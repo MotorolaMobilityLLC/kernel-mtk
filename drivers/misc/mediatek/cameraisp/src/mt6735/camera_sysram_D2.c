@@ -1276,50 +1276,16 @@ static ssize_t SYSRAM_DumpLayoutToProc(struct file *pPage,
 static ssize_t SYSRAM_ReadFlag(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *Off)
 {
-	char tempStr[256];
-	char tempStr2[256] = {'\0'};
-	long length = 0;
-	static int finished;
-
-	if (finished) {
-		finished = 0;
-		return 0;
-	}
-
-	finished = 1;
-
-	if (Count < 256) {
-		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
-		return 0;
-	}
-
-	length += sprintf(tempStr, "Sysram.DebugFlag = 0x%08lX\r\n", Sysram.DebugFlag);
-
-	strncat(tempStr2, tempStr, length);
-
-	if (copy_to_user(pBuffer, tempStr2, length))
-		return -EFAULT;
-
-	return length;/*end of reading*/
+	LOG_ERR("SYSRAM_ReadFlag: Not implement");
+	return 0;
 }
 
 /* ------------------------------------------------------------------------------ */
 static ssize_t SYSRAM_WriteFlag(struct file *pFile,
 			    const char __user *pBuffer, size_t Count, loff_t *p_off)
 {
-	char acBuf[32];
-	MUINT32 u4CopySize = 0;
-	MUINT32 u4SysramDbgFlag = 0;
-	/*  */
-	u4CopySize = (Count < (sizeof(acBuf) - 1)) ? Count : (sizeof(acBuf) - 1);
-	if (copy_from_user(acBuf, pBuffer, u4CopySize)) {
-		return 0;
-	}
-	acBuf[u4CopySize] = '\0';
-	if (3 == sscanf(acBuf, "%lx", &u4SysramDbgFlag)) {
-		Sysram.DebugFlag = u4SysramDbgFlag;
-	}
-	return ((ssize_t)Count);
+	LOG_ERR("SYSRAM_WriteFlag: Not implement");
+	return 0;
 }
 
 /*******************************************************************************
