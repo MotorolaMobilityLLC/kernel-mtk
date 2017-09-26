@@ -6188,111 +6188,8 @@ static struct platform_driver IspDriver = {
 static ssize_t ISP_DumpRegToProc(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *off)
 {
-	static MUINT32 i, j;
-	static int dataState = 1, lastDataState;
-	char tempStr[256];
-	char tempStr2[256] = { '\0' };
-	long length = 0;
-
-	if (Count < 256) {
-		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
-		return 0;
-	}
-
-	switch (dataState) {
-	case 0:
-		dataState = lastDataState;
-		break;
-	case 1:
-		i = 0x0;
-		j = 0x64;
-		length += sprintf(tempStr, "MT ISP Register\n");
-		strncat(tempStr2, tempStr, length);
-		length += sprintf(tempStr, "====== top ====\n");
-		strncat(tempStr2, tempStr, length);
-		break;
-	case 2:
-		i = 0x200;
-		j = 0x3D8;
-		length += sprintf(tempStr, "====== dma ====\n");
-		strncat(tempStr2, tempStr, length);
-		break;
-	case 3:
-		i = 0x400;
-		j = 0x4EC;
-		length += sprintf(tempStr, "====== tg ====\n");
-		strncat(tempStr2, tempStr, length);
-		break;
-	case 4:
-		i = 0xB00;
-		j = 0xDE0;
-		length += sprintf(tempStr, "====== cdp (including EIS) ====\n");
-		strncat(tempStr2, tempStr, length);
-		break;
-	case 5:
-		i = 0x4000;
-		j = 0x40C0;
-		break;
-	case 6:
-		i = 0x4100;
-		j = 0x41BC;
-		break;
-	case 7:
-		i = 0x4300;
-		j = 0x4310;
-		break;
-	case 8:
-		i = 0x43A0;
-		j = 0x43B0;
-		break;
-	case 9:
-		i = 0x4400;
-		j = 0x4424;
-		break;
-	case 10:
-		i = 0x4500;
-		j = 0x4520;
-		break;
-	case 11:
-		i = 0x4F00;
-		j = 0x4F38;
-		length += sprintf(tempStr, "====== 3DNR ====\n");
-		strncat(tempStr2, tempStr, length);
-		break;
-	default:
-		dataState = 0;
-		lastDataState = 0;
-		return 0;
-	}
-
-	LOG_INF(" i(%d), j(%d), Count(%ld), dataState(%d)", i, j,
-		(long int)Count, dataState);
-
-	for (; i <= j; i += 4) {
-		if (length < 226) {/*Preserve some memory for safety*/
-			length += sprintf(tempStr, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-			strncat(tempStr2, tempStr, length);
-		} else {
-			lastDataState = dataState;
-			dataState = 0;/*a state to keep i, j value*/
-			i -= 4;
-			if (copy_to_user(pBuffer, tempStr2, length))
-				return -EFAULT;
-
-			return length;
-		}
-	}
-
-	if (dataState <= 11) {
-		if (copy_to_user(pBuffer, tempStr2, length))
-			return -EFAULT;
-
-		dataState++;
-		return length;
-	} else
-		return 0;/*end of reading*/
-
+	LOG_ERR("ISP_DumpRegToProc: Not implement");
+	return 0;
 }
 
 /*******************************************************************************
@@ -6301,67 +6198,15 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 static ssize_t ISP_RegDebug(struct file *pFile,
 			   const char __user *pBuffer, size_t  Count, loff_t *p_off)
 {
-	char RegBuf[64];
-	MUINT32 CopyBufSize = (Count < (sizeof(RegBuf) - 1)) ? (Count) : (sizeof(RegBuf) - 1);
-	MUINT32 Addr = 0;
-	MUINT32 Data = 0;
-
-	if ((Count <= 0) || (Count > (sizeof(RegBuf) - 1))) {
-		LOG_ERR("Count(%ld) size error!", (long int)Count);
-		return -EFAULT;
-	}
-
-	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
-
-	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
-		LOG_ERR("copy_from_user() fail.");
-		return -EFAULT;
-	}
-
-	if (sscanf(RegBuf, "%x %x", &Addr, &Data) == 2) {
-		ISP_WR32((ISP_ADDR_CAMINF + Addr), Data);
-		LOG_ERR("Write => Addr: 0x%08X, Write Data: 0x%08X. Read Data: 0x%08X.",
-			(unsigned int)(ISP_ADDR_CAMINF + Addr), Data,
-			ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
-	} else if (kstrtou32(RegBuf, 0, &Addr) == 0) {
-		LOG_ERR("Read => Addr: 0x%08X, Read Data: 0x%08X.",
-			(unsigned int)(ISP_ADDR_CAMINF + Addr), ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
-	}
-
-	LOG_DBG("Count(%d)", (MINT32)Count);
-	return (ssize_t)Count;
+	LOG_ERR("ISP_RegDebug: Not implement");
+	return 0;
 }
 
-static MUINT32 proc_regOfst;
 static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *off)
 {
-	char tempStr[256];
-	char tempStr2[256] = {'\0'};
-	long length = 0;
-	static int finished;
-	if (finished) {
-		finished = 0;
-		return 0;
-	} else
-		finished = 1;
-
-	if (Count < 200) {
-		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
-		return 0;
-	}
-
-	length += sprintf(tempStr, "reg_0x%08X = 0x%X\n",
-		(unsigned int)(ISP_ADDR_CAMINF + proc_regOfst),
-		     ioread32((void *)(ISP_ADDR_CAMINF + proc_regOfst)));
-
-	strncat(tempStr2, tempStr, length);
-
-	if (copy_to_user(pBuffer, tempStr2, length))
-		return -EFAULT;
-
-	return length;/*end of reading*/
-
+	LOG_ERR("CAMIO_DumpRegToProc: Not implement");
+	return 0;
 }
 
 /*******************************************************************************
@@ -6370,33 +6215,8 @@ static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 static ssize_t CAMIO_RegDebug(struct file *pFile,
 			     const char __user*pBuffer, size_t Count, loff_t *p_off)
 {
-	char RegBuf[64];
-	MUINT32 CopyBufSize = (Count < (sizeof(RegBuf) - 1)) ? (Count) : (sizeof(RegBuf) - 1);
-#if 0
-	MUINT32 Addr = 0;
-	MUINT32 Data = 0;
-#endif
-	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
-
-	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
-		LOG_ERR("copy_from_user() fail.");
-		return -EFAULT;
-	}
-#if 0
-	if (sscanf(RegBuf, "%x %x", &Addr, &Data) == 2) {
-		proc_regOfst = Addr;
-		/* ISP_WR32((void *)(GPIO_BASE + Addr), Data); //TODO: Must fixed by Device tree */
-		LOG_ERR("Write => Addr: 0x%08X, Write Data: 0x%08X. Read Data: 0x%08X.",
-			GPIO_BASE + Addr, Data, ioread32((GPIO_BASE + Addr)));
-	} else if (sscanf(RegBuf, "%x", &Addr) == 1) {
-		proc_regOfst = Addr;
-		LOG_ERR("Read => Addr: 0x%08X, Read Data: 0x%08X.", GPIO_BASE + Addr,
-			ioread32((GPIO_BASE + Addr)));
-	}
-#endif
-
-	LOG_DBG("Count(%ld)", (long int) Count);
-	return ((ssize_t)Count);
+	LOG_ERR("CAMIO_RegDebug: Not implement");
+	return 0;
 }
 
 /*******************************************************************************
