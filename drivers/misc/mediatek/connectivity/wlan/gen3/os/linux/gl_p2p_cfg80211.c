@@ -1361,9 +1361,8 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
 				kalP2PSetCipher(prGlueInfo, IW_AUTH_CIPHER_CCMP);
 				break;
 			default:
+				cnmMemFree(prGlueInfo->prAdapter, prConnReqMsg);
 				DBGLOG(REQ, WARN, "invalid cipher pairwise (%d)\n", sme->crypto.ciphers_pairwise[0]);
-				kalMemFree(prConnReqMsg, VIR_MEM_TYPE,
-						(sizeof(MSG_P2P_CONNECTION_REQUEST_T) + sme->ie_len));
 				return -EINVAL;
 			}
 		}
