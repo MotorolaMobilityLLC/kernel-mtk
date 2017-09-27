@@ -1069,7 +1069,10 @@ int m4u_cache_sync_by_range(unsigned long va, unsigned int size,
 	int ret = 0;
 
 	if (va < PAGE_OFFSET) {	/* from user space */
-		ret = __m4u_cache_sync_user(va, size, sync_type);
+		if (va >= VMALLOC_START && va <= VMALLOC_END) /* vmalloc */
+			ret = __m4u_cache_sync_kernel((void *)va, size, sync_type);
+		else
+			ret = __m4u_cache_sync_user(va, size, sync_type);
 	} else {
 		ret = __m4u_cache_sync_kernel((void *)va, size, sync_type);
 	}
@@ -2284,7 +2287,9 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 {
 	int ret = 0;
 	M4U_MOUDLE_STRUCT m4u_module;
+#ifdef M4U_FPGAPORTING
 	M4U_PORT_STRUCT m4u_port;
+#endif
 	M4U_PORT_ID PortID;
 	M4U_PORT_ID ModuleID;
 	M4U_CACHE_STRUCT m4u_cache_data;
@@ -2404,7 +2409,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				m4u_dma_data.size, m4u_dma_data.mva,
 				m4u_dma_data.eDMAType, m4u_dma_data.eDMADir);
 		break;
-
+#ifdef M4U_FPGAPORTING
 	case MTK_M4U_T_CONFIG_PORT:
 		ret = copy_from_user(&m4u_port, (void *)arg, sizeof(M4U_PORT_STRUCT));
 		if (ret) {
@@ -2423,6 +2428,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		mutex_unlock(&gM4u_sec_init);
 #endif
 		break;
+#endif
 	case MTK_M4U_T_MONITOR_START:
 		ret = copy_from_user(&PortID, (void *)arg, sizeof(unsigned int));
 		if (ret) {
