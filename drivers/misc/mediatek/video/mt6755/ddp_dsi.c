@@ -1420,7 +1420,6 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 				txdiv1 = 2;
 			} else {
 				DISPMSG("dataRate is too low(%d)\n", data_Rate);
-				ASSERT(0);
 			}
 
 			/* step 8 */
