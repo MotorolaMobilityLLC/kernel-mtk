@@ -28,7 +28,6 @@
 	/* chosen */
 	chosen: chosen {
 		bootargs = "TODO: add bootargs here";
-		kaslr-seed = <0 0>;
 	};
 
 	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
