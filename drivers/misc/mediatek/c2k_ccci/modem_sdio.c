@@ -3720,7 +3720,6 @@ static int func_enable_irq(struct sdio_func *func, int enable)
 static void modem_sdio_write(struct sdio_modem *modem, int addr,
 			     void *buf, size_t len)
 {
-	struct sdio_func *func = modem->func;
 	/*struct mmc_host *host = func->card->host; */
 	unsigned char *print_buf = NULL;
 	struct sdio_msg_head *msg_head = NULL;
@@ -3866,18 +3865,25 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		goto terminate;
 	}
 
-	if (func == modem->func && func && func->card) {
-		sdio_claim_host(func);
+	atomic_inc(&modem->in_writing);
+	if (atomic_read(&modem->func_releasing) > 0) {
+		LOGPRT(LOG_ERR, "%s %d: func is releasing during writing, terminate\n",
+		       __func__, __LINE__);
+		goto write_exit;
+	}
+
+	if (modem->func && modem->func->card) {
+		sdio_claim_host(modem->func);
 	} else {
 		LOGPRT(LOG_ERR,
 		       "%s %d: func changed during writing, terminate\n",
 		       __func__, __LINE__);
-		goto terminate;
+		goto write_exit;
 	}
 
 	/*if hw just support one channel, cannot tx/rx at the same time, we should disable irq here */
 	if (modem->cbp_data->tx_disable_irq) {
-		ret = func_enable_irq(func, 0);
+		ret = func_enable_irq(modem->func, 0);
 		if (ret) {
 			LOGPRT(LOG_ERR,
 			       "%s %d: channel%d func_disable_irq failed ret=%d\n",
@@ -3932,7 +3938,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		pr_debug("[C2K SDIO] write ctrl channel start, len = %zd\n",
 			 len);
 	}
-	ret = sdio_writesb(func, addr, buf, len);
+	ret = sdio_writesb(modem->func, addr, buf, len);
 	if (ret) {
 		LOGPRT(LOG_ERR, "%s %d: channel%d failed ret=%d\n", __func__,
 		       __LINE__, ch_id, ret);
@@ -3960,7 +3966,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 	/*LOGPRT(LOG_ERR,  "%s %d: channel%d data ack after!\n", __func__, __LINE__, index); */
 
 	if (modem->cbp_data->tx_disable_irq) {
-		ret = func_enable_irq(func, 1);
+		ret = func_enable_irq(modem->func, 1);
 		if (ret) {
 			LOGPRT(LOG_ERR,
 			       "%s %d: channel%d func_enable_irq failed ret=%d\n",
@@ -3969,13 +3975,16 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		}
 	}
  release_host:
-	sdio_release_host(func);
+	sdio_release_host(modem->func);
+
 	if (err_flag != 0) {
 		LOGPRT(LOG_ERR,
 		       "%s %d: channel%d ret =%d signal err to user space\n",
 		       __func__, __LINE__, ch_id, ret);
 		modem_err_indication_usr(1);
 	}
+write_exit:
+	atomic_dec_if_positive(&modem->in_writing);
  terminate:
 	if (tx_ready == 0)
 		asc_tx_ready_count(modem->cbp_data->tx_handle->name, 0);
@@ -5307,7 +5316,7 @@ void modem_reset_handler(void)
 	struct sdio_modem *modem = c2k_modem;
 	/*struct sdio_func *func = modem->func; */
 	struct sdio_func *func = NULL;
-
+	int r_delay = 20;	/*release delay: 200ms*/
 	int ret = -1;
 	unsigned long flags;
 
@@ -5350,6 +5359,11 @@ void modem_reset_handler(void)
 
 	/*modem_port_remove(modem); */
 	if (atomic_add_return(1, &modem->func_releasing) == 1) {
+		while (atomic_read(&modem->in_writing) && r_delay--)
+			mdelay(10);
+		LOGPRT(LOG_ERR, "%s: wait done, in_writing = %d\n", __func__, atomic_read(&modem->in_writing));
+		atomic_set(&modem->in_writing, 0);
+
 		func = modem->func;
 		if (!func || !func->card) {
 			LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
@@ -5377,9 +5391,15 @@ void modem_pre_stop(void)
 	struct sdio_modem *modem = c2k_modem;
 	/*struct sdio_func *func = modem->func; */
 	struct sdio_func *func = NULL;
+	int r_delay = 20;	/*release delay: 200ms*/
 	int ret = 0;
 
 	if (atomic_add_return(1, &modem->func_releasing) == 1) {
+		while (atomic_read(&modem->in_writing) && r_delay--)
+			mdelay(10);
+		LOGPRT(LOG_ERR, "%s: wait done, in_writing = %d\n", __func__, atomic_read(&modem->in_writing));
+		atomic_set(&modem->in_writing, 0);
+
 		func = modem->func;
 		if (!func || !func->card) {
 			LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
@@ -6016,6 +6036,7 @@ int modem_sdio_init(struct cbp_platform_data *pdata)
 	atomic_set(&modem->as_packet->occupied, 0);
 	atomic_set(&modem->tx_fifo_cnt, TX_FIFO_SZ);
 	atomic_set(&modem->func_releasing, 0);
+	atomic_set(&modem->in_writing, 0);
 	INIT_WORK(&modem->loopback_work, loopback_to_c2k);
 #endif
 
