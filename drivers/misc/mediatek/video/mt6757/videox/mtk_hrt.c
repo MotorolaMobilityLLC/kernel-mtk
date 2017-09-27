@@ -1029,6 +1029,11 @@ int check_disp_info(struct disp_layer_info *disp_info)
 
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 
+		if (disp_info->layer_num[disp_idx] < 0) {
+			DISPERR("[HRT]disp_info layer_num invalid!\n");
+			return -1;
+		}
+
 		if (disp_info->layer_num[disp_idx] > 0 &&
 			disp_info->input_config[disp_idx] == NULL) {
 			DISPERR("[HRT]Has input layer, but input config is empty, disp_idx:%d, layer_num:%d\n",
@@ -1039,7 +1044,6 @@ int check_disp_info(struct disp_layer_info *disp_info)
 		if ((disp_info->gles_head[disp_idx] < 0 && disp_info->gles_tail[disp_idx] >= 0) ||
 			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0) ||
 			(disp_info->gles_head[disp_idx] < -1 || disp_info->gles_tail[disp_idx] < -1)) {
-			dump_disp_info(disp_info);
 			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 			return -1;
