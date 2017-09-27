@@ -834,8 +834,10 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 		is_on_OVL = 1;
 		layout_layers = 0;
 
+#ifndef LAYERING_SUPPORT_EXT_LAYER_ON_2ND_DISP
 		if (disp_idx == 1)
 			continue;
+#endif
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
