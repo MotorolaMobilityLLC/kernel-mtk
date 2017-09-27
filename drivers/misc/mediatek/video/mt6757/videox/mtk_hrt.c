@@ -824,7 +824,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 	int is_on_OVL, is_ext_layer;
 	int disp_idx, i;
 	struct layer_config *src_info, *dst_info;
-	int layout_layers, prim_layout_layers = 0, ext_layout_layers = 0;
+	int layout_layers, prim_layout_layers = 0;
 
 	ext_layer_info_init(disp_info);
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
@@ -936,10 +936,8 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 					disp_info->gles_tail[disp_idx], i, dst_info->ovl_id, dst_info->ext_sel_layer);
 		}
 
-		if (disp_idx == 0)
-			prim_layout_layers = layout_layers;
-		else
-			ext_layout_layers = layout_layers;
+		/*if (disp_idx == 0)*/
+		prim_layout_layers = layout_layers;
 	}
 
 	/* We just care about primary display */
