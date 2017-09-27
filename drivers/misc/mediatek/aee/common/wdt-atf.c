@@ -46,6 +46,7 @@
 #ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 #include <linux/irqchip/mt-eic.h>
 #endif
+#include <mrdump_private.h>
 
 #define THREAD_INFO(sp) ((struct thread_info *) \
 				((unsigned long)(sp) & ~(THREAD_SIZE - 1)))
@@ -513,6 +514,8 @@ void notrace aee_wdt_atf_entry(void)
 	int cpu = get_HW_cpuid();
 
 	aee_rr_rec_exp_type(1);
+
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 
 	if (atf_aee_debug_virt_addr) {
 		regs = (void *)(atf_aee_debug_virt_addr + (cpu * sizeof(struct atf_aee_regs)));
