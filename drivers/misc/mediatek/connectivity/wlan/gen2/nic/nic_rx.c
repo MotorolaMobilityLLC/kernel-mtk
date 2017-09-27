@@ -2501,35 +2501,19 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
 			for (i = 0; i < u4RxAggCount; i++) {
 				UINT_16 u2PktLength;
-				UINT_32 u4HeaderOffset = (((P_HIF_RX_HEADER_T)pucSrcAddr)->ucHerderLenOffset
-								& HIF_RX_HDR_HEADER_OFFSET_MASK);
 
 				u2PktLength = (rxNum == 0 ?
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
-				if (((P_HIF_RX_HEADER_T)pucSrcAddr)->u2PacketLen < HIF_RX_HDR_SIZE + u4HeaderOffset) {
-					DBGLOG(RX, ERROR, "u2PacketLen(%d) headerLen(%lu)\n",
-						((P_HIF_RX_HEADER_T)pucSrcAddr)->u2PacketLen,
-						(HIF_RX_HDR_SIZE + u4HeaderOffset));
-					DBGLOG_MEM8(RX, ERROR, pucSrcAddr,
-						ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
-
-					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
-					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
-					continue;
-				}
-
-				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE
-					|| ((P_HIF_RX_HEADER_T)pucSrcAddr)->u2PacketLen > CFG_RX_MAX_PKT_SIZE) {
+				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
 					DBGLOG(RX, ERROR,
-						"[%s] Request_len(%d), pkt_field_len(%d), MAX_PKT_SIZE(%d)...",
-						__func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
-						((P_HIF_RX_HEADER_T)pucSrcAddr)->u2PacketLen,
-						CFG_RX_MAX_PKT_SIZE);
+					       "[%s] Request_len(%d) is greater than CFG_RX_MAX_PKT_SIZE(%d)...",
+					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
+					       CFG_RX_MAX_PKT_SIZE);
 					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
 					DBGLOG_MEM8(RX, ERROR, pucSrcAddr,
-						ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+					       ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
 
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
