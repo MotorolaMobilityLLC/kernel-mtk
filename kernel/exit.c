@@ -53,6 +53,7 @@
 #include <linux/oom.h>
 #include <linux/writeback.h>
 #include <linux/shm.h>
+#include <linux/kcov.h>
 #ifdef CONFIG_MTPROF
 #include "mt_cputime.h"
 #endif
@@ -673,6 +674,7 @@ void do_exit(long code)
 	TASKS_RCU(int tasks_rcu_i);
 
 	profile_task_exit(tsk);
+	kcov_task_exit(tsk);
 #ifdef CONFIG_MTPROF
 #ifdef CONFIG_MTPROF_CPUTIME
 	/* mt shceduler profiling*/
