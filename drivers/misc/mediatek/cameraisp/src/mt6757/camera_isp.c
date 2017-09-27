@@ -7804,7 +7804,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	}
 	case ISP_CLEAR_IRQ: {
 		if (copy_from_user(&ClearIrq, (void *)Param, sizeof(struct ISP_CLEAR_IRQ_STRUCT)) == 0) {
-			LOG_DBG("ISP_CLEAR_IRQ Type(%d)\n", ClearIrq.Type);
+			if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
+				LOG_DBG("ISP_CLEAR_IRQ Type(%d)\n", ClearIrq.Type);
 
 			if ((ClearIrq.Type >= ISP_IRQ_TYPE_AMOUNT) || (ClearIrq.Type < 0)) {
 				Ret = -EFAULT;
@@ -7826,9 +7827,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 
 			i = ClearIrq.EventInfo.UserKey;/*avoid line over 120 char per line */
-			LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%x)\n",
-				ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type,
-				IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][i]);
+			if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
+				LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%x)\n",
+					ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type,
+					IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][i]);
 			spin_lock_irqsave(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
 			IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][ClearIrq.EventInfo.UserKey] &=
 				(~ClearIrq.EventInfo.Status);
