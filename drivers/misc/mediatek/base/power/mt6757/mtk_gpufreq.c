@@ -1454,7 +1454,11 @@ static unsigned int mt_gpufreq_dds_calc(unsigned int khz, enum post_div_enum pos
 
 static void gpu_dvfs_switch_to_univpll(bool on)
 {
-	clk_prepare_enable(mt_gpufreq_clk->clk_mux);
+	int ret;
+
+	ret = clk_prepare_enable(mt_gpufreq_clk->clk_mux);
+	if (ret < 0)
+		gpufreq_err("@%s: clk_prepare_enable fail\n", __func__);
 
 	if (on) {
 #if 0
