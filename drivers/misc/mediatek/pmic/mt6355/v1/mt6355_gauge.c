@@ -191,7 +191,7 @@ static void read_fg_hw_info_Iavg(struct gauge_device *gauge_dev, int *is_iavg_va
 	long long fg_iavg_reg = 0;
 	long long fg_iavg_reg_tmp = 0;
 	long long fg_iavg_ma = 0;
-	int fg_iavg_reg_27_16 = 0;
+	long long fg_iavg_reg_27_16 = 0;
 	int fg_iavg_reg_15_00 = 0;
 	int sign_bit = 0;
 	int is_bat_charging;
@@ -232,7 +232,7 @@ static void read_fg_hw_info_Iavg(struct gauge_device *gauge_dev, int *is_iavg_va
 	}
 
 	bm_debug(
-		"[read_fg_hw_info_Iavg] fg_iavg_reg 0x%llx fg_iavg_reg_tmp 0x%llx 27_16 0x%x 15_00 0x%x\n",
+		"[read_fg_hw_info_Iavg] fg_iavg_reg 0x%llx fg_iavg_reg_tmp 0x%llx 27_16 0x%llx 15_00 0x%x\n",
 			fg_iavg_reg, fg_iavg_reg_tmp, fg_iavg_reg_27_16, fg_iavg_reg_15_00);
 	bm_debug(
 		"[read_fg_hw_info_Iavg] is_bat_charging %d fg_iavg_ma 0x%llx\n",
@@ -246,7 +246,7 @@ static signed int fg_get_current_iavg(struct gauge_device *gauge_dev, int *data)
 	long long fg_iavg_reg = 0;
 	long long fg_iavg_reg_tmp = 0;
 	long long fg_iavg_ma = 0;
-	int fg_iavg_reg_27_16 = 0;
+	long long fg_iavg_reg_27_16 = 0;
 	int fg_iavg_reg_15_00 = 0;
 	int sign_bit = 0;
 	int is_bat_charging;
@@ -296,7 +296,7 @@ static signed int fg_get_current_iavg(struct gauge_device *gauge_dev, int *data)
 			fg_iavg_ma = 0 - fg_iavg_ma;
 
 		bm_trace(
-			"[fg_get_current_iavg] fg_iavg_ma %lld fg_iavg_reg %lld r_fg_value %d 27_16 0x%x 15_00 0x%x\n",
+			"[fg_get_current_iavg] fg_iavg_ma %lld fg_iavg_reg %lld r_fg_value %d 27_16 0x%llx 15_00 0x%x\n",
 			fg_iavg_ma, fg_iavg_reg, gauge_dev->fg_cust_data->r_fg_value,
 			fg_iavg_reg_27_16, fg_iavg_reg_15_00);
 			gauge_dev->fg_hw_info.current_avg = fg_iavg_ma;
@@ -637,7 +637,7 @@ static int fgauge_get_average_current(struct gauge_device *gauge_dev, int *data,
 	long long fg_iavg_reg = 0;
 	long long fg_iavg_reg_tmp = 0;
 	long long fg_iavg_ma = 0;
-	int fg_iavg_reg_27_16 = 0;
+	long long fg_iavg_reg_27_16 = 0;
 	int fg_iavg_reg_15_00 = 0;
 	int sign_bit = 0;
 	int is_bat_charging;
@@ -677,7 +677,7 @@ static int fgauge_get_average_current(struct gauge_device *gauge_dev, int *data,
 			fg_iavg_ma, fg_iavg_reg, fg_iavg_reg_tmp);
 
 		do_div(fg_iavg_ma, 1000000);
-		bm_trace("[fg_get_current_iavg] fg_iavg_ma %lld\n", fg_iavg_ma);
+		/* bm_trace("[fg_get_current_iavg] fg_iavg_ma %lld\n", fg_iavg_ma); */
 
 		do_div(fg_iavg_ma, gauge_dev->fg_cust_data->r_fg_value);
 		bm_trace("[fg_get_current_iavg] fg_iavg_ma %lld\n", fg_iavg_ma);
@@ -687,7 +687,7 @@ static int fgauge_get_average_current(struct gauge_device *gauge_dev, int *data,
 			fg_iavg_ma = 0 - fg_iavg_ma;
 
 		bm_trace(
-			"[fg_get_current_iavg] fg_iavg_ma %lld fg_iavg_reg %lld r_fg_value %d 27_16 0x%x 15_00 0x%x\n",
+			"[fg_get_current_iavg] fg_iavg_ma %lld fg_iavg_reg %lld r_fg_value %d 27_16 0x%llx 15_00 0x%x\n",
 			fg_iavg_ma, fg_iavg_reg, gauge_dev->fg_cust_data->r_fg_value,
 			fg_iavg_reg_27_16, fg_iavg_reg_15_00);
 			gauge_dev->fg_hw_info.current_avg = fg_iavg_ma;
@@ -2401,7 +2401,9 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 		bm_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
-		do_div(temp_sum, avg_cnt);
+		if (avg_cnt > 0)
+			do_div(temp_sum, avg_cnt);
+
 		current_from_ADC = temp_sum;
 
 		bm_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
