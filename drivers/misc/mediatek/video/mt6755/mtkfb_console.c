@@ -507,7 +507,8 @@ void screen_logger_add_message(char *obj, message_mode mode, char *message)
 	}
 	if (1 == add_new) {
 		screen_logger *logger = kmalloc(sizeof(screen_logger), GFP_KERNEL);
-
+		if (!logger)
+			return;
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
 		list_add_tail(&logger->list, &logger_head.list);
