@@ -676,9 +676,11 @@ void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
 		arch_get_cluster_cpus(&cpu_mask, id);
 		domain = (struct hmp_domain *)
 			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
-		cpumask_copy(&domain->possible_cpus, &cpu_mask);
-		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
-		list_add(&domain->hmp_domains, hmp_domains_list);
+		if (domain) {
+			cpumask_copy(&domain->possible_cpus, &cpu_mask);
+			cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+			list_add(&domain->hmp_domains, hmp_domains_list);
+		}
 	}
 }
 #else
