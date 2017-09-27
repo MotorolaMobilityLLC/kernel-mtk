@@ -592,6 +592,10 @@ static int m4u_debug_set(void *data, u64 val)
 		unsigned int *pSrc;
 
 		pSrc = vmalloc(128);
+		if (!pSrc) {
+			M4UMSG("vmalloc failed!\n");
+			return 0;
+		}
 		memset(pSrc, 55, 128);
 		m4u_cache_sync(NULL, 0, 0, 0, 0, M4U_CACHE_FLUSH_ALL);
 
