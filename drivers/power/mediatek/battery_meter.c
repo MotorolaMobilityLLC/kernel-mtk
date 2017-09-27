@@ -1495,10 +1495,12 @@ void fgauge_construct_battery_profile_init(void)
 					profile_index++;
 					continue;
 				} else if (((profile_p[i] + profile_index)->percentage) == j * 2) {
-					(temp_profile_p + j)->voltage =
-					    (profile_p[i] + profile_index)->voltage;
-					(temp_profile_p + j)->percentage =
-					    (profile_p[i] + profile_index)->percentage;
+					if (temp_profile_p != NULL) {
+						(temp_profile_p + j)->voltage =
+							(profile_p[i] + profile_index)->voltage;
+						(temp_profile_p + j)->percentage =
+							(profile_p[i] + profile_index)->percentage;
+					}
 					break;
 				}
 				low_p = (profile_p[i] + profile_index - 1)->percentage;
@@ -1506,25 +1508,30 @@ void fgauge_construct_battery_profile_init(void)
 				now_p = j * 2;
 				low_vol = (profile_p[i] + profile_index)->voltage;
 				high_vol = (profile_p[i] + profile_index - 1)->voltage;
-				(temp_profile_p + j)->voltage =
-				    (low_vol * 1000 +
-				     ((high_vol - low_vol) * 1000 * (now_p - low_p) / (high_p -
-										       low_p))) /
-				    1000;
-				(temp_profile_p + j)->percentage = j * 2;
+				if (temp_profile_p != NULL) {
+					(temp_profile_p + j)->voltage =
+					(low_vol * 1000 + ((high_vol - low_vol) * 1000 * (now_p - low_p) /
+						(high_p - low_p))) / 1000;
+					(temp_profile_p + j)->percentage = j * 2;
+				}
 
 				break;
 			}
-			bm_print(BM_LOG_CRTI, "new battery_profile[%d,%d] <%d,%d>\n", i, j,
+			if (temp_profile_p != NULL) {
+				bm_print(BM_LOG_CRTI, "new battery_profile[%d,%d] <%d,%d>\n", i, j,
 				 (temp_profile_p + j)->percentage, (temp_profile_p + j)->voltage);
+			}
 		}
 
 		for (j = 0; j * 2 <= 100; j++) {
-			(profile_p[i] + j)->voltage = (temp_profile_p + j)->voltage;
-			(profile_p[i] + j)->percentage = (temp_profile_p + j)->percentage;
+			if (temp_profile_p != NULL) {
+				(profile_p[i] + j)->voltage = (temp_profile_p + j)->voltage;
+				(profile_p[i] + j)->percentage = (temp_profile_p + j)->percentage;
+			}
 		}
 	}
-	kfree(temp_profile_p);
+	if (temp_profile_p != NULL)
+		kfree(temp_profile_p);
 }
 
 void fgauge_construct_battery_profile(signed int temperature, BATTERY_PROFILE_STRUCT_P temp_profile_p)
