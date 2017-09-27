@@ -1010,7 +1010,7 @@ static int lsm6ds3hg_factory_get_data(int32_t data[3], int *status)
 		err = LSM6DS3H_gyro_SetPowerMode(lsm6ds3h_i2c_client, true);
 		if (err != 0)
 			GYRO_PR_ERR("MPU6515_SetPowerMode fail\n");
-		msleep(50);
+		msleep(150);
 	}
 	err = lsm6ds3h_gyro_get_data(&data[0], &data[1], &data[2], status);
 	data[0] = (int32_t) (data[0] / 1000);
