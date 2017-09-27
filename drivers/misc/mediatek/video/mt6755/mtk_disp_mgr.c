@@ -1391,15 +1391,15 @@ int _ioctl_query_valid_layer(unsigned long arg)
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
-		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
 	}
 
 	ret = layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
 	return ret;
