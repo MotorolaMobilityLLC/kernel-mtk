@@ -7299,12 +7299,8 @@ int init_ext_decouple_buffers(void)
 #if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT) {
-		ret = -1;
-	} else {
-		if (decouple_buffer_info[0] == NULL)
-			ret = allocate_idle_lp_dc_buffer();
-	}
+	if (decouple_buffer_info[0] == NULL)
+		ret = allocate_idle_lp_dc_buffer();
 
 	_primary_path_unlock(__func__);
 #endif
