@@ -1877,6 +1877,10 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	INT32 i = 0;
 	UINT32 value = 0x0;
 	ENUM_WMT_CHIP_TYPE chip_type;
+	INT32 debug_count = 0;
+	INT32 debug_strlen = 0;
+	INT32 debug_pointer = 0;
+	char debug_str[256] = {""};
 
 	if (!g_stp_dbg_cpupcr) {
 		STP_DBG_ERR_FUNC("NULL reference pointer\n");
@@ -1959,6 +1963,12 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR1));
 		STP_DBG_INFO_FUNC("CONNSYS debug cr2 0x1807040c:0x%08x\n",
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
+		for (debug_count = 0; debug_count < 20; debug_count++) {
+			debug_strlen = osal_sprintf(&debug_str[debug_pointer], "0x%08x ",
+					wmt_plat_get_dump_info(0x50 + debug_count * 4));
+			debug_pointer += debug_strlen;
+		}
+		STP_DBG_INFO_FUNC("get dump info 0xF0080050 ~ 0xF008009c: %s\n", &debug_str[0]);
 	} else if (chip_type == WMT_CHIP_TYPE_COMBO) {
 		STP_DBG_INFO_FUNC("dump sdio register for debug\n");
 		mtk_stp_dump_sdio_register();
