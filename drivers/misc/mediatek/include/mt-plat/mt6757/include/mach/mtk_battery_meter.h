@@ -70,7 +70,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE	1000
 #define R_FG_BOARD_SLOPE	1000 /*slope*/
-#define CAR_TUNE_VALUE	100 /*1.00 */
+#define CAR_TUNE_VALUE	120 /*1.00 */
 
 
 /* HW Fuel gague  */
