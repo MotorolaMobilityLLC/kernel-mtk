@@ -575,14 +575,13 @@ int __init spm_module_init(void)
 	spm_set_pcm_init_flag();
 #endif
 
-#if 0
+
 #ifdef SPM_VCORE_EN
 	spm_go_to_vcore_dvfs(SPM_VCORE_DVFS_EN, 0);
 #else
 #if defined(CONFIG_ARCH_MT6735)
 	/* only for common solution, no DVS */
 	spm_go_to_vcore_dvfs(0, 0);
-#endif
 #endif
 #endif
 
@@ -684,19 +683,9 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		spm_fw_count++;
 	}
 
-	if (spm_fw_count == check_spm_fw_count) {
-#ifdef SPM_VCORE_EN
-		spm_go_to_vcore_dvfs(SPM_VCORE_DVFS_EN, 0);
-		late_init_to_lowpwr_opp();
-#else
-#if defined(CONFIG_ARCH_MT6735)
-		/* only for common solution, no DVS */
-		spm_go_to_vcore_dvfs(0, 0);
-#endif
-#endif
-
+	if (spm_fw_count == check_spm_fw_count)
 		dyna_load_pcm_done = 1;
-	}
+
 	return err;
 }
 
