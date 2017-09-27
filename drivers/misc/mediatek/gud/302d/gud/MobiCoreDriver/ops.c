@@ -30,7 +30,6 @@
 #include <linux/cpu.h>
 #include <linux/moduleparam.h>
 
-
 #include "main.h"
 #include "fastcall.h"
 #include "ops.h"
@@ -290,10 +289,38 @@ int mc_switch_core(uint32_t core_num)
 	return ret;
 }
 
+#ifdef TBASE_CPU_ONLINE_BOOST
+static void mc_cpu_online_boost(int cpu)
+{
+	/* If active_cpu is 0-3, online cpu is 4-9, and TBASE not idle, BOOST! */
+	if (((1U << cpu) & BOOST_CPUS_MASK) && !((1U << active_cpu) & BOOST_CPUS_MASK)) {
+		MCDRV_DBG(mcd, "online_boost cpu %d\n", cpu);
+		mc_switch_core(cpu);
+	}
+}
+#endif
+
 void mc_cpu_offfline(int cpu)
 {
 	if (active_cpu == cpu) {
 		int i;
+
+#ifdef TBASE_CPU_ONLINE_BOOST
+		int j = 0;
+
+		/* Find the last online CPU and switch! */
+		for_each_online_cpu(i) {
+			if (i == cpu) {
+				MCDRV_DBG(mcd, "Skipping CPU %d\n", cpu);
+				continue;
+			} else {
+				MCDRV_DBG(mcd, "Found CPU %d\n", i);
+				j = i;
+			}
+		}
+		MCDRV_DBG(mcd, "CPU %d is dying, switching to %d\n", cpu, j);
+		mc_switch_core(j);
+#else
 		/* Chose the first online CPU and switch! */
 		for_each_online_cpu(i) {
 			if (i == cpu) {
@@ -305,6 +332,7 @@ void mc_cpu_offfline(int cpu)
 			mc_switch_core(i);
 			break;
 		}
+#endif
 	} else {
 		MCDRV_DBG(mcd, "not active CPU, no action taken\n");
 	}
@@ -316,6 +344,15 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 	unsigned int cpu = (unsigned long)hcpu;
 
 	switch (action) {
+	case CPU_ONLINE:
+		MCDRV_DBG(mcd, "Cpu %d CPU_ONLINE\n", cpu);
+#ifdef TBASE_CPU_ONLINE_BOOST
+		mc_cpu_online_boost(cpu);
+#endif
+		break;
+	case CPU_UP_PREPARE:
+		MCDRV_DBG(mcd, "Cpu %d CPU_UP_PREPARE\n", cpu);
+		break;
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
 		MCDRV_DBG(mcd, "Cpu %u is going to die\n", cpu);

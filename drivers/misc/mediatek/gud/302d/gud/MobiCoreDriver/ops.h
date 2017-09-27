@@ -27,6 +27,7 @@ int mc_init(phys_addr_t base, uint32_t  nq_length, uint32_t mcp_offset,
 		uint32_t  mcp_length);
 #ifdef TBASE_CORE_SWITCHER
 int mc_switch_core(uint32_t core_num);
+uint32_t mc_active_core(void);
 #endif
 
 bool mc_fastcall(void *data);

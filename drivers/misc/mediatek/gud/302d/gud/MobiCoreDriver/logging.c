@@ -72,11 +72,19 @@ static void log_eol(uint16_t source)
 	}
 	/* MobiCore Userspace */
 	if (prev_source)
+#ifdef TBASE_CORE_SWITCHER
+		dev_info(mcd, "%03x(%d)|%s\n", prev_source,
+			mc_active_core(), log_line);
+#else
 		dev_info(mcd, "%03x|%s\n", prev_source, log_line);
+#endif
 	/* MobiCore kernel */
 	else
+#ifdef TBASE_CORE_SWITCHER
+		dev_info(mcd, "mtk(%d)|%s\n", mc_active_core(), log_line);
+#else
 		dev_info(mcd, "%s\n", log_line);
-
+#endif
 	log_line_len = 0;
 	log_line[0] = 0;
 }
