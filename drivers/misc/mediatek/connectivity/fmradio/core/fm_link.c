@@ -226,6 +226,7 @@ signed int fm_event_parser(signed int(*rds_parser) (struct rds_rx_t *, signed in
 {
 	signed int len;
 	signed int i = 0;
+	signed int j = 0;
 	unsigned char opcode = 0;
 	unsigned short length = 0;
 	unsigned char ch;
@@ -257,7 +258,14 @@ signed int fm_event_parser(signed int(*rds_parser) (struct rds_rx_t *, signed in
 
 				state = FM_TASK_RX_PARSER_OPCODE;
 			} else {
-				WCN_DBG(FM_ALT | LINK, "event pkt type error (rx_buf[%d] = 0x%02x)\n", i, ch);
+				for (j = i+1; j < i+4; j++) {
+					if (j >= len || rx_buf[j] == FM_TASK_EVENT_PKT_TYPE)
+						break;
+				}
+				WCN_DBG(FM_ALT | LINK,
+					"event pkt type error (rx_buf[%d~%d]=0x%02x 0x%02x 0x%02x 0x%02x)\n",
+					i, (j-1), rx_buf[i], rx_buf[i+1], rx_buf[i+2], rx_buf[i+3]);
+				i = j-1;
 			}
 
 			i++;
