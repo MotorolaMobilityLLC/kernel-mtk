@@ -434,8 +434,8 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	if (sscanf(buf, "%61s %lu %lu %lu", option, &arg1, &arg2, &arg3) == 4 ||
-			sscanf(buf, "%61s %lu", option, &arg1) == 2) {
+	if (sscanf(buf, "%63s %ld %ld %ld", option, &arg1, &arg2, &arg3) == 4 ||
+			sscanf(buf, "%63s %ld", option, &arg1) == 2) {
 		if (strncmp(option, "ENABLE_CG", 9) == 0) {
 			enable_cg_fliper(arg1);
 		} else if (strncmp(option, "ENABLE_TOTAL", 12) == 0) {
@@ -450,13 +450,14 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 			cg_restore_threshold();
 		} else if (strncmp(option, "RESTORE_TOTAL", 13) == 0) {
 			total_restore_threshold();
-		}	else if (strncmp(option, "SET_CG", 6) == 0) {
+		} else if (strncmp(option, "SET_CG", 6) == 0) {
 			setCG(arg1);
-		}	else if (strncmp(option, "SET_TOTAL", 9) == 0) {
+		} else if (strncmp(option, "SET_TOTAL", 9) == 0) {
 			setTotal(arg1);
-		}	else if (strncmp(option, "SET_VCORE_MIN", 13) == 0) {
-			vcorefs_request_dvfs_opp(KIR_PERF, arg1);
-		}  else if (strncmp(option, "POWER_MODE", 10) == 0) {
+		} else if (strncmp(option, "SET_VCORE_MIN", 13) == 0) {
+			if (arg1 >= -1 && arg1 < 4)
+				vcorefs_request_dvfs_opp(KIR_PERF, arg1);
+		} else if (strncmp(option, "POWER_MODE", 10) == 0) {
 			if (!fliper_debug) {
 				if (arg1 == Default) {
 					pr_debug(TAG"POWER_MODE: default\n");
