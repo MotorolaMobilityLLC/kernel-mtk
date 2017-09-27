@@ -7261,12 +7261,16 @@ static ssize_t show_mt6311_access(struct device *dev, struct device_attribute *a
 static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *attr,
 				   const char *buf, size_t size)
 {
-	int ret;
+	int ret = 0;
 	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
 	pr_err("[store_mt6311_access]\n");
+	if ((size > 10) || (size < 3)) {
+		/*pr_err("[store_mt6311_access] ERR buf is %s [%zu]\n", buf, size);*/
+		return -1;
+	}
 
 	if (buf != NULL && size != 0) {
 		/*PMICLOG1("[store_mt6311_access] buf is %s and size is %d\n",buf,size); */
@@ -7275,15 +7279,38 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 		pvalue = (char *)buf;
 		if (size > 4) {
 			addr = strsep(&pvalue, " ");
-			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
+			if (addr != NULL) {
+				ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+				if (ret) {
+					pr_err("[store_mt6311_access] reg_addr ERROR\n");
+					return -1;
+				}
+			} else {
+				pr_err("[store_mt6311_access] addr empty\n");
+				return -1;
+			}
+		} else {
 			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+			if (ret) {
+				pr_err("[store_mt6311_access] reg_addr ERROR\n");
+				return -1;
+			}
+		}
 		/*ret = kstrtoul(buf, 16, (unsigned long *)&reg_address); */
 
 		if (size > 4) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16); */
 			val = strsep(&pvalue, " ");
-			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+			if (val != NULL) {
+				ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+				if (ret) {
+					pr_err("[store_mt6311_access] reg_value ERROR\n");
+					return -1;
+				}
+			} else {
+				pr_err("[store_mt6311_access] val empty\n");
+				return -1;
+			}
 			pr_err("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
 			       reg_address, reg_value);
 
