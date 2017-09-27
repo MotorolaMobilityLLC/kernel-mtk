@@ -48,7 +48,9 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 UINT_64 u8DrvOwnStart, u8DrvOwnEnd;
 UINT32 u4DrvOwnMax = 0;
 #define CFG_USER_LOAD 0
+#define ARP_TX_DONE_REQ_INTERVAL	500
 static UINT_16 su2TxDoneCfg = CFG_DHCP | CFG_ICMP | CFG_EAPOL | CFG_ARP;
+static OS_SYSTIME srLastArpTxDoneReqTime;
 /*******************************************************************************
 *						P R I V A T E  F U N C T I O N S
 ********************************************************************************
@@ -1070,10 +1072,19 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
 			break;
 		case EVENT_TX:
-			if (u2OpCode == ARP_PRO_REQ)
+			if (u2OpCode == ARP_PRO_REQ) {
 				DBGLOG(TX, TRACE, "<TX> Arp Req to IP: %d.%d.%d.%d\n",
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
-			else if (u2OpCode == ARP_PRO_RSP)
+				if (srLastArpTxDoneReqTime &&
+					kalGetTimeTick() - srLastArpTxDoneReqTime
+						< ARP_TX_DONE_REQ_INTERVAL) {
+					DBGLOG(TX, INFO,
+					"<TX> Skip Tx done status for Arp Req to IP: %d.%d.%d.%d\n",
+					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
+					break;
+				}
+				srLastArpTxDoneReqTime = kalGetTimeTick();
+			} else if (u2OpCode == ARP_PRO_RSP)
 				DBGLOG(TX, TRACE, "<TX> Arp Rsp to IP: %d.%d.%d.%d\n",
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			prMsduInfo->fgNeedTxDoneStatus = TRUE;
