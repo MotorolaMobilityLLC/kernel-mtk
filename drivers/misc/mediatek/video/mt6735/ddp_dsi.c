@@ -1391,6 +1391,12 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 			DISPERR("invalid mipitx Data Rate: %d\n", data_Rate);
 			break;
 		}
+		if (0 != dsi_params->ssc_range)
+			delta1 = dsi_params->ssc_range;
+		if (delta1 > 8) {
+			DISPERR("invalid ssc_range: %d\n", delta1);
+			break;
+		}
 		/* step 1 */
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
@@ -1482,10 +1488,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 					RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);
 				/* PRD=ROUND(pmod) = 433; */
-				if (0 != dsi_params->ssc_range)
-					delta1 = dsi_params->ssc_range;
 
-				ASSERT(delta1 <= 8);
 				pdelta1 = (delta1 * data_Rate * txdiv * 262144 + 281664) / 563329;
 				MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
@@ -1500,7 +1503,6 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 			}
 		} else {
 			DISPERR("[dsi_dsi.c] PLL clock should not be 0!!!\n");
-			ASSERT(0);
 		}
 
 		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
