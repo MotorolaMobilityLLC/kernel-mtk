@@ -91,7 +91,7 @@ static void gyro_work_func(struct work_struct *work)
 
     /* add wake lock to make sure data can be read before system suspend */
 	if (cxt->gyro_data.get_data != NULL)
-		cxt->gyro_data.get_data(&x, &y, &z, &status);
+		err = cxt->gyro_data.get_data(&x, &y, &z, &status);
 	else
 		GYRO_PR_ERR("gyro driver not register data path\n");
 
@@ -483,7 +483,7 @@ static ssize_t gyro_store_cali(struct device *dev, struct device_attribute *attr
 	if (cxt->gyro_ctl.set_cali != NULL)
 		err = cxt->gyro_ctl.set_cali(cali_buf, count);
 	else
-		GYRO_INFO("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
+		GYRO_INFO("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION SET_CALI\n");
 	if (err < 0)
 		GYRO_INFO("gyro set cali err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
