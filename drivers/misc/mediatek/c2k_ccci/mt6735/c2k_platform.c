@@ -672,7 +672,7 @@ void c2k_modem_power_off_platform(void)
 
 	C2K_BOOTUP_LOG("[C2K] md_power_off begin\n");
 #if defined(CONFIG_MTK_CLKMGR)
-	ret = md_power_off(SYS_MD2, 1000);
+	ret = md_power_off(SYS_MD2, 100);
 #else
 	if (atomic_read(&clock_on)) {
 		C2K_BOOTUP_LOG("[C2K] already power on, power down now\n");
