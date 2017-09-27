@@ -553,7 +553,8 @@ static s32 pwrap_wacs2_hal(u32  write, u32  adr, u32  wdata, u32 *rdata)
 
 		if (0 == (wdata & (1<<11)) || 1 == ((wdata>>10) & 0x1)) {
 			PWRAPERR(" pwrap_wacs2_hal check 0xa err pid=%d, wdata=0x%x\n", current->pid, wdata);
-			BUG_ON(1);
+			goto FAIL;
+			/* BUG_ON(1); */
 		}
 	}
 

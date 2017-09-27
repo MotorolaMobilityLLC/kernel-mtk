@@ -574,24 +574,50 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
+	if ((size > 10) || (size < 5)) {
+		/* pr_err("[store_pmic_access] ERR buf is %s [%zu]\n", buf, size); */
+		return -1;
+	}
 	pr_err("[store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_err("[store_pmic_access] buf is %s\n", buf);
+		/* pr_err("[store_pmic_access] buf is %s %zu\n", buf, size); */
 		/*reg_address = simple_strtoul(buf, &pvalue, 16); */
 
 		pvalue = (char *)buf;
 		if (size > 5) {
 			addr = strsep(&pvalue, " ");
-			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
+			if (addr != NULL) {
+				ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+				if (ret) {
+					pr_err("[store_pmic_access] reg_addr ERROR\n");
+					return -1;
+				}
+			} else {
+				pr_err("[store_pmic_access] addr empty\n");
+				return -1;
+			}
+		} else {
 			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+			if (ret) {
+				pr_err("[store_pmic_access] reg_addr ERROR\n");
+				return -1;
+			}
+		}
 
 		if (size > 5) {
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16); */
-			/*pvalue = (char *)buf + 1; */
-			val = strsep(&pvalue, " ");
-			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
-
+			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
+			/*pvalue = (char *)buf + 1;*/
+			val =  strsep(&pvalue, " ");
+			if (val != NULL) {
+				ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+				if (ret) {
+					pr_err("[store_pmic_access] reg_dat ERROR\n");
+					return -1;
+				}
+			} else {
+				pr_err("[store_pmic_access] val empty\n");
+				return -1;
+			}
 			pr_err("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
 			       reg_address, reg_value);
 			ret = pmic_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
