@@ -448,6 +448,8 @@ void screen_logger_add_message(char *obj, enum message_mode mode, char *message)
 			case MESSAGE_APPEND:
 				len = strlen(p->message) + strlen(message);
 				tmp1 = kmalloc(sizeof(char) * (len + 1), GFP_KERNEL);
+				if (!tmp1)
+					return;
 				strncpy(tmp1, p->message, strlen(p->message));
 				strncat(tmp1, message, strlen(message));
 				tmp2 = p->message;
@@ -462,6 +464,8 @@ void screen_logger_add_message(char *obj, enum message_mode mode, char *message)
 	}
 	if (add_new == 1) {
 		struct screen_logger *logger = kmalloc(sizeof(struct screen_logger), GFP_KERNEL);
+		if (!logger)
+			return;
 
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
