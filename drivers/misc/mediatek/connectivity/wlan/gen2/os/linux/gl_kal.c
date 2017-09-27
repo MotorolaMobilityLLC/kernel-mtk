@@ -3620,7 +3620,6 @@ struct file *kalFileOpen(const char *path, int flags, int rights)
 	set_fs(oldfs);
 	if (IS_ERR(filp)) {
 		err = PTR_ERR(filp);
-		DBGLOG(INIT, ERROR, "error code :%ld\n", PTR_ERR(filp));
 		return NULL;
 	}
 	return filp;
