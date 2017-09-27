@@ -221,10 +221,11 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 	/* 0->primary display, 1->secondary display */
 	for (disp_index = 0 ; disp_index < 2 ; disp_index++) {
 		/* No need to considerate HRT in decouple mode */
+#if 0
 		if (disp_info->disp_mode[disp_index] == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
 				disp_info->disp_mode[disp_index] == DISP_SESSION_DECOUPLE_MODE)
 			continue;
-
+#endif
 		if (disp_index == 0)
 			if (dal_enable)
 				ovl_num_limit = primary_max_input_layer_num - 1;
@@ -832,6 +833,9 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 		phy_layer_num_on_OVL_2L = 0;
 		is_on_OVL = 1;
 		layout_layers = 0;
+
+		if (disp_idx == 1)
+			continue;
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
