@@ -181,7 +181,12 @@ void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 	u32 ptr, len, con0;
 
 	/* tell IM where is PCM code (use slave mode if code existed) */
-	ptr = base_va_to_pa(pcmdesc->base);
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
+	if (pcmdesc->base_dma)
+		ptr = pcmdesc->base_dma;
+	else
+#endif
+		ptr = base_va_to_pa(pcmdesc->base);
 	len = pcmdesc->size - 1;
 	if (spm_read(SPM_PCM_IM_PTR) != ptr || spm_read(SPM_PCM_IM_LEN) != len || pcmdesc->sess > 2) {
 		spm_write(SPM_PCM_IM_PTR, ptr);
@@ -317,6 +322,9 @@ void __spm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl)
 	/* enable r0 and r7 to control power */
 	spm_write(SPM_PCM_PWR_IO_EN, (pwrctrl->r0_ctrl_en ? PCM_PWRIO_EN_R0 : 0) |
 		  (pwrctrl->r7_ctrl_en ? PCM_PWRIO_EN_R7 : 0));
+
+	while ((spm_read(SPM_PCM_FSM_STA) & (0x7 << 7)) != (0x4 << 7))
+		;
 
 	/* kick PCM to run (only toggle PCM_KICK) */
 	con0 = spm_read(SPM_PCM_CON0) & ~(CON0_IM_KICK | CON0_PCM_KICK);

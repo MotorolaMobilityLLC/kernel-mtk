@@ -791,7 +791,7 @@ static void set_init_opp_index(struct vcorefs_profile *pwrctrl)
 	}
 }
 
-static int late_init_to_lowpwr_opp(void)
+int late_init_to_lowpwr_opp(void)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct kicker_profile *kicker_ctrl_table = kicker_table;
@@ -1183,7 +1183,6 @@ static int __init vcorefs_module_init(void)
 }
 
 module_init(vcorefs_module_init);
-late_initcall_sync(late_init_to_lowpwr_opp);
 
 MODULE_DESCRIPTION("Vcore DVFS Driver v0.2");
 

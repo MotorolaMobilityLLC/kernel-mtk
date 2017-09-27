@@ -271,6 +271,14 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 				goto LEAVE_SLEEP;
 		}
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if (!spm_load_firmware_status()) {
+		slp_error("SPM FIRMWARE IS NOT READY\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
+#endif
+
 /*
 #if defined(CONFIG_ARCH_MT6735M)
 #if SLP_SLEEP_DPIDLE_EN

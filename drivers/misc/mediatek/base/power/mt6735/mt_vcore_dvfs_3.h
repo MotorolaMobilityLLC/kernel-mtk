@@ -100,6 +100,7 @@ extern unsigned int vcorefs_get_curr_voltage(void);
 extern int get_ddr_khz(void);
 extern int get_ddr_khz_by_steps(unsigned int steps);
 extern bool is_vcorefs_can_work(void);
+extern int late_init_to_lowpwr_opp(void);
 
 /*
  * Macro and Inline

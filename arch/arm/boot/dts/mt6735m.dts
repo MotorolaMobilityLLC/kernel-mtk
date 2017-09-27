@@ -162,6 +162,14 @@
 						alignment = <0 0x200000>;
 				};
 
+				spm-reserve-memory {
+					compatible = "mediatek,spm-reserve-memory";
+					no-map;
+					size = <0 0x10000>; /* PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX = 4K * 4 */
+					alignment = <0 0x10000>;
+					alloc-ranges = <0 0x40000000 0 0x60000000>;
+				};
+
 				ram_console-reserved-memory@43f00000 {
 						compatible = "mediatek,ram_console";
 						reg = <0 0x43f00000 0 0x10000>;

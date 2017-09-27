@@ -328,6 +328,7 @@ enum {
 	BY_TMR,
 	BY_OTH,
 	BY_VTG,
+	BY_FRM,
 	NR_REASONS
 };
 
@@ -606,6 +607,7 @@ static const char *reason_name[NR_REASONS] = {
 	"by_tmr",
 	"by_oth",
 	"by_vtg",
+	"by_frm",
 };
 
 char cg_group_name[][NR_GRPS] = {
@@ -1102,6 +1104,13 @@ static bool soidle_can_enter(int cpu)
 	bool retval = false;
 	char *p;
 
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
+	if (!spm_load_firmware_status()) {
+		reason = BY_FRM;
+		goto out;
+	}
+#endif
+
 #ifdef CONFIG_SMP
 	if (!mt_idle_cpu_criteria()) {
 		reason = BY_CPU;
@@ -1326,6 +1335,13 @@ static bool dpidle_can_enter(void)
 	unsigned long long dpidle_block_curr_time = 0;
 	bool retval = false;
 	char *p;
+
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
+	if (!spm_load_firmware_status()) {
+		reason = BY_FRM;
+		goto out;
+	}
+#endif
 
 #ifdef CONFIG_SMP
 	if (!mt_idle_cpu_criteria()) {
