@@ -3174,11 +3174,13 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		pTask->secData.enginesNeedDAPC = pCommandDesc->secData.enginesNeedDAPC;
 		pTask->secData.enginesNeedPortSecurity =
 		    pCommandDesc->secData.enginesNeedPortSecurity;
-		pTask->secData.addrMetadataCount = pCommandDesc->secData.addrMetadataCount;
-		if (pTask->secData.is_secure == true && pTask->secData.addrMetadataCount > 0) {
+
+		if (pTask->secData.is_secure == true && pCommandDesc->secData.addrMetadataCount > 0 &&
+			pCommandDesc->secData.addrMetadataCount < CMDQ_IWC_MAX_ADDR_LIST_LENGTH) {
 			u32 metadata_length = 0;
 			void *p_metadatas = NULL;
 
+			pTask->secData.addrMetadataCount = pCommandDesc->secData.addrMetadataCount;
 			metadata_length = (pTask->secData.addrMetadataCount) * sizeof(struct cmdqSecAddrMetadataStruct);
 			/* create sec data task buffer for working */
 			p_metadatas = kzalloc(metadata_length, GFP_KERNEL);
@@ -3197,6 +3199,7 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 			pTask->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)p_metadatas;
 		} else {
 			pTask->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)NULL;
+			pTask->secData.addrMetadataCount = 0;
 		}
 #endif
 
