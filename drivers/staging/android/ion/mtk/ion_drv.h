@@ -111,7 +111,7 @@ typedef struct ion_sys_get_phys_param {
 	unsigned long len;
 } ion_sys_get_phys_param_t;
 
-#define ION_MM_DBG_NAME_LEN 16
+#define ION_MM_DBG_NAME_LEN 48
 #define ION_MM_SF_BUF_INFO_LEN 16
 
 typedef struct __ion_sys_client_name {
