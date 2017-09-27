@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
+
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -73,19 +75,19 @@ static int led191_pinctrl_init(struct platform_device *pdev)
 	/* get pinctrl */
 	led191_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(led191_pinctrl)) {
-		fl_pr_err("Failed to get flashlight pinctrl.\n");
+		pr_err("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(led191_pinctrl);
 	}
 
 	/*  Flashlight pin initialization */
 	led191_hwen_high = pinctrl_lookup_state(led191_pinctrl, LED191_PINCTRL_STATE_HWEN_HIGH);
 	if (IS_ERR(led191_hwen_high)) {
-		fl_pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_HIGH);
+		pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_HIGH);
 		ret = PTR_ERR(led191_hwen_high);
 	}
 	led191_hwen_low = pinctrl_lookup_state(led191_pinctrl, LED191_PINCTRL_STATE_HWEN_LOW);
 	if (IS_ERR(led191_hwen_low)) {
-		fl_pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_LOW);
+		pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_LOW);
 		ret = PTR_ERR(led191_hwen_low);
 	}
 
@@ -97,7 +99,7 @@ static int led191_pinctrl_set(int pin, int state)
 	int ret = 0;
 
 	if (IS_ERR(led191_pinctrl)) {
-		fl_pr_err("pinctrl is not available\n");
+		pr_err("pinctrl is not available\n");
 		return -1;
 	}
 
@@ -108,13 +110,13 @@ static int led191_pinctrl_set(int pin, int state)
 		else if (state == LED191_PINCTRL_PINSTATE_HIGH && !IS_ERR(led191_hwen_high))
 			ret = pinctrl_select_state(led191_pinctrl, led191_hwen_high);
 		else
-			fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
+			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
-		fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
+		pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
-	fl_pr_debug("pin(%d) state(%d), ret:%d\n", pin, state, ret);
+	pr_debug("pin(%d) state(%d), ret:%d\n", pin, state, ret);
 
 	return ret;
 }
@@ -175,7 +177,7 @@ static unsigned int led191_timeout_ms;
 
 static void led191_work_disable(struct work_struct *data)
 {
-	fl_pr_debug("work queue callback\n");
+	pr_debug("work queue callback\n");
 	led191_disable();
 }
 
@@ -200,19 +202,19 @@ static int led191_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		led191_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		led191_set_level(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (led191_timeout_ms) {
@@ -227,7 +229,7 @@ static int led191_ioctl(unsigned int cmd, unsigned long arg)
 		}
 		break;
 	default:
-		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
+		pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -257,14 +259,14 @@ static int led191_set_driver(int set)
 		if (!use_count)
 			ret = led191_init();
 		use_count++;
-		fl_pr_debug("Set driver: %d\n", use_count);
+		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
 		if (!use_count)
 			ret = led191_uninit();
 		if (use_count < 0)
 			use_count = 0;
-		fl_pr_debug("Unset driver: %d\n", use_count);
+		pr_debug("Unset driver: %d\n", use_count);
 	}
 	mutex_unlock(&led191_mutex);
 
@@ -319,13 +321,13 @@ static int led191_parse_dt(struct device *dev,
 
 	pdata->channel_num = of_get_child_count(np);
 	if (!pdata->channel_num) {
-		fl_pr_info("Parse no dt, node.\n");
+		pr_info("Parse no dt, node.\n");
 		return 0;
 	}
-	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+	pr_info("Channel number(%d).\n", pdata->channel_num);
 
 	if (of_property_read_u32(np, "decouple", &decouple))
-		fl_pr_info("Parse no dt, decouple.\n");
+		pr_info("Parse no dt, decouple.\n");
 
 	pdata->dev_id = devm_kzalloc(dev,
 			pdata->channel_num * sizeof(struct flashlight_device_id),
@@ -344,7 +346,7 @@ static int led191_parse_dt(struct device *dev,
 		pdata->dev_id[i].channel = i;
 		pdata->dev_id[i].decouple = decouple;
 
-		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+		pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
 				pdata->dev_id[i].type, pdata->dev_id[i].ct,
 				pdata->dev_id[i].part, pdata->dev_id[i].name,
 				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
@@ -364,11 +366,11 @@ static int led191_probe(struct platform_device *pdev)
 	int err;
 	int i;
 
-	fl_pr_debug("Probe start.\n");
+	pr_debug("Probe start.\n");
 
 	/* init pinctrl */
 	if (led191_pinctrl_init(pdev)) {
-		fl_pr_debug("Failed to init pinctrl.\n");
+		pr_debug("Failed to init pinctrl.\n");
 		err = -EFAULT;
 		goto err;
 	}
@@ -414,7 +416,7 @@ static int led191_probe(struct platform_device *pdev)
 		}
 	}
 
-	fl_pr_debug("Probe done.\n");
+	pr_debug("Probe done.\n");
 
 	return 0;
 err:
@@ -426,7 +428,7 @@ static int led191_remove(struct platform_device *pdev)
 	struct led191_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int i;
 
-	fl_pr_debug("Remove start.\n");
+	pr_debug("Remove start.\n");
 
 	pdev->dev.platform_data = NULL;
 
@@ -440,7 +442,7 @@ static int led191_remove(struct platform_device *pdev)
 	/* flush work queue */
 	flush_work(&led191_work);
 
-	fl_pr_debug("Remove done.\n");
+	pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -479,34 +481,34 @@ static int __init flashlight_led191_init(void)
 {
 	int ret;
 
-	fl_pr_debug("Init start.\n");
+	pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&led191_gpio_platform_device);
 	if (ret) {
-		fl_pr_err("Failed to register platform device\n");
+		pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&led191_platform_driver);
 	if (ret) {
-		fl_pr_err("Failed to register platform driver\n");
+		pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_pr_debug("Init done.\n");
+	pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_led191_exit(void)
 {
-	fl_pr_debug("Exit start.\n");
+	pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&led191_platform_driver);
 
-	fl_pr_debug("Exit done.\n");
+	pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_led191_init);
