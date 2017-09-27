@@ -4419,7 +4419,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		OVL_CONFIG_STRUCT *ovl_cfg;
 
 		layer = input_cfg->layer_id;
-		ovl_cfg = &(data_config->ovl_config[layer]);
+		if (layer > PRIMARY_SESSION_INPUT_LAYER_COUNT-1 || layer < 0) {
+			DISPMSG("layer out of bounds,layer = %d\n", layer);
+			continue;
+		} else
+			ovl_cfg = &(data_config->ovl_config[layer]);
 		if (cfg->setter != SESSION_USER_AEE) {
 			if (is_DAL_Enabled() && layer == primary_display_get_option("ASSERT_LAYER")) {
 				DISPMSG("skip AEE layer %d\n", layer);
