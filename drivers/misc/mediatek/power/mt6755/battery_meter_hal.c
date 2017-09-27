@@ -1335,6 +1335,9 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 		pr_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
+		if (avg_cnt == 0)
+			return STATUS_UNSUPPORTED;
+
 		do_div(temp_sum, avg_cnt);
 		current_from_ADC = temp_sum;
 
