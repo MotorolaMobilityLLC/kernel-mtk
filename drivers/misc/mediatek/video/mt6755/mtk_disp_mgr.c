@@ -338,7 +338,7 @@ static int __trigger_display(disp_session_config *config)
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
+		WARN(1, "%s: legacy API are not supported!\n", __func__);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		mutex_lock(&disp_session_lock);
 		ret = external_display_trigger(config->tigger_mode, session_id);

@@ -2724,25 +2724,11 @@ static int decouple_update_rdma_config(void)
 
 static int _requestCondition(int overlap_layers)
 {
-	int ret = 0;
-	int iwidth = 0;
-	int ihight = 0;
-
-	ihight = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
-	iwidth = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
-
-	if (ihight * iwidth < DISP_HW_HRT_PERF_LCM_AREA_THRESHOLD) {
-		if (overlap_layers <= DISP_HW_HRT_PERF_FOR_LCM_SMALL)
-			return -1;
-	} else {
-		if (overlap_layers > DISP_HW_HRT_PERF_FOR_LCM_BIG_MAX)
-			DISPWRN("overlayed layer num is %d > %d\n", overlap_layers,
-			DISP_HW_HRT_PERF_FOR_LCM_BIG_MAX);
-		if (overlap_layers <= DISP_HW_HRT_PERF_FOR_LCM_BIG)
-			return -1;
-	}
-
-	return ret;
+	if (overlap_layers <= 0)
+		return -1;
+	if (overlap_layers > 1)
+		DISPWRN("hrt level > %d\n", overlap_layers);
+	return 0;
 }
 
 static int _request_dvfs_perf(int req)

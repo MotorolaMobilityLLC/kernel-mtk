@@ -32,6 +32,8 @@ static struct layering_rule_info_t l_rule_info;
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_NORMAL */
 	{4, 6},
+	{6, 9},
+	{3, 4},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -76,8 +78,14 @@ static void layering_rule_senario_decision(disp_layer_info *disp_info)
 	l_rule_info.disp_path = HRT_PATH_GENERAL;
 
 	l_rule_info.primary_fps = 60;
-	l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_NORMAL;
-
+	if (primary_display_get_width() < 800)
+		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_HD;
+	else {
+		if (primary_display_get_height() <= 1920)
+			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_NORMAL;
+		else
+			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_FHD_PLUS;
+	}
 	MMProfileLogEx(ddp_mmp_get_events()->hrt, MMProfileFlagEnd, l_rule_info.disp_path,
 		l_rule_info.layer_tb_idx | (l_rule_info.bound_tb_idx << 16));
 }
