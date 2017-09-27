@@ -1937,19 +1937,14 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 #else
 #ifdef FG_BAT_INT
 
-	int ret = 0;
-	signed int car_instant = 0;
-
-	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR_ACT, &car_instant);
-
 	if (wake_up_smooth_time == 0)
 		g_spm_timer = NORMAL_WAKEUP_PERIOD;
 	else
 		g_spm_timer = wake_up_smooth_time;
 
 	bm_print(BM_LOG_CRTI,
-		 "[get_dynamic_period] g_spm_timer:%d wake_up_smooth_time:%d vbat:%d car:%d\r\n",
-		 g_spm_timer, wake_up_smooth_time, g_sw_vbat_temp, car_instant);
+		 "[get_dynamic_period] g_spm_timer:%d wake_up_smooth_time:%d vbat:%d \r\n",
+		 g_spm_timer, wake_up_smooth_time, g_sw_vbat_temp);
 	return g_spm_timer;
 
 #else

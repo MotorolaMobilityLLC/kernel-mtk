@@ -4179,8 +4179,6 @@ static void battery_timer_resume(void)
 		battery_meter_reset_sleep_time();
 		BAT_thread();
 		mutex_unlock(&bat_mutex);
-	} else {
-		battery_log(BAT_LOG_CRTI, "battery resume NOT by pcm timer!!\n");
 	}
 
 	/* phone call last than x min */
@@ -4197,7 +4195,7 @@ static void battery_timer_resume(void)
 	hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
 	hrtimer_start(&charger_hv_detect_timer, hvtime, HRTIMER_MODE_REL);
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	battery_log(BAT_LOG_CRTI,
+	battery_log(BAT_LOG_FULL,
 		 "[fg reg] current:0x%x 0x%x low:0x%x 0x%x high:0x%x 0x%x\r\n",
 		pmic_get_register_value(PMIC_FG_CAR_18_03), pmic_get_register_value(PMIC_FG_CAR_34_19),
 		pmic_get_register_value(PMIC_FG_BLTR_15_00), pmic_get_register_value(PMIC_FG_BLTR_31_16),
@@ -4212,7 +4210,7 @@ static void battery_timer_resume(void)
 		low |= ((pmic_get_register_value(PMIC_FG_BLTR_31_16)) & 0xffff) << 16;
 		high = (pmic_get_register_value(PMIC_FG_BFTR_15_00));
 		high |= ((pmic_get_register_value(PMIC_FG_BFTR_31_16)) & 0xffff) << 16;
-		battery_log(BAT_LOG_CRTI,
+		battery_log(BAT_LOG_FULL,
 			 "[fg reg] current:%d low:%d high:%d\r\n", cur, low, high);
 	}
 #else
@@ -4239,7 +4237,7 @@ static void battery_timer_resume(void)
 #endif
 
 	battery_suspended = KAL_FALSE;
-	battery_log(BAT_LOG_CRTI, "@bs=0@\n");
+	battery_log(BAT_LOG_FULL, "@bs=0@\n");
 	mutex_unlock(&bat_mutex);
 
 #endif
