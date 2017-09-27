@@ -3690,7 +3690,25 @@ static void mmc_blk_shutdown(struct mmc_card *card)
 #ifdef CONFIG_PM
 static int mmc_blk_suspend(struct mmc_card *card)
 {
-	return _mmc_blk_suspend(card);
+	struct mmc_blk_data *md = mmc_get_drvdata(card);
+	int ret;
+
+	ret = _mmc_blk_suspend(card);
+	if (ret)
+		goto out;
+
+	/*
+	 * Make sure partition is the main one when
+	 * suspend.
+	 */
+	if (md) {
+		ret = mmc_blk_part_switch(card, md);
+		if (ret)
+			pr_info("%s: error %d during suspend\n",
+				md->disk->disk_name, ret);
+	}
+out:
+	return ret;
 }
 
 static int mmc_blk_resume(struct mmc_card *card)
