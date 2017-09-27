@@ -29,11 +29,6 @@
 
 #include "log_store_kernel.h"
 
-
-#define FILE_PATH	"/data/pl_lk"
-
-
-
 static struct sram_log_header *sram_header;
 static int sram_log_store_status = BUFF_NOT_READY;
 static int dram_log_store_status = BUFF_NOT_READY;
@@ -201,12 +196,12 @@ static void store_printk_buff(void)
 	buff = log_buf_addr_get();
 	log_buf = virt_to_phys(buff);
 	size = log_buf_len_get();
-	sram_dram_buff->reserve2[0] = (u32)log_buf;
-	sram_dram_buff->reserve2[1] = size;
+	sram_dram_buff->klog_addr = (u32)log_buf;
+	sram_dram_buff->klog_size = size;
 	if (early_log_disable == false)
 		sram_dram_buff->flag |= BUFF_EARLY_PRINTK;
 	pr_notice("log_store printk log buff addr:0x%x, size 0x%x. buff flag 0x%x.\n",
-		sram_dram_buff->reserve2[0], sram_dram_buff->reserve2[1], sram_dram_buff->flag);
+		sram_dram_buff->klog_addr, sram_dram_buff->klog_size, sram_dram_buff->flag);
 }
 
 void disable_early_log(void)
