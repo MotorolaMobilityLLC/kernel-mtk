@@ -2731,10 +2731,21 @@ static ssize_t mt_gpufreq_fixed_freq_proc_write(struct file *file, const char __
 			mt_gpufreq_fixed_freq_state = false;
 			mt_gpufreq_fixed_frequency = 0;
 		} else {
-			_mt_gpufreq_set_cur_freq(fixed_freq);
-			mt_gpufreq_fixed_freq_state = true;
-			mt_gpufreq_fixed_frequency = fixed_freq;
-			g_cur_gpu_OPPidx = 0;	/* keep Max Vcore */
+			int i, found = 0;
+
+			for (i = 0; i < mt_gpufreqs_num; i++) {
+				if (fixed_freq == mt_gpufreqs[i].gpufreq_khz) {
+					found = 1;
+					break;
+				}
+			}
+
+			if (found == 1) {
+				_mt_gpufreq_set_cur_freq(fixed_freq);
+				mt_gpufreq_fixed_freq_state = true;
+				mt_gpufreq_fixed_frequency = fixed_freq;
+				g_cur_gpu_OPPidx = 0;	/* keep Max Vcore */
+			}
 		}
 		mutex_unlock(&mt_gpufreq_lock);
 	} else
