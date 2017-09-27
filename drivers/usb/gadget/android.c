@@ -1323,7 +1323,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		return ret;
 
 	/* setup this to avoid create fsg thread in fsg_bind again */
-	fsg_opts->no_configfs = true;
+	fsg_opts->no_configfs = false;
 
 	return 0;
 
