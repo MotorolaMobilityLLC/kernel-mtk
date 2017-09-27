@@ -938,7 +938,6 @@ static int __set_input(disp_session_input_config *session_input, int overlap_lay
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		ret = set_external_buffer(session_input);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
