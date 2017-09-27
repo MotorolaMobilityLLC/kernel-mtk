@@ -3637,6 +3637,11 @@ signed int battery_meter_get_VSense(void)
 #endif
 }
 
+signed int battery_meter_get_QMAX25(void)
+{
+	return batt_meter_cust_data.q_max_pos_25;
+}
+
 /* ============================================================ // */
 static ssize_t fgadc_log_write(struct file *filp, const char __user *buff,
 			       size_t len, loff_t *data)
