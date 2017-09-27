@@ -33,6 +33,7 @@
 #define REGFLAG_END_OF_TABLE	0xFF   /* END OF REGISTERS MARKER */
 
 #define LCM_DSI_CMD_MODE		0
+#define LCM_DENSITY			(160)
 
 /**
  * Local Variables
@@ -224,6 +225,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->type = LCM_TYPE_DSI;
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density = LCM_DENSITY;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
