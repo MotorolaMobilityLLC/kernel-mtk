@@ -220,7 +220,7 @@ int parse_memory_layout_buf(struct reserved_mem_ext *reserved_mem)
 		temp[end - start] = '\0';
 
 		if (strstr(temp, "[PHY layout]")) {
-			if (!strstr(temp, "kernel")) {
+			if (!strstr(temp, "lca_reserved_mem") && !strstr(temp, "kernel")) {
 				count = parse_memory_layout_log(reserved_mem, count, temp);
 				if (count == -1)
 					return -1;
