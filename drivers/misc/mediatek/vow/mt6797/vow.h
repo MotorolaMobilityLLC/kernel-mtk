@@ -114,6 +114,9 @@ typedef enum VOW_FLAG_TYPE {
 	VOW_FLAG_DEBUG,
 	VOW_FLAG_PRE_LEARN,
 	VOW_FLAG_DMIC_LOWPOWER,
+	VOW_FLAG_PERIODIC_ENABLE,
+	VOW_FLAG_FORCE_PHASE1_DEBUG,
+	VOW_FLAG_FORCE_PHASE2_DEBUG,
 	NUM_OF_VOW_FLAG_TYPE
 } VOW_FLAG_TYPE;
 
@@ -199,7 +202,7 @@ typedef struct {
 #endif
 
 void VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set);
-
+struct platform_device *get_vow_platformdev(void);
 /*
 #define ReadREG(_addr, _value) ((_value) = *(volatile unsigned int *)(_addr) )
 #define WriteREG(_addr, _value) (*(volatile unsigned int *)(_addr) = (_value))
