@@ -15,7 +15,7 @@
 *
 * Filename:
 * ---------
-*   bq25890.h
+*   bq25896.h
 *
 * Project:
 * --------
@@ -23,38 +23,40 @@
 *
 * Description:
 * ------------
-*   bq25890 header file
+*   bq25896 header file
 *
 * Author:
 * -------
 *
 ****************************************************************************/
-#ifndef _bq25890_SW_H_
-#define _bq25890_SW_H_
+#ifndef _bq25896_SW_H_
+#define _bq25896_SW_H_
 
-#define bq25890_CON0      0x00
-#define bq25890_CON1      0x01
-#define bq25890_CON2      0x02
-#define bq25890_CON3      0x03
-#define bq25890_CON4      0x04
-#define bq25890_CON5      0x05
-#define bq25890_CON6      0x06
-#define bq25890_CON7     0x07
-#define bq25890_CON8     0x08
-#define bq25890_CON9     0x09
-#define bq25890_CONA     0x0A
-#define bq25890_CONB     0x0B
-#define bq25890_CONC     0x0C
-#define bq25890_COND     0x0D
-#define bq25890_CONE     0x0E
-#define bq25890_CON11    0X11
-#define bq25890_CON12     0x12
-#define bq25890_CON13     0x13
-
-
+#define bq25896_CON0      0x00
+#define bq25896_CON1      0x01
+#define bq25896_CON2      0x02
+#define bq25896_CON3      0x03
+#define bq25896_CON4      0x04
+#define bq25896_CON5      0x05
+#define bq25896_CON6      0x06
+#define bq25896_CON7     0x07
+#define bq25896_CON8     0x08
+#define bq25896_CON9     0x09
+#define bq25896_CONA     0x0A
+#define bq25896_CONB     0x0B
+#define bq25896_CONC     0x0C
+#define bq25896_COND     0x0D
+#define bq25896_CONE     0x0E
+#define bq25896_CON11    0X11
+#define bq25896_CON12     0x12
+#define bq25896_CON13     0x13
 
 
-#define bq25890_REG_NUM 21
+
+
+#define bq25896_REG_NUM 21
+#define CON1_RESET_MASK   0x1
+#define CON1_RESET_SHIFT  7
 
 
 
@@ -73,13 +75,7 @@
 
 
 /* CON1 */
-#define CON1_DP_DAC_MASK   0x7
-#define CON1_DP_DAC_SHIFT  5
-
-#define CON1_DM_DAC_MASK   0x7
-#define CON1_DM_DAC_SHIFT  2
-
-#define CON1_VINDPM_OS_MASK   0x1
+#define CON1_VINDPM_OS_MASK   0x1F
 #define CON1_VINDPM_OS_SHIFT  0
 
 
@@ -96,12 +92,6 @@
 #define CON2_ICO_EN_MASK   0x1
 #define CON2_ICO_EN_RATE_SHIFT  4
 
-#define CON2_HVDCP_EN_MASK   0x1
-#define CON2_HVDCP_EN_SHIFT  3
-
-#define CON2_MAX_EN_MASK   0x1
-#define CON2_MAX_EN_SHIFT  2
-
 #define CON2_FORCE_DPDM_MASK   0x1
 #define CON2_FORCE_DPDM_SHIFT  1
 
@@ -112,8 +102,8 @@
 
 
 /* CON3 */
-#define CON3_FORCE_DSEL_MASK   0x1
-#define CON3_FORCE_DSEL_SHIFT  7
+#define CON3_BAT_LOADEN_MASK   0x1
+#define CON3_BAT_LOADEN_SHIFT  7
 
 #define CON3_WD_MASK   0x1
 #define CON3_WD_SHIFT  6
@@ -267,81 +257,81 @@
   *
   *********************************************************/
 /* CON0---------------------------------------------------- */
-extern void bq25890_set_en_hiz(unsigned int val);
-extern void bq25890_set_en_ilim(unsigned int val);
-extern void bq25890_set_iinlim(unsigned int val);
-extern unsigned int bq25890_get_iinlim(void);
+extern void bq25896_set_en_hiz(unsigned int val);
+extern void bq25896_set_en_ilim(unsigned int val);
+extern void bq25896_set_iinlim(unsigned int val);
+extern unsigned int bq25896_get_iinlim(void);
 
 /* CON1---------------------------------------------------- */
 
 /* CON2---------------------------------------------------- */
-extern void bq25890_ADC_start(unsigned int val);
-extern void bq25890_set_ADC_rate(unsigned int val);
-extern void bq25890_set_ico_en_start(unsigned int val);
+extern void bq25896_ADC_start(unsigned int val);
+extern void bq25896_set_ADC_rate(unsigned int val);
+extern void bq25896_set_ico_en_start(unsigned int val);
 /*  */
 
 
 /* CON3---------------------------------------------------- */
 /* willcai */
-extern void bq25890_wd_reset(unsigned int val);
-extern void bq25890_otg_en(unsigned int val);
-extern void bq25890_chg_en(unsigned int val);
-extern void bq25890_set_sys_min(unsigned int val);
+extern void bq25896_wd_reset(unsigned int val);
+extern void bq25896_otg_en(unsigned int val);
+extern void bq25896_chg_en(unsigned int val);
+extern void bq25896_set_sys_min(unsigned int val);
 /*  */
 
 
 /* CON4---------------------------------------------------- */
 
 /* willcai */
-extern void bq25890_en_pumpx(unsigned int val);
-extern void bq25890_set_ichg(unsigned int val);
-unsigned int bq25890_get_reg_ichg(void);
+extern void bq25896_en_pumpx(unsigned int val);
+extern void bq25896_set_ichg(unsigned int val);
+unsigned int bq25896_get_reg_ichg(void);
 
 /*  */
 
 /* CON5---------------------------------------------------- */
 
 /* willcai */
-extern void bq25890_set_iprechg(unsigned int val);
-extern void bq25890_set_iterml(unsigned int val);
+extern void bq25896_set_iprechg(unsigned int val);
+extern void bq25896_set_iterml(unsigned int val);
 /*  */
 
 
 /* CON6---------------------------------------------------- */
 /* willcai */
-extern void bq25890_set_vreg(unsigned int val);
-extern void bq25890_set_batlowv(unsigned int val);
-extern void bq25890_set_vrechg(unsigned int val);
-extern unsigned int bq25890_get_vreg(void);
+extern void bq25896_set_vreg(unsigned int val);
+extern void bq25896_set_batlowv(unsigned int val);
+extern void bq25896_set_vrechg(unsigned int val);
+extern unsigned int bq25896_get_vreg(void);
 
 /* con7 */
 
-extern void bq25890_en_term_chg(unsigned int val);
-extern void bq25890_en_state_dis(unsigned int val);
-extern void bq25890_set_wd_timer(unsigned int val);
-extern void bq25890_en_chg_timer(unsigned int val);
-extern unsigned int bq25890_get_chg_timer_enable(void);
+extern void bq25896_en_term_chg(unsigned int val);
+extern void bq25896_en_state_dis(unsigned int val);
+extern void bq25896_set_wd_timer(unsigned int val);
+extern void bq25896_en_chg_timer(unsigned int val);
+extern unsigned int bq25896_get_chg_timer_enable(void);
 
-extern void bq25890_set_chg_timer(unsigned int val);
+extern void bq25896_set_chg_timer(unsigned int val);
 
 
 /* con8 */
-extern void bq25890_set_thermal_regulation(unsigned int val);
-extern void bq25890_set_VBAT_clamp(unsigned int val);
-extern void bq25890_set_VBAT_IR_compensation(unsigned int val);
+extern void bq25896_set_thermal_regulation(unsigned int val);
+extern void bq25896_set_VBAT_clamp(unsigned int val);
+extern void bq25896_set_VBAT_IR_compensation(unsigned int val);
 /* con9 */
-void bq25890_pumpx_up(unsigned int val);
+void bq25896_pumpx_up(unsigned int val);
 
 
 
 
 /* --------------------------------------------------------- */
-extern void bq25890_dump_register(void);
-extern unsigned int bq25890_reg_config_interface(unsigned char RegNum, unsigned char val);
+extern void bq25896_dump_register(void);
+extern unsigned int bq25896_reg_config_interface(unsigned char RegNum, unsigned char val);
 
-extern unsigned int bq25890_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
+extern unsigned int bq25896_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
 					 unsigned char SHIFT);
-extern unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+extern unsigned int bq25896_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
 					   unsigned char SHIFT);
 /*
 *static void hw_bc11_dump_register(void);
@@ -355,39 +345,39 @@ extern unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char
 *static void hw_bc11_done(void);
 */
 /* CONA */
-extern void bq25890_set_boost_ilim(unsigned int val);
-extern void bq25890_set_boost_vlim(unsigned int val);
+extern void bq25896_set_boost_ilim(unsigned int val);
+extern void bq25896_set_boost_vlim(unsigned int val);
 
 /* CONB */
-unsigned int bq25890_get_vbus_state(void);
-unsigned int bq25890_get_chrg_state(void);
-unsigned int bq25890_get_pg_state(void);
-unsigned int bq25890_get_sdp_state(void);
-unsigned int bq25890_get_vsys_state(void);
-unsigned int bq25890_get_wdt_state(void);
-unsigned int bq25890_get_boost_state(void);
-unsigned int bq25890_get_chrg_fault_state(void);
-unsigned int bq25890_get_bat_state(void);
-unsigned int bq25890_get_ichg(void);
+unsigned int bq25896_get_vbus_state(void);
+unsigned int bq25896_get_chrg_state(void);
+unsigned int bq25896_get_pg_state(void);
+unsigned int bq25896_get_sdp_state(void);
+unsigned int bq25896_get_vsys_state(void);
+unsigned int bq25896_get_wdt_state(void);
+unsigned int bq25896_get_boost_state(void);
+unsigned int bq25896_get_chrg_fault_state(void);
+unsigned int bq25896_get_bat_state(void);
+unsigned int bq25896_get_ichg(void);
 
 /* CON0D */
-extern void bq25890_set_force_vindpm(unsigned int val);
-extern void bq25890_set_vindpm(unsigned int val);
-extern unsigned int bq25890_get_vindpm(void);
+extern void bq25896_set_force_vindpm(unsigned int val);
+extern void bq25896_set_vindpm(unsigned int val);
+extern unsigned int bq25896_get_vindpm(void);
 
 /* CON11 */
-extern unsigned int bq25890_get_vbus(void);
+extern unsigned int bq25896_get_vbus(void);
 
 /* aggregated APIs */
-extern void bq25890_hw_init(void);
-extern void bq25890_charging_enable(unsigned int bEnable);
-extern void bq25890_dump_register(void);
-extern unsigned int bq25890_get_chrg_stat(void);
+extern void bq25896_hw_init(void);
+extern void bq25896_charging_enable(unsigned int bEnable);
+extern void bq25896_dump_register(void);
+extern unsigned int bq25896_get_chrg_stat(void);
 
 
 /*CON13*/
-unsigned int bq25890_get_idpm_state(void);
-unsigned int bq25890_get_vdpm_state(void);
+unsigned int bq25896_get_idpm_state(void);
+unsigned int bq25896_get_vdpm_state(void);
 
 /*Added for debuging to check power off caller*/
 extern void dump_stack(void);

@@ -37,7 +37,8 @@ else
 			obj-$(CONFIG_MTK_BQ24296_SUPPORT) += bq24296.o charging_hw_bq24296.o
 			obj-$(CONFIG_MTK_NCP1854_SUPPORT) += ncp1854.o charging_hw_ncp1854.o
 			obj-$(CONFIG_MTK_FAN5405_SUPPORT) += fan5405.o charging_hw_fan5405.o
-			obj-$(CONFIG_MTK_BQ25896_SUPPORT) += bq25890.o charging_hw_bq25890.o
+			obj-$(CONFIG_MTK_BQ25896_SUPPORT) += bq25896.o charging_hw_bq25896.o
+			obj-$(CONFIG_MTK_BQ25890_SUPPORT) += bq25890.o charging_hw_bq25890.o
 			obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o
 			obj-$(CONFIG_MTK_RT9468_SUPPORT) += rt9468.o
 		else

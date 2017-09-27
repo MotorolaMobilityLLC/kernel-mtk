@@ -21,7 +21,7 @@
 #include <mach/mtk_battery_meter.h>
 #include <mach/mtk_charging.h>
 #include <mach/mtk_pmic.h>
-#include "bq25890.h"
+#include "bq25896.h"
 #include <mtk_sleep.h>
 #include <mt-plat/mtk_gpio.h>
 #include "mtk_bif_intf.h"
@@ -55,7 +55,7 @@ static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
 
 kal_bool charging_type_det_done = KAL_TRUE;
 
-/*BQ25890 REG06 VREG[5:0]*/
+/*BQ25896 REG06 VREG[5:0]*/
 const unsigned int VBAT_CV_VTH[] = {
 	3840000, 3856000, 3872000, 3888000,
 	3904000, 3920000, 3936000, 3952000,
@@ -72,7 +72,7 @@ const unsigned int VBAT_CV_VTH[] = {
 	4608000
 };
 
-/*BQ25890 REG04 ICHG[6:0]*/
+/*BQ25896 REG04 ICHG[6:0]*/
 const unsigned int CS_VTH[] = {
 	0, 6400, 12800, 19200,
 	25600, 32000, 38400, 44800,
@@ -96,7 +96,7 @@ const unsigned int CS_VTH[] = {
 	486400, 492800, 499200, 505600
 };
 
-/*BQ25890 REG00 IINLIM[5:0]*/
+/*BQ25896 REG00 IINLIM[5:0]*/
 const unsigned int INPUT_CS_VTH[] = {
 	10000, 15000, 20000, 25000,
 	30000, 35000, 40000, 45000,
@@ -140,18 +140,18 @@ const unsigned int VINDPM_REG[] = {
 	15300
 };
 
-/* BQ25890 REG0A BOOST_LIM[2:0], mA */
+/* BQ25896 REG0A BOOST_LIM[2:0], mA */
 const unsigned int BOOST_CURRENT_LIMIT[] = {
-	500, 750, 1200, 1400, 1650, 1875, 2150,
+	500, 750, 1200, 1400, 1650,
 };
 
 
-/* BQ25890 REG08 VCLAMP, mV */
+/* BQ25896 REG08 VCLAMP, mV */
 const unsigned int IRCMP_VOLT_CLAMP[] = {
 	0, 32, 64, 128, 160, 192, 224,
 };
 
-/* BQ25890 REG08 BAT_COMP, mohm */
+/* BQ25896 REG08 BAT_COMP, mohm */
 const unsigned int IRCMP_RESISTOR[] = {
 	0, 20, 40, 60, 80, 100, 120, 140,
 };
@@ -268,7 +268,7 @@ static int charging_hw_init(void *data)
 {
 	int status = STATUS_OK;
 
-	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
+	bq25896_config_interface(bq25896_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	if (wireless_charger_gpio_number != 0) {
@@ -299,7 +299,7 @@ static int charging_dump_register(void *data)
 	int status = STATUS_OK;
 
 	battery_log(BAT_LOG_FULL, "charging_dump_register\r\n");
-	bq25890_dump_register();
+	bq25896_dump_register();
 
 	return status;
 }
@@ -310,16 +310,16 @@ static int charging_enable(void *data)
 	unsigned int enable = *(unsigned int *) (data);
 
 	if (enable == KAL_TRUE) {
-		/* bq25890_config_interface(bq25890_CON3, 0x1, 0x1, 4); //enable charging */
-		bq25890_set_en_hiz(0x0);
-		bq25890_chg_en(enable);
+		/* bq25896_config_interface(bq25896_CON3, 0x1, 0x1, 4); //enable charging */
+		bq25896_set_en_hiz(0x0);
+		bq25896_chg_en(enable);
 	} else {
-		/* bq25890_config_interface(bq25890_CON3, 0x0, 0x1, 4); //enable charging */
-		bq25890_chg_en(enable);
+		/* bq25896_config_interface(bq25896_CON3, 0x0, 0x1, 4); //enable charging */
+		bq25896_chg_en(enable);
 		if (charging_get_error_state())
 			battery_log(BAT_LOG_CRTI, "[charging_enable] under test mode: disable charging\n");
 
-		/*bq25890_set_en_hiz(0x1);*/
+		/*bq25896_set_en_hiz(0x1);*/
 	}
 
 	return status;
@@ -341,7 +341,7 @@ static int charging_set_cv_voltage(void *data)
 	    charging_parameter_to_value(VBAT_CV_VTH, ARRAY_SIZE(VBAT_CV_VTH), set_cv_voltage);
 	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage register_value=0x%x %d %d\n",
 		    register_value, *(unsigned int *) data, set_cv_voltage);
-	bq25890_set_vreg(register_value);
+	bq25896_set_vreg(register_value);
 
 	return status;
 }
@@ -356,7 +356,7 @@ static int charging_get_current(void *data)
 
 	/*Get current level */
 	array_size = ARRAY_SIZE(CS_VTH);
-	val = bq25890_get_reg_ichg();
+	val = bq25896_get_reg_ichg();
 	*(unsigned int *)data = charging_value_to_parameter(CS_VTH, array_size, val);
 
 	return status;
@@ -374,8 +374,8 @@ static int charging_set_current(void *data)
 	array_size = ARRAY_SIZE(CS_VTH);
 	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, current_value);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
-	/* bq25890_config_interface(bq25890_CON4, register_value, 0x7F, 0); */
-	bq25890_set_ichg(register_value);
+	/* bq25896_config_interface(bq25896_CON4, register_value, 0x7F, 0); */
+	bq25896_set_ichg(register_value);
 
 	return status;
 }
@@ -393,7 +393,7 @@ static int charging_set_input_current(void *data)
 	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, current_value);
 	g_input_current = set_chr_current;
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_chr_current);
-	bq25890_set_iinlim(register_value);
+	bq25896_set_iinlim(register_value);
 	mutex_unlock(&g_input_current_mutex);
 
 /*For USB_IF compliance test only when USB is in suspend(Ibus < 2.5mA) or unconfigured(Ibus < 70mA) states*/
@@ -414,7 +414,7 @@ static int charging_get_charging_status(void *data)
 	int status = STATUS_OK;
 	unsigned char reg_value;
 
-	bq25890_read_interface(bq25890_CONB, &reg_value, 0x3, 3);	/* ICHG to BAT */
+	bq25896_read_interface(bq25896_CONB, &reg_value, 0x3, 3);	/* ICHG to BAT */
 
 	if (reg_value == 0x3)	/* check if chrg done */
 		*(unsigned int *) data = KAL_TRUE;
@@ -428,7 +428,7 @@ static int charging_reset_watch_dog_timer(void *data)
 {
 	int status = STATUS_OK;
 
-	bq25890_config_interface(bq25890_CON3, 0x1, 0x1, 6);	/* reset watchdog timer */
+	bq25896_config_interface(bq25896_CON3, 0x1, 0x1, 6);	/* reset watchdog timer */
 
 	return status;
 }
@@ -474,13 +474,19 @@ static int charging_get_battery_status(void *data)
 	*(kal_bool *) (data) = 0;
 	battery_log(BAT_LOG_CRTI, "bat exist for evb\n");
 #else
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	pmic_set_register_value(PMIC_RG_BATON_EN, 1);
-	*(kal_bool *) (data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
-#else
 	unsigned int val = 0;
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	val = pmic_get_register_value(PMIC_BATON_TDET_EN);
+	battery_log(BAT_LOG_FULL, "[charging_get_battery_status] BATON_TDET_EN = %d\n", val);
+	if (val) {
+		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
+		pmic_set_register_value(PMIC_RG_BATON_EN, 1);
+		*(kal_bool *) (data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+	} else {
+		*(kal_bool *) (data) = KAL_FALSE;
+	}
+#else
 	val = pmic_get_register_value(MT6351_PMIC_BATON_TDET_EN);
 	battery_log(BAT_LOG_FULL, "[charging_get_battery_status] BATON_TDET_EN = %d\n", val);
 	if (val) {
@@ -561,7 +567,8 @@ static int charging_get_charger_type(void *data)
 
 	/* FIXME: Put charger type detection code here */
 	charging_type_det_done = KAL_FALSE;
-	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
+	/* *(CHARGER_TYPE *) (data) = hw_charging_get_charger_type(); */
+	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 	charging_type_det_done = KAL_TRUE;
 	g_charger_type = *(CHARGER_TYPE *) (data);
 
@@ -668,121 +675,121 @@ static int charging_set_ta_current_pattern(void *data)
 		increase = 0;
 	/*unsigned int charging_status = KAL_FALSE; */
 #if 1
-	bq25890_pumpx_up(increase);
+	bq25896_pumpx_up(increase);
 	battery_log(BAT_LOG_FULL, "Pumping up adaptor...");
 
 #else
 	if (increase == KAL_TRUE) {
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 1");
 		msleep(85);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 1");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 2");
 		msleep(85);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 2");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 3");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 3");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 4");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 4");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 5");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 5");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() on 6");
 		msleep(485);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_increase() off 6");
 		msleep(50);
 
 		battery_log(BAT_LOG_CRTI, "mtk_ta_increase() end\n");
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		msleep(200);
 	} else {
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 1");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 1");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 2");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 2");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 3");
 		msleep(281);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 3");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 4");
 		msleep(85);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 4");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 5");
 		msleep(85);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 5");
 		msleep(85);
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() on 6");
 		msleep(485);
 
-		bq25890_set_ichg(0x0);	/* 64mA */
+		bq25896_set_ichg(0x0);	/* 64mA */
 		battery_log(BAT_LOG_FULL, "mtk_ta_decrease() off 6");
 		msleep(50);
 
 		battery_log(BAT_LOG_CRTI, "mtk_ta_decrease() end\n");
 
-		bq25890_set_ichg(0x8);	/* 512mA */
+		bq25896_set_ichg(0x8);	/* 512mA */
 	}
 #endif
 	return STATUS_OK;
@@ -793,7 +800,7 @@ static int charging_set_vindpm(void *data)
 	int status = STATUS_OK;
 	unsigned int v = *(unsigned int *) data;
 
-	bq25890_set_vindpm(v);
+	bq25896_set_vindpm(v);
 
 	return status;
 }
@@ -1003,7 +1010,7 @@ static int charging_set_chrind_ck_pdn(void *data)
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 #else
-	pmic_set_register_value(PMIC_RG_DRV_CHRIND_CK_PDN, pwr_dn);
+	pmic_set_register_value(MT6351_PMIC_RG_DRV_CHRIND_CK_PDN, pwr_dn);
 #endif
 
 	return status;
@@ -1015,57 +1022,57 @@ static int charging_sw_init(void *data)
 	/*put here anything needed to be init upon battery_common driver probe*/
 	mtk_bif_init();
 
-	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
-	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
-	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
+	bq25896_config_interface(bq25896_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
+	 /*DPM*/ bq25896_config_interface(bq25896_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
+	bq25896_config_interface(bq25896_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
 	/*CC mode */
-	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
+	bq25896_config_interface(bq25896_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
 	/*Vbus current limit */
-	bq25890_config_interface(bq25890_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
+	bq25896_config_interface(bq25896_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
 
 	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
-	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
+	bq25896_config_interface(bq25896_COND, 0x13, 0x7F, 0);
 
 	/*CV mode */
-	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
+	bq25896_config_interface(bq25896_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
 
 /*	upmu_set_rg_vcdt_hv_en(0);*/
 
 	/* The following setting is moved from HW_INIT */
-	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 3);	/* disable HV DCP for gq25897 */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 2);	/* disbale MaxCharge for gq25897 */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
+	bq25896_config_interface(bq25896_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
+	bq25896_config_interface(bq25896_CON2, 0x0, 0x1, 3);	/* disable HV DCP for gq25897 */
+	bq25896_config_interface(bq25896_CON2, 0x0, 0x1, 2);	/* disbale MaxCharge for gq25897 */
+	bq25896_config_interface(bq25896_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
 
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */
-	bq25890_config_interface(bq25890_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
+	bq25896_config_interface(bq25896_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
+	bq25896_config_interface(bq25896_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */
+	bq25896_config_interface(bq25896_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
 
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
-	bq25890_config_interface(bq25890_CONA, 0x7, 0xF, 4);	/* boost voltagte 4.998V default */
-	bq25890_config_interface(bq25890_CONA, 0x3, 0x7, 0);	/* boost current limit 1.3A */
+	bq25896_config_interface(bq25896_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
+	bq25896_config_interface(bq25896_CONA, 0x7, 0xF, 4);	/* boost voltagte 4.998V default */
+	bq25896_config_interface(bq25896_CONA, 0x3, 0x7, 0);	/* boost current limit 1.3A */
 #ifdef CONFIG_MTK_BIF_SUPPORT
-	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
-	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
+	bq25896_config_interface(bq25896_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
+	bq25896_config_interface(bq25896_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
 #else
-	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
-	bq25890_config_interface(bq25890_CON8, 0x6, 0x7, 2);	/* enable ir_comp_vdamp */
+	bq25896_config_interface(bq25896_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
+	bq25896_config_interface(bq25896_CON8, 0x6, 0x7, 2);	/* enable ir_comp_vdamp */
 #endif
-	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
+	bq25896_config_interface(bq25896_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
 
-	bq25890_config_interface(bq25890_CON9, 0x0, 0x1, 4);	/* JEITA_VSET: VREG-200mV */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 0);	/* JEITA_ISet : 20% x ICHG */
+	bq25896_config_interface(bq25896_CON9, 0x0, 0x1, 4);	/* JEITA_VSET: VREG-200mV */
+	bq25896_config_interface(bq25896_CON7, 0x1, 0x1, 0);	/* JEITA_ISet : 20% x ICHG */
 
-	bq25890_config_interface(bq25890_CON3, 0x5, 0x7, 1);	/* System min voltage default 3.5V */
+	bq25896_config_interface(bq25896_CON3, 0x5, 0x7, 1);	/* System min voltage default 3.5V */
 
 	/*PreCC mode */
-	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 4);	/* precharge current default 128mA */
-	bq25890_config_interface(bq25890_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
+	bq25896_config_interface(bq25896_CON5, 0x1, 0xF, 4);	/* precharge current default 128mA */
+	bq25896_config_interface(bq25896_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
 	/*CV mode */
-	bq25890_config_interface(bq25890_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* disable ICHG termination detect */
-	bq25890_config_interface(bq25890_CON5, 0x1, 0x7, 0);	/* termianation current default 128mA */
+	bq25896_config_interface(bq25896_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
+	bq25896_config_interface(bq25896_CON7, 0x1, 0x1, 7);	/* disable ICHG termination detect */
+	bq25896_config_interface(bq25896_CON5, 0x1, 0x7, 0);	/* termianation current default 128mA */
 
 	return status;
 }
@@ -1076,7 +1083,7 @@ static int charging_enable_safetytimer(void *data)
 	unsigned int en;
 
 	en = *(unsigned int *) data;
-	bq25890_en_chg_timer(en);
+	bq25896_en_chg_timer(en);
 
 	return status;
 }
@@ -1094,7 +1101,7 @@ static int charging_set_hiz_swchr(void *data)
 		vindpm = 0x13;
 
 	charging_set_vindpm(&vindpm);
-	/*bq25890_set_en_hiz(en);*/
+	/*bq25896_set_en_hiz(en);*/
 
 	return status;
 }
@@ -1113,7 +1120,7 @@ static int charging_set_vindpm_voltage(void *data)
 	vindpm = charging_parameter_to_value(VINDPM_REG, array_size, vindpm);
 
 	/*
-	 * Since BQ25890 uses vindpm to turn off power path
+	 * Since BQ25896 uses vindpm to turn off power path
 	 * If power path is disabled, do not adjust mivr
 	 */
 	ret = charging_get_is_power_path_enable(&is_power_path_enable);
@@ -1125,21 +1132,21 @@ static int charging_set_vindpm_voltage(void *data)
 	}
 
 	charging_set_vindpm(&vindpm);
-	/*bq25890_set_en_hiz(en);*/
+	/*bq25896_set_en_hiz(en);*/
 
 	return status;
 }
 
 static int charging_set_ta20_reset(void *data)
 {
-	bq25890_set_vindpm(0x13);
-	bq25890_set_ichg(8);
+	bq25896_set_vindpm(0x13);
+	bq25896_set_ichg(8);
 
-	bq25890_set_ico_en_start(0);
-	bq25890_set_iinlim(0x0);
+	bq25896_set_ico_en_start(0);
+	bq25896_set_iinlim(0x0);
 	msleep(250);
-	bq25890_set_iinlim(0xc);
-	bq25890_set_ico_en_start(1);
+	bq25896_set_iinlim(0xc);
+	bq25896_set_ico_en_start(1);
 	return STATUS_OK;
 }
 
@@ -1165,14 +1172,14 @@ static int charging_set_ta20_current_pattern(void *data)
 	CHR_VOLTAGE_ENUM chr_vol = *(CHR_VOLTAGE_ENUM *) data;
 
 
-	bq25890_set_vindpm(0x13);
-	bq25890_set_ichg(8);
-	bq25890_set_ico_en_start(0);
+	bq25896_set_vindpm(0x13);
+	bq25896_set_ichg(8);
+	bq25896_set_ico_en_start(0);
 
 	usleep_range(1000, 1200);
 	value = (chr_vol - CHR_VOLT_05_500000_V) / CHR_VOLT_00_500000_V;
 
-	bq25890_set_iinlim(0x0);
+	bq25896_set_iinlim(0x0);
 	msleep(70);
 
 	get_monotonic_boottime(&ptime[j++]);
@@ -1180,7 +1187,7 @@ static int charging_set_ta20_current_pattern(void *data)
 		flag = value & (1 << i);
 
 		if (flag == 0) {
-			bq25890_set_iinlim(0xc);
+			bq25896_set_iinlim(0xc);
 			msleep(PEOFFTIME);
 			get_monotonic_boottime(&ptime[j]);
 			cptime[j][0] = PEOFFTIME;
@@ -1192,7 +1199,7 @@ static int charging_set_ta20_current_pattern(void *data)
 				return STATUS_FAIL;
 			}
 			j++;
-			bq25890_set_iinlim(0x0);
+			bq25896_set_iinlim(0x0);
 			msleep(PEONTIME);
 			get_monotonic_boottime(&ptime[j]);
 			cptime[j][0] = PEONTIME;
@@ -1206,7 +1213,7 @@ static int charging_set_ta20_current_pattern(void *data)
 			j++;
 
 		} else {
-			bq25890_set_iinlim(0xc);
+			bq25896_set_iinlim(0xc);
 			msleep(PEONTIME);
 			get_monotonic_boottime(&ptime[j]);
 			cptime[j][0] = PEONTIME;
@@ -1218,7 +1225,7 @@ static int charging_set_ta20_current_pattern(void *data)
 				return STATUS_FAIL;
 			}
 			j++;
-			bq25890_set_iinlim(0x0);
+			bq25896_set_iinlim(0x0);
 			msleep(PEOFFTIME);
 			get_monotonic_boottime(&ptime[j]);
 			cptime[j][0] = PEOFFTIME;
@@ -1233,7 +1240,7 @@ static int charging_set_ta20_current_pattern(void *data)
 		}
 	}
 
-	bq25890_set_iinlim(0xc);
+	bq25896_set_iinlim(0xc);
 	msleep(160);
 	get_monotonic_boottime(&ptime[j]);
 	cptime[j][0] = 160;
@@ -1246,9 +1253,9 @@ static int charging_set_ta20_current_pattern(void *data)
 	}
 	j++;
 
-	bq25890_set_iinlim(0x0);
+	bq25896_set_iinlim(0x0);
 	msleep(30);
-	bq25890_set_iinlim(0xc);
+	bq25896_set_iinlim(0xc);
 
 	battery_log(BAT_LOG_CRTI,
 	"[charging_set_ta20_current_pattern]:chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
@@ -1263,8 +1270,8 @@ static int charging_set_ta20_current_pattern(void *data)
 	cptime[6][1], cptime[7][1], cptime[8][1], cptime[9][1], cptime[10][1], cptime[11][1]);
 
 
-	bq25890_set_ico_en_start(1);
-	bq25890_set_iinlim(0x3f);
+	bq25896_set_ico_en_start(1);
+	bq25896_set_iinlim(0x3f);
 
 	return STATUS_OK;
 }
@@ -1273,7 +1280,7 @@ static int charging_set_dp(void *data)
 {
 	unsigned int status = STATUS_OK;
 
-#if 0
+#ifndef CONFIG_POWER_EXT
 	unsigned int en;
 
 	en = *(int *) data;
@@ -1298,7 +1305,7 @@ static int charging_set_boost_current_limit(void *data)
 		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
 	reg_ilim = charging_parameter_to_value(BOOST_CURRENT_LIMIT,
 		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
-	bq25890_set_boost_ilim(reg_ilim);
+	bq25896_set_boost_ilim(reg_ilim);
 
 	return ret;
 }
@@ -1309,7 +1316,7 @@ static int charging_enable_otg(void *data)
 	unsigned int enable = 0;
 
 	enable = *((unsigned int *)data);
-	bq25890_otg_en(enable);
+	bq25896_otg_en(enable);
 
 	return ret;
 }
@@ -1320,11 +1327,11 @@ static int charging_enable_power_path(void *data)
 	unsigned int enable = 0;
 
 	enable = *((unsigned int *)data);
-	bq25890_set_force_vindpm(1);
+	bq25896_set_force_vindpm(1);
 	if (enable)
-		bq25890_set_vindpm(0x13);
+		bq25896_set_vindpm(0x13);
 	else
-		bq25890_set_vindpm(0x7F);
+		bq25896_set_vindpm(0x7F);
 
 	return ret;
 }
@@ -1358,7 +1365,7 @@ static int charging_get_is_power_path_enable(void *data)
 	int ret = 0;
 	u32 reg_vindpm = 0;
 
-	reg_vindpm = bq25890_get_vindpm();
+	reg_vindpm = bq25896_get_vindpm();
 	*((bool *)data) = (reg_vindpm == 0x7F) ? false : true;
 
 	return ret;
@@ -1369,7 +1376,7 @@ static int charging_get_is_safetytimer_enable(void *data)
 	int ret = 0;
 	u32 reg_safetytimer = 0;
 
-	reg_safetytimer = bq25890_get_chg_timer_enable();
+	reg_safetytimer = bq25896_get_chg_timer_enable();
 	*((bool *)data) = (reg_safetytimer) ? true : false;
 
 	return ret;
@@ -1422,7 +1429,7 @@ static int charging_set_ircmp_resistor(void *data)
 		ARRAY_SIZE(IRCMP_RESISTOR), resistor);
 	reg_resistor = charging_parameter_to_value(IRCMP_RESISTOR,
 		ARRAY_SIZE(IRCMP_RESISTOR), resistor);
-	bq25890_set_VBAT_IR_compensation(reg_resistor);
+	bq25896_set_VBAT_IR_compensation(reg_resistor);
 
 	return 0;
 }
@@ -1437,7 +1444,7 @@ static int charging_set_ircmp_volt_clamp(void *data)
 		ARRAY_SIZE(IRCMP_VOLT_CLAMP), volt_clamp);
 	reg_volt_clamp = charging_parameter_to_value(IRCMP_VOLT_CLAMP,
 		ARRAY_SIZE(IRCMP_VOLT_CLAMP), volt_clamp);
-	bq25890_set_VBAT_clamp(reg_volt_clamp);
+	bq25896_set_VBAT_clamp(reg_volt_clamp);
 
 	return 0;
 }
