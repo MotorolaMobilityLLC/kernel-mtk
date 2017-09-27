@@ -1778,9 +1778,17 @@ static int icm20645_factory_do_self_test(void)
 
 static int icm20645_factory_get_cali(int32_t data[3])
 {
-	data[0] = obj_i2c_data->cali_sw[ICM20645_AXIS_X];
-	data[1] = obj_i2c_data->cali_sw[ICM20645_AXIS_Y];
-	data[2] = obj_i2c_data->cali_sw[ICM20645_AXIS_Z];
+	struct i2c_client *client = icm20645_i2c_client;
+	struct icm20645_i2c_data *obj = obj_i2c_data;
+	int cali[ICM20645_AXES_NUM];
+	int err = -1;
+
+	err = ICM20645_ReadCalibration(client, cali);
+	if (err)
+		GSE_ERR("Read cali fail\n");
+	data[0] = cali[ICM20645_AXIS_X] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	data[1] = cali[ICM20645_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	data[2] = cali[ICM20645_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 	return 0;
 }
 
@@ -1788,14 +1796,11 @@ static int icm20645_factory_set_cali(int32_t data[3])
 {
 	int err = 0;
 	int cali[3] = { 0 };
+	struct icm20645_i2c_data *obj = obj_i2c_data;
 
-	obj_i2c_data->cali_sw[ICM20645_AXIS_X] += data[0];
-	obj_i2c_data->cali_sw[ICM20645_AXIS_Y] += data[1];
-	obj_i2c_data->cali_sw[ICM20645_AXIS_Z] += data[2];
-
-	cali[ICM20645_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
-	cali[ICM20645_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
-	cali[ICM20645_AXIS_Z] = data[2] * gsensor_gain.z / GRAVITY_EARTH_1000;
+	cali[ICM20645_AXIS_X] = data[0] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[ICM20645_AXIS_Y] = data[1] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[ICM20645_AXIS_Z] = data[2] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
 	err = ICM20645_WriteCalibration(icm20645_i2c_client, cali);
 	if (err) {
 		GSE_ERR("ICM20645_WriteCalibration failed!\n");
