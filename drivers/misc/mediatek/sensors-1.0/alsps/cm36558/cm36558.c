@@ -888,7 +888,6 @@ static int CM36558_check_intr(struct i2c_client *client)
 
 	return 0;
  EXIT_ERR:
-	APS_ERR("CM36558_check_intr dev: %d\n", res);
 	return res;
 }
 
@@ -923,7 +922,6 @@ static void CM36558_eint_work(struct work_struct *work)
 #else
 	mt65xx_eint_unmask(CUST_EINT_ALS_NUM);
 #endif
-	APS_ERR("CM36558_eint_work err: %d\n", res);
 }
 
 /*----------------------------------------------------------------------------*/
