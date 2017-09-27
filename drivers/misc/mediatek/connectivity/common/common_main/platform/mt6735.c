@@ -878,7 +878,7 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 	WMT_PLAT_INFO_FUNC("setting MPU for EMI share memory\n");
 #if defined(CONFIG_ARCH_MT6735)
 	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
-			gConEmiPhyBase + SZ_1M - 1,
+			gConEmiPhyBase + gConEmiSize - 1,
 			13,
 			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
