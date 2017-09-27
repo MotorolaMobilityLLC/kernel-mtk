@@ -1271,6 +1271,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					r = -EFAULT;
 				} else {
 					capConfig.outputBuffer = vmalloc(fb_size);
+					if (!capConfig.outputBuffer) {
+						MTKFB_LOG("[FB]:vmalloc capConfig outputBuffer failed!line:%d\n",
+						__LINE__);
+						return -EFAULT;
+					}
 					primary_display_capture_framebuffer_ovl((unsigned long)
 									capConfig.outputBuffer,
 									format);
