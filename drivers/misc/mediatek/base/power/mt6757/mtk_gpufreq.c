@@ -580,7 +580,6 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 		gpufreq_err("@%s: Cannot get GPU speed from DT!\n", __func__);
 		type = 0;
 #endif
-		return type;
 	}
 
 	switch (gpu_speed_bounding) {
