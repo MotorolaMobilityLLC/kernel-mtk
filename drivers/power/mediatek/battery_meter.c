@@ -1483,7 +1483,10 @@ void fgauge_construct_battery_profile_init(void)
 	saddles = fgauge_get_saddles();
 	temp_profile_p =
 	    (BATTERY_PROFILE_STRUCT_P) kmalloc(51 * sizeof(*temp_profile_p), GFP_KERNEL);
-	memset(temp_profile_p, 0, 51 * sizeof(*temp_profile_p));
+
+	if (temp_profile_p != NULL)
+		memset(temp_profile_p, 0, 51 * sizeof(*temp_profile_p));
+
 	for (i = 0; i < PROFILE_SIZE; i++) {
 		profile_index = 0;
 		for (j = 0; j * 2 <= 100; j++) {
