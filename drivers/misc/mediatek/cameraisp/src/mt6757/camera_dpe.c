@@ -2417,7 +2417,8 @@ static signed int DPE_WriteRegToHw(struct DPE_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_DPE_BASE + pReg[i].Addr) < (ISP_DPE_BASE + DPE_REG_RANGE))) {
+		if (((ISP_DPE_BASE + pReg[i].Addr) < (ISP_DPE_BASE + DPE_REG_RANGE))
+			&& (pReg[i].Addr < DPE_REG_RANGE)) {
 			DPE_WR32(ISP_DPE_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong address(0x%lx)\n",
