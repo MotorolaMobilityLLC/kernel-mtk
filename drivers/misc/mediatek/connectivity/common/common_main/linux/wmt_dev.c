@@ -1062,12 +1062,12 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			wmt_lib_set_stp_wmt_last_close(0);
 		break;
 	case WMT_IOCTL_SET_PATCH_NUM:
-		pAtchNum = arg;
-		if (pAtchNum == 0 || pAtchNum > MAX_PATCH_NUM) {
-			WMT_ERR_FUNC("patch num(%d) == 0 or > %d!\n", pAtchNum, MAX_PATCH_NUM);
+		if (arg == 0 || arg > MAX_PATCH_NUM) {
+			WMT_ERR_FUNC("patch num(%d) == 0 or > %d!\n", arg, MAX_PATCH_NUM);
 			iRet = -1;
 			break;
 		}
+		pAtchNum = arg;
 
 		if (pPatchInfo == NULL)
 			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
@@ -1100,6 +1100,13 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 
 			dWloadSeq = wMtPatchInfo.dowloadSeq;
+
+			if (dWloadSeq > pAtchNum) {
+				WMT_ERR_FUNC("Seq(%d) > patch num(%d)\n", dWloadSeq, pAtchNum);
+				iRet = -1;
+				break;
+			}
+
 			WMT_DBG_FUNC(
 				"patch dl seq %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
 			     dWloadSeq, wMtPatchInfo.patchName,
