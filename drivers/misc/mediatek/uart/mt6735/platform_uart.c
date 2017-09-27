@@ -24,6 +24,8 @@
 #include <mach/mt_clkmgr.h>
 #endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_MTK_FPGA)*/
 
+#include <mt-plat/mt_gpio.h>
+
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 #include <mt-plat/mt_gpio.h>
 /* #include <cust_gpio_usage.h> */
@@ -37,6 +39,7 @@
 
 #if !defined(CONFIG_MTK_LEGACY)
 struct pinctrl *ppinctrl_uart[UART_NR];
+int uart3_switch = 1;
 /* pinctrl-names from dtsi.GPIO operations: rx set, rx clear, tx set, tx clear */
 char *uart_gpio_cmds[UART_NR][4] = {
 	{"uart0_rx_set", "uart0_rx_clear", "uart0_tx_set", "uart0_tx_clear"},
@@ -2326,6 +2329,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 	int uart_gpio_op = 0;	/* URAT RX SET */
 #endif
 	int uartport = uart->nport;
+	int rx_mode, tx_mode;
 
 	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
@@ -2333,6 +2337,20 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
+	/* Workround of CR ALPS03506947, if the gpio not used for uart3,
+	 * do not switch the gpio mode when system enter suspend and resume,
+	 * if switch the gpio mode, the other moudle will not work who really
+	 * use the gpio59-60.
+	*/
+	if (uartport == 3 && uart3_switch == 1) {
+		rx_mode = mt_get_gpio_mode(0x80000000 | 0x3B);
+		tx_mode = mt_get_gpio_mode(0x80000000 | 0x3C);
+		if (tx_mode != 1 || rx_mode != 1)
+			uart3_switch = 0;
+	}
+	if (uart3_switch == 0)
+		return;
+
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
@@ -2393,6 +2411,8 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
+	if (uart3_switch == 0)
+		return;
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
@@ -2442,6 +2462,7 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 	int uart_gpio_op = 1;	/* URAT RX Clear */
 #endif
 	int uartport = uart->nport;
+	int rx_mode, tx_mode;
 
 	/*pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
@@ -2449,6 +2470,16 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
+
+	if (uartport == 3 && uart3_switch == 1) {
+		rx_mode = mt_get_gpio_mode(0x80000000 | 0x3B);
+		tx_mode = mt_get_gpio_mode(0x80000000 | 0x3C);
+		if (tx_mode != 1 || rx_mode != 1)
+			uart3_switch = 0;
+	}
+	if (uart3_switch == 0)
+		return;
+
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
@@ -2505,6 +2536,8 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
+	if (uart3_switch == 0)
+		return;
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uartport) {
