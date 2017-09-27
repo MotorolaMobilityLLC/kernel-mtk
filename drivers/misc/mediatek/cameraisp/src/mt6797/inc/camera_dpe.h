@@ -26,7 +26,7 @@
 #define KERNEL_LOG  /* enable debug log flag if defined */
 
 #define _SUPPORT_MAX_DPE_FRAME_REQUEST_ 6
-#define _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ 4
+#define _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ 8
 
 
 #define SIG_ERESTARTSYS 512 /* ERESTARTSYS */
