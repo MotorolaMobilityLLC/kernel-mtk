@@ -616,30 +616,7 @@ static ssize_t cm36652_store_send(struct device_driver *ddri, const char *buf, s
 	dat = (u8)cmd;
 	return count;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36652_show_recv(struct device_driver *ddri, char *buf)
-{
-	return 0;
-}
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36652_store_recv(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int *addr = NULL;
-	int ret;
 
-	if (!cm36652_obj) {
-		APS_ERR("cm36652_obj is null!!\n");
-		return 0;
-	}
-	/*} else if (1 != sscanf(buf, "%x", &addr)) {*/
-	ret = kstrtoint(buf, 16, addr);
-	if (ret < 0) {
-		APS_ERR("invalid format: '%s'\n", buf);
-		return ret;
-	}
-
-	return count;
-}
 /*----------------------------------------------------------------------------*/
 static ssize_t cm36652_show_status(struct device_driver *ddri, char *buf)
 {
@@ -756,7 +733,6 @@ static DRIVER_ATTR(alsval,  S_IWUSR | S_IRUGO, cm36652_show_alsval, cm36652_stor
 static DRIVER_ATTR(trace,   S_IWUSR | S_IRUGO, cm36652_show_trace,		cm36652_store_trace);
 static DRIVER_ATTR(status,  S_IWUSR | S_IRUGO, cm36652_show_status, NULL);
 static DRIVER_ATTR(send,	S_IWUSR | S_IRUGO, cm36652_show_send, cm36652_store_send);
-static DRIVER_ATTR(recv,	S_IWUSR | S_IRUGO, cm36652_show_recv, cm36652_store_recv);
 static DRIVER_ATTR(reg,	 S_IWUSR | S_IRUGO, cm36652_show_reg, NULL);
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *cm36652_attr_list[] = {
@@ -768,7 +744,6 @@ static struct driver_attribute *cm36652_attr_list[] = {
 	&driver_attr_alsval,
 	&driver_attr_status,
 	&driver_attr_send,
-	&driver_attr_recv,
 	&driver_attr_reg,
 };
 
