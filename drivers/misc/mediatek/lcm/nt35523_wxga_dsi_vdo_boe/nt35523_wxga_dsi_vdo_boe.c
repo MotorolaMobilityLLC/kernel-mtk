@@ -17,7 +17,6 @@
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
-#include <linux/gpio.h>
 #include <asm-generic/gpio.h>
 
 #include "lcm_drv.h"
@@ -140,12 +139,12 @@ void lcm_request_gpio_control(struct device *dev)
 	GPIO_LCD_PWR_EN = of_get_named_gpio(dev->of_node, "lcm_power_gpio", 0);
 
 	gpio_request(GPIO_LCD_PWR_EN, "GPIO_LCD_PWR_EN");
-	pr_debug("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
+	pr_notice("[KE/LCM] GPIO_LCD_PWR_EN = 0x%x\n", GPIO_LCD_PWR_EN);
 
 	GPIO_LCD_BL_EN = of_get_named_gpio(dev->of_node, "lcm_bl_gpio", 0);
 
 	gpio_request(GPIO_LCD_BL_EN, "GPIO_LCD_BL_EN");
-	pr_debug("[KE/LCM] GPIO_LCD_BL_EN = 0x%x\n", GPIO_LCD_BL_EN);
+	pr_notice("[KE/LCM] GPIO_LCD_BL_EN = 0x%x\n", GPIO_LCD_BL_EN);
 }
 
 static int lcm_driver_probe(struct device *dev, void const *data)
