@@ -14,11 +14,15 @@
 #ifndef SEC_IOCTL_H
 #define SEC_IOCTL_H
 
+struct sec_rid {
+	unsigned int rid_val[4];
+};
+
 /* use 's' as magic number */
 #define SEC_IOC_MAGIC       's'
 
 /* random id */
-#define SEC_GET_RANDOM_ID               _IOR(SEC_IOC_MAGIC,  1, unsigned int)
+#define SEC_GET_RANDOM_ID               _IOR(SEC_IOC_MAGIC,  1, struct sec_rid)
 
 /* secure boot init */
 #define SEC_BOOT_INIT                   _IOR(SEC_IOC_MAGIC,  2, unsigned int)
