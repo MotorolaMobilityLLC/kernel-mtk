@@ -377,6 +377,10 @@ static int port_char_init(struct ccci_port *port)
 
 	CCCI_DEBUG_LOG(md_id, CHAR, "char port %s is initializing\n", port->name);
 	dev = kmalloc(sizeof(struct cdev), GFP_KERNEL);
+	if (unlikely(!dev)) {
+		CCCI_ERROR_LOG(port->md_id, CHAR, "alloc char dev fail!!\n");
+		return -1;
+	}
 	cdev_init(dev, &char_dev_fops);
 	dev->owner = THIS_MODULE;
 	port->rx_length_th = MAX_QUEUE_LENGTH;

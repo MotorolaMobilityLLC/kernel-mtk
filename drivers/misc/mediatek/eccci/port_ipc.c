@@ -216,6 +216,10 @@ static struct ccci_port *find_ipc_port_by_task_id(struct port_proxy *proxy_p, in
 int port_ipc_init(struct ccci_port *port)
 {
 	struct ccci_ipc_ctrl *ipc_ctrl = kmalloc(sizeof(struct ccci_ipc_ctrl), GFP_KERNEL);
+	if (unlikely(!ipc_ctrl)) {
+		CCCI_ERROR_LOG(port->md_id, IPC, "alloc ipc_ctrl fail!!\n");
+		return -1;
+	}
 
 	port->private_data = ipc_ctrl;
 	/*
