@@ -242,7 +242,7 @@ static int ovl2mem_callback(unsigned int userdata)
 	int fence_idx = 0;
 	int layid = 0;
 
-	DISPMSG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
+	DISPDBG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
 		get_ovl2mem_ticket(), userdata);
 	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
