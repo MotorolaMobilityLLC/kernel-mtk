@@ -204,15 +204,6 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	struct i2c_msg msgs[2] = { {0}, {0} };
 
 	mutex_lock(&lsm6ds3h_init_mutex);
-	msgs[0].addr = client->addr;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &beg;
-
-	msgs[1].addr = client->addr;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = len;
-	msgs[1].buf = data;
 
 	if (!client) {
 		mutex_unlock(&lsm6ds3h_init_mutex);
@@ -222,6 +213,15 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 		GSE_PR_ERR("length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
+	msgs[0].addr = client->addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = &beg;
+
+	msgs[1].addr = client->addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = len;
+	msgs[1].buf = data;
 
 	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {
@@ -684,7 +684,7 @@ s16 LSM6DS3H_acc_TransfromResolution(s16 rawData, int sensitivity)
 /*----------------------------------------------------------------------------*/
 static int LSM6DS3H_ReadAccData(struct i2c_client *client, char *buf, int bufsize)
 {
-	struct lsm6ds3h_i2c_data *obj = (struct lsm6ds3h_i2c_data *)i2c_get_clientdata(client);
+	struct lsm6ds3h_i2c_data *obj;
 	u8 databuf[20];
 	int acc[LSM6DS3H_AXES_NUM];
 	int res = 0;
@@ -697,6 +697,7 @@ static int LSM6DS3H_ReadAccData(struct i2c_client *client, char *buf, int bufsiz
 		*buf = 0;
 		return -2;
 	}
+	obj = (struct lsm6ds3h_i2c_data *)i2c_get_clientdata(client);
 
 	if (sensor_power == false) {
 		res = LSM6DS3H_SetPowerMode(client, true);

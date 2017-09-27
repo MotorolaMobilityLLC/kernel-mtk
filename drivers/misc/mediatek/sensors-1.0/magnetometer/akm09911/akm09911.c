@@ -212,10 +212,12 @@ static long AKI2C_RxData(char *rxData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = rxData[0];
+	char addr;
 
 	if ((rxData == NULL) || (length < 1))
 		return -EINVAL;
+	addr = rxData[0];
+
 	res = mag_i2c_read_block(client, addr, rxData, length);
 	if (res < 0)
 		return -1;
@@ -267,11 +269,13 @@ static long AKI2C_TxData(char *txData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = txData[0];
-	u8 *buff = &txData[1];
+	char addr;
+	u8 *buff;
 
 	if ((txData == NULL) || (length < 2))
 		return -EINVAL;
+	addr = txData[0];
+	buff = &txData[1];
 	res = mag_i2c_write_block(client, addr, buff, (length - 1));
 	if (res < 0)
 		return -1;
@@ -1698,7 +1702,7 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	err = hwmsen_get_convert(data->hw->direction, &data->cvt);
 	if (err) {
 		MAGN_PR_ERR("invalid direction: %d\n", data->hw->direction);
-		goto exit;
+		goto exit_kfree;
 	}
 	atomic_set(&data->layout, data->hw->direction);
 	atomic_set(&data->trace, 0);
