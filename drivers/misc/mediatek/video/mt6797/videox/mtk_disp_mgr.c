@@ -630,7 +630,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 	int i = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;
 	disp_session_sync_info *session_info;
 
@@ -670,7 +670,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 
 			DISPPR_FENCE
-			    ("S+/ML%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%x/t%d/sec%d\n",
+			    ("S+/ML%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%lx/t%d/sec%d\n",
 			     input->config[i].layer_id, input->config[i].layer_enable,
 			     input->config[i].next_buff_idx, input->config[i].src_width,
 			     input->config[i].src_height, input->config[i].src_offset_x,
