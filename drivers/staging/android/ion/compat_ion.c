@@ -125,7 +125,6 @@ struct compat_ion_mm_data {
 	union {
 		struct compat_ion_mm_config_buffer_param config_buffer_param;
 		struct compat_ion_mm_buf_debug_info  buf_debug_info_param;
-		struct compat_ion_mm_sf_buf_info sf_buf_info_param;
 	};
 };
 
@@ -295,58 +294,6 @@ static int compat_put_ion_mm_buf_debug_info(
 	return err;
 }
 
-static int compat_get_ion_mm_sf_buf_info_set(
-			struct compat_ion_mm_sf_buf_info __user *data32,
-			struct __ion_mm_sf_buf_info __user *data)
-{
-	compat_ulong_t handle;
-	compat_uint_t info;
-
-	int i, err;
-
-	err = get_user(handle, &data32->handle);
-	err |= put_user(handle, &data->handle);
-	for (i = 0; i < ION_MM_SF_BUF_INFO_LEN; i++) {
-		err |= get_user(info, &data32->info[i]);
-		err |= put_user(info, &data->info[i]);
-	}
-
-	return err;
-}
-
-static int compat_get_ion_mm_sf_buf_info(
-			struct compat_ion_mm_sf_buf_info __user *data32,
-			struct __ion_mm_sf_buf_info __user *data)
-{
-	compat_ulong_t handle;
-
-	int err;
-
-	err = get_user(handle, &data32->handle);
-	err |= put_user(handle, &data->handle);
-
-	return err;
-}
-
-static int compat_put_ion_mm_sf_buf_info(
-			struct compat_ion_mm_sf_buf_info __user *data32,
-			struct __ion_mm_sf_buf_info __user *data)
-{
-	compat_ulong_t handle;
-	compat_uint_t info;
-
-	int i, err;
-
-	err = get_user(handle, &data->handle);
-	err |= put_user(handle, &data32->handle);
-
-	for (i = 0; i < ION_MM_SF_BUF_INFO_LEN; i++) {
-		err |= get_user(info, &data->info[i]);
-		err |= put_user(info, &data32->info[i]);
-	}
-
-	return err;
-}
 
 static int compat_get_ion_mm_data(struct compat_ion_mm_data *data32, struct ion_mm_data *data)
 {
@@ -373,16 +320,6 @@ static int compat_get_ion_mm_data(struct compat_ion_mm_data *data32, struct ion_
 		err |= compat_get_ion_mm_buf_debug_info(&data32->buf_debug_info_param, &data->buf_debug_info_param);
 		break;
 	}
-	case ION_MM_SET_SF_BUF_INFO:
-	{
-		err |= compat_get_ion_mm_sf_buf_info_set(&data32->sf_buf_info_param, &data->sf_buf_info_param);
-		break;
-	}
-	case ION_MM_GET_SF_BUF_INFO:
-	{
-		err |= compat_get_ion_mm_sf_buf_info(&data32->sf_buf_info_param, &data->sf_buf_info_param);
-		break;
-	}
 	}
 
 	return err;
@@ -401,10 +338,6 @@ static int compat_put_ion_mm_data(struct compat_ion_mm_data *data32, struct ion_
 	case ION_MM_GET_DEBUG_INFO:
 	{
 		err |= compat_put_ion_mm_buf_debug_info(&data32->buf_debug_info_param, &data->buf_debug_info_param);
-		break;
-	}
-	case ION_MM_GET_SF_BUF_INFO: {
-		err |= compat_put_ion_mm_sf_buf_info(&data32->sf_buf_info_param, &data->sf_buf_info_param);
 		break;
 	}
 	default:

@@ -116,11 +116,11 @@ void m4u_mvaGraph_dump(void)
 void *mva_get_priv_ext(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
-	if (index == 0 || index > MVA_MAX_BLOCK_NR) {
+	if (index <= 0 || index > MVA_MAX_BLOCK_NR) {
 		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
 		return NULL;
 	}
@@ -209,8 +209,8 @@ void *mva_get_priv(unsigned int mva)
 
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 {
-	short s, end;
-	short new_start, new_end;
+	unsigned short s, end;
+	unsigned short new_start, new_end;
 	short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
@@ -274,9 +274,9 @@ unsigned int m4u_do_mva_alloc_fix(unsigned int mva, unsigned int size, void *pri
 	short nr = 0;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short endIdx;
-	short region_start, region_end;
+	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short endIdx;
+	unsigned short region_start, region_end;
 
 	if (size == 0)
 		return 0;
@@ -344,13 +344,18 @@ out:
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	unsigned short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	unsigned short endIdx = startIdx + nr - 1;
+	unsigned int startIdx;
+	unsigned int nr;
+	unsigned int endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned short nrRequire;
 	unsigned long irq_flags;
 
+	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	if (startIdx < 0 && startIdx > 4095)
+		return -1;
+	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	endIdx = startIdx + nr - 1;
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	/* -------------------------------- */
 	/* check the input arguments */

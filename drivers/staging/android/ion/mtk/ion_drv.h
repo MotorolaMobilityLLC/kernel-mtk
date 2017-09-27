@@ -188,7 +188,6 @@ typedef struct ion_mm_data {
 	union {
 		ion_mm_config_buffer_param_t config_buffer_param;
 		ion_mm_buf_debug_info_t buf_debug_info_param;
-		ion_mm_sf_buf_info_t sf_buf_info_param;
 	};
 } ion_mm_data_t;
 
