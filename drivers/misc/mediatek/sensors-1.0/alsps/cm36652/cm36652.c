@@ -1503,7 +1503,7 @@ static int set_psensor_threshold(struct i2c_client *client)
 
 }
 
-static int cm36552_als_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
+static int cm36652_als_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
 {
 	int err = 0;
 
@@ -1519,35 +1519,48 @@ static int cm36552_als_factory_enable_sensor(bool enable_disable, int64_t sample
 	}
 	return 0;
 }
-static int cm36552_als_factory_get_data(int32_t *data)
+static int cm36652_als_factory_get_data(int32_t *data)
 {
 	int status;
 
 	return als_get_data(data, &status);
 }
-static int cm36552_als_factory_get_raw_data(int32_t *data)
+static int cm36652_als_factory_get_raw_data(int32_t *data)
 {
-	int status;
+	int err = 0;
+	struct cm36652_priv *obj = cm36652_obj;
 
-	return als_get_data(data, &status);
+	if (!obj) {
+		APS_ERR("obj is null!!\n");
+		return -1;
+	}
+
+	err = cm36652_read_als(obj->client, &obj->als);
+	if (err) {
+		APS_ERR("%s failed\n", __func__);
+		return -1;
+	}
+	*data = cm36652_obj->als;
+
+	return 0;
 }
-static int cm36552_als_factory_enable_calibration(void)
+static int cm36652_als_factory_enable_calibration(void)
 {
 	return 0;
 }
-static int cm36552_als_factory_clear_cali(void)
+static int cm36652_als_factory_clear_cali(void)
 {
 	return 0;
 }
-static int cm36552_als_factory_set_cali(int32_t offset)
+static int cm36652_als_factory_set_cali(int32_t offset)
 {
 	return 0;
 }
-static int cm36552_als_factory_get_cali(int32_t *offset)
+static int cm36652_als_factory_get_cali(int32_t *offset)
 {
 	return 0;
 }
-static int cm36552_ps_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
+static int cm36652_ps_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
 {
 	int err = 0;
 
@@ -1563,7 +1576,7 @@ static int cm36552_ps_factory_enable_sensor(bool enable_disable, int64_t sample_
 	}
 	return err;
 }
-static int cm36552_ps_factory_get_data(int32_t *data)
+static int cm36652_ps_factory_get_data(int32_t *data)
 {
 	int err = 0, status = 0;
 
@@ -1572,7 +1585,7 @@ static int cm36552_ps_factory_get_data(int32_t *data)
 		return -1;
 	return 0;
 }
-static int cm36552_ps_factory_get_raw_data(int32_t *data)
+static int cm36652_ps_factory_get_raw_data(int32_t *data)
 {
 	int err = 0;
 	struct cm36652_priv *obj = cm36652_obj;
@@ -1590,25 +1603,25 @@ static int cm36552_ps_factory_get_raw_data(int32_t *data)
 	*data = obj->ps;
 	return 0;
 }
-static int cm36552_ps_factory_enable_calibration(void)
+static int cm36652_ps_factory_enable_calibration(void)
 {
 	return 0;
 }
-static int cm36552_ps_factory_clear_cali(void)
+static int cm36652_ps_factory_clear_cali(void)
 {
 	struct cm36652_priv *obj = cm36652_obj;
 
 	obj->ps_cali = 0;
 	return 0;
 }
-static int cm36552_ps_factory_set_cali(int32_t offset)
+static int cm36652_ps_factory_set_cali(int32_t offset)
 {
 	struct cm36652_priv *obj = cm36652_obj;
 
 	obj->ps_cali = offset;
 	return 0;
 }
-static int cm36552_ps_factory_get_cali(int32_t *offset)
+static int cm36652_ps_factory_get_cali(int32_t *offset)
 {
 	struct cm36652_priv *obj = cm36652_obj;
 
@@ -1616,7 +1629,7 @@ static int cm36552_ps_factory_get_cali(int32_t *offset)
 	return 0;
 }
 
-static int cm36552_ps_factory_set_threashold(int32_t threshold[2])
+static int cm36652_ps_factory_set_threashold(int32_t threshold[2])
 {
 	int err = 0;
 	struct cm36652_priv *obj = cm36652_obj;
@@ -1632,7 +1645,7 @@ static int cm36552_ps_factory_set_threashold(int32_t threshold[2])
 	}
 	return 0;
 }
-static int cm36552_ps_factory_get_threashold(int32_t threshold[2])
+static int cm36652_ps_factory_get_threashold(int32_t threshold[2])
 {
 	struct cm36652_priv *obj = cm36652_obj;
 
@@ -1641,30 +1654,30 @@ static int cm36552_ps_factory_get_threashold(int32_t threshold[2])
 	return 0;
 }
 
-static struct alsps_factory_fops cm36552_factory_fops = {
-	.als_enable_sensor = cm36552_als_factory_enable_sensor,
-	.als_get_data = cm36552_als_factory_get_data,
-	.als_get_raw_data = cm36552_als_factory_get_raw_data,
-	.als_enable_calibration = cm36552_als_factory_enable_calibration,
-	.als_clear_cali = cm36552_als_factory_clear_cali,
-	.als_set_cali = cm36552_als_factory_set_cali,
-	.als_get_cali = cm36552_als_factory_get_cali,
+static struct alsps_factory_fops cm36652_factory_fops = {
+	.als_enable_sensor = cm36652_als_factory_enable_sensor,
+	.als_get_data = cm36652_als_factory_get_data,
+	.als_get_raw_data = cm36652_als_factory_get_raw_data,
+	.als_enable_calibration = cm36652_als_factory_enable_calibration,
+	.als_clear_cali = cm36652_als_factory_clear_cali,
+	.als_set_cali = cm36652_als_factory_set_cali,
+	.als_get_cali = cm36652_als_factory_get_cali,
 
-	.ps_enable_sensor = cm36552_ps_factory_enable_sensor,
-	.ps_get_data = cm36552_ps_factory_get_data,
-	.ps_get_raw_data = cm36552_ps_factory_get_raw_data,
-	.ps_enable_calibration = cm36552_ps_factory_enable_calibration,
-	.ps_clear_cali = cm36552_ps_factory_clear_cali,
-	.ps_set_cali = cm36552_ps_factory_set_cali,
-	.ps_get_cali = cm36552_ps_factory_get_cali,
-	.ps_set_threashold = cm36552_ps_factory_set_threashold,
-	.ps_get_threashold = cm36552_ps_factory_get_threashold,
+	.ps_enable_sensor = cm36652_ps_factory_enable_sensor,
+	.ps_get_data = cm36652_ps_factory_get_data,
+	.ps_get_raw_data = cm36652_ps_factory_get_raw_data,
+	.ps_enable_calibration = cm36652_ps_factory_enable_calibration,
+	.ps_clear_cali = cm36652_ps_factory_clear_cali,
+	.ps_set_cali = cm36652_ps_factory_set_cali,
+	.ps_get_cali = cm36652_ps_factory_get_cali,
+	.ps_set_threashold = cm36652_ps_factory_set_threashold,
+	.ps_get_threashold = cm36652_ps_factory_get_threashold,
 };
 
-static struct alsps_factory_public cm36552_factory_device = {
+static struct alsps_factory_public cm36652_factory_device = {
 	.gain = 1,
 	.sensitivity = 1,
-	.fops = &cm36552_factory_fops,
+	.fops = &cm36652_factory_fops,
 };
 
 /*-----------------------------------i2c operations----------------------------------*/
@@ -1737,7 +1750,7 @@ static int cm36652_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	if (err)
 		goto exit_init_failed;
 	APS_LOG("cm36652_init_client() OK!\n");
-	err = alsps_factory_device_register(&cm36552_factory_device);
+	err = alsps_factory_device_register(&cm36652_factory_device);
 	if (err) {
 		APS_ERR("CM36558_device register failed\n");
 		goto exit_misc_device_register_failed;
@@ -1830,7 +1843,7 @@ static int cm36652_i2c_remove(struct i2c_client *client)
 	err = cm36652_delete_attr(&(cm36652_init_info.platform_diver_addr->driver));
 	if (err)
 		APS_ERR("cm36652_delete_attr fail: %d\n", err);
-	alsps_factory_device_deregister(&cm36552_factory_device);
+	alsps_factory_device_deregister(&cm36652_factory_device);
 
 	cm36652_i2c_client = NULL;
 	i2c_unregister_device(client);

@@ -1380,9 +1380,22 @@ static int cm36686_als_factory_get_data(int32_t *data)
 }
 static int cm36686_als_factory_get_raw_data(int32_t *data)
 {
-	int status;
+	int err = 0;
+	struct cm36686_priv *obj = cm36686_obj;
 
-	return als_get_data(data, &status);
+	if (!obj) {
+		APS_ERR("obj is null!!\n");
+		return -1;
+	}
+
+	err = cm36686_read_als(obj->client, &obj->als);
+	if (err) {
+		APS_ERR("%s failed\n", __func__);
+		return -1;
+	}
+	*data = cm36686_obj->als;
+
+	return 0;
 }
 static int cm36686_als_factory_enable_calibration(void)
 {

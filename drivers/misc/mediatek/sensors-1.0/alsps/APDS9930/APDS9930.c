@@ -1366,9 +1366,22 @@ static int APDS9930_als_factory_get_data(int32_t *data)
 }
 static int APDS9930_als_factory_get_raw_data(int32_t *data)
 {
-	int status;
+	int err = 0;
+	struct APDS9930_priv *obj = APDS9930_obj;
 
-	return als_get_data(data, &status);
+	if (!obj) {
+		APS_ERR("obj is null!!\n");
+		return -1;
+	}
+
+	err = APDS9930_read_als(obj->client, &obj->als);
+	if (err) {
+		APS_ERR("%s failed\n", __func__);
+		return -1;
+	}
+	*data = APDS9930_obj->als;
+
+	return 0;
 }
 static int APDS9930_als_factory_enable_calibration(void)
 {
