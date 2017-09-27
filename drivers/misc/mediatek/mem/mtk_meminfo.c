@@ -13,6 +13,7 @@
 
 #include <asm/page.h>
 #include <asm/setup.h>
+#include <asm/pgtable.h>
 #include <linux/module.h>
 #include <linux/of_fdt.h>
 #include <linux/vmalloc.h>
