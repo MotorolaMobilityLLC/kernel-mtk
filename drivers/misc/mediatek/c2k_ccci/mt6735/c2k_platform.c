@@ -680,7 +680,8 @@ void c2k_modem_power_off_platform(void)
 		clk_disable_unprepare(clk_scp_sys_md2_main);
 	}
 #endif
-	C2K_BOOTUP_LOG("[C2K] md_power_off %d\n", ret);
+	if (ret)
+		pr_debug("[C2K] md_power_off %d(0:OK,1:TO)\n", ret);
 }
 
 void c2k_modem_reset_platform(void)
