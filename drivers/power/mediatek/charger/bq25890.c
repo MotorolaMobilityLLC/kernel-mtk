@@ -402,12 +402,12 @@ unsigned int bq25890_read_interface(unsigned char RegNum, unsigned char *val, un
 
 	ret = bq25890_read_byte(RegNum, &bq25890_reg);
 
-	pr_debug_ratelimited("[bq25890_read_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
+	chr_debug("[bq25890_read_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
 
 	bq25890_reg &= (MASK << SHIFT);
 	*val = (bq25890_reg >> SHIFT);
 
-	pr_debug_ratelimited("[bq25890_read_interface] val=0x%x\n", *val);
+	chr_debug("[bq25890_read_interface] val=0x%x\n", *val);
 
 	return ret;
 }
@@ -428,7 +428,7 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 
 	ret = bq25890_write_byte(RegNum, bq25890_reg);
 	mutex_unlock(&bq25890_access_lock);
-	pr_debug_ratelimited("[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
+	chr_debug("[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
 		    bq25890_reg, bq25890_reg_ori);
 
 	/* Check */
@@ -1822,7 +1822,7 @@ static int bq25890_dump_register(struct charger_device *chg_dev)
 	bq25890_ADC_start(1);
 	for (i = 0; i < bq25890_REG_NUM; i++) {
 		bq25890_read_byte(i, &bq25890_reg[i]);
-		pr_debug("[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
+		chr_debug("[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
 	}
 	bq25890_ADC_start(1);
 	iinlim = bq25890_get_iinlim();
