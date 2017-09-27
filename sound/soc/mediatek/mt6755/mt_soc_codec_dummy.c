@@ -484,17 +484,6 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
 	 },
-	{
-	 .name = MT_SOC_CODEC_OFFLOAD_GDMA_DAI_NAME,
-	 .playback = {
-		      .stream_name = MT_SOC_OFFLOAD_GDMA_STREAM_NAME,
-		      .channels_min = 1,
-		      .channels_max = 2,
-		      .rates = SNDRV_PCM_RATE_8000_48000,
-		      .formats = SND_SOC_ADV_MT_FMTS,
-		      },
-	 .compress_dai = 1,
-	 },
 	 {
 	 .name = MT_SOC_CODEC_BTCVSD_RX_DAI_NAME,
 	 .capture = {

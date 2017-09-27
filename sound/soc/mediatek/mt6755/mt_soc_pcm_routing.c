@@ -59,7 +59,6 @@
 #include "mt_soc_pcm_common.h"
 #include "mt_auddrv_devtree_parser.h"
 #include "auddrv_underflow_mach.h"
-#include "AudDrv_OffloadCommon.h"
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
 
