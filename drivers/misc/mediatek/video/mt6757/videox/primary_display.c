@@ -1956,6 +1956,17 @@ static int _DL_switch_to_DC_fast(void)
 			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
 	}
+
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+		primary_display_is_video_mode()) {
+		/* for vdo mode, we should wait for next SOF for MUTEX0 setting take effect
+		 * issue: if VFP is large, mutex1 may start before MUTEX0 SOF
+		 * then wdma will underrun, because it's in both mutex 0&1
+		 */
+		cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_SOF);
+		cmdqRecWaitNoClear(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_SOF);
+	}
+
 	/* 6 .flush to cmdq */
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
