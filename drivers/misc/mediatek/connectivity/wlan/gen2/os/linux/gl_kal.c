@@ -678,8 +678,6 @@ PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PPUINT_
 
 	if (prSkb)
 		*ppucData = (PUINT_8) (prSkb->data);
-	else
-		DBGLOG(RX, WARN, "kalPacketAlloc fail!!\n");
 #if DBG
 	{
 		PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
