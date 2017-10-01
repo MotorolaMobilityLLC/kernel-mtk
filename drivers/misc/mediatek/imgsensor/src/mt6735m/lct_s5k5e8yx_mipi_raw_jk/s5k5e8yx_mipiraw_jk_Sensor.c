@@ -44,7 +44,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k5e8yx_mipiraw_Sensor.h"
+#include "s5k5e8yx_mipiraw_jk_Sensor.h"
 
 /****************************Modify following Strings for debug****************************/
 #define PFX "s5k5e8yx_camera_sensor"
@@ -57,7 +57,7 @@ static int first_flag = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static imgsensor_info_struct imgsensor_info = { 
-	.sensor_id = S5K5E8YX_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
+	.sensor_id = S5K5E8YX_SENSOR_ID_JK,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 
 	.checksum_value = 0x2ae69154,
 
@@ -253,6 +253,9 @@ struct s5k5e8_otp_struct
 	kal_uint8 g_bg_h;
 	kal_uint8 g_bg_l;
 
+	kal_uint8 gb_gr_h;
+	kal_uint8 gb_gr_l;
+
 	kal_uint16 R_Gain;
 	kal_uint16 G_Gain;
 	kal_uint16 B_Gain;
@@ -289,8 +292,8 @@ static void s5k5e8_read_otp_lsc_blx(void)
 	int i = 0;
 	int j = 0;
 	s5k5e8_start_read_otp_blx(0x0004);
-	#if 0
-	for(i = 0x0A32;i <= 0x0A43;i++)
+	#if 1
+	for(i = 0x0A34;i <= 0x0A43;i++)
 	{
 		LOG_INF("LSC[4][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
 	}
@@ -299,7 +302,7 @@ static void s5k5e8_read_otp_lsc_blx(void)
 	for(j = 5;j <= 9; j++)
 	{
 		s5k5e8_start_read_otp_blx(j);
-		#if 0
+		#if 1
 		for(i = 0x0A04;i <= 0x0A43;i++)
 		{
 			LOG_INF("LSC[%d][0x%x] = 0x%x\n",j,i,read_cmos_sensor(i));
@@ -308,7 +311,7 @@ static void s5k5e8_read_otp_lsc_blx(void)
 		s5k5e8_stop_read_otp_blx();
 	}
 	s5k5e8_start_read_otp_blx(0x000a);
-	#if 0
+	#if 1
 	for(i = 0x0A04;i <= 0x0A1B;i++)
 	{
 		LOG_INF("LSC[10][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
@@ -329,20 +332,22 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 #ifdef S5K5E8_LSC_OTP_DEBUG	
 	s5k5e8_read_otp_lsc_blx();
 #endif
-	s5k5e8_start_read_otp_blx(0x04);
+	s5k5e8_start_read_otp_blx(0x0E);
 	awb_flag = read_cmos_sensor(0x0A04);
 	if(awb_flag == 0x01){
 		LOG_INF("page = 0x%x\n",0x04);
 		basic_address = 0x0A05;
-	}else if(awb_flag == 0x13){
-		LOG_INF("page = 0x%x\n",0x04);
-		awb_flag = read_cmos_sensor(0x0A14);
-	}else if(awb_flag == 0x37){
-		LOG_INF("page = 0x%x\n",0x04);
-		awb_flag = read_cmos_sensor(0x0A23);
 	}else{
-		awb_flag = 0;
-		LOG_INF("read Module&AWB data Valid!!!\n");
+		LOG_INF("page = 0x%x\n",0x04);
+		awb_flag = read_cmos_sensor(0x0A12);
+		if(awb_flag == 0x01)
+		{
+			LOG_INF("page = 0x%x\n",0x04);
+			basic_address = 0x0A13;
+		}
+		else
+		awb_flag =0;
+			
 	}
 	LOG_INF("s5k5e8 otp awb_flag = 0x%02x.\n",awb_flag);
 
@@ -355,8 +360,10 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 		otp->month = read_cmos_sensor(basic_address++);
 		otp->day  = read_cmos_sensor(basic_address++);
 
-		LOG_INF("otp->mid=0x%x, otp->year=0%d, otp->month=0x%d, otp->day=0x%d\n"
+		LOG_INF("otp->mid=0x%x, otp->lid=0x%x,otp->vid=0x%x,otp->year=0%d, otp->month=0x%d, otp->day=0x%d\n"
 					,otp->mid
+					,otp->lid
+					,otp->vid
 					,otp->year
 					,otp->month
 					,otp->day);
@@ -371,7 +378,7 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 					,otp->u_bg_h
 					,otp->u_bg_l
 			   );
-
+		#if 0 //modify by ameng start 
 		otp->g_rg_h = read_cmos_sensor(basic_address++);
 		otp->g_rg_l = read_cmos_sensor(basic_address++);
 		otp->g_bg_h = read_cmos_sensor(basic_address++);
@@ -383,10 +390,13 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 					,otp->g_bg_h
 					,otp->g_bg_l
 			   );
+		#endif //
+		otp->gb_gr_h=read_cmos_sensor(basic_address++);
+		otp->gb_gr_l=read_cmos_sensor(basic_address++);
 		/*checksum*/
 		CheckSum =  (otp->mid + otp->lid + otp->vid + otp->year + otp->month + otp->day + 
 					otp->u_rg_h + otp->u_rg_l + otp->u_bg_h + otp->u_bg_l+
-					otp->g_rg_h + otp->g_rg_l + otp->g_bg_h + otp->g_bg_l) % 0xFF +1;
+					otp->gb_gr_h+otp->gb_gr_l) % 0xFF +1;
 		LOG_INF("CheckSum = %d;read_cmos_sensor(basic_address) = %d\n",
 					CheckSum,read_cmos_sensor(basic_address));
 		if(CheckSum == read_cmos_sensor(basic_address)){
@@ -416,13 +426,16 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 		otp->g_rg_l = 0;
 		otp->g_bg_h = 0;
 		otp->g_bg_l = 0;
+		
+		otp->gb_gr_h =0;
+		otp->gb_gr_l =0;
 
 		LOG_INF("s5k5e8 otp fail !");
 		s5k5e8_stop_read_otp_blx();
 		return 0;
 	}
 }
-
+#if 1
 static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 {
 
@@ -504,7 +517,8 @@ static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 
 	LOG_INF("R_gain=0x%x, B_gain=0x%x, G_gain=0x%x \n",otp->R_Gain, otp->B_Gain, otp->G_Gain);
 }
-
+#endif
+#if 1
 static int s5k5e8_read_static_register_from_otp_blx(void)
 {
 	memset(&current_5e8_otp_blx, 0, sizeof(struct s5k5e8_otp_struct));
@@ -516,7 +530,8 @@ static int s5k5e8_read_static_register_from_otp_blx(void)
 		return 0;
 	}
 }
-
+#endif
+#if 1
 static void s5k5e8_write_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 {
 
@@ -571,7 +586,7 @@ static void s5k5e8_write_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 	LOG_INF("read_cmos_sensor(0x0214) = %d\n",read_cmos_sensor(0x0214));
 	LOG_INF("read_cmos_sensor(0x0215) = %d\n",read_cmos_sensor(0x0215));
 }
-
+#endif
 /*
    int s5k5e8_get_module_id_blx(void)
    {	
@@ -625,6 +640,7 @@ return flag_LSC;
  * Return      :  [bool] 0 : OTP data fail 
 1 : otp_lenc update success            
  **************************************************************************************************/
+#if 1
 static bool s5k5e8_otp_lenc_update(void)
 {
 	//BYTE  flag_LSC_page = 0;
@@ -643,6 +659,7 @@ static bool s5k5e8_otp_lenc_update(void)
 	}
 	return 1;
 }
+#endif
 #endif
 // OTP END
 
@@ -1571,8 +1588,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 retry = 2;
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
 	s_DEVINFO_ccm.device_type = "CCM-S";
-	s_DEVINFO_ccm.device_module = "BLX5E8L-L3600-CF";//can change if got module id
-	s_DEVINFO_ccm.device_vendor = "BLX";
+	s_DEVINFO_ccm.device_module = "JK5E8L-L3600-CF";//can change if got module id
+	s_DEVINFO_ccm.device_vendor = "JK";
 	s_DEVINFO_ccm.device_ic = "s5k5e8yx";
 	s_DEVINFO_ccm.device_version = "Samsung";
 	s_DEVINFO_ccm.device_info = "500W";
@@ -1584,18 +1601,18 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {		
+			*sensor_id = return_sensor_id()+1;
+			if (*sensor_id == imgsensor_info.sensor_id) {
 				s5k5e8_read_otp_wb_blx(&current_5e8_otp_blx);
 				mdelay(2);
-				printk("the value of 5e8 blx module_id=0x%x\n",current_5e8_otp_blx.mid);
-				if((current_5e8_otp_blx.mid)!=0x49)
+				printk("the value of 5e8 jinkang module_id=0x%x\n",current_5e8_otp_blx.mid);
+				if((current_5e8_otp_blx.mid)!=0x08)
 				{
-				    	printk("blx module not found\n");
+				   	printk("jinkang module not found\n");
 				    	*sensor_id = 0xFFFFFFFF;
 					return ERROR_SENSOR_CONNECT_FAIL;
-				}				
-				LOG_INF("blx i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+				}	
+				LOG_INF("jinkang-i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT		
 				DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
 							s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
@@ -1603,7 +1620,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #endif	  
 				return ERROR_NONE;
 			}	
-			LOG_INF("blx Read sensor id fail, id: 0x%x\n",*sensor_id);
+			LOG_INF("jinkang Read sensor id fail, id: 0x%x\n",*sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1660,19 +1677,19 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
+			sensor_id = return_sensor_id()+1;
 			if (sensor_id == imgsensor_info.sensor_id) {
-				printk("the value of 5e8 blx module_id=0x%x\n",current_5e8_otp_blx.mid);
-				if((current_5e8_otp_blx.mid)!=0x49)
+				printk("the value of 5e8 jinkang module_id=0x%x\n",current_5e8_otp_blx.mid);
+				if((current_5e8_otp_blx.mid)!=0x08)
 				{
-				        printk("blx module not found\n");
+				        printk("jinkang module not found\n");
 				    	sensor_id = 0xFFFFFFFF;
 					return ERROR_SENSOR_CONNECT_FAIL;
 				}					
-				LOG_INF("5e8 blx i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
+				LOG_INF("5e8 jinkang i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
 				break;
 			}	
-			LOG_INF("5e8 blx open() Read sensor id fail, id: 0x%x\n",sensor_id);
+			LOG_INF("5e8 jinkang open() Read sensor id fail, id: 0x%x\n",sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1687,7 +1704,8 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-#ifdef S5K5E8_OTP_ENABLE/*jijin.wang add OTP*/
+//#ifdef S5K5E8_OTP_ENABLE/*jijin.wang add OTP*/
+#if 0
 	s5k5e8_write_otp_wb_blx(&current_5e8_otp_blx);
 	s5k5e8_otp_lenc_update();
 #endif
@@ -2347,7 +2365,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 };
 
 
-UINT32 S5K5E8YX_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K5E8YX_MIPI_RAW_SensorInit_Jk(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
