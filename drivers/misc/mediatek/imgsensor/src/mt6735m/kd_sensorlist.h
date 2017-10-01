@@ -73,6 +73,7 @@ UINT32 S5K8AAYX_MIPI_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 S5K8AAYX_PVI_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 UINT32 S5K5E8YX_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
+UINT32 S5K5E8YX_MIPI_RAW_SensorInit_Jk(PSENSOR_FUNCTION_STRUCT *pfFunc);
 #endif
 /*HI*/
 UINT32 HI841_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
@@ -154,11 +155,14 @@ UINT32 GC5025MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 //! 2. This file should be the same as mediatek\custom\common\hal\imgsensor\src\sensorlist.cpp
 ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
 {
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+//add by xlj   
+ #if defined(LCT_S5K5E8YX_MIPI_RAW_JK)
+    {S5K5E8YX_SENSOR_ID_JK, SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW_JK, S5K5E8YX_MIPI_RAW_SensorInit_Jk},
+#endif
 #if defined(LCT_HI556_MIPI_RAW_QH)
     {HI556_SENSOR_ID, SENSOR_DRVNAME_HI556_MIPI_RAW, HI556MIPI_RAW_SensorInit},
 #endif
-#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
-//add by xlj    
 #if defined(LCT_AR1335_MIPI_RAW_OFILM)
   {AR1335_SENSOR_ID, SENSOR_DRVNAME_AR1335_MIPI_RAW,AR1335_MIPI_RAW_SensorInit},
 #endif
