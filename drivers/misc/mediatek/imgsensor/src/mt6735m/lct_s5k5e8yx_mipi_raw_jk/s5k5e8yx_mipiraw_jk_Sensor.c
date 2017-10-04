@@ -450,8 +450,8 @@ static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 	awb_rg    = ((otp->u_rg_h&0x00FF) << 8)|(otp->u_rg_l&0x00FF);
 	awb_bg    = ((otp->u_bg_h&0x00FF) << 8)|(otp->u_bg_l&0x00FF);
 
-	golden_rg = 0x29b;//0x17a;//((otp->g_rg_h&0x00FF) << 8)|(otp->g_rg_l&0x00FF);
-	golden_bg = 0x26e;//0x147;//((otp->g_bg_h&0x00FF) << 8)|(otp->g_bg_l&0x00FF);
+	golden_rg = 0x292;//0x17a;//((otp->g_rg_h&0x00FF) << 8)|(otp->g_rg_l&0x00FF);
+	golden_bg = 0x275;//0x147;//((otp->g_bg_h&0x00FF) << 8)|(otp->g_bg_l&0x00FF);
 
 
 	LOG_INF("awb_rg=0x%x, awb_bg=0x%x, golden_rg=0x%x, golden_bg=0x%x\n"
