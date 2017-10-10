@@ -258,8 +258,8 @@ struct s5k5e8_otp_struct
 	kal_uint16 B_Gain;
 };
 
-static struct s5k5e8_otp_struct current_5e8_otp_blx;
-static bool s5k5e8_start_read_otp_blx(u8 zone)
+struct s5k5e8_otp_struct current_5e8_otp_blx;
+bool s5k5e8_start_read_otp_blx(u8 zone)
 {
 	//u8 val = 0;
 	//int i;
@@ -277,14 +277,14 @@ static bool s5k5e8_start_read_otp_blx(u8 zone)
  * Function    :  s5k5e8_stop_read_otp_blx
  * Description :  after read otp , stop and reset otp block setting  
  **************************************************************************************************/
-static void s5k5e8_stop_read_otp_blx(void)
+void s5k5e8_stop_read_otp_blx(void)
 {
 	write_cmos_sensor(0x0A00, 0x04);//make initial state
 	write_cmos_sensor(0x0A00, 0x00);//Disable NVM controller
 }
 //#define S5K5E8_LSC_OTP_DEBUG
 #ifdef S5K5E8_LSC_OTP_DEBUG
-static void s5k5e8_read_otp_lsc_blx(void)
+void s5k5e8_read_otp_lsc_blx(void)
 {
 	int i = 0;
 	int j = 0;
@@ -318,7 +318,7 @@ static void s5k5e8_read_otp_lsc_blx(void)
 }
 #endif
 
-static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
+int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 {
 
 	u32 awb_flag = 0;
@@ -423,7 +423,7 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 	}
 }
 
-static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
+void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 {
 
 	kal_uint32 awb_rg, awb_bg;
@@ -505,7 +505,7 @@ static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 	LOG_INF("R_gain=0x%x, B_gain=0x%x, G_gain=0x%x \n",otp->R_Gain, otp->B_Gain, otp->G_Gain);
 }
 
-static int s5k5e8_read_static_register_from_otp_blx(void)
+int s5k5e8_read_static_register_from_otp_blx(void)
 {
 	memset(&current_5e8_otp_blx, 0, sizeof(struct s5k5e8_otp_struct));
 	LOG_INF("awb s5k5e8_read_static_register_from_otp_blx\n");
@@ -517,7 +517,7 @@ static int s5k5e8_read_static_register_from_otp_blx(void)
 	}
 }
 
-static void s5k5e8_write_otp_wb_blx(struct s5k5e8_otp_struct *otp)
+void s5k5e8_write_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 {
 
 	kal_uint16 R_GainH, B_GainH, G_GainH;
@@ -1585,17 +1585,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {		
-				s5k5e8_read_otp_wb_blx(&current_5e8_otp_blx);
-				mdelay(2);
-				printk("the value of 5e8 blx module_id=0x%x\n",current_5e8_otp_blx.mid);
-				if((current_5e8_otp_blx.mid)!=0x49)
-				{
-				    	printk("blx module not found\n");
-				    	*sensor_id = 0xFFFFFFFF;
-					return ERROR_SENSOR_CONNECT_FAIL;
-				}				
-				LOG_INF("blx i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+			if (*sensor_id == imgsensor_info.sensor_id) {				
+				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT		
 				DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
 							s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
@@ -1603,7 +1594,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #endif	  
 				return ERROR_NONE;
 			}	
-			LOG_INF("blx Read sensor id fail, id: 0x%x\n",*sensor_id);
+			LOG_INF("Read sensor id fail, id: 0x%x\n",*sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1661,18 +1652,11 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			if (sensor_id == imgsensor_info.sensor_id) {
-				printk("the value of 5e8 blx module_id=0x%x\n",current_5e8_otp_blx.mid);
-				if((current_5e8_otp_blx.mid)!=0x49)
-				{
-				        printk("blx module not found\n");
-				    	sensor_id = 0xFFFFFFFF;
-					return ERROR_SENSOR_CONNECT_FAIL;
-				}					
-				LOG_INF("5e8 blx i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
+			if (sensor_id == imgsensor_info.sensor_id) {				
+				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
 				break;
 			}	
-			LOG_INF("5e8 blx open() Read sensor id fail, id: 0x%x\n",sensor_id);
+			LOG_INF("open() Read sensor id fail, id: 0x%x\n",sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
