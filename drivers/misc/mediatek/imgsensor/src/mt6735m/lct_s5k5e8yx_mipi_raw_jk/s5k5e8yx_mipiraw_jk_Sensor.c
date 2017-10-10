@@ -335,14 +335,14 @@ static int s5k5e8_read_otp_wb_blx(struct s5k5e8_otp_struct *otp)
 	s5k5e8_start_read_otp_blx(0x0E);
 	awb_flag = read_cmos_sensor(0x0A04);
 	if(awb_flag == 0x01){
-		LOG_INF("first page = 0x%x\n",0x0E);
+		LOG_INF("page = 0x%x\n",0x04);
 		basic_address = 0x0A05;
 	}else{
-		LOG_INF("second page = 0x%x\n",0x0E);
+		LOG_INF("page = 0x%x\n",0x04);
 		awb_flag = read_cmos_sensor(0x0A12);
 		if(awb_flag == 0x01)
 		{
-			LOG_INF("second page = 0x%x\n",0x0E);
+			LOG_INF("page = 0x%x\n",0x04);
 			basic_address = 0x0A13;
 		}
 		else
@@ -450,8 +450,8 @@ static void s5k5e8_algorithm_otp_wb1_blx(struct s5k5e8_otp_struct *otp)
 	awb_rg    = ((otp->u_rg_h&0x00FF) << 8)|(otp->u_rg_l&0x00FF);
 	awb_bg    = ((otp->u_bg_h&0x00FF) << 8)|(otp->u_bg_l&0x00FF);
 
-	golden_rg = 0x29b;//0x17a;//((otp->g_rg_h&0x00FF) << 8)|(otp->g_rg_l&0x00FF);
-	golden_bg = 0x26e;//0x147;//((otp->g_bg_h&0x00FF) << 8)|(otp->g_bg_l&0x00FF);
+	golden_rg = 0x17a;//((otp->g_rg_h&0x00FF) << 8)|(otp->g_rg_l&0x00FF);
+	golden_bg = 0x147;//((otp->g_bg_h&0x00FF) << 8)|(otp->g_bg_l&0x00FF);
 
 
 	LOG_INF("awb_rg=0x%x, awb_bg=0x%x, golden_rg=0x%x, golden_bg=0x%x\n"
