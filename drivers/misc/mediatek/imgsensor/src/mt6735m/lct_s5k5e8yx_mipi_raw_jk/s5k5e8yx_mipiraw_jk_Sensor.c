@@ -1704,7 +1704,8 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-#ifdef S5K5E8_OTP_ENABLE/*jijin.wang add OTP*/
+//#ifdef S5K5E8_OTP_ENABLE/*jijin.wang add OTP*/
+#if 0
 	s5k5e8_write_otp_wb_blx(&current_5e8_otp_blx);
 	s5k5e8_otp_lenc_update();
 #endif
