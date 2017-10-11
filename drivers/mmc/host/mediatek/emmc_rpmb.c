@@ -279,6 +279,9 @@ static int emmc_rpmb_send_command(
 	struct scatterlist sg;
 	u8 *transfer_buf = NULL;
 
+	if (blks == 0)
+		return -EINVAL;
+
 	mrq.sbc = &sbc;
 	mrq.cmd = &cmd;
 	mrq.data = &data;
@@ -286,8 +289,6 @@ static int emmc_rpmb_send_command(
 	transfer_buf = kzalloc(512 * blks, GFP_KERNEL);
 	if (!transfer_buf)
 		return -ENOMEM;
-	if (blks == 0)
-		return -EINVAL;
 
 	/*
 	 * set CMD23
