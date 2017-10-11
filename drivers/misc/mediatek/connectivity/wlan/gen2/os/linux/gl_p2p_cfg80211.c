@@ -1092,7 +1092,11 @@ int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, co
 
 		prDisconnectMsg->rMsgHdr.eMsgId = MID_MNY_P2P_CONNECTION_ABORT;
 		COPY_MAC_ADDR(prDisconnectMsg->aucTargetID, mac);
+#if CFG_TC10_FEATURE
 		prDisconnectMsg->u2ReasonCode = REASON_CODE_DEAUTH_LEAVING_BSS;
+#else
+		prDisconnectMsg->u2ReasonCode = REASON_CODE_UNSPECIFIED;
+#endif
 		prDisconnectMsg->fgSendDeauth = TRUE;
 
 		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_del_station ReasonCode = %d\n", prDisconnectMsg->u2ReasonCode);
