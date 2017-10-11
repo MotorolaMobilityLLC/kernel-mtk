@@ -453,6 +453,9 @@ struct msdc_host {
 	struct delayed_work	work_init; /* for init mmc card */
 	struct platform_device  *pdev;
 
+	u64                     last_cg_set_time;
+	u64                     last_cg_clr_time;
+
 #ifdef MSDC_WQ_ERROR_TUNE
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */

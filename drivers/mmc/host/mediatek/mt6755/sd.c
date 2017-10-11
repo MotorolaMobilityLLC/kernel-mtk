@@ -269,6 +269,9 @@ int msdc_rsp[] = {
 #define pr_reg(OFFSET, VAL)     \
 	pr_err("%d R[%x]=0x%.8x", id, OFFSET, VAL)
 
+static void msdc_init_hw(struct msdc_host *host);
+static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
+
 static u16 msdc_offsets[] = {
 	OFFSET_MSDC_CFG,
 	OFFSET_MSDC_IOCON,
@@ -421,10 +424,10 @@ void msdc_dump_info(u32 id)
 	msdc_dump_clock_sts();
 
 	/* 3: check msdc pmic ldo */
-	msdc_dump_ldo_sts(host);
+	/* msdc_dump_ldo_sts(host); */
 
 	/* 4: check msdc pad control */
-	msdc_dump_padctl(host);
+	/* msdc_dump_padctl(host); */
 
 	/* 5: For designer */
 	mdelay(10);
@@ -732,6 +735,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		#endif
 
 		(void)msdc_clk_enable(host);
+		host->last_cg_clr_time = sched_clock();
 
 		host->core_clkon = 1;
 		udelay(10);
@@ -750,6 +754,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 			msdc_clk_disable(host);
+			host->last_cg_set_time = sched_clock();
 
 			host->core_clkon = 0;
 
@@ -1226,10 +1231,19 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	*/
 	struct msdc_host *host = mmc_priv(mmc);
 
-	msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
-	udelay(2);
-	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
-	usleep_range(200, 500);
+	/* Attention: reset will clear WP status */
+	if (mmc->caps & MMC_CAP_HW_RESET) {
+		msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
+		udelay(2);
+		msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
+		usleep_range(200, 500);
+	}
+
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 260000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
+
+	msdc_init_hw(host);
 }
 
 static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
@@ -4655,6 +4669,7 @@ static void msdc_async_tune(struct work_struct *work)
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	int ret = 0;
 
 	host->legacy_tuning_in_progress = true;
 	/*host->async_tuning_in_progress = true;*/
@@ -4687,18 +4702,18 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 			if (opcode == MMC_SEND_STATUS) {
 				pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
-				hs200_execute_tuning_cmd(host, NULL);
+				ret = hs200_execute_tuning_cmd(host, NULL);
 			} else {
 				pr_err("[AUTOK]eMMC HS200 Tune\n");
-				hs200_execute_tuning(host, NULL);
+				ret = hs200_execute_tuning(host, NULL);
 			}
 		} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
 			if (opcode == MMC_SEND_STATUS) {
 				pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
-				hs400_execute_tuning_cmd(host, NULL);
+				ret = hs400_execute_tuning_cmd(host, NULL);
 			} else {
 				pr_err("[AUTOK]eMMC HS400 Tune\n");
-				hs400_execute_tuning(host, NULL);
+				ret = hs400_execute_tuning(host, NULL);
 			}
 		}
 	} else if (host->hw->host_function == MSDC_SDIO) {
@@ -4785,7 +4800,8 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 	msdc_gate_clock(host, 1);
 
-	return 0;
+	/* return error to reset emmc when timeout occurs during autok */
+	return ret;
 }
 
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -5391,6 +5407,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 	if (host->core_clkon == 0) {
 		(void)msdc_clk_enable(host);
+		host->last_cg_clr_time = sched_clock();
 		host->core_clkon = 1;
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 	}
@@ -5661,13 +5678,20 @@ static void msdc_tasklet_flush_cache(unsigned long arg)
 static void msdc_timer_pm(unsigned long data)
 {
 	struct msdc_host *host = (struct msdc_host *)data;
+	void __iomem *base = host->base;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
 	if (host->clk_gate_count == 0) {
-		msdc_clksrc_onoff(host, 0);
-		N_MSG(CLK, "time out, dsiable clock, clk_gate_count=%d",
-			host->clk_gate_count);
+		/* re-schedule when controller or device is busy */
+		if (host->power_mode != MMC_POWER_OFF
+		 && (sdc_is_busy() ||
+		     !((MSDC_READ32(MSDC_PS) >> 16) & 0x1))) {
+			mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
+		} else {
+			msdc_clksrc_onoff(host, 0);
+			N_MSG(CLK, "gate msdc%d clock", host->id);
+		}
 	}
 #ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
 	if (check_mmc_cache_ctrl(mmc->card))
