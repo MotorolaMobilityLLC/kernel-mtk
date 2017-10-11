@@ -527,20 +527,12 @@ static int16_t AKECS_SetCert(void)
 		axis_order[i] = (uint8_t)data->cvt.map[i];
 
 	for (i = 0; i < 3; i++) {
-		axis_sign[i] = (uint8_t)data->cvt.sign[i];
-		if (axis_sign[i] > 0)
+		if (data->cvt.sign[i] > 0)
 			axis_sign[i] = 0;
-		else if (axis_sign[i] < 0)
+		else if (data->cvt.sign[i] < 0)
 			axis_sign[i] = 1;
 	}
-#if 0
-	axis_order[0] = 0;
-	axis_order[1] = 1;
-	axis_order[2] = 2;
-	axis_sign[0] = 0;
-	axis_sign[1] = 0;
-	axis_sign[2] = 0;
-#endif
+
 	ret = AKECS_AxisInfoToPat(axis_order, axis_sign, &cert);
 	if (ret != 0)
 		return 0;
