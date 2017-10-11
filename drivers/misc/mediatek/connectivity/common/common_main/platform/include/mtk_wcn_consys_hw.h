@@ -214,6 +214,7 @@ VOID mtk_wcn_force_trigger_assert_debug_pin(VOID);
 INT32 mtk_wcn_consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag);
 
 P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID);
+VOID mtk_wcn_consys_dump_power_reg(VOID);
 INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID);
 #if CONSYS_ENALBE_SET_JTAG
 UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en);

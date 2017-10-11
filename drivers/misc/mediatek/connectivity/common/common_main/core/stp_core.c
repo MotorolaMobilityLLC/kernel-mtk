@@ -123,6 +123,7 @@ static VOID stp_update_tx_queue(UINT32 txseq);
 static VOID stp_rest_ctx_state(VOID);
 static VOID stp_change_rx_state(mtkstp_parser_state next);
 static void stp_tx_timeout_handler(ULONG data);
+static void stp_cpupcr_timeout_handler(ULONG data);
 static VOID stp_dump_data(const PUINT8 buf, const PUINT8 title, const UINT32 len);
 static VOID stp_dump_tx_queue(UINT32 txseq);
 static INT32 stp_is_apply_powersaving(VOID);
@@ -621,6 +622,13 @@ static void stp_tx_timeout_handler(ULONG data)
 	STP_WARN_FUNC("call retry btm retry wq ...#\n");
 }
 
+static void stp_cpupcr_timeout_handler(ULONG data)
+{
+	STP_WARN_FUNC("Polling connsys cpupcr timeout. Maybe bus hang!\n");
+	wmt_plat_dump_power_reg();
+	mtk_wcn_stp_dbg_dump_package();
+}
+
 VOID stp_do_tx_timeout(VOID)
 {
 	UINT32 seq;
@@ -718,8 +726,11 @@ VOID stp_do_tx_timeout(VOID)
 	}
 
 	stp_ctx_unlock(&stp_core_ctx);
-	/*polling cpupcr when no ack occurs at first retry */
+	/* polling cpupcr when no ack occurs at first retry */
+	/* Add timer mechanism to detect bus hang */
+	osal_timer_start(&stp_core_ctx.cpupcr_timer, 1000);
 	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
+	osal_timer_stop(&stp_core_ctx.cpupcr_timer);
 	STP_WARN_FUNC
 	    ("==============================================================================#\n");
 }
@@ -1437,7 +1448,7 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	/* Used to inform the function driver has received the corresponding type of information */
 	sys_event_set = cb_func->cb_event_set;
 
-	/*  Used to inform the function driver can continue to send information and
+	/*  Used to inform the funcpupcr_timerction driver can continue to send information and
 	   STP has resources to deal with
 	 */
 	sys_event_tx_resume = cb_func->cb_event_tx_resume;
@@ -1457,6 +1468,9 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	stp_core_ctx.tx_timer.timeoutHandler = stp_tx_timeout_handler;
 	stp_core_ctx.tx_timer.timeroutHandlerData = 0;
 	osal_timer_create(&stp_core_ctx.tx_timer);
+	stp_core_ctx.cpupcr_timer.timeoutHandler = stp_cpupcr_timeout_handler;
+	stp_core_ctx.cpupcr_timer.timeroutHandlerData = 0;
+	osal_timer_create(&stp_core_ctx.cpupcr_timer);
 
 	STP_SET_BT_STK(stp_core_ctx, 0);
 	STP_SET_ENABLE(stp_core_ctx, 0);

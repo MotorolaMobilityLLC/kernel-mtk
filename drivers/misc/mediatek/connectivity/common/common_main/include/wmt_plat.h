@@ -349,6 +349,7 @@ UINT32 wmt_plat_get_soc_chipid(VOID);
 UINT32 wmt_plat_soc_co_clock_flag_get(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
 INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 buf);
+VOID wmt_plat_dump_power_reg(VOID);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif
