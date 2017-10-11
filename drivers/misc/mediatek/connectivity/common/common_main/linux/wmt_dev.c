@@ -1105,20 +1105,14 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				break;
 			}
 
-			if (wMtPatchInfo.dowloadSeq > pAtchNum) {
-				WMT_ERR_FUNC("dowloadSeq num(%d) > %d!\n", wMtPatchInfo.dowloadSeq, pAtchNum);
+			if (wMtPatchInfo.dowloadSeq > pAtchNum || wMtPatchInfo.dowloadSeq == 0) {
+				WMT_ERR_FUNC("dowloadSeq num(%u) > %u or == 0!\n", wMtPatchInfo.dowloadSeq, pAtchNum);
 				iRet = -EFAULT;
 				counter = 0;
 				break;
 			}
 
 			dWloadSeq = wMtPatchInfo.dowloadSeq;
-
-			if (dWloadSeq > pAtchNum) {
-				WMT_ERR_FUNC("Seq(%d) > patch num(%d)\n", dWloadSeq, pAtchNum);
-				iRet = -1;
-				break;
-			}
 
 			WMT_DBG_FUNC(
 				"patch dl seq %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
