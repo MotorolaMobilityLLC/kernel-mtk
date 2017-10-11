@@ -1874,6 +1874,10 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	UINT8 cccr_value = 0x0;
 	INT32 chip_id = -1;
 	INT32 i_ret = 0;
+	INT32 debug_count = 0;
+	INT32 debug_strlen = 0;
+	INT32 debug_pointer = 0;
+	char debug_str[256] = {""};
 
 	if (!g_stp_dbg_cpupcr) {
 		STP_DBG_ERR_FUNC("NULL reference pointer\n");
@@ -1937,6 +1941,13 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 					stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
 			STP_DBG_INFO_FUNC("CONNSYS EMI remap :0x%08x\n",
 					stp_dbg_soc_read_debug_crs(CONNSYS_EMI_REMAP));
+			for (debug_count = 0; debug_count < 20; debug_count++) {
+				debug_strlen = osal_sprintf(&debug_str[debug_pointer], "0x%08x ",
+						wmt_plat_get_dump_info(0x50 + debug_count * 4));
+				debug_pointer += debug_strlen;
+			}
+			STP_DBG_INFO_FUNC("get dump info 0xF0080050 ~ 0xF008009c: %s\n",
+					&debug_str[0]);
 		}
 
 		chip_id = mtk_wcn_wmt_chipid_query();
