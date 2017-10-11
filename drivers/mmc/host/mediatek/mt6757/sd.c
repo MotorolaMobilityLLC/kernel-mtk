@@ -1225,7 +1225,7 @@ end:
 			pr_err("msdc%d -> MSDC Device Request Suspend",
 				host->id);
 		}
-		msdc_gate_clock(host, 0);
+		msdc_gate_clock(host, 1);
 	} else {
 		msdc_gate_clock(host, 1);
 	}
@@ -1697,6 +1697,11 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		while (sdc_is_busy()) {
 			if (time_after(jiffies, tmo)) {
 				str = "sdc_busy";
+				/* Something wrong, need check problem and BUG here */
+				ERR_MSG("XXX %s timeout: before CMD<%d>", str, opcode);
+				msdc_dump_register(host);
+				pr_info("BUG: failure at %s:%d/%s()!/n", __FILE__, __LINE__, __func__);
+				panic("BUG!");
 				goto err;
 			}
 		}
@@ -5699,6 +5704,7 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
 	struct msdc_host *host;
 	void __iomem *base;
+	unsigned long flags;
 
 	/* FIX ME: consider to remove the next 2 lines */
 	if (mmc == NULL)
@@ -5706,6 +5712,22 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 
 	host = mmc_priv(mmc);
 	base = host->base;
+
+	spin_lock_irqsave(&host->clk_gate_lock, flags);
+	if (host->clk_gate_count > 0) {
+		ERR_MSG("msdc is busy\n");
+		spin_unlock_irqrestore(&host->clk_gate_lock, flags);
+		return -EBUSY;
+	}
+	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
+
+	msdc_ungate_clock(host);
+	if (sdc_is_busy() || !((MSDC_READ32(MSDC_PS) >> 16) & 0x1)) {
+		ERR_MSG("msdc or device is busy\n");
+		msdc_gate_clock(host, 1);
+		return -EBUSY;
+	}
+	msdc_gate_clock(host, 1);
 
 	if (state.event == PM_EVENT_SUSPEND) {
 		if  (host->hw->flags & MSDC_SYS_SUSPEND) {
