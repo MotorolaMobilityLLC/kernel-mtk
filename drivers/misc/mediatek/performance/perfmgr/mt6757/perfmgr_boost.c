@@ -21,6 +21,8 @@
 
 #include <linux/platform_device.h>
 #include <legacy_controller.h>
+#include <mtk_vcorefs_governor.h>
+#include <mtk_vcorefs_manager.h>
 
 /*--------------DEFAULT SETTING-------------------*/
 
@@ -58,6 +60,7 @@ void perfmgr_boost(int enable, int core, int freq)
 		freq_to_set[0].max = -1;
 		freq_to_set[1].min = -1;
 		freq_to_set[1].max = -1;
+		vcorefs_request_dvfs_opp(KIR_FBT, 0);
 	} else {
 		core_to_set[0].min = -1;
 		core_to_set[0].max = -1;
@@ -67,6 +70,7 @@ void perfmgr_boost(int enable, int core, int freq)
 		freq_to_set[0].max = -1;
 		freq_to_set[1].min = -1;
 		freq_to_set[1].max = -1;
+		vcorefs_request_dvfs_opp(KIR_FBT, -1);
 	}
 
 	update_userlimit_cpu_core(PPM_KIR_FBC, CLUSTER_NUM, core_to_set);
