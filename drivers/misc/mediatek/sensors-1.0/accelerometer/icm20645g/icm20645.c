@@ -522,7 +522,9 @@ static int ICM20645_ReadData(struct i2c_client *client, s16 data[ICM20645_AXES_N
 	if (NULL == client)
 		return -EINVAL;
 	/* write then burst read */
-	mpu_i2c_read_block(client, ICM20645_REG_DATAX0, buf, ICM20645_DATA_LEN);
+	err = mpu_i2c_read_block(client, ICM20645_REG_DATAX0, buf, ICM20645_DATA_LEN);
+	if (err)
+		return err;
 
 	data[ICM20645_AXIS_X] = (s16) ((buf[ICM20645_AXIS_X * 2] << 8) | (buf[ICM20645_AXIS_X * 2 + 1]));
 	data[ICM20645_AXIS_Y] = (s16) ((buf[ICM20645_AXIS_Y * 2] << 8) | (buf[ICM20645_AXIS_Y * 2 + 1]));
