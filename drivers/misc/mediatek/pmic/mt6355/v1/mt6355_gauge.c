@@ -2431,7 +2431,8 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 
 		/* Move 100 from denominator to cali_car_tune's numerator */
 		/*cali_car_tune = meta_input_cali_current * 1000 / dvalue;*/
-		cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
+		if (dvalue != 0)
+			cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
 
 		bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
 			dvalue, gauge_dev->fg_cust_data->r_fg_value, cali_car_tune);
