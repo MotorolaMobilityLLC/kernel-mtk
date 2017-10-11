@@ -855,6 +855,7 @@ static int __frame_config(struct frame_queue_t *frame_node)
 		if (!present_fence) {
 			DISPERR("error to get prev_present_fence from fd %d\n",
 				frame_cfg->prev_present_fence_fd);
+			return -EINVAL;
 		}
 	}
 	frame_cfg->prev_present_fence_struct = present_fence;
