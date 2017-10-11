@@ -42,6 +42,12 @@
 
 static DECLARE_WAIT_QUEUE_HEAD(open_wq);
 
+#define AKM_CONTINUOUS 1
+
+#if AKM_CONTINUOUS
+#define AKM_CONTINUOUS_MODE
+#endif
+
 static short akmd_delay = AKM09911_DEFAULT_DELAY;
 static int factory_mode;
 static int akm09911_init_flag;
@@ -334,6 +340,20 @@ static long AKECS_SetMode_SngMeasure(void)
 	/* Set data */
 	return AKI2C_TxData(buffer, 2);
 }
+
+#ifdef AKM_CONTINUOUS_MODE
+static long AKECS_SetMode_CntMeasure(char mode)
+{
+	char buffer[2];
+
+	/* Set measure mode */
+	buffer[0] = AK09911_REG_CNTL2;
+	buffer[1] = mode;	/* 16 bit mode */
+
+	/* Set data */
+	return AKI2C_TxData(buffer, 2);
+}
+#endif
 
 static long AKECS_SetMode_SelfTest(void)
 {
@@ -1199,8 +1219,10 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 	char sensordata[SENSOR_DATA_SIZE];
 	char strbuf[AKM09911_BUFSIZE];
 
+#ifndef AKM_CONTINUOUS_MODE
 	AKECS_SetMode_SngMeasure();
 	mdelay(10);
+#endif
 	AKECS_GetData(sensordata, SENSOR_DATA_SIZE);
 
 	sprintf(strbuf, "%d %d %d %d %d %d %d %d %d\n", sensordata[0], sensordata[1], sensordata[2],
@@ -1480,7 +1502,13 @@ static int akm09911_enable(int en)
 	factory_mode = 1;
 	if (value == 1) {
 		f_obj->enable = true;
+
+#ifdef AKM_CONTINUOUS_MODE
+		err = AKECS_SetMode_CntMeasure(AK09911_MODE_CNT_MEASURE_3);
+#else
+
 		err = AKECS_SetMode(AK09911_MODE_SNG_MEASURE);
+#endif
 		if (err < 0) {
 			MAGN_PR_ERR("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
@@ -1546,8 +1574,10 @@ static int akm09911_get_data(int *x, int *y, int *z, int *status)
 	char strbuf[SENSOR_DATA_SIZE];
 	int16_t data[3];
 
+#ifndef AKM_CONTINUOUS_MODE
 	AKECS_SetMode_SngMeasure();
 	mdelay(10);
+#endif
 
 	AKECS_GetData(strbuf, SENSOR_DATA_SIZE);
 	data[0] = (int16_t)(strbuf[1] | (strbuf[2] << 8));
