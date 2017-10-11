@@ -772,6 +772,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	UINT_32 num_ssid = 0;
+	UINT_32 old_num_ssid = 0;
+	UINT_32 wildcard_flag = 0;
 #if CFG_MULTI_SSID_SCAN
 	UINT_32 i, u4ValidIdx;
 #endif
@@ -788,8 +790,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 		return -EBUSY;
 	}
 
-	num_ssid = (UINT_32)request->n_ssids;
-	DBGLOG(REQ, INFO, "request->n_ssids=%d", request->n_ssids);
+	old_num_ssid = num_ssid = (UINT_32)request->n_ssids;
+	DBGLOG(REQ, TRACE, "request->n_ssids=%d\n", request->n_ssids);
 
 	if (request->n_ssids == 0)
 		rScanRequest.u4SsidNum = 0;
@@ -799,7 +801,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 			if ((request->ssids[i].ssid[0] == 0)
 				|| (request->ssids[i].ssid_len == 0)) {
 				num_ssid--; /* remove if this is a wildcard scan*/
-				DBGLOG(REQ, INFO, "i=%d, num_ssid-- for wildcard scan\n", i);
+				wildcard_flag |= (1 << i);
+				DBGLOG(REQ, TRACE, "i=%d, num_ssid-- for wildcard scan\n", i);
 				continue;
 			}
 			COPY_SSID(rScanRequest.rSsid[u4ValidIdx].aucSsid,
@@ -851,7 +854,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 		return -EINVAL;
 	}
 #endif
-	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d, num_ssid=%d\n", request->n_ssids, num_ssid);
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d, num_ssid=(%u=>%u), wildcard=0x%X\n"
+			, request->n_ssids, old_num_ssid, num_ssid, wildcard_flag);
 
 	if (request->ie_len > 0) {
 		rScanRequest.u4IELength = request->ie_len;
