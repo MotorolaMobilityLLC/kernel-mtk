@@ -189,6 +189,9 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	u8 beg = addr;
 	struct i2c_msg msgs[2] = { {0}, {0} };
 
+	if (!client)
+		return -EINVAL;
+
 	mutex_lock(&icm20645_i2c_mutex);
 	msgs[0].addr = client->addr;
 	msgs[0].flags = 0;
@@ -515,12 +518,14 @@ static int ICM20645_SetDataResolution(struct icm20645_i2c_data *obj)
 /*----------------------------------------------------------------------------*/
 static int ICM20645_ReadData(struct i2c_client *client, s16 data[ICM20645_AXES_NUM])
 {
-	struct icm20645_i2c_data *priv = i2c_get_clientdata(client);
+	struct icm20645_i2c_data *priv = NULL;
 	u8 buf[ICM20645_DATA_LEN] = { 0 };
 	int err = 0;
 
 	if (NULL == client)
 		return -EINVAL;
+
+	priv = i2c_get_clientdata(client);
 	/* write then burst read */
 	err = mpu_i2c_read_block(client, ICM20645_REG_DATAX0, buf, ICM20645_DATA_LEN);
 	if (err)
@@ -1040,11 +1045,13 @@ static int ICM20645_ReadSensorData(struct i2c_client *client, char *buf, int buf
 /*----------------------------------------------------------------------------*/
 static int ICM20645_ReadRawData(struct i2c_client *client, char *buf)
 {
-	struct icm20645_i2c_data *obj = (struct icm20645_i2c_data *)i2c_get_clientdata(client);
+	struct icm20645_i2c_data *obj = NULL;
 	int res = 0;
 
 	if (!buf || !client)
 		return -2;
+
+	obj = (struct icm20645_i2c_data *)i2c_get_clientdata(client);
 
 	if (atomic_read(&obj->suspend))
 		return -3;
@@ -1344,10 +1351,10 @@ static ssize_t store_self_value(struct device_driver *ddri, const char *buf, siz
 
 	if (!ICM20645_JudgeTestResult(client, avg_prv, avg_nxt)) {
 		GSE_LOG("SELFTEST : PASS\n");
-		strcpy(selftestRes, "y");
+		strlcpy(selftestRes, "y", sizeof(selftestRes));
 	} else {
 		GSE_LOG("SELFTEST : FAIL\n");
-		strcpy(selftestRes, "n");
+		strlcpy(selftestRes, "n", sizeof(selftestRes));
 	}
 
  exit:

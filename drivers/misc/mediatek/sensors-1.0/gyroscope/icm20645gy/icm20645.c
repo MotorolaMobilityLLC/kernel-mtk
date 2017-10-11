@@ -384,7 +384,6 @@ static int ICM20645_ReadCalibration(struct i2c_client *client, int dat[ICM20645_
 static int ICM20645_WriteCalibration(struct i2c_client *client, int dat[ICM20645_AXES_NUM])
 {
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
-	int err = 0;
 	int cali[ICM20645_AXES_NUM];
 
 	if (!obj || !dat) {
@@ -405,7 +404,6 @@ static int ICM20645_WriteCalibration(struct i2c_client *client, int dat[ICM20645
 #endif
 	return ICM20645_write_rel_calibration(obj, cali);
 
-	return err;
 }
 
 
@@ -564,10 +562,14 @@ static int ICM20645_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 {
 	char databuf[6];
 	int data[3];
+	int err;
+
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
 
 	if (sensor_power == false) {
-		ICM20645_SetPowerMode(client, true);
+		err = ICM20645_SetPowerMode(client, true);
+		if (err)
+			GYRO_PR_ERR("Power on  error %d!\n", err);
 		icm20645_turn_on(client, BIT_PWR_GYRO_STBY, true);
 		msleep(50);
 	}
