@@ -1493,7 +1493,19 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			if (copy_from_user(&var, argp, sizeof(var)))
 				return -EFAULT;
 
+			/* invalidate params from userspace */
+			if (var.xres > MTK_FB_XRES || var.yres > MTK_FB_YRES ||
+			    var.xres_virtual > MTK_FB_XRESV ||
+			    var.yres_virtual > MTK_FB_YRESV ||
+			    var.xoffset > MTK_FB_XRES ||
+			    var.yoffset > MTK_FB_YRESV * (MTK_FB_PAGES - 1)) {
+				DISPERR("invalidate params from userspace\n");
+				return -EFAULT;
+			}
 			info->var.yoffset = var.yoffset;
+			/*  check var.yoffset passed by user space */
+			if (info->var.yres + info->var.yoffset > info->var.yres_virtual)
+				info->var.yoffset = info->var.yres_virtual - info->var.yres;
 			init_framebuffer(info);
 
 			return mtkfb_pan_display_impl(&var, info);
