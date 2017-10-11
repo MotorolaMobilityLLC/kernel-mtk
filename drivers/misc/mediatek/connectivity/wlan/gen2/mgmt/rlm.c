@@ -1326,6 +1326,11 @@ static BOOLEAN
 rlmRecBcnInfoForClient(P_ADAPTER_T prAdapter,
 		       P_BSS_INFO_T prBssInfo, P_SW_RFB_T prSwRfb, PUINT_8 pucIE, UINT_16 u2IELength)
 {
+	/* For checking if syncing params are different from
+	 * last syncing and need to sync again */
+	CMD_SET_BSS_RLM_PARAM_T rBssRlmParam;
+	BOOLEAN fgNewParameter = FALSE;
+
 	if ((prAdapter == NULL)
 		|| (pucIE == NULL)
 		|| (prBssInfo == NULL)
@@ -1353,9 +1358,40 @@ rlmRecBcnInfoForClient(P_ADAPTER_T prAdapter,
 	prBssInfo->u2CapInfo = ((P_WLAN_BEACON_FRAME_T) (prSwRfb->pvHeader))->u2CapInfo;
 	prBssInfo->fgUseShortSlotTime = (prBssInfo->u2CapInfo & CAP_INFO_SHORT_SLOT_TIME) ? TRUE : FALSE;
 
+	rBssRlmParam.ucRfBand = (UINT_8) prBssInfo->eBand;
+	rBssRlmParam.ucPrimaryChannel = prBssInfo->ucPrimaryChannel;
+	rBssRlmParam.ucRfSco = (UINT_8) prBssInfo->eBssSCO;
+	rBssRlmParam.ucErpProtectMode = (UINT_8) prBssInfo->fgErpProtectMode;
+	rBssRlmParam.ucHtProtectMode = (UINT_8) prBssInfo->eHtProtectMode;
+	rBssRlmParam.ucGfOperationMode = (UINT_8) prBssInfo->eGfOperationMode;
+	rBssRlmParam.ucTxRifsMode = (UINT_8) prBssInfo->eRifsOperationMode;
+	rBssRlmParam.u2HtOpInfo3 = prBssInfo->u2HtOpInfo3;
+	rBssRlmParam.u2HtOpInfo2 = prBssInfo->u2HtOpInfo2;
+	rBssRlmParam.ucHtOpInfo1 = prBssInfo->ucHtOpInfo1;
+	rBssRlmParam.ucUseShortPreamble = prBssInfo->fgUseShortPreamble;
+	rBssRlmParam.ucUseShortSlotTime = prBssInfo->fgUseShortSlotTime;
+
 	rlmRecIeInfoForClient(prAdapter, prBssInfo, pucIE, u2IELength);
 
-	return TRUE;
+	if (rBssRlmParam.ucRfBand != prBssInfo->eBand
+		|| rBssRlmParam.ucPrimaryChannel != prBssInfo->ucPrimaryChannel
+		|| rBssRlmParam.ucRfSco != prBssInfo->eBssSCO
+		|| rBssRlmParam.ucErpProtectMode != prBssInfo->fgErpProtectMode
+		|| rBssRlmParam.ucHtProtectMode != prBssInfo->eHtProtectMode
+		|| rBssRlmParam.ucGfOperationMode != prBssInfo->eGfOperationMode
+		|| rBssRlmParam.ucTxRifsMode != prBssInfo->eRifsOperationMode
+		|| rBssRlmParam.u2HtOpInfo3 != prBssInfo->u2HtOpInfo3
+		|| rBssRlmParam.u2HtOpInfo2 != prBssInfo->u2HtOpInfo2
+		|| rBssRlmParam.ucHtOpInfo1 != prBssInfo->ucHtOpInfo1
+		|| rBssRlmParam.ucUseShortPreamble != prBssInfo->fgUseShortPreamble
+		|| rBssRlmParam.ucUseShortSlotTime != prBssInfo->fgUseShortSlotTime)
+		fgNewParameter = TRUE;
+	else {
+		DBGLOG(RLM, TRACE, "prBssInfo's params are all the same! not to sync!\n");
+		fgNewParameter = FALSE;
+	}
+
+	return fgNewParameter;
 }
 
 /*----------------------------------------------------------------------------*/
