@@ -374,12 +374,15 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	kalMemZero(arBssid, MAC_ADDR_LEN);
 	wlanQueryInformation(prGlueInfo->prAdapter, wlanoidQueryBssid, &arBssid[0], sizeof(arBssid), &u4BufLen);
 
-	/* 1. check BSSID */
-	if (UNEQUAL_MAC_ADDR(arBssid, mac)) {
+	/* 1. check MAC address */
+	/* Should be currently connected BSSID or device itself
+	 * wificond will bring the MAC address of device itself to retrieve TX/RX statistics
+	 */
+	if (UNEQUAL_MAC_ADDR(arBssid, mac) && UNEQUAL_MAC_ADDR(ndev->dev_addr, mac)) {
 		/* wrong MAC address */
 		DBGLOG(REQ, WARN,
-		       "incorrect BSSID: [" MACSTR "] currently connected BSSID[" MACSTR "]\n",
-			MAC2STR(mac), MAC2STR(arBssid));
+		       "Incorrect MAC addr[" MACSTR "], device[" MACSTR "], currently connected BSSID[" MACSTR "]\n",
+		       MAC2STR(mac), MAC2STR(ndev->dev_addr), MAC2STR(arBssid));
 		return -ENOENT;
 	}
 
