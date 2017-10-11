@@ -393,7 +393,7 @@ EXPORT_SYMBOL(mtkfb_get_backlight_pwm);
 void mtkfb_waitVsync(void)
 {
 	if (primary_display_is_sleepd()) {
-		DISPMSG("[MTKFB_VSYNC]:mtkfb has suspend, return directly\n");
+		DISPCHECK("[MTKFB_VSYNC]:mtkfb has suspend, return directly\n");
 		msleep(20);
 		return;
 	}
@@ -855,7 +855,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	if (var->yres + var->yoffset > var->yres_virtual)
 		var->yoffset = var->yres_virtual - var->yres;
 
-	DISPMSG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
+	DISPCHECK("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
 		var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 		var->xoffset, var->yoffset, var->bits_per_pixel);
 
@@ -2618,7 +2618,7 @@ static void mtkfb_early_suspend(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPMSG("[FB Driver] enter early_suspend\n");
+	DISPCHECK("[FB Driver] enter early_suspend\n");
 
 	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
 
@@ -2631,7 +2631,7 @@ static void mtkfb_early_suspend(void)
 		return;
 	}
 
-	DISPMSG("[FB Driver] leave early_suspend\n");
+	DISPCHECK("[FB Driver] leave early_suspend\n");
 
 }
 
@@ -2653,7 +2653,7 @@ static void mtkfb_late_resume(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPMSG("[FB Driver] enter late_resume\n");
+	DISPCHECK("[FB Driver] enter late_resume\n");
 
 	ret = primary_display_resume();
 
@@ -2662,7 +2662,7 @@ static void mtkfb_late_resume(void)
 		return;
 	}
 
-	DISPMSG("[FB Driver] leave late_resume\n");
+	DISPCHECK("[FB Driver] leave late_resume\n");
 
 }
 

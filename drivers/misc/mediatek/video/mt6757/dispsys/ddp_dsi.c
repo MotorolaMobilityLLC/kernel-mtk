@@ -3733,7 +3733,7 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 	}
 
 	if (mode == 0) {	/* V2C */
-		DISPMSG("[C2V]v2c switch begin\n");
+		DISPCHECK("[C2V]v2c switch begin\n");
 #if 0
 		/* 1. enable dsi auto rack */
 		DSI_SetBypassRack(module, cmdq_handle, 1);
@@ -3846,9 +3846,9 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		dsi_analysis(module);
 		DSI_DumpRegisters(module, 2);
 
-		DISPMSG("[C2V]v2c switch finished\n");
+		DISPCHECK("[C2V]v2c switch finished\n");
 	} else {		/* C2V */
-		DISPMSG("[C2V]c2v switch begin\n");
+		DISPCHECK("[C2V]c2v switch begin\n");
 		/* 1. Adjust PLL clk */
 		cmdqRecWaitNoClear(cmdq_handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 		DSI_DisableClk(module, cmdq_handle);
@@ -3937,7 +3937,7 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		/* 8. disable dsi auto rack  */
 		/* DSI_SetBypassRack(module, NULL, 0); */
 
-		DISPMSG("[C2V]c2v switch finished\n");
+		DISPCHECK("[C2V]c2v switch finished\n");
 
 	}
 	dsi_currect_mode = mode;

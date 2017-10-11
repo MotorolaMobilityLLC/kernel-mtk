@@ -88,32 +88,34 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_debug("[DISP]"string, ##args);		\
+			pr_debug("[DISP][INFO]"string, ##args);		\
 	} while (0)
 
+/*always print log, try to aviod use*/
 #define DISPMSG(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		pr_debug("[DISP]"string, ##args);		\
+		pr_debug("[DISP][MSG]"string, ##args);		\
 	} while (0)
 
 #define DISPCHECK(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		pr_debug("[DISP]"string, ##args);		\
+		if (g_mobilelog)					\
+			pr_debug("[DISP][CHECK]"string, ##args);		\
 	} while (0)
 
 #define DISPWARN(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);	\
-		pr_debug("[DISP][%s #%d]warn:"string,			\
+		pr_debug("[DISP][WARN][%s #%d]warn:"string,			\
 				__func__, __LINE__, ##args); \
 	} while (0)
 
 #define DISPPR_ERROR(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);	\
-		pr_debug("[DISP][%s #%d]ERROR:"string,			\
+		pr_debug("[DISP][ERROR][%s #%d]ERROR:"string,			\
 				__func__, __LINE__, ##args);		\
 	} while (0)
 
@@ -123,7 +125,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_debug("fence/"string, ##args);		\
+			pr_debug("[DISP][FENCE]fence/"string, ##args);		\
 	} while (0)
 
 #define DISPDBG(string, args...)					\

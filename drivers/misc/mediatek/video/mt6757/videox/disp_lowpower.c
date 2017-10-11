@@ -345,7 +345,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	} else {
 		/* acquire resource success */
-		DISPMSG("share SRAM success\n");
+		DISPCHECK("share SRAM success\n");
 		/* cmdqRecClearEventToken(handle, resourceEvent); //???cmdq do it */
 
 		/* set rdma golden setting parameters*/
@@ -453,7 +453,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	/*unsigned int need_disable_pll = 0;*/
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 	if (mmsys_clk_new == get_mmsys_clk())
 		return ret;
 
@@ -518,7 +518,7 @@ cmdq_d:
 int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
 	/* need lock */
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 	primary_display_manual_lock();
 	_switch_mmsys_clk(mmsys_clk_old, mmsys_clk_new);
 	primary_display_manual_unlock();
@@ -669,7 +669,7 @@ void _primary_display_enable_mmsys_clk(void)
 /* Share wrot sram end */
 void _vdo_mode_enter_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
 	idlemgr_pgc->session_mode_before_enter_idle = primary_get_sess_mode();
@@ -753,7 +753,7 @@ void _vdo_mode_enter_idle(void)
 
 void _vdo_mode_leave_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 
 	/* Disable sodi */
 #if 0
@@ -808,7 +808,7 @@ void _vdo_mode_leave_idle(void)
 
 void _cmd_mode_enter_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 
 	/* need leave share sram for disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
@@ -829,7 +829,7 @@ void _cmd_mode_enter_idle(void)
 
 void _cmd_mode_leave_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPCHECK("[disp_lowpower]%s\n", __func__);
 
 	/*Exit PD mode*/
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))

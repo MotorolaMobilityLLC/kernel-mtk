@@ -1293,7 +1293,7 @@ int gen_hrt_pattern(void)
 
 	dispsys_hrt_calc(&disp_info);
 
-	DISPMSG("free test pattern\n");
+	DISPCHECK("free test pattern\n");
 	kfree(disp_info.input_config[0]);
 	kfree(disp_info.input_config[1]);
 	msleep(50);

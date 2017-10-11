@@ -1105,7 +1105,7 @@ int dprec_handle_option(unsigned int option)
 	_control.cmm_dump = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_SWITCH));
 	_control.cmm_dump_use_va = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_VA));
 	_control.systrace = (option & (1 << DPREC_DEBUG_BIT_SYSTRACE));
-	DISPMSG("dprec control=%p\n", &_control);
+	DISPCHECK("dprec control=%p\n", &_control);
 
 	return 0;
 }

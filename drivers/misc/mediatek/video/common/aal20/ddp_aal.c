@@ -367,11 +367,11 @@ static void disp_aal_notify_backlight_log(int bl_1024)
 
 	if (diff_mesc > LOG_INTERVAL_TH) {
 		if (g_aal_log_index == 0) {
-			pr_debug("disp_aal_notify_backlight_changed: %d/1023\n", bl_1024);
+			AAL_DBG("disp_aal_notify_backlight_changed: %d/1023\n", bl_1024);
 		} else {
 			sprintf(g_aal_log_buffer + strlen(g_aal_log_buffer), ", %d/1023 %03lu.%03lu",
 				bl_1024, tsec, tusec);
-			pr_debug("%s\n", g_aal_log_buffer);
+			AAL_DBG("%s\n", g_aal_log_buffer);
 			g_aal_log_index = 0;
 		}
 	} else {
@@ -387,7 +387,7 @@ static void disp_aal_notify_backlight_log(int bl_1024)
 		}
 
 		if ((g_aal_log_index >= LOG_BUFFER_SIZE) || (bl_1024 == 0)) {
-			pr_debug("%s\n", g_aal_log_buffer);
+			AAL_DBG("%s\n", g_aal_log_buffer);
 			g_aal_log_index = 0;
 		}
 	}

@@ -1741,7 +1741,7 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
-	DISPMSG("dl_to_dc capture:Flush wait wdma sof\n");
+	DISPCHECK("dl_to_dc capture:Flush wait wdma sof\n");
 out:
 	cmdqRecDestroy(cmdq_handle);
 	cmdqRecDestroy(cmdq_wait_handle);
@@ -4137,13 +4137,13 @@ int primary_display_wait_for_vsync(void *config)
 
 	if (pgc->force_fps_keep_count && pgc->force_fps_skip_count) {
 		g_keep++;
-		DISPMSG("vsync|keep %d\n", g_keep);
+		DISPCHECK("vsync|keep %d\n", g_keep);
 		if (g_keep == pgc->force_fps_keep_count) {
 			g_keep = 0;
 
 			while (g_skip != pgc->force_fps_skip_count) {
 				g_skip++;
-				DISPMSG("vsync|skip %d\n", g_skip);
+				DISPCHECK("vsync|skip %d\n", g_skip);
 				ret =
 				    dpmgr_wait_event_timeout(pgc->dpmgr_handle,
 							     DISP_PATH_EVENT_IF_VSYNC, HZ / 10);
@@ -6911,11 +6911,11 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
-	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
+	DISPCHECK("primary capture:Flush add memout mva(0x%x)\n", mva);
 	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
-	DISPMSG("primary capture:Flush wait wdma sof\n");
+	DISPCHECK("primary capture:Flush wait wdma sof\n");
 	cmdqRecReset(cmdq_handle);
 	_cmdq_handle_clear_dirty(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -6926,7 +6926,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	/* flush remove memory to cmdq */
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
-	DISPMSG("primary capture: Flush remove memout\n");
+	DISPCHECK("primary capture: Flush remove memout\n");
 
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
 	_primary_path_unlock(__func__);

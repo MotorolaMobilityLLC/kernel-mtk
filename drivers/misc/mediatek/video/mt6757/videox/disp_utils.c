@@ -79,7 +79,7 @@ unsigned int disp_allocate_mva(unsigned int pa, unsigned int size, M4U_PORT_ID p
 	/* m4u_alloc_mva(M4U_PORT_DISP_OVL0, pa_start, (pa_end - pa_start + 1), 0, 0, mva); */
 	if (ret)
 		DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
-	DISPMSG("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", mva, pa);
+	DISPCHECK("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", mva, pa);
 
 	return mva;
 }

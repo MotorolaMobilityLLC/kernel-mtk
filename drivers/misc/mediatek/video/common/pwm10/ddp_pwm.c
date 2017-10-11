@@ -53,9 +53,10 @@
 static int pwm_dbg_en;
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
 #define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
-#define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
+#define PWM_MSG(fmt, arg...) \
+	do { if (pwm_dbg_en) pr_debug("[PWM][MSG] " fmt "\n", ##arg); } while (0)
 #define PWM_DBG(fmt, arg...) \
-	do { if (pwm_dbg_en) pr_warn("[PWM] " fmt "\n", ##arg); } while (0)
+	do { if (pwm_dbg_en) pr_debug("[PWM] " fmt "\n", ##arg); } while (0)
 
 #define PWM_LOG_BUFFER_SIZE 8
 

@@ -155,7 +155,7 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 
 	buf_info->buf_va = dma_alloc_coherent(disp_get_device(), size, &buf_info->buf_pa, GFP_KERNEL);
 	if (!(buf_info->buf_va)) {
-		DISPMSG("dma_alloc_coherent error!  dma memory not available. size=%zu\n", size);
+		DISPERR("dma_alloc_coherent error!  dma memory not available. size=%zu\n", size);
 		return -1;
 	}
 
@@ -178,7 +178,7 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
 
 		buf_info->buf_mva = mva;
-		DISPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, mva, &buf_info->buf_pa);
+		DISPCHECK("%s MVA is 0x%x PA is 0x%pa\n", __func__, mva, &buf_info->buf_pa);
 	}
 
 	return 0;
@@ -224,7 +224,7 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
 
-	DISPMSG("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
+	DISPCHECK("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
 		__func__, layer_num, w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, size);
 
 	input_config = kmalloc(sizeof(*input_config), GFP_KERNEL);
