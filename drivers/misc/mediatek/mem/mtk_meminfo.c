@@ -165,6 +165,9 @@ void *vmap_reserved_mem(phys_addr_t start, phys_addr_t size, pgprot_t prot)
 	page_count = DIV_ROUND_UP(size, PAGE_SIZE);
 	pages = vmalloc(page_count * sizeof(struct page *));
 
+	if (!pages)
+		return NULL;
+
 	for (i = 0; i < page_count; i++) {
 		pfn = __phys_to_pfn(addr);
 		if (unlikely(!pfn_valid(pfn)))
