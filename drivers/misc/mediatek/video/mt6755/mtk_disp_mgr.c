@@ -1080,7 +1080,6 @@ static int __set_output(disp_session_output_config *session_output)
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		disp_mem_output_config primary_output;
 
