@@ -919,6 +919,7 @@ static void *vb_alloc(unsigned long size, gfp_t gfp_mask)
 	struct vmap_block *vb;
 	unsigned long addr = 0;
 	unsigned int order;
+	int purge = 0;
 
 	BUG_ON(size & ~PAGE_MASK);
 	BUG_ON(size > PAGE_SIZE*VMAP_MAX_ALLOC);
@@ -939,8 +940,12 @@ again:
 		int i;
 
 		spin_lock(&vb->lock);
-		if (vb->free < 1UL << order)
+		if (vb->free < 1UL << order) {
+			/* free left too small, handle as fragmented scenario */
+			if (vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS)
+				purge = 1;
 			goto next;
+		}
 
 		i = VMAP_BBMAP_BITS - vb->free;
 		addr = vb->va->va_start + (i << PAGE_SHIFT);
@@ -957,6 +962,9 @@ again:
 next:
 		spin_unlock(&vb->lock);
 	}
+
+	if (purge)
+		purge_fragmented_blocks(smp_processor_id());
 
 	put_cpu_var(vmap_block_queue);
 	rcu_read_unlock();
