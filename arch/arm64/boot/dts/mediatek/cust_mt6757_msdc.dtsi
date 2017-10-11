@@ -73,7 +73,11 @@
 	pinctl = <&mmc2_pins_default>;
 	register_setting = <&mmc2_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
+#ifdef CONFIG_MTK_COMBO_COMM
+	status = "okay";
+#else
 	status = "disable";
+#endif
 };
 
 &pio {
