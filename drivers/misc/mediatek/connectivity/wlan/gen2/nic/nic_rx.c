@@ -2526,6 +2526,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 					continue;
 				}
 
@@ -2542,6 +2543,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 					continue;
 				}
 
