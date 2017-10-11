@@ -1467,44 +1467,82 @@ int msdc_io_check(struct msdc_host *host)
 	int result = 1;
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = 0;
-	u32 orig_pupd;
+	u32 orig_pupd, orig_r0, orig_r1;
 	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
 
 	if (host->id != 1)
 		return 1;
+
+	if (host->block_bad_card)
+			goto POWER_OFF;
+
 	MSDC_GET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+	MSDC_GET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+	MSDC_GET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
 
 	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_DAT0_MASK, 1);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_DAT0_MASK, 0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_DAT0_MASK, 1);
 	polling_tmo = jiffies + POLLING_PINS;
 	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[0]) {
 		if (time_after(jiffies, polling_tmo)) {
+			if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+				break;
 			pr_err("msdc%d DAT0 pin get wrong, ps = 0x%x!\n",
 				host->id, MSDC_READ32(MSDC_PS));
-		goto POWER_OFF;
-		}
-	}
-
-	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_DAT1_MASK, 1);
-	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[1]) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d DAT1 pin get wrong, ps = 0x%x!\n",
-				host->id, MSDC_READ32(MSDC_PS));
-			goto POWER_OFF;
-		}
-	}
-
-	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_DAT2_MASK, 1);
-	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[2]) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d DAT2 pin get wrong, ps = 0x%x!\n",
-				host->id, MSDC_READ32(MSDC_PS));
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+			MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+			MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
 			goto POWER_OFF;
 		}
 	}
 
 	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_DAT1_MASK, 1);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_DAT1_MASK, 0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_DAT1_MASK, 1);
+
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[1]) {
+		if (time_after(jiffies, polling_tmo)) {
+			if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+				break;
+			pr_err("msdc%d DAT1 pin get wrong, ps = 0x%x!\n",
+				host->id, MSDC_READ32(MSDC_PS));
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+			MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+			MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
+			goto POWER_OFF;
+		}
+	}
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_DAT2_MASK, 1);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_DAT2_MASK, 0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_DAT2_MASK, 1);
+	polling_tmo = jiffies + POLLING_PINS;
+	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[2]) {
+		if (time_after(jiffies, polling_tmo)) {
+			if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+				break;
+			pr_err("msdc%d DAT2 pin get wrong, ps = 0x%x!\n",
+				host->id, MSDC_READ32(MSDC_PS));
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+			MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+			MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
+			goto POWER_OFF;
+		}
+	}
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_ALL_MASK, orig_pupd);
+	MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR, MSDC1_R0_ALL_MASK, orig_r0);
+	MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR, MSDC1_R1_ALL_MASK, orig_r1);
 	return result;
 
 POWER_OFF:
