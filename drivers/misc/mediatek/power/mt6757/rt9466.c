@@ -37,7 +37,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9466.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9466_DRV_VERSION	"1.0.11_MTK"
+#define RT9466_DRV_VERSION	"1.0.12_MTK"
 
 /* ======================= */
 /* RT9466 Parameter        */
@@ -2426,6 +2426,19 @@ static int rt_charger_get_temperature(struct mtk_charger_info *mchr_info,
 {
 	int ret = 0, adc_temp = 0;
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
+	bool hz_en = false;
+
+	/* Check HZ mode */
+	ret = rt9466_i2c_test_bit(info, RT9466_REG_CHG_CTRL1,
+		RT9466_SHIFT_HZ_EN, &hz_en);
+	if (ret < 0)
+		return ret;
+
+	if (hz_en) {
+		((int *)data)[0] = 25;
+		((int *)data)[1] = 25;
+		return -EINVAL;
+	}
 
 	/* Get value from ADC */
 	ret = rt9466_get_adc(info, RT9466_ADC_TEMP_JC, &adc_temp);
@@ -2526,6 +2539,7 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 {
 	int ret = 0;
 	u8 auto_sense = 0;
+	u8 exit_hid = 0x00;
 
 	/* enter hidden mode */
 	ret = rt9466_device_write(info->client, 0x70,
@@ -2551,7 +2565,7 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 		dev_err(info->dev, "%s: en = %d fail\n", __func__, en);
 
 out:
-	return rt9466_device_write(info->client, 0x70, 1, 0x00);
+	return rt9466_device_write(info->client, 0x70, 1, &exit_hid);
 }
 
 /*
@@ -3161,6 +3175,10 @@ MODULE_VERSION(RT9466_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.12
+ * (1) Fix type error of enable_auto_sensing in sw_reset
+ * (2) Check HZ mode for get_tchg
+ *
  * 1.0.11
  * (1) Do ilim select in WQ and register charger class in probe
  * (2) Enable IRQ_RZE at the end of irq handler
