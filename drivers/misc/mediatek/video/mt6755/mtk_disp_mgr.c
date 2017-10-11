@@ -1387,12 +1387,19 @@ int _ioctl_set_vsync(unsigned long arg)
 int _ioctl_query_valid_layer(unsigned long arg)
 {
 	int ret = 0;
+	int i = 0;
 	disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
+	}
+	for (i = 0; i < 2; i++) {
+		if (!access_ok(VERIFY_READ, disp_info_user.input_config[i], sizeof(layer_config))) {
+			DISPERR("[FB]: can not read memory! line:%d\n", __LINE__);
+			return -EFAULT;
+		}
 	}
 
 	ret = layering_rule_start(&disp_info_user, 0);
