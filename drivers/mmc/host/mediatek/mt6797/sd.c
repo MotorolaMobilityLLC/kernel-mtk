@@ -5798,8 +5798,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		BUG();
 	}
 
-	if (ret)
-		goto free_irq;
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
 		ghost = host;
 		/* enable sdio detection */
@@ -5815,10 +5813,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	return 0;
 
-free_irq:
-	free_irq(host->irq, host);
-	pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
 release:
+	if (host->irq >= 0)
+		free_irq(host->irq, host);
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
 	pr_err("[%s]: msdc%d init fail release!\n", __func__, host->id);
