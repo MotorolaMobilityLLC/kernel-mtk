@@ -660,7 +660,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 #if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	idle_time = 2000;
 #else
-	idle_time = 50;
+	idle_time = 100;
 #endif
 
 	while (1) {
@@ -690,7 +690,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		_primary_path_unlock(__func__);
 
 #if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
-		idle_time = 50;
+		idle_time = 100;
 #endif
 
 		/* _disp_primary_idle_lock(); */
