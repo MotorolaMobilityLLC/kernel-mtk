@@ -212,7 +212,7 @@ BOOLEAN kalIsResetting(VOID)
 static void mtk_wifi_trigger_reset(struct work_struct *work)
 {
 	BOOLEAN fgResult = FALSE;
-	RESET_STRUCT_T *rst = container_of(work, RESET_STRUCT_T, rst_work);
+	RESET_STRUCT_T *rst = container_of(work, RESET_STRUCT_T, rst_trigger_work);
 
 	fgResetTriggered = TRUE;
 	/* Set the power off flag to FALSE in WMT to prevent chip power off after
