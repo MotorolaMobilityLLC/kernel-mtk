@@ -231,7 +231,7 @@ static void msdc_mdelay(u32 time)
 	u64 t_start = 0, t_end = 0;
 
 	t_start = arch_counter_get_cntpct();
-	t_end = t_start + time * ((u64) 1000) * 1000 / 77;
+	t_end = t_start + time * ((u64)(1000 * 1000 / 77));
 	while (t_end > arch_counter_get_cntpct())
 		cpu_relax();
 }
