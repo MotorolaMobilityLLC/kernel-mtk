@@ -1236,7 +1236,10 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			host->power_control(host, 1);
 
 		mdelay(10);
-
+		if (host->id == 1) {
+			if (!msdc_io_check(host))
+				return;
+		}
 		if (host->hw->host_function == MSDC_SD) {
 			pmic_read_interface(MT6351_PMIC_OC_STATUS_VMCH_ADDR,
 					    &val,
