@@ -259,7 +259,8 @@ static int fence_wait_worker_func(void *data)
 	struct list_head *list;
 	struct disp_frame_cfg_t *frame_cfg;
 
-#if 0
+#if 1
+	/*the do frame config thread should be kept in real-time priority*/
 	struct sched_param param = {.sched_priority = 94 };
 	sched_setscheduler(current, SCHED_RR, &param);
 #endif
