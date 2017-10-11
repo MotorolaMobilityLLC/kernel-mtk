@@ -1225,7 +1225,7 @@ end:
 			pr_err("msdc%d -> MSDC Device Request Suspend",
 				host->id);
 		}
-		msdc_gate_clock(host, 1);
+		msdc_gate_clock(host, 0);
 	} else {
 		msdc_gate_clock(host, 1);
 	}
