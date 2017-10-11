@@ -47,6 +47,7 @@
 #include <m4u.h>
 #include <cmdq_core.h>
 #include <cmdq_record.h>
+#include <mt-plat/mtk_devinfo.h>
 
 /* #define __DPE_EP_NO_CLKMGR__ */
 
@@ -250,6 +251,7 @@ struct DPE_device {
 
 static struct DPE_device *DPE_devs;
 static int nr_DPE_devs;
+static int segments;
 
 /* Get HW modules' base address from device nodes */
 #define DPE_DEV_NODE_IDX 0
@@ -2691,6 +2693,13 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	pUserInfo = (struct DPE_USER_INFO_STRUCT *) (pFile->private_data);
 	/*  */
+	if (segments == 0) {
+		LOG_ERR("Segments:(%d), Unknown Cmd(%d)", segments, Cmd);
+		LOG_ERR("Fail, Cmd(%d), Dir(%d), Type(%d), Nr(%d),Size(%d)\n", Cmd, _IOC_DIR(Cmd),
+			_IOC_TYPE(Cmd), _IOC_NR(Cmd), _IOC_SIZE(Cmd));
+		Ret = -EPERM;
+		return Ret;
+	}
 	switch (Cmd) {
 	case DPE_RESET:
 		{
@@ -3838,6 +3847,8 @@ static signed int DPE_probe(struct platform_device *pDev)
 	/* Only register char driver in the 1st time */
 	if (nr_DPE_devs == 1) {
 
+		segments = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
+
 		/* Register char driver */
 		Ret = DPE_RegCharDev();
 		if (Ret) {
@@ -3926,7 +3937,7 @@ EXIT:
 		DPE_UnregCharDev();
 
 
-	LOG_INF("- X. DPE driver probe.");
+	LOG_INF("- X. DPE driver probe. segments:%d", segments);
 
 	return Ret;
 }
@@ -4117,7 +4128,7 @@ static int dpe_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "\n============ dpe dump register============\n");
 	seq_puts(m, "DVE Config Info\n");
 
-	if (DPEInfo.UserCount <= 0)
+	if ((DPEInfo.UserCount <= 0) || (segments == 0))
 		return 0;
 
 	for (i = 0x2C; i < 0x8C; i = i + 4) {
@@ -4228,7 +4239,7 @@ static int dpe_reg_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "======== read dpe register ========\n");
 
-	if (DPEInfo.UserCount <= 0)
+	if ((DPEInfo.UserCount <= 0) || (segments == 0))
 		return 0;
 
 	for (i = 0x1C; i <= 0x308; i = i + 4) {
@@ -4259,11 +4270,11 @@ static ssize_t dpe_reg_write(struct file *file, const char __user *buffer, size_
 	int addr = 0, val = 0;
 	long int tempval;
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
+	if ((DPEInfo.UserCount <= 0) || (segments == 0))
 		return 0;
 
-	if (DPEInfo.UserCount <= 0)
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
