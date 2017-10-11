@@ -35,7 +35,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9466.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9466_DRV_VERSION	"1.0.11_MTK"
+#define RT9466_DRV_VERSION	"1.0.12_MTK"
 
 /* ======================= */
 /* RT9466 Parameter        */
@@ -2418,6 +2418,19 @@ static int rt9466_get_tchg(struct charger_device *chg_dev, int *tchg_min,
 {
 	int ret = 0, adc_temp = 0;
 	struct rt9466_info *info = dev_get_drvdata(&chg_dev->dev);
+	bool hz_en = false;
+
+	/* Check HZ mode */
+	ret = rt9466_i2c_test_bit(info, RT9466_REG_CHG_CTRL1,
+		RT9466_SHIFT_HZ_EN, &hz_en);
+	if (ret < 0)
+		return ret;
+
+	if (hz_en) {
+		*tchg_min = 25;
+		*tchg_max = 25;
+		return -EINVAL;
+	}
 
 	/* Get value from ADC */
 	ret = rt9466_get_adc(info, RT9466_ADC_TEMP_JC, &adc_temp);
@@ -2519,6 +2532,7 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 {
 	int ret = 0;
 	u8 auto_sense = 0;
+	u8 exit_hid = 0x00;
 
 	/* enter hidden mode */
 	ret = rt9466_device_write(info->client, 0x70,
@@ -2544,7 +2558,7 @@ static int __rt9466_enable_auto_sensing(struct rt9466_info *info, bool en)
 		dev_err(info->dev, "%s: en = %d fail\n", __func__, en);
 
 out:
-	return rt9466_device_write(info->client, 0x70, 1, 0x00);
+	return rt9466_device_write(info->client, 0x70, 1, &exit_hid);
 }
 
 /*
@@ -2867,6 +2881,12 @@ static int rt9466_do_event(struct charger_device *chg_dev, u32 event, u32 args)
 	return 0;
 }
 
+static int rt9466_is_chip_enabled(struct charger_device *chg_dev, bool *en)
+{
+	*en = true;
+	return 0;
+}
+
 static struct charger_ops rt9466_chg_ops = {
 	/* Normal charging */
 	.plug_in = rt9466_plug_in,
@@ -2888,6 +2908,7 @@ static struct charger_ops rt9466_chg_ops = {
 	.enable_termination = rt9466_enable_te,
 	.run_aicl = rt9466_run_aicl,
 	.reset_eoc_state = rt9466_reset_eoc_state,
+	.is_chip_enabled = rt9466_is_chip_enabled,
 
 	/* Safety timer */
 	.enable_safety_timer = rt9466_enable_safety_timer,
@@ -3195,14 +3216,18 @@ MODULE_VERSION(RT9466_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.12
+ * (1) Fix type error of enable_auto_sensing in sw_reset
+ * (2) Check HZ mode for get_tchg
+ * (3) Add is_chip_enabled ops
+ *
  * 1.0.11
  * (1) Add do event interface for polling mode
  * (2) Enable IRQ_RZE at the end of irq handler
  * (3) Remove IRQ related registers from reg_addr
  * (4) Do ilim select in WQ and register charger class in probe
- * (5) Fix type error of enable_auto_sensing in sw_reset
- * (6) Move irq_mask to info structure
-
+ * (5) Move irq_mask to info structure
+ *
  * 1.0.10
  * (1) Filter out not changed irq state
  * (2) Not to use CHG_IRQ3
