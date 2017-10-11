@@ -51,6 +51,8 @@ enum {
 	MMC_DUMP_CSD = 28,
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 	MMC_CMDQ_STATUS = 30,
+	/* for DB dump, do not change index */
+	MMC_HANG_DETECT_DUMP = 256,
 };
 /* Debug message event */
 #define DBG_EVT_NONE	    (0)		/* No event */
@@ -144,6 +146,16 @@ do { \
 #define IRQ_MSG(fmt, args...)
 #endif
 
+#define MSDC_PRINFO_PROC_MSG(evt, fmt, args...) \
+do { \
+	if (evt == NULL) { \
+		pr_info(fmt, ##args); \
+	} \
+	else { \
+		seq_printf(evt, fmt, ##args); \
+	} \
+} while (0)
+
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
@@ -161,9 +173,8 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 		uint address, int count, uint type, int multi_thread);
 void msdc_select_card_type(struct mmc_host *host);
 int msdc_reinit(struct msdc_host *host);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg);
-void mmc_cmd_dump(struct mmc_host *host);
-#endif
+
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
+void mmc_cmd_dump(struct seq_file *m, struct mmc_host *mmc, u32 latest_cnt);
 
 #endif

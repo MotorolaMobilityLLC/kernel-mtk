@@ -1845,10 +1845,9 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	/* use polling way */
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
 	rawarg = cmd->arg;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (host->hw->host_function == MSDC_EMMC)
-		dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
-#endif
+
+	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+
 	sdc_send_cmd(rawcmd, rawarg);
 
 	return 0;
@@ -1946,10 +1945,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			*rsp = MSDC_READ32(SDC_RESP0);
 			break;
 		}
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (host->hw->host_function == MSDC_EMMC)
-			dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
-#endif
+		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
+
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
@@ -1976,8 +1973,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 		    ) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			if (host->hw->host_function == MSDC_EMMC)
-				mmc_cmd_dump(host->mmc);
+			mmc_cmd_dump(NULL, host->mmc, 50);
 #endif
 			msdc_dump_info(host->id);
 		}
@@ -2182,11 +2178,8 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+			mmc_cmd_dump(NULL, host->mmc, 50);
 			msdc_dump_info(host->id);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			if (host->hw->host_function == MSDC_EMMC)
-				mmc_cmd_dump(host->mmc);
-#endif
 			/*msdc_reset_hw(host->id);*/
 		}
 	}
@@ -3707,7 +3700,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 					if (time_after(jiffies, polling_tmo)) {
 						ERR_MSG("waiting data transfer done TMO");
 						msdc_dump_info(host->id);
-						mmc_cmd_dump(host->mmc);
+						mmc_cmd_dump(NULL, host->mmc, 50);
 						msdc_dma_stop(host);
 						msdc_dma_clear(host);
 						msdc_reset_hw(host->id);
@@ -3775,7 +3768,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			if (time_after(jiffies, polling_tmo)) {
 				ERR_MSG("waiting data transfer done TMO");
 				msdc_dump_info(host->id);
-				mmc_cmd_dump(host->mmc);
+				mmc_cmd_dump(NULL, host->mmc, 50);
 				msdc_dma_stop(host);
 				msdc_dma_clear(host);
 				msdc_reset_hw(host->id);
@@ -4476,7 +4469,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			if (time_after(jiffies, polling_tmo)) {
 				ERR_MSG("waiting data transfer done TMO");
 				msdc_dump_info(host->id);
-				mmc_cmd_dump(host->mmc);
+				mmc_cmd_dump(NULL, host->mmc, 50);
 			}
 		}
 	}
@@ -5189,8 +5182,7 @@ static void msdc_cmdq_check_timeout(struct work_struct *work)
 		__func__, host->cmdq_timeout_ms, mrq->cmd->opcode);
 
 	msdc_dump_info(host->id);
-	if (host->hw->host_function == MSDC_EMMC)
-		mmc_cmd_dump(host->mmc);
+	mmc_cmd_dump(NULL, host->mmc, 50);
 
 	if (msdc_use_async_dma(data->host_cookie)) {
 		if (!mmc->done_mrq) {

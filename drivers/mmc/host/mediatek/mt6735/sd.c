@@ -81,6 +81,8 @@
 
 #include<mt-plat/upmu_common.h>
 
+#include "dbg.h"
+
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -3656,6 +3658,8 @@ static unsigned int msdc_command_start(struct msdc_host *host,
 	sdr_clr_bits(MSDC_INTEN, wints_cmd);
 	rawarg = cmd->arg;
 
+	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+
 	sdc_send_cmd(rawcmd, rawarg);
 
 /*end:*/
@@ -3790,6 +3794,7 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 				}
 				break;
 			}
+			dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
 		} else if (intsts & MSDC_INT_RSPCRCERR) {
 			cmd->error = (unsigned int)-EIO;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",
