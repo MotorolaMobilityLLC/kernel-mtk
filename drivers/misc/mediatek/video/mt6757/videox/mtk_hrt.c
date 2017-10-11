@@ -816,6 +816,7 @@ static void ext_layer_info_init(struct disp_layer_info *disp_info)
  * 1. consider SIM LARB layout
  * 2. affect the max ovl layer number returned to HWC
  */
+#ifndef LAYERING_SUPPORT_EXT_LAYER_ON_2ND_DISP
 static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 {
 	int ext_layer_num_on_OVL, ext_layer_num_on_OVL_2L;
@@ -827,17 +828,138 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 	int layout_layers, prim_layout_layers = 0;
 
 	ext_layer_info_init(disp_info);
+
+	ext_layer_num_on_OVL = ext_layer_num_on_OVL_2L = 0;
+	phy_layer_num_on_OVL = 1;
+	phy_layer_num_on_OVL_2L = 0;
+	is_on_OVL = 1;
+	layout_layers = 0;
+
+	/*only the primary support ext layer*/
+	disp_idx = 0;
+
+	for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
+		dst_info = &disp_info->input_config[disp_idx][i];
+		src_info = &disp_info->input_config[disp_idx][i-1];
+		/** skip other GPU layers */
+		if (dst_info->ovl_id == src_info->ovl_id)
+			continue;
+
+		is_ext_layer = !is_overlap_on_yaxis(src_info, dst_info);
+
+		is_ext_layer &= !is_continuous_ext_layer_overlap(disp_info->input_config[disp_idx], i);
+		/**
+		 * update current ext_layer_num and phy_layer_num
+		 */
+		if (is_ext_layer) {
+			if (is_on_OVL)
+				++ext_layer_num_on_OVL;
+			else
+				++ext_layer_num_on_OVL_2L;
+		} else {
+			if (is_on_OVL)
+				++phy_layer_num_on_OVL;
+			else
+				++phy_layer_num_on_OVL_2L;
+		}
+
+		/**
+		 * If ext layer num exceed HW capability on OVL, then
+		 * 1. if OVL is full, put the current ext layer on OVL_2L and change it to phy layer
+		 * 2. if OVL is not full, put the current ext layer on OVL and change it to phy layer
+		 */
+		hw_layer_num = PRIMARY_HW_OVL_LAYER_NUM;
+		if (is_on_OVL && (ext_layer_num_on_OVL > DISP_HW_OVL0_EXT_LAYER_NUM)) {
+			if (phy_layer_num_on_OVL > hw_layer_num) {
+				is_on_OVL = 0;
+				is_ext_layer = 0;
+				++phy_layer_num_on_OVL_2L;
+			} else if (is_ext_layer) {
+				is_ext_layer = 0;
+				++phy_layer_num_on_OVL;
+			}
+		}
+
+		/**
+		 * If OVL is full, put the current phy layer onto OVL_2L
+		 */
+		if (is_on_OVL && (phy_layer_num_on_OVL > hw_layer_num)) {
+			is_on_OVL = 0;
+			++phy_layer_num_on_OVL_2L;
+		}
+
+		/**
+		 * If ext layer num exceed HW capability on OVL_2L, then
+		 * 1. if OVL_2L is full, need to rollback to GPU
+		 * 2. if OVL_2L is not full, put the current ext layer on OVL_2L and change it to phy layer
+		 */
+		hw_layer_num = PRIMARY_HW_OVL_2L_LAYER_NUM;
+		if (!is_on_OVL && (ext_layer_num_on_OVL_2L > DISP_HW_OVL0_2L_EXT_LAYER_NUM)) {
+			is_ext_layer = 0;
+			++phy_layer_num_on_OVL_2L;
+		}
+
+		/**
+		 * If OVL_2L is full, this phy layer exceed the HW capability, need to rollback to GPU
+		 * no need to check layers behind it any more!
+		 */
+		if (dal_enable)
+			hw_layer_num = PRIMARY_HW_OVL_2L_LAYER_NUM - 1;
+
+		if (phy_layer_num_on_OVL_2L > hw_layer_num) {
+			layout_layers += PRIMARY_HW_OVL_LAYER_NUM + PRIMARY_HW_OVL_2L_LAYER_NUM;
+			if (dal_enable)
+				layout_layers = layout_layers - 1;
+			layout_layers += (ext_layer_num_on_OVL < DISP_HW_OVL0_EXT_LAYER_NUM) ?
+				ext_layer_num_on_OVL : DISP_HW_OVL0_EXT_LAYER_NUM;
+			layout_layers += (ext_layer_num_on_OVL_2L < DISP_HW_OVL0_2L_EXT_LAYER_NUM) ?
+				ext_layer_num_on_OVL_2L : DISP_HW_OVL0_2L_EXT_LAYER_NUM;
+
+			break;
+		}
+
+		if (is_ext_layer) {
+			if (is_on_OVL)
+				dst_info->ext_sel_layer = phy_layer_num_on_OVL - 1;
+			else
+				dst_info->ext_sel_layer = phy_layer_num_on_OVL_2L - 1;
+		}
+
+		if (i == 1)
+			DISPDBG("dispatch ext: N%d gles(%d,%d) L%d->%d, ext_sel:%d\n",
+					disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
+					disp_info->gles_tail[disp_idx], i-1, src_info->ovl_id,
+					src_info->ext_sel_layer);
+			DISPDBG("dispatch ext: N%d gles(%d,%d) L%d->%d, ext_sel:%d\n",
+					disp_info->layer_num[disp_idx], disp_info->gles_head[disp_idx],
+					disp_info->gles_tail[disp_idx], i, dst_info->ovl_id, dst_info->ext_sel_layer);
+	}
+
+	/*if (disp_idx == 0)*/
+	prim_layout_layers = layout_layers;
+
+	/* We just care about primary display */
+	return prim_layout_layers;
+}
+#else
+
+static int dispatch_ext_layer(struct disp_layer_info *disp_info)
+{
+	int ext_layer_num_on_OVL, ext_layer_num_on_OVL_2L;
+	int phy_layer_num_on_OVL, phy_layer_num_on_OVL_2L;
+	int hw_layer_num;	/* tmp variable */
+	int is_on_OVL, is_ext_layer;
+	int disp_idx, i;
+	struct layer_config *src_info, *dst_info;
+	int layout_layers, prim_layout_layers = 0, ext_layout_layers = 0;
+
+	ext_layer_info_init(disp_info);
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 		ext_layer_num_on_OVL = ext_layer_num_on_OVL_2L = 0;
 		phy_layer_num_on_OVL = 1;
 		phy_layer_num_on_OVL_2L = 0;
 		is_on_OVL = 1;
 		layout_layers = 0;
-
-#ifndef LAYERING_SUPPORT_EXT_LAYER_ON_2ND_DISP
-		if (disp_idx == 1)
-			continue;
-#endif
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 			dst_info = &disp_info->input_config[disp_idx][i];
@@ -938,13 +1060,16 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 					disp_info->gles_tail[disp_idx], i, dst_info->ovl_id, dst_info->ext_sel_layer);
 		}
 
-		/*if (disp_idx == 0)*/
-		prim_layout_layers = layout_layers;
+		if (disp_idx == 0)
+			prim_layout_layers = layout_layers;
+		else
+			ext_layout_layers = layout_layers;
 	}
 
 	/* We just care about primary display */
 	return prim_layout_layers;
 }
+#endif
 
 static int dispatch_ovl_id(struct disp_layer_info *disp_info, int available)
 {
