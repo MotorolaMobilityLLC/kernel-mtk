@@ -5722,8 +5722,8 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 
 	msdc_ungate_clock(host);
-	if (sdc_is_busy() || !((MSDC_READ32(MSDC_PS) >> 16) & 0x1)) {
-		ERR_MSG("msdc or device is busy\n");
+	if (sdc_is_busy() || (((MSDC_READ32(MSDC_PS) >> 16) & 0xF) == 0xE)) {
+		ERR_MSG("msdc or device is busy, MSDC_PS=0x%x\n", MSDC_READ32(MSDC_PS));
 		msdc_gate_clock(host, 1);
 		return -EBUSY;
 	}
