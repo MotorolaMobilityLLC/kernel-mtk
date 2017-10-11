@@ -1,17 +1,14 @@
 /*
- * Header of Flashlight Class Device Driver
+ *  Copyright (C) 2017 MediaTek Inc.
  *
- * Copyright (C) 2013 Richtek Technology Corp.
- * Patrick Chang <patrick_chang@richtek.com>
- *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #ifndef LINUX_LEDS_FLASHLIGHT_H
@@ -22,21 +19,21 @@
 #include <linux/mutex.h>
 
 
-typedef enum flashlight_type {
+enum flashlight_type {
 	FLASHLIGHT_TYPE_XENON = 0,
 	FLASHLIGHT_TYPE_LED,
 	FLASHLIFHT_TYPE_BULB,
 	FLASHLIGHT_TYPE_MAX,
-} flashlight_type_t;
+};
 
-typedef enum flashlight_mode {
+enum flashlight_mode {
 	FLASHLIGHT_MODE_OFF = 0,
 	FLASHLIGHT_MODE_TORCH,
 	FLASHLIGHT_MODE_FLASH,
 	/* MIXED mode means TORCH + FLASH */
 	FLASHLIGHT_MODE_MIXED,
 	FLASHLIGHT_MODE_MAX,
-} flashlight_mode_t;
+};
 
 struct flashlight_device;
 
