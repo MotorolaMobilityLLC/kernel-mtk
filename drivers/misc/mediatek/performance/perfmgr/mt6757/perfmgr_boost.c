@@ -60,7 +60,7 @@ void perfmgr_boost(int enable, int core, int freq)
 		freq_to_set[0].max = -1;
 		freq_to_set[1].min = -1;
 		freq_to_set[1].max = -1;
-		vcorefs_request_dvfs_opp(KIR_FBT, 0);
+		vcorefs_request_dvfs_opp(KIR_FBT, 1);
 	} else {
 		core_to_set[0].min = -1;
 		core_to_set[0].max = -1;
