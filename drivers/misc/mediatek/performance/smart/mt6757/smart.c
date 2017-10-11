@@ -112,7 +112,7 @@ int __init init_smart(void)
 	smart_dir = proc_mkdir("perfmgr/smart", NULL);
 
 	pr_debug(TAG"init smart driver start\n");
-	pe5 = proc_create("l_plus_support", 0644, smart_dir, &mt_l_plus_support_fops);
+	pe5 = proc_create("smart_turbo_support", 0644, smart_dir, &mt_l_plus_support_fops);
 	if (!pe5)
 		return -ENOMEM;
 
