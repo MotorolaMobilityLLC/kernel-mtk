@@ -1700,7 +1700,7 @@ static int msdc_check_emmc_cache_status(struct msdc_host *host)
 	struct mmc_card *card;
 
 	if (!host || !host->mmc || !host->mmc->card) {
-		pr_err("msdc%d: host, host->mmc, or host->mmc->card is invalid\n", host->id);
+		pr_err("host, host->mmc, or host->mmc->card is invalid\n");
 		return -2;
 	}
 
