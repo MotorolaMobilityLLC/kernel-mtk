@@ -24,7 +24,7 @@
 			mrstb_en; /* external reset pin enable */
 			mrstb_tmr = <3>; /* 0: 0.75ms, 1: 1ms, 2: 1.25ms, 3: 1.5ms */
 			/* 4: 1.75ms, 5: 2ms, 6: 2.25ms, 7: 2.5ms */
-			int_wdt = <0>; /* 0: disable, 1: 250ms, 2: 500ms, 3: 1s */
+			int_wdt = <1>; /* 0: disable, 1: 250ms, 2: 500ms, 3: 1s */
 			int_deg = <0>; /* interrupt deglitch, 0: 1ms, 1: 2ms, 2: 5ms, 3: 10ms */
 		};
 		charger {
