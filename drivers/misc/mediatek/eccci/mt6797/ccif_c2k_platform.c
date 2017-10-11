@@ -426,10 +426,11 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 					 C2K_STATUS));
 
 		/*release bus protection*/
-		spm_topaxi_protect(0x7 << 13, 0);	/*bit 13-15*/
-		CCCI_BOOTUP_LOG(md->index, TAG,
-			     "[C2K] bus protect = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_TOPAXI_PROTECTEN_1));
+		ccif_write32(md_ctrl->hw_info->infra_ao_base,
+			     INFRA_TOPAXI_PROTECTEN_1,
+			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
+					 INFRA_TOPAXI_PROTECTEN_1) & (0xFFFF1FFF));
+
 		/*set c2k pll*/
 		config_c2k_pll();
 

@@ -384,10 +384,9 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS));
 
 		/*release bus protection */
-		spm_topaxi_protect(0x7 << 22, 0);	/*bit 22-24*/
-		CCCI_BOOTUP_LOG(md->index, TAG,
-			     "[C2K] bus protect = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_TOPAXI_PROTECTEN_1));
+		ccif_write32(md_ctrl->hw_info->infra_ao_base,
+			     INFRA_TOPAXI_PROTECTEN_1,
+			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_TOPAXI_PROTECTEN_1) & (0xFE3FFFFF));
 
 		while (ccif_read32(c2k_cgbr1_addr, 0) != 0xFE8)
 			;

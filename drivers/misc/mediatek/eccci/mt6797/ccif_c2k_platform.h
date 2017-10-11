@@ -70,7 +70,7 @@
 #define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
 
-#define C2K_PROT_MASK (0x7 << 13) /*bit 13-15*/
+#define INFRA_TOPAXI_PROTECTEN_1 0x220	/*((UINT32P)(INFRACFG_AO_BASE+0x220))*/
 #define PWR_RST_B     0
 #define PWR_ISO       1
 #define PWR_ON        2
@@ -168,6 +168,5 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 extern void mtk_wdt_set_c2k_sysrst(unsigned int flag);
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);
 extern int mtk_wdt_swsysret_config(int bit, int set_value);
-extern int spm_topaxi_protect(unsigned int mask_value, int en);
 
 #endif /*__CLDMA_PLATFORM_H__*/
