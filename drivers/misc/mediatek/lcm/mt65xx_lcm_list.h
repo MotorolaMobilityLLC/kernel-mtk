@@ -269,9 +269,6 @@ extern LCM_DRIVER lct_ili9881c_dijing5513_720p_vdo_lcm_drv;//add by yufangfang
 extern LCM_DRIVER lct_ili9881c_dijing5515_720p_vdo_lcm_drv;//add by yufangfang
 extern LCM_DRIVER lct_otm1289a_wistron_720p_vdo_lcm_drv;//add by yufangfang
 extern LCM_DRIVER lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv;//add by yufangfang
-//zhangchao@wind-mobi.com 20170914 begin
-extern LCM_DRIVER ili9881_hd720_dsi_vdo_yashi_lcm_drv;
-//zhangchao@wind-mobi.com 20170914 end
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
