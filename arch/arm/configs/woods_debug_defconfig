@@ -207,7 +207,7 @@ CONFIG_MTK_IMGSENSOR=y
 CONFIG_MTK_JPEG=y
 CONFIG_MTK_LCM=y
 # xuzhifeng@wind-mobi.com 20161108 begin
-CONFIG_CUSTOM_KERNEL_LCM="ili9881_hd720_dsi_vdo_tm hx8394f_hd720_dsi_vdo_boe ili9881_hd720_dsi_vdo_yashi"
+CONFIG_CUSTOM_KERNEL_LCM="ili9881_hd720_dsi_vdo_tm hx8394f_hd720_dsi_vdo_boe"
 # xuzhifeng@wind-mobi.com 20161108 end
 CONFIG_MTK_LENS=y
 CONFIG_MTK_LENS_DUMMYLENS_SUPPORT=y
