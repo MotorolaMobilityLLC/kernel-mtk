@@ -293,7 +293,11 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 
 	buffer->priv_virt = pBufferInfo;
 
+	if ((mm_heap_total_memory + size) > 2147483647)
+		IONMSG("error: mm_alloc fail: size=%lu, total=%zu.\n",
+		       size, mm_heap_total_memory);
 	mm_heap_total_memory += size;
+
 	caller_pid = 0;
 	caller_tid = 0;
 
@@ -352,6 +356,10 @@ void ion_mm_heap_free(struct ion_buffer *buffer)
 	int i;
 
 	mm_heap_total_memory -= buffer->size;
+
+	if (mm_heap_total_memory > 2147483647)
+		IONMSG("error: mm_free fail: size=%zu, total=%zu.\n",
+		       buffer->size, mm_heap_total_memory);
 
 	/* uncached pages come from the page pools, zero them before returning
 	 for security purposes (other allocations are zerod at alloc time */
@@ -732,11 +740,6 @@ void ion_mm_heap_memory_detail(void)
 
 skip_client_entry:
 
-	ION_PRINT_LOG_OR_SEQ(NULL,
-			     "%18.s %8.s %3.s %3.s %s %s %4.s %4.s %4.s %4.s %s\n",
-			     "buffer", "size", "ref", "hdl",
-			     "pid(alloc_pid)", "comm(client)", "v1", "v2", "v3", "v4", "dbg_name");
-
 	if (mutex_trylock(&dev->buffer_lock)) {
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 			struct ion_buffer
@@ -751,14 +754,6 @@ skip_client_entry:
 					total_orphaned_size += buffer->size;
 					has_orphaned = true;
 				}
-
-			ION_PRINT_LOG_OR_SEQ(NULL,
-					     "0x%p %8zu %3d %3d %5d(%5d) %16s %d %d %d %d  %s\n",
-					     buffer, buffer->size,
-					     atomic_read(&buffer->ref.refcount), buffer->handle_count,
-					     buffer->pid, bug_info->pid, buffer->task_comm,
-					     pdbg->value1, pdbg->value2, pdbg->value3,
-					     pdbg->value4, pdbg->dbg_name);
 			}
 		}
 
