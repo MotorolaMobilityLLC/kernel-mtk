@@ -1385,36 +1385,7 @@ void dump_axi_bus_info(void)
 
 void dump_emi_info(void)
 {
-	unsigned int i = 0;
-	unsigned int addr = 0;
-
 	return; /*weiping check */
-
-	pr_err("=============== EMI INFO =============");
-	if (!emi_reg_base) {
-		pr_err("emi_reg_base = %p\n", emi_reg_base);
-		return;
-	}
-
-	pr_err("before, reg[0x102034e8]=0x%x",
-		MSDC_READ32(emi_reg_base + 0x4e8));
-	pr_err("before, reg[0x10203400]=0x%x",
-		MSDC_READ32(emi_reg_base + 0x400));
-	MSDC_WRITE32(emi_reg_base + 0x4e8, 0x2000000);
-	MSDC_WRITE32(emi_reg_base + 0x400, 0xff0001);
-	pr_err("after, reg[0x102034e8]=0x%x",
-		MSDC_READ32(emi_reg_base + 0x4e8));
-	pr_err("after, reg[0x10203400]=0x%x",
-		MSDC_READ32(emi_reg_base + 0x400));
-
-	for (i = 0; i < 5; i++) {
-		for (addr = 0; addr < 0x78; addr += 4) {
-			pr_err("reg[0x%x]=0x%x", (0x10203500 + addr),
-				MSDC_READ32((emi_reg_base + 0x500 + addr)));
-			if (addr % 0x10 == 0)
-				mdelay(1);
-		}
-	}
 }
 
 void msdc_polling_axi_status(int line, int dead)
