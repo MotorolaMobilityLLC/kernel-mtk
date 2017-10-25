@@ -264,11 +264,12 @@ static ssize_t bow_ampc_read(IN struct file *filp, IN char __user *buf, IN size_
 
 /* kfifo_get(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
 /* kfifo_out(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
-	if (!(kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval)))
+	if ((kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval))) {
+		if (copy_to_user(buf, aucBuffer, retval))
+			retval = -EIO;
+	} else {
 		retval = -EIO;
-
-	if (copy_to_user(buf, aucBuffer, retval))
-		retval = -EIO;
+	}
 
 	return retval;
 }

@@ -228,6 +228,9 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prNewKey->ucBssIdx);
 	ASSERT(prBssInfo);
 
+	if (prBssInfo == NULL)
+		return WLAN_STATUS_FAILURE;
+
 	if (prBssInfo->ucBMCWlanIndex >= WTBL_SIZE) {
 		prBssInfo->ucBMCWlanIndex =
 		    secPrivacySeekForBcEntry(prAdapter, prBssInfo->ucBssIndex, prBssInfo->aucBSSID,

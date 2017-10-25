@@ -1680,12 +1680,8 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	goto netcreate_done;
 
 netcreate_err:
-	if (NULL != prAdapter) {
-		wlanAdapterDestroy(prAdapter);
-		prAdapter = NULL;
-	}
 
-	if (NULL != prGlueInfo->prDevHandler) {
+	if (prGlueInfo->prDevHandler != NULL) {
 		free_netdev(prGlueInfo->prDevHandler);
 		prGlueInfo->prDevHandler = NULL;
 	}
