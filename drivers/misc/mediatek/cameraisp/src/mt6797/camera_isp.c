@@ -5924,7 +5924,14 @@ static inline MUINT32 ISP_P2_BufQue_WaitEventState(ISP_P2_BUFQUE_STRUCT param, I
 {
 	MUINT32 ret = MFALSE;
 	MINT32 index = -1;
-	ISP_P2_BUFQUE_PROPERTY property = param.property;
+	ISP_P2_BUFQUE_PROPERTY property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		return ret;
+	}
+
+	property = param.property;
 	/*  */
 	switch (type) {
 	case ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ:
