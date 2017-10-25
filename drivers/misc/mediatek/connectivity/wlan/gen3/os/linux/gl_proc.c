@@ -117,10 +117,10 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (*f_pos > 0)
 		return 0;
 
-	kalStrCpy(temp, "\nTEMP|LOUD|INFO|TRACE | EVENT|STATE|WARN|ERROR\n"
+	kalStrnCpy(temp, "\nTEMP|LOUD|INFO|TRACE | EVENT|STATE|WARN|ERROR\n"
 			"bit7|bit6|bit5|bit4 | bit3|bit2|bit1|bit0\n\n"
 			"Usage: Module Index:Module Level, such as 0x00:0xff\n\n"
-			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n");
+			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n", sizeof(aucProcBuf));
 	temp += kalStrLen(temp);
 
 	u2ModuleNum = (sizeof(aucDbModuleName) / PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN) & 0xfe;

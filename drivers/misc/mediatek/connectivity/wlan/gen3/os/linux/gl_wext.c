@@ -1128,7 +1128,7 @@ wext_get_ap(IN struct net_device *prNetDev,
 	/* } */
 
 	if (prGlueInfo->eParamMediaStateIndicated == PARAM_MEDIA_STATE_DISCONNECTED) {
-		memset(prAddr, 0, 6);
+		memset(prAddr, 0, sizeof(struct sockaddr));
 		return 0;
 	}
 

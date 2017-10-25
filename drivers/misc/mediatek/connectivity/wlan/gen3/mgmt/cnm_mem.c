@@ -1435,20 +1435,17 @@ cnmPeerUpdate(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, 
 	}
 
 	/* ++HT capability */
-
-	if (prCmd->rHtCap.rMCS.arRxMask) {
-		prAdapter->rWifiVar.eRateSetting = FIXED_RATE_NONE;
-		prStaRec->ucDesiredPhyTypeSet |= PHY_TYPE_BIT_HT;
-		prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
-		prStaRec->u2HtCapInfo = prCmd->rHtCap.u2CapInfo;
-		prStaRec->ucAmpduParam = prCmd->rHtCap.ucAmpduParamsInfo;
-		prStaRec->u2HtExtendedCap = prCmd->rHtCap.u2ExtHtCapInfo;
-		prStaRec->u4TxBeamformingCap = prCmd->rHtCap.u4TxBfCapInfo;
-		prStaRec->ucAselCap = prCmd->rHtCap.ucAntennaSelInfo;
-		prStaRec->ucMcsSet = prCmd->rHtCap.rMCS.arRxMask[0];
-		prStaRec->fgSupMcs32 = (prCmd->rHtCap.rMCS.arRxMask[32 / 8] & BIT(0)) ? TRUE : FALSE;
-		kalMemCopy(prStaRec->aucRxMcsBitmask, prCmd->rHtCap.rMCS.arRxMask, sizeof(prStaRec->aucRxMcsBitmask));
-	}
+	prAdapter->rWifiVar.eRateSetting = FIXED_RATE_NONE;
+	prStaRec->ucDesiredPhyTypeSet |= PHY_TYPE_BIT_HT;
+	prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
+	prStaRec->u2HtCapInfo = prCmd->rHtCap.u2CapInfo;
+	prStaRec->ucAmpduParam = prCmd->rHtCap.ucAmpduParamsInfo;
+	prStaRec->u2HtExtendedCap = prCmd->rHtCap.u2ExtHtCapInfo;
+	prStaRec->u4TxBeamformingCap = prCmd->rHtCap.u4TxBfCapInfo;
+	prStaRec->ucAselCap = prCmd->rHtCap.ucAntennaSelInfo;
+	prStaRec->ucMcsSet = prCmd->rHtCap.rMCS.arRxMask[0];
+	prStaRec->fgSupMcs32 = (prCmd->rHtCap.rMCS.arRxMask[32 / 8] & BIT(0)) ? TRUE : FALSE;
+	kalMemCopy(prStaRec->aucRxMcsBitmask, prCmd->rHtCap.rMCS.arRxMask, sizeof(prStaRec->aucRxMcsBitmask));
 	/* TODO ++VHT */
 
 	cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_3);

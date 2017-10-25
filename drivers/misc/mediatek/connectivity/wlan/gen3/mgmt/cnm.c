@@ -916,15 +916,19 @@ VOID cnmRunEventReqChnlUtilTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 	DBGLOG(CNM, INFO, "Request Channel Utilization timeout\n");
 	wlanReleasePendingCmdById(prAdapter, CMD_ID_REQ_CHNL_UTILIZATION);
 	prMsgChUtil = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsgChUtil));
-	kalMemZero(prMsgChUtil, sizeof(*prMsgChUtil));
-	prMsgChUtil->rMsgHdr.eMsgId = prCnmInfo->u2ReturnMID;
-	prMsgChUtil->ucChnlNum = 0;
-	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
+	if (prMsgChUtil != NULL) {
+		kalMemZero(prMsgChUtil, sizeof(*prMsgChUtil));
+		prMsgChUtil->rMsgHdr.eMsgId = prCnmInfo->u2ReturnMID;
+		prMsgChUtil->ucChnlNum = 0;
+		mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
+	}
 	/* tell scan_fsm to continue to process scan request, if there's any pending */
 	prScanReqMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prScanReqMsg));
-	kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
-	prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
-	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+	if (prScanReqMsg != NULL) {
+		kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
+		prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
+		mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+	}
 }
 
 VOID cnmHandleChannelUtilization(P_ADAPTER_T prAdapter,
@@ -950,9 +954,11 @@ VOID cnmHandleChannelUtilization(P_ADAPTER_T prAdapter,
 	kalMemCopy(prMsgChUtil->aucChUtil, prChnlUtil->aucChannelUtilization, prChnlUtil->ucChannelNum);
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
 	prScanReqMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prScanReqMsg));
-	kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
-	prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
-	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+	if (prScanReqMsg != NULL) {
+		kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
+		prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
+		mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+	}
 }
 
 VOID cnmRequestChannelUtilization(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
@@ -1021,7 +1027,7 @@ VOID cnmChReqPrivilegeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 		/* To do: exception handle */
 		if (!prChResp) {
-			DBGLOG(CNM, ERROR, "ChGrant: fail to get buf (net=%d, token=%d)\n");
+			DBGLOG(CNM, ERROR, "ChGrant: fail to get buf.\n");
 			cnmMemFree(prAdapter, prMsgChReq);
 			return;
 		}

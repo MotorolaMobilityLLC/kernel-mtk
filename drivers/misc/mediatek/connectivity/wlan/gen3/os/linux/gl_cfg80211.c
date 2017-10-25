@@ -1777,6 +1777,7 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 	P_NL80211_DRIVER_GET_STA_STATISTICS_PARAMS prParams = NULL;
 	PARAM_GET_STA_STA_STATISTICS rQueryStaStatistics;
 	struct sk_buff *skb;
+	INT_32 ifree = 0;
 
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
@@ -1786,11 +1787,6 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 
 	if (!prParams) {
 		DBGLOG(QM, TRACE, "%s prParams is NULL\n", __func__);
-		return -EINVAL;
-	}
-
-	if (!prParams->aucMacAddr) {
-		DBGLOG(QM, TRACE, "%s MAC Address is NULL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -1971,8 +1967,11 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 			sizeof(rQueryStaStatistics.au4Reserved), rQueryStaStatistics.au4Reserved))
 			break;
 		i4Status = cfg80211_testmode_reply(skb);
+		ifree = 1;
 	} while (0);
 
+	if (ifree == 0)
+		kfree_skb(skb);
 	return i4Status;
 }
 
@@ -2459,11 +2458,15 @@ int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, I
 		return -ENOMEM;
 	}
 
-	if (!NLA_PUT_U8(skb, NL80211_TESTMODE_P2P_SCANDONE_INVALID, &u1Buf))
+	if (!NLA_PUT_U8(skb, NL80211_TESTMODE_P2P_SCANDONE_INVALID, &u1Buf)) {
+		kfree_skb(skb);
 		return i4Status;
+	}
 
-	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_P2P_SCANDONE_STATUS, &READY_TO_BEAM))
+	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_P2P_SCANDONE_STATUS, &READY_TO_BEAM)) {
+		kfree_skb(skb);
 		return i4Status;
+	}
 
 	i4Status = cfg80211_testmode_reply(skb);
 	return i4Status;

@@ -463,7 +463,7 @@ WLAN_STATUS bowCmdSetupConnection(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND pr
 	prBowFsmInfo->prTargetBssDesc = NULL;
 
 	COPY_MAC_ADDR(rBowTable.aucPeerAddress, prBowSetupConnection->aucPeerAddress);
-	/* owTable.eState = BOW_DEVICE_STATE_ACQUIRING_CHANNEL; */
+	rBowTable.eState = BOW_DEVICE_STATE_ACQUIRING_CHANNEL;
 	rBowTable.fgIsValid = TRUE;
 	rBowTable.ucAcquireID = prBowFsmInfo->ucSeqNumOfChReq;
 	/* rBowTable.ucRole = prBowSetupConnection->ucRole; */
@@ -2108,10 +2108,10 @@ VOID bowFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 	DBGLOG(BOW, EVENT, "Start bowfsmRunEventJoinComplete.\n");
 	DBGLOG(BOW, EVENT, "bowfsmRunEventJoinComplete ptr check\n");
-	DBGLOG(BOW, EVENT, "prMsgHdr %x\n", prMsgHdr);
-	DBGLOG(BOW, EVENT, "prAdapter %x\n", prAdapter);
-	DBGLOG(BOW, EVENT, "prBowFsmInfo %x\n", prBowFsmInfo);
-	DBGLOG(BOW, EVENT, "prStaRec %x\n", prStaRec);
+	DBGLOG(BOW, EVENT, "prMsgHdr %p\n", prMsgHdr);
+	DBGLOG(BOW, EVENT, "prAdapter %p\n", prAdapter);
+	DBGLOG(BOW, EVENT, "prBowFsmInfo %p\n", prBowFsmInfo);
+	DBGLOG(BOW, EVENT, "prStaRec %p\n", prStaRec);
 
 	ASSERT(prStaRec);
 	ASSERT(prBowFsmInfo);
