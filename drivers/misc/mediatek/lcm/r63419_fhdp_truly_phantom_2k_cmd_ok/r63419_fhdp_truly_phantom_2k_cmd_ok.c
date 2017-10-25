@@ -497,7 +497,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch				= 100;/* >150 */
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 #if (LCM_DSI_CMD_MODE)
-	params->dsi.PLL_CLOCK = 423; /*this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 210; /*this value must be in MTK suggested table */
 #else
 	params->dsi.PLL_CLOCK = 250;
 #endif
