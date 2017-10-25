@@ -574,7 +574,9 @@ static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
 	int ret = 0;
-	int fgcurrent;
+	int fgcurrent = 0;
+	bool b_ischarging = 0;
+
 	struct battery_data *data = container_of(psy->desc, struct battery_data, psd);
 
 	switch (psp) {
@@ -594,8 +596,11 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_CAPACITY;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		gauge_get_current(&fgcurrent);
-		val->intval = fgcurrent;
+		b_ischarging = gauge_get_current(&fgcurrent);
+		if (b_ischarging == false)
+			fgcurrent = 0 - fgcurrent;
+
+		val->intval = fgcurrent / 10;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = 3000000;
