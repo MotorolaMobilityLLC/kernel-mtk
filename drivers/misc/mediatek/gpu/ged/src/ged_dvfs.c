@@ -229,6 +229,20 @@ unsigned long ged_query_info( GED_INFO eType)
 			return 0;
 #endif
 		}
+		case GED_CPU0_LOADING: case GED_CPU1_LOADING:
+		case GED_CPU2_LOADING: case GED_CPU3_LOADING:
+		case GED_CPU4_LOADING: case GED_CPU5_LOADING:
+		case GED_CPU6_LOADING: case GED_CPU7_LOADING:
+		case GED_CPU8_LOADING: case GED_CPU9_LOADING:
+		{
+#if defined(CONFIG_ARCH_MT6797)
+			int id = eType - GED_CPU0_LOADING;
+
+			return (id < nr_cpu_ids) ? hps_get_per_cpu_load(id, 1) : 0;
+#else
+			return 0;
+#endif
+		}
 		default:
 			return 0;
 	}
