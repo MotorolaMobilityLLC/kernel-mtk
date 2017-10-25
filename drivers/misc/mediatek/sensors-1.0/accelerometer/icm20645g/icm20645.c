@@ -203,10 +203,7 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	msgs[1].len = len;
 	msgs[1].buf = data;
 
-	if (!client) {
-		mutex_unlock(&icm20645_i2c_mutex);
-		return -EINVAL;
-	} else if (len > C_I2C_FIFO_SIZE) {
+	if (len > C_I2C_FIFO_SIZE) {
 		mutex_unlock(&icm20645_i2c_mutex);
 		GSE_ERR("length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
