@@ -996,7 +996,8 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			qmDetermineStaRecIndex(prAdapter, prCurrentMsduInfo);
 
 			wlanUpdateTxStatistics(prAdapter, prCurrentMsduInfo, FALSE);	/*get per-AC Tx packets */
-
+			if (prCurrentMsduInfo->ucDhcpArpFlag)
+				nicTxSetPktLowestFixedRate(prAdapter, prCurrentMsduInfo);
 			switch (prCurrentMsduInfo->ucStaRecIndex) {
 			case STA_REC_INDEX_BMCAST:
 				prTxQue = &prQM->arTxQueue[TX_QUEUE_INDEX_BMCAST];

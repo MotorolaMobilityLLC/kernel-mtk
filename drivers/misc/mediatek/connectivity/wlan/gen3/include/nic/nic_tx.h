@@ -573,6 +573,7 @@ struct _MSDU_INFO_T {
 	UINT_8 ucUserPriority;	/* QoS parameter, convert to TID */
 
 	/* For composing TX descriptor header */
+	UINT_8 ucDhcpArpFlag;	/* 1: DHCP|ARP Data */
 	UINT_8 ucTC;		/* Traffic Class: 0~4 (HIF TX0), 5 (HIF TX1) */
 	UINT_8 ucPacketType;	/* 0: Data, 1: Management Frame */
 	UINT_8 ucStaRecIndex;	/* STA_REC index */

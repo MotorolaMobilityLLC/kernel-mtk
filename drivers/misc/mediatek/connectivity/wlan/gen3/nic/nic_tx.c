@@ -2105,7 +2105,7 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 
 		if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DHCP) || GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ARP)) {
 			prMsduInfo->ucUserPriority = 6; /* use VO priority */
-			nicTxSetPktLowestFixedRate(prAdapter, prMsduInfo);
+			prMsduInfo->ucDhcpArpFlag = 1;
 		}
 	}
 
@@ -2382,7 +2382,7 @@ VOID nicTxProcessTxDoneEvent(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent
 
 	if (prTxDone->ucFlag & BIT(0)) {
 		/* Tx Done with advanced info */
-		DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
+		DBGLOG(TX, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
 				    prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 				    prTxDone->u2SequenceNumber, prTxDone->ucTxCount, prTxDone->u2TxRate);
 	} else {
