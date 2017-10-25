@@ -1546,8 +1546,7 @@ int msdc_io_check(struct msdc_host *host)
 	return result;
 
 POWER_OFF:
-	host->block_bad_card = 1;
-	host->power_control(host, 0);
+	msdc_set_bad_card_and_remove(host);
 	return 0;
 }
 
