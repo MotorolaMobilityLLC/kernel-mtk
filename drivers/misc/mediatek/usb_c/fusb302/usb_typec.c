@@ -1224,7 +1224,6 @@ void SetStateAttachedSink(void)
 	Registers.Control.HOST_CUR = 0x00;	/* Disable the host current */
 	Registers.Measure.MDAC = MDAC_2P05V;	/* Set up DAC threshold to 2.05V */
 	/* Enable the pull-downs on the CC pins, measure CC1 and disable the BMC transmitters */
-	Registers.Switches.word = 0x0007;
 	Registers.Switches.word = 0x0003;	/* Enable the pull-downs on the CC pins */
 	if (blnCCPinIsCC1)
 		Registers.Switches.MEAS_CC1 = 1;
@@ -2186,10 +2185,11 @@ void fusb300_i2c_w_reg8(struct i2c_client *client, u8 addr, u8 var)
 u8 fusb300_i2c_r_reg(struct i2c_client *client, u8 addr)
 {
 	u8 var;
+	int ret;
 
 	i2c_master_send(client, &addr, 1);
-	i2c_master_recv(client, &var, 1);
-	return var;
+	ret = i2c_master_recv(client, &var, 1);
+	return ((ret < 0) ? 0 : var);
 }
 
 const char *strings[] = {
