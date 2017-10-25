@@ -173,6 +173,7 @@ static inline DISP_MODULE_ENUM ovl_index_to_module(int index)
 	if (index >= OVL_NUM) {
 		DDPERR("invalid ovl index=%d\n", index);
 		WARN(1, "invalid ovl index=%d\n", index);
+		return -1;
 	}
 
 	return ovl_index_module[index];

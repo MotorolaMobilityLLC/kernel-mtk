@@ -5330,8 +5330,8 @@ user_cmd_unlock:
 		_primary_path_switch_dst_unlock();
 
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd, (unsigned long)handle,
-		       cmdqsize);
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd,
+		       MMProfileFlagEnd, cmdqsize, 0);
 
 	return ret;
 }
