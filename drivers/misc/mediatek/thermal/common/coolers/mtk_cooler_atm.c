@@ -2014,6 +2014,13 @@ static int krtatm_thread(void *arg)
 			if (krtatm_prev_maxtj == 0)
 				krtatm_prev_maxtj = atm_prev_maxtj;
 			_adaptive_power_calc(krtatm_prev_maxtj, krtatm_curr_maxtj, (unsigned int) gpu_loading);
+
+			/* To confirm if krtatm kthread is really running. */
+			if (krtatm_curr_maxtj >= 100000 || (krtatm_curr_maxtj - krtatm_prev_maxtj >= 20000))
+				tscpu_warn("%s c %d p %d cl %d gl %d s %d\n", __func__,
+					krtatm_curr_maxtj, krtatm_prev_maxtj,
+					adaptive_cpu_power_limit, adaptive_gpu_power_limit,
+					cl_dev_adp_cpu_state_active);
 		}
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();

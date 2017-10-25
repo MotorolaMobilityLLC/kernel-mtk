@@ -2267,7 +2267,7 @@ void tscpu_update_tempinfo(void)
 #endif
 }
 
-#if defined(CONFIG_ARCH_MT6797)
+#ifdef FAST_RESPONSE_ATM
 DEFINE_SPINLOCK(timer_lock);
 int is_worktimer_en = 1;
 #endif
@@ -2281,10 +2281,10 @@ void tscpu_workqueue_cancel_timer(void)
 	if (is_worktimer_en && thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
 		isTimerCancelled = 1;
-		tscpu_dprintk("[tTimer] workqueue stopping\n");
 		spin_lock(&timer_lock);
 		is_worktimer_en = 0;
 		spin_unlock(&timer_lock);
+		tscpu_dprintk("[tTimer] workqueue stopped\n");
 	}
 
 	up(&sem_mutex);
@@ -2307,18 +2307,16 @@ void tscpu_workqueue_start_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
-
 	if (down_trylock(&sem_mutex))
 		return;
 
 	if (!is_worktimer_en && thz_dev != NULL && interval != 0) {
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), 0);
-
-		tscpu_dprintk("[tTimer] workqueue starting\n");
+		isTimerCancelled = 0;
 		spin_lock(&timer_lock);
 		is_worktimer_en = 1;
 		spin_unlock(&timer_lock);
+		tscpu_dprintk("[tTimer] workqueue started\n");
 	}
 
 	up(&sem_mutex);
@@ -2326,17 +2324,18 @@ void tscpu_workqueue_start_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
-
 	if (down_trylock(&sem_mutex))
 		return;
+
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+	if (thz_dev != NULL && interval != 0) {
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue),
+			round_jiffies(msecs_to_jiffies(1000)));
+		isTimerCancelled = 0;
+	}
 
 	up(&sem_mutex);
 #endif
-
 }
 
 void tscpu_cancel_thermal_timer(void)
