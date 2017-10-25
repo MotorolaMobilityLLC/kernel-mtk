@@ -172,7 +172,7 @@ typedef enum {
 } MD32_IPC_MSG;
 
 static struct snd_soc_pcm_runtime *pruntimepcm;
-
+#if 0
 static void memcpy_md32(void __iomem *trg, const void *src, int size)
 {
 	int i;
@@ -183,9 +183,10 @@ static void memcpy_md32(void __iomem *trg, const void *src, int size)
 	for (i = 0; i < (size >> 2); i++)
 		*t++ = *s++;
 }
-
+#endif
 int get_md32_img_sz(const char *IMAGE_PATH)
 {
+#if 0
 	struct file *filp = NULL;
 	struct inode *inode;
 
@@ -203,6 +204,9 @@ int get_md32_img_sz(const char *IMAGE_PATH)
 
 	filp_close(filp, NULL);
 	return fsize;
+#else
+	return 0;
+#endif
 }
 
 void upload_coef(void)
@@ -225,6 +229,7 @@ void update_coef(void)
 
 int load_md32(const char *IMAGE_PATH, void *dst)
 {
+#if 0
 	struct file *filp = NULL;
 	unsigned char *buf = NULL;
 	unsigned char *ptr;
@@ -265,6 +270,7 @@ error:
 		filp_close(filp, NULL);
 
 	kfree(buf);
+#endif
 	return -1;
 
 }
