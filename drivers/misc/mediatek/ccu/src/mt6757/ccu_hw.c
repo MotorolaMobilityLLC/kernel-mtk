@@ -54,7 +54,6 @@ static char g_ccu_sensor_name_main2[SENSOR_NAME_MAX_LEN];
 static struct ccu_sensor_info g_ccu_sensor_info_sub  = {-1, NULL};
 static char g_ccu_sensor_name_sub[SENSOR_NAME_MAX_LEN];
 
-static DEFINE_SPINLOCK(mailbox_lock);
 ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
 static ccu_msg_t receivedCcuCmd;
 static ccu_msg_t CcuAckCmd;
@@ -315,10 +314,13 @@ static bool users_queue_is_empty(void)
 
 	list_for_each(head, &ccu_dev->user_list) {
 		user = vlist_node_of(head, ccu_user_t);
+		mutex_lock(&user->data_mutex);
 		if (!list_empty(&user->enque_ccu_cmd_list)) {
+			mutex_unlock(&user->data_mutex);
 			ccu_unlock_user_mutex();
 			return false;
 		}
+		mutex_unlock(&user->data_mutex);
 	}
 
 	ccu_unlock_user_mutex();
@@ -357,10 +359,10 @@ static int ccu_enque_cmd_loop(void *arg)
 		/* consume the user's queue */
 		list_for_each(head, &ccu_dev->user_list) {
 			user = vlist_node_of(head, ccu_user_t);
-			/*mutex_lock(&user->data_mutex);*/
+			mutex_lock(&user->data_mutex);
 			/* flush thread will handle the remaining queue if flush */
 			if (user->flush || list_empty(&user->enque_ccu_cmd_list)) {
-				/*mutex_unlock(&user->data_mutex);*/
+				mutex_unlock(&user->data_mutex);
 				continue;
 			}
 
@@ -369,18 +371,18 @@ static int ccu_enque_cmd_loop(void *arg)
 
 			list_del_init(vlist_link(cmd, ccu_cmd_st));
 			user->running = true;
-			/*mutex_unlock(&user->data_mutex);*/
+			mutex_unlock(&user->data_mutex);
 
 			LOG_DBG("%s +:new command\n", __func__);
 			ccu_send_command(cmd);
 
-			/*mutex_lock(&user->data_mutex);*/
+			mutex_lock(&user->data_mutex);
 			list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->deque_ccu_cmd_list);
 			user->running = false;
 
 			LOG_DBG("list_empty(%d)\n", (int)list_empty(&user->deque_ccu_cmd_list));
 
-			/*mutex_unlock(&user->data_mutex);*/
+			mutex_unlock(&user->data_mutex);
 
 			wake_up_interruptible_all(&user->deque_wait);
 
@@ -779,7 +781,6 @@ int ccu_run(void)
 	int32_t timeout = 10;
 	ccu_mailbox_t *ccuMbPtr = NULL;
 	ccu_mailbox_t *apMbPtr = NULL;
-	unsigned long flags;
 
 	LOG_DBG("+:%s\n", __func__);
 
@@ -814,14 +815,13 @@ int ccu_run(void)
 	* Due to AHB2GMC HW Bug, mailbox use SRAM
 	* Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
 	*/
-	spin_lock_irqsave(&mailbox_lock, flags);
 	pMailBox[MAILBOX_SEND] =
-	    (ccu_mailbox_t *)(uintptr_t)(dmem_base +
+	    (ccu_mailbox_t *)(dmem_base +
 				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
 	pMailBox[MAILBOX_GET] =
-	    (ccu_mailbox_t *)(uintptr_t)(dmem_base +
+	    (ccu_mailbox_t *)(dmem_base +
 				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
-	spin_unlock_irqrestore(&mailbox_lock, flags);
+
 
 	ccuMbPtr = (ccu_mailbox_t *) pMailBox[MAILBOX_SEND];
 	apMbPtr = (ccu_mailbox_t *) pMailBox[MAILBOX_GET];
@@ -942,7 +942,7 @@ int ccu_i2c_ctrl(unsigned char i2c_write_id, int transfer_len)
 
 int ccu_read_info_reg(int regNo)
 {
-	int *offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
+	int *offset = (int *)(ccu_base + 0x60 + regNo * 4);
 
 	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
 
@@ -1002,5 +1002,5 @@ void ccu_get_sensor_name(char **sensor_name)
 
 int ccu_query_power_status(void)
 {
-	return ccuInfo.IsI2cPoweredOn;
+	return ccuInfo.IsCcuPoweredOn;
 }

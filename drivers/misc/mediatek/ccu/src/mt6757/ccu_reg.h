@@ -19,11 +19,11 @@
 #include "CCU_A_c_header.h"
 
 #if defined(linux) || defined(__linux) || defined(__arm__)
-#define ccu_read_reg(base, regName)       (((PCCU_A_REGS)(uintptr_t)base)->regName.Raw)
-#define ccu_write_reg(base, regName, val)  (((PCCU_A_REGS)(uintptr_t)base)->regName.Raw = val)
+#define ccu_read_reg(base, regName)       (((PCCU_A_REGS)base)->regName.Raw)
+#define ccu_write_reg(base, regName, val)  (((PCCU_A_REGS)base)->regName.Raw = val)
 
-#define ccu_read_reg_bit(base, regName, fieldNmae)       (((PCCU_A_REGS)(uintptr_t)base)->regName.Bits.fieldNmae)
-#define ccu_write_reg_bit(base, regName, fieldNmae, val)  (((PCCU_A_REGS)(uintptr_t)base)->regName.Bits.fieldNmae = val)
+#define ccu_read_reg_bit(base, regName, fieldNmae)       (((PCCU_A_REGS)base)->regName.Bits.fieldNmae)
+#define ccu_write_reg_bit(base, regName, fieldNmae, val)  (((PCCU_A_REGS)base)->regName.Bits.fieldNmae = val)
 
 
 /*#define ISP_WR32(addr, data)    mt_reg_sync_writel(data, addr)*/  /* For 89     Only.*/   /* NEED_TUNING_BY_PROJECT */
