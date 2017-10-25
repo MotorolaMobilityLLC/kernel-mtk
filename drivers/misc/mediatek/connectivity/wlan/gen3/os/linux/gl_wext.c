@@ -1375,7 +1375,7 @@ wext_get_scan(IN struct net_device *prNetDev,
 	}
 
 	if (prList->u4NumberOfItems > CFG_MAX_NUM_BSS_LIST) {
-		DBGLOG(INIT, INFO, "[wifi] strange scan result count:%ld\n", prList->u4NumberOfItems);
+		DBGLOG(INIT, INFO, "[wifi] strange scan result count:%u\n", prList->u4NumberOfItems);
 		goto error;
 	}
 
@@ -3135,7 +3135,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ASSERT(iwr->u.data.length <= u4ExtraSize);
 			if (iwr->u.data.length > u4ExtraSize) {
 				DBGLOG(INIT, INFO,
-				       "Updated result length is larger than allocated (%d > %ld)\n",
+				       "Updated result length is larger than allocated (%u > %u)\n",
 					iwr->u.data.length, u4ExtraSize);
 				iwr->u.data.length = u4ExtraSize;
 			}

@@ -584,7 +584,7 @@ batchConvertResult(IN P_EVENT_BATCH_RESULT_T prEventBatchResult,
 
 short_buf:
 	DBGLOG(SCN, TRACE,
-	       "Short buffer issue! %d > %d, %s\n", u4MaxBufferLen + (nsize - nleft), u4MaxBufferLen, pvBuffer);
+	       "Short buffer issue! %d > %u, %s\n", u4MaxBufferLen + (nsize - nleft), u4MaxBufferLen, pvBuffer);
 	return WLAN_STATUS_INVALID_LENGTH;
 }
 #endif
@@ -775,7 +775,7 @@ priv_set_int(IN struct net_device *prNetDev,
 	case PRIV_CUSTOM_BWCS_CMD:
 
 		DBGLOG(REQ, INFO,
-		       "pu4IntBuf[1] = %x, size of PTA_IPC_T = %d.\n", pu4IntBuf[1], sizeof(PARAM_PTA_IPC_T));
+		       "pu4IntBuf[1] = %x, size of PTA_IPC_T = %u.\n", pu4IntBuf[1], sizeof(PARAM_PTA_IPC_T));
 
 		prPtaIpc = (P_PTA_IPC_T) aucOidBuf;
 		prPtaIpc->u.aucBTPParams[0] = (UINT_8) (pu4IntBuf[1] >> 24);
@@ -1577,7 +1577,7 @@ priv_set_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
 
 	if (prWlanReqEntry->fgSetBufLenChecking) {
 		if (prNdisReq->inNdisOidlength != prWlanReqEntry->u4InfoBufLen) {
-			DBGLOG(REQ, WARN, "Set %s: Invalid length (current=%ld, needed=%ld)\n",
+			DBGLOG(REQ, WARN, "Set %s: Invalid length (current=%u, needed=%u)\n",
 					   prWlanReqEntry->pucOidName,
 					   prNdisReq->inNdisOidlength, prWlanReqEntry->u4InfoBufLen);
 

@@ -681,7 +681,7 @@ VOID p2pDevFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 			}
 		} else {
 			DBGLOG(P2P, WARN,
-			       "p2pDevFsmRunEventChannelAbort: Channel Abort Fail, cookie not found:%d\n",
+			       "p2pDevFsmRunEventChannelAbort: Channel Abort Fail, cookie not found:%llu\n",
 				prChnlAbortMsg->u8Cookie);
 		}
 	} while (FALSE);

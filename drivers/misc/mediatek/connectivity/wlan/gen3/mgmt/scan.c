@@ -2292,7 +2292,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 					if (prStaRec->ucJoinFailureCount >= JOIN_MAX_RETRY_FAILURE_COUNT)
 						prStaRec->ucJoinFailureCount = 0;
 					DBGLOG(SCN, INFO,
-					       "SEARCH:Try to join BSS again,Status Code=%d(Curr=%ld/Last Join=%ld)\n",
+					       "SEARCH:Try to join BSS again,Status Code=%u(Curr=%u/Last Join=%u)\n",
 					       prStaRec->u2StatusCode, rCurrentTime, prStaRec->rLastJoinTime);
 				} else {
 					DBGLOG(SCN, INFO,

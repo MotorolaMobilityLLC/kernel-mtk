@@ -387,7 +387,7 @@ BOOLEAN wapiPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prB
 	/* If we cannot find proper pairwise and group cipher suites to join the
 	   BSS, do not check the supported AKM suites. */
 	if (u4PairwiseCipher == 0 || u4GroupCipher == 0) {
-		DBGLOG(SEC, TRACE, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		DBGLOG(SEC, TRACE, "Failed to select pairwise/group cipher (0x%08x/0x%08x)\n",
 				    u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
