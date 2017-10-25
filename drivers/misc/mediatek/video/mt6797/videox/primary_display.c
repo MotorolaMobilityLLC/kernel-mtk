@@ -6311,7 +6311,9 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	_primary_path_lock(__func__);
 
 	primary_display_idlemgr_kick(__func__, 0);
-	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	ret = dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	if (ret)
+		goto err;
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6351,6 +6353,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	DISPMSG("primary capture: Flush remove memout\n");
 
+err:
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
 	_primary_path_unlock(__func__);
 
@@ -6378,7 +6381,9 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 	_primary_path_lock(__func__);
 	primary_display_idlemgr_kick(__func__, 1);
 
-	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
+	ret = dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
+	if (ret)
+		goto out;
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6406,6 +6411,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 
 	dpmgr_path_remove_memout(pgc->dpmgr_handle, NULL);
 
+out:
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
 	_primary_path_unlock(__func__);
 	return 0;

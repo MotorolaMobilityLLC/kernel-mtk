@@ -579,12 +579,18 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, DISP_MODULE_ENUM engine, v
 	ddp_path_handle handle;
 	DISP_MODULE_ENUM wdma;
 	DDP_MANAGER_CONTEXT *context;
+	bool scn_error = false;
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle)dp_handle;
-	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP
-	       || handle->scenario == DDP_SCENARIO_SUB_DISP
-	       || handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT);
+
+	scn_error = !(handle->scenario == DDP_SCENARIO_PRIMARY_DISP ||
+		      handle->scenario == DDP_SCENARIO_SUB_DISP ||
+		      handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT);
+	if (WARN(scn_error, "%s:%d:path scenario:%s\n", __func__, __LINE__,
+				 ddp_get_scenario_name(handle->scenario)))
+		return -1;
+
 	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
