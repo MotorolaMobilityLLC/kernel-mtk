@@ -6140,12 +6140,29 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
 	struct msdc_host *host;
 	void __iomem *base;
+	unsigned long flags;
 
 	if (mmc == NULL)
 		return 0;
 
 	host = mmc_priv(mmc);
 	base = host->base;
+
+	spin_lock_irqsave(&host->clk_gate_lock, flags);
+	if (host->clk_gate_count > 0) {
+		ERR_MSG("msdc is busy\n");
+		spin_unlock_irqrestore(&host->clk_gate_lock, flags);
+		return -EBUSY;
+	}
+	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
+
+	msdc_ungate_clock(host);
+	if (sdc_is_busy() || (((MSDC_READ32(MSDC_PS) >> 16) & 0xF) == 0xE)) {
+		ERR_MSG("msdc or device is busy, MSDC_PS=0x%x\n", MSDC_READ32(MSDC_PS));
+		msdc_gate_clock(host, 1);
+		return -EBUSY;
+	}
+	msdc_gate_clock(host, 1);
 
 	if (state.event == PM_EVENT_SUSPEND) {
 		if  (host->hw->flags & MSDC_SYS_SUSPEND) {
