@@ -127,6 +127,7 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 			     IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo)
 {
 	do {
+		UINT_32 u4TimeoutMs = 0;
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pDevFsmInfo != NULL) && (prChnlReqInfo != NULL));
 
 		ASSERT(prChnlReqInfo->eChnlReqType == CH_REQ_TYPE_P2P_LISTEN);
@@ -139,10 +140,14 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eChnlSco;
 
+		if (prAdapter->prP2pInfo->ucExtendChanFlag)
+			u4TimeoutMs = P2P_DEV_EXTEND_CHAN_TIME;
+		else
+			u4TimeoutMs = prChnlReqInfo->u4MaxInterval;
 		DBGLOG(P2P, INFO, "Start channel on hand timer, Cookie: 0x%llx, Interval: %d\n",
-			prChnlReqInfo->u8Cookie, prChnlReqInfo->u4MaxInterval);
+			prChnlReqInfo->u8Cookie, u4TimeoutMs);
 
-		cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer), prChnlReqInfo->u4MaxInterval);
+		cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer), u4TimeoutMs);
 		kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
 					   prChnlReqInfo->u8Cookie,
 					   prChnlReqInfo->ucReqChnlNum,

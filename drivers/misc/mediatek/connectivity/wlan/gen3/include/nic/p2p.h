@@ -106,8 +106,8 @@ struct _P2P_INFO_T {
 	enum _ENUM_P2P_CONNECT_STATE_T eConnState;
 	EVENT_P2P_DEV_DISCOVER_RESULT_T arP2pDiscoverResult[CFG_MAX_NUM_BSS_LIST];
 	PUINT_8 pucCurrIePtr;
-	UINT_8 aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN];	/* A common pool for IE of all
-								 *scan results. */
+	UINT_8 aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN];	/* A common pool for IE of all scan results. */
+	UINT_8 ucExtendChanFlag;
 };
 
 typedef enum {
