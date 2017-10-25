@@ -43,7 +43,7 @@
 /*#define CONFIG_MTK_EMMC_CQ_MET_USR_DEF*/
 
 #ifdef CONFIG_MT_ENG_BUILD
-/*#define MTK_EMMC_CQ_DEBUG*/
+#define MTK_EMMC_CQ_DEBUG
 /*#define CONFIG_MTK_EMMC_CQ_MET_USR_DEF*/
 #endif
 

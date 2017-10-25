@@ -2006,7 +2006,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		    (cmd->opcode != 19) && (cmd->opcode != 21) &&
 		    (cmd->opcode != 1) &&
 		    ((cmd->opcode != 13) || (g_emmc_mode_switch == 0))) {
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if 0 /* def CONFIG_MTK_EMMC_CQ_SUPPORT */
 			if (host->hw->host_function == MSDC_EMMC)
 				mmc_cmd_dump(host->mmc);
 #endif
@@ -2208,7 +2208,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
-			mmc_cmd_dump(host->mmc);
+			/* mmc_cmd_dump(host->mmc); */
 			msdc_dump_info(host->id);
 			/*msdc_reset_hw(host->id);*/
 		}
@@ -5242,6 +5242,7 @@ static void msdc_check_write_timeout(struct work_struct *work)
 
 	if ((msdc_use_async_dma(data->host_cookie)) &&
 	    (!host->async_tuning_in_progress)) {
+		mmc_cmd_dump(host->mmc);
 		msdc_dump_info(host->id);
 
 		msdc_dma_stop(host);
