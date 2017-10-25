@@ -9010,6 +9010,13 @@ static MINT32 ISP_release(
 	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), log_limit_line(%d),	last user",
 		IspInfo.UserCount, current->comm, current->pid, current->tgid, pr_detect_count);
 
+	LOG_DBG("Post off camsv vf prevent TF");
+	for (i = ISP_CAMSV0_IDX; i <= ISP_CAMSV5_IDX; i++) {
+		Reg = ISP_RD32(CAM_REG_TG_VF_CON(i));
+		Reg &= 0xfffffffE;/* close Vfinder */
+		ISP_WR32(CAM_REG_TG_VF_CON(i), Reg);
+	}
+
 	/* Close VF when ISP_release */
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
 	Reg = ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_A_IDX));
