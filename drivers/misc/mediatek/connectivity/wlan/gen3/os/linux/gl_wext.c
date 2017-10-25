@@ -653,7 +653,8 @@ wextSrchDesiredWPSIE(IN PUINT_8 pucIEStart,
 */
 /*----------------------------------------------------------------------------*/
 static int
-wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrInfo, OUT char *pcName, IN char *pcExtra)
+wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrInfo,
+	      OUT char *pcName, IN size_t szNameSize, IN char *pcExtra)
 {
 	ENUM_PARAM_NETWORK_TYPE_T eNetWorkType = PARAM_NETWORK_TYPE_NUM;
 
@@ -674,24 +675,25 @@ wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrIn
 
 		switch (eNetWorkType) {
 		case PARAM_NETWORK_TYPE_DS:
-			strncpy(pcName, "IEEE 802.11b", IFNAMSIZ-1);
+			strncpy(pcName, "IEEE 802.11b", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_OFDM24:
-			strncpy(pcName, "IEEE 802.11bgn", IFNAMSIZ-1);
+			strncpy(pcName, "IEEE 802.11bgn", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_AUTOMODE:
 		case PARAM_NETWORK_TYPE_OFDM5:
-			strncpy(pcName, "IEEE 802.11abgn", IFNAMSIZ-1);
+			strncpy(pcName, "IEEE 802.11abgn", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_FH:
 		default:
-			strncpy(pcName, "IEEE 802.11", IFNAMSIZ-1);
+			strncpy(pcName, "IEEE 802.11", szNameSize);
 			break;
 		}
 	} else {
-		strncpy(pcName, "Disconnected", IFNAMSIZ-1);
+		strncpy(pcName, "Disconnected", szNameSize);
 	}
 
+	pcName[szNameSize - 1] = '\0';
 	return 0;
 }				/* wext_get_name */
 
@@ -2968,7 +2970,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 
 	switch (i4Cmd) {
 	case SIOCGIWNAME:	/* 0x8B01, get wireless protocol name */
-		ret = wext_get_name(prDev, &rIwReqInfo, (char *)&iwr->u.name, NULL);
+		ret = wext_get_name(prDev, &rIwReqInfo, (char *)&iwr->u.name, sizeof(iwr->u.name), NULL);
 		break;
 
 		/* case SIOCSIWNWID: 0x8B02, deprecated */
