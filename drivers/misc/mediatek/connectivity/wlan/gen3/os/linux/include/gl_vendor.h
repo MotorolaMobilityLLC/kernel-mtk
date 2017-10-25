@@ -85,7 +85,9 @@ typedef enum {
 	WIFI_SUBCMD_SET_COUNTRY_CODE,                    /* 0x0006 */
 	WIFI_SUBCMD_SET_RSSI_MONITOR,			 /* 0x0007 */
 
+	WIFI_SUBCMD_GET_ROAMING_CAPABILITIES,            /* 0x0008 */
 	WIFI_SUBCMD_SET_ROAMING = 0x0009,		 /* 0x0009 */
+	WIFI_SUBCMD_CONFIG_ROAMING = 0x000a,		 /* 0x0009 */
 	/* Add more sub commands here */
 
 } WIFI_SUB_COMMAND;
@@ -146,7 +148,14 @@ typedef enum {
 
 	WIFI_ATTRIBUTE_MAX_RSSI,
 	WIFI_ATTRIBUTE_MIN_RSSI,
-	WIFI_ATTRIBUTE_RSSI_MONITOR_START
+	WIFI_ATTRIBUTE_RSSI_MONITOR_START,
+
+	WIFI_ATTRIBUTE_ROAMING_CAPABILITIES,
+	WIFI_ATTRIBUTE_ROAMING_BLACKLIST_NUM,
+	WIFI_ATTRIBUTE_ROAMING_BLACKLIST_BSSID,
+	WIFI_ATTRIBUTE_ROAMING_WHITELIST_NUM,
+	WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID
+
 
 } WIFI_ATTRIBUTE;
 
@@ -285,6 +294,9 @@ typedef enum {
 #define PSCAN_VERSION                      1
 
 #define MAX_BUFFERED_GSCN_RESULTS 5
+
+#define MAX_FW_ROAMING_BLACKLIST_SIZE	16
+#define MAX_FW_ROAMING_WHITELIST_SIZE	16
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -789,4 +801,11 @@ int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wire
 
 int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_dev *wdev,
 					const void *data, int data_len);
+
+int mtk_cfg80211_vendor_get_roaming_capabilities(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len);
+
+int mtk_cfg80211_vendor_config_roaming(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len);
+
 #endif /* _GL_VENDOR_H */

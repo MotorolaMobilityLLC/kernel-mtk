@@ -3222,13 +3222,24 @@ try_again:
 			break;
 		} else if (!fgSearchBlackList) {
 			prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
-			if (prBssDesc->prBlack)
+			if (prBssDesc->prBlack) {
+				if (prBssDesc->prBlack->blackListSource & AIS_BLACK_LIST_FROM_FWK)
+					DBGLOG(SCN, INFO, "%s(%pM) is in FWK blacklist, skip it\n",
+								prBssDesc->aucSSID, prBssDesc->aucBSSID);
 				continue;
+			}
 		} else if (!prBssDesc->prBlack)
 			continue;
-		else
+		else {
+			/* never search FWK blacklist even if we are trying blacklist */
+			if (prBssDesc->prBlack->blackListSource	& AIS_BLACK_LIST_FROM_FWK) {
+				DBGLOG(SCN, INFO, "Although trying blacklist, %s(%pM) is in FWK blacklist, skip it\n",
+							prBssDesc->aucSSID, prBssDesc->aucBSSID);
+				continue;
+			}
 			u2BlackListScore = WEIGHT_IDX_BLACK_LIST *
 				aisCalculateBlackListScore(prAdapter, prBssDesc);
+		}
 
 		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 		DBGLOG(SCN, TRACE, "cRSSI %d, %pM\n", cRssi, prBssDesc->aucBSSID);

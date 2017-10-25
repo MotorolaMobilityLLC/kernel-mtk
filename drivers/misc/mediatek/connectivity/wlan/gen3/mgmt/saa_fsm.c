@@ -724,7 +724,7 @@ static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T pr
 
 	prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
 	if (prBssDesc) {
-		aisAddBlacklist(prAdapter, prBssDesc);
+		aisAddBlacklist(prAdapter, prBssDesc, AIS_BLACK_LIST_FROM_DRIVER);
 		if (prBssDesc->prBlack)
 			prBssDesc->prBlack->u2AuthStatus = prStaRec->u2StatusCode;
 	} else
@@ -988,7 +988,8 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 
 			if (prBssDesc) {
 				if (prStaRec->u2ReasonCode == REASON_CODE_DISASSOC_AP_OVERLOAD) {
-					struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBssDesc);
+					struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBssDesc,
+											AIS_BLACK_LIST_FROM_DRIVER);
 
 					if (prBlackList)
 						prBlackList->u2DeauthReason = prStaRec->u2ReasonCode;
