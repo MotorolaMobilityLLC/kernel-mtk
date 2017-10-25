@@ -31,8 +31,6 @@ void fsm_md_bootup_timeout_handler(struct ccci_fsm_ee *ee_ctl)
 {
 	struct ccci_mem_layout *mem_layout = ccci_md_get_mem(ee_ctl->md_id);
 
-	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump MD image memory\n");
-	ccci_mem_dump(ee_ctl->md_id, (void *)mem_layout->md_bank0.base_ap_view_vir, MD_IMG_DUMP_SIZE);
 	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump MD layout struct\n");
 	ccci_mem_dump(ee_ctl->md_id, mem_layout, sizeof(struct ccci_mem_layout));
 	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump queue 0 & 1\n");
