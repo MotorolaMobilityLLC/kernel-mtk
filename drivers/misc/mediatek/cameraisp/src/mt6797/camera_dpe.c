@@ -282,7 +282,7 @@ static int nr_DPE_devs;
 
 
 static unsigned int g_u4EnableClockCount;
-
+static unsigned int g_u4DpeCnt;
 /* maximum number for supporting user to do interrupt operation */
 /* index 0 is for all the user that do not do register irq first */
 #define IRQ_USER_NUM_MAX 32
@@ -441,25 +441,82 @@ static SV_LOG_STR gSvLog[DPE_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
-	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	int avaLen;\
+	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
-	if (_LOG_ERR == logT) {\
+	unsigned int logi;\
+	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
-	} else if (_LOG_DBG == logT) {\
+	} else if (logT == _LOG_DBG) {\
 		str_leng = NORMAL_STR_LEN*DBG_PAGE; \
-	} else if (_LOG_INF == logT) {\
+	} else if (logT == _LOG_INF) {\
 		str_leng = NORMAL_STR_LEN*INF_PAGE;\
 	} else {\
 		str_leng = 0;\
 	} \
 	ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
-	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
-		LOG_ERR("log str over flow(%d)", irq);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+		snprintf((char *)(pDes), avaLen, fmt,\
+			##__VA_ARGS__);   \
+		if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
+			LOG_ERR("log str over flow(%d)", irq);\
+		} \
+		while (*ptr++ != '\0') {        \
+			(*ptr2)++;\
+		}     \
+	} else { \
+		LOG_INF("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+		ptr = pSrc->_str[ppb][logT];\
+		if (pSrc->_cnt[ppb][logT] != 0) {\
+			if (logT == _LOG_DBG) {\
+				for (logi = 0; logi < DBG_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_INF) {\
+				for (logi = 0; logi < INF_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_ERR) {\
+				for (logi = 0; logi < ERR_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else {\
+				LOG_INF("N.S.%d", logT);\
+			} \
+			ptr[0] = '\0';\
+			pSrc->_cnt[ppb][logT] = 0;\
+			avaLen = str_leng - 1;\
+			ptr = pDes = (char *)&(pSrc->_str[ppb][logT][pSrc->_cnt[ppb][logT]]);\
+			ptr2 = &(pSrc->_cnt[ppb][logT]);\
+			snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
+			while (*ptr++ != '\0') {\
+				(*ptr2)++;\
+			} \
+		} \
 	} \
-	while (*ptr++ != '\0') {        \
-		(*ptr2)++;\
-	}     \
 } while (0)
 #else
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)  xlog_printk(ANDROID_LOG_DEBUG  ,\
@@ -3454,7 +3511,8 @@ static MINT32 DPE_open(struct inode *pInode, struct file *pFile)
 
 	/* Enable clock */
 	DPE_EnableClock(MTRUE);
-	LOG_DBG("DPE open g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	g_u4DpeCnt = 0;
+	LOG_INF("DPE open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
 	for (i = 0; i < DPE_IRQ_TYPE_AMOUNT; i++)
@@ -3518,7 +3576,7 @@ static MINT32 DPE_release(struct inode *pInode, struct file *pFile)
 
 	/* Disable clock. */
 	DPE_EnableClock(MFALSE);
-	LOG_DBG("DPE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("DPE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
@@ -3910,6 +3968,10 @@ static MINT32 DPE_suspend(struct platform_device *pDev, pm_message_t Mesg)
 
 	bPass1_On_In_Resume_TG1 = 0;
 
+	if (g_u4EnableClockCount > 0) {
+		DPE_EnableClock(MFALSE);
+		g_u4DpeCnt++;
+	}
 
 	return 0;
 }
@@ -3921,6 +3983,10 @@ static MINT32 DPE_resume(struct platform_device *pDev)
 {
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
+	if (g_u4DpeCnt > 0) {
+		DPE_EnableClock(MTRUE);
+		g_u4DpeCnt--;
+	}
 	return 0;
 }
 
@@ -3934,6 +4000,7 @@ int DPE_pm_suspend(struct device *device)
 	BUG_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	LOG_INF("DPE suspend g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3945,6 +4012,7 @@ int DPE_pm_resume(struct device *device)
 	BUG_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	LOG_INF("DPE resume g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_resume(pdev);
 }
