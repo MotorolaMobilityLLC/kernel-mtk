@@ -2306,7 +2306,9 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 		uCmdEdge ^= 0x1;
 	} while (uCmdEdge);
 
-	if (autok_pad_dly_sel(&uCmdDatInfo) == 0) {
+	/* must return ret for emmc reset when error happen */
+	ret = autok_pad_dly_sel(&uCmdDatInfo);
+	if (ret == 0) {
 		msdc_autok_adjust_param(host, CMD_EDGE, &uCmdDatInfo.opt_edge_sel, AUTOK_WRITE);
 		msdc_autok_adjust_paddly(host, &uCmdDatInfo.opt_dly_cnt, CMD_PAD_RDLY);
 		MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, p_autok_tune_res[0]);
@@ -2335,7 +2337,8 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 	}
 	AUTOK_RAWPRINT("[AUTOK]CMD Online Tune Alg Complete\r\n");
 
-	return 0;
+	/* must return ret for emmc reset when error happen */
+	return ret;
 }
 
 /* online tuning for latch ck */

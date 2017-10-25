@@ -3714,7 +3714,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 						msdc_dma_stop(host);
 						msdc_dma_clear(host);
 						msdc_reset_hw(host->id);
-						BUG_ON(1);
+						return 1;
 					}
 				}
 			}
@@ -4432,7 +4432,8 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	host->tuning_in_progress = false;
 	pmic_force_vcore_pwm(false);
 	msdc_gate_clock(host, 1);
-	return 0;
+	/* need return error to reset emmc when timeout happens */
+	return ret;
 }
 int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 {
