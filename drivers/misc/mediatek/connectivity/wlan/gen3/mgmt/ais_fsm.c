@@ -1392,7 +1392,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				P_RF_CHANNEL_INFO_T prChnlInfo = &prScanReqMsg->arChnlInfoList[0];
 				UINT_8 ucChnlNum = 0;
 
-				while (ucChnlNum < CFG_NEIGHBOR_AP_CHANNEL_NUM && pucChnl[ucChnlNum] > 0) {
+				while (ucChnlNum < MAXIMUM_OPERATION_CHANNEL_LIST && pucChnl[ucChnlNum] > 0) {
 					prChnlInfo[ucChnlNum].ucChannelNum = pucChnl[ucChnlNum];
 					prChnlInfo[ucChnlNum].eBand = pucChnl[ucChnlNum] > 14 ? BAND_5G:BAND_2G4;
 					ucChnlNum++;

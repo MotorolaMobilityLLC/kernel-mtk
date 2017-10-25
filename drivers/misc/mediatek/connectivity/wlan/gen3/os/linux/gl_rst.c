@@ -240,11 +240,11 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 		DBGLOG(INIT, ERROR,
 			"FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
 			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+			(UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+			(UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			(prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+			(UINT_16)(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 		fgResult = TRUE;
 	} else {
@@ -253,11 +253,11 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 			     MTK_CHIP_REV,
 			     wlanGetEcoVersion(prAdapter),
 			     (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+			     (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			     (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+			     (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			     (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+			     (UINT_16)(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 		schedule_work(&(wifi_rst.rst_trigger_work));
 	}

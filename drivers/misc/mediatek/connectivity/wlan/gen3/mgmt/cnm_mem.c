@@ -1341,97 +1341,92 @@ cnmPeerUpdate(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, 
 	prStaRec->eStaType = prCmd->eStaType;
 
 	/* ++ support rate */
-	if (prCmd->aucSupRate) {
-		for (i = 0; i < prCmd->u2SupRateLen; i++) {
-			if (prCmd->aucSupRate[i]) {
-				ucRate = prCmd->aucSupRate[i] & RATE_MASK;
-				/* Search all valid data rates */
-				for (j = 0; j < sizeof(aucValidDataRate) / sizeof(UINT_8); j++) {
-					if (ucRate == aucValidDataRate[j]) {
-						u2OperationalRateSet |= BIT(j);
-						break;
-					}
+	for (i = 0; i < prCmd->u2SupRateLen; i++) {
+		if (prCmd->aucSupRate[i]) {
+			ucRate = prCmd->aucSupRate[i] & RATE_MASK;
+			/* Search all valid data rates */
+			for (j = 0; j < sizeof(aucValidDataRate) / sizeof(UINT_8); j++) {
+				if (ucRate == aucValidDataRate[j]) {
+					u2OperationalRateSet |= BIT(j);
+					break;
 				}
-			}
-
-		}
-
-		prStaRec->u2OperationalRateSet = u2OperationalRateSet;
-		prStaRec->u2BSSBasicRateSet = prAisBssInfo->u2BSSBasicRateSet;
-
-		/* 4     <5> PHY type setting */
-
-		prStaRec->ucPhyTypeSet = 0;
-
-		if (BAND_2G4 == prAisBssInfo->eBand) {
-			if (prCmd->rHtCap.rMCS.arRxMask)
-				prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
-
-			/* if not 11n only */
-			if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_BIT_HT_PHY)) {
-				/* check if support 11g */
-				if ((prStaRec->u2OperationalRateSet & RATE_SET_OFDM))
-					prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_ERP;
-
-				/* if not 11g only */
-				if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_OFDM)) {
-					/* check if support 11b */
-					if ((prStaRec->u2OperationalRateSet & RATE_SET_HR_DSSS))
-						prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HR_DSSS;
-				}
-			}
-		} else {
-			if (prCmd->rVHtCap.u2CapInfo)
-				prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_VHT;
-
-			if (prCmd->rHtCap.rMCS.arRxMask)
-				prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
-
-			/* if not 11n only */
-			if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_BIT_HT_PHY)) {
-				/* Support 11a definitely */
-				prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_OFDM;
 			}
 		}
 
-		if (IS_STA_IN_AIS(prStaRec)) {
-			if (!((prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_ENABLED)
-			      || (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_KEY_ABSENT)
-			      || (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION_DISABLED)
-			      || (prAdapter->prGlueInfo->u2WSCAssocInfoIELen)
+	}
+
+	prStaRec->u2OperationalRateSet = u2OperationalRateSet;
+	prStaRec->u2BSSBasicRateSet = prAisBssInfo->u2BSSBasicRateSet;
+
+	/* 4     <5> PHY type setting */
+
+	prStaRec->ucPhyTypeSet = 0;
+
+	if (BAND_2G4 == prAisBssInfo->eBand) {
+		prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
+
+		/* if not 11n only */
+		if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_BIT_HT_PHY)) {
+			/* check if support 11g */
+			if ((prStaRec->u2OperationalRateSet & RATE_SET_OFDM))
+				prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_ERP;
+
+			/* if not 11g only */
+			if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_OFDM)) {
+				/* check if support 11b */
+				if ((prStaRec->u2OperationalRateSet & RATE_SET_HR_DSSS))
+					prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HR_DSSS;
+			}
+		}
+	} else {
+		if (prCmd->rVHtCap.u2CapInfo)
+			prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_VHT;
+
+		prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
+
+		/* if not 11n only */
+		if (!(prStaRec->u2BSSBasicRateSet & RATE_SET_BIT_HT_PHY)) {
+			/* Support 11a definitely */
+			prStaRec->ucPhyTypeSet |= PHY_TYPE_BIT_OFDM;
+		}
+	}
+
+	if (IS_STA_IN_AIS(prStaRec)) {
+		if (!((prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_ENABLED)
+		      || (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_KEY_ABSENT)
+		      || (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION_DISABLED)
+		      || (prAdapter->prGlueInfo->u2WSCAssocInfoIELen)
 #if CFG_SUPPORT_WAPI
-			      || (prAdapter->prGlueInfo->u2WapiAssocInfoIESz)
+		      || (prAdapter->prGlueInfo->u2WapiAssocInfoIESz)
 #endif
-			    )) {
+		    )) {
 
-				prStaRec->ucPhyTypeSet &= ~PHY_TYPE_BIT_HT;
-			}
+			prStaRec->ucPhyTypeSet &= ~PHY_TYPE_BIT_HT;
+		}
+	}
+
+	prStaRec->ucDesiredPhyTypeSet = prStaRec->ucPhyTypeSet & prAdapter->rWifiVar.ucAvailablePhyTypeSet;
+	ucNonHTPhyTypeSet = prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11ABG;
+
+	/* Check for Target BSS's non HT Phy Types */
+	if (ucNonHTPhyTypeSet) {
+		if (ucNonHTPhyTypeSet & PHY_TYPE_BIT_ERP)
+			prStaRec->ucNonHTBasicPhyType = PHY_TYPE_ERP_INDEX;
+		else if (ucNonHTPhyTypeSet & PHY_TYPE_BIT_OFDM)
+			prStaRec->ucNonHTBasicPhyType = PHY_TYPE_OFDM_INDEX;
+		else
+			prStaRec->ucNonHTBasicPhyType = PHY_TYPE_HR_DSSS_INDEX;
+
+		prStaRec->fgHasBasicPhyType = TRUE;
+	} else {
+		/* Use mandatory for 11N only BSS */
+		ASSERT(prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N);
+		{
+			/* TODO(Kevin): which value should we set for 11n ? ERP ? */
+			prStaRec->ucNonHTBasicPhyType = PHY_TYPE_HR_DSSS_INDEX;
 		}
 
-		prStaRec->ucDesiredPhyTypeSet = prStaRec->ucPhyTypeSet & prAdapter->rWifiVar.ucAvailablePhyTypeSet;
-		ucNonHTPhyTypeSet = prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11ABG;
-
-		/* Check for Target BSS's non HT Phy Types */
-		if (ucNonHTPhyTypeSet) {
-			if (ucNonHTPhyTypeSet & PHY_TYPE_BIT_ERP)
-				prStaRec->ucNonHTBasicPhyType = PHY_TYPE_ERP_INDEX;
-			else if (ucNonHTPhyTypeSet & PHY_TYPE_BIT_OFDM)
-				prStaRec->ucNonHTBasicPhyType = PHY_TYPE_OFDM_INDEX;
-			else
-				prStaRec->ucNonHTBasicPhyType = PHY_TYPE_HR_DSSS_INDEX;
-
-			prStaRec->fgHasBasicPhyType = TRUE;
-		} else {
-			/* Use mandatory for 11N only BSS */
-			ASSERT(prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N);
-			{
-				/* TODO(Kevin): which value should we set for 11n ? ERP ? */
-				prStaRec->ucNonHTBasicPhyType = PHY_TYPE_HR_DSSS_INDEX;
-			}
-
-			prStaRec->fgHasBasicPhyType = FALSE;
-		}
-
+		prStaRec->fgHasBasicPhyType = FALSE;
 	}
 
 	/* ++HT capability */

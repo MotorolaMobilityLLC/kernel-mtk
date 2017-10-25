@@ -848,7 +848,7 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 				pWiFiEmibaseaddr = ioremap_nocache(gConEmiPhyBase, WIFI_EMI_MEM_SIZE);
 				DBGLOG(INIT, INFO,
 					"gConEmiPhyBase %p, idx %u, pEmiWiFibaseaddr %p, Dst %p, SecOffset %x, SecLen %x, fgEmiDownloaded %d\n",
-					gConEmiPhyBase,
+					(PVOID)gConEmiPhyBase,
 					i,
 					pWiFiEmibaseaddr,
 					pWiFiEmibaseaddr + (prFwHead->arSection[i].u4DestAddr & 0xfffff),
@@ -3749,11 +3749,11 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 
 	DBGLOG(NIC, INFO, "FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
 	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 	       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-	       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+	       (UINT_16)(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 	return WLAN_STATUS_SUCCESS;
 }

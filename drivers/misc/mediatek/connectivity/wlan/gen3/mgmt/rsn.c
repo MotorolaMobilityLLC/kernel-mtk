@@ -884,7 +884,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 
 	if (!fgSuiteSupported) {
 		DBGLOG(RSN, TRACE,
-		       "Failed to support selected pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		       "Failed to support selected pairwise/group cipher (0x%08x/0x%08x)\n",
 			u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}

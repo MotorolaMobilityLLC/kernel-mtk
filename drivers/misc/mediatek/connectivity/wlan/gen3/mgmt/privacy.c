@@ -616,10 +616,7 @@ BOOLEAN secIsProtectedFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsdu, I
 			}
 		}
 #endif
-		if (prStaRec && fgRobustActionWithProtect /* AIS & Robust action frame */)
-			return TRUE;
-		else
-			return FALSE;
+		return prStaRec && fgRobustActionWithProtect;
 	}
 #else
 	if (prMsdu->ucPacketType == TX_PACKET_TYPE_MGMT)

@@ -1073,9 +1073,9 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 					DBGLOG(RSN, INFO,
 					       "QM RX MGT: Deauth frame, P=%d Sec=%d CM=%d BC=%d fc=%04x\n",
 						prAisSpecBssInfo->fgMgmtProtection,
-						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
-						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
-						IS_BMCAST_MAC_ADDR(prDeauthFrame->aucDestAddr),
+						(UINT_8)HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
+						(UINT_8)HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
+						(UINT_8)IS_BMCAST_MAC_ADDR(prDeauthFrame->aucDestAddr),
 						prDeauthFrame->u2FrameCtrl);
 					if (prAisSpecBssInfo->fgMgmtProtection
 					    && HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus)
@@ -1265,9 +1265,9 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 					DBGLOG(RSN, INFO,
 					       "QM RX MGT: Disassoc frame, P=%d Sec=%d CM=%d BC=%d fc=%04x\n",
 						prAisSpecBssInfo->fgMgmtProtection,
-						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
-						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
-						IS_BMCAST_MAC_ADDR(prDisassocFrame->aucDestAddr),
+						(UINT_8)HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
+						(UINT_8)HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
+						(UINT_8)IS_BMCAST_MAC_ADDR(prDisassocFrame->aucDestAddr),
 						prDisassocFrame->u2FrameCtrl);
 					if (IS_STA_IN_AIS(prStaRec)
 					    && prAisSpecBssInfo->fgMgmtProtection

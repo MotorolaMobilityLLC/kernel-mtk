@@ -497,7 +497,7 @@ P_SW_RFB_T nicRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 		if (ucFragNum) {
 			DBGLOG(RX, LOUD,
 			       "FC %04x M %04x SQ %04x\n",
-			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       u2FrameCtrl, (UINT_16)(u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgLast = TRUE;
 		}
 		/* Non-fragment frame */
@@ -509,12 +509,12 @@ P_SW_RFB_T nicRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 		if (ucFragNum == 0) {
 			DBGLOG(RX, LOUD,
 			       "FC %04x M %04x SQ %04x\n",
-			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       u2FrameCtrl, (UINT_16)(u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgFirst = TRUE;
 		} else {
 			DBGLOG(RX, LOUD,
 			       "FC %04x M %04x SQ %04x\n",
-			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       u2FrameCtrl, (UINT_16)(u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 		}
 	}
 

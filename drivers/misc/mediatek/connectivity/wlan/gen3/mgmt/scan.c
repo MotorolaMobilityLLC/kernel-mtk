@@ -613,8 +613,10 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 	switch (eBSSType) {
 	case BSS_TYPE_P2P_DEVICE:
 		fgCheckSsid = FALSE;
+		/* This case need to fall through */
 	case BSS_TYPE_INFRASTRUCTURE:
 		scanSearchBssDescOfRoamSsid(prAdapter);
+		/* This case need to fall through */
 	case BSS_TYPE_BOW_DEVICE:
 		{
 			prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
