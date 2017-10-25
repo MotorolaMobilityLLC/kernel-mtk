@@ -5551,12 +5551,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
 			MUINT8 array[_cam_max_];
+			memset(array, 0, sizeof(array));
 			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(MUINT8)*_cam_max_) == 0) {
 				MUINT32 z;
-				if (array == NULL) {
-					LOG_ERR("[rtbc] NULL array");
-					return -EFAULT;
-				}
 				if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
 					LOG_ERR("[rtbc] module is out of range");
 					return -EFAULT;
