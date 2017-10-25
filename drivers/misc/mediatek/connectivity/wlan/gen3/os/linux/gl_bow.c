@@ -484,7 +484,7 @@ VOID kalIndicateBOWEvent(IN P_GLUE_INFO_T prGlueInfo, IN P_AMPC_EVENT prEvent)
 
 	/* check kfifo availability */
 	if (u4AvailSize < u4EventSize) {
-		DBGLOG(BOW, EVENT, "No space for event: %u/%u\n", u4EventSize, u4AvailSize);
+		DBGLOG(BOW, EVENT, "No space for event: %zu/%zu\n", u4EventSize, u4AvailSize);
 		return;
 	}
 	/* queue into kfifo */
