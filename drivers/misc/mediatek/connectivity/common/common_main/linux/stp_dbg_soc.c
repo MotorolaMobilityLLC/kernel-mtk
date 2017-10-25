@@ -148,7 +148,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 	UINT64 start_ts = 0;
 	ULONG start_nsec = 0;
-
+	UINT64 elapsed_time = 0;
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
 	osal_assert(p_ecsi);
@@ -187,6 +187,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		}
 		osal_get_local_time(&start_ts, &start_nsec);
 		while (1) {
+			elapsed_time = stp_dbg_soc_elapsed_time(start_ts, start_nsec);
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
 			if (chip_state == STP_CHIP_DUMP_PUT_DONE) {
@@ -196,10 +197,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			STP_DBG_DBG_FUNC("waiting chip put done\n");
 			STP_DBG_INFO_FUNC("chip_state: %d\n", chip_state);
 
-			if (stp_dbg_soc_elapsed_time(start_ts, start_nsec) > EMI_SYNC_TIMEOUT) {
+			if (elapsed_time > EMI_SYNC_TIMEOUT) {
 #ifndef CONFIG_MT_ENG_BUILD
-				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n",
-					stp_dbg_soc_elapsed_time(start_ts, start_nsec), EMI_SYNC_TIMEOUT);
+				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if get coredump timeout, skip it and do chip reset ASAP. */
 				if (dump_sink == 2)
@@ -282,6 +282,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		STP_DBG_INFO_FUNC("\n\n++ paged dump counter(%d) ++\n\n", page_counter);
 		osal_get_local_time(&start_ts, &start_nsec);
 		while (1) {
+			elapsed_time = stp_dbg_soc_elapsed_time(start_ts, start_nsec);
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
 			if (chip_state == STP_CHIP_DUMP_END) {
@@ -290,10 +291,9 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				break;
 			}
 			STP_DBG_INFO_FUNC("waiting chip put end, chip_state: %d\n", chip_state);
-			if (stp_dbg_soc_elapsed_time(start_ts, start_nsec) > EMI_SYNC_TIMEOUT) {
+			if (elapsed_time > EMI_SYNC_TIMEOUT) {
 #ifndef CONFIG_MT_ENG_BUILD
-				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n",
-					stp_dbg_soc_elapsed_time(start_ts, start_nsec), EMI_SYNC_TIMEOUT);
+				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n", elapsed_time, EMI_SYNC_TIMEOUT);
 				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
 				/* For UX, if wait sync state timeout, skip it and do chip reset ASAP. */
 				if (dump_sink == 2)
