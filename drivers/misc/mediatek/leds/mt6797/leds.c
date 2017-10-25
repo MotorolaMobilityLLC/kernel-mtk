@@ -364,6 +364,7 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 	struct pwm_spec_config pwm_setting;
 	int time_index = 0;
 
+	memset(&pwm_setting, 0, sizeof(pwm_setting));
 	pwm_setting.pwm_no = pwm_num;
 	pwm_setting.mode = PWM_MODE_OLD;
 	pwm_setting.pmic_pad = 0;
