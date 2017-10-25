@@ -255,34 +255,6 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 	prTxCtrl = &prAdapter->rTxCtrl;
 	prRxCtrl = &prAdapter->rRxCtrl;
 
-	/* 4 <5> Memory for enhanced interrupt response */
-	if (prAdapter->prSDIOCtrl) {
-		kalReleaseIOBuffer((PVOID) prAdapter->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
-		prAdapter->prSDIOCtrl = (P_SDIO_CTRL_T) NULL;
-	}
-	/* 4 <4> Memory for Common Coalescing Buffer */
-#if CFG_COALESCING_BUFFER_SIZE || CFG_SDIO_RX_AGG
-	if (prAdapter->pucCoalescingBufCached) {
-		kalReleaseIOBuffer((PVOID) prAdapter->pucCoalescingBufCached, prAdapter->u4CoalescingBufCachedSize);
-		prAdapter->pucCoalescingBufCached = (PUINT_8) NULL;
-	}
-#endif /* CFG_COALESCING_BUFFER_SIZE */
-
-	/* 4 <3> Memory for TX Descriptor */
-	if (prTxCtrl->pucTxCached) {
-		kalMemFree((PVOID) prTxCtrl->pucTxCached, VIR_MEM_TYPE, prTxCtrl->u4TxCachedSize);
-		prTxCtrl->pucTxCached = (PUINT_8) NULL;
-	}
-	/* 4 <2> Memory for RX Descriptor */
-	if (prRxCtrl->pucRxCached) {
-		kalMemFree((PVOID) prRxCtrl->pucRxCached, VIR_MEM_TYPE, prRxCtrl->u4RxCachedSize);
-		prRxCtrl->pucRxCached = (PUINT_8) NULL;
-	}
-	/* 4 <1> Memory for Management Memory Pool */
-	if (prAdapter->pucMgtBufCached) {
-		kalMemFree((PVOID) prAdapter->pucMgtBufCached, PHY_MEM_TYPE, prAdapter->u4MgtBufCachedSize);
-		prAdapter->pucMgtBufCached = (PUINT_8) NULL;
-	}
 #if CFG_DBG_MGT_BUF
 	do {
 		BOOLEAN fgUnfreedMem = FALSE;
@@ -314,15 +286,42 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 			/* Skip this ASSERT if chip is no ACK */
 			if (prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount)
 				break;
-			for (i = 0; i < MEM_TRACE_NUM; i++) {
-				if (arMemTrace[i].u4MemAddr != 0)
-					DBGLOG(MEM, ERROR, "Unequal memory, MemAddr:0x%x FuncAddr:0x%x\n",
+			for (i = 0; i < MEM_TRACE_NUM; i++)
+				DBGLOG(MEM, ERROR, "Unequal memory, MemAddr:0x%lx FuncAddr:0x%lx\n",
 						arMemTrace[i].u4MemAddr, arMemTrace[i].u4FuncAddr);
-			}
 			ASSERT(FALSE);
 		}
 	} while (FALSE);
 #endif
+
+	/* 4 <5> Memory for enhanced interrupt response */
+	if (prAdapter->prSDIOCtrl) {
+		kalReleaseIOBuffer((PVOID) prAdapter->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+		prAdapter->prSDIOCtrl = (P_SDIO_CTRL_T) NULL;
+	}
+	/* 4 <4> Memory for Common Coalescing Buffer */
+#if CFG_COALESCING_BUFFER_SIZE || CFG_SDIO_RX_AGG
+	if (prAdapter->pucCoalescingBufCached) {
+		kalReleaseIOBuffer((PVOID) prAdapter->pucCoalescingBufCached, prAdapter->u4CoalescingBufCachedSize);
+		prAdapter->pucCoalescingBufCached = (PUINT_8) NULL;
+	}
+#endif /* CFG_COALESCING_BUFFER_SIZE */
+
+	/* 4 <3> Memory for TX Descriptor */
+	if (prTxCtrl->pucTxCached) {
+		kalMemFree((PVOID) prTxCtrl->pucTxCached, VIR_MEM_TYPE, prTxCtrl->u4TxCachedSize);
+		prTxCtrl->pucTxCached = (PUINT_8) NULL;
+	}
+	/* 4 <2> Memory for RX Descriptor */
+	if (prRxCtrl->pucRxCached) {
+		kalMemFree((PVOID) prRxCtrl->pucRxCached, VIR_MEM_TYPE, prRxCtrl->u4RxCachedSize);
+		prRxCtrl->pucRxCached = (PUINT_8) NULL;
+	}
+	/* 4 <1> Memory for Management Memory Pool */
+	if (prAdapter->pucMgtBufCached) {
+		kalMemFree((PVOID) prAdapter->pucMgtBufCached, PHY_MEM_TYPE, prAdapter->u4MgtBufCachedSize);
+		prAdapter->pucMgtBufCached = (PUINT_8) NULL;
+	}
 
 }
 

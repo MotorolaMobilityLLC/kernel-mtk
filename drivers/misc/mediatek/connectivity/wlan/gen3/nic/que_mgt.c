@@ -5133,7 +5133,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 	u4CurBufferCount = 0;
 	u4CurPageCount = 0;
 
-	DBGLOG(SW4, INFO, "\n------<Dump QUEUE Status>------\n");
+	DBGLOG(SW4, INFO, "------<Dump QUEUE Status>------\n");
 
 	for (i = TC0_INDEX; i < TC_NUM; i++) {
 		DBGLOG(SW4, INFO, "TC%u ResCount: Max[%02u/%03u] Free[%02u/%03u] PreUsed[%03u]\n",
@@ -5210,6 +5210,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 			   prAdapter->rTxCtrl.rFreeMsduInfoList.u4NumElem, CFG_TX_MAX_PKT_NUM,
 			   prAdapter->rTxCtrl.rTxMgmtTxingQueue.u4NumElem);
 
+	DBGLOG(SW4, INFO, "---------------------------------\n");
 	pucMemHandle = prTxCtrl->pucTxCached;
 	QUEUE_INITIALIZE(prNotReturnedQue);
 	for (i = 0; i < CFG_TX_MAX_PKT_NUM; i++) {
@@ -5249,7 +5250,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 			prMsduInfo1->pucAllocFunc, prMsduInfo2->pucAllocFunc, prMsduInfo3->pucAllocFunc);
 		prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo3->rQueEntry);
 	}
-	DBGLOG(SW4, INFO, "---------------------------------\n\n");
+	DBGLOG(SW4, INFO, "---------------------------------\n");
 }
 
 #if CFG_M0VE_BA_TO_DRIVER

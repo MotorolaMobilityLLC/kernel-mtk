@@ -1172,22 +1172,22 @@ VOID cnmDumpMemoryStatus(IN P_ADAPTER_T prAdapter)
 	P_BUF_INFO_T prBufInfo;
 
 #if CFG_DBG_MGT_BUF
-	DBGLOG(SW4, TRACE, "============= DUMP Memory Status =============\n");
+	DBGLOG(SW4, INFO, "============= DUMP Memory Status =============\n");
 
-	DBGLOG(SW4, TRACE, "Dynamic alloc OS memory count: alloc[%u] free[%u]\n",
+	DBGLOG(SW4, INFO, "Dynamic alloc OS memory count: alloc[%u] free[%u]\n",
 			   prAdapter->u4MemAllocDynamicCount, prAdapter->u4MemFreeDynamicCount);
 
 	prBufInfo = &prAdapter->rMsgBufInfo;
-	DBGLOG(SW4, TRACE, "MSG memory count: alloc[%u] free[%u] null[%u] bitmap[0x%08x]\n",
+	DBGLOG(SW4, INFO, "MSG memory count: alloc[%u] free[%u] null[%u] bitmap[0x%08x]\n",
 			   prBufInfo->u4AllocCount, prBufInfo->u4FreeCount,
 			   prBufInfo->u4AllocNullCount, (UINT_32) prBufInfo->rFreeBlocksBitmap);
 
 	prBufInfo = &prAdapter->rMgtBufInfo;
-	DBGLOG(SW4, TRACE, "MGT memory count: alloc[%u] free[%u] null[%u] bitmap[0x%08x]\n",
+	DBGLOG(SW4, INFO, "MGT memory count: alloc[%u] free[%u] null[%u] bitmap[0x%08x]\n",
 			   prBufInfo->u4AllocCount, prBufInfo->u4FreeCount,
 			   prBufInfo->u4AllocNullCount, (UINT_32) prBufInfo->rFreeBlocksBitmap);
 
-	DBGLOG(SW4, TRACE, "============= DUMP END =============\n");
+	DBGLOG(SW4, INFO, "============= DUMP END =============\n");
 
 #endif
 }
