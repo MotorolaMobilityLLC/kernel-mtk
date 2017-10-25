@@ -633,7 +633,7 @@ static int SYSRAM_Open(
 		pProc = (SYSRAM_PROC_STRUCT *)(pFile->private_data);
 		pProc->Pid = 0;
 		pProc->Tgid = 0;
-		strncpy(pProc->ProcName, SYSRAM_PROC_NAME, strlen(SYSRAM_PROC_NAME));
+		strncpy(pProc->ProcName, SYSRAM_PROC_NAME, sizeof(SYSRAM_PROC_NAME));
 		pProc->Table = 0;
 		pProc->Time64 = Time64;
 		pProc->TimeS = Sec;
@@ -932,7 +932,7 @@ static long SYSRAM_Ioctl(
 				if (pProc->Table == 0) {
 					pProc->Pid = 0;
 					pProc->Tgid = 0;
-					strncpy(pProc->ProcName, SYSRAM_PROC_NAME, strlen(SYSRAM_PROC_NAME));
+					strncpy(pProc->ProcName, SYSRAM_PROC_NAME, sizeof(SYSRAM_PROC_NAME));
 				}
 				SYSRAM_SpinUnlock();
 			} else{
