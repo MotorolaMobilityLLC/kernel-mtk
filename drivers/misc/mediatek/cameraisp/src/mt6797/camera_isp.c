@@ -5456,20 +5456,6 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	/*  */
 	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(ISP_BUFFER_CTRL_STRUCT)) == 0) {
 
-		if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
-			LOG_ERR("[rtbc] module is out of range");
-			return -EFAULT;
-		}
-		if (rt_buf_ctrl.buf_id < 0 || rt_buf_ctrl.buf_id >= _cam_max_) {
-			LOG_ERR("[rtbc] buf_id is out of range");
-			return -EFAULT;
-		}
-
-		if (rt_buf_ctrl.pExtend == NULL) {
-			LOG_ERR("[rtbc] NULL pExtend");
-			return -EFAULT;
-		}
-
 		if (NULL == pstRTBuf[rt_buf_ctrl.module])  {
 			LOG_ERR("[rtbc]NULL pstRTBuf, module:0x%x\n", rt_buf_ctrl.module);
 			return -EFAULT;
@@ -5485,7 +5471,14 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				LOG_INF("[rtbc][%d][CLEAR]:rt_dma(%d)\n", rt_buf_ctrl.module, rt_dma);
 			}
 			/*  */
-
+			if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
+				LOG_ERR("[rtbc] module is out of range");
+				return -EFAULT;
+			}
+			if (rt_dma < 0 || rt_dma >= _cam_max_) {
+				LOG_ERR("[rtbc] rt_dma is out of range");
+				return -EFAULT;
+			}
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_usec[rt_buf_ctrl.module], 0, sizeof(MUINT32) * 32);
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_sec[rt_buf_ctrl.module], 0, sizeof(MUINT32) * 32);
 			/* remove, cause clear will be involked only when current module r totally stopped */
@@ -5557,6 +5550,15 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			MUINT8 array[_cam_max_];
 			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(MUINT8)*_cam_max_) == 0) {
 				MUINT32 z;
+				if (array == NULL) {
+					LOG_ERR("[rtbc] NULL array");
+					return -EFAULT;
+				}
+				if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
+					LOG_ERR("[rtbc] module is out of range");
+					return -EFAULT;
+				}
+
 				for (z = 0; z < _cam_max_; z++) {
 					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
 					if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL) {
@@ -6260,7 +6262,18 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 
-
+	if ((irqinfo->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (irqinfo->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			irqinfo->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((irqinfo->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			irqinfo->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 	if (irqinfo->EventInfo.St_type == SIGNAL_INT) {
 		/* 1. enable marked flag */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
@@ -6379,7 +6392,18 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 
 	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
 		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
-
+	if ((irqinfo->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (irqinfo->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			irqinfo->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((irqinfo->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			irqinfo->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 	/* 1. enable signal */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
@@ -6420,6 +6444,18 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	time_getrequest.tv_usec = usec;
 	time_getrequest.tv_sec = sec;
 
+	if ((WaitIrq->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (WaitIrq->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			WaitIrq->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((WaitIrq->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (WaitIrq->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			WaitIrq->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 #ifdef ENABLE_WAITIRQ_LOG
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
@@ -8678,7 +8714,7 @@ static MINT32 ISP_open(
 	/*  */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 		FirstUnusedIrqUserKey = 1;
-		strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
+		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN-1);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 	/*  */
@@ -8843,11 +8879,13 @@ static inline void ISP_StopHW(MINT32 module)
 	unsigned long long  timeoutMs = 500000000;/*500ms*/
 	char moduleName[128];
 
-	if (module == ISP_CAM_A_IDX)
-		strcpy(moduleName, "CAMA");
-	else
-		strcpy(moduleName, "CAMB");
-
+	if (module == ISP_CAM_A_IDX) {
+		strncpy(moduleName, "CAMA", sizeof(moduleName)-1);
+		moduleName[sizeof(moduleName)-1] = '\0';
+	} else {
+		strncpy(moduleName, "CAMB", sizeof(moduleName)-1);
+		moduleName[sizeof(moduleName)-1] = '\0';
+	}
 	/* wait TG idle*/
 	loopCnt = 3;
 	waitirq.Type = (module == ISP_CAM_A_IDX) ?
@@ -9003,7 +9041,7 @@ static MINT32 ISP_release(
 	/*      */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 		FirstUnusedIrqUserKey = 1;
-		strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
+		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN-1);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 	if (IspInfo.BufInfo.Read.pData != NULL) {
@@ -10517,7 +10555,8 @@ static MINT32 ISP_suspend(
 
 	ret = 0;
 	module = -1;
-	strcpy(moduleName, pDev->dev.of_node->name);
+	strncpy(moduleName, pDev->dev.of_node->name, sizeof(moduleName)-1);
+	moduleName[sizeof(moduleName)-1] = '\0';
 
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */
@@ -10717,7 +10756,8 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 
 	ret = 0;
 	module = -1;
-	strcpy(moduleName, pDev->dev.of_node->name);
+	strncpy(moduleName, pDev->dev.of_node->name, sizeof(moduleName)-1);
+	moduleName[sizeof(moduleName)-1] = '\0';
 
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */
