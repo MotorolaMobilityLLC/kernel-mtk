@@ -579,8 +579,13 @@ void msdc_cmdq_status_print(struct seq_file *m, struct msdc_host *host)
 void msdc_cmdq_func(struct seq_file *m, struct msdc_host *host, const int num)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	void __iomem *base = host->base;
+	void __iomem *base = NULL;
 	int a, b;
+
+	if (host == NULL)
+		return;
+
+	base = host->base;
 #endif
 
 	if (!host || !host->mmc || !host->mmc->card)
@@ -1683,8 +1688,10 @@ void msdc_dump_gpd_bd(int id)
 	struct gpd_t *gpd;
 	struct bd_t  *bd;
 
-	if (id < 0 || id >= HOST_MAX_NUM)
+	if (id < 0 || id >= HOST_MAX_NUM) {
 		pr_err("[%s]: invalid host id: %d\n", __func__, id);
+		return;
+	}
 
 	host = mtk_msdc_host[id];
 	if (host == NULL) {
@@ -2417,9 +2424,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		host = mtk_msdc_host[id];
 		if ((p2 < 0) || (p2 > 2)) {
 			seq_puts(m, "[SD_Debug]invalid option ( set rd:0, set td:1, get td/rd: 2)\n");
-		} else if ((p2 == 0 && (unsigned char)p3 > 0xffff)
-			|| (p2 == 1 && (unsigned char)p3 > 0xffff)) {
-			seq_puts(m, "[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xffff << 0))\n");
 		} else {
 			if (p2 == 0) {
 				msdc_set_rdsel_dbg(host, p3);
@@ -2704,9 +2708,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 #endif
 	case ENABLE_AXI_MODULE:
 		if (p1)
-			strcpy(enable_str, "enable");
+			strncpy(enable_str, "enable", 7);
 		else
-			strcpy(enable_str, "disable");
+			strncpy(enable_str, "disable", 8);
 		seq_printf(m, "==== %s AXI MODULE ====\n", enable_str);
 		if (p2 == 0 || p2 == 5) {
 			seq_printf(m, "%s %s transaction on AXI bus\n",
@@ -2964,11 +2968,14 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	const char __user *buf, size_t count, loff_t *data)
 {
 	int ret;
-	int i_case = 0, i_par1 = -1, i_par2 = -1, i_clk = 0;
+	int i_case = 0, i_par1 = -1, i_par2 = -1;
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
+	int i_clk = 0;
 	int i_driving = 0, i_edge = 0, i_data = 0, i_delay = 0;
 	u32 cur_rxdly0;
 	u8 u8_dat0, u8_dat1, u8_dat2, u8_dat3;
 	void __iomem *base;
+#endif
 	int sscanf_num;
 
 	if (count == 0)
@@ -3005,6 +3012,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	return -1;
 #endif
 
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
 	if (i_case == 1) { /*set clk*/
 		if (!((i_par1 == 0) || (i_par1 == 1)))
 			return -1;
@@ -3069,6 +3077,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	}
 
 	return 1;
+#endif
 }
 
 #ifdef ONLINE_TUNING_DVTTEST
