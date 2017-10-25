@@ -151,9 +151,6 @@ VOID p2pRoleFsmUninit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx)
 
 		ASSERT_BREAK(prP2pRoleFsmInfo != NULL);
 
-		if (!prP2pRoleFsmInfo)
-			return;
-
 		prP2pBssInfo = prAdapter->aprBssInfo[prP2pRoleFsmInfo->ucBssIndex];
 
 		p2pFuncDissolve(prAdapter, prP2pBssInfo, TRUE, REASON_CODE_DEAUTH_LEAVING_BSS);

@@ -180,7 +180,7 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 
 	DEBUGFUNC("wlanoidSetAddP2PKey");
-	DBGLOG(REQ, INFO, "\n");
+	DBGLOG(REQ, INFO, "wlanoidSetAddP2PKey\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
@@ -299,19 +299,14 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 				/* so use the rAisSpecificBssInfo to save key setting */
 				/* fgAddTxBcKey = TRUE; */
 			}
-		} else {
-			if (prBssInfo) {	/* GO/AP Tx BC */
-				ASSERT(prBssInfo->ucBMCWlanIndex < WTBL_SIZE);
-				rCmdKey.ucWlanIndex = prBssInfo->ucBMCWlanIndex;
-				/* rCmdKey.ucWlanIndex =  secPrivacySeekForBcEntry(prAdapter, prBssInfo->ucBssIndex, */
-				/* prBssInfo->aucBSSID, 0xff, rCmdKey.ucAlgorithmId, rCmdKey.ucKeyId, */
-				/* prBssInfo->ucCurrentGtkId, BIT(1)); */
-				prBssInfo->fgTxBcKeyExist = TRUE;
-				prBssInfo->ucTxDefaultKeyID = rCmdKey.ucKeyId;
-			} else {
-				rCmdKey.ucWlanIndex = 255;	/* GC WEP Tx key ? */
-				ASSERT(FALSE);
-			}
+		} else {	/* GO/AP Tx BC */
+			ASSERT(prBssInfo->ucBMCWlanIndex < WTBL_SIZE);
+			rCmdKey.ucWlanIndex = prBssInfo->ucBMCWlanIndex;
+			/* rCmdKey.ucWlanIndex =  secPrivacySeekForBcEntry(prAdapter, prBssInfo->ucBssIndex, */
+			/* prBssInfo->aucBSSID, 0xff, rCmdKey.ucAlgorithmId, rCmdKey.ucKeyId, */
+			/* prBssInfo->ucCurrentGtkId, BIT(1)); */
+			prBssInfo->fgTxBcKeyExist = TRUE;
+			prBssInfo->ucTxDefaultKeyID = rCmdKey.ucKeyId;
 		}
 	} else {
 		if (((rCmdKey.aucPeerAddr[0] & rCmdKey.aucPeerAddr[1] & rCmdKey.aucPeerAddr[2] &

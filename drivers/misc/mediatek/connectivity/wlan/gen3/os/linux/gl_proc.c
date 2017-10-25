@@ -282,7 +282,7 @@ static ssize_t procPktDelayDbgCfgWrite(struct file *file, const char __user *buf
 
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%s %x %d %u", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
+		if (sscanf(temp, "%6s %x %d %u", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
@@ -341,7 +341,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char __user *buffer, 
 	temp = &aucProcBuf[0];
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
+		if (sscanf(temp, "%4s %d", aucModule, &u4Enabled) != 2)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			fgParamValue = FALSE;
 			break;
