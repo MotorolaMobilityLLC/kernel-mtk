@@ -3406,10 +3406,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	pgc->lcm_fps = lcm_fps;
 	pgc->lcm_refresh_rate = 60;
+
+	pgc->state = DISP_ALIVE;
+
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
-	pgc->state = DISP_ALIVE;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	disp_switch_data.name = "disp";
 	disp_switch_data.index = 0;
@@ -4206,12 +4208,13 @@ int primary_display_resume(void)
 		}
 	}
 
+done:
+	primary_set_state(DISP_ALIVE);
+
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
-done:
-	primary_set_state(DISP_ALIVE);
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	switch_set_state(&disp_switch_data, DISP_ALIVE);
 #endif
