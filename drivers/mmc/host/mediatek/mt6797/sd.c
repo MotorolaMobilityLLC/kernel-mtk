@@ -2270,6 +2270,7 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	BUG_ON(!kaddr);
 	BUG_ON(sg == NULL);
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
+	spin_unlock(&host->lock);
 	while (1) {
 		if (!get_xfer_done) {
 			ints = MSDC_READ32(MSDC_INT);
@@ -2450,6 +2451,7 @@ check_fifo_end:
 	if (data->error)
 		ERR_MSG("read pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+	spin_lock(&host->lock);
 	return data->error;
 }
 
@@ -2478,6 +2480,7 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 
 	BUG_ON(!kaddr);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
+	spin_unlock(&host->lock);
 	while (1) {
 		if (!get_xfer_done) {
 			ints = MSDC_READ32(MSDC_INT);
@@ -2650,6 +2653,7 @@ check_fifo_end:
 			data->error, left, size);
 
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
+	spin_lock(&host->lock);
 	return data->error;
 }
 
