@@ -366,6 +366,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
+#endif
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

@@ -521,6 +521,8 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 		sum_overlap_w += (4 * weight);
 	if (has_dal_layer)
 		sum_overlap_w += 120;
+	if (disp_helper_get_option(DISP_OPT_ROUND_CORNER) && has_rc_layer)
+		sum_overlap_w += 240;
 
 	/*
 	3.Calculate the HRT bound if the total layer weight over the lower bound
@@ -535,6 +537,8 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 			sum_overlap_w += (4 * weight);
 		if (has_dal_layer)
 			sum_overlap_w += 120;
+		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER) && has_rc_layer)
+			sum_overlap_w += 240;
 	}
 
 #ifdef HRT_DEBUG
@@ -569,8 +573,7 @@ static int _get_larb0_idx(disp_layer_info *disp_info)
 		else
 			larb_idx = 3;
 	}
-	if (disp_info->gles_head[0] != -1 &&
-		larb_idx > disp_info->gles_head[0])
+	if (disp_info->gles_head[0] != -1 && larb_idx > disp_info->gles_head[0])
 		larb_idx += (disp_info->gles_tail[0] - disp_info->gles_head[0]);
 
 	return larb_idx;
@@ -599,11 +602,16 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 
 static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
 {
-	int primary_ovl_cnt = 0, larb5_idx = 0, sum_overlap_w = 0;
+	int sum_overlap_w = 0;
 	bool is_over_bound = true;
+	int larb0_layer_cnt = 0;
+	int larb5_primary_layer_cnt = 0;
 
-	primary_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_PRIMARY);
-	if (primary_ovl_cnt > 3 && has_hrt_limit(disp_info, HRT_PRIMARY)) {
+	larb0_layer_cnt = _get_larb0_idx(disp_info) + 1;
+	larb5_primary_layer_cnt = disp_info->layer_num[0] - larb0_layer_cnt;
+	if (larb5_primary_layer_cnt > larb_lower_bound &&
+	    has_hrt_limit(disp_info, HRT_PRIMARY)) {
+		int larb5_idx = 0;
 
 		larb5_idx = _get_larb0_idx(disp_info) + 1;
 		sum_overlap_w += _calc_hrt_num(disp_info, HRT_PRIMARY,

@@ -461,10 +461,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	value = (((cfg->sur_aen & 0x1) << 15) |
 		 ((cfg->dst_alpha & 0x3) << 6) | ((cfg->dst_alpha & 0x3) << 4) |
 		 ((cfg->src_alpha & 0x3) << 2) | (cfg->src_alpha & 0x3));
-
-	value = (REG_FLD_VAL((L_PITCH_FLD_SUR_ALFA), (value)) |
-		 REG_FLD_VAL((L_PITCH_FLD_LSP), (cfg->src_pitch)));
-
+	value = REG_FLD_VAL((L_PITCH_FLD_SUR_ALFA), (value));
+	value |= REG_FLD_VAL((L_PITCH_FLD_LSP), (cfg->src_pitch));
 	if (cfg->const_bld)
 		value = value | REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_PITCH + layer_offset, value);
