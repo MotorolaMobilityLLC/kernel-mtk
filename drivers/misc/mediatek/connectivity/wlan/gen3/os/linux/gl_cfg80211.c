@@ -2563,9 +2563,14 @@ int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev, struc
 	STA_RECORD_T *prStaRec;
 	u8 deleteMac[MAC_ADDR_LEN];
 
-	prAdapter = prGlueInfo->prAdapter;
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
+
+	if (!prGlueInfo)
+		return -1;
+	prAdapter = prGlueInfo->prAdapter;
+
+
 	/* For kernel 3.18 modification, we trasfer to local buff to query sta */
 	memset(deleteMac, 0, MAC_ADDR_LEN);
 	memcpy(&deleteMac, params->mac, MAC_ADDR_LEN);

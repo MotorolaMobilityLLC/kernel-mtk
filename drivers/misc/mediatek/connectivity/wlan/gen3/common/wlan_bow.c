@@ -251,6 +251,7 @@ WLAN_STATUS bowCmdGetMacStatus(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND prCmd
 	/* fill event body */
 	prMacStatus = (P_BOW_MAC_STATUS) (prEvent->aucPayload);
 	kalMemZero(prMacStatus, sizeof(BOW_MAC_STATUS));
+	kalMemZero(aucChannelList, sizeof(aucChannelList));
 
 	/* 3 <2> Call CNM to decide if BOW available. */
 	if (cnmBowIsPermitted(prAdapter))
