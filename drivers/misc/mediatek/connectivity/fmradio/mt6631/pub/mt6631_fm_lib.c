@@ -734,11 +734,6 @@ static signed int mt6631_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 	mt6631_hw_info.patch_ver = (signed int) tmp_reg;
 	WCN_DBG(FM_NTC | CHIP, "Patch version: 0x%08x\n", mt6631_hw_info.patch_ver);
 
-	if (ret == 1) {
-		dsp_buf[4] = 0x00;	/* if we found rom version undefined, we should disable patch */
-		dsp_buf[5] = 0x00;
-	}
-
 	ret = fm_download_patch((const unsigned char *)dsp_buf, patch_len, IMG_COEFFICIENT);
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " Download DSP coefficient failed\n");
