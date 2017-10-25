@@ -5783,7 +5783,14 @@ static MINT32 ISP_P2_BufQue_GetMatchIdx(ISP_P2_BUFQUE_STRUCT param, ISP_P2_BUFQU
 {
 	int idx = -1;
 	int i = 0;
-	int property = param.property;
+	int property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		return idx;
+	}
+	property = param.property;
+
 	switch (matchType) {
 	case ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ:
 		/* traverse for finding the frame unit which had not beed dequeued of the process */
