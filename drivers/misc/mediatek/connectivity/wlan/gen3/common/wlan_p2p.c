@@ -405,14 +405,14 @@ wlanoidSetRemoveP2PKey(IN P_ADAPTER_T prAdapter,
 	/* Check bit 31: this bit should always 0 */
 	if (prRemovedKey->u4KeyIndex & IS_TRANSMIT_KEY) {
 		/* Bit 31 should not be set */
-		DBGLOG(REQ, ERROR, "invalid key index: 0x%08lx\n", prRemovedKey->u4KeyIndex);
+		DBGLOG(REQ, ERROR, "invalid key index: 0x%08x\n", prRemovedKey->u4KeyIndex);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
 	/* Check bits 8 ~ 29 should always be 0 */
 	if (prRemovedKey->u4KeyIndex & BITS(8, 29)) {
 		/* Bit 31 should not be set */
-		DBGLOG(REQ, ERROR, "invalid key index: 0x%08lx\n", prRemovedKey->u4KeyIndex);
+		DBGLOG(REQ, ERROR, "invalid key index: 0x%08x\n", prRemovedKey->u4KeyIndex);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 

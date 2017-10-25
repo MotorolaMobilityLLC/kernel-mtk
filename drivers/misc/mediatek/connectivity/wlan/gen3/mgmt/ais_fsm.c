@@ -1455,26 +1455,26 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				/*this is a full scan*/
 				OS_SYSTIME rCurrentTime;
 				P_PARTIAL_SCAN_INFO channel_t;
-				P_GLUE_INFO_T pGlinfo;
+				P_GLUE_INFO_T prGlueInfo;
 				UINT_32 u4size;
 
-				pGlinfo = prAdapter->prGlueInfo;
+				prGlueInfo = prAdapter->prGlueInfo;
 				GET_CURRENT_SYSTIME(&rCurrentTime);
-				DBGLOG(AIS, TRACE, "Full2Partial LastFullST= %lld,CurrentT=%lld\n",
-					pGlinfo->u4LastFullScanTime, rCurrentTime);
-				if ((pGlinfo->u4LastFullScanTime == 0) ||
-					(CHECK_FOR_TIMEOUT(rCurrentTime, pGlinfo->u4LastFullScanTime,
+				DBGLOG(AIS, TRACE, "Full2Partial LastFullST=%u, CurrentT=%u\n",
+				       prGlueInfo->u4LastFullScanTime, rCurrentTime);
+				if ((prGlueInfo->u4LastFullScanTime == 0) ||
+					(CHECK_FOR_TIMEOUT(rCurrentTime, prGlueInfo->u4LastFullScanTime,
 						SEC_TO_SYSTIME(UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT)))) {
 					/*first full scan during connected*/
 					/*or time over 60s from last full scan*/
 					DBGLOG(AIS, INFO, "Full2Partial not update full scan\n");
-					pGlinfo->u4LastFullScanTime = rCurrentTime;
-					pGlinfo->ucTrScanType = 1;
-					kalMemSet(pGlinfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
-					if (pGlinfo->puFullScan2PartialChannel != NULL) {
-						kalMemFree(pGlinfo->puFullScan2PartialChannel,
-							VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
-						pGlinfo->puFullScan2PartialChannel = NULL;
+					prGlueInfo->u4LastFullScanTime = rCurrentTime;
+					prGlueInfo->ucTrScanType = 1;
+					kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+					if (prGlueInfo->puFullScan2PartialChannel != NULL) {
+						kalMemFree(prGlueInfo->puFullScan2PartialChannel,
+							   VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+						prGlueInfo->puFullScan2PartialChannel = NULL;
 					}
 				} else {
 					DBGLOG(AIS, INFO, "Full2Partial update full scan to partial scan\n");
@@ -1482,18 +1482,18 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					/*at here, we should update full scan to partial scan*/
 					aisGetAndSetScanChannel(prAdapter);
 
-					if (pGlinfo->puFullScan2PartialChannel != NULL) {
+					if (prGlueInfo->puFullScan2PartialChannel != NULL) {
 						PUINT_8 pChanneltmp;
 						/* update full scan to partial scan */
-						pChanneltmp = pGlinfo->puFullScan2PartialChannel;
+						pChanneltmp = prGlueInfo->puFullScan2PartialChannel;
 						channel_t = (P_PARTIAL_SCAN_INFO)pChanneltmp;
 
 						/* set partial scan */
 						prScanReqMsg->ucChannelListNum = channel_t->ucChannelListNum;
 						u4size = sizeof(channel_t->arChnlInfoList);
 
-						DBGLOG(AIS, TRACE, "Full2Partial ChList=%d,u4size=%d\n",
-							channel_t->ucChannelListNum, u4size);
+						DBGLOG(AIS, TRACE, "Full2Partial ChList=%d, u4size=%u\n",
+						       channel_t->ucChannelListNum, u4size);
 
 						kalMemCopy(&(prScanReqMsg->arChnlInfoList),
 							&(channel_t->arChnlInfoList), u4size);

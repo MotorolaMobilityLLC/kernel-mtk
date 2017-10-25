@@ -3744,16 +3744,16 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 #if CFG_ENABLE_CAL_LOG
 	DBGLOG(NIC, LOUD, " RF CAL FAIL  = (%d),BB CAL FAIL  = (%d)\n",
-			    prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
+	       prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
 #endif
 
-	DBGLOG(NIC, INFO, "FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+	DBGLOG(NIC, INFO, "FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 	return WLAN_STATUS_SUCCESS;
 }

@@ -661,10 +661,9 @@ wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrIn
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	UINT_32 u4BufLen = 0;
 
-	ASSERT(prNetDev);
-	ASSERT(pcName);
 	if (FALSE == GLUE_CHK_PR2(prNetDev, pcName))
 		return -EINVAL;
+
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
 	if (netif_carrier_ok(prNetDev)) {
@@ -675,22 +674,22 @@ wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrIn
 
 		switch (eNetWorkType) {
 		case PARAM_NETWORK_TYPE_DS:
-			strcpy(pcName, "IEEE 802.11b");
+			strncpy(pcName, "IEEE 802.11b", IFNAMSIZ-1);
 			break;
 		case PARAM_NETWORK_TYPE_OFDM24:
-			strcpy(pcName, "IEEE 802.11bgn");
+			strncpy(pcName, "IEEE 802.11bgn", IFNAMSIZ-1);
 			break;
 		case PARAM_NETWORK_TYPE_AUTOMODE:
 		case PARAM_NETWORK_TYPE_OFDM5:
-			strcpy(pcName, "IEEE 802.11abgn");
+			strncpy(pcName, "IEEE 802.11abgn", IFNAMSIZ-1);
 			break;
 		case PARAM_NETWORK_TYPE_FH:
 		default:
-			strcpy(pcName, "IEEE 802.11");
+			strncpy(pcName, "IEEE 802.11", IFNAMSIZ-1);
 			break;
 		}
 	} else {
-		strcpy(pcName, "Disconnected");
+		strncpy(pcName, "Disconnected", IFNAMSIZ-1);
 	}
 
 	return 0;
@@ -2658,11 +2657,14 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	UINT_32 u4BufLen = 0;
 
-	ASSERT(prNetDev);
-	ASSERT(prEnc);
 	if (FALSE == GLUE_CHK_PR3(prNetDev, prEnc, pcExtra))
 		return -EINVAL;
+
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	if (!prGlueInfo) {
+		DBGLOG(INIT, ERROR, "No glue info\n");
+		return -EFAULT;
+	}
 
 	memset(keyStructBuf, 0, sizeof(keyStructBuf));
 
@@ -2710,7 +2712,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 	} else
 #endif
 	{
-
 		if ((prEnc->flags & IW_ENCODE_MODE) == IW_ENCODE_DISABLED) {
 			prRemoveKey->u4Length = sizeof(*prRemoveKey);
 			memcpy(prRemoveKey->arBSSID, prIWEncExt->addr.sa_data, 6);
@@ -2721,9 +2722,14 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 
 			if (rStatus != WLAN_STATUS_SUCCESS)
 				DBGLOG(INIT, INFO, "remove key error:%x\n", rStatus);
+
 			return 0;
 		}
-		/* return 0; */
+
+		if (prIWEncExt->key_len > 32) {
+			DBGLOG(INIT, ERROR, "Invalid key length %d\n", prIWEncExt->key_len);
+			return -EINVAL;
+		}
 
 		switch (prIWEncExt->alg) {
 		case IW_ENCODE_ALG_NONE:
@@ -2787,7 +2793,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 				}
 
 			} else {
-				DBGLOG(INIT, INFO, "key length %x\n", prIWEncExt->key_len);
+				DBGLOG(INIT, INFO, "key length %d\n", prIWEncExt->key_len);
 				DBGLOG(INIT, INFO, "key error\n");
 			}
 

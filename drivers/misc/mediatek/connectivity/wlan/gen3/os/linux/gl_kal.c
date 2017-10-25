@@ -914,9 +914,8 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 	/* DBGLOG_MEM32(RX, TRACE, (PUINT_32)prSkb->data, prSkb->len); */
 	/* DBGLOG(RX, EVENT, ("kalRxIndicatePkts len = %d\n", prSkb->len)); */
 	if (prSkb->tail > prSkb->end) {
-		DBGLOG(RX, ERROR,
-		       "kalRxIndicateOnePkt [prSkb = 0x%p][prSkb->len = %u][prSkb->protocol = 0x%02X] %p,%p\n",
-			(PUINT_8) prSkb, prSkb->len, prSkb->protocol, prSkb->tail, prSkb->end);
+		DBGLOG(RX, ERROR, "prSkb[0x%p] len[%u] protocol[0x%04x] tail[0x%lx] end[0x%lx]\n",
+		       prSkb, prSkb->len, prSkb->protocol, (ULONG)prSkb->tail, (ULONG)prSkb->end);
 		DBGLOG_MEM32(RX, ERROR, (PUINT_32) prSkb->data, prSkb->len);
 	}
 	if (!in_interrupt())

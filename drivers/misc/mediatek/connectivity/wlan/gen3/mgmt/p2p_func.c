@@ -2125,16 +2125,19 @@ p2pFuncParseBeaconIEs(IN P_ADAPTER_T prAdapter,
 				break;
 			case ELEM_ID_SUP_RATES:	/* 1 *//* V */
 				{
-					DBGLOG(P2P, TRACE, "Supported Rate IE\n");
-					kalMemCopy(prP2pBssInfo->aucAllSupportedRates,
-						   SUP_RATES_IE(pucIE)->aucSupportedRates,
-						   SUP_RATES_IE(pucIE)->ucLength);
+					UINT_8 ucSupRatesLen = SUP_RATES_IE(pucIE)->ucLength;
 
-					prP2pBssInfo->ucAllSupportedRatesLen = SUP_RATES_IE(pucIE)->ucLength;
-
+					DBGLOG(P2P, TRACE, "Supported Rate IE: %d rate elements\n", ucSupRatesLen);
 					DBGLOG_MEM8(P2P, TRACE,
-						    SUP_RATES_IE(pucIE)->aucSupportedRates,
-						    SUP_RATES_IE(pucIE)->ucLength);
+						    SUP_RATES_IE(pucIE)->aucSupportedRates, ucSupRatesLen);
+
+					if (ucSupRatesLen > ELEM_MAX_LEN_SUP_RATES) /* impossible case */
+						ucSupRatesLen = ELEM_MAX_LEN_SUP_RATES;
+
+					kalMemCopy(prP2pBssInfo->aucAllSupportedRates,
+						   SUP_RATES_IE(pucIE)->aucSupportedRates, ucSupRatesLen);
+
+					prP2pBssInfo->ucAllSupportedRatesLen = ucSupRatesLen;
 				}
 				break;
 			case ELEM_ID_DS_PARAM_SET:	/* 3 *//* V */
@@ -2252,20 +2255,26 @@ p2pFuncParseBeaconIEs(IN P_ADAPTER_T prAdapter,
 				}
 				break;
 			case ELEM_ID_EXTENDED_SUP_RATES:	/* 50 *//* V */
-				/* Be attention:
-				 * ELEM_ID_SUP_RATES should be placed before ELEM_ID_EXTENDED_SUP_RATES.
-				 */
-				DBGLOG(P2P, TRACE, "Extended Supported Rate IE\n");
-				kalMemCopy(&
-					   (prP2pBssInfo->aucAllSupportedRates[prP2pBssInfo->ucAllSupportedRatesLen]),
-					   EXT_SUP_RATES_IE(pucIE)->aucExtSupportedRates,
-					   EXT_SUP_RATES_IE(pucIE)->ucLength);
+				{
+					/* Be attention:
+					 * ELEM_ID_SUP_RATES should be placed before ELEM_ID_EXTENDED_SUP_RATES.
+					 */
+					UINT_8 ucSupRatesLen = prP2pBssInfo->ucAllSupportedRatesLen;
+					UINT_8 ucExtSupRatesLen = EXT_SUP_RATES_IE(pucIE)->ucLength;
 
-				DBGLOG_MEM8(P2P, TRACE,
-					    EXT_SUP_RATES_IE(pucIE)->aucExtSupportedRates,
-					    EXT_SUP_RATES_IE(pucIE)->ucLength);
+					DBGLOG(P2P, TRACE, "Extended Supported Rate IE: %d rate elements\n",
+					       ucExtSupRatesLen);
+					DBGLOG_MEM8(P2P, TRACE,
+						    EXT_SUP_RATES_IE(pucIE)->aucExtSupportedRates, ucExtSupRatesLen);
 
-				prP2pBssInfo->ucAllSupportedRatesLen += EXT_SUP_RATES_IE(pucIE)->ucLength;
+					if (ucExtSupRatesLen > (RATE_NUM_SW - ucSupRatesLen)) /* impossible case */
+						ucExtSupRatesLen = RATE_NUM_SW - ucSupRatesLen;
+
+					kalMemCopy(&(prP2pBssInfo->aucAllSupportedRates[ucSupRatesLen]),
+						   EXT_SUP_RATES_IE(pucIE)->aucExtSupportedRates, ucExtSupRatesLen);
+
+					prP2pBssInfo->ucAllSupportedRatesLen += ucExtSupRatesLen;
+				}
 				break;
 			case ELEM_ID_HT_OP:	/* 61 *//* V */
 				{

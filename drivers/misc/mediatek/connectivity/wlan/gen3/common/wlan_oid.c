@@ -2139,7 +2139,7 @@ wlanoidSetRemoveWep(IN P_ADAPTER_T prAdapter,
 
 	/* Dump PARAM_WEP content. */
 	DBGLOG(OID, INFO, "Set: Dump PARAM_KEY_INDEX content\n");
-	DBGLOG(OID, INFO, "Index : 0x%08lx\n", u4KeyId);
+	DBGLOG(OID, INFO, "Index : 0x%08x\n", u4KeyId);
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
 		DBGLOG(OID, WARN,
@@ -2150,7 +2150,7 @@ wlanoidSetRemoveWep(IN P_ADAPTER_T prAdapter,
 
 	if (u4KeyId & IS_TRANSMIT_KEY) {
 		/* Bit 31 should not be set */
-		DBGLOG(OID, ERROR, "Invalid WEP key index: 0x%08lx\n", u4KeyId);
+		DBGLOG(OID, ERROR, "Invalid WEP key index: 0x%08x\n", u4KeyId);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -2718,7 +2718,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	/* Check bits 8 ~ 29 should always be 0 */
 	if (prRemovedKey->u4KeyIndex & BITS(8, 29)) {
 		/* Bit 31 should not be set */
-		DBGLOG(OID, ERROR, "invalid key index: 0x%08lx\n", prRemovedKey->u4KeyIndex);
+		DBGLOG(OID, ERROR, "invalid key index: 0x%08x\n", prRemovedKey->u4KeyIndex);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -6895,7 +6895,7 @@ wlanoidSetBeaconInterval(IN P_ADAPTER_T prAdapter,
 
 	if ((*pu4BeaconInterval < DOT11_BEACON_PERIOD_MIN)
 	    || (*pu4BeaconInterval > DOT11_BEACON_PERIOD_MAX)) {
-		DBGLOG(OID, TRACE, "Invalid Beacon Interval = %ld\n", *pu4BeaconInterval);
+		DBGLOG(OID, TRACE, "Invalid Beacon Interval = %u\n", *pu4BeaconInterval);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -9943,7 +9943,7 @@ batchSetCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBuff
 	UINT_32 u4Value = 0;
 	INT_32 i4Ret = 0;
 
-	DBGLOG(SCN, TRACE, "[BATCH] command=%s, len=%d\n", pvSetBuffer, u4SetBufferLen);
+	DBGLOG(SCN, TRACE, "[BATCH] command=%s, len=%u\n", (PCHAR)pvSetBuffer, u4SetBufferLen);
 
 	if (!pu4WritenLen)
 		return -EINVAL;

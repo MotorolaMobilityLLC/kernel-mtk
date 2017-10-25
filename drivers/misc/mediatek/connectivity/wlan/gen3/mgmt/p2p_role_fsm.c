@@ -1493,18 +1493,22 @@ VOID p2pRoleFsmRunEventAAATxFail(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prS
 VOID p2pRoleFsmRunEventSwitchOPMode(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
-	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
+	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) NULL;
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 
 	do {
-		ASSERT_BREAK((prAdapter != NULL) && (prSwitchOpMode != NULL));
+		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
 		DBGLOG(P2P, TRACE, "p2pRoleFsmRunEventSwitchOPMode\n");
 
+		prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
+
 		if (prSwitchOpMode->ucRoleIdx < BSS_P2P_NUM)
 			prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[prSwitchOpMode->ucRoleIdx];
-		else
-			ASSERT(FALSE);
+		else {
+			DBGLOG(P2P, ERROR, "Error RoleIdx %d\n", prSwitchOpMode->ucRoleIdx);
+			break;
+		}
 
 		ASSERT(prP2pRoleFsmInfo->ucBssIndex < P2P_DEV_BSS_INDEX);
 

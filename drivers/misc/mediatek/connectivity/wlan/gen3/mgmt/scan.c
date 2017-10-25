@@ -2350,7 +2350,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 						      SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
 					DBGLOG(SCN, LOUD,
-					       "SEARCH: Now(%zd) Skip old record of BSS Descriptor(%zd) - BSSID:["
+					       "SEARCH: Now(%u) Skip old record of BSS Descriptor(%u) - BSSID:["
 					       MACSTR "]\n\n",
 					       rCurrentTime,
 					       prBssDesc->rUpdateTime,

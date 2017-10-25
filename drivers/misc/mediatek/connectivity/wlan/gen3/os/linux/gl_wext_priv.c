@@ -1429,19 +1429,16 @@ priv_get_struct(IN struct net_device *prNetDev,
 
 	kalMemZero(&aucOidBuf[0], sizeof(aucOidBuf));
 
-	ASSERT(prNetDev);
-	ASSERT(prIwReqData);
 	if (!prNetDev || !prIwReqData) {
-		DBGLOG(REQ, INFO, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
+		DBGLOG(REQ, ERROR, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
 		return -EINVAL;
 	}
 
 	u4SubCmd = (UINT_32) prIwReqData->data.flags;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
-	ASSERT(prGlueInfo);
 	if (!prGlueInfo) {
-		DBGLOG(REQ, INFO, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
-				   prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
+		DBGLOG(REQ, ERROR, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
+		       prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
 		return -EINVAL;
 	}
 #if 0
@@ -3136,7 +3133,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 
 		if (i4BytesWritten >= i4TotalLen) {
 			DBGLOG(REQ, INFO,
-			       "%s: i4BytesWritten %d > i4TotalLen < %d\n", __func__, i4BytesWritten, i4TotalLen);
+			       "%s: i4BytesWritten %d >= i4TotalLen %d\n", __func__, i4BytesWritten, i4TotalLen);
 			i4BytesWritten = i4TotalLen;
 		} else {
 			pcCommand[i4BytesWritten] = '\0';
@@ -3181,16 +3178,16 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 	}
 
 	if (copy_from_user(priv_cmd, prReq->ifr_data, sizeof(priv_driver_cmd_t))) {
-		DBGLOG(REQ, INFO, "%s: copy_from_user fail\n", __func__);
+		DBGLOG(REQ, ERROR, "%s: copy_from_user fail\n", __func__);
 		ret = -EFAULT;
 		goto exit;
 	}
 
 	i4TotalLen = priv_cmd->total_len;
 
-	if (i4TotalLen <= 0) {
+	if (i4TotalLen <= 0 || i4TotalLen > PRIV_CMD_SIZE) {
 		ret = -EINVAL;
-		DBGLOG(REQ, INFO, "%s: i4TotalLen invalid\n", __func__);
+		DBGLOG(REQ, ERROR, "%s: invalid i4TotalLen %d\n", __func__, i4TotalLen);
 		goto exit;
 	}
 
@@ -3201,8 +3198,8 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 	i4BytesWritten = priv_driver_cmds(prNetDev, pcCommand, i4TotalLen);
 
 	if (i4BytesWritten < 0) {
-		DBGLOG(REQ, INFO, "%s: command %s failed; Written is %d\n",
-			__func__, pcCommand, i4BytesWritten);
+		DBGLOG(REQ, ERROR, "%s: command %s failed, i4BytesWritten %d\n",
+		       __func__, pcCommand, i4BytesWritten);
 		ret = -EFAULT;
 	}
 

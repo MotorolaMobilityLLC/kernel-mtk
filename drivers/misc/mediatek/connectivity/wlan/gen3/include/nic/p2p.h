@@ -79,19 +79,6 @@
  ********************************************************************************
  */
 
-#if DBG
-#define ASSERT_BREAK(_exp) \
-	{ \
-		if (!(_exp)) { \
-			ASSERT(FALSE); \
-			break; \
-		} \
-	}
-
-#else
-#define ASSERT_BREAK(_exp)
-#endif
-
 #define p2pChangeMediaState(_prAdapter, _prP2pBssInfo, _eNewMediaState) \
 	(_prP2pBssInfo->eConnectionState = (_eNewMediaState))
 

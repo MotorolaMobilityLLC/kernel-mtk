@@ -936,7 +936,7 @@ VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 			p2pRoleFsmRunEventScanRequest(prAdapter, prMsgHdr);
 	} while (FALSE);
 
-	if (prP2pScanReqMsg == NULL)
+	if (prP2pScanReqMsg == NULL) /* in case ASSERT_BREAK happens */
 		cnmMemFree(prAdapter, prMsgHdr);
 
 }				/* p2pDevFsmRunEventScanRequest */

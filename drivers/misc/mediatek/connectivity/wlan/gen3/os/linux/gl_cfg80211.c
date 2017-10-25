@@ -2023,7 +2023,7 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 			   prBugReport, sizeof(EVENT_BUG_REPORT_T), TRUE, TRUE, TRUE, &u4BufLen);
 
 	if (rStatus != WLAN_STATUS_SUCCESS)
-		DBGLOG(INIT, INFO, "query statistics error:%lx\n", rStatus);
+		DBGLOG(INIT, INFO, "query statistics error:%x\n", rStatus);
 
 	kalMemCopy(arBugReport, prBugReport, sizeof(EVENT_BUG_REPORT_T));
 
