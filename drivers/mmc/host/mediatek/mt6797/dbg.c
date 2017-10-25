@@ -218,8 +218,7 @@ static void msdc_init_dma_latest_address(void)
 	while (ptr != msdc_latest_dma_address) {
 		prev = ptr - 1;
 		prev->next = (void *)(msdc_latest_dma_address
-			+ sizeof(struct dma_addr)
-			* (ptr - msdc_latest_dma_address));
+			+ (ptr - msdc_latest_dma_address));
 		ptr = prev;
 	}
 
