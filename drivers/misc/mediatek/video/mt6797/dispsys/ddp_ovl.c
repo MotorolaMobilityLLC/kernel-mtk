@@ -821,17 +821,25 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 
 	/* check if the ovl module has sec layer */
 	for (layer_id = global_layer; layer_id < (global_layer + ovl_layer_num(module)); layer_id++) {
-			if (pConfig->ovl_config[layer_id].layer_en &&
-				(pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
-					has_sec_layer = 1;
+		if (layer_id >= TOTAL_OVL_LAYER_NUM)
+			continue;
+
+		if (pConfig->ovl_config[layer_id].layer_en &&
+		    (pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
+				has_sec_layer = 1;
 	}
 
 	setup_ovl_sec(module, handle, has_sec_layer);
 
 	for (local_layer = 0; local_layer < ovl_layer_num(module); local_layer++, global_layer++) {
+		OVL_CONFIG_STRUCT *ovl_cfg = NULL;
 
-		OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
 		pConfig->ovl_layer_scanned |= (1 << global_layer);
+
+		if (global_layer >= TOTAL_OVL_LAYER_NUM)
+			continue;
+
+		ovl_cfg = &pConfig->ovl_config[global_layer];
 
 		if (ovl_cfg->layer_en == 0)
 			continue;
