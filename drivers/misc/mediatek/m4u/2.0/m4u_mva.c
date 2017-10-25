@@ -71,7 +71,7 @@ void m4u_mvaGraph_dump(void)
 	unsigned short index = 1, nr = 0;
 	int i, max_bit, is_busy;
 	short frag[12] = { 0 };
-	short nr_free = 0, nr_alloc = 0;
+	unsigned short nr_free = 0, nr_alloc = 0;
 	unsigned long irq_flags;
 
 	M4ULOG_HIGH("[M4U_K] mva allocation info dump:====================>\n");
@@ -211,7 +211,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 {
 	unsigned short s, end;
 	unsigned short new_start, new_end;
-	short nr = 0;
+	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
@@ -271,7 +271,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 
 unsigned int m4u_do_mva_alloc_fix(unsigned int mva, unsigned int size, void *priv)
 {
-	short nr = 0;
+	unsigned short nr = 0;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
 	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
@@ -352,7 +352,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	unsigned long irq_flags;
 
 	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	if (startIdx < 0 && startIdx > 4095)
+	if (startIdx == 0 || startIdx > 4095)
 		return -1;
 	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
 	endIdx = startIdx + nr - 1;
