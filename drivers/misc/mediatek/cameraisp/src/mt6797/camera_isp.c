@@ -5455,7 +5455,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 	/*  */
 	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(ISP_BUFFER_CTRL_STRUCT)) == 0) {
-
+		if ((rt_buf_ctrl.module < 0) || (rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT)) {
+			LOG_ERR("[rtbc] module is out of range");
+			return -EFAULT;
+		}
 		if (NULL == pstRTBuf[rt_buf_ctrl.module])  {
 			LOG_ERR("[rtbc]NULL pstRTBuf, module:0x%x\n", rt_buf_ctrl.module);
 			return -EFAULT;
@@ -7045,6 +7048,10 @@ static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 #if 1
 	/* Adjust S/W start time when using H/W timestamp */
 	#if (TIMESTAMP_QUEUE_EN == 0)
+	if ((module < 0) || (module >= ISP_IRQ_TYPE_AMOUNT)) {
+		LOG_ERR("module index is out of range.");
+		return -EFAULT;
+	}
 	g1stSof[module] = MTRUE;
 	#endif
 
