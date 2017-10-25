@@ -12,7 +12,9 @@
  *
  */
 
-
+#ifdef CONFIG_GPU_TRACEPOINTS
+#define CREATE_TRACE_POINTS
+#endif
 
 #include <mali_kbase.h>
 #include <mali_kbase_config_defaults.h>
