@@ -99,7 +99,6 @@ struct icm20645_i2c_data {
 	atomic_t fir_en;
 	struct data_filter fir;
 #endif
-	bool flush;
 };
 /*----------------------------------------------------------------------------*/
 #ifdef CONFIG_OF
@@ -1172,14 +1171,9 @@ static int icm20645gy_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatch
 static int icm20645gy_flush(void)
 {
 	int err = 0;
-	/*Only flush after sensor was enabled*/
-	if (!sensor_power) {
-		obj_i2c_data->flush = true;
-		return 0;
-	}
+
 	err = gyro_flush_report();
-	if (err >= 0)
-		obj_i2c_data->flush = false;
+	GYRO_INFO("Flush complete\n");
 	return err;
 }
 
