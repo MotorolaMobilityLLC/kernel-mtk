@@ -35,19 +35,24 @@
 #define ALIGN_TO(x, n)  (((x) + ((n) - 1)) & ~((n) - 1))
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || !defined(CONFIG_MTK_GPU_SUPPORT)
-#define MTK_FB_ALIGNMENT 1 /* SW 3D */
+#  define MTK_FB_ALIGNMENT	1 /* SW 3D */
 #else
-#define MTK_FB_ALIGNMENT 32 /* HW 3D */
+#  define MTK_FB_ALIGNMENT	32 /* HW 3D */
 #endif
 
 #define MTK_FB_ION_SUPPORT
-#define VIDEO_LAYER_COUNT            (3)
-/* #define HW_OVERLAY_COUNT                  (4) */
+#define VIDEO_LAYER_COUNT			(3)
+/* #define HW_OVERLAY_COUNT			(4) */
 
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(8)
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4)
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4)
-#define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+#  define PRIMARY_SESSION_INPUT_LAYER_COUNT	(8 - 2) /* 2 for round corner */
+#else
+#  define PRIMARY_SESSION_INPUT_LAYER_COUNT	(8)
+#endif
+
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT	(4)
+#define MEMORY_SESSION_INPUT_LAYER_COUNT	(4)
+#define DISP_SESSION_OVL_TIMELINE_ID(x)		(x)
 
 /* Display HW Capabilities */
 #define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_SWITCHABLE
@@ -61,7 +66,7 @@ typedef enum {
 	DISP_SESSION_TIMELINE_COUNT,
 } DISP_SESSION_ENUM;
 
-#define MAX_SESSION_COUNT					5
+#define MAX_SESSION_COUNT			5
 
 /* macros for display path hardware */
 #define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	3
@@ -71,4 +76,4 @@ typedef enum {
 /* Other platform-dependent features */
 #define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 
-#endif				/* __DISP_DRV_PLATFORM_H__ */
+#endif	/* __DISP_DRV_PLATFORM_H__ */

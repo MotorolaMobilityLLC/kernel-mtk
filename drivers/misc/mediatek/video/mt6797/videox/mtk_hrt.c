@@ -479,7 +479,8 @@ static int get_layer_weight(int disp_idx)
 }
 
 static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
-				int start_layer, int end_layer, bool force_scan_y, bool has_dal_layer)
+			 int start_layer, int end_layer,
+			 bool force_scan_y, bool has_dal_layer, bool has_rc_layer)
 {
 	int i, bpp, sum_overlap_w, overlap_lower_bound, overlay_w, weight;
 	bool has_gles = false;
@@ -556,22 +557,62 @@ static int _get_larb0_idx(disp_layer_info *disp_info)
 
 	primary_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_PRIMARY);
 
-	if (primary_fps == 120) {
-		if (primary_ovl_cnt < 3)
-			larb_idx = primary_ovl_cnt - 1;
-		else if (primary_ovl_cnt < 5)
-			larb_idx = 1;
-		else if (primary_ovl_cnt < 7)
-			larb_idx = 2;
-		else
-			larb_idx = 3;
+	if (disp_helper_get_option(DISP_OPT_ROUND_CORNER)) {
+		if (primary_fps != 120) {
+			unsigned int h;
+
+			h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+			if (h > FHDP_H) {
+				/*
+				 * WQHD: if layer cnt <= 4, offset one index
+				 * for BW balance
+				 */
+				if (primary_ovl_cnt < 4)
+					larb_idx = primary_ovl_cnt - 1;
+				else if (primary_ovl_cnt == 4)
+					larb_idx = 2;
+				else
+					larb_idx = 3;
+			} else {
+				/* from FHD_plus to HD no offset */
+				if (primary_ovl_cnt <= 4)
+					larb_idx = primary_ovl_cnt - 1;
+				else
+					larb_idx = 3;
+			}
+		}
 	} else {
-		if (primary_ovl_cnt < 4)
-			larb_idx = primary_ovl_cnt - 1;
-		else if (primary_ovl_cnt < 7)
-			larb_idx = 2;
-		else
-			larb_idx = 3;
+		if (primary_fps == 120) {
+			if (primary_ovl_cnt < 3)
+				larb_idx = primary_ovl_cnt - 1;
+			else if (primary_ovl_cnt < 5)
+				larb_idx = 1;
+			else if (primary_ovl_cnt < 7)
+				larb_idx = 2;
+			else
+				larb_idx = 3;
+		} else {
+			unsigned int h;
+
+			h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+			if (h > FHDP_H) {
+				/* WQHD: offset one index if layer cnt <= 6 */
+				if (primary_ovl_cnt < 4)
+					larb_idx = primary_ovl_cnt - 1;
+				else if (primary_ovl_cnt < 7)
+					larb_idx = 2;
+				else
+					larb_idx = 3;
+			} else {
+				/* from FHD_plus to HD: no offset */
+				if (primary_ovl_cnt <= 4)
+					larb_idx = primary_ovl_cnt - 1;
+				else
+					larb_idx = 3;
+			}
+		}
 	}
 	if (disp_info->gles_head[0] != -1 && larb_idx > disp_info->gles_head[0])
 		larb_idx += (disp_info->gles_tail[0] - disp_info->gles_head[0]);
@@ -590,7 +631,7 @@ static bool _calc_larb0(disp_layer_info *disp_info, int emi_hrt_w)
 	}
 
 	larb_idx = _get_larb0_idx(disp_info);
-	sum_overlap_w = _calc_hrt_num(disp_info, 0, 0, larb_idx, false, false);
+	sum_overlap_w = _calc_hrt_num(disp_info, 0, 0, larb_idx, true, false, false);
 
 	if (get_hrt_level(sum_overlap_w, true) > HRT_LEVEL_LOW)
 		is_over_bound = true;
@@ -614,14 +655,15 @@ static bool _calc_larb5(disp_layer_info *disp_info, int emi_hrt_w)
 		int larb5_idx = 0;
 
 		larb5_idx = _get_larb0_idx(disp_info) + 1;
-		sum_overlap_w += _calc_hrt_num(disp_info, HRT_PRIMARY,
-					larb5_idx, disp_info->layer_num[0] - 1, false, dal_enable);
-
+		sum_overlap_w = _calc_hrt_num(disp_info, HRT_PRIMARY, larb5_idx,
+					      disp_info->layer_num[0] - 1,
+					      true, dal_enable, true);
 	}
 
 	if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
-		sum_overlap_w += _calc_hrt_num(disp_info, HRT_SECONDARY,
-					0, disp_info->layer_num[1] - 1, false, false);
+		sum_overlap_w += _calc_hrt_num(disp_info, HRT_SECONDARY, 0,
+					       disp_info->layer_num[1] - 1,
+					       true, false, false);
 	}
 
 	if (get_hrt_level(sum_overlap_w, true) > HRT_LEVEL_LOW)
@@ -647,22 +689,17 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 {
 	int hrt_level = HRT_OVER_LIMIT;
 	int sum_overlay_w = 0;
-	bool single_ovl = false;
-
-	/*
-	This is a temporary solution for support single ovl for primary display.
-	Remove it if primary display can support multiple ovl.
-	*/
-	if (PRIMARY_OVL_LAYER_NUM < 8)
-		single_ovl = true;
 
 	/* Calculate HRT for EMI level */
 	if (has_hrt_limit(disp_info, HRT_PRIMARY))
-		sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1,
-					false, dal_enable);
+		sum_overlay_w = _calc_hrt_num(disp_info, 0, 0,
+					      disp_info->layer_num[0] - 1,
+					      false, dal_enable, true);
+
 	if (has_hrt_limit(disp_info, HRT_SECONDARY))
-		sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1,
-					false, false);
+		sum_overlay_w += _calc_hrt_num(disp_info, 1, 0,
+					       disp_info->layer_num[1] - 1,
+					       false, false, false);
 
 
 	hrt_level = get_hrt_level(sum_overlay_w, false);
@@ -679,35 +716,13 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 	if (hrt_level != HRT_LEVEL_LOW)
 		return hrt_level;
 
-	if (single_ovl) {
-		/* In single ovl mode, larb0->primary, larb5->secondary */
+	/* Check Larb Bound here */
+	if (calc_larb_hrt(disp_info, sum_overlay_w))
+		hrt_level = HRT_LEVEL_HIGH;
+	else
+		hrt_level = HRT_LEVEL_LOW;
+	disp_info->hrt_num = hrt_level;
 
-		if (has_hrt_limit(disp_info, HRT_PRIMARY)) {
-			sum_overlay_w = _calc_hrt_num(disp_info, 0, 0, disp_info->layer_num[0] - 1,
-				true, dal_enable);
-			hrt_level = get_hrt_level(sum_overlay_w, true);
-			if (hrt_level > HRT_LEVEL_LOW) {
-				disp_info->hrt_num = hrt_level;
-				return hrt_level;
-			}
-		}
-		if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
-			sum_overlay_w += _calc_hrt_num(disp_info, 1, 0, disp_info->layer_num[1] - 1,
-				true, false);
-			hrt_level = get_hrt_level(sum_overlay_w, true);
-			if (hrt_level > HRT_LEVEL_LOW) {
-				disp_info->hrt_num = hrt_level;
-				return hrt_level;
-			}
-		}
-	} else {
-		/* Check Larb Bound here */
-		if (calc_larb_hrt(disp_info, sum_overlay_w))
-			hrt_level = HRT_LEVEL_HIGH;
-		else
-			hrt_level = HRT_LEVEL_LOW;
-		disp_info->hrt_num = hrt_level;
-	}
 #ifdef HRT_DEBUG
 	DISPMSG("Larb hrt level:%d\n", hrt_level);
 #endif
@@ -716,7 +731,7 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 
 static int dispatch_ovl_id(disp_layer_info *disp_info)
 {
-	int disp_idx, i, ovl_id_offset;
+	int disp_idx, i, ovl_id_offset = 0;
 	layer_config *layer_info;
 	bool has_gles, has_second_disp;
 
@@ -768,19 +783,47 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 		int gles_count, ovl_cnt;
 
 		ovl_cnt = get_ovl_layer_cnt(disp_info, disp_idx);
-		if (primary_fps == 120) {
-			if (ovl_cnt <= 4 && disp_idx == HRT_PRIMARY)
-				ovl_id_offset = 2;
-			else if (ovl_cnt <= 6 && disp_idx == HRT_PRIMARY)
-				ovl_id_offset = 1;
-			else
-				ovl_id_offset = 0;
+		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER)) {
+			if (primary_fps != 120) {
+				unsigned int h;
+
+				h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+				if (h > FHDP_H) { /* WQHD */
+					/* layer cnt <= 4, offset one index for BW balance */
+					if (ovl_cnt <= 4 && disp_idx == HRT_PRIMARY &&
+					    PRIMARY_OVL_LAYER_NUM > 4)
+						ovl_id_offset = 1;
+					else
+						ovl_id_offset = 0;
+				} else {
+					/* from FHD_plus to HD: no offset */
+					ovl_id_offset = 0;
+				}
+			}
 		} else {
-			if (ovl_cnt <= larb_lower_bound * 2 && disp_idx == HRT_PRIMARY &&
-				PRIMARY_OVL_LAYER_NUM > 4)
-				ovl_id_offset = 1;
-			else
-				ovl_id_offset = 0;
+			if (primary_fps == 120) {
+				if (ovl_cnt <= 4 && disp_idx == HRT_PRIMARY)
+					ovl_id_offset = 2;
+				else if (ovl_cnt <= 6 && disp_idx == HRT_PRIMARY)
+					ovl_id_offset = 1;
+				else
+					ovl_id_offset = 0;
+			} else {
+				unsigned int h;
+
+				h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+				if (h > FHDP_H) { /* WQHD */
+					if (ovl_cnt <= 6 &&
+					    disp_idx == HRT_PRIMARY && PRIMARY_OVL_LAYER_NUM > 4)
+						ovl_id_offset = 1;
+					else
+						ovl_id_offset = 0;
+				} else { /* from FHD_plus to HD */
+					ovl_id_offset = 0;
+				}
+			}
 		}
 		gles_count = disp_info->gles_tail[disp_idx] - disp_info->gles_head[disp_idx] + 1;
 		has_gles = false;
@@ -955,6 +998,9 @@ int gen_hrt_pattern(void)
 
 static int set_hrt_bound(void)
 {
+	unsigned int h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+	/* 120 fps */
 	if (primary_display_get_lcm_refresh_rate() == 120) {
 		emi_lower_bound = OD_EMI_LOWER_BOUND;
 		emi_upper_bound = OD_EMI_UPPER_BOUND;
@@ -966,14 +1012,26 @@ static int set_hrt_bound(void)
 		return 120;
 	}
 
-	emi_lower_bound = EMI_LOWER_BOUND;
-	emi_upper_bound = EMI_UPPER_BOUND;
-	larb_lower_bound = LARB_LOWER_BOUND;
-	larb_upper_bound = LARB_UPPER_BOUND;
-	if (primary_display_get_width() > 1080)
-		emi_extreme_lower_bound = EMI_EXTREME_LOWER_BOUND;
-	else
-		emi_extreme_lower_bound = EMI_EXTREME_LOWER_BOUND + 1;
+	/* 60 fps */
+	if (h > FHDP_H) { /* WQHD(9:16) */
+		emi_extreme_lower_bound = WQHD_EMI_EXTREME_LOWER_BOUND;
+		emi_lower_bound = WQHD_EMI_LOWER_BOUND;
+		emi_upper_bound = WQHD_EMI_UPPER_BOUND;
+		larb_lower_bound = WQHD_LARB_LOWER_BOUND;
+		larb_upper_bound = WQHD_LARB_UPPER_BOUND;
+	} else if (h > HDP_H) { /* FHD(9:16) or FHD_plus(9:18) */
+		emi_extreme_lower_bound = FHDP_EMI_EXTREME_LOWER_BOUND;
+		emi_lower_bound = FHDP_EMI_LOWER_BOUND;
+		emi_upper_bound = FHDP_EMI_UPPER_BOUND;
+		larb_lower_bound = FHDP_LARB_LOWER_BOUND;
+		larb_upper_bound = FHDP_LARB_UPPER_BOUND;
+	} else { /* HD(9:16) or HD_plus(9:18) */
+		emi_extreme_lower_bound = FHDP_EMI_EXTREME_LOWER_BOUND;
+		emi_lower_bound = HDP_EMI_LOWER_BOUND;
+		emi_upper_bound = HDP_EMI_UPPER_BOUND;
+		larb_lower_bound = HDP_LARB_LOWER_BOUND;
+		larb_upper_bound = HDP_LARB_UPPER_BOUND;
+	}
 
 	dal_enable = is_DAL_Enabled();
 #ifdef HRT_DEBUG

@@ -6648,6 +6648,8 @@ unsigned int primary_display_get_option(const char *option)
 		return PRIMARY_SESSION_INPUT_LAYER_COUNT - 1;
 	if (!strcmp(option, "M4U_ENABLE"))
 		return disp_helper_get_option(DISP_OPT_USE_M4U);
+	if (!strcmp(option, "ROUND_CORNER"))
+		return PRIMARY_SESSION_INPUT_LAYER_COUNT;
 	ASSERT(0);
 }
 

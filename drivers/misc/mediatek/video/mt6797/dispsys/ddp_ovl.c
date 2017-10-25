@@ -465,7 +465,7 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	value = REG_FLD_VAL((L_PITCH_FLD_SUR_ALFA), (value));
 	value |= REG_FLD_VAL((L_PITCH_FLD_LSP), (cfg->src_pitch));
 	if (cfg->const_bld)
-		value = value | REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
+		value |= REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_PITCH + layer_offset, value);
 
 	return 0;
@@ -716,14 +716,14 @@ static int ovl_check_input_param(OVL_CONFIG_STRUCT *config)
 /* use noinline to reduce stack size */
 static noinline void print_layer_config_args(int module, int local_layer, OVL_CONFIG_STRUCT *ovl_cfg)
 {
-	DDPDBG("%s, layer=%d(%d), source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d),pitch=%d,",
+	DDPDBG("%s:L%d/%d,source=%s,src(%d,%d),dst(%d,%d,%dx%d),pitch=%d\n",
 		ddp_get_module_name(module), local_layer, ovl_cfg->layer,
 		(ovl_cfg->source == 0) ? "memory" : "dim", ovl_cfg->src_x, ovl_cfg->src_y,
 		ovl_cfg->dst_x, ovl_cfg->dst_y, ovl_cfg->dst_w, ovl_cfg->dst_h, ovl_cfg->src_pitch);
-	DDPDBG("fmt=%s, addr=%lx, keyEn=%d, key=%d, aen=%d, alpha=%d,",
+	DDPDBG(" fmt=%s,addr=%lx,keyEn=%d,key=%d,aen=%d,alpha=%d\n",
 		unified_color_fmt_name(ovl_cfg->fmt), ovl_cfg->addr,
 		ovl_cfg->keyEn, ovl_cfg->key, ovl_cfg->aen, ovl_cfg->alpha);
-	DDPDBG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
+	DDPDBG(" sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
 		ovl_cfg->sur_aen, (ovl_cfg->dst_alpha << 2) | ovl_cfg->src_alpha,
 		ovl_cfg->yuv_range, ovl_cfg->security, ovl_cfg->const_bld);
 }
@@ -1073,9 +1073,9 @@ static void ovl_printf_status(unsigned int status)
 
 static void ovl_print_ovl_rdma_status(unsigned int status)
 {
-	DDPDUMP("wram_rst_cs:0x%x,layer_greq:0x%x,out_data:0x%x,",
+	DDPDUMP(" wram_rst_cs:0x%x,layer_greq:0x%x,out_data:0x%x\n",
 		status & 0x7, (status >> 3) & 0x1, (status >> 4) & 0xffffff);
-	DDPDUMP("out_ready:0x%x,out_valid:0x%x,smi_busy:0x%x,smi_greq:0x%x\n",
+	DDPDUMP(" out_ready:0x%x,out_valid:0x%x,smi_busy:0x%x,smi_greq:0x%x\n",
 		(status >> 28) & 0x1, (status >> 29) & 0x1, (status >> 30) & 0x1,
 		(status >> 31) & 0x1);
 }
@@ -1083,19 +1083,19 @@ static void ovl_print_ovl_rdma_status(unsigned int status)
 static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 {
 	enum UNIFIED_COLOR_FMT fmt;
-	fmt =
-	    display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
+
+	fmt = display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
 					   (L_CON_FLD_CFMT, DISP_REG_OVL_L0_CON + layer_offset),
 					   DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
 							      DISP_REG_OVL_L0_CON + layer_offset),
 						DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
 							      DISP_REG_OVL_L0_CON + layer_offset));
 
-	DDPDUMP("layer%d: w=%d,h=%d,off(x=%d,y=%d),pitch=%d,addr=0x%x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
-	     layer, DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) & 0xfff,
-	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) >> 16) & 0xfff,
-	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_OFFSET) & 0xfff,
+	DDPDUMP(" L%d:(%d,%d,%dx%d),pitch=%d,addr=0x%08x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
+	     layer, DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_OFFSET) & 0xfff,
 	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_OFFSET) >> 16) & 0xfff,
+	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) & 0xfff,
+	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) >> 16) & 0xfff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_PITCH) & 0xffff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_ADDR), unified_color_fmt_name(fmt),
 	     (DISP_REG_GET_FIELD(L_CON_FLD_LARC, DISP_REG_OVL_L0_CON + layer_offset) ==
@@ -1115,7 +1115,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
 	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
-	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),",
+	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(%dx%d)\n",
 		DISP_REG_GET(DISP_REG_OVL_EN + offset),
 		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) & 0x1,
 		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 1) & 0x1,
@@ -1142,9 +1142,9 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 		if (src_on & (0x1 << i))
 			ovl_dump_layer_info(i, layer_offset);
 		else
-			DDPDUMP("layer%d: disabled\n", i);
+			DDPDUMP("L%d:disabled\n", i);
 		rdma_ctrl = DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_CTRL);
-		DDPDUMP("ovl rdma%d status:(en=%d, fifo_used %d, GMC=0x%x)\n", i,
+		DDPDUMP(" ovl rdma%d status:(en=%d, fifo_used %d, GMC=0x%x)\n", i,
 			REG_FLD_VAL_GET(RDMA0_CTRL_FLD_RDMA_EN, rdma_ctrl),
 			REG_FLD_VAL_GET(RDMA0_CTRL_FLD_RMDA_FIFO_USED_SZ, rdma_ctrl),
 			DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_MEM_GMC_SETTING));

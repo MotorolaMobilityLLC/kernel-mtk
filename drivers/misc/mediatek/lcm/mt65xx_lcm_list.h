@@ -215,6 +215,7 @@ extern LCM_DRIVER r63417_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv;
 extern LCM_DRIVER r63417_fhd_dsi_vdo_truly_nt50358_lcm_drv;
 extern LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv;
 extern LCM_DRIVER r63419_wqhd_truly_phantom_vdo_lcm_drv;
+extern LCM_DRIVER r63419_fhdp_truly_phantom_lcm_drv;
 extern LCM_DRIVER r63419_fhd_truly_phantom_lcm_drv;
 extern LCM_DRIVER r63423_wqhd_truly_phantom_lcm_drv;
 extern LCM_DRIVER kr101ia2s_dsi_vdo_lcm_drv;

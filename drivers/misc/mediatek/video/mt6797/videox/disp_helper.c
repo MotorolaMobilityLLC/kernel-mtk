@@ -131,6 +131,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_PARTIAL_UPDATE",
 	"DISP_OPT_CV_BYSUSPEND",
 	"DISP_OPT_DELAYED_TRIGGER",
+	"DISP_OPT_ROUND_CORNER",
 };
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
