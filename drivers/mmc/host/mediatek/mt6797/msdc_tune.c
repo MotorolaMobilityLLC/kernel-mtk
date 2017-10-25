@@ -206,6 +206,25 @@ done:
 	return 0;
 
 }
+
+int sdcard_hw_reset(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	int ret = 0;
+
+	/* power reset sdcard */
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 260000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
+	ret = mmc_hw_reset(mmc);
+	if (ret)
+		pr_notice("msdc%d power reset failed, block_bad_card = %d\n",
+			host->id, host->block_bad_card);
+	else
+		pr_notice("msdc%d power reset success\n", host->id);
+	return ret;
+}
+
 /* SDcard will change speed mode and power reset
  * UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
  */
@@ -243,13 +262,7 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 power_reinit:
 	pr_err("msdc%d reinit card\n",
 		host->id);
-	mmc->ios.timing = MMC_TIMING_LEGACY;
-	mmc->ios.clock = 260000;
-	msdc_ops_set_ios(mmc, &mmc->ios);
-	/* power reset sdcard */
-	ret = mmc_hw_reset(mmc);
-	if (ret)
-		pr_err("msdc%d power reset failed\n", host->id);
+	ret = sdcard_hw_reset(mmc);
 	return ret;
 }
 /*

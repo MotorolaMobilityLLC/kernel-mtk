@@ -40,7 +40,8 @@
 #define TUNE_LEGACY_CMD          (0x1 << 3) /* legacy transfer cmd crc */
 #define TUNE_LEGACY_DATA_WRITE   (0x1 << 4) /* legacy transfer data crc */
 #define TUNE_LEGACY_DATA_READ    (0x1 << 5) /* legacy transfer data crc */
-#define TUNE_AUTOK_PASS          (0x1 << 6) /* autok pass flag */
+#define TUNE_LEGACY_CMD_TMO      (0x1 << 6) /* legacy transfer cmd tmo*/
+#define TUNE_AUTOK_PASS          (0x1 << 7) /* autok pass flag */
 
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
@@ -479,6 +480,8 @@ struct msdc_host {
 	u8                      autocmd;
 	u32                     sw_timeout;
 	/* msdc autok */
+	/* cmd13 continuous timeout,clear when any other cmd with resp success */
+	u32			cmd13_timeout_cont;
 	bool                    tuning_in_progress;
 	u32	                    need_tune;
 	int                     autok_error;
@@ -791,6 +794,7 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type,
 void msdc_set_smpl_all(struct msdc_host *host, u8 HS400);
 int msdc_switch_part(struct msdc_host *host, char part_id);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
+int sdcard_hw_reset(struct mmc_host *mmc);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
 

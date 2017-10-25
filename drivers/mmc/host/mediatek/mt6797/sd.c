@@ -1943,6 +1943,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		default: /* Response types 1, 3, 4, 5, 6, 7(1b) */
 			*rsp = MSDC_READ32(SDC_RESP0);
+			host->cmd13_timeout_cont = 0;
 			break;
 		}
 		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
@@ -1982,6 +1983,13 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			pr_err("msdc%d: send stop TMO, device status: %x\n",
 					host->id, host->device_status);
 		}
+
+		if (cmd->opcode == 13) {
+			host->cmd13_timeout_cont++;
+			pr_notice("%s: %d: CMD%d cmd13_timeout_cont = %d\n", __func__, __LINE__,
+				cmd->opcode, host->cmd13_timeout_cont);
+		}
+
 		if ((cmd->opcode == 5) && emmc_do_sleep_awake)
 			msdc_dump_info(host->id);
 
@@ -3504,6 +3512,8 @@ done:
 		host->need_tune = TUNE_LEGACY_DATA_READ;
 	else if (host->error & REQ_CRC_STATUS_ERR)
 		host->need_tune = TUNE_LEGACY_DATA_WRITE;
+	else if (host->error & REQ_CMD_TMO)
+		host->need_tune = TUNE_LEGACY_CMD_TMO;
 
 	if (host->error & REQ_CMD_EIO || host->error & REQ_DAT_ERR ||
 		host->error & REQ_CRC_STATUS_ERR)
@@ -4236,6 +4246,8 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 			/* mmc_blk_err_check will do legacy request without data */
 			if (host->need_tune & TUNE_LEGACY_CMD)
 				host->need_tune &= ~TUNE_LEGACY_CMD;
+			if (host->need_tune & TUNE_LEGACY_CMD_TMO)
+				host->need_tune &= ~TUNE_LEGACY_CMD_TMO;
 			/* Retry legacy data read pass, clear autok pass flag */
 			if ((host->need_tune & TUNE_LEGACY_DATA_READ) &&
 				mrq->cmd->data) {
@@ -4486,7 +4498,19 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	else if ((host->need_tune & TUNE_ASYNC_DATA_WRITE) ||
 		(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
-
+	else if (host->need_tune & TUNE_LEGACY_CMD_TMO) {
+		host->need_tune = TUNE_NONE;
+		if ((host->hw->host_function == MSDC_SD)
+			&& (mrq->cmd->opcode == MMC_SEND_STATUS)) {
+			if (host->cmd13_timeout_cont >= 3) {
+				pr_notice(
+	"%s: CMD%d cmd13 continuous timeout count = %d, reset sdcard\n", __func__,
+					 mrq->cmd->opcode, host->cmd13_timeout_cont);
+				(void)sdcard_hw_reset(mmc);
+			}
+		}
+		goto end;
+	}
 	/* 1. mmc_blk_err_check will send CMD13 to check device status
 	 * Don't autok/switch edge here, or it will cause CMD19 send when
 	 * device is not in transfer status
@@ -4769,6 +4793,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 
 	host->is_autok_done = 0;
 	host->block_bad_card = 0;
+	host->cmd13_timeout_cont = 0;
 	msdc_ops_get_cd(mmc);
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
