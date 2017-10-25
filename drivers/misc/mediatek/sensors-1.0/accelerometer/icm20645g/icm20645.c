@@ -1759,9 +1759,37 @@ static int icm20645_get_data(int *x, int *y, int *z, int *status)
 
 static int icm20645_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	return 0;
+	unsigned int hw_rate, delay_t, err;
+	struct i2c_client *client = icm20645_i2c_client;
 
+	delay_t = samplingPeriodNs / 1000 / 1000;
+	hw_rate = 1000 / delay_t;
+
+	if (hw_rate >= 150) {
+		err = ICM20645_Setfilter(client, ACCEL_AVGCFG_1_4X);
+		if (err != ICM20645_SUCCESS) {
+			GSE_ERR("ICM20645_Setfilter error\n");
+			return err;
+		}
+		hw_rate = 562;
+	} else {
+		err = ICM20645_Setfilter(client, ACCEL_AVGCFG_8X);
+		if (err != ICM20645_SUCCESS) {
+			GSE_ERR("ICM20645_Setfilter error\n");
+			return err;
+		}
+		hw_rate = 125;
+	}
+
+	err = ICM20645_SetSampleRate(client, hw_rate);
+	if (err != ICM20645_SUCCESS) {
+		GSE_ERR("ICM20645_SetSampleRate error\n");
+		return err;
+	}
+
+	return 0;
 }
+
 static int icm20645_flush(void)
 {
 	int err = 0;

@@ -1146,7 +1146,8 @@ static int icm20645gy_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatch
 			return err;
 		}
 	} else if (hw_rate >= 100) {
-		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_4X);
+		hw_rate = 562;
+		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_1X);
 		if (err != ICM20645_SUCCESS) {
 			GYRO_PR_ERR("ICM20645_Setfilter ERR!\n");
 			return err;
