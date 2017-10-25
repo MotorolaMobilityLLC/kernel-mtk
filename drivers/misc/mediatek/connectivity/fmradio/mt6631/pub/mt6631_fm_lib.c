@@ -2008,7 +2008,6 @@ static unsigned short mt6631_chan_para_get(unsigned short freq)
 
 	size = sizeof(mt6631_chan_para_map) / sizeof(mt6631_chan_para_map[0]);
 
-	pos = (pos < 0) ? 0 : pos;
 	pos = (pos > (size - 1)) ? (size - 1) : pos;
 
 	return mt6631_chan_para_map[pos];
