@@ -14,7 +14,7 @@
 #ifndef OIS_COEF_H
 #define OIS_COEF_H
 
-const	OIS_UBYTE	DOWNLOAD_COEF[] = {
+const	unsigned char	DOWNLOAD_COEF[] = {
 	0xef,
 	0x00,
 	0x00,
