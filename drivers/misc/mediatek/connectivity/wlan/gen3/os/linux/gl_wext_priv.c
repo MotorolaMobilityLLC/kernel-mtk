@@ -883,7 +883,6 @@ priv_get_int(IN struct net_device *prNetDev,
 	UINT_32 u4BufLen = 0;
 	int status = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-	INT_32 ch[50];
 
 	ASSERT(prNetDev);
 	ASSERT(prIwReqInfo);
@@ -1009,34 +1008,21 @@ priv_get_int(IN struct net_device *prNetDev,
 	switch (u4SubCmd) {
 	case PRIV_CMD_GET_CH_LIST:
 		{
-			UINT_16 i, j = 0;
-			UINT_8 NumOfChannel = 50;
+			UINT_8 ucNumOfChannel, i;
 			UINT_8 ucMaxChannelNum = 50;
 			RF_CHANNEL_INFO_T aucChannelList[50];
+			INT_32 ch[50];
 
-			DBGLOG(RLM, INFO, "Domain: Query Channel List.\n");
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
-			if (NumOfChannel > 50)
-				NumOfChannel = 50;
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
+			DBGLOG(RLM, INFO, "PRIV_CMD_GET_CH_LIST: return %d channels\n", ucNumOfChannel);
+			if (ucNumOfChannel > 50)
+				ucNumOfChannel = 50;
 
-			if (kalIsAPmode(prGlueInfo)) {
-				for (i = 0; i < NumOfChannel; i++) {
-					if ((aucChannelList[i].ucChannelNum <= 13) ||
-					    (aucChannelList[i].ucChannelNum == 36
-					     || aucChannelList[i].ucChannelNum == 40
-					     || aucChannelList[i].ucChannelNum == 44
-					     || aucChannelList[i].ucChannelNum == 48)) {
-						ch[j] = (INT_32) aucChannelList[i].ucChannelNum;
-						j++;
-					}
-				}
-			} else {
-				for (j = 0; j < NumOfChannel; j++)
-					ch[j] = (INT_32) aucChannelList[j].ucChannelNum;
-			}
+			for (i = 0; i < ucNumOfChannel; i++)
+				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = j;
-			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
+			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
 				return status;
@@ -1175,7 +1161,6 @@ priv_get_ints(IN struct net_device *prNetDev,
 	UINT_32 u4SubCmd;
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
-	INT_32 ch[50];
 
 	ASSERT(prNetDev);
 	ASSERT(prIwReqInfo);
@@ -1190,20 +1175,21 @@ priv_get_ints(IN struct net_device *prNetDev,
 	switch (u4SubCmd) {
 	case PRIV_CMD_GET_CH_LIST:
 		{
-			UINT_16 i;
-			UINT_8 NumOfChannel = 50;
+			UINT_8 ucNumOfChannel, i;
 			UINT_8 ucMaxChannelNum = 50;
 			RF_CHANNEL_INFO_T aucChannelList[50];
+			INT_32 ch[50];
 
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
-			if (NumOfChannel > 50)
-				NumOfChannel = 50;
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
+			DBGLOG(RLM, INFO, "PRIV_CMD_GET_CH_LIST: return %d channels\n", ucNumOfChannel);
+			if (ucNumOfChannel > 50)
+				ucNumOfChannel = 50;
 
-			for (i = 0; i < NumOfChannel; i++)
+			for (i = 0; i < ucNumOfChannel; i++)
 				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = NumOfChannel;
-			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
+			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
 				return status;

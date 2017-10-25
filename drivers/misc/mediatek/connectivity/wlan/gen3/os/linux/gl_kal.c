@@ -3669,28 +3669,6 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 			     pucNumOfChannel, paucChannelList);
 }
 
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief
-*
-* \param[in] prAdapter  Pointer of ADAPTER_T
-*
-* \return none
-*/
-/*----------------------------------------------------------------------------*/
-BOOL kalIsAPmode(IN P_GLUE_INFO_T prGlueInfo)
-{
-#if 0				/* Marked for MT6630 (New ucBssIndex) */
-#if CFG_ENABLE_WIFI_DIRECT
-	if (IS_NET_ACTIVE(prGlueInfo->prAdapter, NETWORK_TYPE_P2P_INDEX) &&
-	    p2pFuncIsAPMode(prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo))
-		return TRUE;
-#endif
-#endif
-
-	return FALSE;
-}
-
 #if CFG_SUPPORT_802_11W
 /*----------------------------------------------------------------------------*/
 /*!

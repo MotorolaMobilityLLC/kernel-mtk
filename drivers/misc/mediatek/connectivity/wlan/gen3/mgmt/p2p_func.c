@@ -2060,16 +2060,11 @@ VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 BOOLEAN p2pFuncIsAPMode(IN P_P2P_CONNECTION_SETTINGS_T prP2pConnSettings)
 {
-	if (prP2pConnSettings) {
-		if (prP2pConnSettings->fgIsWPSMode == 1)
-			return FALSE;
+	if (prP2pConnSettings)
 		return prP2pConnSettings->fgIsApMode;
-	} else {
+	else
 		return FALSE;
-	}
-}
-
-/* p2pFuncIsAPMode */
+}				/* p2pFuncIsAPMode */
 
 VOID
 p2pFuncParseBeaconIEs(IN P_ADAPTER_T prAdapter,

@@ -1508,12 +1508,13 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	WLAN_STATUS u4Status;
 	P_BSS_INFO_T prBssInfo;
 	CMD_SET_BSS_INFO rCmdSetBssInfo;
-	P_WIFI_VAR_T prWifiVar = &prAdapter->rWifiVar;
+	P_WIFI_VAR_T prWifiVar;
 
 	ASSERT(prAdapter);
 	ASSERT(ucBssIndex <= MAX_BSS_INDEX);
 
 	prBssInfo = prAdapter->aprBssInfo[ucBssIndex];
+	prWifiVar = &prAdapter->rWifiVar;
 
 	kalMemZero(&rCmdSetBssInfo, sizeof(CMD_SET_BSS_INFO));
 
@@ -1555,6 +1556,8 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	else {
 #if CFG_ENABLE_WIFI_DIRECT
 		if (prAdapter->fgIsP2PRegistered) {
+			P_P2P_CONNECTION_SETTINGS_T prP2PConnSettings = prWifiVar->prP2PConnSettings;
+
 			if (kalP2PGetCcmpCipher(prAdapter->prGlueInfo)) {
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_WPA2_PSK;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION3_ENABLED;
@@ -1569,8 +1572,15 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_OPEN;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION_DISABLED;
 			}
-			/* Need the probe response to detect the PBC overlap */
-			rCmdSetBssInfo.ucIsApMode = p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings);
+			/*
+			 * In AP WPS Certification, need firmware to report Probe Request and
+			 * hostapd to send Probe Response for bringing manufacturer information
+			 * and detecting the PBC overlap.
+			 */
+			if (prP2PConnSettings && prP2PConnSettings->fgIsWPSMode)
+				rCmdSetBssInfo.ucIsApMode = FALSE;
+			else
+				rCmdSetBssInfo.ucIsApMode = p2pFuncIsAPMode(prP2PConnSettings);
 
 			if (rCmdSetBssInfo.ucIsApMode)
 				rCmdSetBssInfo.ucDisconnectDetectTh = prWifiVar->ucApDisconnectDetectTh;
