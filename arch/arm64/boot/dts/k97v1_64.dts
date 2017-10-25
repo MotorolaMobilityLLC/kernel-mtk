@@ -851,7 +851,6 @@
 	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
 	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
 	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
-	partial-update = <1>;
 	status = "okay";
 };
 
