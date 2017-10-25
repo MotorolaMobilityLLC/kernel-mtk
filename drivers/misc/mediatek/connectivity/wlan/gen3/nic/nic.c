@@ -528,7 +528,7 @@ WLAN_STATUS nicProcessIST(IN P_ADAPTER_T prAdapter)
 		/* DBGLOG(NIC, TRACE, ("u4IntStatus: 0x%x\n", u4IntStatus)); */
 
 		if (u4IntStatus & ~(WHIER_DEFAULT | WHIER_FW_OWN_BACK_INT_EN)) {
-			DBGLOG(INTR, WARN, "Un-handled HISR %#x, HISR = %#x (HIER:0x%x)\n",
+			DBGLOG(INTR, WARN, "Un-handled HISR %#lx, HISR = %#x (HIER:0x%lx)\n",
 					    (u4IntStatus & ~WHIER_DEFAULT), u4IntStatus, WHIER_DEFAULT);
 			u4IntStatus &= WHIER_DEFAULT;
 		}
@@ -611,8 +611,8 @@ BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter)
 
 	HAL_MCR_RD(prAdapter, MCR_WCIR, &u4CIR);
 
-	DBGLOG(NIC, TRACE, "Chip ID: 0x%08x\n", u4CIR & WCIR_CHIP_ID);
-	DBGLOG(NIC, TRACE, "Revision ID: 0x%08x\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
+	DBGLOG(NIC, TRACE, "Chip ID: 0x%08lx\n", u4CIR & WCIR_CHIP_ID);
+	DBGLOG(NIC, TRACE, "Revision ID: 0x%08lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
 
 	if ((u4CIR & WCIR_CHIP_ID) != MTK_CHIP_REV)
 		return FALSE;
@@ -3508,7 +3508,7 @@ VOID nicPrintFirmwareAssertInfo(IN P_ADAPTER_T prAdapter)
 
 	aucAssertFile[6] = '\0';
 
-	LOG_FUNC("[%s][wifi][Firmware] Assert at \"%s\" #%ld\n\n", NIC_NAME, aucAssertFile, line);
+	LOG_FUNC("[%s][wifi][Firmware] Assert at \"%s\" #%u\n\n", NIC_NAME, aucAssertFile, line);
 
 }
 

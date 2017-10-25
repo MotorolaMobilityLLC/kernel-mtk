@@ -651,15 +651,12 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 		return FALSE;
 
 	scan_req_t = (struct cfg80211_scan_request *)puPartialScanReq;
-	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
+	if (scan_req_t->n_channels > 0) {
 
 		channel_counts = scan_req_t->n_channels;
 		DBGLOG(OID, TRACE, "scan channel number: n_channels=%d\n", channel_counts);
 
 		if (channel_counts > 25)
-			return TRUE;
-
-		if (channel_counts > MAXIMUM_OPERATION_CHANNEL_LIST)
 			return TRUE;
 		/*
 		if (scan_req_t->n_channels > MAXIMUM_OPERATION_CHANNEL_LIST) {
@@ -784,7 +781,7 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	for (i = 0; i < prScanRequest->u4SsidNum; i++) {
 		if (prScanRequest->rSsid[i].u4SsidLen > ELEM_MAX_LEN_SSID) {
 			DBGLOG(OID, ERROR,
-			       "[%s] SSID(%s) Length(%ld) is over than ELEM_MAX_LEN_SSID(%d)\n",
+			       "[%s] SSID(%s) Length(%u) is over than ELEM_MAX_LEN_SSID(%d)\n",
 			       __func__, prScanRequest->rSsid[i].aucSsid,
 			       prScanRequest->rSsid[i].u4SsidLen, ELEM_MAX_LEN_SSID);
 			DBGLOG_MEM8(REQ, ERROR, prScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T));
@@ -812,18 +809,10 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	} else
 #endif
 	{
-		if (prAdapter->fgEnOnlineScan == TRUE) {
-			if (prScanRequest == NULL)
-				return WLAN_STATUS_FAILURE;
+		if (prAdapter->fgEnOnlineScan ||
+			kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
-			if (partial_result == FALSE)
-				return WLAN_STATUS_FAILURE;
-			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
-			if (prScanRequest == NULL)
-				return WLAN_STATUS_FAILURE;
-			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
-			if (partial_result == FALSE)
+			if (!partial_result)
 				return WLAN_STATUS_FAILURE;
 			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 		} else
@@ -4806,7 +4795,7 @@ wlanoidSetMcrWrite(IN P_ADAPTER_T prAdapter,
 		HAL_MCR_WR(prAdapter, (prMcrWrInfo->u4McrOffset & BITS(2, 31)),	/* address is in DWORD unit */
 			   prMcrWrInfo->u4McrData);
 
-		DBGLOG(OID, TRACE, "MCR Write: Offset = %#08lx, Data = %#08lx\n",
+		DBGLOG(OID, TRACE, "MCR Write: Offset = %#08x, Data = %#08x\n",
 		       prMcrWrInfo->u4McrOffset, prMcrWrInfo->u4McrData);
 
 		return WLAN_STATUS_SUCCESS;
@@ -7980,7 +7969,7 @@ wlanoidSetWapiAssocInfo(IN P_ADAPTER_T prAdapter,
 
 	kalMemCopy(prAdapter->prGlueInfo->aucWapiAssocInfoIEs, prWapiInfo, u2IeLength);
 	prAdapter->prGlueInfo->u2WapiAssocInfoIESz = u2IeLength;
-	DBGLOG(SEC, TRACE, "Assoc Info IE sz %ld\n", u2IeLength);
+	DBGLOG(SEC, TRACE, "Assoc Info IE sz %d\n", u2IeLength);
 
 	prAdapter->rWifiVar.rConnSettings.fgWapiMode = TRUE;
 
@@ -8045,11 +8034,7 @@ wlanoidSetWapiKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	/* Todo:: WAPI AP mode !!!!! */
 	prBssInfo = prAdapter->prAisBssInfo;
 
-	/* Exception check */
-	if (prNewKey->ucKeyID != 0x1 || prNewKey->ucKeyID != 0x0) {
-		prNewKey->ucKeyID = prNewKey->ucKeyID & BIT(0);
-		/* DBGLOG(SEC, INFO, ("Invalid WAPI key ID (%d)\r\n", prNewKey->ucKeyID)); */
-	}
+	prNewKey->ucKeyID = prNewKey->ucKeyID & BIT(0);
 
 	/* Dump P_PARAM_WPI_KEY_T content. */
 	DBGLOG(OID, TRACE, "Set: Dump P_PARAM_WPI_KEY_T content\r\n");
@@ -10320,7 +10305,8 @@ wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
 	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
 		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)\n");
 		return WLAN_STATUS_INVALID_LENGTH;
-	} else if (pvSetBuffer == NULL) {
+	}
+	if (pvSetBuffer == NULL) {
 		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
 		return WLAN_STATUS_INVALID_DATA;
 	}
@@ -10331,18 +10317,14 @@ wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
 	}
 
 	prCmdGscnParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	if (prCmdGscnParam) {
-		DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
-			prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
-			prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
+	DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
+		prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
+		prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
 
-		if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
-			return WLAN_STATUS_SUCCESS;
-		else
-			return WLAN_STATUS_FAILURE;
-	}
-
-	return WLAN_STATUS_INVALID_DATA;
+	if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
 }
 
 /*----------------------------------------------------------------------------*/

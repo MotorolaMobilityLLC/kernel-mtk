@@ -238,7 +238,7 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 			MTK_CHIP_REV,
 			wlanGetEcoVersion(prAdapter));
 		DBGLOG(INIT, ERROR,
-			"FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
+			"FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
 			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
 			(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
@@ -249,7 +249,7 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 		fgResult = TRUE;
 	} else {
 		DBGLOG(INIT, ERROR,
-		"Trigger whole-chip reset! Chip[%04X E%u] FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
+		"Trigger whole-chip reset! Chip[%04X E%d] FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
 			     MTK_CHIP_REV,
 			     wlanGetEcoVersion(prAdapter),
 			     (prAdapter->rVerInfo.u2FwOwnVersion >> 8),

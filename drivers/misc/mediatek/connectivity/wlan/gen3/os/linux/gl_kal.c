@@ -1159,9 +1159,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				{
 					UINT_32 i = 0;
 
-					P_PARAM_PMKID_CANDIDATE_T prPmkidCand =
-					    (P_PARAM_PMKID_CANDIDATE_T) &pPmkid->arCandidateList[0];
-
 					for (i = 0; i < pPmkid->u4NumCandidates; i++) {
 						cfg80211_pmksa_candidate_notify(prGlueInfo->prDevHandler, 1000,
 										pPmkid->arCandidateList[i].arBSSID,
@@ -1171,7 +1168,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 									 IWEVPMKIDCAND,
 									 (unsigned char *)&pPmkid->arCandidateList[i],
 									 pPmkid->u4NumCandidates);
-						prPmkidCand += sizeof(PARAM_PMKID_CANDIDATE_T);
 					}
 				}
 				break;
