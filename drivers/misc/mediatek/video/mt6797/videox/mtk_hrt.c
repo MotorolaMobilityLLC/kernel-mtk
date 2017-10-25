@@ -153,11 +153,6 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 	/* 0->primary display, 1->secondary display */
 	for (disp_index = 0 ; disp_index < 2 ; disp_index++) {
 
-		/* No need to considerate HRT in decouple mode */
-		if (disp_info->disp_mode[disp_index] == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
-			disp_info->disp_mode[disp_index] == DISP_SESSION_DECOUPLE_MODE)
-			continue;
-
 		if (disp_index == 0) {
 			if (dal_enable)
 				ovl_num_limit = PRIMARY_OVL_LAYER_NUM - 1;
