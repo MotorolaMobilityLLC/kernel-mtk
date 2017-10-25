@@ -3630,6 +3630,7 @@ VOID qmInsertNoNeedWaitPkt(IN P_SW_RFB_T prSwRfb, IN ENUM_NO_NEED_WATIT_DROP_REA
 	if (!(prRxBaEntry) || !(prRxBaEntry->fgIsValid)) {
 		DBGLOG(QM, WARN, "qmInsertNoNeedWaitPkt for a NULL ReorderQueParm, SSN:[%u], DropReason:(%d)\n",
 			prSwRfb->u2SSN, eDropReason);
+		kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
 		return;
 	}
 

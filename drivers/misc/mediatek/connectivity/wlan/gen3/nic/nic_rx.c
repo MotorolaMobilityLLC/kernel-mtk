@@ -496,7 +496,7 @@ P_SW_RFB_T nicRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 		/* The last fragment frame */
 		if (ucFragNum) {
 			DBGLOG(RX, LOUD,
-			       "FC %04hx M %04x SQ %04hx\n",
+			       "FC %04x M %04x SQ %04x\n",
 			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgLast = TRUE;
 		}
@@ -508,12 +508,12 @@ P_SW_RFB_T nicRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 	else {
 		if (ucFragNum == 0) {
 			DBGLOG(RX, LOUD,
-			       "FC %04hx M %04x SQ %04hx\n",
+			       "FC %04x M %04x SQ %04x\n",
 			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgFirst = TRUE;
 		} else {
 			DBGLOG(RX, LOUD,
-			       "FC %04hx M %04x SQ %04hx\n",
+			       "FC %04x M %04x SQ %04x\n",
 			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 		}
 	}
@@ -862,16 +862,16 @@ VOID nicRxProcessPktWithoutReorder(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	prRxCtrl->ucNumIndPacket++;
 #endif
 
+#if !defined(LINUX)
 	if (fgIsRetained) {
 		prRxCtrl->apvRetainedPacket[prRxCtrl->ucNumRetainedPacket] = prSwRfb->pvPacket;
 		prRxCtrl->ucNumRetainedPacket++;
 		/* TODO : error handling of nicRxSetupRFB */
 		nicRxSetupRFB(prAdapter, prSwRfb);
-		nicRxReturnRFB(prAdapter, prSwRfb);
-	} else {
-		prSwRfb->pvPacket = NULL;
-		nicRxReturnRFB(prAdapter, prSwRfb);
-	}
+	} else
+#endif
+	prSwRfb->pvPacket = NULL;
+	nicRxReturnRFB(prAdapter, prSwRfb);
 
 #if CFG_SUPPORT_MULTITHREAD
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_TO_OS_QUE);

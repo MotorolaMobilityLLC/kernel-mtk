@@ -70,6 +70,13 @@ p2pDevStateInit_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 
 		ASSERT(prP2pMsgChnlReq);
 
+		if (!prP2pMsgChnlReq) {
+			/* NO Channel Request Pending. */
+			DBGLOG(P2P, ERROR, "NO Pending Channel Request\n");
+			fgIsTransition = TRUE;
+			*peNextState = P2P_DEV_STATE_IDLE;
+			break;
+		}
 		prChnlReqInfo->u4MaxInterval = prP2pMsgChnlReq->u4Duration;
 		prChnlReqInfo->ucReqChnlNum = prP2pMsgChnlReq->rChannelInfo.ucChannelNum;
 		prChnlReqInfo->eChnlSco = prP2pMsgChnlReq->eChnlSco;

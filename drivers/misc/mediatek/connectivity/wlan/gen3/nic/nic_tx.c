@@ -324,7 +324,7 @@ WLAN_STATUS nicTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_FAILURE;
 	INT_32 i = NIC_TX_RESOURCE_POLLING_TIMEOUT;
-	UINT_32 au4WTSR[8];
+	UINT_16 au2WTSR[HIF_TX_NUM];
 
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
@@ -336,12 +336,12 @@ WLAN_STATUS nicTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 		return WLAN_STATUS_SUCCESS;
 
 	while (i-- > 0) {
-		HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
+		HAL_READ_TX_RELEASED_COUNT(prAdapter, au2WTSR);
 
 		if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
 			u4Status = WLAN_STATUS_FAILURE;
 			break;
-		} else if (nicTxReleaseResource(prAdapter, (PUINT_16) au4WTSR)) {
+		} else if (nicTxReleaseResource(prAdapter, au2WTSR)) {
 			if (prTxCtrl->rTc.au2FreeBufferCount[ucTC] > 0) {
 				u4Status = WLAN_STATUS_SUCCESS;
 				break;

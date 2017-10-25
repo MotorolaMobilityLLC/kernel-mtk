@@ -540,8 +540,13 @@ VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 			u4RemoveTime = u4RemoveTime / 2;
 		} while (u4RemoveTime > 0);
 
-		COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
+		if (prRoamBssDesc)
+			COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
 				prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+		else {
+			DBGLOG(SCN, ERROR, "AllocateRoamBssDesc failed for two days\n");
+			return;
+		}
 	}
 
 	GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);

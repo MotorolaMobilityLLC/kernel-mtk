@@ -520,7 +520,7 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	/* Trigger statistics log if Auth/Assoc Tx failed */
 	if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-		DBGLOG(SAA, INFO, "EVENT-TX DONE: Status[%d] SeqNo[%d] Current Time = %ld\n",
+		DBGLOG(SAA, INFO, "EVENT-TX DONE: Status[%d] SeqNo[%d] Current Time = %u\n",
 		       rTxDoneStatus, prMsduInfo->ucTxSeqNum, kalGetTimeTick());
 		wlanTriggerStatsLog(prAdapter, prAdapter->rWifiVar.u4StatsLogDuration);
 	}
@@ -1070,7 +1070,7 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 					prAisSpecBssInfo = &(prAdapter->rWifiVar.rAisSpecificBssInfo);
 
 					DBGLOG(RSN, INFO,
-					       "QM RX MGT: Deauth frame, P=%d Sec=%d CM=%d BC=%d fc=%02hx\n",
+					       "QM RX MGT: Deauth frame, P=%d Sec=%d CM=%d BC=%d fc=%04x\n",
 						prAisSpecBssInfo->fgMgmtProtection,
 						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
 						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
@@ -1262,7 +1262,7 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 					prAisSpecBssInfo = &(prAdapter->rWifiVar.rAisSpecificBssInfo);
 
 					DBGLOG(RSN, INFO,
-					       "QM RX MGT: Disassoc frame, P=%d Sec=%d CM=%d BC=%d fc=%02hx\n",
+					       "QM RX MGT: Disassoc frame, P=%d Sec=%d CM=%d BC=%d fc=%04x\n",
 						prAisSpecBssInfo->fgMgmtProtection,
 						HAL_RX_STATUS_GET_SEC_MODE(prSwRfb->prRxStatus),
 						HAL_RX_STATUS_IS_CIPHER_MISMATCH(prSwRfb->prRxStatus),
