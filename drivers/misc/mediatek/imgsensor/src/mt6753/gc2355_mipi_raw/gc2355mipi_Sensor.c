@@ -1321,7 +1321,7 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
     return ERROR_NONE;
 }
 
-#define MAX_DUMMY_LINE 1232
+
 static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 framerate)
 {
     kal_uint32 frame_length;
@@ -1331,15 +1331,6 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
             frame_length = imgsensor_info.pre.pclk / framerate * 10 / imgsensor_info.pre.linelength;
-			LOG_INF("pre.pclk=%d pre.linelength = %d\n",
-				imgsensor_info.pre.pclk, imgsensor_info.pre.linelength);
-
-			if (frame_length - imgsensor_info.pre.framelength > MAX_DUMMY_LINE) {
-				/*HW limit*/
-				LOG_INF("dummy_line over limit! current = %d, frame_length=%d pre.fl=%d\n",
-					imgsensor.dummy_line, frame_length, imgsensor_info.pre.framelength);
-				return ERROR_INVALID_PARA;
-			}
             spin_lock(&imgsensor_drv_lock);
             imgsensor.dummy_line = (frame_length > imgsensor_info.pre.framelength) ? (frame_length - imgsensor_info.pre.framelength) : 0;
             imgsensor.frame_length = imgsensor_info.pre.framelength + imgsensor.dummy_line;
