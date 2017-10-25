@@ -958,6 +958,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	UINT_8 ucChannelNum;
 	P_BSS_DESC_T prBssDesc = NULL;
 	UINT_16 u2StatusCode = WLAN_STATUS_AUTH_TIMEOUT;
+	UINT_32 u4StartTime = 0;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -978,6 +979,15 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		/* switch netif on */
 		netif_carrier_on(prGlueInfo->prDevHandler);
 
+		/* To Check netdevice up and qdisc active */
+		u4StartTime = kalGetTimeTick();
+		while (!netif_carrier_ok(prGlueInfo->prDevHandler)
+			|| KAL_TEST_BIT(__LINK_STATE_LINKWATCH_PENDING, prGlueInfo->prDevHandler->state))
+			kalUsleep_range(500, 1000);
+
+		if (CHECK_FOR_EXPIRATION(kalGetTimeTick(), u4StartTime + 10))
+			DBGLOG(INIT, INFO, "wlan netdevice takes %u ms to be ready\n",
+				(kalGetTimeTick() - u4StartTime));
 		do {
 			/* print message on console */
 			wlanQueryInformation(prGlueInfo->prAdapter, wlanoidQuerySsid, &ssid, sizeof(ssid), &bufLen);
