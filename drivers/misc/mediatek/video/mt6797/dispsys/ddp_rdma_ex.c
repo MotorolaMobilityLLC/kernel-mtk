@@ -348,11 +348,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
 	if (idx == 0)
-		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height;
-	else {
-		consume_rate = rdma_golden_setting->ext_dst_width
-		* rdma_golden_setting->ext_dst_height;
-	}
+		consume_rate =
+			(unsigned long long)rdma_golden_setting->dst_width *
+						rdma_golden_setting->dst_height;
+	else
+		consume_rate =
+			(unsigned long long)rdma_golden_setting->ext_dst_width *
+					rdma_golden_setting->ext_dst_height;
 
 	consume_rate /= (8*1000);
 	consume_rate *= frame_rate * bpp;
@@ -385,12 +387,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 			fifo_valid_size = 2048;
 		else
 			fifo_valid_size = 512;
-	} else
+	} else {
 		fifo_valid_size = 512;
-
+	}
 
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
-	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp / (16*8) - 1;
+	temp = (long long)rdma_golden_setting->rdma_width *
+			rdma_golden_setting->rdma_height * bpp / (16 * 8) - 1;
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	if (frame_rate	== 120)
@@ -402,7 +405,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	else
 		sodi_threshold_high = preultra_high > (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000)
 			? preultra_high : (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000);
-
 
 	sodi_threshold_low = (ultra_low_us * 10 + 20) * consume_rate / 10;
 	if (sodi_threshold_low % 1000)
