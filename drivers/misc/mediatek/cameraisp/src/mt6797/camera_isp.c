@@ -7373,7 +7373,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* Check User Space Allocate Memory Size */
 				MUINT32 *pData = kmalloc_array(nDMA_ERR, sizeof(MUINT32), GFP_KERNEL);
 
-				if (pData) {
+				if (pData == NULL) {
 					LOG_ERR("ISP_GET_DMA_ERR kmalloc failed");
 					Ret = -ENOMEM;
 					goto EXIT;
