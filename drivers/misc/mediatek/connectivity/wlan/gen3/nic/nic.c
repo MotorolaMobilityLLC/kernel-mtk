@@ -576,7 +576,7 @@ WLAN_STATUS nicProcessIST_impl(IN P_ADAPTER_T prAdapter, IN UINT_32 u4IntStatus)
 				apfnEventFuncTable[prIntEventMap->u4Event] (prAdapter);
 			} else {
 				DBGLOG(INTR, WARN,
-				       "Empty INTR handler! ISAR bit#: %u, event:%u, func: 0x%x\n",
+				       "Empty INTR handler! ISAR bit#: %u, event:%u, func: %p\n",
 					prIntEventMap->u4Int, prIntEventMap->u4Event,
 					apfnEventFuncTable[prIntEventMap->u4Event]);
 
@@ -2923,9 +2923,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_48M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_48M;
