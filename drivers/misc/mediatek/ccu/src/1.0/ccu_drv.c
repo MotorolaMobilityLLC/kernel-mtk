@@ -274,12 +274,15 @@ int ccu_create_user(ccu_user_t **user)
 
 int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 {
-	if (!user) {
+	LOG_DBG("+:%s\n", __func__);
+	/*Accuire user_mutex to ensure drv. release func. concurrency*/
+	mutex_lock(&g_ccu_device->user_mutex);
+	if (user == NULL) {
 		LOG_ERR("empty user");
 		return -1;
 	}
 
-	LOG_DBG("+:%s\n", __func__);
+	mutex_unlock(&g_ccu_device->user_mutex);
 
 	mutex_lock(&user->data_mutex);
 	list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->enque_ccu_cmd_list);
@@ -330,6 +333,16 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 {
 	int ret;
 	ccu_cmd_st *cmd;
+
+	LOG_DBG("+:%s\n", __func__);
+
+	/*Accuire user_mutex to ensure drv. release func. concurrency*/
+	mutex_lock(&g_ccu_device->user_mutex);
+	if (user == NULL) {
+		LOG_ERR("empty user");
+		return -1;
+	}
+	mutex_unlock(&g_ccu_device->user_mutex);
 
 	/* wait until condition is true */
 	ret = wait_event_interruptible_timeout(user->deque_wait,
@@ -573,6 +586,7 @@ void ccu_clock_disable(void)
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	int powerStat;
 	CCU_WAIT_IRQ_STRUCT IrqInfo;
 	ccu_user_t *user = flip->private_data;
 
@@ -588,8 +602,8 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	if ((cmd == CCU_IOCTL_SEND_CMD) || (cmd == CCU_IOCTL_ENQUE_COMMAND) ||
 		(cmd == CCU_IOCTL_DEQUE_COMMAND) || (cmd == CCU_IOCTL_WAIT_IRQ) ||
 		(cmd == CCU_READ_REGISTER)) {
-		ret = ccu_query_power_status();
-		if (ret == 0) {
+		powerStat = ccu_query_power_status();
+		if (powerStat == 0) {
 			LOG_WRN("ccuk: ioctl without powered on\n");
 			return -EFAULT;
 		}
@@ -598,10 +612,23 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case CCU_IOCTL_SET_POWER:
 		{
-			LOG_DBG("ccuk: ioctl set powerk+\n");
+			LOG_DBG("ccuk: ioctl set powerk+: %p\n", (void *)arg);
 			ret = copy_from_user(&power, (void *)arg, sizeof(ccu_power_t));
 			CCU_ASSERT(ret == 0, "[SET_POWER] copy_from_user failed, ret=%d\n", ret);
-			ret = ccu_set_power(&power);
+
+			/* to prevent invalid operation, check is arguments reasonable
+			 * CCU can only be powered on when power is currently off,
+			 * and powered off when power is currently on
+			 */
+			powerStat = ccu_query_power_status();
+			if (((power.bON == 1) && (powerStat == 0)) ||
+				((power.bON == 0) && (powerStat == 1))) {
+				ret = ccu_set_power(&power);
+			} else {
+				LOG_WRN("ccuk: ioctl set powe invalid, Stat:0x%x, Arg:0x%x", powerStat, power.bON);
+				return -EFAULT;
+			}
+
 			LOG_DBG("ccuk: ioctl set powerk-\n");
 			break;
 		}

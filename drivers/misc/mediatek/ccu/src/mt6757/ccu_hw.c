@@ -778,7 +778,7 @@ static int _ccu_powerdown(void)
 
 int ccu_run(void)
 {
-	int32_t timeout = 10;
+	int32_t timeout = 100;
 	ccu_mailbox_t *ccuMbPtr = NULL;
 	ccu_mailbox_t *apMbPtr = NULL;
 
@@ -816,10 +816,10 @@ int ccu_run(void)
 	* Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
 	*/
 	pMailBox[MAILBOX_SEND] =
-	    (ccu_mailbox_t *)(dmem_base +
+	    (ccu_mailbox_t *)(uintptr_t)(dmem_base +
 				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
 	pMailBox[MAILBOX_GET] =
-	    (ccu_mailbox_t *)(dmem_base +
+	    (ccu_mailbox_t *)(uintptr_t)(dmem_base +
 				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
 
 
@@ -831,10 +831,10 @@ int ccu_run(void)
 	/*tell ccu that driver has initialized mailbox*/
 	ccu_write_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE, 0);
 
-	timeout = 10;
-	while (ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2) {
-		mdelay(1);
-		LOG_DBG("wait ccu log test\n");
+	timeout = 100;
+	while (ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2 && (timeout >= 0)) {
+		mdelay(10);
+		LOG_DBG("wait ccu 2nd initial done\n");
 		timeout = timeout - 1;
 	}
 
@@ -942,7 +942,7 @@ int ccu_i2c_ctrl(unsigned char i2c_write_id, int transfer_len)
 
 int ccu_read_info_reg(int regNo)
 {
-	int *offset = (int *)(ccu_base + 0x60 + regNo * 4);
+	int *offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
 
 	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
 
