@@ -5965,7 +5965,15 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 	int i = 0, q = 0;
 	int idx =  -1, idx2 =  -1;
 	MINT32 restTime = 0;
-	int property = param.property;
+	int property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		ret = -EFAULT;
+		return ret;
+	}
+	property = param.property;
+
 	switch (param.ctrl) {
 	case ISP_P2_BUFQUE_CTRL_ENQUE_FRAME:    /* signal that a specific buffer is enqueued */
 		spin_lock(&(SpinLock_P2FrameList));
