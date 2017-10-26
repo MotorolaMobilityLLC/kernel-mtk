@@ -558,6 +558,38 @@
 	};
 };
 /*ACCDET end*/
+
+/* chr_eint start */
+&pio {
+	chr_eint_pins_default: default {
+	};
+	ap_dpdm_low: chr_stat@67_0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	chr_dpdm_high: chr_stat@67_1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+/* chr_eint start */
+&chr_stat {
+		/* CHARGER EINT  GPIO standardization ACC mode use */
+		pinctrl-names = "default","ap_dpdm_low","chr_dpdm_high";
+		pinctrl-0 = <&chr_eint_pins_default>;
+		pinctrl-1 = <&ap_dpdm_low>;
+		pinctrl-2 = <&chr_dpdm_high>;
+		gpio_dpdm = <&pio 67 0x0>;
+		status = "okay";
+};
+
+
 /* mmc start */
 &mmc0 {
 		clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
@@ -586,10 +618,12 @@
 		sd-uhs-sdr25;
 		sd-uhs-sdr50;
 		sd-uhs-sdr104;
-		/* sd-uhs-ddr50;*/
-		pinctrl-names = "default","insert_cfg";
+		/* sd-uhs-ddr50; */
+		pinctrl-names = "default","insert_cfg","power_output0","power_output1";
 		pinctrl-0 = <&mmc1_pins_insert_default>;
 		pinctrl-1 = <&mmc1_pins_insert_cfg>;
+		pinctrl-2 = <&mmc1_pins_power_output0>;
+		pinctrl-3 = <&mmc1_pins_power_output1>;
 
 		pinctl = <&mmc1_pins_default>;
 		pinctl_sdr104 = <&mmc1_pins_sdr104>;
@@ -598,7 +632,7 @@
 		register_setting = <&mmc1_register_setting_default>;
 		host_function = /bits/ 8 <MSDC_SD>;
 		cd_level = /bits/ 8 <MSDC_CD_LOW>;
-		cd-gpios = <&pio 67 0>;
+		cd-gpios = <&pio 87 0>;
 		status = "okay";
 };
 
@@ -607,13 +641,26 @@
 	};
 	mmc1_pins_insert_cfg: mmc1_ins_cfg {
 		pins_insert {
-			pins = <PINMUX_GPIO67__FUNC_EINT6>;
+			pins = <PINMUX_GPIO87__FUNC_EINT10>;
 			input-schmitt-enable =<1>;
 			slew-rate = <0>;
 			bias-pull-up =<00>;
 		};
 	};
-
+	mmc1_pins_power_output0: mmc1_power_output0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO40__FUNC_GPIO40>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mmc1_pins_power_output1: mmc1_power_output1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO40__FUNC_GPIO40>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 };
 /* AUDIO GPIO standardization */
 &audgpio {

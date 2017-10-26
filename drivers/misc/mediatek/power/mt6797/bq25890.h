@@ -32,6 +32,18 @@
 #ifndef _bq25890_SW_H_
 #define _bq25890_SW_H_
 
+enum CHARGER_TYPE {
+	NO_INPUT = 0,
+	USB_HOST_SDP,
+	USB_CDP,
+	USB_DCP,
+	MAXCHARGER,
+	UNKNOWN_ADP,
+	NON_STANDARD_ADAPTER,
+	OTG,
+};
+
+
 #define bq25890_CON0      0x00
 #define bq25890_CON1      0x01
 #define bq25890_CON2      0x02
@@ -388,6 +400,10 @@ extern unsigned int bq25890_get_chrg_stat(void);
 unsigned int bq25890_get_idpm_state(void);
 unsigned int bq25890_get_vdpm_state(void);
 
+extern void bq2589x_set_dpdm(bool gpio_pin);
+extern bool bq25890_is_maxcharger(void);
+extern unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+				    unsigned char SHIFT);
 /*Added for debuging to check power off caller*/
 extern void dump_stack(void);
 #endif

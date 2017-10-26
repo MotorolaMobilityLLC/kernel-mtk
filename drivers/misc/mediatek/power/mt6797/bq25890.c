@@ -10,7 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 #include <linux/types.h>
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
@@ -26,6 +27,8 @@
 #include <mach/mt_charging.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/battery_common.h>
+#include <mt-plat/mt_gpio.h>
+
 #include "bq25890.h"
 /**********************************************************
   *
@@ -36,8 +39,8 @@
 #ifdef CONFIG_OF
 #else
 
-#define bq25890_SLAVE_ADDR_WRITE   0xD6
-#define bq25890_SLAVE_ADDR_Read    0xD7
+#define bq25890_SLAVE_ADDR_WRITE   0xD4
+#define bq25890_SLAVE_ADDR_Read    0xD5
 
 #ifdef I2C_SWITHING_CHARGER_CHANNEL
 #define bq25890_BUSNUM I2C_SWITHING_CHARGER_CHANNEL
@@ -64,6 +67,12 @@ static DEFINE_MUTEX(bq25890_i2c_access);
 static DEFINE_MUTEX(bq25890_access_mutex);
 
 int g_bq25890_hw_exist = 0;
+static struct platform_device *pltfm_dev1;
+struct pinctrl_state *chr_pins_eint_int;
+struct pinctrl *bq25890_pinctrl;
+struct platform_device *bq25890PltFmDev;
+int gpio_dpdm;
+
 
 /**********************************************************
   *
@@ -264,6 +273,44 @@ unsigned int bq25890_reg_config_interface(unsigned char RegNum, unsigned char va
 
 	return ret;
 }
+
+struct platform_device *get_bq25890_platformdev(void)
+{
+	return pltfm_dev1;
+}
+
+
+void bq2589x_set_dpdm(bool gpio_pin)
+{
+	bool gpio_out = gpio_pin;
+
+	gpio_direction_output(gpio_dpdm, gpio_out);
+}
+
+
+int bq2589x_get_gpio_info(void)
+{
+	int ret;
+	struct device_node *np;
+
+	bq25890PltFmDev = get_bq25890_platformdev();
+
+	if (bq25890PltFmDev == NULL) {
+		pr_debug("bq25890PltFmDev == NULL");
+		return -1;
+	}
+	np = bq25890PltFmDev->dev.of_node;
+	gpio_dpdm = of_get_named_gpio_flags(np, "gpio_dpdm", 0, NULL);
+	pr_debug("%s get gpio_dpdm = %d\n", __func__, gpio_dpdm);
+	ret = gpio_request(gpio_dpdm, "bq2589x_gpio_dpdm");
+	if (ret)
+		pr_debug("bq request bq2589x_gpio_dpdm failed\n");
+	gpio_direction_output(gpio_dpdm, 0);
+
+	pr_debug("gyg-get_gpio_info OK\n");
+	return 0;
+}
+
 
 /**********************************************************
   *
@@ -731,6 +778,20 @@ unsigned int bq25890_get_vbus_state(void)
 	return val;
 }
 
+bool bq25890_is_maxcharger(void)
+{
+	unsigned char vbus_type;
+
+	vbus_type = bq25890_get_vbus_state();
+
+	if (vbus_type == MAXCHARGER) {
+		battery_log(BAT_LOG_CRTI,"bq25890 charger type is maxcharger\n");
+		return true;
+	} else {
+		battery_log(BAT_LOG_CRTI,"bq25890 charger type is normal\n");
+		return false;
+	}
+}
 
 unsigned int bq25890_get_chrg_state(void)
 {
@@ -1152,10 +1213,41 @@ static struct i2c_driver bq25890_driver = {
 	.id_table = bq25890_i2c_id,
 };
 
+static int bq25890_platform_probe(struct platform_device *pdev)
+{
+	pr_debug("bq25890_platform_probe\n");
+	pltfm_dev1 = pdev;
+	return 0;
+}
+
+static int bq25890_platform_remove(struct platform_device *pdev)
+{
+	pr_debug("bq25890_platform_remove\n");
+	return 0;
+}
+
+static const struct of_device_id bq25890_platform_of_match[] = {
+	{.compatible = "mediatek,mt6797_chr_stat",},
+	{},
+};
+
+static struct platform_driver bq25890_platform_driver = {
+	.probe	  = bq25890_platform_probe,
+	.remove	 = bq25890_platform_remove,
+	.driver = {
+
+		.name  = "chr_stat",
+		.of_match_table = bq25890_platform_of_match,
+	}
+};
+
+
 static int __init bq25890_init(void)
 {
 	int ret = 0;
 
+	if (platform_driver_register(&bq25890_platform_driver))
+		pr_debug("failed to register bq25890_platform_driver\n");
 	/* i2c registeration using DTS instead of boardinfo*/
 #ifdef CONFIG_OF
 	battery_log(BAT_LOG_CRTI, "[bq25890_init] init start with i2c DTS");
@@ -1184,6 +1276,7 @@ static int __init bq25890_init(void)
 			    ret);
 		return ret;
 	}
+	bq2589x_get_gpio_info();
 
 	return 0;
 }

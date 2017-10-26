@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="09.06.2017.13:51:12"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.26.2017.17:45:58"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>manning</proj>
@@ -76,13 +76,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint5>
-            <eint6>
-                <varName>MSDC1_INS</varName>
-                <debounce_time>1</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint6>
             <eint8>
                 <varName>TOUCH</varName>
                 <debounce_time>0</debounce_time>
@@ -1039,13 +1032,13 @@
             </gpio66>
             <gpio67>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <mode_arr>11000000</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
-                <out>false</out>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>false</in>
+                <out>true</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_SDHC_EINT_PIN</varName0>
                 <smt>false</smt>
@@ -3725,7 +3718,7 @@
             <device0>
                 <varName>SW_CHARGER</varName>
                 <channel>I2C_CHANNEL_0</channel>
-                <address>0x6B</address>
+                <address>0x6A</address>
             </device0>
             <device1>
                 <varName>I2C_LCD_BIAS</varName>

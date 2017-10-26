@@ -4010,7 +4010,7 @@
 		};
 
 		chr_stat: chr_stat@ {
-			compatible = "mediatek,mt6797-chr_stat";
+			compatible = "mediatek,mt6797_chr_stat";
 			status = "disabled";
 		};
 
