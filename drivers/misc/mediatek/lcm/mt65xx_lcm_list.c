@@ -625,6 +625,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35596_fhd_dsi_vdo_yassy_lcm_drv,
 #endif
 
+#if defined(NT35596_FHD_DSI_VDO_TIANMA)
+	&nt35596_fhd_dsi_vdo_tianma_lcm_drv,
+#endif
+
+#if defined(ILI7807D_FHD_DSI_VDO_DJN)
+	&ili7807d_fhd_dsi_vdo_djn_lcm_drv,
+#endif
+
 #if defined(NT35596_HD720_DSI_VDO_TRULY_TPS65132)
 	&nt35596_hd720_dsi_vdo_truly_tps65132_lcm_drv,
 #endif

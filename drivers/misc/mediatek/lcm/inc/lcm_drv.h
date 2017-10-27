@@ -789,6 +789,7 @@ typedef struct {
 	int (*set_gpio_dir)(unsigned int pin, unsigned int dir);
 	int (*set_gpio_pull_enable)(unsigned int pin, unsigned char pull_en);
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
+	long (*set_gpio_lcd_enn_bias)(unsigned int value);
 	long (*set_gpio_lcd_enp_bias_ByName)(bool bOn, char *pinName);
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
@@ -805,6 +806,13 @@ typedef struct {
 typedef enum {
 	LCM_DRV_IOCTL_ENABLE_CMD_MODE = 0x100,
 } LCM_DRV_IOCTL_CMD;
+
+typedef enum {
+	OFF,
+	UI,
+	STILL_IMAGE,
+	MOVING_IMAGE,
+} LCM_CABC_MODE;
 
 typedef struct {
 	const char *name;
@@ -829,6 +837,7 @@ typedef struct {
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
+	void (*esd_recover_backlight)(void);
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);
 	void (*set_backlight_mode)(unsigned int mode);
@@ -857,6 +866,7 @@ typedef struct {
 			     unsigned int *lcm_value);
 	/* /////////////PWM///////////////////////////// */
 	void (*set_pwm_for_mix)(int enable);
+	int (*set_cabc_mode)(int mode);
 } LCM_DRIVER;
 
 #if	defined(CONFIG_ARCH_MT6735) ||\
@@ -877,5 +887,6 @@ unsigned char which_lcd_module_triple(void);
 int lcm_vgp_supply_enable(void);
 int lcm_vgp_supply_disable(void);
 extern LCM_DSI_MODE_CON lcm_dsi_mode;
+extern int lp3101_write_bytes(unsigned char addr, unsigned char value);
 
 #endif /* __LCM_DRV_H__ */

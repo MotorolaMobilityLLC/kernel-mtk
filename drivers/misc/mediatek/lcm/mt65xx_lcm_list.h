@@ -146,6 +146,8 @@ extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_tps65132_720p_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_6735_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_6735_720p_lcm_drv;
 extern LCM_DRIVER nt35596_fhd_dsi_vdo_yassy_lcm_drv;
+extern LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv;
+extern LCM_DRIVER ili7807d_fhd_dsi_vdo_djn_lcm_drv;
 extern LCM_DRIVER nt35596_hd720_dsi_vdo_truly_tps65132_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_truly2_lcm_drv;
 extern LCM_DRIVER otm9608_wvga_dsi_cmd_drv;

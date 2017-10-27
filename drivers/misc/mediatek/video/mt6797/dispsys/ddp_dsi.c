@@ -2440,8 +2440,18 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 
 	if (0 != DSI_REG[0]->DSI_MODE_CTRL.MODE) { /* not in cmd mode */
 		/* start DSI VM CMDQ */
-		if (force_update)
-			DSI_EnableVM_CMD(module, cmdq);
+		if (force_update) {
+			if (cmdq) {
+				DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0);
+				DSI_EnableVM_CMD(module, cmdq);
+				DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 1);
+			} else {
+				wait_vm_cmd_done = false;
+				DSI_EnableVM_CMD(module, cmdq);
+				wait_event_interruptible(_dsi_wait_vm_cmd_done_queue[0], wait_vm_cmd_done);
+			}
+		}
+
 	} else {
 		if (force_update) {
 			DSI_Start(module, cmdq);
@@ -2520,8 +2530,17 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 					OUTREG32(&DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 				}
 				/* start DSI VM CMDQ */
-				if (force_update)
-					DSI_EnableVM_CMD(module, cmdq);
+				if (force_update) {
+					if (cmdq) {
+						DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0);
+						DSI_EnableVM_CMD(module, cmdq);
+						DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 1);
+					} else {
+						wait_vm_cmd_done = false;
+						DSI_EnableVM_CMD(module, cmdq);
+						wait_event_interruptible(_dsi_wait_vm_cmd_done_queue[0], wait_vm_cmd_done);
+					}
+				}
 			} else {
 				DSI_WaitForNotBusy(module, cmdq);
 
@@ -2704,16 +2723,13 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 
 static void lcm_set_reset_pin(UINT32 value)
 {
-#if 1
+#if 0
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
-#else
-#if !defined(CONFIG_MTK_LEGACY)
+#endif
 	if (value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	else
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-#endif
-#endif
 }
 
 static void lcm_udelay(UINT32 us)
@@ -2726,7 +2742,7 @@ static void lcm_mdelay(UINT32 ms)
 	if (ms < 10)
 		udelay(ms * 1000);
 	else
-		msleep(ms);
+		usleep_range(ms*1000, ms*1000);
 }
 
 void DSI_set_cmdq_V11_wrapper_DSI0(void *cmdq, unsigned int *pdata, unsigned int queue_size, unsigned char force_update)
@@ -2832,13 +2848,27 @@ long lcd_enp_bias_setting(unsigned int value)
 
 #if !defined(CONFIG_MTK_LEGACY)
 	if (value)
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
 	else
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP0);
 #endif
 
 	return ret;
 }
+long lcd_enn_bias_setting(unsigned int value)
+{
+	long ret = 0;
+
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
+#endif
+
+	return ret;
+}
+
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
 	LCM_UTIL_FUNCS *utils = NULL;
@@ -2914,6 +2944,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_gpio_pull_enable = (int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
 #endif
 #endif
 

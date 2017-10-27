@@ -759,6 +759,7 @@ extern int fb_set_cmap(struct fb_cmap *cmap, struct fb_info *fb_info);
 extern int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *fb_info);
 extern const struct fb_cmap *fb_default_cmap(int len);
 extern void fb_invert_cmaps(void);
+extern int primary_display_set_cabc_mode(int mode);
 
 struct fb_videomode {
 	const char *name;	/* optional */

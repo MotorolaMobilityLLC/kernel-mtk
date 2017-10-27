@@ -27,7 +27,7 @@ OBJS += $(LOCAL_DIR)/mt65xx_lcm_list.o \
 		$(LOCAL_DIR)/lcm_gpio.o \
 		$(LOCAL_DIR)/lcm_i2c.o \
 		$(LOCAL_DIR)/lcm_pmic.o \
-		$(LOCAL_DIR)/lcm_util.o
-
+		$(LOCAL_DIR)/lcm_util.o \
+		$(LOCAL_DIR)/lp3101.o
 INCLUDES += -I$(LOCAL_DIR)/inc
 

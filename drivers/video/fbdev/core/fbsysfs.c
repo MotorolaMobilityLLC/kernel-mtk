@@ -492,6 +492,53 @@ static ssize_t show_bl_curve(struct device *device,
 	return len;
 }
 #endif
+static const char * const cabc_mode_name[] = {
+	"DIS",		/* always used when CABC is not supported */
+	"UI",
+	"ST",
+	"MV",
+};
+static unsigned int cabc_mode;
+static ssize_t store_cabc_mode(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(cabc_mode_name); i++) {
+		const char *mode_str = cabc_mode_name[i];
+		int cmp_len = strlen(mode_str);
+
+		if (count > 0 && buf[count - 1] == '\n')
+			count--;
+		if (count != cmp_len)
+			continue;
+
+		if (strncmp(buf, mode_str, cmp_len) == 0)
+			break;
+	}
+	if (i == ARRAY_SIZE(cabc_mode_name))
+		return -EINVAL;
+	primary_display_set_cabc_mode(i);
+	cabc_mode = i;
+	return count;
+}
+
+
+static ssize_t show_cabc_mode(struct device *device,
+			     struct device_attribute *attr, char *buf)
+{
+	int len = 0;
+
+	if (cabc_mode < ARRAY_SIZE(cabc_mode_name)) {
+		len += snprintf(&buf[0], PAGE_SIZE, "%s\n",
+				cabc_mode_name[cabc_mode]);
+	} else {
+		len += snprintf(&buf[0], PAGE_SIZE, "Error mode\n");
+	}
+
+	return len;
+}
 
 /* When cmap is added back in it should be a binary attribute
  * not a text one. Consideration should also be given to converting
@@ -512,6 +559,8 @@ static struct device_attribute device_attrs[] = {
 #ifdef CONFIG_FB_BACKLIGHT
 	__ATTR(bl_curve, S_IRUGO|S_IWUSR, show_bl_curve, store_bl_curve),
 #endif
+	__ATTR(cabc_mode, S_IRUGO|S_IWUSR, show_cabc_mode, store_cabc_mode),
+
 };
 
 int fb_init_device(struct fb_info *fb_info)
