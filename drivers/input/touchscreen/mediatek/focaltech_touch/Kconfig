@@ -1,0 +1,8 @@
+#
+# Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_MTK_FTS_DIRECTORY
+    string "Focaltech ts directory name"
+    default "focaltech_touch"
+    depends on TOUCHSCREEN_MTK_FOCALTECH_TS

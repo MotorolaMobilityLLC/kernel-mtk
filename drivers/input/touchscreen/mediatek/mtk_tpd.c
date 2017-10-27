@@ -61,7 +61,7 @@ EXPORT_SYMBOL(tpd_dts_data);
 
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
-struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
+struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1, *power_output0, *power_output1;
 struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt6570-touch", },
 	{ .compatible = "mediatek,mt6735-touch", },
@@ -143,6 +143,11 @@ void tpd_gpio_output(int pin, int level)
 			pinctrl_select_state(pinctrl1, eint_output1);
 		else
 			pinctrl_select_state(pinctrl1, eint_output0);
+	} else if (pin == 2) {
+		if (level)
+			pinctrl_select_state(pinctrl1, power_output1);
+		else
+			pinctrl_select_state(pinctrl1, power_output0);
 	} else {
 		if (level)
 			pinctrl_select_state(pinctrl1, rst_output1);
@@ -199,6 +204,18 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
 		return ret;
 	}
+    power_output0 = pinctrl_lookup_state(pinctrl1, "state_power_output0");
+    if (IS_ERR(power_output0)) {
+	ret = PTR_ERR(power_output0);
+	dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_power_output0!\n");
+	return ret;
+    }
+    power_output1 = pinctrl_lookup_state(pinctrl1, "state_power_output1");
+    if (IS_ERR(power_output1)) {
+	ret = PTR_ERR(power_output1);
+	dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_power_output1!\n");
+	return ret;
+    }
 	TPD_DEBUG("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
 	return 0;
 }

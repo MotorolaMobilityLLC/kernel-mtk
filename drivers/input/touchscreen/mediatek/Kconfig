@@ -167,4 +167,14 @@ config TOUCHSCREEN_LGE_FT8707
 	  connected to your system.
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
+
+config TOUCHSCREEN_MTK_FOCALTECH_TS
+	bool "Focaltech Ts for Mediatek"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have Focaltech touch panel.
+	  If unsure, say N.
+
+source “drivers/input/touchscreen/mediatek/focaltech_touch/Kconfig”
 endif
