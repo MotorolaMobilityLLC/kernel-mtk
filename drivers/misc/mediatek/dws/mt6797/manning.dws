@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.27.2017.13:41:56"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.27.2017.22:17:23"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>manning</proj>
@@ -76,13 +76,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint5>
-            <eint8>
+            <eint7>
                 <varName>TOUCH</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
+                <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint8>
+            </eint7>
             <eint9>
                 <varName>FPC1145</varName>
                 <debounce_time>0</debounce_time>
