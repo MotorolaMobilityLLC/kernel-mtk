@@ -915,11 +915,8 @@
 	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
 	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
 	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
-<<<<<<< HEAD
 	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0>;
 	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn1>;
-=======
->>>>>>> origin_partner/mtk/caf/6797_O
 	status = "okay";
 };
 
