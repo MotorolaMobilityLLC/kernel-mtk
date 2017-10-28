@@ -597,9 +597,7 @@ static void process_dbg_opt(const char *opt)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
 
 		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
-	}
-
-	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
+	} else if (0 == strncmp(opt, "primary_basic_test:", 19)) {
 		int layer_num, w, h, fmt, frame_num, vsync;
 
 		ret = sscanf(opt, "primary_basic_test:%d,%d,%d,%d,%d,%d\n",
@@ -617,9 +615,7 @@ static void process_dbg_opt(const char *opt)
 			fmt = DISP_FORMAT_RGB565;
 
 		primary_display_basic_test(layer_num, w, h, fmt, frame_num, vsync);
-	}
-
-	if (0 == strncmp(opt, "pan_disp_test:", 13)) {
+	} else if (0 == strncmp(opt, "pan_disp_test:", 13)) {
 		int frame_num;
 		int bpp;
 
@@ -630,9 +626,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		pan_display_test(frame_num, bpp);
-	}
-
-	if (0 == strncmp(opt, "scenario:", 8)) {
+	} else if (0 == strncmp(opt, "scenario:", 8)) {
 		int scen;
 
 		ret = sscanf(opt, "scenario:%d\n", &scen);
@@ -641,10 +635,13 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		primary_display_set_scenario(scen);
+	} else if (strncmp(opt, "round_corner_offset_debug:", 26) == 0) {
+		if (strncmp(opt + 26, "on", 2) == 0)
+			round_corner_offset_enable = 1;
+		else if (strncmp(opt + 26, "off", 3) == 0)
+			round_corner_offset_enable = 0;
 	}
-
 }
-
 
 static void process_dbg_cmd(char *cmd)
 {

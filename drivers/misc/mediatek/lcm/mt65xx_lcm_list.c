@@ -861,6 +861,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&r63419_fhd_truly_phantom_lcm_drv,
 #endif
 
+#if defined(R63419_FHDP_TRULY_PHANTOM_2K_CMD_OK)
+	&r63419_fhdp_truly_phantom_lcm_drv,
+#endif
+
 #if defined(R63419_FHD_TRULY_PHANTOM_2K_CMD_OK_MT6797)
 	&r63419_fhd_truly_phantom_lcm_drv,
 #endif

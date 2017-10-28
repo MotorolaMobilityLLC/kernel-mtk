@@ -279,6 +279,9 @@ static int emmc_rpmb_send_command(
 	struct scatterlist sg;
 	u8 *transfer_buf = NULL;
 
+	if (blks == 0)
+		return -EINVAL;
+
 	mrq.sbc = &sbc;
 	mrq.cmd = &cmd;
 	mrq.data = &data;
@@ -450,8 +453,12 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
 	int ret;
+	u8 user_key;
 
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_key, key))
+		return -EFAULT;
 
 	rpmb_frame = kzalloc(sizeof(struct s_rpmb), 0);
 	if (rpmb_frame == NULL)
@@ -565,6 +572,9 @@ int emmc_rpmb_req_write_data(struct mmc_card *card, struct rpmb_ioc_param *param
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
+#ifdef RPMB_MULTI_BLOCK_ACCESS
+	u8 user_param_data;
+#endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
 
@@ -576,6 +586,7 @@ int emmc_rpmb_req_write_data(struct mmc_card *card, struct rpmb_ioc_param *param
 	left_blkcnt = total_blkcnt = ((param->data_len % RPMB_SZ_DATA) ?
 					(param->data_len / RPMB_SZ_DATA + 1) :
 					(param->data_len / RPMB_SZ_DATA));
+
 
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 
@@ -591,7 +602,8 @@ int emmc_rpmb_req_write_data(struct mmc_card *card, struct rpmb_ioc_param *param
 
 	blkaddr = param->addr;
 
-
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
 
 	while (left_blkcnt) {
 
@@ -793,7 +805,7 @@ int emmc_rpmb_req_write_data(struct mmc_card *card, struct rpmb_ioc_param *param
 int emmc_rpmb_req_read_data(struct mmc_card *card, struct rpmb_ioc_param *param)
 {
 	struct emmc_rpmb_req rpmb_req;
-	/* //if we put a large static buffer here, it will build fail.
+	/* if we put a large static buffer here, it will build fail.
 	 * rpmb_frame[MAX_RPMB_TRANSFER_BLK];
 	 * so I use dynamic alloc.
 	*/
@@ -805,6 +817,9 @@ int emmc_rpmb_req_read_data(struct mmc_card *card, struct rpmb_ioc_param *param)
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
+#ifdef RPMB_MULTI_BLOCK_ACCESS
+	u8 user_param_data;
+#endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
 
@@ -821,6 +836,8 @@ int emmc_rpmb_req_read_data(struct mmc_card *card, struct rpmb_ioc_param *param)
 
 	blkaddr = param->addr;
 
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
 
 	while (left_blkcnt) {
 
@@ -1148,6 +1165,23 @@ static int emmc_rpmb_execute(u32 cmdId)
 
 		break;
 
+#ifdef CFG_RPMB_KEY_PROGRAMED_IN_KERNEL
+	case DCI_RPMB_CMD_PROGRAM_KEY:
+		MSG(INFO, "%s: DCI_RPMB_CMD_PROGRAM_KEY.\n", __func__);
+
+		rpmb_req.type = RPMB_PROGRAM_KEY;
+		/* rpmb_req.blk_cnt = rpmb_dci->request.blks; */
+		rpmb_req.blk_cnt = 1;
+		rpmb_req.addr = rpmb_dci->request.addr;
+		rpmb_req.data_frame = rpmb_dci->request.frame;
+
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n", __func__, ret);
+
+		break;
+#endif
+
 	default:
 		MSG(ERR, "%s: receive an unknown command id(%d).\n", __func__, cmdId);
 		break;
@@ -1238,7 +1272,7 @@ static int emmc_rpmb_open_session(void)
 					 sizeof(dciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
-			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
+			MSG(ERR, "%s, mc_open_session failed, result(%d), times(%d)\n", __func__, mc_ret, cnt);
 
 			mc_ret = mc_free_wsm(rpmb_devid, (uint8_t *)rpmb_dci);
 			MSG(ERR, "%s, free wsm result (%d)\n", __func__, mc_ret);
@@ -1248,6 +1282,7 @@ static int emmc_rpmb_open_session(void)
 			cnt++;
 			continue;
 		}
+		MSG(INFO, "%s, mc_open_session success.\n", __func__);
 
 		/* create a thread for listening DCI signals */
 		rpmbDci_th = kthread_run(emmc_rpmb_listenDci, NULL, "rpmb_Dci");
@@ -1317,6 +1352,22 @@ static int emmc_rpmb_gp_execute(u32 cmdId)
 			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n", __func__, ret);
 
 		break;
+
+#ifdef CFG_RPMB_KEY_PROGRAMED_IN_KERNEL
+	case DCI_RPMB_CMD_PROGRAM_KEY:
+		MSG(INFO, "%s: DCI_RPMB_CMD_PROGRAM_KEY.\n", __func__);
+
+		rpmb_req.type = RPMB_PROGRAM_KEY;
+		rpmb_req.blk_cnt = rpmb_gp_dci->request.blks;
+		rpmb_req.addr = rpmb_gp_dci->request.addr;
+		rpmb_req.data_frame = rpmb_gp_dci->request.frame;
+
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret)
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n", __func__, ret);
+
+		break;
+#endif
 
 	default:
 		MSG(ERR, "%s: receive an unknown command id(%d).\n", __func__, cmdId);
@@ -1411,7 +1462,7 @@ static int emmc_rpmb_gp_open_session(void)
 					 sizeof(dciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
-			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
+			MSG(ERR, "%s, mc_open_session failed, result(%d), times(%d)\n", __func__, mc_ret, cnt);
 
 			mc_ret = mc_free_wsm(rpmb_gp_devid, (uint8_t *)rpmb_gp_dci);
 			MSG(ERR, "%s, free wsm result (%d)\n", __func__, mc_ret);
@@ -1421,6 +1472,7 @@ static int emmc_rpmb_gp_open_session(void)
 			cnt++;
 			continue;
 		}
+		MSG(INFO, "%s, mc_open_session success.\n", __func__);
 
 		/* create a thread for listening DCI signals */
 		rpmb_gp_Dci_th = kthread_run(emmc_rpmb_gp_listenDci, NULL, "rpmb_gp_Dci");
@@ -1479,11 +1531,13 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	u32 rpmb_size = 0;
 	struct rpmb_infor rpmbinfor;
+	unsigned int *arg_p = (unsigned int *)arg;
+	unsigned int user_arg;
 
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
 #endif
 
-	/* MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);    */
+	/* MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__); */
 
 	err = copy_from_user(&param, (void *)arg, sizeof(param));
 	if (err < 0) {
@@ -1513,8 +1567,7 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			}
 			rpmbinfor.data_frame = (rpmb_buffer + 4);
 		} else {
-			MSG(ERR, "%s, rpmbinfor.size(%d+4) is overflow (%d)!\n",
-					__func__, rpmbinfor.size, RPMB_DATA_BUFF_SIZE);
+			MSG(ERR, "%s, rpmb size %d+4 overflow %d\n", __func__, rpmbinfor.size, RPMB_DATA_BUFF_SIZE);
 			return -1;
 		}
 	}
@@ -1555,9 +1608,9 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	case RPMB_IOCTL_SOTER_WRITE_DATA:
 
-			ret = ut_rpmb_req_write_data(card,
-					(struct s_rpmb *)(rpmbinfor.data_frame),
-					rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
+		ret = ut_rpmb_req_write_data(card,
+			(struct s_rpmb *)(rpmbinfor.data_frame),
+			rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (ret) {
 			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
@@ -1566,13 +1619,13 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
 
-	    break;
+		break;
 
 	case RPMB_IOCTL_SOTER_READ_DATA:
 
-			ret = ut_rpmb_req_read_data(card,
-					(struct s_rpmb *)(rpmbinfor.data_frame),
-					rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
+		ret = ut_rpmb_req_read_data(card,
+			(struct s_rpmb *)(rpmbinfor.data_frame),
+			rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (ret) {
 			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
@@ -1581,20 +1634,27 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
 
-	    break;
+		break;
 
 	case RPMB_IOCTL_SOTER_GET_CNT:
 
+		if (get_user(user_arg, arg_p))
+			return -EFAULT;
+
 		ret = ut_rpmb_req_get_wc(card, (unsigned int *)arg);
-			break;
+
+		break;
 
 	case RPMB_IOCTL_SOTER_GET_WR_SIZE:
 
-			ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)arg);
+		if (get_user(user_arg, arg_p))
+			return -EFAULT;
 
-			break;
+		ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)arg);
 
+		break;
 #endif
+
 	default:
 		MSG(ERR, "%s, wrong ioctl code (%d)!!!\n", __func__, cmd);
 		return -ENOTTY;

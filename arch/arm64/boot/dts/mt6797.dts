@@ -34,6 +34,11 @@
 			initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
+	pmu {
+		compatible = "arm,armv8-pmuv3";
+		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
 	/* Kernel-3.18 can't transfer this node to mtk-msdc.0. So workaround here */
 	mtk-msdc.0 {

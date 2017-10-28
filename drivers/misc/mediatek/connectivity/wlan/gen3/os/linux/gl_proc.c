@@ -117,10 +117,10 @@ static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t coun
 	if (*f_pos > 0)
 		return 0;
 
-	kalStrCpy(temp, "\nTEMP|LOUD|INFO|TRACE | EVENT|STATE|WARN|ERROR\n"
+	kalStrnCpy(temp, "\nTEMP|LOUD|INFO|TRACE | EVENT|STATE|WARN|ERROR\n"
 			"bit7|bit6|bit5|bit4 | bit3|bit2|bit1|bit0\n\n"
 			"Usage: Module Index:Module Level, such as 0x00:0xff\n\n"
-			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n");
+			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n", sizeof(aucProcBuf));
 	temp += kalStrLen(temp);
 
 	u2ModuleNum = (sizeof(aucDbModuleName) / PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN) & 0xfe;
@@ -199,7 +199,7 @@ static const struct file_operations dbglevel_ops = {
 static ssize_t procPktDelayDbgCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	UINT_8 *temp = &aucProcBuf[0];
-	UINT_32 u4CopySize = 0;
+	UINT_32 u4CopySize = sizeof(aucProcBuf)/sizeof(aucProcBuf[0]) - 1;
 	UINT_8 ucTxRxFlag;
 	UINT_8 ucTxIpProto;
 	UINT_16 u2TxUdpPort;
@@ -212,14 +212,16 @@ static ssize_t procPktDelayDbgCfgRead(struct file *filp, char __user *buf, size_
 	if (*f_pos > 0)
 		return 0;
 
-	kalStrCpy(temp,
+	kalStrnCpy(temp,
 		"\nUsage: txLog/rxLog/reset 1(ICMP)/6(TCP)/11(UDP) Dst/SrcPortNum DelayThreshold(us)\n"
 		"Print tx delay log,                                   such as: echo txLog 0 0 0 > pktDelay\n"
 		"Print tx UDP delay log,                               such as: echo txLog 11 0 0 > pktDelay\n"
 		"Print tx UDP dst port19305 delay log,                 such as: echo txLog 11 19305 0 > pktDelay\n"
 		"Print rx UDP src port19305 delay more than 500us log, such as: echo rxLog 11 19305 500 > pktDelay\n"
 		"Print tx TCP delay more than 500us log,               such as: echo txLog 6 0 500 > pktDelay\n"
-		"Close log,                                            such as: echo reset 0 0 0 > pktDelay\n\n");
+		"Close log,                                            such as: echo reset 0 0 0 > pktDelay\n\n",
+		u4CopySize);
+	aucProcBuf[u4CopySize] = '\0';
 	temp += kalStrLen(temp);
 
 	StatsEnvGetPktDelay(&ucTxRxFlag, &ucTxIpProto, &u2TxUdpPort, &u4TxDelayThreshold,
@@ -280,7 +282,7 @@ static ssize_t procPktDelayDbgCfgWrite(struct file *file, const char __user *buf
 
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%s %x %d %d", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
+		if (sscanf(temp, "%6s %x %d %u", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
@@ -339,7 +341,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char __user *buffer, 
 	temp = &aucProcBuf[0];
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
+		if (sscanf(temp, "%4s %d", aucModule, &u4Enabled) != 2)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			fgParamValue = FALSE;
 			break;
@@ -1014,6 +1016,9 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 	UINT_32 u4CopySize = sizeof(aucCfgBuf);
 	UINT_8 token_num = 1;
 
+	if (count == 0 || buf == NULL)
+		return 0;
+
 	kalMemSet(aucCfgBuf, 0, u4CopySize);
 
 	if (u4CopySize >= (count + 1))
@@ -1037,6 +1042,8 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 	if (token_num == 1) {
 		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
 		/* remove the 0x0a */
+		if (u4CopySize > sizeof(aucCfgQueryKey))
+			u4CopySize = sizeof(aucCfgQueryKey);
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
 		if (aucCfgQueryKey[u4CopySize - 1] == 0x0a)
 			aucCfgQueryKey[u4CopySize - 1] = '\0';

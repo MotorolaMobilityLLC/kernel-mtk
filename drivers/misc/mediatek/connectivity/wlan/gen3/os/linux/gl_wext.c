@@ -653,7 +653,8 @@ wextSrchDesiredWPSIE(IN PUINT_8 pucIEStart,
 */
 /*----------------------------------------------------------------------------*/
 static int
-wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrInfo, OUT char *pcName, IN char *pcExtra)
+wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrInfo,
+	      OUT char *pcName, IN size_t szNameSize, IN char *pcExtra)
 {
 	ENUM_PARAM_NETWORK_TYPE_T eNetWorkType = PARAM_NETWORK_TYPE_NUM;
 
@@ -661,10 +662,9 @@ wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrIn
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	UINT_32 u4BufLen = 0;
 
-	ASSERT(prNetDev);
-	ASSERT(pcName);
 	if (FALSE == GLUE_CHK_PR2(prNetDev, pcName))
 		return -EINVAL;
+
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
 	if (netif_carrier_ok(prNetDev)) {
@@ -675,24 +675,25 @@ wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrIn
 
 		switch (eNetWorkType) {
 		case PARAM_NETWORK_TYPE_DS:
-			strcpy(pcName, "IEEE 802.11b");
+			strncpy(pcName, "IEEE 802.11b", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_OFDM24:
-			strcpy(pcName, "IEEE 802.11bgn");
+			strncpy(pcName, "IEEE 802.11bgn", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_AUTOMODE:
 		case PARAM_NETWORK_TYPE_OFDM5:
-			strcpy(pcName, "IEEE 802.11abgn");
+			strncpy(pcName, "IEEE 802.11abgn", szNameSize);
 			break;
 		case PARAM_NETWORK_TYPE_FH:
 		default:
-			strcpy(pcName, "IEEE 802.11");
+			strncpy(pcName, "IEEE 802.11", szNameSize);
 			break;
 		}
 	} else {
-		strcpy(pcName, "Disconnected");
+		strncpy(pcName, "Disconnected", szNameSize);
 	}
 
+	pcName[szNameSize - 1] = '\0';
 	return 0;
 }				/* wext_get_name */
 
@@ -1127,7 +1128,7 @@ wext_get_ap(IN struct net_device *prNetDev,
 	/* } */
 
 	if (prGlueInfo->eParamMediaStateIndicated == PARAM_MEDIA_STATE_DISCONNECTED) {
-		memset(prAddr, 0, 6);
+		memset(prAddr, 0, sizeof(struct sockaddr));
 		return 0;
 	}
 
@@ -1375,7 +1376,7 @@ wext_get_scan(IN struct net_device *prNetDev,
 	}
 
 	if (prList->u4NumberOfItems > CFG_MAX_NUM_BSS_LIST) {
-		DBGLOG(INIT, INFO, "[wifi] strange scan result count:%ld\n", prList->u4NumberOfItems);
+		DBGLOG(INIT, INFO, "[wifi] strange scan result count:%u\n", prList->u4NumberOfItems);
 		goto error;
 	}
 
@@ -2658,11 +2659,14 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	UINT_32 u4BufLen = 0;
 
-	ASSERT(prNetDev);
-	ASSERT(prEnc);
 	if (FALSE == GLUE_CHK_PR3(prNetDev, prEnc, pcExtra))
 		return -EINVAL;
+
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	if (!prGlueInfo) {
+		DBGLOG(INIT, ERROR, "No glue info\n");
+		return -EFAULT;
+	}
 
 	memset(keyStructBuf, 0, sizeof(keyStructBuf));
 
@@ -2710,7 +2714,6 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 	} else
 #endif
 	{
-
 		if ((prEnc->flags & IW_ENCODE_MODE) == IW_ENCODE_DISABLED) {
 			prRemoveKey->u4Length = sizeof(*prRemoveKey);
 			memcpy(prRemoveKey->arBSSID, prIWEncExt->addr.sa_data, 6);
@@ -2721,9 +2724,14 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 
 			if (rStatus != WLAN_STATUS_SUCCESS)
 				DBGLOG(INIT, INFO, "remove key error:%x\n", rStatus);
+
 			return 0;
 		}
-		/* return 0; */
+
+		if (prIWEncExt->key_len > 32) {
+			DBGLOG(INIT, ERROR, "Invalid key length %d\n", prIWEncExt->key_len);
+			return -EINVAL;
+		}
 
 		switch (prIWEncExt->alg) {
 		case IW_ENCODE_ALG_NONE:
@@ -2787,7 +2795,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 				}
 
 			} else {
-				DBGLOG(INIT, INFO, "key length %x\n", prIWEncExt->key_len);
+				DBGLOG(INIT, INFO, "key length %d\n", prIWEncExt->key_len);
 				DBGLOG(INIT, INFO, "key error\n");
 			}
 
@@ -2962,7 +2970,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 
 	switch (i4Cmd) {
 	case SIOCGIWNAME:	/* 0x8B01, get wireless protocol name */
-		ret = wext_get_name(prDev, &rIwReqInfo, (char *)&iwr->u.name, NULL);
+		ret = wext_get_name(prDev, &rIwReqInfo, (char *)&iwr->u.name, sizeof(iwr->u.name), NULL);
 		break;
 
 		/* case SIOCSIWNWID: 0x8B02, deprecated */
@@ -3135,7 +3143,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ASSERT(iwr->u.data.length <= u4ExtraSize);
 			if (iwr->u.data.length > u4ExtraSize) {
 				DBGLOG(INIT, INFO,
-				       "Updated result length is larger than allocated (%d > %ld)\n",
+				       "Updated result length is larger than allocated (%u > %u)\n",
 					iwr->u.data.length, u4ExtraSize);
 				iwr->u.data.length = u4ExtraSize;
 			}

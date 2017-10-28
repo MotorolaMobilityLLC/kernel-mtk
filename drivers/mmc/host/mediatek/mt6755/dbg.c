@@ -43,7 +43,7 @@
 /*#define CONFIG_MTK_EMMC_CQ_MET_USR_DEF*/
 
 #ifdef CONFIG_MT_ENG_BUILD
-/*#define MTK_EMMC_CQ_DEBUG*/
+#define MTK_EMMC_CQ_DEBUG
 /*#define CONFIG_MTK_EMMC_CQ_MET_USR_DEF*/
 #endif
 
@@ -1699,16 +1699,19 @@ static int msdc_check_emmc_cache_status(struct msdc_host *host)
 {
 	struct mmc_card *card;
 
-	BUG_ON(!host || !host->mmc || !host->mmc->card);
+	if (!host || !host->mmc || !host->mmc->card) {
+		pr_err("host, host->mmc, or host->mmc->card is invalid\n");
+		return -2;
+	}
 
 	card = host->mmc->card;
 	if (!mmc_card_mmc(card)) {
-		pr_err("host:%d is not a eMMC card\n", host->id);
+		pr_err("msdc%d: not eMMC card\n", host->id);
 		return -2;
 	}
 
 	if (0 == card->ext_csd.cache_size) {
-		pr_err("card don't support cache feature\n");
+		pr_err("msdc%d: cache feature not supported\n", host->id);
 		return -1;
 	}
 
@@ -2491,77 +2494,6 @@ static const struct file_operations msdc_help_fops = {
 	.release = single_release,
 };
 
-#ifdef MSDC_HQA
-u32 sdio_vio18_flag, sdio_vcore1_flag, sdio_vcore2_flag;
-u32 vio18_reg, vcore1_reg, vcore2_reg;
-
-static ssize_t msdc_voltage_proc_write(struct file *file,
-	const char __user *buf, size_t count, loff_t *data)
-{
-	int ret;
-	int sscanf_num;
-
-	ret = copy_from_user(cmd_buf, buf, count);
-	if (ret < 0)
-		return -1;
-
-	cmd_buf[count] = '\0';
-	pr_err("[SD_Debug]msdc Write %s\n", cmd_buf);
-
-	sscanf_num = sscanf(cmd_buf, "%d %d %d", &sdio_vio18_flag,
-		&sdio_vcore1_flag, &sdio_vcore2_flag);
-
-	if (sscanf_num < 3)
-		return -1;
-
-	if (sdio_vio18_flag >= 1730 && sdio_vio18_flag <= 1880) {
-		/*0.01V per step*/
-		if (sdio_vio18_flag > 1800)
-			vio18_reg = 8-(sdio_vio18_flag-1800)/10;
-		else
-			vio18_reg = (1800-sdio_vio18_flag)/10;
-		pmic_config_interface(REG_VIO18_CAL, vio18_reg,
-			VIO18_CAL_MASK, VIO18_CAL_SHIFT);
-	}
-
-	/*Vcore2 is VCORE_AO*/
-	if (sdio_vcore2_flag > 900 && sdio_vcore2_flag < 1200) {
-		/*0.00625V per step*/
-		/*Originally divied by 12.5, to avoid floating-point division,
-		 amplify numerator and denominator by 4*/
-		vcore2_reg = ((sdio_vcore2_flag-600)<<2)/25;
-		pmic_config_interface(REG_VCORE_VOSEL_SW, vcore2_reg,
-			VCORE_VOSEL_SW_MASK, VCORE_VOSEL_SW_SHIFT);
-		pmic_config_interface(REG_VCORE_VOSEL_HW, vcore2_reg,
-			VCORE_VOSEL_HW_MASK, VCORE_VOSEL_HW_SHIFT);
-	}
-
-	return count;
-}
-
-static int msdc_voltage_flag_proc_read_show(struct seq_file *m, void *data)
-{
-	seq_printf(m, "vio18: 0x%d 0x%X\n", sdio_vio18_flag, vio18_reg);
-	seq_printf(m, "vcore1: 0x%d 0x%X\n", sdio_vcore1_flag,  vcore1_reg);
-	seq_printf(m, "vcore2: 0x%d 0x%X\n", sdio_vcore2_flag, vcore2_reg);
-	return 0;
-}
-
-static int msdc_voltage_flag_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, msdc_voltage_flag_proc_read_show,
-		inode->i_private);
-}
-
-static const struct file_operations msdc_voltage_flag_fops = {
-	.open = msdc_voltage_flag_proc_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.write = msdc_voltage_proc_write,
-};
-#endif
-
 #ifndef USER_BUILD_KERNEL
 #define PROC_PERM		0660
 #else
@@ -2573,9 +2505,7 @@ int msdc_debug_proc_init(void)
 	struct proc_dir_entry *prEntry;
 	kuid_t uid;
 	kgid_t gid;
-#ifdef MSDC_HQA
-	struct proc_dir_entry *voltage_flag;
-#endif
+
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
 
@@ -2594,20 +2524,6 @@ int msdc_debug_proc_init(void)
 		pr_err("[%s]: create /proc/msdc_help\n", __func__);
 	else
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
-
-#ifdef MSDC_HQA
-	voltage_flag = proc_create("msdc_voltage_flag", PROC_PERM, NULL,
-		&msdc_voltage_flag_fops);
-
-	if (voltage_flag) {
-		proc_set_user(voltage_flag, uid, gid);
-		pr_err("[%s]: successfully create /proc/msdc_voltage_flag\n",
-			__func__);
-	} else {
-		pr_err("[%s]: failed to create /proc/msdc_voltage_flag\n",
-			__func__);
-	}
-#endif
 
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();

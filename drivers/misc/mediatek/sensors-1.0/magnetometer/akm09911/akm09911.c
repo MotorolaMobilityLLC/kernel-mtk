@@ -191,10 +191,13 @@ static long AKI2C_RxData(char *rxData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = rxData[0];
+	char addr = 0;
 
 	if ((rxData == NULL) || (length < 1))
 		return -EINVAL;
+
+	addr = rxData[0];
+
 	res = mag_i2c_read_block(client, addr, rxData, length);
 	if (res < 0)
 		return -1;
@@ -246,11 +249,15 @@ static long AKI2C_TxData(char *txData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = txData[0];
-	u8 *buff = &txData[1];
+	char addr = 0;
+	u8 *buff = NULL;
 
 	if ((txData == NULL) || (length < 2))
 		return -EINVAL;
+
+	addr = txData[0];
+	buff = &txData[1];
+
 	res = mag_i2c_write_block(client, addr, buff, (length - 1));
 	if (res < 0)
 		return -1;
@@ -527,20 +534,12 @@ static int16_t AKECS_SetCert(void)
 		axis_order[i] = (uint8_t)data->cvt.map[i];
 
 	for (i = 0; i < 3; i++) {
-		axis_sign[i] = (uint8_t)data->cvt.sign[i];
-		if (axis_sign[i] > 0)
+		if (data->cvt.sign[i] > 0)
 			axis_sign[i] = 0;
-		else if (axis_sign[i] < 0)
+		else if (data->cvt.sign[i] < 0)
 			axis_sign[i] = 1;
 	}
-#if 0
-	axis_order[0] = 0;
-	axis_order[1] = 1;
-	axis_order[2] = 2;
-	axis_sign[0] = 0;
-	axis_sign[1] = 0;
-	axis_sign[2] = 0;
-#endif
+
 	ret = AKECS_AxisInfoToPat(axis_order, axis_sign, &cert);
 	if (ret != 0)
 		return 0;

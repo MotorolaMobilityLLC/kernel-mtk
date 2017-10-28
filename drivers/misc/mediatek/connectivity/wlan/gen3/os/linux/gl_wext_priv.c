@@ -584,7 +584,7 @@ batchConvertResult(IN P_EVENT_BATCH_RESULT_T prEventBatchResult,
 
 short_buf:
 	DBGLOG(SCN, TRACE,
-	       "Short buffer issue! %d > %d, %s\n", u4MaxBufferLen + (nsize - nleft), u4MaxBufferLen, pvBuffer);
+	       "Short buffer issue! %u > %u, %s\n", u4MaxBufferLen + (nsize - nleft), u4MaxBufferLen, (PCHAR)pvBuffer);
 	return WLAN_STATUS_INVALID_LENGTH;
 }
 #endif
@@ -775,7 +775,7 @@ priv_set_int(IN struct net_device *prNetDev,
 	case PRIV_CUSTOM_BWCS_CMD:
 
 		DBGLOG(REQ, INFO,
-		       "pu4IntBuf[1] = %x, size of PTA_IPC_T = %d.\n", pu4IntBuf[1], sizeof(PARAM_PTA_IPC_T));
+		       "pu4IntBuf[1] = %x, size of PTA_IPC_T = %zu.\n", pu4IntBuf[1], sizeof(PARAM_PTA_IPC_T));
 
 		prPtaIpc = (P_PTA_IPC_T) aucOidBuf;
 		prPtaIpc->u.aucBTPParams[0] = (UINT_8) (pu4IntBuf[1] >> 24);
@@ -883,7 +883,6 @@ priv_get_int(IN struct net_device *prNetDev,
 	UINT_32 u4BufLen = 0;
 	int status = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-	INT_32 ch[50];
 
 	ASSERT(prNetDev);
 	ASSERT(prIwReqInfo);
@@ -1009,34 +1008,21 @@ priv_get_int(IN struct net_device *prNetDev,
 	switch (u4SubCmd) {
 	case PRIV_CMD_GET_CH_LIST:
 		{
-			UINT_16 i, j = 0;
-			UINT_8 NumOfChannel = 50;
+			UINT_8 ucNumOfChannel, i;
 			UINT_8 ucMaxChannelNum = 50;
 			RF_CHANNEL_INFO_T aucChannelList[50];
+			INT_32 ch[50];
 
-			DBGLOG(RLM, INFO, "Domain: Query Channel List.\n");
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
-			if (NumOfChannel > 50)
-				NumOfChannel = 50;
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
+			DBGLOG(RLM, INFO, "PRIV_CMD_GET_CH_LIST: return %d channels\n", ucNumOfChannel);
+			if (ucNumOfChannel > 50)
+				ucNumOfChannel = 50;
 
-			if (kalIsAPmode(prGlueInfo)) {
-				for (i = 0; i < NumOfChannel; i++) {
-					if ((aucChannelList[i].ucChannelNum <= 13) ||
-					    (aucChannelList[i].ucChannelNum == 36
-					     || aucChannelList[i].ucChannelNum == 40
-					     || aucChannelList[i].ucChannelNum == 44
-					     || aucChannelList[i].ucChannelNum == 48)) {
-						ch[j] = (INT_32) aucChannelList[i].ucChannelNum;
-						j++;
-					}
-				}
-			} else {
-				for (j = 0; j < NumOfChannel; j++)
-					ch[j] = (INT_32) aucChannelList[j].ucChannelNum;
-			}
+			for (i = 0; i < ucNumOfChannel; i++)
+				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = j;
-			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
+			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
 				return status;
@@ -1175,7 +1161,6 @@ priv_get_ints(IN struct net_device *prNetDev,
 	UINT_32 u4SubCmd;
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
-	INT_32 ch[50];
 
 	ASSERT(prNetDev);
 	ASSERT(prIwReqInfo);
@@ -1190,20 +1175,21 @@ priv_get_ints(IN struct net_device *prNetDev,
 	switch (u4SubCmd) {
 	case PRIV_CMD_GET_CH_LIST:
 		{
-			UINT_16 i;
-			UINT_8 NumOfChannel = 50;
+			UINT_8 ucNumOfChannel, i;
 			UINT_8 ucMaxChannelNum = 50;
 			RF_CHANNEL_INFO_T aucChannelList[50];
+			INT_32 ch[50];
 
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
-			if (NumOfChannel > 50)
-				NumOfChannel = 50;
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
+			DBGLOG(RLM, INFO, "PRIV_CMD_GET_CH_LIST: return %d channels\n", ucNumOfChannel);
+			if (ucNumOfChannel > 50)
+				ucNumOfChannel = 50;
 
-			for (i = 0; i < NumOfChannel; i++)
+			for (i = 0; i < ucNumOfChannel; i++)
 				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = NumOfChannel;
-			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
+			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
 				return status;
@@ -1429,19 +1415,16 @@ priv_get_struct(IN struct net_device *prNetDev,
 
 	kalMemZero(&aucOidBuf[0], sizeof(aucOidBuf));
 
-	ASSERT(prNetDev);
-	ASSERT(prIwReqData);
 	if (!prNetDev || !prIwReqData) {
-		DBGLOG(REQ, INFO, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
+		DBGLOG(REQ, ERROR, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
 		return -EINVAL;
 	}
 
 	u4SubCmd = (UINT_32) prIwReqData->data.flags;
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
-	ASSERT(prGlueInfo);
 	if (!prGlueInfo) {
-		DBGLOG(REQ, INFO, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
-				   prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
+		DBGLOG(REQ, ERROR, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
+		       prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
 		return -EINVAL;
 	}
 #if 0
@@ -1485,7 +1468,7 @@ priv_get_struct(IN struct net_device *prNetDev,
 		pu4IntBuf = (PUINT_32) prIwReqData->data.pointer;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		if (prIwReqData->data.length > (sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent))) {
+		if (prIwReqData->data.length > sizeof(prNdisReq->ndisOidContent)) {
 			DBGLOG(REQ, INFO, "priv_get_struct() exceeds length limit\n");
 			return -EFAULT;
 		}
@@ -1577,7 +1560,7 @@ priv_set_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
 
 	if (prWlanReqEntry->fgSetBufLenChecking) {
 		if (prNdisReq->inNdisOidlength != prWlanReqEntry->u4InfoBufLen) {
-			DBGLOG(REQ, WARN, "Set %s: Invalid length (current=%ld, needed=%ld)\n",
+			DBGLOG(REQ, WARN, "Set %s: Invalid length (current=%u, needed=%u)\n",
 					   prWlanReqEntry->pucOidName,
 					   prNdisReq->inNdisOidlength, prWlanReqEntry->u4InfoBufLen);
 
@@ -3136,7 +3119,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 
 		if (i4BytesWritten >= i4TotalLen) {
 			DBGLOG(REQ, INFO,
-			       "%s: i4BytesWritten %d > i4TotalLen < %d\n", __func__, i4BytesWritten, i4TotalLen);
+			       "%s: i4BytesWritten %d >= i4TotalLen %d\n", __func__, i4BytesWritten, i4TotalLen);
 			i4BytesWritten = i4TotalLen;
 		} else {
 			pcCommand[i4BytesWritten] = '\0';
@@ -3181,16 +3164,16 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 	}
 
 	if (copy_from_user(priv_cmd, prReq->ifr_data, sizeof(priv_driver_cmd_t))) {
-		DBGLOG(REQ, INFO, "%s: copy_from_user fail\n", __func__);
+		DBGLOG(REQ, ERROR, "%s: copy_from_user fail\n", __func__);
 		ret = -EFAULT;
 		goto exit;
 	}
 
 	i4TotalLen = priv_cmd->total_len;
 
-	if (i4TotalLen <= 0) {
+	if (i4TotalLen <= 0 || i4TotalLen > PRIV_CMD_SIZE) {
 		ret = -EINVAL;
-		DBGLOG(REQ, INFO, "%s: i4TotalLen invalid\n", __func__);
+		DBGLOG(REQ, ERROR, "%s: invalid i4TotalLen %d\n", __func__, i4TotalLen);
 		goto exit;
 	}
 
@@ -3201,8 +3184,8 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 	i4BytesWritten = priv_driver_cmds(prNetDev, pcCommand, i4TotalLen);
 
 	if (i4BytesWritten < 0) {
-		DBGLOG(REQ, INFO, "%s: command %s failed; Written is %d\n",
-			__func__, pcCommand, i4BytesWritten);
+		DBGLOG(REQ, ERROR, "%s: command %s failed, i4BytesWritten %d\n",
+		       __func__, pcCommand, i4BytesWritten);
 		ret = -EFAULT;
 	}
 

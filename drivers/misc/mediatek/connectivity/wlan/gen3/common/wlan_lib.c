@@ -847,8 +847,8 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 
 				pWiFiEmibaseaddr = ioremap_nocache(gConEmiPhyBase, WIFI_EMI_MEM_SIZE);
 				DBGLOG(INIT, INFO,
-					"gConEmiPhyBase %p, idx %d, pEmiWiFibaseaddr %p, Dst %p, SecOffset %x, SecLen %x, fgEmiDownloaded %d\n",
-					gConEmiPhyBase,
+					"gConEmiPhyBase %p, idx %u, pEmiWiFibaseaddr %p, Dst %p, SecOffset %x, SecLen %x, fgEmiDownloaded %d\n",
+					(PVOID)gConEmiPhyBase,
 					i,
 					pWiFiEmibaseaddr,
 					pWiFiEmibaseaddr + (prFwHead->arSection[i].u4DestAddr & 0xfffff),
@@ -3744,16 +3744,16 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 #if CFG_ENABLE_CAL_LOG
 	DBGLOG(NIC, LOUD, " RF CAL FAIL  = (%d),BB CAL FAIL  = (%d)\n",
-			    prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
+	       prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
 #endif
 
-	DBGLOG(NIC, INFO, "FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+	DBGLOG(NIC, INFO, "FW Ver DEC[%d.%d] HEX[%x.%x], Driver Ver[%d.%d]\n",
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (UINT_16)(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+	       (UINT_16)(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -6462,12 +6462,8 @@ VOID wlanTxLifetimeTagPacket(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduIn
 
 	case TX_PROF_TAG_DRV_TX_DONE:
 		if (prPktProfile->fgIsValid) {
-			BOOLEAN fgPrintCurPkt = FALSE;
 
 			prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
-
-			if (fgPrintCurPkt)
-				PRINT_PKT_PROFILE(prPktProfile, "C");
 
 #if CFG_ENABLE_PER_STA_STATISTICS
 			wlanTxLifetimeUpdateStaStats(prAdapter, prMsduInfo);

@@ -99,7 +99,6 @@ struct icm20645_i2c_data {
 	atomic_t fir_en;
 	struct data_filter fir;
 #endif
-	bool flush;
 };
 /*----------------------------------------------------------------------------*/
 #ifdef CONFIG_OF
@@ -384,7 +383,6 @@ static int ICM20645_ReadCalibration(struct i2c_client *client, int dat[ICM20645_
 static int ICM20645_WriteCalibration(struct i2c_client *client, int dat[ICM20645_AXES_NUM])
 {
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
-	int err = 0;
 	int cali[ICM20645_AXES_NUM];
 
 	if (!obj || !dat) {
@@ -405,7 +403,6 @@ static int ICM20645_WriteCalibration(struct i2c_client *client, int dat[ICM20645
 #endif
 	return ICM20645_write_rel_calibration(obj, cali);
 
-	return err;
 }
 
 
@@ -564,10 +561,14 @@ static int ICM20645_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 {
 	char databuf[6];
 	int data[3];
+	int err;
+
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
 
 	if (sensor_power == false) {
-		ICM20645_SetPowerMode(client, true);
+		err = ICM20645_SetPowerMode(client, true);
+		if (err)
+			GYRO_PR_ERR("Power on  error %d!\n", err);
 		icm20645_turn_on(client, BIT_PWR_GYRO_STBY, true);
 		msleep(50);
 	}
@@ -1144,7 +1145,8 @@ static int icm20645gy_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatch
 			return err;
 		}
 	} else if (hw_rate >= 100) {
-		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_4X);
+		hw_rate = 562;
+		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_1X);
 		if (err != ICM20645_SUCCESS) {
 			GYRO_PR_ERR("ICM20645_Setfilter ERR!\n");
 			return err;
@@ -1169,14 +1171,9 @@ static int icm20645gy_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatch
 static int icm20645gy_flush(void)
 {
 	int err = 0;
-	/*Only flush after sensor was enabled*/
-	if (!sensor_power) {
-		obj_i2c_data->flush = true;
-		return 0;
-	}
+
 	err = gyro_flush_report();
-	if (err >= 0)
-		obj_i2c_data->flush = false;
+	GYRO_INFO("Flush complete\n");
 	return err;
 }
 

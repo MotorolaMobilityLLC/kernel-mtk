@@ -1605,7 +1605,7 @@ typedef struct _IE_SSID_T {
 typedef struct _IE_SUPPORTED_RATE_T {
 	UINT_8 ucId;
 	UINT_8 ucLength;
-	UINT_8 aucSupportedRates[ELEM_MAX_LEN_SUP_RATES];
+	UINT_8 aucSupportedRates[0]; /* Variable size, should no more than 8 */
 } __KAL_ATTRIB_PACKED__ IE_SUPPORTED_RATE_T, *P_IE_SUPPORTED_RATE_T;
 
 /* 7.3.2.4 DS Parameter Set element */
@@ -1692,7 +1692,7 @@ typedef struct _IE_ERP_T {
 typedef struct _IE_EXT_SUPPORTED_RATE_T {
 	UINT_8 ucId;
 	UINT_8 ucLength;
-	UINT_8 aucExtSupportedRates[ELEM_MAX_LEN_EXTENDED_SUP_RATES];
+	UINT_8 aucExtSupportedRates[0]; /* Variable size */
 } __KAL_ATTRIB_PACKED__ IE_EXT_SUPPORTED_RATE_T, *P_IE_EXT_SUPPORTED_RATE_T;
 
 /* 7.3.2.15 Power Constraint element */

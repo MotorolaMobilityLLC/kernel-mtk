@@ -71,6 +71,9 @@
  */
 static LCM_UTIL_FUNCS lcm_util = {0};
 
+static unsigned int last_backlight_level;
+static void lcm_setbacklight_cmdq(void *handle, unsigned int level);
+
 #define SET_RESET_PIN(v) (lcm_util.set_reset_pin((v)))
 
 #define UDELAY(n) (lcm_util.udelay(n))
@@ -139,7 +142,6 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0x35, 1, {0x00} }, /* TE ON */
 
 	{0x53, 1, {0x20} }, /* Dimming Control */
-	{0x51, 1, {0xFF} }, /* Luminance Setting */
 
 	{REGFLAG_DELAY, 120, {} }, /* 120ms */
 
@@ -235,10 +237,11 @@ static void lcm_init(void)
 
 	push_table(lcm_initialization_setting, ARRAY_SIZE(lcm_initialization_setting), 1);
 
+	lcm_setbacklight_cmdq(NULL, last_backlight_level);
+
 #ifdef BUILD_LK
 	dprintf(0, "[LK]push_table end\n");
 #endif
-
 }
 
 static void lcm_suspend(void)
@@ -249,6 +252,7 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
+	last_backlight_level = 0;
 	lcm_init();
 }
 
@@ -344,6 +348,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 #endif
 
 	dsi_set_cmd_by_cmdq_dual(handle, cmd_1, count_1, &value_1, 1);
+
+	last_backlight_level = level;
 }
 
 LCM_DRIVER s6e3fa3_fhd_cmd_lcm_drv = {

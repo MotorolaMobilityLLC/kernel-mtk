@@ -573,48 +573,53 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, DISP_MODULE_ENUM engine, v
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
-	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP
-	       || handle->scenario == DDP_SCENARIO_SUB_DISP
-	       || handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT);
-	wdma =
-	    ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
-
-	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
-		DISPERR("dpmgr_path_add_memout error, wdma is already in scenario=%s\n",
-		       ddp_get_scenario_name(handle->scenario));
+	if (handle->scenario != DDP_SCENARIO_PRIMARY_DISP
+	       && handle->scenario != DDP_SCENARIO_SUB_DISP
+	       && handle->scenario != DDP_SCENARIO_PRIMARY_OVL_MEMOUT){
+		DISPERR("dpmgr_path_add_memout error, wdma can not be added to scenario=%s\n",
+			       ddp_get_scenario_name(handle->scenario));
 		return -1;
-	}
-	/* update contxt */
-	context = _get_context();
-
-	context->module_usage_table[wdma]++;
-	context->module_path_table[wdma] = handle;
-	if (engine == DISP_MODULE_OVL0) {
-		handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
-	} else if (engine == DISP_MODULE_OVL1) {
-		handle->scenario = DDP_SCENARIO_SUB_ALL;
-	} else if (engine == DISP_MODULE_DITHER) {
-		handle->scenario = DDP_SCENARIO_DITHER_1TO2;
-	} else if (engine == DISP_MODULE_UFOE) {
-		handle->scenario = DDP_SCENARIO_UFOE_1TO2;
 	} else {
-		pr_err("%s error: engine=%d\n", __func__, engine);
-		BUG();
+		wdma =
+		    ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
+
+		if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
+			DISPERR("dpmgr_path_add_memout error, wdma is already in scenario=%s\n",
+			       ddp_get_scenario_name(handle->scenario));
+			return -1;
+		}
+		/* update contxt */
+		context = _get_context();
+
+		context->module_usage_table[wdma]++;
+		context->module_path_table[wdma] = handle;
+		if (engine == DISP_MODULE_OVL0) {
+			handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
+		} else if (engine == DISP_MODULE_OVL1) {
+			handle->scenario = DDP_SCENARIO_SUB_ALL;
+		} else if (engine == DISP_MODULE_DITHER) {
+			handle->scenario = DDP_SCENARIO_DITHER_1TO2;
+		} else if (engine == DISP_MODULE_UFOE) {
+			handle->scenario = DDP_SCENARIO_UFOE_1TO2;
+		} else {
+			pr_err("%s error: engine=%d\n", __func__, engine);
+			BUG();
+		}
+		/* update connected */
+		_dpmgr_path_connect(handle->scenario, cmdq_handle);
+		ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
+
+		/* wdma just need start. */
+		if (ddp_modules_driver[wdma] != 0) {
+			if (ddp_modules_driver[wdma]->init != 0)
+				ddp_modules_driver[wdma]->init(wdma, cmdq_handle);
+
+			if (ddp_modules_driver[wdma]->start != 0)
+				ddp_modules_driver[wdma]->start(wdma, cmdq_handle);
+
+		}
+		return 0;
 	}
-	/* update connected */
-	_dpmgr_path_connect(handle->scenario, cmdq_handle);
-	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
-
-	/* wdma just need start. */
-	if (ddp_modules_driver[wdma] != 0) {
-		if (ddp_modules_driver[wdma]->init != 0)
-			ddp_modules_driver[wdma]->init(wdma, cmdq_handle);
-
-		if (ddp_modules_driver[wdma]->start != 0)
-			ddp_modules_driver[wdma]->start(wdma, cmdq_handle);
-
-	}
-	return 0;
 }
 
 int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)

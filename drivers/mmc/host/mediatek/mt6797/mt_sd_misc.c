@@ -765,13 +765,12 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 		return 0;
 	}
 	host = msdc_get_host(host_function, boot, 0);
-	if (IS_ERR_OR_NULL(host) || IS_ERR_OR_NULL(host->mmc) ||
-			IS_ERR_OR_NULL(host->mmc->card))
+	if (!host || !host->mmc)
 		return -EINVAL;
 	switch (info_type) {
 	/* FIXME: check if any user space program use this EMMC_XXX */
 	case CARD_INFO:
-		if (host->mmc && host->mmc->card)
+		if (host->mmc->card)
 			info->card = host->mmc->card;
 		else {
 			pr_err("CARD was not ready<get card>!");
@@ -779,7 +778,7 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 		}
 		break;
 	case DISK_INFO:
-		if (host->mmc && host->mmc->card)
+		if (host->mmc->card)
 			info->disk = mmc_get_disk(host->mmc->card);
 		else {
 			pr_err("CARD was not ready<get disk>!");

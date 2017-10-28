@@ -151,9 +151,6 @@ VOID p2pRoleFsmUninit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx)
 
 		ASSERT_BREAK(prP2pRoleFsmInfo != NULL);
 
-		if (!prP2pRoleFsmInfo)
-			return;
-
 		prP2pBssInfo = prAdapter->aprBssInfo[prP2pRoleFsmInfo->ucBssIndex];
 
 		p2pFuncDissolve(prAdapter, prP2pBssInfo, TRUE, REASON_CODE_DEAUTH_LEAVING_BSS);
@@ -664,14 +661,14 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 		prP2pConnReqInfo = &(prP2pRoleFsmInfo->rConnReqInfo);
 
 		if (prP2pStartAPMsg->u4BcnInterval) {
-			DBGLOG(P2P, TRACE, "Beacon interval updated to: %ld\n", prP2pStartAPMsg->u4BcnInterval);
+			DBGLOG(P2P, TRACE, "Beacon interval updated to: %u\n", prP2pStartAPMsg->u4BcnInterval);
 			prP2pBssInfo->u2BeaconInterval = (UINT_16) prP2pStartAPMsg->u4BcnInterval;
 		} else if (prP2pBssInfo->u2BeaconInterval == 0) {
 			prP2pBssInfo->u2BeaconInterval = DOT11_BEACON_PERIOD_DEFAULT;
 		}
 
 		if (prP2pStartAPMsg->u4DtimPeriod) {
-			DBGLOG(P2P, TRACE, "DTIM interval updated to: %ld\n", prP2pStartAPMsg->u4DtimPeriod);
+			DBGLOG(P2P, TRACE, "DTIM interval updated to: %u\n", prP2pStartAPMsg->u4DtimPeriod);
 			prP2pBssInfo->ucDTIMPeriod = (UINT_8) prP2pStartAPMsg->u4DtimPeriod;
 		} else if (prP2pBssInfo->ucDTIMPeriod == 0) {
 			prP2pBssInfo->ucDTIMPeriod = DOT11_DTIM_PERIOD_DEFAULT;
@@ -1493,18 +1490,22 @@ VOID p2pRoleFsmRunEventAAATxFail(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prS
 VOID p2pRoleFsmRunEventSwitchOPMode(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
-	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
+	P_MSG_P2P_SWITCH_OP_MODE_T prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) NULL;
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 
 	do {
-		ASSERT_BREAK((prAdapter != NULL) && (prSwitchOpMode != NULL));
+		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
 		DBGLOG(P2P, TRACE, "p2pRoleFsmRunEventSwitchOPMode\n");
 
+		prSwitchOpMode = (P_MSG_P2P_SWITCH_OP_MODE_T) prMsgHdr;
+
 		if (prSwitchOpMode->ucRoleIdx < BSS_P2P_NUM)
 			prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[prSwitchOpMode->ucRoleIdx];
-		else
-			ASSERT(FALSE);
+		else {
+			DBGLOG(P2P, ERROR, "Error RoleIdx %d\n", prSwitchOpMode->ucRoleIdx);
+			break;
+		}
 
 		ASSERT(prP2pRoleFsmInfo->ucBssIndex < P2P_DEV_BSS_INDEX);
 

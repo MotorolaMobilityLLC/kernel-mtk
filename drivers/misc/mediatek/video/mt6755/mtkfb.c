@@ -1693,16 +1693,16 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			unsigned long *pbuf = NULL;
 			compat_ulong_t l;
 
-			data32 = compat_ptr(arg);
 			pbuf = compat_alloc_user_space(sizeof(unsigned long));
 
 			if (!pbuf) {
 				DISPERR("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
 				ret  = -EFAULT;
 			} else {
+				data32 = compat_ptr(arg);
 				ret = get_user(l, data32);
 				ret |= put_user(l, pbuf);
-				primary_display_capture_framebuffer_ovl(*pbuf, UFMT_BGRA8888);
+				ret = mtkfb_ioctl(info, MTKFB_CAPTURE_FRAMEBUFFER, (unsigned long)pbuf);
 				}
 			break;
 		}

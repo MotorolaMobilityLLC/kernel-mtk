@@ -552,6 +552,7 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 				}
 
 			}
+			break;
 		case SWCTRL_TX_CTRL_INFO:
 			{
 				P_TX_CTRL_T prTxCtrl;

@@ -1236,7 +1236,10 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 			host->power_control(host, 1);
 
 		mdelay(10);
-
+		if (host->id == 1) {
+			if (!msdc_io_check(host))
+				return;
+		}
 		if (host->hw->host_function == MSDC_SD) {
 			pmic_read_interface(MT6351_PMIC_OC_STATUS_VMCH_ADDR,
 					    &val,
@@ -1842,10 +1845,9 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	/* use polling way */
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
 	rawarg = cmd->arg;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (host->hw->host_function == MSDC_EMMC)
-		dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
-#endif
+
+	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+
 	sdc_send_cmd(rawcmd, rawarg);
 
 	return 0;
@@ -1941,12 +1943,11 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		default: /* Response types 1, 3, 4, 5, 6, 7(1b) */
 			*rsp = MSDC_READ32(SDC_RESP0);
+			host->cmd13_timeout_cont = 0;
 			break;
 		}
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (host->hw->host_function == MSDC_EMMC)
-			dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
-#endif
+		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
+
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
@@ -1973,8 +1974,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 		    ) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			if (host->hw->host_function == MSDC_EMMC)
-				mmc_cmd_dump(host->mmc);
+			mmc_cmd_dump(NULL, host->mmc, 50);
 #endif
 			msdc_dump_info(host->id);
 		}
@@ -1983,6 +1983,13 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			pr_err("msdc%d: send stop TMO, device status: %x\n",
 					host->id, host->device_status);
 		}
+
+		if (cmd->opcode == 13) {
+			host->cmd13_timeout_cont++;
+			pr_notice("%s: %d: CMD%d cmd13_timeout_cont = %d\n", __func__, __LINE__,
+				cmd->opcode, host->cmd13_timeout_cont);
+		}
+
 		if ((cmd->opcode == 5) && emmc_do_sleep_awake)
 			msdc_dump_info(host->id);
 
@@ -2179,11 +2186,8 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+			mmc_cmd_dump(NULL, host->mmc, 50);
 			msdc_dump_info(host->id);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			if (host->hw->host_function == MSDC_EMMC)
-				mmc_cmd_dump(host->mmc);
-#endif
 			/*msdc_reset_hw(host->id);*/
 		}
 	}
@@ -2266,6 +2270,7 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	BUG_ON(!kaddr);
 	BUG_ON(sg == NULL);
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
+	spin_unlock(&host->lock);
 	while (1) {
 		if (!get_xfer_done) {
 			ints = MSDC_READ32(MSDC_INT);
@@ -2446,6 +2451,7 @@ check_fifo_end:
 	if (data->error)
 		ERR_MSG("read pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+	spin_lock(&host->lock);
 	return data->error;
 }
 
@@ -2474,6 +2480,7 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 
 	BUG_ON(!kaddr);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
+	spin_unlock(&host->lock);
 	while (1) {
 		if (!get_xfer_done) {
 			ints = MSDC_READ32(MSDC_INT);
@@ -2646,6 +2653,7 @@ check_fifo_end:
 			data->error, left, size);
 
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
+	spin_lock(&host->lock);
 	return data->error;
 }
 
@@ -3508,6 +3516,8 @@ done:
 		host->need_tune = TUNE_LEGACY_DATA_READ;
 	else if (host->error & REQ_CRC_STATUS_ERR)
 		host->need_tune = TUNE_LEGACY_DATA_WRITE;
+	else if (host->error & REQ_CMD_TMO)
+		host->need_tune = TUNE_LEGACY_CMD_TMO;
 
 	if (host->error & REQ_CMD_EIO || host->error & REQ_DAT_ERR ||
 		host->error & REQ_CRC_STATUS_ERR)
@@ -3704,11 +3714,11 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 					if (time_after(jiffies, polling_tmo)) {
 						ERR_MSG("waiting data transfer done TMO");
 						msdc_dump_info(host->id);
-						mmc_cmd_dump(host->mmc);
+						mmc_cmd_dump(NULL, host->mmc, 50);
 						msdc_dma_stop(host);
 						msdc_dma_clear(host);
 						msdc_reset_hw(host->id);
-						BUG_ON(1);
+						return 1;
 					}
 				}
 			}
@@ -3772,7 +3782,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			if (time_after(jiffies, polling_tmo)) {
 				ERR_MSG("waiting data transfer done TMO");
 				msdc_dump_info(host->id);
-				mmc_cmd_dump(host->mmc);
+				mmc_cmd_dump(NULL, host->mmc, 50);
 				msdc_dma_stop(host);
 				msdc_dma_clear(host);
 				msdc_reset_hw(host->id);
@@ -4240,6 +4250,8 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 			/* mmc_blk_err_check will do legacy request without data */
 			if (host->need_tune & TUNE_LEGACY_CMD)
 				host->need_tune &= ~TUNE_LEGACY_CMD;
+			if (host->need_tune & TUNE_LEGACY_CMD_TMO)
+				host->need_tune &= ~TUNE_LEGACY_CMD_TMO;
 			/* Retry legacy data read pass, clear autok pass flag */
 			if ((host->need_tune & TUNE_LEGACY_DATA_READ) &&
 				mrq->cmd->data) {
@@ -4424,7 +4436,8 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	host->tuning_in_progress = false;
 	pmic_force_vcore_pwm(false);
 	msdc_gate_clock(host, 1);
-	return 0;
+	/* need return error to reset emmc when timeout happens */
+	return ret;
 }
 int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 {
@@ -4473,7 +4486,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			if (time_after(jiffies, polling_tmo)) {
 				ERR_MSG("waiting data transfer done TMO");
 				msdc_dump_info(host->id);
-				mmc_cmd_dump(host->mmc);
+				mmc_cmd_dump(NULL, host->mmc, 50);
 			}
 		}
 	}
@@ -4490,7 +4503,19 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	else if ((host->need_tune & TUNE_ASYNC_DATA_WRITE) ||
 		(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
-
+	else if (host->need_tune & TUNE_LEGACY_CMD_TMO) {
+		host->need_tune = TUNE_NONE;
+		if ((host->hw->host_function == MSDC_SD)
+			&& (mrq->cmd->opcode == MMC_SEND_STATUS)) {
+			if (host->cmd13_timeout_cont >= 3) {
+				pr_notice(
+	"%s: CMD%d cmd13 continuous timeout count = %d, reset sdcard\n", __func__,
+					 mrq->cmd->opcode, host->cmd13_timeout_cont);
+				(void)sdcard_hw_reset(mmc);
+			}
+		}
+		goto end;
+	}
 	/* 1. mmc_blk_err_check will send CMD13 to check device status
 	 * Don't autok/switch edge here, or it will cause CMD19 send when
 	 * device is not in transfer status
@@ -4773,6 +4798,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 
 	host->is_autok_done = 0;
 	host->block_bad_card = 0;
+	host->cmd13_timeout_cont = 0;
 	msdc_ops_get_cd(mmc);
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
@@ -5186,8 +5212,7 @@ static void msdc_cmdq_check_timeout(struct work_struct *work)
 		__func__, host->cmdq_timeout_ms, mrq->cmd->opcode);
 
 	msdc_dump_info(host->id);
-	if (host->hw->host_function == MSDC_EMMC)
-		mmc_cmd_dump(host->mmc);
+	mmc_cmd_dump(NULL, host->mmc, 50);
 
 	if (msdc_use_async_dma(data->host_cookie)) {
 		if (!mmc->done_mrq) {
@@ -5798,8 +5823,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		BUG();
 	}
 
-	if (ret)
-		goto free_irq;
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
 		ghost = host;
 		/* enable sdio detection */
@@ -5815,10 +5838,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	return 0;
 
-free_irq:
-	free_irq(host->irq, host);
-	pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
 release:
+	if (host->irq >= 0)
+		free_irq(host->irq, host);
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
 	pr_err("[%s]: msdc%d init fail release!\n", __func__, host->id);

@@ -216,6 +216,13 @@ typedef struct {
 
 #define pgc	_get_context()
 
+unsigned int round_corner_offset_enable;
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+static int
+primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
+				     unsigned int *pitch, unsigned int *height);
+#endif
+
 static int smart_ovl_try_switch_mode_nolock(void);
 
 static display_primary_path_context *_get_context(void)
@@ -3399,10 +3406,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	pgc->lcm_fps = lcm_fps;
 	pgc->lcm_refresh_rate = 60;
+
+	pgc->state = DISP_ALIVE;
+
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
-	pgc->state = DISP_ALIVE;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	disp_switch_data.name = "disp";
 	disp_switch_data.index = 0;
@@ -4199,12 +4208,13 @@ int primary_display_resume(void)
 		}
 	}
 
+done:
+	primary_set_state(DISP_ALIVE);
+
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
-done:
-	primary_set_state(DISP_ALIVE);
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	switch_set_state(&disp_switch_data, DISP_ALIVE);
 #endif
@@ -4713,6 +4723,145 @@ static int evaluate_bandwidth_save(disp_ddp_path_config *cfg, int *ori, int *act
 	return 0;
 }
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_corner_pattern_width(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+int primary_display_get_corner_pattern_height(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_height;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+static int
+primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
+				     unsigned int *pitch, unsigned int *height)
+{
+	unsigned int ret = -1;
+	unsigned int Bpp = 4;
+	unsigned int corner_size = 0;
+	unsigned int dal_buf_size = DAL_GetLayerSize();
+	unsigned int frame_buf_size = DISP_GetFBRamSize();
+	unsigned int vram_buf_size = mtkfb_get_fb_size();
+	unsigned long frame_buf_mva =
+				primary_display_get_frame_buffer_mva_address();
+
+	if (vram_buf_size > dal_buf_size + frame_buf_size) {
+		*height = primary_display_get_corner_pattern_height();
+		*pitch = primary_display_get_width();
+		corner_size = (*pitch) * (*height) * Bpp;
+
+		*tp_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
+		*bt_mva = *tp_mva + corner_size;
+		ret = 0;
+		DISPMSG("corner_sz:%u,tp_mva:0x%08x,bt_mva:0x%08x\n",
+			corner_size, *tp_mva, *bt_mva);
+	} else {
+		DISPERR("vram_buf may not contain corner size!\n");
+	}
+	return ret;
+}
+
+void primary_display_add_round_corner_layers(disp_ddp_path_config *pconfig)
+{
+	static bool init_corner;
+	static unsigned int pitch, h;
+	static unsigned int bottom_mva, top_mva;
+
+	unsigned int layer = primary_display_get_option("ROUND_CORNER");
+	OVL_CONFIG_STRUCT *oc = NULL;
+	unsigned int offset = round_corner_offset_enable ? 100 : 0;
+	int ret = 0;
+
+	if (unlikely(init_corner == false)) {
+		ret = primary_display_get_round_corner_mva(&top_mva, &bottom_mva,
+							   &pitch, &h);
+		init_corner = true;
+	}
+	if (ret || h == 0 || h > (primary_display_get_height() >> 1)) {
+		DISPERR("round corner init fail: ret:%d, h:%u\n", ret, h);
+		return;
+	}
+
+	/* top round corner */
+	oc = &pconfig->ovl_config[layer];
+	oc->layer = layer;
+	oc->isDirty = 1;
+	oc->buff_idx = -1;
+	oc->layer_en = 1;
+	oc->fmt = UFMT_RGBA8888;
+	oc->addr = (unsigned long)top_mva;
+	oc->const_bld = 0;
+	oc->src_x = 0;
+	oc->src_y = 0;
+	oc->src_w = pitch;
+	oc->src_h = h;
+	oc->src_pitch = pitch * ufmt_get_Bpp(oc->fmt);
+	oc->dst_x = 0;
+	oc->dst_y = offset;
+	oc->dst_w = pitch;
+	oc->dst_h = h;
+	oc->aen = 1;
+	oc->sur_aen = 0;
+	oc->alpha = 255;
+	oc->keyEn = 0;
+	oc->key = 0;
+	oc->src_alpha = 0;
+	oc->dst_alpha = 0;
+	oc->source = OVL_LAYER_SOURCE_MEM;
+	oc->security = 0;
+	oc->yuv_range = 0;
+
+	/* bottom round corner */
+	oc = &pconfig->ovl_config[layer + 1];
+	oc->layer = layer + 1;
+	oc->isDirty = 1;
+	oc->buff_idx = -1;
+	oc->layer_en = 1;
+	oc->fmt = UFMT_RGBA8888;
+	oc->addr = (unsigned long)bottom_mva;
+	oc->const_bld = 0;
+	oc->src_x = 0;
+	oc->src_y = 0;
+	oc->src_w = pitch;
+	oc->src_h = h;
+	oc->src_pitch = pitch * ufmt_get_Bpp(oc->fmt);
+	oc->dst_x = 0;
+	oc->dst_y = primary_display_get_height() - h - offset;
+	oc->dst_w = pitch;
+	oc->dst_h = h;
+	oc->aen = 1;
+	oc->sur_aen = 0;
+	oc->alpha = 255;
+	oc->keyEn = 0;
+	oc->key = 0;
+	oc->src_alpha = 0;
+	oc->dst_alpha = 0;
+	oc->source = OVL_LAYER_SOURCE_MEM;
+	oc->security = 0;
+	oc->yuv_range = 0;
+}
+#endif
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, cmdqRecHandle cmdq_handle)
 {
@@ -4897,6 +5046,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			}
 		}
 	}
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	primary_display_add_round_corner_layers(data_config);
+#endif
 
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);
 
@@ -5180,8 +5333,8 @@ user_cmd_unlock:
 		_primary_path_switch_dst_unlock();
 
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd, (unsigned long)handle,
-		       cmdqsize);
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd,
+		       MMProfileFlagEnd, cmdqsize, 0);
 
 	return ret;
 }
@@ -5364,7 +5517,8 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
 	/* calc wdma/rdma data size */
-	rdma_sz = data_config->dst_h * data_config->dst_w * 3;
+	rdma_sz = (unsigned long long)data_config->dst_h *
+					data_config->dst_w * 3;
 
 	/* calc ovl data size */
 	ovl_sz = 0;
@@ -5599,6 +5753,7 @@ int primary_display_get_info(disp_session_info *info)
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
+	dispif_info->density = DISP_GetDensity();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
@@ -6080,6 +6235,20 @@ uint32_t DISP_GetActiveWidthUm(void)
 	return 0;
 }
 
+uint32_t DISP_GetDensity(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->density;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
 LCM_PARAMS *DISP_GetLcmPara(void)
 {
 	if (pgc->plcm == NULL) {
@@ -6142,7 +6311,9 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	_primary_path_lock(__func__);
 
 	primary_display_idlemgr_kick(__func__, 0);
-	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	ret = dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	if (ret)
+		goto err;
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6182,6 +6353,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	DISPMSG("primary capture: Flush remove memout\n");
 
+err:
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
 	_primary_path_unlock(__func__);
 
@@ -6209,7 +6381,9 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 	_primary_path_lock(__func__);
 	primary_display_idlemgr_kick(__func__, 1);
 
-	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
+	ret = dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, NULL);
+	if (ret)
+		goto out;
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6237,6 +6411,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 
 	dpmgr_path_remove_memout(pgc->dpmgr_handle, NULL);
 
+out:
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
 	_primary_path_unlock(__func__);
 	return 0;
@@ -6479,6 +6654,8 @@ unsigned int primary_display_get_option(const char *option)
 		return PRIMARY_SESSION_INPUT_LAYER_COUNT - 1;
 	if (!strcmp(option, "M4U_ENABLE"))
 		return disp_helper_get_option(DISP_OPT_USE_M4U);
+	if (!strcmp(option, "ROUND_CORNER"))
+		return PRIMARY_SESSION_INPUT_LAYER_COUNT;
 	ASSERT(0);
 }
 

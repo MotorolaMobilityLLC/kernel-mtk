@@ -299,6 +299,12 @@ typedef enum _ENUM_DBG_MODULE_T {
 #define ASSERT_REPORT(_exp, _fmt)
 #endif /* BUILD_QA_DBG */
 
+#define ASSERT_BREAK(_exp) \
+	if (!(_exp)) { \
+		ASSERT(FALSE); \
+		break; \
+	}
+
 /* The following macro is used for debugging packed structures. */
 #ifndef DATA_STRUCT_INSPECTING_ASSERT
 #define DATA_STRUCT_INSPECTING_ASSERT(expr) \

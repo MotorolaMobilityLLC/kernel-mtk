@@ -540,8 +540,13 @@ VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 			u4RemoveTime = u4RemoveTime / 2;
 		} while (u4RemoveTime > 0);
 
-		COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
+		if (prRoamBssDesc)
+			COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
 				prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+		else {
+			DBGLOG(SCN, ERROR, "AllocateRoamBssDesc failed for two days\n");
+			return;
+		}
 	}
 
 	GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);
@@ -608,8 +613,10 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 	switch (eBSSType) {
 	case BSS_TYPE_P2P_DEVICE:
 		fgCheckSsid = FALSE;
+		/* This case need to fall through */
 	case BSS_TYPE_INFRASTRUCTURE:
 		scanSearchBssDescOfRoamSsid(prAdapter);
+		/* This case need to fall through */
 	case BSS_TYPE_BOW_DEVICE:
 		{
 			prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
@@ -2292,7 +2299,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 					if (prStaRec->ucJoinFailureCount >= JOIN_MAX_RETRY_FAILURE_COUNT)
 						prStaRec->ucJoinFailureCount = 0;
 					DBGLOG(SCN, INFO,
-					       "SEARCH:Try to join BSS again,Status Code=%d(Curr=%ld/Last Join=%ld)\n",
+					       "SEARCH:Try to join BSS again,Status Code=%u(Curr=%u/Last Join=%u)\n",
 					       prStaRec->u2StatusCode, rCurrentTime, prStaRec->rLastJoinTime);
 				} else {
 					DBGLOG(SCN, INFO,
@@ -2350,7 +2357,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 						      SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
 					DBGLOG(SCN, LOUD,
-					       "SEARCH: Now(%zd) Skip old record of BSS Descriptor(%zd) - BSSID:["
+					       "SEARCH: Now(%u) Skip old record of BSS Descriptor(%u) - BSSID:["
 					       MACSTR "]\n\n",
 					       rCurrentTime,
 					       prBssDesc->rUpdateTime,
@@ -3217,13 +3224,24 @@ try_again:
 			break;
 		} else if (!fgSearchBlackList) {
 			prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
-			if (prBssDesc->prBlack)
+			if (prBssDesc->prBlack) {
+				if (prBssDesc->prBlack->blackListSource & AIS_BLACK_LIST_FROM_FWK)
+					DBGLOG(SCN, INFO, "%s(%pM) is in FWK blacklist, skip it\n",
+								prBssDesc->aucSSID, prBssDesc->aucBSSID);
 				continue;
+			}
 		} else if (!prBssDesc->prBlack)
 			continue;
-		else
+		else {
+			/* never search FWK blacklist even if we are trying blacklist */
+			if (prBssDesc->prBlack->blackListSource	& AIS_BLACK_LIST_FROM_FWK) {
+				DBGLOG(SCN, INFO, "Although trying blacklist, %s(%pM) is in FWK blacklist, skip it\n",
+							prBssDesc->aucSSID, prBssDesc->aucBSSID);
+				continue;
+			}
 			u2BlackListScore = WEIGHT_IDX_BLACK_LIST *
 				aisCalculateBlackListScore(prAdapter, prBssDesc);
+		}
 
 		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 		DBGLOG(SCN, TRACE, "cRSSI %d, %pM\n", cRssi, prBssDesc->aucBSSID);

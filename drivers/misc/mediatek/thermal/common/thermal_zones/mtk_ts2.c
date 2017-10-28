@@ -274,14 +274,14 @@ void mtkts_allts_start_ts2_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
-
 	if (down_trylock(&sem_mutex))
 		return;
 
-	if (thz_dev != NULL && interval != 0)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
-	/*1000 = 1sec */
+	if (thz_dev != NULL && interval != 0) {
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue),
+			round_jiffies(msecs_to_jiffies(1000))); /*1000 = 1sec */
+		isTimerCancelled = 0;
+	}
 
 	up(&sem_mutex);
 }
