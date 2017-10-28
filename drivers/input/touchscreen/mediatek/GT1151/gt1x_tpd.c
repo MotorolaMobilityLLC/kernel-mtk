@@ -1166,7 +1166,11 @@ int tpd_enter_tui(void)
 	int ret = 0;
 
 	tpd_tui_flag = 1;
+#ifdef CONFIG_ARCH_MT6797
+	mt_eint_set_deint(8, 206);
+#else
 	mt_eint_set_deint(10, 187);
+#endif
 	GTP_INFO("[%s] enter tui", __func__);
 	return ret;
 }
@@ -1185,8 +1189,11 @@ int tpd_exit_tui(void)
 		tpd_suspend(NULL);
 		GTP_INFO("[%s] do low power again-", __func__);
 	}
-
+#ifdef CONFIG_ARCH_MT6797
+	mt_eint_clr_deint(8);
+#else
 	mt_eint_clr_deint(10);
+#endif
 	tpd_reregister_from_tui();
 
 	GTP_INFO("[%s] exit TUI-", __func__);

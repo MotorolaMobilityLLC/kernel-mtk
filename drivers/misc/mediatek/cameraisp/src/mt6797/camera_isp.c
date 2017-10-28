@@ -4690,6 +4690,11 @@ static inline void ISP_Reset(MINT32 module)
 
 	LOG_DBG(" Reset module(%d), CAMSYS clk gate(0x%x), IMGSYS clk gate(0x%x)\n", module, ISP_RD32(CAMSYS_REG_CG_CON), ISP_RD32(IMGSYS_REG_CG_CON));
 
+	if (module < 0 || module >= nr_isp_devs) {
+		LOG_ERR("[module:%d]index is out of range", module);
+		return;
+	}
+
 	switch (module) {
 	case ISP_CAM_A_IDX:
 	case ISP_CAM_B_IDX: {
@@ -4758,21 +4763,36 @@ static inline void ISP_Reset(MINT32 module)
 ********************************************************************************/
 static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 {
-	MUINT32 i;
 	MINT32 Ret = 0;
-
-	MUINT32 module;
+	MUINT32 i;
 	void __iomem *regBase;
+	ISP_REG_STRUCT *pData = NULL;
+	ISP_REG_STRUCT *pDataArray = NULL;
 
+	if ((pRegIo->Count > (PAGE_SIZE / sizeof(MUINT32))) || (pRegIo->Count <= 0)
+		|| (pRegIo->pData == NULL)) {
+		LOG_ERR("ERROR ISP_ReadReg pRegIo->pData is NULLL or pRegIo->Count error:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
-	/*  */
-	ISP_REG_STRUCT reg;
-	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	ISP_REG_STRUCT *pData = (ISP_REG_STRUCT *)pRegIo->pData;
+	pDataArray = kmalloc((pRegIo->Count) * sizeof(ISP_REG_STRUCT), GFP_KERNEL);
+	if (pDataArray == NULL) {
+		LOG_ERR("ERROR ISP_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
 
-	module = pData->module;
+	if (copy_from_user(pDataArray, (void *)pRegIo->pData,
+		(pRegIo->Count) * sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("ERROR ISP_ReadReg copy_from_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
-	switch (module) {
+	pData = pDataArray;
+	switch (pData->module) {
 	case CAM_A:
 		regBase = ISP_CAM_A_BASE;
 		break;
@@ -4807,39 +4827,37 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 		regBase = ISP_SENINF1_BASE;
 		break;
 	default:
-		LOG_ERR("Unsupported module(%x) !!!\n", module);
+		LOG_ERR("Unsupported module(%x) !!!\n", pData->module);
 		Ret = -EFAULT;
 		goto EXIT;
 	}
 
 
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (0 != get_user(reg.Addr, (MUINT32 *)&pData->Addr)) {
-			LOG_ERR("get_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
-		/*  */
-		if (((regBase + reg.Addr) < (regBase + PAGE_SIZE))) {
-			reg.Val = ISP_RD32(regBase + reg.Addr);
+		if ((regBase + pData->Addr >= regBase) &&
+			(regBase + pData->Addr < (regBase + PAGE_SIZE))) {
+			pData->Val = ISP_RD32(regBase + pData->Addr);
 		} else {
-			LOG_ERR("Wrong address(0x%lx)\n", (unsigned long)(regBase + reg.Addr));
-			reg.Val = 0;
+			LOG_ERR("ERROR ISP_ReadReg wrong address\n");
+			pData->Val = 0;
 		}
-		/*  */
-		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",ISP_ADDR_CAMINF + reg.Addr,reg.Val); */
 
-		if (0 != put_user(reg.Val, (MUINT32 *) &(pData->Val))) {
-			LOG_ERR("put_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
 		pData++;
-		/*  */
 	}
-	/*  */
+
+	if (copy_to_user((void *)pRegIo->pData, pDataArray,
+		(pRegIo->Count) * sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("ERROR ISP_ReadReg copy_to_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 EXIT:
+	if (pDataArray != NULL) {
+		kfree(pDataArray);
+		pDataArray = NULL;
+	}
+
 	return Ret;
 }
 
@@ -4915,7 +4933,8 @@ static MINT32 ISP_WriteRegToHw(
 			LOG_DBG("module(%d), base(0x%lx),Addr(0x%lx), Val(0x%x)\n", module, (unsigned long)regBase , (unsigned long)(pReg[i].Addr), (MUINT32)(pReg[i].Val));
 		}
 
-		if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE))) {
+		if (((regBase + pReg[i].Addr) > regBase) &&
+			((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE))) {
 			ISP_WR32(regBase + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong address(0x%lx)\n", (unsigned long)(regBase + pReg[i].Addr));
@@ -4940,6 +4959,15 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	/* MUINT8* pData = NULL; */
 	ISP_REG_STRUCT *pData = NULL;
 	/*  */
+
+	if ((pRegIo->Count > (PAGE_SIZE / sizeof(MUINT32))) || (pRegIo->Count == 0)
+		|| (pRegIo->pData == NULL)) {
+		LOG_ERR("ERROR ISP_WriteReg pRegIo->pData is NULL or pRegIo->Count error:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	if (IspInfo.DebugMask & ISP_DBG_WRITE_REG) {
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 	}
@@ -5427,6 +5455,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 	/*  */
 	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(ISP_BUFFER_CTRL_STRUCT)) == 0) {
+		if ((rt_buf_ctrl.module < 0) || (rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT)) {
+			LOG_ERR("[rtbc] module is out of range");
+			return -EFAULT;
+		}
 		if (NULL == pstRTBuf[rt_buf_ctrl.module])  {
 			LOG_ERR("[rtbc]NULL pstRTBuf, module:0x%x\n", rt_buf_ctrl.module);
 			return -EFAULT;
@@ -5442,7 +5474,14 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				LOG_INF("[rtbc][%d][CLEAR]:rt_dma(%d)\n", rt_buf_ctrl.module, rt_dma);
 			}
 			/*  */
-
+			if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
+				LOG_ERR("[rtbc] module is out of range");
+				return -EFAULT;
+			}
+			if (rt_dma < 0 || rt_dma >= _cam_max_) {
+				LOG_ERR("[rtbc] rt_dma is out of range");
+				return -EFAULT;
+			}
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_usec[rt_buf_ctrl.module], 0, sizeof(MUINT32) * 32);
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_sec[rt_buf_ctrl.module], 0, sizeof(MUINT32) * 32);
 			/* remove, cause clear will be involked only when current module r totally stopped */
@@ -5512,8 +5551,14 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
 			MUINT8 array[_cam_max_];
+			memset(array, 0, sizeof(array));
 			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(MUINT8)*_cam_max_) == 0) {
 				MUINT32 z;
+				if (rt_buf_ctrl.module < 0 || rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
+					LOG_ERR("[rtbc] module is out of range");
+					return -EFAULT;
+				}
+
 				for (z = 0; z < _cam_max_; z++) {
 					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
 					if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL) {
@@ -5735,7 +5780,14 @@ static MINT32 ISP_P2_BufQue_GetMatchIdx(ISP_P2_BUFQUE_STRUCT param, ISP_P2_BUFQU
 {
 	int idx = -1;
 	int i = 0;
-	int property = param.property;
+	int property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		return idx;
+	}
+	property = param.property;
+
 	switch (matchType) {
 	case ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ:
 		/* traverse for finding the frame unit which had not beed dequeued of the process */
@@ -5869,7 +5921,14 @@ static inline MUINT32 ISP_P2_BufQue_WaitEventState(ISP_P2_BUFQUE_STRUCT param, I
 {
 	MUINT32 ret = MFALSE;
 	MINT32 index = -1;
-	ISP_P2_BUFQUE_PROPERTY property = param.property;
+	ISP_P2_BUFQUE_PROPERTY property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		return ret;
+	}
+
+	property = param.property;
 	/*  */
 	switch (type) {
 	case ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ:
@@ -5920,7 +5979,15 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 	int i = 0, q = 0;
 	int idx =  -1, idx2 =  -1;
 	MINT32 restTime = 0;
-	int property = param.property;
+	int property;
+
+	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
+		LOG_ERR("property err(%d)\n", param.property);
+		ret = -EFAULT;
+		return ret;
+	}
+	property = param.property;
+
 	switch (param.ctrl) {
 	case ISP_P2_BUFQUE_CTRL_ENQUE_FRAME:    /* signal that a specific buffer is enqueued */
 		spin_lock(&(SpinLock_P2FrameList));
@@ -6217,7 +6284,18 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 
-
+	if ((irqinfo->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (irqinfo->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			irqinfo->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((irqinfo->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			irqinfo->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 	if (irqinfo->EventInfo.St_type == SIGNAL_INT) {
 		/* 1. enable marked flag */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
@@ -6336,7 +6414,18 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 
 	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
 		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
-
+	if ((irqinfo->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (irqinfo->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			irqinfo->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((irqinfo->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			irqinfo->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 	/* 1. enable signal */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
@@ -6377,6 +6466,18 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	time_getrequest.tv_usec = usec;
 	time_getrequest.tv_sec = sec;
 
+	if ((WaitIrq->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT)
+		|| (WaitIrq->EventInfo.St_type < 0)) {
+		LOG_ERR("invalid St_type(%d), max(%d)\n",
+			WaitIrq->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return 0;
+	}
+	if ((WaitIrq->EventInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (WaitIrq->EventInfo.UserKey < 0)) {
+		LOG_ERR("invalid UserKey (%d), max(%d)\n",
+			WaitIrq->EventInfo.UserKey , IRQ_USER_NUM_MAX);
+		return 0;
+	}
 #ifdef ENABLE_WAITIRQ_LOG
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
@@ -6958,6 +7059,10 @@ static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 #if 1
 	/* Adjust S/W start time when using H/W timestamp */
 	#if (TIMESTAMP_QUEUE_EN == 0)
+	if ((module < 0) || (module >= ISP_IRQ_TYPE_AMOUNT)) {
+		LOG_ERR("module index is out of range.");
+		return -EFAULT;
+	}
 	g1stSof[module] = MTRUE;
 	#endif
 
@@ -7176,7 +7281,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	switch (Cmd) {
 	case ISP_RESET_CAM_P1:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)*2) != 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)*2) != 0) {
 			LOG_ERR("get reset cam p1 from user fail\n");
 			Ret = -EFAULT;
 			break;
@@ -7261,8 +7366,40 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			LOG_ERR("get module fail\n");
 			Ret = -EFAULT;
 		} else {
-			if (copy_to_user((void *)Param, &g_DmaErr_CAM[DebugFlag[0]], sizeof(MUINT32)*nDMA_ERR) != 0) {
-				LOG_ERR("get dma_err fail\n");
+			if (DebugFlag[0] >= 0 && DebugFlag[0] < ISP_IRQ_TYPE_AMOUNT) {
+				/* Check User Space Allocate Memory Size */
+				MUINT32 *pData = kmalloc_array(nDMA_ERR, sizeof(MUINT32), GFP_KERNEL);
+
+				if (pData == NULL) {
+					LOG_ERR("ISP_GET_DMA_ERR kmalloc failed");
+					Ret = -ENOMEM;
+					goto EXIT;
+				}
+				if (copy_from_user((void *)pData, (void *)Param, sizeof(MUINT32) * nDMA_ERR) != 0) {
+					if (pData != NULL) {
+						kfree(pData);
+						pData = NULL;
+					}
+
+					LOG_ERR("memory size is not enough");
+					Ret = -EFAULT;
+					break;
+				}
+
+				/* Free */
+				if (pData != NULL) {
+					kfree(pData);
+					pData = NULL;
+				}
+
+				if (copy_to_user((void *)Param, (g_DmaErr_CAM + DebugFlag[0]),
+					sizeof(MUINT32) * nDMA_ERR) != 0) {
+					LOG_ERR("get dma_err fail\n");
+					Ret = -EFAULT;
+				}
+			} else {
+				LOG_ERR("[DebugFlag:%d]index is out of range", DebugFlag[0]);
+				Ret = -EFAULT;
 			}
 
 		}
@@ -7271,6 +7408,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
 			LOG_ERR("get cur sof from user fail\n");
 			Ret = -EFAULT;
+			break;
 		} else {
 #if 0
 			switch (DebugFlag[0]) {
@@ -7296,7 +7434,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				break;
 			}
 #else
-			DebugFlag[1] = sof_count[DebugFlag[0]];
+			if (DebugFlag[0] >= 0 && DebugFlag[0] < ISP_IRQ_TYPE_AMOUNT) {
+				DebugFlag[1] = sof_count[DebugFlag[0]];
+			} else {
+				LOG_ERR("[DebugFlag:%d]index is out of range", DebugFlag[0]);
+				Ret = -EFAULT;
+				break;
+			}
 #endif
 		}
 		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
@@ -8596,7 +8740,7 @@ static MINT32 ISP_open(
 	/*  */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 		FirstUnusedIrqUserKey = 1;
-		strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
+		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN-1);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 	/*  */
@@ -8761,11 +8905,13 @@ static inline void ISP_StopHW(MINT32 module)
 	unsigned long long  timeoutMs = 500000000;/*500ms*/
 	char moduleName[128];
 
-	if (module == ISP_CAM_A_IDX)
-		strcpy(moduleName, "CAMA");
-	else
-		strcpy(moduleName, "CAMB");
-
+	if (module == ISP_CAM_A_IDX) {
+		strncpy(moduleName, "CAMA", sizeof(moduleName)-1);
+		moduleName[sizeof(moduleName)-1] = '\0';
+	} else {
+		strncpy(moduleName, "CAMB", sizeof(moduleName)-1);
+		moduleName[sizeof(moduleName)-1] = '\0';
+	}
 	/* wait TG idle*/
 	loopCnt = 3;
 	waitirq.Type = (module == ISP_CAM_A_IDX) ?
@@ -8882,6 +9028,13 @@ static MINT32 ISP_release(
 	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), log_limit_line(%d),	last user",
 		IspInfo.UserCount, current->comm, current->pid, current->tgid, pr_detect_count);
 
+	LOG_DBG("Post off camsv vf prevent TF");
+	for (i = ISP_CAMSV0_IDX; i <= ISP_CAMSV5_IDX; i++) {
+		Reg = ISP_RD32(CAM_REG_TG_VF_CON(i));
+		Reg &= 0xfffffffE;/* close Vfinder */
+		ISP_WR32(CAM_REG_TG_VF_CON(i), Reg);
+	}
+
 	/* Close VF when ISP_release */
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
 	Reg = ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_A_IDX));
@@ -8921,7 +9074,7 @@ static MINT32 ISP_release(
 	/*      */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 		FirstUnusedIrqUserKey = 1;
-		strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
+		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN-1);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 	if (IspInfo.BufInfo.Read.pData != NULL) {
@@ -10435,7 +10588,8 @@ static MINT32 ISP_suspend(
 
 	ret = 0;
 	module = -1;
-	strcpy(moduleName, pDev->dev.of_node->name);
+	strncpy(moduleName, pDev->dev.of_node->name, sizeof(moduleName)-1);
+	moduleName[sizeof(moduleName)-1] = '\0';
 
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */
@@ -10635,7 +10789,8 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 
 	ret = 0;
 	module = -1;
-	strcpy(moduleName, pDev->dev.of_node->name);
+	strncpy(moduleName, pDev->dev.of_node->name, sizeof(moduleName)-1);
+	moduleName[sizeof(moduleName)-1] = '\0';
 
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */

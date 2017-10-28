@@ -737,6 +737,7 @@ static int __init disp_probe_1(void)
 	if (!dispsys_dev) {
 		DDPERR("%s: dispsys_dev=NULL\n", __func__);
 		WARN(1, "dispsys_dev=NULL\n");
+		return -EINVAL;
 	}
 
 	dispsys_dev->dev = &pdev->dev;

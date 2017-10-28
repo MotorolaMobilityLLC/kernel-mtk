@@ -290,6 +290,9 @@ void mt_pidlog_map_sg(struct bio_vec *bvec, int rw)
 	ppl = ((struct page_pid_logger *)mt_bio_pagelogger) + page_offset;
 	tmp.pid1 = ppl->pid1;
 	tmp.pid2 = ppl->pid2;
+
+	ppl->pid1 = 0xFFFF;
+	ppl->pid2 = 0xFFFF;
 	spin_unlock_irqrestore(&mt_bio_pagelogger_lock, flags);
 
 	if (tmp.pid1 != 0xFFFF)

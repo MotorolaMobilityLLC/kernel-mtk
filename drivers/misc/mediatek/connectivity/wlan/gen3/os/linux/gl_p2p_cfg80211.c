@@ -1712,8 +1712,8 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void 
 	if (data && len)
 		memcpy(&rParams, data, len);
 
-	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx_mode=%d idx=%d value=%lu\n",
-	       (INT_16) rParams.idx_mode, (INT_16) rParams.idx, rParams.value);
+	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx_mode=%d idx=%d value=%u\n",
+	       rParams.idx_mode, rParams.idx, rParams.value);
 
 	index_mode = rParams.idx_mode;
 	index = rParams.idx;
@@ -2209,7 +2209,7 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 		}
 	}
 
-	u4AcsChnReport[NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_2G_BASE_1 - 1] = fgIsReady ? BIT(31) : 0;
+	u4AcsChnReport[NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_2G_BASE_1 - 1] = BIT(31);
 	if (rPreferChannel.ucChannel > 0)
 		u4AcsChnReport[NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_2G_BASE_1 - 1] |= BIT(rPreferChannel.ucChannel - 1);
 

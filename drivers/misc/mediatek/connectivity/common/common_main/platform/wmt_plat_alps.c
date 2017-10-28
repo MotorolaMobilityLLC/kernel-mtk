@@ -1793,3 +1793,8 @@ INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 str_buf)
 
 	return 0;
 }
+
+VOID wmt_plat_dump_power_reg(VOID)
+{
+	mtk_wcn_consys_dump_power_reg();
+}

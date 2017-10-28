@@ -381,27 +381,30 @@ VOID p2pDevFsmRunEventTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			/* TODO: IDLE timeout for low power mode. */
 			break;
 		case P2P_DEV_STATE_CHNL_ON_HAND:
-			switch (prAdapter->prP2pInfo->eConnState) {
-			case P2P_CNN_GO_NEG_REQ:
-			case P2P_CNN_GO_NEG_RESP:
-			case P2P_CNN_INVITATION_REQ:
-			case P2P_CNN_DEV_DISC_REQ:
-			case P2P_CNN_PROV_DISC_REQ:
-				DBGLOG(P2P, INFO, "P2P: re-enter CHNL_ON_HAND with state: %d\n",
-				       prAdapter->prP2pInfo->eConnState);
-				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
+			if (!prAdapter->prP2pInfo->ucExtendChanFlag) {
+				switch (prAdapter->prP2pInfo->eConnState) {
+				case P2P_CNN_GO_NEG_REQ:
+				case P2P_CNN_GO_NEG_RESP:
+				case P2P_CNN_INVITATION_REQ:
+				case P2P_CNN_DEV_DISC_REQ:
+				case P2P_CNN_PROV_DISC_REQ:
+					DBGLOG(P2P, INFO, "P2P: re-enter CHNL_ON_HAND with state: %d\n",
+						prAdapter->prP2pInfo->eConnState);
+					prAdapter->prP2pInfo->ucExtendChanFlag = 1;
+					p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
 							 P2P_DEV_STATE_CHNL_ON_HAND);
-				break;
-			case P2P_CNN_NORMAL:
-			case P2P_CNN_GO_NEG_CONF:
-			case P2P_CNN_INVITATION_RESP:
-			case P2P_CNN_DEV_DISC_RESP:
-			case P2P_CNN_PROV_DISC_RES:
-			default:
-				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
-							 P2P_DEV_STATE_IDLE);
-				break;
-			}
+					break;
+				case P2P_CNN_NORMAL:
+				case P2P_CNN_GO_NEG_CONF:
+				case P2P_CNN_INVITATION_RESP:
+				case P2P_CNN_DEV_DISC_RESP:
+				case P2P_CNN_PROV_DISC_RES:
+				default:
+					p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_IDLE);
+					break;
+				}
+			} else
+				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_IDLE);
 			break;
 		default:
 			ASSERT(FALSE);
@@ -681,7 +684,7 @@ VOID p2pDevFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 			}
 		} else {
 			DBGLOG(P2P, WARN,
-			       "p2pDevFsmRunEventChannelAbort: Channel Abort Fail, cookie not found:%d\n",
+			       "p2pDevFsmRunEventChannelAbort: Channel Abort Fail, cookie not found:%llu\n",
 				prChnlAbortMsg->u8Cookie);
 		}
 	} while (FALSE);
@@ -880,6 +883,7 @@ VOID p2pFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prMsgChGrant = (P_MSG_CH_GRANT_T) prMsgHdr;
 
 		prP2pBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prMsgChGrant->ucBssIndex);
+		prAdapter->prP2pInfo->ucExtendChanFlag = 0;
 
 		DBGLOG(P2P, TRACE, "P2P Run Event Channel Grant\n");
 
@@ -936,7 +940,7 @@ VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 			p2pRoleFsmRunEventScanRequest(prAdapter, prMsgHdr);
 	} while (FALSE);
 
-	if (prP2pScanReqMsg == NULL)
+	if (prP2pScanReqMsg == NULL) /* in case ASSERT_BREAK happens */
 		cnmMemFree(prAdapter, prMsgHdr);
 
 }				/* p2pDevFsmRunEventScanRequest */

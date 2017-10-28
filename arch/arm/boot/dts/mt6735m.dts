@@ -676,6 +676,11 @@
 		swtp: swtp {
 			compatible = "mediatek, swtp-eint";
 		};
+
+		dsi_te: dsi_te {
+			compatible = "mediatek, DSI_TE_1-eint";
+			status = "disabled";
+		};
 	};
 
 	bus: bus {

@@ -26,7 +26,7 @@
 
 static bool ufoe_enable;
 static bool lr_mode_en;
-static bool compress_ratio;
+static unsigned int compress_ratio;
 
 static void ufoe_dump(void)
 {

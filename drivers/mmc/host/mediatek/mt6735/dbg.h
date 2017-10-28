@@ -123,6 +123,8 @@ typedef enum {
 	MMC_ETT_TUNE = 24,
 	MMC_CRC_STRESS = 25,
 	ENABLE_AXI_MODULE = 26,
+	/* for DB dump, do not change index */
+	MMC_HANG_DETECT_DUMP = 256,
 } msdc_dbg;
 
 
@@ -133,6 +135,16 @@ typedef struct {
 	unsigned char rst_drv;
 	unsigned char ds_drv;
 } drv_mod;
+
+#define MSDC_PRINFO_PROC_MSG(evt, fmt, args...) \
+do { \
+	if (evt == NULL) { \
+		pr_info(fmt, ##args); \
+	} \
+	else { \
+		seq_printf(evt, fmt, ##args); \
+	} \
+} while (0)
 
 extern u32 dma_size[HOST_MAX_NUM];
 extern unsigned char msdc_clock_src[HOST_MAX_NUM];
@@ -187,4 +199,6 @@ extern void GPT_GetCounter64(u32 *cntL32, u32 *cntH32);
 u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
 
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
+void mmc_cmd_dump(struct seq_file *m, struct mmc_host *mmc, u32 latest_cnt);
 #endif

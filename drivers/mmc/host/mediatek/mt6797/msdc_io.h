@@ -125,6 +125,7 @@ void msdc_fpga_pwr_init(void);
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
 #ifndef FPGA_PLATFORM
+int msdc_io_check(struct msdc_host *host);
 void msdc_emmc_power(struct msdc_host *host, u32 on);
 void msdc_sd_power(struct msdc_host *host, u32 on);
 void msdc_sdio_power(struct msdc_host *host, u32 on);

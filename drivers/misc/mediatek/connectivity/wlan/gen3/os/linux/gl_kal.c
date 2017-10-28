@@ -914,9 +914,8 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 	/* DBGLOG_MEM32(RX, TRACE, (PUINT_32)prSkb->data, prSkb->len); */
 	/* DBGLOG(RX, EVENT, ("kalRxIndicatePkts len = %d\n", prSkb->len)); */
 	if (prSkb->tail > prSkb->end) {
-		DBGLOG(RX, ERROR,
-		       "kalRxIndicateOnePkt [prSkb = 0x%p][prSkb->len = %u][prSkb->protocol = 0x%02X] %p,%p\n",
-			(PUINT_8) prSkb, prSkb->len, prSkb->protocol, prSkb->tail, prSkb->end);
+		DBGLOG(RX, ERROR, "prSkb[0x%p] len[%u] protocol[0x%04x] tail[0x%lx] end[0x%lx]\n",
+		       prSkb, prSkb->len, prSkb->protocol, (ULONG)prSkb->tail, (ULONG)prSkb->end);
 		DBGLOG_MEM32(RX, ERROR, (PUINT_32) prSkb->data, prSkb->len);
 	}
 	if (!in_interrupt())
@@ -959,6 +958,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	UINT_8 ucChannelNum;
 	P_BSS_DESC_T prBssDesc = NULL;
 	UINT_16 u2StatusCode = WLAN_STATUS_AUTH_TIMEOUT;
+	UINT_32 u4StartTime = 0;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -979,6 +979,15 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		/* switch netif on */
 		netif_carrier_on(prGlueInfo->prDevHandler);
 
+		/* To Check netdevice up and qdisc active */
+		u4StartTime = kalGetTimeTick();
+		while (!netif_carrier_ok(prGlueInfo->prDevHandler)
+			|| KAL_TEST_BIT(__LINK_STATE_LINKWATCH_PENDING, prGlueInfo->prDevHandler->state))
+			kalUsleep_range(500, 1000);
+
+		if (CHECK_FOR_EXPIRATION(kalGetTimeTick(), u4StartTime + 10))
+			DBGLOG(INIT, INFO, "wlan netdevice takes %u ms to be ready\n",
+				(kalGetTimeTick() - u4StartTime));
 		do {
 			/* print message on console */
 			wlanQueryInformation(prGlueInfo->prAdapter, wlanoidQuerySsid, &ssid, sizeof(ssid), &bufLen);
@@ -1159,9 +1168,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				{
 					UINT_32 i = 0;
 
-					P_PARAM_PMKID_CANDIDATE_T prPmkidCand =
-					    (P_PARAM_PMKID_CANDIDATE_T) &pPmkid->arCandidateList[0];
-
 					for (i = 0; i < pPmkid->u4NumCandidates; i++) {
 						cfg80211_pmksa_candidate_notify(prGlueInfo->prDevHandler, 1000,
 										pPmkid->arCandidateList[i].arBSSID,
@@ -1171,7 +1177,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 									 IWEVPMKIDCAND,
 									 (unsigned char *)&pPmkid->arCandidateList[i],
 									 pPmkid->u4NumCandidates);
-						prPmkidCand += sizeof(PARAM_PMKID_CANDIDATE_T);
 					}
 				}
 				break;
@@ -3672,28 +3677,6 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 {
 	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, FALSE, ucMaxChannelNum,
 			     pucNumOfChannel, paucChannelList);
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief
-*
-* \param[in] prAdapter  Pointer of ADAPTER_T
-*
-* \return none
-*/
-/*----------------------------------------------------------------------------*/
-BOOL kalIsAPmode(IN P_GLUE_INFO_T prGlueInfo)
-{
-#if 0				/* Marked for MT6630 (New ucBssIndex) */
-#if CFG_ENABLE_WIFI_DIRECT
-	if (IS_NET_ACTIVE(prGlueInfo->prAdapter, NETWORK_TYPE_P2P_INDEX) &&
-	    p2pFuncIsAPMode(prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo))
-		return TRUE;
-#endif
-#endif
-
-	return FALSE;
 }
 
 #if CFG_SUPPORT_802_11W

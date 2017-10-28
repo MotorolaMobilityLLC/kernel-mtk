@@ -102,5 +102,6 @@ enum {
 
 };
 #define M4U_PORT_NR M4U_PORT_UNKNOWN
+#define M4U_LARB_PORT_NR 31   /*0x7f  31*/
 
 #endif

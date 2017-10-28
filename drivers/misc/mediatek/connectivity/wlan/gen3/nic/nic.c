@@ -255,34 +255,6 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 	prTxCtrl = &prAdapter->rTxCtrl;
 	prRxCtrl = &prAdapter->rRxCtrl;
 
-	/* 4 <5> Memory for enhanced interrupt response */
-	if (prAdapter->prSDIOCtrl) {
-		kalReleaseIOBuffer((PVOID) prAdapter->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
-		prAdapter->prSDIOCtrl = (P_SDIO_CTRL_T) NULL;
-	}
-	/* 4 <4> Memory for Common Coalescing Buffer */
-#if CFG_COALESCING_BUFFER_SIZE || CFG_SDIO_RX_AGG
-	if (prAdapter->pucCoalescingBufCached) {
-		kalReleaseIOBuffer((PVOID) prAdapter->pucCoalescingBufCached, prAdapter->u4CoalescingBufCachedSize);
-		prAdapter->pucCoalescingBufCached = (PUINT_8) NULL;
-	}
-#endif /* CFG_COALESCING_BUFFER_SIZE */
-
-	/* 4 <3> Memory for TX Descriptor */
-	if (prTxCtrl->pucTxCached) {
-		kalMemFree((PVOID) prTxCtrl->pucTxCached, VIR_MEM_TYPE, prTxCtrl->u4TxCachedSize);
-		prTxCtrl->pucTxCached = (PUINT_8) NULL;
-	}
-	/* 4 <2> Memory for RX Descriptor */
-	if (prRxCtrl->pucRxCached) {
-		kalMemFree((PVOID) prRxCtrl->pucRxCached, VIR_MEM_TYPE, prRxCtrl->u4RxCachedSize);
-		prRxCtrl->pucRxCached = (PUINT_8) NULL;
-	}
-	/* 4 <1> Memory for Management Memory Pool */
-	if (prAdapter->pucMgtBufCached) {
-		kalMemFree((PVOID) prAdapter->pucMgtBufCached, PHY_MEM_TYPE, prAdapter->u4MgtBufCachedSize);
-		prAdapter->pucMgtBufCached = (PUINT_8) NULL;
-	}
 #if CFG_DBG_MGT_BUF
 	do {
 		BOOLEAN fgUnfreedMem = FALSE;
@@ -314,15 +286,42 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 			/* Skip this ASSERT if chip is no ACK */
 			if (prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount)
 				break;
-			for (i = 0; i < MEM_TRACE_NUM; i++) {
-				if (arMemTrace[i].u4MemAddr != 0)
-					DBGLOG(MEM, ERROR, "Unequal memory, MemAddr:0x%x FuncAddr:0x%x\n",
+			for (i = 0; i < MEM_TRACE_NUM; i++)
+				DBGLOG(MEM, ERROR, "Unequal memory, MemAddr:0x%lx FuncAddr:0x%lx\n",
 						arMemTrace[i].u4MemAddr, arMemTrace[i].u4FuncAddr);
-			}
 			ASSERT(FALSE);
 		}
 	} while (FALSE);
 #endif
+
+	/* 4 <5> Memory for enhanced interrupt response */
+	if (prAdapter->prSDIOCtrl) {
+		kalReleaseIOBuffer((PVOID) prAdapter->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+		prAdapter->prSDIOCtrl = (P_SDIO_CTRL_T) NULL;
+	}
+	/* 4 <4> Memory for Common Coalescing Buffer */
+#if CFG_COALESCING_BUFFER_SIZE || CFG_SDIO_RX_AGG
+	if (prAdapter->pucCoalescingBufCached) {
+		kalReleaseIOBuffer((PVOID) prAdapter->pucCoalescingBufCached, prAdapter->u4CoalescingBufCachedSize);
+		prAdapter->pucCoalescingBufCached = (PUINT_8) NULL;
+	}
+#endif /* CFG_COALESCING_BUFFER_SIZE */
+
+	/* 4 <3> Memory for TX Descriptor */
+	if (prTxCtrl->pucTxCached) {
+		kalMemFree((PVOID) prTxCtrl->pucTxCached, VIR_MEM_TYPE, prTxCtrl->u4TxCachedSize);
+		prTxCtrl->pucTxCached = (PUINT_8) NULL;
+	}
+	/* 4 <2> Memory for RX Descriptor */
+	if (prRxCtrl->pucRxCached) {
+		kalMemFree((PVOID) prRxCtrl->pucRxCached, VIR_MEM_TYPE, prRxCtrl->u4RxCachedSize);
+		prRxCtrl->pucRxCached = (PUINT_8) NULL;
+	}
+	/* 4 <1> Memory for Management Memory Pool */
+	if (prAdapter->pucMgtBufCached) {
+		kalMemFree((PVOID) prAdapter->pucMgtBufCached, PHY_MEM_TYPE, prAdapter->u4MgtBufCachedSize);
+		prAdapter->pucMgtBufCached = (PUINT_8) NULL;
+	}
 
 }
 
@@ -529,7 +528,7 @@ WLAN_STATUS nicProcessIST(IN P_ADAPTER_T prAdapter)
 		/* DBGLOG(NIC, TRACE, ("u4IntStatus: 0x%x\n", u4IntStatus)); */
 
 		if (u4IntStatus & ~(WHIER_DEFAULT | WHIER_FW_OWN_BACK_INT_EN)) {
-			DBGLOG(INTR, WARN, "Un-handled HISR %#x, HISR = %#x (HIER:0x%x)\n",
+			DBGLOG(INTR, WARN, "Un-handled HISR %#lx, HISR = %#x (HIER:0x%lx)\n",
 					    (u4IntStatus & ~WHIER_DEFAULT), u4IntStatus, WHIER_DEFAULT);
 			u4IntStatus &= WHIER_DEFAULT;
 		}
@@ -577,7 +576,7 @@ WLAN_STATUS nicProcessIST_impl(IN P_ADAPTER_T prAdapter, IN UINT_32 u4IntStatus)
 				apfnEventFuncTable[prIntEventMap->u4Event] (prAdapter);
 			} else {
 				DBGLOG(INTR, WARN,
-				       "Empty INTR handler! ISAR bit#: %u, event:%u, func: 0x%x\n",
+				       "Empty INTR handler! ISAR bit#: %u, event:%u, func: %p\n",
 					prIntEventMap->u4Int, prIntEventMap->u4Event,
 					apfnEventFuncTable[prIntEventMap->u4Event]);
 
@@ -612,8 +611,8 @@ BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter)
 
 	HAL_MCR_RD(prAdapter, MCR_WCIR, &u4CIR);
 
-	DBGLOG(NIC, TRACE, "Chip ID: 0x%08x\n", u4CIR & WCIR_CHIP_ID);
-	DBGLOG(NIC, TRACE, "Revision ID: 0x%08x\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
+	DBGLOG(NIC, TRACE, "Chip ID: 0x%08lx\n", u4CIR & WCIR_CHIP_ID);
+	DBGLOG(NIC, TRACE, "Revision ID: 0x%08lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
 
 	if ((u4CIR & WCIR_CHIP_ID) != MTK_CHIP_REV)
 		return FALSE;
@@ -1509,12 +1508,13 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	WLAN_STATUS u4Status;
 	P_BSS_INFO_T prBssInfo;
 	CMD_SET_BSS_INFO rCmdSetBssInfo;
-	P_WIFI_VAR_T prWifiVar = &prAdapter->rWifiVar;
+	P_WIFI_VAR_T prWifiVar;
 
 	ASSERT(prAdapter);
 	ASSERT(ucBssIndex <= MAX_BSS_INDEX);
 
 	prBssInfo = prAdapter->aprBssInfo[ucBssIndex];
+	prWifiVar = &prAdapter->rWifiVar;
 
 	kalMemZero(&rCmdSetBssInfo, sizeof(CMD_SET_BSS_INFO));
 
@@ -1556,6 +1556,8 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	else {
 #if CFG_ENABLE_WIFI_DIRECT
 		if (prAdapter->fgIsP2PRegistered) {
+			P_P2P_CONNECTION_SETTINGS_T prP2PConnSettings = prWifiVar->prP2PConnSettings;
+
 			if (kalP2PGetCcmpCipher(prAdapter->prGlueInfo)) {
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_WPA2_PSK;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION3_ENABLED;
@@ -1570,8 +1572,15 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_OPEN;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION_DISABLED;
 			}
-			/* Need the probe response to detect the PBC overlap */
-			rCmdSetBssInfo.ucIsApMode = p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings);
+			/*
+			 * In AP WPS Certification, need firmware to report Probe Request and
+			 * hostapd to send Probe Response for bringing manufacturer information
+			 * and detecting the PBC overlap.
+			 */
+			if (prP2PConnSettings && prP2PConnSettings->fgIsWPSMode)
+				rCmdSetBssInfo.ucIsApMode = FALSE;
+			else
+				rCmdSetBssInfo.ucIsApMode = p2pFuncIsAPMode(prP2PConnSettings);
 
 			if (rCmdSetBssInfo.ucIsApMode)
 				rCmdSetBssInfo.ucDisconnectDetectTh = prWifiVar->ucApDisconnectDetectTh;
@@ -2836,9 +2845,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_6M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_6M;
@@ -2849,9 +2858,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_9M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_9M;
@@ -2862,9 +2871,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_12M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_12M;
@@ -2875,9 +2884,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_18M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_18M;
@@ -2888,9 +2897,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_24M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_24M;
@@ -2901,9 +2910,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_36M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_36M;
@@ -2914,9 +2923,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_48M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_48M;
@@ -2927,9 +2936,9 @@ nicUpdateRateParams(IN P_ADAPTER_T prAdapter,
 		break;
 
 	case FIXED_RATE_54M:
-		if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_ERP)
+		if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_ERP)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_ERP;
-		else if ((*pucDesiredPhyTypeSet) | PHY_TYPE_BIT_OFDM)
+		else if ((*pucDesiredPhyTypeSet) & PHY_TYPE_BIT_OFDM)
 			*pucDesiredPhyTypeSet = PHY_TYPE_BIT_OFDM;
 
 		*pu2DesiredNonHTRateSet = RATE_SET_BIT_54M;
@@ -3509,7 +3518,7 @@ VOID nicPrintFirmwareAssertInfo(IN P_ADAPTER_T prAdapter)
 
 	aucAssertFile[6] = '\0';
 
-	LOG_FUNC("[%s][wifi][Firmware] Assert at \"%s\" #%ld\n\n", NIC_NAME, aucAssertFile, line);
+	LOG_FUNC("[%s][wifi][Firmware] Assert at \"%s\" #%u\n\n", NIC_NAME, aucAssertFile, line);
 
 }
 

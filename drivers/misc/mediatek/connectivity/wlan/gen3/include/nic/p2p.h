@@ -79,19 +79,6 @@
  ********************************************************************************
  */
 
-#if DBG
-#define ASSERT_BREAK(_exp) \
-	{ \
-		if (!(_exp)) { \
-			ASSERT(FALSE); \
-			break; \
-		} \
-	}
-
-#else
-#define ASSERT_BREAK(_exp)
-#endif
-
 #define p2pChangeMediaState(_prAdapter, _prP2pBssInfo, _eNewMediaState) \
 	(_prP2pBssInfo->eConnectionState = (_eNewMediaState))
 
@@ -119,8 +106,8 @@ struct _P2P_INFO_T {
 	enum _ENUM_P2P_CONNECT_STATE_T eConnState;
 	EVENT_P2P_DEV_DISCOVER_RESULT_T arP2pDiscoverResult[CFG_MAX_NUM_BSS_LIST];
 	PUINT_8 pucCurrIePtr;
-	UINT_8 aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN];	/* A common pool for IE of all
-								 *scan results. */
+	UINT_8 aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN];	/* A common pool for IE of all scan results. */
+	UINT_8 ucExtendChanFlag;
 };
 
 typedef enum {

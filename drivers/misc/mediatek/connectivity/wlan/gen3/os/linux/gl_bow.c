@@ -264,11 +264,12 @@ static ssize_t bow_ampc_read(IN struct file *filp, IN char __user *buf, IN size_
 
 /* kfifo_get(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
 /* kfifo_out(prGlueInfo->rBowInfo.prKfifo, aucBuffer, retval); */
-	if (!(kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval)))
+	if ((kfifo_out(&(prGlueInfo->rBowInfo.rKfifo), aucBuffer, retval))) {
+		if (copy_to_user(buf, aucBuffer, retval))
+			retval = -EIO;
+	} else {
 		retval = -EIO;
-
-	if (copy_to_user(buf, aucBuffer, retval))
-		retval = -EIO;
+	}
 
 	return retval;
 }
@@ -302,18 +303,18 @@ static ssize_t bow_ampc_write(IN struct file *filp, OUT const char __user *buf, 
 	else if (copy_from_user(aucBuffer, buf, size))
 		return -EIO;
 
-	DBGLOG(BOW, EVENT, "AMP driver CMD buffer size : %d.\n", size);
+	DBGLOG(BOW, EVENT, "AMP driver CMD buffer size: %zu\n", size);
 
 	for (i = 0; i < MAX_BUFFER_SIZE; i++)
-		DBGLOG(BOW, EVENT, "AMP write content : 0x%x.\n", aucBuffer[i]);
+		DBGLOG(BOW, EVENT, "AMP write content: 0x%x\n", aucBuffer[i]);
 
 	DBGLOG(BOW, EVENT, "BoW CMD write.\n");
 
 	prCmd = (P_AMPC_COMMAND) aucBuffer;
 
-	DBGLOG(BOW, EVENT, "AMP write content payload length : %d.\n", prCmd->rHeader.u2PayloadLength);
+	DBGLOG(BOW, EVENT, "AMP write content payload length: %d\n", prCmd->rHeader.u2PayloadLength);
 
-	DBGLOG(BOW, EVENT, "AMP write content header length : %d.\n", sizeof(AMPC_COMMAND_HEADER_T));
+	DBGLOG(BOW, EVENT, "AMP write content header length: %zu\n", sizeof(AMPC_COMMAND_HEADER_T));
 
 	/* size check */
 	if (prCmd->rHeader.u2PayloadLength + sizeof(AMPC_COMMAND_HEADER_T) != size) {
@@ -483,7 +484,7 @@ VOID kalIndicateBOWEvent(IN P_GLUE_INFO_T prGlueInfo, IN P_AMPC_EVENT prEvent)
 
 	/* check kfifo availability */
 	if (u4AvailSize < u4EventSize) {
-		DBGLOG(BOW, EVENT, "[bow] no space for event: %d/%d\n", u4EventSize, u4AvailSize);
+		DBGLOG(BOW, EVENT, "No space for event: %zu/%zu\n", u4EventSize, u4AvailSize);
 		return;
 	}
 	/* queue into kfifo */

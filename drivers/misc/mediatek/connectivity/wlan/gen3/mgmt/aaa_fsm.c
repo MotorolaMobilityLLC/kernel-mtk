@@ -547,7 +547,7 @@ aaaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	/* Trigger statistics log if Auth/Assoc Tx failed */
 	if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-		DBGLOG(AAA, INFO, "EVENT-TX DONE: Status[%d] SeqNo[%d] Current Time = %ld\n",
+		DBGLOG(AAA, INFO, "EVENT-TX DONE: Status[%d] SeqNo[%d] Current Time = %u\n",
 		       rTxDoneStatus, prMsduInfo->ucTxSeqNum, kalGetTimeTick());
 		wlanTriggerStatsLog(prAdapter, prAdapter->rWifiVar.u4StatsLogDuration);
 	}

@@ -678,6 +678,14 @@ static int mmc_compare_ext_csds(struct mmc_card *card, unsigned bus_width)
 	u8 *bw_ext_csd;
 	int err;
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT)
+	/* add for reset emmc reset when error happen;
+	 * return directly because comparison fails seldom when reinit emmc
+	 */
+	if (emmc_resetting_when_cmdq)
+		return 0;
+#endif
+
 	if (bus_width == MMC_BUS_WIDTH_1)
 		return 0;
 
@@ -1668,12 +1676,10 @@ err:
 	return err;
 }
 
-#ifdef CONFIG_MMC_FFU
 int mmc_reinit_oldcard(struct mmc_host *host)
 {
 	return mmc_init_card(host, host->card->ocr, host->card);
 }
-#endif
 
 /*
  * Turn the cache ON/OFF.

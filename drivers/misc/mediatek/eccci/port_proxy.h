@@ -24,6 +24,8 @@
 #define PORT_F_CH_TRAFFIC	(1<<5)	/* Enable port channel traffic*/
 #define PORT_F_DUMP_RAW_DATA	(1<<6)	/* Dump raw data if CH_TRAFFIC set*/
 
+#define PORT_F_TX_DATA_FULLED	(1<<1)	/* reused for net tx, Data queue, same bit as RX_FULLED */
+#define PORT_F_TX_ACK_FULLED	(1<<8)
 enum {
 	PORT_DBG_DUMP_RILD = 0,
 	PORT_DBG_DUMP_AUDIO,
@@ -55,7 +57,7 @@ struct ccci_port {
 	unsigned char rxq_index;
 	unsigned char txq_exp_index;
 	unsigned char rxq_exp_index;
-	unsigned char flags;
+	unsigned short flags;
 	struct ccci_port_ops *ops;
 	/* device node related */
 	unsigned int minor;

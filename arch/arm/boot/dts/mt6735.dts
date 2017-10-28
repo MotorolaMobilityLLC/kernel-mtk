@@ -2932,8 +2932,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			/* High battery support */
 			high_battery_voltage_support = <0 >;
 		};
-
-
+		dsi_te: dsi_te {
+			compatible = "mediatek, dsi_te_1-eint";
+			status = "disabled";
+		};
 	};
 
 	vcorefs {

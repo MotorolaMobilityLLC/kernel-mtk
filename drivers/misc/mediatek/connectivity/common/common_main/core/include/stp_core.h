@@ -231,6 +231,8 @@ typedef struct {
 #endif
 	/* MTK_WCN_TIMER tx_timer; // timer for tx timeout handling */
 	OSAL_TIMER tx_timer;
+	/* timer for polling connsys cpupcr */
+	OSAL_TIMER cpupcr_timer;
 
 	MTKSTP_PSM_T *psm;
 	MTKSTP_BTM_T *btm;

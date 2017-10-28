@@ -845,7 +845,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	/* If we cannot find proper pairwise and group cipher suites to join the
 	   BSS, do not check the supported AKM suites. */
 	if (u4PairwiseCipher == 0 || u4GroupCipher == 0) {
-		DBGLOG(RSN, TRACE, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		DBGLOG(RSN, TRACE, "Failed to select pairwise/group cipher (0x%08x/0x%08x)\n",
 				    u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
@@ -855,7 +855,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (u4PairwiseCipher != RSN_CIPHER_SUITE_CCMP ||
 		    u4GroupCipher != RSN_CIPHER_SUITE_CCMP || u4AkmSuite != RSN_AKM_SUITE_PSK) {
 			DBGLOG(RSN, TRACE,
-			       "Failed to select pairwise/group cipher for P2P network (0x%08lx/0x%08lx)\n",
+			       "Failed to select pairwise/group cipher for P2P network (0x%08x/0x%08x)\n",
 				u4PairwiseCipher, u4GroupCipher);
 			return FALSE;
 		}
@@ -869,7 +869,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 			/* Todo:: Nothing */
 		}
 		DBGLOG(RSN, TRACE,
-		       "Failed to select pairwise/group cipher for BT over Wi-Fi network (0x%08lx/0x%08lx)\n",
+		       "Failed to select pairwise/group cipher for BT over Wi-Fi network (0x%08x/0x%08x)\n",
 			u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
@@ -884,7 +884,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 
 	if (!fgSuiteSupported) {
 		DBGLOG(RSN, TRACE,
-		       "Failed to support selected pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		       "Failed to support selected pairwise/group cipher (0x%08x/0x%08x)\n",
 			u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
@@ -944,20 +944,6 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 			prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
 		}
 	} else {
-		if (prBssRsnInfo->fgRsnCapPresent && prBssRsnInfo->u2RsnCap) {
-			if (/* (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR) || */
-				   (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC)) {
-				prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
-				prAdapter->prGlueInfo->rWpaInfo.u4Mfp = RSN_AUTH_MFP_OPTIONAL;
-			}
-			/* else if ((prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC) && */
-			/* !(prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) { */
-			/* prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE; */
-			/* prAdapter->prGlueInfo->rWpaInfo.u4Mfp = RSN_AUTH_MFP_OPTIONAL; */
-			/* } */
-			else
-				prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
-		}
 		if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) {
 			if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection == FALSE) {
 				DBGLOG(RSN, INFO, "[MFP] Skip RSN IE, No MFP Required Capability\n");

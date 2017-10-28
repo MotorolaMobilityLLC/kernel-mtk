@@ -73,6 +73,8 @@ const char string_conection_state[18][32] = {
 	"DelayUnattached",
 };
 
+static struct delayed_work recovery_work;
+static atomic_t is_recovery = ATOMIC_INIT(0);
 
 /* /////////////////////////////////////////////////////////////////////////// */
 /* Variables accessible outside of the FUSB300 state machine */
@@ -230,6 +232,7 @@ void StateMachineFUSB300(struct usbtypc *typec)
 	FUSB300Read(regStatus0, 2, (unsigned char *)&Registers.Status.Status);	/* Read the status */
 	FUSB300Read(regInterrupta, 2, (unsigned char *)&Registers.Status.InterruptAdv);	/* Read the status */
 	FUSB300Read(regStatus0a, 2, (unsigned char *)&Registers.Status.StatusAdv);	/* Read the status */
+
 	fusb_printk(K_DEBUG, "StatusAdv==0x%x\n", Registers.Status.StatusAdv);
 	fusb_printk(K_DEBUG, "InterruptAdv==0x%x\n", Registers.Status.InterruptAdv);
 	fusb_printk(K_DEBUG, "Status==0x%x\n", Registers.Status.Status);
@@ -337,19 +340,59 @@ void StateMachineDelayUnattached(void)
 		SetStateUnattached();
 }
 
+static void do_recovery_work(struct work_struct *data)
+{
+	fusb_printk(K_INFO, "%s Force DRP %d\n", __func__, atomic_read(&is_recovery));
+
+	if (atomic_read(&is_recovery) != 1)
+		return;
+
+	Registers.Control.TOGGLE = 0;	/* Disable the toggle in order to clear... */
+	/* Commit the control state */
+	FUSB300Write(regControl2, 1, &Registers.Control.byte[2]);
+
+	udelay(10);
+
+	/* Re-enable the toggle state machine... (allows us to get another I_TOGDONE interrupt) */
+	Registers.Control.TOGGLE = 1;
+	Registers.Control.MODE = 1;
+
+	/* Commit the control state */
+	FUSB300Write(regControl2, 1, &Registers.Control.byte[2]);
+
+	atomic_set(&is_recovery, 0);
+}
+
+static inline void cancel_recovery(void)
+{
+	if (atomic_read(&is_recovery) == 1)
+		cancel_delayed_work_sync(&recovery_work);
+
+	atomic_set(&is_recovery, 0);
+}
+
 void StateMachineUnattached(void)
 {
+	static int disable_cnt;
+
+	fusb_printk(K_INFO, "%s %d TOGDONE=0x%x, TOGSS=0x%x\n", __func__, disable_cnt,
+		Registers.Status.I_TOGDONE, Registers.Status.TOGSS);
+
 	if (Registers.Status.I_TOGDONE) {
 		switch (Registers.Status.TOGSS) {
 		case 0x05:	/* Rp detected on CC1 */
 			blnCCPinIsCC1 = TRUE;
 			blnCCPinIsCC2 = FALSE;
 			SetStateAttachWaitSnk();	/* Go to the AttachWaitSnk state */
+			disable_cnt = 0;
+			cancel_recovery();
 			break;
 		case 0x06:	/* Rp detected on CC2 */
 			blnCCPinIsCC1 = FALSE;
 			blnCCPinIsCC2 = TRUE;
 			SetStateAttachWaitSnk();	/* Go to the AttachWaitSnk state */
+			disable_cnt = 0;
+			cancel_recovery();
 			break;
 		case 0x01:	/* Rd detected on CC1 */
 			blnCCPinIsCC1 = TRUE;
@@ -359,6 +402,8 @@ void StateMachineUnattached(void)
 				SetStateAttachWaitAcc();	/* Go to the AttachWaitAcc state */
 			else	/* Otherwise we must be configured as a source or DRP */
 				SetStateAttachWaitSrc();	/* So go to the AttachWaitSnk state */
+			disable_cnt = 0;
+			cancel_recovery();
 			break;
 		case 0x02:	/* Rd detected on CC2 */
 			blnCCPinIsCC1 = FALSE;
@@ -368,6 +413,8 @@ void StateMachineUnattached(void)
 				SetStateAttachWaitAcc();	/* Go to the AttachWaitAcc state */
 			else	/* Otherwise we must be configured as a source or DRP */
 				SetStateAttachWaitSrc();	/* So go to the AttachWaitSnk state */
+			disable_cnt = 0;
+			cancel_recovery();
 			break;
 		case 0x07:	/* Ra detected on both CC1 and CC2 */
 			blnCCPinIsCC1 = FALSE;
@@ -377,6 +424,8 @@ void StateMachineUnattached(void)
 				SetStateAttachWaitAcc();	/* Go to the AttachWaitAcc state */
 			else	/* Otherwise we must be configured as a source or DRP */
 				SetStateAttachWaitSrc();	/* So go to the AttachWaitSnk state */
+			disable_cnt = 0;
+			cancel_recovery();
 			break;
 		default:	/* Shouldn't get here, but just in case reset everything... */
 			Registers.Control.TOGGLE = 0;	/* Disable the toggle in order to clear... */
@@ -385,10 +434,35 @@ void StateMachineUnattached(void)
 			udelay(10);
 			/* Re-enable the toggle state machine... (allows us to get another I_TOGDONE interrupt) */
 			Registers.Control.TOGGLE = 1;
+
 			/* Commit the control state */
 			FUSB300Write(regControl2, 1, &Registers.Control.byte[2]);
 			break;
 		}
+	}
+
+	if ((Registers.Status.InterruptAdv == 0) && (Registers.Status.Interrupt1 == 0x20))
+		disable_cnt++;
+
+	if (disable_cnt == 20) {
+		disable_cnt = 0;
+		fusb_printk(K_INFO, "%s Force UFP\n", __func__);
+
+		Registers.Control.TOGGLE = 0;	/* Disable the toggle in order to clear... */
+		/* Commit the control state */
+		FUSB300Write(regControl2, 1, &Registers.Control.byte[2]);
+
+		udelay(10);
+
+		/* Re-enable the toggle state machine... (allows us to get another I_TOGDONE interrupt) */
+		Registers.Control.TOGGLE = 1;
+		Registers.Control.MODE = 2;
+
+		/* Commit the control state */
+		FUSB300Write(regControl2, 1, &Registers.Control.byte[2]);
+
+		atomic_set(&is_recovery, 1);
+		schedule_delayed_work(&recovery_work, msecs_to_jiffies(30*1000));
 	}
 	/* rand(); */
 }
@@ -1224,7 +1298,6 @@ void SetStateAttachedSink(void)
 	Registers.Control.HOST_CUR = 0x00;	/* Disable the host current */
 	Registers.Measure.MDAC = MDAC_2P05V;	/* Set up DAC threshold to 2.05V */
 	/* Enable the pull-downs on the CC pins, measure CC1 and disable the BMC transmitters */
-	Registers.Switches.word = 0x0007;
 	Registers.Switches.word = 0x0003;	/* Enable the pull-downs on the CC pins */
 	if (blnCCPinIsCC1)
 		Registers.Switches.MEAS_CC1 = 1;
@@ -2186,10 +2259,11 @@ void fusb300_i2c_w_reg8(struct i2c_client *client, u8 addr, u8 var)
 u8 fusb300_i2c_r_reg(struct i2c_client *client, u8 addr)
 {
 	u8 var;
+	int ret;
 
 	i2c_master_send(client, &addr, 1);
-	i2c_master_recv(client, &var, 1);
-	return var;
+	ret = i2c_master_recv(client, &var, 1);
+	return ((ret < 0) ? 0 : var);
 }
 
 const char *strings[] = {
@@ -2674,6 +2748,8 @@ static int fusb300_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	usb3_switch_init(typec);
 	fusb300_eint_init(typec);
 	fusb_printk(K_INFO, "%s %x\n", __func__, fusb300_i2c_r_reg(client, 0x1));
+
+	INIT_DELAYED_WORK(&recovery_work, do_recovery_work);
 
 	/*precheck status */
 	/* StateMachineFUSB300(typec); */

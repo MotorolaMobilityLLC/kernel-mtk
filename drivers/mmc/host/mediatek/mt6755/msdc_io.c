@@ -588,6 +588,7 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 void msdc_dump_clock_sts(void)
 {
 	void __iomem *reg;
+	struct msdc_host *host;
 
 	if (apmixed_reg_base && topckgen_reg_base && infracfg_ao_reg_base) {
 		reg = apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET;
@@ -613,6 +614,20 @@ void msdc_dump_clock_sts(void)
 		pr_err(" apmixed_reg_base = %p, topckgen_reg_base = %p, clk_infra_base = %p\n",
 			apmixed_reg_base, topckgen_reg_base, infracfg_ao_reg_base);
 	}
+
+	host = mtk_msdc_host[0];
+	if (host) {
+		pr_err("msdc0 last_cg_clr_time %llu, last_cg_set_time %llu\n",
+			host->last_cg_clr_time, host->last_cg_set_time);
+		pr_err("msdc0 clk_gate_count %d\n", host->clk_gate_count);
+	}
+
+	host = mtk_msdc_host[1];
+	if (host) {
+		pr_err("msdc1 last_cg_clr_time %llu, last_cg_set_time %llu\n",
+			host->last_cg_clr_time, host->last_cg_set_time);
+		pr_err("msdc1 clk_gate_count %d\n", host->clk_gate_count);
+	}
 }
 
 void msdc_clk_status(int *status)
@@ -626,6 +641,7 @@ void msdc_clk_status(int *status)
 			continue;
 
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
+		/* if (mtk_msdc_host[i]->core_clkon > 0) */
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
 			g_clk_gate |= 1 << msdc_cg_clk_id[i];
 		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);

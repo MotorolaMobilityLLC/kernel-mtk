@@ -40,6 +40,7 @@
 #include "osal_typedef.h"
 #include "mt6755.h"
 #include "mtk_wcn_consys_hw.h"
+#include "mt_spm_sleep.h"
 #include <linux/platform_device.h>
 
 #if CONSYS_EMI_MPU_SETTING
@@ -1116,4 +1117,13 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID)
 P_WMT_CONSYS_IC_OPS mtk_wcn_get_consys_ic_ops(VOID)
 {
 	return &consys_ic_ops;
+}
+
+VOID mtk_wcn_consys_dump_power_reg(VOID)
+{
+	WMT_PLAT_INFO_FUNC("reg dump:CONSYS_PWR_CONN_ACK_REG(0x%x)\n",
+		   CONSYS_REG_READ(conn_reg.spm_base + CONSYS_PWR_CONN_ACK_OFFSET));
+	WMT_PLAT_INFO_FUNC("reg dump:CONSYS_PWR_CONN_ACK_S_REG(0x%x)\n",
+		   CONSYS_REG_READ(conn_reg.spm_base + CONSYS_PWR_CONN_ACK_S_OFFSET));
+	WMT_PLAT_INFO_FUNC("CONN is SLEEP? %s\n", spm_is_conn_sleep() ? "yes" : "no");
 }

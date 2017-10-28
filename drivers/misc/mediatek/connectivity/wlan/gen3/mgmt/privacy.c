@@ -616,10 +616,7 @@ BOOLEAN secIsProtectedFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsdu, I
 			}
 		}
 #endif
-		if (prStaRec && fgRobustActionWithProtect /* AIS & Robust action frame */)
-			return TRUE;
-		else
-			return FALSE;
+		return prStaRec && fgRobustActionWithProtect;
 	}
 #else
 	if (prMsdu->ucPacketType == TX_PACKET_TYPE_MGMT)
@@ -750,6 +747,7 @@ BOOL secPrivacySeekForEntry(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta)
 #endif
 
 	if (ucStartIDX != 0 || ucMaxIDX != 0) {
+#if 0	/* This part of code is the related to above */
 		if (ucStartIDX > ucMaxIDX) {
 			for (i = ucStartIDX; i > ucMaxIDX; i--) {
 				if (prWtbl[i].ucUsed && EQUAL_MAC_ADDR(prSta->aucMacAddr, prWtbl[i].aucMacAddr)
@@ -768,7 +766,9 @@ BOOL secPrivacySeekForEntry(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta)
 					}
 				}
 			}
-		} else {
+		} else
+#endif
+		{
 			for (i = ucStartIDX; i <= ucMaxIDX; i++) {
 				if (prWtbl[i].ucUsed && EQUAL_MAC_ADDR(prSta->aucMacAddr, prWtbl[i].aucMacAddr)
 				    && prWtbl[i].ucPairwise) {

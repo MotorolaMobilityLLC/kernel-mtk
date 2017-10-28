@@ -1392,7 +1392,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				P_RF_CHANNEL_INFO_T prChnlInfo = &prScanReqMsg->arChnlInfoList[0];
 				UINT_8 ucChnlNum = 0;
 
-				while (pucChnl[ucChnlNum] > 0 && ucChnlNum < CFG_NEIGHBOR_AP_CHANNEL_NUM) {
+				while (ucChnlNum < MAXIMUM_OPERATION_CHANNEL_LIST && pucChnl[ucChnlNum] > 0) {
 					prChnlInfo[ucChnlNum].ucChannelNum = pucChnl[ucChnlNum];
 					prChnlInfo[ucChnlNum].eBand = pucChnl[ucChnlNum] > 14 ? BAND_5G:BAND_2G4;
 					ucChnlNum++;
@@ -1455,26 +1455,26 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				/*this is a full scan*/
 				OS_SYSTIME rCurrentTime;
 				P_PARTIAL_SCAN_INFO channel_t;
-				P_GLUE_INFO_T pGlinfo;
+				P_GLUE_INFO_T prGlueInfo;
 				UINT_32 u4size;
 
-				pGlinfo = prAdapter->prGlueInfo;
+				prGlueInfo = prAdapter->prGlueInfo;
 				GET_CURRENT_SYSTIME(&rCurrentTime);
-				DBGLOG(AIS, TRACE, "Full2Partial LastFullST= %lld,CurrentT=%lld\n",
-					pGlinfo->u4LastFullScanTime, rCurrentTime);
-				if ((pGlinfo->u4LastFullScanTime == 0) ||
-					(CHECK_FOR_TIMEOUT(rCurrentTime, pGlinfo->u4LastFullScanTime,
+				DBGLOG(AIS, TRACE, "Full2Partial LastFullST=%u, CurrentT=%u\n",
+				       prGlueInfo->u4LastFullScanTime, rCurrentTime);
+				if ((prGlueInfo->u4LastFullScanTime == 0) ||
+					(CHECK_FOR_TIMEOUT(rCurrentTime, prGlueInfo->u4LastFullScanTime,
 						SEC_TO_SYSTIME(UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT)))) {
 					/*first full scan during connected*/
 					/*or time over 60s from last full scan*/
 					DBGLOG(AIS, INFO, "Full2Partial not update full scan\n");
-					pGlinfo->u4LastFullScanTime = rCurrentTime;
-					pGlinfo->ucTrScanType = 1;
-					kalMemSet(pGlinfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
-					if (pGlinfo->puFullScan2PartialChannel != NULL) {
-						kalMemFree(pGlinfo->puFullScan2PartialChannel,
-							VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
-						pGlinfo->puFullScan2PartialChannel = NULL;
+					prGlueInfo->u4LastFullScanTime = rCurrentTime;
+					prGlueInfo->ucTrScanType = 1;
+					kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+					if (prGlueInfo->puFullScan2PartialChannel != NULL) {
+						kalMemFree(prGlueInfo->puFullScan2PartialChannel,
+							   VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+						prGlueInfo->puFullScan2PartialChannel = NULL;
 					}
 				} else {
 					DBGLOG(AIS, INFO, "Full2Partial update full scan to partial scan\n");
@@ -1482,18 +1482,18 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					/*at here, we should update full scan to partial scan*/
 					aisGetAndSetScanChannel(prAdapter);
 
-					if (pGlinfo->puFullScan2PartialChannel != NULL) {
+					if (prGlueInfo->puFullScan2PartialChannel != NULL) {
 						PUINT_8 pChanneltmp;
 						/* update full scan to partial scan */
-						pChanneltmp = pGlinfo->puFullScan2PartialChannel;
+						pChanneltmp = prGlueInfo->puFullScan2PartialChannel;
 						channel_t = (P_PARTIAL_SCAN_INFO)pChanneltmp;
 
 						/* set partial scan */
 						prScanReqMsg->ucChannelListNum = channel_t->ucChannelListNum;
 						u4size = sizeof(channel_t->arChnlInfoList);
 
-						DBGLOG(AIS, TRACE, "Full2Partial ChList=%d,u4size=%d\n",
-							channel_t->ucChannelListNum, u4size);
+						DBGLOG(AIS, TRACE, "Full2Partial ChList=%d, u4size=%u\n",
+						       channel_t->ucChannelListNum, u4size);
 
 						kalMemCopy(&(prScanReqMsg->arChnlInfoList),
 							&(channel_t->arChnlInfoList), u4size);
@@ -2031,7 +2031,8 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		P_BSS_DESC_T prBss = prAisFsmInfo->prTargetBssDesc;
 
 	    if (prSta && prBss && prSta->u2ReasonCode == REASON_CODE_DISASSOC_AP_OVERLOAD) {
-			struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBss);
+			struct AIS_BLACKLIST_ITEM *prBlackList = aisAddBlacklist(prAdapter, prBss,
+										AIS_BLACK_LIST_FROM_DRIVER);
 
 			if (prBlackList)
 				prBlackList->u2DeauthReason = prSta->u2ReasonCode;
@@ -2398,7 +2399,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 				prBssDesc->ucJoinFailureCount++;
 				prBssDesc->u2StatusCode = prStaRec->u2StatusCode;
 				if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
-					aisAddBlacklist(prAdapter, prBssDesc);
+					aisAddBlacklist(prAdapter, prBssDesc, AIS_BLACK_LIST_FROM_DRIVER);
+
 					GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
 					DBGLOG(AIS, TRACE,
 					       "Bss " MACSTR " join fail %d times, temp disable it at time: %u\n",
@@ -2973,7 +2975,7 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 	if (prBssDesc) {
 		prBssDesc->fgIsConnecting = FALSE;
 		prBssDesc->fgIsConnected = TRUE;
-		aisRemoveBlackList(prAdapter, prBssDesc);
+		aisRemoveBlackList(prAdapter, prBssDesc, AIS_BLACK_LIST_FROM_DRIVER);
 		prBssDesc->ucJoinFailureCount = 0;
 		prBssDesc->u2StatusCode = 0;
 		/* 4 <4.1> Setup MIB for current BSS */
@@ -3563,7 +3565,8 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 		aisFsmStateAbort_JOIN(prAdapter);
 
 		/* 2. Increase Join Failure Count */
-		aisAddBlacklist(prAdapter, prAisFsmInfo->prTargetBssDesc);
+		aisAddBlacklist(prAdapter, prAisFsmInfo->prTargetBssDesc, AIS_BLACK_LIST_FROM_DRIVER);
+
 		prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount++;
 
 		if (prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
@@ -4725,8 +4728,25 @@ VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 }				/* aisFuncValidateRxActionFrame */
 
+VOID aisRemoveBlacklistBySource(P_ADAPTER_T prAdapter, enum _BLACK_LIST_SOURCE source)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	P_LINK_T prFreeList = &prConnSettings->rBlackList.rFreeLink;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+
+	DBGLOG(AIS, INFO, "Refresh all the BSSes' fgIsInFWKBlacklist to FALSE\n");
+	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		prEntry->blackListSource &= ~source;
+		if (!prEntry->blackListSource) {
+			LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
+			LINK_INSERT_HEAD(prFreeList, &prEntry->rLinkEntry);
+		}
+	}
+}
+
 struct AIS_BLACKLIST_ITEM *
-aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc, enum _BLACK_LIST_SOURCE source)
 {
 	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
@@ -4740,6 +4760,7 @@ aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	if (prBssDesc->prBlack) {
 		GET_CURRENT_SYSTIME(&prBssDesc->prBlack->rAddTime);
 		prBssDesc->prBlack->ucCount++;
+		prBssDesc->prBlack->blackListSource |= source;
 		DBGLOG(AIS, INFO, "update blacklist for %pM, count %d\n",
 			prBssDesc->aucBSSID, prBssDesc->prBlack->ucCount);
 		return prBssDesc->prBlack;
@@ -4751,6 +4772,7 @@ aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 		GET_CURRENT_SYSTIME(&prEntry->rAddTime);
 		prBssDesc->prBlack = prEntry;
 		prEntry->ucCount++;
+		prEntry->blackListSource |= source;
 		DBGLOG(AIS, INFO, "update blacklist for %pM, count %d\n",
 			prBssDesc->aucBSSID, prEntry->ucCount);
 		return prEntry;
@@ -4765,6 +4787,7 @@ aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	}
 	kalMemZero(prEntry, sizeof(*prEntry));
 	prEntry->ucCount = 1;
+	prEntry->blackListSource |= source;
 	COPY_MAC_ADDR(prEntry->aucBSSID, prBssDesc->aucBSSID);
 	COPY_SSID(prEntry->aucSSID, prEntry->ucSSIDLen, prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
 	GET_CURRENT_SYSTIME(&prEntry->rAddTime);
@@ -4775,7 +4798,44 @@ aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	return prEntry;
 }
 
-VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+struct AIS_BLACKLIST_ITEM *
+aisAddBlacklistByBssid(P_ADAPTER_T prAdapter, UINT_8 aucBSSID[], enum _BLACK_LIST_SOURCE source)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	P_LINK_T prFreeList = &prConnSettings->rBlackList.rFreeLink;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+
+	prEntry = aisQueryBlackListByBssid(prAdapter, aucBSSID);
+
+	if (prEntry) {
+		GET_CURRENT_SYSTIME(&prEntry->rAddTime);
+		prEntry->ucCount++;
+		prEntry->blackListSource |= source;
+		DBGLOG(AIS, INFO, "update blacklist for %pM, count %d\n",
+			aucBSSID, prEntry->ucCount);
+		return prEntry;
+	}
+
+	LINK_REMOVE_HEAD(prFreeList, prEntry, struct AIS_BLACKLIST_ITEM *);
+	if (!prEntry)
+		prEntry = kalMemAlloc(sizeof(struct AIS_BLACKLIST_ITEM), VIR_MEM_TYPE);
+	if (!prEntry) {
+		DBGLOG(AIS, WARN, "No memory to allocate\n");
+		return NULL;
+	}
+	kalMemZero(prEntry, sizeof(*prEntry));
+	prEntry->ucCount = 1;
+	prEntry->blackListSource |= source;
+	COPY_MAC_ADDR(prEntry->aucBSSID, aucBSSID);
+	COPY_SSID(prEntry->aucSSID, prEntry->ucSSIDLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen);
+	GET_CURRENT_SYSTIME(&prEntry->rAddTime);
+	LINK_INSERT_HEAD(prBlackList, &prEntry->rLinkEntry);
+
+	DBGLOG(AIS, INFO, "Add %pM to black List\n", aucBSSID);
+	return prEntry;
+}
+VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc, enum _BLACK_LIST_SOURCE source)
 {
 	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
@@ -4785,10 +4845,14 @@ VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	prEntry = aisQueryBlackList(prAdapter, prBssDesc);
 	if (!prEntry)
 		return;
-	LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
-	LINK_INSERT_HEAD(prFreeList, &prEntry->rLinkEntry);
-	prBssDesc->prBlack = NULL;
-	DBGLOG(AIS, INFO, "Remove %pM from blacklist\n", prBssDesc->aucBSSID);
+	prEntry->blackListSource &= ~source;
+
+	if (!prEntry->blackListSource) {
+		LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
+		LINK_INSERT_HEAD(prFreeList, &prEntry->rLinkEntry);
+		prBssDesc->prBlack = NULL;
+		DBGLOG(AIS, INFO, "Remove %pM from blacklist\n", prBssDesc->aucBSSID);
+	}
 }
 
 struct AIS_BLACKLIST_ITEM *
@@ -4815,6 +4879,23 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	return NULL;
 }
 
+struct AIS_BLACKLIST_ITEM *
+aisQueryBlackListByBssid(P_ADAPTER_T prAdapter, UINT_8 aucBSSID[])
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+
+	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		if (EQUAL_MAC_ADDR(aucBSSID, prEntry->aucBSSID) &&
+			EQUAL_SSID(prConnSettings->aucSSID, prConnSettings->ucSSIDLen,
+			prEntry->aucSSID, prEntry->ucSSIDLen))
+			return prEntry;
+	}
+	DBGLOG(AIS, TRACE, "%pM is not in blacklist\n", aucBSSID);
+	return NULL;
+}
+
 VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter)
 {
 	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
@@ -4827,6 +4908,8 @@ VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter)
 	GET_CURRENT_SYSTIME(&rCurrent);
 
 	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		if (prEntry->blackListSource & AIS_BLACK_LIST_FROM_FWK)
+			continue;
 		if (!CHECK_FOR_TIMEOUT(rCurrent, prEntry->rAddTime, SEC_TO_MSEC(AIS_BLACKLIST_TIMEOUT)))
 			continue;
 		LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);

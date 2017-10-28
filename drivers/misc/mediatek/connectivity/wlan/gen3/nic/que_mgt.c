@@ -996,7 +996,8 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			qmDetermineStaRecIndex(prAdapter, prCurrentMsduInfo);
 
 			wlanUpdateTxStatistics(prAdapter, prCurrentMsduInfo, FALSE);	/*get per-AC Tx packets */
-
+			if (prCurrentMsduInfo->ucDhcpArpFlag)
+				nicTxSetPktLowestFixedRate(prAdapter, prCurrentMsduInfo);
 			switch (prCurrentMsduInfo->ucStaRecIndex) {
 			case STA_REC_INDEX_BMCAST:
 				prTxQue = &prQM->arTxQueue[TX_QUEUE_INDEX_BMCAST];
@@ -3630,6 +3631,7 @@ VOID qmInsertNoNeedWaitPkt(IN P_SW_RFB_T prSwRfb, IN ENUM_NO_NEED_WATIT_DROP_REA
 	if (!(prRxBaEntry) || !(prRxBaEntry->fgIsValid)) {
 		DBGLOG(QM, WARN, "qmInsertNoNeedWaitPkt for a NULL ReorderQueParm, SSN:[%u], DropReason:(%d)\n",
 			prSwRfb->u2SSN, eDropReason);
+		kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
 		return;
 	}
 
@@ -5133,7 +5135,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 	u4CurBufferCount = 0;
 	u4CurPageCount = 0;
 
-	DBGLOG(SW4, INFO, "\n------<Dump QUEUE Status>------\n");
+	DBGLOG(SW4, INFO, "------<Dump QUEUE Status>------\n");
 
 	for (i = TC0_INDEX; i < TC_NUM; i++) {
 		DBGLOG(SW4, INFO, "TC%u ResCount: Max[%02u/%03u] Free[%02u/%03u] PreUsed[%03u]\n",
@@ -5210,6 +5212,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 			   prAdapter->rTxCtrl.rFreeMsduInfoList.u4NumElem, CFG_TX_MAX_PKT_NUM,
 			   prAdapter->rTxCtrl.rTxMgmtTxingQueue.u4NumElem);
 
+	DBGLOG(SW4, INFO, "---------------------------------\n");
 	pucMemHandle = prTxCtrl->pucTxCached;
 	QUEUE_INITIALIZE(prNotReturnedQue);
 	for (i = 0; i < CFG_TX_MAX_PKT_NUM; i++) {
@@ -5249,7 +5252,7 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 			prMsduInfo1->pucAllocFunc, prMsduInfo2->pucAllocFunc, prMsduInfo3->pucAllocFunc);
 		prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo3->rQueEntry);
 	}
-	DBGLOG(SW4, INFO, "---------------------------------\n\n");
+	DBGLOG(SW4, INFO, "---------------------------------\n");
 }
 
 #if CFG_M0VE_BA_TO_DRIVER

@@ -539,7 +539,7 @@ unsigned int mtkfb_update_buf_ticket(unsigned int session_id, unsigned int layer
 	if (layer_id >= DISP_SESSION_TIMELINE_COUNT) {
 		DISPERR("mtkfb_update_buf_state return MVA=0x0 mtkfb_query_buf_mva layer_id %d !!!!!!(Warning)\n",
 			layer_id);
-		return mva;
+		return -1;
 	}
 
 	session_info = _get_session_sync_info(session_id);

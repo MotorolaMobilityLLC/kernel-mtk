@@ -1397,7 +1397,6 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 		if (0 != data_Rate) {
 			if (data_Rate > 1250) {
 				DISPMSG("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
-				ASSERT(0);
 			} else if (data_Rate >= 500) {
 				txdiv = 1;
 				txdiv0 = 0;

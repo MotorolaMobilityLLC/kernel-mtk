@@ -158,6 +158,22 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
 	},
+	.normal_video1 = {
+		.pclk = 371200000,
+		.linelength = 5880,
+		.framelength = 3174,
+		.startx = 0,
+		.starty = 0,
+#ifdef FIX_VIEW_ANGLE
+		.grabwindow_width = 5312,
+		.grabwindow_height = 2976,
+#else
+		.grabwindow_width = 5328,
+		.grabwindow_height = 3000,
+#endif
+		.mipi_data_lp2hs_settle_dc = 85,/*unit , ns*/
+		.max_framerate = 200,
+	},
 	.normal_video2 = {
 		.pclk = 560000000,
 		.linelength = 12224,
@@ -4300,6 +4316,8 @@ static void normal_video_setting(kal_uint16 currefps)
 
 	if (currefps == 150)
 		pip_capture_15fps_setting();
+	else if (currefps == 200)
+		pip_capture_setting();
 	else
 		normal_capture_setting();
 
@@ -4896,7 +4914,9 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}
-	else if(imgsensor.current_fps == 240)//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+	/* PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M */
+	else if (imgsensor.current_fps == 240
+		|| imgsensor.current_fps == imgsensor_info.cap1.max_framerate)
     {
 		if (imgsensor.current_fps != imgsensor_info.cap1.max_framerate)
 			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor.current_fps,imgsensor_info.cap1.max_framerate/10);
@@ -4935,6 +4955,12 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.line_length = imgsensor_info.normal_video2.linelength;
 		imgsensor.frame_length = imgsensor_info.normal_video2.framelength;
 		imgsensor.min_frame_length = imgsensor_info.normal_video2.framelength;
+		imgsensor.autoflicker_en = KAL_FALSE;
+	} else if (imgsensor.current_fps == imgsensor_info.normal_video1.max_framerate) { /* 20fps */
+		imgsensor.pclk = imgsensor_info.normal_video1.pclk;
+		imgsensor.line_length = imgsensor_info.normal_video1.linelength;
+		imgsensor.frame_length = imgsensor_info.normal_video1.framelength;
+		imgsensor.min_frame_length = imgsensor_info.normal_video1.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else { /* 30fps */
 		imgsensor.pclk = imgsensor_info.normal_video.pclk;
@@ -5384,6 +5410,16 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 				imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video2.framelength)
 					? (frame_length - imgsensor_info.normal_video2.framelength) : 0;
 				imgsensor.frame_length = imgsensor_info.normal_video2.framelength
+					+ imgsensor.dummy_line;
+				imgsensor.min_frame_length = imgsensor.frame_length;
+				spin_unlock(&imgsensor_drv_lock);
+			} else if (imgsensor.current_fps == 200) {  /* 20fps */
+				frame_length = imgsensor_info.normal_video1.pclk /
+					imgsensor_info.normal_video1.linelength / framerate * 10;
+				spin_lock(&imgsensor_drv_lock);
+				imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video1.framelength)
+					? (frame_length - imgsensor_info.normal_video1.framelength) : 0;
+				imgsensor.frame_length = imgsensor_info.normal_video1.framelength
 					+ imgsensor.dummy_line;
 				imgsensor.min_frame_length = imgsensor.frame_length;
 				spin_unlock(&imgsensor_drv_lock);

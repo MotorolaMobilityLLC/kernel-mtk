@@ -55,7 +55,7 @@ stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
 stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{OV23850_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{OV23850_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
-	{S5K3M2_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K3M2_SENSOR_ID, 0xA0, CMD_BRCB032GWZ, cam_cal_check_mtk_cid},
 	{IMX214_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX214_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K5E2YA_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},

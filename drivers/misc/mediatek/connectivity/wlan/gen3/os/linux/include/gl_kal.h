@@ -931,8 +931,6 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 		  IN ENUM_BAND_T eSpecificBand,
 		  IN UINT_8 ucMaxChannelNum, IN PUINT_8 pucNumOfChannel, IN P_RF_CHANNEL_INFO_T paucChannelList);
 
-BOOL kalIsAPmode(IN P_GLUE_INFO_T prGlueInfo);
-
 #if CFG_SUPPORT_802_11W
 /*----------------------------------------------------------------------------*/
 /* 802.11W                                                                    */

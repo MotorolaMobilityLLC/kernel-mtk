@@ -640,6 +640,7 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 static int set_memory_buffer(disp_session_input_config *input)
 {
 	int i = 0;
+	int ret = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long dst_mva = 0;
@@ -696,8 +697,11 @@ static int set_memory_buffer(disp_session_input_config *input)
 		}
 
 		/* disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
-		mtkfb_update_buf_ticket(session_id, layer_id, input->config[i].next_buff_idx,
+		ret = mtkfb_update_buf_ticket(session_id, layer_id, input->config[i].next_buff_idx,
 					get_ovl2mem_ticket());
+
+		if (ret != 0)
+			return 0;
 
 		if (input->config[i].layer_enable) {
 			mtkfb_update_buf_info(input->session_id, input->config[i].layer_id,
@@ -1069,6 +1073,7 @@ out:
 static int __set_output(disp_session_output_config *session_output)
 {
 	unsigned int session_id = 0;
+	int ret = 0;
 	unsigned long dst_mva = 0;
 	disp_session_sync_info *session_info;
 
@@ -1080,7 +1085,6 @@ static int __set_output(disp_session_output_config *session_output)
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		disp_mem_output_config primary_output;
 
@@ -1093,8 +1097,12 @@ static int __set_output(disp_session_output_config *session_output)
 						(unsigned int)session_output->config.buff_idx);
 		}
 
-		mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
+		ret = mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
 					session_output->config.buff_idx, get_ovl2mem_ticket());
+
+		if (ret != 0)
+			return 0;
+
 		_sync_convert_fb_layer_to_disp_output(session_output->session_id,
 						      &(session_output->config), &primary_output,
 						      dst_mva);
@@ -1387,12 +1395,19 @@ int _ioctl_set_vsync(unsigned long arg)
 int _ioctl_query_valid_layer(unsigned long arg)
 {
 	int ret = 0;
+	int i = 0;
 	disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
+	}
+	for (i = 0; i < 2; i++) {
+		if (!access_ok(VERIFY_READ, disp_info_user.input_config[i], sizeof(layer_config))) {
+			DISPERR("[FB]: can not read memory! line:%d\n", __LINE__);
+			return -EFAULT;
+		}
 	}
 
 	ret = layering_rule_start(&disp_info_user, 0);

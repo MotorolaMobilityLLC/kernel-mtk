@@ -70,6 +70,13 @@ p2pDevStateInit_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 
 		ASSERT(prP2pMsgChnlReq);
 
+		if (!prP2pMsgChnlReq) {
+			/* NO Channel Request Pending. */
+			DBGLOG(P2P, ERROR, "NO Pending Channel Request\n");
+			fgIsTransition = TRUE;
+			*peNextState = P2P_DEV_STATE_IDLE;
+			break;
+		}
 		prChnlReqInfo->u4MaxInterval = prP2pMsgChnlReq->u4Duration;
 		prChnlReqInfo->ucReqChnlNum = prP2pMsgChnlReq->rChannelInfo.ucChannelNum;
 		prChnlReqInfo->eChnlSco = prP2pMsgChnlReq->eChnlSco;
@@ -120,6 +127,7 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 			     IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo)
 {
 	do {
+		UINT_32 u4TimeoutMs = 0;
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pDevFsmInfo != NULL) && (prChnlReqInfo != NULL));
 
 		ASSERT(prChnlReqInfo->eChnlReqType == CH_REQ_TYPE_P2P_LISTEN);
@@ -132,10 +140,14 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eChnlSco;
 
+		if (prAdapter->prP2pInfo->ucExtendChanFlag)
+			u4TimeoutMs = P2P_DEV_EXTEND_CHAN_TIME;
+		else
+			u4TimeoutMs = prChnlReqInfo->u4MaxInterval;
 		DBGLOG(P2P, INFO, "Start channel on hand timer, Cookie: 0x%llx, Interval: %d\n",
-			prChnlReqInfo->u8Cookie, prChnlReqInfo->u4MaxInterval);
+			prChnlReqInfo->u8Cookie, u4TimeoutMs);
 
-		cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer), prChnlReqInfo->u4MaxInterval);
+		cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer), u4TimeoutMs);
 		kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
 					   prChnlReqInfo->u8Cookie,
 					   prChnlReqInfo->ucReqChnlNum,
@@ -270,8 +282,9 @@ p2pDevStateAbort_OFF_CHNL_TX(IN P_ADAPTER_T prAdapter,
 				LINK_REMOVE_HEAD(&(prP2pMgmtTxInfo->rP2pTxReqLink),
 						 prP2pOffChnlTxPkt, P_P2P_OFF_CHNL_TX_REQ_INFO_T);
 
-				kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo,
-							   prP2pOffChnlTxPkt->prMgmtTxMsdu, FALSE);
+				if (prP2pOffChnlTxPkt != NULL)
+					kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo,
+								   prP2pOffChnlTxPkt->prMgmtTxMsdu, FALSE);
 			}
 
 			p2pFuncReleaseCh(prAdapter, P2P_DEV_BSS_INDEX, prChnlReqInfo);

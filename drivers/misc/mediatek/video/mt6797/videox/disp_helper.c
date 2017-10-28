@@ -131,6 +131,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_PARTIAL_UPDATE",
 	"DISP_OPT_CV_BYSUSPEND",
 	"DISP_OPT_DELAYED_TRIGGER",
+	"DISP_OPT_ROUND_CORNER",
 };
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
@@ -196,6 +197,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 	if (option >= DISP_OPT_NUM) {
 		DISPERR("%s: option invalid %d\n", __func__, option);
 		WARN(1, "%s: option invalid %d\n", __func__, option);
+		return -EINVAL;
 	}
 
 	switch (option) {
@@ -366,6 +368,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
+#endif
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

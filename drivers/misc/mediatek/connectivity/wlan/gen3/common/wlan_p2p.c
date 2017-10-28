@@ -180,7 +180,7 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 
 	DEBUGFUNC("wlanoidSetAddP2PKey");
-	DBGLOG(REQ, INFO, "\n");
+	DBGLOG(REQ, INFO, "wlanoidSetAddP2PKey\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
@@ -227,6 +227,9 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prNewKey->ucBssIdx);
 	ASSERT(prBssInfo);
+
+	if (prBssInfo == NULL)
+		return WLAN_STATUS_FAILURE;
 
 	if (prBssInfo->ucBMCWlanIndex >= WTBL_SIZE) {
 		prBssInfo->ucBMCWlanIndex =
@@ -296,19 +299,14 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 				/* so use the rAisSpecificBssInfo to save key setting */
 				/* fgAddTxBcKey = TRUE; */
 			}
-		} else {
-			if (prBssInfo) {	/* GO/AP Tx BC */
-				ASSERT(prBssInfo->ucBMCWlanIndex < WTBL_SIZE);
-				rCmdKey.ucWlanIndex = prBssInfo->ucBMCWlanIndex;
-				/* rCmdKey.ucWlanIndex =  secPrivacySeekForBcEntry(prAdapter, prBssInfo->ucBssIndex, */
-				/* prBssInfo->aucBSSID, 0xff, rCmdKey.ucAlgorithmId, rCmdKey.ucKeyId, */
-				/* prBssInfo->ucCurrentGtkId, BIT(1)); */
-				prBssInfo->fgTxBcKeyExist = TRUE;
-				prBssInfo->ucTxDefaultKeyID = rCmdKey.ucKeyId;
-			} else {
-				rCmdKey.ucWlanIndex = 255;	/* GC WEP Tx key ? */
-				ASSERT(FALSE);
-			}
+		} else {	/* GO/AP Tx BC */
+			ASSERT(prBssInfo->ucBMCWlanIndex < WTBL_SIZE);
+			rCmdKey.ucWlanIndex = prBssInfo->ucBMCWlanIndex;
+			/* rCmdKey.ucWlanIndex =  secPrivacySeekForBcEntry(prAdapter, prBssInfo->ucBssIndex, */
+			/* prBssInfo->aucBSSID, 0xff, rCmdKey.ucAlgorithmId, rCmdKey.ucKeyId, */
+			/* prBssInfo->ucCurrentGtkId, BIT(1)); */
+			prBssInfo->fgTxBcKeyExist = TRUE;
+			prBssInfo->ucTxDefaultKeyID = rCmdKey.ucKeyId;
 		}
 	} else {
 		if (((rCmdKey.aucPeerAddr[0] & rCmdKey.aucPeerAddr[1] & rCmdKey.aucPeerAddr[2] &
@@ -405,14 +403,14 @@ wlanoidSetRemoveP2PKey(IN P_ADAPTER_T prAdapter,
 	/* Check bit 31: this bit should always 0 */
 	if (prRemovedKey->u4KeyIndex & IS_TRANSMIT_KEY) {
 		/* Bit 31 should not be set */
-		DBGLOG(REQ, ERROR, "invalid key index: 0x%08lx\n", prRemovedKey->u4KeyIndex);
+		DBGLOG(REQ, ERROR, "invalid key index: 0x%08x\n", prRemovedKey->u4KeyIndex);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
 	/* Check bits 8 ~ 29 should always be 0 */
 	if (prRemovedKey->u4KeyIndex & BITS(8, 29)) {
 		/* Bit 31 should not be set */
-		DBGLOG(REQ, ERROR, "invalid key index: 0x%08lx\n", prRemovedKey->u4KeyIndex);
+		DBGLOG(REQ, ERROR, "invalid key index: 0x%08x\n", prRemovedKey->u4KeyIndex);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -633,7 +631,7 @@ wlanoidSetP2pPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_POWER_MODE);
 	if (u4SetBufferLen < sizeof(PARAM_POWER_MODE)) {
-		DBGLOG(REQ, WARN, "Invalid length %ld\n", u4SetBufferLen);
+		DBGLOG(REQ, WARN, "Invalid length %u\n", u4SetBufferLen);
 		return WLAN_STATUS_INVALID_LENGTH;
 	} else if (*(PPARAM_POWER_MODE) pvSetBuffer >= Param_PowerModeMax) {
 		DBGLOG(REQ, WARN, "Invalid power mode %d\n", *(PPARAM_POWER_MODE) pvSetBuffer);
@@ -741,7 +739,7 @@ wlanoidSetP2pSetNetworkAddress(IN P_ADAPTER_T prAdapter,
 		prCmdNetworkAddressList->ucAddressCount = (UINT_8) u4IpAddressCount;
 		prNetworkAddress = prNetworkAddressList->arAddress;
 
-		DBGLOG(INIT, INFO, "u4IpAddressCount (%ld)\n", (INT_32) u4IpAddressCount);
+		DBGLOG(INIT, INFO, "u4IpAddressCount (%d)\n", (INT_32) u4IpAddressCount);
 		for (i = 0, j = 0; i < prNetworkAddressList->u4AddressCount; i++) {
 			if (prNetworkAddress->u2AddressType == PARAM_PROTOCOL_ID_TCP_IP &&
 			    prNetworkAddress->u2AddressLength == sizeof(PARAM_NETWORK_ADDRESS_IP)) {
@@ -810,7 +808,7 @@ wlanoidSetP2PMulticastList(IN P_ADAPTER_T prAdapter,
 
 	/* The data must be a multiple of the Ethernet address size. */
 	if ((u4SetBufferLen % MAC_ADDR_LEN)) {
-		DBGLOG(REQ, WARN, "Invalid MC list length %ld\n", u4SetBufferLen);
+		DBGLOG(REQ, WARN, "Invalid MC list length %u\n", u4SetBufferLen);
 
 		*pu4SetInfoLen = (((u4SetBufferLen + MAC_ADDR_LEN) - 1) / MAC_ADDR_LEN) * MAC_ADDR_LEN;
 

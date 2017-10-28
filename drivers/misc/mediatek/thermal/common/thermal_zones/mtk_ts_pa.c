@@ -609,13 +609,14 @@ void mtkts_pa_start_thermal_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
-
 	if (down_trylock(&sem_mutex))
 		return;
 
-	if (thz_dev != NULL && interval != 0)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
+	if (thz_dev != NULL && interval != 0) {
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue),
+			round_jiffies(msecs_to_jiffies(3000)));
+		isTimerCancelled = 0;
+	}
 
 	up(&sem_mutex);
 }

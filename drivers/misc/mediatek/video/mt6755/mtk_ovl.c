@@ -77,6 +77,7 @@ static ovl2mem_path_context *_get_context(void)
 
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(ovl2mem_path_context));
+		mutex_init(&(g_context.lock));
 		is_context_inited = 1;
 	}
 
@@ -293,7 +294,6 @@ int ovl2mem_init(unsigned int session)
 
 	DISPMSG("ovl2mem_init\n");
 	dpmgr_init();
-	mutex_init(&(pgc->lock));
 
 	_ovl2mem_path_lock(__func__);
 

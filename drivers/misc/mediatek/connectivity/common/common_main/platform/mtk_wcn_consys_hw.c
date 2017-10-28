@@ -136,6 +136,11 @@ P_WMT_CONSYS_IC_OPS __weak mtk_wcn_get_consys_ic_ops(VOID)
 	return NULL;
 }
 
+VOID __weak mtk_wcn_consys_dump_power_reg(VOID)
+{
+	WMT_PLAT_WARN_FUNC("Does not support on this project\n");
+}
+
 static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
 	INT32 iRet = -1;

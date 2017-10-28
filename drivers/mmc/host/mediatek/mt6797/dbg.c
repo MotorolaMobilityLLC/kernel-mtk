@@ -49,23 +49,21 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 
-#ifdef CONFIG_MT_ENG_BUILD
-#define MTK_EMMC_CQ_DEBUG
-#endif
+#define MTK_EMMC_CMD_DEBUG
 
 #ifdef MTK_IO_PERFORMANCE_DEBUG
-unsigned int g_mtk_mmc_perf_dbg = 0;
-unsigned int g_mtk_mmc_dbg_range = 0;
-unsigned int g_dbg_range_start = 0;
-unsigned int g_dbg_range_end = 0;
-unsigned int g_mtk_mmc_dbg_flag = 0;
-unsigned int g_dbg_req_count = 0;
-unsigned int g_dbg_raw_count = 0;
-unsigned int g_dbg_write_count = 0;
-unsigned int g_dbg_raw_count_old = 0;
-unsigned int g_mtk_mmc_clear = 0;
-int g_check_read_write = 0;
-int g_i = 0;
+unsigned int g_mtk_mmc_perf_dbg;
+unsigned int g_mtk_mmc_dbg_range;
+unsigned int g_dbg_range_start;
+unsigned int g_dbg_range_end;
+unsigned int g_mtk_mmc_dbg_flag;
+unsigned int g_dbg_req_count;
+unsigned int g_dbg_raw_count;
+unsigned int g_dbg_write_count;
+unsigned int g_dbg_raw_count_old;
+unsigned int g_mtk_mmc_clear;
+int g_check_read_write;
+int g_i;
 unsigned long long g_req_buf[4000][30] = { {0} };
 unsigned long long g_req_write_buf[4000][30] = { {0} };
 unsigned long long g_req_write_count[4000] = { 0 };
@@ -106,7 +104,7 @@ char *g_time_mark_vfs_write[] = {
 
 /* for get transfer time with each trunk size, default not open */
 #ifdef MTK_MMC_PERFORMANCE_TEST
-unsigned int g_mtk_mmc_perf_test = 0;
+unsigned int g_mtk_mmc_perf_test;
 #endif
 
 /* for a type command, e.g. CMD53, 2 blocks */
@@ -220,8 +218,7 @@ static void msdc_init_dma_latest_address(void)
 	while (ptr != msdc_latest_dma_address) {
 		prev = ptr - 1;
 		prev->next = (void *)(msdc_latest_dma_address
-			+ sizeof(struct dma_addr)
-			* (ptr - msdc_latest_dma_address));
+			+ (ptr - msdc_latest_dma_address));
 		ptr = prev;
 	}
 
@@ -372,8 +369,7 @@ skip_emmc50_reg:
 	return;
 }
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#ifdef MTK_EMMC_CQ_DEBUG
+#ifdef MTK_EMMC_CMD_DEBUG
 #define dbg_max_cnt (500)
 struct dbg_run_host_log {
 	unsigned long long time_sec;
@@ -381,6 +377,7 @@ struct dbg_run_host_log {
 	int type;
 	int cmd;
 	int arg;
+	int skip;
 };
 static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
 static int dbg_host_cnt;
@@ -390,23 +387,41 @@ static spinlock_t cmd_dump_lock;
 static unsigned int printk_cpu_test = UINT_MAX;
 struct timeval cur_tv;
 
-static void init_lock(void)
-{
-	if (!is_lock_init) {
-		spin_lock_init(&cmd_dump_lock);
-		is_lock_init = 1;
-	}
-}
-
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
+/* type 0: cmd, type 1 rsp */
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
 	unsigned long long t;
 	unsigned long long nanosec_rem;
 	unsigned long flags;
+	static int last_cmd, last_arg, skip;
+	int l_skip = 0;
+	struct msdc_host *host = mmc_priv(mmc);
 
-	init_lock();
+	/* only log msdc0 */
+	if (!host || host->id != 0)
+		return;
+
+	if (!is_lock_init) {
+		spin_lock_init(&cmd_dump_lock);
+		is_lock_init = 1;
+	}
 
 	spin_lock_irqsave(&cmd_dump_lock, flags);
+	if (type == 1) {
+		/*skip log if last cmd rsp are the same*/
+		if (last_cmd == cmd && last_arg == arg) {
+			skip++;
+			if (dbg_host_cnt == 0)
+				dbg_host_cnt = dbg_max_cnt;
+			/*remove type = 0, command*/
+			dbg_host_cnt--;
+			goto end;
+		}
+		last_cmd = cmd;
+		last_arg = arg;
+		l_skip = skip;
+		skip = 0;
+	}
 	t = cpu_clock(printk_cpu_test);
 	nanosec_rem = do_div(t, 1000000000)/1000;
 	do_gettimeofday(&cur_tv);
@@ -415,103 +430,123 @@ void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
 	dbg_run_host_log_dat[dbg_host_cnt].type = type;
 	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
 	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
+	dbg_run_host_log_dat[dbg_host_cnt].skip = l_skip;
 	dbg_host_cnt++;
 	if (dbg_host_cnt >= dbg_max_cnt)
 		dbg_host_cnt = 0;
+end:
 	spin_unlock_irqrestore(&cmd_dump_lock, flags);
 }
 
-void mmc_cmd_dump(struct mmc_host *host)
+void mmc_cmd_dump(struct seq_file *m, struct mmc_host *mmc, u32 latest_cnt)
 {
-	int i;
+	int i, j;
 	int tag = -1;
+	int is_read, is_rel, is_fprg;
 	unsigned long flags;
+	unsigned long long time_sec, time_usec;
+	int type, cmd, arg, skip, cnt;
+	struct msdc_host *host;
+	u32 dump_cnt;
 
-	init_lock();
-
-	pr_err("-------------------------------------------------------------------------------\n");
-	spin_lock_irqsave(&cmd_dump_lock, flags);
-	for (i = dbg_host_cnt; i < dbg_max_cnt; i++) {
-		if (dbg_run_host_log_dat[i].cmd == 44
-			&& (dbg_run_host_log_dat[i].type == 0)) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag,
-				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
-				);
-		} else if ((dbg_run_host_log_dat[i].cmd == 46
-			|| dbg_run_host_log_dat[i].cmd == 47)
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag);
-		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			dbg_run_host_log_dat[i].time_sec,
-			dbg_run_host_log_dat[i].time_usec,
-			dbg_run_host_log_dat[i].type,
-			dbg_run_host_log_dat[i].cmd,
-			dbg_run_host_log_dat[i].arg);
+	if (!mmc || !mmc->card)
+		return;
+	/* only dump msdc0 */
+	host = mmc_priv(mmc);
+	if (!host || host->id != 0)
+		return;
+	if (!is_lock_init) {
+		spin_lock_init(&cmd_dump_lock);
+		is_lock_init = 1;
 	}
 
-	for (i = 0; i < dbg_host_cnt; i++) {
-		if (dbg_run_host_log_dat[i].cmd == 44
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag,
-				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
-				);
-		} else if ((dbg_run_host_log_dat[i].cmd == 46
-			|| dbg_run_host_log_dat[i].cmd == 47)
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag);
+	spin_lock_irqsave(&cmd_dump_lock, flags);
+	dump_cnt = min_t(u32, latest_cnt, dbg_max_cnt);
+
+	i = dbg_host_cnt - 1;
+	if (i < 0)
+		i = dbg_max_cnt - 1;
+
+	for (j = 0; j < dump_cnt; j++) {
+		time_sec = dbg_run_host_log_dat[i].time_sec;
+		time_usec = dbg_run_host_log_dat[i].time_usec;
+		type = dbg_run_host_log_dat[i].type;
+		cmd = dbg_run_host_log_dat[i].cmd;
+		arg = dbg_run_host_log_dat[i].arg;
+		skip = dbg_run_host_log_dat[i].skip;
+		if (cmd == 44 && !type) {
+			cnt = arg & 0xffff;
+			tag = (arg >> 16) & 0xf;
+			is_read = (arg >> 30) & 0x1;
+			is_rel = (arg >> 31) & 0x1;
+			is_fprg = (arg >> 24) & 0x1;
+			MSDC_PRINFO_PROC_MSG(m,
+			"%04d [%5llu.%06llu]%2d %2d %08x id=%02d %s cnt=%d %d %d\n",
+				j, time_sec, time_usec,
+				type, cmd, arg, tag,
+				is_read ? "R" : "W",
+				cnt, is_rel, is_fprg);
+		} else if ((cmd == 46 || cmd == 47) && !type) {
+			tag = (arg >> 16) & 0xf;
+			MSDC_PRINFO_PROC_MSG(m, "%04d [%5llu.%06llu]%2d %2d %08x id=%02d\n",
+				j, time_sec, time_usec,
+				type, cmd, arg, tag);
 		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			dbg_run_host_log_dat[i].time_sec,
-			dbg_run_host_log_dat[i].time_usec,
-			dbg_run_host_log_dat[i].type,
-			dbg_run_host_log_dat[i].cmd,
-			dbg_run_host_log_dat[i].arg);
+			MSDC_PRINFO_PROC_MSG(m, "%04d [%5llu.%06llu]%2d %2d %08x (%d)\n",
+				j, time_sec, time_usec,
+				type, cmd, arg, skip);
+		i--;
+		if (i < 0)
+			i = dbg_max_cnt - 1;
 	}
 	spin_unlock_irqrestore(&cmd_dump_lock, flags);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	MSDC_PRINFO_PROC_MSG(m, "areq_cnt:%d, task_id_index %08lx, cq_wait_rdy:%d\n",
+			atomic_read(&mmc->areq_cnt), mmc->task_id_index, atomic_read(&mmc->cq_wait_rdy));
+#endif
 }
 
 #else
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
+{
+}
 
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg) { }
-
-void mmc_cmd_dump(struct mmc_host *host) { }
-
+void mmc_cmd_dump(struct seq_file *m, struct mmc_host *mmc, u32 latest_cnt)
+{
+}
 #endif
 
-#endif
+static void msdc_dump_host_state(struct seq_file *m, struct msdc_host *host)
+{
+	/* need porting */
+}
+
+static void msdc_proc_dump(struct seq_file *m, u32 id)
+{
+	struct msdc_host *host = mtk_msdc_host[id];
+
+	if (host == NULL) {
+		pr_info("====== Null msdc%d, dump skipped ======\n", id);
+		return;
+	}
+
+	msdc_dump_host_state(m, host);
+	mmc_cmd_dump(m, host->mmc, 500);
+}
+
+void msdc_hang_detect_dump(u32 id)
+{
+	struct msdc_host *host = mtk_msdc_host[id];
+
+	if (host == NULL) {
+		pr_info("====== Null msdc%d, dump skipped ======\n", id);
+		return;
+	}
+
+	msdc_dump_host_state(NULL, host);
+	mmc_cmd_dump(NULL, host->mmc, 50);
+}
+EXPORT_SYMBOL(msdc_hang_detect_dump);
 
 void msdc_cmdq_status_print(struct seq_file *m, struct msdc_host *host)
 {
@@ -544,8 +579,13 @@ void msdc_cmdq_status_print(struct seq_file *m, struct msdc_host *host)
 void msdc_cmdq_func(struct seq_file *m, struct msdc_host *host, const int num)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	void __iomem *base = host->base;
+	void __iomem *base = NULL;
 	int a, b;
+
+	if (host == NULL)
+		return;
+
+	base = host->base;
 #endif
 
 	if (!host || !host->mmc || !host->mmc->card)
@@ -562,7 +602,7 @@ void msdc_cmdq_func(struct seq_file *m, struct msdc_host *host, const int num)
 		host->mmc->cmdq_support_changed = 1;
 		break;
 	case 2:
-		mmc_cmd_dump(host->mmc);
+		mmc_cmd_dump(m, host->mmc, 500);
 		break;
 	case 3:
 		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
@@ -802,7 +842,8 @@ static void msdc_set_field(struct seq_file *m, void __iomem *address,
 {
 	unsigned long field;
 
-	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
+	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
+		|| (start_bit + len) > 32) {
 		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -820,7 +861,8 @@ static void msdc_get_field(struct seq_file *m, void __iomem *address,
 {
 	unsigned long field;
 
-	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0 || ((len == 32) && (start_bit == 0))) {
+	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
+		|| (start_bit + len > 32)) {
 		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -1646,8 +1688,10 @@ void msdc_dump_gpd_bd(int id)
 	struct gpd_t *gpd;
 	struct bd_t  *bd;
 
-	if (id < 0 || id >= HOST_MAX_NUM)
+	if (id < 0 || id >= HOST_MAX_NUM) {
 		pr_err("[%s]: invalid host id: %d\n", __func__, id);
+		return;
+	}
 
 	host = mtk_msdc_host[id];
 	if (host == NULL) {
@@ -2380,9 +2424,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		host = mtk_msdc_host[id];
 		if ((p2 < 0) || (p2 > 2)) {
 			seq_puts(m, "[SD_Debug]invalid option ( set rd:0, set td:1, get td/rd: 2)\n");
-		} else if ((p2 == 0 && (unsigned char)p3 > 0xffff)
-			|| (p2 == 1 && (unsigned char)p3 > 0xffff)) {
-			seq_puts(m, "[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xffff << 0))\n");
 		} else {
 			if (p2 == 0) {
 				msdc_set_rdsel_dbg(host, p3);
@@ -2667,9 +2708,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 #endif
 	case ENABLE_AXI_MODULE:
 		if (p1)
-			strcpy(enable_str, "enable");
+			strncpy(enable_str, "enable", 7);
 		else
-			strcpy(enable_str, "disable");
+			strncpy(enable_str, "disable", 8);
 		seq_printf(m, "==== %s AXI MODULE ====\n", enable_str);
 		if (p2 == 0 || p2 == 5) {
 			seq_printf(m, "%s %s transaction on AXI bus\n",
@@ -2762,6 +2803,13 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		msdc_cmdq_func(m, host, p2);
+		break;
+	case MMC_HANG_DETECT_DUMP:
+		seq_puts(m, "==== hang detect dump ====\n");
+		id = p1;
+		if (id >= HOST_MAX_NUM || id < 0)
+			goto invalid_host_id;
+		msdc_proc_dump(m, id);
 		break;
 	default:
 		seq_puts(m, "[SD_Debug]: Invalid Command\n");
@@ -2920,11 +2968,14 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	const char __user *buf, size_t count, loff_t *data)
 {
 	int ret;
-	int i_case = 0, i_par1 = -1, i_par2 = -1, i_clk = 0;
+	int i_case = 0, i_par1 = -1, i_par2 = -1;
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
+	int i_clk = 0;
 	int i_driving = 0, i_edge = 0, i_data = 0, i_delay = 0;
 	u32 cur_rxdly0;
 	u8 u8_dat0, u8_dat1, u8_dat2, u8_dat3;
 	void __iomem *base;
+#endif
 	int sscanf_num;
 
 	if (count == 0)
@@ -2961,6 +3012,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	return -1;
 #endif
 
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
 	if (i_case == 1) { /*set clk*/
 		if (!((i_par1 == 0) || (i_par1 == 1)))
 			return -1;
@@ -3025,6 +3077,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file,
 	}
 
 	return 1;
+#endif
 }
 
 #ifdef ONLINE_TUNING_DVTTEST
@@ -3332,13 +3385,9 @@ static const struct file_operations msdc_voltage_flag_fops = {
 int msdc_debug_proc_init(void)
 {
 	struct proc_dir_entry *prEntry;
-	struct proc_dir_entry *tune;
-	struct proc_dir_entry *tune_flag;
 	kuid_t uid;
 	kgid_t gid;
-#ifdef MSDC_HQA
-	struct proc_dir_entry *voltage_flag;
-#endif
+
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
 
@@ -3353,43 +3402,6 @@ int msdc_debug_proc_init(void)
 
 	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
-
-	prEntry = proc_create("msdc_FT", PROC_PERM, NULL, &msdc_FT_fops);
-
-	if (!prEntry)
-		pr_err("[%s]: failed to create /proc/msdc_FT\n", __func__);
-
-#ifdef ONLINE_TUNING_DVTTEST
-	prEntry = proc_create("msdc_DVT", PROC_PERM, NULL, &msdc_DVT_fops);
-
-	if (!prEntry)
-		pr_err("[%s]: failed to create /proc/msdc_DVT\n", __func__);
-#endif  /* ONLINE_TUNING_DVTTEST*/
-
-	tune = proc_create("msdc_tune", PROC_PERM, NULL, &msdc_tune_fops);
-
-	if (tune)
-		proc_set_user(tune, uid, gid);
-	else
-		pr_err("[%s]: failed to create /proc/msdc_tune\n", __func__);
-
-	tune_flag = proc_create("msdc_tune_flag", PROC_PERM, NULL,
-		&msdc_tune_flag_fops);
-
-	if (!tune_flag)
-		pr_err("[%s]: failed to create /proc/msdc_tune_flag\n",
-			__func__);
-
-#ifdef MSDC_HQA
-	voltage_flag = proc_create("msdc_voltage_flag", PROC_PERM, NULL,
-		&msdc_voltage_flag_fops);
-
-	if (voltage_flag)
-		proc_set_user(voltage_flag, uid, gid);
-	else
-		pr_err("[%s]: failed to create /proc/msdc_voltage_flag\n",
-			__func__);
-#endif
 
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();

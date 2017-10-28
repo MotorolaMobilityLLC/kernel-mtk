@@ -1358,6 +1358,9 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 	switch (index) {
 	case 0:
 		value = 5;
+#if defined(CONFIG_MACH_MT6797)
+		value = 0;
+#endif
 		spm_crit("SPM Suspend debug regs count = 0x%.8x\n",  value);
 	break;
 	case 1:

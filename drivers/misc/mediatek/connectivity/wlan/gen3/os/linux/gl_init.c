@@ -295,6 +295,22 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_GET_ROAMING_CAPABILITIES
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_roaming_capabilities
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_CONFIG_ROAMING
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_config_roaming
+	},
 	/* GSCAN */
 #if CFG_SUPPORT_GSCN
 	{
@@ -1664,12 +1680,8 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	goto netcreate_done;
 
 netcreate_err:
-	if (NULL != prAdapter) {
-		wlanAdapterDestroy(prAdapter);
-		prAdapter = NULL;
-	}
 
-	if (NULL != prGlueInfo->prDevHandler) {
+	if (prGlueInfo->prDevHandler != NULL) {
 		free_netdev(prGlueInfo->prDevHandler);
 		prGlueInfo->prDevHandler = NULL;
 	}
@@ -1847,7 +1859,7 @@ VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
 	CMD_PS_PROFILE_T rPowerSaveMode;
 
 	/* 4 <1> Sanity Check */
-	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+	if ((u4WlanDevNum == 0) || (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
 		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
 		return;
 	}
@@ -2215,13 +2227,13 @@ bailout:
 	} while (FALSE);
 
 	if (i4Status == WLAN_STATUS_SUCCESS) {
+		cnmResetMemTrace();
 		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 		wlanCfgSetChip(prGlueInfo->prAdapter);
 		wlanGetFwInfo(prGlueInfo->prAdapter);
 		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
 		/* Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);
-		cnmResetMemTrace();
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
@@ -2464,8 +2476,8 @@ static int initWlan(void)
 #if (CFG_CHIP_RESET_SUPPORT)
 	glResetInit();
 #endif
-
-	kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
+	if (gprWdev)
+		kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 	return ret;
 }				/* end of initWlan() */
 

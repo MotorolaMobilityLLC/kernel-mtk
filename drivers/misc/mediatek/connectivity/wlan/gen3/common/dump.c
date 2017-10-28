@@ -72,13 +72,13 @@ VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length)
 {
 	ASSERT(pucStartAddr);
 
-	LOG_FUNC("DUMP8 ADDRESS: %x, Length: %d\n", (ULONG) pucStartAddr, u4Length);
+	LOG_FUNC("DUMP8 ADDRESS: %p, Length: %u\n", pucStartAddr, u4Length);
 
 	while (u4Length > 0) {
 		if (u4Length >= 16) {
 			LOG_FUNC(
 			"(%p) %02x %02x %02x %02x  %02x %02x %02x %02x - %02x %02x %02x %02x  %02x %02x %02x %02x\n",
-				 (ULONG) pucStartAddr, pucStartAddr[0], pucStartAddr[1],
+				 pucStartAddr, pucStartAddr[0], pucStartAddr[1],
 				 pucStartAddr[2], pucStartAddr[3], pucStartAddr[4], pucStartAddr[5],
 				 pucStartAddr[6], pucStartAddr[7], pucStartAddr[8], pucStartAddr[9],
 				 pucStartAddr[10], pucStartAddr[11], pucStartAddr[12],
@@ -206,7 +206,7 @@ VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length)
 
 	ASSERT(pu4StartAddr);
 
-	LOG_FUNC("DUMP32 ADDRESS: %08x, Length: %d\n", (ULONG) pu4StartAddr, u4Length);
+	LOG_FUNC("DUMP32 ADDRESS: %p, Length: %u\n", pu4StartAddr, u4Length);
 
 	if (IS_NOT_ALIGN_4((ULONG) pu4StartAddr)) {
 		UINT_32 u4ProtrudeLen = sizeof(UINT_32) - ((ULONG) pu4StartAddr % 4);

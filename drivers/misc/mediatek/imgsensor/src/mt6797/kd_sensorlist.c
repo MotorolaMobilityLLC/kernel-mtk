@@ -2695,7 +2695,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			PK_ERR(" NULL arg.\n");
 			return -EFAULT;
 		}
-		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
+		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int)) && FeatureParaLen) {
 			PK_ERR(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}
