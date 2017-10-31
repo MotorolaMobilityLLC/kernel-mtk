@@ -607,6 +607,7 @@ void arch_reset(char mode, const char *cmd)
 		mtk_wd_SetNonResetReg2(0x0, 1);
 #endif
 	} else {
+		rtc_mark_reboot();
 		reboot = 1;
 	}
 
