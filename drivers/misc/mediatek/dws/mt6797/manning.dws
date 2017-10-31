@@ -656,15 +656,16 @@
             <gpio39>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>false</inpull_en>
+                <mode_arr>11000000</mode_arr>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <smt>false</smt>
-                <ies>false</ies>
+                <varName0>GPIO_SMARTPA_RST_PIN</varName0>
+                <smt>true</smt>
+                <ies>true</ies>
             </gpio39>
             <gpio40>
                 <eint_mode>false</eint_mode>
@@ -3732,9 +3733,9 @@
                 <address>0x63</address>
             </device3>
             <device4>
-                <varName>SPEAKER_AMP</varName>
+                <varName>SMART_PA</varName>
                 <channel>I2C_CHANNEL_0</channel>
-                <address>0x31</address>
+                <address>0x58</address>
             </device4>
             <device5>
                 <varName>USB_TYPE_C</varName>
