@@ -190,6 +190,13 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
+	cust_smartpa@0 {
+		compatible				= "mediatek,smart_pa";
+		pinctrl-names = "smartpa_rst_low", "smartpa_rst_high";
+		pinctrl-0 = <&smartpa_rst_low>;
+		pinctrl-1 = <&smartpa_rst_high>;
+		status = "okay";
+	};
 };
 
 
@@ -220,6 +227,20 @@
 
 	gyro_intpin_default: gyrodefaultcfg {
 
+	};
+	smartpa_rst_low: smartpa_rst_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	smartpa_rst_high: smartpa_rst_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <1>;
+			output-high;
+		};
 	};
 };
 
@@ -550,10 +571,9 @@
 		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <1>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		accdet-mic-mode = <2>;
+		accdet-mic-mode = <1>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
-		headset-three-key-threshold = <0 80 220 400>;
-		headset-three-key-threshold-CDD = <0 192 306 600>;
+		headset-three-key-threshold = <0 80 150 400>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode use */
@@ -894,13 +914,6 @@
 		};
 	};
 
-	/* external amp support */
-	max98926L@31 {
-		compatible = "maxim,max98926L";
-		vmon-slot-no = <1>;
-		imon-slot-no = <5>;
-		status = "ok";
-	};
 };
 /* AUDIO end */
 
