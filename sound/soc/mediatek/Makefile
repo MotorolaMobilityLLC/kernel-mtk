@@ -51,6 +51,7 @@ obj-y += $(MTK_PLATFORM)/
 # Old architecture
 else
 
+obj-y += pa/
 obj-y += common/
 obj-$(CONFIG_MT_SND_SOC_V3) += mt6735/
 obj-$(CONFIG_MT_SND_SOC_6570) += mt6570/
