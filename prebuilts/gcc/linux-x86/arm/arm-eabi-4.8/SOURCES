@@ -1,0 +1,51 @@
+Using built-in specs.
+COLLECT_GCC=/tmp/android-eabi-4.8-2013-11-04/toolchains/arm-eabi-4.8/prebuilt/linux-x86_64/bin/arm-eabi-gcc
+COLLECT_LTO_WRAPPER=/tmp/android-eabi-4.8-2013-11-04/toolchains/arm-eabi-4.8/prebuilt/linux-x86_64/bin/../libexec/gcc/arm-eabi/4.8/lto-wrapper
+Target: arm-eabi
+Configured with: /tmp/AOSP-toolchain/build/../gcc/gcc-4.8/configure --prefix=/tmp/toolchain-build-eabi/prefix --target=arm-eabi --host=x86_64-linux-gnu --build=x86_64-linux-gnu --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --with-gmp=/tmp/toolchain-build-eabi/temp-install --with-mpfr=/tmp/toolchain-build-eabi/temp-install --with-mpc=/tmp/toolchain-build-eabi/temp-install --with-cloog=/tmp/toolchain-build-eabi/temp-install --with-isl=/tmp/toolchain-build-eabi/temp-install --with-ppl=/tmp/toolchain-build-eabi/temp-install --disable-ppl-version-check --disable-cloog-version-check --disable-isl-version-check --enable-cloog-backend=isl --with-host-libstdcxx='-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm' --disable-libssp --enable-threads --disable-nls --disable-libmudflap --disable-libgomp --disable-libstdc__-v3 --disable-sjlj-exceptions --disable-shared --disable-tls --disable-libitm --with-float=soft --with-fpu=vfp --with-arch=armv5te --enable-target-optspace --with-abi=aapcs --enable-initfini-array --disable-nls --prefix=/tmp/toolchain-build-eabi/prefix --with-sysroot=/tmp/toolchain-build-eabi/prefix/sysroot --with-binutils-version=2.23 --with-mpfr-version=3.1.1 --with-mpc-version=1.0.1 --with-gmp-version=5.0.5 --with-gcc-version=4.8 --with-gdb-version=7.6 --with-gxx-include-dir=/tmp/toolchain-build-eabi/prefix/include/c++/4.8 --with-bugurl=http://source.android.com/source/report-bugs.html --disable-bootstrap --disable-libquadmath --enable-plugins --enable-libgomp --disable-libsanitizer --enable-gold --enable-graphite=yes --with-cloog-version=0.18.0 --with-isl-version=0.11.1 --enable-eh-frame-hdr-for-static --with-arch=armv5te --disable-gold --disable-libgomp --program-transform-name='s&^&arm-eabi-&'
+Thread model: single
+gcc version 4.8 (GCC) 
+
+gcc:
+commit 325a57a9cceb570741de8b68c40f4a72136cc35d
+Merge: 5605fa8 12b4a6e
+Author: Ben Cheng <bccheng@google.com>
+
+    Merge "[4.8] Backport revision 204203 to fix 3.4 kernel compilation."
+
+binutils:
+commit 9ddab0875454b0b5a8329a63c01b71880170575e
+Author: Pavel Chupin <pavel.v.chupin@intel.com>
+
+    [2.23] Use relative relocation for R_X86_64_32 on x32
+
+gdb:
+commit 2f1caff8ab3e6f7d34c8e58bd199ef518cfd2202
+Author: Andrew Hsieh <andrewhsieh@google.com>
+
+    [7.3.x] Add one clue to find prebuilt python for Android platform debugging
+
+gmp:
+commit e6b9669dafc6a5f83c80b4b4176359b78bccdc90
+Author: David 'Digit' Turner <digit@google.com>
+
+    Add gmp-5.0.5.tar.bz2
+
+mpfr:
+commit bfcf1bfa38469208aaad8873cd4c68781061d90f
+Author: Andrew Hsieh <andrewhsieh@google.com>
+
+    add mpfr-3.1.1.tar.bz2
+
+build:
+commit 2f00bce0ef2fe4bd07ade43c4abc0fd4c498bdc4
+Author: Ben Cheng <bccheng@google.com>
+
+    Change the triplet to aarch64-linux-android for aarch64-gcc.
+
+expat:
+commit 40172a0ae9d40a068f1e1a48ffcf6a1ccf765ed5
+Author: Jing Yu <jingyu@google.com>
+
+    expat package for building gdb-7.3
+
