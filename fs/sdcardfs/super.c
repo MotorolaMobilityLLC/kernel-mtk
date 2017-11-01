@@ -19,6 +19,7 @@
  */
 
 #include "sdcardfs.h"
+#include <linux/fsnotify.h>
 
 /*
  * The inode cache is used with alloc_inode for both our inode info and the
@@ -34,6 +35,82 @@ static struct kmem_cache *sdcardfs_inode_cachep;
  * new data and then drops the ref to the old data.
  */
 static struct kmem_cache *sdcardfs_inode_data_cachep;
+static LIST_HEAD(sdcardfs_list);
+static DEFINE_SPINLOCK(sdcardfs_list_lock);
+
+void sdcardfs_add_super(struct sdcardfs_sb_info *sbi, struct super_block *sb)
+{
+	sbi->s_sb = sb;
+	INIT_LIST_HEAD(&sbi->s_list);
+
+	spin_lock(&sdcardfs_list_lock);
+	list_add_tail(&sbi->s_list, &sdcardfs_list);
+	spin_unlock(&sdcardfs_list_lock);
+}
+
+static void sdcardfs_remove_super(struct sdcardfs_sb_info *sbi)
+{
+	spin_lock(&sdcardfs_list_lock);
+	list_del(&sbi->s_list);
+	spin_unlock(&sdcardfs_list_lock);
+}
+
+/* drop all shared dentries from other superblocks */
+void sdcardfs_drop_sb_icache(struct super_block *sb, unsigned long ino)
+{
+	struct inode *inode = ilookup(sb, ino);
+	struct dentry *dentry, *dir_dentry;
+
+	if (!inode)
+		return;
+
+	dentry = d_find_any_alias(inode);
+
+	if (!dentry) {
+		iput(inode);
+		return;
+	}
+
+	dir_dentry = lock_parent(dentry);
+
+	mutex_lock(&inode->i_mutex);
+	set_nlink(inode, sdcardfs_lower_inode(inode)->i_nlink);
+	d_drop(dentry);
+	dont_mount(dentry);
+	mutex_unlock(&inode->i_mutex);
+
+	/* We don't d_delete() NFS sillyrenamed files--they still exist. */
+	if (!(dentry->d_flags & DCACHE_NFSFS_RENAMED)) {
+		fsnotify_link_count(inode);
+		d_delete(dentry);
+	}
+
+	unlock_dir(dir_dentry);
+	dput(dentry);
+	iput(inode);
+}
+
+void sdcardfs_drop_shared_icache(struct super_block *sb, struct inode *lower_inode)
+{
+	struct list_head *p;
+	struct sdcardfs_sb_info *sbi;
+	struct super_block *lower_sb = lower_inode->i_sb;
+
+	spin_lock(&sdcardfs_list_lock);
+	p = sdcardfs_list.next;
+	while (p != &sdcardfs_list) {
+		sbi = list_entry(p, struct sdcardfs_sb_info, s_list);
+		if (sbi->s_sb == sb || sbi->lower_sb != lower_sb) {
+			p = p->next;
+			continue;
+		}
+		spin_unlock(&sdcardfs_list_lock);
+		sdcardfs_drop_sb_icache(sbi->s_sb, lower_inode->i_ino);
+		spin_lock(&sdcardfs_list_lock);
+		p = p->next;
+	}
+	spin_unlock(&sdcardfs_list_lock);
+}
 
 void data_release(struct kref *ref)
 {
@@ -63,6 +140,7 @@ static void sdcardfs_put_super(struct super_block *sb)
 	sdcardfs_set_lower_super(sb, NULL);
 	atomic_dec(&s->s_active);
 
+	sdcardfs_remove_super(spd);
 	kfree(spd);
 	sb->s_fs_info = NULL;
 }

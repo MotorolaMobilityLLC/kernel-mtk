@@ -341,6 +341,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 	list_add(&sb_info->list, &sdcardfs_super_list);
 	mutex_unlock(&sdcardfs_super_list_lock);
 
+	sdcardfs_add_super(sb_info, sb);
 	if (!silent)
 		pr_info("sdcardfs: mounted on top of %s type %s\n",
 				dev_name, lower_sb->s_type->name);
