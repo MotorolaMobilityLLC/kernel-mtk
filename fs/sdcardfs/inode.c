@@ -708,6 +708,8 @@ static int sdcardfs_setattr_wrn(struct dentry *dentry, struct iattr *ia)
 static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct iattr *ia)
 {
 	int err;
+	loff_t oldsize;
+	loff_t newsize;
 	struct dentry *lower_dentry;
 	struct vfsmount *lower_mnt;
 	struct inode *inode;
@@ -807,7 +809,25 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 				up_write(&current->mm->mmap_sem);
 			goto out;
 		}
-		truncate_setsize(inode, ia->ia_size);
+		/*
+		 * i_size_write needs locking around it
+		 * otherwise i_size_read() may spin forever
+		 * (see include/linux/fs.h).
+		 * similar to function fsstack_copy_inode_size
+		 */
+		oldsize = i_size_read(inode);
+		newsize = ia->ia_size;
+
+		#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+		spin_lock(&inode->i_lock);
+		#endif
+		i_size_write(inode, newsize);
+		#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+		spin_unlock(&inode->i_lock);
+		#endif
+		if (newsize > oldsize)
+			pagecache_isize_extended(inode, oldsize, newsize);
+		truncate_pagecache(inode, newsize);
 		sdcardfs_truncate_share(inode->i_sb, lower_dentry->d_inode, ia->ia_size);
 	}
 	if (current->mm)
