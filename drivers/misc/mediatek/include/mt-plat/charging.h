@@ -628,6 +628,8 @@ extern int is_mt6311_sw_ready(void);
 extern void hw_charging_enable_dp_voltage(int ison);
 
 
+/* For RT5735A SDA low workaround */
+extern void battery_disable_batfet(void);
 /* switch charger */
 extern void switch_charger_set_vindpm(unsigned int chr_v);
 extern int mtk_get_dynamic_cv(unsigned int *cv);

@@ -38,22 +38,21 @@
 #define TEMPERATURE_T	255 /* This should be fixed, never change the value*/
 
 #define FG_METER_RESISTANCE	0
-
+#define Q_MAX_CHARGE_FULL_DESIGN 4000
 /* Qmax for battery  */
-#define Q_MAX_POS_50	2910
-#define Q_MAX_POS_25	2737
-#define Q_MAX_POS_0	1999
-#define Q_MAX_NEG_10	796
+#define Q_MAX_POS_50	3910
+#define Q_MAX_POS_25	3737
+#define Q_MAX_POS_0	2999
+#define Q_MAX_NEG_10	1796
 
-#define Q_MAX_POS_50_H_CURRENT	2852
-#define Q_MAX_POS_25_H_CURRENT	2682
-#define Q_MAX_POS_0_H_CURRENT	1959
-#define Q_MAX_NEG_10_H_CURRENT	780
+#define Q_MAX_POS_50_H_CURRENT	3852
+#define Q_MAX_POS_25_H_CURRENT	3682
+#define Q_MAX_POS_0_H_CURRENT	2959
+#define Q_MAX_NEG_10_H_CURRENT	1780
 
 
 /* Discharge Percentage */
 #define OAM_D5	1		/*  1 : D5,   0: D2*/
-
 
 /* battery meter parameter */
 #define CHANGE_TRACKING_POINT
@@ -85,8 +84,8 @@
 
 /* fg 2.0 */
 #define DIFFERENCE_HWOCV_RTC		30
-#define DIFFERENCE_HWOCV_SWOCV		10
-#define DIFFERENCE_SWOCV_RTC		10
+#define DIFFERENCE_HWOCV_SWOCV		16
+#define DIFFERENCE_SWOCV_RTC		25
 #define DIFFERENCE_HWOCV_VBAT		30
 #define DIFFERENCE_VBAT_RTC			30
 #define DIFFERENCE_SWOCV_RTC_POS	15
@@ -95,16 +94,18 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
-#define BATTERYPSEUDO100	95
+#define BATTERYPSEUDO100		98
 #define BATTERYPSEUDO1	2
 
 /* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
-#define Q_MAX_SYS_VOLTAGE		3050
+#define Q_MAX_SYS_VOLTAGE		3350
 #define SHUTDOWN_GAUGE0
-#define SHUTDOWN_GAUGE1_XMINS
+//#define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS	60
 
-#define SHUTDOWN_SYSTEM_VOLTAGE	3100	/*	DLPT will shutdown at 3.1v first	*/
+#ifndef SHUTDOWN_SYSTEM_VOLTAGE
+#define SHUTDOWN_SYSTEM_VOLTAGE	3400	/*	DLPT will shutdown at 3.1v first	*/
+#endif
 #define CHARGE_TRACKING_TIME	60
 #define DISCHARGE_TRACKING_TIME	10
 
@@ -129,7 +130,7 @@
 /* Dynamic change wake up period of battery thread when suspend*/
 #define VBAT_NORMAL_WAKEUP	3600		/*3.6V*/
 #define VBAT_LOW_POWER_WAKEUP	3500		/*3.5v*/
-#define NORMAL_WAKEUP_PERIOD	5400		/*90 * 60 = 90 min*/
+#define NORMAL_WAKEUP_PERIOD	3600	/*60 * 60 = 60 min*/
 #define LOW_POWER_WAKEUP_PERIOD	300		/*5 * 60 = 5 min*/
 #define CLOSE_POWEROFF_WAKEUP_PERIOD	30	/*30 s*/
 
@@ -162,6 +163,13 @@
 #define CUST_TRACKINGOFFSET		0	/* Force offset to shift SOC to 0 */
 #define CUST_TRACKINGEN			0	/* 0:disable, 1:enable */
 
+#define CHAGER_CURRENT_USE_FG_METER
+//#define CHAGER_CURRENT_USE_SWITCHIC_METER
+#ifdef CHAGER_CURRENT_USE_SWITCHIC_METER
+#define CHARGER_IC_RLIM 240
+#define CHARGER_IC_KLIM 435
+#define  CHARGER_CURRENT_ADC 14
+#endif
 /* Multi battery */
-/* #define MTK_MULTI_BAT_PROFILE_SUPPORT */
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
 #endif

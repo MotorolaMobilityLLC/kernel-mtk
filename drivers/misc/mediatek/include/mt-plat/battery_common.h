@@ -112,6 +112,13 @@ typedef enum {
 	DURATION_NUM
 } BATTERY_TIME_ENUM;
 
+enum {
+	POWER_SUPPLY_CHARGE_RATE_NONE = 0,
+	POWER_SUPPLY_CHARGE_RATE_NORMAL,
+	POWER_SUPPLY_CHARGE_RATE_WEAK,
+	POWER_SUPPLY_CHARGE_RATE_TURBO,
+};
+
 /*****************************************************************************
 *   JEITA battery temperature standard
     charging info ,like temperatue, charging current, re-charging voltage, CV threshold would be reconfigurated.
@@ -187,7 +194,10 @@ typedef unsigned char  BOOL;
   #define TRUE  (1)
 #endif
 
-
+enum {
+	VBUS_STATE_5V = 0,
+	VBUS_STATE_9V,
+};
 
 /*****************************************************************************
  *  structure
@@ -220,6 +230,8 @@ typedef struct {
 	unsigned int nPercent_ZCV;
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
+	int charger_rate;
+	int charger_vbus_state;
 } PMU_ChargerStruct;
 
 struct battery_custom_data {
@@ -376,6 +388,9 @@ extern void mt_battery_charging_algorithm(void);
 extern PMU_STATUS do_jeita_state_machine(void);
 #endif
 
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+ extern   void lenovo_battery_cv_set(void);
+#endif
 #else
 
 #define wake_up_bat()			do {} while (0)

@@ -30,7 +30,9 @@
 #define STATUS_UNSUPPORTED    -1
 #define STATUS_FAIL -2
 #define GETARRAYNUM(array) (sizeof(array)/sizeof(array[0]))
-
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+extern kal_bool lenovo_battery_is_temp_45_to_pos_50(void);
+#endif
 /* ============================================================ // */
 /* Global variable */
 /* ============================================================ // */
@@ -277,12 +279,72 @@ static unsigned int is_chr_det(void)
 }
 #endif
 
+static int charging_hw_init(void *data);
+ void lenovo_charging_again_enble(void)
+{
+	int en = KAL_TRUE;
+
+	//bq25890_set_en_hiz(1);
+	bq25890_chg_en(0x0); // charger disable
+	msleep(100);
+
+	charging_hw_init(&en);
+
+	//bq25890_set_en_hiz(0x0);
+	bq25890_chg_en(0x1); // charger enable
+}
+
+
 static int charging_hw_init(void *data)
 {
 	int status = STATUS_OK;
 
+	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
+	bq25890_config_interface(bq25890_CON0, 0x00, 0x01, 7);	/* disable HIZ Mode */
+	 /*DPM*/
+	/*bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);*/	/* Vindpm offset  600MV */
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
+	 /* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
+	bq25890_config_interface(bq25890_COND, 0x15, 0x7F, 0);
+
+	/* upmu_set_rg_vcdt_hv_en(0); */
+
+	/* The following setting is moved from HW_INIT */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* enable ico Algorithm -->bear:en */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 3);	/* enable HVDCP for bq25890 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 2);	/* enable MaxCharge for bq25890 */
+	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
+	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 0);
+
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
+	bq25890_config_interface(bq25890_CON7, 0x0, 0x1, 3);	/* disable charging timer safety timer */
+	bq25890_config_interface(bq25890_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
+
+	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
+	bq25890_config_interface(bq25890_CONA, 0x7, 0xF, 4);	/* boost voltagte 4.998V default */
+	bq25890_config_interface(bq25890_CONA, 0x3, 0x7, 0);	/* boost current limit 1.3A */
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
+	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
+#else
+	bq25890_config_interface(bq25890_CON8, 0x1, 0x7, 5);	/* enable ir_comp_resistance */
+	bq25890_config_interface(bq25890_CON8, 0x2, 0x7, 2);	/* enable ir_comp_vdamp */
+#endif
+	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
+
+	bq25890_config_interface(bq25890_CON9, 0x0, 0x1, 4);	/* JEITA_VSET: VREG-200mV */
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 0);	/* JEITA_ISet : 20% x ICHG */
+
+	bq25890_config_interface(bq25890_CON3, 0x5, 0x7, 1);	/* System min voltage default 3.5V */
+
+	/*PreCC mode */
+	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 4);	/* precharge current default 128mA */
+	bq25890_config_interface(bq25890_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
+	/*CV mode */
+	bq25890_config_interface(bq25890_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* enable ICHG termination detect */
+	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 0);	/* termianation current default 128mA */
 
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	if (wireless_charger_gpio_number != 0) {
@@ -1005,32 +1067,52 @@ static int charging_sw_init(void *data)
 	int status = STATUS_OK;
 	/*put here anything needed to be init upon battery_common driver probe*/
 	mtk_bif_init();
-
+	bq25890_chg_en(0x0);      /* disable charge enable */
 	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
-	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
+	bq25890_config_interface(bq25890_CON0, 0x00, 0x01, 7);	/* disable HIZ Mode */
+	 /*DPM*/
+	/*bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);*/	/* Vindpm offset  600MV */
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
 	/*CC mode */
-	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
+	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA */
 	/*Vbus current limit */
-	bq25890_config_interface(bq25890_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
+	bq25890_config_interface(bq25890_CON0, 0x08, 0x3F, 0);	/* input current limit, IINLIM, 500mA */
 
 	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
-	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
+	bq25890_config_interface(bq25890_COND, 0x15, 0x7F, 0);
 
 	/*CV mode */
-	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
-
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+      if(lenovo_battery_is_temp_45_to_pos_50())
+	{
+		bq25890_config_interface(bq25890_CON6,
+			LENOVO_TEMP_POS_45_TO_POS_50_CV_REG, 0x3F, 2);//4.2V
+	}
+       else
+#endif
+	{
+		#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+			    #if defined(HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT)
+					bq25890_config_interface(bq25890_CON6, 0x23, 0x3F, 2);//4.4v
+			    #else
+					bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2); //4.352
+			    #endif
+		#else
+			bq25890_config_interface(bq25890_CON6, 0x17, 0x3F, 2); //4.2V
+		#endif
+	}
 	/* upmu_set_rg_vcdt_hv_en(0); */
 
 	/* The following setting is moved from HW_INIT */
-	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 3);	/* disable HV DCP for gq25897 */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 2);	/* disbale MaxCharge for gq25897 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* enable ico Algorithm -->bear:en */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 3);	/* enable HVDCP for bq25890 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 2);	/* enable MaxCharge for bq25890 */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
+	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 0);
 
 	bq25890_config_interface(bq25890_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */
+	bq25890_config_interface(bq25890_CON7, 0x0, 0x1, 3);	/* disable charging timer safety timer */
 	bq25890_config_interface(bq25890_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
 
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
@@ -1040,8 +1122,8 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
 	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
 #else
-	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
-	bq25890_config_interface(bq25890_CON8, 0x6, 0x7, 2);	/* enable ir_comp_vdamp */
+	bq25890_config_interface(bq25890_CON8, 0x1, 0x7, 5);	/* enable ir_comp_resistance */
+	bq25890_config_interface(bq25890_CON8, 0x2, 0x7, 2);	/* enable ir_comp_vdamp */
 #endif
 	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
 
@@ -1055,8 +1137,8 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
 	/*CV mode */
 	bq25890_config_interface(bq25890_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* disable ICHG termination detect */
-	bq25890_config_interface(bq25890_CON5, 0x1, 0x7, 0);	/* termianation current default 128mA */
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* enable ICHG termination detect */
+	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 0);	/* termianation current default 128mA */
 
 	return status;
 }

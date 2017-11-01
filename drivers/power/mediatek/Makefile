@@ -17,6 +17,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc/
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/power/mt6797
 
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pep_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pep20_intf.o
@@ -27,6 +28,9 @@ else
 obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter.o battery_common.o
 endif
 
+ifeq ($(CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT),y)
+    obj-$(CONFIG_MTK_SMART_BATTERY) += lenovo_charging.o
+endif
 
 ifeq ($(CONFIG_MTK_FAN5402_SUPPORT),y)
 	obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o

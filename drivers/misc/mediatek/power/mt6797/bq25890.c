@@ -793,6 +793,18 @@ bool bq25890_is_maxcharger(void)
 	}
 }
 
+void bq25890_set_9V_to_5V(void)
+{
+	bq25890_config_interface(bq25890_CON1, 0x2, 0x7, 5);
+	bq25890_config_interface(bq25890_CON1, 0x1, 0x7, 2);
+}
+
+void bq25890_set_5V_to_9V(void)
+{
+	bq25890_config_interface(bq25890_CON1, 0x6, 0x7, 5);
+	bq25890_config_interface(bq25890_CON1, 0x2, 0x7, 2);
+}
+
 unsigned int bq25890_get_chrg_state(void)
 {
 	unsigned int ret = 0;
@@ -1052,7 +1064,7 @@ void bq25890_dump_register(void)
 	unsigned char vdpm = 0;
 	unsigned char fault = 0;
 
-	if (Enable_BATDRV_LOG == BAT_LOG_FULL) {
+	if (Enable_BATDRV_LOG == BAT_LOG_CRTI) {
 		bq25890_ADC_start(1);
 		for (i = 0; i < bq25890_REG_NUM; i++)
 			bq25890_read_byte(i, &bq25890_reg[i]);
@@ -1112,6 +1124,19 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	battery_charging_control = chr_control_interface;
 
 	return 0;
+}
+
+#define CON9_BATFET_DIS_MASK 0x1
+#define CON9_BATFET_DIS_SHIFT 0x5
+
+/* For RT5735A SDA low workaround */
+void battery_disable_batfet(void)
+{
+	unsigned int ret = 0;
+
+	ret = bq25890_config_interface(bq25890_CON9, 1,
+			CON9_BATFET_DIS_MASK, CON9_BATFET_DIS_SHIFT);
+	pr_notice("battery_disable_batfet success");
 }
 
 /**********************************************************

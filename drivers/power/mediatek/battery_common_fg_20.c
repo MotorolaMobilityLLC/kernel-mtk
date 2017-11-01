@@ -88,12 +88,17 @@
 #include <mach/mt_battery_meter.h>
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
+#include "bq25890.h"
 
 #include "mtk_pep_intf.h"
 #include "mtk_pep20_intf.h"
 
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
+#endif
+
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#include "lenovo_charging.h"
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
@@ -254,6 +259,14 @@ static struct work_struct battery_init_work;
 static struct tcpc_device *tcpc_dev;
 #endif
 
+struct delayed_work		check_turbo_charger_work;
+static int check_turbo_counter = 0;
+struct delayed_work		charger_type_detection_work;
+
+extern signed int fgauge_get_Q_max(signed short temperature);
+extern int force_get_tbat(kal_bool update);
+signed int mt_battery_GetBatteryCapacity(void);
+signed int mt_battery_GetBatteryChargeCounter(void);
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ADB CMD */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -265,7 +278,11 @@ int g_present_smb = 0;
 static int cmd_discharging = -1;
 static int adjust_power = -1;
 static int suspend_discharging = -1;
+#define HQ_CHARGER_FOR_MOTO
 
+#if defined(HQ_CHARGER_FOR_MOTO)
+#define HQ_Get_BAT_VOL _IOW('k', 7, int)
+#endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ANDROID BATTERY SERVICE */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -300,6 +317,7 @@ struct battery_data {
 	int BAT_TempBattVoltage;
 	int BAT_InstatVolt;
 	int BAT_BatteryAverageCurrent;
+	int BAT_BatteryCurrent;
 	int BAT_BatterySenseVoltage;
 	int BAT_ISenseVoltage;
 	int BAT_ChargerVoltage;
@@ -309,6 +327,9 @@ struct battery_data {
 	int capacity_smb;
 	int present_smb;
 	int adjust_power;
+	int charge_full_design;
+	int charge_full;
+	int charge_rate;
 };
 
 static enum power_supply_property wireless_props[] = {
@@ -344,6 +365,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TempBattVoltage,
 	POWER_SUPPLY_PROP_InstatVolt,
 	POWER_SUPPLY_PROP_BatteryAverageCurrent,
+	POWER_SUPPLY_PROP_BatteryCurrent,
 	POWER_SUPPLY_PROP_BatterySenseVoltage,
 	POWER_SUPPLY_PROP_ISenseVoltage,
 	POWER_SUPPLY_PROP_ChargerVoltage,
@@ -353,6 +375,9 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_CHARGE_RATE,
 };
 
 struct timespec batteryThreadRunTime;
@@ -631,6 +656,25 @@ static int usb_get_property(struct power_supply *psy,
 	return ret;
 }
 
+signed int mt_battery_GetBatteryCapacity(void)
+{
+	int temp, Qmax;
+
+	temp = force_get_tbat(KAL_TRUE);
+	Qmax = fgauge_get_Q_max(temp);
+	battery_log(BAT_LOG_CRTI, "BatteryCapacity= (%d)\n",Qmax);
+	return Qmax;
+}
+
+signed int mt_battery_GetBatteryChargeCounter(void)
+{
+	int charge_counter;
+
+	charge_counter = BMT_status.UI_SOC2*mt_battery_GetBatteryCapacity()/100;
+	battery_log(BAT_LOG_CRTI, "battery charge_counter= (%d)\n",charge_counter);
+	return charge_counter;
+}
+
 static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
@@ -671,6 +715,10 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_BatteryAverageCurrent:
 		val->intval = data->BAT_BatteryAverageCurrent;
 		break;
+	case POWER_SUPPLY_PROP_BatteryCurrent:
+		data->BAT_BatteryCurrent = battery_meter_get_charging_current();
+		val->intval = data->BAT_BatteryCurrent;
+		break;
 	case POWER_SUPPLY_PROP_BatterySenseVoltage:
 		val->intval = data->BAT_BatterySenseVoltage;
 		break;
@@ -689,10 +737,6 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = 5000000;
 		break;
-	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = battery_meter_get_QMAX25() * 1000;
-		/* QMAX from battery, ma to ua */
-		break;
 
 		/* Dual battery */
 	case POWER_SUPPLY_PROP_status_smb:
@@ -706,6 +750,18 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		val->intval = data->charge_full_design;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval = data->charge_full;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = mt_battery_GetBatteryChargeCounter();
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_RATE:
+		val->intval = data->charge_rate;
 		break;
 
 	default:
@@ -776,6 +832,8 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+	.charge_full = Q_MAX_CHARGE_FULL_DESIGN,
 #else
 	.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
@@ -794,6 +852,8 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+	.charge_full = Q_MAX_CHARGE_FULL_DESIGN,
 #endif
 };
 
@@ -1697,6 +1757,7 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->BAT_BatterySenseVoltage = BMT_status.bat_vol;
 	bat_data->BAT_ISenseVoltage = BMT_status.Vsense;	/* API */
 	bat_data->BAT_ChargerVoltage = BMT_status.charger_vol;
+	bat_data->charge_rate = BMT_status.charger_rate;
 	bat_data->BAT_CURRENT_NOW = BMT_status.CURRENT_NOW * 100; /* 0.1mA to uA */
 	/* Dual battery */
 	bat_data->status_smb = g_status_smb;
@@ -1704,10 +1765,19 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->present_smb = g_present_smb;
 	battery_log(BAT_LOG_FULL, "status_smb = %d, capacity_smb = %d, present_smb = %d\n",
 		    bat_data->status_smb, bat_data->capacity_smb, bat_data->present_smb);
+	#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	lenovo_battery_notify_to_health(g_BatteryNotifyCode, &bat_data->BAT_HEALTH);
+	#endif
 	if ((BMT_status.UI_SOC2 == 100) && (BMT_status.charger_exist == KAL_TRUE)
 	    && (BMT_status.bat_charging_state != CHR_ERROR))
 		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 
+	battery_log(BAT_LOG_CRTI,"BAT_CAPACITY = %d\n",bat_data->BAT_CAPACITY);
+	if ((bat_data->BAT_CAPACITY == 0) && (BMT_status.bat_vol > 3700)) {
+		bat_data->BAT_CAPACITY = 1;
+		battery_log(BAT_LOG_CRTI,
+			"BAT_CAPACITY=1, due to BMT_status.bat_vol > 3700, bat_vol = %d\n",BMT_status.bat_vol);
+	}
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	if (bat_data->BAT_CAPACITY <= 0)
 		bat_data->BAT_CAPACITY = 1;
@@ -2223,6 +2293,7 @@ void mt_battery_GetBatteryData(void)
 }
 
 
+ #ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 static PMU_STATUS mt_battery_CheckBatteryTemp(void)
 {
 	PMU_STATUS status = PMU_STATUS_OK;
@@ -2261,7 +2332,7 @@ static PMU_STATUS mt_battery_CheckBatteryTemp(void)
 
 	return status;
 }
-
+#endif
 
 static PMU_STATUS mt_battery_CheckChargerVoltage(void)
 {
@@ -2345,10 +2416,12 @@ static void mt_battery_CheckBatteryStatus(void)
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
 		cmd_discharging = -1;
 	}
+ #ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 	if (mt_battery_CheckBatteryTemp() != PMU_STATUS_OK) {
 		BMT_status.bat_charging_state = CHR_ERROR;
 		return;
 	}
+#endif
 
 	if (mt_battery_CheckChargerVoltage() != PMU_STATUS_OK) {
 		BMT_status.bat_charging_state = CHR_ERROR;
@@ -2394,11 +2467,23 @@ static void mt_battery_notify_TotalChargingTime_check(void)
 static void mt_battery_notify_VBat_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0004_VBAT)
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+#if defined(HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT)
+	if(BMT_status.bat_vol > 4450)
+#else
+	if(BMT_status.bat_vol > 4400)
+#endif
+#else
+	if(BMT_status.bat_vol > 4350)
+#endif
+#else
 	if (BMT_status.bat_vol > 4350)
+#endif
 		/* if (BMT_status.bat_vol > 3800) //test */
 	{
 		g_BatteryNotifyCode |= 0x0008;
-		battery_log(BAT_LOG_CRTI, "[BATTERY] bat_vlot(%ld) > 4350mV\n", BMT_status.bat_vol);
+		battery_log(BAT_LOG_CRTI, "[BATTERY] bat_vlot(%d) > 4350mV\n", BMT_status.bat_vol);
 	} else {
 		g_BatteryNotifyCode &= ~(0x0008);
 	}
@@ -2534,6 +2619,7 @@ void mt_battery_notify_check(void)
 	}
 }
 
+#ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 static void mt_battery_thermal_check(void)
 {
 	if ((g_battery_thermal_throttling_flag == 1) || (g_battery_thermal_throttling_flag == 3)) {
@@ -2587,7 +2673,7 @@ static void mt_battery_thermal_check(void)
 	}
 
 }
-
+#endif
 
 void mt_battery_update_status(void)
 {
@@ -2606,7 +2692,78 @@ void mt_battery_update_status(void)
 
 #endif
 }
+#define CHECK_TURBO_MS 1000
+static void bq25890_check_turbo_charger_work(struct work_struct *work)
+{
+	struct battery_data *bat_data = &battery_main;
+	struct power_supply *bat_psy = &bat_data->psy;
+	int prev_chg_rate = bat_data->charge_rate;
+	CHR_CURRENT_ENUM input_CC_value;
+	CHR_CURRENT_ENUM CC_value;
+	char *charge_rate[] = {
+		"None", "Normal", "Weak", "Turbo"
+	};
 
+	if (bq25890_is_maxcharger()) {
+		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		BMT_status.charger_vbus_state = VBUS_STATE_9V;
+
+		input_CC_value = TURBO_AC_CHARGER_INPUT_CURRENT;
+		CC_value = TURBO_AC_CHARGER_CURRENT;
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+		&input_CC_value);
+		battery_charging_control(CHARGING_CMD_SET_CURRENT,
+		&CC_value);
+
+	} else {
+		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
+	}
+
+	if (prev_chg_rate != bat_data->charge_rate)
+	battery_log(BAT_LOG_CRTI, "%s Charger Detected!\n",
+		charge_rate[bat_data->charge_rate]);
+
+	if (bat_data->charge_rate == POWER_SUPPLY_CHARGE_RATE_NORMAL) {
+		if (check_turbo_counter <= 9) {
+			check_turbo_counter ++;
+			schedule_delayed_work(&check_turbo_charger_work,
+				msecs_to_jiffies(CHECK_TURBO_MS));
+		} else {
+			power_supply_changed(bat_psy);
+			check_turbo_counter = 0;
+		}
+	} else if (bat_data->charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO) {
+		power_supply_changed(bat_psy);
+		check_turbo_counter = 0;
+	}
+
+}
+
+#define CHECK_TYPE_MS 3000
+static void mt_charger_type_detection_work(struct work_struct *work)
+{
+	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+
+	mutex_lock(&charger_type_mutex);
+
+	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+	BMT_status.charger_type = CHR_Type_num;
+
+	printk("mt_charger_type_detection_work  the charge type is %d\n",CHR_Type_num);
+	if ((BMT_status.charger_type == STANDARD_HOST)
+	    || (BMT_status.charger_type == CHARGING_HOST)) {
+		mt_usb_connect();
+	}
+
+	if (BMT_status.charger_type == STANDARD_CHARGER)
+		schedule_delayed_work(&check_turbo_charger_work,
+			msecs_to_jiffies(CHECK_TURBO_MS));
+
+	mutex_unlock(&charger_type_mutex);
+}
 
 CHARGER_TYPE mt_charger_type_detection(void)
 {
@@ -2624,7 +2781,30 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 	    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
+#if 1
+	if( (g_platform_boot_mode==META_BOOT) || (g_platform_boot_mode==ADVMETA_BOOT) )
+	{
+		CHR_Type_num = STANDARD_HOST;
+	}
+	else
+	{
 		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
+
+		if ( NONSTANDARD_CHARGER == CHR_Type_num) {
+			msleep(200);
+			battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
+			printk("mahj2_debug now the charge type is %d\n",CHR_Type_num);
+		 }
+
+		if ( NONSTANDARD_CHARGER == CHR_Type_num) {
+			schedule_delayed_work(&charger_type_detection_work,
+					msecs_to_jiffies(CHECK_TYPE_MS));
+			printk("mt_charger_type_detection the charge type is %d\n",CHR_Type_num);
+		 }
+    }
+#else
+	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+#endif
 		BMT_status.charger_type = CHR_Type_num;
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
@@ -2713,6 +2893,12 @@ static void mt_battery_charger_detect_check(void)
 			    || (BMT_status.charger_type == CHARGING_HOST)) {
 				mt_usb_connect();
 			}
+
+			if (BMT_status.charger_type == STANDARD_CHARGER)
+				schedule_delayed_work(&check_turbo_charger_work,
+					msecs_to_jiffies(CHECK_TURBO_MS));
+			else
+				BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
 		}
 #endif
 
@@ -2726,7 +2912,7 @@ static void mt_battery_charger_detect_check(void)
 		battery_charging_control(CHARGING_CMD_SET_CHRIND_CK_PDN, &pwr);
 #endif
 
-		battery_log(BAT_LOG_FULL, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
+		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
 			    BMT_status.charger_type);
 
 
@@ -2750,6 +2936,8 @@ static void mt_battery_charger_detect_check(void)
 
 		BMT_status.charger_exist = KAL_FALSE;
 		BMT_status.charger_type = CHARGER_UNKNOWN;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
 		BMT_status.bat_full = KAL_FALSE;
 		BMT_status.bat_in_recharging_state = KAL_FALSE;
 		BMT_status.bat_charging_state = CHR_PRE;
@@ -2768,6 +2956,9 @@ static void mt_battery_charger_detect_check(void)
 
 		battery_log(BAT_LOG_FULL, "[PE+] Cable OUT\n");
 
+		check_turbo_counter = 0;
+		cancel_delayed_work(&check_turbo_charger_work);
+		cancel_delayed_work(&charger_type_detection_work);
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*New low power feature of MT6531: disable charger CLK without CHARIN.
@@ -2874,6 +3065,8 @@ void do_chrdet_int_task(void)
 			/* Reset AICR's upper bound calculated by AICL */
 			mtk_chr_reset_aicr_upper_bound();
 
+			bq2589x_set_dpdm(0);
+			bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);
 			/* Set AICR to 500mA if it is plugged out */
 			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
 				&plug_out_aicr);
@@ -2996,10 +3189,20 @@ void BAT_thread(void)
 	if (BMT_status.charger_exist == KAL_TRUE)
 		check_battery_exist();
 
+#ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 	mt_battery_thermal_check();
+#endif
 	mt_battery_notify_check();
 
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+   if(lenovo_battery_charging_thread(&g_BatteryNotifyCode, g_BN_TestMode) == KAL_FALSE){
+	  return;   //skip charging algorithm for lenovo discharging engineer test
+   }
+#endif
 	if (BMT_status.charger_exist == KAL_TRUE) {
+	#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+	        lenovo_battery_cv_set();
+	#endif
 		mt_battery_CheckBatteryStatus();
 		mt_battery_charging_algorithm();
 	}
@@ -3010,6 +3213,7 @@ void BAT_thread(void)
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Internal API */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
+
 int bat_routine_thread(void *x)
 {
 	ktime_t ktime = ktime_set(3, 0);	/* 10s, 10* 1000 ms */
@@ -3079,6 +3283,9 @@ int bat_update_thread(void *x)
 		battery_meter_smooth_uisoc2();
 #endif
 		mt_battery_update_status();
+		#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+		lenovo_battery_charging_set_led_state();
+		#endif
 		mutex_unlock(&bat_update_mutex);
 
 		battery_log(BAT_LOG_FULL, "wait event 2\n");
@@ -3276,7 +3483,13 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;
-
+#if defined(HQ_CHARGER_FOR_MOTO)
+	case HQ_Get_BAT_VOL:
+		user_data_addr = (int *)arg;
+		adc_out_data[0] = battery_meter_get_battery_voltage(KAL_TRUE);
+		ret = copy_to_user(user_data_addr, adc_out_data, 4);
+		break;
+#endif
 	case Get_META_BAT_CAR_TUNE_VALUE:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3343,6 +3556,15 @@ void check_battery_exist(void)
 
 	for (i = 0; i < 3; i++) {
 		battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS, &battery_status);
+		if (battery_status ==1 )
+		{
+			for(i=0;i<20;i++) {
+				battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS,&battery_status);
+				if (battery_status == 0) {
+					break;
+				}
+			}
+		}
 		baton_count += battery_status;
 
 	}
@@ -3965,7 +4187,8 @@ static int battery_probe(struct platform_device *dev)
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	wake_lock_init(&TA_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA charger suspend wakelock");
 #endif
-
+	INIT_DELAYED_WORK(&check_turbo_charger_work, bq25890_check_turbo_charger_work);
+	INIT_DELAYED_WORK(&charger_type_detection_work, mt_charger_type_detection_work);
 	mtk_pep_init();
 	mtk_pep20_init();
 
@@ -4004,6 +4227,14 @@ static int battery_probe(struct platform_device *dev)
 	}
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] power_supply_register Battery Success !!\n");
 
+	#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	ret = lenovo_battery_create_sys_file(battery_main.psy.dev);
+ 	if (ret)
+	{
+		printk( "%s,failed: lenovo device_create_file \n", __func__);
+		return ret;
+	}
+	#endif
 #if !defined(CONFIG_POWER_EXT)
 
 #ifdef CONFIG_MTK_POWER_EXT_DETECT
@@ -4411,7 +4642,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
-		set_usb_current_unlimited(cmd_current_unlimited);
+		//set_usb_current_unlimited(cmd_current_unlimited);
 		if (cmd_discharging == 1) {
 			charging_enable = false;
 			adjust_power = -1;
@@ -4614,7 +4845,7 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 	proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
 	battery_log(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
 
-	proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
+	proc_create("current_cmd", S_IRUGO | /*S_IWUSR*/ S_IWUGO, battery_dir, &current_cmd_proc_fops);
 	battery_log(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
 
 	proc_create("discharging_cmd", S_IRUGO | S_IWUSR, battery_dir,
