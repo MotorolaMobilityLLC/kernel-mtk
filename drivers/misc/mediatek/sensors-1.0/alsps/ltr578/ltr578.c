@@ -767,58 +767,7 @@ static int get_avg_lux(unsigned int lux)
 	}
 	return lux_a;
 }
-/*----------------------------------------------------------------------------*/
 
-static int ltr578_get_als_value(struct ltr578_priv *obj, u16 als)
-{
-	int idx;
-	int invalid = 0;
-
-	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw->als_level[idx])
-			break;
-	}
-
-	if (idx >= obj->als_value_num) {
-		APS_ERR("ltr578_get_als_value exceed range\n");
-		idx = obj->als_value_num - 1;
-	}
-
-	if (1 == atomic_read(&obj->als_deb_on)) {
-		unsigned long endt = atomic_read(&obj->als_deb_end);
-		if (time_after(jiffies, endt))
-			atomic_set(&obj->als_deb_on, 0);
-		if (1 == atomic_read(&obj->als_deb_on))
-			invalid = 1;
-	}
-
-	if (!invalid) {
-#if 0/*defined(CONFIG_MTK_AAL_SUPPORT) */
-		int level_high = obj->hw->als_level[idx];
-		int level_low = (idx > 0) ? obj->hw->als_level[idx - 1] : 0;
-		int level_diff = level_high - level_low;
-		int value_high = obj->hw->als_value[idx];
-		int value_low = (idx > 0) ? obj->hw->als_value[idx - 1] : 0;
-		int value_diff = value_high - value_low;
-		int value = 0;
-
-		if ((level_low >= level_high) || (value_low >= value_high))
-			value = value_low;
-		else
-			value =
-				(level_diff * value_low + (als - level_low) * value_diff +
-				 ((level_diff + 1) >> 1)) / level_diff;
-
-		/*
-		 *APS_DBG("ALS: %d [%d, %d] => %d [%d, %d]\n", als, level_low, level_high, value,
-		 *value_low, value_high);
-		 */
-		return value;
-#endif
-		return obj->hw->als_value[idx];
-	}
-	return -1;
-}
 
 /*----------------------------------------------------------------------------*/
 static int  ltr578_read_ps(struct i2c_client *client, u16 *data)
@@ -1216,7 +1165,8 @@ static long ltr578_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		/*----------------modified by hongguang for avglux function-----------------------*/
 		obj->als = get_avg_lux(obj->als);
 
-		dat = ltr578_get_als_value(obj, obj->als);
+		dat = obj->als;
+
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
 			goto err_out;
@@ -1611,7 +1561,7 @@ int ltr578_als_operate(void *self, uint32_t command, void *buff_in, int size_in,
 				(b[1] > b[0]) ? (obj->als = b[0]) : (obj->als = b[1]);
 				/*----------------modified by hongguang for avglux function-----------------------*/
 				obj->als = get_avg_lux(obj->als);
-				sensor_data->values[0] = ltr578_get_als_value(obj, obj->als);
+				sensor_data->values[0] = obj->als;
 				temp_als = sensor_data->values[0];
 			}
 			sensor_data->value_divide = 1;
@@ -1730,7 +1680,7 @@ static int als_get_data(int *value, int *status)
 	if (err)
 		err = -1;
 	else {
-		*value = ltr578_get_als_value(ltr578_obj, ltr578_obj->als);
+		*value = ltr578_obj->als;
 		if (*value < 0)
 			err = -1;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
