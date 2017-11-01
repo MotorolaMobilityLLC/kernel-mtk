@@ -1677,7 +1677,7 @@
 	status = "okay";
 	/* customization */
 	i2c_num = <1>;
-	i2c_addr = <0x51 0 0 0>;
+	i2c_addr = <0x53 0 0 0>;
 	polling_mode_ps = <0>;
 	polling_mode_als = <1>;
 	power_id = <0xffff>;

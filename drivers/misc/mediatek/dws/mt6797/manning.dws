@@ -3765,7 +3765,7 @@
             <device10>
                 <varName>ALSPS</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x51</address>
+                <address>0x53</address>
             </device10>
             <device11>
                 <varName>HUMIDITY</varName>
