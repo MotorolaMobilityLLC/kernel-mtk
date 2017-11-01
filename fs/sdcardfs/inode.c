@@ -67,10 +67,15 @@ static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 	const struct cred *saved_cred = NULL;
 	struct fs_struct *saved_fs;
 	struct fs_struct *copied_fs;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 
 	if (!check_caller_access_to_name(dir, &dentry->d_name)) {
 		err = -EACCES;
 		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
 	}
 
 	/* save current_cred and override it */
@@ -167,10 +172,15 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 	struct dentry *lower_dir_dentry;
 	struct path lower_path;
 	const struct cred *saved_cred = NULL;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 
 	if (!check_caller_access_to_name(dir, &dentry->d_name)) {
 		err = -EACCES;
 		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
 	}
 
 	/* save current_cred and override it */
@@ -279,6 +289,10 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	if (!check_caller_access_to_name(dir, &dentry->d_name)) {
 		err = -EACCES;
 		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
 	}
 
 	/* save current_cred and override it */
@@ -472,11 +486,17 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct vfsmount *lower_mnt = NULL;
 	struct dentry *trap = NULL;
 	struct path lower_old_path, lower_new_path;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(old_dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	if (!check_caller_access_to_name(old_dir, &old_dentry->d_name) ||
 		!check_caller_access_to_name(new_dir, &new_dentry->d_name)) {
 		err = -EACCES;
+		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
 		goto out_eacces;
 	}
 
@@ -691,10 +711,17 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct iattr lower_ia;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	struct dentry *parent;
 	struct inode tmp;
 	struct sdcardfs_inode_data *top;
 	const struct cred *saved_cred = NULL;
+
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
+		goto out_err;
+	}
 
 	inode = dentry->d_inode;
 	top = top_data_get(SDCARDFS_I(inode));
