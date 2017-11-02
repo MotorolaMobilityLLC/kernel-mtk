@@ -81,6 +81,12 @@
 #include "mt_smi.h"
 #include <mach/mt_freqhopping.h>
 
+//add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		extern char *g_lcm_name;
+#endif
+//add wind_device_info for A158---lenovo@lenovo.com 20161123 end
+
 typedef void (*fence_release_callback) (unsigned int data);
 unsigned int is_hwc_enabled = 0;
 static int is_hwc_update_frame;
@@ -5167,6 +5173,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		}
 	}
 #endif
+    //add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	g_lcm_name = (char *)pgc->plcm->drv->name;
+	#endif
+	//add wind_device_info for A158---lenovo@lenovo.com 20161123 end
 	lcm_param = disp_lcm_get_params(pgc->plcm);
 
 	if (lcm_param == NULL) {

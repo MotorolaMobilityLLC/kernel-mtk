@@ -71,6 +71,9 @@ obj-$(CONFIG_MTK_LENS_BU63165AF_SUPPORT)  += common/bu63165af/
 obj-$(CONFIG_MTK_LENS_DW9714AF_SUPPORT)    += common/dw9714af/
 obj-$(CONFIG_MTK_LENS_DW9814AF_SUPPORT)    += common/dw9814af/
 obj-$(CONFIG_MTK_LENS_DW9718AF_SUPPORT)    += common/dw9718af/
+##lenovo@lenovo.com add for qt 9718 lens 20161230 begin
+obj-$(CONFIG_MTK_LENS_DW9718AF_QT_SUPPORT)    += common/dw9718af_qt/
+##lenovo@lenovo.com add for qt 9718 lens 20161230 begin
 obj-$(CONFIG_MTK_LENS_DW9719TAF_SUPPORT)    += common/dw9719taf/
 obj-$(CONFIG_MTK_LENS_LC898212AF_SUPPORT)  += common/lc898212af/
 obj-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT)  += common/lc898212xdaf/

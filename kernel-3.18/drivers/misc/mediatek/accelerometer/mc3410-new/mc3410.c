@@ -67,7 +67,7 @@
 /**************************
  *** CONFIGURATION
  **************************/
-#define MC3XXX_DEV_NAME						"MC3XXX"
+#define MC3XXX_DEV_NAME						"MC3410"
 #define MC3XXX_DEV_DRIVER_VERSION			  "2.1.6"
 #define MC3XXX_DEV_DRIVER_VERSION_VIRTUAL_Z	"1.0.1"
 
@@ -102,15 +102,16 @@
 
 
 /* Maintain  cust info here */
-struct acc_hw accel_cust;
-static struct acc_hw *hw = &accel_cust;
+//lenovo@lenovo.com modify at 20161207
+struct acc_hw mc3410_accel_cust;
+static struct acc_hw *hw = &mc3410_accel_cust;
 
 /* For  driver get cust info */
 struct acc_hw *get_cust_acc(void)
 {
-	return &accel_cust;
+	return &mc3410_accel_cust;
 }
-
+//lenovo@lenovo.com modify at 20161207
 static int g_samedataCounter;/*count the same data number*/
 static int g_predata[3] = {0, 0, 0};/*save the pre data of acc*/
 
@@ -1572,13 +1573,13 @@ static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable)
 	/* GSE_LOG("set power read MC3XXX_REG_MODE_FEATURE =%x\n", databuf[0]); */
 
 	if (enable) {
-		databuf[0] = 0x41;
+		databuf[0] = 0xC1;	//solve BaseCurrent high --lenovo@lenovo.com at 20161207
 		res = MC3XXX_i2c_write_block(client, MC3XXX_REG_MODE_FEATURE, databuf, 1);
 	#ifdef _MC3XXX_SUPPORT_DOT_CALIBRATION_
 		mcube_load_cali(client);
 	#endif
 	} else {
-		databuf[0] = 0x43;
+		databuf[0] = 0xC3;	//solve BaseCurrent high --lenovo@lenovo.com at 20161207
 		res = MC3XXX_i2c_write_block(client, MC3XXX_REG_MODE_FEATURE, databuf, 1);
 	}
 

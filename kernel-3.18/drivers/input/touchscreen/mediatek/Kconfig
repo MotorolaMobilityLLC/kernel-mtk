@@ -151,6 +151,21 @@ config TOUCHSCREEN_MTK_FT5X0X
 
 source "drivers/input/touchscreen/mediatek/ft5x0x/Kconfig"
 
+## ft5406 tp add for A158 ----lenovo@lenovo.com begin at 20161109
+config TOUCHSCREEN_MTK_FT5406
+	bool "FT5X0X for Mediatek package"
+	default n
+	help
+	  Say Y here if you have FT5406 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/ft5406/Kconfig"
+## ft5406 tp add for A158 ----lenovo@lenovo.com end at 20161109
+
 config TOUCHSCREEN_MTK_SYNAPTICS_3320_50
 	bool "Synaptics 5.0inch for Mediatek package"
     default n

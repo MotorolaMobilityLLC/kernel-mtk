@@ -1234,6 +1234,11 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	bool dis_eotp_en = false;
 	bool hstx_cklp_en = false;
 	int max_return_size = 0;
+	//oufeigang esd for A158---lenovo@lenovo.com begin at 20161121	
+	extern bool oufeiguang_esd;
+	if(oufeiguang_esd == true)		
+		 hstx_cklp_en = true;
+    //oufeigang esd for A158---lenovo@lenovo.com end at 20161121
 
 	switch (lane_num) {
 	case LCM_ONE_LANE:

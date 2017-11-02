@@ -22,6 +22,14 @@ config ACCDET_EINT_IRQ
 	  say Y or M here.
 	  If unsure, say N.
 
+##solve headset pull out leads to music playback ---lenovo@lenovo.com 20170222 begin
+config WIND_HEADSET_LEAD_MUSIC_PLAY
+	tristate "WIND ACCDET CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY"
+	---help---
+	  WIND_HEADSET_LEAD_MUSIC_PLAY use to solve 
+	  headset pull out leads to music playback.
+##solve headset pull out leads to music playback ---lenovo@lenovo.com 20170222 end
+
 config ACCDET_SUPPORT_EINT0
 	tristate "MediaTek ACCDET PMIC EINT0"
 	---help---

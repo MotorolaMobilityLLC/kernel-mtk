@@ -31,7 +31,9 @@ obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 obj-$(CONFIG_MTK_NFC) += nfc/
-
+##add sar -----lenovo@lenovo.com start 
+obj-$(CONFIG_INPUT_SX9310) += sar/
+##add sar -----lenovo@lenovo.com end
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
@@ -216,3 +218,6 @@ endif
 obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
 obj-$(CONFIG_USB)	+= usb_boost/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
+## add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+obj-$(CONFIG_WIND_DEVICE_INFO) += wind_device_info/
+## add wind_device_info for A158---lenovo@lenovo.com 20161123 end

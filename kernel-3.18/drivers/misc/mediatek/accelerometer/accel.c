@@ -14,6 +14,12 @@
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
 
+//add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+	extern char *g_gsensor_name;
+#endif
+//add wind_device_info for A158---lenovo@lenovo.com 20161123 end
+
 struct acc_context *acc_context_obj = NULL;
 
 
@@ -518,6 +524,11 @@ static int acc_real_driver_init(void)
 			ACC_LOG(" acc try to init driver %s\n", gsensor_init_list[i]->name);
 			err = gsensor_init_list[i]->init();
 			if (0 == err) {
+				//add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+				#ifdef CONFIG_WIND_DEVICE_INFO
+				g_gsensor_name = gsensor_init_list[i]->name;
+				#endif
+				//add wind_device_info for A158---lenovo@lenovo.com 20161123 end
 				ACC_LOG(" acc real driver %s probe ok\n",
 					gsensor_init_list[i]->name);
 				break;

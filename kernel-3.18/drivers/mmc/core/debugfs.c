@@ -276,16 +276,23 @@ static int mmc_dbg_card_status_get(void *data, u64 *val)
 }
 DEFINE_SIMPLE_ATTRIBUTE(mmc_dbg_card_status_fops, mmc_dbg_card_status_get,
 		NULL, "%08llx\n");
-
-#define EXT_CSD_STR_LEN 1025
-
+//lenovo@lenovo.com modify for read firmware version at 20170122 beign
+#define EXT_CSD_STR_LEN 3   //1025
+#define NO_REMOVE_OLD		0
+//lenovo@lenovo.com modify for read firmware version at 20170122 end
 static int mmc_ext_csd_open(struct inode *inode, struct file *filp)
 {
 	struct mmc_card *card = inode->i_private;
 	char *buf;
+	int err;
+//lenovo@lenovo.com modify for read firmware version at 20170122 beign
+#if NO_REMOVE_OLD
 	ssize_t n = 0;
+	int i;
+#endif
+//lenovo@lenovo.com modify for read firmware version at 20170122 end
 	u8 *ext_csd;
-	int err, i;
+	__u64 fwrev;    //lenovo@lenovo.com modify at 20170122
 
 	buf = kmalloc(EXT_CSD_STR_LEN + 1, GFP_KERNEL);
 	if (!buf)
@@ -302,12 +309,19 @@ static int mmc_ext_csd_open(struct inode *inode, struct file *filp)
 	mmc_put_card(card);
 	if (err)
 		goto out_free;
-
+//lenovo@lenovo.com modify for read firmware version at 20170122 beign
+	fwrev= ((__u64)ext_csd[261])<<56 | ((__u64)ext_csd[260])<<48
+                | ((__u64)ext_csd[259])<<40 | ((__u64)ext_csd[258])<<32
+                | ((__u64)ext_csd[257])<<24 | ((__u64)ext_csd[256])<<16
+                | ((__u64)ext_csd[255])<<8 | ext_csd[254];
+	sprintf(buf,"%02x\n",(unsigned int)fwrev);
+	#if NO_REMOVE_OLD
 	for (i = 0; i < 512; i++)
 		n += sprintf(buf + n, "%02x", ext_csd[i]);
 	n += sprintf(buf + n, "\n");
 	BUG_ON(n != EXT_CSD_STR_LEN);
-
+	#endif
+//lenovo@lenovo.com modify for read firmware version at 20170122 end
 	filp->private_data = buf;
 	kfree(ext_csd);
 	return 0;
@@ -456,11 +470,12 @@ void mmc_add_card_debugfs(struct mmc_card *card)
 		if (!debugfs_create_file("status", S_IRUSR, root, card,
 					&mmc_dbg_card_status_fops))
 			goto err;
-
+//lenovo@lenovo.com modify for read firmware version at 20100122 beign
 	if (mmc_card_mmc(card))
-		if (!debugfs_create_file("ext_csd", S_IRUSR, root, card,
+		if (!debugfs_create_file("ext_csd", 0444, root, card,
 					&mmc_dbg_ext_csd_fops))
 			goto err;
+//lenovo@lenovo.com modify for read firmware version at 20170122 end
 #ifdef MTK_BKOPS_IDLE_MAYA
 	if (mmc_card_mmc(card) && (card->ext_csd.rev >= 5) &&
 		card->ext_csd.bkops_en)

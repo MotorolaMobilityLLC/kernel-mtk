@@ -80,6 +80,14 @@ config MTK_SPEAKER
 	help
 	  If you say Y, enable MTK_SPEAKER_AMP
 
+##ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+config MTK_LEGACY_EXTSPK
+	bool "MTK_LEGACY_EXTSPK"
+	default n
+	help
+	  If you say Y, enable MTK_LEGACY_EXTSPK
+##ext pa add for A158 ----lenovo@lenovo.com end at 20161109
+
 config MTK_NXP_TFA9890
 	bool "MTK_NXP_TFA9890"
 	default n

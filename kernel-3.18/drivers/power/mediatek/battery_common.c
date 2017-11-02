@@ -234,6 +234,7 @@ static kal_bool chr_wake_up_bat = KAL_FALSE;	/* charger in/out to wake up batter
 static kal_bool fg_wake_up_bat = KAL_FALSE;
 static kal_bool bat_meter_timeout = KAL_FALSE;
 static DEFINE_MUTEX(bat_mutex);
+static DEFINE_MUTEX(battery_shutdown_mutex);    //lenovo@lenovo.com modify at 20161226
 static DEFINE_MUTEX(charger_type_mutex);
 static DECLARE_WAIT_QUEUE_HEAD(bat_thread_wq);
 static struct hrtimer charger_hv_detect_timer;
@@ -248,6 +249,12 @@ static kal_bool fg_hv_thread;
 /*extern BOOL bat_spm_timeout;
 extern unsigned int _g_bat_sleep_total_time;*/
 
+//lenovo@lenovo.com 20161220 begin
+#ifdef CONFIG_WIND_BATTERY_NOW_CURRENT
+signed int mt_battery_GetChargeCurrent_now(void);
+#endif
+//lenovo@lenovo.com 20161220 end
+
 /*
  * FOR ADB CMD
  */
@@ -259,6 +266,10 @@ int g_present_smb = 0;
 static int cmd_discharging = -1;
 static int adjust_power = -1;
 static int suspend_discharging = -1;
+
+//lenovo@lenovo.com 20170306 begin
+static int g_chr_det_delay = TRUE;
+//lenovo@lenovo.com 20170306 end
 
 #if !defined(CONFIG_POWER_EXT)
 static int is_uisoc_ever_100 = KAL_FALSE;
@@ -325,6 +336,11 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_TECHNOLOGY,
+	//lenovo@lenovo.com 20161220 begin
+	#ifdef CONFIG_WIND_BATTERY_NOW_CURRENT
+	POWER_SUPPLY_PROP_CURRENT_NOW,
+    #endif
+	//lenovo@lenovo.com 20161220 end
 	POWER_SUPPLY_PROP_CAPACITY,
 	/* Add for Battery Service */
 	POWER_SUPPLY_PROP_batt_vol,
@@ -399,8 +415,17 @@ kal_bool upmu_is_chr_det(void)
 	unsigned int tmp32;
 #endif
 
+
 	if (battery_charging_control == NULL)
 		battery_charging_control = chr_control_interface;
+		
+	//lenovo@lenovo.com 20170306 begin
+	if(g_chr_det_delay == TRUE)
+	{
+		mdelay(200);
+		g_chr_det_delay = FALSE;
+	}
+	//lenovo@lenovo.com 20170306 end
 
 #if defined(CONFIG_POWER_EXT)
 	/* return KAL_TRUE; */
@@ -650,6 +675,13 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_ChargerVoltage;
 		break;
 		/* Dual battery */
+	//lenovo@lenovo.com 20161220 begin
+	 #ifdef CONFIG_WIND_BATTERY_NOW_CURRENT
+	case POWER_SUPPLY_PROP_CURRENT_NOW:
+		val->intval = mt_battery_GetChargeCurrent_now();
+		break;
+    #endif
+	//lenovo@lenovo.com 20161220 end
 	case POWER_SUPPLY_PROP_status_smb:
 		val->intval = data->status_smb;
 		break;
@@ -1671,6 +1703,35 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(Pump_Express, 0664, show_Pump_Express, store_Pump_Express);
 
+//lenovo@lenovo.com 20170307 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+static ssize_t show_Charging_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int chr_sign;
+	chr_sign = cmd_discharging;
+	battery_log(BAT_LOG_CRTI, "wind-log cmd_discharging = %d\n", chr_sign);
+	return sprintf(buf, "%d\n", chr_sign);
+}
+
+static ssize_t store_Charging_disable(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t size)
+{
+       if (kstrtouint(buf, 10, &cmd_discharging) == 1) {
+		battery_log(BAT_LOG_CRTI, "wind-log not charging cmd_discharging = %d\n", cmd_discharging);
+		return size;
+	}
+	else
+	   {
+	   	battery_log(BAT_LOG_CRTI, "wind-log 00 be charging cmd_discharging = %d\n", cmd_discharging);
+		return size;
+	   }
+	return cmd_discharging;
+}
+
+static DEVICE_ATTR(Charging_disable, 0664, show_Charging_disable, store_Charging_disable);
+#endif
+//lenovo@lenovo.com 20170307 end
+
 static void mt_battery_update_EM(struct battery_data *bat_data)
 {
 	bat_data->BAT_CAPACITY = BMT_status.UI_SOC;
@@ -2345,6 +2406,22 @@ static unsigned int mt_battery_average_method(BATTERY_AVG_ENUM type, unsigned in
 	return avgdata;
 }
 
+//lenovo@lenovo.com 20161220 begin
+#ifdef CONFIG_WIND_BATTERY_NOW_CURRENT
+signed int mt_battery_GetChargeCurrent_now(void)
+{
+	signed int ICharging;
+	if( upmu_is_chr_det() == KAL_TRUE ) {
+		ICharging = battery_meter_get_charging_current();
+	}
+	else {
+		ICharging = 0;
+	}
+	return ICharging;
+}
+#endif
+//lenovo@lenovo.com 201161220 end
+
 void mt_battery_GetBatteryData(void)
 {
 	unsigned int bat_vol, charger_vol, Vsense, ZCV;
@@ -2509,6 +2586,11 @@ static PMU_STATUS mt_battery_CheckChargerVoltage(void)
 		if (batt_cust_data.v_charger_enable) {
 			if (BMT_status.charger_vol <= batt_cust_data.v_charger_min) {
 				battery_log(BAT_LOG_CRTI, "[BATTERY]Charger under voltage!!\r\n");
+				//lenovo@lenovo.com 20161121 begin
+				#ifdef CONFIG_WIND_BATTERY_MODIFY
+				BMT_status.charger_protect_status = charger_UNDER_VOL;
+				#endif
+				//lenovo@lenovo.com 20161121 end
 				BMT_status.bat_charging_state = CHR_ERROR;
 				status = PMU_STATUS_FAIL;
 			}
@@ -2663,6 +2745,133 @@ static void mt_battery_notify_ICharging_check(void)
 #endif
 }
 
+//lenovo@lenovo.com 20161206 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+static int temperature_num_0=0;
+//static int temperature_num_1=0;
+static int temperature_num_2=0;
+static int temperature_num_3=0;
+//static int temperature_num_4=0;
+
+static int temp_over_first_time_0=0;
+//static int temp_over_first_time_1=0;
+static int temp_over_first_time_2=0;
+static int temp_over_first_time_3=0;
+//static int temp_over_first_time_4=0;
+static void mt_battery_notify_VBatTemp_check(void)
+{
+#if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+
+#if defined(MTK_JEITA_STANDARD_SUPPORT)
+	if((BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) || (BMT_status.temperature < TEMP_NEG_10_THRESHOLD))
+#else
+	if(BMT_status.temperature >= batt_cust_data.max_charge_temperature  && BMT_status.temperature <= 58)
+#endif	//#if defined(MTK_JEITA_STANDARD_SUPPORT)
+	{
+		if(BMT_status.charger_exist == KAL_TRUE)
+		{
+			temperature_num_0++;
+			if ((temperature_num_0>=18)||(temp_over_first_time_0==0))
+			{
+				g_BatteryNotifyCode |= 0x0002;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high) with charging\n", BMT_status.temperature);
+				temperature_num_0=0;
+				temp_over_first_time_0=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0002);
+			temp_over_first_time_0=0;
+			temperature_num_0=0;
+		}
+		/*
+		if(BMT_status.charger_exist != KAL_TRUE)
+		{
+			temperature_num_1++;
+			if ((temperature_num_1>=18)||(temp_over_first_time_1==0))
+			{
+				g_BatteryNotifyCode |= 0x0040;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high) with nocharging\n", BMT_status.temperature);
+				temperature_num_1=0;
+				temp_over_first_time_1=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0040);
+			temp_over_first_time_1=0;
+			temperature_num_1=0;
+		}
+		*/
+	}
+
+	if(BMT_status.temperature >= 59 && BMT_status.temperature <= 60)
+	{
+		temperature_num_2++;
+		if ((temperature_num_2>=18)||(temp_over_first_time_2==0))
+		{
+			g_BatteryNotifyCode |= 0x0100;
+			battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high), it will poweroff!!!\n", BMT_status.temperature);
+            temperature_num_2=0;
+			temp_over_first_time_2=1;
+		}
+	}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0100);
+			temp_over_first_time_2=0;
+			temperature_num_2=0;
+		}
+
+#ifdef BAT_LOW_TEMP_PROTECT_ENABLE
+	if(BMT_status.temperature < batt_cust_data.min_charge_temperature)
+	{
+		if(BMT_status.charger_exist == KAL_TRUE )
+		//if(BMT_status.charger_exist == KAL_TRUE && BMT_status.temperature > -10)
+		{
+			temperature_num_3++;
+			if ((temperature_num_3>=18)||(temp_over_first_time_3==0))
+			{
+				g_BatteryNotifyCode |= 0x0020;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low) with charging\n", BMT_status.temperature);
+				temperature_num_3=0;
+				temp_over_first_time_3=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0020);
+			temp_over_first_time_3=0;
+			temperature_num_3=0;
+		}
+		/*
+		if(BMT_status.temperature <= -10)
+		{
+			temperature_num_4++;
+			if ((temperature_num_4>=18)||(temp_over_first_time_4==0))
+			{
+				g_BatteryNotifyCode |= 0x0080;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low) ,it will suspend", BMT_status.temperature);
+				temperature_num_4=0;
+				temp_over_first_time_4=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0080);
+			temp_over_first_time_4=0;
+			temperature_num_4=0;
+		}
+		*/
+	}
+#endif
+	battery_log(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n", g_BatteryNotifyCode);
+
+#endif
+}
+#else
+//lenovo@lenovo.com 20161206 end
 
 static void mt_battery_notify_VBatTemp_check(void)
 {
@@ -2694,7 +2903,9 @@ static void mt_battery_notify_VBatTemp_check(void)
 
 #endif
 }
-
+//lenovo@lenovo.com 20161206 begin
+#endif
+//lenovo@lenovo.com 20161206 end
 
 static void mt_battery_notify_VCharger_check(void)
 {
@@ -2867,7 +3078,9 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	}
 #else
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	if (BMT_status.charger_type == CHARGER_UNKNOWN) {
+//lenovo@lenovo.com 20161229 begin
+	if ((BMT_status.charger_type == CHARGER_UNKNOWN) || (BMT_status.charger_type == NONSTANDARD_CHARGER)) {
+//lenovo@lenovo.com 20611229 end
 #else
 	if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 	    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
@@ -2951,6 +3164,13 @@ static void mt_battery_charger_detect_check(void)
 		    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
 			mt_charger_type_detection();
+			
+			//lenovo@lenovo.com 20161229 begin
+			if(BMT_status.charger_type == NONSTANDARD_CHARGER)
+			{
+				mt_charger_type_detection();
+			}
+			//lenovo@lenovo.com 20161229 end
 
 			if ((BMT_status.charger_type == STANDARD_HOST)
 			    || (BMT_status.charger_type == CHARGING_HOST)) {
@@ -2989,6 +3209,9 @@ static void mt_battery_charger_detect_check(void)
 
 		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable out \r\n");
 
+		//lenovo@lenovo.com 20170410 begin
+		battery_charging_control(CHARGING_CMD_ENABLE, &BMT_status.charger_exist); 
+		//lenovo@lenovo.com 20170410 end
 		mt_usb_disconnect();
 
 
@@ -3049,6 +3272,9 @@ void do_chrdet_int_task(void)
 		    (DISO_data.diso_state.cur_vdc_state == DISO_ONLINE)) {
 #endif
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger exist!\n");
+			//lenovo@lenovo.com 20170306 begin
+			g_chr_det_delay = TRUE;
+			//lenovo@lenovo.com 20170306 end
 			BMT_status.charger_exist = KAL_TRUE;
 
 			wake_lock(&battery_suspend_lock);
@@ -4403,6 +4629,11 @@ static int battery_probe(struct platform_device *dev)
 
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charger_Type);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Pump_Express);
+		//lenovo@lenovo.com 20161212 begin
+		#ifdef CONFIG_WIND_BATTERY_MODIFY
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_disable);
+		#endif
+		//lenovo@lenovo.com 20161212 end
 	}
 
 	/* battery_meter_initial();      //move to mt_battery_GetBatteryData() to decrease booting time */
@@ -4545,17 +4776,17 @@ static void battery_shutdown(struct platform_device *dev)
 #if !defined(CONFIG_POWER_EXT)
 	int count = 0;
 
-	mutex_lock(&bat_mutex);
+	mutex_lock(&battery_shutdown_mutex);    //lenovo@lenovo.com modify at 20161226
 	fg_battery_shutdown = KAL_TRUE;
 	wake_up_bat();
 	charger_hv_detect_flag = KAL_TRUE;
 	wake_up_interruptible(&charger_hv_detect_waiter);
 
 	while ((!fg_bat_thread || !fg_hv_thread) && count < 5) {
-		mutex_unlock(&bat_mutex);
+		mutex_unlock(&battery_shutdown_mutex);    //lenovo@lenovo.com modify at 20161226
 		msleep(20);
 		count++;
-		mutex_lock(&bat_mutex);
+		mutex_lock(&battery_shutdown_mutex);    //lenovo@lenovo.com modify at 20161226
 	}
 
 	if (!fg_bat_thread || !fg_hv_thread)
@@ -4571,7 +4802,7 @@ static void battery_shutdown(struct platform_device *dev)
 			__func__);
 	}
 
-	mutex_unlock(&bat_mutex);
+	mutex_unlock(&battery_shutdown_mutex);    //lenovo@lenovo.com modify at 20161226
 #endif
 }
 

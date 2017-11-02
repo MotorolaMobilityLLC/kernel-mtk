@@ -121,7 +121,12 @@ typedef enum {
 
 typedef enum {
 	STATE_LOW,
-	STATE_HIGH
+	STATE_HIGH,
+//lenovo@lenovo.com 20170207 begin
+	FLASHLIGHT_BACK,
+	FLASHLIGHT_backpwm,
+	FLASHLIGHT_SUB
+//lenovo@lenovo.com 20170207 end
 } FLASHLIGHT_GPIO_STATE_ENUM;
 
 #define FLASHLIGHT_MAGIC 'S'
@@ -241,4 +246,15 @@ int flashlight_gpio_init(struct platform_device *pdev);
 int flashlight_gpio_set(int pin, int state);
 int flashlight_gpio_hwen_high(void);
 int flashlight_gpio_hwen_low(void);
+//lenovo@lenovo.com 20170208 begin
+int flash_gpio_init(struct platform_device *dev);
+//int flash_gpio_set(int PwrType, int Val);
+int flash_gpio_back_high(void);
+int flash_gpio_back_low(void);
+int flash_gpio_backpwm_high(void);
+int flash_gpio_backpwm_low(void);
+int flash_gpio_sub_high(void);
+int flash_gpio_sub_low(void);
+//lenovo@lenovo.com 20170208 end
+
 #endif

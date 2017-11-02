@@ -14,6 +14,23 @@ config POWER_SUPPLY_DEBUG
 	  Say Y here to enable debugging messages for power supply class
 	  and drivers.
 
+# lenovo@lenovo.com 20161121 begin
+config WIND_BATTERY_MODIFY
+	bool "Define this macro for charging management"
+	help
+	  Say Y here to use wind code.
+	  
+config WIND_THERMAL_CURRENT
+	bool "charging current management"
+	help
+		Say Y here to use wind code
+		
+config WIND_BATTERY_NOW_CURRENT
+	bool "Define this macro for show now current"
+	help
+	  Say Y here to use wind code.
+# lenovo@lenovo.com 20161121 end
+	   
 config PDA_POWER
 	tristate "Generic PDA/phone power driver"
 	depends on !S390

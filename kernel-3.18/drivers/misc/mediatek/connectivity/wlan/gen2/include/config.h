@@ -113,7 +113,9 @@
 
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
 
-#define CFG_FORCE_USE_20BW			1
+//remove wifi N channel restrictions for A158---lenovo@lenovo.com 20161227 begin
+#define CFG_FORCE_USE_20BW			0  //1
+//remove wifi N channel restrictions for A158---lenovo@lenovo.com 20161227 end
 
 #define CFG_SUPPORT_RN				1
 /*------------------------------------------------------------------------------

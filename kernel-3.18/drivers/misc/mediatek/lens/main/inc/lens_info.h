@@ -35,6 +35,9 @@
 #define AFDRV_DW9714A "DW9714A"
 #define AFDRV_DW9714AF "DW9714AF"
 #define AFDRV_DW9718AF "DW9718AF"
+//lenovo@lenovo.com add for qt 9718 lens 20161230 begin
+#define AFDRV_DW9718AF_QT "DW9718AF_QT"
+//lenovo@lenovo.com add for qt 9718 lens 20161230 end
 #define AFDRV_DW9719TAF "DW9719TAF"
 #define AFDRV_DW9814AF "DW9814AF"
 #define AFDRV_FM50AF "FM50AF"

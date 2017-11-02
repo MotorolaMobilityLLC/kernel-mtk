@@ -79,7 +79,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #define SUPPORT_I2C_BUS_NUM1        0
 #endif
 #ifndef SUPPORT_I2C_BUS_NUM2
-#define SUPPORT_I2C_BUS_NUM2        2
+#define SUPPORT_I2C_BUS_NUM2        0
 #endif
 
 
@@ -3642,7 +3642,9 @@ static int CAMERA_HW_i2c_probe(struct i2c_client *client, const struct i2c_devic
 	spin_lock(&kdsensor_drv_lock);
 	g_pstI2Cclient = client;
 	/* set I2C clock rate */
-	g_pstI2Cclient->timing = 200;	/* 100k */
+	//lenovo@lenovo.com 20161114 begin
+	g_pstI2Cclient->timing = 400;	/* 100k */
+	//lenovo@lenovo.com 20161114 end
 	g_pstI2Cclient->ext_flag &= ~I2C_POLLING_FLAG;	/* No I2C polling busy waiting */
 
 	spin_unlock(&kdsensor_drv_lock);

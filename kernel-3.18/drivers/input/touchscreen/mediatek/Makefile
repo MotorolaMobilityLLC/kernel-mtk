@@ -24,3 +24,6 @@ obj-$(CONFIG_TOUCHSCREEN_MTK_FT5X0X)	+=  ft5x0x/
 obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_3320_50) +=  synaptics_3320_50/
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT9271TB_HOTKNOT) +=  GT9271TB_hotknot/
 obj-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4)	+=  unified_driver_4/
+## ft5406 tp add for A158 ----lenovo@lenovo.com begin at 20161109
+obj-$(CONFIG_TOUCHSCREEN_MTK_FT5406)	+=  ft5406/
+## ft5406 tp add for A158 ----lenovo@lenovo.com end at 20161109

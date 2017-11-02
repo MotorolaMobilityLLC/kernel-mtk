@@ -240,7 +240,13 @@ static bool musb_is_host(void)
 	#if defined(CONFIG_MTK_LEGACY)
 	iddig_state = mt_get_gpio_in(iddig_pin);
 	#else
-	iddig_state = __gpio_get_value(iddig_pin);
+	//lenovo@lenovo.com 20161209 begin
+		#ifdef CONFIG_MTK_FAN5405_SUPPORT
+		iddig_state = mt_get_gpio_in(iddig_pin);
+		#else
+		iddig_state = __gpio_get_value(iddig_pin);
+		#endif
+	//lenovo@lenovo.com 20161209 end
 	#endif
 	#else
 	iddig_state = mt_get_gpio_in(GPIO_OTG_IDDIG_EINT_PIN);

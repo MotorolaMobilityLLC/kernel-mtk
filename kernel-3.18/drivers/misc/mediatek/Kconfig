@@ -84,6 +84,15 @@ config MTK_GPT_SCHEME_SUPPORT
 	  MTK driver support gpt scheme layout
 	  GPT is a better partition layout scheme
 	  GPT is instead of PMT
+	  
+#lenovo@lenovo.com add at 20161125 begin
+config WIND_FM_RSSI
+	bool "flag for read FM RSSI"
+	default n
+	help
+	  this is for read fm rssi.
+	  If you are not sure about this, set n
+#lenovo@lenovo.com add at 20161125 end
 
 source "drivers/misc/mediatek/dum-char/Kconfig"
 source "drivers/misc/mediatek/nand/Kconfig"
@@ -273,6 +282,9 @@ source "drivers/misc/mediatek/conn_md/Kconfig"
 source "drivers/misc/mediatek/dual_ccci/Kconfig"
 source "drivers/misc/mediatek/eccci/Kconfig"
 source "drivers/misc/mediatek/nfc/Kconfig"
+##add sar ----lenovo@lenovo.com 20161111-start
+source "drivers/misc/mediatek/sar/Kconfig"
+##add sar ----lenovo@lenovo.com 20161111-end
 source "drivers/misc/mediatek/ssw/Kconfig"
 
 endmenu  # CONN
@@ -316,6 +328,9 @@ source "drivers/misc/mediatek/usb2jtag/Kconfig"
 source "drivers/misc/mediatek/usb_c/Kconfig"
 source "drivers/misc/mediatek/vibrator/Kconfig"
 source "drivers/misc/mediatek/xhci/Kconfig"
+## add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+source "drivers/misc/mediatek/wind_device_info/Kconfig"
+## add wind_device_info for A158---lenovo@lenovo.com 20161123 end
 
 endmenu  # Peripheral
 

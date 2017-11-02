@@ -176,10 +176,16 @@ int swtp_init(int md_id)
 		gpio_set_debounce(swtp_data[md_id].gpiopin, swtp_data[md_id].setdebounce);
 		swtp_data[md_id].irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(swtp_data[md_id].irq, swtp_irq_func,
-			IRQF_TRIGGER_NONE, "swtp-eint", &swtp_data[md_id]);
+		    //lenovo@lenovo.com 20170122 begin
+			(swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH) ? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW, 
+            "swtp-eint", &swtp_data[md_id]);
+			//lenovo@lenovo.com 20170122 end
 		if (ret != 0) {
 			CCCI_LEGACY_ERR_LOG(md_id, KERN, "swtp-eint IRQ LINE NOT AVAILABLE\n");
 		} else {
+		    //lenovo@lenovo.com 20170122 begin
+            enable_irq(swtp_data[md_id].irq);
+			//lenovo@lenovo.com 20170122 end
 			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN,
 				"swtp-eint set EINT finished, irq=%d, setdebounce=%d, eint_type=%d\n",
 				swtp_data[md_id].irq, swtp_data[md_id].setdebounce, swtp_data[md_id].eint_type);

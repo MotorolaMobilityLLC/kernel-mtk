@@ -183,7 +183,16 @@ config INPUT_KEYRESET
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called keyreset.
-
+#add for dtv --lenovo@lenovo.com----20161119 start
+config INPUT_DTV
+	tristate "dtv"
+	depends on INPUT
+	---help---
+	  Say Y here if you want to add dtv;	 
+	  
+	  To compile this driver as a module, choose M here.
+#add for dtv --lenovo@lenovo.com----20161119 end
+	  
 config INPUT_KEYCOMBO
 	tristate "Key combo"
 	depends on INPUT

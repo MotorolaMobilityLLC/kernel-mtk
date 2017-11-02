@@ -34,6 +34,20 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+/*******************lcm add ---qiumeng@wind.mobi.com start at 20170425******************************/
+#if defined(NT35512_CMI_720P_OUFEIGUANG)
+		&nt35512_cmi_720p_oufeiguang_drv,
+#endif
+
+#if defined(ILI9881_HD720_DSI_VDO_TM)
+	    &ili9881_hd720_dsi_vdo_tm_lcm_drv,
+#endif
+
+#if defined(ILI9881_HD720_DSI_VDO_DJ)
+	&ili9881_hd720_dsi_vdo_dj_lcm_drv,
+#endif
+/*******************lcm add ---qiumeng@wind.mobi.com end at 20170425******************************/
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif

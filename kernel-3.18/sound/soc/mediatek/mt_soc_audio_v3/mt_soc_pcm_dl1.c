@@ -107,8 +107,9 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-
-#ifdef CONFIG_MTK_LEGACY
+//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+#ifdef CONFIG_MTK_LEGACY_EXTSPK
+//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
 static unsigned int pin_extspkamp, pin_extspkamp_2, pin_vowclk, pin_audclk, pin_audmiso,
 	pin_audmosi, pin_i2s1clk, pin_i2s1dat, pin_i2s1mclk, pin_i2s1ws, pin_rcvspkswitch;
 static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso, pin_mode_vowclk,
@@ -762,8 +763,9 @@ static int Auddrv_Reg_map_new(void *dev)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_LEGACY
-
+//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+#ifdef CONFIG_MTK_LEGACY_EXTSPK
+//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
 static int Auddrv_OF_ParseGPIO(void *dev)
 {
 	/* struct device_node *node = NULL; */
@@ -1092,7 +1094,9 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#ifndef CONFIG_MTK_LEGACY
+//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+#ifndef CONFIG_MTK_LEGACY_EXTSPK
+//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
 	AudDrv_GPIO_probe(&pdev->dev);
 #else
 	ret = Auddrv_OF_ParseGPIO(&pdev->dev);

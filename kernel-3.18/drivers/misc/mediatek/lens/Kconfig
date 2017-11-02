@@ -136,6 +136,17 @@ config MTK_LENS_DW9718AF_SUPPORT
     lens driver for the camera sensor module
     Set as y if the driver is used in this project
 
+##lenovo@lenovo.com 20170104 begin
+config MTK_LENS_DW9718AF_QT_SUPPORT
+  bool "DW9718AF_QT Lens Driver"
+  default n
+  help
+    DW9718AF_QT Lens Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project
+##lenovo@lenovo.com 20170104 end
+
 config MTK_LENS_DW9714AF_SUPPORT
   bool "DW9714AF Lens Driver"
   default n

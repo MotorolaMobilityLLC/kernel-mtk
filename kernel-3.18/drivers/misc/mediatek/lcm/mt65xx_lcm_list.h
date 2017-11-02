@@ -256,6 +256,12 @@ extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv;
 extern LCM_DRIVER nt35695_fhd_dsi_vdo_truly_nt50358_720p_lcm_drv;
 extern LCM_DRIVER ft8707_fhd_dsi_vdo_lgd_drv;
+/*******************lcm add ---qiumeng@wind.mobi.com start at 20170425******************************/
+extern LCM_DRIVER nt35512_cmi_720p_oufeiguang_drv;
+extern LCM_DRIVER ili9881_hd720_dsi_vdo_tm_lcm_drv;
+extern LCM_DRIVER ili9881_hd720_dsi_vdo_dj_lcm_drv;
+/*******************lcm add ---qiumeng@wind.mobi.com end at 20170425******************************/
+
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif

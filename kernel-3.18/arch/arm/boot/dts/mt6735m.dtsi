@@ -760,7 +760,11 @@
 		bat_comm: bat_comm {
 			compatible = "mediatek,battery";
 		};
-
+//lenovo@lenovo.com 20170207 begin
+		flashlights: flashlights@ {
+			compatible = "mediatek,camera_flashlights";
+		};
+//lenovo@lenovo.com 20170207 end
 		mdcldma:mdcldma@1000A000 {
 			compatible = "mediatek,mdcldma";
 			reg =	<0x1000A000 0x1000>, /*AP_CLDMA_AO*/
@@ -1185,6 +1189,13 @@
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
 
+		/*lenovo@lenovo.com 20161110 begin*/
+		chr_stat:chr_stat{
+			compatible = "mediatek,cha_stat-eint";
+			status ="disabled";
+		};
+		/*lenovo@lenovo.com 20161110 end*/
+		
 		accdet: accdet@ {
 			compatible = "mediatek,mt6735-accdet",
 						"mediatek,mt6735m-accdet";
@@ -1229,7 +1240,18 @@
 			gpio-irq = <2>;
 		};
 		/* NFC end */
-
+	/*add sar ---lenovo@lenovo.com--20161111---start****/ 
+		sar:sar@0 {
+			compatible = "mediatek,sarsensor";
+			gpio-irq = <2>;
+		};
+	/*add sar ---lenovo@lenovo.com--20161111---end****/ 
+	/*add dtv ---lenovo@lenovo.com--20161111---start****/ 	
+		dtv:dtv@0 {
+			compatible = "mediatek,dtv";
+			enable-gpio = <83>;
+		};
+	/*add dtv ---lenovo@lenovo.com--20161111---end****/ 
 		gps {
 			compatible = "mediatek,gps";
 		};
@@ -1279,7 +1301,9 @@
 			dma = <1>;
 			num_eps = <16>;
 			dma_channels = <8>;
-			drvvbus_gpio = <83 2>;
+		/*add dtv ---lenovo@lenovo.com--20161111---start****/ 
+			drvvbus_gpio = <64 2>;
+		/*add dtv ---lenovo@lenovo.com--20161111---end****/	
 		};
 
 		audio@11220000 {
@@ -1296,7 +1320,9 @@
 			audmiso-gpio = <144 0>;
 			audmosi-gpio = <145 0>;
 			vowclk-gpio = <148 0>;
-			extspkamp-gpio = <117 0>;
+			//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+			extspkamp-gpio = <120 0>;
+			//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
 			i2s1clk-gpio = <80 0>;
 			i2s1dat-gpio = <78 0>;
 			i2s1mclk-gpio = <9 0>;
