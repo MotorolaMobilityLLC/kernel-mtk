@@ -1611,17 +1611,17 @@
             </gpio109>
             <gpio110>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <mode_arr>10100000</mode_arr>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_mode>1</def_mode>
+                <mode_arr>11100000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_LDO_EN_PIN</varName0>
+                <varName0>GPIO_KPD_KCOL1_PIN</varName0>
                 <varName1>GPIO_VMBUCK_I2C_SDA</varName1>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio110>
             <gpio111>
@@ -3899,7 +3899,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>VOLUMEUP NC NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEUP MUSICKEY NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
