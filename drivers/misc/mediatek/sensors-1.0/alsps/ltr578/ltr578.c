@@ -341,27 +341,21 @@ static int ltr578_dynamic_calibrate(void)
 
 	if ((noise != 0) && (noise < (last_min_value + 100))) { /*add by pengc at 20141029 */
 		last_min_value = noise;/*add by pengc at 20141029 */
-		if (noise < 100) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 40); /*70 */
-			atomic_set(&obj->ps_thd_val_low, noise + 17); /*50 */
+		if (noise < 25) {
+			atomic_set(&obj->ps_thd_val_high,  noise + 25); /*70 */
+			atomic_set(&obj->ps_thd_val_low, noise + 12); /*50 */
+		} else if (noise < 100) {
+			atomic_set(&obj->ps_thd_val_high,  noise + 30);
+			atomic_set(&obj->ps_thd_val_low, noise + 15);
 		} else if (noise < 200) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 40);
-			atomic_set(&obj->ps_thd_val_low, noise + 17);
+			atomic_set(&obj->ps_thd_val_high,  noise + 35);
+			atomic_set(&obj->ps_thd_val_low, noise + 20);
 		} else if (noise < 300) {
 			atomic_set(&obj->ps_thd_val_high,  noise + 40);
-			atomic_set(&obj->ps_thd_val_low, noise + 17);
-		} else if (noise < 400) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 40);
-			atomic_set(&obj->ps_thd_val_low, noise + 17);
-		} else if (noise < 600) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 40);
-			atomic_set(&obj->ps_thd_val_low, noise + 17);
-		} else if (noise < 1000) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 40);
-			atomic_set(&obj->ps_thd_val_low, noise + 17);
-		} else if (noise < 1450) {
-			atomic_set(&obj->ps_thd_val_high,  noise + 80);
 			atomic_set(&obj->ps_thd_val_low, noise + 25);
+		} else if (noise < 401) {
+			atomic_set(&obj->ps_thd_val_high,  noise + 45);
+			atomic_set(&obj->ps_thd_val_low, noise + 30);
 		} else {
 			atomic_set(&obj->ps_thd_val_high,  1600);
 			atomic_set(&obj->ps_thd_val_low, 1550);
