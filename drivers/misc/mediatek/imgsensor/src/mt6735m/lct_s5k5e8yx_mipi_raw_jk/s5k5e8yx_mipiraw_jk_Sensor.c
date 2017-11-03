@@ -62,6 +62,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0x2ae69154,
 
 	.pre = {
+#if 0
 		.pclk = 182000000,				//record different mode's pclk
 		.linelength = 5632,//5200				//record different mode's linelength
 		.framelength = 1062,			//record different mode's framelength
@@ -73,6 +74,16 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,	
+#endif
+		.pclk = 182000000,
+		.linelength = 3096,//2856
+		.framelength = 1968,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 2592,
+		.grabwindow_height = 1944,
+		.mipi_data_lp2hs_settle_dc = 85,
+		.max_framerate = 300,
 	},
 
 	.cap = {
@@ -974,8 +985,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3C32,0xAC);
 
 }	/*	sensor_init  */
-
-
+#if 0
 static void preview_setting(void)
 {
 	// +++++++++++++++++++++++++++//                                                               
@@ -1074,6 +1084,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x3C0D,0x00); //pll select
 
 }	/*	preview_setting  */
+#endif
 
 static void capture_setting(kal_uint16 currefps)
 {
@@ -1788,7 +1799,8 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.min_frame_length = imgsensor_info.pre.framelength;
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	preview_setting();
+	//preview_setting();
+	capture_setting(imgsensor.current_fps); 
 	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }	/*	preview   */
