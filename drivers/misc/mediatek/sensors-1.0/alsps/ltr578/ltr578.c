@@ -612,7 +612,7 @@ static int ltr578_init_client(struct i2c_client *client)
 
 
 	databuf[0] = APS_RW_PS_N_PULSES;     /*pulses = 8 */
-	databuf[1] = 0x10;
+	databuf[1] = 0x08;
 	res = ltr578_i2c_master_operate(client, databuf, 0x2, I2C_FLAG_WRITE);
 	if (res <= 0)
 		goto EXIT_ERR;
@@ -631,7 +631,7 @@ static int ltr578_init_client(struct i2c_client *client)
 	if (res <= 0)
 		goto EXIT_ERR;
 
-	als_gainrange = ALS_RANGE_18;
+	als_gainrange = ALS_RANGE_6;
 	switch (als_gainrange) {
 	case ALS_RANGE_1:
 		error = ltr578_i2c_write_reg(APS_RW_ALS_GAIN, MODE_ALS_Range1);
@@ -707,6 +707,10 @@ int ltr578_read_als(struct i2c_client *client, u16 *data)
 	 *struct ltr578_priv *obj = i2c_get_clientdata(client);
 	 */
 	int luxdata_int;
+	int alsval;
+	int cleval;
+	int lsec;
+
 	u8 buffer[3];
 	long res = 0;
 
@@ -715,7 +719,31 @@ int ltr578_read_als(struct i2c_client *client, u16 *data)
 	if (res <= 0)
 		goto EXIT_ERR;
 
-	luxdata_int = (buffer[2] * 256 * 256) + (buffer[1] * 256) + buffer[0];
+	alsval = (buffer[2] * 256 * 256) + (buffer[1] * 256) + buffer[0];
+
+	buffer[0] = 0x0a;
+	res = ltr578_i2c_master_operate(client, buffer, 0x301, I2C_FLAG_READ);
+	if (res <= 0)
+		goto EXIT_ERR;
+	cleval = (buffer[2] * 256 * 256) + (buffer[1] * 256) + buffer[0];
+
+	if(alsval == 0)
+		lsec = 0;
+	else
+		lsec = (cleval / alsval) * 10;
+
+
+	if (lsec > 100)
+		luxdata_int = (alsval * 312) / (600) * 14 / 10;
+	else if (lsec > 48)
+		luxdata_int = (alsval * 379) / (600) * 13 / 10;
+	else if (lsec > 30)
+		luxdata_int = (alsval * 379) / (600);
+	else
+		luxdata_int = (alsval * 812) * 10 / (600) / 17;
+
+	APS_DBG("als_value_lux = %d,lsec = %d\n", luxdata_int, lsec);
+
 	/*
 	 *APS_DBG("luxdata_int = %d,buffer[2]=%d,buffer[1]=%d,buffer[0]=%d\n",luxdata_int,buffer[2],buffer[1],buffer[0]);
 	 */
