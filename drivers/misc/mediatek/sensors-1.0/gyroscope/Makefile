@@ -10,3 +10,4 @@ obj-$(CONFIG_MTK_ITG1010)   +=  ITG1010/
 obj-$(CONFIG_MTK_MPU6515G)	+= mpu6515/
 obj-$(CONFIG_MTK_MPU6050GY)   +=  mpu6050gy/
 obj-$(CONFIG_MTK_ICM20645GY)   +=  icm20645gy/
+obj-$(CONFIG_MTK_ICM206XX_G)   +=  icm206xx_g/

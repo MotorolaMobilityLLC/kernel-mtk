@@ -11,3 +11,4 @@ obj-$(CONFIG_MTK_MPU6515A)		+= mpu6515/
 obj-$(CONFIG_MTK_BMA222E)		+= bma222e/
 obj-$(CONFIG_MTK_MPU6050G)   +=  mpu6050g/
 obj-$(CONFIG_MTK_ICM20645G)   +=  icm20645g/
+obj-$(CONFIG_MTK_ICM206XX_A)   +=  icm206xx_a/
