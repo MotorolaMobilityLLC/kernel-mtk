@@ -1707,3 +1707,56 @@
 
 };
 /*End of this file, DO NOT ADD ANYTHING HERE*/
+
+
+/* USB XHCI GPIO start */
+&pio {
+	iddig_default: iddig_default {
+	};
+
+	gpio181_mode1_iddig: iddig_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO181__FUNC_IDDIG>;
+			slew-rate = <0>;
+			bias-pull-up = <11>;
+		};
+	};
+};
+
+&pio {
+	drvvbus_default: drvvbus_default {
+	};
+
+	gpio94_mode1_drvvbus_low: drvvbus_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO94__FUNC_USB_DRVVBUS>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio94_mode1_drvvbus_high: drvvbus_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO94__FUNC_USB_DRVVBUS>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&usb0 {
+	pinctrl-names = "iddig_default", "iddig_init";
+	pinctrl-0 = <&iddig_default>;
+	pinctrl-1 = <&gpio181_mode1_iddig>;
+	status = "okay";
+};
+
+&xhci0 {
+	pinctrl-names = "drvvbus_default", "drvvbus_low", "drvvbus_high";
+	pinctrl-0 = <&drvvbus_default>;
+	pinctrl-1 = <&gpio94_mode1_drvvbus_low>;
+	pinctrl-2 = <&gpio94_mode1_drvvbus_high>;
+	status = "okay";
+};
+
+/* USB XHCI GPIO start */
