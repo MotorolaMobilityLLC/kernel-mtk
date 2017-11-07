@@ -282,7 +282,8 @@ static ssize_t procPktDelayDbgCfgWrite(struct file *file, const char __user *buf
 
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%6s %x %d %u", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
+		if (sscanf((const char *)temp, "%6s %x %d %u", aucModule, &u4IpProto, &u2PortNum,
+			   &u4DelayThreshold) != 4)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
