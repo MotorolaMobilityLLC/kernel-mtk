@@ -2062,12 +2062,11 @@ INT8 wmt_lib_co_clock_get(void)
 }
 
 
-#if WMT_FOR_SDIO_1V_AUTOK
 UINT32 wmt_lib_get_drv_status(UINT32 type)
 {
 	return wmt_core_get_drv_status((ENUM_WMTDRV_TYPE_T) type);
 }
-#endif
+
 INT32 wmt_lib_trigger_reset(VOID)
 {
 	return wmt_btm_trigger_reset();
