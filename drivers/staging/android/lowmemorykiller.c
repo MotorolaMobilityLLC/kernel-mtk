@@ -155,9 +155,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
 	int d_state_is_found = 0;
 	int unreclaimable_zones = 0;
+#ifdef CONFIG_SWAP
+	unsigned long swap_pages = 0;
+#endif
 #if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	int to_be_aggressive = 0;
-	unsigned long swap_pages = 0;
 #endif
 #ifdef CONFIG_MTK_ENG_BUILD
 	int pid_dump = -1; /* process to be dump */
@@ -165,6 +167,17 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	static int pid_flm_warn = -1;
 	static unsigned long flm_warn_timeout;
 	int log_offset = 0, log_ret;
+#endif
+
+#if defined(CONFIG_SWAP) && !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	/* Adjust vm_swappiness according to the percentage of swap space in free */
+	swap_pages = atomic_long_read(&nr_swap_pages);
+	/* More than 1/2 swap usage */
+	if (swap_pages * 2 < total_swap_pages)
+		vm_swappiness = 10;
+	/* Less than 1/4 swap usage */
+	if (swap_pages * 4 > total_swap_pages * 3)
+		vm_swappiness = 60;
 #endif
 
 	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
