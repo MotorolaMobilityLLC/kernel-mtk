@@ -78,6 +78,8 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	struct ppm_limit_data *final_core;
 	int retval = 0;
 	int i, j;
+	int total_core_per_kicker[PPM_MAX_KIR] = {0};
+	int total_core = 0;
 
 	mutex_lock(&boost_core);
 
@@ -106,6 +108,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	}
 #endif
 
+	/* STEP 0: set this kicker's core_set*/
 	for (i = 0; i < nr_ppm_clusters; i++) {
 		core_set[kicker][i].min = core_limit[i].min >= -1 ? core_limit[i].min : -1;
 		core_set[kicker][i].max = core_limit[i].max >= -1 ? core_limit[i].max : -1;
@@ -113,15 +116,40 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 			 kicker, i, core_set[kicker][i].min, core_set[kicker][i].max);
 	}
 
+	/* STEP 1: decide total core*/
+	for (i = 0; i < PPM_MAX_KIR; i++) {
+		for (j = 0; j < nr_ppm_clusters; j++)
+			if (core_set[i][j].min != -1)
+				total_core_per_kicker[i] += core_set[i][j].min;
+	}
+
+	for (i = 0; i < PPM_MAX_KIR; i++)
+		total_core = MAX(total_core, total_core_per_kicker[i]);
+
+	legacy_debug(log_enable, TAG"total_core %d", total_core);
+
+	/* STEP 2: decide min core of each cluster*/
+	for (i = nr_ppm_clusters - 1; i >= 0; i--) {
+		for (j = 0; j < PPM_MAX_KIR; j++)
+			final_core[i].min = MAX(core_set[j][i].min, final_core[i].min);
+		if (total_core >= final_core[i].min && final_core[i].min != -1) {
+			total_core -= final_core[i].min;
+		} else if (total_core < final_core[i].min && final_core[i].min != -1) {
+			final_core[i].min = total_core;
+			total_core = 0;
+		}
+	}
+
+	/* STEP 3: decide max core of each cluster*/
 	for (i = 0; i < PPM_MAX_KIR; i++) {
 		for (j = 0; j < nr_ppm_clusters; j++) {
-			final_core[j].min = MAX(core_set[i][j].min, final_core[j].min);
 			final_core[j].max = MAX(core_set[i][j].max, final_core[j].max);
 			if (final_core[j].min > final_core[j].max && final_core[j].max != -1)
 				final_core[j].max = final_core[j].min;
 		}
 	}
 
+	/* STEP 4: decide actual value of max core of each cluster (if max < min)*/
 	for (i = 0; i < nr_ppm_clusters; i++) {
 		current_core[i].min = final_core[i].min;
 		current_core[i].max = final_core[i].max;
