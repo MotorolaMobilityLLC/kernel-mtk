@@ -181,4 +181,6 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter);
 
 VOID glGetRstReason(ENUM_CHIP_RESET_REASON_TYPE_T eReason);
 
+UINT32 wlanPollingCpupcr(UINT32 u4Times, UINT32 u4Sleep);
+
 #endif /* _GL_RST_H */
