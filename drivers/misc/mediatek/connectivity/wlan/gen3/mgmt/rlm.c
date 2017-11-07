@@ -54,7 +54,6 @@
 BOOLEAN g_bCaptureDone = FALSE;
 BOOLEAN g_bIcapEnable = FALSE;
 UINT_16 g_u2DumpIndex = 0;
-BOOLEAN g_fgHasChannelSwitchIE = FALSE;
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -114,7 +113,6 @@ VOID rlmFsmEventInit(P_ADAPTER_T prAdapter)
 	rlmDomainCheckCountryPowerLimitTable(prAdapter);
 #endif
 
-	g_fgHasChannelSwitchIE = FALSE;
 	g_bCaptureDone = FALSE;
 	g_bIcapEnable = FALSE;
 	g_u2DumpIndex = 0;
@@ -1273,22 +1271,12 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 					ucChannelAnnouncePri = prChannelSwitchAnnounceIE->ucNewChannelNum;
 					DBGLOG(RLM, INFO, "Switch channel [%d]->[%d]\n",
 					       prBssInfo->ucPrimaryChannel, ucChannelAnnouncePri);
-
-					if (RLM_NET_IS_11AC(prBssInfo) && (prBssInfo->ucVhtChannelWidth != CW_20_40MHZ))
-						g_fgHasChannelSwitchIE = TRUE;
 					fgHasChannelSwitchIE = TRUE;
 #if 0
 					qmSetStaRecTxAllowed(prAdapter, prStaRec, TRUE);
 					DBGLOG(RLM, INFO, "After switching, TxAllowed = %d\n",
 					       prStaRec->fgIsTxAllowed);
 #endif
-				}
-				if (RLM_NET_IS_11AC(prBssInfo) && (prBssInfo->ucVhtChannelWidth != CW_20_40MHZ)) {
-					DBGLOG(RLM, INFO, "Send Operation Action Frame\n");
-					rlmSendOpModeNotificationFrame(prAdapter, prStaRec,
-								       VHT_OP_MODE_CHANNEL_WIDTH_20, 1);
-				} else {
-					DBGLOG(RLM, INFO, "Skip Send Operation Action Frame\n");
 				}
 			}
 
@@ -1383,16 +1371,6 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 			prBssInfo->eBssSCO = eChannelAnnounceSco;
 	}
 
-	/*DFS Certification for Channel Bandwidth 80Hz*/
-	if (g_fgHasChannelSwitchIE) {
-		DBGLOG(RLM, INFO, "Ch : DFS 80M Flag= %d\n", g_fgHasChannelSwitchIE);
-		prBssInfo->eBssSCO = CHNL_EXT_SCN;
-		prBssInfo->ucVhtChannelWidth = CW_20_40MHZ;
-		prBssInfo->ucVhtChannelFrequencyS1 = 0;
-		prBssInfo->ucVhtChannelFrequencyS2 = 255;
-		prBssInfo->ucHtOpInfo1 &= ~(HT_OP_INFO1_SCO | HT_OP_INFO1_STA_CHNL_WIDTH);
-		DBGLOG(RLM, INFO, "Ch : DFS has Appeared\n");
-	}
 #endif
 
 	rlmReviseMaxBw(prAdapter, prBssInfo->ucBssIndex, &prBssInfo->eBssSCO, &prBssInfo->ucVhtChannelWidth,
@@ -2424,14 +2402,6 @@ VOID rlmProcessSpecMgtAction(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 
 						fgHasChannelSwitchIE = TRUE;
 					}
-					if (RLM_NET_IS_11AC(prBssInfo) &&
-					    (prBssInfo->ucVhtChannelWidth != CW_20_40MHZ)) {
-						DBGLOG(RLM, INFO, "Send Operation Action Frame\n");
-						rlmSendOpModeNotificationFrame(prAdapter, prStaRec,
-									       VHT_OP_MODE_CHANNEL_WIDTH_20, 1);
-					} else {
-						DBGLOG(RLM, INFO, "Skip Send Operation Action Frame\n");
-					}
 				}
 				break;
 			case ELEM_ID_SCO:
@@ -2460,36 +2430,6 @@ VOID rlmProcessSpecMgtAction(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 			}
 			if (fgHasSCOIE) {
 				prBssInfo->eBssSCO = eChannelSco;
-			}
-		} else {
-			P_BSS_DESC_T prBssDesc;
-
-			prBssDesc = scanSearchBssDescByBssid(prAdapter, prBssInfo->aucBSSID);
-			if (RLM_NET_IS_11AC(prBssInfo) && (prBssInfo->ucVhtChannelWidth != CW_20_40MHZ)) {
-				/*Due to MT6630 BW80 sidelope issue*/
-				DBGLOG(RLM, INFO,
-					"AC Network and BW=%d\n",
-					prBssInfo->ucVhtChannelWidth);
-				/* Beacon and AssocRsp Process to fix 20M Case */
-				g_fgHasChannelSwitchIE = TRUE;
-				prBssInfo->ucVhtChannelWidth = CW_20_40MHZ;
-				prBssInfo->ucVhtChannelFrequencyS1 = prBssInfo->ucPrimaryChannel;
-				/* To Inform FW radar appear. */
-				prBssInfo->ucVhtChannelFrequencyS2 = 255;
-				prBssInfo->ucHtOpInfo1 &= ~(HT_OP_INFO1_SCO | HT_OP_INFO1_STA_CHNL_WIDTH);
-				prBssInfo->eBssSCO = CHNL_EXT_SCN;
-			}
-			if (prBssDesc) {
-				DBGLOG(RLM, INFO,
-					"BSS: "MACSTR" Desc found, channel from %u to %u\n ",
-					MAC2STR(prBssInfo->aucBSSID),
-					prBssDesc->ucChannelNum,
-					prBssInfo->ucPrimaryChannel);
-				prBssDesc->ucChannelNum = prBssInfo->ucPrimaryChannel;
-			} else {
-				DBGLOG(RLM, INFO,
-					"BSS: "MACSTR" Desc is not found\n ",
-					MAC2STR(prBssInfo->aucBSSID));
 			}
 		}
 		nicUpdateBss(prAdapter, prBssInfo->ucBssIndex);
