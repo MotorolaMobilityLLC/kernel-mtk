@@ -874,6 +874,7 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 					SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 					  NO_PROTECTION, FORBIDDEN, FORBIDDEN));
 
+				iounmap(pWiFiEmibaseaddr);
 			} else {
 				DBGLOG(INIT, ERROR, "consys emi memory address gConEmiPhyBase invalid\n");
 				u4Status = WLAN_STATUS_FAILURE;
