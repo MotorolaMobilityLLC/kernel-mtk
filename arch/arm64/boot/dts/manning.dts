@@ -1644,7 +1644,7 @@
 &gsensor_mtk {
 	i2c_num = <1>;
 	i2c_addr = <0x68 0 0 0>;
-	direction = <3>;
+	direction = <2>;
 	power_id = <0xffff>;
 	power_vol = <0>;
 	firlen = <0>;
@@ -1654,7 +1654,7 @@
 &msensor_mtk {
 	i2c_num = <1>;
 	i2c_addr = <0x0c 0 0 0>;
-	direction = <7>;
+	direction = <2>;
 	power_id = <0xffff>;
 	power_vol = <0>;
 	is_batch_supported = <0>;
@@ -1663,7 +1663,7 @@
 &gyro_mtk {
 	i2c_num = <1>;
 	i2c_addr = <0x69 0 0 0>;
-	direction = <3>;
+	direction = <2>;
 	power_id = <0xffff>;
 	power_vol = <0>;
 	firlen = <0>;
