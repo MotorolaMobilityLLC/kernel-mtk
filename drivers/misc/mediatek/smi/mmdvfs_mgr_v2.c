@@ -96,7 +96,7 @@ static int mmsys_clk_change_notify_checked(clk_switch_cb func, int ori_mmsys_clk
 int update_mmsys_clk_mode, char *msg);
 static int determine_current_mmsys_clk(void);
 static int get_venc_step(int venc_resolution);
-static int get_vr_step(int sensor_size, int camera_mode);
+static int get_vr_step(int sensor_size, int preview_size, int camera_mode);
 static int get_ext_disp_step(enum mmdvfs_lcd_size_enum disp_resolution);
 static int query_vr_step(struct MTK_MMDVFS_CMD *query_cmd);
 
@@ -636,7 +636,7 @@ static int get_ext_disp_step(enum mmdvfs_lcd_size_enum lcd_size)
  * and fps since the information is set after profile change
  */
 #ifdef MMDVFS_O1
-static int get_vr_step(int sensor_size, int camera_mode)
+static int get_vr_step(int sensor_size, int preview_size, int camera_mode)
 {
 	unsigned int hpm_cam_mode = 0;
 	unsigned int lpm_cam_mode = 0;
@@ -670,6 +670,10 @@ static int get_vr_step(int sensor_size, int camera_mode)
 	if (sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_FULL)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
 
+	/* Check preview size */
+	if (preview_size >= MMDVFS_PIXEL_NUM_2160P)
+		vr_step = MMDVFS_VOLTAGE_HIGH;
+
 	/* Check hpm camera mode flag */
 	if (camera_mode & hpm_cam_mode)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
@@ -681,7 +685,7 @@ static int get_vr_step(int sensor_size, int camera_mode)
 	return vr_step;
 }
 #else /* MMDVFS_O1 */
-static int get_vr_step(int sensor_size, int camera_mode)
+static int get_vr_step(int sensor_size, int preview_size, int camera_mode)
 {
 	unsigned int hpm_cam_mode = 0;
 
@@ -722,7 +726,7 @@ static int query_vr_step(struct MTK_MMDVFS_CMD *query_cmd)
 		else
 			return MMDVFS_VOLTAGE_LOW;
 	else
-		return get_vr_step(query_cmd->sensor_size, query_cmd->camera_mode);
+		return get_vr_step(query_cmd->sensor_size, query_cmd->preview_size, query_cmd->camera_mode);
 
 }
 
@@ -954,10 +958,11 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CK:%d,low_low_en:%d\n",
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x,0x%x,0x%x),C(%d,%d,%d,0x%x),I(%d,%d),CK:%d,low_low_en:%d\n",
 		scenario, g_mmdvfs_concurrency, step, final_step_ulpm_limited, final_step,
 		concurrency_hpm, concurrency_lpm, concurrency_ulpm,
-		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
+		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
+		g_mmdvfs_cmd.preview_size, g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
 		current_mmsys_clk, enable_low_low);
 
@@ -1127,9 +1132,10 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 	}
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),	CLK:%d,low_low_en:%d\n",
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x),CMD(%d,%d,%d,0x%x),INFO(%d,%d),CLK:%d,low_low_en:%d\n",
 		scenario, g_mmdvfs_concurrency, step, g_disp_low_low_request, final_step, concurrency,
-		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
+		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
+		g_mmdvfs_cmd.preview_size, g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
 		current_mmsys_clk, enable_low_low);
 
@@ -1329,7 +1335,9 @@ void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 			enum mmdvfs_voltage_enum vr_step = MMDVFS_VOLTAGE_LOW;
 			enum mmdvfs_voltage_enum venc_step = MMDVFS_VOLTAGE_LOW;
 
-			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode);
+			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size,
+				g_mmdvfs_cmd.preview_size,
+				g_mmdvfs_cmd.camera_mode);
 
 			/* Also get venc step if needed*/
 			if (g_mmdvfs_concurrency & (1 << SMI_BWC_SCEN_VENC))
@@ -1905,8 +1913,9 @@ void dump_mmdvfs_info(void)
 {
 	int i = 0;
 
-	MMDVFSMSG("MMDVFS dump: CMD(%d,%d,0x%x),INFO VR(%d,%d),CLK: %d\n",
-	g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
+	MMDVFSMSG("MMDVFS dump: CMD(%d,%d,%d,0x%x),INFO VR(%d,%d),CLK: %d\n",
+	g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
+	g_mmdvfs_cmd.preview_size, g_mmdvfs_cmd.camera_mode,
 	g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
 	current_mmsys_clk);
 

@@ -85,6 +85,7 @@ struct mmdvfs_cam_property {
 	int sensor_size;
 	int feature_flag;
 	int fps;
+	int preview_size;
 };
 
 struct mmdvfs_video_property {
