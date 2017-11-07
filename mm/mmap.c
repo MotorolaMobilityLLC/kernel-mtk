@@ -2574,6 +2574,10 @@ int split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
 	return __split_vma(mm, vma, addr, new_below);
 }
 
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#include <mt-plat/aee.h>
+#endif
+
 /* Munmap is split into 2 main parts -- this part which finds
  * what needs doing, and the areas themselves, which do the
  * work.  This now handles partial unmappings.
@@ -2608,6 +2612,70 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 	end = start + len;
 	if (vma->vm_start >= end)
 		return 0;
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+	if (vma_get_anon_name(vma)) {
+		const char __user *anon_name = vma_get_anon_name(vma);
+		struct mm_struct *mm = vma->vm_mm;
+		unsigned long page_start_vaddr;
+		unsigned long page_offset;
+		unsigned long num_pages;
+		unsigned long max_len = NAME_MAX;
+		int i;
+		char name[NAME_MAX + 1];
+		unsigned long offset = 0;
+
+		page_start_vaddr = (unsigned long)anon_name & PAGE_MASK;
+		page_offset = (unsigned long)anon_name - page_start_vaddr;
+		num_pages = DIV_ROUND_UP(page_offset + max_len, PAGE_SIZE);
+
+		for (i = 0; i < num_pages; i++) {
+			int len;
+			int write_len;
+			const char *kaddr;
+			long pages_pinned;
+			struct page *page;
+
+			pages_pinned = get_user_pages(current, mm, page_start_vaddr,
+						1, 0, 0, &page, NULL);
+			if (pages_pinned < 1)
+				break;
+
+			kaddr = (const char *)kmap(page);
+			len = min(max_len, PAGE_SIZE - page_offset);
+			write_len = strnlen(kaddr + page_offset, len);
+			memcpy(name + offset, kaddr + page_offset, write_len);
+			offset += write_len;
+			name[offset] = '\0';
+			kunmap(page);
+			put_page(page);
+
+			/* if strnlen hit a null terminator then we're done */
+			if (write_len != len)
+				break;
+
+			max_len -= len;
+			page_offset = 0;
+			page_start_vaddr += PAGE_SIZE;
+		}
+
+		if (offset && strstr(name, "lch_unwind_mempool")) {
+			char msg_to_aee[70];
+
+			if (current->pid == current->tgid)
+				pr_warn("[lch_debug]main thread munmap unwind_mempool: %s\n", current->comm);
+			else
+				pr_warn("[lch_debug]child thread munmap unwind_mempool tgid:%d\n", current->tgid);
+
+			snprintf(msg_to_aee, sizeof(msg_to_aee),
+					"munmap page unexpectly\n");
+			aee_kernel_exception_api(__FILE__, __LINE__,
+				DB_OPT_DEFAULT |
+				DB_OPT_NATIVE_BACKTRACE,
+				"unwind_debug", msg_to_aee);
+		}
+	}
+#endif
 
 	/*
 	 * If we need to split any vma, do it now to save pain later.
