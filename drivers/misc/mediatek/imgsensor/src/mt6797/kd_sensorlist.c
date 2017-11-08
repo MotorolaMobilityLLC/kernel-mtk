@@ -151,18 +151,18 @@ struct device *sensor_device = NULL;
 ******************************************************************************/
 #define PFX "[kd_sensorlist]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
-#define PK_DBG_FUNC(fmt, arg...)    pr_debug(fmt, ##arg)
+#define PK_DBG_FUNC(fmt, arg...)    pr_err(fmt, ##arg)
 //#define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
-#define PK_INF(fmt, args...)     pr_debug("[%s] " fmt, __FUNCTION__, ##args)
+#define PK_INF(fmt, args...)     pr_err("[%s] " fmt, __FUNCTION__, ##args)
 
 //#undef DEBUG_CAMERA_HW_K
-/* #define DEBUG_CAMERA_HW_K */
+ #define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
 #define PK_XLOG_INFO(fmt, args...) \
         do {    \
-            pr_debug(fmt, ##args); \
+            pr_err(fmt, ##args); \
         } while (0)
 #else
 #define PK_DBG(a, ...)
@@ -474,6 +474,42 @@ int iReadReg(u16 a_u2Addr , u8 *a_puBuff , u16 i2cId)
     }
     return 0;
 }
+
+/*******************************************************************************
+* iReadRegI2C
+********************************************************************************/
+int iReadRegI2C_gt24c64(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
+{
+    		int  i4RetValue = 0;
+			spin_lock(&kdsensor_drv_lock);
+			g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+
+			/* Remove i2c ack error log during search sensor */
+			/* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
+			if (g_IsSearchSensor == 1)
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
+			else
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
+#endif
+			spin_unlock(&kdsensor_drv_lock);
+			/*	*/
+			i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+				return -1;
+			}
+
+			i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
+			if (i4RetValue != a_sizeRecvData) {
+				PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
+				return -1;
+			}
+			    return 0;
+}
+
+
 
 /*******************************************************************************
 * iReadRegI2C
@@ -1841,6 +1877,38 @@ int kdSetExpGain(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera)
 }
 
 /*******************************************************************************
+*
+********************************************************************************/
+static UINT32 ms_to_jiffies(MUINT32 ms)
+{
+    return ((ms * HZ + 512) >> 10);
+}
+
+
+int kdSensorSetExpGainWaitDone(int *ptime)
+{
+    int timeout;
+    PK_DBG("[kd_sensorlist]enter kdSensorSetExpGainWaitDone: time: %d\n", *ptime);
+    timeout = wait_event_interruptible_timeout(
+        kd_sensor_wait_queue,
+        (setExpGainDoneFlag & 1),
+        ms_to_jiffies(*ptime));
+
+    PK_DBG("[kd_sensorlist]after wait_event_interruptible_timeout\n");
+    if (timeout == 0) {
+    PK_ERR("[kd_sensorlist] kdSensorSetExpGainWait: timeout=%d\n", *ptime);
+
+    return -EAGAIN;
+    }
+
+    return 0;   /* No error. */
+
+}
+
+
+
+
+/*******************************************************************************
 * adopt_CAMERA_HW_Open
 ********************************************************************************/
 inline static int adopt_CAMERA_HW_Open(void)
@@ -2695,7 +2763,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			PK_ERR(" NULL arg.\n");
 			return -EFAULT;
 		}
-		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int)) && FeatureParaLen) {
+		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
 			PK_ERR(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}
@@ -3668,7 +3736,7 @@ bool Get_Cam_Regulator(void)
 				    regSubVCAMD = regulator_get(sensor_device, "vcamd_sub");
 			    }
 				if (regMain2VCAMD == NULL) {
-				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
+				    regMain2VCAMD = regulator_get(sensor_device, "vcamdmain2");
 			    }
 			    if (regVCAMIO == NULL) {
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
@@ -4236,6 +4304,7 @@ static long CAMERA_HW_Ioctl(
         break;
 
     case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
+        i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);
         break;
 
     case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:

@@ -50,6 +50,7 @@
 #include <linux/compat.h>
 #endif
 #include "kd_flashlight.h"
+#include <mach/mt_pbm.h>
 
 
 
@@ -67,21 +68,15 @@
 #define logI(fmt, ...)    {printf(fmt, __VA_ARGS__); printf("\n"); }
 #else
 #define PFX "[KD_CAMERA_FLASHLIGHT]"
+#define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "%s: " fmt, __func__ , ##arg)
 
-/*#define DEBUG_KD_STROBE*/
+#define DEBUG_KD_STROBE
 #ifdef DEBUG_KD_STROBE
 #define logI PK_DBG_FUNC
 #else
 #define logI(a, ...)
 #endif
-#endif
-
-#define POWER_THROTTLING 1
-#define DLPT_FEATURE 1
-
-#if DLPT_FEATURE
-#include <mach/mt_pbm.h>
 #endif
 /* ============================== */
 /* variables */
@@ -348,8 +343,11 @@ static int setFlashDrv(int sensorDev, int strobeId)
 				strobeInit_main_sid1_part2(ppF);
 		} else if (strobeId == 2) {
 			if (partId == 1)
+				#ifdef CAMERA_FLASH_INDRIYAPRO
+				strobeInit_main_sid2_part1_aw3644(ppF);
+				#else
 				strobeInit_main_sid2_part1(ppF);
-
+				#endif
 			else if (partId == 2)
 				strobeInit_main_sid2_part2(ppF);
 		}
@@ -378,35 +376,31 @@ static int setFlashDrv(int sensorDev, int strobeId)
 	}
 	return 0;
 }
-#if POWER_THROTTLING
 
-static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
-static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-static int gLowPowerOc = BATTERY_OC_LEVEL_0;
-/*
+/*@@
 static int decFlash(void)
 {
-	int i;
+    int i;
 	int j;
 	int k;
 	int duty;
-
-	for (i = 0; i < e_Max_Sensor_Dev_Num; i++)
-		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++)
-			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
-				if (g_pFlashInitFunc[i][j][k] != 0) {
-					if (gLowBatDuty[i][j] != -1) {
-						duty = gLowBatDuty[i][j];
-						logI("decFlash i,j,k,duty %d %d %d %d", i, j, k,
-						     duty);
-						g_pFlashInitFunc[i][j][k]->flashlight_ioctl
-						    (FLASH_IOC_SET_DUTY, duty);
-					}
-				}
-			}
+	for(i=0;i<e_Max_Sensor_Dev_Num;i++)
+	for(j=0;j<e_Max_Strobe_Num_Per_Dev;j++)
+	for(k=0;k<e_Max_Part_Num_Per_Dev;k++)
+	{
+		if(g_pFlashInitFunc[i][j][k]!=0)
+		{
+		    if(gLowBatDuty[i][j]!=-1)
+		    {
+			duty = gLowBatDuty[i][j];
+			logI("decFlash i,j,k,duty %d %d %d %d", i, j, k, duty);
+			g_pFlashInitFunc[i][j][k]->flashlight_ioctl(FLASH_IOC_SET_DUTY, duty);
+		    }
+		}
+	}
 	return 0;
-}
-*/
+}*/
+
 static int closeFlash(void)
 {
 	int i;
@@ -414,12 +408,15 @@ static int closeFlash(void)
 	int k;
 
 	mutex_lock(&g_mutex);
-	logI("closeFlash ln=%d, (%d/%d/%d)", __LINE__, gLowPowerVbat, gLowPowerPer, gLowPowerOc);
+	/* logI("closeFlash ln=%d", __LINE__); */
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++) {
+		/* logI("closeFlash ln=%d %d",__LINE__,i); */
 		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++) {
+			/* logI("closeFlash ln=%d %d",__LINE__,j); */
 			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
+				/* logI("closeFlash ln=%d %d %d",__LINE__,k, (int)g_pFlashInitFunc[i][j][k]); */
 				if (g_pFlashInitFunc[i][j][k] != 0) {
-					logI("closeFlash i,j,k %d %d %d", i, j, k);
+					/* logI("closeFlash i,j,k %d %d %d", i, j, k); */
 					g_pFlashInitFunc[i][j][k]->flashlight_ioctl
 					    (FLASH_IOC_SET_ONOFF, 0);
 				}
@@ -430,14 +427,23 @@ static int closeFlash(void)
 	return 0;
 }
 
+/* @@{ */
+
+/*
+#define LOW_BATTERY_LEVEL_0 0
+#define LOW_BATTERY_LEVEL_1 1
+#define LOW_BATTERY_LEVEL_2 2
+#define BATTERY_PERCENT_LEVEL_0 0
+#define BATTERY_PERCENT_LEVEL_1 1
+*/
+
+/* /}@@ */
+static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
+
 static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 {
-/*
 	logI("Lbat_protection_powerlimit_flash %d (%d %d %d %d)\n", level, LOW_BATTERY_LEVEL_0,
 	     LOW_BATTERY_LEVEL_1, LOW_BATTERY_LEVEL_2, __LINE__);
-	logI("Lbat_protection_powerlimit_flash %d (%d %d %d %d)\n", level, LOW_BATTERY_LEVEL_0,
-	     LOW_BATTERY_LEVEL_1, LOW_BATTERY_LEVEL_2, __LINE__);
-*/
 	if (level == LOW_BATTERY_LEVEL_0) {
 		gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
@@ -452,30 +458,32 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 	}
 }
 
+
+
+static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
+
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
-/*
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
 	     BATTERY_PERCENT_LEVEL_0, BATTERY_PERCENT_LEVEL_1, __LINE__);
-	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
-	     BATTERY_PERCENT_LEVEL_0, BATTERY_PERCENT_LEVEL_1, __LINE__);
-*/
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
 		closeFlash();
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
-		/*unlimit cpu and gpu*/
+		/* unlimit cpu and gpu */
 	}
 }
 
-static void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
-{
+
 /*
+static int gLowPowerOc=BATTERY_OC_LEVEL_0;
+
+void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
+{
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
-*/
     if (level == BATTERY_OC_LEVEL_1){
 	closeFlash();
 	gLowPowerOc=BATTERY_OC_LEVEL_1;
@@ -484,9 +492,9 @@ static void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
 	gLowPowerOc=BATTERY_OC_LEVEL_0;
     }
 }
+*/
 
 
-#endif
 
 /* ======================================================================== */
 
@@ -522,13 +530,11 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 		logI("FLASH_IOC_IS_LOW_POWER");
 		{
 			int isLow = 0;
-#if POWER_THROTTLING
-			if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
-			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0
-			|| gLowPowerOc != BATTERY_OC_LEVEL_0)
-				isLow = 1;
+                           //lenovo.sw wuyt3 change for K5,low power state,enable flash_on
+			//if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
+			//    || gLowPowerVbat != LOW_BATTERY_LEVEL_0)
+			//	isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
-#endif
 			kdArg.arg = isLow;
 			if (copy_to_user
 			    ((void __user *)arg, (void *)&kdArg, sizeof(kdStrobeDrvArg))) {
@@ -574,15 +580,9 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 
 			pF = g_pFlashInitFunc[sensorDevIndex][strobeIndex][partIndex];
 			if (pF != 0) {
-#if DLPT_FEATURE
 				kicker_pbm_by_flash(kdArg.arg);
-#endif
-				if (!(gLowPowerVbat == LOW_BATTERY_LEVEL_0 &&
-				gLowPowerPer == BATTERY_PERCENT_LEVEL_0 &&
-				gLowPowerOc == BATTERY_OC_LEVEL_0))
-					logI("[FLASH_IOC_SET_ONOFF] PT condition (%d, %d, %d)",
-					gLowPowerVbat, gLowPowerPer, gLowPowerOc);
 				i4RetValue = pF->flashlight_ioctl(cmd, kdArg.arg);
+
 			} else {
 				logI("[FLASH_IOC_SET_ONOFF] function pointer is wrong -");
 			}
@@ -770,12 +770,158 @@ static struct device *flashlight_device;
 static struct flashlight_data flashlight_private;
 static dev_t flashlight_devno;
 static struct cdev *g_pFlash_CharDrv;
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_INDRIYAPRO
+/* songwei4 add for facotry mode flash test. this MACRO FLAH_SYS_CTRL
+control create sys node /sys/class/leds/flash\/torch
+and app can operation this node. 2014 7-11 */
+#define FLAH_SYS_CTRL 1
+#if FLAH_SYS_CTRL
+#include <linux/leds.h>
+static struct work_struct flash_work;
+FLASHLIGHT_FUNCTION_STRUCT *submpF=NULL;
+static void flash_work_func(struct work_struct *data);
+FLASHLIGHT_FUNCTION_STRUCT *mpF=NULL;
+#ifdef CONFIG_LENOVO_TORCH_MODE
+FLASHLIGHT_FUNCTION_STRUCT *lowpF=NULL;
+#endif
+static struct led_classdev flash_cdev;
+static struct led_classdev torch_cdev;
+static struct led_classdev sub_flash_cdev;
+static int flash_torch_flag=0;
+static int fl_value=0;
+static void flash_work_func(struct work_struct *data)
+{
+	int duty=0;
+#ifdef CONFIG_LENOVO_TORCH_MODE
+	if((mpF==NULL)||(lowpF==NULL))
+#else
+	if(mpF==NULL)
+#endif
+	{
+		printk("-------flash_work_func pF==NULL----\n");
+		return;
+	}
+	if(fl_value==0){
+		//mpF->flashlight_open(0);
+		mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+		mpF->flashlight_release(0);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+		lowpF->flashlight_release(0);
+#endif
+		return;
+	}
+	if(flash_torch_flag){
+		#ifdef CONFIG_LENOVO_TORCH_MODE
+		duty=12;
+		#else
+		duty=1;
+		#endif
+	}else{
+		#ifdef CONFIG_LENOVO_TORCH_MODE
+		duty=3;
+		#else
+		duty=0;
+		#endif
+	}
+	if(flash_torch_flag==1) //engineer mode
+	{
+	mpF->flashlight_open(0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 3);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+	#ifdef CONFIG_LENOVO_TORCH_MODE
+		lowpF->flashlight_open(0);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 3);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+	#endif
+	printk("--[%s][%d]--------duty=%d  flash_torch_flag=%d only in engineer mode\n",__FUNCTION__,__LINE__,duty,flash_torch_flag);
+	return;
+	}
+	else //torch mode
+	{
+	mpF->flashlight_open(0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 2);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+	lowpF->flashlight_open(0);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 3);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+#endif
+	}
+	printk("--[%s][%d]--------duty=%d  flash_torch_flag=%d\n",__FUNCTION__,__LINE__,duty,flash_torch_flag);
+	return;
+}
+static void sys_flash_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	//ii
+	printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	flash_torch_flag=1;
+	fl_value=brightness;
+	schedule_work(&flash_work);
+	return;
+}
+static void sys_torch_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	flash_torch_flag=0;
+	fl_value=brightness;
+	schedule_work(&flash_work);
+	return;
+}
+static void sys_sub_flash_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	printk("-- [%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	if (brightness == 0) {
+	submpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+	submpF->flashlight_release(0);
+	} else {
+	submpF->flashlight_open(0);
+	submpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	submpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 0);
+	submpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+	}
+
+	return;
+}
+static ssize_t show_aw3644_id(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	kal_uint8 tmp;
+	mpF->flashlight_open(0);
+	tmp=mpF->flashlight_ioctl(FLASH_IOC_GET_REG, 0x0c);
+	//printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,tmp);
+	mpF->flashlight_release(0);
+	if (tmp == 0x02)
+		return snprintf(buf, 10, "%s\n", "aw3644");
+	else
+		return snprintf(buf, 10, "%s\n", "ERROR");
+}
+
+static ssize_t store_aw3644_id(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	return size;
+}
+
+static DEVICE_ATTR(aw3644_id, 0664, show_aw3644_id, store_aw3644_id);
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 /* ======================================================================== */
 #define ALLOC_DEVNO
 static int flashlight_probe(struct platform_device *dev)
 {
 	int ret = 0, err = 0;
-
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_INDRIYAPRO
+#if FLAH_SYS_CTRL
+	int device_file = 0;
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] start ~");
 
 #ifdef ALLOC_DEVNO
@@ -834,9 +980,33 @@ static int flashlight_probe(struct platform_device *dev)
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_INDRIYAPRO
+#if FLAH_SYS_CTRL
+    //create some sys node.
+    torch_cdev.name="torch";
+    torch_cdev.brightness_set=sys_torch_brightness_set;
+    led_classdev_register(&(dev->dev),&torch_cdev);
+
+    flash_cdev.name="hq-torch";
+    flash_cdev.brightness_set=sys_flash_brightness_set;
+    led_classdev_register(&(dev->dev),&flash_cdev);
+    sub_flash_cdev.name="sub-flashlight";
+    sub_flash_cdev.brightness_set=sys_sub_flash_brightness_set;
+    led_classdev_register(&(dev->dev),&sub_flash_cdev);
+    constantFlashlightInit(&mpF);
+    subStrobeInit(&submpF);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+    strobeInit_main_sid2_part1_aw3644(&lowpF);
+#endif
+    INIT_WORK(&flash_work, flash_work_func);
+    device_file = device_create_file(flashlight_device, &dev_attr_aw3644_id);
+#endif
+#else
 	/* GPIO pinctrl initial */
 	flashlight_gpio_init(dev);
-
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -866,7 +1036,14 @@ static int flashlight_remove(struct platform_device *dev)
 #endif
 	device_destroy(flashlight_class, flashlight_devno);
 	class_destroy(flashlight_class);
-
+//lenovo.sw STRAT wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_INDRIYAPRO
+#if FLAH_SYS_CTRL
+	led_classdev_unregister(&torch_cdev);
+        led_classdev_unregister(&flash_cdev);
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] Done ~");
 	return 0;
 }
@@ -878,14 +1055,16 @@ static void flashlight_shutdown(struct platform_device *dev)
 	checkAndRelease();
 	logI("[flashlight_shutdown] Done ~");
 }
-
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifndef CAMERA_FLASH_INDRIYAPRO
 #ifdef CONFIG_OF
 static const struct of_device_id FLASHLIGHT_of_match[] = {
-	{.compatible = "mediatek,mt6797-flashlight"},
+	{.compatible = "mediatek,mt6755-flashlight"},
 	{},
 };
 #endif
-
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
@@ -893,9 +1072,13 @@ static struct platform_driver flashlight_platform_driver = {
 	.driver = {
 		   .name = FLASHLIGHT_DEVNAME,
 		   .owner = THIS_MODULE,
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifndef CAMERA_FLASH_INDRIYAPRO
 #ifdef CONFIG_OF
 	.of_match_table = FLASHLIGHT_of_match,
 #endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 		   },
 };
 
@@ -923,11 +1106,13 @@ static int __init flashlight_init(void)
 		logI("[flashlight_probe] platform_driver_register fail ~");
 		return ret;
 	}
-#if POWER_THROTTLING
+
 	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
-	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight, BATTERY_PERCENT_PRIO_FLASHLIGHT);
-	register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT);
-#endif
+	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
+					BATTERY_PERCENT_PRIO_FLASHLIGHT);
+/* @@    register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT); */
+
+
 	logI("[flashlight_probe] done! ~");
 	return ret;
 }

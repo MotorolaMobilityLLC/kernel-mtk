@@ -14,7 +14,9 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-
+#ifeq ($(TARGET_PRODUCT),manning)
+ccflags-y += -DCAMERA_FLASH_INDRIYAPRO
+#endif
 obj-y				+= kd_flashlightlist.o
 obj-y				+= strobe_main_sid2_part2.o
 obj-y				+= strobe_sub_sid2_part1.o

@@ -30,7 +30,7 @@
 #include <linux/time.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_flashlight_type.h"
+#include "kd_camera_typedef.h"
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 #include <linux/version.h>
@@ -42,14 +42,32 @@
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
+/* availible parameter */
+/* ANDROID_LOG_ASSERT */
+/* ANDROID_LOG_ERROR */
+/* ANDROID_LOG_WARNING */
+/* ANDROID_LOG_INFO */
+/* ANDROID_LOG_DEBUG */
+/* ANDROID_LOG_VERBOSE */
 #define TAG_NAME "[strobe_sub_sid2_part2.c]"
+#define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_WARN(fmt, arg...)        pr_warn(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_NOTICE(fmt, arg...)      pr_notice(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_INFO(fmt, arg...)        pr_info(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_TRC_FUNC(f)              pr_debug(TAG_NAME "<%s>\n", __func__)
+#define PK_TRC_VERBOSE(fmt, arg...) pr_debug(TAG_NAME fmt, ##arg)
+#define PK_ERROR(fmt, arg...)       pr_err(TAG_NAME "%s: " fmt, __func__ , ##arg)
 
 #define DEBUG_LEDS_STROBE
 #ifdef DEBUG_LEDS_STROBE
 #define PK_DBG PK_DBG_FUNC
+#define PK_VER PK_TRC_VERBOSE
+#define PK_ERR PK_ERROR
 #else
 #define PK_DBG(a, ...)
+#define PK_VER(a, ...)
+#define PK_ERR(a, ...)
 #endif
 
 

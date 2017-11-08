@@ -30,7 +30,7 @@
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
-#define LOG_INF(format, args...) pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) pr_err(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -49,8 +49,8 @@ static unsigned long g_u4CurrPosition;
 #define Min_Pos		0
 #define Max_Pos		1023
 
-static signed short Hall_Max = 0x5800;
-static signed short Hall_Min = 0xA800;
+static signed short Hall_Max = 0x4500;
+static signed short Hall_Min =  0xBB00;
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {

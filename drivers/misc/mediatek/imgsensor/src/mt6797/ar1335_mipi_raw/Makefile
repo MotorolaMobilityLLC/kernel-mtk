@@ -12,5 +12,5 @@
 #
 
 
-obj-y += s5k5e2yamipiraw_Sensor.o
-obj-y += s5k5e2_eeprom.o
+obj-y += ar1335mipi_ofilm_Sensor.o
+obj-y += GT24c32a.o

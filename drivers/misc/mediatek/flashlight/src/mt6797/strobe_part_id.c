@@ -30,7 +30,7 @@
 #include <linux/time.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_flashlight_type.h"
+#include "kd_camera_typedef.h"
 #ifdef CONFIG_COMPAT
 #include <linux/fs.h>
 #include <linux/compat.h>
