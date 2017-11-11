@@ -2764,15 +2764,11 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			PK_ERR(" NULL arg.\n");
 			return -EFAULT;
 		}
-<<<<<<< HEAD
-		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
-=======
 
 		if (copy_from_user((void *)&FeatureParaLen,
 				(void *)pFeatureCtrl->pFeatureParaLen,
 				sizeof(unsigned int)) ||
 				FeatureParaLen > FEATURE_PARA_LENGTH_MAX) {
->>>>>>> origin_partner/mtk/caf/6797_O
 			PK_ERR(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}

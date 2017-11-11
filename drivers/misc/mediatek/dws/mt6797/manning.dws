@@ -1732,8 +1732,6 @@
                 <smt>true</smt>
             </gpio136>
             <gpio137>
-<<<<<<< HEAD
-=======
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000100</mode_arr>
@@ -1744,7 +1742,6 @@
                 <out>true</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_IRTX_OUT_PIN</varName0>
->>>>>>> origin_partner/mtk/caf/6797_O
                 <smt>true</smt>
             </gpio137>
             <gpio138>
