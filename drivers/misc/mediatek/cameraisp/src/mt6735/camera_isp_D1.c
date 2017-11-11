@@ -7914,7 +7914,7 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
 		}
 	}
 
-	LOG_INF("User(%s)key(%d)\n", userName, key);
+	LOG_INF("User(%s)key(%d)\n", m_UserName, key);
 	return key;
 }
 

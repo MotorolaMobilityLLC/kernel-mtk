@@ -2666,6 +2666,7 @@ inline static int adopt_CAMERA_HW_Control(void *pBuf)
 /*******************************************************************************
 * adopt_CAMERA_HW_FeatureControl
 ********************************************************************************/
+#define FEATURE_PARA_LENGTH_MAX 0x10000
 inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 {
     ACDK_SENSOR_FEATURECONTROL_STRUCT *pFeatureCtrl = (ACDK_SENSOR_FEATURECONTROL_STRUCT *)pBuf;
@@ -2695,7 +2696,11 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			PK_ERR(" NULL arg.\n");
 			return -EFAULT;
 		}
-		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int)) && FeatureParaLen) {
+
+		if (copy_from_user((void *)&FeatureParaLen,
+				(void *)pFeatureCtrl->pFeatureParaLen,
+				sizeof(unsigned int)) ||
+				FeatureParaLen > FEATURE_PARA_LENGTH_MAX) {
 			PK_ERR(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}

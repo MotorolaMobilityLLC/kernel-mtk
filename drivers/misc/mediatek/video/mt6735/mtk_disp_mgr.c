@@ -1859,6 +1859,10 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 	caps_info.disp_feature |= DISP_FEATURE_NO_PARGB;
 
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	caps_info.is_output_rotated = 1;
+#endif
+
 	DISPMSG("%s mode:%d, pass:%d, max_layer_num:%d\n",
 		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
 
