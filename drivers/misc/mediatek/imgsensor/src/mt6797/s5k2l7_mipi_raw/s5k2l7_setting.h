@@ -35,7 +35,7 @@
 #include "s5k2l7_setting_mode3.h"
 
 
-#define S5K2L7_SENSOR_MODE 1 // open this define for m1, close this define for m2
+#define S5K2L7_SENSOR_MODE 3 /* open this define for m1, close this define for m2 */
 
 UINT16 pdaf_sensor_mode = S5K2L7_SENSOR_MODE;
 UINT16 proc_pdaf_sensor_mode = S5K2L7_SENSOR_MODE;
