@@ -907,12 +907,10 @@ static VOID wmt_core_dump_func_state(PINT8 pSource)
 
 }
 
-#if WMT_FOR_SDIO_1V_AUTOK
 ENUM_DRV_STS wmt_core_get_drv_status(ENUM_WMTDRV_TYPE_T type)
 {
 	return gMtkWmtCtx.eDrvStatus[type];
 }
-#endif
 
 MTK_WCN_BOOL wmt_core_patch_check(UINT32 u4PatchVer, UINT32 u4HwVer)
 {

@@ -335,9 +335,7 @@ extern VOID wmt_lib_dump_wmtd_backtrace(VOID);
 #if CFG_WMT_LTE_COEX_HANDLING
 extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(struct ipc_ilm *idc_infor);
 #endif
-#if WMT_FOR_SDIO_1V_AUTOK
 extern UINT32 wmt_lib_get_drv_status(UINT32 type);
-#endif
 extern INT32 wmt_lib_tm_temp_query(VOID);
 extern INT32 wmt_lib_trigger_reset(VOID);
 extern INT32 wmt_lib_trigger_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);

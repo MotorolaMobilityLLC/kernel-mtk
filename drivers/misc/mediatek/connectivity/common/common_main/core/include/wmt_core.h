@@ -455,9 +455,7 @@ extern INT32 wmt_core_lpbk_do_stp_deinit(void);
 #endif
 
 extern VOID wmt_core_set_coredump_state(ENUM_DRV_STS state);
-#if WMT_FOR_SDIO_1V_AUTOK
 extern ENUM_DRV_STS wmt_core_get_drv_status(ENUM_WMTDRV_TYPE_T type);
-#endif
 #if CFG_WMT_LTE_COEX_HANDLING
 extern VOID wmt_core_set_flag_for_test(UINT32 enable);
 extern UINT32 wmt_core_get_flag_for_test(VOID);
