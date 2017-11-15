@@ -2,7 +2,7 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-subdir-ccflags-y += -Werror
+#subdir-ccflags-y += -Werror
 
 obj-$(CONFIG_IBM_ASM)		+= ibmasm/
 obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
