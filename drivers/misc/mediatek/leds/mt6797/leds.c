@@ -548,10 +548,10 @@ static int led_switch_breath_pmic(enum mt65xx_led_pmic pmic_type,
 
 #define PMIC_PERIOD_NUM 8
 /* 100 * period, ex: 0.01 Hz -> 0.01 * 100 = 1 */
-int pmic_period_array[] = { 250, 500, 1000, 1250, 1666, 2000, 2500, 10000 };
+int pmic_period_array[] = { 250, 500, 1000, 1250, 1666, 2000, 5000, 10000 };
 
 /* int pmic_freqsel_array[] = {99999, 9999, 4999, 1999, 999, 499, 199, 4, 0}; */
-int pmic_freqsel_array[] = { 0, 4, 199, 499, 999, 1999, 1999, 1999 };
+int pmic_freqsel_array[] = { 0, 4, 199, 499, 999, 1999, 4999, 9999 };
 
 static int find_time_index_pmic(int time_ms)
 {
@@ -590,7 +590,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_0);	/* 4mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, duty);
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL,
 					pmic_freqsel_array[time_index]);
@@ -801,7 +801,7 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_0);	/* 4mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, 15);
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */
 		if (level)
