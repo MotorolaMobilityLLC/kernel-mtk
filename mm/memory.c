@@ -3054,7 +3054,7 @@ EXPORT_SYMBOL(unmap_mapping_range);
 int do_swap_page(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
-	struct page *page = NULL, *swapcache;
+	struct page *page = NULL, *swapcache = NULL;
 	struct mem_cgroup *memcg;
 	struct vma_swap_readahead swap_ra;
 	swp_entry_t entry;
@@ -3108,6 +3108,8 @@ int do_swap_page(struct vm_fault *vmf)
 		page = lookup_swap_cache(entry, vma_readahead ? vma : NULL,
 					 vmf->address);
 	if (!page) {
+		struct swap_info_struct *si = swp_swap_info(entry);
+
 		if (vma_readmore && (vmf->flags & FAULT_FLAG_SPECULATIVE)) {
 			/*
 			 * Don't try readahead during a speculative page fault
@@ -3120,14 +3122,27 @@ int do_swap_page(struct vm_fault *vmf)
 			ret = VM_FAULT_RETRY;
 			goto out;
 		}
-		if (vma_readahead)
-			page = do_swap_page_readahead(entry,
-				GFP_HIGHUSER_MOVABLE | __GFP_CMA, vmf,
-						&swap_ra);
-		else
-			page = swapin_readahead(entry,
-				GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma,
-						vmf->address);
+		if (!(si->flags & SWP_SYNCHRONOUS_IO)) {
+			if (vma_readahead)
+				page = do_swap_page_readahead(entry,
+					GFP_HIGHUSER_MOVABLE | __GFP_CMA, vmf,
+							&swap_ra);
+			else
+				page = swapin_readahead(entry,
+					GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma,
+							vmf->address);
+			swapcache = page;
+		} else {
+			/* skip swapcache */
+			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vmf->address);
+			if (page) {
+				__SetPageLocked(page);
+				__SetPageSwapBacked(page);
+				set_page_private(page, entry.val);
+				lru_cache_add_anon(page);
+				swap_readpage(page, true);
+			}
+		}
 		if (!page) {
 			/*
 			 * Back out if the VMA has changed in our back during
@@ -3160,7 +3175,6 @@ int do_swap_page(struct vm_fault *vmf)
 		goto out_release;
 	}
 
-	swapcache = page;
 	locked = lock_page_or_retry(page, vma->vm_mm, vmf->flags);
 
 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
@@ -3175,7 +3189,8 @@ int do_swap_page(struct vm_fault *vmf)
 	 * test below, are not enough to exclude that.  Even if it is still
 	 * swapcache, we need to check that the page's swap has not changed.
 	 */
-	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
+	if (unlikely((!PageSwapCache(page) ||
+			page_private(page) != entry.val)) && swapcache)
 		goto out_page;
 
 	page = ksm_might_need_to_copy(page, vma, vmf->address);
@@ -3231,14 +3246,15 @@ int do_swap_page(struct vm_fault *vmf)
 		pte = pte_mksoft_dirty(pte);
 	set_pte_at(vma->vm_mm, vmf->address, vmf->pte, pte);
 	vmf->orig_pte = pte;
-	if (page == swapcache) {
-		do_page_add_anon_rmap(page, vma, vmf->address, exclusive);
-		mem_cgroup_commit_charge(page, memcg, true, false);
-		activate_page(page);
-	} else { /* ksm created a completely new copy */
+	/* ksm created a completely new copy */
+	if (unlikely(page != swapcache && swapcache)) {
 		__page_add_new_anon_rmap(page, vma, vmf->address, false);
 		mem_cgroup_commit_charge(page, memcg, false, false);
 		__lru_cache_add_active_or_unevictable(page, vmf->vma_flags);
+	} else {
+		do_page_add_anon_rmap(page, vma, vmf->address, exclusive);
+		mem_cgroup_commit_charge(page, memcg, true, false);
+		activate_page(page);
 	}
 
 	swap_free(entry);
@@ -3246,7 +3262,7 @@ int do_swap_page(struct vm_fault *vmf)
 	    (vmf->vma_flags & VM_LOCKED) || PageMlocked(page))
 		try_to_free_swap(page);
 	unlock_page(page);
-	if (page != swapcache) {
+	if (page != swapcache && swapcache) {
 		/*
 		 * Hold the lock to avoid the swap entry to be reused
 		 * until we take the PT lock for the pte_same() check
@@ -3280,7 +3296,7 @@ out_page:
 	unlock_page(page);
 out_release:
 	put_page(page);
-	if (page != swapcache) {
+	if (page != swapcache && swapcache) {
 		unlock_page(swapcache);
 		put_page(swapcache);
 	}
