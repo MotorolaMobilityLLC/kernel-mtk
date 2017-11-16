@@ -1,0 +1,8 @@
+config MTK_BMA253
+	tristate "BMA253 for MediaTek package"
+	default n
+	help
+	  It support different accelerometer sensor.
+          If this option is set,
+	  it will support
+          BMA253 Accelerometer.

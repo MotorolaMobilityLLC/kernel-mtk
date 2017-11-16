@@ -1,0 +1,66 @@
+config MICROTRUST_TEE_SUPPORT
+	bool "Enable Microtrust TEEI Support"
+	default n
+	---help---
+	  Enable Microtrust TEEI Support
+
+config MICROTRUST_TZ_DRIVER
+	tristate "Microtrust TEEI Driver"
+	depends on MICROTRUST_TEE_SUPPORT
+	default y
+	---help---
+	  Enable TEEI Linux Kernel Tz Driver
+
+config MICROTRUST_VFS_DRIVER
+	tristate "Microtrust Virtual File System Driver"
+	depends on MICROTRUST_TEE_SUPPORT
+	default y
+	---help---
+	  Enable TEEI Virtual File System Driver
+
+config MICROTRUST_FP_DRIVER
+	tristate "Microtrust Fingerprint Driver"
+	depends on MICROTRUST_TEE_SUPPORT
+	default y
+	---help---
+	  Enable TEEI Fingerprint Driver
+
+config MICROTRUST_KEYMASTER_DRIVER
+	tristate "Microtrust keymaster Driver"
+	depends on MICROTRUST_TEE_SUPPORT
+	default y
+	---help---
+	  Enable TEEI Keymaster Driver
+
+config MICROTRUST_TUI_DRIVER
+	bool "Enable Microtrust TUI Support"
+	depends on MICROTRUST_TEE_SUPPORT
+	default n
+	---help---
+	  Enable Microtrust TUI Support
+
+config MICROTRUST_DEBUG
+	bool "Enable Microtrust Debug Message"
+	depends on MICROTRUST_TEE_SUPPORT
+	default n
+	---help---
+	  Enable debug messages output from Microtrust Linux drivers
+
+config MICROTRUST_DCIH_SUPPORT
+     tristate "Microtrust DCIH Capability Support"
+     depends on MICROTRUST_TEE_SUPPORT
+     default n
+     ---help---
+     Enable TEEI DCIH Capability
+
+config MICROTRUST_TZ_LOG
+	bool "Enable Microtrust TrustZone logger"
+	depends on MICROTRUST_TEE_SUPPORT
+	default y
+	---help---
+	  Enable Microtrust TrustZone logger to dump TEE logs in kernel log buffer.
+
+config MICROTRUST_WDT_FIQ_ARMV7_SUPPORT
+	tristate "Microtrust WDT FIQ for arm"
+	depends on MICROTRUST_TEE_SUPPORT && MTK_NO_ATF && !MTK_KERNEL_IN_SECURE_MODE
+	default y
