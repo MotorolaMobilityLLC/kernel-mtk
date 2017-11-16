@@ -3110,7 +3110,18 @@ int do_swap_page(struct vm_fault *vmf)
 	if (!page) {
 		struct swap_info_struct *si = swp_swap_info(entry);
 
-		if (vma_readmore && (vmf->flags & FAULT_FLAG_SPECULATIVE)) {
+		if (si->flags & SWP_SYNCHRONOUS_IO &&
+				__swap_count(si, entry) == 1) {
+			/* skip swapcache */
+			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vmf->address);
+			if (page) {
+				__SetPageLocked(page);
+				__SetPageSwapBacked(page);
+				set_page_private(page, entry.val);
+				lru_cache_add_anon(page);
+				swap_readpage(page, true);
+			}
+		} else if (vma_readmore && (vmf->flags & FAULT_FLAG_SPECULATIVE)) {
 			/*
 			 * Don't try readahead during a speculative page fault
 			 * as the VMA's boundaries may change in our back.
@@ -3121,8 +3132,7 @@ int do_swap_page(struct vm_fault *vmf)
 			delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
 			ret = VM_FAULT_RETRY;
 			goto out;
-		}
-		if (!(si->flags & SWP_SYNCHRONOUS_IO)) {
+		} else {
 			if (vma_readahead)
 				page = do_swap_page_readahead(entry,
 					GFP_HIGHUSER_MOVABLE | __GFP_CMA, vmf,
@@ -3132,16 +3142,6 @@ int do_swap_page(struct vm_fault *vmf)
 					GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma,
 							vmf->address);
 			swapcache = page;
-		} else {
-			/* skip swapcache */
-			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vmf->address);
-			if (page) {
-				__SetPageLocked(page);
-				__SetPageSwapBacked(page);
-				set_page_private(page, entry.val);
-				lru_cache_add_anon(page);
-				swap_readpage(page, true);
-			}
 		}
 		if (!page) {
 			/*
