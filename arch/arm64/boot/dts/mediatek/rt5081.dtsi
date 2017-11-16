@@ -14,8 +14,8 @@
 	rt5081_pmu: rt5081_pmu_dts {
 		interrupt-controller;
 		#interrupt-cells = <1>;
-		rt,intr_gpio_num = <3>; /* direct defined GPIO num */
-		rt,intr_gpio = <&pio 3 0x0>; /* GPIO */
+		rt,intr_gpio_num = <101>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 101 0x0>; /* GPIO */
 		core {
 			compatible = "richtek,rt5081_pmu_core";
 			interrupt-names = "otp", "vdda_ovp", "vdda_uv";
@@ -102,7 +102,7 @@
 			interrupt-names = "bled_ocp";
 			rt,bled_name = "rt5081_pmu_bled";
 			//rt,ext_en_pin;
-			rt,chan_en  = <0xf>; /* bit 0 1 2 3 -> chan 1 2 3 4 */
+			rt,chan_en  = <0xe>; /* bit 0 1 2 3 -> chan 1 2 3 4 */
 			rt,map_linear;
 			rt,bl_ovp_level = <3>; /* 0 17v, 1 21v, 2 25v, 3 29v */
 			rt,bl_ocp_level = <2>; /* 0 900mA, 1 1200mA, 2 1500mA, 3 1800mA */

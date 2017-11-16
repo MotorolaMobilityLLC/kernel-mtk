@@ -34,6 +34,15 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+	
+#if defined(LCT_OTM1911A_OFILM_1080P_VDO)
+	&lct_otm1911a_ofilm_1080p_vdo_lcm_drv,
+#endif
+
+#if defined(LCT_R63350_TIANMA_1080P_VDO)
+	&lct_r63350_tianma_1080p_vdo_lcm_drv,
+#endif
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
