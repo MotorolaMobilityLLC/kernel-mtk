@@ -1,0 +1,14 @@
+* Goodix Fingerprint sensors
+
+Required properties:
+- compatible : "goodix,goodix-fp".
+- spi-max-frequency = <8000000>;
+
+Example:
+
+ &spi1 {
+	fingerprint@0 {
+		compatible = "goodix,goodix-fp";
+		spi-max-frequency = <8000000>;
+		status = "okay";
+}

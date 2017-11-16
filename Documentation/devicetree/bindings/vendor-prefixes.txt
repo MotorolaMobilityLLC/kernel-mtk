@@ -63,6 +63,7 @@ geniatech	Geniatech, Inc.
 globalscale	Globalscale Technologies, Inc.
 gmt	Global Mixed-mode Technology, Inc.
 google	Google, Inc.
+goodix	Goodix Technology Co. Ltd.
 gumstix	Gumstix, Inc.
 gw	Gateworks Corporation
 haoyu	Haoyu Microelectronic Co. Ltd.
