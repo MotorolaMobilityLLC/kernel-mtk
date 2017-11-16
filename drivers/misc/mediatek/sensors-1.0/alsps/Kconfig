@@ -19,3 +19,7 @@ source "drivers/misc/mediatek/sensors-1.0/alsps/alspshub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652-new/Kconfig"
+
+#add by yanghongjiang 1102 for add new driver
+source "drivers/misc/mediatek/sensors-1.0/alsps/ltr578/Kconfig"
+#end

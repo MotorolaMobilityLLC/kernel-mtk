@@ -2156,12 +2156,12 @@
             <device2>
                 <varName>MSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x0D</address>
+                <address>0x30</address>
             </device2>
             <device3>
                 <varName>GSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x6B</address>
+                <address>0x68</address>
             </device3>
             <device4>
                 <varName>BAROMETER</varName>
@@ -2171,7 +2171,7 @@
             <device5>
                 <varName>ALSPS</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x51</address>
+                <address>0x53</address>
             </device5>
             <device6>
                 <varName>SPEAKER_AMP</varName>

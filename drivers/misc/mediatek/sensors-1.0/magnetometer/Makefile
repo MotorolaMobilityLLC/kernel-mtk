@@ -8,3 +8,6 @@ obj-y   +=  mag_factory.o
 
 obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
 obj-$(CONFIG_MTK_AKM09911)         +=  akm09911/
+#add by yanghongjiang for add new driver
+obj-$(CONFIG_MTK_MMC3630X)   +=  mmc3630x/
+#end

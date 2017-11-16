@@ -19,3 +19,7 @@ source "drivers/misc/mediatek/sensors-1.0/magnetometer/maghub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/magnetometer/akm09911-new/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/magnetometer/akm09911/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/magnetometer/akm09915-new/Kconfig"
+
+#add by yanghongjiang 1102 for add new driver
+source "drivers/misc/mediatek/sensors-1.0/magnetometer/mmc3630x/Kconfig"
+#end

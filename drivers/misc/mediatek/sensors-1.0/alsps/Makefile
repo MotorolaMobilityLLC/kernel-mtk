@@ -6,3 +6,6 @@ obj-y   +=  aal_control.o
 
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 obj-$(CONFIG_MTK_CM36558)	+=  cm36558/
+#add by yanghongjiang for add new driver
+obj-$(CONFIG_MTK_LTR578)	+=  ltr578/
+#end

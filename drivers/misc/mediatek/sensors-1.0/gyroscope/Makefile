@@ -5,4 +5,7 @@ obj-y   +=  gyroscope.o gyro_factory.o
 
 
 obj-$(CONFIG_MTK_GYROHUB)      +=  gyrohub/
-obj-$(CONFIG_MTK_LSM6DS3HGY)   +=  lsm6ds3hgy/
+obj-$(CONFIG_MTK_LSM6DS3HGY) +=  lsm6ds3hgy/
+#add by yanghongjiang for add new driver
+obj-$(CONFIG_MTK_BMI160GY_NEW)   +=  bmi160_gyro/
+#end

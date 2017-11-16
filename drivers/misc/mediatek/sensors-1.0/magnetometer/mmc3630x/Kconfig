@@ -1,0 +1,9 @@
+
+config MTK_MMC3630X
+	bool "mmc3630x for MediaTek package"
+	default n
+	help
+	  It support different magnetometer sensor.
+		  If this option is set,
+	  It will support
+		  MMC3630X magnetometer.
