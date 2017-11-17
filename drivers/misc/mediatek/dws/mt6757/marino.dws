@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="160817" dws_modification_time="10.03.2016.16:12:34"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.17.2017.17:56:59"-->
 <dct_cfg>
     <general chip="MT6757-P25">
         <proj>marino</proj>
@@ -33,6 +33,18 @@
                 <varName>HW_CONTROL</varName>
                 <current>3.0</current>
             </pmic_clk4>
+            <pmic_clk5>
+                <varName>DISABLE</varName>
+                <current>1.4</current>
+            </pmic_clk5>
+            <pmic_clk6>
+                <varName>DISABLE</varName>
+                <current>1.4</current>
+            </pmic_clk6>
+            <pmic_clk7>
+                <varName>DISABLE</varName>
+                <current>1.4</current>
+            </pmic_clk7>
             <rf_clk1>
                 <varName>HW_CONTROL</varName>
                 <current>1.4</current>
@@ -118,6 +130,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
+            <eint57>
+                <varName>SWTP</varName>
+                <debounce_time>256</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint57>
             <eint101>
                 <varName>RT5081_PMU_EINT</varName>
                 <debounce_time>0</debounce_time>
@@ -908,6 +927,19 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio56>
+            <gpio57>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <mode_arr>10000000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio57>
             <gpio59>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -935,6 +967,19 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio60>
+            <gpio62>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <mode_arr>11000000</mode_arr>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>true</in>
+                <out>true</out>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio62>
             <gpio63>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -1052,6 +1097,19 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio78>
+            <gpio79>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <mode_arr>11000000</mode_arr>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>true</in>
+                <out>true</out>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio79>
             <gpio80>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -1059,7 +1117,7 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <in>false</in>
+                <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
                 <smt>false</smt>
@@ -1072,12 +1130,25 @@
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <in>false</in>
+                <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio81>
+            <gpio82>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <mode_arr>11000000</mode_arr>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>true</in>
+                <out>true</out>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>false</ies>
+            </gpio82>
             <gpio83>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
