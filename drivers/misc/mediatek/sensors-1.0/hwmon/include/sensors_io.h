@@ -137,27 +137,7 @@ struct compat_biometric_threshold {
 #define COMPAT_MSENSOR_IOCTL_SET_CALIDATA		    _IOW(MSENSOR, 0x0a, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE          _IOW(MSENSOR, 0x51, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA  _IOW(MSENSOR, 0x52, compat_int_t)
-#endif
 
-#define ECS_IOCTL_GET_OUTBIT		_IOR(MSENSOR, 0x23, char)
-#define ECS_IOCTL_GET_ACCEL		_IOR(MSENSOR, 0x24, short[3])
-#define MMC31XX_IOC_RM					_IO(MSENSOR, 0x25)
-#define MMC31XX_IOC_RRM					_IO(MSENSOR, 0x26)
-/* IOCTLs for MMC31XX device */
-#define MMC31XX_IOC_TM					_IO(MSENSOR, 0x18)
-#define MMC31XX_IOC_SET					_IO(MSENSOR, 0x19)
-#define MMC31XX_IOC_RESET				_IO(MSENSOR, 0x1a)
-#define MMC31XX_IOC_READ				_IOR(MSENSOR, 0x1b, int[3])
-#define MMC31XX_IOC_READXYZ				_IOR(MSENSOR, 0x1c, int[3])
-
-#define ECOMPASS_IOC_GET_DELAY			_IOR(MSENSOR, 0x1d, int)
-#define ECOMPASS_IOC_GET_MFLAG			_IOR(MSENSOR, 0x1e, short)
-#define	ECOMPASS_IOC_GET_OFLAG			_IOR(MSENSOR, 0x1f, short)
-#define ECOMPASS_IOC_GET_OPEN_STATUS	_IOR(MSENSOR, 0x20, int)
-#define ECOMPASS_IOC_SET_YPR			_IOW(MSENSOR, 0x21, int[12])
-#define ECOMPASS_IOC_GET_LAYOUT			_IOR(MSENSOR, 0X22, int)
-
-#ifdef CONFIG_COMPAT
 /*COMPAT IOCTLs for AKM library */
 #define COMPAT_ECS_IOCTL_WRITE                 _IOW(MSENSOR, 0x0b, compat_uptr_t)
 #define COMPAT_ECS_IOCTL_READ                  _IOWR(MSENSOR, 0x0c, compat_uptr_t)
@@ -173,59 +153,12 @@ struct compat_biometric_threshold {
 #define COMPAT_ECS_IOCTL_GET_MATRIX            _IOR(MSENSOR, 0x16, compat_short_t [4][3][3])
 #define	COMPAT_ECS_IOCTL_GET_LAYOUT			   _IOR(MSENSOR, 0x17, compat_int_t[3])
 
-#define COMPAT_ECS_IOCTL_GET_OUTBIT		       _IOR(MSENSOR, 0x23, char)
-#define COMPAT_ECS_IOCTL_GET_ACCEL		       _IOR(MSENSOR, 0x24, compat_short_t[3])
-#define COMPAT_MMC31XX_IOC_RM				   _IO(MSENSOR, 0x25)
-#define COMPAT_MMC31XX_IOC_RRM				   _IO(MSENSOR, 0x26)
 /*COMPAT IOCTLs for akm09911 device */
 #define COMPAT_ECS_IOCTL_GET_INFO			   _IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE])
 #define COMPAT_ECS_IOCTL_GET_CONF			   _IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
 #define COMPAT_ECS_IOCTL_SET_YPR_09911         _IOW(MSENSOR, 0x29, compat_int_t[26])
 #define COMPAT_ECS_IOCTL_GET_DELAY_09911       _IOR(MSENSOR, 0x30, int64_t[3])
 #define	COMPAT_ECS_IOCTL_GET_LAYOUT_09911	   _IOR(MSENSOR, 0x31, char)
-/*COPMPAT IOCTLs for MMC31XX device */
-#define COMPAT_MMC31XX_IOC_TM				   _IO(MSENSOR, 0x18)
-#define COMPAT_MMC31XX_IOC_SET				   _IO(MSENSOR, 0x19)
-#define COMPAT_MMC31XX_IOC_RESET			   _IO(MSENSOR, 0x1a)
-#define COMPAT_MMC31XX_IOC_READ				   _IOR(MSENSOR, 0x1b, compat_int_t[3])
-#define COMPAT_MMC31XX_IOC_READXYZ			   _IOR(MSENSOR, 0x1c, compat_int_t[3])
-
-#define COMPAT_ECOMPASS_IOC_GET_DELAY		   _IOR(MSENSOR, 0x1d, compat_int_t)
-#define COMPAT_ECOMPASS_IOC_GET_MFLAG		   _IOR(MSENSOR, 0x1e, compat_short_t)
-#define	COMPAT_ECOMPASS_IOC_GET_OFLAG		   _IOR(MSENSOR, 0x1f, compat_short_t)
-#define COMPAT_ECOMPASS_IOC_GET_OPEN_STATUS	   _IOR(MSENSOR, 0x20, compat_int_t)
-#define COMPAT_ECOMPASS_IOC_SET_YPR			   _IOW(MSENSOR, 0x21, compat_int_t[12])
-#define COMPAT_ECOMPASS_IOC_GET_LAYOUT		   _IOR(MSENSOR, 0X22, compat_int_t)
-#endif
-/* IOCTLs for QMCX983 device */
-
-#define QMC_IOCTL_WRITE                 _IOW(MSENSOR, 0x40, char*)
-#define QMC_IOCTL_READ                  _IOWR(MSENSOR, 0x41, char*)
-#define QMC_IOCTL_RESET                 _IO(MSENSOR, 0x42)
-#define QMC_IOCTL_SET_MODE              _IOW(MSENSOR, 0x43, short)
-#define QMC_IOCTL_GETDATA               _IOR(MSENSOR, 0x44, char[SENSOR_DATA_SIZE])
-#define QMC_IOCTL_SET_YPR               _IOW(MSENSOR, 0x45, short[28])
-#define QMC_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x46, int)
-#define QMC_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x47, int)
-#define QMC_IOC_GET_MFLAG               _IOR(MSENSOR, 0x48, int)
-#define QMC_IOC_GET_OFLAG               _IOR(MSENSOR, 0x49, int)
-#define QMC_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x4a, short)
-
-
-#ifdef CONFIG_COMPAT
-/* compat IOCTLs for QMCX983 device */
-
-#define COMPAT_QMC_IOCTL_WRITE                 _IOW(MSENSOR, 0x40, compat_uptr_t)
-#define COMPAT_QMC_IOCTL_READ                  _IOWR(MSENSOR, 0x41, compat_uptr_t)
-#define COMPAT_QMC_IOCTL_RESET                 _IO(MSENSOR, 0x42)
-#define COMPAT_QMC_IOCTL_SET_MODE              _IOW(MSENSOR, 0x43, compat_short_t)
-#define COMPAT_QMC_IOCTL_GETDATA               _IOR(MSENSOR, 0x44, char[SENSOR_DATA_SIZE])
-#define COMPAT_QMC_IOCTL_SET_YPR               _IOW(MSENSOR, 0x45, compat_short_t[28])
-#define COMPAT_QMC_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x46, compat_int_t)
-#define COMPAT_QMC_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x47, compat_int_t)
-#define COMPAT_QMC_IOC_GET_MFLAG               _IOR(MSENSOR, 0x48, compat_int_t)
-#define COMPAT_QMC_IOC_GET_OFLAG               _IOR(MSENSOR, 0x49, compat_int_t)
-#define COMPAT_QMC_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x4a, compat_short_t)
 #endif
 
 #define ALSPS							0X84
