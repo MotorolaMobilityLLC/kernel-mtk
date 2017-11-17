@@ -53,6 +53,13 @@
 #define         C_BMI160_THIRTYONE_U8X                  ((u8)31)
 #define         C_BMI160_THIRTYTWO_U8X                  ((u8)32)
 
+#define ECOMPASS_IOC_GET_DELAY			_IOR(MSENSOR, 0x1d, int)
+#define ECOMPASS_IOC_GET_MFLAG			_IOR(MSENSOR, 0x1e, short)
+#define	ECOMPASS_IOC_GET_OFLAG			_IOR(MSENSOR, 0x1f, short)
+#define ECOMPASS_IOC_GET_OPEN_STATUS	_IOR(MSENSOR, 0x20, int)
+#define ECOMPASS_IOC_SET_YPR			_IOW(MSENSOR, 0x21, int[12])
+#define ECOMPASS_IOC_GET_LAYOUT			_IOR(MSENSOR, 0X22, int)
+
 #define BMI160_GET_BITSLICE(regvar, bitname)\
 		((regvar & bitname##__MSK) >> bitname##__POS)
 #define BMI160_SET_BITSLICE(regvar, bitname, val)\
