@@ -3591,6 +3591,11 @@
 		use_ul_260k = <0>; /* select 1: use, 0: not use */
 		use_mtkaif_ver = <0>; /* select 1: 1.5, 0: 1.0*/
 	};
+/* LCT add ext speaker pa @duanlongfei 20170119 Start */
+	aw87319_pa: aw87319_pa@ {
+		compatible = "mediatek,aw87319_pa";
+	};
+/* LCT add ext speaker pa @duanlongfei End */
 
 	mt_soc_dummy_pcm {
 		compatible = "mediatek,mt_soc_pcm_dummy";
@@ -3917,6 +3922,11 @@
 #include "mt6351.dtsi"
 #endif
 
+/* LCT add ext speaker pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+#include "lct_aw87319.dtsi"
+#endif
+/* LCT add ext speaker pa @duanlongfei End */
 #ifdef CONFIG_MFD_RT5081_PMU
 #include "rt5081.dtsi"
 #endif

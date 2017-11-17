@@ -41,7 +41,7 @@
 /* fix record no voice when press key */
 #include "mtk-soc-codec-63xx.h"
 #endif
-#define HW_MODE_SUPPORT		1/* HW path */
+#define HW_MODE_SUPPORT		0//1/* HW path */
 /*
  * static variable defination
  */
