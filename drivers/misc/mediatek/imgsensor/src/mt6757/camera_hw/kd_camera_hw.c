@@ -112,7 +112,7 @@ PowerCust PowerCustList = {
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_AVDD; */
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DOVDD; */
-		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
+		{GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
 		{GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; */
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DOVDD; */
 		/* {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
@@ -123,6 +123,131 @@ PowerCust PowerCustList = {
 
 PowerUp PowerOnList = {
 	{
+#if defined(S5K3L8_MIPI_RAW)
+	{SENSOR_DRVNAME_S5K3L8_MIPI_RAW,
+	{
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 4},
+	   {PDN, Vol_High, 0},
+	   //{RST, Vol_Low, 1},
+	  // {RST, Vol_High, 0},
+			},
+		},
+#endif
+#if defined(S5K3L8_MIPI_RAW_SUNNY)
+	{SENSOR_DRVNAME_S5K3L8_MIPI_RAW_SUNNY,
+	{
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 4},
+	   {PDN, Vol_High, 0},
+	   //{RST, Vol_Low, 1},
+	  // {RST, Vol_High, 0},
+			},
+		},
+#endif
+
+#if defined(OV13855_MIPI_RAW)
+	 {SENSOR_DRVNAME_OV13855_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 2},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+
+#if defined(OV13855_MIPI_RAW_QTECH)
+	 {SENSOR_DRVNAME_OV13855_MIPI_RAW_QTECH,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 2},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+
+#if defined(S5K5E2YA_MIPI_RAW)
+	 {SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+//	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 1},
+	   {PDN, Vol_High, 0},
+	  },
+	 },
+#endif
+
+#if defined(S5K5E2YA_MIPI_RAW_QTECH)
+	 {SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW_QTECH,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+//	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 1},
+	   {PDN, Vol_High, 0},
+	  },
+	 },
+#endif
+
+#if defined(S5K5E8YX_MIPI_RAW)
+	 {SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+//	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 1},
+	   {PDN, Vol_High, 0},
+	  },
+	 },
+#endif
+#if defined(S5K4H8_MIPI_RAW)
+	 {SENSOR_DRVNAME_S5K4H8_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 1},
+	   {DVDD, Vol_1200, 1},
+	   {AVDD, Vol_2800, 1},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+#if defined(S5K4H8_MIPI_RAW_QTECH)
+	 {SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QTECH,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 1},
+	   {DVDD, Vol_1200, 1},
+	   {AVDD, Vol_2800, 1},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+#if 0
 #if defined(IMX386_MIPI_RAW)
 		{SENSOR_DRVNAME_IMX386_MIPI_RAW,
 			{
@@ -510,6 +635,7 @@ PowerUp PowerOnList = {
 			},
 		},
 #endif
+#endif
 		/* add new sensor before this line */
 		{NULL,},
 	}
@@ -548,6 +674,8 @@ struct pinctrl_state *cam_ldo_vcamaf_h;	/* for AFVDD */
 struct pinctrl_state *cam_ldo_vcamaf_l;
 struct pinctrl_state *cam_ldo_sub_vcamd_h;	/* for SUB_DVDD */
 struct pinctrl_state *cam_ldo_sub_vcamd_l;
+struct pinctrl_state *cam_ldo_main2_vcama_h;	/* for MAIN2_AVDD */
+struct pinctrl_state *cam_ldo_main2_vcama_l;
 struct pinctrl_state *cam_ldo_main2_vcamd_h;	/* for MAIN2_DVDD */
 struct pinctrl_state *cam_ldo_main2_vcamd_l;
 struct pinctrl_state *cam_mipi_switch_en_h;	/* for mipi switch enable */
@@ -720,6 +848,18 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcamd_l\n", __func__);
 	}
 
+	cam_ldo_main2_vcama_h = pinctrl_lookup_state(camctrl, "cam_ldo_main2_vcama_1");
+	if (IS_ERR(cam_ldo_main2_vcama_h)) {
+		ret = PTR_ERR(cam_ldo_main2_vcama_h);
+		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcamd_h\n", __func__);
+	}
+
+	cam_ldo_main2_vcama_l = pinctrl_lookup_state(camctrl, "cam_ldo_main2_vcama_0");
+	if (IS_ERR(cam_ldo_main2_vcama_l)) {
+		ret = PTR_ERR(cam_ldo_main2_vcama_l);
+		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcama_l\n", __func__);
+	}
+
 	cam_mipi_switch_en_h = pinctrl_lookup_state(camctrl, "cam_mipi_switch_en_1");
 	if (IS_ERR(cam_mipi_switch_en_h)) {
 		has_mipi_switch = 0;
@@ -814,8 +954,14 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 		}
 		break;
 	case MAIN2_DVDD:
+		/* MAIN2_DVDD use same cotrol GPIO */
+		if (Val == 0 && !IS_ERR(cam_ldo_main2_vcamd_l)) {
+			pinctrl_select_state(camctrl, cam_ldo_main2_vcamd_l);
+		} else if (Val == 1 && !IS_ERR(cam_ldo_main2_vcamd_h)) {
+			pinctrl_select_state(camctrl, cam_ldo_main2_vcamd_h);
+		}
+		break;
 	case SUB_AVDD:
-	case MAIN2_AVDD:
 		/*SUB_DVDD & SUB_AVDD MAIN2_AVDD use same cotrol GPIO */
 		PK_DBG("mDVDD_usercounter(%d)\n", mDVDD_usercounter);
 		if (Val == 0 && !IS_ERR(cam_ldo_vcamd_l)) {
@@ -831,6 +977,15 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 		} else if (Val == 1 && !IS_ERR(cam_ldo_vcamd_h)) {
 			mDVDD_usercounter++;
 			pinctrl_select_state(camctrl, cam_ldo_vcamd_h);
+		}
+		break;
+	case MAIN2_AVDD:
+		/* MAIN2_AVDD use same cotrol GPIO */
+		if (Val == 0 && !IS_ERR(cam_ldo_main2_vcama_l)) {
+			pinctrl_select_state(camctrl, cam_ldo_main2_vcama_l);
+
+		} else if (Val == 1 && !IS_ERR(cam_ldo_main2_vcama_h)) {
+			pinctrl_select_state(camctrl, cam_ldo_main2_vcama_h);
 		}
 		break;
 	case DVDD:
@@ -893,7 +1048,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			    GPIO_UNSUPPORTED) {
 				PK_DBG("[CAMERA SENSOR] MAIN2 camera VCAM_D power on");
 				/*vcamd: unsupportable voltage range: 1500000-1210000uV */
-				if (pwInfo.Voltage == Vol_1200) {
+				if (pwInfo.Voltage != Vol_1200) {
 					pwInfo.Voltage = Vol_1220;
 					/* PK_INFO("[CAMERA SENSOR] Main2 camera VCAM_D power 1.2V to 1.21V\n"); */
 				}
@@ -902,6 +1057,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					return FALSE;
 				}
 			} else {
+				PK_DBG("[CAMERA SENSOR] MAIN2 camera VCAM_D power on");
 				if (mtkcam_gpio_set(pinSetIdx, MAIN2_DVDD,
 						    PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Voltage)) {
 					PK_ERR("[CAMERA CUST_MAIN2_DVDD] set gpio failed!!\n");
@@ -1182,20 +1338,23 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 	/* power ON */
 	if (On) {
-		PK_INFO("PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName,
-			pinSetIdx, SensorIdx);
+		PK_INFO("huangsh PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d has_mipi_switch = %d \n", currSensorName,
+			pinSetIdx, SensorIdx,has_mipi_switch);
+	#ifdef CAMERAHW_INDRIYA
 		/* MIPI SWITCH */
 		if (has_mipi_switch) {
 			if (SensorIdx == DUAL_CAMERA_SUB_SENSOR) {
-				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
-				pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
-
-			} else if (SensorIdx == DUAL_CAMERA_MAIN_2_SENSOR) {
+				PK_INFO("huangsh PowerOn:DUAL_CAMERA_SUB_SENSOR mipi\n");
 				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
 				pinctrl_select_state(camctrl, cam_mipi_switch_sel_l);
+
+			} else if (SensorIdx == DUAL_CAMERA_MAIN_2_SENSOR) {
+			PK_INFO("huangsh PowerOn:DUAL_CAMERA_MAIN_2_SENSOR mipi\n");
+				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
+				pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
 			}
 		}
-
+	#endif
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName, currSensorName) == 0)) {
@@ -1379,14 +1538,16 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 #endif
 	} else {
 		/* power OFF */
+		#if 1
 		PK_INFO("PowerOFF:pinSetIdx=%d, sensorIdx:%d\n", pinSetIdx, SensorIdx);
+		#ifdef CAMERAHW_INDRIYA
 		if (has_mipi_switch) {
 			if ((SensorIdx == DUAL_CAMERA_SUB_SENSOR)
 			    || (SensorIdx == DUAL_CAMERA_MAIN_2_SENSOR)) {
 				pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
 			}
 		}
-
+		#endif
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName, currSensorName) == 0)) {
@@ -1506,6 +1667,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 
 		}
+#endif
 #endif
 	}			/*  */
 

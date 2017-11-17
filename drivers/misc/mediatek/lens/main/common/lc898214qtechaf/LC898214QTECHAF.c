@@ -12,7 +12,7 @@
 */
 
 /*
- * LC898214AF voice coil motor driver
+ * LC898214QTECHAF voice coil motor driver
  *
  *
  */
@@ -25,9 +25,8 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "LC898214AF_DRV"
+#define AF_DRVNAME "LC898214QTECHAF_DRV"
 #define AF_I2C_SLAVE_ADDR        0xE4
-#define EEPROM_I2C_SLAVE_ADDR    0xA0
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
@@ -52,29 +51,6 @@ static unsigned long g_u4CurrPosition;
 
 static signed short Hall_Max = 0x4500;
 static signed short Hall_Min =  0xBB00;
-
-static int s4EEPROM_ReadReg(u16 addr, u16 *data)
-{
-	u8 u8data[2];
-	u8 pu_send_cmd[2] = { (u8) (addr >> 8), (u8) (addr & 0xFF) };
-
-	g_pstAF_I2Cclient->addr = (EEPROM_I2C_SLAVE_ADDR) >> 1;
-	if (i2c_master_send(g_pstAF_I2Cclient, pu_send_cmd, 2) < 0) {
-		LOG_INF("read I2C send failed!!\n");
-		return -1;
-	}
-	if (i2c_master_recv(g_pstAF_I2Cclient, u8data, 2) < 0) {
-		LOG_INF("EEPROM_ReadReg failed!!\n");
-		return -1;
-	}
-	LOG_INF("u8data[0] = 0x%x\n", u8data[0]);
-	LOG_INF("u8data[1] = 0x%x\n", u8data[1]);
-
-	*data = u8data[1] << 8 |  u8data[0];
-	LOG_INF("s4EEPROM_ReadReg 0x%x, 0x%x\n", addr, *data);
-
-	return 0;
-}
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
@@ -161,18 +137,6 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if (*g_pAF_Opened == 1) {
 		unsigned char Temp;
-		unsigned short Data;
-		unsigned short Cnt;
-
-		s4EEPROM_ReadReg(0x0F63, &Data);
-
-		if (Data > 0 && Data < 0xFFFF)
-			Hall_Max = Data;
-
-		s4EEPROM_ReadReg(0x0F65, &Data);
-
-		if (Data > 0 && Data < 0xFFFF)
-			Hall_Min = Data;
 
 		s4AF_ReadReg(0xF0, &Temp);
 
@@ -183,16 +147,12 @@ static inline int moveAF(unsigned long a_u4Position)
 
 		s4AF_WriteReg(0, 0xE0, 0x1);
 
-		Cnt = 0;
-
 		while (1) {
 			msleep(20);
 
 			s4AF_ReadReg(0xE0, &Temp);
 
-			Cnt++;
-
-			if (Temp == 0 || Cnt > 3)
+			if (Temp == 0)
 				break;
 		}
 
@@ -217,7 +177,6 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
-		return -1;
 	}
 
 	return 0;
@@ -240,7 +199,7 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long LC898214AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long LC898214QTECHAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -275,7 +234,7 @@ long LC898214AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int LC898214AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int LC898214QTECHAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
@@ -297,7 +256,7 @@ int LC898214AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-int LC898214AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int LC898214QTECHAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;

@@ -50,8 +50,8 @@
 #define RT5081_ENABLE_TORCH 1
 #define RT5081_ENABLE_FLASH 2
 
-#define RT5081_LEVEL_NUM 32
-#define RT5081_LEVEL_TORCH 16
+#define RT5081_LEVEL_NUM 14
+#define RT5081_LEVEL_TORCH 4  //modify Lct chenhongbin 20171115
 #define RT5081_LEVEL_FLASH RT5081_LEVEL_NUM
 #define RT5081_WDT_TIMEOUT 1248 /* ms */
 #define RT5081_HW_TIMEOUT 400 /* ms */
@@ -90,24 +90,14 @@ struct rt5081_platform_data {
 /******************************************************************************
  * rt5081 operations
  *****************************************************************************/
-static const int rt5081_current[RT5081_LEVEL_NUM] = {
-	  25,   50,  75, 100, 125, 150, 175,  200,  225,  250,
-	 275,  300, 325, 350, 375, 400, 450,  500,  550,  600,
-	 650,  700, 750, 800, 850, 900, 950, 1000, 1050, 1100,
-	1150, 1200
-};
-
 static const unsigned char rt5081_torch_level[RT5081_LEVEL_TORCH] = {
-	0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12,
-	0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E
+	0x02, 0x06, 0x0a, 0x0e    //modify lct tianyaping 20170316 0-200mA step 50mA
 };
 
 static const unsigned char rt5081_strobe_level[RT5081_LEVEL_FLASH] = {
-	0x80, 0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10,
-	0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x20, 0x24, 0x28, 0x2C,
-	0x30, 0x34, 0x38, 0x3C, 0x40, 0x44, 0x48, 0x4C, 0x50, 0x54,
-	0x58, 0x5C
-};
+	0x00, 0x04, 0x08, 0x0c, 0x14, 0x1c, 0x24, 0x2c, 0x34, 0x3c,
+	0x44, 0x4c, 0x54, 0x5c        //modify lct tianyaping 20170316 0-200mA step 50mA,200-1.2A step 100mA  
+}; 
 
 static int rt5081_decouple_mode;
 static int rt5081_en_ch1;
@@ -127,9 +117,9 @@ static int rt5081_is_charger_ready(void)
 static int rt5081_is_torch(int level)
 {
 	if (level >= RT5081_LEVEL_TORCH)
-		return -1;
+		return 0;
 
-	return 0;
+	return 1;
 }
 
 #if 0
@@ -159,55 +149,71 @@ static int rt5081_verify_level(int level)
 static int rt5081_enable(void)
 {
 	int ret = 0;
-	enum flashlight_mode mode = FLASHLIGHT_MODE_TORCH;
 
-	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
+	if (!flashlight_dev_ch1) {
 		pr_err("Failed to enable since no flashlight device.\n");
 		return -1;
 	}
-
-	/* set flash mode if any channel is flash mode */
+#if 0
 	if ((rt5081_en_ch1 == RT5081_ENABLE_FLASH)
 			|| (rt5081_en_ch2 == RT5081_ENABLE_FLASH))
-		mode = FLASHLIGHT_MODE_FLASH;
-
-	/* enable channel 1 and channel 2 */
-	if (rt5081_en_ch1)
-		ret |= flashlight_set_mode(
-				flashlight_dev_ch1, mode);
+		ret = flashlight_set_mode(
+				flashlight_dev_ch2, FLASHLIGHT_MODE_FLASH);
 	else
-		ret |= flashlight_set_mode(
-				flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
-	if (rt5081_en_ch2)
-		ret |= flashlight_set_mode(
-				flashlight_dev_ch2, mode);
-	else
-		ret |= flashlight_set_mode(
-				flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
-
-	if (ret < 0)
-		pr_err("Failed to enable.\n");
-
+		ret = flashlight_set_mode(
+				flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
+#endif 
+pr_err("shen rt5081_enable rt5081_en_ch1= %d ,rt5081_en_ch2 = %d .\n",rt5081_en_ch1,rt5081_en_ch2);
+if (rt5081_en_ch1 == RT5081_ENABLE_FLASH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_ch1, FLASHLIGHT_MODE_FLASH);
+		}
+	else if (rt5081_en_ch1 == RT5081_ENABLE_TORCH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_ch1, FLASHLIGHT_MODE_TORCH);
+		}
+if (rt5081_en_ch2 == RT5081_ENABLE_FLASH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_ch2, FLASHLIGHT_MODE_FLASH);
+		}
+	else if (rt5081_en_ch2 == RT5081_ENABLE_TORCH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
+		}
 	return ret;
 }
 
+int rt5081_timer_cancel(int ct_index)
+{
+	printk("tqq line = %d\n",__LINE__);	
+	if (ct_index == RT5081_CHANNEL_CH1)
+		hrtimer_cancel(&rt5081_timer_ch1);
+	else if (ct_index == RT5081_CHANNEL_CH2)
+		hrtimer_cancel(&rt5081_timer_ch2);
+	else {
+		pr_err("Error ct index\n");
+		return -1;
+	}
+
+	return 0;
+}
 /* flashlight disable function */
 static int rt5081_disable(void)
 {
 	int ret = 0;
-
-	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
+	if (!flashlight_dev_ch1) {
 		pr_err("Failed to disable since no flashlight device.\n");
 		return -1;
 	}
-
-	/* disable channel 1 and channel 2 */
+	printk("aaron rt5081_en_ch1 = %d , rt5081_en_ch2 = %d ,line = %d\n",rt5081_en_ch1,rt5081_en_ch2,__LINE__);	
+	if ((rt5081_en_ch1 == RT5081_DISABLE)) {
 	ret |= flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
+	rt5081_timer_cancel(RT5081_CHANNEL_CH1);
+		}
+	if ((rt5081_en_ch2 == RT5081_DISABLE)) {
 	ret |= flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
-
-	if (ret < 0)
-		pr_err("Failed to disable.\n");
-
+	rt5081_timer_cancel(RT5081_CHANNEL_CH2);
+		}
 	return ret;
 }
 
@@ -223,7 +229,7 @@ static int rt5081_set_level_ch1(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (rt5081_is_torch(level))
 		flashlight_set_torch_brightness(
 				flashlight_dev_ch1, rt5081_torch_level[level]);
 	flashlight_set_strobe_brightness(
@@ -243,7 +249,7 @@ static int rt5081_set_level_ch2(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (rt5081_is_torch(level))
 		flashlight_set_torch_brightness(
 				flashlight_dev_ch2, rt5081_torch_level[level]);
 	flashlight_set_strobe_brightness(
@@ -370,19 +376,6 @@ static int rt5081_timer_start(int channel, ktime_t ktime)
 	return 0;
 }
 
-static int rt5081_timer_cancel(int channel)
-{
-	if (channel == RT5081_CHANNEL_CH1)
-		hrtimer_cancel(&rt5081_timer_ch1);
-	else if (channel == RT5081_CHANNEL_CH2)
-		hrtimer_cancel(&rt5081_timer_ch2);
-	else {
-		pr_err("Error channel\n");
-		return -1;
-	}
-
-	return 0;
-}
 
 /******************************************************************************
  * Flashlight operation wrapper function
@@ -420,8 +413,8 @@ static int rt5081_operate(int channel, int enable)
 		if ((rt5081_en_ch1 == RT5081_DISABLE) &&
 				(rt5081_en_ch2 == RT5081_DISABLE)) {
 			rt5081_disable();
-			rt5081_timer_cancel(RT5081_CHANNEL_CH1);
-			rt5081_timer_cancel(RT5081_CHANNEL_CH2);
+			//rt5081_timer_cancel(RT5081_CHANNEL_CH1);
+			//rt5081_timer_cancel(RT5081_CHANNEL_CH2);
 		} else {
 			if (rt5081_timeout_ms[RT5081_CHANNEL_CH1]) {
 				ktime = ktime_set(
@@ -493,27 +486,6 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 		fl_arg->arg = rt5081_is_charger_ready();
 		break;
 
-	case FLASH_IOC_GET_DUTY_NUMBER:
-		pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
-		fl_arg->arg = RT5081_LEVEL_NUM;
-		break;
-
-	case FLASH_IOC_GET_MAX_TORCH_DUTY:
-		pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
-		fl_arg->arg = RT5081_LEVEL_TORCH - 1;
-		break;
-
-	case FLASH_IOC_GET_DUTY_CURRENT:
-		fl_arg->arg = rt5081_verify_level(fl_arg->arg);
-		pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
-				channel, (int)fl_arg->arg);
-		fl_arg->arg = rt5081_current[fl_arg->arg];
-		break;
-
-	case FLASH_IOC_GET_HW_TIMEOUT:
-		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
-		fl_arg->arg = RT5081_HW_TIMEOUT;
-		break;
 
 	default:
 		pr_info("No such command and arg(%d): (%d, %d)\n",

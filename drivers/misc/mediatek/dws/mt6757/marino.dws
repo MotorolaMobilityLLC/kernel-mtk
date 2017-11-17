@@ -471,17 +471,14 @@
             </gpio22>
             <gpio23>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <mode_arr>11000000</mode_arr>
+                <def_mode>1</def_mode>
+                <mode_arr>21000000</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_VCAMA_ENABLE_PIN</varName0>
-                <varName1>GPIO_CAMERA_VCAMD_EN_PIN</varName1>
-                <varName2>GPIO_EINT_WPC_PIN</varName2>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio23>
@@ -2296,18 +2293,18 @@
             </device15>
             <device16>
                 <varName>CAMERA_SUB</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_2</channel>
                 <address>0x10</address>
             </device16>
             <device17>
                 <varName>CAMERA_SUB_AF</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_2</channel>
                 <address>0x0C</address>
             </device17>
             <device18>
                 <varName>CAMERA_MAIN_TWO</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x1A</address>
+                <address>0x10</address>
             </device18>
             <device19>
                 <varName>CAMERA_MAIN_TWO_AF</varName>

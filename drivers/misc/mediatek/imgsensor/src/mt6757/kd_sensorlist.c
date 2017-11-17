@@ -108,20 +108,29 @@ static DEFINE_SPINLOCK(kdsensor_drv_i2c_lock);
 /* #define SUPPORT_I2C_BUS_NUM2        2 */
 
 /* The following is to avoid build error of project: mt6755_fpga related //Jessy @2014/06/04 */
+#ifdef CAMERA_INDRIYA 
+#ifndef SUPPORT_I2C_BUS_NUM1
+#define SUPPORT_I2C_BUS_NUM1        2
+#endif
+#ifndef SUPPORT_I2C_BUS_NUM2
+#define SUPPORT_I2C_BUS_NUM2        2
+#endif
+
+/* Main2 support */
+#ifndef SUPPORT_I2C_BUS_NUM3
+#define SUPPORT_I2C_BUS_NUM3        4
+#endif
+#else 
 #ifndef SUPPORT_I2C_BUS_NUM1
 #define SUPPORT_I2C_BUS_NUM1        2
 #endif
 #ifndef SUPPORT_I2C_BUS_NUM2
 #define SUPPORT_I2C_BUS_NUM2        3
 #endif
+
 /* Main2 support */
 #ifndef SUPPORT_I2C_BUS_NUM3
 #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
-#endif
-#ifdef MTK_SUB2_IMGSENSOR
-/* sub2 support */
-#ifndef SUPPORT_I2C_BUS_NUM4
-    #define SUPPORT_I2C_BUS_NUM4        SUPPORT_I2C_BUS_NUM2
 #endif
 #endif
 
@@ -134,9 +143,6 @@ static DEFINE_SPINLOCK(kdsensor_drv_i2c_lock);
 #define CAMERA_HW_DRVNAME2  "kd_camera_hw_bus2"
 #if HW_TRIGGER_I2C_SUPPORT
 #define CAMERA_HW_DRVNAME3  "kd_camera_hw_trigger"
-#endif
-#ifdef MTK_SUB2_IMGSENSOR
-#define CAMERA_HW_DRVNAME4  "kd_camera_hw_bus3"
 #endif
 
 #if defined(CONFIG_MTK_LEGACY)
@@ -538,6 +544,39 @@ int iReadReg(u16 a_u2Addr, u8 *a_puBuff, u16 i2cId)
 		}
 	}
 	return 0;
+}
+/*******************************************************************************
+* iReadRegI2C
+********************************************************************************/
+int iReadRegI2C_gt24c64(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
+{
+    		int  i4RetValue = 0;
+			spin_lock(&kdsensor_drv_lock);
+			g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+
+			/* Remove i2c ack error log during search sensor */
+			/* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
+			if (g_IsSearchSensor == 1)
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
+			else
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
+#endif
+			spin_unlock(&kdsensor_drv_lock);
+			/*	*/
+			i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+				return -1;
+			}
+
+			i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
+			if (i4RetValue != a_sizeRecvData) {
+				PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
+				return -1;
+			}
+			    return 0;
 }
 
 /*******************************************************************************
@@ -5125,10 +5164,17 @@ static int CAMERA_HW_i2c_remove4(struct i2c_client *client)
  * I2C Driver structure
  ********************************************************************************/
 #ifdef CONFIG_OF
+#ifdef CAMERA_INDRIYA
+static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
+	{.compatible = "mediatek,camera_main_two",},
+	{}
+};
+#else
 static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
 	{.compatible = "mediatek,camera_sub",},
 	{}
 };
+#endif
 #endif
 
 struct i2c_driver CAMERA_HW_i2c_driver2 = {

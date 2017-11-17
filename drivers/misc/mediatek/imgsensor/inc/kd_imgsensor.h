@@ -15,6 +15,12 @@
 #define _KD_IMGSENSOR_H
 
 #include <linux/ioctl.h>
+/* #define CONFIG_COMPAT */
+#ifdef CONFIG_COMPAT
+/* 64 bit */
+#include <linux/fs.h>
+#include <linux/compat.h>
+#endif
 
 #ifndef ASSERT
 #define ASSERT(expr)        WARN_ON(!(expr))
@@ -140,11 +146,15 @@
 #define IMX073_SENSOR_ID                        0x0046
 #define IMX058_SENSOR_ID                        0x0058
 /*OV*/
+#define OV13855_QTECH_MID			0x06
+#define OV13855_OFILM_MID			0x07
 #define OV23850_SENSOR_ID                       0x023850
 #define OV16880_SENSOR_ID                       0x016880
 #define OV16825MIPI_SENSOR_ID                   0x016820
 #define OV13870_SENSOR_ID                       0x013870
 #define OV13850_SENSOR_ID                       0xD850
+#define OV13855_SENSOR_ID                       0xD855
+#define OV13855_QTECH_SENSOR_ID                 (0xD855+OV13855_QTECH_MID)
 #define OV12830_SENSOR_ID                       0xC830
 #define OV9760MIPI_SENSOR_ID                    0x9760
 #define OV9740MIPI_SENSOR_ID                    0x9740
@@ -182,6 +192,14 @@
 #define OV2650_SENSOR_ID_2                      0x2652
 #define OV2650_SENSOR_ID_3                      0x2655
 /*S5K*/
+#define S5K5E2YA_OFILM_MID			0x07
+#define S5K5E2YA_QTECH_MID			0x06
+#define S5K4H8_OFILM_MID		0x07
+#define S5K4H8_QTECH_MID		0x06
+#define S5K3L8_TRULY_MID		0x02
+#define S5K3L8_SUNNY_MID		0x01
+#define S5K4H8_SENSOR_ID                      0x4088
+#define S5K4H8_QTECH_SENSOR_ID                  (0x4088+S5K4H8_QTECH_MID)
 #define S5K3P8SP_SENSOR_ID                      0x3108
 #define S5K2L7_SENSOR_ID                        0x20C7
 #define S5K3L8_SENSOR_ID                        0x30C8
@@ -207,7 +225,8 @@
 #define S5K53BEX_SENSOR_ID                      0x45A8
 #define S5K53BEB_SENSOR_ID                      0x87A8
 #define S5K5BAFX_SENSOR_ID                      0x05BA
-#define S5K5E2YA_SENSOR_ID                      0x5e20
+#define S5K5E2YA_SENSOR_ID                      (0x5e20+S5K5E2YA_OFILM_MID)
+#define S5K5E2YA_QTECH_SENSOR_ID                (0x5e20+S5K5E2YA_QTECH_MID)
 #define S5K4H5YX_2LANE_SENSOR_ID                0x485B
 #define S5K4H5YC_SENSOR_ID                      0x485B
 #define S5K83AFX_SENSOR_ID                      0x01C4
@@ -331,6 +350,8 @@
 #define SENSOR_DRVNAME_IMX091_MIPI_RAW          "imx091_mipi_raw"
 #define SENSOR_DRVNAME_IMX073_MIPI_RAW          "imx073_mipi_raw"
 /*OV*/
+#define SENSOR_DRVNAME_OV13855_MIPI_RAW         "ov13855_mipi_raw"
+#define SENSOR_DRVNAME_OV13855_MIPI_RAW_QTECH         "ov13855mipirawqtech"
 #define SENSOR_DRVNAME_OV23850_MIPI_RAW         "ov23850_mipi_raw"
 #define SENSOR_DRVNAME_OV16880_MIPI_RAW         "ov16880_mipi_raw"
 #define SENSOR_DRVNAME_OV16825_MIPI_RAW         "ov16825_mipi_raw"
@@ -375,6 +396,8 @@
 #define SENSOR_DRVNAME_OV2655_YUV               "ov2655_yuv"
 #define SENSOR_DRVNAME_OV2650_RAW               "ov265x_raw"
 /*S5K*/
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8_mipi_raw"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QTECH          "s5k4h8mipirawqtech"
 #define SENSOR_DRVNAME_S5K3P8SP_MIPI_RAW        "s5k3p8sp_mipi_raw"
 #define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7_mipi_raw"
 #define SENSOR_DRVNAME_S5K3L8_MIPI_RAW          "s5k3l8_mipi_raw"
@@ -395,6 +418,7 @@
 #define SENSOR_DRVNAME_S5K5CAGX_YUV             "s5k5cagx_yuv"
 #define SENSOR_DRVNAME_S5K4H5YX_2LANE_MIPI_RAW  "s5k4h5yx_2lane_mipi_raw"
 #define SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW        "s5k5e2ya_mipi_raw"
+#define SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW_QTECH        "s5k5e2yamipirawqtech"
 #define SENSOR_DRVNAME_S5K8AAYX_MIPI_YUV        "s5k8aayx_mipi_yuv"
 #define SENSOR_DRVNAME_S5K8AAYX_YUV             "s5k8aayx_yuv"
 #define SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW        "s5k5e8yx_mipi_raw"

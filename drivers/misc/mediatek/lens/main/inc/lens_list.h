@@ -132,6 +132,13 @@ extern int LC898214AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_
 extern long LC898214AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int LC898214AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+#define LC898214QTECHAF_SetI2Cclient LC898214QTECHAF_SetI2Cclient_Main
+#define LC898214QTECHAF_Ioctl LC898214QTECHAF_Ioctl_Main
+#define LC898214QTECHAF_Release LC898214QTECHAF_Release_Main
+extern int LC898214QTECHAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long LC898214QTECHAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int LC898214QTECHAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+
 #define LC898217AF_SetI2Cclient LC898217AF_SetI2Cclient_Main
 #define LC898217AF_Ioctl LC898217AF_Ioctl_Main
 #define LC898217AF_Release LC898217AF_Release_Main

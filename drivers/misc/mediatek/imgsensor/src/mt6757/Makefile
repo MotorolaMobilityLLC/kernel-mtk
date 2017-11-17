@@ -20,6 +20,9 @@
 #else
 subdir-ccflags-y += -I$(srctree)/drivers/i2c/busses/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccu/inc
+ifeq ($(TARGET_PRODUCT),marino)
+ccflags-y += -DCAMERA_INDRIYA
+endif
 #endif
 define FILTER_PROJECT_DRV
 ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)

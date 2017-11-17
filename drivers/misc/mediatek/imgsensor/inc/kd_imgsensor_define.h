@@ -1087,6 +1087,14 @@ typedef struct {
 	MUINT8 drvname[32];
 	MUINT32(*SensorInit)(PSENSOR_FUNCTION_STRUCT *pfFunc);
 } ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT, *PACDK_KD_SENSOR_INIT_FUNCTION_STRUCT;
+#define KDIMGSENSOR_DUAL_SHIFT 16
+#define KDIMGSENSOR_DUAL_MASK_MSB 0xFFFF0000
+#define KDIMGSENSOR_DUAL_MASK_LSB 0x0000FFFF
+
+#define KDIMGSENSOR_NOSENSOR    "non_sensor"
+#define KDIMGSENSOR_MAX_INVOKE_DRIVERS  (2)
+#define KDIMGSENSOR_INVOKE_DRIVER_0     (0)
+#define KDIMGSENSOR_INVOKE_DRIVER_1     (1)
 
 /* For sensor synchronize the exposure time / sensor gain and isp gain. */
 typedef struct {

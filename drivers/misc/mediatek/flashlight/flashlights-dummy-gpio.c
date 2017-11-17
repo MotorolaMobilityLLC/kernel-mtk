@@ -29,7 +29,14 @@
 
 #include "flashlight-core.h"
 #include "flashlight-dt.h"
-
+  static unsigned int f_duty = 7;  //modify lct tianyaping 100mA 20170407
+ module_param(f_duty,int,0644);
+  static unsigned int t_duty = 5;  //modify lct tianyaping  75mA 20170407
+ module_param(t_duty,int,0644);
+   static unsigned int count = 8;
+ module_param(count,int,0644);
+    static unsigned int sleep = 50;
+ module_param(sleep,int,0644);
 /* define device tree */
 /* TODO: modify temp device tree name */
 #ifndef DUMMY_DTNAME
@@ -41,11 +48,15 @@
 
 /* define registers */
 /* TODO: define register */
-
+enum
+{
+	e_DutyNum = 16,
+};
+static int flashDuty[e_DutyNum]=     {16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1}; //lenovo.sw huangsh4 change for 1A flash current
 /* define mutex and work queue */
 static DEFINE_MUTEX(dummy_mutex);
 static struct work_struct dummy_work;
-
+static int g_duty=-1;
 /* define pinctrl */
 /* TODO: define pinctrl */
 #define DUMMY_PINCTRL_PIN_XXX 0
@@ -128,13 +139,36 @@ static int dummy_pinctrl_set(int pin, int state)
  * dummy operations
  *****************************************************************************/
 /* flashlight enable function */
-static int dummy_enable(void)
+static int dummy_enable(int level)
 {
-	int pin = 0, state = 0;
-
+	int pin = 0;
+	int i =0;
+	if(g_duty== 0)//torch
+	{
+	for (i =1;i<=flashDuty[t_duty];i++)
+	{
+		//dummy_pinctrl_set(pin, 1);
+		udelay(count);
+		pr_debug("Suny FL_enable torch i = %d ,g_duty=%d line=%d\n",i,g_duty,__LINE__);
+		 dummy_pinctrl_set(pin, 0);
+		  udelay(sleep);
+		 dummy_pinctrl_set(pin, 1);
+			}
+	} else {
+	for (i =1;i<=flashDuty[f_duty];i++)
+	{
+		//dummy_pinctrl_set(pin, 1);
+		udelay(count);
+		pr_debug("Suny FL_enable flash i = %d ,g_duty=%d line=%d\n",i,g_duty,__LINE__);
+		 dummy_pinctrl_set(pin, 0);
+		  udelay(sleep);
+		 dummy_pinctrl_set(pin, 1);
+			}
+		}
+		pr_debug("Suny FL_enable flash g_duty=%d line=%d\n",g_duty,__LINE__);
 	/* TODO: wrap enable function */
 
-	return dummy_pinctrl_set(pin, state);
+	return 0;
 }
 
 /* flashlight disable function */
@@ -153,7 +187,8 @@ static int dummy_set_level(int level)
 	int pin = 0, state = 0;
 
 	/* TODO: wrap set level function */
-
+	g_duty=level;
+	pr_debug(" Suny FL_dim_duty=%d line=%d\n",level,__LINE__);
 	return dummy_pinctrl_set(pin, state);
 }
 
@@ -230,7 +265,7 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 						(dummy_timeout_ms % 1000) * 1000000);
 				hrtimer_start(&dummy_timer, ktime, HRTIMER_MODE_REL);
 			}
-			dummy_enable();
+			dummy_enable((int)fl_arg->arg);
 		} else {
 			dummy_disable();
 			hrtimer_cancel(&dummy_timer);
@@ -286,7 +321,7 @@ static ssize_t dummy_strobe_store(struct flashlight_arg arg)
 	dummy_set_driver(1);
 	dummy_set_level(arg.level);
 	dummy_timeout_ms = 0;
-	dummy_enable();
+	dummy_enable(arg.level);
 	msleep(arg.dur);
 	dummy_disable();
 	dummy_set_driver(0);
