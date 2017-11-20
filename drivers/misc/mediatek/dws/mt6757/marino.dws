@@ -89,11 +89,11 @@
                 <debounce_en>Disable</debounce_en>
             </eint6>
             <eint7>
-                <varName>MRDUMP_EXT_RST</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
+                <varName>GOODIX_FP</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Edge</sensitive_level>
+                <debounce_en>Disable</debounce_en>
             </eint7>
             <eint8>
                 <varName>RT5081_PD</varName>
@@ -260,6 +260,7 @@
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_FP_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio7>
@@ -1295,52 +1296,21 @@
             </gpio94>
             <gpio95>
                 <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
-                <mode_arr>11000001</mode_arr>
+                <def_mode>1</def_mode>
+                <mode_arr>11000101</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_JTAG_TDO_PIN</varName0>
-                <varName1>GPIO_SPI_MISO_PIN</varName1>
+                <varName0>GPIO_SPI1_MISO_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio95>
             <gpio96>
                 <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
-                <mode_arr>11000001</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
-                <out>true</out>
-                <out_high>false</out_high>
-                <varName0>GPIO_JTAG_TMS_PIN</varName0>
-                <varName1>GPIO_SPI_CS_PIN</varName1>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio96>
-            <gpio97>
-                <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
-                <mode_arr>11000001</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
-                <out>true</out>
-                <out_high>false</out_high>
-                <varName0>GPIO_JTAG_TDI_PIN</varName0>
-                <varName1>GPIO_SPI_MOSI_PIN</varName1>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio97>
-            <gpio98>
-                <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
+                <def_mode>1</def_mode>
                 <mode_arr>11000001</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
@@ -1348,8 +1318,35 @@
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_JTAG_TCK_PIN</varName0>
-                <varName1>GPIO_SPI_SCK_PIN</varName1>
+                <varName0>GPIO_SPI_CS_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio96>
+            <gpio97>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <mode_arr>11000101</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>true</in>
+                <out>true</out>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_MOSI_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio97>
+            <gpio98>
+                <eint_mode>false</eint_mode>
+                <def_mode>1</def_mode>
+                <mode_arr>11000001</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <in>true</in>
+                <out>true</out>
+                <out_high>false</out_high>
+                <varName0>GPIO_SPI1_CK_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio98>
@@ -2132,7 +2129,7 @@
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_RST_PIN</varName0>
+                <varName0>GPIO_FINGERPRINT_RST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio190>

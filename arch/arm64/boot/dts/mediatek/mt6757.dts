@@ -3780,6 +3780,10 @@
 		main2_bus = <4>;
 	};
 
+	goodix_fp: fingerprint@ {
+		compatible = "mediatek,goodix-fp";
+	};
+
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
