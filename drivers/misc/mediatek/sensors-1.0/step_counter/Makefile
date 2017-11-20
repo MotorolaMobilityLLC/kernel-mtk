@@ -17,6 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/hwmon/include
 obj-y	+= step_counter.o
 
 obj-$(CONFIG_MTK_STEPSIGNHUB)		+=	stepsignhub/
+obj-$(CONFIG_MTK_ICM206XX_SC)		+=	icm206xx_sc/
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_STEP_COUNTER),"OTHER_VENDOR")
 obj-y += other_vendor/

@@ -51,8 +51,8 @@ static char selftestRes[8] = { 0 };
 
 static int g_icm206xx_gyro_sensitivity = ICM206XX_GYRO_DEFAULT_SENSITIVITY;	/* +/-1000DPS as default */
 
-//struct gyro_hw gyro_cust;
-//static struct gyro_hw *hw = &gyro_cust;
+/* struct gyro_hw gyro_cust; */
+/* static struct gyro_hw *hw = &gyro_cust; */
 
 static int icm206xx_gyro_local_init(struct platform_device *pdev);
 static int icm206xx_gyro_remove(void);
@@ -1316,7 +1316,7 @@ static struct i2c_driver icm206xx_gyro_i2c_driver = {
 
 static int icm206xx_gyro_remove(void)
 {
-	//icm206xx_gyro_power(&obj->hw, 0);
+	/* icm206xx_gyro_power(&obj->hw, 0); */
 
 	i2c_del_driver(&icm206xx_gyro_i2c_driver);
 
@@ -1325,7 +1325,7 @@ static int icm206xx_gyro_remove(void)
 
 static int icm206xx_gyro_local_init(struct platform_device *pdev)
 {
-	//icm206xx_gyro_power(&obj->hw, 1);
+	/* icm206xx_gyro_power(&obj->hw, 1); */
 
 	if (i2c_add_driver(&icm206xx_gyro_i2c_driver)) {
 		GYRO_PR_ERR("add driver error\n");
@@ -1339,12 +1339,7 @@ static int icm206xx_gyro_local_init(struct platform_device *pdev)
 /*----------------------------------------------------------------------------*/
 static int __init icm206xx_gyro_init(void)
 {
-/*	const char *name = "mediatek,icm206xx_gyro";
 
-	hw = get_gyro_dts_func(name, hw);
-	if (!hw)
-		GYRO_PR_ERR("get dts info fail\n");
-*/
 	gyro_driver_add(&icm206xx_gyro_init_info);
 
 	return 0;

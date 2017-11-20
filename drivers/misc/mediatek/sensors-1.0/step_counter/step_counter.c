@@ -92,7 +92,7 @@ static void step_c_work_func(struct work_struct *work)
 	/*STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);*/
 
 	step_c_data_report(cxt->drv_data.counter, cxt->drv_data.status);
-	floor_c_data_report(cxt->drv_data.floor_counter, cxt->drv_data.floor_c_status);
+	/*floor_c_data_report(cxt->drv_data.floor_counter, cxt->drv_data.floor_c_status);*/
 
 step_c_loop:
 	if (true == cxt->is_polling_run) {

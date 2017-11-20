@@ -44,8 +44,6 @@ struct icm206xx_accel_i2c_data {
 
 static int icm206xx_accel_init_flag = -1;
 
-//struct acc_hw accel_cust;
-//static struct acc_hw *hw = &accel_cust;
 struct i2c_client *icm206xx_accel_i2c_client;
 static struct icm206xx_accel_i2c_data *obj_i2c_data;
 
@@ -75,88 +73,7 @@ static struct acc_init_info icm206xx_accel_init_info = {
 
 #define DEBUG_PRINT_ELEMENT_COUNT	8
 #define DEBUG_PRINT_CHAR_COUNT_PER_LINE 24
-/*
-struct icm206xx_debug_data {
-	int nTestCount[DEBUG_MAX_CHECK_COUNT];
-	int nUsedTestCount;
 
-	unsigned char ucCmdLog[DEBUG_MAX_IOCTL_CMD_COUNT];
-	int nLogIndex;
-	unsigned char ucPrevCmd;
-
-	int nDriverState;
-
-	char strDebugDump[DEBUG_MAX_LOG_STRING_LENGTH];
-	int nStrIndex;
-};
-struct icm206xx_debug_data icm206xx_accel_debug;
-static void initDebugData(void)
-{
-	memset(&icm206xx_accel_debug, 0x00, sizeof(icm206xx_accel_debug));
-	icm206xx_accel_debug.ucPrevCmd = DEBUG_IOCTL_CMD_DEFAULT;
-	memset(&(icm206xx_accel_debug.ucCmdLog[0]), DEBUG_IOCTL_CMD_DEFAULT, DEBUG_MAX_IOCTL_CMD_COUNT);
-}
-static void addCmdLog(unsigned int cmd)
-{
-	unsigned char converted_cmd = DEBUG_IOCTL_CMD_DEFAULT;
-
-	switch (cmd) {
-	case GSENSOR_IOCTL_INIT:
-		converted_cmd = 0;
-		break;
-	case GSENSOR_IOCTL_READ_CHIPINFO:
-		converted_cmd = 1;
-		break;
-	case GSENSOR_IOCTL_READ_SENSORDATA:
-		converted_cmd = 2;
-		break;
-	case GSENSOR_IOCTL_READ_OFFSET:
-		converted_cmd = 3;
-		break;
-	case GSENSOR_IOCTL_READ_GAIN:
-		converted_cmd = 4;
-		break;
-	case GSENSOR_IOCTL_READ_RAW_DATA:
-		converted_cmd = 5;
-		break;
-	case GSENSOR_IOCTL_SET_CALI:
-		converted_cmd = 6;
-		break;
-	case GSENSOR_IOCTL_GET_CALI:
-		converted_cmd = 7;
-		break;
-	case GSENSOR_IOCTL_CLR_CALI:
-		converted_cmd = 8;
-		break;
-	}
-
-	icm206xx_accel_debug.nDriverState = 0;
-
-	if ((icm206xx_accel_debug.nLogIndex < DEBUG_MAX_IOCTL_CMD_COUNT) && (converted_cmd != DEBUG_IOCTL_CMD_DEFAULT)) {
-		icm206xx_accel_debug.ucCmdLog[icm206xx_accel_debug.nLogIndex++] = converted_cmd;
-		icm206xx_accel_debug.ucPrevCmd = converted_cmd;
-	}
-}
-static void printCmdLog(void)
-{
-	int i;
-	int nRowCount = 0;
-
-	nRowCount = (int)(icm206xx_accel_debug.nLogIndex / 8);
-
-	for (i = 0; i < nRowCount + 1; i++) {
-		sprintf(&icm206xx_accel_debug.strDebugDump[i * 24], "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 0],
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 1],
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 2],
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 3],
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 4],
-			icm206xx_accel_debug.ucCmdLog[i * 8 + 5], icm206xx_accel_debug.ucCmdLog[i * 8 + 6], icm206xx_accel_debug.ucCmdLog[i * 8 + 7]);
-	}
-
-	ACC_LOG("ACCEL_IOCTL_CMD_LOG :\n%s\t%d\n", icm206xx_accel_debug.strDebugDump, icm206xx_accel_debug.nLogIndex);
-}
-*/
 /*=======================================================================================*/
 /* Vendor Specific Functions Section							 */
 /*=======================================================================================*/
@@ -187,17 +104,7 @@ static int icm206xx_accel_SetFullScale(struct i2c_client *client, u8 accel_fsr)
 		return ICM206XX_ERR_I2C;
 	}
 
-/*
-	databuf[0] = 0;
 
-	res = icm206xx_share_i2c_read_register(ICM206XX_REG_ACCEL_CFG, databuf, 1);
-	if (res < 0) {
-		ACC_PR_ERR("Read fsr register err!\n");
-		return ICM206XX_ERR_I2C;
-	}
-
-	ACC_LOG("read fsr: 0x%x\n", databuf[0]);
-*/
 	return ICM206XX_SUCCESS;
 }
 
@@ -226,18 +133,6 @@ static int icm206xx_accel_SetFilter(struct i2c_client *client, u8 accel_filter)
 		ACC_PR_ERR("write filter register err!\n");
 		return ICM206XX_ERR_I2C;
 	}
-
-/*
-	databuf[0] = 0;
-
-	res = icm206xx_share_i2c_read_register(ICM206XX_REG_ACCEL_CFG2, databuf, 1);
-	if (res < 0) {
-		ACC_PR_ERR("Read filter register err!\n");
-		return ICM206XX_ERR_I2C;
-	}
-
-	ACC_LOG("read filter: 0x%x\n", databuf[0]);
-*/
 
 	return ICM206XX_SUCCESS;
 }
@@ -618,12 +513,7 @@ static int icm206xx_accel_init_client(struct i2c_client *client, bool enable)
 }
 
 /*----------------------------------------------------------------------------*/
-/* For  driver get cust info 
-struct acc_hw *get_cust_acc(void)
-{
-	return &accel_cust;
-}
-*/
+
 /* accelerometer power control function */
 static void icm206xx_accel_power(struct acc_hw *hw, unsigned int on)
 {
@@ -1320,7 +1210,7 @@ static int icm206xx_accel_i2c_probe(struct i2c_client *client, const struct i2c_
 	int res = 0;
 
 	ACC_LOG();
-	//obj = kzalloc(sizeof(*obj), GFP_KERNEL);
+
 	obj = devm_kzalloc(&client->dev, sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		res = -ENOMEM;
@@ -1333,10 +1223,7 @@ static int icm206xx_accel_i2c_probe(struct i2c_client *client, const struct i2c_
 		goto exit;
 	}
 
-	//memset(obj, 0, sizeof(struct icm206xx_accel_i2c_data));
-
 	/* hwmsen_get_convert() depend on the direction value */
-	//obj->hw = hw;
 
 	res = hwmsen_get_convert(obj->hw.direction, &obj->cvt);
 	if (res) {
@@ -1365,7 +1252,6 @@ static int icm206xx_accel_i2c_probe(struct i2c_client *client, const struct i2c_
 		goto exit;
 
 	/* misc_register() for factory mode, engineer mode and so on */
-	//res = misc_register(&icm206xx_accel_device);
 	res = accel_factory_device_register(&icm206xx_factory_device);
 	if (res) {
 		ACC_PR_ERR("icm206xx_accel_device acc_factory register failed!\n");
@@ -1418,16 +1304,16 @@ static int icm206xx_accel_i2c_probe(struct i2c_client *client, const struct i2c_
 	return 0;
 
 exit_create_attr_failed:
-	//misc_deregister(&icm206xx_accel_device);
+
 	icm206xx_accel_delete_attr(&(icm206xx_accel_init_info.platform_diver_addr->driver));
-	
+
 exit_misc_device_register_failed:
 	accel_factory_device_deregister(&icm206xx_factory_device);
 exit:
 	ACC_PR_ERR("%s: err = %d\n", __func__, res);
 	icm206xx_accel_init_flag = -1;
 	new_client = NULL;
-	obj = NULL;	
+	obj = NULL;
 	return res;
 }
 
@@ -1442,11 +1328,7 @@ static int icm206xx_accel_i2c_remove(struct i2c_client *client)
 	res = misc_deregister(&icm206xx_accel_device);
 	if (res)
 		ACC_PR_ERR("misc_deregister fail: %d\n", res);
-/*
-	res = hwmsen_detach(ID_ACCELEROMETER);
-	if (res)
-		ACC_PR_ERR("hwmsen_detach fail: %d\n", res);
-*/
+
 	icm206xx_accel_i2c_client = NULL;
 	i2c_unregister_device(client);
 	accel_factory_device_deregister(&icm206xx_factory_device);
@@ -1529,7 +1411,7 @@ static struct i2c_driver icm206xx_accel_i2c_driver = {
 
 static int icm206xx_accel_remove(void)
 {
-	//icm206xx_accel_power(&obj->hw, 0);
+	/* icm206xx_accel_power(&obj->hw, 0); */
 
 	i2c_del_driver(&icm206xx_accel_i2c_driver);
 
@@ -1538,9 +1420,6 @@ static int icm206xx_accel_remove(void)
 
 static int icm206xx_accel_local_init(void)
 {
-	//icm206xx_accel_power(&obj->hw, 1);
-
-/*	initDebugData();*/
 
 	if (i2c_add_driver(&icm206xx_accel_i2c_driver)) {
 		ACC_PR_ERR("add driver error\n");
@@ -1555,12 +1434,7 @@ static int icm206xx_accel_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int __init icm206xx_accel_init(void)
 {
-/*	const char *name = "mediatek,icm206xx_accel";
 
-	hw = get_accel_dts_func(name, hw);
-	if (!hw)
-		ACC_PR_ERR("get dts info fail\n");
-*/
 	acc_driver_add(&icm206xx_accel_init_info);
 
 	return 0;
