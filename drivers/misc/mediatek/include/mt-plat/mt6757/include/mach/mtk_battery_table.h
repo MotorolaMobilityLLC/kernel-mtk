@@ -26,7 +26,7 @@
 #define Q_MAX_H_CURRENT 10000
 
 /* multiple battery profile compile options */
-/*#define MTK_GET_BATTERY_ID_BY_AUXADC*/
+#define MTK_GET_BATTERY_ID_BY_AUXADC //modify longcheer_liml 20170402
 #define BATTERY_ID_CHANNEL_NUM 1
 #define BATTERY_PROFILE_ID 0
 #define TOTAL_BATTERY_NUMBER 4
@@ -45,12 +45,12 @@ int g_Q_MAX_T2_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2418, 2132, 2010, 1646};
 int g_Q_MAX_T3_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2235, 1691, 1558, 1573};
 int g_Q_MAX_T4_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2223, 1660, 1543, 1551};
 
-int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3400, 3400, 3400, 3400};
+int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3200, 3200, 3200, 3200};
 
 /* 0~0.5V for battery 0, 0.5~1V for battery 1*/
 /* 1~1.5V for battery 2, -1 for the last one (battery 3) */
 int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
-	500000, 1000000, 1500000, -1};
+	1250, 2900, -1, -1};//500000, 1000000, 1500000 modify longcheer_liml 20170402
 
 int g_FG_PSEUDO1_T0[TOTAL_BATTERY_NUMBER] = { 5, 6, 7, 8};
 int g_FG_PSEUDO1_T1[TOTAL_BATTERY_NUMBER] = { 9, 10, 11, 12};

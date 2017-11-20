@@ -71,11 +71,27 @@
 #include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
 #include <pmic.h>
+#include "mtk_switch_charging.h"
 
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
+/*====running test add by longcheer_liml_2017_03_04_start======*/
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+extern int battery_test_status;
+extern int runin_flag;
+#endif
+unsigned int flag_power_off;     // add by longcheer yangjz
+//add by longcheer_liml_2017_05_31
+extern int force_demo_mode;
+extern int force_demo_mode_flag;
+int demo_full_soc=100;
 
+
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+extern unsigned int lct_alt_status;
+int cmd_discharging = 0;
+#endif
 #define USE_FG_TIMER 1
 
 
@@ -337,12 +353,26 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 
 		if (en == false) {
 			if (pdata->disable_charging_count == 0)
+			{
+        #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		        if (lct_alt_status != 1)
 				_mtk_charger_do_charging(info, en);
+	    #else
+	            _mtk_charger_do_charging(info, en);
+	    #endif
+			}
 
 			pdata->disable_charging_count++;
 		} else {
 			if (pdata->disable_charging_count == 1) {
-				_mtk_charger_do_charging(info, en);
+		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		        if (lct_alt_status == 1)
+				    _mtk_charger_do_charging(info, 0);
+				else
+				    _mtk_charger_do_charging(info, en);
+	    #else   
+                 _mtk_charger_do_charging(info, en);
+	    #endif
 				pdata->disable_charging_count = 0;
 			} else if (pdata->disable_charging_count > 1)
 				pdata->disable_charging_count--;
@@ -372,7 +402,7 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
 	struct charger_manager *info = consumer->cm;
-
+printk("~~liml_charger input_current=%d\n",input_current);
 	if (info != NULL) {
 		struct charger_data *pdata;
 
@@ -382,8 +412,22 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
-
+    #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		if (lct_alt_status == 1)
+        {
+            if(mt_get_charger_type() == 4)
+            {
+                pdata->thermal_input_current_limit = 2050000;//input_current;
+            }else{
+                pdata->thermal_input_current_limit = 500000;//input_current;
+            }
+        }else
+        {
 		pdata->thermal_input_current_limit = input_current;
+        }
+    #else
+        pdata->thermal_input_current_limit = input_current;
+    #endif
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
 		idx, input_current);
 		_mtk_charger_change_current_setting(info);
@@ -719,7 +763,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	sw_jeita->charging = true;
 	/* JEITA battery temp Standard */
 
-	if (info->battery_temperature >= info->data.temp_t4_threshold) {
+	if (info->battery_temperature > info->data.temp_t4_threshold) {
 		chr_err("[SW_JEITA] Battery Over high Temperature(%d) !!\n\r",
 			    info->data.temp_t4_threshold);
 
@@ -795,7 +839,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 		else if (sw_jeita->sm == TEMP_T3_TO_T4)
 			sw_jeita->cv = info->data.jeita_temp_t3_to_t4_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T2_TO_T3)
-			sw_jeita->cv = 0;
+			sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T1_TO_T2)
 			sw_jeita->cv = info->data.jeita_temp_t1_to_t2_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T0_TO_T1)
@@ -805,11 +849,17 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 		else
 			sw_jeita->cv = info->data.battery_cv;
 	} else {
-		sw_jeita->cv = 0;
+		sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv_voltage;
 	}
+	
+    if(force_demo_mode_flag == 1)//add by longcheer_liml_2017_05_31
+    {
+        sw_jeita->cv = 4000000;
+    }
 
-	chr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n\r",
-		sw_jeita->pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv);
+
+	chr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d,force_demo_mode_flag:%d\n\r",
+		sw_jeita->pre_sm , sw_jeita->sm, info->battery_temperature, sw_jeita->cv,force_demo_mode_flag);
 }
 
 static ssize_t show_sw_jeita(struct device *dev, struct device_attribute *attr,
@@ -1102,6 +1152,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	pdata1->input_current_limit_by_aicl = -1;
 	pdata2->disable_charging_count = 0;
 
+    info->pe.is_connect = false;//add by longcheer_liml_2017_03_22
 	if (info->plug_out != NULL)
 		info->plug_out(info);
 
@@ -1140,13 +1191,24 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 	int vchr = 0;
 
 	vchr = pmic_get_vbus();
-	if (vchr > info->data.max_charger_voltage) {
-		info->notify_code |= 0x0001;
-		chr_err("[BATTERY] charger_vol(%d) > %d mV\n",
-			vchr, info->data.max_charger_voltage);
-	} else {
-		info->notify_code &= ~(0x0001);
+	printk("~~liml func=%s,vchr=%d,info->pe.pe_is_connect=%d\n",__func__,vchr,info->pe.is_connect);
+	if(info->pe.is_connect == true)
+	{
+	    if (vchr > 10000) {//10V
+		    info->notify_code |= 0x0001;
+		    pr_err("[BATTERY] charger_vol(%d) > 10000 mV\n", vchr);
+	    } else {
+		    info->notify_code &= ~(0x0001);
+	    }
+	}else{
+	    if (vchr > info->data.max_charger_voltage/1000) {//6.5V
+		    info->notify_code |= 0x0001;
+		    pr_err("[BATTERY] charger_vol(%d) > %d mV\n", vchr, info->data.max_charger_voltage/1000);
+	    } else {
+		    info->notify_code &= ~(0x0001);
+	    }
 	}
+
 	if (info->notify_code != 0x0000)
 		chr_err("[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n",
 			info->notify_code);
@@ -1312,11 +1374,14 @@ static void kpoc_power_off_check(struct charger_manager *info)
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
 			__func__, vbus, boot_mode);
-		if (!mtk_is_pe30_running(info) && vbus < 2500
-			&& atomic_read(&info->enable_kpoc_shdn)) {
+		flag_power_off = 1;     //add by longcheer yangjz
+		if (!mtk_is_pe30_running(info) && vbus < 2500) {
 			pr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
 			kernel_power_off();
 		}
+	}
+	else{
+		flag_power_off = 0;     //add by longcheer yangjz
 	}
 #endif
 }
@@ -1371,6 +1436,91 @@ void mtk_charger_stop_timer(struct charger_manager *info)
 		gtimer_stop(&info->charger_kthread_fgtimer);
 }
 
+//add by longcheer_liml_2017_03_23
+static void mt_battery_CheckChargerVoltage(struct charger_manager *info)
+{
+    int vchr = 0;
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    
+    vchr = pmic_get_vbus();
+    printk("~~liml func=%s,vchr=%d,info->pe.is_connect=%d\n",__func__,vchr,info->pe.is_connect);
+	if(info->pe.is_connect == true)
+	{
+        if (vchr > 10000) {//10V
+            swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+            pr_err("[BATTERY] charger_vol(%d) > 10000 mV\n", vchr);
+        } 
+    }else{
+        if (vchr > info->data.max_charger_voltage/1000) {//6.5V
+            swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+            pr_err("[BATTERY] charger_vol(%d) > %d mV\n", vchr, info->data.max_charger_voltage/1000);
+        }
+    }
+}
+
+/*====running test add by longcheer_liml_2017_03_04_start======*/
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+static void mt_battery_runin_test(struct charger_manager *info)
+{
+    int soc =0;
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+    if((battery_test_status == 1)&&(runin_flag ==0))
+	{
+	    soc =battery_get_bat_uisoc();
+		if(soc >=80)
+		{
+			swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		    charger_dev_enable_powerpath(info->chg1_dev, 0);
+		}else if(soc <=60)
+		{
+            swchgalg->state = CHR_CC;
+            charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+            charger_dev_enable_powerpath(info->chg1_dev, 1);
+		}
+	}else if((battery_test_status == 0)&&(runin_flag ==1)&&(swchgalg->state != CHR_BATFULL))
+	{
+	    swchgalg->state = CHR_CC;
+	    charger_dev_enable_powerpath(info->chg1_dev, 1);
+	    charger_manager_notifier(info,CHARGER_NOTIFY_NORMAL);
+	}
+	printk("~~liml_charger battery_test_status=%d,runin_flag=%d,soc=%d,lct_alt_status=%d\n",battery_test_status,runin_flag,soc,lct_alt_status);
+}
+#endif
+
+//========================add_by_longcheer_liml_2017_05_31 for add force demo mode start======
+static void mt_battery_force_demo_mode(struct charger_manager *info)
+{
+    int soc =0;
+    bool chg_done = false;
+    
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    
+    charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+    
+    if(force_demo_mode_flag == 1)
+	{
+	    soc =battery_get_bat_uisoc();
+		if((soc >=force_demo_mode) ||(chg_done))
+		{
+		    demo_full_soc =soc;
+			swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		    charger_dev_enable_powerpath(info->chg1_dev, 0);
+		}else if(soc <=(demo_full_soc -5))
+		{
+            swchgalg->state = CHR_CC;
+            charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+            charger_dev_enable_powerpath(info->chg1_dev, 1);
+		}
+	    printk("~~liml_charger force_demo_mode_flag=%d,force_demo_mode=%d,chg_done=%d,demo_full_soc=%d\n",force_demo_mode_flag,force_demo_mode,chg_done,demo_full_soc);  
+	} 
+}
+//========================modify_longcheer_liml_2017_05_31 for add force demo mode end======
+
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
@@ -1398,12 +1548,18 @@ static int charger_routine_thread(void *arg)
 		charger_update_data(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
-#ifndef CONFIG_POWER_EXT
+
 		if (is_charger_on == true) {
+		    mt_battery_CheckChargerVoltage(info);//add by lonngcheer_liml
+		  #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+		    mt_battery_runin_test(info);
+		  #endif
+		  mt_battery_force_demo_mode(info);//add_by_longcheer_liml_2017_05_31 for add force demo mode start
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
-#endif
+
+
 		if (info->charger_thread_polling == true)
 			mtk_charger_start_timer(info);
 
@@ -1900,7 +2056,7 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	if (mtk_is_TA_support_pe30(pinfo) == true)
 		is_ta_detected = 1;
 
-	pr_debug("%s: detected = %d, pe20_is_connect = %d, pe_is_connect = %d\n",
+	pr_err("%s: detected = %d, pe20_is_connect = %d, pe_is_connect = %d\n",
 		__func__, is_ta_detected,
 		mtk_pe20_get_is_connect(pinfo),
 		mtk_pe_get_is_connect(pinfo));
@@ -1976,6 +2132,45 @@ static ssize_t show_ADC_Charger_Voltage(struct device *dev, struct device_attrib
 static DEVICE_ATTR(ADC_Charger_Voltage, 0444, show_ADC_Charger_Voltage, NULL);
 
 /* procfs */
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
+{
+	struct charger_manager *pinfo = m->private;
+	seq_printf(m, "%d %d\n", pinfo->usb_unlimited, pinfo->cmd_discharging);
+	return 0;
+}
+static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buffer,
+						size_t count, loff_t *data)
+{
+	int len = 0;
+	char desc[32];
+	int cmd_current_unlimited = 0;
+	struct charger_manager *info = PDE_DATA(file_inode(file));
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
+		info->usb_unlimited = cmd_current_unlimited;
+		if (cmd_discharging == 1) {
+		    lct_alt_status = 1;
+			info->cmd_discharging = true;
+			charger_dev_enable(info->chg1_dev, false);
+			charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		} else if (cmd_discharging == 0) {
+		    lct_alt_status = 0;
+			info->cmd_discharging = false;
+			charger_dev_enable(info->chg1_dev, true);
+			charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		}
+		pr_debug("%s cmd_current_unlimited=%d, cmd_discharging=%d,lct_alt_status=%d\n",
+			__func__, cmd_current_unlimited, cmd_discharging,lct_alt_status);
+		return count;
+	}
+	pr_err("bad argument, echo [usb_unlimited] [disable] > current_cmd\n");
+	return count;
+}
+#else
 static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
@@ -2019,6 +2214,7 @@ static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buff
 	chr_err("bad argument, echo [usb_unlimited] [disable] > current_cmd\n");
 	return count;
 }
+#endif
 
 static int mtk_charger_en_power_path_show(struct seq_file *m, void *data)
 {

@@ -1259,7 +1259,7 @@
 	};
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
+    #ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
 		#include "bat_setting/mt6757_battery_prop_ext.dtsi"
 	#else
 		#include "bat_setting/mt6757_battery_prop.dtsi"
@@ -1635,7 +1635,7 @@
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10204000 0 0x1000>;
 		interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_LOW>;
-		mediatek,cirq_num = <209>;
+		mediatek,cirq_num = <208>;
 		mediatek,spi_start_offset = <72>;
 		mediatek,edge_trig_irqs_for_spm-quantity = <5>;
 		mediatek,edge_trig_irqs_for_spm = <162 196 281 284 300>;
@@ -3783,51 +3783,54 @@
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
-		/* enable_sw_jeita; */
+		enable_sw_jeita;//add by longcheer_liml_2017_03_14
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
-
+		/***charg by liminglong longcheer start******/
+		battery_cv =<4400000>;
+		max_charger_voltage=<6500000>;//14mv
+               /***charg by liminglong longcheer end******/
 		/* charging current */
 		usb_charger_current_suspend = <0>;
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
-		ac_charger_input_current = <3200000>;
+		/***charg by liminglong longcheer start******/
+		ac_charger_current = <2500000 >;
+		ac_charger_input_current = <2050000 >;
+		/***charg by liminglong longcheer end******/
 		non_std_ac_charger_current = <500000>;
 		charging_host_charger_current = <500000>;
-		ta_ac_charger_current = <3000000>;
+		ta_ac_charger_current = <2500000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv_voltage = <4240000>;
-		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
-		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
-		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
-		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
-		jeita_temp_below_t0_cv_voltage = <4040000>;
+		jeita_temp_above_t4_cv_voltage = <4150000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4150000>;
+		jeita_temp_t2_to_t3_cv_voltage = <4400000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4400000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4400000>;
+		jeita_temp_below_t0_cv_voltage = <4400000>;
 		temp_t4_threshold = <50>;
 		temp_t4_thres_minus_x_degree = <47>;
 		temp_t3_threshold = <45>;
-		temp_t3_thres_minus_x_degree = <39>;
-		temp_t2_threshold = <10>;
+		temp_t3_thres_minus_x_degree = <44>;
+		temp_t2_threshold = <15>;
 		temp_t2_thres_plus_x_degree = <16>;
-		temp_t1_threshold = <0>;
-		temp_t1_thres_plus_x_degree = <6>;
-		temp_t0_threshold = <0>;
-		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_threshold = <0>;
+		temp_t1_threshold = <1>;
+		temp_t1_thres_plus_x_degree = <2>;
+		temp_t0_threshold = <1>;
+		temp_t0_thres_plus_x_degree = <1>;
+		temp_neg_10_threshold = <1>;
 
 		/* battery temperature protection */
 		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <6>;
-		max_charge_temperature = <50>;
-		max_charge_temperature_minus_x_degree = <47>;
+		min_charge_temperature_plus_x_degree = <2>;
+		max_charge_temperature = <51>;
+		max_charge_temperature_minus_x_degree = <48>;
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;

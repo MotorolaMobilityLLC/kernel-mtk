@@ -172,6 +172,12 @@ bool is_fg_disable(void)
 	return gDisableGM30;
 }
 
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+unsigned int lct_alt_status = 0;
+extern void rtc_clear_alt(void);
+extern int get_rtc_mark_alt(void);
+extern int cmd_discharging;
+#endif
 
 static int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 static int loglevel_count;
@@ -216,6 +222,15 @@ static bool g_ADC_Cali;
 
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) //add by longcheer_liml_2017_03_04
+int battery_test_status=0;
+int runin_flag =0;
+#endif
+
+//add by longcheer_liml_2017_05_31
+int force_demo_mode =100;
+int force_demo_mode_flag =0;
+
 static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_HEALTH,
@@ -243,6 +258,10 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+//add by longcheer_liml_2017_02_22 for add battery capacity start
+    POWER_SUPPLY_PROP_CHARGE_FULL,
+    POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+//add by longcheer_liml_2017_02_22 for add battery capacity end
 };
 
 bool is_battery_init_done(void)
@@ -564,7 +583,11 @@ void battery_update_psd(struct battery_data *bat_data)
 	bat_data->BAT_batt_temp = battery_get_bat_temperature();
 	bat_data->BAT_TempBattVoltage = battery_meter_get_tempV();
 	bat_data->BAT_TemperatureR = battery_meter_get_tempR(bat_data->BAT_TempBattVoltage);
+#if defined(CONFIG_RT5081_PMU_CHARGER) //add by longcheer_liml_2017_02_07
+	bat_data->BAT_BatteryAverageCurrent = battery_get_bat_current()/10;
+#else
 	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
+#endif
 	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
 	bat_data->BAT_ChargerVoltage = battery_get_vbus();
 
@@ -611,7 +634,8 @@ static int battery_get_property(struct power_supply *psy,
 		/* 5v */
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = FG_status.soc;
+		//val->intval = FG_status.soc;
+		val->intval = (4000*data->BAT_CAPACITY)/100;
 		/* using soc as charge_counter */
 		break;
 	case POWER_SUPPLY_PROP_batt_vol:
@@ -655,7 +679,14 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
 		break;
-
+//add by longcheer_liml_2017_02_22 for add battery capacity start
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval = 4000000;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		val->intval = 4000000;
+		break;
+//add by longcheer_liml_2017_02_22 for add battery capacity end
 	default:
 		ret = -EINVAL;
 		break;
@@ -991,10 +1022,12 @@ static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
 int g_fg_battery_id;
 
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+int id_volt =0;  //modify longcheer_liml_20170403
+extern int pmic_get_auxadc_value(u8 list);  //modify longcheer_liml_20170403
 void fgauge_get_profile_id(void)
 {
-	int id_volt = 0;
 	int id = 0;
+#if 0  //modify longcheer_liml_20170403
 	int ret = 0;
 
 	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
@@ -1002,7 +1035,9 @@ void fgauge_get_profile_id(void)
 		bm_debug("[fgauge_get_profile_id]id_volt read fail\n");
 	else
 		bm_debug("[fgauge_get_profile_id]id_volt = %d\n", id_volt);
-
+#else
+    id_volt = pmic_get_auxadc_value(AUXADC_LIST_BATID);
+#endif
 	if ((sizeof(g_battery_id_voltage) / sizeof(int)) != TOTAL_BATTERY_NUMBER) {
 		bm_debug("[fgauge_get_profile_id]error! voltage range incorrect!\n");
 		return;
@@ -1017,7 +1052,7 @@ void fgauge_get_profile_id(void)
 		}
 	}
 
-	bm_debug("[fgauge_get_profile_id]Battery id (%d)\n", g_fg_battery_id);
+	printk("Jason[fgauge_get_profile_id]Battery id (%d), id_volt(%d)\n", g_fg_battery_id, id_volt);
 }
 #elif defined(MTK_GET_BATTERY_ID_BY_GPIO)
 void fgauge_get_profile_id(void)
@@ -2002,8 +2037,16 @@ int force_get_tbat(bool update)
 	}
 
 	ntc_disable_nafg = false;
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT //add by longcheer_liml_2017_04_13
+	    if (1 == lct_alt_status){
+	        return 25;
+	    }else{
+            return bat_temperature_val;
+	    }
+#else
 
 	return bat_temperature_val;
+#endif //CONFIG_LCT_CHR_ALT_TEST_SUPPORT
 #endif
 }
 
@@ -3096,7 +3139,7 @@ static void nl_data_handler(struct sk_buff *skb)
 	uid = NETLINK_CREDS(skb)->uid;
 	seq = nlh->nlmsg_seq;
 
-	/*bm_debug("[Netlink] recv skb from user space uid:%d pid:%d seq:%d\n",uid,pid,seq); */
+	printk("[Netlink Jason] recv skb from user space uid:%d pid:%d seq:%d\n",*(int *)&uid,pid,seq); 
 	data = NLMSG_DATA(nlh);
 
 	fgd_msg = (struct fgd_nl_msg_t *)data;
@@ -4312,12 +4355,90 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
 
+/*=====================add by longcheer_liml_2017_04_03=================*/
+static ssize_t show_BatteryIdVoltage(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	printk("[Battery] BatteryId : %u\n",id_volt);
+	return sprintf(buf, "%u\n", id_volt);
+}
+static ssize_t store_BatteryIdVoltage(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	bm_err("[EM] BatteryIdVoltage Not Support Write Function\n");
+	return size;
+}
+static DEVICE_ATTR(BatteryIdVoltage, 0664, show_BatteryIdVoltage, store_BatteryIdVoltage);
+
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+/*=====================running test start=add by longcheer_liml_2017_03_04=================*/
+static ssize_t show_BatteryTestStatus(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	printk("[Battery] show_BatteryTestStatus : %u\n",battery_test_status);
+
+	return sprintf(buf, "%u\n", battery_test_status);
+}
+static ssize_t store_BatteryTestStatus(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+
+	sscanf(buf, "%u", &battery_test_status);
+	if(battery_test_status == 1)
+	{
+	    runin_flag = 0;
+	}else
+	{
+	    runin_flag = 1;
+	}
+
+	return size;
+}
+static DEVICE_ATTR(BatteryTestStatus, 0664, show_BatteryTestStatus, store_BatteryTestStatus);
+/*=====================running test end ==================*/
+#endif
+
+//========================modify_longcheer_liml_2017_05_31 for add force demo mode start=======
+static ssize_t show_force_demo_mode(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	printk("[Battery] show_force_demo_mode : %u,force_demo_mode_flag=%u\n",force_demo_mode,force_demo_mode_flag);
+
+	return sprintf(buf, "%u %u\n", force_demo_mode,force_demo_mode_flag);
+}
+static ssize_t store_force_demo_mode(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+
+    force_demo_mode_flag =1;
+	sscanf(buf, "%u", &force_demo_mode);
+	return size;
+}
+static DEVICE_ATTR(force_demo_mode, 0664, show_force_demo_mode, store_force_demo_mode);
+
+
+//========================modify_longcheer_liml_2017_02_08 for add battery voltage start=======
+static ssize_t show_FG_Battery_Voltage(struct device *dev, struct device_attribute *attr,
+						  char *buf)
+{
+	int ret_value = 0;
+
+	ret_value = battery_get_vbus();
+	bm_err("[EM] FG_Battery_Voltage : %d mA\n", ret_value);
+	return sprintf(buf, "%d\n", ret_value);
+}
+
+static ssize_t store_FG_Battery_Voltage(struct device *dev,
+						   struct device_attribute *attr, const char *buf,
+						   size_t size)
+{
+	bm_err("[EM] Not Support Write Function\n");
+	return size;
+}
+
+static DEVICE_ATTR(FG_Battery_Voltage, 0664, show_FG_Battery_Voltage,  store_FG_Battery_Voltage);
+//========================add_longcheer_liml_2017_02_08 for add battery voltage end=======
+
 static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct device_attribute *attr,
 						  char *buf)
 {
 	int ret_value = 8888;
 
-	ret_value = battery_get_bat_avg_current();
+	ret_value = battery_get_bat_current();//battery_get_bat_avg_current(); //modify longcheer_liml_2017_03_13
 	bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
 	return sprintf(buf, "%d\n", ret_value);
 }
@@ -4384,6 +4505,8 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 		{
 /* CHARGING FULL */
 			notify_fg_chr_full();
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;//add by longcheer_liml_2017_05_16 update charger full status
+			battery_update(&battery_main);//add by longcheer_liml_2017_05_16 update charger full status
 		}
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
@@ -4749,6 +4872,13 @@ static int __init battery_probe(struct platform_device *dev)
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
 
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+	lct_alt_status = get_rtc_mark_alt();
+	if (lct_alt_status == 1){
+		cmd_discharging = 1;
+		rtc_clear_alt();
+	}
+#endif
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
 	if (ret)
@@ -4856,6 +4986,12 @@ static int __init battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_Voltage);//add_longcheer_liml_2017_02_08 for add battery voltage
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);//add by longcheer_liml_2017_03_04 for runin test
+#endif
+    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryIdVoltage);//add by longcheer_liml_2017_04_03 for add battery id
+    ret_device_file = device_create_file(&(dev->dev), &dev_attr_force_demo_mode);//add by longcheer_liml_2017_05_31 for force_demo_mode
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);
@@ -4943,6 +5079,11 @@ struct platform_device battery_device = {
 	.id = -1,
 };
 
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT  //add by longcheer_liml_2017_04_05
+#include  <dev_info.h>
+struct devinfo_struct *dev_battery;
+#endif
+
 #ifdef CONFIG_OF
 static int battery_dts_probe(struct platform_device *dev)
 {
@@ -4957,6 +5098,34 @@ static int battery_dts_probe(struct platform_device *dev)
 	}
 
 	fg_custom_init_from_dts(dev);
+
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT //add by longcheer_liml_2017_04_05
+	dev_battery = (struct devinfo_struct*)kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);
+	dev_battery->device_type = "Battery";
+	dev_battery->device_vendor = DEVINFO_NULL;
+	dev_battery->device_ic = DEVINFO_NULL;
+	dev_battery->device_version = DEVINFO_NULL;
+#ifdef CONFIG_L3510_MAINBOARD
+	if(g_fg_battery_id==0)
+	dev_battery->device_module = "Veken"; //0V
+	else if(g_fg_battery_id==1)
+	dev_battery->device_module = "SCUD";//feimaotui 2.8V
+	else
+#else
+	if(g_fg_battery_id==0)
+	dev_battery->device_module = "SCUD"; //1.14V
+	else if(g_fg_battery_id==1)
+	dev_battery->device_module = "Veken";//weike 1.4V
+	else
+#endif
+	dev_battery->device_module = "ERROR";
+	dev_battery->device_info = DEVINFO_NULL;
+	dev_battery->device_used = DEVINFO_USED;
+	devinfo_check_add_device(dev_battery);
+
+	printk("[DEVINFO battery]registe battery device! type:<%s> module:<%s> used<%s>\n",
+				dev_battery->device_type,dev_battery->device_module,dev_battery->device_used);
+#endif
 
 	return 0;
 }

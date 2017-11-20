@@ -15,14 +15,14 @@
 #define _MTK_BATTERY_PROPERTY_H
 
 /* customize */
-#define DIFFERENCE_FULLOCV_ITH	200	/* mA */
+#define DIFFERENCE_FULLOCV_ITH	150	/* mA */
 #define MTK_CHR_EXIST 1
 #define SHUTDOWN_1_TIME	60
 #define KEEP_100_PERCENT 2
 #define R_FG_VALUE	10				/* mOhm */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
-#define FG_METER_RESISTANCE	75
+#define FG_METER_RESISTANCE	50
 #define CAR_TUNE_VALUE	100 /*1.00 */
 #define NO_BAT_TEMP_COMPENSATE 0
 /* NO_BAT_TEMP_COMPENSATE 1 = don't need bat_temper compensate, */
@@ -30,9 +30,9 @@
 
 #define SHUTDOWN_GAUGE0 1
 #define SHUTDOWN_GAUGE1_XMINS 1
-#define SHUTDOWN_GAUGE0_VOLTAGE 34000
+#define SHUTDOWN_GAUGE0_VOLTAGE 35000
 
-#define POWERON_SYSTEM_IBOOT 500	/* mA */
+#define POWERON_SYSTEM_IBOOT 1000	/* mA */
 
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
@@ -47,7 +47,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 34000
+#define PMIC_MIN_VOL 32000
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -55,13 +55,13 @@
 #define PSEUDO100_EN 1
 #define PSEUDO100_EN_DIS 1
 
-#define DIFF_SOC_SETTING 100	/* 0.01% */
+#define DIFF_SOC_SETTING 50	/* 0.01% */
 #define DIFF_BAT_TEMP_SETTING 1
 #define DIFF_BAT_TEMP_SETTING_C 10
 #define DISCHARGE_TRACKING_TIME 10
 #define CHARGE_TRACKING_TIME 60
 #define DIFFERENCE_FULLOCV_VTH	1000	/* 0.1mV */
-#define CHARGE_PSEUDO_FULL_LEVEL 9000
+#define CHARGE_PSEUDO_FULL_LEVEL 7700  //9000 modify longcheer_liml_2017_04_22
 
 /* pre tracking */
 #define FG_PRE_TRACKING_EN 0

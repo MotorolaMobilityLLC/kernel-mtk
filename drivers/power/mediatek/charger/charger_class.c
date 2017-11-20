@@ -22,6 +22,10 @@
 #include <linux/slab.h>
 #include <mt-plat/charger_class.h>
 
+
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+extern unsigned int lct_alt_status;
+#endif
 static struct class *charger_class;
 
 static ssize_t charger_show_name(struct device *dev,
@@ -63,9 +67,27 @@ static void charger_device_release(struct device *dev)
 
 int charger_dev_enable(struct charger_device *charger_dev, bool en)
 {
-	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable)
-		return charger_dev->ops->enable(charger_dev, en);
 
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable){
+	    if(en ==false)
+	    {
+            return charger_dev->ops->enable(charger_dev, en);
+	    }else{
+        #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+            if (lct_alt_status == 1)
+            {
+                return charger_dev->ops->enable(charger_dev, 0);
+            }else
+            {
+                return charger_dev->ops->enable(charger_dev, en);
+            }
+        #else
+                return charger_dev->ops->enable(charger_dev, en);
+        #endif
+	    }
+//add by longcheer_liml_2017_03_14_end
+//  return charger_dev->ops->enable(charger_dev, en);
+	}
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_enable);

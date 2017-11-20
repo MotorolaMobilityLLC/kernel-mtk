@@ -24,7 +24,7 @@
 			mrstb_en; /* external reset pin enable */
 			mrstb_tmr = <3>; /* 0: 0.75ms, 1: 1ms, 2: 1.25ms, 3: 1.5ms */
 			/* 4: 1.75ms, 5: 2ms, 6: 2.25ms, 7: 2.5ms */
-			int_wdt = <1>; /* 0: disable, 1: 250ms, 2: 500ms, 3: 1s */
+			int_wdt = <0>; /* 0: disable, 1: 250ms, 2: 500ms, 3: 1s */
 			int_deg = <0>; /* interrupt deglitch, 0: 1ms, 1: 2ms, 2: 5ms, 3: 10ms */
 		};
 		charger {
@@ -37,9 +37,9 @@
 			ichg = <2000000>;	/* uA */
 			aicr = <500000>;	/* uA */
 			mivr = <4400000>;	/* uV */
-			cv = <4350000>;		/* uA */
+			cv = <4400000>;		/* uA */
 			ieoc = <150000>;	/* uA */
-			safety_timer = <12>;	/* hour */
+			safety_timer = <20>;	/* 12 hour modify longcheer_liml*/
 			dc_wdt = <4000000>;	/* us */
 			ircmp_resistor = <25000>;	/* uohm */
 			ircmp_vclamp = <32000>;		/* uV */
@@ -95,7 +95,7 @@
 			/* pwm_mode -> pwm dimming mode */
 			/* breath_mode -> as the name */
 			rt,led_default_trigger = "cc_mode", "cc_mode",
-						 "cc_mode", "none";
+						 "cc_mode", "cc_mode";//modify longcheer_liml_20170523
 		};
 		bled {
 			compatible = "richtek,rt5081_pmu_bled";
@@ -133,7 +133,7 @@
 			db_vpos_20ms = <1>; /* 1 = DB VPOS discharge 20ms when shutdown; 0 = disable */
 			db_vpos_disc = <0>; /*  1 = Discharge VPOS when turn off; 0 = disable */
 			db_delay = <3>; /* 0 = no constraint; 1 = 0 ms; 2 = 1 ms; 3 = 4 ms */
-			db_vbst  = <5700>; /* mV */
+			db_vbst  = <5600>; /* mV */
 			db_vpos_slew = <1>; /* 0 : 8.46 V/ms; 1 : 5.79 V/ms; 2: 3.87 V/ms; 3: 2.97V/ms */
 			db_vneg_slew = <1>; /* 0: -9.24V/ms; 1: -5.97V/ms; 2: -4.82V/ms; 3: -3.07V/ms*/
 			rt5081_dsvp {

@@ -56,11 +56,12 @@
 
 /* pe */
 #define PE_ICHG_LEAVE_THRESHOLD 1000 /* mA */
-#define TA_AC_12V_INPUT_CURRENT 3200000
-#define TA_AC_9V_INPUT_CURRENT	3200000
-#define TA_AC_7V_INPUT_CURRENT	3200000
+#define TA_AC_12V_INPUT_CURRENT 1500000
+#define TA_AC_9V_INPUT_CURRENT	1600000
+#define TA_AC_7V_INPUT_CURRENT	1600000
 #define TA_9V_SUPPORT
-#define TA_12V_SUPPORT
+//#define TA_12V_SUPPORT  //close by longcheer_liml_2017_03_07
+
 
 /* pe2.0 */
 #define PE20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
@@ -85,5 +86,6 @@
 /* battery warning */
 #define BATTERY_NOTIFY_CASE_0001_VCHARGER
 #define BATTERY_NOTIFY_CASE_0002_VBATTEMP
+#define BAT_LOW_TEMP_PROTECT_ENABLE  //add by longcheer_liml_2017_03_07
 
 #endif /*__MTK_CHARGER_INIT_H__*/

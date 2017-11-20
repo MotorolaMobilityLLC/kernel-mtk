@@ -18,6 +18,12 @@
 #include "mtk_charger_intf.h"
 #include <upmu_common.h>
 
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+int lcm_resume_flag = 1;
+#endif
+//--end--
+
 /* Unit of the following functions are uV, uA */
 static inline u32 pe_get_vbus(void)
 {
@@ -542,15 +548,54 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 		return -ENOTSUPP;
 
 	chr_volt = pe_get_vbus();
-	if ((chr_volt - pe->ta_vchr_org) > 6000000) { /* TA = 12V */
+	if ((chr_volt - pinfo->pe.ta_vchr_org) > 6000000) { /* TA = 12V */
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
 		*aicr = pinfo->data.ta_ac_12v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
+		}
 	} else if ((chr_volt - pe->ta_vchr_org) > 3000000) { /* TA = 9V */
+	    if (pinfo->battery_temperature >= pinfo->data.temp_t3_threshold)//add by longcheer_liml_2017_06_01
+	    {
+	        *aicr = pinfo->data.ta_ac_9v_input_current;
+		    *ichg = 2000000;//2000mA
+	    }else{
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
 		*aicr = pinfo->data.ta_ac_9v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
+		}    
+	    }
 	} else if ((chr_volt - pe->ta_vchr_org) > 1000000) { /* TA = 7V */
-		*aicr = pinfo->data.ta_ac_7v_input_current;
+	    if (pinfo->battery_temperature >= pinfo->data.temp_t3_threshold)//add by longcheer_liml_2017_06_01
+	    {
+	        *aicr = pinfo->data.ta_ac_7v_input_current;
+		    *ichg = 2000000;
+	    }else{
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
+	        *aicr = pinfo->data.ta_ac_7v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
+		}
+		}
 	}
 
 	pr_err("%s: Ichg= %dmA, AICR = %dmA, chr_org = %d, chr_after = %d\n",
