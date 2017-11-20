@@ -996,6 +996,7 @@ W = 17
 X = 45
 Y = 21
 Z = 44
+MUSIC = 485
 
 [Power_Key_definition]
 POWER
