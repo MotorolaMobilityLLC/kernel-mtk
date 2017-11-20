@@ -89,7 +89,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_LOW	0xFFFE
 #define REGFLAG_RESET_HIGH	0xFFFF
 
-extern unsigned int flag_power_off;  //add by longcheer yangjz
+//extern unsigned int flag_power_off;  //add by longcheer yangjz
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 extern int cabc_mode_mode;
 #define CABC_MODE_SETTING_UI	1
@@ -156,7 +156,6 @@ static struct LCM_setting_table lcm_setting_mv[] = {
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 #endif
-
 static struct LCM_setting_table bl_level[] = {
 	{0x51, 1, {0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
@@ -275,15 +274,15 @@ static int display_bias_regulator_init(void)
 	int ret;
 
 	if (!regulator_inited) {
-		 //please only get regulator once in a driver 
+		/* please only get regulator once in a driver */
 		ret = mtk_regulator_get(NULL, "dsv_pos", &disp_bias_pos);
-		if (ret < 0) { 
+		if (ret < 0) { /* handle return value */
 			pr_err("get dsv_pos fail\n");
 			return -1;
 		}
 
 		ret = mtk_regulator_get(NULL, "dsv_neg", &disp_bias_neg);
-		if (ret < 0) { 
+		if (ret < 0) { /* handle return value */
 			pr_err("get dsv_pos fail\n");
 			return -1;
 		}
@@ -294,7 +293,7 @@ static int display_bias_regulator_init(void)
 	return 0;
 }
 #endif
-/*
+#if 0
 static int display_bias_enable(void)
 {
 	int ret = 0;
@@ -303,7 +302,7 @@ static int display_bias_enable(void)
 	if (ret)
 		return ret;
 
-	// set voltage with min & max
+	/* set voltage with min & max*/
 	ret = mtk_regulator_set_voltage(&disp_bias_pos, 5500000, 5500000);
 	if (ret < 0)
 		pr_err("set voltage disp_bias_pos fail\n");
@@ -313,7 +312,7 @@ static int display_bias_enable(void)
 		pr_err("set voltage disp_bias_neg fail\n");
 
 #if 0
-	//get voltage 
+	/* get voltage */
 	ret = mtk_regulator_get_voltage(&disp_bias_pos);
 	if (ret < 0)
 		pr_err("get voltage disp_bias_pos fail\n");
@@ -324,7 +323,7 @@ static int display_bias_enable(void)
 		pr_err("get voltage disp_bias_neg fail\n");
 	pr_debug("neg voltage = %d\n", ret);
 #endif
-	// enable regulator
+	/* enable regulator */
 	ret = mtk_regulator_enable(&disp_bias_pos, true);
 	if (ret < 0)
 		pr_err("enable regulator disp_bias_pos fail\n");
@@ -333,10 +332,10 @@ static int display_bias_enable(void)
 	if (ret < 0)
 		pr_err("enable regulator disp_bias_neg fail\n");
 	return ret;
-}*/
-
+}
+#endif
 //add by yangjiangzhu for hbm
-#if 0//def CONFIG_LCT_HBM_SUPPORT
+#ifdef CONFIG_LCT_HBM_SUPPORT
 static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
 extern int lct_klcm_rm63350_enable_hbm(int enable);
@@ -419,7 +418,7 @@ static void lcm_cabc_cmdq(void *handle, unsigned int mode)
 	}
 }
 #endif
-/*
+#if 0
 static int display_bias_disable(void)
 {
 	int ret = 0;
@@ -437,8 +436,8 @@ static int display_bias_disable(void)
 		pr_err("disable regulator disp_bias_pos fail\n");
 
 	return ret;
-}*/
-
+}
+#endif 
 static void lcm_init_power(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -578,20 +577,13 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-//unsigned int level_hight = 255;
+unsigned int level_hight = 255;
 LCM_LOGI("%s,LCM R63350 backlight: level = %d\n", __func__, level);
-
-if(level <= 4)
-	level = 4;
-	bl_level[0].para_list[0] = level;
-	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-
-#if 0
      if(hbm_enable == 0) {
-	if(flag_power_off == 1) {
-   		MDELAY(30);//optimize device turn off,press power key wake up screen slowly.
-		printk("enter power off charging mode delay 30ms");
-				}
+//	if(flag_power_off == 1) {
+//   		MDELAY(30);//optimize device turn off,press power key wake up screen slowly.
+//		printk("enter power off charging mode delay 30ms");
+//				}
 	if(level <= 4)
 		level = 4;
 		bl_level[0].para_list[0] = level;
@@ -601,8 +593,7 @@ if(level <= 4)
 			bl_level[0].para_list[0] = level_hight;
 			push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 	            }
-#endif
-		#if 0//def CONFIG_LCT_HBM_SUPPORT
+		#ifdef CONFIG_LCT_HBM_SUPPORT
 			last_level = level;
 		#endif
 }
@@ -624,7 +615,7 @@ LCM_DRIVER lct_r63350_tianma_1080p_vdo_lcm_drv = {
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 	.set_cabc_cmdq = lcm_cabc_cmdq,
 #endif
-#if 0//def CONFIG_LCT_HBM_SUPPORT
+#ifdef CONFIG_LCT_HBM_SUPPORT
 	.set_backlight_hbm = lcm_setbacklight_hbm,
 #endif
 };

@@ -493,6 +493,112 @@ static ssize_t show_bl_curve(struct device *device,
 }
 #endif
 
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+#define CABC_MODE_UI	1
+#define CABC_MODE_MV	2
+#define CABC_MODE_DIS	3
+extern int primary_display_setcabc(unsigned int enable);
+extern int primary_recognition_cabc_mode(void);
+static ssize_t store_cabc_mode(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{	
+	unsigned int cabc_mode_mode = 0;	
+	//printk("kls store cabc_mode buf = %s\n",buf);
+	if((strncmp(buf,"UI",2)==0)||(strncmp(buf,"ui",2)==0))
+	{
+		cabc_mode_mode = CABC_MODE_UI;	
+	}	
+	if((strncmp(buf,"MV",2)==0)||(strncmp(buf,"mv",2)==0))	
+	{
+		cabc_mode_mode = CABC_MODE_MV;
+	}
+	if((strncmp(buf,"DIS",3)==0)||(strncmp(buf,"dis",3)==0))
+	{
+		cabc_mode_mode = CABC_MODE_DIS;
+	}
+	primary_display_setcabc(cabc_mode_mode);
+	return count;
+
+}
+static ssize_t show_cabc_mode(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	char cabc_show[5] = "0";
+	switch(primary_recognition_cabc_mode())
+	{
+		case CABC_MODE_UI:
+			{
+				cabc_show[0]='U';
+				cabc_show[1]='I';
+			}
+			break;
+		case CABC_MODE_MV:
+			{
+				cabc_show[0]='M';
+				cabc_show[1]='V';
+			}
+			break;
+		case CABC_MODE_DIS:
+			{
+				cabc_show[0]='D';
+			cabc_show[1]='I';
+				cabc_show[2]='S';
+			}
+			break;
+		default:
+			{
+				cabc_show[0]='U';
+				cabc_show[1]='I';
+			}
+		
+	}
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+	                cabc_show);
+}
+#endif
+
+#ifdef CONFIG_LCT_HBM_SUPPORT
+#define HBM_ENABLE	1
+#define HBM_DISABLE	0
+extern int primary_display_setbacklight_hbm(unsigned int level);
+extern int primary_recognition_hbm_level(void);
+static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	char echo_hbm[2]={'1','0'};
+	if(strncmp(echo_hbm,buf,1)==0)	
+		primary_display_setbacklight_hbm(255);
+	if(strncmp(echo_hbm+1,buf,1)==0)
+		primary_display_setbacklight_hbm(0);
+	printk("buf = %s\n",buf);
+	return count;
+
+}
+static ssize_t show_hbm(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	char hbm_show ='0';
+	int hbm_state = primary_recognition_hbm_level();
+
+	switch(hbm_state)
+	{
+		case HBM_ENABLE:
+				hbm_show='1';
+		break;
+		case HBM_DISABLE:
+				hbm_show='0';
+		break;
+		default:
+				hbm_show='0';
+			
+	}
+	return snprintf(buf, PAGE_SIZE, "%c\n",
+	                hbm_show);
+}
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
+
 /* When cmap is added back in it should be a binary attribute
  * not a text one. Consideration should also be given to converting
  * fbdev to use configfs instead of sysfs */
@@ -512,6 +618,14 @@ static struct device_attribute device_attrs[] = {
 #ifdef CONFIG_FB_BACKLIGHT
 	__ATTR(bl_curve, S_IRUGO|S_IWUSR, show_bl_curve, store_bl_curve),
 #endif
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	__ATTR(cabc_mode, S_IRUGO|S_IWUSR, show_cabc_mode, store_cabc_mode),
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	__ATTR(hbm, S_IRUGO|S_IWUSR, show_hbm, store_hbm),
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
 };
 
 int fb_init_device(struct fb_info *fb_info)

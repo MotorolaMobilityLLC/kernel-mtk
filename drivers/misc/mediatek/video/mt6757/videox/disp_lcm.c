@@ -1332,6 +1332,58 @@ unsigned int disp_lcm_ATA(struct disp_lcm_handle *plcm)
 	}
 
 }
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+int disp_lcm_set_cabc(struct disp_lcm_handle *plcm, void *handle, unsigned int enable)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) 
+	{
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_cabc_cmdq) 
+		{
+			lcm_drv->set_cabc_cmdq(handle, enable);
+		} 
+		else 
+		{
+			DISPERR("FATAL ERROR, lcm_drv->set_cabc is null\n");
+			return -1;
+		}
+		return 0;
+	}
+	else 
+	{
+		DISPERR("lcm_drv is null\n");
+		return -1;
+	}
+}
+#endif
+
+#ifdef CONFIG_LCT_HBM_SUPPORT
+int disp_lcm_set_backlight_hbm(struct disp_lcm_handle *plcm, int level)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_backlight_hbm) {
+			lcm_drv->set_backlight_hbm(level);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
+}
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
 
 void *disp_lcm_switch_mode(struct disp_lcm_handle *plcm, int mode)
 {

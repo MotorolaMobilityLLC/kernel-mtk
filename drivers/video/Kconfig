@@ -50,5 +50,10 @@ if FB || SGI_NEWPORT_CONSOLE
 
 endif
 
+config LCT_CABC_MODE_SUPPORT
+	bool "LCT_CABC_MODE_SUPPORT"
+
+config LCT_HBM_SUPPORT
+	bool "LCT_HBM_SUPPORT"
 
 endmenu

@@ -248,7 +248,6 @@ static struct LCM_setting_table lcm_setting_mv[] = {
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 #endif
-
 static struct LCM_setting_table bl_level[] = {
 	{0x51, 1, {0x00} },  //0xFF
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
@@ -509,7 +508,7 @@ static void lcm_cabc_cmdq(void *handle, unsigned int mode)
 	}
 }
 #endif
-/*
+#if 0
 static int display_bias_disable(void)
 {
 	int ret = 0;
@@ -527,8 +526,8 @@ static int display_bias_disable(void)
 		pr_err("disable regulator disp_bias_pos fail\n");
 
 	return ret;
-}*/
-
+}
+#endif 
 static void lcm_init_power(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -664,15 +663,8 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-//unsigned int level_hight = 255;
+unsigned int level_hight = 255;
 	LCM_LOGI("%s,lcm otm1911a backlight: level = %d\n", __func__, level);
-	
-		if(level <= 4)
-		level = 4;
-	bl_level[0].para_list[0] = level;
-
-	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-#if 0
 if(hbm_enable == 0){
 		if(level <= 4)
 		level = 4;
@@ -685,7 +677,6 @@ else{
 	bl_level[0].para_list[0] = level_hight;
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
-#endif 
 	#ifdef CONFIG_LCT_HBM_SUPPORT
 		last_level = level;
 	#endif	

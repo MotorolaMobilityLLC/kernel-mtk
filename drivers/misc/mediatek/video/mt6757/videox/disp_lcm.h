@@ -58,7 +58,14 @@ unsigned int disp_lcm_ATA(struct disp_lcm_handle *plcm);
 void *disp_lcm_switch_mode(struct disp_lcm_handle *plcm, int mode);
 int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle, unsigned int *lcm_cmd,
 			 unsigned int *lcm_count, unsigned int *lcm_value);
-
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+int disp_lcm_set_cabc(struct disp_lcm_handle *plcm, void *handle, unsigned int enable);
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+int disp_lcm_set_backlight_hbm(struct disp_lcm_handle *plcm, int level);
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
 int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm);
 int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y, int *w, int *h);
 int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter);
