@@ -19,6 +19,8 @@
 static unsigned int tpd_keycnt;
 static int tpd_keys[TPD_VIRTUAL_KEY_MAX] = { 0 };
 
+int gesture_enable_flag = 0;
+
 static int tpd_keys_dim[TPD_VIRTUAL_KEY_MAX][4];	/* = {0}; */
 static ssize_t mtk_virtual_keys_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -32,6 +34,25 @@ static ssize_t mtk_virtual_keys_show(struct kobject *kobj, struct kobj_attribute
 	return j;
 }
 
+static ssize_t tpd_suspend_status_show(struct kobject *kobj, struct kobj_attribute *attr,char *buf)
+{
+	ssize_t len;
+
+	len = sprintf(buf, "gesture_enable_flag = %d\n", gesture_enable_flag);
+	return len;
+}
+
+static ssize_t tpd_suspend_status_store(struct kobject *kobj, struct kobj_attribute *attr,const char *buf, size_t count)
+{
+	int flag = 0;
+
+	if (!kstrtoint(buf, 10, &flag)) {
+		gesture_enable_flag = flag;
+	}
+
+	return count;
+}
+
 static struct kobj_attribute mtk_virtual_keys_attr = {
 	.attr = {
 		 .name = "virtualkeys.mtk-tpd",
@@ -40,8 +61,18 @@ static struct kobj_attribute mtk_virtual_keys_attr = {
 	.show = &mtk_virtual_keys_show,
 };
 
+static struct kobj_attribute tpd_suspend_status = {
+	.attr = {
+		 .name = "tpd_suspend_status",
+		 .mode = S_IRUGO,
+		 },
+	.show = &tpd_suspend_status_show,
+	.store = &tpd_suspend_status_store,
+};
+
 static struct attribute *mtk_properties_attrs[] = {
 	&mtk_virtual_keys_attr.attr,
+	&tpd_suspend_status.attr,
 	NULL
 };
 
