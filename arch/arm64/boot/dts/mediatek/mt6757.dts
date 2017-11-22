@@ -449,10 +449,10 @@
 		compatible = "mediatek,bat_notify";
 	};
 
-	battery {
+/*	battery {
 		compatible = "mediatek,battery";
 	};
-
+Jason*/
 	bat_metter {
 		compatible = "mediatek,bat_meter";
 		/* cust_charging.h */
