@@ -459,7 +459,7 @@ log_again:
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
 		long free = other_free * (long)(PAGE_SIZE / 1024);
 
-		if (selected_oom_score_adj <= lowmem_kernel_warn_adj)
+		if (selected_oom_score_adj <= 0)
 			mlog(MLOG_TRIGGER_LMK);
 
 		task_lock(selected);
