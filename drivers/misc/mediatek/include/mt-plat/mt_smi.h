@@ -113,6 +113,7 @@ typedef struct {
 	unsigned int ddr_type;
 	unsigned int step;
 	unsigned int venc_size;
+	unsigned int preview_size;
 
 	unsigned int ret;
 } MTK_MMDVFS_CMD;
