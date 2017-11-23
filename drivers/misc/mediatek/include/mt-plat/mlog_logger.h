@@ -14,6 +14,20 @@
 #ifndef _MLOG_LOGGER_H
 #define _MLOG_LOGGER_H
 
+#define MLOG_TRIGGER_TIMER  0
+#define MLOG_TRIGGER_LMK    1
+#define MLOG_TRIGGER_LTK    2
+
+#ifdef CONFIG_MTK_MLOG
+
 extern void mlog_init_procfs(void);
+extern void mlog(int type);
+
+#else /* CONFIG_MLOG */
+
+void mlog_init_procfs(void) { return; }
+void mlog(int type) { return; }
+
+#endif /* CONFIG_MLOG */
 
 #endif

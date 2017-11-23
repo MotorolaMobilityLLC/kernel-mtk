@@ -77,6 +77,7 @@ static DEFINE_SPINLOCK(lowmem_shrink_lock);
 #include "trace/lowmemorykiller.h"
 
 #include "internal.h"
+#include <mt-plat/mlog_logger.h>
 
 static u32 lowmem_debug_level = 1;
 static short lowmem_adj[9] = {
@@ -457,6 +458,9 @@ log_again:
 		long cache_size = other_file * (long)(PAGE_SIZE / 1024);
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
 		long free = other_free * (long)(PAGE_SIZE / 1024);
+
+		if (selected_oom_score_adj <= lowmem_kernel_warn_adj)
+			mlog(MLOG_TRIGGER_LMK);
 
 		task_lock(selected);
 		send_sig(SIGKILL, selected, 0);

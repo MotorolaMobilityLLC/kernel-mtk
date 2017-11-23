@@ -47,8 +47,8 @@
 #include <mtk/ion_drv.h>
 #endif
 
+#include <mt-plat/mlog_logger.h>
 #include "mlog_internal.h"
-#include "mlog_logger.h"
 
 #define CONFIG_MLOG_BUF_SHIFT   16	/* 64KB for 32bit, 128kB for 64bit */
 
@@ -108,10 +108,6 @@
 #define V_FILTER_ALL        (V_PSWPIN | V_PSWPOUT | V_PGFMFAULT)
 #define P_FILTER_ALL        (P_ADJ | P_RSS | P_RSWAP | P_SWPIN | P_SWPOUT | P_FMFAULT)
 #define B_FILTER_ALL        (B_NORMAL | B_HIGH)
-
-#define MLOG_TRIGGER_TIMER  0
-#define MLOG_TRIGGER_LMK    1
-#define MLOG_TRIGGER_LTK    2
 
 static uint meminfo_filter = M_FILTER_ALL;
 static uint vmstat_filter = V_FILTER_ALL;
