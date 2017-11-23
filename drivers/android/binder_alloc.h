@@ -22,6 +22,8 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 
+#define BINDER_MIN_ALLOC (1 * PAGE_SIZE)
+
 struct binder_transaction;
 
 /**
