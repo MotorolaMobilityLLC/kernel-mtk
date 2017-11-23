@@ -23,6 +23,7 @@
 #include <linux/slab.h>
 
 struct binder_transaction;
+#define BINDER_MIN_ALLOC (1 * PAGE_SIZE)
 
 /**
  * struct binder_buffer - buffer used for binder transactions
