@@ -3919,6 +3919,11 @@ Jason*/
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
 	};
+	/*LCT shaohui add for deviceinfo*/
+	deviceinfo{
+		compatible = "mediatek,lct_devinfo";
+	};
+	/*shaohui add end*/
 };
 
 #include "cust_mt6757_msdc.dtsi"

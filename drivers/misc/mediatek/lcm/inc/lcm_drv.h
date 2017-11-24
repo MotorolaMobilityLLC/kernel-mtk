@@ -666,6 +666,14 @@ typedef struct {
 	unsigned int corner_pattern_width;
 	unsigned int corner_pattern_height;
 #endif
+/*add by lct wangjiaxing 201703013*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	char *ic;
+	char *vendor;
+	char *module;
+	char *info;
+#endif
+/*add by lct wangjiaxing 201703013*/
 
 } LCM_PARAMS;
 

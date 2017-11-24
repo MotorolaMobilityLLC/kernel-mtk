@@ -189,3 +189,7 @@ obj-$(CONFIG_MACH_MT8167) += xo/
 obj-$(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)	+= pkt_track/
 obj-$(CONFIG_MTK_GZ_KREE)  += geniezone/
 obj-y += time/
+#shaohui add for LCT DEVINFO start
+obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
+#obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/
+#shaohui add for LCT DEVINFO end
