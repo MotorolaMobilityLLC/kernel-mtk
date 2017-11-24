@@ -19,10 +19,10 @@
 #include "rt-flashlight.h"
 
 #include<linux/delay.h>
-extern int rt5081_operate(int channel, int enable);
-extern int rt5081_set_level(int channel, int level);
-extern struct flashlight_device *flashlight_dev_ch1;
-extern struct flashlight_device *flashlight_dev_ch2;
+extern int rt5081_operate(int ct_index, int enable);
+extern int rt5081_set_level(int ct_index, int level);
+extern struct flashlight_device *flashlight_dev_ht;
+extern struct flashlight_device *flashlight_dev_lt;
 static const char * const flashlight_type_string[] = {
 	[FLASHLIGHT_TYPE_XENON] = "Xenon",
 	[FLASHLIGHT_TYPE_LED] = "LED",
@@ -237,24 +237,24 @@ static void flashlight_device_release(struct device *dev)
 }
 
 
-static DEVICE_ATTR(name, 0444, flashlight_show_name, NULL);
-static DEVICE_ATTR(type, 0444, flashlight_show_type, NULL);
-static DEVICE_ATTR(mode, 0444, flashlight_show_mode, NULL);
-static DEVICE_ATTR(torch_max_brightness, 0444,
+static DEVICE_ATTR(name, S_IRUGO, flashlight_show_name, NULL);
+static DEVICE_ATTR(type, S_IRUGO, flashlight_show_type, NULL);
+static DEVICE_ATTR(mode, S_IRUGO, flashlight_show_mode, NULL);
+static DEVICE_ATTR(torch_max_brightness, S_IRUGO,
 	flashlight_show_torch_max_brightness, NULL);
-static DEVICE_ATTR(strobe_max_brightness, 0444,
+static DEVICE_ATTR(strobe_max_brightness, S_IRUGO,
 	flashlight_show_strobe_max_brightness, NULL);
-static DEVICE_ATTR(color_temperature, 0444,
+static DEVICE_ATTR(color_temperature, S_IRUGO,
 	flashlight_show_color_temperature, NULL);
-static DEVICE_ATTR(strobe_delay, 0664,
+static DEVICE_ATTR(strobe_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	flashlight_show_strobe_delay, NULL);
-static DEVICE_ATTR(strobe_timeout, 0664,
+static DEVICE_ATTR(strobe_timeout, S_IRUGO | S_IWUSR | S_IWGRP,
 	flashlight_show_strobe_timeout,
 	flashlight_store_strobe_timeout);
-static DEVICE_ATTR(torch_brightness, 0664,
+static DEVICE_ATTR(torch_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 	flashlight_show_torch_brightness,
 	flashlight_store_torch_brightness);
-static DEVICE_ATTR(strobe_brightness, 0664,
+static DEVICE_ATTR(strobe_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 	flashlight_show_strobe_brightness,
 	flashlight_store_strobe_brightness);
 
@@ -605,7 +605,7 @@ static ssize_t flash_factory_write_proc(struct file *file, const char *buffer, s
 	}
 	temp[count - 1] = '\0';
 	rc = atoi(temp);
-	if (!flashlight_dev_ch1) {
+	if (!flashlight_dev_ht) {
 		printk("Failed to enable since no flashlight device.\n");
 		//return -1;
 	}
@@ -613,29 +613,29 @@ static ssize_t flash_factory_write_proc(struct file *file, const char *buffer, s
 	switch (rc)
 	{
 		case 0x33:
-			flashlight_set_torch_brightness(flashlight_dev_ch1,2);
-			flashlight_set_torch_brightness(flashlight_dev_ch2,2);
+			flashlight_set_torch_brightness(flashlight_dev_ht,2);
+			flashlight_set_torch_brightness(flashlight_dev_lt,2);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
 			break;
 		case 0x30:
-			flashlight_set_torch_brightness(flashlight_dev_ch1,2);
-			flashlight_set_torch_brightness(flashlight_dev_ch2,0);
+			flashlight_set_torch_brightness(flashlight_dev_ht,2);
+			flashlight_set_torch_brightness(flashlight_dev_lt,0);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
 			break;
 		case 0x03:
-			flashlight_set_torch_brightness(flashlight_dev_ch1,0);
-			flashlight_set_torch_brightness(flashlight_dev_ch2,2);
+			flashlight_set_torch_brightness(flashlight_dev_ht,0);
+			flashlight_set_torch_brightness(flashlight_dev_lt,2);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
 			break;
 		default:
-			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
-			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
 			break;
 	}
 	//seq_printf(m, "%x\n", rc);
@@ -667,6 +667,7 @@ static int __init flashlight_class_init(void)
 	flashlight_class->dev_groups = flashlight_groups;
 	flashlight_class->suspend = flashlight_suspend;
 	flashlight_class->resume = flashlight_resume;
+	 proc_create("flashlight_fac", 0660, NULL, &proc_fac_operations);//LCSH ADD by dingyin for flashlight factory test
 	return 0;
 }
 
