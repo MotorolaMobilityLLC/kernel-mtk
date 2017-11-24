@@ -138,6 +138,7 @@ static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
 static struct sg_table table;
 
+unsigned int esd_backlight_level = 0;
 static int decouple_mirror_update_rdma_config_thread(void *data);
 static int decouple_trigger_worker_thread(void *data);
 
@@ -3374,9 +3375,84 @@ static int primary_display_frame_update_kthread(void *data)
 	return 0;
 }
 
+/* add by lct wangjiaxing start for dev_info */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+//#define SLT_DEVINFO_LCM_DEBUG
+#include  <dev_info.h>
+#include <linux/timer.h>
+static int devinfo_first=0;
+static int lct_lcm_devinfo_index = 0;
+struct devinfo_struct lct_devinfo_lcm;   
+
+extern LCM_DRIVER* lcm_driver_list[];
+extern unsigned int lcm_count;
+
+static void lct_devinfo_lcm_register(void)
+{
+	
+#ifdef SLT_DEVINFO_LCM_DEBUG
+		printk("[DEVINFO LCM]registe LCM device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				lct_devinfo_lcm.device_type,lct_devinfo_lcm.device_module,lct_devinfo_lcm.device_vendor,lct_devinfo_lcm.device_ic,
+				lct_devinfo_lcm.device_version,lct_devinfo_lcm.device_info,lct_devinfo_lcm.device_used);
+#endif
+		DEVINFO_CHECK_DECLARE(lct_devinfo_lcm.device_type,lct_devinfo_lcm.device_module,lct_devinfo_lcm.device_vendor,lct_devinfo_lcm.device_ic,
+				lct_devinfo_lcm.device_version,lct_devinfo_lcm.device_info,lct_devinfo_lcm.device_used);
+
+	
+}
+
+void lct_devinfo_lcm_get(const char* lcm_name)
+{
+	LCM_DRIVER *lct_devinfo_lcmdrv = NULL;
+	int i;
+	LCM_PARAMS lct_devinfo_lcm_params= {0};
+	LCM_PARAMS *plct_devinfo_lcm_params= &lct_devinfo_lcm_params;
+	for(i = 0;i < lcm_count;i++)
+	{
+		plct_devinfo_lcm_params = &lct_devinfo_lcm_params;
+		lct_devinfo_lcmdrv = lcm_driver_list[i];
+
+			if(!strcmp(lcm_name,lct_devinfo_lcmdrv->name))
+			{
+			lct_lcm_devinfo_index = i;
+			memset((void*)plct_devinfo_lcm_params, 0, sizeof(LCM_PARAMS));
+			lct_devinfo_lcmdrv->get_params(plct_devinfo_lcm_params);
+
+			lct_devinfo_lcm.device_info=kmalloc(64,GFP_KERNEL);
+
+			lct_devinfo_lcm.device_type="LCM";
+			lct_devinfo_lcm.device_module=plct_devinfo_lcm_params->module;
+			lct_devinfo_lcm.device_vendor=plct_devinfo_lcm_params->vendor;
+			lct_devinfo_lcm.device_ic=plct_devinfo_lcm_params->ic;
+			lct_devinfo_lcm.device_info=plct_devinfo_lcm_params->info;
+			//lct_devinfo_lcm.device_comments=plct_devinfo_lcm_params->comments;
+			lct_devinfo_lcm.device_version=DEVINFO_NULL;
+				lct_devinfo_lcm.device_used=DEVINFO_USED;
+				
+			}
+			
+		//			sprintf(s_DEVINFO_lcm[i].device_info,"%d * %d",slt_lcm_params->width,slt_lcm_params->height);
+#ifdef SLT_DEVINFO_LCM_DEBUG
+		printk("[DEVINFO LCM]registe LCM device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				lct_devinfo_lcm.device_type,lct_devinfo_lcm.device_module,lct_devinfo_lcm.device_vendor,lct_devinfo_lcm.device_ic,
+				lct_devinfo_lcm.device_version,lct_devinfo_lcm.device_info,lct_devinfo_lcm.device_used);
+#endif
+	}
+	//return 0;
+}	
+#endif
 static int _present_fence_release_worker_thread(void *data)
 {
 	struct sched_param param = {.sched_priority = 87 };
+/* add by lct wangjiaxing start for dev_info */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	if(devinfo_first==0)
+	{
+		devinfo_first=1;
+		lct_devinfo_lcm_register();
+	}
+#endif
+/* add by lct wangjiaxing end for dev_info */
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -3533,6 +3609,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	_primary_path_lock(__func__);
 
+//add by lct wangjiaxing for lcm dev_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	lct_devinfo_lcm_get(lcm_name);
+#endif
 	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED, is_lcm_inited);
 
 	if (pgc->plcm == NULL) {
@@ -6483,6 +6563,15 @@ int primary_display_vsync_switch(int method)
 	return ret;
 }
 
+int primary_display_esd_setbacklight(unsigned int level)
+{
+
+
+			disp_lcm_set_backlight(pgc->plcm,NULL,level);
+ 		printk("add by zhouhua   primary_display_esd_setbacklight, level == %d\n",level);
+	
+	return 0;
+}
 int _set_backlight_by_cmdq(unsigned int level)
 {
 	int ret = 0;
@@ -6621,10 +6710,12 @@ int primary_display_setbacklight_hbm(unsigned int level)
 	DISPFUNC();
 	if (last_level == level)
 	  return 0;
-	if(level==255)
+	if(level==255){
 	  hbm_backlight_level = 1;
-	else
+	  }
+	else{
 	  hbm_backlight_level = 0;
+	  }
 	  disp_lcm_set_backlight_hbm(pgc->plcm, level);
 	  last_level = level;
 	return ret;
