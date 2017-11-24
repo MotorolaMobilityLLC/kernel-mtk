@@ -26,6 +26,12 @@ config SLT_DEVINFO
 		this is a module for factory mode to get dev info
 		add by dingyin
 
+config SLT_DEVINFO
+	bool "SLT_DEVINFO"
+	default n
+	help
+		this is a module for factory mode to get dev info
+		add by dingyin
 if MMC
 
 source "drivers/mmc/core/Kconfig"

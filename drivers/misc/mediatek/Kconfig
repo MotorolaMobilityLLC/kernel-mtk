@@ -6,6 +6,11 @@ menuconfig MEDIATEK_SOLUTION
 	help
 	  Check this to enable MediaTek properity configuration.
 
+config LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM
+	bool "Enable l3500 evt bls_pwm mode of backlight"
+	default n
+	help 
+		used for enable lcm backlight bls_pwm mode of l3500 dvt board
 if MEDIATEK_SOLUTION
 
 config MTK_PLATFORM
@@ -410,6 +415,10 @@ config MTK_CACHE_FLUSH_RANGE_PARALLEL
 	  to all the online CPUs except the one has largest affinity value, which
 	  services IRQs rather than participating cache flushing procesure.
 
+#LCSH ADD by tianqiangqiang for L3510 20170217
+config L3510_MAINBOARD
+	bool "config for l3510 mainboard"
+	default n
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
 	depends on CMA
