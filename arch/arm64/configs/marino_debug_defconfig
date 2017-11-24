@@ -617,3 +617,5 @@ CONFIG_LCT_VIBR_FACTORY_SUPPORT=y
 CONFIG_LCT_DEVINFO_SUPPORT=y
 # add by LCT shaohui for Lenovo bootinfo requirement
 CONFIG_LCT_BOOTINFO_SUPPORT=y
+#LCSH ADD by dingyin for devinfo
+CONFIG_SLT_DEVINFO=y

@@ -102,13 +102,6 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint8>
-            <eint13>
-                <varName>NFC</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint13>
             <eint24>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>0</debounce_time>
@@ -335,44 +328,41 @@
                 <ies>true</ies>
             </gpio12>
             <gpio13>
-                <eint_mode>true</eint_mode>
+                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>false</out>
+                <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_IRQ_NFC_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio13>
             <gpio14>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10001100</mode_arr>
+                <mode_arr>10000000</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <in>false</in>
+                <def_dir>IN</def_dir>
+                <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio14>
             <gpio15>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10001100</mode_arr>
-                <inpull_en>true</inpull_en>
+                <mode_arr>10000000</mode_arr>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <in>false</in>
+                <def_dir>IN</def_dir>
+                <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_NFC_RST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio15>
