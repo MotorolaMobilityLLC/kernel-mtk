@@ -949,6 +949,36 @@ static ssize_t store_datarate_value(struct device_driver *ddri,
     return count;
 }
 
+//add devinfo of gyro by yanghongjiang 20171125
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_gyro;   
+//The followd code is for GTP style
+static void devinfo_gyro_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_gyro =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_gyro->device_type="Gyro";
+	s_DEVINFO_gyro->device_module=module;
+	s_DEVINFO_gyro->device_vendor=vendor;
+	s_DEVINFO_gyro->device_ic="BMI160";
+	s_DEVINFO_gyro->device_info=DEVINFO_NULL;
+	s_DEVINFO_gyro->device_version=version;
+	s_DEVINFO_gyro->device_used=used;
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO magnetometer sensor]registe msensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_gyro->device_type,s_DEVINFO_gyro->device_module,s_DEVINFO_gyro->device_vendor,
+				s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_gyro->device_type,s_DEVINFO_gyro->device_module,s_DEVINFO_gyro->device_vendor,s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used);
+}
+      //devinfo_check_add_device(s_DEVINFO_ctp);
+
+
+#endif
+
 static DRIVER_ATTR(chipinfo, S_IWUSR | S_IRUGO, show_chipinfo_value, NULL);
 static DRIVER_ATTR(sensordata, S_IWUSR | S_IRUGO, show_sensordata_value, NULL);
 static DRIVER_ATTR(rawdata, S_IWUSR | S_IRUGO, show_rawdata_value, NULL);
@@ -1378,6 +1408,12 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
         GYRO_PR_ERR("gyro_register_data_path fail = %d\n", err);
         goto exit_create_attr_failed;
     }
+
+//add devinfo of gyro by yanghongjiang 20171125
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_gyro_regchar("BMI160","BOSCH","1.5",DEVINFO_USED);
+   #endif
+//end of add
 
     bmi160_gyro_init_flag = 0;
     GYRO_LOG("%s: OK\n", __func__);

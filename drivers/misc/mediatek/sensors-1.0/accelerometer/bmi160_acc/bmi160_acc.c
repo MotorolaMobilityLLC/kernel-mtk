@@ -345,6 +345,35 @@ static struct data_resolution bmi160_acc_offset_resolution = {{0, 12}, 8192};
 #define I2C_DMA_FLAG    (0x2000)
 #endif
 
+//add devinfo 0f accel by yanghongjiang 20171125
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_acc;
+//The followd code is for GTP style
+static void devinfo_acc_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_acc =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_acc->device_type="Acceleration";
+	s_DEVINFO_acc->device_module=module;
+	s_DEVINFO_acc->device_vendor=vendor;
+	s_DEVINFO_acc->device_ic="BMI160";
+	s_DEVINFO_acc->device_info=DEVINFO_NULL;
+	s_DEVINFO_acc->device_version=version;
+	s_DEVINFO_acc->device_used=used;
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_acc->device_type,s_DEVINFO_acc->device_module,s_DEVINFO_acc->device_vendor,
+				s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_acc->device_type,s_DEVINFO_acc->device_module,s_DEVINFO_acc->device_vendor,s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used);
+}
+//devinfo_check_add_device(s_DEVINFO_ctp);
+#endif
+//end of add
+
 static void *I2CDMABuf_va = NULL;
 static dma_addr_t I2CDMABuf_pa;
 
@@ -4219,6 +4248,12 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
     }
 #endif
 #endif //BMC050_VG
+
+//add devinfo by yanghongjiang 20171125
+	#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_acc_regchar("BMI160","BOSCH","1.5",DEVINFO_USED);
+	#endif
+//add end
 
 //tad3sgh add --
 #ifdef CONFIG_HAS_EARLYSUSPEND

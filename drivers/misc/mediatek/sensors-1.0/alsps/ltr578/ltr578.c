@@ -83,6 +83,36 @@ static int ltr578_i2c_write_reg(u8 regnum, u8 value);
 static int ltr578_i2c_read_reg(u8 regnum);
 /*------------------------------------------------------------------------*/
 
+//add devinfo of alsps by yanghongjiang 20171125
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_alsps;   
+//The followd code is for GTP style
+static void devinfo_alsps_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_alsps =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_alsps->device_type="Alsps";
+	s_DEVINFO_alsps->device_module=module;
+	s_DEVINFO_alsps->device_vendor=vendor;
+	s_DEVINFO_alsps->device_ic="LTR578";
+	s_DEVINFO_alsps->device_info=DEVINFO_NULL;
+	s_DEVINFO_alsps->device_version=version;
+	s_DEVINFO_alsps->device_used=used;
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO magnetometer sensor]registe msensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,
+				s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+}
+      //devinfo_check_add_device(s_DEVINFO_ctp);
+
+#endif
+
+
 struct PS_CALI_DATA_STRUCT {
 	int close;
 	int far_away;
@@ -2278,6 +2308,12 @@ static int ltr578_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		APS_ERR("tregister fail = %d\n", err);
 		goto exit_sensor_obj_attach_fail;
 	}
+
+//add devinfo for alsps by yanghongjiang
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_alsps_regchar("ltr578","BOE","null",DEVINFO_USED);
+   #endif
+//end of add
 
 	ltr578_init_flag = 0;
 	APS_ERR("%s: OK\n", __func__);

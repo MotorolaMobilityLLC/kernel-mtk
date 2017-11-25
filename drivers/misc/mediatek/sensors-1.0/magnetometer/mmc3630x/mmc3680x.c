@@ -139,7 +139,35 @@ struct mmc3680x_i2c_data {
 
 static int mmc3680x_init_flag = 0; // 0<==>OK -1 <==> fail
 
+//add devinfo of mmc3630 by yanghongjiang 20171125
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_mag;   
+//The followd code is for GTP style
+static void devinfo_mag_regchar(char *module,char * vendor,char *version,char *used)
+{
 
+	s_DEVINFO_mag =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_mag->device_type="Magnetometer";
+	s_DEVINFO_mag->device_module=module;
+	s_DEVINFO_mag->device_vendor=vendor;
+	s_DEVINFO_mag->device_ic="MMC3630X";
+	s_DEVINFO_mag->device_info=DEVINFO_NULL;
+	s_DEVINFO_mag->device_version=version;
+	s_DEVINFO_mag->device_used=used;
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO magnetometer sensor]registe msensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_mag->device_type,s_DEVINFO_mag->device_module,s_DEVINFO_mag->device_vendor,
+				s_DEVINFO_mag->device_ic,s_DEVINFO_mag->device_version,s_DEVINFO_mag->device_info,s_DEVINFO_mag->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_mag->device_type,s_DEVINFO_mag->device_module,s_DEVINFO_mag->device_vendor,s_DEVINFO_mag->device_ic,s_DEVINFO_mag->device_version,s_DEVINFO_mag->device_info,s_DEVINFO_mag->device_used);
+}
+      //devinfo_check_add_device(s_DEVINFO_ctp);
+
+
+#endif
 
 static struct mag_init_info mmc3680x_init_info = {
 	 .name = "mmc3680x",
@@ -1269,6 +1297,12 @@ static int mmc3680x_i2c_probe(struct i2c_client *client, const struct i2c_device
 	data->early_drv.resume   = mmc3680x_late_resume,
 	register_early_suspend(&data->early_drv);
 #endif
+
+//add devinfo of mmc3630 by yanghongjiang 20171125
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_mag_regchar("MMC3630X","MEMSIC","null",DEVINFO_USED);
+   #endif
+//end of add
 
 	MEMSIC_INFO("mmc3680X IIC probe successful !");
 	printk("+++yhj check in %s successful .\n",__func__);
