@@ -290,7 +290,7 @@ void m4u_mvaGraph_dump(void)
 void *mva_get_priv_ext(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
@@ -314,7 +314,7 @@ void *mva_get_priv_ext(unsigned int mva)
 
 int mva_foreach_priv(mva_buf_fn_t *fn, void *data)
 {
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	unsigned int mva;
 	void *priv;
 	unsigned long irq_flags;
@@ -363,7 +363,7 @@ unsigned int get_first_valid_mva(void)
 void *mva_get_priv(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
@@ -429,9 +429,9 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
  */
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 {
-	short s, end;
-	short new_start, new_end;
-	short nr = 0;
+	unsigned short s, end;
+	unsigned short new_start, new_end;
+	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
@@ -683,9 +683,9 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 							unsigned int size,
 							void *priv)
 {
-	short s = 0, end;
-	short new_start, new_end;
-	short nr = 0;
+	unsigned short s = 0, end;
+	unsigned short new_start, new_end;
+	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
@@ -877,14 +877,20 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	short endIdx = startIdx + nr - 1;
+	unsigned short startIdx;
+	unsigned short nr;
+	unsigned short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	short nrRequire, nr_tmp = 0;
 	unsigned long irq_flags;
 	int   requeired_mva_status, is_in_vpu_region_flag = 0;
 	int ret = 0;
+
+	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	if (startIdx == 0 || startIdx > 4095)
+		return -1;
+	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	endIdx = startIdx + nr - 1;
 
 	requeired_mva_status = m4u_check_mva_region(startIdx, nr, (void *)mvaInfoGraph[startIdx]);
 	if (requeired_mva_status == -1) {
