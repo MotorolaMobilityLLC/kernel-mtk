@@ -444,18 +444,12 @@ static void gf_reset_gpio_cfg(struct gf_device *gf_dev)
 /* delay ms after reset */
 static void gf_hw_reset(struct gf_device *gf_dev, u8 delay)
 {
-	//gpio_request(190, "gpio_190");
 #ifdef CONFIG_OF
-gf_debug(ERR_LOG, "%s, wuzhipeng reset\n", __func__);
 
 	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
 	mdelay(5);
 	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
-	
-	//gpio_direction_output(190, 0);
-	//msleep(5);
-	//gpio_direction_output(190, 1);
-	
+
 #endif
 
 	if (delay) {
