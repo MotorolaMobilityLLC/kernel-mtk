@@ -111,13 +111,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	else
 #endif
 		pOp->op.au4OpData[0] = type;
-	if (WMTDRV_TYPE_WIFI == type) {
-		pSignal->timeoutValue = 4000;
-		pSignal->timeoutExtension = 2;
-		/*donot block system server/Init/Netd from longer than 5s, in case of ANR happens */
-	} else
-		pSignal->timeoutValue =
-		    (WMT_OPID_FUNC_ON == pOp->op.opId) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
+	pSignal->timeoutValue = (pOp->op.opId == WMT_OPID_FUNC_ON) ? MAX_FUNC_ON_TIME : MAX_FUNC_OFF_TIME;
 
 	WMT_INFO_FUNC("wmt-exp: OPID(%d) type(%zu) start\n", pOp->op.opId, pOp->op.au4OpData[0]);
 

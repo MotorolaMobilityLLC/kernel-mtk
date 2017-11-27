@@ -723,11 +723,12 @@ static MTK_WCN_BOOL wmt_lib_ps_do_host_awake(VOID)
 static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 {
 	INT32 ret;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
 	ret = 0;		/* TODO:[FixMe][George] initial value or compile warning? */
 	/* if(g_block_tx && (action == SLEEP)) */
 	if ((0 != mtk_wcn_stp_coredump_start_get()) && (action == SLEEP)) {
-		mtk_wcn_stp_psm_notify_stp(SLEEP);
+		ret = mtk_wcn_stp_psm_notify_stp(SLEEP);
 		return ret;
 	}
 
@@ -735,18 +736,19 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 	if (!mtk_wcn_stp_is_ready()) {
 		if (!mtk_wcn_stp_is_sdio_mode()) {
 			WMT_DBG_FUNC("MT662x Not Ready, Dont Send Sleep/Wakeup Command\n");
-			mtk_wcn_stp_psm_notify_stp(ROLL_BACK);
+			ret = mtk_wcn_stp_psm_notify_stp(ROLL_BACK);
 		} else {
 			WMT_DBG_FUNC("MT662x Not Ready, SDIO mode, skip EIRQ");
 		}
-		return 0;
+		return ret;
 	}
 
 	if (SLEEP == action) {
 		WMT_DBG_FUNC("send op--------------------------------> sleep job\n");
 
 		if (!mtk_wcn_stp_is_sdio_mode()) {
-			ret = wmt_lib_ps_do_sleep();
+			bRet = wmt_lib_ps_do_sleep();
+			ret = bRet ? 0 : -1;
 			WMT_DBG_FUNC("enable host eirq\n");
 			wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_EN);
 #if CFG_WMT_DUMP_INT_STATUS
@@ -787,7 +789,8 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 					wmt_plat_BGF_irq_dump_status();
 #endif
 			wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_DIS);
-			ret = wmt_lib_ps_do_wakeup();
+			bRet = wmt_lib_ps_do_wakeup();
+			ret = bRet ? 0 : -1;
 		} else {
 			/* ret = mtk_wcn_stp_sdio_do_own_clr(); */
 
@@ -819,7 +822,8 @@ static INT32 wmt_lib_ps_handler(MTKSTP_PSM_ACTION_T action)
 			if (MTK_WCN_BOOL_TRUE == wmt_plat_dump_BGF_irq_status())
 				wmt_plat_BGF_irq_dump_status();
 #endif
-			ret = wmt_lib_ps_do_host_awake();
+			bRet = wmt_lib_ps_do_host_awake();
+			ret = bRet ? 0 : -1;
 		} else {
 			WMT_DBG_FUNC("[SDIO-PS] SDIO host awake! ####\n");
 

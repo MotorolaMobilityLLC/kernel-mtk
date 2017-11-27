@@ -46,7 +46,7 @@
 ********************************************************************************
 */
 
-static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID + 1] = {
+static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_ROAMING_STATE + 1] = {
 	[WIFI_ATTRIBUTE_BAND] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_NUM_CHANNELS] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_CHANNEL_LIST] = {.type = NLA_UNSPEC},
@@ -66,6 +66,7 @@ static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_ROAMING_WHITELIST_
 	[WIFI_ATTRIBUTE_ROAMING_BLACKLIST_BSSID] = {.type = NLA_UNSPEC},
 	[WIFI_ATTRIBUTE_ROAMING_WHITELIST_NUM] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID] = {.type = NLA_UNSPEC},
+	[WIFI_ATTRIBUTE_ROAMING_STATE] = {.type = NLA_U32},
 };
 
 static struct nla_policy nla_parse_gscan_policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
@@ -323,6 +324,11 @@ int mtk_cfg80211_vendor_config_roaming(struct wiphy *wiphy,
 	if (!prGlueInfo)
 		return -EINVAL;
 
+	if (prGlueInfo->u4FWRoamingEnable == 0) {
+		DBGLOG(REQ, INFO, "FWRoaming is disabled (FWRoamingEnable=%d)\n", prGlueInfo->u4FWRoamingEnable);
+		return WLAN_STATUS_SUCCESS;
+	}
+
 	attrlist = (struct nlattr *)data;
 
 	/* get the number of blacklist and copy those mac addresses from HAL */
@@ -347,8 +353,33 @@ int mtk_cfg80211_vendor_config_roaming(struct wiphy *wiphy,
 		}
 	}
 
+	DBGLOG(REQ, INFO, "config roaming return SUCCESS\n");
 	return WLAN_STATUS_SUCCESS;
 }
+
+int mtk_cfg80211_vendor_enable_roaming(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	struct nlattr *attr;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (!prGlueInfo)
+		return -EFAULT;
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == WIFI_ATTRIBUTE_ROAMING_STATE)
+		prGlueInfo->u4FWRoamingEnable = nla_get_u32(attr);
+
+	DBGLOG(REQ, INFO, "FWK set FWRoamingEnable = %d\n", prGlueInfo->u4FWRoamingEnable);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
 
 #if CFG_SUPPORT_GSCN
 int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,

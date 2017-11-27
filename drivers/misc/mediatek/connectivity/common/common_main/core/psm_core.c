@@ -997,7 +997,7 @@ static inline INT32 _stp_psm_wait_wmt_event_wq(MTKSTP_PSM_T *stp_psm)
 static inline INT32 _stp_psm_notify_stp(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_ACTION_T action)
 {
 
-	INT32 retval = 0;
+	INT32 retval = STP_PSM_OPERATION_SUCCESS;
 
 	if (action == EIRQ) {
 		STP_PSM_DBG_FUNC("Call _stp_psm_notify_wmt_host_awake_wq\n\r");
@@ -1124,7 +1124,7 @@ static inline INT32 _stp_psm_notify_stp(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 
 static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_ACTION_T action)
 {
-	INT32 ret = 0;
+	INT32 ret = STP_PSM_OPERATION_SUCCESS;
 
 	if (stp_psm == NULL)
 		return STP_PSM_OPERATION_FAIL;
@@ -1143,8 +1143,12 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 			_stp_psm_release_data(stp_psm);
 
 			if (stp_psm->wmt_notify) {
-				stp_psm->wmt_notify(SLEEP);
-				_stp_psm_wait_wmt_event_wq(stp_psm);
+				ret = stp_psm->wmt_notify(SLEEP);
+				if (!ret)
+					_stp_psm_wait_wmt_event_wq(stp_psm);
+				else
+					STP_PSM_ERR_FUNC("stp_psm->wmt_notify return fail\n");
+
 			} else {
 				STP_PSM_ERR_FUNC("stp_psm->wmt_notify = NULL\n");
 				ret = STP_PSM_OPERATION_FAIL;
@@ -1192,8 +1196,11 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 				}
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
-				stp_psm->wmt_notify(WAKEUP);
-				_stp_psm_wait_wmt_event_wq(stp_psm);
+				ret = stp_psm->wmt_notify(WAKEUP);
+				if (!ret)
+					_stp_psm_wait_wmt_event_wq(stp_psm);
+				else
+					STP_PSM_ERR_FUNC("stp_psm->wmt_notify return fail\n");
 			} else {
 				STP_PSM_ERR_FUNC("stp_psm->wmt_notify = NULL\n");
 				ret = STP_PSM_OPERATION_FAIL;
@@ -1225,8 +1232,11 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 				}
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
-				stp_psm->wmt_notify(HOST_AWAKE);
-				_stp_psm_wait_wmt_event_wq(stp_psm);
+				ret = stp_psm->wmt_notify(HOST_AWAKE);
+				if (!ret)
+					_stp_psm_wait_wmt_event_wq(stp_psm);
+				else
+					STP_PSM_ERR_FUNC("stp_psm->wmt_notify return fail\n");
 			} else {
 				STP_PSM_ERR_FUNC("stp_psm->wmt_notify = NULL\n");
 				ret = STP_PSM_OPERATION_FAIL;
