@@ -48,6 +48,13 @@
         </module>
         <module name="eint">
             <count>153</count>
+            <eint0>
+                <varName>ACCDET</varName>
+                <debounce_time>256</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint0>
             <eint1>
                 <varName>TOUCH</varName>
                 <debounce_time>0</debounce_time>
@@ -55,13 +62,6 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint1>
-            <eint3>
-                <varName>MSDC1_INS</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint3>
             <eint4>
                 <varName>GYRO</varName>
                 <debounce_time>0</debounce_time>
@@ -136,7 +136,18 @@
         <module name="gpio">
             <count>194</count>
             <gpio0>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <mode_arr>20000000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <varName0>GPIO_ACCDET_EINT_PIN</varName0>
                 <smt>true</smt>
+                <ies>true</ies>
             </gpio0>
             <gpio1>
                 <eint_mode>true</eint_mode>
@@ -346,7 +357,7 @@
             </gpio15>
             <gpio16>
                 <eint_mode>false</eint_mode>
-                <def_mode>6</def_mode>
+                <def_mode>0</def_mode>
                 <mode_arr>10001110</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>

@@ -207,9 +207,10 @@
 		/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */
 		accdet-mic-vol = <7>;
 		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
-		accdet-plugout-debounce = <1>;
+		/* LCSH MOD for support selfie stick @duanlongfei 20170526 */
+		accdet-plugout-debounce = <200>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		accdet-mic-mode = <2>;
+		accdet-mic-mode = <1>;
 		/* eint_level_trigger: 8,LEVEL_LOW(default);4,LEVEL_HIGH;others,LEVEL_LOW */
 		headset-eint-level-pol = <8>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
@@ -218,6 +219,21 @@
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode no use */
+		pinctrl-names = "default", "state_eint_as_int";
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_pins_eint_as_int>;
+		status = "okay";
+};
+&pio {
+	accdet_pins_default: accdetdefault {
+	};
+	accdet_pins_eint_as_int: accdeteint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
 };
 /* accdet end*/
 
@@ -304,7 +320,7 @@
 		pins_cmd1_dat {
 			pins = <PINMUX_GPIO150__FUNC_GPIO150>;
 			slew-rate = <0>;
-			bias-pull-up;
+			bias-pull-up = <00>;
 		};
 	};
 
@@ -344,7 +360,7 @@
 
 	aud_pins_smartpa_reset: aud_pins_smartpa_reset {
 		pins_cmd0_dat {
-			pins = <PINMUX_GPIO190__FUNC_GPIO190>;
+			pins = <PINMUX_GPIO192__FUNC_GPIO192>;
 		};
 	};
 
