@@ -1376,13 +1376,13 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
     err = bmg_init_client(obj->client, 1);
     if (err)
         goto exit_init_client_failed;
-#if 0
+
     err = misc_register(&bmg_device);
     if (err) {
         GYRO_PR_ERR("misc device register failed, err = %d\n", err);
         goto exit_misc_device_register_failed;
     }
-#endif
+
     err = bmg_create_attr(
         &bmi160_gyro_init_info.platform_diver_addr->driver);
     if (err) {
@@ -1421,7 +1421,7 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
 
 exit_create_attr_failed:
     misc_deregister(&bmg_device);
-//exit_misc_device_register_failed:
+exit_misc_device_register_failed:
 exit_init_client_failed:
 exit_hwmsen_get_convert_failed:
     kfree(obj);
