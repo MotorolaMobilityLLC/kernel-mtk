@@ -97,6 +97,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint13>
+            <eint24>
+                <varName>MSDC1_INS</varName>
+                <debounce_time>1</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint24>
             <eint42>
                 <varName>OTG_IDDIG</varName>
                 <debounce_time>0</debounce_time>
@@ -169,7 +176,6 @@
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_MSDC1_INSI</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio3>
@@ -451,15 +457,16 @@
                 <ies>true</ies>
             </gpio23>
             <gpio24>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <mode_arr>20000000</mode_arr>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_MSDC1_INSI</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio24>
@@ -736,7 +743,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_DSI_TE_PIN</varName0>
                 <smt>false</smt>
@@ -746,11 +753,11 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <mode_arr>11000000</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_SIM2_HOT_PLUG</varName0>
                 <smt>false</smt>
@@ -760,11 +767,11 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <mode_arr>11000000</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_SIM1_HOT_PLUG</varName0>
                 <smt>false</smt>
@@ -2213,7 +2220,7 @@
             <eint0>
                 <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
                 <debounce_time>100</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
@@ -2223,7 +2230,7 @@
             <eint1>
                 <varName>MD1_SIM2_HOT_PLUG_EINT</varName>
                 <debounce_time>100</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
