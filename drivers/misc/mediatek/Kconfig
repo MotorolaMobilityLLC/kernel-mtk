@@ -19,6 +19,15 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
+config LCT_POWEROFF_CHARGER_LED
+    tristate "Longcheer poweroff_charger flag"
+    default n
+	---help---
+	poweroff charge led
+	If you say y, you enable module param enable support
+	If you wantn't to use it ,say n as default
+
+
 config FPGA_EARLY_PORTING
 	bool "MTK FPGA EARLY PORTING"
 	help
