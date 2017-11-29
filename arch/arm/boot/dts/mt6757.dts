@@ -1638,7 +1638,7 @@
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10204000 0 0x1000>;
 		interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_LOW>;
-		mediatek,cirq_num = <209>;
+		mediatek,cirq_num = <208>;
 		mediatek,spi_start_offset = <72>;
 		mediatek,edge_trig_irqs_for_spm-quantity = <5>;
 		mediatek,edge_trig_irqs_for_spm = <162 196 281 284 300>;
