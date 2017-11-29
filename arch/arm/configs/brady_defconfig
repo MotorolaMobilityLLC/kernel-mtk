@@ -290,7 +290,10 @@ CONFIG_MTK_FM_CHIP="MT6625_FM"
 CONFIG_MTK_ECCCI_DRIVER=y
 CONFIG_MTK_ECCCI_C2K=y
 CONFIG_MTK_ACCDET=y
-CONFIG_ACCDET_EINT_IRQ=y
+#charge by duanlongfei   longcheer start
+CONFIG_ACCDET_EINT=y
+#CONFIG_ACCDET_EINT_IRQ=y
+#charge by duanlongfei   longcheer end
 CONFIG_MTK_DEBUG_LATCH=y
 CONFIG_MTK_DEVAPC_DRIVER=y
 CONFIG_MTK_DFD_INTERNAL_DUMP=y
@@ -560,6 +563,9 @@ CONFIG_CRYPTO_AES_ARM_BS=y
 CONFIG_CRYPTO_AES_ARM_CE=y
 CONFIG_CRYPTO_GHASH_ARM_CE=y
 # CONFIG_MTK_WAPI_SUPPORT is not set
+# LCT add ext speaker pa @duanlongfei 20170119 Start
+CONFIG_LCT_AW87319_PA=y
+# LCT add ext speaker pa @duanlongfei End
 #LCSH ADD by dingyin for devinfo
 CONFIG_SLT_DEVINFO=y
 #add by lct  wangjiaxing  20170301 start
