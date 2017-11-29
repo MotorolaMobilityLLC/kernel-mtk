@@ -201,7 +201,9 @@ static u32 insert_node_to_zram_tree(struct zram *zram, struct zram_meta *meta, u
 	/* found node in zram_tree */
 	if (NULL != current_node) {
 		if (!zsm_test_flag(meta, current_node, ZRAM_RB_NODE)) {
-			pr_err("[ZRAM]ERROR !!found wrong rb node 0x%p\n", (void *)current_node);
+			pr_err("[ZRAM]ERROR !!found wrong rb node 0x%p flag %c\n"
+				, (void *)current_node
+				, current_node->flags);
 			BUG_ON(1);
 		}
 

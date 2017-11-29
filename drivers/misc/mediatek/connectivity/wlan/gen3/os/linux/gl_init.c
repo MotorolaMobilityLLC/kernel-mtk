@@ -311,6 +311,14 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_config_roaming
 	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_ENABLE_ROAMING
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_enable_roaming
+	},
 	/* GSCAN */
 #if CFG_SUPPORT_GSCN
 	{
@@ -1991,6 +1999,9 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter = prGlueInfo->prAdapter;
 
 		prGlueInfo->u4ReadyFlag = 0;
+
+		/* default set the FW roaming enable state to 'on' */
+		prGlueInfo->u4FWRoamingEnable = 1;
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);

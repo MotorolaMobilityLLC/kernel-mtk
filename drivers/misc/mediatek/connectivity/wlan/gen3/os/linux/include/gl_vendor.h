@@ -87,7 +87,8 @@ typedef enum {
 
 	WIFI_SUBCMD_GET_ROAMING_CAPABILITIES,            /* 0x0008 */
 	WIFI_SUBCMD_SET_ROAMING = 0x0009,		 /* 0x0009 */
-	WIFI_SUBCMD_CONFIG_ROAMING = 0x000a,		 /* 0x0009 */
+	WIFI_SUBCMD_CONFIG_ROAMING = 0x000a,		 /* 0x000a */
+	WIFI_SUBCMD_ENABLE_ROAMING = 0x000b,		 /* 0x000b */
 	/* Add more sub commands here */
 
 } WIFI_SUB_COMMAND;
@@ -154,8 +155,8 @@ typedef enum {
 	WIFI_ATTRIBUTE_ROAMING_BLACKLIST_NUM,
 	WIFI_ATTRIBUTE_ROAMING_BLACKLIST_BSSID,
 	WIFI_ATTRIBUTE_ROAMING_WHITELIST_NUM,
-	WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID
-
+	WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID,
+	WIFI_ATTRIBUTE_ROAMING_STATE
 
 } WIFI_ATTRIBUTE;
 
@@ -808,4 +809,6 @@ int mtk_cfg80211_vendor_get_roaming_capabilities(struct wiphy *wiphy,
 int mtk_cfg80211_vendor_config_roaming(struct wiphy *wiphy,
 				 struct wireless_dev *wdev, const void *data, int data_len);
 
+int mtk_cfg80211_vendor_enable_roaming(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len);
 #endif /* _GL_VENDOR_H */
