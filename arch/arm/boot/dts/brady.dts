@@ -94,6 +94,11 @@
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+	/*LCT shaohui add for deviceinfo*/
+	deviceinfo{
+		compatible = "mediatek,lct_devinfo";
+	};
+	/*shaohui add end*/
 };
 
 /* TOUCH start */

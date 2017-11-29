@@ -136,7 +136,7 @@ static char* temp_ver;
 
 #ifdef LCT_ADD_TP_VERSION
 #define CTP_PROC_FILE "tp_info"
-//static u8 tpd_cfg_version_hx = 0; 
+static u8 tpd_cfg_version_hx = 0; 
 
 static int ctp_proc_read_show (struct seq_file* m, void* data)
 {

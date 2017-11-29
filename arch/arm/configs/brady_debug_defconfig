@@ -591,7 +591,7 @@ CONFIG_LCT_AW87319_PA=y
 #LCSH ADD by dingyin for devinfo
 CONFIG_SLT_DEVINFO=y
 #add by lct  wangjiaxing  20170301 start
-#CONFIG_LCT_DEVINFO_SUPPORT is not set
+CONFIG_LCT_DEVINFO_SUPPORT=y
 #add by lct wangjiaxing 20170301 end
 #add by wangjiaxing 20170227 start
 CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM=y
@@ -599,6 +599,8 @@ CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM=y
 
 CONFIG_LCT_CHR_ALT_TEST_SUPPORT=y
 
+# add by LCT shaohui for Lenovo bootinfo requirement
+CONFIG_LCT_BOOTINFO_SUPPORT=y
 #add by longcheer_liml_2017_03_06
 CONFIG_LCT_CHR_LIMIT_MAX_SOC=y
 CONFIG_MTK_ADDITIONAL_BATTERY_TABLE=y
