@@ -871,7 +871,7 @@
 
 	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO158__FUNC_LCM_RST>;
+			pins = <PINMUX_GPIO158__FUNC_GPIO158>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -879,7 +879,7 @@
 
 	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO12__FUNC_GPIO12>;
+			pins = <PINMUX_GPIO158__FUNC_GPIO158>;
 			slew-rate = <1>;
 			output-low;
 		};
