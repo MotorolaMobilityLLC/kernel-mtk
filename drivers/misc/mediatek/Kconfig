@@ -68,7 +68,6 @@ config MTK_ENG_BUILD
 
 config MTK_DTBO_FEATURE
 	bool "Support Device Tree Overlay"
-	default y
 	select BUILD_ARM_DTB_OVERLAY_IMAGE if !ARM64
 	select BUILD_ARM64_DTB_OVERLAY_IMAGE if ARM64
 	help
