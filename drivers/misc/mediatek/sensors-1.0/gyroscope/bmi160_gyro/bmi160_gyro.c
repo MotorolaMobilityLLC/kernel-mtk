@@ -1471,9 +1471,9 @@ static struct i2c_driver bmg_i2c_driver = {
 #ifdef CONFIG_OF
         .of_match_table = gyro_of_match,
 #endif
-	#ifdef CONFIG_PM_SLEEP
-		.pm = &bmi160_gyro_pm_ops,
-	#endif
+//#ifdef CONFIG_PM_SLEEP
+//	.pm = &bmi160_gyro_pm_ops,
+//#endif
     },
     .probe = bmi160_gyro_i2c_probe,
     .remove = bmi160_gyro_i2c_remove,
