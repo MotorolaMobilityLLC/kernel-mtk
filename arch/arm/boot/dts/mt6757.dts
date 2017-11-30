@@ -3712,6 +3712,10 @@
 		status = "disabled";
 	};
 
+	goodix_fp: fingerprint@ {
+		compatible = "mediatek,goodix-fp";
+	};
+
 	mse: mse {
 		compatible = "mediatek, mse-eint";
 		status = "disabled";

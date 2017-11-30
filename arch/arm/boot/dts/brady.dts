@@ -296,7 +296,7 @@
 	pinctrl-5 = <&aud_dat_miso_on>;
 	pinctrl-6 = <&aud_pins_hpdepop_high>;
 	pinctrl-7 = <&aud_pins_hpdepop_low>;
-	pinctrl-8 = <&aud_pins_smartpa_reset>;
+	//pinctrl-8 = <&aud_pins_smartpa_reset>;
 	pinctrl-9 = <&aud_pins_smartpa_on>;
 	pinctrl-10 = <&aud_clk_mosi_pull_high>;
 	pinctrl-11 = <&aud_clk_mosi_pull_low>;
@@ -357,13 +357,13 @@
 			output-low;
 		};
 	};
-
+/*
 	aud_pins_smartpa_reset: aud_pins_smartpa_reset {
 		pins_cmd0_dat {
 			pins = <PINMUX_GPIO192__FUNC_GPIO192>;
 		};
 	};
-
+*/
 	aud_pins_smartpa_on: aud_pins_smartpa_on {
 		pins_cmd0_dat {
 			pins = <PINMUX_GPIO16__FUNC_I2S0_DI>;
@@ -973,6 +973,135 @@
 		is_batch_supported_als = <0>;
 	};
 };
+
+/* FINGERPRINT start */
+&spi0{
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	fingerprint@0 {
+		compatible = "goodix,goodix-fp";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		status = "okay";
+	};
+};
+
+&goodix_fp {
+	pinctrl-names = "default", "miso_pullhigh", "miso_pulllow", "reset_high", "reset_low","fp_irq_mode", "fp_ldo1v8_off","fp_ldo1v8_on","fp_ldo3v3_on","fp_ldo3v3_off","fp_spi0_mi","fp_spi0_csb","fp_spi0_mo","fp_spi0_clk";
+	pinctrl-0 = <&fingerprint_default>;
+	pinctrl-1 = <&fingerprint_miso_pullhigh>;
+	pinctrl-2 = <&fingerprint_miso_pulllow>;
+	pinctrl-3 = <&fingerprint_reset_high>;
+	pinctrl-4 = <&fingerprint_reset_low>;
+	pinctrl-5 = <&gdfp_fp_irq_mode>;
+    	pinctrl-6 = <&gdfp_fp_ldo1v8_off>;
+    	pinctrl-7 = <&gdfp_fp_ldo1v8_on>;
+   	pinctrl-8 = <&gdfp_fp_ldo3v3_on>;
+    	pinctrl-9 = <&gdfp_fp_ldo3v3_off>;
+	pinctrl-10 = <&gdfp_fp_spi0_mi>;
+	pinctrl-11 = <&gdfp_fp_spi0_csb>;
+	pinctrl-12 = <&gdfp_fp_spi0_mo>;
+	pinctrl-13 = <&gdfp_fp_spi0_clk>;
+	status = "okay";
+};
+
+&pio {
+	fingerprint_default: state_default {
+
+	};
+
+	fingerprint_miso_pullhigh: state_miso_pullhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_miso_pulllow: state_miso_pulllow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO190__FUNC_GPIO190>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO190__FUNC_GPIO190>;
+			slew-rate = <1>;
+			output-low;
+		};
+
+	};
+	gdfp_fp_irq_mode: state_fp_irq_mode{
+                      pins_cmd_dat {
+                          pins = <PINMUX_GPIO7__FUNC_GPIO7>;
+                          slew-rate = <0>;
+                          bias-disable;
+                      };
+                  };
+
+	gdfp_fp_ldo1v8_off: state_fp_ldo1v8_off{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO21__FUNC_GPIO21>;
+                            slew-rate = <1>;
+                            output-low;
+                        };
+                    };
+	gdfp_fp_ldo1v8_on: state_fp_ldo1v8_on{
+                       pins_cmd_dat {
+                           pins = <PINMUX_GPIO21__FUNC_GPIO21>;
+                           slew-rate = <1>;
+                           output-high;
+                       };
+                   };
+	gdfp_fp_ldo3v3_on: state_fp_1do3v3_on{
+                       pins_cmd_dat {
+                           pins = <PINMUX_GPIO22__FUNC_GPIO22>;
+                           slew-rate = <1>;
+                           output-high;
+                       };
+                   };
+	gdfp_fp_ldo3v3_off: state_fp_ldo3v3_off{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO22__FUNC_GPIO22>;
+                            slew-rate = <1>;
+                            output-low;
+			};
+ 		  };
+	gdfp_fp_spi0_mi: spi0_mi{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO95__FUNC_SPI0_MI>;
+			};
+ 		 };
+	gdfp_fp_spi0_csb: spi0_csb{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO96__FUNC_SPI0_CSB>;
+			};
+ 		 };
+	gdfp_fp_spi0_mo: spi0_mo{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO97__FUNC_SPI0_MO>;
+			};
+ 		};
+	gdfp_fp_spi0_clk: spi0_clk{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO98__FUNC_SPI0_CLK>;
+			};
+
+		};
+};
+/* FINGERPRINT end */
 
 #include <brady/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
