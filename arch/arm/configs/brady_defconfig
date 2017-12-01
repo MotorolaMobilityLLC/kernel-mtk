@@ -575,6 +575,8 @@ CONFIG_LCT_AW87319_PA=y
 # LCT add ext speaker pa @duanlongfei End
 #LCSH ADD by dingyin for devinfo
 CONFIG_SLT_DEVINFO=y
+#add by longcheer liuzhenhe for vibr in  factory mode
+CONFIG_LCT_VIBR_FACTORY_SUPPORT=y
 #add by lct  wangjiaxing  20170301 start
 CONFIG_LCT_DEVINFO_SUPPORT=y
 #add by lct wangjiaxing 20170301 end 

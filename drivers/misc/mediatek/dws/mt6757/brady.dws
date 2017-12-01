@@ -1370,15 +1370,15 @@
             </gpio103>
             <gpio104>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
+                <def_mode>1</def_mode>
+                <mode_arr>11000000</mode_arr>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_IR_LDO_EN_PIN</varName0>
+                <varName0>GPIO_KPD_KCOL1_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio104>
@@ -2339,7 +2339,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>VOLUMEDOWN NC NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEDOWN MUSIC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
