@@ -63,7 +63,7 @@
 #define STP_PSM_IDLE_TIME_SLEEP           30	/* temporary for stress testing */
 #define STP_PSM_IDLE_TIME_SLEEP_1000           1000	/* for high speed transmission e.g. BT OPP*/
 #define STP_PSM_SDIO_IDLE_TIME_SLEEP           100	/* temporary for SDIO stress testing */
-#define STP_PSM_WAIT_EVENT_TIMEOUT        6000
+#define STP_PSM_WAIT_EVENT_TIMEOUT        18500
 
 #if 0
 #define STP_PSM_WMT_EVENT_SLEEP_EN                    (0x1UL << 0)

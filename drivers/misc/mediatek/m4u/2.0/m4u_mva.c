@@ -500,18 +500,22 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	unsigned short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	unsigned short endIdx = startIdx + nr - 1;
+	unsigned short startIdx;
+	unsigned short nr;
+	unsigned short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned short nrRequire;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
+	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
 	if (startIdx == 0 || startIdx > 4095) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		return -1;
 	}
+	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	endIdx = startIdx + nr - 1;
+
 	/* -------------------------------- */
 	/* check the input arguments */
 	/* right condition: startIdx is not NULL && region is busy && right module && right size */

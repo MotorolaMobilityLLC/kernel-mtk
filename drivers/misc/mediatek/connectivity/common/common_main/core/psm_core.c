@@ -1347,7 +1347,7 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 static inline INT32 _stp_psm_do_wakeup(MTKSTP_PSM_T *stp_psm)
 {
 	INT32 ret = 0;
-	INT32 retry = 1;
+	INT32 retry = 10;
 	P_OSAL_OP_Q pOpQ;
 	P_OSAL_OP pOp;
 
