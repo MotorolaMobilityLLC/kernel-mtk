@@ -951,7 +951,7 @@ static int kpd_pdrv_suspend(struct platform_device *pdev, pm_message_t state)
 	if (call_status == 2) {
 		kpd_print("kpd_early_suspend wake up source enable!! (%d)\n", kpd_suspend);
 	} else {
-		kpd_wakeup_src_setting(0);
+		kpd_wakeup_src_setting(1);
 		kpd_print("kpd_early_suspend wake up source disable!! (%d)\n", kpd_suspend);
 	}
 #endif
