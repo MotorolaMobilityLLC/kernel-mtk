@@ -34,7 +34,11 @@ struct rt5081_pmu_bled_data *bled_data;
 static uint8_t bled_init_data[] = {
 	0x42, /* RT5081_PMU_REG_BLEN */
 	0x89, /* RT5081_PMU_REG_BLBSTCTRL */
+#ifdef CONFIG_L3510_MAINBOARD
+	0x06, /* RT5081_PMU_REG_BLPWM */
+#else
 	0x04, /* RT5081_PMU_REG_BLPWM */
+#endif
 	0x00, /* RT5081_PMU_REG_BLCTRL */
 	0x00, /* RT5081_PMU_REG_BLDIM2 */
 	0x00, /* RT5081_PMU_REG_BLDIM1 */
@@ -517,8 +521,13 @@ static inline int rt_parse_dt(struct device *dev)
 		pdata->ext_en_pin = 1;
 	if (of_property_read_u32(np, "rt,chan_en", &tmp) < 0)
 		pdata->chan_en = 0x0; /* default 4 channel disable */
-	else
+	else{
+#ifdef CONFIG_L3510_MAINBOARD
+        pdata->chan_en = 0x0e;  //Mod chan_ne for Marino
+#else
 		pdata->chan_en = tmp;
+#endif
+	}
 	if (of_property_read_bool(np, "rt,map_linear"))
 		pdata->map_linear = 1;
 	if (of_property_read_u32(np, "rt,bl_ovp_level", &tmp) < 0)
@@ -561,6 +570,18 @@ static inline int rt_parse_dt(struct device *dev)
 		pdata->max_bled_brightness = 1024;
 	else
 	{
+#ifdef CONFIG_L3510_MAINBOARD
+		pdata->max_bled_brightness = tmp;//Mod max brightness 350 nits for Marino
+		lct_parseLcmName_fromcmdline();
+		if(strcmp(lct_klcm_name, "lct_r63350_tianma_1080p_vdo") == 0)
+		{
+			pdata->max_bled_brightness = 1055;
+		}
+		if(strcmp(lct_klcm_name,"lct_otm1911a_ofilm_1080p_vdo") == 0)
+		{
+			pdata->max_bled_brightness = 1230;
+		}
+#else
 		pdata->max_bled_brightness = tmp;
 /**  add by lct:wangjiaxing 20170313 start **/
 		//lct_parseLcmName_fromcmdline();
@@ -573,6 +594,7 @@ static inline int rt_parse_dt(struct device *dev)
 			pdata->max_bled_brightness = 750;
 		}
 /**  add by lct:wangjiaxing 20170313 end **/
+#endif
 	}
 	of_property_read_string(np, "rt,bled_name", &(pdata->bled_name));
 	return 0;
