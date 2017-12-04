@@ -954,7 +954,7 @@
 		/* customization */
 		i2c_num = <1>;
 		i2c_addr = <0x69 0 0 0>;
-		direction = <7>;
+		direction = <3>;
 		power_id = <0xffff>;
 		power_vol = <0>;
 		firlen = <0>;
