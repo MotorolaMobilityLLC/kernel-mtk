@@ -16,6 +16,7 @@
 struct alsps_context *alsps_context_obj/* = NULL*/;
 struct platform_device *pltfm_dev;
 int last_als_report_data = -1;
+static int first_als_enable = 1;
 
 /* AAL default delay timer(nano seconds)*/
 #define AAL_DELAY	200000000
@@ -295,6 +296,7 @@ static int als_enable_and_batch(void)
 	/* als_power off -> power on */
 	if (cxt->als_power == 0 && cxt->als_enable == 1) {
 		ALSPS_LOG("ALSPS als_power on\n");
+		first_als_enable = 1;
 		err = cxt->als_ctl.enable_nodata(1);
 		if (err) {
 			ALSPS_PR_ERR("als turn on als_power err = %d\n", err);
@@ -329,7 +331,13 @@ static int als_enable_and_batch(void)
 			atomic_set(&cxt->delay_als, mdelay);
 			/* the first sensor start polling timer */
 			if (cxt->is_als_polling_run == false) {
-				mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
+				if (1 == first_als_enable) {
+					mod_timer(&cxt->timer_als, jiffies + 150/(1000/HZ));
+				}
+				else {
+					mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
+				}
+				first_als_enable = 0;
 				cxt->is_als_polling_run = true;
 				cxt->is_als_first_data_after_enable = true;
 			}
