@@ -460,8 +460,8 @@ static void set_shutter(kal_uint16 shutter)
     // Update Shutter
     //write_cmos_sensor(0x0104, 0x01);
     write_cmos_sensor_2byte(0x0202, shutter);
-	//write_cmos_sensor(0x0104, 0x00);
-    LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+    write_cmos_sensor_2byte(0x3044, 0x6580);      //add 0x3044 register to fix hdr issue INDRIYAPRO_1807
+    LOG_INF("Exit! aaron shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
 }    /*    set_shutter */
 
