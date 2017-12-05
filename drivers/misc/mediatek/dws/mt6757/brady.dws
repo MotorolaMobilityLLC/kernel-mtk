@@ -72,8 +72,8 @@
             <eint6>
                 <varName>ALSPS_MTK</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
+                <polarity>High</polarity>
+                <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint6>
             <eint7>
@@ -2167,20 +2167,15 @@
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x5D</address>
             </device0>
-            <device1>
-                <varName>I2C_LCD_BIAS</varName>
-                <channel>I2C_CHANNEL_0</channel>
-                <address>0x3E</address>
-            </device1>
             <device2>
                 <varName>MSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x0D</address>
+                <address>0x30</address>
             </device2>
             <device3>
                 <varName>GSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x6B</address>
+                <address>0x18</address>
             </device3>
             <device4>
                 <varName>BAROMETER</varName>
@@ -2190,7 +2185,7 @@
             <device5>
                 <varName>ALSPS</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x51</address>
+                <address>0x53</address>
             </device5>
             <device6>
                 <varName>STROBE_MAIN</varName>
@@ -2210,7 +2205,7 @@
             <device9>
                 <varName>GYRO</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x69</address>
+                <address>0x68</address>
             </device9>
             <device10>
                 <varName>SWITHING_CHARGER</varName>

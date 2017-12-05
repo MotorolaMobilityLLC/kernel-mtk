@@ -829,7 +829,11 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	}
 	else
 	{
+#ifdef CONFIG_L3510_MAINBOARD
 		MEMSIC_ERR("invalid content: '%s', length = %ld\n", buf, count);
+#else
+		MEMSIC_ERR("invalid content: '%s', length = %d\n", buf, count);
+#endif
 	}
 
 	return count;

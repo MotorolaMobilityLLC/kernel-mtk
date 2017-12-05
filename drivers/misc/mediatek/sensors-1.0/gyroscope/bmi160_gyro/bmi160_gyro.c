@@ -1356,7 +1356,11 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
 	printk("+++yhj check gyro_default_i2c_addr: %x\n", client->addr);
 	
     obj_i2c_data = obj;
+#ifdef CONFIG_L3510_MAINBOARD
     obj->client = bmi160_acc_i2c_client;
+#else
+    obj->client = client; 
+#endif
     i2c_set_clientdata(obj->client, obj);
     atomic_set(&obj->trace, 0);
     atomic_set(&obj->suspend, 0);
