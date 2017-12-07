@@ -71,6 +71,9 @@ static int hd_detect_enabled;
 static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
+extern void get_msdc_aee_buffer(unsigned long *buff,
+	unsigned long *size)__attribute__((weak));
+static bool msdc_debug_done;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
@@ -312,6 +315,33 @@ static void Log2HangInfo(const char *fmt, ...)
 	Hang_Info_Size += len;
 }
 
+static void Buff2HangInfo(const char *buff, unsigned long size)
+{
+	if (((unsigned long)Hang_Info_Size + size)
+		>= (unsigned long)MaxHangInfoSize) {
+		LOGE("Buff2HangInfo Buffer overflow len(0x%x), MaxHangInfoSize:0x%lx !!!!!!!\n",
+			 Hang_Info_Size, (long)MaxHangInfoSize);
+		return;
+	}
+	memcpy(&Hang_Info[Hang_Info_Size], buff, size);
+	Hang_Info_Size += size;
+
+}
+
+static void DumpMsdc2HangInfo(void)
+{
+	char *buff_add;
+	unsigned long buff_size;
+
+	if (msdc_debug_done == false) {
+		msdc_debug_done = true;
+		if (get_msdc_aee_buffer) {
+			get_msdc_aee_buffer((unsigned long *)&buff_add, &buff_size);
+			if (buff_size != 0 && buff_size <= 30 * 1024)
+				Buff2HangInfo(buff_add, buff_size);
+		}
+	}
+}
 
 static void get_kernel_bt(struct task_struct *tsk)
 {
@@ -785,10 +815,13 @@ static void ShowStatus(void)
 	}
 	read_unlock(&tasklist_lock);
 
+	if (Hang_Detect_first == false)
+		show_state_filter_local();
+	else
+		DumpMsdc2HangInfo();
+
 	for (i = 0; i < dump_count; i++)
 		show_bt_by_pid(dumppids[i]);
-
-	show_state_filter_local();
 
 	/* debug_locks = 1; */
 	debug_show_all_locks();
