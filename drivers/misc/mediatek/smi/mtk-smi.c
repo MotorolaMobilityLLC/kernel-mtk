@@ -814,6 +814,8 @@ static char *smi_get_scenario_name(enum MTK_SMI_BWC_SCEN scen)
 		return "SMI_BWC_SCEN_CAM_PV";
 	case SMI_BWC_SCEN_CAM_CP:
 		return "SMI_BWC_SCEN_CAM_CP";
+	case SMI_BWC_SCEN_CAM_ZSD:
+		return "SMI_BWC_SCEN_CAM_ZSD";
 	default:
 		return "unknown scenario";
 	}
@@ -917,6 +919,8 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 		eFinalScen = SMI_BWC_SCEN_VR_SLOW;
 	else if ((1 << SMI_BWC_SCEN_VR) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VR;
+	else if ((1 << SMI_BWC_SCEN_CAM_ZSD) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_CAM_ZSD;
 	else if ((1 << SMI_BWC_SCEN_CAM_PV) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_CAM_PV;
 	else if ((1 << SMI_BWC_SCEN_CAM_CP) & u4Concurrency)
