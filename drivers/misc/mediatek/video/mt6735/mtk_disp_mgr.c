@@ -1147,6 +1147,12 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 	memset((void *)&input_params, 0, sizeof(input_params));
 
+	if (input->config_layer_num == 0 || input->config_layer_num > OVL_LAYER_NUM) {
+		DISPERR("set_memory_buffer, config_layer_num invalid = %d!\n",
+			input->config_layer_num);
+		return 0;
+	}
+
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
 		layer_id = input->config[i].layer_id;
@@ -1240,6 +1246,12 @@ static int set_external_buffer(disp_session_input_config *input)
 
 	session_id = input->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
+
+	if (input->config_layer_num == 0 || input->config_layer_num > OVL_LAYER_NUM) {
+		DISPERR("set_external_buffer, config_layer_num invalid = %d!\n",
+			input->config_layer_num);
+		return 0;
+	}
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
