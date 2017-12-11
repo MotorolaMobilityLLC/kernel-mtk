@@ -1052,7 +1052,7 @@ void fgauge_get_profile_id(void)
 		}
 	}
 
-	printk("Jason[fgauge_get_profile_id]Battery id (%d), id_volt(%d)\n", g_fg_battery_id, id_volt);
+	bm_debug("[fgauge_get_profile_id]Battery id (%d)\n", g_fg_battery_id);
 }
 #elif defined(MTK_GET_BATTERY_ID_BY_GPIO)
 void fgauge_get_profile_id(void)
@@ -3139,7 +3139,7 @@ static void nl_data_handler(struct sk_buff *skb)
 	uid = NETLINK_CREDS(skb)->uid;
 	seq = nlh->nlmsg_seq;
 
-	printk("[Netlink Jason] recv skb from user space uid:%d pid:%d seq:%d\n",*(int *)&uid,pid,seq); 
+	/*bm_debug("[Netlink] recv skb from user space uid:%d pid:%d seq:%d\n",uid,pid,seq); */
 	data = NLMSG_DATA(nlh);
 
 	fgd_msg = (struct fgd_nl_msg_t *)data;

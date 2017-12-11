@@ -538,6 +538,16 @@ config MEMORY_STATE_TIME
 	depends on PROFILING
 	help
 	  Memory time statistics exported to /sys/kernel/memory_state_time
+config MOT_UTAG
+       tristate  "Motorola Configuration read/write support "
+       default n
+       help
+         With this option you get read/write access to utag partition via procfs.
+         Content of the entire partition can be checked, separate utags accessed
+         and modified.
+
+         This driver should be built as a module. The module will be called
+         utags.ko.
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
