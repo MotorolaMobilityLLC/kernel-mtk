@@ -66,6 +66,8 @@ static kuid_t binder_context_mgr_uid = INVALID_UID;
 static int binder_last_id;
 static struct workqueue_struct *binder_deferred_workqueue;
 
+#define BINDER_MIN_ALLOC (1 * PAGE_SIZE)
+
 #define RT_PRIO_INHERIT			"v1.7"
 #ifdef RT_PRIO_INHERIT
 #include <linux/sched/rt.h>
@@ -4313,6 +4315,11 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 		}
 	}
 #endif
+	if (vma->vm_end - vma->vm_start < BINDER_MIN_ALLOC) {
+		ret = -EINVAL;
+		failure_string = "VMA size < BINDER_MIN_ALLOC";
+		goto err_vma_too_small;
+	}
 	proc->pages =
 	    kzalloc(sizeof(proc->pages[0]) *
 		    ((vma->vm_end - vma->vm_start) / PAGE_SIZE), GFP_KERNEL);
@@ -4350,6 +4357,7 @@ err_alloc_small_buf_failed:
 	kfree(proc->pages);
 	proc->pages = NULL;
 err_alloc_pages_failed:
+err_vma_too_small:
 	mutex_lock(&binder_mmap_lock);
 	vfree(proc->buffer);
 	proc->buffer = NULL;
