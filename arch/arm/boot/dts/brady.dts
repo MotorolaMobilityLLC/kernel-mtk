@@ -99,6 +99,16 @@
 		compatible = "mediatek,lct_devinfo";
 	};
 	/*shaohui add end*/
+
+	utags {
+		compatible = "mmi,utags";
+		mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/utags";
+	};
+	hw {
+		compatible = "mmi,utags";
+		mmi,dir-name = "hw";
+		mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/hw";
+	};
 };
 
 /* TOUCH start */
@@ -965,10 +975,10 @@
 		polling_mode_als = <1>;
 		power_id = <0xffff>;
 		power_vol = <0>;
-		als_level = <0 328 861 1377 3125 7721 7767 12621 23062 28430 33274 47116 57694 57694 65535>;
-		als_value = <0 133 304 502 1004 2005 3058 5005 8008 10010 12000 16000 20000 20000 20000 20000>;
-		ps_threshold_high = <26>;
-		ps_threshold_low = <21>;
+		als_level = <  1 4  10 30 120 150 255 380 650 900  1350 2200 3500 6000 10000 20000 30000 50000>;
+		als_value = <0 5 10 30 80 120 225 320 550 800 1250 2000 3000 5000 5500 7500  13000 24000 30000>;
+		ps_threshold_high = <60>;
+		ps_threshold_low = <40>;
 		is_batch_supported_ps = <0>;
 		is_batch_supported_als = <0>;
 	};
