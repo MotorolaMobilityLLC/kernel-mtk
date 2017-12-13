@@ -2902,5 +2902,6 @@ struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM] = {
 	{SMI_BWC_SCEN_VPMJC, &vpmjc_setting_config},
 	{SMI_BWC_SCEN_N3D, &n3d_setting_config},
 	{SMI_BWC_SCEN_CAM_PV, &vr_setting_config},
-	{SMI_BWC_SCEN_CAM_CP, &vr_setting_config}
+	{SMI_BWC_SCEN_CAM_CP, &vr_setting_config},
+	{SMI_BWC_SCEN_CAM_ZSD, &vr_setting_config}
 };
