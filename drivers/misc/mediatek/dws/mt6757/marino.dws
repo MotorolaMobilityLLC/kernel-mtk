@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="12.07.2017.01:33:24"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="12.14.2017.22:00:34"-->
 <dct_cfg>
     <general chip="MT6757-P25">
         <proj>marino</proj>
@@ -926,7 +926,7 @@
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
