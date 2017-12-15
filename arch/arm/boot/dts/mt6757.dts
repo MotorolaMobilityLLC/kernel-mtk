@@ -3353,7 +3353,15 @@
 		<&topckgen TOP_UNIVPLL_192M_D4>,
 		<&topckgen TOP_UNIVPLL2_D2>;
 		clock-names = "TOP_CAMTG_SEL","TOP_MUX_SCAM","TOP_UNIVPLL_192M_D4","TOP_UNIVPLL2_D2";
+		/*add by guoameng  longcheer start */
+		vcama-supply = <&mt_pmic_vcama1_ldo_reg>;
+		vcamd-supply = <&mt_pmic_vcamd1_ldo_reg>;
 		vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
+                // vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
+		 vcamasub-supply = <&mt_pmic_vcama2_ldo_reg>;
+		vcamdsub-supply = <&mt_pmic_vcamd2_ldo_reg>;
+		vcamd_main2-supply = <&mt_pmic_vgp3_ldo_reg>;
+		 /*add by guoameng  longcheer end */
 	};
 
 	kd_camera_hw2:kd_camera_hw2@1a040000 {
@@ -3643,6 +3651,9 @@
 	flashlights_rt5081: flashlights_rt5081 {
 		compatible = "mediatek,flashlights_rt5081";
 	};
+	flashlights_dummy_gpio: flashlights_dummy_gpio {
+		compatible = "mediatek,flashlights_dummy_gpio";
+	};
 
 	gsensor@0 {
 		compatible = "mediatek,gsensor";
@@ -3751,6 +3762,7 @@
 		compatible = "mediatek,cam_cal_drv";
 		main_bus = <2>;
 		sub_bus = <4>;
+		main2_bus = <4>;
 	};
 
 	charger: charger {

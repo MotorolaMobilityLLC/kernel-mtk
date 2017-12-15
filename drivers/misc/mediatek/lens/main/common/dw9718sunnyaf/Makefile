@@ -14,14 +14,7 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-ifneq ($(CONFIG_PINCTRL_MT6757),y)
-# to use mtk legacy pinctrl
-subdir-ccflags-y += -I$(DRVGEN_OUT)/inc
-endif
-MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
-ifeq ($(TARGET_PRODUCT),marino)
-ccflags-y += -DCAMERAHW_INDRIYA
-endif
-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
 
-obj-y				+= kd_camera_hw.o
+obj-y += DW9718SUNNYAF.o
+
+

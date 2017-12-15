@@ -12,7 +12,7 @@
  */
 
 /*
- * DW9718AF voice coil motor driver
+ * DW9718SUNNYAF voice coil motor driver
  *
  *
  */
@@ -25,7 +25,7 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "DW9718AF_DRV"
+#define AF_DRVNAME "DW9718SUNNYAF_DRV"
 #define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
@@ -73,7 +73,7 @@ static u8 read_data(u8 addr)
 	return get_byte;
 }
 
-static int s4DW9718AF_ReadReg(unsigned short *a_pu2Result)
+static int s4DW9718SUNNYAF_ReadReg(unsigned short *a_pu2Result)
 {
 	*a_pu2Result = (read_data(0x02) << 8) + (read_data(0x03) & 0xff);
 
@@ -127,15 +127,14 @@ static void initdrv(void)
 
 
 	char puSendCmd3[2] = {0x01, 0x39};
-	char puSendCmd4[2] = {0x05, 0x74};
+	char puSendCmd4[2] = {0x05, 0x7A};
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 	
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-        msleep(1);
+ 	msleep(1);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd4, 2);
-
 
 }
 
@@ -155,7 +154,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	
 
 		initdrv();
-		ret = s4DW9718AF_ReadReg(&InitPos);
+		ret = s4DW9718SUNNYAF_ReadReg(&InitPos);
 
 		if (ret == 0) {
 			LOG_INF("Init Pos %6d\n", InitPos);
@@ -213,13 +212,13 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long DW9718SUNNYAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *)(a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -248,7 +247,7 @@ long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int DW9718SUNNYAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	
 	char puSendCmd_release[2] = { 0x01, 0x33 };
@@ -277,7 +276,7 @@ int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-int DW9718AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int DW9718SUNNYAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;

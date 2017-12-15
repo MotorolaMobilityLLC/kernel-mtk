@@ -108,6 +108,12 @@ mt_pmic_regulator {
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <264>;
 		};
+		mt_pmic_vgp3_ldo_reg: ldo_vgp3 {
+			regulator-name = "vgp3";
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1810000>;
+			regulator-enable-ramp-delay = <264>;
+		};
 		mt_pmic_vusb33_ldo_reg: ldo_vusb33 {
 			compatible = "regulator-fixed";
 			regulator-name = "vusb33";
