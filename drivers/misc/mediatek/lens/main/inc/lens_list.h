@@ -68,13 +68,23 @@ extern int DW9814AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t 
 extern long DW9814AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int DW9814AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+#ifdef CONFIG_MTK_LENS_DW9718SUNNYAF_SUPPORT
+#define DW9718SUNNYAF_SetI2Cclient DW9718SUNNYAF_SetI2Cclient_Main
+#define DW9718SUNNYAF_Ioctl DW9718SUNNYAF_Ioctl_Main
+#define DW9718SUNNYAF_Release DW9718SUNNYAF_Release_Main
+extern int DW9718SUNNYAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9718SUNNYAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9718SUNNYAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
+#ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
 #define DW9718AF_SetI2Cclient DW9718AF_SetI2Cclient_Main
 #define DW9718AF_Ioctl DW9718AF_Ioctl_Main
 #define DW9718AF_Release DW9718AF_Release_Main
 extern int DW9718AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
-
+#endif
 #define DW9718SAF_SetI2Cclient DW9718SAF_SetI2Cclient_Main
 #define DW9718SAF_Ioctl DW9718SAF_Ioctl_Main
 #define DW9718SAF_Release DW9718SAF_Release_Main

@@ -4513,8 +4513,9 @@ static kal_uint32 open(void)
             break;
         retry = 2;
     }        
-    if (imgsensor_info.sensor_id != sensor_id || (MID !=S5K4H8_OFILM_MID ))
+    if (imgsensor_info.sensor_id != sensor_id || (MID !=S5K4H8_OFILM_MID )){
         return ERROR_SENSOR_CONNECT_FAIL;
+        }
 	/* initail sequence write in  */
 	sensor_init();
 

@@ -724,28 +724,28 @@
 	};
 	camera_pins_cam2_rst0: cam2@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
+			pins = <PINMUX_GPIO86__FUNC_GPIO86>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_rst1: cam2@1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
+			pins = <PINMUX_GPIO86__FUNC_GPIO86>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam2_pnd0: cam2@3 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO89__FUNC_GPIO89>;
+			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_pnd1: cam2@4 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO89__FUNC_GPIO89>;
+			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -780,14 +780,28 @@
 	};
 	camera_pins_cam_ldo_vcamd_0: cam0@vcamd0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO23__FUNC_GPIO23>;
+			pins = <PINMUX_GPIO192__FUNC_GPIO192>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo_vcamd_1: cam1@vcamd1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO23__FUNC_GPIO23>;
+			pins = <PINMUX_GPIO192__FUNC_GPIO192>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam_ldo_vcamaf_0: cam0@vcamaf0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam_ldo_vcamaf_1: cam1@vcamaf1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -804,7 +818,7 @@
 			"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
 			"cam_mipi_switch_sel_0", "cam_mipi_switch_sel_1",
 			"cam_mipi_switch_en_0", "cam_mipi_switch_en_1",
-			"cam_ldo_vcamd_0", "cam_ldo_vcamd_1";
+			"cam_ldo_vcamd_0", "cam_ldo_vcamd_1","cam_ldo_vcamaf_0", "cam_ldo_vcamaf_1";
 
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst0>;
@@ -825,6 +839,8 @@
 	pinctrl-16 = <&camera_pins_cam_mipi_en_1>;
 	pinctrl-17 = <&camera_pins_cam_ldo_vcamd_0>;
 	pinctrl-18 = <&camera_pins_cam_ldo_vcamd_1>;
+	pinctrl-19 = <&camera_pins_cam_ldo_vcamaf_0>;
+	pinctrl-20 = <&camera_pins_cam_ldo_vcamaf_1>;
 	status = "okay";
 
 };
@@ -896,6 +912,14 @@
 	status = "okay";
 };/* DISPSYS GPIO standardization end */
 
+&i2c2 {
+
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
+};
 /* FLASHLIGHTS_LM3643 GPIO standardization */
 &pio {
 	flashlights_lm3643_pins_default: flashlights_default {
