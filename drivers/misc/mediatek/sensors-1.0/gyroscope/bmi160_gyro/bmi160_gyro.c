@@ -115,7 +115,7 @@ struct bmg_i2c_data {
     struct data_filter  fir;
 #endif
 };
-
+static bool isOpenLog = false;
 struct gyro_hw gyro_cust;
 static int bmi160_gyro_local_init(struct platform_device *pdev);
 static struct gyro_hw *hw = &gyro_cust;
@@ -210,6 +210,9 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
 {
     int err = 0;
     struct bmg_i2c_data *priv = obj_i2c_data;
+    if(isOpenLog){
+		printk("check in [%s] .\n",__func__);
+	}
     if (priv->power_mode == BMG_SUSPEND_MODE) {
         err = bmg_set_powermode(client,
             (enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
@@ -239,6 +242,17 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
         data[BMG_AXIS_Z] = (s16)
             ((((s32)((s8)buf_tmp[5]))
               << BMI160_SHIFT_8_POSITION) | (buf_tmp[4]));
+		if(isOpenLog){
+			printk("bmi160_gyro 0 [%s][16bit raw]\n\n"
+            "[%08X %08X %08X] => [%5d %5d %5d]\n",
+            priv->sensor_name,
+            data[BMG_AXIS_X],
+            data[BMG_AXIS_Y],
+            data[BMG_AXIS_Z],
+            data[BMG_AXIS_X],
+            data[BMG_AXIS_Y],
+            data[BMG_AXIS_Z]);
+		}
         if (atomic_read(&priv->trace) & GYRO_TRC_RAWDATA) {
             GYRO_LOG("[%s][16bit raw]\n\n"
             "[%08X %08X %08X] => [%5d %5d %5d]\n",
@@ -272,6 +286,20 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
                 priv->fir.sum[BMG_AXIS_X] += data[BMG_AXIS_X];
                 priv->fir.sum[BMG_AXIS_Y] += data[BMG_AXIS_Y];
                 priv->fir.sum[BMG_AXIS_Z] += data[BMG_AXIS_Z];
+                if(isOpenLog){
+			        printk("bmi160-gyro 1 [%s] add [%2d]\n\n"
+                    "[%5d %5d %5d] => [%5d %5d %5d]\n",__func__,
+                    priv->fir.num,
+                    priv->fir.raw
+                    [priv->fir.num][BMG_AXIS_X],
+                    priv->fir.raw
+                    [priv->fir.num][BMG_AXIS_Y],
+                    priv->fir.raw
+                    [priv->fir.num][BMG_AXIS_Z],
+                    priv->fir.sum[BMG_AXIS_X],
+                    priv->fir.sum[BMG_AXIS_Y],
+                    priv->fir.sum[BMG_AXIS_Z]);
+				}
                 if (atomic_read(&priv->trace)&GYRO_TRC_FILTER) {
                     GYRO_LOG("add [%2d]\n\n"
                     "[%5d %5d %5d] => [%5d %5d %5d]\n",
@@ -315,6 +343,20 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
                     priv->fir.sum[BMG_AXIS_Y]/firlen;
                 data[BMG_AXIS_Z] =
                     priv->fir.sum[BMG_AXIS_Z]/firlen;
+                if(isOpenLog){
+				    printk("bmi160-gyro 2 [%s]add [%2d]\n\n"
+                    "[%5d %5d %5d] =>\n\n"
+                    "[%5d %5d %5d] : [%5d %5d %5d]\n",__func__, idx,
+                    priv->fir.raw[idx][BMG_AXIS_X],
+                    priv->fir.raw[idx][BMG_AXIS_Y],
+                    priv->fir.raw[idx][BMG_AXIS_Z],
+                    priv->fir.sum[BMG_AXIS_X],
+                    priv->fir.sum[BMG_AXIS_Y],
+                    priv->fir.sum[BMG_AXIS_Z],
+                    data[BMG_AXIS_X],
+                    data[BMG_AXIS_Y],
+                    data[BMG_AXIS_Z]);
+				}
                 if (atomic_read(&priv->trace)&GYRO_TRC_FILTER) {
                     GYRO_LOG("add [%2d]\n\n"
                     "[%5d %5d %5d] =>\n\n"
@@ -707,10 +749,12 @@ static int bmg_read_sensor_data(struct i2c_client *client,
         gyro[BMG_AXIS_X] = (gyro[BMG_AXIS_X] * 1310) / obj->sensitivity;
         gyro[BMG_AXIS_Y] = (gyro[BMG_AXIS_Y] * 1310) / obj->sensitivity;
         gyro[BMG_AXIS_Z] = (gyro[BMG_AXIS_Z] * 1310) / obj->sensitivity;
-//      GYRO_LOG("wcz %04x %04x %04x",gyro[BMG_AXIS_X],gyro[BMG_AXIS_Y],gyro[BMG_AXIS_Z]);
-//      GYRO_LOG("gyro final xyz data: %d,%d,%d, sens:%d\n",
-//      gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y],
-//      gyro[BMG_AXIS_Z], obj->sensitivity);
+		if(isOpenLog){
+			printk("[%s] wcz %04x %04x %04x .\n",__func__,gyro[BMG_AXIS_X],gyro[BMG_AXIS_Y],gyro[BMG_AXIS_Z]);
+			printk("[%s] gyro final xyz data: %d,%d,%d, sens:%d\n",__func__,
+					gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y],
+					gyro[BMG_AXIS_Z], obj->sensitivity);
+		}
         snprintf(buf, 96, "%04x %04x %04x",
         gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
         if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
@@ -995,6 +1039,32 @@ show_range_value, store_range_value);
 static DRIVER_ATTR(gyro_odr, S_IWUSR | S_IRUGO,
 show_datarate_value, store_datarate_value);
 
+//add node for open log by yanghongjiang 20171215
+static ssize_t store_openLog_value(struct device_driver *ddri,
+        const char *buf, size_t count)
+{
+    int range;
+    sscanf(buf,"%d",&range);
+    printk("bmi160-gyro [%s] ,range = %d .\n",__func__,range);
+    if(range > 0){
+		isOpenLog = true;
+	}else{
+		isOpenLog = false;
+	}
+    return count;
+}
+
+static ssize_t show_openLog_value(struct device_driver *ddri, char *buf)
+{
+	int ret;
+	printk("bmi160-gyro [%s] isShowLog = %d .\n",__func__,isOpenLog);
+    ret = sprintf(buf,"[OpenLog] = %d \n",isOpenLog);
+    return ret;
+}
+
+static DRIVER_ATTR(openLog, S_IWUSR | S_IRUGO, show_openLog_value, store_openLog_value);
+//add by yanghongjiang end
+
 static struct driver_attribute *bmg_attr_list[] = {
     /* chip information */
     &driver_attr_chipinfo,
@@ -1016,6 +1086,8 @@ static struct driver_attribute *bmg_attr_list[] = {
     &driver_attr_gyro_range,
     /* get data rate */
     &driver_attr_gyro_odr,
+    /* open log */
+    &driver_attr_openLog,
 };
 
 static int bmg_create_attr(struct device_driver *driver)
@@ -1334,7 +1406,7 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
     struct bmg_i2c_data *obj;
     struct gyro_control_path ctl = {0};
     struct gyro_data_path data = {0};
-
+	isOpenLog = false;
     err = get_gyro_dts_func(client->dev.of_node, hw);
     if (!hw) {
         GYRO_PR_ERR("get dts info fail\n");
