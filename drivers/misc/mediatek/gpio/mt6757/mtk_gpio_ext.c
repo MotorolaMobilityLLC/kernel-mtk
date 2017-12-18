@@ -16,7 +16,7 @@
  */
 #include <mt-plat/mtk_gpio.h>
 #include <mt-plat/mtk_gpio_core.h>
-#include <mtk_gpio_ext.h>
+#include "mtk_gpio_ext.h"
 
 /* #define MAX_GPIO_REG_BITS      16 */
 /* #define MAX_GPIO_MODE_PER_REG  5 */

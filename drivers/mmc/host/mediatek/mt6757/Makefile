@@ -21,6 +21,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 #workaround for include mmc/card/queue.h and mmc/core/core.h
 ccflags-y += -I$(srctree)/drivers
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
 endif
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6798")

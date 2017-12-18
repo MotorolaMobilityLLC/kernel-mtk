@@ -42,7 +42,7 @@
 #include <mtk_spm.h>
 #include <mt-plat/mtk_gpio.h>
 /* #include <mach/mt_gpio_core.h> */
-#include <mtk_clkbuf_ctl.h>
+#include "mtk_clkbuf_ctl.h"
 #include <mt-plat/upmu_common.h>
 
 #define TAG     "[Power/clkbuf]"

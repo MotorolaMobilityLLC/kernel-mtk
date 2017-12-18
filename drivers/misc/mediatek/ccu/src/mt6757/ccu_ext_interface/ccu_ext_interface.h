@@ -1,7 +1,7 @@
 #ifndef __CCU_INTERFACE__
 #define __CCU_INTERFACE__
 
-#include "ccu_ext_interface/ccu_types.h"
+#include "ccu_types.h"
 /*#include "algorithm/ae_algo_ctrl.h"*/
 
 /*--fpgaep*/

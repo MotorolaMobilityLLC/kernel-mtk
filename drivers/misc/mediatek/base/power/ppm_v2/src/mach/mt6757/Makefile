@@ -13,6 +13,7 @@
 
 ccflags-y +=	\
 	-I$(PPM_ROOT_DIR)/inc \
+	-I$(PPM_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/
 
 # platform dependent functions

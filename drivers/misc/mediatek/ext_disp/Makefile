@@ -12,6 +12,7 @@
 #
 
 PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/$(PLATFORM)
 ifeq ($(CONFIG_SINGLE_PANEL_OUTPUT),y)
 else ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/ext_disp/$(PLATFORM)/),)
 obj-y += $(PLATFORM)/

@@ -22,8 +22,8 @@
 #include <linux/wakelock.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <mtk_leds_hal.h>
-#include <mtk_leds_drv.h>
+#include "mtk_leds_hal.h"
+#include "mtk_leds_drv.h"
 #include <mt-plat/mtk_pwm.h>
 
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557

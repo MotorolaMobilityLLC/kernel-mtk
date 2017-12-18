@@ -12,14 +12,14 @@
  */
 
 
-#include <6757_gpio.h>
+#include "6757_gpio.h"
 #include <linux/types.h>
-#include "mt-plat/sync_write.h"
+#include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_gpio.h>
 #include <mt-plat/mtk_gpio_core.h>
-#include <mtk_gpio_base.h>
+#include "mtk_gpio_base.h"
 /* autogen */
-#include <gpio_cfg.h>
+#include "gpio_cfg.h"
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
 #endif

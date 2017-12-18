@@ -12,7 +12,7 @@
  */
 
 #include <linux/slab.h>
-#include <6757_gpio.h>
+#include "6757_gpio.h"
 #include <mt-plat/mtk_gpio.h>
 #include <mt-plat/mtk_gpio_core.h>
 /*#include <gpio_cfg.h>*/

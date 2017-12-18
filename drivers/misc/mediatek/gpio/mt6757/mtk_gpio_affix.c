@@ -13,12 +13,12 @@
 
 
 #include <linux/types.h>
-#include "mt-plat/sync_write.h"
+#include <mt-plat/sync_write.h>
 #include <linux/types.h>
 #include <linux/device.h>
 /* #include <mach/mt_gpio.h> */
 #include <mt-plat/mtk_gpio_core.h>
-#include <6757_gpio.h>
+#include "6757_gpio.h"
 
 
 void mt_gpio_pin_decrypt(unsigned long *cipher)
