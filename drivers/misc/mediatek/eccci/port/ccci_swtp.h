@@ -16,8 +16,8 @@
 
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
 
-#define SWTP_EINT_PIN_PLUG_IN        (1)
-#define SWTP_EINT_PIN_PLUG_OUT       (0)
+#define SWTP_EINT_PIN_PLUG_IN        (0)
+#define SWTP_EINT_PIN_PLUG_OUT       (1)
 
 struct swtp_t {
 	unsigned int	md_id;
