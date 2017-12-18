@@ -294,7 +294,6 @@
 			"aud_dat_miso_on",
 			"hpdepop-pullhigh",
 			"hpdepop-pulllow",
-			"aud_smartpa_reset",
 			"aud_smartpa_on",
 			"aud_clk_mosi_pull_high",
 			"aud_clk_mosi_pull_low";
@@ -306,10 +305,9 @@
 	pinctrl-5 = <&aud_dat_miso_on>;
 	pinctrl-6 = <&aud_pins_hpdepop_high>;
 	pinctrl-7 = <&aud_pins_hpdepop_low>;
-	//pinctrl-8 = <&aud_pins_smartpa_reset>;
-	pinctrl-9 = <&aud_pins_smartpa_on>;
-	pinctrl-10 = <&aud_clk_mosi_pull_high>;
-	pinctrl-11 = <&aud_clk_mosi_pull_low>;
+	pinctrl-8 = <&aud_pins_smartpa_on>;
+	pinctrl-9 = <&aud_clk_mosi_pull_high>;
+	pinctrl-10 = <&aud_clk_mosi_pull_low>;
 	status = "okay";
 };
 
@@ -367,13 +365,7 @@
 			output-low;
 		};
 	};
-/*
-	aud_pins_smartpa_reset: aud_pins_smartpa_reset {
-		pins_cmd0_dat {
-			pins = <PINMUX_GPIO192__FUNC_GPIO192>;
-		};
-	};
-*/
+
 	aud_pins_smartpa_on: aud_pins_smartpa_on {
 		pins_cmd0_dat {
 			pins = <PINMUX_GPIO16__FUNC_I2S0_DI>;

@@ -1563,7 +1563,7 @@
 		compatible = "mediatek, mrdump_ext_rst-eint";
 		source = "EINT";
 		mode = "IRQ";
-		status = "okay";
+		status = "disabled";
 	};
 	keypad: keypad@10010000 {
 		compatible = "mediatek,mt6757-keypad";
