@@ -1047,7 +1047,7 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	P_IE_MEASUREMENT_REPORT_T prTsmRpt = NULL;
 	struct RM_TSM_REPORT *prTsmRptField = NULL;
 	P_CMD_GET_TSM_STATISTICS_T prTsmStatistic = (P_CMD_GET_TSM_STATISTICS_T)pucEventBuf;
-	UINT_8 ucIeSize = OFFSET_OF(IE_MEASUREMENT_REPORT_T, aucReportFields) + sizeof(*prTsmRptField);
+	UINT_16 u2IeSize = OFFSET_OF(IE_MEASUREMENT_REPORT_T, aucReportFields) + sizeof(*prTsmRptField);
 	struct ACTIVE_RM_TSM_REQ *prCurrentTsmReq = NULL;
 	struct WMM_INFO *prWMMInfo = &prAdapter->rWifiVar.rWmmInfo;
 
@@ -1064,7 +1064,7 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	}
 
 	/* Put the report IE into report frame */
-	if (ucIeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH)
+	if (u2IeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH)
 		rlmTxRadioMeasurementReport(prAdapter);
 
 	DBGLOG(WMM, INFO, "tid %d, aci %d\n", prCurrentTsmReq->prTsmReq->ucTID, prCurrentTsmReq->prTsmReq->ucACI);
@@ -1073,7 +1073,7 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	prTsmRpt->ucToken = prCurrentTsmReq->prTsmReq->ucToken;
 	prTsmRpt->ucMeasurementType = ELEM_RM_TYPE_TSM_REPORT;
 	prTsmRpt->ucReportMode = 0;
-	prTsmRpt->ucLength = ucIeSize - 2;
+	prTsmRpt->ucLength = u2IeSize - 2;
 	prTsmRptField = (struct RM_TSM_REPORT *)&prTsmRpt->aucReportFields[0];
 	prTsmRptField->u8ActualStartTime = prTsmStatistic->u8StartTime;
 	prTsmRptField->u2Duration = prCurrentTsmReq->prTsmReq->u2Duration;
@@ -1090,7 +1090,7 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	prTsmRptField->u4AvgDelay = prTsmStatistic->u4AvgPktTxDelay;
 	prTsmRptField->ucBin0Range = prCurrentTsmReq->prTsmReq->ucB0Range;
 	kalMemCopy(&prTsmRptField->u4Bin[0], &prTsmStatistic->au4PktCntBin[0], sizeof(prTsmStatistic->au4PktCntBin));
-	prRmRep->u2ReportFrameLen += ucIeSize;
+	prRmRep->u2ReportFrameLen += u2IeSize;
 	/* For normal TSM, only once measurement */
 	if (prCurrentTsmReq->prTsmReq->u2Duration) {
 		struct RM_TSM_REQ *prTsmReq = NULL;

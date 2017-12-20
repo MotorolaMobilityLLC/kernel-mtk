@@ -2125,7 +2125,7 @@ static UINT_8 scanGetChannel(P_HIF_RX_HEADER_T prHifRxHdr, PUINT_8 pucIE, UINT_1
 	UINT_8 ucDsChannel = 0;
 	UINT_8 ucHtChannel = 0;
 	UINT_8 ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prHifRxHdr);
-	UINT_8 u2Offset = 0;
+	UINT_16 u2Offset = 0;
 	ENUM_BAND_T eBand = HIF_RX_HDR_GET_RF_BAND(prHifRxHdr);
 
 	IE_FOR_EACH(pucIE, u2IELen, u2Offset) {
@@ -2245,7 +2245,7 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	struct RM_MEASURE_REPORT_ENTRY *prReportEntry = NULL;
 	UINT_16 u2RemainLen = 0;
 	BOOLEAN fgValidChannel = FALSE;
-	UINT_8 ucIeSize = 0;
+	UINT_16 u2IeSize = 0;
 
 	if (!EQUAL_MAC_ADDR(prBcnReq->aucBssid, "\xff\xff\xff\xff\xff\xff") &&
 		!EQUAL_MAC_ADDR(prBcnReq->aucBssid, pucBssid)) {
@@ -2254,7 +2254,6 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	}
 
 	pucIE = pucIEBuf;
-
 	/* Step1: parsing Beacon Request sub element field to get Report controlling information */
 	/* if match the channel that is in fixed field, no need to check AP channel report */
 	if (prBcnReq->ucChannel == prRepParams->ucChannel)
@@ -2263,8 +2262,8 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	u2RemainLen = prRmReq->prCurrMeasElem->ucLength - 3 - OFFSET_OF(RM_BCN_REQ_T, aucSubElements);
 	pucSubIE = &prBcnReq->aucSubElements[0];
 	while (u2RemainLen > 0) {
-		ucIeSize = IE_SIZE(pucSubIE);
-		if (ucIeSize > u2RemainLen)
+		u2IeSize = IE_SIZE(pucSubIE);
+		if (u2IeSize > u2RemainLen)
 			break;
 		switch (pucSubIE[0]) {
 		case 0: /* checking if SSID is matched */
@@ -2303,7 +2302,7 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 			if (fgValidChannel)
 				break;
 			/* try to match with AP channel report */
-			while (ucNumChannels < ucIeSize) {
+			while (ucNumChannels < u2IeSize) {
 				if (prRepParams->ucChannel == pucSubIE[ucNumChannels]) {
 					fgValidChannel = TRUE;
 					break;
@@ -2312,8 +2311,8 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 			}
 		}
 		}
-		u2RemainLen -= ucIeSize;
-		pucSubIE += ucIeSize;
+		u2RemainLen -= u2IeSize;
+		pucSubIE += u2IeSize;
 	}
 	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255) {
 		DBGLOG(SCN, INFO, "channel %d, valid %d\n", prBcnReq->ucChannel, fgValidChannel);
@@ -2344,7 +2343,7 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 			break;
 		prBcnReport = NULL;
 	}
-	if (!prBcnReport) { /* not found a entry in collected report link */
+	if (!prBcnReport) {/* not found a entry in collected report link */
 		LINK_REMOVE_HEAD(&prRmRep->rFreeReportLink, prReportEntry, struct RM_MEASURE_REPORT_ENTRY *);
 		if (!prReportEntry) {/* not found a entry in free report link */
 			prReportEntry = kalMemAlloc(sizeof(*prReportEntry), VIR_MEM_TYPE);

@@ -1431,15 +1431,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 			rCmdSetBssInfo.ucAuthMode = AUTH_MODE_WPA2;
 		else
 #endif
-		/* Firmware didn't define AUTH_MODE_NON_RSN_FT, so AUTH_MODE_OPEN is zero in firmware,
-		** but it is 1 in driver. so we need to minus 1 for all authmode except AUTH_MODE_NON_RSN_FT,
-		** because AUTH_MODE_NON_RSN_FT will be same as AUTH_MODE_OPEN in firmware
-		**/
-		if (prConnSettings->eAuthMode != AUTH_MODE_NON_RSN_FT)
-			rCmdSetBssInfo.ucAuthMode = (UINT_8)prConnSettings->eAuthMode - 1;
-		else
-			rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
-
+		rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) prConnSettings->eEncStatus;
 		rCmdSetBssInfo.fgWapiMode = (UINT_8) prConnSettings->fgWapiMode;
 	}
@@ -1468,6 +1460,12 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION3_KEY_ABSENT;
 #endif
 	}
+	/* Firmware didn't define AUTH_MODE_NON_RSN_FT, so AUTH_MODE_OPEN is zero in firmware,
+	** but it is 1 in driver. so we need to minus 1 for all authmode except AUTH_MODE_NON_RSN_FT,
+	** because AUTH_MODE_NON_RSN_FT will be same as AUTH_MODE_OPEN in firmware
+	**/
+	if (rCmdSetBssInfo.ucAuthMode != AUTH_MODE_NON_RSN_FT)
+		rCmdSetBssInfo.ucAuthMode -= 1;
 
 	if (eNetworkTypeIdx == NETWORK_TYPE_AIS_INDEX &&
 	    prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE && prBssInfo->prStaRecOfAP != NULL) {
