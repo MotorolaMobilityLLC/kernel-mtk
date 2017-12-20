@@ -1884,7 +1884,7 @@ static int __init dram_test_init(void)
 	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
 	pr_info("[DRAMC Driver] dram type =%d\n", get_ddr_type());
 
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 13;
 	pr_info("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
 
 	switch (CBT_MODE) {
