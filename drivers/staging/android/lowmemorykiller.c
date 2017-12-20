@@ -54,6 +54,10 @@ static uint32_t in_lowmem;
 #include <linux/highmem.h>
 #endif
 
+#ifdef CONFIG_COMPACTION
+#include <linux/compaction.h>
+#endif
+
 #ifdef CONFIG_MTK_ION
 #include "mtk/ion_drv.h"
 #endif
@@ -116,6 +120,46 @@ static unsigned long lowmem_deathpending_timeout;
 		if (lowmem_debug_level >= (level))	\
 			pr_info(x);			\
 	} while (0)
+
+/* Force LMK to kill process if lower zones are under fragmentation */
+static short aggressive_lmk_for_frag(struct shrink_control *sc, short adj)
+{
+#ifdef CONFIG_COMPACTION
+	enum zone_type high_zoneidx;
+	struct pglist_data *pgdat;
+	struct zone *z;
+	enum zone_type zoneidx;
+	unsigned long file_frag = 0, free_frag = 0;
+
+	if (current_is_kswapd())
+		return adj;
+
+	high_zoneidx = gfp_zone(sc->gfp_mask);
+	if (high_zoneidx > ZONE_NORMAL)
+		return adj;
+
+	/* If file >= free, just return */
+	for_each_online_pgdat(pgdat) {
+		for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
+			z = pgdat->node_zones + zoneidx;
+			file_frag += zone_page_state(z, NR_FILE_PAGES);
+			free_frag += zone_page_state(z, NR_FREE_PAGES);
+		}
+	}
+	if (file_frag >= free_frag)
+		return adj;
+
+	/* Is there any zone under fragmentation for THREAD_SIZE_ORDER */
+	for_each_online_pgdat(pgdat) {
+		for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
+			z = pgdat->node_zones + zoneidx;
+			if (fragmentation_index(z, THREAD_SIZE_ORDER) > sysctl_extfrag_threshold)
+				return 0;
+		}
+	}
+#endif
+	return adj;
+}
 
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
@@ -227,6 +271,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			break;
 		}
 	}
+
+	/* Check whether the system is under fragmentation */
+	min_score_adj = aggressive_lmk_for_frag(sc, min_score_adj);
 
 	/* If in CPU hotplugging, let LMK be more aggressive */
 	if (in_cpu_hotplugging) {
