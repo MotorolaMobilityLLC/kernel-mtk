@@ -319,9 +319,6 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	if (is_mipi_enterulps())
 		return;
 
-	if (primary_get_state() != DISP_ALIVE)
-		return;
-
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -375,9 +372,6 @@ void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 	if (use_wrot_sram() == 0)
-		return;
-
-	if (primary_get_state() != DISP_ALIVE)
 		return;
 
 	/* 1.create and reset cmdq */
