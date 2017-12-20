@@ -2043,11 +2043,11 @@ schedule_next:
 		return;
 	}
 		} else {
-			UINT_8 ucIeSize = IE_SIZE(prRmReq->prCurrMeasElem);
+			UINT_16 u2IeSize = IE_SIZE(prRmReq->prCurrMeasElem);
 
 			prCurrReq = prRmReq->prCurrMeasElem =
-				(P_IE_MEASUREMENT_REQ_T)((PUINT_8)prRmReq->prCurrMeasElem + ucIeSize);
-			prRmReq->u2RemainReqLen -= ucIeSize;
+				(P_IE_MEASUREMENT_REQ_T)((PUINT_8)prRmReq->prCurrMeasElem + u2IeSize);
+			prRmReq->u2RemainReqLen -= u2IeSize;
 		}
 		fgNewStarted = FALSE;
 		goto schedule_next;
@@ -2058,7 +2058,7 @@ schedule_next:
 		P_LINK_T prReportLink = &prRmRep->rReportLink;
 		P_LINK_T prFreeReportLink = &prRmRep->rFreeReportLink;
 		PUINT_8 pucReportFrame = prRmRep->pucReportFrameBuff + prRmRep->u2ReportFrameLen;
-		UINT_8 ucIeSize = 0;
+		UINT_16 u2IeSize = 0;
 		BOOLEAN fgNewLoop = FALSE;
 
 		DBGLOG(RLM, INFO, "total %u report element for current request\n", prReportLink->u4NumElem);
@@ -2067,15 +2067,15 @@ schedule_next:
 			LINK_REMOVE_HEAD(prReportLink, prReportEntry, struct RM_MEASURE_REPORT_ENTRY *);
 			if (!prReportEntry)
 				break;
-			ucIeSize = IE_SIZE(prReportEntry->aucMeasReport);
+			u2IeSize = IE_SIZE(prReportEntry->aucMeasReport);
 			/* if reach the max length of a MMPDU size, send a Rm report first */
-			if (ucIeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH) {
+			if (u2IeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH) {
 				rlmTxRadioMeasurementReport(prAdapter);
 				pucReportFrame = prRmRep->pucReportFrameBuff + prRmRep->u2ReportFrameLen;
 			}
-			kalMemCopy(pucReportFrame, prReportEntry->aucMeasReport, ucIeSize);
-			pucReportFrame += ucIeSize;
-			prRmRep->u2ReportFrameLen += ucIeSize;
+			kalMemCopy(pucReportFrame, prReportEntry->aucMeasReport, u2IeSize);
+			pucReportFrame += u2IeSize;
+			prRmRep->u2ReportFrameLen += u2IeSize;
 			LINK_INSERT_TAIL(prFreeReportLink, &prReportEntry->rLinkEntry);
 		}
 		/* if Measurement is done, free report element memory */
@@ -2101,10 +2101,10 @@ schedule_next:
 			}
 		}
 		if (!fgNewLoop) {
-			ucIeSize = IE_SIZE(prRmReq->prCurrMeasElem);
+			u2IeSize = IE_SIZE(prRmReq->prCurrMeasElem);
 			prCurrReq = prRmReq->prCurrMeasElem =
-				(P_IE_MEASUREMENT_REQ_T)((PUINT_8)prRmReq->prCurrMeasElem + ucIeSize);
-			prRmReq->u2RemainReqLen -= ucIeSize;
+				(P_IE_MEASUREMENT_REQ_T)((PUINT_8)prRmReq->prCurrMeasElem + u2IeSize);
+			prRmReq->u2RemainReqLen -= u2IeSize;
 		}
 	}
 
