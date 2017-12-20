@@ -754,12 +754,6 @@ VOID aisFsmStateAbort_JOIN(IN P_ADAPTER_T prAdapter)
 
 	/* 3.2 reset local variable */
 	prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
-
-#if CFG_SUPPORT_RN
-	if (prAisBSSInfo->fgDisConnReassoc == FALSE)
-#endif
-		prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
-
 }				/* end of aisFsmAbortJOIN() */
 
 /*----------------------------------------------------------------------------*/
@@ -1111,7 +1105,9 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
 							, prAisBssInfo->ucReasonOfDisconnect);
 						prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
-						aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
+						aisFsmStateAbort(prAdapter,
+								prAisBssInfo->ucReasonOfDisconnect,
+								prAisBssInfo->fgIsDelayIndication);
 					}
 #endif
 				}
@@ -1247,8 +1243,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 
 						prAisBssInfo->fgDisConnReassoc = FALSE;
-						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-									 WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+						aisIndicationOfMediaStateToHost(prAdapter,
+								PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 						eNextState = AIS_STATE_IDLE;
 						fgIsTransition = TRUE;
 						break;
@@ -1876,7 +1872,9 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
 						, prAisBssInfo->ucReasonOfDisconnect);
 					prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
-					aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
+					aisFsmStateAbort(prAdapter,
+								prAisBssInfo->ucReasonOfDisconnect,
+								prAisBssInfo->fgIsDelayIndication);
 				}
 #endif
 			}
@@ -2307,6 +2305,8 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 
 	/* 4 <1> Save information of Abort Message and then free memory. */
 	prAisBssInfo->ucReasonOfDisconnect = ucReasonOfDisconnect;
+	prAisBssInfo->fgIsDelayIndication = fgDelayIndication;
+
 	if (PARAM_MEDIA_STATE_CONNECTED == prAisBssInfo->eConnectionState &&
 			AIS_STATE_DISCONNECTING != prAisFsmInfo->eCurrentState &&
 		ucReasonOfDisconnect != DISCONNECT_REASON_CODE_REASSOCIATION &&
@@ -2809,7 +2809,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 									     WLAN_STATUS_JOIN_FAILURE,
 									     (PVOID)&u2StatusCode,
 									     sizeof(u2StatusCode));
-
+						prAisBssInfo->eConnectionStateIndicated =
+							PARAM_MEDIA_STATE_DISCONNECTED;
 						eNextState = AIS_STATE_IDLE;
 					}
 #endif /* CFG_SUPPORT_ROAMING */
@@ -2820,8 +2821,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 
 					prAisBssInfo->fgDisConnReassoc = FALSE;
-					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								 WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+					aisIndicationOfMediaStateToHost(prAdapter,
+							PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 
@@ -3193,8 +3194,13 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 	/* For indicating the Disconnect Event only if current media state is
 	 * disconnected and we didn't do indication yet.
 	 */
+	DBGLOG(AIS, INFO, "Current state: %d, connection state indicated: %d\n",
+		prAisFsmInfo->eCurrentState, prAisBssInfo->eConnectionStateIndicated);
+
 	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED &&
-		prAisFsmInfo->eCurrentState != AIS_STATE_JOIN) {
+		/* if receive DEAUTH in JOIN state, report disconnect*/
+		!(prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DEAUTHENTICATED &&
+		 prAisFsmInfo->eCurrentState == AIS_STATE_JOIN)) {
 		if (prAisBssInfo->eConnectionStateIndicated == eConnectionState)
 			return;
 	}

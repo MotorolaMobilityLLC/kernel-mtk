@@ -376,6 +376,8 @@ struct _BSS_INFO_T {
 	BOOLEAN fgP2PPendingDeauth;
 	UINT_32 u4P2PEapTxDoneTime;
 #endif
+
+	BOOLEAN fgIsDelayIndication;
 };
 
 struct ESS_CHNL_INFO {
