@@ -575,7 +575,7 @@ static int bmg_set_powermode(struct i2c_client *client,
         /*data = actual_power_mode;*/
         err += bmg_i2c_write_block(client,
             BMI160_CMD_COMMANDS__REG, &actual_power_mode, 1);
-        bmi160_gyro_delay(55);
+        bmi160_gyro_delay(200);
     }
     if (err < 0)
         GYRO_PR_ERR("set power mode failed, err = %d, sensor name = %s\n",
