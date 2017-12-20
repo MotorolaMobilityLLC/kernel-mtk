@@ -86,6 +86,7 @@ static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
 #define MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT 1
 #define MMDVFS_EVENT_UI_IDLE_ENTER 2
 #define MMDVFS_EVENT_UI_IDLE_EXIT 3
+static int register_share_sram;
 
 
 /* Local API */
@@ -212,6 +213,10 @@ static void set_share_sram(unsigned int is_share_sram)
 {
 	if (golden_setting_pgc->is_wrot_sram != is_share_sram)
 		golden_setting_pgc->is_wrot_sram = is_share_sram;
+	if (is_share_sram)
+		mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_START, 0, 0);
+	else
+		mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_END, 0, 0);
 }
 
 static unsigned int use_wrot_sram(void)
@@ -365,6 +370,12 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/*DISPMSG("warning: mdp acquire wrot_resource after unregister the callback!\n");*/
+		primary_display_manual_unlock();
+		return 0;
+	}
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -424,6 +435,13 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* need lock  */
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/*DISPMSG("warning:mdp release wrot_resource after unregister the callback!\n");*/
+		primary_display_manual_unlock();
+		return 0;
+	}
+
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -1105,6 +1123,8 @@ void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* 1. register call back first */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1,
 		_acquire_wrot_resource, _release_wrot_resource);
+	register_share_sram = 1;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 1);
 
 	/* 2. try to allocate sram at the fisrt time */
 	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
@@ -1114,6 +1134,8 @@ void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1, NULL, NULL);
+	register_share_sram = 0;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 0);
 
 	/* 2. try to release share sram */
 	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
