@@ -43,6 +43,7 @@
 #include <linux/profile.h>
 #include <linux/notifier.h>
 #include <linux/freezer.h>
+#include <linux/cpu.h>
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 #include <mt-plat/aee.h>
@@ -168,6 +169,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	static int pid_flm_warn = -1;
 	static unsigned long flm_warn_timeout;
 	int log_offset = 0, log_ret;
+#endif
+#ifdef CONFIG_HOTPLUG_CPU
+	/* Check whether it is in cpu_hotplugging */
+	bool in_cpu_hotplugging = cpu_hotplugging();
 #endif
 
 #if defined(CONFIG_SWAP) && !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
@@ -299,6 +304,14 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	/* Promote its priority */
 	if (unreclaimable_zones > 0)
 		min_score_adj = lowmem_adj[0];
+
+#ifdef CONFIG_HOTPLUG_CPU
+	/* If in CPU hotplugging, let LMK be more aggressive */
+	if (in_cpu_hotplugging) {
+		pr_info("Aggressive LMK during CPU hotplug!\n");
+		min_score_adj = 0;
+	}
+#endif
 
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 			sc->nr_to_scan, sc->gfp_mask, other_free,

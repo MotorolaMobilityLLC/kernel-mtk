@@ -213,7 +213,7 @@ bool cpu_hotplugging(void)
 {
 	bool ret = false;
 
-	if (cpu_hotplug_disabled == 1)
+	if (cpu_hotplug_disabled)
 		ret = true;
 
 	return ret;
