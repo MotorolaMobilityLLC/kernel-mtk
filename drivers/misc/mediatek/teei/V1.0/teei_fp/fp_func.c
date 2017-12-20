@@ -25,6 +25,7 @@
 
 #define MICROTRUST_FP_SIZE	(0x80000)
 #define FP_BUFFER_OFFSET	(0x10)
+#define TEEI_IOC_MAXNR          (4)
 #define FP_LEN_MAX		(MICROTRUST_FP_SIZE - FP_BUFFER_OFFSET)
 #define FP_LEN_MIN		0
 #define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
@@ -106,6 +107,8 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 	unsigned int fp_fid = 0xFF;
 	unsigned char args[16] = {0};
 	unsigned int buff_len = 0;
+	if (_IOC_NR(cmd) > TEEI_IOC_MAXNR)
+		return -ENOTTY;
 
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
