@@ -123,8 +123,7 @@ typedef enum {
 	MMC_ETT_TUNE = 24,
 	MMC_CRC_STRESS = 25,
 	ENABLE_AXI_MODULE = 26,
-	/* for DB dump, do not change index */
-	MMC_HANG_DETECT_DUMP = 256,
+	MSDC_STATUS = 27,
 } msdc_dbg;
 
 

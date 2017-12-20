@@ -51,8 +51,6 @@ enum {
 	MMC_DUMP_CSD = 28,
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 	MMC_CMDQ_STATUS = 30,
-	/* for DB dump, do not change index */
-	MMC_HANG_DETECT_DUMP = 256,
 };
 /* Debug message event */
 #define DBG_EVT_NONE	    (0)		/* No event */
