@@ -911,15 +911,13 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	if (cmd == TEEI_CANCEL_COMMAND) {
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
 
-		ut_pm_mutex_lock(&pm_mutex);
-
 		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
-			ut_pm_mutex_unlock(&pm_mutex);
 			return -EINVAL;
 		}
+		if (*((u32 *)cancel_message_buff) != 0) {
+ 			return -EINVAL;
+ 		}
 		send_cancel_command(0);
-
-		ut_pm_mutex_unlock(&pm_mutex);
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
 		return 0;
@@ -1174,15 +1172,13 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	if (cmd == TEEI_CANCEL_COMMAND) {
 		printk("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
 
-		ut_pm_mutex_lock(&pm_mutex);
-
 		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
-			ut_pm_mutex_unlock(&pm_mutex);
 			return -EINVAL;
 		}
+		if (*((u64 *)cancel_message_buff) != 0) {
+ 			return -EINVAL;
+ 		}
 		send_cancel_command(0);
-
-		ut_pm_mutex_unlock(&pm_mutex);
 
 		printk("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
 		return 0;
