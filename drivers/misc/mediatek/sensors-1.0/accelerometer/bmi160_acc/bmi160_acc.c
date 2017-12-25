@@ -4130,9 +4130,9 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
     memset(obj, 0, sizeof(struct bmi160_acc_i2c_data));
 
     obj->hw = hw;
-
+#ifdef LCT_3500
     obj->hw->direction = 1;
-    
+#endif
     err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
     if(err) {
         GSE_ERR("invalid direction: %d\n", obj->hw->direction);
