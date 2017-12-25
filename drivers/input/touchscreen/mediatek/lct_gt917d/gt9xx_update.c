@@ -3235,7 +3235,7 @@ s32 gup_load_fx_system(void)
 		GTP_ERROR("[load_fx_system]firmware's length is invalid.");
 		goto load_fx_exit;
 	}
-
+#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_check_firmware(&firmware[FIRMWARE_HEADER_LEN], length);
 	if (ret == FAIL) {
 		GTP_ERROR("[load_fx_system]firmware's checksum is error.");
@@ -3244,7 +3244,6 @@ s32 gup_load_fx_system(void)
 
 	current_system_length = length;
 
-#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_load_system(&firmware[FIRMWARE_HEADER_LEN], length, 1);
 #endif
 
@@ -3322,7 +3321,7 @@ s32 gup_load_hotknot_system(void)
 		GTP_ERROR("[load_hotknot_system]firmware's length is invalid.");
 		goto load_hotknot_exit;
 	}
-
+#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_check_firmware(&firmware[FIRMWARE_HEADER_LEN], length);
 	if (ret == FAIL) {
 		GTP_ERROR("[load_hotknot_system]firmware's checksum is error.");
@@ -3331,7 +3330,6 @@ s32 gup_load_hotknot_system(void)
 
 	current_system_length = length;
 
-#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_load_system(&firmware[FIRMWARE_HEADER_LEN], length, 0);
 #endif
 
