@@ -24,4 +24,8 @@ ccflags-y += -DCAMERAHW_INDRIYA
 endif
 ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
 
+ifeq ($(CONFIG_L3510_MAINBOARD),y)
 obj-y				+= kd_camera_hw.o
+else
+obj-y				+= kd_camera_hw_brady.o
+endif
