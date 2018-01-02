@@ -2989,74 +2989,6 @@ wlanoidSetEncryptionStatus(IN P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief This routine is called to test the driver.
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*/
-/*----------------------------------------------------------------------------*/
-WLAN_STATUS
-wlanoidSetTest(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_802_11_TEST_T prTest;
-	PVOID pvTestData;
-	PVOID pvStatusBuffer;
-	UINT_32 u4StatusBufferSize;
-
-	DEBUGFUNC("wlanoidSetTest");
-
-	ASSERT(prAdapter);
-
-	ASSERT(pu4SetInfoLen);
-	ASSERT(pvSetBuffer);
-
-	*pu4SetInfoLen = u4SetBufferLen;
-
-	prTest = (P_PARAM_802_11_TEST_T) pvSetBuffer;
-
-	DBGLOG(OID, TRACE, "Test - Type %u\n", prTest->u4Type);
-
-	switch (prTest->u4Type) {
-	case 1:		/* Type 1: generate an authentication event */
-		pvTestData = (PVOID) &prTest->u.AuthenticationEvent;
-		pvStatusBuffer = (PVOID) prAdapter->aucIndicationEventBuffer;
-		u4StatusBufferSize = prTest->u4Length - 8;
-		break;
-
-	case 2:		/* Type 2: generate an RSSI status indication */
-		pvTestData = (PVOID) &prTest->u.RssiTrigger;
-		pvStatusBuffer = (PVOID) &prAdapter->rWlanInfo.rCurrBssId.rRssi;
-		u4StatusBufferSize = sizeof(PARAM_RSSI);
-		break;
-
-	default:
-		return WLAN_STATUS_INVALID_DATA;
-	}
-
-	ASSERT(u4StatusBufferSize <= 180);
-	if (u4StatusBufferSize > 180)
-		return WLAN_STATUS_INVALID_LENGTH;
-
-	/* Get the contents of the StatusBuffer from the test structure. */
-	kalMemCopy(pvStatusBuffer, pvTestData, u4StatusBufferSize);
-
-	kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-				     WLAN_STATUS_MEDIA_SPECIFIC_INDICATION, pvStatusBuffer, u4StatusBufferSize);
-
-	return WLAN_STATUS_SUCCESS;
-}				/* wlanoidSetTest */
-
-/*----------------------------------------------------------------------------*/
-/*!
 * \brief This routine is called to query the driver's WPA2 status.
 *
 * \param[in] prAdapter Pointer to the Adapter structure.
@@ -6011,7 +5943,7 @@ wlanoidSetMulticastList(IN P_ADAPTER_T prAdapter,
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Verify if we can support so many multicast addresses. */
-	if ((u4SetBufferLen / MAC_ADDR_LEN) > MAX_NUM_GROUP_ADDR) {
+	if ((u4SetBufferLen > MAC_ADDR_LEN * MAX_NUM_GROUP_ADDR) {
 		DBGLOG(OID, WARN, "Too many MC addresses\n");
 
 		return WLAN_STATUS_MULTICAST_FULL;
