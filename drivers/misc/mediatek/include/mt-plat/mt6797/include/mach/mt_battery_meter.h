@@ -38,7 +38,7 @@
 #define TEMPERATURE_T	255 /* This should be fixed, never change the value*/
 
 #define FG_METER_RESISTANCE	0
-#define Q_MAX_CHARGE_FULL_DESIGN 4000
+#define Q_MAX_CHARGE_FULL_DESIGN 4000000 /*uAh*/
 /* Qmax for battery  */
 #define Q_MAX_POS_50	3910
 #define Q_MAX_POS_25	3737
