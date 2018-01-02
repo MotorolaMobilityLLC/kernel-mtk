@@ -474,8 +474,6 @@ INT32 wmt_lib_set_hif(ULONG hifconf)
 		break;
 	default:
 		WMT_WARN_FUNC("invalid stp mode: %lu %u\n", hifconf, val);
-		mtk_wcn_stp_set_if_tx_type(STP_MAX_IF_TX);
-		wmt_plat_set_comm_if_type(STP_MAX_IF_TX);
 		return -1;
 	}
 
