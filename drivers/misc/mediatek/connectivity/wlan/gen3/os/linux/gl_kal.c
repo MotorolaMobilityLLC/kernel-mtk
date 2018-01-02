@@ -959,6 +959,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	P_BSS_DESC_T prBssDesc = NULL;
 	UINT_16 u2StatusCode = WLAN_STATUS_AUTH_TIMEOUT;
 	UINT_32 u4StartTime = 0;
+	UINT_32 u4Cnt = 0;
+	struct netdev_queue *dev_queue = NULL;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -982,8 +984,21 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		/* To Check netdevice up and qdisc active */
 		u4StartTime = kalGetTimeTick();
 		while (!netif_carrier_ok(prGlueInfo->prDevHandler)
-			|| KAL_TEST_BIT(__LINK_STATE_LINKWATCH_PENDING, prGlueInfo->prDevHandler->state))
+			|| KAL_TEST_BIT(__LINK_STATE_LINKWATCH_PENDING, prGlueInfo->prDevHandler->state)) {
 			kalUsleep_range(500, 1000);
+			u4Cnt++;
+			if (u4Cnt > 1000) {
+				dev_queue = netdev_get_tx_queue(prGlueInfo->prDevHandler, 0);
+				if (dev_queue)
+					DBGLOG(INIT, ERROR, "dev_queue state=0x%lx\n", dev_queue->state);
+				DBGLOG(INIT, ERROR,
+				       "Carrier on timeout. State is [0x%x] [0x%lx] [0x%x]\n",
+				       netif_carrier_ok(prGlueInfo->prDevHandler),
+				       prGlueInfo->prDevHandler->state,
+				       prGlueInfo->prDevHandler->flags);
+				break;
+			}
+		}
 
 		if (CHECK_FOR_EXPIRATION(kalGetTimeTick(), u4StartTime + 10))
 			DBGLOG(INIT, INFO, "wlan netdevice takes %u ms to be ready\n",
