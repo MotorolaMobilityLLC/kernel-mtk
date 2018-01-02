@@ -871,6 +871,10 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 	case WMT_IOCTL_FUNC_ONOFF_CTRL:	/* test turn on/off func */
 		do {
 			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+			if ((arg & 0xF) >= WMTDRV_TYPE_MAX) {
+				WMT_WARN_FUNC("Input arg(%d) invalid\n", arg & 0xF);
+				break;
+			}
 
 			if (arg & 0x80000000)
 				bRet = mtk_wcn_wmt_func_on(arg & 0xF);
