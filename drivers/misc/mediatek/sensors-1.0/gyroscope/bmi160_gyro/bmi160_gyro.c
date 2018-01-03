@@ -203,6 +203,7 @@ static int bmg_i2c_write_block(struct i2c_client *client, u8 addr,
     } else {
         err = 0;
     }
+    msleep(1);
     return err;
 }
 
@@ -576,6 +577,9 @@ static int bmg_set_powermode(struct i2c_client *client,
         err += bmg_i2c_write_block(client,
             BMI160_CMD_COMMANDS__REG, &actual_power_mode, 1);
         bmi160_gyro_delay(200);
+        err += bmg_i2c_read_block(client,
+            BMI160_USER_PMU_STATUS_ADDR, &data, 1);
+            GYRO_PR_ERR("++++ [bmi160 gyro] get power mode = 0x%x\n", data);
     }
     if (err < 0)
         GYRO_PR_ERR("set power mode failed, err = %d, sensor name = %s\n",
@@ -620,7 +624,7 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
         data, BMI160_USER_GYR_RANGE, actual_range);
         err += bmg_i2c_write_block(
         client, BMI160_USER_GYR_RANGE__REG, &data, 1);
-        bmi160_gyro_delay(1);
+        bmi160_gyro_delay(5);
         if (err < 0)
             GYRO_PR_ERR("set range failed.\n");
         else {
@@ -673,6 +677,7 @@ static int bmg_set_datarate(struct i2c_client *client,
             BMI160_USER_GYR_CONF_ODR, datarate);
         err += bmg_i2c_write_block(client,
             BMI160_USER_GYR_CONF_ODR__REG, &data, 1);
+        bmi160_gyro_delay(5);
     }
     if (err < 0)
         GYRO_PR_ERR("set data rate failed.\n");
