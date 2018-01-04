@@ -944,6 +944,8 @@ static inline void check_cable_type(void)
 				mutex_unlock(&accdet_eint_irq_sync_mutex);
 				/* accdet_auxadc_switch(0); */
 				/* recover  pwm frequency and duty */
+				/* solution: reduce hook switch debounce time to 0x400 */
+				pmic_pwrap_write(ACCDET_DEBOUNCE0, button_press_debounce);
 				pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings->pwm_width));
 				pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));
 			}
