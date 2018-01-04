@@ -325,41 +325,44 @@
                 <ies>true</ies>
             </gpio12>
             <gpio13>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
-                <inpull_en>false</inpull_en>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_IRQ_NFC_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio13>
             <gpio14>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
+                <mode_arr>10001100</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
+                <def_dir>OUT</def_dir>
+                <in>false</in>
                 <out>true</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_NFC_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio14>
             <gpio15>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>false</inpull_en>
+                <mode_arr>10001100</mode_arr>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
+                <def_dir>OUT</def_dir>
+                <in>false</in>
                 <out>true</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_NFC_RST_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio15>
