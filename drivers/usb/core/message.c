@@ -1880,6 +1880,12 @@ free_interfaces:
 	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
 			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
 			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+	if (ret < 0)
+	{
+		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+	}
 	if (ret < 0 && cp) {
 		/*
 		 * All the old state is gone, so what else can we do?
