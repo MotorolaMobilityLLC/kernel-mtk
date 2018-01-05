@@ -1423,6 +1423,9 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
         goto exit;
     }
     obj->hw = hw;
+#ifdef  CONFIG_LCT_3500
+    obj->hw->direction = 7;
+#endif
     err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
     if (err) {
         GYRO_PR_ERR("invalid direction: %d\n", obj->hw->direction);
