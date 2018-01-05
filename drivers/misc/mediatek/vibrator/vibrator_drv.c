@@ -140,8 +140,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	struct vibrator_hw *hw = mt_get_cust_vibrator_hw();
 #endif
 
-	/* VIB_DEBUG("vibrator_enable: vibrator first in value = %d\n", value); */
-
+	pr_info("vibrator_enable: vibrator first in value = %d\n", value);
 	spin_lock_irqsave(&vibe_lock, flags);
 	while (hrtimer_cancel(&vibe_timer))
 		VIB_DEBUG("vibrator_enable: try to cancel hrtimer[cust timer: %d(ms)], value: %d\n",
