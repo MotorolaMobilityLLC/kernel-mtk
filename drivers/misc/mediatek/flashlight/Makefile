@@ -4,7 +4,9 @@
 
 flashlight-y := flashlight-core.o
 flashlight-y += flashlight-device.o
-
+ifeq ($(TARGET_PRODUCT),brady)
+ccflags-y += -DFLASH_BRADY
+endif
 obj-$(CONFIG_MTK_FLASHLIGHT)             += flashlight.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LED191)      += flashlights-led191.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3642)      += flashlights-lm3642.o
