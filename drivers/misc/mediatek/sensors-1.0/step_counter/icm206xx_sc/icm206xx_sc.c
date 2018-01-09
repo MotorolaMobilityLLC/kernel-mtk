@@ -561,7 +561,7 @@ static int icm206xx_sc_step_c_batch(int flag, int64_t samplingPeriodNs, int64_t 
 
 static int icm206xx_sc_step_c_flush(void)
 {
-	return 0;
+	return step_c_flush_report();
 }
 
 static int icm206xx_sc_step_d_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
@@ -571,7 +571,7 @@ static int icm206xx_sc_step_d_batch(int flag, int64_t samplingPeriodNs, int64_t 
 
 static int icm206xx_sc_step_d_flush(void)
 {
-	return 0;
+	return step_d_flush_report();
 }
 
 static int icm206xx_sc_floor_c_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)

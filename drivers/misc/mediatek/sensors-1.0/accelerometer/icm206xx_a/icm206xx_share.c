@@ -289,6 +289,8 @@ static int icm206xx_SetPowerMode(struct i2c_client *client, int sensor_type, boo
 			databuf[0] |= ICM206XX_BIT_SLEEP;
 		}
 	}
+	else
+		databuf[0] |= 1;
 
 	res = icm206xx_share_i2c_write_register(ICM206XX_REG_PWR_CTL, databuf, 1);
 	if (res < 0) {

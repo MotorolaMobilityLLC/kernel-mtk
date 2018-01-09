@@ -1078,7 +1078,19 @@ static const struct of_device_id accel_of_match[] = {
 
 static int icm206xx_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	return 0;
+	int value = 0;
+	int res = 0;
+
+	value = (int)samplingPeriodNs/1000/1000;
+	ACC_LOG("ICM206xx acc set delay = (%d ms) ok. \n",value);
+	res = icm206xx_accel_set_delay(samplingPeriodNs);
+	mdelay(150);
+	if (res < 0) {
+	    ACC_PR_ERR("Set_delay err!\n");
+	    return 0;
+	}
+
+	return res;
 
 }
 static int icm206xx_flush(void)
