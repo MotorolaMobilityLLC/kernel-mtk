@@ -2257,6 +2257,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 		if (id >= HOST_MAX_NUM || id < 0)
 			seq_puts(m, "[****SD_Debug****]msdc host_id error when modify msdc reg\n");
+		else if (offset > 0xFFFF || offset < 0)
+			seq_puts(m, "[****SD_Debug****]msdc address offset error when modify msdc reg\n");
 		else {
 			if (id == 0 && mtk_msdc_host[0])
 				base = mtk_msdc_host[0]->base;
