@@ -2822,7 +2822,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 				I("%s edge triiger falling\n ",__func__);
 #ifdef CONFIG_OF_TOUCH
 #ifdef MTK_KERNEL_318
-				ret = request_irq(client->irq, tpd_eint_interrupt_handler, IRQF_TRIGGER_FALLING, "TOUCH_PANEL-eint", NULL);
+				ret = request_irq(client->irq, tpd_eint_interrupt_handler, IRQF_TRIGGER_HIGH, "TOUCH_PANEL-eint", NULL);
 #endif
 #ifdef MTK_KERNEL_310
 				ret = request_irq(client->irq, tpd_eint_interrupt_handler, EINTF_TRIGGER_FALLING,
