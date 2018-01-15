@@ -604,7 +604,7 @@ static int __init atf_log_init(void)
 		pr_err("atf_log: failed to register device");
 		return -1;
 	}
-	pr_notice("atf_log: inited");
+	pr_notice("atf_log: lenovo debug inited");
 	/* get atf reserved memory(atf_buf_phy_ctl) from device tree */
 	/* pass from preloader to LK, then create the dt node in LK */
 	atf_log_get_from_dt(&atf_buf_phy_ctl, &atf_buf_len);    /* TODO */
@@ -694,7 +694,7 @@ static int __init atf_log_init(void)
 #else
 	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, (u32)time_to_sync, (u32)(time_to_sync >> 32), 0);
 #endif
-	pr_notice("atf_time_sync: inited");
+	pr_notice("atf_time_sync: lenovo debug inited");
 #endif
 
 	return 0;

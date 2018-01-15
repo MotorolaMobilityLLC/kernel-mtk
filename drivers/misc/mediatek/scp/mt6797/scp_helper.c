@@ -652,14 +652,14 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 		/*The scp remap region is fixed, only
 		 * 0x4000_0000ULL~0x8FFF_FFFFULL
 		 * can be accessible*/
-		pr_err("[SCP] The allocated memory(0x%llx) is larger than expected\n", scp_mem_base_phys);
+		pr_err("[SCP] fdt The allocated memory(0x%llx) is larger than expected\n", scp_mem_base_phys);
 		/*should not call BUG() here or there is no log, return -1
 		 * instead.*/
 		return -1;
 	}
 
 
-	pr_debug("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)rmem->base,
+	pr_err("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)rmem->base,
 			(phys_addr_t)rmem->base + (phys_addr_t)rmem->size, (phys_addr_t)rmem->size);
 	accumlate_memory_size = 0;
 	for (id = 0; id < NUMS_MEM_ID; id++) {
