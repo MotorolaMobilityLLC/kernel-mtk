@@ -3758,7 +3758,8 @@ try_again:
 			continue;
 		else {
 			/* never search FWK blacklist even if we are trying blacklist */
-			if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE) {
+			if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE &&
+                prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 				DBGLOG(SCN, INFO, "Although trying blacklist, %s(%pM) is in FWK blacklist, skip it\n",
 							prBssDesc->aucSSID, prBssDesc->aucBSSID);
 				continue;
