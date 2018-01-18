@@ -2643,6 +2643,7 @@ static void himax_ts_work_func(struct work_struct *work)
 static irqreturn_t tpd_eint_interrupt_handler(int irq, void *desc)
 {
 	tpd_flag = 1;
+	//I("[Simon][2646]%s!!!",__func__);
 	/* enter EINT handler disable INT, make sure INT is disable when handle touch event including top/bottom half */
 	/* use _nosync to avoid deadlock */
 	wake_up_interruptible(&waiter);
@@ -2652,6 +2653,7 @@ static irqreturn_t tpd_eint_interrupt_handler(int irq, void *desc)
 static void tpd_eint_interrupt_handler(void)
 {
 	tpd_flag = 1;
+	//I("[Simon][2656]%s!!!",__func__);
 	wake_up_interruptible(&waiter);
 }
 #endif
@@ -2813,7 +2815,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 			}
 		}
 	}
-
+	client->irq = 0; //Unused INT mode ,modify by jiatianbao 20180118
 	//Work functon
 	if (client->irq) {/*INT mode*/
 		ts->use_irq = 1;
@@ -2822,7 +2824,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 				I("%s edge triiger falling\n ",__func__);
 #ifdef CONFIG_OF_TOUCH
 #ifdef MTK_KERNEL_318
-				ret = request_irq(client->irq, tpd_eint_interrupt_handler, IRQF_TRIGGER_HIGH, "TOUCH_PANEL-eint", NULL);
+				ret = request_irq(client->irq, tpd_eint_interrupt_handler, IRQF_TRIGGER_FALLING, "TOUCH_PANEL-eint", NULL);
 #endif
 #ifdef MTK_KERNEL_310
 				ret = request_irq(client->irq, tpd_eint_interrupt_handler, EINTF_TRIGGER_FALLING,
@@ -2878,7 +2880,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 	else {
 		I("%s: client->irq is empty, use polling mode.\n", __func__);
 	}
-
+	ts->use_irq = 0; // Use polling mode. modify by jiatianbao 20180118
 	if (!ts->use_irq) {/*if use polling mode need to disable HX_ESD_WORKAROUND function*/
 		ts->himax_wq = create_singlethread_workqueue("himax_touch");
 
