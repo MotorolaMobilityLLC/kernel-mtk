@@ -1207,6 +1207,9 @@ kalP2PGCIndicateConnectionStatus(IN P_GLUE_INFO_T prGlueInfo,
 		DBGLOG(P2P, INFO, "%s: Reason code: %d\n", __func__, u2StatusReason);
 
 		if (prP2pConnInfo) {
+			/* switch netif on */
+			netif_carrier_on(prGlueP2pInfo->prDevHandler);
+
 			cfg80211_connect_result(prGlueP2pInfo->prDevHandler,	/* struct net_device * dev, */
 						prP2pConnInfo->aucBssid, prP2pConnInfo->aucIEBuf,
 						prP2pConnInfo->u4BufLength,
