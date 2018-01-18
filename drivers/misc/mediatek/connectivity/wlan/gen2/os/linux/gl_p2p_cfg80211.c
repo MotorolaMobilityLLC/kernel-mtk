@@ -553,6 +553,9 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
+		/* switch netif on */
+		netif_carrier_on(dev);
+
 		mtk_p2p_cfg80211_set_channel(wiphy, &settings->chandef);
 
 		prP2pBcnUpdateMsg = (P_MSG_P2P_BEACON_UPDATE_T) cnmMemAlloc(prGlueInfo->prAdapter,

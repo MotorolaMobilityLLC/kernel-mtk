@@ -1065,7 +1065,7 @@ static int p2pOpen(IN struct net_device *prDev)
 #endif
 
 	/* 2. carrier on & start TX queue */
-	netif_carrier_on(prDev);
+	/* netif_carrier_on(prDev); */
 	netif_tx_start_all_queues(prDev);
 
 	return 0;		/* success */
