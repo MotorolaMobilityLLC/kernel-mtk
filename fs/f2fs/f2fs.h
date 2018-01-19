@@ -2180,7 +2180,7 @@ static inline int f2fs_fname_setup_filename(struct inode *dir,
 
 static inline void f2fs_fname_free_filename(struct f2fs_filename *fname) { }
 #endif
-#define DEFAULT_WRITE_FSUID		10010
+#define DEFAULT_WRITE_FSUID		10050
 #define DEFAULT_RESERVED_SIZE		100//100MB
 
 static inline int f2fs_check_avail_size(struct dentry *dentry, size_t size, int dir)
