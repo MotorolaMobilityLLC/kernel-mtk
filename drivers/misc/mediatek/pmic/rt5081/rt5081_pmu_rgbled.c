@@ -22,10 +22,8 @@
 
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_rgbled.h"
+#include <mt-plat/mtk_boot.h>
 
-/*add by longcheer liuzhenhe for shutdown charge led on start*/
-extern uint8_t lct_chager_led;
-/*add by longcheer liuzhenhe for shutdown charge led on start*/
 enum {
 	RT5081_PMU_LED_PWMMODE = 0,
 	RT5081_PMU_LED_BREATHMODE,
@@ -1264,6 +1262,7 @@ static int rt5081_pmu_rgbled_probe(struct platform_device *pdev)
 	struct rt5081_pmu_rgbled_data *rgbled_data;
 	bool use_dt = pdev->dev.of_node;
 	int i = 0, ret = 0;
+	int boot_mode = get_boot_mode();
 	rgbled_data = devm_kzalloc(&pdev->dev,
 				   sizeof(*rgbled_data), GFP_KERNEL);
 	if (!rgbled_data)
@@ -1325,8 +1324,8 @@ static int rt5081_pmu_rgbled_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 /*add by longcheer liuzhenhe for shutdown charge led on start*/
 	#ifdef CONFIG_LCT_POWEROFF_CHARGER_LED
-	if(lct_chager_led == 0x01){
-		printk("liuzhenhe1991999/n");
+	if(boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || boot_mode == LOW_POWER_OFF_CHARGING_BOOT){
+		printk("[%s]: Kernel Power Off Charging Detection Ok, enable RGBLED\n", __func__);
 	        my_rt5081_pmu_led_bright_set(1);
 	}
 	#endif
