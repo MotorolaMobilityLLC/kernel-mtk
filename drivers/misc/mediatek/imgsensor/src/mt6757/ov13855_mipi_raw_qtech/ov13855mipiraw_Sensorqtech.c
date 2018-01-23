@@ -937,6 +937,9 @@ static void sensor_init(void)
 	write_cmos_sensor(0x030b, 0x06);// add for the change list of pll setting /12
 	write_cmos_sensor(0x030c, 0x02);// add for the change list of pll setting /12
 	write_cmos_sensor(0x030d, 0x88);// add for the change list of pll setting /12
+	write_cmos_sensor(0x3012, 0x40);
+	write_cmos_sensor(0x3013, 0x72);
+	write_cmos_sensor(0x3021, 0x23);
 	write_cmos_sensor(0x3022, 0x01);
 	write_cmos_sensor(0x3013, 0x12);
 	write_cmos_sensor(0x3016, 0x72);//Pll
@@ -1036,6 +1039,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x450a, 0x04);
 	write_cmos_sensor(0x4809, 0x04);
 	write_cmos_sensor(0x480c, 0x12);
+	write_cmos_sensor(0x484b, 0x07);
 	write_cmos_sensor(0x4826, 0x2a); //Yajun Add For MIPI Test
 	write_cmos_sensor(0x4833, 0x10);
 	//write_cmos_sensor(0x4837, 0x0f); //Yajun Add For MIPI Test
@@ -1315,7 +1319,7 @@ static void capture_setting(kal_uint16 currefps)
 	if ( currefps==300 ) {
 
 	write_cmos_sensor(0x0100,0x00);
-	mdelay(1);
+	mdelay(10);
 
 	write_cmos_sensor(0x0303, 0x00);
 	write_cmos_sensor(0x3501, 0x80);
