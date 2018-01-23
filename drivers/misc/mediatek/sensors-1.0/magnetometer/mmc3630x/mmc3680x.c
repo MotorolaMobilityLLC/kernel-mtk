@@ -1217,7 +1217,11 @@ static int mmc3680x_i2c_probe(struct i2c_client *client, const struct i2c_device
 	memset(data, 0, sizeof(struct mmc3680x_i2c_data));
 
 	data->hw = hw;
-
+//add by longcheer ligang_2017-01-23
+	#ifdef  CONFIG_LCT_3500
+    	data->hw->direction = 6;
+	#endif
+///add by longcheer ligang_2018-01-23
     err = hwmsen_get_convert(data->hw->direction, &data->cvt);
     if(err) {
         MEMSIC_ERR("invalid direction: %d\n", data->hw->direction);

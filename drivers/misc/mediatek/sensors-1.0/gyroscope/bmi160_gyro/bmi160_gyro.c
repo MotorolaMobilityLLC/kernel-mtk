@@ -1424,7 +1424,7 @@ static int bmi160_gyro_i2c_probe(struct i2c_client *client,
     }
     obj->hw = hw;
 #ifdef  CONFIG_LCT_3500
-    obj->hw->direction = 7;
+    obj->hw->direction = 2;
 #endif
     err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
     if (err) {
