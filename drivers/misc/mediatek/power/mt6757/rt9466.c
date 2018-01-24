@@ -37,7 +37,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9466.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9466_DRV_VERSION	"1.0.12_MTK"
+#define RT9466_DRV_VERSION	"1.0.14_MTK"
 
 /* ======================= */
 /* RT9466 Parameter        */
@@ -238,6 +238,7 @@ struct rt9466_info {
 	struct mutex aicr_access_lock;
 	struct mutex ichg_access_lock;
 	struct mutex hidden_mode_lock;
+	struct mutex tchg_lock;
 	struct device *dev;
 	struct rt9466_desc *desc;
 	wait_queue_head_t wait_queue;
@@ -254,6 +255,7 @@ struct rt9466_info {
 	u32 ieoc;
 	bool ieoc_wkard;
 	struct work_struct init_work;
+	int tchg;
 #ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
 	struct rt_regmap_properties *regmap_prop;
@@ -1535,6 +1537,13 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 	/* Enter hidden mode */
 	rt9466_enable_hidden_mode(info, true);
 
+	/* Disable PSK mode */
+	ret = rt9466_clr_bit(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x80);
+	if (ret < 0) {
+		dev_info(info->dev, "%s: disable skip mode fail\n", __func__);
+		goto out;
+	}
+
 	/* Disable TS auto sensing */
 	ret = rt9466_clr_bit(info, RT9466_REG_CHG_HIDDEN_CTRL15, 0x01);
 	if (ret < 0)
@@ -1817,17 +1826,10 @@ static int rt9466_enable_pump_express(struct rt9466_info *info, bool en)
 	if (ret < 0)
 		return ret;
 
-	rt9466_enable_hidden_mode(info, true);
-
-	ret = rt9466_clr_bit(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x80);
-	if (ret < 0)
-		dev_err(info->dev, "%s: disable skip mode fail\n",
-			__func__);
-
 	ret = (en ? rt9466_set_bit : rt9466_clr_bit)
 		(info, RT9466_REG_CHG_CTRL17, RT9466_MASK_PUMPX_EN);
 	if (ret < 0)
-		goto out;
+		return ret;
 
 	for (i = 0; i < max_wait_times; i++) {
 		msleep(2500);
@@ -1843,9 +1845,6 @@ static int rt9466_enable_pump_express(struct rt9466_info *info, bool en)
 	} else
 		ret = 0;
 
-out:
-	rt9466_set_bit(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x80);
-	rt9466_enable_hidden_mode(info, false);
 	return ret;
 }
 
@@ -2313,31 +2312,20 @@ static int rt_charger_set_pep20_reset(struct mtk_charger_info *mchr_info,
 	int ret = 0;
 	u32 mivr = 4500; /* mA */
 	u32 aicr = 10000; /* 10uA */
-	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
 
 	ret = rt_charger_set_mivr(mchr_info, &mivr);
 	if (ret < 0)
 		return ret;
 
-	/* Disable SPK mode */
-	rt9466_enable_hidden_mode(info, true);
-	ret = rt9466_clr_bit(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x80);
-	if (ret < 0)
-		dev_err(info->dev, "%s: disable skip mode fail\n",
-			__func__);
-
 	ret = rt_charger_set_aicr(mchr_info, &aicr);
 	if (ret < 0)
-		goto out;
+		return ret;
 
 	msleep(250);
 
 	aicr = 70000;
 	ret = rt_charger_set_aicr(mchr_info, &aicr);
 
-out:
-	rt9466_set_bit(info, RT9466_REG_CHG_HIDDEN_CTRL9, 0x80);
-	rt9466_enable_hidden_mode(info, false);
 	return ret;
 }
 
@@ -2348,7 +2336,6 @@ int rt_charger_set_pep20_current_pattern(
 	u8 reg_volt = 0;
 	u32 uV = *((u32 *)data) * 1000;
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
-
 
 	/* Find register value of target voltage */
 	reg_volt = rt9466_closest_reg(RT9466_PEP20_VOLT_MIN,
@@ -2427,6 +2414,7 @@ static int rt_charger_get_temperature(struct mtk_charger_info *mchr_info,
 	int ret = 0, adc_temp = 0;
 	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
 	bool hz_en = false;
+	u32 retry_cnt = 3;
 
 	/* Check HZ mode */
 	ret = rt9466_i2c_test_bit(info, RT9466_REG_CHG_CTRL1,
@@ -2444,6 +2432,23 @@ static int rt_charger_get_temperature(struct mtk_charger_info *mchr_info,
 	ret = rt9466_get_adc(info, RT9466_ADC_TEMP_JC, &adc_temp);
 	if (ret < 0)
 		return ret;
+
+	/* Check unusual temperature */
+	while (adc_temp >= 120 && retry_cnt > 0) {
+		dev_info(info->dev, "%s: [WARNING] t = %d\n", __func__, adc_temp);
+		rt9466_get_adc(info, RT9466_ADC_VBAT, &adc_temp);
+		ret = rt9466_get_adc(info, RT9466_ADC_TEMP_JC, &adc_temp);
+		retry_cnt--;
+	}
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&info->tchg_lock);
+	if (adc_temp >= 120)
+		adc_temp = info->tchg;
+	else
+		info->tchg = adc_temp;
+	mutex_unlock(&info->tchg_lock);
 
 	((int *)data)[0] = adc_temp;
 	((int *)data)[1] = adc_temp;
@@ -2960,12 +2965,14 @@ static int rt9466_probe(struct i2c_client *client,
 	mutex_init(&info->aicr_access_lock);
 	mutex_init(&info->ichg_access_lock);
 	mutex_init(&info->hidden_mode_lock);
+	mutex_init(&info->tchg_lock);
 	info->client = client;
 	info->dev = &client->dev;
 	info->aicr_limit = -1;
 	info->hidden_mode_cnt = 0;
 	info->ieoc_wkard = false;
 	info->ieoc = 250000;
+	info->tchg = 25;
 	memcpy(info->irq_mask, rt9466_irq_maskall, RT9466_IRQIDX_MAX);
 
 	/* Init wait queue head */
@@ -3044,6 +3051,7 @@ err_no_dev:
 	mutex_destroy(&info->aicr_access_lock);
 	mutex_destroy(&info->ichg_access_lock);
 	mutex_destroy(&info->hidden_mode_lock);
+	mutex_destroy(&info->tchg_lock);
 	return ret;
 }
 
@@ -3065,6 +3073,7 @@ static int rt9466_remove(struct i2c_client *client)
 		mutex_destroy(&info->aicr_access_lock);
 		mutex_destroy(&info->ichg_access_lock);
 		mutex_destroy(&info->hidden_mode_lock);
+		mutex_destroy(&info->tchg_lock);
 	}
 
 	return ret;
@@ -3175,6 +3184,12 @@ MODULE_VERSION(RT9466_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.14
+ * (1) Check tchg 3 times if it >= 120 degree
+ *
+ * 1.0.13
+ * (1) Disable PSK mode initially
+ *
  * 1.0.12
  * (1) Fix type error of enable_auto_sensing in sw_reset
  * (2) Check HZ mode for get_tchg
