@@ -3758,9 +3758,6 @@ try_again:
 			continue;
 		else {
 			/* never search FWK blacklist even if we are trying blacklist */
-			if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE)
-				DBGLOG(SCN, INFO, "Is %s(%pM) in FWK blacklist? Answer=%d\n", prBssDesc->aucSSID,
-							prBssDesc->aucBSSID, prBssDesc->prBlack->fgIsInFWKBlacklist);
 			if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE) {
 				DBGLOG(SCN, INFO, "Although trying blacklist, %s(%pM) is in FWK blacklist, skip it\n",
 							prBssDesc->aucSSID, prBssDesc->aucBSSID);

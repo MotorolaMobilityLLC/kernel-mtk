@@ -5513,13 +5513,7 @@ VOID aisRefreshFWKBlacklist(P_ADAPTER_T prAdapter)
 
 	DBGLOG(AIS, INFO, "Refresh all the BSSes' fgIsInFWKBlacklist to FALSE\n");
 	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
-		DBGLOG(AIS, INFO, "blacklist: [" MACSTR "] & %d\n", MAC2STR(prEntry->aucBSSID), prEntry->fgIsInFWKBlacklist);
-	}
-	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
 		prEntry->fgIsInFWKBlacklist = FALSE;
-	}
-	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
-		DBGLOG(AIS, INFO, "blacklist: [" MACSTR "] & %d\n", MAC2STR(prEntry->aucBSSID), prEntry->fgIsInFWKBlacklist);
 	}
 }
 
