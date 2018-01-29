@@ -411,6 +411,8 @@ typedef struct {
 #endif
 #define CLK_MISC_CFG_0 (0x0210)
 
+#define CLK_MAX_LENGTH CLK_MISC_CFG_0
+
 #ifdef APLL1_CON0
 #undef APLL1_CON0
 #define APLL1_CON0 (0x0270)
