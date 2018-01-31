@@ -438,6 +438,8 @@ struct kbase_jd_atom {
 	u32 device_nr;
 	u64 affinity;
 	u64 jc;
+	/* Copy of data read from the user space buffer that jc points to */
+	void *softjob_data;
 	enum kbase_atom_coreref_state coreref_state;
 #ifdef CONFIG_KDS
 	struct list_head node;

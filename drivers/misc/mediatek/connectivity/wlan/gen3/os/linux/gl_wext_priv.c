@@ -1021,7 +1021,7 @@ priv_get_int(IN struct net_device *prNetDev,
 			for (i = 0; i < ucNumOfChannel; i++)
 				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			prIwReqData->data.length = ucNumOfChannel;
 			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
@@ -1188,7 +1188,7 @@ priv_get_ints(IN struct net_device *prNetDev,
 			for (i = 0; i < ucNumOfChannel; i++)
 				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
 
-			prIwReqData->data.length = ucNumOfChannel * sizeof(INT_32);
+			prIwReqData->data.length = ucNumOfChannel;
 			if (copy_to_user(prIwReqData->data.pointer, ch, ucNumOfChannel * sizeof(INT_32)))
 				return -EFAULT;
 			else
