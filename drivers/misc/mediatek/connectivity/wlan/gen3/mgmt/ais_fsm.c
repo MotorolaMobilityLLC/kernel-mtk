@@ -4732,11 +4732,12 @@ VOID aisRemoveBlacklistBySource(P_ADAPTER_T prAdapter, enum _BLACK_LIST_SOURCE s
 {
 	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	struct AIS_BLACKLIST_ITEM *prNextEntry = NULL;
 	P_LINK_T prFreeList = &prConnSettings->rBlackList.rFreeLink;
 	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
 
 	DBGLOG(AIS, INFO, "Refresh all the BSSes' fgIsInFWKBlacklist to FALSE\n");
-	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
 		prEntry->blackListSource &= ~source;
 		if (!prEntry->blackListSource) {
 			LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
