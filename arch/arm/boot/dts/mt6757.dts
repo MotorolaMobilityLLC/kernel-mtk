@@ -3856,7 +3856,11 @@
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait";
+                                        #ifndef CONFIG_MTK_DM_VERITY_OFF
+                                        fsmgr_flags = "wait,verify";
+                                        #else
+                                        fsmgr_flags = "wait";
+                                        #endif
 				};
 #endif
 #ifndef CONFIG_MTK_LATE_MOUNT
