@@ -494,7 +494,7 @@ static int icm206xx_accel_init_client(struct i2c_client *client, bool enable)
 	/* Set 5ms(200hz) sample rate */
 	res = icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 5000000, false);
 	if (res != ICM206XX_SUCCESS)
-		return res;
+	    return res;
 
 	/* Disable sensor - standby mode for accelerometer */
 	/*res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, enable);
@@ -1023,7 +1023,6 @@ static int icm206xx_accel_enable_nodata(int en)
 	}
 	if (0 == en) {
 		power_acc = false;
-		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 0, false);
 	}
 
 	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power_acc);
@@ -1032,6 +1031,10 @@ static int icm206xx_accel_enable_nodata(int en)
 	if (res != ICM206XX_SUCCESS) {
 		ACC_LOG("fail!\n");
 		return -1;
+	}
+
+ 	if (0 == en) {
+		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 2000000, true); 
 	}
 
 	ACC_LOG("icm206xx_accel_enable_nodata OK!\n");
@@ -1078,21 +1081,12 @@ static const struct of_device_id accel_of_match[] = {
 
 static int icm206xx_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	int value = 0;
-	int res = 0;
+	ACC_LOG("%s is called [ns:%lld]\n", __func__, samplingPeriodNs);
+	icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, samplingPeriodNs, false);
 
-	value = (int)samplingPeriodNs/1000/1000;
-	ACC_LOG("ICM206xx acc set delay = (%d ms) ok. \n",value);
-	res = icm206xx_accel_set_delay(samplingPeriodNs);
-	mdelay(150);
-	if (res < 0) {
-	    ACC_PR_ERR("Set_delay err!\n");
-	    return 0;
-	}
-
-	return res;
-
+	return 0;
 }
+
 static int icm206xx_flush(void)
 {
 	int err = 0;
