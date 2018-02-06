@@ -32,15 +32,15 @@
 ******************************************************************************/
 #define PFX "[kd_camera_hw]"
 
-#define DEBUG_CAMERA_HW_K
+//#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
-#define PK_DBG(fmt, arg...)			pr_err(PFX fmt, ##arg)
-#define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...) 		pr_err(PFX fmt, ##arg)
+#define PK_DBG(fmt, arg...)    pr_err(PFX fmt, ##arg)
+#define PK_ERR(fmt, arg...)    pr_err(fmt, ##arg)
+#define PK_INFO(fmt, arg...)    pr_err(PFX fmt, ##arg)
 #else
-#define PK_DBG(fmt, arg...)
-#define PK_ERR(fmt, arg...)			pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...)		pr_err(PFX fmt, ##arg)
+#define PK_DBG(fmt, arg...)    pr_debug(PFX fmt, ##arg)
+#define PK_ERR(fmt, arg...)    pr_err(fmt, ##arg)
+#define PK_INFO(fmt, arg...)    pr_err(PFX fmt, ##arg)
 #endif
 
 
@@ -493,7 +493,7 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 2}
 	   },
 	  },
-#endif	  
+#endif
 #if defined(OV5670_MIPI_RAW)
 	   {SENSOR_DRVNAME_OV5670_MIPI_RAW,
 	   {

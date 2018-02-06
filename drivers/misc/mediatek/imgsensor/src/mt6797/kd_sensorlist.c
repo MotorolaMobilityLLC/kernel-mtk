@@ -152,8 +152,8 @@ struct device *sensor_device = NULL;
 #define PFX "[kd_sensorlist]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_err(fmt, ##arg)
-//#define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
-#define PK_INF(fmt, args...)     pr_err("[%s] " fmt, __FUNCTION__, ##args)
+#define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+//#define PK_INF(fmt, args...)     pr_err("[%s] " fmt, __FUNCTION__, ##args)
 
 //#undef DEBUG_CAMERA_HW_K
  #define DEBUG_CAMERA_HW_K
@@ -5320,12 +5320,12 @@ static int proc_set_pdaf_type_open(struct inode *inode, struct file *file)
     return single_open(file, pdaf_type_info_read, NULL);
 };
 
-	
+
 static ssize_t  proc_set_pdaf_type_write(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
     char regBuf[64] = {'\0'};
     u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
-	
+
     if( copy_from_user(regBuf, buffer, u4CopyBufSize))
     {
         return -EFAULT;

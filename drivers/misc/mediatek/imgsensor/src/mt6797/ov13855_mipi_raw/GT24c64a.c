@@ -37,7 +37,7 @@
 #define PFX "GT24c64_otp"
 
 #define CAM_CALINF(fmt, arg...)     pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
-#define CAM_CALDB(fmt, arg...)    pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
+#define CAM_CALDB(fmt, arg...)    pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##arg)
 #define CAM_CALERR(fmt, arg...)     pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define CAM_CALDB(x,...)
@@ -84,7 +84,7 @@ static atomic_t g_CAM_CALatomic;
 //spin_unlock(&kdcam_cal_drv_lock);
 
 
- 
+
 
 #define EEPROM_I2C_SPEED 400
 //#define LSCOTPDATASIZE 0x03c4 //964
@@ -278,7 +278,7 @@ CAM_CALDB("GT24c64_Ioctl_Compat compat cmd = %ud , cmd = %lu,cmd =%lu\n",cmd,COM
 
     case COMPAT_CAM_CALIOC_G_READ:
     {
-		
+
         data32 = compat_ptr(arg);
 		CAM_CALDB("GT24c64_Ioctl_Compat 222222\n");
         data = compat_alloc_user_space(sizeof(*data));
@@ -309,7 +309,7 @@ CAM_CALDB("GT24c64_Ioctl_Compat compat cmd = %ud , cmd = %lu,cmd =%lu\n",cmd,COM
 static bool selective_read_eeprom(unsigned short addr, unsigned char * data)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-	
+
 	if(iReadRegI2C_gt24c64(pu_send_cmd, 2, (u8*)data, 1, GT24c64_DEVICE_ID)<0)
 		return false;
     return true;
@@ -335,7 +335,7 @@ static int ReadOV13855AWBData(unsigned short ui4_offset, unsigned int  ui4_lengt
 	u8 AWBdatabuf[37];
 
 	CAM_CALDB("ReadOV13855AWBData\n");
-	
+
 	for(i = 0; i < 37; i++) {  // AWB data 30 byte
 		if(!selective_read_eeprom(addr, &AWBdatabuf[i])){
 			return -1;
@@ -359,7 +359,7 @@ static int ReadOV13855AWBData(unsigned short ui4_offset, unsigned int  ui4_lengt
 	{
 		pinputdata[i] = AWBdatabuf[i+13];
 	}
-	
+
 	return 0;
 }
 
@@ -370,7 +370,7 @@ static int ReadOV13855AFData(unsigned short ui4_offset, unsigned int  ui4_length
 	u8 AFdatabuf[7];
 
 	CAM_CALDB("ReadOV13855AFData\n");
-	
+
 	for(i = 0; i < 7; i++) {  // AWB data 30 byte
 		if(!selective_read_eeprom(addr, &AFdatabuf[i])){
 			return -1;
@@ -388,7 +388,7 @@ static int ReadOV13855AFData(unsigned short ui4_offset, unsigned int  ui4_length
 	{
 		pinputdata[i-3] = AFdatabuf[i];
 	}
-	
+
 	return 0;
 }
 
@@ -397,7 +397,7 @@ static int ReadOV13855LSCData(unsigned short ui4_offset, unsigned int  ui4_lengt
 	int i = 0;
 	int addr = ui4_offset;
 	CAM_CALDB("ReadOV13855LSCData\n");
-	
+
 	for(i = 0; i < LSC_SIZE + 2; i++) {  // LSC data 1868 + 2 byte
 		if(!selective_read_eeprom(addr, &LSCdatabuf[i])){
 			return -1;
@@ -412,7 +412,7 @@ static int ReadOV13855LSCData(unsigned short ui4_offset, unsigned int  ui4_lengt
 		CAM_CALDB("LSCdatabuf[0]:0x%x\n", LSCdatabuf[0]);
 		CAM_CALDB("OV13855_OTP LSC data invalid!\n");
 	}
-	
+
 	for(i = 1; i < LSC_SIZE + 1; i++)
 	{
 		pinputdata[i-1] = LSCdatabuf[i];
@@ -431,7 +431,7 @@ static int iReadData(unsigned short ui4_offset, unsigned int  ui4_length, unsign
 		}
 		CAM_CALDB("read_eeprom 0x%0x %d\n",addr, pinputdata[i]);
 		addr++;
-	}	
+	}
 
 	return 0;
 }
@@ -511,12 +511,12 @@ static long CAM_CAL_Ioctl(
 	if(is_firstboot == 1)
 	{
 		mdelay(300);
-	}	
+	}
 
 	spin_lock(&g_CAM_CALLock);
 	is_firstboot = 0;
 	spin_unlock(&g_CAM_CALLock);
-	
+
     switch(a_u4Command)
     {
         case CAM_CALIOC_S_WRITE:
@@ -547,7 +547,7 @@ static long CAM_CAL_Ioctl(
             CAM_CALDB("[CAM_CAL] length %d \n", ptempbuf->u4Length);
             //CAM_CALDB("[CAM_CAL] Before read Working buffer address 0x%p \n", pu1Params);
 
-            //i4RetValue = selective_read_region(ptempbuf->u4Offset, pu1Params, GT24c64_DEVICE_ID,ptempbuf->u4Length);  
+            //i4RetValue = selective_read_region(ptempbuf->u4Offset, pu1Params, GT24c64_DEVICE_ID,ptempbuf->u4Length);
             if((ptempbuf->u4Offset == AWB_ADDR) && (ptempbuf->u4Length == 16) )
             {
             	i4RetValue = ReadOV13855AWBData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
@@ -555,18 +555,18 @@ static long CAM_CAL_Ioctl(
             else if((ptempbuf->u4Offset == AF_ADDR) && (ptempbuf->u4Length == 4) )
             {
             	i4RetValue = ReadOV13855AFData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
-            }   
-            
+            }
+
             else if((ptempbuf->u4Offset == LSC_ADDR) && (ptempbuf->u4Length == LSC_SIZE) )
             {
             	i4RetValue = ReadOV13855LSCData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
-            }   
-            
+            }
+
             else
             {
             	i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
             }
-            
+
             CAM_CALDB("[GT24c64_CAL] After read Working buffer data  0x%x \n", *pu1Params);
 
 
@@ -748,12 +748,12 @@ static int CAM_CAL_i2c_remove(struct i2c_client *);
 
 static const struct i2c_device_id CAM_CAL_i2c_id[] = {{GT24c64_CAM_CAL_DRVNAME,0},{}};
 
- 
+
 
 static const struct of_device_id GT24c64_of_match[] = {
 	{.compatible = "mediatek,GT24c64a"},
 	{},
-}; 
+};
 
 
 static struct i2c_driver CAM_CAL_i2c_driver = {
@@ -761,7 +761,7 @@ static struct i2c_driver CAM_CAL_i2c_driver = {
 		 .name = GT24c64_CAM_CAL_DRVNAME,
 
 		 .of_match_table = GT24c64_of_match,
- 
+
 		},
     .probe = CAM_CAL_i2c_probe,
     .remove = CAM_CAL_i2c_remove,
@@ -825,7 +825,7 @@ static struct platform_driver g_stCAM_CAL_Driver = {
         .owner	= THIS_MODULE,
     }
 };
- 
+
 
 static struct platform_device g_stCAM_CAL_Device = {
     .name = GT24c64_CAM_CAL_DRVNAME,
