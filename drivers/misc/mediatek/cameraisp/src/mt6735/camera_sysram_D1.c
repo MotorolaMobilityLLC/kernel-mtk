@@ -822,7 +822,7 @@ static int SYSRAM_mmap(
 	struct file *pFile,
 	struct vm_area_struct *pVma)
 {
-	long length = 0;
+	unsigned long length = 0;
 	MUINT32 pfn = 0x0;
 	/* LOG_MSG(""); */
 	pVma->vm_page_prot = pgprot_noncached(pVma->vm_page_prot);
