@@ -2408,14 +2408,10 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 	if (status < 0)
 		goto fail3;
 
-	status = musb_init_debugfs(musb);
-	if (status < 0)
-		goto fail4;
-
 #ifdef CONFIG_SYSFS
 	status = sysfs_create_group(&musb->controller->kobj, &musb_attr_group);
 	if (status)
-		goto fail5;
+		goto fail4;
 #endif
 
 	pm_runtime_put(musb->controller);
@@ -2423,12 +2419,9 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 	return 0;
 
 #ifdef CONFIG_SYSFS
-fail5:
-	musb_exit_debugfs(musb);
-#endif
-
 fail4:
 	musb_gadget_cleanup(musb);
+#endif
 
 fail3:
 	pm_runtime_put_sync(musb->controller);
@@ -2520,7 +2513,6 @@ static int musb_remove(struct platform_device *pdev)
 	 */
 	DBG(0, "musb_removed to 1\n");
 	musb_removed = 1;
-	musb_exit_debugfs(musb);
 	musb_shutdown(pdev);
 
 	musb_free(musb);
