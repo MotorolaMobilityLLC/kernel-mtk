@@ -945,31 +945,25 @@ int get_rac_val(void)
 	int retry_count = 0;
 
 	do {
-		/*adc and fg-------------------------------------------------------- */
+		/* Trigger ADC PTIM mode to get VBAT and current */
 		do_ptim(true);
-
-		pmic_spm_crit2("[1,Trigger ADC PTIM mode] volt1=%d, curr_1=%d\n", ptim_bat_vol,
-			       ptim_R_curr);
 		volt_1 = ptim_bat_vol;
 		curr_1 = ptim_R_curr;
 
-		pmic_spm_crit2("[2,enable dummy load]");
+		/* enable dummy load */
 		enable_dummy_load(1);
 		mdelay(50);
-		/*Wait -------------------------------------------------------------- */
+		/*Wait --------------------------------------------------------------*/
 
-		/*adc and fg-------------------------------------------------------- */
+		/* Trigger ADC PTIM mode again to get new VBAT and current */
 		do_ptim(true);
-
-		pmic_spm_crit2("[3,Trigger ADC PTIM mode again] volt2=%d, curr_2=%d\n",
-			       ptim_bat_vol, ptim_R_curr);
 		volt_2 = ptim_bat_vol;
 		curr_2 = ptim_R_curr;
 
-		/*Disable dummy load------------------------------------------------- */
+		/*Disable dummy load-------------------------------------------------*/
 		enable_dummy_load(0);
 
-		/*Calculate Rac------------------------------------------------------ */
+		/*Calculate Rac------------------------------------------------------*/
 		if ((curr_2 - curr_1) >= 700 && (curr_2 - curr_1) <= 1200
 		    && (volt_1 - volt_2) >= 80 && (volt_1 - volt_2) <= 2000) {
 			/*40.0mA */
@@ -982,16 +976,13 @@ int get_rac_val(void)
 
 		} else {
 			ret = -1;
-			pmic_spm_crit2("[4,Calculate Rac] bypass due to (curr_x-curr_y) < 40mA\n");
+			pmic_spm_crit2("[Calculate Rac] bypass due to (curr_x-curr_y) < 40mA\n");
 		}
 
-		pmic_spm_crit2
-		    ("volt_1 = %d,volt_2 = %d,curr_1 = %d,curr_2 = %d,rac_cal = %d,ret = %d,retry_count = %d\n",
-		     volt_1, volt_2, curr_1, curr_2, rac_cal, ret, retry_count);
-
-		pmic_spm_crit2(" %d,%d,%d,%d,%d,%d,%d\n",
-			       volt_1, volt_2, curr_1, curr_2, rac_cal, ret, retry_count);
-
+		pmic_spm_crit2(
+			"v1=%d,v2=%d,c1=%d,c2=%d,rac_cal=%d,ret=%d,retry=%d,v_diff=%d,c_diff=%d\n",
+			volt_1, volt_2, curr_1, curr_2, rac_cal, ret,
+			retry_count, (volt_1 - volt_2), (curr_2 - curr_1));
 
 		/*------------------------*/
 		retry_count++;
