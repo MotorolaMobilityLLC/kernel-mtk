@@ -198,7 +198,7 @@ static int hps_algo_heavytsk_det(void)
 	mutex_unlock(&hps_ctxt.para_lock);
 	return ret;
 }
-
+#if 0
 static int hps_algo_check_criteria(void)
 {
 	int ret, i;
@@ -221,7 +221,7 @@ static int hps_algo_check_criteria(void)
 		hps_warn("[Info]Condition break!!\n");
 	return ret;
 }
-
+#endif
 static int hps_algo_do_cluster_action(unsigned int cluster_id)
 {
 	unsigned int cpu, target_cores, online_cores, cpu_id_min, cpu_id_max;
@@ -235,8 +235,10 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (hps_get_break_en() != 0)
 				return 1;
+#if 0
 			if (hps_algo_check_criteria() == 1)
 				return 1;
+#endif
 			if (!cpu_online(cpu)) {	/* For CPU offline */
 				if (cpu % 4 == 0)
 					hps_cpu_up(cpu);
@@ -254,8 +256,10 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
 			if (hps_get_break_en() != 0)
 				return 1;
+#if 0
 			if (hps_algo_check_criteria() == 1)
 				return 1;
+#endif
 			if (cpu_online(cpu)) {
 				if (cpu % 4 == 0)
 					hps_cpu_down(cpu);
