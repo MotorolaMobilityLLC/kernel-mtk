@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com add for camera 20161129 begin
+	wangkangmin@wind-mobi.com add for camera 20161129 begin
 */
 /*****************************************************************************
  *
@@ -167,5 +167,5 @@ extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 
 #endif
 /*
-	lenovo@lenovo.com add for camera 20161129 end
+	wangkangmin@wind-mobi.com add for camera 20161129 end
 */

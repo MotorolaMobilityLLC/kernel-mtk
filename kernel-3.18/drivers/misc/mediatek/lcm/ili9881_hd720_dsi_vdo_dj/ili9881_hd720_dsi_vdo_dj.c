@@ -1,9 +1,9 @@
-//lenovo@lenovo.com add at 20170425 begin
+//qiumeng@wind-mobi.com add at 20170425 begin
 
 #include "lcm_drv.h"
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 #include "lcm_extern.h"
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 #ifdef BUILD_LK
 #include <platform/gpio_const.h>
 #include <platform/mt_gpio.h>
@@ -18,11 +18,11 @@
 #endif
 #endif
 
-//lenovo@lenovo.com add at 20161231 begin
+//liujinzhou@wind-mobi.com add at 20161231 begin
 #ifdef CONFIG_WIND_DEVICE_INFO
 		extern char *g_lcm_name;
 #endif
-//lenovo@lenovo.com add at 20161231 end
+//liujinzhou@wind-mobi.com add at 20161231 end
 // ---------------------------------------------------------------------------
 //  Local Constants
 // ---------------------------------------------------------------------------
@@ -215,12 +215,12 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 
 //Power setting
    {0xFF,3,{0x98,0x81,0x04}},
-   //lenovo@lenovo.com 20170522 begin
+   //qiumeng@wind-mobi.com 20170522 begin
    //{0x00,1,{0x80}},             //0x80for4lane,0x00for3lane 
    {0x6C,1,{0x15}},             // VCORE: 1.5V 
    {0x6E,1,{0x2B}},             // VGH: 2B=15V 
    {0x6F,1,{0x45}},             // VGH:3x VGL:-2.5x VCL:REG
-   //lenovo@lenovo.com 20170522 end
+   //qiumeng@wind-mobi.com 20170522 end
    {0x3A,1,{0x24}},             // Power saving
    {0x8D,1,{0x1F}},             // VGL: -11V
    {0x87,1,{0xBA}},             //ESD Enhance
@@ -236,17 +236,17 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
    {0xFF,3,{0x98,0x81,0x01}},
    {0x22,1,{0x0A}},             // 0AÕýÉ¨ 09·´É¨
    {0x31,1,{0x0B}},             // Inversion:00 Column
-   //lenovo@lenovo.com 20170522 begin
+   //qiumeng@wind-mobi.com 20170522 begin
    //{0x53,1,{0x60}},             //vcom1 
    //{0x55,1,{0x60}},             //vcom2
    {0x50,1,{0x85}},             // VSP  5V
    {0x51,1,{0x80}},             // VSN  -5V
-   //lenovo@lenovo.com 20170522 end
+   //qiumeng@wind-mobi.com 20170522 end
    {0x60,1,{0x0A}},             // Source Timing
 
    
 //------------------GAMMA SETTING------------------
-//lenovo@lenovo.com 20170522 begin
+//qiumeng@wind-mobi.com 20170522 begin
 //P-tive setting
    {0xA0,1,{0x00}},				//VP255	Gamma P
    {0xA1,1,{0x0B}},				//VP251  
@@ -290,15 +290,15 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
    {0xD1,1,{0x54}},             //VN8  
    {0xD2,1,{0x66}},             //VN4
    {0xD3,1,{0x3F}},             //VN0 
-//lenovo@lenovo.com 20170522 end
+//qiumeng@wind-mobi.com 20170522 end
  //CMD_P 0
  {0xFF,3,{0x98,0x81,0x00}},
- //lenovo@lenovo.com 20170522 begin
+ //qiumeng@wind-mobi.com 20170522 begin
  //{0x51,2,{0x0F,0XFF}},
  //{0x53,1,{0x24}},
  //{0x55,1,{0x00}}, 
  //{0x35,1,{0x00}},   //TE on
- //lenovo@lenovo.com 20170522 end
+ //qiumeng@wind-mobi.com 20170522 end
  {0x11,1,{0x00}},
  {REGFLAG_DELAY, 120, {}},		//120 
  {0x29,1,{0x00}},
@@ -368,10 +368,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 		memset(params, 0, sizeof(LCM_PARAMS));
 		params->type   = LCM_TYPE_DSI;
-        //modify panel physical size to 5 inches---lenovo@lenovo.com 20170324 begin
+        //modify panel physical size to 5 inches---qiumeng@wind-mobi.com 20170324 begin
 		params->physical_width  = 60;
 		params->physical_height = 112;
-		//modify panel physical size to 5 inches---lenovo@lenovo.com 20170324 end
+		//modify panel physical size to 5 inches---qiumeng@wind-mobi.com 20170324 end
 		params->width  = FRAME_WIDTH;
 		params->height = FRAME_HEIGHT;
 
@@ -402,10 +402,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 		// params->dsi.word_count=480*3;	
 		//DSI CMD mode need set these two bellow params, different to 6577   
 		// params->dsi.vertical_active_line=800;   
-		//disable lcm ssc for A158---lenovo@lenovo.com 20161214 begin		
+		//disable lcm ssc for A158---qiumeng@wind-mobi.com 20161214 begin		
 		params->dsi.ssc_disable=1;
-		//disable lcm ssc for A158---lenovo@lenovo.com 20161214 end
-		//improve lcm FPS for A158---lenovo@lenovo.com 20170306 begin		
+		//disable lcm ssc for A158---qiumeng@wind-mobi.com 20161214 end
+		//improve lcm FPS for A158---qiumeng@wind-mobi.com 20170306 begin		
 		params->dsi.vertical_sync_active				= 6; //4   
 		params->dsi.vertical_backporch				       = 20;  //14  
 		params->dsi.vertical_frontporch				       = 14;  //16  
@@ -415,7 +415,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.horizontal_frontporch				= 40;    //60
 		params->dsi.horizontal_blanking_pixel				= 60;   
 		params->dsi.horizontal_active_pixel				= FRAME_WIDTH;  
-		//improve lcm FPS for A158---lenovo@lenovo.com 20170306 end
+		//improve lcm FPS for A158---qiumeng@wind-mobi.com 20170306 end
 	//	params->dsi.pll_div1=1;		   
 	//	params->dsi.pll_div2=1;		   
 	//	params->dsi.fbk_div =28;//28	
@@ -435,19 +435,19 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init(void)
 {
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 	unsigned char cmd = 0x0;
 	unsigned char data = 0xFF;
 	int ret = 0;
 	cmd = 0x00;
-	data = 0x0A;
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+	data = 0x0F; //liujinzhou@wind-mobi.com modify at 20171026
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 #ifdef GPIO_LCD_BIAS_ENP_PIN	
 	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);	
 	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);	
 	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
 #endif
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 	MDELAY(5);
 	ret = tps65132_write_bytes(cmd, data);
 		if (ret < 0)
@@ -455,14 +455,14 @@ static void lcm_init(void)
 	else
 		printk("ili9881----tps6132----cmd=%0x--i2c write success----\n", cmd);
 	cmd = 0x01;
-	data = 0x0A;
+	data = 0x0F; //liujinzhou@wind-mobi.com modify at 20171026
 	ret = tps65132_write_bytes(cmd, data);
 		if (ret < 0)
 		printk("ili9881----tps6132----cmd=%0x--i2c write error----\n", cmd);
 	else
 		printk("ili9881----tps6132----cmd=%0x--i2c write success----\n", cmd);
 	MDELAY(5);
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);
@@ -660,7 +660,7 @@ static unsigned int lcm_esd_recover(void)
 	return TRUE;
 }
 
-//lenovo@lenovo.com modify at 20161230 begin
+//liujinzhou@wind-mobi.com modify at 20161230 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
 	#ifdef CONFIG_WIND_DEVICE_INFO
@@ -671,7 +671,7 @@ static unsigned int lcm_ata_check(unsigned char *buf)
 	}
 	#endif
 }
-//lenovo@lenovo.com modify at 20161230 end
+//liujinzhou@wind-mobi.com modify at 20161230 end
 
 LCM_DRIVER ili9881_hd720_dsi_vdo_dj_lcm_drv =
 {
@@ -684,8 +684,8 @@ LCM_DRIVER ili9881_hd720_dsi_vdo_dj_lcm_drv =
     .compare_id     	= lcm_compare_id,
 	.esd_check = lcm_esd_check,
 	.esd_recover = lcm_esd_recover,
-	.ata_check          = lcm_ata_check,    //lenovo@lenovo.com add ata_check at 20161130
+	.ata_check          = lcm_ata_check,    //sunsiyuan@wind-mobi.com add ata_check at 20161130
 };
 //late_initcall(lcm_init);
-//lenovo@lenovo.com add at 20170425 end
+//qiumeng@wind-mobi.com add at 20170425 end
 

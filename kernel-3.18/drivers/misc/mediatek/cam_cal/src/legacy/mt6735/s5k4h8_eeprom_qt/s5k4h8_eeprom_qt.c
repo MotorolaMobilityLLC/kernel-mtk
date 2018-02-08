@@ -1,5 +1,5 @@
 /*
-	//lenovo@lenovo.com add for bb otp 20161216 begin
+	//luminjie@wind-mobi.com add for bb otp 20161216 begin
 */
 /*
  * Driver for CAM_CAL
@@ -595,5 +595,5 @@ MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
 /*
-	lenovo@lenovo.com add for bb otp 20161216 end
+	luminjie@wind-mobi.com add for bb otp 20161216 end
 */

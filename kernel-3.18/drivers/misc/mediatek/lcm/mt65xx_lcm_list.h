@@ -260,6 +260,7 @@ extern LCM_DRIVER ft8707_fhd_dsi_vdo_lgd_drv;
 extern LCM_DRIVER nt35512_cmi_720p_oufeiguang_drv;
 extern LCM_DRIVER ili9881_hd720_dsi_vdo_tm_lcm_drv;
 extern LCM_DRIVER ili9881_hd720_dsi_vdo_dj_lcm_drv;
+extern LCM_DRIVER ili9881_hd720_dsi_vdo_hs_lcm_drv;//liujinzhou@wind-mobi.com add at 20170705 begin
 /*******************lcm add ---qiumeng@wind.mobi.com end at 20170425******************************/
 
 #ifdef BUILD_LK

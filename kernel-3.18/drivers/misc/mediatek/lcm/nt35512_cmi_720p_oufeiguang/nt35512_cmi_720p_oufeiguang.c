@@ -1,4 +1,4 @@
-/*******add oufeiguang lcm for A158 ---lenovo@lenovo.com begin at 20161109********/
+/*******add oufeiguang lcm for A158 ---qiumeng@wind-mobi.com begin at 20161109********/
 #define LOG_TAG "LCM"
 
 #ifndef BUILD_LK
@@ -32,15 +32,15 @@
 #include <cust_i2c.h>
 #endif
 #endif
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 #include <linux/i2c.h>
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 
-//lenovo@lenovo.com add at 20161231 begin
+//liujinzhou@wind-mobi.com add at 20161231 begin
 #ifdef CONFIG_WIND_DEVICE_INFO
 		extern char *g_lcm_name;
 #endif
-//lenovo@lenovo.com add at 20161231 end
+//liujinzhou@wind-mobi.com add at 20161231 end
 
 
 #ifdef BUILD_LK
@@ -75,16 +75,16 @@ static LCM_UTIL_FUNCS lcm_util;
 #define REGFLAG_DELAY                       0xFC
 #define REGFLAG_END_OF_TABLE                0xFD
 
-//lenovo@lenovo.com begin at 20161114
+//qiumeng@wind-mobi.com begin at 20161114
 #define LCM_ID_NT35512  0x19  
-//lenovo@lenovo.com end at 20161114
+//qiumeng@wind-mobi.com end at 20161114
 
-//oufeigang esd for A158---lenovo@lenovo.com begin at 20161121
+//oufeigang esd for A158---qiumeng@wind-mobi.com begin at 20161121
 bool oufeiguang_esd = false;
-//oufeigang esd for A158---lenovo@lenovo.com end at 20161121
+//oufeigang esd for A158---qiumeng@wind-mobi.com end at 20161121
 /* Local Variables */
 
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 #define TPS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL	/* for I2C channel 0 */
 #define I2C_ID_NAME "tps65132"
 #define TPS_ADDR 0x3E
@@ -189,7 +189,7 @@ module_init(tps65132_iic_init);
 module_exit(tps65132_iic_exit);
 
 
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 
 struct LCM_setting_table {
 	unsigned char cmd;
@@ -218,7 +218,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0x6F,1,{0x21}},
 	{0xF7,1,{0x00}},
     
-	//lenovo@lenovo.com 20170122 begin		  
+	//qiumeng@wind-mobi.com 20170122 begin		  
 	{0x6F,1,{0x1A}},
 	{0xF7,1,{0x05}},
 					  
@@ -235,7 +235,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xBB,2,{0x74,0x44}},
 	{0xBC,2,{0x00,0x00}},
 	{0xEC,1,{0x05}},
-	//lenovo@lenovo.com 20170122 end
+	//qiumeng@wind-mobi.com 20170122 end
 		  
 	{0xBD,5,{0x02,0xB0,0x20,0x20,0x00}},
 		  
@@ -259,7 +259,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xB4,2,{0x10,0x10}},
 		  
 	{0xF0,5,{0x55,0xAA,0x52,0x08,0x02}},		
-	//modify lcm gammar for A158---lenovo@lenovo.com 20170103 begin		
+	//modify lcm gammar for A158---qiumeng@wind-mobi.com 20170103 begin		
 	{0xEE,1,{0x01}},										   
 	{0xB0,16,{0x00,0x80,0x00,0x95,0x00,0xb5,0x00,0xc5,0x00,0xE3,0x01,0x03,0x01,0x1A,0x01,0x42}},																																									   
 	{0xB1,16,{0x01,0x65,0x01,0x9A,0x01,0xC2,0x02,0x05,0x02,0x3C,0x02,0x3E,0x02,0x6A,0x02,0x9C}},																																																																				  
@@ -275,7 +275,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		  
 								 
 	//{0xBF,4,{0x03,0xDE,0x03,0xE7}},
-	//modify lcm gammar for A158---lenovo@lenovo.com 20170103 end		 
+	//modify lcm gammar for A158---qiumeng@wind-mobi.com 20170103 end		 
 		  
 	{0xF0,5,{0x55,0xAA,0x52,0x08,0x06}},
 		  
@@ -332,10 +332,10 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		  
 	{0xE7,1,{0x00}},
 		 
-	//lenovo@lenovo.com 20170122 begin 
+	//qiumeng@wind-mobi.com 20170122 begin 
 	{0xF0,5,{0x55,0xAA,0x52,0x08,0x04}},
 	{0xC3,1,{0x83}},
-	//lenovo@lenovo.com 20170122 end
+	//qiumeng@wind-mobi.com 20170122 end
 	
 	{0xF0,5,{0x55,0xAA,0x52,0x08,0x03}},
 	{0xB0,2,{0x00,0x00}},
@@ -384,9 +384,9 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xEA,1,{0x06}},
 			  
 	{0xED,1,{0x30}},
-//oufeigang esd for A158---lenovo@lenovo.com begin at 20161121
+//oufeigang esd for A158---qiumeng@wind-mobi.com begin at 20161121
 	{0x62,1,{0x01}},
-//oufeigang esd for A158---lenovo@lenovo.com end at 20161121	  
+//oufeigang esd for A158---qiumeng@wind-mobi.com end at 20161121	  
 	{0x11,  0,  {}},
 	{REGFLAG_DELAY, 120, {}},
 	{0x29,  0,  {}},
@@ -431,10 +431,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 		memset(params, 0, sizeof(LCM_PARAMS));
 	
 		params->type = LCM_TYPE_DSI;
-	    //modify panel physical size to 5 inches---lenovo@lenovo.com 20170324 begin
+	    //modify panel physical size to 5 inches---qiumeng@wind-mobi.com 20170324 begin
 		params->physical_width  = 60;
 		params->physical_height = 112;
-		//modify panel physical size to 5 inches---lenovo@lenovo.com 20170324 end
+		//modify panel physical size to 5 inches---qiumeng@wind-mobi.com 20170324 end
 		params->width = FRAME_WIDTH;
 		params->height = FRAME_HEIGHT;
 	
@@ -446,9 +446,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 	
 		/* DSI */
 		/* Command mode setting */
-		//lenovo@lenovo.com 20170122 begin
+		//qiumeng@wind-mobi.com 20170122 begin
 		params->dsi.LANE_NUM = LCM_FOUR_LANE;
-		//lenovo@lenovo.com 20170122 end
+		//qiumeng@wind-mobi.com 20170122 end
 		/* The following defined the fomat for data coming from LCD engine. */
 		params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 		params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -460,7 +460,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 		/* video mode timing */
 	
 		params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
-	    //improve lcm FPS for A158---lenovo@lenovo.com 20170412 begin
+	    //improve lcm FPS for A158---qiumeng@wind-mobi.com 20170412 begin
 		params->dsi.vertical_sync_active				= 4;
 		params->dsi.vertical_backporch				= 18;//10
 		params->dsi.vertical_frontporch				= 18;//10
@@ -472,20 +472,20 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.horizontal_active_pixel			= FRAME_WIDTH;
 
 		params->dsi.PLL_CLOCK = 216;//211
-		//improve lcm FPS for A158---lenovo@lenovo.com 20170412 end
+		//improve lcm FPS for A158---qiumeng@wind-mobi.com 20170412 end
 //		params->dsi.CLK_HS_POST = 36;
 //		params->dsi.clk_lp_per_line_enable = 0;
-//lenovo@lenovo.com begin at 20161114
+//qiumeng@wind-mobi.com begin at 20161114
 		params->dsi.esd_check_enable = 1;
 		params->dsi.customization_esd_check_enable = 1;
 		params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 		params->dsi.lcm_esd_check_table[0].count = 1;
 		params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
-//lenovo@lenovo.com end at 20161114
-//oufeigang esd for A158---lenovo@lenovo.com begin at 20161121
+//qiumeng@wind-mobi.com end at 20161114
+//oufeigang esd for A158---qiumeng@wind-mobi.com begin at 20161121
         params->dsi.noncont_clock = 1;
         params->dsi.clk_lp_per_line_enable = 1;
-//oufeigang esd for A158---lenovo@lenovo.com end at 20161121
+//oufeigang esd for A158---qiumeng@wind-mobi.com end at 20161121
 
 }
 
@@ -506,14 +506,14 @@ static unsigned int lcm_compare_id(void)
 
 	array[0] = 0x00023700;  /* read id return two byte,version and id */
 	dsi_set_cmdq(array, 1, 1);
-//lenovo@lenovo.com begin at 20161114
+//qiumeng@wind-mobi.com begin at 20161114
     read_reg_v2(0xda, buffer, 2);
-//lenovo@lenovo.com end at 20161114
+//qiumeng@wind-mobi.com end at 20161114
 	id = buffer[0];     /* we only need ID */
 
 	LCM_LOGI("%s,nt35512 debug: nt35512 id = 0x%08x\n", __func__, id);
 	
-    //oufeigang esd for A158---lenovo@lenovo.com begin at 20161121
+    //oufeigang esd for A158---qiumeng@wind-mobi.com begin at 20161121
 	if (id == LCM_ID_NT35512)
 	{
 	    oufeiguang_esd = true;
@@ -521,7 +521,7 @@ static unsigned int lcm_compare_id(void)
 	}
 	else
 		return 0;
-	//oufeigang esd for A158---lenovo@lenovo.com end at 20161121
+	//oufeigang esd for A158---qiumeng@wind-mobi.com end at 20161121
 
 
 }
@@ -529,20 +529,20 @@ static unsigned int lcm_compare_id(void)
 
 static void lcm_init(void)
 {
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 	unsigned char cmd = 0x0;
 	unsigned char data = 0xFF;
 	int ret = 0;
 	cmd = 0x00;
 	data = 0x10;
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/
 	/*-----------------DSV start---------------------*/
 	//set_gpio_lcd_enp(1);
 	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
 
-/***********add for extern avdd ---lenovo@lenovo.com---start*********/
+/***********add for extern avdd ---shenyong@wind-mobi.com---start*********/
 	MDELAY(5);
 	ret = tps65132_write_bytes(cmd, data);
 		if (ret < 0)
@@ -557,7 +557,7 @@ static void lcm_init(void)
 	else
 		printk("nt35521----tps6132----cmd=%0x--i2c write success----\n", cmd);
 	MDELAY(5);
-/***********add for extern avdd ---lenovo@lenovo.com---end*********/	
+/***********add for extern avdd ---shenyong@wind-mobi.com---end*********/	
 	/*-----------------DSV end---------------------*/
 
 	SET_RESET_PIN(1);
@@ -592,7 +592,7 @@ static void lcm_resume(void)
 	lcm_init();
 }
 
-//lenovo@lenovo.com modify at 20161230 begin
+//liujinzhou@wind-mobi.com modify at 20161230 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
 	#ifdef CONFIG_WIND_DEVICE_INFO
@@ -603,7 +603,7 @@ static unsigned int lcm_ata_check(unsigned char *buf)
 	}
 	#endif
 }
-//lenovo@lenovo.com modify at 20161230 end
+//liujinzhou@wind-mobi.com modify at 20161230 end
 
 LCM_DRIVER nt35512_cmi_720p_oufeiguang_drv= {
 	.name               = "nt35512_cmi_720p_oufeiguang_drv",
@@ -613,6 +613,6 @@ LCM_DRIVER nt35512_cmi_720p_oufeiguang_drv= {
 	.compare_id  = lcm_compare_id,
 	.suspend            = lcm_suspend,
 	.resume             = lcm_resume,
-	.ata_check          = lcm_ata_check,    //lenovo@lenovo.com add ata_check at 20161130
+	.ata_check          = lcm_ata_check,    //sunsiyuan@wind-mobi.com add ata_check at 20161130
 };
-/*******add oufeiguang lcm for A158 ---lenovo@lenovo.com end at 20161109********/
+/*******add oufeiguang lcm for A158 ---qiumeng@wind-mobi.com end at 20161109********/

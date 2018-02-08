@@ -1,5 +1,5 @@
 /*
-	#lenovo@lenovo.com 20160317 begin
+	#wangkangmin@wind-mobi.com 20160317 begin
 */
 /*****************************************************************************
  *
@@ -121,5 +121,5 @@ extern void kdSetI2CSpeed(u16 i2cSpeed);
 
 #endif
 /*
-	#lenovo@lenovo.com 20160317 begin
+	#wangkangmin@wind-mobi.com 20160317 begin
 */

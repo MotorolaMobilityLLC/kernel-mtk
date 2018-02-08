@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2014 FCI Inc. All Rights Reserved
 
@@ -76,4 +76,4 @@ extern "C" {
 #endif
 
 #endif /* __FCI_TYPES_H__ */
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

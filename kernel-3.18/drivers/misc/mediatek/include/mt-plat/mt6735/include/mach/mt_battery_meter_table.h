@@ -88,7 +88,7 @@ BATT_TEMPERATURE Batt_Temperature_Table[] = {
 #endif
 
 /* T0 -10C */
-//lenovo@lenovo.com 20161207 begin
+//zhanyoufei@wind-mobi.com 20161207 begin
 BATTERY_PROFILE_STRUCT battery_profile_t0[] = {
 	{0   , 4381},
 	{1   , 4347},
@@ -977,7 +977,7 @@ R_PROFILE_STRUCT r_profile_temperature[] = {
 	{0, 0},
 	{0, 0}
 };
-//lenovo@lenovo.com 20161207 end
+//zhanyoufei@wind-mobi.com 20161207 end
 /* ============================================================
 // function prototype
 // ============================================================*/

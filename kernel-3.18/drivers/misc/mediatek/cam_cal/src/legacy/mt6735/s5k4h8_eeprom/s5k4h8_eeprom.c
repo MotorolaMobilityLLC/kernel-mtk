@@ -1,5 +1,5 @@
 /*
-	//lenovo@lenovo.com add for bb otp 20161216 begin
+	//luminjie@wind-mobi.com add for bb otp 20161216 begin
 */
 /*
  * Driver for CAM_CAL
@@ -502,8 +502,9 @@ inline static int RegisterCAM_CALCharDrv(void)
 
         return -EAGAIN;
     }
-
-	CAM_CAL_class = class_create(THIS_MODULE, "CAM_CALdrv2");
+//wangkangmin@wind-mobi.com 20170704 begin
+	CAM_CAL_class = class_create(THIS_MODULE, "CAM_CALdrv");
+//wangkangmin@wind-mobi.com 20170704 end
 	if (IS_ERR(CAM_CAL_class)) {
 		int ret = PTR_ERR(CAM_CAL_class);
 
@@ -595,5 +596,5 @@ MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
 /*
-	lenovo@lenovo.com add for bb otp 20161216 end
+	luminjie@wind-mobi.com add for bb otp 20161216 end
 */

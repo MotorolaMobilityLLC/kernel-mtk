@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20160119 begin
+	luminjie@wind-mobi.com 20160119 begin
 */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -59,7 +59,7 @@
 #define PK_ERR(a, ...)
 #endif
 
-//lenovo@lenovo.com 20160723 begin
+//wangkangmin@wind-mobi.com 20160723 begin
 
 static DEFINE_SPINLOCK(g_strobeSMPLock);	/* cotta-- SMP proection */
 
@@ -72,9 +72,9 @@ static int g_duty = -1;
 static int g_timeOutTimeMs;
 
 static DEFINE_MUTEX(g_strobeSem);
-//lenovo@lenovo.com 20170207 begin
+//luminjie@wind-mobi.com 20170207 begin
 //extern int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
-//lenovo@lenovo.com 20170207 end
+//luminjie@wind-mobi.com 20170207 end
 static struct work_struct workTimeOut;
 
 /* #define FLASH_GPIO_ENF GPIO12 */
@@ -83,20 +83,20 @@ static struct work_struct workTimeOut;
 static int FL_Enable(void)
 {
 	PK_DBG(" purple \n");
-	//lenovo@lenovo.com 20170207 begin
+	//luminjie@wind-mobi.com 20170207 begin
 	//flash_gpio_set(FLASHLIGHT_SUB, 1);
 	flash_gpio_sub_high();
-	//lenovo@lenovo.com 20170207 end
+	//luminjie@wind-mobi.com 20170207 end
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
 	return 0;
 }
 
 static int FL_Disable(void)
 {
-	//lenovo@lenovo.com 20170207 begin
+	//luminjie@wind-mobi.com 20170207 begin
 	//flash_gpio_set(FLASHLIGHT_SUB, 0);
 	flash_gpio_sub_low();
-	//lenovo@lenovo.com 20170207 end
+	//luminjie@wind-mobi.com 20170207 end
 	PK_DBG(" FL_Disable line=%d\n", __LINE__);
 	return 0;
 }
@@ -110,10 +110,10 @@ static int FL_dim_duty(kal_uint32 duty)
 
 static int FL_Init(void)
 {
-	//lenovo@lenovo.com 20170207 begin
+	//luminjie@wind-mobi.com 20170207 begin
 	//flash_gpio_set(FLASHLIGHT_SUB, 0);
 	flash_gpio_sub_low();
-	//lenovo@lenovo.com 20170207 end
+	//luminjie@wind-mobi.com 20170207 end
 	PK_DBG(" FL_Init line=%d\n", __LINE__); 
 	return 0;
 }
@@ -266,7 +266,7 @@ static int sub_strobe_release(void *pArg)
 	return 0;
 
 }
-//lenovo@lenovo.com 20160723 end
+//wangkangmin@wind-mobi.com 20160723 end
 FLASHLIGHT_FUNCTION_STRUCT subStrobeFunc = {
 	sub_strobe_open,
 	sub_strobe_release,
@@ -281,5 +281,5 @@ MUINT32 subStrobeInit(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
 	return 0;
 }
 /*
-	lenovo@lenovo.com 20160119 end
+	luminjie@wind-mobi.com 20160119 end
 */

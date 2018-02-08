@@ -45,7 +45,9 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 
 	add_nq_entry(cmd_addr, size, valid_flag);
 	set_sch_nq_cmd();
-	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	/* Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000); */
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	n_invoke_t_nq(0, 0, 0);
 	return 0;
@@ -301,12 +303,18 @@ int teei_smc_call(u32 teei_cmd_type,
 	wmb();
 
 #if 0
-	get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);
-	put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 #else
-	Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	/* Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry)); */
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	retVal = add_work_entry(CAPI_CALL, (unsigned long)&smc_call_entry);
 
 	if (retVal != 0) {
@@ -319,7 +327,9 @@ int teei_smc_call(u32 teei_cmd_type,
 	down(psema);
 
 	Invalidate_Dcache_By_Area((unsigned long)local_smc_cmd, (unsigned long)local_smc_cmd + sizeof(struct teei_smc_cmd));
-	Invalidate_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//Invalidate_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	if (cmd_buf)
 		Invalidate_Dcache_By_Area((unsigned long)cmd_buf, (unsigned long)cmd_buf + cmd_len);

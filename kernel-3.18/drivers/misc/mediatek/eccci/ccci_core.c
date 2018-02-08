@@ -418,6 +418,13 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		if (*((unsigned int *)buf) > MD_BOOT_MODE_INVALID && *((unsigned int *)buf) < MD_BOOT_MODE_MAX)
 			md->md_boot_mode = *((unsigned int *)buf);
 		break;
+	case ID_MD_RF_DESENSE:
+		if (buf == NULL)
+			CCCI_ERR_MSG(md->index, CHAR, "%ps,ID_MD_RF_DESENSE buf is null\n",
+				__builtin_return_address(0));
+		else
+			ret = ccci_update_rf_desense(md, buf[0]);
+		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;
 		break;

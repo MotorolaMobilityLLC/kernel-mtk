@@ -31,12 +31,18 @@
 #include "teei_debug.h"
 #include "smc_id.h"
 
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#include "tz_service.h"
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 #include "nt_smc_call.h"
 #include "teei_client_main.h"
 #include "utos_version.h"
 
 #include <linux/of.h>
 #include <linux/of_address.h>
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#include <linux/completion.h>
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 #include <linux/kthread.h>
 #include <linux/module.h>
@@ -48,12 +54,17 @@
 #include "teei_smc_struct.h"
 #include "utdriver_macro.h"
 
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#define MESSAGE_LENGTH                 (4096)
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 #define GK_BUFF_SIZE		(4 * 1024)
 #define GK_SYS_NO		(120)
 
 extern unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order);
 extern struct semaphore keymaster_api_lock;
-
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+extern unsigned long teei_vfs_flag;
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 struct semaphore boot_decryto_lock;
 
 unsigned long cpu_notify_flag = 0;
@@ -186,10 +197,14 @@ static void boot_stage2(void)
 {
 	int cpu_id = 0;
 
-	get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_boot_stage2, NULL, 1);
-	put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 }
 
 int switch_to_t_os_stages2(void)
@@ -220,10 +235,14 @@ static void load_tee(void)
 {
 	int cpu_id = 0;
 
-	get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_tee, NULL, 1);
-	put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 }
 
 
@@ -283,10 +302,14 @@ static void post_teei_invoke_drv(int cpu_id)
 static void teei_invoke_drv(void)
 {
 	int cpu_id = 0;
-	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	post_teei_invoke_drv(cpu_id);
-	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	return;
 }
@@ -325,11 +348,15 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	/* with a wmb() */
 	wmb();
 
-	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	pr_debug("current cpu id [%d]\n", cpu_id);
 	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
-	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	/* with a rmb() */
 	rmb();
@@ -352,14 +379,18 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				pr_debug("cpu down prepare ************************\n");
-				retVal = down_trylock(&smc_lock);
+				//zhangheting@wind-mobi.com add teei patch 20170523 start
+				down(&smc_lock);
+				//zhangheting@wind-mobi.com add teei patch 20170523 end
 				if (retVal == 1)
 					return NOTIFY_BAD;
 				else {
 					cpu_notify_flag = 1;
 					for_each_online_cpu(i) {
 						/*pr_debug("current on line cpu [%d]\n", i);*/
-						if (i == cpu) {
+					//zhangheting@wind-mobi.com add teei patch 20170523 start
+					if ((i == cpu) || (i == 8) || (i == 9)) {
+					//zhangheting@wind-mobi.com add teei patch 20170523 end
 							continue;
 						}
 						switch_to_cpu_id = i;
@@ -445,10 +476,14 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
-	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	get_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
-	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//	put_online_cpus();
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	/* with a rmb() */
 	rmb();
@@ -1600,7 +1635,16 @@ static int teei_client_init(void)
 		pr_err("cdev_add failed %x\n", ret_code);
 		goto class_device_destroy;
 	}
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	teei_vfs_flag = (unsigned long)kmalloc(64 * sizeof(unsigned char), GFP_KERNEL);
+	if (teei_vfs_flag == NULL) {
+		printk("[%s][%d]kmalloc teei_vfs_flag failed!\n", __func__, __LINE__);
+		goto fastcall_thread_fail;
+	}
 
+	printk("[%s][%d] teei_vfs_flag = %lx\n", __func__, __LINE__, teei_vfs_flag);
+	memset(teei_vfs_flag, 0, 64 * sizeof(unsigned char));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	memset(&teei_contexts_head, 0, sizeof(teei_contexts_head));
 
 	teei_contexts_head.dev_file_cnt = 0;
@@ -1613,8 +1657,12 @@ static int teei_client_init(void)
 	sema_init(&(smc_lock), 1);
 
 	for_each_online_cpu(i) {
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	if ((i != 8) && (i != 9)) {
 		current_cpu_id = i;
 		pr_debug("init stage : current_cpu_id = %d\n", current_cpu_id);
+	}
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	}
 
 	pr_debug("begin to create sub_thread.\n");

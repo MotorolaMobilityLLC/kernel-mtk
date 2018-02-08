@@ -150,6 +150,9 @@ int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag
 	struct NQ_head *temp_head = NULL;
 	struct NQ_entry *temp_entry = NULL;
 
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	Invalidate_Dcache_By_Area((unsigned long)nt_t_buffer, (unsigned long)(nt_t_buffer + NQ_BUFF_SIZE));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	temp_head = (struct NQ_head *)nt_t_buffer;
 
 	if (temp_head->start_index == ((temp_head->end_index + 1) % temp_head->Max_count))

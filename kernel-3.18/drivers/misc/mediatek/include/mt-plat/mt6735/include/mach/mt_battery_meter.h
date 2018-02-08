@@ -51,7 +51,7 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-//lenovo@lenovo.com 20161207 begin
+//zhanyoufei@wind-mobi.com 20161207 begin
 #define Q_MAX_POS_50 3863
 #define Q_MAX_POS_25 3961
 #define Q_MAX_POS_0 3998
@@ -61,7 +61,7 @@
 #define Q_MAX_POS_25_H_CURRENT 3932
 #define Q_MAX_POS_0_H_CURRENT 3742
 #define Q_MAX_NEG_10_H_CURRENT 2911
-//lenovo@lenovo.com 20161207 end
+//zhanyoufei@wind-mobi.com 20161207 end
 
 /* Discharge Percentage */
 #define OAM_D5		 1		/*  1 : D5,   0: D2*/
@@ -187,7 +187,7 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-//lenovo@lenovo.com 20161207 begin
+//zhanyoufei@wind-mobi.com 20161207 begin
 #define Q_MAX_POS_50 3863
 #define Q_MAX_POS_25 3961
 #define Q_MAX_POS_0 3998
@@ -197,7 +197,7 @@
 #define Q_MAX_POS_25_H_CURRENT 3932
 #define Q_MAX_POS_0_H_CURRENT 3742
 #define Q_MAX_NEG_10_H_CURRENT 2911
-//lenovo@lenovo.com 20161207 end
+//zhanyoufei@wind-mobi.com 20161207 end
 
 /* Discharge Percentage */
 #define OAM_D5		 1		/*  1 : D5,   0: D2*/
@@ -218,9 +218,9 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-//lenovo@lenovo.com 20161207 begin
+//zhanyoufei@wind-mobi.com 20161207 begin
 #define CAR_TUNE_VALUE 100 /*1.00*/
-//lenovo@lenovo.com 20161207 end
+//zhanyoufei@wind-mobi.com 20161207 end
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/
@@ -326,7 +326,7 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-//lenovo@lenovo.com 20161207 begin
+//zhanyoufei@wind-mobi.com 20161207 begin
 #define Q_MAX_POS_50 3863
 #define Q_MAX_POS_25 3961
 #define Q_MAX_POS_0 3998
@@ -336,7 +336,7 @@
 #define Q_MAX_POS_25_H_CURRENT 3932
 #define Q_MAX_POS_0_H_CURRENT 3742
 #define Q_MAX_NEG_10_H_CURRENT 2911
-//lenovo@lenovo.com 20161207 end
+//zhanyoufei@wind-mobi.com 20161207 end
 
 /* Discharge Percentage */
 #define OAM_D5		 1		/*  1 : D5,   0: D2*/

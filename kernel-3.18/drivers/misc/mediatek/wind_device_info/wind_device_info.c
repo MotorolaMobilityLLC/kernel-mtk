@@ -1,4 +1,4 @@
-//add wind_device_info for A158---lenovo@lenovo.com 20161123 begin
+//add wind_device_info for A158---qiumeng@wind-mobi.com 20161123 begin
 /*
 	History Notes:
 				1. 20150204  Create this file for device info
@@ -34,22 +34,22 @@ struct device_info_dev g_device_info_dev;
 static struct class *g_device_info_classp =NULL; 
 
 static int test_val = 0;
-/* lenovo@lenovo.com 201500821 s-- */
+/* huangzhaosong@wind-mobi.com 201500821 s-- */
 char *g_lcm_name ="";
 char *g_gsensor_name ="";
-/* lenovo@lenovo.com 201500821 e-- */
+/* huangzhaosong@wind-mobi.com 201500821 e-- */
 
-// lenovo@lenovo.com 20151103 begin
+// hebiao@wind-mobi.com 20151103 begin
 char *g_msensor_name = "NULL";
-// lenovo@lenovo.com 20151103 end
+// hebiao@wind-mobi.com 20151103 end
 
-u16 g_dtv_chip_id; // lenovo@lenovo.com 20161229
+u16 g_dtv_chip_id; // sunjingtao@wind-mobi.com 20161229
 
 u16 g_ctp_fwvr; 
 u16 g_ctp_vendor;
 char g_ctp_id_str[21];
 
-// lenovo@lenovo.com 20151103 begin
+// hebiao@wind-mobi.com 20151103 begin
 static ssize_t show_msensor_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	size_t size = 0;
@@ -58,7 +58,7 @@ static ssize_t show_msensor_info(struct device *dev,struct device_attribute *att
 		size = sprintf(buf, "%s\n", g_msensor_name);
     return size;
 }
-// lenovo@lenovo.com 20151103 end
+// hebiao@wind-mobi.com 20151103 end
 
 static ssize_t show_lcm_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
@@ -89,7 +89,7 @@ static ssize_t store_gsensor_info(struct device *dev,struct device_attribute *at
 	DEVICE_INFO_FUN();
    	return size;
 }
-// lenovo@lenovo.com 20161229 begin
+// sunjingtao@wind-mobi.com 20161229 begin
 static ssize_t show_gdtv_chip_id_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	size_t size = 0;
@@ -106,7 +106,7 @@ static ssize_t store_gdtv_chip_id_info(struct device *dev,struct device_attribut
 	DEVICE_INFO_FUN();
    	return size;
 }
-// lenovo@lenovo.com 20161229 end
+// sunjingtao@wind-mobi.com 20161229 end
 static ssize_t show_ctp_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	char *buf_temp = buf;
@@ -176,12 +176,12 @@ static ssize_t store_battery_boot_info(struct device *dev,struct device_attribut
 
 static DEVICE_ATTR(lcm_info, 0664, show_lcm_info, store_lcm_info);
 static DEVICE_ATTR(gsensor_info, 0664, show_gsensor_info, store_gsensor_info);
-// lenovo@lenovo.com 20151103 begin
+// hebiao@wind-mobi.com 20151103 begin
 static DEVICE_ATTR(msensor_info, 0664, show_msensor_info, NULL);
-// lenovo@lenovo.com 20151103 end
-// lenovo@lenovo.com 20161229 begin
+// hebiao@wind-mobi.com 20151103 end
+// sunjingtao@wind-mobi.com 20161229 begin
 static DEVICE_ATTR(dtv_info, 0664, show_gdtv_chip_id_info, store_gdtv_chip_id_info);
-// lenovo@lenovo.com 20161229 end
+// sunjingtao@wind-mobi.com 20161229 end
 static DEVICE_ATTR(ctp_info, 0664, show_ctp_info, store_ctp_info);
 static DEVICE_ATTR(camera_info, 0664, show_camera_info, store_camera_info);
 static DEVICE_ATTR(battery_boot_info, 0664, show_battery_boot_info, store_battery_boot_info);
@@ -190,12 +190,12 @@ static void attr_files_create(struct device *device)
 {	
 	device_create_file(device, &dev_attr_lcm_info);	
 	device_create_file(device, &dev_attr_gsensor_info);	
-// lenovo@lenovo.com 20151103 begin
+// hebiao@wind-mobi.com 20151103 begin
 	device_create_file(device, &dev_attr_msensor_info);	
-// lenovo@lenovo.com 20151103 begin
-// lenovo@lenovo.com 20161229 begin
+// hebiao@wind-mobi.com 20151103 begin
+// sunjingtao@wind-mobi.com 20161229 begin
 	device_create_file(device, &dev_attr_dtv_info);	
-// lenovo@lenovo.com 20161229 end
+// sunjingtao@wind-mobi.com 20161229 end
 	device_create_file(device, &dev_attr_ctp_info);	
 	device_create_file(device, &dev_attr_camera_info);	
 	device_create_file(device, &dev_attr_battery_boot_info);	
@@ -316,6 +316,6 @@ static void  device_info_exit(void)
 module_init(device_info_init);
 module_exit(device_info_exit);
 MODULE_DESCRIPTION("Wind Device Info");
-MODULE_AUTHOR("liqiang<lenovo@lenovo.com>");
+MODULE_AUTHOR("liqiang<liqiang@wind-mobi.com>");
 MODULE_LICENSE("GPL");
-//add wind_device_info for A158---lenovo@lenovo.com 20161123 end
+//add wind_device_info for A158---qiumeng@wind-mobi.com 20161123 end

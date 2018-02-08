@@ -230,9 +230,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	//lenovo@lenovo.com 20161110 begin
+	//luminjie@wind-mobi.com 20161110 begin
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
-	//lenovo@lenovo.com 20161110 end
+	//luminjie@wind-mobi.com 20161110 end
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x21, 0x20, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -653,7 +653,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 
 }
 
-//lenovo@lenovo.com 20161110 begin
+//luminjie@wind-mobi.com 20161110 begin
 #if 1
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -692,7 +692,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 
 }
 #endif
-//lenovo@lenovo.com 20161110 end
+//luminjie@wind-mobi.com 20161110 end
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -780,9 +780,9 @@ static void preview_setting(void)
 	write_cmos_sensor(0x4797,  0x0E);
 	write_cmos_sensor(0x479B,  0x0E);
 	write_cmos_sensor(0x0100,  0x01);
-	//lenovo@lenovo.com 20161110 begin
+	//luminjie@wind-mobi.com 20161110 begin
 	set_mirror_flip(imgsensor.mirror);
-	//lenovo@lenovo.com 20161110 end
+	//luminjie@wind-mobi.com 20161110 end
 
 }	/*	preview_setting  */
 
@@ -847,9 +847,9 @@ static void capture_setting(kal_uint16 currefps)
 		  write_cmos_sensor(0x4797,   0x0E);
 		  write_cmos_sensor(0x479B,   0x0E);
 		  write_cmos_sensor(0x0100,   0x01);
-		  //lenovo@lenovo.com 20161110 begin
+		  //luminjie@wind-mobi.com 20161110 begin
 		  set_mirror_flip(imgsensor.mirror);
-		  //lenovo@lenovo.com 20161110 end
+		  //luminjie@wind-mobi.com 20161110 end
 
 	} else {   //30fps			//30fps for Normal capture & ZSD
 		write_cmos_sensor(0x0100,	0x00);
@@ -908,9 +908,9 @@ static void capture_setting(kal_uint16 currefps)
 		  write_cmos_sensor(0x4797,   0x0E);
 		  write_cmos_sensor(0x479B,   0x0E);
 		  write_cmos_sensor(0x0100,   0x01);
-		  //lenovo@lenovo.com 20161110 begin
+		  //luminjie@wind-mobi.com 20161110 begin
 		  set_mirror_flip(imgsensor.mirror);
-		  //lenovo@lenovo.com 20161110 end
+		  //luminjie@wind-mobi.com 20161110 end
 		if (imgsensor.ihdr_en) {
 
 	} else {

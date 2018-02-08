@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2014 FCI Inc. All Rights Reserved
 
@@ -51,4 +51,4 @@ extern s32 fc8180_bypass_write(HANDLE handle, u8 chip, u8 addr, u8 *data,
 #endif
 
 #endif /* __FC8180_I2C_H__ */
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

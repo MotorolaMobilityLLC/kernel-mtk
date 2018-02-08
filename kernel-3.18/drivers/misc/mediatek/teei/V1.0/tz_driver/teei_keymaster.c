@@ -178,7 +178,9 @@ int send_keymaster_command(unsigned long share_memory_size)
 	put_online_cpus();
 
 #else
-	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	/* Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct)); */
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
 
 	if (retVal != 0) {
@@ -195,8 +197,9 @@ int send_keymaster_command(unsigned long share_memory_size)
 	rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
-	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
-
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	/* Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct)); */
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 

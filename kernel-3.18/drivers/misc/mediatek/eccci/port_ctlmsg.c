@@ -23,16 +23,37 @@
 
 #define MAX_QUEUE_LENGTH 16
 
+int ccci_notfiy_md_desense(struct ccci_modem *md)
+{
+	int ret = -1;
+
+	if (md->md_state == READY) {
+		ret =  ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_RF_DESENSE, md->rf_desense, 0);
+		CCCI_INF_MSG(md->index, KERN, "Send desense(%d),ret=%d\n", md->rf_desense, ret);
+	} else
+		CCCI_INF_MSG(md->index, KERN, "Not send desense for md state=%d\n", md->md_state);
+	return ret;
+}
+
+int ccci_update_rf_desense(struct ccci_modem *md, int rf_desense)
+{
+	md->rf_desense = rf_desense;
+	return ccci_notfiy_md_desense(md);
+}
+
 static int normal_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 {
 	int ret = 1;
 	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
+	struct ccci_modem *md = port->modem;
 
 	if (ccci_h->data[1] == MD_INIT_START_BOOT
 	    && ccci_h->reserved == MD_INIT_CHK_ID) {
 		port_proxy_md_hs1_msg_notify(port->port_proxy, skb);
 	} else if (ccci_h->data[1] == MD_NORMAL_BOOT) {
 		port_proxy_md_hs2_msg_notify(port->port_proxy, skb);
+		if (md->rf_desense)
+			ccci_notfiy_md_desense(md);
 	} else {
 		ret = 0;
 	}

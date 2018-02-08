@@ -88,7 +88,7 @@ static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 /* ============================== */
 /* functions */
 /* ============================== */
-//lenovo@lenovo.com 20170208 begin
+//luminjie@wind-mobi.com 20170208 begin
 static struct platform_device * pltfm_dev ;
 struct pinctrl *flashlightctrl = NULL;
 struct pinctrl_state *flash_back_l = NULL;
@@ -220,7 +220,7 @@ switch (PwrType) {
 return 0;
 }
 */
-//lenovo@lenovo.com 20170208 end
+//luminjie@wind-mobi.com 20170208 end
 int globalInit(void)
 {
 	int i;
@@ -854,11 +854,11 @@ static int flashlight_probe(struct platform_device *dev)
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
-	//lenovo@lenovo.com 20170207 begin
+	//luminjie@wind-mobi.com 20170207 begin
 	#if !defined(CONFIG_MTK_LEGACY)
 	flash_gpio_init(dev);
 	#endif
-	//lenovo@lenovo.com 20170207 end
+	//luminjie@wind-mobi.com 20170207 end
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -900,7 +900,7 @@ static void flashlight_shutdown(struct platform_device *dev)
 	checkAndRelease();
 	logI("[flashlight_shutdown] Done ~");
 }
-//lenovo@lenovo.com 20170208 begin
+//luminjie@wind-mobi.com 20170208 begin
 #ifdef CONFIG_OF
 struct of_device_id flashlight_of_match[] = {
 	{ .compatible = "mediatek,camera_flashlights"},
@@ -919,7 +919,7 @@ static struct platform_driver flashlight_platform_driver = {
 		  #endif
 		   },
 };
-//lenovo@lenovo.com 20170208 end
+//luminjie@wind-mobi.com 20170208 end
 static struct platform_device flashlight_platform_device = {
 	.name = FLASHLIGHT_DEVNAME,
 	.id = 0,

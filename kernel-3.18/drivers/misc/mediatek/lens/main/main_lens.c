@@ -86,11 +86,17 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
 	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl, DW9718AF_Release},
 #endif
-//lenovo@lenovo.com add for qt 9718 lens 20161230 begin
+//luminjie@wind-mobi.com add for qt 9718 lens 20170613 begin
 #ifdef CONFIG_MTK_LENS_DW9718AF_QT_SUPPORT
 	{1, AFDRV_DW9718AF_QT, DW9718AF_QT_SetI2Cclient, DW9718AF_QT_Ioctl, DW9718AF_QT_Release},
 #endif
-//lenovo@lenovo.com add for qt 9718 lens 20161230 end
+#ifdef CONFIG_MTK_LENS_DW9718AF_HLT_SUPPORT
+	{1, AFDRV_DW9718AF_HLT, DW9718AF_HLT_SetI2Cclient, DW9718AF_HLT_Ioctl, DW9718AF_HLT_Release},
+#endif
+#ifdef CONFIG_MTK_LENS_DW9718AF_BLX_SUPPORT
+	{1, AFDRV_DW9718AF_BLX, DW9718AF_BLX_SetI2Cclient, DW9718AF_BLX_Ioctl, DW9718AF_BLX_Release},
+#endif
+//luminjie@wind-mobi.com add for qt 9718 lens 20170613 end
 #ifdef CONFIG_MTK_LENS_DW9719TAF_SUPPORT
 	{1, AFDRV_DW9719TAF, DW9719TAF_SetI2Cclient, DW9719TAF_Ioctl, DW9719TAF_Release},
 #endif

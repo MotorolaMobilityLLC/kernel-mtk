@@ -67,5 +67,7 @@ extern int fp_call_flag;
 extern int keymaster_call_flag;
 static struct work_entry work_ent;
 extern struct work_queue *secure_wq;
-extern int teei_vfs_flag;
-
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//extern int teei_vfs_flag;
+extern unsigned long teei_vfs_flag;
+//zhangheting@wind-mobi.com add teei patch 20170523 end

@@ -3,11 +3,17 @@
 #include <linux/semaphore.h>
 #include <linux/irq.h>
 #include <linux/kthread.h>
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#include <linux/delay.h>
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 #include "sched_status.h"
 #include "tlog.h"
 #include "teei_id.h"
 
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#define MESSAGE_LENGTH	0x1000
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 /********************************************
 		LOG IRQ handler
  ********************************************/
@@ -120,6 +126,9 @@ int tlog_print(unsigned long log_start)
 		pr_info("[UT_LOG] %s\n", tlog_line);
 		tlog_line_len = 0;
 		tlog_line[0] = 0;
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		msleep(1);
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 	} else {
 		tlog_line[tlog_line_len] = entry->context;
 		tlog_line[tlog_line_len + 1] = 0;
@@ -163,6 +172,9 @@ int tlog_worker(void *p)
 	}
 
 	while (!kthread_should_stop()) {
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		Invalidate_Dcache_By_Area(tlog_thread_buff, tlog_thread_buff + MESSAGE_LENGTH * 64);
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 		if (((struct ut_log_buf_head *)tlog_buf)->write_pos == tlog_pos) {
 			schedule_timeout_interruptible(1 * HZ);
 			continue;
@@ -261,16 +273,26 @@ long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_s
 
 int utgate_log_print(unsigned long log_start)
 {
-	if (*((char *)log_start) == '\n') {
-		pr_info("[uTgate LOG] %s\n", utgate_log_line);
-		utgate_log_len = 0;
-		utgate_log_line[0] = 0;
-	} else {
-		utgate_log_line[utgate_log_len] = *((char *)log_start);
-		utgate_log_line[utgate_log_len + 1] = 0;
-		utgate_log_len++;
-	}
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	#if 1
 
+		if (*((char *)log_start) == '\n') {
+			printk("[uTgate LOG] %s\n", utgate_log_line);
+			utgate_log_len = 0;
+			utgate_log_line[0] = 0;
+			msleep(1);
+		} else {
+			utgate_log_line[utgate_log_len] = *((char *)log_start);
+			utgate_log_line[utgate_log_len + 1] = 0;
+			utgate_log_len++;
+			if (utgate_log_len > MAX_LOG_LEN) {
+				printk("[uTgate LOG] %s\n", utgate_log_line);
+				utgate_log_len = 0;
+				utgate_log_line[0] = 0;
+			}
+		}
+	#endif
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	utgate_log_pos = (utgate_log_pos + 1) % (((struct utgate_log_head *)utgate_log_buff)->length - sizeof(struct utgate_log_head));
 
 	return 0;
@@ -305,6 +327,9 @@ int utgate_log_worker(void *p)
 	}
 
 	while (!kthread_should_stop()) {
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		Invalidate_Dcache_By_Area(utgate_log_buff, utgate_log_buff + MESSAGE_LENGTH * 64);
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 		if (((struct utgate_log_head *)utgate_log_buff)->write_pos == utgate_log_pos) {
 			schedule_timeout_interruptible(1 * HZ);
 			continue;

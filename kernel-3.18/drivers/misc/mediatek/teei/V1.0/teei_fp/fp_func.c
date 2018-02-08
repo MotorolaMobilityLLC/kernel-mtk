@@ -21,7 +21,10 @@
 
 /* #define FP_DEBUG */
 
-#define MICROTRUST_FP_SIZE	0x80000
+#define MICROTRUST_FP_SIZE	(0x80000)
+#define FP_BUFFER_OFFSET	(0x10)
+#define FP_LEN_MAX		(MICROTRUST_FP_SIZE - FP_BUFFER_OFFSET)
+#define FP_LEN_MIN		0
 #define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
 #define CMD_FP_CMD      _IO(0x775A777E, 0x2)
 #define CMD_GATEKEEPER_CMD	_IO(0x775A777E, 0x3)
@@ -99,6 +102,9 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 	unsigned int args_len = 0;
 	unsigned int fp_cid = 0xFF;
 	unsigned int fp_fid = 0xFF;
+	unsigned char args[16] = {0};
+	unsigned int buff_len = 0;
+
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
 	pr_debug("##################################\n");
@@ -112,16 +118,27 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		break;
 
 	case CMD_FP_CMD:
+		if (copy_from_user((void *)args, (void *)arg, FP_BUFFER_OFFSET)) {
+			pr_err("copy args from user failed.\n");
+			up(&fp_api_lock);
+			return -EFAULT;
+		}
 		/*TODO compute args length*/
 		/*[11-15] is the length of data*/
-		args_len = *((unsigned int *)(arg + 12));
+		args_len = *((unsigned int *)(args + 12));
+		if (args_len > FP_LEN_MAX || (args_len <= FP_LEN_MIN)) {
+			pr_err("args_len is invalid %d !\n", args_len);
+			up(&fp_api_lock);
+			return -EFAULT;
+		}
+		buff_len = args_len + FP_BUFFER_OFFSET;
 		/*[0-3] is cmd id*/
-		fp_cid = *((unsigned int *)(arg));
+		fp_cid = *((unsigned int *)(args));
 		/*[4-7] is fuction id*/
-		fp_fid = *((unsigned int *)(arg + 4));
+		fp_fid = *((unsigned int *)(args + 4));
 #ifdef FP_DEBUG
 		pr_debug("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n", (unsigned int)arg, args_len);
-		pr_debug("invoke fp cmd fp_cid is %d fp_fid is %d \n", fp_cid, fp_fid);
+		pr_debug("invoke fp cmd fp_cid is %d fp_fid is %d\n", fp_cid, fp_fid);
 #endif
 
 		if (!fp_buff_addr) {
@@ -129,11 +146,10 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
+		memset((void *)fp_buff_addr, 0, buff_len);
 
-		memset((void *)fp_buff_addr, 0, args_len + 16);
-
-		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
-			pr_err(KERN_INFO "copy from user failed. \n");
+		if (copy_from_user((void *)fp_buff_addr, (void *)arg, buff_len)) {
+			pr_err("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
@@ -147,8 +163,8 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		pr_debug("[%s][%d] fp_buff_addr 88 - 91 = %d\n", __func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
 
-		if (copy_to_user((void *)arg, fp_buff_addr, args_len + 16)) {
-			pr_err("copy from user failed. \n");
+		if (copy_to_user((void *)arg, (void *)fp_buff_addr, buff_len)) {
+			pr_err("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}

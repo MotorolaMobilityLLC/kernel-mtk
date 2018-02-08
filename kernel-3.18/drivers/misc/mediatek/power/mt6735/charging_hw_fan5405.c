@@ -1,4 +1,4 @@
-//lenovo@lenovo.com 20161110 begin
+//zhanyoufei@wind-mobi.com 20161110 begin
 #include <linux/types.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/upmu_common.h>
@@ -138,19 +138,19 @@ static u32 charging_hw_init(void *data)
 	mt_set_gpio_mode(wireless_charger_gpio_number, 0);	/* 0:GPIO mode */
 	mt_set_gpio_dir(wireless_charger_gpio_number, 0);	/* 0: input, 1: output */
 #endif
-	//lenovo@lenovo.com 20160222 begin
+	//zhanyoufei@wind-mobi.com 20160222 begin
 	#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
 	fan5405_reg_config_interface(0x06, 0x77);
 	#else
 	fan5405_reg_config_interface(0x06, 0x70);
 	#endif	
-	//lenovo@lenovo.com 20160222 end
+	//zhanyoufei@wind-mobi.com 20160222 end
 	
 	fan5405_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
 	fan5405_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
-	//lenovo@lenovo.com 20170223 begin
+	//zhanyoufei@wind-mobi.com 20170223 begin
 	fan5405_reg_config_interface(0x05, 0x04);
-	//lenovo@lenovo.com 20170223 end
+	//zhanyoufei@wind-mobi.com 20170223 end
 	if (!charging_init_flag) {
 		fan5405_reg_config_interface(0x04, 0x1A);	/* 146mA */
 		charging_init_flag = KAL_TRUE;
@@ -322,10 +322,10 @@ static u32 charging_get_hv_status(void *data)
 static u32 charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
-//lenovo@lenovo.com 20161216 begin
+//zhanyoufei@wind-mobi.com 20161216 begin
 //#if 1 //defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
-//lenovo@lenovo.com 20161216 end
+//zhanyoufei@wind-mobi.com 20161216 end
 	*(kal_bool *) (data) = 0;	/* battery exist */
 	battery_log(BAT_LOG_CRTI, "[charging_get_battery_status] battery exist for bring up.\n");
 #else
@@ -371,11 +371,11 @@ static u32 charging_get_charger_type(void *data)
 	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 #else
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
-	//lenovo@lenovo.com 20170104 begin
+	//zhanyoufei@wind-mobi.com 20170104 begin
 	if(*(CHARGER_TYPE *) (data) == 1){
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
 	}
-	//lenovo@lenovo.com 20170104 end
+	//zhanyoufei@wind-mobi.com 20170104 end
 #endif
 
 	return status;
@@ -489,4 +489,4 @@ s32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 
 	return status;
 }
-//lenovo@lenovo.com 20161110 end
+//zhanyoufei@wind-mobi.com 20161110 end

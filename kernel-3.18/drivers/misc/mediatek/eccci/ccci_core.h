@@ -462,6 +462,7 @@ extern int ccci_subsys_dfo_init(void);
 /* per-modem sub-system */
 extern int switch_MD1_Tx_Power(unsigned int mode);
 extern int switch_MD2_Tx_Power(unsigned int mode);
+extern int ccci_update_rf_desense(struct ccci_modem *md, int rf_desense);
 
 #ifdef FEATURE_MTK_SWITCH_TX_POWER
 int swtp_init(int md_id);
@@ -816,6 +817,7 @@ enum {
 	MD_SW_MD1_TX_POWER_REQ = 0x110,
 	MD_SW_MD2_TX_POWER_REQ = 0x111,
 	MD_THROTTLING = 0x112, /* SW throughput throttling */
+	MD_RF_DESENSE = 0x113,
 	/* TEST_MESSAGE for IT only */
 	TEST_MSG_ID_MD2AP = 0x114,
 	TEST_MSG_ID_AP2MD = 0x115,
@@ -962,13 +964,13 @@ struct c2k_ctrl_port_msg {
 	unsigned char option;
 } __packed; /* not necessary, but it's a good gesture, :) */
 
-//lenovo@lenovo.com 20170122 begin
+//qiumeng@wind-mobi.com 20170122 begin
 #define FEATURE_MTK_SWITCH_TX_POWER
 
 #ifdef FEATURE_MTK_SWITCH_TX_POWER
 #define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
 extern int swtp_init(int md_id);
 #endif
-//lenovo@lenovo.com 20170122 end
+//qiumeng@wind-mobi.com 20170122 end
 
 #endif	/* __CCCI_CORE_H__ */

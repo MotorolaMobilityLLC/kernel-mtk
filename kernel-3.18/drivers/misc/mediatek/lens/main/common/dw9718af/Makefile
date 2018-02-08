@@ -1,4 +1,4 @@
-##lenovo@lenovo.com 20160119 begin
+##luminjie@wind-mobi.com 20160119 begin
 # Copyright (C) 2015 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,4 +18,4 @@
 obj-y += DW9718AF.o
 
 
-##lenovo@lenovo.com 20160119 end
+##luminjie@wind-mobi.com 20160119 end

@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20160119 begin
+	luminjie@wind-mobi.com 20160119 begin
 */
 
 /*
@@ -128,12 +128,12 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static void initdrv(void)
 {
-	//lenovo@lenovo.com 20170330 begin
+	//luminjie@wind-mobi.com 20170330 begin
 	//char puSendCmd2[2] = { 0x01, 0x39 };
 	//char puSendCmd3[2] = { 0x05, 0x65 };
 	char puSendCmd2[2] = { 0x01, 0x3B };
 	char puSendCmd3[2] = { 0x05, 0x62 };
-	//lenovo@lenovo.com 20170330 end
+	//luminjie@wind-mobi.com 20170330 end
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 }
@@ -272,5 +272,5 @@ void DW9718AF_QT_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pA
 	g_pAF_Opened = pAF_Opened;
 }
 /*
-	lenovo@lenovo.com 20160119 end
+	luminjie@wind-mobi.com 20160119 end
 */

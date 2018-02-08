@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2013 FCI Inc. All Rights Reserved
 
@@ -102,4 +102,4 @@ extern ssize_t fci_ringbuffer_pkt_next(struct fci_ringbuffer *rbuf
 #endif
 
 #endif
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

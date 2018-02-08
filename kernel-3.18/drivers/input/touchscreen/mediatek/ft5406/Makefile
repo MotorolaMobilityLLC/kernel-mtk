@@ -1,4 +1,4 @@
-##lenovo@lenovo.com add at 20161109 begin
+##qiumeng@wind-mobi.com add at 20161109 begin
 # Linux driver folder
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/ft5406/include/
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
@@ -13,7 +13,7 @@ obj-y	+=  focaltech_flash.o
 obj-y	+=  focaltech_Gesture.o
 obj-y	+=  focaltech_core.o
 obj-y	+=	focaltech_esd_protection.o
-##lenovo@lenovo.com add at 20161109 end
+##qiumeng@wind-mobi.com add at 20161109 end
 
 
 

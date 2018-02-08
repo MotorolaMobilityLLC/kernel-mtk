@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /*
  *
  * FocalTech fts TouchScreen driver.
@@ -115,18 +115,21 @@
 /*******************************************************************************
 * Static variables
 *******************************************************************************/
-// extern u16 g_ctp_vendor; //lenovo@lenovo.com remove at 20160410
-//add TP firmware ---lenovo@lenovo.com modify at 20170601 begin
+// extern u16 g_ctp_vendor; //tuwenzan@wind-mobi.com remove at 20160410
+//add TP firmware ---qiumeng@wind-mobi.com modify at 20170612 begin
 static unsigned char CTPM_FW[] = {
-	#include "FT5x46i_YD_A158_OFilm_Lacrose_VID01_V0D_D01_20170216_app.i"
+	#include "FT5x46i_YD_A158_OFilm_Lacrose_VID01_V10_D01_20170703_app.i"
 };
 static unsigned char CTPM_FW1[] = {
-	#include "FT5x46i_YD_A158_TT_Lacrose_VID01_V10_D01_20170531_app.i"
+	#include "FT5x46i_YD_A158_TT_Lacrose_VID01_V11_D01_20170630_app.i"
 };
 static unsigned char CTPM_FW2[] = {
-	#include "FT5346I_YD_A158_lacrosse_DJN0x10_V03_D01_20170523_app.i"
+	#include "FT5346I_YD_A158_lacrosse_DJN0x10_V05_D01_20170724_app.i"	//DIJIN TPsensor--sunsiyuan@wind-mobi.com add at 20170725
 };
-//add TP firmware ---lenovo@lenovo.com modify at 20170601 end
+static unsigned char CTPM_FW3[] = {
+	#include "FT5346I_YD_A158_Each0x03_V06_D01_20170726_app.i"	//yeji TPsensor--sunsiyuan@wind-mobi.com add at 20170728
+};
+//add TP firmware ---qiumeng@wind-mobi.com modify at 20170607 end
 
 static unsigned char aucFW_PRAM_BOOT[] = {
 	//#include "FT8xx6_Pramboot_Vx.x_xxxx.i"
@@ -1284,9 +1287,9 @@ int fts_5x36_ctpm_fw_upgrade(struct i2c_client *client, u8 *pbt_buf, u32 dw_lent
 	u8  	bt_ecc;
 	int	i_ret;
 	int	fw_filenth = sizeof(CTPM_FW);
-	int	fw_filenth1 = sizeof(CTPM_FW1); //lenovo@lenovo.com add at 20160504
+	int	fw_filenth1 = sizeof(CTPM_FW1); //tuwenzan@wind-mobi.com add at 20160504
 
-	if((CTPM_FW[fw_filenth-12] == 30) || (CTPM_FW1[fw_filenth1-12] == 30)) //lenovo@lenovo.com modify at 20160504
+	if((CTPM_FW[fw_filenth-12] == 30) || (CTPM_FW1[fw_filenth1-12] == 30)) //tuwenzan@wind-mobi.com modify at 20160504
 	{
 		is_5336_fwsize_30 = 1;
 	}
@@ -1956,7 +1959,7 @@ int  fts_5x46_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 			bt_ecc ^= packet_buf[6 + i];
 		}
 		fts_i2c_write(client, packet_buf, FTS_PACKET_LENGTH + 6);
-		msleep(10); //lenovo@lenovo.com 20161129
+		msleep(10); //qiumeng@wind-mobi.com 20161129
 		/*
 		for(i = 0;i < 30;i++)
 		{
@@ -3313,23 +3316,28 @@ int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client, char *firmware_
 ***********************************************************************/
 int fts_ctpm_get_i_file_ver(u8 tp_vendor_id)
 {
-	//lenovo@lenovo.com 20170426 begin
-	u16 ui_sz,ui_sz1,ui_sz2;
-	int fw_id = 0;  //lenovo@lenovo.com 20161129
+	//qiumeng@wind-mobi.com 20170607 begin
+	u16 ui_sz,ui_sz1,ui_sz2,ui_sz3;
+	int fw_id = 0;  //qiumeng@wind-mobi.com 20161129
 	ui_sz = sizeof(CTPM_FW);
 	ui_sz1 = sizeof(CTPM_FW1);
 	ui_sz2 = sizeof(CTPM_FW2);
-		if(tp_vendor_id==0x01) //lenovo@lenovo.com add at 20161129
+	ui_sz3 = sizeof(CTPM_FW3);
+		if(tp_vendor_id==0x01) //qiumeng@wind-mobi.com add at 20161129
 		{
 			fw_id = CTPM_FW[ui_sz - 2];
 		}
-		else if (tp_vendor_id==0x02)  //lenovo@lenovo.com add at 20161209
+		else if (tp_vendor_id==0x02)  //qiumeng@wind-mobi.com add at 20161209
 		{
 			fw_id = CTPM_FW1[ui_sz1 - 2];
 		}
 		else if (tp_vendor_id==0x10)
 		{
 			fw_id = CTPM_FW2[ui_sz2 - 2];
+		}
+		else if (tp_vendor_id==0x03)
+		{
+			fw_id = CTPM_FW3[ui_sz3 - 2];
 		}
 	if (ui_sz > 2)
 	{
@@ -3342,7 +3350,7 @@ int fts_ctpm_get_i_file_ver(u8 tp_vendor_id)
 		return fw_id; //CTPM_FW[ui_sz - 2];
 	}
 	}
-	//lenovo@lenovo.com 20170426 end
+	//qiumeng@wind-mobi.com 20170607 end
 	return 0x00;
 }
 /************************************************************************
@@ -3474,15 +3482,16 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 	u8 *pbt_buf = NULL;
 	int i_ret=0;
 	int fw_len = sizeof(CTPM_FW);
-	//lenovo@lenovo.com 20170426 begin
+	//qiumeng@wind-mobi.com 20170607 begin
     int fw_len2 = sizeof(CTPM_FW2);
-	//lenovo@lenovo.com 20170426 end
-	//lenovo@lenovo.com add at 20150410 begin
+	int fw_len3 = sizeof(CTPM_FW3);
+	//qiumeng@wind-mobi.com 20170607 end
+	//tuwenzan@wind-mobi.com add at 20150410 begin
 	int fw_len1 = sizeof(CTPM_FW1);
 	u8  tp_vendor_id;
 	//fts_read_reg(client, FTS_REG_VENDOR_ID, &tp_vendor_id);
-	tp_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);//lenovo@lenovo.com --20160222
-	//lenovo@lenovo.com add at 20150410 end
+	tp_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);//shenyong@wind-mobi.com --20160222
+	//tuwenzan@wind-mobi.com add at 20150410 end
 
 	/*judge the fw that will be upgraded
 	* if illegal, then stop upgrade and return.
@@ -3554,8 +3563,8 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 	}
 	else if ((fts_updateinfo_curr.CHIP_ID==0x54))
 	{
-	//lenovo@lenovo.com modify at 20160506 begin
-		if(tp_vendor_id==0x01) //lenovo@lenovo.com modify at 20161129
+	//tuwenzan@wind-mobi.com modify at 20160506 begin
+		if(tp_vendor_id==0x01) //qiumeng@wind-mobi.com modify at 20161129
 		{
 		//	printk("twz vendor_name=FT3427 \n");
 			if (fw_len < 8 || fw_len > 54 * 1024) 
@@ -3578,7 +3587,7 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			#endif
 			}
 		}
-		else if(tp_vendor_id==0x02) //lenovo@lenovo.com modify at 20161209
+		else if(tp_vendor_id==0x02) //qiumeng@wind-mobi.com modify at 20161209
 		{
 		//	printk("twz vendor_name=FT3327 \n");
 			if (fw_len1 < 8 || fw_len1 > 54 * 1024) 
@@ -3599,7 +3608,7 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			#endif
 			}
 		}
-		//lenovo@lenovo.com 20170426 begin
+		//qiumeng@wind-mobi.com 20170426 begin
 		else if(tp_vendor_id==0x10)
 		{
 	
@@ -3621,8 +3630,31 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			#endif
 			}
 		}
-		//lenovo@lenovo.com 20170426 end
-		//lenovo@lenovo.com modify at 20160506 end
+		//qiumeng@wind-mobi.com 20170426 end
+		//qiumeng@wind-mobi.com 20170607 begin
+		else if(tp_vendor_id==0x03)
+		{
+	
+			if (fw_len3 < 8 || fw_len3 > 54 * 1024) 
+			{
+			pr_err("FW length error\n");
+			return -EIO;
+			}
+			pbt_buf = CTPM_FW3;
+			i_ret = fts_5x46_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW3));
+			if (i_ret != 0)
+			{
+					dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n", i_ret);
+			}
+			else 
+			{
+			#ifdef AUTO_CLB
+				fts_ctpm_auto_clb(client);  /*start auto CLB*/
+			#endif
+			}
+		}
+		//qiumeng@wind-mobi.com 20170607 end
+		//tuwenzan@wind-mobi.com modify at 20160506 end
 	}	
 	else if ((fts_updateinfo_curr.CHIP_ID==0x58))
 	{
@@ -3883,12 +3915,12 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	fts_read_reg(client, FTS_REG_FW_VER, &uc_tp_fm_ver);
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
-    //lenovo@lenovo.com add 20170426 begin
-	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID))
+    //qiumeng@wind-mobi.com add 20170607 begin
+	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID) && (uc_tp_vendor_id != FTS_Vendor_4_ID))
 	{
 		uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
 		printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-		if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID)|| (uc_boot_vendor_id == FTS_Vendor_3_ID))
+		if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID)|| (uc_boot_vendor_id == FTS_Vendor_3_ID)|| (uc_boot_vendor_id == FTS_Vendor_4_ID))
 		{
 			uc_tp_fm_ver = 0;//force to upgrade the FW
 			uc_tp_vendor_id = uc_boot_vendor_id;
@@ -3899,8 +3931,8 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 			return -EIO;//FW unmatched
 		}
 	}
-    //lenovo@lenovo.com add 20170426 end
-	uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //lenovo@lenovo.com modify at 20160506
+    //qiumeng@wind-mobi.com add 20170607 end
+	uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //tuwenzan@wind-mobi.com modify at 20160506
 	printk("[FTS] uc_host_fm_ver = 0x%x\n",uc_host_fm_ver);
 	
 	if (uc_tp_fm_ver == FTS_REG_FW_VER ||	uc_tp_fm_ver < uc_host_fm_ver )
@@ -3912,7 +3944,7 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 		if (i_ret == 0)	
 		{
 			msleep(300);
-			uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //lenovo@lenovo.com modify at 20160504
+			uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //tuwenzan@wind-mobi.com modify at 20160504
 			dev_dbg(&client->dev, "[FTS] upgrade to new version 0x%x\n",uc_host_fm_ver);
 			printk("[FTS] upgrade to new version 0x%x\n",uc_host_fm_ver);
 		} 
@@ -3925,4 +3957,4 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	}
 	return 0;
 }
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

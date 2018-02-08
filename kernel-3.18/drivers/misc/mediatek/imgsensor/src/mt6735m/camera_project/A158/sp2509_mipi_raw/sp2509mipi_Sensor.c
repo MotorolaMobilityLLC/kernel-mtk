@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20160901 begin
+	wangkangmin@wind-mobi.com 20160901 begin
 */
 /*****************************************************************************
  *
@@ -144,9 +144,9 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-    //lenovo@lenovo.com 20160727 beign
+    //luminjie@wind-mobi.com 20160727 beign
     .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,//sensor output first pixel color
-    //lenovo@lenovo.com 20160727 end
+    //luminjie@wind-mobi.com 20160727 end
     .mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
     .mipi_lane_num = SENSOR_MIPI_1_LANE,//mipi lane num
     .i2c_addr_table = {0x7a, 0xff},
@@ -358,9 +358,9 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
     //not support HDR
     //LOG_INF("le:0x%x, se:0x%x, gain:0x%x\n",le,se,gain);
 }
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
 #if 0
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
     LOG_INF("image_mirror = %d\n", image_mirror);
@@ -488,9 +488,9 @@ static void sensor_init(void)
       write_cmos_sensor(0xfe,0x10); // 9.29wu
       write_cmos_sensor(0xf9,0x00); // 9.29wu
       write_cmos_sensor(0xfa,0x00); // 9.29wu
-	  //lenovo@lenovo.com 20160723 begin
+	  //luminjie@wind-mobi.com 20160723 begin
 	write_cmos_sensor(0x3f,0x03);
-	//lenovo@lenovo.com 20160723 end
+	//luminjie@wind-mobi.com 20160723 end
     	}    /*    MIPI_sensor_Init  */
 
 
@@ -717,9 +717,9 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
     //set_mirror_flip(sensor_config_data->SensorImageMirror);
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
     return ERROR_NONE;
 }    /*    preview   */
 
@@ -762,9 +762,9 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     }
     spin_unlock(&imgsensor_drv_lock);
     capture_setting(imgsensor.current_fps);
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
     //set_mirror_flip(sensor_config_data->SensorImageMirror);
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
     return ERROR_NONE;
 }    /* capture() */
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -782,9 +782,9 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     normal_video_setting(imgsensor.current_fps);
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
     //set_mirror_flip(sensor_config_data->SensorImageMirror);
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
     return ERROR_NONE;
 }    /*    normal_video   */
 
@@ -805,9 +805,9 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     hs_video_setting();
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
     //set_mirror_flip(sensor_config_data->SensorImageMirror);
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
     return ERROR_NONE;
 }    /*    hs_video   */
 
@@ -827,9 +827,9 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     slim_video_setting();
-//lenovo@lenovo.com 20160323 begin
+//wangkangmin@wind-mobi.com 20160323 begin
     //set_mirror_flip(sensor_config_data->SensorImageMirror);
-//lenovo@lenovo.com 20160323 end
+//wangkangmin@wind-mobi.com 20160323 end
 
     return ERROR_NONE;
 }    /*    slim_video     */
@@ -1287,5 +1287,5 @@ UINT32 SP2509_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
     return ERROR_NONE;
 }    /*    SP2509MIPISensorInit    */
 /*
-	lenovo@lenovo.com 20160901 begin
+	wangkangmin@wind-mobi.com 20160901 begin
 */

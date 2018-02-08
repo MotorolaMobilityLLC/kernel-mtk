@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /*
  *
  * FocalTech TouchScreen driver.
@@ -362,4 +362,4 @@ int fts_read_Gestruedata(void)
 	return -1;
 }
 #endif
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

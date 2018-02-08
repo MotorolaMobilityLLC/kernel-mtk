@@ -1,4 +1,4 @@
-##lenovo@lenovo.com 20161116 begin
+##luminjie@wind-mobi.com 20161116 begin
 #
 # Copyright (C) 2015 MediaTek Inc.
 #
@@ -15,4 +15,4 @@
 
 obj-y += gc2355mipi_Sensor.o
 
-##lenovo@lenovo.com 20161116 end
+##luminjie@wind-mobi.com 20161116 end

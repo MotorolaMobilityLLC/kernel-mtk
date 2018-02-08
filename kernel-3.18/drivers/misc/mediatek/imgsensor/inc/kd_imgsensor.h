@@ -281,16 +281,18 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Others*/
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
-//lenovo@lenovo.com 20161212 begin
+//luminjie@wind-mobi.com 20161212 begin
 #define IMX219_SENSOR_ID                        0x0219
 #define S5K4H8_SENSOR_ID                        0x4088
-//lenovo@lenovo.com 20161229 begin
+//luminjie@wind-mobi.com 20170613 begin
 #define S5K4H8_SENSOR_ID_QT                     0x4088+1
-//lenovo@lenovo.com 20161229 end
+#define S5K4H8_SENSOR_ID_HLT                    0x4088+2
+#define S5K4H8_SENSOR_ID_BLX                    0x4088+3
+//luminjie@wind-mobi.com 20170613 end
 #define SP2509MIPI_SENSOR_ID					0x2509
 #define GC2355_SENSOR_ID                        0x2355
 #define GC2375_SENSOR_ID                        0x2375
-//lenovo@lenovo.com 20161212 end
+//luminjie@wind-mobi.com 20161212 end
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -431,16 +433,18 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135mipiraw5mp"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP      "imx135mipiraw8mp"
-//lenovo@lenovo.com 20161212 begin
+//luminjie@wind-mobi.com 20161212 begin
 #define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
 #define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
-//lenovo@lenovo.com 20161229 begin
+//luminjie@wind-mobi.com 20170613 begin
 #define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT       "s5k4h8mipirawqt"
-//lenovo@lenovo.com 20161229 end
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT       "s5k4h8mipirawhlt"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX       "s5k4h8mipirawblx"
+//luminjie@wind-mobi.com 20170613 end
 #define SENSOR_DRVNAME_SP2509_MIPI_RAW         	"sp2509mipiraw"
 #define SENSOR_DRVNAME_GC2355_MIPI_RAW          "gc2355mipiraw"
 #define SENSOR_DRVNAME_GC2375_MIPI_RAW          "gc2375mipiraw"
-//lenovo@lenovo.com 20161212 end
+//luminjie@wind-mobi.com 20161212 end
 /*******************************************************************************
 *
 ********************************************************************************/

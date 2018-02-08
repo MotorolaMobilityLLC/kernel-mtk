@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20161116 begin
+	luminjie@wind-mobi.com 20161116 begin
 */
 /*
  * Copyright (C) 2015 MediaTek Inc.
@@ -156,9 +156,9 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	//lenovo@lenovo.com set color 20161116 begin
+	//luminjie@wind-mobi.com set color 20161116 begin
     .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
-	//lenovo@lenovo.com set color 20161116 end
+	//luminjie@wind-mobi.com set color 20161116 end
     .mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
     .mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
     .i2c_addr_table = {0x78, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -542,9 +542,9 @@ static void sensor_init(void)
 	write_cmos_sensor(0x14,0x01);
 	write_cmos_sensor(0x15,0x00);
 	write_cmos_sensor(0x16,0xc1);*/
-	//lenovo@lenovo.com set mirror 20161116 begin
+	//luminjie@wind-mobi.com set mirror 20161116 begin
 	write_cmos_sensor(0x17,0x17);//14
-	//lenovo@lenovo.com set mirror 20161116 end
+	//luminjie@wind-mobi.com set mirror 20161116 end
 	//write_cmos_sensor(0x18,0x02);
 	write_cmos_sensor(0x19,0x0b);
 	write_cmos_sensor(0x1b,0x49); //48
@@ -1653,5 +1653,5 @@ UINT32 GC2355_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 }    /*    GC2355_MIPI_RAW_SensorInit    */
 EXPORT_SYMBOL(GC2355_MIPI_RAW_SensorInit);
 /*
-	lenovo@lenovo.com 20161116 end
+	luminjie@wind-mobi.com 20161116 end
 */

@@ -66,6 +66,8 @@ static kuid_t binder_context_mgr_uid = INVALID_UID;
 static int binder_last_id;
 static struct workqueue_struct *binder_deferred_workqueue;
 
+#define BINDER_MIN_ALLOC (1 * PAGE_SIZE)
+
 #define RT_PRIO_INHERIT			"v1.7"
 #ifdef RT_PRIO_INHERIT
 #include <linux/sched/rt.h>
@@ -231,7 +233,7 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
 #define binder_user_error(x...) \
 	do { \
 		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
-			pr_err(x); \
+			pr_err_ratelimited(x); \
 		if (binder_stop_on_user_error) \
 			binder_stop_on_user_error = 2; \
 	} while (0)
@@ -653,18 +655,27 @@ static void binder_print_bwdog(struct binder_transaction *t,
 	sub_t = timespec_sub(cur, *startime);
 
 	rtc_time_to_tm(t->tv.tv_sec, &tm);
-	pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld sec (%s) dex_code %u",
-		 t->debug_id, binder_wait_on_str[r],
-		 t->fproc, t->fthrd, t->tproc, t->tthrd,
-		 (cur_in && e) ? "over" : "total",
-		 (unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
-		 t->service, t->code);
-	pr_debug(" start_at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
-		 (unsigned long)startime->tv_sec,
-		 (startime->tv_nsec / NSEC_PER_MSEC),
-		 (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
-		 tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
-
+	if (cur_in && e) {
+		pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			 t->debug_id, binder_wait_on_str[r],
+			 t->fproc, t->fthrd, t->tproc, t->tthrd, "over",
+			 (unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			 t->service, t->code,
+			 (unsigned long)startime->tv_sec,
+			 (startime->tv_nsec / NSEC_PER_MSEC),
+			 (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			 tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	} else {
+		pr_debug_ratelimited("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			 t->debug_id, binder_wait_on_str[r],
+			 t->fproc, t->fthrd, t->tproc, t->tthrd, "total",
+			 (unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			 t->service, t->code,
+			 (unsigned long)startime->tv_sec,
+			 (startime->tv_nsec / NSEC_PER_MSEC),
+			 (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			 tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	}
 	if (e) {
 		e->over_sec = sub_t.tv_sec;
 		memcpy(&e->ts, startime, sizeof(struct timespec));
@@ -4308,6 +4319,11 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 		}
 	}
 #endif
+	if (vma->vm_end - vma->vm_start < BINDER_MIN_ALLOC) {
+		ret = -EINVAL;
+		failure_string = "VMA size < BINDER_MIN_ALLOC";
+		goto err_vma_too_small;
+	}
 	proc->pages =
 	    kzalloc(sizeof(proc->pages[0]) *
 		    ((vma->vm_end - vma->vm_start) / PAGE_SIZE), GFP_KERNEL);
@@ -4345,6 +4361,7 @@ err_alloc_small_buf_failed:
 	kfree(proc->pages);
 	proc->pages = NULL;
 err_alloc_pages_failed:
+err_vma_too_small:
 	mutex_lock(&binder_mmap_lock);
 	vfree(proc->buffer);
 	proc->buffer = NULL;

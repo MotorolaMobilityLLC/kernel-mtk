@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /* Copyright Statement:
  *
  * This software/firmware and related documentation ("MediaTek Software") are
@@ -99,4 +99,4 @@ static unsigned char TPD_FW3[] = {
 };
 #endif /* CTP_DETECT_SUPPLIER_THROUGH_GPIO */
 #endif /* TOUCHPANEL_UPGRADE_H__ */
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

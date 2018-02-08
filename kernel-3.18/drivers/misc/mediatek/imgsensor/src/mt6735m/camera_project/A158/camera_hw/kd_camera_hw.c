@@ -405,15 +405,15 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		} 
-		//lenovo@lenovo.com 20161028 begin
+		//luminjie@wind-mobi.com 20161028 begin
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_SP2509_MIPI_RAW, currSensorName))&&(pinSetIdx == 1)) {
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
-						//lenovo@lenovo.com 20170306 begin
+						//luminjie@wind-mobi.com 20170306 begin
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-						//lenovo@lenovo.com 20170306 end
+						//luminjie@wind-mobi.com 20170306 end
 
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
@@ -422,9 +422,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(50);
 
 			/* VCAM_A */
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			//mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
@@ -471,9 +471,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			/* enable active sensor */
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(1-pinSetIdx, CAMPDN,
-						//lenovo@lenovo.com 20170306 begin
+						//luminjie@wind-mobi.com 20170306 begin
 						pinSet[1-pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-						//lenovo@lenovo.com 20170306 end
+						//luminjie@wind-mobi.com 20170306 end
 			}
 
 			mdelay(5);
@@ -520,9 +520,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 			mdelay(10);
 			/* VCAM_A */
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
@@ -605,9 +605,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 			mdelay(5);
 			/* VCAM_A */
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
@@ -668,8 +668,8 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		}
-		//lenovo@lenovo.com 20161028 end
-		//lenovo@lenovo.com add qt_4h8 power on 20161229 begin
+		//luminjie@wind-mobi.com 20161028 end
+		//luminjie@wind-mobi.com add qt_4h8 power on 20161229 begin
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT, currSensorName))&&(pinSetIdx == 0)) {
 			/* First Power Pin low and Reset Pin Low */
@@ -691,9 +691,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 			mdelay(5);
 			/* VCAM_A */
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
@@ -754,9 +754,179 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		}
-		//lenovo@lenovo.com add qt_4h8 power on 20161229 end
-		//lenovo@lenovo.com 20161028 end
-		//lenovo@lenovo.com add 2375 power on 20161212 begin
+		
+
+		else if (currSensorName
+			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT, currSensorName))&&(pinSetIdx == 0)) {
+			/* First Power Pin low and Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+
+			mdelay(5);
+			/* AF_VCC */
+			if (TRUE != _hwPowerOn(VCAMAF, VOL_2800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_AF),power id = %d\n",
+				     VCAMAF);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			mdelay(5);
+			/* VCAM_A */
+			//luminjie@wind-mobi.com 20161121 begin
+			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
+			//luminjie@wind-mobi.com 20161121 end
+			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
+				     VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+
+			/* VCAM_IO */
+			if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable IO power (VCAM_IO),power id = %d\n",
+				     VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+#if 1
+			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n",
+				     VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+#endif
+			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(1-pinSetIdx, CAMRST,
+						pinSet[1-pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+			}
+			mdelay(5);
+			/* enable active sensor */
+			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(1-pinSetIdx, CAMPDN,
+						pinSet[1-pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			}
+
+			mdelay(5);
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+				mdelay(5);
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
+			}
+			mdelay(5);
+			/* enable active sensor */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+				mdelay(5);
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
+			}
+
+			mdelay(5);
+
+		}
+		else if (currSensorName
+			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX, currSensorName))&&(pinSetIdx == 0)) {
+			/* First Power Pin low and Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+
+			mdelay(5);
+			/* AF_VCC */
+			if (TRUE != _hwPowerOn(VCAMAF, VOL_2800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_AF),power id = %d\n",
+				     VCAMAF);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			mdelay(5);
+			/* VCAM_A */
+			//luminjie@wind-mobi.com 20161121 begin
+			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
+			//luminjie@wind-mobi.com 20161121 end
+			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A),power id = %d\n",
+				     VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+
+			/* VCAM_IO */
+			if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable IO power (VCAM_IO),power id = %d\n",
+				     VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+#if 1
+			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n",
+				     VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(5);
+#endif
+			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(1-pinSetIdx, CAMRST,
+						pinSet[1-pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+			}
+			mdelay(5);
+			/* enable active sensor */
+			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(1-pinSetIdx, CAMPDN,
+						pinSet[1-pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			}
+
+			mdelay(5);
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+				mdelay(5);
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
+			}
+			mdelay(5);
+			/* enable active sensor */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+				mdelay(5);
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
+			}
+
+			mdelay(5);
+
+		}
+		//luminjie@wind-mobi.com add qt_4h8 power on 20161229 end
+		//luminjie@wind-mobi.com 20161028 end
+		//luminjie@wind-mobi.com add 2375 power on 20161212 begin
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_GC2375_MIPI_RAW, currSensorName))&&(pinSetIdx == 1)) {
 			/* First Power Pin low and Reset Pin Low */
@@ -816,9 +986,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			/* enable active sensor */
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(1-pinSetIdx, CAMPDN,
-						//lenovo@lenovo.com 20170306 begin
+						//luminjie@wind-mobi.com 20170306 begin
 						pinSet[1-pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-						//lenovo@lenovo.com 20170306 end
+						//luminjie@wind-mobi.com 20170306 end
 			}
 
 			mdelay(20);
@@ -843,8 +1013,8 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		}
-		//lenovo@lenovo.com add 2375 power on 20161212 end
-		//lenovo@lenovo.com 20161028 end
+		//luminjie@wind-mobi.com add 2375 power on 20161212 end
+		//luminjie@wind-mobi.com 20161028 end
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_OV5648_MIPI_RAW, currSensorName))) {
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
@@ -1002,14 +1172,14 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 			/* VCAM_A */
-			//lenovo@lenovo.com 20161207 begin
+			//luminjie@wind-mobi.com 20161207 begin
 			//if (TRUE != _hwPowerOnCnt(VCAMA, VOL_2800, mode_name)) {
 			//	PK_DBG
 			//	    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_A), power id = %d\n",
 			//	     VCAMA);
 			//	goto _kdCISModulePowerOn_exit_;
 			//	}
-			//lenovo@lenovo.com 20161207 end
+			//luminjie@wind-mobi.com 20161207 end
 			/* VCAM_D */
 			if (currSensorName
 			    && (0 == strcmp(SENSOR_DRVNAME_S5K2P8_MIPI_RAW, currSensorName))) {
@@ -1105,7 +1275,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		} 
-		//lenovo@lenovo.com 20161028 begin
+		//luminjie@wind-mobi.com 20161028 begin
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_SP2509_MIPI_RAW, currSensorName))&&(pinSetIdx == 1)) {
 			/* Set Power Pin low and Reset Pin Low */
@@ -1129,9 +1299,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 #endif
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			/* VCAM_A */
 			if (TRUE != _hwPowerDown(VCAMA)) {
 				PK_DBG
@@ -1180,9 +1350,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 #endif
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			/* VCAM_A */
 			if (TRUE != _hwPowerDown(VCAMA)) {
 				PK_DBG
@@ -1213,10 +1383,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
-				//lenovo@lenovo.com 20161207 begin
+				//luminjie@wind-mobi.com 20161207 begin
 				pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 			}
-				//lenovo@lenovo.com 20161207 end
+				//luminjie@wind-mobi.com 20161207 end
 			/* Set Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
@@ -1231,9 +1401,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				     VCAMD);
 				goto _kdCISModulePowerOn_exit_;
 			}
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			/* VCAM_A */
 			if (TRUE != _hwPowerDown(VCAMA)) {
 				PK_DBG
@@ -1256,16 +1426,16 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 		}
-		//lenovo@lenovo.com add qt_4h8 power off 20161229 begin
+		//luminjie@wind-mobi.com add qt_4h8 power off 20161229 begin
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT, currSensorName))&&(pinSetIdx == 0)) {
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
-				//lenovo@lenovo.com 20161207 begin
+				//luminjie@wind-mobi.com 20161207 begin
 				pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 			}
-				//lenovo@lenovo.com 20161207 end
+				//luminjie@wind-mobi.com 20161207 end
 			/* Set Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
@@ -1280,9 +1450,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				     VCAMD);
 				goto _kdCISModulePowerOn_exit_;
 			}
-			//lenovo@lenovo.com 20161121 begin
+			//luminjie@wind-mobi.com 20161121 begin
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			//lenovo@lenovo.com 20161121 end
+			//luminjie@wind-mobi.com 20161121 end
 			/* VCAM_A */
 			if (TRUE != _hwPowerDown(VCAMA)) {
 				PK_DBG
@@ -1305,8 +1475,106 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 		}
-		//lenovo@lenovo.com add qt_4h8 power off 20161229 end
-		//lenovo@lenovo.com add 2375 power off 20161212 begin
+
+		
+		else if (currSensorName
+			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT, currSensorName))&&(pinSetIdx == 0)) {
+			/* Set Power Pin low and Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+				//luminjie@wind-mobi.com 20161207 begin
+				pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			}
+				//luminjie@wind-mobi.com 20161207 end
+			/* Set Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+			}
+
+			ISP_MCLK1_EN(0);
+			/* VCAM_D */
+			if (TRUE != _hwPowerDown(VCAMD)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF core power (VCAM_D), power id = %d\n",
+				     VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			//luminjie@wind-mobi.com 20161121 begin
+			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
+			//luminjie@wind-mobi.com 20161121 end
+			/* VCAM_A */
+			if (TRUE != _hwPowerDown(VCAMA)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF analog power (VCAM_A), power id= (%d)\n",
+				     VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			/* VCAM_IO */
+			if (TRUE != _hwPowerDown(VCAMIO)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF digital power (VCAM_IO), power id = %d\n",
+				     VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			/* AF_VCC */
+			if (TRUE != _hwPowerDown(VCAMAF)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF AF power (VCAM_AF), power id = %d\n",
+				     VCAMAF);
+				goto _kdCISModulePowerOn_exit_;
+			}
+		}
+        else if (currSensorName
+			   && (0 == strcmp(SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX, currSensorName))&&(pinSetIdx == 0)) {
+			/* Set Power Pin low and Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
+				mtkcam_gpio_set(pinSetIdx, CAMPDN,
+				//luminjie@wind-mobi.com 20161207 begin
+				pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			}
+				//luminjie@wind-mobi.com 20161207 end
+			/* Set Reset Pin Low */
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
+				mtkcam_gpio_set(pinSetIdx, CAMRST,
+						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+			}
+
+			ISP_MCLK1_EN(0);
+			/* VCAM_D */
+			if (TRUE != _hwPowerDown(VCAMD)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF core power (VCAM_D), power id = %d\n",
+				     VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			//luminjie@wind-mobi.com 20161121 begin
+			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
+			//luminjie@wind-mobi.com 20161121 end
+			/* VCAM_A */
+			if (TRUE != _hwPowerDown(VCAMA)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF analog power (VCAM_A), power id= (%d)\n",
+				     VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			/* VCAM_IO */
+			if (TRUE != _hwPowerDown(VCAMIO)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF digital power (VCAM_IO), power id = %d\n",
+				     VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			/* AF_VCC */
+			if (TRUE != _hwPowerDown(VCAMAF)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to OFF AF power (VCAM_AF), power id = %d\n",
+				     VCAMAF);
+				goto _kdCISModulePowerOn_exit_;
+			}
+		}
+		//luminjie@wind-mobi.com add qt_4h8 power off 20161229 end
+		//luminjie@wind-mobi.com add 2375 power off 20161212 begin
 		else if (currSensorName
 		   && (0 == strcmp(SENSOR_DRVNAME_GC2375_MIPI_RAW, currSensorName))&&(pinSetIdx == 1)) {
 			/* Set Power Pin low and Reset Pin Low */
@@ -1358,8 +1626,8 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 			}
 		}
-		//lenovo@lenovo.com add 2375 power off 20161212 end
-		//lenovo@lenovo.com 20161028 end
+		//luminjie@wind-mobi.com add 2375 power off 20161212 end
+		//luminjie@wind-mobi.com 20161028 end
 		else if (currSensorName
 			   && (0 == strcmp(SENSOR_DRVNAME_OV5648_MIPI_RAW, currSensorName))) {
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
@@ -1417,9 +1685,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 			ISP_MCLK1_EN(0);
-			//lenovo@lenovo.com 20161207 begin
+			//luminjie@wind-mobi.com 20161207 begin
 			//mtkcam_gpio_set(pinSetIdx, CAMLDO, 0);
-			//lenovo@lenovo.com 20161207 end
+			//luminjie@wind-mobi.com 20161207 end
 			if (TRUE != _hwPowerDownCnt(VCAMD, mode_name)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to OFF core power (VCAM_D), power id = %d\n",
@@ -1476,7 +1744,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 					goto _kdCISModulePowerOn_exit_;
 				}
 			}
-			//lenovo@lenovo.com 20161207 begin
+			//luminjie@wind-mobi.com 20161207 begin
 			/* VCAM_A */
 			//if (TRUE != _hwPowerDownCnt(VCAMA, mode_name)) {
 				//PK_DBG
@@ -1484,7 +1752,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				     //VCAMA);
 				//goto _kdCISModulePowerOn_exit_;
 			//}
-			//lenovo@lenovo.com 20161207 end
+			//luminjie@wind-mobi.com 20161207 end
 			/* VCAM_IO */
 			if (TRUE != _hwPowerDownCnt(VCAMIO, mode_name)) {
 				PK_DBG

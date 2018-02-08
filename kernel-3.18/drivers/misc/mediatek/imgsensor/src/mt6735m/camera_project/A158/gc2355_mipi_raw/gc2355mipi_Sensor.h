@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20161116 begin
+	luminjie@wind-mobi.com 20161116 begin
 */
 /*
  * Copyright (C) 2015 MediaTek Inc.
@@ -158,5 +158,5 @@ extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 
 #endif
 /*
-	lenovo@lenovo.com 20161116 end
+	luminjie@wind-mobi.com 20161116 end
 */

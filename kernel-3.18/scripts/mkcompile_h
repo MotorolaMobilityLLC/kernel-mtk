@@ -42,7 +42,7 @@ if [ -z "$KBUILD_BUILD_TIMESTAMP" ]; then
 else
 	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
 fi
-# lenovo@lenovo.com 20161228 modify for kernel-version begin
+# zhangheting@wind-mobi.com 20161228 modify for kernel-version begin
 if test -z "$KBUILD_BUILD_USER"; then
     #LINUX_COMPILE_BY=$(whoami | sed 's/\\/\\\\/')
     LINUX_COMPILE_BY="$KERNEL_VER"
@@ -57,7 +57,7 @@ else
     #LINUX_COMPILE_HOST=$KBUILD_BUILD_HOST
     LINUX_COMPILE_HOST="droid"
 fi
-# lenovo@lenovo.com 20161228 modify for kernel-version end
+# zhangheting@wind-mobi.com 20161228 modify for kernel-version end
 
 UTS_VERSION="#$VERSION"
 CONFIG_FLAGS=""

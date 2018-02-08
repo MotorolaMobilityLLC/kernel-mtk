@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /* Copyright Statement:
  *
  * This software/firmware and related documentation ("MediaTek Software") are
@@ -175,4 +175,4 @@ extern dma_addr_t tpd_i2c_dma_pa;
 extern int tpd_auto_upgrade(struct i2c_client *client);
 #endif
 #endif /* TOUCHPANEL_H__ */
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

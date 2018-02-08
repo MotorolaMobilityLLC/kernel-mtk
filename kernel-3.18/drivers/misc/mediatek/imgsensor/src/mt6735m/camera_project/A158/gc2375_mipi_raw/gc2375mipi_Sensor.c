@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com modify 20170420 begin
+	wupeiyuan@wind-mobi.com modify 20170420 begin
 */
 /*****************************************************************************
  *
@@ -53,9 +53,9 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
     .sensor_id = GC2375_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
-    //lenovo@lenovo.com modify the camera ATA test 20161219 begin
-    .checksum_value = 0x37081188,        //checksum value for Camera Auto Test
-    //lenovo@lenovo.com modify the camera ATA test 20161219 end
+    //luminjie@wind-mobi.com modify the camera ATA test 20170814 begin
+    .checksum_value = 0x635f89d8,        //checksum value for Camera Auto Test
+    //luminjie@wind-mobi.com modify the camera ATA test 20170814 end
 
     .pre = {
         .pclk = 39000000,                //record different mode's pclk
@@ -145,9 +145,9 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-    //lenovo@lenovo.com 20161216 begin
+    //luminjie@wind-mobi.com 20161216 begin
     .sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
-    //lenovo@lenovo.com 20161216 end
+    //luminjie@wind-mobi.com 20161216 end
     .mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
     .mipi_lane_num = SENSOR_MIPI_1_LANE,//mipi lane num
     .i2c_addr_table = {0x6e, 0x78, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -755,7 +755,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x68,0x00);	
 
 	/*Gain*/                                      
-	write_cmos_sensor(0xb0,0x72);//58  lenovo@lenovo.com 20170420
+	write_cmos_sensor(0xb0,0x72);//58  wupeiyuan@wind-mobi.com 20170420
 	write_cmos_sensor(0xb1,0x01);
 	write_cmos_sensor(0xb2,0x00);	
 	write_cmos_sensor(0xb6,0x00);
@@ -1541,5 +1541,5 @@ UINT32 GC2375MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
     return ERROR_NONE;
 }    /*    GC2375MIPI_RAW_SensorInit    */
 /*
-	lenovo@lenovo.com modify 20170420 end
+	wupeiyuan@wind-mobi.com modify 20170420 end
 */

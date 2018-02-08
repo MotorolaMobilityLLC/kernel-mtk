@@ -8,7 +8,10 @@
 #define UT_TLOG_VERSION			(2)
 #define UT_TYPE_STRING			(1)
 #define TLOG_SIZE			(256 * 1024)
-#define MAX_LOG_LEN			(256)
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+//#define MAX_LOG_LEN			(256)
+#define MAX_LOG_LEN			(250)
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 /********************************************
 	structures for LOG IRQ handler

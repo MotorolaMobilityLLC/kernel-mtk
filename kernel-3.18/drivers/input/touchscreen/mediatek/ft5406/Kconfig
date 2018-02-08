@@ -1,7 +1,19 @@
-##lenovo@lenovo.com add at 20161109 begin
+##qiumeng@wind-mobi.com add at 20161109 begin
 #
 # Touchscreen driver configuration
 #
+
+## ft5406 tp_simulate_switch ----wangpengpeng@wind-mobi.com begin at 20170714
+config TP_SIMULATE_SWITCH
+	bool "Tp_simulate_switch"
+	default n
+	help
+	  Say Y here if you want to open the switch function.
+
+	  If you donnot, say N.
+
+## ft5406 tp_simulate_switch ----wangpengpeng@wind-mobi.com end at 20170714
+
 if TOUCHSCREEN_MTK_FT5436
 
 config FT5X0X_FIRMWARE
@@ -84,4 +96,4 @@ config TPD_CUSTOM_CALIBRATION
 	To compile this dirver as a module, choose M here: the
 	module will be called.
 endif
-##lenovo@lenovo.com add at 20161109 end
+##qiumeng@wind-mobi.com add at 20161109 end

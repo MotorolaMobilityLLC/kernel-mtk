@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20161128 begin
+	luminjie@wind-mobi.com 20161128 begin
 */
 /*****************************************************************************
  *
@@ -44,14 +44,14 @@
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#define LOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-//lenovo@lenovo.com close loginfo 20170309 begin
+//luminjie@wind-mobi.com close loginfo 20170309 begin
 #ifdef camera_log
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 #else
 #define LOG_INF(a, ...)
 #endif
-//lenovo@lenovo.com close loginfo 20170309 end
-//lenovo@lenovo.com close the sensor otp 20161216 begin
+//luminjie@wind-mobi.com close loginfo 20170309 end
+//luminjie@wind-mobi.com close the sensor otp 20161216 begin
 #define S5K4H8_OTP_SUPPORT
 #ifdef S5K4H8_OTP_SUPPORT
 struct S5K4H8_otp_struct {
@@ -75,13 +75,13 @@ kal_uint16 R_gain=0,B_gain=0,gd_R_gain=0,gd_B_gain=0,in_af,ma_af;
 kal_uint8  vendor_id=0;
 extern int read_s5k4h8_eeprom_mtk_fmt(void);
 #endif
-//lenovo@lenovo.com close the sensor otp 20161216 end
+//luminjie@wind-mobi.com close the sensor otp 20161216 end
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = S5K4H8_SENSOR_ID,
-	//lenovo@lenovo.com modify the camera ATA test 20160301 begin
+	//luminjie@wind-mobi.com modify the camera ATA test 20160301 begin
 	.checksum_value = 0xfa16fff,
-	//lenovo@lenovo.com modify the camera ATA test 20160301 end
+	//luminjie@wind-mobi.com modify the camera ATA test 20160301 end
 	.pre = {
 		.pclk = 280000000,				//record different mode's pclk
 		.linelength = 3744,				//record different mode's linelength
@@ -297,7 +297,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
-//lenovo@lenovo.com close the sensor otp 20161129 begin
+//luminjie@wind-mobi.com close the sensor otp 20161129 begin
 #ifdef S5K4H8_OTP_SUPPORT
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
@@ -308,7 +308,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
     return get_byte;
 }
 #endif
-//lenovo@lenovo.com close the sensor otp 20161129 end
+//luminjie@wind-mobi.com close the sensor otp 20161129 end
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
@@ -531,7 +531,7 @@ static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
 }
 
-//lenovo@lenovo.com close the sensor otp 20161216 begin
+//luminjie@wind-mobi.com close the sensor otp 20161216 begin
 #ifdef S5K4H8_OTP_SUPPORT
 static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 {
@@ -561,11 +561,11 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	  
 	  LOG_INF("luminjie s5k4h8 group2\n");
 	}
-	if((awb_flag & 0xff) == 0x40){
+	if((awb_flag & 0xc0) == 0x40){
 		addr = 0x0A27; // group 1
 		//LOG_INF("luminjie addr =  %x \n", addr);
 	}
-	else if((awb_flag & 0xff) == 0xd0){
+	else if((awb_flag & 0x30) == 0x10){
 		addr = 0x0A34; // group 2
 		//LOG_INF("luminjie addr =  %x \n", addr);
 	}
@@ -615,13 +615,13 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 gd_B_gain = 0;
 	}
 	LOG_INF("luminjie af_addr =  %x \n", af_addr);
-	if((af_flag & 0xff) == 0x40){
+	if((af_flag & 0xc0) == 0x40){
 	    af_addr = 0x0A1B; // group 1
 		LOG_INF("luminjie af_addr =  %x \n", af_addr);
 	}
-	//lenovo@lenovo.com 20170606 begin
-	else if((af_flag & 0xff) == 0xd0){
-	//lenovo@lenovo.com 20170606 end
+	//luminjie@wind-mobi.com 20170606 begin
+	else if((af_flag & 0x30) == 0x10){
+	//luminjie@wind-mobi.com 20170606 end
 	    af_addr = 0x0A21; // group 2
 		LOG_INF("luminjie af_addr =  %x \n", af_addr);
 	}
@@ -707,11 +707,11 @@ static int apply_otp_s5k4H8(struct S5K4H8_otp_struct *otp_ptr)
 }
 #endif
 #endif
-//lenovo@lenovo.com close the sensor otp 20161216 end
+//luminjie@wind-mobi.com close the sensor otp 20161216 end
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 #if 1
-//lenovo@lenovo.com close the sensor otp 20161216 begin
+//luminjie@wind-mobi.com close the sensor otp 20161216 begin
 #ifdef S5K4H8_OTP_SUPPORT1
 
 	int size;
@@ -760,7 +760,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 #endif
 #endif
 }
-//lenovo@lenovo.com close the sensor otp 20161216 end
+//luminjie@wind-mobi.com close the sensor otp 20161216 end
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -787,9 +787,9 @@ static void check_output_stream_on(void)
 
 		if(read_register0005_value != 0xff)			
 			break;		
-		//lenovo@lenovo.com 20170223 begin		
+		//luminjie@wind-mobi.com 20170223 begin		
 		mdelay(10);
-		//lenovo@lenovo.com 20170223 end		
+		//luminjie@wind-mobi.com 20170223 end		
 		if(read_count == 4)			
 			LOG_INF("[error][0x0005, 0xff]sensor not output\n");	
 	}
@@ -807,9 +807,9 @@ static void check_output_stream_off(void)
 
 		if(read_register0005_value == 0xff)			
 			break;
-		//lenovo@lenovo.com 20170223 begin
+		//luminjie@wind-mobi.com 20170223 begin
 		mdelay(10);
-		//lenovo@lenovo.com 20170223 end		
+		//luminjie@wind-mobi.com 20170223 end		
 		if(read_count == 4)			
 			LOG_INF("stream off error\n");	
 	}
@@ -817,7 +817,7 @@ static void check_output_stream_off(void)
 static void sensor_init(void)
 {
  // write_cmos_sensor(0x0100, 0x0000);
-//lenovo@lenovo.com init the sensor register 20161206 begin
+//luminjie@wind-mobi.com init the sensor register 20161206 begin
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x1FD0);
 	write_cmos_sensor(0x6F12, 0x0448);
@@ -966,14 +966,14 @@ static void sensor_init(void)
 	write_cmos_sensor(0x36D0, 0x00DD);
 	write_cmos_sensor(0x36D2, 0x0100);
 	write_cmos_sensor(0x306A, 0x00EF);
-//lenovo@lenovo.com init the sensor register 20161206 end
-	//lenovo@lenovo.com modify the camera ATA test 20161208 begin
+//luminjie@wind-mobi.com init the sensor register 20161206 end
+	//luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
 	// LSC enable
 	write_cmos_sensor(0x6028, 0x4000);
-	//lenovo@lenovo.com open sensor lsc calibrationg 20161219 begin
-	write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-	//lenovo@lenovo.com open sensor lsc calibrationg 20161219 end
-	//lenovo@lenovo.com modify the camera ATA test 20161208 end
+	//luminjie@wind-mobi.com open sensor lsc calibrationg 20161219 begin
+	write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+	//luminjie@wind-mobi.com open sensor lsc calibrationg 20161219 end
+	//luminjie@wind-mobi.com modify the camera ATA test 20161208 end
 }	/*	sensor_init  */
 /**********************************************************************************************************************/
 //$MIPI[Width:2096,Height:1552,Format:RAW10,Lane:4,ErrorCheck:0,PolarityData:0,PolarityClock:0,Buffer:4,DataRate:1260,useEmbData:0]
@@ -1011,9 +1011,9 @@ static void preview_setting(void)
   write_cmos_sensor(0xF48E, 0x0010);
   write_cmos_sensor(0xF45C, 0x0004);
   write_cmos_sensor(0x0B04, 0x0101);
-  //lenovo@lenovo.com modify the camera ATA test 20161208 begin
-  //write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-  //lenovo@lenovo.com modify the camera ATA test 20161208 end
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
+  //write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 end
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0C40);
   write_cmos_sensor(0x6F12, 0x0140);
@@ -1094,9 +1094,9 @@ static void normal_capture_setting(void)
   write_cmos_sensor(0xF48E, 0x0010);
   write_cmos_sensor(0xF45C, 0x0004);
   write_cmos_sensor(0x0B04, 0x0101);
-  //lenovo@lenovo.com modify the camera ATA test 20161208 begin
-  //write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-  //lenovo@lenovo.com modify the camera ATA test 20161208 end
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
+  //write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 end
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0C40);
   write_cmos_sensor(0x6F12, 0x0140);
@@ -1176,9 +1176,9 @@ static void pip_capture_setting(void)
   write_cmos_sensor(0xF48E, 0x0010);
   write_cmos_sensor(0xF45C, 0x0004);
   write_cmos_sensor(0x0B04, 0x0101);
-  //lenovo@lenovo.com modify the camera ATA test 20161208 begin
-  //write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-  //lenovo@lenovo.com modify the camera ATA test 20161208 end
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
+  //write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 end
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0C40);
   write_cmos_sensor(0x6F12, 0x0140);
@@ -1268,9 +1268,9 @@ static void hs_video_setting(void)
   write_cmos_sensor(0xF48E, 0x0010);
   write_cmos_sensor(0xF45C, 0x0004);
   write_cmos_sensor(0x0B04, 0x0101);
-  //lenovo@lenovo.com modify the camera ATA test 20161208 begin
-  //write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-  //lenovo@lenovo.com modify the camera ATA test 20161208 end
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
+  //write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 end
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0C40);
   write_cmos_sensor(0x6F12, 0x0140);
@@ -1348,9 +1348,9 @@ static void slim_video_setting(void)
   write_cmos_sensor(0xF48E, 0x0010);
   write_cmos_sensor(0xF45C, 0x0004);
   write_cmos_sensor(0x0B04, 0x0101);
-  //lenovo@lenovo.com modify the camera ATA test 20161208 begin
-  //write_cmos_sensor(0x0B00, 0x0180);// lenovo@lenovo.com 20151120 LSC enable
-  //lenovo@lenovo.com modify the camera ATA test 20161208 end
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 begin
+  //write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+  //luminjie@wind-mobi.com modify the camera ATA test 20161208 end
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0C40);
   write_cmos_sensor(0x6F12, 0x0140);
@@ -1423,11 +1423,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 #ifdef S5K4H8_OTP_SUPPORT
                 struct S5K4H8_otp_struct *otp_ptr1 = (struct S5K4H8_otp_struct *)kzalloc(sizeof(struct S5K4H8_otp_struct), GFP_KERNEL);
                 read_otp_s5k4h8(otp_ptr1);
-                //lenovo@lenovo.com close the sensor otp 20161216 begin
+                //luminjie@wind-mobi.com close the sensor otp 20161216 begin
                 read_s5k4h8_eeprom_mtk_fmt();
                 kfree(otp_ptr1);
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
-				//lenovo@lenovo.com 20161229 begin
+				//luminjie@wind-mobi.com 20161229 begin
                 if(vendor_id == 0x07){
                     //printk("luminjie ofg success \n");
                     return ERROR_NONE;
@@ -1436,8 +1436,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                     *sensor_id = 0xFFFFFFFF;
                     return ERROR_SENSOR_CONNECT_FAIL;
                 }
-				//lenovo@lenovo.com 20161229 end
-                //lenovo@lenovo.com close the sensor otp 20161216 end
+				//luminjie@wind-mobi.com 20161229 end
+                //luminjie@wind-mobi.com close the sensor otp 20161216 end
                 #else   
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);      
                 return ERROR_NONE; 
@@ -2246,7 +2246,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	if (enable) {
 		// 0x5E00[8]: 1 enable,  0 disable
 		// 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK
-//lenovo@lenovo.com modify the camera ATA test 20160301 begin
+//luminjie@wind-mobi.com modify the camera ATA test 20160301 begin
       write_cmos_sensor(0xFCFC, 0x4000);
 		
       write_cmos_sensor(0x36E8, 0x0001);
@@ -2271,7 +2271,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		// 0x5E00[8]: 1 enable,  0 disable
 		// 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK
         write_cmos_sensor(0x0600, 0x0000);
-//lenovo@lenovo.com modify the camera ATA test 20160301 end
+//luminjie@wind-mobi.com modify the camera ATA test 20160301 end
 	}	 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
@@ -2420,5 +2420,5 @@ UINT32 S5K4H8_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 	return ERROR_NONE;
 }	/*	s5k4h8_MIPI_RAW_SensorInit	*/
 /*
-	lenovo@lenovo.com 2061128 end
+	luminjie@wind-mobi.com 2061128 end
 */

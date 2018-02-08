@@ -1,4 +1,4 @@
-//lenovo@lenovo.com 20161110 begin
+//zhanyoufei@wind-mobi.com 20161110 begin
 #include <linux/types.h>
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
@@ -672,4 +672,4 @@ subsys_initcall(fan5405_init);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("I2C fan5405 Driver");
 MODULE_AUTHOR("James Lo<james.lo@mediatek.com>");
-//lenovo@lenovo.com 20161110 end
+//zhanyoufei@wind-mobi.com 20161110 end

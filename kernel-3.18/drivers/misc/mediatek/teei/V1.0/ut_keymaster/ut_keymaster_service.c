@@ -69,7 +69,9 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_phy_address,
 				unsigned long b_phy_address)
 {
-	int cpu_id = 0;
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//int cpu_id = 0;
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	keymaster_cmdbuf_entry.phy_addr = phy_address;
 	keymaster_cmdbuf_entry.f_phy_addr = f_phy_address;
 	keymaster_cmdbuf_entry.b_phy_addr = b_phy_address;
@@ -78,10 +80,9 @@ static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_ph
 	/* with a wmb() */
 	wmb();
 
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
-	put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	smp_call_function_single(0, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	/* with a rmb() */
 	rmb();

@@ -62,10 +62,14 @@ void invoke_fastcall(void)
 {
 	int cpu_id = 0;
 
-	get_online_cpus();
+  //zhangheting@wind-mobi.com add teei patch 20170523 start
+  //get_online_cpus();
+  //zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
-	put_online_cpus();
+  //zhangheting@wind-mobi.com add teei patch 20170523 start
+  //put_online_cpus();
+  //zhangheting@wind-mobi.com add teei patch 20170523 end
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -166,20 +170,32 @@ int __reetime_handle(struct service_handler *handler)
 {
 	struct timeval tv;
 	void *ptr = NULL;
-	int tv_sec;
-	int tv_usec;
-	do_gettimeofday(&tv);
-	ptr = handler->param_buf;
-	tv_sec = tv.tv_sec;
-	*((int *)ptr) = tv_sec;
-	tv_usec = tv.tv_usec;
-	*((int *)ptr + 1) = tv_usec;
-
+        //zhangheting@wind-mobi.com add teei patch 20170523 start
+        int tv_sec = 0;
+        int tv_usec = 0;
+        Invalidate_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
+        ptr = handler->param_buf;
+        if(*((int *) ptr) == 1) {
+             struct timespec tp;
+             get_monotonic_boottime(&tp);
+             tv_sec = tp.tv_sec + (tp.tv_nsec ? 1 : 0);
+             *((int *)ptr) = tv_sec;
+             *((int *)ptr + 1) = 0;
+        } else {
+           do_gettimeofday(&tv);
+           tv_sec = tv.tv_sec;
+           *((int *)ptr) = tv_sec;
+           tv_usec = tv.tv_usec;
+           *((int *)ptr + 1) = tv_usec;
+        }
+        //zhangheting@wind-mobi.com add teei patch 20170523 end
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
-
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	*((unsigned long *)teei_vfs_flag) = 0;
+	Flush_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag + 8));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	n_ack_t_invoke_drv(0, 0, 0);
 
 	return 0;
@@ -279,8 +295,10 @@ int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
-
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	*((unsigned long *)teei_vfs_flag) = 0;
+	Flush_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag + 8));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	n_ack_t_invoke_drv(0, 0, 0);
 
 	return 0;

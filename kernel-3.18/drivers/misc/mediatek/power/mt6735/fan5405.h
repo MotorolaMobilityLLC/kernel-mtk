@@ -1,4 +1,4 @@
-//lenovo@lenovo.com 20161110 begin
+//zhanyoufei@wind-mobi.com 20161110 begin
 /*****************************************************************************
 *
 * Filename:
@@ -175,4 +175,4 @@ extern unsigned int fan5405_read_interface(unsigned char RegNum, unsigned char *
 extern unsigned int fan5405_config_interface(unsigned char RegNum, unsigned char val,
 	unsigned char MASK, unsigned char SHIFT);
 #endif				/* _fan5405_SW_H_ */
-//lenovo@lenovo.com 20161110 end
+//zhanyoufei@wind-mobi.com 20161110 end

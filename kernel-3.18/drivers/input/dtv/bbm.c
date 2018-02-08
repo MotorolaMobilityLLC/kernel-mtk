@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2014 FCI Inc. All Rights Reserved
 
@@ -302,4 +302,4 @@ s32 bbm_com_ac_callback_deregister(void)
 
 	return BBM_OK;
 }
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

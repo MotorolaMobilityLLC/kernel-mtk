@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /*
  *
  * FocalTech TouchScreen driver.
@@ -768,10 +768,10 @@ static ssize_t fts_fwupdate_store(struct device *dev, struct device_attribute *a
 	//struct fts_ts_data *data = NULL;
 	u8 uc_host_fm_ver;
 	int i_ret;
-	u8 uc_tp_vendor_id; //lenovo@lenovo.com add at 20160504
+	u8 uc_tp_vendor_id; //tuwenzan@wind-mobi.com add at 20160504
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	//data = (struct fts_ts_data *) i2c_get_clientdata(client);
-	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id); //lenovo@lenovo.com add at 20160504
+	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id); //tuwenzan@wind-mobi.com add at 20160504
 	#if FT_ESD_PROTECT
 		esd_switch(0);apk_debug_flag = 1;
 	#endif
@@ -783,7 +783,7 @@ static ssize_t fts_fwupdate_store(struct device *dev, struct device_attribute *a
 	if (i_ret == 0)
 	{
 		msleep(300);
-		uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //lenovo@lenovo.com add at 20160504
+		uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id); //tuwenzan@wind-mobi.com add at 20160504
 		dev_dbg(dev, "%s [FTS] upgrade to new version 0x%x\n", __func__, uc_host_fm_ver);
 	}
 	else
@@ -942,4 +942,4 @@ int fts_remove_sysfs(struct i2c_client * client)
 	sysfs_remove_group(&client->dev.kobj, &fts_attribute_group);
 	return 0;
 }
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /*
  *
  * FocalTech TouchScreen driver.
@@ -191,4 +191,4 @@ static int fts_esd_protection_check(void)
 	g_esd_protection_checking = 0;
 	return 0;
 }
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

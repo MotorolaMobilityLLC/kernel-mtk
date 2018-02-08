@@ -273,8 +273,10 @@ static irqreturn_t nt_bdrv_handler(void)
 
 	bdrv_id = get_bdrv_id();
 
-	teei_vfs_flag = 1;
-
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	*((unsigned long *)teei_vfs_flag) = 1;
+	Flush_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag + 8));
+	//zhangheting@wind-mobi.com add teei patch 20170523 end	
 	add_bdrv_queue(bdrv_id);
 	up(&smc_lock);
 
@@ -422,10 +424,14 @@ void load_func(struct work_struct *entry)
 
 	down(&smc_lock);
 
-	get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//get_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
-	put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 start
+	//put_online_cpus();
+	//zhangheting@wind-mobi.com add teei patch 20170523 end
 
 	return;
 }
@@ -438,10 +444,14 @@ void work_func(struct work_struct *entry)
 
 	if (sys_call_num == reetime.sysno) {
 		reetime.handle(&reetime);
-		Flush_Dcache_By_Area(reetime.param_buf, reetime.param_buf + reetime.size);
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		/* Flush_Dcache_By_Area(reetime.param_buf, reetime.param_buf + reetime.size); */
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 	} else if (sys_call_num == vfs_handler.sysno) {
 		vfs_handler.handle(&vfs_handler);
-		Flush_Dcache_By_Area(vfs_handler.param_buf, vfs_handler.param_buf + vfs_handler.size);
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		/* Flush_Dcache_By_Area(vfs_handler.param_buf, vfs_handler.param_buf + vfs_handler.size); */
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 	}
 
 	return;
@@ -464,6 +474,9 @@ static irqreturn_t nt_switch_irq_handler(void)
 		return IRQ_HANDLED;
 
 	} else {
+		//zhangheting@wind-mobi.com add teei patch 20170523 start
+		Invalidate_Dcache_By_Area(message_buff, message_buff + MESSAGE_LENGTH);
+		//zhangheting@wind-mobi.com add teei patch 20170523 end
 		msg_head = (struct message_head *)message_buff;
 
 		if (FAST_CALL_TYPE == msg_head->message_type) {
@@ -501,6 +514,9 @@ static irqreturn_t nt_switch_irq_handler(void)
 				}
 
 				/* Get the semaphore */
+				//zhangheting@wind-mobi.com add teei patch 20170523 start
+				Invalidate_Dcache_By_Area((unsigned long)command, (unsigned long)command + MESSAGE_LENGTH);
+				//zhangheting@wind-mobi.com add teei patch 20170523 end
 				cmd_sema = (struct semaphore *)(command->teei_sema);
 
 				/* Up the semaphore */

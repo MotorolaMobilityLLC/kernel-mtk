@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com add for bb otp 20161216 begin
+	luminjie@wind-mobi.com add for bb otp 20161216 begin
 */
 /*****************************************************************************
  *
@@ -35,5 +35,5 @@
 
 #endif /* __CAM_CAL_H */
 /*
-	lenovo@lenovo.com add for bb otp 20161216 end
+	luminjie@wind-mobi.com add for bb otp 20161216 end
 */

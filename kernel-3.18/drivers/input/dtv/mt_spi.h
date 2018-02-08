@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 #ifndef __MT_SPI_H__
 #define __MT_SPI_H__
 
@@ -94,4 +94,4 @@ struct mt_chip_conf {
 };
 
 #endif
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

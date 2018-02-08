@@ -123,16 +123,18 @@ UINT32 T4KA7_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 /*Others*/
 UINT32 ISX012_MIPI_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 T8EV5_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//lenovo@lenovo.com 20161212 begin
+//luminjie@wind-mobi.com 20161212 begin
 UINT32 IMX219_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 S5K4H8_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//lenovo@lenovo.com 20161229 begin
+//luminjie@wind-mobi.com 20170613 begin
 UINT32 S5K4H8_MIPI_RAW_SensorInit_QT(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//lenovo@lenovo.com 20161229 end
+UINT32 S5K4H8_MIPI_RAW_SensorInit_HLT(PSENSOR_FUNCTION_STRUCT *pfFunc);
+UINT32 S5K4H8_MIPI_RAW_SensorInit_BLX(PSENSOR_FUNCTION_STRUCT *pfFunc);
+//luminjie@wind-mobi.com 20170613 end
 UINT32 SP2509_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 GC2355_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 GC2375MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//lenovo@lenovo.com 20161212 end
+//luminjie@wind-mobi.com 20161212 end
 
 //! Add Sensor Init function here
 //! Note:
@@ -451,18 +453,24 @@ ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
 #if defined(IMX135_MIPI_RAW_8MP)
     {IMX135_SENSOR_ID, SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP, IMX135_MIPI_RAW_SensorInit},
 #endif
-//lenovo@lenovo.com 20161212 begin
+//luminjie@wind-mobi.com 20161212 begin
 #if defined(IMX219_MIPI_RAW)
     {IMX219_SENSOR_ID, SENSOR_DRVNAME_IMX219_MIPI_RAW, IMX219_MIPI_RAW_SensorInit},
 #endif
 #if defined(S5K4H8_MIPI_RAW)
     {S5K4H8_SENSOR_ID, SENSOR_DRVNAME_S5K4H8_MIPI_RAW, S5K4H8_MIPI_RAW_SensorInit},
 #endif
-//lenovo@lenovo.com 20161229 begin
+//luminjie@wind-mobi.com 20170613 begin
 #if defined(S5K4H8_MIPI_RAW_QT)
     {S5K4H8_SENSOR_ID_QT, SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT, S5K4H8_MIPI_RAW_SensorInit_QT},
 #endif
-//lenovo@lenovo.com 20161229 end
+#if defined(S5K4H8_MIPI_RAW_HLT)
+    {S5K4H8_SENSOR_ID_HLT, SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT, S5K4H8_MIPI_RAW_SensorInit_HLT},
+#endif
+#if defined(S5K4H8_MIPI_RAW_BLX)
+    {S5K4H8_SENSOR_ID_BLX, SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX, S5K4H8_MIPI_RAW_SensorInit_BLX},
+#endif
+//luminjie@wind-mobi.com 20170613 end
 #if defined(SP2509_MIPI_RAW)
     {SP2509MIPI_SENSOR_ID, SENSOR_DRVNAME_SP2509_MIPI_RAW,  SP2509_MIPI_RAW_SensorInit},
 #endif
@@ -472,7 +480,7 @@ ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
 #if defined(GC2375_MIPI_RAW)
     {GC2375_SENSOR_ID, SENSOR_DRVNAME_GC2375_MIPI_RAW,GC2375MIPI_RAW_SensorInit},
 #endif
-//lenovo@lenovo.com 20161212 end
+//luminjie@wind-mobi.com 20161212 end
 
 /*  ADD sensor driver before this line */
     {0,{0},NULL}, //end of list

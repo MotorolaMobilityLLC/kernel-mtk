@@ -923,9 +923,14 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		JPEG_MSG("[JPEGDRV]JPEG Encoder Time Jiffies : %ld\n", timeout_jiff);
 
 		if (jpeg_isr_enc_lisr() < 0) {
-			wait_event_interruptible_timeout(enc_wait_queue, _jpeg_enc_int_status,
-							 timeout_jiff);
-			JPEG_MSG("[JPEGDRV]JPEG Encoder Wait done !!\n");
+			do {
+				ret = wait_event_interruptible_timeout(enc_wait_queue, _jpeg_enc_int_status,
+								 timeout_jiff);
+				if (ret > 0)
+					JPEG_MSG("[JPEGDRV]JPEG Encoder Wait done !!\n");
+				else if (ret == 0)
+					JPEG_MSG("[JPEGDRV]JPEG Encoder Wait timeout !!\n");
+			} while (ret < 0);
 		} else {
 			JPEG_MSG("[JPEGDRV]JPEG Encoder already done !!\n");
 		}

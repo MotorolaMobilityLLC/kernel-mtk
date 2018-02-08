@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2013 FCI Inc. All Rights Reserved
 
@@ -53,11 +53,11 @@
 #include "fc8180_isr.h"
 #include "fci_hal.h"
 
-//add by lenovo@lenovo.com 20161229 begin
+//add by sunjingtao@wind-mobi.com 20161229 begin
 #ifdef CONFIG_WIND_DEVICE_INFO
 	extern u16 g_dtv_chip_id;
 #endif
-//add by lenovo@lenovo.com 20161229 end
+//add by sunjingtao@wind-mobi.com 20161229 end
 
 struct ISDBT_INIT_INFO_T *hInit;
 #define FEATURE_THREADED_IRQ
@@ -838,11 +838,11 @@ s32 isdbt_chip_id(void)
 #endif
 	addr = FC8180_CHIP_ID_REG;
 	res = bbm_com_word_read(hInit, addr, &data);
-//lenovo@lenovo.com 20161229 begin
+//sunjingtao@wind-mobi.com 20161229 begin
 #ifdef CONFIG_WIND_DEVICE_INFO
 	g_dtv_chip_id = data;
 #endif
-//lenovo@lenovo.com 20161229 end
+//sunjingtao@wind-mobi.com 20161229 end
 	if (res) {
 		print_log(hInit, "%s reading chip id err %d\n", __func__, res);
 		goto errout;
@@ -975,4 +975,4 @@ module_init(isdbt_init);
 module_exit(isdbt_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

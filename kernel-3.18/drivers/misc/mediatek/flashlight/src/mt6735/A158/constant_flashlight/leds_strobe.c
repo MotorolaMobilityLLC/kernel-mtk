@@ -1,5 +1,5 @@
 /*
-	lenovo@lenovo.com 20160119 begin
+	luminjie@wind-mobi.com 20160119 begin
 */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -27,10 +27,10 @@
 #include <linux/mutex.h>
 #include <linux/i2c.h>
 #include <linux/leds.h>
-//lenovo@lenovo.com 20160322 begin
+//luminjie@wind-mobi.com 20160322 begin
 #include <mach/gpio_const.h>
 #include <mt-plat/mt_gpio.h>
-//lenovo@lenovo.com 20160322 end
+//luminjie@wind-mobi.com 20160322 end
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
@@ -52,14 +52,14 @@
 #else
 #define PK_DBG(a, ...)
 #endif
-//lenovo@lenovo.com 20170331 begin
+//luminjie@wind-mobi.com 20170331 begin
 #ifdef wind_flashlight_mode
 static int hduration=-1;
 static int lduration=-1;
 extern int flashlight_set_pwm(u32 hduration, u32 lduration, u32 level);
 extern int flashlight_set_pwm_old(u32 hduration, u32 lduration, u32 level);
 #endif
-//lenovo@lenovo.com 20170331 end
+//luminjie@wind-mobi.com 20170331 end
 /******************************************************************************
  * local variables
 ******************************************************************************/
@@ -78,33 +78,33 @@ static DEFINE_MUTEX(g_strobeSem);
 
 
 #define STROBE_DEVICE_ID 0xC6
-//lenovo@lenovo.com 20170207 begin
+//luminjie@wind-mobi.com 20170207 begin
 //extern int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 static struct work_struct workTimeOut;
 
 /* #define FLASH_GPIO_ENF GPIO12 */
 /* #define FLASH_GPIO_ENT GPIO13 */
-//lenovo@lenovo.com modify the flashlight mode 20161206 begin
+//luminjie@wind-mobi.com modify the flashlight mode 20161206 begin
 static int FL_Enable(void)
 {
-//lenovo@lenovo.com 20170331 begin
+//luminje@wind-mobi.com 20170331 begin
 #ifdef wind_flashlight_mode
 	int level =0;
 #endif
-//lenovo@lenovo.com 20170331 end
+//luminje@wind-mobi.com 20170331 end
 	printk("FL_enable g_duty=%d \n",g_duty);
-//lenovo@lenovo.com 20160418 begin
+//luminjie@wind-mobi.com 20160418 begin
 	if(g_duty < 1){
-//lenovo@lenovo.com 20160418 end
+//luminjie@wind-mobi.com 20160418 end
 		g_duty=0;
 	}
 	if(g_duty==0){
-	//lenovo@lenovo.com 20160506 begin
+	//luminjie@wind-mobi.com 20160506 begin
 	//flash_gpio_set(FLASHLIGHT_BACK, 1);
 	flash_gpio_back_high();
-	//lenovo@lenovo.com 20160506 end
+	//luminjie@wind-mobi.com 20160506 end
 	}
-	//lenovo@lenovo.com 20170331 begin
+	//luminjie@wind-mobi.com 20170331 begin
 	#ifdef wind_flashlight_mode
 	else if (g_duty >= 1 && g_duty <= 9){
 	
@@ -114,9 +114,9 @@ static int FL_Enable(void)
 	
 	//mtkcam_gpio_set(0, 5, 1);
 	mdelay(10);
-	//lenovo@lenovo.com 20170109 begin
+	//luminjie@wind-mobi.com 20170109 begin
 	mt_set_gpio_mode(GPIO1 | 0x80000000, GPIO_MODE_01);
-	//lenovo@lenovo.com 20170109 end
+	//luminjie@wind-mobi.com 20170109 end
 	mt_set_gpio_dir(GPIO1 | 0x80000000,1);
 
 	switch(g_duty){
@@ -182,14 +182,14 @@ static int FL_Enable(void)
 			break;
 		}
 	flashlight_set_pwm_old(hduration,lduration,level);
-	//lenovo@lenovo.com 20170105 begin
+	//luminjie@wind-mobi.com 20170105 begin
 	mdelay(6);
-	//lenovo@lenovo.com 20170105 end
+	//luminjie@wind-mobi.com 20170105 end
 	//flash_gpio_set(FLASHLIGHT_backpwm, 1);
 	flash_gpio_backpwm_high();
 	}
 	#endif
-	//lenovo@lenovo.com 201770331 end
+	//luminje@wind-mobi.com 201770331 end
 	else{
 		//flash_gpio_set(FLASHLIGHT_backpwm, 0);
 		flash_gpio_backpwm_low();
@@ -202,7 +202,7 @@ static int FL_Enable(void)
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
 	return 0;
 }
-//lenovo@lenovo.com modify the flashlight mode 20161206 end
+//luminjie@wind-mobi.com modify the flashlight mode 20161206 end
 static int FL_Disable(void)
 {
 	//flash_gpio_set(FLASHLIGHT_backpwm, 0);
@@ -233,7 +233,7 @@ static int FL_Init(void)
 	PK_DBG(" FL_Init line=%d\n", __LINE__); 
 	return 0;
 }
-//lenovo@lenovo.com 20170207 end
+//luminjie@wind-mobi.com 20170207 end
 static int FL_Uninit(void)
 {
 	FL_Disable();
@@ -415,5 +415,5 @@ ssize_t strobe_VDIrq(void)
 }
 EXPORT_SYMBOL(strobe_VDIrq);
 /*
-	lenovo@lenovo.com 20160119 end
+	luminjie@wind-mobi.com 20160119 end
 */

@@ -1,4 +1,4 @@
-/*******add sar -------lenovo@lenovo.com --20161111---********/
+/*******add sar -------shenyong@wind-mobi.com --20161111---********/
 /*
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -229,11 +229,11 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 
 static struct _buttonInfo psmtcButtons[] = {
   {
-    .keycode = KEY_BRL_DOT5,    //modify by lenovo@lenovo.com at 2016.12.20
+    .keycode = KEY_BRL_DOT5,    //modify by shenyong@wind-mobi.com at 2016.12.20
     .mask = SX9310_TCHCMPSTAT_TCHSTAT0_FLAG,
   },
   {
-    .keycode = KEY_BRL_DOT6,	//modify by lenovo@lenovo.com at 2016.12.20
+    .keycode = KEY_BRL_DOT6,	//modify by shenyong@wind-mobi.com at 2016.12.20
     .mask = SX9310_TCHCMPSTAT_TCHSTAT1_FLAG,
   },
   {

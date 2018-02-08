@@ -1,4 +1,4 @@
-//lenovo@lenovo.com add at 20161109 begin
+//qiumeng@wind-mobi.com add at 20161109 begin
 /*
  *
  * FocalTech TouchScreen driver.
@@ -113,7 +113,7 @@
 #define TPD_KEYS                					{ KEY_MENU, KEY_HOMEPAGE, KEY_BACK}
 #define TPD_KEYS_DIM            					{{80,900,20,TPD_BUTTON_HEIGH}, {240,900,20,TPD_BUTTON_HEIGH}, {400,900,20,TPD_BUTTON_HEIGH}}
 #define FT_ESD_PROTECT  									0
-#define CTP_ESD_PROTECT							1 //lenovo@lenovo.com add at 20160602
+#define CTP_ESD_PROTECT							1 //tuwenzan@wind-mobi.com add at 20160602
 /*********************Custom Define end*************************************************/
 #define MT_PROTOCOL_B
 #define A_TYPE												0
@@ -148,6 +148,10 @@
 //#define TPD_RES_Y                					1280//800
 #define TPD_CALIBRATION_MATRIX  			{962,0,0,0,1600,0,0,0};
 #define FT_PROXIMITY_ENABLE				0
+//qiumeng@wind-mobi.com 20161212 begin
+#define TPD_PROXIMITY 1
+//qiumeng@wind-mobi.com 20161212 end
+//yinyapeng add for upgrade ==>
 //#define TPD_AUTO_UPGRADE
 //#define TPD_HAVE_CALIBRATION
 //#define TPD_HAVE_TREMBLE_ELIMINATION
@@ -166,7 +170,7 @@
 
 /*register address*/
 #define FTS_REG_CHIP_ID						0xA3    			// chip ID 
-#define FTS_REG_FW_VER						0xA6   			// FW  version  //lenovo@lenovo.com 20161209
+#define FTS_REG_FW_VER						0xA6   			// FW  version  //qiumeng@wind-mobi.com 20161209
 #define FTS_REG_VENDOR_ID					0xA8   			// TP vendor ID 
 #define FTS_REG_POINT_RATE					0x88   			// report rate	
 #define TPD_MAX_POINTS_2                        		2
@@ -280,23 +284,24 @@ struct fts_ts_data {
 #define MTK_EN 									1
 #define FTS_APK_DEBUG
 #define SYSFS_DEBUG
-#define TPD_AUTO_UPGRADE  //open firmware upgrade --lenovo@lenovo.com 20161209
+#define TPD_AUTO_UPGRADE  //open firmware upgrade --qiumeng@wind-mobi.com 20161209
 #define MTK_CTP_NODE                     1
-//lenovo@lenovo.com 20160419 begin
+//qiumeng@wind-mobi.com 20160419 begin
 #define USB_CHARGE_DETECT		 1 
-//lenovo@lenovo.com 20160419 end
+//qiumeng@wind-mobi.com 20160419 end
 
 #ifdef TPD_AUTO_UPGRADE
 #define Boot_Upgrade_Protect			//开机升级保护。升级失败后，再次开机可重新升级
 #endif
-//change CHIP_ID & Vendor_ID ---lenovo@lenovo.com add 20170426 begin
+//change CHIP_ID & Vendor_ID ---qiumeng@wind-mobi.com add 20170426 begin
 #define FTS_CHIP_ID			0x54	//FT3427、FT5x46 CHIP ID = 0x54 FT5436i chip id = 0x12
 #define FTS_Vendor_1_ID		0x01    //Ofilm TP VID 
-//modify shenyue TP vendor id --lenovo@lenovo.com 20161209 begin
+//modify shenyue TP vendor id --qiumeng@wind-mobi.com 20161209 begin
 #define FTS_Vendor_2_ID		0x02    //shenyue TP VID  
-//modify shenyue TP vendor id --lenovo@lenovo.com 20161209 end
-#define FTS_Vendor_3_ID		0x10   //dijing TP VID 
-//change CHIP_ID & Vendor_ID ---lenovo@lenovo.com add 20170426 end
+//modify shenyue TP vendor id --qiumeng@wind-mobi.com 20161209 end
+#define FTS_Vendor_3_ID		0x10   //dijing TP VID
+#define FTS_Vendor_4_ID		0x03   //yeji TP VID
+//change CHIP_ID & Vendor_ID ---qiumeng@wind-mobi.com add 20170607 end
 #define FIRMWARE_VERTION_NODE                                
 #define FT_TP									0
 //#define CONFIG_TOUCHPANEL_PROXIMITY_SENSOR
@@ -326,7 +331,7 @@ extern int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client,
 				       char *firmware_name);
 extern int fts_ctpm_auto_clb(struct i2c_client *client);
 extern int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client);
-extern int fts_ctpm_get_i_file_ver(u8 tp_vendor_id); //lenovo@lenovo.com modify at 20160506
+extern int fts_ctpm_get_i_file_ver(u8 tp_vendor_id); //tuwenzan@wind-mobi.com modify at 20160506
 extern int fts_remove_sysfs(struct i2c_client *client);
 extern void fts_release_apk_debug_channel(void);
 extern int fts_ctpm_auto_upgrade(struct i2c_client *client);
@@ -351,4 +356,4 @@ extern int fts_create_apk_debug_channel(struct i2c_client * client);
 #endif
 #endif*/
 #endif
-//lenovo@lenovo.com add at 20161109 end
+//qiumeng@wind-mobi.com add at 20161109 end

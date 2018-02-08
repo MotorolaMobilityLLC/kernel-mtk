@@ -28,13 +28,13 @@ static variable defination
 ----------------------------------------------------------------------*/
 
 #define REGISTER_VALUE(x)   (x - 1)
-//solve headset pull out leads to music playback ---lenovo@lenovo.com 20170222 begin
+//solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170222 begin
 #ifdef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
 static int button_press_debounce = 0x800;
 #else
 static int button_press_debounce = 0x400;
 #endif
-//solve headset pull out leads to music playback ---lenovo@lenovo.com 20170222 end
+//solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170222 end
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
@@ -105,9 +105,9 @@ struct pinctrl_state *pins_eint_int;
 #endif
 #ifdef DEBUG_THREAD
 #endif
-//lenovo@lenovo.com 20170111 begin
+//qiumeng@wind-mobi.com 20170111 begin
 u32 headset_flag = 0;
-//lenovo@lenovo.com 20170111 end
+//qiumeng@wind-mobi.com 20170111 end
 static u32 pmic_pwrap_read(u32 addr);
 static void pmic_pwrap_write(u32 addr, unsigned int wdata);
 char *accdet_status_string[5] = {
@@ -522,9 +522,9 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 #endif
 
 		/* update the eint status */
-		//lenovo@lenovo.com 20170111 begin
+		//qiumeng@wind-mobi.com 20170111 begin
 		headset_flag = 0;
-		//lenovo@lenovo.com 20170111 end
+		//qiumeng@wind-mobi.com 20170111 end
 		cur_eint_state = EINT_PIN_PLUG_OUT;
 	} else {
 		/*
@@ -546,9 +546,9 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 		gpio_set_debounce(gpiopin, accdet_dts_data.accdet_plugout_debounce * 1000);
 #endif
 		/* update the eint status */
-		//lenovo@lenovo.com 20170111 begin
+		//qiumeng@wind-mobi.com 20170111 begin
 		headset_flag = 1;
-		//lenovo@lenovo.com 20170111 end
+		//qiumeng@wind-mobi.com 20170111 end
 		cur_eint_state = EINT_PIN_PLUG_IN;
 
 		mod_timer(&micbias_timer, jiffies + MICBIAS_DISABLE_TIMER);
@@ -643,7 +643,7 @@ static int key_check(int b)
 		return UP_KEY;
 	else if (b < accdet_dts_data.three_key.mid_key)
 	{
-	  //solve headset pull out leads to music playback ---lenovo@lenovo.com 20170307 begin
+	  //solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170307 begin
 	  #ifndef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
 		  if((16 <= b ) && (b <= 28))
 			  return NO_KEY;
@@ -652,7 +652,7 @@ static int key_check(int b)
 	  #else
 	      return MD_KEY;
 	  #endif
-	  //solve headset pull out leads to music playback ---lenovo@lenovo.com 20170307 end
+	  //solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170307 end
 	}
 	ACCDET_DEBUG("[accdet] leave key_check!!\n");
 	return NO_KEY;
@@ -1155,19 +1155,23 @@ void accdet_get_dts_data(void)
 		of_property_read_u32(node, "accdet-mic-vol", &accdet_dts_data.mic_mode_vol);
 		of_property_read_u32(node, "accdet-plugout-debounce", &accdet_dts_data.accdet_plugout_debounce);
 		of_property_read_u32(node, "accdet-mic-mode", &accdet_dts_data.accdet_mic_mode);
-		#ifdef CONFIG_FOUR_KEY_HEADSET
+#ifdef CONFIG_FOUR_KEY_HEADSET
 		of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
 		memcpy(&accdet_dts_data.four_key, four_key+1, sizeof(struct four_key_threshold));
 		ACCDET_INFO("[Accdet]mid-Key = %d, voice = %d, up_key = %d, down_key = %d\n",
 		     accdet_dts_data.four_key.mid_key_four, accdet_dts_data.four_key.voice_key_four,
 		     accdet_dts_data.four_key.up_key_four, accdet_dts_data.four_key.down_key_four);
+#else
+		#ifdef CONFIG_HEADSET_TRI_KEY_CDD
+		of_property_read_u32_array(node, "headset-three-key-threshold-CDD", three_key, ARRAY_SIZE(three_key));
 		#else
 		of_property_read_u32_array(node, "headset-three-key-threshold", three_key, ARRAY_SIZE(three_key));
+		#endif
 		memcpy(&accdet_dts_data.three_key, three_key+1, sizeof(struct three_key_threshold));
 		ACCDET_INFO("[Accdet]mid-Key = %d, up_key = %d, down_key = %d\n",
 		     accdet_dts_data.three_key.mid_key, accdet_dts_data.three_key.up_key,
 		     accdet_dts_data.three_key.down_key);
-		#endif
+#endif
 
 		memcpy(&accdet_dts_data.headset_debounce, debounce, sizeof(debounce));
 		cust_headset_settings = &accdet_dts_data.headset_debounce;
@@ -1348,6 +1352,11 @@ static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *b
 {
 	int ret = 0;
 
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] NULL input!!\n",  __func__);
+		return -EINVAL;
+	}
+
 	if (strlen(buf) < 1) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
 		return -EINVAL;
@@ -1399,6 +1408,11 @@ static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const c
 	int ret = 0;
 	int tmp_headset_mode = 0;
 
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] NULL input!!\n",  __func__);
+		return -EINVAL;
+	}
+
 	if (strlen(buf) < 1) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
 		return -EINVAL;
@@ -1443,7 +1457,7 @@ static ssize_t show_accdet_dump_register(struct device_driver *ddri, char *buf)
 
 	return strlen(buf);
 }
-//lenovo@lenovo.com add at 20161124 begin
+//tuwenzan@wind-mobi.com add at 20161124 begin
 #ifdef CONFIG_WIND_FM_RSSI
 static ssize_t show_fm_rssi_state(struct device_driver *ddri, char *buf)
 {
@@ -1452,7 +1466,7 @@ static ssize_t show_fm_rssi_state(struct device_driver *ddri, char *buf)
 	return sprintf(buf,"Rssi = %d\n",rssi_value);
 }
 #endif
-//lenovo@lenovo.com add at 20161124 end
+//tuwenzan@wind-mobi.com add at 20161124 end
 
 
 static int dbug_thread(void *unused)
@@ -1469,6 +1483,12 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 {
 	int error = 0;
 	int ret = 0;
+	int tmp_value = 0;
+
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] NULL input!!\n",  __func__);
+		return -EINVAL;
+	}
 
 	if (strlen(buf) < 1) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
@@ -1476,8 +1496,8 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 	}
 
 	/* if write 0, Invalid; otherwise, valid */
-	ret = strncmp(buf, "0", 1);
-	if (ret) {
+	ret = kstrtoint(buf, 10, &tmp_value);
+	if (tmp_value) {
 		g_start_debug_thread = 1;
 		thread = kthread_run(dbug_thread, 0, "ACCDET");
 		if (IS_ERR(thread)) {
@@ -1497,6 +1517,12 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char *buf, size_t count)
 {
 	int ret = 0;
+	int tmp_value = 0;
+
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] NULL input!!\n",  __func__);
+		return -EINVAL;
+	}
 
 	if (strlen(buf) < 1) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
@@ -1504,8 +1530,8 @@ static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char
 	}
 
 	/* if write 0, Invalid; otherwise, valid */
-	ret = strncmp(buf, "0", 1);
-	if (ret) {
+	ret = kstrtoint(buf, 10, &tmp_value);
+	if (tmp_value) {
 		g_dump_register = 1;
 		ACCDET_INFO("[%s]start dump regs!\n",  __func__);
 	} else {
@@ -1521,6 +1547,11 @@ static ssize_t store_accdet_set_register(struct device_driver *ddri, const char 
 	int ret = 0;
 	unsigned int addr_temp = 0;
 	unsigned int value_temp = 0;
+
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] NULL input!!\n",  __func__);
+		return -EINVAL;
+	}
 
 	if (strlen(buf) < 3) {
 		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
@@ -1547,7 +1578,7 @@ static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, 
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
 static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
-//lenovo@lenovo.com add at 20161124 begin
+//tuwenzan@wind-mobi.com add at 20161124 begin
 #ifdef CONFIG_WIND_FM_RSSI
 static DRIVER_ATTR(fm_rssi_state, 0644, show_fm_rssi_state, NULL);
 #endif
@@ -1569,7 +1600,7 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_TS3A225EConnectorType,
 #endif
 };
-//lenovo@lenovo.com add at 20161124 end
+//tuwenzan@wind-mobi.com add at 20161124 end
 
 static int accdet_create_attr(struct device_driver *driver)
 {

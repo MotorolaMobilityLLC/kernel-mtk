@@ -1,4 +1,4 @@
-//add dtv ---lenovo@lenovo.com ---20161119 start 
+//add dtv ---shenyong@wind-mobi.com ---20161119 start 
 /*****************************************************************************
 	Copyright(c) 2014 FCI Inc. All Rights Reserved
 
@@ -326,4 +326,4 @@ s32 fc8180_i2c_deinit(HANDLE handle)
 
 	return BBM_OK;
 }
-//add dtv ---lenovo@lenovo.com ---20161119 end 
+//add dtv ---shenyong@wind-mobi.com ---20161119 end 

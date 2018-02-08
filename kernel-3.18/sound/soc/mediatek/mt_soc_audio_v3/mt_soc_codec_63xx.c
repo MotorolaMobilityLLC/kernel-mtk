@@ -56,9 +56,9 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if !defined(CONFIG_MTK_LEGACY_EXTSPK)
-//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #else
@@ -1870,11 +1870,11 @@ do { \
 #define NULL_PIN_DEFINITION    (-1)
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if defined(CONFIG_MTK_LEGACY_EXTSPK)
 	int ret;
 #endif
-//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_LEGACY)
@@ -1891,7 +1891,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
 		
 #ifndef CONFIG_MTK_SPEAKER
-//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if defined(CONFIG_MTK_LEGACY_EXTSPK)
 	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
 	if (ret < 0) {
@@ -1905,7 +1905,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
 		usleep_range(1*1000, 20*1000);
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);
-		//change ext amp to mode3 for A158 ---lenovo@lenovo.com add at 20161214 begin		
+		//change ext amp to mode3 for A158 ---shenyong@wind-mobi.com add at 20161214 begin		
 		udelay(GAP);
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
 		udelay(GAP);
@@ -1914,9 +1914,9 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
 		udelay(GAP);
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);
-		//change ext amp to mode3 for A158 ---lenovo@lenovo.com add at 20161214 end
+		//change ext amp to mode3 for A158 ---shenyong@wind-mobi.com add at 20161214 end
 #endif
-//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 
 #if defined(CONFIG_MTK_LEGACY)
 
@@ -1961,12 +1961,12 @@ static void Ext_Speaker_Amp_Change(bool enable)
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
 #ifndef CONFIG_MTK_SPEAKER
-//ext pa add for A158 ----lenovo@lenovo.com begin at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if defined(CONFIG_MTK_LEGACY_EXTSPK)
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disbale */
 #endif
-//ext pa add for A158 ----lenovo@lenovo.com end at 20161109
+//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 #if defined(CONFIG_MTK_LEGACY)
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
 		/* mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00); //GPIO117: DPI_D3, mode 0 */

@@ -1,4 +1,4 @@
-/*******add sar -------lenovo@lenovo.com --20161111---********/
+/*******add sar -------shenyong@wind-mobi.com --20161111---********/
 /*! \file sx9310.c
  * \brief  SX9310 Driver
  *
@@ -28,7 +28,7 @@
 #include <linux/platform_device.h>
 #include <mt-plat/mt_gpio.h>
 
-#include <linux/string.h> //lenovo@lenovo.com add at 20161123
+#include <linux/string.h> //shenyong@wind-mobi.com add at 20161123
 
 #define IDLE 0
 #define ACTIVE 1
@@ -238,7 +238,7 @@ static ssize_t manual_offset_calibration_store(struct device *dev,
 	return count;
 }
 
-//lenovo@lenovo.com add at 20161123 begin
+//shenyong@wind-mobi.com add at 20161123 begin
 
 
 static ssize_t all_register_value_show(struct device *dev,
@@ -308,7 +308,7 @@ static struct attribute *sx9310_attributes[] = {
 static struct attribute_group sx9310_attr_group = {
 	.attrs = sx9310_attributes,
 };
-//lenovo@lenovo.com add at 20161123 end
+//shenyong@wind-mobi.com add at 20161123 end
 /*********************************************************************/
 
 

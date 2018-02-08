@@ -3,7 +3,9 @@
 #include <linux/mutex.h>
 #include <linux/freezer.h>
 #include <linux/semaphore.h>
-
+//zhangheting@wind-mobi.com add teei patch 20170523 start
+#include "teei_id.h"
+//zhangheting@wind-mobi.com add teei patch 20170523 end
 #include "nt_smc_call.h"
 #include "global_function.h"
 #include "sched_status.h"
@@ -73,7 +75,10 @@ int global_fn(void)
 			/*msleep_interruptible(10);*/
 		} else if (fp_call_flag == GLSCH_HIGH) {
 			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			if (teei_vfs_flag == 0) {
+			//zhangheting@wind-mobi.com add teei patch 20170523 start
+				Invalidate_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag) + 8);
+			if (*((unsigned long *)teei_vfs_flag) == 0) {
+			//zhangheting@wind-mobi.com add teei patch 20170523 end
 				nt_sched_t_call();
 			} else {
 				up(&smc_lock);
@@ -81,7 +86,10 @@ int global_fn(void)
 			}
 		} else if (forward_call_flag == GLSCH_LOW) {
 			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			if (teei_vfs_flag == 0)	{
+			//zhangheting@wind-mobi.com add teei patch 20170523 start
+				Invalidate_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag) + 8);
+			if (*((unsigned long *)teei_vfs_flag) == 0) {
+			//zhangheting@wind-mobi.com add teei patch 20170523 end
 				nt_sched_t_call();
 			} else {
 				up(&smc_lock);

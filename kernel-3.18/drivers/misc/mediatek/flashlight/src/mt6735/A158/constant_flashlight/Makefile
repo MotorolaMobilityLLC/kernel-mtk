@@ -1,4 +1,4 @@
-##lenovo@lenovo.com 20160119 begin
+##luminjie@wind-mobi.com 20160119 begin
 #
 # Copyright (C) 2015 MediaTek Inc.
 #
@@ -23,4 +23,4 @@ CFILES := leds_strobe.o
 obj-m				+= flashlight_device.o
 flashlight_device-objs := $(CFILES)
 endif
-##lenovo@lenovo.com 20160119 end
+##luminjie@wind-mobi.com 20160119 end
