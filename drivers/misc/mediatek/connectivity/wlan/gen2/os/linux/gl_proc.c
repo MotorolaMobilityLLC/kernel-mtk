@@ -912,7 +912,6 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 	DBGLOG(INIT, TRACE, "write parameter len = %d\n\r", (INT32) len);
 	if (len >= sizeof(buf)) {
 		DBGLOG(INIT, ERROR, "input handling fail!\n");
-		len = sizeof(buf) - 1;
 		return -1;
 	}
 
@@ -1259,9 +1258,7 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 	UINT_8 token_num = 1;
 
 	kalMemSet(aucCfgBuf, '\0', u4CopySize);
-
-	if (u4CopySize >= (count + 1))
-		u4CopySize = count;
+	u4CopySize = (count < u4CopySize) ? count : (u4CopySize - 1);
 
 	if (copy_from_user(aucCfgBuf, buf, u4CopySize)) {
 		DBGLOG(INIT, ERROR, "copy from user failed\n");
