@@ -2832,10 +2832,6 @@ _priv_set_ints(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
 	UINT_32 u4SubCmd, u4BufLen, u4CmdLen;
-#if !(CFG_SUPPORT_TX_POWER_BACK_OFF)
-	UINT_16 i = 0;
-	INT_32  setting[4] = {0};
-#endif
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -2855,12 +2851,15 @@ _priv_set_ints(IN struct net_device *prNetDev,
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
-#if !(CFG_SUPPORT_TX_POWER_BACK_OFF)
 	{
+		UINT_16 i, j;
+		INT_32  setting[4] = {0};
+
 		if (u4CmdLen > 4)
 			return -EINVAL;
 		if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
 			return -EFAULT;
+#if !(CFG_SUPPORT_TX_POWER_BACK_OFF)
 		prTxpwr = &prGlueInfo->rTxPwr;
 		if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
 			/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
@@ -2911,11 +2910,7 @@ _priv_set_ints(IN struct net_device *prNetDev,
 					   sizeof(SET_TXPWR_CTRL_T), TRUE, FALSE, FALSE, FALSE, &u4BufLen);
 		} else
 			return -EFAULT;
-	}
 #else
-	{
-		INT_32 *setting = prIwReqData->data.pointer;
-		UINT_16 i, j;
 
 #if 0
 		DBGLOG(REQ, INFO, "Tx power num = %d\n", prIwReqData->data.length);
@@ -3010,8 +3005,8 @@ _priv_set_ints(IN struct net_device *prNetDev,
 			} while (j < 40);
 		} else
 			return -EFAULT;
-	}
 #endif
+	}
 
 	return status;
 	default:
