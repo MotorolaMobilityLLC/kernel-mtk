@@ -4651,6 +4651,12 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
+	/* 4 <0> Report upper layer that signal is bad, then do retry */
+	mtk_cfg80211_vendor_event_rssi_beyond_range(
+			priv_to_wiphy(prAdapter->prGlueInfo),
+			prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
+			(signed int)-127);
+
 	/* 4 <1> Diagnose Connection for Beacon Timeout Event */
 	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 		if (prAisBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {

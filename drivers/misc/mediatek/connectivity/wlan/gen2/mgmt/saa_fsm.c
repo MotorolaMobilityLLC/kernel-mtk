@@ -1098,6 +1098,11 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 		saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
 	} else {
 		DBGLOG(SAA, INFO, "<drv> reassociate\n");
+		/* Report a lowest RSSI value to wlan framework, who will transfer it to modem and then
+		** modem can make a decision if need to switch to LTE data link.
+		*/
+		mtk_cfg80211_vendor_event_rssi_beyond_range(priv_to_wiphy(prAdapter->prGlueInfo),
+					prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr, -127);
 
 		if (prAisBssInfo->fgDisConnReassoc == FALSE) {
 			P_BSS_DESC_T prBssDesc;

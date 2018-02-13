@@ -1649,8 +1649,8 @@ int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wire
 	rRSSIEvt.version = 1; /* RSSI_MONITOR_EVT_VERSION = 1 */
 	if (rssi > PARAM_WHQL_RSSI_MAX_DBM)
 		rssi = PARAM_WHQL_RSSI_MAX_DBM;
-	else if (rssi < -120)
-		rssi = -120;
+	else if (rssi < -127)
+		rssi = -127;
 	rRSSIEvt.rssi = (INT_8)rssi;
 	DBGLOG(REQ, INFO, "RSSI Event: version=%d, rssi=%d, BSSID=" MACSTR "\r\n",
 		rRSSIEvt.version, rRSSIEvt.rssi, MAC2STR(rRSSIEvt.BSSID));
