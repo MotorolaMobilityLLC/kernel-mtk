@@ -420,6 +420,7 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	struct nlattr *pbucket, *pchannel;
 	UINT_32 len_basic, len_bucket, len_channel;
 	int i, j, k;
+	unsigned int u4ArySize;
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -447,7 +448,10 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_NUM_BUCKETS:
-				prWifiScanCmd->num_buckets = nla_get_u32(attr[k]);
+				u4ArySize = nla_get_u32(attr[k]);
+				prWifiScanCmd->num_buckets =
+					(u4ArySize <= GSCAN_MAX_BUCKETS)
+					? u4ArySize : GSCAN_MAX_BUCKETS;
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				DBGLOG(REQ, TRACE, "attr=0x%x, num_buckets=%d nla_len=%d,\r\n",
 				       *(UINT_32 *) attr[k], prWifiScanCmd->num_buckets, attr[k]->nla_len);
