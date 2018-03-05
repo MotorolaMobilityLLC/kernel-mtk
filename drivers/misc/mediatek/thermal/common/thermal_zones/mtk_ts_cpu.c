@@ -871,7 +871,7 @@ static ssize_t tscpu_write_GPIO_out(struct file *file, const char __user *buffer
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%s %d %s %d ", TEMP, &valTEMP, ENABLE, &valENABLE) == 4) {
+	if (sscanf(desc, "%9s %d %9s %d ", TEMP, &valTEMP, ENABLE, &valENABLE) == 4) {
 		/* tscpu_printk("XXXXXXXXX\n"); */
 
 		if (!strcmp(TEMP, "TEMP")) {
