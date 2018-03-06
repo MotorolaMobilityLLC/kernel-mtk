@@ -1008,6 +1008,9 @@ VOID qmResetArpDetect(VOID);
 VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 VOID qmHandleRxDhcpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 #endif
+#ifdef CFG_SUPPORT_REPLAY_DETECTION
+BOOLEAN qmHandleRxReplay(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
+#endif
 
 /*******************************************************************************
  *                              F U N C T I O N S
