@@ -162,7 +162,7 @@ signed int fm_set_stat(struct fm *fmp, int which, bool stat)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (which < ARRAY_SIZE(g_fm_stat)) {
+	if (which >= 0 && which < ARRAY_SIZE(g_fm_stat)) {
 		g_fm_stat[which] = stat;
 		WCN_DBG(FM_DBG | MAIN, "fm set stat object=%d, stat=%d\n", which, stat);
 	} else {
@@ -189,7 +189,7 @@ signed int fm_get_stat(struct fm *fmp, int which, bool *stat)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (which < ARRAY_SIZE(g_fm_stat)) {
+	if (which >= 0 && which < ARRAY_SIZE(g_fm_stat)) {
 		*stat = g_fm_stat[which];
 		WCN_DBG(FM_DBG | MAIN, "fm get stat object=%d, stat=%d\n", which, *stat);
 	} else {
