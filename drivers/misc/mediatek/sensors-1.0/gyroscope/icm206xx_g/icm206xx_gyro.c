@@ -929,15 +929,17 @@ static int icm206xx_gyro_enable_nodata(int en)
 {
 	int res = 0;
 
-	if (1 == en)
+	if (1 == en) {
 		power_gyro = true;
+		res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
+		res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
+	}
 	else{
 		power_gyro = false;
-		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_GYRO, 0, false);
+		res = icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_GYRO, 2000000, true); 
+		res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
+		res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
 	}
-
-	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
-	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
 
 	if (res != ICM206XX_SUCCESS) {
 		GYRO_PR_ERR("icm206xx_gyro_SetPowerMode fail!\n");
@@ -984,42 +986,15 @@ static const struct of_device_id gyro_of_match[] = {
 
 static int icm206xx_gyro_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	unsigned int err;
-	//unsigned int hw_rate, delay_t, err;
+	GYRO_LOG("%s is called [ns:%lld]\n", __func__, samplingPeriodNs);
+	icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_GYRO, samplingPeriodNs, false);
 
-	err = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, true);
-	if (err < 0) {
-		GYRO_LOG("ICM206xx_gyro_SetPowerMode on fail\n\r");
-		err = -1;
-	}
-		/* filter : ICM206XX_GYRO_DLPF_2 */
-		err = icm206xx_gyro_SetFilter(obj_i2c_data->client, ICM206XX_GYRO_DLPF_2);
-		if (err != ICM206XX_SUCCESS) {
-			GYRO_PR_ERR("ICM206xx_gyro_Setfilter ERR!\n");
-			return err;
-		}
-
-	/* odr : 1000hz (1kHz) */
-	err = icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_GYRO, 1000000, true);
-	if (err != 0) {
-		GYRO_PR_ERR("icm206xx_gyro_SetSampleRate error\n\r");
-		err = -1;
-	}
 	return 0;
 }
 
 static int icm206xx_gyro_flush(void)
 {
-	int err = 0;
-	/*Only flush after sensor was enabled*/
-	if (!power_gyro) {
-		obj_i2c_data->flush = true;
-		return 0;
-	}
-	err = gyro_flush_report();
-	if (err >= 0)
-		obj_i2c_data->flush = false;
-	return err;
+	return gyro_flush_report();
 }
 
 /************************* For MTK factory mode ************************************/

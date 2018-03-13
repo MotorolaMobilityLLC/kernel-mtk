@@ -1019,22 +1019,20 @@ static int icm206xx_accel_enable_nodata(int en)
 
 	if (1 == en) {
 		power_acc = true;
-
+		res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, power_acc);
+		res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power_acc);
 	}
+
 	if (0 == en) {
 		power_acc = false;
+		res = icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 2000000, true); 
+		res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power_acc);
+		res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, power_acc);
 	}
-
-	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power_acc);
-	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, power_acc);
 
 	if (res != ICM206XX_SUCCESS) {
 		ACC_LOG("fail!\n");
 		return -1;
-	}
-
- 	if (0 == en) {
-		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 2000000, true); 
 	}
 
 	ACC_LOG("icm206xx_accel_enable_nodata OK!\n");
@@ -1089,16 +1087,7 @@ static int icm206xx_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRe
 
 static int icm206xx_flush(void)
 {
-	int err = 0;
-	/*Only flush after sensor was enabled*/
-	if (!power_acc) {
-		obj_i2c_data->flush = true;
-		return 0;
-	}
-	err = acc_flush_report();
-	if (err >= 0)
-		obj_i2c_data->flush = false;
-	return err;
+	return acc_flush_report();
 }
 
 /************************* For MTK factory mode ************************************/
