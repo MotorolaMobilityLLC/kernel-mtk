@@ -576,7 +576,7 @@ static int bmg_set_powermode(struct i2c_client *client,
         /*data = actual_power_mode;*/
         err += bmg_i2c_write_block(client,
             BMI160_CMD_COMMANDS__REG, &actual_power_mode, 1);
-        bmi160_gyro_delay(200);
+        bmi160_gyro_delay(90); /* lenovo-sw wunan3 2018-03-14 change to 90ms as FAE's suggestion to improve camera KPI data */
         err += bmg_i2c_read_block(client,
             BMI160_USER_PMU_STATUS_ADDR, &data, 1);
             GYRO_PR_ERR("++++ [bmi160 gyro] get power mode = 0x%x\n", data);
