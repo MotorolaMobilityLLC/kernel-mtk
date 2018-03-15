@@ -438,6 +438,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_T8EV5_YUV                "t8ev5_yuv"
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135mipiraw5mp"
+#define SENSOR_DRVNAME_OV8865_SUNNY_MIPI_RAW    "ov8865sunnymipiraw "
+#define SENSOR_DRVNAME_S5K3M2_SUNNY_MIPI_RAW    "s5k3m2sunnymipiraw "
 /*******************************************************************************
 *
 ********************************************************************************/
