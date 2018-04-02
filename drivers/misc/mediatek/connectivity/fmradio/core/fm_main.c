@@ -157,7 +157,7 @@ fm_s32 fm_set_stat(struct fm *fmp, int which, bool stat)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (which < (sizeof(g_fm_stat) / sizeof(g_fm_stat[0]))) {
+	if (which >= 0 && which < (sizeof(g_fm_stat) / sizeof(g_fm_stat[0]))) {
 		g_fm_stat[which] = stat;
 		WCN_DBG(FM_DBG | MAIN, "fm set stat object=%d, stat=%d\n", which, stat);
 	} else {
@@ -184,7 +184,7 @@ fm_s32 fm_get_stat(struct fm *fmp, int which, bool *stat)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (which < (sizeof(g_fm_stat) / sizeof(g_fm_stat[0]))) {
+	if (which >= 0 && which < (sizeof(g_fm_stat) / sizeof(g_fm_stat[0]))) {
 		*stat = g_fm_stat[which];
 		WCN_DBG(FM_DBG | MAIN, "fm get stat object=%d, stat=%d\n", which, *stat);
 	} else {
