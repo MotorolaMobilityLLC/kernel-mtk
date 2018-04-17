@@ -739,6 +739,10 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		return FALSE;
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, use this BSS. */
+		if (prBss->fgIERSN || prBss->fgIEWPA) {
+			DBGLOG(RSN, WARN, "-- WEP-only but RSN and IEWPA exist\n");
+			return FALSE;
+		}
 		DBGLOG(RSN, TRACE, "-- WEP-only legacy BSS\n");
 		return TRUE;
 	}
@@ -929,10 +933,10 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 
 	if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED) {
 		if (!prBssRsnInfo->fgRsnCapPresent) {
-			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Required Capability.\n");
+			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No RSN Capability.\n");
 			return FALSE;
 		} else if (!(prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC)) {
-			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Required\n");
+			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Capable\n");
 			return FALSE;
 		}
 		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
@@ -954,9 +958,6 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	DBGLOG(RSN, TRACE,
 	       "[MFP] fgMgmtProtection = %d\n ", prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection);
 
-	prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq = FALSE;
-	if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR))
-		prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq = TRUE;
 #endif
 
 	if (GET_SELECTOR_TYPE(u4GroupCipher) == CIPHER_SUITE_CCMP) {
@@ -1262,12 +1263,11 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 		       "Gen RSN IE = %x\n", GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->u2RsnSelectedCapInfo);
 		if (GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->eNetworkType == NETWORK_TYPE_AIS
 		    && prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection) {
-			if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED
-			    /* prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq */) {
-				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC | ELEM_WPA_CAP_MFPR);	/* Capabilities */
+			if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED) {
+				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC | ELEM_WPA_CAP_MFPR);
 				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP_NO - MFPC & MFPR\n");
 			} else {
-				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC);	/* Capabilities */
+				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC);
 				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP_NO - MFPC\n");
 			}
 		}

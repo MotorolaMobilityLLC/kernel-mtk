@@ -711,8 +711,9 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	case NL80211_MFP_NO:
 		prGlueInfo->rWpaInfo.u4Mfp = IW_AUTH_MFP_DISABLED;
 		break;
+	/* There's no OPTIONAL defination in both kernel and wpa_supplicant cfg80211 driver */
 	case NL80211_MFP_REQUIRED:
-		prGlueInfo->rWpaInfo.u4Mfp = IW_AUTH_MFP_REQUIRED;
+		prGlueInfo->rWpaInfo.u4Mfp = IW_AUTH_MFP_OPTIONAL;
 		break;
 	default:
 		prGlueInfo->rWpaInfo.u4Mfp = IW_AUTH_MFP_DISABLED;

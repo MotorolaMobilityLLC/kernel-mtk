@@ -463,7 +463,6 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	BOOLEAN fgIndicatePMKID;
 #if CFG_SUPPORT_802_11W
 	BOOLEAN fgMgmtProtection;
-	BOOLEAN fgAPApplyPmfReq;
 	UINT_32 u4SaQueryStart;
 	UINT_32 u4SaQueryCount;
 	UINT_8 ucSaQueryTimedOut;
