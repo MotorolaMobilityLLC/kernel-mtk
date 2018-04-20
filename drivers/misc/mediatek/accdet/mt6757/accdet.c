@@ -1662,9 +1662,10 @@ void accdet_late_init(unsigned long a)
 {
 	if (atomic_cmpxchg(&g_accdet_first, 1, 0)) {
 		del_timer_sync(&accdet_init_timer);
-		accdet_init();
+		//We needn't be called by dc_trim_thread
+		//accdet_init();
 		/* schedule a work for the first detection */
-		queue_work(accdet_workqueue, &accdet_work);
+		//queue_work(accdet_workqueue, &accdet_work);
 	} else {
 		ACCDET_INFO("[accdet_late_init]err: accdet have been done or get dts failed!\n");
 	}
