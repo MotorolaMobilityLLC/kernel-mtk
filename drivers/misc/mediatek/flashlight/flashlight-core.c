@@ -609,7 +609,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 #ifdef CONFIG_MTK_FLASHLIGHT_DLPT
 			kicker_pbm_by_flash(fl_arg.arg);
 #endif
-#ifdef CONFIG_MTK_FLASHLIGHT_PT
+#if 0 //#ifdef CONFIG_MTK_FLASHLIGHT_PT
 			if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
 					|| pt_low_vol != LOW_BATTERY_LEVEL_0
 					|| pt_over_cur != BATTERY_OC_LEVEL_0) {
