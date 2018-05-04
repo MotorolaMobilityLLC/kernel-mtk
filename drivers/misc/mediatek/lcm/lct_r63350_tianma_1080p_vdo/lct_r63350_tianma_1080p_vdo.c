@@ -590,15 +590,14 @@ LCM_LOGI("%s,LCM R63350 backlight: level = %d\n", __func__, level);
 //   		MDELAY(30);//optimize device turn off,press power key wake up screen slowly.
 //		printk("enter power off charging mode delay 30ms");
 //				}
-	if(level <= 4)
-		level = 4;
+		//if(level <= 4)
+		//	level = 4;
 		bl_level[0].para_list[0] = level;
 		push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-		}
-	 	else {	
-			bl_level[0].para_list[0] = level_hight;
-			push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-	            }
+	}else {	
+		bl_level[0].para_list[0] = level_hight;
+		push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	}
 		#ifdef CONFIG_LCT_HBM_SUPPORT
 			last_level = level;
 		#endif

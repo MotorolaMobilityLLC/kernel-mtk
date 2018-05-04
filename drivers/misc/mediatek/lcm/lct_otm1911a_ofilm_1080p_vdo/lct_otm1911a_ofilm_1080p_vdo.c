@@ -672,8 +672,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 unsigned int level_hight = 255;
 	LCM_LOGI("%s,lcm otm1911a backlight: level = %d\n", __func__, level);
 if(hbm_enable == 0){
-		if(level <= 4)
-		level = 4;
+	//if(level <= 4)
+	//	level = 4;
 	bl_level[0].para_list[0] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
