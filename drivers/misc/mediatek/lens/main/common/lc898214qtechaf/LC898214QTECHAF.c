@@ -134,7 +134,8 @@ static inline int moveAF(unsigned long a_u4Position)
 		LOG_INF("out of range\n");
 		return -EINVAL;
 	}
-
+	if (g_u4CurrPosition == a_u4Position)
+		return 0;
 	if (*g_pAF_Opened == 1) {
 		unsigned char Temp;
 
@@ -160,10 +161,6 @@ static inline int moveAF(unsigned long a_u4Position)
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
-
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
-
 	spin_lock(g_pAF_SpinLock);
 	g_u4TargetPosition = a_u4Position;
 	spin_unlock(g_pAF_SpinLock);
