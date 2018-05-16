@@ -593,6 +593,56 @@ static int _get_max_layer(unsigned int session_id)
 	return 0;
 }
 
+static int disp_validate_input_params(struct disp_input_config *cfg, int layer_num)
+{
+	if (cfg->layer_id >= layer_num) {
+		disp_aee_print("layer_id=%d > layer_num=%d\n", cfg->layer_id, layer_num);
+		return -1;
+	}
+	if (cfg->layer_enable) {
+		if ((cfg->src_fmt <= 0) || ((cfg->src_fmt >> 8) == 15) ||
+			((cfg->src_fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
+			disp_aee_print("layer_id=%d,src_fmt=0x%x is invalid color format\n",
+				cfg->layer_id, cfg->src_fmt);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static int disp_validate_output_params(struct disp_output_config *cfg)
+{
+	if ((cfg->fmt <= 0) || ((cfg->fmt >> 8) == 15) ||
+		((cfg->fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
+		disp_aee_print("output fmt=0x%x is invalid color format\n", cfg->fmt);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
+{
+	int i;
+
+	/* TODO: check session_id */
+
+	if (cfg->input_layer_num > _get_max_layer(cfg->session_id)) {
+		disp_aee_print("sess:0x%x layer_num %d>%d\n", cfg->session_id,
+			cfg->input_layer_num, _get_max_layer(cfg->session_id));
+		return -1;
+	}
+
+	for (i = 0; i < cfg->input_layer_num; i++)
+		if (disp_validate_input_params(&cfg->input_cfg[i], cfg->input_layer_num) != 0)
+			return -1;
+
+	if (cfg->output_en && disp_validate_output_params(&cfg->output_cfg) != 0)
+		return -1;
+
+	return 0;
+}
+
 static int disp_input_get_dirty_roi(struct disp_frame_cfg_t *cfg)
 {
 	int i;
@@ -889,8 +939,10 @@ static int _ioctl_frame_config(unsigned long arg)
 		return -EINVAL;
 	}
 
-	return __frame_config(frame_node);
-
+	if (disp_validate_ioctl_params(frame_cfg) != 0)
+		return -EINVAL;
+	else
+		return __frame_config(frame_node);
 }
 
 static int _ioctl_wait_all_jobs_done(unsigned long arg)
