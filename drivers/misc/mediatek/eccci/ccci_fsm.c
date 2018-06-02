@@ -276,9 +276,10 @@ static void ccci_routine_stop(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command 
 	ccci_md_pre_stop(md, cmd->flag & CCCI_CMD_FLAG_FLIGHT_MODE ? MD_FLIGHT_MODE_ENTER : MD_FLIGHT_MODE_NONE);
 	/* 3. check for EE */
 	ee_cmd = ccci_check_for_ee(ctl, 1);
-	if (ee_cmd)
+	if (ee_cmd) {
 		ccci_routine_exception(ctl, ee_cmd, EXCEPTION_EE);
-	ccci_md_check_ee_done(md, EE_DONE_TIMEOUT);
+		ccci_md_check_ee_done(md, EE_DONE_TIMEOUT);
+	}
 	/* 4. hardware stop */
 	ccci_md_stop(md, cmd->flag & CCCI_CMD_FLAG_FLIGHT_MODE ? MD_FLIGHT_MODE_ENTER : MD_FLIGHT_MODE_NONE);
 	/* 5. clear event queue */
