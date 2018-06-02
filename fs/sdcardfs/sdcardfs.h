@@ -409,6 +409,7 @@ extern void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 extern void get_derived_permission_new(struct dentry *parent, struct dentry *dentry, struct dentry *newdentry);
 extern void get_derive_permissions_recursive(struct dentry *parent);
 
+extern void update_derived_permission(struct dentry *dentry);
 extern void update_derived_permission_lock(struct dentry *dentry);
 extern int need_graft_path(struct dentry *dentry);
 extern int is_base_obbpath(struct dentry *dentry);
