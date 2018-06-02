@@ -88,10 +88,8 @@ static int dev_char_close(struct inode *inode, struct file *file)
 
 	return 0;
 }
-
-static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len)
+static void port_dump_string(struct ccci_port *port, int dir, void *msg_buf, int len)
 {
-#if 1
 #define DUMP_BUF_SIZE 32
 	unsigned char *char_ptr = (unsigned char *)msg_buf;
 	char buf[DUMP_BUF_SIZE];
@@ -132,14 +130,78 @@ static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len
 	ts_nsec = local_clock();
 	rem_nsec = do_div(ts_nsec, 1000000000);
 	if (dir == 0)
-		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d>%s\n",
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d<%s\n",
 			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->rx_ch,
 			port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt, "R", len, buf);
 	else
 		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d) %s: %d>%s\n",
 			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->tx_ch,
 			port->tx_pkg_cnt, "W", len, buf);
-#endif
+}
+static void port_dump_raw_data(struct ccci_port *port, int dir, void *msg_buf, int len)
+{
+#define DUMP_RAW_DATA_SIZE 16
+	unsigned int *curr_p = (unsigned int *)msg_buf;
+	unsigned char *curr_ch_p;
+	int _16_fix_num = len / 16;
+	int tail_num = len % 16;
+	char buf[16];
+	int i, j;
+	int dump_size;
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+
+	dump_size = len > DUMP_RAW_DATA_SIZE ? DUMP_RAW_DATA_SIZE : len;
+	_16_fix_num = dump_size / 16;
+	tail_num = dump_size % 16;
+
+	if (curr_p == NULL) {
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "start_addr <NULL>\n");
+		return;
+	}
+	if (len == 0) {
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "len [0]\n");
+		return;
+	}
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+
+	if (dir == 0)
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d<",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->rx_ch,
+			port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt, "R", len);
+	else
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d) %s: %d>",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->tx_ch,
+			port->tx_pkg_cnt, "W", len);
+	/* Fix section */
+	for (i = 0; i < _16_fix_num; i++) {
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+		curr_p += 4;
+	}
+
+	/* Tail section */
+	if (tail_num > 0) {
+		curr_ch_p = (unsigned char *)curr_p;
+		for (j = 0; j < tail_num; j++) {
+			buf[j] = *curr_ch_p;
+			curr_ch_p++;
+		}
+		for (; j < 16; j++)
+			buf[j] = 0;
+		curr_p = (unsigned int *)buf;
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+	}
+}
+
+static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len)
+{
+	if (port->flags & PORT_F_DUMP_RAW_DATA)
+		port_dump_raw_data(port, dir, msg_buf, len);
+	else
+		port_dump_string(port, dir, msg_buf, len);
 }
 
 static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t *ppos)
@@ -221,8 +283,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	unsigned char blocking = !(file->f_flags & O_NONBLOCK);
 	struct sk_buff *skb = NULL;
 	struct ccci_header *ccci_h = NULL;
-	size_t actual_count = 0;
+	size_t actual_count = 0, alloc_size = 0;
 	int ret = 0, header_len = 0;
+
+	if (count == 0)
+		return -EINVAL;
 
 	if (port->tx_ch == CCCI_MONITOR_CH)
 		return -EPERM;
@@ -234,19 +299,13 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 				     count, port->name);
 			return -ENOMEM;
 		}
-	}
-	if (count == 0)
-		return -EINVAL;
-	if (port->flags & PORT_F_USER_HEADER)
-		actual_count = count > (CCCI_MTU + header_len) ? (CCCI_MTU + header_len) : count;
-	else
+		actual_count = count;
+		alloc_size = actual_count;
+	} else {
 		actual_count = count > CCCI_MTU ? CCCI_MTU : count;
-#if 0
-	if (port->tx_ch != CCCI_FS_TX)
-		CCCI_NORMAL_LOG(port->md_id, CHAR, "write on %s for %zu of %zu, md_s=%d\n",
-			port->name, actual_count, count, port->modem->md_state);
-#endif
-	skb = ccci_alloc_skb(actual_count, 1, blocking);
+		alloc_size = actual_count + header_len;
+	}
+	skb = ccci_alloc_skb(alloc_size, 1, blocking);
 	if (skb) {
 		/* 1. for Tx packet, who issued it should know whether recycle it  or not */
 		/* 2. prepare CCCI header, every member of header should be re-write as request may be re-used */
@@ -263,7 +322,13 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		ret = copy_from_user(skb_put(skb, actual_count), buf, actual_count);
 		if (ret)
 			goto err_out;
-		if (port->flags & PORT_F_USER_HEADER) {	/* header provided by user, valid after copy_from_user */
+		if (port->flags & PORT_F_USER_HEADER) {
+			/* ccci_header provided by user,
+			 * For only send ccci_header without additional data case,
+			 *	data[0]=CCCI_MAGIC_NUM, data[1]=user_data, ch=tx_channel, reserved=no_use
+			 * For send ccci_header with additional data case,
+			 *	data[0]=0, data[1]=data_size, ch=tx_channel, reserved=user_data
+			 */
 			if (actual_count == sizeof(struct ccci_header))
 				ccci_h->data[0] = CCCI_MAGIC_NUM;
 			else
@@ -278,8 +343,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 				ccci_h->reserved = ret;	/* Unity ID */
 		}
 		if (port->flags & PORT_F_CH_TRAFFIC) {
-			port_ch_dump(port, 1, skb->data + sizeof(struct ccci_header),
-				     actual_count);
+			if (port->flags & PORT_F_USER_HEADER)
+				port_ch_dump(port, 1, skb->data, actual_count);
+			else
+				port_ch_dump(port, 1, skb->data + header_len,
+					actual_count);
 		}
 
 		/* 4. send out */
@@ -449,7 +517,10 @@ static int port_char_init(struct ccci_port *port)
 		port->rx_ch == CCCI_C2K_AT7 ||
 		port->rx_ch == CCCI_C2K_AT8)
 		port->flags |= PORT_F_CH_TRAFFIC;
-
+#if 0
+	if (port->rx_ch == CCCI_PCM_RX)
+		port->flags |= (PORT_F_CH_TRAFFIC | PORT_F_DUMP_RAW_DATA);
+#endif
 	return ret;
 }
 
