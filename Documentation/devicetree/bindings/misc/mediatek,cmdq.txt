@@ -1,0 +1,12 @@
+MediaTek SoC system GCE
+
+Required properties:
+- compatible : Should be "mediatek,gce"
+- reg: Should contain dramc registers location and length
+
+Examples:
+
+		gce@10212000 {
+			compatible = "mediatek,gce";
+			reg = <0 0x10212000 0 0x1000>;
+		};
