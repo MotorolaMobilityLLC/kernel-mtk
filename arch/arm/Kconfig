@@ -1261,7 +1261,7 @@ config ARM_ERRATA_855873
 	  the interconnect in the wrong order.
 
 config ARM_ERRATA_824069
-	bool "ARM errata: Cache line might not be marked as clean after a CleanShared snoop
+	bool "ARM errata: Cache line might not be marked as clean after a CleanShared snoop"
 	help
 	  This option enables the workaround for the 824069 Cortex-A53
 	  (up to r0p2) erratum. If a Cortex-A53 processor is executing

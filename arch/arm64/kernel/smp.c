@@ -105,6 +105,9 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	 * Now bring the CPU into our world.
 	 */
 	ret = boot_secondary(cpu, idle);
+
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+
 	if (ret == 0) {
 		/*
 		 * CPU was successfully started, wait for it to come online or
@@ -120,6 +123,8 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	} else {
 		pr_err("CPU%u: failed to boot: %d\n", cpu, ret);
 	}
+
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 
 	secondary_data.stack = NULL;
 
@@ -178,7 +183,11 @@ asmlinkage void secondary_start_kernel(void)
 	/*
 	 * Enable GIC and timers.
 	 */
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+
 	notify_cpu_starting(cpu);
+
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 
 	smp_store_cpu_info(cpu);
 
@@ -281,10 +290,14 @@ void __cpu_die(unsigned int cpu)
 	 * verify that it has really left the kernel before we consider
 	 * clobbering anything it might still be using.
 	 */
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+
 	err = op_cpu_kill(cpu);
 	if (err)
 		pr_warn("CPU%d may not have shut down cleanly: %d\n",
 			cpu, err);
+
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 }
 
 /*
