@@ -109,6 +109,8 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type,
 		unsigned long data1, unsigned long data2, const char *str);
 long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type, MMP_MetaDataStructure_t *pMetaData);
 long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData);
+void MMProfileStart(int start);
+void MMProfileEnable(int enable);
 #endif
 
 #define MMProfileLogStructure(event, type, pStruct, struct_type) \
@@ -192,6 +194,14 @@ static inline long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, con
 static inline long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData)
 {
 	return 0;
+}
+
+static inline void MMProfileStart(int start)
+{
+}
+
+static inline void MMProfileEnable(int enable)
+{
 }
 #endif
 
