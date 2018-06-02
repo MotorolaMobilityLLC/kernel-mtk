@@ -80,12 +80,12 @@ typedef enum {
 typedef enum {
 	WIFI_SUBCMD_GET_CHANNEL_LIST = ANDROID_NL80211_SUBCMD_WIFI_RANGE_START,
 
-	WIFI_SUBCMD_GET_FEATURE_SET,                     /* 0x0001 */
-	WIFI_SUBCMD_GET_FEATURE_SET_MATRIX,              /* 0x0002 */
-	WIFI_SUBCMD_SET_PNO_RANDOM_MAC_OUI,              /* 0x0003 */
-	WIFI_SUBCMD_NODFS_SET,                           /* 0x0004 */
-	WIFI_SUBCMD_SET_COUNTRY_CODE,                    /* 0x0005 */
-	WIFI_SUBCMD_SET_RSSI_MONITOR,			 /* 0x0006 */
+	WIFI_SUBCMD_GET_FEATURE_SET,                     /* 0x0002 */
+	WIFI_SUBCMD_GET_FEATURE_SET_MATRIX,              /* 0x0003 */
+	WIFI_SUBCMD_SET_PNO_RANDOM_MAC_OUI,              /* 0x0004 */
+	WIFI_SUBCMD_NODFS_SET,                           /* 0x0005 */
+	WIFI_SUBCMD_SET_COUNTRY_CODE,                    /* 0x0006 */
+	WIFI_SUBCMD_SET_RSSI_MONITOR,			 /* 0x0007 */
 
 	/* Add more sub commands here */
 
@@ -135,7 +135,7 @@ typedef enum {
 } WIFI_VENDOR_EVENT;
 
 typedef enum {
-	WIFI_ATTRIBUTE_BAND,
+	WIFI_ATTRIBUTE_BAND = 1,
 	WIFI_ATTRIBUTE_NUM_CHANNELS,
 	WIFI_ATTRIBUTE_CHANNEL_LIST,
 
