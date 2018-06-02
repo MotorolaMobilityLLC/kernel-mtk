@@ -29,3 +29,18 @@ endmenu
 menu "Modem & Connectivity related configs"
 source "drivers/misc/mediatek/connectivity/Kconfig"
 endmenu
+
+menuconfig MEDIATEK_SOLUTION
+	bool "MediaTek Properitary Configuration"
+	select FW_LOADER_USER_HELPER_FALLBACK
+	select I2C
+	help
+	  Check this to enable MediaTek properity configuration.
+
+if MEDIATEK_SOLUTION
+config MTK_PLATFORM
+	string "MTK platform name"
+
+config ARCH_MTK_PROJECT
+	string "MTK project name"
+endif
