@@ -14,6 +14,7 @@
 #$(call all-subdir-src-or-makefile)
 subdir-ccflags-y += -Werror
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 obj-y	+= hwmon/
@@ -24,3 +25,4 @@ obj-$(CONFIG_MMC_MTK_SDIO) += mtk_sdio/
 obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_UNIFIED_DEBUG_INTERFACE) += udi/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
+obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/

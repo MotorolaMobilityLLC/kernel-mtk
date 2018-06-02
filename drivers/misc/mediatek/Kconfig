@@ -48,5 +48,5 @@ endif
 menu "Other Peripherals"
 
 source "drivers/misc/mediatek/devapc/Kconfig"
-
+source "drivers/misc/mediatek/ext_gic/Kconfig"
 endmenu # Peripheral
