@@ -24,8 +24,6 @@
 #include <linux/of_address.h>
 #endif
 
-/* Temporary: Fix build, No such file */
-/* #include <mach/irqs.h> */
 #include <mach/mtk_gpt.h>
 #include <mach/mtk_secure_api.h>
 
@@ -328,12 +326,8 @@ void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 	u32 v0, v1;
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-#if defined(CONFIG_MACH_MT6757)
-	#ifdef SODI_VSRAM_VPROC_SHUTDOWN
+#if defined(CONFIG_MACH_MT6757) && defined(SODI_VSRAM_VPROC_SHUTDOWN)
 		mt_cpu_dormant(CPU_SHUTDOWN_MODE);
-	#else
-		mt_cpu_dormant(CPU_SODI_MODE);
-	#endif
 #else
 		mt_cpu_dormant(CPU_SODI_MODE);
 #endif
@@ -622,7 +616,10 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 						wr = WR_WAKE_SRC;
 					}
 				}
-				/*BUG_ON(strlen(buf) >= LOG_BUF_SIZE);*/
+
+				if (unlikely(strlen(buf) >= LOG_BUF_SIZE)) {
+					strcpy(buf, "None (LOG BUFFER OVERFLOW)");
+				}
 
 				so_warn(sodi_flags, "wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d\n",
 						buf, vcore_status, spm_read(SPM_PASR_DPD_0),
@@ -663,17 +660,11 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-#if defined(CONFIG_MACH_MT6757)
-	vcore_status = 0;
-#else
 	vcore_status = vcorefs_get_curr_ddr();
-#endif
-
 	sodi_idx = spm_sodi_get_pcm_idx(cpu);
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
 		sodi_err("ERROR: LOAD FIRMWARE FAIL\n");
-		/*BUG();*/
 		return WR_NONE;
 	}
 	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);

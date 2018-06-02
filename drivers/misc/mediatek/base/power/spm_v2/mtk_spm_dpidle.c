@@ -23,8 +23,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-/* Temporary: Fix build, No such file */
-/*#include <mach/irqs.h>*/
 #include <mach/mtk_secure_api.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>

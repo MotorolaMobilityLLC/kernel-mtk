@@ -64,7 +64,7 @@
 
 #define FEATURE_ENABLE_SODI2P5
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
 #define USING_STD_TIMER_OPS
 #endif
 
