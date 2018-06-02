@@ -380,7 +380,6 @@ int hps_set_powmode_status(unsigned int pwrmode)
 	return 0;
 }
 
-#ifdef CONFIG_SMP_PPM
 /*
  * hps get/set PPM_power mode
  */
@@ -411,4 +410,3 @@ int hps_set_ppm_powmode_status(unsigned int pwrmode)
 
 	return 0;
 }
-#endif

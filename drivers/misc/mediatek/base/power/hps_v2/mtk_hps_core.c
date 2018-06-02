@@ -21,6 +21,7 @@
 
 #include "mtk_hps_internal.h"
 #include "mtk_hps.h"
+#include <trace/events/mtk_events.h>
 #include <trace/events/sched.h>
 #include <mt-plat/aee.h>
 
@@ -77,7 +78,6 @@ static void hps_get_sysinfo(void)
 	char *str1_ptr = str1;
 	char *str2_ptr = str2;
 	int scaled_tlp, avg_tlp;
-#ifdef CONFIG_SMP_PPM
 	/* AHT: Average heavy task */
 	int lastpoll_htask1 = 0, lastpoll_htask2 = 0;
 	int avg_htask = 0, avg_htask_scal = 0;
@@ -91,7 +91,6 @@ static void hps_get_sysinfo(void)
 	int avg_htask_scal_idx1 = 0;
 	int avg_htask_scal_idx2 = 0;
 	int max_idx1 = 0;
-#endif
 	/*
 	 * calculate cpu loading
 	 */
@@ -197,22 +196,6 @@ static void hps_get_sysinfo(void)
 #endif
 }
 
-struct hrtimer cpuhp_timer;
-static int cpuhp_timer_func(unsigned long data)
-{
-	if (hps_ctxt.tsk_struct_ptr) {
-		pr_err("HPS task info (run on CPU %d)\n", task_cpu(hps_ctxt.tsk_struct_ptr));
-		if (hps_ctxt.tsk_struct_ptr->on_cpu == 0)
-			show_stack(hps_ctxt.tsk_struct_ptr, NULL);
-	} else {
-		pr_err("%s: no hps_main task\n", __func__);
-	}
-
-	WARN_ON(1);
-
-	return HRTIMER_NORESTART;
-}
-
 /*
  * hps task main loop
  */
@@ -223,8 +206,6 @@ static int _hps_task_main(void *data)
 
 	hps_ctxt_print_basic(1);
 
-	hrtimer_init(&cpuhp_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	cpuhp_timer.function = (void *)&cpuhp_timer_func;
 	algo_func_ptr = hps_algo_main;
 
 	while (1) {
@@ -258,12 +239,10 @@ static int _hps_task_main(void *data)
 				       hps_ctxt.hps_regular_ktime))) >=
 				       HPS_TIMER_INTERVAL_MS) {
 
-#ifdef CONFIG_SMP_PPM
 			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
 
 			/*Execute PPM main function */
 			mt_ppm_main();
-#endif
 
 			if (hps_ctxt.is_interrupt)
 				hps_ctxt.is_interrupt = 0;
@@ -272,10 +251,7 @@ static int _hps_task_main(void *data)
 			hps_ctxt.is_interrupt = 0;
 
 		/*execute hotplug algorithm */
-		if (!hrtimer_active(&cpuhp_timer))
-			hrtimer_start(&cpuhp_timer, ns_to_ktime(CPUHP_INTERVAL), HRTIMER_MODE_REL);
 		(*algo_func_ptr) ();
-		hrtimer_cancel(&cpuhp_timer);
 
 #ifdef CONFIG_CPU_ISOLATION
 HPS_WAIT_EVENT:
@@ -373,7 +349,6 @@ void hps_task_wakeup(void)
 	mutex_unlock(&hps_ctxt.lock);
 }
 
-#ifdef CONFIG_SMP_PPM
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
@@ -386,6 +361,10 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		 *	i, p->cpu_limit[i].has_advise_core,
 		 *	p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
 		 */
+#ifdef _TRACE_
+		trace_ppm_limit_callback_update(i, p->cpu_limit[i].has_advise_core,
+			p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
+#endif
 		if (!p->cpu_limit[i].has_advise_core) {
 			hps_sys.cluster_info[i].ref_base_value = p->cpu_limit[i].min_cpu_core;
 			hps_sys.cluster_info[i].ref_limit_value = p->cpu_limit[i].max_cpu_core;
@@ -400,7 +379,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	hps_task_wakeup_nolock();
 
 }
-#endif
 
 /*
  * init
@@ -433,9 +411,8 @@ int hps_core_init(void)
 		return r;
 	}
 
-#ifdef CONFIG_SMP_PPM
 	mt_ppm_register_client(PPM_CLIENT_HOTPLUG, &ppm_limit_callback);	/* register PPM callback */
-#endif
+
 	return r;
 }
 
