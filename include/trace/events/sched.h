@@ -863,6 +863,18 @@ TRACE_EVENT(sched_select_task_rq,
 );
 #endif
 
+TRACE_EVENT(sched_heavy_task,
+		TP_PROTO(const char *s),
+		TP_ARGS(s),
+		TP_STRUCT__entry(
+			__string(s, s)
+			),
+		TP_fast_assign(
+			__assign_str(s, s);
+			),
+		TP_printk("%s", __get_str(s))
+);
+
 #ifdef CONFIG_MT_SCHED_TRACE
 #define sched_trace(event) \
 TRACE_EVENT(event,                      \
