@@ -168,7 +168,10 @@ static void addrconf_dad_run(struct inet6_dev *idev);
 static void addrconf_rs_timer(unsigned long data);
 static void __ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
 static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
-
+static void inet6_no_ra_notify(int event, struct inet6_dev *idev);
+static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
+			   u32 portid, u32 seq, int event, unsigned int flags);
+static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp);
 static void inet6_prefix_notify(int event, struct inet6_dev *idev,
 				struct prefix_info *pinfo);
 static bool ipv6_chk_same_addr(struct net *net, const struct in6_addr *addr,
@@ -3484,9 +3487,10 @@ static void addrconf_rs_timer(unsigned long data)
 		goto out;
 
 	/* Announcement received after solicitation was sent */
-	if (idev->if_flags & IF_RA_RCVD)
+	if (idev->if_flags & IF_RA_RCVD) {
+		pr_info("[VzW]%s has already received RA packet\n", idev->dev->name);
 		goto out;
-
+}
 	if (idev->rs_probes++ < idev->cnf.rtr_solicits) {
 		write_unlock(&idev->lock);
 		if (!ipv6_get_lladdr(dev, &lladdr, IFA_F_TENTATIVE))
@@ -3502,11 +3506,15 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->cnf.rtr_solicit_delay :
 				      idev->cnf.rtr_solicit_interval);
 	} else {
+		inet6_no_ra_notify(RTM_NORA, idev);
+		/*add for VzW feature : remove IF_RS_VZW_SENT flag*/
+		if (idev->if_flags & IF_RS_VZW_SENT)
+			idev->if_flags &= ~IF_RS_VZW_SENT;
 		/*
 		 * Note: we do not support deprecated "all on-link"
 		 * assumption any longer.
 		 */
-		pr_debug("%s: no IPv6 routers present\n", idev->dev->name);
+		pr_info("[VzW]%s: no IPv6 routers present\n", idev->dev->name);
 	}
 
 out:
@@ -3755,6 +3763,41 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
 	}
 }
 
+/*VzW : RA refresh*/
+static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
+{
+	struct net_device *dev = ifp->idev->dev;
+
+	/*struct inet6_ifaddr *linklocal_ifp = NULL;*/
+	pr_info("[VzW] inet6_send_rs_vzw:dev name:%s\n", dev->name);
+
+	/*because of  using link local address will triger KE ,so this first using global address*/
+	if (ipv6_accept_ra(ifp->idev) &&
+	    ifp->idev->cnf.rtr_solicits > 0 &&
+	    (dev->flags & IFF_LOOPBACK) == 0) {
+		pr_info("[VzW] send rs :dev name:%s\n", dev->name);
+		ndisc_send_rs(ifp->idev->dev, &ifp->addr, &in6addr_linklocal_allrouters);
+
+		/*disable  softirq */
+		local_bh_disable();
+		/*Kernel3.18 ifp->idev->rs_probes*/
+		/*Kernel3.10 ifp->probes = 1*/
+		ifp->idev->rs_probes = 1;
+		/*ifp->probes = 1; */
+		ifp->idev->if_flags |= IF_RS_SENT;
+		ifp->idev->if_flags |= IF_RS_VZW_SENT;
+
+		if (ifp->idev->if_flags & IF_RA_RCVD) {
+			pr_info("ifp: has IF_RA_RCVD flag, and will clear it\n");
+			ifp->idev->if_flags &= ~IF_RA_RCVD;
+		}
+		/*Kernel3.10 addrconf_mod_timer*/
+		/*addrconf_mod_timer(ifp, AC_RS, ifp->idev->cnf.rtr_solicit_interval);*/
+		/*Kernel3.18 addrconf_mod_rs_timer*/
+		addrconf_mod_rs_timer(ifp->idev, ifp->idev->cnf.rtr_solicit_interval);
+		local_bh_enable();
+	}
+}
 static void addrconf_dad_run(struct inet6_dev *idev)
 {
 	struct inet6_ifaddr *ifp;
@@ -4042,6 +4085,18 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
+				/*only ccmni interface will send RS,if prefered_lft reach 75% of itself*/
+				if (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0) {
+					if ((age > (ifp->prefered_lft * 3 / 4)) &&
+					    !(ifp->idev->if_flags & IF_RS_VZW_SENT))
+						inet6_send_rs_vzw(ifp);
+
+				if (!(ifp->idev->if_flags & IF_RS_VZW_SENT)) {
+					if (time_before(ifp->tstamp +
+					    ((ifp->prefered_lft * 3 / 4) * HZ), next))
+						next = ifp->tstamp + ((ifp->prefered_lft * 3 / 4) * HZ);
+				}
+				}
 				spin_unlock(&ifp->lock);
 			}
 		}
@@ -5206,6 +5261,68 @@ static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifp)
 	if (likely(ifp->idev->dead == 0))
 		__ipv6_ifa_notify(event, ifp);
 	rcu_read_unlock_bh();
+}
+
+/*send no ra netlink msg*/
+static void inet6_no_ra_notify(int event, struct inet6_dev *idev)
+{
+	struct sk_buff *skb;
+	struct net *net = dev_net(idev->dev);
+	int err = -ENOBUFS;
+	size_t length = NLMSG_ALIGN(sizeof(struct ifinfomsg));
+
+	skb = nlmsg_new(length, GFP_ATOMIC);
+	if (!skb)
+		goto errout;
+
+	err = inet6_fill_nora(skb, idev, 0, 0, event, 0);
+	if (err < 0) {
+		/* -EMSGSIZE implies BUG in inet6_prefix_nlmsg_size() */
+		WARN_ON(err == -EMSGSIZE);
+		kfree_skb(skb);
+		goto errout;
+	}
+
+	rtnl_notify(skb, net, 0, RTNLGRP_IPV6_PREFIX, NULL, GFP_ATOMIC);
+	return;
+errout:
+	if (err < 0)
+		rtnl_set_sk_err(net, RTNLGRP_IPV6_PREFIX, err);
+}
+
+/*Fill skb for  no ra  msg*/
+static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
+			   u32 portid, u32 seq, int event, unsigned int flags)
+{
+	struct net_device *dev = idev->dev;
+	struct nlmsghdr *nlh;
+	struct ifinfomsg *hdr;
+
+	nlh = nlmsg_put(skb, portid, seq, event, sizeof(*hdr), flags);
+	if (!nlh)
+		return -EMSGSIZE;
+
+	hdr = nlmsg_data(nlh);
+	hdr->ifi_family = AF_INET6;
+	hdr->__ifi_pad = 0;
+	hdr->ifi_type = dev->type;
+	hdr->ifi_index = dev->ifindex;
+	/*This ifi_flags refers to the dev flag in kernel, but here, I use it as a valid flag
+	*When ifi_flags is zero , it means RA refesh Fail, And When ifi_flags is  1, it means
+	*RA init Fail!@MTK07384
+	*/
+	/*hdr->ifi_flags = dev_get_flags(dev); */
+	if (idev->if_flags & IF_RS_VZW_SENT) {
+		hdr->ifi_flags = 0;
+		pr_info("[mtk_net][vzw]RA refresh Fail\n");
+	} else {
+		hdr->ifi_flags = 1;
+		pr_info("[mtk_net][vzw]RA init Fail\n");
+		}
+	hdr->ifi_change = 0;
+
+	nlmsg_end(skb, nlh);
+	return 0;
 }
 
 #ifdef CONFIG_SYSCTL
