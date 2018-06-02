@@ -12,6 +12,7 @@ sys.path.append('..')
 from obj.ChipObj import ChipObj
 from obj.ChipObj import Everest
 from obj.ChipObj import Olympus
+from obj.ChipObj import KiboPlus
 
 from utility.util import LogLevel
 from utility.util import log
@@ -116,6 +117,8 @@ if __name__ == '__main__':
         chipObj = Everest(dws_path, gen_path)
     elif cmp(chipId, 'MT6757') == 0:
         chipObj = Olympus(dws_path, gen_path)
+    elif cmp(chipId, 'KIBOPLUS') == 0:
+        chipObj = KiboPlus(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 
