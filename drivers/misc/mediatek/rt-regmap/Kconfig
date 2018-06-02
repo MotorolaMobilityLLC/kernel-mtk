@@ -1,0 +1,7 @@
+config RT_REGMAP
+	bool "Richtek regmap"
+	default n
+	help
+	  Say Y to enable Richtek regmap
+	  This config decide to use regmap easy
+	  for debug in RT chip.
