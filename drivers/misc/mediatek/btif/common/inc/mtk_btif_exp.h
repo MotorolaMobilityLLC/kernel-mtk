@@ -275,5 +275,5 @@ int mtk_btif_exp_clock_ctrl(int en);
 #if BTIF_RXD_BE_BLOCKED_DETECT
 int mtk_btif_rxd_be_blocked_flag_get(void);
 #endif
-
+void mtk_btif_read_cpu_sw_rst_debug_exp(void);
 #endif /*_MTK_BTIF_EXP_H_*/
