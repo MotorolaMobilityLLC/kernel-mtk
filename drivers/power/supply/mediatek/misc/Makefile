@@ -10,7 +10,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
-subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+
+
+obj-y += mtk_gauge_time_service.o
+
