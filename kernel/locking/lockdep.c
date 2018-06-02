@@ -56,6 +56,9 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/lock.h>
+#ifdef CONFIG_PREEMPT_MONITOR
+#include "mt_sched_mon.h"
+#endif
 
 #ifdef CONFIG_PROVE_LOCKING
 int prove_locking = 1;
@@ -2652,6 +2655,9 @@ EXPORT_SYMBOL(trace_hardirqs_on_caller);
 
 void trace_hardirqs_on(void)
 {
+#ifdef CONFIG_PREEMPT_MONITOR
+	MT_trace_hardirqs_on();
+#endif
 	trace_hardirqs_on_caller(CALLER_ADDR0);
 }
 EXPORT_SYMBOL(trace_hardirqs_on);
@@ -2690,6 +2696,9 @@ EXPORT_SYMBOL(trace_hardirqs_off_caller);
 
 void trace_hardirqs_off(void)
 {
+#ifdef CONFIG_PREEMPT_MONITOR
+	MT_trace_hardirqs_off();
+#endif
 	trace_hardirqs_off_caller(CALLER_ADDR0);
 }
 EXPORT_SYMBOL(trace_hardirqs_off);

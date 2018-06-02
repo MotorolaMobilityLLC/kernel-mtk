@@ -28,6 +28,10 @@
 
 #include "smpboot.h"
 
+#ifdef CONFIG_MT_SCHED_MONITOR
+#include "mt_sched_mon.h"
+#endif
+
 #ifdef CONFIG_SMP
 /* Serializes the updates to cpu_online_mask, cpu_present_mask */
 static DEFINE_MUTEX(cpu_add_remove_lock);
@@ -427,6 +431,10 @@ static int _cpu_down(unsigned int cpu, int tasks_frozen)
 	irq_unlock_sparse();
 
 	hotplug_cpu__broadcast_tick_pull(cpu);
+#ifdef CONFIG_MT_SCHED_MONITOR
+	mt_save_irq_counts(CPU_DOWN);
+#endif
+
 	/* This actually kills the CPU. */
 	__cpu_die(cpu);
 

@@ -49,3 +49,7 @@ unsigned long nsec_low(unsigned long long nsec);
 
 /* for bootprof.c */
 unsigned int gpt_boot_time(void);
+
+const char *isr_name(int irq);
+long long usec_high(unsigned long long usec);
+unsigned long usec_low(unsigned long long usec);

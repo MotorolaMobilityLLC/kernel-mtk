@@ -1841,6 +1841,11 @@ struct task_struct {
 	unsigned long	task_state_change;
 #endif
 	int pagefault_disabled;
+
+#ifdef CONFIG_PREEMPT_MONITOR
+	unsigned long preempt_dur;
+#endif
+
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*
