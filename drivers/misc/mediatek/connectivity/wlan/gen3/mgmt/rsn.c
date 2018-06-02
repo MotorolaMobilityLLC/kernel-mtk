@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/rsn.c#3
 */
 
@@ -8,226 +22,6 @@
  *
  * This file provided the macros and functions library support the wpa/rsn ie parsing,
  * cipher and AKM check to help the AP seleced deciding, tkip mic error handler and rsn PMKID support.
- */
-
-/*
- * Log: rsn.c
- *
- * 08 13 2013 terry.wu
- * [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
- * Remove unused code
- *
- * 07 30 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * update some debug code
- *
- * 07 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Modify some security code for 11w and p2p
- *
- * 07 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Sync the latest jb2.mp 11w code as draft version
- * Not the CM bit for avoid wapi 1x drop at re-key
- *
- * 07 01 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add some debug code, fixed some compiling warning
- *
- * 03 12 2013 tsaiyuan.hsu
- * [BORA00002222] MT6630 unified MAC RXM
- * add rx data and management processing.
- *
- * 03 08 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Remove non-used compiling flag and code
- *
- * 02 19 2013 cp.wu
- * [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
- * take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
- * for correctly indexing of BSS-INFO pointers
- *
- * 01 22 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * modification for ucBssIndex migration
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * .
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 03 09 2012 chinglan.wang
- * NULL
- * Fix the condition error.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Snc CFG80211 modification for ICS migration from branch 2.2.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 10 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * change the debug module level.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 02 09 2011 wh.su
- * [WCXRP00000432] [MT6620 Wi-Fi][Driver] Add STA privacy check at hotspot mode
- * adding the code for check STA privacy bit at AP mode, .
- *
- * 12 24 2010 chinglan.wang
- * NULL
- * [MT6620][Wi-Fi] Modify the key management in the driver for WPS function.
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000260] [MT6620 Wi-Fi][Driver][Firmware] Create V1.1 branch for both firmware and driver
- * create branch for Wi-Fi driver v1.1
- *
- * 11 05 2010 wh.su
- * [WCXRP00000165] [MT6620 Wi-Fi] [Pre-authentication] Assoc req rsn ie use wrong pmkid value
- * fixed the.pmkid value mismatch issue
- *
- * 11 03 2010 wh.su
- * [WCXRP00000124] [MT6620 Wi-Fi] [Driver] Support the dissolve P2P Group
- * Refine the HT rate disallow TKIP pairwise cipher .
- *
- * 10 04 2010 cp.wu
- * [WCXRP00000077] [MT6620 Wi-Fi][Driver][FW] Eliminate use of ENUM_NETWORK_TYPE_T
- * and replaced by ENUM_NETWORK_TYPE_INDEX_T only
- * remove ENUM_NETWORK_TYPE_T definitions
- *
- * 09 29 2010 yuche.tsai
- * NULL
- * Fix compile error, remove unused pointer in rsnGenerateRSNIE().
- *
- * 09 28 2010 wh.su
- * NULL
- * [WCXRP00000069][MT6620 Wi-Fi][Driver] Fix some code for phase 1 P2P Demo.
- *
- * 09 24 2010 wh.su
- * NULL
- * [WCXRP00005002][MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning.
- *
- * 09 06 2010 wh.su
- * NULL
- * let the p2p can set the privacy bit at beacon and rsn ie at assoc req at key handshake state.
- *
- * 08 30 2010 wh.su
- * NULL
- * remove non-used code.
- *
- * 08 19 2010 wh.su
- * NULL
- * adding the tx pkt call back handle for countermeasure.
- *
- * 07 24 2010 wh.su
- *
- * .support the Wi-Fi RSN
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * modify some code for concurrent network.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * enable RX management frame handling.
- *
- * 06 19 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * consdier the concurrent network setting.
- *
- * 06 18 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * [WPD00003840] [MT6620 5931] Security migration
- * migration from firmware.
- *
- * 05 27 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * not indicate pmkid candidate while no new one scanned.
- *
- * 04 29 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * adjsut the pre-authentication code.
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * move the AIS specific variable for security to AIS specific structure.
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * Fixed the pre-authentication timer not correctly init issue,
- * and modify the security related callback function prototype.
- *
- * 01 27 2010 wh.su
- * [BORA00000476][Wi-Fi][firmware] Add the security module initialize code
- * add and fixed some security function.
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Dec 8 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * change the name
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * using the Rx0 port to indicate event
- *
- * Dec 4 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * refine the code for generate the WPA/RSN IE for assoc req
- *
- * Dec 3 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adjust code for pmkid event
- *
- * Dec 1 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the code for event (mic error and pmkid indicate) and do some function rename
- *
- * Nov 23 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some security function
- *
- * Nov 19 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some security feature, including pmkid
- *
- * Nov 18 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
- *
  */
 
 /*******************************************************************************

@@ -1,38 +1,24 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_cfg80211.h#1
  */
 
 /*
  * ! \file   gl_cfg80211.h
  *  \brief  This file is for Portable Driver linux cfg80211 support.
- */
-
-/*
- * Log: gl_cfg80211.h
- *
- * 08 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add GTK re-key driver handle function
- *
- * 08 09 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * 1. integrate scheduled scan functionality
- * 2. condition compilation for linux-3.4 & linux-3.8 compatibility
- * 3. correct CMD queue access to reduce lock scope
- *
- * 07 29 2013 cp.wu
- * [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
- * Preparation for porting remain_on_channel support
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * .
- *
  */
 
 #ifndef _GL_CFG80211_H

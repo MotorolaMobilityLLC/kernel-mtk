@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/cnm.c#2
  */
 
@@ -7,219 +21,6 @@
  *  \brief  Module of Concurrent Network Management
  *
  *   Module of Concurrent Network Management
- */
-
-/*
- * Log: cnm.c
- *
- * 06 26 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * For BSS_INFO alloc/free, Use fgIsInUse instead of fgIsNetActive
- *
- * 05 07 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Provide macro for TXM to query if BSS is CH_GRANTED
- *
- * 01 21 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * 1. Create rP2pDevInfo structure
- * 2. Support 80/160 MHz channel bandwidth for channel privilege
- *
- * 01 17 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Use ucBssIndex to replace eNetworkTypeIndex
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 11 15 2011 cm.chang
- * NULL
- * Fix possible wrong message when P2P is unregistered
- *
- * 11 14 2011 yuche.tsai
- * [WCXRP00001107] [Volunteer Patch][Driver] Large Network Type index assert in FW issue.
- * Fix large network type index assert in FW issue.
- *
- * 11 10 2011 cm.chang
- * NULL
- * Modify debug message for XLOG
- *
- * 11 08 2011 cm.chang
- * NULL
- * Add RLM and CNM debug message for XLOG
- *
- * 11 01 2011 cm.chang
- * [WCXRP00001077] [All Wi-Fi][Driver] Fix wrong preferred channel for AP and BOW
- * Only check AIS channel for P2P and BOW
- *
- * 10 25 2011 cm.chang
- * [WCXRP00001058] [All Wi-Fi][Driver] Fix sta_rec's phyTypeSet and OBSS scan in AP mode
- * Extension channel of some 5G AP will not follow regulation requirement
- *
- * 09 30 2011 cm.chang
- * [WCXRP00001020] [MT6620 Wi-Fi][Driver] Handle secondary channel offset of AP in 5GHz band
- * .
- *
- * 09 01 2011 cm.chang
- * [WCXRP00000937] [MT6620 Wi-Fi][Driver][FW] cnm.c line #848 assert when doing monkey test
- * Print message only in Linux platform for monkey testing
- *
- * 06 23 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * change parameter name from PeerAddr to BSSID
- *
- * 06 20 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * 1. specify target's BSSID when requesting channel privilege.
- * 2. pass BSSID information to firmware domain
- *
- * 06 01 2011 cm.chang
- * [WCXRP00000756] [MT6620 Wi-Fi][Driver] 1. AIS follow channel of BOW 2. Provide legal channel function
- * Limit AIS to fixed channel same with BOW
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 03 10 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Check if P2P network index is Tethering AP
- *
- * 03 10 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Add some functions to let AIS/Tethering or AIS/BOW be the same channel
- *
- * 02 17 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * When P2P registried, invoke BOW deactivate function
- *
- * 01 12 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Provide function to decide if BSS can be activated or not
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000239] MT6620 Wi-Fi][Driver][FW] Merge concurrent branch back to maintrunk
- * 1. BSSINFO include RLM parameter
- * 2. free all sta records when network is disconnected
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * 1. Country code is from NVRAM or supplicant
- * 2. Change band definition in CMD/EVENT.
- *
- * 11 08 2010 cm.chang
- * [WCXRP00000169] [MT6620 Wi-Fi][Driver][FW] Remove unused CNM recover message ID
- * Remove CNM channel reover message ID
- *
- * 10 13 2010 cm.chang
- * [WCXRP00000094] [MT6620 Wi-Fi][Driver] Connect to 2.4GHz AP, Driver crash.
- * Add exception handle when cmd buffer is not available
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 07 19 2010 wh.su
- *
- * update for security supporting.
- *
- * 07 19 2010 cm.chang
- *
- * Set RLM parameters and enable CNM channel manager
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Rename MID_MNY_CNM_CH_RELEASE to MID_MNY_CNM_CH_ABORT
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Fix wrong message ID for channel grant to requester
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Modify CNM message handler for new flow
- *
- * 06 07 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Set 20/40M bandwidth of AP HT OP before association process
- *
- * 05 31 2010 yarco.yang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add RX TSF Log Feature and ADDBA Rsp with DECLINE handling
- *
- * 05 21 2010 yarco.yang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support TCP/UDP/IP Checksum offload feature
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 05 05 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add a new function to send abort message
- *
- * 04 27 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * BMC mac address shall be ignored in basic config command
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * g_aprBssInfo[] depends on CFG_SUPPORT_P2P and CFG_SUPPORT_BOW
- *
- * 04 22 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support change of MAC address by host command
- *
- * 04 16 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
- * adding the wpa-none for ibss beacon.
- *
- * 04 07 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Fix bug for OBSS scan
- *
- * 03 30 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support 2.4G OBSS scan
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- *
- *  *  *  *  *  *  *  *  *  * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 02 25 2010 wh.su
- * [BORA00000605][WIFISYS] Phase3 Integration
- * use the Rx0 dor event indicate.
- *
- * 02 08 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support partial part about cmd basic configuration
- *
- * Dec 10 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Remove conditional compiling FPGA_V5
- *
- * Nov 18 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add function cnmFsmEventInit()
- *
- * Nov 2 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
  */
 
 /*******************************************************************************

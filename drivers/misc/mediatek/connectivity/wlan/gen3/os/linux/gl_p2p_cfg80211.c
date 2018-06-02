@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  * Id: @(#) gl_p2p_cfg80211.c@@
  */
 
@@ -9,186 +23,6 @@
  *
  *  This file contains the main routines of Linux driver for MediaTek Inc. 802.11
  *  Wireless LAN Adapters.
- */
-
-/*
- * Log: gl_p2p_cfg80211.c
- *
- * 06 30 2014 eason.tsai
- * [ALPS01622627] [MT6595][E2][WFD]Sometimes the sink device can't be disconnected
- * immediately afte change Wi-Fi AP to reconnect to WFD sink.
- *	.
- *
- * 04 07 2014 eason.tsai
- * [ALPS01070904] [Need Patch] [Volunteer Patch]
- * add scan channel debug log
- *
- * 03 25 2014 eason.tsai
- * [ALPS01070904] [Need Patch] [Volunteer Patch]
- * fix build warning
- *
- * 03 24 2014 eason.tsai
- * [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
- * fix ap mode channel setting
- *
- * 03 07 2014 eason.tsai
- * [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
- * fix ap mode crash by hotspot only set_beacon without chenge_interface
- *
- * 10 08 2013 yuche.tsai
- * [ALPS01065606] [Volunteer Patch][MT6630][Wi-Fi Direct][Driver] MT6630 Wi-Fi Direct Driver Patch
- * Update Wi-Fi Direct Source.
- *
- * 08 22 2013 yuche.tsai
- * [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
- * Fix Wi-Fi Direct Bug.
- *
- * 08 22 2013 yuche.tsai
- * [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
- * [BORA00000779] [MT6620] Emulation For TX Code Check In
- *	Make P2P group interface formation success.
- *
- * 08 19 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add the code to set the GC security mode while connection request issued
- *
- * 07 30 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * MT6630 Driver Update for Hot-Spot.
- *
- * 07 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Modify some security code for 11w and p2p
- *
- * 07 19 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Code update for P2P.
- *
- * 07 17 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * MT6630 P2P first connection check point 1.
- *
- * 07 05 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Fix to let the wpa-psk ok
- *
- * 07 02 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Refine security BMC wlan index assign
- * Fix some compiling warning
- *
- * 03 27 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * add default ket handler
- *
- * 03 07 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Add wlan_p2p.c, but still need to FIX many place.
- *
- * 02 27 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Add new code, fix compile warning.
- *
- * 01 30 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Code first update.
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 08 30 2012 yuche.tsai
- * NULL
- * Fix disconnect issue possible leads KE.
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * .
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 08 24 2012 yuche.tsai
- * NULL
- * Fix bug of invitation request.
- *
- * 08 20 2012 yuche.tsai
- * NULL
- * Try to fix frame register KE issue.
- *
- * 08 17 2012 yuche.tsai
- * NULL
- * Fix compile warning.
- *
- * 08 16 2012 yuche.tsai
- * NULL
- * Fix compile warning.
- *
- * 08 08 2012 yuche.tsai
- * NULL
- * Fix bug of hard scan p2p device sometimes
- *
- * 08 08 2012 wh.su
- * [WCXRP00001246] [MT6620 Wi-Fi][Driver][P2P] Do more filed check for avoid not copy the STA mac address for add key
- * [WCXRP00001262] [MT6620 Wi-Fi][Driver] Fixed the update assoc info pkt length issue
- * .
- *
- * 08 06 2012 yuche.tsai
- * [WCXRP00001119] [Volunteer Patch][WiFi Direct][Driver] Connection Policy Set for WFD SIGMA test
- * Fix P2P reset would not reset QoS BSS info issue.
- *
- * 07 31 2012 yuche.tsai
- * NULL
- * Update Active/Deactive network policy for P2P network.
- * Highly related to power saving.
- *
- * 07 25 2012 yuche.tsai
- * NULL
- * Add support for null mac address del station.
- *
- * 07 25 2012 yuche.tsai
- * NULL
- * Bug fix.
- *
- * 07 25 2012 yuche.tsai
- * NULL
- * Bug fix for TX mgmt frame.
- *
- * 07 24 2012 yuche.tsai
- * NULL
- * Bug fix for JB.
- *
- * 07 19 2012 yuche.tsai
- * NULL
- * Code update for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Fix compile error for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000054] [MT6620 Wi-Fi][Driver] Restructure driver for second Interface
- * Isolate P2P related function for Hardware Software Bundle
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 31 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add cfg80211 interface, which is to replace WE, for further extension
- *
- *
  */
 
 /*******************************************************************************
