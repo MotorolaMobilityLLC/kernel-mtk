@@ -64,13 +64,6 @@
 #include <linux/of_address.h>
 #endif
 
-/* the new efuse cali has 2 regs, and the old has one only */
-#if defined(NEW_EFUSE_CALI_REG)
-#define EFUSE_CALI_REG        1
-#else
-#define EFUSE_CALI_REG        0
-#endif
-
 #if !defined(CONFIG_MTK_CLKMGR)
 #ifdef CONFIG_OF
 static struct clk *clk_auxadc;
@@ -193,17 +186,12 @@ static int g_start_debug_thread;
 static int g_adc_init_flag;
 
 static u32 cali_reg;
-#if defined(EFUSE_CALI)
-#if EFUSE_CALI_REG
-static u32 cali_ge_reg;
-static u32 cali_oe_reg;
-#endif
-#endif
 static s32 cali_oe;
 static s32 cali_ge;
 static u32 cali_ge_a;
 static u32 cali_oe_a;
 static u32 gain;
+
 static void mt_auxadc_update_cali(void)
 {
 	cali_oe = 0;
@@ -211,26 +199,16 @@ static void mt_auxadc_update_cali(void)
 
 #if defined(EFUSE_CALI)
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
-#if EFUSE_CALI_REG
-	cali_ge_reg = (*(volatile unsigned int *const)(ADC_GE_A_REG));
-	cali_oe_reg = (*(volatile unsigned int *const)(ADC_OE_A_REG));
-#endif
+
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
-#if EFUSE_CALI_REG
-		cali_oe_a = (cali_oe_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
-		cali_ge_a = ((cali_ge_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
-#else
 		cali_oe_a = (cali_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
 		cali_ge_a = ((cali_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
-#endif
+		/*In sw implement guide, ge should div 4096. But we don't do that now due to it will multi 4096 later*/
 		cali_ge = cali_ge_a - 512;
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
+		/*In sw implement guide, gain = 1 + GE = 1 + cali_ge / 4096, we doen't use the variable here */
 	}
-/*
- *	pr_debug("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
- *	cali_reg, cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
- */
 #endif
 }
 
@@ -239,6 +217,7 @@ static void mt_auxadc_get_cali_data(unsigned int rawdata, int data[4], bool enab
 
 	if (enable_cali == true) {
 #if defined(EFUSE_CALI)
+		/*In sw implement guide, 4096 * gain = 4096 * (1 + GE) = 4096 * (1 + cali_ge / 4096) = 4096 + cali_ge)*/
 		rawdata = rawdata - cali_oe;
 		data[0] = (rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
 		data[1] = (rawdata * 150 / (4096 + cali_ge)) % 100;  /* convert to mv, need multiply 10 */
@@ -315,8 +294,6 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	}
 #endif
 #endif
-
-	mt_auxadc_update_cali();
 
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
@@ -461,7 +438,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 		pr_err("[AUXADC] base failed\n");
 
 #if defined(EFUSE_CALI)
-	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
 	if (!node)
 		pr_err("[AUXADC] find node failed\n");
 
@@ -1638,8 +1615,9 @@ exit:
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i, res;
+	int i, res, raw;
 	int data[4] = { 0, 0, 0, 0 };
+	int data_raw[4] = { 0, 0, 0, 0 };
 
 	seq_puts(m, "********** Auxadc status dump **********\n");
 
@@ -1659,11 +1637,14 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 	}
 
 	for (i = 0; i < 5; i++) {
-		res = IMM_auxadc_GetOneChannelValue(i, data, NULL);
+		res = IMM_auxadc_GetOneChannelValue(i, data, &raw);
 		if (res < 0)
 			seq_printf(m, "[adc_driver]: get data error res:%d\n", res);
-		else
-			seq_printf(m, "channel[%d]=%d.%d %d\n", i, data[0], data[1], data[2]);
+		else {
+			seq_printf(m, "channel[%d]=%d %d %d\n", i, data[0], data[1], data[2]);
+			mt_auxadc_get_cali_data(raw, data_raw, false);
+			seq_printf(m, "channel[%d] raw data =%d %d %d\n", i, data_raw[0], data_raw[1], data_raw[2]);
+		}
 	}
 
 	return 0;
@@ -1868,6 +1849,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 	g_adc_init_flag = 1;
 
 	mt_auxadc_create_device_attr(adc_dev);
+	mt_auxadc_update_cali();
 	return ret;
 }
 
