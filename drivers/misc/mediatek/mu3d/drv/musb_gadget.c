@@ -1653,10 +1653,10 @@ void set_usb_rdy(void)
 
 	/* yield CPU to make queued connection work exection */
 	msleep(200);
-
-#if defined(CONFIG_MTK_SMART_BATTERY)
-	wake_up_bat();
-#endif
+/*
+ *#if defined(CONFIG_MTK_CHARGER)
+ *#endif
+ */
 }
 
 bool is_usb_rdy(void)

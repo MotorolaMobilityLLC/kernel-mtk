@@ -894,9 +894,10 @@ static int mtu3d_probe(struct platform_device *pdev)
 	}
 
 /* run time force on */
-//#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) \
+	|| defined(FOR_BRING_UP)
 	mu3d_force_on = 1;
-//#endif
+#endif
 
 #ifdef CONFIG_MTK_BOOT
 	if (get_boot_mode() == META_BOOT) {
