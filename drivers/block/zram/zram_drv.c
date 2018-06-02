@@ -30,6 +30,7 @@
 #include <linux/err.h>
 #include <linux/idr.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <linux/sysfs.h>
 
 #include "zram_drv.h"
