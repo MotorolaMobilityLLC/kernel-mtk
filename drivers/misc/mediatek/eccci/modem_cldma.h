@@ -37,7 +37,6 @@
 #define TRAFFIC_MONITOR_INTERVAL 10	/* seconds */
 #define ENABLE_HS1_POLLING_TIMER
 #define SKB_RX_QUEUE_MAX_LEN 200000
-/*#define ENABLE_FAST_HEADER*/
 
 /*
  * CLDMA feature options:
