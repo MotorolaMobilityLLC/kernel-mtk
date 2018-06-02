@@ -13,7 +13,7 @@
 
 # common driver code for CMDQ
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
-	obj-$(CONFIG_ARCH_MT6757) += v2/
+	obj-y += v2/
 else
 	obj-y += v3/
 endif

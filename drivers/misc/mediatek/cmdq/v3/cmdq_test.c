@@ -29,10 +29,6 @@
 #include "cmdq_mdp_common.h"
 #include "cmdq_device.h"
 
-#ifndef CMDQ_USE_CCF
-#include <mach/mt_clkmgr.h>
-#endif				/* !defined(CMDQ_USE_CCF) */
-
 #define CMDQ_TEST
 
 #ifdef CMDQ_TEST
@@ -847,46 +843,6 @@ static void testcase_prefetch_scenarios(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
-#ifndef CMDQ_USE_CCF
-void testcase_clkmgr_impl(cgCLKID gateId,
-			  char *name,
-			  const unsigned long testWriteReg,
-			  const uint32_t testWriteValue,
-			  const unsigned long testReadReg, const bool verifyWriteResult)
-{
-/* clkmgr is not available on FPGA */
-#ifndef CONFIG_MTK_FPGA
-	uint32_t value = 0;
-
-	CMDQ_MSG("====== %s:%s ======\n", __func__, name);
-	CMDQ_VERBOSE("clk:%d, name:%s\n", gateId, name);
-	CMDQ_VERBOSE("write reg(0x%lx) to 0x%08x, read reg(0x%lx), verify write result:%d\n",
-		     testWriteReg, testWriteValue, testReadReg, verifyWriteResult);
-
-	/* turn on CLK, function should work */
-	CMDQ_MSG("enable_clock\n");
-	enable_clock(gateId, name);
-
-	CMDQ_REG_SET32(testWriteReg, testWriteValue);
-	value = CMDQ_REG_GET32(testReadReg);
-	if ((true == verifyWriteResult) && (testWriteValue != value)) {
-		CMDQ_ERR("when enable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
-		/* BUG(); */
-	}
-
-	/* turn off CLK, function should not work and access register should not cause hang */
-	CMDQ_MSG("disable_clock\n");
-	disable_clock(gateId, name);
-
-	CMDQ_REG_SET32(testWriteReg, testWriteValue);
-	value = CMDQ_REG_GET32(testReadReg);
-	if (value != 0) {
-		CMDQ_ERR("when disable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
-		/* BUG(); */
-	}
-#endif
-}
-#else
 void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 			  char *name,
 			  const unsigned long testWriteReg,
@@ -938,23 +894,15 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	}
 #endif
 }
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 static void testcase_clkmgr(void)
 {
 	CMDQ_MSG("%s\n", __func__);
 #ifdef CMDQ_PWR_AWARE
-#ifndef CMDQ_USE_CCF
-	testcase_clkmgr_impl(MT_CG_INFRA_GCE,
-			     "CMDQ_TEST",
-			     CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
-			     0xFFFFDEAD, CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG), true);
-#else
 	testcase_clkmgr_impl(CMDQ_ENG_CMDQ,
 				 "CMDQ_TEST",
 				 CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
 				 0xFFFFDEAD, CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG), true);
-#endif				/* !defined(CMDQ_USE_CCF) */
 	cmdq_mdp_get_func()->testcaseClkmgrMdp();
 #endif				/* defined(CMDQ_PWR_AWARE) */
 

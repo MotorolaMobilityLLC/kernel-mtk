@@ -18,12 +18,7 @@
 #include <linux/device.h>
 #include "cmdq_def.h"
 #include "cmdq_mdp_common.h"
-
-#ifndef CMDQ_USE_CCF
-#include <mach/mt_clkmgr.h>
-#else
 #include <linux/clk.h>
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 #define DECLARE_ENABLE_HW_CLOCK(HW_NAME) uint32_t cmdq_dev_enable_clock_##HW_NAME(bool enable)
 DECLARE_ENABLE_HW_CLOCK(SMI_COMMON);
@@ -33,17 +28,6 @@ DECLARE_ENABLE_HW_CLOCK(MUTEX_32K);
 #endif
 #undef DECLARE_ENABLE_HW_CLOCK
 
-#ifndef CMDQ_USE_CCF
-enum cg_clk_id cgCLKID;
-uint32_t cmdq_dev_enable_mtk_clock(bool enable, cgCLKID gateId, char *name);
-bool cmdq_dev_mtk_clock_is_enable(cgCLKID gateId);
-/* For test case used */
-void testcase_clkmgr_impl(cgCLKID gateId,
-			  char *name,
-			  const unsigned long testWriteReg,
-			  const uint32_t testWriteValue,
-			  const unsigned long testReadReg, const bool verifyWriteResult);
-#else
 void cmdq_dev_get_module_clock_by_name(const char *name, const char *clkName,
 				       struct clk **clk_module);
 uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const char *clkName);
@@ -54,7 +38,6 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 			  const unsigned long testWriteReg,
 			  const uint32_t testWriteValue,
 			  const unsigned long testReadReg, const bool verifyWriteResult);
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 struct device *cmdq_dev_get(void);
 /* interrupt index */

@@ -325,7 +325,7 @@ static int32_t cmdq_append_wpr_command(struct cmdqRecStruct *handle, enum CMDQ_C
 	return 0;
 }
 
-int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
+int32_t cmdq_append_command(struct cmdqRecStruct *handle, enum CMDQ_CODE_ENUM code,
 			    uint32_t arg_a, uint32_t arg_b, uint32_t arg_a_type, uint32_t arg_b_type)
 {
 	int32_t status;
@@ -973,7 +973,7 @@ int32_t cmdq_setup_sec_data_of_command_desc_by_rec_handle(struct cmdqCommandStru
 	return 0;
 }
 
-int32_t cmdq_rec_setup_profile_marker_data(cmdqCommandStruct *pDesc, cmdqRecHandle handle)
+int32_t cmdq_rec_setup_profile_marker_data(struct cmdqCommandStruct *pDesc, struct cmdqRecStruct *handle)
 {
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	uint32_t i;
@@ -1044,7 +1044,7 @@ int32_t cmdq_task_flush_and_read_register(struct cmdqRecStruct *handle, uint32_t
 	return cmdqCoreSubmitTask(&desc);
 }
 
-int32_t cmdq_task_flush_async(struct cmdqRecHandle handle)
+int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle)
 {
 	int32_t status = 0;
 	struct cmdqCommandStruct desc = { 0 };
