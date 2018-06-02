@@ -55,6 +55,46 @@
 #include "console_cmdline.h"
 #include "braille.h"
 
+
+
+bool printk_disable_uart;
+
+bool mt_get_uartlog_status(void)
+{
+	return !printk_disable_uart;
+}
+
+void set_uartlog_status(bool value)
+{
+#ifdef CONFIG_MTK_ENG_BUILD
+	printk_disable_uart = !value;
+	pr_info("set uart log status %d.\n", value);
+#endif
+}
+
+#ifdef CONFIG_MT_PRINTK_UART_CONSOLE
+void mt_disable_uart(void)
+{
+	if (mt_need_uart_console == 0)
+		printk_disable_uart = 1;
+}
+void mt_enable_uart(void)
+{
+	if (mt_need_uart_console == 1) {
+		if (printk_disable_uart == 0)
+			return;
+		printk_disable_uart = 0;
+	}
+}
+#endif
+
+
+#ifdef CONFIG_PRINTK_MT_PREFIX
+static DEFINE_PER_CPU(char, printk_state);
+#endif
+
+
+
 #ifdef CONFIG_EARLY_PRINTK_DIRECT
 extern void printascii(char *);
 #endif
@@ -245,6 +285,13 @@ struct printk_log {
  */
 static DEFINE_RAW_SPINLOCK(logbuf_lock);
 
+bool is_logbuf_lock(raw_spinlock_t *lock)
+{
+	if (lock == &logbuf_lock || lock == &console_sem.lock)
+		return true;
+	return false;
+}
+
 #ifdef CONFIG_PRINTK
 DECLARE_WAIT_QUEUE_HEAD(log_wait);
 /* the next printk record to read by syslog(READ) or /proc/kmsg */
@@ -433,9 +480,29 @@ static int log_store(int facility, int level,
 	u32 size, pad_len;
 	u16 trunc_msg_len = 0;
 
-	/* number of '\0' padding bytes to next message */
-	size = msg_used_size(text_len, dict_len, &pad_len);
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	int this_cpu = smp_processor_id();
+	char state = this_cpu_read(printk_state);
+	char tbuf[50];
+	unsigned tlen;
+#endif
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	if (state == 0) {
+		this_cpu_write(printk_state, ' ');
+		state = ' ';
+	}
+	if (console_suspended == 0)
+		tlen = snprintf(tbuf, sizeof(tbuf), "%c(%x)[%d:%s]", state, this_cpu, current->pid, current->comm);
+	else
+		tlen = snprintf(tbuf, sizeof(tbuf), "%c%x)", state, this_cpu);
+#endif
 
+	/* number of '\0' padding bytes to next message */
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	size = msg_used_size(text_len + tlen, dict_len, &pad_len);
+#else
+	size = msg_used_size(text_len, dict_len, &pad_len);
+#endif
 	if (log_make_free_space(size)) {
 		/* truncate the message if it is too long for empty buffer */
 		size = truncate_msg(&text_len, &trunc_msg_len,
@@ -457,7 +524,17 @@ static int log_store(int facility, int level,
 
 	/* fill message */
 	msg = (struct printk_log *)(log_buf + log_next_idx);
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	memcpy(log_text(msg), tbuf, tlen);
+	if (tlen + text_len > LOG_LINE_MAX)
+		text_len = LOG_LINE_MAX - tlen;
+
+	memcpy(log_text(msg) + tlen, text, text_len);
+	text_len += tlen;
+#else
 	memcpy(log_text(msg), text, text_len);
+#endif
+
 	msg->text_len = text_len;
 	if (trunc_msg_len) {
 		memcpy(log_text(msg) + text_len, trunc_msg, trunc_msg_len);
@@ -1040,6 +1117,7 @@ static inline void boot_delay_msec(int level)
 
 static bool printk_time = IS_ENABLED(CONFIG_PRINTK_TIME);
 module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+module_param_named(disable_uart, printk_disable_uart, bool, S_IRUGO | S_IWUSR);
 
 static size_t print_time(u64 ts, char *buf)
 {
@@ -1077,6 +1155,17 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	if (syslog == false && printk_disable_uart == false) {
+		if (buf)
+			len += sprintf(buf+len, "<%d>", smp_processor_id());
+		else
+			len += snprintf(NULL, 0, "<%d>", smp_processor_id());
+	}
+#endif
+
+
 	return len;
 }
 
@@ -1448,6 +1537,8 @@ static void call_console_drivers(int level,
 		return;
 
 	for_each_console(con) {
+		if (printk_disable_uart && (con->flags & CON_CONSDEV))
+			continue;
 		if (exclusive_console && con != exclusive_console)
 			continue;
 		if (!(con->flags & CON_ENABLED))
@@ -1485,6 +1576,25 @@ static void zap_locks(void)
 	/* And make sure that we print immediately */
 	sema_init(&console_sem, 1);
 }
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+/* if logbuf lock in aee_wdt flow, zap locks uncondationally  */
+void aee_wdt_zap_locks(void)
+{
+	debug_locks_off();
+	/* If a crash is occurring, make sure we can't deadlock */
+	raw_spin_lock_init(&logbuf_lock);
+	/* And make sure that we print immediately */
+	sema_init(&console_sem, 1);
+}
+
+/* for aee_wdt test case */
+void aee_wdt_logbuf_lock(void)
+{
+	raw_spin_lock(&logbuf_lock);
+	down(&console_sem);
+}
+#endif
 
 /*
  * Check if we have any console that is capable of printing while cpu is
@@ -1673,8 +1783,11 @@ asmlinkage int vprintk_emit(int facility, int level,
 	int this_cpu;
 	int printed_len = 0;
 	bool in_sched = false;
+	int in_irq_disable;
 	/* cpu currently holding logbuf_lock in this function */
 	static unsigned int logbuf_cpu = UINT_MAX;
+
+	in_irq_disable = irqs_disabled();
 
 	if (level == LOGLEVEL_SCHED) {
 		level = LOGLEVEL_DEFAULT;
@@ -1767,6 +1880,19 @@ asmlinkage int vprintk_emit(int facility, int level,
 
 	if (dict)
 		lflags |= LOG_PREFIX|LOG_NEWLINE;
+	/* MTK_prefix */
+
+#ifdef CONFIG_PRINTK_MT_PREFIX
+	if (in_irq_disable)
+		this_cpu_write(printk_state, '-');
+#ifdef CONFIG_MT_PRINTK_UART_CONSOLE
+	else if (printk_disable_uart == 0)
+		this_cpu_write(printk_state, '.');
+#endif
+	else
+		this_cpu_write(printk_state, ' ');
+#endif
+
 
 	if (!(lflags & LOG_NEWLINE)) {
 		/*
