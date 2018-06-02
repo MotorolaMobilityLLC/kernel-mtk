@@ -117,8 +117,6 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if (attr->nla_type == WIFI_ATTRIBUTE_BAND)
 		band = nla_get_u32(attr);
 
-	DBGLOG(REQ, INFO, "Get channel list for band: %d, iftype=%d\n", band, wdev->iftype);
-
 	if (wdev->iftype == NL80211_IFTYPE_AP)
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 	else
@@ -126,12 +124,21 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if (!prGlueInfo)
 		return -EFAULT;
 
-	if (band == 1) { /* 2.4G band */
+	switch (band) {
+	case 1: /* 2.4G band */
 		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
-	} else { /* 5G band */
+		break;
+	case 2: /* 5G band without DFS channels */
 		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_5G, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
+		break;
+	case 4: /* 5G band DFS channels only */
+		rlmDomainGetDfsChnls(prGlueInfo->prAdapter, 64, &ucNumOfChannel, aucChannelList);
+		break;
+	default:
+		ucNumOfChannel = 0;
+		break;
 	}
 
 	kalMemZero(channels, sizeof(channels));
@@ -140,20 +147,13 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 		channels[j] = nicChannelNum2Freq(aucChannelList[i].ucChannelNum) / 1000;
 		if (channels[j] == 0)
 			continue;
-		else if ((prGlueInfo->prAdapter->rWifiVar.rConnSettings.u2CountryCode == COUNTRY_CODE_TW) &&
-			(channels[j] >= 5180 && channels[j] <= 5260)) {
-			/* Taiwan NCC has resolution to follow FCC spec to support 5G Band 1/2/3/4
-			 * (CH36~CH48, CH52~CH64, CH100~CH140, CH149~CH165)
-			 * Filter CH36~CH52 for compatible with some old devices.
-			 */
-			continue;
-		} else {
-			DBGLOG(REQ, INFO, "channels[%d] = %d\n", j, channels[j]);
+		else {
+			DBGLOG(REQ, TRACE, "channels[%d] = %d\n", j, channels[j]);
 			j++;
 		}
 	}
 	num_channels = j;
-	DBGLOG(REQ, INFO, "num_channels = %d\n", num_channels);
+	DBGLOG(REQ, INFO, "Get channel list for band: %d, num_channels=%d\n", band, num_channels);
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(channels));
 	if (!skb) {

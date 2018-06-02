@@ -523,10 +523,12 @@ typedef struct _SUBBAND_CHANNEL_T {
 */
 P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter);
 
-VOID
-rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
-		     ENUM_BAND_T eSpecificBand, BOOLEAN fgNoDfs,
-		     UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
+VOID rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
+			  ENUM_BAND_T eSpecificBand, BOOLEAN fgNoDfs,
+			  UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
+
+VOID rlmDomainGetDfsChnls(P_ADAPTER_T prAdapter,
+			  UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
 
 VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
 
