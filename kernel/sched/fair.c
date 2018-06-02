@@ -2727,6 +2727,31 @@ static inline void update_cfs_shares(struct sched_entity *se)
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
 #ifdef CONFIG_SMP
+/*
+ * generic entry point for cpu mask construction, dedicated for
+ * mediatek scheduler.
+ */
+static __init inline void cmp_cputopo_domain_setup(void)
+{
+	WARN(smp_processor_id() != 0,
+		"%s is supposed runs on CPU0 while kernel init", __func__);
+	/*
+	 * sched_init
+	 *   |-> cmp_cputopo_domain_setup()
+	 * ...
+	 * rest_init
+	 *   ^ fork kernel_init
+	 *       |-> kernel_init_freeable
+	 *        ...
+	 *           |-> arch_build_cpu_topology_domain
+	 *
+	 * here, we focus to build up cpu topology and domain
+	 * before scheduler runs.
+	 */
+	pr_debug("[CPUTOPO][%s] build CPU topology and cluster.\n", __func__);
+	arch_build_cpu_topology_domain();
+}
+
 /* Precomputed fixed inverse multiplies for multiplication by y^n */
 static const u32 runnable_avg_yN_inv[] = {
 	0xffffffff, 0xfa83b2da, 0xf5257d14, 0xefe4b99a, 0xeac0c6e6, 0xe5b906e6,
@@ -10770,5 +10795,6 @@ __init void init_sched_fair_class(void)
 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
 #endif
 #endif /* SMP */
+	cmp_cputopo_domain_setup();
 
 }
