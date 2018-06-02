@@ -2066,7 +2066,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VXO22_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
@@ -2119,7 +2119,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
@@ -2183,7 +2183,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VXO22_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		/* TODO: do not hardcode pmic operation */
 		pmic_config_interface_nolock(0xA6E, 0x020E, 0xffff, 0); /* LDO_VA10_CON0 */
