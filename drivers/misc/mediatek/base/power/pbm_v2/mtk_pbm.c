@@ -259,6 +259,15 @@ spm_vcorefs_get_MD_status(void)
 	return 0;
 }
 
+void __attribute__ ((weak))
+__iomem *get_smem_start_addr(int md_id, enum SMEM_USER_ID user_id,
+	int *size_o)
+{
+	pbm_crit("%s not ready\n", __func__);
+	return 0;
+}
+
+
 int get_battery_volt(void)
 {
 	return pmic_get_auxadc_value(AUXADC_LIST_BATADC);
@@ -407,10 +416,12 @@ static void init_md3_section_level(void)
 	u32 mem_c2k = 0;
 	int section;
 
-share_mem = (u32 *)get_smem_start_addr(MD_SYS3, SMEM_USER_RAW_DBM, NULL);
+	share_mem =
+	(u32 *)get_smem_start_addr(MD_SYS3, SMEM_USER_RAW_DBM, NULL);
 
-for (section = 1; section <= SECTION_NUM; section++)
-	mem_c2k |= md3_section_level_c2k[section] << section_level[section];
+	for (section = 1; section <= SECTION_NUM; section++)
+		mem_c2k |=
+		md3_section_level_c2k[section] << section_level[section];
 
 	/* Get 4 byte = 32 bit */
 	mem_c2k &= SECTION_LEN;
