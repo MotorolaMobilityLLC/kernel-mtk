@@ -31,7 +31,11 @@ static int __init mtk_spm_init(void)
 	slp_module_init();
 #endif
 #elif defined(CONFIG_MACH_KIBOPLUS)
-	/* nothing; TODO */
+	/* cpu dormant driver init */
+	/* mt_cpu_dormant_init(); */
+
+	spm_module_init();
+	/* slp_module_init(); */
 #endif
 
 	return 0;
