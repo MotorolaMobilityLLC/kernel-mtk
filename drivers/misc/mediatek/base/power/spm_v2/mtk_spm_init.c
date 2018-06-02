@@ -28,7 +28,7 @@ static int __init mtk_spm_init(void)
 	mt_cpu_dormant_init();
 
 	spm_module_init();
-	/* slp_module_init(); */
+	slp_module_init();
 #endif
 #endif
 
