@@ -2,6 +2,8 @@
 # Makefile for the Linux unix domain socket layer.
 #
 
+ccflags-y += -Wno-error=maybe-uninitialized
+
 obj-$(CONFIG_UNIX)	+= unix.o
 
 unix-y			:= af_unix.o garbage.o
