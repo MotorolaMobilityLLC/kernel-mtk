@@ -14,7 +14,9 @@
 #define LOG_TAG "RDMA"
 
 #include <linux/delay.h>
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
+#endif
 #include "ddp_log.h"
 #include "ddp_reg.h"
 #include "ddp_matrix_para.h"

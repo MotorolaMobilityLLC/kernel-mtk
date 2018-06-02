@@ -298,7 +298,7 @@ struct fb_post_video_buffer {
 };
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MACH_MT8167)
 extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
@@ -369,6 +369,9 @@ struct mtkfb_device {
 	int timeline_max;
 	struct list_head pending_configs;	/* CL2340210 */
 	struct ion_client *ion_client;
+#ifdef CONFIG_MTK_IOMMU
+	struct platform_device *larb_pdev[2];
+#endif
 };
 
 #endif				/* __KERNEL__ */
@@ -380,7 +383,7 @@ extern unsigned int vramsize;
 #endif
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MACH_MT8167)
 extern bool is_early_suspended;
 extern void mtkfb_waitVsync(void);
 extern bool is_ipoh_bootup;

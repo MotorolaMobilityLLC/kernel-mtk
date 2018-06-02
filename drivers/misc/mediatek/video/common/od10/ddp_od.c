@@ -32,7 +32,9 @@
 #else
 #include <ddp_clkmgr.h>
 #endif
+#ifdef CONFIG_MTK_M4U
 #include <m4u.h>
+#endif
 #include <ddp_drv.h>
 #include <ddp_reg.h>
 #include <ddp_debug.h>
