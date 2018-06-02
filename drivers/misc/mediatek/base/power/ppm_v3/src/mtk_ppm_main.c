@@ -837,7 +837,9 @@ static int ppm_main_resume(struct device *dev)
 
 static int ppm_main_data_init(void)
 {
+#ifndef NO_SCHEDULE_API
 	struct cpumask cpu_mask;
+#endif
 	int ret = 0;
 	int i;
 
@@ -872,11 +874,14 @@ static int ppm_main_data_init(void)
 		/* get topology info */
 #ifndef NO_SCHEDULE_API
 		arch_get_cluster_cpus(&cpu_mask, i);
-#endif
 		ppm_main_info.cluster_info[i].core_num =
 			cpumask_weight(&cpu_mask);
 		ppm_main_info.cluster_info[i].cpu_id =
 			cpumask_first(&cpu_mask);
+#else
+		ppm_main_info.cluster_info[i].core_num = 4;
+		ppm_main_info.cluster_info[i].cpu_id = i * 4;
+#endif
 		ppm_info("ppm cluster %d -> core_num = %d, cpu_id = %d\n",
 				ppm_main_info.cluster_info[i].cluster_id,
 				ppm_main_info.cluster_info[i].core_num,

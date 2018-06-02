@@ -21,9 +21,7 @@
 
 #include "mtk_ppm_internal.h"
 #include "mtk_ppm_platform.h"
-#ifndef NO_PBM
-#include "mtk_pbm.h"
-#endif
+#include "mach/mtk_pbm.h"
 
 
 static unsigned int ppm_dlpt_pwr_budget_preprocess(
