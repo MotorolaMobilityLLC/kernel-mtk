@@ -40,9 +40,7 @@
 #include <linux/io.h>
 #include <asm/irq.h>
 #include <linux/irq.h>
-/* #include <asm/scatterlist.h> */
 #include <mt-plat/dma.h>
-/* #include <mach/mt_clkmgr.h> */
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/syscore_ops.h>
@@ -2784,39 +2782,12 @@ static int mtk_uart_init_ports(void)
 		/* mtk_uart_power_down(uart); */
 #endif
 	}
-#if defined(CONFIG_MTK_SERIAL_MODEM_TEST)
-	/*NOTICE: for enabling modem test, UART4 needs to be disabled.
-	 * Howerver, if CONFIG_MTK_SERIAL_CONSOLE
-	 * is defined, resume will fail. Since the root cause is not clear,
-	 * only disable the console-related
-	 * function.
-	 */
-	/*printk("HW_MISC: 0x%08X\n", UART_READ32(HW_MISC)); */
-	/* mtk does NOT has this register */
-#endif
 	return 0;
 }
 
 /*---------------------------------------------------------------------------*/
 static const struct of_device_id apuart_of_ids[] = {
-	{.compatible = "mediatek,AP_UART0",},
-	{.compatible = "mediatek,AP_UART1",},
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	{.compatible = "mediatek,AP_UART2",},
-	{.compatible = "mediatek,AP_UART3",},
-#if (UART_NR > 4)
-	{.compatible = "mediatek,AP_UART4",},
-#endif
-#endif
-	{.compatible = "mediatek,mt6735-uart",},
-	{.compatible = "mediatek,mt6755-uart",},
-	{.compatible = "mediatek,mt8173-uart",},
-	{.compatible = "mediatek,mt6797-uart",},
-	{.compatible = "mediatek,mt8163-uart",},
-	{.compatible = "mediatek,mt8167-uart",},
 	{.compatible = "mediatek,mtk-uart",},
-	{.compatible = "mediatek,mt6759-uart",},
-	{.compatible = "mediatek,mt6758-uart",},
 	{}
 };
 
@@ -2913,7 +2884,7 @@ int request_uart_to_sleep(void)
 		uart = &mtk_uarts[uart_idx];
 		base = uart->base;
 		if (uart->poweron_count <= 0)
-			return 0;
+			continue;
 		/* request UART to sleep */
 		val1 = UART_READ32(UART_SLEEP_REQ);
 		reg_sync_writel(val1 | UART_CLK_OFF_REQ, UART_SLEEP_REQ);
@@ -2929,7 +2900,6 @@ int request_uart_to_sleep(void)
 			udelay(10);
 		}
 	}
-
 	return 0;
 }
 EXPORT_SYMBOL(request_uart_to_sleep);
@@ -2947,7 +2917,7 @@ int request_uart_to_wakeup(void)
 		uart = &mtk_uarts[uart_idx];
 		base = uart->base;
 		if (uart->poweron_count <= 0)
-			return 0;
+			continue;
 		/* wakeup uart */
 		val1 = UART_READ32(UART_SLEEP_REQ);
 		reg_sync_writel(val1 & (~UART_CLK_OFF_REQ), UART_SLEEP_REQ);
