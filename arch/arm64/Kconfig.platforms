@@ -89,6 +89,28 @@ config ARCH_MEDIATEK
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
 
+config MACH_MT6758
+	bool "MediaTek MT6758"
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	help
+	  This enables support for MediaTek Helio P30 - MT6758
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones.
+	  Support for aarch64 Architecture
+
 config ARCH_MESON
 	bool "Amlogic Platforms"
 	select PINCTRL
