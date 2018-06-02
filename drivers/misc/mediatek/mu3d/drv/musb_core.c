@@ -2395,7 +2395,6 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 
 fail5:
 	musb_exit_debugfs(musb);
-
 fail4:
 	if (!is_otg_enabled(musb) && is_host_enabled(musb))
 		usb_remove_hcd(musb_to_hcd(musb));
@@ -2890,7 +2889,7 @@ static const struct dev_pm_ops musb_dev_pm_ops = {
 #endif				/* CONFIG_MTK_UART_USB_SWITCH */
 #endif				/* NEVER */
 
-static struct platform_driver musb_driver = {
+static struct platform_driver musb_driver_probe = {
 	.driver = {
 		   .name = (char *)musb_driver_name,
 		   .bus = &platform_bus_type,
@@ -2992,7 +2991,7 @@ static ssize_t musb_mu3d_proc_write(struct file *file, const char __user *buf, s
 		os_printk(K_DEBUG, "registe mu3d driver ===>\n");
 		init_connection_work();
 		init_check_ltssm_work();
-		platform_driver_register(&musb_driver);
+		platform_driver_register(&musb_driver_probe);
 		mu3d_normal_driver_on = 1;
 		Charger_Detect_En(true);
 		os_printk(K_DEBUG, "registe mu3d driver <===\n");
@@ -3000,7 +2999,7 @@ static ssize_t musb_mu3d_proc_write(struct file *file, const char __user *buf, s
 		os_printk(K_DEBUG, "unregiste mu3d driver ===>\n");
 		mu3d_normal_driver_on = 0;
 		Charger_Detect_En(false);
-		platform_driver_unregister(&musb_driver);
+		platform_driver_unregister(&musb_driver_probe);
 		os_printk(K_DEBUG, "unregiste mu3d driver <===\n");
 	} else {
 		/* kernel_restart(NULL); */
@@ -3039,7 +3038,7 @@ static int __init musb_init(void)
 		os_printk(K_ERR, "[ERROR] create the mu3d init proc FAIL\n");
 
 	/* set MU3D up at boot up */
-	ret = platform_driver_register(&musb_driver);
+	ret = platform_driver_register(&musb_driver_probe);
 	mu3d_normal_driver_on = 1;
 	Charger_Detect_En(true);
 
@@ -3051,7 +3050,7 @@ static void __exit musb_cleanup(void)
 {
 	os_printk(K_ERR, "musb_cleanup\n");
 	if (mu3d_normal_driver_on == 1)
-		platform_driver_unregister(&musb_driver);
+		platform_driver_unregister(&musb_driver_probe);
 
 }
 module_exit(musb_cleanup);
@@ -3063,13 +3062,13 @@ static int __init musb_init(void)
 		return 0;
 
 	pr_info("%s: version " MUSB_VERSION ", ?dma?, otg (peripheral+host)\n", musb_driver_name);
-	return platform_driver_register(&musb_driver);
+	return platform_driver_register(&musb_driver_probe);
 }
 module_init(musb_init);
 
 static void __exit musb_cleanup(void)
 {
-	platform_driver_unregister(&musb_driver);
+	platform_driver_unregister(&musb_driver_probe);
 }
 module_exit(musb_cleanup);
 #endif

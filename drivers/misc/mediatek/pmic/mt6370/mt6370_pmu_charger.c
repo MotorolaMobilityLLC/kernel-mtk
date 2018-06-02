@@ -448,12 +448,10 @@ static int mt6370_set_usbsw_state(struct mt6370_pmu_charger_data *chg_data,
 #ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
 	dev_info(chg_data->dev, "%s: state = %d\n", __func__, state);
 
-#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_USB_MTK_HDRC)
 	if (state == MT6370_USBSW_CHG)
 		Charger_Detect_Init();
 	else
 		Charger_Detect_Release();
-#endif
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT */
 
 	return 0;
