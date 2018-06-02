@@ -65,7 +65,7 @@ struct mtk_desc_eint {
 
 struct mtk_desc_pin {
 	struct pinctrl_pin_desc	pin;
-	const struct mtk_desc_eint eint;
+	struct mtk_desc_eint eint;
 	const struct mtk_desc_function	*functions;
 };
 
@@ -307,7 +307,7 @@ struct mtk_pinctrl {
  * @regmap_num:chip regmap number.
  */
 struct mtk_pinctrl_devdata {
-	const struct mtk_desc_pin		*pins;
+	struct mtk_desc_pin		*pins;
 	unsigned int			npins;
 	const struct mtk_drv_group_desc	*grp_desc;
 	unsigned int			n_grp_cls;

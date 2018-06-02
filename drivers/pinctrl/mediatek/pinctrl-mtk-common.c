@@ -1157,6 +1157,8 @@ static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
 			irqd_to_hwirq(d));
 		return ret;
 	}
+	pr_debug("%s eint %d, mode%d\n", __func__,
+		pin->eint.eintnum, pin->eint.eintmux);
 
 	/* set mux to INT mode */
 	mtk_pmx_set_mode(pctl->pctl_dev,
@@ -1360,7 +1362,7 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned int offset,
 
 	/* Delay a while (more than 2T) to wait for hw debounce */
 	/* counter reset work correctly */
-	udelay(1);
+	udelay(100);
 	if (unmask == 1)
 		mtk_eint_unmask(d);
 
@@ -2204,6 +2206,41 @@ mtk_eint_debounce_process(struct mtk_pinctrl *pctl, int index)
 	}
 }
 
+/*
+ * mt_eint_print_status: Print the EINT status register.
+ */
+void mt_eint_print_status(void)
+{
+	unsigned int status, eint_num;
+	unsigned int offset;
+	const struct mtk_eint_offsets *eint_offsets =
+		&pctl->devdata->eint_offsets;
+	void __iomem *reg_base =
+		 mtk_eint_get_offset(pctl, 0, eint_offsets->stat);
+	unsigned int triggered_eint;
+
+	pr_notice("EINT_STA:");
+	for (eint_num = 0; eint_num < pctl->devdata->ap_num;
+		reg_base += 4, eint_num += 32) {
+		/* read status register every 32 interrupts */
+		status = readl(reg_base);
+		if (status)
+			pr_notice("EINT Module - addr:%p,EINT_STA = 0x%x\n",
+				reg_base, status);
+		else
+			continue;
+
+		while (status) {
+			offset = __ffs(status);
+			triggered_eint = eint_num + offset;
+			pr_notice("EINT %d is pending\n", triggered_eint);
+			status &= ~BIT(offset);
+		}
+	}
+	pr_notice("\n");
+}
+EXPORT_SYMBOL(mt_eint_print_status);
+
 static void mtk_eint_irq_handler(struct irq_desc *desc)
 {
 	struct irq_chip *chip = irq_desc_get_chip(desc);
@@ -2533,6 +2570,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	}
 
 	pctl->eint_reg_base = devm_ioremap_resource(&pdev->dev, res);
+	pr_debug("EINT resource %pR\n", res);
 	if (IS_ERR(pctl->eint_reg_base)) {
 		ret = -EINVAL;
 		goto chip_error;
@@ -2567,8 +2605,16 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		goto chip_error;
 	}
 
-	pctl->domain = irq_domain_add_linear(np,
-		pctl->devdata->ap_num, &irq_domain_simple_ops, NULL);
+	if (pctl->devdata->mtk_irq_domain_ops) {
+		pctl->domain = irq_domain_add_linear(np,
+			pctl->devdata->ap_num,
+				pctl->devdata->mtk_irq_domain_ops, NULL);
+	} else {
+		pctl->domain = irq_domain_add_linear(np,
+			pctl->devdata->ap_num,
+				&irq_domain_simple_ops, NULL);
+	}
+
 	if (!pctl->domain) {
 		dev_err(&pdev->dev, "Couldn't register IRQ domain\n");
 		ret = -ENOMEM;
