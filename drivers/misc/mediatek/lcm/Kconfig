@@ -17,7 +17,6 @@ config CUSTOM_KERNEL_LCM
 
 config MTK_LCM_DEVICE_TREE_SUPPORT
 	bool "support LCM device tree connect with display drivers"
-	string "support LCM device tree"
 	help
 	  Decide whether to support LCM device tree based configuration.
 	  This feature requires the connection between display driver and LCM devices.
