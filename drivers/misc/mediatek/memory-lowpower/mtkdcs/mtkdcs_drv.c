@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
+#include "mtkdcs_drv.h"
 
 /* Memory lowpower private header file */
 #include "../internal.h"
@@ -39,10 +40,93 @@ enum dcs_status dummy_ipi_read_dcs_status(void)
 {
 	return DCS_NORMAL;
 }
-int dummy_ipi_do_dcs(enum dcs_status status)
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include "sspm_ipi.h"
+static unsigned int dcs_recv_data[4];
+
+static int dcs_migration_ipi(enum migrate_dir dir)
 {
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_MIGRATION;
+	ipi_buf[1] = dir;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err)
+		pr_err("ipi_write error: %d\n", err);
+	else
+		pr_err("ipi_write success: %x\n", ipi_data_ret);
+
 	return 0;
 }
+
+static int dcs_set_dummy_write_ipi(void)
+{
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_SET_DUMMY_WRITE;
+	ipi_buf[1] = 0;
+	ipi_buf[2] = 0x200000;
+	ipi_buf[3] = 0x000000;
+	ipi_buf[4] = 0x300000;
+	ipi_buf[5] = 0x000000;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err)
+		pr_err("ipi_write error: %d\n", err);
+	else
+		pr_err("ipi_write success: %x\n", ipi_data_ret);
+
+	return 0;
+}
+
+static int dcs_dump_reg_ipi(void)
+{
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_DUMP_REG;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err)
+		pr_err("ipi_write error: %d\n", err);
+	else
+		pr_err("ipi_write success: %x\n", ipi_data_ret);
+
+	return 0;
+}
+
+static int dcs_ipi_register(void)
+{
+	int ret;
+	int retry = 0;
+	struct ipi_action dcs_isr;
+
+	dcs_isr.data = (void *)dcs_recv_data;
+
+	do {
+		ret = sspm_ipi_recv_registration(IPI_ID_DCS, &dcs_isr);
+	} while ((ret != IPI_REG_OK) && (retry++ < 10));
+
+	if (ret != IPI_REG_OK) {
+		pr_err("dcs_ipi_register fail\n");
+		return -EBUSY;
+	}
+
+	return 0;
+}
+#else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+static int dcs_ipi_register(void) { return 0; }
+static int dcs_migration_ipi(enum migrate_dir dir) { return 0; }
+static int dcs_set_dummy_write_ipi(void) { return 0; }
+static int dcs_dump_reg_ipi(void) { return 0; }
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 /*
  * dcs_dram_channel_switch
@@ -62,7 +146,7 @@ int dcs_dram_channel_switch(enum dcs_status status)
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
 		(sys_dcs_status != status)) {
-		dummy_ipi_do_dcs(status);
+		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		sys_dcs_status = DCS_BUSY;
 		spin_unlock(&dcs_lock);
 	} else {
@@ -131,6 +215,8 @@ bool dcs_initialied(void)
 
 static int __init mtkdcs_init(void)
 {
+	int ret;
+
 	/* read system dcs status */
 	sys_dcs_status = dummy_ipi_read_dcs_status();
 
@@ -147,14 +233,17 @@ static int __init mtkdcs_init(void)
 
 	lowpower_channel_num = (normal_channel_num / 2);
 
+	/* register IPI */
+	ret = dcs_ipi_register();
+	if (ret)
+		return -EBUSY;
+
 	dcs_initialized = true;
 
 	return 0;
 }
 
-static void __exit mtkdcs_exit(void)
-{
-}
+static void __exit mtkdcs_exit(void) { }
 
 device_initcall(mtkdcs_init);
 module_exit(mtkdcs_exit);
@@ -171,6 +260,10 @@ static int mtkdcs_show(struct seq_file *m, void *v)
 	} else {
 		pr_info("dcs_get_channel_num_trylock busy\n");
 	}
+
+	/* call debug ipi */
+	dcs_set_dummy_write_ipi();
+	dcs_dump_reg_ipi();
 
 	return 0;
 }
