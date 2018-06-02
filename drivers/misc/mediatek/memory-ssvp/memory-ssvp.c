@@ -43,8 +43,8 @@
 #define _SVP_MBSIZE CONFIG_MTK_SVP_RAM_SIZE
 #define _TUI_MBSIZE CONFIG_MTK_TUI_RAM_SIZE
 
-#define COUNT_DOWN_MS 2000
-#define	COUNT_DOWN_INTERVAL 100
+#define COUNT_DOWN_MS 4000
+#define	COUNT_DOWN_INTERVAL 200
 
 #include <mt-plat/aee.h>
 
@@ -287,7 +287,7 @@ static int _svp_wdt_kthread_func(void *data)
 
 	pr_info("[START COUNT DOWN]: %dms/%dms\n", COUNT_DOWN_MS, COUNT_DOWN_INTERVAL);
 
-	for (count_down = 0; count_down > 0; --count_down) {
+	for (; count_down > 0; --count_down) {
 		msleep(COUNT_DOWN_INTERVAL);
 
 		/*
@@ -307,25 +307,17 @@ static int _svp_wdt_kthread_func(void *data)
 		pr_info("[COUNT DOWN]: %d\n", count_down);
 
 	}
-
 	pr_alert("[COUNT DOWN FAIL]\n");
 
-	if (IS_ENABLED(CONFIG_MTK_AEE_FEATURE) && IS_ENABLED(CONFIG_MT_ENG_BUILD)) {
-#define MSG_SIZE_TO_AEE 70
-		char msg_to_aee[MSG_SIZE_TO_AEE];
-
-		pr_alert("Shareable SVP trigger kernel warnin");
-
-		snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "please contact SS memory module owner\n");
-		aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
-				| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
-				| DB_OPT_PROCESS_COREDUMP
-				| DB_OPT_DUMPSYS_SURFACEFLINGER
-				| DB_OPT_DUMPSYS_GFXINFO
-				| DB_OPT_DUMPSYS_PROCSTATS,
-				"SVP wdt: SSVP online Failed\nCRDISPATCH_KEY:SVP_SS1",
-				msg_to_aee);
-	}
+	pr_alert("Shareable SVP trigger kernel warnin");
+	aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+			| DB_OPT_PROCESS_COREDUMP
+			| DB_OPT_DUMPSYS_SURFACEFLINGER
+			| DB_OPT_DUMPSYS_GFXINFO
+			| DB_OPT_DUMPSYS_PROCSTATS,
+			"SVP wdt: SSVP online Failed\nCRDISPATCH_KEY:SVP_SS1",
+			"please contact SS memory module owner\n");
 
 	return 0;
 }
