@@ -711,6 +711,8 @@ void disp_od_set_smi_clock(int enabled)
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_ARCH_ELBRUS)
 	larb_clk = DISP0_SMI_LARB4;
+#elif defined(CONFIG_MACH_MT6799)
+	larb_clk = DISP0_SMI_LARB1;
 #else
 	larb_clk = DISP0_SMI_LARB5;
 #endif
@@ -1097,7 +1099,9 @@ static int od_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 static int od_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
+#ifdef CONFIG_MTK_M4U
 	M4U_PORT_STRUCT m4u_port;
+#endif /* CONFIG_MTK_M4U */
 
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
@@ -1115,6 +1119,7 @@ static int od_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 	mutex_unlock(&g_od_global_lock);
 #endif /* CONFIG_MTK_OD_SUPPORT */
 
+#ifdef CONFIG_MTK_M4U
 	m4u_port.ePortID = M4U_PORT_DISP_OD_R;
 	m4u_port.Virtuality = 0;
 	m4u_port.Security = 0;
@@ -1124,6 +1129,7 @@ static int od_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 	m4u_config_port(&m4u_port);
 	m4u_port.ePortID = M4U_PORT_DISP_OD_W;
 	m4u_config_port(&m4u_port);
+#endif /* CONFIG_MTK_M4U */
 
 	return 0;
 }
