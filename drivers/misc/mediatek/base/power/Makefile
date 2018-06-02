@@ -13,3 +13,4 @@
 
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_MT6757) += spm_v2/
+obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
