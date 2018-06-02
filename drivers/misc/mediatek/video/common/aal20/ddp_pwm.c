@@ -76,11 +76,11 @@ enum PWM_LOG_TYPE {
 #define PWM_USE_HIGH_ULPOSC_FQ
 #endif
 
+static volatile bool g_pwm_is_change_state;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
-static volatile bool g_pwm_is_change_state;
 #if defined(PWM_USE_HIGH_ULPOSC_FQ)
 static bool g_pwm_first_config;
 #endif
