@@ -80,12 +80,6 @@ static struct musb_hdrc_config mtu3d_config = {
 	.fifo_cfg_size = ARRAY_SIZE(mtu3d_cfg),
 };
 
-#ifdef CONFIG_USB_MTK_DUALMODE
-static struct pinctrl *pinctrl;
-static struct pinctrl_state *pinctrl_iddig;
-#endif
-
-
 static int mtu3d_musb_init(struct musb *musb);
 static int mtu3d_musb_exit(struct musb *musb);
 static void mtu3d_musb_enable(struct musb *musb);
@@ -816,19 +810,6 @@ static int mtu3d_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to register musb device\n");
 		goto err2;
 	}
-
-#ifdef CONFIG_USB_MTK_DUALMODE
-	pinctrl = devm_pinctrl_get(&pdev->dev);
-	if (IS_ERR(pinctrl))
-		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
-	else {
-		pinctrl_iddig = pinctrl_lookup_state(pinctrl, "iddig_init");
-		if (IS_ERR(pinctrl_iddig))
-			dev_err(&pdev->dev, "Cannot find usb pinctrl iddig_init\n");
-		else
-		pinctrl_select_state(pinctrl, pinctrl_iddig);
-	}
-#endif
 
 	return 0;
 

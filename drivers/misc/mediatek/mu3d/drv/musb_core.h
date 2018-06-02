@@ -811,9 +811,9 @@ extern u32 upmu_get_rgs_chrdet(void);
 
 #ifdef CONFIG_USB_MTK_DUALMODE
 extern bool mtk_is_host_mode(void);
-extern void mtk_unload_xhci_on_ipo(void);
-extern void switch_int_to_host_and_mask(void);
-extern void switch_int_to_host(void);
+extern void mtk_enable_host(void);
+extern void mtk_disable_host(void);
+
 #else
 static inline int mtk_is_host_mode(void)
 {
