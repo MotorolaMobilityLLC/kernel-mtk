@@ -20,7 +20,7 @@ endif
 
 #MRDUMP_KEY is independent feature
 #it is not depend on MRDUMP
-obj-$(CONFIG_MTK_AEE_FEATURE) += mrdump_key.o
-mrdump_key-y := mrdump_key_setup.o
+# obj-$(CONFIG_MTK_AEE_FEATURE) += mrdump_key.o
+# mrdump_key-y := mrdump_key_setup.o
 
 obj-$(CONFIG_MTK_AEE_IPANIC) += mrdump_mini.o
