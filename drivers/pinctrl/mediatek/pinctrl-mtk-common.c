@@ -475,12 +475,12 @@ static int mtk_pconf_set_driving(struct mtk_pinctrl *pctl,
 	unsigned int bits, mask, shift;
 	const struct mtk_drv_group_desc *drv_grp;
 
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (pctl->devdata->pin_drv_grps) {
 		return mtk_pinctrl_set_gpio_driving(pctl,
 			pin, driving);
 	}
 
-#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (pctl->devdata->mtk_pctl_set_gpio_drv)
 		return pctl->devdata->mtk_pctl_set_gpio_drv(pctl,
 			pin, driving);
@@ -1917,7 +1917,7 @@ static int mtk_eint_set_type(struct irq_data *d, unsigned int type)
 
 	if (((type & IRQ_TYPE_EDGE_BOTH) && (type & IRQ_TYPE_LEVEL_MASK)) ||
 		((type & IRQ_TYPE_LEVEL_MASK) == IRQ_TYPE_LEVEL_MASK)) {
-		PINCTRL_INFO("Can't config IRQ%d (EINT%lu) for type 0x%X\n",
+		pr_info("[GPIO]Can't config IRQ%d (EINT%lu) for type 0x%X\n",
 			d->irq, d->hwirq, type);
 		return -EINVAL;
 	}
@@ -2211,6 +2211,7 @@ mtk_eint_debounce_process(struct mtk_pinctrl *pctl, int index)
  */
 void mt_eint_print_status(void)
 {
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	unsigned int status, eint_num;
 	unsigned int offset;
 	const struct mtk_eint_offsets *eint_offsets =
@@ -2237,6 +2238,7 @@ void mt_eint_print_status(void)
 			status &= ~BIT(offset);
 		}
 	}
+#endif
 	pr_notice("\n");
 }
 EXPORT_SYMBOL(mt_eint_print_status);
@@ -2331,6 +2333,7 @@ static int mtk_pctrl_build_state(struct platform_device *pdev)
 	return 0;
 }
 
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 int mtk_pctrl_get_gpio_chip_base(void)
 {
 	if (pctl)
@@ -2442,6 +2445,8 @@ static void mtk_pinctrl_test(struct mtk_pinctrl *pctl)
 	PINCTRL_INFO("pinctrl test end\n");
 }
 #endif
+#endif
+
 int mtk_pctrl_init(struct platform_device *pdev,
 		const struct mtk_pinctrl_devdata *data,
 		struct regmap *regmap)
@@ -2464,7 +2469,9 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		dev_err(&pdev->dev, "only support pins-are-numbered format\n");
 		return -EINVAL;
 	}
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (data->regmap_num == 0) {
+#endif
 		node = of_parse_phandle(np, "mediatek,pctl-regmap", 0);
 		if (node) {
 			pctl->regmap1 = syscon_node_to_regmap(node);
@@ -2473,7 +2480,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		} else if (regmap) {
 			pctl->regmap1  = regmap;
 		} else {
-			PINCTRL_INFO("Pinctrl node hasn't register regmap\n");
+			pr_info("Pinctrl node hasn't register regmap\n");
 			return -EINVAL;
 		}
 
@@ -2484,6 +2491,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 			if (IS_ERR(pctl->regmap2))
 				return PTR_ERR(pctl->regmap2);
 		}
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	} else {
 		for (i = 0; i < data->regmap_num; i++) {
 			node = of_parse_phandle(np, "mediatek,pctl-regmap", i);
@@ -2494,6 +2502,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 			}
 		}
 	}
+#endif
 	pctl->devdata = data;
 	ret = mtk_pctrl_build_state(pdev);
 	if (ret) {
@@ -2605,16 +2614,16 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		goto chip_error;
 	}
 
+	pctl->domain = irq_domain_add_linear(np,
+		pctl->devdata->ap_num,
+			&irq_domain_simple_ops, NULL);
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (pctl->devdata->mtk_irq_domain_ops) {
 		pctl->domain = irq_domain_add_linear(np,
 			pctl->devdata->ap_num,
 				pctl->devdata->mtk_irq_domain_ops, NULL);
-	} else {
-		pctl->domain = irq_domain_add_linear(np,
-			pctl->devdata->ap_num,
-				&irq_domain_simple_ops, NULL);
 	}
-
+#endif
 	if (!pctl->domain) {
 		dev_err(&pdev->dev, "Couldn't register IRQ domain\n");
 		ret = -ENOMEM;
@@ -2632,7 +2641,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 
 	irq_set_chained_handler_and_data(irq, mtk_eint_irq_handler, pctl);
 	if (mtk_eint_create_attr(&pdev->dev))
-		PINCTRL_INFO("mtk_eint create attribute error\n");
+		pr_info("mtk_eint create attribute error\n");
 	return 0;
 
 chip_error:
