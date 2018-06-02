@@ -26,7 +26,7 @@
 #include "mtk_spm_vcore_dvfs.h"
 #include "mtk_spm_misc.h"
 #include <mt-plat/upmu_common.h>
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include <m4u.h>
 #include <mt-plat/mtk_chip.h>
 #endif
@@ -51,7 +51,7 @@ int __attribute__((weak)) check_scp_resource(void)
 
 #define SPM_WAKE_PERIOD         600	/* sec */
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 /* CPU_PWR_STATUS */
 /* CPU_PWR_STATUS_2ND */
 #define MP0_CPU0                (1U <<  9)
@@ -165,7 +165,7 @@ const char *twam_event_str[32] = {
 	[31] = "CONN_DDR_EN",
 };
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define SPM_CPU_PWR_STATUS		PWR_STATUS
 #define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
 
@@ -226,7 +226,7 @@ u32 is_scp_request_freq(void)
 /**************************************
  * Function and API
  **************************************/
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
@@ -309,7 +309,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		  MIF_APBEN_LSB | SCP_APB_INTERNAL_EN_LSB);
 
 	/* clear SPM_SW_INT after scenario change */
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	spm_write(SPM_SWINT_CLR, PCM_SW_INT0);
 #else
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
@@ -414,7 +414,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 }
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 int can_spm_pmic_set_vcore_voltage(void)
 {
 	if (mt_get_chip_hw_ver() > 0xCA00)
@@ -501,7 +501,7 @@ void __spm_init_event_vector(const struct pcm_desc *pcmdesc)
 	/* event vector will be enabled by PCM itself */
 }
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 {
 	/* SPM_AP_STANDBY_CON */
@@ -834,7 +834,7 @@ void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
 	else
 		mask = pwrctrl->wake_src_cust;
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (pwrctrl->csyspwreq_mask)
 #else
 	if (pwrctrl->syspwreq_mask)
@@ -931,7 +931,7 @@ void __spm_clean_after_wakeup(void)
 	/* clean ISR status (except TWAM) */
 	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
 	spm_write(SPM_IRQ_STA, ISRC_ALL_EXC_TWAM);
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	spm_write(SPM_SWINT_CLR, PCM_SW_INT_ALL);
 #else
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT_ALL);
@@ -1067,7 +1067,7 @@ void __spm_check_md_pdn_power_control(struct pwr_ctrl *pwr_ctrl)
 
 void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
 {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	u32 dvfs_mask =  SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS;
 
 	dest_pwr_ctrl->cpu_md_dvfs_req_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_req_merge_mask_b;
@@ -1096,11 +1096,11 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->spm_dvfs_req			= src_pwr_ctrl->spm_dvfs_req;
 	dest_pwr_ctrl->spm_dvfs_force_down		= src_pwr_ctrl->spm_dvfs_force_down;
 	dest_pwr_ctrl->cpu_md_dvfs_sop_force_on		= src_pwr_ctrl->cpu_md_dvfs_sop_force_on;
-#if defined(SPM_VCORE_EN_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(SPM_VCORE_EN_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	dest_pwr_ctrl->dvfs_halt_src_chk = src_pwr_ctrl->dvfs_halt_src_chk;
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	dest_pwr_ctrl->pcm_flags = (dest_pwr_ctrl->pcm_flags & (~dvfs_mask)) | (src_pwr_ctrl->pcm_flags & dvfs_mask);
 	if (dest_pwr_ctrl->pcm_flags_cust)
 		dest_pwr_ctrl->pcm_flags_cust = (dest_pwr_ctrl->pcm_flags_cust & (~dvfs_mask)) |
@@ -1361,8 +1361,8 @@ void __spm_restore_pmic_ck_pdn(void)
 
 void __spm_bsi_top_init_setting(void)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* needs to check type of clk buf if MT6757 */
 	if (!is_clk_buf_from_pmic()) {
 #endif
@@ -1373,7 +1373,7 @@ void __spm_bsi_top_init_setting(void)
 		spm_write(spm_bsi1cfg + 0x2020, 0x0e001841);
 		spm_write(spm_bsi1cfg + 0x2024, 0x150b0000);
 		spm_write(spm_bsi1cfg + 0x2030, 0x1);
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	}
 #endif
 #endif
@@ -1409,7 +1409,7 @@ void __spm_pmic_pg_force_off(void)
 
 void __spm_pmic_low_iq_mode(int en)
 {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (en) {
 		pmic_config_interface_nolock(MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_ADDR,

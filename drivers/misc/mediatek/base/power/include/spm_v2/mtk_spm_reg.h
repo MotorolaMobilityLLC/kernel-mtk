@@ -24,7 +24,7 @@
 
 #define WAKE_SRC_CONN2AP R12_CONN2AP_SPM_WAKEUP_B
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "mtk_spm_reg_mt6757.h"
 

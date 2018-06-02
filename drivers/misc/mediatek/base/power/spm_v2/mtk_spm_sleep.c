@@ -101,7 +101,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SUSPEND \
@@ -229,7 +229,7 @@ enum spm_suspend_step {
 };
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static struct pwr_ctrl suspend_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SUSPEND,
 	.wake_src_md32 = WAKE_SRC_FOR_MD32,
@@ -500,7 +500,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
@@ -788,8 +788,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 	u32 cpu = smp_processor_id();
 	int pcm_index;
-#if defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	static int slp_count;
+#endif
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -805,7 +807,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_spm_suspend_val(SPM_SUSPEND_ENTER);
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4 + !(get_ddr_type() == TYPE_LPDDR3) * 2;
 #else
 	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4;
@@ -816,10 +818,12 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	else
 		WARN_ON(1);
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
-#if defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	slp_count++;
 	pr_warn("[%d] vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
 		   slp_count, vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
+#endif
 #endif
 
 	pwrctrl = __spm_suspend.pwrctrl;
@@ -863,7 +867,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	snapshot_golden_setting(__func__, 0);
 #endif
 	mt_power_gs_dump_suspend();
@@ -883,7 +887,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	__spm_check_md_pdn_power_control(pwrctrl);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 
@@ -1153,7 +1157,7 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 	case 0:
 #if defined(CONFIG_ARCH_MT6755)
 		value = 5;
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 		value = 0;
 #elif defined(CONFIG_ARCH_MT6797)
 		value = 6;

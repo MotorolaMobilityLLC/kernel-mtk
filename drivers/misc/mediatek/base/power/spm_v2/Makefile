@@ -106,3 +106,19 @@ endif
 #obj-y += mt_spm_vcorefs_mt6797.o
 
 #endif
+
+ifeq ($(CONFIG_MACH_KIBOPLUS), y)
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cameraisp/src/$(MTK_PLATFORM)/inc/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
+
+obj-y += mtk_sleep.o
+obj-y += mtk_spm_init.o
+obj-y += mtk_spm.o
+obj-y += mtk_spm_internal.o
+#obj-y += mtk_spm_sleep.o
+#obj-y += mtk_spm_fs.o
+endif

@@ -30,6 +30,8 @@ static int __init mtk_spm_init(void)
 	spm_module_init();
 	slp_module_init();
 #endif
+#elif defined(CONFIG_MACH_KIBOPLUS)
+	/* nothing; TODO */
 #endif
 
 	return 0;
