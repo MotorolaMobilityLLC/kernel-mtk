@@ -258,6 +258,28 @@ menu "Modem & Connectivity related configs"
 #source "drivers/misc/mediatek/nfc/Kconfig"
 #source "drivers/misc/mediatek/ssw/Kconfig"
 
+config MTK_VOLTE_SUPPORT
+	bool
+	default n
+	depends on !CRYPTO_NULL || !CRYPTO_SHA512 || !CRYPTO_XCBC || !CRYPTO_CTR
+	help
+	  dummy option for dependency check.if MTK_VOLTE_SUPPORT is set,
+	  CRYPTO_NULL && CRYPTO_SHA512 && CRYPTO_XCBC are not set, build error will happen.
+	  CRYPTO_NULL && CRYPTO_SHA512 && CRYPTO_XCBC are set, build error will be fixed; when
+	  MTK_VOLTE_SUPPORT is not set, there is no error whatever CRYPTO_NULL or CRYPTO_SHA512
+	  or CRYPTO_XCBC are set or not
+
+config MTK_EPDG_SUPPORT
+	bool
+	default n
+	depends on !XFRM_USER || !XFRM_SUB_POLICY
+	help
+	  dummy option for dependency check.if MTK_EPDG_SUPPORT is set,
+	  XFRM_USER && XFRM_SUB_POLICY  are not set, build error will happen.  XFRM_USER &&
+	  XFRM_SUB_POLICY are set, build error will be fixed; when MTK_EPDG_SUPPORT is not
+	  set, there is no error whatever XFRM_USER && XFRM_SUB_POLICY  are set or not
+
+
 endmenu  # CONN
 
 menu "Other Peripherals"
