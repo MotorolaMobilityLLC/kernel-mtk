@@ -588,7 +588,7 @@ static ssize_t acc_read(struct file *fp, char __user *buf,
 	}
 
 	if (dev->rx_done) {
-		// last req cancelled. try to get it.
+		/* last req cancelled. try to get it. */
 		req = dev->rx_req[0];
 		goto copy_data;
 	}
@@ -612,8 +612,9 @@ requeue_req:
 		r = ret;
 		ret = usb_ep_dequeue(dev->ep_out, req);
 		if (ret != 0) {
-			// cancel failed. There can be a data already received.
-			// it will be retrieved in the next read.
+			/* cancel failed. There can be a data already received.
+			 * it will be retrieved in the next read.
+			 */
 			pr_debug("acc_read: cancelling failed %d", ret);
 		}
 		goto done;
@@ -750,7 +751,7 @@ static long acc_ioctl(struct file *fp, unsigned code, unsigned long value)
 
 static int acc_open(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "acc_open\n");
+	pr_info("acc_open\n");
 	if (atomic_xchg(&_acc_dev->open_excl, 1))
 		return -EBUSY;
 
@@ -761,7 +762,7 @@ static int acc_open(struct inode *ip, struct file *fp)
 
 static int acc_release(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "acc_release\n");
+	pr_info("acc_release\n");
 
 	WARN_ON(!atomic_xchg(&_acc_dev->open_excl, 0));
 	_acc_dev->disconnected = 0;
@@ -821,10 +822,10 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 	unsigned long flags;
 
 /*
-	printk(KERN_INFO "acc_ctrlrequest "
-			"%02x.%02x v%04x i%04x l%u\n",
-			b_requestType, b_request,
-			w_value, w_index, w_length);
+ *	printk(KERN_INFO "acc_ctrlrequest "
+ *			"%02x.%02x v%04x i%04x l%u\n",
+ *			b_requestType, b_request,
+ *			w_value, w_index, w_length);
 */
 
 	if (b_requestType == (USB_DIR_OUT | USB_TYPE_VENDOR)) {
@@ -964,7 +965,12 @@ __acc_function_bind(struct usb_configuration *c,
 			f->name, dev->ep_in->name, dev->ep_out->name);
 	return 0;
 }
-
+#if 0
+static int
+acc_function_bind(struct usb_configuration *c, struct usb_function *f) {
+	return __acc_function_bind(c, f, false);
+}
+#endif
 static int
 acc_function_bind_configfs(struct usb_configuration *c,
 			struct usb_function *f) {
@@ -1163,6 +1169,36 @@ static void acc_function_disable(struct usb_function *f)
 
 	VDBG(cdev, "%s disabled\n", dev->function.name);
 }
+#if 0
+static int acc_bind_config(struct usb_configuration *c)
+{
+	struct acc_dev *dev = _acc_dev;
+	int ret;
+
+	pr_info("acc_bind_config\n");
+
+	/* allocate a string ID for our interface */
+	if (acc_string_defs[INTERFACE_STRING_INDEX].id == 0) {
+		ret = usb_string_id(c->cdev);
+		if (ret < 0)
+			return ret;
+		acc_string_defs[INTERFACE_STRING_INDEX].id = ret;
+		acc_interface_desc.iInterface = ret;
+	}
+
+	dev->cdev = c->cdev;
+	dev->function.name = "accessory";
+	dev->function.strings = acc_strings,
+	dev->function.fs_descriptors = fs_acc_descs;
+	dev->function.hs_descriptors = hs_acc_descs;
+	dev->function.bind = acc_function_bind;
+	dev->function.unbind = acc_function_unbind;
+	dev->function.set_alt = acc_function_set_alt;
+	dev->function.disable = acc_function_disable;
+
+	return usb_add_function(c, &dev->function);
+}
+#endif
 
 static int acc_setup(void)
 {
