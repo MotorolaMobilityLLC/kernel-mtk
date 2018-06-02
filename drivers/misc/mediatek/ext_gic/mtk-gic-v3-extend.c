@@ -342,21 +342,22 @@ void mt_irq_set_pending(unsigned int irq)
 	mt_irq_set_pending_hw(hwirq);
 }
 
-void mt_irq_unmask_for_sleep_ex(unsigned int irq)
+void mt_irq_unmask_for_sleep_ex(unsigned int virq)
 {
 	void __iomem *dist_base;
 	u32 mask;
+	unsigned int hwirq;
 
-	mask = 1 << (irq % 32);
-	irq = virq_to_hwirq(irq);
+	hwirq = virq_to_hwirq(virq);
 	dist_base = GIC_DIST_BASE;
+	mask = 1 << (hwirq % 32);
 
-	if (irq < 16) {
-		pr_err("Fail to enable interrupt %d\n", irq);
+	if (hwirq < 16) {
+		pr_err("Fail to enable interrupt %d\n", hwirq);
 		return;
 	}
 
-	writel(mask, dist_base + GIC_DIST_ENABLE_SET + irq / 32 * 4);
+	writel(mask, dist_base + GIC_DIST_ENABLE_SET + hwirq / 32 * 4);
 	mb();
 }
 

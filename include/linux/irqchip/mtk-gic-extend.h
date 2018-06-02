@@ -50,8 +50,8 @@ struct mtk_irq_mask {
 };
 
 unsigned int get_hardware_irq(unsigned int virq);
-void mt_irq_unmask_for_sleep(unsigned int virq);
-void mt_irq_unmask_for_sleep_ex(unsigned int irq);
+void mt_irq_unmask_for_sleep(unsigned int hwirq);
+void mt_irq_unmask_for_sleep_ex(unsigned int virq);
 void mt_irq_mask_for_sleep(unsigned int virq);
 int mt_irq_mask_all(struct mtk_irq_mask *mask);
 int mt_irq_mask_restore(struct mtk_irq_mask *mask);
