@@ -506,6 +506,12 @@ struct mem_size_stats {
 	unsigned long shared_hugetlb;
 	unsigned long private_hugetlb;
 	u64 pss;
+#ifdef CONFIG_SWAP
+	u64 pswap;
+#endif
+#ifdef CONFIG_ZNDSWAP
+	u64 pswap_zndswap;
+#endif
 	u64 swap_pss;
 };
 
@@ -555,17 +561,22 @@ static void smaps_pte_entry(pte_t *pte, unsigned long addr,
 
 		if (!non_swap_entry(swpent)) {
 			int mapcount;
+			u64 pss_delta = (u64)PAGE_SIZE << PSS_SHIFT;
 
 			mss->swap += PAGE_SIZE;
 			mapcount = swp_swapcount(swpent);
-			if (mapcount >= 2) {
-				u64 pss_delta = (u64)PAGE_SIZE << PSS_SHIFT;
-
+			if (mapcount >= 2)
 				do_div(pss_delta, mapcount);
-				mss->swap_pss += pss_delta;
-			} else {
-				mss->swap_pss += (u64)PAGE_SIZE << PSS_SHIFT;
-			}
+			mss->swap_pss += pss_delta;
+#ifdef CONFIG_ZNDSWAP
+			/* It indicates 2ndswap ONLY */
+			if (swp_type(swpent) == 1UL)
+				mss->pswap_zndswap += pss_delta;
+			else
+				mss->pswap += pss_delta;
+#else
+			mss->pswap += pss_delta;
+#endif
 		} else if (is_migration_entry(swpent))
 			page = migration_entry_to_page(swpent);
 	}
@@ -752,6 +763,12 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   "Shared_Hugetlb: %8lu kB\n"
 		   "Private_Hugetlb: %7lu kB\n"
 		   "Swap:           %8lu kB\n"
+#ifdef CONFIG_SWAP
+		   "PSwap:          %8lu kB\n"
+#endif
+#ifdef CONFIG_ZNDSWAP
+		   "PSwap_zndswap:  %8lu kB\n"
+#endif
 		   "SwapPss:        %8lu kB\n"
 		   "KernelPageSize: %8lu kB\n"
 		   "MMUPageSize:    %8lu kB\n"
@@ -769,6 +786,12 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   mss.shared_hugetlb >> 10,
 		   mss.private_hugetlb >> 10,
 		   mss.swap >> 10,
+#ifdef CONFIG_SWAP
+		   (unsigned long)(mss.pswap >> (10 + PSS_SHIFT)),
+#endif
+#ifdef CONFIG_ZNDSWAP
+		   (unsigned long)(mss.pswap_zndswap >> (10 + PSS_SHIFT)),
+#endif
 		   (unsigned long)(mss.swap_pss >> (10 + PSS_SHIFT)),
 		   vma_kernel_pagesize(vma) >> 10,
 		   vma_mmu_pagesize(vma) >> 10,
