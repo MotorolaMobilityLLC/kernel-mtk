@@ -548,6 +548,9 @@ extern void free_contig_range(unsigned long pfn, unsigned nr_pages);
 
 /* CMA stuff */
 extern void init_cma_reserved_pageblock(struct page *page);
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+extern void free_cma_reserved_pageblock(struct page *page);
+#endif
 
 #endif
 
