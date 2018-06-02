@@ -847,7 +847,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mt_irq_mask_all(&mask);
-	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 #if defined(CONFIG_ARCH_MT6797)
 	unmask_edge_trig_irqs_for_cirq();
 #endif

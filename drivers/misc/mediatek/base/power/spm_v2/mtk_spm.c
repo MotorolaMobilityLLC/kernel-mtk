@@ -434,7 +434,9 @@ static void spm_register_init(void)
 {
 	unsigned long flags;
 	struct device_node *node;
+#if !defined(CONFIG_MACH_MT6757)
 	int ret = -1;
+#endif
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
@@ -606,10 +608,61 @@ static void spm_register_init(void)
 		spm_err("mediatek,GPIO base addr can NOT found!\n");
 
 	/* edge trigger irqs that have to lateched by CIRQ */
+#if defined(CONFIG_MACH_MT6757)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-toprgu");
+	if (!node) {
+		spm_err("find toprgu node failed\n");
+	} else {
+		edge_trig_irqs[0] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[0])
+			spm_err("get wdt_irq failed\n");
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-keypad");
+	if (!node) {
+		spm_err("find keypad node failed\n");
+	} else {
+		edge_trig_irqs[1] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[1])
+			spm_err("get kp_irq failed\n");
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,ap2c2k_ccif");
+	if (!node) {
+		spm_err("find ap2c2k_ccif node failed\n");
+	} else {
+		edge_trig_irqs[2] = irq_of_parse_and_map(node, 1);
+		if (!edge_trig_irqs[2])
+			spm_err("get c2k_wdt_irq failed\n");
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldma");
+	if (!node) {
+		spm_err("find mdcldma node failed\n");
+	} else {
+		edge_trig_irqs[3] = irq_of_parse_and_map(node, 2);
+		if (!edge_trig_irqs[3])
+			spm_err("get md_wdt_irq failed\n");
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-consys");
+	if (!node) {
+		spm_err("find consys node failed\n");
+	} else {
+		edge_trig_irqs[4] = irq_of_parse_and_map(node, 1);
+		if (!edge_trig_irqs[4])
+			spm_err("get conn_wdt_irq failed\n");
+	}
+
+	spm_err("edge trigger irqs: %d, %d, %d, %d, %d\n",
+		 edge_trig_irqs[0],
+		 edge_trig_irqs[1],
+		 edge_trig_irqs[2],
+		 edge_trig_irqs[3],
+		 edge_trig_irqs[4]);
+#else /* Dilapidate, needs to remove */
 #if defined(CONFIG_ARCH_MT6755)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-sys_cirq");
-#elif defined(CONFIG_MACH_MT6757)
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-sys_cirq");
 #elif defined(CONFIG_ARCH_MT6797)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-sys_cirq");
 #endif
@@ -650,12 +703,6 @@ static void spm_register_init(void)
 		edge_trig_irqs[2] = 252;
 		edge_trig_irqs[3] = 255;
 		edge_trig_irqs[4] = 271;
-#elif defined(CONFIG_MACH_MT6757)
-		edge_trig_irqs[0] = 162;
-		edge_trig_irqs[1] = 196;
-		edge_trig_irqs[2] = 281;
-		edge_trig_irqs[3] = 284;
-		edge_trig_irqs[4] = 300;
 #elif defined(CONFIG_ARCH_MT6797)
 		edge_trig_irqs[0] = 169;
 		edge_trig_irqs[1] = 319;
@@ -664,6 +711,7 @@ static void spm_register_init(void)
 		edge_trig_irqs[4] = 317;
 #endif
 	}
+#endif
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -2305,6 +2353,19 @@ void *mt_spm_base_get(void)
 }
 EXPORT_SYMBOL(mt_spm_base_get);
 
+#if defined(CONFIG_MACH_MT6757)
+void unmask_edge_trig_irqs_for_cirq(void)
+{
+	int i;
+
+	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
+		if (edge_trig_irqs[i]) {
+			/* unmask edge trigger irqs */
+			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
+		}
+	}
+}
+#else /* Dilapidate, needs to remove */
 void unmask_edge_trig_irqs_for_cirq(void)
 {
 	int i;
@@ -2312,5 +2373,6 @@ void unmask_edge_trig_irqs_for_cirq(void)
 	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++)
 		mt_irq_unmask_for_sleep(edge_trig_irqs[i]);
 }
+#endif
 
 MODULE_DESCRIPTION("SPM Driver v0.1");
