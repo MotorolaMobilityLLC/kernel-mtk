@@ -586,8 +586,10 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
-	DBGLOG(SAA, INFO, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
-
+	if (IS_STA_IN_P2P(prStaRec))
+		DBGLOG(SAA, INFO, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
+	else
+		DBGLOG(SAA, TRACE, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
 	/* 4 <6> Enqueue the frame to send this (Re)Association request frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
@@ -849,8 +851,10 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 	}
 #endif
 	*pu2StatusCode = u2RxStatusCode;
-
-	DBGLOG(SAA, INFO, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
+	if (IS_STA_IN_P2P(prStaRec))
+		DBGLOG(SAA, INFO, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
+	else
+		DBGLOG(SAA, TRACE, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
 
 	return WLAN_STATUS_SUCCESS;
 
