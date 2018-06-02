@@ -329,7 +329,7 @@ el1_undef:
 	 */
 	enable_dbg
 	mov	x0, sp
-	b	do_undefinstr
+	bl	do_undefinstr
 el1_dbg:
 	/*
 	 * Debug exception handling
