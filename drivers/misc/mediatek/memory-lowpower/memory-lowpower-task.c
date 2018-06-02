@@ -80,9 +80,9 @@ static enum power_state memory_lowpower_action;
 static atomic_t action_changed;
 static unsigned long memory_lowpower_state;
 static int get_cma_aligned;			/* in PAGE_SIZE order */
-static int get_cma_num;				/* Number of allocation */
+static int get_cma_num;				/* number of allocations */
 static unsigned long get_cma_size;		/* in PAGES */
-static struct page **cma_aligned_pages;
+static struct page **cma_aligned_pages;		/* NULL means full allocation */
 static struct memory_lowpower_statistics memory_lowpower_statistics;
 
 /*
@@ -153,15 +153,25 @@ static void insert_buffer(struct page *page, int bound)
 			inser_buffer_cmp, NULL);
 }
 
-/* Wrapper for memory lowpower CMA allocation */
+/*
+ * Wrapper for memory lowpower CMA allocation -
+ * Return 0 if success, -ENOMEM if no memory, -EBUSY if being aborted
+ */
 static int acquire_memory(void)
 {
-	int i = 0, ret;
+	int i = 0, ret = 0;
 	struct page *page;
 
 	/* Full allocation */
-	if (cma_aligned_pages == NULL)
-		return get_memory_lowpower_cma();
+	if (cma_aligned_pages == NULL) {
+		if (get_cma_num == 0) {
+			i = 1;
+			ret = get_memory_lowpower_cma();
+			if (!ret)
+				get_cma_num = 1;
+		}
+		goto out;
+	}
 
 	/* Find the 1st null position */
 	while (i < get_cma_num && cma_aligned_pages[i] != NULL)
@@ -172,11 +182,20 @@ static int acquire_memory(void)
 		ret = get_memory_lowpower_cma_aligned(get_cma_size, get_cma_aligned, &page);
 		if (ret)
 			break;
+
 		MLPT_PRINT("%s: PFN[%lu] allocated for [%d]\n", __func__, page_to_pfn(page), i);
 		insert_buffer(page, i);
 		++i;
+
+		/* Early termination for "action is changed" */
+		if (!IS_ACTION_SCREENOFF(memory_lowpower_action)) {
+			pr_warn("%s: got a screen-on event\n", __func__);
+			ret = -EBUSY;
+			break;
+		}
 	}
 
+out:
 	memory_lowpower_statistics.nr_acquire_memory++;
 	if (i == (get_cma_num))
 		memory_lowpower_statistics.nr_full_acquire++;
@@ -185,18 +204,31 @@ static int acquire_memory(void)
 	else
 		memory_lowpower_statistics.nr_empty_acquire++;
 
-	return 0;
+	/* Translate to -ENOMEM */
+	if (ret == -1)
+		ret = -ENOMEM;
+
+	return ret;
 }
 
-/* Wrapper for memory lowpower CMA free */
+/*
+ * Wrapper for memory lowpower CMA free -
+ * It returns 0 in success, otherwise return -EINVAL.
+ */
 static int release_memory(void)
 {
-	int i = 0, ret;
+	int i = 0, ret = 0;
 	struct page **pages;
 
 	/* Full release */
-	if (cma_aligned_pages == NULL)
-		return put_memory_lowpower_cma();
+	if (cma_aligned_pages == NULL) {
+		if (get_cma_num == 1) {
+			ret = put_memory_lowpower_cma();
+			if (!ret)
+				get_cma_num = 0;
+		}
+		goto out;
+	}
 
 	/* Aligned release */
 	pages = cma_aligned_pages;
@@ -211,9 +243,14 @@ static int release_memory(void)
 			BUG();
 	} while (++i < get_cma_num);
 
+out:
 	memory_lowpower_statistics.nr_release_memory++;
 
-	return 0;
+	/* Translate to -EINVAL */
+	if (ret == -1)
+		ret = -EINVAL;
+
+	return ret;
 }
 
 /* Query CMA allocated buffer */
@@ -226,8 +263,10 @@ static void memory_range(int which, unsigned long *spfn, unsigned long *epfn)
 
 	/* Range of full allocation */
 	if (cma_aligned_pages == NULL) {
-		*spfn = __phys_to_pfn(memory_lowpower_cma_base());
-		*epfn = __phys_to_pfn(memory_lowpower_cma_base() + memory_lowpower_cma_size());
+		if (get_cma_num == 1) {
+			*spfn = __phys_to_pfn(memory_lowpower_cma_base());
+			*epfn = __phys_to_pfn(memory_lowpower_cma_base() + memory_lowpower_cma_size());
+		}
 		goto out;
 	}
 
@@ -406,17 +445,16 @@ static void go_to_screenoff(void)
 		goto acquired;
 	}
 
-	/* Collect free pages */
-	do {
-		/* Try to collect free pages. If done or can't proceed, then break. */
-		if (!acquire_memory())
-			break;
+	/*
+	 * Try to collect free pages.
+	 * If done or can't proceed, just go ahead.
+	 */
+	if (acquire_memory())
+		pr_warn("%s: some exception occurs!\n", __func__);
 
-		/* Action is changed, just leave here. */
-		if (!IS_ACTION_SCREENOFF(memory_lowpower_action))
-			goto out;
-
-	} while (1);
+	/* Action is changed, just leave here. */
+	if (!IS_ACTION_SCREENOFF(memory_lowpower_action))
+		goto out;
 
 	/* Clear SCREENON state */
 	ClearMlpsScreenOn(&memory_lowpower_state);
@@ -687,6 +725,10 @@ late_initcall(memory_lowpower_task_init);
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER_TASK_DEBUG
 static int memory_lowpower_task_show(struct seq_file *m, void *v)
 {
+	/*
+	 * At SCREEN-ON, nr_release_memory may be larger than nr_acquire_memory by 1
+	 * due to boot-up flow with FB operations.
+	 */
 	seq_printf(m, "memory lowpower statistics: %lld, %lld, %lld, %lld, %lld\n",
 			memory_lowpower_statistics.nr_acquire_memory,
 			memory_lowpower_statistics.nr_release_memory,
