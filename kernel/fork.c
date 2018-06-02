@@ -10,7 +10,7 @@
  * Fork is rather simple, once you get the hang of it, but the memory
  * management can be a bitch. See 'mm/memory.c': 'copy_page_range()'
  */
-
+#define DEBUG
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/unistd.h>
@@ -97,6 +97,8 @@
  * Maximum number of threads
  */
 #define MAX_THREADS FUTEX_TID_MASK
+
+#define WARN_FORK_DUR 1000000000
 
 /*
  * Protected counters by write_lock_irq(&tasklist_lock)
@@ -339,17 +341,23 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 	int err;
 
 	tsk = alloc_task_struct_node(node);
-	if (!tsk)
+	if (!tsk) {
+		pr_err("[%d:%s] fork fail at alloc_tsk_node, please check kmem_cache_alloc_node()\n",
+			current->pid, current->comm);
 		return NULL;
-
+	}
 	ti = alloc_thread_info_node(tsk, node);
-	if (!ti)
+	if (!ti) {
+		pr_err("[%d:%s] fork fail at alloc_t_info_node, please check alloc_pages_node()\n",
+			current->pid, current->comm);
 		goto free_tsk;
-
+	}
 	err = arch_dup_task_struct(tsk, orig);
-	if (err)
+	if (err) {
+		pr_err("[%d:%s] fork fail at arch_dup_task_struct, err:%d\n",
+			current->pid, current->comm, err);
 		goto free_ti;
-
+	}
 	tsk->stack = ti;
 #ifdef CONFIG_SECCOMP
 	/*
@@ -1253,9 +1261,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	struct task_struct *p;
 	void *cgrp_ss_priv[CGROUP_CANFORK_COUNT] = {};
 
-	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS)) {
+		pr_err("[%d:%s] fork fail at cpp 1, clone_flags:0x%x\n",
+			current->pid, current->comm, (unsigned int)clone_flags);
 		return ERR_PTR(-EINVAL);
-
+	}
 	if ((clone_flags & (CLONE_NEWUSER|CLONE_FS)) == (CLONE_NEWUSER|CLONE_FS))
 		return ERR_PTR(-EINVAL);
 
@@ -1263,17 +1273,21 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	 * Thread groups must share signals as well, and detached threads
 	 * can only be started up within the thread group.
 	 */
-	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
+	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND)) {
+		pr_err("[%d:%s] fork fail at cpp 2, clone_flags:0x%x\n",
+			current->pid, current->comm, (unsigned int)clone_flags);
 		return ERR_PTR(-EINVAL);
-
+	}
 	/*
 	 * Shared signal handlers imply shared VM. By way of the above,
 	 * thread groups also imply shared VM. Blocking this case allows
 	 * for various simplifications in other code.
 	 */
-	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
+	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM)) {
+		pr_err("[%d:%s] fork fail at cpp 3, clone_flags:0x%x\n",
+			current->pid, current->comm, (unsigned int)clone_flags);
 		return ERR_PTR(-EINVAL);
-
+	}
 	/*
 	 * Siblings of global init remain as zombies on exit since they are
 	 * not reaped by their parent (swapper). To solve this and to avoid
@@ -1281,9 +1295,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	 * from creating siblings.
 	 */
 	if ((clone_flags & CLONE_PARENT) &&
-				current->signal->flags & SIGNAL_UNKILLABLE)
+				current->signal->flags & SIGNAL_UNKILLABLE) {
+		pr_err("[%d:%s] fork fail at cpp 4, clone_flags:0x%x\n",
+			current->pid, current->comm, (unsigned int)clone_flags);
 		return ERR_PTR(-EINVAL);
-
+	}
 	/*
 	 * If the new process will be in a different pid or user namespace
 	 * do not allow it to share a thread group with the forking task.
@@ -1301,8 +1317,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	retval = -ENOMEM;
 	p = dup_task_struct(current);
-	if (!p)
+	if (!p) {
+		pr_err("[%d:%s] fork fail at dup_task_struct, p=%p\n",
+			current->pid, current->comm, p);
 		goto fork_out;
+	}
 
 	ftrace_graph_init_task(p);
 
@@ -1660,6 +1679,7 @@ bad_fork_cleanup_count:
 bad_fork_free:
 	free_task(p);
 fork_out:
+	pr_err("[%d:%s] fork fail retval:0x%x\n", current->pid, current->comm, retval);
 	return ERR_PTR(retval);
 }
 
@@ -1701,7 +1721,9 @@ long _do_fork(unsigned long clone_flags,
 	struct task_struct *p;
 	int trace = 0;
 	long nr;
+	unsigned long long start, end, dur;
 
+	start = sched_clock();
 	/*
 	 * Determine whether and which event to report to ptracer.  When
 	 * called from kernel_thread or CLONE_UNTRACED is explicitly
@@ -1744,6 +1766,14 @@ long _do_fork(unsigned long clone_flags,
 			get_task_struct(p);
 		}
 
+		end = sched_clock();
+		dur = end - start;
+		trace_sched_fork_time(current, p, dur);
+		if (dur > WARN_FORK_DUR) {
+			pr_err("[%d:%s] fork [%d:%s] total fork time[%llu us] > 1s\n",
+			current->pid, current->comm, p->pid, p->comm, dur);
+		}
+
 		wake_up_new_task(p);
 
 		/* forking complete and child started to run, tell ptracer */
@@ -1758,6 +1788,7 @@ long _do_fork(unsigned long clone_flags,
 		put_pid(pid);
 	} else {
 		nr = PTR_ERR(p);
+		pr_err("[%d:%s] fork fail:[%p, %d]\n", current->pid, current->comm, p, (int) nr);
 	}
 	return nr;
 }
