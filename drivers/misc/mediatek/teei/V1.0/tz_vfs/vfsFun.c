@@ -82,17 +82,17 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 	if (daulOS_VFS_share_mem == NULL)
 		return -EINVAL;
 
-	if ((0 > size )||(size > VFS_SIZE))
+	if ((0 > size) || (size > VFS_SIZE))
 		return -EINVAL;
 
-	/*printk("read begin cpu[%d]\n",cpu_id);*/
+	/*pr_debug("read begin cpu[%d]\n",cpu_id);*/
 #ifdef VFS_RDWR_SEM
 	down_interruptible(&VFS_rd_sem);
 #else
 	ret = wait_for_completion_interruptible(&VFS_rd_comp);
 
 	if (ret == -ERESTARTSYS) {
-		printk("[%s][%d] ----------------wait_for_completion_interruptible_timeout interrupt----------------------- \n", __func__, __LINE__);
+		pr_debug("[%s][%d] ----------------wait_for_completion_interruptible_timeout interrupt----------------------- \n", __func__, __LINE__);
 		complete(&global_down_lock);
 		return ret;
 	}
@@ -127,10 +127,10 @@ static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 	if (daulOS_VFS_share_mem == NULL)
 		return -EINVAL;
 
-	if ((0 > size)||(size > VFS_SIZE))
+	if ((0 > size) || (size > VFS_SIZE))
 		return -EINVAL;
 
-	/*printk("write begin cpu_id[%d]\n",cpu_id);*/
+	/*pr_debug("write begin cpu_id[%d]\n",cpu_id);*/
 	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))
 		return -EFAULT;
 
@@ -162,7 +162,7 @@ static void vfs_setup_cdev(struct vfs_dev *dev, int index)
 	err = cdev_add(&dev->cdev, devno, 1);
 
 	if (err)
-		printk("Error %d adding socket %d.\n", err, index);
+		pr_err("Error %d adding socket %d.\n", err, index);
 }
 
 
@@ -184,7 +184,7 @@ int vfs_init(void)
 
 	if (IS_ERR(driver_class)) {
 		result = -ENOMEM;
-		printk("class_create failed %d.\n", result);
+		pr_err("class_create failed %d.\n", result);
 		goto unregister_chrdev_region;
 	}
 
@@ -192,7 +192,7 @@ int vfs_init(void)
 
 	if (!class_dev) {
 		result = -ENOMEM;
-		printk("class_device_create failed %d.\n", result);
+		pr_err("class_device_create failed %d.\n", result);
 		goto class_destroy;
 	}
 

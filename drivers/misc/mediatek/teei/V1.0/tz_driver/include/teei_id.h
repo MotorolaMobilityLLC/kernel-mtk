@@ -118,7 +118,6 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 
 
 	uint64_t temp[2];
-
 	temp[0] = start;
 	temp[1] = end;
 	__asm__ volatile(
@@ -138,7 +137,7 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 		"dsb	sy\n\t"
 		: :
 		[temp] "r" (temp)
-		:"x0","x1","x2","x3","memory");
+		:"x0", "x1", "x2", "x3", "memory");
 
 
 

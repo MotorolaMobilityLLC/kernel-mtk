@@ -10,8 +10,6 @@
 
 #define SCHED_CALL      0x04
 
-#define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
-
 extern int add_work_entry(int work_type, unsigned long buff);
 
 static void secondary_nt_sched_t(void *info)
@@ -32,9 +30,8 @@ void nt_sched_t_call(void)
 	int retVal = 0;
 
 	retVal = add_work_entry(SCHED_CALL, NULL);
-        if (retVal != 0) {
-		printk("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
-        }
+	if (retVal != 0)
+		pr_err("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
 
 #endif
 
@@ -50,17 +47,17 @@ int global_fn(void)
 		set_freezable();
 		set_current_state(TASK_INTERRUPTIBLE);
 #if 1
-                if (teei_config_flag == 1) {
-                        retVal = wait_for_completion_interruptible(&global_down_lock);
-                        if (retVal == -ERESTARTSYS) {
-				printk("[%s][%d]*********down &global_down_lock failed *****************\n", __func__, __LINE__ );
-                                continue;
+		if (teei_config_flag == 1) {
+			retVal = wait_for_completion_interruptible(&global_down_lock);
+			if (retVal == -ERESTARTSYS) {
+				pr_err("[%s][%d]*********down &global_down_lock failed *****************\n", __func__, __LINE__);
+				continue;
 			}
-                }
+		}
 #endif
 		retVal = down_interruptible(&smc_lock);
 		if (retVal != 0) {
-			printk("[%s][%d]*********down &smc_lock failed *****************\n", __func__, __LINE__ );
+			pr_err("[%s][%d]*********down &smc_lock failed *****************\n", __func__, __LINE__);
 			complete(&global_down_lock);
 			continue;
 		}
@@ -70,12 +67,12 @@ int global_fn(void)
 			msleep(10);
 			nt_sched_t_call();
 		} else if (irq_call_flag == GLSCH_HIGH) {
-			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
+			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
 			irq_call_flag = GLSCH_NONE;
 			nt_sched_t_call();
 			/*msleep_interruptible(10);*/
 		} else if (fp_call_flag == GLSCH_HIGH) {
-			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
+			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
 			if (teei_vfs_flag == 0) {
 				nt_sched_t_call();
 			} else {
@@ -83,7 +80,7 @@ int global_fn(void)
 				msleep_interruptible(1);
 			}
 		} else if (forward_call_flag == GLSCH_LOW) {
-			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
+			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
 			if (teei_vfs_flag == 0)	{
 				nt_sched_t_call();
 			} else {
@@ -91,10 +88,9 @@ int global_fn(void)
 				msleep_interruptible(1);
 			}
 		} else {
-			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
+			/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
 			up(&smc_lock);
 			msleep_interruptible(1);
 		}
-
 	}
 }

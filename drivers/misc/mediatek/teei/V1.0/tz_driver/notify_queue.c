@@ -6,8 +6,6 @@
 #include "notify_queue.h"
 #include "teei_id.h"
 
-#define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
-
 /***********************************************************************
 
  create_notify_queue:
@@ -34,7 +32,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 
 	/* Check the argument */
 	if (size > MAX_BUFF_SIZE) {
-		printk("[%s][%d]: The NQ buffer size is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
+		pr_err("[%s][%d]: The NQ buffer size is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
 		retVal = -EINVAL;
 		goto return_fn;
 	}
@@ -46,7 +44,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	nt_t_buffer = (unsigned long) __get_free_pages(GFP_KERNEL , get_order(ROUND_UP(size, SZ_4K)));
 #endif
 	if (nt_t_buffer == NULL) {
-		printk("[%s][%d]: kmalloc nt_t_buffer failed.\n", __func__, __LINE__);
+		pr_err("[%s][%d]: kmalloc nt_t_buffer failed.\n", __func__, __LINE__);
 		retVal =  -ENOMEM;
 		goto return_fn;
 	}
@@ -58,7 +56,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 #endif
 
 	if (t_nt_buffer == NULL) {
-		printk("[%s][%d]: kmalloc t_nt_buffer failed.\n", __func__, __LINE__);
+		pr_err("[%s][%d]: kmalloc t_nt_buffer failed.\n", __func__, __LINE__);
 		retVal =  -ENOMEM;
 		goto Destroy_nt_t_buffer;
 	}
@@ -165,6 +163,7 @@ int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag
 	temp_head->end_index = (temp_head->end_index + 1) % temp_head->Max_count;
 
 	Flush_Dcache_By_Area((unsigned long)nt_t_buffer, (unsigned long)(nt_t_buffer + NQ_BUFF_SIZE));
+	return 0;
 }
 
 
@@ -177,7 +176,7 @@ unsigned char *get_nq_entry(unsigned char *buffer_addr)
 	temp_head = (struct NQ_head *)buffer_addr;
 
 	if (temp_head->start_index == temp_head->end_index) {
-		printk("[cache] temp_head->start_index = %d  temp_head->end_index = %d\n ", temp_head->start_index,  temp_head->end_index);
+		pr_err("[cache] temp_head->start_index = %d  temp_head->end_index = %d\n ", temp_head->start_index,  temp_head->end_index);
 		return NULL;
 	}
 
@@ -196,7 +195,7 @@ long create_nq_buffer(void)
 	retVal = create_notify_queue(message_buff, NQ_SIZE);
 
 	if (retVal < 0) {
-		printk("[%s][%d]:create_notify_queue failed with errno %d.\n", __func__, __LINE__, retVal);
+		pr_err("[%s][%d]:create_notify_queue failed with errno %ld.\n", __func__, __LINE__, retVal);
 		return -EINVAL;
 	}
 
