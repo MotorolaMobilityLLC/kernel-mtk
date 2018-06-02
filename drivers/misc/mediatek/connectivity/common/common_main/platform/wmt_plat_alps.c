@@ -1636,6 +1636,7 @@ UINT32 wmt_plat_read_cpupcr(VOID)
 {
 	return mtk_wcn_consys_read_cpupcr();
 }
+EXPORT_SYMBOL(wmt_plat_read_cpupcr);
 
 UINT32 wmt_plat_read_dmaregs(UINT32 type)
 {
