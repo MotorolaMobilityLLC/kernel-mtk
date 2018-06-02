@@ -226,11 +226,9 @@ static inline void ccci_channel_dump_packet_counter(struct ccci_modem *md)
 		     CCCI_CCMNI3_RX, md->logic_ch_pkt_cnt[CCCI_CCMNI3_RX]);
 }
 
-void ccci_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_queue_num, int rx_queue_num);
-void ccci_dump_log_add(struct ccci_modem *md, DIRECTION dir, int queue_index,
+void ccci_md_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_queue_num, int rx_queue_num);
+void ccci_md_add_log_history(struct ccci_modem *md, DIRECTION dir, int queue_index,
 				struct ccci_header *msg, int is_dropped);
-
-
 /****************************************************************************************************************/
 /* API Region called by port_proxy class */
 /****************************************************************************************************************/
