@@ -271,7 +271,7 @@ static int rt5509_set_bias_level(struct snd_soc_codec *codec,
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 	case SND_SOC_BIAS_PREPARE:
-		codec->component.dapm.bias_level = level;
+		codec->dapm.bias_level = level;
 		break;
 	case SND_SOC_BIAS_STANDBY:
 		ret = rt5509_power_on(chip, true);
@@ -288,7 +288,7 @@ static int rt5509_set_bias_level(struct snd_soc_codec *codec,
 					  0x20, 0x20);
 		if (ret < 0)
 			goto out_set_bias;
-		codec->component.dapm.bias_level = level;
+		codec->dapm.bias_level = level;
 		ret = 0;
 		break;
 	case SND_SOC_BIAS_OFF:
@@ -314,7 +314,7 @@ static int rt5509_set_bias_level(struct snd_soc_codec *codec,
 		ret = rt5509_power_on(chip, false);
 		if (ret < 0)
 			goto out_set_bias;
-		codec->component.dapm.bias_level = level;
+		codec->dapm.bias_level = level;
 		ret = 0;
 		break;
 	default:
@@ -589,7 +589,7 @@ static int rt5509_codec_probe(struct snd_soc_codec *codec)
 err_out_probe:
 	dev_err(codec->dev, "chip io error\n");
 	/* Chip Disable */
-	snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 		RT5509_CHIPPD_ENMASK, RT5509_CHIPPD_ENMASK);
 	return ret;
 }
@@ -622,26 +622,25 @@ static int rt5509_clk_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
 	int ret = 0;
-	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		ret = snd_soc_update_bits(codec, RT5509_REG_CLKEN1,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CLKEN1,
 			RT5509_CLKEN1_MASK, RT5509_CLKEN1_MASK);
 		if (ret < 0)
 			goto out_clk_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_CLKEN2,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CLKEN2,
 			RT5509_CLKEN2_MASK, RT5509_CLKEN2_MASK);
 		if (ret < 0)
 			goto out_clk_event;
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		msleep(20);
-		ret = snd_soc_update_bits(codec, RT5509_REG_CLKEN2,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CLKEN2,
 			RT5509_CLKEN2_MASK, ~RT5509_CLKEN2_MASK);
 		if (ret < 0)
 			goto out_clk_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_CLKEN1,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CLKEN1,
 			RT5509_CLKEN1_MASK, ~RT5509_CLKEN1_MASK);
 		if (ret < 0)
 			goto out_clk_event;
@@ -656,65 +655,79 @@ out_clk_event:
 static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
-	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
-	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
-
+	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(w->codec);
 	int ret = 0;
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CHIPEN,
 			RT5509_TRIWAVE_ENMASK, RT5509_TRIWAVE_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_OCPOTPEN,
-			0x03, 0x03);
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_MSKFLAG,
+			0x3F, 0x00);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKCONF5,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKCONF5,
 			RT5509_VBG_ENMASK, RT5509_VBG_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKVMID,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKVMID,
 			RT5509_VMID_ENMASK, RT5509_VMID_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKEN1,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKEN1,
 					  RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK,
 					  RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec,
+		ret = snd_soc_update_bits(w->codec,
 			RT5509_REG_AMPCONF, 0xF8, 0xB8);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_BSTTM,
+			0x40, 0x40);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_OCPOTPEN,
+			0x03, 0x03);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_MSKFLAG,
+			0x3F, 0x3F);
 		dev_info(chip->dev, "amp turn on\n");
 		break;
 	case SND_SOC_DAPM_POST_PMU:
-		msleep(200);
+		msleep(10);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_info(chip->dev, "amp turn off\n");
-		ret = snd_soc_update_bits(codec,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_OCPOTPEN,
+			0x03, 0x00);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_BSTTM,
+			0x40, 0x00);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_update_bits(w->codec,
 			RT5509_REG_AMPCONF, 0xF8, 0x00);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKEN1,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKEN1,
 			RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK,
 			~(RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK));
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKVMID,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKVMID,
 			RT5509_VMID_ENMASK, ~RT5509_VMID_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKCONF5,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_DSPKCONF5,
 			RT5509_VBG_ENMASK, ~RT5509_VBG_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_OCPOTPEN,
-			0x03, 0x00);
-		if (ret < 0)
-			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+		ret = snd_soc_update_bits(w->codec, RT5509_REG_CHIPEN,
 			RT5509_TRIWAVE_ENMASK, ~RT5509_TRIWAVE_ENMASK);
 		break;
 	default:
@@ -872,6 +885,7 @@ static int rt5509_aif_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
 		regval |= (RT5509_DSP_MODEA << RT5509_DSPMODE_SHFT);
+		break;
 	case SND_SOC_DAIFMT_DSP_B:
 		regval |= (RT5509_DSP_MODEB << RT5509_DSPMODE_SHFT);
 		break;
