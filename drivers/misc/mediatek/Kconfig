@@ -52,6 +52,7 @@ endmenu  # Power
 
 menu "MultiMedia, Display, Camera related configs"
 
+source "drivers/misc/mediatek/m4u/Kconfig"
 source "drivers/misc/mediatek/smi/Kconfig"
 
 endmenu  # MM
