@@ -164,7 +164,7 @@ struct VAL_MUTEX_T {
 struct VAL_POWER_T {
 	void		*pvHandle;
 	unsigned int	u4HandleSize;
-	VAL_DRIVER_TYPE_T	eDriverType;
+	enum VAL_DRIVER_TYPE_T	eDriverType;
 	char		fgEnable;
 	void		*pvReserved;
 	unsigned int	u4ReservedSize;
@@ -219,17 +219,17 @@ struct VAL_VCODEC_OAL_HW_REGISTER_T {
 	unsigned int	u4HWIsTimeout;
 	/* /< [IN]     Number of HW register need to store; */
 	unsigned int	u4NumOfRegister;
-	VAL_VCODEC_OAL_MEM_STAUTS_T *pHWStatus;
+	struct VAL_VCODEC_OAL_MEM_STAUTS_T *pHWStatus;
 };
 
 
 struct VAL_VCODEC_OAL_HW_CONTEXT_T {
-	VAL_VCODEC_OAL_HW_REGISTER_T	*Oal_HW_reg;
+	struct VAL_VCODEC_OAL_HW_REGISTER_T	*Oal_HW_reg;
 	unsigned int			*Oal_HW_mem_reg;
 	unsigned int			*kva_Oal_HW_mem_reg;
 	unsigned long			pa_Oal_HW_mem_reg;
 	unsigned long			ObjId;
-	VAL_EVENT_T			IsrEvent;
+	struct VAL_EVENT_T			IsrEvent;
 	unsigned int			slotindex;
 	unsigned int			u4VCodecThreadNum;
 	unsigned int			u4VCodecThreadID[VCODEC_THREAD_MAX_NUM];
@@ -237,7 +237,7 @@ struct VAL_VCODEC_OAL_HW_CONTEXT_T {
 	unsigned long			pvHandle;
 	unsigned int			u4NumOfRegister;
 	/* MAX 16 items could be read; //kernel space access register */
-	VAL_VCODEC_OAL_MEM_STAUTS_T	oalmem_status[OALMEM_STATUS_NUM];
+	struct VAL_VCODEC_OAL_MEM_STAUTS_T oalmem_status[OALMEM_STATUS_NUM];
 	unsigned long			kva_u4HWIsCompleted;
 	unsigned long			kva_u4HWIsTimeout;
 	unsigned int			tid1;
@@ -257,19 +257,6 @@ struct VAL_VCODEC_CORE_LOADING_T {
 	int CPUid;                              /* [in] */
 	int Loading;                            /* [out] */
 };
-
-void (*ena)(int);
-void (*disa)(int);
-void (*ena_timeout)(int, int);
-int (*user_reg)(int, int);
-void (*user_unreg)(int);
-void (*user_enable)(int);
-void (*user_disable)(int);
-void (*user_enable_timeout)(int, int);
-int (*user_reg_scn)(void);
-void (*user_reg_scn_config)(int, int, int, int, int, int);
-void (*user_unreg_scn)(int);
-
 
 
 struct VAL_INIT_HANDLE {

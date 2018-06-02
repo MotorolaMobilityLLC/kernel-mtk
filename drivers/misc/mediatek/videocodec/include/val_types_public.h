@@ -254,7 +254,7 @@ struct VAL_MEM_ADDR_T {    /* union extend 64bits for TEE*/
 		unsigned long long u4PA_ext64;
 	};
 	union {
-		unsigned long u4Size      /* /< [IN/OUT] size */
+		unsigned long u4Size;     /* /< [IN/OUT] size */
 		unsigned long long u4Size_ext64;
 	};
 };
@@ -315,7 +315,7 @@ struct VAL_VCODEC_CPU_OPP_LIMIT_T {
  *  security		[IN] security or not
  */
 struct VAL_VCODEC_M4U_BUFFER_CONFIG_T {
-	VAL_MEM_CODEC_T eMemCodec;
+	enum VAL_MEM_CODEC_T eMemCodec;
 	unsigned int    cache_coherent;
 	unsigned int    security;
 };
@@ -337,7 +337,7 @@ struct VAL_VCODEC_M4U_BUFFER_CONFIG_T {
  */
 struct VAL_MEMORY_T {   /* union extend 64bits for TEE*/
 	unsigned int    u4MemSign;
-	VAL_MEM_TYPE_T  eMemType;
+	enum VAL_MEM_TYPE_T  eMemType;
 	union {
 		unsigned long u4MemSize;
 		unsigned long long u4MemSize_ext64;
@@ -350,7 +350,7 @@ struct VAL_MEMORY_T {   /* union extend 64bits for TEE*/
 		void *pvMemPa;
 		unsigned long long pvMemPa_ext64;
 	};
-	VAL_MEM_ALIGN_T eAlignment;
+	enum VAL_MEM_ALIGN_T eAlignment;
 	union {
 		void *pvAlignMemVa;
 		unsigned long long pvAlignMemVa_ext64;
@@ -359,7 +359,7 @@ struct VAL_MEMORY_T {   /* union extend 64bits for TEE*/
 		void *pvAlignMemPa;
 		unsigned long long pvAlignMemPa_ext64;
 	};
-	VAL_MEM_CODEC_T eMemCodec;
+	enum VAL_MEM_CODEC_T eMemCodec;
 	unsigned int    i4IonShareFd;
 
 	union {
@@ -460,7 +460,7 @@ struct VAL_STRSTR_T {
 struct VAL_ISR_T {
 	void			*pvHandle;
 	unsigned int		u4HandleSize;
-	VAL_DRIVER_TYPE_T	eDriverType;
+	enum VAL_DRIVER_TYPE_T	eDriverType;
 	void			*pvIsrFunction;
 	void			*pvReserved;
 	unsigned int		u4ReservedSize;
@@ -492,7 +492,7 @@ struct VAL_HW_LOCK_T {
 	unsigned int	u4TimeoutMs;
 	void		*pvReserved;
 	unsigned int	u4ReservedSize;
-	VAL_DRIVER_TYPE_T	eDriverType;
+	enum VAL_DRIVER_TYPE_T	eDriverType;
 	char		bSecureInst;
 };
 
@@ -589,7 +589,7 @@ struct VAL_CURRENT_SCENARIO_CNT_T {
  *  u4Config		[IN] set port config
  */
 struct _VAL_MCI_PORT_CONFIG_T {
-	VAL_MEM_CODEC_T    eMemCodecType;
+	enum VAL_MEM_CODEC_T    eMemCodecType;
 	unsigned int       u4Config;
 };
 
@@ -619,7 +619,7 @@ struct VAL_LCM_INFO_T {
  *  bVirtuality	[IN]  config port virtuality
  */
 struct VAL_M4U_MPORT_CONFIG_T {
-	VAL_MEM_CODEC_T	eMemCodec;
+	enum VAL_MEM_CODEC_T	eMemCodec;
 	unsigned int	i4M4UPortID;
 	char		bSecurity;
 	char		bVirtuality;
@@ -641,7 +641,7 @@ struct VAL_MetaBufInfo {
 
 struct VAL_MetaHandleList {
 	int             mIonDevFd;
-	VAL_MetaBufInfo rMetaBufInfo[META_HANDLE_LIST_MAX];
+	struct VAL_MetaBufInfo rMetaBufInfo[META_HANDLE_LIST_MAX];
 	char            fgSeqHdrEncoded;
 };
 

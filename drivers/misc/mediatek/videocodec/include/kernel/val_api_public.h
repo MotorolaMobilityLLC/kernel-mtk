@@ -57,7 +57,7 @@ unsigned int eVideoAllocMVA(
 	unsigned int a_u4Va,
 	unsigned int *ap_u4Pa,
 	unsigned int a_u4Size,
-	VAL_VCODEC_M4U_BUFFER_CONFIG_T *a_pvM4uConfig
+	struct VAL_VCODEC_M4U_BUFFER_CONFIG_T *a_pvM4uConfig
 );
 
 /**
@@ -83,7 +83,7 @@ unsigned int eVideoFreeMVA(
 	unsigned int a_u4Va,
 	unsigned int a_u4Pa,
 	unsigned int a_u4Size,
-	VAL_VCODEC_M4U_BUFFER_CONFIG_T *a_pvM4uConfig
+	struct VAL_VCODEC_M4U_BUFFER_CONFIG_T *a_pvM4uConfig
 );
 
 
@@ -126,7 +126,8 @@ int eVideoGetM4UModuleID(unsigned int u4MemType);
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoAtoi(VAL_ATOI_T *a_prParam, unsigned int a_u4ParamSize);
+enum VAL_RESULT_T eVideoAtoi(struct VAL_ATOI_T *a_prParam,
+		unsigned int a_u4ParamSize);
 
 
 /**
@@ -142,8 +143,8 @@ VAL_RESULT_T eVideoAtoi(VAL_ATOI_T *a_prParam, unsigned int a_u4ParamSize);
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoStrStr(VAL_STRSTR_T *a_prParam,
-			unsigned int a_u4ParamSize);
+enum VAL_RESULT_T eVideoStrStr(struct VAL_STRSTR_T *a_prParam,
+				unsigned int a_u4ParamSize);
 
 
 /**
@@ -161,7 +162,7 @@ VAL_RESULT_T eVideoStrStr(VAL_STRSTR_T *a_prParam,
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_MEMORY for fail
  */
-VAL_RESULT_T eVideoFlushCache(VAL_MEMORY_T *a_prParam,
+enum VAL_RESULT_T eVideoFlushCache(struct VAL_MEMORY_T *a_prParam,
 			unsigned int a_u4ParamSize, unsigned int optype);
 
 
@@ -171,8 +172,8 @@ VAL_RESULT_T eVideoFlushCache(VAL_MEMORY_T *a_prParam,
  * @par Description
  *   The invalidate cache usage function
  * @param
- *   a_prParam          [IN] The structure contains used info for invalidate
- *				cache
+ *   a_prParam          [IN] The structure contains used info for
+ *				invalidate cache
  * @param
  *   a_u4ParamSize      [IN] The size of a_prParam structure
  * @param
@@ -181,7 +182,8 @@ VAL_RESULT_T eVideoFlushCache(VAL_MEMORY_T *a_prParam,
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_MEMORY for fail
  */
-VAL_RESULT_T eVideoInvalidateCache(VAL_MEMORY_T *a_prParam,
+enum VAL_RESULT_T eVideoInvalidateCache
+			(struct VAL_MEMORY_T *a_prParam,
 			unsigned int a_u4ParamSize, unsigned int optype);
 
 
@@ -191,16 +193,17 @@ VAL_RESULT_T eVideoInvalidateCache(VAL_MEMORY_T *a_prParam,
  * @par Description
  *   The memory allocate usage function
  * @param
- *   a_prParam          [IN] The structure contains used info for allocate
- *				memory
+ *   a_prParam          [IN] The structure contains used info for
+ *				allocate memory
  * @param
  *   a_u4ParamSize      [IN] The size of a_prParam structure
  * @par Returns
  *   VAL_RESULT_T       [OUT]
  *   VAL_RESULT_NO_ERROR for success,
- *   VAL_RESULT_INVALID_MEMORY or VAL_RESULT_INVALID_PARAMETER for fail
+ *   VAL_RESULT_INVALID_MEMORY or
+ *   VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoMemAlloc(VAL_MEMORY_T *a_prParam,
+enum VAL_RESULT_T eVideoMemAlloc(struct VAL_MEMORY_T *a_prParam,
 			unsigned int a_u4ParamSize);
 
 
@@ -217,7 +220,8 @@ VAL_RESULT_T eVideoMemAlloc(VAL_MEMORY_T *a_prParam,
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoMemFree(VAL_MEMORY_T *a_prParam, unsigned int a_u4ParamSize);
+enum VAL_RESULT_T eVideoMemFree(struct VAL_MEMORY_T *a_prParam,
+				unsigned int a_u4ParamSize);
 
 
 /**
@@ -237,8 +241,8 @@ VAL_RESULT_T eVideoMemFree(VAL_MEMORY_T *a_prParam, unsigned int a_u4ParamSize);
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoMemSet(
-	VAL_MEMORY_T *a_prParam,
+enum VAL_RESULT_T eVideoMemSet(
+	struct VAL_MEMORY_T *a_prParam,
 	unsigned int a_u4ParamSize,
 	int a_u4Value,
 	unsigned int a_u4Size
@@ -267,10 +271,10 @@ VAL_RESULT_T eVideoMemSet(
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoMemCpy(
-	VAL_MEMORY_T *a_prParamDst,
+enum VAL_RESULT_T eVideoMemCpy(
+	struct VAL_MEMORY_T *a_prParamDst,
 	unsigned int a_u4ParamDstSize,
-	VAL_MEMORY_T *a_prParamSrc,
+	struct VAL_MEMORY_T *a_prParamSrc,
 	unsigned int a_u4ParamSrcSize,
 	unsigned int a_u4Size
 );
@@ -298,10 +302,10 @@ VAL_RESULT_T eVideoMemCpy(
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_INVALID_PARAMETER for fail
  */
-VAL_RESULT_T eVideoMemCmp(
-	VAL_MEMORY_T *a_prParamSrc1,
+enum VAL_RESULT_T eVideoMemCmp(
+	struct VAL_MEMORY_T *a_prParamSrc1,
 	unsigned int a_u4ParamSrc1Size,
-	VAL_MEMORY_T *a_prParamSrc2,
+	struct VAL_MEMORY_T *a_prParamSrc2,
 	unsigned int a_u4ParamSrc2Size,
 	unsigned int a_u4Size
 );
@@ -311,8 +315,8 @@ VAL_RESULT_T eVideoMemCmp(
  * @par Function
  *   WaitISR
  * @par Description
- *   The ISR usage related function, whene trigger HW, we will use to wait HW
- *	complete
+ *   The ISR usage related function, whene trigger HW,
+ *   we will use to wait HW complete
  * @param
  *   a_prParam          [IN] The structure contains used info for ISR usage
  * @param
@@ -321,7 +325,8 @@ VAL_RESULT_T eVideoMemCmp(
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_ISR_TIMEOUT for fail
  */
-VAL_RESULT_T WaitISR(VAL_ISR_T *a_prParam, unsigned int a_u4ParamSize);
+enum VAL_RESULT_T WaitISR(struct VAL_ISR_T *a_prParam,
+				unsigned int a_u4ParamSize);
 
 
 /**
@@ -337,7 +342,7 @@ VAL_RESULT_T WaitISR(VAL_ISR_T *a_prParam, unsigned int a_u4ParamSize);
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_UNKNOWN_ERROR for fail
  */
-VAL_RESULT_T eVideoLockHW(VAL_HW_LOCK_T *a_prParam,
+enum VAL_RESULT_T eVideoLockHW(struct VAL_HW_LOCK_T *a_prParam,
 			unsigned int  a_u4ParamSize);
 
 
@@ -355,7 +360,7 @@ VAL_RESULT_T eVideoLockHW(VAL_HW_LOCK_T *a_prParam,
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success,
  *				VAL_RESULT_UNKNOWN_ERROR for fail
  */
-VAL_RESULT_T eVideoUnLockHW(VAL_HW_LOCK_T *a_prParam,
+enum VAL_RESULT_T eVideoUnLockHW(struct VAL_HW_LOCK_T *a_prParam,
 			unsigned int  a_u4ParamSize);
 
 
@@ -371,7 +376,7 @@ VAL_RESULT_T eVideoUnLockHW(VAL_HW_LOCK_T *a_prParam,
  * @par Returns
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success
  */
-VAL_RESULT_T eVideoGetTimeOfDay(VAL_TIME_T *a_prParam,
+enum VAL_RESULT_T eVideoGetTimeOfDay(struct VAL_TIME_T *a_prParam,
 				unsigned int a_u4ParamSize);
 
 
@@ -386,7 +391,8 @@ VAL_RESULT_T eVideoGetTimeOfDay(VAL_TIME_T *a_prParam,
  * @par Returns
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success
  */
-VAL_RESULT_T eHalEMICtrlForRecordSize(VAL_RECORD_SIZE_T *a_prDrvRecordSize);
+enum VAL_RESULT_T eHalEMICtrlForRecordSize
+			(struct VAL_RECORD_SIZE_T *a_prDrvRecordSize);
 
 
 /**
@@ -400,7 +406,8 @@ VAL_RESULT_T eHalEMICtrlForRecordSize(VAL_RECORD_SIZE_T *a_prDrvRecordSize);
  * @par Returns
  *   VAL_RESULT_T       [OUT] VAL_RESULT_NO_ERROR for success
  */
-VAL_RESULT_T eVideoVcodecSetThreadID(VAL_VCODEC_THREAD_ID_T *a_prThreadID);
+enum VAL_RESULT_T eVideoVcodecSetThreadID
+			(struct VAL_VCODEC_THREAD_ID_T *a_prThreadID);
 
 
 /**
@@ -417,8 +424,8 @@ VAL_RESULT_T eVideoVcodecSetThreadID(VAL_VCODEC_THREAD_ID_T *a_prThreadID);
  * @par Returns
  *   VAL_RESULT_T   [OUT]   VAL_RESULT_NO_ERROR for success
  */
-VAL_RESULT_T eVideoGetParam(VAL_GET_TYPE_T a_eType, void *a_pvInParam,
-			void *a_pvOutParam);
+enum VAL_RESULT_T eVideoGetParam(enum VAL_GET_TYPE_T a_eType,
+			void *a_pvInParam, void *a_pvOutParam);
 
 /**
  * @par Function
@@ -434,11 +441,11 @@ VAL_RESULT_T eVideoGetParam(VAL_GET_TYPE_T a_eType, void *a_pvInParam,
  * @par Returns
  *   VAL_RESULT_T   [OUT]   VAL_RESULT_NO_ERROR for success
  */
-VAL_RESULT_T eVideoSetParam(VAL_SET_TYPE_T a_eType, void *a_pvInParam,
-			void *a_pvOutParam);
+enum VAL_RESULT_T eVideoSetParam(enum VAL_SET_TYPE_T a_eType,
+			void *a_pvInParam, void *a_pvOutParam);
 
-VAL_RESULT_T eVideoE3TCMPowerON(unsigned int a_u4E3TCMClk);
-VAL_RESULT_T eVideoE3TCMPowerOFF(unsigned int a_u4E3TCMClk);
+enum VAL_RESULT_T eVideoE3TCMPowerON(unsigned int a_u4E3TCMClk);
+enum VAL_RESULT_T eVideoE3TCMPowerOFF(unsigned int a_u4E3TCMClk);
 
 #ifdef __cplusplus
 }
