@@ -63,6 +63,7 @@ menu "MultiMedia, Display, Camera related configs"
 
 source "drivers/misc/mediatek/m4u/Kconfig"
 source "drivers/misc/mediatek/smi/Kconfig"
+source "drivers/misc/mediatek/mmp/Kconfig"
 
 endmenu  # MM
 
