@@ -83,7 +83,8 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 			spin_lock_irqsave(&mdee->ctrl_lock, flags);
 			mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_MSG_GET | MD_STATE_UPDATE | MD_EE_TIME_OUT_SET);
 			spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
-			ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
+			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET))
+				ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
 			port_proxy_send_msg_to_md(port->port_proxy, CCCI_CONTROL_TX, MD_EX, MD_EX_CHK_ID, 1);
 			port_proxy_append_fsm_event(port->port_proxy, CCCI_EVENT_MD_EX, NULL, 0);
 		}
@@ -102,10 +103,8 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 				need_update_state = 1;
 			}
 			spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
-			if (need_update_state) {
-				CCCI_ERROR_LOG(md_id, KERN, "get MD_EX_REC_OK without exception MD_EX\n");
+			if (!(mdee->ee_info_flag & MD_EE_SWINT_GET))
 				ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
-			}
 			/* Keep exception info package from MD*/
 			mdee_set_ee_pkg(mdee, skb_pull(skb, sizeof(struct ccci_header)),
 				skb->len - sizeof(struct ccci_header));
@@ -183,7 +182,7 @@ void mdee_monitor_func(struct md_ee *mdee)
 	}
 
 	mdee->ee_case = ee_case;
-	if (ee_info_flag & MD_STATE_UPDATE)
+	if (!(ee_info_flag & MD_EE_SWINT_GET))
 		ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
 
 	/* Dump MD EE info */
