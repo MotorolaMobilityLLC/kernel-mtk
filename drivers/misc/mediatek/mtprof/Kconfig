@@ -92,4 +92,13 @@ config LOG_TOO_MUCH_DETECT_GAP
 	default 10
 	depends on LOG_TOO_MUCH_WARNING
 
+config MT_RCU_MONITOR
+	bool "mt rcu callback list monitor"
+	depends on TREE_RCU_TRACE
+	default n
+	help
+	  MT_RCU_MONITOR is used to monitor rcu callback list.
+	  Record all call_rcu callback information and invoke rcu callback information.
+	  Say Y here to enable rt throttle
+	  monitor. If you are not sure about whether to enable it or not, please set n.
 endif # MTPROF
