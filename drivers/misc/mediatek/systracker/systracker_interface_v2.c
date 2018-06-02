@@ -396,7 +396,7 @@ void systracker_enable_default(void)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	writel(timer_control_value, IOMEM(BUS_DBG_TIMER_CON1));
 #else
-	writel(BUS_DBG_MAX_TIMEOUT_VAL, IOMEM(BUS_DBG_TIMER_CON0));
+	writel(BUS_DBG_MAX_TIMEOUT_VAL, IOMEM(BUS_DBG_TIMER_CON1));
 #endif
 
 	track_config.state = 1;
