@@ -22,6 +22,9 @@
 #else
 #define BAT_Get_Battery_Voltage(polling_mode)    ({ 0; })
 #endif
+#ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
+#include <mt-plat/env.h>
+#endif
 #include <mt-plat/mtk_boot_common.h>
 
 #define TAG     "port"
