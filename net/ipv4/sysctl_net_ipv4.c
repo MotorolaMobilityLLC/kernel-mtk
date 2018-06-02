@@ -271,6 +271,20 @@ bad_key:
 
 static struct ctl_table ipv4_table[] = {
 	{
+		.procname = "tcp_rto_min",
+		.data = &sysctl_tcp_rto_min,
+		.maxlen = sizeof(int),
+		.mode = 0644,
+		.proc_handler = proc_dointvec_ms_jiffies,
+	},
+	{
+		.procname = "tcp_rto_max",
+		.data = &sysctl_tcp_rto_max,
+		.maxlen = sizeof(int),
+		.mode = 0644,
+		.proc_handler = proc_dointvec_ms_jiffies,
+	},
+	{
 		.procname	= "tcp_timestamps",
 		.data		= &sysctl_tcp_timestamps,
 		.maxlen		= sizeof(int),

@@ -610,7 +610,7 @@ static void reqsk_timer_handler(unsigned long data)
 
 		if (req->num_timeout++ == 0)
 			atomic_dec(&queue->young);
-		timeo = min(TCP_TIMEOUT_INIT << req->num_timeout, TCP_RTO_MAX);
+		timeo = min(TCP_TIMEOUT_INIT << req->num_timeout, sysctl_tcp_rto_max);
 		mod_timer_pinned(&req->rsk_timer, jiffies + timeo);
 		return;
 	}

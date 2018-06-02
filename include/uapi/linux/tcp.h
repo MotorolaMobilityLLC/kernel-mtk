@@ -84,7 +84,7 @@ enum {
 /*
  * TCP general constants
  */
-#define TCP_MSS_DEFAULT		 536U	/* IPv4 (RFC1122, RFC2581) */
+#define TCP_MSS_DEFAULT		 1220U	/* IPv4 (RFC1122, RFC2581) */
 #define TCP_MSS_DESIRED		1220U	/* IPv6 (tunneled), EDNS0 (RFC3226) */
 
 /* TCP socket options */
