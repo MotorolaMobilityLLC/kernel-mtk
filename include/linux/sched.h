@@ -1273,6 +1273,10 @@ struct sched_entity {
 	/* Per entity load average tracking */
 	struct sched_avg	avg;
 #endif
+
+#ifdef CONFIG_MT_RT_THROTTLE_MON
+	u64			mtk_isr_time;
+#endif
 };
 
 struct sched_rt_entity {
