@@ -30,7 +30,7 @@ obj-$(CONFIG_MTK_SERIAL)	+= uart/
 #obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 #obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
-#obj-$(CONFIG_MTK_NFC) += nfc/
+obj-$(CONFIG_MTK_NFC_SUPPORT) += nfc/
 
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
