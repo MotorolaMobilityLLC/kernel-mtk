@@ -12,9 +12,12 @@
 #
 
 #$(call all-subdir-src-or-makefile)
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 obj-y	+= hwmon/
@@ -35,6 +38,7 @@ obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
 obj-$(CONFIG_MTK_PMIC)	+= power/
+obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
