@@ -39,10 +39,6 @@
 #include <linux/compat.h>
 #endif
 
-#ifdef CONFIG_ARCH_MT8173
-/*#define MMDVFS_ENABLE*/
-#endif
-
 #ifdef MMDVFS_ENABLE
 #include "mmdvfs_mgr_8173.h"
 #endif
