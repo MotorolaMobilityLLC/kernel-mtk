@@ -63,6 +63,12 @@
 #if 1
 #define SCN_BSS_DESC_REMOVE_TIMEOUT_SEC     30
 #define SCN_BSS_DESC_STALE_SEC				10	/* 2.4G + 5G need 8.1s */
+#if CFG_ENABLE_WIFI_DIRECT
+#if CFG_SUPPORT_WFD
+#define SCN_BSS_DESC_STALE_SEC_WFD			20	/* For WFD scan need about 15s. */
+#endif
+#endif
+
 #else
 #define SCN_BSS_DESC_REMOVE_TIMEOUT_SEC     5	/* Second. */
 					      /* This is used by POLICY TIMEOUT,
@@ -74,6 +80,11 @@
 #define SCN_PROBE_DELAY_MSEC                0
 
 #define SCN_ADHOC_BSS_DESC_TIMEOUT_SEC      5	/* Second. */
+#if CFG_ENABLE_WIFI_DIRECT
+#if CFG_SUPPORT_WFD
+#define SCN_ADHOC_BSS_DESC_TIMEOUT_SEC_WFD	20	/* Second. For WFD scan timeout. */
+#endif
+#endif
 
 #define SCN_NLO_NETWORK_CHANNEL_NUM         (4)
 
