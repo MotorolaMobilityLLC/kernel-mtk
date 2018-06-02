@@ -1480,13 +1480,6 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .rates = SNDRV_PCM_RATE_8000_192000,
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
-	 .capture = {
-		     .stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
-		     .channels_min = 1,
-		     .channels_max = 8,
-		     .rates = SNDRV_PCM_RATE_8000_192000,
-		     .formats = SND_SOC_ADV_MT_FMTS,
-		     },
 	 },
 	{
 	 .name = MT_SOC_CODEC_TXDAI2_NAME,

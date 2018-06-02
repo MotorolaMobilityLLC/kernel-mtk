@@ -445,13 +445,6 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_FM_I2S_DUMMY_DAI_NAME,
-	 .playback = {
-		      .stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
-		      .channels_min = 1,
-		      .channels_max = 8,
-		      .rates = SOC_HIGH_USE_RATE,
-		      .formats = SND_SOC_ADV_MT_FMTS,
-		      },
 	 .capture = {
 		     .stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
 		     .channels_min = 1,
