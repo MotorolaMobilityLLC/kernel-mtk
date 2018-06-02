@@ -1,0 +1,50 @@
+config MTK_CHARGER
+	bool "MediaTek Charging Driver"
+	depends on MEDIATEK_SOLUTION
+	default n
+	help
+	  Say yes here to enable MediaTek charging driver.
+	  This driver contains charging control flow and
+	  maintains charging status.
+	  Say no if not using MediaTek charging driver.
+
+config POWER_EXT
+	bool "MediaTek Power Ext"
+	default n
+	help
+	  Check this if the device is not powered by battery.
+	  For example, if the device is powered by AC adapter.
+	  Select No if the device needs info about
+	  battery voltage, temperature, etc.
+
+config MTK_SWCHR_SUPPORT
+	bool "MediaTek switch charger"
+	default n
+	depends on MTK_CHARGER
+	help
+	  This is to enable switching charger control flow.
+	  switching charger has better performance than pulse charger
+	  Set to yes if switching charger is used.
+	  Set to no if pmic pulse charger is used.
+
+config MTK_KERNEL_POWER_OFF_CHARGING
+	bool "MTK kernel power off charging"
+	default n
+	depends on MTK_CHARGER
+	help
+	  yes : support KPOC feature, power off charging would running by
+	  kernel and charging animation by kpoc service. no: not support KPOC
+	  feature.
+	  device won't enter charging mode if config is no.
+
+config SWCHR_POWER_PATH
+	bool "External charger IC supports powerpath"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Set Yes if the external charger IC
+	  supports power path function.
+	  This affects setting of auxadc channels
+	  used to representing voltage of system
+	  or battery.
+
