@@ -388,10 +388,12 @@
 			compatible = "mediatek,mt8173-m4u";
 			reg = <0 0x10205000 0 0x1000>;
 			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&infracfg CLK_INFRA_M4U>;
-			clock-names = "bclk";
+			clocks = <&infracfg CLK_INFRA_M4U>,
+				 <&infracfg CLK_INFRA_SMI>;
+			clock-names = "bclk", "infra_smi";
 			mediatek,larbs = <&larb0 &larb1 &larb2
 					  &larb3 &larb4 &larb5>;
+			cell-index = <0>;
 			#iommu-cells = <1>;
 		};
 
@@ -422,6 +424,13 @@
 		fhctl: fhctl@10209e00 {
 			compatible = "mediatek,mt8173-fhctl";
 			reg = <0 0x10209e00 0 0x100>;
+		};
+
+		perisysiommu: perisys@10214000 {
+			compatible = "mediatek,mt8173-perisys-iommu";
+			reg = <0 0x10214000 0 0x1000>;
+			interrupts = <GIC_SPI 137 IRQ_TYPE_LEVEL_LOW>;
+			cell-index = <1>;
 		};
 
 		mipi_tx0: mipi-dphy@10215000 {
@@ -976,6 +985,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x14021000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <0>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
 			clocks = <&mmsys CLK_MM_SMI_LARB0>,
 				 <&mmsys CLK_MM_SMI_LARB0>;
@@ -1033,6 +1043,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x14027000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <4>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
 			clocks = <&mmsys CLK_MM_SMI_LARB4>,
 				 <&mmsys CLK_MM_SMI_LARB4>;
@@ -1049,6 +1060,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x15001000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <2>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_ISP>;
 			clocks = <&imgsys CLK_IMG_LARB2_SMI>,
 				 <&imgsys CLK_IMG_LARB2_SMI>;
@@ -1065,6 +1077,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x16010000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <1>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_VDEC>;
 			clocks = <&vdecsys CLK_VDEC_CKEN>,
 				 <&vdecsys CLK_VDEC_LARB_CKEN>;
@@ -1081,6 +1094,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x18001000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <3>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC>;
 			clocks = <&vencsys CLK_VENC_CKE1>,
 				 <&vencsys CLK_VENC_CKE0>;
@@ -1136,6 +1150,7 @@
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x19001000 0 0x1000>;
 			mediatek,smi = <&smi_common>;
+			mediatek,larbid = <5>;
 			power-domains = <&scpsys MT8173_POWER_DOMAIN_VENC_LT>;
 			clocks = <&vencltsys CLK_VENCLT_CKE1>,
 				 <&vencltsys CLK_VENCLT_CKE0>;
