@@ -41,7 +41,7 @@ obj-$(CONFIG_MTK_PWM)	    += pwm/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 #obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
 #obj-$(CONFIG_MTK_HWMON)	    += hwmon/
-#obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
+obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
 #obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
 #obj-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += accelerometer/
 #obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
