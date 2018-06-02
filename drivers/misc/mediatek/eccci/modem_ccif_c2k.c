@@ -339,7 +339,7 @@ void c2k_mem_dump(void *start_addr, int len)
 	CCCI_DEBUG_LOG(MD_SYS3, TAG, "[C2K-DUMP]Base: 0x%lx, len: %d\n", (unsigned long)start_addr, len);
 	/*Fix section */
 	for (i = 0; i < _16_fix_num; i++) {
-		CCCI_NORMAL_LOG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		CCCI_MEM_LOG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 		curr_p += 4;
 	}
@@ -354,7 +354,7 @@ void c2k_mem_dump(void *start_addr, int len)
 		for (; j < 16; j++)
 			buf[j] = 0;
 		curr_p = (unsigned int *)buf;
-		CCCI_NORMAL_LOG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		CCCI_MEM_LOG(MD_SYS3, TAG, "[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 	}
 }
@@ -374,10 +374,10 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	case CCCI_STATUS_TX:
 	case CCCI_STATUS_RX:
 		if (is_tx)
-			CCCI_NORMAL_LOG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+			CCCI_MEM_LOG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
 				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
 		else
-			CCCI_NORMAL_LOG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+			CCCI_MEM_LOG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
 				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
 		if (data_len > 0)
 			c2k_mem_dump(skb->data + sizeof(struct ccci_header), dump_len);
