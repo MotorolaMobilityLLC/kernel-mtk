@@ -23,3 +23,4 @@ obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MMC_MTK_SDIO) += mtk_sdio/
 obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_UNIFIED_DEBUG_INTERFACE) += udi/
+obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
