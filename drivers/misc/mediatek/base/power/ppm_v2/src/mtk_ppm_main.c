@@ -850,11 +850,10 @@ end:
 
 static void ppm_main_send_request_for_suspend(void)
 {
+#if 0
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 	int i;
-
-	return;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -888,6 +887,7 @@ static void ppm_main_send_request_for_suspend(void)
 	ppm_info("send fix idx to DVFS before suspend!\n");
 
 	FUNC_EXIT(FUNC_LV_MAIN);
+#endif
 }
 
 static int ppm_main_suspend(struct device *dev)
