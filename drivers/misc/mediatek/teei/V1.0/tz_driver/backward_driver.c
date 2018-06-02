@@ -113,7 +113,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	msg_body.vdrv_phy_addr = virt_to_phys(handler->param_buf);
 	msg_body.vdrv_size = handler->size;
 
-	local_irq_save(irq_flag);
+	//local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -130,7 +130,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	local_irq_restore(irq_flag);
+	//local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_VDRV)) {

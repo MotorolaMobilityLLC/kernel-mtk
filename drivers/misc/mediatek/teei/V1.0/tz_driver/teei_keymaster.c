@@ -63,7 +63,7 @@ unsigned long create_keymaster_fdrv(int buff_size)
 	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
 	msg_body.fdrv_size = buff_size;
 
-	local_irq_save(irq_flag);
+	//local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -76,11 +76,11 @@ unsigned long create_keymaster_fdrv(int buff_size)
 	down(&(boot_sema));
 	//up(&(boot_sema));
 
-	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);	
+	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	local_irq_restore(irq_flag);
+	//local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
@@ -160,7 +160,7 @@ int send_keymaster_command(unsigned long share_memory_size)
 
 	down(&smc_lock);
 
-	if (teei_config_flag == 1)	
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
 
 #if 0
@@ -185,7 +185,7 @@ int send_keymaster_command(unsigned long share_memory_size)
 		mutex_unlock(&pm_mutex);
 	        up(&fdrv_lock);
                 return retVal;
-        }	
+        }
 #endif
 
 	down(&fdrv_sema);
