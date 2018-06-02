@@ -31,6 +31,7 @@
 #include <linux/timer.h>
 #include <linux/cache.h>
 /* #include <linux/printk.h> */
+#include <linux/highmem.h>
 
 #ifdef pr_fmt
 #undef pr_fmt
