@@ -613,6 +613,9 @@ static void spm_register_init(void)
 #elif defined(CONFIG_ARCH_MT6797)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-sys_cirq");
 #endif
+	if (!node)
+		node = of_find_compatible_node(NULL, NULL, "mediatek,sys_cirq");
+
 	if (!node) {
 		spm_err("find mediatek,sys_cirq failed\n");
 		/* WARN_ON(1); */
