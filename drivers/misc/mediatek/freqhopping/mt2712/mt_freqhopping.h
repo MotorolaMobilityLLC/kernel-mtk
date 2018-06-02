@@ -48,6 +48,7 @@ struct freqhopping_ssc {
 	unsigned int dds;
 };
 
+struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
 extern int mtk_fhctl_enable_ssc_by_id(unsigned int fh_pll_id);
 extern int mtk_fhctl_disable_ssc_by_id(unsigned int fh_pll_id);
 extern int mtk_fhctl_hopping_by_id(unsigned int fh_pll_id, unsigned int target_vco_frequency);
