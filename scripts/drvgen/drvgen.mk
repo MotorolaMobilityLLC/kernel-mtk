@@ -14,12 +14,12 @@ DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
 else
 DRVGEN_FILE_LIST :=
 endif
-DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen
+DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen.py
 
 .PHONY: drvgen
 drvgen: $(DRVGEN_FILE_LIST)
 $(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
 	@mkdir -p $(dir $@)
-	$(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
+	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 
 endif#MTK_PLATFORM
