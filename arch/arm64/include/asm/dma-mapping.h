@@ -24,6 +24,8 @@
 #include <xen/xen.h>
 #include <asm/xen/hypervisor.h>
 
+#include <mt-plat/aee.h>
+
 #define DMA_ERROR_CODE	(~(dma_addr_t)0)
 extern struct dma_map_ops dummy_dma_ops;
 
@@ -78,10 +80,19 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
 
 static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
 {
-	if (!dev->dma_mask)
-		return false;
+	bool ret;
 
-	return addr + size - 1 <= *dev->dma_mask;
+	if (!dev->dma_mask) {
+		aee_kernel_warning("Bounce Buffering", "NULL dma_mask");
+		return false;
+	}
+
+	ret = addr + size - 1 <= *dev->dma_mask;
+	if (!ret)
+		aee_kernel_warning("Bounce Buffering",
+				"Incorrect dma_mask(%llx), addr+size-1(%llx)",
+				*dev->dma_mask, addr + size - 1);
+	return ret;
 }
 
 static inline void dma_mark_clean(void *addr, size_t size)
