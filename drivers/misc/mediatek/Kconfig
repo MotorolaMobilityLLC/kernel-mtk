@@ -56,6 +56,12 @@ source "drivers/misc/mediatek/connectivity/Kconfig"
 
 endmenu  # CONN
 
+menu "Security"
+
+source "drivers/misc/mediatek/masp/Kconfig"
+
+endmenu  # Security
+
 menu "Other Peripherals"
 
 source "drivers/misc/mediatek/ice_debug/Kconfig"
