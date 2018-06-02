@@ -36,7 +36,7 @@ int __attribute__ ((weak))
 arch_get_nr_clusters(void)
 {
 	pr_notice("%s not ready\n", __func__);
-	return 0;
+	return 2;
 }
 
 /*

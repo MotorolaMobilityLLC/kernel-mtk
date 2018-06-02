@@ -664,6 +664,10 @@ static int __init hps_init(void)
 
 	hps_warn("hps_init\n");
 
+	/* temp for bringup */
+	return 0;
+	/* temp for bringup */
+
 	/* hps_cpu_init() must before hps_core_init() */
 	r = hps_cpu_init();
 	if (r)
