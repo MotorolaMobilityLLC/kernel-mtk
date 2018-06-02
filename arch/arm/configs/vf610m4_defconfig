@@ -39,4 +39,3 @@ CONFIG_MFD_SYSCON=y
 # CONFIG_HID is not set
 # CONFIG_USB_SUPPORT is not set
 # CONFIG_MISC_FILESYSTEMS is not set
-# CONFIG_FTRACE is not set
