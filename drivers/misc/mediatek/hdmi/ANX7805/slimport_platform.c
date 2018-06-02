@@ -13,7 +13,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 */
 
 #include "slimport_platform.h"
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 /*#include "mach/eint.h"*/
 
 #ifdef CONFIG_MTK_LEGACY
