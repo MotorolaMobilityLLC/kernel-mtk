@@ -19,6 +19,10 @@
 #include "mtk/ion_drv.h"
 #include "ion_sec_heap.h"
 
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#include "secmem.h"
+#endif
+
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
 do {\
 	if (seq_file)\
