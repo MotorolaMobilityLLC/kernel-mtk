@@ -37,7 +37,7 @@
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include "f_hid.c"
 #endif
-#if 0
+#ifdef CONFIG_SND_RAWMIDI
 #include "f_midi.c"
 #endif
 
@@ -80,14 +80,12 @@ static const char longname[] = "Gadget Android";
 #define KPOC_USB_PRODUCT_ID 0x20FF
 #endif
 
-#if 0
 #ifdef CONFIG_SND_RAWMIDI
 /* f_midi configuration */
 #define MIDI_INPUT_PORTS    1
 #define MIDI_OUTPUT_PORTS   1
 #define MIDI_BUFFER_SIZE    1024
 #define MIDI_QUEUE_LENGTH   32
-#endif
 #endif
 
 
@@ -682,7 +680,6 @@ static struct android_usb_function acm_function = {
 	.attributes	= acm_function_attributes,
 };
 
-#if 0
 #ifdef CONFIG_USB_F_SS_LB
 #define MAX_LOOPBACK_INSTANCES 1
 
@@ -769,7 +766,6 @@ static struct android_usb_function loopback_function = {
 	.cleanup	= loopback_function_cleanup,
 	.bind_config	= loopback_function_bind_config,
 };
-#endif
 #endif
 
 /* note all serial port number could not exceed MAX_U_SERIAL_PORTS */
@@ -880,7 +876,6 @@ static ssize_t serial_port_store(struct device *dev,
 static DEVICE_ATTR(port, S_IRUGO | S_IWUSR, serial_port_show, serial_port_store);
 static struct device_attribute *serial_function_attributes[] = { &dev_attr_port, NULL };
 
-
 static struct android_usb_function serial_function = {
 	.name		= "gser",
 	.init		= serial_function_init,
@@ -951,7 +946,6 @@ static struct android_usb_function ptp_function = {
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
 };
-#if 0
 struct eem_function_config {
 	u8      ethaddr[ETH_ALEN];
 	char	manufacturer[256];
@@ -1058,7 +1052,6 @@ static struct android_usb_function eem_function = {
 	.unbind_config	= eem_function_unbind_config,
 	.attributes	= eem_function_attributes,
 };
-#endif
 #if 0
 struct rndis_function_config {
 	u8      ethaddr[ETH_ALEN];
@@ -1532,7 +1525,7 @@ static struct android_usb_function mass_storage_function = {
 	.attributes	= mass_storage_function_attributes,
 };
 
-#if 0
+
 static int accessory_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -1564,8 +1557,8 @@ static struct android_usb_function accessory_function = {
 	.bind_config	= accessory_function_bind_config,
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
-#endif
-#if 0
+
+#ifdef CONFIG_SOUND
 struct audio_source_function_config {
 	struct usb_function *f_aud;
 	struct usb_function_instance *f_aud_inst;
@@ -1705,7 +1698,6 @@ static struct android_usb_function rawbulk_gps_function = {
 #endif
 #endif
 
-#if 0
 #ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
@@ -1761,7 +1753,6 @@ static struct android_usb_function midi_function = {
 	.attributes	= midi_function_attributes,
 };
 #endif
-#endif
 
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
@@ -1769,14 +1760,16 @@ static struct android_usb_function *supported_functions[] = {
 	&acm_function,
 	&mtp_function,
 	&ptp_function,
-	/* &eem_function, */
+	&eem_function,
 	&serial_function,
 	/* &rndis_function, */
 	&mass_storage_function,
-	/* &accessory_function, */
-	/* &audio_source_function, */
+	&accessory_function,
+#ifdef CONFIG_SOUND
+	&audio_source_function,
+#endif
 #ifdef CONFIG_SND_RAWMIDI
-	/* &midi_function, */
+	&midi_function,
 #endif
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */

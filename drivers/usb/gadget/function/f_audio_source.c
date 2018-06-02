@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  */
-
+#ifdef CONFIG_SOUND
 #include <linux/device.h>
 #include <linux/usb/audio.h>
 #include <linux/wait.h>
@@ -31,10 +31,15 @@
 #define SAMPLE_RATE 44100
 #define FRAMES_PER_MSEC (SAMPLE_RATE / 1000)
 
-#define IN_EP_MAX_PACKET_SIZE 256
+/* mod for performance enhancement */
+#define BYTES_PER_FRAME 4
+#define IN_EP_MAX_PACKET_SIZE ((FRAMES_PER_MSEC + 1) * BYTES_PER_FRAME)
+/* #define IN_EP_MAX_PACKET_SIZE 256 */
 
 /* Number of requests to allocate */
-#define IN_EP_REQ_COUNT 4
+/* #define IN_EP_REQ_COUNT 4 */
+/* mod for performance enhancement */
+#define IN_EP_REQ_COUNT 16
 
 #define AUDIO_AC_INTERFACE	0
 #define AUDIO_AS_INTERFACE	1
@@ -365,20 +370,28 @@ static void audio_send(struct audio_dev *audio)
 	s64 msecs;
 	s64 frames;
 	ktime_t now;
+	unsigned long flags;
+
+	spin_lock_irqsave(&audio->lock, flags);
 
 	/* audio->substream will be null if we have been closed */
-	if (!audio->substream)
+	if (!audio->substream) {
+		spin_unlock_irqrestore(&audio->lock, flags);
 		return;
+	}
 	/* audio->buffer_pos will be null if we have been stopped */
-	if (!audio->buffer_pos)
+	if (!audio->buffer_pos) {
+		spin_unlock_irqrestore(&audio->lock, flags);
 		return;
-
+	}
 	runtime = audio->substream->runtime;
-
+	spin_unlock_irqrestore(&audio->lock, flags);
 	/* compute number of frames to send */
 	now = ktime_get();
 	msecs = ktime_to_ns(now) - ktime_to_ns(audio->start_time);
 	do_div(msecs, 1000000);
+	/* mod for performance enhancement */
+	msecs += IN_EP_REQ_COUNT/2;
 	frames = msecs * SAMPLE_RATE;
 	do_div(frames, 1000);
 
@@ -386,19 +399,38 @@ static void audio_send(struct audio_dev *audio)
 	 * If we get too far behind it is better to drop some frames than
 	 * to keep sending data too fast in an attempt to catch up.
 	 */
-	if (frames - audio->frames_sent > 10 * FRAMES_PER_MSEC)
+
+
+	/* if (frames - audio->frames_sent > 10 * FRAMES_PER_MSEC) */
+	/* mod for performance enhancement */
+	if (frames - audio->frames_sent > 2 * FRAMES_PER_MSEC * IN_EP_REQ_COUNT)
 		audio->frames_sent = frames - FRAMES_PER_MSEC;
 
 	frames -= audio->frames_sent;
 
 	/* We need to send something to keep the pipeline going */
+	/* mod for performance enhancement */
+	/*
 	if (frames <= 0)
-		frames = FRAMES_PER_MSEC;
-
+	*	frames = FRAMES_PER_MSEC;
+	*/
 	while (frames > 0) {
 		req = audio_req_get(audio);
-		if (!req)
+		spin_lock_irqsave(&audio->lock, flags);
+		/* audio->substream will be null if we have been closed */
+		if (!audio->substream) {
+			spin_unlock_irqrestore(&audio->lock, flags);
+			return;
+		}
+		/* audio->buffer_pos will be null if we have been stopped */
+		if (!audio->buffer_pos) {
+			spin_unlock_irqrestore(&audio->lock, flags);
+			return;
+		}
+		if (!req) {
+			spin_unlock_irqrestore(&audio->lock, flags);
 			break;
+		}
 
 		length = frames_to_bytes(runtime, frames);
 		if (length > IN_EP_MAX_PACKET_SIZE)
@@ -424,6 +456,7 @@ static void audio_send(struct audio_dev *audio)
 		}
 
 		req->length = length;
+		spin_unlock_irqrestore(&audio->lock, flags);
 		ret = usb_ep_queue(audio->in_ep, req, GFP_ATOMIC);
 		if (ret < 0) {
 			pr_err("usb_ep_queue failed ret: %d\n", ret);
@@ -690,15 +723,18 @@ audio_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct audio_dev *audio = func_to_audio(f);
 	struct usb_request *req;
+	unsigned long flags;
 
 	while ((req = audio_req_get(audio)))
 		audio_request_free(req, audio->in_ep);
 
 	snd_card_free_when_closed(audio->card);
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->card = NULL;
 	audio->pcm = NULL;
 	audio->substream = NULL;
 	audio->in_ep = NULL;
+	spin_unlock_irqrestore(&audio->lock, flags);
 
 	if (IS_ENABLED(CONFIG_USB_CONFIGFS)) {
 		struct audio_source_instance *fi_audio =
@@ -733,13 +769,16 @@ static int audio_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct audio_dev *audio = substream->private_data;
+	unsigned long flags;
 
 	runtime->private_data = audio;
 	runtime->hw = audio_hw_info;
 	snd_pcm_limit_hw_rates(runtime);
 	runtime->hw.channels_max = 2;
 
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->substream = substream;
+	spin_unlock_irqrestore(&audio->lock, flags);
 	return 0;
 }
 
@@ -779,13 +818,16 @@ static int audio_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct audio_dev *audio = runtime->private_data;
+	unsigned long flags;
 
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->period = snd_pcm_lib_period_bytes(substream);
 	audio->period_offset = 0;
 	audio->buffer_start = runtime->dma_area;
 	audio->buffer_end = audio->buffer_start
 		+ snd_pcm_lib_buffer_bytes(substream);
 	audio->buffer_pos = audio->buffer_start;
+	spin_unlock_irqrestore(&audio->lock, flags);
 
 	return 0;
 }
@@ -1058,3 +1100,4 @@ static struct usb_function *audio_source_alloc(struct usb_function_instance *fi)
 DECLARE_USB_FUNCTION_INIT(audio_source, audio_source_alloc_inst,
 			audio_source_alloc);
 MODULE_LICENSE("GPL");
+#endif
