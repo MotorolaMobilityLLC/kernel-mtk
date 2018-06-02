@@ -193,12 +193,13 @@ static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
 
+	Set_BTCVSD_State(BT_SCO_TXSTATE_ENDING);
+
 	if (BT_CVSD_Mem.TX_btcvsd_dma_buf.area)
 		return 0;
 	else
 		return snd_pcm_lib_free_pages(substream);
 
-	Set_BTCVSD_State(BT_SCO_TXSTATE_ENDING);
 	return 0;
 }
 
