@@ -29,7 +29,7 @@
 #include "port_poller.h"
 #define MAX_QUEUE_LENGTH 16
 #define POLLING_INTERVAL_TIME 15
-#define POLLING_TIMEOUT 5
+#define POLLING_TIMEOUT 15
 
 static void status_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 {

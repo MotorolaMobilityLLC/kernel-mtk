@@ -116,7 +116,7 @@ do { \
 
 #define CCCI_MEM_LOG(idx, tag, fmt, args...) \
 do { \
-	ccci_dump_write(idx, CCCI_DUMP_MEM_DUMP, 0, fmt, (idx+1), ##args); \
+	ccci_dump_write(idx, CCCI_DUMP_MEM_DUMP, 0, fmt, ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
@@ -124,13 +124,13 @@ do { \
 #define CCCI_HISTORY_LOG_1ST(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_HISTORY, CCCI_DUMP_TIME_FLAG|CCCI_DUMP_CURR_FLAG|CCCI_DUMP_CLR_BUF_FLAG,\
-			"[%d]" fmt, (idx+1), ##args); \
+			fmt, ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_HISTORY_LOG(idx, tag, fmt, args...) \
 do { \
-	ccci_dump_write(idx, CCCI_DUMP_HISTORY, 0, "[%d]" fmt, (idx+1), ##args); \
+	ccci_dump_write(idx, CCCI_DUMP_HISTORY, 0, fmt, ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
 /******************************************************************************************
