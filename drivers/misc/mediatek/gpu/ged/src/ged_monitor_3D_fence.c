@@ -17,11 +17,8 @@
 #include <asm/atomic.h>
 #include <linux/module.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-#include <linux/sync.h>
-#else
-#include <../drivers/staging/android/sync.h>
-#endif
+#include <linux/sync_file.h>
+#include <linux/fence.h>
 
 #include <mt-plat/mtk_gpu_utility.h>
 #include <trace/events/gpu.h>
@@ -52,12 +49,12 @@ extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 
 typedef struct GED_MONITOR_3D_FENCE_TAG
 {
-	struct sync_fence_waiter    sSyncWaiter;
-	struct work_struct          sWork;
-	struct sync_fence*          psSyncFence;
+	struct fence_cb sSyncWaiter;
+	struct work_struct sWork;
+	struct fence *psSyncFence;
 } GED_MONITOR_3D_FENCE;
 
-static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *waiter)
+static void ged_sync_cb(struct fence *sFence, struct fence_cb *waiter)
 {
 	GED_MONITOR_3D_FENCE *psMonitor;
 	unsigned long long t;
@@ -68,11 +65,6 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
 
 	ged_monitor_3D_fence_notify();
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)
-	/* FIX-ME: IMG's loading API requires mutext lock which is not suitable here */;
-#else
-	ged_dvfs_cal_gpu_utilization_force();
-#endif
 
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
 
@@ -118,7 +110,7 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 		GED_LOGI("[-]3D fences count = %d\n", atomic_read(&g_i32Count));
 
 	psMonitor = GED_CONTAINER_OF(psWork, GED_MONITOR_3D_FENCE, sWork);
-	sync_fence_put(psMonitor->psSyncFence);
+	fence_put(psMonitor->psSyncFence);
 	ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
 }
 
@@ -149,30 +141,35 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 	if (!psMonitor)
 		return GED_ERROR_OOM;
 
-	sync_fence_waiter_init(&psMonitor->sSyncWaiter, ged_sync_cb);
-	INIT_WORK(&psMonitor->sWork, ged_monitor_3D_fence_work_cb);
-	psMonitor->psSyncFence = sync_fence_fdget(fence_fd);
+	psMonitor->psSyncFence = sync_file_get_fence(fence_fd);
+
 	if (psMonitor->psSyncFence == NULL) {
 		ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
+	INIT_WORK(&psMonitor->sWork, ged_monitor_3D_fence_work_cb);
+
+	err = fence_add_callback(psMonitor->psSyncFence,
+		&psMonitor->sSyncWaiter, ged_sync_cb);
+
 	ged_log_buf_print(ghLogBuf_DVFS, "[+] ged_monitor_3D_fence_add (ts=%llu) %p", t, psMonitor->psSyncFence);
 
-#ifdef GED_DEBUG_MONITOR_3D_FENCE
-	ged_log_buf_print(ghLogBuf_GED, "[+]sync_fence_wait_async");
-#endif
-
-	err = sync_fence_wait_async(psMonitor->psSyncFence, &psMonitor->sSyncWaiter);
 
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
-	ged_log_buf_print(ghLogBuf_GED, "[-]sync_fence_wait_async, err = %d", err);
+	ged_log_buf_print(ghLogBuf_GED, "fence_add_callback, err = %d", err);
 #endif
 
-	if ((err == 1) || (err < 0)) {
-		sync_fence_put(psMonitor->psSyncFence);
+
+	if (err < 0) {
+		/* if fence not signaled then it means error,
+		 * need to do fence put
+		 */
+		if (err != -ENOENT)
+			fence_put(psMonitor->psSyncFence);
+
 		ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
-	} else if (err == 0) {
+	} else {
 		int iCount = atomic_add_return (1, &g_i32Count);
 		if (iCount > 1) {
 			unsigned int uiFreqLevelID;
