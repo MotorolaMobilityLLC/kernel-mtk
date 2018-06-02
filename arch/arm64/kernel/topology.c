@@ -274,6 +274,22 @@ static void update_cpu_capacity(unsigned int cpu)
 	set_capacity_scale(cpu, capacity);
 }
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+/* To add this function for sched_avg.c */
+unsigned long get_cpu_orig_capacity(unsigned int cpu)
+{
+	unsigned long capacity = cpu_capacity(cpu);
+
+	if (!capacity || !max_cpu_perf)
+		return 1024;
+
+	capacity *= SCHED_CAPACITY_SCALE;
+	capacity /= max_cpu_perf;
+
+	return capacity;
+}
+#endif
+
 static void __init parse_dt_cpu_capacity(void)
 {
 	const struct cpu_efficiency *cpu_eff;
@@ -316,6 +332,7 @@ static void __init parse_dt_cpu_capacity(void)
 
 		cpu_perf = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
 		cpu_capacity(cpu) = cpu_perf;
+
 		max_cpu_perf = max(max_cpu_perf, cpu_perf);
 		min_cpu_perf = min(min_cpu_perf, cpu_perf);
 		i++;

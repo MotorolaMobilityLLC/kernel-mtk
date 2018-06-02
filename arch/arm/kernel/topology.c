@@ -217,7 +217,7 @@ static const struct cpu_efficiency table_efficiency[] = {
 static unsigned long *__cpu_capacity;
 #define cpu_capacity(cpu)	__cpu_capacity[cpu]
 
-static unsigned long max_cpu_perf, min_cpu_perf;
+static u64 max_cpu_perf, min_cpu_perf;
 
 static int __init parse_dt_topology(void)
 {
@@ -278,7 +278,7 @@ static void parse_dt_cpu_capacity(void)
 	for_each_possible_cpu(cpu) {
 		const u32 *rate;
 		int len;
-		unsigned long cpu_perf;
+		u64 cpu_perf;
 
 		/* too early to use cpu->of_node */
 		cn = of_get_cpu_node(cpu, NULL);
@@ -322,7 +322,7 @@ static void parse_dt_cpu_capacity(void)
  */
 static void update_cpu_capacity(unsigned int cpu)
 {
-	unsigned long capacity = cpu_capacity(cpu);
+	u64 capacity = cpu_capacity(cpu);
 
 	if (!capacity || !max_cpu_perf) {
 		cpu_capacity(cpu) = 0;
@@ -330,7 +330,7 @@ static void update_cpu_capacity(unsigned int cpu)
 	}
 
 	capacity *= SCHED_CAPACITY_SCALE;
-	capacity /= max_cpu_perf;
+	capacity = div64_u64(capacity, max_cpu_perf);
 
 	set_capacity_scale(cpu, capacity);
 
@@ -686,4 +686,20 @@ void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
 #else
 void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
 #endif /* CONFIG_SCHED_HMP */
+
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+/* To add this function for sched_avg.c */
+unsigned long get_cpu_orig_capacity(unsigned int cpu)
+{
+	u64 capacity = cpu_capacity(cpu);
+
+	if (!capacity || !max_cpu_perf)
+		return 1024;
+
+	capacity *= SCHED_CAPACITY_SCALE;
+	capacity = div64_u64(capacity, max_cpu_perf);
+
+	return capacity;
+}
+#endif
 
