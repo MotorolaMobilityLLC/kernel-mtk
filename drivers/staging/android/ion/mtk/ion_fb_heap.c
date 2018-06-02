@@ -114,7 +114,7 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 	paddr = ion_fb_allocate(heap, size, align);
 
 	/*create fb buffer info for it*/
-	buffer_info = kzalloc(sizeof(buffer_info), GFP_KERNEL);
+	buffer_info = kzalloc(sizeof(*buffer_info), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(buffer_info)) {
 		IONMSG("[ion_fb_heap_allocate]: Error. Allocate ion_buffer failed.\n");
 		return -EFAULT;
