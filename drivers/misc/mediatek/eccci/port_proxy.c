@@ -619,7 +619,7 @@ int port_proxy_send_skb_to_md(struct port_proxy *proxy_p, struct ccci_port *port
 	    && port->tx_ch != CCCI_FS_TX)
 		return -ETXTBSY;
 	if (md_state == GATED
-			|| md_state == RESET
+			|| md_state == WAITING_TO_STOP
 			|| md_state == INVALID)
 		return -ENODEV;
 
@@ -1070,8 +1070,6 @@ static void port_proxy_set_traffic_flag(struct port_proxy *proxy_p, unsigned int
 			 "%s: 0x%x\n", __func__, proxy_p->traffic_dump_flag);
 	for (idx = 0; idx < proxy_p->port_number; idx++) {
 		port = proxy_p->ports + idx;
-		if (!port)
-			continue;
 		/*clear traffic & dump flag*/
 		port->flags &= ~(PORT_F_CH_TRAFFIC | PORT_F_DUMP_RAW_DATA);
 
