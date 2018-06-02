@@ -112,11 +112,7 @@ extern void __iomem *u3_sif_base;
 extern void __iomem *u3_sif2_base;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-#ifdef USB_ELBRUS
 extern void __iomem *i2c_base;
-#else
-extern void __iomem *i2c1_base;
-#endif
 #endif
 
 /**

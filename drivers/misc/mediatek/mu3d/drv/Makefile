@@ -17,11 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv \
              -I$(srctree)/drivers/misc/mediatek/mu3phy/$(CONFIG_MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 
-ifeq (,$(filter $(CONFIG_MTK_PLATFORM) , "elbrus"))
 ccflags-y += -DUSE_SSUSB_QMU
-else
-ccflags-y += -DUSB_ELBRUS -DFOR_BRING_UP -DUSE_SSUSB_QMU
-endif
 
 obj-y := musb_hdrc.o
 musb_hdrc-y := musb_core.o
