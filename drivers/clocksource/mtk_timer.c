@@ -49,6 +49,7 @@
 #define TIMER_CLK_DIV2		(0x1)
 
 #define TIMER_CNT_REG(val)	(0x08 + (0x10 * (val)))
+#define TIMER_CNT_REG_H(val)	(0x08 + (0x10 * (val+1)))
 #define TIMER_CMP_REG(val)	(0x0C + (0x10 * (val)))
 
 #define GPT_CLK_EVT	1
@@ -59,6 +60,8 @@ struct mtk_clock_event_device {
 	u32 ticks_per_jiffy;
 	struct clock_event_device dev;
 };
+
+static struct mtk_clock_event_device *mtk_evt;
 
 static void __iomem *gpt_sched_reg __read_mostly;
 
@@ -179,6 +182,22 @@ static void mtk_timer_enable_irq(struct mtk_clock_event_device *evt, u8 timer)
 			evt->gpt_base + GPT_IRQ_EN_REG);
 }
 
+u64 mtk_timer_get_cnt(u8 timer)
+{
+	u32 val[2];
+	u64 cnt;
+
+	val[0] = readl(mtk_evt->gpt_base + TIMER_CNT_REG(timer));
+	if (timer == 6) {
+		val[1] = readl(mtk_evt->gpt_base + TIMER_CNT_REG_H(timer));
+		cnt = (((u64)val[1]<<32) | (u64)val[0]);
+		return cnt;
+	}
+
+	cnt = ((u64)val[0])&0x00000000FFFFFFFF;
+	return cnt;
+}
+
 static void __init mtk_timer_init(struct device_node *node)
 {
 	struct mtk_clock_event_device *evt;
@@ -233,6 +252,8 @@ static void __init mtk_timer_init(struct device_node *node)
 	}
 
 	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
+
+	mtk_evt = evt;
 
 	/* Configure clock source */
 	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN);
