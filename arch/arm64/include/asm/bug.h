@@ -56,6 +56,7 @@ _BUGVERBOSE_LOCATION(__FILE__, __LINE__)		\
 } while (0)
 
 #define __WARN_TAINT(taint) _BUG_FLAGS(BUGFLAG_TAINT(taint))
+#undef __WARN_TAINT
 
 #endif /* ! CONFIG_GENERIC_BUG */
 
