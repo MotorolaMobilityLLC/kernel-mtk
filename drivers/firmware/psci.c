@@ -209,7 +209,7 @@ static int get_set_conduit_method(struct device_node *np)
 	return 0;
 }
 
-#if (!defined(CONFIG_ARCH_MT6757))
+#if (!defined(CONFIG_MACH_MT6757))
 static void psci_sys_reset(enum reboot_mode reboot_mode, const char *cmd)
 {
 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_RESET, 0, 0, 0);
@@ -324,7 +324,7 @@ static void __init psci_0_2_set_functions(void)
 
 	psci_ops.migrate_info_type = psci_migrate_info_type;
 
-#if (!defined(CONFIG_ARCH_MT6757))
+#if (!defined(CONFIG_MACH_MT6757))
 	arm_pm_restart = psci_sys_reset;
 
 	pm_power_off = psci_sys_poweroff;
