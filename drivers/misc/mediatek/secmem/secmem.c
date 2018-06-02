@@ -687,8 +687,10 @@ int secmem_api_query(u32 *allocate_size)
 		*allocate_size = param.size;
 	}
 
+#ifdef CONFIG_MT_ENG_BUILD
 	if (*allocate_size)
 		secmem_execute(CMD_SEC_MEM_DUMP_INFO, &param);
+#endif
 
 	return err;
 }
