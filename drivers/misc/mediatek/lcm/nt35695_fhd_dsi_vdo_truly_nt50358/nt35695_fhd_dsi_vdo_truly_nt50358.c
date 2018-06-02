@@ -217,6 +217,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_WIDTH										(1080)
 #define FRAME_HEIGHT									(1920)
 
+/* physical size in um */
+#define LCM_PHYSICAL_WIDTH									(74520)
+#define LCM_PHYSICAL_HEIGHT									(132480)
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
 #endif
@@ -266,6 +270,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0x5E, 1, {0x00} },
 	{0xFF, 1, {0x24} },	/* CMD2 Page4 Entrance */
 	{REGFLAG_UDELAY, 1, {} },
+	{0xC2, 1, {0x00} },
 	{0xFB, 1, {0x01} },
 	{0x9D, 1, {0xB0} },
 	{0x72, 1, {0x00} },
@@ -1470,6 +1475,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
@@ -1501,7 +1510,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
 	params->dsi.vertical_frontporch = 10;
-	params->dsi.vertical_frontporch_for_low_power = 400;
+	params->dsi.vertical_frontporch_for_low_power = 620;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
