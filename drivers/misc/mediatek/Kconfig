@@ -78,8 +78,8 @@ config MTK_GPT_SCHEME_SUPPORT
 	  GPT is a better partition layout scheme
 	  GPT is instead of PMT
 
-#source "drivers/misc/mediatek/dum-char/Kconfig"
-#source "drivers/misc/mediatek/nand/Kconfig"
+source "drivers/misc/mediatek/dum-char/Kconfig"
+source "drivers/misc/mediatek/nand/Kconfig"
 source "drivers/misc/mediatek/partition/Kconfig"
 
 endmenu  # Storage

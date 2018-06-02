@@ -36,6 +36,7 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/map.h>
+#include <linux/vmalloc.h>
 
 #include <asm/uaccess.h>
 
@@ -212,16 +213,14 @@ static ssize_t mtdchar_read(struct file *file, char __user *buf, size_t count,
 			if (copy_to_user(buf, kbuf, retlen)) {
 				kfree(kbuf);
 				return -EFAULT;
-			}
-			else
+			} else
 				total_retlen += retlen;
 
 			count -= retlen;
 			buf += retlen;
 			if (retlen == 0)
 				count = 0;
-		}
-		else {
+		} else {
 			kfree(kbuf);
 			return ret;
 		}
@@ -243,6 +242,9 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 	size_t total_retlen=0;
 	int ret=0;
 	int len;
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+	int vmalloc_alloced = 0;
+#endif
 
 	pr_debug("MTD_write\n");
 
@@ -255,6 +257,12 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 	if (!count)
 		return 0;
 
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+	if (size >= 4*1024*1024) {
+		vmalloc_alloced = 1;
+		kbuf = vmalloc(size);
+	} else
+#endif
 	kbuf = mtd_kmalloc_up_to(mtd, &size);
 	if (!kbuf)
 		return -ENOMEM;
@@ -263,6 +271,11 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 		len = min_t(size_t, count, size);
 
 		if (copy_from_user(kbuf, buf, len)) {
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+			if (vmalloc_alloced)
+				vfree(kbuf);
+			else
+#endif
 			kfree(kbuf);
 			return -EFAULT;
 		}
@@ -308,13 +321,22 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 			total_retlen += retlen;
 			count -= retlen;
 			buf += retlen;
-		}
-		else {
+		} else {
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+			if (vmalloc_alloced)
+				vfree(kbuf);
+			else
+#endif
 			kfree(kbuf);
 			return ret;
 		}
 	}
 
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+	if (vmalloc_alloced)
+		vfree(kbuf);
+	else
+#endif
 	kfree(kbuf);
 	return total_retlen;
 } /* mtdchar_write */

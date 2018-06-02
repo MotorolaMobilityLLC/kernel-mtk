@@ -54,6 +54,19 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 #define NAND_MAX_CHIPS		8
 
 /*
+ * This constant declares the max. oobsize / page, which
+ * is supported now. If you add a chip with bigger oobsize/page
+ * adjust this accordingly.
+ */
+#define NAND_MAX_OOBSIZE	4096
+#define NAND_MAX_PAGESIZE	32768
+
+#ifdef CONFIG_MTK_MTD_NAND
+/* Using in cache mecahnism. As the minimum read size of device */
+#define NAND_MAX_SUBPAGE_SIZE       (1024)
+#define NAND_MAX_SUBPAGE_SPARE_SIZE (256)
+#endif
+/*
  * Constants for hardware specific CLE/ALE/NCE function
  *
  * These are bits which can be or'ed to set/clear multiple
@@ -100,12 +113,30 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 
 #define NAND_CMD_NONE		-1
 
+#define SET_SLC_MODE_CMD 0xA2
+#define LOW_PG_SELECT_CMD 0x01
+#define MID_PG_SELECT_CMD 0x02
+#define HIGH_PG_SELECT_CMD 0x03
+#define PROGRAM_1ST_CYCLE_CMD 0x09
+#define PROGRAM_2ND_CYCLE_CMD 0x0D
+#define CHANGE_COLUNM_ADDR_1ST_CMD 0x05
+#define CHANGE_COLUNM_ADDR_2ND_CMD 0xE0
+#define PROGRAM_LEFT_PLANE_CMD 0x11
+#define PROGRAM_RIGHT_PLANE_CMD 0x1A
+#define NOT_KEEP_ERASE_LVL_15NM_CMD 0xC6
+#define NOT_KEEP_ERASE_LVL_A19NM_CMD 0xDF
+#define MULTI_PLANE_READ_CMD 0x32
+#define PLANE_INPUT_DATA_CMD 0x81
+
 /* Status bits */
 #define NAND_STATUS_FAIL	0x01
 #define NAND_STATUS_FAIL_N1	0x02
 #define NAND_STATUS_TRUE_READY	0x20
 #define NAND_STATUS_READY	0x40
 #define NAND_STATUS_WP		0x80
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#define SLC_MODE_OP_FALI    (0x04)
+#endif
 
 /*
  * Constants for ECC_MODES
@@ -536,6 +567,9 @@ struct nand_buffers {
 	uint8_t	*ecccalc;
 	uint8_t	*ecccode;
 	uint8_t *databuf;
+#ifdef CONFIG_MTK_MTD_NAND
+	uint8_t subpagebuf[NAND_MAX_SUBPAGE_SIZE + NAND_MAX_SUBPAGE_SPARE_SIZE];
+#endif
 };
 
 /**
@@ -670,6 +704,30 @@ struct nand_chip {
 	int (*onfi_get_features)(struct mtd_info *mtd, struct nand_chip *chip,
 			int feature_addr, uint8_t *subfeature_para);
 	int (*setup_read_retry)(struct mtd_info *mtd, int retry_mode);
+#ifdef CONFIG_MTK_MTD_NAND
+	/*
+	* Accerate page read and erase process by using driver function call.
+	* Skip command send in mtd.
+	*/
+	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
+			u8 *buf, int page);
+	int (*erase_hw)(struct mtd_info *mtd, int page);
+	/*
+	* sub-page read related members
+	*/
+
+	/* subpage read will be triggered if this API is
+	* hooked by driver, otherwise normal page read
+	* will only be triggered.
+	*/
+	int (*read_subpage)(struct mtd_info *mtd, struct nand_chip *chip,
+			u8 *buf, int page, int subpage_begin, int subpage_cnt);
+
+	/* indicating subpage size, must be assigned in
+	* driver's initialization stage.
+	*/
+	int subpage_size;
+#endif
 
 	int chip_delay;
 	unsigned int options;
@@ -938,6 +996,17 @@ static inline int onfi_get_sync_timing_mode(struct nand_chip *chip)
 	return le16_to_cpu(chip->onfi_params.src_sync_timing_mode);
 }
 
+#ifdef CONFIG_MTK_MTD_NAND
+/* Record size read from FS for performance log. */
+struct mtd_perf_log {
+	unsigned int read_size_0_512;
+	unsigned int read_size_512_1K;
+	unsigned int read_size_1K_2K;
+	unsigned int read_size_2K_3K;
+	unsigned int read_size_3K_4K;
+	unsigned int read_size_Above_4K;
+};
+#endif
 /*
  * Check if it is a SLC nand.
  * The !nand_is_slc() can be used to check the MLC/TLC nand chips.
@@ -1029,4 +1098,30 @@ int nand_check_erased_ecc_chunk(void *data, int datalen,
 				void *ecc, int ecclen,
 				void *extraoob, int extraooblen,
 				int threshold);
+
+#ifdef CONFIG_MTK_MTD_NAND
+extern void nand_enable_clock(void);
+extern void nand_disable_clock(void);
+#endif
+
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
+extern bool g_b2Die_CS;
+extern bool mtk_nand_IsRawPartition(loff_t logical_address);
+extern u64 part_get_startaddress(u64 byte_address, u32 *idx);
+#endif
+
+#ifdef CONFIG_MTK_MTD_NAND
+extern int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
+				uint8_t *buf, u32 page);
+extern int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf,
+				int page, u32 size);
+extern bool mtk_block_istlc(u64 addr);
+extern bool mtk_is_normal_tlc_nand(void);
+extern u64 mtk_nand_device_size(void);
+extern int mtk_nand_init_size(struct mtd_info *mtd, struct nand_chip *this, u8 *id_data);
+#endif
+
+#define PMT_POOL_SIZE (2)
+
+int nand_get_device(struct mtd_info *mtd, int new_state);
 #endif /* __LINUX_MTD_NAND_H */
