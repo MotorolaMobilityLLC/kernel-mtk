@@ -26,7 +26,7 @@ fm_cust_cfg fm_config;
 static fm_u16 g_fm_chipid;
 static enum fm_cfg_chip_type g_fm_chip_type = FM_CHIP_TYPE_MAX;
 
-#define FM_CUST_CFG_PATH "/vendor/etc/fmr/fm_cust.cfg"
+#define FM_CUST_CFG_PATH "fm_cust.cfg"
 
 fm_s32 to_upper_n(fm_s8 *str, fm_s32 len)
 {
