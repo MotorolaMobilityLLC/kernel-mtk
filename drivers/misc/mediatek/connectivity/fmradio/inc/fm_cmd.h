@@ -16,6 +16,12 @@
 
 #include <linux/types.h>
 #include "fm_typedef.h"
+#include "fm_patch.h"
+#include "fm_link.h"
+
+extern fm_u8 *cmd_buf;
+extern struct fm_lock *cmd_buf_lock;
+extern struct fm_res_ctx *fm_res;
 
 /* FM basic-operation's opcode */
 #define FM_BOP_BASE (0x80)
@@ -29,6 +35,15 @@ enum {
 	FM_TOP_RD_UNTIL_BASIC_OP = (FM_BOP_BASE + 0x06),
 	FM_TOP_MODIFY_BASIC_OP = (FM_BOP_BASE + 0x07),
 	FM_MAX_BASIC_OP = (FM_BOP_BASE + 0x08)
+};
+
+#define PATCH_SEG_LEN 512
+enum IMG_TYPE {
+	IMG_WRONG = 0,
+	IMG_ROM,
+	IMG_PATCH,
+	IMG_COEFFICIENT,
+	IMG_HW_COEFFICIENT
 };
 
 /* FM BOP's size */
@@ -64,6 +79,17 @@ fm_s32 fm_set_bits_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 bits, fm_
 fm_s32 fm_pmic_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr);
 fm_s32 fm_pmic_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 val);
 fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and, fm_u32 mask_or);
+fm_s32 fm_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl);
+fm_s32 fm_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl);
+fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type);
+fm_s32 fm_get_read_result(struct fm_res_ctx *result);
+fm_s32 fm_reg_read(fm_u8 addr, fm_u16 *val);
+fm_s32 fm_reg_write(fm_u8 addr, fm_u16 val);
+fm_s32 fm_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask);
+fm_s32 fm_top_reg_read(fm_u16 addr, fm_u32 *val);
+fm_s32 fm_top_reg_write(fm_u16 addr, fm_u32 val);
+fm_s32 fm_host_reg_read(fm_u32 addr, fm_u32 *val);
+fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val);
 
 /*
  * fm_get_channel_space - get the spcace of gived channel

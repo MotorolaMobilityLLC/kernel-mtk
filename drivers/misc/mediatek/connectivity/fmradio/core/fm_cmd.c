@@ -563,3 +563,256 @@ fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and,
 	return 13;
 }
 
+fm_s32 fm_get_patch_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
+{
+	fm_s32 i;
+	fm_s32 max = FM_ROM_MAX;
+
+	/* check if the ROM version is defined or not */
+	for (i = 0; i < max; i++) {
+		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].patch) == 0)) {
+			*ppath = patch_tbl[i].patch;
+			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
+			return 0;
+		}
+	}
+
+	/* the ROM version isn't defined, find a latest patch instead */
+	for (i = max; i > 0; i--) {
+		if (fm_file_exist(patch_tbl[i - 1].patch) == 0) {
+			*ppath = patch_tbl[i - 1].patch;
+			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
+			return 0;
+		}
+	}
+
+	/* get path failed */
+	WCN_DBG(FM_ERR | CHIP, "No valid patch file\n");
+	return -FM_EPATCH;
+}
+
+fm_s32 fm_get_coeff_path(fm_s32 ver, const fm_s8 **ppath, struct fm_patch_tbl *patch_tbl)
+{
+	fm_s32 i;
+	fm_s32 max = FM_ROM_MAX;
+
+	/* check if the ROM version is defined or not */
+	for (i = 0; i < max; i++) {
+		if ((patch_tbl[i].idx == ver) && (fm_file_exist(patch_tbl[i].coeff) == 0)) {
+			*ppath = patch_tbl[i].coeff;
+			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
+			return 0;
+		}
+	}
+
+	/* the ROM version isn't defined, find a latest patch instead */
+	for (i = max; i > 0; i--) {
+		if (fm_file_exist(patch_tbl[i - 1].coeff) == 0) {
+			*ppath = patch_tbl[i - 1].coeff;
+			WCN_DBG(FM_ERR | CHIP, "undefined ROM version\n");
+			return 0;
+		}
+	}
+
+	/* get path failed */
+	WCN_DBG(FM_ERR | CHIP, "No valid coeff file\n");
+	return -FM_EPATCH;
+}
+
+/*
+*  DspPatch - DSP download procedure
+*  @img - source dsp bin code
+*  @len - patch length in byte
+*  @type - rom/patch/coefficient/hw_coefficient
+*/
+fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
+{
+	fm_u8 seg_num;
+	fm_u8 seg_id = 0;
+	fm_s32 seg_len;
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (img == NULL) {
+		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+
+	if (len <= 0)
+		return -1;
+
+	seg_num = len / PATCH_SEG_LEN + 1;
+	WCN_DBG(FM_NTC | CHIP, "binary len:%d, seg num:%d\n", len, seg_num);
+
+	switch (type) {
+	case IMG_PATCH:
+
+		for (seg_id = 0; seg_id < seg_num; seg_id++) {
+			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
+			WCN_DBG(FM_NTC | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			if (FM_LOCK(cmd_buf_lock))
+				return -FM_ELOCK;
+			pkt_size =
+			    fm_patch_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
+						  &img[seg_id * PATCH_SEG_LEN], seg_len);
+			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_PATCH, SW_RETRY_CNT, PATCH_TIMEOUT, NULL);
+			FM_UNLOCK(cmd_buf_lock);
+
+			if (ret) {
+				WCN_DBG(FM_ERR | CHIP, "fm_patch_download failed\n");
+				return ret;
+			}
+		}
+
+		break;
+
+	case IMG_COEFFICIENT:
+
+		for (seg_id = 0; seg_id < seg_num; seg_id++) {
+			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
+			WCN_DBG(FM_NTC | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			if (FM_LOCK(cmd_buf_lock))
+				return -FM_ELOCK;
+			pkt_size =
+			    fm_coeff_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
+						  &img[seg_id * PATCH_SEG_LEN], seg_len);
+			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_COEFF, SW_RETRY_CNT, COEFF_TIMEOUT, NULL);
+			FM_UNLOCK(cmd_buf_lock);
+
+			if (ret) {
+				WCN_DBG(FM_ERR | CHIP, "fm_coeff_download failed\n");
+				return ret;
+			}
+		}
+
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+fm_s32 fm_get_read_result(struct fm_res_ctx *result)
+{
+	if (result == NULL) {
+		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+	fm_res = result;
+
+	return 0;
+}
+
+fm_s32 fm_reg_read(fm_u8 addr, fm_u16 *val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_get_reg(cmd_buf, TX_BUF_SIZE, addr);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_FSPI_RD, SW_RETRY_CNT, FSPI_RD_TIMEOUT, fm_get_read_result);
+
+	if (!ret && fm_res)
+		*val = fm_res->fspi_rd;
+
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_reg_write(fm_u8 addr, fm_u16 val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_set_reg(cmd_buf, TX_BUF_SIZE, addr, val);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_FSPI_WR, SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_set_bits_reg(cmd_buf, TX_BUF_SIZE, addr, bits, mask);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, (1 << 0x11), SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
+	/* 0x11 this opcode won't be parsed as an opcode, so set here as spcial case. */
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_top_reg_read(fm_u16 addr, fm_u32 *val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_top_get_reg(cmd_buf, TX_BUF_SIZE, addr);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_CSPI_READ, SW_RETRY_CNT, FSPI_RD_TIMEOUT, fm_get_read_result);
+
+	if (!ret && fm_res)
+		*val = fm_res->cspi_rd;
+
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_top_reg_write(fm_u16 addr, fm_u32 val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_top_set_reg(cmd_buf, TX_BUF_SIZE, addr, val);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_CSPI_WRITE, SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_host_reg_read(fm_u32 addr, fm_u32 *val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_host_get_reg(cmd_buf, TX_BUF_SIZE, addr);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_HOST_READ, SW_RETRY_CNT, FSPI_RD_TIMEOUT, fm_get_read_result);
+
+	if (!ret && fm_res)
+		*val = fm_res->cspi_rd;
+
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}
+
+fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val)
+{
+	fm_s32 ret = 0;
+	fm_u16 pkt_size;
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+	pkt_size = fm_host_set_reg(cmd_buf, TX_BUF_SIZE, addr, val);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_HOST_WRITE, SW_RETRY_CNT, FSPI_WR_TIMEOUT, NULL);
+	FM_UNLOCK(cmd_buf_lock);
+
+	return ret;
+}

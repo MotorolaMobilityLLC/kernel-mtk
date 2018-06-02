@@ -366,9 +366,9 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			}
 
 			if (parm_ctl.rw_flag == 0)
-				ret = fm_reg_write(fm, parm_ctl.addr, parm_ctl.val);
+				ret = fm_write(fm, parm_ctl.addr, parm_ctl.val);
 			else
-				ret = fm_reg_read(fm, parm_ctl.addr, &parm_ctl.val);
+				ret = fm_read(fm, parm_ctl.addr, &parm_ctl.val);
 
 			if (ret < 0)
 				goto out;
