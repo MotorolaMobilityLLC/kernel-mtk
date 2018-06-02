@@ -8,6 +8,8 @@
 #include <trace/events/sched.h>
 #endif
 
+#include <mt-plat/aee.h>
+
 #include <linux/slab.h>
 #include <linux/irq_work.h>
 #ifdef CONFIG_MT_RT_THROTTLE_MON
@@ -160,11 +162,30 @@ void free_rt_sched_group(struct task_group *tg)
 	kfree(tg->rt_se);
 }
 
+#ifdef CONFIG_PROVE_LOCKING
+DEFINE_RAW_SPINLOCK(rt_rq_runtime_spinlock);
+#define MAX_SPIN_KEY 10
+DEFINE_PER_CPU(struct lock_class_key, spin_key[MAX_SPIN_KEY]);
+DEFINE_PER_CPU(int, spin_key_idx);
+#endif
+
 void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
 		struct sched_rt_entity *rt_se, int cpu,
 		struct sched_rt_entity *parent)
 {
 	struct rq *rq = cpu_rq(cpu);
+#ifdef CONFIG_PROVE_LOCKING
+	int idx;
+
+	raw_spin_lock(&rt_rq_runtime_spinlock);
+	idx = per_cpu(spin_key_idx, cpu);
+
+	lockdep_set_class(&rt_rq->rt_runtime_lock, &per_cpu(spin_key[idx], cpu));
+	per_cpu(spin_key_idx, cpu)++;
+	if (per_cpu(spin_key_idx, cpu) >= MAX_SPIN_KEY)
+		aee_kernel_exception("Sched exception", "init_rt_rq: spin_key_idx >= MAX_SPIN_KEY");
+	raw_spin_unlock(&rt_rq_runtime_spinlock);
+#endif
 
 	rt_rq->highest_prio.curr = MAX_RT_PRIO;
 	rt_rq->rt_nr_boosted = 0;
