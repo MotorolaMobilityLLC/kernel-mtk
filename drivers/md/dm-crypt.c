@@ -34,6 +34,10 @@
 
 #define DM_MSG_PREFIX "crypt"
 
+#if defined(CONFIG_MTK_HW_FDE)
+#include <mt-plat/mtk_secure_api.h>
+#endif
+
 /*
  * context holding the current state of a multi-part conversion
  */
@@ -141,6 +145,11 @@ struct crypt_config {
 	char *cipher;
 	char *cipher_string;
 
+#if defined(CONFIG_MTK_HW_FDE)
+	int hw_fde;
+	int id;
+#endif
+
 	struct crypt_iv_operations *iv_gen_ops;
 	union {
 		struct iv_essiv_private essiv;
@@ -185,6 +194,10 @@ struct crypt_config {
 static void clone_init(struct dm_crypt_io *, struct bio *);
 static void kcryptd_queue_crypt(struct dm_crypt_io *io);
 static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
+#if defined(CONFIG_MTK_HW_FDE)
+/* use to check if the key has been changed */
+static unsigned int key_idx;
+#endif
 
 /*
  * Use this to access cipher attributes that are the same for each CPU.
@@ -1108,6 +1121,12 @@ static void crypt_endio(struct bio *clone)
 	unsigned rw = bio_data_dir(clone);
 	int error;
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1)
+		bio_put(clone);
+	else
+#endif
+	{
 	/*
 	 * free the processed pages
 	 */
@@ -1124,6 +1143,7 @@ static void crypt_endio(struct bio *clone)
 
 	if (unlikely(error))
 		io->error = error;
+	}
 
 	crypt_dec_pending(io);
 }
@@ -1158,6 +1178,14 @@ static int kcryptd_io_read(struct dm_crypt_io *io, gfp_t gfp)
 	clone_init(io, clone);
 	clone->bi_iter.bi_sector = cc->start + io->sector;
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1) {
+		clone->bi_hw_fde = 1;
+		clone->bi_iter.bi_sector = cc->start + io->sector;
+		clone->bi_key_idx = key_idx;
+	}
+#endif
+
 	generic_make_request(clone);
 	return 0;
 }
@@ -1172,6 +1200,63 @@ static void kcryptd_io_read_work(struct work_struct *work)
 	crypt_dec_pending(io);
 }
 
+#if defined(CONFIG_MTK_HW_FDE)
+
+/*
+ * MTK PATCH:
+ *
+ * Get storage device type (for hw fde on/off decision)
+ * or id (for crypt_config).
+ *
+ * Returns:
+ *   0: Embedded storage, for example: eMMC or UFS.
+ *   1: External storage, for example: SD card.
+ *  -1: Unrecognizable storage.
+ */
+static int crypt_dev_id(const char *path)
+{
+	int type = -1;
+
+	if (strstr(path, "bootdevice")) {
+
+		/* example: /dev/block/platform/bootdevice/by-name/userdata */
+		type = 0;
+
+	} else if (strstr(path, "externdevice") || strstr(path, "vold")) {
+
+		/* example: /dev/block/vold/private:179,2 */
+		type = 1;
+	}
+
+	pr_info("[dm-crypt] dev path: %s, type: %d\n", path, type);
+
+	return type;
+}
+
+static int crypt_is_hw_fde(const char *path)
+{
+	int dev_type;
+
+
+	dev_type = crypt_dev_id(path);
+
+	if (dev_type == 0) {
+
+		/* Always support HW FDE in embedded storage */
+		/* if CONFIG_MTK_HW_FDE is true */
+		return 1;
+
+	} else if (dev_type == 1) {
+
+		/* Do not support HW FDE in external storage. */
+		return 0;
+
+	}
+
+	return 0;
+}
+#endif
+
 static void kcryptd_queue_read(struct dm_crypt_io *io)
 {
 	struct crypt_config *cc = io->cc;
@@ -1183,6 +1268,16 @@ static void kcryptd_queue_read(struct dm_crypt_io *io)
 static void kcryptd_io_write(struct dm_crypt_io *io)
 {
 	struct bio *clone = io->ctx.bio_out;
+
+#if defined(CONFIG_MTK_HW_FDE)
+	struct crypt_config *cc = io->cc;
+
+	if (cc->hw_fde == 1) {
+		clone->bi_hw_fde = 1;
+		clone->bi_iter.bi_sector = cc->start + io->sector;
+		clone->bi_key_idx = key_idx;
+	}
+#endif
 
 	generic_make_request(clone);
 }
@@ -1479,12 +1574,25 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 	/* Ignore extra keys (which are used for IV etc) */
 	subkey_size = (cc->key_size - cc->key_extra_size) >> ilog2(cc->tfms_count);
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1) {
+		for (i = 0; i < (cc->key_size>>3); i++)
+			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_KEY,
+				*(u32 *)(cc->key+(i*8)),
+				*(u32 *)(cc->key+(i*8)+4),
+				(cc->id & 0xff) << 24 |
+				(i & 0xff)<<16 | (cc->key_size & 0xffff));
+		key_idx++;
+	} else
+#endif
+	{
 	for (i = 0; i < cc->tfms_count; i++) {
 		r = crypto_skcipher_setkey(cc->tfms[i],
 					   cc->key + (i * subkey_size),
 					   subkey_size);
 		if (r)
 			err = r;
+		}
 	}
 
 	return err;
@@ -1542,19 +1650,29 @@ static void crypt_dtr(struct dm_target *ti)
 
 	if (cc->io_queue)
 		destroy_workqueue(cc->io_queue);
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 0)
+#endif
+	{
 	if (cc->crypt_queue)
 		destroy_workqueue(cc->crypt_queue);
+	}
 
 	crypt_free_tfms(cc);
 
 	if (cc->bs)
 		bioset_free(cc->bs);
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 0)
+#endif
+	{
 	mempool_destroy(cc->page_pool);
 	mempool_destroy(cc->req_pool);
 
 	if (cc->iv_gen_ops && cc->iv_gen_ops->dtr)
 		cc->iv_gen_ops->dtr(cc);
+	}
 
 	if (cc->dev)
 		dm_put_device(ti, cc->dev);
@@ -1639,6 +1757,17 @@ static int crypt_ctr_cipher(struct dm_target *ti,
 		goto bad_mem;
 	}
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1) {
+		/* Initialize and set key */
+		ret = crypt_set_key(cc, key);
+		if (ret < 0) {
+			ti->error = "Error decoding and setting key";
+			goto bad;
+		}
+	} else
+#endif
+	{
 	/* Allocate cipher */
 	ret = crypt_alloc_tfms(cc, cipher_api);
 	if (ret < 0) {
@@ -1716,7 +1845,7 @@ static int crypt_ctr_cipher(struct dm_target *ti,
 			goto bad;
 		}
 	}
-
+	}
 	ret = 0;
 bad:
 	kfree(cipher_api);
@@ -1761,10 +1890,29 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	cc->key_size = key_size;
 
 	ti->private = cc;
+
+#if defined(CONFIG_MTK_HW_FDE)
+	cc->hw_fde = (crypt_is_hw_fde(argv[3]) == 1)?1:0;
+	cc->id = ret = crypt_dev_id(argv[3]);
+	if (ret < 0)
+		goto bad;
+	pr_debug("%s %d HW FDE:%d MSDC%d\n",
+			__func__,
+			__LINE__,
+			cc->hw_fde,
+			cc->id);
+#endif
+
 	ret = crypt_ctr_cipher(ti, argv[0], argv[1]);
 	if (ret < 0)
 		goto bad;
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1) {
+		iv_size_padding = 0; /* for per_bio_data_size. */
+	} else
+#endif
+	{
 	cc->dmreq_start = sizeof(struct skcipher_request);
 	cc->dmreq_start += crypto_skcipher_reqsize(any_tfm(cc));
 	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
@@ -1789,16 +1937,22 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 		ti->error = "Cannot allocate crypt request mempool";
 		goto bad;
 	}
+	}
 
 	cc->per_bio_data_size = ti->per_io_data_size =
 		ALIGN(sizeof(struct dm_crypt_io) + cc->dmreq_start +
 		      sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size,
 		      ARCH_KMALLOC_MINALIGN);
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 0)
+#endif
+	{
 	cc->page_pool = mempool_create_page_pool(BIO_MAX_PAGES, 0);
 	if (!cc->page_pool) {
 		ti->error = "Cannot allocate page mempool";
 		goto bad;
+		}
 	}
 
 	cc->bs = bioset_create(MIN_IOS, 0);
@@ -1809,12 +1963,17 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 
 	mutex_init(&cc->bio_alloc_lock);
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 0)
+#endif
+	{
 	ret = -EINVAL;
 	if (sscanf(argv[2], "%llu%c", &tmpll, &dummy) != 1) {
 		ti->error = "Invalid iv_offset sector";
 		goto bad;
 	}
 	cc->iv_offset = tmpll;
+	}
 
 	ret = dm_get_device(ti, argv[3], dm_table_get_mode(ti->table), &cc->dev);
 	if (ret) {
@@ -1874,7 +2033,10 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 		ti->error = "Couldn't create kcryptd io queue";
 		goto bad;
 	}
-
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 0)
+#endif
+	{
 	if (test_bit(DM_CRYPT_SAME_CPU, &cc->flags))
 		cc->crypt_queue = alloc_workqueue("kcryptd",
 						  WQ_HIGHPRI |
@@ -1888,6 +2050,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	if (!cc->crypt_queue) {
 		ti->error = "Couldn't create kcryptd queue";
 		goto bad;
+		}
 	}
 
 	init_waitqueue_head(&cc->write_thread_wait);
@@ -1942,11 +2105,18 @@ static int crypt_map(struct dm_target *ti, struct bio *bio)
 	crypt_io_init(io, cc, bio, dm_target_offset(ti, bio->bi_iter.bi_sector));
 	io->ctx.req = (struct skcipher_request *)(io + 1);
 
+#if defined(CONFIG_MTK_HW_FDE)
+	if (cc->hw_fde == 1)
+		kcryptd_queue_read(io);
+	else
+#endif
+	{
 	if (bio_data_dir(io->base_bio) == READ) {
 		if (kcryptd_io_read(io, GFP_NOWAIT))
 			kcryptd_queue_read(io);
 	} else
 		kcryptd_queue_crypt(io);
+	}
 
 	return DM_MAPIO_SUBMITTED;
 }

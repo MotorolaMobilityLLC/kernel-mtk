@@ -142,6 +142,12 @@ struct mmc_request {
 
 	/* Allow other commands during this ongoing data transfer or busy wait */
 	bool			cap_cmd_during_tfr;
+
+#ifdef CONFIG_MTK_HW_FDE
+	unsigned int            bi_hw_fde;
+	unsigned int            bi_key_idx;
+#endif
+
 	ktime_t			io_start;
 #ifdef CONFIG_BLOCK
 	int			lat_hist_enabled;
