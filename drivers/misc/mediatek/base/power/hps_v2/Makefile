@@ -27,3 +27,6 @@ obj-y += mtk_hps_ops.o
 
 # platform dependent files
 #obj-y += mach/
+
+# stress module
+obj-y += mtk_cpuhp_ut.o
