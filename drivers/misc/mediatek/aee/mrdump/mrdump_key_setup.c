@@ -13,7 +13,6 @@
 
 #include <linux/kconfig.h>
 #include <linux/module.h>
-#ifndef CONFIG_ARCH_MT6757
 #ifdef CONFIG_MTK_WATCHDOG
 #include <mach/wd_api.h>
 static int __init mrdump_key_init(void)
@@ -35,7 +34,6 @@ static int __init mrdump_key_init(void)
 }
 
 module_init(mrdump_key_init);
-#endif
 #endif
 
 

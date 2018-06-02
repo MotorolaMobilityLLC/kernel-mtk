@@ -36,6 +36,7 @@
 #include <smp.h>
 #endif
 #include "aee-common.h"
+#include <mrdump_private.h>
 
 #undef WDT_DEBUG_VERBOSE
 /* #define WDT_DEBUG_VERBOSE */
@@ -351,7 +352,6 @@ void aee_fiq_ipi_cpu_stop(void *arg, void *regs, void *svc_sp)
 	aee_wdt_dump_stack_bin(cpu, ((struct pt_regs *)regs)->ARM_sp,
 			       ((struct pt_regs *)regs)->ARM_sp + WDT_SAVE_STACK_SIZE);
 
-	set_cpu_online(cpu, false);
 	local_fiq_disable();
 	local_irq_disable();
 
@@ -434,7 +434,7 @@ void aee_wdt_irq_info(void)
 	aee_sram_fiq_log("\n\n");
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_TIME);
-	t = cpu_clock(smp_processor_id());
+	t = cpu_clock(get_HW_cpuid());
 	nanosec_rem = do_div(t, 1000000000);
 	aee_wdt_printf("\nQwdt at [%5lu.%06lu] ", (unsigned long)t, nanosec_rem / 1000);
 

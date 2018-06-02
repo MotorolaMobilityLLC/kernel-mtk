@@ -35,6 +35,7 @@
 #include <mt-plat/aee.h>
 #include <mrdump.h>
 #include "aee-common.h"
+#include <mrdump_private.h>
 
 #define RR_PROC_NAME "reboot-reason"
 
@@ -152,7 +153,7 @@ void ksysfs_bootinfo_exit(void)
 
 /* end sysfs bootinfo */
 
-static inline unsigned int get_linear_memory_size(void)
+static inline unsigned long get_linear_memory_size(void)
 {
 	return (unsigned long)high_memory - PAGE_OFFSET;
 }
@@ -327,12 +328,6 @@ __weak int aee_rr_curr_fiq_step(void)
 	return -1;
 }
 #endif
-
-__weak int get_HW_cpuid(void)
-{
-	LOGE("%s:weak function %s\n", __func__, __FILE__);
-	return -99;
-}
 
 asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 {
