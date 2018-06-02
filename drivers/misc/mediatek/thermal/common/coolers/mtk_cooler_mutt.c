@@ -21,7 +21,7 @@
 #include <linux/err.h>
 #include <linux/syscalls.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include <mt_ccci_common.h>
+#include <mtk_ccci_common.h>
 #include <linux/uidgid.h>
 #include <mtk_cooler_setting.h>
 #include <linux/debugfs.h>
