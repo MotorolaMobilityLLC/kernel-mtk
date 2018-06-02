@@ -64,7 +64,7 @@ int aal_dbg_en;
 #ifdef CONFIG_MTK_AAL_SUPPORT
 static int disp_aal_write_init_regs(void *cmdq);
 #endif
-static int disp_aal_write_param_to_reg(cmdqRecHandle cmdq, const DISP_AAL_PARAM *param);
+static int disp_aal_write_param_to_reg(struct cmdqRecStruct cmdq, const DISP_AAL_PARAM *param);
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
@@ -494,7 +494,7 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 #define DRE_REG_2(v0, off0, v1, off1)           (((v1) << (off1)) | ((v0) << (off0)))
 #define DRE_REG_3(v0, off0, v1, off1, v2, off2) (((v2) << (off2)) | (v1 << (off1)) | ((v0) << (off0)))
 
-static int disp_aal_write_param_to_reg(cmdqRecHandle cmdq, const DISP_AAL_PARAM *param)
+static int disp_aal_write_param_to_reg(struct cmdqRecStruct cmdq, const DISP_AAL_PARAM *param)
 {
 	int i;
 	const int *gain;
