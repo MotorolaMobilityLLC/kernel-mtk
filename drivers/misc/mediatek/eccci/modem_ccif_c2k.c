@@ -1084,6 +1084,7 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 		ccci_md_inc_tx_seq_num(md, ccci_h);
 
 		md_ccif_tx_rx_printk(md, skb, qno, 1);
+		ccci_channel_update_packet_counter(md, ccci_h);
 
 		if (md->index == MD_SYS3) {
 			/* heart beat msg is sent from status channel in ECCCI,
