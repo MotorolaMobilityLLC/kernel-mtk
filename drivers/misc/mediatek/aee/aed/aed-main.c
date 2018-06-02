@@ -1447,12 +1447,16 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				struct pt_regs *user_ret = NULL;
 
+				rcu_read_lock();
 				task = find_task_by_vpid(tmp->tid);
 				if (task == NULL) {
+					rcu_read_unlock();
 					kfree(tmp);
 					ret = -EINVAL;
 					goto EXIT;
 				}
+				rcu_read_unlock();
+
 				user_ret = task_pt_regs(task);
 				memcpy(&(tmp->regs), user_ret, sizeof(struct pt_regs));
 				if (copy_to_user
@@ -1501,12 +1505,16 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				int dumpable = -1;
 
+				rcu_read_lock();
 				task = find_task_by_vpid(pid);
 				if (task == NULL) {
+					rcu_read_unlock();
 					LOGD("%s: process:%d task null\n", __func__, pid);
 					ret = -EINVAL;
 					goto EXIT;
 				}
+				rcu_read_unlock();
+
 				if (task->mm == NULL) {
 					LOGD("%s: process:%d task mm null\n", __func__, pid);
 					ret = -EINVAL;
