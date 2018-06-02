@@ -22,4 +22,8 @@ int disp_pwm_clksource_disable(int clk_req);
 
 bool disp_pwm_mux_is_osc(void);
 
+void disp_pwm_ulposc_cali(void);
+
+void disp_pwm_ulposc_query(char *debug_output);
+
 #endif

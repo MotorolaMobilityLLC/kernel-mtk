@@ -72,11 +72,18 @@ enum PWM_LOG_TYPE {
 	MSG_LOG,
 };
 
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#define PWM_USE_HIGH_ULPOSC_FQ
+#endif
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 static volatile bool g_pwm_is_config_init;
+#if defined(PWM_USE_HIGH_ULPOSC_FQ)
+static bool g_pwm_first_config;
+#endif
 #endif
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
 static volatile bool g_pwm_force_backlight_update;
@@ -202,6 +209,7 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int ret;
+	bool config_instantly = false;
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
 
@@ -212,10 +220,30 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 		/* Some backlight chip/PMIC(e.g. MT6332) only accept slower clock */
 		pwm_div = (pwm_div == 0) ? PWM_DEFAULT_DIV_VALUE : pwm_div;
 		pwm_div &= 0x3FF;
+#if defined(PWM_USE_HIGH_ULPOSC_FQ)
+		if ((pwm_src == 0 || pwm_src == 1) && (pwm_src < 0x3FF)) {
+			/* add PWM clock division, due to ULPOSC frequency is too high in some chip */
+			pwm_div += 1;
+		}
+		if (g_pwm_first_config == false) {
+			config_instantly = true;
+			g_pwm_first_config = true;
+		}
+#endif
 		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
 	g_pwm_is_config_init = true;
+
+	if (config_instantly == true) {
+		/* Set PWM clock division instantly to avoid frequency change dramaticly */
+		DISP_REG_MASK(NULL, reg_base + 0x20, 0x3, ~0);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
+		udelay(40);
+		DISP_REG_MASK(NULL, reg_base + 0x20, 0x0, ~0);
+
+		PWM_MSG("disp_pwm_init : PWM config data instantly (%d,%d)", pwm_src, pwm_div);
+	}
 
 	/* We don't enable PWM until we really need */
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
@@ -576,6 +604,7 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_pwm_power_on(module, cmq_handle);
+
 	return 0;
 }
 
@@ -821,5 +850,15 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "queryBL", 7) == 0) {
 		disp_pwm_query_backlight(debug_output);
 	}
+
+#if defined(PWM_USE_HIGH_ULPOSC_FQ)
+	if (strncmp(cmd, "query_osc", 9) == 0) {
+		disp_pwm_ulposc_query(debug_output);
+		PWM_MSG("Trigger query ulposc");
+	} else if (strncmp(cmd, "osc_cali", 8) == 0) {
+		disp_pwm_ulposc_cali();
+		PWM_MSG("Trigger ulposc calibration");
+	}
+#endif
 }
 
