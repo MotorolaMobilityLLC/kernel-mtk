@@ -65,7 +65,11 @@ struct mtk_desc_eint {
 
 struct mtk_desc_pin {
 	struct pinctrl_pin_desc	pin;
+#ifdef CONFIG_MTK_EINT_MULTI_TRIGGER_DESIGN
 	struct mtk_desc_eint eint;
+#else
+	const struct mtk_desc_eint eint;
+#endif
 	const struct mtk_desc_function	*functions;
 };
 
@@ -307,7 +311,11 @@ struct mtk_pinctrl {
  * @regmap_num:chip regmap number.
  */
 struct mtk_pinctrl_devdata {
+#ifdef CONFIG_MTK_EINT_MULTI_TRIGGER_DESIGN
 	struct mtk_desc_pin		*pins;
+#else
+	const struct mtk_desc_pin		*pins;
+#endif
 	unsigned int			npins;
 	const struct mtk_drv_group_desc	*grp_desc;
 	unsigned int			n_grp_cls;

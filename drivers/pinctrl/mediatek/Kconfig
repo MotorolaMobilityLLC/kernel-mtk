@@ -13,6 +13,16 @@ config PINCTRL_MT6758
 	depends on (!ARCH_MEDIATEK) && MACH_MT6758
 	select PINCTRL_MTK
 	select PINCTRL_MTK_NO_UPSTREAM
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
+config MTK_EINT_MULTI_TRIGGER_DESIGN
+	bool "Mediatek EINT multi-trigger design"
+	depends on PINCTRL_MTK
+	default n
+	help
+	  On MTK EINT design, a GPIO pin is connected to 2 EINT pin  in order to
+	  save pins for assignments. Which EINT pin is actually occupied by a GPIO
+	  is described in *pins and it is decided in run time.
 
 if ARCH_MEDIATEK || COMPILE_TEST
 # For pintcrl command debug
