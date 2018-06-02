@@ -58,6 +58,7 @@ static DECLARE_COMPLETION(aed_ee_com);
 static spinlock_t aed_device_lock;
 int aee_mode = AEE_MODE_NOT_INIT;
 static int force_red_screen = AEE_FORCE_NOT_SET;
+static int aee_force_exp = AEE_FORCE_EXP_NOT_SET;
 
 static struct proc_dir_entry *aed_proc_dir;
 
@@ -602,19 +603,16 @@ static int ke_gen_ind_msg(struct aee_oops *oops)
 
 static void ke_destroy_log(void)
 {
+	struct aee_oops *lastlog = aed_dev.kerec.lastlog;
 	LOGD("%s\n", __func__);
 	msg_destroy(&aed_dev.kerec.msg);
 
 	if (aed_dev.kerec.lastlog) {
-		if (strncmp
-		    (aed_dev.kerec.lastlog->module, IPANIC_MODULE_TAG,
-		     strlen(IPANIC_MODULE_TAG)) == 0) {
-			ipanic_oops_free(aed_dev.kerec.lastlog, 0);
-		} else {
-			aee_oops_free(aed_dev.kerec.lastlog);
-		}
-
 		aed_dev.kerec.lastlog = NULL;
+		if (strncmp(lastlog->module, IPANIC_MODULE_TAG, strlen(IPANIC_MODULE_TAG)) == 0)
+			ipanic_oops_free(lastlog, 0);
+		else
+			aee_oops_free(lastlog);
 	}
 }
 
@@ -625,7 +623,11 @@ static int ke_log_avail(void)
 		if (is_compat_task() != ((aed_dev.kerec.lastlog->dump_option & DB_OPT_AARCH64) == 0))
 			return 0;
 #endif
-		LOGI("AEE api log available\n");
+		/* remove the log to reduce risk of dead loop: cpux keep moving log from buffer to
+		 * console and can not process debuggerd work flow, meanwhile aed keep calling poll
+		 * which produce more log into buffer and cpux stucked whith these log.
+		 * LOGI("AEE api log available\n");
+		 */
 		return 1;
 	}
 
@@ -1030,7 +1032,7 @@ static ssize_t aed_ee_write(struct file *filp, const char __user *buf, size_t co
 		return -1;
 	}
 
-	msg_show(__func__, &msg);
+	/*the same reason removing "AEE api log available". msg_show(__func__, &msg);*/
 
 	if (msg.cmdType == AE_REQ) {
 		if (!ee_log_avail()) {
@@ -1235,7 +1237,7 @@ static ssize_t aed_ke_write(struct file *filp, const char __user *buf, size_t co
 		return -1;
 	}
 
-	msg_show(__func__, &msg);
+	/*the same reason removing "AEE api log available". msg_show(__func__, &msg);*/
 
 	if (msg.cmdType == AE_REQ) {
 		if (!ke_log_avail()) {
@@ -1347,6 +1349,15 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				goto EXIT;
 			}
 			LOGD("set aee mode = %d\n", aee_mode);
+			break;
+		}
+	case AEEIOCTL_SET_AEE_FORCE_EXP:
+		{
+			if (copy_from_user(&aee_force_exp, (void __user *)arg, sizeof(aee_force_exp))) {
+				ret = -EFAULT;
+				goto EXIT;
+			}
+			LOGD("set aee force_exp = %d\n", aee_force_exp);
 			break;
 		}
 	case AEEIOCTL_DAL_SHOW:
@@ -1885,7 +1896,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 
 	LOGD("%s : [%s] log ptr %p size %d, phy ptr %p size %d\n", __func__,
 	     assert_type, log, log_size, phy, phy_size);
-	if (aee_mode >= AEE_MODE_CUSTOMER_USER)
+	if ((aee_mode >= AEE_MODE_CUSTOMER_USER) && (aee_force_exp == AEE_FORCE_EXP_NOT_SET))
 		return;
 	eerec = kzalloc(sizeof(struct aed_eerec), GFP_ATOMIC);
 	if (eerec == NULL) {
