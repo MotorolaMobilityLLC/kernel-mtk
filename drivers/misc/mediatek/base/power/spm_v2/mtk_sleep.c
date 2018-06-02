@@ -27,12 +27,12 @@
 #include "mtk_sleep.h"
 #include "mtk_spm.h"
 #include "mtk_spm_sleep.h"
-/* #include "mtk_spm_idle.h" */
+#include "mtk_spm_idle.h"
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
-/* #include "mtk_clkmgr.h" */
+#include <mach/mtk_clkmgr.h>
 #endif
 
-/* #include "mtk_spm_mtcmos.h" */
+/* #include "mtk_spm_mtcmos.h" */ /* TODO */
 #include "mtk_spm_misc.h"
 #ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>
@@ -41,7 +41,7 @@
 /**************************************
  * only for internal debug
  **************************************/
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_LDVT
 #define SLP_SLEEP_DPIDLE_EN         1
 #define SLP_REPLACE_DEF_WAKESRC     1
@@ -282,8 +282,6 @@ void gpio_dump_regs_func(void)
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
-
-	return 0; /* temporarily fix suspend fail */
 #if 0
 	u32 cpu = smp_processor_id();
 #endif
@@ -298,6 +296,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		fm_radio_is_playing = 1;
 #endif				/* CONFIG_MT_SND_SOC_6755 */
 #endif
+
+	return 0; /* temporarily fix suspend fail */
+
 #ifdef CONFIG_MTKPASR
 	/* PASR SW operations */
 	enter_pasrdpd();
@@ -327,7 +328,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */ /* TODO */
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();
 #endif

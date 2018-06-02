@@ -18,11 +18,11 @@
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/atomic.h>
-/* #include "mtk_spm_idle.h" */
-/* #include <mach/irqs.h> */
+#include "mtk_spm_idle.h"
+/* #include <mach/irqs.h> */ /* TODO */
 #include <mt-plat/upmu_common.h>
-/* #include "mtk_spm_vcore_dvfs.h" */
-/* #include "mtk_vcorefs_governor.h" */
+#include "mtk_spm_vcore_dvfs.h"
+#include "mtk_vcorefs_governor.h"
 #include "mtk_spm_internal.h"
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -258,27 +258,6 @@ int __attribute__((weak)) spm_fs_init(void)
 {
 	return 0;
 }
-
-unsigned int __attribute__((weak)) pmic_read_interface_nolock
-					(unsigned int p1, unsigned int *p2, unsigned int p3, unsigned int p4)
-{
-	return 0;
-}
-
-unsigned int __attribute__((weak)) pmic_config_interface
-					(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4)
-{
-	return 0;
-}
-
-int __attribute__((weak)) get_ddr_type(void)
-{
-	return 0;
-}
-
-#ifndef TYPE_LPDDR3
-#define TYPE_LPDDR3 1
-#endif
 
 /**************************************
  * Init and IRQ Function
@@ -839,7 +818,9 @@ int spm_module_init(void)
 			spm_read(SPM_POWER_ON_VAL0));
 	}
 #elif defined(CONFIG_MACH_MT6757)
-	/* spm_vcorefs_init_state(0); */ /* todo: assume boot-up with OPP_0 */
+	reg_val = get_shuffle_status();
+	spm_vcorefs_init_state(reg_val);
+	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuffle status: 0x%x\n", spm_read(SPM_SW_RSV_5), reg_val);
 #elif defined(CONFIG_ARCH_MT6797)
 	if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 0)
 		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | SPM_SCREEN_ON_HPM);
@@ -1012,7 +993,10 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 	}
 #endif
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
-#if defined(CONFIG_ARCH_MT6755) /*|| defined(CONFIG_MACH_MT6757)*/
+#if defined(CONFIG_MACH_MT6757)
+		__spm_pmic_low_iq_mode(0);
+#endif
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
 		vcorefs_late_init_dvfs();
 #endif
 		dyna_load_pcm_done = 1;
@@ -1835,7 +1819,7 @@ static void spm_pmic_set_vsram_proc_mode(int mode)
 }
 #endif
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 static void spm_pmic_set_osc_mode(int mode)
 {
 	pmic_config_interface_nolock(MT6351_PMIC_RG_OSC_SEL_HW_MODE_ADDR,
@@ -1845,6 +1829,25 @@ static void spm_pmic_set_osc_mode(int mode)
 #endif
 
 #if defined(CONFIG_MACH_MT6757)
+#define RG_VCORE_SLEEP_0P6	0x3	/* 2'b11 */
+#define RG_VCORE_SLEEP_0P65	0x2	/* 2'b10 */
+#define RG_VCORE_SLEEP_0P7	0x0	/* 2'b00 */
+#define RG_VCORE_SLEEP_0P9	0x1	/* 2'b01 */
+static void spm_pmic_set_rg_vcore(int vcore, int lock)
+{
+	if (lock == 0) {
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR,
+					     vcore,
+					     MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
+	} else {
+		pmic_config_interface(MT6351_PMIC_RG_VCORE_VSLEEP_SEL_ADDR,
+				      vcore,
+				      MT6351_PMIC_RG_VCORE_VSLEEP_SEL_MASK,
+				      MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT);
+	}
+}
+
 static void spm_pmic_set_extra_low_power_mode(int lock)
 {
 	if (lock == 0) {
@@ -2017,38 +2020,54 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	case PMIC_PWR_DEEPIDLE:
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
-#elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
-#elif defined(CONFIG_MACH_MT6757)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
-		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P8, lock);
-#endif
-
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-#if defined(CONFIG_MACH_MT6757)
-		spm_pmic_set_buck(MT6351_BUCK_VSRAM_MD_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-#endif
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
-		spm_pmic_set_osc_mode(PMIC_HW_MODE);
-#endif
-
-#if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-#elif defined(CONFIG_MACH_MT6757)
-		if (get_ddr_type() == TYPE_LPDDR3)
-			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-		else
-			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
-#endif
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
 		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+#elif defined(CONFIG_MACH_MT6757)
+		if (can_spm_pmic_set_vcore_voltage()) {
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
+		} else {
+			pr_debug("Not set vcore voltage\n");
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P8, lock);
+		}
+		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P8, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VSRAM_MD_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		if (get_ddr_type() == TYPE_LPDDR3)
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		else
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
+		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VXO22_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+#elif defined(CONFIG_ARCH_MT6797)
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
+		spm_pmic_set_osc_mode(PMIC_HW_MODE);
+		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
+		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock); /* For Audio MP3 */
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+#endif
 		break;
 	case PMIC_PWR_SODI3:
 #if defined(CONFIG_ARCH_MT6755)
@@ -2062,24 +2081,32 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 #elif defined(CONFIG_MACH_MT6757)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
-		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P8, lock);
-		spm_pmic_set_osc_mode(PMIC_SW_MODE);
-		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VSRAM_MD_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
-		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		if (can_spm_pmic_set_vcore_voltage()) {
+			spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_0P7, lock);
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
+		} else {
+			pr_debug("SODI3 set vcore sleep voltage to be 0p7\n");
+			spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_0P7, lock);
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P8, lock);
+		}
+		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P6, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VSRAM_MD_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		if (get_ddr_type() == TYPE_LPDDR3)
 			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		else
 			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
@@ -2093,8 +2120,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
-#endif
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
+#endif
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
@@ -2113,7 +2140,15 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_MACH_MT6757)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P65, lock);
+		if (can_spm_pmic_set_vcore_voltage()) {
+			pr_warn("Set vcore sleep voltage to be 0p65\n");
+			spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_0P65, lock);
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P65, lock);
+		} else {
+			pr_warn("Set vcore sleep voltage to be 0p7\n");
+			spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_0P7, lock);
+			spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P8, lock);
+		}
 		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P6, lock);
 		spm_pmic_set_vgpu(VGPU_VOSEL_SLEEP_0P6, lock);
 		spm_pmic_set_vmd1(VMD1_VOSEL_SLEEP_0P6, lock);
@@ -2129,10 +2164,9 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		else
 			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
-		spm_pmic_set_osc_mode(PMIC_HW_MODE);
 		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, -1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
