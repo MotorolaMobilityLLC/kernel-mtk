@@ -26,29 +26,6 @@
 #define DCM_ENABLE 1
 
 /*
- * weak function
- */
-int __attribute__ ((weak))
-arch_get_cluster_id(unsigned int cpu)
-{
-	pr_notice("%s not ready\n", __func__);
-	return 0;
-}
-
-void __attribute__ ((weak))
-arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
-{
-	pr_notice("%s not ready\n", __func__);
-}
-
-int __attribute__ ((weak))
-arch_get_nr_clusters(void)
-{
-	pr_notice("%s not ready\n", __func__);
-	return 0;
-}
-
-/*
  * Global Variables
  */
 bool is_in_cpufreq;

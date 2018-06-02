@@ -533,7 +533,7 @@ static int hps_suspend(struct device *dev)
 
 suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER)
 		ret = hps_del_timer();
 #endif
@@ -579,7 +579,7 @@ static int hps_resume(struct device *dev)
 #endif
 resume_end:
 	hps_ctxt.state = STATE_EARLY_SUSPEND;
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
 		hps_task_wakeup();
 		hps_restart_timer();
@@ -665,7 +665,7 @@ static int __init hps_init(void)
 	hps_warn("hps_init\n");
 
 	/* temp for bringup */
-	return 0;
+	/* return 0; */
 	/* temp for bringup */
 
 	/* hps_cpu_init() must before hps_core_init() */

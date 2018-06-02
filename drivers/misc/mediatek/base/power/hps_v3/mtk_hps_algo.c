@@ -28,15 +28,6 @@
 #endif
 
 /*
- * weak function
- */
-void __attribute__ ((weak))
-arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
-{
-	pr_notice("%s not ready\n", __func__);
-}
-
-/*
  * static
  */
 #define STATIC
