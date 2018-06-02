@@ -1159,7 +1159,14 @@ static int smi_probe(struct platform_device *pdev)
 						smi_clk_get_by_name(
 						i, smi_clk_name[i][j]);
 			}
-			atomic_set(&(larbs_clock_count[i]), 0);
+			if (i == SMI_COMMON_REG_INDX || i == SMI_LARB0_REG_INDX)
+				atomic_set(&(larbs_clock_count[i]), 1);
+#if defined(SMI_VIN)
+			else if (i == SMI_LARB1_REG_INDX)
+				atomic_set(&(larbs_clock_count[i]), 1);
+#endif
+			else
+				atomic_set(&(larbs_clock_count[i]), 0);
 		}
 		smi_mmdvfs_clks_init();
 	} else
