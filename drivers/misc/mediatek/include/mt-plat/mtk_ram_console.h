@@ -15,6 +15,7 @@
 #define __MTK_RAM_CONSOLE_H__
 
 #include <linux/console.h>
+#include <linux/pstore.h>
 
 typedef enum {
 	AEE_FIQ_STEP_FIQ_ISR_BASE = 1,
