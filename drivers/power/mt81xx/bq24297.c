@@ -21,16 +21,14 @@
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 #include <linux/reboot.h>
-#include <linux/reboot.h>
 #include <linux/regulator/consumer.h>
-#include <linux/switch.h>
 #include <linux/workqueue.h>
 
 #include "bq24297.h"
 #include "mt_charging.h"
-#include <mt-plat/mt_boot.h>
-#include <mt-plat/mt_reboot.h>
+#include <mt-plat/mtk_boot.h>
 #include <mt-plat/upmu_common.h>
+#include <mach/upmu_sw.h>
 
 /**********************************************************
  *
@@ -52,7 +50,6 @@
  *********************************************************/
 
 static struct i2c_client *new_client;
-static struct switch_dev bq24297_reg09;
 static bool charging_type_det_done = true;
 static u8 bq24297_reg[bq24297_REG_NUM] = {0};
 
@@ -100,6 +97,11 @@ __attribute__((weak)) void Charger_Detect_Release(void)
 	pr_debug("need usb porting!\n");
 }
 
+__attribute__((weak)) int slp_get_wake_reason(void)
+{
+	pr_debug("need spm porting!\n");
+	return 0;
+}
 /**********************************************************
  *
  *   [I2C Function For Read/Write bq24297]
@@ -945,10 +947,7 @@ static u32 charging_set_platform_reset(void *data)
 
 	pr_debug("charging_set_platform_reset\n");
 
-	if (system_state == SYSTEM_BOOTING)
-		arch_reset(0, NULL);
-	else
-		orderly_reboot(true);
+	orderly_reboot();
 
 	return status;
 }
@@ -1129,15 +1128,9 @@ void bq24297_polling_reg09(void)
 			 * This is to filter noises
 			 */
 			i = 0;
-			/* need filter fault type here */
-			switch_set_state(&bq24297_reg09,
-				bq24297_get_reg9_fault_type(
-				bq24297_reg[bq24297_CON9]));
 		}
 		msleep(20);
 	}
-	/* send normal fault state to UI */
-	switch_set_state(&bq24297_reg09, BQ_NORMAL_FAULT);
 }
 
 static irqreturn_t ops_bq24297_int_handler(int irq, void *dev_id)
@@ -1146,20 +1139,30 @@ static irqreturn_t ops_bq24297_int_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int bq24297_driver_suspend(struct i2c_client *client, pm_message_t mesg)
+static int bq24297_driver_suspend(struct device *pdev)
 {
-	pr_debug("[bq24297_driver_suspend] client->irq(%d)\n", client->irq);
-	if (client->irq > 0)
-		disable_irq(client->irq);
+	if (!new_client) {
+		pr_debug("[%s]error: driver not ready\n", __func__);
+		return 0;
+	}
+
+	pr_debug("[bq24297_driver_suspend] client->irq(%d)\n", new_client->irq);
+	if (new_client->irq > 0)
+		disable_irq(new_client->irq);
 
 	return 0;
 }
 
-static int bq24297_driver_resume(struct i2c_client *client)
+static int bq24297_driver_resume(struct device *pdev)
 {
-	pr_debug("[bq24297_driver_resume] client->irq(%d)\n", client->irq);
-	if (client->irq > 0)
-		enable_irq(client->irq);
+	if (!new_client) {
+		pr_debug("[%s]error: driver not ready\n", __func__);
+		return 0;
+	}
+
+	pr_debug("[bq24297_driver_resume] client->irq(%d)\n", new_client->irq);
+	if (new_client->irq > 0)
+		enable_irq(new_client->irq);
 
 	return 0;
 }
@@ -1212,16 +1215,6 @@ static int bq24297_driver_probe(struct i2c_client *client,
 
 	bq24297_dump_register();
 
-	bq24297_reg09.name = "bq24297_reg09";
-	bq24297_reg09.index = 0;
-	bq24297_reg09.state = 0;
-	ret = switch_dev_register(&bq24297_reg09);
-
-	if (ret < 0)
-		pr_debug(
-			"[bq24297_driver_probe] switch_dev_register() error(%d)\n",
-			ret);
-
 	if (client->irq > 0) {
 
 		pr_debug("[bq24297_driver_probe] enable interrupt: %d\n",
@@ -1254,7 +1247,11 @@ static const struct of_device_id bq24297_id[] = {
 
 MODULE_DEVICE_TABLE(of, bq24297_id);
 #endif
-
+#ifdef CONFIG_PM
+static const struct dev_pm_ops bq24297_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(bq24297_driver_suspend, bq24297_driver_resume)
+};
+#endif
 static struct i2c_driver bq24297_driver = {
 	.driver = {
 
@@ -1262,11 +1259,12 @@ static struct i2c_driver bq24297_driver = {
 #ifdef CONFIG_OF
 			.of_match_table = of_match_ptr(bq24297_id),
 #endif
+#ifdef CONFIG_PM
+			.pm   = &bq24297_pm_ops,
+#endif
 		},
 	.probe = bq24297_driver_probe,
 	.shutdown = bq24297_driver_shutdown,
-	.suspend = bq24297_driver_suspend,
-	.resume = bq24297_driver_resume,
 	.id_table = bq24297_i2c_id,
 };
 
