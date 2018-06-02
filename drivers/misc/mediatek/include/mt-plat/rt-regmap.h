@@ -14,7 +14,7 @@
 
 #include <linux/debugfs.h>
 
-#define RT_REGMAP_VERSION	"1.1.9_G"
+/* #define RT_REGMAP_VERSION	"1.1.10_G" */
 
 enum rt_access_mode {
 	RT_1BYTE_MODE = 1,
