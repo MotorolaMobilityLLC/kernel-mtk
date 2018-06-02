@@ -202,6 +202,8 @@ enum pwrap_regs {
 	PWRAP_DCM_DBC_PRD,
 
 	/* MT2701 only regs */
+	PWRAP_OP_TYPE,
+	PWRAP_MSB_FIRST,
 	PWRAP_ADC_CMD_ADDR,
 	PWRAP_PWRAP_ADC_CMD,
 	PWRAP_ADC_RDY_ADDR,
@@ -249,6 +251,8 @@ static int mt2701_regs[] = {
 	[PWRAP_WRAP_EN] =		0x4,
 	[PWRAP_DIO_EN] =		0x8,
 	[PWRAP_SIDLY] =			0xc,
+	[PWRAP_OP_TYPE] =		0x10,
+	[PWRAP_MSB_FIRST] =		0x14,
 	[PWRAP_RDDMY] =			0x18,
 	[PWRAP_SI_CK_CON] =		0x1c,
 	[PWRAP_CSHEXT_WRITE] =		0x20,
@@ -523,6 +527,7 @@ struct pmic_wrapper_type {
 	u32 spi_w;
 	u32 wdt_src;
 	int has_bridge:1;
+	int slv_switch:1;
 	int (*init_reg_clock)(struct pmic_wrapper *wrp);
 	int (*init_soc_specific)(struct pmic_wrapper *wrp);
 };
@@ -926,6 +931,20 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 		pwrap_writel(wrp, 0, PWRAP_DCM_DBC_PRD);
 	}
 
+	if (wrp->master->slv_switch) {
+		/* Enable Slave option if more than one slave support */
+		switch (wrp->slave->type) {
+		case PMIC_MT6323:
+			pwrap_writel(wrp, 0, PWRAP_OP_TYPE);
+			pwrap_writel(wrp, 1, PWRAP_MSB_FIRST);
+			break;
+		case PMIC_MT6397:
+			pwrap_writel(wrp, 1, PWRAP_OP_TYPE);
+			pwrap_writel(wrp, 0, PWRAP_MSB_FIRST);
+			break;
+		}
+	}
+
 	/* Reset SPI slave */
 	ret = pwrap_reset_spislave(wrp);
 	if (ret)
@@ -1063,6 +1082,7 @@ static const struct pmic_wrapper_type pwrap_mt2701 = {
 	.spi_w = PWRAP_MAN_CMD_SPI_WRITE_NEW,
 	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
 	.has_bridge = 0,
+	.slv_switch = 1,
 	.init_reg_clock = pwrap_mt2701_init_reg_clock,
 	.init_soc_specific = pwrap_mt2701_init_soc_specific,
 };
@@ -1075,6 +1095,7 @@ static struct pmic_wrapper_type pwrap_mt8135 = {
 	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
 	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
 	.has_bridge = 1,
+	.slv_switch = 0,
 	.init_reg_clock = pwrap_mt8135_init_reg_clock,
 	.init_soc_specific = pwrap_mt8135_init_soc_specific,
 };
@@ -1087,6 +1108,7 @@ static struct pmic_wrapper_type pwrap_mt8173 = {
 	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
 	.wdt_src = PWRAP_WDT_SRC_MASK_NO_STAUPD,
 	.has_bridge = 0,
+	.slv_switch = 0,
 	.init_reg_clock = pwrap_mt8173_init_reg_clock,
 	.init_soc_specific = pwrap_mt8173_init_soc_specific,
 };
