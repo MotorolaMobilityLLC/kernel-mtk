@@ -962,6 +962,7 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 	struct clock_event_device *bc;
 	unsigned long flags;
 	unsigned int next_cpu;
+	ktime_t next_event;
 
 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
 	bc = tick_broadcast_device.evtdev;
@@ -985,10 +986,25 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 		next_cpu = smp_processor_id();
 		irq_force_affinity(bc->irq, cpumask_of(next_cpu));
 		bc->irq_affinity_on = next_cpu;
-		pr_debug("tb: irq %d->%d\n", deadcpu, next_cpu);
 
-		/* re-arm soc timer to ensure irq will be serviced */
-		clockevents_program_event(bc, bc->next_event, 1);
+		/*
+		 * re-arm soc timer to ensure irq will be serviced.
+		 *
+		 * bc->next_event may be KTIME_MAX here: for example,
+		 * in tick_handle_oneshot_broadcast(), if all cpus' next
+		 * events are expired, bc->next_event will be set as
+		 * KTIME_MAX, and meanwhile cpu hot plug-off event
+		 * happens.
+		 *
+		 * In this case, apply 1 dummy tick as next_event for
+		 * clockevents_program_event to re-arm soc timer anyway.
+		 */
+		if (bc->next_event.tv64 == KTIME_MAX)
+			next_event.tv64 = 1;
+		else
+			next_event = bc->next_event;
+
+		clockevents_program_event(bc, next_event, 1);
 	}
 
 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
