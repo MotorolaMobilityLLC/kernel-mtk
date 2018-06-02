@@ -22,7 +22,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 #obj-$(CONFIG_MTK_POWER_GS) += power_gs/
-#obj-$(CONFIG_MEDIATEK_SOLUTION)	+= sched/
+obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
 #obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
 #obj-$(CONFIG_MTK_GPT_COMMON) += gpt/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
@@ -119,7 +119,7 @@ obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 #obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
-#obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
+obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 #obj-y += cameraisp/src/
 #obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 #obj-$(CONFIG_MTK_LENS)   += lens/
