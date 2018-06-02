@@ -24,8 +24,10 @@ void nt_sched_t_call(void)
 {
 	int cpu_id = 0;
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
+	put_online_cpus();
 #else
 	int retVal = 0;
 
@@ -47,7 +49,7 @@ int global_fn(void)
 	while (1) {
 		set_freezable();
 		set_current_state(TASK_INTERRUPTIBLE);
-#if 1 
+#if 1
                 if (teei_config_flag == 1) {
                         retVal = wait_for_completion_interruptible(&global_down_lock);
                         if (retVal == -ERESTARTSYS) {
@@ -93,6 +95,6 @@ int global_fn(void)
 			up(&smc_lock);
 			msleep_interruptible(1);
 		}
-		
+
 	}
 }

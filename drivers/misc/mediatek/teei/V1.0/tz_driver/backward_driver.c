@@ -220,8 +220,10 @@ static int reetime_handle(struct service_handler *handler)
 	wmb();
 
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
+	put_online_cpus();
 #else
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
         if (retVal != 0) {
@@ -319,8 +321,10 @@ static int vfs_handle(struct service_handler *handler)
 	/* with a wmb() */
 	wmb();
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
+	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);
