@@ -29,3 +29,10 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6355)	+= pmic.o pmic_irq.o pmic_common.o \
 		pmic_initial_setting.o \
 		pmic_throttling_dlpt.o pmic_debugfs.o
 # pmic_bif.o
+
+# Charger Type Detection
+ifndef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+		obj-$(CONFIG_MTK_PMIC_CHIP_MT6355) += pmic_chr_type_det_v2.o
+	endif
+endif
