@@ -317,7 +317,8 @@
 ********************************************************************************
 */
 /*! Maximum buffer size of SCAN list */
-#define SCN_MAX_BUFFER_SIZE                 (CFG_MAX_NUM_BSS_LIST * ALIGN_4(sizeof(BSS_DESC_T)))
+#define SCN_MAX_BUFFER_SIZE			(CFG_MAX_NUM_BSS_LIST * ALIGN_4(sizeof(BSS_DESC_T)))
+#define SCN_ROAM_MAX_BUFFER_SIZE		(CFG_MAX_NUM_ROAM_BSS_LIST * ALIGN_4(sizeof(ROAM_BSS_DESC_T)))
 
 #define SCN_RM_POLICY_EXCLUDE_CONNECTED     BIT(0)	/* Remove SCAN result except the connected one. */
 #define SCN_RM_POLICY_TIMEOUT               BIT(1)	/* Remove the timeout one */
@@ -329,10 +330,13 @@
 							 */
 #define SCN_RM_POLICY_ENTIRE                BIT(4)	/* Remove entire SCAN result */
 
-#define SCN_BSS_DESC_SAME_SSID_THRESHOLD    3	/* This is used by POLICY SMART WEAKEST,
+#define SCN_BSS_DESC_SAME_SSID_THRESHOLD    20	/* This is used by POLICY SMART WEAKEST,
 						 * If exceed this value, remove weakest BSS_DESC_T
 						 * with same SSID first in large network.
 						 */
+
+#define REMOVE_TIMEOUT_TWO_DAY     (60*60*24*2)
+
 #if 1
 #define SCN_BSS_DESC_REMOVE_TIMEOUT_SEC     30
 #define SCN_BSS_DESC_STALE_SEC				10	/* 2.4G + 5G need 8.1s */
@@ -569,6 +573,13 @@ struct _BSS_DESC_T {
 	OS_SYSTIME rJoinFailTime;
 };
 
+struct _ROAM_BSS_DESC_T {
+	LINK_ENTRY_T rLinkEntry;
+	UINT_8 ucSSIDLen;
+	UINT_8 aucSSID[ELEM_MAX_LEN_SSID];
+	OS_SYSTIME rUpdateTime;
+};
+
 typedef struct _SCAN_PARAM_T {	/* Used by SCAN FSM */
 	/* Active or Passive */
 	ENUM_SCAN_TYPE_T eScanType;
@@ -666,6 +677,10 @@ typedef struct _SCAN_INFO_T {
 	LINK_T rFreeBSSDescList;
 
 	LINK_T rPendingMsgList;
+
+	UINT_8 aucScanRoamBuffer[SCN_ROAM_MAX_BUFFER_SIZE];
+	LINK_T rRoamFreeBSSDescList;
+	LINK_T rRoamBSSDescList;
 
 	/* Sparse Channel Detection */
 	BOOLEAN fgIsSparseChannelValid;
@@ -894,6 +909,12 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc, IN P_SW_RFB_T prSwRfb);
 
 VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T SpecificprBssDesc);
+
+P_ROAM_BSS_DESC_T scanSearchRoamBssDescBySsid(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc);
+P_ROAM_BSS_DESC_T scanAllocateRoamBssDesc(IN P_ADAPTER_T prAdapter);
+VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc);
+VOID scanSearchBssDescOfRoamSsid(IN P_ADAPTER_T prAdapter);
+VOID scanRemoveRoamBssDescsByTime(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemoveTime);
 /*----------------------------------------------------------------------------*/
 /* Routines in scan_fsm.c                                                     */
 /*----------------------------------------------------------------------------*/

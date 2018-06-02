@@ -827,7 +827,7 @@ Add per station flow control when STA is in PS
 #include <net/cfg80211.h>
 #include "gl_cfg80211.h"
 #include "gl_vendor.h"
-
+#include "wnm.h"
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -3732,6 +3732,10 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 	DBGLOG(RX, INFO, "Category %u\n", prActFrame->ucCategory);
 
 	switch (prActFrame->ucCategory) {
+	case CATEGORY_QOS_ACTION:
+		DBGLOG(RX, INFO, "received dscp action frame: %d\n", __LINE__);
+		handleQosMapConf(prAdapter, prSwRfb);
+		break;
 	case CATEGORY_PUBLIC_ACTION:
 		if (HIF_RX_HDR_GET_NETWORK_IDX(prSwRfb->prHifRxHdr) == NETWORK_TYPE_AIS_INDEX)
 			aisFuncValidateRxActionFrame(prAdapter, prSwRfb);
@@ -3776,10 +3780,14 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		}
 		break;
 #endif
-#if CFG_SUPPORT_802_11V
+#if (CFG_SUPPORT_802_11V || CFG_SUPPORT_PPR2)
 	case CATEGORY_WNM_ACTION:
 		{
-			wnmWNMAction(prAdapter, prSwRfb);
+			if (HIF_RX_HDR_GET_NETWORK_IDX(prSwRfb->prHifRxHdr) == NETWORK_TYPE_AIS_INDEX) {
+				DBGLOG(RX, INFO, "WNM action frame: %d\n", __LINE__);
+				wnmWNMAction(prAdapter, prSwRfb);
+			} else
+				DBGLOG(RX, INFO, "WNM action frame: %d\n", __LINE__);
 		}
 		break;
 #endif

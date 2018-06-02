@@ -775,7 +775,7 @@ authCheckRxAuthFrameStatus(IN P_ADAPTER_T prAdapter,
 	if (u2RxTransactionSeqNum != u2TransactionSeqNum) {
 		DBGLOG(SAA, WARN, "Discard Auth frame with Transaction Seq No = %d\n", u2RxTransactionSeqNum);
 		*pu2StatusCode = STATUS_CODE_AUTH_OUT_OF_SEQ;
-		return WLAN_STATUS_SUCCESS;
+		return WLAN_STATUS_FAILURE;
 	}
 	/* 4 <3> Get the Status code */
 	/* WLAN_GET_FIELD_16(&prAuthFrame->u2StatusCode, &u2RxStatusCode); */

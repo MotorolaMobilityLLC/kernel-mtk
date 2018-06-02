@@ -897,6 +897,9 @@ typedef struct _CONNECTION_SETTINGS_T {
 
 	/* for RSN info store, when upper layer set rsn info */
 	RSN_INFO_T rRsnInfo;
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	BOOLEAN fgSecModeChangeStartTimer;
+#endif
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
 struct _BSS_INFO_T {
@@ -1118,6 +1121,13 @@ struct _BSS_INFO_T {
 
 	WIFI_WMM_AC_STAT_T arLinkStatistics[WMM_AC_INDEX_NUM];	/*link layer statistics */
 
+#if CFG_SUPPORT_RN
+	OS_SYSTIME				rConnTime;
+	BOOLEAN					fgDisConnReassoc;
+#endif
+	UINT_8 ucRoamSkipTimes;
+	BOOLEAN fgGoodRcpiArea;
+	BOOLEAN fgPoorRcpiArea;
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {

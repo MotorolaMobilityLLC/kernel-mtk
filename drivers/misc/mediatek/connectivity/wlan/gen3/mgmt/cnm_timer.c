@@ -206,6 +206,10 @@ cnmTimerInitTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer, IN PFN_MGMT_TI
 	}
 #endif
 
+	if (prTimer->pfMgmtTimeOutFunc == pfFunc && prTimer->rLinkEntry.prNext) {
+		DBGLOG(CNM, WARN, "re-init timer, func %p\n", pfFunc);
+		show_stack(NULL, NULL);
+	}
 	LINK_ENTRY_INITIALIZE(&prTimer->rLinkEntry);
 
 	prTimer->pfMgmtTimeOutFunc = pfFunc;
@@ -379,7 +383,8 @@ VOID cnmTimerDoTimeOutCheck(IN P_ADAPTER_T prAdapter)
 	LINK_FOR_EACH(prLinkEntry, prTimerList) {
 		prTimer = LINK_ENTRY(prLinkEntry, TIMER_T, rLinkEntry);
 		ASSERT(prTimer);
-
+		if (prLinkEntry->prNext == NULL)
+			DBGLOG(CNM, WARN, "timer was re-inited, func %p\n", prTimer->pfMgmtTimeOutFunc);
 		/* Check if this entry is timeout. */
 		if (!TIME_BEFORE(rCurSysTime, prTimer->rExpiredSysTime)) {
 			cnmTimerStopTimer_impl(prAdapter, prTimer, FALSE);

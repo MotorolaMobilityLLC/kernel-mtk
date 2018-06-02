@@ -3089,6 +3089,18 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 				GLUE_SET_PKT_BSS_IDX(prCurrSwRfb->pvPacket,
 						     secGetBssIdxByWlanIdx(prAdapter, prCurrSwRfb->ucWlanIdx));
 			}
+			if (prCurrSwRfb->u2PacketLen > CFG_RX_MAX_PKT_SIZE) {
+				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
+				continue;
+			} else {
+				HAL_RX_STATUS_GET_TA(prCurrSwRfb->prRxStatusGroup4, aucTaAddr);
+				if (kalMemCmp("\x0\x0\x0\x0\x0\x0", aucTaAddr, MAC_ADDR_LEN) == 0) {
+					prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+					QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
+					continue;
+				}
+			}
 			/* ASSERT(prAdapter->rWifiVar.arWtbl[prCurrSwRfb->ucWlanIdx].ucUsed); */
 			if (prAdapter->rRxCtrl.rFreeSwRfbList.u4NumElem
 			    > (CFG_RX_MAX_PKT_NUM - CFG_NUM_OF_QM_RX_PKT_NUM)) {

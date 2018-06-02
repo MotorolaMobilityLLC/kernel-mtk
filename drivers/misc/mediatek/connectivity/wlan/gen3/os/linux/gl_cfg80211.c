@@ -2008,6 +2008,62 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 	return i4Status;
 }
 
+int
+mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
+{
+
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	INT_32 i4Status = -EINVAL;
+	UINT_32 u4BufLen;
+	UINT_8 u1buf = 0;
+
+	PARAM_802_11_STATISTICS_STRUCT_T rStatistics;
+	struct sk_buff *skb;
+
+	ASSERT(wiphy);
+	ASSERT(prGlueInfo);
+
+	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
+
+	if (!skb) {
+		DBGLOG(QM, TRACE, "%s allocate skb failed:%x\n", __func__, rStatus);
+		return -ENOMEM;
+	}
+
+	kalMemZero(&rStatistics, sizeof(rStatistics));
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidQueryStatistics,
+			   &rStatistics, sizeof(rStatistics), TRUE, TRUE, TRUE, &u4BufLen);
+
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		DBGLOG(INIT, INFO, "query statistics error:%lx\n", rStatus);
+
+	do {
+		if (!NLA_PUT_U8(skb, NL80211_TESTMODE_LINK_INVALID, &u1buf))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_TX_FAIL_CNT, &rStatistics.rFailedCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_TX_RETRY_CNT, &rStatistics.rRetryCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_TX_MULTI_RETRY_CNT,
+				&rStatistics.rMultipleRetryCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_ACK_FAIL_CNT, &rStatistics.rACKFailureCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_FCS_ERR_CNT, &rStatistics.rFCSErrorCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_TX_CNT, &rStatistics.rTransmittedFragmentCount.QuadPart))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_RX_CNT, &rStatistics.rReceivedFragmentCount.QuadPart))
+			break;
+
+		i4Status = cfg80211_testmode_reply(skb);
+	} while (0);
+
+	return i4Status;
+}
+
 int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int len)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -2070,7 +2126,9 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 	case 0x10:
 		i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
 		break;
-
+	case 0x20:
+		i4Status = mtk_cfg80211_testmode_get_link_detection(wiphy, data, len, prGlueInfo);
+		break;
 #if CFG_SUPPORT_PASSPOINT
 	case TESTMODE_CMD_ID_HS20:
 		i4Status = mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len);

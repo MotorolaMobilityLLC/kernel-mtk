@@ -467,7 +467,7 @@ Add per station flow control when STA is in PS
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-
+#include "qosmap.h"
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -642,6 +642,24 @@ typedef struct _STAT_CNT_INFO_DRV_T {
 
 	STAT_CNT_INFO_FW_T rFw;
 } STAT_CNT_INFO_DRV_T;
+
+#ifdef DSCP_SUPPORT
+struct _DSCP_EXCEPTION {
+	UINT_8 dscp;
+	UINT_8 userPriority;
+};
+
+struct _DSCP_RANGE {
+	UINT_8 lDscp;
+	UINT_8 hDscp;
+};
+
+struct _QOS_MAP_SET {
+	struct _DSCP_RANGE dscpRange[8];
+	UINT_8 dscpExceptionNum;
+	struct _DSCP_EXCEPTION dscpException[1];
+};
+#endif
 
 /* Define STA record structure */
 struct _STA_RECORD_T {
@@ -921,6 +939,9 @@ struct _STA_RECORD_T {
 
 	UINT8 ucStatsGenDisplayCnt;
 #endif				/* CFG_SUPPORT_STATISTICS */
+#ifdef DSCP_SUPPORT
+	struct _QOS_MAP_SET *qosMapSet;
+#endif
 };
 
 #if 0
