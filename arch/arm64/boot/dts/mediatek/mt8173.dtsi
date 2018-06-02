@@ -319,7 +319,7 @@
 		};
 
 		scpsys: scpsys@10006000 {
-			compatible = "mediatek,mt8173-scpsys";
+			compatible = "mediatek,mt8173-scpsys", "syscon";
 			#power-domain-cells = <1>;
 			reg = <0 0x10006000 0 0x1000>;
 			clocks = <&clk26m>,
@@ -373,6 +373,11 @@
 			clocks = <&topckgen CLK_TOP_SCP_SEL>;
 			clock-names = "main";
 			memory-region = <&vpu_dma_reserved>;
+		};
+
+		mcucfg: mcucfg@10200000 {
+			compatible = "mediatek,mt8173-mcucfg", "syscon";
+			reg = <0 0x10200000 0 0x1000>;
 		};
 
 		sysirq: intpol-controller@10200620 {
