@@ -623,18 +623,6 @@ static int __init ram_console_late_init(void)
 {
 	struct proc_dir_entry *entry;
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-#ifdef CONFIG_MTK_AEE_IPANIC
-	int err;
-	static struct task_struct *thread;
-
-	thread = kthread_run(emmc_read_last_kmsg, 0, "read_poweroff_log");
-	if (IS_ERR(thread)) {
-		err = PTR_ERR(thread);
-		pr_err("ram_console: failed to create kernel thread: %d\n", err);
-	}
-#endif
-#endif
 	entry = proc_create("last_kmsg", 0444, NULL, &ram_console_file_ops);
 	if (!entry) {
 		pr_err("ram_console: failed to create proc entry\n");
