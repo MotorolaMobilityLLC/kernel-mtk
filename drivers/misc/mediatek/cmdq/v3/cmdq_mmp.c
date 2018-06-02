@@ -14,8 +14,6 @@
 #include "cmdq_mmp.h"
 
 static struct CMDQ_MMP_Events_t CMDQ_MMP_Events;
-/* extern void MMProfileEnable(int enable); */
-/* extern void MMProfileStart(int start); */
 
 struct CMDQ_MMP_Events_t *cmdq_mmp_get_event(void)
 {
