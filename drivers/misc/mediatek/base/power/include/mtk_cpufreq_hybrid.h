@@ -31,7 +31,7 @@
 #endif
 /*#define __TRIAL_RUN__*/
 
-#elif defined(CONFIG_MACH_MT6797) /*&& defined(CONFIG_MTK_HYBRID_CPU_DVFS)*/
+#elif defined(CONFIG_MACH_MT6797)
 #include "../mt6797/mt_cpufreq.h"
 #ifdef ENABLE_IDVFS
 #define CONFIG_HYBRID_CPU_DVFS
@@ -185,7 +185,7 @@ static inline int cpuhvfs_module_init(void)		{ return -ENODEV; }
 static inline int cpuhvfs_kick_dvfsp_to_run(struct init_sta *sta)	{ return -ENODEV; }
 
 static inline void cpuhvfs_notify_cluster_on(unsigned int cluster)	{}
-static inline void cpuhvfs_notify_cluster_off(unsigned int cluster)	{ WARN_ON(1);	/* BUG! */ }
+static inline void cpuhvfs_notify_cluster_off(unsigned int cluster)	{ WARN_ON(1); }
 
 static inline int cpuhvfs_set_target_opp(unsigned int cluster, unsigned int index,
 					 unsigned int *ret_volt)	{ return -ENODEV; }
