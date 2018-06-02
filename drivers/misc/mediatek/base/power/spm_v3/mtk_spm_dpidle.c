@@ -1051,7 +1051,7 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
 	else
-		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_DPIDLE_MODE);
+		spm_dormant_sta = mtk_enter_idle_state(MTK_STANDBY_MODE);
 
 	if (spm_dormant_sta < 0)
 		spm_crit2("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);

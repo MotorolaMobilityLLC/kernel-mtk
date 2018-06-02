@@ -203,7 +203,7 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 	if (is_cpu_pdn(pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
 	else
-		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SODI_MODE);
+		spm_dormant_sta = mtk_enter_idle_state(MTK_STANDBY_MODE);
 
 	if (spm_dormant_sta < 0)
 		sodi_err("spm_dormant_sta(%d) < 0\n", spm_dormant_sta);

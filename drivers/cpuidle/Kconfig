@@ -17,6 +17,7 @@ if CPU_IDLE
 
 config CPU_IDLE_MULTIPLE_DRIVERS
         bool
+	default y
 
 config CPU_IDLE_GOV_LADDER
 	bool "Ladder governor (for periodic timer tick)"
