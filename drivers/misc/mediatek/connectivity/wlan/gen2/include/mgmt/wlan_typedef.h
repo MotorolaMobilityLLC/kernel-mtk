@@ -56,6 +56,7 @@ typedef struct _WFD_DBG_CFG_SETTINGS_T WFD_DBG_CFG_SETTINGS_T, *P_WFD_DBG_CFG_SE
 /* BSS related structures */
 /* Type definition for BSS_DESC_T structure, to describe parameter sets of a particular BSS */
 typedef struct _BSS_DESC_T BSS_DESC_T, *P_BSS_DESC_T, **PP_BSS_DESC_T;
+typedef struct _ROAM_BSS_DESC_T ROAM_BSS_DESC_T, *P_ROAM_BSS_DESC_T, **PP_ROAM_BSS_DESC_T;
 
 #if CFG_SUPPORT_HOTSPOT_2_0
 typedef struct _HS20_INFO_T HS20_INFO_T, *P_HS20_INFO_T;

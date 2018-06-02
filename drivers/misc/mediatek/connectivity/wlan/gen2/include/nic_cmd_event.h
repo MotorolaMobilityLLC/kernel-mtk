@@ -751,6 +751,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_GSCN_SCN_RESULT = 0x48,	/* 0x48 (Get) */
 	CMD_ID_SET_COUNTRY_POWER_LIMIT = 0x4A,	/* 0x4A (Set) */
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
+	CMD_ID_SET_ROAMING_SKIP = 0x6D, /* 0x6D (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -2135,6 +2136,9 @@ typedef struct _WIFI_SYSTEM_SUSPEND_CMD_T {
 	UINT_8 reserved[3];
 } WIFI_SYSTEM_SUSPEND_CMD_T, *P_WIFI_SYSTEM_SUSPEND_CMD_T;
 
+typedef struct _CMD_ID_SET_ROAMING_SKIP_T {
+	BOOLEAN IsRoamingSkipOneAp;
+} CMD_ID_SET_ROAMING_SKIP_T, *P_CMD_ID_SET_ROAMING_SKIP_T;
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

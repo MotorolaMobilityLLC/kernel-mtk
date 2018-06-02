@@ -1233,6 +1233,8 @@
 /*! Maximum number of BSS in the SCAN list */
 #define CFG_MAX_NUM_BSS_LIST                    128
 
+#define CFG_MAX_NUM_ROAM_BSS_LIST		64
+
 #define CFG_MAX_COMMON_IE_BUF_LEN         ((1500 * CFG_MAX_NUM_BSS_LIST) / 3)
 
 /*! Maximum size of Header buffer of each SCAN record */
@@ -1244,6 +1246,10 @@
 /*! Maximum number of STA records */
 #define CFG_MAX_NUM_STA_RECORD                  32
 
+#define CFG_GOOG_RCPI_THRESHOLD			90
+#define CFG_POOR_RCPI_THRESHOLD			67
+#define CFG_GOOG_RCPI_SCAN_SKIP_TIMES		3
+#define CFG_POOR_RCPI_SCAN_SKIP_TIMES		2
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Power management
  *------------------------------------------------------------------------------
