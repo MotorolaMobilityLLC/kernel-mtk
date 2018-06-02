@@ -86,19 +86,19 @@ bool mtk_kbase_dump_gpu_memory_usage()
 	int i = 0;
 
 	//output the total memory usage and cap for this device
-	pr_warn(KERN_DEBUG "%10s\t%16s\n", "PID", "Memory by Page");
-	pr_warn(KERN_DEBUG "============================\n");
+	pr_warn("%10s\t%16s\n", "PID", "GPU Memory by Page");
+	pr_warn("============================\n");
 
 	for(i = 0; (i < MTK_MEMINFO_SIZE) && (g_mtk_gpu_meminfo[i].pid != 0); i++) {
-		pr_warn(KERN_DEBUG "%10d\t%16d\n", g_mtk_gpu_meminfo[i].pid, \
+		pr_warn("%10d\t%16d\n", g_mtk_gpu_meminfo[i].pid, \
                                         g_mtk_gpu_meminfo[i].used_pages);
         }
 
-	pr_warn(KERN_DEBUG "============================\n");
-	pr_warn(KERN_DEBUG "%10s\t%16u\n", \
+	pr_warn("============================\n");
+	pr_warn("%10s\t%16u\n", \
 			"Total", \
 			g_mtk_gpu_total_memory_usage_in_pages_debugfs);
-	pr_warn(KERN_DEBUG "============================\n");
+	pr_warn("============================\n");
 	return true;
 }
 
@@ -191,6 +191,7 @@ static const struct file_operations kbasep_gpu_help_debugfs_fops = {
 static int proc_gpu_memoryusage_show(struct seq_file *m, void *v)
 {
 	ssize_t ret = 0;
+	int i = 0;
 
 #ifdef ENABLE_MTK_MEMINFO
 	int total_size_in_bytes;
@@ -199,7 +200,22 @@ static int proc_gpu_memoryusage_show(struct seq_file *m, void *v)
 	total_size_in_bytes = mtk_kbase_report_gpu_memory_usage();
 	peak_size_in_bytes = mtk_kbase_report_gpu_memory_peak();
 
-	seq_printf(m, "curr: %10u, peak %10u\n", total_size_in_bytes, peak_size_in_bytes);
+	seq_printf(m, "curr: %10u byte, peak %10u byte\n", total_size_in_bytes, peak_size_in_bytes);
+
+	//output the total memory usage and cap for this device
+	seq_printf(m, "%10s\t%16s\n", "PID", "GPU Memory by Page");
+	seq_printf(m, "============================\n");
+
+	for(i = 0; (i < MTK_MEMINFO_SIZE) && (g_mtk_gpu_meminfo[i].pid != 0); i++) {
+		seq_printf(m, "%10d\t%16d\n", g_mtk_gpu_meminfo[i].pid, \
+		g_mtk_gpu_meminfo[i].used_pages);
+	}
+
+	seq_printf(m, "============================\n");
+	seq_printf(m, "%10s\t%16u\n", \
+		"Total", \
+		g_mtk_gpu_total_memory_usage_in_pages_debugfs);
+	seq_printf(m, "============================\n");
 #endif /* ENABLE_MTK_MEMINFO */
 
 	return ret;
