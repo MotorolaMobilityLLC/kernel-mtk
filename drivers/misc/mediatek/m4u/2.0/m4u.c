@@ -2534,7 +2534,8 @@ static int m4u_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	M4UERR("pdev is NULL\n");
+	if (pdev == NULL)
+		M4UERR("pdev is NULL!\n");
 
 	return m4u_suspend(pdev, PMSG_SUSPEND);
 }
@@ -2543,7 +2544,8 @@ static int m4u_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	M4UERR("pdev is NULL\n");
+	if (pdev == NULL)
+		M4UERR("pdev is NULL!\n");
 
 	return m4u_resume(pdev);
 }
