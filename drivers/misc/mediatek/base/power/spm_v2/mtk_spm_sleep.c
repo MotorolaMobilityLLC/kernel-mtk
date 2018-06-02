@@ -230,6 +230,11 @@ int __attribute__((weak)) vcorefs_get_curr_ddr(void)
 {
 	return 0;
 }
+
+int __attribute__((weak)) vcorefs_get_hw_opp(void)
+{
+	return 0;
+}
 #endif
 
 #if SPM_AEE_RR_REC
