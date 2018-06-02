@@ -71,6 +71,7 @@ struct ccci_fsm_ctl {
 	spinlock_t command_lock;
 	spinlock_t cmd_complete_lock;
 	struct task_struct *fsm_thread;
+	atomic_t fs_ongoing;
 };
 
 struct ccci_fsm_event {

@@ -88,11 +88,11 @@ static void ccci_routine_exception(struct ccci_fsm_ctl *ctl, struct ccci_fsm_com
 	/* 2. check EE reason */
 	switch (reason) {
 	case EXCEPTION_HS1_TIMEOUT:
-		CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS1_FAIL!\n");
+		CCCI_ERROR_LOG(md->index, FSM, "MD_BOOT_HS1_FAIL!\n");
 		ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
 		break;
 	case EXCEPTION_HS2_TIMEOUT:
-		CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS2_FAIL!\n");
+		CCCI_ERROR_LOG(md->index, FSM, "MD_BOOT_HS2_FAIL!\n");
 		ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
 		break;
 	case EXCEPTION_MD_HANG:
@@ -166,7 +166,7 @@ static void ccci_routine_exception(struct ccci_fsm_ctl *ctl, struct ccci_fsm_com
 static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command *cmd)
 {
 	int ret;
-	int count = 0, user_exit = 0, hs1_got = 0, hs2_got = 0, fs_got = 0, fs_ongoing = 0;
+	int count = 0, user_exit = 0, hs1_got = 0, hs2_got = 0;
 	struct ccci_modem *md = ctl->md;
 	struct ccci_fsm_event *event, *next;
 	unsigned long flags;
@@ -217,15 +217,6 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 			if (event->event_id == CCCI_EVENT_HS1) {
 				hs1_got = 1;
 				ccci_fsm_finish_event(md, event);
-			} else if (event->event_id == CCCI_EVENT_FS_IN) {
-				fs_got = 1;
-				fs_ongoing = 1;
-				ccci_fsm_finish_event(md, event);
-			} else if (event->event_id == CCCI_EVENT_FS_OUT) {
-				fs_got = 1;
-				fs_ongoing = 0;
-				count = 0;
-				ccci_fsm_finish_event(md, event);
 			} else if (event->event_id == CCCI_EVENT_HS2 && hs1_got) {
 				hs2_got = 1;
 				ccci_fsm_finish_event(md, event);
@@ -238,15 +229,9 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 		}
 		if (hs2_got)
 			goto success;
-		/* FS trick
-		 * count from the last FS write, but also eliminate on-the-fly FS operation.
-		 * do not sleep or count++ for any FS event, there are a lot of them.
-		 */
-		if (fs_got) {
-			fs_got = 0;
-			continue;
-		}
-		if (!fs_ongoing)
+		if (atomic_read(&ctl->fs_ongoing))
+			count = 0;
+		else
 			count++;
 		msleep(EVENT_POLL_INTEVAL);
 	}
@@ -398,6 +383,7 @@ int ccci_fsm_init(struct ccci_modem *md)
 	spin_lock_init(&ctl->command_lock);
 	spin_lock_init(&ctl->cmd_complete_lock);
 	ctl->md = md;
+	atomic_set(&md->fsm.fs_ongoing, 0);
 
 	ctl->fsm_thread = kthread_run(ccci_fsm_main, md, "ccci_fsm%d", md->index + 1);
 	return 0;
@@ -448,7 +434,7 @@ static void ccci_fsm_finish_command(struct ccci_modem *md, struct ccci_fsm_comma
 {
 	unsigned long flags;
 
-	CCCI_NORMAL_LOG(md->index, FSM, "command %d is completed %d by %ps\n", cmd->cmd_id, cmd->complete,
+	CCCI_NORMAL_LOG(md->index, FSM, "command %d is completed %d by %ps\n", cmd->cmd_id, result,
 			__builtin_return_address(0));
 	if (cmd->flag & CCCI_CMD_FLAG_WAIT_FOR_COMPLETE) {
 		spin_lock_irqsave(&md->fsm.cmd_complete_lock, flags);
@@ -472,6 +458,13 @@ int ccci_fsm_append_event(struct ccci_modem *md, CCCI_FSM_EVENT event_id,
 		CCCI_ERROR_LOG(md->index, FSM, "invalid event %d\n", event_id);
 		return -EINVAL;
 	}
+	if (event_id == CCCI_EVENT_FS_IN) {
+		atomic_set(&(md->fsm.fs_ongoing), 1);
+		return 0;
+	} else if (event_id == CCCI_EVENT_FS_OUT) {
+		atomic_set(&(md->fsm.fs_ongoing), 0);
+		return 0;
+	}
 	event = kmalloc(sizeof(struct ccci_fsm_event) + length, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
 	if (!event) {
 		CCCI_ERROR_LOG(md->index, FSM, "fail to alloc event%d\n", event_id);
@@ -487,9 +480,8 @@ int ccci_fsm_append_event(struct ccci_modem *md, CCCI_FSM_EVENT event_id,
 	list_add_tail(&event->entry, &md->fsm.event_queue);
 	spin_unlock_irqrestore(&md->fsm.event_lock, flags);
 	/* do not derefence event after here */
-	if (event_id != CCCI_EVENT_FS_IN && event_id != CCCI_EVENT_FS_OUT)
-		CCCI_NORMAL_LOG(md->index, FSM, "event %d is appended from %ps\n", event_id,
-				__builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, FSM, "event %d is appended from %ps\n", event_id,
+		__builtin_return_address(0));
 	return 0;
 }
 
@@ -497,8 +489,7 @@ int ccci_fsm_append_event(struct ccci_modem *md, CCCI_FSM_EVENT event_id,
 static void ccci_fsm_finish_event(struct ccci_modem *md, struct ccci_fsm_event *event)
 {
 	list_del(&event->entry);
-	if (event->event_id != CCCI_EVENT_FS_IN && event->event_id != CCCI_EVENT_FS_OUT)
-		CCCI_NORMAL_LOG(md->index, FSM, "event %d is completed by %ps\n", event->event_id,
-				__builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, FSM, "event %d is completed by %ps\n", event->event_id,
+			__builtin_return_address(0));
 	kfree(event);
 }
