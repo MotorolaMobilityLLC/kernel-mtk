@@ -27,7 +27,7 @@
 /*#include <mach/irqs.h>*/
 #include <mach/mtk_secure_api.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
-#include <mt-plat/mt_cirq.h>
+#include <mt-plat/mtk_cirq.h>
 #endif
 #include "mtk_spm_idle.h"
 #include "mtk_cpuidle.h"
