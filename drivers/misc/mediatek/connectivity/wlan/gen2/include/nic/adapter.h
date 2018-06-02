@@ -356,6 +356,12 @@ struct _BSS_INFO_T {
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;
+
+#if CFG_SUPPORT_RN
+	OS_SYSTIME	rConnTime;
+	BOOLEAN		fgDisConnReassoc;
+#endif
+
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {

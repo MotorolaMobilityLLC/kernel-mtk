@@ -1849,9 +1849,13 @@ wext_set_essid(IN struct net_device *prNetDev,
 #else
 	rNewSsid.u4SsidLen = prEssid->length;
 #endif
+
+	kalMemSet(rNewSsid.aucSsid, '\0', sizeof(rNewSsid.aucSsid));
+	if (rNewSsid.u4SsidLen > sizeof(rNewSsid.aucSsid) - 1)
+		rNewSsid.u4SsidLen = sizeof(rNewSsid.aucSsid) - 1;
+
 	kalMemCopy(rNewSsid.aucSsid, pcExtra, rNewSsid.u4SsidLen);
 
-	rNewSsid.aucSsid[rNewSsid.u4SsidLen] = '\0';
 	DBGLOG(REQ, INFO, "wlan set essid: %s, u4SsidLen=%d\n", rNewSsid.aucSsid, rNewSsid.u4SsidLen);
 
 	if (kalIoctl(prGlueInfo,

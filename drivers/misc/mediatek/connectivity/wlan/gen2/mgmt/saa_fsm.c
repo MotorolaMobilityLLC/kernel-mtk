@@ -680,6 +680,29 @@ VOID saaFsmRunEventRxRespTimeOut(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prS
 
 }				/* end of saaFsmRunEventRxRespTimeOut() */
 
+#if CFG_SUPPORT_RN
+static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN UINT_16 u2StatusCode, IN ENUM_AA_STATE_T eFrmType)
+{
+	static UINT_32 u4OverLoadRN;
+	P_BSS_INFO_T prAisBssInfo;
+
+	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+
+	if (prAisBssInfo->fgDisConnReassoc == TRUE) {
+		if (u2StatusCode == STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD) {
+			DBGLOG(SAA, INFO, "<SAA> eFrmType: %d, u4OverLoadRN times: %d\n", eFrmType, u4OverLoadRN);
+			if (u4OverLoadRN < JOIN_MAX_RETRY_OVERLOAD_RN) {
+				u4OverLoadRN++;
+				aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
+				return TRUE;
+			}
+		}
+	} else
+		u4OverLoadRN = 0;
+
+	return FALSE;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function will process the Rx Auth Response Frame and then
@@ -743,7 +766,10 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 			/* Reset Send Auth/(Re)Assoc Frame Count */
 			prStaRec->ucTxAuthAssocRetryCount = 0;
-
+#if CFG_SUPPORT_RN
+			if (saaCheckOverLoadRN(prAdapter, u2StatusCode, SAA_STATE_SEND_AUTH1))
+				break;
+#endif
 			saaFsmSteps(prAdapter, prStaRec, eNextState, (P_SW_RFB_T) NULL);
 		}
 		break;
@@ -855,6 +881,10 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 			eNextState = AA_STATE_IDLE;
 
+#if CFG_SUPPORT_RN
+			if (saaCheckOverLoadRN(prAdapter, u2StatusCode, SAA_STATE_SEND_ASSOC1))
+				break;
+#endif
 			saaFsmSteps(prAdapter, prStaRec, eNextState, prRetainedSwRfb);
 		}
 		break;
@@ -866,6 +896,124 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 	return rStatus;
 
 }				/* end of saaFsmRunEventRxAssoc() */
+
+VOID
+saaSendDisconnectMsgHandler(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec, IN P_BSS_INFO_T prAisBssInfo,
+				IN ENUM_AA_FRM_TYPE_T eFrmType)
+{
+	do {
+		if (eFrmType == FRM_DEAUTH) {
+			if (prStaRec->ucStaState >= STA_STATE_2) {
+				P_MSG_AIS_ABORT_T prAisAbortMsg;
+
+				/* NOTE(Kevin): Change state immediately to avoid starvation of
+				 * MSG buffer because of too many deauth frames before changing
+				 * the STA state.
+				 */
+				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
+
+				prAisAbortMsg =
+				    (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
+								    sizeof(MSG_AIS_ABORT_T));
+				if (!prAisAbortMsg)
+					break;
+
+				prAisAbortMsg->rMsgHdr.eMsgId = MID_SAA_AIS_FSM_ABORT;
+				prAisAbortMsg->ucReasonOfDisconnect =
+				    DISCONNECT_REASON_CODE_DEAUTHENTICATED;
+				prAisAbortMsg->fgDelayIndication = FALSE;
+
+				mboxSendMsg(prAdapter,
+					    MBOX_ID_0,
+					    (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
+			} else {
+
+				/* TODO(Kevin): Joining Abort */
+			}
+		} else { /* FRM_DISASSOC*/
+			if (prStaRec->ucStaState >= STA_STATE_3) {
+				P_MSG_AIS_ABORT_T prAisAbortMsg;
+				/* NOTE(Chaozhong): Change state immediately to avoid starvation of
+					 * MSG buffer because of too many disassoc frames before changing
+					 * the STA state.
+					 */
+				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
+
+				prAisAbortMsg =
+				    (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
+								    sizeof(MSG_AIS_ABORT_T));
+				if (!prAisAbortMsg)
+					break;
+
+				prAisAbortMsg->rMsgHdr.eMsgId = MID_SAA_AIS_FSM_ABORT;
+				prAisAbortMsg->ucReasonOfDisconnect =
+				    DISCONNECT_REASON_CODE_DISASSOCIATED;
+				prAisAbortMsg->fgDelayIndication = FALSE;
+
+				mboxSendMsg(prAdapter,
+					    MBOX_ID_0,
+					    (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
+				} else {
+
+					/* TODO(Kevin): Joining Abort */
+				}
+		}
+		if (prAisBssInfo)
+			prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
+	} while (0);
+}
+
+#if CFG_SUPPORT_RN
+static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
+				IN P_BSS_INFO_T prAisBssInfo, IN ENUM_AA_FRM_TYPE_T eFrmType)
+{
+	OS_SYSTIME rCurrentTime;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	GET_CURRENT_SYSTIME(&rCurrentTime);
+
+	/*
+		* TODO: maybe AP is in DFS channel, it wants to switch channels?
+		* Wait for beacon timeout?
+		* Need to do partial scan for the AP channel.
+	*/
+
+	if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
+				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL)) &&
+		/* maybe some packets are queued in HW, we will get many de-auth */
+		(prAisBssInfo->fgDisConnReassoc == FALSE)) {
+		DBGLOG(SAA, INFO, "<drv> AP deauth ok 0x%x %x %x rcpi:%d\n",
+			rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL),
+			dBm_TO_RCPI(prAdapter->rLinkQuality.cRssi));
+		saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
+	} else {
+		DBGLOG(SAA, INFO, "<drv> reassociate\n");
+
+		if (prAisBssInfo->fgDisConnReassoc == FALSE) {
+			/* during reassoc, FW send null then we maybe get deauth again */
+			/* in the case, we will send deauth to supplicant, not here */
+
+			/* avoid re-scan */
+			prAisBssInfo->fgDisConnReassoc = TRUE;
+
+			prConnSettings->fgIsConnReqIssued = TRUE;
+			prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+
+			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
+		} else if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
+				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10))) {
+
+			DBGLOG(SAA, INFO, "<drv> AP deauth ok under reassoc 0x%x %x %x\n",
+				rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10));
+
+			prAisBssInfo->fgDisConnReassoc = FALSE;
+			saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
+		}
+		/* else, we are reassociating, skip the deauth */
+	}
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -908,35 +1056,11 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 				DBGLOG(SAA, INFO, "Deauth reason = %d\n", prStaRec->u2ReasonCode);
 
-				if (prStaRec->ucStaState >= STA_STATE_2) {
-					P_MSG_AIS_ABORT_T prAisAbortMsg;
-
-					/* NOTE(Kevin): Change state immediately to avoid starvation of
-					 * MSG buffer because of too many deauth frames before changing
-					 * the STA state.
-					 */
-					cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
-
-					prAisAbortMsg =
-					    (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
-									    sizeof(MSG_AIS_ABORT_T));
-					if (!prAisAbortMsg)
-						break;
-
-					prAisAbortMsg->rMsgHdr.eMsgId = MID_SAA_AIS_FSM_ABORT;
-					prAisAbortMsg->ucReasonOfDisconnect =
-					    DISCONNECT_REASON_CODE_DEAUTHENTICATED;
-					prAisAbortMsg->fgDelayIndication = FALSE;
-
-					mboxSendMsg(prAdapter,
-						    MBOX_ID_0,
-						    (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
-				} else {
-
-					/* TODO(Kevin): Joining Abort */
-				}
-				prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
-
+#if CFG_SUPPORT_RN
+				saaAutoReConnect(prAdapter, prStaRec, prAisBssInfo, FRM_DEAUTH);
+#else
+				saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, FRM_DEAUTH);
+#endif
 			}
 
 		}
@@ -1000,34 +1124,11 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 
 				DBGLOG(SAA, INFO, "Disassoc reason = %d\n", prStaRec->u2ReasonCode);
 
-				if (prStaRec->ucStaState >= STA_STATE_3) {
-					P_MSG_AIS_ABORT_T prAisAbortMsg;
-					/* NOTE(Chaozhong): Change state immediately to avoid starvation of
-					 * MSG buffer because of too many disassoc frames before changing
-					 * the STA state.
-					 */
-					cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
-
-					prAisAbortMsg =
-					    (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
-									    sizeof(MSG_AIS_ABORT_T));
-					if (!prAisAbortMsg)
-						break;
-
-					prAisAbortMsg->rMsgHdr.eMsgId = MID_SAA_AIS_FSM_ABORT;
-					prAisAbortMsg->ucReasonOfDisconnect =
-					    DISCONNECT_REASON_CODE_DISASSOCIATED;
-					prAisAbortMsg->fgDelayIndication = FALSE;
-
-					mboxSendMsg(prAdapter,
-						    MBOX_ID_0,
-						    (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
-				} else {
-
-					/* TODO(Kevin): Joining Abort */
-				}
-				prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
-
+#if CFG_SUPPORT_RN
+				saaAutoReConnect(prAdapter, prStaRec, prAisBssInfo, FRM_DISASSOC);
+#else
+				saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, FRM_DISASSOC);
+#endif
 			}
 
 		}
