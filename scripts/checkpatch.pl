@@ -4499,6 +4499,17 @@ sub process {
 			}
 		}
 
+# warn if <foo.h> is #included but foo.h is available in current directory
+		if ($tree && $rawline =~ m{^.\s*\#\s*include\s*\<(.*)\.h\>}) {
+			my $file = "$1.h";
+			my $realpath = dirname($realfile);
+			my $checkfile = "$realpath/$file";
+			if (-f "$root/$checkfile") {
+				WARN("SUSPECT_SYSTEM_INCLUDE",
+					"Use #include \"$file\" instead of <$file>\n" . $herecurr);
+			}
+		}
+
 # multi-statement macros should be enclosed in a do while loop, grab the
 # first statement and ensure its the whole macro if its not enclosed
 # in a known good container
