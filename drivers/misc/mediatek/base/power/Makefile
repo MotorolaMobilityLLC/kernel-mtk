@@ -18,3 +18,4 @@ obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/
 obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6757) += hps_v2/
 obj-$(CONFIG_MACH_MT6757) += ppm_v2/
+obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
