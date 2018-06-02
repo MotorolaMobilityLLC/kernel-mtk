@@ -402,8 +402,10 @@ static int rt5509_init_proprietary_setting(struct snd_soc_codec *codec)
 		}
 		dev_dbg(chip->dev, "%s end\n", prop_str[i]);
 	}
-	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN, RT5509_SPKPROT_ENMASK,
-			    RT5509_SPKPROT_ENMASK);
+	if (p_param->cfg_size[RT5509_CFG_SPEAKERPROT]) {
+		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+			RT5509_SPKPROT_ENMASK, RT5509_SPKPROT_ENMASK);
+	}
 out_init_proprietary:
 	return ret;
 }
@@ -462,11 +464,11 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 	sptr = (u32 *)(buf + cnt - 4);
 	size = *sptr;
 	dev_dbg(chip->dev, "size %d\n", size);
-	if (size < 47 || (size + 47) != cnt) {
+	if (cnt < 47 || (size + 47) != cnt) {
 		dev_err(chip->dev, "sorry bin size is wrong\n");
 		goto out_param_write;
 	}
-	for (i = 0; i < 9; i++) {
+	for (i = 0; i < RT5509_CFG_MAX; i++) {
 		sptr = (u32 *)(buf + cnt - 40 + i * 4);
 		size -= *sptr;
 	}
@@ -490,7 +492,7 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 		goto out_param_write;
 	}
 	bin_offset = buf + 7;
-	for (i = 0; i < 9; i++) {
+	for (i = 0; i < RT5509_CFG_MAX; i++) {
 		sptr = (u32 *)(buf + cnt - 40 + i * 4);
 		param->cfg_size[i] = *sptr;
 		param->cfg[i] = devm_kzalloc(chip->dev,
@@ -500,7 +502,11 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 		bin_offset += param->cfg_size[i];
 	}
 	chip->pdata->p_param = param;
+	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_STANDBY) < 0)
+		goto out_param_write;
 	rt5509_init_proprietary_setting(chip->codec);
+	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_OFF) < 0)
+		goto out_param_write;
 	return cnt;
 out_param_write:
 	return -EINVAL;
