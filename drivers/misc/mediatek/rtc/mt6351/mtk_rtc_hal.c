@@ -54,6 +54,10 @@
 /* Causion, for SRCLKENA drop speed too slow (align VIO18) to cause current leakage for 32K less */
 #define GPIO_SRCLKEN_PIN (148 | 0x80000000)
 
+
+#define PMIC_EOSC_CALI_TD_MASK		MT6351_PMIC_EOSC_CALI_TD_MASK
+#define PMIC_EOSC_CALI_TD_SHIFT		MT6351_PMIC_EOSC_CALI_TD_SHIFT
+
 /*TODO extern bool pmic_chrdet_status(void);*/
 
 /*
@@ -123,6 +127,9 @@ u16 rtc_spare_reg[][3] = {
 	{RTC_SPAR0, 0x1, 7}
 };
 
+static int rtc_eosc_cali_td = 8;
+module_param(rtc_eosc_cali_td, int, S_IRUGO | S_IWUSR | S_IWGRP);
+
 void hal_rtc_set_abb_32k(u16 enable)
 {
 	hal_rtc_xinfo("ABB 32k not support\n");
@@ -186,8 +193,30 @@ void rtc_enable_k_eosc(void)
 		PMIC_RG_SRCLKEN_IN0_HW_MODE_SHIFT);
 	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
 		PMIC_RG_SRCLKEN_IN1_HW_MODE_SHIFT);
-	/* If cali eosc every second, needing to add the following configuration, default period is 8 sec */
-	/*pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x3, PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);*/
+	pmic_config_interface_nolock(MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_ADDR, 0,
+		MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_MASK, MT6351_PMIC_RG_RTC_EOSC32_CK_PDN_SHIFT);
+	switch (rtc_eosc_cali_td) {
+	case 1:
+		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x3,
+			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
+		break;
+	case 2:
+		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x4,
+			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
+		break;
+	case 4:
+		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x5,
+			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
+		break;
+	case 16:
+		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x7,
+			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
+		break;
+	default:
+		pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x6,
+			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
+		break;
+	}
 	pmic_config_interface_nolock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
 		PMIC_EOSC_CALI_START_SHIFT);
 
