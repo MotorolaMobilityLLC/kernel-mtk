@@ -1330,7 +1330,14 @@ void tick_cancel_sched_timer(int cpu)
 		hrtimer_cancel(&ts->sched_timer);
 # endif
 
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	/* Do not memset to 0 to avoid idle time be cleared
+	 * to 0 after CPU plug-off
+	 */
+	ts->nohz_mode = NOHZ_MODE_INACTIVE;
+#else
 	memset(ts, 0, sizeof(*ts));
+#endif
 }
 #endif
 
