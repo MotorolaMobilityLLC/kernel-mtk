@@ -1357,6 +1357,28 @@ enum perf_event_task_context {
 	perf_nr_task_contexts,
 };
 
+#ifdef CONFIG_MT_SCHED_TRACE
+#ifdef CONFIG_MT_SCHED_DEBUG
+#define mt_sched_printf(event, x...) \
+do { \
+	char strings[128] = "";  \
+	snprintf(strings, 128, x); \
+	pr_alert(x); \
+	trace_##event(strings); \
+} while (0)
+#else
+#define mt_sched_printf(event, x...) \
+do { \
+	char strings[128] = "";  \
+	snprintf(strings, 128, x); \
+	trace_##event(strings); \
+} while (0)
+
+#endif
+#else
+#define mt_sched_printf(event, x...) do {} while (0)
+#endif
+
 /* Track pages that require TLB flushes */
 struct tlbflush_unmap_batch {
 	/*

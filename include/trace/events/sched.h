@@ -611,6 +611,28 @@ TRACE_EVENT(sched_wake_idle_without_ipi,
 
 	TP_printk("cpu=%d", __entry->cpu)
 );
+
+#ifdef CONFIG_MT_SCHED_TRACE
+#define sched_trace(event) \
+TRACE_EVENT(event,                      \
+    TP_PROTO(char *strings),                    \
+    TP_ARGS(strings),                           \
+    TP_STRUCT__entry(                           \
+        __array(    char,  strings, 128)        \
+    ),                                          \
+    TP_fast_assign(                             \
+        memcpy(__entry->strings, strings, 128); \
+    ),                                          \
+    TP_printk("%s",__entry->strings))
+
+sched_trace(sched_log);
+// mtk rt enhancement
+sched_trace(sched_rt);
+sched_trace(sched_rt_info);
+sched_trace(sched_lb);
+sched_trace(sched_lb_info);
+#endif
+
 #endif /* _TRACE_SCHED_H */
 
 /* This part must be outside protection */
