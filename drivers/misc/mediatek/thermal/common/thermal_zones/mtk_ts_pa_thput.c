@@ -12,6 +12,7 @@
  */
 
 #include <linux/version.h>
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/dmi.h>
@@ -31,7 +32,6 @@
 #include <linux/spinlock.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mt-plat/mtk_mdm_monitor.h"
-#include <mt-plat/mt_boot_common.h>
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 
@@ -111,8 +111,8 @@ int mtk_mdm_get_md_info(struct md_info **p_inf, int *size)
 	mtk_mdm_dprintk("mtk_mdm_get_md_info+\n");
 
 	*p_inf = g_pinfo_list;
-	/**size = sizeof(g_pinfo_list) / sizeof(g_pinfo_list[0]);*/
-	ARRAY_SIZE(g_pinfo_list);
+
+	*size = ARRAY_SIZE(g_pinfo_list);
 	mtk_mdm_dprintk("mtk_mdm_get_md_info-\n");
 
 	return 0;

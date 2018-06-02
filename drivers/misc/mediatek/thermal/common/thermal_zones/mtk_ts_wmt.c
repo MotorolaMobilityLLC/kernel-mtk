@@ -159,69 +159,9 @@ static int g_thermal_trip[COOLER_NUM] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 wmt_tm_t g_wmt_tm;
 wmt_tm_t *pg_wmt_tm = &g_wmt_tm;
 
-static int wmt_thz_bind(struct thermal_zone_device *, struct thermal_cooling_device *);
-static int wmt_thz_unbind(struct thermal_zone_device *, struct thermal_cooling_device *);
-static int wmt_thz_get_temp(struct thermal_zone_device *, unsigned long *);
-static int wmt_thz_get_mode(struct thermal_zone_device *, enum thermal_device_mode *);
-static int wmt_thz_set_mode(struct thermal_zone_device *, enum thermal_device_mode);
-static int wmt_thz_get_trip_type(struct thermal_zone_device *, int, enum thermal_trip_type *);
-static int wmt_thz_get_trip_temp(struct thermal_zone_device *, int, unsigned long *);
-static int wmt_thz_get_crit_temp(struct thermal_zone_device *, unsigned long *);
-static int wmt_cl_get_max_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_get_cur_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_set_cur_state(struct thermal_cooling_device *, unsigned long);
 
-static int wmt_cl_pa1_get_max_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa1_get_cur_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa1_set_cur_state(struct thermal_cooling_device *, unsigned long);
 
-static int wmt_cl_pa2_get_max_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa2_get_cur_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa2_set_cur_state(struct thermal_cooling_device *, unsigned long);
-static int wmt_send_signal(int level);
 
-#ifdef NEVER
-static int wmt_cl_pa3_get_max_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa3_get_cur_state(struct thermal_cooling_device *, unsigned long *);
-static int wmt_cl_pa3_set_cur_state(struct thermal_cooling_device *, unsigned long);
-#endif				/* NEVER */
-
-static struct thermal_zone_device_ops wmt_thz_dev_ops = {
-	.bind = wmt_thz_bind,
-	.unbind = wmt_thz_unbind,
-	.get_temp = wmt_thz_get_temp,
-	.get_mode = wmt_thz_get_mode,
-	.set_mode = wmt_thz_set_mode,
-	.get_trip_type = wmt_thz_get_trip_type,
-	.get_trip_temp = wmt_thz_get_trip_temp,
-	.get_crit_temp = wmt_thz_get_crit_temp,
-};
-
-static struct thermal_cooling_device_ops mtktspa_cooling_sysrst_ops = {
-	.get_max_state = wmt_cl_get_max_state,
-	.get_cur_state = wmt_cl_get_cur_state,
-	.set_cur_state = wmt_cl_set_cur_state,
-};
-
-static struct thermal_cooling_device_ops mtktspa_cooling_pa1_ops = {
-	.get_max_state = wmt_cl_pa1_get_max_state,
-	.get_cur_state = wmt_cl_pa1_get_cur_state,
-	.set_cur_state = wmt_cl_pa1_set_cur_state,
-};
-
-static struct thermal_cooling_device_ops mtktspa_cooling_pa2_ops = {
-	.get_max_state = wmt_cl_pa2_get_max_state,
-	.get_cur_state = wmt_cl_pa2_get_cur_state,
-	.set_cur_state = wmt_cl_pa2_set_cur_state,
-};
-
-#ifdef NEVER
-static struct thermal_cooling_device_ops mtktspa_cooling_pa3_ops = {
-	.get_max_state = wmt_cl_pa3_get_max_state,
-	.get_cur_state = wmt_cl_pa3_get_cur_state,
-	.set_cur_state = wmt_cl_pa3_set_cur_state,
-};
-#endif				/* NEVER */
 
 #define init_wifi_tput_ratio 100
 
@@ -259,6 +199,46 @@ static inline int is_wifi_tput_min(void)
 	wmt_tm_dprintk("%s: %d\n", __func__, __LINE__);
 	return (g_limit_tput != -1 && g_limit_tput <= min_wifi_tput) ? 1 : 0;
 }
+
+
+/* -mtktspa_cooling_sysrst_ops- */
+
+static int wmt_send_signal(int level)
+{
+	int ret = 0;
+	int thro = level;
+
+	g_limit_tput = level;
+	wmt_tm_dprintk("%s +++ level %d\n", __func__, level);
+
+	if (tm_input_pid == 0) {
+		wmt_tm_dprintk("[%s] pid is empty\n", __func__);
+		ret = -1;
+	}
+
+	wmt_tm_printk("[%s] pid is %d, %d, %d\n", __func__, tm_pid, tm_input_pid, thro);
+
+	if (ret == 0 && tm_input_pid != tm_pid) {
+		tm_pid = tm_input_pid;
+		pg_task = get_pid_task(find_vpid(tm_pid), PIDTYPE_PID);
+	}
+
+	if (ret == 0 && pg_task) {
+		siginfo_t info;
+
+		info.si_signo = SIGIO;
+		info.si_errno = 0;
+		info.si_code = thro;
+		info.si_addr = NULL;
+		ret = send_sig_info(SIGIO, &info, pg_task);
+	}
+
+	if (ret != 0)
+		wmt_tm_info("[%s] ret=%d\n", __func__, ret);
+
+	return ret;
+}
+
 
 static unsigned long set_adaptive_wifi_tput_limit(unsigned int cur_tput, unsigned int limit_ratio)
 {
@@ -583,7 +563,7 @@ static int wmt_thz_unbind(struct thermal_zone_device *thz_dev,
 	return 0;
 }
 
-static int wmt_thz_get_temp(struct thermal_zone_device *thz_dev, unsigned long *pv)
+static int wmt_thz_get_temp(struct thermal_zone_device *thz_dev, int *pv)
 {
 
 	/* struct wmt_thermal_ctrl_ops *p_des; */
@@ -688,14 +668,14 @@ static int wmt_thz_get_trip_type(struct thermal_zone_device *thz_dev, int trip,
 	return 0;
 }
 
-static int wmt_thz_get_trip_temp(struct thermal_zone_device *thz_dev, int trip, unsigned long *pv)
+static int wmt_thz_get_trip_temp(struct thermal_zone_device *thz_dev, int trip, int *pv)
 {
 	wmt_tm_dprintk("[mtktspa_get_trip_temp] %d\n", trip);
 	*pv = g_trip_temp[trip];
 	return 0;
 }
 
-static int wmt_thz_get_crit_temp(struct thermal_zone_device *thz_dev, unsigned long *pv)
+static int wmt_thz_get_crit_temp(struct thermal_zone_device *thz_dev, int *pv)
 {
 	wmt_tm_dprintk("[%s]\n", __func__);
 #define WMT_TM_TEMP_CRIT 85000	/* 85.000 degree Celsius */
@@ -731,44 +711,6 @@ static int wmt_cl_set_cur_state(struct thermal_cooling_device *cool_dev, unsigne
 	}
 
 	return 0;
-}
-
-/* -mtktspa_cooling_sysrst_ops- */
-
-static int wmt_send_signal(int level)
-{
-	int ret = 0;
-	int thro = level;
-
-	g_limit_tput = level;
-	wmt_tm_dprintk("%s +++ level %d\n", __func__, level);
-
-	if (tm_input_pid == 0) {
-		wmt_tm_dprintk("[%s] pid is empty\n", __func__);
-		ret = -1;
-	}
-
-	wmt_tm_printk("[%s] pid is %d, %d, %d\n", __func__, tm_pid, tm_input_pid, thro);
-
-	if (ret == 0 && tm_input_pid != tm_pid) {
-		tm_pid = tm_input_pid;
-		pg_task = get_pid_task(find_vpid(tm_pid), PIDTYPE_PID);
-	}
-
-	if (ret == 0 && pg_task) {
-		siginfo_t info;
-
-		info.si_signo = SIGIO;
-		info.si_errno = 0;
-		info.si_code = thro;
-		info.si_addr = NULL;
-		ret = send_sig_info(SIGIO, &info, pg_task);
-	}
-
-	if (ret != 0)
-		wmt_tm_info("[%s] ret=%d\n", __func__, ret);
-
-	return ret;
 }
 
 #define UNK_STAT -1
@@ -1385,6 +1327,116 @@ static int wmt_tm_pid_open(struct inode *inode, struct file *file)
 
 #define check_str(x) (x[0] == '\0'?"none\t":x)
 
+
+static void mtkts_wmt_cancel_thermal_timer(void)
+{
+
+	struct linux_thermal_ctrl_if *p_linux_if = 0;
+
+	/* wmt_tm_dprintk("[%s]\n", __func__); */
+
+	if (pg_wmt_tm)
+		p_linux_if = &pg_wmt_tm->linux_if;
+	else
+		return;
+
+	/* pr_debug("mtkts_wmt_cancel_thermal_timer\n"); */
+
+	/* stop thermal framework polling when entering deep idle */
+	if (p_linux_if->thz_dev)
+		cancel_delayed_work(&(p_linux_if->thz_dev->poll_queue));
+}
+
+static void mtkts_wmt_start_thermal_timer(void)
+{
+	struct linux_thermal_ctrl_if *p_linux_if = 0;
+
+	/* wmt_tm_dprintk("[%s]\n", __func__); */
+
+	if (pg_wmt_tm)
+		p_linux_if = &pg_wmt_tm->linux_if;
+	else
+		return;
+
+	/* pr_debug("mtkts_wmt_start_thermal_timer\n"); */
+	/* resume thermal framework polling when leaving deep idle */
+	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
+		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
+				 round_jiffies(msecs_to_jiffies(2000)));
+}
+
+static struct thermal_zone_device_ops wmt_thz_dev_ops = {
+	.bind = wmt_thz_bind,
+	.unbind = wmt_thz_unbind,
+	.get_temp = wmt_thz_get_temp,
+	.get_mode = wmt_thz_get_mode,
+	.set_mode = wmt_thz_set_mode,
+	.get_trip_type = wmt_thz_get_trip_type,
+	.get_trip_temp = wmt_thz_get_trip_temp,
+	.get_crit_temp = wmt_thz_get_crit_temp,
+};
+
+
+static struct thermal_cooling_device_ops mtktspa_cooling_sysrst_ops = {
+	.get_max_state = wmt_cl_get_max_state,
+	.get_cur_state = wmt_cl_get_cur_state,
+	.set_cur_state = wmt_cl_set_cur_state,
+};
+
+
+static struct thermal_cooling_device_ops mtktspa_cooling_pa1_ops = {
+	.get_max_state = wmt_cl_pa1_get_max_state,
+	.get_cur_state = wmt_cl_pa1_get_cur_state,
+	.set_cur_state = wmt_cl_pa1_set_cur_state,
+};
+
+static struct thermal_cooling_device_ops mtktspa_cooling_pa2_ops = {
+	.get_max_state = wmt_cl_pa2_get_max_state,
+	.get_cur_state = wmt_cl_pa2_get_cur_state,
+	.set_cur_state = wmt_cl_pa2_set_cur_state,
+};
+
+static int wmt_tm_thz_cl_register(void)
+{
+	#define DEFAULT_POLL_TIME 0	/*Default disable, turn on by thermal policy */
+
+	struct linux_thermal_ctrl_if *p_linux_if = 0;
+
+	wmt_tm_dprintk("[%s]\n", __func__);
+
+	if (pg_wmt_tm)
+		p_linux_if = &pg_wmt_tm->linux_if;
+	else
+		return -1;
+
+	/* cooling devices */
+	p_linux_if->cl_dev = mtk_thermal_cooling_device_register("mtktswmt-sysrst", NULL,
+								 &mtktspa_cooling_sysrst_ops);
+
+	p_linux_if->cl_pa1_dev = mtk_thermal_cooling_device_register("mtktswmt-pa1", NULL,
+								     &mtktspa_cooling_pa1_ops);
+
+	p_linux_if->cl_pa2_dev = mtk_thermal_cooling_device_register("mtktswmt-pa2", NULL,
+								     &mtktspa_cooling_pa2_ops);
+
+#ifdef NEVER
+	p_linux_if->cl_pa3_dev = mtk_thermal_cooling_device_register("mtktswmt-pa3", NULL,
+								     &mtktspa_cooling_pa3_ops);
+#endif				/* NEVER */
+
+	p_linux_if->interval = DEFAULT_POLL_TIME;
+
+	/* trips */
+	p_linux_if->thz_dev = mtk_thermal_zone_device_register("mtktswmt", g_num_trip, NULL,
+							       &wmt_thz_dev_ops, 0, 0, 0,
+							       p_linux_if->interval);
+
+	return 0;
+}
+
+
+
+
 static int wmt_tm_read(struct seq_file *m, void *v)
 {
 	/* int len = 0; */
@@ -1469,7 +1521,7 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 
 	if (sscanf
 	    (ptr_tm_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 	     &g_num_trip, &ptr_tm_data->trip_temp[0], &ptr_tm_data->thermal_trip[0], ptr_tm_data->bind0,
 	     &ptr_tm_data->trip_temp[1], &ptr_tm_data->thermal_trip[1], ptr_tm_data->bind1,
 	     &ptr_tm_data->trip_temp[2], &ptr_tm_data->thermal_trip[2], ptr_tm_data->bind2,
@@ -1574,42 +1626,13 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 }
 
 
-static void mtkts_wmt_cancel_thermal_timer(void)
-{
-
-	struct linux_thermal_ctrl_if *p_linux_if = 0;
-
-	/* wmt_tm_dprintk("[%s]\n", __func__); */
-
-	if (pg_wmt_tm)
-		p_linux_if = &pg_wmt_tm->linux_if;
-	else
-		return;
-
-	/* pr_debug("mtkts_wmt_cancel_thermal_timer\n"); */
-
-	/* stop thermal framework polling when entering deep idle */
-	if (p_linux_if->thz_dev)
-		cancel_delayed_work(&(p_linux_if->thz_dev->poll_queue));
-}
-
-static void mtkts_wmt_start_thermal_timer(void)
-{
-	struct linux_thermal_ctrl_if *p_linux_if = 0;
-
-	/* wmt_tm_dprintk("[%s]\n", __func__); */
-
-	if (pg_wmt_tm)
-		p_linux_if = &pg_wmt_tm->linux_if;
-	else
-		return;
-
-	/* pr_debug("mtkts_wmt_start_thermal_timer\n"); */
-	/* resume thermal framework polling when leaving deep idle */
-	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
-		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
-				 round_jiffies(msecs_to_jiffies(2000)));
-}
+#ifdef NEVER
+static struct thermal_cooling_device_ops mtktspa_cooling_pa3_ops = {
+	.get_max_state = wmt_cl_pa3_get_max_state,
+	.get_cur_state = wmt_cl_pa3_get_cur_state,
+	.set_cur_state = wmt_cl_pa3_set_cur_state,
+};
+#endif				/* NEVER */
 
 static const struct file_operations _wmt_tm_fops = {
 	.owner = THIS_MODULE,
@@ -1735,44 +1758,6 @@ static int wmt_tm_proc_unregister(void)
 	return 0;
 }
 
-static int wmt_tm_thz_cl_register(void)
-{
-#define DEFAULT_POLL_TIME 0	/*Default disable, turn on by thermal policy */
-
-	struct linux_thermal_ctrl_if *p_linux_if = 0;
-
-	wmt_tm_dprintk("[%s]\n", __func__);
-
-	if (pg_wmt_tm)
-		p_linux_if = &pg_wmt_tm->linux_if;
-	else
-		return -1;
-
-	/* cooling devices */
-	p_linux_if->cl_dev = mtk_thermal_cooling_device_register("mtktswmt-sysrst", NULL,
-								 &mtktspa_cooling_sysrst_ops);
-
-	p_linux_if->cl_pa1_dev = mtk_thermal_cooling_device_register("mtktswmt-pa1", NULL,
-								     &mtktspa_cooling_pa1_ops);
-
-	p_linux_if->cl_pa2_dev = mtk_thermal_cooling_device_register("mtktswmt-pa2", NULL,
-								     &mtktspa_cooling_pa2_ops);
-
-#ifdef NEVER
-	p_linux_if->cl_pa3_dev = mtk_thermal_cooling_device_register("mtktswmt-pa3", NULL,
-								     &mtktspa_cooling_pa3_ops);
-#endif				/* NEVER */
-
-	p_linux_if->interval = DEFAULT_POLL_TIME;
-
-	/* trips */
-	p_linux_if->thz_dev = mtk_thermal_zone_device_register("mtktswmt", g_num_trip, NULL,
-							       &wmt_thz_dev_ops, 0, 0, 0,
-							       p_linux_if->interval);
-
-	return 0;
-}
-
 static int wmt_tm_thz_cl_unregister(void)
 {
 	struct linux_thermal_ctrl_if *p_linux_if = 0;
@@ -1856,6 +1841,8 @@ static int wmt_tm_ops_unregister(void)
 	}
 }
 #endif
+
+
 
 static int __init wmt_tm_init(void)
 {
