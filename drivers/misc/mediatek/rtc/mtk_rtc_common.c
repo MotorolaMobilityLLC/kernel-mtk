@@ -170,6 +170,12 @@ static DEFINE_SPINLOCK(rtc_lock);
 
 static void rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo);
 
+void __attribute__((weak)) arch_reset(char mode, const char *cmd)
+{
+	pr_info("arch_reset is not ready\n");
+}
+
+
 static int rtc_show_time;
 static int rtc_show_alarm = 1;
 

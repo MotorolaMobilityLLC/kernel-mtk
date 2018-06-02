@@ -73,6 +73,11 @@
 /*---IPI Mailbox define---*/
 /*#define IPIMB*/
 
+void __attribute__((weak)) arch_reset(char mode, const char *cmd)
+{
+	pr_info("arch_reset is not ready\n");
+}
+
 /* Global variable */
 int g_pmic_irq;
 unsigned int g_eint_pmic_num = 176;	/* TBD */
