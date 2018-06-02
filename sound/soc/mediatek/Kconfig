@@ -28,3 +28,72 @@ config SND_SOC_MT8173_RT5650_RT5676
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config MT_SND_SOC_6797
+	bool "MT 6797 PLATFORM AUDIO DRIVER"
+	default n
+	help
+	  If you say Y, enable MTK 6797 audio driver.
+	  Must enable this to use medatek audio driver.
+	  The default value is y for MT6797.
+	  It's recommended no to change this.
+
+config MT_SND_SOC_CODEC
+	string "String for Mediatek audio codec"
+	help
+	  Specify Mediatek audio codec.
+	  Say "mt6351" if you have mt6351 audio codec.
+
+config MTK_SPEAKER
+	bool "MTK SPEAKER AMP"
+	default n
+	help
+	  If you say Y, enable MTK_SPEAKER_AMP
+
+config MTK_NXP_TFA9890
+	bool "MTK NXP TFA9890 SMART PA DRIVER"
+	default n
+	help
+	  If you say Y, enable MTK_NXP_TFA9890 driver.
+
+config MTK_SPKGPIO_REWORK
+	bool "MTK SPEAKER GPIO REWORK"
+	default n
+	help
+	  This is only for MTK internal phone only
+	  Enable SPKGPIO REWORK check functionality
+	  Will choose the correct GPIO for external AMP
+          If you say Y, enable MTK_SPKGPIO_REWORK
+
+config MTK_HP_ANASWITCH
+	bool "MTK HEADPHONE ANALOG SWITCH"
+	default n
+	help
+	  This will enable headphone analog switch control
+	  for de-pop functionality
+	  Only enable this when you have headphone analog switch
+          If you say Y, enable MTK_HP_ANASWITCH
+
+config MTK_BTCVSD_ALSA
+	bool "MTK BT CVSD ALSA ARICHITECTURE"
+	default n
+	help
+	  If you say Y, enable MTK_BTCVSD_ALSA.
+
+config MTK_SND_SOC_NEW_ARCH
+	bool "Support new audio architecture"
+	help
+	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
+	  Only enable this when you use refactored audio driver architecture.
+
+config MTK_OFFLOAD_PLAYBACK
+	bool "Audio playback through dsp"
+	help
+	  If you say Y, enable MTK_OFFLOAD_PLAYBACK.
+	  Only enable this when we have DSP.
+	  This makes audio out pass bitstream, and decoding process is done in DSP.
+
+config MTK_HYBRIDDRE_SUPPORT
+	bool "Audio Hybrid DRE support"
+	help
+	  If you say Y, enable MTK_HYBRIDDRE_SUPPORT.
+	  Only enable this when we have Hybrid DRE feature.

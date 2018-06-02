@@ -17,7 +17,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_L3
 	select SND_SOC_AB8500_CODEC if ABX500_CORE
 	select SND_SOC_AC97_CODEC
-	select SND_SOC_AD1836 if SPI_MASTER
+	select SND_SOC_AD1836 if SPI_MASTERRT5509
 	select SND_SOC_AD193X_SPI if SPI_MASTER
 	select SND_SOC_AD193X_I2C if I2C
 	select SND_SOC_AD1980 if SND_SOC_AC97_BUS
@@ -916,3 +916,16 @@ config SND_SOC_TPA6130A2
 	depends on I2C
 
 endmenu
+
+config SND_SOC_MAX98926
+	bool "MAXIM 98926 CODEC"
+	default n
+	help
+	  for max98926 codec,enable this config will
+	  add max98926 codec driver.
+
+config SND_SOC_RT5509
+	bool "RT5509 CODEC"
+	default n
+	depends on I2C
+	select RT_REGMAP
