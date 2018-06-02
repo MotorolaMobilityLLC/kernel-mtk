@@ -107,6 +107,7 @@ config MACH_MT6758
 	select PINCTRL
 	select PINCTRL_MT6758
 	select MFD_SYSCON
+	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG

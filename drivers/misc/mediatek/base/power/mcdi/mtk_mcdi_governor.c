@@ -222,11 +222,11 @@ bool cluster_residency_check(int cpu)
 
 #if 0
 	if (!cluster_can_pwr_off) {
-		pr_notify("this cpu = %d, predict_us = %u, ",
+		pr_info("this cpu = %d, predict_us = %u, ",
 					cpu,
 					this_cpu_predict_us,
 		);
-		pr_notify("curr_time_us = %llu, residency = %u\n",
+		pr_info("curr_time_us = %llu, residency = %u\n",
 					curr_time_us,
 					target_residency
 		);
@@ -237,17 +237,17 @@ bool cluster_residency_check(int cpu)
 
 				sta = &mcdi_gov_data.status[i];
 
-				pr_notify("\tcpu = %d, state = %d, ",
+				pr_info("\tcpu = %d, state = %d, ",
 					i,
 					sta->state,
 				);
-				pr_notify("enter_time_us = %llu, ",
+				pr_info("enter_time_us = %llu, ",
 					sta->enter_time_us,
 				);
-				pr_notify("predict_us = %llu, ",
+				pr_info("predict_us = %llu, ",
 					sta->predict_us,
 				);
-				pr_notify("remain_predict_us = %llu\n",
+				pr_info("remain_predict_us = %llu\n",
 					predict_leave_ts - curr_time_us
 				);
 			}
@@ -579,7 +579,7 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		val = (unsigned long)uptime.tv_sec;
 
 		if (val >= BOOT_TIME_LIMIT) {
-			pr_notify("MCDI bootup check: PASS\n");
+			pr_info("MCDI bootup check: PASS\n");
 			boot_time_check = 1;
 		} else {
 			return MCDI_STATE_WFI;
@@ -740,12 +740,12 @@ void mcdi_avail_cpu_cluster_update(void)
 	update_avail_cpu_mask_to_mcdi_controller(cpu_mask);
 
 #if 0
-	pr_notify("online = %d, avail: mcusys = %d, cluster[0] = %d ",
+	pr_info("online = %d, avail: mcusys = %d, cluster[0] = %d ",
 		num_online_cpus(),
 		mcdi_gov_data.avail_cnt_mcusys,
 		mcdi_gov_data.avail_cnt_cluster[0],
 	);
-	pr_notify("[1] = %d, cpu_mask = %04x, cluster_mask = %04x\n",
+	pr_info("[1] = %d, cpu_mask = %04x, cluster_mask = %04x\n",
 		mcdi_gov_data.avail_cnt_cluster[1],
 		mcdi_gov_data.avail_cpu_mask,
 		mcdi_gov_data.avail_cluster_mask
@@ -794,7 +794,7 @@ void set_mcdi_s_state(int state)
 		return;
 	}
 
-	pr_notify("set_mcdi_s_state = %d\n", state);
+	pr_info("set_mcdi_s_state = %d\n", state);
 
 	spin_lock_irqsave(&mcdi_feature_stat_spin_lock, flags);
 
