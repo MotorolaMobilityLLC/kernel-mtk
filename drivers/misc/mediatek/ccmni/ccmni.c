@@ -262,6 +262,8 @@ static int ccmni_open(struct net_device *dev)
 		return -1;
 	}
 
+	netif_carrier_on(dev);
+
 	netif_tx_start_all_queues(dev);
 
 	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
@@ -481,12 +483,6 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			break;
 		}
 
-		if (md_id_irat == ccmni->md_id) {
-			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
-				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), atomic_read(&ccmni->usage));
-			break;
-		}
-
 		ctlb_irat = ccmni_ctl_blk[md_id_irat];
 		if (ccmni->index >= ctlb_irat->ccci_ops->ccmni_num) {
 			CCMNI_ERR_MSG(md_id, "SIOCSCCMNICFG: %s iRAT(MD%d->MD%d) fail,index(%d)>max_num(%d)\n",
@@ -494,6 +490,18 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			break;
 		}
 		ccmni_irat = ctlb_irat->ccmni_inst[ccmni->index];
+
+		if (md_id_irat == ccmni->md_id) {
+			if (ccmni_irat->dev != dev) {
+				CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: iRAT on the same MD%d from %s to %s\n",
+					(ifr->ifr_ifru.ifru_ivalue+1), ccmni_irat->dev->name, dev->name);
+				ccmni_irat->dev = dev;
+			}
+			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
+				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), atomic_read(&ccmni->usage));
+			break;
+		}
+
 		usage_cnt = atomic_read(&ccmni->usage);
 		atomic_set(&ccmni_irat->usage, usage_cnt);
 		/* fix dev!=ccmni_irat->dev issue when MD3-CC3MNI -> MD3-CCMNI */
@@ -648,8 +656,8 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			dev->mtu = CCMNI_MTU;
 			dev->tx_queue_len = CCMNI_TX_QUEUE;
 			dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
-			dev->flags = IFF_NOARP & /* ccmni is a pure IP device */
-					(~IFF_BROADCAST & ~IFF_MULTICAST);	/* ccmni is P2P */
+			dev->flags = (IFF_NOARP | IFF_BROADCAST) & /* ccmni is a pure IP device */
+					(~IFF_MULTICAST);	/* ccmni is P2P */
 			dev->features = NETIF_F_VLAN_CHALLENGED; /* not support VLAN */
 			if (ctlb->ccci_ops->md_ability & MODEM_CAP_SGIO) {
 				dev->features |= NETIF_F_SG;
@@ -926,7 +934,8 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	switch (state) {
 	case READY:
-		netif_carrier_on(ccmni->dev);
+		/*don't carrire on here, MD data link may be not ready. carrirer on it in ccmni_open*/
+		/*netif_carrier_on(ccmni->dev);*/
 		ccmni->tx_seq_num[0] = 0;
 		ccmni->tx_seq_num[1] = 0;
 		ccmni->rx_seq_num = 0;
@@ -934,6 +943,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	case EXCEPTION:
 	case RESET:
+	case WAITING_TO_STOP:
 		netif_carrier_off(ccmni->dev);
 		break;
 
