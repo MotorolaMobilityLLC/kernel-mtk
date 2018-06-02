@@ -166,7 +166,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if (!prGlueInfo)
 		return -EFAULT;
 
-	if (band == 0) { /* 2.4G band */
+	if (band == 1) { /* 2.4G band */
 		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
 	} else { /* 5G band */
@@ -194,6 +194,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	}
 	num_channels = j;
 
+	DBGLOG(REQ, INFO, "Get channel list for band: %d, num_channels=%d\n", band, num_channels);
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(channels));
 	if (!skb) {
 		DBGLOG(REQ, ERROR, "Allocate skb failed\n");
