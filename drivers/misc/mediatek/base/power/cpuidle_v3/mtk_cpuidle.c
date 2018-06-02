@@ -252,14 +252,12 @@ static inline void cpuidle_fp_reset(int cpu)
 static void mtk_spm_wakeup_src_restore(void)
 {
 	int i;
-	u32 spm_wakeup_state;
 
 	for (i = 0; i < MAX_SPM_WAKEUP_SRC; i++) {
 		if (!spm_wakeup_src[i].irq_nr)
 			return;
 
-		spm_wakeup_state = readl_relaxed(SPM_WAKEUP_STA);
-		if (spm_wakeup_state & spm_wakeup_src[i].irq_pending)
+		if (readl_relaxed(SPM_SW_RSV_0) & spm_wakeup_src[i].irq_pending)
 			mt_irq_set_pending(spm_wakeup_src[i].irq_nr);
 	}
 }
