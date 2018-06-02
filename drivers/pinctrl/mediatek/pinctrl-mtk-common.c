@@ -41,12 +41,6 @@
 #include "pinctrl-mtk-common.h"
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
-#define PINCTRL_TAG		"[mtk_pinctrl_common] "
-#define PINCTRL_DBG(fmt, args...)	\
-	pr_debug(PINCTRL_TAG"[%04d][%s]: "fmt, __LINE__, __func__, ##args)
-#define PINCTRL_INFO(fmt, args...)	\
-	pr_info(PINCTRL_TAG"[%04d][%s]: "fmt, __LINE__, __func__, ##args)
-
 struct mtk_pinctrl *pctl;
 #endif
 
@@ -190,10 +184,10 @@ static int mtk_pinctrl_set_gpio_output(struct mtk_pinctrl *pctl,
 	return mtk_pinctrl_set_gpio_value(pctl, pin, value,
 		pctl->devdata->n_pin_dout, pctl->devdata->pin_dout_grps);
 #else
-	PINCTRL_DBG("config pin = %d, value = %d\n", pin, value);
+	pr_info("config pin = %d, value = %d\n", pin, value);
 	mtk_pinctrl_set_gpio_value(pctl, pin, value,
 		pctl->devdata->n_pin_dout, pctl->devdata->pin_dout_grps);
-	PINCTRL_DBG("set pin = %d, value = %d\n", pin,
+	pr_info("set pin = %d, value = %d\n", pin,
 		mtk_pinctrl_get_gpio_output(pctl, pin));
 	return 0;
 #endif
@@ -217,10 +211,10 @@ static int mtk_pinctrl_set_gpio_direction(struct mtk_pinctrl *pctl,
 	return mtk_pinctrl_set_gpio_value(pctl, pin, input,
 		pctl->devdata->n_pin_dir, pctl->devdata->pin_dir_grps);
 #else
-	PINCTRL_DBG("config pin = %d, dir = %d\n", pin, input);
+	pr_info("config pin = %d, dir = %d\n", pin, input);
 	mtk_pinctrl_set_gpio_value(pctl, pin, input,
 			pctl->devdata->n_pin_dir, pctl->devdata->pin_dir_grps);
-	PINCTRL_DBG("set pin = %d, dir = %d\n", pin,
+	pr_info("set pin = %d, dir = %d\n", pin,
 		mtk_pinctrl_get_gpio_direction(pctl, pin));
 	return 0;
 #endif
@@ -239,10 +233,10 @@ static int mtk_pinctrl_set_gpio_mode(struct mtk_pinctrl *pctl,
 	return mtk_pinctrl_update_gpio_value(pctl, pin, mode,
 		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
 #else
-	PINCTRL_DBG("config pin = %d, mode = %d\n", pin, (int)mode);
+	pr_info("config pin = %d, mode = %d\n", pin, (int)mode);
 	mtk_pinctrl_update_gpio_value(pctl, pin, mode,
 		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
-	PINCTRL_DBG("set pin = %d, mode = %d\n", pin,
+	pr_info("set pin = %d, mode = %d\n", pin,
 		mtk_pinctrl_get_gpio_mode(pctl, pin));
 	return 0;
 #endif
@@ -261,10 +255,10 @@ static int mtk_pinctrl_set_gpio_driving(struct mtk_pinctrl *pctl,
 	return mtk_pinctrl_update_gpio_value(pctl, pin, driving,
 		pctl->devdata->n_pin_drv, pctl->devdata->pin_drv_grps);
 #else
-	PINCTRL_DBG("config pin = %d, driving = %d\n", pin, driving);
+	pr_info("config pin = %d, driving = %d\n", pin, driving);
 	mtk_pinctrl_update_gpio_value(pctl, pin, driving,
 			pctl->devdata->n_pin_drv, pctl->devdata->pin_drv_grps);
-	PINCTRL_DBG("set pin = %d, driving = %d\n", pin,
+	pr_info("set pin = %d, driving = %d\n", pin,
 		mtk_pinctrl_get_gpio_driving(pctl, pin));
 	return 0;
 #endif
@@ -327,7 +321,7 @@ static int mtk_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (pctl->devdata->pin_dir_grps)/* because input is true */
-		return mtk_pinctrl_set_gpio_direction(pctl, offset, input);
+		return mtk_pinctrl_set_gpio_direction(pctl, offset, !input);
 #endif
 
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
@@ -1100,7 +1094,8 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned int offset)
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (pctl->devdata->pin_dir_grps)
-		return mtk_pinctrl_get_gpio_direction(pctl, offset);
+		/* need reverse the direction for gpiolib */
+		return !mtk_pinctrl_get_gpio_direction(pctl, offset);
 #endif
 
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
@@ -1696,7 +1691,7 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 	}
 	return len;
 }
-#if 1//add by xuexi
+
 void gpio_dump_regs_range(int start, int end)
 {
 	struct gpio_chip *chip;
@@ -1704,7 +1699,7 @@ void gpio_dump_regs_range(int start, int end)
 	int pull_val;
 
 	if (!pctl) {
-		PINCTRL_INFO("pinctrl does not exist\n");
+		pr_err("[gpio_dump_regs]error: pinctrl does not exist\n");
 		return;
 	}
 
@@ -1743,7 +1738,7 @@ void gpio_dump_regs(void)
 {
 	gpio_dump_regs_range(-1, -1);
 }
-#endif
+
 static ssize_t mtk_gpio_store_pin(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -2352,111 +2347,13 @@ int mtk_pctrl_get_gpio_chip_base(void)
 {
 	if (pctl)
 		return pctl->chip->base;
-	PINCTRL_DBG("mtk_pinctrl is not initialized\n");
+	pr_info("mtk_pinctrl is not initialized\n");
 	return 0;
 }
 #ifdef CONFIG_PINCTRL_TEST
 static void mtk_pinctrl_test(struct mtk_pinctrl *pctl)
 {
-	int i, val, res;
-
-	PINCTRL_INFO("pinctrl test start--\n");
-
-	PINCTRL_INFO("pinctrl mode test start\n");
-	for (i = 0; i < pctl->devdata->npins; i++) {
-		for (val = 0; val < 8; val++) {
-			res = mtk_pinctrl_set_gpio_mode(pctl, i, val);
-			if (res)
-				PINCTRL_INFO("GPIO[%d]Failed:set %d\n",
-				i, val);
-			else if (val != mtk_pinctrl_get_gpio_mode(pctl, i))
-				PINCTRL_INFO("GPIO[%d]Failed:set %d,get %d\n",
-				i, val, mtk_pinctrl_get_gpio_mode(pctl, i));
-			else
-				PINCTRL_INFO("GPIO[%d]OK:set %d\n", i, val);
-		}
-	}
-	PINCTRL_INFO("pinctrl mode test end\n");
-
-	PINCTRL_INFO("pinctrl direction test start\n");
-	for (i = 0; i < pctl->devdata->npins; i++) {
-		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
-		for (val = 0; val < 2; val++) {
-			res = mtk_pinctrl_set_gpio_direction(pctl, i, val);
-			if (res)
-				PINCTRL_INFO("GPIO[%d]Failed:set %d\n",
-				i, val);
-			else if (val != mtk_pinctrl_get_gpio_direction(pctl, i))
-				PINCTRL_INFO("GPIO[%d]Failed:get %d, get %d\n",
-				i, val,
-				mtk_pinctrl_get_gpio_direction(pctl, i));
-			else
-				PINCTRL_INFO("GPIO[%d]OK:set %d\n", i, val);
-		}
-	}
-	PINCTRL_INFO("pinctrl direction test end\n");
-
-	PINCTRL_INFO("pinctrl output test start\n");
-	for (i = 0; i < pctl->devdata->npins; i++) {
-		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
-		mtk_pinctrl_set_gpio_direction(pctl, i, 1);
-		for (val = 0; val < 2; val++) {
-			res = mtk_pinctrl_set_gpio_output(pctl, i, val);
-			if (res)
-				PINCTRL_INFO("GPIO[%d]Failed:set %d\n",
-				i, val);
-			if (val != mtk_pinctrl_get_gpio_output(pctl, i))
-				PINCTRL_INFO("GPIO[%d]Failed:set %d,get %d\n",
-				i, val, mtk_pinctrl_get_gpio_output(pctl, i));
-		}
-	}
-	PINCTRL_INFO("pinctrl output test end\n");
-
-	PINCTRL_INFO("pinctrl smt test start\n");
-	for (i = 0; i < pctl->devdata->npins; i++) {
-		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
-		for (val = 0; val < 2; val++) {
-			res = mtk_pinctrl_set_gpio_smt(pctl, i, val);
-			if (res)
-				PINCTRL_INFO("GPIO[%d]Failed:set smt %d\n",
-				i, val);
-			if (val != mtk_pinctrl_get_gpio_smt(pctl, i))
-				PINCTRL_INFO("GPIO[%d]Failed:get %d,get %d\n",
-				i, val, mtk_pinctrl_get_gpio_smt(pctl, i));
-		}
-	}
-	PINCTRL_INFO("pinctrl output test end\n");
-
-	PINCTRL_INFO("pinctrl pull test start\n");
-	for (i = 0; i < pctl->devdata->npins; i++) {
-		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
-		/*pull disable test*/
-		pctl->devdata->mtk_pctl_set_pull(pctl, i, false, false, 0x0);
-		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
-		if (res)
-			PINCTRL_INFO("GPIO[%d]get pullen 0 failed\n", i);
-		/*pull down test*/
-		pctl->devdata->mtk_pctl_set_pull(pctl, i, true, false, 0x3);
-		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
-		if (!res)
-			PINCTRL_INFO("GPIO[%d]get pullen 1 failed\n", i);
-		res = pctl->devdata->mtk_pctl_get_pull_sel(pctl, i);
-		res = (res >= 0) ? (res&1) : -1;
-		if (res)
-			PINCTRL_INFO("GPIO[%d]get pullsel 0 failed\n", i);
-		/*pull up test*/
-		pctl->devdata->mtk_pctl_set_pull(pctl, i, true, true, 0x3);
-		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
-		if (!res)
-			PINCTRL_INFO("GPIO[%d]get pullen 1 failed\n", i);
-		res = pctl->devdata->mtk_pctl_get_pull_sel(pctl, i);
-		res = (res >= 0) ? (res&1) : -1;
-		if (!res)
-			PINCTRL_INFO("GPIO[%d]get pullsel 1 failed\n", i);
-		}
-	PINCTRL_INFO("pinctrl pull test end\n");
-
-	PINCTRL_INFO("pinctrl test end\n");
+	/* TODO something */
 }
 #endif
 #endif
@@ -2496,7 +2393,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		} else if (regmap) {
 			pctl->regmap1  = regmap;
 		} else {
-			pr_info("Pinctrl node hasn't register regmap\n");
+			pr_warn("Pinctrl node hasn't register regmap\n");
 			return -EINVAL;
 		}
 
@@ -2574,17 +2471,19 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		ret = -EINVAL;
 		goto chip_error;
 	}
+
 #ifdef CONFIG_PINCTRL_TEST
 	mtk_pinctrl_test(pctl);
 #endif
-
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	if (mtk_gpio_create_attr(&pdev->dev))
-		pr_warn("mtk_gpio create attribute error\n");
+		pr_warn("[pinctrl]mtk_gpio create attribute error\n");
 #endif
 
-	if (!of_property_read_bool(np, "interrupt-controller"))
+	if (!of_property_read_bool(np, "interrupt-controller")) {
+		pr_warn("[pinctrl]init:interrupt-controller node no found\n");
 		return 0;
+	}
 
 	/* Get EINT register base from dts. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -2657,13 +2556,16 @@ int mtk_pctrl_init(struct platform_device *pdev,
 
 	irq_set_chained_handler_and_data(irq, mtk_eint_irq_handler, pctl);
 	if (mtk_eint_create_attr(&pdev->dev))
-		pr_info("mtk_eint create attribute error\n");
+		pr_warn("mtk_eint create attribute error\n");
+
+	pr_info("mtk_pctrl_init--->OK\n");
 	return 0;
 
 chip_error:
 	gpiochip_remove(pctl->chip);
 pctrl_error:
 	pinctrl_unregister(pctl->pctl_dev);
+	pr_err("mtk_pctrl_init--->Failed\n");
 	return ret;
 }
 
