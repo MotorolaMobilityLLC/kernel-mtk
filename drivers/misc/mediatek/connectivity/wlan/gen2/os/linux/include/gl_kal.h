@@ -557,7 +557,7 @@ extern int allocatedMemSize;
 
 #if CFG_SUPPORT_MET_PROFILING
 #include "linux/kallsyms.h"
-#include <linux/ftrace_event.h>
+#include <linux/trace_events.h>
 #endif
 
 extern BOOLEAN fgIsUnderSuspend;
