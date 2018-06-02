@@ -27,7 +27,7 @@ MTK_GPU_DVFS_TYPE_ITEM(TOUCHBOOST) \
 MTK_GPU_DVFS_TYPE_ITEM(THERMAL) \
 MTK_GPU_DVFS_TYPE_ITEM(CUSTOMIZATION)}
 
-/* typedef enum MTK_GPU_DVFS_TYPE_TAG */
+typedef enum MTK_GPU_DVFS_TYPE_TAG
 
 #define MTK_GPU_DVFS_TYPE_ITEM(type) MTK_GPU_DVFS_TYPE_##type,
 MTK_GPU_DVFS_TYPE_LIST
@@ -85,13 +85,12 @@ bool mtk_enable_gpu_perf_monitor(bool enable);
 
 /* GPU PMU should be implemented by GPU IP-dep code */
 
-/* typedef struct { */
-/*	int id; */
-/*	const char *name; */
-/*	unsigned int value; */
-/*	int overflow; */
-/* } GPU_PMU; */
-/* #endif */
+typedef struct {
+	int id;
+	const char *name;
+	unsigned int value;
+	int overflow;
+} GPU_PMU;
 
 bool mtk_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size);
 bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size);
