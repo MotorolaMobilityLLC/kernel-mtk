@@ -12,6 +12,10 @@
 #
 
 # common driver code for CMDQ
-obj-y += v3/
-
+ifeq ($(CONFIG_MTK_CMDQ_TAB), y)
+  obj-y += v2/
+else
+  # use common driver
+  obj-y += v3/
+endif
 # EOF
