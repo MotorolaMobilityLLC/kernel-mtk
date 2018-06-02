@@ -330,7 +330,7 @@ static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client, int
 	}
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
 	mm_data.config_buffer_param.kernel_handle = handle;
-	/* mm_data.config_buffer_param.eModuleID = 0; //rogerhsu */
+	mm_data.config_buffer_param.module_id = 0;
 	mm_data.config_buffer_param.security = 0;
 	mm_data.config_buffer_param.coherent = 0;
 
