@@ -99,7 +99,7 @@ static long fm_ops_compat_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg
 static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 {
 	fm_s32 ret = 0;
-	struct fm_platform *plat = container_of(filp->f_dentry->d_inode->i_cdev, struct fm_platform, cdev);
+	struct fm_platform *plat = container_of(filp->f_path.dentry->d_inode->i_cdev, struct fm_platform, cdev);
 	struct fm *fm = container_of(plat, struct fm, platform);
 
 	WCN_DBG(FM_DBG | MAIN, "%s---pid(%d)---cmd(0x%08x)---arg(0x%08x)\n", current->comm,
