@@ -52,7 +52,7 @@
 #define CHARGING_H
 
 #ifndef CONFIG_ARCH_MT8173
-#include <mach/mt_charging.h>
+#include <mach/mtk_charging.h>
 #endif
 
 /* ============================================================ */
