@@ -1,7 +1,7 @@
 #
 # Makefile for regulator drivers.
 #
-
+ccflags-$(CONFIG_REGULATOR) += -Wno-error=unused-variable
 
 obj-$(CONFIG_REGULATOR) += core.o dummy.o fixed-helper.o helpers.o devres.o
 obj-$(CONFIG_OF) += of_regulator.o
