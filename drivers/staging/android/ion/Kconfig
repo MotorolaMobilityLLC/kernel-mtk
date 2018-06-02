@@ -1,3 +1,4 @@
+
 menuconfig ION
 	bool "Ion Memory Manager"
 	depends on HAVE_MEMBLOCK && HAS_DMA && MMU
@@ -16,6 +17,8 @@ config ION_TEST
 	help
 	  Choose this option to create a device that can be used to test the
 	  kernel and device side ION functions.
+	  this file to ion test.
+	  you want to test ion, please uset this option.
 
 config ION_DUMMY
 	bool "Dummy Ion driver"
@@ -32,11 +35,9 @@ config ION_TEGRA
 	depends on ARCH_TEGRA && ION
 	help
 	  Choose this option if you wish to use ion on an nVidia Tegra.
+	  ion for tegra is on an nVidia tegra.
+	  It set in xxxx_defconfig.mk.
+	  default is on.
 
-config ION_POOL_CACHE_POLICY
-	bool "Ion set page pool cache policy"
-	depends on ION && X86
-	default y if X86
-	help
-	  Choose this option if need to explicity set cache policy of the
-	  pages in the page pool.
+source "drivers/staging/android/ion/mtk/Kconfig"
+

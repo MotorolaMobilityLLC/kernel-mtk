@@ -11,25 +11,18 @@
 # GNU General Public License for more details.
 #
 
-ccflags-$(CONFIG_MTK_ION)  += -I$(srctree)/drivers/staging/android/ion
-
-obj-$(CONFIG_ION) +=	ion.o ion_heap.o ion_page_pool.o ion_system_heap.o \
-			ion_carveout_heap.o ion_chunk_heap.o ion_cma_heap.o ion_profile.o
-obj-$(CONFIG_ION_TEST) += ion_test.o
-ifdef CONFIG_COMPAT
-obj-$(CONFIG_ION) += compat_ion.o
-endif
-
-obj-$(CONFIG_ION_DUMMY) += ion_dummy_driver.o
-obj-$(CONFIG_ION_TEGRA) += tegra/
-
-obj-$(CONFIG_MTK_ION) += mtk/
-
+obj-$(CONFIG_MTK_ION) += ion_drv.o ion_mm_heap.o ion_fb_heap.o
+ccflags-$(CONFIG_MTK_ION)  += -I$(srctree)/drivers/staging/android/ion #fro kernel-3.10 ion
+ccflags-$(CONFIG_MTK_M4U) += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/arch/arm/
 
 ifeq ($(CONFIG_MT_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
+#ccflags-y += -DION_HISTORY_RECORD
+#obj-$(CONFIG_ION_MTK) += ion_history.o
 else
 ccflags-y += -DION_RUNTIME_DEBUGGER=0
 endif
+
