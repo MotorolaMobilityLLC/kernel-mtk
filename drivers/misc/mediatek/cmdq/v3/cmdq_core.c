@@ -8069,8 +8069,7 @@ static void cmdq_core_change_prev_jump(
 		/* find which task JUMP into task */
 		if (tsk && tsk->pCMDEnd && tsk->pCMDEnd[-1] ==
 			cmdq_core_task_get_first_pa(task) &&
-			prev_task->pCMDEnd[0] ==
-			((CMDQ_CODE_JUMP << 24) | 0x1)) {
+			tsk->pCMDEnd[0] == ((CMDQ_CODE_JUMP << 24) | 0x1)) {
 			prev_task = tsk;
 			break;
 		}
