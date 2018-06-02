@@ -341,6 +341,7 @@ asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 	int timeout = 1000000;
 	int cpu;
 #ifdef CONFIG_MTK_WATCHDOG
+	int res = 0;
 	struct wd_api *wd_api = NULL;
 #endif
 	struct pt_regs *excp_regs = NULL;
@@ -414,7 +415,7 @@ asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 		aee_rec_step_nested_panic(step_base + 6);
 		/* we donot want a FIQ after this, so disable hwt */
 #ifdef CONFIG_MTK_WATCHDOG
-		int res = get_wd_api(&wd_api);
+		res = get_wd_api(&wd_api);
 
 		if (res)
 			aee_nested_printf("get_wd_api error\n");
