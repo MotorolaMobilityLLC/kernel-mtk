@@ -203,7 +203,7 @@ obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 obj-n += crypto/
 
 #widevine drm
-#obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
 #obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
 #obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 #obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
