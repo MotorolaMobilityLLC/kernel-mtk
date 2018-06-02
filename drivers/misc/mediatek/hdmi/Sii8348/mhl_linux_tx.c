@@ -44,11 +44,11 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include "platform.h"
 
 #include <linux/kthread.h>
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 
 #ifdef CONFIG_MTK_LEGACY
 #include "mach/eint.h"
-#include <mach/mt_gpio.h>
+/*#include <mach/mt_gpio.h>*/
 #include <cust_gpio_usage.h>
 #include <cust_eint.h>
 #endif
@@ -586,15 +586,15 @@ ssize_t send_rap(struct device *dev, struct device_attribute *attr, const char *
 		goto err_exit;
 	}
 
-	if (strnicmp("poll", buf, count - 1) == 0) {
+	if (strncasecmp("poll", buf, count - 1) == 0) {
 		if (!si_mhl_tx_rap_send(dev_context, MHL_RAP_POLL))
 			status = -EPERM;
 
-	} else if (strnicmp("content_on", buf, count - 1) == 0) {
+	} else if (strncasecmp("content_on", buf, count - 1) == 0) {
 		if (!si_mhl_tx_rap_send(dev_context, MHL_RAP_CONTENT_ON))
 			status = -EPERM;
 
-	} else if (strnicmp("content_off", buf, count - 1) == 0) {
+	} else if (strncasecmp("content_off", buf, count - 1) == 0) {
 		if (!si_mhl_tx_rap_send(dev_context, MHL_RAP_CONTENT_OFF))
 			status = -EPERM;
 
@@ -670,9 +670,9 @@ ssize_t set_rap_status(struct device *dev, struct device_attribute *attr, const 
 		goto err_exit;
 	}
 
-	if (strnicmp("busy", buf, count - 1) == 0) {
+	if (strncasecmp("busy", buf, count - 1) == 0) {
 		dev_context->mhl_flags |= MHL_STATE_APPLICATION_RAP_BUSY;
-	} else if (strnicmp("ready", buf, count - 1) == 0) {
+	} else if (strncasecmp("ready", buf, count - 1) == 0) {
 		dev_context->mhl_flags &= ~MHL_STATE_APPLICATION_RAP_BUSY;
 	} else {
 		MHL_TX_DBG_ERR(dev_context, "Invalid parameter %s received\n", buf);

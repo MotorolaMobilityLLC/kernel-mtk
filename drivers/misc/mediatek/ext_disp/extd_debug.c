@@ -20,7 +20,7 @@
 /*#include <mach/mt_typedefs.h>*/
 #include <linux/types.h>
 /*#include <mach/mt_gpio.h>*/
-#include <mt-plat/mt_gpio.h>
+/*#include <mt-plat/mt_gpio.h>*/
 /* #include <cust_gpio_usage.h> */
 
 
