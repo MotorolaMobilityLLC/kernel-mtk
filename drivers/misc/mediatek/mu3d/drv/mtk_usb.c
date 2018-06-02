@@ -230,13 +230,13 @@ bool usb_cable_connected(void)
 
 #ifdef USB_FORCE_ON
 	/* FORCE USB ON */
-	chg_type = STANDARD_HOST;
+	chg_type = _mu3d_musb->charger_mode = STANDARD_HOST;
 	vbus_exist = true;
 	connected = true;
 	os_printk(K_INFO, "%s type force to STANDARD_HOST\n", __func__);
 #else
 	/* TYPE CHECK*/
-	chg_type = mt_get_charger_type();
+	chg_type = _mu3d_musb->charger_mode = mt_get_charger_type();
 	if (fake_CDP && chg_type == STANDARD_HOST) {
 		os_printk(K_INFO, "%s, fake to type 2\n", __func__);
 		chg_type = CHARGING_HOST;
