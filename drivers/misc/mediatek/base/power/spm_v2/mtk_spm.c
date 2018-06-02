@@ -259,6 +259,13 @@ int __attribute__((weak)) spm_fs_init(void)
 	return 0;
 }
 
+#if defined(CONFIG_MACH_KIBOPLUS) /* temporarily fix build fail */
+int __attribute__((weak)) vcorefs_late_init_dvfs(void)
+{
+	return 0;
+}
+#endif
+
 /**************************************
  * Init and IRQ Function
  **************************************/
