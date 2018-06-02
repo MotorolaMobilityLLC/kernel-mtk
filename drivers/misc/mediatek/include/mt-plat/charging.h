@@ -129,6 +129,18 @@ typedef enum {
 	CHARGING_CMD_SET_BOOST_CURRENT_LIMIT,
 	CHARGING_CMD_ENABLE_OTG,
 	CHARGING_CMD_ENABLE_POWER_PATH,
+	CHARGING_CMD_GET_BIF_IS_EXIST,
+	CHARGING_CMD_GET_INPUT_CURRENT,
+	CHARGING_CMD_ENABLE_DIRECT_CHARGE,
+	CHARGING_CMD_GET_IS_POWER_PATH_ENABLE,
+	CHARGING_CMD_GET_IS_SAFETY_TIMER_ENABLE,
+	CHARGING_CMD_SET_PWRSTAT_LED_EN,
+	CHARGING_CMD_GET_IBUS,
+	CHARGING_CMD_GET_VBUS,
+	CHARGING_CMD_RESET_DC_WATCH_DOG_TIMER,
+	CHARGING_CMD_RUN_AICL,
+	CHARGING_CMD_SET_IRCMP_RESISTOR,
+	CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -284,22 +296,33 @@ typedef enum {
 	BATTERY_VOLT_03_740000_V = 3740000,
 	BATTERY_VOLT_03_750000_V = 3750000,
 	BATTERY_VOLT_03_760000_V = 3760000,
+	BATTERY_VOLT_03_762500_V = 3762500,
 	BATTERY_VOLT_03_775000_V = 3775000,
 	BATTERY_VOLT_03_780000_V = 3780000,
+	BATTERY_VOLT_03_787500_V = 3787500,
 	BATTERY_VOLT_03_800000_V = 3800000,
+	BATTERY_VOLT_03_812500_V = 3812500,
 	BATTERY_VOLT_03_820000_V = 3820000,
 	BATTERY_VOLT_03_825000_V = 3825000,
+	BATTERY_VOLT_03_837500_V = 3837500,
 	BATTERY_VOLT_03_840000_V = 3840000,
 	BATTERY_VOLT_03_850000_V = 3850000,
 	BATTERY_VOLT_03_860000_V = 3860000,
+	BATTERY_VOLT_03_862500_V = 3862500,
+	BATTERY_VOLT_03_875000_V = 3875000,
 	BATTERY_VOLT_03_880000_V = 3880000,
+	BATTERY_VOLT_03_887500_V = 3887500,
 	BATTERY_VOLT_03_900000_V = 3900000,
+	BATTERY_VOLT_03_912500_V = 3912500,
 	BATTERY_VOLT_03_920000_V = 3920000,
+	BATTERY_VOLT_03_925000_V = 3925000,
+	BATTERY_VOLT_03_937500_V = 3937500,
 	BATTERY_VOLT_03_940000_V = 3940000,
 	BATTERY_VOLT_03_950000_V = 3950000,
 	BATTERY_VOLT_03_960000_V = 3960000,
 	BATTERY_VOLT_03_975000_V = 3975000,
 	BATTERY_VOLT_03_980000_V = 3980000,
+	BATTERY_VOLT_03_987500_V = 3987500,
 	BATTERY_VOLT_04_000000_V = 4000000,
 	BATTERY_VOLT_04_012500_V = 4012500,
 	BATTERY_VOLT_04_020000_V = 4020000,
@@ -584,16 +607,11 @@ extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 extern int hw_charging_get_charger_type(void);
 extern void mt_power_off(void);
-extern unsigned int mt6311_get_chip_id(void);
-extern int is_mt6311_exist(void);
-extern int is_mt6311_sw_ready(void);
 
 extern void hw_charging_enable_dp_voltage(int ison);
 
 
 /* switch charger */
-extern void switch_charger_set_vindpm(unsigned int chr_v);
-extern void mtk_pe20_plugout_reset(void);
 /*extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);*/
 /*extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);*/
 
@@ -605,12 +623,23 @@ extern kal_bool pmic_chrdet_status(void);
 /*BCCT input current control function over switch charger*/
 extern unsigned int set_chr_input_current_limit(int current_limit);
 
-/* Get internal temperature of charger */
-extern int get_chr_temperature(int *min_temp, int *max_temp);
-
 /* Set charger's boost current limit */
 extern int set_chr_boost_current_limit(unsigned int current_limit);
 
 /* Enable/Disable OTG mode */
 extern int set_chr_enable_otg(unsigned int enable);
-#endif				/* #ifndef _CHARGING_H */
+
+extern int mtk_chr_get_tchr(int *min_tchr, int *max_tchr);
+extern int mtk_chr_get_soc(unsigned int *soc);
+extern int mtk_chr_get_ui_soc(unsigned int *soc);
+extern int mtk_chr_get_vbat(unsigned int *vbat);
+extern int mtk_chr_get_ibat(unsigned int *ibat);
+extern int mtk_chr_get_vbus(unsigned int *vbus);
+extern int mtk_chr_get_aicr(unsigned int *aicr);
+extern int mtk_chr_is_charger_exist(unsigned char *exist);
+extern int mtk_chr_enable_direct_charge(unsigned char charging_enable);
+extern int mtk_chr_enable_power_path(unsigned char en);
+extern int mtk_chr_enable_charge(unsigned char charging_enable);
+extern int mtk_chr_reset_aicr_upper_bound(void);
+
+#endif /* #ifndef _CHARGING_H */
