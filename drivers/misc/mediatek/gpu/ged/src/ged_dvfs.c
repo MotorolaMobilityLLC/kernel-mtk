@@ -1086,7 +1086,11 @@ GED_ERROR ged_dvfs_probe_signal(int signo)
 		if(g_probe_pid==GED_NO_UM_SERVICE)
 			t = NULL;
 		else
+		{
+			rcu_read_lock();
 			t = pid_task(find_vpid(g_probe_pid), PIDTYPE_PID);
+			rcu_read_unlock();
+		}
 	}
 
 	if(t!=NULL)
