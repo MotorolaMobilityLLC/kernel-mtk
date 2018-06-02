@@ -297,7 +297,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif				/* CONFIG_MT_SND_SOC_6755 */
 #endif
 
+#ifndef CONFIG_ARM64
 	return 0; /* temporarily fix suspend fail */
+#endif
 
 #ifdef CONFIG_MTKPASR
 	/* PASR SW operations */
@@ -328,7 +330,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */ /* TODO */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();
 #endif
