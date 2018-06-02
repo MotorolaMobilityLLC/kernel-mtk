@@ -278,7 +278,11 @@ ENTRY(v7_coherent_user_range)
 	ALT_UP(W(nop))
 #endif
 1:
+#if defined(CONFIG_ARM_ERRATA_855873) || defined(CONFIG_ARM_ERRATA_824069)
+ USER(  mcr     p15, 0, r12, c7, c14, 1 )       @ clean D line to the point of unification
+#else
  USER(	mcr	p15, 0, r12, c7, c11, 1	)	@ clean D line to the point of unification
+#endif
 	add	r12, r12, r2
 	cmp	r12, r1
 	blo	1b
@@ -386,7 +390,11 @@ v7_dma_clean_range:
 	ALT_UP(W(nop))
 #endif
 1:
+#if defined(CONFIG_ARM_ERRATA_855873) || defined(CONFIG_ARM_ERRATA_824069)
+	mcr     p15, 0, r0, c7, c14, 1          @ clean and Invalidate D / U line
+#else
 	mcr	p15, 0, r0, c7, c10, 1		@ clean D / U line
+#endif
 	add	r0, r0, r2
 	cmp	r0, r1
 	blo	1b
