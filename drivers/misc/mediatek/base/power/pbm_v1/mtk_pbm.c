@@ -863,7 +863,7 @@ static bool pbm_update_table_info(enum pbm_kicker kicker, struct mrp *mrpmgr)
 		break;
 	default:
 		pbm_crit("[%s] ERROR, unknown kicker [%d]\n", __func__, kicker);
-		WARN_ON(); /*BUG();*/
+		WARN_ON(1);
 		break;
 	}
 
