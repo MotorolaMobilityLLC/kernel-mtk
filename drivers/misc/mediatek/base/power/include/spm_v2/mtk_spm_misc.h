@@ -113,6 +113,10 @@ extern bool is_already_snap_shot;
 extern void mt_power_gs_dump_suspend(void);
 extern void mt_power_gs_dump_dpidle(void);
 extern bool slp_chk_golden;
+int __attribute__((weak)) snapshot_golden_setting(const char *func, const unsigned int line)
+{
+	return 0;
+}
 
 /* gpio */
 extern int mt_get_gpio_dir(unsigned long pin);
