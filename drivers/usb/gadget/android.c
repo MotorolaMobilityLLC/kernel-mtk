@@ -489,7 +489,6 @@ static void functionfs_closed_callback(struct ffs_data *ffs)
 }
 
 /* note all serial port number could not exceed MAX_U_SERIAL_PORTS */
-#if 0
 #define MAX_ACM_INSTANCES 4
 struct acm_function_config {
 	int instances;
@@ -613,10 +612,10 @@ static ssize_t acm_instances_store(struct device *dev,
 	struct android_usb_function *f = dev_get_drvdata(dev);
 	struct acm_function_config *config = f->config;
 
-	int value;
+	int value, ret;
 
 
-	kstrtoint(buf, 0, &value);
+	ret = kstrtoint(buf, 0, &value);
 	if (value > MAX_ACM_INSTANCES)
 		value = MAX_ACM_INSTANCES;
 	config->instances = value;
@@ -680,6 +679,7 @@ static struct android_usb_function acm_function = {
 	.attributes	= acm_function_attributes,
 };
 
+#if 0
 #ifdef CONFIG_USB_F_SS_LB
 #define MAX_LOOPBACK_INSTANCES 1
 
@@ -766,6 +766,7 @@ static struct android_usb_function loopback_function = {
 	.cleanup	= loopback_function_cleanup,
 	.bind_config	= loopback_function_bind_config,
 };
+#endif
 #endif
 
 /* note all serial port number could not exceed MAX_U_SERIAL_PORTS */
@@ -886,7 +887,6 @@ static struct android_usb_function serial_function = {
 };
 
 
-#endif
 static int
 mtp_function_init(struct android_usb_function *f,
 		struct usb_composite_dev *cdev)
@@ -1761,11 +1761,11 @@ static struct android_usb_function midi_function = {
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
 	/* &mbim_function, */
-	/* &acm_function, */
+	&acm_function,
 	&mtp_function,
 	&ptp_function,
 	/* &eem_function, */
-	/* &serial_function, */
+	&serial_function,
 	/* &rndis_function, */
 	&mass_storage_function,
 	/* &accessory_function, */
