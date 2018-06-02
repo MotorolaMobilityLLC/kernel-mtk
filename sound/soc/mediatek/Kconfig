@@ -37,6 +37,19 @@ config MT_SND_SOC_6797
 	  The default value is y for MT6797.
 	  It's recommended no to change this.
 
+config SND_SOC_MT8167
+	tristate
+
+config SND_SOC_MT8167_MT6392_MACH
+	tristate "ASoC Audio driver for MT8167 with internal codec"
+	depends on MACH_MT8167
+	select SND_SOC_MT8167
+	help
+	  This adds support for ASoC machine driver for Mediatek MT8167
+	  platforms with internal audio codec and speaker amplifier MT6392.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config MT_SND_SOC_CODEC
 	string "String for Mediatek audio codec"
 	help
@@ -97,3 +110,4 @@ config MTK_HYBRIDDRE_SUPPORT
 	help
 	  If you say Y, enable MTK_HYBRIDDRE_SUPPORT.
 	  Only enable this when we have Hybrid DRE feature.
+
