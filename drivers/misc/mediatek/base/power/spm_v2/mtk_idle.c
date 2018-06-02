@@ -53,7 +53,7 @@
 #if defined(CONFIG_ARCH_MT6797)
 #include <mtk_vcorefs_governor.h>
 #endif
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 #include <mtk_dramc.h>
 #endif
 #include <linux/uaccess.h>
@@ -311,7 +311,7 @@ int __attribute__((weak)) hps_restart_timer(void)
 
 void __attribute__((weak)) msdc_clk_status(int *status)
 {
-	*status = 0x1;
+	*status = 0x0;
 }
 
 wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 sodi_flags)
@@ -1681,7 +1681,7 @@ static noinline void go_to_rgidle(int cpu)
 static inline void soidle_pre_handler(void)
 {
 	hps_del_timer();
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		del_zqcs_timer();
 #endif
@@ -1702,7 +1702,7 @@ static inline void soidle_pre_handler(void)
 static inline void soidle_post_handler(void)
 {
 	hps_restart_timer();
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		add_zqcs_timer();
 #endif
@@ -1773,7 +1773,7 @@ u32 slp_spm_deepidle_flags = {
 static inline void dpidle_pre_handler(void)
 {
 	hps_del_timer();
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		del_zqcs_timer();
 #endif
@@ -1788,7 +1788,7 @@ static inline void dpidle_pre_handler(void)
 static inline void dpidle_post_handler(void)
 {
 	hps_restart_timer();
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		add_zqcs_timer();
 #endif
