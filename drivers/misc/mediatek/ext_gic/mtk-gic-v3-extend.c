@@ -59,6 +59,17 @@ static inline unsigned int gic_irq(struct irq_data *d)
 	return d->hwirq;
 }
 
+static inline unsigned int virq_to_hwirq(unsigned int virq)
+{
+	struct irq_desc *desc;
+	unsigned int hwirq;
+
+	desc = irq_to_desc(virq);
+	hwirq = gic_irq(&desc->irq_data);
+
+	return hwirq;
+}
+
 static int gic_populate_rdist(void __iomem **rdist_base)
 {
 	int cpu = smp_processor_id();
@@ -123,6 +134,7 @@ u32 mt_irq_get_pol(u32 irq)
 {
 	u32 reg;
 	void __iomem *base = INT_POL_CTL0;
+	irq = virq_to_hwirq(irq);
 
 	if (irq < 32) {
 		pr_err("Fail to set polarity of interrupt %d\n", irq);
@@ -249,6 +261,8 @@ u32 mt_irq_get_pending(unsigned int irq)
 	void __iomem *base;
 	u32 bit = 1 << (irq % 32);
 
+	irq = virq_to_hwirq(irq);
+
 	if (irq >= 32) {
 		base = GIC_DIST_BASE;
 	} else {
@@ -264,6 +278,8 @@ void mt_irq_set_pending(unsigned int irq)
 {
 	void __iomem *base;
 	u32 bit = 1 << (irq % 32);
+
+	irq = virq_to_hwirq(irq);
 
 	if (irq >= 32) {
 		base = GIC_DIST_BASE;
@@ -283,8 +299,10 @@ void mt_irq_set_pending(unsigned int irq)
 void mt_irq_unmask_for_sleep(unsigned int irq)
 {
 	void __iomem *dist_base;
-	u32 mask = 1 << (irq % 32);
+	u32 mask;
 
+	irq = virq_to_hwirq(irq);
+	mask = 1 << (irq % 32);
 	dist_base = GIC_DIST_BASE;
 
 	if (irq < 16) {
@@ -304,8 +322,10 @@ void mt_irq_unmask_for_sleep(unsigned int irq)
 void mt_irq_mask_for_sleep(unsigned int irq)
 {
 	void __iomem *dist_base;
-	u32 mask = 1 << (irq % 32);
+	u32 mask;
 
+	irq = virq_to_hwirq(irq);
+	mask = 1 << (irq % 32);
 	dist_base = GIC_DIST_BASE;
 
 	if (irq < 16) {
@@ -322,6 +342,8 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	int rc;
 	unsigned int result;
 	char *ptr = buf;
+
+	irq = virq_to_hwirq(irq);
 
 	if (!ptr)
 		return NULL;
@@ -395,18 +417,18 @@ static void _mt_set_pol_reg(void __iomem *add, u32 val)
 	writel_relaxed(val, add);
 }
 
-void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
+void _mt_irq_set_polarity(unsigned int hwirq, unsigned int polarity)
 {
 	u32 offset, reg, value;
 	void __iomem *base = INT_POL_CTL0;
 
-	if (irq < 32) {
-		pr_err("Fail to set polarity of interrupt %d\n", irq);
+	if (hwirq < 32) {
+		pr_err("Fail to set polarity of interrupt %d\n", hwirq);
 		return;
 	}
 
-	offset = irq%32;
-	reg = ((irq - 32)/32);
+	offset = hwirq%32;
+	reg = ((hwirq - 32)/32);
 
 	/* if reg_len_pol0 != 0, means there is 2nd POL reg base,
 	 * compute the correct offset for polarity reg in 2nd POL reg
