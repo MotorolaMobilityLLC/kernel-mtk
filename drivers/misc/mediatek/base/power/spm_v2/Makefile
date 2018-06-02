@@ -67,6 +67,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 
 obj-y += mtk_sleep.o
+obj-y += mtk_spm_init.o
 obj-y += mtk_spm.o
 obj-y += mtk_spm_internal.o
 #obj-y += mt_spm_pmic_wrap.o
