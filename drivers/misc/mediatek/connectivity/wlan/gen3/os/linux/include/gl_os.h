@@ -1333,4 +1333,8 @@ VOID kalMetInit(IN P_GLUE_INFO_T prGlueInfo);
 
 VOID wlanUpdateChannelTable(P_GLUE_INFO_T prGlueInfo);
 
+#ifdef FW_CFG_SUPPORT
+INT_32 cfgCreateProcEntry(P_GLUE_INFO_T prGlueInfo);
+INT_32 cfgRemoveProcEntry(void);
+#endif
 #endif /* _GL_OS_H */
