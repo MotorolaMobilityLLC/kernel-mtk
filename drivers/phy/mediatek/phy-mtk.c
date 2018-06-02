@@ -268,16 +268,6 @@ static int mtk_phy_power_off(struct phy *phy)
 }
 
 
-static const struct of_device_id mtk_phy_of_match[] = {
-#ifdef CONFIG_PHY_MTK_SSUSB
-	{
-		.compatible = "mediatek,mt6758-phy",
-		.data = &ssusb_phy_config,
-	},
-#endif
-	{ },
-};
-
 static struct phy_ops mtk_u3phy_ops = {
 	.init		= mtk_phy_init,
 	.exit		= NULL,
@@ -341,8 +331,11 @@ static int mtk_usb_phy_probe(struct platform_device *pdev)
 	if (retval)
 		return retval;
 
-/*	pm_runtime_enable(dev);*/
-/*	pm_runtime_get_sync(dev);*/
+	pm_runtime_enable(dev);
+	retval = pm_runtime_get_sync(dev);
+	if (retval < 0)
+		goto err1;
+	pm_runtime_forbid(dev);
 
 	for (i = 0; i < mtkphy->phycfg->num_phys; i++) {
 		struct mtk_phy_instance *instance = mtkphy->phys[i];
@@ -352,7 +345,7 @@ static int mtk_usb_phy_probe(struct platform_device *pdev)
 		instance = devm_kzalloc(dev, sizeof(*instance), GFP_KERNEL);
 		if (!instance) {
 			retval = -ENOMEM;
-						goto drv_exit;
+			goto err2;
 		}
 
 		instance->port_base = mtkphy->phy_base
@@ -363,7 +356,7 @@ static int mtk_usb_phy_probe(struct platform_device *pdev)
 			dev_err(dev, "Failed to create usb2_phy \"%s\"\n",
 				name);
 			retval = PTR_ERR(phy);
-			goto drv_exit;
+			goto err2;
 		}
 		instance->phy = phy;
 		instance->phycfg = &mtkphy->phycfg->phys[i];
@@ -374,12 +367,17 @@ static int mtk_usb_phy_probe(struct platform_device *pdev)
 	}
 
 	provider = devm_of_phy_provider_register(dev,
-						mtk_phy_xlate);
+			mtk_phy_xlate);
 
 	return PTR_ERR_OR_ZERO(provider);
 
-drv_exit:
+err2:
+	pm_runtime_allow(dev);
+err1:
+	pm_runtime_put_sync(dev);
+	pm_runtime_disable(dev);
 	mtkcfg->usb_drv_exit(pdev, mtkphy);
+
 	return retval;
 }
 
