@@ -39,3 +39,4 @@ obj-y += devinfo/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-y += sspm/
+obj-$(CONFIG_MTK_SMI_EXT)	+= smi/
