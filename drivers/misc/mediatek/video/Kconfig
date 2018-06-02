@@ -121,3 +121,13 @@ config MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
 	  Define it means display driver support partial update.
 	  If you want to support partial update, please set Y in xxx_defconfig.mk.
 	  If unsure, set N.
+
+config MTK_PQ_COLOR_MODE
+	string "Config PQ_COLOR_MODE (MDP & DISP COLOR on/off)"
+	default "DISP"
+	help
+	  This control mdp color on/off and disp color on/off
+	  if value equals to DISP, only display color is on.
+	  if value equals to MDP, only mdp color is on.
+	  if value equals to DISP_MDP, mdp and display color are both on.
+	  if value equals to OFF, mdp and display color are both off.
