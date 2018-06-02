@@ -275,6 +275,9 @@ struct pwr_ctrl {
 	u8 dvfs_up_2d_dvfs_req_mask_b;
 	u8 disable_off_load_lpm;
 	u8 en_sdio_dvfs_setting;
+
+	/* SPM_SW_RSV_6 version control */
+	u8 rsv6_legacy_version;
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
 	u32 spm_wakeup_event_mask;
