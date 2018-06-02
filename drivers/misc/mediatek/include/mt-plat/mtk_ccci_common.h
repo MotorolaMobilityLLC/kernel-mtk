@@ -658,7 +658,7 @@ struct _mpu_cfg {
 	unsigned int permission;
 	int relate_region; /* Using same behavior and setting */
 };
-mpu_cfg_t *get_mpu_region_cfg_info(int region_id);
+_mpu_cfg *get_mpu_region_cfg_info(int region_id);
 int ccci_get_opt_val(char *opt_name);
 
 /* RAT configure relate */
