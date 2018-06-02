@@ -1033,7 +1033,6 @@ static void cldma_queue_switch_ring(struct md_cd_queue *queue)
 		queue->budget = queue->tr_ring->length;
 	}
 	/* work should be flushed by then */
-	INIT_WORK(&queue->cldma_rx_work, cldma_rx_done);
 	CCCI_DEBUG_LOG(md->index, TAG, "queue %d/%d switch ring to %p\n", queue->index, queue->dir, queue->tr_ring);
 }
 
@@ -1042,6 +1041,7 @@ static void cldma_rx_queue_init(struct md_cd_queue *queue)
 	struct ccci_modem *md = queue->modem;
 
 	cldma_queue_switch_ring(queue);
+	INIT_WORK(&queue->cldma_rx_work, cldma_rx_done);
 	/*
 	 * we hope work item of different CLDMA queue can work concurrently, but work items of the same
 	 * CLDMA queue must be work sequentially as wo didn't implement any lock in rx_done or tx_done.
@@ -2712,11 +2712,15 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 static int md_cd_give_more(struct ccci_modem *md, unsigned char qno)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	unsigned long flags;
 
 	if (qno >= QUEUE_LEN(md_ctrl->rxq))
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
 	CCCI_DEBUG_LOG(md->index, TAG, "give more on queue %d work %p\n", qno, &md_ctrl->rxq[qno].cldma_rx_work);
-	cldma_rx_worker_start(md, qno);
+	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+	if (md_ctrl->rxq_active & (1 << md_ctrl->rxq[qno].index))
+		cldma_rx_worker_start(md, qno);
+	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	return 0;
 }
 
