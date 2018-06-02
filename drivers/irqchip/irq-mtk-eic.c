@@ -1792,14 +1792,16 @@ unsigned int mt_gpio_to_irq(unsigned int gpio)
 {
 	struct pin_node *p;
 	int i = 0;
+	int irq = -1;
+	int eint = -1;
 
 	if (builtin_entry > 0) {
 		for (i = 0; i < builtin_entry; ++i) {
 			if (gpio == builtin_mapping[i].gpio) {
 				if (mt_get_gpio_mode(gpio) ==
 					builtin_mapping[i].func_mode)
-					return builtin_mapping[i].builtin_eint +
-						EINT_IRQ_BASE;
+					eint = builtin_mapping[i].builtin_eint;
+					goto done;
 			}
 		}
 	}
@@ -1808,11 +1810,20 @@ unsigned int mt_gpio_to_irq(unsigned int gpio)
 		p = pin_search(gpio);
 		if (p == NULL)
 			return -EINVAL;
-		else
-			return p->eint_pin + EINT_IRQ_BASE;
+		else {
+			eint = p->eint_pin;
+			goto done;
+		}
 	} else {
-		return gpio + EINT_IRQ_BASE;
+		eint = gpio;
+		goto done;
 	}
+
+done:
+	irq = eint + EINT_IRQ_BASE;
+	EINT_FUNC.gpio[eint] = gpio;
+
+	return irq;
 }
 EXPORT_SYMBOL(mt_gpio_to_irq);
 
