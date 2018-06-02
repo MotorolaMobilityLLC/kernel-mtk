@@ -945,6 +945,111 @@ TRACE_EVENT(sched_task_entity_avg,
 		__entry->load_sum, __entry->util_sum, __entry->period_contrib,
 		__entry->ratio, __entry->usage_sum, __entry->load_avg, __entry->util_avg)
 );
+
+/*
+ * Tracepoint for average heavy task calculation.
+ */
+TRACE_EVENT(sched_avg_heavy_task,
+
+	TP_PROTO(int last_poll1, int last_poll2, int avg, int cluster_id, int max),
+
+	TP_ARGS(last_poll1, last_poll2, avg, cluster_id, max),
+
+	TP_STRUCT__entry(
+		__field(int, last_poll1)
+		__field(int, last_poll2)
+		__field(int, avg)
+		__field(int, cid)
+		__field(int, max)
+	),
+
+	TP_fast_assign(
+		__entry->last_poll1 = last_poll1;
+		__entry->last_poll2 = last_poll2;
+		__entry->avg = avg;
+		__entry->cid = cluster_id;
+		__entry->max = max;
+	),
+
+	TP_printk("last_poll1=%d last_poll2=%d, avg=%d, max:%d, cid:%d",
+		__entry->last_poll1,
+		__entry->last_poll2,
+		__entry->avg,
+		__entry->max,
+		__entry->cid)
+);
+
+TRACE_EVENT(sched_avg_heavy_nr,
+	TP_PROTO(const char *func_name, int nr_heavy, long long int diff, int ack_cap, int cpu),
+
+	TP_ARGS(func_name, nr_heavy, diff, ack_cap, cpu),
+
+	TP_STRUCT__entry(
+		__array(char, func_name, 32)
+		__field(int, nr_heavy)
+		__field(long long int, diff)
+		__field(int, ack_cap)
+		__field(int, cpu)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->func_name, func_name, 32);
+		__entry->nr_heavy = nr_heavy;
+		__entry->diff = diff;
+		__entry->ack_cap = ack_cap;
+		__entry->cpu = cpu;
+	),
+
+	TP_printk("%s nr_heavy=%d time diff:%lld ack_cap:%d cpu:%d",
+		__entry->func_name,
+		__entry->nr_heavy, __entry->diff, __entry->ack_cap, __entry->cpu
+	)
+);
+
+TRACE_EVENT(sched_avg_heavy_time,
+	TP_PROTO(long long int time_period, long long int last_get_heavy_time, int cid),
+
+	TP_ARGS(time_period, last_get_heavy_time, cid),
+
+	TP_STRUCT__entry(
+		__field(long long int, time_period)
+		__field(long long int, last_get_heavy_time)
+		__field(int, cid)
+	),
+
+	TP_fast_assign(
+		__entry->time_period = time_period;
+		__entry->last_get_heavy_time = last_get_heavy_time;
+		__entry->cid = cid;
+	),
+
+	TP_printk("time_period:%lld last_get_heavy_time:%lld cid:%d",
+		__entry->time_period, __entry->last_get_heavy_time, __entry->cid
+	)
+)
+
+TRACE_EVENT(sched_avg_heavy_task_load,
+	TP_PROTO(struct task_struct *t),
+
+	TP_ARGS(t),
+
+	TP_STRUCT__entry(
+		__array(        char,   comm,   TASK_COMM_LEN   )
+		__field(        pid_t,  pid)
+		__field(        long long int,  load)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, t->comm, TASK_COMM_LEN);
+		__entry->pid = t->pid;
+		__entry->load = t->se.avg.load_avg;
+	),
+
+	TP_printk("heavy_task_detect comm:%s pid:%d load:%lld",
+		__entry->comm, __entry->pid, __entry->load
+	)
+)
+
 #endif /* _TRACE_SCHED_H */
 
 /* This part must be outside protection */
