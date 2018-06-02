@@ -351,7 +351,7 @@ static void _od_set_dram_buffer_addr(void *cmdq, int manual_comp, int image_widt
 
 		if (va == NULL) {
 			ODDBG(OD_LOG_ALWAYS, "OD: MEM NOT ENOUGH %d", u4Linesize);
-			WARN_ON();
+			WARN_ON(1);
 		}
 
 		ODDBG(OD_LOG_ALWAYS, "OD: pa %08lx size %d order %d va %lx",
@@ -621,7 +621,7 @@ static void _od_set_table(void *cmdq, int tableSelect, const u8 *od_table, int t
 		DISP_REG_SET(cmdq, OD_REG12, 1 << 0);
 	} else {
 		ODDBG(OD_LOG_ALWAYS, "Error OD table");
-		WARN_ON();
+		WARN_ON(1);
 	}
 
 	DISP_REG_SET(cmdq, DISP_REG_OD_MISC, 0); /* [1]:can access OD table; [0]:can't access OD table */
@@ -654,7 +654,7 @@ void disp_config_od(unsigned int width, unsigned int height, void *cmdq, unsigne
 
 	if (od_table == NULL) {
 		ODDBG(OD_LOG_ALWAYS, "LCM NULL OD table");
-		WARN_ON();
+		WARN_ON(1);
 	}
 
 	_od_set_table(cmdq, od_table_select, od_table, 0);
@@ -1366,7 +1366,7 @@ static void od_test_stress_table(void *cmdq)
 
 void od_test(const char *cmd, char *debug_output)
 {
-	struct cmdqRecStruct cmdq;
+	struct cmdqRecStruct *cmdq;
 	unsigned long offset;
 	unsigned int value, mask;
 

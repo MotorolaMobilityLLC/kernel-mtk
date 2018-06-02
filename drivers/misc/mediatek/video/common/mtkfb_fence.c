@@ -61,7 +61,7 @@ void mtkfb_fence_log_enable(bool enable)
 		if (expr)					\
 			break;					\
 		pr_debug("FENCE ASSERT FAILED %s, %d\n",	\
-				__FILE__, __LINE__); WARN_ON();	\
+				__FILE__, __LINE__); WARN_ON(1);	\
 	} while (0)
 #endif
 
@@ -117,7 +117,7 @@ static disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 	}
 
 	mutex_lock(&_disp_fence_mutex);
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context); i++) {
 		if (session_id == _disp_fence_context[i].session_id) {
 			/* DISPMSG("found session info for session_id:0x%08x,0x%08x\n",*/
 				  /* session_id, &(_disp_fence_context[i])); */
@@ -126,7 +126,7 @@ static disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 		}
 	}
 
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context); i++) {
 		if (_disp_fence_context[i].session_id == 0xffffffff) {
 			DISPMSG("not found session info for session_id:0x%08x,insert %p to array index:%d\n",
 				session_id, &(_disp_fence_context[i]), i);
@@ -139,54 +139,64 @@ static disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
 						&ddp_mmp_get_events()->session_Parent);
+			sprintf(name, "%s%d_frame_cfg", disp_session_mode_spy(session_id),
+				DISP_SESSION_DEV(session_id));
+			dprec_logger_event_init(&session_info->event_frame_cfg, name,
+						DPREC_LOGGER_LEVEL_DEFAULT,
+						&session_info->event_prepare.mmp);
 
+			sprintf(name, "%s%d_wait_fence", disp_session_mode_spy(session_id),
+				DISP_SESSION_DEV(session_id));
+			dprec_logger_event_init(&session_info->event_wait_fence, name,
+						DPREC_LOGGER_LEVEL_DEFAULT,
+						&session_info->event_prepare.mmp);
 			sprintf(name, "%s%d_setinput", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_setinput, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_setoutput", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_setoutput, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_trigger", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_trigger, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_findidx", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_findidx, name,
 						DPREC_LOGGER_LEVEL_DEFAULT,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_release", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_release, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_waitvsync", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_waitvsync, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_err", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_err, name,
 						DPREC_LOGGER_LEVEL_DEFAULT |
 						DPREC_LOGGER_LEVEL_SYSTRACE,
-						&ddp_mmp_get_events()->session_Parent);
+						&session_info->event_prepare.mmp);
 
 			for (j = 0; j < (sizeof(session_info->session_layer_info) /
 					 sizeof(session_info->session_layer_info[0])); j++) {
@@ -320,7 +330,7 @@ static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client, int
 	}
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
 	mm_data.config_buffer_param.kernel_handle = handle;
-	mm_data.config_buffer_param.module_id = 0;
+	/* mm_data.config_buffer_param.eModuleID = 0; //rogerhsu */
 	mm_data.config_buffer_param.security = 0;
 	mm_data.config_buffer_param.coherent = 0;
 
@@ -726,7 +736,8 @@ int disp_sync_init(void)
 	disp_session_sync_info *session_info = NULL;
 
 	memset((void *)&_disp_fence_context, 0, sizeof(_disp_fence_context));
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) {
+	/* for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) { */
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) { /* rogerhsu */
 		session_info = &_disp_fence_context[i];
 		session_info->session_id = 0xffffffff;
 	}
@@ -819,10 +830,11 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 
 		} else {
 			mutex_unlock(&layer_info->sync_lock);
-			dprec_trigger(&session_info->event_err, fence, layer_info->fence_idx);
-			/* DISPPR_FENCE("Warning, R+/%s%d/L%d/id%d/last%d/new%d\n",*/
-					/*disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),*/
-					/*layer_id, fence, current_timeline_idx, layer_info->fence_idx);*/
+			/*dprec_trigger(&session_info->event_err, fence, layer_info->fence_idx);
+			 *DISPPR_FENCE("Warning, R+/%s%d/L%d/id%d/last%d/new%d\n",
+			 *disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
+			 *layer_id, fence, current_timeline_idx, layer_info->fence_idx)
+			 */
 
 			return;
 		}
@@ -1014,7 +1026,7 @@ static int disp_sync_convert_input_to_fence_layer_info_v2(FENCE_LAYER_INFO *dst,
 {
 	if (!dst) {
 		pr_err("%s error!\n", __func__);
-		WARN_ON();
+		WARN_ON(1);
 	}
 
 	dst->layer = timeline_idx;
@@ -1220,8 +1232,44 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 	return idx;
 }
 
-unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
-				      unsigned int idx, unsigned long *mva, unsigned int *size)
+unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx)
+{
+	struct mtkfb_fence_buf_info *buf = NULL;
+	disp_sync_info *layer_info = NULL;
+	int found = 0;
+
+	layer_info = _get_sync_info(session_id, timeline_id);
+
+	mutex_lock(&layer_info->sync_lock);
+	list_for_each_entry(buf, &layer_info->buf_list, list) {
+		if (buf->idx != idx)
+			continue;
+
+		if (buf->cache_sync) {
+			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+			mtkfb_ion_cache_flush(ion_client, buf->hnd);
+			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
+		}
+		found = 1;
+		break;
+	}
+	mutex_unlock(&layer_info->sync_lock);
+
+	if (!found) {
+		DISPERR("cannot find buf for cache sync, session:%s%d, layer=%d,\n",
+			disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id), timeline_id);
+		DISPERR("idx=%d, fence_idx=%d, timeline_idx=%d, cur_idx=%d!\n",
+			idx, layer_info->fence_idx, layer_info->timeline_idx, layer_info->cur_idx);
+	}
+
+	return 0;
+}
+
+
+static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size,
+				      int need_sync)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
 	unsigned long dst_mva = 0;
@@ -1250,7 +1298,7 @@ unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int time
 		*mva = dst_mva;
 		*size = dst_size;
 		buf->ts_create = sched_clock();
-		if (buf->cache_sync) {
+		if (buf->cache_sync && need_sync) {
 			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
 			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC, (unsigned long)buf->hnd, buf->mva);
@@ -1270,6 +1318,20 @@ unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int time
 	return 0;
 }
 
+unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size)
+{
+	return __disp_sync_query_buf_info(session_id, timeline_id, idx, mva, size, 1);
+}
+
+unsigned int disp_sync_query_buf_info_nosync(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size)
+{
+	return __disp_sync_query_buf_info(session_id, timeline_id, idx, mva, size, 0);
+}
+
+
+
 int disp_sync_get_debug_info(char *stringbuf, int buf_len)
 {
 	int len = 0;
@@ -1284,7 +1346,8 @@ int disp_sync_get_debug_info(char *stringbuf, int buf_len)
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|********Display Session Information********\n");
 
-	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) {
+	/* for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) { */
+	for (i = 0; i < ARRAY_SIZE(_disp_fence_context) ; i++) { /* rogerhsu */
 		session_id = _disp_fence_context[i].session_id;
 		session_info = &(_disp_fence_context[i]);
 		len += scnprintf(stringbuf + len, buf_len - len, "|Session id\t0x%08x\n", session_id);

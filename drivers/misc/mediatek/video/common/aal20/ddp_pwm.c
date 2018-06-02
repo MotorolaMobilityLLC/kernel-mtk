@@ -29,8 +29,8 @@
 #include <ddp_pwm_mux.h>
 /* #include <mach/mt_gpio.h> */
 #include <disp_dts_gpio.h> /* DTS GPIO */
-#include <leds_drv.h>
-#include <leds_sw.h>
+#include <mtk_leds_drv.h>
+#include <mtk_leds_sw.h>
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <primary_display.h>
@@ -204,7 +204,7 @@ static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 }
 
 
-static void disp_pwm_set_enabled(struct cmdqRecStruct cmdq, disp_pwm_id_t id, int enabled)
+static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq, disp_pwm_id_t id, int enabled)
 {
 	unsigned long reg_base = pwm_get_reg_base(id);
 
