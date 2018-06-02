@@ -1,97 +1,12 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/cnm.h#1
- */
-
-/*
- * ! \file   "cnm.h"
- *  \brief
- */
-
-/*
- * Log: cnm.h
- *
- * 06 23 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * change parameter name from PeerAddr to BSSID
- *
- * 06 20 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * 1. specify target's BSSID when requesting channel privilege.
- * 2. pass BSSID information to firmware domain
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 03 10 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Add some functions to let AIS/Tethering or AIS/BOW be the same channel
- *
- * 01 12 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Provide function to decide if BSS can be activated or not
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000239] MT6620 Wi-Fi][Driver][FW] Merge concurrent branch back to maintrunk
- * 1. BSSINFO include RLM parameter
- * 2. free all sta records when network is disconnected
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 07 19 2010 cm.chang
- *
- * Set RLM parameters and enable CNM channel manager
- *
- * 07 13 2010 cm.chang
- *
- * Rename MSG_CH_RELEASE_T to MSG_CH_ABORT_T
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Rename MID_MNY_CNM_CH_RELEASE to MID_MNY_CNM_CH_ABORT
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Need bandwidth info when requesting channel privilege
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Modify CNM message handler for new flow
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 05 05 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add a new function to send abort message
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 02 08 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support partial part about cmd basic configuration
- *
- * Nov 18 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add prototype of cnmFsmEventInit()
- *
- * Nov 2 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-**
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _CNM_H

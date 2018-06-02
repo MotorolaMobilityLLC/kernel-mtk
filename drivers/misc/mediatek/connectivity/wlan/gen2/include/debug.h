@@ -1,118 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/debug.h#1
- */
-
-/*
- * ! \file   debug.h
- *  \brief  Definition of SW debugging level.
- *
- *  In this file, it describes the definition of various SW debugging levels and
- *  assert functions.
- */
-
-/*
- * Log: debug.h
- *
- * 12 16 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * fixed the Windows DDK free build compiling error.
- *
- * 11 24 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Adjust code for DBG and CONFIG_XLOG.
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 10 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Using the new XLOG define for dum Memory.
- *
- * 11 03 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Add dumpMemory8 at XLOG support.
- *
- * 11 02 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * adding the code for XLOG.
- *
- * 08 31 2011 cm.chang
- * [WCXRP00000969] [MT6620 Wi-Fi][Driver][FW] Channel list for 5G band based on country code
- * .
- *
- * 01 27 2011 tsaiyuan.hsu
- * [WCXRP00000392] [MT6620 Wi-Fi][Driver] Add Roaming Support
- * add roaming fsm
- * 1. not support 11r, only use strength of signal to determine roaming.
- * 2. not enable CFG_SUPPORT_ROAMING until completion of full test.
- * 3. in 6620, adopt work-around to avoid sign extension problem of cck of hw
- * 4. assume that change of link quality in smooth way.
- *
- * 01 07 2011 wh.su
- * [WCXRP00000326] [MT6620][Wi-Fi][Driver] check in the binary format gl_sec.o.new instead of use change type!!!
- * .
- *
- * 09 23 2010 cp.wu
- * NULL
- * add BOW index for debugging message and passing compilation
- *
- * 07 20 2010 wh.su
- *
- * adding the wapi code.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 yarco.yang
- * [WPD00003837][MT6620]Data Path Refine
- * Support CFG_MQM_MIGRATION flag
- *
- * 06 17 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add one more debug moduel for P2P.
- *
- * 06 14 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add management dispatching function table.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add bss.c.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) migrate assoc.c.
- * 2) add ucTxSeqNum for tracking frames which needs TX-DONE awareness
- * 3) add configuration options for CNM_MEM and RSN modules
- * 4) add data path for management frames
- * 5) eliminate rPacketInfo of MSDU_INFO_T
- *
- * 06 10 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add debug module index for cnm and ais.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 17 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * add CFG_STARTUP_DEBUG for debugging starting up issue.
- *
- * 04 26 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) surpress compiler warning
- * 2) when acqruing LP-own, keep writing WHLPCR whenever OWN is not acquired yet
- *  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-10-29 19:47:50 GMT mtk01084
- *  add emu category
- *  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-04-17 18:12:04 GMT mtk01426
- *  Don't use dynamic memory allocate for debug message
- *  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:11:29 GMT mtk01426
- *  Init for develop
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _DEBUG_H
 #define _DEBUG_H

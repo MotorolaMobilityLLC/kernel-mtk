@@ -1,40 +1,13 @@
 /*
- * Id: @(#) gl_cfg80211.c@@
- */
-
-/*
- * ! \file   gl_cfg80211.c
- *  \brief  Main routines for supporintg MT6620 cfg80211 control interface
- *
- *   This file contains the support routines of Linux driver for MediaTek Inc. 802.11
- *   Wireless LAN Adapters.
- */
-
-/*
- * Log: gl_cfg80211.c
- *
- * 09 05 2013 cp.wu
- * correct length to pass to wlanoidSetBssid()
- *
- * 09 04 2013 cp.wu
- * fix typo
- *
- * 09 03 2013 cp.wu
- * add path for reassociation
- *
- * 11 23 2012 yuche.tsai
- * [ALPS00398671] [Acer-Tablet] Remove Wi-Fi Direct completely
- * Fix bug of WiFi may reboot under user load, when WiFi Direct is removed..
- *
- * 09 12 2012 wcpadmin
- * [ALPS00276400] Remove MTK copyright and legal header on GPL/LGPL related packages
- * .
- *
- * 08 30 2012 chinglan.wang
- * [ALPS00349664] [6577JB][WIFI] Phone can not connect to AP secured with AES via WPS in 802.11n Only
- * .
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

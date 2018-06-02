@@ -1,22 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/hif/sdio/include/hif.h#1
- */
-
-/*
- * ! \file   "hif_pdma.h"
- *  \brief  MARCO, definition, structure for PDMA.
- *
- *  MARCO, definition, structure for PDMA.
- */
-
-/*
- * Log: hif_pdma.h
- *
- * 01 16 2013 vend_samp.lin
- * Add AHB PDMA support
- * 1) Initial version
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _HIF_PDMA_H
 #define _HIF_PDMA_H

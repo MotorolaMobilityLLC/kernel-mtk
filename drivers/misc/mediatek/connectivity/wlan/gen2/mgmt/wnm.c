@@ -1,19 +1,13 @@
 /*
- * Id: //Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/mgmt/wnm.c#1
- */
-
-/*
- * ! \file   "wnm.c"
- *   \brief  This file includes the 802.11v default vale and functions.
- */
-
-/*
- * Log: wnm.c
- *
- * 01 05 2012 tsaiyuan.hsu
- * [WCXRP00001157] [MT6620 Wi-Fi][FW][DRV] add timing measurement support for 802.11v
- * add timing measurement support for 802.11v.
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

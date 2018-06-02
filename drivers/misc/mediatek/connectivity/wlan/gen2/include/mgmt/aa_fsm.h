@@ -1,69 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/aa_fsm.h#1
- */
-
-/*
- * ! \file   aa_fsm.h
- *  \brief  Declaration of functions and finite state machine for SAA/AAA Module.
- *
- *  Declaration of functions and finite state machine for SAA/AAA Module.
- */
-
-/*
- * Log: aa_fsm.h
- *
- * 10 13 2011 cp.wu
- * [MT6620 Wi-Fi][Driver] Reduce join failure count limit to 2 for faster re-join for other BSS
- * 1. short join failure count limit to 2
- * 2. treat join timeout as kind of join failure as well
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * refine TX-DONE callback.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) migrate assoc.c.
- * 2) add ucTxSeqNum for tracking frames which needs TX-DONE awareness
- * 3) add configuration options for CNM_MEM and RSN modules
- * 4) add data path for management frames
- * 5) eliminate rPacketInfo of MSDU_INFO_T
- *
- * 06 10 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add buildable & linkable ais_fsm.c
- *
- * related reference are still waiting to be resolved
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add aa_fsm.h, ais_fsm.h, bss.h, mib.h and scan.h.
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- *
- * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 02 04 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
- *
- * 01 11 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add Deauth and Disassoc Handler
- *
- * Nov 24 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Revise MGMT Handler with Retain Status
- *
- * Nov 23 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _AA_FSM_H
 #define _AA_FSM_H

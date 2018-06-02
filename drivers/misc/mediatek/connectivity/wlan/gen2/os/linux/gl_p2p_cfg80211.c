@@ -1,89 +1,13 @@
 /*
- * Id: @(#) gl_p2p_cfg80211.c@@
- */
-
-/*
- * ! \file   gl_p2p_cfg80211.c
- *  \brief  Main routines of Linux driver interface for Wi-Fi Direct
- *      using cfg80211 interface
- *
- *   This file contains the main routines of Linux driver for MediaTek Inc. 802.11
- *   Wireless LAN Adapters.
- */
-
-/*
- * Log: gl_p2p_cfg80211.c
- *
- * 01 30 2013 yuche.tsai
- * [ALPS00455459] [GN_WIFI]??wifi direct???????????
- * Fix possible race condition under GO mode.
- *
- * 09 12 2012 wcpadmin
- * [ALPS00276400] Remove MTK copyright and legal header on GPL/LGPL related packages
- * .
- *
- * 09 05 2012 wh.su
- * [ALPS00351547] [6577JB][WiFi direct]The 3rd device fail to establish p2p connection with GO sometimes
- * sync with the ICS code.
- *
- * 08 31 2012 yuche.tsai
- * [ALPS00349585] [6577JB][WiFi direct][KE]Establish p2p connection while both device have connected to AP previously,
- * one device reboots automatically with KE
- * Fix possible KE when concurrent & disconnect.
- *
- * 08 21 2012 yuche.tsai
- * NULL
- * Fix compile warning.
- *
- * 08 20 2012 yuche.tsai
- * NULL
- * Fix possible KE issue.
- *
- * 08 17 2012 yuche.tsai
- * NULL
- * Fix compile warning.
- *
- * 08 16 2012 yuche.tsai
- * NULL
- * Fix compile warning.
- *
- * 08 14 2012 yuche.tsai
- * NULL
- * Fix p2p bug find on ALPS.JB trunk.
- *
- * 07 26 2012 yuche.tsai
- * [ALPS00324337] [ALPS.JB][Hot-Spot] Driver update for Hot-Spot
- * Update driver code of ALPS.JB for hot-spot.
- *
- * 07 19 2012 yuche.tsai
- * NULL
- * Code update for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Fix compile error for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000054] [MT6620 Wi-Fi][Driver] Restructure driver for second Interface
- * Isolate P2P related function for Hardware Software Bundle
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 31 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add cfg80211 interface, which is to replace WE, for further extension
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
