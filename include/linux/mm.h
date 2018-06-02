@@ -30,6 +30,20 @@ struct user_struct;
 struct writeback_control;
 struct bdi_writeback;
 
+struct kernel_reserve_meminfo {
+	unsigned long total;
+	unsigned long available;
+	unsigned long kernel_code;
+	unsigned long rwdata;
+	unsigned long rodata;
+	unsigned long init;
+	unsigned long bss;
+	unsigned long reserved;
+#ifdef CONFIG_HIGHMEM
+	unsigned long highmem;
+#endif
+};
+
 #ifndef CONFIG_NEED_MULTIPLE_NODES	/* Don't use mapnrs, do it properly */
 extern unsigned long max_mapnr;
 
