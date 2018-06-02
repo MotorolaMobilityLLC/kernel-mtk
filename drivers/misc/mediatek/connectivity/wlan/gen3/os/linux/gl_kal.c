@@ -5132,3 +5132,11 @@ VOID kalFbNotifierUnReg(VOID)
 	wlan_fb_notifier_priv_data = NULL;
 }
 
+UINT_8 kalGetEapolKeyType(P_NATIVE_PACKET prPacket)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prPacket;
+
+	if (!prSkb)
+		return EAPOL_KEY_NOT_KEY;
+	return (UINT_8)secGetEapolKeyType(prSkb->data);
+}

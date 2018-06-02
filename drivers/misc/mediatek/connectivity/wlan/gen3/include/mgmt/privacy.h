@@ -102,10 +102,23 @@
 #define WTBL_AIS_IBSS_NO_SEC_BC_IDX     28	/* Reserved for Ad-hoc No sec index */
 #define WTBL_AP_NO_SEC_BC_IDX           28	/* Reserved for AP mode No Sec index */
 
+#define SEC_TX_KEY_COMMAND		1
+#define SEC_QUEUE_KEY_COMMAND	0
+#define SEC_DROP_KEY_COMMAND	2
+
 /*******************************************************************************
  *                         D A T A   T Y P E S
  ********************************************************************************
  */
+enum EAPOL_KEY_TYPE {
+	EAPOL_KEY_NOT_KEY = 0,
+	EAPOL_KEY_1_OF_4 = 1,
+	EAPOL_KEY_2_OF_4 = 2,
+	EAPOL_KEY_3_OF_4 = 3,
+	EAPOL_KEY_4_OF_4 = 4,
+	EAPOL_KEY_1_OF_2 = 5,
+	EAPOL_KEY_2_OF_2 = 6,
+};
 
 typedef struct _IEEE_802_1X_HDR {
 	UINT_8 ucVersion;
@@ -193,7 +206,8 @@ VOID secPrivacyFreeForEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucEntry);
 
 VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec);
 
-BOOLEAN secIs24Of4Packet(IN P_NATIVE_PACKET prPacket);
+enum EAPOL_KEY_TYPE secGetEapolKeyType(PUINT_8 pucPacket);
+VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, UINT_8 ucAction);
 
 UINT_8
 secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex, IN PUINT_8 pucAddr, IN UINT_8 ucStaIdx, IN
@@ -216,6 +230,8 @@ BOOLEAN secIsProtected1xFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaR
 BOOLEAN secIsProtectedBss(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo);
 
 BOOLEAN tkipMicDecapsulate(IN P_SW_RFB_T prSwRfb, IN PUINT_8 pucMicKey);
+
+UINT_8 secGetBssIdxByNetType(P_ADAPTER_T prAdapter);
 
 /*******************************************************************************
  *                              F U N C T I O N S
