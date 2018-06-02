@@ -819,7 +819,7 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
 		/* disable, reverse the sequence */
 #ifdef CMDQ_CONFIG_SMI
-		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "CMDQ", false);
+		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "CMDQ", true);
 #endif
 	}
 #endif				/* CMDQ_PWR_AWARE */
