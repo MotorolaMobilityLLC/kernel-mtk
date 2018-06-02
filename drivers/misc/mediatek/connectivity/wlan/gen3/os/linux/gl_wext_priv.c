@@ -3136,58 +3136,58 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 
 	if (i4CmdFound == 0) {
 		i4CmdFound = 1;
-		if (strnicmp(pcCommand, CMD_RSSI, strlen(CMD_RSSI)) == 0) {
+		if (strncasecmp(pcCommand, CMD_RSSI, strlen(CMD_RSSI)) == 0) {
 			/*
 			 * i4BytesWritten =
 			 * wl_android_get_rssi(net, command, i4TotalLen);
 			 */
-		} else if (strnicmp(pcCommand, CMD_LINKSPEED, strlen(CMD_LINKSPEED)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_LINKSPEED, strlen(CMD_LINKSPEED)) == 0) {
 			i4BytesWritten = priv_driver_get_linkspeed(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_PNOSSIDCLR_SET, strlen(CMD_PNOSSIDCLR_SET)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_PNOSSIDCLR_SET, strlen(CMD_PNOSSIDCLR_SET)) == 0) {
 			/* ToDo:: Nothing */
-		} else if (strnicmp(pcCommand, CMD_PNOSETUP_SET, strlen(CMD_PNOSETUP_SET)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_PNOSETUP_SET, strlen(CMD_PNOSETUP_SET)) == 0) {
 			/* ToDo:: Nothing */
-		} else if (strnicmp(pcCommand, CMD_PNOENABLE_SET, strlen(CMD_PNOENABLE_SET)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_PNOENABLE_SET, strlen(CMD_PNOENABLE_SET)) == 0) {
 			/* ToDo:: Nothing */
-		} else if (strnicmp(pcCommand, CMD_SETSUSPENDOPT, strlen(CMD_SETSUSPENDOPT)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SETSUSPENDOPT, strlen(CMD_SETSUSPENDOPT)) == 0) {
 			/* i4BytesWritten = wl_android_set_suspendopt(net, pcCommand, i4TotalLen); */
-		} else if (strnicmp(pcCommand, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SETSUSPENDMODE, strlen(CMD_SETSUSPENDMODE)) == 0) {
 			i4BytesWritten = priv_driver_set_suspend_mode(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_SETBAND, strlen(CMD_SETBAND)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SETBAND, strlen(CMD_SETBAND)) == 0) {
 			i4BytesWritten = priv_driver_set_band(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GETBAND, strlen(CMD_GETBAND)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_GETBAND, strlen(CMD_GETBAND)) == 0) {
 			/* i4BytesWritten = wl_android_get_band(net, pcCommand, i4TotalLen); */
-		} else if (strnicmp(pcCommand, CMD_SET_TXPOWER, strlen(CMD_SET_TXPOWER)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SET_TXPOWER, strlen(CMD_SET_TXPOWER)) == 0) {
 			i4BytesWritten = priv_driver_set_txpower(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_COUNTRY, strlen(CMD_COUNTRY)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_COUNTRY, strlen(CMD_COUNTRY)) == 0) {
 			i4BytesWritten = priv_driver_set_country(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0) {
 			i4BytesWritten = priv_driver_set_miracast(prNetDev, pcCommand, i4TotalLen);
 		}
 		/* Mediatek private command  */
-		else if (strnicmp(pcCommand, CMD_SET_SW_CTRL, strlen(CMD_SET_SW_CTRL)) == 0) {
+		else if (strncasecmp(pcCommand, CMD_SET_SW_CTRL, strlen(CMD_SET_SW_CTRL)) == 0) {
 			i4BytesWritten = priv_driver_set_sw_ctrl(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GET_SW_CTRL, strlen(CMD_GET_SW_CTRL)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_GET_SW_CTRL, strlen(CMD_GET_SW_CTRL)) == 0) {
 			i4BytesWritten = priv_driver_get_sw_ctrl(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_SET_CFG, strlen(CMD_SET_CFG)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SET_CFG, strlen(CMD_SET_CFG)) == 0) {
 			i4BytesWritten = priv_driver_set_cfg(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GET_CFG, strlen(CMD_GET_CFG)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_GET_CFG, strlen(CMD_GET_CFG)) == 0) {
 			i4BytesWritten = priv_driver_get_cfg(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_SET_CHIP, strlen(CMD_SET_CHIP)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SET_CHIP, strlen(CMD_SET_CHIP)) == 0) {
 			i4BytesWritten = priv_driver_set_chip_config(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GET_CHIP, strlen(CMD_GET_CHIP)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_GET_CHIP, strlen(CMD_GET_CHIP)) == 0) {
 			i4BytesWritten = priv_driver_get_chip_config(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_SET_DBG_LEVEL, strlen(CMD_SET_DBG_LEVEL)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_SET_DBG_LEVEL, strlen(CMD_SET_DBG_LEVEL)) == 0) {
 			i4BytesWritten = priv_driver_set_dbg_level(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GET_DBG_LEVEL, strlen(CMD_GET_DBG_LEVEL)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_GET_DBG_LEVEL, strlen(CMD_GET_DBG_LEVEL)) == 0) {
 			i4BytesWritten = priv_driver_get_dbg_level(prNetDev, pcCommand, i4TotalLen);
 		}
 #if CFG_SUPPORT_BATCH_SCAN
-		else if (strnicmp(pcCommand, CMD_BATCH_SET, strlen(CMD_BATCH_SET)) == 0) {
+		else if (strncasecmp(pcCommand, CMD_BATCH_SET, strlen(CMD_BATCH_SET)) == 0) {
 			kalIoctl(prGlueInfo,
 				 wlanoidSetBatchScanReq,
 				 (PVOID) pcCommand, i4TotalLen, FALSE, FALSE, TRUE, &i4BytesWritten);
-		} else if (strnicmp(pcCommand, CMD_BATCH_GET, strlen(CMD_BATCH_GET)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_BATCH_GET, strlen(CMD_BATCH_GET)) == 0) {
 			/* strcpy(pcCommand, "BATCH SCAN DATA FROM FIRMWARE"); */
 			/* i4BytesWritten = strlen("BATCH SCAN DATA FROM FIRMWARE") + 1; */
 			/* i4BytesWritten = priv_driver_get_linkspeed (prNetDev, pcCommand, i4TotalLen); */
@@ -3225,14 +3225,14 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			 * "BATCH", DUMP_PREFIX_ADDRESS, 16, 1, pcCommand, i4BytesWritten, TRUE);
 			 */
 
-		} else if (strnicmp(pcCommand, CMD_BATCH_STOP, strlen(CMD_BATCH_STOP)) == 0) {
+		} else if (strncasecmp(pcCommand, CMD_BATCH_STOP, strlen(CMD_BATCH_STOP)) == 0) {
 			kalIoctl(prGlueInfo,
 				 wlanoidSetBatchScanReq,
 				 (PVOID) pcCommand, i4TotalLen, FALSE, FALSE, TRUE, &i4BytesWritten);
 		}
 #endif
 #if CFG_SUPPORT_SNIFFER
-		else if (strnicmp(pcCommand, CMD_SETMONITOR, strlen(CMD_SETMONITOR)) == 0)
+		else if (strncasecmp(pcCommand, CMD_SETMONITOR, strlen(CMD_SETMONITOR)) == 0)
 			i4BytesWritten = priv_driver_set_monitor(prNetDev, pcCommand, i4TotalLen);
 #endif
 		else
