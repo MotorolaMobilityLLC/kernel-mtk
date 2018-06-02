@@ -28,6 +28,89 @@
 #include <linux/signal.h>
 #include <trace/events/signal.h>
 
+#ifdef CONFIG_MTK_ENG_BUILD
+
+MT_DEBUG_ENTRY(log);
+static unsigned long print_num;
+static unsigned long long second = 1;
+
+static int mt_log_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "Print %ld lines log in %lld second in last time.\n", print_num, second);
+	SEQ_printf(m, "show: Please echo m n > log again. m: second, n: level.\n");
+	return 0;
+}
+
+static ssize_t mt_log_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+{
+	char buf[64];
+	unsigned long long t1 = 0, t2 = 0;
+	int level = 0;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt] = 0;
+
+	if (sscanf(buf, "%lld %d ", &second, &level) == 2) {
+		SEQ_printf(NULL, "will print log in level %d about %lld second.\n", level, second);
+	} else {
+		SEQ_printf(NULL, "Please echo m n > log; m: second, n: level.\n");
+		return cnt;
+	}
+	t1 = sched_clock();
+	pr_err("printk debug log: start time: %lld.\n", t1);
+	print_num = 0;
+	for (;;) {
+		t2 = sched_clock();
+		if (t2 - t1 > second * 1000000000)
+			break;
+		pr_err("printk debug log: the %ld line, time: %lld.\n", print_num++, t2);
+		switch (level) {
+		case 0:
+			break;
+		case 1:
+			__delay(1);
+			break;
+		case 2:
+			__delay(5);
+			break;
+		case 3:
+			__delay(10);
+			break;
+		case 4:
+			__delay(50);
+			break;
+		case 5:
+			__delay(100);
+			break;
+		case 6:
+			__delay(200);
+			break;
+		case 7:
+			__delay(500);
+			break;
+		case 8:
+			__delay(1000);
+			break;
+		case 9:
+			msleep(20);
+			break;
+		default:
+			msleep(20);
+			break;
+		}
+	}
+
+	pr_err("mt log total write %ld line in %lld second.\n", print_num, second);
+	return cnt;
+}
+#endif
+
+
 #define STORE_SIGINFO(_errno, _code, info)			\
 	do {							\
 		if (info == SEND_SIG_NOINFO ||			\
@@ -298,6 +381,11 @@ static int __init init_mtsched_prof(void)
 	if (!pe)
 		return -ENOMEM;
 
+#ifdef CONFIG_MTK_ENG_BUILD
+	pe = proc_create("mtprof/log", 0664, NULL, &mt_log_fops);
+	if (!pe)
+		return -ENOMEM;
+#endif
 	return 0;
 }
 
