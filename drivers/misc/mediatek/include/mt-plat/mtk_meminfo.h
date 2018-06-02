@@ -48,6 +48,12 @@ struct single_cma_registration {
 #define ZMC_EVENT_ALLOC_MOVABLE 0x01
 #endif
 
+#ifdef CONFIG_MTK_SVP
+extern phys_addr_t memory_ssvp_cma_base(void);
+extern phys_addr_t memory_ssvp_cma_size(void);
+extern struct single_cma_registration memory_ssvp_registration;
+#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+
 enum dcs_status {
 	DCS_NORMAL,
 	DCS_LOWPOWER,
