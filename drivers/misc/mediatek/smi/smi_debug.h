@@ -18,10 +18,13 @@
 #include "smi_configuration.h"
 #define SMI_DBG_LARB_SELECT(smi_dbg_larb, n) ((smi_dbg_larb) & (1<<n))
 
-/*
- * #undef pr_fmt
- * #define pr_fmt(fmt) "%s:%d: " fmt, __func__, __LINE__
- */
+#define SMI_TAG "SMI"
+#undef pr_fmt
+#if 1
+#define pr_fmt(fmt) "[" SMI_TAG "] " fmt
+#else
+#define pr_fmt(fmt) "%s:%d: " fmt, __func__, __LINE__
+#endif
 
 #define SMIMSG(string, args...) pr_debug(string, ##args)
 
@@ -34,13 +37,12 @@
 		pr_notice(string, ##args); \
 	} while (0)
 #else
-#define SMIMSG3(onoff, string, args...) SMIMSG(string, ##args)
+#define SMIMSG3(onoff, string, args...) pr_notice(string, ##args)
 #endif
 
 #if 1
 #define SMIERR(string, args...) pr_notice(string, ##args)
 #else
-#define SMI_TAG "smi"
 #define SMIERR(string, args...) \
 	do { \
 		pr_notice(string, ##args); \

@@ -409,7 +409,7 @@ void smi_common_ostd_setting(int enable)
 	unsigned int val = 0;
 	unsigned int tmp_val = 0;
 
-	SMIDBG(1, "before setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
+	SMIDBG(3, "before setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
 	M4U_ReadReg32(get_common_base_addr(), 0x118),
 	M4U_ReadReg32(get_common_base_addr(), 0x11c),
 	M4U_ReadReg32(get_common_base_addr(), 0x120));
@@ -431,7 +431,7 @@ void smi_common_ostd_setting(int enable)
 		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x120) | val;
 		M4U_WriteReg32(get_common_base_addr(), 0x120, tmp_val);
 	}
-	SMIDBG(1, "after setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
+	SMIDBG(3, "after setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
 	M4U_ReadReg32(get_common_base_addr(), 0x118),
 	M4U_ReadReg32(get_common_base_addr(), 0x11c),
 	M4U_ReadReg32(get_common_base_addr(), 0x120));
@@ -455,7 +455,7 @@ static void smi_apply_larb_mmu_setting(int larb)
 			continue;
 
 		for (j = 0; j < settings->smi_larb_reg_num[i]; j++) {
-			SMIDBG(1, "before apply, offset=%#x, value=%#x\n",
+			SMIDBG(3, "before apply, offset=%#x, value=%#x\n",
 				settings->smi_larb_setting_vals[i][j].offset,
 				M4U_ReadReg32(get_larb_base_addr(i),
 				settings->smi_larb_setting_vals[i][j].offset));
@@ -469,7 +469,7 @@ static void smi_apply_larb_mmu_setting(int larb)
 			M4U_WriteReg32(get_larb_base_addr(i),
 			settings->smi_larb_setting_vals[i][j].offset, val);
 
-			SMIDBG(1, "before apply, offset=%#x, value=%#x\n",
+			SMIDBG(3, "before apply, offset=%#x, value=%#x\n",
 				settings->smi_larb_setting_vals[i][j].offset,
 				M4U_ReadReg32(get_larb_base_addr(i),
 				settings->smi_larb_setting_vals[i][j].offset));
@@ -598,7 +598,7 @@ static void smi_bus_optimization(int optimization_larbs, int smi_profile)
 {
 	if (enable_bw_optimization) {
 		SMIDBG(1, "dump register before setting\n");
-		if (smi_debug_level)
+		if (smi_debug_level > 99)
 			smi_dumpDebugMsg();
 
 		smi_bus_regs_setting(optimization_larbs, smi_profile,
@@ -673,7 +673,7 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf,
 		SMIERR("Incorrect SMI BWC config : 0x%x\n", p_conf->scenario);
 		return -1;
 	}
-	SMIDBG(3, "current request is turn %s %d\n",
+	SMIDBG(1, "current request is turn %s %d\n",
 		p_conf->b_on_off ? "on" : "off", p_conf->scenario);
 
 #ifdef MMDVFS_HOOK
@@ -722,7 +722,7 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf,
 		if (g_SMIInfo.pu4ConcurrencyTable[i])
 			u4Concurrency |= (1 << i);
 	}
-	SMIDBG(3, "after update, u4Concurrency=0x%x\n", u4Concurrency);
+	SMIDBG(1, "after update, u4Concurrency=0x%x\n", u4Concurrency);
 
 #ifdef MMDVFS_HOOK
 	/* notify mmdvfs concurrency */
@@ -807,7 +807,7 @@ int smi_common_init(void)
 	fglarbcallback = true;
 #ifdef SMI_INTERNAL_CCF_SUPPORT
 	pold = register_pg_callback(&smi_clk_subsys_handle);
-	if (pold)
+	if (!pold)
 		SMIERR("smi reg clk cb call fail\n");
 	else
 		SMIMSG("smi reg clk cb call success\n");
