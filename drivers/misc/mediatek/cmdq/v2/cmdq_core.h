@@ -24,6 +24,8 @@
 #include <linux/sched.h>
 #include "cmdq_def.h"
 
+#define CMDQ_JUMP_MEM
+
 /*  */
 /* address conversion for 4GB ram support: */
 /* .address register: 32 bit */
@@ -441,13 +443,24 @@ struct CmdqModulePAStatStruct {
 };
 #endif
 
+struct CmdBufferStruct {
+	struct list_head listEntry;
+	uint32_t *pVABase;	/* virtual address of command buffer */
+	dma_addr_t MVABase;	/* physical address of command buffer */
+};
+
 struct TaskStruct {
 	struct list_head listEntry;
 
 	/* For buffer state */
 	enum TASK_STATE_ENUM taskState;	/* task life cycle */
+#ifdef CMDQ_JUMP_MEM
+	struct list_head cmd_buffer_list;	/* list of allocated command buffer */
+	uint32_t buf_available_size;		/* available size for last buffer in list */
+#else
 	uint32_t *pVABase;	/* virtual address of command buffer */
 	dma_addr_t MVABase;	/* physical address of command buffer */
+#endif
 	uint32_t bufferSize;	/* size of allocated command buffer */
 	bool useEmergencyBuf;	/* is the command buffer emergency buffer? */
 
@@ -577,6 +590,19 @@ struct RecordStruct {
 #endif
 };
 
+struct MemRecordStruct {
+	size_t alloc_range;		/* max size of this range */
+	uint32_t task_count;	/* how may task in this range */
+};
+
+struct MemMonitorStruct {
+	atomic_t monitor_mem_enable;
+	size_t mem_max_use;
+	size_t mem_max_phy_use;
+	size_t mem_current;
+	size_t mem_phy_current;
+};
+
 struct ErrorStruct {
 	struct RecordStruct errorRec;	/* the record of the error task */
 	u64 ts_nsec;		/* kernel time of attach_error_task */
@@ -590,12 +616,15 @@ struct WriteAddrStruct {
 	pid_t user;
 };
 
+#ifdef CMDQ_JUMP_MEM
+#else
 struct EmergencyBufferStruct {
 	bool used;
 	uint32_t size;
 	void *va;
 	dma_addr_t pa;
 };
+#endif
 
 /**
  * shared memory between normal and secure world
@@ -995,6 +1024,8 @@ extern "C" {
 	void cmdq_core_set_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
 	uint32_t cmdq_core_get_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
 	bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
+	void cmdq_core_set_mem_monitor(bool enable);
+	void cmdq_core_dump_mem_monitor(void);
 #ifdef __cplusplus
 }
 #endif

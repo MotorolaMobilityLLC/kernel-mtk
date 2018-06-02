@@ -308,12 +308,22 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	struct iwcCmdqMessage_t *pIwc;
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
+#ifdef CMDQ_JUMP_MEM
+	struct CmdBufferStruct *cmd_buffer = NULL;
+	uint32_t buffer_index = 0;
+#endif
+
+	/* check task first */
+	if (!pTask) {
+		CMDQ_ERR("[SEC]SESSION_MSG: Unable to fill message by empty task.\n");
+		return -EFAULT;
+	}
 
 	status = 0;
 	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	/* check command size first */
-	if (pTask && (pTask->commandSize + reservedCommandSize) > CMDQ_TZ_CMD_BLOCK_SIZE) {
+	if ((pTask->commandSize + reservedCommandSize) > CMDQ_TZ_CMD_BLOCK_SIZE) {
 		CMDQ_ERR("[SEC]SESSION_MSG: pTask %p commandSize %d > %d\n",
 			 pTask, pTask->commandSize, CMDQ_TZ_CMD_BLOCK_SIZE);
 		return -EFAULT;
@@ -329,21 +339,45 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	pIwc->command.metadata.enginesNeedDAPC = pTask->secData.enginesNeedDAPC;
 	pIwc->command.metadata.enginesNeedPortSecurity = pTask->secData.enginesNeedPortSecurity;
 
-	if (pTask != NULL && thread != CMDQ_INVALID_THREAD) {
+	if (thread != CMDQ_INVALID_THREAD) {
 		/* basic data */
 		pIwc->command.scenario = pTask->scenario;
 		pIwc->command.thread = thread;
 		pIwc->command.priority = pTask->priority;
 		pIwc->command.engineFlag = pTask->engineFlag;
-		pIwc->command.commandSize = pTask->commandSize;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
+#ifdef CMDQ_JUMP_MEM
+		pIwc->command.commandSize = pTask->bufferSize;
+
+		buffer_index = 0;
+		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
+				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+			uint32_t *start_va = (pIwc->command.pVABase +
+				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2);
+			uint32_t *end_va = start_va + copy_size / sizeof(uint32_t);
+
+			memcpy(start_va, (cmd_buffer->pVABase), (copy_size));
+
+			/* we must reset the jump inst since now buffer is continues */
+			if (((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+				(end_va[-1] & 0x1) == 1) {
+				end_va[-1] = CMDQ_CODE_JUMP << 24;
+				end_va[-2] = 0x8;
+			}
+
+			buffer_index++;
+		}
+#else
+		pIwc->command.commandSize = pTask->commandSize;
 		memcpy((pIwc->command.pVABase), (pTask->pVABase), (pTask->commandSize));
+#endif
 
 		/* cookie */
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
 		pIwc->command.resetExecCnt = pTask->secData.resetExecCnt;
 
-		CMDQ_MSG("[SEC]SESSION_MSG: task 0x%p, thread: %d, size: %d, scenario:%d, flag:0x%08llx\n",
+		CMDQ_MSG("[SEC]SESSION_MSG: task: 0x%p, thread: %d, size: %d, scenario: %d, flag: 0x%016llx\n",
 				   pTask, thread, pTask->commandSize, pTask->scenario, pTask->engineFlag);
 
 		CMDQ_VERBOSE("[SEC]SESSION_MSG: addrList[%d][0x%p]\n",
@@ -541,7 +575,7 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 	return status;
 }
 
-void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const iwcCmdqMessage_t *pIwc,
+void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const struct iwcCmdqMessage_t *pIwc,
 	int32_t sec_status_code)
 {
 	int index = 0;
@@ -589,7 +623,6 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pI
 	int32_t status;
 	int32_t iwcRsp;
 	struct cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
-	int index;
 
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
@@ -610,7 +643,7 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pI
 		}
 
 		/* for WFE, we specifically dump the event value */
-		if (CMDQ_CODE_WFE == ((pIwc->cancelTask.errInstr[1] & 0xFF000000) >> 24)) {
+		if (((pIwc->cancelTask.errInstr[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
 			const uint32_t eventID = 0x3FF & pIwc->cancelTask.errInstr[1];
 
 			CMDQ_ERR
@@ -808,7 +841,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	} while (0);
 
 
-	if (-ETIMEDOUT == status) {
+	if (status == -ETIMEDOUT) {
 		/* t-base strange issue, mc_wait_notification false timeout when secure world has done */
 		/* because retry may failed, give up retry method */
 		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
