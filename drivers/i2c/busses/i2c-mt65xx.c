@@ -62,6 +62,7 @@
 #define I2C_DMA_HARD_RST		0x0002
 #define I2C_DMA_4G_MODE			0x0001
 
+#define I2C_DEFAULT_CLK_DIV		2
 #define I2C_DEFAULT_SPEED		100000	/* hz */
 #define MAX_FS_MODE_SPEED		400000
 #define MAX_HS_MODE_SPEED		3400000
@@ -128,6 +129,7 @@ enum I2C_REGS_OFFSET {
 	OFFSET_DEBUGSTAT = 0x64,
 	OFFSET_DEBUGCTRL = 0x68,
 	OFFSET_TRANSFER_LEN_AUX = 0x6c,
+	OFFSET_CLOCK_DIV = 0x70,
 };
 
 struct mtk_i2c_compatible {
@@ -137,6 +139,7 @@ struct mtk_i2c_compatible {
 	unsigned char auto_restart: 1;
 	unsigned char aux_len_reg: 1;
 	unsigned char support_33bits: 1;
+	unsigned char timing_adjust: 1;
 };
 
 struct mtk_i2c {
@@ -156,6 +159,7 @@ struct mtk_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	enum mtk_trans_op op;
+	unsigned int clk_src_div;
 	u16 timing_reg;
 	u16 high_speed_reg;
 	unsigned char auto_restart;
@@ -187,6 +191,7 @@ static const struct mtk_i2c_compatible mt6577_compat = {
 	.auto_restart = 0,
 	.aux_len_reg = 0,
 	.support_33bits = 0,
+	.timing_adjust = 0,
 };
 
 static const struct mtk_i2c_compatible mt6589_compat = {
@@ -196,6 +201,17 @@ static const struct mtk_i2c_compatible mt6589_compat = {
 	.auto_restart = 0,
 	.aux_len_reg = 0,
 	.support_33bits = 0,
+	.timing_adjust = 0,
+};
+
+static const struct mtk_i2c_compatible mt8167_compat = {
+	.quirks = &mt8173_i2c_quirks,
+	.pmic_i2c = 0,
+	.dcm = 1,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.support_33bits = 1,
+	.timing_adjust = 1,
 };
 
 static const struct mtk_i2c_compatible mt8173_compat = {
@@ -205,11 +221,13 @@ static const struct mtk_i2c_compatible mt8173_compat = {
 	.auto_restart = 1,
 	.aux_len_reg = 1,
 	.support_33bits = 1,
+	.timing_adjust = 0,
 };
 
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6577-i2c", .data = &mt6577_compat },
 	{ .compatible = "mediatek,mt6589-i2c", .data = &mt6589_compat },
+	{ .compatible = "mediatek,mt8167-i2c", .data = &mt8167_compat },
 	{ .compatible = "mediatek,mt8173-i2c", .data = &mt8173_compat },
 	{}
 };
@@ -266,6 +284,9 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 	if (i2c->dev_comp->dcm)
 		writew(I2C_DCM_DISABLE, i2c->base + OFFSET_DCM_EN);
 
+	if (i2c->dev_comp->timing_adjust)
+		writew((i2c->clk_src_div - 1), i2c->base + OFFSET_CLOCK_DIV);
+
 	writew(i2c->timing_reg, i2c->base + OFFSET_TIMING);
 	writew(i2c->high_speed_reg, i2c->base + OFFSET_HS);
 
@@ -294,8 +315,7 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
  * less than or equal to i2c->speed_hz. The calculation try to get
  * sample_cnt and step_cn
  */
-static int mtk_i2c_set_speed(struct mtk_i2c *i2c, unsigned int parent_clk,
-			     unsigned int clock_div)
+static int mtk_i2c_set_speed(struct mtk_i2c *i2c, unsigned int parent_clk)
 {
 	unsigned int clk_src;
 	unsigned int step_cnt;
@@ -308,7 +328,7 @@ static int mtk_i2c_set_speed(struct mtk_i2c *i2c, unsigned int parent_clk,
 	unsigned int best_mul;
 	unsigned int cnt_mul;
 
-	clk_src = parent_clk / clock_div;
+	clk_src = parent_clk / i2c->clk_src_div;
 	target_speed = i2c->speed_hz;
 
 	if (target_speed > MAX_HS_MODE_SPEED)
@@ -659,8 +679,7 @@ static const struct i2c_algorithm mtk_i2c_algorithm = {
 	.functionality = mtk_i2c_functionality,
 };
 
-static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c,
-			    unsigned int *clk_src_div)
+static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c)
 {
 	int ret;
 
@@ -668,12 +687,14 @@ static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c,
 	if (ret < 0)
 		i2c->speed_hz = I2C_DEFAULT_SPEED;
 
-	ret = of_property_read_u32(np, "clock-div", clk_src_div);
-	if (ret < 0)
-		return ret;
+	if (!i2c->dev_comp->timing_adjust) {
+		ret = of_property_read_u32(np, "clock-div", &i2c->clk_src_div);
+		if (ret < 0)
+			return ret;
 
-	if (*clk_src_div == 0)
-		return -EINVAL;
+		if (i2c->clk_src_div == 0)
+			return -EINVAL;
+	}
 
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->use_push_pull =
@@ -688,17 +709,12 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct mtk_i2c *i2c;
 	struct clk *clk;
-	unsigned int clk_src_div;
 	struct resource *res;
 	int irq;
 
 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
 	if (!i2c)
 		return -ENOMEM;
-
-	ret = mtk_i2c_parse_dt(pdev->dev.of_node, i2c, &clk_src_div);
-	if (ret)
-		return -EINVAL;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	i2c->base = devm_ioremap_resource(&pdev->dev, res);
@@ -730,6 +746,13 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 	i2c->adap.timeout = 2 * HZ;
 	i2c->adap.retries = 1;
 
+	ret = mtk_i2c_parse_dt(pdev->dev.of_node, i2c);
+	if (ret)
+		return -EINVAL;
+
+	if (i2c->dev_comp->timing_adjust)
+		i2c->clk_src_div = I2C_DEFAULT_CLK_DIV;
+
 	if (i2c->have_pmic && !i2c->dev_comp->pmic_i2c)
 		return -EINVAL;
 
@@ -757,7 +780,7 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 
 	strlcpy(i2c->adap.name, I2C_DRV_NAME, sizeof(i2c->adap.name));
 
-	ret = mtk_i2c_set_speed(i2c, clk_get_rate(clk), clk_src_div);
+	ret = mtk_i2c_set_speed(i2c, clk_get_rate(clk));
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to set the speed.\n");
 		return -EINVAL;
