@@ -62,7 +62,7 @@
 #define MTK_HDMI_USBOTG_STATUS                  HDMI_IOWR(33, int)
 #define MTK_HDMI_GET_DRM_ENABLE                 HDMI_IOWR(34, int)
 
-#define MTK_HDMI_GET_DEV_INFO                   HDMI_IOWR(35, mtk_dispif_info_t)
+#define MTK_HDMI_GET_DEV_INFO                   HDMI_IOWR(35, struct mtk_dispif_info)
 #define MTK_HDMI_PREPARE_BUFFER                 HDMI_IOW(36, struct fb_overlay_buffer)
 #define MTK_HDMI_SCREEN_CAPTURE                 HDMI_IOW(37, unsigned long)
 

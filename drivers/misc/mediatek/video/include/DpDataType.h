@@ -30,7 +30,7 @@
 
 typedef int32_t DpEngineType;
 
-typedef enum DP_STATUS_ENUM {
+enum DP_STATUS_ENUM {
 	DP_STATUS_ABORTED_BY_USER   =  4,
 	DP_STATUS_ALL_TEST_DONE     =  3,
 	DP_STATUS_ALL_TPIPE_DONE    =  2,
@@ -83,21 +83,21 @@ typedef enum DP_STATUS_ENUM {
 	DP_STATUS_Y_OUT_OVERLAP     = -45,
 	DP_STATUS_BACK_LE_FORWARD   = -46,
 	DP_STATUS_UNKNOWN_ERROR     = -47,
-} DP_STATUS_ENUM;
+};
 
 
-typedef enum DP_MEMORY_ENUM {
+enum DP_MEMORY_ENUM {
 	DP_MEMORY_VA,
 	DP_MEMORY_ION,
 	DP_MEMORY_PHY,
 	DP_MEMORY_MVA
-} DP_MEMORY_ENUM;
+};
 
-typedef enum DP_PROFILE_ENUM {
+enum DP_PROFILE_ENUM {
 	DP_PROFILE_BT601,
 	DP_PROFILE_BT709,
 	DP_PROFILE_JPEG
-} DP_PROFILE_ENUM;
+};
 
 
 /* FMT GROUP , 0-RGB , 1-YUV , 2-Bayer raw , 3-compressed format */
@@ -125,7 +125,7 @@ typedef enum DP_PROFILE_ENUM {
 #define DP_COLOR_GET_UNIQUE_ID(color)		((0x0000001F & color) >>  0)
 #define DP_COLOR_GET_HW_FORMAT(color)		((0x0000001F & color) >>  0)
 
-typedef enum DP_COLOR_ENUM {
+enum DP_COLOR_ENUM {
 	DP_COLOR_UNKNOWN        = 0,
 	DP_COLOR_FULLG8         = DP_COLORFMT_PACK(0,   1,  0, 0, 0,  8, 3,  0, 20),
 	DP_COLOR_FULLG10        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 10, 3,  0, 21),
@@ -185,10 +185,11 @@ typedef enum DP_COLOR_ENUM {
 	/*    DP_COLOR_Y800           = DP_COLORFMT_PACK(1,  0, 1, 0, 8, 1, 42), Dup to DP_COLOR_GREY */
 	/*    DP_COLOR_COMPACT_RAW1   = DP_COLORFMT_PACK(1,  0, 1, 0, 10, 2, 43), Dup to Bayer10 */
 	/*    DP_COLOR_420_3P_YVU     = DP_COLORFMT_PACK(3,  0, 1, 1,  8, 1, 44), Dup to DP_COLOR_YV12 */
-} DP_COLOR_ENUM;
+};
 
 /* Legacy for 6589 compatible */
-typedef DP_COLOR_ENUM DpColorFormat;
+#define DpColorFormat (struct DP_COLOR_ENUM)
+
 
 #define eYUV_420_3P		DP_COLOR_I420
 #define eYUV_420_2P_YUYV	DP_COLOR_YUYV

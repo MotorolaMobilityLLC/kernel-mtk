@@ -163,7 +163,7 @@ static int game_whitelist_check(void)
 static int fps_update(void)
 {
 #ifdef CONFIG_MTK_FB
-	disp_session_info info;
+	struct disp_session_info info;
 
 
 	memset(&info, 0, sizeof(info));

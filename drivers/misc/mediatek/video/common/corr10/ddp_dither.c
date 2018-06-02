@@ -15,8 +15,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -25,10 +24,6 @@
 #include <ddp_path.h>
 #include <ddp_dither.h>
 #include <ddp_drv.h>
-#include <disp_drv_platform.h>
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
-#include <disp_helper.h>
-#endif
 
 #if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
 #define DITHER0_BASE_NAMING (DISPSYS_DITHER0_BASE)
@@ -97,26 +92,11 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
 
-#ifdef DISP_PLATFORM_HAS_SHADOW_REG
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			/* full shadow mode*/
-			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x0, 0x7);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-			/* force commit */
-			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x1 << 1, 0x7);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-			/* bypass shadow */
-			DISP_REG_MASK(cmdq, DISP_REG_DITHER_0, 0x1, 0x7);
-		}
-	}
-#endif
-
 	DITHER_DBG("disp_dither_init bpp = %d, width = %d height = %d", dither_bpp, width, height);
 }
 
 
-static int disp_dither_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_dither_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty) {
 		disp_dither_init(DISP_DITHER0, pConfig->dst_w, pConfig->dst_h,
@@ -127,7 +107,7 @@ static int disp_dither_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pCo
 }
 
 
-static int disp_dither_bypass(DISP_MODULE_ENUM module, int bypass)
+static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
@@ -142,7 +122,7 @@ static int disp_dither_bypass(DISP_MODULE_ENUM module, int bypass)
 }
 
 
-static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
+static int disp_dither_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* dither is DCM , do nothing */
@@ -160,7 +140,7 @@ static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
+static int disp_dither_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* dither is DCM , do nothing */
@@ -179,7 +159,7 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 }
 
 #ifdef DITHER_SUPPORT_PARTIAL_UPDATE
-static int _dither_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _dither_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -189,8 +169,8 @@ static int _dither_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq
 	return 0;
 }
 
-static int dither_ioctl(DISP_MODULE_ENUM module, void *handle,
-		DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
+		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -202,7 +182,7 @@ static int dither_ioctl(DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-DDP_MODULE_DRIVER ddp_driver_dither = {
+struct DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
 	.bypass = disp_dither_bypass,
 	.init = disp_dither_power_on,

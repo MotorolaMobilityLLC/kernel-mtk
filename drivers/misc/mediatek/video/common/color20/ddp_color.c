@@ -16,11 +16,6 @@
 #include <linux/spinlock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include <disp_drv_platform.h>
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
-#include <disp_helper.h>
-#endif
-
 #if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #include <mach/mt_clkmgr.h>
 #elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
@@ -39,7 +34,7 @@
 
 
 /* global PQ param for kernel space */
-static DISP_PQ_PARAM g_Color_Param[2] = {
+static struct DISP_PQ_PARAM g_Color_Param[2] = {
 	{
 u4SHPGain:2,
 u4SatGain:4,
@@ -62,7 +57,7 @@ u4Ccorr:1
 	}
 };
 
-static DISP_PQ_PARAM g_Color_Cam_Param = {
+static struct DISP_PQ_PARAM g_Color_Cam_Param = {
 u4SHPGain:0,
 u4SatGain:4,
 u4PartialY:0,
@@ -73,7 +68,7 @@ u4Brightness:4,
 u4Ccorr:2
 };
 
-static DISP_PQ_PARAM g_Color_Gal_Param = {
+static struct DISP_PQ_PARAM g_Color_Gal_Param = {
 u4SHPGain:2,
 u4SatGain:4,
 u4PartialY:0,
@@ -84,7 +79,7 @@ u4Brightness:4,
 u4Ccorr:3
 };
 
-static DISP_PQ_DC_PARAM g_PQ_DC_Param = {
+static struct DISP_PQ_DC_PARAM g_PQ_DC_Param = {
 param:
 	{
 	 1, 1, 0, 0, 0, 0, 0, 0, 0, 0x0A,
@@ -93,7 +88,7 @@ param:
 	 0x19, 0x00, 0x20, 0, 0, 1, 2, 1, 80, 1}
 };
 
-static DISP_PQ_DS_PARAM g_PQ_DS_Param = {
+static struct DISP_PQ_DS_PARAM g_PQ_DS_Param = {
 param:
 	{
 	 1, -4, 1024, -4, 1024,
@@ -103,7 +98,7 @@ param:
 	 0, 0, 0}
 };
 
-static MDP_TDSHP_REG g_tdshp_reg = {
+static struct MDP_TDSHP_REG g_tdshp_reg = {
 	TDS_GAIN_MID:0x10,
 	TDS_GAIN_HIGH:0x20,
 	TDS_COR_GAIN:0x10,
@@ -115,7 +110,7 @@ static MDP_TDSHP_REG g_tdshp_reg = {
 
 /* initialize index (because system default is 0, need fill with 0x80) */
 
-static DISPLAY_PQ_T g_Color_Index = {
+static struct DISPLAY_PQ_T g_Color_Index = {
 GLOBAL_SAT:
 	{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80},	/* 0~9 */
 
@@ -927,7 +922,7 @@ LSP_EN:0
 };
 
 static DEFINE_MUTEX(g_color_reg_lock);
-static DISPLAY_COLOR_REG_T g_color_reg;
+static struct DISPLAY_COLOR_REG g_color_reg;
 static int g_color_reg_valid;
 
 int color_dbg_en = 1;
@@ -938,7 +933,7 @@ int color_dbg_en = 1;
 
 static ddp_module_notify g_color_cb;
 
-static DISPLAY_TDSHP_T g_TDSHP_Index;
+static struct DISPLAY_TDSHP_T g_TDSHP_Index;
 
 static unsigned int g_split_en;
 static unsigned int g_split_window_x = 0xFFFF0000;
@@ -955,7 +950,7 @@ static unsigned long g_color0_dst_h;
 static unsigned long g_color1_dst_w;
 static unsigned long g_color1_dst_h;
 
-static MDP_COLOR_CAP mdp_color_cap;
+static struct MDP_COLOR_CAP mdp_color_cap;
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
 static int g_color_bypass = 1;
@@ -1007,17 +1002,17 @@ void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 *g_Color_Param
 */
 
-DISP_PQ_PARAM *get_Color_config(int id)
+struct DISP_PQ_PARAM *get_Color_config(int id)
 {
 	return &g_Color_Param[id];
 }
 
-DISP_PQ_PARAM *get_Color_Cam_config(void)
+struct DISP_PQ_PARAM *get_Color_Cam_config(void)
 {
 	return &g_Color_Cam_Param;
 }
 
-DISP_PQ_PARAM *get_Color_Gal_config(void)
+struct DISP_PQ_PARAM *get_Color_Gal_config(void)
 {
 	return &g_Color_Gal_Param;
 }
@@ -1026,13 +1021,13 @@ DISP_PQ_PARAM *get_Color_Gal_config(void)
 *g_Color_Index
 */
 
-DISPLAY_PQ_T *get_Color_index(void)
+struct DISPLAY_PQ_T *get_Color_index(void)
 {
 	return &g_Color_Index;
 }
 
 
-DISPLAY_TDSHP_T *get_TDSHP_index(void)
+struct DISPLAY_TDSHP_T *get_TDSHP_index(void)
 {
 	return &g_TDSHP_Index;
 }
@@ -1059,7 +1054,7 @@ static void _color_reg_set_field(void *__cmdq, unsigned int field_mask, unsigned
 	DISP_REG_SET_FIELD(cmdq, field_mask, addr, value);
 }
 
-void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
+void DpEngine_COLORonInit(enum DISP_MODULE_ENUM module, void *__cmdq)
 {
 	/* pr_debug("===================init COLOR =======================\n"); */
 	int offset = C0_OFFSET;
@@ -1092,13 +1087,13 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 
 }
 
-void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
+void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 {
 	int index = 0;
 	unsigned int u4Temp = 0;
 	unsigned char h_series[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	int offset = C0_OFFSET;
-	DISP_PQ_PARAM *pq_param_p = &g_Color_Param[COLOR_ID_0];
+	struct DISP_PQ_PARAM *pq_param_p = &g_Color_Param[COLOR_ID_0];
 	void *cmdq = __cmdq;
 #if defined(CONFIG_ARCH_MT6797)
 	int i, j, reg_index;
@@ -1400,8 +1395,8 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
 }
 
-static void color_write_hw_reg(DISP_MODULE_ENUM module,
-	const DISPLAY_COLOR_REG_T *color_reg, void *cmdq)
+static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
+	const struct DISPLAY_COLOR_REG *color_reg, void *cmdq)
 {
 	int offset = C0_OFFSET;
 	int index;
@@ -1650,7 +1645,7 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
 }
 
-static void color_trigger_refresh(DISP_MODULE_ENUM module)
+static void color_trigger_refresh(enum DISP_MODULE_ENUM module)
 {
 	if (g_color_cb != NULL)
 		g_color_cb(module, DISP_PATH_EVENT_TRIGGER);
@@ -1658,7 +1653,7 @@ static void color_trigger_refresh(DISP_MODULE_ENUM module)
 		COLOR_ERR("ddp listener is NULL!!\n");
 }
 
-static void ddp_color_bypass_color(DISP_MODULE_ENUM module, int bypass, void *__cmdq)
+static void ddp_color_bypass_color(enum DISP_MODULE_ENUM module, int bypass, void *__cmdq)
 {
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
@@ -1672,7 +1667,7 @@ static void ddp_color_bypass_color(DISP_MODULE_ENUM module, int bypass, void *__
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 7), 0x000000FF);	/* resume all */
 }
 
-static void ddp_color_set_window(DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
+static void ddp_color_set_window(struct DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
 {
 	const int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
@@ -2094,7 +2089,7 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 }
 
 
-static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
+static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* color is DCM , do nothing */
@@ -2125,7 +2120,7 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 	return 0;
 }
 
-static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
+static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* color is DCM , do nothing */
@@ -2152,7 +2147,7 @@ static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 	return 0;
 }
 
-static int _color_init(DISP_MODULE_ENUM module, void *cmq_handle)
+static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	_color_clock_on(module, cmq_handle);
 
@@ -2172,13 +2167,13 @@ static int _color_init(DISP_MODULE_ENUM module, void *cmq_handle)
 	return 0;
 }
 
-static int _color_deinit(DISP_MODULE_ENUM module, void *cmq_handle)
+static int _color_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	_color_clock_off(module, cmq_handle);
 	return 0;
 }
 
-static int _color_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmq_handle)
+static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmq_handle)
 {
 	int offset = C0_OFFSET;
 	void *cmdq = cmq_handle;
@@ -2224,25 +2219,10 @@ static int _color_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	}
 #endif
 
-#ifdef DISP_PLATFORM_HAS_SHADOW_REG
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			/* full shadow mode*/
-			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 0);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-			/* force commit */
-			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 2);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-			/* bypass shadow */
-			_color_reg_set(cmdq, DISP_COLOR_SHADOW_CTRL, 1);
-		}
-	}
-#endif
-
 	return 0;
 }
 
-static int _color_start(DISP_MODULE_ENUM module, void *cmdq)
+static int _color_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	if (module == DISP_MODULE_COLOR1) {
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
@@ -2275,14 +2255,14 @@ static int _color_start(DISP_MODULE_ENUM module, void *cmdq)
 	return 0;
 }
 
-static int _color_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int _color_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_color_cb = notify;
 	return 0;
 }
 
 #if defined(COLOR_SUPPORT_PARTIAL_UPDATE)
-static int _color_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _color_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -2315,8 +2295,8 @@ static int _color_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 	return 0;
 }
 
-static int color_ioctl(DISP_MODULE_ENUM module, void *handle,
-		DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int color_ioctl(enum DISP_MODULE_ENUM module, void *handle,
+		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -2329,13 +2309,13 @@ static int color_ioctl(DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
 	int value = 0;
-	DISP_PQ_PARAM *pq_param;
-	DISPLAY_PQ_T *pq_index;
-	DISPLAY_TDSHP_T *tdshp_index;
+	struct DISP_PQ_PARAM *pq_param;
+	struct DISPLAY_PQ_T *pq_index;
+	struct DISPLAY_TDSHP_T *tdshp_index;
 
 	COLOR_DBG("_color_io: msg %x", msg);
 	/* COLOR_ERR("_color_io: GET_PQPARAM %lx\n", DISP_IOCTL_GET_PQPARAM); */
@@ -2348,7 +2328,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		/* case DISP_IOCTL_SET_C0_PQPARAM: */
 
 		pq_param = get_Color_config(COLOR_ID_0);
-		if (copy_from_user(pq_param, (void *)arg, sizeof(DISP_PQ_PARAM))) {
+		if (copy_from_user(pq_param, (void *)arg, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_SET_PQPARAM Copy from user failed\n");
 
 			return -EFAULT;
@@ -2373,7 +2353,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		/* case DISP_IOCTL_GET_C0_PQPARAM: */
 
 		pq_param = get_Color_config(COLOR_ID_0);
-		if (copy_to_user((void *)arg, pq_param, sizeof(DISP_PQ_PARAM))) {
+		if (copy_to_user((void *)arg, pq_param, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_GET_PQPARAM Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2384,7 +2364,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		COLOR_DBG("DISP_IOCTL_SET_PQINDEX!\n");
 
 		pq_index = get_Color_index();
-		if (copy_from_user(pq_index, (void *)arg, sizeof(DISPLAY_PQ_T))) {
+		if (copy_from_user(pq_index, (void *)arg, sizeof(struct DISPLAY_PQ_T))) {
 			COLOR_ERR("DISP_IOCTL_SET_PQINDEX Copy from user failed\n");
 			return -EFAULT;
 		}
@@ -2394,7 +2374,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	case DISP_IOCTL_GET_PQINDEX:
 
 		pq_index = get_Color_index();
-		if (copy_to_user((void *)arg, pq_index, sizeof(DISPLAY_PQ_T))) {
+		if (copy_to_user((void *)arg, pq_index, sizeof(struct DISPLAY_PQ_T))) {
 			COLOR_ERR("DISP_IOCTL_GET_PQPARAM Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2405,7 +2385,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		COLOR_DBG("DISP_IOCTL_SET_COLOR_REG\n");
 
 		mutex_lock(&g_color_reg_lock);
-		if (copy_from_user(&g_color_reg, (void *)arg, sizeof(DISPLAY_COLOR_REG_T))) {
+		if (copy_from_user(&g_color_reg, (void *)arg, sizeof(struct DISPLAY_COLOR_REG))) {
 			mutex_unlock(&g_color_reg_lock);
 			COLOR_ERR("DISP_IOCTL_SET_COLOR_REG Copy from user failed\n");
 			return -EFAULT;
@@ -2424,7 +2404,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		COLOR_DBG("DISP_IOCTL_SET_TDSHPINDEX!\n");
 
 		tdshp_index = get_TDSHP_index();
-		if (copy_from_user(tdshp_index, (void *)arg, sizeof(DISPLAY_TDSHP_T))) {
+		if (copy_from_user(tdshp_index, (void *)arg, sizeof(struct DISPLAY_TDSHP_T))) {
 			COLOR_ERR("DISP_IOCTL_SET_TDSHPINDEX Copy from user failed\n");
 			return -EFAULT;
 		}
@@ -2438,7 +2418,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 			return -EFAULT;
 		}
 		tdshp_index = get_TDSHP_index();
-		if (copy_to_user((void *)arg, tdshp_index, sizeof(DISPLAY_TDSHP_T))) {
+		if (copy_to_user((void *)arg, tdshp_index, sizeof(struct DISPLAY_TDSHP_T))) {
 			COLOR_ERR("DISP_IOCTL_GET_TDSHPINDEX Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2448,7 +2428,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	case DISP_IOCTL_SET_PQ_CAM_PARAM:
 
 		pq_param = get_Color_Cam_config();
-		if (copy_from_user(pq_param, (void *)arg, sizeof(DISP_PQ_PARAM))) {
+		if (copy_from_user(pq_param, (void *)arg, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_SET_PQ_CAM_PARAM Copy from user failed\n");
 			return -EFAULT;
 		}
@@ -2458,7 +2438,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	case DISP_IOCTL_GET_PQ_CAM_PARAM:
 
 		pq_param = get_Color_Cam_config();
-		if (copy_to_user((void *)arg, pq_param, sizeof(DISP_PQ_PARAM))) {
+		if (copy_to_user((void *)arg, pq_param, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_GET_PQ_CAM_PARAM Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2468,7 +2448,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	case DISP_IOCTL_SET_PQ_GAL_PARAM:
 
 		pq_param = get_Color_Gal_config();
-		if (copy_from_user(pq_param, (void *)arg, sizeof(DISP_PQ_PARAM))) {
+		if (copy_from_user(pq_param, (void *)arg, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_SET_PQ_GAL_PARAM Copy from user failed\n");
 			return -EFAULT;
 		}
@@ -2478,7 +2458,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	case DISP_IOCTL_GET_PQ_GAL_PARAM:
 
 		pq_param = get_Color_Gal_config();
-		if (copy_to_user((void *)arg, pq_param, sizeof(DISP_PQ_PARAM))) {
+		if (copy_to_user((void *)arg, pq_param, sizeof(struct DISP_PQ_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_GET_PQ_GAL_PARAM Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2510,11 +2490,11 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 	case DISP_IOCTL_READ_REG:
 		{
-			DISP_READ_REG rParams;
+			struct DISP_READ_REG rParams;
 			unsigned long va;
 			unsigned int pa;
 
-			if (copy_from_user(&rParams, (void *)arg, sizeof(DISP_READ_REG))) {
+			if (copy_from_user(&rParams, (void *)arg, sizeof(struct DISP_READ_REG))) {
 				COLOR_ERR("DISP_IOCTL_READ_REG, copy_from_user failed\n");
 				return -EFAULT;
 			}
@@ -2532,7 +2512,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 			COLOR_NLOG("read pa:0x%x(va:0x%lx) = 0x%x (0x%x)\n", pa, va, rParams.val,
 				   rParams.mask);
 
-			if (copy_to_user((void *)arg, &rParams, sizeof(DISP_READ_REG))) {
+			if (copy_to_user((void *)arg, &rParams, sizeof(struct DISP_READ_REG))) {
 				COLOR_ERR("DISP_IOCTL_READ_REG, copy_to_user failed\n");
 				return -EFAULT;
 			}
@@ -2541,12 +2521,12 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 	case DISP_IOCTL_WRITE_REG:
 		{
-			DISP_WRITE_REG wParams;
+			struct DISP_WRITE_REG wParams;
 			unsigned int ret;
 			unsigned long va;
 			unsigned int pa;
 
-			if (copy_from_user(&wParams, (void *)arg, sizeof(DISP_WRITE_REG))) {
+			if (copy_from_user(&wParams, (void *)arg, sizeof(struct DISP_WRITE_REG))) {
 				COLOR_ERR("DISP_IOCTL_WRITE_REG, copy_from_user failed\n");
 				return -EFAULT;
 			}
@@ -2585,9 +2565,9 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 	case DISP_IOCTL_READ_SW_REG:
 		{
-			DISP_READ_REG rParams;
+			struct DISP_READ_REG rParams;
 
-			if (copy_from_user(&rParams, (void *)arg, sizeof(DISP_READ_REG))) {
+			if (copy_from_user(&rParams, (void *)arg, sizeof(struct DISP_READ_REG))) {
 				COLOR_ERR("DISP_IOCTL_READ_SW_REG, copy_from_user failed\n");
 				return -EFAULT;
 			}
@@ -2603,7 +2583,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 			COLOR_NLOG("read sw reg 0x%x = 0x%x\n", rParams.reg, rParams.val);
 
-			if (copy_to_user((void *)arg, &rParams, sizeof(DISP_READ_REG))) {
+			if (copy_to_user((void *)arg, &rParams, sizeof(struct DISP_READ_REG))) {
 				COLOR_ERR("DISP_IOCTL_READ_SW_REG, copy_to_user failed\n");
 				return -EFAULT;
 			}
@@ -2612,9 +2592,9 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 	case DISP_IOCTL_WRITE_SW_REG:
 		{
-			DISP_WRITE_REG wParams;
+			struct DISP_WRITE_REG wParams;
 
-			if (copy_from_user(&wParams, (void *)arg, sizeof(DISP_WRITE_REG))) {
+			if (copy_from_user(&wParams, (void *)arg, sizeof(struct DISP_WRITE_REG))) {
 				COLOR_ERR("DISP_IOCTL_WRITE_SW_REG, copy_from_user failed\n");
 				return -EFAULT;
 			}
@@ -2649,9 +2629,9 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 	case DISP_IOCTL_PQ_SET_WINDOW:
 		{
-			DISP_PQ_WIN_PARAM win_param;
+			struct DISP_PQ_WIN_PARAM win_param;
 
-			if (copy_from_user(&win_param, (void *)arg, sizeof(DISP_PQ_WIN_PARAM))) {
+			if (copy_from_user(&win_param, (void *)arg, sizeof(struct DISP_PQ_WIN_PARAM))) {
 				COLOR_ERR("DISP_IOCTL_PQ_SET_WINDOW Copy from user failed\n");
 				return -EFAULT;
 			}
@@ -2681,7 +2661,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 
 	case DISP_IOCTL_PQ_GET_DC_PARAM:
-		if (copy_to_user((void *)arg, &g_PQ_DC_Param, sizeof(DISP_PQ_DC_PARAM))) {
+		if (copy_to_user((void *)arg, &g_PQ_DC_Param, sizeof(struct DISP_PQ_DC_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_PQ_GET_DC_PARAM Copy to user failed\n");
 			return -EFAULT;
 		}
@@ -2689,7 +2669,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		break;
 
 	case DISP_IOCTL_PQ_SET_DC_PARAM:
-		if (copy_from_user(&g_PQ_DC_Param, (void *)arg, sizeof(DISP_PQ_DC_PARAM))) {
+		if (copy_from_user(&g_PQ_DC_Param, (void *)arg, sizeof(struct DISP_PQ_DC_PARAM))) {
 			COLOR_ERR("DISP_IOCTL_PQ_SET_DC_PARAM Copy from user failed\n");
 			return -EFAULT;
 		}
@@ -2697,7 +2677,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		break;
 
 	case DISP_IOCTL_PQ_GET_DS_PARAM:
-			if (copy_to_user((void *)arg, &g_PQ_DS_Param, sizeof(DISP_PQ_DS_PARAM))) {
+			if (copy_to_user((void *)arg, &g_PQ_DS_Param, sizeof(struct DISP_PQ_DS_PARAM))) {
 				COLOR_ERR("DISP_IOCTL_PQ_GET_DS_PARAM Copy to user failed\n");
 				return -EFAULT;
 			}
@@ -2705,7 +2685,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 		break;
 
 	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
-			if (copy_to_user((void *)arg, &g_tdshp_reg, sizeof(MDP_TDSHP_REG))) {
+			if (copy_to_user((void *)arg, &g_tdshp_reg, sizeof(struct MDP_TDSHP_REG))) {
 				COLOR_ERR("DISP_IOCTL_PQ_GET_MDP_TDSHP_REG Copy to user failed\n");
 				return -EFAULT;
 			}
@@ -2714,7 +2694,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 
 #ifdef DISP_MDP_COLOR_ON
 	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
-			if (copy_to_user((void *)arg, &mdp_color_cap, sizeof(MDP_COLOR_CAP))) {
+			if (copy_to_user((void *)arg, &mdp_color_cap, sizeof(struct MDP_COLOR_CAP))) {
 				COLOR_ERR("DISP_IOCTL_PQ_GET_MDP_COLOR_CAP Copy to user failed\n");
 				return -EFAULT;
 			}
@@ -2732,7 +2712,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 }
 
 #ifdef CONFIG_FOR_SOURCE_PQ
-void set_color_bypass(DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
+void set_color_bypass(enum DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
 {
 	int offset = C0_OFFSET;
 
@@ -2770,7 +2750,7 @@ void set_color_bypass(DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
 }
 #endif
 
-static int _color_bypass(DISP_MODULE_ENUM module, int bypass)
+static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int offset = C0_OFFSET;
 
@@ -2811,7 +2791,7 @@ static int _color_bypass(DISP_MODULE_ENUM module, int bypass)
 	return 0;
 }
 
-static int _color_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
+static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum CMDQ_STATE state)
 {
 	int ret = 0;
 
@@ -2841,7 +2821,7 @@ static int _color_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 	return ret;
 }
 
-DDP_MODULE_DRIVER ddp_driver_color = {
+struct DDP_MODULE_DRIVER ddp_driver_color = {
 	.init = _color_init,
 	.deinit = _color_deinit,
 	.config = _color_config,

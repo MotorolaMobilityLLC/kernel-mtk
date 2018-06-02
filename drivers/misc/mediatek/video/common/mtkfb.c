@@ -151,7 +151,7 @@ bool fblayer_dither_needed;
 bool is_ipoh_bootup;
 struct fb_info *mtkfb_fbi;
 struct fb_overlay_layer fb_layer_context;
-mtk_dispif_info_t dispif_info[MTKFB_MAX_DISPLAY_COUNT];
+struct mtk_dispif_info dispif_info[MTKFB_MAX_DISPLAY_COUNT];
 
 /**
  * This mutex is used to prevent tearing due to page flipping when adbd is
@@ -383,7 +383,7 @@ static int mtkfb_set_par(struct fb_info *fbi);
 
 static bool no_update;
 
-static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_input_config *dst)
+static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, struct disp_input_config *dst)
 {
 	dst->layer_id = src->layer_id;
 
@@ -497,8 +497,8 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	int ret = 0;
 	unsigned int src_pitch = 0;
 	static unsigned int pan_display_cnt;
-	disp_session_input_config session_input;
-	disp_input_config *input;
+	struct disp_session_input_config session_input;
+	struct disp_input_config *input;
 
 	/* DISPFUNC(); */
 
@@ -766,8 +766,8 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	struct mtkfb_device *fbdev = (struct mtkfb_device *)fbi->par;
 	struct fb_overlay_layer fb_layer;
 	u32 bpp = var->bits_per_pixel;
-	disp_session_input_config session_input;
-	disp_input_config *input;
+	struct disp_session_input_config session_input;
+	struct disp_input_config *input;
 
 	/* DISPFUNC(); */
 	memset(&fb_layer, 0, sizeof(struct fb_overlay_layer));
@@ -864,7 +864,7 @@ static int mtkfb_soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 static int mtkfb_get_overlay_layer_info(struct fb_overlay_layer_info *layerInfo)
 {
 #if 0
-	DISP_LAYER_INFO layer;
+	struct DISP_LAYER_INFO layer;
 
 	if (layerInfo->layer_id >= DDP_OVL_LAYER_MUN)
 		return 0;
@@ -958,11 +958,11 @@ void mtkfb_dump_layer_info(void)
 #endif
 }
 
-static disp_session_input_config session_input;
+static struct disp_session_input_config session_input;
 static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
-	DISP_STATUS ret = 0;
+	enum DISP_STATUS ret = 0;
 	int r = 0;
 
 	DISPFUNC();
@@ -1005,7 +1005,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				displayid);
 		}
 
-		if (copy_to_user((void __user *)arg, &(dispif_info[displayid]), sizeof(mtk_dispif_info_t))) {
+		if (copy_to_user((void __user *)arg, &(dispif_info[displayid]), sizeof(struct mtk_dispif_info))) {
 			MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 			r = -EFAULT;
 		}
@@ -1189,7 +1189,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 			r = -EFAULT;
 		} else {
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			memset((void *)&session_input, 0, sizeof(session_input));
 			if (layerInfo.layer_id >= TOTAL_OVL_LAYER_NUM) {
@@ -1248,7 +1248,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		} else {
 			int32_t i;
 			/* mutex_lock(&OverlaySettingMutex); */
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			memset((void *)&session_input, 0, sizeof(session_input));
 
@@ -1519,7 +1519,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				  __LINE__);
 			ret = -EFAULT;
 		} else {
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			compat_convert(&compat_layerInfo, &layerInfo);
 
@@ -1556,7 +1556,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 		} else {
 			int32_t i;
 			/* mutex_lock(&OverlaySettingMutex); */
-			disp_input_config *input;
+			struct disp_input_config *input;
 
 			memset((void *)&session_input, 0, sizeof(session_input));
 
@@ -1688,7 +1688,10 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	/*DISPFUNC(); */
 
-	WARN_ON(!fbdev->fb_va_base);
+	if (!fbdev->fb_va_base) {
+		DISPERR("init fb info fail\n");
+		return -1;
+	}
 	info->fbops = &mtkfb_ops;
 	info->flags = FBINFO_FLAG_DEFAULT;
 	info->screen_base = (char *)fbdev->fb_va_base;
@@ -1815,7 +1818,8 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* nothing to free */
 		break;
 	default:
-		WARN_ON();
+		DISPERR("free resources fail, state=%d\n", state);
+		ASSERT(0);
 	}
 }
 
@@ -2555,7 +2559,11 @@ int mtkfb_pm_suspend(struct device *device)
 	/* pr_debug("calling %s()\n", __func__); */
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	if (pdev == NULL) {
+		DISPERR("pm suspend fail\n");
+		ASSERT(0);
+		return -1;
+	}
 
 	return mtkfb_suspend((struct device *)pdev, PMSG_SUSPEND);
 }
@@ -2565,7 +2573,13 @@ int mtkfb_pm_resume(struct device *device)
 	/* pr_debug("calling %s()\n", __func__); */
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	if (pdev == NULL) {
+
+		DISPERR("pm suspend fail\n");
+		ASSERT(0);
+		return -1;
+	}
+
 
 	return mtkfb_resume((struct device *)pdev);
 }

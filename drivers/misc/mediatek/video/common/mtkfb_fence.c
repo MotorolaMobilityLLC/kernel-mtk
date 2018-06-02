@@ -62,8 +62,8 @@ void mtkfb_fence_log_enable(bool enable)
 	do {							\
 		if (expr)					\
 			break;					\
-		pr_debug("FENCE ASSERT FAILED %s, %d\n",	\
-				__FILE__, __LINE__); WARN_ON(1);	\
+		pr_debug("FENCE ASSERT FAILED %s, %d\n", __FILE__, __LINE__);\
+		aee_kernel_exception("fence", "[FENCE]error:", __FILE__, __LINE__);\
 	} while (0)
 #endif
 
@@ -82,7 +82,7 @@ static LIST_HEAD(info_pool_head);
 static DEFINE_MUTEX(_disp_fence_mutex);
 static DEFINE_MUTEX(fence_buffer_mutex);
 
-disp_session_sync_info _disp_fence_context[MAX_SESSION_COUNT];
+struct disp_session_sync_info _disp_fence_context[MAX_SESSION_COUNT];
 
 #if 0 /* defined but not used */
 static const char *session_mode_spy(unsigned int mode)
@@ -102,12 +102,12 @@ static const char *session_mode_spy(unsigned int mode)
 }
 #endif
 
-static disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
+static struct disp_session_sync_info *_get_session_sync_info(unsigned int session_id)
 {
 	int i = 0;
 	int j = 0;
-	disp_session_sync_info *session_info = NULL;
-	disp_sync_info *layer_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 	char name[32];
 	const char *prefix = "timeline";
 
@@ -241,16 +241,16 @@ done:
 	return session_info;
 }
 
-disp_session_sync_info *disp_get_session_sync_info_for_debug(unsigned int session_id)
+struct disp_session_sync_info *disp_get_session_sync_info_for_debug(unsigned int session_id)
 {
 	return _get_session_sync_info(session_id);
 }
 
-disp_sync_info *_get_sync_info(unsigned int session_id, unsigned int timeline_id)
+struct disp_sync_info *_get_sync_info(unsigned int session_id, unsigned int timeline_id)
 {
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
-	disp_session_sync_info *session_info = _get_session_sync_info(session_id);
+	struct disp_session_sync_info *session_info = _get_session_sync_info(session_id);
 
 	mutex_lock(&_disp_fence_mutex);
 	if (session_info) {
@@ -400,7 +400,7 @@ unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id,
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int mva = 0x0;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, layer_id);
 
@@ -446,8 +446,8 @@ unsigned int mtkfb_query_buf_va(unsigned int session_id, unsigned int layer_id, 
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int va = 0x0;
-	disp_session_sync_info *session_info;
-	disp_sync_info *layer_info;
+	struct disp_session_sync_info *session_info;
+	struct disp_sync_info *layer_info;
 
 	ASSERT(layer_id < DISP_SESSION_TIMELINE_COUNT);
 
@@ -484,8 +484,8 @@ unsigned int mtkfb_query_release_idx(unsigned int session_id, unsigned int layer
 	struct mtkfb_fence_buf_info *buf = NULL;
 	struct mtkfb_fence_buf_info *pre_buf = NULL;
 	unsigned int idx = 0x0;
-	disp_session_sync_info *session_info = _get_session_sync_info(session_id);
-	disp_sync_info *layer_info = &(session_info->session_layer_info[layer_id]);
+	struct disp_session_sync_info *session_info = _get_session_sync_info(session_id);
+	struct disp_sync_info *layer_info = &(session_info->session_layer_info[layer_id]);
 
 	if (layer_id != layer_info->layer_id) {
 		MTKFB_FENCE_ERR("wrong layer id %d(rt), %d(in)!\n", layer_info->layer_id, layer_id);
@@ -533,8 +533,8 @@ unsigned int mtkfb_update_buf_ticket(unsigned int session_id, unsigned int layer
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int mva = 0x0;
-	disp_session_sync_info *session_info;
-	disp_sync_info *layer_info;
+	struct disp_session_sync_info *session_info;
+	struct disp_sync_info *layer_info;
 
 	/* ASSERT(layer_id < HW_OVERLAY_COUNT); */
 	if (layer_id >= DISP_SESSION_TIMELINE_COUNT) {
@@ -571,8 +571,8 @@ unsigned int mtkfb_query_idx_by_ticket(unsigned int session_id, unsigned int lay
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
 	int idx = -1;
-	disp_session_sync_info *session_info = _get_session_sync_info(session_id);
-	disp_sync_info *layer_info = &(session_info->session_layer_info[layer_id]);
+	struct disp_session_sync_info *session_info = _get_session_sync_info(session_id);
+	struct disp_sync_info *layer_info = &(session_info->session_layer_info[layer_id]);
 
 	if (layer_id != layer_info->layer_id) {
 		DISPERR("wrong layer id %d(rt), %d(in)!\n", layer_info->layer_id, layer_id);
@@ -593,11 +593,11 @@ unsigned int mtkfb_query_idx_by_ticket(unsigned int session_id, unsigned int lay
 	return idx;
 }
 
-bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset, disp_input_config *buf_info)
+bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset, struct disp_input_config *buf_info)
 {
 	struct mtkfb_fence_buf_info *buf;
-	disp_session_sync_info *session_info;
-	disp_sync_info *layer_info;
+	struct disp_session_sync_info *session_info;
+	struct disp_sync_info *layer_info;
 	unsigned int mva = 0x0;
 
 	if (buf_info->layer_id >= DISP_SESSION_TIMELINE_COUNT) {
@@ -632,8 +632,8 @@ unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id
 		int query_type)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
-	disp_session_sync_info *session_info;
-	disp_sync_info *layer_info;
+	struct disp_session_sync_info *session_info;
+	struct disp_sync_info *layer_info;
 	int query_info = 0;
 
 	session_info = _get_session_sync_info(session_id);
@@ -666,7 +666,7 @@ bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsig
 {
 	struct mtkfb_fence_buf_info *buf;
 	bool ret = false;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, layer_id);
 
@@ -698,8 +698,8 @@ unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int l
 {
 	struct mtkfb_fence_buf_info *buf;
 	unsigned int frm_seq = 0x0;
-	disp_session_sync_info *session_info;
-	disp_sync_info *layer_info;
+	struct disp_session_sync_info *session_info;
+	struct disp_sync_info *layer_info;
 
 	if (session_id <= 0)
 		return 0;
@@ -735,7 +735,7 @@ unsigned int mtkfb_query_frm_seq_by_addr(unsigned int session_id, unsigned int l
 int disp_sync_init(void)
 {
 	int i = 0;
-	disp_session_sync_info *session_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
 
 	memset((void *)&_disp_fence_context, 0, sizeof(_disp_fence_context));
 	/* for (i = 0; i < ARRAY_SIZE(_disp_fence_context) / sizeof(_disp_fence_context[0]); i++) { */
@@ -805,8 +805,8 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 	int num_fence = 0;
 	int current_timeline_idx = 0;
 	int ion_release_count = 0;
-	disp_sync_info *layer_info = NULL;
-	disp_session_sync_info *session_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
 
 	session_info = _get_session_sync_info(session_id);
 	layer_info = _get_sync_info(session_id, layer_id);
@@ -885,7 +885,7 @@ void mtkfb_release_fence(unsigned int session_id, unsigned int layer_id, int fen
 
 void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id)
 {
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 	int fence = 0;
 
 	layer_info = _get_sync_info(session_id, layer_id);
@@ -906,7 +906,7 @@ void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id)
 
 void mtkfb_release_session_fence(unsigned int session_id)
 {
-	disp_session_sync_info *session_sync_info = NULL;
+	struct disp_session_sync_info *session_sync_info = NULL;
 	int i;
 
 	session_sync_info = _get_session_sync_info(session_id);
@@ -943,7 +943,7 @@ int disp_sync_get_cached_layer_info(unsigned int session_id, unsigned int timeli
 				    unsigned int *fence_idx)
 {
 	int ret = -1;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, timeline_idx);
 
@@ -972,10 +972,10 @@ done:
 }
 
 int disp_sync_put_cached_layer_info(unsigned int session_id, unsigned int timeline_idx,
-				    disp_input_config *src, unsigned long mva)
+				    struct disp_input_config *src, unsigned long mva)
 {
 	int ret = -1;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, timeline_idx);
 
@@ -1003,7 +1003,7 @@ done:
 
 }
 
-int disp_sync_convert_input_to_fence_layer_info(disp_input_config *src, FENCE_LAYER_INFO *dst,
+int disp_sync_convert_input_to_fence_layer_info(struct disp_input_config *src, struct FENCE_LAYER_INFO *dst,
 						unsigned long dst_mva)
 {
 	if (src && dst) {
@@ -1023,12 +1023,12 @@ int disp_sync_convert_input_to_fence_layer_info(disp_input_config *src, FENCE_LA
 	}
 }
 
-static int disp_sync_convert_input_to_fence_layer_info_v2(FENCE_LAYER_INFO *dst, unsigned int timeline_idx,
+static int disp_sync_convert_input_to_fence_layer_info_v2(struct FENCE_LAYER_INFO *dst, unsigned int timeline_idx,
 			unsigned int fence_id, int layer_en, unsigned long mva)
 {
 	if (!dst) {
 		pr_err("%s error!\n", __func__);
-		WARN_ON(1);
+		return -1;
 	}
 
 	dst->layer = timeline_idx;
@@ -1047,7 +1047,7 @@ int disp_sync_put_cached_layer_info_v2(unsigned int session_id, unsigned int tim
 			unsigned int fence_id, int layer_en, unsigned long mva)
 {
 	/* int ret = -1; */
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, timeline_idx);
 
@@ -1067,7 +1067,7 @@ int disp_sync_put_cached_layer_info_v2(unsigned int session_id, unsigned int tim
 }
 
 
-static int prepare_ion_buf(disp_buffer_info *buf, struct mtkfb_fence_buf_info *buf_info)
+static int prepare_ion_buf(struct disp_buffer_info *buf, struct mtkfb_fence_buf_info *buf_info)
 {
 	unsigned int mva = 0x0;
 	struct ion_handle *handle = NULL;
@@ -1095,15 +1095,15 @@ static int prepare_ion_buf(disp_buffer_info *buf, struct mtkfb_fence_buf_info *b
  * @buf struct @fb_overlay_buffer
  * @return struct @mtkfb_fence_buf_info
  */
-struct mtkfb_fence_buf_info *disp_sync_prepare_buf(disp_buffer_info *buf)
+struct mtkfb_fence_buf_info *disp_sync_prepare_buf(struct disp_buffer_info *buf)
 {
 	int ret = 0;
 	unsigned int session_id = 0;
 	unsigned int timeline_id = 0;
 	struct mtkfb_fence_buf_info *buf_info = NULL;
 	struct fence_data data;
-	disp_sync_info *layer_info = NULL;
-	disp_session_sync_info *session_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
 
 	if (buf == NULL) {
 		DISPERR("Prepare Buffer, buf is NULL!!\n");
@@ -1174,8 +1174,8 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 	unsigned int layer_en = 0;
 	unsigned long addr = 0;
 	unsigned int fence_idx = -1;
-	disp_sync_info *layer_info = NULL;
-	disp_session_sync_info *session_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
 
 	session_info = _get_session_sync_info(session_id);
 	layer_info = _get_sync_info(session_id, timeline_id);
@@ -1238,7 +1238,7 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 				      unsigned int idx)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 	int found = 0;
 
 	layer_info = _get_sync_info(session_id, timeline_id);
@@ -1276,7 +1276,7 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 	struct mtkfb_fence_buf_info *buf = NULL;
 	unsigned long dst_mva = 0;
 	uint32_t dst_size = 0;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	layer_info = _get_sync_info(session_id, timeline_id);
 	if (layer_info == NULL || mva == NULL || size == NULL) {
@@ -1339,9 +1339,9 @@ int disp_sync_get_debug_info(char *stringbuf, int buf_len)
 	int len = 0;
 	int i = 0;
 	int layer_id = 0;
-	disp_session_sync_info *session_info = NULL;
+	struct disp_session_sync_info *session_info = NULL;
 	unsigned int session_id = 0;
-	disp_sync_info *layer_info = NULL;
+	struct disp_sync_info *layer_info = NULL;
 
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|----------------------------------------------------------------------------------|\n");
