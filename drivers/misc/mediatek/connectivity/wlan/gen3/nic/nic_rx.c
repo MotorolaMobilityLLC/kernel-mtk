@@ -2408,6 +2408,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 					if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
 #if ARP_MONITER_ENABLE
 						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+						qmHandleRxDhcpPackets(prAdapter, prRetSwRfb);
 #endif
 						u4LastRxPacketTime = kalGetTimeTick();
 					}
