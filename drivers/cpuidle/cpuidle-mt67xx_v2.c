@@ -18,7 +18,8 @@
 
 #include "dt_idle_states.h"
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) \
+	|| defined(CONFIG_MACH_KIBOPLUS)
 #define USING_TICK_BROADCAST
 #endif
 

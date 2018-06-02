@@ -64,7 +64,7 @@
 
 #define FEATURE_ENABLE_SODI2P5
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define USING_STD_TIMER_OPS
 #endif
 
@@ -364,7 +364,7 @@ int __attribute__((weak)) is_teei_ready(void)
 	return 1;
 }
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 int __attribute__((weak)) gpt_check_and_ack_irq(unsigned int id)
 {
 	return 0;
@@ -457,7 +457,7 @@ static bool             soidle3_by_pass_en;
 static bool             soidle3_by_pass_pwm;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_3P0;
 static int              sodi3_by_uptime_count;
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static bool             sodi3_chk_dis_pwr;
 #endif
 /* SODI */
@@ -644,7 +644,7 @@ static bool mtk_idle_cpu_criteria(void)
 
 	return ((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4)) ? true : false;
 }
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static bool mtk_idle_cpu_criteria(void)
 {
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
@@ -736,7 +736,7 @@ bool soidle3_can_enter(int cpu)
 		}
 	}
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (sodi3_chk_dis_pwr) {
 		if ((idle_readl(SPM_PWR_STATUS) & DIS_PWR_STA_MASK)) {
 			reason = BY_CLK;
@@ -1921,7 +1921,7 @@ EXPORT_SYMBOL(dpidle_enter);
 
 static inline void soidle3_update_flags(void)
 {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (univpll_is_off() && is_auxadc_released())
 		slp_spm_SODI3_flags &= ~SPM_FLAG_DIS_SRCCLKEN_LOW;
 	else
@@ -2495,7 +2495,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_bypass_en=%u\n", soidle3_by_pass_en);
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_bypass_pwm=%u\n", soidle3_by_pass_pwm);
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi3_flags=0x%x\n", sodi3_flags);
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi3_chk_dis_pwr=%d\n", sodi3_chk_dis_pwr);
 #endif
 
@@ -2569,7 +2569,7 @@ static ssize_t soidle3_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "sodi3_flags")) {
 			sodi3_flags = param;
 			idle_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 		} else if (!strcmp(cmd, "chk_dis_pwr")) {
 			sodi3_chk_dis_pwr = param;
 			idle_dbg("sodi3_chk_dis_pwr = %d\n", sodi3_chk_dis_pwr);
@@ -2849,7 +2849,7 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* TBD */
 #elif defined(CONFIG_ARCH_MT6797)
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));

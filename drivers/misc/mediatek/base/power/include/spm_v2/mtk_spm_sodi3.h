@@ -117,7 +117,7 @@
 
 #define WAKE_SRC_FOR_MD32  0
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SODI3 \

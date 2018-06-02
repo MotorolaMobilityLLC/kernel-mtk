@@ -86,7 +86,7 @@ unsigned int __attribute__((weak)) pmic_read_interface_nolock(unsigned int RegNu
 	return -1;
 }
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static struct pwr_ctrl sodi_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_SODI,
 	.wake_src_md32		= WAKE_SRC_FOR_MD32,
@@ -302,7 +302,7 @@ struct spm_lp_scen __spm_sodi = {
 
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static bool gSpm_lcm_vdo_mode;
 #endif
 
@@ -313,7 +313,7 @@ static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
 #if defined(CONFIG_ARCH_MT6755)
 static int by_ccif1_count;
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static unsigned int last_r12;
 
 #define IS_NOT_FREQUENT_EVENT(evt, curr)	((evt != last_r12) || \
@@ -326,7 +326,7 @@ void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 	u32 v0, v1;
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-#if defined(CONFIG_MACH_MT6757) && defined(SODI_VSRAM_VPROC_SHUTDOWN)
+#if (defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)) && defined(SODI_VSRAM_VPROC_SHUTDOWN)
 		mt_cpu_dormant(CPU_SHUTDOWN_MODE);
 #else
 		mt_cpu_dormant(CPU_SODI_MODE);
@@ -383,7 +383,7 @@ static void spm_sodi_pre_process(void)
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #ifdef SODI_VSRAM_VPROC_SHUTDOWN
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
@@ -482,7 +482,7 @@ static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_
 			by_ccif1_count++;
 		}
 	}
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (IS_NOT_IGNORE_EVENT(wakesta->r12) && IS_NOT_FREQUENT_EVENT(wakesta->r12, curr_time))
 		logout = true;
 #endif
@@ -508,7 +508,7 @@ static inline bool spm_sodi_last_logout(long int curr_time)
 
 void spm_sodi_dvfs_status(u32 sodi_flags)
 {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	u32 HPM2LPM = spm_read(SPM_SW_RSV_10);
 	u32 LPM2HPM = spm_read(SPM_SW_RSV_9);
 
@@ -568,7 +568,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 
 		if (need_log_out != SODI_LOGOUT_NONE) {
 			sodi_logout_prev_time = sodi_logout_curr_time;
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 			last_r12 = wakesta->r12;
 #endif
 
@@ -779,14 +779,14 @@ UNLOCK_SPM:
 
 void spm_sodi_set_vdo_mode(bool vdo_mode)
 {
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	gSpm_lcm_vdo_mode = vdo_mode;
 #endif
 }
 
 bool spm_get_cmd_mode(void)
 {
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	return !gSpm_lcm_vdo_mode;
 #else
 	return true;
