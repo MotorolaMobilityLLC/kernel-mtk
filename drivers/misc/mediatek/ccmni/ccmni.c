@@ -44,10 +44,10 @@
 #include <linux/sockios.h>
 #include <linux/device.h>
 #include <linux/debugfs.h>
+#include <linux/preempt.h>
 #include "ccmni.h"
 #include "ccci_debug.h"
 
-#define ENABLE_GRO
 #define IS_CCMNI_LAN(dev)    (strncmp(dev->name, "ccmni-lan", 9) == 0)
 
 ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
@@ -577,6 +577,10 @@ static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni, struct net
 		ccmni->timer->data = (unsigned long)ccmni;
 		netif_napi_add(dev, ccmni->napi, ccmni_napi_poll, ctlb->ccci_ops->napi_poll_weigh);
 	}
+#ifdef ENABLE_WQ_GRO
+	if (dev)
+		netif_napi_add(dev, ccmni->napi, ccmni_napi_poll, ctlb->ccci_ops->napi_poll_weigh);
+#endif
 
 	atomic_set(&ccmni->usage, 0);
 	spin_lock_init(&ccmni->spinlock);
@@ -651,15 +655,27 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 				dev->features |= NETIF_F_SG;
 				dev->hw_features |= NETIF_F_SG;
 			}
-#ifdef ENABLE_GRO
 			if (ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI) {
+#ifdef ENABLE_NAPI_GRO
 				dev->features |= NETIF_F_GRO;
 				dev->hw_features |= NETIF_F_GRO;
-			}
+#else
+				/*
+				 * check gro_list_prepare, GRO needs hard_header_len == ETH_HLEN.
+				 * CCCI header can use ethernet header and padding bytes' region.
+				 */
+				dev->hard_header_len += sizeof(struct ccci_header);
 #endif
+			} else {
+#ifdef ENABLE_WQ_GRO
+				dev->features |= NETIF_F_GRO;
+				dev->hw_features |= NETIF_F_GRO;
+#else
+				dev->hard_header_len += sizeof(struct ccci_header);
+#endif
+			}
 			dev->addr_len = ETH_ALEN; /* ethernet header size */
 			dev->destructor = free_netdev;
-			dev->hard_header_len += sizeof(struct ccci_header); /* reserve Tx CCCI header room */
 			dev->netdev_ops = &ccmni_netdev_ops;
 			random_ether_addr((u8 *) dev->dev_addr);
 
@@ -860,18 +876,25 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	ctlb->net_rx_delay[0] = dev->stats.rx_bytes + skb_len;
 	ctlb->net_rx_delay[1] = dev->stats.tx_bytes;
 #endif
-
 	if (likely(ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
-#ifdef ENABLE_GRO
+#ifdef ENABLE_NAPI_GRO
 		napi_gro_receive(ccmni->napi, skb);
 #else
 		netif_receive_skb(skb);
 #endif
 	} else {
+#ifdef ENABLE_WQ_GRO
+		spin_lock(&ccmni->spinlock);
+		preempt_disable();
+		napi_gro_receive(ccmni->napi, skb);
+		preempt_enable();
+		spin_unlock(&ccmni->spinlock);
+#else
 		if (!in_interrupt())
 			netif_rx_ni(skb);
 		else
 			netif_rx(skb);
+#endif
 	}
 	dev->stats.rx_packets++;
 	dev->stats.rx_bytes += skb_len;
@@ -894,7 +917,9 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	ccmni = ctlb->ccmni_inst[ccmni_idx];
 
-	if ((state != TX_IRQ) && (state != TX_FULL) && (atomic_read(&ccmni->usage) > 0)) {
+	if ((state != RX_IRQ) && (state != RX_FLUSH) &&
+		(state != TX_IRQ) && (state != TX_FULL) &&
+		(atomic_read(&ccmni->usage) > 0)) {
 		CCMNI_INF_MSG(md_id, "md_state_cb: CCMNI%d, md_sta=%d, usage=%d\n",
 			ccmni_idx, state, atomic_read(&ccmni->usage));
 	}
@@ -917,6 +942,15 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		napi_schedule(ccmni->napi);
 		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 		break;
+#ifdef ENABLE_WQ_GRO
+	case RX_FLUSH:
+		spin_lock(&ccmni->spinlock);
+		preempt_disable();
+		napi_gro_flush(ccmni->napi, false);
+		preempt_enable();
+		spin_unlock(&ccmni->spinlock);
+		break;
+#endif
 
 	case TX_IRQ:
 		if (netif_running(ccmni->dev) && atomic_read(&ccmni->usage) > 0) {

@@ -619,6 +619,8 @@ static void ccif_rx_work(struct work_struct *work)
 	if (ret == -EAGAIN) {
 		CCCI_DEBUG_LOG(queue->modem->index, TAG, "Q%u queue again\n", queue->index);
 		queue_work(queue->worker, &queue->qwork);
+	} else {
+		ccci_md_status_notice(queue->modem, IN, -1, queue->index, RX_FLUSH);
 	}
 }
 int md_ccif_op_is_epon_set(struct ccci_modem *md)
@@ -827,6 +829,7 @@ static int md_ccif_op_broadcast_state(struct ccci_modem *md, MD_STATE state)
 	/*only for thoes states which are updated by port_kernel.c */
 	switch (state) {
 	case RX_IRQ:
+	case RX_FLUSH:
 		CCCI_ERROR_LOG(md->index, TAG, "%ps broadcast RX_IRQ to ports!\n",
 			     __builtin_return_address(0));
 		return 0;
