@@ -512,5 +512,6 @@ config AXP20X_POWER
 	  AXP20x PMIC.
 
 source "drivers/power/supply/mediatek/battery/Kconfig"
+source "drivers/power/supply/mediatek/charger/Kconfig"
 
 endif # POWER_SUPPLY
