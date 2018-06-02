@@ -42,6 +42,7 @@ obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-y += sspm/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_SMI_EXT)	+= smi/
