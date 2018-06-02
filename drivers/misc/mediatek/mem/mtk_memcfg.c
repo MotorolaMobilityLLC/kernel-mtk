@@ -664,14 +664,6 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 			"orig_dram_info", NULL);
 	if (dram_info) {
 		for (i = 0; i < dram_info->rank_num; i++) {
-			MTK_MEMCFG_LOG_AND_PRINTK(
-				"[debug]orig_dram rank[%d]   :   0x%08llx - 0x%08llx (0x%llx)\n",
-				i,
-				dram_info->rank_info[i].start,
-				dram_info->rank_info[i].start +
-				dram_info->rank_info[i].size - 1,
-				dram_info->rank_info[i].size
-				);
 			phone_dram_sz += dram_info->rank_info[i].size;
 		}
 	}
@@ -681,15 +673,6 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 			"mblock_info", NULL);
 	if (mblock_info) {
 		for (i = 0; i < mblock_info->mblock_num; i++) {
-			MTK_MEMCFG_LOG_AND_PRINTK(
-				"[debug]mblock[%d][r%d]  :   0x%08llx - 0x%08llx (0x%llx)\n",
-				i,
-				mblock_info->mblock[i].rank,
-				mblock_info->mblock[i].start,
-				mblock_info->mblock[i].start +
-				mblock_info->mblock[i].size - 1,
-				mblock_info->mblock[i].size
-				);
 			dram_sz += mblock_info->mblock[i].size;
 		}
 	}
