@@ -31,18 +31,8 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 
-#ifdef CONFIG_MACH_MT6755
-#include "../misc/mediatek/base/power/mt6755/mt_cpufreq.h"
-#define CPUDVFS_POWER_MODE
-#endif
-
 #ifdef CONFIG_MACH_MT6757
 #include "../misc/mediatek/base/power/mt6757/mtk_cpufreq.h"
-#define CPUDVFS_POWER_MODE
-#endif
-
-#ifdef CONFIG_MACH_MT6797
-#include "../misc/mediatek/base/power/mt6797/mt_cpufreq.h"
 #define CPUDVFS_POWER_MODE
 #endif
 
@@ -370,13 +360,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 #ifdef CPUDVFS_POWER_MODE
 	/* default(normal), low power, just make, performance(sports) */
-#if defined(CONFIG_MACH_MT6755)
-	int freq_idx[4] = { 2, 6, 4, 0 };
-#elif defined(CONFIG_MACH_MT6797)
-	int freq_idx[4] = { 7, 11, 8, 0 };
-#endif
-	int ppb_idx;
 	int min_sample_t[4] = { 80, 20, 20, 80 };
+	int ppb_idx;
 #endif
 
 	if (!down_read_trylock(&pcpu->enable_sem))
@@ -402,23 +387,10 @@ static void cpufreq_interactive_timer(unsigned long data)
 #ifdef CPUDVFS_POWER_MODE
 	ppb_idx = mt_cpufreq_get_ppb_state();
 
-#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797)
-	/* Not to modify if L in default mode */
-	if (ppb_idx == 0 && arch_get_cluster_id(pcpu->policy->cpu) >= 1
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
-	    && !mt_cpufreq_get_chip_id_38()
-#endif
-	) {
-		tunables->hispeed_freq = pcpu->freq_table[0].frequency;
-		tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
-	} else {
-		tunables->hispeed_freq = pcpu->freq_table[freq_idx[ppb_idx]].frequency;
-#else
 	{
 		unsigned int idx = mt_cpufreq_ppb_hispeed_freq(data, ppb_idx);
 
 		tunables->hispeed_freq = pcpu->freq_table[idx].frequency;
-#endif
 		tunables->min_sample_time = min_sample_t[ppb_idx] * USEC_PER_MSEC;
 
 		if (hispeed_freq_perf != 0)
