@@ -69,3 +69,12 @@ SCHED_FEAT(RT_RUNTIME_SHARE, false)
 SCHED_FEAT(LB_MIN, false)
 SCHED_FEAT(ATTACH_AGE_LOAD, true)
 
+/*
+ * HMP scheduling. Use dynamic threshold depends on system load and
+ * CPU capacity to make schedule decisions.
+ */
+#ifdef CONFIG_SCHED_HMP
+SCHED_FEAT(SCHED_HMP, true)
+#else
+SCHED_FEAT(SCHED_HMP, false)
+#endif
