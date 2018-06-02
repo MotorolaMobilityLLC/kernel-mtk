@@ -155,7 +155,7 @@ extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
 	unsigned int val,
 	unsigned int MASK,
 	unsigned int SHIFT);
-#ifndef CONFIG_MACH_MT8167
+#ifdef CONFIG_MTK_PMIC_COMMON
 extern unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname,
 					      unsigned int val);
 extern unsigned short pmic_get_register_value(PMU_FLAGS_LIST_ENUM flagname);
@@ -199,22 +199,9 @@ extern int dlpt_check_power_off(void);
 extern unsigned int pmic_read_vbif28_volt(unsigned int *val);
 extern unsigned int pmic_get_vbif28_volt(void);
 extern void pmic_auxadc_debug(int index);
-#ifndef CONFIG_MACH_MT8167
-#ifndef CONFIG_MTK_PMIC_NEW_ARCH
-extern void pmic_auxadc_init(void);
-extern signed int PMIC_IMM_GetCurrent(void);
-extern unsigned int PMIC_IMM_GetOneChannelValue(
-					pmic_adc_ch_list_enum dwChannel,
-					int deCount,
-					int trimd);
-extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
-extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
-#endif
-#else
 extern int PMIC_IMM_GetOneChannelValue(unsigned int dwChannel,
 				       int deCount,
 				       int trimd);
-#endif
 
 extern int get_battery_plug_out_status(void);
 
