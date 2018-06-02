@@ -65,9 +65,7 @@
 #include <mtk_hps_internal.h>
 #endif
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 #include <mtk_mcdi_api.h>
-#endif
 
 /**************************************
  * only for internal debug
@@ -705,9 +703,7 @@ enum wk_reason spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	u32 cpu = 0;
 	int ch;
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(true);
-#endif
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
@@ -846,9 +842,7 @@ defined(CONFIG_MTK_PSCI) || defined(CONFIG_MTK_HW_FDE)
 #endif
 	spm_suspend_footprint(0);
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(false);
-#endif
 
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();

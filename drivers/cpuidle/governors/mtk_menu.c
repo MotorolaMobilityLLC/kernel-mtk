@@ -47,6 +47,10 @@ void __attribute__((weak)) mcdi_heart_beat_log_dump(void)
 {
 }
 
+void __attribute__((weak)) mtk_cpuidle_framework_init(void)
+{
+}
+
 static int mtk_menu_fb_notifier_callback(struct notifier_block *self,
 				unsigned long event, void *data)
 {
@@ -640,6 +644,8 @@ static int __init init_menu(void)
 	screen_on = true;
 
 	spin_unlock_irqrestore(&mtk_menu_spin_lock, flags);
+
+	mtk_cpuidle_framework_init();
 
 	return cpuidle_register_governor(&menu_governor);
 }
