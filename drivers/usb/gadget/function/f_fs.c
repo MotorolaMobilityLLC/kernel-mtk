@@ -150,6 +150,7 @@ struct ffs_io_data {
 	struct iov_iter data;
 	const void *to_free;
 	char *buf;
+	size_t len;
 
 	struct mm_struct *mm;
 	struct work_struct work;
@@ -497,7 +498,11 @@ static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
 		spin_unlock_irq(&ffs->ev.waitq.lock);
 
 		if (likely(len)) {
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+			data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 			data = kmalloc(len, GFP_KERNEL);
+#endif
 			if (unlikely(!data)) {
 				ret = -ENOMEM;
 				goto done_mutex;
@@ -695,8 +700,16 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	char *data = NULL;
 	ssize_t ret, data_len = -EINVAL;
 	int halt;
-	if (atomic_read(&epfile->error))
+
+	pr_debug("%s: len %lld, read %d\n", __func__, (u64)io_data->len, io_data->read);
+
+	if (atomic_read(&epfile->error)) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+		if (__ratelimit(&ratelimit))
+			pr_err("[ratelimit]%s: ep=%p\n", __func__, epfile->ep);
 		return -ENODEV;
+	}
 
 	/* Are we still active? */
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {
@@ -765,7 +778,11 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			data_len = usb_ep_align_maybe(gadget, ep->ep, data_len);
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		data = kmalloc(data_len, GFP_KERNEL | GFP_DMA);
+#else
 		data = kmalloc(data_len, GFP_KERNEL);
+#endif
 		if (unlikely(!data))
 			return -ENOMEM;
 		if (!io_data->read) {
@@ -2338,7 +2355,11 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
 		vla_item(d, struct usb_string, strings,
 			lang_count*(needed_count+1));
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 
 		if (unlikely(!vlabuf)) {
 			kfree(_data);
@@ -2834,7 +2855,11 @@ static int _ffs_func_bind(struct usb_configuration *c,
 		return -ENOTSUPP;
 
 	/* Allocate a single chunk, less management later on */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 	if (unlikely(!vlabuf))
 		return -ENOMEM;
 
@@ -3552,7 +3577,11 @@ static char *ffs_prepare_buffer(const char __user *buf, size_t len)
 	if (unlikely(!len))
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 	data = kmalloc(len, GFP_KERNEL);
+#endif
 	if (unlikely(!data))
 		return ERR_PTR(-ENOMEM);
 

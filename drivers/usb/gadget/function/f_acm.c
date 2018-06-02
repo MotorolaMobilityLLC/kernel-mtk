@@ -22,7 +22,7 @@
 
 #include "u_serial.h"
 
-
+#define ACM_LOG "USB_ACM"
 /*
  * This CDC ACM function support just wraps control functions and
  * notifications around the generic serial-over-usb code.
@@ -333,6 +333,10 @@ static void acm_complete_set_line_coding(struct usb_ep *ep,
 		 * nothing unless we control a real RS232 line.
 		 */
 		acm->port_line_coding = *value;
+
+		pr_notice("[XLOG_INFO][USB_ACM] %s: rate=%d, stop=%d, parity=%d, data=%d\n", __func__,
+				acm->port_line_coding.dwDTERate, acm->port_line_coding.bCharFormat,
+				acm->port_line_coding.bParityType, acm->port_line_coding.bDataBits);
 	}
 }
 
@@ -354,6 +358,10 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 	 * to them by stalling.  Options include get/set/clear comm features
 	 * (not that useful) and SEND_BREAK.
 	 */
+
+	pr_notice("[XLOG_INFO][USB_ACM]%s: ttyGS%d req%02x.%02x v%04x i%04x len=%d\n", __func__,
+			acm->port_num, ctrl->bRequestType, ctrl->bRequest, w_value, w_index, w_length);
+
 	switch ((ctrl->bRequestType << 8) | ctrl->bRequest) {
 
 	/* SET_LINE_CODING ... just read and save what the host sends */
@@ -377,6 +385,11 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 		value = min_t(unsigned, w_length,
 				sizeof(struct usb_cdc_line_coding));
 		memcpy(req->buf, &acm->port_line_coding, value);
+
+		pr_notice("[XLOG_INFO][USB_ACM]%s: rate=%d,stop=%d,parity=%d,data=%d\n", __func__,
+				acm->port_line_coding.dwDTERate, acm->port_line_coding.bCharFormat,
+				acm->port_line_coding.bParityType, acm->port_line_coding.bDataBits);
+
 		break;
 
 	/* SET_CONTROL_LINE_STATE ... save what the host sent */
@@ -469,6 +482,7 @@ static void acm_disable(struct usb_function *f)
 	struct f_acm	*acm = func_to_acm(f);
 	struct usb_composite_dev *cdev = f->config->cdev;
 
+	INFO(cdev, "acm ttyGS%d deactivated\n", acm->port_num);
 	dev_dbg(&cdev->gadget->dev, "acm ttyGS%d deactivated\n", acm->port_num);
 	gserial_disconnect(&acm->port);
 	usb_ep_disable(acm->notify);
@@ -688,6 +702,12 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
 			acm_ss_function);
 	if (status)
 		goto fail;
+
+	pr_notice("[XLOG_INFO][USB_ACM]%s: ttyGS%d: %s speed IN/%s OUT/%s NOTIFY/%s\n",
+			__func__, acm->port_num,
+			gadget_is_superspeed(c->cdev->gadget) ? "super" :
+			gadget_is_dualspeed(c->cdev->gadget) ? "dual" : "full",
+			acm->port.in->name, acm->port.out->name, acm->notify->name);
 
 	dev_dbg(&cdev->gadget->dev,
 		"acm ttyGS%d: %s speed IN/%s OUT/%s NOTIFY/%s\n",

@@ -21,7 +21,11 @@ struct usb_request *alloc_ep_req(struct usb_ep *ep, int len, int default_len)
 	req = usb_ep_alloc_request(ep, GFP_ATOMIC);
 	if (req) {
 		req->length = len ?: default_len;
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		req->buf = kmalloc(req->length, GFP_ATOMIC | GFP_DMA);
+#else
 		req->buf = kmalloc(req->length, GFP_ATOMIC);
+#endif
 		if (!req->buf) {
 			usb_ep_free_request(ep, req);
 			req = NULL;
