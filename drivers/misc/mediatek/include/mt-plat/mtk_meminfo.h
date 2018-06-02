@@ -27,5 +27,22 @@ extern phys_addr_t get_zone_movable_cma_size(void);
 extern phys_addr_t memory_lowpower_cma_base(void);
 extern phys_addr_t memory_lowpower_cma_size(void);
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+enum dcs_status {
+	DCS_NORMAL,
+	DCS_LOWPOWER,
+	DCS_BUSY,
+	DCS_NR_STATUS,
+};
+#ifdef CONFIG_MTK_DCS
+extern int dcs_dram_channel_switch(enum dcs_status status);
+extern int dcs_get_channel_num_trylock(int *num);
+extern void dcs_get_channel_num_unlock(void);
+extern bool dcs_initialied(void);
+#else
+static inline int dcs_dram_channel_switch(enum dcs_status status) { return 0; }
+static inline int dcs_get_channel_num_trylock(int *num) { return 0; }
+static inline void dcs_get_channel_num_unlock(void) {}
+static inline bool dcs_initialied(void) { return true; }
+#endif /* CONFIG_MTK_DCS */
 
 #endif /* end __MTK_MEMINFO_H__ */
