@@ -16,3 +16,4 @@ obj-$(CONFIG_MACH_MT6758) += spm_v3/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
+obj-$(CONFIG_MACH_MT6758) += pbm_v2/
