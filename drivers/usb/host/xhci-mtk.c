@@ -406,7 +406,8 @@ static int usb_wakeup_of_property_parse(struct xhci_hcd_mtk *mtk,
 }
 
 static int xhci_mtk_setup(struct usb_hcd *hcd);
-static const struct xhci_driver_overrides xhci_mtk_overrides __initconst = {
+
+static const struct xhci_driver_overrides xhci_mtk_overrides = {
 	.extra_priv_size = sizeof(struct xhci_hcd),
 	.reset = xhci_mtk_setup,
 };
@@ -819,12 +820,25 @@ static const struct dev_pm_ops xhci_mtk_pm_ops = {
 };
 #define DEV_PM_OPS IS_ENABLED(CONFIG_PM) ? &xhci_mtk_pm_ops : NULL
 
+static const struct dev_pm_ops xhci_mtk_phone_pm_ops = {
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(xhci_mtk_suspend, xhci_mtk_resume)
+};
+#define DEV_PHONE_PM_OPS (IS_ENABLED(CONFIG_PM) ? &xhci_mtk_phone_pm_ops : NULL)
+
+
 #ifdef CONFIG_OF
 static const struct of_device_id mtk_xhci_of_match[] = {
 	{ .compatible = "mediatek,mt8173-xhci"},
 	{ },
 };
 MODULE_DEVICE_TABLE(of, mtk_xhci_of_match);
+
+static const struct of_device_id mtk_xhci_phone_of_match[] = {
+	{ .compatible = "mediatek,mt67xx-xhci"},
+	{ },
+};
+MODULE_DEVICE_TABLE(of, mtk_xhci_phone_of_match);
+
 #endif
 
 static struct platform_driver mtk_xhci_driver = {
@@ -836,7 +850,28 @@ static struct platform_driver mtk_xhci_driver = {
 		.of_match_table = of_match_ptr(mtk_xhci_of_match),
 	},
 };
+
+static struct platform_driver mtk_xhci_phone_driver = {
+	.probe	= xhci_mtk_probe,
+	.remove	= xhci_mtk_remove,
+	.driver	= {
+		.name = "xhci-mtk-phone",
+		.pm = DEV_PHONE_PM_OPS,
+		.of_match_table = of_match_ptr(mtk_xhci_phone_of_match),
+	},
+};
+
 MODULE_ALIAS("platform:xhci-mtk");
+
+int xhci_mtk_register_plat(void)
+{
+	return platform_driver_register(&mtk_xhci_phone_driver);
+}
+
+void xhci_mtk_unregister_plat(void)
+{
+	platform_driver_unregister(&mtk_xhci_phone_driver);
+}
 
 static int __init xhci_mtk_init(void)
 {
