@@ -193,6 +193,8 @@ static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
 
+	btcvsd_tx_clean_buffer();
+
 	if (BT_CVSD_Mem.TX_btcvsd_dma_buf.area)
 		return 0;
 	else
