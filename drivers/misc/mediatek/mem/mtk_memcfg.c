@@ -584,6 +584,7 @@ module_exit(mtk_memcfg_exit);
 static int __init mtk_memcfg_late_sanity_test(void)
 {
 #ifdef MTK_AEE_FEATURE
+#if 0
 	/* trigger kernel warning if warning flag is set */
 	if (mtk_memcfg_late_warning_flag & WARN_MEMBLOCK_CONFLICT) {
 		aee_kernel_warning("[memory layout conflict]",
@@ -609,6 +610,7 @@ static int __init mtk_memcfg_late_sanity_test(void)
 #endif /* end of CONFIG_HIGHMEM */
 
 #endif /* MTK_AEE_FEATURE */
+#endif
 	return 0;
 }
 
