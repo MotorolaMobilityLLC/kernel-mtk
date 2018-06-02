@@ -66,3 +66,4 @@ obj-$(CONFIG_RT_FLASHLIGHT)     += flashlight/richtek/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_USB_MU3D_DRV)	+= mu3d/
+obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
