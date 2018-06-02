@@ -20,8 +20,8 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_thermal.h"
-#include <mach/mt_clkmgr.h>
+#include "mach/mtk_thermal.h"
+#include <mach/mtk_clkmgr.h>
 #if !defined(CONFIG_MACH_MT6757)
 #include <mt_ptp.h>
 #endif
@@ -34,9 +34,9 @@
 #include <ap_thermal_limit.h>
 
 #if defined(ATM_USES_PPM)
-#include "mach/mt_ppm_api.h"
+#include "mach/mtk_ppm_api.h"
 #else
-#include "mt_cpufreq.h"
+#include "mtk_cpufreq.h"
 #endif
 
 
