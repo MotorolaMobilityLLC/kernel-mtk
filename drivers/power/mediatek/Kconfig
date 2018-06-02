@@ -122,6 +122,25 @@ config MTK_KERNEL_POWER_OFF_CHARGING
 	  feature.
 	  device won't enter charging mode if config is no.
 
+config MTK_BATTERY_PROTECT
+	bool "Enable BATTERY PROTECT"
+	default n
+	help
+	  Mediatek  PMIC supports low battery protect.
+	  This config enables notification of low battery event.
+	  Enable this feature to support throttle of CPU power
+	  to perform battery protect.
+
+config MTK_BATTERY_THROTTLING
+	bool "Enable BATTERY THROTTLING"
+	default n
+	help
+	  Enable this feature to support active throttle
+	  mechanism of CPU to save battery life.
+	  The feature throttles CPU or GPU actively
+	  to avoid device power drop due to instant
+	  peak current.
+
 config MTK_BATTERY_LIFETIME_DATA_SUPPORT
 	bool "Enable Battery LifeTime Data Logging"
 	default n
