@@ -137,7 +137,7 @@ config MTK_HIBERNATION
 #source "drivers/misc/mediatek/freqhopping/Kconfig"
 #source "drivers/misc/mediatek/pmic/Kconfig"
 source "drivers/misc/mediatek/pmic_wrap/Kconfig"
-#source "drivers/misc/mediatek/power/Kconfig"
+source "drivers/misc/mediatek/power/Kconfig"
 #source "drivers/misc/mediatek/thermal/Kconfig"
 
 endmenu  # Power
