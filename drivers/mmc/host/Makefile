@@ -79,3 +79,5 @@ obj-$(CONFIG_MMC_SDHCI_ST)		+= sdhci-st.o
 ifeq ($(CONFIG_CB710_DEBUG),y)
 	CFLAGS-cb710-mmc	+= -DDEBUG
 endif
+
+obj-$(CONFIG_MMC_MTK_PRO)		+= mediatek/
