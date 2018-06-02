@@ -14,7 +14,7 @@
 #ifndef __MDEE_DUMPER_V1_H__
 #define __MDEE_DUMPER_V1_H__
 
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 #define EE_BUF_LEN		(256)
 #define AED_STR_LEN		(512)

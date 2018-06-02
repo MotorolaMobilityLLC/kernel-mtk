@@ -13,7 +13,7 @@
 
 #ifndef __MDEE_DUMPER_V2_H__
 #define __MDEE_DUMPER_V2_H__
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 #define MD_HS1_FAIL_DUMP_SIZE  (2048)
 
