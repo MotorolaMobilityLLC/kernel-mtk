@@ -1073,7 +1073,8 @@ static void SetHprOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* 10589 for square wave 34uA i-DAC output current */
+	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
@@ -1087,7 +1088,8 @@ static void SetHplOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* 10589 for square wave 34uA i-DAC output current */
+	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
