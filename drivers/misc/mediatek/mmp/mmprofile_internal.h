@@ -113,8 +113,10 @@ struct compat_mmprofile_metalog_t {
 #define MMP_IOC_ENABLE _IOW(MMP_IOC_MAGIC, 1, unsigned int)
 #define MMP_IOC_START _IOW(MMP_IOC_MAGIC, 2, unsigned int)
 #define MMP_IOC_TIME _IOR(MMP_IOC_MAGIC, 3, unsigned long long)
-#define MMP_IOC_REGEVENT _IOWR(MMP_IOC_MAGIC, 4, struct mmprofile_eventinfo_t)
-#define MMP_IOC_FINDEVENT _IOWR(MMP_IOC_MAGIC, 5, struct mmprofile_eventinfo_t)
+#define MMP_IOC_REGEVENT \
+	_IOWR(MMP_IOC_MAGIC, 4, struct mmprofile_eventinfo_t)
+#define MMP_IOC_FINDEVENT \
+	_IOWR(MMP_IOC_MAGIC, 5, struct mmprofile_eventinfo_t)
 #define MMP_IOC_ENABLEEVENT \
 	_IOW(MMP_IOC_MAGIC, 6, struct mmprofile_eventsetting_t)
 #define MMP_IOC_LOG \

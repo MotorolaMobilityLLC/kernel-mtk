@@ -106,14 +106,14 @@ long mmprofile_log_meta_string(mmp_event event, enum mmp_log_type type,
 EXPORT_SYMBOL(mmprofile_log_meta_string);
 
 long mmprofile_log_meta_bitmap(mmp_event event, enum mmp_log_type type,
-	mmp_metadata_bitmap_t *pMetaData)
+	struct mmp_metadata_bitmap_t *pMetaData)
 {
 	return 0;
 }
 EXPORT_SYMBOL(mmprofile_log_meta_bitmap);
 
 long mmprofile_log_meta_yuv_bitmap(mmp_event event, enum mmp_log_type type,
-	mmp_metadata_bitmap_t *pMetaData)
+	struct mmp_metadata_bitmap_t *pMetaData)
 {
 	return 0;
 }
