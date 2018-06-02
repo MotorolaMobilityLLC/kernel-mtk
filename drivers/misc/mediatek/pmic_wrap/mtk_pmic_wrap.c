@@ -76,6 +76,9 @@ EXPORT_SYMBOL(pwrap_read);
 
 s32 pwrap_write(u32 adr, u32 wdata)
 {
+#if defined PWRAP_TRACE
+	tracepwrap(adr, wdata);
+#endif
 	return pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
 }
 EXPORT_SYMBOL(pwrap_write);
