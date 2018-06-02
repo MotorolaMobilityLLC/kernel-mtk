@@ -26,6 +26,7 @@
 /* #include "mtk_spm_vcore_dvfs.h" */
 #include "mtk_spm_misc.h"
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_lpae.h>
 #if defined(CONFIG_ARCH_MT6797)
 #include <camera_isp.h>
 #endif
@@ -429,11 +430,9 @@ void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 	/* tell IM where is PCM code (use slave mode if code existed) */
 	if (pcmdesc->base_dma) {
 		ptr = pcmdesc->base_dma;
-#if 0
 		/* for 4GB mode */
 		if (enable_4G())
 			MAPPING_DRAM_ACCESS_ADDR(ptr);
-#endif
 	} else {
 		ptr = base_va_to_pa(pcmdesc->base);
 	}

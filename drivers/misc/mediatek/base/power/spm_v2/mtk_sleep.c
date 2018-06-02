@@ -362,7 +362,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	}
 #endif
 #if SLP_SLEEP_DPIDLE_EN
-#if defined(CONFIG_MT_SND_SOC_6755) /*|| defined(CONFIG_MT_SND_SOC_6757)*/ || defined(CONFIG_MT_SND_SOC_6797)
+#if defined(CONFIG_MT_SND_SOC_6755) || defined(CONFIG_MT_SND_SOC_6797) || defined(CONFIG_MTK_SND_SOC_NEW_ARCH)
 	if (slp_ck26m_on | fm_radio_is_playing)
 #else
 	if (slp_ck26m_on)
