@@ -37,8 +37,8 @@ ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
 ifeq ($(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_dr \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
