@@ -28,6 +28,8 @@
 #include "port_proxy.h"
 #include "port_poller.h"
 #define MAX_QUEUE_LENGTH 16
+#define POLLING_INTERVAL_TIME 15
+#define POLLING_TIMEOUT 5
 
 static void status_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 {
@@ -38,7 +40,7 @@ static void status_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 	ccci_util_cmpt_mem_dump(port->md_id, CCCI_DUMP_REPEAT, skb->data, skb->len);
 	ccci_free_skb(skb);
 	if (port_proxy_get_md_state(port->port_proxy) == READY)
-		mod_timer(&status_poller->md_status_poller, jiffies + 15 * HZ);
+		mod_timer(&status_poller->md_status_poller, jiffies + POLLING_INTERVAL_TIME * HZ);
 }
 
 static void md_status_poller_func(unsigned long data)
@@ -49,7 +51,7 @@ static void md_status_poller_func(unsigned long data)
 	int ret = 0;
 
 	status_poller->latest_poll_start_time = local_clock();
-	mod_timer(&status_poller->md_status_timeout, jiffies + 5 * HZ);
+	mod_timer(&status_poller->md_status_timeout, jiffies + POLLING_TIMEOUT * HZ);
 	ret = port_proxy_send_msg_to_md(port->port_proxy, CCCI_STATUS_TX, 0, 0, 0);
 	CCCI_REPEAT_LOG(md_id, KERN, "poll modem status %d seq=0x%X\n", ret,
 		port_proxy_get_poll_seq_num(port->port_proxy));
@@ -62,10 +64,10 @@ static void md_status_poller_func(unsigned long data)
 			if (status_poller->md_status_poller_flag & MD_STATUS_POLL_BUSY) {
 				port_proxy_md_no_repsone_notify(port->port_proxy);
 			} else if (ret == -CCCI_ERR_ALLOCATE_MEMORY_FAIL) {
-				mod_timer(&status_poller->md_status_poller, jiffies + 10 * HZ);
+				mod_timer(&status_poller->md_status_poller, jiffies + POLLING_INTERVAL_TIME * HZ);
 			} else {
 				status_poller->md_status_poller_flag |= MD_STATUS_POLL_BUSY;
-				mod_timer(&status_poller->md_status_poller, jiffies + 10 * HZ);
+				mod_timer(&status_poller->md_status_poller, jiffies + POLLING_INTERVAL_TIME * HZ);
 			}
 		}
 	} else {
@@ -86,7 +88,7 @@ static void md_status_timeout_func(unsigned long data)
 	} else {
 		CCCI_ERROR_LOG(md_id, KERN, "modem status polling timeout, force assert\n");
 		status_poller->md_status_poller_flag |= MD_STATUS_ASSERTED;
-		mod_timer(&status_poller->md_status_timeout, jiffies + 5 * HZ);
+		mod_timer(&status_poller->md_status_timeout, jiffies + POLLING_TIMEOUT * HZ);
 		port_proxy_poll_md_fail_notify(port->port_proxy, status_poller->latest_poll_start_time);
 	}
 }
@@ -113,7 +115,7 @@ void port_poller_start(struct ccci_port *port)
 	struct port_md_status_poller *status_poller = port->private_data;
 
 	if (port_proxy_get_md_state(port->port_proxy) == READY)
-		mod_timer(&status_poller->md_status_poller, jiffies + 10 * HZ);
+		mod_timer(&status_poller->md_status_poller, jiffies + POLLING_INTERVAL_TIME * HZ);
 #endif
 }
 void port_poller_stop(struct ccci_port *port)
