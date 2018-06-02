@@ -32,8 +32,11 @@
 #define AUDPLL_TUNER_EN		BIT(31)
 
 #define POSTDIV_MASK		0x7
+#if defined(CONFIG_MACH_MT6758)
+#define INTEGER_BITS		8
+#else
 #define INTEGER_BITS		7
-
+#endif
 /*
  * MediaTek PLLs are configured through their pcw value. The pcw value describes
  * a divider in the PLL feedback loop which consists of 7 bits for the integer
@@ -162,7 +165,11 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		u32 freq, u32 fin)
 {
+#if defined(CONFIG_MACH_MT6758)
+	unsigned long fmin = 2000 * MHZ;
+#else
 	unsigned long fmin = 1000 * MHZ;
+#endif
 	const struct mtk_pll_div_table *div_table = pll->data->div_table;
 	u64 _pcw;
 	u32 val;
@@ -235,6 +242,76 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv);
 }
 
+#if (defined(CONFIG_MACH_MT6758))
+static int mtk_pll_prepare(struct clk_hw *hw)
+{
+	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
+	u32 r;
+
+	if (readl(pll->pwr_addr) & CON0_PWR_ON) {
+		/* PLL is already power on */
+	} else {
+		r = readl(pll->pwr_addr) | CON0_PWR_ON;
+		writel(r, pll->pwr_addr);
+		udelay(1);
+
+		r = readl(pll->pwr_addr) & ~CON0_ISO_EN;
+		writel(r, pll->pwr_addr);
+		udelay(1);
+
+		r = readl(pll->base_addr + REG_CON0);
+		r |= pll->data->en_mask;
+		writel(r, pll->base_addr + REG_CON0);
+
+		if (pll->tuner_addr) {
+			r = readl(pll->tuner_addr) | AUDPLL_TUNER_EN;
+			writel(r, pll->tuner_addr);
+		}
+
+		udelay(20);
+
+		if (pll->data->flags & HAVE_RST_BAR) {
+			r = readl(pll->base_addr + REG_CON0);
+			r |= pll->data->rst_bar_mask;
+			writel(r, pll->base_addr + REG_CON0);
+		}
+	}
+	return 0;
+}
+
+static void mtk_pll_unprepare(struct clk_hw *hw)
+{
+	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
+	u32 r;
+
+	if (!strcmp(__clk_get_name(hw->clk), "mainpll")) {
+		/* Not disable Mainpll */
+	} else {
+		if (readl(pll->pwr_addr) & CON0_PWR_ON) {
+			if (pll->data->flags & HAVE_RST_BAR) {
+				r = readl(pll->base_addr + REG_CON0);
+				r &= ~pll->data->rst_bar_mask;
+				writel(r, pll->base_addr + REG_CON0);
+			}
+
+			if (pll->tuner_addr) {
+				r = readl(pll->tuner_addr) & ~AUDPLL_TUNER_EN;
+				writel(r, pll->tuner_addr);
+			}
+
+			r = readl(pll->base_addr + REG_CON0);
+			r &= ~CON0_BASE_EN;
+			writel(r, pll->base_addr + REG_CON0);
+
+			r = readl(pll->pwr_addr) | CON0_ISO_EN;
+			writel(r, pll->pwr_addr);
+
+			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
+			writel(r, pll->pwr_addr);
+		}
+	}
+}
+#else
 static int mtk_pll_prepare(struct clk_hw *hw)
 {
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
@@ -300,7 +377,18 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 	r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 	writel(r, pll->pwr_addr);
 }
+#endif
 
+#if (defined(CONFIG_MACH_MT6758))
+static const struct clk_ops mtk_pll_ops = {
+	.is_enabled	= mtk_pll_is_prepared,
+	.enable		= mtk_pll_prepare,
+	.disable	= mtk_pll_unprepare,
+	.recalc_rate	= mtk_pll_recalc_rate,
+	.round_rate	= mtk_pll_round_rate,
+	.set_rate	= mtk_pll_set_rate,
+};
+#else
 static const struct clk_ops mtk_pll_ops = {
 	.is_prepared	= mtk_pll_is_prepared,
 	.prepare	= mtk_pll_prepare,
@@ -309,6 +397,7 @@ static const struct clk_ops mtk_pll_ops = {
 	.round_rate	= mtk_pll_round_rate,
 	.set_rate	= mtk_pll_set_rate,
 };
+#endif
 
 static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 		void __iomem *base)

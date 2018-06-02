@@ -98,6 +98,17 @@ config COMMON_CLK_MT2712_VENCSYS
 	---help---
 	  This driver supports Mediatek MT2712 vencsys clocks.
 
+config COMMON_CLK_MT6758
+	bool "Clock driver for Mediatek MT6758"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK
+	default y if MACH_MT6758
+	---help---
+	  This driver supports Mediatek MT6758 clocks.
+	  Use the config to support CCF on MT6758,
+	  instead of old clkmgr architecture.
+	  MT6758 default will use CCF.
+
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"
 	depends on ARCH_MEDIATEK || COMPILE_TEST
