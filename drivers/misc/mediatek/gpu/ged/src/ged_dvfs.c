@@ -15,7 +15,7 @@
 #include <linux/sched.h>
 
 #ifdef GED_DVFS_ENABLE
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 #include <mtk_gpufreq.h>
 #endif
 
@@ -202,15 +202,11 @@ unsigned long ged_query_info( GED_INFO eType)
 		case GED_LATEST_START:
 			return g_ulPreCalResetTS_us;
 		case GED_FPS: {
-#ifdef GED_KERNEL_4_4_PORTING
-			disp_session_info info;
+			struct disp_session_info info;
 			memset(&info, 0, sizeof(info));
 			info.session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 			disp_mgr_get_session_info(&info);
 			return info.updateFPS;
-#else
-			return 0;
-#endif
 		}
 		default:
 			return 0;
