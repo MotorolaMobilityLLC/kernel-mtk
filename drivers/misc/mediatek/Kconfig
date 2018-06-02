@@ -132,7 +132,7 @@ config MTK_PERIODIC_DATA_COLLECTION
 	  to create a unused contiguous memory. The
 	  DRAM can enter low power state if it is idle.
 
-#source "drivers/misc/mediatek/base/power/Kconfig"
+source "drivers/misc/mediatek/base/power/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 #source "drivers/misc/mediatek/pmic/Kconfig"
 source "drivers/misc/mediatek/pmic_wrap/Kconfig"
