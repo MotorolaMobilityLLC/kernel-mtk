@@ -159,6 +159,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_SET_CUSTOMER_CFG = 0x70, /* 0x70(Set) */
 #endif
 
+	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -1648,6 +1649,11 @@ typedef struct _CMD_SET_PSCAN_MAC_ADDR {
 	UINT_8 aucMacAddr[6];
 	UINT_8 aucReserved[8];
 } CMD_SET_PSCAN_MAC_ADDR, *P_CMD_SET_PSCAN_MAC_ADDR;
+
+struct CMD_TDLS_PS_T {
+	UINT_8	ucIsEnablePs; /* 0: disable tdls power save; 1: enable tdls power save */
+	UINT_8	aucReserved[3];
+};
 
 typedef struct _CMD_SUSPEND_MODE_SETTING_T {
 	UINT_8		ucBssIndex;

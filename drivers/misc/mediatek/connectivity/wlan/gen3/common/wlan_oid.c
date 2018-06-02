@@ -11078,3 +11078,28 @@ WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 	return rStatus;
 }
 #endif
+
+WLAN_STATUS
+wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	struct CMD_TDLS_PS_T rTdlsPs;
+
+	if (!prAdapter || !pvSetBuffer)
+		return WLAN_STATUS_INVALID_DATA;
+
+	rTdlsPs.ucIsEnablePs = *(PUINT_8)pvSetBuffer - '0';
+	DBGLOG(OID, INFO, "enable tdls ps %d\n", rTdlsPs.ucIsEnablePs);
+	wlanSendSetQueryCmd(prAdapter,
+							CMD_ID_TDLS_PS,
+							TRUE,
+							FALSE,
+							FALSE,
+							NULL,
+							nicOidCmdTimeoutCommon,
+							sizeof(rTdlsPs),
+							(PUINT_8)&rTdlsPs,
+							NULL,
+							0);
+	return WLAN_STATUS_SUCCESS;
+}

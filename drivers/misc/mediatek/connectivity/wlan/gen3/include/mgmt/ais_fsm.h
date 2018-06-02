@@ -43,7 +43,7 @@
 #define AIS_BG_SCAN_INTERVAL_MIN_SEC        2	/* 30 // exponential to 960 */
 #define AIS_BG_SCAN_INTERVAL_MAX_SEC        2	/* 960 // 16min */
 
-#define AIS_DELAY_TIME_OF_DISCONNECT_SEC    15	/* 10 */
+#define AIS_DELAY_TIME_OF_DISCONNECT_SEC    5	/* 10 */
 
 #define AIS_IBSS_ALONE_TIMEOUT_SEC          20	/* seconds */
 
