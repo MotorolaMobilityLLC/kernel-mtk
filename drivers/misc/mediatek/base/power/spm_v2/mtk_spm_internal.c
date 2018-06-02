@@ -19,7 +19,7 @@
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
 #include <linux/random.h>
-/* #include <mach/mtk_spm_mtcmos_internal.h> */ /* TODO */
+/* #include <mach/mtk_spm_mtcmos_internal.h> */
 #include <asm/setup.h>
 #include "mtk_spm_internal.h"
 #include "mtk_vcorefs_governor.h"
@@ -417,8 +417,6 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 #if defined(CONFIG_MACH_MT6757)
 int can_spm_pmic_set_vcore_voltage(void)
 {
-	return 1;
-
 	if (mt_get_chip_hw_ver() > 0xCA00)
 		return 1;
 
