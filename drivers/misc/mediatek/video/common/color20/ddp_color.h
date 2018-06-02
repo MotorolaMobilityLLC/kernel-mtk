@@ -228,11 +228,11 @@ enum {
 /* --------------------------------------------------------------------------- */
 
 
-struct DISP_PQ_PARAM *get_Color_config(int id);
-struct DISP_PQ_PARAM *get_Color_Cam_config(void);
-struct DISP_PQ_PARAM *get_Color_Gal_config(void);
-struct DISPLAY_PQ_T *get_Color_index(void);
-extern struct DISPLAY_TDSHP_T *get_TDSHP_index(void);
+DISP_PQ_PARAM *get_Color_config(int id);
+DISP_PQ_PARAM *get_Color_Cam_config(void);
+DISP_PQ_PARAM *get_Color_Gal_config(void);
+DISPLAY_PQ_T *get_Color_index(void);
+extern DISPLAY_TDSHP_T *get_TDSHP_index(void);
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower);

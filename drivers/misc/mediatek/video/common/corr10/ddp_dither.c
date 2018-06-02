@@ -96,7 +96,7 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 }
 
 
-static int disp_dither_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_dither_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty) {
 		disp_dither_init(DISP_DITHER0, pConfig->dst_w, pConfig->dst_h,
@@ -107,7 +107,7 @@ static int disp_dither_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path
 }
 
 
-static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
+static int disp_dither_bypass(DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
@@ -122,7 +122,7 @@ static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
 }
 
 
-static int disp_dither_power_on(enum DISP_MODULE_ENUM module, void *handle)
+static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* dither is DCM , do nothing */
@@ -140,7 +140,7 @@ static int disp_dither_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int disp_dither_power_off(enum DISP_MODULE_ENUM module, void *handle)
+static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	/* dither is DCM , do nothing */
@@ -159,7 +159,7 @@ static int disp_dither_power_off(enum DISP_MODULE_ENUM module, void *handle)
 }
 
 #ifdef DITHER_SUPPORT_PARTIAL_UPDATE
-static int _dither_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _dither_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -169,8 +169,8 @@ static int _dither_partial_update(enum DISP_MODULE_ENUM module, void *arg, void 
 	return 0;
 }
 
-static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
-		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int dither_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -182,7 +182,7 @@ static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-struct DDP_MODULE_DRIVER ddp_driver_dither = {
+DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
 	.bypass = disp_dither_bypass,
 	.init = disp_dither_power_on,
