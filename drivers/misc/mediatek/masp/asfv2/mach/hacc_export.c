@@ -30,9 +30,7 @@
  * GLOBAL VARIABLES
  ******************************************************************************/
 bool bHACC_HWWrapKeyInit;
-bHACC_HWWrapKeyInit = false;
 bool bHACC_SWKeyInit;
-bHACC_SWKeyInit = false;
 
 /******************************************************************************
  *  INTERNAL VARIABLES
@@ -190,6 +188,8 @@ unsigned int masp_hal_sp_hacc_init(unsigned char *sec_seed, unsigned int size)
 {
 	AES_KEY_SEED keyseed;
 	unsigned int i = 0;
+	bHACC_HWWrapKeyInit = false;
+	bHACC_SWKeyInit = false;
 
 	if (size != _CRYPTO_SEED_LEN)
 		return ERR_HACC_SEED_LEN_ERROR;
