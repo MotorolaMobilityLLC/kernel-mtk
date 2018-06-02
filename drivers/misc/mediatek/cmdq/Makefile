@@ -12,7 +12,10 @@
 #
 
 # common driver code for CMDQ
-
-obj-y += v3/
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
+	obj-$(CONFIG_ARCH_MT6757) += v2/
+else
+	obj-y += v3/
+endif
 
 # EOF
