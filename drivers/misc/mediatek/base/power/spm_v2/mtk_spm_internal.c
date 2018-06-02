@@ -1364,6 +1364,10 @@ void __spm_restore_pmic_ck_pdn(void)
 void __spm_bsi_top_init_setting(void)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
+	/* needs to check type of clk buf if MT6757 */
+	if (!is_clk_buf_from_pmic()) {
+#endif
 		/* BSI_TOP init setting */
 		spm_write(spm_bsi1cfg + 0x2004, 0x8000A824);
 		spm_write(spm_bsi1cfg + 0x2010, 0x20001201);
@@ -1371,6 +1375,9 @@ void __spm_bsi_top_init_setting(void)
 		spm_write(spm_bsi1cfg + 0x2020, 0x0e001841);
 		spm_write(spm_bsi1cfg + 0x2024, 0x150b0000);
 		spm_write(spm_bsi1cfg + 0x2030, 0x1);
+#if defined(CONFIG_MACH_MT6757)
+	}
+#endif
 #endif
 }
 
