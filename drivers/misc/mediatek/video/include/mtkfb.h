@@ -16,7 +16,7 @@
 
 #include <linux/types.h>
 #include "mtkfb_info.h"
-
+#include <mt-plat/aee.h>
 
 /**NOTICE:
  * Must be consistent with bionic/libc/kernel/linux/common/mtkfb.h
@@ -114,6 +114,7 @@
 
 #define MTKFB_GET_MAX_DISPLAY_COUNT		       MTK_IOR(56, unsigned int)
 #define MTKFB_SET_FB_LAYER_SECURE              MTK_IOW(57, int)
+#define MTKFBERR(string, args...) aee_kernel_exception("MTKFB", "[MTKFB] ERROR:", string, ##args)
 /**
  * @}
  */

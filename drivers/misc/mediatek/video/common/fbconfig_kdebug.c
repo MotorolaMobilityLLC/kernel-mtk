@@ -121,7 +121,7 @@ static void *pm_get_handle(void)
 	return (void *)&pm_params;
 }
 
-static DISP_MODULE_ENUM pm_get_dsi_handle(DSI_INDEX dsi_id)
+static enum DISP_MODULE_ENUM pm_get_dsi_handle(DSI_INDEX dsi_id)
 {
 	if (dsi_id == PM_DSI0)
 		return DISP_MODULE_DSI0;
@@ -409,7 +409,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case LCM_GET_DSI_TIMING:
 	{
 		uint32_t ret;
-		MIPI_TIMING timing;
+		struct MIPI_TIMING timing;
 
 		if (copy_from_user(&timing, (void __user *)argp, sizeof(timing))) {
 			pr_debug("[MIPI_GET_TIMING]: copy_from_user failed! line:%d\n",
@@ -438,8 +438,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case FB_LAYER_GET_EN:
 	{
-		PM_LAYER_EN layers;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		struct PM_LAYER_EN layers;
+		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 		int i = 0;
 
 #ifdef PRIMARY_THREE_OVL_CASCADE
@@ -467,8 +467,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case FB_LAYER_GET_INFO:
 	{
-		PM_LAYER_INFO layer_info;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		struct PM_LAYER_INFO layer_info;
+		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
 		if (copy_from_user(&layer_info, (void __user *)argp, sizeof(layer_info))) {
 			pr_debug("[FB_LAYER_GET_INFO]: copy_from_user failed! line:%d\n", __LINE__);
@@ -505,7 +505,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int mapped_size = 0;
 		unsigned int real_mva = 0;
 		unsigned int real_size = 0;
-		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
+		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
