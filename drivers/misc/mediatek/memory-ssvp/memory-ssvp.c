@@ -53,6 +53,7 @@
 static unsigned long svp_usage_count;
 static int ref_count;
 
+#define CONFIG_MTK_MEMORY_SSVP_WRAP
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 static struct page *wrap_svp_pages;
 static struct page *wrap_tui_pages;
