@@ -69,8 +69,8 @@
 #include <mt-plat/mtk_boot_common.h>
 #endif
 /* #include <linux/printk.h> */
-/* #include <mtk_reboot.h> */
-#if 0
+#include <mtk_reboot.h>
+#ifdef CONFIG_MTK_SMART_BATTERY
 #include <mt-plat/charging.h>
 #endif
 
@@ -413,7 +413,7 @@ void mt_power_off(void)
 		/* Phone */
 		mdelay(100);
 		rtc_xinfo("Phone with charger\n");
-#if 0
+#ifdef CONFIG_MTK_SMART_BATTERY
 		if (pmic_chrdet_status() == KAL_TRUE || count > 10)
 			arch_reset(0, "charger");
 #endif
@@ -697,7 +697,6 @@ static int rtc_ops_ioctl(struct device *dev, unsigned int cmd, unsigned long arg
 {
 	/* dump_stack(); */
 	rtc_xinfo("rtc_ops_ioctl cmd=%d\n", cmd);
-#if 0
 	switch (cmd) {
 	case RTC_AUTOBOOT_ON:
 		{
@@ -714,7 +713,6 @@ static int rtc_ops_ioctl(struct device *dev, unsigned int cmd, unsigned long arg
 	default:
 		break;
 	}
-#endif
 	return -ENOIOCTLCMD;
 }
 
@@ -743,8 +741,10 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 		return PTR_ERR(rtc);
 	}
 #ifdef PMIC_REGISTER_INTERRUPT_ENABLE
+#ifdef CONFIG_MTK_PMIC
 	pmic_register_interrupt_callback(RTC_INTERRUPT_NUM, rtc_irq_handler);
 	pmic_enable_interrupt(RTC_INTERRUPT_NUM, 1, "RTC");
+#endif
 #endif
 
 	return 0;
@@ -795,38 +795,6 @@ static int __init rtc_device_init(void)
 
 	return 0;
 }
-
-#if 0
-static int __init rtc_mod_init(void)
-{
-	int r;
-
-	rtc_xinfo("rtc_mod_init");
-
-	r = platform_device_register(&rtc_pdev);
-	if (r) {
-		rtc_xerror("register device failed (%d)\n", r);
-		return r;
-	}
-
-	r = platform_driver_register(&rtc_pdrv);
-	if (r) {
-		rtc_xerror("register driver failed (%d)\n", r);
-		platform_device_unregister(&rtc_pdev);
-		return r;
-	}
-
-	return 0;
-}
-#endif
-
-/* should never be called */
-#if 0
-static void __exit rtc_mod_exit(void)
-{
-}
-#endif
-
 
 static int __init rtc_late_init(void)
 {
