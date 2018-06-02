@@ -28,6 +28,8 @@
 #include <linux/vmalloc.h>
 #include <linux/suspend.h>
 #include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
 
 #include <mach/mtk_pbm.h>
 
@@ -37,8 +39,8 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <mtk_cpufreq_api.h>
 #include <mtk_gpufreq.h>
-#include <mach/mtk_thermal.h>
-#include <mach/mtk_ppm_api.h>
+#include "mtk_thermal.h"
+#include "mtk_ppm_api.h"
 #endif				/* #ifndef DISABLE_PBM_FEATURE */
 
 #if MD_POWER_METER_ENABLE
