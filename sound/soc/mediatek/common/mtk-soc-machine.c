@@ -568,7 +568,6 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.codec_dai_name = "rt5509-aif1",
 		.codec_name = "RT5509_MT",
 		.ignore_suspend = 1,
-		.ignore_pmdown_time = true,
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
