@@ -862,19 +862,25 @@ int spm_fw_count = DYNA_LOAD_PCM_MAX;
 void *get_spm_firmware_version(uint32_t index)
 {
 	void *ptr = NULL;
+#if 0
 	int loop = 30;
 
 	while (dyna_load_pcm_done == 0 && loop > 0) {
 		loop--;
 		msleep(100);
 	}
+#endif
 
-	if (index == 0) {
-		ptr = (void *)&spm_fw_count;
-		spm_crit("SPM firmware version count = %d\n", spm_fw_count);
-	} else if (index <= DYNA_LOAD_PCM_MAX) {
-		ptr = dyna_load_pcm[index - 1].version;
-		spm_crit("SPM firmware version(0x%x) = %s\n", index - 1, (char *)ptr);
+	if (dyna_load_pcm_done) {
+		if (index == 0) {
+			ptr = (void *)&spm_fw_count;
+			spm_crit("SPM firmware version count = %d\n", spm_fw_count);
+		} else if (index <= DYNA_LOAD_PCM_MAX) {
+			ptr = dyna_load_pcm[index - 1].version;
+			spm_crit("SPM firmware version(0x%x) = %s\n", index - 1, (char *)ptr);
+		}
+	} else {
+		spm_crit("SPM firmware is not ready, dyna_load_pcm_done = %d\n", dyna_load_pcm_done);
 	}
 
 	return ptr;
