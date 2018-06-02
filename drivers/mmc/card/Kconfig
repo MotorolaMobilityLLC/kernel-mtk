@@ -69,6 +69,20 @@ config MMC_TEST
 	  This driver is only of interest to those developing or
 	  testing a host driver. Most people should say N here.
 
+config MMC_BLOCK_IO_LOG
+	bool "Block IO log"
+	depends on MMC_BLOCK
+	depends on MTK_BLOCK_TAG
+	default y
+	help
+	  The BLOCK TAG trace provides I/O logs for performance analysis and
+	  application access pattern study. The BLOCK TAG trace summarizes the
+	  I/O of each process every 1 second, and saves to ring buffer. The log
+	  can be displayed by "cat /sys/kernel/debug/blockio".
+
+	  The trace is default enabled on user and eng builts, say N here to
+	  disable it.
+
 config MMC_SIMULATE_MAX_SPEED
 	bool "Turn on maximum speed control per block device"
 	depends on MMC_BLOCK
@@ -80,3 +94,11 @@ config MMC_SIMULATE_MAX_SPEED
 	  control the write or read maximum KB/second speed behaviors.
 
 	  If unsure, say N here.
+
+config MMC_FFU
+	bool "FFU SUPPORT"
+	depends on MMC != n
+	help
+	  This is an option to run firmware update on eMMC 5.0.
+	  Field firmware updates (FFU) enables features enhancment
+	  in the field.
