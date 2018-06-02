@@ -82,8 +82,8 @@
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/charging.h>
-#include <mach/mt_charging.h>
-#include <mt-plat/mt_boot.h>
+#include <mach/mtk_charging.h>
+#include <mt-plat/mtk_boot.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
 #include <linux/wakelock.h>
