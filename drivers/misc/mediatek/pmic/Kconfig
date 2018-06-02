@@ -113,3 +113,5 @@ config MTK_EXTERNAL_CHARGER_TYPE_DETECT
 	  Default is MTK PMIC path. Select Y to disable MTK charger type detect.
 	  Set y to enable it.
 	  Set n to disable it.
+
+source "drivers/misc/mediatek/pmic/mt6370/Kconfig"
