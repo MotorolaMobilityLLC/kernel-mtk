@@ -117,7 +117,7 @@ extern signed int pwrap_init(void);
 #define PWRAPFUC(fmt, arg...)
 #define PWRAPLOG(fmt, arg...)
 #endif				/* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)
+#define PWRAPERR(fmt, arg...) \
 	print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_LK)
 #ifdef PMIC_WRAP_DEBUG
@@ -127,16 +127,13 @@ extern signed int pwrap_init(void);
 #define PWRAPFUC(fmt, arg...)
 #define PWRAPLOG(fmt, arg...)
 #endif				/* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)
+#define PWRAPERR(fmt, arg...) \
 	dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_KERNEL)
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPDEB(fmt, arg...)
-	pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-#define PWRAPLOG(fmt, arg...)
-	pr_debug(PWRAPTAG fmt, ##arg)
+#define PWRAPLOG(fmt, arg...) pr_debug(PWRAPTAG fmt, ##arg)
 #define PWRAPFUC(fmt, arg...)
-	pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
 #define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
 #else
 #define PWRAPDEB(fmt, arg...)
@@ -152,7 +149,7 @@ extern signed int pwrap_init(void);
 #define PWRAPFUC(fmt, arg...)	/*PRINTF_D(PWRAPTAG "%s\n", __FUNCTION__) */
 #define PWRAPLOG(fmt, arg...)	/*PRINTF_D(PWRAPTAG fmt, ##arg) */
 #endif				/* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)
+#define PWRAPERR(fmt, arg...) \
 	PRINTF_E(PWRAPTAG "ERROR, line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_CTP)
 #ifdef PMIC_WRAP_DEBUG
@@ -162,7 +159,7 @@ extern signed int pwrap_init(void);
 #define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
 #define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
 #endif				/* end of #ifdef PMIC_WRAP_DEBUG */
-#define PWRAPERR(fmt, arg...)
+#define PWRAPERR(fmt, arg...) \
 	dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #else
 ### Compile error, check SW ENV define
@@ -288,9 +285,9 @@ extern void __iomem *pwrap_base;
 #define WRAP_RD32(addr)            __raw_readl((void *)addr)
 #define WRAP_WR32(addr, val)        mt_reg_sync_writel((val), ((void *)addr))
 
-#define WRAP_SET_BIT(BS, REG)
+#define WRAP_SET_BIT(BS, REG) \
 mt_reg_sync_writel((__raw_readl((void *)REG) | (u32)(BS)), ((void *)REG))
-#define WRAP_CLR_BIT(BS, REG)
+#define WRAP_CLR_BIT(BS, REG) \
 mt_reg_sync_writel((__raw_readl((void *)REG) & (~(u32)(BS))), ((void *)REG))
 
 
