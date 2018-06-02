@@ -8955,6 +8955,102 @@ void cmdq_core_dump_dts_setting(void)
 	}
 }
 
+int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
+	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
+{
+	struct EngineStruct *pEngine;
+	struct ThreadStruct *pThread;
+	int32_t index;
+	int32_t thread = CMDQ_INVALID_THREAD;
+	unsigned long flags = 0;
+	int32_t status = -EFAULT;
+	struct TaskStruct *pTargetTask = NULL;
+
+	if (p_out_task == NULL)
+		return -EINVAL;
+
+	/* make sure context does not change during get and copy */
+	mutex_lock(&gCmdqTaskMutex);
+	spin_lock_irqsave(&gCmdqThreadLock, flags);
+
+	pEngine = gCmdqContext.engine;
+	pThread = gCmdqContext.thread;
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
+		if (engineFlag & (1LL << index)) {
+			if (pEngine[index].userCount > 0) {
+				thread = pEngine[index].currOwner;
+				break;
+			}
+		}
+	}
+
+	if (thread != CMDQ_INVALID_THREAD) {
+		struct TaskStruct *pTask;
+		uint32_t insts[4];
+		uint32_t currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+
+		currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+		for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
+			pTask = pThread[thread].pCurTask[index];
+#ifdef CMDQ_JUMP_MEM
+			if (pTask == NULL || list_empty(&pTask->cmd_buffer_list))
+				continue;
+#else
+			if (pTask == NULL || pTask->pVABase == NULL)
+				continue;
+#endif
+			if (cmdq_core_get_pc(pTask, thread, insts)) {
+				pTargetTask = pTask;
+				break;
+			}
+		}
+		if (!pTargetTask) {
+			unsigned long flagsExec = 0;
+			uint32_t currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+
+			CMDQ_LOG("cannot find pc (0x%08x) at thread (%d)\n", currPC, thread);
+			spin_lock_irqsave(&gCmdqExecLock, flagsExec);
+			cmdq_core_dump_task_in_thread(thread, false, true, false);
+			spin_unlock_irqrestore(&gCmdqExecLock, flagsExec);
+		}
+	}
+
+	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+
+	if (pTargetTask) {
+		uint32_t current_debug_str_len = pTargetTask->userDebugStr ?
+			(uint32_t)strlen(pTargetTask->userDebugStr) : 0;
+		uint32_t debug_str_len = userDebugStrLen < current_debug_str_len ?
+			userDebugStrLen : current_debug_str_len;
+		char *debug_str_buffer = p_out_task->userDebugStr;
+
+		/* copy content except pointers */
+		memcpy(p_out_task, pTargetTask, sizeof(struct TaskStruct));
+		p_out_task->pCMDEnd = NULL;
+#ifdef CMDQ_JUMP_MEM
+#else
+		p_out_task->pVABase = NULL;
+		p_out_task->MVABase = 0;
+#endif
+		p_out_task->regResults = NULL;
+		p_out_task->secStatus = NULL;
+		p_out_task->profileData = NULL;
+
+		if (debug_str_buffer) {
+			p_out_task->userDebugStr = debug_str_buffer;
+			if (debug_str_len)
+				strncpy(debug_str_buffer, pTargetTask->userDebugStr, debug_str_len);
+		}
+
+		/* mark success */
+		status = 0;
+	}
+
+	mutex_unlock(&gCmdqTaskMutex);
+
+	return status;
+}
+
 int32_t cmdqCoreInitialize(void)
 {
 	struct TaskStruct *pTask;
