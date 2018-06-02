@@ -243,7 +243,6 @@ int ccci_md_store_load_type(struct ccci_modem *md, int type);
 int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb);
 struct ccci_runtime_feature *ccci_md_get_rt_feature_by_id(struct ccci_modem *md, u8 feature_id, u8 ap_query_md);
 int ccci_md_parse_rt_feature(struct ccci_modem *md, struct ccci_runtime_feature *rt_feature, void *data, u32 data_len);
-void ccci_md_boot_fail_func(struct ccci_modem *md);
 int ccci_md_get_ex_type(struct ccci_modem *md);
 
 static inline struct port_proxy *ccci_md_get_port_proxy_by_id(int md_id)

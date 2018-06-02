@@ -88,13 +88,17 @@ static void ccci_routine_exception(struct ccci_fsm_ctl *ctl, struct ccci_fsm_com
 	/* 2. check EE reason */
 	switch (reason) {
 	case EXCEPTION_HS1_TIMEOUT:
+		CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS1_FAIL!\n");
+		ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
+		break;
 	case EXCEPTION_HS2_TIMEOUT:
-		ccci_md_boot_fail_func(md);
+		CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS2_FAIL!\n");
+		ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
 		break;
 	case EXCEPTION_MD_HANG:
 	case EXCEPTION_WDT:
-		mdee_set_wdt_ee(md->mdee_obj);
 		mdee_monitor_func(md->mdee_obj);
+		msleep(MD_EX_PASS_TIMEOUT);
 		mdee_monitor2_func(md->mdee_obj);
 		break;
 	case EXCEPTION_EE:
