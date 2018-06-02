@@ -216,6 +216,11 @@
 		compatible = "simple-bus";
 		ranges;
 
+		chipid: chipid@08000000 {
+			compatible = "mediatek,mt8173-chipid";
+			reg = <0 0x08000000 0 0x0010>;
+		};
+
 		topckgen: clock-controller@10000000 {
 			compatible = "mediatek,mt8173-topckgen";
 			reg = <0 0x10000000 0 0x1000>;
