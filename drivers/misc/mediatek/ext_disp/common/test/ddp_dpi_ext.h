@@ -63,7 +63,7 @@ unsigned int ClearDPIIntrStatus(void);
 unsigned int enableRGB2YUV(enum AviColorSpace_e format);
 unsigned int enableSingleEdge(void);
 int enableAndGetChecksum(void);
-/* int enableAndGetChecksumCmdq(cmdqRecHandle cmdq_handle); */
+/* int enableAndGetChecksumCmdq(struct cmdqRecStruct *cmdq_handle); */
 unsigned int configDpiRepetition(void);
 unsigned int configDpiEmbsync(void);
 /* unsigned int configDpiColorTransformToBT709(void); */
