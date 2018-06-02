@@ -7,8 +7,14 @@ struct request;
 struct task_struct;
 
 struct mmc_blk_request {
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_request	mrq_que;
+#endif
 	struct mmc_request	mrq;
 	struct mmc_command	sbc;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_command	que;
+#endif
 	struct mmc_command	cmd;
 	struct mmc_command	stop;
 	struct mmc_data		data;
@@ -42,6 +48,9 @@ struct mmc_queue_req {
 	struct mmc_async_req	mmc_active;
 	enum mmc_packed_type	cmd_type;
 	struct mmc_packed	*packed;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	atomic_t		index;
+#endif
 };
 
 struct mmc_queue {
@@ -55,7 +64,11 @@ struct mmc_queue {
 	int			(*issue_fn)(struct mmc_queue *, struct request *);
 	void			*data;
 	struct request_queue	*queue;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_queue_req	mqrq[EMMC_MAX_QUEUE_DEPTH];
+#else
 	struct mmc_queue_req	mqrq[2];
+#endif
 	struct mmc_queue_req	*mqrq_cur;
 	struct mmc_queue_req	*mqrq_prev;
 #ifdef CONFIG_MMC_SIMULATE_MAX_SPEED
@@ -67,6 +80,11 @@ struct mmc_queue {
 	unsigned long cache_jiffies;
 #endif
 };
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define IS_RT_CLASS_REQ(x)	\
+	(IOPRIO_PRIO_CLASS(req_get_ioprio(x)) == IOPRIO_CLASS_RT)
+#endif
 
 extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
 			  const char *);
@@ -81,7 +99,9 @@ extern void mmc_queue_bounce_post(struct mmc_queue_req *);
 
 extern int mmc_packed_init(struct mmc_queue *, struct mmc_card *);
 extern void mmc_packed_clean(struct mmc_queue *);
-
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+extern void mmc_wait_cmdq_empty(struct mmc_host *);
+#endif
 extern int mmc_access_rpmb(struct mmc_queue *);
 
 #endif
