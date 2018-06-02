@@ -22,6 +22,13 @@
 typedef unsigned char      u8;
 
 #define LSM6DS3H_ACCESS_BY_GSE_I2C
+#define LSM6DS3H_SENSITIVITY_SCALING
+#define	LSM6DS3H_SENSITIVITY_SCALING_X	1026023
+#define	LSM6DS3H_SENSITIVITY_SCALING_Y	999999
+#define	LSM6DS3H_SENSITIVITY_SCALING_Z	1012843
+
+
+
 
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
 	#define LSM6DS3H_I2C_SLAVE_ADDR		0xD4
@@ -367,7 +374,8 @@ extern int LSM6DS3H_hwmsen_write_block(u8 addr, u8 *buf, u8 len);
 // 1 rad = 180/PI degree, L3G4200D_OUT_MAGNIFY = 131,
 // 180*131/PI = 7506
 #define PI              3.1415926
-#define DEGREE_TO_RAD	180*1000000/PI //7506  // fenggy mask
+#define DEGREE_TO_RAD	1000 /*we don't report degree but report mPI in kernel, in hal need to divide 1000 to PI*/
+
 //#define DEGREE_TO_RAD 819
 #endif //L3M6DS3_H
 
