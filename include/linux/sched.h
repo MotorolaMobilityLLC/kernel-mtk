@@ -1205,6 +1205,7 @@ struct sched_avg {
 	u64 last_update_time, load_sum;
 	u32 util_sum, period_contrib;
 	unsigned long load_avg, util_avg;
+	unsigned long loadwop_avg, loadwop_sum;
 };
 
 #ifdef CONFIG_SCHEDSTATS
