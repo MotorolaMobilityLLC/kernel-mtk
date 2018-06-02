@@ -45,7 +45,7 @@ else ifeq ($(CONFIG_ARCH_MT6797),y)
 ccflags-y += -DSMI_EV
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 obj-y += mmdvfs_mgr_v2.o
-else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "kiboplus"))
 ccflags-y += -DSMI_OLY
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 obj-y += mmdvfs_mgr_v2.o
