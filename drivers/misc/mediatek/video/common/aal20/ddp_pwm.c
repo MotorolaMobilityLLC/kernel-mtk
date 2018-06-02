@@ -60,7 +60,7 @@ static DEFINE_SPINLOCK(g_pwm_log_lock);
 
 
 typedef struct {
-	unsigned int value;
+	int value;
 	unsigned long tsec;
 	unsigned long tusec;
 } PWM_LOG;
@@ -307,12 +307,12 @@ int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 
 
 static volatile int g_pwm_duplicate_count;
-
+#define LOGBUFFERSIZE 384
 static void disp_pwm_log(int level_1024, int log_type)
 {
 	int i;
 	struct timeval pwm_time;
-	char buffer[256] = "";
+	char buffer[LOGBUFFERSIZE] = "";
 	int print_log;
 
 	do_gettimeofday(&pwm_time);
@@ -328,7 +328,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 	if (g_pwm_log_index >= g_pwm_log_num || level_1024 == 0) {
 		sprintf(buffer + strlen(buffer), "(latest=%2u): ", g_pwm_log_index);
 		for (i = 0; i < g_pwm_log_index; i += 1) {
-			sprintf(buffer + strlen(buffer), "%5u(%4lu,%4lu)",
+			sprintf(buffer + strlen(buffer), "%5d(%4lu,%4lu)",
 				g_pwm_log_buffer[i].value,
 				g_pwm_log_buffer[i].tsec,
 				g_pwm_log_buffer[i].tusec);
@@ -338,8 +338,8 @@ static void disp_pwm_log(int level_1024, int log_type)
 		print_log = 1;
 
 		for (i = 0; i < PWM_LOG_BUFFER_SIZE; i += 1) {
-			g_pwm_log_buffer[i].tsec = -1;
-			g_pwm_log_buffer[i].tusec = -1;
+			g_pwm_log_buffer[i].tsec = 0;
+			g_pwm_log_buffer[i].tusec = 0;
 			g_pwm_log_buffer[i].value = -1;
 		}
 	}
