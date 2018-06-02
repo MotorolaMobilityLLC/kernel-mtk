@@ -389,8 +389,6 @@ struct cmdqCommandStruct {
 	struct cmdqReadAddressStruct readAddress;
 	/* [IN] secure execution data */
 	struct cmdqSecDataStruct secData;
-	/* [IN] CPR position */
-	struct cmdq_v3_replace_struct replace_instr;
 	/* [IN] set to non-zero to enable register debug dump. */
 	uint32_t debugRegDump;
 	/* [Reserved] This is for CMDQ driver usage itself. Not for client. Do not access this field from User Space */
