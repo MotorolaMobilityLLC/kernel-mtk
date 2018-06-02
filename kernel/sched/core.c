@@ -2596,6 +2596,14 @@ static struct rq *finish_task_switch(struct task_struct *prev)
 	return rq;
 }
 
+unsigned long get_cpu_load(int cpu)
+{
+	struct rq *this = cpu_rq(cpu);
+
+	return this->cpu_load[0];
+}
+EXPORT_SYMBOL(get_cpu_load);
+
 #ifdef CONFIG_SMP
 
 /* rq->lock is NOT held, but preemption is disabled */
