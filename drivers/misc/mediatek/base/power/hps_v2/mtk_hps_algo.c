@@ -164,7 +164,6 @@ static int hps_algo_check_criteria(void)
 	ret = 0;
 	mutex_lock(&hps_ctxt.para_lock);
 	for (i = 0; i < hps_sys.cluster_num; i++) {
-#ifdef CONFIG_SMP_PPM
 		if (hps_ctxt.is_ppm_init == 0) {
 			struct cpumask all_cpus;
 
@@ -174,15 +173,6 @@ static int hps_algo_check_criteria(void)
 			hps_sys.cluster_info[i].ref_base_value = 0;
 			hps_sys.cluster_info[i].ref_limit_value = cpumask_weight(&all_cpus);
 		}
-#else
-		struct cpumask all_cpus;
-
-		arch_get_cluster_cpus(&all_cpus, hps_sys.cluster_info[i].cluster_id);
-
-		/* there is no input from PPM, so get default */
-		hps_sys.cluster_info[i].ref_base_value = 0;
-		hps_sys.cluster_info[i].ref_limit_value = cpumask_weight(&all_cpus);
-#endif
 
 		if ((hps_sys.cluster_info[i].target_core_num >=
 		     hps_sys.cluster_info[i].ref_base_value)

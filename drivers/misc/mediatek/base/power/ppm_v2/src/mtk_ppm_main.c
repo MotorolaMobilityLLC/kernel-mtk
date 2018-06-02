@@ -49,7 +49,7 @@ static int ppm_main_pdrv_remove(struct platform_device *pdev);
 /* Global variables						*/
 /*==============================================================*/
 struct ppm_data ppm_main_info = {
-	.is_enabled = true,
+	.is_enabled = false,
 	.is_in_suspend = false,
 
 	.cur_mode = PPM_MODE_PERFORMANCE,
