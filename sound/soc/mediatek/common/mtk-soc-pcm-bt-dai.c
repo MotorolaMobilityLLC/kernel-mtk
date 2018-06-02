@@ -127,7 +127,7 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream)
 	irq_add_user(substream,
 		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
 		     substream->runtime->rate,
-		     substream->runtime->period_size >> 1);
+		     substream->runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DAI, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI, true);
