@@ -94,7 +94,7 @@ CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
 CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
 #else
@@ -963,7 +963,7 @@ PMU_STATUS do_jeita_state_machine(void)
 	cv_voltage = select_jeita_cv();
 	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 	g_cv_voltage = cv_voltage;
 #endif
 
@@ -1415,7 +1415,7 @@ static void pchr_turn_on_charging(void)
 			#endif
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
-			#if defined(CONFIG_MTK_HAFG_20)
+			#if (CONFIG_MTK_GAUGE_VERSION == 20)
 			g_cv_voltage = cv_voltage;
 			#endif
 #endif
@@ -1442,7 +1442,7 @@ PMU_STATUS BAT_PreChargeModeAction(void)
 
 	/*  Enable charger */
 	pchr_turn_on_charging();
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 	if (BMT_status.UI_SOC2 == 100 && charging_full_check()) {
 #else
 	if (BMT_status.UI_SOC == 100) {
@@ -1500,7 +1500,7 @@ PMU_STATUS BAT_BatteryFullAction(void)
 
 		BMT_status.bat_in_recharging_state = KAL_TRUE;
 		BMT_status.bat_charging_state = CHR_CC;
-#ifndef CONFIG_MTK_HAFG_20
+#if (CONFIG_MTK_GAUGE_VERSION != 20)
 		battery_meter_reset();
 #endif
 #if defined(PUMPEX_PLUS_RECHG) && defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
