@@ -39,6 +39,7 @@
 #include <asm/tlb.h>
 #include <asm/memblock.h>
 #include <asm/mmu_context.h>
+#include <mt-plat/mtk_memcfg.h>
 
 #include "mm.h"
 
@@ -369,6 +370,13 @@ static void __init map_mem(void)
 	for_each_memblock(memory, reg) {
 		phys_addr_t start = reg->base;
 		phys_addr_t end = start + reg->size;
+		mtk_memcfg_write_memory_layout_info(MTK_MEMCFG_MEMBLOCK_PHY,
+				"kernel", start, reg->size);
+		MTK_MEMCFG_LOG_AND_PRINTK(
+			"[PHY layout]kernel   :   0x%08llx - 0x%08llx (0x%llx)\n",
+			(unsigned long long)start,
+			(unsigned long long)start + reg->size - 1,
+			(unsigned long long)reg->size);
 
 		if (start >= end)
 			break;

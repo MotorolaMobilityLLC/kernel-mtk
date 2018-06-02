@@ -3,6 +3,8 @@ obj-y				:= dma-mapping.o extable.o fault.o init.o \
 				   ioremap.o mmap.o pgd.o mmu.o \
 				   context.o proc.o pageattr.o
 obj-$(CONFIG_HUGETLB_PAGE)	+= hugetlbpage.o
+
+KBUILD_CPPFLAGS += -Werror -I$(srctree)/drivers/misc/mediatek/include
 obj-$(CONFIG_ARM64_PTDUMP)	+= dump.o
 
 obj-$(CONFIG_KASAN)		+= kasan_init.o

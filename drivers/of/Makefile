@@ -16,3 +16,4 @@ obj-$(CONFIG_OF_RESOLVE)  += resolver.o
 obj-$(CONFIG_OF_OVERLAY) += overlay.o
 
 obj-$(CONFIG_OF_UNITTEST) += unittest-data/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
