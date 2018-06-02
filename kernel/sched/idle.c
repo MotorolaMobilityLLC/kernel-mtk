@@ -227,6 +227,9 @@ static void cpu_idle_loop(void)
 
 			if (cpu_is_offline(cpu)) {
 				cpuhp_report_idle_dead();
+#ifdef CONFIG_MEDIATEK_SOLUTION
+				tick_set_cpu_plugoff_flag(1);
+#endif
 				arch_cpu_idle_dead();
 			}
 
