@@ -270,14 +270,12 @@ static inline void ccci_md_stop_bootup_timer(struct ccci_modem *md)
 {
 	del_timer(&md->bootup_timer);
 }
+
 static inline int ccci_md_send_ccb_tx_notify(struct ccci_modem *md, int core_id)
 {
 	return md->ops->send_ccb_tx_notify(md, core_id);
 }
-static inline int ccci_md_broadcast_state(struct ccci_modem *md, MD_STATE state)
-{
-	return md->ops->broadcast_state(md, state);
-}
+
 static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	/*WDT happened at bootup, need stop timer*/
@@ -468,6 +466,16 @@ static inline void ccci_md_scp_state_sync(struct ccci_modem *md)
 	schedule_work(&md->scp_md_state_sync_work);
 }
 #endif
+
+static inline int ccci_md_broadcast_state(struct ccci_modem *md, MD_STATE state)
+{
+	int ret = md->ops->broadcast_state(md, state);
+
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	ccci_md_scp_state_sync(md);
+#endif
+	return ret;
+}
 /****************************************************************************************************************/
 /* API Region called by ccci modem object */
 /****************************************************************************************************************/
