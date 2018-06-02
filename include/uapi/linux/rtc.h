@@ -11,13 +11,25 @@
 #ifndef _UAPI_LINUX_RTC_H_
 #define _UAPI_LINUX_RTC_H_
 
+struct rtc_time {
+	int tm_sec;
+	int tm_min;
+	int tm_hour;
+	int tm_mday;
+	int tm_mon;
+	int tm_year;
+	int tm_wday;
+	int tm_yday;
+	int tm_isdst;
+	int tm_cnt;
+};
+
 /*
  * The struct used to pass data via the following ioctl. Similar to the
  * struct tm in <time.h>, but it needs to be here so that the kernel
  * source is self contained, allowing cross-compiles, etc. etc.
  */
-
-struct rtc_time {
+struct rtc_time_wo_cnt {
 	int tm_sec;
 	int tm_min;
 	int tm_hour;
@@ -75,11 +87,21 @@ struct rtc_pll_info {
 #define RTC_PIE_OFF	_IO('p', 0x06)	/* ... off			*/
 #define RTC_WIE_ON	_IO('p', 0x0f)  /* Watchdog int. enable on	*/
 #define RTC_WIE_OFF	_IO('p', 0x10)  /* ... off			*/
-
-#define RTC_ALM_SET	_IOW('p', 0x07, struct rtc_time) /* Set alarm time  */
-#define RTC_ALM_READ	_IOR('p', 0x08, struct rtc_time) /* Read alarm time */
-#define RTC_RD_TIME	_IOR('p', 0x09, struct rtc_time) /* Read RTC time   */
-#define RTC_SET_TIME	_IOW('p', 0x0a, struct rtc_time) /* Set RTC time    */
+#define RTC_AUTOBOOT_ON _IO('p', 0x20) /* RTC drop power auto reboot on */
+#define RTC_AUTOBOOT_OFF _IO('p', 0x21)  /* RTC drop power auto reboot off */
+/* Workaround: struct rtc_time is added a cnt element in kernel.
+ * Framework has no corresponding element, that would cause
+ * frameworks' ioctl variable can't matched kernel's.
+ * Adding a original time structure without cnt.
+ */
+/* Set alarm time  */
+#define RTC_ALM_SET	_IOW('p', 0x07, struct rtc_time_wo_cnt)
+/* Read alarm time */
+#define RTC_ALM_READ	_IOR('p', 0x08, struct rtc_time_wo_cnt)
+/* Read RTC time   */
+#define RTC_RD_TIME	_IOR('p', 0x09, struct rtc_time_wo_cnt)
+/* Set RTC time    */
+#define RTC_SET_TIME	_IOW('p', 0x0a, struct rtc_time_wo_cnt)
 #define RTC_IRQP_READ	_IOR('p', 0x0b, unsigned long)	 /* Read IRQ rate   */
 #define RTC_IRQP_SET	_IOW('p', 0x0c, unsigned long)	 /* Set IRQ rate    */
 #define RTC_EPOCH_READ	_IOR('p', 0x0d, unsigned long)	 /* Read epoch      */
