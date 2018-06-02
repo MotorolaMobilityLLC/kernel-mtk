@@ -816,7 +816,8 @@ err:
 
 /* interface for ion */
 static m4u_client_t *ion_m4u_client;
-int m4u_alloc_mva_sg(port_mva_info_t *port_info, struct sg_table *sg_table)
+int m4u_alloc_mva_sg(struct port_mva_info_t *port_info,
+		     struct sg_table *sg_table)
 {
 	int prot;
 	int ret;

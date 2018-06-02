@@ -83,7 +83,7 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 {
 	struct ion_fb_buffer_info *buffer_info =
 	    (struct ion_fb_buffer_info *)buffer->priv_virt;
-	port_mva_info_t port_info;
+	struct port_mva_info_t port_info;
 
 	if (!buffer_info) {
 		IONMSG("[ion_fb_heap_phys]: Error. Invalid buffer.\n");

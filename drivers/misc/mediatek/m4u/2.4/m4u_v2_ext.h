@@ -82,7 +82,7 @@ typedef struct {
 	struct list_head mvaList;
 } m4u_client_t;
 
-typedef struct {
+struct port_mva_info_t {
 	int eModuleID;
 	unsigned long va;
 	unsigned int BufSize;
@@ -92,11 +92,12 @@ typedef struct {
 	unsigned int iova_start;
 	unsigned int iova_end;
 	unsigned int mva;
-} port_mva_info_t;
+};
 
 struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size);
 
-int m4u_alloc_mva_sg(port_mva_info_t * port_info, struct sg_table *sg_table);
+int m4u_alloc_mva_sg(struct port_mva_info_t *port_info,
+		     struct sg_table *sg_table);
 
 int m4u_dealloc_mva_sg(int eModuleID,
 		       struct sg_table *sg_table,
