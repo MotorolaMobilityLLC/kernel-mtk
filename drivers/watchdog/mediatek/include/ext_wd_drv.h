@@ -36,6 +36,10 @@ void wdt_dump_reg(void);
 int mtk_wdt_swsysret_config(int bit, int set_value);
 int mtk_rgu_dram_reserved(int enable);
 int mtk_rgu_mcu_cache_preserve(int enable);
+int mtk_wdt_dfd_count_en(int value);
+int mtk_wdt_dfd_thermal1_dis(int value);
+int mtk_wdt_dfd_thermal2_dis(int value);
+int mtk_wdt_dfd_timeout(int value);
 
 /* direct api */
 int mpcore_wk_wdt_config(int reserved, int reserved2, int timeout_val);
