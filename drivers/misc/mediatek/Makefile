@@ -97,7 +97,7 @@ endif
 #obj-$(CONFIG_USB_C_SWITCH)	+= usb_c/
 #obj-$(CONFIG_MTK_GPIO) += gpio/
 #obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
-#obj-$(CONFIG_MTK_MEM) += mem/
+obj-$(CONFIG_MTK_MEM) += mem/
 #obj-$(CONFIG_MTK_MEMORY_LOWPOWER) += memory-lowpower/
 #obj-$(CONFIG_MTK_CMDQ) += cmdq/
 obj-$(CONFIG_MTK_BOOT) += boot/
