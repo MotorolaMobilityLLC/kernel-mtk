@@ -37,6 +37,15 @@ config MT_SCHED_DEBUG
 	   Including print scheduler debug information at KE and print load balance
 	   information at kernel log.
 	   Say no if not sure.
+
+config MT_DEBUG_PREEMPT
+	bool "debug preempt, output the preempt enable/disable to FTRACE"
+	default n
+	help
+	   Provide preempt debug.
+	   Dump preempt disable/enable backtrace into ftrace.
+	   Dump preempt count in kernel log.
+	   Say no if not sure.
 endmenu
 
 menu "MTK Cluster MultiProcessor Scheduler"
