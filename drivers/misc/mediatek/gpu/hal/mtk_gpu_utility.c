@@ -17,7 +17,9 @@
 #include <linux/mutex.h>
 
 #include <mt-plat/mtk_gpu_utility.h>
+#if 0
 #include "ged_monitor_3D_fence.h"
+#endif
 
 unsigned int (*mtk_get_gpu_memory_usage_fp)(void) = NULL;
 EXPORT_SYMBOL(mtk_get_gpu_memory_usage_fp);

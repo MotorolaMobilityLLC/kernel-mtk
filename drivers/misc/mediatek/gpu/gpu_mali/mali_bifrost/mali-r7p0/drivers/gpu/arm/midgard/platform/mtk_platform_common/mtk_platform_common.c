@@ -22,7 +22,9 @@
 #endif
 #include <mali_kbase_pm_internal.h>
 
+#if 0
 #include <ged_log.h>
+#endif
 
 #include <linux/workqueue.h>
 
@@ -42,14 +44,18 @@ static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
 
 void mtk_kbase_gpu_memory_debug_init(void)
 {
+#if 0
 	mtk_dump_gpu_memory_usage_fp = mtk_kbase_dump_gpu_memory_usage;
 	mtk_get_gpu_memory_usage_fp = mtk_kbase_report_gpu_memory_usage;
+#endif
 }
 
 void mtk_kbase_gpu_memory_debug_remove(void)
 {
+#if 0
 	mtk_dump_gpu_memory_usage_fp = NULL;
 	mtk_get_gpu_memory_usage_fp = NULL;
+#endif
 }
 
 void mtk_kbase_reset_gpu_meminfo(void)

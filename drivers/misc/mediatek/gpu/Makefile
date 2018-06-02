@@ -12,7 +12,7 @@
 #
 
 #obj-y += ged/
-obj-y += hal/
+#obj-y += hal/
 
 MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
 
