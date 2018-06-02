@@ -67,6 +67,7 @@ void connectivity_export_tracing_record_cmdline(struct task_struct *tsk)
 }
 EXPORT_SYMBOL(connectivity_export_tracing_record_cmdline);
 
+#ifdef CPU_BOOST
 void connectivity_export_mt_ppm_sysboost_freq(enum ppm_sysboost_user user,
 					      unsigned int freq)
 {
@@ -80,14 +81,6 @@ void connectivity_export_mt_ppm_sysboost_core(enum ppm_sysboost_user user,
 	mt_ppm_sysboost_core(user, core_num);
 }
 EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_core);
-
-#ifdef CPU_BOOST
-bool connectivity_export_spm_resource_req(unsigned int user,
-					  unsigned int req_mask)
-{
-	return spm_resource_req(user, req_mask);
-}
-EXPORT_SYMBOL(connectivity_export_spm_resource_req);
 
 void connectivity_export_mt_ppm_sysboost_set_core_limit(
 				enum ppm_sysboost_user user,
@@ -105,5 +98,5 @@ void connectivity_export_mt_ppm_sysboost_set_freq_limit(
 {
 	mt_ppm_sysboost_set_freq_limit(user, cluster, min_freq, max_freq);
 }
-EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_set_core_limit);
+EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_set_freq_limit);
 #endif
