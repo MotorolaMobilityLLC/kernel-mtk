@@ -31,7 +31,7 @@ ccflags-y  += -DMTK_SEC_MODEM_NVRAM_ANTI_CLONE
 endif
 
 # common services
-ccci-y := ccci_core.o ccci_bm.o ccci_support.o ccci_modem.o ccci_swtp.o
+ccci-y := ccci_core.o ccci_bm.o ccci_support.o ccci_modem.o ccci_swtp.o ccci_fsm.o
 
 # port routines
 ccci-y += port_char.o port_net.o port_ipc.o port_cfg.o port_smem.o \
