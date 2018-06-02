@@ -208,9 +208,9 @@ config MTK_SENSOR_SUPPORT
 	help
 	  sensor config to sensor port sensor feature in project.
 
-#source "drivers/misc/mediatek/accelerometer/Kconfig"
+source "drivers/misc/mediatek/accelerometer/Kconfig"
 #source "drivers/misc/mediatek/activity_sensor/Kconfig"
-#source "drivers/misc/mediatek/alsps/Kconfig"
+source "drivers/misc/mediatek/alsps/Kconfig"
 #source "drivers/misc/mediatek/answer_call_sensor/Kconfig"
 #source "drivers/misc/mediatek/barometer/Kconfig"
 #source "drivers/misc/mediatek/face_down_sensor/Kconfig"
@@ -220,12 +220,12 @@ config MTK_SENSOR_SUPPORT
 #source "drivers/misc/mediatek/gesture/Kconfig"
 #source "drivers/misc/mediatek/glance_gesture_sensor/Kconfig"
 #source "drivers/misc/mediatek/gravity/Kconfig"
-#source "drivers/misc/mediatek/gyroscope/Kconfig"
+source "drivers/misc/mediatek/gyroscope/Kconfig"
 #source "drivers/misc/mediatek/heart_rate_sensor/Kconfig"
 #source "drivers/misc/mediatek/humidity/Kconfig"
-#source "drivers/misc/mediatek/hwmon/Kconfig"
+source "drivers/misc/mediatek/hwmon/Kconfig"
 #source "drivers/misc/mediatek/linearacceleration/Kconfig"
-#source "drivers/misc/mediatek/magnetometer/Kconfig"
+source "drivers/misc/mediatek/magnetometer/Kconfig"
 #source "drivers/misc/mediatek/pdr_sensor/Kconfig"
 #source "drivers/misc/mediatek/pedometer/Kconfig"
 #source "drivers/misc/mediatek/pick_up_sensor/Kconfig"
