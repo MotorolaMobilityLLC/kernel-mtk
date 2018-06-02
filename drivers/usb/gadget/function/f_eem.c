@@ -615,6 +615,68 @@ static void eem_unbind(struct usb_configuration *c, struct usb_function *f)
 	usb_free_all_descriptors(f);
 }
 
+static void
+eem_old_unbind(struct usb_configuration *c, struct usb_function *f)
+{
+	struct f_eem	*eem = func_to_eem(f);
+
+	DBG(c->cdev, "eem unbind\n");
+
+	usb_free_all_descriptors(f);
+	kfree(eem);
+}
+/**
+ * eem_bind_config - add CDC Ethernet (EEM) network link to a configuration
+ * @c: the configuration to support the network link
+ * Context: single threaded during gadget setup
+ *
+ * Returns zero on success, else negative errno.
+ *
+ * Caller must have called @gether_setup().  Caller is also responsible
+ * for calling @gether_cleanup() before module unload.
+ */
+int eem_bind_config(struct usb_configuration *c, struct eth_dev *dev)
+{
+	struct f_eem	*eem;
+	int		status;
+
+	/* maybe allocate device-global string IDs */
+	if (eem_string_defs[0].id == 0) {
+
+		/* control interface label */
+		status = usb_string_id(c->cdev);
+		if (status < 0)
+			return status;
+		eem_string_defs[0].id = status;
+		eem_intf.iInterface = status;
+	}
+
+	/* allocate and initialize one new instance */
+	eem = kzalloc(sizeof(*eem), GFP_KERNEL);
+	if (!eem)
+		return -ENOMEM;
+
+	eem->port.ioport = dev;
+	eem->port.cdc_filter = DEFAULT_FILTER;
+
+	eem->port.func.name = "cdc_eem";
+	eem->port.func.strings = eem_strings;
+	/* descriptors are per-instance copies */
+	eem->port.func.bind = eem_bind;
+	eem->port.func.unbind = eem_old_unbind;
+	eem->port.func.set_alt = eem_set_alt;
+	eem->port.func.setup = eem_setup;
+	eem->port.func.disable = eem_disable;
+	eem->port.wrap = eem_wrap;
+	eem->port.unwrap = eem_unwrap;
+	eem->port.header_len = EEM_HLEN;
+
+	status = usb_add_function(c, &eem->port.func);
+	if (status)
+		kfree(eem);
+	return status;
+}
+
 static struct usb_function *eem_alloc(struct usb_function_instance *fi)
 {
 	struct f_eem	*eem;
