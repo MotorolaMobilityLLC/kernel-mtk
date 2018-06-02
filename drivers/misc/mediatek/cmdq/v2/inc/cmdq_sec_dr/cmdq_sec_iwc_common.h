@@ -61,7 +61,7 @@ struct iwcCmdqSystraceLog_t {
 
 struct iwcCmdqMetadata_t {
 	uint32_t addrListLength;
-	iwcCmdqAddrMetadata_t addrList[CMDQ_IWC_MAX_ADDR_LIST_LENGTH];
+	struct iwcCmdqAddrMetadata_t addrList[CMDQ_IWC_MAX_ADDR_LIST_LENGTH];
 
 	uint64_t enginesNeedDAPC;
 	uint64_t enginesNeedPortSecurity;
@@ -111,7 +111,7 @@ struct iwcCmdqCommand_t {
 	char callerName[CMDQ_IWC_CLIENT_NAME];
 
 	/* metadata */
-	iwcCmdqMetadata_t metadata;
+	struct iwcCmdqMetadata_t metadata;
 
 	/* debug */
 	uint64_t hNormalTask; /* handle to reference task in normal world*/
@@ -134,13 +134,13 @@ struct iwcCmdqMessage_t {
 	};
 
 	union {
-		iwcCmdqCommand_t command;
-		iwcCmdqCancelTask_t cancelTask;
-		iwcCmdqPathResource_t pathResource;
-		iwcCmdqSectraceBuffer_t sectracBuffer;
+		struct iwcCmdqCommand_t command;
+		struct iwcCmdqCancelTask_t cancelTask;
+		struct iwcCmdqPathResource_t pathResource;
+		struct iwcCmdqSectraceBuffer_t sectracBuffer;
 	};
 
-	iwcCmdqDebugConfig_t debug;
+	struct iwcCmdqDebugConfig_t debug;
 };
 
 /*  */
