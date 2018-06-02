@@ -182,6 +182,8 @@ typedef enum {
 	Soc_Aud_InterConnectionInput_I24,
 	Soc_Aud_InterConnectionInput_I25,
 	Soc_Aud_InterConnectionInput_I26,
+	Soc_Aud_InterConnectionInput_I27,
+	Soc_Aud_InterConnectionInput_I28,
 	Soc_Aud_InterConnectionInput_Num_Input
 } Soc_Aud_InterConnectionInput;
 
@@ -220,6 +222,10 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_O31,
 	Soc_Aud_InterConnectionOutput_O32,
 	Soc_Aud_InterConnectionOutput_O33,
+	Soc_Aud_InterConnectionOutput_O34,
+	Soc_Aud_InterConnectionOutput_O35,
+	Soc_Aud_InterConnectionOutput_O36,
+	Soc_Aud_InterConnectionOutput_O37,
 	Soc_Aud_InterConnectionOutput_Num_Output
 } Soc_Aud_InterConnectionOutput;
 
