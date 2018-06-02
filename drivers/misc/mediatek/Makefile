@@ -32,6 +32,7 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
+obj-$(CONFIG_MTK_PMIC)	+= power/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
