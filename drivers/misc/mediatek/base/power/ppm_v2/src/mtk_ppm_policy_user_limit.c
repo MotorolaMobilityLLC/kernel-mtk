@@ -232,7 +232,7 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 			goto out;
 		}
 
-#ifdef CONFIG_ARCH_MT6757
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 		if (setup_max_cpus == 4) {
 			if ((max_core == 0) && (id == 0)) {
 				ppm_err("@%s: Cannot disable cluster %d if in LL_ONLY state\n",
