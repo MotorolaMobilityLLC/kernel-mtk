@@ -4602,7 +4602,7 @@ module_init(eem_init); /* late_initcall */
  */
 static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 {
-	unsigned int ackData;
+	unsigned int ackData = 0;
 	unsigned int len = EEM_IPI_SEND_DATA_LEN;
 	unsigned int ret;
 	#define IPI_ID IPI_ID_PTPOD /* IPI_ID_VCORE_DVFS */
@@ -4730,8 +4730,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_VCORE_INIT:
 			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len,
-&ackData);
+			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
 			if (ret != 0)
 				eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_INIT) ret:%d - %d\n",
 							ret, ackData);
@@ -5323,12 +5322,12 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 	buf[count] = '\0';
 
 	if (sscanf(buf, "%u %u", &index, &newVolt) == 2) {
-		ret = 0;
 		/* transfer uv to 10uv */
 		if (newVolt > 10)
 			newVolt = newVolt / 10;
 		/* disable bound checking */
-		/* ret = check_vcore_volt_boundary(index, newVolt);*/
+		#if 0
+		ret = check_vcore_volt_boundary(index, newVolt);
 		if (ret == -EINVAL) {
 			if (index == 0)
 				eem_debug("volt should be set larger than index %d\n", index+1);
@@ -5336,15 +5335,15 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 				eem_debug("volt should be set smaller than index %d\n", index-1);
 			else
 				eem_debug("volt should be set between index %d - %d\n", index-1, index+1);
-		} else {
-			eem_error("set eem_vcore[%d]=%d\n", index, newVolt);
-			spin_lock_irqsave(&eem_spinlock, flags);
-			memset(&eem_data, 0, sizeof(struct eem_ipi_data));
-			eem_data.u.data.arg[0] = index;
-			eem_data.u.data.arg[1] = newVolt;
-			ipi_ret = eem_to_sspm(IPI_EEM_VCORE_UPDATE_PROC_WRITE, &eem_data);
-			spin_unlock_irqrestore(&eem_spinlock, flags);
 		}
+		#endif
+		eem_error("set eem_vcore[%d]=%d\n", index, newVolt);
+		spin_lock_irqsave(&eem_spinlock, flags);
+		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
+		eem_data.u.data.arg[0] = index;
+		eem_data.u.data.arg[1] = newVolt;
+		ipi_ret = eem_to_sspm(IPI_EEM_VCORE_UPDATE_PROC_WRITE, &eem_data);
+		spin_unlock_irqrestore(&eem_spinlock, flags);
 	} else {
 		ret = -EINVAL;
 		eem_debug("bad argument!! argument should be \"0\"1\n");
