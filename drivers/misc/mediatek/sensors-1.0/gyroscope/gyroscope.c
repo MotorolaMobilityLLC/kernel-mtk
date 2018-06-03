@@ -728,6 +728,7 @@ int gyro_data_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	check_repeat_data(data->x, data->y, data->z);
@@ -751,6 +752,7 @@ int gyro_bias_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
@@ -807,6 +809,7 @@ int gyro_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	GYRO_LOG("flush\n");
