@@ -526,73 +526,16 @@ static void update_freq_fastpath(void)
 }
 #endif
 
-#if 0 /* no use */
-int boost_write_for_perf_pid(int pid, int boost_value)
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+void set_min_boost_freq(int boost_value, int cpu_clus)
 {
-	struct task_struct *boost_task;
-	struct schedtune *ct;
-	unsigned threshold_idx;
-	int boost_pct;
+	int max_freq = schedtune_target_cap[cpu_clus].freq;
+	int max_cap = schedtune_target_cap[cpu_clus].cap;
+	int floor_cap, floor_freq;
 
-	if (boost_value >= 1000) {
-		boost_value -= 1000;
-		stune_task_threshold = 0;
-	} else {
-		stune_task_threshold = default_stune_threshold;
-	}
-
-	if (boost_value < -100 || boost_value > 100)
-		printk_deferred("warning: perf boost value should be -100~100\n");
-
-	if (boost_value >= 100)
-		boost_value = 100;
-	else if (boost_value <= -100)
-		boost_value = -100;
-
-	rcu_read_lock();
-
-	boost_task = find_task_by_vpid(pid);
-	if (boost_task) {
-		ct = task_schedtune(boost_task);
-
-		if (ct->idx == 0) {
-			printk_deferred("error: don't boost perf task at root idx=%d, pid:%d\n", ct->idx, pid);
-			rcu_read_unlock();
-			return -EINVAL;
-		}
-
-		boost_pct = boost_value;
-
-		/*
-		 * Update threshold params for Performance Boost (B)
-		 * and Performance Constraint (C) regions.
-		 * The current implementatio uses the same cuts for both
-		 * B and C regions.
-		 */
-		threshold_idx = clamp(boost_pct, 0, 99) / 10;
-		ct->perf_boost_idx = threshold_idx;
-		ct->perf_constrain_idx = threshold_idx;
-
-		ct->boost = boost_value;
-
-		/* Update CPU boost */
-		schedtune_boostgroup_update(ct->idx, ct->boost);
-	} else {
-		printk_deferred("error: perf task no exist: pid=%d, boost=%d\n", pid, boost_value);
-		rcu_read_unlock();
-		return -EINVAL;
-	}
-
-	trace_sched_tune_config(ct->boost);
-
-#if MET_STUNE_DEBUG
-	/* perf: foreground with pid */
-	if (ct->idx == 1)
-		met_tag_oneshot(0, "sched_boost_fg", ct->boost);
-#endif
-
-	rcu_read_unlock();
-	return 0;
+	floor_cap = (max_cap * (int)(boost_value+1) / 100);
+	floor_freq = (floor_cap * max_freq / max_cap);
+	min_boost_freq[cpu_clus] = mt_cpufreq_find_close_freq(cpu_clus, floor_freq);
 }
 #endif
 
@@ -603,24 +546,37 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int boost_pct;
 	bool dvfs_on_demand = false;
 	int idx = 0;
+	int cluster;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	int floor = 0;
 	int i;
-
+	int c0, c1;
+#endif
 	if (boost_value >= 3000) { /* dvfs floor */
 
 		boost_value -= 3000;
-		for (i = 0; i < cpu_cluster_nr; i++) {
-			int max_freq = schedtune_target_cap[i].freq;
-			int max_cap = schedtune_target_cap[i].cap;
-			int floor_cap, floor_freq;
+		cluster = (int)boost_value / 100;
+		boost_value = (int)boost_value % 100;
 
-			floor_cap = (max_cap * (int)boost_value / 100);
-			floor_freq = (floor_cap * max_freq / max_cap);
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
-			min_boost_freq[i] = mt_cpufreq_find_close_freq(i, floor_freq);
-#endif
+		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
+			floor = 1;
+			c0 = cluster & 0x1;
+			c1 = cluster & 0x2;
+
+			/* cluster 0 */
+			if (c0)
+				set_min_boost_freq(boost_value, 0);
+			else
+				min_boost_freq[0] = 0;
+
+			/* cluster 1 */
+			if (c1)
+				set_min_boost_freq(boost_value, 1);
+			else
+				min_boost_freq[1] = 0;
 		}
-		floor = 1;
+#endif
 
 		stune_task_threshold = default_stune_threshold;
 	} else if (boost_value >= 2000) { /* dvfs short cut */
@@ -829,25 +785,37 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	unsigned threshold_idx;
 	int boost_pct;
 	bool dvfs_on_demand = false;
+	int cluster;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	int floor = 0;
 	int i;
-
+	int c0, c1;
+#endif
 	if (boost >= 3000) { /* dvfs floor */
 
 		boost -= 3000;
+		cluster = (int)boost / 100;
+		boost = (int)boost % 100;
 
-		for (i = 0; i < cpu_cluster_nr; i++) {
-			int max_freq = schedtune_target_cap[i].freq;
-			int max_cap = schedtune_target_cap[i].cap;
-			int floor_cap, floor_freq;
-
-			floor_cap = (max_cap * (int)boost / 100);
-			floor_freq = (floor_cap * max_freq / max_cap);
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
-			min_boost_freq[i] = mt_cpufreq_find_close_freq(i, floor_freq);
-#endif
+		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
+			floor = 1;
+			c0 = cluster & 0x1;
+			c1 = cluster & 0x2;
+
+			/* cluster 0 */
+			if (c0)
+				set_min_boost_freq(boost, 0);
+			else
+				min_boost_freq[0] = 0;
+
+			/* cluster 1 */
+			if (c1)
+				set_min_boost_freq(boost, 1);
+			else
+				min_boost_freq[1] = 0;
 		}
-		floor = 1;
+#endif
 
 		stune_task_threshold = default_stune_threshold;
 	} else if (boost >= 2000) { /* dvfs short cut */
