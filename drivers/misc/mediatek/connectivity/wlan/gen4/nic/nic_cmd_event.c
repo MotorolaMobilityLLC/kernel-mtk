@@ -748,7 +748,8 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 
 		if (u4Value & WCIR_WLAN_READY) {
 			break;
-		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
+		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE
+			/*|| kalIsResetting()*/) {
 			if (prCmdInfo->fgIsOid) {
 				/* Update Set Information Length */
 				kalOidComplete(prAdapter->prGlueInfo,

@@ -3741,7 +3741,8 @@ VOID aisFsmRunEventRoamingDiscovery(IN P_ADAPTER_T prAdapter, UINT_32 u4ReqScan)
 
 		prWfdCfgSettings = &(prAdapter->rWifiVar.rWfdConfigureSettings);
 		if ((prWfdCfgSettings->ucWfdEnable != 0)) {
-			DBGLOG(ROAMING, INFO, "WFD is running. Stop roaming.\n");
+			DBGLOG(ROAMING, INFO, "WFD is running. Stop roaming[WfdEnable:%u]\n",
+				prWfdCfgSettings->ucWfdEnable);
 			roamingFsmRunEventRoam(prAdapter);
 			roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_NOCANDIDATE);
 			return;

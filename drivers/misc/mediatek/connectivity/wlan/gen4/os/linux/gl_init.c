@@ -305,6 +305,8 @@ const UINT_32 mtk_cipher_suites[5] = {
 };
 
 static struct cfg80211_ops mtk_wlan_ops = {
+	.suspend = mtk_cfg80211_suspend,
+	.resume = mtk_cfg80211_resume,
 	.change_virtual_intf = mtk_cfg80211_change_iface,
 	.add_key = mtk_cfg80211_add_key,
 	.get_key = mtk_cfg80211_get_key,

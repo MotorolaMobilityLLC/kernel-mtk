@@ -8928,7 +8928,16 @@ wlanSendSetQueryCmd(IN P_ADAPTER_T prAdapter,
 	P_WIFI_CMD_T prWifiCmd;
 	UINT_8 ucCmdSeqNum;
 
+	if (!prAdapter || !prAdapter->prAisBssInfo) {
+		DBGLOG(OID, ERROR, "prAdapter or prAisBssInfo is not allocated.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
 	prGlueInfo = prAdapter->prGlueInfo;
+	if (!prGlueInfo) {
+		/* When wlanRemove is called, can't do wlanTriggerStatsLog in auth/assoc tx done */
+		return WLAN_STATUS_FAILURE;
+	}
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + u4SetQueryInfoLen));
 
 	DEBUGFUNC("wlanSendSetQueryCmd");
