@@ -72,6 +72,7 @@
 #include "external_display.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
+#include "ddp_dsi.h"
 
 
 static struct task_struct *primary_display_check_task; /* For abnormal check */
@@ -616,6 +617,8 @@ int primary_display_esd_recovery(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 6);
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
+	/*after dsi_stop, we should enable the dsi basic irq.*/
+	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
 	disp_lcm_suspend(primary_get_lcm());
 	DISPCHECK("[POWER]lcm suspend[end]\n");
 

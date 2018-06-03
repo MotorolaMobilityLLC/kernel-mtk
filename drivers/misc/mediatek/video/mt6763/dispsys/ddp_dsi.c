@@ -3102,6 +3102,13 @@ int dsi_te_irq_enable(enum DISP_MODULE_ENUM module, void *handle, unsigned int e
 	return 0;
 }
 
+int dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
+{
+	_dsi_basic_irq_enable(module, cmdq);
+
+	return 0;
+}
+
 /*TUI will use the api*/
 int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
 {
