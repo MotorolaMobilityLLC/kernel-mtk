@@ -152,59 +152,7 @@ struct ccci_clk_node {
 
 struct md_pll_reg {
 	void __iomem *md_top_clkSW;
-	void __iomem *md_dcm;
-	void __iomem *md_peri_misc;
-	void __iomem *md_L1_a0;
 	void __iomem *md_top_Pll;
-	void __iomem *md_sys_clk;
-	/*void __iomem *md_l1_conf;*/
-	/* the follow is used for dump */
-	void __iomem *md_dbg_sys;
-	void __iomem *md_pc_mon1;
-	void __iomem *md_pc_mon2;
-	void __iomem *md_clkSW;
-	void __iomem *md_clkSw0;
-	void __iomem *md_clkSw1;
-	void __iomem *md_clkSw2;
-	void __iomem *md_clkSw3;
-	void __iomem *md_pll_mixed_0;
-	void __iomem *md_pll_mixed_1;
-	void __iomem *md_pll_mixed_2;
-	void __iomem *md_pll_mixed_3;
-	void __iomem *md_pll_mixed_4;
-	void __iomem *md_pll_mixed_5;
-	void __iomem *md_pll_mixed_6;
-	void __iomem *md_pll_mixed_7;
-	void __iomem *md_pll_mixed_8;
-	void __iomem *md_pll_mixed_9;
-	void __iomem *md_pll_mixed_A;
-	void __iomem *md_clk_ctl_0;
-	void __iomem *md_clk_ctl_1;
-	void __iomem *md_clk_ctl_2;
-	void __iomem *md_clk_ctl_3;
-	void __iomem *md_global_con_0;
-	void __iomem *md_global_con_1;
-	void __iomem *md_global_con_2;
-	void __iomem *md_global_con_3;
-	void __iomem *md_global_con_4;
-	void __iomem *md_global_con_5;
-	void __iomem *md_bus_reg_0;
-	void __iomem *md_bus_reg_1;
-	void __iomem *md_bus_reg_2;
-	void __iomem *md_bus_reg_3;
-	void __iomem *md_bus_reg_4;
-	void __iomem *md_bus_rec_0;
-	void __iomem *md_bus_rec_1;
-	void __iomem *md_bus_rec_2;
-	void __iomem *md_ect_0;
-	void __iomem *md_ect_1;
-	void __iomem *md_ect_2;
-	void __iomem *md_ect_3;
-	void __iomem *md_topsm_reg;
-	void __iomem *md_rgu_reg_0;
-	void __iomem *md_rgu_reg_1;
-	void __iomem *md_ost_status;
-	void __iomem *md_csc_reg;
 
 	void __iomem *md_boot_stats0;
 	void __iomem *md_boot_stats1;

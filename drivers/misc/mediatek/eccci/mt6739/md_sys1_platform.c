@@ -265,56 +265,6 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_top_clkSW = ioremap_nocache(MDTOP_CLKSW_BASE, MDTOP_CLKSW_LENGTH);
 	/*needed by bootup flow end*/
 
-	/*just for dump begin*/
-	md_reg->md_peri_misc = ioremap_nocache(MD_PERI_MISC_BASE, MD_PERI_MISC_LEN);
-	md_reg->md_L1_a0 = ioremap_nocache(MDL1A0_BASE, MDL1A0_LEN);
-
-	md_reg->md_sys_clk = ioremap_nocache(MDSYS_CLKCTL_BASE, MDSYS_CLKCTL_LEN);
-	md_reg->md_dbg_sys = ioremap_nocache(MD1_OPEN_DEBUG_APB_CLK, 0x1000);
-	md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_LEN0);
-	md_info->md_pc_monitor = md_reg->md_pc_mon1;
-	md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_LEN1);
-	md_reg->md_clkSW = ioremap_nocache(MD_CLKSW_BASE, MD_CLKSW_LENGTH);
-	md_reg->md_clkSw0 = md_reg->md_clkSW;
-	md_reg->md_clkSw1 = ioremap_nocache(MD1_CLKSW_BASE1, MD1_CLKSW_LEN1);
-	md_reg->md_clkSw2 = ioremap_nocache(MD1_CLKSW_BASE2, MD1_CLKSW_LEN2);
-	md_reg->md_clkSw3 = ioremap_nocache(MD1_CLKSW_BASE3, MD1_CLKSW_LEN3);
-	md_reg->md_pll_mixed_0 = ioremap_nocache(MD1_PLLMIXED_BASE0, MD1_PLLMIXED_LEN0);
-	md_reg->md_pll_mixed_1 = ioremap_nocache(MD1_PLLMIXED_BASE1, MD1_PLLMIXED_LEN1);
-	md_reg->md_pll_mixed_2 = ioremap_nocache(MD1_PLLMIXED_BASE2, MD1_PLLMIXED_LEN1);
-	md_reg->md_pll_mixed_3 = ioremap_nocache(MD1_PLLMIXED_BASE3, MD1_PLLMIXED_LEN3);
-	md_reg->md_pll_mixed_4 = ioremap_nocache(MD1_PLLMIXED_BASE4, MD1_PLLMIXED_LEN4);
-	md_reg->md_pll_mixed_5 = ioremap_nocache(MD1_PLLMIXED_BASE5, MD1_PLLMIXED_LEN5);
-	md_reg->md_pll_mixed_6 = ioremap_nocache(MD1_PLLMIXED_BASE6, MD1_PLLMIXED_LEN6);
-	md_reg->md_pll_mixed_7 = ioremap_nocache(MD1_PLLMIXED_BASE7, MD1_PLLMIXED_LEN7);
-	md_reg->md_pll_mixed_8 = ioremap_nocache(MD1_PLLMIXED_BASE8, MD1_PLLMIXED_LEN8);
-	md_reg->md_pll_mixed_9 = ioremap_nocache(MD1_PLLMIXED_BASE9, MD1_PLLMIXED_LEN9);
-	md_reg->md_clk_ctl_0 = ioremap_nocache(MD1_CLKCTL_BASE0, MD1_CLKCTL_LEN0);
-	md_reg->md_clk_ctl_1 = ioremap_nocache(MD1_CLKCTL_BASE1, MD1_CLKCTL_LEN1);
-	md_reg->md_global_con_0 = ioremap_nocache(MD1_GLOBALCON_BASE0, MD1_GLOBALCON_LEN0);
-	md_reg->md_global_con_1 = ioremap_nocache(MD1_GLOBALCON_BASE1, MD1_GLOBALCON_LEN1);
-	md_reg->md_global_con_2 = ioremap_nocache(MD1_GLOBALCON_BASE2, MD1_GLOBALCON_LEN2);
-	md_reg->md_global_con_3 = ioremap_nocache(MD1_GLOBALCON_BASE3, MD1_GLOBALCON_LEN3);
-	md_reg->md_global_con_4 = ioremap_nocache(MD1_GLOBALCON_BASE4, MD1_GLOBALCON_LEN4);
-	md_reg->md_global_con_5 = ioremap_nocache(MD1_GLOBALCON_BASE5, MD1_GLOBALCON_LEN5);
-	md_reg->md_bus_reg_0 = ioremap_nocache(MD1_BUS_REG_BASE0, MD1_BUS_REG_LEN0);
-	md_reg->md_bus_reg_1 = ioremap_nocache(MD1_BUS_REG_BASE1, MD1_BUS_REG_LEN1);
-	md_reg->md_bus_reg_2 = ioremap_nocache(MD1_BUS_REG_BASE2, MD1_BUS_REG_LEN2);
-	md_reg->md_bus_reg_3 = ioremap_nocache(MD1_BUS_REG_BASE3, MD1_BUS_REG_LEN3);
-	md_reg->md_bus_rec_0 = ioremap_nocache(MD1_MCU_MO_BUSREC_BASE0, MD1_MCU_MO_BUSREC_LEN0);
-	md_reg->md_bus_rec_1 = ioremap_nocache(MD1_INFRA_BUSREC_BASE0, MD1_INFRA_BUSREC_LEN0);
-	md_reg->md_bus_rec_2 = ioremap_nocache(MD1_BUSREC_LAY_BASE0, MD1_BUSREC_LAY_LEN0);
-	md_reg->md_ect_0 = ioremap_nocache(MD1_ECT_REG_BASE0, MD1_ECT_REG_LEN0);
-	md_reg->md_ect_1 = ioremap_nocache(MD1_ECT_REG_BASE1, MD1_ECT_REG_LEN1);
-	md_reg->md_ect_2 = ioremap_nocache(MD1_ECT_REG_BASE2, MD1_ECT_REG_LEN2);
-	md_reg->md_ect_3 = ioremap_nocache(MD1_ECT_REG_BASE3, MD1_ECT_REG_LEN3);
-	md_reg->md_topsm_reg = ioremap_nocache(MD1_TOPSM_REG_BASE0, MD1_TOPSM_REG_LEN0);
-	md_reg->md_rgu_reg_0 = ioremap_nocache(MD1_RGU_REG_BASE0, MD1_RGU_REG_LEN0);
-	md_reg->md_rgu_reg_1 = ioremap_nocache(MD1_RGU_REG_BASE1, MD1_RGU_REG_LEN1);
-	md_info->md_ost_status = ioremap_nocache(MD_OST_STATUS_BASE, MD_OST_STATUS_LENGTH);
-	md_reg->md_ost_status = md_info->md_ost_status;
-
-	md_reg->md_csc_reg = ioremap_nocache(MD_CSC_REG_BASE, MD_CSC_REG_LENGTH);
 	md_reg->md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 4);
 	md_reg->md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 4);
 	/*just for dump end*/
@@ -381,7 +331,10 @@ void md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int l
 static int dump_emi_last_bm(struct ccci_modem *md)
 {
 	u32 buf_len = 1024;
+	u32 i, j;
+	char temp_char;
 	char *buf = NULL;
+	char *temp_buf = NULL;
 
 	buf = kzalloc(buf_len, GFP_ATOMIC);
 	if (!buf) {
@@ -392,7 +345,27 @@ static int dump_emi_last_bm(struct ccci_modem *md)
 	dump_last_bm(buf, buf_len);
 #endif
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump EMI last bm\n");
-	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, buf, buf_len);
+	buf[buf_len - 1] = '\0';
+	temp_buf = buf;
+	for (i = 0, j = 1; i < buf_len - 1; i++, j++) {
+		if (buf[i] == 0x0) /* 0x0 end of hole string. */
+			break;
+		if (buf[i] == 0x0A && j < 256) {
+			/* 0x0A stands for end of string, no 0x0D */
+			buf[i] = '\0';
+			CCCI_MEM_LOG(md->index, TAG, "%s\n", temp_buf);/* max 256 bytes */
+			temp_buf = buf + i + 1;
+			j = 0;
+		} else if (unlikely(j >= 255)) {
+			/* ccci_mem_log max buffer length: 256, but dm log maybe only less than 50 bytes. */
+			temp_char = buf[i];
+			buf[i] = '\0';
+			CCCI_MEM_LOG(md->index, TAG, "%s\n", temp_buf);
+			temp_buf = buf + i;
+			j = 0;
+			buf[i] = temp_char;
+		}
+	}
 
 	kfree(buf);
 
@@ -402,11 +375,10 @@ static int dump_emi_last_bm(struct ccci_modem *md)
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
 	/* MD no need dump because of bus hang happened - open for debug */
-	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-	struct md_pll_reg *md_reg = md_info->md_pll_base;
 	struct ccci_per_md *per_md_data = &md->per_md_data;
 	unsigned int reg_value[2] = { 0 };
 	unsigned int ccif_sram[CCCI_EE_SIZE_CCIF_SRAM/sizeof(unsigned int)] = { 0 };
+	void __iomem *dump_reg0;
 
 	/*dump_emi_latency();*/
 	dump_emi_last_bm(md);
@@ -419,128 +391,164 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	else if (!((reg_value[0] == 0x54430007) || (reg_value[0] == 0) ||
 		(reg_value[0] >= 0x53310000 && reg_value[0] <= 0x533100FF)))
 		return;
-
+	if (unlikely(in_interrupt())) {
+		CCCI_MEM_LOG_TAG(md->index, TAG, "In interrupt, skip dump MD debug register.\n");
+		return;
+	}
 	md_cd_lock_modem_clock_src(1);
 
 	/* 1. pre-action */
 	if (per_md_data->md_dbg_dump_flag & (MD_DBG_DUMP_ALL & ~(1 << MD_DBG_DUMP_SMEM))) {
-		ccci_write32(md_reg->md_dbg_sys, 0x430, 0x1);
+		dump_reg0 = ioremap_nocache(MD1_OPEN_DEBUG_APB_CLK, 0x1000);
+		ccci_write32(dump_reg0, 0x430, 0x1);
 		udelay(1000);
-		CCCI_MEM_LOG_TAG(md->index, TAG, "md_dbg_sys:0x%X\n", cldma_read32(md_reg->md_dbg_sys, 0x430));
+		CCCI_MEM_LOG_TAG(md->index, TAG, "md_dbg_sys:0x%X\n", cldma_read32(dump_reg0, 0x430));
+		iounmap(dump_reg0);
 	} else {
 		md_cd_lock_modem_clock_src(0);
 		return;
 	}
+
 	/* 1. PC Monitor */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PCMON)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor\n");
-		CCCI_MEM_LOG_TAG(md->index, TAG, "common: 0x%X\n", MD1_PC_MONITOR_BASE0);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "common: 0x%X\n", (MD_PC_MONITOR_BASE + 0x800));
 		/* Stop all PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL); /* stop MD PCMon */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0x100);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1 + 0x100, 0x60);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x200), 0x60);
-
+		dump_reg0 = ioremap_nocache(MD_PC_MONITOR_BASE, MD_PC_MONITOR_LEN);
+		ccci_write32(dump_reg0, 0x800, 0x22); /* stop MD PCMon */
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x800), 0x100);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0 + 0x900, 0x60);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xA00), 0x60);
 		/* core0 */
 		CCCI_MEM_LOG_TAG(md->index, TAG, "core0/1: [0]0x%X, [1]0x%X\n",
-			MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_BASE1 + 0x400);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x400);
+				MD_PC_MONITOR_BASE, (MD_PC_MONITOR_BASE + 0x400));
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0x400);
 		/* core1 */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x400), 0x400);
-
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x400), 0x400);
 		/* Resume PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_RESTART_ALL_VAL);
-		ccci_read32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET);
+		ccci_write32(dump_reg0, 0x800, 0x11);
+		ccci_read32(dump_reg0, 0x800);
+		iounmap(dump_reg0);
 	}
+
 	/* 2. dump PLL */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PLL)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PLL\n");
 		/* MD CLKSW */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "CLKSW: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X\n",
-			MD1_CLKSW_BASE0, MD1_CLKSW_BASE1, MD1_CLKSW_BASE2, MD1_CLKSW_BASE3);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clkSW, MD1_CLKSW_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clkSw1, MD1_CLKSW_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clkSw3, MD1_CLKSW_LEN3);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "CLKSW: [0]0x%X, [1]0x%X, [2]0x%X\n",
+					MD_CLKSW_BASE, (MD_CLKSW_BASE + 0x100), (MD_CLKSW_BASE + 0xF00));
+		dump_reg0 = ioremap_nocache(MD_CLKSW_BASE, MD_CLKSW_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0xD4);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x100), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xF00), 0x8);
+		iounmap(dump_reg0);
 		/* MD PLLMIXED */
 		CCCI_MEM_LOG_TAG(md->index, TAG,
-		"PLLMIXED:[0]0x%X,[1]0x%X,[2]0x%X,[3]0x%X,[4]0x%X,[5]0x%X,[6]0x%X,[7]0x%X,[8]0x%X,[9]0x%X\n",
-			MD1_PLLMIXED_BASE0, MD1_PLLMIXED_BASE1, MD1_PLLMIXED_BASE2, MD1_PLLMIXED_BASE3,
-			MD1_PLLMIXED_BASE4, MD1_PLLMIXED_BASE5, MD1_PLLMIXED_BASE6, MD1_PLLMIXED_BASE7,
-			MD1_PLLMIXED_BASE8, MD1_PLLMIXED_BASE9);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_0, MD1_PLLMIXED_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_1, MD1_PLLMIXED_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_2, MD1_PLLMIXED_LEN2);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_3, MD1_PLLMIXED_LEN3);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_4, MD1_PLLMIXED_LEN4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_5, MD1_PLLMIXED_LEN5);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_6, MD1_PLLMIXED_LEN6);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_7, MD1_PLLMIXED_LEN7);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_8, MD1_PLLMIXED_LEN8);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pll_mixed_9, MD1_PLLMIXED_LEN9);
-
+			"PLLMIXED:[0]0x%X,[1]0x%X,[2]0x%X,[3]0x%X,[4]0x%X,[5]0x%X,[6]0x%X,[7]0x%X,[8]0x%X,[9]0x%X\n",
+			MD_PLL_MIXED_BASE, (MD_PLL_MIXED_BASE + 0x100), (MD_PLL_MIXED_BASE + 0x200),
+			(MD_PLL_MIXED_BASE + 0x300),	(MD_PLL_MIXED_BASE + 0x400), (MD_PLL_MIXED_BASE + 0x500),
+			(MD_PLL_MIXED_BASE + 0x600),	(MD_PLL_MIXED_BASE + 0xC00), (MD_PLL_MIXED_BASE + 0xD00),
+			(MD_PLL_MIXED_BASE + 0xF00));
+		dump_reg0 = ioremap_nocache(MD_PLL_MIXED_BASE, MD_PLL_MIXED_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0x68);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x100), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x8);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x300), 0x1C);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x400), 0x5C);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x500), 0xD0);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x600), 0x10);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xC00), 0x48);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xD00), 0x8);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xF00), 0x14);
+		iounmap(dump_reg0);
 		/* MD CLKCTL */
 		CCCI_MEM_LOG_TAG(md->index, TAG, "CLKCTL: [0]0x%X, [1]0x%X\n",
-			MD1_CLKCTL_BASE0, MD1_CLKCTL_BASE1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clk_ctl_0, MD1_CLKCTL_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clk_ctl_1, MD1_CLKCTL_LEN1);
-
+			MD_CLKCTL_BASE, (MD_CLKCTL_BASE + 0x100));
+		dump_reg0 = ioremap_nocache(MD_CLKCTL_BASE, MD_CLKCTL_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0x1C);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x100), 0x20);
+		iounmap(dump_reg0);
 		/* MD GLOBAL CON */
 		CCCI_MEM_LOG_TAG(md->index, TAG,
-		"GLOBAL CON: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X, [4]0x%X, [5]0x%X, [6]0x%X, [7]0x%X, [8]0x%X\n",
-			MD1_GLOBALCON_BASE0, MD1_GLOBALCON_BASE1, MD1_GLOBALCON_BASE2,
-			MD1_GLOBALCON_BASE3, MD1_GLOBALCON_BASE4, MD1_GLOBALCON_BASE5,
-			MD1_GLOBALCON_BASE5 + 0x300, MD1_GLOBALCON_BASE5 + 0x400, MD1_GLOBALCON_BASE5 + 0x600);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_0, MD1_GLOBALCON_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_1, MD1_GLOBALCON_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_2, MD1_GLOBALCON_LEN2);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_3, MD1_GLOBALCON_LEN3);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_4, MD1_GLOBALCON_LEN4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5, 0x8);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x300, 0x1C);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x400, 4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x600, 8);
+			"GLOBAL CON: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X, [4]0x%X, [5]0x%X, [6]0x%X, [7]0x%X, [8]0x%X\n",
+			MD_GLOBALCON_BASE, (MD_GLOBALCON_BASE + 0x100), (MD_GLOBALCON_BASE + 0x200),
+			(MD_GLOBALCON_BASE + 0x300), (MD_GLOBALCON_BASE + 0x800), (MD_GLOBALCON_BASE + 0x900),
+			(MD_GLOBALCON_BASE + 0xC00), (MD_GLOBALCON_BASE + 0xD00), (MD_GLOBALCON_BASE + 0xF00));
+		dump_reg0 = ioremap_nocache(MD_GLOBALCON_BASE, MD_GLOBALCON_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0xA0);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x100), 0x10);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x98);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x300), 0x24);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x800), 0x8);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x900), 0x8);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xC00), 0x1C);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xD00), 4);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0xF00), 8);
+		iounmap(dump_reg0);
 	}
+
 	/* 3. Bus status */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUS)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus status: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X\n",
-			MD1_BUS_REG_BASE0, MD1_BUS_REG_BASE1, MD1_BUS_REG_BASE2,
-			MD1_BUS_REG_BASE3);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_reg_0, MD1_BUS_REG_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_reg_1, MD1_BUS_REG_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_reg_2, MD1_BUS_REG_LEN2);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_reg_3, MD1_BUS_REG_LEN3);
+			MD_BUS_REG_BASE0, MD_BUS_REG_BASE1, MD_BUS_REG_BASE2, MD_BUS_REG_BASE3);
+		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE0, MD_BUS_REG_LEN0);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN0);
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE1, MD_BUS_REG_LEN1);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN1);
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE2, MD_BUS_REG_LEN2);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN2);
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE3, MD_BUS_REG_LEN3);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN3);
+		iounmap(dump_reg0);
 	}
 
 	/* 4. Bus REC */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUSREC)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus REC: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			MD1_MCU_MO_BUSREC_BASE0, MD1_INFRA_BUSREC_BASE0, MD1_BUSREC_LAY_BASE0);
-		ccci_write32(md_reg->md_bus_rec_0, 0x10, MD1_MCU_MO_BUSREC_STOP_VAL);/* pre-action: stop busrec */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x0, 0x104);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x200, 0x18);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x300, 0x30);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x400, 0x18);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x500, 0x30);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x700, 0x51C);
-		ccci_write32(md_reg->md_bus_rec_0, 0x10, MD1_MCU_MO_BUSREC_RESTART_VAL);/* restart busrec */
-		ccci_write32(md_reg->md_bus_rec_1, 0x10, MD1_INFRA_BUSREC_STOP_VAL);/* pre-action: stop busrec */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x0, 0x104);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x200, 0x18);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x300, 0x30);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x400, 0x18);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x500, 0x30);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x700, 0x51C);
-		ccci_write32(md_reg->md_bus_rec_1, 0x10, MD1_INFRA_BUSREC_RESTART_VAL);/* post-action: restart busrec */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_2, MD1_BUSREC_LAY_LEN0);
+			MD_MCU_MO_BUSREC_BASE, MD_INFRA_BUSREC_BASE, MD_BUSREC_LAY_BASE);
+		dump_reg0 = ioremap_nocache(MD_MCU_MO_BUSREC_BASE, MD_MCU_MO_BUSREC_LEN);
+		ccci_write32(dump_reg0, 0x10, 0x0); /* stop */
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x0), 0x104);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x300), 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x400), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x500), 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x700), 0x51C);
+		ccci_write32(dump_reg0, 0x10, 0x1); /* re-start */
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_INFRA_BUSREC_BASE, MD_INFRA_BUSREC_LEN);
+		ccci_write32(dump_reg0, 0x10, 0x0); /* stop */
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x0), 0x104);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x300), 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x400), 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x500), 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x700), 0x51C);
+		ccci_write32(dump_reg0, 0x10, 0x1);/* re-start */
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_BUSREC_LAY_BASE, MD_BUSREC_LAY_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0x8);
+		iounmap(dump_reg0);
 	}
+
 	/* 5. ECT */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_ECT)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X\n",
-			MD1_ECT_REG_BASE0, MD1_ECT_REG_BASE1, MD1_ECT_REG_BASE2, MD1_ECT_REG_BASE3);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_0, MD1_ECT_REG_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_1, MD1_ECT_REG_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD1_ECT_REG_LEN2);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD1_ECT_REG_LEN3);
+			MD_ECT_REG_BASE0, MD_ECT_REG_BASE1,
+			(MD_ECT_REG_BASE2 + 0x14), (MD_ECT_REG_BASE2 + 0x0C));
+		dump_reg0 = ioremap_nocache(MD_ECT_REG_BASE0, MD_ECT_REG_LEN0);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_ECT_REG_LEN0);
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_ECT_REG_BASE1, MD_ECT_REG_LEN1);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_ECT_REG_LEN1);
+		iounmap(dump_reg0);
+		dump_reg0 = ioremap_nocache(MD_ECT_REG_BASE2, MD_ECT_REG_LEN2);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x14), 0x4);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x0C), 0x4);
+		iounmap(dump_reg0);
 	}
 
 	/*avoid deadlock and set bus protect*/
@@ -568,26 +576,40 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 	/* 6. TOPSM */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD1_TOPSM_REG_BASE0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_topsm_reg, MD1_TOPSM_REG_LEN0);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD_TOPSM_REG_BASE);
+		dump_reg0 = ioremap_nocache(MD_TOPSM_REG_BASE, MD_TOPSM_REG_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_TOPSM_REG_LEN);
+		iounmap(dump_reg0);
 	}
 
 	/* 7. MD RGU */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_MDRGU)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD RGU: [0]0x%X, [1]0x%X\n",
-			MD1_RGU_REG_BASE0, MD1_RGU_REG_BASE1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_rgu_reg_0, MD1_RGU_REG_LEN0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_rgu_reg_1, MD1_RGU_REG_LEN1);
+			MD_RGU_REG_BASE, (MD_RGU_REG_BASE + 0x200));
+		dump_reg0 = ioremap_nocache(MD_RGU_REG_BASE, MD_RGU_REG_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0xCC);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x5C);
+		iounmap(dump_reg0);
 	}
+
 	/* 8 OST */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_OST)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status: [0]0x%X, [1]0x%X\n",
-			MD_OST_STATUS_BASE, MD_OST_STATUS_BASE + 0x200);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ost_status, 0xF0);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ost_status + 0x200, 0x8);
+			MD_OST_STATUS_BASE, (MD_OST_STATUS_BASE + 0x200));
+		dump_reg0 = ioremap_nocache(MD_OST_STATUS_BASE, 0x300);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0xF0);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x200), 0x8);
+		iounmap(dump_reg0);
 		/* 9 CSC */
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD CSC: 0x%X\n", MD_CSC_REG_BASE);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_csc_reg, MD_CSC_REG_LENGTH);
+		dump_reg0 = ioremap_nocache(MD_CSC_REG_BASE, MD_CSC_REG_LEN);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, MD_CSC_REG_LEN);
+		iounmap(dump_reg0);
+		/* 10 ELM */
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ELM: 0x%X\n", MD_ELM_REG_BASE);
+		dump_reg0 = ioremap_nocache(MD_ELM_REG_BASE, 0x480);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dump_reg0, 0x480);
+		iounmap(dump_reg0);
 	}
 
 	md_cd_lock_modem_clock_src(0);
