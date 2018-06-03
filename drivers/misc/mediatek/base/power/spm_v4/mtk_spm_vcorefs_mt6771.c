@@ -452,8 +452,11 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 15));
 		}
 	} else {
-	spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3 << 2)) | (vcore_req[opp] << 2));
-	spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3)) | (emi_req[opp]));
+		if (opp >= NUM_OPP || opp < OPP_0)
+			opp = NUM_OPP - 1;
+
+		spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3 << 2)) | (vcore_req[opp] << 2));
+		spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3)) | (emi_req[opp]));
 	}
 
 	/* check DVFS timer */
@@ -754,6 +757,9 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 	if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
 		emi_req[1] = 0x2;
 	}
+
+	if (is_vcorefs_can_work() != 1)
+		return;
 
 	switch (id) {
 	case 0: /* ZQTX */
