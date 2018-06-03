@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <linux/module.h>
+#include <linux/pm_qos.h>
 #include "mtk_ppm_api.h"
 #include "usb_boost.h"
 
@@ -37,6 +38,8 @@ struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
 /* add new here */
 #endif
 
+static struct pm_qos_request pm_qos_req;
+
 static int freq_hold(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
@@ -49,16 +52,24 @@ static int freq_release(struct act_arg_obj *arg)
 	mt_ppm_sysboost_freq(BOOST_BY_USB, 0);
 	return 0;
 }
+
 static int core_hold(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
 	mt_ppm_sysboost_core(BOOST_BY_USB, arg->arg1);
+
+	/*Disable MCDI to save around 100us "Power ON CPU -> CPU context restore"*/
+	pm_qos_update_request(&pm_qos_req, 50);
 	return 0;
 }
+
 static int core_release(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
 	mt_ppm_sysboost_core(BOOST_BY_USB, 0);
+
+	/*Enable MCDI*/
+	pm_qos_update_request(&pm_qos_req, PM_QOS_DEFAULT_VALUE);
 	return 0;
 }
 
@@ -79,6 +90,9 @@ static int __init init(void)
 	register_usb_boost_act(TYPE_CPU_FREQ, ACT_RELEASE, freq_release);
 	register_usb_boost_act(TYPE_CPU_CORE, ACT_HOLD, core_hold);
 	register_usb_boost_act(TYPE_CPU_CORE, ACT_RELEASE, core_release);
+
+	pm_qos_add_request(&pm_qos_req, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
+
 	return 0;
 }
 module_init(init);
