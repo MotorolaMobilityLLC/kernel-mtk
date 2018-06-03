@@ -256,16 +256,16 @@ void spm_enable_mmu_smi_async(void)
 }
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
-static void spm_sodi_pmic_before_wfi(void)
+void spm_sodi_pmic_before_wfi(void)
 {
 }
 
-static void spm_sodi_pmic_after_wfi(void)
+void spm_sodi_pmic_after_wfi(void)
 {
 }
 
 #elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-static void spm_sodi_pmic_before_wfi(void)
+void spm_sodi_pmic_before_wfi(void)
 {
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	u32 val;
@@ -277,21 +277,21 @@ static void spm_sodi_pmic_before_wfi(void)
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VSRAM_NORMAL,
 								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
-								val | (1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+								0x1);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VSRAM_SLEEP,
 								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
-								val & ~(1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+								0x3);
 
 	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_EN_ADDR, &val, PMIC_VAL_SIZE_MASK, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VPROC_NORMAL,
 								PMIC_RG_BUCK_VPROC11_EN_ADDR,
-								val | (1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+								0x1);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VPROC_SLEEP,
 								PMIC_RG_BUCK_VPROC11_EN_ADDR,
-								val & ~(1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+								0x3);
 #else
 	pmic_read_interface_nolock(PMIC_RG_LDO_VSRAM_PROC_VOSEL_ADDR,
 								&val,
@@ -326,20 +326,20 @@ static void spm_sodi_pmic_before_wfi(void)
 #endif
 }
 
-static void spm_sodi_pmic_after_wfi(void)
+void spm_sodi_pmic_after_wfi(void)
 {
 	__spm_pmic_pg_force_off();
 }
 
 #else
-static void spm_sodi_pmic_before_wfi(void)
+void spm_sodi_pmic_before_wfi(void)
 {
 	u32 val;
 
 	__spm_pmic_pg_force_on();
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #ifdef SODI_VSRAM_VPROC_SHUTDOWN
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, 0xFFFF, 0);
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, PMIC_VAL_SIZE_MASK, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VSRAM_NORMAL,
 								MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR,
@@ -373,13 +373,13 @@ static void spm_sodi_pmic_before_wfi(void)
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
 }
 
-static void spm_sodi_pmic_after_wfi(void)
+void spm_sodi_pmic_after_wfi(void)
 {
 	__spm_pmic_pg_force_off();
 }
 #endif
 
-static void spm_sodi_pre_process(void)
+void spm_sodi_pre_process(void)
 {
 	spm_disable_mmu_smi_async();
 	spm_bypass_boost_gpio_set();
