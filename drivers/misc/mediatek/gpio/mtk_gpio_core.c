@@ -320,13 +320,13 @@ int mt_set_gpio_pull_resistor(unsigned long pin, unsigned long resistors)
 	}
 	return MT_GPIO_OPS_SET(pin, set_pull_resistor, resistors);
 }
-EXPORT_SYMBOL(mt_get_gpio_pull_resistor);
+EXPORT_SYMBOL(mt_set_gpio_pull_resistor);
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_pull_resistor(unsigned long pin)
 {
 	return MT_GPIO_OPS_GET(pin, get_pull_resistor);
 }
-EXPORT_SYMBOL(mt_set_gpio_pull_resistor);
+EXPORT_SYMBOL(mt_get_gpio_pull_resistor);
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_inversion(unsigned long pin, unsigned long enable)
 {
