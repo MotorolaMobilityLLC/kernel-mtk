@@ -21,6 +21,12 @@
 #include <linux/rtmutex.h>
 #include <linux/interrupt.h>
 
+#define rt_dbg(dev, fmt, ...) \
+	do { \
+		if (dbg_log_en) \
+			dev_dbg(dev, fmt, ##__VA_ARGS__); \
+	} while (0)
+
 enum {
 	RT5081_PMU_COREDEV,
 	RT5081_PMU_CHGDEV,
