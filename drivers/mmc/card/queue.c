@@ -86,7 +86,6 @@ static int mmc_queue_thread(void *d)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int cmdq_full = 0;
 	unsigned int tmo;
-	bool issue = false;
 #endif
 	bool io_boost_done = false;
 	bool part_cmdq_en = mmc_blk_part_cmdq_en(mq);
@@ -128,15 +127,7 @@ fetch_done:
 #endif
 		spin_unlock_irq(q->queue_lock);
 
-		if (req || (!part_cmdq_en && mq->mqrq_prev->req))
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			issue = true;
-		else
-			issue = false;
-
-		if (issue)
-#endif
-		{
+		if (req || (!part_cmdq_en && mq->mqrq_prev->req)) {
 			set_current_state(TASK_RUNNING);
 			cmd_flags = req ? req->cmd_flags : 0;
 			mq->issue_fn(mq, req);
