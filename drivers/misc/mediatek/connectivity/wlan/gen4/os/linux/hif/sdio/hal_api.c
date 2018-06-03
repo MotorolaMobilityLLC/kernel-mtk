@@ -331,14 +331,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 	while (1) {
 		HAL_LP_OWN_RD(prAdapter, &fgResult);
-
-		if (TIME_AFTER(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
-			fgTimeout =
-				((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
-		} else {
-			fgTimeout =
-				((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
-		}
+		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
 
 #if CFG_SUPPORT_LOW_POWER_DEBUG
 		/* For driver own back fail debug,  get current PC value */
@@ -424,14 +417,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		while (1) {
 			HAL_WIFI_FUNC_READY_CHECK(prAdapter, WIFI_FUNC_READY_BITS, &fgReady);
 
-			if (TIME_AFTER(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
-				fgTimeout =
-					((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
-			} else {
-				fgTimeout =
-					((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS)
-						? TRUE : FALSE;
-			}
+			fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
 
 			if (fgReady) {
 				break;
