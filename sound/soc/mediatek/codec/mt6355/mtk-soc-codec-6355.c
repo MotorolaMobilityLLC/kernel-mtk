@@ -161,6 +161,8 @@ static unsigned int mUseHpDepopFlow;
 
 static unsigned int mUseUl260kFlow;
 
+static unsigned int use_6355_e3;
+
 enum mtkaif_version {
 	MTKAIF_1_0,
 	MTKAIF_1_5,
@@ -1108,8 +1110,15 @@ void OpenTrimBufferHardware(bool enable)
 		/* Enable HP aux output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
 		/* Enable HP aux feedback loop */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8c00, 0xff00);
-		/* Enable HP aux CMFB loop */
+
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0c00, 0x0f00);
+			/* Enable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8c00, 0xff00);
+			/* Enable HP aux CMFB loop */
+		}
 
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0);
 		/* Enable HP driver bias circuits */
@@ -1121,10 +1130,17 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200); /* 0x8E00 */
 		/* Enable HP main CMFB loop */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8200 */
-		/* Set HP status as power-up & enable HPL/R CMFB */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); */
-		/* Change compensation for HP main loop */
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0f00);
+			/* Enable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8200 */
+			/* Set HP status as power-up & enable HPL/R CMFB */
+			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); */
+			/* Change compensation for HP main loop */
+		}
+
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 		/* Enable HP main output stage */
 
@@ -1198,8 +1214,14 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0030);
 		/* Disable HP driver core circuits */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8200 */
-		/* Disable HP aux CMFB loop and enable main CMFB loop */
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0f00);
+			/* Enable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8200 */
+			/* Disable HP aux CMFB loop and enable main CMFB loop */
+		}
 
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
 		/* Disable HP aux feedback loop */
@@ -1388,8 +1410,14 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0077);
 		/* Disable HPP/N STB enhance circuits */
 
-		/* HP Aux loop gain setting */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x8200);
+
+		if (use_6355_e3) {
+			/* HP Aux loop gain setting */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200);
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0080);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x8200);
+		}
 
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 		/* Disable HPR/L main CMFB loop modulation control */
@@ -1404,8 +1432,14 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x1f00);
 		/* Disable HPDET circuit */
 
-		/* HP Aux loop gain setting */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0x8200);
+		if (use_6355_e3) {
+			/* HP Aux loop gain setting */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200);
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+		} else {
+			/* HP Aux loop gain setting */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0x8200);
+		}
 
 		/* HPL/HPR output stage STB enhance for ACCDET */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
@@ -2426,12 +2460,15 @@ static void hp_main_output_ramp(bool up)
 
 static void hp_aux_feedback_loop_gain_ramp(bool up)
 {
-	int i = 0, stage = 0;
+	int i = 0, stage = 0, step_size = 8;
+
+	if (use_6355_e3)
+		step_size = 16;
 
 	/* Reduce HP aux feedback loop gain step by step */
-	for (i = 0; i < 8; i++) {
-		stage = up ? i : 7 - i;
-		Ana_Set_Reg(AUDDEC_ANA_CON9, stage << 12, 0x7 << 12);
+	for (i = 0; i < step_size; i++) {
+		stage = up ? i : (step_size - 1) - i;
+		Ana_Set_Reg(AUDDEC_ANA_CON9, stage << 12, (step_size - 1) << 12);
 		udelay(600);
 	}
 }
@@ -2540,8 +2577,15 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Enable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
 			/* Enable HP aux feedback loop */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8c00, 0xff00);
-			/* Enable HP aux CMFB loop */
+
+			if (use_6355_e3) {
+				Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0c00, 0x0f00);
+				/* Enable HP aux CMFB loop */
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+			} else {
+				Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8c00, 0xff00);
+				/* Enable HP aux CMFB loop */
+			}
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0); /* 0x30C0 */
 			/* Enable HP driver bias circuits */
@@ -3326,10 +3370,17 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0003, 0x0003);
 		/* Enable HPR/L main CMFB loop modulation control for E3 */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8201 */
-		/* Enable HP main CMFB loop */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); - 6337 */
-		/* Change compensation for HP main loop */
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0f00);
+			/* Enable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0080, 0x0080);
+		} else {
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8201 */
+			/* Enable HP main CMFB loop */
+			/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); - 6337 */
+			/* Change compensation for HP main loop */
+		}
+
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 		/* Enable HP main output stage */
 
@@ -3382,8 +3433,15 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Change compensation for HP aux loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00f0);
 			/* Disable HPR/HPL */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
-			/* Disable HP aux CMFB loop */
+
+			if (use_6355_e3) {
+				Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0f00);
+				/* Enable HP aux CMFB loop */
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0080);
+			} else {
+				Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
+				/* Disable HP aux CMFB loop */
+			}
 
 			/* HPL/HPR output stage STB enhance for ACCDET */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
@@ -8394,8 +8452,16 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 			       __func__, use_mtkaif_version);
 
 		}
-		pr_info("%s(), use_hp_depop_flow = %d, use_ul_260k = %d, use_mtkaif_ver = %d\n",
-			__func__, mUseHpDepopFlow, mUseUl260kFlow, use_mtkaif_version);
+
+		/* check if use 6355 E3 */
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "use_6355_e3", &use_6355_e3);
+		if (ret)
+			pr_info("%s [use_6355_e3] property_read error = %d\n",
+			       __func__, ret);
+
+		pr_info("%s(), use_hp_depop_flow = %d, use_ul_260k = %d, use_mtkaif_ver = %d, use_6355_e3 = %d\n",
+			__func__, mUseHpDepopFlow, mUseUl260kFlow, use_mtkaif_version, use_6355_e3);
 	} else {
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
 	}
