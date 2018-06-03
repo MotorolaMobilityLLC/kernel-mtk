@@ -127,6 +127,7 @@ unsigned int PMIC_upmu_get_rgs_baton_undet(void)
 int PMIC_check_battery(void)
 {
 	unsigned int val = 0;
+	unsigned int ret = 0;
 
 	/* ask shin-shyu programming guide */
 	PMIC_upmu_set_rg_baton_en(1);
@@ -136,6 +137,11 @@ int PMIC_check_battery(void)
 		pr_debug("bat is exist.\n");
 		return 1;
 	}
+
+	ret = pmic_config_interface(0x15E0, 0x1, 0x1, 0);
+	ret = pmic_config_interface(0x15E2, 0x1, 0x1, 1);/*--HW0 EN--*/
+	ret = pmic_config_interface(0x15E8, 0x0, 0x1, 1);/*--Prefer ON/OFF--*/
+
 	pr_debug("bat NOT exist.\n");
 	return 0;
 }
