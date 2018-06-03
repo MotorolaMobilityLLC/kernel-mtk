@@ -22,6 +22,8 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
 
+obj-y		+= imgsensor_cfg_table.o
+
 obj-y		+= regulator/
 obj-y		+= gpio/
 

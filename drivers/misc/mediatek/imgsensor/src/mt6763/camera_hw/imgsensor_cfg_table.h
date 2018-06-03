@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include "imgsensor_common.h"
 
 #ifndef __IMGSENSOR_CFG_TABLE_H__
@@ -94,7 +94,6 @@ typedef enum {
 enum IMGSENSOR_HW_ID {
 	IMGSENSOR_HW_ID_REGULATOR,
 	IMGSENSOR_HW_ID_GPIO,
-	//IMGSENSOR_HW_ID_MT6306,
 
 	IMGSENSOR_HW_ID_MAX_NUM,
 	IMGSENSOR_HW_ID_NONE = -1
@@ -142,7 +141,7 @@ struct IMGSENSOR_HW_POWER_SEQ {
 struct IMGSENSOR_HW_DEVICE {
 	void              *pinstance;
 	enum IMGSENSOR_RETURN (*init)(void *);
-	enum IMGSENSOR_RETURN (*set) (
+	enum IMGSENSOR_RETURN (*set)(
 		void *,
 		enum IMGSENSOR_SENSOR_IDX,
 		enum IMGSENSOR_HW_PIN,
