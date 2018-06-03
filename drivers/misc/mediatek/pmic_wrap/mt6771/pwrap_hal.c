@@ -34,6 +34,8 @@
 #include <mt-plat/mtk_gpio.h>
 #include <mach/mtk_pmic_wrap.h>
 #include "pwrap_hal.h"
+#include <mt-plat/aee.h>
+#include <linux/ratelimit.h>
 #undef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
@@ -336,6 +338,7 @@ static inline unsigned int wait_for_state_ready_init(loop_condition_fp fp, unsig
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPLOG("ready_init timeout\n");
+			pwrap_dump_ap_register();
 			return E_PWR_WAIT_IDLE_TIMEOUT;
 		}
 		reg_rdata = WRAP_RD32(wacs_register);
@@ -1320,23 +1323,57 @@ signed int pwrap_init(void)
 /*-------------------pwrap debug---------------------*/
 static inline void pwrap_dump_ap_register(void)
 {
-	unsigned int i = 0;
+	unsigned int i = 0, offset = 0;
 #if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
 	unsigned int *reg_addr;
 #else
 	unsigned int reg_addr;
 #endif
-	unsigned int reg_value = 0;
+	unsigned int val = 0;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
 	PWRAPLOG("dump reg\n");
-	for (i = 0; i <= PMIC_WRAP_REG_RANGE; i++) {
-		reg_addr = (PMIC_WRAP_BASE + i * 4);
+	if (__ratelimit(&ratelimit)) {
+		for (i = 0; i <= PMIC_WRAP_REG_RANGE; i++) {
+			reg_addr = (PMIC_WRAP_BASE + i * 4);
 #if (PMIC_WRAP_KERNEL)
-		reg_value = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + i * 4)));
+		val = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + i * 4)));
 #else
-		reg_value = WRAP_RD32(reg_addr);
+		val = WRAP_RD32(reg_addr);
 #endif
-		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, reg_value);
+		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
+		}
+	}
+	for (i = 0; i <= 14; i++) {
+		offset = 0xc00 + i * 4;
+		reg_addr = (PMIC_WRAP_BASE + offset);
+#if (PMIC_WRAP_KERNEL)
+		val = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + offset)));
+#else
+		val = WRAP_RD32(reg_addr);
+#endif
+		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
+	}
+	aee_kernel_warning("WRAPPER:ERR DUMP", "WRAP");
+}
+
+static inline void pwrap_dump_pmic_register(void)
+{
+	unsigned int i = 0, reg_addr = 0, reg_value = 0, ret = 0;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+
+	PWRAPLOG("dump PMIC register\n");
+	if (__ratelimit(&ratelimit)) {
+		for (i = 0; i <= 4; i++) {
+			reg_addr = (PMIC_HWCID_ADDR + i * 2);
+			ret = pwrap_read_nochk(reg_addr, &reg_value);
+			PWRAPLOG("[REG]0x%x=0x%x\n", reg_addr, reg_value);
+		}
+		for (i = 0; i <= 14; i++) {
+			reg_addr = (PMIC_RG_SLP_RW_EN_ADDR + i * 2);
+			ret = pwrap_read_nochk(reg_addr, &reg_value);
+			PWRAPLOG("[REG]0x%x=0x%x\n", reg_addr, reg_value);
+		}
 	}
 }
 
@@ -1353,7 +1390,12 @@ void pwrap_dump_all_register(void)
 	pr_notice("tsx dump reg_addr:0x1000d288 = 0x%x\n", dcxo_0);
 	dcxo_1 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_1_STA_1);
 	pr_notice("tsx dump reg_addr:0x1000d28c = 0x%x\n", dcxo_1);
-/*	pwrap_dump_ap_register(); */
+
+	pwrap_dump_ap_register();
+	pwrap_dump_pmic_register();
+	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x0);
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
+	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 }
 
 static int is_pwrap_init_done(void)
@@ -1631,6 +1673,8 @@ static int __init pwrap_hal_init(void)
 		PWRAP_PR_ERR("not init (%d)\n", ret);
 	}
 
+	/* enable logging mode */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
 	PWRAPLOG("mt_pwrap_init----\n");
 	return ret;
 }

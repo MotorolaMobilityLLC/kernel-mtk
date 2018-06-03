@@ -39,7 +39,7 @@
 	#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		/* #define PWRAP_TIMEOUT */
+		#define PWRAP_TIMEOUT
 	#endif
 #elif (PMIC_WRAP_CTP)
 	#if defined(CONFIG_MTK_FPGA)
@@ -164,7 +164,7 @@ extern signed int pwrap_init(void);
 /**********************************************************/
 
 /***********  platform info, PMIC info ********************/
-#define PMIC_WRAP_REG_RANGE     (354)
+#define PMIC_WRAP_REG_RANGE     (250)
 #define CLK_26M_PRD            (3846)
 #define CLK_ULPOSC_PRD         (5594)
 
