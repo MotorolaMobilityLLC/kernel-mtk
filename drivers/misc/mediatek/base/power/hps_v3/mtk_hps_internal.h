@@ -26,7 +26,7 @@
 /*
  * CONFIG - compile time
  */
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
 #define CPU_BUCK_CTRL   (1)
 #else
 #define CPU_BUCK_CTRL   (0)
@@ -370,6 +370,11 @@ extern int sodi_limit;
 /* mtk_hps_ops_mtXXXX.c */
 extern int hps_ops_init(void);
 
+/*mtk_hotplug_cb.c*/
+extern bool cpuhp_is_buck_off(int cluster_idx);
+#define MP_BUCK_ON	(0xAA)
+#define MP_BUCK_OFF	(0xDD)
+
 /* mtk_hps_main.c */
 extern void hps_ctxt_reset_stas_nolock(void);
 extern void hps_ctxt_reset_stas(void);
@@ -408,6 +413,11 @@ extern int hps_procfs_init(void);
 
 extern int hps_cpu_init(void);
 extern int hps_cpu_deinit(void);
+
+#if defined(CONFIG_MACH_MT6771)
+extern  struct regulator *cpu_vproc11_id;
+extern  struct regulator *cpu_vsram11_id;
+#endif
 
 /* sched */
 /* extern int hps_cpu_get_arch_type(void); */

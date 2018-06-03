@@ -353,6 +353,7 @@ int mtk_enter_idle_state(int mode)
 		pr_notice("[xxxx_drcc %s] c=%d, L_cs=%d\n ",
 			__func__, cpu, cpus_L);
 		#endif
+		#if 0
 		if ((cpus_L == 1) &&
 			(mtk_drcc_calibration_result() == 0)) {
 			/* Log into SRAM debug. */
@@ -361,6 +362,7 @@ int mtk_enter_idle_state(int mode)
 				__func__);
 			/* drcc_fail_composite(); */
 		}
+		#endif
 		/* pr_notice("[%s] DRCC calibration done !!!\n", __func__); */
 		#endif
 	#endif
