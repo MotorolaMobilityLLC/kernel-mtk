@@ -411,6 +411,74 @@ int schedtune_task_boost(struct task_struct *p)
 
 	return task_boost;
 }
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+static void update_freq_fastpath(void)
+{
+	int cid;
+
+	if (!sched_freq())
+		return;
+
+#if MET_STUNE_DEBUG
+	met_tag_oneshot(0, "sched_dvfs_fastpath", 1);
+#endif
+
+	/* for each cluster*/
+	for (cid = 0; cid < arch_get_nr_clusters(); cid++) {
+		unsigned long capacity = 0;
+		int cpu;
+		struct cpumask cls_cpus;
+		int first_cpu = -1;
+		unsigned int freq_new = 0;
+		unsigned long req_cap = 0;
+
+		arch_get_cluster_cpus(&cls_cpus, cid);
+
+		for_each_cpu(cpu, &cls_cpus) {
+			struct sched_capacity_reqs *scr;
+
+			if (!cpu_online(cpu))
+				continue;
+
+			if (first_cpu < 0)
+				first_cpu = cpu;
+
+			scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
+
+			/* find boosted util per cpu.  */
+			req_cap = boosted_cpu_util(cpu);
+
+			/* Convert scale-invariant capacity to cpu. */
+			req_cap = req_cap * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
+
+			req_cap += scr->rt;
+
+			/* Add DVFS margin. */
+			req_cap = req_cap * capacity_margin_dvfs / SCHED_CAPACITY_SCALE;
+
+			req_cap += scr->dl;
+
+			/* find max boosted util */
+			capacity = max(capacity, req_cap);
+
+			trace_sched_cpufreq_fastpath_request(cpu, req_cap, cpu_util(cpu),
+					boosted_cpu_util(cpu), (int)scr->rt);
+		}
+
+		if (capacity > 0) { /* update freq in fast path */
+			freq_new = capacity * arch_scale_get_max_freq(first_cpu) >> SCHED_CAPACITY_SHIFT;
+
+			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
+
+			mt_cpufreq_set_by_schedule_load_cluster(cid, freq_new);
+		}
+
+	}
+#if MET_STUNE_DEBUG
+	met_tag_oneshot(0, "sched_dvfs_fastpath", 0);
+#endif
+}
+#endif
 
 int boost_value_for_GED_pid(int pid, int boost_value)
 {
@@ -486,17 +554,23 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	struct schedtune *ct;
 	unsigned threshold_idx;
 	int boost_pct;
+	bool dvfs_on_demand = false;
 
 	if (group_idx == 0) {
 		printk_deferred("error: don't boost GED task at root: idx=%d\n", group_idx);
 		return -EINVAL;
 	}
 
-	if (boost_value >= 1000) {
+	if (boost_value >= 2000) { /* dvfs short cut */
+		boost_value -= 2000;
+		stune_task_threshold = default_stune_threshold;
+
+		dvfs_on_demand = true;
+	} else if (boost_value >= 1000) { /* boost all tasks */
 		boost_value -= 1000;
 		stune_task_threshold = 0;
-	} else {
-		stune_task_threshold = default_stune_threshold;
+	} else { /* boost big task only */
+			stune_task_threshold = default_stune_threshold;
 	}
 
 	if (boost_value < 0 || boost_value > 100)
@@ -535,6 +609,11 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 		printk_deferred("error: GED boost for stune group no exist: idx=%d\n", group_idx);
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+	if (dvfs_on_demand)
+		update_freq_fastpath();
+#endif
 
 	trace_sched_tune_config(ct->boost);
 
@@ -657,8 +736,14 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	struct schedtune *st = css_st(css);
 	unsigned threshold_idx;
 	int boost_pct;
+	bool dvfs_on_demand = false;
 
-	if (boost >= 1000) {
+	if (boost >= 2000) { /* dvfs short cut */
+		boost -= 2000;
+		stune_task_threshold = default_stune_threshold;
+
+		dvfs_on_demand = true;
+	} else if (boost >= 1000) {
 		boost -= 1000;
 		stune_task_threshold = 0;
 	} else
@@ -690,6 +775,11 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+	if (dvfs_on_demand)
+		update_freq_fastpath();
+#endif
 
 	trace_sched_tune_config(st->boost);
 
@@ -1136,7 +1226,6 @@ schedtune_init(void)
 	default_stune_threshold = sg->sge->cap_states[0].cap;
 #endif
 
-
 #ifndef CONFIG_MTK_ACAO
 	/* mtk: compute max_power & min_power of all possible cores, not only online cores. */
 	schedtune_add_cluster_nrg_hotplug(ste, NULL);
@@ -1171,5 +1260,5 @@ nodata:
 	rcu_read_unlock();
 	return -EINVAL;
 }
-late_initcall_sync(schedtune_init);
 
+late_initcall_sync(schedtune_init);
