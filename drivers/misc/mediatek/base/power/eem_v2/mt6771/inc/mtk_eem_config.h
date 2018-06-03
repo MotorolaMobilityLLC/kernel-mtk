@@ -183,7 +183,8 @@ enum mt_cpu_dvfs_id {
 
 #define LOW_TEMP_OFF_DEFAULT	(0)
 #define LOW_TEMP_OFF_DEFAULT_GPU	(3)
-#define MARGIN_ADD_OFF			(8)
+#define MARGIN_ADD_OFF_VER3			(8)	/* Add 50mv */
+#define MARGIN_ADD_OFF_VER4			(5)	/* Add 31.25mv */
 
 
 #if ENABLE_EEMCTL0
