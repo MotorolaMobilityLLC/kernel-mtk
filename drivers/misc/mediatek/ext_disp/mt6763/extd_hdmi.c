@@ -122,6 +122,10 @@ static unsigned int hdmi_resolution_param_table[][3] = {
 	{1920, 1080, 60},
 };
 
+unsigned int project_is_bsp;
+enum HDMI_VIDEO_RESOLUTION hdmi_max_resolution;
+
+
 DEFINE_SEMAPHORE(hdmi_update_mutex);
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
@@ -211,6 +215,10 @@ void hdmi_cable_fake_plug_in(void)
 			/* /msleep(1000); */
 			hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
 			switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
+			if (project_is_bsp == 1) {
+				EXTDMSG("[HDMIFake]set resolution for BSP project\n");
+				hdmi_set_resolution(HDMI_VIDEO_1280x720p_60Hz);
+			}
 		}
 	}
 }
@@ -546,6 +554,12 @@ static void hdmi_state_reset(void)
 			switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
 		hdmi_enable_dvfs(true);
 		hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
+		/* Set max resolution for BSP project */
+		if (project_is_bsp == 1) {
+			EXTDMSG("set max resolution for BSP project\n");
+			hdmi_get_edid(NULL);
+			hdmi_set_resolution(hdmi_max_resolution);
+		}
 	} else {
 	if (enable_ut != 1) {
 		switch_set_state(&hdmi_switch_data, HDMI_STATE_NO_DEVICE);
@@ -635,6 +649,11 @@ static void hdmi_state_reset(void)
 			msleep(1000);
 			switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
 			hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
+			/* Set max resolution for BSP project */
+			if (project_is_bsp == 1) {
+				EXTDMSG("[HDMIFake]set resolution for BSP project\n");
+				hdmi_set_resolution(HDMI_VIDEO_1280x720p_60Hz);
+			}
 		} else {
 			/* this is just a ugly workaround for some tv sets... */
 			if (hdmi_drv->get_state() == HDMI_STATE_ACTIVE) {
@@ -839,6 +858,12 @@ void hdmi_state_callback(enum HDMI_STATE state)
 				hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
 				switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
 				hdmi_enable_dvfs(true);
+				/* Set max resolution for BSP project */
+				if (project_is_bsp == 1) {
+					EXTDMSG("set max resolution for BSP project\n");
+					hdmi_get_edid(NULL);
+					hdmi_set_resolution(hdmi_max_resolution);
+				}
 			}
 #if defined(CONFIG_MTK_SMARTBOOK_SUPPORT) && defined(CONFIG_HAS_SBSUSPEND)
 			if (hdmi_params->cabletype == MHL_SMB_CABLE)
@@ -1137,6 +1162,28 @@ int hdmi_get_capability(void *info)
 	return ret;
 }
 
+void hdmi_get_max_resolution(struct _HDMI_EDID_T *edid_info)
+{
+	if (edid_info->ui4_pal_resolution & SINK_2160p30)
+		hdmi_max_resolution = HDMI_VIDEO_2160p_DSC_30Hz;
+	else if (edid_info->ui4_pal_resolution & SINK_2160p24)
+		hdmi_max_resolution = HDMI_VIDEO_2160p_DSC_24Hz;
+	else if (edid_info->ui4_pal_resolution & SINK_1080P60)
+		hdmi_max_resolution = HDMI_VIDEO_1920x1080p_60Hz;
+	else if (edid_info->ui4_pal_resolution & SINK_1080P30)
+		hdmi_max_resolution = HDMI_VIDEO_1920x1080p_30Hz;
+	else if (edid_info->ui4_pal_resolution & SINK_720P60)
+		hdmi_max_resolution = HDMI_VIDEO_1280x720p_60Hz;
+	else if (edid_info->ui4_pal_resolution & SINK_480P)
+		hdmi_max_resolution = HDMI_VIDEO_720x480p_60Hz;
+	else {
+		hdmi_max_resolution = HDMI_VIDEO_720x480p_60Hz;
+		EXTDERR("hdmi resolution is not match!\n");
+	}
+
+	EXTDINFO("hdmi max resolution is %d\n", hdmi_max_resolution);
+}
+
 int hdmi_get_edid(void *edid_info)
 {
 	int ret = 0;
@@ -1144,11 +1191,6 @@ int hdmi_get_edid(void *edid_info)
 
 	EXTDFUNC();
 	memset(&pv_get_info, 0, sizeof(pv_get_info));
-
-	if (!edid_info) {
-		EXTDERR("ioctl pointer is NULL\n");
-		return -EFAULT;
-	}
 
 	if (hdmi_drv->getedid) {
 		hdmi_drv->getedid(&pv_get_info);
@@ -1172,10 +1214,21 @@ int hdmi_get_edid(void *edid_info)
 			pv_get_info.ui4_pal_resolution &= (~SINK_1080P30);
 	}
 
-	if (copy_to_user(edid_info, &pv_get_info, sizeof(pv_get_info))) {
-		EXTDERR("copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+	if (project_is_bsp != 1) {
+		if (!edid_info) {
+			EXTDERR("ioctl pointer is NULL\n");
+			return -EFAULT;
+		}
+
+		if (copy_to_user(edid_info, &pv_get_info, sizeof(pv_get_info))) {
+			EXTDERR("copy_to_user failed! line:%d\n", __LINE__);
+			ret = -EFAULT;
+		}
+	} else {
+		/* Get max resolution for BSP project */
+		hdmi_get_max_resolution(&pv_get_info);
 	}
+
 	EXTDINFO("hdmi_get_edid done\n");
 	return ret;
 }
@@ -1235,6 +1288,8 @@ int hdmi_init(void)
 	struct device_node *node;
 	const char interface_type[10];
 	const char *type = interface_type;
+	const char project_type[10];
+	const char *p_project_type = project_type;
 
 	EXTDMSG("hdmi_init start\n");
 	/* for support hdmi hotplug, inform AP the event */
@@ -1257,6 +1312,8 @@ int hdmi_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,extd_dev");
 	if (!node)
 		EXTDERR("Failed to find device node mediatek,extd_dev\n");
+
+	/* Get interface_type */
 	if (node)
 		of_property_read_string(node, "interface_type", &type);
 
@@ -1268,6 +1325,20 @@ int hdmi_init(void)
 		EXTDMSG("interface_type is DSI\n");
 		dst_is_dsi = 1;
 	}
+
+	/* Get project type */
+	if (node)
+		of_property_read_string(node, "project_type", &p_project_type);
+
+	EXTDMSG("project_type is %s\n", p_project_type);
+	if (!strncmp(p_project_type, "BSP", 3)) {
+		EXTDMSG("project_type is BSP\n");
+		project_is_bsp = 1;
+	} else {
+		EXTDMSG("project_type is not BSP\n");
+		project_is_bsp = 0;
+	}
+
 	EXTDINFO("hdmi_init done\n");
 	return 0;
 }
@@ -1328,6 +1399,11 @@ int hdmi_post_init(void)
 #endif
 
 	Extd_DBG_Init();
+	if (project_is_bsp == 1) {
+		EXTDMSG("hdmi enable for BSP\n");
+		hdmi_enable(1);
+	}
+
 	EXTDINFO("hdmi_post_init done\n");
 	return 0;
 }

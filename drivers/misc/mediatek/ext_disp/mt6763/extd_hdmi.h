@@ -218,6 +218,9 @@ void hdmi_power_off(void);
 
 int hdmi_wait_vsync_debug(int enable);
 int hdmi_dump_vendor_chip_register(void);
+void hdmi_get_max_resolution(struct _HDMI_EDID_T *edid_info);
+int hdmi_set_resolution(int res);
+int hdmi_get_edid(void *edid_info);
 
 extern void Extd_DBG_Init(void);
 #endif
