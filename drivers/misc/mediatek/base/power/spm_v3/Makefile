@@ -75,6 +75,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6775.o
 obj-y += mtk_idle_profile.o
@@ -94,6 +96,7 @@ obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_mcsodi.o
 #obj-y += mtk_spm_vcorefs_mt6775.o
+#obj-y += mtk_spm_vcorefs_ipi_mt6775.o
 endif
 
 ifeq ($(CONFIG_MACH_MT6759), y)
