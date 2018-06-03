@@ -96,6 +96,12 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 	/* here to set interrupt */
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
+	/* here to turn off digital part */
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
+
 	EnableAfe(false);
 }
 
@@ -111,6 +117,12 @@ static void StartAudioAWBHardware(struct snd_pcm_substream *substream)
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_AWB, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, true);
+
+	/* here to turn on digital part */
+	SetIntfConnection(Soc_Aud_InterCon_Connection,
+			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	SetIntfConnection(Soc_Aud_InterCon_Connection,
+			Soc_Aud_AFE_IO_Block_I2S2, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 	EnableAfe(true);
 }
