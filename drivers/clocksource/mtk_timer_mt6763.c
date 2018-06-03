@@ -413,39 +413,9 @@ static void __gpt_set_clk(struct gpt_device *dev, unsigned int clksrc, unsigned 
 	dev->clkdiv = clkdiv;
 }
 
-static void __gpt_wait_cmp_done(struct gpt_device *dev, unsigned int cmpl,
-		unsigned int cmph)
-{
-	unsigned int cmp[2] = {0};
-
-	/* wait until cmp values in register match target values */
-	while (1) {
-
-		__gpt_get_cmp(dev, cmp);
-
-		if (cmp[0] == cmpl && cmp[1] == cmph)
-			break;
-	}
-}
-
 static void __gpt_set_cmp(struct gpt_device *dev, unsigned int cmpl,
 		unsigned int cmph)
 {
-	/*
-	 * If new cmp values are exactly the same as old values, set
-	 * cmp as 0 first to ensure below __gpt_wait_cmp_done works for
-	 * real target values below.
-	 */
-	if (dev->cmp[0] == cmpl && dev->cmp[1] == cmph) {
-
-		mt_reg_sync_writel(0, dev->base_addr + GPT_CMP);
-
-		if (dev->features & GPT_FEAT_64_BIT)
-			mt_reg_sync_writel(0, dev->base_addr + GPT_CMPH);
-
-		__gpt_wait_cmp_done(dev, 0, 0);
-	}
-
 	mt_reg_sync_writel(cmpl, dev->base_addr + GPT_CMP);
 	dev->cmp[0] = cmpl;
 
@@ -453,14 +423,6 @@ static void __gpt_set_cmp(struct gpt_device *dev, unsigned int cmpl,
 		mt_reg_sync_writel(cmph, dev->base_addr + GPT_CMPH);
 		dev->cmp[1] = cmpl;
 	}
-
-	/*
-	 * Wait until new cmp value is confirmed being written to gpt hw.
-	 * Do this because gpt hw needs a perioid time to clear old counter value.
-	 * The specific time shall be counted after new cmp value is
-	 * actually written to gpt hw.
-	 */
-	__gpt_wait_cmp_done(dev, cmpl, cmph);
 }
 
 static void __gpt_clrcnt(struct gpt_device *dev)
@@ -563,6 +525,19 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 {
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
+	/*
+	 * Configure gpt1 to use 13MHz clock during re-configuration.
+	 *
+	 * Reason: Clock synchronization issue may happen if gpt is in 32KHz domain
+	 *         during re-configuration.
+	 *
+	 *         For example: Updating cmp value may need to wait a period of time
+	 *         (e.g., 3T) to let gpt hw finish jobs. because gpt hw will clear
+	 *         counter value during this time, and GPT_EN shall be enabled after
+	 *         gpt hw done this job.
+	 */
+	__gpt_set_clk(dev, GPT_CLK_SRC_SYS & GPT_CLKSRC_MASK, GPT_CLK_DIV_1 & GPT_CLKDIV_MASK);
+
 	__gpt_stop(dev);
 
 	if (cycles < 3) {
@@ -570,14 +545,27 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 		cycles = 3;
 	}
 
-	__gpt_ack_irq(dev);
-
-	/* ensure IRQ is enabled before next running */
-	__gpt_enable_irq(dev);
-
+	/*
+	 * Do cmp first because updating cmp will trigger most complicated behavior in gpt hw.
+	 * See above description.
+	 */
 	__gpt_set_cmp(dev, cycles, 0);
 
-	__gpt_wait_clrcnt_then_start(dev);
+	/* ack irq */
+	__gpt_ack_irq(dev);
+
+	/* ensure irq is enabled before next running */
+	__gpt_enable_irq(dev);
+
+	/*
+	 * Configure gpt1 to use 32KHz clock before enabling.
+	 *
+	 * Reason: 13MHz clock source may be disabled during some low-power scenarios,
+	 *         e.g., SODI. We shall use a always-on clock after enabling, e.g., 32KHz.
+	 */
+	__gpt_set_clk(dev, GPT_CLK_SRC_RTC & GPT_CLKSRC_MASK, GPT_CLK_DIV_1 & GPT_CLKDIV_MASK);
+
+	__gpt_start(dev);
 
 #if defined(CONFIG_MTK_TIMER_AEE_DUMP)
 	gpt_clkevt_last_setting_next_event_time = sched_clock();
