@@ -773,7 +773,7 @@ static INT32 wmt_core_stp_init(VOID)
 	/* TODO: [ChangeFeature][GeorgeKuo] can we apply raise UART baud rate firstly for ALL supported chips??? */
 
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-	WMT_INFO_FUNC("disable deep sleep featrue before the first command to firmware\n");
+	WMT_DBG_FUNC("disable deep sleep featrue before the first command to firmware\n");
 	wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
 #endif
 

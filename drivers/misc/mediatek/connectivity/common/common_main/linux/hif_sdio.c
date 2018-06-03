@@ -1782,7 +1782,7 @@ static INT32 hif_sdio_probe(struct sdio_func *func, const struct sdio_device_id 
 	MTK_WCN_HIF_SDIO_CLT_PROBE_WORKERINFO *clt_probe_worker_info = 0;
 #endif
 
-	HIF_SDIO_INFO_FUNC("start!\n");
+	HIF_SDIO_DBG_FUNC("start!\n");
 	HIF_SDIO_ASSERT(func);
 #if !(DELETE_HIF_SDIO_CHRDEV)
 	hif_sdio_match_chipid_by_dev_id(id);
@@ -2125,7 +2125,7 @@ static _osal_inline_ INT32 hif_sdio_stp_on(VOID)
 
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
 
-	HIF_SDIO_INFO_FUNC("hif_sdio_stp_on, start!\n");
+	HIF_SDIO_DBG_FUNC("hif_sdio_stp_on, start!\n");
 
 	/* 4 <1> If stp client drv has not been probed, return error code */
 	/* MT6620 */
@@ -2199,7 +2199,7 @@ stp_on_exist:
 			HIF_SDIO_WARN_FUNC("sdio_claim_irq() for stp fail(%d)\n", ret);
 			return ret;
 		}
-		HIF_SDIO_INFO_FUNC("sdio_claim_irq() for stp ok\n");
+		HIF_SDIO_DBG_FUNC("sdio_claim_irq() for stp ok\n");
 
 		/* 4 <5> If this struct sdio_func *func is supported by any driver in */
 		/* 4 g_hif_sdio_clt_drv_list, schedule another task to call client's .hif_clt_probe() */
@@ -2265,7 +2265,7 @@ static _osal_inline_ INT32 hif_sdio_stp_off(VOID)
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
 
-	HIF_SDIO_INFO_FUNC("hif_sdio_stp_off, start!\n");
+	HIF_SDIO_DBG_FUNC("hif_sdio_stp_off, start!\n");
 
 	/* 4 <1> If stp client drv has not been probed, return error code */
 	/* MT6620 */

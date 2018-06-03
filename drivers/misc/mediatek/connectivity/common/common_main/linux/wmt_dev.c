@@ -246,7 +246,7 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 		if (currentLpbkStatus != lpbk_req_onoff)
 			currentLpbkStatus = wmt_lpbk_handler(lpbk_req_onoff, retryCounter);
 		else
-			WMT_DBG_FUNC("drop wmt start to run\n");
+			WMT_INFO_FUNC("drop wmt start to run, lpbk_seq %d\n", g_es_lr_flag_for_lpbk_onoff);
 	}
 }
 
@@ -815,9 +815,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		do {
 			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
-			if (arg & 0x80000000)
+			if (arg & 0x80000000) {
 				bRet = mtk_wcn_wmt_func_on(arg & 0xF);
-			else
+				if (bRet)
+					currentLpbkStatus = 1;
+			} else
 				bRet = mtk_wcn_wmt_func_off(arg & 0xF);
 
 			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;

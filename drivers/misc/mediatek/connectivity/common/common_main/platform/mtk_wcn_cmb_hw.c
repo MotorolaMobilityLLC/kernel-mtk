@@ -88,7 +88,7 @@ INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 	INT32 iRet = 0;
 	UINT32 chip_id = 0x0;
 
-	WMT_INFO_FUNC("CMB-HW, hw_pwr_off start\n");
+	WMT_DBG_FUNC("CMB-HW, hw_pwr_off start\n");
 
 	/*1. disable irq --> should be done when do wmt-ic swDeinit period */
 	/* TODO:[FixMe][GeorgeKuo] clarify this */
@@ -126,7 +126,7 @@ INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 	/*7. deinit gps_lna */
 	iRet += wmt_plat_gpio_ctrl(PIN_GPS_LNA, PIN_STA_DEINIT);
 
-	WMT_INFO_FUNC("CMB-HW, hw_pwr_off finish\n");
+	WMT_DBG_FUNC("CMB-HW, hw_pwr_off finish\n");
 	return iRet;
 }
 
@@ -222,13 +222,13 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 		iRet += wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_INIT);
 		WMT_INFO_FUNC("CMB-HW, BGF_EINT IRQ registered and disabled\n");
 	} else {
-		WMT_INFO_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 & MT6632 SDIO mode\n");
+		WMT_DBG_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 & MT6632 SDIO mode\n");
 	}
 
 	/* 8.1 set ALL_EINT pin to correct state even it is not used currently */
 	iRet += wmt_plat_gpio_ctrl(PIN_ALL_EINT, PIN_STA_MUX);
 	iRet += wmt_plat_eirq_ctrl(PIN_ALL_EINT, PIN_STA_INIT);
-	WMT_INFO_FUNC("CMB-HW, hw_pwr_on finish (%d)\n", iRet);
+	WMT_DBG_FUNC("CMB-HW, hw_pwr_on finish (%d)\n", iRet);
 
 	_pwr_first_time = 0;
 	return iRet;
