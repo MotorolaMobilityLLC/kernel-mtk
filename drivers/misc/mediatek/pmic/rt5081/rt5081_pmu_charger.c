@@ -28,6 +28,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/charger_class.h>
 #include <mt-plat/charger_type.h>
+#include <mt-plat/aee.h>
 #include <mtk_charger_intf.h>
 #include <mtk_pe30_intf.h>
 #include <mtk_pe20_intf.h>
@@ -103,6 +104,8 @@ struct rt5081_pmu_charger_data {
 	u8 irq_flag[RT5081_CHG_IRQIDX_MAX];
 	int aicr_limit;
 	bool adc_waiting_irq;
+	u32 zcv;
+	bool adc_hang;
 #if 0
 	struct task_struct *task;
 #endif
@@ -527,6 +530,7 @@ static int rt5081_set_iprec(struct rt5081_pmu_charger_data *chg_data,
 static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
+	u8 zcv_data[2] = {0};
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 
@@ -534,6 +538,18 @@ static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 	ret = rt5081_enable_hidden_mode(chg_data, true);
 	if (ret < 0)
 		goto out;
+
+	/* Read ZCV data */
+	ret = rt5081_pmu_reg_block_read(chg_data->chip,
+		RT5081_PMU_REG_ADCBATDATAH, 2, zcv_data);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: read zcv data failed\n", __func__);
+	else {
+		chg_data->zcv = 5000 * (zcv_data[0] * 256 + zcv_data[1]);
+
+		dev_info(chg_data->dev, "%s: zcv = (0x%02X, 0x%02X, %dmV)\n",
+			__func__, zcv_data[0], zcv_data[1], chg_data->zcv / 1000);
+	}
 
 	/* Trigger any ADC before disabling ZCV */
 	ret = rt5081_pmu_reg_write(chg_data->chip, RT5081_PMU_REG_CHGADC,
@@ -570,7 +586,7 @@ out:
 static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	enum rt5081_adc_sel adc_sel, int *adc_val)
 {
-	int ret = 0;
+	int ret = 0, i = 0;
 	u8 adc_data[6] = {0};
 	bool adc_start = false;
 	u32 aicr = 0, ichg = 0;
@@ -652,6 +668,24 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 			"%s: wait conversation failed, sel = %d, ret = %d\n",
 			__func__, adc_sel, ret);
 
+		/* AEE for debug */
+		if (!chg_data->adc_hang) {
+			for (i = 0; i < ARRAY_SIZE(rt5081_chg_reg_addr); i++) {
+				ret = rt5081_pmu_reg_read(chg_data->chip,
+						rt5081_chg_reg_addr[i]);
+				if (ret < 0)
+					return ret;
+
+				dev_err(chg_data->dev, "%s: reg[0x%02X] = 0x%02X\n",
+					__func__, rt5081_chg_reg_addr[i], ret);
+			}
+
+			aee_kernel_exception("rt5081 ADC", "(%s, %s) %s: adc hang\n",
+				__FILE__, __LINE__, __func__);
+
+			chg_data->adc_hang = true;
+		}
+
 		/* Add for debug */
 		/* ZCV, reg0x10 */
 		ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_OSCCTRL);
@@ -667,7 +701,13 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		else
 			dev_err(chg_data->dev, "%s: reg0x3E = 0x%02X\n", __func__, ret);
 
-		/* Do not return fail here, read adc data for debug */
+		/* Do not return fail here, read adc data for debug, only return channel 12 */
+		if (adc_sel == RT5081_ADC_TEMP_JC) {
+			*adc_val = 25;
+			rt5081_enable_hidden_mode(chg_data, false);
+			mutex_unlock(&chg_data->adc_access_lock);
+			return 0;
+		}
 	}
 
 	mdelay(1);
@@ -2203,6 +2243,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	bool chg_en = 0;
 	int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0;
 	enum rt5081_charging_status chg_status = RT5081_CHG_STATUS_READY;
+	u8 chg_stat = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
@@ -2217,6 +2258,9 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_VBAT, &adc_vbat);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_IBAT, &adc_ibat);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_IBUS, &adc_ibus);
+
+	/* Add for debug */
+	chg_stat = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGSTAT1);
 
 	if (chg_status == RT5081_CHG_STATUS_FAULT) {
 		for (i = 0; i < ARRAY_SIZE(rt5081_chg_reg_addr); i++) {
@@ -2239,8 +2283,8 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 		__func__, adc_vsys / 1000, adc_vbat / 1000, adc_ibat / 1000,
 		adc_ibus / 1000);
 
-	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s\n",
-		__func__, chg_en, rt5081_chg_status_name[chg_status]);
+	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s, CHG_STAT = 0x%02X\n",
+		__func__, chg_en, rt5081_chg_status_name[chg_status], chg_stat);
 
 	ret = 0;
 	return ret;
@@ -2267,19 +2311,17 @@ static int rt5081_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 		chg_data->chg_online = false;
 		chg_data->chg_type = CHARGER_UNKNOWN;
 		rt5081_inform_psy_changed(chg_data);
-	}
-
-	/* TypeC attach */
+	} else { /* TypeC attach */
 #ifdef CONFIG_PROJECT_PHY
-	Charger_Detect_Init();
+		Charger_Detect_Init();
 #endif
-
-	/* Clear attachi event */
-	rt5081_chg_irq_clr_flag(
-		chg_data,
-		&chg_data->irq_flag[RT5081_CHG_IRQIDX_QCIRQ],
-		RT5081_MASK_ATTACHI
-	);
+		/* Clear attachi event */
+		rt5081_chg_irq_clr_flag(
+			chg_data,
+			&chg_data->irq_flag[RT5081_CHG_IRQIDX_QCIRQ],
+			RT5081_MASK_ATTACHI
+		);
+	}
 
 	ret = rt5081_enable_chgdet_flow(chg_data, en);
 	if (ret < 0)
@@ -2287,6 +2329,18 @@ static int rt5081_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 #endif
 
 	return ret;
+}
+
+static int rt5081_get_zcv(struct charger_device *chg_dev, u32 *uV)
+{
+	struct rt5081_pmu_charger_data *chg_data =
+		dev_get_drvdata(&chg_dev->dev);
+
+	dev_info(chg_data->dev, "%s: zcv = %dmV\n", __func__,
+		chg_data->zcv / 1000);
+	*uV = chg_data->zcv;
+
+	return 0;
 }
 
 #if 0
@@ -3306,6 +3360,7 @@ static struct charger_ops rt5081_chg_ops = {
 	.kick_wdt = rt5081_kick_wdt,
 	.set_mivr = rt5081_set_mivr,
 	.is_charging_done = rt5081_is_charging_done,
+	.get_zcv = rt5081_get_zcv,
 
 	/* Safety timer */
 	.enable_safety_timer = rt5081_enable_safety_timer,
@@ -3397,6 +3452,7 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->chg_type = CHARGER_UNKNOWN;
 	chg_data->aicr_limit = -1;
 	chg_data->adc_waiting_irq = false;
+	chg_data->adc_hang = false;
 
 	if (use_dt) {
 		ret = rt_parse_dt(&pdev->dev, chg_data);
@@ -3542,6 +3598,11 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.8_MTK
+ * (1) Read CHG_STAT in dump register
+ * (2) Read ZCV before disabling it and add ZCV ops
+ * (3) Add AEE log for ADC hang issue
+ *
  * 1.1.7_MTK
  * (1) Add a adc flag for adc_done IRQ
  * (2) Not waitting ssfinish IRQ after enabling OTG

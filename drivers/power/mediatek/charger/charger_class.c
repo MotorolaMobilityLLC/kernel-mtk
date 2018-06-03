@@ -431,6 +431,15 @@ int charger_dev_set_boost_current_limit(struct charger_device *charger_dev, u32 
 }
 EXPORT_SYMBOL(charger_dev_set_boost_current_limit);
 
+int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_zcv)
+		return charger_dev->ops->get_zcv(charger_dev, uV);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_zcv);
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(
