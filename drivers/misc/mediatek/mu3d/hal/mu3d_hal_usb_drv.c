@@ -1269,7 +1269,7 @@ void mu3d_hal_unfigured_ep_num(DEV_UINT8 ep_num, USB_DIR dir)
 {
 	struct USB_EP_SETTING *ep_setting;
 
-	os_printk(K_INFO, "%s %d\n", __func__, ep_num);
+	os_printk(K_DEBUG, "%s %d\n", __func__, ep_num);
 
 	if (dir == USB_TX) {
 		USB_WriteCsr32(U3D_TX1CSR0, ep_num, USB_ReadCsr32(U3D_TX1CSR0, ep_num) & (~0x7FF));

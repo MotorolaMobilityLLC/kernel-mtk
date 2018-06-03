@@ -231,7 +231,6 @@ static void android_work(struct work_struct *data)
 		is_hwconnected = true;
 	else
 		is_hwconnected = false;
-	pr_notice("[USB]%s: is_hwconnected=%d\n", __func__, is_hwconnected);
 
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (cdev->config)
@@ -243,7 +242,7 @@ static void android_work(struct work_struct *data)
 
 	if (uevent_envp) {
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp);
-		pr_notice("%s: sent uevent %s\n", __func__, uevent_envp[0]);
+		pr_notice("%s: sent uevent %s, is_hwconnected=%d\n", __func__, uevent_envp[0], is_hwconnected);
 #ifdef CONFIG_MTPROF
 		if (uevent_envp == configured) {
 			static int first_shot = 1;
@@ -255,8 +254,8 @@ static void android_work(struct work_struct *data)
 		}
 #endif
 	} else {
-		pr_notice("%s: did not send uevent (%d %d %p)\n", __func__,
-			 dev->connected, dev->sw_connected, cdev->config);
+		pr_notice("%s: did not send uevent (%d %d %p), is_hwconnected=%d\n", __func__,
+			 dev->connected, dev->sw_connected, cdev->config, is_hwconnected);
 	}
 
 	if (!is_hwconnected) {
@@ -1104,7 +1103,6 @@ rndis_function_bind_config(struct android_usb_function *f,
 	struct eth_dev *dev;
 	struct rndis_function_config *rndis = f->config;
 
-	pr_notice("[USB]%s\n", __func__);
 	if (!rndis) {
 		pr_err("%s: rndis_pdata\n", __func__);
 		return -1;
