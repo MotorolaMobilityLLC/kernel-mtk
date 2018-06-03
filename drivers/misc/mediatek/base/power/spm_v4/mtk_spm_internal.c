@@ -204,15 +204,17 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	if (wakesta->assert_pc != 0) {
 		/* add size check for vcoredvfs */
-		spm_print(suspend, "PCM ASSERT AT 0x%x (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
+		spm_crit2("PCM ASSERT AT 0x%x (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
 			  wakesta->assert_pc, scenario, wakesta->r13,
 			  wakesta->debug_flag, wakesta->debug_flag1);
 
+#if 0
 		if (!(wakesta->debug_flag1 & SPM_DBG1_DRAM_SREF_ACK_TO))
 			aee_kernel_warning("SPM Warning",
 					"PCM ASSERT AT 0x%x (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
 					wakesta->assert_pc, scenario, wakesta->r13,
 					wakesta->debug_flag, wakesta->debug_flag1);
+#endif
 
 		return WR_PCM_ASSERT;
 	}
