@@ -693,7 +693,11 @@ void VowDrv_SetSmartDevice(bool enable)
 	VOWDRV_DEBUG("VowDrv_SetSmartDevice:%x\n", enable);
 	if (vowserv.node) {
 		/* query eint number from device tree */
-		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
+		ret = of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
+		if (ret != 0) {
+			VOWDRV_DEBUG("%s(), there is no debounce node\n", __func__);
+			return;
+		}
 		eint_num = ints[0];
 
 		if (enable == false)
@@ -1184,11 +1188,15 @@ int VowDrv_setup_smartdev_eint(struct platform_device *pdev)
 	/* eint setting */
 	vowserv.node = pdev->dev.of_node;
 	if (vowserv.node) {
-		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
-		VOWDRV_DEBUG("EINT ID: %x, %x\n", ints[0], ints[1]);
+		ret = of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
+		if (ret != 0) {
+			VOWDRV_DEBUG("%s(), there is no debounce node\n", __func__);
+			return;
+		}
+		VOWDRV_DEBUG("VOW EINT ID: %x, %x\n", ints[0], ints[1]);
 	} else {
 		/* no node here */
-		VOWDRV_DEBUG("there is no this node\n");
+		VOWDRV_DEBUG("%s(), there is no this node\n", __func__);
 	}
 	return 0;
 }
