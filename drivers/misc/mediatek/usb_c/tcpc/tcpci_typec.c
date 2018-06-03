@@ -287,7 +287,6 @@ static const char *const typec_attach_name[] = {
 	"DBGACC_SNK",
 	"CUSTOM_SRC",
 	"NORP_SRC",
-
 };
 
 static int typec_alert_attach_state_change(struct tcpc_device *tcpc_dev)

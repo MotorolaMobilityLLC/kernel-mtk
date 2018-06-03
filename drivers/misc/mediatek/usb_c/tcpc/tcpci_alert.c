@@ -338,8 +338,13 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 {
 	int rv, i;
 	uint32_t alert_status;
+	uint32_t alert_mask;
 
 	rv = tcpci_get_alert_status(tcpc_dev, &alert_status);
+	if (rv)
+		return rv;
+
+	rv = tcpci_get_alert_mask(tcpc_dev, &alert_mask);
 	if (rv)
 		return rv;
 
@@ -353,6 +358,8 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 
 	if (tcpc_dev->typec_role == TYPEC_ROLE_UNKNOWN)
 		return 0;
+
+	alert_status &= alert_mask;
 
 	if (alert_status & TCPC_REG_ALERT_EXT_VBUS_80)
 		alert_status |= TCPC_REG_ALERT_POWER_STATUS;

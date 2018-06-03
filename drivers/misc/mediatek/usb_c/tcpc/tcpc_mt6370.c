@@ -817,6 +817,29 @@ int mt6370_fault_status_clear(struct tcpc_device *tcpc, uint8_t status)
 	return 0;
 }
 
+int mt6370_get_alert_mask(struct tcpc_device *tcpc, uint32_t *mask)
+{
+	int ret;
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	uint8_t v2;
+#endif
+
+	ret = mt6370_i2c_read16(tcpc, TCPC_V10_REG_ALERT_MASK);
+	if (ret < 0)
+		return ret;
+	*mask = (uint16_t) ret;
+
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	ret = mt6370_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+	if (ret < 0)
+		return ret;
+
+	v2 = (uint8_t) ret;
+	*mask |= v2 << 16;
+#endif
+	return 0;
+}
+
 int mt6370_get_alert_status(struct tcpc_device *tcpc, uint32_t *alert)
 {
 	int ret;
@@ -1047,7 +1070,6 @@ static int mt6370_set_low_power_mode(
 {
 	int rv = 0;
 	uint8_t data;
-	uint16_t power_status;
 
 	if (en) {
 		data = MT6370_REG_BMCIO_LPEN;
@@ -1063,7 +1085,6 @@ static int mt6370_set_low_power_mode(
 			MT6370_REG_VBUS_DET_EN | MT6370_REG_BMCIO_OSC_EN;
 
 		mt6370_enable_vsafe0v_detect(tcpc_dev, true);
-		tcpci_get_power_status(tcpc_dev, &power_status);
 	}
 
 	rv = mt6370_i2c_write8(tcpc_dev, MT6370_REG_BMC_CTRL, data);
@@ -1247,6 +1268,7 @@ static struct tcpc_ops mt6370_tcpc_ops = {
 	.init = mt6370_tcpc_init,
 	.alert_status_clear = mt6370_alert_status_clear,
 	.fault_status_clear = mt6370_fault_status_clear,
+	.get_alert_mask = mt6370_get_alert_mask,
 	.get_alert_status = mt6370_get_alert_status,
 	.get_power_status = mt6370_get_power_status,
 	.get_fault_status = mt6370_get_fault_status,
