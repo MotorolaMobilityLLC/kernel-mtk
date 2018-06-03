@@ -35,6 +35,7 @@ int g_db_vbst;
 int g_vbst_adjustment;
 int g_irq_count_max;
 int g_irq_mask;
+int g_irq_mask_warning;
 
 int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
 					enum dsv_dbg_mode_t mode)
@@ -64,9 +65,9 @@ int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
 
 		snprintf(str, 50, "Vbst=0x%x,Vpos=0x%x,Vneg=0x%x,mask=0x%x",
 			dbvbst, dbvpos, dbvneg, dbmask);
-
-		aee_kernel_warning("mt6370 dsv irq", "db irq type = %x %s\n",
-			mode, str);
+		if (g_irq_mask_warning)
+			aee_kernel_warning("mt6370 dsv irq",
+				"db irq type = %x %s\n", mode, str);
 		ret = 1;
 	}
 
@@ -136,6 +137,10 @@ static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
 	} else if (!strncmp(b, "irq_mask ", strlen("irq_mask "))) {
 		b += strlen("irq_mask ");
 		flag = DSV_VAR_IRQ_MASK;
+	} else if (!strncmp(b, "irq_mask_warning ",
+				strlen("irq_mask_warning "))) {
+		b += strlen("irq_mask_warning ");
+		flag = DSV_VAR_IRQ_MASK_WARNING;
 	} else
 		return -EINVAL;
 
@@ -162,6 +167,11 @@ static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
 		pr_info("[%s] set irq_mask = 0x%x\n",
 					__func__, g_irq_mask);
 		break;
+	case DSV_VAR_IRQ_MASK_WARNING:
+		g_irq_mask_warning = val;
+		pr_info("[%s] set irq_mask_warning = 0x%x\n",
+					__func__, g_irq_mask_warning);
+		break;
 	default:
 		pr_info("[%s] do nothing\n", __func__);
 		break;
@@ -175,6 +185,7 @@ static int mt6370_pmu_dsv_debug_show(struct seq_file *s, void *unused)
 	seq_printf(s, "vbst_adjustment = %d\n", g_vbst_adjustment);
 	seq_printf(s, "irq_count_max = %d\n", g_irq_count_max);
 	seq_printf(s, "irq_mask = 0x%x\n", g_irq_mask);
+	seq_printf(s, "irq_mask_warning = 0x%x\n", g_irq_mask_warning);
 
 	return 0;
 }
@@ -212,6 +223,7 @@ int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
 	g_vbst_adjustment = 0;
 	g_irq_count_max = IRQ_COUNT_MAX;
 	g_irq_mask = 1;
+	g_irq_mask_warning = 0;
 
 	return 0;
 }
