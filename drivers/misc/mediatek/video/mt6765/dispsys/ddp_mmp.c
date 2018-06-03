@@ -548,6 +548,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer,
 	if (!pLayer->layer_en)
 		goto end;
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = pLayer->vaddr;
 	Bitmap.width = pLayer->dst_w;
 	Bitmap.height = pLayer->dst_h;
@@ -716,6 +717,7 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer,
 		return;
 	}
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = wdma_layer->dstAddress;
 	Bitmap.width = wdma_layer->srcWidth;
 	Bitmap.height = wdma_layer->srcHeight;
@@ -819,6 +821,7 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer,
 		return;
 	}
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = rdma_layer->address;
 	Bitmap.width = rdma_layer->width;
 	Bitmap.height = rdma_layer->height;

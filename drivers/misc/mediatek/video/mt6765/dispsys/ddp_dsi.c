@@ -2061,6 +2061,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	struct DSI_T0_INS t0;
 	struct DSI_T2_INS t2;
 
+	memset(&t0, 0, sizeof(struct DSI_T0_INS));
+	memset(&t2, 0, sizeof(struct DSI_T2_INS));
 	if (module == DISP_MODULE_DSI0)
 		d = 0;
 	else if (module == DISP_MODULE_DSI1)

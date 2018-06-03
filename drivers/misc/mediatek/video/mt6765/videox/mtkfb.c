@@ -2258,7 +2258,7 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 	return 0;
 }
 
-int __parse_tag_videolfb(struct device_node *node)
+static int __parse_tag_videolfb(struct device_node *node)
 {
 	struct tag_videolfb *videolfb_tag = NULL;
 	unsigned long size = 0;
@@ -2267,7 +2267,8 @@ int __parse_tag_videolfb(struct device_node *node)
 		"atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
-		strcpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname);
+		strncpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname,
+			sizeof(mtkfb_lcm_name));
 		mtkfb_lcm_name[strlen(videolfb_tag->lcmname)] = '\0';
 
 		lcd_fps = videolfb_tag->fps;

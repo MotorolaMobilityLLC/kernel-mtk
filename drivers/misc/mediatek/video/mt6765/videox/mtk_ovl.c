@@ -546,6 +546,9 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			(unsigned long)(cfg->input_cfg[i].src_phy_addr));
 
 		config_layer_id = cfg->input_cfg[i].layer_id;
+		if (config_layer_id > (TOTAL_OVL_LAYER_NUM - 1))
+			return -1;
+
 		_convert_disp_input_to_ovl(
 			&(data_config->ovl_config[config_layer_id]),
 			&(cfg->input_cfg[i]));
