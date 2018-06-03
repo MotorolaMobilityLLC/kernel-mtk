@@ -22,6 +22,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
 
 #include "mtu3.h"
 
@@ -184,8 +185,15 @@ static void mtu3_intr_enable(struct mtu3 *mtu)
 
 	if (mtu->is_u3_ip) {
 		/* Enable U3 LTSSM interrupts */
+#ifdef CONFIG_USB_MTU3_PLAT_PHONE
+		value = MTU3_LTSSM_INTR_EN;
+#else
 		value = HOT_RST_INTR | WARM_RST_INTR | VBUS_RISE_INTR |
 		    VBUS_FALL_INTR | ENTER_U3_INTR | EXIT_U3_INTR;
+#endif
+		if (mtu->ssusb->force_vbus)
+			value &= ~(VBUS_FALL_INTR | VBUS_RISE_INTR);
+
 		mtu3_writel(mbase, U3D_LTSSM_INTR_ENABLE, value);
 	}
 
@@ -581,7 +589,10 @@ static void mtu3_regs_init(struct mtu3 *mtu)
 	/* enable QMU 16B checksum */
 	mtu3_setbits(mbase, U3D_QCR0, QMU_CS16B_EN);
 	/* vbus detected by HW */
-	mtu3_clrbits(mbase, U3D_MISC_CTRL, VBUS_FRC_EN | VBUS_ON);
+	if (mtu->ssusb->force_vbus)
+		mtu3_setbits(mbase, U3D_MISC_CTRL, VBUS_FRC_EN | VBUS_ON);
+	else
+		mtu3_clrbits(mbase, U3D_MISC_CTRL, VBUS_FRC_EN | VBUS_ON);
 }
 
 static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
@@ -651,6 +662,15 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 	mtu3_writel(mbase, U3D_LTSSM_INTR, ltssm); /* W1C */
 	dev_dbg(mtu->dev, "=== LTSSM[%x] ===\n", ltssm);
 
+	if (ltssm & SS_DISABLE_INTR) {
+		/* enable U2 link. after host reset,
+		 *HS/FS EP0 configuration is applied in musb_g_reset
+		 */
+		mtu3_hs_softconn_set(mtu, true);
+	}
+	if (ltssm & ENTER_U0_INTR)
+		mtu3_printk(K_INFO, "LTSSM: ENTER_U0_INTR\n");
+
 	if (ltssm & (HOT_RST_INTR | WARM_RST_INTR))
 		mtu3_gadget_reset(mtu);
 
@@ -665,6 +685,60 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 
 	if (ltssm & ENTER_U3_INTR)
 		mtu3_gadget_suspend(mtu);
+
+	if (ltssm & HOT_RST_INTR) {
+		u32 link_err_cnt;
+		u32 timeout_val;
+
+		mtu3_printk(K_INFO, "LTSSM: HOT_RST_INTR\n");
+		/* Clear link error count */
+		link_err_cnt = mtu3_readl(mtu->mac_base,
+			U3D_LINK_ERR_COUNT);
+		mtu3_printk(K_INFO, "LTSSM: link_err_cnt=%x\n", link_err_cnt);
+		mtu3_writel(mtu->mac_base, CLR_LINK_ERR_CNT,
+			U3D_LINK_ERR_COUNT);
+
+		/* Clear U1 & U2 Enable */
+		mtu3_clrbits(mtu->mac_base, U3D_LINK_POWER_CONTROL,
+			(SW_U1_ACCEPT_ENABLE | SW_U2_ACCEPT_ENABLE));
+
+		mtu->u1_enable = 0;
+		mtu->u2_enable = 0;
+
+		/* Reset U1 & U2 timeout value */
+		timeout_val = mtu3_readl(mtu->mac_base,
+			U3D_LINK_UX_INACT_TIMER);
+		mtu3_printk(K_INFO, "LTSSM: timer_val =%x\n", timeout_val);
+		timeout_val &= ~(U1_INACT_TIMEOUT_MSK |
+			DEV_U2_INACT_TIMEOUT_MSK);
+		mtu3_writel(mtu->mac_base, U3D_LINK_UX_INACT_TIMER,
+			timeout_val);
+	}
+
+	if (ltssm & WARM_RST_INTR) {
+		u32 link_err_cnt;
+
+		mtu3_printk(K_INFO, "LTSSM: WARM_RST_INTR\n");
+		/* Clear link error count */
+		link_err_cnt = mtu3_readl(mtu->mac_base,
+			U3D_LINK_ERR_COUNT);
+		mtu3_printk(K_INFO, "LTSSM: link_err_cnt=%x\n", link_err_cnt);
+		mtu3_writel(mtu->mac_base, CLR_LINK_ERR_CNT,
+			U3D_LINK_ERR_COUNT);
+	}
+
+	if (ltssm & SS_INACTIVE_INTR)
+		mtu3_printk(K_INFO, "LTSSM: SS_INACTIVE_INTR\n");
+	if (ltssm & RECOVERY_INTR)
+		mtu3_printk(K_INFO, "LTSSM: RECOVERY_INTR\n");
+	if (ltssm & U3_RESUME_INTR)
+		mtu3_printk(K_INFO, "LTSSM: U3_RESUME_INTR\n");
+	if (ltssm & ENTER_U2_INTR)
+		mtu3_printk(K_INFO, "LTSSM: ENTER_U2_INTR\n");
+	if (ltssm & ENTER_U1_INTR)
+		mtu3_printk(K_INFO, "LTSSM: ENTER_U1_INTR\n");
+	if (ltssm & RXDET_SUCCESS_INTR)
+		mtu3_printk(K_INFO, "LTSSM: RXDET_SUCCESS_INTR\n");
 
 	return IRQ_HANDLED;
 }
@@ -743,6 +817,14 @@ static int mtu3_hw_init(struct mtu3 *mtu)
 		dev_err(mtu->dev, "device enable failed %d\n", ret);
 		return ret;
 	}
+
+	cap_dev = mtu3_readl(mtu->mac_base, U3D_MISC_CTRL);
+	mtu->is_36bit = !!CAP_36BIT_SUPPORT(cap_dev);
+
+	dev_info(mtu->dev, "DMA 36bits:%d\n", mtu->is_36bit);
+
+	if (mtu->is_36bit)
+		dma_set_mask_and_coherent(mtu->dev, DMA_BIT_MASK(36));
 
 	ret = mtu3_mem_alloc(mtu);
 	if (ret)

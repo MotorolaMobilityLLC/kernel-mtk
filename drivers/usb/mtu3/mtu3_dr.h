@@ -87,6 +87,9 @@ static inline void ssusb_gadget_exit(struct ssusb_mtk *ssusb)
 int ssusb_otg_switch_init(struct ssusb_mtk *ssusb);
 void ssusb_otg_switch_exit(struct ssusb_mtk *ssusb);
 int ssusb_set_vbus(struct otg_switch_mtk *otg_sx, int is_on);
+#if IS_ENABLED(CONFIG_USB_MTU3_PLAT_PHONE)
+extern u32 mtu3_speed;
+#endif
 
 #else
 

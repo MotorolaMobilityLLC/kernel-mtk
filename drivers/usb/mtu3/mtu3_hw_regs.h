@@ -59,6 +59,9 @@
 #define U3D_QCR2		(SSUSB_DEV_BASE + 0x0408)
 #define U3D_QCR3		(SSUSB_DEV_BASE + 0x040C)
 
+#define U3D_TXQHIAR1		(SSUSB_DEV_BASE + 0x0484)
+#define U3D_RXQHIAR1		(SSUSB_DEV_BASE + 0x04C4)
+
 #define U3D_TXQCSR1		(SSUSB_DEV_BASE + 0x0510)
 #define U3D_TXQSAR1		(SSUSB_DEV_BASE + 0x0514)
 #define U3D_TXQCPR1		(SSUSB_DEV_BASE + 0x0518)
@@ -227,7 +230,7 @@
 /* U3D_MISC_CTRL */
 #define VBUS_ON			BIT(1)
 #define VBUS_FRC_EN		BIT(0)
-
+#define CAP_36BIT_SUPPORT(x)	(((x) >> 31) & 0x1)
 
 /*---------------- SSUSB_EPCTL_CSR REGISTER DEFINITION ----------------*/
 

@@ -478,6 +478,21 @@ static int mtu3_gadget_set_self_powered(struct usb_gadget *gadget,
 	return 0;
 }
 
+static int usb_rdy = 1;
+
+void set_usb_rdy(void)
+{
+	usb_rdy = 1;
+}
+
+bool is_usb_rdy(void)
+{
+	if (usb_rdy)
+		return true;
+	else
+		return false;
+}
+
 static int mtu3_gadget_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct mtu3 *mtu = gadget_to_mtu3(gadget);
@@ -497,6 +512,8 @@ static int mtu3_gadget_pullup(struct usb_gadget *gadget, int is_on)
 		mtu->softconnect = is_on;
 		mtu3_dev_on_off(mtu, is_on);
 	}
+	if (is_usb_rdy() == false && is_on)
+		set_usb_rdy();
 
 	spin_unlock_irqrestore(&mtu->lock, flags);
 
@@ -665,6 +682,8 @@ int mtu3_gadget_setup(struct mtu3 *mtu)
 	mtu->is_active = 0;
 
 	mtu3_gadget_init_eps(mtu);
+
+	mtu->g.quirk_ep_out_aligned_size = true;
 
 	ret = usb_add_gadget_udc(mtu->dev, &mtu->g);
 	if (ret) {
