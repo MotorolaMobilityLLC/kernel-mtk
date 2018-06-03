@@ -17,6 +17,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv \
              -I$(srctree)/drivers/misc/mediatek/mu3phy/$(CONFIG_MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 
+ifeq ($(CONFIG_TCPC_CLASS),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+endif
+
 ifeq ($(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pkt_track/mod-pkt_track/include \
              -I$(srctree)/drivers/usb/gadget \
