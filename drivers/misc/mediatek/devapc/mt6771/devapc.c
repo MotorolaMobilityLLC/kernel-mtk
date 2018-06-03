@@ -603,6 +603,22 @@ static void unmask_infra_module_irq(unsigned int module)
 	*DEVAPC_PD_INFRA_VIO_MASK(apc_index) &= (0xFFFFFFFF ^ (1 << apc_bit_index));
 }
 
+static void mask_infra_module_irq(unsigned int module)
+{
+	unsigned int apc_index = 0;
+	unsigned int apc_bit_index = 0;
+
+	if (module > PD_INFRA_VIO_MASK_MAX_INDEX) {
+		pr_err("[DEVAPC] mask_infra_module_irq: module overflow!\n");
+		return;
+	}
+
+	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
+	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
+
+	*DEVAPC_PD_INFRA_VIO_MASK(apc_index) |= (1 << apc_bit_index);
+}
+
 static int clear_infra_vio_status(unsigned int module)
 {
 	unsigned int apc_index = 0;
@@ -697,6 +713,10 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 	unsigned int domain_id;
 
 	DEVAPC_VIO_MSG("[DEVAPC] Executing AEE Exception...\n");
+
+	/* mask irq for module "i" */
+	mask_infra_module_irq(i);
+
 	/* Mark the flag for showing AEE (AEE should be shown only once) */
 	devapc_vio_aee_shown[i] = 1;
 	if (devapc_vio_current_aee_trigger_times < DEVAPC_VIO_MAX_TOTAL_MODULE_AEE_TRIGGER_TIMES) {
