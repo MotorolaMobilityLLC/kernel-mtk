@@ -1004,7 +1004,7 @@ int m4u_dma_cache_flush_all(void)
 
 void m4u_dma_cache_flush_range(void *start, size_t size)
 {
-	dmac_flush_range((void *)start, size, DMA_TO_DEVICE);
+	dmac_flush_range((void *)start, size);
 }
 
 static struct vm_struct *cache_map_vm_struct;
@@ -1044,7 +1044,7 @@ static int __m4u_cache_sync_kernel(const void *start, size_t size,
 	else if (sync_type == M4U_CACHE_INVALID_BY_RANGE)
 		dmac_unmap_area((void *)start, size, DMA_FROM_DEVICE);
 	else if (sync_type == M4U_CACHE_FLUSH_BY_RANGE)
-		dmac_flush_range((void *)start, size, DMA_TO_DEVICE);
+		dmac_flush_range((void *)start, size);
 
 	return 0;
 }
