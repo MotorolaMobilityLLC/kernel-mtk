@@ -32,6 +32,12 @@ struct create_fdrv_struct {
 	unsigned int fdrv_size;
 };
 
+struct fdrv_call_struct {
+        int fdrv_call_type;
+        int fdrv_call_buff_size;
+        int retVal;
+};
+
 struct ack_fast_call_struct {
 	int retVal;
 };
@@ -41,10 +47,8 @@ struct keymaster_command_struct {
 	int retVal;
 };
 
-struct keymaster_command_struct keymaster_command_entry;
-
 extern unsigned long message_buff;
-unsigned long keymaster_buff_addr;
+
 extern unsigned long fdrv_message_buff;
 extern int fp_call_flag;
 extern struct semaphore fdrv_lock;

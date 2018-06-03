@@ -88,3 +88,4 @@
 #define IRQ_DELAY       1000
 
 #define UT_DMA_ZONE
+#define DRM_SYS_NO	102

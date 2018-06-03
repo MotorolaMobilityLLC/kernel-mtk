@@ -17,6 +17,7 @@ ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/touc
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/GT9XX_hotknot/
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/V1.0/tz_driver/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/V1.0/public/
 
 
 teei-objs += teei_client_main.o
