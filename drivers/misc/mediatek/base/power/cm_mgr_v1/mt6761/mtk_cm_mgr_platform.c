@@ -240,9 +240,9 @@ static int cm_mgr_check_dram_type(void)
 	int ddr_type = get_ddr_type();
 	int ddr_hz = dram_steps_freq(0);
 
-	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
+	if (ddr_type == TYPE_LPDDR4X || ddr_type == TYPE_LPDDR4)
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3200;
-	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
+	else if (ddr_type == TYPE_LPDDR3)
 		cm_mgr_idx = CM_MGR_LP3_1CH_1866;
 	pr_info("#@# %s(%d) ddr_type 0x%x, ddr_hz %d, cm_mgr_idx 0x%x\n",
 			__func__, __LINE__, ddr_type, ddr_hz, cm_mgr_idx);
@@ -292,7 +292,6 @@ static unsigned int cm_mgr_read_stall(int cpu)
 
 	if (cpu < CM_MGR_CPU_LIMIT) {
 		if (cm_mgr_idle_mask & CLUSTER0_MASK)
-
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 	}
 	spin_unlock(&cm_mgr_cpu_mask_lock);
