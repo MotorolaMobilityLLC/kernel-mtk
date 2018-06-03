@@ -340,7 +340,7 @@ void disable_26M_clock_to_conn_rf(void)
 	uint32_t value = 0;
 
 	/* RG_CLKBUF_XO_EN<7:0>=8'h00 */
-	value = BSI_read(0x33) & !BITS(8, 15);
+	value = BSI_read(0x33) & ~BITS(8, 15);
 	BSI_write(0x33, value);
 
 	/* Toggle RG_XO_1_2=0'1'0 */
