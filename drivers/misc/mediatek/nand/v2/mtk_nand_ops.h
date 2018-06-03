@@ -67,15 +67,15 @@ extern void dump_nfi(void);
 #if NAND_DEBUG_DISABLE
 #define nand_debug(fmt, ...) do {} while (0)
 #else
-#define nand_debug(fmt, ...) pr_err("NAND: " fmt "\n", ##__VA_ARGS__)
+#define nand_debug(fmt, ...) pr_debug("NAND: " fmt "\n", ##__VA_ARGS__)
 #endif
 
 /* nand error messages */
-#define nand_info(fmt, ...) pr_err("NAND:%s %d info: " fmt "\n",      \
+#define nand_info(fmt, ...) pr_debug("NAND:%s %d info: " fmt "\n",      \
 	__func__, __LINE__,  ##__VA_ARGS__)
 
 /* nand error messages */
-#define nand_err(fmt, ...) pr_err("NAND:%s %d failed: " fmt "\n",      \
+#define nand_err(fmt, ...) pr_debug("NAND:%s %d failed: " fmt "\n",      \
 	__func__, __LINE__,  ##__VA_ARGS__)
 
 #ifndef FALSE

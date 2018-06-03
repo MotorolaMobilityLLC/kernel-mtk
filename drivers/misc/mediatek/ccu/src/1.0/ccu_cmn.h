@@ -253,18 +253,18 @@ void ccu_clock_disable(void);
 
 #define LOG_DBG_MUST(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_INF_MUST(format, args...)    pr_info(CCU_TAG "[%s] " format, __func__, ##args)
-#define LOG_WRN_MUST(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_WRN_MUST(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_DBG(format, args...)
 #define LOG_INF(format, args...)
-#define LOG_WRN(format, args...)    pr_warn(CCU_TAG "[%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_WRN(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
 
 #define ccu_print_seq(seq_file, fmt, args...) \
 		do {\
 			if (seq_file)\
 				seq_printf(seq_file, fmt, ##args);\
 			else\
-				pr_err(fmt, ##args);\
+				pr_debug(fmt, ##args);\
 		} while (0)
 
 #define ccu_error(format, args...) \

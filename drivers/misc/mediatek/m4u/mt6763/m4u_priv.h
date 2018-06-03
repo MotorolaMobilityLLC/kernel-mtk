@@ -24,7 +24,7 @@
 #include "m4u_reg.h"
 #include "../2.0/m4u_pgtable.h"
 
-#define M4UMSG(string, args...)	pr_err("[M4U] "string, ##args)
+#define M4UMSG(string, args...)	pr_debug("[M4U] "string, ##args)
 #define M4UINFO(string, args...) pr_debug("[M4U] "string, ##args)
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -300,7 +300,7 @@ extern int gM4U_log_to_uart;
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			pr_err(fmt, ##args);\
+			pr_debug(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */

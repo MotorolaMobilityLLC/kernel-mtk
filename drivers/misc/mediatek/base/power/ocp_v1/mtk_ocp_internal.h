@@ -86,8 +86,8 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 /* log print */
 #define TAG     "[mt_ocp]"
-#define ocp_err(fmt, args...)	pr_err(TAG fmt, ##args)
-#define ocp_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
+#define ocp_err(fmt, args...)	pr_debug(TAG fmt, ##args)
+#define ocp_warn(fmt, args...)	pr_debug(TAG fmt, ##args)
 #define ocp_info(fmt, args...)	pr_info(TAG fmt, ##args)
 #define ocp_dbg(fmt, args...)				\
 	do {						\
