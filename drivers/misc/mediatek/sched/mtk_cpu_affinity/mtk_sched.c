@@ -77,14 +77,18 @@ static void mt_sched_check_tasks(void)
 {
 	struct mt_task *tmp, *tmp2;
 	unsigned long irq_flags;
+	struct task_struct *tsk;
 
 	spin_lock_irqsave(&mt_sched_spinlock, irq_flags);
+	rcu_read_lock();
 	list_for_each_entry_safe(tmp, tmp2, &mt_task_head.list, list) {
-		if (tmp->pid != tmp->p->pid) {
+		tsk = find_task_by_vpid(tmp->pid);
+		if (!tsk) {
 			list_del(&(tmp->list));
 			kfree(tmp);
 		}
 	}
+	rcu_read_unlock();
 	spin_unlock_irqrestore(&mt_sched_spinlock, irq_flags);
 }
 
@@ -98,6 +102,7 @@ static long __mt_sched_addaffinity(struct task_struct *p, const struct cpumask *
 	struct mt_task *tmp, *tmp2;
 	unsigned long irq_flags;
 	int find = 0;
+	struct task_struct *tsk;
 
 	new = kmalloc(sizeof(struct mt_task), GFP_KERNEL);
 	if (!new)
@@ -109,17 +114,20 @@ static long __mt_sched_addaffinity(struct task_struct *p, const struct cpumask *
 	cpumask_copy(&new->mask, new_mask);
 
 	spin_lock_irqsave(&mt_sched_spinlock, irq_flags);
+	rcu_read_lock();
 	list_for_each_entry_safe(tmp, tmp2, &mt_task_head.list, list) {
-		if (tmp->pid != tmp->p->pid) {
+		tsk = find_task_by_vpid(tmp->pid);
+		if (tsk) {
+			if (!find && (tmp->p == p)) {
+				cpumask_copy(&tmp->mask, new_mask);
+				find = 1;
+			}
+		} else {
 			list_del(&(tmp->list));
 			kfree(tmp);
-			continue;
-		}
-		if (!find && (tmp->p == p)) {
-			find = 1;
-			cpumask_copy(&tmp->mask, new_mask);
 		}
 	}
+	rcu_read_unlock();
 
 	if (!find)
 		list_add(&(new->list), &(mt_task_head.list));
