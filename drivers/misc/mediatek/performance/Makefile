@@ -10,9 +10,9 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
 obj-y += perfmgr/
 obj-y += eas_controller/
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += legacy_controller/
+	obj-$(CONFIG_MTK_BASE_POWER) += fliper/
 endif
