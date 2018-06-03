@@ -109,16 +109,16 @@ static int g_accdet_auxadc_offset;
 static int g_moisture_vdd_offset; /* unit is mv */
 static int g_moisture_offset; /* unit is mv */
 static int g_moisture_vm; /* unit is mv */
-static int water_r; /* moisture resister ohm */
+static int water_r = 10000; /* moisture resister ohm */
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 static int g_moisture_eint_offset; /* unit is ohm */
 #endif
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
-static int external_r; /* unit is ohm */
+static int external_r = 470000; /* unit is ohm */
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
-static int internal_r; /* unit is ohm */
+static int internal_r = 47000; /* unit is ohm */
 #endif
 static int g_cur_key;
 static unsigned int g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
