@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/fb.h>
+#include <linux/pinctrl/consumer.h>
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 #include <mach/mtk_6306_gpio.h>
 #endif
