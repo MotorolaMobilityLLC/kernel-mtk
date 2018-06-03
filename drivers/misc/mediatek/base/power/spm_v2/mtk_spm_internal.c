@@ -1259,7 +1259,7 @@ void spm_set_dummy_read_addr(void)
 	spm_crit("dram_rank_num: %d\n", dram_rank_num);
 	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	MAPPING_DRAM_ACCESS_ADDR(rank0_addr);
 	MAPPING_DRAM_ACCESS_ADDR(rank1_addr);
 	spm_crit("dummy read addr(4GB: %d): rank0: 0x%x, rank1: 0x%x\n", enable_4G(), rank0_addr, rank1_addr);
