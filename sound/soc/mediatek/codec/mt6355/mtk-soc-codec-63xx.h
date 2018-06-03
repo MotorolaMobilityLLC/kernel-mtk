@@ -82,7 +82,7 @@ void OpenTrimBufferHardware(bool bEnable);
 
 /* mtk audio interface calibration function */
 void mtkaif_calibration_set_loopback(bool enable);
-void mtkaif_calibration_set_phase(int mode1, int mode2);
+void mtkaif_calibration_set_phase(int mode1);
 
 /* mtk dpd function */
 void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param);
