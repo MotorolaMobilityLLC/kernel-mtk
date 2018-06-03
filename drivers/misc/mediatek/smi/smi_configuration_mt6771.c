@@ -223,7 +223,7 @@ struct SMI_SETTING_VALUE smi_profile_setting_common_init[SMI_PROFILE_SETTING_COM
 };
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb0_init[SMI_LARB0_PORT_NUM] = {
-	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 0x1f}, {0x20c, 0xc}, {0x210, 0xc}, {0x214, 0x5}, {0x218, 0x9},
+	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 0x1f}, {0x20c, 0x1f}, {0x210, 0x1f}, {0x214, 0x5}, {0x218, 0x9},
 	{0x21c, 0x4}, {0x220, 0x4}, {0x224, 0x1f}
 };
 
@@ -274,7 +274,7 @@ struct SMI_SETTING init_setting_config = {
 struct SMI_SETTING_VALUE smi_profile_setting_common_icfp[SMI_PROFILE_SETTING_COMMON_ICFP_NUM] = {
 	{0x220, 0x4414},
 	{REG_OFFSET_SMI_L1ARB0, 0x1361}, {REG_OFFSET_SMI_L1ARB1, 0x119e}, {REG_OFFSET_SMI_L1ARB2, 0x12ad},
-	{REG_OFFSET_SMI_L1ARB3, 0x130d}, {REG_OFFSET_SMI_L1ARB5, 0x109f}, {REG_OFFSET_SMI_L1ARB6, 0x109f}
+	{REG_OFFSET_SMI_L1ARB3, 0x130d}, {REG_OFFSET_SMI_L1ARB5, 0x1610}, {REG_OFFSET_SMI_L1ARB6, 0x1610}
 };
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb0_icfp[SMI_LARB0_PORT_NUM] = {
