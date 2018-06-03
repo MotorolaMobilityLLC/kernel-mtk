@@ -30,6 +30,8 @@
 #include <backend/gpu/mali_kbase_pm_internal.h>
 #include <backend/gpu/mali_kbase_jm_internal.h>
 
+extern unsigned int (*mtk_get_gpu_loading_fp)(void);
+
 static void kbase_pm_gpu_poweroff_wait_wq(struct work_struct *data);
 
 void kbase_pm_register_access_enable(struct kbase_device *kbdev)
@@ -119,6 +121,9 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 		kbdev->pm.backend.callback_mtk_power_suspend = NULL;
 		kbdev->pm.backend.callback_mtk_power_resume = NULL;
 	}
+
+	/* MTK MET use */
+	mtk_get_gpu_loading_fp = kbasep_get_gl_utilization;
 
 	/* Initialise the metrics subsystem */
 	ret = kbasep_pm_metrics_init(kbdev);
