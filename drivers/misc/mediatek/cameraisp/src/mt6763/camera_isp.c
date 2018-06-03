@@ -121,21 +121,8 @@ struct mmdvfs_pm_qos_request isp_qos;
 #define CAMSV2_TAG ""
 #define CAM_TAG ""
 #endif
-typedef unsigned char           MUINT8;
-typedef unsigned int            MUINT32;
-typedef unsigned int            UINT32;
-/*  */
-typedef signed char             MINT8;
-typedef signed int              MINT32;
-/*  */
-typedef bool                    MBOOL;
-#ifndef BOOL
-typedef unsigned char           BOOL;
-#endif
-
 
 #include "inc/camera_isp.h"
-
 
 /*  */
 #ifndef MTRUE
@@ -190,8 +177,8 @@ typedef unsigned char           BOOL;
 /* #define ISP_WR32(addr, data)    iowrite32(data, addr) // For other projects. */
 #define ISP_WR32(addr, data)    mt_reg_sync_writel(data, addr)  /* For 89     Only.*/   /* NEED_TUNING_BY_PROJECT */
 #define ISP_RD32(addr)                  ioread32((void *)addr)
-#define ISP_SET_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) |= (MUINT32)(1 << (bit)))
-#define ISP_CLR_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) &= ~((MUINT32)(1 << (bit))))
+/* #define ISP_SET_BIT(reg, bit)   ((*(volatile unsigned int*)(reg)) |= (unsigned int)(1 << (bit))) */
+/* #define ISP_CLR_BIT(reg, bit)   ((*(volatile unsigned int*)(reg)) &= ~((unsigned int)(1 << (bit)))) */
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -356,27 +343,27 @@ typedef unsigned char           BOOL;
 				 SV_IMGO_ERR |\
 				 SV_IMGO_OVERRUN)
 
-static irqreturn_t ISP_Irq_CAM_A(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAM_A(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAM_B(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_0(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_1(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_2(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_3(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_4(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_5(int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_DIP_A(int  Irq, void *DeviceId);
 
 
-typedef irqreturn_t (*IRQ_CB)(MINT32, void *);
+typedef irqreturn_t (*IRQ_CB)(int, void *);
 
-typedef struct {
+struct ISR_TABLE {
 	IRQ_CB          isr_fp;
 	unsigned int    int_number;
 	char            device_name[16];
-} ISR_TABLE;
+};
 
 #ifndef CONFIG_OF
-const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_CAM_A,     CAM0_IRQ_BIT_ID,    "CAM_A"},
 	{NULL,                            0,    "CAM_B"},
 	{NULL,                            0,    "DIP_A"},
@@ -388,7 +375,7 @@ const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 #else
 /* int number is got from kernel api */
 
-const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 #if DUMMY_INT
 	{ISP_Irq_CAM_A,     0,  "cam2-dummy"}, /* Must be the same name with that in device node. */
 	{ISP_Irq_CAM_B,     0,  "cam3-dummy"},
@@ -438,10 +425,10 @@ static const struct of_device_id isp_of_ids[] = {
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
 typedef void (*tasklet_cb)(unsigned long);
-typedef struct {
+struct Tasklet_table {
 	tasklet_cb tkt_cb;
 	struct tasklet_struct  *pIsp_tkt;
-} Tasklet_table;
+};
 
 struct tasklet_struct tkt[ISP_IRQ_TYPE_AMOUNT];
 
@@ -454,7 +441,7 @@ static void ISP_TaskletFunc_SV_3(unsigned long data);
 static void ISP_TaskletFunc_SV_4(unsigned long data);
 static void ISP_TaskletFunc_SV_5(unsigned long data);
 
-static Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
+static struct Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_CAM_A, &tkt[ISP_IRQ_TYPE_INT_CAM_A_ST]},
 	{ISP_TaskletFunc_CAM_B, &tkt[ISP_IRQ_TYPE_INT_CAM_B_ST]},
 	{NULL,                  &tkt[ISP_IRQ_TYPE_INT_DIP_A_ST]},
@@ -468,14 +455,14 @@ static Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
 };
 
 #if (ISP_BOTTOMHALF_WORKQ == 1)
-typedef struct {
+struct IspWorkqueTable {
 	ISP_IRQ_TYPE_ENUM	module;
 	struct work_struct  isp_bh_work;
-} IspWorkqueTable;
+};
 
 static void ISP_BH_Workqueue(struct work_struct *pWork);
 
-static IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
+static struct IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_IRQ_TYPE_INT_CAM_A_ST},
 	{ISP_IRQ_TYPE_INT_CAM_B_ST},
 	{ISP_IRQ_TYPE_INT_DIP_A_ST},
@@ -492,19 +479,9 @@ static IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
 
 #ifdef CONFIG_OF
 
-/* TODO: Remove, Jessy */
-typedef enum {
-	ISP_BASE_ADDR = 0,
-	ISP_INNER_BASE_ADDR,
-	ISP_IMGSYS_CONFIG_BASE_ADDR,
-	ISP_MIPI_ANA_BASE_ADDR,
-	ISP_GPIO_BASE_ADDR,
-	ISP_CAM_BASEADDR_NUM
-} ISP_CAM_BASEADDR_ENUM;
-
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
 #include <linux/clk.h>
-typedef struct {
+struct ISP_CLK_STRUCT {
 	struct clk *ISP_SCP_SYS_DIS;
 	struct clk *ISP_SCP_SYS_ISP;
 	struct clk *ISP_SCP_SYS_CAM;
@@ -515,8 +492,8 @@ typedef struct {
 	struct clk *ISP_CAM_CAMSV0;
 	struct clk *ISP_CAM_CAMSV1;
 	struct clk *ISP_CAM_CAMSV2;
-} ISP_CLK_STRUCT;
-ISP_CLK_STRUCT isp_clk;
+};
+struct ISP_CLK_STRUCT isp_clk;
 #endif
 
 /* TODO: Remove, Jessy */
@@ -579,14 +556,14 @@ static unsigned int g_VirISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static unsigned int g_CmdqBuffer[(MAX_ISP_CMDQ_BUFFER_SIZE >> 2)];
 #endif
 static volatile bool g_bUserBufIsReady = MFALSE;
-static MUINT32 DumpBufferField;
+static unsigned int DumpBufferField;
 static volatile bool g_bDumpPhyISPBuf = MFALSE;
-static MUINT32 g_tdriaddr = 0xffffffff;
-static MUINT32 g_cmdqaddr = 0xffffffff;
+static unsigned int g_tdriaddr = 0xffffffff;
+static unsigned int g_cmdqaddr = 0xffffffff;
 static ISP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static ISP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
 static ISP_MEM_INFO_STRUCT g_CmdqBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
-static volatile MUINT32 m_CurrentPPB;
+static volatile unsigned int m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source isp_wake_lock;
@@ -654,15 +631,15 @@ void __iomem *SMI_LARB_BASE[8];
 #define ISP_REG_SW_CTL_RST_CAMSV        (3)
 #define ISP_REG_SW_CTL_RST_CAMSV2       (4)
 
-typedef struct {
-	MUINT32 sec;
-	MUINT32 usec;
-} S_START_T;
+struct S_START_T {
+	unsigned int sec;
+	unsigned int usec;
+};
 
 /* QQ, remove later */
 /* record remain node count(success/fail) excludes head when enque/deque control */
-static volatile MINT32 EDBufQueRemainNodeCnt;
-static volatile MUINT32 g_regScen = 0xa5a5a5a5; /* remove later */
+static volatile int EDBufQueRemainNodeCnt;
+static volatile unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
 
 static /*volatile*/ wait_queue_head_t P2WaitQueueHead_WaitDeque;
@@ -672,32 +649,33 @@ static spinlock_t      SpinLock_P2FrameList;
 #define _MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_ 8
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_ (_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
-typedef struct {
-	volatile MINT32 start; /* starting index for frames in the ring list */
-	volatile MINT32 curr; /* current index for running frame in the ring list */
-	volatile MINT32 end; /* ending index for frames in the ring list */
-} ISP_P2_BUFQUE_IDX_STRUCT;
+struct ISP_P2_BUFQUE_IDX_STRUCT {
+	volatile int start; /* starting index for frames in the ring list */
+	volatile int curr; /* current index for running frame in the ring list */
+	volatile int end; /* ending index for frames in the ring list */
+};
 
-typedef struct {
-	volatile MUINT32               processID;  /* caller process ID */
-	volatile MUINT32               callerID;   /* caller thread ID */
-	volatile MUINT32               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
+struct ISP_P2_FRAME_UNIT_STRUCT {
+	volatile unsigned int               processID;  /* caller process ID */
+	volatile unsigned int               callerID;   /* caller thread ID */
+	volatile unsigned int               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
 
 	volatile ISP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
-} ISP_P2_FRAME_UNIT_STRUCT;
+};
 
-static volatile ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile ISP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
+static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static volatile struct
+ISP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
 
-typedef struct {
-	volatile MUINT32                processID;  /* caller process ID */
-	volatile MUINT32                callerID;   /* caller thread ID */
-	volatile MUINT32                dupCQIdx;       /* to judge it belongs to which frame package */
-	volatile MINT32                   frameNum;
-	volatile MINT32                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
-} ISP_P2_FRAME_PACKAGE_STRUCT;
-static volatile ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile ISP_P2_FRAME_PACKAGE_STRUCT
+struct ISP_P2_FRAME_PACKAGE_STRUCT {
+	volatile unsigned int                processID;  /* caller process ID */
+	volatile unsigned int                callerID;   /* caller thread ID */
+	volatile unsigned int                dupCQIdx;       /* to judge it belongs to which frame package */
+	volatile int                   frameNum;
+	volatile int                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
+};
+static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static volatile struct ISP_P2_FRAME_PACKAGE_STRUCT
 	P2_FramePackage_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_PACKAGE_NUM_];
 
 
@@ -713,12 +691,13 @@ static  spinlock_t      SpinLock_UserKey;
 
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats);
-static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id,
-					MUINT32 delayCheck);
-static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod);
-static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pTstp);
-static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id);
+static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats);
+static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, unsigned int dma_id,
+					unsigned int delayCheck);
+static int32_t ISP_PushBufTimestamp(unsigned int module, unsigned int dma_id, unsigned int sec,
+									unsigned int usec, unsigned int frmPeriod);
+static int32_t ISP_PopBufTimestamp(unsigned int module, unsigned int dma_id, struct S_START_T *pTstp);
+static int32_t ISP_WaitTimestampReady(unsigned int module, unsigned int dma_id);
 #endif
 
 /*******************************************************************************
@@ -750,27 +729,27 @@ int pr_detect_count;
 #define _ion_keep_max_   (64)/*32*/
 #include "ion_drv.h" /*g_ion_device*/
 static struct ion_client *pIon_client;
-static MINT32 G_WRDMA_IonCt[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };
-static MINT32 G_WRDMA_IonFd[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };
+static int G_WRDMA_IonCt[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };
+static int G_WRDMA_IonFd[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };
 static struct ion_handle *G_WRDMA_IonHnd[2][_dma_max_wr_*_ion_keep_max_] = { {NULL}, {NULL} };
 static spinlock_t SpinLock_IonHnd[2][_dma_max_wr_]; /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
 
-typedef struct{
+struct T_ION_TBL {
 	ISP_DEV_NODE_ENUM node;
-	MINT32 *pIonCt;
-	MINT32 *pIonFd;
+	int *pIonCt;
+	int *pIonFd;
 	struct ion_handle **pIonHnd;
 	spinlock_t *pLock;
-} T_ION_TBL;
+};
 
-static T_ION_TBL gION_TBL[ISP_DEV_NODE_NUM] = {
+static struct T_ION_TBL gION_TBL[ISP_DEV_NODE_NUM] = {
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
-	{ISP_CAM_A_IDX, (MINT32 *)G_WRDMA_IonCt[0], (MINT32 *)G_WRDMA_IonFd[0], (struct ion_handle **)G_WRDMA_IonHnd[0],
+	{ISP_CAM_A_IDX, (int *)G_WRDMA_IonCt[0], (int *)G_WRDMA_IonFd[0], (struct ion_handle **)G_WRDMA_IonHnd[0],
 		(spinlock_t *)SpinLock_IonHnd[0]},
-	{ISP_CAM_B_IDX, (MINT32 *)G_WRDMA_IonCt[1], (MINT32 *)G_WRDMA_IonFd[1], (struct ion_handle **)G_WRDMA_IonHnd[1],
+	{ISP_CAM_B_IDX, (int *)G_WRDMA_IonCt[1], (int *)G_WRDMA_IonFd[1], (struct ion_handle **)G_WRDMA_IonHnd[1],
 		(spinlock_t *)SpinLock_IonHnd[1]},
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
 	{ISP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
@@ -783,10 +762,10 @@ static T_ION_TBL gION_TBL[ISP_DEV_NODE_NUM] = {
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
+struct ISP_USER_INFO_STRUCT {
 	pid_t   Pid;
 	pid_t   Tid;
-} ISP_USER_INFO_STRUCT;
+};
 
 /*******************************************************************************
 *
@@ -795,22 +774,22 @@ typedef struct {
 #define ISP_BUF_SIZE_WRITE      1024
 #define ISP_BUF_WRITE_AMOUNT    6
 
-typedef enum {
+enum ISP_BUF_STATUS_ENUM {
 	ISP_BUF_STATUS_EMPTY,
 	ISP_BUF_STATUS_HOLD,
 	ISP_BUF_STATUS_READY
-} ISP_BUF_STATUS_ENUM;
+};
 
-typedef struct {
-	volatile ISP_BUF_STATUS_ENUM Status;
-	volatile MUINT32                Size;
-	MUINT8 *pData;
-} ISP_BUF_STRUCT;
+struct ISP_BUF_STRUCT {
+	volatile enum ISP_BUF_STATUS_ENUM Status;
+	volatile unsigned int                Size;
+	unsigned char *pData;
+};
 
-typedef struct {
-	ISP_BUF_STRUCT      Read;
-	ISP_BUF_STRUCT      Write[ISP_BUF_WRITE_AMOUNT];
-} ISP_BUF_INFO_STRUCT;
+struct ISP_BUF_INFO_STRUCT {
+	struct ISP_BUF_STRUCT      Read;
+	struct ISP_BUF_STRUCT      Write[ISP_BUF_WRITE_AMOUNT];
+};
 
 
 /*******************************************************************************
@@ -820,80 +799,69 @@ typedef struct {
 #define INT_ERR_WARN_TIMER_THREAS 1000
 #define INT_ERR_WARN_MAX_TIME 1
 
-typedef struct {
-	MUINT32 m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
-	MUINT32 m_warn_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each warning int # */
-	MUINT32 m_err_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
-	MUINT32 m_warn_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
+struct ISP_IRQ_ERR_WAN_CNT_STRUCT {
+	unsigned int m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
+	unsigned int m_warn_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each warning int # */
+	unsigned int m_err_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
+	unsigned int m_warn_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
 	unsigned long m_int_usec[ISP_IRQ_TYPE_AMOUNT];
-} ISP_IRQ_ERR_WAN_CNT_STRUCT;
+};
 
-static volatile MINT32 FirstUnusedIrqUserKey = 1;
+static volatile int FirstUnusedIrqUserKey = 1;
 #define USERKEY_STR_LEN 128
 
-typedef struct {
+struct UserKeyInfo {
 	char userName[USERKEY_STR_LEN]; /* name for the user that register a userKey */
 	int userKey;    /* the user key for that user */
-} UserKeyInfo;
+};
 /* array for recording the user name for a specific user key */
-static volatile UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
+static volatile struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
 
-typedef struct {
+struct ISP_IRQ_INFO_STRUCT {
 	/* Add an extra index for status type in Everest -> signal or dma */
-	volatile MUINT32    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
-	MUINT32             Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
-	MUINT32             ErrMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
-	UINT32              WarnMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	volatile unsigned int    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int             Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	unsigned int             ErrMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	unsigned int              WarnMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
 	/* flag for indicating that user do mark for a interrupt or not */
-	volatile MUINT32    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	volatile unsigned int    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile MUINT32    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	volatile unsigned int    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile MUINT32    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	volatile unsigned int    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* number of a specific signal that passed by */
-	volatile MINT32     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	volatile int     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* */
-	volatile MUINT32    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
+	volatile unsigned int    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
-	volatile MUINT32    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
+	volatile unsigned int    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
-} ISP_IRQ_INFO_STRUCT;
+};
 
-typedef struct {
-	MUINT32     Vd;
-	MUINT32     Expdone;
-	MUINT32     WorkQueueVd;
-	MUINT32     WorkQueueExpdone;
-	MUINT32     TaskletVd;
-	MUINT32     TaskletExpdone;
-} ISP_TIME_LOG_STRUCT;
+struct ISP_TIME_LOG_STRUCT {
+	unsigned int     Vd;
+	unsigned int     Expdone;
+	unsigned int     WorkQueueVd;
+	unsigned int     WorkQueueExpdone;
+	unsigned int     TaskletVd;
+	unsigned int     TaskletExpdone;
+};
 
 #if (TIMESTAMP_QUEUE_EN == 1)
 #define ISP_TIMESTPQ_DEPTH      (256)
-typedef struct {
+struct ISP_TIMESTPQ_INFO_STRUCT {
 	struct {
-		S_START_T   TimeQue[ISP_TIMESTPQ_DEPTH];
-		MUINT32     WrIndex; /* increase when p1done or dmao done */
-		MUINT32     RdIndex; /* increase when user deque */
+		struct S_START_T   TimeQue[ISP_TIMESTPQ_DEPTH];
+		unsigned int     WrIndex; /* increase when p1done or dmao done */
+		unsigned int     RdIndex; /* increase when user deque */
 		unsigned long long  TotalWrCnt;
 		unsigned long long  TotalRdCnt;
-		/* TSTP_V3 MUINT32	    PrevFbcDropCnt; */
-		MUINT32     PrevFbcWCnt;
+		/* TSTP_V3 unsigned int	    PrevFbcDropCnt; */
+		unsigned int     PrevFbcWCnt;
 	} Dmao[_cam_max_];
-	MUINT32  DmaEnStatus[_cam_max_];
-} ISP_TIMESTPQ_INFO_STRUCT;
+	unsigned int  DmaEnStatus[_cam_max_];
+};
 #endif
-
-typedef enum _eChannel {
-	_PASS1      = 0,
-	_PASS1_D    = 1,
-	_CAMSV      = 2,
-	_CAMSV_D    = 3,
-	_PASS2      = 4,
-	_ChannelMax = 5,
-} eChannel;
-
-
 
 /**********************************************************************/
 #define my_get_pow_idx(value)      \
@@ -910,13 +878,13 @@ typedef enum _eChannel {
 	})
 
 
-static volatile UINT32 g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile MUINT32 g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
+static volatile unsigned int g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
+static volatile unsigned int g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
 
 
 
 #define SUPPORT_MAX_IRQ 32
-typedef struct {
+struct ISP_INFO_STRUCT {
 	spinlock_t                      SpinLockIspRef;
 	spinlock_t                      SpinLockIsp;
 	spinlock_t                      SpinLockIrq[ISP_IRQ_TYPE_AMOUNT];
@@ -926,38 +894,27 @@ typedef struct {
 	wait_queue_head_t               WaitQueueHead[ISP_IRQ_TYPE_AMOUNT];
 	/* wait_queue_head_t*              WaitQHeadList; */
 	volatile wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
-	MUINT32                         UserCount;
-	MUINT32                         DebugMask;
-	MINT32							IrqNum;
-	ISP_IRQ_INFO_STRUCT			IrqInfo;
-	ISP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
-	ISP_BUF_INFO_STRUCT			BufInfo;
-	ISP_TIME_LOG_STRUCT             TimeLog;
+	unsigned int                         UserCount;
+	unsigned int                         DebugMask;
+	int							IrqNum;
+	struct ISP_IRQ_INFO_STRUCT			IrqInfo;
+	struct ISP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
+	struct ISP_BUF_INFO_STRUCT			BufInfo;
+	struct ISP_TIME_LOG_STRUCT             TimeLog;
 	#if (TIMESTAMP_QUEUE_EN == 1)
-	ISP_TIMESTPQ_INFO_STRUCT        TstpQInfo[ISP_IRQ_TYPE_AMOUNT];
+	struct ISP_TIMESTPQ_INFO_STRUCT        TstpQInfo[ISP_IRQ_TYPE_AMOUNT];
 	#endif
-} ISP_INFO_STRUCT;
+};
 
+static struct ISP_INFO_STRUCT IspInfo;
+static bool    SuspnedRecord[ISP_DEV_NODE_NUM] = {0};
 
-
-static ISP_INFO_STRUCT IspInfo;
-static MBOOL    SuspnedRecord[ISP_DEV_NODE_NUM] = {0};
-
-typedef enum _eLOG_TYPE {
+enum eLOG_TYPE {
 	_LOG_DBG = 0,   /* currently, only used at ipl_buf_ctrl. to protect critical section */
 	_LOG_INF = 1,
 	_LOG_ERR = 2,
 	_LOG_MAX = 3,
-} eLOG_TYPE;
-
-typedef enum _eLOG_OP {
-	_LOG_INIT = 0,
-	_LOG_RST = 1,
-	_LOG_ADD = 2,
-	_LOG_PRT = 3,
-	_LOG_GETCNT = 4,
-	_LOG_OP_MAX = 5
-} eLOG_OP;
+};
 
 #define NORMAL_STR_LEN (512)
 #define ERR_PAGE 2
@@ -966,15 +923,15 @@ typedef enum _eLOG_OP {
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define LOG_PPNUM 2
-typedef struct _SV_LOG_STR {
-	MUINT32 _cnt[LOG_PPNUM][_LOG_MAX];
+struct SV_LOG_STR {
+	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
-	S_START_T   _lastIrqTime;
-} SV_LOG_STR, *PSV_LOG_STR;
+	struct S_START_T   _lastIrqTime;
+};
 
 static void *pLog_kmalloc;
-static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
+static struct SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 
 /**
  *   for irq used,keep log until IRQ_LOG_PRINTER being involked,
@@ -993,11 +950,11 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
-	MINT32 avaLen;\
-	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	int avaLen;\
+	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
-	MUINT32 i;\
-	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	unsigned int i;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
@@ -1077,11 +1034,11 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 
 #if 1
 #define IRQ_LOG_PRINTER(irq, ppb_in, logT_in) do {\
-		SV_LOG_STR *pSrc = &gSvLog[irq];\
+		struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 		char *ptr;\
-		MUINT32 i;\
-		MINT32 ppb = 0;\
-		MINT32 logT = 0;\
+		unsigned int i;\
+		int ppb = 0;\
+		int logT = 0;\
 		if (ppb_in > 1) {\
 			ppb = 1;\
 		} else{\
@@ -1141,7 +1098,7 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 #endif
 
 /* //////////////////////////////////////////////////// */
-typedef volatile union _FBC_CTRL_1_ {
+union FBC_CTRL_1 {
 	volatile struct { /* 0x18004110 */
 		unsigned int  FBC_NUM                               :  6;      /*  0.. 5, 0x0000003F */
 		unsigned int  rsv_6                                 :  9;      /*  6..14, 0x00007FC0 */
@@ -1153,10 +1110,10 @@ typedef volatile union _FBC_CTRL_1_ {
 		unsigned int  rsv_21                                :  3;      /* 21..23, 0x00E00000 */
 		unsigned int  SUB_RATIO                             :  8;      /* 24..31, 0xFF000000 */
 	} Bits;
-	UINT32 Raw;
-} FBC_CTRL_1;  /* CAM_A_FBC_IMGO_CTL1 */
+	unsigned int Raw;
+};  /* CAM_A_FBC_IMGO_CTL1 */
 
-typedef volatile union _FBC_CTRL_2_ {
+union FBC_CTRL_2 {
 	volatile struct { /* 0x18004114 */
 		unsigned int  FBC_CNT                               :  7;      /*  0.. 6, 0x0000007F */
 		unsigned int  rsv_7                                 :  1;      /*  7.. 7, 0x00000080 */
@@ -1166,15 +1123,15 @@ typedef volatile union _FBC_CTRL_2_ {
 		unsigned int  rsv_22                                :  2;      /* 22..23, 0x00C00000 */
 		unsigned int  DROP_CNT                              :  8;      /* 24..31, 0xFF000000 */
 	} Bits;
-	UINT32 Raw;
-} FBC_CTRL_2;  /* CAM_A_FBC_IMGO_CTL2 */
+	unsigned int Raw;
+};  /* CAM_A_FBC_IMGO_CTL2 */
 
 
-typedef struct _isp_bk_reg {
-	UINT32  CAM_TG_INTER_ST;                                 /* 453C*/
-} _isp_bk_reg_t;
+struct _isp_bk_reg_t {
+	unsigned int  CAM_TG_INTER_ST;                                 /* 453C*/
+};
 
-static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
+static struct _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 
 /* Everest top registers */
 #define CAMSYS_REG_CG_CON               (ISP_CAMSYS_CONFIG_BASE + 0x0)
@@ -2267,7 +2224,7 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 
 /* if isp has been suspend, frame cnt needs to add previous value*/
 #define ISP_RD32_TG_CAM_FRM_CNT(IrqType, reg_module) ({\
-	UINT32 _regVal;\
+	unsigned int _regVal;\
 	_regVal = ISP_RD32(CAM_REG_TG_INTER_ST(reg_module));\
 	_regVal = ((_regVal & 0x00FF0000) >> 16) + g_BkReg[IrqType].CAM_TG_INTER_ST;\
 	if (_regVal > 255) { \
@@ -2287,7 +2244,7 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_MsToJiffies(MUINT32 Ms)
+static inline unsigned int ISP_MsToJiffies(unsigned int Ms)
 {
 	return ((Ms * HZ + 512) >> 10);
 }
@@ -2295,7 +2252,7 @@ static inline MUINT32 ISP_MsToJiffies(MUINT32 Ms)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_UsToJiffies(MUINT32 Us)
+static inline unsigned int ISP_UsToJiffies(unsigned int Us)
 {
 	return (((Us / 1000) * HZ + 512) >> 10);
 }
@@ -2303,10 +2260,11 @@ static inline MUINT32 ISP_UsToJiffies(MUINT32 Us)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_GetIRQState(MUINT32 type, MUINT32 stType, MUINT32 userNumber, MUINT32 stus)
+static inline unsigned int
+ISP_GetIRQState(unsigned int type, unsigned int stType, unsigned int userNumber, unsigned int stus)
 {
-	MUINT32 ret;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned int ret;
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
 	/*  */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[type]), flags);
@@ -2321,7 +2279,7 @@ static inline MUINT32 ISP_GetIRQState(MUINT32 type, MUINT32 stType, MUINT32 user
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_JiffiesToMs(MUINT32 Jiffies)
+static inline unsigned int ISP_JiffiesToMs(unsigned int Jiffies)
 {
 	return ((Jiffies * 1000) / HZ);
 }
@@ -2332,11 +2290,11 @@ static inline MUINT32 ISP_JiffiesToMs(MUINT32 Jiffies)
 
 static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 {
-	MUINT32 uni_path;
-	MUINT32 flk2_sel;
-	MUINT32 hds2_sel;
-	MUINT32 i;
-	MUINT32 dmaerr[_cam_max_];
+	unsigned int uni_path;
+	unsigned int flk2_sel;
+	unsigned int hds2_sel;
+	unsigned int i;
+	unsigned int dmaerr[_cam_max_];
 	ISP_DEV_NODE_ENUM regModule; /* for read/write register */
 
 	switch (module) {
@@ -2352,22 +2310,22 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	}
 
 
-	dmaerr[_imgo_] = (MUINT32)ISP_RD32(CAM_REG_IMGO_ERR_STAT(regModule));
-	dmaerr[_rrzo_] = (MUINT32)ISP_RD32(CAM_REG_RRZO_ERR_STAT(regModule));
-	dmaerr[_aao_] = (MUINT32)ISP_RD32(CAM_REG_AAO_ERR_STAT(regModule));
-	dmaerr[_afo_] = (MUINT32)ISP_RD32(CAM_REG_AFO_ERR_STAT(regModule));
-	dmaerr[_lcso_] = (MUINT32)ISP_RD32(CAM_REG_LCSO_ERR_STAT(regModule));
-	dmaerr[_ufeo_] = (MUINT32)ISP_RD32(CAM_REG_UFEO_ERR_STAT(regModule));
-	dmaerr[_bpci_] = (MUINT32)ISP_RD32(CAM_REG_BPCI_ERR_STAT(regModule));
-	dmaerr[_lsci_] = (MUINT32)ISP_RD32(CAM_REG_LSCI_ERR_STAT(regModule));
-	dmaerr[_pdo_] = (MUINT32)ISP_RD32(CAM_REG_PDO_ERR_STAT(regModule));
-	dmaerr[_pso_] = (MUINT32)ISP_RD32(CAM_REG_PSO_ERR_STAT(regModule));
+	dmaerr[_imgo_] = (unsigned int)ISP_RD32(CAM_REG_IMGO_ERR_STAT(regModule));
+	dmaerr[_rrzo_] = (unsigned int)ISP_RD32(CAM_REG_RRZO_ERR_STAT(regModule));
+	dmaerr[_aao_] = (unsigned int)ISP_RD32(CAM_REG_AAO_ERR_STAT(regModule));
+	dmaerr[_afo_] = (unsigned int)ISP_RD32(CAM_REG_AFO_ERR_STAT(regModule));
+	dmaerr[_lcso_] = (unsigned int)ISP_RD32(CAM_REG_LCSO_ERR_STAT(regModule));
+	dmaerr[_ufeo_] = (unsigned int)ISP_RD32(CAM_REG_UFEO_ERR_STAT(regModule));
+	dmaerr[_bpci_] = (unsigned int)ISP_RD32(CAM_REG_BPCI_ERR_STAT(regModule));
+	dmaerr[_lsci_] = (unsigned int)ISP_RD32(CAM_REG_LSCI_ERR_STAT(regModule));
+	dmaerr[_pdo_] = (unsigned int)ISP_RD32(CAM_REG_PDO_ERR_STAT(regModule));
+	dmaerr[_pso_] = (unsigned int)ISP_RD32(CAM_REG_PSO_ERR_STAT(regModule));
 
 
-	dmaerr[_eiso_] = (MUINT32)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_flko_] = (MUINT32)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_rsso_] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_rawi_] = (MUINT32)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_eiso_] = (unsigned int)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_flko_] = (unsigned int)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_rsso_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_rawi_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
 
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"mmsys:0x%x, imgsys:0x%x, camsys:0x%x", ISP_RD32(ISP_MMSYS_CONFIG_BASE + 0x100),
@@ -2462,7 +2420,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 
 
 #define RegDump(start, end) {\
-	MUINT32 i;\
+	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
 		LOG_INF("QQ [0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",\
 			(unsigned int)(ISP_TPIPE_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i),\
@@ -2473,9 +2431,9 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 }
 
 
-static MINT32 ISP_DumpSeninfReg(void)
+static int ISP_DumpSeninfReg(void)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	/*  */
 	LOG_INF("- E.");
 	/*Sensor interface Top mux and Package counter*/
@@ -2514,9 +2472,9 @@ static MINT32 ISP_DumpSeninfReg(void)
 	return Ret;
 
 }
-static MINT32 ISP_DumpReg(void)
+static int ISP_DumpReg(void)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 
 #if 0
 	/*  */
@@ -2851,18 +2809,18 @@ static MINT32 ISP_DumpReg(void)
 	return Ret;
 }
 
-static MINT32 ISP_DumpDIPReg(void)
+static int ISP_DumpDIPReg(void)
 {
-	MINT32 Ret = 0;
-	MUINT32 i, cmdqidx = 0;
+	int Ret = 0;
+	unsigned int i, cmdqidx = 0;
 #ifdef AEE_DUMP_REDUCE_MEMORY
-	MUINT32 offset = 0;
+	unsigned int offset = 0;
 	uintptr_t OffsetAddr = 0;
-	MUINT32 ctrl_start;
+	unsigned int ctrl_start;
 #else
-	MUINT32 offset = 0;
+	unsigned int offset = 0;
 	uintptr_t OffsetAddr = 0;
-	MUINT32 ctrl_start;
+	unsigned int ctrl_start;
 #endif
 	/*  */
 	LOG_INF("- E.");
@@ -3354,11 +3312,11 @@ static inline void Disable_Unprepare_cg_clock(void)
 *
 ********************************************************************************/
 
-void ISP_Halt_Mask(MUINT32 isphaltMask)
+void ISP_Halt_Mask(unsigned int isphaltMask)
 {
-	MUINT32 setReg;
+	unsigned int setReg;
 
-	setReg = ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120) & ~((MUINT32)(1 << (isphaltMask)));
+	setReg = ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120) & ~((unsigned int)(1 << (isphaltMask)));
 
 	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, setReg);
 
@@ -3369,10 +3327,10 @@ EXPORT_SYMBOL(ISP_Halt_Mask);
 /*******************************************************************************
 *
 ********************************************************************************/
-static void ISP_EnableClock(MBOOL En)
+static void ISP_EnableClock(bool En)
 {
 #if defined(EP_NO_CLKMGR)
-	MUINT32 setReg;
+	unsigned int setReg;
 #endif
 
 	if (En) {
@@ -3410,7 +3368,7 @@ static void ISP_EnableClock(MBOOL En)
 		/*LOG_INF("CCF:prepare_enable clk");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		if (G_u4EnableClockCount == 0) {
-			MUINT32 _reg = ISP_RD32(CLOCK_CELL_BASE);
+			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
 
 			ISP_WR32(CLOCK_CELL_BASE, _reg|(1<<6));
 		}
@@ -3460,7 +3418,7 @@ static void ISP_EnableClock(MBOOL En)
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
 		if (G_u4EnableClockCount == 0) {
-			MUINT32 _reg = ISP_RD32(CLOCK_CELL_BASE);
+			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
 
 			ISP_WR32(CLOCK_CELL_BASE, _reg&(~(1<<6)));
 		}
@@ -3475,10 +3433,10 @@ static void ISP_EnableClock(MBOOL En)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline void ISP_Reset(MINT32 module)
+static inline void ISP_Reset(int module)
 {
-	/*    MUINT32 Reg;*/
-	/*    MUINT32 setReg;*/
+	/*    unsigned int Reg;*/
+	/*    unsigned int setReg;*/
 
 	LOG_DBG("- E.\n");
 
@@ -3549,18 +3507,18 @@ static inline void ISP_Reset(MINT32 module)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
+static int ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 {
-	MUINT32 i;
-	MINT32 Ret = 0;
+	unsigned int i;
+	int Ret = 0;
 
-	MUINT32 module;
+	unsigned int module;
 	void __iomem *regBase;
 
 
 	/*  */
 	ISP_REG_STRUCT reg;
-	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
+	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	ISP_REG_STRUCT *pData = (ISP_REG_STRUCT *)pRegIo->pData;
 
 	module = pData->module;
@@ -3610,7 +3568,7 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 
 
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (MUINT32 *)&pData->Addr) != 0) {
+		if (get_user(reg.Addr, (unsigned int *)&pData->Addr) != 0) {
 			LOG_ERR("get_user failed\n");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -3626,7 +3584,7 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 		/*  */
 		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",ISP_ADDR_CAMINF + reg.Addr,reg.Val); */
 
-		if (put_user(reg.Val, (MUINT32 *) &(pData->Val)) != 0) {
+		if (put_user(reg.Val, (unsigned int *) &(pData->Val)) != 0) {
 			LOG_ERR("put_user failed\n");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -3644,14 +3602,14 @@ EXIT:
 *
 ********************************************************************************/
 /* Note: Can write sensor's test model only, if need write to other modules, need modify current code flow */
-static MINT32 ISP_WriteRegToHw(
+static int ISP_WriteRegToHw(
 	ISP_REG_STRUCT *pReg,
-	MUINT32         Count)
+	unsigned int         Count)
 {
-	MINT32 Ret = 0;
-	MUINT32 i;
-	MBOOL dbgWriteReg;
-	MUINT32 module;
+	int Ret = 0;
+	unsigned int i;
+	bool dbgWriteReg;
+	unsigned int module;
 	void __iomem *regBase;
 
 	/* Use local variable to store IspInfo.DebugMask & ISP_DBG_WRITE_REG for saving lock time*/
@@ -3712,7 +3670,7 @@ static MINT32 ISP_WriteRegToHw(
 	for (i = 0; i < Count; i++) {
 		if (dbgWriteReg)
 			LOG_DBG("module(%d), base(0x%lx),Addr(0x%lx), Val(0x%x)\n", module, (unsigned long)regBase,
-			(unsigned long)(pReg[i].Addr), (MUINT32)(pReg[i].Val));
+			(unsigned long)(pReg[i].Addr), (unsigned int)(pReg[i].Val));
 
 		if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE)))
 			ISP_WR32(regBase + pReg[i].Addr, pReg[i].Val);
@@ -3730,13 +3688,13 @@ static MINT32 ISP_WriteRegToHw(
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
+static int ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 {
-	MINT32 Ret = 0;
-	/*    MINT32 TimeVd = 0;*/
-	/*    MINT32 TimeExpdone = 0;*/
-	/*    MINT32 TimeTasklet = 0;*/
-	/* MUINT8* pData = NULL; */
+	int Ret = 0;
+	/*    int TimeVd = 0;*/
+	/*    int TimeExpdone = 0;*/
+	/*    int TimeTasklet = 0;*/
+	/* unsigned char* pData = NULL; */
 	ISP_REG_STRUCT *pData = NULL;
 
 	if (pRegIo->Count > 0xFFFFFFFF) {
@@ -3748,7 +3706,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	if (IspInfo.DebugMask & ISP_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
-	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(ISP_REG_STRUCT), GFP_ATOMIC); */
+	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(ISP_REG_STRUCT), GFP_ATOMIC); */
 	pData = kmalloc((pRegIo->Count) * sizeof(ISP_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
@@ -3786,7 +3744,7 @@ EXIT:
 *
 ********************************************************************************/
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
-static MINT32 isp_allocbuf(struct isp_imem_memory *pMemInfo)
+static int isp_allocbuf(struct isp_imem_memory *pMemInfo)
 {
 	int ret = 0;
 	struct ion_mm_data mm_data;
@@ -3871,9 +3829,9 @@ static void isp_freebuf(struct isp_imem_memory *pMemInfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
+static int ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 
 	if (pDumpBufStruct->BytesofBufferSize > 0xFFFFFFFF) {
 		LOG_ERR("pDumpTuningBufStruct->BytesofBufferSize error");
@@ -4044,9 +4002,9 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_SetMemInfo(ISP_MEM_INFO_STRUCT *pMemInfoStruct)
+static int ISP_SetMemInfo(ISP_MEM_INFO_STRUCT *pMemInfoStruct)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	/*  */
 	if ((void __user *)(pMemInfoStruct->MemVa) == NULL) {
 		LOG_ERR("NULL pMemInfoStruct->MemVa");
@@ -4077,12 +4035,12 @@ EXIT:
 ********************************************************************************/
 static atomic_t g_imem_ref_cnt[ISP_REF_CNT_ID_MAX];
 /*  */
-/* static long ISP_REF_CNT_CTRL_FUNC(MUINT32 Param) */
+/* static long ISP_REF_CNT_CTRL_FUNC(unsigned int Param) */
 static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	ISP_REF_CNT_CTRL_STRUCT ref_cnt_ctrl;
-	MINT32 imem_ref_cnt = 0;
+	int imem_ref_cnt = 0;
 
 	/* LOG_INF("[rc]+ QQ"); */ /* for memory corruption check */
 
@@ -4135,7 +4093,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 				break;
 			}
 			/*  */
-			imem_ref_cnt = (MINT32)atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
+			imem_ref_cnt = (int)atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
 
 			if (imem_ref_cnt == 0) {
 				/* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
@@ -4163,7 +4121,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 				LOG_ERR("NULL data_ptr");
 				return -EFAULT;
 			}
-			if (put_user(imem_ref_cnt, (MINT32 *)ref_cnt_ctrl.data_ptr) != 0) {
+			if (put_user(imem_ref_cnt, (int *)ref_cnt_ctrl.data_ptr) != 0) {
 				LOG_ERR("[rc][GET]:copy_to_user failed");
 				Ret = -EFAULT;
 			}
@@ -4195,20 +4153,20 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 
 /*  */
 /* isr dbg log , sw isr response counter , +1 when sw receive 1 sof isr. */
-static volatile MUINT32 sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
+static volatile unsigned int sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
 volatile int Vsync_cnt[2] = {0, 0};
 
 /* keep current frame status */
 static volatile CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 
 /* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
-static volatile MBOOL g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
+static volatile bool g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
-static volatile MBOOL g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
+static volatile bool g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
 static volatile unsigned long long gPrevSofTimestp[ISP_IRQ_TYPE_AMOUNT];
 #endif
 
-static S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
+static struct S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 #define _INVALID_FRM_CNT_ 0xFFFF
@@ -4216,26 +4174,26 @@ static S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
 
 #define _UNCERTAIN_MAGIC_NUM_FLAG_ 0x40000000
 #define _DUMMY_MAGIC_              0x20000000
-static MUINT32 m_LastMNum[_cam_max_] = {0}; /* imgo/rrzo */
+static unsigned int m_LastMNum[_cam_max_] = {0}; /* imgo/rrzo */
 
 #endif
-/* static long ISP_Buf_CTRL_FUNC(MUINT32 Param) */
+/* static long ISP_Buf_CTRL_FUNC(unsigned int Param) */
 static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	_isp_dma_enum_ rt_dma;
-	MUINT32 i = 0;
-	/*    MUINT32 x = 0;*/
-	/*    MUINT32 iBuf = 0;*/
-	/*    MUINT32 size = 0;*/
-	/*    MUINT32 bWaitBufRdy = 0;*/
+	unsigned int i = 0;
+	/*    unsigned int x = 0;*/
+	/*    unsigned int iBuf = 0;*/
+	/*    unsigned int size = 0;*/
+	/*    unsigned int bWaitBufRdy = 0;*/
 	ISP_BUFFER_CTRL_STRUCT         rt_buf_ctrl;
-	/*    MUINT32 flags;*/
+	/*    unsigned int flags;*/
 	/*    ISP_RT_BUF_INFO_STRUCT       rt_buf_info;*/
 	/*    ISP_DEQUE_BUF_INFO_STRUCT    deque_buf;*/
 	/*    ISP_IRQ_TYPE_ENUM irqT = ISP_IRQ_TYPE_AMOUNT;*/
 	/*    ISP_IRQ_TYPE_ENUM irqT_Lock = ISP_IRQ_TYPE_AMOUNT;*/
-	/*    MBOOL CurVF_En = MFALSE;*/
+	/*    bool CurVF_En = MFALSE;*/
 	/*  */
 	if ((void __user *)Param == NULL)  {
 		LOG_ERR("[rtbc]NULL Param");
@@ -4268,9 +4226,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			/*  */
 
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_usec[rt_buf_ctrl.module],
-				0, sizeof(MUINT32) * 32);
+				0, sizeof(unsigned int) * 32);
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_sec[rt_buf_ctrl.module],
-				0, sizeof(MUINT32) * 32);
+				0, sizeof(unsigned int) * 32);
 			/* remove, cause clear will be involked only when current module r totally stopped */
 			/* spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags); */
 
@@ -4299,7 +4257,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
 				}
 
-				memset((void *)g_DmaErr_CAM[rt_buf_ctrl.module], 0, sizeof(MUINT32)*_cam_max_);
+				memset((void *)g_DmaErr_CAM[rt_buf_ctrl.module], 0, sizeof(unsigned int)*_cam_max_);
 				break;
 			case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
@@ -4337,9 +4295,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
-			MUINT8 array[_cam_max_];
-			MUINT32 z;
-			MUINT8 *pExt;
+			unsigned char array[_cam_max_];
+			unsigned int z;
+			unsigned char *pExt;
 
 			if (rt_buf_ctrl.pExtend == NULL) {
 				LOG_ERR("NULL pExtend");
@@ -4347,9 +4305,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				break;
 			}
 
-			pExt = (MUINT8 *)(rt_buf_ctrl.pExtend);
+			pExt = (unsigned char *)(rt_buf_ctrl.pExtend);
 			for (z = 0; z < _cam_max_; z++) {
-				if (get_user(array[z], (MUINT8 *)pExt) == 0) {
+				if (get_user(array[z], (unsigned char *)pExt) == 0) {
 					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
 					if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
 						LOG_INF("[rtbc][DMA_EN]:dma_%d:%d", z, array[z]);
@@ -4379,11 +4337,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 /*******************************************************************************
 * update current idnex to working frame
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_Update_ListCIdx(ISP_P2_BUFQUE_PROPERTY property, ISP_P2_BUFQUE_LIST_TAG listTag)
+static int ISP_P2_BufQue_Update_ListCIdx(ISP_P2_BUFQUE_PROPERTY property, ISP_P2_BUFQUE_LIST_TAG listTag)
 {
-	MINT32 ret = 0;
-	MINT32 tmpIdx = 0;
-	MINT32 cnt = 0;
+	int ret = 0;
+	int tmpIdx = 0;
+	int cnt = 0;
 	bool stop = false;
 	int i = 0;
 	ISP_P2_BUF_STATE_ENUM cIdxSts = ISP_P2_BUF_STATE_NONE;
@@ -4473,12 +4431,12 @@ static MINT32 ISP_P2_BufQue_Update_ListCIdx(ISP_P2_BUFQUE_PROPERTY property, ISP
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_Erase(ISP_P2_BUFQUE_PROPERTY property, ISP_P2_BUFQUE_LIST_TAG listTag, MINT32 idx)
+static int ISP_P2_BufQue_Erase(ISP_P2_BUFQUE_PROPERTY property, ISP_P2_BUFQUE_LIST_TAG listTag, int idx)
 {
-	MINT32 ret =  -1;
+	int ret =  -1;
 	bool stop = false;
 	int i = 0;
-	MINT32 cnt = 0;
+	int cnt = 0;
 	int tmpIdx = 0;
 
 	switch (listTag) {
@@ -4573,7 +4531,7 @@ static MINT32 ISP_P2_BufQue_Erase(ISP_P2_BUFQUE_PROPERTY property, ISP_P2_BUFQUE
 /*******************************************************************************
 * get first matched element idnex
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_GetMatchIdx(ISP_P2_BUFQUE_STRUCT param,
+static int ISP_P2_BufQue_GetMatchIdx(ISP_P2_BUFQUE_STRUCT param,
 		ISP_P2_BUFQUE_MATCH_TYPE matchType, ISP_P2_BUFQUE_LIST_TAG listTag)
 {
 	int idx = -1;
@@ -4736,11 +4694,11 @@ static MINT32 ISP_P2_BufQue_GetMatchIdx(ISP_P2_BUFQUE_STRUCT param,
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_P2_BufQue_WaitEventState(ISP_P2_BUFQUE_STRUCT param,
-		ISP_P2_BUFQUE_MATCH_TYPE type, MINT32 *idx)
+static inline unsigned int ISP_P2_BufQue_WaitEventState(ISP_P2_BUFQUE_STRUCT param,
+		ISP_P2_BUFQUE_MATCH_TYPE type, int *idx)
 {
-	MUINT32 ret = MFALSE;
-	MINT32 index = -1;
+	unsigned int ret = MFALSE;
+	int index = -1;
 	ISP_P2_BUFQUE_PROPERTY property;
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
@@ -4799,12 +4757,12 @@ static inline MUINT32 ISP_P2_BufQue_WaitEventState(ISP_P2_BUFQUE_STRUCT param,
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
+static int ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 {
-	MINT32 ret = 0;
+	int ret = 0;
 	int i = 0, q = 0;
 	int idx =  -1, idx2 =  -1;
-	MINT32 restTime = 0;
+	int restTime = 0;
 	int property;
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
@@ -4837,7 +4795,7 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		}
 		{
 			/*(2) add new to the last of the frame unit list */
-			MUINT32 cqmask = (param.dupCQIdx << 2) | (param.cQIdx << 1) | (param.burstQIdx);
+			unsigned int cqmask = (param.dupCQIdx << 2) | (param.cQIdx << 1) | (param.burstQIdx);
 
 			if (P2_FramePack_List_Idx[property].end < 0 || P2_FrameUnit_List_Idx[property].end < 0) {
 #ifdef P2_DBG_LOG
@@ -5113,7 +5071,7 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
+static int ISP_REGISTER_IRQ_USERKEY(char *userName)
 {
 	int key =  -1;
 	int i = 0;
@@ -5152,9 +5110,9 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
+static int ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 	int idx = my_get_pow_idx(irqinfo->EventInfo.Status);
 
 	unsigned long long  sec = 0;
@@ -5207,10 +5165,10 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT *irqinfo)
+static int ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	MINT32 Ret = 0;
-	/*    MUINT32 flags;*/
+	int Ret = 0;
+	/*    unsigned int flags;*/
 	/*    struct timeval time_getrequest;*/
 	/*    struct timeval time_ready2return;*/
 
@@ -5300,9 +5258,9 @@ static MINT32 ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
+static int ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
 	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
 		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
@@ -5338,15 +5296,15 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
+static int ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
-	MINT32 Ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
+	int Ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
 
-	/*    MUINT32 i;*/
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	/*    unsigned int i;*/
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
-	MUINT32 irqStatus;
+	unsigned int irqStatus;
 	/*    int cnt = 0;*/
 	int idx = my_get_pow_idx(WaitIrq->EventInfo.Status);
 	struct timeval time_getrequest;
@@ -5740,18 +5698,18 @@ static void ISP_ion_free_handle(struct ion_client *client, struct ion_handle *ha
 /*******************************************************************************
 *
 ********************************************************************************/
-static void ISP_ion_free_handle_by_module(MUINT32 module)
+static void ISP_ion_free_handle_by_module(unsigned int module)
 {
 	int i, j;
-	MINT32 nFd;
+	int nFd;
 	struct ion_handle *p_IonHnd;
-	T_ION_TBL *ptbl = &gION_TBL[module];
+	struct T_ION_TBL *ptbl = &gION_TBL[module];
 
 	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
 		LOG_INF("[ion_free_hd_by_module]%d\n", module);
 
 	for (i = 0; i < _dma_max_wr_; i++) {
-		MUINT32 jump = i*_ion_keep_max_;
+		unsigned int jump = i*_ion_keep_max_;
 
 		for (j = 0; j < _ion_keep_max_ ; j++) {
 			spin_lock(&(ptbl->pLock[i]));
@@ -5785,23 +5743,23 @@ static void ISP_ion_free_handle_by_module(MUINT32 module)
 ********************************************************************************/
 static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	/*  */
-	/*    MBOOL   HoldEnable = MFALSE;*/
-	MUINT32 DebugFlag[3] = {0};
-	/*    MUINT32 pid = 0;*/
+	/*    bool   HoldEnable = MFALSE;*/
+	unsigned int DebugFlag[3] = {0};
+	/*    unsigned int pid = 0;*/
 	ISP_REG_IO_STRUCT       RegIo;
 	ISP_DUMP_BUFFER_STRUCT DumpBufStruct;
 	ISP_MEM_INFO_STRUCT MemInfoStruct;
 	ISP_WAIT_IRQ_STRUCT     IrqInfo;
 	ISP_CLEAR_IRQ_STRUCT    ClearIrq;
-	ISP_USER_INFO_STRUCT *pUserInfo;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
 	ISP_P2_BUFQUE_STRUCT    p2QueBuf;
-	MUINT32                 regScenInfo_value = 0xa5a5a5a5;
-	/*    MINT32                  burstQNum;*/
-	MUINT32                 wakelock_ctrl;
-	MUINT32                 module;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned int                 regScenInfo_value = 0xa5a5a5a5;
+	/*    int                  burstQNum;*/
+	unsigned int                 wakelock_ctrl;
+	unsigned int                 module;
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 	int userKey =  -1;
 	ISP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
@@ -5811,7 +5769,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct ion_handle *p_IonHnd;
 	#endif
 	ISP_CLK_INFO ispclks;
-	MUINT32 lv = 0;
+	unsigned int lv = 0;
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -5820,11 +5778,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		return -EFAULT;
 	}
 	/*  */
-	pUserInfo = (ISP_USER_INFO_STRUCT *)(pFile->private_data);
+	pUserInfo = (struct ISP_USER_INFO_STRUCT *)(pFile->private_data);
 	/*  */
 	switch (Cmd) {
 	case ISP_WAKELOCK_CTRL:
-		if (copy_from_user(&wakelock_ctrl, (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&wakelock_ctrl, (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get ISP_WAKELOCK_CTRL from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -5852,7 +5810,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_DROP_FRAME:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get irq from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -5882,21 +5840,21 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 				LOG_ERR("copy to user fail\n");
 				Ret = -EFAULT;
 			}
 		}
 		break;
 	case ISP_GET_INT_ERR:
-		if (copy_to_user((void *)Param, (void *)g_ISPIntErr, sizeof(MUINT32)*ISP_IRQ_TYPE_AMOUNT) != 0)
+		if (copy_to_user((void *)Param, (void *)g_ISPIntErr, sizeof(unsigned int)*ISP_IRQ_TYPE_AMOUNT) != 0)
 			LOG_ERR("get int err fail\n");
 		else
 			memset((void *)g_ISPIntErr, 0, sizeof(g_ISPIntErr));
 
 		break;
 	case ISP_GET_DMA_ERR:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get module fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -5905,13 +5863,14 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			if (copy_to_user((void *)Param, &g_DmaErr_CAM[DebugFlag[0]], sizeof(MUINT32)*_cam_max_) != 0)
+			if (copy_to_user(
+			(void *)Param, &g_DmaErr_CAM[DebugFlag[0]], sizeof(unsigned int)*_cam_max_) != 0)
 				LOG_ERR("get dma_err fail\n");
 
 		}
 		break;
 	case ISP_GET_CUR_SOF:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get cur sof from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -5947,13 +5906,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			DebugFlag[1] = sof_count[DebugFlag[0]];
 #endif
 		}
-		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy to user fail\n");
 			Ret = -EFAULT;
 		}
 		break;
 	case ISP_RESET_BY_HWMODULE: {
-		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get hwmodule from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -6150,7 +6109,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	/*  */
 	case ISP_UPDATE_REGSCEN:
-		if (copy_from_user(&regScenInfo_value, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(&regScenInfo_value, (void *)Param, sizeof(unsigned int)) == 0) {
 			spin_lock((spinlock_t *)(&SpinLockRegScen));
 			g_regScen = regScenInfo_value;
 			spin_unlock((spinlock_t *)(&SpinLockRegScen));
@@ -6164,7 +6123,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		regScenInfo_value = g_regScen;
 		spin_unlock((spinlock_t *)(&SpinLockRegScen));
 		/*      */
-		if (copy_to_user((void *)Param, &regScenInfo_value, sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &regScenInfo_value, sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy_to_user failed\n");
 			Ret = -EFAULT;
 		}
@@ -6172,7 +6131,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	case ISP_UPDATE_BURSTQNUM:
 #if 0 /* QQ, remove later*/
-		if (copy_from_user(&burstQNum, (void *)Param, sizeof(MINT32)) == 0) {
+		if (copy_from_user(&burstQNum, (void *)Param, sizeof(int)) == 0) {
 			spin_lock(&SpinLockRegScen);
 			P2_Support_BurstQNum = burstQNum;
 			spin_unlock(&SpinLockRegScen);
@@ -6189,7 +6148,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		burstQNum = P2_Support_BurstQNum;
 		spin_unlock(&SpinLockRegScen);
 		/*  */
-		if (copy_to_user((void *)Param, &burstQNum, sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &burstQNum, sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy_to_user failed");
 			Ret = -EFAULT;
 		}
@@ -6201,7 +6160,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		Ret = ISP_DumpReg();
 		break;
 	case ISP_DEBUG_FLAG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)) == 0) {
 
 			IspInfo.DebugMask = DebugFlag[0];
 
@@ -6218,9 +6177,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		Ret = ISP_REF_CNT_CTRL_FUNC(Param);
 		break;
 	case ISP_DUMP_ISR_LOG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
-			MUINT32 currentPPB = m_CurrentPPB;
-			MUINT32 lock_key = ISP_IRQ_TYPE_AMOUNT;
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)) == 0) {
+			unsigned int currentPPB = m_CurrentPPB;
+			unsigned int lock_key = ISP_IRQ_TYPE_AMOUNT;
 
 			if (DebugFlag[0] >= ISP_IRQ_TYPE_AMOUNT) {
 				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
@@ -6246,15 +6205,16 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_VF_LOG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
-			MUINT32 vf;
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 3) == 0) {
+			unsigned int vf;
 
 			switch (DebugFlag[0]) {
 			case 1: {
-				MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
-				MUINT32 cam_dmao = 0;
-				MUINT32 uni_dmao = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
-				MUINT32 hds2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+				unsigned int module = ISP_IRQ_TYPE_INT_CAM_A_ST;
+				unsigned int cam_dmao = 0;
+				unsigned int uni_dmao = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
+				unsigned int hds2_sel =
+				((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
 
 				switch (DebugFlag[1]) {
 				case ISP_CAM_A_IDX:
@@ -6280,7 +6240,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
 					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
-							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+							sizeof(struct ISP_TIMESTPQ_INFO_STRUCT));
 					g1stSwP1Done[ISP_IRQ_TYPE_INT_CAM_A_ST] = MTRUE;
 					gPrevSofTimestp[ISP_IRQ_TYPE_INT_CAM_A_ST] = 0;
 					#endif
@@ -6309,7 +6269,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
 					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
-							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+							sizeof(struct ISP_TIMESTPQ_INFO_STRUCT));
 					g1stSwP1Done[ISP_IRQ_TYPE_INT_CAM_B_ST] = MTRUE;
 					gPrevSofTimestp[ISP_IRQ_TYPE_INT_CAM_B_ST] = 0;
 					#endif
@@ -6352,8 +6312,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			/* CAMSV */
 			case 11: {
-				MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
-				MUINT32 cam_dmao = 0;
+				unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
+				unsigned int cam_dmao = 0;
 
 				switch (DebugFlag[1]) {
 				case ISP_CAMSV0_IDX:
@@ -6495,12 +6455,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_START_TIME:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
-			S_START_T *pTstp = NULL;
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 3) == 0) {
+			struct S_START_T *pTstp = NULL;
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			S_START_T tstp;
-			MUINT32 dma_id = DebugFlag[1];
+			struct S_START_T tstp;
+			unsigned int dma_id = DebugFlag[1];
 
 			if (_cam_max_ == DebugFlag[1]) {
 				/* only for wait timestamp to ready */
@@ -6549,7 +6509,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
-				if (copy_to_user((void *)Param, pTstp, sizeof(S_START_T)) != 0) {
+				if (copy_to_user((void *)Param, pTstp, sizeof(struct S_START_T)) != 0) {
 					LOG_ERR("copy_to_user failed");
 					Ret = -EFAULT;
 				}
@@ -6563,9 +6523,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_DFS_UPDATE:
 		{
-			MUINT32 dfs_update;
+			unsigned int dfs_update;
 
-			if (copy_from_user(&dfs_update, (void *)Param, sizeof(MUINT32)) == 0) {
+			if (copy_from_user(&dfs_update, (void *)Param, sizeof(unsigned int)) == 0) {
 				mmdvfs_pm_qos_update_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, dfs_update);
 				LOG_VRB("Set clock level:%d", dfs_update);
 			} else {
@@ -6594,19 +6554,19 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_CUR_ISP_CLOCK:
 		{
-			MUINT32 curclk;
+			unsigned int curclk;
 
 			curclk = mmdvfs_qos_get_cur_thres(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
 			LOG_VRB("Get current clock level:%d", curclk);
 
-			if (copy_to_user((void *)Param, &curclk, sizeof(MUINT32)) != 0) {
+			if (copy_to_user((void *)Param, &curclk, sizeof(unsigned int)) != 0) {
 				LOG_ERR("copy_to_user failed");
 				Ret = -EFAULT;
 			}
 		}
 		break;
 	case ISP_GET_VSYNC_CNT:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get cur sof from user fail");
 			Ret = -EFAULT;
 		} else {
@@ -6623,7 +6583,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				break;
 			}
 		}
-		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy to user fail");
 			Ret = -EFAULT;
 		}
@@ -6634,8 +6594,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	#ifdef ENABLE_KEEP_ION_HANDLE
 	case ISP_ION_IMPORT:
 		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
-			T_ION_TBL *ptbl = NULL;
-			MUINT32 jump;
+			struct T_ION_TBL *ptbl = NULL;
+			unsigned int jump;
 
 			if (!pIon_client) {
 				LOG_ERR("ion_import: invalid ion client!\n");
@@ -6731,8 +6691,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_ION_FREE:
 		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
-			T_ION_TBL *ptbl = NULL;
-			MUINT32 jump;
+			struct T_ION_TBL *ptbl = NULL;
+			unsigned int jump;
 
 			if (!pIon_client) {
 				LOG_ERR("ion_free: invalid ion client!\n");
@@ -6821,7 +6781,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_ION_FREE_BY_HWMODULE:
-		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) == 0) {
 			if (module >= ISP_DEV_NODE_NUM) {
 				LOG_ERR("[ISP_ION_FREE_BY_HWMODULE]module should be smaller than ISP_DEV_NODE_NUM");
 				Ret = -EFAULT;
@@ -6841,9 +6801,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	#endif
 	case ISP_CQ_SW_PATCH: {
-			static MUINT32 Addr[2] = {0, 0};
+			static unsigned int Addr[2] = {0, 0};
 
-			if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)*2) == 0) {
+			if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)*2) == 0) {
 				switch (DebugFlag[0]) {
 				case ISP_IRQ_TYPE_INT_CAM_A_ST:
 					Addr[0] = DebugFlag[1];
@@ -7409,14 +7369,14 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_open(
+static int ISP_open(
 	struct inode *pInode,
 	struct file *pFile)
 {
-	MINT32 Ret = 0;
-	MUINT32 i, j;
+	int Ret = 0;
+	unsigned int i, j;
 	int q = 0, p = 0;
-	ISP_USER_INFO_STRUCT *pUserInfo;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -7425,13 +7385,13 @@ static MINT32 ISP_open(
 	spin_lock(&(IspInfo.SpinLockIspRef));
 
 	pFile->private_data = NULL;
-	pFile->private_data = kmalloc(sizeof(ISP_USER_INFO_STRUCT), GFP_ATOMIC);
+	pFile->private_data = kmalloc(sizeof(struct ISP_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
 			current->comm, current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
-		pUserInfo = (ISP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct ISP_USER_INFO_STRUCT *)pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
 	}
@@ -7584,7 +7544,7 @@ static MINT32 ISP_open(
 		}
 	}
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 	/* create ion client*/
@@ -7618,10 +7578,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline void ISP_StopHW(MINT32 module)
+static inline void ISP_StopHW(int module)
 {
-	MUINT32 regTGSt, loopCnt;
-	MINT32 ret = 0;
+	unsigned int regTGSt, loopCnt;
+	int ret = 0;
 	ISP_WAIT_IRQ_STRUCT waitirq;
 	ktime_t             time;
 	unsigned long long  sec = 0, m_sec = 0;
@@ -7711,13 +7671,13 @@ static inline void ISP_StopHW(MINT32 module)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_release(
+static int ISP_release(
 	struct inode *pInode,
 	struct file *pFile)
 {
-	ISP_USER_INFO_STRUCT *pUserInfo;
-	MUINT32 Reg;
-	MUINT32 i = 0;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
+	unsigned int Reg;
+	unsigned int i = 0;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -7727,7 +7687,7 @@ static MINT32 ISP_release(
 	/* LOG_DBG("UserCount(%d)",IspInfo.UserCount); */
 	/*  */
 	if (pFile->private_data != NULL) {
-		pUserInfo = (ISP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct ISP_USER_INFO_STRUCT *)pFile->private_data;
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
@@ -7876,7 +7836,7 @@ static MINT32 ISP_release(
 	}
 #endif
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
 
 	/*  */
 #ifdef ENABLE_KEEP_ION_HANDLE
@@ -7919,10 +7879,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
+static int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
 	unsigned long length = 0;
-	MUINT32 pfn = 0x0;
+	unsigned int pfn = 0x0;
 
 	/*LOG_DBG("- E.");*/
 	length = (pVma->vm_end - pVma->vm_start);
@@ -8028,9 +7988,9 @@ static inline void ISP_UnregCharDev(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MINT32 ISP_RegCharDev(void)
+static inline int ISP_RegCharDev(void)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	/*  */
 	LOG_DBG("- E.\n");
 	/*  */
@@ -8071,13 +8031,13 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_probe(struct platform_device *pDev)
+static int ISP_probe(struct platform_device *pDev)
 {
-	MINT32 Ret = 0;
+	int Ret = 0;
 	/*    struct resource *pRes = NULL;*/
-	MINT32 i = 0, j = 0;
-	MUINT8 n;
-	MUINT32 irq_info[3]; /* Record interrupts info from device tree */
+	int i = 0, j = 0;
+	unsigned char n;
+	unsigned int irq_info[3]; /* Record interrupts info from device tree */
 	struct isp_device *_ispdev = NULL;
 
 #ifdef CONFIG_OF
@@ -8367,10 +8327,10 @@ EXIT:
 /*******************************************************************************
 * Called when the device is being detached from the driver
 ********************************************************************************/
-static MINT32 ISP_remove(struct platform_device *pDev)
+static int ISP_remove(struct platform_device *pDev)
 {
 	/*    struct resource *pRes;*/
-	MINT32 IrqNum;
+	int IrqNum;
 	int i;
 	/*  */
 	LOG_DBG("- E.");
@@ -8425,17 +8385,17 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 	return 0;
 }
 
-static MINT32 ISP_suspend(
+static int ISP_suspend(
 	struct platform_device *pDev,
 	pm_message_t            Mesg
 )
 {
 #if 1
-	MUINT32 regVal;
-	MINT32 IrqType, ret, module;
+	unsigned int regVal;
+	int IrqType, ret, module;
 	char moduleName[128];
 
-	MUINT32 regTGSt, loopCnt;
+	unsigned int regTGSt, loopCnt;
 	ISP_WAIT_IRQ_STRUCT waitirq;
 	ktime_t             time;
 	unsigned long long  sec = 0, m_sec = 0;
@@ -8560,10 +8520,10 @@ static MINT32 ISP_suspend(
 	} else
 		SuspnedRecord[module] = 0;
 #else
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
+	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
 	ISP_WAIT_IRQ_STRUCT waitirq;
-	MINT32 ret = 0;
+	int ret = 0;
 
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
 		bPass1_On_In_Resume_TG1, bPass1_On_In_Resume_TG2, regTG1Val, regTG2Val);
@@ -8599,11 +8559,11 @@ static MINT32 ISP_suspend(
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_resume(struct platform_device *pDev)
+static int ISP_resume(struct platform_device *pDev)
 {
 #if 1
-	MUINT32 regVal;
-	MINT32 IrqType, ret, module;
+	unsigned int regVal;
+	int IrqType, ret, module;
 	char moduleName[128];
 
 	ret = 0;
@@ -8767,12 +8727,12 @@ static struct platform_driver IspDriver = {
 */
 #define USE_OLD_STYPE_11897 0
 #if USE_OLD_STYPE_11897
-static MINT32 ISP_DumpRegToProc(
+static int ISP_DumpRegToProc(
 	char *pPage,
 	char **ppStart,
 	off_t off,
-	MINT32 Count,
-	MINT32 *pEof,
+	int Count,
+	int *pEof,
 	void *pData)
 #else /* new file_operations style */
 static ssize_t ISP_DumpRegToProc(
@@ -8784,9 +8744,9 @@ static ssize_t ISP_DumpRegToProc(
 {
 #if USE_OLD_STYPE_11897
 	char *p = pPage;
-	MINT32 Length = 0;
-	MUINT32 i = 0;
-	MINT32 ret = 0;
+	int Length = 0;
+	unsigned int i = 0;
+	int ret = 0;
 	/*  */
 	LOG_DBG("- E. pPage: %p. off: %d. Count: %d.", pPage, (unsigned int)off, Count);
 	/*  */
@@ -8870,7 +8830,7 @@ static ssize_t ISP_DumpRegToProc(
 */
 #define USE_OLD_STYPE_12011 0
 #if USE_OLD_STYPE_12011
-static MINT32  ISP_RegDebug(
+static int  ISP_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	unsigned long   Count,
@@ -8892,13 +8852,13 @@ static ssize_t ISP_RegDebug(
 */
 #define USE_OLD_STYPE_12061 0
 #if USE_OLD_STYPE_12061
-static MUINT32 proc_regOfst;
-static MINT32 CAMIO_DumpRegToProc(
+static unsigned int proc_regOfst;
+static int CAMIO_DumpRegToProc(
 	char *pPage,
 	char **ppStart,
 	off_t   off,
-	MINT32  Count,
-	MINT32 *pEof,
+	int  Count,
+	int *pEof,
 	void *pData)
 #else /* new file_operations style */
 static ssize_t CAMIO_DumpRegToProc(
@@ -8921,7 +8881,7 @@ static ssize_t CAMIO_DumpRegToProc(
 */
 #define USE_OLD_STYPE_12112 0
 #if USE_OLD_STYPE_12112
-static MINT32  CAMIO_RegDebug(
+static int  CAMIO_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	unsigned long   Count,
@@ -9223,9 +9183,9 @@ static const struct file_operations fcameraio_proc_fops = {
 *
 ********************************************************************************/
 
-static MINT32 __init ISP_Init(void)
+static int __init ISP_Init(void)
 {
-	MINT32 Ret = 0, j;
+	int Ret = 0, j;
 	void *tmp;
 	struct device_node *node = NULL;
 	struct proc_dir_entry *proc_entry;
@@ -9671,7 +9631,7 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 #if defined(_debug_dma_err_)
 #define bit(x) (0x1<<(x))
 
-MUINT32 DMA_ERR[3 * 12] = {
+unsigned int DMA_ERR[3 * 12] = {
 	bit(1), 0xF50043A8, 0x00000011, /* IMGI */
 	bit(2), 0xF50043AC, 0x00000021, /* IMGCI */
 	bit(4), 0xF50043B0, 0x00000031, /* LSCI */
@@ -9686,18 +9646,18 @@ MUINT32 DMA_ERR[3 * 12] = {
 	bit(13), 0xF50043D4, 0x000001d4, /* AAO */
 };
 
-static MINT32 DMAErrHandler(void)
+static int DMAErrHandler(void)
 {
-	MUINT32 err_ctrl = ISP_RD32(0xF50043A4);
+	unsigned int err_ctrl = ISP_RD32(0xF50043A4);
 
 	LOG_DBG("err_ctrl(0x%08x)", err_ctrl);
 
-	MUINT32 i = 0;
+	unsigned int i = 0;
 
-	MUINT32 *pErr = DMA_ERR;
+	unsigned int *pErr = DMA_ERR;
 
 	for (i = 0; i < 12; i++) {
-		MUINT32 addr = 0;
+		unsigned int addr = 0;
 
 #if 1
 		if (err_ctrl & (*pErr)) {
@@ -9710,7 +9670,7 @@ static MINT32 DMAErrHandler(void)
 		}
 #else
 		addr = pErr[1];
-		MUINT32 status = ISP_RD32(addr);
+		unsigned int status = ISP_RD32(addr);
 
 		if (status & 0x0000FFFF) {
 			ISP_WR32(0xF5004160, pErr[2]);
@@ -9728,10 +9688,10 @@ static MINT32 DMAErrHandler(void)
 #endif
 
 
-void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_ENUM module)
+void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, ISP_IRQ_TYPE_ENUM module)
 {
 	/* ERR print */
-	/* MUINT32 i = 0; */
+	/* unsigned int i = 0; */
 	if (ErrStatus) {
 		switch (module) {
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
@@ -9803,9 +9763,9 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 }
 
 
-CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 delayCheck)
+CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, unsigned int delayCheck)
 {
-	MINT32 dma_arry_map[_cam_max_] = {
+	int dma_arry_map[_cam_max_] = {
 		/*      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,*/
 		 0, /* _imgo_*/
 		 1, /* _rrzo_ */
@@ -9820,15 +9780,15 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 		-1  /* _pso_ */
 	};
 
-	MUINT32 dma_en;
-	MUINT32 uni_dma_en;
-	FBC_CTRL_1 fbc_ctrl1[6];
-	FBC_CTRL_2 fbc_ctrl2[6];
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
-	MBOOL bQueMode = MFALSE;
-	MUINT32 product = 1;
-	/* TSTP_V3 MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1; */
-	UINT32 i;
+	unsigned int dma_en;
+	unsigned int uni_dma_en;
+	union FBC_CTRL_1 fbc_ctrl1[6];
+	union FBC_CTRL_2 fbc_ctrl2[6];
+	unsigned int hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	bool bQueMode = MFALSE;
+	unsigned int product = 1;
+	/* TSTP_V3 unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1; */
+	unsigned int i;
 
 	if ((module != ISP_CAM_A_IDX) && (module != ISP_CAM_B_IDX)) {
 		LOG_ERR("unsupported module:0x%x\n", module);
@@ -9938,12 +9898,12 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 }
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats)
+static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats)
 {
-	MUINT32 dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
-	MUINT32 flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
-	MUINT32 uni_dma_en = 0;
+	unsigned int dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+	unsigned int hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	unsigned int flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+	unsigned int uni_dma_en = 0;
 
 	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
 	DmaPortsStats[_ufeo_] = ((dma_en & 0x02) ? 1 : 0);
@@ -9971,10 +9931,10 @@ static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPort
 
 }
 
-static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id,
-					MUINT32 delayCheck)
+static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, unsigned int dma_id,
+					unsigned int delayCheck)
 {
-	static const MINT32 dma_arry_map[_cam_max_] = {
+	static const int dma_arry_map[_cam_max_] = {
 		-1, /* _imgo_*/
 		-1, /* _rrzo_ */
 		-1, /* _ufeo_ */
@@ -9988,14 +9948,14 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 		 4  /* _pso_ */
 	};
 
-	MUINT32     dma_en;
-	MUINT32     uni_dma_en;
-	FBC_CTRL_1  fbc_ctrl1;
-	FBC_CTRL_2  fbc_ctrl2;
-	MUINT32     flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
-	MBOOL       bQueMode = MFALSE;
-	MUINT32     product = 1;
-	/* TSTP_V3 MUINT32     frmPeriod = 1; */
+	unsigned int     dma_en;
+	unsigned int     uni_dma_en;
+	union FBC_CTRL_1  fbc_ctrl1;
+	union FBC_CTRL_2  fbc_ctrl2;
+	unsigned int     flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+	bool       bQueMode = MFALSE;
+	unsigned int     product = 1;
+	/* TSTP_V3 unsigned int     frmPeriod = 1; */
 
 	switch (module) {
 	case ISP_CAM_A_IDX:
@@ -10085,10 +10045,11 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 
 }
 
-static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod)
+static int32_t ISP_PushBufTimestamp(unsigned int module,
+		unsigned int dma_id, unsigned int sec, unsigned int usec, unsigned int frmPeriod)
 {
-	MUINT32 wridx = 0;
-	FBC_CTRL_2 fbc_ctrl2;
+	unsigned int wridx = 0;
+	union FBC_CTRL_2 fbc_ctrl2;
 	ISP_DEV_NODE_ENUM reg_module;
 
 	fbc_ctrl2.Raw = 0x0;
@@ -10183,7 +10144,7 @@ static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec,
 	return 0;
 }
 
-static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pTstp)
+static int32_t ISP_PopBufTimestamp(unsigned int module, unsigned int dma_id, struct S_START_T *pTstp)
 {
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
@@ -10241,17 +10202,17 @@ static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pT
 }
 
 
-static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
+static int32_t ISP_WaitTimestampReady(unsigned int module, unsigned int dma_id)
 {
-	MUINT32 _timeout = 0;
-	MUINT32 wait_cnt = 0;
+	unsigned int _timeout = 0;
+	unsigned int wait_cnt = 0;
 
 	if (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt > IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt)
 		return 0;
 
 	LOG_INF("Wait module:%d dma:%d timestamp ready W/R:%d/%d\n", module, dma_id,
-		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 
 	#if 1
 	for (wait_cnt = 3; wait_cnt > 0; wait_cnt--) {
@@ -10285,14 +10246,14 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 		if ((wait_cnt & 0x7) == 0x7)
 			LOG_INF("WARNING: module:%d dma:%d wait long %d W/R:%d/%d\n",
 				module, dma_id, wait_cnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 
 		if (wait_cnt > 3000) {
 			LOG_INF("ERROR: module:%d dma:%d wait timeout %d W/R:%d/%d\n",
 				module, dma_id, wait_cnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 			break;
 		}
 
@@ -10304,13 +10265,14 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 }
 
 static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
-			MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod)
+			unsigned int module, unsigned int dma_id, unsigned int sec,
+			unsigned int usec, unsigned int frmPeriod)
 {
-	FBC_CTRL_2  fbc_ctrl2;
-	MUINT32     delta_wcnt = 0, wridx = 0, wridx_prev1 = 0, wridx_prev2 = 0, i = 0;
-	MUINT32     delta_time = 0, max_delta_time = 0;
-	S_START_T   time_prev1, time_prev2;
-	MBOOL dmao_mask = MFALSE;/*To shrink error log, only rrzo print error log*/
+	union FBC_CTRL_2  fbc_ctrl2;
+	unsigned int     delta_wcnt = 0, wridx = 0, wridx_prev1 = 0, wridx_prev2 = 0, i = 0;
+	unsigned int     delta_time = 0, max_delta_time = 0;
+	struct S_START_T   time_prev1, time_prev2;
+	bool dmao_mask = MFALSE;/*To shrink error log, only rrzo print error log*/
 	/*
 	 * Patch timestamp and WCNT base on current HW WCNT and
 	 * previous SW WCNT value, and calculate difference
@@ -10474,11 +10436,11 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 }
 
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
-static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPeriod,
+static int32_t ISP_PatchTimestamp(unsigned int module, unsigned int dma_id, unsigned int frmPeriod,
 		unsigned long long refTimestp, unsigned long long prevTimestp)
 {
 	unsigned long long prev_tstp = prevTimestp, cur_tstp = refTimestp;
-	MUINT32 target_wridx = 0, curr_wridx = 0, frm_dt = 0, last_frm_dt = 0, i = 1;
+	unsigned int target_wridx = 0, curr_wridx = 0, frm_dt = 0, last_frm_dt = 0, i = 1;
 
 	/* Only sub-sample case needs patch */
 	if (frmPeriod <= 1)
@@ -10491,7 +10453,7 @@ static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPer
 	else
 		target_wridx = curr_wridx - frmPeriod;
 
-	frm_dt = (((MUINT32)(cur_tstp - prev_tstp)) / frmPeriod);
+	frm_dt = (((unsigned int)(cur_tstp - prev_tstp)) / frmPeriod);
 	last_frm_dt = ((cur_tstp - prev_tstp) - frm_dt*(frmPeriod-1));
 
 	if (frm_dt == 0)
@@ -10525,12 +10487,12 @@ static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPer
 
 #endif
 
-irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_DIP_A(int  Irq, void *DeviceId)
 {
 	int i = 0;
-	MUINT32 IrqINTStatus = 0x0;
-	MUINT32 IrqCQStatus = 0x0;
-	MUINT32 IrqCQLDStatus = 0x0;
+	unsigned int IrqINTStatus = 0x0;
+	unsigned int IrqCQStatus = 0x0;
+	unsigned int IrqCQLDStatus = 0x0;
 
 	/*LOG_DBG("ISP_Irq_DIP_A:%d\n", Irq);*/
 
@@ -10559,21 +10521,21 @@ irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_0(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
-	MUINT32 reg_module = ISP_CAMSV0_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
+	unsigned int reg_module = ISP_CAMSV0_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
 
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/*  */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/*  */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/*  */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -10662,9 +10624,9 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -10684,7 +10646,7 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 
 			/* keep current time */
@@ -10716,7 +10678,7 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -10750,20 +10712,20 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_1(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_1_ST;
-	MUINT32 reg_module = ISP_CAMSV1_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_1_ST;
+	unsigned int reg_module = ISP_CAMSV1_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -10851,9 +10813,9 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -10873,7 +10835,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 #endif
 			/* keep current time */
@@ -10905,7 +10867,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -10939,20 +10901,20 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_2(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_2_ST;
-	MUINT32 reg_module = ISP_CAMSV2_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_2_ST;
+	unsigned int reg_module = ISP_CAMSV2_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -11041,9 +11003,9 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -11063,7 +11025,7 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -11094,7 +11056,7 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -11127,20 +11089,20 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_3(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_3_ST;
-	MUINT32 reg_module = ISP_CAMSV3_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_3_ST;
+	unsigned int reg_module = ISP_CAMSV3_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -11228,9 +11190,9 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -11250,7 +11212,7 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -11281,7 +11243,7 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -11314,20 +11276,20 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_4(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_4_ST;
-	MUINT32 reg_module = ISP_CAMSV4_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_4_ST;
+	unsigned int reg_module = ISP_CAMSV4_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -11415,9 +11377,9 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -11437,7 +11399,7 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -11468,7 +11430,7 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -11502,20 +11464,20 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_5(int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_5_ST;
-	MUINT32 reg_module = ISP_CAMSV5_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_5_ST;
+	unsigned int reg_module = ISP_CAMSV5_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	volatile unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -11603,9 +11565,9 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -11625,7 +11587,7 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -11656,7 +11618,7 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -11692,21 +11654,21 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 #define ERR_WRN_INT_CNT_THRE    3
 
-irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAM_A(int Irq, void *DeviceId)
 {
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
-	MUINT32 reg_module = ISP_CAM_A_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	MUINT32 DmaStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
-	MUINT32 cur_v_cnt = 0;
+	unsigned int module = ISP_IRQ_TYPE_INT_CAM_A_ST;
+	unsigned int reg_module = ISP_CAM_A_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	unsigned int DmaStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
-	MUINT32 IrqEnableOrig, IrqEnableNew;
+	unsigned int IrqEnableOrig, IrqEnableNew;
 
 	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
 	if (G_u4EnableClockCount == 0)
@@ -11842,7 +11804,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
 		if (g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+			unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
 			if (frmPeriod > 1) {
 				ISP_PatchTimestamp(module, _imgo_, frmPeriod,
@@ -11872,8 +11834,8 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
-		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
-		MUINT32 irqDelay = 0;
+		unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+		unsigned int irqDelay = 0;
 
 		time = ktime_get(); /* ns */
 		sec = time.tv64;
@@ -11912,8 +11874,8 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		}
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
-			MUINT32 magic_num;
+			static unsigned int m_sec = 0, m_usec;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_imgo_].active)
 				magic_num = ISP_RD32(CAM_REG_IMGO_FH_SPARE_2(reg_module));
@@ -11930,7 +11892,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			#if (TIMESTAMP_QUEUE_EN == 1)
 			{
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 subFrm = 0;
+			unsigned int subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
 			CAM_FrameST FrmStat_pso;
 
@@ -12085,7 +12047,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
@@ -12148,7 +12110,7 @@ LB_CAMA_SOF_IGNORE:
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -12181,21 +12143,21 @@ LB_CAMA_SOF_IGNORE:
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAM_B(int  Irq, void *DeviceId)
 {
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_B_ST;
-	MUINT32 reg_module = ISP_CAM_B_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	MUINT32 DmaStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
-	MUINT32 cur_v_cnt = 0;
+	unsigned int module = ISP_IRQ_TYPE_INT_CAM_B_ST;
+	unsigned int reg_module = ISP_CAM_B_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	unsigned int DmaStatus;
+	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
-	MUINT32 IrqEnableOrig, IrqEnableNew;
+	unsigned int IrqEnableOrig, IrqEnableNew;
 
 	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
 	if (G_u4EnableClockCount == 0)
@@ -12331,7 +12293,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
 		if (g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+			unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
 			if (frmPeriod > 1) {
 				ISP_PatchTimestamp(module, _imgo_, frmPeriod,
@@ -12360,8 +12322,8 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
-		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
-		MUINT32 irqDelay = 0;
+		unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+		unsigned int irqDelay = 0;
 
 		time = ktime_get(); /* ns */
 		sec = time.tv64;
@@ -12399,8 +12361,8 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		}
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
-			MUINT32 magic_num;
+			static unsigned int m_sec = 0, m_usec;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_imgo_].active)
 				magic_num = ISP_RD32(CAM_REG_IMGO_FH_SPARE_2(reg_module));
@@ -12416,7 +12378,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			#if (TIMESTAMP_QUEUE_EN == 1)
 			{
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 subFrm = 0;
+			unsigned int subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
 			CAM_FrameST FrmStat_pso;
 
@@ -12571,7 +12533,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
@@ -12633,7 +12595,7 @@ LB_CAMB_SOF_IGNORE:
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -12677,7 +12639,7 @@ static void ISP_TaskletFunc_CAM_A(unsigned long data)
 #if 1
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAM_A_ST, m_CurrentPPB, _LOG_INF);
 #else
-	MUINT32 reg, flags;
+	unsigned int reg, flags;
 
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]), flags);
 	reg = IspInfo.IrqInfo.Status[ISP_IRQ_TYPE_INT_CAM_A_ST][0];
@@ -12725,7 +12687,7 @@ static void ISP_TaskletFunc_SV_5(unsigned long data)
 #if (ISP_BOTTOMHALF_WORKQ == 1)
 static void ISP_BH_Workqueue(struct work_struct *pWork)
 {
-	IspWorkqueTable *pWorkTable = container_of(pWork, IspWorkqueTable, isp_bh_work);
+	struct IspWorkqueTable *pWorkTable = container_of(pWork, struct IspWorkqueTable, isp_bh_work);
 
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_ERR);
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_INF);
