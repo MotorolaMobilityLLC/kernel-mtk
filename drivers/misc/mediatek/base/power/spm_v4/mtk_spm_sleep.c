@@ -105,7 +105,14 @@ void __attribute__((weak)) mt_cirq_disable(void)
 static inline void spm_suspend_footprint(enum spm_suspend_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_spm_suspend_val(step | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
+	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | step | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
+#endif
+}
+
+static inline void spm_suspend_reset_footprint(void)
+{
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_spm_suspend_val(0);
 #endif
 }
 
@@ -404,7 +411,7 @@ RESTORE_IRQ:
 	if (usb2jtag_mode())
 		mtk_usb2jtag_resume();
 #endif
-	spm_suspend_footprint(0);
+	spm_suspend_reset_footprint();
 
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
