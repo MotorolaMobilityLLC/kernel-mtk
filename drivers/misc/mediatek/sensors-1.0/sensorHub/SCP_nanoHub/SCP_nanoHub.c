@@ -233,6 +233,7 @@ struct scp_send_ipi {
 };
 
 static struct scp_send_ipi txrx_cmd;
+static DEFINE_SPINLOCK(txrx_cmd_lock);
 static struct ipi_master master;
 
 static inline void ipi_message_init(struct ipi_message *m)
@@ -250,18 +251,21 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 {
 	int status = 0, retry = 0;
 	int timeout;
+	unsigned long flags;
 	struct scp_send_ipi *hw = &txrx_cmd;
 
 	/* SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)t->tx_buf;
 	* SCP_PR_ERR("sensorType:%d, action:%d\n", req->req.sensorType, req->req.action);
 	*/
 
+	spin_lock_irqsave(&txrx_cmd_lock, flags);
 	hw->tx = t->tx_buf;
 	hw->rx = t->rx_buf;
 	hw->len = t->len;
 
 	init_completion(&hw->done);
 	hw->context = &hw->done;
+	spin_unlock_irqrestore(&txrx_cmd_lock, flags);
 	do {
 		status = scp_ipi_send(IPI_SENSOR, (unsigned char *)hw->tx, hw->len, 0, SCP_A_ID);
 		if (status == SCP_IPI_ERROR) {
@@ -282,12 +286,13 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 		SCP_PR_ERR("retry time:%d\n", retry);
 
 	timeout = wait_for_completion_timeout(&hw->done, 500 * HZ / 1000);
+	spin_lock_irqsave(&txrx_cmd_lock, flags);
 	if (!timeout) {
-		hw->context = NULL;
 		SCP_PR_ERR("transfer timeout!");
-		return -1;
+		hw->count = -1;
 	}
 	hw->context = NULL;
+	spin_unlock_irqrestore(&txrx_cmd_lock, flags);
 	return hw->count;
 }
 
@@ -508,162 +513,63 @@ static int SCP_sensorHub_direct_push_work(void *data)
 	}
 	return 0;
 }
-static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
+static void SCP_sensorHub_xcmd_putdata(SCP_SENSOR_HUB_DATA_P rsp,
+			int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req;
+	struct scp_send_ipi *hw = &txrx_cmd;
 
-	if (txrx_cmd.context == NULL) {
+	spin_lock(&txrx_cmd_lock);
+	if (!hw->context) {
 		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
+		goto out;
 	}
 
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
+	req = (SCP_SENSOR_HUB_DATA_P)hw->tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
 		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
+		memcpy(hw->rx, rsp, rx_len);
+		hw->count = rx_len;
+		complete(hw->context);
 	}
+out:
+	spin_unlock(&txrx_cmd_lock);
+}
+static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp,
+					int rx_len)
+{
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_set_delay_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_get_data_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_batch_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_set_cfg_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_set_cust_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_batch_timeout_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req;
-
-	if (txrx_cmd.context == NULL) {
-		SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		return;
-	}
-
-	req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		memcpy(txrx_cmd.rx, rsp, rx_len);
-		txrx_cmd.count = rx_len;
-		complete(txrx_cmd.context);
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_set_timestamp_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
-
-	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
-			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
-	} else {
-		if (txrx_cmd.context == NULL)
-			SCP_PR_ERR("after ipi transfer timeout ack occur then dropped this\n");
-		else {
-			memcpy(txrx_cmd.rx, rsp, rx_len);
-			txrx_cmd.count = rx_len;
-			complete(txrx_cmd.context);
-		}
-	}
+	SCP_sensorHub_xcmd_putdata(rsp, rx_len);
 }
 static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 {
