@@ -2375,6 +2375,7 @@
 		reg = <0 0x1a0b1000 0 0x1000>;
 		clocks = <&camsys CAMSYS_CCU_CGPDN>;
 		clock-names = "TSF_CLK_CAM_CCU";
+		interrupts = <GIC_SPI 247 IRQ_TYPE_LEVEL_LOW>;
 	};
 	camsys_dfp@1a008000 {
 		compatible = "mediatek,camsys_dfp";
