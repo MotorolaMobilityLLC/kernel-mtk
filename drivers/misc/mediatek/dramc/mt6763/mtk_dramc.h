@@ -102,8 +102,6 @@ enum TX_RESULT {
 #define ERR_PL_UPDATED			(0x4)
 
 extern void __iomem *mt_emi_base_get(void);
-extern void enable_drs(unsigned char enable);
-extern int disable_drs(unsigned char *backup);
 unsigned int mt_dramc_chn_get(unsigned int emi_cona);
 unsigned int mt_dramc_chp_get(unsigned int emi_cona);
 phys_addr_t mt_dramc_rankbase_get(unsigned int rank);

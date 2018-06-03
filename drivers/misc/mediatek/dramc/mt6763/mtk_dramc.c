@@ -1320,7 +1320,6 @@ static unsigned char low_freq_counter;
 
 void lp3_zq_timer_callback(unsigned long data)
 {
-	unsigned char drs_status;
 	unsigned int RankCounter, Response, TimeCnt;
 	void __iomem *u4rg_24;
 	void __iomem *u4rg_38;
@@ -1334,11 +1333,6 @@ void lp3_zq_timer_callback(unsigned long data)
 	u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
 	u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
 	u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
-
-	if (disable_drs(&drs_status)) {
-		pr_info("[DRAMC] disable DRS fail\n");
-		return;
-	}
 
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
@@ -1380,12 +1374,9 @@ void lp3_zq_timer_callback(unsigned long data)
 	local_irq_restore(save_flags);
 	}
 	mod_timer(&lp3_zq_timer, jiffies + msecs_to_jiffies(2800));
-
-	restore_drs(drs_status);
 }
 void zqcs_timer_callback(unsigned long data)
 {
-	unsigned char drs_status;
 #ifdef SW_ZQCS
 	unsigned int Response, TimeCnt, CHCounter, RankCounter;
 	void __iomem *u4rg_24;
@@ -1400,12 +1391,6 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef SW_TX_TRACKING
 	unsigned int res[2];
 #endif
-
-	if (disable_drs(&drs_status)) {
-		pr_info("[DRAMC] disable DRS fail\n");
-		return;
-	}
-
 #ifdef SW_ZQCS
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
@@ -1538,8 +1523,6 @@ void zqcs_timer_callback(unsigned long data)
 #endif
 
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-
-	restore_drs(drs_status);
 
 #ifdef SW_TX_TRACKING
 	if (res[0] != TX_DONE)
