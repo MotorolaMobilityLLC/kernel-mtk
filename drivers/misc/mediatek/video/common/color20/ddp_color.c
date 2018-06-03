@@ -48,7 +48,7 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 

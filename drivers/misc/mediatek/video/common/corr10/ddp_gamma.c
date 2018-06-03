@@ -72,7 +72,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define GAMMA_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -415,7 +415,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define CCORR_SUPPORT_PARTIAL_UPDATE
 #endif
 

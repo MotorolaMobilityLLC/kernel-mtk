@@ -227,7 +227,6 @@ int ovl_roi(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_BGCLR, bg_color);
 
-	DDPMSG("%s:(%ux%u)\n", __func__, bg_w, bg_h);
 	return 0;
 }
 int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
@@ -304,9 +303,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
 	unsigned int dst_h = cfg->dst_h;
-#if 0
-	struct OVL_CONFIG_LIST config_info;
-#endif
 
 	if (ovl_partial_roi != NULL) {
 		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
@@ -333,7 +329,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	rotate = 1;
+	if (module != DISP_MODULE_OVL1_2L)
+		rotate = 1;
 #endif
 
 	/* check dim layer fmt */
@@ -346,6 +343,17 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	input_swap = ufmt_get_byteswap(format);
 	input_fmt = ufmt_get_format(format);
 	is_rgb = ufmt_get_rgb(format);
+	if (rotate) {
+		unsigned int bg_h, bg_w;
+
+		bg_h = DISP_REG_GET(ovl_base + DISP_REG_OVL_ROI_SIZE);
+		bg_w = bg_h & 0xFFFF;
+		bg_h = bg_h >> 16;
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
+			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
+	} else {
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
+	}
 
 	if (format == UFMT_UYVY || format == UFMT_VYUY ||
 	    format == UFMT_YUYV || format == UFMT_YVYU) {
@@ -410,23 +418,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
-	if (rotate) {
-		unsigned int bg_h, bg_w;
-
-		bg_h = DISP_REG_GET(ovl_base + DISP_REG_OVL_ROI_SIZE);
-		bg_w = bg_h & 0xFFFF;
-		bg_h = bg_h >> 16;
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
-			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
-			     cfg->addr + cfg->src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * Bpp - 1);
+	if (rotate)
 		offset = (src_x + dst_w) * Bpp + (src_y + dst_h - 1) * cfg->src_pitch - 1;
-	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
-			cfg->addr + src_x * Bpp + src_y * cfg->src_pitch);
+	else
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
-	}
 
 	if (!is_engine_sec) {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr, cfg->addr + offset);
@@ -996,43 +991,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		enabled_ext_layers | ext_sel_layers);
 
-#if 0
-	/* IP ACTIVE ALGORITHM */
-	if (pConfig->ovl_partial_dirty)
-		ip_active_algorithm(pConfig->ovl_partial_roi->width, pConfig->ovl_partial_roi->height);
-	else
-		ip_active_algorithm(pConfig->dst_w, pConfig->dst_h);
-
-
-	for (layer_id = 0; layer_id < TOTAL_OVL_LAYER_NUM; layer_id++) {
-		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[layer_id];
-		int enable = ovl_cfg->layer_en;
-
-		if (enable == 0)
-			continue;
-		if (ovl_check_input_param(ovl_cfg)) {
-			DDPAEE("invalid layer parameters!\n");
-			continue;
-		}
-		if (ovl_cfg->ovl_index != module)
-			continue;
-
-		if (ovl_cfg->ext_layer == -1) {
-			get_ip_active_layer_roi(ovl_cfg->phy_layer, 0, &tb, &bb);
-
-			DISP_REG_SET(handle,
-			ovl_base_addr(module) + DISP_REG_OVL_DVFS_L0_ROI + ovl_cfg->phy_layer*4,
-			bb << 16 | tb);
-
-		} else {
-			get_ip_active_layer_roi(ovl_cfg->ext_layer, 1, &tb, &bb);
-
-			DISP_REG_SET(handle,
-			ovl_base_addr(module) + DISP_REG_OVL_DVFS_EL0_ROI + ovl_cfg->ext_layer*4,
-			bb << 16 | tb);
-		}
-	}
-#endif
 	return 0;
 }
 
@@ -1736,7 +1694,7 @@ int ovl_partial_update(enum DISP_MODULE_ENUM module, unsigned int bg_w,
 		DDPERR("ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
 		ASSERT(0);
 	}
-	DDPDBG("ovl%d partial update\n", module);
+	DDPDBG("ovl%d partial update roi: (%dx%d)\n", module, bg_w, bg_h);
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE, bg_h << 16 | bg_w);
 
 	return 0;

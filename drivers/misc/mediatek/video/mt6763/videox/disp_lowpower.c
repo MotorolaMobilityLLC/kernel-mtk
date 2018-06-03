@@ -87,7 +87,7 @@ static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
 #endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
 /* dvfs */
-static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LPM);
+static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_ULPM);
 #endif
 
 
@@ -950,7 +950,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when leave screen idle: reset to default */
-		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
+		/*primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);*/
 #endif
 		if (kthread_should_stop())
 			break;
