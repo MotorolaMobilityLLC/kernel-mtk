@@ -225,7 +225,7 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 			|| (size != (size & PMD_MASK))
 			|| !memblock_is_memory(virt_to_phys((void *)start))
 			|| !size || !start) {
-		pr_alert("[invalid parameter]: start=0x%lx, size=%pa\n",
+		pr_info("[invalid parameter]: start=0x%lx, size=%pa\n",
 				start, &size);
 		return -1;
 	}
@@ -238,26 +238,26 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 		pgd = pgd_offset_k(address);
 
 		if (pgd_none(*pgd) || pgd_bad(*pgd)) {
-			pr_alert("bad pgd break\n");
+			pr_info("bad pgd break\n");
 			goto fail;
 		}
 
 		pud = pud_offset(pgd, address);
 
 		if (pud_none(*pud) || pud_bad(*pud)) {
-			pr_alert("bad pud break\n");
+			pr_info("bad pud break\n");
 			goto fail;
 		}
 
 		pmd = pmd_offset(pud, address);
 
 		if (pmd_none(*pmd)) {
-			pr_alert("none ");
+			pr_info("none ");
 			goto fail;
 		}
 
 		if (pmd_table(*pmd)) {
-			pr_alert("pmd_table not set PMD\n");
+			pr_info("pmd_table not set PMD\n");
 			goto fail;
 		}
 
@@ -273,7 +273,7 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 	flush_tlb_all();
 	return 0;
 fail:
-	pr_alert("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
+	pr_info("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
 			start, &size, (void *)address, map);
 	show_pte(NULL, address);
 	return -1;
@@ -405,7 +405,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 			region->count << PAGE_SHIFT);
 
 	if (ret_map < 0) {
-		pr_alert("[unmapping fail]: virt:0x%lx, size:0x%lx",
+		pr_info("[unmapping fail]: virt:0x%lx, size:0x%lx",
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
 
@@ -447,7 +447,7 @@ static int memory_region_online(struct SSVP_Region *region)
 				region->count << PAGE_SHIFT);
 
 		if (ret_map < 0) {
-			pr_alert("[remapping fail]: virt:0x%lx, size:0x%lx",
+			pr_info("[remapping fail]: virt:0x%lx, size:0x%lx",
 					(unsigned long)__va((page_to_phys(region->page))),
 					region->count << PAGE_SHIFT);
 
@@ -483,7 +483,7 @@ int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
 	int retval = 0;
 	struct SSVP_Region *region = &_svpregs[SSVP_TUI];
 
-	pr_alert("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
 			svp_state_text[region->state], upper_limit);
 
 	if (region->state != SVP_STATE_ON) {
@@ -500,12 +500,12 @@ int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
 	}
 
 	region->state = SVP_STATE_OFF;
-	pr_alert("%s %d: [reserve done]: pa 0x%llx, size 0x%lx\n",
-			__func__, __LINE__, page_to_phys(region->page),
+	pr_info("%s %d: [reserve done]: pa 0x%lx, size 0x%lx\n",
+			__func__, __LINE__, (unsigned long)page_to_phys(region->page),
 			region->count << PAGE_SHIFT);
 
 out:
-	pr_alert("%s %d: <<<<<< state: %s, retval: %d\n", __func__, __LINE__,
+	pr_info("%s %d: <<<<<< state: %s, retval: %d\n", __func__, __LINE__,
 			svp_state_text[region->state], retval);
 	return retval;
 }
@@ -515,7 +515,7 @@ int tui_region_online(void)
 	struct SSVP_Region *region = &_svpregs[SSVP_TUI];
 	int retval;
 
-	pr_alert("%s %d: >>>>>> enter state: %s\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> enter state: %s\n", __func__, __LINE__,
 			svp_state_text[region->state]);
 
 	if (region->state != SVP_STATE_OFF) {
@@ -528,7 +528,7 @@ int tui_region_online(void)
 	region->state = SVP_STATE_ON;
 
 out:
-	pr_alert("%s %d: <<<<<< leave state: %s, retval: %d\n",
+	pr_info("%s %d: <<<<<< leave state: %s, retval: %d\n",
 			__func__, __LINE__, svp_state_text[region->state], retval);
 	return retval;
 }
@@ -560,9 +560,9 @@ static int _svp_wdt_kthread_func(void *data)
 		pr_info("[COUNT DOWN]: %d\n", count_down);
 
 	}
-	pr_alert("[COUNT DOWN FAIL]\n");
+	pr_info("[COUNT DOWN FAIL]\n");
 
-	pr_alert("Shareable SVP trigger kernel warnin");
+	pr_info("Shareable SVP trigger kernel warnin");
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 			| DB_OPT_PROCESS_COREDUMP
@@ -588,7 +588,7 @@ int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
 	int retval = 0;
 	struct SSVP_Region *region = &_svpregs[SSVP_SVP];
 
-	pr_alert("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
 			svp_state_text[region->state], upper_limit);
 
 	if (region->state != SVP_STATE_ON) {
@@ -605,12 +605,12 @@ int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
 	}
 
 	region->state = SVP_STATE_OFF;
-	pr_alert("%s %d: [reserve done]: pa 0x%llx, size 0x%lx\n",
-			__func__, __LINE__, page_to_phys(region->page),
+	pr_info("%s %d: [reserve done]: pa 0x%lx, size 0x%lx\n",
+			__func__, __LINE__, (unsigned long)page_to_phys(region->page),
 			region->count << PAGE_SHIFT);
 
 out:
-	pr_alert("%s %d: <<<<<< state: %s, retval: %d\n", __func__, __LINE__,
+	pr_info("%s %d: <<<<<< state: %s, retval: %d\n", __func__, __LINE__,
 			svp_state_text[region->state], retval);
 	return retval;
 }
@@ -620,7 +620,7 @@ int svp_region_online(void)
 	struct SSVP_Region *region = &_svpregs[SSVP_SVP];
 	int retval;
 
-	pr_alert("%s %d: >>>>>> enter state: %s\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> enter state: %s\n", __func__, __LINE__,
 			svp_state_text[region->state]);
 
 	if (region->state != SVP_STATE_OFF) {
@@ -633,7 +633,7 @@ int svp_region_online(void)
 	region->state = SVP_STATE_ON;
 
 out:
-	pr_alert("%s %d: <<<<<< leave state: %s, retval: %d\n",
+	pr_info("%s %d: <<<<<< leave state: %s, retval: %d\n",
 			__func__, __LINE__, svp_state_text[region->state], retval);
 	return retval;
 }
@@ -643,7 +643,7 @@ static long svp_cma_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 {
 	int ret = 0;
 
-	pr_alert("%s %d: cmd: %x\n", __func__, __LINE__, cmd);
+	pr_info("%s %d: cmd: %x\n", __func__, __LINE__, cmd);
 
 	switch (cmd) {
 	case SVP_REGION_IOC_ONLINE:
@@ -676,7 +676,7 @@ static long svp_cma_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 #if IS_ENABLED(CONFIG_COMPAT)
 static long svp_cma_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	pr_alert("%s %d: cmd: %x\n", __func__, __LINE__, cmd);
+	pr_info("%s %d: cmd: %x\n", __func__, __LINE__, cmd);
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
 		return -ENOTTY;
@@ -746,14 +746,14 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 			__phys_to_pfn(cma_base), __phys_to_pfn(cma_end),
 			cma_get_size(cma) >> PAGE_SHIFT);
 
-	seq_printf(m, "svp region base:0x%llx, count %lu, state %s.%s\n",
-			_svpregs[SSVP_SVP].page == NULL ? 0 : page_to_phys(_svpregs[SSVP_SVP].page),
+	seq_printf(m, "svp region base:0x%lx, count %lu, state %s.%s\n",
+			_svpregs[SSVP_SVP].page == NULL ? 0 : (unsigned long)page_to_phys(_svpregs[SSVP_SVP].page),
 			_svpregs[SSVP_SVP].count,
 			svp_state_text[_svpregs[SSVP_SVP].state],
 			_svpregs[SSVP_SVP].use_cache_memory ? " (cache memory)" : "");
 
-	seq_printf(m, "tui region base:0x%llx, count %lu, state %s.%s\n",
-			_svpregs[SSVP_TUI].page == NULL ? 0 : page_to_phys(_svpregs[SSVP_TUI].page),
+	seq_printf(m, "tui region base:0x%lx, count %lu, state %s.%s\n",
+			_svpregs[SSVP_TUI].page == NULL ? 0 : (unsigned long)page_to_phys(_svpregs[SSVP_TUI].page),
 			_svpregs[SSVP_TUI].count,
 			svp_state_text[_svpregs[SSVP_TUI].state],
 			_svpregs[SSVP_TUI].use_cache_memory ? " (cache memory)" : "");
