@@ -85,6 +85,7 @@ struct thz_data {
 	int num_trip;
 	unsigned int interval;	/* mseconds, 0 : no auto polling */
 	int kernelmode;
+	int doing_tz_unregister;
 };
 
 static struct thz_data g_tsData[RESERVED_TZS];
@@ -445,7 +446,7 @@ static void mtkts_allts_cancel_timer(void)
 	int i;
 
 	for (i = 0; i < g_img_max; i++) {
-		if (g_tsData[i].thz_dev)
+		if (g_tsData[i].thz_dev && !g_tsData[i].doing_tz_unregister)
 			cancel_delayed_work(&(g_tsData[i].thz_dev->poll_queue));
 	}
 }
@@ -456,7 +457,7 @@ static void mtkts_allts_start_timer(void)
 	int i;
 
 	for (i = 0; i < g_img_max; i++) {
-		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0)
+		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0 && !g_tsData[i].doing_tz_unregister)
 			mod_delayed_work(system_freezable_wq, &(g_tsData[i].thz_dev->poll_queue),
 				round_jiffies(msecs_to_jiffies(1000)));
 		/*1000 = 1sec */
@@ -548,8 +549,10 @@ static ssize_t tz ## num ## _proc_write(struct file *file, const char __user *bu
 		mtk_imgs_dprintk("[mtk_imgs_write_"__stringify(num)"] thermal unregister\n");	\
 \
 		if (g_tsData[num].thz_dev) {	\
+			g_tsData[num].doing_tz_unregister = 1;	\
 			mtk_thermal_zone_device_unregister(g_tsData[num].thz_dev);	\
 			g_tsData[num].thz_dev = NULL;	\
+			g_tsData[num].doing_tz_unregister = 0;	\
 		}	\
 \
 		if (pTempD->num_trip < 0 || pTempD->num_trip > 10) {	\
@@ -801,8 +804,10 @@ static void __exit mtk_imgs_exit(void)
 	/* Unregister thermal zones */
 	for (i = 0; i < g_img_max; i++) {
 		if (g_tsData[i].thz_dev) {
+			g_tsData[i].doing_tz_unregister = 1;
 			mtk_thermal_zone_device_unregister(g_tsData[i].thz_dev);
 			g_tsData[i].thz_dev = NULL;
+			g_tsData[i].doing_tz_unregister = 0;
 		}
 	}
 
