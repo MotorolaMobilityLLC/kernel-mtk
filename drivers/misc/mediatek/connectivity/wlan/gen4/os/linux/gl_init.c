@@ -2249,16 +2249,13 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		prAdapter->rWifiFemCfg.u2WifiPath =
 				(WLAN_FLAG_2G4_WF0 | WLAN_FLAG_5G_WF0 | WLAN_FLAG_2G4_WF1 | WLAN_FLAG_5G_WF1);
 
-		DBGLOG(INIT, TRACE, "WifiPath Init=0x%x\n", prAdapter->rWifiFemCfg.u2WifiPath);
-
 #if (MTK_WCN_HIF_SDIO && CFG_WMT_WIFI_PATH_SUPPORT)
 		i4RetVal = mtk_wcn_wmt_wifi_fem_cfg_report((PVOID)&prAdapter->rWifiFemCfg);
-
 		if (i4RetVal)
-			DBGLOG(INIT, ERROR, "Get WifiPath from WMT drv FAIL\n");
+			DBGLOG(INIT, ERROR, "Get WifiPath from WMT drv fail\n");
 		else
-			DBGLOG(INIT, INFO, "Get WifiPath from WMT drv Success WifiPath=0x%x\n",
-					prAdapter->rWifiFemCfg.u2WifiPath);
+			DBGLOG(INIT, INFO, "Get WifiPath from WMT drv success, WifiPath=0x%x\n",
+			       prAdapter->rWifiFemCfg.u2WifiPath);
 #endif
 		/* 4 <5> Start Device */
 		prRegInfo = &prGlueInfo->rRegInfo;
@@ -2542,7 +2539,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <0> Sanity check */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
-		DBGLOG(INIT, ERROR, "0 == u4WlanDevNum\n");
+		DBGLOG(INIT, ERROR, "u4WlanDevNum = 0\n");
 		return;
 	}
 #if (CFG_ENABLE_WIFI_DIRECT && MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
@@ -2555,14 +2552,14 @@ static VOID wlanRemove(VOID)
 
 	ASSERT(prDev);
 	if (prDev == NULL) {
-		DBGLOG(INIT, ERROR, "NULL == prDev\n");
+		DBGLOG(INIT, ERROR, "prDev is NULL\n");
 		return;
 	}
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 	if (prGlueInfo == NULL) {
-		DBGLOG(INIT, INFO, "NULL == prGlueInfo\n");
+		DBGLOG(INIT, INFO, "prGlueInfo is NULL\n");
 		free_netdev(prDev);
 		return;
 	}
@@ -2597,6 +2594,10 @@ static VOID wlanRemove(VOID)
 	/* 4 <2> Mark HALT, notify main thread to stop, and clean up queued requests */
 	set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
 
+	/* Stop works */
+	flush_work(&prGlueInfo->rTxMsduFreeWork);
+	cancel_delayed_work_sync(&prGlueInfo->rRxPktDeAggWork);
+
 #if CFG_SUPPORT_MULTITHREAD
 	wake_up_interruptible(&prGlueInfo->waitq_hif);
 	wait_for_completion_interruptible(&prGlueInfo->rHifHaltComp);
@@ -2608,10 +2609,6 @@ static VOID wlanRemove(VOID)
 	wake_up_interruptible(&prGlueInfo->waitq);
 	/* wait main thread stops */
 	wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
-
-	/* Stop works */
-	flush_work(&prGlueInfo->rTxMsduFreeWork);
-	cancel_delayed_work_sync(&prGlueInfo->rRxPktDeAggWork);
 
 	DBGLOG(INIT, INFO, "wlan thread stopped\n");
 
