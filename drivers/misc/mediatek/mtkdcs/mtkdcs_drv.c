@@ -26,6 +26,7 @@
 #include <mach/emi_mpu.h>
 #include <mach/fliper.h>
 #include <mt-plat/mtk_meminfo.h>
+#include <mt-plat/aee.h>
 #include "mtkdcs_drv.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_vcorefs_manager.h>
@@ -277,6 +278,11 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 #ifdef CONFIG_MTK_EMI_MPU
 			dump_emi_outstanding_for_md();
 #endif
+#ifdef CONFIG_MTK_AEE_FEATURE
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
+					"DCS timeout", "dump EMI debug register");
+#endif
+			msleep(15000);
 			BUG();
 		}
 #ifdef DCS_PROFILE
