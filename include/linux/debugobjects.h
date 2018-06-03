@@ -80,6 +80,7 @@ debug_object_active_state(void *addr, struct debug_obj_descr *descr,
 
 extern void debug_objects_early_init(void);
 extern void debug_objects_mem_init(void);
+extern void debug_object_mtk_aee_warning(char *msg);
 #else
 static inline void
 debug_object_init      (void *addr, struct debug_obj_descr *descr) { }
@@ -98,6 +99,7 @@ debug_object_assert_init(void *addr, struct debug_obj_descr *descr) { }
 
 static inline void debug_objects_early_init(void) { }
 static inline void debug_objects_mem_init(void) { }
+static inline void debug_object_mtk_aee_warning(char *msg) { }
 #endif
 
 #ifdef CONFIG_DEBUG_OBJECTS_FREE
