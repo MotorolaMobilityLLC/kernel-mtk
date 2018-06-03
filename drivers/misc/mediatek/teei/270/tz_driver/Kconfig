@@ -10,7 +10,18 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT), y)
-$(info "CONFIG_MICROTRUST_TEE_VERSION=$(CONFIG_MICROTRUST_TEE_VERSION)")
-obj-y += $(subst ",,$(CONFIG_MICROTRUST_TEE_VERSION))/
-endif
+#config MICROTRUST_TZ_EXTENSIONS
+#	bool "Enable microtrust TrustZone extensions"
+#	default y
+#	---help---
+#	  Enables microtrust TrustZone extensions to the Linux kernel.
+
+config MICROTRUST_TZ_DRIVER
+	tristate "Support teei_driver function"
+	default n
+	---help---
+	Enable teei_driver framework.
+	Enable teei_driver framework.
+	Enable teei_driver framework.
+	Enable teei_driver framework.
+	Communication with the secure OS
