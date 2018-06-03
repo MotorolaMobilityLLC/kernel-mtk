@@ -14,12 +14,6 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
-config MTK_INTERNAL
-	bool "Enable MTK internal debug feature"
-	help
-	  Identify if codebase is built with MTK internal debug
-	  (Don't modify this feature option setting.)
-
 config FPGA_EARLY_PORTING
 	bool "MTK FPGA EARLY PORTING"
 	help
