@@ -282,17 +282,16 @@ static bool gSpm_sodi_en;
 
 static void spm_sodi_pre_process(void)
 {
-	/* set PMIC WRAP table for deepidle power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
 }
 
 static void spm_sodi_post_process(void)
 {
-	/* set PMIC WRAP table for normal power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
 }
 

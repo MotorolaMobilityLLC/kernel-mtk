@@ -438,6 +438,18 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
+
+	pmic_config_interface_nolock(
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
+		1,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
+
+	pmic_config_interface_nolock(
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
+		1,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 }
 
