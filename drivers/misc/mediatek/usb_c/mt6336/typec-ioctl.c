@@ -131,8 +131,6 @@ static ssize_t dump_show(struct device *pdev, struct device_attribute *attr,
 	dev_err(pdev, "%s%s", title, divider);
 	sprintf(buf + strlen(buf), "%s%s", title, divider);
 
-	MEMPRINTK("%s%s", title, divider);
-
 	for (addr = 0; addr <= MAX_REG; addr += 0x10) {
 		uint32_t real_addr = addr + CC_REG_BASE;
 
@@ -143,7 +141,6 @@ static ssize_t dump_show(struct device *pdev, struct device_attribute *attr,
 
 		dev_err(pdev, "0x%03x %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
 		sprintf(buf + strlen(buf), "0x%03x  %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
-		MEMPRINTK("0x%03x %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
 	}
 
 	return strlen(buf);
@@ -253,6 +250,18 @@ static const char * const string_sink_power[] = {
 	"3A0",
 };
 
+static const char * const string_power_role[] = {
+	"SNK",
+	"SRC",
+	"NR",
+};
+
+static const char * const string_data_role[] = {
+	"UFP",
+	"DFP",
+	"NR",
+};
+
 static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 			   char *buf)
 {
@@ -285,11 +294,14 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 	sprintf(buf + strlen(buf), "vbus_present=%d\n", hba->vbus_present);
 	sprintf(buf + strlen(buf), "vconn_en=%d\n", hba->vconn_en);
 
-	sprintf(buf + strlen(buf), "power_role=%s\n", ((hba->power_role == PD_ROLE_SINK)?"SNK":"SRC"));
-	sprintf(buf + strlen(buf), "data_role=%s\n", ((hba->data_role == PD_ROLE_UFP)?"UFP":"DFP"));
+	sprintf(buf + strlen(buf), "power_role=%s\n", string_power_role[hba->power_role]);
+	sprintf(buf + strlen(buf), "data_role=%s\n", string_data_role[hba->data_role]);
 
 	if (hba->power_role == PD_ROLE_SINK)
 		sprintf(buf + strlen(buf), "Rp=%s\n", SRC_CUR(hba->src_rp));
+
+	if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
+		sprintf(buf + strlen(buf), "e-mark cable\n");
 
 	sprintf(buf + strlen(buf), "flags=0x%x\n", hba->flags);
 
@@ -383,7 +395,7 @@ static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
 #endif
 				set_state(hba, PD_STATE_SOFT_RESET);
 #if RESET_STRESS_TEST
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+				if (!wait_for_completion_timeout(&hba->ready, msecs_to_jiffies(PD_STRESS_DELAY)))
 					dev_err(hba->dev, "SOFT RESET timeout\n");
 			}
 #endif
@@ -402,7 +414,7 @@ static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
 				set_state(hba, PD_STATE_HARD_RESET_SEND);
 #if RESET_STRESS_TEST
 
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+				if (!wait_for_completion_timeout(&hba->ready, msecs_to_jiffies(PD_STRESS_DELAY)))
 					dev_err(hba->dev, "HARD RESET timeout\n");
 			}
 #endif
@@ -439,7 +451,7 @@ static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
 				} else
 					dev_err(pdev, "swap [power|data|vconn] [0-9]+\n");
 #if RESET_STRESS_TEST
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
+				if (!wait_for_completion_timeout(&hba->ready, msecs_to_jiffies(PD_STRESS_DELAY)))
 					dev_err(hba->dev, "SWAP ACTION timeout\n");
 			}
 #endif

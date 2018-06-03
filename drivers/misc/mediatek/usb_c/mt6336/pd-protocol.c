@@ -160,98 +160,6 @@ struct bit_mapping pd_is1_mapping_dbg[] = {
 	{PD_HR_TRANS_DONE_INTR, "HR_TRANS_DONE"},
 };
 
-void pd_dump_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1)
-{
-	int i;
-
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1) {
-		for (i = 0; i < sizeof(pd_is0_mapping)/sizeof(struct bit_mapping); i++) {
-			if (pd_is0 & pd_is0_mapping[i].mask)
-				dev_err(hba->dev, "%s\n", pd_is0_mapping[i].name);
-		}
-
-		for (i = 0; i < sizeof(pd_is1_mapping)/sizeof(struct bit_mapping); i++) {
-			if (pd_is1 & pd_is1_mapping[i].mask)
-				dev_err(hba->dev, "%s\n", pd_is1_mapping[i].name);
-		}
-	}
-
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3) {
-		for (i = 0; i < sizeof(pd_is0_mapping_dbg)/sizeof(struct bit_mapping); i++) {
-			if (pd_is0 & pd_is0_mapping_dbg[i].mask)
-				dev_err(hba->dev, "%s\n", pd_is0_mapping_dbg[i].name);
-		}
-
-		for (i = 0; i < sizeof(pd_is1_mapping_dbg)/sizeof(struct bit_mapping); i++) {
-			if (pd_is1 & pd_is1_mapping_dbg[i].mask)
-				dev_err(hba->dev, "%s\n", pd_is1_mapping_dbg[i].name);
-		}
-	}
-}
-
-
-#if PD_SW_WORKAROUND3
-#define PD_HZ_FACTOR_DIVIDEND 10
-#define PD_HZ_FACTOR_DIVIDER 41
-
-inline unsigned long pd_msecs_to_jiffies(unsigned long ms_timeout)
-{
-	return ms_timeout;
-}
-
-inline unsigned long pd_jiffies_to_msecs(unsigned long jiffies)
-{
-	return jiffies;
-}
-#else
-#define PD_HZ_FACTOR_DIVIDER 1
-
-unsigned long pd_msecs_to_jiffies(unsigned long ms_timeout)
-{
-	return  msecs_to_jiffies(ms_timeout);
-}
-
-unsigned long pd_jiffies_to_msecs(unsigned long jiffies)
-{
-	/*FIXME*/
-	return 0;
-}
-#endif
-
-#if PD_SW_WORKAROUND2
-void pd_timer0_start(struct typec_hba *hba, unsigned long ms_timeout)
-{
-	uint32_t val = PD_REF_CK_MS * ms_timeout;
-
-	typec_writew(hba, val, PD_TIMER0_VAL_0);
-	typec_writew(hba, (val>>16), PD_TIMER0_VAL_1);
-
-	/*ONLY 0->1 transition triggers timer to work*/
-	typec_set(hba, PD_TIMER0_EN, PD_TIMER0_ENABLE);
-}
-
-void pd_timer0_stop(struct typec_hba *hba)
-{
-	/*disable timer because ONLY 0->1 transition triggers timer*/
-	typec_clear(hba, PD_TIMER0_EN, PD_TIMER0_ENABLE);
-
-	/*clear the corresponding interrupt status*/
-	typec_set(hba, PD_TIMER0_TIMEOUT_INTR, PD_INTR_1);
-}
-#endif
-
-#if PD_SW_WORKAROUND3
-#define time_after_16(a, b) \
-	(typecheck(uint16_t, a) && \
-	typecheck(uint16_t, b) && \
-	((int16_t)(b) - (int16_t)(a) < 0))
-
-uint16_t pd_get_jiffies(struct typec_hba *hba)
-{
-	return typec_readw(hba, PD_TIMER1_TICK_CNT);
-}
-#endif
-
 static enum hrtimer_restart timeout_hrtimer_callback(struct hrtimer *timer)
 {
 	struct typec_hba *hba = container_of(timer, struct typec_hba, timeout_timer);
@@ -346,21 +254,6 @@ void pd_set_default_param(struct typec_hba *hba)
 	typec_clear(hba, (REG_PD_TX_AUTO_SEND_SR_EN | REG_PD_TX_AUTO_SEND_HR_EN | REG_PD_TX_AUTO_SEND_CR_EN),
 		PD_TX_PARAMETER);
 #endif
-
-	/*
-	 *  Caution: TX parameters & RX parameters have the different values on each design.
-	 *  All are depened on source clock to measure. Now use the default value.
-	 */
-
-	/*set timer parameters*/
-	#if PD_SW_WORKAROUND2
-	typec_writew(hba, PD_REF_CK_MS, PD_TIMER0_VAL_0);
-	typec_writew(hba, (PD_REF_CK_MS>>16), PD_TIMER0_VAL_1);
-	#endif
-	#if PD_SW_WORKAROUND3
-	typec_writew(hba, PD_REF_CK_MS, PD_TIMER1_VAL);
-	typec_set(hba, PD_TIMER1_EN, PD_TIMER1_ENABLE);
-	#endif
 }
 
 #define MAIN_CON4 (0x404)
@@ -480,10 +373,6 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	rx_event = ((pd_is0 & PD_RX_EVENTS0_LISTEN) || (pd_is1 & PD_RX_EVENTS1_LISTEN));
 	cc_event = (cc_is0 & PD_INTR_IS0_LISTEN);
 	timer_event = (pd_is1 & PD_TIMER0_TIMEOUT_INTR);
-	typec_sw_probe(hba, DBG_INTR_TX_EVENT, (tx_event ? DBG_INTR_TX_EVENT : 0));
-	typec_sw_probe(hba, DBG_INTR_RX_EVENT, (rx_event ? DBG_INTR_RX_EVENT : 0));
-	typec_sw_probe(hba, DBG_INTR_CC_EVENT, (cc_event ? DBG_INTR_CC_EVENT : 0));
-	typec_sw_probe(hba, DBG_INTR_TIMER_EVENT, (timer_event ? DBG_INTR_TIMER_EVENT : 0));
 
 	if (hba->dbg_lvl >= TYPEC_DBG_LVL_1)
 		dev_err(hba->dev, "%s pd0=0x%X, pd1=0x%X cc0=0x%X cc2=0x%X %s %s %s %s\n", __func__,
@@ -566,8 +455,6 @@ void set_state(struct typec_hba *hba, enum pd_states next_state)
 {
 	set_state_timeout(hba, 0, PD_STATE_NO_TIMEOUT);
 	hba->task_state = next_state;
-
-	typec_sw_probe(hba, DBG_PD_STATE, (next_state<<DBG_PD_STATE_OFST));
 }
 
 int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
@@ -599,10 +486,8 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	typec_writew(hba, header, PD_TX_HEADER);
 
 	/*prepare data*/
-	for (i = 0; i < cnt; i++) {
-		typec_writew(hba, data[i], (PD_TX_DATA_OBJECT0_0+i*4));
-		typec_writew(hba, (data[i]>>16), (PD_TX_DATA_OBJECT0_1+i*4));
-	}
+	for (i = 0; i < cnt; i++)
+		typec_writedw(hba, data[i], (PD_TX_DATA_OBJECT0_0+i*4));
 
 	reinit_completion(&hba->tx_event);
 
@@ -624,7 +509,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 		dev_err(hba->dev, "%s unhandled events pd_is0: %x, pd_is1: %x", __func__,
 			hba->pd_is0 & PD_TX_EVENTS0, hba->pd_is1 & PD_TX_EVENTS1);
 
-	if (wait_for_completion_timeout(&hba->tx_event, pd_msecs_to_jiffies(PD_TX_TIMEOUT)))	{
+	if (wait_for_completion_timeout(&hba->tx_event, msecs_to_jiffies(PD_TX_TIMEOUT)))	{
 		/*clean up TX events*/
 		mutex_lock(&hba->typec_lock);
 
@@ -633,8 +518,6 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 
 		pd_clear_event(hba, (pd_is0 & PD_TX_EVENTS0), (pd_is1 & PD_TX_EVENTS1), 0);
 		mutex_unlock(&hba->typec_lock);
-		typec_sw_probe(hba, DBG_INTR_TX_EVENT, 0);
-
 
 		if (pd_is1 & PD_TX_HR_SUCCESS) {
 			pd_complete_hr(hba);
@@ -829,7 +712,7 @@ void handle_vdm_request(struct typec_hba *hba, int cnt, uint32_t *payload)
 		/* If UFP responded busy retry after timeout */
 		if (PD_VDO_CMDT(payload[0]) == CMDT_RSP_BUSY) {
 			hba->vdm_timeout = jiffies +
-				pd_msecs_to_jiffies(PD_T_VDM_BUSY);
+				msecs_to_jiffies(PD_T_VDM_BUSY);
 			hba->vdm_state = VDM_STATE_WAIT_RSP_BUSY;
 			hba->vdo_retry = (payload[0] & ~VDO_CMDT_MASK) |
 				CMDT_INIT;
@@ -1009,11 +892,7 @@ void pd_execute_hard_reset(struct typec_hba *hba)
 	 *  after tSrcRecover strongly. So use src_recover to block all actions
 	 *  before tSrcRecover.
 	 */
-	#if PD_SW_WORKAROUND3
-	hba->src_recover = pd_get_jiffies(hba) + PD_T_SRC_RECOVER;
-	#else
-	hba->src_recover = jiffies + pd_msecs_to_jiffies(PD_T_SRC_RECOVER);
-	#endif
+	hba->src_recover = jiffies + msecs_to_jiffies(PD_T_SRC_RECOVER);
 	set_state(hba, PD_STATE_SRC_HARD_RESET_RECOVER);
 }
 
@@ -1728,7 +1607,7 @@ void pd_vdm_send_state_machine(struct typec_hba *hba)
 			if (PD_VDO_CMDT(hba->vdo_data[0]) == CMDT_INIT) {
 				hba->vdm_state = VDM_STATE_BUSY;
 				hba->vdm_timeout = jiffies +
-					pd_msecs_to_jiffies(vdm_get_ready_timeout(hba->vdo_data[0]));
+					msecs_to_jiffies(vdm_get_ready_timeout(hba->vdo_data[0]));
 			} else
 				hba->vdm_state = VDM_STATE_DONE;
 		}
@@ -1926,25 +1805,16 @@ int pd_task(void *data)
 		 * if this is case, jump directly into event handlers; otherwise,
 		 * wait for timeout, or CC/RX/timer events
 		 */
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_WAIT<<DBG_LOOP_STATE_OFST));
-		typec_sw_probe(hba, DBG_TIMER0_VAL, (timeout<<DBG_TIMER0_VAL_OFST));
-
 		mutex_lock(&hba->typec_lock);
 		missing_event = (hba->pd_is0 & PD_RX_SUCCESS0) || (hba->pd_is1 & PD_RX_HR_SUCCESS) || (hba->cc_is0);
 		mutex_unlock(&hba->typec_lock);
 
-		if (!missing_event && timeout > PD_WAIT_FOR_COMPLETION_OVERHEAD) {
-		#if PD_SW_WORKAROUND2
-			pd_timer0_start(hba, (timeout - PD_WAIT_FOR_COMPLETION_OVERHEAD));
-			wait_for_completion(&hba->event); /*timer event terminates wait when timeouts*/
-		#else
+		if (!missing_event && timeout) {
 			ret = wait_for_completion_interruptible_timeout(&hba->event,
-				pd_msecs_to_jiffies(timeout - PD_WAIT_FOR_COMPLETION_OVERHEAD));
-		#endif
+				msecs_to_jiffies(timeout));
 		}
 
 		/* latch events */
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_CHK_EVENT<<DBG_LOOP_STATE_OFST));
 		mutex_lock(&hba->typec_lock);
 		pd_is0 = hba->pd_is0;
 		pd_is1 = hba->pd_is1;
@@ -1953,19 +1823,8 @@ int pd_task(void *data)
 		pd_clear_event(hba, (pd_is0 & PD_EVENTS0), (pd_is1 & PD_EVENTS1), cc_is0);
 		mutex_unlock(&hba->typec_lock);
 
-		/* dump timeout information */
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_TIMER<<DBG_LOOP_STATE_OFST));
-		typec_sw_probe(hba, DBG_INTR_TIMER_EVENT, 0);
-
-		#if PD_SW_WORKAROUND2
-		/*no matter triggered or not, timer0 work has finished*/
-		pd_timer0_stop(hba);
-		if ((hba->dbg_lvl >= TYPEC_DBG_LVL_3) && (pd_is1 & PD_TIMER0_TIMEOUT_INTR))
-			dev_err(hba->dev, "[TIMEOUT1 %lums]\n", timeout);
-		#else
 		if ((hba->dbg_lvl >= TYPEC_DBG_LVL_3) && !ret)
 			dev_err(hba->dev, "[TIMEOUT1 %lums]\n", timeout);
-		#endif
 
 		/* Directly go to timeout_state when time is up set by set_state_timeout() */
 		if (hba->flags & PD_FLAGS_TIMEOUT) {
@@ -1982,9 +1841,6 @@ int pd_task(void *data)
 			#endif
 
 			incoming_packet = 1;
-
-			typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_RX<<DBG_LOOP_STATE_OFST));
-			typec_sw_probe(hba, DBG_INTR_RX_EVENT, 0);
 
 			#if PD_SW_WORKAROUND1_1
 			if (hba->header && (hba->bist_mode != BDO_MODE_TEST_DATA))
@@ -2013,7 +1869,6 @@ int pd_task(void *data)
 		if (pd_is1 & PD_RX_HR_SUCCESS) {
 			dev_err(hba->dev, "PD_RX_HR_SUCCESS\n");
 
-			typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_HARD_RESET<<DBG_LOOP_STATE_OFST));
 			pd_complete_hr(hba);
 
 			if (hba->task_state != PD_STATE_SRC_HARD_RESET_RECOVER)
@@ -2022,9 +1877,6 @@ int pd_task(void *data)
 
 		/* process CC events */
 		/* change state according to Type-C controller status */
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_CHK_CC_EVENT<<DBG_LOOP_STATE_OFST));
-		typec_sw_probe(hba, DBG_INTR_CC_EVENT, 0);
-
 		if ((cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) && !pd_is_power_swapping(hba))
 			set_state(hba, PD_STATE_SRC_ATTACH);
 		if ((cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) && !pd_is_power_swapping(hba))
@@ -2054,9 +1906,6 @@ int pd_task(void *data)
 			dev_err(hba->dev, "%s->%s\n",
 				pd_state_mapping[hba->last_state].name, pd_state_mapping[hba->task_state].name);
 		}
-
-		/* state machine */
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_STATE_MACHINE<<DBG_LOOP_STATE_OFST));
 
 		switch (curr_state) {
 		case PD_STATE_DISABLED:
@@ -2123,11 +1972,7 @@ int pd_task(void *data)
 
 		case PD_STATE_SRC_HARD_RESET_RECOVER:
 			/* Do not continue until hard reset recovery time */
-#if PD_SW_WORKAROUND3
-			if (!time_after_16(pd_get_jiffies(hba), hba->src_recover)) {
-#else
 			if (time_after(hba->src_recover, jiffies)) {
-#endif
 				timeout = 50;
 				break;
 			}

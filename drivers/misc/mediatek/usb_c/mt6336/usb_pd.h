@@ -839,7 +839,7 @@ enum pd_data_msg_type {
 #define PD_ROLE_UFP    0
 #define PD_ROLE_DFP    1
 
-#define PD_NO_ROLE  U8_MAX
+#define PD_NO_ROLE  2
 
 /* Vconn role */
 #define PD_ROLE_VCONN_OFF 0
