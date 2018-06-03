@@ -95,6 +95,7 @@ static void mtk_spm_get_edge_trigger_irq(void)
 	}
 }
 
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 static void mtk_spm_unmask_edge_trig_irqs_for_cirq(void)
 {
 	int i;
@@ -106,6 +107,7 @@ static void mtk_spm_unmask_edge_trig_irqs_for_cirq(void)
 		}
 	}
 }
+#endif
 
 static unsigned int spm_irq_0;
 #if defined(CONFIG_MTK_GIC_V3_EXT)

@@ -313,7 +313,6 @@ int mtk_spm_init(void)
 	mtk_cpuidle_init();
 	ret = spm_module_init();
 
-	mtk_idle_cond_check_init();
 	return ret;
 }
 

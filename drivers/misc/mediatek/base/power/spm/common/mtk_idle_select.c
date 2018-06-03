@@ -59,6 +59,12 @@ int mtk_idle_select(int cpu)
 	bool dcs_lock_get = false;
 	#endif
 
+	/* direct return if all mtk idle features are off */
+	if (!mtk_dpidle_enabled() &&
+		!mtk_sodi3_enabled() && !mtk_sodi_enabled()) {
+		return -1;
+	}
+
 	__profile_idle_start(IDLE_TYPE_DP, PIDX_SELECT_TO_ENTER);
 	__profile_idle_start(IDLE_TYPE_SO3, PIDX_SELECT_TO_ENTER);
 	__profile_idle_start(IDLE_TYPE_SO, PIDX_SELECT_TO_ENTER);
