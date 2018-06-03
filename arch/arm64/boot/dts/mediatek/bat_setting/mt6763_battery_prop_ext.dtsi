@@ -6,7 +6,7 @@ bat_gm30: bat_gm30{
 	R_FG_VALUE = <(10)>;	/*	R_sense resistance.*/
 	EMBEDDED_SEL = <(0)>;	/*	Configures whether using embedded battery or not.*/
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
-	FG_METER_RESISTANCE = <(50)>;	/*	The resistance of PCB*/
+	FG_METER_RESISTANCE = <(200)>;	/*	The resistance of PCB*/
 	CAR_TUNE_VALUE = <(100)>;	/*	Tune value for current measurement.*/
 	TEMPERATURE_T0 = <(50)>;	/*	Battery temperature T0*/
 	TEMPERATURE_T1 = <(25)>;	/*	Battery temperature T1*/
