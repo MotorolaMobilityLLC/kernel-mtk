@@ -146,6 +146,20 @@ extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 static unsigned int g_ui32TargetPeriod_us = 16666;
 static unsigned int g_ui32BoostValue = 100;
 
+static unsigned int ged_commit_freq;
+static unsigned int ged_commit_opp_freq;
+
+#ifdef GED_DVFS_STRESS_TEST
+/***************************
+ * GPU DVFS stress test
+ * 0 : disable GPU DVFS stress test
+ * 1 : enable GPU DVFS stress test for OPP Index
+ * 2 : enable GPU DVFS stress test for fine-grained OPP
+ ****************************/
+static unsigned int ged_dvfs_stress_test;
+module_param(ged_dvfs_stress_test, uint, 0644);
+#endif
+
 void ged_dvfs_last_and_target_cb(int t_gpu_target, int boost_accum_gpu)
 {
 	g_ui32TargetPeriod_us = t_gpu_target;
@@ -281,7 +295,7 @@ void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID,
 EXPORT_SYMBOL(ged_dvfs_gpu_freq_commit_fp);
 
 
-bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType)
+bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, unsigned long ui32NewFreq, GED_DVFS_COMMIT_TYPE eCommitType)
 {
 	int bCommited=false;
 	unsigned long ui32CurFreqID;
@@ -314,9 +328,15 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 		g_ulCommitFreq = mt_gpufreq_get_freq_by_idx(ui32NewFreqID);
 
 #ifdef GED_DVFS_STRESS_TEST
-		get_random_bytes(&ui32NewFreqID, sizeof(ui32NewFreqID));
-		ui32NewFreqID = (ui32NewFreqID) % 16;
+		if (ged_dvfs_stress_test == 1) {
+			get_random_bytes(&ui32NewFreqID, sizeof(ui32NewFreqID));
+			ui32NewFreqID = (ui32NewFreqID) % 16;
+		}
 #endif
+
+		ged_commit_freq = ui32NewFreq;
+		ged_commit_opp_freq = mt_gpufreq_get_freq_by_idx(ui32NewFreqID);
+
 		/* do change */
 		if (ui32NewFreqID != ui32CurFreqID) {
 			/* call to DVFS module */
@@ -522,6 +542,14 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 	if (bFallback == true) /* in the fallback mode, gpu_tar_freq taking as freq index */
 		ged_dvfs_policy(gpu_loading, &ui32NewFreqID, 0, 0, 0, true);
 	else {
+#ifdef GED_DVFS_STRESS_TEST
+		if (ged_dvfs_stress_test == 2)
+			gpu_tar_freq  = get_random_int() %
+				(ged_query_info(GED_MIN_FREQ_IDX_FREQ) -
+				ged_query_info(GED_MAX_FREQ_IDX_FREQ) + 1) +
+				ged_query_info(GED_MAX_FREQ_IDX_FREQ);
+#endif
+
 		/* Search suitable frequency level */
 		g_CommitType = MTK_GPU_DVFS_TYPE_VSYNCBASED;
 		g_um_gpu_tar_freq = gpu_tar_freq;
@@ -545,7 +573,12 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 	ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] rdy to commit (%u)",ui32NewFreqID);
 
 	g_computed_freq_id = ui32NewFreqID;
-	ged_dvfs_gpu_freq_commit(ui32NewFreqID, GED_DVFS_DEFAULT_COMMIT);
+	if (bFallback == true)
+		ged_dvfs_gpu_freq_commit(ui32NewFreqID,
+				mt_gpufreq_get_freq_by_idx(ui32NewFreqID), GED_DVFS_DEFAULT_COMMIT);
+	else
+		ged_dvfs_gpu_freq_commit(ui32NewFreqID, gpu_tar_freq, GED_DVFS_DEFAULT_COMMIT);
+
 
 	mutex_unlock(&gsDVFSLock);
 #endif /* GED_DVFS_UM_CAL */
@@ -692,7 +725,9 @@ static void ged_dvfs_freq_input_boostCB(unsigned int ui32BoostFreqID)
 	mutex_lock(&gsDVFSLock);
 
 	if (ui32BoostFreqID < mt_gpufreq_get_cur_freq_index()) {
-		if (ged_dvfs_gpu_freq_commit(ui32BoostFreqID, GED_DVFS_INPUT_BOOST_COMMIT))
+		if (ged_dvfs_gpu_freq_commit(ui32BoostFreqID,
+					mt_gpufreq_get_freq_by_idx(ui32BoostFreqID),
+					GED_DVFS_INPUT_BOOST_COMMIT))
 			g_dvfs_skip_round = GED_DVFS_SKIP_ROUNDS; /* of course this must be fixed */
 	}
 
@@ -713,7 +748,9 @@ static void ged_dvfs_freq_thermal_limitCB(unsigned int ui32LimitFreqID)
 	mutex_lock(&gsDVFSLock);
 
 	if (ui32LimitFreqID > mt_gpufreq_get_cur_freq_index()) {
-		if (ged_dvfs_gpu_freq_commit(ui32LimitFreqID, GED_DVFS_SET_LIMIT_COMMIT))
+		if (ged_dvfs_gpu_freq_commit(ui32LimitFreqID,
+					mt_gpufreq_get_freq_by_idx(ui32LimitFreqID),
+					GED_DVFS_SET_LIMIT_COMMIT))
 			g_dvfs_skip_round = 0; /* of course this must be fixed */
 	}
 
@@ -748,7 +785,7 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 
 	/* if current id is larger, ie lower freq, we need to reflect immedately */
 	if (g_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
-		ged_dvfs_gpu_freq_commit(g_bottom_freq_id, GED_DVFS_SET_BOTTOM_COMMIT);
+		ged_dvfs_gpu_freq_commit(g_bottom_freq_id, gpu_bottom_freq, GED_DVFS_SET_BOTTOM_COMMIT);
 
 	mutex_unlock(&gsDVFSLock);
 }
@@ -777,7 +814,7 @@ static void ged_dvfs_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 	gpu_cust_boost_freq = mt_gpufreq_get_freq_by_idx(g_cust_boost_freq_id);
 
 	if (g_cust_boost_freq_id < mt_gpufreq_get_cur_freq_index())
-		ged_dvfs_gpu_freq_commit(g_cust_boost_freq_id, GED_DVFS_CUSTOM_BOOST_COMMIT);
+		ged_dvfs_gpu_freq_commit(g_cust_boost_freq_id, gpu_cust_boost_freq, GED_DVFS_CUSTOM_BOOST_COMMIT);
 
 	mutex_unlock(&gsDVFSLock);
 }
@@ -801,7 +838,7 @@ static void ged_dvfs_custom_ceiling_gpu_freq(unsigned int ui32FreqLevel)
 	gpu_cust_upbound_freq = mt_gpufreq_get_freq_by_idx(g_cust_upbound_freq_id);
 
 	if (g_cust_upbound_freq_id > mt_gpufreq_get_cur_freq_index())
-		ged_dvfs_gpu_freq_commit(g_cust_upbound_freq_id, GED_DVFS_CUSTOM_CEIL_COMMIT);
+		ged_dvfs_gpu_freq_commit(g_cust_upbound_freq_id, gpu_cust_upbound_freq, GED_DVFS_CUSTOM_CEIL_COMMIT);
 
 	mutex_unlock(&gsDVFSLock);
 }
@@ -925,7 +962,9 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 			/* timer-backup DVFS use only */
 			if (ged_dvfs_policy(gpu_loading, &g_ui32FreqIDFromPolicy, t, phase, ul3DFenceDoneTime, false)) {
 				g_computed_freq_id = g_ui32FreqIDFromPolicy;
-				ged_dvfs_gpu_freq_commit(g_ui32FreqIDFromPolicy, GED_DVFS_DEFAULT_COMMIT);
+				ged_dvfs_gpu_freq_commit(g_ui32FreqIDFromPolicy,
+						mt_gpufreq_get_freq_by_idx(g_ui32FreqIDFromPolicy),
+						GED_DVFS_DEFAULT_COMMIT);
 			}
 		}
 	}
@@ -957,6 +996,16 @@ void ged_dvfs_track_latest_record(MTK_GPU_DVFS_TYPE *peType, unsigned long *pulF
 {
 	*peType = g_CommitType;
 	*pulFreq = g_ulCommitFreq;
+}
+
+unsigned long ged_dvfs_get_gpu_commit_freq(void)
+{
+	return ged_commit_freq;
+}
+
+unsigned long ged_dvfs_get_gpu_commit_opp_freq(void)
+{
+	return ged_commit_opp_freq;
 }
 
 unsigned long ged_dvfs_get_gpu_tar_freq(void)
@@ -1119,6 +1168,13 @@ GED_ERROR ged_dvfs_system_init()
 
 	g_policy_tar_freq = 0;
 	g_mode = 0;
+
+	ged_commit_freq = 0;
+	ged_commit_opp_freq = 0;
+
+#ifdef GED_DVFS_STRESS_TEST
+	ged_dvfs_stress_test = 0;
+#endif
 
 #ifdef ENABLE_TIMER_BACKUP
 	g_gpu_timer_based_emu = 0;
