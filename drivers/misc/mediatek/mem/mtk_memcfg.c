@@ -419,6 +419,17 @@ static const struct file_operations mtk_memcfg_oom_operations = {
 
 /* end of kenerl out-of-memory(oom) trigger */
 
+#ifdef CONFIG_SLUB_DEBUG
+/* kenerl slabtrace  */
+static const struct file_operations proc_slabtrace_operations = {
+	.open = slabtrace_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+/* end of kernel slabtrace */
+#endif
 static int __init mtk_memcfg_late_init(void)
 {
 	struct proc_dir_entry *entry = NULL;
@@ -464,6 +475,15 @@ static int __init mtk_memcfg_late_init(void)
 		if (!entry)
 			pr_info("create oom entry failed\n");
 
+#ifdef CONFIG_SLUB_DEBUG
+		/* slabtrace - full slub object backtrace */
+		entry = proc_create("slabtrace",
+				    0400, mtk_memcfg_dir,
+				    &proc_slabtrace_operations);
+
+		if (!entry)
+			pr_info("create slabtrace proc entry failed\n");
+#endif
 #endif /* end of CONFIG_MTK_ENG_BUILD */
 	}
 
