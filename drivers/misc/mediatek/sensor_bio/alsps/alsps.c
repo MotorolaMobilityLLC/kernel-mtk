@@ -251,7 +251,7 @@ static struct alsps_context *alsps_context_alloc_object(void)
 	return obj;
 }
 
-#ifndef CONFIG_NANOHUB
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_ALSPSHUB)
 static int als_enable_and_batch(void)
 {
 	struct alsps_context *cxt = alsps_context_obj;
@@ -362,7 +362,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
-#ifdef CONFIG_NANOHUB
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
 	if (cxt->als_enable) {
 		err = cxt->als_ctl.enable_nodata(cxt->als_enable);
 		if (err) {
@@ -417,7 +417,7 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 		cxt->als_delay_ns = cxt->als_delay_ns < AAL_DELAY ? cxt->als_delay_ns : AAL_DELAY;
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-#ifdef CONFIG_NANOHUB
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
 	if (cxt->als_ctl.is_support_batch)
 		err = cxt->als_ctl.batch(0, cxt->als_delay_ns, cxt->als_latency_ns);
 	else
@@ -472,7 +472,7 @@ static ssize_t als_show_devnum(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
-#ifndef CONFIG_NANOHUB
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_ALSPSHUB)
 static int ps_enable_and_batch(void)
 {
 	struct alsps_context *cxt = alsps_context_obj;
@@ -580,7 +580,7 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 		err = -1;
 		goto err_out;
 	}
-#ifdef CONFIG_NANOHUB
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
 	err = cxt->ps_ctl.enable_nodata(cxt->ps_enable);
 #else
 	err = ps_enable_and_batch();
@@ -616,7 +616,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 		ALSPS_ERR("ps_store_batch param error: err = %d\n", err);
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-#ifdef CONFIG_NANOHUB
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
 	if (cxt->ps_ctl.is_support_batch)
 		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, cxt->ps_latency_ns);
 	else
