@@ -614,6 +614,9 @@ static inline void clear_resume_bit(struct mt_spi_t *ms)
 static inline void spi_disable_dma(struct mt_spi_t *ms)
 {
 	u32 cmd;
+	/* Reset TX/RX DMA >4GB address */
+	spi_writel(ms, SPI_TX_SRC_REG_64, 0x0);
+	spi_writel(ms, SPI_RX_DST_REG_64, 0x0);
 
 	cmd = spi_readl(ms, SPI_CMD_REG);
 	cmd &= ~SPI_CMD_TX_DMA_MASK;
@@ -1478,7 +1481,6 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	struct spi_master *master;
 	struct mt_spi_t *ms;
 #ifdef CONFIG_OF
-	static int is_dma_addrmask_initialized;
 	/*
 	 * void __iomem *spi_base;
 	 * unsigned int pin[4];
@@ -1581,14 +1583,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 			return -ENODEV;
 		}
 		/* Support >4GB SPI DMA address */
-		/* Should only initialize dma mask once */
-		is_dma_addrmask_initialized++;
-		if (!is_dma_addrmask_initialized) {
-			if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(ms->dma_addrmask))) {
-				dev_err(&pdev->dev,
-					"SPI dma_set_mask failed, dma_addrmask = %d\n", ms->dma_addrmask);
-				return -ENODEV;
-			}
+		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(ms->dma_addrmask))) {
+			dev_err(&pdev->dev,
+				"SPI dma_set_mask failed, dma_addrmask = %d\n", ms->dma_addrmask);
+			return -ENODEV;
 		}
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
 #if !defined(CONFIG_MTK_CLKMGR)

@@ -60,8 +60,8 @@ static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len
 #define SPI_CROSS_ALIGN_OFFSET 1008
 	xfer->len = len;
 
-	xfer->tx_buf = kzalloc(len, GFP_KERNEL | GFP_DMA);
-	xfer->rx_buf = kzalloc(len, GFP_KERNEL | GFP_DMA);
+	xfer->rx_buf = kzalloc(len, GFP_KERNEL);
+	xfer->tx_buf = kzalloc(len, GFP_KERNEL);
 
 	/* Instead of using kzalloc, if using below
 	 * dma_alloc_coherent to allocate tx_dma/rx_dma, remember:
