@@ -3609,6 +3609,9 @@
 	bat_gm30: bat_gm30{
 	};
 
+	usb_c_pinctrl: usb_c_pinctrl {
+	};
+
 };
 
 #include "mt6358.dtsi"
