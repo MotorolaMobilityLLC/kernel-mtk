@@ -75,9 +75,10 @@
 static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
+#ifndef CONFIG_FPGA_EARLY_PORTING
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
-
+#endif
 /*#define NO_SPM*/
 
 /* wait for mmdvfs_mgr.h ready */
@@ -822,19 +823,21 @@ void _cmd_mode_enter_idle(void)
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
 	}
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/*enter PD mode*/
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(0);
+#endif
 }
 
 void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/*Exit PD mode*/
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
-
+#endif
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
 
@@ -861,6 +864,7 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_HIGH:
@@ -880,6 +884,7 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
+#endif
 	return 0;
 }
 
@@ -994,14 +999,17 @@ unsigned int get_mipi_clk(void)
 
 void primary_display_sodi_enable(int flag)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifndef NO_SPM
 	spm_enable_sodi(flag);
+#endif
 #endif
 }
 
 /* for met - end */
 void primary_display_sodi_rule_init(void)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* enable sodi when display driver is ready */
 #ifndef NO_SPM
 	if (primary_display_is_video_mode()) {
@@ -1015,7 +1023,7 @@ void primary_display_sodi_rule_init(void)
 		/*enable CG mode*/
 		spm_sodi_mempll_pwr_mode(1);
 	}
-
+#endif
 #endif
 }
 
