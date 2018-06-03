@@ -76,6 +76,7 @@ static void __iomem *g_apmixed_base;
 #include "mtk_devinfo.h"
 
 /* #define BRING_UP */
+/* #define SET_EXT_FREQ_LEVEL */
 
 #define DRIVER_NOT_READY	-1
 
@@ -235,7 +236,13 @@ static void __iomem *g_apmixed_base;
 /* MT6763T Use VCORE DVFS and need on/off VCORE & frequency control only */
 #define GPU_DVFS_FREQ0_6763T	 (770000)	/* KHz */
 #define GPU_DVFS_FREQ1_6763T	 (530000)	/* KHz */
+
+#ifdef SET_EXT_FREQ_LEVEL
+#define GPU_DVFS_FREQ2_6763T	 (390000)	/* KHz */
+#define GPUFREQ_LAST_FREQ_LEVEL_6763T	(GPU_DVFS_FREQ2_6763T)
+#else
 #define GPUFREQ_LAST_FREQ_LEVEL_6763T	(GPU_DVFS_FREQ1_6763T)
+#endif
 
 #define GPU_DVFS_VOLT0_6763T	 (80000)	/* mV x 100 */
 #define GPU_DVFS_VOLT1_6763T	 (70000)	/* mV x 100 */
@@ -248,7 +255,14 @@ static void __iomem *g_apmixed_base;
 /* MT6763 Use VCORE DVFS and need on/off VCORE & frequency control only */
 #define GPU_DVFS_FREQ0_6763	 (700000)	/* KHz */
 #define GPU_DVFS_FREQ1_6763	 (530000)	/* KHz */
+
+#ifdef SET_EXT_FREQ_LEVEL
+#define GPU_DVFS_FREQ2_6763	 (390000)	/* KHz */
+#define GPUFREQ_LAST_FREQ_LEVEL_6763	(GPU_DVFS_FREQ2_6763)
+#else
 #define GPUFREQ_LAST_FREQ_LEVEL_6763	(GPU_DVFS_FREQ1_6763)
+#endif
+
 
 #define GPU_DVFS_VOLT0_6763	 (80000)	/* mV x 100 */
 #define GPU_DVFS_VOLT1_6763	 (70000)	/* mV x 100 */
@@ -371,11 +385,17 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_0[] = {
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_1[] = {
 	GPUOP(GPU_DVFS_FREQ0_6763T, GPU_DVFS_VOLT0_6763T, GPU_DVFS_VSRAM0_6763T, 0),
 	GPUOP(GPU_DVFS_FREQ1_6763T, GPU_DVFS_VOLT1_6763T, GPU_DVFS_VSRAM1_6763T, 1),
+#ifdef SET_EXT_FREQ_LEVEL
+	GPUOP(GPU_DVFS_FREQ2_6763T, GPU_DVFS_VOLT1_6763T, GPU_DVFS_VSRAM1_6763T, 2),
+#endif
 };
 
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_2[] = {
 	GPUOP(GPU_DVFS_FREQ0_6763, GPU_DVFS_VOLT0_6763, GPU_DVFS_VSRAM0_6763, 0),
 	GPUOP(GPU_DVFS_FREQ1_6763, GPU_DVFS_VOLT1_6763, GPU_DVFS_VSRAM1_6763, 1),
+#ifdef SET_EXT_FREQ_LEVEL
+	GPUOP(GPU_DVFS_FREQ2_6763, GPU_DVFS_VOLT1_6763, GPU_DVFS_VSRAM1_6763, 2),
+#endif
 };
 
 /*
@@ -2062,8 +2082,15 @@ enum {
 static unsigned int mt_gpufreq_oc_level;
 
 #define MT_GPUFREQ_OC_LIMIT_FREQ_1		GPU_DVFS_FREQ14		/* < 485 MHz */
+
+#ifndef SET_EXT_FREQ_LEVEL
 #define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T	GPU_DVFS_FREQ1_6763T	/* 530 MHz */
 #define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763		GPU_DVFS_FREQ1_6763	/* 530 MHz */
+#else
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T	GPU_DVFS_FREQ2_6763T	/* 390 MHz */
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763		GPU_DVFS_FREQ2_6763	/* 390 MHz */
+#endif
+
 static unsigned int mt_gpufreq_oc_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_oc_limited_index_1;
 static unsigned int mt_gpufreq_oc_limited_index;	/* Limited frequency index for oc */
@@ -2083,8 +2110,15 @@ static unsigned int mt_gpufreq_low_battery_level;
 
 #define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_1		GPU_DVFS_FREQ0	/* no need to throttle when LV1 */
 #define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2		GPU_DVFS_FREQ14	/* 485 MHz */
+
+#ifndef SET_EXT_FREQ_LEVEL
 #define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763T	GPU_DVFS_FREQ1_6763T	/* 530 MHz */
 #define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763	GPU_DVFS_FREQ1_6763	/* 530 MHz */
+#else
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763T	GPU_DVFS_FREQ2_6763T	/* 390 MHz */
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763	GPU_DVFS_FREQ2_6763	/* 390 MHz */
+#endif
+
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_1;
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_2;
