@@ -130,7 +130,7 @@ check_defconfig() {
 }
 export -f check_defconfig
 
-parallel -k check_defconfig ::: $CONFIGS ::: $UPDATE
+parallel check_defconfig ::: $CONFIGS ::: $UPDATE
 RETVAL=$?
 
 if [ $RETVAL != 0 ]; then
