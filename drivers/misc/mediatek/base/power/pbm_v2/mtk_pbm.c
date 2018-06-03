@@ -31,15 +31,16 @@
 #include <linux/proc_fs.h>
 
 #include <mach/mtk_pbm.h>
+
+#ifndef DISABLE_PBM_FEATURE
 #include <mach/upmu_sw.h>
 #include <mt-plat/upmu_common.h>
-
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <mtk_cpufreq_api.h>
-
 #include <mtk_gpufreq.h>
 #include <mach/mtk_thermal.h>
 #include <mach/mtk_ppm_api.h>
+#endif				/* #ifndef DISABLE_PBM_FEATURE */
 
 #if MD_POWER_METER_ENABLE
 #include "mtk_spm_vcore_dvfs.h"
