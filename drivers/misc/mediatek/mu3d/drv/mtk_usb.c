@@ -128,6 +128,9 @@ void connection_work(struct work_struct *data)
 			if (wake_lock_active(&musb->usb_wakelock))
 				wake_unlock(&musb->usb_wakelock);
 
+#ifdef VCORE_OPS_DEV
+			vcore_op(0);
+#endif
 			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
 		}
 
@@ -170,6 +173,9 @@ void connection_work(struct work_struct *data)
 			/* FIXME: Should use usb_udc_start() & usb_gadget_connect(), like usb_udc_softconn_store().
 			 * But have no time to think how to handle. However i think it is the correct way.
 			 */
+#ifdef VCORE_OPS_DEV
+			vcore_op(1);
+#endif
 			musb_start(musb);
 
 			os_printk(K_INFO, "%s ----Connect----\n", __func__);
@@ -188,6 +194,9 @@ void connection_work(struct work_struct *data)
 			if (wake_lock_active(&musb->usb_wakelock))
 				wake_unlock(&musb->usb_wakelock);
 
+#ifdef VCORE_OPS_DEV
+			vcore_op(0);
+#endif
 			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
 		} else {
 			/* This if-elseif is to set wakelock when booting with USB cable.
