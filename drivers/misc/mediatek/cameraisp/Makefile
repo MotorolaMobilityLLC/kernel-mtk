@@ -16,3 +16,4 @@ obj-y += src/
 obj-y += owe/
 obj-y += rsc/
 obj-y += wpe/
+obj-y += mfb/
