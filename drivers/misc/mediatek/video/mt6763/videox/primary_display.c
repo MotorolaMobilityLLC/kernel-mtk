@@ -1557,7 +1557,7 @@ void _cmdq_start_trigger_loop(void)
 		/* need to set STREAM_EOF for the first time, otherwise we will stuck in dead loop */
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CABC_EOF);
-		cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+		cmdqCoreSetEvent(CMDQ_EVENT_DISP_OVL0_EOF);
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
 
@@ -2045,7 +2045,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
-	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_OVL0_EOF);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
 
@@ -2680,7 +2680,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	 */
 	dpmgr_path_trigger(disp_handle, cmdq_handle, CMDQ_ENABLE);
 
-	cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_OVL0_EOF);
 
 	layer = disp_sync_get_output_timeline_id();
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->cur_config_fence, layer, mem_config.buff_idx);
@@ -2698,7 +2698,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 
 	cmdqRecFlushAsyncCallback(cmdq_handle, callback, data);
 	cmdqRecReset(cmdq_handle);
-	cmdqRecWait(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqRecWait(cmdq_handle, CMDQ_EVENT_DISP_OVL0_EOF);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0, data);
 
@@ -4549,7 +4549,7 @@ int primary_display_resume(void)
 	 * if no other thread is running, cmdq may disable its clock
 	 * all cmdq event will be cleared after suspend
 	 */
-	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_OVL0_EOF);
 
 	/* reinit fake timer for debug, we can enable option then press powerkey to enable thsi feature. */
 	/* use fake timer to generate vsync signal for cmd mode w/o LCM(originally using LCM TE Signal as VSYNC) */
@@ -6971,7 +6971,7 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 	/* when we stop trigger loop*/
 	 /*if no other thread is running, cmdq may disable its clock*/
 	 /*all cmdq event will be cleared after suspend */
-	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_OVL0_EOF);
 	DISPCHECK("[ESD]start cmdq trigger loop[end]\n");
 	disp_irq_esd_cust_bycmdq(1);
 	primary_display_esd_check_enable(1);
@@ -7058,7 +7058,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	/* when we stop trigger loop*/
 	 /*if no other thread is running, cmdq may disable its clock*/
 	 /*all cmdq event will be cleared after suspend */
-	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_OVL0_EOF);
 
 	DISPCHECK("[Pmaster]start cmdq trigger loop\n");
 done:
