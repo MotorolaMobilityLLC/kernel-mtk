@@ -3645,21 +3645,25 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 		}
 	case DDP_DSI_PORCH_CHANGE:
 		{
-			unsigned int *p = (unsigned int *)params;
-			unsigned int vfp = p[0];
+			if (params == NULL)
+				DDPERR("[ddp_dsi_ioctl] input pointer is NULL\n");
+			else {
+				unsigned int *p = (unsigned int *)params;
+				unsigned int vfp = p[0];
 
-			DDPMSG("[ddp_dsi_ioctl] DDP_DSI_PORCH_CHANGE vfp=%d\n", vfp);
-			ddp_dsi_porch_setting(module, cmdq_handle, DSI_VFP, vfp);
+				DDPMSG("[ddp_dsi_ioctl] DDP_DSI_PORCH_CHANGE vfp=%d\n", vfp);
+				ddp_dsi_porch_setting(module, cmdq_handle, DSI_VFP, vfp);
+			}
 			break;
 		}
 	case DDP_DSI_PORCH_ADDR:
 		{
-			unsigned int *p = (unsigned int *)params;
-			unsigned int addr = p[0];
-
 			if (params == NULL)
 				DDPERR("[ddp_dsi_ioctl] input pointer is NULL\n");
 			else {
+				unsigned int *p = (unsigned int *)params;
+				unsigned int addr = p[0];
+
 				DDPMSG("[ddp_dsi_ioctl] DDP_DSI_PORCH_ADDR addr=0x%x\n", addr);
 				DSI_Get_Porch_Addr(module, params);
 			}
