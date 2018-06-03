@@ -211,8 +211,6 @@ int _gz_client_wait_ret(int32_t Fd, struct gz_syscall_cmd_param *data)
 	return rc;
 }
 
-static int32_t _sys_service_Fd = -1; /* only need to open sys service once */
-
 static void recover_64_params(union MTEEC_PARAM *dst, union MTEEC_PARAM *src, uint32_t types)
 {
 	int i;
