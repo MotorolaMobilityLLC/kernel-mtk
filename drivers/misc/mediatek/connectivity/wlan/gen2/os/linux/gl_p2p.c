@@ -2092,6 +2092,7 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 			}
 
 			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
+
 			if (!prExtraBuf) {
 				ret = -ENOMEM;
 				break;
@@ -2108,6 +2109,7 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 		}
 
 		prEnc = &wrqu->encoding;
+		/* here, need confirm (struct iw_encode_ext) < u4ExtraSize */
 		prIWEncExt = (struct iw_encode_ext *)prExtraBuf;
 
 		if (GLUE_CHK_PR3(prDev, prEnc, prExtraBuf) != TRUE) {
@@ -3549,7 +3551,6 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 			status = -EINVAL;
 			break;
 		}
-
 		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]),
 				   wrqu->data.pointer, sizeof(IW_P2P_TRANSPORT_STRUCT))) {
 			DBGLOG(P2P, ERROR, "%s() copy_from_user oidBuf fail\n", __func__);

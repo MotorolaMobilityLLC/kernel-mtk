@@ -282,7 +282,7 @@ typedef struct _PARAM_AUTH_EVENT_T {
 typedef struct _PARAM_BSSID_EX_T {
 	UINT_32 u4Length;	/*!< Length of structure */
 	PARAM_MAC_ADDRESS arMacAddress;	/*!< BSSID */
-	UINT_16 u2CapInfo;
+	UINT_8 Reserved[2];
 	PARAM_SSID_T rSsid;	/*!< SSID */
 	UINT_32 u4Privacy;	/*!< Need WEP encryption */
 	PARAM_RSSI rRssi;	/*!< in dBm */
@@ -871,17 +871,17 @@ typedef struct _CMD_GET_PSCAN_CAPABILITY {
 /* TBD */
 } CMD_GET_GSCAN_CAPABILITY, *P_CMD_GET_GSCAN_CAPABILITY;
 
-typedef enum _ENUM_PSCAN_ACT_T {
-	PSCAN_ACT_DISABLE = 0,
-	PSCAN_ACT_ENABLE,
-	PSCAN_ACT_SUSPEND,
-	PSCAN_ACT_CLEAR
-} ENUM_PSCAN_ACT_T, *P_ENUM_PSCAN_ACT_T;
-
 typedef struct _CMD_SET_PSCAN_ENABLE {
 	UINT_8 ucPscanAct;
 	UINT_8 aucReserved[3];
 } CMD_SET_PSCAN_ENABLE, *P_CMD_SET_PSCAN_ENABLE;
+
+typedef enum _ENUM_PSCAN_ACT_T {
+	ENABLE,
+	DISABLE,
+	SUSPEND,
+	CLEAR
+} ENUM_PSCAN_ACT_T, *P_ENUM_PSCAN_ACT_T;
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /*--------------------------------------------------------------*/
@@ -1496,23 +1496,21 @@ WLAN_STATUS
 wlanoidSetStopSchedScan(IN P_ADAPTER_T prAdapter,
 			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
-#if CFG_SUPPORT_GSCN
 WLAN_STATUS
 wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 WLAN_STATUS
-wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
+wlanoidSetGSCNAParam(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 WLAN_STATUS
-wlanoidSetGSCNConfig(IN P_ADAPTER_T prAdapter,
+wlanoidSetGSCNAConfig(IN P_ADAPTER_T prAdapter,
 		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 WLAN_STATUS
 wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
-#endif
 
 WLAN_STATUS
 wlanoidSetTxRateInfo(IN P_ADAPTER_T prAdapter,
@@ -1549,5 +1547,3 @@ wlanoidAddPMKID(IN P_ADAPTER_T prAdapter,
 			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 #endif
 #endif /* _WLAN_OID_H */
-WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
-				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);

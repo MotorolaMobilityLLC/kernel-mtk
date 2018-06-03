@@ -30,9 +30,9 @@
 #endif
 
 /*******************************************************************************
-*                              C O N S T A N T S
-********************************************************************************
-*/
+ *                              C O N S T A N T S
+ ********************************************************************************
+ */
 #define NUM_SUPPORTED_OIDS		(sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
 #define CMD_START			"START"
 #define CMD_STOP			"STOP"
@@ -2215,9 +2215,9 @@ _priv_set_string(IN struct net_device *prNetDev,
 	ASSERT(prIwReqData);
 	ASSERT(pcExtra);
 
+
 	if (GLUE_CHK_PR3(prNetDev, prIwReqData, pcExtra) == FALSE)
 		return -EINVAL;
-
 	u4BufLen = prIwReqData->data.length;
 	GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
