@@ -206,11 +206,14 @@ int is_obbpath_invalid(struct dentry *dent)
 				kfree(path_buf);
 			}
 
+			spin_unlock(&di->lock);
 			//unlock_dir(lower_parent);
 			path_put(&di->lower_path);
+			goto out;
 		}
 	}
 	spin_unlock(&di->lock);
+out:
 	return ret;
 }
 
