@@ -1286,15 +1286,15 @@ static inline struct usb_hcd *xhci_to_hcd(struct xhci_hcd *xhci)
 #define XHCI_DEBUG  0
 
 #define xhci_dbg(xhci, fmt, args...) \
-	do { if (XHCI_DEBUG) pr_err("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
+	do { if (XHCI_DEBUG) pr_info("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
 #define xhci_info(xhci, fmt, args...) \
-	do { if (XHCI_DEBUG) pr_err("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
+	do { if (XHCI_DEBUG) pr_info("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
 #define xhci_err(xhci, fmt, args...) \
-	do { if (1) pr_err("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
+	do { if (1) pr_info("%s(%d):" fmt, __func__, __LINE__, ##args); } while (0)
 #define xhci_warn(xhci, fmt, args...) \
-	do { if (1) pr_err(fmt, ##args); } while (0)
+	do { if (1) pr_info(fmt, ##args); } while (0)
 
-/*Enable log for DVT, revert pr_debug to pr_error*/
+/*Enable log for DVT */
 #define log_err(fmt, args...) \
 	do { if (1) pr_notice(fmt, ##args); } while (0)
 #define log_notice(fmt, args...) \
