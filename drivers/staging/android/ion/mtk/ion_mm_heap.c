@@ -73,13 +73,17 @@ struct ion_mm_buffer_info {
 	} while (0)
 
 #ifdef CONFIG_DMAUSER_PAGES
-static unsigned int high_order_gfp_flags = (__GFP_ZERO | __GFP_NOWARN |
-				     __GFP_NORETRY) & ~__GFP_RECLAIM; /*__GFP_DIRECT_RECLAIM*/
-static unsigned int low_order_gfp_flags = (__GFP_ZERO | __GFP_NOWARN);
+	static unsigned int order_gfp_flags[] = {
+		__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
+		(__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
+		(__GFP_ZERO | __GFP_NOWARN)
+	};
 #else
-static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN |
-				     __GFP_NORETRY) & ~__GFP_RECLAIM;
-static unsigned int low_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN);
+	static unsigned int order_gfp_flags[] = {
+		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
+		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
+		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN)
+	};
 #endif
 static const unsigned int orders[] = {4, 1, 0 };
 /* static const unsigned int orders[] = {8, 4, 0}; */
@@ -881,10 +885,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 
 	for (i = 0; i < num_orders; i++) {
 		struct ion_page_pool *pool;
-		gfp_t gfp_flags = low_order_gfp_flags;
-
-		if (orders[i] > 0)
-			gfp_flags = high_order_gfp_flags;
+		gfp_t gfp_flags = order_gfp_flags[i];
 
 		if (unused->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
 			gfp_flags |= __GFP_HIGHMEM | __GFP_MOVABLE;
