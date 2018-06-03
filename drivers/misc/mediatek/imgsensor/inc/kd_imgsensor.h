@@ -180,6 +180,7 @@
 #define OV2650_SENSOR_ID_1                      0x2651
 #define OV2650_SENSOR_ID_2                      0x2652
 #define OV2650_SENSOR_ID_3                      0x2655
+#define OV20880MIPI_SENSOR_ID                   0x20880
 /*S5K*/
 #define S5K3P8SP_SENSOR_ID                      0x3108
 #define S5K2L7_SENSOR_ID                        0x20C7
@@ -306,7 +307,7 @@
 #define SENSOR_DRVNAME_IMX398_MIPI_RAW          "imx398_mipi_raw"
 #define SENSOR_DRVNAME_IMX268_MIPI_RAW          "imx268_mipi_raw"
 #define SENSOR_DRVNAME_IMX386_MIPI_RAW          "imx386_mipi_raw"
-#define SENSOR_DRVNAME_IMX300_MIPI_RAW          "imx300mipiraw"
+#define SENSOR_DRVNAME_IMX300_MIPI_RAW          "imx300_mipi_raw"
 #define SENSOR_DRVNAME_IMX386_MIPI_MONO         "imx386_mipi_mono"
 #define SENSOR_DRVNAME_IMX362_MIPI_RAW          "imx362_mipi_raw"
 #define SENSOR_DRVNAME_IMX338_MIPI_RAW          "imx338_mipi_raw"
@@ -343,7 +344,7 @@
 #define SENSOR_DRVNAME_OV8858_MIPI_RAW          "ov8858_mipi_raw"
 #define SENSOR_DRVNAME_OV8858S_MIPI_RAW         "ov8858s_mipi_raw"
 #define SENSOR_DRVNAME_OV8856_MIPI_RAW          "ov8856_mipi_raw"
-#define SENSOR_DRVNAME_OV8830_RAW               "ov8830"
+#define SENSOR_DRVNAME_OV8830_RAW               "ov8830_raw"
 #define SENSOR_DRVNAME_OV8825_MIPI_RAW          "ov8825_mipi_raw"
 #define SENSOR_DRVNAME_OV7675_YUV               "ov7675_yuv"
 #define SENSOR_DRVNAME_OV5693_MIPI_RAW          "ov5693_mipi_raw"
@@ -372,6 +373,7 @@
 #define SENSOR_DRVNAME_OV2659_YUV               "ov2659_yuv"
 #define SENSOR_DRVNAME_OV2655_YUV               "ov2655_yuv"
 #define SENSOR_DRVNAME_OV2650_RAW               "ov265x_raw"
+#define SENSOR_DRVNAME_OV20880_MIPI_RAW         "ov20880_mipi_raw"
 /*S5K*/
 #define SENSOR_DRVNAME_S5K3P8SP_MIPI_RAW        "s5k3p8sp_mipi_raw"
 #define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7_mipi_raw"
@@ -382,7 +384,7 @@
 #define SENSOR_DRVNAME_S5K2P8_MIPI_RAW          "s5k2p8_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW        "s5k3p3sx_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P3_MIPI_RAW          "s5k3p3_mipi_raw"
-#define SENSOR_DRVNAME_S5K3P8_MIPI_RAW			"s5k3p8_mipi_raw"
+#define SENSOR_DRVNAME_S5K3P8_MIPI_RAW          "s5k3p8_mipi_raw"
 #define SENSOR_DRVNAME_S5K3M2_MIPI_RAW          "s5k3m2_mipi_raw"
 #define SENSOR_DRVNAME_S5K4E6_MIPI_RAW          "s5k4e6_mipi_raw"
 #define SENSOR_DRVNAME_S5K3H2YX_MIPI_RAW        "s5k3h2yx_mipi_raw"
