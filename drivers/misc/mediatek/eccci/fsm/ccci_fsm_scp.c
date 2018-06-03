@@ -39,8 +39,8 @@ static int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 	scp_ipi_tx_msg.md_id = md_id;
 	scp_ipi_tx_msg.op_id = op_id;
 	scp_ipi_tx_msg.data[0] = *((u32 *)data);
-	CCCI_NORMAL_LOG(scp_ipi_tx_msg.md_id, FSM, "IPI send %d/0x%x, %ld\n",
-				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], sizeof(struct ccci_ipi_msg));
+	CCCI_NORMAL_LOG(scp_ipi_tx_msg.md_id, FSM, "IPI send %d/0x%x, %d\n",
+				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], (int)sizeof(struct ccci_ipi_msg));
 	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1, SCP_A_ID) != SCP_IPI_DONE) {
 		CCCI_ERROR_LOG(md_id, FSM, "IPI send fail!\n");
 		ret = -CCCI_ERR_MD_NOT_READY;
@@ -149,8 +149,8 @@ static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
 	struct sk_buff *skb = NULL;
 
 	if (len != sizeof(struct ccci_ipi_msg)) {
-		CCCI_ERROR_LOG(-1, CORE, "IPI handler, data length wrong %d vs. %ld\n", len,
-						sizeof(struct ccci_ipi_msg));
+		CCCI_ERROR_LOG(-1, CORE, "IPI handler, data length wrong %d vs. %d\n", len,
+						(int)sizeof(struct ccci_ipi_msg));
 		return;
 	}
 	CCCI_NORMAL_LOG(ipi_msg_ptr->md_id, CORE, "IPI handler %d/0x%x, %d\n",
