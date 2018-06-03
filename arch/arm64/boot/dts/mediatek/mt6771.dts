@@ -1370,7 +1370,7 @@
 		interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	auxadc@11001000 {
+	auxadc: auxadc@11001000 {
 		compatible = "mediatek,auxadc";
 		reg = <0 0x11001000 0 0x1000>;
 		interrupts = <GIC_SPI 74 IRQ_TYPE_EDGE_FALLING>;
@@ -3572,6 +3572,43 @@
 			"clk_pll_5",
 			"clk_pll_6";
 	};
+
+	rt5081_pmu_eint: rt5081_pmu_eint {
+	};
+
+	rt5081_pd: rt5081_pd_eint {
+	};
+
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+	};
+
+	msdc1_ins: msdc1_ins {
+	};
+
+	gyro: gyro {
+	};
+
+	mse: mse {
+	};
+
+	als: als {
+	};
+
+	irq_nfc: irq_nfc {
+	};
+
+	smart_pa: smart_pa {
+	};
+
+	md1_sim1_hot_plug_eint: md1_sim1_hot_plug_eint {
+	};
+
+	md1_sim2_hot_plug_eint: md1_sim2_hot_plug_eint {
+	};
+
+	bat_gm30: bat_gm30{
+	};
+
 };
 
 #include "mt6358.dtsi"
