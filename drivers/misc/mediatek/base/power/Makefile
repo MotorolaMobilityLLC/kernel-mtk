@@ -32,6 +32,7 @@ obj-$(CONFIG_MACH_MT6763) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6739) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6771) += leakage_table_v2/
+obj-$(CONFIG_MACH_MT6775) += leakage_table_v2/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6763) += cpufreq_v1/
@@ -39,6 +40,7 @@ obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6739) += cpufreq_v2/
 obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6771) += cpufreq_v1/
+obj-$(CONFIG_MACH_MT6775) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT3886) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6799) += eem_v1/
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
@@ -46,15 +48,18 @@ obj-$(CONFIG_MACH_MT6759) += eem_v2/
 obj-$(CONFIG_MACH_MT6763) += eem_v2/
 obj-$(CONFIG_MACH_MT6739) += eem_v2/
 obj-$(CONFIG_MACH_MT6771) += eem_v2/
+obj-$(CONFIG_MACH_MT6775) += eem_v2/
 endif
 obj-$(CONFIG_MACH_MT6799) += upower_v1/
 obj-$(CONFIG_MACH_MT6771) += upower_v2/
+obj-$(CONFIG_MACH_MT6775) += upower_v2/
 ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6759) += upower_v2/
 obj-$(CONFIG_MACH_MT6763) += upower_v2/
 obj-$(CONFIG_MACH_MT6758) += upower_v2/
 obj-$(CONFIG_MACH_MT6739) += upower_v2/
 obj-$(CONFIG_MACH_MT6771) += upower_v2/
+obj-$(CONFIG_MACH_MT6775) += upower_v2/
 endif
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
