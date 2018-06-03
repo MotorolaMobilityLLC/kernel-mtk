@@ -46,7 +46,6 @@ void ged_kpi_get_latest_perf_state(long long *t_cpu_remained,
 									long long *t_gpu_remained,
 									long *t_cpu_target,
 									long *t_gpu_target);
-GED_BOOL ged_kpi_set_target_fps(unsigned int target_fps, int mode);
 
 GED_ERROR ged_kpi_system_init(void);
 void ged_kpi_system_exit(void);

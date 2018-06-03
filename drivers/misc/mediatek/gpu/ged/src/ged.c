@@ -36,9 +36,6 @@ void ged_notification(GED_NOTIFICATION_TYPE eType)
 EXPORT_SYMBOL(ged_notification);
 int ged_set_target_fps(unsigned int target_fps, int mode)
 {
-	if (ged_kpi_set_target_fps(target_fps, mode) == GED_TRUE)
-		return 1;
-	else
 		return 0;
 }
 EXPORT_SYMBOL(ged_set_target_fps);
