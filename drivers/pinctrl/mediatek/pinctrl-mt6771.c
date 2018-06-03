@@ -222,7 +222,7 @@ static int mtk_pinctrl_get_gpio_pullen(struct mtk_pinctrl *pctl, int pin)
 
 #if defined(HAS_CONTIN_PUPD_R0R1) || defined(HAS_DISCRE_PUPD_R0R1)
 	pull_val = mtk_pinctrl_get_gpio_pupd_r1r0(pctl, pin);
-	if (pull_val & MTK_PUPD_R1R0_BIT_SUPPORT) {
+	if (pull_val > 0 && pull_val & MTK_PUPD_R1R0_BIT_SUPPORT) {
 		/*pull_val = [r1,r0,pupd], pull disabel 000,001, others enable*/
 		if (MTK_PUPD_R1R0_GET_PULLEN(pull_val))
 			pull_en = GPIO_PULL_ENABLE;
