@@ -146,3 +146,12 @@ config RT7207_ADAPTER
 	  Richtek RT7207
 	  PD Adapter
 	  Function.
+
+config USB_C_SWITCH_U3_MUX
+	bool "USB TYPE-C USB 3.0 Mux"
+	default n
+	---help---
+	  Enables to support USB3.0 mux in usb-c.
+	  To support TYPE-C USB3.0 must have a MUX to switch SSRX1/SSTX1/SSRX2/SSTX2 pins.
+	  Say Y to enable TYPEC USB3.0 Mux
+	  If unsure, say N.
