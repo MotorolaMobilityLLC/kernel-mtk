@@ -32,6 +32,7 @@ enum {
 	CG_INFRA_2,
 	CG_MMSYS0,
 	CG_MMSYS1,
+	CG_PWR_STATE,
 	NR_GRPS,
 };
 
