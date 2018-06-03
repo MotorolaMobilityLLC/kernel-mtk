@@ -44,6 +44,8 @@ extern int g_lowbat_int_bottom;
 extern int g_low_battery_level;
 /*----- BATTERY_OC_PROTECT -----*/
 extern int g_battery_oc_level;
+/* for update VBIF28 by AUXADC */
+extern unsigned int g_pmic_pad_vbif28_vol;
 
 /*
  * PMIC EXTERN FUNCTIONS
