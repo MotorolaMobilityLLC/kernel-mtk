@@ -246,8 +246,8 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
 					   1, id, type, PSTORE_TYPE_CONSOLE, 0);
 		/* pr_notice("pstore: pstore_read bprz type: %d count %d id %llx\n",
 		* *type, cxt->bconsole_read_cnt, *id);
-		* id = 2;
 		*/
+		*id = 2;
 	}
 	if (!prz_ok(prz))
 		prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
