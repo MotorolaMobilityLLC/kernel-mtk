@@ -72,6 +72,14 @@ unsigned int hps_get_hvytsk(unsigned int cluster_id)
 		return hps_sys.cluster_info[cluster_id].hvyTsk_value;
 }
 
+unsigned int hps_get_bigtsk(unsigned int cluster_id)
+{
+	if (cluster_id >= hps_sys.cluster_num)
+		return 0xFFEE;
+	else
+		return hps_sys.cluster_info[cluster_id].bigTsk_value;
+}
+
 unsigned int hps_get_per_cpu_load(int cpu, int isReset)
 {
 	unsigned int ret;

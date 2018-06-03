@@ -32,7 +32,7 @@
 #include "mach/mtk_freqhopping.h"
 #endif
 
-#define CPU_BUCK_CTRL	(0)
+#define CPU_BUCK_CTRL	(1)
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
@@ -173,8 +173,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*3. Turn off ARM PLL*/
 				armpll_control(2, 0);
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
-					hps_power_off_vproc2(); /*4. Power off Vproc2*/
-					buck_enable(VSRAM_DVFS2, 0);/*5. Turn off VSram*/
+					/*4. Power off Vproc2*/
+					hps_power_off_vproc2();
+
+					/*5. Turn off VSram*/
+					buck_enable(VSRAM_DVFS2, 0);
 				}
 				break;
 			case 2:

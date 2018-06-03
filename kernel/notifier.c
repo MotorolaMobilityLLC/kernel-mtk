@@ -111,6 +111,7 @@ static int notifier_call_chain(struct notifier_block **nl,
 			aee_rr_rec_hotplug_cpu_event(val & 0xff);
 			aee_rr_rec_hotplug_cb_index(index & 0xff);
 			aee_rr_rec_hotplug_cb_fp((unsigned long)nb->notifier_call);
+			aee_rr_rec_hotplug_cb_times(ktime_to_us(ktime_get()));
 #endif
 			TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, (long)v, val & 0xff, index & 0xff,
 			(unsigned long)nb->notifier_call);
