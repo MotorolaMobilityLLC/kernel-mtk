@@ -424,6 +424,12 @@ struct typec_hba {
 	uint32_t payload[7];
 #endif
 #endif
+
+	int vsafe_5v;
+
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+	int (*charger_det_notify)(int);
+#endif
 };
 
 struct bit_mapping {
@@ -529,6 +535,7 @@ extern void typec_int_disable(struct typec_hba *hba, uint16_t msk0, uint16_t msk
 extern void typec_select_rp(struct typec_hba *hba, enum enum_typec_rp rp_val);
 extern int typec_enable(struct typec_hba *hba, int enable);
 extern int typec_set_mode(struct typec_hba *hba, enum enum_typec_role role, int param1, int param2);
+extern void typec_set_vsafe5v(struct typec_hba *hba, int val);
 
 extern struct typec_hba *get_hba(void);
 
