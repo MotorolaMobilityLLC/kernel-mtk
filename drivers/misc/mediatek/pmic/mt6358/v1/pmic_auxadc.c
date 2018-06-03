@@ -85,6 +85,98 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 	return 0;
 }
 
+
+static unsigned int g_DEGC;
+static unsigned int g_O_VTS;
+static unsigned int g_O_SLOPE_SIGN;
+static unsigned int g_O_SLOPE;
+static unsigned int g_CALI_FROM_EFUSE_EN;
+static unsigned int g_GAIN_AUX;
+static unsigned int g_SIGN_AUX;
+static unsigned int g_GAIN_BGRL;
+static unsigned int g_SIGN_BGRL;
+static unsigned int g_TEMP_L_CALI;
+static unsigned int g_GAIN_BGRH;
+static unsigned int g_SIGN_BGRH;
+static unsigned int g_TEMP_H_CALI;
+static unsigned int g_AUXCALI_EN;
+static unsigned int g_BGRCALI_EN;
+
+static int wk_aux_cali(int T_curr, int vbat_out)
+{
+	signed long long coeff_gain_aux = 0;
+
+	coeff_gain_aux = (317220 + 11960 * g_GAIN_AUX);
+	if (g_SIGN_AUX == 0)
+		vbat_out += vbat_out * (T_curr - 250) * coeff_gain_aux / 255 / 1000000000;
+	else
+		vbat_out -= vbat_out * (T_curr - 250) * coeff_gain_aux / 255 / 1000000000;
+	return vbat_out;
+}
+
+static int wk_bgr_cali(int T_curr, int vbat_out)
+{
+	signed long long coeff_gain_bgr = 0;
+	signed int T_L = -100 + g_TEMP_L_CALI * 25;
+	signed int T_H = 600 + g_TEMP_H_CALI * 25;
+
+	if (T_curr < T_L) {
+		coeff_gain_bgr = (127 + 8 * g_GAIN_BGRL);
+		if (g_SIGN_BGRL == 0)
+			vbat_out += vbat_out * (T_curr - T_L) * coeff_gain_bgr / 1000000 / 127;
+		else
+			vbat_out -= vbat_out * (T_curr - T_L) * coeff_gain_bgr / 1000000 / 127;
+	} else if (T_curr > T_H) {
+		coeff_gain_bgr = (127 + 8 * g_GAIN_BGRH);
+		if (g_SIGN_BGRH == 0)
+			vbat_out -= vbat_out * (T_curr - T_H) * coeff_gain_bgr / 1000000 / 127;
+		else
+			vbat_out += vbat_out * (T_curr - T_H) * coeff_gain_bgr / 1000000 / 127;
+	}
+
+	return vbat_out;
+}
+
+/* vbat_out unit is 0.1mV, vthr unit is mV */
+int wk_vbat_cali(int vbat_out, int vthr)
+{
+	int mV_diff = 0;
+	int T_curr = 0; /* unit: 0.1 degrees C*/
+	int vbat_out_old = vbat_out;
+
+	mV_diff = vthr - g_O_VTS * 1800 / 4096;
+	if (g_O_SLOPE_SIGN == 0)
+		T_curr = mV_diff * 10000 / (signed int)(1681 + g_O_SLOPE * 10);
+	else
+		T_curr = mV_diff * 10000 / (signed int)(1681 - g_O_SLOPE * 10);
+	T_curr = (g_DEGC * 10 / 2) - T_curr;
+	/*pr_info("%d\n", T_curr);*/
+
+	if (g_AUXCALI_EN == 1) {
+		vbat_out = wk_aux_cali(T_curr, vbat_out);
+		/*pr_info("vbat_out_auxcali = %d\n", vbat_out);*/
+	}
+
+	if (g_BGRCALI_EN == 1) {
+		vbat_out = wk_bgr_cali(T_curr, vbat_out);
+		/*pr_info("vbat_out_bgrcali = %d\n", vbat_out);*/
+	}
+
+	if (abs(vbat_out - vbat_out_old) > 1000) {
+		pr_notice("vbat_out_old=%d, vthr=%d, T_curr=%d, vbat_out=%d\n",
+			vbat_out_old, vthr, T_curr, vbat_out);
+		pr_notice("%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+			g_DEGC, g_O_VTS, g_O_SLOPE_SIGN, g_O_SLOPE,
+			g_SIGN_AUX, g_SIGN_BGRL, g_SIGN_BGRH,
+			g_AUXCALI_EN, g_BGRCALI_EN,
+			g_GAIN_AUX, g_GAIN_BGRL, g_GAIN_BGRH,
+			g_TEMP_L_CALI, g_TEMP_H_CALI);
+		aee_kernel_warning("PMIC AUXADC CALI", "VBAT CALI");
+	}
+
+	return vbat_out;
+}
+
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
 	pmic_config_interface(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX_ADDR, en,
@@ -532,6 +624,7 @@ int mt6358_get_auxadc_value(u8 channel)
 {
 	int bat_cur = 0, is_charging = 0;
 	signed int adc_result = 0, reg_val = 0;
+	signed int vbat_cali = 0, vthr = 0;
 	struct pmic_auxadc_channel_new *auxadc_channel;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
@@ -576,6 +669,13 @@ int mt6358_get_auxadc_value(u8 channel)
 			pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, auxadc_channel->ch_num,
 				bat_cur, reg_val, adc_result);
+		} else if (channel == AUXADC_LIST_BATADC) {
+			vthr = pmic_get_auxadc_value(AUXADC_LIST_CHIP_TEMP);
+			vbat_cali = DIV_ROUND_CLOSEST(wk_vbat_cali(adc_result * 10, vthr), 10);
+			pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, old_vbat = %d, vthr = %d, adc_result = %d\n",
+				__func__, channel, auxadc_channel->ch_num,
+				reg_val, adc_result, vthr, vbat_cali);
+			adc_result = vbat_cali;
 		} else {
 			pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, auxadc_channel->ch_num,
@@ -650,6 +750,54 @@ static void mts_thread_init(void)
 }
 #endif
 
+void mt6358_adc_cali_init(void)
+{
+	unsigned int efuse = 0;
+
+	if (pmic_get_register_value(PMIC_AUXADC_EFUSE_ADC_CALI_EN) == 1) {
+		g_DEGC = pmic_get_register_value(PMIC_AUXADC_EFUSE_DEGC_CALI);
+		if (g_DEGC < 38 || g_DEGC > 60)
+			g_DEGC = 53;
+		g_O_VTS = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_VTS);
+		g_O_SLOPE_SIGN = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE_SIGN);
+		g_O_SLOPE = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE);
+	} else {
+		g_DEGC = 50;
+		g_O_VTS = 1600;
+	}
+
+	efuse = pmic_Read_Efuse_HPOffset(39);
+	g_CALI_FROM_EFUSE_EN = (efuse >> 2) & 0x1;
+	if (g_CALI_FROM_EFUSE_EN == 1) {
+		g_SIGN_AUX = (efuse >> 3) & 0x1;
+		g_AUXCALI_EN = (efuse >> 6) & 0x1;
+		g_GAIN_AUX = (efuse >> 8) & 0xFF;
+	} else {
+		g_SIGN_AUX = 0;
+		g_AUXCALI_EN = 1;
+		g_GAIN_AUX = 106;
+	}
+	g_SIGN_BGRL = (efuse >> 4) & 0x1;
+	g_SIGN_BGRH = (efuse >> 5) & 0x1;
+	g_BGRCALI_EN = (efuse >> 7) & 0x1;
+
+	efuse = pmic_Read_Efuse_HPOffset(40);
+	g_GAIN_BGRL = (efuse >> 9) & 0x7F;
+	efuse = pmic_Read_Efuse_HPOffset(41);
+	g_GAIN_BGRH = (efuse >> 9) & 0x7F;
+
+	efuse = pmic_Read_Efuse_HPOffset(42);
+	g_TEMP_L_CALI = (efuse >> 10) & 0x7;
+	g_TEMP_H_CALI = (efuse >> 13) & 0x7;
+
+	pr_info("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+		g_DEGC, g_O_VTS, g_O_SLOPE_SIGN, g_O_SLOPE,
+		g_CALI_FROM_EFUSE_EN, g_SIGN_AUX, g_SIGN_BGRL, g_SIGN_BGRH,
+		g_AUXCALI_EN, g_BGRCALI_EN,
+		g_GAIN_AUX, g_GAIN_BGRL, g_GAIN_BGRH,
+		g_TEMP_L_CALI, g_TEMP_H_CALI);
+}
+
 void mt6358_auxadc_init(void)
 {
 	HKLOG("%s\n", __func__);
@@ -676,5 +824,7 @@ void mt6358_auxadc_init(void)
 	adc_dbg_init();
 	pr_info("****[%s] DONE, BAT TEMP = %d, MTS_ADC = 0x%x\n",
 		__func__, battmp, mts_adc);
+
+	mt6358_adc_cali_init();
 }
 EXPORT_SYMBOL(mt6358_auxadc_init);
