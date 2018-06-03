@@ -58,7 +58,6 @@
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
-#include "mt6797_hdmi.h"
 
 /* information about */
 
