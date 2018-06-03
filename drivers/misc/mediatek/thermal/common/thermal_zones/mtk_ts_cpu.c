@@ -161,8 +161,6 @@ static bool talking_flag;
 static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static int temperature_switch;
-
 #if defined(TZCPU_SET_INIT_CFG)
 static int num_trip = TZCPU_INITCFG_NUM_TRIPS;
 #else
@@ -1039,46 +1037,6 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 	}
 
 	tscpu_dprintk("tscpu_talking_flag_write bad argument\n");
-	return -EINVAL;
-}
-
-static int tscpu_set_temperature_read(struct seq_file *m, void *v)
-{
-
-
-	seq_printf(m, "%d\n", temperature_switch);
-
-	return 0;
-}
-
-
-static ssize_t tscpu_set_temperature_write(
-struct file *file, const char __user *buffer, size_t count, loff_t *data)
-{
-	char desc[32];
-	int lv_tempe_switch;
-	int len = 0;
-
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-
-	desc[len] = '\0';
-
-	tscpu_dprintk("tscpu_set_temperature_write\n");
-
-	if (kstrtoint(desc, 10, &lv_tempe_switch) == 0) {
-		temperature_switch = lv_tempe_switch;
-
-		tscpu_config_all_tc_hw_protect(temperature_switch, tc_mid_trip);
-
-		tscpu_dprintk(
-			"tscpu_set_temperature_write temperature_switch=%d\n",
-			temperature_switch);
-
-		return count;
-	}
-	tscpu_warn("tscpu_set_temperature_write bad argument\n");
 	return -EINVAL;
 }
 
@@ -2140,21 +2098,6 @@ static const struct file_operations mtktscpu_read_temperature_fops = {
 	.release = single_release,
 };
 
-
-static int tscpu_set_temperature_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, tscpu_set_temperature_read, NULL);
-}
-
-static const struct file_operations mtktscpu_set_temperature_fops = {
-	.owner = THIS_MODULE,
-	.open = tscpu_set_temperature_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = tscpu_set_temperature_write,
-	.release = single_release,
-};
-
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 static int tscpu_pmic_current_limit_open(struct inode *inode, struct file *file)
 {
@@ -2757,9 +2700,6 @@ static void tscpu_create_fs(void)
 		entry = proc_create("tzcpu_read_temperature", 0444,
 					mtktscpu_dir,
 					&mtktscpu_read_temperature_fops);
-
-		entry = proc_create("tzcpu_set_temperature", 0644, mtktscpu_dir,
-						&mtktscpu_set_temperature_fops);
 
 		entry = proc_create("tzcpu_talking_flag", 0644, mtktscpu_dir,
 						&mtktscpu_talking_flag_fops);

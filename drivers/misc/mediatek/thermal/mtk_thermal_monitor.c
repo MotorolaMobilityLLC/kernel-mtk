@@ -199,119 +199,6 @@ static kgid_t gid = KGIDT_INIT(1000);
 /* ************************************ */
 /* Thermal Monitor API */
 /* ************************************ */
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-#include <mach/mt_gpt.h>
-#include <mt_sleep.h>
-#include <linux/wakelock.h>
-
-/* extern int force_get_tbat(void); */
-
-static struct wake_lock mtm_wake_lock;
-static unsigned int gpt_remaining_cnt;
-static int last_batt_raw_temp;
-
-static int mtk_thermal_monitor_get_battery_timeout_time(void)
-{
-	if (tz_last_values[MTK_THERMAL_SENSOR_BATTERY] != NULL) {
-		/* *tz_last_values[MTK_THERMAL_SENSOR_BATTERY]; */
-		int batt_temp = last_batt_raw_temp;
-
-		if (batt_temp <= 25000)
-			return 330;	/* max 330 */
-		else if (batt_temp <= 35000 && batt_temp > 25000)
-			return 300;
-		else if (batt_temp <= 45000 && batt_temp > 35000)
-			return 150;	/* 2.5 min */
-		else if (batt_temp <= 50000 && batt_temp > 45000)
-			return 60;	/* 1 min */
-		else
-			return 30;	/* 0.5 min */
-	} else {
-		return -1;	/* no battery temperature, what to protect? */
-	}
-}
-
-static int mtk_thermal_monitor_suspend
-(struct platform_device *dev, pm_message_t state)
-{
-	/* check if phone call on going... */
-	if (g_mtm_phone_call_ongoing) {
-		/* if yes, based on battery temperature to setup a GPT timer */
-		int timeout = mtk_thermal_monitor_get_battery_timeout_time();
-
-		if (timeout > 0) {
-			/* restart a one-shot GPT timer // max 5.5 min */
-			if (gpt_remaining_cnt > 0 && gpt_remaining_cnt
-				<= (timeout * 13000000))
-				gpt_set_cmp(GPT5, gpt_remaining_cnt);
-			else
-				/* compare unit is (1/13M) s */
-				gpt_set_cmp(GPT5, timeout * 13000000);
-
-			start_gpt(GPT5);
-
-			THRML_ERROR_LOG(
-				"%s timeout: %d, gpt_remaining_cnt: %u\n",
-				__func__, timeout, gpt_remaining_cnt);
-		}
-		/* make GPT able to wake up AP */
-		slp_set_wakesrc(WAKE_SRC_CFG_KEY | WAKE_SRC_GPT, true, false);
-	} else {
-		THRML_LOG("%s disable GPT wakes AP.\n", __func__);
-		/* make GPT unable to wake up AP */
-		slp_set_wakesrc(WAKE_SRC_CFG_KEY | WAKE_SRC_GPT, false, false);
-	}
-
-	return 0;
-}
-
-static int mtk_thermal_monitor_resume(struct platform_device *dev)
-{
-	/* take wake lock */
-	if (tz_last_values[MTK_THERMAL_SENSOR_BATTERY] != NULL) {
-		/* check if phone call on going...if yes,
-		 *we need to confirm battery temp. if not, we don't need this.
-		 */
-		if (g_mtm_phone_call_ongoing) {
-			unsigned int GPT5_cmp;
-			unsigned int GPT5_cnt;
-			int gpt_counting;
-
-			gpt_counting = gpt_is_counting(GPT5);
-			gpt_get_cmp(GPT5, &GPT5_cmp);
-			gpt_get_cnt(GPT5, &GPT5_cnt);
-			gpt_remaining_cnt = GPT5_cmp - GPT5_cnt;
-
-			/* If no wake lock taken and gpt does timeout! */
-			if (!wake_lock_active(&mtm_wake_lock)
-			&& !gpt_counting) {
-				THRML_ERROR_LOG(
-				"%s wake_lock() counting=%d, cmp=%u, cnt=%u",
-				__func__, gpt_counting, GPT5_cmp, GPT5_cnt);
-				wake_lock(&mtm_wake_lock);
-			}
-		}
-	}
-	/* cancel my own GPT timer, ok to do it w/o pairing */
-	stop_gpt(GPT5);
-
-	/* release wake lock until no problem... */
-
-	return 0;
-}
-
-static struct platform_driver mtk_thermal_monitor_driver = {
-	.remove = NULL,
-	.shutdown = NULL,
-	.probe = NULL,
-	.suspend = mtk_thermal_monitor_suspend,
-	.resume = mtk_thermal_monitor_resume,
-	.driver = {
-		.name = "mtk-therm-mon",
-	},
-};
-#endif
-
 #if MTK_THERMAL_MONITOR_MEASURE_GET_TEMP_OVERHEAD
 static long int _get_current_time_us(void)
 {
@@ -1393,10 +1280,6 @@ static int __init mtkthermal_init(void)
 	if (proc_tz_dir_entry == NULL)
 		THRML_ERROR_LOG("%s mkdir /proc/mtktz failed\n", __func__);
 
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-	wake_lock_init(&mtm_wake_lock, WAKE_LOCK_SUSPEND, "alarm");
-#endif
-
 	INIT_DELAYED_WORK(&_mtm_sysinfo_poll_queue, _mtm_update_sysinfo);
 	_mtm_update_sysinfo(NULL);
 
@@ -1407,18 +1290,7 @@ static int __init mtkthermal_init(void)
 static void __exit mtkthermal_exit(void)
 {
 	THRML_LOG("%s\n", __func__);
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-	wake_lock_destroy(&mtm_wake_lock);
-#endif
 }
-
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-static int __init mtkthermal_late_init(void)
-{
-	THRML_LOG("%s\n", __func__);
-	return platform_driver_register(&mtk_thermal_monitor_driver);
-}
-#endif
 
 /* ************************************
  * thermal_zone_device_ops Wrapper
@@ -1588,35 +1460,6 @@ static int mtk_thermal_wrapper_get_temp
 		ret = ops->get_temp(thermal, &raw_temp);
 
 	nTemperature = (int)raw_temp;	/* /< Long cast to INT. */
-
-
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-	/* if batt temp raw data < 60C, release wake lock */
-	/* batt TZ is registered */
-	if ((tz_last_values[MTK_THERMAL_SENSOR_BATTERY] != NULL) &&
-		/* get batt temp this time */
-		(&(thermal->temperature)
-			== tz_last_values[MTK_THERMAL_SENSOR_BATTERY])) {
-
-		if (wake_lock_active(&mtm_wake_lock)) {
-			nTemperature = mtk_thermal_force_get_batt_temp() * 1000;
-			raw_temp = nTemperature;
-			THRML_ERROR_LOG(
-				"[.get_temp] tz: %s wake_lock_active() batt temp=%d\n",
-				thermal->type, nTemperature);
-		}
-
-		if (nTemperature < 59000 && wake_lock_active(&mtm_wake_lock)) {
-			/* unlock when only batt temp below 60C */
-			THRML_ERROR_LOG("[.get_temp] tz: %s wake_unlock()\n",
-								thermal->type);
-
-			wake_unlock(&mtm_wake_lock);
-		}
-
-		last_batt_raw_temp = nTemperature;
-	}
-#endif
 
 	if (ret == 0) {
 		*temperature =
@@ -2383,7 +2226,3 @@ EXPORT_SYMBOL(mtk_thermal_get_proc_drv_therm_dir_entry);
 
 module_init(mtkthermal_init);
 module_exit(mtkthermal_exit);
-
-#if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
-late_initcall(mtkthermal_late_init);
-#endif
