@@ -794,15 +794,8 @@ HPS_END:
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				     str_target);
 			else {
-				unsigned long clus_util[3];
 				char str1[256];
 				char str2[256];
-
-				/* sched-assist hotplug: for debug */
-				sched_get_cluster_util(0, &clus_util[0], NULL);
-				sched_get_cluster_util(1, &clus_util[1], NULL);
-				sched_get_cluster_util(2, &clus_util[2], NULL);
-
 
 				snprintf(str1, sizeof(str1),
 	"(0x%X)%s action end (%u)(%u)(%u) %s %s[%u](%u) %s %s%s (%u)(%u)(%u)(%u)",
@@ -816,7 +809,7 @@ HPS_END:
 						hps_sys.tlp_avg, hps_sys.rush_cnt);
 
 				snprintf(str2, sizeof(str2),
-	"[%u,%u|%u,%u|%u,%u][%u,%u,%u] [%u,%u,%u] [%u,%u,%u] [%lu,%lu,%lu] %s",
+	"[%u,%u|%u,%u|%u,%u][%u,%u,%u] [%u,%u,%u] [%u,%u,%u] [%u,%u,%u] %s",
 						hps_sys.cluster_info[0].up_threshold,
 						hps_sys.cluster_info[0].down_threshold,
 						hps_sys.cluster_info[1].up_threshold,
@@ -832,9 +825,10 @@ HPS_END:
 						hps_sys.cluster_info[0].abs_load,
 						hps_sys.cluster_info[1].abs_load,
 						hps_sys.cluster_info[2].abs_load,
-						clus_util[0],
-						clus_util[1],
-						clus_util[2],
+						/* sched-assist hotplug: for debug */
+						hps_sys.cluster_info[0].sched_load,
+						hps_sys.cluster_info[1].sched_load,
+						hps_sys.cluster_info[2].sched_load,
 						str_target);
 
 				hps_warn("%s%s\n", str1, str2);
