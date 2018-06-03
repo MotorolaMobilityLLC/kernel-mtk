@@ -5,13 +5,17 @@
  *              http://www.mediatek.com
  *
  */
+
+#include <generated/autoconf.h>
 #include <dt-bindings/clock/mt6763-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6763-msdc.h>
 /* mt6763-pinfunc.h will be removed after DCT auto gen check-in */
 #include <dt-bindings/pinctrl/mt6763-pinfunc.h>
-#include <generated/autoconf.h>
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 
 / {
 	model = "mt6763";
