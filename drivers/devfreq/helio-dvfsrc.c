@@ -260,6 +260,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	int ret = 0;
 	int level = 0;
 	int opp = 0;
+	int last_cnt = 0;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
 
@@ -271,11 +272,18 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 	spm_check_status_before_dvfs();
 
-	ret = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, DVFSRC_TIMEOUT);
-	if (ret) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		pr_err("Failed to get response from dvfsrc\n");
-		goto out;
+	if (type == PM_QOS_EMI_OPP ||
+	    type == PM_QOS_VCORE_OPP ||
+	    type == PM_QOS_VCORE_DVFS_FIXED_OPP) {
+		last_cnt = dvfsrc_read(dvfsrc, DVFSRC_LAST);
+		ret = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, DVFSRC_TIMEOUT);
+		if (ret) {
+			pr_info("[%s] wait no idle, class: %d, data: 0x%x rc_level: 0x%x (last: %d -> %d)\n",
+			__func__, type, data, dvfsrc_read(dvfsrc, DVFSRC_LEVEL),
+			last_cnt, dvfsrc_read(dvfsrc, DVFSRC_LAST));
+			/* aee_kernel_warning(NULL); */
+			/* goto out; */
+		}
 	}
 
 	switch (type) {
@@ -320,8 +328,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 				SPM_DVFS_TIMEOUT);
 #endif
 		if (ret < 0) {
+			pr_info("[%s] wair not complete, class: %d, data: 0x%x\n", __func__, type, data);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+			aee_kernel_warning("VCOREFS", "emi_opp cannot be done.");
 		}
 
 		break;
@@ -348,8 +357,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 				SPM_DVFS_TIMEOUT);
 #endif
 		if (ret < 0) {
+			pr_info("[%s] not complete, class: %d, data: 0x%x\n", __func__, type, data);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+			aee_kernel_warning("VCOREFS", "vcore_opp cannot be done.");
 		}
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
@@ -378,6 +388,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 					SPM_DVFS_TIMEOUT);
 #endif
 			if (ret < 0) {
+				pr_info("[%s] not complete, class: %d, data: 0x%x\n", __func__, type, data);
 				spm_vcorefs_dump_dvfs_regs(NULL);
 				aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
 			}
@@ -387,9 +398,6 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	default:
 		break;
 	}
-
-	if (ret < 0)
-		pr_err("Failed to adjust dvfsrc level\n");
 
 out:
 	mutex_unlock(&dvfsrc->devfreq->lock);
