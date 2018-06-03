@@ -204,9 +204,6 @@ void *KVA_VDEC_MISC_BASE, *KVA_VDEC_VLD_BASE;
 void *KVA_VDEC_BASE, *KVA_VDEC_GCON_BASE;
 unsigned int VENC_IRQ_ID, VDEC_IRQ_ID;
 
-extern void __attribute__((weak)) met_mmsys_tag(const char *tag,
-					unsigned int value);
-
 /* #define KS_POWER_WORKAROUND */
 
 /* extern unsigned long pmem_user_v2p_video(unsigned long va); */
@@ -739,9 +736,6 @@ void enc_isr(void)
 
 static irqreturn_t video_intr_dlr(int irq, void *dev_id)
 {
-	if (met_mmsys_tag)
-		met_mmsys_tag("VDEC", CodecHWLock.eDriverType | 0x100);
-
 	dec_isr();
 	return IRQ_HANDLED;
 }
@@ -1208,7 +1202,11 @@ static long vcodec_lockhw(unsigned long arg)
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC) {
-		return vcodec_lockhw_vdec(&rHWLock, &bLockedHW);
+		ret =  vcodec_lockhw_vdec(&rHWLock, &bLockedHW);
+		if (ret != 0) {
+			/* If there is error, return immediately */
+			return ret;
+		}
 	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 			(rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC)) {
 		ret = vcodec_lockhw_venc(&rHWLock, &bLockedHW);
