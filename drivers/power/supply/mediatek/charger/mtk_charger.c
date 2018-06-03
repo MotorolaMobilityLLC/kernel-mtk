@@ -1171,6 +1171,8 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 	} else {
 		if (info->chr_type == CHARGER_UNKNOWN)
 			mtk_charger_plug_in(info, chr_type);
+		else
+			info->chr_type = chr_type;
 	}
 
 	if (chr_type == CHARGER_UNKNOWN)
