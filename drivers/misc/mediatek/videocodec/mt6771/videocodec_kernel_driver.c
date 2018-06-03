@@ -887,86 +887,6 @@ static irqreturn_t video_intr_dlr2(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static long vcodec_alloc_non_cache_buffer(unsigned long arg)
-{
-	VAL_UINT8_T *user_data_addr;
-	VAL_MEMORY_T rTempMem;
-	VAL_LONG_T ret;
-
-	pr_debug("VCODEC_ALLOC_NON_CACHE_BUFFER + tid = %d\n", current->pid);
-
-	user_data_addr = (VAL_UINT8_T *)arg;
-	ret = copy_from_user(&rTempMem, user_data_addr, sizeof(VAL_MEMORY_T));
-	if (ret) {
-		pr_debug("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
-		return -EFAULT;
-	}
-
-	rTempMem.u4ReservedSize /*kernel va*/ =
-		(VAL_ULONG_T)dma_alloc_coherent(0, rTempMem.u4MemSize, (dma_addr_t *)&rTempMem.pvMemPa, GFP_KERNEL);
-	if ((rTempMem.u4ReservedSize == 0) || (rTempMem.pvMemPa == 0)) {
-		pr_debug("[ERROR] dma_alloc_coherent fail in VCODEC_ALLOC_NON_CACHE_BUFFER\n");
-		  return -EFAULT;
-	}
-
-	MODULE_MFV_LOGD("[VCODEC] kernel va = 0x%lx, kernel pa = 0x%lx, memory size = %lu\n",
-		 (VAL_ULONG_T)rTempMem.u4ReservedSize,
-		 (VAL_ULONG_T)rTempMem.pvMemPa,
-		 (VAL_ULONG_T)rTempMem.u4MemSize);
-
-	/* mutex_lock(&NonCacheMemoryListLock); */
-	/* Add_NonCacheMemoryList(rTempMem.u4ReservedSize, (VAL_UINT32_T)rTempMem.pvMemPa,
-	 *			    (VAL_UINT32_T)rTempMem.u4MemSize, 0, 0);
-	 */
-	/* mutex_unlock(&NonCacheMemoryListLock); */
-
-	ret = copy_to_user(user_data_addr, &rTempMem, sizeof(VAL_MEMORY_T));
-	if (ret) {
-		pr_debug("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
-		return -EFAULT;
-	}
-
-	pr_debug("VCODEC_ALLOC_NON_CACHE_BUFFER - tid = %d\n", current->pid);
-
-	return 0;
-}
-
-static long vcodec_free_non_cache_buffer(unsigned long arg)
-{
-	VAL_UINT8_T *user_data_addr;
-	VAL_MEMORY_T rTempMem;
-	VAL_LONG_T ret;
-
-	pr_debug("VCODEC_FREE_NON_CACHE_BUFFER + tid = %d\n", current->pid);
-
-	user_data_addr = (VAL_UINT8_T *)arg;
-	ret = copy_from_user(&rTempMem, user_data_addr, sizeof(VAL_MEMORY_T));
-	if (ret) {
-		pr_debug("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
-		return -EFAULT;
-	}
-
-	dma_free_coherent(0, rTempMem.u4MemSize, (void *)rTempMem.u4ReservedSize,
-							(dma_addr_t)(VAL_ULONG_T)rTempMem.pvMemPa);
-
-	/* mutex_lock(&NonCacheMemoryListLock); */
-	/* Free_NonCacheMemoryList(rTempMem.u4ReservedSize, (VAL_UINT32_T)rTempMem.pvMemPa); */
-	/* mutex_unlock(&NonCacheMemoryListLock); */
-
-	rTempMem.u4ReservedSize = 0;
-	rTempMem.pvMemPa = NULL;
-
-	ret = copy_to_user(user_data_addr, &rTempMem, sizeof(VAL_MEMORY_T));
-	if (ret) {
-		pr_debug("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_to_user failed: %lu\n", ret);
-		return -EFAULT;
-	}
-
-	pr_debug("VCODEC_FREE_NON_CACHE_BUFFER - tid = %d\n", current->pid);
-
-	return 0;
-}
-
 static long vcodec_lockhw_dec_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseDecHW)
 {
 	pr_debug("[ERROR] VCODEC_LOCKHW, DecHWLockEvent TimeOut, CurrentTID = %d\n", current->pid);
@@ -1760,21 +1680,13 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_ALLOC_NON_CACHE_BUFFER:
 	{
-		ret = vcodec_alloc_non_cache_buffer(arg);
-		if (ret) {
-			pr_debug("[ERROR] VCODEC_ALLOC_NON_CACHE_BUFFER failed! %lu\n", ret);
-			return ret;
-		}
+		/* MODULE_MFV_LOGE("VCODEC_ALLOC_NON_CACHE_BUFFER [EMPTY] + tid = %d\n", current->pid); */
 	}
 	break;
 
 	case VCODEC_FREE_NON_CACHE_BUFFER:
 	{
-		ret = vcodec_free_non_cache_buffer(arg);
-		if (ret) {
-			pr_debug("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER failed! %lu\n", ret);
-			return ret;
-		}
+		/* MODULE_MFV_LOGE("VCODEC_FREE_NON_CACHE_BUFFER [EMPTY] + tid = %d\n", current->pid); */
 	}
 	break;
 
