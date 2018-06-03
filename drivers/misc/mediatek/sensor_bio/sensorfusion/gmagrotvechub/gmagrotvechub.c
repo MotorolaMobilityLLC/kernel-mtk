@@ -87,12 +87,12 @@ static int gmagrotvec_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == FLUSH_ACTION)
-		err = gmrv_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = gmrv_data_report(event->magnetic_t.x, event->magnetic_t.y, event->magnetic_t.z,
 			event->magnetic_t.scalar, event->magnetic_t.status,
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == FLUSH_ACTION)
+		err = gmrv_flush_report();
 
 	return err;
 }

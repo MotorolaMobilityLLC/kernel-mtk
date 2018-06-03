@@ -150,6 +150,8 @@ struct gyro_context {
 extern int gyro_driver_add(struct gyro_init_info *obj);
 extern int gyro_data_report(struct gyro_data *data);
 extern int gyro_bias_report(struct gyro_data *data);
+extern int gyro_cali_report(struct gyro_data *data);
+extern int gyro_temp_report(int32_t *temp);
 extern int gyro_flush_report(void);
 extern int gyro_register_control_path(struct gyro_control_path *ctl);
 extern int gyro_register_data_path(struct gyro_data_path *data);

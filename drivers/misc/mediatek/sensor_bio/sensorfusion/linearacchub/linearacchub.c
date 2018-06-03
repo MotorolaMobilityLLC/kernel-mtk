@@ -97,11 +97,11 @@ static int linearacc_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == FLUSH_ACTION)
-		err = la_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = la_data_report(event->accelerometer_t.x, event->accelerometer_t.y, event->accelerometer_t.z,
 			event->accelerometer_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == FLUSH_ACTION)
+		err = la_flush_report();
 
 	return err;
 }

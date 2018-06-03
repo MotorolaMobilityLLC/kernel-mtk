@@ -298,10 +298,10 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
 	data.reserved[0] = event->reserve[0];
 
-	if (event->flush_action == FLUSH_ACTION)
-		err = mag_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = mag_data_report(&data);
+	else if (event->flush_action == FLUSH_ACTION)
+		err = mag_flush_report();
 	else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->magnetic_t.x_bias;
 		data.y = event->magnetic_t.y_bias;

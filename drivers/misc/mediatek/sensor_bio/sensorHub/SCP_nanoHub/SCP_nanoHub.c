@@ -976,7 +976,8 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				else if (raw_enable && data_t->flush_action == FLUSH_ACTION) {
 					if (atomic_dec_if_positive(&mSensorState[sensor_type].flushCnt) >= 0)
 						err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-				} else if (data_t->flush_action == BIAS_ACTION)
+				} else if (data_t->flush_action == BIAS_ACTION || data_t->flush_action == CALI_ACTION
+					|| data_t->flush_action == TEMP_ACTION)
 					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 			}
 		}
