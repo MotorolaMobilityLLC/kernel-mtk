@@ -205,8 +205,8 @@ static ssize_t atf_log_write(struct file *file,
 	if (!strncmp((const char *) GENERATE_ATF_CRASH_STRING_PATTERN,
 				(const char *) kernel_buf,
 				(__kernel_size_t) 8)) {
-		mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP,
-			0, 0, GENERATE_ATF_CRASH_REPORT, 0);
+		mt_secure_call(MTK_SIP_KERNEL_ATF_DEBUG,
+			GENERATE_ATF_CRASH_REPORT, 0, 0, 0);
 
 	} else {
 		wake_up_interruptible(&atf_log_wq);
