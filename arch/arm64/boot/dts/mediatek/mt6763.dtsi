@@ -1296,8 +1296,17 @@
 
 	btif@1100c000 {
 		compatible = "mediatek,btif";
-		reg = <0 0x1100c000 0 0x1000>;
-		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+		#address-cells = <2>;
+		#size-cells = <2>;
+		reg = <0 0x1100c000 0 0x1000>,	/*btif base*/
+		    <0 0x11000900 0 0x80>,	/*btif tx dma base*/
+		    <0 0x11000980 0 0x80>;	/*btif rx dma base*/
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,	/*btif irq*/
+			   <GIC_SPI 95 IRQ_TYPE_LEVEL_LOW>,	/*btif tx dma irq*/
+			   <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>;	/*btif rx dma irq*/
+		clocks = <&infracfg_ao INFRACFG_AO_BTIF_CG>,	/*btif clock*/
+		       <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;		/*ap dma clock*/
+		clock-names = "btifc","apdmac";
 	};
 
 	irtx@1100d000 {
