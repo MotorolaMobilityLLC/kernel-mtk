@@ -108,11 +108,11 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.margin = 6,
 	.min_shutter = 6,
 	.max_frame_length = 0x7FFF,
-	#if per_frame
+#if per_frame
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
 	.ae_ispGain_delay_frame = 2,
-	#else
+#else
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 1,
 	.ae_ispGain_delay_frame = 2,
@@ -145,6 +145,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x51, 0x50, 0x40, 0xff},
+	.i2c_speed = 400,
 };
 
 static struct imgsensor_struct imgsensor = {
@@ -162,7 +163,6 @@ static struct imgsensor_struct imgsensor = {
 	.ihdr_en = 0,
 	.i2c_write_id = 0x40,
 };
-
 
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
@@ -692,10 +692,11 @@ write_cmos_sensor(0x005c, 0x0102);
 write_cmos_sensor(0x0a1a, 0x0800);
 write_cmos_sensor(0x004e, 0x0100);
 }
-#if 1
+
+
 static void preview_setting(void)
 {
-write_cmos_sensor(0x0a00, 0x0000); // stream off
+//write_cmos_sensor(0x0a00, 0x0000); // stream off
 write_cmos_sensor(0x0b0a, 0x8259);
 write_cmos_sensor(0x0f30, 0x6e25);
 write_cmos_sensor(0x0f32, 0x7167);
@@ -737,13 +738,13 @@ write_cmos_sensor(0x0918, 0x0304);
 write_cmos_sensor(0x091a, 0x0709);
 write_cmos_sensor(0x091c, 0x0e06);
 write_cmos_sensor(0x091e, 0x0300);
-write_cmos_sensor(0x0a00, 0x0100); // stream on
+//write_cmos_sensor(0x0a00, 0x0100); // stream on
 }
-#endif
+
 
 static void capture_setting(kal_uint16 currefps)
 {
-	write_cmos_sensor(0x0a00, 0x0000); // stream off
+	//write_cmos_sensor(0x0a00, 0x0000); // stream off
 	if (currefps == 300)	{
 		LOG_INF("capture_setting fps = 300\n");
 		write_cmos_sensor(0x0b0a, 0x8252);
@@ -845,7 +846,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x091c, 0x0f09);
 		write_cmos_sensor(0x091e, 0x0a00);
 	}
-	write_cmos_sensor(0x0a00, 0x0100); // stream on
+	//write_cmos_sensor(0x0a00, 0x0100); // stream on
 }
 
 static void hs_video_setting(void)
@@ -865,7 +866,7 @@ static void hs_video_setting(void)
 	//BLC offset	  : 64code
 	////////////////////////////////////////////////
 
-	write_cmos_sensor(0x0a00, 0x0000);
+	//write_cmos_sensor(0x0a00, 0x0000);
 	write_cmos_sensor(0x0b0a, 0x8252);
 	write_cmos_sensor(0x0f30, 0x6e25);
 	write_cmos_sensor(0x0f32, 0x7267);
@@ -907,7 +908,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x091a, 0x0406);
 	write_cmos_sensor(0x091c, 0x0903);
 	write_cmos_sensor(0x091e, 0x0300);
-	write_cmos_sensor(0x0a00, 0x0100);
+	//write_cmos_sensor(0x0a00, 0x0100);
 }
 
 static void slim_video_setting(void)
@@ -927,7 +928,7 @@ static void slim_video_setting(void)
 	//BLC offset	  : 64code
 	////////////////////////////////////////////////
 
-	write_cmos_sensor(0x0a00, 0x0000);
+	//write_cmos_sensor(0x0a00, 0x0000);
 	write_cmos_sensor(0x0b0a, 0x8252);
 	write_cmos_sensor(0x0f30, 0x6e25);
 	write_cmos_sensor(0x0f32, 0x7167);
@@ -969,10 +970,8 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x091c, 0x0e06);
 	write_cmos_sensor(0x091a, 0x0709);
 	write_cmos_sensor(0x091e, 0x0300);
-	write_cmos_sensor(0x0a00, 0x0100);
+	//write_cmos_sensor(0x0a00, 0x0100);
 }
-
-#define HI556FRONT_I2CBUS    (4)
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -1325,7 +1324,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	    sensor_info->SensorGrabStartY = imgsensor_info.cap.starty;
 
 	    sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
-				imgsensor_info.cap.mipi_data_lp2hs_settle_dc;
+			imgsensor_info.cap.mipi_data_lp2hs_settle_dc;
 	break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 	    sensor_info->SensorGrabStartX = imgsensor_info.normal_video.startx;
@@ -1351,7 +1350,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	    sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
 
 	    sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount =
-				imgsensor_info.pre.mipi_data_lp2hs_settle_dc;
+			imgsensor_info.pre.mipi_data_lp2hs_settle_dc;
 	break;
 	}
 
@@ -1599,6 +1598,18 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+
+	if (enable)
+		write_cmos_sensor(0x0a00, 0x0100); // stream on
+	else
+		write_cmos_sensor(0x0a00, 0x0000); // stream off
+
+	mdelay(10);
+	return ERROR_NONE;
+}
 
 static kal_uint32 feature_control(
 			MSDK_SENSOR_FEATURE_ENUM feature_id,
@@ -1608,6 +1619,7 @@ static kal_uint32 feature_control(
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
+	INT32 *feature_return_para_i32 = (INT32 *) feature_para;
 	unsigned long long *feature_data =
 		(unsigned long long *) feature_para;
 
@@ -1735,6 +1747,21 @@ static kal_uint32 feature_control(
 	    ihdr_write_shutter_gain((UINT16)*feature_data,
 			(UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
 	#endif
+	break;
+	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
+		pr_info("GET_TEMPERATURE_VALUE is not support\n");
+		*feature_return_para_i32 = 0;
+		*feature_para_len = 4;
+	break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		pr_debug("ET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+	break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		pr_debug("STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
 	break;
 	default:
 	break;

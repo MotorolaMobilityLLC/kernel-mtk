@@ -221,7 +221,7 @@
 #define S5K8AAYX_MIPI_SENSOR_ID                 0x08aa
 #define S5K8AAYX_SENSOR_ID                      0x08aa
 #define S5K5E8YX_SENSOR_ID                      0x5e80
-#define S5K5E8YXREAR2_SENSOR_ID                 0x5e80
+#define S5K5E8YXREAR2_SENSOR_ID                 0x5e81
 /*HI*/
 #define HI841_SENSOR_ID                         0x0841
 #define HI707_SENSOR_ID                         0x00b8

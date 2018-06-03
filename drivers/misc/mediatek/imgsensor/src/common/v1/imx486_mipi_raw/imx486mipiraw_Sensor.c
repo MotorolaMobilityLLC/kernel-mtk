@@ -178,11 +178,12 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
 	/* sensor output first pixel color */
-	.mclk = 12,	/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
+	.mclk = 24,	/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,	/* mipi lane num */
 
 /* record sensor support all write id addr, only supprt 4must end with 0xff */
 	.i2c_addr_table = {0x34, 0x20, 0xff},
+	.i2c_speed = 400,
 };
 
 
@@ -904,7 +905,7 @@ static void preview_setting(void)
 	pr_info("preview E\n");
 
 //From reg tool at 2018-1-6 17:01
-write_cmos_sensor(0x0100, 0x00);
+//write_cmos_sensor(0x0100, 0x00);
 write_cmos_sensor(0x0112, 0x0A);
 write_cmos_sensor(0x0113, 0x0A);
 write_cmos_sensor(0x0114, 0x03);
@@ -959,7 +960,7 @@ write_cmos_sensor(0x0216, 0x00);
 write_cmos_sensor(0x0217, 0x00);
 write_cmos_sensor(0x0226, 0x01);
 write_cmos_sensor(0x0227, 0x00);
-write_cmos_sensor(0x0100, 0x01);
+//write_cmos_sensor(0x0100, 0x01);
 
 }
 
@@ -971,7 +972,7 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8 pdaf_mode)
 		pr_info("PIP15fps capture E\n");
 
 //From reg tool at 2018-1-6 17:01
-write_cmos_sensor(0x0100, 0x00);
+//write_cmos_sensor(0x0100, 0x00);
 write_cmos_sensor(0x0112, 0x0A);
 write_cmos_sensor(0x0113, 0x0A);
 write_cmos_sensor(0x0114, 0x03);
@@ -1026,11 +1027,11 @@ write_cmos_sensor(0x0216, 0x00);
 write_cmos_sensor(0x0217, 0x00);
 write_cmos_sensor(0x0226, 0x01);
 write_cmos_sensor(0x0227, 0x00);
-write_cmos_sensor(0x0100, 0x01);
+//write_cmos_sensor(0x0100, 0x01);
 	} else if (curretfps == 240) {
-		pr_info("PIP24fps capture E\n");
+	pr_info("PIP24fps capture E\n");
 //From reg tool at 2018-1-6 17:01
-write_cmos_sensor(0x0100, 0x00);
+//write_cmos_sensor(0x0100, 0x00);
 write_cmos_sensor(0x0112, 0x0A);
 write_cmos_sensor(0x0113, 0x0A);
 write_cmos_sensor(0x0114, 0x03);
@@ -1085,10 +1086,10 @@ write_cmos_sensor(0x0216, 0x00);
 write_cmos_sensor(0x0217, 0x00);
 write_cmos_sensor(0x0226, 0x01);
 write_cmos_sensor(0x0227, 0x00);
-write_cmos_sensor(0x0100, 0x01);
+//write_cmos_sensor(0x0100, 0x01);
 	} else {
 //From reg tool at 2018-1-6 17:01
-write_cmos_sensor(0x0100, 0x00);
+//write_cmos_sensor(0x0100, 0x00);
 write_cmos_sensor(0x0112, 0x0A);
 write_cmos_sensor(0x0113, 0x0A);
 write_cmos_sensor(0x0114, 0x03);
@@ -1143,7 +1144,7 @@ write_cmos_sensor(0x0216, 0x00);
 write_cmos_sensor(0x0217, 0x00);
 write_cmos_sensor(0x0226, 0x01);
 write_cmos_sensor(0x0227, 0x00);
-write_cmos_sensor(0x0100, 0x01);
+//write_cmos_sensor(0x0100, 0x01);
 
 	}
 }
@@ -1158,13 +1159,13 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8 pdaf_mode)
 static void hs_video_setting(void)
 {
 	pr_info("hs_video E\n");
-preview_setting();
+	preview_setting();
 }
 
 static void slim_video_setting(void)
 {
 	pr_info("slim video E\n");
-preview_setting();
+	preview_setting();
 }
 
 /*************************************************************************
@@ -1939,11 +1940,10 @@ static kal_uint32 get_sensor_temperature(void)
 	else
 		temperature_convert = (INT8) temperature;
 
-		pr_info("temp_c(%d), read_reg(%d)\n",
-			temperature_convert, temperature);
+	pr_info("temp_c(%d), read_reg(%d)\n",
+		temperature_convert, temperature);
 
-	//return temperature_convert;
-	return 25;
+	return temperature_convert;
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
