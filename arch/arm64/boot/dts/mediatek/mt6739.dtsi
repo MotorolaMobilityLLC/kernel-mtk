@@ -1815,6 +1815,10 @@
 		clocks = <&scpsys SCP_SYS_CONN>;
 		clock-names = "conn";
 	};
+
+	otg_iddig: otg_iddig {
+		compatible = "mediatek,usb_iddig_bi_eint";
+	};
 };
 
 #include "cust_mt6739_msdc.dtsi"
