@@ -3322,7 +3322,7 @@ void fg_nafg_int_handler(void)
 	FG_status.sw_car_nafg_c_dltv = nafg_c_dltv;
 
 	bm_err("[fg_nafg_int_handler][fg_bat_nafg] [%d:%d:%d]\n", nafg_cnt, nafg_dltv, nafg_c_dltv);
-	battery_dump_nag();
+	/* battery_dump_nag(); */
 
 	/* 2. Stop HW interrupt*/
 	gauge_set_nag_en(nafg_en);
