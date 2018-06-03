@@ -1124,13 +1124,15 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 	case ACT:
 
 		if (action == SLEEP) {
+			osal_lock_sleepable_lock(&stp_psm->user_lock);
 			if (osal_test_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR, &stp_psm->flag)) {
 				STP_PSM_ERR_FUNC("psm monitor disabled, can't do sleep op\n");
+				osal_unlock_sleepable_lock(&stp_psm->user_lock);
 				return STP_PSM_OPERATION_FAIL;
 			}
 
 			_stp_psm_set_state(stp_psm, ACT_INACT);
-
+			osal_unlock_sleepable_lock(&stp_psm->user_lock);
 			_stp_psm_release_data(stp_psm);
 
 			if (stp_psm->wmt_notify) {
