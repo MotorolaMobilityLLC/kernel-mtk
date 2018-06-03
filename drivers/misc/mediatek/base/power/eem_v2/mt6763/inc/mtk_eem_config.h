@@ -190,7 +190,7 @@
 #define VMAX_VAL		(0x74) /* volt domain: 1.12v*/
 #define VMIN_VAL		(0x20) /* volt domain: 0.6v*/
 #define VCO_VAL			(0x20)
-#define DVTFIXED_VAL		(0x7)
+#define DVTFIXED_VAL		(0x9)
 
 #define DTHI_VAL		(0x01) /* positive */
 #define DTLO_VAL		(0xfe) /* negative (2's compliment) */
@@ -202,7 +202,7 @@
 /* different for GPU */
 #define VBOOT_VAL_GPU		(0x40) /* eem domain: 0x40, volt domain: 0.8v */
 #define VMAX_VAL_GPU		(0x60) /* eem domain: 0x60, volt domain: 1.0v */
-#define DVTFIXED_VAL_GPU	(0x6)
+#define DVTFIXED_VAL_GPU	(0x3)
 
 /* different for SOC */
 #define VMAX_VAL_SOC		(0x40) /* eem domain: 0x40, volt domain: 0.8v */
