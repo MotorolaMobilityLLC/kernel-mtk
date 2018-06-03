@@ -2393,6 +2393,16 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb, unsigned long event,
 		/* PE40 is ready */
 			_wake_up_charger(pinfo);
 		break;
+
+		case PD_CONNECT_TYPEC_ONLY_SNK:
+			mutex_lock(&pinfo->charger_pd_lock);
+			chr_err("PD Notify Type-C Ready\r\n");
+			pinfo->pd_type = PD_CONNECT_TYPEC_ONLY_SNK;
+			mutex_unlock(&pinfo->charger_pd_lock);
+		/* type C is ready */
+			_wake_up_charger(pinfo);
+		break;
+
 		};
 	}
 	return NOTIFY_OK;
