@@ -1158,8 +1158,8 @@ static void testcase_perisys_apb(void)
 	/* we use MSDC debug to test: */
 	/* write SEL, read OUT. */
 
-	const long MSDC_PA_START = cmdq_dev_get_reference_PA("msdc0", 0);
-	const long AUDIO_TOP_CONF0_PA = cmdq_dev_get_reference_PA("audio", 0);
+	const phys_addr_t MSDC_PA_START = cmdq_dev_get_reference_PA("msdc0", 0);
+	const phys_addr_t AUDIO_TOP_CONF0_PA = cmdq_dev_get_reference_PA("audio", 0);
 	const long MSDC_SW_DBG_SEL_PA = MSDC_PA_START + 0xA0;
 	const long MSDC_SW_DBG_OUT_PA = MSDC_PA_START + 0xA4;
 
@@ -1181,8 +1181,8 @@ static void testcase_perisys_apb(void)
 	uint32_t dataRead = 0;
 
 	CMDQ_LOG("%s\n", __func__);
-	CMDQ_LOG("MSDC_VA_BASE:  VA:0x%lx, PA: 0x%lx\n", MSDC_VA_BASE, MSDC_PA_START);
-	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA: 0x%lx\n", AUDIO_VA_BASE, AUDIO_TOP_CONF0_PA);
+	CMDQ_LOG("MSDC_VA_BASE:  VA:0x%lx, PA: %pa\n", MSDC_VA_BASE, &MSDC_PA_START);
+	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA: %pa\n", AUDIO_VA_BASE, &AUDIO_TOP_CONF0_PA);
 
 	if (cmdq_core_subsys_from_phys_addr(MSDC_PA_START) < 0)
 		cmdq_core_set_addon_subsys(MSDC_PA_START & 0xffff0000, 99, 0xffff0000);
@@ -1200,7 +1200,7 @@ static void testcase_perisys_apb(void)
 	if (data != ~0) {
 		/* MSDC_SW_DBG_OUT would not same as sel setting */
 		CMDQ_MSG("write 0xFFFFFFFF to MSDC_SW_DBG_OUT = 0x%08x=====\n", data);
-		CMDQ_MSG("MSDC_SW_DBG_OUT: PA(0x%lx) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
+		CMDQ_MSG("MSDC_SW_DBG_OUT: PA(%pa) VA(0x%lx) =====\n", &MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
 	}
 
 	/* test read from AP_DMA_GLOBAL_SLOW_DOWN to CMDQ GPR */
@@ -1214,7 +1214,7 @@ static void testcase_perisys_apb(void)
 	if (data != dataRead || data == 0) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: CMDQ_DATA_REG_PQ_COLOR is 0x%08x, different=====\n", dataRead);
-		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(0x%lx) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
+		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(%pa) VA(0x%lx) =====\n", &MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
 	}
 
 	if (cmdq_core_subsys_from_phys_addr(AUDIO_TOP_CONF0_PA) < 0)
@@ -1224,7 +1224,7 @@ static void testcase_perisys_apb(void)
 	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
 	if (data != ~0) {
 		CMDQ_ERR("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%lx) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+		CMDQ_ERR("AUDIO_TOP_CONF0: PA(%pa) VA(0x%lx) =====\n", &AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
 	} else {
 		CMDQ_LOG("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
 	}
@@ -1241,7 +1241,7 @@ static void testcase_perisys_apb(void)
 	if (data != AUDIO_TOP_MASK) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: AUDIO_TOP_CONF0 is 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%lx) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+		CMDQ_ERR("AUDIO_TOP_CONF0: PA(%pa) VA(0x%lx) =====\n", &AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
 	}
 
 	cmdq_task_destroy(handle);
