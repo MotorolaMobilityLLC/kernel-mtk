@@ -490,18 +490,20 @@ void dfrc_reset_state(void)
 long dfrc_get_request_set(struct DFRC_DRC_REQUEST_SET *request_set)
 {
 	long res = 0L;
+	int num = 0;
 	int size;
 
 	mutex_lock(&g_mutex_request);
 	if (g_request_policy != NULL && request_set->policy != NULL) {
-		size = request_set->num > g_request_notified.num_policy ? g_request_notified.num_policy :
+		num = request_set->num > g_request_notified.num_policy ? g_request_notified.num_policy :
 				request_set->num;
-		size *= sizeof(struct DFRC_DRV_POLICY);
+		size = num * sizeof(struct DFRC_DRV_POLICY);
 		if (copy_to_user((void *)request_set->policy, g_request_policy, size)) {
 			DFRC_WRN("get_request_set: failed to copy data to user\n");
 			res = -EFAULT;
 		}
 	}
+	request_set->num = num;
 	mutex_unlock(&g_mutex_request);
 	return res;
 }
@@ -899,6 +901,10 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 		}
 		res = dfrc_get_request_set(&request_set);
+		if (copy_to_user((void *)arg, &request_set, sizeof(request_set))) {
+			DFRC_WRN("get_request_set: failed to copy data to user\n");
+			return -EFAULT;
+		}
 		break;
 
 	case DFRC_IOCTL_CMD_GET_VSYNC_REQUEST:
