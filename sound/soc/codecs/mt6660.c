@@ -180,6 +180,14 @@ static int mt6660_codec_init_setting(struct snd_soc_codec *codec)
 	ret = snd_soc_update_bits(codec, MT6660_REG_SPS_CTRL, 0x01, 0x00);
 	if (ret < 0)
 		return ret;
+	/* HPF coefficient for current sense path */
+	ret = snd_soc_write(codec, MT6660_REG_HPF1_COEF, 0x7fdbfffe);
+	if (ret < 0)
+		return ret;
+	/* HPF coefficient for voltage sense path */
+	ret = snd_soc_write(codec, MT6660_REG_HPF2_COEF, 0x7fdbfffe);
+	if (ret < 0)
+		return ret;
 	/* SIG Gain */
 	ret = snd_soc_write(codec, MT6660_REG_SIG_GAIN, 0x7b);
 	if (ret < 0)
@@ -451,6 +459,10 @@ static const struct snd_kcontrol_new mt6660_codec_snd_controls[] = {
 		       snd_soc_get_volsw, mt6660_codec_put_volsw),
 	SOC_SINGLE_EXT("Mute_Enable", MT6660_REG_SYSTEM_CTRL, 1, 1, 0,
 		       snd_soc_get_volsw, mt6660_codec_put_volsw),
+	SOC_SINGLE_EXT("CS_Comp_Disable", MT6660_REG_PATH_BYPASS, 2, 1, 0,
+		       snd_soc_get_volsw, mt6660_codec_put_volsw),
+	SOC_SINGLE_EXT("T0_SEL", MT6660_REG_CALI_T0, 0, 7, 0,
+		       snd_soc_get_volsw, NULL),
 };
 
 static const struct snd_soc_codec_driver mt6660_codec_driver = {

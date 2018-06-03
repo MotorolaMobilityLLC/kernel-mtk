@@ -60,7 +60,7 @@ void mt6660_regmap_unregister(struct mt6660_chip *chip);
 #define MT6660_REG_HPF_CTRL		(0x118)
 #define MT6660_REG_HPF0_COEF		(0x419)
 #define MT6660_REG_HPF1_COEF		(0x41A)
-#define MT6660_REG_HFP2_COEF		(0x41B)
+#define MT6660_REG_HPF2_COEF		(0x41B)
 #define MT6660_REG_GISENS		(0x21C)
 #define MT6660_REG_GVSENS		(0x11D)
 #define MT6660_REG_PATH_BYPASS		(0x11E)
