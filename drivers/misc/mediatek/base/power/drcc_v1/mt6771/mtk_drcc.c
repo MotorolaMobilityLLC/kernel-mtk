@@ -139,6 +139,7 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 #define drcc_write_field(addr, range, val)	\
 	drcc_write(addr, (drcc_read(addr) & ~BITMASK(range)) | BITS(range, val))
 
+#ifdef DRCC_K_CHECK
 /************************************************
  * call back registeration
 ************************************************/
@@ -157,6 +158,7 @@ static int drcc_cpu_pm_notifier(struct notifier_block *self,
 static struct notifier_block drcc_cpu_pm_notifier_block = {
 	.notifier_call = drcc_cpu_pm_notifier,
 };
+#endif
 
 /************************************************
  * static Variable
@@ -203,6 +205,8 @@ static void mtk_drcc_unlock(unsigned long *flags)
 #endif
 }
 
+
+#ifdef DRCC_K_CHECK
 static int _mt_drcc_cpu_CB(struct notifier_block *nfb,
 	unsigned long action, void *hcpu)
 {
@@ -272,8 +276,7 @@ static int drcc_cpu_pm_notifier(struct notifier_block *self,
 	}
 	return NOTIFY_OK;
 }
-
-
+#endif
 
 void mtk_drcc_log2RamConsole(void)
 {
@@ -304,9 +307,15 @@ int mtk_drcc_feature_enabled_check(void)
 
 int mtk_drcc_calibration_result(void)
 {
+	#ifndef DRCC_K_CHECK
+	unsigned long flags;
+	#endif
 	unsigned int value, result;
 
 	/* check the calibration result */
+	#ifndef DRCC_K_CHECK
+	mtk_drcc_lock(&flags);
+	#endif
 	value = mt_secure_call_drcc(MTK_SIP_KERNEL_DRCC_K_RST,
 		0, 0, 0);
 	/* drcc_debug("K rst = (0x%x) !!\n", value); */
@@ -316,6 +325,9 @@ int mtk_drcc_calibration_result(void)
 		result = 0;
 	} else
 		result = 1;
+	#ifndef DRCC_K_CHECK
+	mtk_drcc_unlock(&flags);
+	#endif
 
 	return result;
 }
@@ -1054,11 +1066,13 @@ static int __init drcc_init(void)
 	hrtimer_init(&drcc_timer_log, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	drcc_timer_log.function = drcc_timer_log_func;
 
+	#ifdef DRCC_K_CHECK
 	register_hotcpu_notifier(&_mt_drcc_cpu_notifier);
 	drcc_debug("register HPS_CB\n");
 
 	cpu_pm_register_notifier(&drcc_cpu_pm_notifier_block);
 	drcc_debug("register CPU_PM_CB\n");
+	#endif
 
 	create_procfs();
 
