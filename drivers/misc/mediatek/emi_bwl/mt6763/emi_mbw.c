@@ -23,6 +23,7 @@
 
 #include "emi_mbw.h"
 #include "emi_bwl.h"
+#include "emi_elm.h"
 
 static bool dump_latency_status;
 
@@ -185,8 +186,10 @@ void dump_last_bm(char *buf, unsigned int leng)
 		bm_lat_apmcu0, bm_lat_apmcu1, bm_lat_mm1, bm_lat_mdmcu, bm_lat_mdhw,
 		bm_lat_mm0, bm_lat_peri, bm_lat_gpu, bm_cnt_apmcu0, bm_cnt_apmcu1,
 		bm_cnt_mm1, bm_cnt_mdmcu, bm_cnt_mdhw, bm_cnt_mm0, bm_cnt_peri, bm_cnt_gpu);
+#elif ENABLE_ELM
+	elm_dump(buf, leng);
 #else
-	snprintf(buf, leng, "[EMI BM] disable runtime BM\n");
+	snprintf(buf, leng, "[EMI] no ELM and runtime BM support\n");
 #endif
 }
 
@@ -360,7 +363,7 @@ int mbw_init(void)
 		platform_device_unregister(&mt_mem_bw_pdev);
 	}
 
-	enable_dump_latency();
+	disable_dump_latency();
 
 out:
 	return ret;
@@ -394,10 +397,10 @@ static int __init dvfs_bwct_init(void)
 
 	switch (ch_num) {
 	case 1:
-		BM_SetBW(0x05000405);
+		BM_SetBW(0x05000400);
 		break;
 	case 2:
-		BM_SetBW(0x0a000705);
+		BM_SetBW(0x0a000700);
 		break;
 	default:
 		pr_err("[EMI] unsupported channel number\n");

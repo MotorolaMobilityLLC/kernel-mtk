@@ -17,3 +17,4 @@ ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
 obj-y += emi_bwl.o
 obj-y += emi_mbw.o
 obj-y += emi_mbw_api.o
+obj-y += emi_elm.o

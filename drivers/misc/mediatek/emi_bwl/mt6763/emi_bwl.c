@@ -34,6 +34,7 @@
 #include <ext_wd_drv.h>
 #include "emi_bwl.h"
 #include "emi_mbw.h"
+#include "emi_elm.h"
 
 DEFINE_SEMAPHORE(emi_bwl_sem);
 
@@ -42,6 +43,8 @@ static void __iomem *CHA_EMI_BASE;
 static void __iomem *CHB_EMI_BASE;
 static void __iomem *EMI_MPU_BASE;
 static unsigned int mpu_irq;
+static unsigned int cgm_irq;
+static unsigned int elm_irq;
 
 static emi_info_t emi_info;
 
@@ -55,9 +58,15 @@ static int emi_probe(struct platform_device *pdev)
 
 	if (node) {
 		mpu_irq = irq_of_parse_and_map(node, 0);
-		pr_err("get EMI_MPU irq = %d\n", mpu_irq);
-	} else
+		cgm_irq = irq_of_parse_and_map(node, 1);
+		elm_irq = irq_of_parse_and_map(node, 2);
+		pr_info("[EMI] get irq of MPU(%d), GCM(%d), ELM(%d)\n",
+			mpu_irq, cgm_irq, elm_irq);
+	} else {
 		mpu_irq = 0;
+		cgm_irq = 0;
+		elm_irq = 0;
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	CEN_EMI_BASE = devm_ioremap_resource(&pdev->dev, res);
@@ -100,6 +109,10 @@ static int emi_probe(struct platform_device *pdev)
 	mbw_init();
 #endif
 
+#if ENABLE_ELM
+	elm_init(cgm_irq);
+#endif
+
 	return 0;
 }
 
@@ -115,12 +128,39 @@ static const struct of_device_id emi_of_ids[] = {
 };
 #endif
 
+#ifdef CONFIG_PM
+static int emi_suspend_noirq(struct device *dev)
+{
+	/* pr_info("[EMI] suspend\n"); */
+	suspend_elm();
+
+	return 0;
+}
+
+static int emi_resume_noirq(struct device *dev)
+{
+	/* pr_info("[EMI] resume\n"); */
+	resume_elm();
+
+	return 0;
+}
+
+static const struct dev_pm_ops emi_pm_ops = {
+	.suspend_noirq = emi_suspend_noirq,
+	.resume_noirq = emi_resume_noirq,
+};
+#define EMI_PM_OPS	(&emi_pm_ops)
+#else
+#define EMI_PM_OPS	NULL
+#endif
+
 static struct platform_driver emi_ctrl = {
 	.probe = emi_probe,
 	.remove = emi_remove,
 	.driver = {
 		.name = "emi_ctrl",
 		.owner = THIS_MODULE,
+		.pm = EMI_PM_OPS,
 #ifdef CONFIG_OF
 		.of_match_table = emi_of_ids,
 #endif
@@ -400,9 +440,10 @@ static ssize_t dump_latency_ctrl_store(struct device_driver *driver,
 {
 	if (!strncmp(buf, "ON", strlen("ON")))
 		enable_dump_latency();
-	else if (!strncmp(buf, "OFF", strlen("OFF")))
+	else if (!strncmp(buf, "OFF", strlen("OFF"))) {
 		disable_dump_latency();
-	else
+		disable_elm();
+	} else
 		pr_err("Unknown dump latency command.\n");
 
 	pr_err("dump_latency_ctrl_store: is_dump_latency: %d\n", is_dump_latency());
@@ -411,6 +452,29 @@ static ssize_t dump_latency_ctrl_store(struct device_driver *driver,
 }
 
 DRIVER_ATTR(dump_latency_ctrl, 0644, dump_latency_ctrl_show, dump_latency_ctrl_store);
+
+static ssize_t elm_ctrl_show(struct device_driver *driver, char *buf)
+{
+	char *ptr;
+
+	ptr = (char *)buf;
+	ptr += sprintf(ptr, "ELM enabled: %d\n", is_elm_enabled());
+
+	return strlen(buf);
+}
+
+static ssize_t elm_ctrl_store(struct device_driver *driver,
+	const char *buf, size_t count)
+{
+	if (!strncmp(buf, "ON", strlen("ON")))
+		enable_elm();
+	else if (!strncmp(buf, "OFF", strlen("OFF")))
+		disable_elm();
+
+	return count;
+}
+
+DRIVER_ATTR(elm_ctrl, 0644, elm_ctrl_show, elm_ctrl_store);
 
 /*
  * emi_ctrl_init: module init function.
@@ -432,6 +496,10 @@ static int __init emi_ctrl_init(void)
 	ret = driver_create_file(&emi_ctrl.driver, &driver_attr_dump_latency_ctrl);
 	if (ret)
 		pr_err("[EMI/MBW] fail to create dump_latency_ctrl file\n");
+
+	ret = driver_create_file(&emi_ctrl.driver, &driver_attr_elm_ctrl);
+	if (ret)
+		pr_info("[EMI/ELM] fail to create elm_ctrl file\n");
 
 	/* get EMI info from boot tags */
 	if (of_chosen) {
@@ -531,4 +599,14 @@ EXPORT_SYMBOL(mt_emi_mpu_base_get);
 unsigned int mt_emi_mpu_irq_get(void)
 {
 	return mpu_irq;
+}
+
+unsigned int mt_emi_elm_irq_get(void)
+{
+	return elm_irq;
+}
+
+unsigned int mt_emi_cgm_irq_get(void)
+{
+	return cgm_irq;
 }
