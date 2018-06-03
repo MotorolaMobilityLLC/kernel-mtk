@@ -45,6 +45,8 @@
 #include "mtk_clkmgr.h"
 
 #include "mtk_gpufreq.h"
+
+#include "mtk_dramc.h"
 /*
 * #include "mtk_static_power.h"
 */
@@ -357,6 +359,7 @@ enum {
 
 static unsigned int device_id;
 static unsigned int ext_buck_exist;
+static int ddr_type;
 
 
 /***************************
@@ -947,8 +950,12 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 					(g_cur_gpu_freq == GPUFREQ_LAST_FREQ_LEVEL_6763);
 
 		if (enable == BUCK_ON) {
-			if (!g_latest_freq_at_lowest)
-				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
+			if (!g_latest_freq_at_lowest) {
+				if (ddr_type == TYPE_LPDDR3)
+					ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_1);
+				else
+					ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
+			}
 		} else {
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		}
@@ -1053,8 +1060,12 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 			if (!mt_gpufreq_ptpod_disable)
 				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		} else {
-			if (!g_latest_freq_at_lowest)
-				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
+			if (!g_latest_freq_at_lowest) {
+				if (ddr_type == TYPE_LPDDR3)
+					ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_1);
+				else
+					ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
+			}
 		}
 	}
 
@@ -1694,7 +1705,10 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 static void mt_gpufreq_volt_switch_vcore(unsigned int volt_old, unsigned int volt_new)
 {
 	if (volt_new > volt_old)
-		vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
+		if (ddr_type == TYPE_LPDDR3)
+			vcorefs_request_dvfs_opp(KIR_GPU, OPP_1);
+		else
+			vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
 	else if (volt_new < volt_old)
 		vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 }
@@ -2873,6 +2887,8 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	} else {
 		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 	}
+
+	ddr_type = get_ddr_type();
 
 	/* alloc PMIC regulator */
 	if (ext_buck_exist) {
