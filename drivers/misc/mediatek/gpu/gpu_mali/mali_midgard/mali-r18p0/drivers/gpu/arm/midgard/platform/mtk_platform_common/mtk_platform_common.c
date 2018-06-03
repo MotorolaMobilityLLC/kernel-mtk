@@ -446,8 +446,15 @@ int mtk_set_mt_gpufreq_target(int freq_id)
 	int ret = 0;
 
 	mutex_lock(&g_flag_lock);
-	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag())
+	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_ON) {
+#ifdef GPUFREQ_ENABLE_KICK_PBM
+		/* For MT6757, we can't power off GPU since HW limitation */
+		/* And this will cause power budge issue, so we add an extra para to support skipping PBM operation */
 		ret = mt_gpufreq_target(freq_id, true);
+#else
+		ret = mt_gpufreq_target(freq_id);
+#endif
+	}
 	mutex_unlock(&g_flag_lock);
 	return ret;
 
