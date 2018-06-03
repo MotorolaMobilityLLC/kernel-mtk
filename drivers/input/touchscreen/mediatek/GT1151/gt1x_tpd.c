@@ -52,7 +52,7 @@ static int tpd_eint_mode = 1;
 static struct task_struct *thread;
 static struct task_struct *update_thread;
 static struct task_struct *probe_thread;
-/* static struct notifier_block pm_notifier_block; */
+static struct notifier_block pm_notifier_block;
 static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
@@ -635,9 +635,6 @@ static int tpd_registration(void *client)
 	gt1x_init_esd_protect();
 	gt1x_esd_switch(SWITCH_ON);
 #endif
-
-#if 0
-
 	update_thread = kthread_run(gt1x_auto_update_proc,
 					(void *)NULL, "gt1x_auto_update");
 	if (IS_ERR(update_thread)) {
@@ -647,8 +644,6 @@ static int tpd_registration(void *client)
 	pm_notifier_block.notifier_call = gt1x_pm_notifier;
 	pm_notifier_block.priority = 0;
 	register_pm_notifier(&pm_notifier_block);
-#endif
-
 #ifdef CONFIG_MTK_LENS
 	AF_PowerDown();
 #endif
