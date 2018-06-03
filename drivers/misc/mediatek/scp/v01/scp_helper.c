@@ -113,6 +113,7 @@ static struct timer_list scp_ready_timer[SCP_CORE_TOTAL];
 #endif
 static struct scp_work_struct scp_A_notify_work;
 static struct scp_work_struct scp_timeout_work;
+static unsigned int scp_timeout_times;
 
 static DEFINE_MUTEX(scp_A_notify_mutex);
 static DEFINE_MUTEX(scp_feature_mutex);
@@ -382,12 +383,11 @@ static void scp_A_notify_ws(struct work_struct *ws)
  */
 static void scp_timeout_ws(struct work_struct *ws)
 {
-	struct scp_work_struct *sws = container_of(ws
-					, struct scp_work_struct, work);
-	unsigned int scp_timeout_id = sws->id;
+	if (scp_timeout_times < 10)
+		scp_send_reset_wq(RESET_TYPE_AWAKE);
 
-	scp_aed(EXCEP_BOOTUP, scp_timeout_id);
-
+	scp_timeout_times++;
+	pr_notice("[SCP] scp_timeout_times=%x\n", scp_timeout_times);
 }
 
 /*
@@ -420,7 +420,6 @@ static void scp_wait_ready_timeout(unsigned long data)
 	scp_timeout_work.flags = 0;
 	scp_timeout_work.id = SCP_A_ID;
 	scp_schedule_work(&scp_timeout_work);
-
 }
 
 #endif
@@ -1344,6 +1343,14 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	pr_debug("[SCP]start scp\n");
 	*(unsigned int *)scp_reset_reg = 0x1;
 	dsb(SY);
+#if SCP_BOOT_TIME_OUT_MONITOR
+	init_timer(&scp_ready_timer[SCP_A_ID]);
+	scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
+	scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
+	/* 0: SCP A, 1: SCP B */
+	scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;
+	add_timer(&scp_ready_timer[SCP_A_ID]);
+#endif
 	/* clear scp reset by cmd flag*/
 	scp_reset_by_cmd = 0;
 }
