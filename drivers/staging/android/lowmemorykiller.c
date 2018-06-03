@@ -174,7 +174,7 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 }
 
 /* Aggressive Memory Reclaim(AMR) */
-static short lowmem_amr_check(int *to_be_aggressive)
+static short lowmem_amr_check(int *to_be_aggressive, int other_file)
 {
 #ifdef CONFIG_SWAP
 #ifdef CONFIG_64BIT
@@ -200,9 +200,22 @@ static short lowmem_amr_check(int *to_be_aggressive)
 	if (totalram_pages < ENABLE_AMR_RAMSIZE) {
 		*to_be_aggressive = 0;
 	} else {
-		i = lowmem_adj_size - 1 - *to_be_aggressive;
-		if (*to_be_aggressive > 0 && i >= 0)
-			amr_adj = lowmem_adj[i];
+		i = lowmem_adj_size - 1;
+		/*
+		 * Comparing other_file with lowmem_minfree to make
+		 * amr less aggressive.
+		 * ex.
+		 * For lowmem_adj[] = {0, 100, 200, 300, 900, 906},
+		 * if swap usage > 50%,
+		 * try to kill 906       when other_file >= lowmem_minfree[5]
+		 * try to kill 300 ~ 906 when other_file  < lowmem_minfree[5]
+		 */
+		if (*to_be_aggressive > 0) {
+			if (other_file < lowmem_minfree[i])
+				i -= *to_be_aggressive;
+			if (likely(i >= 0))
+				amr_adj = lowmem_adj[i];
+		}
 	}
 #endif
 
@@ -313,7 +326,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		other_min_score_adj = 0;
 
 	other_min_score_adj =
-		min(other_min_score_adj, lowmem_amr_check(&to_be_aggressive));
+		min(other_min_score_adj,
+		    lowmem_amr_check(&to_be_aggressive, other_file));
 
 	/* Let other_free be positive or zero */
 	if (other_free < 0)
