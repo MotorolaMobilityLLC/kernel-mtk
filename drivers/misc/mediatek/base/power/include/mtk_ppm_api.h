@@ -14,9 +14,7 @@
 #ifndef _MTK_PPM_API_H_
 #define _MTK_PPM_API_H_
 
-#if defined(CONFIG_MACH_MT6758)
 #include "ppm_v3/mtk_ppm_api.h"
-#endif
 
 #endif /* _MTK_PPM_API_H_ */
 

@@ -31,7 +31,7 @@ extern "C" {
 #include <linux/sched.h>
 #include <linux/cpumask.h>
 
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_ipi.h"
 

@@ -14,7 +14,7 @@
 #ifndef _MT_PPM_IPI_
 #define _MT_PPM_IPI_
 
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #include "mtk_ppm_platform.h"
 
 
