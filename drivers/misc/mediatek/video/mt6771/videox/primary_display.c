@@ -5931,6 +5931,9 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 	struct OVL_CONFIG_STRUCT *input_phy, *input_ext;
 	unsigned int offset = round_corner_offset_enable ? 100 : 0;
 
+	if (is_DAL_Enabled())
+		return;
+
 	input_phy = &(cfg->ovl_config[layer]);
 	input_phy->ovl_index = module;
 	input_phy->layer = layer;
@@ -5992,7 +5995,7 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 	input_ext->security = 0;
 	input_ext->yuv_range = 0;
 	input_ext->ext_layer = 2;
-	input_ext->ext_sel_layer = 2;
+	input_ext->ext_sel_layer = 3;
 	input_ext->phy_layer = phy_layer;
 }
 
@@ -6475,12 +6478,12 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	if (lcm_corner_en) {
 		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER) &&
-			!primary_display_is_OVL_DCM_mode())
+			!primary_display_is_OVL_DCM_mode() && !is_DAL_Enabled())
 			add_round_corner_layers(data_config, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0_2L, TOTAL_OVL_LAYER_NUM, 1, 1);
+			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM, 3, 1);
 		else
 			add_round_corner_layers(data_config, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0_2L, TOTAL_OVL_LAYER_NUM, 1, 0);
+			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM, 3, 0);
 	}
 #endif
 
