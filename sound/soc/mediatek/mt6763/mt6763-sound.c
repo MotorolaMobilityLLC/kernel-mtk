@@ -1479,9 +1479,9 @@ bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
 	/* force all memif use normal mode */	/* TODO: KC: change to better place, handle when 16bit or dram */
 	Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7fff << 16, 0x7fff << 16);
 	/* force cpu use normal mode when access sram data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 0 << 29);	/* TODO: KC: force cpu only use normal mode */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 1 << 29);	/* TODO: KC: force cpu only use normal mode */
 	/* force cpu use 8_24 format when writing 32bit data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 28, 0 << 28);	/* TODO: KC: force use 8_24 format */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 28, 1 << 28);	/* TODO: KC: force use 8_24 format */
 
 	switch (InterfaceType) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
