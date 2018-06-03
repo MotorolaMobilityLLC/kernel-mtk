@@ -115,7 +115,7 @@ static unsigned int mt6356_vproc1_transfer2pmicval(unsigned int volt)
 
 static unsigned int mt6356_vproc1_transfer2volt(unsigned int val)
 {
-	return (val * 625 + 50000) * 10;
+	return val * 625 + 50000;
 }
 
 static unsigned int mt6356_vproc1_settletime(unsigned int old_volt, unsigned int new_volt)
@@ -137,9 +137,9 @@ static unsigned int mt6311_vproc1_transfer2volt(unsigned int val)
 {
 	/* For EEM table */
 #if 0
-	return (val * 625 + 60000) * 10;
+	return val * 625 + 60000;
 #else
-	return (val * 625 + 50000) * 10;
+	return val * 625 + 50000;
 #endif
 }
 
