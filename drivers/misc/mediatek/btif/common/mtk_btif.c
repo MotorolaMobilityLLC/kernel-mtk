@@ -787,7 +787,8 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 		return -1;
 	}
 
-	memcpy(buf, buffer, sizeof(buf));
+	strncpy(buf, buffer, len);
+	buf[len] = '\0';
 	p_buf = buf;
 
 	p_token = strsep(&p_buf, p_delimiter);
