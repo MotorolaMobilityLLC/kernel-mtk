@@ -378,9 +378,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		/* create fence */
 		data.fence = MTK_FB_INVALID_FENCE_FD;
 		data.value = ++fence_idx;
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 		ret = fence_create(layer_info->timeline, &data);
-#endif
 		if (ret != 0) {
 			DISPERR("%s%d,layer%d create Fence Object failed!\n",
 				disp_session_mode_spy(pnt_fence.session_id),
@@ -1160,7 +1158,8 @@ int _ioctl_get_display_caps(unsigned long arg)
 	if (disp_helper_get_option(DISP_OPT_HRT))
 		caps_info.disp_feature |= DISP_FEATURE_HRT;
 
-	caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
+	if (disp_helper_get_option(DISP_OPT_FRAME_QUEUE))
+		caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n",
