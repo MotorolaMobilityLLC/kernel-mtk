@@ -212,12 +212,12 @@ int imgsensor_i2c_write(
 		pdata += write_per_cycle;
 	}
 
-	if ((ret = mtk_i2c_transfer(
+	if (mtk_i2c_transfer(
 		pinst->pi2c_client->adapter,
 		pinst->msg,
 		i,
 		0,
-		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED)) != i) {
+		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED) != i) {
 		PK_ERR("I2C write failed (0x%x)! speed(0=%d) \n", ret, speed);
 		ret = -1;
 	}

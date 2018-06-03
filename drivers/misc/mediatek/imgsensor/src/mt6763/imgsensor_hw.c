@@ -111,7 +111,7 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		pin_cnt++;
 	}
 
-	if(pwr_status == IMGSENSOR_HW_POWER_STATUS_OFF) {
+	if (pwr_status == IMGSENSOR_HW_POWER_STATUS_OFF) {
 		while(pin_cnt) {
 			ppwr_info--;
 			pin_cnt--;
@@ -129,6 +129,10 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 			}
 		}
 	}
+
+	/* wait for power stable */
+	if(pwr_status == IMGSENSOR_HW_POWER_STATUS_ON)
+		mdelay(5);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

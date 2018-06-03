@@ -475,12 +475,12 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 	memset(pInfo, 0, sizeof(MSDK_SENSOR_INFO_STRUCT));
 	memset(pConfig, 0, sizeof(MSDK_SENSOR_CONFIG_STRUCT));
 
-	if (NULL == pSensorGetInfo) {
+	if (pSensorGetInfo == NULL) {
 		PK_DBG("[CAMERA_HW] NULL arg.\n");
 		return -EFAULT;
 	}
 
-	if ((NULL == pSensorGetInfo->pInfo) || (NULL == pSensorGetInfo->pConfig))  {
+	if ((pSensorGetInfo->pInfo == NULL) || (pSensorGetInfo->pConfig == NULL))  {
 		PK_DBG("[CAMERA_HW] NULL arg.\n");
 		return -EFAULT;
 	}
@@ -604,7 +604,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry%d\n", pSensorGetInfo->SensorId);
 
-	if (NULL == pSensorGetInfo) {
+	if (pSensorGetInfo == NULL) {
 	    PK_DBG("[CAMERA_HW] NULL arg.\n");
 	    return -EFAULT;
 	}
@@ -623,9 +623,13 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	pSensorInfo = kmalloc(sizeof(ACDK_SENSOR_INFO2_STRUCT), GFP_KERNEL);
 
-	if (pConfig == NULL || pConfig == NULL || pConfig1 == NULL || pConfig1 == NULL ||
-		pConfig2 == NULL || pConfig2 == NULL || pConfig3 == NULL || pConfig3 == NULL ||
-		pConfig4 == NULL || pConfig4 == NULL || pSensorInfo ==NULL || psensorResolution == NULL) {
+	if (pConfig == NULL ||
+		pConfig1 == NULL ||
+		pConfig2 == NULL ||
+		pConfig3 == NULL ||
+		pConfig4 == NULL ||
+		pSensorInfo ==NULL ||
+		psensorResolution == NULL) {
 		PK_ERR(" ioctl allocate mem failed\n");
 		ret = -EFAULT;
 		goto IMGSENSOR_GET_INFO_RETURN;
@@ -825,7 +829,7 @@ inline static int adopt_CAMERA_HW_Control(void *pBuf)
 	memset(&imageWindow, 0, sizeof(ACDK_SENSOR_EXPOSURE_WINDOW_STRUCT));
 	memset(&sensorConfigData, 0, sizeof(ACDK_SENSOR_CONFIG_STRUCT));
 
-	if (NULL == pSensorCtrl || NULL == pSensorCtrl->pImageWindow || NULL == pSensorCtrl->pSensorConfigData) {
+	if (pSensorCtrl == NULL || pSensorCtrl->pImageWindow == NULL || pSensorCtrl->pSensorConfigData == NULL) {
     	PK_DBG("[CAMERA_HW] NULL arg.\n");
     	return -EFAULT;
 	}
@@ -866,7 +870,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	ACDK_KD_SENSOR_SYNC_STRUCT *pSensorSyncInfo = NULL;
 	signed int ret = 0;
 
-	if (NULL == pFeatureCtrl) {
+	if (pFeatureCtrl == NULL) {
 	    PK_ERR(" NULL arg.\n");
 	    return -EFAULT;
 	}
@@ -876,7 +880,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	}
 	else
 	{
-		if (NULL == pFeatureCtrl->pFeaturePara || NULL == pFeatureCtrl->pFeatureParaLen) {
+		if (pFeatureCtrl->pFeaturePara == NULL || pFeatureCtrl->pFeatureParaLen == NULL) {
 			PK_ERR(" NULL arg.\n");
 			return -EFAULT;
 		}
@@ -886,7 +890,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 
 		pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
-		if (NULL == pFeaturePara) {
+		if (pFeaturePara == NULL) {
 			PK_ERR(" ioctl allocate mem failed\n");
 			return -ENOMEM;
 		}
@@ -907,12 +911,11 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 	case SENSOR_FEATURE_SET_DRIVER:
 	{
-		u32 drv_idx;
+		MINT32 drv_idx;
 
 		psensor->inst.sensor_idx = pFeatureCtrl->InvokeCamera;
 		drv_idx = imgsensor_set_driver(psensor);
-		if(drv_idx != -EIO)
-			memcpy(pFeaturePara, &drv_idx, FeatureParaLen);
+		memcpy(pFeaturePara, &drv_idx, FeatureParaLen);
 
 		break;
 	}
