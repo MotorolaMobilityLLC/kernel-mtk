@@ -1039,6 +1039,7 @@ static INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_IN_PU:
 		pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
 				gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_IN_PULLUP]);
+		break;
 	default:
 		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on UART Group\n", state);
 		break;
