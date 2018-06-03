@@ -320,7 +320,10 @@ static int i2c_set_speed(struct mt_i2c *i2c, unsigned int clk_src_in_hz)
 		speed_hz = i2c->speed_hz;
 
 	if (speed_hz > MAX_HS_MODE_SPEED) {
-		return -EINVAL;
+		if (i2c->dev_comp->check_max_freq)
+			return -EINVAL;
+		mode = HS_MODE;
+		max_step_cnt = MAX_HS_STEP_CNT_DIV;
 	} else if (speed_hz > MAX_FS_MODE_SPEED) {
 		mode = HS_MODE;
 		max_step_cnt = MAX_HS_STEP_CNT_DIV;
@@ -532,6 +535,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		dev_err(i2c->dev, "Failed to set the speed\n");
 		return -EINVAL;
 	}
+
+	if (i2c->dev_comp->set_dt_div) {
+		if (i2c->clk_src_div > MAX_CLOCK_DIV) {
+			dev_err(i2c->dev, "Clock div error\n");
+			return -EINVAL;
+		}
+		i2c_writew((i2c->clk_src_div - 1), i2c, OFFSET_CLOCK_DIV);
+	}
+
 	/* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
 	if (i2c->have_pmic)
 		i2c_writew(I2C_CONTROL_WRAPPER, i2c, OFFSET_PATH_DIR);
@@ -1101,30 +1113,40 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 static const struct mtk_i2c_compatible mt6735_compat = {
 	.dma_support = 0,
 	.idvfs_i2c = 0,
+	.set_dt_div = 0,
+	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
 
 static const struct mtk_i2c_compatible mt6797_compat = {
 	.dma_support = 1,
 	.idvfs_i2c = 1,
+	.set_dt_div = 0,
+	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
 
 static const struct mtk_i2c_compatible mt6757_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 0,
+	.set_dt_div = 0,
+	.check_max_freq = 1,
 	.ext_time_config = 0x201,
 };
 
 static const struct mtk_i2c_compatible mt6799_compat = {
 	.dma_support = 3,
 	.idvfs_i2c = 1,
+	.set_dt_div = 1,
+	.check_max_freq = 0,
 	.ext_time_config = 0,
 };
 
 static const struct mtk_i2c_compatible elbrus_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 1,
+	.set_dt_div = 0,
+	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
 
