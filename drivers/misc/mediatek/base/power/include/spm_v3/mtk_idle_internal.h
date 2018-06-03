@@ -55,6 +55,8 @@ enum {
 	NR_GRPS,
 };
 
+#define NF_CG_STA_RECORD	(NR_GRPS + 2)
+
 enum {
 	PDN_MASK         = 0,
 	PDN_VALUE,
@@ -332,8 +334,8 @@ const char *mtk_get_reason_name(int);
 const char *mtk_get_cg_group_name(int id);
 const char *mtk_get_pll_group_name(int id);
 
-bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
-bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
+bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD]);
+bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD]);
 bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
 bool mtk_idle_check_clkmux(int idle_type,
 							unsigned int block_mask[NR_TYPES][NF_CLK_CFG]);
