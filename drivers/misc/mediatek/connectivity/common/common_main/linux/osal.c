@@ -244,14 +244,19 @@ INT32 osal_dbg_assert(INT32 expr, const PINT8 file, INT32 line)
 
 }
 
-INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description)
+INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description, ...)
 {
-	osal_err_print("[WMT-ASSERT] [E][Module]:%s, [INFO]%s\n", module, detail_description);
+	INT8 tempString[DBG_LOG_STR_SIZE];
+	va_list args;
 
+	va_start(args, detail_description);
+	vsnprintf(tempString, DBG_LOG_STR_SIZE, detail_description, args);
+	osal_err_print("[WMT-ASSERT][E][Module]:%s, [INFO]%s\n", module, tempString);
 #ifdef WMT_PLAT_ALPS
-	/* aee_kernel_warning(module,detail_description); */
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_WCN_ISSUE_INFO, module, detail_description);
+	/* There exists Format-String vulnerability. For safety, we must use the %s format parameter to read data */
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_WCN_ISSUE_INFO, module, detail_description, "%s", tempString);
 #endif
+	va_end(args);
 	return 0;
 }
 
