@@ -616,13 +616,13 @@ bool SetDl2ToI2s3(uint32 ConnectionState)
 	return true;
 }
 
-typedef struct connection_link_t {
+struct connection_link_t {
 	uint32 input;
 	uint32 output;
 	connection_function connectionFunction;
-} connection_link_t;
+};
 
-static const connection_link_t mConnectionLink[] = {
+static const struct connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_I2S3, SetDl1ToI2s0},
 	{Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_I2S1_DAC, SetDl1ToI2s1Dac},
 	{Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2, SetAdc2ToVulData2},

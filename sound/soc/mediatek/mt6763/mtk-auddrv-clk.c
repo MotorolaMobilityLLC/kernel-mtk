@@ -93,8 +93,8 @@ static DEFINE_MUTEX(auddrv_pmic_mutex);
 static DEFINE_MUTEX(audEMI_Clk_mutex);
 static DEFINE_MUTEX(auddrv_clk_mutex);
 
-/* AUDIO_APLL_DIVIDER_GROUP may vary by chip!!! */
-typedef enum {
+/* audio_apll_divider_group may vary by chip!!! */
+enum audio_apll_divider_group {
 	AUDIO_APLL1_DIV0 = 0,
 	AUDIO_APLL2_DIV0 = 1,
 	AUDIO_APLL12_DIV0 = 2,
@@ -104,7 +104,7 @@ typedef enum {
 	AUDIO_APLL12_DIV4 = 6,
 	AUDIO_APLL12_DIVB = 7,
 	AUDIO_APLL_DIV_NUM
-} AUDIO_APLL_DIVIDER_GROUP;
+};
 
 /* mI2SAPLLDivSelect may vary by chip!!! */
 static const uint32 mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {

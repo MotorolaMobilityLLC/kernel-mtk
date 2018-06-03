@@ -83,7 +83,7 @@ static int SetDcCompenSation(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 
-static mt6356_Codec_Data_Priv *mCodec_data;
+static struct mt6356_codec_priv *mCodec_data;
 static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = { 48000, 48000, 48000 };
 
 #define MAX_DL_SAMPLE_RATE (192000)
@@ -4702,14 +4702,14 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
 
 	/* here to set  private data */
-	mCodec_data = kzalloc(sizeof(mt6356_Codec_Data_Priv), GFP_KERNEL);
+	mCodec_data = kzalloc(sizeof(struct mt6356_codec_priv), GFP_KERNEL);
 	if (!mCodec_data) {
 		/*pr_warn("Failed to allocate private data\n");*/
 		return -ENOMEM;
 	}
 	snd_soc_codec_set_drvdata(codec, mCodec_data);
 
-	memset((void *)mCodec_data, 0, sizeof(mt6356_Codec_Data_Priv));
+	memset((void *)mCodec_data, 0, sizeof(struct mt6356_codec_priv));
 	mt6356_codec_init_reg(codec);
 	InitCodecDefault();
 	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
