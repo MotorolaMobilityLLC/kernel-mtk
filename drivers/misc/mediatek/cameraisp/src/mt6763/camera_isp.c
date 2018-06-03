@@ -5495,16 +5495,16 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			  ISP_GetIRQState(WaitIrq->Type, WaitIrq->EventInfo.St_type, WaitIrq->EventInfo.UserKey,
 			  WaitIrq->EventInfo.Status),
 			  ISP_MsToJiffies(WaitIrq->EventInfo.Timeout));
+
 	/* check if user is interrupted by system signal */
+	/* if (Timeout == -ERESTARTSYS) { this should be the right method */
 	if ((Timeout != 0) && (!ISP_GetIRQState(WaitIrq->Type, WaitIrq->EventInfo.St_type, WaitIrq->EventInfo.UserKey,
 		WaitIrq->EventInfo.Status))) {
 		LOG_INF("interrupted by system signal,return value(%d),irq Type/User/Sts(0x%x/%d/0x%x)\n",
 			Timeout, WaitIrq->Type, WaitIrq->EventInfo.UserKey, WaitIrq->EventInfo.Status);
 		Ret = -SIG_ERESTARTSYS;  /* actually it should be -ERESTARTSYS */
 		goto EXIT;
-	}
-	/* timeout */
-	if (Timeout == 0) {
+	} else if (Timeout == 0) { /* timeout */
 		/* Store irqinfo status in here to redeuce time of spin_lock_irqsave */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
 		irqStatus =
@@ -5629,39 +5629,6 @@ NON_CLEAR_WAIT:
 			WaitIrq->EventInfo.TimeInfo.tLastSig2GetSig_sec,
 			WaitIrq->EventInfo.TimeInfo.tLastSig2GetSig_usec,
 			WaitIrq->EventInfo.UserKey);
-	}
-	/*  */
-	/* check CQ status, when pass2, pass2b, pass2c done */
-	if (WaitIrq->Type == ISP_IRQ_TYPE_INT_DIP_A_ST) {
-#if 0
-		MUINT32 CQ_status;
-
-		ISP_WR32(ISP_IMGSYS_BASE + 0x4160, 0x6000);
-		CQ_status = ISP_RD32(ISP_IMGSYS_BASE + 0x4164);
-		switch (WaitIrq->EventInfo.Status) {
-		case ISP_IRQ_P2_STATUS_PASS2A_DON_ST:
-			if ((CQ_status & 0x0000000F) != 0x001)
-				LOG_ERR("CQ1 not idle dbg(0x%08x 0x%08x)",
-					ISP_RD32(ISP_IMGSYS_BASE + 0x4160), CQ_status);
-
-			break;
-		case ISP_IRQ_P2_STATUS_PASS2B_DON_ST:
-			if ((CQ_status & 0x000000F0) != 0x010)
-				LOG_ERR("CQ2 not idle dbg(0x%08x 0x%08x)",
-					ISP_RD32(ISP_IMGSYS_BASE + 0x4160), CQ_status);
-
-			break;
-		case ISP_IRQ_P2_STATUS_PASS2C_DON_ST:
-			if ((CQ_status & 0x00000F00) != 0x100)
-				LOG_ERR("CQ3 not idle dbg(0x%08x 0x%08x)",
-					ISP_RD32(ISP_IMGSYS_BASE + 0x4160), CQ_status);
-
-			break;
-		default:
-			break;
-		}
-#endif
-		LOG_ERR("marked, need p2 member to review\n");
 	}
 #endif
 
@@ -6036,11 +6003,6 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.St_type, IrqInfo.EventInfo.Status);
 #endif
 			Ret = ISP_WaitIrq(&IrqInfo);
-
-			if (copy_to_user((void *)Param, &IrqInfo, sizeof(ISP_WAIT_IRQ_STRUCT)) != 0) {
-				LOG_ERR("copy_to_user failed\n");
-				Ret = -EFAULT;
-			}
 		} else {
 			LOG_ERR("copy_from_user failed\n");
 			Ret = -EFAULT;
