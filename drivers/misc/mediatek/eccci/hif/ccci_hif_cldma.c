@@ -275,6 +275,11 @@ static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno)
 	}
 
 	/* use request's link head to traverse */
+	/*maybe there is more txq than rxq*/
+	if (qno >= CLDMA_RXQ_NUM) {
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "invalid rxq%d\n", qno);
+		return;
+	}
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, " dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
 			md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
 	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
