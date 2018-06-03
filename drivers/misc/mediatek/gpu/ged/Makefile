@@ -70,6 +70,10 @@ endif
 
 ccflags-y += -DGED_DVFS_DEBUG_BUF
 
+ifeq ($(VER),eng)
+ccflags-y += -DGED_DEBUG_IOCTL_LOCK
+endif
+
 ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
 ccflags-y += -DMTK_GED_KPI
 ccflags-y += -DMTK_FRR20

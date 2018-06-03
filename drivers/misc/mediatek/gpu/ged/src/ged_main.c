@@ -68,7 +68,9 @@ static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
 GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
 
-
+#ifdef GED_DEBUG_IOCTL_LOCK
+GED_LOG_BUF_HANDLE ghLogBuf_ged_ioctl_log;
+#endif
 
 static void* gvIOCTLParamBuf = NULL;
 
@@ -252,7 +254,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 	return ret;
 }
 
-DEFINE_SEMAPHORE(ged_dal_sem);
+DEFINE_MUTEX(ged_ioctl_lock);
 
 static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long arg)
 {
@@ -260,11 +262,15 @@ static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long a
 	GED_BRIDGE_PACKAGE *psBridgePackageKM, *psBridgePackageUM = (GED_BRIDGE_PACKAGE*)arg;
 	GED_BRIDGE_PACKAGE sBridgePackageKM;
 
-	if (down_interruptible(&ged_dal_sem) < 0)
-	{
-		GED_LOGE("Fail to down ged_dal_sem\n");
-		return -ERESTARTSYS;
-	}
+#ifdef GED_DEBUG_IOCTL_LOCK
+	unsigned int function_id;
+
+	get_user(function_id, &psBridgePackageUM->ui32FunctionID);
+#endif
+
+	GED_DEBUG_IOCTL_LOCK_LOG("try lock: %u", GED_GET_BRIDGE_ID(function_id));
+	mutex_lock(&ged_ioctl_lock);
+	GED_DEBUG_IOCTL_LOCK_LOG("get lock: %u", GED_GET_BRIDGE_ID(function_id));
 
 	psBridgePackageKM = &sBridgePackageKM;
 	if (0 != ged_copy_from_user(psBridgePackageKM, psBridgePackageUM, sizeof(GED_BRIDGE_PACKAGE)))
@@ -276,7 +282,8 @@ static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long a
 	ret = ged_dispatch(pFile, psBridgePackageKM);
 
 unlock_and_return:
-	up(&ged_dal_sem);
+	GED_DEBUG_IOCTL_LOCK_LOG("release lock: %u", GED_GET_BRIDGE_ID(function_id));
+	mutex_unlock(&ged_ioctl_lock);
 
 	return ret;
 }
@@ -300,11 +307,15 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	GED_BRIDGE_PACKAGE_32 *psBridgePackageKM32 = &sBridgePackageKM32;
 	GED_BRIDGE_PACKAGE_32 *psBridgePackageUM32 = (GED_BRIDGE_PACKAGE_32*)arg;
 
-	if (down_interruptible(&ged_dal_sem) < 0)
-	{
-		GED_LOGE("Fail to down ged_dal_sem\n");
-		return -ERESTARTSYS;
-	}
+#ifdef GED_DEBUG_IOCTL_LOCK
+	unsigned int function_id;
+
+	get_user(function_id, &psBridgePackageUM32->ui32FunctionID);
+#endif
+
+	GED_DEBUG_IOCTL_LOCK_LOG("try lock: %u", GED_GET_BRIDGE_ID(function_id));
+	mutex_lock(&ged_ioctl_lock);
+	GED_DEBUG_IOCTL_LOCK_LOG("get lock: %u", GED_GET_BRIDGE_ID(function_id));
 
 	if (0 != ged_copy_from_user(psBridgePackageKM32, psBridgePackageUM32, sizeof(GED_BRIDGE_PACKAGE_32)))
 	{
@@ -322,7 +333,8 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	ret = ged_dispatch(pFile, &sBridgePackageKM64);
 
 unlock_and_return:
-	up(&ged_dal_sem);
+	GED_DEBUG_IOCTL_LOCK_LOG("release lock: %u", GED_GET_BRIDGE_ID(function_id));
+	mutex_unlock(&ged_ioctl_lock);
 
 	return ret;
 }
@@ -502,6 +514,11 @@ static int ged_init(void)
 	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
 #endif
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
+#endif
+
+#ifdef GED_DEBUG_IOCTL_LOCK
+	ghLogBuf_ged_ioctl_log =  ged_log_buf_alloc(2048, 2048*18, GED_LOG_BUF_TYPE_RINGBUFFER,
+			"ged_ioctl_log", "ged_ioctl_log");
 #endif
 
 	return 0;
