@@ -222,7 +222,7 @@ static void ta_nl_send_to_user(int pid, int seq, struct tad_nl_msg_t *reply_msg)
 
 	ret = netlink_unicast(daemo_nl_sk, skb, pid, MSG_DONTWAIT);
 	if (ret < 0)
-		tsta_warn("[ta_nl_send_to_user] send failed %d\n", ret);
+		pr_err("[ta_nl_send_to_user] send failed %d\n", ret);
 
 
 	tsta_dprintk("[ta_nl_send_to_user] netlink_unicast- ret=%d\n", ret);
@@ -237,7 +237,7 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 	int seq;
 	void *data;
 	struct nlmsghdr *nlh;
-	struct tad_nl_msg_t *tad_msg, *tad_ret_msg;
+	struct tad_nl_msg_t *tad_msg, *tad_ret_msg = NULL;
 	int size = 0;
 
 	nlh = (struct nlmsghdr *)skb->data;
@@ -254,13 +254,19 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 
 	/*tad_ret_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
 	tad_ret_msg = vmalloc(size);
-	memset(tad_ret_msg, 0, size);
+	if (tad_ret_msg != NULL) {
+		memset(tad_ret_msg, 0, size);
 
-	atm_ctrl_cmd_from_user(data, tad_ret_msg);
-	ta_nl_send_to_user(pid, seq, tad_ret_msg);
-	tsta_dprintk("[ta_nl_data_handler] send to user space process done\n");
+		atm_ctrl_cmd_from_user(data, tad_ret_msg);
+		ta_nl_send_to_user(pid, seq, tad_ret_msg);
+		tsta_dprintk("[ta_nl_data_handler] send to user space process done\n");
 
-	vfree(tad_ret_msg);
+		vfree(tad_ret_msg);
+
+	} else {
+		pr_warn("[Thermal/TC/TA][ta_nl_data_handler] vmalloc fail\n");
+	}
+
 }
 
 int wakeup_ta_algo(int flow_state)
@@ -268,11 +274,15 @@ int wakeup_ta_algo(int flow_state)
 	tsta_dprintk("[wakeup_ta_algo]g_tad_pid=%d, state=%d\n", g_tad_pid, flow_state);
 
 	if (g_tad_pid != 0) {
-		struct tad_nl_msg_t *tad_msg;
+		struct tad_nl_msg_t *tad_msg = NULL;
 		int size = TAD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
 		/*tad_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
 		tad_msg = vmalloc(size);
+		if (tad_msg != NULL) {
+			pr_warn("[Thermal/TC/TA][wakeup_ta_algo] vmalloc fail\n");
+			return -ENOMEM;
+		}
 		tsta_dprintk("[wakeup_ta_algo] malloc size=%d\n", size);
 		memset(tad_msg, 0, size);
 		tad_msg->tad_cmd = TA_DAEMON_CMD_NOTIFY_DAEMON;
