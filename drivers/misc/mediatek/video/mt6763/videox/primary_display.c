@@ -874,6 +874,9 @@ static int fps_ext_ctx_init(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
 	return 0;
 }
 
+void (*display_time_fps_stablizer)(unsigned long long ts);
+EXPORT_SYMBOL(display_time_fps_stablizer);
+
 static int fps_ext_ctx_update(struct fps_ext_ctx_t *fps_ctx)
 {
 	unsigned long long ns = sched_clock();
@@ -887,6 +890,8 @@ static int fps_ext_ctx_update(struct fps_ext_ctx_t *fps_ctx)
 		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
 		return -1;
 	}
+	if (display_time_fps_stablizer)
+		display_time_fps_stablizer(ns);
 
 	mutex_lock(&fps_ctx->lock);
 	fps_ctx->total++;

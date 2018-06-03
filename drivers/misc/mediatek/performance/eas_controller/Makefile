@@ -11,4 +11,28 @@
 # GNU General Public License for more details.
 #
 
-obj-y += eas_controller.o
+MTK_TOP = $(srctree)/drivers/misc/mediatek/
+ccflags-y += \
+	-I$(MTK_TOP)/base/power/include/ \
+	-I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/ \
+	-I$(srctree)/drivers/misc/mediatek/performance/eas_controller/include/ \
+
+obj-$(CONFIG_MACH_MT6739) += src/platform/mt6739/eas_ctrl.o
+obj-$(CONFIG_MACH_MT6763) += src/platform/mt6763/eas_ctrl.o
+obj-$(CONFIG_MACH_MT6758) += src/platform/mt6758/eas_ctrl.o
+
+ifeq ($(CONFIG_MTK_FPSGO_FBT_GAME), y)
+        ifeq ($(CONFIG_MACH_MT6739), y)
+                ccflags-y += -DCPI_THRES=250
+        endif
+
+        ifeq ($(CONFIG_MACH_MT6763), y)
+                ccflags-y += -DCPI_THRES=250
+        endif
+
+        ifeq ($(CONFIG_MACH_MT6758), y)
+                ccflags-y += -DCPI_THRES=250
+        endif
+endif
+
+obj-y += src/eas_controller.o

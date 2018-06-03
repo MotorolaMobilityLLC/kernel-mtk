@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2016-2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -9,7 +9,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/kallsyms.h>
@@ -19,9 +23,17 @@
 #include <linux/uaccess.h>
 #include <linux/printk.h>
 #include <linux/string.h>
+#include <asm/div64.h>
+
+#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+#include <fpsgo_common.h>
+#include <mtk_vcorefs_governor.h>
+#include <mtk_vcorefs_manager.h>
+#endif
 
 #include <linux/platform_device.h>
-#include "eas_controller.h"
+#include <eas_controller.h>
+#include <eas_ctrl_plat.h>
 
 #define TAG "[Boost Controller]"
 
@@ -35,6 +47,37 @@ static int boost_value[NR_CGROUP][EAS_MAX_KIR];
 static int debug_boost_value[NR_CGROUP];
 static int debug;
 
+#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+/* for CPI monitor */
+static int vcore_high;
+static int vcore;
+static int cpi_thres;
+
+static inline void reduce_stall_wrapper(int boost_value)
+{
+	int vcore_opp = -1;
+
+	/*
+	 * the boost value here is already decrement from actual
+	 * linear boost due to scheduler shifts valid boost range
+	 * from 1-100 to 0-99. recover it before threshold check.
+	 */
+	vcore_opp = reduce_stall((boost_value + 1),
+				 cpi_thres, vcore_high);
+
+	if (vcore == vcore_opp)
+		return;
+
+	if (vcorefs_request_dvfs_opp(KIR_FBT, vcore_opp) < 0)
+		return;
+
+	vcore = vcore_opp;
+	fpsgo_systrace_c_fbt_gm(-400, boost_value - 3100, "boost_value");
+	fpsgo_systrace_c_fbt_gm(-400, vcore_opp, "vcore_opp");
+}
+#else
+static inline void reduce_stall_wrapper(int boost_value) { }
+#endif
 
 /*************************************************************************************/
 #ifdef CONFIG_SCHED_TUNE
@@ -73,8 +116,8 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	else
 		final_boost_value = 0;
 
-	if (final_boost_value > 3000)
-		current_boost_value[cgroup_idx] = 3000;
+	if (final_boost_value > 4000)
+		current_boost_value[cgroup_idx] = 4000;
 	else if (final_boost_value < -100)
 		current_boost_value[cgroup_idx] = -100;
 	else
@@ -85,9 +128,13 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 				kicker, boost_value[cgroup_idx][kicker],
 				final_boost_value, current_boost_value[cgroup_idx]);
 
-	if (!debug)
-		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 3000)
+
+	if (!debug) {
+		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 4000) {
 			boost_write_for_perf_idx(cgroup_idx, current_boost_value[cgroup_idx]);
+			reduce_stall_wrapper(current_boost_value[cgroup_idx]);
+		}
+	}
 
 	mutex_unlock(&boost_eas);
 
@@ -372,8 +419,8 @@ static ssize_t perfmgr_perfserv_ta_boost_write(struct file *filp, const char *ub
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000)
-		data = 3000;
+	if (data > 4000)
+		data = 4000;
 	else if (data < -100)
 		data = -100;
 
@@ -482,6 +529,89 @@ static const struct file_operations perfmgr_debug_ta_boost_fops = {
 	.release = single_release,
 };
 /*************************************************************************************/
+#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+static ssize_t perfmgr_cpi_thres_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	int data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (kstrtoint(buf, 10, &data))
+		return -1;
+
+	cpi_thres = data;
+
+	return cnt;
+}
+
+static int perfmgr_cpi_thres_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", cpi_thres);
+
+	return 0;
+}
+
+static int perfmgr_cpi_thres_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_cpi_thres_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_cpi_thres_fops = {
+	.open = perfmgr_cpi_thres_open,
+	.write = perfmgr_cpi_thres_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+static ssize_t perfmgr_vcore_high_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	int data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (kstrtoint(buf, 10, &data))
+		return -1;
+
+	vcore_high = data;
+
+	return cnt;
+}
+
+static int perfmgr_vcore_high_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", vcore_high);
+
+	return 0;
+}
+
+static int perfmgr_vcore_high_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_vcore_high_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_vcore_high_fops = {
+	.open = perfmgr_vcore_high_open,
+	.write = perfmgr_vcore_high_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
+/*************************************************************************************/
 void perfmgr_eas_boost_init(void)
 {
 	int i, j;
@@ -502,10 +632,22 @@ void perfmgr_eas_boost_init(void)
 	proc_create("current_ta_boost", 0644, boost_dir, &perfmgr_current_ta_boost_fops);
 	proc_create("debug_ta_boost", 0644, boost_dir, &perfmgr_debug_ta_boost_fops);
 
+#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+	proc_create("vcore_high", 0644, boost_dir, &perfmgr_vcore_high_fops);
+	proc_create("cpi_thres", 0644, boost_dir, &perfmgr_cpi_thres_fops);
+
+	cpi_thres = CPI_THRES;
+
+	vcore_high = 1;
+	vcore = -1;
+#endif
+
 	for (i = 0; i < NR_CGROUP; i++)
 		for (j = 0; j < EAS_MAX_KIR; j++)
 			boost_value[i][j] = 0;
 
+	/*update pwr table for CPI monitor*/
+	update_pwd_tbl();
 }
 
 void init_perfmgr_eas_controller(void)

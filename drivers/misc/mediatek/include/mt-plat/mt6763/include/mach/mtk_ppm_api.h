@@ -141,6 +141,8 @@ extern unsigned int mt_ppm_thermal_get_cur_power(void);
 /* User limit policy */
 extern unsigned int mt_ppm_userlimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data);
 extern unsigned int mt_ppm_userlimit_cpu_freq(unsigned int cluster_num, struct ppm_limit_data *data);
+extern unsigned int mt_ppm_userlimit_freq_limit_by_others(unsigned int cluster);
+extern void ppm_game_mode_change_cb(int is_game_mode);
 
 /* Force limit policy */
 extern unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data);
@@ -159,6 +161,8 @@ extern void mt_set_ppm_state_registerCB(met_set_ppm_state_funcMET pCB);
 
 extern unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster);
 
+/* CPI */
+extern unsigned int ppm_get_cluster_cpi(unsigned int cluster);
 
 #ifdef __cplusplus
 }

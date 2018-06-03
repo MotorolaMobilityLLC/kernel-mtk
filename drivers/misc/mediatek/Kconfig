@@ -369,6 +369,46 @@ config GATOR
 	help
 	  Gator module for ARM's Streamline Performance Analyzer
 
+config MTK_FPSGO
+	bool "Support FPSGO framework"
+	default n
+	depends on MTK_ACAO_SUPPORT
+	help
+	  Support FPSGO framework for UX & Gaming FPS performance and
+	  low power balance. As a perquisite to ensure FPS performance,
+	  FPSGO persuades lowest power consumption for better DoU
+	  endurance and gaming experience.
+	  If you are not sure about this, set n.
+
+config MTK_FPSGO_FBT_GAME
+	bool "Support FPSGO Frame Budget Tuner for Game"
+	default n
+	depends on MTK_FPSGO
+	help
+	  Support FPSGO Frame Budget Tuner for Gaming FPS performance
+	  and low power balance. FBT is designated to achieve on-time
+	  rendering through manipulation of CPU frequencies.
+	  If you are not sure about this, set n.
+
+config MTK_FPSGO_FBT_UX
+	bool "Support FPSGO Frame Budget Tuner for UX"
+	default n
+	depends on MTK_FPSGO
+	help
+	  Support FPSGO Frame Budget Tuner for UX FPS performance and
+	  and low power balance. FBT is designated to achieve on-time
+	  rendering through manipulation of CPU frequencies.
+	  If you are not sure about this, set n.
+
+config MTK_FPSGO_FSTB
+	bool "Support FPSGO FPS STBailizer"
+	default n
+	depends on MTK_FPSGO
+	help
+	  Support FPSGO FPS stabilizer for FPS performance and low
+	  power balance.
+	  If you are not sure about this, set n.
+
 endmenu  # PPT
 
 menu "Misc configs"

@@ -23,7 +23,12 @@ static struct mutex notify_lock;
 static struct hrtimer hrt, hrt1, hrt2;
 static unsigned long __read_mostly mark_addr;
 
-static struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
+#ifdef CONFIG_MTK_FPSGO_FSTB
+static void notify_game_render_aware_timeout(void);
+static DECLARE_WORK(mt_game_render_aware_timeout_work, (void *) notify_game_render_aware_timeout);
+static struct hrtimer hrt3;
+#endif
+
 static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_render_aware, fbc_render_aware_pre;
 static int fbc_game, fbc_trace, has_frame;
 static long frame_budget, twanted, twanted_ms, avg_frame_time, queue_time;
@@ -64,38 +69,11 @@ inline void fbc_tracer(int pid, char *name, int count)
 	preempt_enable();
 }
 
-void release_core(void)
+void boost_touch_eas(void)
 {
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	core_limit[0].min = -1;
-	core_limit[0].max = -1;
-	core_limit[1].min = -1;
-	core_limit[1].max = -1;
-#if NR_PPM_CLUSTERS == 3
-	core_limit[2].min = -1;
-	core_limit[2].max = -1;
-#endif
-	update_userlimit_cpu_core(PPM_KIR_FBC, NR_PPM_CLUSTERS, core_limit);
-
-	fbc_tracer(-4, "b_enable", 0);
-}
-
-void boost_touch_core_eas(void)
-{
-	/* lock is mandatory*/
-	WARN_ON(!mutex_is_locked(&notify_lock));
-
-	core_limit[0].min = 3;
-	core_limit[0].max = -1;
-	core_limit[1].min = -1;
-	core_limit[1].max = -1;
-#if NR_PPM_CLUSTERS == 3
-	core_limit[2].min = -1;
-	core_limit[2].max = -1;
-#endif
-	update_userlimit_cpu_core(PPM_KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 2100);
 	fbc_tracer(-3, "boost_value", 100);
 }
@@ -129,6 +107,24 @@ static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
 
 	return HRTIMER_NORESTART;
 }
+
+#ifdef CONFIG_MTK_FPSGO_FSTB
+static void enable_game_render_aware_timer(void)
+{
+	ktime_t ktime;
+
+	ktime = ktime_set(0, NSEC_PER_MSEC * RENDER_AWARE_TIMEOUT_MSEC);
+	hrtimer_start(&hrt3, ktime, HRTIMER_MODE_REL);
+}
+
+static enum hrtimer_restart mt_game_render_aware_timeout(struct hrtimer *timer)
+{
+	if (wq)
+		queue_work(wq, &mt_game_render_aware_timeout_work);
+
+	return HRTIMER_NORESTART;
+}
+#endif
 
 static void enable_render_aware_timer(void)
 {
@@ -225,12 +221,20 @@ static void notify_render_aware_timeout(void)
 
 	fbc_render_aware_pre = fbc_render_aware;
 	fbc_render_aware = 0;
-	release_core();
 	release_eas();
 	fbc_tracer(-3, "render_aware", fbc_render_aware);
 
 	mutex_unlock(&notify_lock);
 }
+
+#ifdef CONFIG_MTK_FPSGO_FSTB
+static void notify_game_render_aware_timeout(void)
+{
+	mutex_lock(&notify_lock);
+	fpsgo_switch_fstb(1);
+	mutex_unlock(&notify_lock);
+}
+#endif
 
 static void notify_act_switch(int begin)
 {
@@ -241,12 +245,18 @@ static void notify_act_switch(int begin)
 		act_switched = 1;
 }
 
-static void notify_game(int game)
+void fbc_notify_game(int game)
 {
+#ifdef CONFIG_MTK_FPSGO
+	mutex_lock(&notify_lock);
+	fbc_game = game;
+	mutex_unlock(&notify_lock);
+#else
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	fbc_game = game;
+#endif
 }
 
 static void notify_twanted_timeout_eas(void)
@@ -303,12 +313,10 @@ void notify_fbc_enable_eas(int enable)
 		}
 
 		current_max_bv = 0;
-		boost_touch_core_eas();
+		boost_touch_eas();
 
 		boost_flag = 0;
 	} else {
-
-		release_core();
 
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 		for (i = 0; i < 10 && vip_group[i] != -1; i++)
@@ -638,7 +646,7 @@ struct fbc_operation_locked fbc_eas = {
 	.frame_cmplt	= notify_frame_complete_eas,
 	.intended_vsync	= notify_intended_vsync_eas,
 	.no_render	= notify_no_render_eas,
-	.game	= notify_game,
+	.game	= fbc_notify_game,
 	.act_switch	= notify_act_switch
 };
 
@@ -665,7 +673,6 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 	if (strncmp(cmd, "debug", 5) == 0) {
 		mutex_lock(&notify_lock);
 		fbc_debug = arg;
-		release_core();
 		release_eas();
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "init", 4) == 0) {
@@ -720,17 +727,49 @@ static int device_open(struct inode *inode, struct file *file)
 	return single_open(file, device_show, inode->i_private);
 }
 
+#ifdef CONFIG_MTK_FPSGO_FSTB
+static unsigned long long fbc_get_time(void)
+{
+	unsigned long long temp;
 
+	preempt_disable();
+	temp = cpu_clock(smp_processor_id());
+	preempt_enable();
+	return temp;
+}
+
+#define FC_TOLERANCE_NUM 3
+#define FC_TOLERANCE_DURATION_NS 100000000ULL
+static unsigned long long fstb_hwui_fc_ts[FC_TOLERANCE_NUM];
+static int fstb_hwui_fc_idx;
+#endif
 static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 {
 
 	/* TODO: need to check touch? */
 
 	switch (cmd) {
+#ifndef CONFIG_MTK_FPSGO
 	/*receive game info*/
 	case IOCTL_WRITE_GM:
 		fbc_op->game(arg);
 		break;
+#endif
+
+#ifdef CONFIG_MTK_FPSGO_FSTB
+	/*receive frame_time info*/
+	case IOCTL_WRITE_FC:
+		fstb_hwui_fc_ts[fstb_hwui_fc_idx] = fbc_get_time();
+		if (fstb_hwui_fc_ts[fstb_hwui_fc_idx] -
+				fstb_hwui_fc_ts[(fstb_hwui_fc_idx + 1) % FC_TOLERANCE_NUM] <
+				FC_TOLERANCE_DURATION_NS) {
+			enable_game_render_aware_timer();
+			if (fpsgo_is_fstb_enable())
+				fpsgo_switch_fstb(0);
+		}
+		fstb_hwui_fc_idx = (fstb_hwui_fc_idx + 1) % FC_TOLERANCE_NUM;
+		break;
+#endif
 
 	default:
 		return 0;
@@ -759,10 +798,12 @@ long device_ioctl(struct file *filp,
 
 	/* start of ux fbc */
 	switch (cmd) {
+#ifndef CONFIG_MTK_FPSGO
 	/*receive game info*/
 	case IOCTL_WRITE_GM:
 		fbc_op->game(arg);
 		break;
+#endif
 
 	/*receive act switch info*/
 	case IOCTL_WRITE_AS:
@@ -800,6 +841,7 @@ long device_ioctl(struct file *filp,
 	if (!is_ux_fbc_active())
 		goto ret_ioctl;
 		swap_buffers_begin = 1;
+		fbc_tracer(-3, "swap_buffers_begin", swap_buffers_begin);
 		break;
 
 	default:
@@ -861,6 +903,10 @@ static int __init init_fbc(void)
 	hrt1.function = &mt_touch_timeout;
 	hrtimer_init(&hrt2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrt2.function = &mt_render_aware_timeout;
+#ifdef CONFIG_MTK_FPSGO_FSTB
+	hrtimer_init(&hrt3, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrt3.function = &mt_game_render_aware_timeout;
+#endif
 
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
