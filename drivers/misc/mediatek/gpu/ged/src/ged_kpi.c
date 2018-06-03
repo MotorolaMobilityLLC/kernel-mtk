@@ -73,6 +73,7 @@ typedef enum {
 	GED_KPI_FRC_DEFAULT_MODE		= DFRC_DRV_MODE_DEFAULT,	/* No frame control is applied */
 	GED_KPI_FRC_FRR_MODE			= DFRC_DRV_MODE_FRR,
 	GED_KPI_FRC_ARR_MODE			= DFRC_DRV_MODE_ARR,
+	GED_KPI_FRC_SW_VSYNC_MODE		= DFRC_DRV_MODE_INTERNAL_SW,
 } GED_KPI_FRC_MODE_TYPE;
 
 typedef struct GED_KPI_HEAD_TAG {
@@ -453,17 +454,17 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 }
 /* ----------------------------------------------------------------------------- */
 #define GED_KPI_IS_SF_SHIFT 0
-#define GED_KPI_IS_SF_MASK_BIT 0x1
+#define GED_KPI_IS_SF_MASK 0x1
 #define GED_KPI_QBUFFER_LEN_SHIFT 1
-#define GED_KPI_QBUFFER_LEN_MASK_BIT 0x7
+#define GED_KPI_QBUFFER_LEN_MASK 0x7
 #define GED_KPI_DEBUG_QBUFFER_LEN_SHIFT 4
-#define GED_KPI_DEBUG_QBUFFER_LEN_MASK_BIT 0x7
+#define GED_KPI_DEBUG_QBUFFER_LEN_MASK 0x7
 #define GED_KPI_GPU_UNCOMPLETED_LEN_SHIFT 7
-#define GED_KPI_GPU_UNCOMPLETED_LEN_MASK_BIT 0x7
+#define GED_KPI_GPU_UNCOMPLETED_LEN_MASK 0x7
 #define GED_KPI_FRC_MODE_SHIFT 10
-#define GED_KPI_FRC_MODE_MASK_BIT 0x7
+#define GED_KPI_FRC_MODE_MASK 0x7
 #define GED_KPI_FRC_CLIENT_SHIFT 13
-#define GED_KPI_FRC_CLIENT_MASK_BIT 0xF
+#define GED_KPI_FRC_CLIENT_MASK 0xF
 #define GED_KPI_GPU_FREQ_INFO_SHIFT 7
 #define GED_KPI_GPU_FREQ_INFO_MASK 0xFFF /* max @ 4096 MHz */
 #define GED_KPI_GPU_LOADING_INFO_SHIFT 0
@@ -475,14 +476,14 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	unsigned long gpu_info = 0;
 
 	ged_kpi_calc_kpi_info(ulID, psKPI, psHead);
-	frame_attr |= ((psHead->isSF & GED_KPI_IS_SF_MASK_BIT) << GED_KPI_IS_SF_SHIFT);
-	frame_attr |= ((psKPI->i32QedBuffer_length & GED_KPI_QBUFFER_LEN_MASK_BIT) << GED_KPI_QBUFFER_LEN_SHIFT);
-	frame_attr |= ((psKPI->i32DebugQedBuffer_length & GED_KPI_DEBUG_QBUFFER_LEN_MASK_BIT)
+	frame_attr |= ((psHead->isSF & GED_KPI_IS_SF_MASK) << GED_KPI_IS_SF_SHIFT);
+	frame_attr |= ((psKPI->i32QedBuffer_length & GED_KPI_QBUFFER_LEN_MASK) << GED_KPI_QBUFFER_LEN_SHIFT);
+	frame_attr |= ((psKPI->i32DebugQedBuffer_length & GED_KPI_DEBUG_QBUFFER_LEN_MASK)
 					<< GED_KPI_DEBUG_QBUFFER_LEN_SHIFT);
-	frame_attr |= ((psKPI->i32Gpu_uncompleted & GED_KPI_GPU_UNCOMPLETED_LEN_MASK_BIT)
+	frame_attr |= ((psKPI->i32Gpu_uncompleted & GED_KPI_GPU_UNCOMPLETED_LEN_MASK)
 					<< GED_KPI_GPU_UNCOMPLETED_LEN_SHIFT);
-	frame_attr |= ((psHead->frc_mode & GED_KPI_FRC_MODE_MASK_BIT) << GED_KPI_FRC_MODE_SHIFT);
-	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK_BIT) << GED_KPI_FRC_CLIENT_SHIFT);
+	frame_attr |= ((psHead->frc_mode & GED_KPI_FRC_MODE_MASK) << GED_KPI_FRC_MODE_SHIFT);
+	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK) << GED_KPI_FRC_CLIENT_SHIFT);
 	gpu_info |= ((psKPI->gpu_freq & GED_KPI_GPU_FREQ_INFO_MASK) << GED_KPI_GPU_FREQ_INFO_SHIFT);
 	gpu_info |= ((psKPI->gpu_loading & GED_KPI_GPU_LOADING_INFO_MASK) << GED_KPI_GPU_LOADING_INFO_SHIFT);
 	psKPI->frame_attr = frame_attr;
@@ -819,6 +820,10 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 			break;
 		case GED_KPI_FRC_ARR_MODE:
 			psHead->frc_mode = GED_KPI_FRC_ARR_MODE;
+			vsync_period = GED_KPI_SEC_DIVIDER / target_fps;
+			break;
+		case GED_KPI_FRC_SW_VSYNC_MODE:
+			psHead->frc_mode = GED_KPI_FRC_SW_VSYNC_MODE;
 			vsync_period = GED_KPI_SEC_DIVIDER / target_fps;
 			break;
 		default:
