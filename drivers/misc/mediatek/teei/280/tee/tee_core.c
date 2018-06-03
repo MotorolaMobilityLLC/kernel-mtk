@@ -44,10 +44,12 @@ static struct class *tee_class;
 static dev_t tee_devt;
 
 /* helper to convert user pointers passed inside __aligned_u64 fields */
+#ifndef u64_to_user_ptr
 static void __user *u64_to_user_ptr(__u64 val)
 {
 	return (void __user *) (unsigned long) val;
 }
+#endif
 
 static struct tee_context *teedev_open(struct tee_device *teedev)
 {
