@@ -1115,6 +1115,8 @@ VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter);
 
 VOID wlanCfgSetChip(IN P_ADAPTER_T prAdapter);
 
+VOID wlanGetFwInfo(IN P_ADAPTER_T prAdapter);
+
 VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter);
 
 VOID wlanCfgSetCountryCode(IN P_ADAPTER_T prAdapter);
