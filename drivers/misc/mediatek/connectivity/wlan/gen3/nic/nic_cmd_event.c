@@ -958,20 +958,6 @@ VOID nicOidCmdTimeoutCommon(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* @brief This function is a generic command timeout handler
-*
-* @param pfnOidHandler      Pointer to the OID handler
-*
-* @return none
-*/
-/*----------------------------------------------------------------------------*/
-VOID nicCmdTimeoutCommon(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
-{
-	ASSERT(prAdapter);
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
 * @brief This function is called when command for entering RF test has
 *        failed sending due to timeout (highly possibly by firmware crash)
 *
