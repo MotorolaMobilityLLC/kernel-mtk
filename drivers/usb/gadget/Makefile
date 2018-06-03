@@ -8,10 +8,17 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_boost
+ifeq ($(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT),y)
+subdir-ccflags-y += -I$(srctree)/drivers/usb/gadget/function
+endif
 
 ccflags-y	+= -I$(srctree)/drivers/usb/gadget/udc -I$(srctree)/drivers/usb/gadget/function
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/c2k_usb/
 ccflags-y += -I$(srctree)/drivers/usb/gadget/
+ifeq ($(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+endif
 
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o

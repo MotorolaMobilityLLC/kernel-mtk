@@ -975,7 +975,7 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 			os_printk(K_DEBUG, "----- ep0 state: MUSB_EP0_STAGE_STATUSIN\n");
 			break;
 		default:
-			ERR("SetupEnd came in a wrong ep0stage %s\n",
+			dev_err(musb->controller, "SetupEnd came in a wrong ep0stage %s\n",
 			    decode_ep0stage(musb->ep0_state));
 		}
 		csr = os_readl(U3D_EP0CSR);
@@ -1064,7 +1064,7 @@ setup:
 			int handled = 0;
 
 			if (len != 8) {
-				ERR("SETUP packet len %d != 8 ?\n", len);
+				dev_err(musb->controller, "SETUP packet len %d != 8 ?\n", len);
 				break;
 			}
 			musb_read_setup(musb, &setup);

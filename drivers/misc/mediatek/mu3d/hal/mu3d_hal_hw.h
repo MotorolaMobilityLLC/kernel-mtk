@@ -72,7 +72,13 @@
 
 #define CS_12B 1
 #define CS_16B 2
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+#define CHECKSUM_TYPE CS_12B
+#else
 #define CHECKSUM_TYPE CS_16B
+#endif
+
 #define U3D_COMMAND_TIMER 10
 
 #if (CHECKSUM_TYPE == CS_16B)
