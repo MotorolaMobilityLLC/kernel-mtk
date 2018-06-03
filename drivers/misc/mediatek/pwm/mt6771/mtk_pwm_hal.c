@@ -22,13 +22,6 @@
 #include <mach/mtk_pwm_hal.h>
 #include <mach/mtk_pwm_prv.h>
 #include <linux/clk.h>
-#ifdef PWM_OVER_4G
-#include <mt-plat/mtk_chip.h>
-#include <linux/device.h>
-#include <linux/of.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#endif
 
 /**********************************
 * Global  data
@@ -48,14 +41,12 @@ enum {
 	PWM_DATA_WIDTH,
 	PWM_THRESH,
 	PWM_SEND_WAVENUM,
-	PWM_VALID
+	PWM_VALID,
+	PWM_BUF_BASE_ADDR2
 } PWM_REG_OFF;
 
 
 unsigned long PWM_register[PWM_NUM] = {};
-#ifdef PWM_OVER_4G
-void __iomem *pwm_pericfg_base;
-#endif
 /**************************************************************/
 
 enum {
@@ -399,41 +390,21 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
-	unsigned long reg_buff0_addr;
-#ifdef PWM_OVER_4G
-	int addr_shift_ctrl = 0;
-	/*
-	 * 0: Register access for 0~4G
-	 * 1: DDR 1~2 Gbytes access (We don't use)
-	 * 2: DDR 2~3 Gbytes access (as above)
-	 * 3: DDR 3~4 Gbytes access (as above)
-	 * ----------------------------------
-	 * 4: DDR 4~5 Gbytes access (We use it)
-	 * ..
-	 * 8: DDR 8~9 Gbytes access (as above)
-	 */
+	unsigned long reg_buff0_addr, reg_buff0_addr2;
+	unsigned int upper_32_addr;
+	unsigned int lower_32_addr;
 
-	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+	reg_buff0_addr = PWM_register[pwm_no] +	4 * PWM_BUF0_BASE_ADDR;
+	reg_buff0_addr2 = PWM_register[pwm_no] + 4 * PWM_BUF_BASE_ADDR2;
+
+	lower_32_addr = lower_32_bits(addr);
+	OUTREG32_DMA(reg_buff0_addr, lower_32_addr);
+	CLRREG32(reg_buff0_addr2, 0xF);
+
 	if (addr > 0xFFFFFFFF) {
-		/* PERI_8GB_DDR_EN should always be enable so that PERI_SHIFT can work */
-		SETREG32(PERI_8GB_DDR_EN, 1);
-		/*
-		 * addr[33:30] : addr_shift_ctrl
-		 * addr[29:0] : reg_buff0_addr
-		 */
-		addr_shift_ctrl = addr >> 30;
-		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
-		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl << PWM_PERI_SHIFT_OFFSET);
-		OUTREG32_DMA(reg_buff0_addr, (addr & 0x3FFFFFFF));
-	} else {
-		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
-		OUTREG32_DMA(reg_buff0_addr, addr);
+		upper_32_addr = upper_32_bits(addr);
+		SETREG32(reg_buff0_addr2, upper_32_addr);
 	}
-#else
-	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
-
-	OUTREG32_DMA(reg_buff0_addr, addr);
-#endif
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
@@ -546,19 +517,6 @@ void mt_pwm_26M_clk_enable_hal(u32 enable)
 
 void mt_pwm_platform_init(void)
 {
-#ifdef PWM_OVER_4G
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
-	if (node) {
-		pwm_pericfg_base = of_iomap(node, 0);
-		pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
-		if (!pwm_pericfg_base)
-			pr_err("PWM pwm_pericfg_base error!!\n");
-	} else {
-		pr_err("PWM can't find pericfg node!!\n");
-	}
-#endif
 }
 
 int mt_get_pwm_clk_src(struct platform_device *pdev)
