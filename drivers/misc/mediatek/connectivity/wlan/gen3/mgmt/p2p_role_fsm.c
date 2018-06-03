@@ -919,7 +919,10 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 			prChnlReqInfo->eChannelWidth = prJoinInfo->prTargetBssDesc->eChannelWidth;
 			prChnlReqInfo->ucCenterFreqS1 = prJoinInfo->prTargetBssDesc->ucCenterFreqS1;
 			prChnlReqInfo->ucCenterFreqS2 = prJoinInfo->prTargetBssDesc->ucCenterFreqS2;
-
+			if (prP2pBssInfo->eBand != prChnlReqInfo->eBand)
+				prP2pBssInfo->eBand = prChnlReqInfo->eBand;
+			DBGLOG(P2P, INFO, "prP2pBssInfo->eBand=%d, prChnlReqInfo->eBand=%d.\n",
+				prP2pBssInfo->eBand, prChnlReqInfo->eBand);
 			p2pRoleFsmStateTransition(prAdapter, prP2pRoleFsmInfo, P2P_ROLE_STATE_REQING_CHANNEL);
 		}
 
