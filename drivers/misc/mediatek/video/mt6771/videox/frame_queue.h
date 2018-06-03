@@ -35,7 +35,7 @@ struct frame_queue_t {
 
 struct frame_queue_head_t *get_frame_queue_head(int session_id);
 struct frame_queue_t *frame_queue_node_create(void);
-void frame_queue_node_destroy(struct frame_queue_t *node);
+void frame_queue_node_destroy(struct frame_queue_t *node, bool free_dirty_roi);
 
 int frame_queue_push(struct frame_queue_head_t *head, struct frame_queue_t *node);
 
