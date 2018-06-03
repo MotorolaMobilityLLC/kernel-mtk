@@ -1228,7 +1228,8 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 			HWM_ERR("copy_from_user fail!!\n");
 			return -EFAULT;
 		}
-		hwmsen_enable_nodata(hwm_obj, flag, 1);
+		if ((flag >= 0) && (flag <= MAX_ANDROID_SENSOR_NUM))
+			hwmsen_enable_nodata(hwm_obj, flag, 1);
 		break;
 
 	case HWM_IO_DISABLE_SENSOR_NODATA:
@@ -1236,7 +1237,8 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 			HWM_ERR("copy_from_user fail!!\n");
 			return -EFAULT;
 		}
-		hwmsen_enable_nodata(hwm_obj, flag, 0);
+		if ((flag >= 0) && (flag <= MAX_ANDROID_SENSOR_NUM))
+			hwmsen_enable_nodata(hwm_obj, flag, 0);
 		break;
 
 	default:
