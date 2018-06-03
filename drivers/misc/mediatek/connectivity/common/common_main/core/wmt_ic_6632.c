@@ -764,7 +764,7 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	ctrlPa2 = 0;
 	wmt_core_ctrl(WMT_CTRL_GET_PATCH_NUM, &ctrlPa1, &ctrlPa2);
 	patch_num = ctrlPa1;
-	WMT_INFO_FUNC("patch total num = [%d]\n", patch_num);
+	WMT_DBG_FUNC("patch total num = [%d]\n", patch_num);
 
 	/* improve patch down load speed */
 	WMT_DBG_FUNC("improve patch dwn speed, clock rate promote, copy data use DMA at firmware side\n");
