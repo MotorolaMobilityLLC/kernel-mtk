@@ -437,12 +437,12 @@ int primary_display_esd_check(void)
 
 	dprec_logger_start(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_START, 0, 0);
-	DISPINFO("[ESD]ESD check begin\n");
+	DISPCHECK("[ESD]ESD check begin\n");
 
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
 		mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 1, 0);
-		DISPINFO("[ESD]Primary DISP slept. Skip esd check\n");
+		DISPCHECK("[ESD]Primary DISP slept. Skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
 	}
@@ -459,15 +459,21 @@ int primary_display_esd_check(void)
 			DISPCHECK("[ESD]ESD check eint\n");
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 2, 0);
 			primary_display_switch_esd_mode(mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 3, 0);
 			ret = do_esd_check_eint();
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 4, 0);
 			mode = GPIO_DSI_MODE; /* used for mode switch */
 			primary_display_switch_esd_mode(mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 5, 0);
 		} else if (mode == GPIO_DSI_MODE) {
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 			DISPCHECK("[ESD]ESD check read\n");
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 2, 1);
 			ret = do_esd_check_read();
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 3, 1);
 			mode = GPIO_EINT_MODE; /* used for mode switch */
 		}
 
@@ -540,6 +546,18 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 			_primary_path_switch_dst_unlock();
 			continue;
 		}
+
+		primary_display_manual_lock();
+		/* thread relase CPU, when display is slept */
+		if (primary_get_state() == DISP_SLEPT) {
+			primary_display_manual_unlock();
+			_primary_path_switch_dst_unlock();
+			primary_display_wait_not_state(DISP_SLEPT,
+				MAX_SCHEDULE_TIMEOUT);
+			continue;
+		}
+		primary_display_manual_unlock();
+
 		i = 0; /* repeat */
 		do {
 			ret = primary_display_esd_check();
