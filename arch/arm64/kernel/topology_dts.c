@@ -35,6 +35,9 @@ static const struct cpu_efficiency table_efficiency[] = {
 	{ NULL, },
 };
 
+static void update_siblings_masks(unsigned int cpuid);
+static void update_cpu_capacity(unsigned int cpu);
+
 static unsigned long *__cpu_capacity;
 #define cpu_capacity(cpu)	__cpu_capacity[cpu]
 
@@ -175,7 +178,16 @@ unsigned long arch_get_cur_cpu_capacity(int cpu)
 static int cpu_topology_init;
 void __init arch_build_cpu_topology_domain(void)
 {
+	int cpuid;
+
 	init_cpu_topology();
+
+	/* update core and thread sibling masks */
+	for_each_possible_cpu(cpuid) {
+		update_siblings_masks(cpuid);
+		update_cpu_capacity(cpuid);
+	}
+
 	cpu_topology_init = 1;
 }
 

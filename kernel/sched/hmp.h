@@ -85,7 +85,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 		int prev_cpu, int new_cpu) { return new_cpu; }
 static void hmp_online_cpu(int cpu) {}
 static void hmp_offline_cpu(int cpu) {}
-static int hmp_idle_pull(int this_cpu) { return this_cpu; }
+static int hmp_idle_pull(int this_cpu) { return 0; }
 static inline void
 hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa) {}
 static void __init hmp_cpu_mask_setup(void) {}
