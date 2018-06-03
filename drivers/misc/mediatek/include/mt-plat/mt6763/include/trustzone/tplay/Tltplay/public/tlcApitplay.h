@@ -36,27 +36,27 @@
  * @param len Length of the data to process.
  * @param data Data to processed (cleartext or ciphertext).
  */
-typedef struct {
-		tciCommandHeader_t  header;     /**< Command header */
+struct tplay_cmd_t {
+		struct tciCommandHeader_t  header;     /**< Command header */
 		uint32_t            len;        /**< Length of data to process or buffer */
 		uint32_t            respLen;    /**< Length of response buffer */
-} tplay_cmd_t;
+};
 
 /*
  * Response structure Trustlet -> Trustlet Connector.
  */
-typedef struct {
-		tciResponseHeader_t header;     /**< Response header */
+struct tplay_rsp_t {
+		struct tciResponseHeader_t header;     /**< Response header */
 		uint32_t            len;
-} tplay_rsp_t;
+};
 
 /*
  * TCI message data.
  */
-typedef struct {
+struct tplay_tciMessage_t {
 		union {
-				tplay_cmd_t     cmd;
-				tplay_rsp_t     rsp;
+				struct tplay_cmd_t     cmd;
+				struct tplay_rsp_t     rsp;
 		};
 		uint32_t    index;
 		uint32_t    result;
@@ -68,7 +68,7 @@ typedef struct {
 		uint32_t    direction;
 		uint32_t    tplay_handle_low_addr;
 		uint32_t    tplay_handle_high_addr;
-} tplay_tciMessage_t;
+};
 
 /*
  * Trustlet UUID.
