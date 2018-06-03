@@ -211,7 +211,7 @@ static void disable_dcs_pasr(void)
 
 	/* Turn on DDRPHY */
 	/*
-	if (dcs_status == DCS_LOWPOWER) {
+	if ((dcs_status == DCS_LOWPOWER) && ((ddrphy_off - ddrphy_on) == 1)) {
 		dram_turn_on_off_ch(1);
 		dcs_mpu_protection(0);
 		ddrphy_on++;
