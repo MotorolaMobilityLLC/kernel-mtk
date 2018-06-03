@@ -1593,6 +1593,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 	UINT32 len = 0;
 	LONG res;
 	INT32 ret;
+	INT32 remain_array_len = 0;
 
 	PUINT8 parser_sub_string[] = {
 		"<ASSERT> ",
@@ -1616,6 +1617,8 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 	STP_DBG_DBG_FUNC("source infor:%s\n", pStr);
 	switch (type) {
 	case STP_DBG_ASSERT_INFO:
+
+
 		pDtr = osal_strstr(pStr, parser_sub_string[type]);
 		if (pDtr != NULL) {
 			pDtr += osal_strlen(parser_sub_string[type]);
@@ -1637,12 +1640,27 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len] = '_';
 
 		pTemp = osal_strchr(pDtr, '#');
+		if (pTemp == NULL) {
+			STP_DBG_ERR_FUNC("parser '#' is not find\n");
+			return -5;
+		}
 		pTemp += 1;
 
 		pTemp2 = osal_strchr(pTemp, ' ');
-		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
-				pTemp2 - pTemp);
-		g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1 + pTemp2 - pTemp] = '\0';
+		if (pTemp2 == NULL) {
+			STP_DBG_ERR_FUNC("parser ' ' is not find\n");
+			pTemp2 = pTemp + 1;
+		}
+		remain_array_len = osal_array_size(g_stp_dbg_cpupcr->assert_info) - (osal_strlen("assert@") + len + 1);
+		if (remain_array_len - 1 > pTemp2 - pTemp) {
+			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
+					pTemp2 - pTemp);
+			g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1 + pTemp2 - pTemp] = '\0';
+		} else {
+			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
+					remain_array_len - 1);
+			g_stp_dbg_cpupcr->assert_info[STP_ASSERT_INFO_SIZE - 1] = '\0';
+		}
 		STP_DBG_INFO_FUNC("assert info:%s\n", &g_stp_dbg_cpupcr->assert_info[0]);
 		break;
 	case STP_DBG_FW_TASK_ID:
