@@ -5040,6 +5040,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
 	spin_lock_init(&host->remove_bad_card);
+	spin_lock_init(&host->cmd_dump_lock);
 	spin_lock_init(&host->sdio_irq_lock);
 	/* init dynamtic timer */
 	init_timer(&host->timer);

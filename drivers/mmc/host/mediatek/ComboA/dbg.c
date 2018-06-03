@@ -219,11 +219,7 @@ struct dbg_run_host_log {
 static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
 char msdc_aee_buffer[MSDC_AEE_BUFFER_SIZE];
 static int dbg_host_cnt;
-static int is_lock_init;
-static spinlock_t cmd_dump_lock;
-
 static unsigned int printk_cpu_test = UINT_MAX;
-struct timeval cur_tv;
 
 /* type 0: cmd, type 1 rsp */
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
@@ -239,12 +235,7 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 	if (!host || host->id != 0)
 		return;
 
-	if (!is_lock_init) {
-		spin_lock_init(&cmd_dump_lock);
-		is_lock_init = 1;
-	}
-
-	spin_lock_irqsave(&cmd_dump_lock, flags);
+	spin_lock_irqsave(&host->cmd_dump_lock, flags);
 	if (type == 1) {
 		 /*skip log if last cmd rsp are the same*/
 		if (last_cmd == cmd &&
@@ -263,7 +254,6 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 	}
 	t = cpu_clock(printk_cpu_test);
 	nanosec_rem = do_div(t, 1000000000)/1000;
-	do_gettimeofday(&cur_tv);
 	dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
 	dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
 	dbg_run_host_log_dat[dbg_host_cnt].type = type;
@@ -274,7 +264,7 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 	if (dbg_host_cnt >= dbg_max_cnt)
 		dbg_host_cnt = 0;
 end:
-	spin_unlock_irqrestore(&cmd_dump_lock, flags);
+	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
 }
 
 void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
@@ -295,12 +285,8 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	host = mmc_priv(mmc);
 	if (!host || host->id != 0)
 		return;
-	if (!is_lock_init) {
-		spin_lock_init(&cmd_dump_lock);
-		is_lock_init = 1;
-	}
 
-	spin_lock_irqsave(&cmd_dump_lock, flags);
+	spin_lock_irqsave(&host->cmd_dump_lock, flags);
 	dump_cnt = min_t(u32, latest_cnt, dbg_max_cnt);
 
 	i = dbg_host_cnt - 1;
@@ -341,12 +327,12 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		if (i < 0)
 			i = dbg_max_cnt - 1;
 	}
-	spin_unlock_irqrestore(&cmd_dump_lock, flags);
+	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	SPREAD_PRINTF(buff, size, m,
-		"areq_cnt:%d, task_id_index %08lx, cq_wait_rdy:%d\n",
+		"areq_cnt:%d, task_id_index %08lx, cq_wait_rdy:%d, cq_rdy_cnt:%d\n",
 		atomic_read(&mmc->areq_cnt),
-		mmc->task_id_index, atomic_read(&mmc->cq_wait_rdy));
+		mmc->task_id_index, atomic_read(&mmc->cq_wait_rdy), atomic_read(&mmc->cq_rdy_cnt));
 #endif
 }
 #else

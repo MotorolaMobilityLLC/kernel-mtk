@@ -444,56 +444,58 @@ void msdc_set_host_power_control(struct msdc_host *host)
 #endif
 #if defined(MSDC_HQA) || defined(SDIO_HQA)
 /* #define MSDC_HQA_HV */
-/* #define MSDC_HQA_NV */
-#define MSDC_HQA_LV
+#define MSDC_HQA_NV
+/* #define MSDC_HQA_LV */
 
 void msdc_HQA_set_voltage(struct msdc_host *host)
 {
 #if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
-	u32 vcore, vio = 0, val_delta;
+	u32 vcore;
+	/*u32 val_delta;*/
 #endif
-	u32 vio_cal = 0;
-	static int vcore_orig = -1, vio_orig = -1;
+	u32 vio_cal = 0, vio_trim = 0;
+	static int vcore_orig = -1;
 
 	if (host->is_autok_done == 1)
 		return;
 
 	if (vcore_orig < 0)
-		pmic_read_interface(0xBE8, &vcore_orig, 0x7F, 0);
-	if (vio_orig < 0)
-		pmic_read_interface(0x1296, &vio_orig, 0xF, 8);
-	pmic_read_interface(0x1296, &vio_cal, 0xF, 0);
-	pr_info("[MSDC%d HQA] orig Vcore 0x%x, Vio 0x%x, Vio_cal 0x%x\n",
-		host->id, vcore_orig, vio_orig, vio_cal);
+		pmic_read_interface(0x14aa, &vcore_orig, 0x7F, 0);
+
+	pmic_read_interface(0x1e94, &vio_cal, 0xF, 0);
+	pmic_read_interface(0x1ebe, &vio_trim, 0xF, 0);
+	pr_info("[MSDC%d HQA] orig Vcore 0x%x, Vio_trim 0x%x, Vio_cal 0x%x\n",
+		host->id, vcore_orig, vio_trim, vio_cal);
 
 #if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
-	val_delta = (500000 + vcore_orig * 6250) / 20 / 6250;
+	/*val_delta = (500000 + vcore_orig * 6250) / 20 / 6250;*/
+	vcore = vcore_orig;
+	vio_cal = 0;
+	vio_trim = 0;
 
 	#ifdef MSDC_HQA_HV
-	vcore = vcore_orig + val_delta;
-	vio_cal = 0xa;
+	/*vcore = vcore_orig + val_delta;*/
+	vio_cal = 0xa; /*+100mV*/
+	vio_trim = 0;
 	#endif
 
 	#ifdef MSDC_HQA_LV
-	vcore = vcore_orig - val_delta;
+	/*vcore = vcore_orig - val_delta;*/
 	vio_cal = 0;
-	vio = vio_orig - 1;
+	vio_trim = 0x7; /*-70mV*/
 	#endif
 
-	pmic_config_interface(0xBE8, vcore, 0x7F, 0);
+	/*let DRAM do the setting for Vcore*/
+	/*pmic_config_interface(0x14aa, vcore, 0x7F, 0);*/
 
-	if (vio_cal)
-		pmic_config_interface(0x1296, vio_cal, 0xF, 0);
-	else
-		pmic_config_interface(0x1296, vio, 0xF, 8);
+	pmic_config_interface(0x1e94, vio_cal, 0xF, 0);
+	pmic_config_interface(0x1ebe, vio_trim, 0xF, 0);
 
-	pr_info("[MSDC%d HQA] adj Vcore 0x%x, Vio 0x%x, Vio_cal 0x%x\n",
-		host->id, vcore, vio, vio_cal);
+	pr_info("[MSDC%d HQA] adj Vcore 0x%x, Vio_trim 0x%x, Vio_cal 0x%x\n",
+		host->id, vcore, vio_trim, vio_cal);
 #endif
-
 }
 #endif
-
 
 /**************************************************************/
 /* Section 3: Clock                                           */
@@ -596,18 +598,18 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			/* pdn at bit 7 */
 			(MSDC_READ32(pericfg_base + 0x094) >> 7) & 1);
 		buf_ptr += sprintf(buf_ptr,
-			"MSDC0 CLK_MUX[%p][1:0]=%d, pdn=%d, CLK_CG[%p]bit 2,6=%d,%d\n",
+			"MSDC0 CLK_MUX[%p][10:8]=%d, pdn=%d, CLK_CG[%p]bit 2,6=%d,%d\n",
 			topckgen_base + 0x080,
 			/* mux at bits 8~10 */
 			(MSDC_READ32(topckgen_base + 0x080) >> 8) & 7,
 			/* pdn at bit 15 */
 			(MSDC_READ32(pericfg_base + 0x094) >> 15) & 1,
-			pericfg_base + 0x290,
+			pericfg_base + 0x094,
 			/* cg at bit 2,6 */
 			(MSDC_READ32(pericfg_base + 0x094) >> 2) & 1,
 			(MSDC_READ32(pericfg_base + 0x094) >> 6) & 1);
 		buf_ptr += sprintf(buf_ptr,
-			"MSDC1 CLK_MUX[%p][1:0]=%d, pdn=%d, CLK_CG[%p]bit 4,16=%d,%d\n",
+			"MSDC1 CLK_MUX[%p][18:16]=%d, pdn=%d, CLK_CG[%p]bit 4,16=%d,%d\n",
 			topckgen_base + 0x080,
 			/* mux at bits 16~18 */
 			(MSDC_READ32(topckgen_base + 0x080) >> 16) & 7,
