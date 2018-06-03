@@ -76,6 +76,74 @@ initcall_debug=1 maxcpus=1";
 	};
 };
 
+&i2c0 {
+	atmel_cap_touch@4a{
+		compatible = "mediatek,atmel_cap_touch";
+		reg = <0x4a>;
+		status = "okay";
+		pinctrl-names = "state_power_output0","state_power_output1";
+		pinctrl-0 = <&ctp_pins_power_output0>;
+		pinctrl-1 = <&ctp_pins_power_output1>;
+		atmel,cfg_name = "640T_V1.7.E1_V1.14_20171215.raw";
+		atmel,fw_version = "16AA";
+		atmel,cfg_1 {
+			atmel,type = <0x01>;
+			atmel,family-id = <0xA4>;
+			atmel,variant-id = <0x0B>;
+			atmel,version = <0x16>;
+			atmel,build = <0xAA>;
+			atmel,config-year = <0x0F>;
+			atmel,config-month = <0x08>;
+			atmel,config-date = <0x1A>;
+		};
+	};
+};
+&pio {
+	ctp_pins_power_output0: mxtpoweroutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	ctp_pins_power_output1: mxtpoweroutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&i2c0 {
+	cap_touch@38{
+		compatible = "mediatek,ft_cap_touch";
+		reg = <0x38>;
+		status = "okay";
+		pinctrl-names = "state_focal_power_output0",
+			"state_focal_power_output1";
+		pinctrl-0 = <&ctp_pins_focal_power_output0>;
+		pinctrl-1 = <&ctp_pins_focal_power_output1>;
+	};
+};
+
+&pio {
+	ctp_pins_focal_power_output0: poweroutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	ctp_pins_focal_power_output1: poweroutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
 &i2c3 {
 	ext_buck_lp4@57 {
 		regulator-name ="ext_buck_vdd2";
@@ -102,7 +170,7 @@ initcall_debug=1 maxcpus=1";
 };
 /* TOUCH start */
 &touch {
-	tpd-resolution = <1080 1920>;
+	tpd-resolution = <720 1440>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
