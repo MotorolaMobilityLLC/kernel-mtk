@@ -79,12 +79,15 @@ struct ppm_data ppm_main_info = {
 #ifdef PPM_1LL_MIN_FREQ
 	.min_freq_1LL = PPM_1LL_MIN_FREQ,
 #endif
+	.smart_detect_boost = 0,
 
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 	.is_5A_limit_enable = true,
 	.is_5A_limit_on = false,
 #endif
-
+#ifdef PPM_L_PLUS_SUPPORT
+	.has_L_plus = false,
+#endif
 	.dvfs_tbl_type = DVFS_TABLE_TYPE_FY,
 
 	.ppm_pm_ops = {
@@ -464,6 +467,9 @@ static void ppm_main_calc_new_limit(void)
 
 	/* fill ptpod activate flag */
 	c_req->is_ptp_policy_activate = is_ptp_activate;
+
+	/* fill smart detect hint to hps */
+	c_req->smart_detect = ppm_main_info.smart_detect_boost;
 
 	/* Trigger exception if all cluster max core limit is 0 */
 	if (is_all_cluster_zero) {
@@ -1095,6 +1101,22 @@ static int ppm_main_data_init(void)
 
 #ifdef PPM_IC_SEGMENT_CHECK
 	ppm_main_info.fix_state_by_segment = ppm_check_fix_state_by_segment();
+#endif
+#ifdef PPM_L_PLUS_SUPPORT
+	/* Check HW has L plus CPU or not */
+	{
+		unsigned int segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
+
+		switch (segment) {
+		case 0x3:
+		case 0x7:
+			ppm_main_info.has_L_plus = true;
+			break;
+		default:
+			break;
+		}
+		ppm_info("has_L_plus = %d, segment = 0x%x\n", ppm_main_info.has_L_plus, segment);
+	}
 #endif
 
 #ifdef CONFIG_MTK_RAM_CONSOLE

@@ -249,6 +249,21 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 			policy->req.limit[1].min_cpufreq_idx = get_cluster_min_cpufreq_idx(1);
 #endif
 
+#ifdef PPM_L_PLUS_SUPPORT
+	if (ppm_main_info.has_L_plus) {
+		if (ppm_main_info.smart_detect_boost) {
+			/* change min core of root cluster to 1 for 4LL_L and 4L_LL state */
+			if (state == PPM_POWER_STATE_4LL_L)
+				policy->req.limit[0].min_cpu_core = 1;
+			else if (state == PPM_POWER_STATE_4L_LL)
+				policy->req.limit[1].min_cpu_core = 1;
+		} else if (state == PPM_POWER_STATE_4L_LL) {
+			/* change min L core of 4L_LL state to 3 (except L plus core) */
+			policy->req.limit[1].min_cpu_core = 3;
+		}
+	}
+#endif
+
 	FUNC_EXIT(FUNC_LV_HICA);
 }
 
@@ -708,6 +723,14 @@ static int __init ppm_hica_policy_init(void)
 			}
 		}
 	}
+
+#ifdef PPM_L_PLUS_SUPPORT
+	if (ppm_main_info.has_L_plus) {
+		/* change loading bond to 300 for L cluster */
+		state_info[PPM_POWER_STATE_L_ONLY].transfer_by_perf->transition_data[0].loading_bond = 300;
+		state_info[PPM_POWER_STATE_4L_LL].transfer_by_pwr->transition_data[0].loading_bond = 300;
+	}
+#endif
 
 	if (ppm_main_register_policy(&hica_policy)) {
 		ppm_err("@%s: hica policy register failed\n", __func__);

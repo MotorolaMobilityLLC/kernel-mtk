@@ -71,6 +71,7 @@ struct ppm_client_req {
 	unsigned int cluster_num;
 	unsigned int root_cluster;
 	bool is_ptp_policy_activate;
+	unsigned int smart_detect;
 	cpumask_var_t online_core;
 	struct ppm_client_limit {
 		unsigned int cluster_id;
