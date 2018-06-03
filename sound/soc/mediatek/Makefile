@@ -32,11 +32,11 @@ ifneq ($(MTK_PLATFORM),mt6763)
   subdir-ccflags-y += -D_GIT318_PMIC_READY
 endif
 subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
-ifneq ($(MTK_PLATFORM),mt6759)
-  ifneq ($(MTK_PLATFORM),mt6763)
-    subdir-ccflags-y += -D_MT_IDLE_HEADER
-  endif
+
+ifneq ($(MTK_PLATFORM),mt6763)
+  subdir-ccflags-y += -D_MT_IDLE_HEADER
 endif
+
 
 # include path
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include

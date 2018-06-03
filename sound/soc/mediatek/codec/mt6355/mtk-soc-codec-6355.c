@@ -6598,7 +6598,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		/* Inverse UL rx clock for 6757 */
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x1 << 8, 0x1 << 8);
 		/* pmic txif sck inverse */
-		Ana_Set_Reg(AFE_UL_SRC_CON0_L, (use_mtkaif_version << 7) || 0x0005, 0xffff);  /* mtkaif 1.5 */
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, (use_mtkaif_version << 7) | 0x0005, 0xffff);  /* mtkaif 1.5 */
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xffff);   /* turn on afe */
 	}
 

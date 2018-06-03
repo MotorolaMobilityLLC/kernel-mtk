@@ -129,5 +129,6 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate);
 void EnableI2SCLKDiv(uint32 I2snum, bool bEnable);
 void PowerDownAllI2SDiv(void);
+void audio_clk_control(void);
 
 #endif
