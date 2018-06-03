@@ -59,6 +59,8 @@ bool spm_set_dpidle_pcm_init_flag(void);
 #define DEEPIDLE_LOG_FULL                (1 << 1)
 #define DEEPIDLE_LOG_RESOURCE_USAGE      (1 << 2)
 
+#define DEEPIDLE_OPT_VCORE_LP_MODE       (1 << 0)
+
 /*
  * for Screen On Deep Idle 3.0
  */

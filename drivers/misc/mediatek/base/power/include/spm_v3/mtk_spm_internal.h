@@ -529,6 +529,14 @@ enum {
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 
+enum {
+	SPM_OPT_SLEEP_DPIDLE  = (1 << 0),
+	SPM_OPT_UNIVPLL_STAT  = (1 << 1),
+	SPM_OPT_GPS_STAT      = (1 << 2),
+	SPM_OPT_VCORE_LP_MODE = (1 << 3),
+	NF_SPM_OPT
+};
+
 struct spm_data {
 	unsigned int cmd;
 	union {
@@ -537,9 +545,7 @@ struct spm_data {
 			unsigned int sys_timestamp_h;
 			unsigned int sys_src_clk_l;
 			unsigned int sys_src_clk_h;
-			unsigned int sleep_dpidle;
-			unsigned int univpll_status;
-			unsigned int gps_status;
+			unsigned int spm_opt;
 		} suspend;
 		struct {
 			unsigned int root_id;
