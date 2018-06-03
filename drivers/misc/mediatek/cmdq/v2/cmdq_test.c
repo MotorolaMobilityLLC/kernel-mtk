@@ -3688,6 +3688,8 @@ void testcase_get_task_by_engine(void)
 
 	CMDQ_MSG("%s\n", __func__);
 
+	memset(&task, 0, sizeof(struct TaskStruct));
+
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 
@@ -3701,7 +3703,7 @@ void testcase_get_task_by_engine(void)
 	/* must fail before flush */
 	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
 	if (status != -EFAULT) {
-		CMDQ_ERR("TEST FAIL: get task by engine flag before flush: 0x%016llx, task flag: 0x%016llx",
+		CMDQ_ERR("TEST FAIL: get task by engine flag before flush: 0x%016llx, task flag: 0x%016llx\n",
 			engineFlag, task.engineFlag);
 	}
 
@@ -3710,7 +3712,7 @@ void testcase_get_task_by_engine(void)
 	cmdq_task_flush_async(handle);
 	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
 	if (status != 0) {
-		CMDQ_ERR("TEST FAIL: get task by engine flag: 0x%016llx, task flag: 0x%016llx",
+		CMDQ_ERR("TEST FAIL: get task by engine flag: 0x%016llx, task flag: 0x%016llx\n",
 			engineFlag, task.engineFlag);
 	}
 
