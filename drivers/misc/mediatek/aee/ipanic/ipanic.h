@@ -240,11 +240,6 @@ extern int card_dump_func_read(unsigned char *buf, unsigned int len, unsigned lo
 extern int card_dump_func_write(unsigned char *buf, unsigned int len, unsigned long long offset,
 				int dev);
 extern unsigned int reset_boot_up_device(int type);	/* force to re-initialize the emmc host controller */
-/*#ifdef CONFIG_MTK_MMPROFILE_SUPPORT*/
-#ifdef CONFIG_MMPROFILE
-extern unsigned int MMProfileGetDumpSize(void);
-extern void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned int *pSize);
-#endif
 extern void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs);
 extern void mrdump_mini_ke_cpu_regs(struct pt_regs *regs);
 extern void mrdump_mini_add_misc(unsigned long addr, unsigned long size, unsigned long start,

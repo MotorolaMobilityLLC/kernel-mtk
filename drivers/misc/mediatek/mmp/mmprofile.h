@@ -165,6 +165,8 @@ long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type, mmp_metada
 long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *pMetaData);
 void mmprofile_start(int start);
 void mmprofile_enable(int enable);
+unsigned int mmprofile_get_dump_size(void);
+void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr, unsigned int *p_size);
 #endif
 
 #define MMProfileLogStructure(event, type, p_struct, struct_type) \
