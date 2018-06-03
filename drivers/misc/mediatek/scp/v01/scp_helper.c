@@ -733,8 +733,13 @@ EXPORT_SYMBOL(scp_wdt_reset);
 static ssize_t scp_wdt_trigger(struct device *dev
 		, struct device_attribute *attr, const char *buf, size_t count)
 {
+	unsigned int value = 0;
+
 	pr_debug("scp_wdt_trigger: %s\n", buf);
-	scp_wdt_reset(SCP_A_ID);
+	if (kstrtouint(buf, 10, &value) == 0) {
+		if (value == 666)
+			scp_wdt_reset(SCP_A_ID);
+	}
 	return count;
 }
 
@@ -1703,7 +1708,9 @@ static void __exit scp_exit(void)
 #if SCP_DVFS_INIT_ENABLE
 	scp_dvfs_exit();
 #endif
-
+#if SCP_LOGGER_ENABLE
+	scp_logger_uninit();
+#endif
 	free_irq(scpreg.irq, NULL);
 	misc_deregister(&scp_device);
 
