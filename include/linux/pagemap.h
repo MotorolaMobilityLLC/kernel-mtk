@@ -223,7 +223,11 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
 #else
 static inline struct page *__page_cache_alloc(gfp_t gfp)
 {
+#ifdef CONFIG_CMA_REFUSE_PAGE_CACHE
+	return alloc_pages(gfp, 0);
+#else
 	return alloc_pages(gfp | __GFP_CMA, 0);
+#endif
 }
 #endif
 

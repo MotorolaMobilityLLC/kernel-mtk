@@ -531,6 +531,16 @@ config CMA_AREAS
 
 	  If unsure, leave the default value "7".
 
+config CMA_REFUSE_PAGE_CACHE
+	bool "refue page cache to alloc from CMA"
+	depends on CMA
+	default n
+	help
+	  Page cache might cause cma allocation flow fail for small size
+	  CMA pool, set to "y" if that kind of issue happened.
+
+	  If unsure, say "n".
+
 config MEM_SOFT_DIRTY
 	bool "Track memory changes"
 	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
