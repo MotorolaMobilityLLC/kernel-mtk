@@ -6991,7 +6991,7 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
-#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
+#if 0 /* for EARLY PORTING, will be removed */
 	/* set power down mode forbidden */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
