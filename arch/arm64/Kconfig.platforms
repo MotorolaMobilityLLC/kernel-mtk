@@ -183,6 +183,7 @@ config MACH_MT6761
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
+	select FAST_CIRQ_CLONE_FLUSH
 	select MTK_SYSIRQ
 	select MTK_EMI
 	select MTK_TIMER
