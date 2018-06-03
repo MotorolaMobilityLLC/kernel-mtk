@@ -1139,9 +1139,30 @@ int mtd_block_markbad(struct mtd_info *mtd, loff_t ofs)
 		return -EINVAL;
 	if (!(mtd->flags & MTD_WRITEABLE))
 		return -EROFS;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	return mtd->_block_markbad(mtd, ofs, NULL);
+#else
 	return mtd->_block_markbad(mtd, ofs);
+#endif
 }
 EXPORT_SYMBOL_GPL(mtd_block_markbad);
+
+int mtd_block_markbad_hw(struct mtd_info *mtd, loff_t ofs, const uint8_t *buf)
+{
+	if (!mtd->_block_markbad)
+		return -EOPNOTSUPP;
+	if (ofs < 0 || ofs >= mtd->size)
+		return -EINVAL;
+	if (!(mtd->flags & MTD_WRITEABLE))
+		return -EROFS;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	return mtd->_block_markbad(mtd, ofs, buf);
+#else
+	return mtd->_block_markbad(mtd, ofs);
+#endif
+}
+EXPORT_SYMBOL_GPL(mtd_block_markbad_hw);
+
 
 /*
  * default_mtd_writev - the default writev method

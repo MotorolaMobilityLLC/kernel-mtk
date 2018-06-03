@@ -304,14 +304,21 @@ static int part_block_isbad(struct mtd_info *mtd, loff_t ofs)
 	ofs += part->offset;
 	return part->master->_block_isbad(part->master, ofs);
 }
-
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+static int part_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buf)
+#else
 static int part_block_markbad(struct mtd_info *mtd, loff_t ofs)
+#endif
 {
 	struct mtd_part *part = PART(mtd);
 	int res;
 
 	ofs += part->offset;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	res = part->master->_block_markbad(part->master, ofs, buf);
+#else
 	res = part->master->_block_markbad(part->master, ofs);
+#endif
 	if (!res)
 		mtd->ecc_stats.badblocks++;
 	return res;

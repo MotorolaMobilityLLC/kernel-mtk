@@ -186,7 +186,7 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 	from = ((loff_t)page) << this->page_shift;
 
 	while (totlen) {
-		len = min(totlen, (size_t)(1 << this->bbt_erase_shift));
+		len = min((u32)totlen, (u32)(1 << this->bbt_erase_shift));
 		if (marker_len) {
 			/*
 			 * In case the BBT marker is not in the OOB area it
@@ -324,7 +324,7 @@ static int scan_read_oob(struct mtd_info *mtd, uint8_t *buf, loff_t offs,
 
 	while (len > 0) {
 		ops.datbuf = buf;
-		ops.len = min(len, (size_t)mtd->writesize);
+		ops.len = min_t(u32, len, mtd->writesize);
 		ops.oobbuf = buf + ops.len;
 
 		res = mtd_read_oob(mtd, offs, &ops);
