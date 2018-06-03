@@ -35,11 +35,14 @@
 #include <linux/proc_fs.h>
 #include <linux/semaphore.h>
 #include <linux/delay.h>
+#include <linux/pm_runtime.h>
 #include <linux/sched.h>
 #include <linux/suspend.h>
 #include <linux/pm_wakeup.h>
 #include <mt-plat/dma.h>
 #include "mt-plat/sync_write.h"
+#include <linux/pm_qos.h>
+#include <mmdvfs_pmqos.h>
 
 #ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
@@ -63,6 +66,13 @@
 #include "val_api_private.h"
 #include "drv_api.h"
 
+#define VCODEC_DVFS_V2
+
+#ifdef VCODEC_DVFS_V2
+#include <linux/slab.h>
+#include "dvfs_v2.h"
+#endif
+
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
@@ -76,12 +86,24 @@
 #define VDO_HW_READ(ptr)            readl((void __iomem *)ptr)
 
 #define VCODEC_DEVNAME     "Vcodec"
+#define VCODEC_DEVNAME2     "Vcodec2"
 #define VCODEC_DEV_MAJOR_NUMBER 160   /* 189 */
 
 static dev_t vcodec_devno = MKDEV(VCODEC_DEV_MAJOR_NUMBER, 0);
+static dev_t vcodec_devno2 = MKDEV(VCODEC_DEV_MAJOR_NUMBER, 1);
 static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
+struct pm_qos_request vcodec_qos_request;
+struct pm_qos_request vcodec_qos_request2;
+struct pm_qos_request vcodec_qos_request_f;
+struct pm_qos_request vcodec_qos_request_f2;
+
+#ifdef CONFIG_PM
+static struct cdev *vcodec_cdev2;
+static struct class *vcodec_class2;
+static struct device *vcodec_device2;
+#endif
 
 static struct clk *clk_MT_CG_VDEC;              /* VENC_GCON_VDEC */
 static struct clk *clk_MT_CG_VENC;              /* VENC_GCON_VENC */
@@ -101,6 +123,8 @@ static DEFINE_MUTEX(EncEMILock);
 static DEFINE_MUTEX(DecEMILock);
 static DEFINE_MUTEX(DriverOpenCountLock);
 static DEFINE_MUTEX(HWLockEventTimeoutLock);
+static DEFINE_MUTEX(DecPMQoSLock);
+static DEFINE_MUTEX(EncPMQoSLock);
 
 static DEFINE_MUTEX(VdecPWRLock);
 static DEFINE_MUTEX(VencPWRLock);
@@ -213,6 +237,28 @@ unsigned int VENC_IRQ_ID, VDEC_IRQ_ID;
 #ifdef ENABLE_MMDVFS_VDEC
 /* <--- MM DVFS related */
 #include <mmdvfs_config_util.h>
+#define MIN_VDEC_FREQ 228
+#define MIN_VENC_FREQ 228
+#define STD_VDEC_FREQ 320
+#define STD_VENC_FREQ 320
+static int gVDECBWRequested;
+static int gVENCBWRequested;
+static u64 g_dec_freq;
+static u64 g_enc_freq;
+static unsigned int gVDECFrmTRAVC[4] = {12, 24, 40, 12}; /* /3 for real ratio */
+static unsigned int gVDECFrmTRHEVC[4] = {12, 24, 40, 12};
+/* 3rd element for VP mode */
+static unsigned int gVDECFrmTRMP2_4[5] = {16, 20, 32, 50, 16};
+static unsigned int gVENCFrmTRAVC[3] = {6, 12, 6};
+static u32 dec_step_size;
+static u32 enc_step_size;
+static u64 g_dec_freq_steps[MAX_FREQ_STEP];
+static u64 g_enc_freq_steps[MAX_FREQ_STEP];
+#ifdef VCODEC_DVFS_V2
+static struct codec_history *codec_hists;
+static struct codec_job *codec_jobs;
+static DEFINE_MUTEX(VcodecDVFSLock);
+#endif
 #endif
 
 unsigned int TimeDiffMs(struct VAL_TIME_T timeOld, struct VAL_TIME_T timeNew)
@@ -364,6 +410,30 @@ void vdec_power_on(void)
 	}
 }
 
+#ifdef VCODEC_DEBUG_SYS
+static ssize_t vcodec_debug_show(struct kobject *kobj,
+				struct kobj_attribute *attr, char *buf) {
+#ifdef ENABLE_MMDVFS_VDEC
+#ifndef VCODEC_DVFS_V2
+
+#endif
+	return sprintf(buf, "Not profiling(%d).\n", vcodecDebugMode);
+#endif
+}
+
+static ssize_t vcodec_debug_store(struct kobject *kobj,
+				struct kobj_attribute *attr,
+				const char *buf, size_t count) {
+	if (sscanf(buf, "%du", &vcodecDebugMode) == 1) {
+		/* Add one line comment to meet coding style */
+		pr_debug("[VCODEC][vcodec_debug_store] Input is stored\n");
+	}
+	return count;
+}
+
+vcodec_attr(vcodec_debug);
+#endif
+
 void vdec_power_off(void)
 {
 
@@ -392,6 +462,16 @@ void vdec_power_off(void)
 		clk_disable_unprepare(clk_MT_SCP_SYS_DISP);
 	}
 	mutex_unlock(&VdecPWRLock);
+	mutex_lock(&DecPMQoSLock);
+
+	/* pr_debug("[PMQoS] vdec_power_off reset to 0"); */
+	pm_qos_update_request(&vcodec_qos_request, 0);
+	gVDECBWRequested = 0;
+
+#ifdef VCODEC_DVFS_V2
+	pm_qos_update_request(&vcodec_qos_request_f, 0);
+#endif
+	mutex_unlock(&DecPMQoSLock);
 }
 
 void venc_power_on(void)
@@ -473,6 +553,16 @@ void venc_power_off(void)
 		clk_disable_unprepare(clk_MT_SCP_SYS_DISP);
 	}
 	mutex_unlock(&VencPWRLock);
+	mutex_lock(&EncPMQoSLock);
+
+	/* pr_debug("[PMQoS] venc_power_off reset to 0"); */
+	pm_qos_update_request(&vcodec_qos_request2, 0);
+	gVENCBWRequested = 0;
+
+#ifdef VCODEC_DVFS_V2
+	pm_qos_update_request(&vcodec_qos_request_f2, 0);
+#endif
+	mutex_unlock(&EncPMQoSLock);
 }
 
 void vdec_break(void)
@@ -575,6 +665,32 @@ void venc_break(void)
 	/* Step 6: Clear pause status */
 	VDO_HW_WRITE(VENC_IRQ_ACK, 0x10);
 }
+
+#ifdef CONFIG_PM
+int mt_vdec_runtime_suspend(struct device *dev)
+{
+	vdec_power_off();
+	return 0;
+}
+
+int mt_vdec_runtime_resume(struct device *dev)
+{
+	vdec_power_on();
+	return 0;
+}
+
+int mt_venc_runtime_suspend(struct device *dev)
+{
+	venc_power_off();
+	return 0;
+}
+
+int mt_venc_runtime_resume(struct device *dev)
+{
+	venc_power_on();
+	return 0;
+}
+#endif
 
 void dec_isr(void)
 {
@@ -833,7 +949,21 @@ static long vcodec_lockhw_vdec(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 #if USE_WAKELOCK == 0
 	unsigned int suspend_block_cnt = 0;
 #endif
+#ifdef VCODEC_DVFS_V2
+	struct codec_job *cur_job = 0;
+	int target_freq;
+	u64 target_freq_64;
+#endif
 
+#ifdef VCODEC_DVFS_V2
+	mutex_lock(&VcodecDVFSLock);
+	handle = (unsigned long)(pHWLock->pvHandle);
+	cur_job = add_job((void *)pmem_user_v2p_video(handle), &codec_jobs);
+	/* pr_debug("cur_job's handle %p", cur_job->handle); */
+	mutex_unlock(&VcodecDVFSLock);
+#endif
+
+	/* Loop until lock hw successful */
 	while ((*bLockedHW) == VAL_FALSE) {
 		mutex_lock(&HWLockEventTimeoutLock);
 		if (HWLockEvent.u4TimeoutMs == 1) {
@@ -873,8 +1003,10 @@ static long vcodec_lockhw_vdec(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 		mutex_unlock(&HWLock);
 
 		if (FirstUseDecHW == 0) {
-			pr_debug("[VDEC] Not first time use HW, timeout = %d\n",
-			HWLockEvent.u4TimeoutMs);
+			/*
+			 * pr_debug("[VDEC] Not first time use, timeout = %d\n",
+			 * HWLockEvent.u4TimeoutMs);
+			 */
 			eValRet = eVideoWaitEvent(&HWLockEvent,
 						sizeof(struct VAL_EVENT_T));
 		}
@@ -915,25 +1047,68 @@ static long vcodec_lockhw_vdec(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 			CodecHWLock.eDriverType = pHWLock->eDriverType;
 			eVideoGetTimeOfDay(&CodecHWLock.rLockedTime,
 					sizeof(struct VAL_TIME_T));
-
-			pr_debug("VDEC_LOCKHW, free to use HW\n");
-			pr_debug("Inst = 0x%lx TID = %d, Time(s, us) = %d, %d",
-					handle,
-					current->pid,
-					CodecHWLock.rLockedTime.u4Sec,
-					CodecHWLock.rLockedTime.u4uSec);
+			/*
+			 * pr_debug("VDEC_LOCKHW, free to use HW\n");
+			 * pr_debug("Inst=0x%lx TID=%d, Time(s, us)=%d, %d",
+			 *		handle,
+			 *		current->pid,
+			 *		CodecHWLock.rLockedTime.u4Sec,
+			 *		CodecHWLock.rLockedTime.u4uSec);
+			 */
 
 			*bLockedHW = VAL_TRUE;
 			if (eValRet == VAL_RESULT_INVALID_ISR &&
 				FirstUseDecHW != 1) {
 				pr_info("[WARN] reset pwr/irq when HWLock");
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device);
+#else
 #ifndef KS_POWER_WORKAROUND
 				vdec_power_off();
 #endif
+#endif
 				disable_irq(VDEC_IRQ_ID);
 			}
+#ifdef VCODEC_DVFS_V2
+			mutex_lock(&VcodecDVFSLock);
+			if (cur_job == 0) {
+				target_freq = 1;
+				target_freq_64 = match_freq(99999,
+					&g_dec_freq_steps[0], dec_step_size);
+				pm_qos_update_request(&vcodec_qos_request_f,
+					target_freq_64);
+			} else {
+				cur_job->start = get_time_us();
+				target_freq = est_freq(cur_job->handle,
+						&codec_jobs, codec_hists);
+				target_freq_64 = match_freq(target_freq,
+						&g_dec_freq_steps[0],
+						dec_step_size);
+				if (target_freq > 0) {
+					g_dec_freq = target_freq;
+					if (g_dec_freq > target_freq_64) {
+						g_dec_freq =
+							(int)target_freq_64;
+					}
+					cur_job->mhz = (int)target_freq_64;
+					pm_qos_update_request(
+						&vcodec_qos_request_f,
+						target_freq_64);
+				}
+			}
+
+			/* pr_info("VDEC cur_job freq %u, %llu, %d",
+			 *	target_freq, target_freq_64, dec_step_size);
+			 */
+
+			mutex_unlock(&VcodecDVFSLock);
+#endif
+#ifdef CONFIG_PM
+			pm_runtime_get_sync(vcodec_device);
+#else
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_on();
+#endif
 #endif
 			if (pHWLock->bSecureInst == VAL_FALSE) {
 				/* Add one line comment for avoid kernel coding
@@ -950,18 +1125,19 @@ static long vcodec_lockhw_vdec(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 					1000000) + rCurTime.u4uSec) -
 					CodecHWLock.rLockedTime.u4uSec) /
 					1000);
-
-			pr_debug("VDEC_LOCKHW, someone use HW\n");
-			pr_debug("Time(ms) = %d, TimeOut(ms)) = %d\n",
-					u4TimeInterval, pHWLock->u4TimeoutMs);
-			pr_debug("Lock Inst = 0x%lx, TID = %d, CurrTID = %d\n",
-				(unsigned long)CodecHWLock.pvHandle,
-				gu4VdecLockThreadId,
-				current->pid);
-			pr_debug("rLockedTime(%ds, %dus), rCurTime(%ds, %dus)",
-					CodecHWLock.rLockedTime.u4Sec,
-					CodecHWLock.rLockedTime.u4uSec,
-					rCurTime.u4Sec, rCurTime.u4uSec);
+			/*
+			 * pr_debug("VDEC_LOCKHW, someone use HW\n");
+			 * pr_debug("Time(ms) = %d, TimeOut(ms)) = %d\n",
+			 *		u4TimeInterval, pHWLock->u4TimeoutMs);
+			 * pr_debug("Lock Inst=0x%lx, TID=%d, CurrTID=%d\n",
+			 *	(unsigned long)CodecHWLock.pvHandle,
+			 *	gu4VdecLockThreadId,
+			 *	current->pid);
+			 * pr_debug("rLockedTime(%ds,%dus), rCurTime(%ds,%dus)",
+			 *		CodecHWLock.rLockedTime.u4Sec,
+			 *		CodecHWLock.rLockedTime.u4uSec,
+			 *		rCurTime.u4Sec, rCurTime.u4uSec);
+			 */
 
 			/* 2012/12/16. Cheng-Jung Never steal hardware lock */
 		}
@@ -985,6 +1161,22 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 	unsigned int suspend_block_cnt = 0;
 #endif
 
+#ifdef VCODEC_DVFS_V2
+	struct codec_job *cur_job = 0;
+	int target_freq;
+	u64 target_freq_64;
+#endif
+
+#ifdef VCODEC_DVFS_V2
+	if (pHWLock->eDriverType != VAL_DRIVER_TYPE_JPEG_ENC) {
+		mutex_lock(&VcodecDVFSLock);
+		handle = (unsigned long)(pHWLock->pvHandle);
+		cur_job = add_job((void *)pmem_user_v2p_video(handle),
+					&codec_jobs);
+		/* pr_debug("cur_job's handle %p", cur_job->handle); */
+		mutex_unlock(&VcodecDVFSLock);
+	}
+#endif
 	while ((*bLockedHW) == VAL_FALSE) {
 		/* Early break for JPEG VENC */
 		if (pHWLock->u4TimeoutMs == 0) {
@@ -1067,51 +1259,84 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 		mutex_lock(&HWLock);
 		/* No process use HW, so current process can use HW */
 		if (CodecHWLock.pvHandle == 0) {
-			if (pHWLock->eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-				pHWLock->eDriverType ==
-					VAL_DRIVER_TYPE_JPEG_ENC) {
 #if USE_WAKELOCK == 1
-				__pm_stay_awake(&v_wakeup_src);
+			__pm_stay_awake(&v_wakeup_src);
 #elif USE_WAKELOCK == 0
-				while (is_entering_suspend == 1) {
-					suspend_block_cnt++;
-					if (suspend_block_cnt > 100000) {
-						/* Print log if trying to enter
-						 * suspend for too long
-						 */
-					pr_info("VENC blocked by suspend");
-						suspend_block_cnt = 0;
-					}
-					msleep(1);
+			while (is_entering_suspend == 1) {
+				suspend_block_cnt++;
+				if (suspend_block_cnt > 100000) {
+					/* Print log if trying to enter
+					 * suspend for too long
+					 */
+				pr_info("VENC blocked by suspend");
+					suspend_block_cnt = 0;
 				}
+				msleep(1);
+			}
 #endif
-				CodecHWLock.pvHandle =
-				(void *)pmem_user_v2p_video(handle);
-				CodecHWLock.eDriverType = pHWLock->eDriverType;
-				eVideoGetTimeOfDay(
-					&CodecHWLock.rLockedTime,
+			CodecHWLock.pvHandle =
+					(void *)pmem_user_v2p_video(handle);
+			CodecHWLock.eDriverType = pHWLock->eDriverType;
+			eVideoGetTimeOfDay(&CodecHWLock.rLockedTime,
 					sizeof(struct VAL_TIME_T));
+			/*
+			 * pr_debug("VENC_LOCKHW, free to use HW\n");
+			 * pr_debug("VENC_LOCKHW, handle = 0x%lx\n",
+			 *	(unsigned long)CodecHWLock.pvHandle);
+			 * pr_debug("Inst=0x%lx TID=%d, Time(%ds, %dus)",
+			 *	(unsigned long)CodecHWLock.pvHandle,
+			 *	current->pid,
+			 *	CodecHWLock.rLockedTime.u4Sec,
+			 *	CodecHWLock.rLockedTime.u4uSec);
+			 */
 
-				pr_debug("VENC_LOCKHW, free to use HW\n");
-				pr_debug("VENC_LOCKHW, handle = 0x%lx\n",
-				(unsigned long)CodecHWLock.pvHandle);
-				pr_debug("Inst=0x%lx TID=%d, Time(%ds, %dus)",
-				(unsigned long)CodecHWLock.pvHandle,
-				current->pid,
-				CodecHWLock.rLockedTime.u4Sec,
-				CodecHWLock.rLockedTime.u4uSec);
-
-				*bLockedHW = VAL_TRUE;
-				if (pHWLock->eDriverType ==
-					VAL_DRIVER_TYPE_H264_ENC ||
-					pHWLock->eDriverType ==
-					VAL_DRIVER_TYPE_JPEG_ENC) {
-#ifndef KS_POWER_WORKAROUND
-					venc_power_on();
-#endif
-					enable_irq(VENC_IRQ_ID);
+#ifdef VCODEC_DVFS_V2
+			if (CodecHWLock.eDriverType !=
+				VAL_DRIVER_TYPE_JPEG_ENC) {
+			mutex_lock(&VcodecDVFSLock);
+			if (cur_job == 0) {
+				target_freq = 1;
+				target_freq_64 = match_freq(99999,
+					&g_enc_freq_steps[0], enc_step_size);
+				pm_qos_update_request(&vcodec_qos_request_f2,
+					target_freq_64);
+			} else {
+				cur_job->start = get_time_us();
+				target_freq = est_freq(cur_job->handle,
+						&codec_jobs, codec_hists);
+				target_freq_64 = match_freq(target_freq,
+						&g_enc_freq_steps[0],
+						enc_step_size);
+				if (target_freq > 0) {
+					g_enc_freq = target_freq;
+					if (g_enc_freq > target_freq_64) {
+						g_enc_freq =
+							(int)target_freq_64;
+					}
+					cur_job->mhz = (int)target_freq_64;
+					pm_qos_update_request(
+						&vcodec_qos_request_f2,
+						target_freq_64);
 				}
 			}
+
+			/* pr_info("VENC cur_job freq %u, %llu, %d",
+			 *	target_freq, target_freq_64, enc_step_size);
+			 */
+
+			mutex_unlock(&VcodecDVFSLock);
+			}
+#endif
+			*bLockedHW = VAL_TRUE;
+
+#ifdef CONFIG_PM
+			pm_runtime_get_sync(vcodec_device2);
+#else
+#ifndef KS_POWER_WORKAROUND
+			venc_power_on();
+#endif
+#endif
+			enable_irq(VENC_IRQ_ID);
 		} else { /* someone use HW, and check timeout value */
 			if (pHWLock->u4TimeoutMs == 0) {
 				*bLockedHW = VAL_FALSE;
@@ -1126,18 +1351,19 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 				1000000) + rCurTime.u4uSec) -
 				CodecHWLock.rLockedTime.u4uSec) / 1000);
 
-			pr_debug("VENC_LOCKHW, someone use enc HW");
-			pr_debug("Time(ms) = %d, TimeOut(ms) = %d\n",
-				 u4TimeInterval, pHWLock->u4TimeoutMs);
-			pr_debug("rLockedTime(%ds, %dus), rCurTime(%ds, %dus)",
-				CodecHWLock.rLockedTime.u4Sec,
-				CodecHWLock.rLockedTime.u4uSec,
-				rCurTime.u4Sec, rCurTime.u4uSec);
-			pr_debug("LockInst = 0x%lx, Inst = 0x%lx, TID = %d\n",
-				 (unsigned long)CodecHWLock.pvHandle,
-				 pmem_user_v2p_video(handle),
-				 current->pid);
-
+			/*
+			 * pr_debug("VENC_LOCKHW, someone use enc HW");
+			 * pr_debug("Time(ms) = %d, TimeOut(ms) = %d\n",
+			 *	 u4TimeInterval, pHWLock->u4TimeoutMs);
+			 * pr_debug("rLockedTime(%ds,%dus),rCurTime(%ds,%dus)",
+			 *	CodecHWLock.rLockedTime.u4Sec,
+			 *	CodecHWLock.rLockedTime.u4uSec,
+			 *	rCurTime.u4Sec, rCurTime.u4uSec);
+			 * pr_debug("LockInst=0x%lx, Inst=0x%lx, TID=%d\n",
+			 *	 (unsigned long)CodecHWLock.pvHandle,
+			 *	 pmem_user_v2p_video(handle),
+			 *	 current->pid);
+			 */
 			++gLockTimeOutCount;
 			if (gLockTimeOutCount > 30) {
 				pr_info("VENC_LOCKHW %d fail 30 times",
@@ -1156,11 +1382,13 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 		}
 
 		if (*bLockedHW == VAL_TRUE) {
-			pr_debug("VENC_LOCKHW ok handle:0x%lx,va:%lx,type:%d\n",
-				(unsigned long)CodecHWLock.pvHandle,
-				(unsigned long)(pHWLock->pvHandle),
-				pHWLock->eDriverType);
-				gLockTimeOutCount = 0;
+			/*
+			 * pr_debug("VENC_LOCKHW handle:0x%lx,va:%lx,type:%d",
+			 *	(unsigned long)CodecHWLock.pvHandle,
+			 *	(unsigned long)(pHWLock->pvHandle),
+			 *	pHWLock->eDriverType);
+			 *	gLockTimeOutCount = 0;
+			 */
 		}
 		mutex_unlock(&HWLock);
 	}
@@ -1183,7 +1411,7 @@ static long vcodec_lockhw(unsigned long arg)
 	unsigned int u4VcodecSel;
 	unsigned int u4DeBlocking = 1;
 
-	pr_debug("VCODEC_LOCKHW + tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_LOCKHW + tid = %d\n", current->pid); */
 
 	user_data_addr = (unsigned char *)arg;
 	ret = copy_from_user(&rHWLock, user_data_addr, sizeof(struct
@@ -1194,8 +1422,7 @@ static long vcodec_lockhw(unsigned long arg)
 		return -EFAULT;
 	}
 
-	pr_debug("[VCODEC] LOCKHW eDriverType = %d\n",
-			rHWLock.eDriverType);
+	/* pr_debug("[VCODEC] LOCKHW eDriverType=%d\n", rHWLock.eDriverType); */
 	eValRet = VAL_RESULT_INVALID_ISR;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
@@ -1230,10 +1457,12 @@ static long vcodec_lockhw(unsigned long arg)
 		gu4LockEncHWCount++;
 		spin_unlock_irqrestore(&LockEncHWCountLock, ulFlagsLockHW);
 
-		pr_debug("VCODEC_LOCKHW, get locked - ObjId =%d\n",
-				current->pid);
+		/*
+		 * pr_debug("VCODEC_LOCKHW, get locked - ObjId =%d\n",
+		 *		current->pid);
+		 */
 
-		pr_debug("VCODEC_LOCKHWed - tid = %d\n", current->pid);
+		/* pr_debug("VCODEC_LOCKHWed - tid = %d\n", current->pid); */
 	} else {
 		pr_info("[WARNING] VCODEC_LOCKHW Unknown instance\n");
 		return -EFAULT;
@@ -1273,7 +1502,7 @@ static long vcodec_lockhw(unsigned long arg)
 	else
 		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x10, 0x0);
 
-	pr_debug("VCODEC_LOCKHW - tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_LOCKHW - tid = %d\n", current->pid); */
 
 	return 0;
 }
@@ -1285,8 +1514,11 @@ static long vcodec_unlockhw(unsigned long arg)
 	unsigned long handle = 0;
 	enum VAL_RESULT_T eValRet;
 	long ret;
+#ifdef VCODEC_DVFS_V2
+	struct codec_job *cur_job;
+#endif
 
-	pr_debug("VCODEC_UNLOCKHW + tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_UNLOCKHW + tid = %d\n", current->pid); */
 
 	user_data_addr = (unsigned char *)arg;
 	ret = copy_from_user(&rHWLock, user_data_addr,
@@ -1297,8 +1529,9 @@ static long vcodec_unlockhw(unsigned long arg)
 		return -EFAULT;
 	}
 
-	pr_debug("VCODEC_UNLOCKHW eDriverType = %d\n",
-			rHWLock.eDriverType);
+	/* pr_debug("VCODEC_UNLOCKHW eDriverType = %d\n",
+	 *		rHWLock.eDriverType);
+	 */
 	eValRet = VAL_RESULT_INVALID_ISR;
 	handle = (unsigned long)rHWLock.pvHandle;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
@@ -1309,6 +1542,23 @@ static long vcodec_unlockhw(unsigned long arg)
 		/* Current owner give up hw lock */
 		if (CodecHWLock.pvHandle ==
 				(void *)pmem_user_v2p_video(handle)) {
+#ifdef VCODEC_DVFS_V2
+			mutex_lock(&VcodecDVFSLock);
+			cur_job = codec_jobs;
+			if (cur_job->handle ==
+				CodecHWLock.pvHandle) {
+				cur_job->end = get_time_us();
+				update_hist(cur_job, &codec_hists);
+				codec_jobs = codec_jobs->next;
+				kfree(cur_job);
+			} else {
+				pr_info("VCODEC wrong job at dec done %p, %p",
+					cur_job->handle,
+					CodecHWLock.pvHandle);
+			}
+			mutex_unlock(&VcodecDVFSLock);
+#endif
+
 			if (rHWLock.bSecureInst == VAL_FALSE) {
 				/* Add one line comment for avoid kernel coding
 				 * style, WARNING:BRACES:
@@ -1316,8 +1566,12 @@ static long vcodec_unlockhw(unsigned long arg)
 				disable_irq(VDEC_IRQ_ID);
 			}
 			/* TODO: check if turning power off is ok */
+#ifdef CONFIG_PM
+			pm_runtime_put_sync(vcodec_device);
+#else
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_off();
+#endif
 #endif
 			CodecHWLock.pvHandle = 0;
 			CodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
@@ -1340,15 +1594,31 @@ static long vcodec_unlockhw(unsigned long arg)
 		/* Current owner give up hw lock */
 		if (CodecHWLock.pvHandle ==
 				(void *)pmem_user_v2p_video(handle)) {
-			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-				rHWLock.eDriverType ==
-					VAL_DRIVER_TYPE_JPEG_ENC) {
-				disable_irq(VENC_IRQ_ID);
-				/* turn venc power off */
-#ifndef KS_POWER_WORKAROUND
-				venc_power_off();
-#endif
+#ifdef VCODEC_DVFS_V2
+			mutex_lock(&VcodecDVFSLock);
+			cur_job = codec_jobs;
+			if (cur_job->handle ==
+				CodecHWLock.pvHandle) {
+				cur_job->end = get_time_us();
+				update_hist(cur_job, &codec_hists);
+				codec_jobs = codec_jobs->next;
+				kfree(cur_job);
+			} else {
+				pr_info("VCODEC wrong job at enc done %p, %p",
+					cur_job->handle,
+					CodecHWLock.pvHandle);
 			}
+			mutex_unlock(&VcodecDVFSLock);
+#endif
+			disable_irq(VENC_IRQ_ID);
+			/* turn venc power off */
+#ifdef CONFIG_PM
+			pm_runtime_put_sync(vcodec_device2);
+#else
+#ifndef KS_POWER_WORKAROUND
+			venc_power_off();
+#endif
+#endif
 			CodecHWLock.pvHandle = 0;
 			CodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 		} else { /* Not current owner */
@@ -1385,7 +1655,7 @@ static long vcodec_waitisr(unsigned long arg)
 	long ret;
 	enum VAL_RESULT_T eValRet;
 
-	pr_debug("VCODEC_WAITISR + tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_WAITISR + tid = %d\n", current->pid); */
 
 	user_data_addr = (unsigned char *)arg;
 	ret = copy_from_user(&val_isr, user_data_addr,
@@ -1474,7 +1744,146 @@ static long vcodec_waitisr(unsigned long arg)
 		return -EFAULT;
 	}
 
-	pr_debug("VCODEC_WAITISR - tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_WAITISR - tid = %d\n", current->pid); */
+
+	return 0;
+}
+
+static long vcodec_set_frame_info(unsigned long arg)
+{
+	unsigned char *user_data_addr;
+	long ret;
+	struct VAL_FRAME_INFO_T rFrameInfo;
+	int frame_type = 0;
+	int b_freq_idx = 0;
+	long emi_bw = 0;
+
+	/* pr_debug("VCODEC_SET_FRAME_INFO + tid = %d\n", current->pid); */
+	user_data_addr = (unsigned char *)arg;
+	ret = copy_from_user(&rFrameInfo, user_data_addr,
+				sizeof(struct VAL_FRAME_INFO_T));
+	if (ret) {
+		pr_debug("vcodec_set_frame_info, copy_from_user failed: %lu\n",
+			ret);
+		return -EFAULT;
+	}
+
+/* TODO check user
+ *	mutex_lock(&VDecHWLock);
+ *	if (grVcodecDecHWLock.pvHandle !=
+ *	(VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rFrameInfo.handle)) {
+ *
+ *	MODULE_MFV_LOGD("[ERROR] VCODEC_SET_FRAME_INFO, vdec not locked");
+ *		mutex_unlock(&VDecHWLock);
+ *		return -EFAULT;
+ *	}
+ *	mutex_unlock(&VDecHWLock);
+ */
+	if (rFrameInfo.driver_type == VAL_DRIVER_TYPE_H264_DEC ||
+		rFrameInfo.driver_type == VAL_DRIVER_TYPE_HEVC_DEC ||
+		rFrameInfo.driver_type == VAL_DRIVER_TYPE_MP4_DEC ||
+		rFrameInfo.driver_type == VAL_DRIVER_TYPE_MP1_MP2_DEC) {
+		mutex_lock(&DecPMQoSLock);
+		/* Request BW after lock hw, this should always be true */
+		if (gVDECBWRequested == 0) {
+			frame_type = rFrameInfo.frame_type;
+			if (frame_type > 3 || frame_type < 0)
+				frame_type = 0;
+
+			if (dec_step_size > 1)
+				b_freq_idx = dec_step_size - 1;
+
+			/* 8bit * w * h * 1.5 * frame type ratio * freq ratio *
+			 * decoding time relative to 1080p
+			 */
+			emi_bw = 8L * 1920 * 1080 * 3 * 10 * g_dec_freq;
+			switch (rFrameInfo.driver_type) {
+			case VAL_DRIVER_TYPE_H264_DEC:
+				emi_bw = emi_bw * gVDECFrmTRAVC[frame_type] /
+					(2 * STD_VDEC_FREQ);
+				break;
+			case VAL_DRIVER_TYPE_HEVC_DEC:
+				emi_bw = emi_bw * gVDECFrmTRHEVC[frame_type] /
+					(2 * STD_VDEC_FREQ);
+				break;
+			case VAL_DRIVER_TYPE_MP4_DEC:
+			case VAL_DRIVER_TYPE_MP1_MP2_DEC:
+				emi_bw = emi_bw * gVDECFrmTRMP2_4[frame_type] /
+					(2 * STD_VDEC_FREQ);
+				break;
+			default:
+				emi_bw = 0;
+				pr_debug("Unsupported decoder type for BW");
+			}
+
+			if (rFrameInfo.is_compressed != 0)
+				emi_bw = emi_bw * 6 / 10;
+
+			/* pr_debug("UFO %d, emi_bw %ld",
+			 *	rFrameInfo.is_compressed, emi_bw);
+			 */
+
+			/* input size */
+			emi_bw += 8 * rFrameInfo.input_size * 100 * 1920 * 1088
+					/ (rFrameInfo.frame_width *
+					rFrameInfo.frame_height);
+
+			/* pr_debug("input_size %d, w %d, h %d emi_bw %ld",
+			 *	rFrameInfo.input_size, rFrameInfo.frame_width,
+			 *	rFrameInfo.frame_height, emi_bw);
+			 */
+
+			/* transaction bytes to occupied BW */
+			emi_bw = emi_bw * 4 / 3;
+
+			/* bits/s to mbytes/s */
+			emi_bw = emi_bw / (1024*1024) / 8;
+
+			/* pr_info("VDEC mbytes/s emi_bw %ld", emi_bw); */
+			pm_qos_update_request(&vcodec_qos_request, (int)emi_bw);
+			gVDECBWRequested = 1;
+		}
+		mutex_unlock(&DecPMQoSLock);
+	} else if (rFrameInfo.driver_type == VAL_DRIVER_TYPE_H264_ENC) {
+		mutex_lock(&EncPMQoSLock);
+
+		if (gVENCBWRequested == 0) {
+			frame_type = rFrameInfo.frame_type;
+			if (frame_type > 2 || frame_type < 0)
+				frame_type = 0;
+
+			if (enc_step_size > 1)
+				b_freq_idx = dec_step_size - 1;
+
+			/* 8bit * w * h * 1.5 * frame type ratio * freq ratio *
+			 * decoding time relative to 1080p
+			 */
+
+			emi_bw = 8L * 1920 * 1080 * 3 * 10 * g_enc_freq;
+			switch (rFrameInfo.driver_type) {
+			case VAL_DRIVER_TYPE_H264_ENC:
+				emi_bw = emi_bw * gVENCFrmTRAVC[frame_type] /
+					(2 * STD_VENC_FREQ);
+				break;
+			default:
+				emi_bw = 0;
+				pr_debug("Unsupported encoder type for BW");
+			}
+
+			/* transaction bytes to occupied BW */
+			emi_bw = emi_bw * 4 / 3;
+
+			/* bits/s to mbytes/s */
+			emi_bw = emi_bw / (1024*1024) / 8;
+
+			/* pr_info("VENC mbytes/s emi_bw %ld", emi_bw); */
+			pm_qos_update_request(&vcodec_qos_request2,
+						(int)emi_bw);
+			gVENCBWRequested = 1;
+		}
+		mutex_unlock(&EncPMQoSLock);
+	}
+	/* pr_debug("VCODEC_SET_FRAME_INFO - tid = %d\n", current->pid); */
 
 	return 0;
 }
@@ -1514,8 +1923,9 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case VCODEC_INC_DEC_EMI_USER:
 	{
-		pr_debug("VCODEC_INC_DEC_EMI_USER + tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_INC_DEC_EMI_USER + tid = %d\n",
+		 *		current->pid);
+		 */
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter++;
@@ -1532,15 +1942,17 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 		}
 		mutex_unlock(&DecEMILock);
 
-		pr_debug("VCODEC_INC_DEC_EMI_USER - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_INC_DEC_EMI_USER - tid = %d\n",
+		 *	current->pid);
+		 */
 	}
 	break;
 
 	case VCODEC_DEC_DEC_EMI_USER:
 	{
-		pr_debug("VCODEC_DEC_DEC_EMI_USER + tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_DEC_DEC_EMI_USER + tid = %d\n",
+		 *		current->pid);
+		 */
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter--;
@@ -1557,19 +1969,21 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 		}
 		mutex_unlock(&DecEMILock);
 
-		pr_debug("VCODEC_DEC_DEC_EMI_USER - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_DEC_DEC_EMI_USER - tid = %d\n",
+		 *		current->pid);
+		 */
 	}
 	break;
 
 	case VCODEC_INC_ENC_EMI_USER:
 	{
-		pr_debug("VCODEC_INC_ENC_EMI_USER + tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_INC_ENC_EMI_USER + tid = %d\n",
+		 *		current->pid);
+		 */
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter++;
-		pr_info("[VCODEC] ENC_EMI_USER = %d\n",
+		pr_debug("[VCODEC] ENC_EMI_USER = %d\n",
 				gu4EncEMICounter);
 		user_data_addr = (unsigned char *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter,
@@ -1582,15 +1996,17 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 		}
 		mutex_unlock(&EncEMILock);
 
-		pr_debug("VCODEC_INC_ENC_EMI_USER - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_INC_ENC_EMI_USER - tid = %d\n",
+		 *		current->pid);
+		 */
 	}
 	break;
 
 	case VCODEC_DEC_ENC_EMI_USER:
 	{
-		pr_debug("VCODEC_DEC_ENC_EMI_USER + tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_DEC_ENC_EMI_USER + tid = %d\n",
+		 *		current->pid);
+		 */
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter--;
@@ -1607,8 +2023,9 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 		}
 		mutex_unlock(&EncEMILock);
 
-		pr_debug("VCODEC_DEC_ENC_EMI_USER - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_DEC_ENC_EMI_USER - tid = %d\n",
+		 *		current->pid);
+		 */
 	}
 	break;
 
@@ -1683,8 +2100,9 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case VCODEC_GET_CORE_NUMBER:
 	{
-		pr_debug("VCODEC_GET_CORE_NUMBER + - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_GET_CORE_NUMBER + - tid = %d\n",
+		 *		current->pid);
+		 */
 
 		user_data_addr = (unsigned char *)arg;
 		temp_nr_cpu_ids = nr_cpu_ids;
@@ -1695,8 +2113,9 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 					ret);
 			return -EFAULT;
 		}
-		pr_debug("VCODEC_GET_CORE_NUMBER - - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_GET_CORE_NUMBER - - tid = %d\n",
+		 *		current->pid);
+		 */
 	}
 	break;
 
@@ -1715,8 +2134,9 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case VCODEC_SET_LOG_COUNT:
 	{
-		pr_debug("VCODEC_SET_LOG_COUNT + tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_SET_LOG_COUNT + tid = %d\n",
+		 *		current->pid);
+		 */
 
 		mutex_lock(&LogCountLock);
 		user_data_addr = (unsigned char *)arg;
@@ -1747,11 +2167,22 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 #endif
 		mutex_unlock(&LogCountLock);
 
-		pr_debug("VCODEC_SET_LOG_COUNT - tid = %d\n",
-				current->pid);
+		/* pr_debug("VCODEC_SET_LOG_COUNT - tid = %d\n",
+		 *		current->pid);
+		 */
 	}
 	break;
 
+	case VCODEC_SET_FRAME_INFO:
+	{
+		ret = vcodec_set_frame_info(arg);
+		if (ret) {
+			pr_debug("[ERROR] VCODEC_SET_FRAME_INFO failed! %lu\n",
+				ret);
+			return ret;
+		}
+	}
+	break;
 	default:
 	{
 		pr_info("[ERROR] vcodec_ioctl default case %u\n", cmd);
@@ -1768,7 +2199,8 @@ enum STRUCT_TYPE {
 	VAL_HW_LOCK_TYPE = 0,
 	VAL_POWER_TYPE,
 	VAL_ISR_TYPE,
-	VAL_MEMORY_TYPE
+	VAL_MEMORY_TYPE,
+	VAL_FRAME_INFO_TYPE
 };
 
 enum COPY_DIRECTION {
@@ -1858,6 +2290,17 @@ struct COMPAT_VAL_MEMORY_T {
 	/* [IN]     The size of reserved parameter structure */
 	compat_ulong_t      u4ReservedSize;
 };
+
+struct COMPAT_VAL_FRAME_INFO_T {
+	compat_uptr_t handle;
+	compat_uint_t driver_type;
+	compat_uint_t input_size;
+	compat_uint_t frame_width;
+	compat_uint_t frame_height;
+	compat_uint_t frame_type;
+	compat_uint_t is_compressed;
+};
+
 
 static int get_uptr_to_32(compat_uptr_t *p, void __user **uptr)
 {
@@ -2096,6 +2539,51 @@ static int compat_copy_struct(
 		}
 	}
 	break;
+	case VAL_FRAME_INFO_TYPE:
+	{
+		if (eDirection == COPY_FROM_USER) {
+			struct COMPAT_VAL_FRAME_INFO_T __user *from32 =
+				(struct COMPAT_VAL_FRAME_INFO_T *)data32;
+			struct VAL_FRAME_INFO_T __user *to =
+				(struct VAL_FRAME_INFO_T *)data;
+
+			err = get_user(p, &(from32->handle));
+			err |= put_user(compat_ptr(p), &(to->handle));
+			err |= get_user(u, &(from32->driver_type));
+			err |= put_user(u, &(to->driver_type));
+			err |= get_user(u, &(from32->input_size));
+			err |= put_user(u, &(to->input_size));
+			err |= get_user(u, &(from32->frame_width));
+			err |= put_user(u, &(to->frame_width));
+			err |= get_user(u, &(from32->frame_height));
+			err |= put_user(u, &(to->frame_height));
+			err |= get_user(u, &(from32->frame_type));
+			err |= put_user(u, &(to->frame_type));
+			err |= get_user(u, &(from32->is_compressed));
+			err |= put_user(u, &(to->is_compressed));
+		} else {
+			struct COMPAT_VAL_FRAME_INFO_T __user *to32 =
+				(struct COMPAT_VAL_FRAME_INFO_T *)data32;
+			struct VAL_FRAME_INFO_T __user *from =
+				(struct VAL_FRAME_INFO_T *)data;
+
+			err = get_uptr_to_32(&p, &(from->handle));
+			err |= put_user(p, &(to32->handle));
+			err |= get_user(u, &(from->driver_type));
+			err |= put_user(u, &(to32->driver_type));
+			err |= get_user(u, &(from->input_size));
+			err |= put_user(u, &(to32->input_size));
+			err |= get_user(u, &(from->frame_width));
+			err |= put_user(u, &(to32->frame_width));
+			err |= get_user(u, &(from->frame_height));
+			err |= put_user(u, &(to32->frame_height));
+			err |= get_user(u, &(from->frame_type));
+			err |= put_user(u, &(to32->frame_type));
+			err |= get_user(u, &(from->is_compressed));
+			err |= put_user(u, &(to32->is_compressed));
+		}
+	}
+	break;
 	default:
 	break;
 	}
@@ -2225,6 +2713,32 @@ static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd,
 	}
 	break;
 
+	case VCODEC_SET_FRAME_INFO:
+	{
+		struct COMPAT_VAL_FRAME_INFO_T __user *data32;
+		struct VAL_FRAME_INFO_T __user *data;
+		int err;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(struct VAL_FRAME_INFO_T));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_copy_struct(VAL_FRAME_INFO_TYPE,
+				COPY_FROM_USER, (void *)data32, (void *)data);
+		if (err)
+			return err;
+
+		ret = file->f_op->unlocked_ioctl(file, VCODEC_SET_FRAME_INFO,
+						(unsigned long)data);
+
+		err = compat_copy_struct(VAL_FRAME_INFO_TYPE, COPY_TO_USER,
+					(void *)data32, (void *)data);
+
+		if (err)
+			return err;
+	}
+
 	default:
 		return vcodec_unlocked_ioctl(file, cmd, arg);
 	}
@@ -2293,13 +2807,25 @@ static int vcodec_release(struct inode *inode, struct file *file)
 				CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_MP1_MP2_DEC) {
 				vdec_break();
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device);
+#else
 				vdec_power_off();
+#endif
+				pm_qos_update_request(&vcodec_qos_request, 0);
+				pm_qos_update_request(&vcodec_qos_request_f, 0);
+				gVDECBWRequested = 0;
 			} else if (CodecHWLock.eDriverType ==
-					VAL_DRIVER_TYPE_H264_ENC ||
-				CodecHWLock.eDriverType ==
-					VAL_DRIVER_TYPE_HEVC_ENC) {
+					VAL_DRIVER_TYPE_H264_ENC) {
 				venc_break();
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device2);
+#else
 				venc_power_off();
+#endif
+				pm_qos_update_request(&vcodec_qos_request2, 0);
+				pm_qos_update_request(&vcodec_qos_request_f2,
+							0);
 			} else if (CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_JPEG_ENC) {
 				venc_power_off();
@@ -2324,6 +2850,11 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		gu4PWRCounter = 0;
 		mutex_unlock(&PWRLock);
 
+#ifdef VCODEC_DVFS_V2
+		mutex_lock(&VcodecDVFSLock);
+		free_hist(&codec_hists, 0);
+		mutex_unlock(&VcodecDVFSLock);
+#endif
 		spin_lock_irqsave(&LockDecHWCountLock, ulFlagsLockHW);
 		gu4LockDecHWCount = 0;
 		spin_unlock_irqrestore(&LockDecHWCountLock, ulFlagsLockHW);
@@ -2431,6 +2962,24 @@ static const struct file_operations vcodec_fops = {
 #endif
 
 };
+
+#ifdef CONFIG_PM
+static struct dev_pm_domain mt_vdec_pm_domain = {
+	.ops = {
+		SET_RUNTIME_PM_OPS(mt_vdec_runtime_suspend,
+				mt_vdec_runtime_resume,
+				NULL)
+		}
+};
+
+static struct dev_pm_domain mt_venc_pm_domain = {
+	.ops = {
+		SET_RUNTIME_PM_OPS(mt_venc_runtime_suspend,
+				mt_venc_runtime_resume,
+				NULL)
+		}
+};
+#endif
 
 #if USE_WAKELOCK == 0
 /**
@@ -2542,6 +3091,35 @@ static int vcodec_probe(struct platform_device *dev)
 
 	vcodec_device = device_create(vcodec_class, NULL, vcodec_devno, NULL,
 					VCODEC_DEVNAME);
+#ifdef CONFIG_PM
+	vcodec_device->pm_domain = &mt_vdec_pm_domain;
+
+	vcodec_cdev2 = cdev_alloc();
+	vcodec_cdev2->owner = THIS_MODULE;
+	vcodec_cdev2->ops = &vcodec_fops;
+
+	ret = cdev_add(vcodec_cdev2, vcodec_devno2, 1);
+	if (ret) {
+		/* Add one line comment for avoid kernel coding style,
+		 * WARNING:BRACES:
+		 */
+		pr_info("[VCODEC] Can't add Vcodec Device 2\n");
+	}
+
+	vcodec_class2 = class_create(THIS_MODULE, VCODEC_DEVNAME2);
+	if (IS_ERR(vcodec_class2)) {
+		ret = PTR_ERR(vcodec_class2);
+		pr_info("[VCODEC] Unable to create class 2, err = %d", ret);
+		return ret;
+	}
+
+	vcodec_device2 = device_create(vcodec_class2, NULL, vcodec_devno2,
+					NULL, VCODEC_DEVNAME2);
+	vcodec_device2->pm_domain = &mt_venc_pm_domain;
+
+	pm_runtime_enable(vcodec_device);
+	pm_runtime_enable(vcodec_device2);
+#endif
 
 	if (request_irq(VDEC_IRQ_ID, (irq_handler_t)video_intr_dlr,
 			IRQF_TRIGGER_LOW, VCODEC_DEVNAME, NULL) < 0) {
@@ -2622,6 +3200,34 @@ static int vcodec_probe(struct platform_device *dev)
 	vdec_power_on();
 	venc_power_on();
 #endif
+	pm_qos_add_request(&vcodec_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH,
+						PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&vcodec_qos_request2, PM_QOS_MM_MEMORY_BANDWIDTH,
+						PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&vcodec_qos_request_f, PM_QOS_VDEC_FREQ,
+						PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&vcodec_qos_request_f2, PM_QOS_VENC_FREQ,
+						PM_QOS_DEFAULT_VALUE);
+
+	dec_step_size = 1;
+	enc_step_size = 1;
+	ret = mmdvfs_qos_get_freq_steps(PM_QOS_VDEC_FREQ,
+					&g_dec_freq_steps[0], &dec_step_size);
+	if (ret < 0)
+		pr_debug("Vdec get DVFS freq steps failed: %d\n", ret);
+	else if (dec_step_size > 0 && dec_step_size <= MAX_FREQ_STEP)
+		g_dec_freq = g_dec_freq_steps[dec_step_size - 1];
+	else
+		g_dec_freq = MIN_VDEC_FREQ;
+
+	ret = mmdvfs_qos_get_freq_steps(PM_QOS_VENC_FREQ,
+					&g_enc_freq_steps[0], &enc_step_size);
+	if (ret < 0)
+		pr_debug("Venc get DVFS freq steps failed: %d\n", ret);
+	else if (enc_step_size > 0 && enc_step_size <= MAX_FREQ_STEP)
+		g_enc_freq = g_enc_freq_steps[enc_step_size - 1];
+	else
+		g_enc_freq = MIN_VENC_FREQ;
 
 	return 0;
 }
@@ -2801,6 +3407,13 @@ static int __init vcodec_driver_init(void)
 		pr_info("[VCODEC][ERROR] create enc hwlock event error\n");
 	}
 
+#ifdef VCODEC_DVFS_V2
+	mutex_lock(&VcodecDVFSLock);
+	codec_hists = 0;
+	codec_jobs = 0;
+	mutex_unlock(&VcodecDVFSLock);
+#endif
+
 	/* IsrEvent part */
 	spin_lock_irqsave(&DecIsrLock, ulFlags);
 	DecIsrEvent.pvHandle = "DECISR_EVENT";
@@ -2840,6 +3453,21 @@ static int __init vcodec_driver_init(void)
 					vcodec_pm_restore_noirq, NULL);
 #endif
 
+#ifdef VCODEC_DEBUG_SYS
+	vcodec_debug_kobject = kobject_create_and_add("vcodec", NULL);
+
+	if (!vcodec_debug_kobject) {
+		pr_debug("Faile to create and add vcodec kobject");
+		return -ENOMEM;
+	}
+
+	error = sysfs_create_file(vcodec_debug_kobject,
+				&vcodec_debug_attr.attr);
+	if (error) {
+		pr_debug("Faile to create/add debug file in /sys/vcodec/");
+		return error;
+	}
+#endif
 	return platform_driver_register(&vcodec_driver);
 }
 
@@ -2865,7 +3493,9 @@ static void __exit vcodec_driver_exit(void)
 
 	cdev_del(vcodec_cdev);
 	unregister_chrdev_region(vcodec_devno, 1);
-
+#ifdef CONFIG_PM
+	cdev_del(vcodec_cdev2);
+#endif
 	/* [TODO] iounmap the following? */
 #if 0
 	iounmap((void *)KVA_VENC_IRQ_STATUS_ADDR);
@@ -2917,11 +3547,15 @@ static void __exit vcodec_driver_exit(void)
 	unregister_swsusp_restore_noirq_func(ID_M_VCODEC);
 #endif
 
+#ifdef VCODEC_DEBUG_SYS
+	kobject_put(vcodec_debug_kobject);
+#endif
+
 	platform_driver_unregister(&vcodec_driver);
 }
 
 module_init(vcodec_driver_init);
 module_exit(vcodec_driver_exit);
 MODULE_AUTHOR("Legis, Lu <legis.lu@mediatek.com>");
-MODULE_DESCRIPTION("Vinson Vcodec Driver");
+MODULE_DESCRIPTION("Cervino Vcodec Driver");
 MODULE_LICENSE("GPL");

@@ -14,7 +14,8 @@
 vcodec_kernel_driver-objs :=        \
     videocodec_kernel_driver.o      \
     common/val/src/val.o			\
-    common/drv/src/drv_base.o
+    common/drv/src/drv_base.o       \
+    common/drv/src/dvfs_v2.o
 
 
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += vcodec_kernel_driver.o
