@@ -446,10 +446,6 @@ static int hps_suspend(struct device *dev)
 	if (!hps_ctxt.suspend_enabled)
 		goto suspend_end;
 
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.enabled_backup = hps_ctxt.enabled;
-	mutex_unlock(&hps_ctxt.lock);
-
 suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER)
@@ -477,7 +473,7 @@ static int hps_resume(struct device *dev)
 
 	if (!hps_ctxt.suspend_enabled)
 		goto resume_end;
-
+/*Add to speedup home screen*/
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.enabled = hps_ctxt.enabled_backup;
 	mutex_unlock(&hps_ctxt.lock);
