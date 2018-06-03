@@ -363,7 +363,7 @@ static DEVICE_ATTR(sw_jeita, 0664, show_sw_jeita,
 /* pump express series */
 bool mtk_is_pep_series_connect(struct charger_manager *info)
 {
-	if (mtk_pe20_get_is_connect(info))
+	if (mtk_is_pe30_running(info) || mtk_pe20_get_is_connect(info))
 		return true;
 
 	return false;
@@ -992,7 +992,12 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	/* Pump express */
 	ret = device_create_file(&(pdev->dev), &dev_attr_Pump_Express);
 
-	mtk_pe20_init(info);
+	if (mtk_pe20_init(info) == false)
+		info->enable_pe_2 = false;
+
+	if (mtk_pe30_init(info) == false)
+		info->enable_pe_3 = false;
+	info->enable_pe_3 = false;
 
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {
