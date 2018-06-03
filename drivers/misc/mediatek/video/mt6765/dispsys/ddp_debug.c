@@ -483,7 +483,10 @@ static void process_dbg_opt(const char *opt)
 		int cmd;
 		int para_cnt, i;
 		char para[15] = {0};
-		char fmt[256] = "set_dsi_cmd:0x%x";
+		static char fmt[256] = {0};
+
+		memset(fmt, 0, sizeof(fmt));
+		strcpy(fmt, "set_dsi_cmd:0x%x");
 
 		for (i = 0; i < ARRAY_SIZE(para); i++)
 			strncat(fmt, ",0x%hhx", sizeof(fmt) - strlen(fmt) - 1);

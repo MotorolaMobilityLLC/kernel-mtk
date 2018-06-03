@@ -113,5 +113,3 @@ else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"OFF")
     ccflags-y += -DDISP_COLOR_ON
 endif
 # EOF
-
-KASAN_SANITIZE_ddp_debug.o := n
