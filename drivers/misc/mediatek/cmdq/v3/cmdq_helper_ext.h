@@ -278,12 +278,12 @@ struct CmdqDebugCBkStruct {
 };
 
 /* handle to gce life cycle callback */
-typedef void (*cmdq_core_handle_begin)(struct cmdqRecStruct *handle);
-typedef void (*cmdq_core_handle_end)(struct cmdqRecStruct *handle);
+typedef void (*cmdq_core_handle_prepare)(struct cmdqRecStruct *handle);
+typedef void (*cmdq_core_handle_unprepare)(struct cmdqRecStruct *handle);
 
 struct cmdq_core_handle_life {
-	cmdq_core_handle_begin begin;
-	cmdq_core_handle_end end;
+	cmdq_core_handle_prepare prepare;
+	cmdq_core_handle_unprepare unprepare;
 };
 
 #define subsys_lsb_bit (16)
@@ -762,8 +762,8 @@ s32 cmdqCoreRegisterTrackTaskCB(enum CMDQ_GROUP_ENUM engGroup,
 s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 	CmdqErrorResetCB errorReset);
 
-void cmdq_core_register_handle_cycle(cmdq_core_handle_begin begin,
-	cmdq_core_handle_end end);
+void cmdq_core_register_handle_cycle(cmdq_core_handle_prepare begin,
+	cmdq_core_handle_unprepare end);
 void cmdq_core_register_status_dump(struct notifier_block *notifier);
 void cmdq_core_remove_status_dump(struct notifier_block *notifier);
 

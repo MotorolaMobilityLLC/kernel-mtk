@@ -228,11 +228,11 @@ s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 	return 0;
 }
 
-void cmdq_core_register_handle_cycle(cmdq_core_handle_begin begin,
-	cmdq_core_handle_end end)
+void cmdq_core_register_handle_cycle(cmdq_core_handle_prepare prepare,
+	cmdq_core_handle_unprepare unprepare)
 {
-	cmdq_handle_cb.begin = begin;
-	cmdq_handle_cb.end = end;
+	cmdq_handle_cb.prepare = prepare;
+	cmdq_handle_cb.unprepare = unprepare;
 }
 
 void cmdq_core_register_status_dump(struct notifier_block *notifier)
@@ -3659,9 +3659,6 @@ static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 {
 	s32 clock_count;
 
-	/* protect multi-thread lock/unlock same time */
-	mutex_lock(&cmdq_clock_mutex);
-
 	clock_count = atomic_inc_return(&cmdq_thread_usage);
 
 	CMDQ_MSG("[CLOCK]enable usage:%d scenario:%d\n",
@@ -3688,16 +3685,11 @@ static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 	}
 
 	cmdq_core_group_clk_cb(true, handle->engineFlag, handle->engine_clk);
-
-	mutex_unlock(&cmdq_clock_mutex);
 }
 
 static void cmdq_core_clk_disable(struct cmdqRecStruct *handle)
 {
 	s32 clock_count;
-
-	/* protect multi-thread lock/unlock same time */
-	mutex_lock(&cmdq_clock_mutex);
 
 	cmdq_core_group_clk_cb(false, handle->engineFlag, handle->engine_clk);
 
@@ -3716,8 +3708,6 @@ static void cmdq_core_clk_disable(struct cmdqRecStruct *handle)
 			__func__, clock_count,
 			(s32)atomic_read(&cmdq_thread_usage));
 	}
-
-	mutex_unlock(&cmdq_clock_mutex);
 }
 
 s32 cmdq_core_suspend_hw_thread(s32 thread)
@@ -4615,14 +4605,18 @@ static s32 cmdq_pkt_lock_handle(struct cmdqRecStruct *handle,
 
 	*client_out = client;
 
+	/* protect multi-thread lock/unlock same time */
+	mutex_lock(&cmdq_clock_mutex);
+
+	/* callback clients we are about to start handle in gce */
+	cmdq_handle_cb.prepare(handle);
+
 	/* task and thread dispatched, increase usage */
 	cmdq_core_clk_enable(handle);
 
-	/* callback clients we are about to start handle in gce */
-	cmdq_handle_cb.begin(handle);
-
 	/* Start delay thread before first task */
 	cmdq_delay_thread_start();
+	mutex_unlock(&cmdq_clock_mutex);
 
 	mutex_lock(&cmdq_handle_list_mutex);
 	list_add_tail(&handle->list_entry, &cmdq_ctx.handle_active);
@@ -4653,12 +4647,15 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 	/* Stop delay thread after last task is done */
 	cmdq_delay_thread_stop();
 
+	/* protect multi-thread lock/unlock same time */
+	mutex_lock(&cmdq_clock_mutex);
+
 	/* callback clients this thread about to clean */
-	cmdq_handle_cb.end(handle);
+	cmdq_handle_cb.unprepare(handle);
 
 	/* before stop job, decrease usage */
-
 	cmdq_core_clk_disable(handle);
+	mutex_unlock(&cmdq_clock_mutex);
 
 	mutex_lock(&cmdq_handle_list_mutex);
 	list_del_init(&handle->list_entry);
