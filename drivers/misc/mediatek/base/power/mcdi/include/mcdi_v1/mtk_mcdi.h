@@ -26,6 +26,12 @@ enum {
 	NF_PWR_STAT_MAP_TYPE
 };
 
+enum {
+	MCDI_SMC_EVENT_ASYNC_WAKEUP_EN = 0,
+
+	NF_MCDI_SMC_EVENT
+};
+
 extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
 
 int cluster_idx_get(int cpu);
@@ -40,5 +46,6 @@ int mcdi_get_mcdi_idle_state(int idx);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
+void mcdi_update_async_wakeup_enable(void);
 
 #endif /* __MTK_MCDI_H__ */

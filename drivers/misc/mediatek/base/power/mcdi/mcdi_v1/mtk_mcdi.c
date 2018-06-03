@@ -110,6 +110,11 @@ struct mtk_mcdi_buf {
 #define mcdi_buf_append(mcdi, fmt, args...) \
 	((mcdi).p_idx += snprintf((mcdi).p_idx, LOG_BUF_LEN - strlen((mcdi).buf), fmt, ##args))
 
+int __attribute__((weak)) mtk_enter_idle_state(int mode)
+{
+	return 0;
+}
+
 int __attribute__((weak)) soidle_enter(int cpu)
 {
 	return 1;
@@ -123,6 +128,11 @@ int __attribute__((weak)) dpidle_enter(int cpu)
 int __attribute__((weak)) soidle3_enter(int cpu)
 {
 	return 1;
+}
+
+unsigned long long __attribute__((weak)) idle_get_current_time_ms(void)
+{
+	return 0;
 }
 
 static int cluster_idx_map[NF_CPU] = {
@@ -858,6 +868,7 @@ bool mcdi_task_pause(bool paused)
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
 {
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
+	mcdi_update_async_wakeup_enable();
 }
 
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
@@ -872,6 +883,7 @@ void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
 		return;
 
 	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
+	mcdi_update_async_wakeup_enable();
 }
 
 bool is_cpu_pwr_on_event_pending(void)

@@ -38,6 +38,11 @@ void mcdi_status_init(void)
 	set_mcdi_enable_status(true);
 }
 
+/* do nothing */
+void mcdi_update_async_wakeup_enable(void)
+{
+}
+
 void mcdi_of_init(void)
 {
 	struct device_node *node = NULL;

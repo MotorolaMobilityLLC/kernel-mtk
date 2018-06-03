@@ -26,6 +26,7 @@ ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
 obj-$(CONFIG_MACH_MT6758)       += cpuidle-mt67xx_acao.o
 obj-$(CONFIG_MACH_MT6763)       += cpuidle-mt67xx_acao.o
 obj-$(CONFIG_MACH_MT6739)       += cpuidle-mt67xx_acao_v2.o
+obj-$(CONFIG_MACH_MT6771)       += cpuidle-mt67xx_acao_v3.o
 else
 obj-$(CONFIG_MACH_MT6758)       += cpuidle-mt67xx_v3.o
 obj-$(CONFIG_MACH_MT6763)       += cpuidle-mt67xx_v4.o
