@@ -18,7 +18,7 @@
 #include "mtk_dcm_autogen.h"
 
 /* #define DCM_DEFAULT_ALL_OFF */
-#define DCM_BRINGUP
+/* #define DCM_BRINGUP */
 /* #define USE_DRAM_API_INSTEAD */
 /* Note: ENABLE_DCM_IN_LK is used in kernel if DCM is enabled in LK */
 #define ENABLE_DCM_IN_LK
