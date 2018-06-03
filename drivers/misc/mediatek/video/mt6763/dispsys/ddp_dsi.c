@@ -299,11 +299,11 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 					i, _dsi_vdo_mode_parse_state(DSI_DBG7_Status));
 			}
 			DSI_DBG8_Status = (INREG32(dsi_base_addr + 0x168)) & 0x3fff;
-			DDPDUMP("DSI%d state8 WORD_COUNTER(cmd mode):%s\n",
-				i, _dsi_cmd_mode_parse_state(DSI_DBG8_Status));
+			DDPDUMP("DSI%d state8 WORD_COUNTER(cmd mode):%d\n",
+				i, DSI_DBG8_Status);
 			DSI_DBG9_Status = (INREG32(dsi_base_addr + 0x16C)) & 0x3fffff;
-			DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%s\n",
-				i, _dsi_cmd_mode_parse_state(DSI_DBG9_Status));
+			DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%d\n",
+				i, DSI_DBG9_Status);
 		}
 	}
 	if (level >= 1) {

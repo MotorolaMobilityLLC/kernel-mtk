@@ -1431,7 +1431,7 @@ static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 
 
 	DDPDUMP
-	    ("dither: en=%d, config=%d, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
+	    ("dither: en=%d, config=0x%x, w=%d, h=%d, in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
 	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x000 + i * offset),
 	     DISP_REG_GET(DISPSYS_DITHER0_BASE + 0x020 + i * offset),
 	     (DISP_REG_GET(DISP_REG_DITHER_SIZE + i * offset) >> 16) & 0x1fff,

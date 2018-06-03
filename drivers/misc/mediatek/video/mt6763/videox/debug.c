@@ -355,6 +355,7 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 	}
 	primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, session_id, 1);
 	primary_display_frame_cfg(cfg);
+	msleep(100);
 
 	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++)
 		release_test_buf(&buf_info[i]);
