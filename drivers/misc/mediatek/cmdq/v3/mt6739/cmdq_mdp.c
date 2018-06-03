@@ -31,7 +31,6 @@ struct CmdqMdpModuleBaseVA {
 	long MDP_RSZ0;
 	long MDP_RSZ1;
 	long MDP_TDSHP;
-	long MDP_COLOR;
 	long MDP_WROT0;
 	long MDP_WDMA;
 	long VENC;
@@ -39,8 +38,6 @@ struct CmdqMdpModuleBaseVA {
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
 struct CmdqMdpModuleClock {
-	struct clk *clk_CAM_MDP_TX;
-	struct clk *clk_CAM_MDP_RX;
 	struct clk *clk_CAM_MDP;
 	struct clk *clk_MDP_RDMA0;
 	struct clk *clk_MDP_RDMA1;
@@ -49,7 +46,6 @@ struct CmdqMdpModuleClock {
 	struct clk *clk_MDP_WDMA;
 	struct clk *clk_MDP_WROT0;
 	struct clk *clk_MDP_TDSHP;
-	struct clk *clk_MDP_COLOR;
 };
 static struct CmdqMdpModuleClock gCmdqMdpModuleClock;
 #define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
@@ -63,8 +59,6 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
 }
 
-IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_TX, CAM_MDP_TX);
-IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_RX, CAM_MDP_RX);
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ0, MDP_RSZ0);
@@ -72,17 +66,13 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ1, MDP_RSZ1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WDMA, MDP_WDMA);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
-IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP_TX, CAM_MDP_TX);
-IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP_RX, CAM_MDP_RX);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ1, MDP_RSZ1);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WDMA, MDP_WDMA);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT0, MDP_WROT0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_TDSHP0, MDP_TDSHP);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_COLOR);
 #undef IMP_ENABLE_MDP_HW_CLOCK
 #undef IMP_MDP_HW_CLOCK_IS_ENABLE
 
@@ -123,11 +113,6 @@ long cmdq_mdp_get_module_base_VA_MDP_TDSHP(void)
 	return gCmdqMdpModuleBaseVA.MDP_TDSHP;
 }
 
-long cmdq_mdp_get_module_base_VA_MDP_COLOR(void)
-{
-	return gCmdqMdpModuleBaseVA.MDP_COLOR;
-}
-
 long cmdq_mdp_get_module_base_VA_MDP_WROT0(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_WROT0;
@@ -149,7 +134,6 @@ long cmdq_mdp_get_module_base_VA_VENC(void)
 #define MDP_RSZ0_BASE		cmdq_mdp_get_module_base_VA_MDP_RSZ0()
 #define MDP_RSZ1_BASE		cmdq_mdp_get_module_base_VA_MDP_RSZ1()
 #define MDP_TDSHP_BASE		cmdq_mdp_get_module_base_VA_MDP_TDSHP()
-#define MDP_COLOR_BASE		cmdq_mdp_get_module_base_VA_MDP_COLOR()
 #define MDP_WROT0_BASE		cmdq_mdp_get_module_base_VA_MDP_WROT0()
 #define MDP_WDMA_BASE		cmdq_mdp_get_module_base_VA_MDP_WDMA()
 #define VENC_BASE			cmdq_mdp_get_module_base_VA_VENC()
@@ -169,24 +153,62 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0x110, "MMSYS Clock Gating Config_1"},
 		{0xF04, "ISP_MOUT_EN"},
 		{0xF08, "MDP_RDMA0_MOUT_EN"},
+		/* {0xF88, "MDP_RDMA1_MOUT_EN"},*/
 		{0xF10, "MDP_PRZ0_MOUT_EN"},
 		{0xF14, "MDP_PRZ1_MOUT_EN"},
+		{0xF24, "COLOR0_SEL_IN"},
+		/* {0xF98, "IPU_MOUT_EN"},*/
 		{0xF18, "MDP_TDSHP_MOUT_EN"},
 		{0xF0C, "DISP_OVL0_MOUT_EN"},
-		{0xF34, "MDP_WDMA_SEL_IN"},
-		{0xF38, "MDP_WROT0_SEL_IN"},
+		/*{0xF04, "DISP_OVL0_2L_MOUT_EN"},*/
+		/*{0xF08, "DISP_OVL1_2L_MOUT_EN"},*/
+		{0xF4C, "DISP_DITHER0_MOUT_EN"},
+		/*{0xF10, "DISP_RSZ_MOUT_EN"},*/
+		/* {0x040, "DISP_UFOE_MOUT_EN"}, */
+		/* {0x040, "MMSYS_MOUT_RST"}, */
+		/*{0xFA0, "DISP_TO_WROT_SOUT_SEL"},*/
+		/*{0xFA4, "MDP_COLOR_IN_SOUT_SEL"},*/
+		/*{0xFA8, "MDP_PATH0_SOUT_SEL"},*/
+		/*{0xFAC, "MDP_PATH1_SOUT_SEL"},*/
+		/*{0xFB0, "MDP_TDSHP_SOUT_SEL"},*/
 		{0xF3C, "MDP_PRZ0_SEL_IN"},
 		{0xF40, "MDP_PRZ1_SEL_IN"},
 		{0xF44, "MDP_TDSHP_SEL_IN"},
+		{0xF2C, "DISP_WDMA0_SEL_IN"},
+		/*{0xFDC, "MDP_COLOR_SEL_IN"},*/
+		/*{0xF20, "DISP_COLOR_OUT_SEL_IN"},*/
+		{0xF38, "MDP_WROT0_SEL_IN"},
+		{0xF34, "MDP_WDMA_SEL_IN"},
+		/*{0xFD8, "MDP_COLOR_OUT_SEL_IN"},*/
+		/*{0xFDC, "MDP_COLOR_SEL_IN "},*/
+		/* {0xFDC, "DISP_COLOR_SEL_IN"},*/
+		/*{0xFE0, "MDP_PATH0_SEL_IN"},*/
+		/*{0xFE4, "MDP_PATH1_SEL_IN"},*/
+		/*{0x070, "DISP_WDMA1_SEL_IN"},*/
+		/*{0x074, "DISP_UFOE_SEL_IN"},*/
+		{0xF30, "DSI0_SEL_IN"},
+		/*{0xF30, "DPI1_SEL_IN"},*/
+		/*{0xF50, "DISP_RDMA0_SOUT_SEL_IN"},*/
+		/*{0xF54, "DISP_RDMA1_SOUT_SEL_IN"},*/
+		{0x0F0, "MMSYS_MISC"},
+		/* ACK and REQ related */
 		{0xF50, "MMSYS_MOUT_MASK0"},
 		{0xF54, "MMSYS_MOUT_MASK1"},
-		/* ACK and REQ related */
 		{0xF58, "DISP_DL_VALID_0"},
 		{0xF5C, "DISP_DL_VALID_1"},
 		{0xF60, "DISP_DL_READY_0"},
-		{0xF64, "DISP_DL_READY_1"},
-		{0xF00, "MOUT_RST"}
+		{0xF64, "DISP_DL_READY_1"}
+		/*{0x8CC, "MDP_DL_VALID_0"},*/
+		/*{0x8D0, "MDP_DL_VALID_1"},*/
+		/*{0x8D4, "MDP_DL_READY_0"},*/
+		/*{0x8D8, "MDP_DL_READY_1"},*/
+		/*{0x8E8, "MDP_MOUT_MASK"}*/
 	};
+
+	if (!MMSYS_CONFIG_BASE) {
+		CMDQ_ERR("mmsys not porting\n");
+		return;
+	}
 
 	for (i = 0; i < ARRAY_SIZE(configRegisters); i++) {
 		value = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + configRegisters[i].offset);
@@ -334,7 +356,6 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_reference_VA_by_name("mdp_wdma0");
 	gCmdqMdpModuleBaseVA.MDP_WROT0 = cmdq_dev_alloc_reference_VA_by_name("mdp_wrot0");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_reference_VA_by_name("mdp_tdshp0");
-	gCmdqMdpModuleBaseVA.MDP_COLOR = cmdq_dev_alloc_reference_VA_by_name("disp_color0");
 	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_reference_VA_by_name("venc");
 }
 
@@ -346,7 +367,6 @@ void cmdq_mdp_deinit_module_base_VA(void)
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WDMA());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT0());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP());
-	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_COLOR());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
 
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(struct CmdqMdpModuleBaseVA));
@@ -356,7 +376,7 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 {
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
-		return cmdq_mdp_clock_is_enable_CAM_MDP_TX();
+		return cmdq_mdp_clock_is_enable_CAM_MDP();
 	case CMDQ_ENG_MDP_RDMA0:
 		return cmdq_mdp_clock_is_enable_MDP_RDMA0();
 	case CMDQ_ENG_MDP_RSZ0:
@@ -382,8 +402,7 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
-		cmdq_mdp_enable_clock_CAM_MDP_TX(enable);
-		cmdq_mdp_enable_clock_CAM_MDP_RX(enable);
+		cmdq_mdp_enable_clock_CAM_MDP(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
@@ -436,10 +455,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 /* Common Clock Framework */
 void cmdq_mdp_init_module_clk(void)
 {
-	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP_TX",
-					  &gCmdqMdpModuleClock.clk_CAM_MDP_TX);
-	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP_RX",
-					  &gCmdqMdpModuleClock.clk_CAM_MDP_RX);
+	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP);
 	cmdq_dev_get_module_clock_by_name("mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
 	cmdq_dev_get_module_clock_by_name("mdp_rsz0", "MDP_RSZ0",
@@ -601,7 +618,6 @@ enum MOUT_BITS {
 	MOUT_BITS_MDP_RDMA0 = 1,	/* bit  1: MDP_RDMA0 multiple outupt reset */
 	MOUT_BITS_MDP_PRZ0 = 2,	/* bit  2: MDP_PRZ0 multiple outupt reset */
 	MOUT_BITS_MDP_PRZ1 = 3,	/* bit  3: MDP_PRZ1 multiple outupt reset */
-	MOUT_BITS_MDP_COLOR = 4,	/* bit  4: MDP_COLOR multiple outupt reset */
 };
 
 int32_t cmdqMdpResetEng(uint64_t engineFlag)
@@ -843,7 +859,7 @@ const char *cmdq_mdp_parse_error_module(const struct TaskStruct *task)
 	else if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
 		module = "JPGDEC";
 	else if ((ISP_ONLY[0] == task->engineFlag) || (ISP_ONLY[1] == task->engineFlag))
-		module = "ISP_ONLY";
+		module = "DIP_ONLY";
 
 	/* for secure path, use HW flag is sufficient */
 	do {
