@@ -27,7 +27,7 @@ ADJ_STS func_PROGRAM_DOWNLOAD(void)
 {
 	OIS_UWORD sts;		/* RHM_HT 2013/04/15    Change "typedef". */
 
-	download(0, 0);	/* Program Download */
+	download(0, 0);		/* Program Download */
 	sts = I2C_OIS_mem__read(_M_OIS_STS);	/* Check Status */
 
 	if ((sts & 0x0004) == 0x0004) {
@@ -50,7 +50,7 @@ ADJ_STS func_PROGRAM_DOWNLOAD(void)
 /* ***************************************************** */
 /* **** COEF Download function */
 /* ***************************************************** */
-OIS_UWORD INTG__INPUT;	/* Integral Input value szx_2014/12/24_2 */
+OIS_UWORD INTG__INPUT;		/* Integral Input value szx_2014/12/24_2 */
 OIS_UWORD KGNTG_VALUE;		/* KgxTG / KgyTG                szx_2014/12/24_2 */
 OIS_UWORD GYRSNS;		/* RHM_HT 2015/01/16    Added */
 
@@ -83,7 +83,7 @@ void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type)
 void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type)
 {
 	/* Data Transfer Size per one I2C access */
-	#define		DWNLD_TRNS_SIZE		(7)
+#define		DWNLD_TRNS_SIZE		(7)
 
 	OIS_UBYTE temp[DWNLD_TRNS_SIZE + 1];
 	OIS_UWORD block_cnt;
@@ -113,12 +113,12 @@ void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type)
 				temp[0] = _OP_FIRM_DWNLD;
 				for (u16_i = 1; u16_i <= lp; u16_i += 1)
 					temp[u16_i] = DOWNLOAD_BIN[(total_cnt - block_cnt) *
-						DWNLD_TRNS_SIZE + u16_i - 1];
+								   DWNLD_TRNS_SIZE + u16_i - 1];
 			} else {
 				temp[0] = _OP_COEF_DWNLD;
 				for (u16_i = 1; u16_i <= lp; u16_i += 1)
 					temp[u16_i] = DOWNLOAD_COEF[(total_cnt - block_cnt) *
-						DWNLD_TRNS_SIZE + u16_i - 1];
+								    DWNLD_TRNS_SIZE + u16_i - 1];
 			}
 
 			/* Data Transfer */
@@ -190,7 +190,7 @@ void SET_FADJ_PARAM(const _FACT_ADJ *param)
 #define	G_SENSE		131	/* [LSB/dps] */
 
 ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param)
+			     OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param)
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;
@@ -199,7 +199,8 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 
 	/* ==> RHM_HT 2013/11/25        Modified */
 	OIS_UBYTE u16_adr_target[3] = {
-	_M_Kgxdr, _M_X_LMT, _M_X_TGT,};
+		_M_Kgxdr, _M_X_LMT, _M_X_TGT,
+	};
 
 	OIS_UWORD u16_dat_SCENE_NIGHT_1[3] = { 0x7FFE, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, };
 	OIS_UWORD u16_dat_SCENE_NIGHT_2[3] = { 0x7FFC, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, };
@@ -213,7 +214,7 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 	OIS_UWORD u16_dat_SCENE_SPORT_2[3] = { 0x7FF0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, };
 	OIS_UWORD u16_dat_SCENE_SPORT_3[3] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, };
 
-	OIS_UWORD u16_dat_SCENE_TEST___[3] = { 0x7FF0, 0x7FFF, 0x7FFF,};	/* Limmiter OFF */
+	OIS_UWORD u16_dat_SCENE_TEST___[3] = { 0x7FF0, 0x7FFF, 0x7FFF, };	/* Limmiter OFF */
 	/* <== RHM_HT 2013/11/25        Modified */
 
 	u16_dat_SCENE_NIGHT_1[1] = ANGLE_LIMIT;
@@ -304,7 +305,7 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat |= 0x4000;
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
-	} else {			/* Enable Filter */
+	} else {		/* Enable Filter */
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat &= 0xBFFF;
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
@@ -337,19 +338,20 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 		u16_dat = (u16_dat | 0x0101);
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
 		DEBUG_printf(("SET : EQCTL:%.4x\n", u16_dat));
-	} else {			/* ==> RHM_HT 2013.03.23        Add for OIS controll */
+	} else {		/* ==> RHM_HT 2013.03.23        Add for OIS control */
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat = (u16_dat & 0xFEFE);
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
 		DEBUG_printf(("SET : EQCTL:%.4x\n", u16_dat));
-	}			/* <== RHM_HT 2013.03.23        Add for OIS controll */
+	}			/* <== RHM_HT 2013.03.23        Add for OIS control */
 
 	return ADJ_OK;		/* RHM_HT 2013/04/15    Change return value */
 }
 
 
 ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param)
+					     OIS_UBYTE filter, OIS_UBYTE range,
+					     const _FACT_ADJ *param)
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;
@@ -359,7 +361,8 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 	/* szx_2014/09/19 ---> Modified */
 	/* ==> RHM_HT 2013/11/25        Modified */
 	OIS_UBYTE u16_adr_target[4] = {
-	_M_Kgxdr, _M_X_LMT, _M_X_TGT, 0x1B,};
+		_M_Kgxdr, _M_X_LMT, _M_X_TGT, 0x1B,
+	};
 
 	OIS_UWORD u16_dat_SCENE_NIGHT_1[4] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, 0x0300, };
 	OIS_UWORD u16_dat_SCENE_NIGHT_2[4] = { 0x7FFF, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, 0x0080, };
@@ -463,7 +466,7 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat |= 0x4000;
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
-	} else {			/* Enable Filter */
+	} else {		/* Enable Filter */
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat &= 0xBFFF;
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
@@ -493,12 +496,12 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 		u16_dat = (u16_dat | 0x1101);
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
 		DEBUG_printf(("SET : EQCTL:%.4x\n", u16_dat));
-	} else {			/* ==> RHM_HT 2013.03.23        Add for OIS controll */
+	} else {		/* ==> RHM_HT 2013.03.23        Add for OIS control */
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat = (u16_dat & 0xFEFE);
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
 		DEBUG_printf(("SET : EQCTL:%.4x\n", u16_dat));
-	}			/* <== RHM_HT 2013.03.23        Add for OIS controll */
+	}			/* <== RHM_HT 2013.03.23        Add for OIS control */
 	return ADJ_OK;		/* RHM_HT 2013/04/15    Change return value */
 }
 
@@ -625,7 +628,7 @@ OIS_UWORD I2C_OIS_F0123__rd(void)
 {
 	OIS_UBYTE u08_dat;
 
-	u08_dat = 0xF0;	/* Op-code */
+	u08_dat = 0xF0;		/* Op-code */
 
 	return RD_I2C(_SLV_OIS_, 1, &u08_dat);
 }

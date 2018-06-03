@@ -56,12 +56,12 @@
 
 #define		USE_INVENSENSE	/* INVENSENSE */
 #ifdef USE_INVENSENSE
-/* #define         FS_SEL          0    */           /* Å}262LSB/?/s  */
-/* #define         FS_SEL          1    */           /* Å}131LSB/?/s  */
-/* #define         FS_SEL          2    */           /* Å}65.5LSB/?/s  */
+
+
+
 #define		FS_SEL		3	/* Å}32.8LSB/?/s  */
 
-/* #define         GYROSTBY       */                  /* Sleep+STBY */
+
 #endif
 
 /**************** Model name *****************/

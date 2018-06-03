@@ -287,7 +287,6 @@ typedef struct STMVPAR {
 
 extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
-									u16 a_sizeRecvData, u16 i2cId);
+				       u16 a_sizeRecvData, u16 i2cId);
 
 #endif
-

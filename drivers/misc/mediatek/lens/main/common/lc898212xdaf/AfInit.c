@@ -47,10 +47,10 @@ void AfInit(unsigned char hall_off, unsigned char hall_bias)
 
 			if (Init_Table_TVC820[i].addr >= REG_ADDR_START)
 				RegWriteA(Init_Table_TVC820[i].addr,
-					(unsigned char)(Init_Table_TVC820[i].data & 0x00ff));
+					  (unsigned char)(Init_Table_TVC820[i].data & 0x00ff));
 			else
 				RamWriteA(Init_Table_TVC820[i].addr,
-					(unsigned short)Init_Table_TVC820[i].data);
+					  (unsigned short)Init_Table_TVC820[i].data);
 		}
 	} else {
 		/* IMX214, IMX258 */
@@ -64,10 +64,10 @@ void AfInit(unsigned char hall_off, unsigned char hall_bias)
 
 			if (Init_Table_TVC651[i].addr >= REG_ADDR_START)
 				RegWriteA(Init_Table_TVC651[i].addr,
-					(unsigned char)(Init_Table_TVC651[i].data & 0x00ff));
+					  (unsigned char)(Init_Table_TVC651[i].data & 0x00ff));
 			else
 				RamWriteA(Init_Table_TVC651[i].addr,
-					(unsigned short)Init_Table_TVC651[i].data);
+					  (unsigned short)Init_Table_TVC651[i].data);
 		}
 	}
 
