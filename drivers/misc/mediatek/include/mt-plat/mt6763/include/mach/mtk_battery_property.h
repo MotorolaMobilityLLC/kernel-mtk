@@ -144,16 +144,16 @@
 #define UI_FAST_TRACKING_GAP 300
 #define KEEP_100_PERCENT_MINSOC 9000
 
-#define UNIT_FGCURRENT     (381470)		/* mt6335 381.470 uA */
-#define UNIT_FGCAR         (108506)		/* unit 2^11 LSB*/
+#define UNIT_FGCURRENT     (314331)		/* mt6356 314.331 uA */
+#define UNIT_FGCAR         (89409)		/* charge_lsb 157166 * 2^11 / 3600 */
 #define R_VAL_TEMP_2         (2)			/* MT6335 use 3, old chip use 4 */
 #define R_VAL_TEMP_3         (3)			/* MT6335 use 3, old chip use 4 */
 #define UNIT_TIME          (50)
-#define UNIT_FGCAR_ZCV     (190735)     /* unit 2^0 LSB */
-#define UNIT_FG_IAVG		(190735)
-#define CAR_TO_REG_FACTOR  (0x49BA)
+#define UNIT_FGCAR_ZCV     (157166)     /* unit 2^0 LSB */
+#define UNIT_FG_IAVG		(157166)
+#define CAR_TO_REG_FACTOR  (0x5979)		/* 3600 * 1000 * 1000 / 157166 */
 
-/*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
+#define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
 #define BATTERY_TMP_TO_DISABLE_NAFG -25
 #define BATTERY_TMP_TO_ENABLE_NAFG -20
