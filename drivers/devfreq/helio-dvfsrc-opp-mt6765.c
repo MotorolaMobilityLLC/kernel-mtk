@@ -59,6 +59,7 @@ void dvfsrc_opp_level_mapping(void)
 {
 	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv, vcore_opp_3_uv;
 	int is_vcore_ct = 0, is_mini_sqc = 0;
+	int info2 = get_devinfo_with_index(132);
 
 	if (!strncmp(CONFIG_ARCH_MTK_PROJECT,
 				"k65v1_64_bsp_ctig", 17) ||
@@ -128,8 +129,14 @@ void dvfsrc_opp_level_mapping(void)
 
 	set_vcore_uv_table(VCORE_OPP_0, vcore_opp_0_uv);
 	set_vcore_uv_table(VCORE_OPP_1, vcore_opp_1_uv);
-	set_vcore_uv_table(VCORE_OPP_2, vcore_opp_2_uv);
-	set_vcore_uv_table(VCORE_OPP_3, vcore_opp_3_uv);
+
+	if (info2 & 0x1) {
+		set_vcore_uv_table(VCORE_OPP_2, vcore_opp_1_uv);
+		set_vcore_uv_table(VCORE_OPP_3, vcore_opp_1_uv);
+	} else {
+		set_vcore_uv_table(VCORE_OPP_2, vcore_opp_2_uv);
+		set_vcore_uv_table(VCORE_OPP_3, vcore_opp_3_uv);
+	}
 
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
