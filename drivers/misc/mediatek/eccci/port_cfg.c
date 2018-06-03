@@ -90,6 +90,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_DHL, "ccci_raw_dhl",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_NETD, "ccci_raw_netd",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_USB, "ccci_raw_usb",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_AUDIO, "ccci_raw_audio",},
 };
 
 #ifdef CONFIG_MTK_ENABLE_MD2
@@ -180,6 +181,8 @@ static struct ccci_port md3_ccci_ports[] = {
 /* sys port */
 	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &ctl_port_ops, 0, "ccci3_ctrl",},
 	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0,	&poller_port_ops, 0, "ccci3_poll",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops,
+								SMEM_USER_RAW_AUDIO, "ccci3_raw_audio",},
 };
 
 #endif
