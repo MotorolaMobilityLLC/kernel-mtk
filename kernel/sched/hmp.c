@@ -447,7 +447,8 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 	struct cpumask srcp;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
-	cpumask_and(&srcp, cpu_online_mask, mask);
+	cpumask_andnot(&srcp, cpu_online_mask, cpu_isolated_mask);
+	cpumask_and(&srcp, &srcp, mask);
 	target = cpumask_any_and(&srcp, tsk_cpus_allow);
 	if (target >= num_possible_cpus())
 		goto out;
@@ -462,7 +463,8 @@ static unsigned int hmp_select_cpu(unsigned int caller, struct task_struct *p,
 	for_each_cpu(curr, mask) {
 		/* Check CPU status and task affinity */
 		if (!cpu_online(curr) ||
-				!cpumask_test_cpu(curr, tsk_cpus_allow))
+				!cpumask_test_cpu(curr, tsk_cpus_allow) ||
+					cpu_isolated(curr))
 			continue;
 
 		/* For global load balancing, unstable CPU will be bypassed */
@@ -692,6 +694,7 @@ static unsigned int hmp_up_migration(int cpu,
 #ifdef CONFIG_HMP_TRACER
 	unsigned int caller = clbenv->flags;
 #endif
+	cpumask_t act_mask;
 
 	L = &clbenv->lstats;
 	B = &clbenv->bstats;
@@ -701,6 +704,7 @@ static unsigned int hmp_up_migration(int cpu,
 	check->status |= HMP_TASK_UP_MIGRATION;
 	check->result = 0;
 
+	cpumask_andnot(&act_mask, cpu_active_mask, cpu_isolated_mask);
 
 	/*
 	 * No migration is needed if
@@ -711,7 +715,8 @@ static unsigned int hmp_up_migration(int cpu,
 	if (!L->ncpu || !B->ncpu
 			|| cpumask_test_cpu(curr_cpu, &clbenv->bcpus)
 			|| !cpumask_intersects(&clbenv->bcpus,
-				tsk_cpus_allowed(p)))
+				tsk_cpus_allowed(p))
+			|| !cpumask_intersects(&clbenv->bcpus, &act_mask))
 		goto out;
 
 	/*
@@ -787,6 +792,7 @@ static unsigned int hmp_down_migration(int cpu,
 	struct mcheck *check;
 	int curr_cpu = cpu;
 	unsigned int caller = clbenv->flags;
+	cpumask_t act_mask;
 
 	L = &clbenv->lstats;
 	B = &clbenv->bstats;
@@ -795,6 +801,8 @@ static unsigned int hmp_down_migration(int cpu,
 	check->status = caller;
 	check->status |= HMP_TASK_DOWN_MIGRATION;
 	check->result = 0;
+
+	cpumask_andnot(&act_mask, cpu_active_mask, cpu_isolated_mask);
 
 	/*
 	 * No migration is needed if
@@ -805,7 +813,8 @@ static unsigned int hmp_down_migration(int cpu,
 	if (!L->ncpu || !B->ncpu
 			|| cpumask_test_cpu(curr_cpu, &clbenv->lcpus)
 			|| !cpumask_intersects(&clbenv->lcpus,
-				tsk_cpus_allowed(p)))
+				tsk_cpus_allowed(p))
+			|| !cpumask_intersects(&clbenv->lcpus, &act_mask))
 		goto out;
 
 	/*
@@ -1032,7 +1041,8 @@ static int hmp_active_task_migration_cpu_stop(void *data)
 	if (busiest_rq->nr_running <= 1)
 		goto out_unlock;
 	/* Are both target and busiest cpu online */
-	if (!cpu_online(busiest_cpu) || !cpu_online(target_cpu))
+	if (!cpu_online(busiest_cpu) || !cpu_online(target_cpu) ||
+		cpu_isolated(busiest_cpu) || cpu_isolated(target_cpu))
 		goto out_unlock;
 	/* Task has migrated meanwhile, abort forced migration */
 	if ((!p) || (task_rq(p) != busiest_rq))
@@ -1646,7 +1656,8 @@ inline int hmp_fork_balance(struct task_struct *p, int prev_cpu)
 		lowest_ratio = hmp_domain_min_load(hmpdom, &new_cpu);
 
 		if (new_cpu < nr_cpu_ids &&
-				cpumask_test_cpu(new_cpu, tsk_cpus_allowed(p)))
+				cpumask_test_cpu(new_cpu, tsk_cpus_allowed(p))
+				&& !cpu_isolated(new_cpu))
 			return new_cpu;
 
 		new_cpu = cpumask_any_and(&hmp_faster_domain(cpu)->cpus,
