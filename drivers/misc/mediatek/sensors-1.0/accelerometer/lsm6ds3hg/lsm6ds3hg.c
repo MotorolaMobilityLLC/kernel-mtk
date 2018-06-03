@@ -141,7 +141,7 @@ static int lsm6ds3h_local_uninit(void);
 
 
 static DEFINE_MUTEX(lsm6ds3h_init_mutex);
-
+static DEFINE_MUTEX(lsm6ds3h_factory_mutex);
 
 
 #ifdef CONFIG_OF
@@ -1527,7 +1527,7 @@ static int bmi160_factory_get_data(int32_t data[3], int *status)
 #if 0
 	return bmi160_acc_get_data(&data[0], &data[1], &data[2], status);
 #endif
-	mutex_lock(&lsm6ds3h_init_mutex);
+	mutex_lock(&lsm6ds3h_factory_mutex);
 	if (sensor_power == false) {
 		err = LSM6DS3H_SetPowerMode(lsm6ds3h_i2c_client, true);
 		if (err)
@@ -1535,7 +1535,7 @@ static int bmi160_factory_get_data(int32_t data[3], int *status)
 
 		msleep(50);
 	}
-	mutex_unlock(&lsm6ds3h_init_mutex);
+	mutex_unlock(&lsm6ds3h_factory_mutex);
 
 	return lsm6ds3h_get_data(&data[0], &data[1], &data[2], status);
 }
