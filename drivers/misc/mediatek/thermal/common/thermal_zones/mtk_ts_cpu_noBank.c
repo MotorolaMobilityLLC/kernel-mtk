@@ -820,22 +820,23 @@ static int tscpu_read_opp(struct seq_file *m, void *v)
 	vpu_power = apthermolmt_get_vpu_power_limit();
 #endif
 
-#if defined(THERMAL_VPU_SUPPORT)
-	seq_printf(m, "%d,",
-		   (int)((vpu_power != 0x7FFFFFFF) ? vpu_power : 0));
-#endif
-
 #if CPT_ADAPTIVE_AP_COOLER
 
 	if (!mtk_get_gpu_loading(&gpu_loading))
 		gpu_loading = 0;
 
-	seq_printf(m, "%d,%d,%d,%d,%d\n",
+	seq_printf(m, "%d,%d,%d,%d,%d",
 		   (int)((cpu_power != 0x7FFFFFFF) ? cpu_power : 0),
 		   (int)((gpu_power != 0x7FFFFFFF) ? gpu_power : 0),
 		   /* ((NULL == mtk_thermal_get_gpu_loading_fp) ? 0 : mtk_thermal_get_gpu_loading_fp()), */
 		   (int)gpu_loading, (int)mt_gpufreq_get_cur_freq(), get_target_tj());
 
+#if defined(THERMAL_VPU_SUPPORT)
+	seq_printf(m, ",%d",
+		   (int)((vpu_power != 0x7FFFFFFF) ? vpu_power : 0));
+#endif
+
+	seq_puts(m, "\n");
 #else
 	seq_printf(m, "%d,%d,0,%d\n",
 		   (int)((cpu_power != 0x7FFFFFFF) ? cpu_power : 0),
