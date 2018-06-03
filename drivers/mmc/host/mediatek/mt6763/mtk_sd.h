@@ -389,12 +389,16 @@ struct msdc_host {
 	int                     prev_cmd_cause_dump;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	volatile int		cq_error_need_stop;
+	volatile int            cq_error_need_stop;
 #endif
 
 	/* BEGIN temporarily debug  ALPS03052531*/
 	int                     resume_write_times;
 	/* END temporarily debug  ALPS03052531*/
+
+	u32                     dma_cnt;
+	u64                     start_dma_time;
+	u64                     stop_dma_time;
 };
 
 enum {

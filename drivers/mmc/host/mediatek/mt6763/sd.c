@@ -403,6 +403,49 @@ int msdc_get_dma_status(int host_id)
 }
 EXPORT_SYMBOL(msdc_get_dma_status);
 
+void msdc_hang_detect_dump(u32 id)
+{
+	struct msdc_host *host = mtk_msdc_host[id];
+	void __iomem *base;
+
+	if (host == NULL) {
+		pr_info("====== Null msdc%d, dump skipped ======\n", id);
+		return;
+	}
+
+	pr_info("====== msdc%d dump start ======\n", id);
+
+	pr_info("Accumulated dma cnt: %u\n", host->dma_cnt);
+	if (host->start_dma_time < host->stop_dma_time)
+		pr_info("No pending dma: last start %llu, last stop %llu\n",
+			host->start_dma_time, host->stop_dma_time);
+
+	if (host->tuning_in_progress)
+		pr_info("tuning_in_progress %d\n",
+			host->tuning_in_progress);
+
+	if ((host->core_clkon == 0)
+	 && host->stop_dma_time
+	 && (host->start_dma_time > host->stop_dma_time)) {
+		pr_info("DMA pending with clock gated: start %llu, stop %llu\n",
+			host->start_dma_time, host->stop_dma_time);
+		msdc_dump_clock_sts(host);
+		return;
+	}
+
+	base = host->base;
+
+	if ((host->core_clkon == 1)
+	 && (host->start_dma_time > host->stop_dma_time)) {
+		pr_info("DMA pending DMA_CFG_SATUS(%d): start %llu, stop %llu\n",
+			MSDC_READ32(MSDC_DMA_CFG) & MSDC_DMA_CFG_STS,
+			host->start_dma_time, host->stop_dma_time);
+	}
+
+	pr_info("======= msdc%d dump end =======\n", id);
+}
+EXPORT_SYMBOL(msdc_hang_detect_dump);
+
 void msdc_clr_fifo(unsigned int id)
 {
 	int retry = 3, cnt = 1000;
@@ -2336,6 +2379,11 @@ static void msdc_dma_start(struct msdc_host *host)
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
 			host->write_timeout_ms);
 	}
+
+	host->dma_cnt++;
+	host->start_dma_time = sched_clock();
+	host->stop_dma_time = 0;
+	mb();
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2367,6 +2415,9 @@ static void msdc_dma_stop(struct msdc_host *host)
 		ERR_MSG("DMA stop retry timeout");
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
+
+	host->stop_dma_time = sched_clock();
+	mb();
 
 	N_MSG(DMA, "DMA stop, latest_INT_status<0x%.8x>", latest_int_status[host->id]);
 }
