@@ -43,6 +43,7 @@ static u64 lbw_start = ULONG_MAX, lbw_end;
 static phys_addr_t mpu_start, mpu_end;
 static DEFINE_MUTEX(dcs_lbw_lock);
 static struct wake_lock dcs_wake_lock;
+static unsigned int nr_swap;
 #define DCS_PROFILE
 
 #ifdef DCS_PROFILE
@@ -255,6 +256,7 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		}
 		sys_dcs_status = status;
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
+		nr_swap++;
 
 		/* notify bwm */
 		notify_bwm_dcs(status == DCS_NORMAL ?
@@ -679,6 +681,7 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 				lbw_start, lbw_end);
 		n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
 				mpu_start, mpu_end);
+		n += sprintf(buf + n, "nr_swap=%u\n", nr_swap);
 		dcs_get_dcs_status_unlock();
 	}
 
