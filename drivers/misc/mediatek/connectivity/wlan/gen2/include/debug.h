@@ -444,16 +444,18 @@ UINT_32 wlanFWDLDebugGetPktCnt(VOID);
 
 VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter);
 
+VOID wlanPktStausDebugUpdateProcessTime(UINT_32 u4DbgTxPktStatusIndex);
 VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter);
 
 
-VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
-VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId
-	, PUINT_8 pucPkt);
-VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq);
 
-VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
-	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
+VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq);
+VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt
+	, P_MSDU_INFO_T prMsduInfo);
+VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId
+	, PUINT_8 pucPkt, P_MSDU_INFO_T prMsduInfo);
+VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType, UINT_16 u2EtherType
+	, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt, P_MSDU_INFO_T prMsduInfo);
 VOID wlanDebugCommandRecodTime(P_CMD_INFO_T prCmdInfo);
 VOID wlanDebugCommandRecodDump(VOID);
 #if CFG_SUPPORT_EMI_DEBUG

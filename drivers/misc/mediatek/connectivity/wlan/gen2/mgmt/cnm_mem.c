@@ -99,6 +99,7 @@ P_MSDU_INFO_T cnmMgtPktAlloc(P_ADAPTER_T prAdapter, UINT_32 u4Length)
 			prMsduInfo->ucCID = 0xff;
 			prMsduInfo->u4InqueTime = 0;
 			prMsduInfo->ucPacketType = TX_PACKET_NUM;
+			prMsduInfo->u4DbgTxPktStatusIndex = 0xffff;
 		}
 	} else {
 		P_QUE_T prTxingQue;

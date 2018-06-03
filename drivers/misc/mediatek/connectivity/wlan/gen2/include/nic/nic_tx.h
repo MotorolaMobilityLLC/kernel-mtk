@@ -295,6 +295,8 @@ struct _MSDU_INFO_T {
 	COMMAND_TYPE eCmdType;
 	UINT_8 ucCID;
 	UINT_32 u4InqueTime;
+	UINT_32 u4DbgTxPktStatusIndex;
+
 };
 
 
