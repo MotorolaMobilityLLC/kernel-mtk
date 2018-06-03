@@ -118,6 +118,12 @@ UINT8 WMT_DEEP_SLEEP_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x11, 0x00 };
 UINT8 WMT_DEEP_SLEEP_EVT[] = { 0x02, 0x02, 0x01, 0x00, 0x00 };
 #endif
 
+UINT8 WMT_CLOCK_RATE_CMD[] = {0x01, 0x0A, 0x04, 0x00, 0x09, 0x01, 0x00, 0x00};
+UINT8 WMT_CLOCK_RATE_EVT[] = {0x02, 0x0A, 0x01, 0x00, 0x00};
+UINT8 WMT_PATCH_DWN_USE_DMA_CMD[] = {0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00,
+	0x01, 0xc0, 0x0a, 0x01, 0x02, 0x04, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF};
+UINT8 WMT_PATCH_DWN_USE_DMA_EVT[] = {0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01};
+
 static UINT8 WMT_RESET_CMD[] = { 0x01, 0x07, 0x01, 0x00, 0x04 };
 static UINT8 WMT_RESET_EVT[] = { 0x02, 0x07, 0x01, 0x00, 0x00 };
 
@@ -388,6 +394,17 @@ static struct init_script init_deep_sleep_script[] = {
 	INIT_CMD(WMT_DEEP_SLEEP_CMD, WMT_DEEP_SLEEP_EVT, "chip deep sleep"),
 };
 #endif
+
+static struct init_script clock_rate_modify[] = {
+	INIT_CMD(WMT_CLOCK_RATE_CMD, WMT_CLOCK_RATE_EVT, "clock rate modify"),
+};
+
+/* WMT_CLOCK_RATE_CMD[6] = 0xD0, promote the XTAL(26MHz) rate to 208MHz */
+static struct init_script clock_rate_pro_and_use_dma[] = {
+	INIT_CMD(WMT_CLOCK_RATE_CMD, WMT_CLOCK_RATE_EVT, "clock rate modify"),
+	INIT_CMD(WMT_PATCH_DWN_USE_DMA_CMD, WMT_PATCH_DWN_USE_DMA_EVT, "patch dwn use DMA"),
+};
+
 
 static struct init_script set_crystal_timing_script[] = {
 	INIT_CMD(WMT_SET_CRYSTAL_TRIMING_CMD, WMT_SET_CRYSTAL_TRIMING_EVT,
@@ -742,6 +759,17 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	patch_num = ctrlPa1;
 	WMT_INFO_FUNC("patch total num = [%d]\n", patch_num);
 
+	/* improve patch down load speed */
+	WMT_DBG_FUNC("improve patch dwn speed, clock rate promote, copy data use DMA at firmware side\n");
+	WMT_CLOCK_RATE_CMD[6] = 0xD0;
+	/* If WMT_CLOCK_RATE_CMD[6] = 0xD0, promote the XTAL(26MHz) rate to 208MHz
+	*   copy data use DMA at firmware side
+	*/
+	iRet = wmt_core_init_script(clock_rate_pro_and_use_dma, ARRAY_SIZE(clock_rate_pro_and_use_dma));
+	if (iRet) {
+		WMT_ERR_FUNC("clock_rate_pro_and_use_dma fail(%d)\n", iRet);
+		return -30;
+	}
 	/* 9.3 Multi-patch Patch download */
 	for (patch_index = 0; patch_index < patch_num; patch_index++) {
 		iRet = mt6632_patch_dwn(patch_index);
@@ -759,6 +787,15 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -13;
 		}
 	}
+	/*close clock rate promote*/
+	WMT_CLOCK_RATE_CMD[6] = 0x00;
+	WMT_DBG_FUNC("close clock rate promote, made XTAL to 26MHz\n");
+	iRet = wmt_core_init_script(clock_rate_modify, ARRAY_SIZE(clock_rate_modify));
+	if (iRet) {
+		WMT_ERR_FUNC("close clock rate promote fail(%d)\n", iRet);
+		return -31;
+	}
+
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 	wmt_stp_get_chip_deep_sleep();
 	if (g_deep_sleep_flag) {
