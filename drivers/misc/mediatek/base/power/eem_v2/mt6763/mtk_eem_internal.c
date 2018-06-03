@@ -107,7 +107,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step   = EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE,
+		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
 		.DTHI		= DTHI_VAL,
@@ -118,6 +118,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DVTFIXED	= DVTFIXED_VAL,
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
+		#if ENABLE_EEMCTL0
+		.EEMCTL0	= EEM_CTL0_2L,
+		#endif
 	},
 
 	[EEM_DET_L] = {
@@ -134,7 +137,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step   = EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE,
+		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
 		.DTHI		= DTHI_VAL,
@@ -145,6 +148,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DVTFIXED	= DVTFIXED_VAL,
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
+		#if ENABLE_EEMCTL0
+		.EEMCTL0	= EEM_CTL0_L,
+		#endif
 	},
 
 	[EEM_DET_CCI] = {
@@ -161,7 +167,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step   = EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE,
+		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
 		.DTHI		= DTHI_VAL,
@@ -172,6 +178,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DVTFIXED	= DVTFIXED_VAL,
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
+		#if ENABLE_EEMCTL0
+		.EEMCTL0	= EEM_CTL0_CCI,
+		#endif
 	},
 
 	[EEM_DET_GPU] = {
@@ -199,7 +208,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DVTFIXED	= DVTFIXED_VAL_GPU,
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
-
+		#if ENABLE_EEMCTL0
+		.EEMCTL0	= EEM_CTL0_GPU,
+		#endif
 	},
 
 	[EEM_DET_SOC] = {
@@ -231,6 +242,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DVTFIXED	= DVTFIXED_VAL,
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
+		#if ENABLE_EEMCTL0
+		.EEMCTL0	= EEM_CTL0_SOC,
+		#endif
 	}
 };
 

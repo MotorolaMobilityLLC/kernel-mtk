@@ -25,6 +25,7 @@
 #define EEM_FAKE_EFUSE		(0)
 #define UPDATE_TO_UPOWER	(0)
 #define EEM_LOCKTIME_LIMIT	(3000)
+#define ENABLE_EEMCTL0		(0)
 
 /* These 4 configs are reserving for sspm EEM */
 /* #define EEM_CUR_VOLT_PROC_SHOW */
@@ -170,7 +171,8 @@
 #endif
 
 /* CPU */
-#define CPU_PMIC_BASE		(60000)
+#define CPU_PMIC_BASE_6356	(50000)
+#define CPU_PMIC_BASE_6311	(60000)
 #define CPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
 #define MAX_ITURBO_OFFSET	(2000)
 
@@ -207,6 +209,17 @@
 #define CORESEL_VAL (0x800f0000)
 #define CORESEL_INIT2_VAL (0x000f0000)
 #define INVERT_TEMP_VAL (33000)
+
+#if ENABLE_EEMCTL0
+/* for EEMCTL0's setting */
+#define EEM_CTL0_BIG (0x00000001)
+#define EEM_CTL0_CCI (0x02100007)
+#define EEM_CTL0_2L (0x00020001)
+#define EEM_CTL0_L (0x00010001)
+#define EEM_CTL0_GPU (0x00060001)
+#define EEM_CTL0_SOC (0x06540007)
+#endif
+
 /* After ATE program version 5 */
 /* #define VCO_VAL_AFTER_5		0x04 */
 /* #define VCO_VAL_AFTER_5_BIG	0x32 */

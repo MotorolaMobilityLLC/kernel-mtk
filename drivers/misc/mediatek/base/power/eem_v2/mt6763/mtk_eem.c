@@ -74,7 +74,7 @@
 #ifdef __KERNEL__
 	#include <mt-plat/mtk_chip.h>
 	#include <mt-plat/mtk_gpio.h>
-	#include "mt-plat/upmu_common.h"
+	#include "upmu_common.h"
 	#include "mach/mtk_freqhopping.h"
 	#include "mtk_thermal.h"
 	#include "mtk_ppm_api.h"
@@ -1130,12 +1130,6 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		  ((det->freq_tbl[5 * (NR_FREQ / 8)] << 8) & 0xff00)	|
 		  ((det->freq_tbl[4 * (NR_FREQ / 8)]) & 0xff));
 
-	#if DVT
-		det->VBOOT = 0x30;
-		det->VMAX = 0xFE;
-		det->VMIN = 0x10;
-	#endif
-
 	#if 0 /*fake*/
 		det->VMAX = 0xFE;
 	#endif
@@ -1150,40 +1144,10 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	eem_write(EEM_DETWINDOW, (((det->DETWINDOW) & 0xffff)));
 	eem_write(EEMCONFIG, (((det->DETMAX) & 0xffff)));
 
+	#if ENABLE_EEMCTL0
 	/* eem ctrl choose thermal sensors */
-	switch (det->ctrl_id) {
-	case EEM_CTRL_2L:
-		eem_write(EEM_CTL0, (0x1 | (2 << 16)));
-		break;
-	case EEM_CTRL_L:
-		eem_write(EEM_CTL0, (0x1 | (1 << 16)));
-		break;
-	case EEM_CTRL_CCI:
-		eem_write(EEM_CTL0, (0x7 | (2 << 24) | (1 << 20) | (0 << 16)));
-		break;
-	case EEM_CTRL_GPU:
-		#if 0
-		eem_error("[SET_PHASE]gpu: EEM_FREQPCT30 = 0x%08X, EEM_FREQPCT74 = 0X%08X\n",
-					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
-		eem_error("[SET_PHASE]gpu: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
-					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
-		#endif
-		eem_write(EEM_CTL0, (0x1 | (6 << 16)));
-		break;
-	case EEM_CTRL_SOC:
-		#if 0
-		eem_error("[SET_PHASE]soc: EEM_FREQPCT30 = 0x%08X, EEM_FREQPCT74 = 0X%08X\n",
-					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
-		eem_error("[SET_PHASE]soc: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
-					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
-		#endif
-		eem_write(EEM_CTL0, (0x7 | (6 << 24) | (5 << 20) | (4 << 16)));
-		break;
-	default:
-		eem_error("unknown ctrl try to set therm sensors\n");
-		break;
-	}
-
+	eem_write(EEM_CTL0, det->EEMCTL0);
+	#endif
 	/* clear all pending EEM interrupt & config EEMINTEN */
 	eem_write(EEMINTSTS, 0xffffffff);
 
@@ -1615,6 +1579,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
 		det->AGEDELTA	= devinfo->CPU_2L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_2L_MTDES;
+		if (is_ext_buck_exist())
+			det->pmic_base = CPU_PMIC_BASE_6311;
+		else
+			det->pmic_base = CPU_PMIC_BASE_6356;
 		#if 0
 		det->recordRef	= recordRef;
 		int i;
@@ -1636,6 +1604,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->AGEDELTA	= devinfo->CPU_L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_L_MTDES;
+		if (is_ext_buck_exist())
+			det->pmic_base = CPU_PMIC_BASE_6311;
+		else
+			det->pmic_base = CPU_PMIC_BASE_6356;
 		#if 0
 		det->recordRef	= recordRef + 36;
 		int i;
@@ -1657,6 +1629,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->AGEDELTA	= devinfo->CCI_AGEDELTA;
 		det->MTDES	= devinfo->CCI_MTDES;
+		if (is_ext_buck_exist())
+			det->pmic_base = CPU_PMIC_BASE_6311;
+		else
+			det->pmic_base = CPU_PMIC_BASE_6356;
 		#if 0
 		det->recordRef	= recordRef + 72;
 		int i;
@@ -1705,6 +1681,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	/* get DVFS frequency table */
 	if (det->ops->get_freq_table)
 		det->ops->get_freq_table(det);
+
+	#if DVT
+		det->VBOOT = 0x30;
+		det->VMAX = 0xFE;
+		det->VMIN = 0x10;
+	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
