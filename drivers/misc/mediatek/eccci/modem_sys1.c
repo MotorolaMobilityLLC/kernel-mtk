@@ -1172,10 +1172,9 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 {
 	struct ccci_modem *md;
 	struct md_sys1_info *md_info;
-	int md_id, i;
+	int md_id;
 	struct ccci_dev_cfg dev_cfg;
 	int ret;
-	int sram_size;
 	struct md_hw_info *md_hw;
 
 	/* Allocate modem hardware info structure memory */
@@ -1235,13 +1234,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md->md_wdt_irq_id = md_hw->md_wdt_irq_id;
 	atomic_set(&md->reset_on_going, 1);
 	atomic_set(&md->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
-
-	/* init CCIF */
-	sram_size = md_hw->sram_size;
-	cldma_write32(md_info->ap_ccif_base, APCCIF_CON, 0x01); /* arbitration */
-	cldma_write32(md_info->ap_ccif_base, APCCIF_ACK, 0xFFFF);
-	for (i = 0; i < sram_size / sizeof(u32); i++)
-		cldma_write32(md_info->ap_ccif_base, APCCIF_CHDATA + i * sizeof(u32), 0);
 
 #if (MD_GENERATION <= 6292)
 	md->hif_flag = 1 << CLDMA_HIF_ID;

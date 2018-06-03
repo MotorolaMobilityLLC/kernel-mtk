@@ -1145,7 +1145,7 @@ static struct ccci_hif_ops ccci_hif_ccif_ops = {
 static void ccif_hif_hw_init(struct md_ccif_ctrl *md_ctrl)
 {
 	struct md_hw_info *hw_info = (struct md_hw_info *)ccci_md_get_hw_info(md_ctrl->md_id);
-	int idx, ret;
+	int ret;
 	unsigned long ccif_irq_flags;
 
 	/*Copy HW info */
@@ -1171,11 +1171,6 @@ static void ccif_hif_hw_init(struct md_ccif_ctrl *md_ctrl)
 		return;
 	}
 
-	/*init CCIF */
-	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_CON, 0x01);	/*arbitration */
-	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, 0xFFFF);
-	for (idx = 0; idx < md_ctrl->sram_size / sizeof(u32); idx++)
-		ccif_write32(md_ctrl->ccif_ap_base, APCCIF_CHDATA + idx * sizeof(u32), 0);
 }
 
 int ccci_ccif_hif_init(unsigned char hif_id, unsigned char md_id)
