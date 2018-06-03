@@ -283,8 +283,11 @@ bool ged_dvfs_cal_gpu_utilization(unsigned int *pui32Loading,
 		if (pui32Loading) {
 			gpu_av_loading = *pui32Loading;
 			gpu_sub_loading = *pui32Loading;
+
+			spin_lock(&load_info_lock);
 			g_loading2_sum += gpu_av_loading;
 			g_loading2_count++;
+			spin_unlock(&load_info_lock);
 		}
 		return true;
 	}
