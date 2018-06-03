@@ -102,6 +102,7 @@ extern void mmc_packed_clean(struct mmc_queue *);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 extern void mmc_wait_cmdq_empty(struct mmc_host *);
 #endif
+extern bool mmc_blk_part_cmdq_en(struct mmc_queue *mq);
 extern int mmc_access_rpmb(struct mmc_queue *);
 
 #endif

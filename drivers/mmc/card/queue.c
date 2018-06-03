@@ -52,44 +52,30 @@ static int mmc_prep_request(struct request_queue *q, struct request *req)
 }
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-int mmc_cmdq_cnt(struct mmc_host *host)
-{
-	if (!host->card->ext_csd.cmdq_mode_en)
-		return 0;
-	return atomic_read(&host->areq_cnt);
-}
-
 static void mmc_queue_softirq_done(struct request *req)
 {
 	blk_end_request_all(req, 0);
 }
 
-int mmc_is_cmdq_empty(struct mmc_host *host)
+int mmc_is_cmdq_full(struct mmc_queue *mq, struct request *req)
 {
-	if (!host->card->ext_csd.cmdq_mode_en)
-		return 1;
-	return !atomic_read(&host->areq_cnt);
-}
+	struct mmc_host *host;
+	int cnt, rt;
+	u8 cmp_depth;
 
-int mmc_is_cmdq_full(struct mmc_host *host, int rt)
-{
-	int cnt;
+	host = mq->card->host;
+	rt = IS_RT_CLASS_REQ(req);
 
-	if (!host->card->ext_csd.cmdq_mode_en)
-		return 0;
 	cnt = atomic_read(&host->areq_cnt);
-	if (rt) {
-		if (cnt >= host->card->ext_csd.cmdq_depth)
-			return 1;
-		else
-			return 0;
-	} else {
-		if (cnt >= host->card->ext_csd.cmdq_depth -
-			EMMC_MIN_RT_CLASS_TAG_COUNT)
-			return 1;
-		else
-			return 0;
-	}
+	cmp_depth = host->card->ext_csd.cmdq_depth;
+	if (!rt &&
+		cmp_depth > EMMC_MIN_RT_CLASS_TAG_COUNT)
+		cmp_depth -= EMMC_MIN_RT_CLASS_TAG_COUNT;
+
+	if (cnt >= cmp_depth)
+		return 1;
+
+	return 0;
 }
 #endif
 
@@ -98,11 +84,12 @@ static int mmc_queue_thread(void *d)
 	struct mmc_queue *mq = d;
 	struct request_queue *q = mq->queue;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int rt, issue;
 	int cmdq_full = 0;
 	unsigned int tmo;
+	bool issue = false;
 #endif
 	bool io_boost_done = false;
+	bool part_cmdq_en = mmc_blk_part_cmdq_en(mq);
 
 	current->flags |= PF_MEMALLOC;
 
@@ -118,63 +105,38 @@ static int mmc_queue_thread(void *d)
 
 		spin_lock_irq(q->queue_lock);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (atomic_read(&mq->card->host->cq_tuning_now) == 1
-#ifdef CONFIG_MMC_FFU
-			|| atomic_read(&mq->card->host->stop_queue) == 1
-#endif
-			) {
-			req = NULL;
-			goto fetch_done;
-		}
-#endif
-
 		set_current_state(TASK_INTERRUPTIBLE);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		req = blk_peek_request(q);
-		if (!req)
-			goto fetch_done;
-		rt = IS_RT_CLASS_REQ(req);
-		if (mmc_is_cmdq_full(mq->card->host, rt)) {
-			req = NULL;
-			cmdq_full = 1;
-			goto fetch_done;
+		if (part_cmdq_en) {
+			req = blk_peek_request(q);
+			if (!req)
+				goto fetch_done;
+
+			if (mmc_is_cmdq_full(mq, req)) {
+				req = NULL;
+				cmdq_full = 1;
+				goto fetch_done;
+			}
 		}
 #endif
-
 		req = blk_fetch_request(q);
-
+		if (!part_cmdq_en)
+			mq->mqrq_cur->req = req;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 fetch_done:
-		if (!mq->card->ext_csd.cmdq_mode_en) {
 #endif
-			mq->mqrq_cur->req = req;
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		}
-#endif
-
 		spin_unlock_irq(q->queue_lock);
 
+		if (req || (!part_cmdq_en && mq->mqrq_prev->req))
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (mq->card->ext_csd.cmdq_mode_en) {
-			if (req)
-				issue = 1;
-			else
-				issue = 0;
-		} else {
-			if (req || mq->mqrq_prev->req)
-				issue = 1;
-			else
-				issue = 0;
-		}
-		if (issue) {
-#else
+			issue = true;
+		else
+			issue = false;
 
-		if (req || mq->mqrq_prev->req) {
-
+		if (issue)
 #endif
+		{
 			set_current_state(TASK_RUNNING);
 			cmd_flags = req ? req->cmd_flags : 0;
 			mq->issue_fn(mq, req);
@@ -184,40 +146,35 @@ fetch_done:
 				continue; /* fetch again */
 			}
 
-			/*
-			 * Current request becomes previous request
-			 * and vice versa.
-			 * In case of special requests, current request
-			 * has been finished. Do not assign it to previous
-			 * request.
-			 */
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			if (!mq->card->ext_csd.cmdq_mode_en) {
-#endif
-
+			if (!part_cmdq_en) {
+				/*
+				 * Current request becomes previous request
+				 * and vice versa.
+				 * In case of special requests, current request
+				 * has been finished. Do not assign it to previous
+				 * request.
+				 */
 				if (cmd_flags & MMC_REQ_SPECIAL_MASK)
 					mq->mqrq_cur->req = NULL;
 
 				mq->mqrq_prev->brq.mrq.data = NULL;
 				mq->mqrq_prev->req = NULL;
 				swap(mq->mqrq_prev, mq->mqrq_cur);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 			}
-#endif
-
 		} else {
 			if (kthread_should_stop()) {
 				set_current_state(TASK_RUNNING);
 				break;
 			}
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 			if (!cmdq_full) {
+				/* no request */
 				up(&mq->thread_sem);
 				schedule();
 				down(&mq->thread_sem);
 			} else {
+				/* queue full */
 				cmdq_full = 0;
 				/* call schedule when queue full */
 				tmo = schedule_timeout(HZ);
@@ -232,7 +189,6 @@ fetch_done:
 			down(&mq->thread_sem);
 #endif
 		}
-
 	} while (1);
 	mt_bio_queue_free(current);
 	up(&mq->thread_sem);
@@ -261,35 +217,29 @@ static void mmc_request_fn(struct request_queue *q)
 		return;
 	}
 
-	cntx = &mq->card->host->context_info;
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (mq->card->ext_csd.cmdq_mode_en) {
+	/* just wake up thread for cmdq */
+	if (mmc_blk_part_cmdq_en(mq)) {
 		wake_up_process(mq->thread);
-	} else {
-#endif
-
-		if (!mq->mqrq_cur->req && mq->mqrq_prev->req) {
-			/*
-			 * New MMC request arrived when MMC thread may be
-			 * blocked on the previous request to be complete
-			 * with no current request fetched
-			 */
-			spin_lock_irqsave(&cntx->lock, flags);
-			if (cntx->is_waiting_last_req) {
-				cntx->is_new_req = true;
-				wake_up_interruptible(&cntx->wait);
-			}
-			spin_unlock_irqrestore(&cntx->lock, flags);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			wake_up_process(mq->thread);
-#endif
-		} else if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
-			wake_up_process(mq->thread);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		return;
 	}
 #endif
+
+	cntx = &mq->card->host->context_info;
+	if (!mq->mqrq_cur->req && mq->mqrq_prev->req) {
+		/*
+		 * New MMC request arrived when MMC thread may be
+		 * blocked on the previous request to be complete
+		 * with no current request fetched
+		 */
+		spin_lock_irqsave(&cntx->lock, flags);
+		if (cntx->is_waiting_last_req) {
+			cntx->is_new_req = true;
+			wake_up_interruptible(&cntx->wait);
+		}
+		spin_unlock_irqrestore(&cntx->lock, flags);
+	} else if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
+		wake_up_process(mq->thread);
 }
 
 static struct scatterlist *mmc_alloc_sg(int sg_len, int *err)
