@@ -105,6 +105,7 @@ typedef struct {
 #define MMDVFS_CAMERA_MODE_FLAG_STEREO  (1 << 5)
 #define MMDVFS_CAMERA_MODE_FLAG_MVHDR  (1 << 6)
 #define MMDVFS_CAMERA_MODE_FLAG_ZVHDR  (1 << 7)
+#define MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM  (1 << 8)
 
 
 typedef struct {
