@@ -38,8 +38,11 @@
 
 #include "include/pmic.h"
 #include "include/mtk_pmic_common.h"
+#include "include/pmic_debugfs.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
+#include <mt-plat/charger_class.h>
+#include <mt-plat/aee.h>
 
 static int count_time_out = 100;
 
@@ -182,6 +185,9 @@ struct pmic_auxadc_channel mt6355_auxadc_channel[] = {
 };
 #define MT6355_AUXADC_CHANNEL_MAX	ARRAY_SIZE(mt6355_auxadc_channel)
 
+static signed int g_ch0_reg_val;
+static unsigned int g_ch0_count;
+
 int mt6355_get_auxadc_value(u8 channel)
 {
 	int count = 0;
@@ -233,6 +239,18 @@ int mt6355_get_auxadc_value(u8 channel)
 		}
 	}
 	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+	if (channel == AUXADC_LIST_BATADC) {
+		if (reg_val == g_ch0_reg_val)
+			g_ch0_count++;
+		else {
+			g_ch0_count = 0;
+			g_ch0_reg_val = reg_val;
+		}
+		if (g_ch0_count > 50) {
+			pmic_dump_register(NULL);
+			g_ch0_count = 0;
+		}
+	}
 
 	if (channel == AUXADC_LIST_BATTEMP || channel == AUXADC_LIST_BATID || channel == AUXADC_LIST_VBIF) {
 		if (channel == AUXADC_LIST_BATTEMP)
@@ -266,6 +284,21 @@ int mt6355_get_auxadc_value(u8 channel)
 		pr_err("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 					__func__, channel, reg_val, adc_result);
 
+	if (
+		pmic_get_register_value(PMIC_RG_INT_MASK_PWRKEY) == 1 ||
+		pmic_get_register_value(PMIC_RG_INT_MASK_PWRKEY_R) == 1 ||
+		pmic_get_register_value(PMIC_RG_INTRP_CK_PDN) == 1 ||
+		pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN) == 1 ||
+		pmic_get_register_value(PMIC_AUXADC_ADC_PWDB_SWCTRL) == 1 ||
+		pmic_get_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN) == 0) {
+		pr_notice("PMIC_RG_INT_MASK_PWRKEY=%d(0)\n", pmic_get_register_value(PMIC_RG_INT_MASK_PWRKEY));
+		pr_notice("PMIC_RG_INT_MASK_PWRKEY_R=%d(0)\n", pmic_get_register_value(PMIC_RG_INT_MASK_PWRKEY_R));
+		pr_notice("PMIC_RG_INTRP_CK_PDN=%d(0)\n", pmic_get_register_value(PMIC_RG_INTRP_CK_PDN));
+		pr_notice("PMIC_RG_AUXADC_1M_CK_PDN=%d(0)\n", pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN));
+		pr_notice("PMIC_AUXADC_ADC_PWDB_SWCTRL=%d(0)\n", pmic_get_register_value(PMIC_AUXADC_ADC_PWDB_SWCTRL));
+		pr_notice("PMIC_RG_LDO_VCN18_SW_OP_EN=%d(1)\n", pmic_get_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN));
+		aee_kernel_warning("PMIC REG error", "PMIC REG error");
+	}
 	/*--Monitor MTS Thread--*/
 	if (channel == AUXADC_LIST_BATADC)
 		wake_up_auxadc_detect();
@@ -290,17 +323,21 @@ static int mt6355_auxadc_get_auxadc_value_batmp(void)
 	mt6355_auxadc_lock();
 	mutex_lock(&auxadc_ch3_mutex);
 
-	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
-	udelay(10);
+	/* repeat get AUXADC BATON value until VSEN_MUX_EN is 0 */
+	do {
+		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
+		pmic_set_register_value(auxadc_channel->channel_rqst, 1);
+		udelay(10);
 
-	while (pmic_get_register_value(auxadc_channel->channel_rdy) != 1) {
-		usleep_range(1300, 1500);
-		if ((count++) > count_time_out) {
-			pr_err("[%s] (%d) Time out!\n", __func__, channel);
-			break;
+		while (pmic_get_register_value(auxadc_channel->channel_rdy) != 1) {
+			usleep_range(1300, 1500);
+			if ((count++) > count_time_out) {
+				pr_notice("[%s] (%d) Time out!\n", __func__, channel);
+				break;
+			}
 		}
-	}
-	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+		reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+	} while (pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN) == 1);
 
 	mutex_unlock(&auxadc_ch3_mutex);
 	mt6355_auxadc_unlock();
@@ -308,7 +345,7 @@ static int mt6355_auxadc_get_auxadc_value_batmp(void)
 	adc_result = (reg_val * auxadc_channel->r_val *
 				VOLTAGE_FULL_RANGE) / 4096;
 
-	pr_err("reg_val = 0x%x, adc_result = %d\n", reg_val, adc_result);
+	pr_info("reg_val = 0x%x, adc_result = %d\n", reg_val, adc_result);
 
 	return adc_result;
 }
