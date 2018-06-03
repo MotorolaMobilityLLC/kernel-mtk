@@ -101,12 +101,6 @@ int is_vcorefs_can_work(void)
 	return 0;
 }
 
-int helio_dvfsrc_fixed(int ddr, int volt)
-{
-	/* ToDo: Ask Fraser how to fix dvfsrc */
-	return 0;
-}
-
 static struct devfreq_dev_profile helio_devfreq_profile = {
 	.polling_ms	= 0,
 };
@@ -169,7 +163,8 @@ static void helio_dvfsrc_enable(struct helio_dvfsrc *dvfsrc)
 static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 {
 	int ret = 0;
-	/* int level = 0; */
+	int level = 0;
+	int force_en_tar = 0;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
 
@@ -186,35 +181,48 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
-		/*
-		 * level = dvfsrc_transfer_to_dram_level(data);
-		 * dvfsrc_write(dvfsrc, DVFSRC_EMI_REQUEST,
-		 *             (dvfsrc_read(dvfsrc, DVFSRC_EMI_REQUEST)
-		 *              & ~(0x3 << 20)) | (level << 20));
-		 */
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_0, data / 100);
 		break;
 	case PM_QOS_CPU_MEMORY_BANDWIDTH:
-		/* dvfsrc_write(dvfsrc, DVFSRC_SW_BW_0, data / 100); */
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_1, data / 100);
 		break;
 	case PM_QOS_GPU_MEMORY_BANDWIDTH:
-		/* dvfsrc_write(dvfsrc, DVFSRC_SW_BW_1, data / 100); */
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_2, data / 100);
 		break;
 	case PM_QOS_MM_MEMORY_BANDWIDTH:
-		/* dvfsrc_write(dvfsrc, DVFSRC_SW_BW_2, data / 100); */
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_3, data / 100);
 		break;
 	case PM_QOS_MD_PERI_MEMORY_BANDWIDTH:
-		/* dvfsrc_write(dvfsrc, DVFSRC_SW_BW_3, data / 100); */
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
-		/* dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100); */
+		level = EMI_NUM_OPP - data - 1;
+		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
+				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
+				& ~(0x3)) | level);
 		break;
 	case PM_QOS_VCORE_OPP:
-		/*
-		 * level = dvfsrc_transfer_to_vcore_level(data);
-		 * dvfsrc_write(dvfsrc, DVFSRC_VCORE_REQUEST,
-		 *             (dvfsrc_read(dvfsrc, DVFSRC_VCORE_REQUEST)
-		 *              & ~(0x3 << 20)) | (level << 20));
-		 */
+		level = ((VCORE_NUM_OPP - data - 1) << 2);
+		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
+				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
+				& ~(0xC)) | level);
+		break;
+	case PM_QOS_VCORE_DVFS_FIXED_OPP:
+		if (data == -1) {
+			level = 0;
+			force_en_tar = 0;
+			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
+					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
+					& ~(1 << 15)) | force_en_tar);
+			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
+		} else {
+			level = 1 << (VCORE_DVFS_FIXED_NUM_OPP - data - 1);
+			force_en_tar = (1 << 15);
+			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
+			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
+					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
+					& ~(1 << 15)) | force_en_tar);
+		}
 		break;
 	default:
 		break;
@@ -314,6 +322,18 @@ static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 	return NOTIFY_OK;
 }
 
+static int pm_qos_vcore_dvfs_fixed_opp_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	struct helio_dvfsrc *dvfsrc;
+
+	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_vcore_dvfs_fixed_opp_nb);
+
+	commit_data(dvfsrc, PM_QOS_VCORE_DVFS_FIXED_OPP, l);
+
+	return NOTIFY_OK;
+}
+
 static void pm_qos_notifier_register(struct helio_dvfsrc *dvfsrc)
 {
 	dvfsrc->pm_qos_memory_bw_nb.notifier_call = pm_qos_memory_bw_notify;
@@ -323,6 +343,7 @@ static void pm_qos_notifier_register(struct helio_dvfsrc *dvfsrc)
 	dvfsrc->pm_qos_md_peri_memory_bw_nb.notifier_call = pm_qos_md_peri_memory_bw_notify;
 	dvfsrc->pm_qos_emi_opp_nb.notifier_call = pm_qos_emi_opp_notify;
 	dvfsrc->pm_qos_vcore_opp_nb.notifier_call = pm_qos_vcore_opp_notify;
+	dvfsrc->pm_qos_vcore_dvfs_fixed_opp_nb.notifier_call = pm_qos_vcore_dvfs_fixed_opp_notify;
 
 	pm_qos_add_notifier(PM_QOS_MEMORY_BANDWIDTH, &dvfsrc->pm_qos_memory_bw_nb);
 	pm_qos_add_notifier(PM_QOS_CPU_MEMORY_BANDWIDTH, &dvfsrc->pm_qos_cpu_memory_bw_nb);
@@ -331,6 +352,7 @@ static void pm_qos_notifier_register(struct helio_dvfsrc *dvfsrc)
 	pm_qos_add_notifier(PM_QOS_MD_PERI_MEMORY_BANDWIDTH, &dvfsrc->pm_qos_md_peri_memory_bw_nb);
 	pm_qos_add_notifier(PM_QOS_EMI_OPP, &dvfsrc->pm_qos_emi_opp_nb);
 	pm_qos_add_notifier(PM_QOS_VCORE_OPP, &dvfsrc->pm_qos_vcore_opp_nb);
+	pm_qos_add_notifier(PM_QOS_VCORE_DVFS_FIXED_OPP, &dvfsrc->pm_qos_vcore_dvfs_fixed_opp_nb);
 }
 
 static int helio_dvfsrc_probe(struct platform_device *pdev)
@@ -386,7 +408,7 @@ static int helio_dvfsrc_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id helio_dvfsrc_of_match[] = {
-	{ .compatible = "mediatek,helio-dvfsrc-v1" },
+	{ .compatible = "mediatek,dvfsrc_top" },
 	{ .compatible = "mediatek,helio-dvfsrc-v2" },
 	{ },
 };
