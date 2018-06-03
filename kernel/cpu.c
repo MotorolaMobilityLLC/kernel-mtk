@@ -59,7 +59,7 @@ EXPORT_SYMBOL(cpu_notifier_register_done);
 	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2)
 RAW_NOTIFIER_HEAD(cpu_chain);
 #else
-static RAW_NOTIFIER_HEAD(cpu_chain);
+RAW_NOTIFIER_HEAD(cpu_chain);
 #endif
 
 /* If set, cpu_up and cpu_down will return -EBUSY and do nothing.
