@@ -42,6 +42,7 @@ struct gyrohub_ipi_data {
 	atomic_t trace;
 	atomic_t suspend;
 	int32_t static_cali[GYROHUB_AXES_NUM];
+	uint8_t static_cali_status;
 	int32_t dynamic_cali[GYROHUB_AXES_NUM];
 	int32_t temperature_cali[6];
 	struct work_struct init_done_work;
@@ -494,11 +495,13 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 		data.x = event->gyroscope_t.x_bias;
 		data.y = event->gyroscope_t.y_bias;
 		data.z = event->gyroscope_t.z_bias;
-		err = gyro_cali_report(&data);
+		if (event->gyroscope_t.status == 0)
+			err = gyro_cali_report(&data);
 		spin_lock(&calibration_lock);
 		obj->static_cali[GYROHUB_AXIS_X] = event->gyroscope_t.x_bias;
 		obj->static_cali[GYROHUB_AXIS_Y] = event->gyroscope_t.y_bias;
 		obj->static_cali[GYROHUB_AXIS_Z] = event->gyroscope_t.z_bias;
+		obj->static_cali_status = (uint8_t)event->gyroscope_t.status;
 		spin_unlock(&calibration_lock);
 		complete(&obj->calibration_done);
 	} else if (event->flush_action == TEMP_ACTION) {
@@ -583,6 +586,7 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 	int err = 0;
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
+	uint8_t status = 0;
 #endif
 
 #ifdef MTK_OLD_FACTORY_CALIBRATION
@@ -593,7 +597,7 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 	}
 #else
 	init_completion(&obj->calibration_done);
-	err = wait_for_completion_timeout(&obj->calibration_done, msecs_to_jiffies(2000));
+	err = wait_for_completion_timeout(&obj->calibration_done, msecs_to_jiffies(3000));
 	if (!err) {
 		GYROS_PR_ERR("gyrohub_factory_get_cali fail!\n");
 		return -1;
@@ -602,7 +606,12 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 	data[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
 	data[GYROHUB_AXIS_Y] = obj->static_cali[GYROHUB_AXIS_Y];
 	data[GYROHUB_AXIS_Z] = obj->static_cali[GYROHUB_AXIS_Z];
+	status = obj->static_cali_status;
 	spin_unlock(&calibration_lock);
+	if (status != 0) {
+		GYROS_LOG("gyrohub static cali detect shake!\n");
+		return -2;
+	}
 #endif
 	return err;
 }
