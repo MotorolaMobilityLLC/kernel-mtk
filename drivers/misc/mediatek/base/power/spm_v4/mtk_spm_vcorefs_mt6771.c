@@ -424,6 +424,24 @@ void dvfsrc_md_scenario_update(bool suspend)
 	}
 }
 
+static void dvfsrc_set_vcore_request(unsigned int mask, unsigned int val)
+{
+	unsigned long flags;
+	unsigned int new_value = 0;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	new_value = (spm_read(DVFSRC_VCORE_REQUEST) & ~mask) | val;
+	spm_write(DVFSRC_VCORE_REQUEST, new_value);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+}
+
+void dvfsrc_set_scp_vcore_request(unsigned int val)
+{
+	dvfsrc_set_vcore_request((0x3 << 30), ((val & 0x3) << 30));
+}
+
 static void dvfsrc_init(void)
 {
 	unsigned long flags;

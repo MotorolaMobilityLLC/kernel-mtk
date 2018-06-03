@@ -45,8 +45,6 @@ extern int spm_vcorefs_get_opp(void);
 extern void spm_request_dvfs_opp(int id, enum dvfs_opp opp);
 extern u32 spm_vcorefs_get_md_srcclkena(void);
 extern void dvfsrc_md_scenario_update(bool);
-void dvfsrc_mdsrclkena_control(bool);
-void dvfsrc_mdsrclkena_control_nolock(bool);
-void dvfsrc_msdc_autok_finish(void);
+extern void dvfsrc_set_scp_vcore_request(unsigned int val);
 
 #endif /* __MTK_SPM_VCORE_DVFS_H__ */
