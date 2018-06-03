@@ -1746,18 +1746,32 @@ static signed int read_fg_hw_info(void *data)
 static signed int read_nafg_vbat(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(signed int *) (data) = 4202;
+	*(signed int *) (data) = 42002;
 	return STATUS_OK;
 #else
-	int nag_vbat_reg, nag_vbat_mv;
+	int nag_vbat_reg, nag_vbat_mv, nag_vbat_rdy;
+	int retry_cnt = 0;
+
+	nag_vbat_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_NAG);
+	while (nag_vbat_rdy != 1) {
+		mdelay(1);
+		nag_vbat_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_NAG);
+
+		retry_cnt++;
+		if (retry_cnt > 20) {
+			bm_err("[FGADC_intr_end][read_nafg_vbat] Timeout!!!\n");
+			*(signed int *) (data) = 0;
+			return STATUS_UNSUPPORTED;
+		}
+	}
 
 	nag_vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_NAG);
 	nag_vbat_mv = REG_to_MV_value(nag_vbat_reg);
 
 	*(signed int *) (data) = nag_vbat_mv;
 
-	bm_err("[FGADC_intr_end][read_nafg_vbat] nag_vbat_reg 0x%x nag_vbat_mv %d\n",
-		nag_vbat_reg, nag_vbat_mv);
+	bm_err("[FGADC_intr_end][read_nafg_vbat] nag_vbat_rdy %d nag_vbat_reg 0x%x nag_vbat_mv %d\n",
+		nag_vbat_rdy, nag_vbat_reg, nag_vbat_mv);
 
 	return STATUS_OK;
 #endif
@@ -1766,7 +1780,7 @@ static signed int read_nafg_vbat(void *data)
 static signed int read_adc_v_bat_sense(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(signed int *) (data) = 4201;
+	*(signed int *) (data) = 42001;
 #else
 #if defined(SWCHR_POWER_PATH)
 	*(signed int *) (data) =
@@ -2550,13 +2564,19 @@ static signed int read_hw_ocv(void *data)
 	int ret;
 	int _hw_ocv_35_pon;
 	int _hw_ocv_35_plugin;
-	int _hw_ocv_36_chgin;
 	int _hw_ocv_35_pon_rdy;
+	int _hw_ocv_chgin;
+	int _hw_ocv_chgin_rdy;
 
 	_hw_ocv_35_pon_rdy = read_hw_ocv_6335_power_on_rdy();
 	_hw_ocv_35_pon = read_hw_ocv_6335_power_on();
 	_hw_ocv_35_plugin = read_hw_ocv_6335_plug_in();
-	_hw_ocv_36_chgin = read_hw_ocv_6336_charger_in();
+	_hw_ocv_chgin = read_hw_ocv_6336_charger_in();
+
+	if (_hw_ocv_chgin < 0)
+		_hw_ocv_chgin_rdy = 0;
+	else
+		_hw_ocv_chgin_rdy = 1;
 
 	ret = fg_is_charger_exist(&g_fg_is_charger_exist);
 	_hw_ocv = _hw_ocv_35_pon;
@@ -2569,8 +2589,8 @@ static signed int read_hw_ocv(void *data)
 	if (g_fg_is_charger_exist) {
 		_hw_ocv_rdy = _hw_ocv_35_pon_rdy;
 		if (_hw_ocv_rdy == 1) {
-			if (MTK_CHR_EXIST == 1) {
-				_hw_ocv = _hw_ocv_36_chgin;
+			if (_hw_ocv_chgin_rdy == 1) {
+				_hw_ocv = _hw_ocv_chgin;
 				_hw_ocv_src = FROM_6336_CHR_IN;
 			} else {
 				_hw_ocv = _hw_ocv_35_pon;
@@ -2591,7 +2611,7 @@ static signed int read_hw_ocv(void *data)
 			/*_hw_ocv_src = FROM_6335_PLUG_IN;*/
 			_hw_ocv = _sw_ocv;
 			_hw_ocv_src = FROM_SW_OCV;
-			if (MTK_CHR_EXIST != 1) {
+			if (_hw_ocv_chgin_rdy != 1) {
 				if (abs(_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
 					_prev_hw_ocv = _hw_ocv;
 					_prev_hw_ocv_src = _hw_ocv_src;
@@ -2611,14 +2631,14 @@ static signed int read_hw_ocv(void *data)
 
 	*(signed int *) (data) = _hw_ocv;
 
-	bm_debug("[read_hw_ocv] g_fg_is_charger_exist %d MTK_CHR_EXIST %d\n",
-		g_fg_is_charger_exist, MTK_CHR_EXIST);
+	bm_debug("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
+		g_fg_is_charger_exist, _hw_ocv_chgin_rdy);
 	bm_debug("[read_hw_ocv] _hw_ocv %d _sw_ocv %d EXT_HWOCV_SWOCV %d\n",
 		_prev_hw_ocv, _sw_ocv, EXT_HWOCV_SWOCV);
 	bm_debug("[read_hw_ocv] _hw_ocv %d _hw_ocv_src %d _prev_hw_ocv %d _prev_hw_ocv_src %d _flag_unreliable %d\n",
 		_hw_ocv, _hw_ocv_src, _prev_hw_ocv, _prev_hw_ocv_src, _flag_unreliable);
-	bm_debug("[read_hw_ocv] _hw_ocv_35_pon_rdy %d _hw_ocv_35_pon %d _hw_ocv_35_plugin %d _hw_ocv_36_chgin %d _sw_ocv %d\n",
-		_hw_ocv_35_pon_rdy, _hw_ocv_35_pon, _hw_ocv_35_plugin, _hw_ocv_36_chgin, _sw_ocv);
+	bm_debug("[read_hw_ocv] _hw_ocv_35_pon_rdy %d _hw_ocv_35_pon %d _hw_ocv_35_plugin %d _hw_ocv_chgin %d _sw_ocv %d\n",
+		_hw_ocv_35_pon_rdy, _hw_ocv_35_pon, _hw_ocv_35_plugin, _hw_ocv_chgin, _sw_ocv);
 
 #endif
 	return STATUS_OK;

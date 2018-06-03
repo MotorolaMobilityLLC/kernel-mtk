@@ -280,7 +280,7 @@ config MTK_DISABLE_GAUGE
 
 config MTK_ADDITIONAL_BATTERY_TABLE
 	bool "Enable the fifth battery table"
-	default n
+	default y
 	help
 	  Set Yes to enable the fifth battery table
 	  Table number is five.

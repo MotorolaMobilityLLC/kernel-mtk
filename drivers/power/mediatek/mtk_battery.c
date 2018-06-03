@@ -843,6 +843,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_fast_tracking_gap = UI_FAST_TRACKING_GAP;
 
 	fg_cust_data.bat_plug_out_time = BAT_PLUG_OUT_TIME;
+	fg_cust_data.keep_100_percent_minsoc = KEEP_100_PERCENT_MINSOC;
 
 /* table */
 	fg_cust_data.additional_battery_table_en = ADDITIONAL_BATTERY_TABLE_EN;
@@ -896,7 +897,6 @@ void fg_custom_init_from_header(void)
 }
 
 #ifdef CONFIG_OF
-#ifdef BATTERY_DTS_SUPPORT
 static void fg_custom_parse_table(const struct device_node *np,
 				const char *node_srting, FUELGAUGE_PROFILE_STRUCT *profile_struct)
 {
@@ -1314,7 +1314,6 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		}
 
 }
-#endif
 #endif
 
 #if 0
@@ -4319,9 +4318,9 @@ static int battery_dts_probe(struct platform_device *dev)
 		bm_err("****[battery_dts_probe] Unable to register device (%d)\n", ret);
 		return ret;
 	}
-#ifdef BATTERY_DTS_SUPPORT
+
 	fg_custom_init_from_dts(dev);
-#endif
+
 	return 0;
 }
 #endif
