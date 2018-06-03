@@ -113,6 +113,13 @@ struct picachu_info {
 	 * Bit[23:16]: MDES
 	 */
 	unsigned int ptp1_efuse[PICACHU_SUPPORT_CLUSTERS];
+
+	/*
+	 * Bit[7:0]: MTDES
+	 * Bit[15:8]: BDES
+	 * Bit[23:16]: MDES
+	 */
+	unsigned int orig_ptp1_efuse;
 };
 
 struct pentry {
@@ -134,6 +141,7 @@ static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 	for (i = 0; i < PICACHU_SUPPORT_CLUSTERS; i++)
 		seq_printf(m, "0x%X\n", info->ptp1_efuse[i]);
 
+	seq_printf(m, "0x%X\n", info->orig_ptp1_efuse);
 }
 
 static int picachu_dump_proc_show(struct seq_file *m, void *v)
@@ -186,8 +194,13 @@ static void picachu_get_data(void)
 		picachu_data.ptp1_efuse[i] = val & PICACHU_PTP1_EFUSE_MASK;
 	}
 
-	val = picachu_read(EEMSPARE3);
+	/* Get original ptp1 efuse for MDES/BDES/MTDES. */
+	val = picachu_read(EEMSPARE0 + (i << 2));
+	tmp = (val >> PICACHU_SIGNATURE_SHIFT_BIT) & 0xff;
+	if (tmp == PICACHU_SIGNATURE)
+		picachu_data.orig_ptp1_efuse = val & PICACHU_PTP1_EFUSE_MASK;
 
+	val = picachu_read(EEMSPARE3);
 	tmp = (val >> PICACHU_SIGNATURE_SHIFT_BIT) & 0xff;
 	if (tmp != PICACHU_SIGNATURE)
 		return;
