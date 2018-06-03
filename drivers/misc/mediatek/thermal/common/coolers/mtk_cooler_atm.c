@@ -47,6 +47,16 @@
 #include "linux/delay.h"
 #endif
 
+/*****************************************************************************
+ *  Local switches
+ *****************************************************************************/
+/* Define ATM_CFG_PROFILING to compile the code segments for profiling. It
+ * depends on ostimer which is wrapped by CFG_TIMER_SUPPORT.
+ * Only tested with FAST_RESPONSE_ATM is turned on.
+ * ! Must not define this in official release branches. Only for local tests.
+ */
+/* #define ATM_CFG_PROFILING (1) */
+
 /*=============================================================
  *Local variable definition
  *=============================================================
@@ -242,6 +252,32 @@ static int atm_prev_maxtj;
 static int krtatm_curr_maxtj;
 static int krtatm_prev_maxtj;
 static struct task_struct *krtatm_thread_handle;
+#endif
+
+#ifdef ATM_CFG_PROFILING
+int atm_resumed = 1;
+
+s64 atm_period_min_delay = 0xFFFFFFF;
+s64 atm_period_max_delay;
+s64 atm_period_avg_delay;
+unsigned int atm_period_cnt = 1;
+
+s64 atm_exec_min_delay = 0xFFFFFFF;
+s64 atm_exec_max_delay;
+s64 atm_exec_avg_delay;
+unsigned int atm_exec_cnt = 1;
+
+s64 cpu_pwr_lmt_min_delay = 0xFFFFFFF;
+s64 cpu_pwr_lmt_max_delay;
+s64 cpu_pwr_lmt_avg_delay;
+s64 cpu_pwr_lmt_latest_delay;
+unsigned int cpu_pwr_lmt_cnt = 1;
+
+s64 gpu_pwr_lmt_min_delay = 0xFFFFFFF;
+s64 gpu_pwr_lmt_max_delay;
+s64 gpu_pwr_lmt_avg_delay;
+s64 gpu_pwr_lmt_latest_delay;
+unsigned int gpu_pwr_lmt_cnt = 1;
 #endif
 
 /*=============================================================
@@ -487,12 +523,97 @@ static int atm_enable_atm_in_sspm(int enable)
 #endif
 #endif
 
+#ifdef ATM_CFG_PROFILING
+static void atm_profile_atm_period(s64 latest_latency)
+{
+	atm_period_max_delay = MAX(latest_latency, atm_period_max_delay);
+	atm_period_min_delay = MIN(latest_latency, atm_period_min_delay);
+	/* for 20ms ATM polling period, rolling avg of 2^14 roughly catchs 5min of data.
+	 * 50 (Hz) * 60 (s) * 5 (min) = 15000.
+	 */
+	if (atm_period_cnt < 16384) {
+		atm_period_avg_delay =
+			(latest_latency + atm_period_avg_delay * (atm_period_cnt-1))/atm_period_cnt;
+		atm_period_cnt++;
+	} else {
+		atm_period_avg_delay =
+			(latest_latency + (atm_period_avg_delay<<14) - atm_period_avg_delay)>>14;
+	}
+	tscpu_warn("atm period M %lld m %lld a %lld l %lld\n"
+		, atm_period_max_delay
+		, atm_period_min_delay
+		, atm_period_avg_delay
+		, latest_latency);
+}
+
+static void atm_profile_atm_exec(s64 latest_latency)
+{
+	atm_exec_max_delay = MAX(latest_latency, atm_exec_max_delay);
+	atm_exec_min_delay = MIN(latest_latency, atm_exec_min_delay);
+	if (atm_exec_cnt < 16384) {
+		atm_exec_avg_delay =
+			(latest_latency + atm_exec_avg_delay * (atm_exec_cnt-1))/atm_exec_cnt;
+		atm_exec_cnt++;
+	} else {
+		atm_exec_avg_delay =
+			(latest_latency + (atm_exec_avg_delay<<14) - atm_exec_avg_delay)>>14;
+	}
+	tscpu_warn("atm exec delay M %lld m %lld a %lld l %lld\n"
+		, atm_exec_max_delay
+		, atm_exec_min_delay
+		, atm_exec_avg_delay
+		, latest_latency);
+}
+
+static void atm_profile_cpu_power_limit(s64 latest_latency)
+{
+	cpu_pwr_lmt_max_delay = MAX(latest_latency, cpu_pwr_lmt_max_delay);
+	cpu_pwr_lmt_min_delay = MIN(latest_latency, cpu_pwr_lmt_min_delay);
+	if (cpu_pwr_lmt_cnt < 16384) {
+		cpu_pwr_lmt_avg_delay =
+			(latest_latency + cpu_pwr_lmt_avg_delay * (cpu_pwr_lmt_cnt-1))/cpu_pwr_lmt_cnt;
+		cpu_pwr_lmt_cnt++;
+	} else {
+		cpu_pwr_lmt_avg_delay =
+			(latest_latency + (cpu_pwr_lmt_avg_delay<<14) - cpu_pwr_lmt_avg_delay)>>14;
+	}
+	tscpu_warn("cpu lmt delay M %lld m %lld a %lld l %lld\n"
+		, cpu_pwr_lmt_max_delay
+		, cpu_pwr_lmt_min_delay
+		, cpu_pwr_lmt_avg_delay
+		, latest_latency);
+}
+
+static void atm_profile_gpu_power_limit(s64 latest_latency)
+{
+	gpu_pwr_lmt_max_delay = MAX(latest_latency, gpu_pwr_lmt_max_delay);
+	gpu_pwr_lmt_min_delay = MIN(latest_latency, gpu_pwr_lmt_min_delay);
+	if (gpu_pwr_lmt_cnt < 16384) {
+		gpu_pwr_lmt_avg_delay =
+			(latest_latency + gpu_pwr_lmt_avg_delay * (gpu_pwr_lmt_cnt-1))/gpu_pwr_lmt_cnt;
+		gpu_pwr_lmt_cnt++;
+	} else {
+		gpu_pwr_lmt_avg_delay =
+			(latest_latency + (gpu_pwr_lmt_avg_delay<<14) - gpu_pwr_lmt_avg_delay)/1024;
+	}
+	tscpu_warn("gpu lmt delay M %lld m %lld a %lld l %lld\n"
+		, gpu_pwr_lmt_max_delay
+		, gpu_pwr_lmt_min_delay
+		, gpu_pwr_lmt_avg_delay
+		, latest_latency);
+}
+#endif
+
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
 	prv_adp_cpu_pwr_lim = adaptive_cpu_power_limit;
 	adaptive_cpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
 
 	if (prv_adp_cpu_pwr_lim != adaptive_cpu_power_limit) {
+#ifdef ATM_CFG_PROFILING
+		ktime_t now, delta;
+#endif
+
 		/* print debug log */
 		adaptive_limit[print_cunt][0] =
 			(int) (adaptive_cpu_power_limit != 0x7FFFFFFF) ? adaptive_cpu_power_limit : 0;
@@ -522,7 +643,17 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 #endif
 		}
 
+#ifdef ATM_CFG_PROFILING
+		now = ktime_get();
+#endif
 		apthermolmt_set_cpu_power_limit(&ap_atm, adaptive_cpu_power_limit);
+#ifdef ATM_CFG_PROFILING
+		delta = ktime_get();
+		if (ktime_after(delta, now)) {
+			cpu_pwr_lmt_latest_delay = ktime_to_us(ktime_sub(delta, now));
+			atm_profile_cpu_power_limit(cpu_pwr_lmt_latest_delay);
+		}
+#endif
 	}
 }
 
@@ -531,10 +662,24 @@ static void set_adaptive_gpu_power_limit(unsigned int limit)
 	prv_adp_gpu_pwr_lim = adaptive_gpu_power_limit;
 	adaptive_gpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
 	if (prv_adp_gpu_pwr_lim != adaptive_gpu_power_limit) {
+#ifdef ATM_CFG_PROFILING
+		ktime_t now, delta;
+#endif
+
 		tscpu_dprintk("%s %d\n", __func__,
 		     (adaptive_gpu_power_limit != 0x7FFFFFFF) ? adaptive_gpu_power_limit : 0);
-
+#ifdef ATM_CFG_PROFILING
+		now = ktime_get();
+#endif
 		apthermolmt_set_gpu_power_limit(&ap_atm, adaptive_gpu_power_limit);
+#ifdef ATM_CFG_PROFILING
+		delta = ktime_get();
+		if (ktime_after(delta, now)) {
+			gpu_pwr_lmt_latest_delay = ktime_to_us(ktime_sub(delta, now));
+			atm_profile_gpu_power_limit(gpu_pwr_lmt_latest_delay);
+		}
+#endif
+
 	}
 }
 
@@ -2165,14 +2310,21 @@ void atm_restart_hrtimer(void)
 
 	ktime = ktime_set(0, atm_hrtimer_polling_delay);
 	hrtimer_start(&atm_hrtimer, ktime, HRTIMER_MODE_REL);
+#ifdef ATM_CFG_PROFILING
+	atm_resumed = 1;
+#endif
 }
 
 static int atm_get_timeout_time(int curr_temp)
 {
+#ifdef ATM_CFG_PROFILING
+	return atm_hrtimer_polling_delay;
+#else
 	if (curr_temp >= 65000)
 		return atm_hrtimer_polling_delay;
 	else
 		return (atm_hrtimer_polling_delay << ((81394 - curr_temp) >> 14));
+#endif
 }
 
 static enum hrtimer_restart atm_loop(struct hrtimer *timer)
@@ -2189,8 +2341,12 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
-	if (atm_sspm_enabled == 1)
+	if (atm_sspm_enabled == 1) {
+#ifdef ATM_CFG_PROFILING
+		atm_resumed = 1; /* Must skip last timestamp. */
+#endif
 		goto exit;
+	}
 #endif
 #endif
 
@@ -2262,6 +2418,10 @@ static void atm_hrtimer_init(void)
 
 static int krtatm_thread(void *arg)
 {
+#ifdef ATM_CFG_PROFILING
+	ktime_t last, delta;
+#endif
+
 #if KRTATM_SCH == KRTATM_RT
 	struct sched_param param = {.sched_priority = 98 };
 
@@ -2276,6 +2436,16 @@ static int krtatm_thread(void *arg)
 	schedule();
 
 	for (;;) {
+#ifdef ATM_CFG_PROFILING
+		if (atm_resumed) {
+			atm_resumed = 0;
+		} else {
+			delta = ktime_get();
+			if (ktime_after(delta, last))
+				atm_profile_atm_period(ktime_to_us(ktime_sub(delta, last)));
+		}
+		last = ktime_get();
+#endif
 		tscpu_dprintk("%s awake\n", __func__);
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 		aee_rr_rec_thermal_ATM_status(ATM_WAKEUP);
@@ -2284,7 +2454,16 @@ static int krtatm_thread(void *arg)
 			break;
 
 		{
+#ifdef ATM_CFG_PROFILING
+			ktime_t start, end;
+#endif
 			unsigned int gpu_loading;
+
+#ifdef ATM_CFG_PROFILING
+			start = ktime_get();
+			cpu_pwr_lmt_latest_delay = 0;
+			gpu_pwr_lmt_latest_delay = 0;
+#endif
 
 			if (!mtk_get_gpu_loading(&gpu_loading))
 				gpu_loading = 0;
@@ -2295,6 +2474,14 @@ static int krtatm_thread(void *arg)
 			if (krtatm_prev_maxtj == 0)
 				krtatm_prev_maxtj = atm_prev_maxtj;
 			_adaptive_power_calc(krtatm_prev_maxtj, krtatm_curr_maxtj, (unsigned int) gpu_loading);
+
+#ifdef ATM_CFG_PROFILING
+			end = ktime_get();
+			if (ktime_after(end, start))
+				atm_profile_atm_exec(
+					(ktime_to_us(ktime_sub(end, start)) -
+						cpu_pwr_lmt_latest_delay - gpu_pwr_lmt_latest_delay));
+#endif
 		}
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
