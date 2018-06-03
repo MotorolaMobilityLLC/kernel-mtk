@@ -296,6 +296,7 @@
 #define CAM_REG_RSSO_A_ERR_STAT(module)  (isp_devs[module].regs + 0x1398)
 #define CAM_REG_UFGO_ERR_STAT(module)  (isp_devs[module].regs + 0x139C)
 #define CAM_REG_PSO_ERR_STAT(module)  (isp_devs[module].regs + 0x13A0)
+#define CAM_REG_DMA_DEBUG_SEL(module)  (isp_devs[module].regs + 0x13C8)
 
 #define CAM_REG_IMGO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x1434)
 #define CAM_REG_RRZO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x1474)
@@ -311,6 +312,9 @@
 #define CAM_UNI_REG_RAWI_CON(module)  (isp_devs[module].regs + 0x013C)
 #define CAM_UNI_REG_RAWI_CON2(module)  (isp_devs[module].regs + 0x0140)
 #define CAM_UNI_REG_RAWI_CON3(module)  (isp_devs[module].regs + 0x0144)
+
+#define CAM_UNI_REG_TOP_DBG_SET(module)  (isp_devs[module].regs + 0x002C)
+#define CAM_UNI_REG_TOP_DBG_PORT(module)  (isp_devs[module].regs + 0x0030)
 
 /* CAMSV */
 #define CAMSV_REG_MODULE_EN(module)  (isp_devs[module].regs + 0x0510)
