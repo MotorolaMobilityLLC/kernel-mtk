@@ -189,8 +189,7 @@ bypass_dcs:
 						mtkpasr_vec[chid].pasr_on >> 0x8, chid);
 
 		/* Step3 - Turn off DDRPHY */
-		/*
-		if (mtkpasr_vec[chconfig].pasr_on ==
+		/* if (mtkpasr_vec[chconfig].pasr_on ==
 				query_channel_segment_bits()) {
 			dcs_mpu_protection(1);
 		}
@@ -217,8 +216,7 @@ static void disable_dcs_pasr(void)
 		return;
 
 	/* Turn on DDRPHY */
-	/*
-	if ((dcs_status == DCS_LOWPOWER)) {
+	/* if ((dcs_status == DCS_LOWPOWER)) {
 		dcs_mpu_protection(0);
 	}
 	*/
