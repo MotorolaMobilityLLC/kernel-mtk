@@ -69,6 +69,14 @@ struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX] = {
 		.v_of_fuse = V_OF_FUSE_VCORE,
 		.t_of_fuse = T_OF_FUSE,
 	},
+	[MTK_MD1_LEAKAGE] = {
+		.name = __stringify(MTK_MD1_LEAKAGE),
+		.devinfo_idx = DEVINFO_IDX_MD1,
+		.devinfo_offset = DEVINFO_OFF_MD1,
+		.value = DEF_MD1_LEAKAGE,
+		.v_of_fuse = V_OF_FUSE_MD1,
+		.t_of_fuse = T_OF_FUSE,
+	},
 	[MTK_MODEM_LEAKAGE] = {
 		.name = __stringify(MTK_MODEM_LEAKAGE),
 		.devinfo_idx = DEVINFO_IDX_MODEM,
