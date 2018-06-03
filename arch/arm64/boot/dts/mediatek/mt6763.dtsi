@@ -1194,9 +1194,13 @@
 	};
 
 	mali@13040000 {
-		compatible = "mediatek,mali";
-		reg = <0 0x13040000 0 0x1000>;
-		interrupts = <GIC_SPI 258 IRQ_TYPE_LEVEL_LOW>;
+		compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
+		reg = <0 0x13040000 0 0x4000>;
+		interrupts =
+			<GIC_SPI 260 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 258 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names = "JOB", "MMU", "GPU";
 	};
 
 	mali_tb@1307f000 {
