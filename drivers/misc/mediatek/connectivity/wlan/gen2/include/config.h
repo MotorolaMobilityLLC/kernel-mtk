@@ -105,6 +105,7 @@
 #define CFG_SUPPORT_RX_HT_GF        1	/* 802.11n RX HT green-field capability */
 
 #define CFG_SUPPORT_ROAMING_ENC		0	/* enahnced roaming */
+#define CFG_SUPPORT_ROAMING_RETRY	1	/* enahnced roaming */
 
 #define CFG_SUPPORT_TDLS			1	/* IEEE802.11z TDLS */
 #define CFG_SUPPORT_TDLS_DBG		0	/* TDLS debug */
@@ -118,6 +119,8 @@
 #define CFG_FORCE_USE_20BW			1
 
 #define CFG_SUPPORT_RN				1
+
+#define CFG_SUPPORT_SET_CAM_BY_PROC	1
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------
@@ -461,6 +464,13 @@
 #define CFG_NLO_MSP 0 /* NLO/PNO Multiple Scan Plan */
 #define CFG_SCAN_SSID_MAX_NUM                   (10)
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
+
+/*------------------------------------------------------------------------------
+ * Flags and Parameters for Support EMI DEBUG
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_EMI_DEBUG                   1
+
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Load Setup Default
@@ -828,7 +838,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20161205_2"
+#define WIFI_DRIVER_VERSION		"11_70_00_20170120_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

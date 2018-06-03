@@ -392,6 +392,7 @@ VOID saaFsmRunEventStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	prStaRec = prSaaFsmStartMsg->prStaRec;
 
 	if ((!prStaRec) || (prStaRec->fgIsInUse == FALSE)) {
+		DBGLOG(SAA, ERROR, "fgIsInUse = %d\n", prStaRec->fgIsInUse);
 		cnmMemFree(prAdapter, prMsgHdr);
 		return;
 	}

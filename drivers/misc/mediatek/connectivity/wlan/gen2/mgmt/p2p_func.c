@@ -897,8 +897,13 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		wlanProcessCommandQueue(prAdapter, &prAdapter->prGlueInfo->rCmdQueue);
 		wlanReleasePowerControl(prAdapter);
 
-		DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
-		kalMdelay(500);
+		if (prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode) {
+			DBGLOG(P2P, INFO, "Wait 100ms for deauth TX in Hotspot\n");
+			kalMdelay(100);
+		} else {
+			DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
+			kalMdelay(500);
+		}
 
 		/* Change Connection Status. */
 		p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
@@ -978,8 +983,10 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		}
 
 	} while (FALSE);
+#if 0
 	/*start dump pkt info*/
 	wlanPktDebugDumpInfo(prAdapter);
+#endif
 	return;
 
 }				/* p2pFuncDisconnect */
@@ -1111,7 +1118,7 @@ const char *action_to_string(int wlan_action)
 	return "UNKNOWN Action Frame";
 }
 
-VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+ENUM_P2P_CNN_STATE_T p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			IN P_WLAN_ACTION_FRAME prActFrame,
 			IN UINT_8 ucP2pAction, IN UINT_64 u8Cookie)
 {
@@ -1121,22 +1128,22 @@ VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 		prActFrame->aucDestAddr,
 		u8Cookie,
 		prMgmtTxMsdu->ucTxSeqNum);
+	return ucP2pAction + 1;
 }
 
 #define P2P_INFO_MSG_LENGTH 200
-VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+ENUM_P2P_CNN_STATE_T p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			IN P_WLAN_ACTION_FRAME prActFrame,
 			IN UINT_8 ucAction, IN UINT_64 u8Cookie)
 {
 	PUINT_8 pucVendor = NULL;
 	UINT_32 offsetMsg;
 	UINT8 aucMsg[P2P_INFO_MSG_LENGTH];
+	ENUM_P2P_CNN_STATE_T eCNNState = P2P_CNN_NORMAL;
 
 	offsetMsg = 0;
 	offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg), "WLAN_%s, ",
 			  pa_to_string(ucAction));
-
-
 
 	if (ucAction == WLAN_PA_VENDOR_SPECIFIC) {
 		pucVendor = (PUINT_8)prActFrame + 26;
@@ -1145,7 +1152,7 @@ VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 		    *(pucVendor + 2) == 0x9a) {
 			if (*(pucVendor + 3) == 0x09) {
 				/* found p2p IE */
-				p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
+				eCNNState = p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
 					prActFrame, *(pucVendor + 4), u8Cookie);
 				offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg) - offsetMsg
 					, "P2P_%s, ", p2p_to_string(*(pucVendor + 4)));
@@ -1166,17 +1173,19 @@ VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			}
 		}
 	}
+
 	DBGLOG(P2P, INFO, "Found :%s\n", aucMsg);
+	return eCNNState;
 }
 
-
-VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+ENUM_P2P_CNN_STATE_T p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			P_WLAN_ACTION_FRAME prActFrame,
 			IN UINT_8 ucCategory,
 			IN UINT_64 u8Cookie)
 {
 
 	UINT_8 ucAction = 0;
+	ENUM_P2P_CNN_STATE_T eCNNState = P2P_CNN_NORMAL;
 
 	DBGLOG(P2P, INFO, "Found WLAN_ACTION_%s, SA: %pM - DA: %pM, u8Cookie: 0x%llx, SeqNO: %d\n",
 		action_to_string(ucCategory),
@@ -1187,9 +1196,9 @@ VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 
 	if (ucCategory == WLAN_ACTION_PUBLIC) {
 		ucAction = prActFrame->ucAction;
-		p2pFuncTagActionActionFrame(prMgmtTxMsdu, prActFrame, ucAction, u8Cookie);
-
+		eCNNState = p2pFuncTagActionActionFrame(prMgmtTxMsdu, prActFrame, ucAction, u8Cookie);
 	}
+	return eCNNState;
 }
 
 /*
@@ -1205,7 +1214,7 @@ VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
  * Provision Discovery Res
  */
 
-VOID
+ENUM_P2P_CNN_STATE_T
 p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
 {
 	/* P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T)NULL; */
@@ -1215,6 +1224,7 @@ p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN 
 	UINT_16 u2TxFrameCtrl;
 	P_WLAN_ACTION_FRAME prActFrame;
 	UINT_8 ucCategory;
+	ENUM_P2P_CNN_STATE_T eCNNState = P2P_CNN_NORMAL;
 
 	prWlanHdr = (P_WLAN_MAC_HEADER_T) ((ULONG) prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
 	/*
@@ -1240,7 +1250,7 @@ p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN 
 
 		prActFrame = (P_WLAN_ACTION_FRAME)prWlanHdr;
 		ucCategory = prActFrame->ucCategory;
-		p2pFuncTagActionCategoryFrame(prMgmtTxMsdu, prActFrame,
+		eCNNState = p2pFuncTagActionCategoryFrame(prMgmtTxMsdu, prActFrame,
 			ucCategory, u8Cookie);
 
 		break;
@@ -1253,6 +1263,7 @@ p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN 
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	}
+	return eCNNState;
 }
 
 WLAN_STATUS
@@ -1325,7 +1336,8 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		prMgmtTxMsdu->pfTxDoneHandler = p2pFsmRunEventMgmtFrameTxDone;
 		prMgmtTxMsdu->fgIsBasicRate = TRUE;
 
-		p2pFuncTagMgmtFrame(prAdapter, prMgmtTxMsdu, u8Cookie);
+		/* record P2P CONNECT state */
+		prAdapter->rWifiVar.prP2pFsmInfo->eCNNState = p2pFuncTagMgmtFrame(prAdapter, prMgmtTxMsdu, u8Cookie);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 
@@ -3630,6 +3642,11 @@ p2pFuncComposeBeaconProbeRspTemplate(IN P_ADAPTER_T prAdapter,
 
 			prP2pProbeRspInfo->prProbeRspMsduTemplate = cnmMgtPktAlloc(prAdapter, u4BcnBufLen);
 
+			if (prP2pProbeRspInfo->prProbeRspMsduTemplate == NULL) {
+				rWlanStatus = WLAN_STATUS_FAILURE;
+				break;
+			}
+
 			prMsduInfo = prP2pProbeRspInfo->prProbeRspMsduTemplate;
 
 			prMsduInfo->eSrc = TX_PACKET_MGMT;
@@ -3696,9 +3713,10 @@ WLAN_STATUS wfdAdjustResource(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 #endif
 	return WLAN_STATUS_SUCCESS;
 }
-
+#define CFG_SUPPORT_WFD_ADJUST_THREAD 0
 WLAN_STATUS wfdAdjustThread(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 {
+#if CFG_SUPPORT_WFD_ADJUST_THREAD
 #define WFD_TX_THREAD_PRIORITY 70
 	DBGLOG(P2P, INFO, "wfdAdjustResource %d\n", fgEnable);
 	if (prAdapter->prGlueInfo->main_thread != NULL) {
@@ -3722,6 +3740,7 @@ WLAN_STATUS wfdAdjustThread(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 
 		DBGLOG(P2P, WARN, "main_thread is null, please check if the wlanRemove is called in advance\n");
 	}
+#endif
 	return WLAN_STATUS_SUCCESS;
 }
 

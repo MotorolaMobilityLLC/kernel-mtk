@@ -377,8 +377,9 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 
 		if ((rStatus != WLAN_STATUS_SUCCESS) || (u4Rate == 0)) {
 			/* DBGLOG(REQ, WARN, "unable to retrieve link speed\n")); */
-			DBGLOG(REQ, WARN, "last link speed\n");
+			DBGLOG(REQ, WARN, "last link speed, status=%d, rate=%d\n", rStatus, u4Rate);
 			sinfo->txrate.legacy = prGlueInfo->u4LinkSpeedCache;
+			return -EBUSY;
 		} else {
 			/* sinfo->filled |= STATION_INFO_TX_BITRATE; */
 			sinfo->txrate.legacy = u4Rate / 1000;	/* convert from 100bps to 100kbps */
@@ -401,6 +402,7 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 			/* DBGLOG(REQ, WARN, "unable to retrieve link speed\n"); */
 			DBGLOG(REQ, WARN, "last rssi\n");
 			sinfo->signal = prGlueInfo->i4RssiCache;
+			return -EBUSY;
 		} else {
 			/* in the cfg80211 layer, the signal is a signed char variable. */
 			sinfo->signal = i4Rssi;	/* dBm */
@@ -425,6 +427,7 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 				DBGLOG(REQ, WARN, "unable to retrieive statistic\n");
 				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
 				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
+				return -EBUSY;
 			} else {
 				INT_32 i4RssiThreshold = -85;	/* set rssi threshold -85dBm */
 				UINT_32 u4LinkspeedThreshold = 55;	/* set link speed threshold 5.5Mbps */
@@ -2907,10 +2910,8 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		i4Status = -EINVAL;
 		break;
 	}
-
 	DBGLOG(REQ, INFO, "--> %s() prParams->index=%d, status=%d\n"
 		, __func__, prParams->index, i4Status);
-
 	return i4Status;
 }
 

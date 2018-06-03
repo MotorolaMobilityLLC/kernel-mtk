@@ -26,11 +26,14 @@ static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 */
 #define AIS_ROAMING_CONNECTION_TRIAL_LIMIT  2
 #define AIS_ROAMING_SCAN_CHANNEL_DWELL_TIME 80
-
+#if CFG_SUPPORT_ROAMING_RETRY
+#define AIS_ROAMING_RETRY_BSS_THRESHOLD     1
+#endif
 #define CTIA_MAGIC_SSID                     "ctia_test_only_*#*#3646633#*#*"
 #define CTIA_MAGIC_SSID_LEN                 30
 
 #define AIS_JOIN_TIMEOUT                    7
+#define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -536,10 +539,21 @@ BOOLEAN aisFsmStateInit_RetryJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prSta
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_MSG_JOIN_REQ_T prJoinReqMsg;
-
+	INT_32 rssi = 0;
 	DEBUGFUNC("aisFsmStateInit_RetryJOIN()");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	rssi = RCPI_TO_dBm(prStaRec->ucRCPI);
+	/*check if driver exists pending scan reques and candiate bss's signal is too weak.*/
+	if ((aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, FALSE) == TRUE)
+		&& (rssi < AIS_DEFAULT_ROAMING_THRESHOLD)) {
+		DBGLOG(AIS, WARN
+			, "Retry BSS :[%pM] Rss:%d is too weak!Skipping retry join and doing next scan!\n"
+			, prStaRec->aucMacAddr, rssi);
+		return FALSE;
+	}
+
+	DBGLOG(AIS, INFO, "AvailableAuthTypes = %d\n", prAisFsmInfo->ucAvailableAuthTypes);
 
 	/* Retry other AuthType if possible */
 	if (!prAisFsmInfo->ucAvailableAuthTypes)
@@ -1097,6 +1111,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 				if (prAisFsmInfo->ucConnTrialCount > AIS_ROAMING_CONNECTION_TRIAL_LIMIT) {
 #if CFG_SUPPORT_ROAMING
+					DBGLOG(AIS, STATE,
+						"Roaming retry count :%d fail!\n", prAisFsmInfo->ucConnTrialCount);
 					roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_CONNLIMIT);
 #endif /* CFG_SUPPORT_ROAMING */
 					/* reset retry count */
@@ -2252,6 +2268,10 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	P_BSS_INFO_T prAisBssInfo;
 	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
 	OS_SYSTIME rCurrentTime;
+#if CFG_SUPPORT_ROAMING_RETRY
+	P_LINK_T prEssLink = NULL;
+	BOOLEAN fgIsUnderRoaming;
+#endif
 
 	DEBUGFUNC("aisFsmRunEventJoinComplete()");
 
@@ -2262,7 +2282,10 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	prJoinCompMsg = (P_MSG_JOIN_COMP_T) prMsgHdr;
 	prStaRec = prJoinCompMsg->prStaRec;
 	prAssocRspSwRfb = prJoinCompMsg->prSwRfb;
-
+#if CFG_SUPPORT_ROAMING_RETRY
+	prEssLink = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
+	fgIsUnderRoaming = FALSE;
+#endif
 	eNextState = prAisFsmInfo->eCurrentState;
 
 	DBGLOG(AIS, TRACE, "AISOK\n");
@@ -2425,6 +2448,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 #if CFG_SUPPORT_ROAMING
 						eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
+#if CFG_SUPPORT_ROAMING_RETRY
+						fgIsUnderRoaming = TRUE;
+#endif /*CFG_SUPPORT_ROAMING_RETRY*/
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 					} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
@@ -2471,6 +2497,22 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 						eNextState = AIS_STATE_IDLE;
 					}
+#if CFG_SUPPORT_ROAMING_RETRY
+					if (fgIsUnderRoaming == TRUE &&
+							prEssLink->u4NumElem > AIS_ROAMING_RETRY_BSS_THRESHOLD) {
+						/*Under roaming case : After candidate BSS joined fail.*/
+						/*STA will re-try other BSS.*/
+						/*if roaming failure was over then AIS_ROAMING_CONNECTION_TRIAL_LIMIT */
+						/*ROAM_FSM was stopped and AIS_FSM was transferred to NORMAL_TR.*/
+						DBGLOG(AIS, INFO,
+						"Under roamming %pM join fail and STA will re-try other AP :%d\n"
+						, prBssDesc->aucBSSID
+						, prEssLink->u4NumElem);
+						prBssDesc->fgIsRoamFail = TRUE;
+						fgIsUnderRoaming = FALSE;
+						eNextState = AIS_STATE_COLLECT_ESS_INFO;
+					}
+#endif /* CFG_SUPPORT_ROAMING_RETRY */
 				}
 			}
 		}
@@ -3499,10 +3541,12 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	/* 4 <6> Indicate Disconnected Event to Host */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, fgDelayIndication);
 
+#if 0
 	/*dump package information and ignore disconnect before new connect state*/
 	if (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState != AIS_STATE_REMAIN_ON_CHANNEL &&
 			prAisBssInfo->ucReasonOfDisconnect != DISCONNECT_REASON_CODE_NEW_CONNECTION)
 		wlanPktDebugDumpInfo(prAdapter);
+#endif
 
 	/* 4 <7> Trigger AIS FSM */
 	aisFsmSteps(prAdapter, AIS_STATE_IDLE);
@@ -3751,6 +3795,11 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			eNextState = AIS_STATE_IDLE;
 		}
 #else
+		/*request channel timeout, driver avoid to aisFsmStateInit_RetryJOIN*/
+		if (prAisFsmInfo->ucAvailableAuthTypes != 0)
+			DBGLOG(AIS, INFO, "driver avoids to aisFsmStateInit_RetryJOIN retry!\n");
+
+		prAisFsmInfo->ucAvailableAuthTypes = 0;
 
 		/* keep eNextState the same (so will not do action here), and do action in aisFsmRunEventJoinComplete */
 		prSaaFsmCompMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SAA_FSM_COMP_T));
@@ -4994,7 +5043,7 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 		return prBssDesc->prBlack;
 
 	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
-		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
+		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
 			EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 			prEntry->aucSSID, prEntry->ucSSIDLen)) {
 			prBssDesc->prBlack = prEntry;
@@ -5039,7 +5088,7 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter)
 	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
 		fgDisappeared = TRUE;
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
+			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
 				EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 				prEntry->aucSSID, prEntry->ucSSIDLen))) {
 				fgDisappeared = FALSE;

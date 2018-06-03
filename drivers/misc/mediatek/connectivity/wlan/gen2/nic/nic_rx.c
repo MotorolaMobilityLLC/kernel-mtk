@@ -1166,8 +1166,10 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		if (prAdapter->ucFlushCount >= RX_FW_FLUSH_PKT_THRESHOLD) {
 			DBGLOG(RX, ERROR, "FW flushed continusous packages :%d\n", prAdapter->ucFlushCount);
 			prAdapter->ucFlushCount = 0;
+#if 0
 			kalSendAeeWarning("[Fatal error! FW Flushed PKT too much!]", __func__);
 			glDoChipReset();
+#endif
 		}
 
 		/* call related TX Done Handler */
@@ -1568,6 +1570,17 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	case EVENT_ID_CHECK_REORDER_BUBBLE:
 		qmHandleEventCheckReorderBubble(prAdapter, prEvent);
 		break;
+#if (CFG_SUPPORT_EMI_DEBUG == 1)
+	case EVENT_ID_DRIVER_DUMP_LOG:
+		{
+			P_EVENT_DRIVER_DUMP_EMI_LOG_T prEventDriverDumpEmiLog;
+
+			DBGLOG(RX, TRACE, "EVENT_ID_DRIVER_DUMP_LOG\n");
+			prEventDriverDumpEmiLog = (P_EVENT_DRIVER_DUMP_EMI_LOG_T) (prEvent->aucBuffer);
+			wlanReadFwInfoFromEmi(&(prEventDriverDumpEmiLog->u4RequestDriverDumpAddr));
+			break;
+		}
+#endif
 	case EVENT_ID_FW_LOG_ENV:
 		{
 			P_EVENT_FW_LOG_T prEventLog;
@@ -1713,9 +1726,12 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		switch (u2Temp) {
 		case ETH_P_IPV4:
 			u2Temp = *(UINT_16 *) &pvHeader[ETH_HLEN + 4];
-			DBGLOG(RX, INFO, "IP Packet from:%d.%d.%d.%d, IP ID 0x%04x wakeup host\n",
+			DBGLOG(RX, INFO, "IP Packet:%d.%d.%d.%d, to:%d.%d.%d.%d,ID 0x%04x wakeup host\n",
 				pvHeader[ETH_HLEN + 12], pvHeader[ETH_HLEN + 13],
-				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15], u2Temp);
+				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15],
+				pvHeader[ETH_HLEN + 16], pvHeader[ETH_HLEN + 17],
+				pvHeader[ETH_HLEN + 18], pvHeader[ETH_HLEN + 19],
+				u2Temp);
 			break;
 		case ETH_P_ARP:
 		{

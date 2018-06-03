@@ -291,4 +291,8 @@ VOID nicUpdateLinkSpeed(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T e
 WLAN_STATUS nicUpdateRddTestMode(IN P_ADAPTER_T prAdapter, IN P_CMD_RDD_CH_T prRddChParam);
 #endif
 
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+VOID nicForceSetCAM(BOOLEAN enabled);
+#endif
+
 #endif /* _NIC_H */

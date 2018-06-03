@@ -682,6 +682,7 @@ VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 		kalMemCopy(prScanReqInfo->aucIEBuf, prP2pScanReqMsg->pucIEBuf, prP2pScanReqMsg->u4IELen);
 
 		prScanReqInfo->u4BufLength = prP2pScanReqMsg->u4IELen;
+		prP2pFsmInfo->eCNNState = P2P_CNN_NORMAL;
 
 		p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_SCAN);
 
@@ -800,6 +801,7 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 /* case P2P_STATE_REQING_CHANNEL: */
 /* break; */
 		case P2P_STATE_CHNL_ON_HAND:
+#if 0
 			switch (prP2pFsmInfo->eListenExted) {
 			case P2P_DEV_NOT_EXT_LISTEN:
 			case P2P_DEV_EXT_LISTEN_WAITFOR_TIMEOUT:
@@ -819,8 +821,27 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 				DBGLOG(P2P, ERROR,
 					"Current P2P State %d is unexpected for FSM timeout event.\n",
 					prP2pFsmInfo->eCurrentState);
+#else
+			switch (prP2pFsmInfo->eCNNState) {
+			case P2P_CNN_GO_NEG_REQ:
+			case P2P_CNN_GO_NEG_RESP:
+			case P2P_CNN_INVITATION_REQ:
+			case P2P_CNN_DEV_DISC_REQ:
+			case P2P_CNN_PROV_DISC_REQ:
+				DBGLOG(P2P, INFO, "P2P: waiting response, re-enter channel on hand state\n");
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_CHNL_ON_HAND);
+				break;
+
+			case P2P_CNN_NORMAL:
+			case P2P_CNN_GO_NEG_CONF:
+			case P2P_CNN_INVITATION_RESP:
+			case P2P_CNN_DEV_DISC_RESP:
+			case P2P_CNN_PROV_DISC_RES:
+			default:
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_IDLE);
+				break;
+#endif
 			}
-			break;
 /* case P2P_STATE_GC_JOIN: */
 /* break; */
 		default:
@@ -977,6 +998,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				prScanReqInfo->fgIsAbort = TRUE;
 			}
 
+			prP2pFsmInfo->eCNNState = P2P_CNN_NORMAL;
 			/* If channel is specified, use active scan to shorten the scan time. */
 			p2pFsmStateTransition(prAdapter, prAdapter->rWifiVar.prP2pFsmInfo, eNextState);
 		}
@@ -1189,6 +1211,7 @@ VOID p2pFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 
 		/* Find BSS Descriptor first. */
 		prP2pFsmInfo->prTargetBss = scanP2pSearchDesc(prAdapter, prP2pBssInfo, prConnReqInfo);
+		prP2pFsmInfo->eCNNState = P2P_CNN_NORMAL;
 
 		if (prP2pFsmInfo->prTargetBss == NULL) {
 			/* Update scan parameter... to scan target device. */

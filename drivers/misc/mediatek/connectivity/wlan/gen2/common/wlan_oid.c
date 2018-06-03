@@ -10667,4 +10667,31 @@ wlanoidSetDrvRoamingPolicy(IN P_ADAPTER_T prAdapter,
 
 	return WLAN_STATUS_SUCCESS;
 }
+#if CFG_SUPPORT_EMI_DEBUG
+WLAN_STATUS
+wlanoidSetEnableDumpEMILog(IN P_ADAPTER_T prAdapter,
+				IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_DRIVER_DUMP_EMI_LOG_T pDriverDumpEMI;
+
+	if (!prAdapter || !pvSetBuffer)
+		return WLAN_STATUS_INVALID_DATA;
+
+	pDriverDumpEMI = (P_CMD_DRIVER_DUMP_EMI_LOG_T)pvSetBuffer;
+	DBGLOG(OID, INFO, "%s: enable:%d", __func__,
+	pDriverDumpEMI->fgIsDriverDumpEmiLogEnable);
+	wlanSendSetQueryCmd(prAdapter,
+						CMD_ID_DRIVER_DUMP_EMI_LOG,
+						TRUE,
+						FALSE,
+						FALSE,
+						NULL,
+						nicOidCmdTimeoutCommon,
+						sizeof(CMD_DRIVER_DUMP_EMI_LOG_T),
+						(PUINT_8)pDriverDumpEMI,
+						NULL,
+						0);
+	return WLAN_STATUS_SUCCESS;
+}
+#endif
 
