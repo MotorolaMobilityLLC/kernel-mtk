@@ -1575,6 +1575,9 @@ static bool SetIrqEnable(uint32 irqmode, bool bEnable)
 		Afe_Set_Reg(irqClrReg->reg,
 			    (1 << irqClrReg->sbit),
 			    (irqClrReg->mask << irqClrReg->sbit));
+		Afe_Set_Reg(irqClrReg->reg,
+			    (1 << irqClrReg->sbit),
+			    (irqClrReg->mask << irqClrReg->sbit));
 
 		irqMissClrReg = &GetIRQCtrlReg(irqmode)->missclr;
 		Afe_Set_Reg(irqMissClrReg->reg,
