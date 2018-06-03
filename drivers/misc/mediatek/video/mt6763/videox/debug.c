@@ -400,11 +400,62 @@ static int test_alloc_buffer(size_t size, struct test_buf_info *buf_info)
 	return ret;
 }
 
+/* don't compare if cksum_golden == 0 */
+static unsigned int cksum_golden;
+static cmdqBackupSlotHandle cksum_slot;
+
+static int __maybe_unused compare_dsi_checksum(unsigned long unused)
+{
+	unsigned int cksum;
+	int ret;
+
+	if (!cksum_golden)
+		return 0;
+
+	ret = cmdqBackupReadSlot(cksum_slot, 0, &cksum);
+	if (ret) {
+		DISPERR("Fail to read cksum from cmdq slot\n");
+		return -1;
+	}
+
+	if (cksum_golden != cksum)
+		pr_err("%s fail, cksum=0x%08x, golden=0x%08x\n", __func__, cksum, cksum_golden);
+
+	return 0;
+}
+
+static int __maybe_unused check_dsi_checksum(void)
+{
+	static struct cmdqRecStruct *handle;
+	int ret;
+
+	if (!handle) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		if (ret) {
+			DISPERR("Fail to create cmdq handle\n");
+			return -1;
+		}
+	}
+	if (!cksum_slot) {
+		ret = cmdqBackupAllocateSlot(&cksum_slot, 1);
+		if (ret) {
+			DISPERR("Fail to alloc cmd slot\n");
+			return -1;
+		}
+	}
+
+	cmdqRecReset(handle);
+	_cmdq_insert_wait_frame_done_token_mira(handle);
+	cmdqRecBackupRegisterToSlot(handle, cksum_slot, 0, disp_addr_convert(DISPSYS_DSI0_BASE + 0x144));
+	cmdqRecFlushAsyncCallback(handle, compare_dsi_checksum, 0);
+	return 0;
+}
+
 static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 					int w, int h, enum DISP_FORMAT fmt, int frame_num,
 					int vsync_num, int offset_x, int offset_y,
 					unsigned int r, unsigned int g, unsigned int b, unsigned int a,
-					int mode)
+					int mode, unsigned int cksum)
 {
 	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 	unsigned int Bpp, frame, i;
@@ -417,6 +468,7 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 	struct test_buf_info buf_info[PRIMARY_SESSION_INPUT_LAYER_COUNT];
 	struct test_buf_info output_buf_info;
 
+	cksum_golden = cksum;
 	ufmt = disp_fmt_to_unified_fmt(fmt);
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
@@ -481,13 +533,14 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 		cfg->output_cfg.fmt = out_fmt;
 		cfg->output_cfg.width = lcm_width;
 		cfg->output_cfg.height = lcm_height;
-		cfg->output_cfg.pitch =	lcm_width * UFMT_GET_Bpp(disp_fmt_to_unified_fmt(out_fmt));
+		cfg->output_cfg.pitch =	lcm_width;
 		cfg->output_cfg.security = DISP_NORMAL_BUFFER;
 		cfg->output_cfg.buff_idx = -1;
 		cfg->output_cfg.interface_idx = -1;
 	}
 
 	/*========start to trigger path =============*/
+	DSI_enable_checksum(DISP_MODULE_DSI0, NULL);
 	for (frame = 0; frame < frame_num; frame++) {
 		primary_display_switch_mode(mode, session_id, 1);
 		primary_display_frame_cfg(cfg);
@@ -497,6 +550,7 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 			vsync_config.session_id = session_id;
 			primary_display_wait_for_vsync(&vsync_config);
 		}
+		check_dsi_checksum();
 
 		if (unlikely(basic_test_cancel)) {
 			pr_err("%s stop because fatal signal\n", __func__);
@@ -978,13 +1032,13 @@ static void process_dbg_opt(const char *opt)
 
 	if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num, vsync_num, x, y, r, g, b, a;
-		unsigned int layer_en_mask;
+		unsigned int layer_en_mask, cksum;
 		int mode;
 
-		ret = sscanf(opt, "primary_basic_test:%d,0x%x,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+		ret = sscanf(opt, "primary_basic_test:%d,0x%x,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,0x%x\n",
 			     &layer_num, &layer_en_mask, &w, &h, &fmt, &frame_num, &vsync_num,
-			     &x, &y, &r, &g, &b, &a, &mode);
-		if (ret != 14 && ret != 1) {
+			     &x, &y, &r, &g, &b, &a, &mode, &cksum);
+		if (ret != 15 && ret != 1) {
 			pr_err("error to parse cmd %s, ret=%d\n", opt, ret);
 			return;
 		}
@@ -1005,7 +1059,7 @@ static void process_dbg_opt(const char *opt)
 			fmt = DISP_FORMAT_RGB565;
 
 		primary_display_basic_test(layer_num, layer_en_mask, w, h, fmt, frame_num,
-			vsync_num, x, y, r, g, b, a, mode);
+			vsync_num, x, y, r, g, b, a, mode, cksum);
 	}
 
 	if (strncmp(opt, "pan_disp_test:", 13) == 0) {

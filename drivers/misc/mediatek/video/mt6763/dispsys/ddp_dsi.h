@@ -176,7 +176,7 @@ extern const LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
 /* defined in mtkfb.c */
 extern bool is_ipoh_bootup;
 
-
+int DSI_enable_checksum(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq);
 void DSI_ChangeClk(enum DISP_MODULE_ENUM module, UINT32 clk);
 INT32 DSI_ssc_enable(UINT32 dsi_idx, UINT32 en);
 UINT32 PanelMaster_get_CC(UINT32 dsi_idx);

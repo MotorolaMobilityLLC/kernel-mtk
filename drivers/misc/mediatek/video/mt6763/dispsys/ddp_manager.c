@@ -651,8 +651,10 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 		if (ddp_get_module_driver(wdma)->stop != 0)
 			ddp_get_module_driver(wdma)->stop(wdma, cmdq_handle);
 
-		if (ddp_get_module_driver(wdma)->deinit != 0)
-			ddp_get_module_driver(wdma)->deinit(wdma, cmdq_handle);
+		/* notes: deinit is moved to cmdq callback */
+		/* if (ddp_get_module_driver(wdma)->deinit != 0)
+		 *	ddp_get_module_driver(wdma)->deinit(wdma, cmdq_handle);
+		 */
 
 	}
 	if (handle->scenario == DDP_SCENARIO_PRIMARY_ALL) {

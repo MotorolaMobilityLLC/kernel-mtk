@@ -3201,6 +3201,20 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 }
 #endif
 
+static int _remove_memout_callback(unsigned long userdata)
+{
+	int ret = 0;
+	CmdqInterruptCB orig_callback = (CmdqInterruptCB)userdata;
+
+	if (ddp_get_module_driver(DISP_MODULE_WDMA0)->deinit != 0)
+		ddp_get_module_driver(DISP_MODULE_WDMA0)->deinit(DISP_MODULE_WDMA0, NULL);
+
+	if (orig_callback)
+		ret = orig_callback(0);
+
+	return ret;
+}
+
 static int primary_display_remove_output(void *callback, unsigned int userdata)
 {
 	int ret = 0;
@@ -3236,7 +3250,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 
 		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-		cmdqRecFlushAsyncCallback(cmdq_handle, callback, 0);
+		cmdqRecFlushAsyncCallback(cmdq_handle, _remove_memout_callback, (unsigned long)callback);
 		pgc->need_trigger_ovl1to2 = 0;
 		/* cmdqRecDestroy(cmdq_handle); */
 	} else {

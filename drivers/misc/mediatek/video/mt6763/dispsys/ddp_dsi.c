@@ -1739,6 +1739,17 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	}
 }
 
+int DSI_enable_checksum(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+{
+	int i;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		DSI_OUTREGBIT(cmdq, struct DSI_DEBUG_SEL_REG, DSI_REG[i]->DSI_DEBUG_SEL,
+			      CHKSUM_REC_EN, 1);
+	}
+	return 0;
+}
+
 enum DSI_STATUS DSI_Start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 
