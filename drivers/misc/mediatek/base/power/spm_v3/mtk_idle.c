@@ -183,7 +183,7 @@ wake_reason_t __attribute__((weak)) spm_go_to_sodi3(u32 spm_flags, u32 spm_data,
 	return WR_UNKNOWN;
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+wake_reason_t __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
 {
 	return WR_UNKNOWN;
 }
@@ -1149,39 +1149,6 @@ static noinline void go_to_rgidle(int cpu)
 /*
  * idle task flow part
  */
-static inline void soidle_pre_handler(void)
-{
-	mtk_idle_notifier_call_chain(SOIDLE_START);
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	hps_del_timer();
-	/* stop Mali dvfs_callback timer */
-	if (!mtk_gpu_sodi_entry())
-		idle_warn("not stop GPU timer in SODI\n");
-#endif
-
-#ifdef CONFIG_THERMAL
-	/* cancel thermal hrtimer for power saving */
-	mtkTTimer_cancel_timer();
-#endif
-}
-
-static inline void soidle_post_handler(void)
-{
-	mtk_idle_notifier_call_chain(SOIDLE_END);
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	hps_restart_timer();
-	/* restart Mali dvfs_callback timer */
-	if (!mtk_gpu_sodi_exit())
-		idle_warn("not restart GPU timer outside SODI\n");
-#endif
-
-#ifdef CONFIG_THERMAL
-	/* restart thermal hrtimer for update temp info */
-	mtkTTimer_start_timer();
-#endif
-}
 
 /*
  * xxidle_handler return 1 if enter and exit the low power state
@@ -1241,6 +1208,41 @@ void ufs_cb_after_xxidle(void)
 #if defined(CONFIG_MTK_UFS_BOOTING)
 	ufs_mtk_deepidle_leave();
 #endif
+}
+
+static inline unsigned int soidle_pre_handler(void)
+{
+	unsigned int op_cond = 0;
+
+	op_cond = ufs_cb_before_xxidle();
+
+	mtk_idle_notifier_call_chain(SOIDLE_START);
+
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	hps_del_timer();
+#endif
+
+#ifdef CONFIG_THERMAL
+	/* cancel thermal hrtimer for power saving */
+	mtkTTimer_cancel_timer();
+#endif
+	return op_cond;
+}
+
+static inline void soidle_post_handler(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	hps_restart_timer();
+#endif
+
+#ifdef CONFIG_THERMAL
+	/* restart thermal hrtimer for update temp info */
+	mtkTTimer_start_timer();
+#endif
+
+	mtk_idle_notifier_call_chain(SOIDLE_END);
+
+	ufs_cb_after_xxidle();
 }
 
 static unsigned int dpidle_pre_process(int cpu)
@@ -1632,13 +1634,14 @@ int soidle3_enter(int cpu)
 	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_SO3] = mtk_idle_check_clkmux(IDLE_TYPE_SO3, clkmux_block_mask);
 
-	soidle_pre_handler();
+	operation_cond |= soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	operation_cond =  clkmux_cond[IDLE_TYPE_SO3] ? 0x1 : 0x0;
+
+	operation_cond |= clkmux_cond[IDLE_TYPE_SO3] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0x0;
 
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
 
@@ -1673,6 +1676,7 @@ EXPORT_SYMBOL(soidle3_enter);
 int soidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_SO;
+	u32 operation_cond = 0;
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
 
@@ -1681,13 +1685,13 @@ int soidle_enter(int cpu)
 
 	idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 
-	soidle_pre_handler();
+	operation_cond |= soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
+	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags, operation_cond);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
@@ -2101,7 +2105,10 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 
 	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
 	for (i = 0; i < NF_CLK_CFG; i++)
-		mt_idle_log("[%d]block_cond=0x%08x\n", i, clkmux_block_mask[IDLE_TYPE_SO3][i]);
+		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
+							i,
+							clkmux_addr[i],
+							clkmux_block_mask[IDLE_TYPE_SO3][i]);
 
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
