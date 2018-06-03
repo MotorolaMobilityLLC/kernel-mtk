@@ -2178,84 +2178,85 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-static int get_trim_buffer_diff(int channels)
-{
-	int diffValue = 0, onValue = 0, offValue = 0;
+#define DC_TRIM_TIMES 20
 
-	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
-	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
-		pr_warn("%s Not support this channels = %d\n", __func__, channels);
-		return 0;
+static int get_trim_buffer_diff(int channel)
+{
+	int on_value[DC_TRIM_TIMES];
+	int off_value[DC_TRIM_TIMES];
+	int offset = 0;
+	int i;
+
+	/* get buffer on auxadc value  */
+	OpenTrimBufferHardware(true, true);
+
+	setOffsetTrimMux(channel);
+	setOffsetTrimBufferGain(3); /* 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	for (i = 0; i < DC_TRIM_TIMES; i++)
+		on_value[i] = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	OpenTrimBufferHardware(false, true);
+
+	/* get buffer off auxadc value */
+	OpenTrimBufferHardware(true, false);
+
+	setOffsetTrimMux(channel);
+	setOffsetTrimBufferGain(3); /* 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	for (i = 0; i < DC_TRIM_TIMES; i++)
+		off_value[i] = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	OpenTrimBufferHardware(false, false);
+
+	/* calculate result */
+	for (i = 0; i < DC_TRIM_TIMES; i++) {
+		offset += on_value[i] - off_value[i];
+		pr_debug("%s(), offset diff %d, on %d, off %d\n",
+			 __func__,
+			 on_value[i] - off_value[i], on_value[i], off_value[i]);
 	}
 
-	/* Buffer Off and Get Auxadc value */
-	setHpGainZero();
+	offset = (offset + (DC_TRIM_TIMES / 2)) / DC_TRIM_TIMES;
 
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
-
-	offValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-
-	/* Buffer On and Get Auxadc values */
-	setOffsetTrimMux(channels);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-	usleep_range(1 * 1000, 10 * 1000);
-
-	onValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-
-	diffValue = onValue - offValue;
-	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
-
-	return diffValue;
+	return offset;
 }
 #endif
 
 int get_audio_trim_offset(int channel)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	const int kTrimTimes = 20;
-	int counter = 0, averageOffset = 0;
-	int trimOffset[kTrimTimes];
+	int offset;
 
 	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
 	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
-		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		pr_warn("%s(), channel %d not support\n", __func__, channel);
 		return 0;
 	}
-
-	pr_warn("%s channels = %d\n", __func__, channel);
 
 	/* open headphone and digital part */
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	OpenAfeDigitaldl1(true);
-	OpenTrimBufferHardware(true);
 
-	for (counter = 0; counter < kTrimTimes; counter++)
-		trimOffset[counter] = get_trim_buffer_diff(channel);
+	offset = get_trim_buffer_diff(channel);
 
-	OpenTrimBufferHardware(false);
 	OpenAfeDigitaldl1(false);
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
 
-	for (counter = 0; counter < kTrimTimes; counter++)
-		averageOffset = averageOffset + trimOffset[counter];
+	pr_warn("%s(), channel = %d, offset = %d\n", __func__, channel, offset);
 
-	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
-	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
-
-	return averageOffset;
-
+	return offset;
 #else
 	return 0;
 #endif
