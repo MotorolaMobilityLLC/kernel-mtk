@@ -1404,42 +1404,36 @@ static void preview_setting(void)
 					       sizeof(kal_uint16));
 		zvhdr_setting();
 	}
-	write_cmos_sensor(0x0100, 0x01);
 }				/*    preview_setting  */
 
 static void custom1_setting(void)
 {
 	preview_setting();
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom2_setting(void)
 {
 	preview_setting();
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom3_setting(void)
 {
 	preview_setting();
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom4_setting(void)
 {
 	preview_setting();
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom5_setting(void)
 {
 	preview_setting();
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 kal_uint16 addr_data_pair_capture_imx338[] = {
@@ -1479,6 +1473,17 @@ kal_uint16 addr_data_pair_capture_imx338_hdr[] = {
 	0x00, 0x3013, 0x01
 		/* ,0x0100 ,0x01 */
 };
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable) {
+		write_cmos_sensor(0x0101, 0x03);
+		write_cmos_sensor(0x0100, 0X01);
+	} else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
 
 kal_uint16 addr_data_pair_capture_imx338_pdaf_on[] = {
 	0x3001, 0x01,/*bit[0]PDAF enable during HDR on*/
@@ -1522,8 +1527,6 @@ static void capture_setting(kal_uint16 currefps)
 
 		imx338_apply_SPC();
 	}
-
-	write_cmos_sensor(0x0100, 0x01);
 
 }
 
@@ -1580,7 +1583,6 @@ static void normal_video_setting(kal_uint16 currefps)
 					       sizeof(kal_uint16));
 		zvhdr_setting();
 	}
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 kal_uint16 addr_data_pair_hs_video_imx338[] = {	/*720 120fps */
@@ -1608,7 +1610,6 @@ static void hs_video_setting(void)
 	imx338_table_write_cmos_sensor(addr_data_pair_hs_video_imx338,
 				       sizeof(addr_data_pair_hs_video_imx338) / sizeof(kal_uint16));
 	zvhdr_setting();
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 kal_uint16 addr_data_pair_slim_video_imx338[] = {
@@ -2763,6 +2764,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		imx338_set_pd_focus_area(*feature_data, *(feature_data + 1));
 		break;
 		/*End of PDAF */
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 	default:
 		break;
 	}
