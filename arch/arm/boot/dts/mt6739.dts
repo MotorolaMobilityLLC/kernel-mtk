@@ -2336,7 +2336,11 @@
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 				system {
 					compatible = "android,system";
+#ifdef CONFIG_MNTL_SUPPORT
+					dev = "/dev/block/mntlblk_d1";
+#else
 					dev = "/dev/block/platform/bootdevice/by-name/system";
+#endif
 					type = "ext4";
 					mnt_flags = "ro";
 					fsmgr_flags = "wait";
