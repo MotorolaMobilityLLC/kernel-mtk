@@ -47,6 +47,11 @@ int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 	if (p_user == NULL) {
 		/*memory allocation for user information */
 		p_user = kmalloc(sizeof(struct conn_md_user), GFP_ATOMIC);
+		if (p_user == NULL) {
+			CONN_MD_ERR_FUNC("kmalloc failed\n");
+			mutex_unlock(&p_user_list->lock);
+			return CONN_MD_ERR_OTHERS;
+		}
 		INIT_LIST_HEAD(&p_user->entry);
 		list_add_tail(&p_user->entry, &p_user_list->list);
 		p_user->u_id = u_id;
