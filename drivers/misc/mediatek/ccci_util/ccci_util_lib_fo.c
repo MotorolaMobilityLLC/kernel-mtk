@@ -1443,8 +1443,12 @@ int get_md_img_type(int md_id)
 				return 6;
 			if (md_support_val & MD_CAP_WCDMA)
 				return 5;
-			return 0; /* Invalid case */
+			return 5; /* Using lwg as default */
 		}
+
+		if ((md_support_val & MD_CAP_MASK) == (MD_CAP_WCDMA | MD_CAP_GSM | MD_CAP_CDMA2000))
+			return 5; /* Special setting for wcg with non-lk load modem */
+
 		if (md_support_val & MD_CAP_WCDMA)
 			return 3;
 		if (md_support_val & MD_CAP_TDS_CDMA)
