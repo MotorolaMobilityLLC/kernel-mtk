@@ -217,9 +217,17 @@ __weak int tscpu_get_min_cpu_pwr(void)
 }
 #endif
 
+#ifdef NEW_PMIC_AUXADC_ARCH
+#include <mt-plat/mtk_auxadc_intf.h>
+#endif
+
 int get_battery_volt(void)
 {
+	#ifdef NEW_PMIC_AUXADC_ARCH
+	return pmic_get_auxadc_value(AUXADC_LIST_BATADC);
+	#else
 	return PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);
+	#endif
 	/* return 3900; */
 }
 
