@@ -195,12 +195,10 @@ int set_shutdown_cond(int shutdown_cond)
 
 			mutex_lock(&sdc.lock);
 			if (now_is_kpoc != 1) {
-				if (curr_sign != 1) {
-					sdc.shutdown_status.is_under_shutdown_voltage = true;
-					for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
-						sdc.batdata[i] = vbat;
-					sdc.batidx = 0;
-				}
+				sdc.shutdown_status.is_under_shutdown_voltage = true;
+				for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
+					sdc.batdata[i] = vbat;
+				sdc.batidx = 0;
 			}
 			bm_err("LOW_BAT_VOLT:%d, curr_sign:%d\n", vbat, curr_sign);
 			mutex_unlock(&sdc.lock);
