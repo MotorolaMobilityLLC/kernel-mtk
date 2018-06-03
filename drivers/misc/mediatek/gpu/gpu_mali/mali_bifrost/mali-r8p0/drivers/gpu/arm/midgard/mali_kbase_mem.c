@@ -1726,10 +1726,6 @@ int kbase_free_phy_pages_helper(
 		kbase_atomic_sub_pages(freed,
 				       &kctx->kbdev->memdev.used_pages);
 
-#ifdef ENABLE_MTK_MEMINFO
-		kbase_atomic_sub_pages(nr_pages_to_free, &g_mtk_gpu_total_memory_usage_in_pages);
-#endif /* ENABLE_MTK_MEMINFO */
-
 		KBASE_TLSTREAM_AUX_PAGESALLOC(
 				kctx->id,
 				(u64)new_page_count);

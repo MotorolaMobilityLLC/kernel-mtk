@@ -320,7 +320,6 @@ struct kbase_pm_backend_data {
 	int (*callback_power_runtime_on)(struct kbase_device *kbdev);
 	void (*callback_power_runtime_off)(struct kbase_device *kbdev);
 	int (*callback_power_runtime_idle)(struct kbase_device *kbdev);
-
 	void (*callback_mtk_power_suspend)(struct kbase_device *kbdev);
 	void (*callback_mtk_power_resume)(struct kbase_device *kbdev);
 };

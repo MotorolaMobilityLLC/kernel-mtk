@@ -31,7 +31,6 @@
 
 #include <ged_dvfs.h>
 
-
 /**
  * kbase_pm_dev_idle - The GPU is idle.
  *
@@ -554,5 +553,6 @@ void MTKCalGpuUtilization(unsigned int *pui32Loading, unsigned int *pui32Block, 
 u32 kbasep_get_gl_utilization(void);
 u32 kbasep_get_cl_js0_utilization(void);
 u32 kbasep_get_cl_js1_utilization(void);
+
 
 #endif /* _KBASE_BACKEND_PM_INTERNAL_H_ */

@@ -35,7 +35,7 @@ MALI_ERROR_INJECT_ON ?= 0
 MALI_MOCK_TEST ?= 0
 MALI_COVERAGE ?= 0
 MALI_INSTRUMENTATION_LEVEL ?= 0
-CONFIG_MALI_PLATFORM_NAME ?= $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME)
+#CONFIG_MALI_PLATFORM_THIRDPARTY_NAME ?= "devicetree"
 # This workaround is for what seems to be a compiler bug we observed in
 # GCC 4.7 on AOSP 4.3.  The bug caused an intermittent failure compiling
 # the "_Pragma" syntax, where an error message is returned:
@@ -62,10 +62,10 @@ DEFINES = \
 
 ifeq ($(KBUILD_EXTMOD),)
 # in-tree
-DEFINES +=-DMALI_KBASE_PLATFORM_PATH=../../$(src)/platform/$(CONFIG_MALI_PLATFORM_NAME)
+DEFINES +=-DMALI_KBASE_PLATFORM_PATH=../../$(src)/platform/$(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME)
 else
 # out-of-tree
-DEFINES +=-DMALI_KBASE_PLATFORM_PATH=$(src)/platform/$(CONFIG_MALI_PLATFORM_NAME)
+DEFINES +=-DMALI_KBASE_PLATFORM_PATH=$(src)/platform/$(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME)
 endif
 
 DEFINES += -I$(srctree)/drivers/staging/android
@@ -137,7 +137,7 @@ obj-$(CONFIG_MALI_MIDGARD) += mali_kbase.o
 mali_kbase-y := $(SRC:.c=.o)
 
 # Kconfig passes in the name with quotes for in-tree builds - remove them.
-platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_NAME))
+platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
 MALI_PLATFORM_DIR := platform/$(platform_name)
 ccflags-y += -I$(src)/$(MALI_PLATFORM_DIR)
 include $(src)/$(MALI_PLATFORM_DIR)/Kbuild

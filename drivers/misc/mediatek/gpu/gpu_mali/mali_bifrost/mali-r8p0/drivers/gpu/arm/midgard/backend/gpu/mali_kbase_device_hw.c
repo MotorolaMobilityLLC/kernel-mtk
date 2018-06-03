@@ -24,6 +24,7 @@
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
 #include <backend/gpu/mali_kbase_device_internal.h>
+
 #include "platform/mtk_platform_common.h"
 
 #if !defined(CONFIG_MALI_NO_MALI)
@@ -194,6 +195,7 @@ u32 kbase_reg_read(struct kbase_device *kbdev, u16 offset,
 
 	if (kctx && kctx->jctx.tb)
 		kbase_device_trace_register_access(kctx, REG_READ, offset, val);
+
 	return val;
 }
 
