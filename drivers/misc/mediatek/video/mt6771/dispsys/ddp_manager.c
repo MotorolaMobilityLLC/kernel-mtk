@@ -199,6 +199,25 @@ static char *path_event_name(enum DISP_PATH_EVENT event)
 	return "unknown event";
 }
 
+static unsigned int dpmgr_is_PQ(enum DISP_MODULE_ENUM module)
+{
+	unsigned int isPQ = 0;
+
+	switch (module) {
+	case DISP_MODULE_COLOR0:
+	case DISP_MODULE_CCORR0:
+	case DISP_MODULE_AAL0:
+	case DISP_MODULE_GAMMA0:
+	case DISP_MODULE_DITHER0:
+		isPQ = 1;
+		break;
+	default:
+		isPQ = 0;
+	}
+
+	return isPQ;
+}
+
 static struct DDP_MANAGER_CONTEXT *_get_context(void)
 {
 	static int is_context_inited;
@@ -1077,24 +1096,6 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 	return error > 0 ? -1 : 0;
 }
 
-static unsigned int dpmgr_is_PQ(enum DISP_MODULE_ENUM module)
-{
-	unsigned int isPQ = 0;
-
-	switch (module) {
-	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_CCORR0:
-	case DISP_MODULE_AAL0:
-	case DISP_MODULE_GAMMA0:
-	case DISP_MODULE_DITHER0:
-		isPQ = 1;
-		break;
-	default:
-		isPQ = 0;
-	}
-
-	return isPQ;
-}
 
 int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
 		struct disp_rect partial, void *cmdq_handle)
@@ -1660,8 +1661,10 @@ int dpmgr_check_status_by_scenario(enum DDP_SCENARIO_ENUM scenario)
 	for (i = 0; i < module_num; i++)
 		ddp_dump_analysis(modules[i]);
 
-	for (i = 0; i < module_num; i++)
-		ddp_dump_reg(modules[i]);
+	for (i = 0; i < module_num; i++) {
+		if (!dpmgr_is_PQ(modules[i]))
+			ddp_dump_reg(modules[i]);
+	}
 
 	return 0;
 }
@@ -1710,9 +1713,10 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	for (i = 0; i < module_num; i++)
 		ddp_dump_analysis(modules[i]);
 
-	for (i = 0; i < module_num; i++)
-		ddp_dump_reg(modules[i]);
-
+	for (i = 0; i < module_num; i++) {
+		if (!dpmgr_is_PQ(modules[i]))
+			ddp_dump_reg(modules[i]);
+	}
 
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);
