@@ -415,6 +415,7 @@ static void spm_set_sysclk_settle(void)
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
 
+static int mt_power_gs_dump_suspend_count = 2;
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
@@ -438,6 +439,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
+
+	if (--mt_power_gs_dump_suspend_count >= 0)
+		mt_power_gs_dump_suspend();
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
