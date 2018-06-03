@@ -444,7 +444,10 @@ static int hps_probe(struct platform_device *pdev)
  */
 static int hps_suspend(struct device *dev)
 {
+#ifndef CONFIG_MACH_MT6763
 	int cpu = 9;
+#endif
+	int ret = 0;
 
 	hps_warn("%s\n", __func__);
 
@@ -455,11 +458,12 @@ suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER)
-		hps_del_timer();
+		ret = hps_del_timer();
 #endif
-	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u, ret: %d\n",
 		 hps_ctxt.state, hps_ctxt.enabled,
-		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled, ret);
+#ifndef CONFIG_MACH_MT6763
 	/* offline big cores only */
 	cpu_hotplug_enable();
 	for (cpu = 9; cpu >= 8; cpu--) {
@@ -467,7 +471,7 @@ suspend_end:
 			cpu_down(cpu);
 	}
 	cpu_hotplug_disable();
-
+#endif
 	return 0;
 }
 
