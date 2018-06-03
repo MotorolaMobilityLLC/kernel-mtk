@@ -415,7 +415,6 @@ ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(9);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 
-ACAO_HPS_END:
 	aee_rr_rec_hps_cb_footprint(10);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	set_current_state(TASK_INTERRUPTIBLE);
