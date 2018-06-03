@@ -294,6 +294,7 @@ mt_pmic_regulator {
 		};
 		mt_pmic_vufs18_ldo_reg: ldo_vufs18 {
 			compatible = "regulator-fixed";
+			regulator-always-on;
 			regulator-name = "vufs18";
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
