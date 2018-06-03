@@ -261,13 +261,28 @@ void die(const char *str, struct pt_regs *regs, int err)
 {
 	struct thread_info *thread = current_thread_info();
 	int ret;
+	int cpu = -1;
+	static int die_owner = -1;
 
 	if (ESR_ELx_EC(err) == ESR_ELx_EC_DABT_CUR)
 		thread->cpu_excp++;
 
 	oops_enter();
 
-	raw_spin_lock_irq(&die_lock);
+	cpu = get_cpu();
+	if (!raw_spin_trylock_irq(&die_lock)) {
+		if (cpu != die_owner) {
+			pr_notice("die_lock: cpu: %d trylock failed(owner:%d)\n", cpu, die_owner);
+			dump_stack();
+			put_cpu();
+			while (1)
+				cpu_relax();
+		} else {
+			pr_notice("die_lock: cpu: %d already locked(owner:%d)\n", cpu, die_owner);
+			dump_stack();
+		}
+	}
+	die_owner = cpu;
 	console_verbose();
 	bust_spinlocks(1);
 	ret = __die(str, err, thread, regs);
