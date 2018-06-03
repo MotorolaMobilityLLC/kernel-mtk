@@ -1820,8 +1820,8 @@
 		compatible = "mediatek,flashlight_core";
 	};
 
-	flashlights_rt5081: flashlights_rt5081 {
-		compatible = "mediatek,flashlights_rt5081";
+	flashlights_mt6370: flashlights_mt6370 {
+		compatible = "mediatek,flashlights_mt6370";
 	};
 
 	irq_nfc: irq_nfc {
