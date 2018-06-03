@@ -806,7 +806,7 @@ static void hdmi_state_reset(void)
 
 /*static*/ void hdmi_resume(void)
 {
-	HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
+	/* HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state)); */
 	if (IS_HDMI_NOT_STANDBY())
 		return;
 
@@ -1342,9 +1342,6 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
-
-		if (displayid != MTKFB_DISPIF_HDMI)
-			HDMI_LOG(": invalid display id:%d\n", displayid);
 
 		memset(&hdmi_info, 0, sizeof(hdmi_info));
 		hdmi_info.displayFormat = DISPIF_FORMAT_RGB888;
