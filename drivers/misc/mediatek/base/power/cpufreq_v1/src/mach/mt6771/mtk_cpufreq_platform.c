@@ -582,9 +582,17 @@ int mt_cpufreq_dts_map(void)
 	return 0;
 }
 
+#define CPUFREQ_EFUSE_IDX_0 50
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
+	unsigned int temp = 0;
+
+	temp = get_devinfo_with_index(CPUFREQ_EFUSE_IDX_0);
+	if (temp >= 0x40)
+		lv = CPU_LEVEL_1;
+	else
+		lv = CPU_LEVEL_0;
 
 	turbo_flag = 0;
 
