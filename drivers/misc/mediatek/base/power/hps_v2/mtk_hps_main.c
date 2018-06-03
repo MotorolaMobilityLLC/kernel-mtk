@@ -444,7 +444,7 @@ static int hps_resume(struct device *dev)
 resume_end:
 	hps_ctxt.state = STATE_EARLY_SUSPEND;
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
-		hps_task_wakeup();
+		/*hps_task_wakeup();*/
 		hps_restart_timer();
 	}
 	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
