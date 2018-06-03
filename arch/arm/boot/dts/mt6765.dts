@@ -1818,6 +1818,17 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x11210000 0 0x10000>;
 	};
 
+	btcvsd@10001000 {
+		compatible = "mediatek,audio_bt_cvsd";
+		offset =<0xf00 0x800 0x140 0x144 0x148>;
+		/*INFRA MISC, conn_bt_cvsd_mask*/
+		/*cvsd_mcu_read, write, packet_indicator*/
+		reg=<0 0x10001000 0 0x1000>, /*INFRACFG_AO BASE ADDRESS*/
+		    <0 0x18050000 0 0x1000>, /*PKV_PHYSICAL_BASE*/
+		    <0 0x18080000 0 0x10000>; /*SRAM_BANK2*/
+		interrupts = <GIC_SPI 266 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	audio: audio@11220000 {
 		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x11220000 0 0x1000>;
@@ -2875,6 +2886,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	mt_soc_pcm_voice_usb_echoref {
 		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
+	};
+
+	mt_soc_btcvsd_rx_pcm {
+		compatible = "mediatek,mt_soc_btcvsd_rx_pcm";
+	};
+	mt_soc_btcvsd_tx_pcm {
+		compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
 	};
 
 	firmware {
