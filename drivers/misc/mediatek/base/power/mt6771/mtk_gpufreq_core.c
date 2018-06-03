@@ -43,11 +43,11 @@
 #include "mach/mtk_fhreg.h"
 #include "mach/mtk_freqhopping.h"
 #include "mtk_freqhopping_drv.h"
-#include "mach/mtk_thermal.h"
+#include "mtk_thermal.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 #include "mach/mtk_pbm.h"
-#include "mt6775_clkmgr.h"
+#include "mt6771_clkmgr.h"
 #include "mtk_dramc.h"
 #undef MT_GPUFREQ_STATIC_PWR_READY2USE
 #ifdef MT_GPUFREQ_STATIC_PWR_READY2USE
@@ -118,7 +118,7 @@ static struct g_opp_table_info g_opp_table_e1_0[] = {
 };
 
 static const struct of_device_id g_gpufreq_of_match[] = {
-	{.compatible = "mediatek,mt6775-gpufreq",},
+	{.compatible = "mediatek,gpufreq",},
 	{},
 };
 

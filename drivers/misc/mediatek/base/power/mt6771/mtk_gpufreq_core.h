@@ -201,7 +201,7 @@ static const struct file_operations mt_ ## name ## _proc_fops =	\
  * Enumerations
  **************************************************/
 enum g_device_id_enum {
-	DEVICE_MT6775 = 0,
+	DEVICE_MT6771 = 0,
 };
 enum g_post_div_order_enum {
 	POST_DIV2 = 1,
