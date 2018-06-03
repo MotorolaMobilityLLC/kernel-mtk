@@ -15,7 +15,7 @@
 #define __MT_EMI_H__
 
 /* submoduce control */
-#define ENABLE_BWL	0
+#define ENABLE_BWL	1
 #define ENABLE_MPU	1
 #define ENABLE_ELM	0
 #define ENABLE_MBW	0
