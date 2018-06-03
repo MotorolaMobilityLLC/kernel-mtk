@@ -49,7 +49,7 @@
 #include <linux/usb/composite.h>
 
 #include "musb_core.h"
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 #include "musb_qmu.h"
 #endif
 
@@ -109,7 +109,7 @@
 static inline void map_dma_buffer(struct musb_request *request,
 				  struct musb *musb, struct musb_ep *musb_ep)
 {
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	int compatible = true;
 	struct dma_controller *dma = musb->dma_controller;
 #endif
@@ -120,7 +120,7 @@ static inline void map_dma_buffer(struct musb_request *request,
 
 
 	request->map_state = UN_MAPPED;
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	if (!is_dma_capable() || !musb_ep->dma)
 		return;
 
@@ -225,13 +225,13 @@ static void nuke(struct musb_ep *ep, const int status)
 {
 	/*struct musb           *musb = ep->musb; */
 	struct musb_request *req = NULL;
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	void __iomem *epio = ep->musb->endpoints[ep->current_epnum].regs;
 #endif
 
 
 	ep->busy = 1;
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 	musb_flush_qmu(ep->hw_ep->epnum, (ep->is_in ? TXQ : RXQ));
 #else
 	if (is_dma_capable() && ep->dma) {
@@ -1348,7 +1348,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 			DBG(0, "packet size beyond hardware FIFO size\n");
 			goto fail;
 		}
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 		musb->intrtxe |= (1 << epnum);
 		musb_writew(mbase, MUSB_INTRTXE, musb->intrtxe);
 #endif
@@ -1388,7 +1388,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 			DBG(0, "packet size beyond hardware FIFO size\n");
 			goto fail;
 		}
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 		musb->intrrxe |= (1 << epnum);
 		musb_writew(mbase, MUSB_INTRRXE, musb->intrrxe);
 #endif
@@ -1431,7 +1431,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 
 	fifo_setup(musb, musb_ep);
 
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	/* NOTE:  all the I/O code _should_ work fine without DMA, in case
 	 * for some reason you run out of channels here.
 	 */
@@ -1449,7 +1449,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	musb_ep->wedged = 0;
 	status = 0;
 
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 	mtk_qmu_enable(musb, epnum, !(musb_ep->is_in));
 #endif
 
@@ -1491,14 +1491,14 @@ static int musb_gadget_disable(struct usb_ep *ep)
 
 	/* zero the endpoint sizes */
 	if (musb_ep->is_in) {
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 		musb->intrtxe &= ~(1 << epnum);
 		musb_writew(musb->mregs, MUSB_INTRTXE, musb->intrtxe);
 #endif
 		musb_writew(epio, MUSB_TXMAXP, 0);
 	} else {
 		u16 csr;
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 		musb->intrrxe &= ~(1 << epnum);
 		musb_writew(musb->mregs, MUSB_INTRRXE, musb->intrrxe);
 #endif
@@ -1571,7 +1571,7 @@ struct free_record {
  */
 void musb_ep_restart(struct musb *musb, struct musb_request *req)
 {
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 	/* limit debug mechanism to avoid printk too much */
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 
@@ -1634,7 +1634,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 
 	/* add request to the list */
 	list_add_tail(&request->list, &musb_ep->req_list);
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 	if (request->request.dma != DMA_ADDR_INVALID) {
 		/* TX case */
 		if (request->tx) {
@@ -1737,7 +1737,7 @@ static int musb_gadget_dequeue(struct usb_ep *ep, struct usb_request *request)
 	/* if the hardware doesn't have the request, easy ... */
 	if (musb_ep->req_list.next != &req->list || musb_ep->busy)
 		musb_g_giveback(musb_ep, request, -ECONNRESET);
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 	else {
 		QMU_DBG("dequeue req(%p), ep(%d), swep(%d)\n", request, musb_ep->hw_ep->epnum,
 			 ep->address);
@@ -1905,13 +1905,13 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 	spin_lock_irqsave(&musb->lock, flags);
 	musb_ep_select(mbase, (u8) epnum);
 
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	/* disable interrupts */
 	musb_writew(mbase, MUSB_INTRTXE, musb->intrtxe & ~(1 << epnum));
 #endif
 
 	if (musb_ep->is_in) {
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 		QMU_WARN("fifo flush(%d), sw(%d)\n", epnum, ep->address);
 		musb_flush_qmu(epnum, TXQ);
 		musb_restart_qmu(musb, epnum, TXQ);
@@ -1930,7 +1930,7 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 			musb_writew(epio, MUSB_TXCSR, csr);
 		}
 	} else {
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if defined(CONFIG_MTK_MUSB_QMU_SUPPORT) && !defined(MUSB_QMU_LIMIT_SUPPORT)
 		QMU_WARN("fifo flush(%d), sw(%d)\n", epnum, ep->address);
 		musb_flush_qmu(epnum, RXQ);
 		musb_restart_qmu(musb, epnum, RXQ);
@@ -1941,7 +1941,7 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 		musb_writew(epio, MUSB_RXCSR, csr);
 	}
 
-#ifndef CONFIG_MTK_MUSB_QMU_SUPPORT
+#if !defined(CONFIG_MTK_MUSB_QMU_SUPPORT) || defined(MUSB_QMU_LIMIT_SUPPORT)
 	/* re-enable interrupt */
 	musb_writew(mbase, MUSB_INTRTXE, musb->intrtxe);
 #endif
