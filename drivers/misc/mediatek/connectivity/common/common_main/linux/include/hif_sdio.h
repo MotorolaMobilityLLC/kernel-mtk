@@ -191,15 +191,7 @@ typedef enum {
 ********************************************************************************
 */
 
-#if WMT_PLAT_ALPS
-#ifdef CONFIG_SDIOAUTOK_SUPPORT
-#define MTK_HIF_SDIO_AUTOK_ENABLED 1
-#else
-#define MTK_HIF_SDIO_AUTOK_ENABLED 0
-#endif
-#else
-#define MTK_HIF_SDIO_AUTOK_ENABLED 0
-#endif
+
 
 /*!
  * \brief A macro used to generate hif_sdio client's context
@@ -347,8 +339,6 @@ extern INT32 mtk_wcn_hif_sdio_update_cb_reg(INT32(*ts_update)(VOID));
 
 extern VOID mtk_wcn_hif_sdio_enable_irq(MTK_WCN_HIF_SDIO_CLTCTX ctx, MTK_WCN_BOOL enable);
 
-extern INT32 mtk_wcn_hif_sdio_do_autok(MTK_WCN_HIF_SDIO_CLTCTX ctx);
-
 extern INT32 mtk_wcn_hif_sdio_f0_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, UINT8 vb);
 
 extern INT32 mtk_wcn_hif_sdio_f0_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, PUINT8 pvb);
@@ -372,10 +362,6 @@ INT32 mtk_wcn_hif_sdio_query_chipid(INT32 waitFlag);
 *                   E X T E R N A L    F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-
-#if MTK_HIF_SDIO_AUTOK_ENABLED
-extern INT32 wait_sdio_autok_ready(PVOID);
-#endif
 
 /*******************************************************************************
 *                              F U N C T I O N S

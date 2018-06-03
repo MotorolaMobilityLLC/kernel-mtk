@@ -21,13 +21,6 @@
 #include <linux/mmc/sdio_ids.h>
 #include <linux/module.h>
 
-#ifdef CONFIG_SDIOAUTOK_SUPPORT
-#define MTK_HIF_SDIO_AUTOK_ENABLED 1
-extern int wait_sdio_autok_ready(void *);
-#else
-#define MTK_HIF_SDIO_AUTOK_ENABLED 0
-#endif
-
 typedef struct _MTK_WCN_HIF_SDIO_CHIP_INFO_ {
 	struct sdio_device_id deviceId;
 	unsigned int chipId;
