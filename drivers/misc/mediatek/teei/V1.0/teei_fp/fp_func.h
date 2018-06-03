@@ -14,15 +14,16 @@
 
 #ifndef TEEI_FUNC_H
 #define TEEI_FUNC_H
-
+#define IOC_MAGIC                   'T'
+#define TEEI_IOC_MAXNR		(4)
 #define MICROTRUST_FP_SIZE	(0x80000)
 #define FP_BUFFER_OFFSET	(0x10)
 #define FP_LEN_MAX		(MICROTRUST_FP_SIZE - FP_BUFFER_OFFSET)
 #define FP_LEN_MIN		0
-#define CMD_MEM_CLEAR		_IO(0x5A777E, 0x1)
-#define CMD_FP_CMD			_IO(0x5A777E, 0x2)
-#define CMD_GATEKEEPER_CMD	_IO(0x5A777E, 0x3)
-#define CMD_LOAD_TEE		_IO(0x5A777E, 0x4)
+#define CMD_MEM_CLEAR		_IO(IOC_MAGIC, 0x1)
+#define CMD_FP_CMD			_IO(IOC_MAGIC, 0x2)
+#define CMD_GATEKEEPER_CMD	_IO(IOC_MAGIC, 0x3)
+#define CMD_LOAD_TEE		_IO(IOC_MAGIC, 0x4)
 #define FP_MAJOR		   254
 #define SHMEM_ENABLE       0
 #define SHMEM_DISABLE      1

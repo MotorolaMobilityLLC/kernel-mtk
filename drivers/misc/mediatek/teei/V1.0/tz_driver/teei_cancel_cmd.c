@@ -60,10 +60,8 @@ int __send_cancel_command(unsigned long share_memory_size)
 	fp_call_flag = GLSCH_HIGH;
 	n_invoke_t_drv(&smc_type, 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }

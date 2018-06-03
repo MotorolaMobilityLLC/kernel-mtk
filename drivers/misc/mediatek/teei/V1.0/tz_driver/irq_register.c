@@ -142,7 +142,7 @@ static irqreturn_t nt_error_irq_handler(void)
 	unsigned long error_num = 0;
 
 	nt_get_secure_os_state((uint64_t *)(&error_num));
-	/*IMSG_ERROR("secure system ERROR ! error_num = %lld\n", (error_num - 4294967296));*/
+	IMSG_ERROR("secure system ERROR ! error_num = %ld\n", (unsigned long)(error_num - 4294967296));
 	soter_error_flag = 1;
 	up(&(boot_sema));
 	up(&smc_lock);
@@ -191,14 +191,13 @@ static irqreturn_t nt_boot_irq_handler(void)
 		boot_soter_flag = END_STATUS;
 		up(&smc_lock);
 		up(&(boot_sema));
-		return IRQ_HANDLED;
 	} else {
 		IMSG_DEBUG("boot irq hanler else\n");
 		forward_call_flag = GLSCH_NONE;
 		up(&smc_lock);
 		up(&(boot_sema));
-		return IRQ_HANDLED;
 	}
+	return IRQ_HANDLED;
 }
 
 void secondary_load_func(void)
@@ -208,10 +207,8 @@ void secondary_load_func(void)
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
 	IMSG_DEBUG("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
 	n_ack_t_load_img(&smc_type, 0, 0);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 }
 
 
@@ -297,10 +294,9 @@ static irqreturn_t nt_switch_irq_handler(void)
 				IMSG_ERROR("[%s][%d] ==== Unknown child_type ========\n", __func__, __LINE__);
 
 			return IRQ_HANDLED;
-		} else {
-			IMSG_ERROR("[%s][%d] ==== Unknown IRQ ========\n", __func__, __LINE__);
-			return IRQ_NONE;
 		}
+		IMSG_ERROR("[%s][%d] ==== Unknown IRQ ========\n", __func__, __LINE__);
+		return IRQ_NONE;
 	}
 }
 
@@ -322,9 +318,11 @@ static irqreturn_t ut_drv_irq_handler(int irq, void *dev)
 	case BDRV_IRQ:
 		retVal = nt_bdrv_handler();
 		break;
+#ifndef CONFIG_MICROTRUST_TZ_LOG
 	case TEEI_LOG_IRQ:
 		retVal = tlog_handler();
 		break;
+#endif
 	case FP_ACK_IRQ:
 		retVal = nt_fp_ack_handler();
 		break;

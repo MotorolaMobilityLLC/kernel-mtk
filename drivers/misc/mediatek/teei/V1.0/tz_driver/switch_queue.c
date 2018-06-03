@@ -22,6 +22,7 @@
 #include <linux/kthread.h>
 #include <linux/delay.h>
 #include <linux/cpu.h>
+#include <linux/notifier.h>
 #include "nt_smc_call.h"
 #include "utdriver_macro.h"
 #include "sched_status.h"
@@ -50,12 +51,6 @@ struct switch_call_struct {
 };
 
 static void switch_fn(struct kthread_work *work);
-
-
-
-
-
-
 
 static struct switch_call_struct *create_switch_call_struct(void)
 {
@@ -129,9 +124,7 @@ static int check_work_type(int work_type)
 	case NT_DUMP_T:
 #ifdef TUI_SUPPORT
 	case POWER_DOWN_CALL:
-	case I2C_REE_CALL:
-	case I2C_TEE_CALL:
-	#endif
+#endif
 		return 0;
 
 	default:
@@ -153,19 +146,16 @@ void handle_lock_pm_mutex(struct mutex *lock)
 	if (ut_pm_count == 0)
 		mutex_lock(lock);
 
-
 	ut_pm_count++;
 }
 
 
 void handle_unlock_pm_mutex(struct mutex *lock)
 {
-
 	ut_pm_count--;
 
 	if (ut_pm_count == 0)
 		mutex_unlock(lock);
-
 }
 
 int add_work_entry(int work_type, unsigned char *buff)
@@ -214,10 +204,8 @@ int handle_sched_call(void *buff)
 
 	nt_sched_t(&smc_type);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -344,10 +332,8 @@ int handle_switch_call(void *buff)
 
 	nt_sched_t(&smc_type);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -358,37 +344,8 @@ int handler_power_down_call(void *buff)
 	uint64_t smc_type = 5;
 
 	nt_cancel_t_tui(&smc_type, 0, 0);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
-
-	return 0;
-}
-
-
-int handler_i2c_ree_call(void *buff)
-{
-	unsigned long smc_type = 5;
-
-	nt_i2c_ree(&smc_type, 0, 0);
-	while (smc_type == 1) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
-	}
-
-	return 0;
-}
-
-int handler_i2c_tee_call(void *buff)
-{
-	unsigned long smc_type = 5;
-
-	nt_i2c_tee(&smc_type, 0, 0);
-	while (smc_type == 1) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -400,7 +357,9 @@ static void switch_fn(struct kthread_work *work)
 	struct switch_call_struct *switch_ent = NULL;
 	int call_type = 0;
 	int retVal = 0;
-
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	struct tz_driver_state *s = get_tz_drv_state();
+#endif
 	switch_work = container_of(work, struct ut_smc_call_work, work);
 
 	switch_ent = (struct switch_call_struct *)switch_work->data;
@@ -476,18 +435,6 @@ static void switch_fn(struct kthread_work *work)
 			IMSG_ERROR("[%s][%d] fail to handle power_down-Call!\n", __func__, __LINE__);
 
 		break;
-	case I2C_REE_CALL:
-		retVal = handler_i2c_ree_call(switch_ent->buff_addr);
-		if (retVal < 0)
-			IMSG_ERROR("[%s][%d] fail to handle i2c_ree-Call!\n", __func__, __LINE__);
-
-		break;
-	case I2C_TEE_CALL:
-		retVal = handler_i2c_tee_call(switch_ent->buff_addr);
-		if (retVal < 0)
-			IMSG_ERROR("[%s][%d] fail to handle i2c_tee-Call!\n", __func__, __LINE__);
-
-		break;
 #endif
 
 	case SWITCH_CORE:
@@ -506,7 +453,9 @@ static void switch_fn(struct kthread_work *work)
 		IMSG_ERROR("switch fn handles a undefined call!\n");
 		break;
 	}
-
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	atomic_notifier_call_chain(&s->notifier, TZ_CALL_RETURNED, NULL);
+#endif
 	retVal = destroy_switch_call_struct(switch_ent);
 
 	if (retVal != 0)

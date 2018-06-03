@@ -23,7 +23,7 @@
 
 #define UT_TLOG_VERSION			(2)
 #define UT_TYPE_STRING			(1)
-#define MAX_LOG_LEN			(250)
+#define MAX_LOG_LEN			(254)
 
 /*	structures for LOG IRQ handler*/
 

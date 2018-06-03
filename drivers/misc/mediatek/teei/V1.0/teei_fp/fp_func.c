@@ -94,6 +94,12 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 	unsigned char args[16] = {0};
 	unsigned int buff_len = 0;
 
+	if (_IOC_TYPE(cmd) != TEEI_IOC_MAGIC)
+		return -ENOTTY;
+
+	if (_IOC_NR(cmd) > TEEI_IOC_MAXNR)
+		return -ENOTTY;
+
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
 	IMSG_DEBUG("##################################\n");
@@ -134,7 +140,6 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			return -EFAULT;
 		}
 		memset((void *)fp_buff_addr, 0, buff_len);
-
 		if (copy_from_user((void *)fp_buff_addr, (void *)arg, buff_len)) {
 			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
@@ -151,7 +156,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 					__func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
 
-		if (copy_to_user((void *)arg, (void *)fp_buff_addr, buff_len)) {
+		if (copy_to_user((void *)arg, (void *)fp_buff_addr, (args_len + 16))) {
 			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
@@ -300,8 +305,8 @@ int fp_init(void)
 	memset(fp_devp, 0, sizeof(struct fp_dev));
 	fp_setup_cdev(fp_devp, 0);
 	sema_init(&fp_devp->sem, 1);
-	sema_init(&daulOS_rd_sem, 0);
-	sema_init(&daulOS_wr_sem, 0);
+	sema_init(&daulOS_rd_sem, 1);
+	sema_init(&daulOS_wr_sem, 1);
 
 	IMSG_DEBUG("[%s][%d]create the teei_fp device node successfully!\n", __func__, __LINE__);
 	goto return_fn;
