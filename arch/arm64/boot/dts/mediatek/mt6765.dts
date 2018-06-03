@@ -1958,6 +1958,25 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x1a053000 0 0x0>;
 	};
 
+	flashlight_core: flashlight_core {
+		compatible = "mediatek,flashlight_core";
+	};
+
+	flashlights_mt6370: flashlights_mt6370 {
+		compatible = "mediatek,flashlights_mt6370";
+		decouple = <0>;
+		channel@1 {
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+		};
+		channel@2 {
+			type = <0>;
+			ct = <1>;
+			part = <0>;
+		};
+	};
+
 	ccu@1a080000 {
 		compatible = "mediatek,ccu";
 		reg = <0 0x1a080000 0 0x0>;
