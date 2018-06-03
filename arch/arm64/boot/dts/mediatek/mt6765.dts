@@ -1843,10 +1843,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupt-names = "RGX";
 		clock-frequency = <570000000>;
 
-	gpu@13000000 {
-		compatible = "mediatek,gpu";
-		reg = <0 0x13000000 0 0x80000>;
 	};
+
 
 	mfg_cfg: mfg_cfg@13ffe000 {
 		compatible = "mediatek,mt6765-mfg_cfg", "syscon";
@@ -2231,9 +2229,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			0x2a0 0x2a4 0x2a8 0x2ac 0x2b0 0x2b4 0x2b8 0x2bc
 			0x2c0 0x2c4 0x2c8 0x2cc 0x2d0>,
 			<0x380 0x384 0x388 0x38c 0x390 0x394 0x398 0x39c>;
-	smi_larb1@17010000 {
-		compatible = "mediatek,smi_larb1";
-		reg = <0 0x17010000 0 0x10000>;
 	};
 
 	venc@17020000 {
