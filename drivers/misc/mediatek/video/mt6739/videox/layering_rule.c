@@ -31,24 +31,24 @@ static struct layering_rule_info_t l_rule_info;
 
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{0, 0, 3, 4},
+	{0, 0, 300, 400},
 	/* HRT_BOUND_TYPE_LP3 */
-	{0, 0, 3, 4},
+	{0, 0, 300, 400},
 	/* HRT_BOUND_TYPE_LP4_1CH */
-	{0, 3, 6, 8},
+	{0, 300, 600, 800},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
-	{0, 0, 3, 4},
+	{0, 0, 300, 400},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{12, 12, 12, 12},
+	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP3 */
-	{12, 12, 12, 12},
+	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_1CH */
-	{12, 12, 12, 12},
+	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
-	{12, 12, 12, 12},
+	{1200, 1200, 1200, 1200},
 };
 
 /**
