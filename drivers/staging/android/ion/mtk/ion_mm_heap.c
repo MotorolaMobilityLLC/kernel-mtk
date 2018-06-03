@@ -1035,6 +1035,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 	}
 
 	heap->heap.debug_show = ion_mm_heap_debug_show;
+	ion_comm_init();
 	return &heap->heap;
 
 err_create_pool:
@@ -1333,6 +1334,28 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 		ion_drv_put_kernel_handle(kernel_handle);
 
 		break;
+	case ION_MM_ACQ_CACHE_POOL:
+	{
+		ion_comm_event_notify(1, param.pool_info_param.len);
+		IONMSG("[ion_heap]: ION_MM_ACQ_CACHE_POOL-%d.\n", param.mm_cmd);
+	}
+	break;
+	case ION_MM_QRY_CACHE_POOL:
+	{
+		int qry_type = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA;
+		struct ion_heap *ion_cam_heap =
+					ion_drv_get_heap(g_ion_device,
+							 qry_type,
+							 1);
+		param.pool_info_param.ret =
+			ion_mm_heap_pool_size(ion_cam_heap,
+					      __GFP_HIGHMEM | __GFP_MOVABLE,
+					      true);
+		IONMSG("ION_MM_QRY_CACHE_POOL, heap 0x%p, id %d, ret: %d.\n",
+		       ion_cam_heap, param.pool_info_param.heap_id_mask,
+		       param.pool_info_param.ret);
+	}
+	break;
 	default:
 		IONMSG(" Error. Invalid command(%d).\n", param.mm_cmd);
 		ret = -EFAULT;
@@ -1345,6 +1368,131 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 		    copy_to_user((void __user *)arg, &param,
 				 sizeof(struct ion_mm_data));
 	return ret;
+}
+
+int ion_mm_heap_cache_allocate(struct ion_heap *heap,
+			       struct ion_buffer *buffer,
+			       unsigned long size,
+			       unsigned long align,
+			       unsigned long flags)
+{
+	struct ion_system_heap
+	*sys_heap = container_of(heap,
+			struct ion_system_heap,
+			heap);
+	struct sg_table *table = NULL;
+	struct scatterlist *sg;
+	int ret;
+	struct list_head pages;
+	struct page_info *info = NULL;
+	struct page_info *tmp_info = NULL;
+	int i = 0;
+	unsigned long size_remaining = PAGE_ALIGN(size);
+	unsigned int max_order = orders[0];
+	unsigned long long start, end;
+
+	INIT_LIST_HEAD(&pages);
+	start = sched_clock();
+
+	/* add time interval to alloc 64k page in low memory status*/
+	if ((start - alloc_large_fail_ts) < 500000000)
+		max_order = orders[1];
+
+	while (size_remaining > 0) {
+		info = alloc_largest_available(sys_heap, buffer,
+					       size_remaining,
+					       max_order);
+		if (!info) {
+			IONMSG("%s cache_alloc info failed.\n", __func__);
+			break;
+		}
+		list_add_tail(&info->list, &pages);
+		size_remaining -= (1 << info->order) * PAGE_SIZE;
+		max_order = info->order;
+		i++;
+	}
+	end = sched_clock();
+
+	table = kzalloc(sizeof(*table), GFP_KERNEL);
+	if (!table) {
+		IONMSG("%s cache kzalloc failed table is null.\n", __func__);
+		goto err;
+	}
+
+	ret = sg_alloc_table(table, i, GFP_KERNEL);
+	if (ret) {
+		IONMSG("%s sg cache alloc table failed %d.\n", __func__, ret);
+		goto err1;
+	}
+
+	sg = table->sgl;
+	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+		struct page *page = info->page;
+
+		sg_set_page(sg, page, (1 << info->order) * PAGE_SIZE, 0);
+		sg = sg_next(sg);
+		list_del(&info->list);
+		kfree(info);
+	}
+
+	buffer->sg_table = table;
+	if (size != size_remaining)
+		IONMSG("%s cache_alloc alloc, size %ld, remain %ld.\n",
+		       __func__, size, size_remaining);
+	return 0;
+err1:
+	kfree(table);
+	IONMSG("error: cache_alloc for sg_table fail\n");
+err:
+	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+		free_buffer_page(sys_heap, buffer,
+				 info->page, info->order);
+		kfree(info);
+	}
+	IONMSG("mm_cache_alloc fail: size=%lu, flag=%lu.\n", size, flags);
+
+	return -ENOMEM;
+}
+
+void ion_mm_heap_cache_free(struct ion_buffer *buffer)
+{
+	struct ion_heap *heap = buffer->heap;
+	struct ion_system_heap *sys_heap;
+	struct sg_table *table = buffer->sg_table;
+	struct scatterlist *sg;
+	LIST_HEAD(pages);
+	int i;
+
+	sys_heap = container_of(heap, struct ion_system_heap, heap);
+	if (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE))
+		ion_heap_buffer_zero(buffer);
+
+	for_each_sg(table->sgl, sg, table->nents, i)
+		free_buffer_page(sys_heap, buffer,
+				 sg_page(sg), get_order(sg->length));
+
+	sg_free_table(table);
+	kfree(table);
+}
+
+int ion_mm_heap_pool_size(struct ion_heap *heap, gfp_t gfp_mask, bool cache)
+{
+	struct ion_system_heap *sys_heap;
+	int nr_total = 0;
+	int i;
+
+	sys_heap = container_of(heap, struct ion_system_heap, heap);
+
+	for (i = 0; i < num_orders; i++) {
+		struct ion_page_pool *pool = sys_heap->pools[i];
+
+		if (cache)
+			pool = sys_heap->cached_pools[i];
+		nr_total += (ion_page_pool_shrink(pool, gfp_mask, 0) *
+						  PAGE_SIZE);
+	}
+
+	return nr_total;
 }
 
 #ifdef CONFIG_PM
