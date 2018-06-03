@@ -256,6 +256,7 @@ static int nr_TSF_devs;
 
 
 static unsigned int g_u4EnableClockCount;
+static unsigned int g_u4TsfCnt;
 
 /* maximum number for supporting user to do interrupt operation */
 /* index 0 is for all the user that do not do register irq first */
@@ -1442,7 +1443,7 @@ static signed int TSF_open(struct inode *pInode, struct file *pFile)
 	/* do wait queue head init when re-enter in camera */
 	/* Enable clock */
 	TSF_EnableClock(MTRUE);
-	/* ISP_EnableClock(MTRUE); */
+	g_u4TsfCnt = 0;
 	LOG_INF("TSF open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
@@ -1867,6 +1868,10 @@ static signed int TSF_remove(struct platform_device *pDev)
 
 static signed int TSF_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
+	if (g_u4EnableClockCount > 0) {
+		TSF_EnableClock(MFALSE);
+		g_u4TsfCnt++;
+	}
 	return 0;
 }
 
@@ -1875,6 +1880,10 @@ static signed int TSF_suspend(struct platform_device *pDev, pm_message_t Mesg)
 ********************************************************************************/
 static signed int TSF_resume(struct platform_device *pDev)
 {
+	if (g_u4TsfCnt > 0) {
+		TSF_EnableClock(MTRUE);
+		g_u4TsfCnt--;
+	}
 	return 0;
 }
 
@@ -1887,7 +1896,7 @@ int TSF_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	LOG_INF("TSF suspend g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("TSF suspend g_u4EnableClockCount: %d, g_u4TsfCnt: %d", g_u4EnableClockCount, g_u4TsfCnt);
 
 	return TSF_suspend(pdev, PMSG_SUSPEND);
 }
@@ -1898,7 +1907,7 @@ int TSF_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	LOG_INF("TSF resume g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("TSF resume g_u4EnableClockCount: %d, g_u4TsfCnt: %d", g_u4EnableClockCount, g_u4TsfCnt);
 
 	return TSF_resume(pdev);
 }
