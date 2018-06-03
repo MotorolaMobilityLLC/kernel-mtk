@@ -429,6 +429,7 @@ static inline int nanohub_wakeup_unlock(struct nanohub_data *data)
 	return mode;
 }
 
+/*
 static void __nanohub_hw_reset(struct nanohub_data *data, int boot0)
 {
 	const struct nanohub_platform_data *pdata = data->pdata;
@@ -442,11 +443,13 @@ static void __nanohub_hw_reset(struct nanohub_data *data, int boot0)
 	else
 		usleep_range(750000, 800000);
 }
-
+*/
 static ssize_t nanohub_hw_reset(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
+	return -EIO;
+/*
 	struct nanohub_data *data = dev_get_nanohub_data(dev);
 	int ret;
 
@@ -458,12 +461,15 @@ static ssize_t nanohub_hw_reset(struct device *dev,
 	}
 
 	return ret < 0 ? ret : count;
+*/
 }
 
 static ssize_t nanohub_erase_shared(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
 {
+	return -EIO;
+/*
 	struct nanohub_data *data = dev_get_nanohub_data(dev);
 	u8 status = CMD_ACK;
 	int ret;
@@ -483,12 +489,15 @@ static ssize_t nanohub_erase_shared(struct device *dev,
 	nanohub_wakeup_unlock(data);
 
 	return ret < 0 ? ret : count;
+*/
 }
 
 static ssize_t nanohub_download_bl(struct device *dev,
 				   struct device_attribute *attr,
 				   const char *buf, size_t count)
 {
+	return -EIO;
+/*
 	struct nanohub_data *data = dev_get_nanohub_data(dev);
 	const struct nanohub_platform_data *pdata = data->pdata;
 	const struct firmware *fw_entry;
@@ -516,12 +525,15 @@ static ssize_t nanohub_download_bl(struct device *dev,
 	nanohub_wakeup_unlock(data);
 
 	return ret < 0 ? ret : count;
+*/
 }
 
 static ssize_t nanohub_download_kernel(struct device *dev,
 				       struct device_attribute *attr,
 				       const char *buf, size_t count)
 {
+	return -EIO;
+/*
 	struct nanohub_data *data = dev_get_nanohub_data(dev);
 	const struct firmware *fw_entry;
 	int ret;
@@ -537,12 +549,15 @@ static ssize_t nanohub_download_kernel(struct device *dev,
 	release_firmware(fw_entry);
 
 	return count;
+*/
 }
 
 static ssize_t nanohub_download_app(struct device *dev,
 				    struct device_attribute *attr,
 				    const char *buf, size_t count)
 {
+	return -EIO;
+/*
 	struct nanohub_data *data = dev_get_nanohub_data(dev);
 	const struct firmware *fw_entry;
 	char buffer[70];
@@ -622,6 +637,7 @@ static ssize_t nanohub_download_app(struct device *dev,
 	release_firmware(fw_entry);
 
 	return count;
+*/
 }
 
 static struct device_attribute attributes[] = {
