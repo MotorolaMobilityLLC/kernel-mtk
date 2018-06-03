@@ -993,7 +993,9 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 		atomic_dec(&ipi_lock_cnt);
 
 	/* FTRACE tag */
+#ifndef SPM_NO_TRACE_EVT
 	trace_sspm_ipi(start, id, opt);
+#endif
 
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
