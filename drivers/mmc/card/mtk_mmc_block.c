@@ -40,10 +40,9 @@
 #define SECTOR_SHIFT 9
 
 /* ring trace for debugfs */
-struct mtk_btag_ringtrace *mt_bio_ringtrace;
+struct mtk_blocktag *mtk_btag_mmc;
 
 /* context buffer of each request queue */
-struct mt_bio_context *mt_bio_reqctx;
 struct mt_bio_context *mt_ctx_map[MMC_BIOLOG_CONTEXTS] = { 0 };
 
 /* context index for mt_ctx_map */
@@ -69,32 +68,7 @@ enum {
 	MMCQD_CMDQ_MODE_EN = 1
 };
 
-/* kernel print buffer */
-static char *mt_bio_prbuf;
-spinlock_t mt_bio_prbuf_lock;
-
-/* debugfs dentries */
-struct dentry *mt_bio_droot;
-struct dentry *mt_bio_dklog;
-struct dentry *mt_bio_dlog;
-struct dentry *mt_bio_dmem;
-
-/* kernel log enable
- * 0: disable
- * 1: enable kernel log
- * 2: enable kernel log with cmdq task trace
- * 3: enable kernel log with cmdq task stage trace
- */
-unsigned int mt_bio_klog_enable;
-unsigned int mt_bio_used_mem;
-
 #define MT_BIO_TRACE_LATENCY (unsigned long long)(1000000000)
-#define MT_BIO_TRACE_TIMEOUT ((MT_BIO_TRACE_LATENCY)*10)
-
-#define biolog_fmt "wl:%d%%,%lld,%lld,%d.vm:%lld,%lld,%lld,%lld,%lld.cpu:%llu,%llu,%llu,%llu,%llu,%llu,%llu.pid:%d,"
-#define biolog_fmt_wt "wt:%d,%d,%lld."
-#define biolog_fmt_rt "rt:%d,%d,%lld."
-#define pidlog_fmt "{%05d:%05d:%08d:%05d:%08d}"
 
 #define REQ_EXECQ  "exe_cq"
 #define REQ_MMCQD0 "mmcqd/0"
@@ -102,7 +76,6 @@ unsigned int mt_bio_used_mem;
 #define REQ_MMCQD0_BOOT1 "mmcqd/0boot1"
 #define REQ_MMCQD0_RPMB  "mmcqd/0rpmb"
 #define REQ_MMCQD1 "mmcqd/1"
-
 
 /* queue id:
  * 0=internal storage (emmc:mmcqd0/exe_cq),
@@ -139,18 +112,20 @@ static int get_ctxid_by_name(const char *str)
 
 static void mt_bio_init_task(struct mt_bio_context_task *tsk)
 {
+	int i;
+
 	tsk->task_id = -1;
 	tsk->arg = 0;
-	tsk->request_start_t = 0;
-	tsk->transfer_start_t = 0;
-	tsk->transfer_end_t = 0;
-	tsk->wait_start_t = 0;
+	for (i = 0; i < tsk_max; i++)
+		tsk->t[i] = 0;
 }
 
-static void mt_bio_init_ctx(struct mt_bio_context *ctx, struct task_struct *thread)
+static void mt_bio_init_ctx(struct mt_bio_context *ctx, struct task_struct *thread,
+	struct request_queue *q)
 {
 	int i;
 
+	ctx->q = q;
 	ctx->pid = task_pid_nr(thread);
 	get_task_comm(ctx->comm, thread);
 	ctx->qid = get_qid_by_name(ctx->comm);
@@ -164,20 +139,19 @@ static void mt_bio_init_ctx(struct mt_bio_context *ctx, struct task_struct *thre
 		mt_bio_init_task(&ctx->task[i]);
 }
 
-void mt_bio_queue_alloc(struct task_struct *thread)
+void mt_bio_queue_alloc(struct task_struct *thread, struct request_queue *q)
 {
 	int i;
 	pid_t pid;
+	struct mt_bio_context *ctx = BTAG_CTX(mtk_btag_mmc);
 
 	pid = task_pid_nr(thread);
 
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
-		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
-
-		if (ctx->pid == pid)
+		if (ctx[i].pid == pid)
 			break;
-		if (ctx->pid == 0) {
-			mt_bio_init_ctx(ctx, thread);
+		if (ctx[i].pid == 0) {
+			mt_bio_init_ctx(&ctx[i], thread, q);
 			break;
 		}
 	}
@@ -187,41 +161,44 @@ void mt_bio_queue_free(struct task_struct *thread)
 {
 	int i;
 	pid_t pid;
+	struct mt_bio_context *ctx = BTAG_CTX(mtk_btag_mmc);
 
 	pid = task_pid_nr(thread);
 
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
-		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
-
-		if (ctx->pid == pid) {
-			mt_ctx_map[ctx->id] = NULL;
-			memset(ctx, 0, sizeof(struct mt_bio_context));
+		if (ctx[i].pid == pid) {
+			mt_ctx_map[ctx[i].id] = NULL;
+			memset(&ctx[i], 0, sizeof(struct mt_bio_context));
 			break;
 		}
 	}
 }
 
-/* get context correspond to current process */
-static struct mt_bio_context *mt_bio_curr_ctx(void)
+static struct mt_bio_context *mt_bio_curr_queue(struct request_queue *q)
 {
 	int i;
 	pid_t qd_pid;
+	struct mt_bio_context *ctx = BTAG_CTX(mtk_btag_mmc);
 
-	if (!mt_bio_reqctx)
+	if (!ctx)
 		return NULL;
 
 	qd_pid = task_pid_nr(current);
 
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
-		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
-
-		if (ctx->pid == 0)
+		if (ctx[i].pid == 0)
 			continue;
-		if (qd_pid == ctx->pid)
-			return ctx;
+		if ((qd_pid == ctx[i].pid) || (ctx[i].q && ctx[i].q == q))
+			return &ctx[i];
 	}
 
 	return NULL;
+}
+
+/* get context correspond to current process */
+static inline struct mt_bio_context *mt_bio_curr_ctx(void)
+{
+	return mt_bio_curr_queue(NULL);
 }
 
 /* get other queue's context by context id */
@@ -234,12 +211,12 @@ static struct mt_bio_context *mt_bio_get_ctx(int id)
 }
 
 /* append a pidlog to given context */
-int mtk_btag_pidlog_add_mmc(pid_t pid, __u32 len, int rw)
+int mtk_btag_pidlog_add_mmc(struct request_queue *q, pid_t pid, __u32 len, int rw)
 {
 	unsigned long flags;
 	struct mt_bio_context *ctx;
 
-	ctx = mt_bio_curr_ctx();
+	ctx = mt_bio_curr_queue(q);
 	if (!ctx)
 		return 0;
 
@@ -255,7 +232,7 @@ EXPORT_SYMBOL_GPL(mtk_btag_pidlog_add_mmc);
 static void mt_bio_context_eval(struct mt_bio_context *ctx)
 {
 	struct mt_bio_context_task *tsk;
-	uint64_t min, period;
+	uint64_t min, period, tsk_start;
 	int i;
 
 	min = ctx->period_end_t;
@@ -264,10 +241,11 @@ static void mt_bio_context_eval(struct mt_bio_context *ctx)
 	for (i = 0; i < MMC_BIOLOG_CONTEXT_TASKS; i++) {
 		tsk = &ctx->task[i];
 		if (tsk->task_id >= 0) {
-			if (tsk->request_start_t > 0 &&
-				tsk->request_start_t >= ctx->period_start_t &&
-				tsk->request_start_t < min)
-				min = tsk->request_start_t;
+			tsk_start = tsk->t[tsk_req_start];
+			if (tsk_start &&
+				tsk_start >= ctx->period_start_t &&
+				tsk_start < min)
+				min = tsk_start;
 		}
 	}
 	ctx->period_usage += (ctx->period_end_t - min);
@@ -283,36 +261,22 @@ static void mt_bio_context_eval(struct mt_bio_context *ctx)
 	mtk_btag_throughput_eval(&ctx->throughput);
 }
 
-/* print trace to kerne log */
-static void mt_bio_print_klog(struct mtk_btag_trace *tr)
-{
-	int len;
-	char *ptr;
-	unsigned long flags;
-
-	if (!mt_bio_prbuf)
-		return;
-
-	len = MMC_BIOLOG_PRINT_BUF-1;
-	ptr = &mt_bio_prbuf[0];
-
-	spin_lock_irqsave(&mt_bio_prbuf_lock, flags);
-	mtk_btag_print_klog(&ptr, &len, tr);
-	spin_unlock_irqrestore(&mt_bio_prbuf_lock, flags);
-}
-
 /* print context to trace ring buffer */
 static void mt_bio_print_trace(struct mt_bio_context *ctx)
 {
+	struct mtk_btag_ringtrace *rt = BTAG_RT(mtk_btag_mmc);
 	struct mtk_btag_trace *tr;
 	struct mt_bio_context *pid_ctx = ctx;
 	unsigned long flags;
 
+	if (!rt)
+		return;
+
 	if (ctx->id == CTX_EXECQ)
 		pid_ctx = mt_bio_get_ctx(CTX_MMCQD0);
 
-	spin_lock_irqsave(&mt_bio_ringtrace->lock, flags);
-	tr = mtk_btag_curr_trace(mt_bio_ringtrace);
+	spin_lock_irqsave(&rt->lock, flags);
+	tr = mtk_btag_curr_trace(rt);
 
 	if (!tr)
 		goto out;
@@ -331,12 +295,10 @@ static void mt_bio_print_trace(struct mt_bio_context *ctx)
 
 	tr->time = sched_clock();
 
-	if (mt_bio_klog_enable)
-		mt_bio_print_klog(tr);
-
-	mtk_btag_next_trace(mt_bio_ringtrace);
+	mtk_btag_klog(mtk_btag_mmc, tr);
+	mtk_btag_next_trace(rt);
 out:
-	spin_unlock_irqrestore(&mt_bio_ringtrace->lock, flags);
+	spin_unlock_irqrestore(&rt->lock, flags);
 }
 
 
@@ -377,34 +339,27 @@ static struct mt_bio_context_task *mt_bio_curr_task(unsigned int task_id, struct
 	return mt_bio_get_task(ctx, task_id);
 }
 
-static void mt_pr_cmdq_tsk_final(struct mt_bio_context_task *tsk,
-	int stage, __u64 busy_time, __u64 end_time)
+static const char *task_name[tsk_max] = {
+	"req_start", "dma_start", "dma_end", "isdone_start", "isdone_end"};
+
+static void mt_pr_cmdq_tsk(struct mt_bio_context_task *tsk, int stage)
 {
 	int rw;
-	__u32 sectors;
-	char str[7][32];
+	int klogen = BTAG_KLOGEN(mtk_btag_mmc);
+	__u32 bytes;
+	char buf[256];
 
-	if (!((mt_bio_klog_enable == 2 && stage == 5) || (mt_bio_klog_enable == 3)))
+	if (!((klogen == 2 && stage == tsk_isdone_end) || (klogen == 3)))
 		return;
 
 	rw = tsk->arg & (1<<30);  /* write: 0, read: 1 */
-	sectors = tsk->arg & 0xFFFF;
+	bytes = (tsk->arg & 0xFFFF) << SECTOR_SHIFT;
 
-	pr_debug("[BLOCK_TAG] cmdq: tsk[%d],%d,%s,len=%d%s%s%s%s%s%s%s\n",
-		tsk->task_id,
-		stage,
-		(rw)?"r":"w",
-		sectors << SECTOR_SHIFT,
-		mtk_btag_pr_time(str[0], 32, "req_start", tsk->request_start_t),
-		(stage > 1) ? mtk_btag_pr_time(str[1], 32, "dma_start", tsk->transfer_start_t) : "",
-		(stage > 2) ? mtk_btag_pr_time(str[2], 32, "dma_end", tsk->transfer_end_t) : "",
-		(stage > 3) ? mtk_btag_pr_time(str[3], 32, "isdone_start", tsk->wait_start_t) : "",
-		(stage > 4) ? mtk_btag_pr_time(str[4], 32, "isdone_end", end_time) : "",
-		(busy_time) ? mtk_btag_pr_time(str[5], 32, "busy", busy_time) : "",
-		mtk_btag_pr_speed(str[6], 32, busy_time, sectors));
+	mtk_btag_task_timetag(buf, 256, stage, tsk_max, task_name, tsk->t, bytes);
+
+	pr_debug("[BLOCK_TAG] cmdq: tsk[%d],%d,%s,len=%d%s\n",
+		tsk->task_id, stage+1, (rw)?"r":"w", bytes, buf);
 }
-
-#define mt_pr_cmdq_tsk(tsk, stage) mt_pr_cmdq_tsk_final(tsk, stage, 0, 0)
 
 void mt_biolog_cmdq_check(void)
 {
@@ -436,6 +391,7 @@ void mt_biolog_cmdq_queue_task(unsigned int task_id, struct mmc_request *req)
 {
 	struct mt_bio_context *ctx;
 	struct mt_bio_context_task *tsk;
+	int i;
 
 	if (!req)
 		return;
@@ -450,15 +406,14 @@ void mt_biolog_cmdq_queue_task(unsigned int task_id, struct mmc_request *req)
 		ctx->state = CMDQ_CTX_QUEUE;
 
 	tsk->arg = req->sbc->arg;
-	tsk->request_start_t = sched_clock();
-	tsk->transfer_start_t = 0;
-	tsk->transfer_end_t = 0;
-	tsk->wait_start_t = 0;
+	tsk->t[tsk_req_start] = sched_clock();
+	for (i = tsk_dma_start; i < tsk_max; i++)
+		tsk->t[i] = 0;
 
 	if (!ctx->period_start_t)
-		ctx->period_start_t = tsk->request_start_t;
+		ctx->period_start_t = tsk->t[tsk_req_start];
 
-	mt_pr_cmdq_tsk(tsk, 1);
+	mt_pr_cmdq_tsk(tsk, tsk_req_start);
 }
 
 static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx, __u64 start, __u64 end)
@@ -482,15 +437,15 @@ void mt_biolog_cmdq_dma_start(unsigned int task_id)
 	tsk = mt_bio_curr_task(task_id, &ctx);
 	if (!tsk)
 		return;
-	tsk->transfer_start_t = sched_clock();
+	tsk->t[tsk_dma_start] = sched_clock();
 
 	/* count first queue task time in workload usage,
 	 * if it was not overlapped with DMA
 	 */
 	if (ctx->state == CMDQ_CTX_QUEUE)
-		mt_bio_ctx_count_usage(ctx, tsk->request_start_t, tsk->transfer_start_t);
+		mt_bio_ctx_count_usage(ctx, tsk->t[tsk_req_start], tsk->t[tsk_dma_start]);
 	ctx->state = CMDQ_CTX_IN_DMA;
-	mt_pr_cmdq_tsk(tsk, 2);
+	mt_pr_cmdq_tsk(tsk, tsk_dma_start);
 }
 
 /* Command Queue Hook: stage3: dma end */
@@ -502,9 +457,9 @@ void mt_biolog_cmdq_dma_end(unsigned int task_id)
 	tsk = mt_bio_curr_task(task_id, &ctx);
 	if (!tsk)
 		return;
-	tsk->transfer_end_t = sched_clock();
+	tsk->t[tsk_dma_end] = sched_clock();
 	ctx->state = CMDQ_CTX_NOT_DMA;
-	mt_pr_cmdq_tsk(tsk, 3);
+	mt_pr_cmdq_tsk(tsk, tsk_dma_end);
 }
 
 /* Command Queue Hook: stage4: isdone start */
@@ -515,14 +470,14 @@ void mt_biolog_cmdq_isdone_start(unsigned int task_id, struct mmc_request *req)
 	tsk = mt_bio_curr_task(task_id, NULL);
 	if (!tsk)
 		return;
-	tsk->wait_start_t = sched_clock();
-	mt_pr_cmdq_tsk(tsk, 4);
+	tsk->t[tsk_isdone_start] = sched_clock();
+	mt_pr_cmdq_tsk(tsk, tsk_isdone_start);
 }
 
 /* Command Queue Hook: stage5: isdone end */
 void mt_biolog_cmdq_isdone_end(unsigned int task_id)
 {
-	int rw;
+	int rw, i;
 	__u32 bytes;
 	__u64 end_time, busy_time;
 	struct mt_bio_context *ctx;
@@ -534,16 +489,17 @@ void mt_biolog_cmdq_isdone_end(unsigned int task_id)
 		return;
 
 	/* return if there's no on-going request  */
-	if (!tsk->request_start_t || !tsk->transfer_start_t || !tsk->wait_start_t)
-		return;
+	for (i = 0; i < tsk_isdone_end; i++)
+		if (!tsk->t[i])
+			return;
 
-	end_time = sched_clock();
+	tsk->t[tsk_isdone_end] = end_time = sched_clock();
 
 	/* throughput usage := duration of handling this request */
 	rw = tsk->arg & (1<<30);  /* write: 0, read: 1 */
 	bytes = tsk->arg & 0xFFFF;
 	bytes = bytes << SECTOR_SHIFT;
-	busy_time = end_time - tsk->request_start_t;
+	busy_time = end_time - tsk->t[tsk_req_start];
 	tp = (rw) ? &ctx->throughput.r : &ctx->throughput.w;
 	tp->usage += busy_time;
 	tp->size += bytes;
@@ -555,11 +511,11 @@ void mt_biolog_cmdq_isdone_end(unsigned int task_id)
 
 	/* count isdone time in workload usage, if it was not overlapped with DMA */
 	if (ctx->state == CMDQ_CTX_NOT_DMA)
-		mt_bio_ctx_count_usage(ctx, tsk->transfer_start_t, end_time);
+		mt_bio_ctx_count_usage(ctx, tsk->t[tsk_dma_start], end_time);
 	else
-		mt_bio_ctx_count_usage(ctx, tsk->transfer_start_t, tsk->transfer_end_t);
+		mt_bio_ctx_count_usage(ctx, tsk->t[tsk_dma_start], tsk->t[tsk_dma_end]);
 
-	mt_pr_cmdq_tsk_final(tsk, 5, busy_time, end_time);
+	mt_pr_cmdq_tsk(tsk, tsk_isdone_end);
 
 	mt_bio_init_task(tsk);
 }
@@ -604,7 +560,7 @@ void mt_biolog_mmcqd_req_start(struct mmc_host *host)
 	tsk = mt_bio_curr_task(0, &ctx);
 	if (!tsk)
 		return;
-	tsk->request_start_t = sched_clock();
+	tsk->t[tsk_req_start] = sched_clock();
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if ((ctx->id == CTX_MMCQD0) &&
@@ -641,17 +597,17 @@ void mt_biolog_mmcqd_req_end(struct mmc_data *data)
 		return;
 
 	/* return if there's no on-going request */
-	if (!tsk->request_start_t)
+	if (!tsk->t[tsk_req_start])
 		return;
 
 	size = (data->blocks * data->blksz);
-	busy_time = end_time - tsk->request_start_t;
+	busy_time = end_time - tsk->t[tsk_req_start];
 
 	/* workload statistics */
 	ctx->workload.count++;
 
 	/* count request handling time in workload usage */
-	mt_bio_ctx_count_usage(ctx, tsk->request_start_t, end_time);
+	mt_bio_ctx_count_usage(ctx, tsk->t[tsk_req_start], end_time);
 
 	/* throughput statistics */
 	tp = (rw) ? &ctx->throughput.r : &ctx->throughput.w; /* write: 0, read: 1 */
@@ -662,154 +618,51 @@ void mt_biolog_mmcqd_req_end(struct mmc_data *data)
 	mt_bio_init_task(tsk);
 }
 
-static void mt_bio_seq_debug_show_info(struct seq_file *seq)
+static size_t mt_bio_seq_debug_show_info(struct seq_file *seq)
 {
 	int i;
-	size_t used_mem = 0;
-	size_t size;
+	struct mt_bio_context *ctx = BTAG_CTX(mtk_btag_mmc);
 
-	if (!mt_bio_reqctx)
-		return;
+	if (!ctx)
+		return 0;
 
-	seq_puts(seq, "<Queue Info>\n");
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
-		if (mt_bio_reqctx[i].pid == 0)
+		if (ctx[i].pid == 0)
 			continue;
-		seq_printf(seq, "mt_bio_reqctx[%d]=mt_ctx_map[%d]=%s,pid:%4d,q:%d\n",
+		seq_printf(seq, "ctx[%d]=ctx_map[%d]=%s,pid:%4d,q:%d\n",
 			i,
-			mt_bio_reqctx[i].id,
-			mt_bio_reqctx[i].comm,
-			mt_bio_reqctx[i].pid,
-			mt_bio_reqctx[i].qid);
-	}
-	seq_puts(seq, "<Detail Memory Usage>\n");
-	if (mt_bio_prbuf) {
-		seq_printf(seq, "Kernel log print buffer: %d bytes\n", MMC_BIOLOG_PRINT_BUF);
-		used_mem += MMC_BIOLOG_PRINT_BUF;
+			ctx[i].id,
+			ctx[i].comm,
+			ctx[i].pid,
+			ctx[i].qid);
 	}
 
-	used_mem += mtk_btag_seq_usedmem(seq, mt_bio_ringtrace);
-
-	if (mt_bio_reqctx) {
-		size = sizeof(struct mt_bio_context) * MMC_BIOLOG_CONTEXTS;
-		seq_printf(seq, "Queue context: %d contexts * %zu = %zu bytes\n",
-			MMC_BIOLOG_CONTEXTS,
-			sizeof(struct mt_bio_context),
-			size);
-		used_mem += size;
-	}
-	seq_printf(seq, "Total: %zu KB\n", used_mem >> 10);
-}
-
-static int mt_bio_seq_debug_show(struct seq_file *seq, void *v)
-{
-	mtk_btag_seq_debug_show_ringtrace(seq, mt_bio_ringtrace);
-	mt_bio_seq_debug_show_info(seq);
 	return 0;
-}
-
-static const struct seq_operations mt_bio_seq_debug_ops = {
-	.start  = mtk_btag_seq_debug_start,
-	.next   = mtk_btag_seq_debug_next,
-	.stop   = mtk_btag_seq_debug_stop,
-	.show   = mt_bio_seq_debug_show,
-};
-
-static int mt_bio_seq_debug_open(struct inode *inode, struct file *file)
-{
-	int rc;
-
-	rc = seq_open(file, &mt_bio_seq_debug_ops);
-	if (rc == 0) {
-		struct seq_file *m = file->private_data;
-
-		m->private = &mt_bio_ringtrace;
-	}
-	return rc;
-
-}
-
-static const struct file_operations mt_bio_seq_debug_fops = {
-	.owner		= THIS_MODULE,
-	.open		= mt_bio_seq_debug_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= seq_release,
-	.write		= mtk_btag_debug_write,
-};
-
-static void mt_mmc_biolog_free(void)
-{
-	mtk_btag_ringtrace_free(mt_bio_ringtrace);
-	kfree(mt_bio_prbuf);
-	kfree(mt_bio_reqctx);
-	mt_bio_prbuf = NULL;
-	mt_bio_ringtrace = NULL;
-	mt_bio_reqctx = NULL;
 }
 
 int mt_mmc_biolog_init(void)
 {
-	mt_bio_ringtrace = mtk_btag_ringtrace_alloc(MMC_BIOLOG_RINGBUF_MAX);
-	mt_bio_prbuf = kmalloc(MMC_BIOLOG_PRINT_BUF, GFP_NOFS);
-	mt_bio_reqctx = kmalloc_array(MMC_BIOLOG_CONTEXTS,
-		sizeof(struct mt_bio_context), GFP_NOFS);
+	struct mtk_blocktag *btag;
 
-	if (!mt_bio_ringtrace || !mt_bio_reqctx || !mt_bio_prbuf)
-		goto error_out;
+	btag = mtk_btag_alloc("mmc",
+		MMC_BIOLOG_RINGBUF_MAX,
+		sizeof(struct mt_bio_context),
+		MMC_BIOLOG_CONTEXTS,
+		mt_bio_seq_debug_show_info);
 
-	memset(mt_bio_reqctx, 0, (sizeof(struct mt_bio_context) * MMC_BIOLOG_CONTEXTS));
+	if (btag)
+		mtk_btag_mmc = btag;
 
-	mt_bio_used_mem =  (unsigned int)(sizeof(struct mtk_btag_trace) * MMC_BIOLOG_RINGBUF_MAX);
-	mt_bio_used_mem += (unsigned int)(sizeof(struct mt_bio_context) * MMC_BIOLOG_CONTEXTS);
-	mt_bio_used_mem += mtk_btag_used_mem_get();
-
-	mt_bio_droot = debugfs_create_dir("blockio_mmc", NULL);
-
-	if (IS_ERR(mt_bio_droot)) {
-		pr_warn("[BLOCK_TAG] blockio: fail to create debugfs root\n");
-		goto out;
-	}
-
-	mt_bio_dmem = debugfs_create_u32("used_mem", 0440, mt_bio_droot, &mt_bio_used_mem);
-
-	if (IS_ERR(mt_bio_dmem)) {
-		pr_warn("[BLOCK_TAG] blockio: fail to create used_mem at debugfs\n");
-		goto out;
-	}
-
-	mt_bio_dklog = debugfs_create_u32("klog_enable", 0660, mt_bio_droot, &mt_bio_klog_enable);
-
-	if (IS_ERR(mt_bio_dklog)) {
-		pr_warn("[BLOCK_TAG] blockio: fail to create klog_enable at debugfs\n");
-		goto out;
-	}
-
-	mt_bio_dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO, NULL, (void *)0, &mt_bio_seq_debug_fops);
-
-	if (IS_ERR(mt_bio_dlog)) {
-		pr_warn("[BLOCK_TAG] blockio: fail to create log at debugfs\n");
-		goto out;
-	}
-
-	spin_lock_init(&mt_bio_prbuf_lock);
-
-out:
-	return 0;
-
-error_out:
-	mt_mmc_biolog_free();
 	return 0;
 }
 EXPORT_SYMBOL_GPL(mt_mmc_biolog_init);
 
 int mt_mmc_biolog_exit(void)
 {
-	mt_mmc_biolog_free();
+	mtk_btag_free(mtk_btag_mmc);
 	return 0;
 }
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Mediatek MMC Block IO Log");
-
 

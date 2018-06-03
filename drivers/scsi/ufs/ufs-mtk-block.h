@@ -30,10 +30,18 @@ void ufs_mtk_biolog_scsi_done_start(unsigned int taski_id);
 void ufs_mtk_biolog_scsi_done_end(unsigned int taski_id);
 void ufs_mtk_biolog_check(unsigned long req_mask);
 
-#define UFS_BIOLOG_PRINT_BUF      4096
 #define UFS_BIOLOG_RINGBUF_MAX    120
 #define UFS_BIOLOG_CONTEXT_TASKS  32
 #define UFS_BIOLOG_CONTEXTS       1
+
+enum {
+	tsk_request_start = 0,
+	tsk_send_cmd,
+	tsk_req_compl,
+	tsk_scsi_done_start,
+	tsk_scsi_done_end,
+	tsk_max
+};
 
 struct ufs_mtk_bio_context_task {
 	int task_id;
@@ -43,11 +51,7 @@ struct ufs_mtk_bio_context_task {
 	__u16 cmd;
 	__u16 len;
 	__u32 lba;
-	uint64_t request_start_t;
-	uint64_t send_cmd_t;
-	uint64_t req_compl_t;
-	uint64_t scsi_done_start_t;
-	uint64_t scsi_done_end_t;
+	uint64_t t[tsk_max];
 };
 
 /* Context of Request Queue */

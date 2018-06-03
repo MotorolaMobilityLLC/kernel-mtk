@@ -413,7 +413,7 @@ int mmc_run_queue_thread(void *data)
 	int err;
 
 	pr_err("[CQ] start cmdq thread\n");
-	mt_bio_queue_alloc(current);
+	mt_bio_queue_alloc(current, NULL);
 	while (1) {
 		set_current_state(TASK_RUNNING);
 		mt_biolog_cmdq_check();

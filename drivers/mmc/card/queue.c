@@ -104,7 +104,7 @@ static int mmc_queue_thread(void *d)
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
-	mt_bio_queue_alloc(current);
+	mt_bio_queue_alloc(current, q);
 	do {
 		struct request *req = NULL;
 		unsigned int cmd_flags = 0;
