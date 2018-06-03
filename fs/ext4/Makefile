@@ -14,3 +14,5 @@ ext4-$(CONFIG_EXT4_FS_POSIX_ACL)	+= acl.o
 ext4-$(CONFIG_EXT4_FS_SECURITY)		+= xattr_security.o
 ext4-$(CONFIG_EXT4_FS_ENCRYPTION)	+= crypto_policy.o crypto.o \
 		crypto_key.o crypto_fname.o
+
+ccflags-y += -I$(srctree)/drivers/scsi/ufs
