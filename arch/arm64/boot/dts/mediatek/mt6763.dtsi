@@ -162,39 +162,84 @@
 		#clock-cells = <1>;
 	};
 
-	iocfg_0@10002000 {
-		compatible = "mediatek,iocfg_0";
-		reg = <0 0x10002000 0 0x1000>;
+	iocfg_lt@11f20000 {
+		compatible = "mediatek,iocfg_lt";
+		reg = <0 0x11f20000 0 0x1000>;
 	};
 
-	iocfg_1@10002200 {
-		compatible = "mediatek,iocfg_1";
-		reg = <0 0x10002200 0 0x1000>;
+	syscfg_pctl_lt: syscfg_pctl_b@11f20000 {
+		compatible = "mediatek,mt6763-pctl-lt-syscfg", "syscon";
+		reg = <0 0x11f20000 0 0x1000>;
 	};
 
-	iocfg_2@10002400 {
-		compatible = "mediatek,iocfg_2";
-		reg = <0 0x10002400 0 0x1000>;
+	iocfg_lm@11e80000 {
+		compatible = "mediatek,iocfg_lm";
+		reg = <0 0x11e80000 0 0x1000>;
 	};
 
-	iocfg_3@10002600 {
-		compatible = "mediatek,iocfg_3";
-		reg = <0 0x10002600 0 0x1000>;
+	syscfg_pctl_lm: syscfg_pctl_lm@11e80000 {
+		compatible = "mediatek,mt6763-pctl-lm-syscfg", "syscon";
+		reg = <0 0x11e80000 0 0x1000>;
 	};
 
-	iocfg_4@10002800 {
-		compatible = "mediatek,iocfg_4";
-		reg = <0 0x10002800 0 0x1000>;
+	iocfg_lb@11e70000 {
+		compatible = "mediatek,iocfg_lb";
+		reg = <0 0x11e70000 0 0x1000>;
 	};
 
-	iocfg_5@10002a00 {
-		compatible = "mediatek,iocfg_5";
-		reg = <0 0x10002a00 0 0x1000>;
+	syscfg_pctl_lb: syscfg_pctl_lb@11e70000 {
+		compatible = "mediatek,mt6763-pctl-lb-syscfg", "syscon";
+		reg = <0 0x11e70000 0 0x1000>;
 	};
 
-	iocfg_6@10002c00 {
-		compatible = "mediatek,iocfg_6";
-		reg = <0 0x10002c00 0 0x1000>;
+	iocfg_bl@11e90000 {
+		compatible = "mediatek,iocfg_bl";
+		reg = <0 0x11e90000 0 0x1000>;
+	};
+
+	syscfg_pctl_bl: syscfg_pctl_bl@11e90000 {
+		compatible = "mediatek,mt6763-pctl-bl-syscfg", "syscon";
+		reg = <0 0x11e90000 0 0x1000>;
+	};
+
+	iocfg_rb@11d30000 {
+		compatible = "mediatek,iocfg_rb";
+		reg = <0 0x11d30000 0 0x1000>;
+	};
+
+	syscfg_pctl_rb: syscfg_pctl_rb@11d30000 {
+		compatible = "mediatek,mt6763-pctl-rb-syscfg", "syscon";
+		reg = <0 0x11d30000 0 0x1000>;
+	};
+
+	iocfg_rm@11d20000 {
+		compatible = "mediatek,iocfg_rm";
+		reg = <0 0x11d20000 0 0x1000>;
+	};
+
+	syscfg_pctl_rm: syscfg_pctl_rm@11d20000 {
+		compatible = "mediatek,mt6763-pctl-rm-syscfg", "syscon";
+		reg = <0 0x11d20000 0 0x1000>;
+	};
+
+	iocfg_rt@11c50000 {
+		compatible = "mediatek,iocfg_rt";
+		reg = <0 0x11c50000 0 0x1000>;
+	};
+
+	syscfg_pctl_rt: syscfg_pctl_rt@11c50000 {
+		compatible = "mediatek,mt6763-pctl-rt-syscfg", "syscon";
+		reg = <0 0x11c50000 0 0x1000>;
+	};
+
+	iocfg_tl@11f30000 {
+		compatible = "mediatek,iocfg_f3";
+		reg = <0 0x11f30000 0 0x1000>;
+	};
+
+	syscfg_pctl_tl: syscfg_pctl_tl@11f30000 {
+		compatible = "mediatek,mt6763-pctl-tl-syscfg", "syscon";
+		reg = <0 0x11f30000 0 0x1000>;
 	};
 
 	pericfg@10003000 {
@@ -232,9 +277,35 @@
 		reg = <0 0x10004000 0 0x1000>;
 	};
 
+	gpio_usage_mapping:gpio {
+		compatible = "mediatek,gpio_usage_mapping";
+	};
+
 	gpio@10005000 {
 		compatible = "mediatek,gpio";
 		reg = <0 0x10005000 0 0x1000>;
+	};
+
+	syscfg_pctl_a: syscfg_pctl_a@10005000 {
+		compatible = "mediatek,mt6763-pctl-a-syscfg", "syscon";
+		reg = <0 0x10005000 0 0x1000>;
+	};
+
+	pio: pinctrl@10005000 {
+		compatible = "mediatek,mt6763-pinctrl";
+		reg = <0 0x10005000 0 0x1000>;
+		mediatek,pctl-regmap = <&syscfg_pctl_a>,
+				       <&syscfg_pctl_lt>,
+				       <&syscfg_pctl_lm>,
+				       <&syscfg_pctl_lb>,
+				       <&syscfg_pctl_bl>,
+				       <&syscfg_pctl_rb>,
+				       <&syscfg_pctl_rm>,
+				       <&syscfg_pctl_rt>,
+				       <&syscfg_pctl_tl>;
+		pins-are-numbered;
+		gpio-controller;
+		#gpio-cells = <2>;
 	};
 
 	dvfsp@10940000 {
