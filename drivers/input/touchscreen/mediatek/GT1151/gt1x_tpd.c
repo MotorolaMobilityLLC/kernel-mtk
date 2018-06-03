@@ -613,7 +613,9 @@ static int tpd_registration(void *client)
 #endif
 
 #ifdef CONFIG_MTK_LENS
+#ifdef CONFIG_MACH_MT6757
 	AF_PowerDown();
+#endif
 #endif
 	return 0;
 }
@@ -961,15 +963,19 @@ static int tpd_i2c_remove(struct i2c_client *client)
 static int tpd_local_init(void)
 {
 #if !defined CONFIG_MTK_LEGACY
+#ifndef CONFIG_MACH_MT6799
 	int ret;
+#endif
 
 	GTP_INFO("Device Tree get regulator!");
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+#ifndef CONFIG_MACH_MT6799
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
 	if (ret) {
 		GTP_ERROR("regulator_set_voltage(%d) failed!\n", ret);
 		return -1;
 	}
+#endif
 #endif
 #ifdef TPD_POWER_SOURCE_CUSTOM
 #ifdef CONFIG_ARCH_MT6580
@@ -1153,7 +1159,9 @@ static void tpd_resume(struct device *h)
 #endif
 
 #ifdef CONFIG_MTK_LENS
+#ifdef CONFIG_MACH_MT6757
 	AF_PowerDown();
+#endif
 #endif
 	GTP_DEBUG("tpd resume end.");
 }
