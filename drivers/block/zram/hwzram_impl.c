@@ -351,6 +351,43 @@ static void hwzram_impl_dump_regs(struct hwzram_impl *hwz)
 			hwzram_read_register(hwz, ZRAM_DECOMP_OFFSET + offset));
 }
 
+/* for debug purpose */
+static void hwzram_impl_dump_regs_for_dec(struct hwzram_impl *hwz)
+{
+	unsigned int offset;
+
+	/* DEC_STATUS */
+	pr_alert("%s: 0x1904: 0x%016llX\n", hwz->name, hwzram_read_register(hwz, 0x1904));
+
+	/* DEC_DBG_ERROR_STATUS */
+	pr_alert("%s: 0x1A18: 0x%016llX\n", hwz->name, hwzram_read_register(hwz, 0x1A18));
+
+	/* Decompression registers */
+	for (offset = 0x800; offset <= 0x830; offset += 8)
+		pr_info("%s: 0x%03X: 0x%016llX\n", hwz->name, offset,
+			hwzram_read_register(hwz, ZRAM_DECOMP_OFFSET + offset));
+}
+
+/* restore dec */
+static void hwzram_impl_restore_dec(struct hwzram_impl *hwz)
+{
+	unsigned int count = 0;
+
+	/* clear error bit */
+	hwzram_write_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_INTRP_STS_ERROR, 0x1);
+	wmb();
+
+	/* restore dec: DEC_GCTRL */
+	hwzram_write_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_GCTRL, 0x1);
+	while (count < 100 &&
+	       hwzram_read_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_GCTRL)) {
+		udelay(20);
+		count++;
+	}
+	if (count == 100)
+		pr_alert("%s: failed to restore dec\n", __func__);
+}
+
 static void convert_desc1(struct compr_desc_0 *dest,
 			  struct compr_desc_1 *src,
 			  dma_addr_t src_copy)
@@ -1177,6 +1214,9 @@ static int process_completed_descriptor(struct hwzram_impl *hwz,
 
 	cmpl->compr_status = desc->u1.s1.status;
 	cmpl->compr_size = desc->compr_len;
+#ifdef CONFIG_MTK_ENG_BUILD
+	cmpl->hash = desc->hash;
+#endif
 	memset(cmpl->buffers, 0, sizeof(dma_addr_t) *
 	       HWZRAM_MAX_BUFFERS_USED);
 
@@ -1520,13 +1560,16 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 				struct page *page,
 				struct hwzram_impl_completion *cmpl)
 {
-	int index;
-	unsigned int status, i, ret = 0;
+	int index, retry = 0;
+	unsigned int status = 0, i, ret = 0;
 	uint64_t csize_data, dest_data;
 	dma_addr_t daddr = 0;
 	phys_addr_t page_phys = page_to_phys(page);
 	uint16_t compr_size = cmpl->compr_size;
 	unsigned long timeout;
+#ifdef CONFIG_MTK_ENG_BUILD
+	u32 hash = cmpl->hash;
+#endif
 
 	/* enable clock */
 	if (hwz->hwctrl)
@@ -1546,7 +1589,15 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	pr_devel("%s: cmd set [%u] size 0x%x dest %pa\n",
 		 __func__, index, compr_size, &page_phys);
 
+retrydec:
+#ifdef CONFIG_MTK_ENG_BUILD
+	csize_data = hash;
+	csize_data = (csize_data << ZRAM_DCMD_CSIZE_HASH_SHIFT) |
+		(compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT) |
+		0x1;
+#else
 	csize_data = (uint64_t)compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
+#endif
 	dest_data = page_to_phys(page);
 
 	if (hwzram_non_coherent(hwz)) {
@@ -1629,7 +1680,22 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	if (status != HWZRAM_DCMD_DECOMPRESSED) {
 		pr_err("%s: bad status 0x%x\n", hwz->name, status);
 		ret = -1;
+
+#ifdef CONFIG_MTK_ENG_BUILD
+		if (status == HWZRAM_DCMD_HASH) {
+			pr_err("%s: mismatched hash 0x%x\n", hwz->name, hash);
+			pr_err("%s: 0x1910: 0x%016llX\n", hwz->name, hwzram_read_register(hwz, 0x1910));
+			pr_err("%s: 0x1914: 0x%016llX\n", hwz->name, hwzram_read_register(hwz, 0x1914));
+		}
+#endif
 		hwzram_impl_dump_regs(hwz);
+		hwzram_impl_dump_regs_for_dec(hwz);
+		hwzram_impl_restore_dec(hwz);
+
+		if (retry < 3) {
+			ret = 0xFF;
+			goto out_dma_unmap;
+		}
 	}
 
 	if (!ret &&
@@ -1659,6 +1725,13 @@ out_dma_unmap:
 	if (daddr) {
 		dma_unmap_page(hwz->dev, daddr, UNCOMPRESSED_BLOCK_SIZE,
 			DMA_FROM_DEVICE);
+	}
+
+	/* try to recover decompression error */
+	if (ret == 0xFF) {
+		retry++;
+		ret = 0;
+		goto retrydec;
 	}
 
 out_no_dest:
