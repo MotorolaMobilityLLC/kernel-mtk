@@ -15,6 +15,16 @@
 #include <asm/opcodes-sec.h>
 #include <asm/opcodes-virt.h>
 #endif
+
+#if defined(CONFIG_ARM64)
+#define LOCAL_REG_SET_DECLARE \
+	register size_t reg0 __asm__("x0") = function_id; \
+	register size_t reg1 __asm__("x1") = arg0; \
+	register size_t reg2 __asm__("x2") = arg1; \
+	register size_t reg3 __asm__("x3") = arg2; \
+	register size_t reg4 __asm__("x4") = arg3; \
+	size_t ret
+#else
 #define LOCAL_REG_SET_DECLARE \
 	register size_t reg0 __asm__("r0") = function_id; \
 	register size_t reg1 __asm__("r1") = arg0; \
@@ -22,19 +32,24 @@
 	register size_t reg3 __asm__("r3") = arg2; \
 	register size_t reg4 __asm__("r4") = arg3; \
 	size_t ret
+#endif
 
 size_t mt_secure_call(size_t function_id,
 	size_t arg0, size_t arg1, size_t arg2)
 {
-	register size_t reg0 __asm__("r0") = function_id; \
-	register size_t reg1 __asm__("r1") = arg0; \
-	register size_t reg2 __asm__("r2") = arg1; \
-	register size_t reg3 __asm__("r3") = arg2; \
 	size_t ret;
 #ifdef CONFIG_ARM64
+	register size_t reg0 __asm__("x0") = function_id;
+	register size_t reg1 __asm__("x1") = arg0;
+	register size_t reg2 __asm__("x2") = arg1;
+	register size_t reg3 __asm__("x3") = arg2;
 	__asm__ volatile ("smc #0x0\n" : "+r"(reg0) :
 		"r"(reg1), "r"(reg2), "r"(reg3));
 #else
+	register size_t reg0 __asm__("r0") = function_id;
+	register size_t reg1 __asm__("r1") = arg0;
+	register size_t reg2 __asm__("r2") = arg1;
+	register size_t reg3 __asm__("r3") = arg2;
 	__asm__ volatile (__SMC(0) : "+r"(reg0) :
 		"r"(reg1), "r"(reg2), "r"(reg3));
 #endif
