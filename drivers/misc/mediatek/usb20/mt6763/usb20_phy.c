@@ -24,6 +24,10 @@
 #include <musb_core.h>
 #include "usb20.h"
 
+#ifdef CONFIG_OF
+#include <linux/of_address.h>
+#endif
+
 #define FRA (48)
 #define PARA (28)
 
@@ -160,6 +164,46 @@ void usb_phy_switch_to_usb(void)
 #endif
 
 #else
+
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+int usb2jtag_usb_init(void)
+{
+	struct device_node *node = NULL;
+	void __iomem *usb_phy_base;
+	u32 temp;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-usb20");
+	if (!node) {
+		pr_err("[USB2JTAG] map node @ mediatek,USB0 failed\n");
+		return -1;
+	}
+
+	usb_phy_base = of_iomap(node, 1);
+	if (!usb_phy_base) {
+		pr_err("[USB2JTAG] iomap usb_phy_base failed\n");
+		return -1;
+	}
+
+	/* rg_usb20_gpio_ctl: bit[9] = 1 */
+	temp = readl(usb_phy_base + 0x820);
+	writel(temp | (1 << 9), usb_phy_base + 0x820);
+
+	/* RG_USB20_BGR_EN: bit[0] = 1 */
+	temp = readl(usb_phy_base + 0x800);
+	writel(temp | (1 << 0), usb_phy_base + 0x800);
+
+	/* RG_USB20_BC11_SW_EN: bit[23] = 0 */
+	temp = readl(usb_phy_base + 0x818);
+	writel(temp & ~(1 << 23), usb_phy_base + 0x818);
+
+	/* wait stable */
+	mdelay(1);
+
+	iounmap(usb_phy_base);
+
+	return 0;
+}
+#endif
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool in_uart_mode;
