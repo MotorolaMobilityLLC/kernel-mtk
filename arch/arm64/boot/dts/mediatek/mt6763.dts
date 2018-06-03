@@ -781,14 +781,10 @@
 		compatible = "mediatek,sys_timer";
 		reg =
 			/* system timer register base */
-			<0 0x10017000 0 0x1000>,
-			/* sysram base for transformation between kernel time (sched_clock) and sys_timer tick */
-			<0 0x0011B7EC 0 0x14>;
+			<0 0x10017000 0 0x1000>;
 		reg-names =
-			"sys_timer_base",
-			"sysram_base";
+			"sys_timer_base";
 		interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
-		mediatek,sysram-size = <0x14>;
 	};
 
 

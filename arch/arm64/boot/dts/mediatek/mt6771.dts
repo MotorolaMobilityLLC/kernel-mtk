@@ -628,7 +628,11 @@
 
 	sys_timer@10017000 {
 		compatible = "mediatek,sys_timer";
-		reg = <0 0x10017000 0 0x1000>;
+		reg =
+			/* system timer register base */
+			<0 0x10017000 0 0x1000>;
+		reg-names =
+			"sys_timer_base";
 		interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
