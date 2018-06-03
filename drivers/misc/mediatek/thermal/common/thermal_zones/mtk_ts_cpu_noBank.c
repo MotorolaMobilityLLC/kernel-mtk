@@ -1458,7 +1458,7 @@ static int ktp_thread(void *arg)
 }
 #endif
 
-int tscpu_get_temp_by_bank(thermal_bank_name ts_bank)
+int tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
 {
 	int bank_T = -127000;
 

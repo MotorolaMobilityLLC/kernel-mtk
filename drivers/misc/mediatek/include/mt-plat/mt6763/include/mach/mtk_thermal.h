@@ -42,14 +42,14 @@ typedef enum thermal_sensor_enum {
 	TS_ENUM_MAX,
 } ts_e;
 
-typedef enum {
+enum thermal_bank_name {
 	THERMAL_BANK0     = 0,
 	THERMAL_BANK1     = 1,
 	THERMAL_BANK2     = 2,
 	THERMAL_BANK3     = 3,
 	THERMAL_BANK4     = 4,
 	THERMAL_BANK_NUM
-} thermal_bank_name;
+};
 
 struct TS_PTPOD {
 	unsigned int ts_MTS;
@@ -61,13 +61,13 @@ extern int mtktscpu_limited_dmips;
 /* Valid if it returns 1, invalid if it returns 0. */
 extern int tscpu_is_temp_valid(void);
 
-extern void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_bank);
+extern void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, enum thermal_bank_name ts_bank);
 
 extern void set_taklking_flag(bool flag);
 
 extern int tscpu_get_cpu_temp(void);
 
-extern int tscpu_get_temp_by_bank(thermal_bank_name ts_bank);
+extern int tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank);
 
 #define THERMAL_WRAP_WR32(val, addr)        mt_reg_sync_writel((val), ((void *)addr))
 

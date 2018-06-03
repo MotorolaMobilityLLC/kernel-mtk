@@ -615,7 +615,7 @@ static void _mt_eem_aee_init(void)
 
 #ifndef EARLY_PORTING_THERMAL
 int __attribute__((weak))
-tscpu_get_temp_by_bank(thermal_bank_name ts_bank)
+tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
 {
 	eem_error("cannot find %s (thermal has not ready yet!)\n", __func__);
 	return 0;
@@ -780,7 +780,7 @@ int base_ops_mon_mode(struct eem_det *det)
 {
 	#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
 	struct TS_PTPOD ts_info;
-	thermal_bank_name ts_bank;
+	enum thermal_bank_name ts_bank;
 	#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -1083,7 +1083,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 int base_ops_get_temp(struct eem_det *det)
 {
 #if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
-	thermal_bank_name ts_bank;
+	enum thermal_bank_name ts_bank;
 
 	ts_bank = det_to_id(det);
 	#ifdef __KERNEL__

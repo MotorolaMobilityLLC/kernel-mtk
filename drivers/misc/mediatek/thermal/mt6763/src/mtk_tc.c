@@ -260,7 +260,7 @@ int tscpu_thermal_clock_off(void)
 }
 
 /* TODO: FIXME */
-void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_bank)
+void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, enum thermal_bank_name ts_bank)
 {
 	unsigned int temp0, temp1, temp2;
 	struct TS_PTPOD ts_ptpod;
