@@ -44,15 +44,9 @@ void __iomem  *apmixed_base_in_idle;
 
 /* Idle handler on/off */
 int idle_switch[NR_TYPES] = {
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	0,	/* dpidle switch */
-	0,	/* soidle3 switch */
-	0,	/* soidle switch */
-#else
 	1,	/* dpidle switch */
 	1,	/* soidle3 switch */
 	1,	/* soidle switch */
-#endif
 	0,	/* mcidle switch */
 	0,	/* slidle switch */
 	1,	/* rgidle switch */
