@@ -11,14 +11,14 @@
 
 #undef TDEBUG
 #ifdef NEU_DEBUG
-#define TDEBUG(fmt, args...) pr_err("%s(%i, %s): " fmt "\n", \
+#define TDEBUG(fmt, args...) pr_debug("%s(%i, %s): " fmt "\n", \
 		__func__, current->pid, current->comm, ## args)
 #else
 #define TDEBUG(fmt, args...)
 #endif
 
 #undef TERR
-#define TERR(fmt, args...) pr_err("%s(%i, %s): " fmt "\n", \
+#define TERR(fmt, args...) pr_debug("%s(%i, %s): " fmt "\n", \
 		__func__, current->pid, current->comm, ## args)
 
 #include <tee_client_api.h>

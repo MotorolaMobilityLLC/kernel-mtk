@@ -33,8 +33,8 @@ static inline unsigned long now_ms(void)
 
 #define IMSG_PRINTK(fmt, ...)           pr_info(fmt, ##__VA_ARGS__)
 
-#define IMSG_PRINT_ERROR(fmt, ...)      pr_err(fmt, ##__VA_ARGS__)
-#define IMSG_PRINT_WARN(fmt, ...)       pr_warn(fmt, ##__VA_ARGS__)
+#define IMSG_PRINT_ERROR(fmt, ...)      pr_debug(fmt, ##__VA_ARGS__)
+#define IMSG_PRINT_WARN(fmt, ...)       pr_debug(fmt, ##__VA_ARGS__)
 #define IMSG_PRINT_INFO(fmt, ...)       pr_info(fmt, ##__VA_ARGS__)
 #define IMSG_PRINT_DEBUG(fmt, ...)      pr_debug(fmt, ##__VA_ARGS__)
 #define IMSG_PRINT_TRACE(fmt, ...)      pr_debug(fmt, ##__VA_ARGS__)
