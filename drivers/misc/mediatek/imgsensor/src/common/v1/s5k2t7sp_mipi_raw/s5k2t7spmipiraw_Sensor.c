@@ -83,6 +83,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		//grabwindow_height should be 16's N times
 		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 214000000,
 	},
 	.cap = {
 		.pclk = 678400000, /*//30fps case*/
@@ -95,6 +96,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*//grabwindow_height should be 16's N times*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 640000000,
 	},
 	.cap1 = {
 		.pclk = 678000000, /*//30fps case*/
@@ -131,6 +133,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*//grabwindow_height should be 16's N times*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 214000000,
 	},
 	.hs_video = {/*slow motion*/
 		.pclk = 688000000, /*//30fps case*/
@@ -143,6 +146,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*//grabwindow_height should be 16's N times*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
+		.mipi_pixel_rate = 403000000,
 	},
 	.slim_video = {/*VT Call*/
 		.pclk = 688000000, /*//30fps case*/
@@ -155,6 +159,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*//grabwindow_height should be 16's N times*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 215000000,
 	},
 	.margin = 8,		/* sensor framelength & shutter margin */
 	.min_shutter = 4,	/* min shutter */
@@ -2582,7 +2587,32 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_return_para_i32 = get_sensor_temperature();
 		*feature_para_len = 4;
 		break;
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
+		break;
 	default:
 		break;
 	}

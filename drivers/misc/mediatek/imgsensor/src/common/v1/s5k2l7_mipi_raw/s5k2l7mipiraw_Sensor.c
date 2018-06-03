@@ -791,16 +791,21 @@ static kal_uint16 set_gain(kal_uint16 leGain, kal_uint16 seGain)
 	/* [4:9] = M meams M X           */
 	/* Total gain = M + N /16 X   */
 
-	if (leGain < S5K2L7_GAIN_MIN || leGain > S5K2L7_GAIN_MAX) {
+	if (leGain < S5K2L7_GAIN_MIN) {
 		pr_debug("Error gain setting:LE=%x\n", leGain);
-		leGain = (leGain < S5K2L7_GAIN_MIN) ? S5K2L7_GAIN_MIN :
-			(leGain > S5K2L7_GAIN_MAX) ? S5K2L7_GAIN_MAX : leGain;
+		leGain = S5K2L7_GAIN_MIN;
 	}
-
-	if (seGain < S5K2L7_GAIN_MIN || seGain > S5K2L7_GAIN_MAX) {
+	if (leGain > S5K2L7_GAIN_MAX) {
+		pr_debug("Error gain setting:LE=%x\n", leGain);
+		leGain = S5K2L7_GAIN_MAX;
+	}
+	if (seGain < S5K2L7_GAIN_MIN) {
 		pr_debug("Error gain setting:SE=%x\n", seGain);
-		seGain = (seGain < S5K2L7_GAIN_MIN) ? S5K2L7_GAIN_MIN :
-			(seGain > S5K2L7_GAIN_MAX) ? S5K2L7_GAIN_MAX : seGain;
+		seGain = S5K2L7_GAIN_MIN;
+	}
+	if (seGain > S5K2L7_GAIN_MAX) {
+		pr_debug("Error gain setting:SE=%x\n", seGain);
+		seGain = S5K2L7_GAIN_MAX;
 	}
 #ifdef S5K2L7_DIGITAL_GAIN
 	write_cmos_sensor_twobyte(0x6028, 0x4000);
@@ -2036,7 +2041,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
 {
-	UINT32 sensor_id;
+	UINT32 sensor_id = 0;
 	UINT16 *feature_return_para_16 = (UINT16 *) feature_para;
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
