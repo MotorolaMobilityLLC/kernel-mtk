@@ -2338,10 +2338,8 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 					DBGLOG_MEM8(RX, WARN, prCurrSwRfb->pvHeader,
 						prCurrSwRfb->u2PacketLen > 32 ? 32:prCurrSwRfb->u2PacketLen);
 #if 0
-#if CFG_CHIP_RESET_SUPPORT
 				glGetRstReason(RST_GROUP4_NULL);
-				glResetTrigger(prAdapter);
-#endif
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 #endif
 				continue;
 			}

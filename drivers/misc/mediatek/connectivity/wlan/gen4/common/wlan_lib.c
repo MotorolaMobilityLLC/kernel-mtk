@@ -684,9 +684,6 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		default:
 			break;
 		}
-#if CFG_CHIP_RESET_SUPPORT
-		glResetTrigger(prAdapter, TRUE);
-#endif
 	}
 
 	return u4Status;
@@ -901,7 +898,7 @@ WLAN_STATUS wlanCheckWifiFunc(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgRdyChk)
 			HAL_WIFI_FUNC_GET_STATUS(prAdapter, u4Result);
 			DBGLOG(INIT, ERROR, "Waiting for %s: Timeout, Status=0x%08x\n",
 				fgRdyChk?"ready bit":"power off", u4Result);
-
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 			u4Status = WLAN_STATUS_FAILURE;
 
 			break;
@@ -920,10 +917,9 @@ WLAN_STATUS wlanPowerOffWifi(IN P_ADAPTER_T prAdapter)
 	/* Hif power off wifi */
 	rStatus = halHifPowerOffWifi(prAdapter);
 
-#if CFG_CHIP_RESET_SUPPORT
 	if (rStatus != WLAN_STATUS_SUCCESS)
-		glResetTrigger(prAdapter, TRUE);
-#endif
+		halDumpHifStatus(prAdapter, NULL, 0);
+
 	return rStatus;
 }
 
@@ -1742,10 +1738,8 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 					       "No response from chip for %u times, set NoAck flag!\n",
 					       prAdapter->ucOidTimeoutCount);
 #if 0
-#if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_OID_TIMEOUT);
-					glResetTrigger(prAdapter, TRUE);
-#endif
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 #endif
 				}
 
@@ -3276,6 +3270,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "u4Status 0x%x\n", u4Status);
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 			break;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
@@ -3301,6 +3296,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 						   prEventCmdResult->ucStatus);
 #endif
 					u4Status = WLAN_STATUS_FAILURE;
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 				} else {
 					u4Status = WLAN_STATUS_SUCCESS;
 				}
@@ -3959,6 +3955,7 @@ WLAN_STATUS wlanAccessRegisterStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 ucCmdSe
 					     ucPortIdx,
 					     prEvent,
 					     u4EventLen, &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) prEvent;
@@ -3968,11 +3965,13 @@ WLAN_STATUS wlanAccessRegisterStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 ucCmdSe
 				&& (ucSetQuery == 1)) ||
 				((prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_ACCESS_REG)
 				&& (ucSetQuery == 0))) {
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 				u4Status = WLAN_STATUS_FAILURE;
 				DBGLOG(INIT, ERROR,
 					"wlanAccessRegisterStatus: incorrect ucEID. ucSetQuery = 0x%x\n", ucSetQuery);
 			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
 				u4Status = WLAN_STATUS_FAILURE;
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 				DBGLOG(INIT, ERROR,
 					"wlanAccessRegisterStatus: incorrect ucCmdSeqNum. = 0x%x\n", ucCmdSeqNum);
 			} else {

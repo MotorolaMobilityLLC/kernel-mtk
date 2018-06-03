@@ -397,10 +397,8 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				prAdapter->u4OwnFailedLogCount++;
 				if (prAdapter->u4OwnFailedLogCount > LP_OWN_BACK_FAILED_RESET_CNT) {
 					/* Trigger RESET */
-#if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_DRV_OWN_FAIL);
-					glResetTrigger(prAdapter, FALSE);
-#endif
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 				}
 				GET_CURRENT_SYSTIME(&prAdapter->rLastOwnFailedLogTime);
 			}
@@ -466,10 +464,8 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 				if (fgTimeout) {
 					/* Trigger RESET */
-#if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_DRV_OWN_FAIL);
-					glResetTrigger(prAdapter, FALSE);
-#endif
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 				}
 
 				break;
@@ -1324,7 +1320,7 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 		if (u2RxPktNum > HIF_RX_MAX_AGG_NUM) {
 			halProcessAbnormalInterrupt(prAdapter);
-			glResetTrigger(prAdapter, TRUE);
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 			return;
 		}
 
@@ -1374,7 +1370,7 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			if (!u4RxLength) {
 				DBGLOG(RX, ERROR, "[%s] RxLength == 0\n", __func__);
 				halProcessAbnormalInterrupt(prAdapter);
-				glResetTrigger(prAdapter, TRUE);
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 				return;
 			}
 
@@ -1386,7 +1382,7 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 				DBGLOG(RX, ERROR, "[%s] Request_len(%d) >= Available_len(%d)\n",
 					__func__, (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
 				halProcessAbnormalInterrupt(prAdapter);
-				glResetTrigger(prAdapter, TRUE);
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 				return;
 			}
 		}
@@ -1960,6 +1956,8 @@ VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 	if (u4Data & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
 		DBGLOG(REQ, WARN, "Skip all SDIO Rx due to Rx underflow error!\n");
 		prAdapter->prGlueInfo->rHifInfo.fgSkipRx = TRUE;
+		halDumpHifStatus(prAdapter, NULL, 0);
+		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 	}
 
 	halDumpIntLog(prAdapter);

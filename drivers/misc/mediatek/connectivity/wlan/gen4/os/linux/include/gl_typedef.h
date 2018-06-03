@@ -126,7 +126,7 @@ typedef unsigned char UCHAR, *PUCHAR, **PPUCHAR;
 typedef unsigned char UINT_8, *PUINT_8, **PPUINT_8, *P_UINT_8;
 typedef unsigned short UINT_16, *PUINT_16, **PPUINT_16;
 typedef unsigned int UINT_32, *PUINT_32, **PPUINT_32;
-typedef unsigned long ULONG, *PULONG, *PPULONG;
+typedef unsigned long ULONG, *PULONG, **PPULONG;
 typedef unsigned long long UINT_64, *PUINT_64, **PPUINT_64;
 
 typedef unsigned int OS_SYSTIME, *POS_SYSTIME, **PPOS_SYSTIME;

@@ -941,9 +941,9 @@ struct PERF_MONITOR_T {
 	ULONG ulWlanRxTp; /* in Bps */
 	ULONG ulP2PTxTp; /* in Bps */
 	ULONG ulP2PRxTp; /* in Bps */
-	UINT32 u4UpdatePeriod; /* in ms */
-	UINT32 u4TarPerfLevel;
-	UINT32 u4CurrPerfLevel;
+	UINT_32 u4UpdatePeriod; /* in ms */
+	UINT_32 u4TarPerfLevel;
+	UINT_32 u4CurrPerfLevel;
 };
 
 /*

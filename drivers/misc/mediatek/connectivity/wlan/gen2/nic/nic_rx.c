@@ -1226,7 +1226,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			prAdapter->ucFlushCount = 0;
 #if 0
 			kalSendAeeWarning("[Fatal error! FW Flushed PKT too much!]", __func__);
-			glDoChipReset();
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 #endif
 		}
 
@@ -1781,6 +1781,7 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 #endif
 			nicRxReturnRFB(prAdapter, prSwRfb);
 			RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 			return;
 		}
 #endif
