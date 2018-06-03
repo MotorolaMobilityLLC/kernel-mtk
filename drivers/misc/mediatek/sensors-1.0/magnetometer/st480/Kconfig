@@ -1,0 +1,9 @@
+
+config MTK_ST480
+	bool "ST480 magnetometer for MediaTek package"
+	default n
+	help
+	  This configuration is for enable or disable ST480 magnetometer sensor support.
+		Say Y here if you want to support this sensor.
+		Say N if you not support it.
+		If no sure, say N.
