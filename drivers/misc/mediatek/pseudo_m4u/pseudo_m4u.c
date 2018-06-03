@@ -1416,14 +1416,20 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	struct sg_table *table = NULL;
 	int kernelport = m4u_user2kernel_port(eModuleID);
 	struct device *dev = m4u_get_larbdev(kernelport);
-	struct iommu_domain *domain = iommu_get_domain_for_dev(dev);
+	struct iommu_domain *domain;
 	unsigned long addr_align = MVA;
 	unsigned int size_align = BufSize;
 	int offset;
 
-	if (!dev || !domain) {
-		M4UMSG("%s, %d, dev or domain is NULL\n", __func__, __LINE__);
+	if (!dev) {
+		M4UMSG("%s, %d, dev is NULL\n", __func__, __LINE__);
 		return -EINVAL;
+	} else {
+		domain = iommu_get_domain_for_dev(dev);
+		if (!domain) {
+			M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
+			return -EINVAL;
+		}
 	}
 
 	M4UDBG
