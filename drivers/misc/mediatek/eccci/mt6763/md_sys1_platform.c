@@ -1005,7 +1005,7 @@ int ccci_modem_suspend(struct platform_device *dev, pm_message_t state)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccci_modem_suspend\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_suspend\n");
 	return 0;
 }
 
@@ -1013,7 +1013,7 @@ int ccci_modem_resume(struct platform_device *dev)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccci_modem_resume\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_resume\n");
 	return 0;
 }
 
@@ -1091,7 +1091,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 				 && cldma_reg_get_4msb_val(md_ctrl->cldma_ap_ao_base,
 					CLDMA_AP_UL_CURRENT_ADDR_BK_4MSB, md_ctrl->txq[i].index) == 0) {
 				if (i != 7) /* Queue 7 not used currently */
-					CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
+					CCCI_DEBUG_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
 				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base,
 					md_ctrl->txq[i].index,
 					md_ctrl->txq[i].tr_done->gpd_addr);
@@ -1142,7 +1142,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 
 int ccci_modem_syssuspend(void)
 {
-	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_syssuspend\n");
+	CCCI_DEBUG_LOG(0, TAG, "ccci_modem_syssuspend\n");
 	return 0;
 }
 
@@ -1150,7 +1150,7 @@ void ccci_modem_sysresume(void)
 {
 	struct ccci_modem *md;
 
-	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_sysresume\n");
+	CCCI_DEBUG_LOG(0, TAG, "ccci_modem_sysresume\n");
 	md = ccci_md_get_modem_by_id(0);
 	if (md != NULL)
 		ccci_modem_restore_reg(md);
