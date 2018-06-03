@@ -93,10 +93,10 @@
 #ifdef EP_STAGE
 #define EP_MARK_SMI
 #define DUMMY_INT    /*for EP if load dont need to use camera*/
+#define EP_NO_PMQOS /* If PMQoS is not ready on EP stage */
 #define EP_NO_CLKMGR /* for clkmgr*/
 #endif
 
-#define EP_NO_PMQOS /* If PMQoS is not ready on EP stage */
 #ifndef EP_NO_PMQOS
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
