@@ -179,6 +179,9 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 	} else
 		return -1;
 
+	/* default is max_cap if we don't find a match */
+	sel_idx = sge->nr_cap_states - 1;
+
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;

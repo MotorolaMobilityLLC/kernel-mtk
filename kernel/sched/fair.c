@@ -5163,21 +5163,25 @@ long group_norm_util(struct energy_env *eenv, struct sched_group *sg)
 static int find_new_capacity(struct energy_env *eenv,
 	const struct sched_group_energy *const sge)
 {
-	int idx;
 	unsigned long util = group_max_util(eenv);
 	unsigned long new_capacity = util;
+	int idx, max_idx = sge->nr_cap_states - 1;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
 
-	for (idx = 0; idx < sge->nr_cap_states; idx++) {
-		if (sge->cap_states[idx].cap >= new_capacity)
-			break;
-	}
+	/* default is max_cap if we don't find a match */
+	eenv->cap_idx = max_idx;
 
-	eenv->cap_idx = idx;
+	for (idx = 0; idx < sge->nr_cap_states; idx++) {
+		if (sge->cap_states[idx].cap >= new_capacity) {
+			/* Keep track of SG's capacity index */
+			eenv->cap_idx = idx;
+			break;
+		}
+	}
 
 	return idx;
 }
