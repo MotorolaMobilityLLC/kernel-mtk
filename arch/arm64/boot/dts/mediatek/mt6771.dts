@@ -988,6 +988,19 @@
 		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	wifi: wifi@180f0000 {
+		compatible = "mediatek,wifi";
+		reg = <0 0x180f0000 0 0x1100>, /* WIFI-HIF base */
+		      <0 0x10212180 0 0x06c>;  /* DMA base */
+		interrupts = <GIC_SPI 290 IRQ_TYPE_LEVEL_LOW>, /* WIFI-HIF IRQ */
+			     <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>; /* DMA IRQ */
+		clocks = <&infracfg_ao INFRACFG_AO_CQ_DMA_CG>;
+		clock-names = "wifi-dma";
+		hardware-values = <0x00000788>, /* HW code */
+				  <0x000a5800>, /* FW load addr */
+				  <0x000a5800>; /* FW start addr */
+	};
+
 	mipi_tx0@11e50000 {
 		compatible = "mediatek,mipi_tx0";
 		reg = <0 0x11e50000 0 0x1000>;
