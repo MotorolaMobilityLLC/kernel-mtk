@@ -24,13 +24,13 @@ extern void mt_power_gs_f_dump_suspend(unsigned int dump_flag);
 extern void mt_power_gs_f_dump_dpidle(unsigned int dump_flag);
 extern void mt_power_gs_f_dump_sodi3(unsigned int dump_flag);
 
-typedef enum {
+enum {
 	GS_PMIC = (0x1 << 0),
 	GS_CG   = (0x1 << 1),
 	GS_DCM  = (0x1 << 2),
 	/* GS_ALL will need to be modified, if the gs_dump_flag is changed */
 	GS_ALL  = (GS_PMIC | GS_CG | GS_DCM),
-} gs_dump_flag;
+};
 
 #define GS_COUNT_PARMS2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _, ...) _
 #define GS_COUNT_PARMS(...) \
