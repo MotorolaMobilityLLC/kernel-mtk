@@ -101,8 +101,9 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
 		rcu_read_lock();
 		reg_instance.ptask = current;
 		rcu_read_unlock();
-
 	} else {
+		reg_instance.ptask = NULL;
+
 		/* Disable interrupt before power off */
 		pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");
 		pmic_enable_interrupt(INT_VCAMD_OC, 0, "camera");
