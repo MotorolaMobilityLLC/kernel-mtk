@@ -48,6 +48,7 @@
 #include <linux/stacktrace.h>
 #include "ccmni.h"
 #include "ccci_debug.h"
+#include <mt-plat/met_drv.h>
 
 
 struct ccmni_ctl_block *ccmni_ctl_blk[MAX_MD_NUM];
@@ -191,6 +192,100 @@ static inline int arp_reply(int md_id, struct net_device *dev, struct ethhdr *et
 	return 1;
 }
 
+static inline int ccmni_forward_rx(struct ccmni_instance *ccmni, struct sk_buff *skb)
+{
+	bool flt_ok = false;
+	bool flt_flag = true;
+	unsigned int pkt_type;
+	struct iphdr *iph;
+	struct ipv6hdr *iph6;
+	struct ccmni_fwd_filter flt_tmp;
+	unsigned int i, j;
+	u16 mask;
+	u32 *addr1, *addr2;
+
+	if (ccmni->flt_cnt) {
+		for (i = 0; i < CCMNI_FLT_NUM; i++) {
+			flt_tmp = ccmni->flt_tbl[i];
+			pkt_type = skb->data[0] & 0xF0;
+			if (!flt_tmp.ver || (flt_tmp.ver != pkt_type))
+				continue;
+
+			if (pkt_type == IPV4_VERSION) {
+				iph = (struct iphdr *)skb->data;
+				mask = flt_tmp.s_pref;
+				addr1 = &iph->saddr;
+				addr2 = &flt_tmp.ipv4.saddr;
+				flt_flag = true;
+				for (j = 0; flt_flag && j < 2; j++) {
+					if (mask && (addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					mask = flt_tmp.d_pref;
+					addr1 = &iph->daddr;
+					addr2 = &flt_tmp.ipv4.daddr;
+				}
+			} else if (pkt_type == IPV6_VERSION) {
+				iph6 = (struct ipv6hdr *)skb->data;
+				mask = flt_tmp.s_pref;
+				addr1 = iph6->saddr.s6_addr32;
+				addr2 = flt_tmp.ipv6.saddr;
+				flt_flag = true;
+				for (j = 0; flt_flag && j < 2; j++) {
+					if (mask == 0) {
+						mask = flt_tmp.d_pref;
+						addr1 = iph6->daddr.s6_addr32;
+						addr2 = flt_tmp.ipv6.daddr;
+						continue;
+					}
+					if (mask <= 32 &&
+					(addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 64 && (addr1[0] != addr2[0] ||
+					addr1[1] >> (64 - mask) != addr2[1] >> (64 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 96 && (addr1[0] != addr2[0] || addr1[1] != addr2[1] ||
+					addr1[2] >> (96 - mask) != addr2[2] >> (96 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 128 && (addr1[0] != addr2[0] ||
+					addr1[1] != addr2[1] || addr1[2] != addr2[2] ||
+					addr1[3] >> (128 - mask) != addr2[3] >> (128 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					mask = flt_tmp.d_pref;
+					addr1 = iph6->daddr.s6_addr32;
+					addr2 = flt_tmp.ipv6.daddr;
+				}
+			}
+			if (flt_flag) {
+				flt_ok = true;
+				break;
+			}
+		}
+
+		if (flt_ok) {
+			skb->ip_summed = CHECKSUM_NONE;
+			skb_set_mac_header(skb, -ETH_HLEN);
+
+			if (!in_interrupt())
+				netif_rx_ni(skb);
+			else
+				netif_rx(skb);
+			return NETDEV_TX_OK;
+		}
+	}
+
+	return -1;
+}
+
 
 /********************netdev register function********************/
 static u16 ccmni_select_queue(struct net_device *dev, struct sk_buff *skb,
@@ -284,94 +379,15 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	unsigned int count = 0;
 	struct ethhdr *eth;
 	__be16 type;
-	bool flt_ok = false;
-	bool flt_flag = true;
-	unsigned int pkt_type;
 	struct iphdr *iph;
-	struct ipv6hdr *iph6;
-	struct ccmni_fwd_filter flt_tmp;
-	unsigned int i, j;
-	u16 mask;
-	u32 *addr1, *addr2;
 
-	if (ccmni->flt_cnt) {
-		for (i = 0; i < CCMNI_FLT_NUM; i++) {
-			flt_tmp = ccmni->flt_tbl[i];
-			pkt_type = skb->data[0] & 0xF0;
-			if (!flt_tmp.ver || (flt_tmp.ver != pkt_type))
-				continue;
+#if defined(CCMNI_MET_DEBUG)
+	char tag_name[32] = { '\0' };
+	unsigned int tag_id = 0;
+#endif
 
-			if (pkt_type == IPV4_VERSION) {
-				iph = (struct iphdr *)skb->data;
-				mask = flt_tmp.s_pref;
-				addr1 = &iph->saddr;
-				addr2 = &flt_tmp.ipv4.saddr;
-				flt_flag = true;
-				for (j = 0; flt_flag && j < 2; j++) {
-					if (mask && (addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
-						flt_flag = false;
-						break;
-					}
-					mask = flt_tmp.d_pref;
-					addr1 = &iph->daddr;
-					addr2 = &flt_tmp.ipv4.daddr;
-				}
-			} else if (pkt_type == IPV6_VERSION) {
-				iph6 = (struct ipv6hdr *)skb->data;
-				mask = flt_tmp.s_pref;
-				addr1 = iph6->saddr.s6_addr32;
-				addr2 = flt_tmp.ipv6.saddr;
-				flt_flag = true;
-				for (j = 0; flt_flag && j < 2; j++) {
-					if (mask == 0) {
-						mask = flt_tmp.d_pref;
-						addr1 = iph6->daddr.s6_addr32;
-						addr2 = flt_tmp.ipv6.daddr;
-						continue;
-					}
-					if (mask <= 32 &&
-					(addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
-						flt_flag = false;
-						break;
-					}
-					if (mask <= 64 && (addr1[0] != addr2[0] ||
-					addr1[1] >> (64 - mask) != addr2[1] >> (64 - mask))) {
-						flt_flag = false;
-						break;
-					}
-					if (mask <= 96 && (addr1[0] != addr2[0] || addr1[1] != addr2[1] ||
-					addr1[2] >> (96 - mask) != addr2[2] >> (96 - mask))) {
-						flt_flag = false;
-						break;
-					}
-					if (mask <= 128 && (addr1[0] != addr2[0] ||
-					addr1[1] != addr2[1] || addr1[2] != addr2[2] ||
-					addr1[3] >> (128 - mask) != addr2[3] >> (128 - mask))) {
-						flt_flag = false;
-						break;
-					}
-					mask = flt_tmp.d_pref;
-					addr1 = iph6->daddr.s6_addr32;
-					addr2 = flt_tmp.ipv6.daddr;
-				}
-			}
-			if (flt_flag) {
-				flt_ok = true;
-				break;
-			}
-		}
-
-		if (flt_ok) {
-			skb->ip_summed = CHECKSUM_NONE;
-			skb_set_mac_header(skb, -ETH_HLEN);
-
-			if (!in_interrupt())
-				netif_rx_ni(skb);
-			else
-				netif_rx(skb);
-			return NETDEV_TX_OK;
-		}
-	}
+	if (ccmni_forward_rx(ccmni, skb) == NETDEV_TX_OK)
+		return NETDEV_TX_OK;
 
 	/*if data_len=1500 with mac_header for ccmni-lan, skb->len>MTU,so it must before MTU judgement */
 	if (IS_CCMNI_LAN(dev)) {
@@ -447,6 +463,19 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			      ccmni->index, dev->stats.tx_packets, is_ack, ccmni->tx_busy_cnt[is_ack]);
 	}
 	ccmni->tx_busy_cnt[is_ack] = 0;
+
+#if defined(CCMNI_MET_DEBUG)
+	if (ccmni->tx_met_time == 0) {
+		ccmni->tx_met_time = jiffies;
+		ccmni->tx_met_bytes = dev->stats.tx_bytes;
+	} else if (time_after_eq(jiffies, ccmni->tx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
+		sprintf(tag_name, "%s_tx_bytes", dev->name);
+		tag_id = CCMNI_TX_MET_ID + ccmni->index;
+		met_tag_oneshot(tag_id, tag_name, (dev->stats.tx_bytes - ccmni->tx_met_bytes));
+		ccmni->tx_met_bytes = dev->stats.tx_bytes;
+		ccmni->tx_met_time = jiffies;
+	}
+#endif
 
 	return NETDEV_TX_OK;
 
@@ -827,8 +856,12 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 		goto alloc_mem_fail;
 	}
 
-	ccmni_ctl_blk[md_id] = ctlb;
+#if defined(CCMNI_MET_DEBUG)
+	if (met_tag_init() != 0)
+		CCMNI_INF_MSG(md_id, "ccmni_init:met tag init fail\n");
+#endif
 
+	ccmni_ctl_blk[md_id] = ctlb;
 	memcpy(ctlb->ccci_ops, ccci_info, sizeof(struct ccmni_ccci_ops));
 
 	for (i = 0; i < ctlb->ccci_ops->ccmni_num; i++) {
@@ -1009,6 +1042,11 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 #if defined(CCCI_SKB_TRACE)
 	struct iphdr *iph;
 #endif
+#if defined(CCMNI_MET_DEBUG)
+	char tag_name[32] = { '\0' };
+	unsigned int tag_id = 0;
+#endif
+
 
 	if (unlikely(ctlb == NULL || ctlb->ccci_ops == NULL)) {
 		CCMNI_PR_ERR(md_id, "invalid CCMNI%d ctrl/ops struct\n", ccmni_idx);
@@ -1065,6 +1103,19 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	}
 	dev->stats.rx_packets++;
 	dev->stats.rx_bytes += skb_len;
+
+#if defined(CCMNI_MET_DEBUG)
+	if (ccmni->rx_met_time == 0) {
+		ccmni->rx_met_time = jiffies;
+		ccmni->rx_met_bytes = dev->stats.rx_bytes;
+	} else if (time_after_eq(jiffies, ccmni->rx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
+		sprintf(tag_name, "%s_rx_bytes", dev->name);
+		tag_id = CCMNI_RX_MET_ID + ccmni_idx;
+		met_tag_oneshot(tag_id, tag_name, (dev->stats.rx_bytes - ccmni->rx_met_bytes));
+		ccmni->rx_met_bytes = dev->stats.rx_bytes;
+		ccmni->rx_met_time = jiffies;
+	}
+#endif
 
 	wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 
