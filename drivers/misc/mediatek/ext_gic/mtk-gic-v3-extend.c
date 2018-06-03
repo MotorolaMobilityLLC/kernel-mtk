@@ -32,6 +32,12 @@
 #include <linux/irqchip/mtk-gic-extend.h>
 #include <linux/io.h>
 #include <mt-plat/mtk_secure_api.h>
+#ifdef CONFIG_CPU_PM
+#include <linux/cpu_pm.h>
+#endif
+#ifdef CONFIG_PM_SLEEP
+#include <linux/syscore_ops.h>
+#endif
 
 #define IOMEM(x)	((void __force __iomem *)(x))
 /* for cirq use */
@@ -39,6 +45,7 @@ void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
 void __iomem *INT_POL_CTL1;
 static void __iomem *GIC_REDIST_BASE;
+void __iomem *MCUSYS_BASE;
 static u32 reg_len_pol0;
 
 #ifndef readq
@@ -535,6 +542,94 @@ void _mt_irq_set_polarity(unsigned int hwirq, unsigned int polarity)
 	_mt_set_pol_reg(base + reg*4, value);
 }
 #endif
+
+#define GIC_INT_MASK (MCUSYS_BASE + 0x5e8)
+#define GIC500_ACTIVE_SEL_SHIFT 3
+#define GIC500_ACTIVE_SEL_MASK (0x7 << GIC500_ACTIVE_SEL_SHIFT)
+#define GIC500_ACTIVE_CPU_SHIFT 16
+#define GIC500_ACTIVE_CPU_MASK (0xff << GIC500_ACTIVE_CPU_SHIFT)
+static spinlock_t domain_lock;
+
+int add_cpu_to_prefer_schedule_domain(unsigned long cpu)
+{
+	unsigned long domain;
+
+	spin_lock(&domain_lock);
+	domain = ioread32(GIC_INT_MASK);
+	domain = domain | (1 << (cpu + GIC500_ACTIVE_CPU_SHIFT));
+	iowrite32(domain, GIC_INT_MASK);
+	spin_unlock(&domain_lock);
+	return 0;
+}
+
+int remove_cpu_from_prefer_schedule_domain(unsigned long cpu)
+{
+	unsigned long domain;
+
+	spin_lock(&domain_lock);
+	domain = ioread32(GIC_INT_MASK);
+	domain = domain & ~(1 << (cpu + GIC500_ACTIVE_CPU_SHIFT));
+	iowrite32(domain, GIC_INT_MASK);
+	spin_unlock(&domain_lock);
+	return 0;
+}
+
+#ifdef CONFIG_CPU_PM
+static int gic_sched_pm_notifier(struct notifier_block *self,
+			       unsigned long cmd, void *v)
+{
+	unsigned int cur_cpu = smp_processor_id();
+
+	if (cmd == CPU_PM_EXIT)
+		remove_cpu_from_prefer_schedule_domain(cur_cpu);
+	else if (cmd == CPU_PM_ENTER)
+		add_cpu_to_prefer_schedule_domain(cur_cpu);
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block gic_sched_pm_notifier_block = {
+	.notifier_call = gic_sched_pm_notifier,
+};
+
+static void gic_sched_pm_init(void)
+{
+	cpu_pm_register_notifier(&gic_sched_pm_notifier_block);
+}
+
+#else
+static inline void gic_cpu_pm_init(void) { }
+#endif /* CONFIG_CPU_PM */
+
+#ifdef CONFIG_HOTPLUG_CPU
+static int gic_sched_hotplug_callback(struct notifier_block *nfb,
+				      unsigned long action, void *hcpu)
+{
+	switch (action) {
+	case CPU_ONLINE:
+		add_cpu_to_prefer_schedule_domain((unsigned long)hcpu);
+		break;
+	case CPU_DOWN_PREPARE:
+		remove_cpu_from_prefer_schedule_domain((unsigned long)hcpu);
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+struct notifier_block gic_sched_nfb = {
+	.notifier_call = gic_sched_hotplug_callback
+};
+
+static void gic_sched_hoplug_init(void)
+{
+	register_cpu_notifier(&gic_sched_nfb);
+}
+#else
+static void gic_sched_hoplug_init(void){};
+#endif
+
 int __init mt_gic_ext_init(void)
 {
 	struct device_node *node;
@@ -566,6 +661,12 @@ int __init mt_gic_ext_init(void)
 	if (of_property_read_u32(node, "mediatek,reg_len_pol0",
 				&reg_len_pol0))
 		reg_len_pol0 = 0;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
+	MCUSYS_BASE = of_iomap(node, 0);
+	spin_lock_init(&domain_lock);
+	gic_sched_pm_init();
+	gic_sched_hoplug_init();
 
 	pr_notice("### gic-v3 init done. ###\n");
 

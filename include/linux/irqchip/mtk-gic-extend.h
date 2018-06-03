@@ -71,6 +71,8 @@ extern void mt_irq_dump_status(int irq);
 void mt_gic_set_priority(unsigned int irq);
 void mt_set_irq_priority(unsigned int irq, unsigned int priority);
 unsigned int mt_get_irq_priority(unsigned int irq);
+int add_cpu_to_prefer_schedule_domain(unsigned long cpu);
+int remove_cpu_from_prefer_schedule_domain(unsigned long cpu);
 #ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
 extern void __iomem *get_dist_base(void);
 extern u32 mt_irq_get_en_hw(unsigned int hwirq);
