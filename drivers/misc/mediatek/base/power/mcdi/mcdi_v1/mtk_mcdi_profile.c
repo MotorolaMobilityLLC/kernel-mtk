@@ -236,7 +236,7 @@ static ssize_t mcdi_profile_read(struct file *filp,
 	struct {
 		unsigned int sec[DISTRIBUTE_NUM];
 		unsigned int total;
-	} cnt[2] = {0};
+	} cnt[2] = { { { 0 }, 0 }, { { 0 }, 0 } };
 
 #ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
 	struct mcdi_prof_breakdown *p_prof =
