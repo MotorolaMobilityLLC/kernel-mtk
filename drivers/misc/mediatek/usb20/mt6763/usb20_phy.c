@@ -29,6 +29,8 @@
 #include <linux/of_address.h>
 #endif
 
+#include <mt-plat/mtk_boot_common.h>
+
 #define FRA (48)
 #define PARA (28)
 
@@ -699,6 +701,11 @@ void Charger_Detect_Init(void)
 	unsigned long flags;
 	int do_lock = 0;
 
+	if ((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT)) {
+		DBG(0, "%s Skip\n", __func__);
+		return;
+	}
+
 	if (mtk_musb) {
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
@@ -726,6 +733,11 @@ void Charger_Detect_Release(void)
 {
 	unsigned long flags;
 	int do_lock = 0;
+
+	if ((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT)) {
+		DBG(0, "%s Skip\n", __func__);
+		return;
+	}
 
 	if (mtk_musb) {
 		spin_lock_irqsave(&mtk_musb->lock, flags);
