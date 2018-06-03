@@ -970,6 +970,7 @@ static long vcodec_lockhw(unsigned long arg)
 		MODULE_MFV_PR_DEBUG("VCODEC_LOCKHWed - tid = %d\n", current->pid);
 	} else {
 		MODULE_MFV_PR_ERR("[WARNING] VCODEC_LOCKHW Unknown instance\n");
+		MODULE_MFV_PR_DEBUG("Unknown instance type:%d\n", rHWLock.eDriverType);
 		return -EFAULT;
 	}
 
