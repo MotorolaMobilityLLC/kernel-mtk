@@ -287,7 +287,7 @@ struct ccu_cmd_s {
 	enum ccu_eng_status_e status;
 };
 
-#define CCU_IMPORT_BUF_NUM	12
+#define CCU_IMPORT_BUF_NUM	14
 struct import_mem_s {
 	uint32_t memID[CCU_IMPORT_BUF_NUM];
 };
