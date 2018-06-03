@@ -117,7 +117,7 @@ do { \
 	if (g_IsNeedDoChipReset) { \
 		g_IsNeedDoChipReset = 0; \
 		WIFI_ERR_FUNC("Do core dump and chip reset in %s line %d\n", __func__, __LINE__); \
-		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40); \
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
 	} \
 } while (0)
 

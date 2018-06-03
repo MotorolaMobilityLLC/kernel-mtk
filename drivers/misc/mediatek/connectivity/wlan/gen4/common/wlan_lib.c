@@ -684,6 +684,9 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		default:
 			break;
 		}
+#if CFG_CHIP_RESET_SUPPORT
+		glDoCoreDump();
+#endif
 	}
 
 	return u4Status;
@@ -917,6 +920,10 @@ WLAN_STATUS wlanPowerOffWifi(IN P_ADAPTER_T prAdapter)
 	/* Hif power off wifi */
 	rStatus = halHifPowerOffWifi(prAdapter);
 
+#if CFG_CHIP_RESET_SUPPORT
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		glDoCoreDump();
+#endif
 	return rStatus;
 }
 

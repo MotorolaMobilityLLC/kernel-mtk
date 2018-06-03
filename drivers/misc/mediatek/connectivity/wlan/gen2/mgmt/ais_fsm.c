@@ -3706,7 +3706,7 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	if (prAdapter->fgTestMode == FALSE) {
 		/* Titus - xxx */
 		/* assert if and only if in normal mode */
-		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40);
 	}
 #endif
 	/* report all scanned frames to upper layer to avoid scanned frame is timeout */
