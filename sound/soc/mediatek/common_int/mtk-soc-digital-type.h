@@ -122,6 +122,7 @@ enum soc_aud_afe_io_block {
 	Soc_Aud_AFE_IO_Block_ADDA_UL,
 	Soc_Aud_AFE_IO_Block_ADDA_UL2,
 	Soc_Aud_AFE_IO_Block_ADDA_UL_LCH,
+	Soc_Aud_AFE_IO_Block_ADDA_UL_RCH,
 	/* I2S */
 	Soc_Aud_AFE_IO_Block_I2S0,
 	Soc_Aud_AFE_IO_Block_I2S0_CH2,
