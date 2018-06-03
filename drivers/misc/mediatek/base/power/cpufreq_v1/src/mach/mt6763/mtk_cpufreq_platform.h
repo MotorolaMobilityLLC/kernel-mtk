@@ -39,7 +39,10 @@
 
 #define CSRAM_BASE		0x0011bc00
 #define CSRAM_SIZE		0x1400		/* 5K bytes */
+
+#define DVFS_LOG_NUM		150
 #define ENTRY_EACH_LOG		5
+
 #define MT_CPU_DVFS_B	MT_CPU_DVFS_L
 
 extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];

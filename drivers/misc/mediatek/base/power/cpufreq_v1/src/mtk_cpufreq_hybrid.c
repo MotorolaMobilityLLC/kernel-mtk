@@ -84,7 +84,7 @@ static void __iomem *csram_base;
 #define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
 #define OFFS_DATA_S		0x02a0
 #define OFFS_LOG_S		0x03d0
-#define OFFS_LOG_E		0x1438
+#define OFFS_LOG_E		(OFFS_LOG_S + DVFS_LOG_NUM * ENTRY_EACH_LOG * 4)
 
 #define MAX_LOG_FETCH 40
 /* log_box_parsed[MAX_LOG_FETCH] is also used to save last log entry */
@@ -419,39 +419,39 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
 
-#define OFFS_TURBO_FREQ	0x02a4 /* 169 */
-#define OFFS_TURBO_VOLT	0x02a8 /* 170 */
+#define OFFS_TURBO_FREQ		0x02a4	/* 169 */
+#define OFFS_TURBO_VOLT		0x02a8	/* 170 */
 
-#define OFFS_TURBO_EN	0x02b8 /* 202 */
-#define OFFS_SCHED_EN	0x02bc /* 203 */
-#define OFFS_STRESS_EN	0x02c0 /* 204 */
-
-/* ICCS idx */
-#define OFFS_ICCS_IDX_S  0x0310 /* 196 */
-#define OFFS_ICCS_IDX_E  0x0318 /* 198 */
-
-/* CUR Vproc */
-#define OFFS_CUR_VPROC_S  0x032c
-#define OFFS_CUR_VPROC_E  0x0350
-
-/* CUR idx */
-#define OFFS_CUR_FREQ_S  0x0354 /* 213 */
-#define OFFS_CUR_FREQ_E  0x0378 /* 222 */
-
-/* WFI idx */
-#define OFFS_WFI_S		0x037c /* 223 */
-#define OFFS_WFI_E		0x03a0 /* 232 */
-
-/* Schedule assist idx */
-#define OFFS_SCHED_S		0x03a4 /* 233 */
-#define OFFS_SCHED_E		0x03c8 /* 242 */
-
-/* PPM idx */
-#define OFFS_PPM_LIMIT_S  0x0320 /* 200 */
+#define OFFS_TURBO_EN		0x02b8	/* 174 */
+#define OFFS_SCHED_DIS		0x02bc	/* 175 */
+#define OFFS_STRESS_EN		0x02c0	/* 176 */
 
 /* EEM Update Flag */
-#define OFFS_EEM_S		0x0300 /* 192 */
-#define OFFS_EEM_E		0x030c /* 195 */
+#define OFFS_EEM_S		0x0300	/* 192 */
+#define OFFS_EEM_E		0x030c	/* 195 */
+
+/* ICCS idx */
+#define OFFS_ICCS_IDX_S		0x0310	/* 196 */
+#define OFFS_ICCS_IDX_E		0x0318	/* 198 */
+
+/* PPM idx */
+#define OFFS_PPM_LIMIT_S	0x0320	/* 200 */
+
+/* CUR Vproc */
+#define OFFS_CUR_VPROC_S	0x032c	/* 203 */
+#define OFFS_CUR_VPROC_E	0x0350	/* 212 */
+
+/* CUR idx */
+#define OFFS_CUR_FREQ_S		0x0354	/* 213 */
+#define OFFS_CUR_FREQ_E		0x0378	/* 222 */
+
+/* WFI idx */
+#define OFFS_WFI_S		0x037c	/* 223 */
+#define OFFS_WFI_E		0x03a0	/* 232 */
+
+/* Schedule assist idx */
+#define OFFS_SCHED_S		0x03a4	/* 233 */
+#define OFFS_SCHED_E		0x03c8	/* 242 */
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
 static int _mt_dvfsp_pdrv_probe(struct platform_device *pdev)
@@ -553,14 +553,14 @@ int cpuhvfs_get_sched_dvfs_disable(void)
 {
 	unsigned int disable;
 
-	disable = csram_read(OFFS_SCHED_EN);
+	disable = csram_read(OFFS_SCHED_DIS);
 
 	return disable;
 }
 
 int cpuhvfs_set_sched_dvfs_disable(unsigned int disable)
 {
-	csram_write(OFFS_SCHED_EN, disable);
+	csram_write(OFFS_SCHED_DIS, disable);
 	return 0;
 }
 
@@ -769,45 +769,45 @@ void cpuhvfs_pvt_tbl_create(void)
 		/* Freq, Vproc, post_div, clk_div */
 		/* LL [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i] =
-			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 1) & 0xFFF) << 16) |
-			(*(recordTbl + (i * ARRAY_ROW_SIZE)) & 0xFFFF);
+			((*(recordTbl + (i * ARRAY_COL_SIZE) + 1) & 0xFFF) << 16) |
+			(*(recordTbl + (i * ARRAY_COL_SIZE)) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i, recordRef[i]);
 		/* LL [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + NR_FREQ] =
-			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 3) & 0xFF) << 16) |
-			(*(recordTbl + (i * ARRAY_ROW_SIZE) + 2) & 0xFF);
+			((*(recordTbl + (i * ARRAY_COL_SIZE) + 3) & 0xFF) << 16) |
+			(*(recordTbl + (i * ARRAY_COL_SIZE) + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + NR_FREQ, recordRef[i + NR_FREQ]);
 		/* L [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 36] =
-			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
-			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
+			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
+			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36, recordRef[i + 36]);
 		/* L [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 36 + NR_FREQ] =
-			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 3) & 0xFF) << 16) |
-			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
+			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
+			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36 + NR_FREQ, recordRef[i + 36 + NR_FREQ]);
 		/* CCI [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 72] =
-			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
-			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
+			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
+			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
 		/* CCI [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 72 + NR_FREQ] =
-			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 3) & 0xFFF) << 16) |
-			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
+			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 3) & 0xFFF) << 16) |
+			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
 
 		if (NR_MT_CPU_DVFS > 3) {
 			/* BIG [31:16] = Vproc, [15:0] = Freq */
 			recordRef[i + 108] =
-				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
-				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
+				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
+				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 			cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
 			/* BIG [31:16] = postdiv, [15:0] = clkdiv */
 			recordRef[i + 108 + NR_FREQ] =
-				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 3) & 0xFF) << 16) |
-				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
+				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
+				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 			cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108 + NR_FREQ,
 				recordRef[i + 108 + NR_FREQ]);
 		}
@@ -826,7 +826,7 @@ static int dbg_repo_show(struct seq_file *m, void *v)
 	char ch;
 
 	for (i = 0; i < DBG_REPO_NUM; i++) {
-		if (i >= REPO_I_LOG_S && (i - REPO_I_LOG_S) % ENTRY_EACH_LOG >= (ENTRY_EACH_LOG - 2))
+		if (i >= REPO_I_LOG_S && (i - REPO_I_LOG_S) % ENTRY_EACH_LOG == 0)
 			ch = ':';	/* timestamp */
 		else
 			ch = '.';

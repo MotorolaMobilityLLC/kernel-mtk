@@ -116,12 +116,10 @@ static int _cpufreq_set_locked_secure(struct cpufreq_policy *policy, struct mt_c
 
 	aee_record_cpu_dvfs_step(1);
 
-#ifdef CONFIG_CPU_FREQ
 	if (!policy) {
 		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
 		goto out;
 	}
-#endif
 
 	cpuhvfs_set_dvfs(arch_get_cluster_id(p->cpu_id), target_khz);
 
@@ -535,22 +533,18 @@ static int _cpufreq_set_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
 	struct pll_ctrl_t *pcci_p;
 
-#ifdef CONFIG_CPU_FREQ
 	struct cpufreq_freqs freqs;
 	unsigned int target_khz_orig = target_khz;
-#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	if (dvfs_disable_flag == 1)
 		return 0;
 
-#ifdef CONFIG_CPU_FREQ
 	if (!policy) {
 		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
 		goto out;
 	}
-#endif
 
 	/* MCSI Output */
 	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
@@ -592,14 +586,12 @@ static int _cpufreq_set_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 
 	aee_record_cpu_dvfs_step(2);
 
-#ifdef CONFIG_CPU_FREQ
 	freqs.old = cur_khz;
 	freqs.new = target_khz_orig;
 	if (policy) {
 		freqs.cpu = policy->cpu;
 		cpufreq_freq_transition_begin(policy, &freqs);
 	}
-#endif
 
 	aee_record_cpu_dvfs_step(3);
 
@@ -609,10 +601,8 @@ static int _cpufreq_set_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 
 	aee_record_cpu_dvfs_step(12);
 
-#ifdef CONFIG_CPU_FREQ
 	if (policy)
 		cpufreq_freq_transition_end(policy, &freqs, 0);
-#endif
 
 	aee_record_cpu_dvfs_step(13);
 
@@ -693,18 +683,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, struct mt_cpu_dvfs *p
 
 	aee_record_cpu_dvfs_in(p);
 
-#ifdef CONFIG_CPU_FREQ
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	ret = _cpufreq_set_locked_secure(policy, p, target_freq, log);
 #else
 	ret = _cpufreq_set_locked(policy, p, target_freq, log);
-#endif
-#else
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	ret = _cpufreq_set_locked_secure(NULL, p, target_freq, log);
-#else
-	ret = _cpufreq_set_locked(NULL, p, target_freq, log);
-#endif
 #endif
 
 	aee_record_cpu_dvfs_out(p);
@@ -1041,7 +1023,6 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
 
-#ifdef CONFIG_CPU_FREQ
 	ret = cpufreq_frequency_table_cpuinfo(policy, p->freq_tbl_for_cpufreq);
 
 	if (!ret)
@@ -1049,7 +1030,6 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 
 	cpumask_copy(policy->cpus, topology_core_cpumask(policy->cpu));
 	cpumask_copy(policy->related_cpus, policy->cpus);
-#endif
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
@@ -1105,6 +1085,7 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 
 static void ppm_limit_callback(struct ppm_client_req req)
 {
+#ifndef CONFIG_HYBRID_CPU_DVFS
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
@@ -1130,13 +1111,10 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			p->idx_opp_ppm_limit = ppm->cpu_limit[i].max_cpufreq_idx;	/* ppm update limit */
 		}
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-		cpuhvfs_set_mix_max(arch_get_cluster_id(p->cpu_id), p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
-#endif
+		/*cpuhvfs_set_mix_max(arch_get_cluster_id(p->cpu_id), p->idx_opp_ppm_base, p->idx_opp_ppm_limit);*/
 	}
 	cpufreq_para_unlock(flags);
 
-#ifndef CONFIG_HYBRID_CPU_DVFS
 	/* Don't care the parameters */
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
 #endif
@@ -1289,7 +1267,6 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 	return cpu_dvfs_get_cur_freq(p);
 }
 
-#ifdef CONFIG_CPU_FREQ
 static struct freq_attr *_mt_cpufreq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
 	NULL,
@@ -1305,7 +1282,6 @@ static struct cpufreq_driver _mt_cpufreq_driver = {
 	.name = "mt-cpufreq",
 	.attr = _mt_cpufreq_attr,
 };
-#endif
 
 /*
  * Platform driver
@@ -1412,9 +1388,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 	}
 
-#ifdef CONFIG_CPU_FREQ
 	cpufreq_register_driver(&_mt_cpufreq_driver);
-#endif
 
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 
@@ -1440,9 +1414,7 @@ static int _mt_cpufreq_pdrv_remove(struct platform_device *pdev)
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 	unregister_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
-#ifdef CONFIG_CPU_FREQ
 	cpufreq_unregister_driver(&_mt_cpufreq_driver);
-#endif
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
