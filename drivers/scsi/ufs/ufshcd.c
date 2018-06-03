@@ -189,8 +189,6 @@ const int ufs_pm_lvl_states_size = ARRAY_SIZE(ufs_pm_lvl_states);
 #ifdef CONFIG_MTK_UFS_DEBUG
 struct ufs_hba *g_ufs_hba_p;	/* for debugging only */
 static int ufs_trace_en = 1;
-#else
-static int ufs_trace_en;
 #endif
 
 static inline enum ufs_dev_pwr_mode
@@ -395,7 +393,7 @@ void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
 	}
 }
 
-void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info, struct seq_file *m)
+void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info, struct seq_file *m, char **buff, unsigned long *size)
 {
 	int err = 0;
 	u32 val;
@@ -403,32 +401,32 @@ void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info, struct seq_file
 	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_STATE_EN))
 		return;
 
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "req r=%d w=%d map=0x%lx\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "req r=%d w=%d map=0x%lx\n",
 		hba->req_r_cnt, hba->req_w_cnt, hba->req_tag_map);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "lrb in use=0x%lx, outstanding reqs=0x%lx tasks=0x%lx\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "lrb in use=0x%lx, outstanding reqs=0x%lx tasks=0x%lx\n",
 		hba->lrb_in_use, hba->outstanding_tasks, hba->outstanding_reqs);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "saved_err=0x%x, saved_uic_err=0x%x\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "saved_err=0x%x, saved_uic_err=0x%x\n",
 		hba->saved_err, hba->saved_uic_err);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Device power mode=%d, UIC link state=%d\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "Device power mode=%d, UIC link state=%d\n",
 		hba->curr_dev_pwr_mode, hba->uic_link_state);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "PM in progress=%d, sys. suspended=%d\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "PM in progress=%d, sys. suspended=%d\n",
 		hba->pm_op_in_progress, hba->is_sys_suspended);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Auto BKOPS=%d, Host self-block=%d\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "Auto BKOPS=%d, Host self-block=%d\n",
 		hba->auto_bkops_enabled, hba->host->host_self_blocked);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "error handling flags=0x%x, req. abort count=%d\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "error handling flags=0x%x, req. abort count=%d\n",
 		hba->eh_flags, hba->req_abort_count);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Host capabilities=0x%x, caps=0x%x\n",
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "Host capabilities=0x%x, caps=0x%x\n",
 		hba->capabilities, hba->caps);
-	UFS_DEVINFO_PROC_MSG(m, hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
+	SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
 		hba->dev_quirks);
 
 	if (mphy_info) {
 		err = ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_FSM_STATE, 0), &val);
 		if (err)
-			UFS_DEVINFO_PROC_MSG(m, hba->dev, "get TX_FSM_STATE fail\n");
+			SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "get TX_FSM_STATE fail\n");
 		else
-			UFS_DEVINFO_PROC_MSG(m, hba->dev, "TX_FSM_STATE: %u\n", val);
+			SPREAD_DEV_PRINTF(buff, size, m, hba->dev, "TX_FSM_STATE: %u\n", val);
 	}
 }
 
@@ -4541,7 +4539,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	scsi_print_command(cmd);
 	if (!hba->req_abort_count) {
 		ufshcd_print_host_regs(hba);
-		ufshcd_print_host_state(hba, 1, NULL);
+		ufshcd_print_host_state(hba, 1, NULL, NULL, NULL);
 		ufshcd_print_pwr_info(hba);
 		ufshcd_print_trs(hba, 1 << tag, true);
 		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_ABORT_CMD_EN);

@@ -983,7 +983,8 @@ int   ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_tr_ocs(struct ufshcd_lrb *lrbp);
 int   ufshcd_make_hba_operational(struct ufs_hba *hba);
-void  ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info, struct seq_file *m);
+void  ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info,
+							struct seq_file *m, char **buff, unsigned long *size);
 int   ufshcd_query_attr(struct ufs_hba *hba,
 							enum query_opcode opcode,
 							enum attr_idn idn,
