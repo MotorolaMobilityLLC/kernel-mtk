@@ -14,6 +14,11 @@
 #ifndef __MTK_PD_INTF_H
 #define __MTK_PD_INTF_H
 
+/* PD charging */
+#define PD_VBUS_UPPER_BOUND 5000000	/* uv */
+#define PD_VBUS_LOW_BOUND 5000000	/* uv */
+
+
 struct pdc_power_cap {
 	uint8_t selected_cap_idx;
 	uint8_t nr;
@@ -27,7 +32,8 @@ struct pdc_power_cap {
 struct mtk_pdc {
 	struct tcpc_device *tcpc;
 	struct pdc_power_cap cap;
-	unsigned int pdc_max_watt;
+	int pdc_max_watt;
+	int pdc_max_watt_setting;
 
 
 	struct mutex access_lock;
@@ -43,8 +49,8 @@ struct mtk_pdc {
 
 extern bool mtk_pdc_check_charger(struct charger_manager *info);
 extern void mtk_pdc_plugout_reset(struct charger_manager *info);
-extern void mtk_pdc_set_max_watt(struct charger_manager *info, unsigned int watt);
-extern unsigned int mtk_pdc_get_max_watt(struct charger_manager *info);
+extern void mtk_pdc_set_max_watt(struct charger_manager *info, int watt);
+extern int mtk_pdc_get_max_watt(struct charger_manager *info);
 extern int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *idx);
 extern void mtk_pdc_init_table(struct charger_manager *info);
 extern bool mtk_pdc_init(struct charger_manager *info);
