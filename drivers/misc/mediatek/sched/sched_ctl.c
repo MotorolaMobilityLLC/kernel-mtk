@@ -325,6 +325,12 @@ static ssize_t show_idle_prefer(struct kobject *kobj,
 	return len;
 }
 
+static ssize_t show_walt_info(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf);
+
+static ssize_t store_walt_info(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count);
+
 static struct kobj_attribute sched_enable_attr =
 __ATTR(hint_enable, S_IWUSR, NULL, store_sched_enable);
 
@@ -337,6 +343,9 @@ __ATTR(hint_info, S_IRUSR, show_sched_info, NULL);
 static struct kobj_attribute sched_idle_prefer_attr =
 __ATTR(idle_prefer, S_IWUSR | S_IRUSR, show_idle_prefer, store_idle_prefer);
 
+static struct kobj_attribute sched_walt_info_attr =
+__ATTR(walt_debug, S_IWUSR | S_IRUSR, show_walt_info, store_walt_info);
+
 static struct attribute *sched_attrs[] = {
 	&sched_info_attr.attr,
 	&sched_load_thresh_attr.attr,
@@ -348,6 +357,7 @@ static struct attribute *sched_attrs[] = {
 	&sched_boost_attr.attr,
 #endif
 	&sched_idle_prefer_attr.attr,
+	&sched_walt_info_attr.attr,
 	NULL,
 };
 
@@ -645,25 +655,88 @@ __ATTR(sched_boost, S_IWUSR | S_IRUSR, show_sched_boost,
  * 1: walt
  */
 static int lt_walt_table[LT_UNKNOWN_USER];
+static int walt_dbg;
+
+static char walt_maker_name[LT_UNKNOWN_USER+1][32] = {
+	"powerHAL",
+	"fpsGO",
+	"sched",
+	"debug",
+	"unknown"
+};
 
 int sched_walt_enable(int user, int en)
 {
 	int walted = 0;
 	int i;
+	unsigned int user_mask = 0;
 
 	if ((user < 0) || (user >= LT_UNKNOWN_USER))
 		return -1;
 
 	lt_walt_table[user] = en;
 
-	for (i = 0; i < LT_UNKNOWN_USER; i++)
+	for (i = 0; i < LT_UNKNOWN_USER; i++) {
 		walted |= lt_walt_table[i];
+		user_mask |= (lt_walt_table[i] << i);
+	}
+
+	if (walt_dbg) {
+		walted = lt_walt_table[LT_WALT_DEBUG];
+		user_mask = 0xFFFF;
+	}
 
 #ifdef CONFIG_SCHED_WALT
 	sysctl_sched_use_walt_cpu_util  = walted;
 	sysctl_sched_use_walt_task_util = walted;
+	trace_sched_ctl_walt(user_mask, walted);
 #endif
 
 	return 0;
 }
 EXPORT_SYMBOL(sched_walt_enable);
+
+static ssize_t show_walt_info(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+	int i;
+	int supported = 0;
+
+	for (i = 0; i < LT_UNKNOWN_USER; i++)
+		len +=  snprintf(buf+len, max_len - len, "walt[%d] = %d (%s)\n",
+				i, lt_walt_table[i], walt_maker_name[i]);
+#ifdef CONFIG_SCHED_WALT
+	supported = 1;
+#endif
+	len +=  snprintf(buf+len, max_len - len, "\nWALT support:%d\n", supported);
+	len +=  snprintf(buf+len, max_len - len, "debug mode:%d\n", walt_dbg);
+	len +=  snprintf(buf+len, max_len - len, "format: echo (debug:walt)\n");
+
+	return len;
+}
+/*
+ * argu1: enable debug mode
+ * argu2: walted or not.
+ *
+ * echo 1 0 : enable debug mode, foring walted off.
+ */
+static ssize_t store_walt_info(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int walted = -1;
+
+	if (sscanf(buf, "%d:%d", &walt_dbg, &walted) <= 0)
+		return count;
+
+	if (walted < 0 || walted > 1 || walt_dbg < 0 || walt_dbg > 1)
+		return count;
+
+	if (walt_dbg)
+		sched_walt_enable(LT_WALT_DEBUG, walted);
+	else
+		sched_walt_enable(LT_WALT_DEBUG, 0);
+
+	return count;
+}
