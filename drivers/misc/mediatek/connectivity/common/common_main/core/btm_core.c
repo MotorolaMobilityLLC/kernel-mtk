@@ -33,17 +33,17 @@ INT32 host_trigger_assert_flag;
 #define STP_BTM_LOUD_FUNC(fmt, arg...) \
 do { \
 	if (gBtmDbgLevel >= STP_BTM_LOG_LOUD) \
-		pr_debug(PFX_BTM "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_BTM "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_BTM_DBG_FUNC(fmt, arg...) \
 do { \
 	if (gBtmDbgLevel >= STP_BTM_LOG_DBG) \
-		pr_debug(PFX_BTM "%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_BTM "%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_BTM_INFO_FUNC(fmt, arg...) \
 do { \
 	if (gBtmDbgLevel >= STP_BTM_LOG_INFO) \
-		pr_debug(PFX_BTM "[I]%s: "  fmt, __func__, ##arg); \
+		pr_warn(PFX_BTM "[I]%s: "  fmt, __func__, ##arg); \
 } while (0)
 #define STP_BTM_WARN_FUNC(fmt, arg...) \
 do { \
