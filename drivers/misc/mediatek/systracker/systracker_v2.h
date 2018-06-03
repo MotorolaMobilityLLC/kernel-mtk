@@ -37,7 +37,7 @@
 
 #if defined(CONFIG_MACH_MT6758)
 	#define BUS_DBG_BUS_MHZ             (135)
-#elif defined(CONFIG_MACH_MT6765)
+#elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 	#define BUS_DBG_BUS_MHZ             (156)
 #else
 	#define BUS_DBG_BUS_MHZ             (266)
