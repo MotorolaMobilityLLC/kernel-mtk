@@ -5273,7 +5273,7 @@ static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
 	nginfo_out->va_start = cmd_buffer->pVABase;
 	nginfo_out->va_pc = va_pc;
-	nginfo_out->buffer = (u32 *)buffer;
+	nginfo_out->buffer = NULL;
 	nginfo_out->engine_flag = ngtask->engineFlag;
 	nginfo_out->scenario = ngtask->scenario;
 	nginfo_out->ngtask = ngtask;
@@ -5285,6 +5285,7 @@ static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 		return;
 	}
 
+	nginfo_out->buffer = (u32 *)buffer;
 	list_for_each_entry(cmd_buffer, &ngtask->cmd_buffer_list, listEntry) {
 		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &ngtask->cmd_buffer_list) ?
 			CMDQ_CMD_BUFFER_SIZE - ngtask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
