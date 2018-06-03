@@ -49,6 +49,7 @@ my $ignore_perl_version = 0;
 my $minimum_perl_version = 5.10.0;
 my $min_conf_desc_length = 4;
 my $spelling_file = "$D/spelling.txt";
+my $deprecated_config_file = "$D/deprecated_config.txt";
 my $codespell = 0;
 my $codespellfile = "/usr/share/codespell/dictionary.txt";
 my $color = 1;
@@ -480,6 +481,26 @@ our $allowed_asm_includes = qr{(?x:
 # Load common spelling mistakes and build regular expression list.
 my $misspellings;
 my %spelling_fix;
+my @deprecated_config;
+
+if(open (my $config, '<', $deprecated_config_file)) {
+	my $i = 0;
+	while(<$config>) {
+		my $line = $_;
+
+		$line =~ s/\s*\n?$//g;
+		$line =~ s/^\s*//g;
+
+		next if ($line =~ m/^\s*#/);
+		next if ($line =~ m/^\s*$/);
+
+		push(@deprecated_config, $line);
+		$i++;
+	}
+	close($config);
+} else {
+	warn "No deprecated config will be found - file '$deprecated_config_file': $!\n";
+}
 
 if (open(my $spelling, '<', $spelling_file)) {
 	while (<$spelling>) {
@@ -2484,6 +2505,16 @@ sub process {
 						 "'$typo' may be misspelled - perhaps '$typo_fix'?\n" . $herecurr) &&
 				    $fix) {
 					$fixed[$fixlinenr] =~ s/(^|[^A-Za-z@])($typo)($|[^A-Za-z@])/$1$typo_fix$3/;
+				}
+			}
+		}
+
+# Check for using deprecated configs mistakes
+		if(@deprecated_config) {
+			foreach (@deprecated_config) {
+				if($line =~ /$_/) {
+					ERROR("USE_DEPRECATED_CONFIG",
+						"please do not use deprecated config '$_'\n" . $herecurr);
 				}
 			}
 		}
