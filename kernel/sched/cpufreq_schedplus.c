@@ -613,17 +613,22 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	gd->thro_type = freq_new < cur_freq ?
 			DVFS_THROTTLE_DOWN : DVFS_THROTTLE_UP;
 
+	/* No throttling in time? Bail and return. */
+	if (ktime_before(now, throttle))
+		goto out;
+
 	/*
 	 * W/O co-working governor:
 	 * if no change in frequency, bail and return current capacity.
 	 * to decrease overhead of freq swtich.
 	 */
-	if (is_cur(freq_new, cur_freq, cid))
+	if (is_cur(freq_new, cur_freq, cid)) {
+		/* Update throttle windows only if same frequency */
+		gd->up_throttle   = ktime_add_ns(now, gd->up_throttle_nsec);
+		gd->down_throttle = ktime_add_ns(now, gd->down_throttle_nsec);
+		gd->throttle      = ktime_add_ns(now, gd->throttle_nsec);
 		goto out;
-
-	/* No throttling in time? Bail and return. */
-	if (ktime_before(now, throttle))
-		goto out;
+	}
 
 	/* update request freq */
 	gd->requested_freq = freq_new;
