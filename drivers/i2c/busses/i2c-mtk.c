@@ -612,7 +612,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 {
 	/* I2CFUC(); */
 	/* int val=0; */
-	pr_err("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
+	pr_info_ratelimited("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
 	pr_err("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
@@ -620,8 +620,8 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
 			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt, i2c->hs_only);
 
-	pr_err("base address 0x%p\n", i2c->base);
-	pr_err("I2C register:\n"
+	pr_info_ratelimited("base address 0x%p\n", i2c->base);
+	pr_info_ratelimited("I2C register:\n"
 	       I2CTAG "SLAVE_ADDR=%x,INTR_MASK=%x,INTR_STAT=%x,CONTROL=%x,TRANSFER_LEN=%x\n"
 	       I2CTAG "TRANSAC_LEN=%x,DELAY_LEN=%x,TIMING=%x,LTIMING=%x,START=%x,FIFO_STAT=%x\n"
 	       I2CTAG "IO_CONFIG=%x,HS=%x,DCM_EN=%x,DEBUGSTAT=%x,EXT_CONF=%x,TRANSFER_LEN_AUX=%x\n",
@@ -642,7 +642,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readw(i2c, OFFSET_DEBUGSTAT)),
 	       (i2c_readw(i2c, OFFSET_EXT_CONF)), (i2c_readw(i2c, OFFSET_TRANSFER_LEN_AUX)));
 
-	pr_err("before enable DMA register(0x%lx):\n"
+	pr_info_ratelimited("before enable DMA register(0x%lx):\n"
 	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
 	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
 	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
@@ -662,7 +662,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       g_dma_regs[i2c->id].int_buf_size, g_dma_regs[i2c->id].debug_sta,
 	       g_dma_regs[i2c->id].tx_mem_addr2,
 	       g_dma_regs[i2c->id].tx_mem_addr2);
-	pr_err("DMA register(0x%p):\n"
+	pr_info_ratelimited("DMA register(0x%p):\n"
 	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
 	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
 	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
@@ -683,7 +683,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readl_dma(i2c, OFFSET_DEBUG_STA)),
 	       (i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR2)),
 	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2)));
-	pr_err("i2c_dump_info ------------------------------------------\n");
+	pr_info_ratelimited("i2c_dump_info ------------------------------------------\n");
 
 	dump_i2c_info(i2c);
 }
@@ -899,7 +899,6 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
 
 	record_i2c_info(i2c, tmo);
-	i2c_dump_info(i2c);
 
 	if (tmo == 0) {
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n",
