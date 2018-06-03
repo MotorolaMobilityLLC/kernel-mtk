@@ -63,7 +63,7 @@ struct vcorefs_profile {
 static struct vcorefs_profile vcorefs_ctrl = {
 	.plat_init_opp	= 0,
 	.init_done	= 0,
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	.autok_finish   = 1,
 #else
 	.autok_finish   = 0,
@@ -307,8 +307,13 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 			vcorefs_autok_lock_dvfs(autok_lock);
 			vcorefs_autok_set_vcore(kicker, opp);
 		} else {
+#if defined(CONFIG_MACH_MT6771)
+			vcorefs_autok_set_vcore(kicker, opp);
+			vcorefs_autok_lock_dvfs(autok_lock);
+#else
 			vcorefs_autok_set_vcore(KIR_SYSFS, _get_dvfs_opp(pwrctrl, kicker, opp));
 			vcorefs_autok_lock_dvfs(autok_lock);
+#endif
 		}
 		return 0;
 	}

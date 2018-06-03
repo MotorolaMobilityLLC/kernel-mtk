@@ -22,27 +22,27 @@ extern unsigned int get_min_opp_for_vcore(int vcore_opp);
 extern unsigned int get_min_opp_for_ddr(int ddr_opp);
 
 enum ddr_opp {
-	DDR_OPP_UNREQ = -1,
 	DDR_OPP_0 = 0,			/* 3200 MHz */
 	DDR_OPP_1,			/* 2400 MHz */
 	DDR_OPP_2,			/* 1600 MHz */
 	DDR_OPP_NUM,
+	DDR_OPP_UNREQ = 15,
 };
 
 enum vcore_opp {
-	VCORE_OPP_UNREQ = -1,
 	VCORE_OPP_0 = 0,		/* 0.8V */
 	VCORE_OPP_1,			/* 0.7V */
 	VCORE_OPP_NUM,
+	VCORE_OPP_UNREQ = 15,
 };
 
 enum vcore_dvfs_opp {
-	VCORE_DVFS_OPP_UNREQ = -1,
 	VCORE_DVFS_OPP_0 = 0,		/* 3200 MHz / 0.8V */
 	VCORE_DVFS_OPP_1,		/* 3200 MHz / 0.7V */
 	VCORE_DVFS_OPP_2,		/* 2400 MHz / 0.7V */
 	VCORE_DVFS_OPP_3,		/* 1600 MHz / 0.7V */
 	VCORE_DVFS_OPP_NUM,
+	VCORE_DVFS_OPP_UNREQ = 15,
 };
 
 #endif /* __HELIO_DVFSRC_MT6771_H */

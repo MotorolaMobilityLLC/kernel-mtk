@@ -449,15 +449,17 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	}
 
 	/* check DVFS timer */
-	if (fix)
-		r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() == opp, SPM_DVFS_TIMEOUT);
-	else
+	if (fix) {
+		if (opp >= 0)
+			r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() == opp, SPM_DVFS_TIMEOUT);
+	} else {
 		r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() <= opp, SPM_DVFS_TIMEOUT);
+	}
 
 	if (r < 0) {
 		spm_vcorefs_warn("[%s]wait complete timeout!\n", __func__);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		/* aee_kernel_warning("VCOREFS", "wait complete timeout"); */
+		aee_kernel_warning("VCOREFS", "wait complete timeout");
 		return -1;
 	}
 

@@ -130,12 +130,9 @@ static unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
 
 static int get_soc_efuse(void)
 {
-#if 1
-	return 0; /* default return 0 without tightening */
-#else
-	/* todo: enable after verify */
-	return (get_devinfo_with_index(65) >> 12) & 0x3;
-#endif
+	pr_info("[VcoreFS]efuse=0x%x soc_efuse=0x%x\n",
+		get_devinfo_with_index(65), ((get_devinfo_with_index(65) >> 12) & 0x3));
+	return ((get_devinfo_with_index(65) >> 12) & 0x3);
 }
 
 static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
@@ -155,18 +152,42 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 		vcore_opp_efuse_idx[1] = soc_efuse & mask; /* 0.7V */
 		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
 		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
+		vcore_dvfs_to_vcore_opp[0] = VCORE_OPP_0;
+		vcore_dvfs_to_vcore_opp[1] = VCORE_OPP_1;
+		vcore_dvfs_to_vcore_opp[2] = VCORE_OPP_1;
+		vcore_dvfs_to_vcore_opp[3] = VCORE_OPP_1;
+		vcore_dvfs_to_ddr_opp[0] = DDR_OPP_0;
+		vcore_dvfs_to_ddr_opp[1] = DDR_OPP_0;
+		vcore_dvfs_to_ddr_opp[2] = DDR_OPP_1;
+		vcore_dvfs_to_ddr_opp[3] = DDR_OPP_2;
 	} else if (ddr_type == SPMFW_LP4X_2CH_3733) {
 		vcore_opp = &vcore_opp_L4_2CH_CASE2[0];
 		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[1] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
 		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
+		vcore_dvfs_to_vcore_opp[0] = VCORE_OPP_0;
+		vcore_dvfs_to_vcore_opp[1] = VCORE_OPP_0;
+		vcore_dvfs_to_vcore_opp[2] = VCORE_OPP_1;
+		vcore_dvfs_to_vcore_opp[3] = VCORE_OPP_1;
+		vcore_dvfs_to_ddr_opp[0] = DDR_OPP_0;
+		vcore_dvfs_to_ddr_opp[1] = DDR_OPP_1;
+		vcore_dvfs_to_ddr_opp[2] = DDR_OPP_1;
+		vcore_dvfs_to_ddr_opp[3] = DDR_OPP_2;
 	} else if (ddr_type == SPMFW_LP3_1CH_1866) {
 		vcore_opp = &vcore_opp_L3_1CH[0];
 		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[1] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
 		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
+		vcore_dvfs_to_vcore_opp[0] = VCORE_OPP_0;
+		vcore_dvfs_to_vcore_opp[1] = VCORE_OPP_0;
+		vcore_dvfs_to_vcore_opp[2] = VCORE_OPP_1;
+		vcore_dvfs_to_vcore_opp[3] = VCORE_OPP_1;
+		vcore_dvfs_to_ddr_opp[0] = DDR_OPP_0;
+		vcore_dvfs_to_ddr_opp[1] = DDR_OPP_1;
+		vcore_dvfs_to_ddr_opp[2] = DDR_OPP_1;
+		vcore_dvfs_to_ddr_opp[3] = DDR_OPP_2;
 	} else {
 		pr_info("WRONG SPM DRAM TYPE: %d\n", ddr_type);
 		return;
@@ -178,8 +199,14 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 	for (i = VCORE_DVFS_OPP_NUM - 2; i >= 0; i--)
 		vcore_opp_table[i] = max(vcore_opp_table[i], vcore_opp_table[i + 1]);
 
-	pr_info("table(d=%d, ef=%d): %d, %d, %d, %d\n",
+	pr_info("[VcoreFS]table(d=%d, ef=%d): %d, %d, %d, %d\n",
 		ddr_type, soc_efuse, vcore_opp_table[0], vcore_opp_table[1], vcore_opp_table[2], vcore_opp_table[3]);
+	pr_info("[VcoreFS]vcore opp tbl: %d, %d, %d, %d\n",
+		vcore_dvfs_to_vcore_opp[0], vcore_dvfs_to_vcore_opp[1],
+		vcore_dvfs_to_vcore_opp[2], vcore_dvfs_to_vcore_opp[3]);
+	pr_info("[VcoreFS]ddr opp tbl: %d, %d, %d, %d\n",
+		vcore_dvfs_to_ddr_opp[0], vcore_dvfs_to_ddr_opp[1],
+		vcore_dvfs_to_ddr_opp[2], vcore_dvfs_to_ddr_opp[3]);
 }
 
 static int vcore_opp_proc_show(struct seq_file *m, void *v)
