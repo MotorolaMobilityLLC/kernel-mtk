@@ -243,7 +243,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb < sizeof(pseudo_larb_clk_name))
+	if (larb < ARRAY_SIZE(pseudo_larb_clk_name))
 		ret = smi_bus_prepare_enable(larb,
 					     pseudo_larb_clk_name[larb],
 					     true);
@@ -260,7 +260,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb < sizeof(pseudo_larb_clk_name))
+	if (larb < ARRAY_SIZE(pseudo_larb_clk_name))
 		ret = smi_bus_disable_unprepare(larb,
 						pseudo_larb_clk_name[larb],
 						true);
@@ -1891,6 +1891,11 @@ static int m4u_create_sgtable_user(unsigned long va_align,
 				struct vm_area_struct *vma_temp;
 
 				vma_temp = find_vma(current->mm, va_align);
+				if (!vma_temp) {
+					M4U_MSG("vma NUll for va 0x%lx\n",
+						va_align);
+					goto out;
+				}
 				M4U_MSG("start=0x%lx,end=0x%lx,flag=0x%lx\n",
 					vma_temp->vm_start,
 					vma_temp->vm_end,
