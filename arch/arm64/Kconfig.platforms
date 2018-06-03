@@ -184,7 +184,7 @@ config MACH_MT6761
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
-	select MTK_TIMER_V1
+	select MTK_TIMER
 	help
 	  This enables support for MediaTek MT6761
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
