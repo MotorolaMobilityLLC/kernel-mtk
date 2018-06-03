@@ -478,25 +478,8 @@ retry:
 						 pnum, vol_id, lnum);
 					err = -EBADMSG;
 				} else {
-					/*
-					 * Ending up here in the non-Fastmap case
-					 * is a clear bug as the VID header had to
-					 * be present at scan time to have it referenced.
-					 * With fastmap the story is more complicated.
-					 * Fastmap has the mapping info without the need
-					 * of a full scan. So the LEB could have been
-					 * unmapped, Fastmap cannot know this and keeps
-					 * the LEB referenced.
-					 * This is valid and works as the layer above UBI
-					 * has to do bookkeeping about used/referenced
-					 * LEBs in any case.
-					 */
-					if (ubi->fast_attach) {
-						err = -EBADMSG;
-					} else {
-						err = -EINVAL;
-						ubi_ro_mode(ubi);
-					}
+					err = -EINVAL;
+					ubi_ro_mode(ubi);
 				}
 			}
 			goto out_free;
@@ -529,6 +512,7 @@ retry:
 
 	if (check) {
 		uint32_t crc1 = crc32(UBI_CRC32_INIT, buf, len);
+
 		if (crc1 != crc) {
 			ubi_warn(ubi, "CRC error: calculated %#08x, must be %#08x",
 				 crc1, crc);
@@ -1133,7 +1117,7 @@ retry:
 			return err;
 		}
 	}
-
+	ubi_err(ubi, "write %d bytes at offset 0x%x of LEB %d:%d, PEB %d", len, offset, vol_id, lnum, pnum);
 	vid_hdr = ubi->peb_buf + ubi->vid_hdr_aloffset;
 
 	err = ubi_io_sync_erase(ubi, pnum, 0);
@@ -1170,9 +1154,9 @@ retry:
 		goto write_error;
 	}
 	mutex_unlock(&ubi_buf_mutex);
-	down_read(&ubi->fm_sem);
+	down_read(&ubi->fm_eba_sem);
 	vol->eba_tbl[lnum] = pnum;
-	up_read(&ubi->fm_sem);
+	up_read(&ubi->fm_eba_sem);
 	leb_write_unlock(ubi, vol_id, lnum);
 	return 0;
 
@@ -1796,7 +1780,7 @@ int ubi_eba_copy_tlc_leb(struct ubi_device *ubi, int from, int to,
 			goto out_unlock_buf;
 		cond_resched();
 		err = ubi_io_sync_erase(ubi, to, 0);
-		/* ubi_msg("update PEB %d ec %d -> %d\n", to, e->ec, e->ec+err); */
+		ubi_msg(ubi, "update PEB %d ec %d -> %d\n", to, e->ec, e->ec+err);
 		cond_resched();
 		if (err >= 1)
 			e->ec += err;
@@ -1896,9 +1880,9 @@ int ubi_eba_copy_tlc_leb(struct ubi_device *ubi, int from, int to,
 	spin_unlock(&ubi->wl_lock);
 
 	ubi_assert(vol->eba_tbl[lnum] == from);
-	down_read(&ubi->fm_sem);
+	down_read(&ubi->fm_eba_sem);
 	vol->eba_tbl[lnum] = to;
-	up_read(&ubi->fm_sem);
+	up_read(&ubi->fm_eba_sem);
 
 out_unlock_buf:
 	mutex_unlock(&ubi_buf_mutex);
@@ -2315,7 +2299,7 @@ int ubi_eba_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
 					ubi_move_aeb_to_list(av, aeb, &ai->free);
 				else
 #endif
-				ubi_move_aeb_to_list(av, aeb, &ai->erase);
+					ubi_move_aeb_to_list(av, aeb, &ai->erase);
 			} else
 				vol->eba_tbl[aeb->lnum] = aeb->pnum;
 		}

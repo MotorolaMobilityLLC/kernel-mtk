@@ -76,7 +76,6 @@ static struct ubi_vtbl_record empty_vtbl_record;
  * ubi_update_layout_vol - helper for updatting layout volumes on flash
  * @ubi: UBI device description object
  */
-
 static int ubi_update_layout_vol(struct ubi_device *ubi)
 {
 	struct ubi_volume *layout_vol;
@@ -464,7 +463,8 @@ static struct ubi_vtbl_record *process_lvol(struct ubi_device *ubi,
 		/* Both LEB 1 and LEB 2 are OK and consistent */
 		vfree(leb[1]);
 		return leb[0];
-	} else {
+	}
+
 		/* LEB 0 is corrupted or does not exist */
 		if (leb[1]) {
 			leb_corrupted[1] = vtbl_check(ubi, leb[1]);
@@ -485,7 +485,6 @@ static struct ubi_vtbl_record *process_lvol(struct ubi_device *ubi,
 
 		vfree(leb[0]);
 		return leb[1];
-	}
 
 out_free:
 	vfree(leb[0]);

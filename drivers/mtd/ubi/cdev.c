@@ -177,6 +177,7 @@ static int vol_cdev_fsync(struct file *file, loff_t start, loff_t end,
 	struct ubi_device *ubi = desc->vol->ubi;
 	struct inode *inode = file_inode(file);
 	int err;
+
 	mutex_lock(&inode->i_mutex);
 	err = ubi_sync(ubi->ubi_num);
 	mutex_unlock(&inode->i_mutex);
@@ -321,7 +322,6 @@ static ssize_t vol_cdev_direct_write(struct file *file, const char __user *buf,
 		else
 #endif
 		err = ubi_eba_write_leb(ubi, vol, lnum, tbuf, off, len);
-
 		if (err)
 			break;
 

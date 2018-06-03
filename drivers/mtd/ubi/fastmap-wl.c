@@ -106,7 +106,7 @@ struct ubi_wl_entry *ubi_wl_get_fm_peb(struct ubi_device *ubi, int anchor)
 
 	/* remove it from the free list,
 	 * the wl subsystem does no longer know this erase block */
-	rb_erase(&e->u.rb, &ubi->free);
+	ubi_rb_erase(e, &e->u.rb, &ubi->free);
 	ubi->free_count--;
 out:
 	return e;

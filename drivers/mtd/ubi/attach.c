@@ -586,16 +586,14 @@ int ubi_add_to_av(struct ubi_device *ubi, struct ubi_attach_info *ai, int pnum,
 			if (av->highest_lnum == lnum)
 				av->last_data_size =
 					be32_to_cpu(vid_hdr->data_size);
-
 			return 0;
-		} else {
+		}
 			/*
 			 * This logical eraseblock is older than the one found
 			 * previously.
 			 */
 		return add_to_list(ubi, ai, pnum, vol_id, lnum, ec,
 					   cmp_res & 4, &ai->erase);
-		}
 	}
 
 	/*
@@ -1333,9 +1331,7 @@ static void destroy_ai(struct ubi_attach_info *ai)
 		}
 	}
 
-	if (ai->aeb_slab_cache)
 	kmem_cache_destroy(ai->aeb_slab_cache);
-
 	kfree(ai);
 }
 
@@ -1377,7 +1373,6 @@ static int scan_all(struct ubi_device *ubi, struct ubi_attach_info *ai,
 		cond_resched();
 
 		dbg_gen("process PEB %d", pnum);
-
 #ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
 		if (last_tlc_pnum == -1 && ubi_peb_istlc(ubi, pnum) && ubi->mtbl == NULL) {
 
@@ -1524,6 +1519,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info **ai)
 	for (pnum = 0; pnum < UBI_FM_MAX_START; pnum++) {
 		int vol_id = -1;
 		unsigned long long sqnum = -1;
+
 		cond_resched();
 
 		dbg_gen("process PEB %d", pnum);
@@ -1784,13 +1780,13 @@ static int self_check_ai(struct ubi_device *ubi, struct ubi_attach_info *ai)
 				goto bad_aeb;
 			}
 
-			if (aeb->ec < ai->min_ec) {
+			if (aeb->ec < min_ec) {
 				ubi_err(ubi, "bad ai->min_ec (%d), %d found",
 					ai->min_ec, aeb->ec);
 				goto bad_aeb;
 			}
 
-			if (aeb->ec > ai->max_ec) {
+			if (aeb->ec > max_ec) {
 				ubi_err(ubi, "bad ai->max_ec (%d), %d found",
 					ai->max_ec, aeb->ec);
 				goto bad_aeb;
