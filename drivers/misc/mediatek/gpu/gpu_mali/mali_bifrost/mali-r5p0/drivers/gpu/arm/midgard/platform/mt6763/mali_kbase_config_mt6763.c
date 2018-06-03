@@ -191,6 +191,13 @@ static int _mtk_pm_callback_power_on(void)
 	MTKCLK_prepare_enable(clk_mfg1);
 	MTKCLK_prepare_enable(clk_mfg2);
 	MTKCLK_prepare_enable(clk_mfg3);
+
+	/* set Sync step before enable CG, bit[11:10]=01 */
+	udelay(100);
+	val = 0x400;
+	writel(val, g_MFG_base + 0x20);
+	udelay(100);
+
 	MTKCLK_prepare_enable(clk_mfg_cg);
 
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
