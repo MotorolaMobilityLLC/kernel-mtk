@@ -25,6 +25,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/slab.h>
 #ifdef CONFIG_MTK_GIC
 #include <linux/irqchip/mt-gic.h>
 #endif
@@ -42,17 +43,10 @@ struct cqdma_env_info {
 	void __iomem *base;
 	u32 irq;
 };
-
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
-#define MAX_CQDMA_CHANNELS 3
-#else
-#define MAX_CQDMA_CHANNELS 2
-#endif
-
-static struct cqdma_env_info env_info[MAX_CQDMA_CHANNELS];
+static struct cqdma_env_info *env_info;
 static u32 keep_clock_ao;
 static u32 nr_cqdma_channel;
-struct wake_lock wk_lock[MAX_CQDMA_CHANNELS];
+struct wake_lock *wk_lock;
 
 /*
  * DMA information
@@ -679,7 +673,15 @@ static int cqdma_probe(struct platform_device *pdev)
 		pr_err("[CQDMA] no channel found\n");
 		return -ENODEV;
 	}
-	pr_err("[CQDMA] DMA channel = %d\n", nr_cqdma_channel);
+	pr_debug("[CQDMA] DMA channel = %d\n", nr_cqdma_channel);
+
+	env_info = kmalloc(sizeof(struct cqdma_env_info)*(nr_cqdma_channel), GFP_KERNEL);
+	if (!env_info)
+		return -ENOMEM;
+
+	wk_lock = kmalloc(sizeof(struct wake_lock)*(nr_cqdma_channel), GFP_KERNEL);
+	if (!wk_lock)
+		return -ENOMEM;
 
 	for (i = 0; i < nr_cqdma_channel; i++) {
 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
