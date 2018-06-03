@@ -4188,6 +4188,10 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	u8 resp = 0xF;
 	struct ufshcd_lrb *lrbp;
 	u32 reg;
+	/* MTK patch to dump debug info */
+	u32 lba = 0;
+	u32 blk_cnt;
+	u32 fua, flush;
 
 	host = cmd->device->host;
 	hba = shost_priv(host);
@@ -4203,6 +4207,45 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 		dev_err(hba->dev,
 		"%s: cmd was completed, but without a notifying intr, tag = %d",
 		__func__, tag);
+	}
+
+	/* MTK patch to dump debug info */
+	ufs_mtk_aborted_cmd.timestamp = sched_clock();
+	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
+
+		lba = cmd->cmnd[5] | (cmd->cmnd[4] << 8) | (cmd->cmnd[3] << 16) | (cmd->cmnd[2] << 24);
+		blk_cnt = cmd->cmnd[8] | (cmd->cmnd[7] << 8);
+		fua = (cmd->cmnd[1] & 0x8) ? 1 : 0;
+		flush = (cmd->request->cmd_flags & REQ_FUA) ? 1 : 0;
+		ufs_mtk_aborted_cmd.lun = ufshcd_scsi_to_upiu_lun(cmd->device->lun);
+		ufs_mtk_aborted_cmd.tag = cmd->request->tag;
+		ufs_mtk_aborted_cmd.cmd = cmd->cmnd[0];
+		ufs_mtk_aborted_cmd.lba = lba;
+		ufs_mtk_aborted_cmd.blk_cnt = blk_cnt;
+		ufs_mtk_aborted_cmd.fua = fua;
+		ufs_mtk_aborted_cmd.flush = flush;
+
+#ifdef CONFIG_MTK_HW_FDE
+		if (cmd->request->bio && cmd->request->bio->bi_hw_fde) {
+			ufs_mtk_aborted_cmd.is_fde = 1;
+			dev_info(hba->dev, "[Abort]QCMD(C),L:%x,T:%d,0x%x,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
+				lba, blk_cnt, fua, flush);
+
+		} else
+#endif
+		{
+			dev_info(hba->dev, "[Abort]QCMD,L:%x,T:%d,0x%x,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
+				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
+				lba, blk_cnt, fua, flush);
+		}
+	} else {
+		ufs_mtk_aborted_cmd.lun = ufshcd_scsi_to_upiu_lun(cmd->device->lun);
+		ufs_mtk_aborted_cmd.tag = cmd->request->tag;
+		ufs_mtk_aborted_cmd.cmd = cmd->cmnd[0];
+		dev_info(hba->dev, "[Abort]QCMD,L:%x,T:%d,0x%x\n",
+		ufshcd_scsi_to_upiu_lun(cmd->device->lun),
+			cmd->request->tag, cmd->cmnd[0]);
 	}
 
 	lrbp = &hba->lrb[tag];

@@ -62,6 +62,20 @@ struct ufs_cmd_str_struct {
 	char cmd;
 };
 
+
+struct ufs_aborted_cmd_struct {
+	u32 lun;
+	u32 tag;
+	u32 cmd;
+	u32 lba;
+	u32 blk_cnt;
+	u32 fua;
+	u32 flush;
+	u32 is_fde;
+	__u64 timestamp;
+};
+
+
 #ifdef MTK_UFS_HQA
 #define UFS_CACHED_REGION_CNT (3)
 #else
@@ -258,6 +272,7 @@ extern bool							ufs_mtk_host_deep_stall_enable;
 extern bool							ufs_mtk_host_scramble_enable;
 extern bool							ufs_mtk_tr_cn_used;
 extern const struct of_device_id			ufs_of_match[];
+extern struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd;
 
 void             ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void             ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
@@ -278,7 +293,7 @@ int              ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *b
 void             ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
 struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
 void             ufs_mtk_runtime_pm_init(struct scsi_device *sdev);
-
+bool ufs_mtk_is_data_cmd(char cmd_op);
 
 #endif /* !_UFS_MTK_H */
 

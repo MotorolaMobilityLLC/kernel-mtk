@@ -51,8 +51,8 @@ bool ufs_mtk_tr_cn_used;
 u32  ufs_mtk_qcmd_r_cmd_cnt;
 u32  ufs_mtk_qcmd_w_cmd_cnt;
 struct ufs_hba *ufs_mtk_hba;
+struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd = {0};
 
-static bool ufs_mtk_is_data_cmd(char cmd_op);
 static bool ufs_mtk_is_data_write_cmd(char cmd_op);
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
@@ -1531,7 +1531,7 @@ static bool ufs_mtk_is_data_write_cmd(char cmd_op)
 	return false;
 }
 
-static bool ufs_mtk_is_data_cmd(char cmd_op)
+bool ufs_mtk_is_data_cmd(char cmd_op)
 {
 	if (cmd_op == WRITE_10 || cmd_op == READ_10 ||
 	    cmd_op == WRITE_16 || cmd_op == READ_16 ||
