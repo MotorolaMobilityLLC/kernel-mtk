@@ -253,6 +253,10 @@ enum {
 	USB_DPIDLE_SRAM,
 	USB_DPIDLE_TIMER
 };
+#ifdef CONFIG_PROJECT_PHY
 extern void usb_hal_dpidle_request(int mode);
+#else
+static inline void usb_hal_dpidle_request(int mode) {};
+#endif
 /***********************************/
 #endif
