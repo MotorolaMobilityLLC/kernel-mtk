@@ -3110,9 +3110,10 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		else if (soc_type == 4)
 			fg_cust_data.v_soc = daemon_soc;
 
-		bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
-			daemon_soc, FG_status.soc, fg_cust_data.c_old_d0,
-			fg_cust_data.v_old_d0, fg_cust_data.c_soc, fg_cust_data.v_soc, soc_type);
+		if (soc_type == 4)
+			bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
+				daemon_soc, FG_status.soc, fg_cust_data.c_old_d0,
+				fg_cust_data.v_old_d0, fg_cust_data.c_soc, fg_cust_data.v_soc, soc_type);
 	}
 	break;
 
@@ -3287,7 +3288,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		gauge_dev_get_info(gauge_dev, GAUGE_CON0_SOC, &_soc);
 		ret_msg->fgd_data_len += sizeof(_soc);
 		memcpy(ret_msg->fgd_data, &_soc, sizeof(_soc));
-		bm_err("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
 	}
 	break;
 
@@ -3297,7 +3298,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		memcpy(&flag, &msg->fgd_data[0], sizeof(flag));
 		gauge_dev_set_info(gauge_dev, GAUGE_IS_NVRAM_FAIL_MODE, flag);
-		bm_err("[fg_res] FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS = %d\n", flag);
+		bm_debug("[fg_res] FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS = %d\n", flag);
 	}
 	break;
 
@@ -3644,13 +3645,13 @@ void fg_bat_temp_int_h_handler(void)
 
 void fg_bat_sw_temp_int_l_handler(void)
 {
-	bm_err("[fg_bat_sw_temp_int_l_handler]\n");
+	bm_debug("[fg_bat_sw_temp_int_l_handler]\n");
 	fg_bat_temp_int_internal();
 }
 
 void fg_bat_sw_temp_int_h_handler(void)
 {
-	bm_err("[fg_bat_sw_temp_int_h_handler]\n");
+	bm_debug("[fg_bat_sw_temp_int_h_handler]\n");
 	fg_bat_temp_int_internal();
 }
 
