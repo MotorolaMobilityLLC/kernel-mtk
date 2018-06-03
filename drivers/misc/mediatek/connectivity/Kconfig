@@ -269,3 +269,13 @@ config MTK_MERGE_INTERFACE_SUPPORT
 	  path. FM audio path will use PCM/I2S merge
 	  interface is set to 'y',
 	  otherwise merge interface is not used.
+
+config MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	depends on MTK_COMBO_CHIP_MT6632
+	default y
+	tristate "Mediatek combo chip deep sleep feature setting"
+	help
+	  this config is used to enable or disable chip deep sleep feature,
+	  if the project is no deep sleep design,
+	  host can`t wake up chip form deep sleep,
+	  we must close this config.

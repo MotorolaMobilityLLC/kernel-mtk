@@ -301,8 +301,12 @@ do { \
 *                              F U N C T I O N S
 ********************************************************************************
 */
-
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+INT32 stp_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag)
+{
+	return mtk_wcn_hif_sdio_deep_sleep_flag_set(flag);
+}
+#endif
 static _osal_inline_ INT32 stp_sdio_host_info_op(INT32 opId)
 {
 	INT32 iRet = 0;
@@ -676,8 +680,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	clt_ctx = pInfo->sdio_cltctx;
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
-		/*if (CLTCTX_CID(clt_ctx) == 0x6632)*/
-			/*mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);*/
+		if (CLTCTX_CID(clt_ctx) == 0x6632)
+			mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
 		while_loop_counter++;
 		osal_ftrace_print("%s|loop_count:%d\n", __func__, while_loop_counter);
 		/* <0> get CHLPCR information */
@@ -3146,6 +3150,9 @@ static INT32 stp_sdio_init(VOID)
 	if (ret)
 		STPSDIO_ERR_FUNC
 		    ("mtk_wcn_stp_wmt_sdio_op_reg(mtk_wcn_stp_sdio_own_ctrl) fail(%d)!\n", ret);
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg(stp_sdio_deep_sleep_flag_set);
+#endif
 
 	STPSDIO_LOUD_FUNC("end\n");
 

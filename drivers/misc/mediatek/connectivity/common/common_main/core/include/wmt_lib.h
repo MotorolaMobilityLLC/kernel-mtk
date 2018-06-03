@@ -259,6 +259,9 @@ extern INT32 wmt_lib_ps_disable(VOID);
 extern VOID wmt_lib_ps_irq_cb(VOID);
 #endif
 extern VOID wmt_lib_ps_set_sdio_psop(PF_WMT_SDIO_PSOP own_cb);
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+extern VOID wmt_lib_sdio_deep_sleep_flag_set(PF_WMT_SDIO_DEEP_SLEEP flag_cb);
+#endif
 extern INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl);
 
 /* LXOP functions: */
@@ -287,7 +290,10 @@ extern INT32 wmt_lib_set_aif(CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);	/* set AUD
 extern INT32 wmt_lib_host_awake_get(VOID);
 extern INT32 wmt_lib_host_awake_put(VOID);
 extern UINT32 wmt_lib_dbg_level_set(UINT32 level);
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+extern INT32 wmt_lib_deep_sleep_ctrl(INT32 value);
+extern MTK_WCN_BOOL wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL flag);
+#endif
 extern INT32 wmt_lib_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
 
 extern INT32 wmt_lib_msgcb_unreg(ENUM_WMTDRV_TYPE_T eType);

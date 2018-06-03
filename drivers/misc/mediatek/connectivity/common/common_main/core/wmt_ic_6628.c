@@ -656,6 +656,8 @@ WMT_IC_OPS wmt_ic_ops_mt6628 = {
 	.is_quick_sleep = mt6628_quick_sleep_flag_get,
 	.is_aee_dump_support = mt6628_aee_dump_flag_get,
 	.trigger_stp_assert = NULL,
+	.deep_sleep_ctrl = NULL,
+	.deep_sleep_flag_get = NULL,
 };
 
 /*******************************************************************************
