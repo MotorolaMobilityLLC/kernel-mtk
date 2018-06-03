@@ -403,7 +403,7 @@ int mtk_power_misc_psy_event(struct notifier_block *nb, unsigned long event, voi
 	int tmp = 0;
 
 	if (strcmp(psy->desc->name, "battery") == 0) {
-		ret = psy->desc->get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
+		ret = psy->desc->get_property(psy, POWER_SUPPLY_PROP_TEMP, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
 			if (tmp >= BATTERY_SHUTDOWN_TEMPERATURE) {

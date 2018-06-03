@@ -275,12 +275,10 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TECHNOLOGY,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
-	POWER_SUPPLY_PROP_CURRENT_MAX,
-	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-	/* Add for Battery Service */
-	POWER_SUPPLY_PROP_batt_vol,
-	POWER_SUPPLY_PROP_batt_temp,
+	POWER_SUPPLY_PROP_TEMP,
+#if 0
 	/* Add for EM */
 	POWER_SUPPLY_PROP_TemperatureR,
 	POWER_SUPPLY_PROP_TempBattVoltage,
@@ -295,6 +293,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+#endif
 };
 
 bool is_battery_init_done(void)
@@ -669,15 +668,16 @@ signed int battery_meter_get_VSense(void)
 void battery_update_psd(struct battery_data *bat_data)
 {
 	bat_data->BAT_batt_vol = battery_get_bat_voltage();
+	bat_data->BAT_batt_temp = battery_get_bat_temperature();
+#if 0
 	bat_data->BAT_InstatVolt = bat_data->BAT_batt_vol;
 	bat_data->BAT_BatterySenseVoltage = bat_data->BAT_batt_vol;
-	bat_data->BAT_batt_temp = battery_get_bat_temperature();
 	bat_data->BAT_TempBattVoltage = battery_meter_get_tempV();
 	bat_data->BAT_TemperatureR = battery_meter_get_tempR(bat_data->BAT_TempBattVoltage);
 	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
 	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
 	bat_data->BAT_ChargerVoltage = battery_get_vbus();
-
+#endif
 }
 
 static int battery_get_property(struct power_supply *psy,
@@ -710,26 +710,19 @@ static int battery_get_property(struct power_supply *psy,
 		if (b_ischarging == false)
 			fgcurrent = 0 - fgcurrent;
 
-		val->intval = fgcurrent / 10;
-		break;
-	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		val->intval = 3000000;
-		/* 3A */
-		break;
-	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		val->intval = 5000000;
-		/* 5v */
+		val->intval = fgcurrent * 100;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = FG_status.soc;
 		/* using soc as charge_counter */
 		break;
-	case POWER_SUPPLY_PROP_batt_vol:
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
-	case POWER_SUPPLY_PROP_batt_temp:
+	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = data->BAT_batt_temp * 10;
 		break;
+#if 0
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
 		break;
@@ -765,7 +758,7 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
 		break;
-
+#endif
 	default:
 		ret = -EINVAL;
 		break;
@@ -791,12 +784,14 @@ static struct battery_data battery_main = {
 	.BAT_CAPACITY = -1,
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
+#if 0
 	/* Dual battery */
 	.status_smb = POWER_SUPPLY_STATUS_DISCHARGING,
 	.capacity_smb = 50,
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+#endif
 };
 
 void evb_battery_init(void)
@@ -808,12 +803,14 @@ void evb_battery_init(void)
 	battery_main.BAT_CAPACITY = 100;
 	battery_main.BAT_batt_vol = 4200;
 	battery_main.BAT_batt_temp = 22;
+#if 0
 	/* Dual battery */
 	battery_main.status_smb = POWER_SUPPLY_STATUS_DISCHARGING;
 	battery_main.capacity_smb = 50;
 	battery_main.present_smb = 0;
 	/* ADB CMD discharging */
 	battery_main.adjust_power = -1;
+#endif
 }
 
 static void battery_update(struct battery_data *bat_data)
