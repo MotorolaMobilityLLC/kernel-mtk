@@ -1130,9 +1130,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	auxadc@11001000 {
+	auxadc: auxadc@11001000 {
 		compatible = "mediatek,auxadc";
-		reg = <0 0x11001000 0 0x0>;
+		reg = <0 0x11001000 0 0x10000>;
 		interrupts = <GIC_SPI 76 IRQ_TYPE_EDGE_FALLING>;
 	};
 
