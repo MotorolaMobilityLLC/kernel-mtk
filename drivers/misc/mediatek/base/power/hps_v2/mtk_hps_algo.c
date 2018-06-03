@@ -223,7 +223,10 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				 * if (cpu_up(cpu))
 				 *	hps_warn("[Info]CPU %d ++!\n", cpu);
 				 */
-				cpu_up(cpu);
+				if (cpu_up(cpu) == -EBUSY && hps_sys.action_id == 0xF00) {
+					/* rush boost failed because cpu_hotplug_disabled != 0 */
+					return -1;
+				}
 				++online_cores;
 			}
 			if (target_cores == online_cores)
@@ -502,11 +505,16 @@ void hps_algo_main(void)
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		if (hps_sys.cluster_info[i].target_core_num >
 		    hps_sys.cluster_info[i].online_core_num) {
-			if (hps_algo_do_cluster_action(i) == 1) {
+			int r = hps_algo_do_cluster_action(i);
+
+			if (r == 1) {
 				action_print = action_break = 1;
 				break;
+			} else if (r == -1) {
+				/* reduce rush boost log in suspend/resume */
+			} else {
+				action_print = 1;
 			}
-			action_print = 1;
 		}
 	}
 	if (!action_break) {
