@@ -14,8 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-BASE_TOP = $(srctree)/drivers/misc/mediatek/performance/fpsgo_v2/base
 MTK_TOP = $(srctree)/drivers/misc/mediatek/
+FPSGO_TOP = $(MTK_TOP)/performance/fpsgo_v2/
+BASE_TOP = $(FPSGO_TOP)/base/
+FBT_TOP = $(FPSGO_TOP)/fbt/
 
 obj-$(CONFIG_MTK_FPSGO) += \
 	src/fpsgo_base.o \
@@ -24,3 +26,4 @@ ccflags-y += \
 	-I$(srctree)/include/ \
 	-I$(MTK_TOP)/include/ \
 	-I$(BASE_TOP)/include/ \
+	-I$(FBT_TOP)/include/ \

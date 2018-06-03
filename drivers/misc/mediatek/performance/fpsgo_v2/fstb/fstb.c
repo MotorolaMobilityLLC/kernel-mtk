@@ -33,7 +33,7 @@
 #include <mt-plat/fpsgo_common.h>
 #include "../fbt/include/fbt_cpu.h"
 #include "../fbt/include/xgf.h"
-#include "../../perf_ioctl/perf_ioctl.h"
+#include "fpsgo_base.h"
 #include "fstb.h"
 #include "fstb_usedext.h"
 /* fps update from display */
@@ -172,7 +172,7 @@ static void switch_fstb_active(void)
 	fpsgo_systrace_c_fstb(-200, fstb_active, "fstb_active");
 
 	mtk_fstb_dprintk_always("%s %d\n", __func__, fstb_active);
-
+/*
 		if (wq) {
 			struct work_struct *psWork = kmalloc(sizeof(struct work_struct), GFP_ATOMIC);
 
@@ -181,6 +181,8 @@ static void switch_fstb_active(void)
 				queue_work(wq, psWork);
 			}
 		}
+*/
+	enable_fstb_timer();
 }
 
 int switch_sample_window(long long time_usec)
@@ -725,6 +727,27 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 
 }
 
+int fpsgo_fbt2fstb_query_fps(int pid)
+{
+	struct FSTB_FRAME_INFO *iter = NULL;
+	int targetfps = 0;
+
+	mutex_lock(&fstb_lock);
+
+	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
+		if (iter->pid == pid)
+			break;
+	}
+
+	if (iter == NULL)
+		targetfps = max_fps_limit;
+	else
+		targetfps = iter->target_fps;
+
+	mutex_unlock(&fstb_lock);
+
+	return targetfps;
+}
 
 static void fstb_fps_stats(struct work_struct *work)
 {
@@ -764,7 +787,6 @@ static void fstb_fps_stats(struct work_struct *work)
 			mtk_fstb_dprintk_always("%s pid:%d target_fps:%d frame_type %d\n",
 					__func__, iter->pid, iter->target_fps, iter->frame_type);
 			iter->target_fps = calculate_fps_limit(target_fps);
-			fpsgo_fstb2fbt_target_fps(iter->pid, iter->target_fps, iter->queue_fps);
 			/* if queue fps == 0, we delete that frame_info */
 		} else {
 			hlist_del(&iter->hlist);
@@ -793,7 +815,7 @@ static void fstb_fps_stats(struct work_struct *work)
 
 	mutex_unlock(&fstb_lock);
 
-	fbt_check_thread_status();
+	fpsgo_check_thread_status();
 }
 
 static int set_fps_level(int nr_level, struct fps_level *level)

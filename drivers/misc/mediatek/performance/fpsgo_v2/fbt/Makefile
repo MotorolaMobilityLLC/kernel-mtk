@@ -18,6 +18,7 @@ FPSGO_TOP = $(srctree)/drivers/misc/mediatek/performance/fpsgo_v2/
 FBT_TOP = $(FPSGO_TOP)/fbt
 COMP_TOP = $(FPSGO_TOP)/composer
 MTK_TOP = $(srctree)/drivers/misc/mediatek/
+BASE_TOP = $(FPSGO_TOP)/base
 
 ccflags-y += -DNR_FREQ_CPU=16
 
@@ -36,5 +37,6 @@ ccflags-y += \
 	-I$(FPSGO_TOP)/base/include/ \
 	-I$(COMP_TOP)/include/ \
 	-I$(FBT_TOP)/include/ \
+	-I$(BASE_TOP)/include/ \
 	-I$(MTK_TOP)/base/power/include/ \
 	-I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/ \
