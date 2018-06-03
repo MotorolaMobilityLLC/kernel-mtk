@@ -2850,6 +2850,21 @@ void cmdq_core_invalidate_hw_fetched_buffer(int32_t thread)
 	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), pc);
 }
 
+/*
+ * Non-pre-fetch thread fetch multiple instructions one time.
+ * Use suspend/resume thread to restart current thread
+ * after modify instruction in DRAM to force thread featch
+ * new instructions again.
+ */
+static void cmdq_core_invalid_hw_thread(s32 thread)
+{
+	u32 status = cmdq_core_suspend_HW_thread(thread, __LINE__);
+
+	if (status < 0)
+		CMDQ_ERR("fail to invalid in runtime, still do resume\n");
+	cmdq_core_resume_HW_thread(thread);
+}
+
 void cmdq_core_fix_command_scenario_for_user_space(struct cmdqCommandStruct *pCommand)
 {
 	if ((pCommand->scenario == CMDQ_SCENARIO_USER_DISP_COLOR)
@@ -7149,7 +7164,9 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 	struct ThreadStruct *pThread = NULL;
 	s32 retry_count = 0;
 	s32 delay_id = cmdq_get_delay_id_by_scenario(pTask->scenario);
-	const u32 max_retry_count = CMDQ_TASK_IS_INTERNAL(pTask) ? 2 : CMDQ_PREDUMP_RETRY_COUNT;
+	const u32 max_retry_count = CMDQ_TASK_IS_INTERNAL(pTask) ?
+		(gStressContext.predump_count ? gStressContext.predump_count : 2) :
+		CMDQ_PREDUMP_RETRY_COUNT;
 
 	pThread = &(gCmdqContext.thread[thread]);
 
@@ -7862,21 +7879,28 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 		}
 
 		if (loop <= 1) {
-			task_pa = cmdq_core_task_get_first_pa(pPrev);
+			u32 prev_task_pa = cmdq_core_task_get_first_pa(pPrev);
+
+			task_pa = cmdq_core_task_get_first_pa(pTask);
+
 			CMDQ_MSG(
-				"Set current(%d) order for new task, org PC(0x%p): %pa, size: %d inst: 0x%08x:%08x line: %d\n",
-				index, pPrev,
-				&task_pa, pTask->commandSize,
+				"Set current:%d order for new task:0x%p org pc:%pa inst:0x%08x:%08x jump to:0x%pa\n",
+				index, pPrev, &prev_task_pa,
 				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1],
-				__LINE__);
+				&task_pa);
 
 			pThread->pCurTask[index] = pTask;
 			/* Jump: Absolute */
 			pPrev->pCMDEnd[0] = ((CMDQ_CODE_JUMP << 24) | 0x1);
 			/* Jump to here */
-			task_pa = cmdq_core_task_get_first_pa(pTask);
 			pPrev->pCMDEnd[-1] = task_pa;
-			CMDQ_VERBOSE("EXEC: modify jump to 0x%pa, line: %d\n", &(task_pa), __LINE__);
+
+			/*
+			 * Task reordered to first one, next to running task.
+			 * Invalid thread to force read instructions again since we change jump.
+			 */
+			if (*pLast != pTask)
+				cmdq_core_invalid_hw_thread(thread);
 
 #ifndef CMDQ_APPEND_WITHOUT_SUSPEND
 			/* re-fetch command buffer again. */
@@ -7886,8 +7910,13 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 		}
 
 		if (pPrev->priority < pTask->priority) {
-			CMDQ_LOG("Switch prev(%d, 0x%p) and curr(%d, 0x%p) order\n",
-				 prev, pPrev, index, pTask);
+
+			task_pa = cmdq_core_task_get_first_pa(pPrev);
+			CMDQ_LOG(
+				"Switch prev(%d, 0x%p 0x%08x) and curr(%d, 0x%p 0x%08x) order loop:%d jump:0x%pa\n",
+				prev, pPrev, pPrev->pCMDEnd[-1],
+				index, pTask, pTask->pCMDEnd[-1],
+				loop, &task_pa);
 
 			pThread->pCurTask[index] = pPrev;
 			pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
@@ -7901,26 +7930,25 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 			/* Jump: Absolute */
 			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 0x1);
 			/* Jump to here */
-			task_pa = cmdq_core_task_get_first_pa(pPrev);
 			pTask->pCMDEnd[-1] = task_pa;
-			CMDQ_VERBOSE("EXEC: modify jump to 0x%pa, line:%d\n", &(task_pa), __LINE__);
 
 #ifndef CMDQ_APPEND_WITHOUT_SUSPEND
 			/* re-fetch command buffer again. */
 			cmdq_core_invalidate_hw_fetched_buffer(thread);
 #endif
 			if (*pLast == pTask) {
-				CMDQ_LOG("update pLast from 0x%p to 0x%p\n", pTask, pPrev);
+				CMDQ_LOG("update pLast from 0x%p (0x%08x) to 0x%p (0x%08x)\n",
+					pTask, pTask->pCMDEnd[-1],
+					pPrev, pPrev->pCMDEnd[-1]);
 				*pLast = pPrev;
 			}
 		} else {
 			task_pa = cmdq_core_task_get_first_pa(pPrev);
+
 			CMDQ_MSG(
-				"Set current(%d) order for new task, org PC(0x%p): %pa, size: %d inst: 0x%08x:%08x line: %d\n",
-				index, pPrev,
-				&task_pa, pPrev->commandSize,
-				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1],
-				__LINE__);
+				"Set current:%d order for new task, org PC:0x%p pa:%pa inst:0x%08x:%08x",
+				index, pPrev, &task_pa,
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
 
 			pThread->pCurTask[index] = pTask;
 			/* Jump: Absolute */
@@ -7928,7 +7956,6 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 			/* Jump to here */
 			task_pa = cmdq_core_task_get_first_pa(pTask);
 			pPrev->pCMDEnd[-1] = task_pa;
-			CMDQ_VERBOSE("EXEC: modify jump to %pa, line:%d\n", &task_pa, __LINE__);
 
 #ifndef CMDQ_APPEND_WITHOUT_SUSPEND
 			/* re-fetch command buffer again. */
@@ -8132,23 +8159,22 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		 * PC = END - 0, All CMDs are executed
 		 */
 		if ((thread_pc == end_addr) || (thread_pc == last_inst_pa)) {
-			cmdq_long_string_init(true, long_msg, &msg_offset, &msg_max_size);
 			MVABase = cmdq_core_task_get_first_pa(pTask);
-			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
-				"EXEC: Task: 0x%p Set HW thread(%d) pc from 0x%08x(end:0x%08x) to 0x%pa,",
-				pTask, thread, thread_pc, end_addr, &MVABase);
-			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
-				" oriNextCookie:%d, oriTaskCount:%d\n",
-					   cookie, pThread->taskCount);
-			CMDQ_MSG("%s", long_msg);
-
 			/* set to pTask directly */
 			if (shift_end)
 				EndAddr = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_final_instr(pTask) - CMDQ_INST_SIZE);
 			else
 				EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
-			CMDQ_MSG("EXEC: thread PC: 0x%08x\n", thread_pc);
-			CMDQ_MSG("EXEC: set end addr: 0x%08x for task: 0x%p\n", EndAddr, pTask);
+
+			cmdq_long_string_init(true, long_msg, &msg_offset, &msg_max_size);
+			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
+				"EXEC: Task: 0x%p Set HW thread(%d) pc from 0x%08x(end:0x%08x) to 0x%pa(end:0x%08x),",
+				pTask, thread, thread_pc, end_addr, &MVABase, EndAddr);
+			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
+				" oriNextCookie:%d, oriTaskCount:%d\n",
+				cookie, pThread->taskCount);
+			CMDQ_MSG("%s", long_msg);
+
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
@@ -8233,7 +8259,6 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			}
 			pThread->taskCount++;
 			pThread->allowDispatching = 1;
-
 		}
 
 		pThread->nextCookie += 1;
