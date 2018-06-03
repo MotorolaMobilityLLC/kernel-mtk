@@ -339,7 +339,7 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#if 0
 	int count = 100;
 #endif
 	#if 0
@@ -366,7 +366,7 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 #endif
 
 	switch (i2c->id) {
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#if 0
 	case 0:
 		while ((get_scp_semaphore(SEMAPHORE_I2C0) != 1) && count > 0)
 			count--;
@@ -393,7 +393,7 @@ static int i2c_release_semaphore(struct mt_i2c *i2c)
 #endif
 
 	switch (i2c->id) {
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#if 0
 	case 0:
 		return release_scp_semaphore(SEMAPHORE_I2C0) == 1 ? 0 : -EBUSY;
 	case 1:
