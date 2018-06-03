@@ -65,6 +65,12 @@ __weak void get_android_log_buffer(unsigned long *addr, unsigned long *size, uns
 {
 }
 
+#if defined(CONFIG_TRUSTY_LOG)
+__weak void get_gz_log_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+#endif
+
 __weak void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
 }
@@ -571,6 +577,11 @@ static void mrdump_mini_build_elf_misc(void)
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_hang_detect_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_HANG_DETECT_");
+#if defined(CONFIG_TRUSTY_LOG)
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_gz_log_buffer(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_GZ_LOG_");
+#endif
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_disp_err_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_ERR_");
