@@ -345,7 +345,10 @@ int gauge_get_zcv(int *zcv)
 
 int gauge_set_nag_en(int nafg_zcv_en)
 {
+#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT)
+#else
 	gauge_dev_enable_nag_interrupt(gauge_dev, nafg_zcv_en);
+#endif
 	return 0;
 }
 
