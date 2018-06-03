@@ -3339,7 +3339,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	if (is_lcm_inited) {
 		/* ??? why need */
-		ret = disp_lcm_init(pgc->plcm, 0);	/* no need lcm power on,because lk power on lcm */
+		/* no need lcm power on,because lk power on lcm */
+		/* ret = disp_lcm_init(pgc->plcm, 0);	*/
 	} else {
 		/* lcm not inited : 1. fpga no lk(verify done); 2. evb no lk(need verify) */
 	if (use_cmdq) {
