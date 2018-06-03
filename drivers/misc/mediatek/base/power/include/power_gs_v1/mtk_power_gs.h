@@ -105,5 +105,6 @@ unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
 void mt_power_gs_table_init(void);
 
 extern struct golden _golden;
+extern bool slp_chk_golden_diff_mode;
 
 #endif
