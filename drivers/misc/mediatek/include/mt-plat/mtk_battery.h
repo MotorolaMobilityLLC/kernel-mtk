@@ -173,6 +173,8 @@ typedef enum {
 	BATTERY_METER_CMD_SET_META_CALI_CURRENT,
 	BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE,
 	BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID,
+	BATTERY_METER_CMD_GET_RTC_UI_SOC,
+	BATTERY_METER_CMD_SET_RTC_UI_SOC,
 
 	BATTERY_METER_CMD_NUMBER
 } BATTERY_METER_CTRL_CMD;
@@ -284,6 +286,8 @@ typedef enum {
 	FG_DAEMON_CMD_SET_FG_VBAT_H_TH,
 	FG_DAEMON_CMD_SET_CAR_TUNE_VALUE,
 	FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID,
+	FG_DAEMON_CMD_GET_RTC_UI_SOC,
+	FG_DAEMON_CMD_SET_RTC_UI_SOC,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -538,6 +542,7 @@ struct fuel_gauge_custom_data {
 	int hwocv_swocv_diff;	/* mv */
 	int hwocv_oldocv_diff;	/* mv */
 	int swocv_oldocv_diff;	/* mv */
+	int vbat_oldocv_diff;	/* mv */
 	int tnew_told_pon_diff;	/* degree */
 	int tnew_told_pon_diff2;/* degree */
 	int pmic_shutdown_time;	/* sec */
@@ -604,6 +609,9 @@ struct fuel_gauge_custom_data {
 	int fg_tracking_current;
 	int fg_tracking_current_iboot_en;
 	int bat_par_i;
+
+	int aging_factor_min;
+	int aging_factor_diff;
 
 /*======old setting ======*/
 	/* cust_battery_meter.h */

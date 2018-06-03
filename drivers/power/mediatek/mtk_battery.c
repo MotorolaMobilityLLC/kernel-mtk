@@ -110,6 +110,8 @@ int bat_cycle_thr;
 
 signed int ptim_lk_v;
 signed int ptim_lk_i;
+int pl_bat_vol;
+int pl_shutdown_time;
 
 struct timespec fg_time;
 struct timespec now_time;
@@ -733,6 +735,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.aging_temp_diff = AGING_TEMP_DIFF;
 	fg_cust_data.aging_100_en = AGING_100_EN;
 	fg_cust_data.difference_voltage_update = DIFFERENCE_VOLTAGE_UPDATE;
+	fg_cust_data.aging_factor_min = UNIT_TRANS_100 * AGING_FACTOR_MIN;
+	fg_cust_data.aging_factor_diff = UNIT_TRANS_100 * AGING_FACTOR_DIFF;
 	/* Aging Compensation 2*/
 	fg_cust_data.aging_two_en = AGING_TWO_EN;
 	/* Aging Compensation 3*/
@@ -791,6 +795,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.hwocv_oldocv_diff = HWOCV_OLDOCV_DIFF;
 	fg_cust_data.hwocv_swocv_diff = HWOCV_SWOCV_DIFF;
 	fg_cust_data.swocv_oldocv_diff = SWOCV_OLDOCV_DIFF;
+	fg_cust_data.vbat_oldocv_diff = VBAT_OLDOCV_DIFF;
 
 	fg_cust_data.pmic_shutdown_time = UNIT_TRANS_60 * PMIC_SHUTDOWN_TIME;
 	fg_cust_data.tnew_told_pon_diff = TNEW_TOLD_PON_DIFF;
@@ -1911,9 +1916,10 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_SHUTDOWN_DURATION_TIME:
 	{
-		unsigned int time = 0;
+		signed int time = 0;
 
-		battery_meter_ctrl(BATTERY_METER_CMD_GET_SHUTDOWN_DURATION_TIME, &time);
+		/*battery_meter_ctrl(BATTERY_METER_CMD_GET_SHUTDOWN_DURATION_TIME, &time);*/
+		time = pl_shutdown_time;
 
 		ret_msg->fgd_data_len += sizeof(time);
 		memcpy(ret_msg->fgd_data, &time, sizeof(time));
@@ -2437,12 +2443,34 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
-
 	case FG_DAEMON_CMD_PRINT_LOG:
 	{
 		bm_err("%s", &msg->fgd_data[0]);
 	}
 	break;
+
+	case FG_DAEMON_CMD_GET_RTC_UI_SOC:
+	{
+		int rtc_ui_soc;
+
+		battery_meter_ctrl(BATTERY_METER_CMD_GET_RTC_UI_SOC, &rtc_ui_soc);
+
+		ret_msg->fgd_data_len += sizeof(rtc_ui_soc);
+		memcpy(ret_msg->fgd_data, &rtc_ui_soc, sizeof(rtc_ui_soc));
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_RTC_UI_SOC = %d\n", rtc_ui_soc);
+	}
+	break;
+
+	case FG_DAEMON_CMD_SET_RTC_UI_SOC:
+	{
+		int rtc_ui_soc;
+
+		memcpy(&rtc_ui_soc, &msg->fgd_data[0], sizeof(rtc_ui_soc));
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_RTC_UI_SOC, &rtc_ui_soc);
+		bm_debug("[fg_res] BATTERY_METER_CMD_SET_RTC_UI_SOC = %d\n", rtc_ui_soc);
+	}
+	break;
+
 
 	default:
 		bm_err("bad FG_DAEMON_CTRL_CMD_FROM_USER 0x%x\n", msg->fgd_cmd);
@@ -3831,6 +3859,12 @@ static int battery_probe(struct platform_device *dev)
 	const char *fg_swocv_i = NULL;
 	char fg_swocv_i_tmp[10];
 	int fg_swocv_i_len = 0;
+	const char *shutdown_time = NULL;
+	char shutdown_time_tmp[10];
+	int shutdown_time_len = 0;
+	const char *boot_voltage = NULL;
+	char boot_voltage_tmp[10];
+	int boot_voltage_len = 0;
 
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
@@ -3938,7 +3972,6 @@ static int battery_probe(struct platform_device *dev)
 		register_charger_manager_notifier(pbat_consumer, &bat_nb);
 	}
 
-#if 1
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		fg_swocv_v = of_get_flat_dt_prop(bat_node, "atag,fg_swocv_v", &fg_swocv_v_len);
 	if (fg_swocv_v == NULL) {
@@ -3962,7 +3995,30 @@ static int battery_probe(struct platform_device *dev)
 			fg_swocv_i, fg_swocv_i_len, fg_swocv_i_tmp, ptim_lk_i);
 	}
 
-#endif
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		shutdown_time = of_get_flat_dt_prop(bat_node, "atag,shutdown_time", &shutdown_time_len);
+	if (shutdown_time == NULL) {
+		bm_err(" shutdown_time == NULL len = %d\n", shutdown_time_len);
+	} else {
+		snprintf(shutdown_time_tmp, (shutdown_time_len + 1), "%s", shutdown_time);
+		ret = kstrtoint(shutdown_time_tmp, 10, &pl_shutdown_time);
+
+		bm_err(" shutdown_time = %s len %d shutdown_time_tmp %s pl_shutdown_time[%d]\n",
+			shutdown_time, shutdown_time_len, shutdown_time_tmp, pl_shutdown_time);
+	}
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		boot_voltage = of_get_flat_dt_prop(bat_node, "atag,boot_voltage", &boot_voltage_len);
+	if (boot_voltage == NULL) {
+		bm_err(" boot_voltage == NULL len = %d\n", boot_voltage_len);
+	} else {
+		snprintf(boot_voltage_tmp, (boot_voltage_len + 1), "%s", boot_voltage);
+		ret = kstrtoint(boot_voltage_tmp, 10, &pl_bat_vol);
+
+		bm_err(" boot_voltage = %s len %d boot_voltage_tmp %s pl_bat_vol[%d]\n",
+			boot_voltage, boot_voltage_len, boot_voltage_tmp, pl_bat_vol);
+	}
+
 
 	wake_unlock(&battery_lock);
 	return 0;
