@@ -44,8 +44,6 @@ static void __iomem *EMI_MPU_BASE;
 static unsigned int mpu_irq;
 static bool force_drs_disable;
 
-static struct timespec drs_time_start;
-static struct timespec drs_time_end;
 static emi_info_t emi_info;
 
 static int emi_probe(struct platform_device *pdev)
@@ -557,8 +555,6 @@ int disable_drs(unsigned char *backup)
 	force_drs_disable = true;
 	spin_unlock_irqrestore(&emi_drs_lock, flags);
 
-	getnstimeofday(&drs_time_start);
-
 	*backup = (readl(IOMEM(CHA_EMI_DRS)) << 4) & 0x10;
 	*backup |= (readl(IOMEM(CHB_EMI_DRS)) & 0x01);
 
@@ -587,17 +583,11 @@ int disable_drs(unsigned char *backup)
 void restore_drs(unsigned char enable)
 {
 	unsigned long flags;
-	long switch_interval;
 
 	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL)) {
 		pr_err("[EMI] can not get base to enable DRS\n");
 		goto out;
 	}
-
-	getnstimeofday(&drs_time_end);
-	switch_interval = (drs_time_end.tv_nsec - drs_time_start.tv_nsec) / 1000;
-	if ((switch_interval > 0) && (switch_interval < 1000))
-		udelay(1000 - switch_interval);
 
 	writel(readl(IOMEM(CHA_EMI_DRS)) | ((enable >> 4) & 0x1),
 		IOMEM(CHA_EMI_DRS));
