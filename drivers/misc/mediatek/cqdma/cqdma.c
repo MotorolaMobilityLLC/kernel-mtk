@@ -84,12 +84,10 @@ struct wake_lock *wk_lock;
 #define DMA_DBG_STAT(ch)           IOMEM((env_info[ch].base + 0x0050))
 
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
-#define DMA_GDMA_SEC_EN(ch)        IOMEM((env_info[ch].base + 0x003C))
 #define DMA_VIO_DBG1(ch)           IOMEM((env_info[ch].base + 0x0040))
 #define DMA_VIO_DBG(ch)            IOMEM((env_info[ch].base + 0x0044))
 #else
 #define DMA_VIO_DBG1(ch)           IOMEM((env_info[ch].base + 0x003c))
-#define DMA_GDMA_SEC_EN(ch)        IOMEM((env_info[ch].base + 0x0058))
 #define DMA_VIO_DBG(ch)            IOMEM((env_info[ch].base + 0x0060))
 #endif
 
@@ -150,8 +148,6 @@ defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define DMA_HARD_RST_CLR_BIT    (0x00000000)
 #define DMA_READ_COHER_BIT      (0x00000010)
 #define DMA_WRITE_COHER_BIT     (0x00100000)
-#define DMA_GSEC_EN_BIT         (0x00000001)
-#define DMA_SEC_EN_BIT          (0x00000001)
 #define DMA_ADDR2_EN_BIT        (0x00000001)
 
 /*
@@ -380,47 +376,6 @@ int mt_config_gdma(int channel, struct mt_gdma_conf *config, int flag)
 		mt_reg_sync_writel(config->wpto, DMA_JUMP_ADDR(channel));
 		mt_reg_sync_writel((config->count) & DMA_GDMA_LEN_MAX_MASK,
 				DMA_LEN1(channel));
-
-		/* setup security channel */
-		if (config->sec) {
-			pr_debug("1:ChSEC:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-			mt_reg_sync_writel(
-				(DMA_SEC_EN_BIT |
-				 readl(DMA_GDMA_SEC_EN(channel))),
-					   DMA_GDMA_SEC_EN(channel));
-			pr_debug("2:ChSEC:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-		} else {
-			pr_debug("1:ChSEC:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-			mt_reg_sync_writel(
-				((~DMA_SEC_EN_BIT) &
-				 readl(DMA_GDMA_SEC_EN(channel))),
-					   DMA_GDMA_SEC_EN(channel));
-			pr_debug("2:ChSEC:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-		}
-
-		/* setup domain_cfg */
-		if (config->domain) {
-			pr_debug("1:Domain_cfg:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-			mt_reg_sync_writel(
-				((config->domain << 1) |
-				 readl(DMA_GDMA_SEC_EN(channel))),
-					   DMA_GDMA_SEC_EN(channel));
-			pr_debug("2:Domain_cfg:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-		} else {
-			pr_debug("1:Domain_cfg:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-			mt_reg_sync_writel(
-				(0x1 & readl(DMA_GDMA_SEC_EN(channel))),
-				DMA_GDMA_SEC_EN(channel));
-			pr_debug("2:Domain_cfg:%x\n",
-					readl(DMA_GDMA_SEC_EN(channel)));
-		}
 
 		if (enable_4G()) {
 			/*
