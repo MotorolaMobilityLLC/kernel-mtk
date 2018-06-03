@@ -358,7 +358,7 @@ int btif_log_output_enable(struct _btif_log_queue_t_ *p_log_que);
 int btif_log_output_disable(struct _btif_log_queue_t_ *p_log_que);
 int btif_log_buf_reset(struct _btif_log_queue_t_ *p_log_que);
 int btif_log_buf_init(struct _mtk_btif_ *p_btif);
-int btif_dump_reg(struct _mtk_btif_ *p_btif);
+int btif_dump_reg(struct _mtk_btif_ *p_btif, enum _ENUM_BTIF_REG_ID_ flag);
 int btif_rx_notify_reg(struct _mtk_btif_ *p_btif, MTK_BTIF_RX_NOTIFY rx_notify);
 int btif_raise_wak_signal(struct _mtk_btif_ *p_btif);
 int btif_clock_ctrl(struct _mtk_btif_ *p_btif, int en);

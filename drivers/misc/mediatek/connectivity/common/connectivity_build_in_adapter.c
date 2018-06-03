@@ -17,6 +17,8 @@
 #define DFT_TAG "[CONNADP]"
 #include "connectivity_build_in_adapter.h"
 
+#include <kernel/sched/sched.h>
+
 /*device tree mode*/
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -232,3 +234,47 @@ void connectivity_export_dump_gpio_info(int start, int end)
 }
 EXPORT_SYMBOL(connectivity_export_dump_gpio_info);
 #endif
+
+void connectivity_export_dump_thread_state(const char *name)
+{
+	static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
+	struct task_struct *g, *p;
+	int cpu;
+	struct rq *rq;
+	struct task_struct *curr;
+	struct thread_info *ti;
+
+	if (name == NULL || strlen(name) > 255) {
+		pr_info("invalid name:%p or thread name too long\n", name);
+		return;
+	}
+
+	pr_info("start to show debug info of %s\n", name);
+
+	rcu_read_lock();
+	for_each_process_thread(g, p) {
+		unsigned long state = p->state;
+
+		if (strncmp(p->comm, name, strlen(name)) != 0)
+			continue;
+		cpu = task_cpu(p);
+		rq = cpu_rq(cpu);
+		curr = rq->curr;
+		ti = task_thread_info(curr);
+		if (state)
+			state = __ffs(state) + 1;
+		pr_info("%d:%-15.15s %c", p->pid, p->comm,
+			state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+		pr_info("cpu=%d on_cpu=%d ", cpu, p->on_cpu);
+		show_stack(p, NULL);
+		pr_info("CPU%d curr=%d:%-15.15s preempt_count=0x%x", cpu,
+			curr->pid, curr->comm, ti->preempt_count);
+
+		if (state == TASK_RUNNING && curr != p)
+			show_stack(curr, NULL);
+
+		break;
+	}
+	rcu_read_unlock();
+}
+EXPORT_SYMBOL(connectivity_export_dump_thread_state);

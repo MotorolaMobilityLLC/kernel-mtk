@@ -179,9 +179,8 @@ enum _ENUM_BTIF_REG_ID_ {
 	REG_WAT_TIME = 9,	/*Async Wait Time Register */
 	REG_HANDSHAKE = 10,	/*New HandShake Mode Register */
 	REG_SLP_WAK = 11,	/*Sleep Wakeup Reigster */
-	REG_BTIF_ALL = 12,	/*all btif controller's registers */
-	REG_TX_DMA_ALL = 13,
-	REG_RX_DMA_ALL = 14,
+	REG_ALL = 12,	/*all  registers */
+	REG_IRQ = 13,	/*IRQ  registers */
 	REG_MAX
 };
 
