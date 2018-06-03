@@ -328,6 +328,8 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 					tmp->render_method, enqueue_start_time);
 				break;
 			case BY_PASS_TYPE:
+				fpsgo_comp2fstb_queue_time_update(pid, tmp->frame_type,
+					0, enqueue_start_time);
 				find = 1;
 				fpsgo_systrace_c_fbt_gm(-100, 0, "%d-frame_time", pid);
 				break;

@@ -1197,7 +1197,7 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 		return 0;
 	}
 
-	seq_puts(m, "tid\tname\t\tframeType\trenderMethod\tcurrentFPS\ttargetFPS\n");
+	seq_puts(m, "tid\tname\t\tBypass\tVsync-aligned\trenderMethod\tcurrentFPS\ttargetFPS\n");
 
 	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
 		rcu_read_lock();
@@ -1221,10 +1221,36 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 		seq_printf(m, "%d\t", iter->pid);
 		seq_printf(m, "%s\t", gtsk->comm);
 		put_task_struct(gtsk);
-		seq_printf(m, "%d\t\t", iter->frame_type);
-		seq_printf(m, "%d\t\t", iter->frame_type != BY_PASS_TYPE ? iter->render_method : -1);
+		seq_printf(m, "%c\t", iter->frame_type == BY_PASS_TYPE ? 'y' : 'n');
+		seq_printf(m, "%c\t\t", iter->frame_type == VSYNC_ALIGNED_TYPE ? 'y' : 'n');
+
+		switch (iter->render_method) {
+		case SWUI:
+			seq_printf(m, "%s\t\t",
+					iter->frame_type == BY_PASS_TYPE
+					|| iter->frame_type == NON_VSYNC_ALIGNED_TYPE ? "others" : "SWUI");
+			break;
+		case HWUI:
+			seq_printf(m, "%s\t\t",
+					iter->frame_type == BY_PASS_TYPE
+					|| iter->frame_type == NON_VSYNC_ALIGNED_TYPE ? "others" : "HWUI");
+			break;
+		case GLSURFACE:
+			seq_printf(m, "%s\t",
+					iter->frame_type == BY_PASS_TYPE
+					|| iter->frame_type == NON_VSYNC_ALIGNED_TYPE ? "others" : "GLSURFACE");
+			break;
+		default:
+			seq_puts(m, "others\t\t");
+			break;
+		}
+
 		seq_printf(m, "%d\t\t", iter->queue_fps > CFG_MAX_FPS_LIMIT ? CFG_MAX_FPS_LIMIT : iter->queue_fps);
-		seq_printf(m, "%d\t", iter->target_fps);
+
+		if (iter->frame_type != BY_PASS_TYPE)
+			seq_printf(m, "%d\t", iter->target_fps);
+		else
+			seq_puts(m, "NA\t");
 		seq_puts(m, "\n");
 
 	}
