@@ -1268,6 +1268,11 @@ void fg_custom_init_from_header(void)
 		fg_cust_data.disable_nafg = 0;
 #endif
 
+	if (gauge_get_hw_version() == GAUGE_HW_V2001) {
+		bm_err("disable nafg\n");
+		fg_cust_data.disable_nafg = 1;
+	}
+
 	fg_table_cust_data.fg_profile_t0_size =
 		sizeof(fg_profile_t0[g_fg_battery_id]) / sizeof(struct FUELGAUGE_PROFILE_STRUCT);
 
