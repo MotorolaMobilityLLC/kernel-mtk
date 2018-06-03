@@ -518,12 +518,16 @@ static int mcdi_debugfs_init(void)
 	return 0;
 }
 
-static void __go_to_wfi(void)
+static void __go_to_wfi(int cpu)
 {
+	trace_rgidle_rcuidle(cpu, 1);
+
 	isb();
 	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
+
+	trace_rgidle_rcuidle(cpu, 0);
 }
 
 unsigned int mcdi_mbox_read(int id)
@@ -593,12 +597,12 @@ void mcdi_cpu_off(int cpu)
 		break;
 	default:
 		/* should NOT happened */
-		__go_to_wfi();
+		__go_to_wfi(cpu);
 
 		break;
 	}
 #else
-	__go_to_wfi();
+	__go_to_wfi(cpu);
 #endif
 }
 
@@ -619,7 +623,7 @@ void mcdi_cluster_off(int cpu)
 #elif MCDI_CPU_OFF
 	mcdi_cpu_off(cpu);
 #else
-	__go_to_wfi();
+	__go_to_wfi(cpu);
 #endif
 }
 
@@ -716,7 +720,7 @@ int mcdi_enter(int cpu)
 
 	switch (state) {
 	case MCDI_STATE_WFI:
-		__go_to_wfi();
+		__go_to_wfi(cpu);
 
 		break;
 	case MCDI_STATE_CPU_OFF:

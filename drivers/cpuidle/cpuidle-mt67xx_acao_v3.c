@@ -103,7 +103,7 @@ static struct cpuidle_driver mt67xx_acao_cpuidle_driver_set_1 = {
 	.safe_state_index = 0,
 };
 
-int __init mt67xx_acao_cpuidle_init(void)
+int __init mt67xx_acao_v3_cpuidle_init(void)
 {
 	int cpu, ret;
 	struct cpuidle_device *dev;
@@ -189,4 +189,4 @@ out_fail:
 	return ret;
 }
 
-device_initcall(mt67xx_acao_cpuidle_init);
+device_initcall(mt67xx_acao_v3_cpuidle_init);
