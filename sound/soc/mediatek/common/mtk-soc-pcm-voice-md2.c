@@ -130,8 +130,8 @@ static struct snd_pcm_hardware mtk_pcm_hardware = {
 	.rates =        SOC_NORMAL_USE_RATE,
 	.rate_min =     SOC_NORMAL_USE_RATE_MIN,
 	.rate_max =     SOC_NORMAL_USE_RATE_MAX,
-	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
-	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
+	.channels_min =     SOC_HIGH_USE_CHANNELS_MIN,
+	.channels_max =     SOC_HIGH_USE_CHANNELS_MAX,
 	.buffer_bytes_max = MAX_BUFFER_SIZE_MD2,
 	.period_bytes_max = MAX_BUFFER_SIZE_MD2,
 	.periods_min =      1,
@@ -199,6 +199,16 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 		set_adc_enable(false);
+
+	/* 3-mic setting */
+	if (substream->runtime->channels > 2) {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH3);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+			set_adc2_enable(false);
+	}
 
 	EnableAfe(false);
 	AudDrv_Clk_Off();
@@ -276,6 +286,20 @@ static int mtk_voice1_ext_prepare(struct snd_pcm_substream *substream)
 		set_adc_enable(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+	}
+
+	/* 3-mic setting */
+	if (substream->runtime->channels > 2) {
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH3);
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+			set_adc2_in(substream->runtime->rate);
+			set_adc2_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+		}
 	}
 
 	EnableAfe(true);
