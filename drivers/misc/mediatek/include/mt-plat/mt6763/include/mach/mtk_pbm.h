@@ -208,12 +208,12 @@ enum md1_section_level_tbl_c2k {
  * MD1 Scenario power
  */
 enum md1_scenario_pwr_tbl {
-	PW_STANDBY = 1,
-	PW_2G_TALKING_OR_DATALINK = 63,
-	PW_3G_TALKING = 142,
-	PW_3G_DATALINK = 258,
-	PW_4G_DL_1CC = 329,
-	PW_4G_DL_2CC = 449
+	PW_STANDBY = 2,
+	PW_2G_TALKING_OR_DATALINK = 30,
+	PW_3G_TALKING = 72,
+	PW_3G_DATALINK = 180,
+	PW_4G_DL_1CC = 171,
+	PW_4G_DL_2CC = 320
 };
 
 /*
