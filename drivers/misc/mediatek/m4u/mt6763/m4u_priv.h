@@ -42,13 +42,16 @@
 #define M4U_DVT 0
 
 #ifndef M4U_PROFILE
-#define mmprofile_log_ex(...)
-#define mmprofile_enable(...)
-#define mmprofile_start(...)
-#define mmprofile_enable_event(...)
-#define mmp_event unsigned int
+#define MMProfileLogEx(...)
+#define MMProfileEnable(...)
+#define MMProfileStart(...)
+#define MMProfileEnableEvent(...)
+#define MMP_Event unsigned int
 #else
 #include <mmprofile.h>
+
+extern void MMProfileEnable(int enable);
+extern void MMProfileStart(int start);
 #endif
 
 #ifdef CONFIG_PM
@@ -219,6 +222,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active);
 
 int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id);
 int m4u_dump_pfh_tlb(int m4u_id);
+int m4u_dump_victim_tlb(int m4u_id);
 int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 
 int config_mau(M4U_MAU_STRUCT mau);
@@ -312,7 +316,7 @@ typedef enum {
 	M4U_MMP_TOGGLE_CG,
 	M4U_MMP_MAX,
 } M4U_MMP_TYPE;
-extern mmp_event M4U_MMP_Events[M4U_MMP_MAX];
+extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
 
 typedef struct {

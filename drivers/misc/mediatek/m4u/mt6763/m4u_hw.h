@@ -20,26 +20,26 @@
 #define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 1)      /* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
 
 /* seq range related */
-#define SEQ_NR_PER_MM_SLAVE    8
+#define SEQ_NR_PER_MM_SLAVE    0
 #define SEQ_NR_PER_PERI_SLAVE    0
 
 #define M4U0_SEQ_NR         (SEQ_NR_PER_MM_SLAVE*M4U_SLAVE_NUM(0))
 #define M4U1_SEQ_NR         (SEQ_NR_PER_PERI_SLAVE*M4U_SLAVE_NUM(1))
 #define M4U_SEQ_NUM(m4u_id)   ((m4u_id) ? M4U1_SEQ_NR : M4U0_SEQ_NR)
 
-#define M4U0_MAU_NR    4
+#define M4U0_MAU_NR    1
 
 #define M4U_SEQ_ALIGN_MSK   (0x100000-1)
 #define M4U_SEQ_ALIGN_SIZE  0x100000
 
 /* mau related */
-#define MAU_NR_PER_M4U_SLAVE    4
+#define MAU_NR_PER_M4U_SLAVE    1
 
 /* smi */
-#define SMI_LARB_NR     6
+#define SMI_LARB_NR     4
 
 /* prog pfh dist related */
-#define PROG_PFH_DIST    16
+#define PROG_PFH_DIST    2
 
 #define M4U0_PROG_PFH_NR         (PROG_PFH_DIST)
 #define M4U1_PROG_PFH_NR         (PROG_PFH_DIST)
