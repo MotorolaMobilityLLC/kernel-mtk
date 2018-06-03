@@ -571,9 +571,6 @@ void AudDrv_Clk_On(void)
 		/* enable audio sys DCM for power saving */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 29, 0x1 << 29);
 
-		/* setting for APLL*/
-		apll1_mux_setting(true);
-		apll2_mux_setting(true);
 		/* TODO: apmixed apll rate is set in preloader, consider set it using CCF */
 	}
 EXIT:
@@ -590,10 +587,6 @@ void AudDrv_Clk_Off(void)
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
 		/* Disable AFE clock */
-
-		/* setting for APLL*/
-		apll1_mux_setting(false);
-		apll2_mux_setting(false);
 
 		if (aud_clks[CLOCK_MTKAIF_26M_CLK].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MTKAIF_26M_CLK].clock);
@@ -1328,6 +1321,7 @@ void EnableApll1(bool enable)
 			/* 180.6336 / 8 = 22.5792MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 			AudDrv_APLL22M_Clk_On();
+			apll1_mux_setting(true);
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 0, 0x1 << 0);
 		}
 
@@ -1337,6 +1331,7 @@ void EnableApll1(bool enable)
 
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 0, 0x1 << 0);
+			apll1_mux_setting(false);
 			AudDrv_APLL22M_Clk_Off();
 		}
 	}
@@ -1351,6 +1346,7 @@ void EnableApll2(bool enable)
 			/* 196.608 / 8 = 24.576MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 28, 0xf << 28);
 			AudDrv_APLL24M_Clk_On();
+			apll2_mux_setting(true);
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 1, 0x1 << 1);
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
@@ -1358,6 +1354,7 @@ void EnableApll2(bool enable)
 		Aud_APLL_DIV_APLL2_cntr--;
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 1, 0x1 << 1);
+			apll2_mux_setting(false);
 			AudDrv_APLL24M_Clk_Off();
 		}
 	}
