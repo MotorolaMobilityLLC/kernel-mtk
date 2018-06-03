@@ -349,32 +349,42 @@ static int acquire_mutex(enum DDP_SCENARIO_ENUM scenario)
 {
 /* /: primay use mutex 0 */
 	int mutex_id = 0;
-	struct DDP_MANAGER_CONTEXT *content = _get_context();
-	int mutex_idx_free = content->mutex_idx;
+	int mutex_idx_free = 0;
+
+	struct DDP_MANAGER_CONTEXT *ctx = _get_context();
 
 	ASSERT(scenario >= 0 && scenario < DDP_SCENARIO_MAX);
+
+	mutex_lock(&ctx->mutex_lock);
+	mutex_idx_free = ctx->mutex_idx;
 	while (mutex_idx_free) {
 		if (mutex_idx_free & 0x1) {
-			content->mutex_idx &= (~(0x1 << mutex_id));
+			ctx->mutex_idx &= (~(0x1 << mutex_id));
 			mutex_id += DISP_MUTEX_DDP_FIRST;
 			break;
 		}
 		mutex_idx_free >>= 1;
 		++mutex_id;
 	}
+	mutex_unlock(&ctx->mutex_lock);
+
 	ASSERT(mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 	DDPDBG("scenario %s acquire mutex %d, left mutex 0x%x!\n",
-		   ddp_get_scenario_name(scenario), mutex_id, content->mutex_idx);
+		   ddp_get_scenario_name(scenario), mutex_id, ctx->mutex_idx);
 	return mutex_id;
 }
 
 static int release_mutex(int mutex_idx)
 {
-	struct DDP_MANAGER_CONTEXT *content = _get_context();
+	struct DDP_MANAGER_CONTEXT *ctx = _get_context();
 
 	ASSERT(mutex_idx < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
-	content->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
-	DDPDBG("release mutex %d, left mutex 0x%x!\n", mutex_idx, content->mutex_idx);
+
+	mutex_lock(&ctx->mutex_lock);
+	ctx->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
+	mutex_unlock(&ctx->mutex_lock);
+
+	DDPDBG("release mutex %d, left mutex 0x%x!\n", mutex_idx, ctx->mutex_idx);
 	return 0;
 }
 
