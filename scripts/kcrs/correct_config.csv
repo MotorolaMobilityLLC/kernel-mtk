@@ -914,8 +914,6 @@ CONFIG_USB_CONFIGFS_F_PTP,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USELIB,COMMON,sophie.wang,File System,N,N,N,N,N,N,N,N,N,N
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
-CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,hongxu.zhao,timer,X,X,X,y,X,X,y,y,y,y
 CONFIG_MTK_AKM09918,PROJECT,jy.lan,,y,y,y,,,,,,,
 CONFIG_ARM64_ERRATUM_858921,PLATFORM,hongxu.zhao,timer,X,X,X,X,X,X,X,y,X,y
