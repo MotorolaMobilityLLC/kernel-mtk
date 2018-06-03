@@ -112,7 +112,7 @@ static unsigned long long ged_get_time(void)
 }
 
 static void xgf_update_tick(struct xgf_proc *proc, struct xgf_tick *tick,
-			    unsigned long long ts)
+			    unsigned long long ts, unsigned long long runtime)
 {
 	struct task_struct *p;
 
@@ -124,8 +124,11 @@ static void xgf_update_tick(struct xgf_proc *proc, struct xgf_tick *tick,
 
 	tick->ts = ts ? ts : ged_get_time();
 
+	if (runtime) {
+		tick->runtime = runtime;
+		return;
+	}
 
-	/* TODO: do not traverse every time */
 	rcu_read_lock();
 	p = find_task_by_vpid(proc->render);
 	if (p)
@@ -179,6 +182,27 @@ static struct xgf_timer *xgf_get_timer_rec(
 	rb_link_node(&xt->rb_node, parent, p);
 	rb_insert_color(&xt->rb_node, &proc->timer_rec);
 	return xt;
+}
+
+static inline void xgf_idle_recycle(void)
+{
+	unsigned long long now_ts = ged_get_time();
+	long long diff;
+	struct xgf_proc *iter;
+	struct hlist_node *tmp;
+
+	xgf_lockprove(__func__);
+
+	hlist_for_each_entry_safe(iter, tmp, &xgf_procs, hlist) {
+		diff = (long long)now_ts - (long long)(iter->deque.ts);
+		/* has not been one seconds since last recycle */
+		if (diff < 0LL || diff < NSEC_PER_SEC)
+			continue;
+
+		xgf_reset_render(iter);
+		hlist_del(&iter->hlist);
+		kfree(iter);
+	}
 }
 
 static inline void xgf_blacked_recycle(struct rb_root *root)
@@ -268,7 +292,7 @@ static int is_valid_sleeper(const void * const timer,
  * xgf_timer_fire - called when timer invocation
  */
 static void xgf_timer_fire(const void * const timer,
-			   struct xgf_proc *proc)
+			   struct xgf_proc *proc, unsigned long long runtime)
 {
 	struct xgf_timer *xt;
 	unsigned long long now_ts;
@@ -289,7 +313,7 @@ static void xgf_timer_fire(const void * const timer,
 
 	xt->hrtimer = timer;
 	xt->expired = 0;
-	xgf_update_tick(proc, &xt->fire, now_ts);
+	xgf_update_tick(proc, &xt->fire, now_ts, runtime);
 
 	hlist_add_head(&xt->hlist, &proc->timer_head);
 }
@@ -312,7 +336,7 @@ static void xgf_update_timer_rec(const void * const timer,
  * xgf_timer_expire - called when timer expires
  */
 static void xgf_timer_expire(const void * const timer,
-			     struct xgf_proc *proc)
+			     struct xgf_proc *proc, unsigned long long runtime)
 {
 	struct xgf_timer *iter;
 	unsigned long long now_ts;
@@ -331,7 +355,7 @@ static void xgf_timer_expire(const void * const timer,
 		if (iter->expired)
 			continue;
 
-		xgf_update_tick(proc, &iter->expire, now_ts);
+		xgf_update_tick(proc, &iter->expire, now_ts, runtime);
 		iter->expired = 1;
 		return;
 	}
@@ -366,6 +390,9 @@ static void xgf_timer_remove(const void * const timer,
 void xgf_igather_timer(const void * const timer, int fire)
 {
 	struct xgf_proc *iter;
+	struct hlist_node *n;
+	struct task_struct *p;
+	unsigned long long runtime = 0;
 	pid_t tpid;
 
 	/*get timer's thread group id, i.e. tgid*/
@@ -378,16 +405,32 @@ void xgf_igather_timer(const void * const timer, int fire)
 		return;
 	}
 
-	hlist_for_each_entry(iter, &xgf_procs, hlist) {
+	hlist_for_each_entry_safe(iter, n, &xgf_procs, hlist) {
+
 		if (iter->parent != tpid)
 			continue;
 
+		rcu_read_lock();
+		p = find_task_by_vpid(iter->render);
+		if (p) {
+			get_task_struct(p);
+			runtime = task_sched_runtime(p);
+			put_task_struct(p);
+		}
+		rcu_read_unlock();
+		if (!p) {
+			xgf_reset_render(iter);
+			hlist_del(&iter->hlist);
+			kfree(iter);
+			continue;
+		}
+
 		switch (fire) {
 		case 1:
-			xgf_timer_fire(timer, iter);
+			xgf_timer_fire(timer, iter, runtime);
 			break;
 		case 0:
-			xgf_timer_expire(timer, iter);
+			xgf_timer_expire(timer, iter, runtime);
 			break;
 		case -1:
 		default:
@@ -525,7 +568,7 @@ static unsigned long long xgf_qudeq_enter(int rpid,
 
 	xgf_lockprove(__func__);
 
-	xgf_update_tick(proc, now, 0);
+	xgf_update_tick(proc, now, 0, 0);
 
 	/* first frame of each process */
 	if (!ref->ts) {
@@ -556,7 +599,7 @@ static void xgf_qudeq_exit(struct xgf_proc *proc, struct xgf_tick *ts,
 	xgf_lockprove(__func__);
 
 	start = ts->ts;
-	xgf_update_tick(proc, ts, 0);
+	xgf_update_tick(proc, ts, 0, 0);
 	if (ts->ts <= start)
 		*time = 0ULL;
 	else
@@ -650,6 +693,7 @@ int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_tim
 				"renew sleep time");
 		p->slptime += dur;
 		xgf_blacked_recycle(&p->timer_rec);
+		xgf_idle_recycle();
 		break;
 
 	case XGF_DEQUEUE_END:
