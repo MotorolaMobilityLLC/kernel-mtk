@@ -151,10 +151,15 @@ static struct notifier_block dvfsrc_fb_notifier = {
 	.notifier_call = dvfsrc_fb_notifier_call,
 };
 
-void helio_dvfsrc_platform_init(void)
+int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc)
 {
-	fb_register_client(&dvfsrc_fb_notifier);
 	mtk_rgu_cfg_dvfsrc(1);
+
+	dvfsrc->init_config = dvfsrc_get_init_conf();
+	helio_dvfsrc_reg_config(dvfsrc->init_config);
+	helio_dvfsrc_sram_reg_init();
+
+	return fb_register_client(&dvfsrc_fb_notifier);
 }
 
 void get_opp_info(char *p)

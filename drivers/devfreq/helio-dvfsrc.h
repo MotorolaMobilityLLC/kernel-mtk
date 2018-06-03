@@ -89,6 +89,7 @@ struct helio_dvfsrc {
 
 enum {
 	QOS_EMI_BW_TOTAL = 0,
+	QOS_EMI_BW_TOTAL_W,
 	QOS_EMI_BW_CPU,
 	QOS_EMI_BW_GPU,
 	QOS_EMI_BW_MM,
@@ -108,6 +109,8 @@ extern char *dvfsrc_dump_reg(char *ptr);
 extern u32 dvfsrc_read(u32 offset);
 extern void dvfsrc_write(u32 offset, u32 val);
 extern void dvfsrc_opp_table_init(void);
+extern void helio_dvfsrc_reg_config(struct reg_config *config);
+extern void helio_dvfsrc_sram_reg_init(void);
 
 extern int helio_dvfsrc_add_interface(struct device *dev);
 extern void helio_dvfsrc_remove_interface(struct device *dev);
@@ -118,7 +121,7 @@ extern void get_dvfsrc_reg(char *p);
 extern void get_dvfsrc_record(char *p);
 extern void get_spm_reg(char *p);
 extern void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore);
-extern void helio_dvfsrc_platform_init(void);
+extern int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc);
 extern u32 spm_get_dvfs_level(void);
 extern u32 spm_get_pcm_reg9_data(void);
 
