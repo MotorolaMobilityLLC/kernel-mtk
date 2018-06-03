@@ -275,6 +275,62 @@ static ssize_t show_sched_info(struct kobject *kobj,
 	return len;
 }
 
+static DEFINE_MUTEX(ip_mutex);
+static int idle_prefer_mode;
+
+static ssize_t store_idle_prefer(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+	static unsigned int dvfs_margin_orig;
+	static int is_dirty;
+	int en;
+
+	mutex_lock(&ip_mutex);
+
+	if (sscanf(buf, "%iu", &val) == 0) {
+		mutex_unlock(&ip_mutex);
+		return count;
+	}
+
+	idle_prefer_mode = val;
+
+	en = (idle_prefer_mode > 0) ? 1 : 0;
+
+	/* backup system settings */
+	if (!is_dirty)
+		dvfs_margin_orig = capacity_margin_dvfs;
+
+	/* marginless DVFS control for high TLP scene */
+	capacity_margin_dvfs = en ? 1024 : dvfs_margin_orig;
+
+#ifdef CONFIG_SCHED_TUNE
+	/*
+	 * set cgroup prefer idle cpu via stune
+	 * 1: fg
+	 * 2: bg
+	 * 3: top-app
+	 */
+	prefer_idle_for_perf_idx(1, en);
+#endif
+	is_dirty = en;
+
+	mutex_unlock(&ip_mutex);
+
+	return count;
+}
+
+static ssize_t show_idle_prefer(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len +=  snprintf(buf, max_len, "idle prefer = %d\n", idle_prefer_mode);
+
+	return len;
+}
+
 static ssize_t show_walt_info(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf);
 
@@ -294,6 +350,9 @@ static struct kobj_attribute sched_walt_info_attr =
 __ATTR(walt_debug, 0600 /* S_IWUSR | S_IRUSR */,
 			show_walt_info, store_walt_info);
 
+static struct kobj_attribute sched_idle_prefer_attr =
+__ATTR(idle_prefer, 0600, show_idle_prefer, store_idle_prefer);
+
 static struct attribute *sched_attrs[] = {
 	&sched_info_attr.attr,
 	&sched_load_thresh_attr.attr,
@@ -305,6 +364,7 @@ static struct attribute *sched_attrs[] = {
 	&sched_boost_attr.attr,
 #endif
 	&sched_walt_info_attr.attr,
+	&sched_idle_prefer_attr.attr,
 	NULL,
 };
 

@@ -29,3 +29,7 @@ int set_sched_boost(unsigned int val);
 #endif
 
 extern int display_set_wait_idle_time(unsigned int wait_idle_time);
+
+#ifdef CONFIG_SCHED_TUNE
+extern int prefer_idle_for_perf_idx(int idx, int prefer_idle);
+#endif
