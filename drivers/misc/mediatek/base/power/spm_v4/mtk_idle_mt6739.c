@@ -348,3 +348,9 @@ u32 get_spm_idle_flags1(void)
 {
 	return 0;
 }
+
+bool mtk_idle_check_clkmux(
+	int idle_type, unsigned int block_mask[NR_TYPES][NF_CLK_CFG])
+{
+	return true;
+}

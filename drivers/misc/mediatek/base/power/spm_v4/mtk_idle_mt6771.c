@@ -39,6 +39,7 @@ void __iomem *mmsys_base;
 void __iomem *imgsys_base;
 void __iomem *mfgsys_base;
 void __iomem *vencsys_base;
+void __iomem *topcksys_base;        /* TOPCKSYS_REG, CLK_CFG */
 
 void __iomem *sleepsys_base;
 void __iomem  *apmixed_base_in_idle;
@@ -89,6 +90,75 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 	1, /* MSDCPLL */
 	0, /* TVDPLL */
 	0, /* MMPLL */
+};
+
+unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
+	/* [0]: PDN mask, [1]: PDN val, [2]: PON mask, [3]: PON val */
+	/* CLK_CFG_0 */
+	[CLKMUX_CAM]            = { 0x80, 0x80, 0x8F, 0x00 },
+	[CLKMUX_IMG]            = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_MM]             = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_AXI]            = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+
+	/* CLK_CFG_1 */
+	[CLKMUX_IPU_IF]         = { 0x80, 0x80, 0x8F, 0x00 },
+	[CLKMUX_DSP2]           = { 0x80, 0x80, 0x8F, 0x00 },
+	[CLKMUX_DSP1]           = { 0x80, 0x80, 0x8F, 0x00 },
+	[CLKMUX_DSP]            = { 0x80, 0x80, 0x8F, 0x00 },
+
+	/* CLK_CFG_2 */
+	[CLKMUX_CAMTG2]         = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_CAMTG]          = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_MFG_52M]        = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_MFG]            = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_3 */
+	[CLKMUX_SPI]            = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_UART]           = { 0x80, 0x80, 0x81, 0x00 },
+	[CLKMUX_CAMTG4]         = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_CAMTG3]         = { 0x80, 0x80, 0x87, 0x00 },
+
+	/* CLK_CFG_4 */
+	[CLKMUX_MSDC30_2]       = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_MSDC30_1]       = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_MSDC50_0]       = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_MSDC50_0_HCLK]  = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_5 */
+	[CLKMUX_PWRAP_ULPOSC]   = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_PMICSPI]        = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_AUD_INTBUS]     = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_AUDIO]          = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_6 */
+	[CLKMUX_SCAM]           = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_DPI0]           = { 0x80, 0x80, 0x8F, 0x00 },
+	[CLKMUX_SSPM]           = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_ATB]            = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_7 */
+	[CLKMUX_SPM]            = { 0x80, 0x80, 0x81, 0x00 },
+	[CLKMUX_SSUSB_XHCI]     = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_USB_TOP]        = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_DISP_PWM]       = { 0x80, 0x80, 0x87, 0x00 }, /* > 125M */
+
+	/* CLK_CFG_8 */
+	[CLKMUX_DXCC]           = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_SENINF]         = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_SCP]            = { 0x80, 0x80, 0x87, 0x00 },
+	[CLKMUX_I2C]            = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_9 */
+	[CLKMUX_UFS]            = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_AES_UFSFDE]     = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_AUD_ENGEN2]     = { 0x80, 0x80, 0x83, 0x00 },
+	[CLKMUX_AUD_ENGEN1]     = { 0x80, 0x80, 0x83, 0x00 },
+
+	/* CLK_CFG_10 */
+	[CLKMUX_RSV_0]          = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_RSV_1]          = { 0x00, 0x00, 0x00, 0x00 }, /* skip */
+	[CLKMUX_AUD_2]          = { 0x80, 0x80, 0x81, 0x00 },
+	[CLKMUX_AUD_1]          = { 0x80, 0x80, 0x81, 0x00 },
 };
 
 static const char *idle_name[NR_TYPES] = {
@@ -368,6 +438,7 @@ void __init iomap_init(void)
 	get_base_from_node("mediatek,venc_gcon", &vencsys_base, 0);
 	get_base_from_node("mediatek,apmixed", &apmixed_base_in_idle, 0);
 	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
+	get_base_from_node("mediatek,topckgen", &topcksys_base, 0);
 }
 
 bool mtk_idle_disp_is_pwm_rosc(void)
@@ -382,4 +453,52 @@ u32 get_spm_idle_flags1(void)
 	idle_flags1 |= SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT;
 
 	return idle_flags1;
+}
+
+static void get_all_clkcfg_state(u32 clkcfgs[NF_CLK_CFG])
+{
+	int i;
+
+	for (i = 0; i < NF_CLK_CFG; i++)
+		clkcfgs[i] = idle_readl(CLK_CFG(i));
+}
+
+bool mtk_idle_check_clkmux(
+	int idle_type, unsigned int block_mask[NR_TYPES][NF_CLK_CFG])
+{
+	u32 clkcfgs[NF_CLK_CFG] = {0};
+	int i;
+	int idx;
+	int offset;
+	u32 masks[4]  = {0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF};
+	int shifts[4] = {24, 16, 8, 0};
+	u32 clkmux_val;
+
+	bool result[2] = {false, false};
+	bool final_result = true;
+
+	get_all_clkcfg_state(clkcfgs);
+
+	/* Check each clkmux setting */
+	for (i = 0; i < NF_CLKMUX; i++) {
+		idx        = i / 4;
+		offset     = i % 4;
+		clkmux_val = ((clkcfgs[idx] & masks[offset]) >> shifts[offset]);
+
+		/* clkmux power down: PASS */
+		result[0] = ((clkmux_val & clkmux_condition_mask[i][PDN_MASK])
+			== clkmux_condition_mask[i][PDN_VALUE]);
+
+		/* clkmux power up: check mux switch */
+		result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK])
+			== clkmux_condition_mask[i][PUP_VALUE]);
+
+		if (result[0] == false && result[1] == false) {
+			final_result = false;
+
+			block_mask[idle_type][idx] |= (clkmux_val << shifts[offset]);
+		}
+	}
+
+	return final_result;
 }

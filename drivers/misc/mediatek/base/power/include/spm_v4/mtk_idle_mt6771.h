@@ -37,6 +37,85 @@ enum {
 
 #define NF_CG_STA_RECORD	(NR_GRPS + 2)
 
+enum {
+	PDN_MASK         = 0,
+	PDN_VALUE,
+	PUP_MASK,
+	PUP_VALUE,
+	NF_CLKMUX_MASK,
+};
+
+enum {
+	/* CLK_CFG_0 */
+	CLKMUX_CAM            = 0,
+	CLKMUX_IMG            = 1,
+	CLKMUX_MM             = 2,
+	CLKMUX_AXI            = 3,
+
+	/* CLK_CFG_1 */
+	CLKMUX_IPU_IF         = 4,
+	CLKMUX_DSP2           = 5,
+	CLKMUX_DSP1           = 6,
+	CLKMUX_DSP            = 7,
+
+	/* CLK_CFG_2 */
+	CLKMUX_CAMTG2         = 8,
+	CLKMUX_CAMTG          = 9,
+	CLKMUX_MFG_52M        = 10,
+	CLKMUX_MFG            = 11,
+
+	/* CLK_CFG_3 */
+	CLKMUX_SPI            = 12,
+	CLKMUX_UART           = 13,
+	CLKMUX_CAMTG4         = 14,
+	CLKMUX_CAMTG3         = 15,
+
+	/* CLK_CFG_4 */
+	CLKMUX_MSDC30_2       = 16,
+	CLKMUX_MSDC30_1       = 17,
+	CLKMUX_MSDC50_0       = 18,
+	CLKMUX_MSDC50_0_HCLK  = 19,
+
+	/* CLK_CFG_5 */
+	CLKMUX_PWRAP_ULPOSC   = 20,
+	CLKMUX_PMICSPI        = 21,
+	CLKMUX_AUD_INTBUS     = 22,
+	CLKMUX_AUDIO          = 23,
+
+	/* CLK_CFG_6 */
+	CLKMUX_SCAM           = 24,
+	CLKMUX_DPI0           = 25,
+	CLKMUX_SSPM           = 26,
+	CLKMUX_ATB            = 27,
+
+	/* CLK_CFG_7 */
+	CLKMUX_SPM            = 28,
+	CLKMUX_SSUSB_XHCI     = 29,
+	CLKMUX_USB_TOP        = 30,
+	CLKMUX_DISP_PWM       = 31,
+
+	/* CLK_CFG_8 */
+	CLKMUX_DXCC           = 32,
+	CLKMUX_SENINF         = 33,
+	CLKMUX_SCP            = 34,
+	CLKMUX_I2C            = 35,
+
+	/* CLK_CFG_9 */
+	CLKMUX_UFS            = 36,
+	CLKMUX_AES_UFSFDE     = 37,
+	CLKMUX_AUD_ENGEN2     = 38,
+	CLKMUX_AUD_ENGEN1     = 39,
+
+	/* CLK_CFG_10 */
+	CLKMUX_RSV_0          = 40,
+	CLKMUX_RSV_1          = 41,
+	CLKMUX_AUD_2          = 42,
+	CLKMUX_AUD_1          = 43,
+
+	NF_CLKMUX,
+};
+
+#define NF_CLK_CFG            (NF_CLKMUX / 4)
 
 extern bool soidle_by_pass_pg;
 extern bool dpidle_by_pass_pg;
@@ -46,6 +125,7 @@ extern void __iomem *mmsys_base;
 extern void __iomem *imgsys_base;
 extern void __iomem *mfgsys_base;
 extern void __iomem *vcodecsys_base;
+extern void __iomem *topcksys_base;
 extern void __iomem *sleepsys_base;
 extern void __iomem  *apmixed_base_in_idle;
 
@@ -55,6 +135,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define MFGSYS_REG(ofs)		(mfgsys_base + ofs)
 #define VENCSYS_REG(ofs)	(vencsys_base + ofs)
 #define SPM_REG(ofs)		(sleepsys_base + ofs)
+#define TOPCKSYS_REG(ofs)     (topcksys_base + ofs)
 #define APMIXEDSYS(ofs)		(apmixed_base_in_idle + ofs)
 
 #ifdef SPM_PWR_STATUS
@@ -84,14 +165,12 @@ extern void __iomem  *apmixed_base_in_idle;
 #define SPM_CONN_PWR_CO		SPM_REG(0x032c)
 #define SPM_MDSYS_INTF_INFRA_PWR_CON SPM_REG(0x0360)
 
-/* FIXME: remove if no need to check audio clock mux */
-#define CLK_CFG_0_BASE		TOPCKSYS_REG(0x100)
-#define CLK_CFG_0_SET_BASE	TOPCKSYS_REG(0x104)
-#define CLK_CFG_0_CLR_BASE	TOPCKSYS_REG(0x108)
+#define CLK_CFG_0_BASE		TOPCKSYS_REG(0x040)
+#define CLK_CFG_0_SET_BASE	TOPCKSYS_REG(0x044)
+#define CLK_CFG_0_CLR_BASE	TOPCKSYS_REG(0x048)
 #define CLK_CFG(n)		(CLK_CFG_0_BASE + n * 0x10)
 #define CLK_CFG_SET(n)		(CLK_CFG_0_SET_BASE + n * 0x10)
 #define CLK_CFG_CLR(n)		(CLK_CFG_0_CLR_BASE + n * 0x10)
-#define CLK6_AUDINTBUS_MASK	0x700
 
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)

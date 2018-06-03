@@ -40,6 +40,8 @@ enum {
 
 #define NF_CG_STA_RECORD	(NR_GRPS + 2)
 
+/* Only for code consistency */
+#define NF_CLK_CFG            (1)
 
 extern bool soidle_by_pass_pg;
 extern bool dpidle_by_pass_pg;
