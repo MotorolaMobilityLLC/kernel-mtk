@@ -4580,7 +4580,7 @@ static void cmdq_core_get_free_thread_impl(
 		CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags,
 			find_free_hw_thread);
 
-		if (!threads[index].engineFlag || threads[index].taskCount ||
+		if (threads[index].engineFlag || threads[index].taskCount ||
 			threads[index].allowDispatching != 1) {
 			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags,
 				find_free_hw_thread);
