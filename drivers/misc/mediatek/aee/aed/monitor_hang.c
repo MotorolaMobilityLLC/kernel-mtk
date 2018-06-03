@@ -262,72 +262,24 @@ static void __exit monitor_hang_exit(void)
 static int hd_detect_enabled;
 static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
-int InDumpAllStack;
-static int system_server_pid;
-static int surfaceflinger_pid;
-static int system_ui_pid;
-static int init_pid;
-static int mmcqd0;
-static int mmcqd1;
-static int debuggerd;
-static int debuggerd64;
-static int mediaserver_pid;
 
 static int FindTaskByName(char *name)
 {
 	struct task_struct *task;
 	int ret = -1;
 
-	system_server_pid = 0;
-	surfaceflinger_pid = 0;
-	system_ui_pid = 0;
-	init_pid = 0;
-	mmcqd0 = 0;
-	mmcqd1 = 0;
-	debuggerd = 0;
-	debuggerd64 = 0;
-	mediaserver_pid = 0;
+	if (!name)
+		return ret;
+
 	read_lock(&tasklist_lock);
 	for_each_process(task) {
-		if (task && (strcmp(task->comm, "init") == 0)) {
-			init_pid = task->pid;
+		if (task && (strncmp(task->comm, name, strlen(name)) == 0)) {
 			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, "mmcqd/0") == 0)) {
-			mmcqd0 = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, "mmcqd/1") == 0)) {
-			mmcqd1 = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, "surfaceflinger") == 0)) {
-			surfaceflinger_pid = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, "debuggerd") == 0)) {
-			debuggerd = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, "debuggerd64") == 0)) {
-			debuggerd64 = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-		} else if (task && (strcmp(task->comm, name) == 0)) {
-			system_server_pid = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-			/* return task->pid; */
-		} else if (task && (strstr(task->comm, "systemui"))) {
-			system_ui_pid = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-			/* return system_server_pid;  //for_each_process list by pid */
-		} else if (task && (strstr(task->comm, "mediaserver"))) {
-			mediaserver_pid = task->pid;
-			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
-			/* return system_server_pid;  //for_each_process list by pid */
+			ret = task->pid;
+			break;
 		}
 	}
 	read_unlock(&tasklist_lock);
-	if (system_server_pid)
-		ret = system_server_pid;
-	else {
-		LOGE("[Hang_Detect] system_server not found!\n");
-		ret = -1;
-	}
 	return ret;
 }
 
@@ -408,91 +360,6 @@ void sched_show_task_local(struct task_struct *p)
 	get_kernel_bt(p);	/* Catch kernel-space backtrace */
 
 }
-
-void show_state_filter_local(unsigned long state_filter)
-{
-	struct task_struct *g, *p;
-
-#if BITS_PER_LONG == 32
-	LOGE("  task                PC stack   pid father\n");
-#else
-	LOGE("  task                        PC stack   pid father\n");
-#endif
-	do_each_thread(g, p) {
-		/*
-		 * reset the NMI-timeout, listing all files on a slow
-		 * console might take a lot of time:
-		 *discard wdtk-* for it always stay in D state
-		 */
-		if ((!state_filter || (p->state & state_filter)) && !strstr(p->comm, "wdtk"))
-			sched_show_task_local(p);
-	} while_each_thread(g, p);
-}
-
-void sched_show_task_local_all(struct task_struct *p)
-{
-	unsigned long free = 0;
-	int ppid;
-	unsigned long state = p->state;
-	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-
-	if (state)
-		state = __ffs(state) + 1;
-	LOGE("%-15.15s %c", p->comm, state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-#if BITS_PER_LONG == 32
-	if (state == TASK_RUNNING)
-		LOGE(" running  ");
-	else
-		LOGE(" %08lx ", thread_saved_pc(p));
-#else
-	if (state == TASK_RUNNING)
-		LOGE("  running task    ");
-	else
-		LOGE(" %016lx ", thread_saved_pc(p));
-#endif
-#ifdef CONFIG_DEBUG_STACK_USAGE
-	free = stack_not_used(p);
-#endif
-	ppid = 0;
-	rcu_read_lock();
-	if (pid_alive(p))
-		ppid = task_pid_nr(rcu_dereference(p->real_parent));
-	rcu_read_unlock();
-	LOGE("%5lu %5d %6d 0x%08lx\n", free,
-	     task_pid_nr(p), ppid, (unsigned long)task_thread_info(p)->flags);
-
-	print_worker_info("6", p);
-	show_stack(p, NULL);
-}
-
-void show_state_filter_local_all(void)
-{
-	struct task_struct *g, *p;
-	int count = 0;
-
-#if BITS_PER_LONG == 32
-	LOGE("  task                PC stack   pid father\n");
-#else
-	LOGE("  task                        PC stack   pid father\n");
-#endif
-	rcu_read_lock();
-	for_each_process_thread(g, p) {
-		/*
-		 * reset the NMI-timeout, listing all files on a slow
-		 * console might take a lot of time:
-		 * Also, reset softlockup watchdogs on all CPUs, because
-		 * another CPU might be blocked waiting for us to process
-		 * an IPI.
-		 */
-		sched_show_task_local_all(p);
-		if ((++count) % 5 == 4)
-			msleep(20);
-	}
-	rcu_read_unlock();
-
-}
-
-
 
 static int DumpThreadNativeMaps(pid_t pid)
 {
@@ -824,47 +691,52 @@ static void show_bt_by_pid(int task_pid)
 	put_pid(pid);
 }
 
+static void show_state_filter_local(void)
+{
+	struct task_struct *g, *p;
+
+	do_each_thread(g, p) {
+		/*
+		 * reset the NMI-timeout, listing all files on a slow
+		 * console might take a lot of time:
+		 *discard wdtk-* for it always stay in D state
+		 */
+		if ((p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE) && !strstr(p->comm, "wdtk"))
+			sched_show_task_local(p);
+	} while_each_thread(g, p);
+}
+
+
 static void ShowStatus(void)
 {
-	InDumpAllStack = 1;
+#define DUMP_PROCESS_NUM 10
+	int dumppids[DUMP_PROCESS_NUM];
+	int dump_count = 0;
+	int i = 0;
+	struct task_struct *task;
 
-	/* show all kbt in surfaceflinger */
+	read_lock(&tasklist_lock);
+	for_each_process(task) {
+		if (dump_count >= DUMP_PROCESS_NUM)
+			break;
 
-	if (mediaserver_pid)
-		show_bt_by_pid(mediaserver_pid);
+		if (!task)
+			continue;
 
-	if (surfaceflinger_pid)
-		show_bt_by_pid(surfaceflinger_pid);
+		if ((strcmp(task->comm, "surfaceflinger") == 0) || (strcmp(task->comm, "init") == 0) ||
+			(strcmp(task->comm, "system_server") == 0) || (strcmp(task->comm, "mmcqd/0") == 0) ||
+			(strcmp(task->comm, "debuggerd64") == 0) || (strcmp(task->comm, "mmcqd/1") == 0) ||
+			(strcmp(task->comm, "debuggerd") == 0)) {
+			dumppids[dump_count++] = task->pid;
+			continue;
+		}
+	}
+	read_unlock(&tasklist_lock);
 
-	if (system_ui_pid)
-		show_bt_by_pid(system_ui_pid);
+	for (i = 0; i < dump_count; i++)
+		show_bt_by_pid(dumppids[i]);
 
-
-	/* show all kbt in system_server */
-	if (system_server_pid)
-		show_bt_by_pid(system_server_pid);
-
-	/* show all D state thread kbt */
-	/* show_state_filter_local(TASK_UNINTERRUPTIBLE); */
-
-	/* show all kbt in init */
-	if (init_pid)
-		show_bt_by_pid(init_pid);
-
-	/*
-	*show all thread bt
-	* LOGE("[Hang_Detect] dump all thread bt start\n");
-	* show_state_filter_local_all();
-	* LOGE("[Hang_Detect] dump all thread bt end\n");
-	*/
-
-	/* show all kbt in mmcqd/0 */
-	if (mmcqd0)
-		show_bt_by_pid(mmcqd0);
-	/* show all kbt in mmcqd/1 */
-
-	if (mmcqd1)
-		show_bt_by_pid(mmcqd1);
+	show_state_filter_local();
 
 	/* debug_locks = 1; */
 	debug_show_all_locks();
@@ -878,16 +750,6 @@ static void ShowStatus(void)
 	if (mtk_dump_gpu_memory_usage() == false)
 		LOGE("[Hang_Detect] mtk_dump_gpu_memory_usage not support\n");
 #endif
-
-	system_server_pid = 0;
-	surfaceflinger_pid = 0;
-	system_ui_pid = 0;
-	init_pid = 0;
-	InDumpAllStack = 0;
-	mmcqd0 = 0;
-	mmcqd1 = 0;
-	debuggerd = 0;
-	debuggerd64 = 0;
 }
 
 void reset_hang_info(void)
