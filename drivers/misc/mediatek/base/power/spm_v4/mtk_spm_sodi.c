@@ -350,7 +350,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 
 	soidle_before_wfi(cpu);
 
-	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	spm_sodi_footprint(SPM_SODI_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
@@ -437,7 +436,6 @@ RESTORE_IRQ:
 #endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
-	lockdep_on();
 
 	soidle_after_wfi(cpu);
 
