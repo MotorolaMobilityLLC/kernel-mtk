@@ -103,8 +103,12 @@ static void StopAudioI2sInAWBHardware(struct snd_pcm_substream *substream)
 			  Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false)
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false) {
 		Set2ndI2SEnable(false);
+		udelay(20);
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
+		pr_debug("%s, AFE_I2S_CON = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON));
+	}
 
 bypass_default_i2s_in:
 
@@ -119,9 +123,6 @@ bypass_default_i2s_in:
 static void StartAudioI2sInAWBHardware(struct snd_pcm_substream *substream)
 {
 	uint32 u32Audio2ndI2sIn = 0;
-	uint32 MclkDiv0 = 0;
-
-	pr_warn("StartAudioI2sInAWBHardware\n");
 
 	/*
 	 * SmartPa might use different i2s in different chips.
@@ -136,13 +137,10 @@ static void StartAudioI2sInAWBHardware(struct snd_pcm_substream *substream)
 	}
 
 	/* default i2s in for echo reference is i2s0 */
-	MclkDiv0 = SetCLkMclk(Soc_Aud_I2S0, substream->runtime->rate); /* select I2S */
-	SetCLkBclk(MclkDiv0, substream->runtime->rate, substream->runtime->channels,
-		   Soc_Aud_I2S_WLEN_WLEN_32BITS);
+	Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, substream->runtime->rate);
 
-	Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
 	u32Audio2ndI2sIn |= (Soc_Aud_LR_SWAP_NO_SWAP << 31);
 	u32Audio2ndI2sIn |= (Soc_Aud_LOW_JITTER_CLOCK << 12);
@@ -154,6 +152,9 @@ static void StartAudioI2sInAWBHardware(struct snd_pcm_substream *substream)
 
 	Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 4,  0x1 << 4); /* Clear I2S0 clock-gated */
 	Set2ndI2SEnable(true);				 /* Enable I2S0 */
+
+	pr_debug("%s, AFE_I2S_CON = 0x%x, AFE_DAC_CON1 = 0x%x\n",
+		 __func__, Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_DAC_CON1));
 
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
 			  Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);

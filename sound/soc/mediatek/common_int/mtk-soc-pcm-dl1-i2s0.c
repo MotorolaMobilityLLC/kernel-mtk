@@ -179,18 +179,11 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		if (!mtk_soc_always_hd)
 			EnableALLbySampleRate(samplerate);
 
-		/* i2s0 i2s3 4pin i2s setting */
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */
-		/* I2S0 I2S3 clock-gated */
-
 		if (extcodec_echoref_control > 0) {
-			/* Turn off i2s0 first */
-			Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
-			udelay(20);
+			/* I2S0 clock-gated */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4);
 
 			/* I2S sample rate Control */
-			SetCLkMclk(Soc_Aud_I2S0, samplerate);
 			SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, samplerate);
 
 			/* I2S0 Input Control */
@@ -204,9 +197,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			Afe_Set_Reg(AFE_I2S_CON, u32Audio2ndI2sIn, MASK_ALL);
 		}
 
-		/* Turn off i2s3 first */
-		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
-		udelay(20);
+		/* I2S3 clock-gated */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7);
 
 		/* I2S3 Input Control */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
@@ -216,15 +208,21 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		u32AudioI2sOut |= (hdoutput_control ? Soc_Aud_LOW_JITTER_CLOCK : Soc_Aud_NORMAL_CLOCK) << 12;
 		Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2sOut, AFE_MASK_ALL);	/* set I2S3 configuration */
 
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 4,  0x1 << 4); /* Clear I2S0 clock-gated */
-		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 7,  0x1 << 7); /* Clear I2S3 clock-gated */
+		if (extcodec_echoref_control > 0) {
+			/* Clear I2S0 clock-gated */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 4,  0x1 << 4);
+			/* Enable I2S0 */
+			Set2ndI2SEnable(true);
+			pr_debug("%s(), Turn on. AFE_I2S_CON0=0x%x, AFE_DAC_CON1=0x%x",
+				 __func__, Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_DAC_CON1));
+		}
 
-		if (extcodec_echoref_control > 0)
-			Set2ndI2SEnable(true);			 /* Enable I2S0 */
-		Set2ndI2SOutEnable(true);			 /* Enable I2S3 */
+		/* Clear I2S3 clock-gated */
+		Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 7,  0x1 << 7);
+		/* Enable I2S3 */
+		Set2ndI2SOutEnable(true);
 
-		pr_debug("%s(), Turn on. AFE_I2S_CON0=0x%x, AFE_I2S_CON3=0x%x\n", __func__,
-			 Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_I2S_CON3));
+		pr_debug("%s(), Turn on. AFE_I2S_CON3=0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON3));
 
 		EnableAfe(true);
 	} else {
@@ -233,26 +231,29 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
-			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, false);
 		}
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
 
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
 			Set2ndI2SOutEnable(false);		/* Disable I2S3 */
-			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false)
-				Set2ndI2SEnable(false);		/* Disable I2S0 */
-
 			udelay(20);
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */
+
+			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false) {
+				Set2ndI2SEnable(false);		/* Disable I2S0 */
+				udelay(20);
+				Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
+			}
+
 #if 0 /* avoding clock gating in FM or other case */
 				Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4, 0x1 << 4);	/* I2S0 clock-gated */
 				Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7, 0x1 << 7);	/* I2S3 clock-gated */
 #endif
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			pr_debug("%s(), Turn off. AFE_I2S_CON=0x%x, AFE_I2S_CON3=0x%x\n", __func__,
 				 Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_I2S_CON3));
 			EnableAfe(false);
