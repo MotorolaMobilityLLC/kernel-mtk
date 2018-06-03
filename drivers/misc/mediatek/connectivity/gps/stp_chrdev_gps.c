@@ -28,7 +28,7 @@
 #include "osal_typedef.h"
 #include "stp_exp.h"
 #include "wmt_exp.h"
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_MACH_MT6580)
 #include <mt_clkbuf_ctl.h>
 #endif
 MODULE_LICENSE("GPL");
@@ -347,7 +347,7 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		GPS_DBG_FUNC("GPS co_clock_flag (%d)\n", retval);
 		break;
 	case COMBO_IOC_D1_EFUSE_GET:
-#if defined(CONFIG_ARCH_MT6735)
+#if defined(CONFIG_MACH_MT6735)
 		do {
 			char *addr = ioremap(0x10206198, 0x4);
 
@@ -484,7 +484,7 @@ static int GPS_open(struct inode *inode, struct file *file)
 	}
 	gps_hold_wake_lock(1);
 	GPS_DBG_FUNC("gps_hold_wake_lock(1)\n");
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_MACH_MT6580)
 	clk_buf_ctrl(CLK_BUF_AUDIO, 1);
 #endif
 	/* init_MUTEX(&wr_mtx); */
@@ -519,7 +519,7 @@ static int GPS_close(struct inode *inode, struct file *file)
 	gps_hold_wake_lock(0);
 	GPS_DBG_FUNC("gps_hold_wake_lock(0)\n");
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_MACH_MT6580)
 	clk_buf_ctrl(CLK_BUF_AUDIO, 0);
 #endif
 	return 0;
