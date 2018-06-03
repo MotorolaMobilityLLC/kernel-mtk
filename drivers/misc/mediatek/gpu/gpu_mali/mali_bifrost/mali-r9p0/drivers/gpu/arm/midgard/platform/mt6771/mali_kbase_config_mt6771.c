@@ -45,11 +45,11 @@ static void _mtk_check_MFG_idle(void)
 
 	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x1 */
 	writel(0x00000001, g_MFG_base + 0xb4);
-	mali_pr_debug("@%s: 0x130000b4 val = 0x%x\n", __func__, readl(g_MFG_base + 0xb4));
+	/* mali_pr_debug("@%s: 0x130000b4 val = 0x%x\n", __func__, readl(g_MFG_base + 0xb4)); */
 
 	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x03 */
 	writel(0x00000003, g_MFG_base + 0x180);
-	mali_pr_debug("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	/* mali_pr_debug("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180)); */
 
 	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 */
 	/* => 1 for GPU (BUS) idle, 0 for GPU (BUS) non-idle */
@@ -102,8 +102,6 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	aee_rr_rec_gpu_dvfs_status(0x5 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
-	mali_pr_debug("@%s: power on successfully\n", __func__);
-
 	mutex_unlock(&g_mfg_lock);
 
 	return 1;
@@ -113,7 +111,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 {
 	mutex_lock(&g_mfg_lock);
 
-	mali_pr_debug("@%s: power off\n", __func__);
+	mali_pr_debug("@%s: power off ...\n", __func__);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x6 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
@@ -146,8 +144,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xA | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
-
-	mali_pr_debug("@%s: power off successfully\n", __func__);
 
 	mutex_unlock(&g_mfg_lock);
 }

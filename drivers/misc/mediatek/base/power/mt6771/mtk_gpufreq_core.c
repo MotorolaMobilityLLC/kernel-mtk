@@ -441,9 +441,6 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
 	mutex_lock(&mt_gpufreq_lock);
 
-	gpufreq_pr_debug("@%s: begin, enable = %d, g_volt_enable_state = %d\n",
-		__func__, enable, g_volt_enable_state);
-
 	if (g_DVFS_is_paused_by_ptpod && enable == 0) {
 		gpufreq_pr_info("@%s: DVFS is paused by PTPOD\n", __func__);
 		mutex_unlock(&mt_gpufreq_lock);
@@ -478,7 +475,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
 	}
 
-	gpufreq_pr_debug("@%s: end, enable = %d, g_volt_enable_state = %d\n",
+	gpufreq_pr_debug("@%s: enable = %d, g_volt_enable_state = %d\n",
 			__func__, enable, g_volt_enable_state);
 
 	mutex_unlock(&mt_gpufreq_lock);
@@ -598,25 +595,19 @@ unsigned int mt_gpufreq_get_dvfs_table_num(void)
 /* API : get frequency via OPP table index */
 unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx)
 {
-	if (idx < g_opp_idx_num) {
-		gpufreq_pr_debug("@%s: idx = %d, freq = %d\n", __func__, idx, g_opp_table[idx].gpufreq_khz);
+	if (idx < g_opp_idx_num)
 		return g_opp_table[idx].gpufreq_khz;
-	} else {
-		gpufreq_pr_debug("@%s: not found, idx = %d\n", __func__, idx);
+	else
 		return 0;
-	}
 }
 
 /* API : get voltage via OPP table index */
 unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx)
 {
-	if (idx < g_opp_idx_num) {
-		gpufreq_pr_debug("@%s: idx = %d, volt = %d\n", __func__, idx, g_opp_table[idx].gpufreq_volt);
+	if (idx < g_opp_idx_num)
 		return g_opp_table[idx].gpufreq_volt;
-	} else {
-		gpufreq_pr_debug("@%s: not found, idx = %d\n", __func__, idx);
+	else
 		return 0;
-	}
 }
 
 /* API : get max power on power table */
@@ -662,8 +653,6 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
  */
 unsigned int mt_gpufreq_get_thermal_limit_index(void)
 {
-	gpufreq_pr_debug("@%s: current GPU Thermal/Power/PBM limit index is %d\n",
-			__func__, g_max_limited_idx);
 	return g_max_limited_idx;
 }
 
@@ -672,8 +661,6 @@ unsigned int mt_gpufreq_get_thermal_limit_index(void)
  */
 unsigned int mt_gpufreq_get_thermal_limit_freq(void)
 {
-	gpufreq_pr_debug("@%s: current GPU thermal limit freq is %d MHz\n",
-			__func__, g_opp_table[g_max_limited_idx].gpufreq_khz / 1000);
 	return g_opp_table[g_max_limited_idx].gpufreq_khz;
 }
 EXPORT_SYMBOL(mt_gpufreq_get_thermal_limit_freq);
@@ -683,7 +670,6 @@ EXPORT_SYMBOL(mt_gpufreq_get_thermal_limit_freq);
  */
 unsigned int mt_gpufreq_get_cur_freq_index(void)
 {
-	gpufreq_pr_debug("@%s: current OPP table conditional index is %d\n", __func__, g_cur_opp_cond_idx);
 	return g_cur_opp_cond_idx;
 }
 
@@ -692,7 +678,6 @@ unsigned int mt_gpufreq_get_cur_freq_index(void)
  */
 unsigned int mt_gpufreq_get_cur_freq(void)
 {
-	gpufreq_pr_debug("@%s: current frequency is %d MHz\n", __func__, g_cur_opp_freq / 1000);
 	return g_cur_opp_freq;
 }
 EXPORT_SYMBOL(mt_gpufreq_get_cur_freq);
@@ -833,8 +818,6 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 	__mt_update_gpufreqs_power_table();
 #endif /* ifdef MT_GPUFREQ_DYNAMIC_POWER_TABLE_UPDATE */
 
-	gpufreq_pr_debug("@%s: limited power = %d\n", __func__, limited_power);
-
 	if (limited_power == 0) {
 		g_limited_idx_array[IDX_THERMAL_PROTECT_LIMITED] = 0;
 		__mt_gpufreq_update_max_limited_idx();
@@ -851,7 +834,7 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 		}
 	}
 
-	gpufreq_pr_debug("@%s: limited power index = %d\n", __func__, i);
+	gpufreq_pr_debug("@%s: limited power index = %d, limited power = %d\n", __func__, i, limited_power);
 
 	mutex_unlock(&mt_gpufreq_power_lock);
 }
@@ -879,8 +862,6 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 	g_pbm_limited_power = limited_power;
 
-	gpufreq_pr_debug("@%s: limited_power = %d\n", __func__, limited_power);
-
 	if (limited_power == 0) {
 		g_limited_idx_array[IDX_PBM_LIMITED] = 0;
 		__mt_gpufreq_update_max_limited_idx();
@@ -895,7 +876,7 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 		}
 	}
 
-	gpufreq_pr_debug("@%s: limited power index = %d\n", __func__, i);
+	gpufreq_pr_debug("@%s: limited power index = %d, limited_power = %d\n", __func__, i, limited_power);
 
 	mutex_unlock(&mt_gpufreq_power_lock);
 }
@@ -1346,9 +1327,13 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsig
 	g_cur_opp_volt = volt_new;
 	g_cur_opp_vsram_volt = vsram_volt_new;
 
+#ifdef MT_GPUFREQ_DEBUG_ENABLE
 	gpufreq_pr_info("@%s: done, freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
 			__func__, freq_old, mt_get_ckgen_freq(9), volt_old, volt_new, vsram_volt_old, vsram_volt_new);
-
+#else
+	gpufreq_pr_debug("@%s: done, freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
+			__func__, freq_old, mt_get_ckgen_freq(9), volt_old, volt_new, vsram_volt_old, vsram_volt_new);
+#endif
 	__mt_gpufreq_kick_pbm(1);
 }
 
