@@ -15,10 +15,10 @@
 #define __MTK_PE20_INTF_H__
 
 /* pe 2.0*/
-typedef struct pe20_profile {
+struct pe20_profile {
 	unsigned int vbat;
 	unsigned int vchr;
-} pe20_profile_t, *p_pe20_profile_t;
+};
 
 struct mtk_pe20 {
 	struct mutex access_lock;
@@ -31,7 +31,7 @@ struct mtk_pe20 {
 	bool is_cable_out_occur; /* Plug out happened while detect PE+20 */
 	bool is_connect;
 	bool is_enabled;
-	pe20_profile_t profile[10];
+	struct pe20_profile profile[10];
 
 	int vbat_orig; /* Measured VBAT before cable impedance measurement */
 	int aicr_cable_imp; /* AICR to set after cable impedance measurement */

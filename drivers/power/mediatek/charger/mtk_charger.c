@@ -206,9 +206,8 @@ static int _mtk_charger_change_current_setting(struct charger_manager *info)
 
 static int _mtk_charger_do_charging(struct charger_manager *info, bool en)
 {
-	if (info != NULL && info->do_charging) {
+	if (info != NULL && info->do_charging)
 		info->do_charging(info, en);
-	}
 	return 0;
 }
 /* charger_manager ops end */
