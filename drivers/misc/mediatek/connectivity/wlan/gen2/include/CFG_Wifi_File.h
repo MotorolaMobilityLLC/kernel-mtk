@@ -109,7 +109,6 @@ typedef struct _MITIGATED_PWR_BY_CH_BY_MODE {
 	INT_8 mitigatedHt40;
 } MITIGATED_PWR_BY_CH_BY_MODE, *P_MITIGATED_PWR_BY_CH_BY_MODE;
 
-#if CFG_SUPPORT_FCC_POWER_BACK_OFF
 typedef struct _FCC_TX_PWR_ADJUST_T {
 	UINT_8 fgFccTxPwrAdjust;
 	UINT_8 uOffsetCCK;
@@ -119,7 +118,6 @@ typedef struct _FCC_TX_PWR_ADJUST_T {
 	UINT_8 aucChannelHT20[2];
 	UINT_8 aucChannelHT40[2];
 } FCC_TX_PWR_ADJUST, *P_FCC_TX_PWR_ADJUST;
-#endif
 
 typedef struct _MT6620_CFG_PARAM_STRUCT {
 	/* 256 bytes of MP data */
@@ -162,9 +160,10 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	/*support tx power back off [start]*/
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
+	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
 	UINT_8 aucReserved3[3];
 	/*support tx power back off [end]*/
-	UINT_8 aucTailReserved[768 - 12 - 204];
+	UINT_8 aucTailReserved[768 - 12 - 214];
 
 } MT6620_CFG_PARAM_STRUCT, *P_MT6620_CFG_PARAM_STRUCT, WIFI_CFG_PARAM_STRUCT, *P_WIFI_CFG_PARAM_STRUCT;
 
