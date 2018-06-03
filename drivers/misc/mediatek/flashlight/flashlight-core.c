@@ -547,6 +547,8 @@ static int pt_trigger(void)
 {
 	struct flashlight_dev *fdev;
 
+	pr_info_ratelimited("PT trigger(%d,%d,%d), PT strict(%d)\n",
+			pt_low_vol, pt_low_bat, pt_over_cur, pt_strict);
 	mutex_lock(&fl_mutex);
 	list_for_each_entry(fdev, &flashlight_list, node) {
 		if (!fdev->ops)
@@ -555,12 +557,8 @@ static int pt_trigger(void)
 		fdev->ops->flashlight_open();
 		fdev->ops->flashlight_set_driver(1);
 		if (pt_strict) {
-			pr_info("PT trigger(%d,%d,%d) disable flashlight\n",
-					pt_low_vol, pt_low_bat, pt_over_cur);
 			fl_enable(fdev, 0);
 		} else {
-			pr_info("PT trigger(%d,%d,%d) decrease duty: %d\n",
-					pt_low_vol, pt_low_bat, pt_over_cur, fdev->low_pt_level);
 			fl_set_level(fdev, fdev->low_pt_level);
 		}
 		fdev->ops->flashlight_set_driver(0);
@@ -571,10 +569,17 @@ static int pt_trigger(void)
 	return 0;
 }
 
+static int pt_resume(void)
+{
+	pr_info_ratelimited("PT resume.\n");
+	return 0;
+}
+
 static void pt_low_vol_callback(LOW_BATTERY_LEVEL level)
 {
 	if (level == LOW_BATTERY_LEVEL_0) {
 		pt_low_vol = LOW_BATTERY_LEVEL_0;
+		pt_resume();
 	} else if (level == LOW_BATTERY_LEVEL_1) {
 		pt_low_vol = LOW_BATTERY_LEVEL_1;
 		pt_trigger();
@@ -590,6 +595,7 @@ static void pt_low_bat_callback(BATTERY_PERCENT_LEVEL level)
 {
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		pt_low_bat = BATTERY_PERCENT_LEVEL_0;
+		pt_resume();
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
 		pt_low_bat = BATTERY_PERCENT_LEVEL_1;
 		pt_trigger();
@@ -602,6 +608,7 @@ static void pt_oc_callback(BATTERY_OC_LEVEL level)
 {
 	if (level == BATTERY_OC_LEVEL_0) {
 		pt_over_cur = BATTERY_OC_LEVEL_0;
+		pt_resume();
 	} else if (level == BATTERY_OC_LEVEL_1) {
 		pt_over_cur = BATTERY_OC_LEVEL_1;
 		pt_trigger();
