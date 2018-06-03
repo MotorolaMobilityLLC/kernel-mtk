@@ -1756,6 +1756,11 @@ skip_cmd_resp_polling:
 				__func__, host->id, cmd->opcode, cmd->arg,
 			host->busy_timeout_ms, host->max_busy_timeout_ms);
 			/* when r1b hw tmo, use cmd13 instead */
+			/*
+			 * Maybe need fixed in the future to adjust to the
+			 * __mmc_switch(), otherwise cmd13 in __mmc_switch()
+			 * maybe polling for a long time(even through 10min).
+			 */
 			cmd->error = 0;
 			goto out;
 		}
@@ -3094,6 +3099,19 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			N_MSG(CHE, "bypass flush command, g_cache_status=%d",
 				g_cache_status);
 			l_bypass_flush = 1;
+			/*
+			 * WARNING: Maybe removed in future when use
+			 * MMC_CAP_WAIT_WHILE_BUSY;
+			 * Workaround: Must return error when dat0 busy (such
+			 * as device already having bug), otherwise cmd13 will
+			 * polling for MMC_OPS_TIMEOUT_MS(10 mins) in
+			 * __mmc_switch().
+			 */
+			if (sdc_is_busy()) {
+				pr_notice("msdc0: sdc_busy before CMD<%d>",
+					cmd->opcode);
+				cmd->error = (unsigned int)-ETIMEDOUT;
+			}
 			goto done;
 		} else
 			l_bypass_flush = 0;

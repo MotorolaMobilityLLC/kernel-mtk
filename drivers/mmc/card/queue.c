@@ -110,6 +110,10 @@ static int mmc_queue_thread(void *d)
 #endif
 	bool io_boost_done = false;
 
+	/*
+	 * WARNING: Should remove this if cmdq is disable, otherwise ANR will
+	 * happen because hw operation maybe blocking cpu/rt thread schedule.
+	 */
 	scheduler_params.sched_priority = 1;
 	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 

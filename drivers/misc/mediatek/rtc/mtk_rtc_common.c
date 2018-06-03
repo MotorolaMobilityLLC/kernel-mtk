@@ -531,6 +531,16 @@ static void rtc_handler(void)
 						   tm.tm_min, tm.tm_sec);
 				} while (time <= now_time);
 				spin_unlock_irqrestore(&rtc_lock, flags);
+				/*
+				 * WARNING: Can modified or removed in
+				 * future, because this code design is bad,
+				 * instead of this, alarm awake should be
+				 * optimized to go system shutdown flow.
+				 * Send PON(power off notify) if PON enabled
+				 * when alarm awake phone(rtc reset) under
+				 * charge mode.
+				 */
+				mmc_charge_shutdown();
 				arch_reset(0, "kpoc");
 			} else {
 				hal_rtc_save_pwron_alarm();
