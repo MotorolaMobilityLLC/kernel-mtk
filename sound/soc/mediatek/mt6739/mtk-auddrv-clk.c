@@ -720,18 +720,9 @@ void AudDrv_APLL22M_Clk_On(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
-		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 180633600);
-			pr_aud("+%s clk_set_rate = 180633600\n", __func__);
-			if (ret) {
-				pr_debug("%s clk_set_rate %s-98303000 fail %d\n",
-				       __func__, aud_clks[CLOCK_APMIXED_APLL1].name, ret);
-				goto EXIT;
-			}
-		}
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
@@ -747,7 +738,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	}
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
-	pr_aud("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	PRINTK_AUD_CLK("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -756,7 +747,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
 	Aud_APLL22M_Clk_cntr--;
 
@@ -777,7 +768,7 @@ EXIT:
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
-	pr_aud("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	PRINTK_AUD_CLK("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -796,16 +787,15 @@ void AudDrv_APLL24M_Clk_On(void)
 	int ret = 0;
 	unsigned long flags = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
 		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 196607999);
-			pr_aud("+%s clk_set_rate = 196607999\n", __func__);
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 98303999);
 			if (ret) {
-				pr_debug("%s clk_set_rate %s-98303000 fail %d\n",
+				pr_err("%s clk_set_rate %s-98303000 fail %d\n",
 				       __func__, aud_clks[CLOCK_APMIXED_APLL1].name, ret);
 				goto EXIT;
 			}
@@ -831,23 +821,30 @@ EXIT:
 void AudDrv_APLL24M_Clk_Off(void)
 {
 	unsigned long flags = 0;
+	int ret = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	Aud_APLL24M_Clk_cntr--;
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
+		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 90316800);
+			if (ret) {
+				pr_err("%s clk_set_rate %s-98303000 fail %d\n",
+				       __func__, aud_clks[CLOCK_APMIXED_APLL1].name, ret);
+				goto EXIT;
+			}
+		}
+
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_APLL22M].clock);
 		} else {
 			pr_err("%s [CCF]clk_prepare error %s fail",
 			       __func__, aud_clks[CLOCK_APLL22M].name);
 			goto EXIT;
-		}
-		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			clk_disable(aud_clks[CLOCK_APMIXED_APLL1].clock);
 		}
 	}
 EXIT:
@@ -1162,12 +1159,12 @@ void SetckSel(unsigned int I2snum, unsigned int SampleRate)
 		pr_debug("%s(), not support I2snum %u\n", __func__, I2snum);
 		break;
 	}
-	pr_aud("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
+	pr_debug("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
 }
 
 void EnableALLbySampleRate(unsigned int SampleRate)
 {
-	pr_debug("%s()+, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n",
+	pr_debug("%s(), APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n",
 		__func__, APLL1Counter, APLL2Counter, SampleRate);
 
 	switch (GetApllbySampleRate(SampleRate)) {
@@ -1188,9 +1185,6 @@ void EnableALLbySampleRate(unsigned int SampleRate)
 	default:
 		pr_debug("%s(), invalid SampleRate %d\n", __func__, SampleRate);
 		break;
-
-	pr_aud("%s()-, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n",
-		__func__, APLL1Counter, APLL2Counter, SampleRate);
 	}
 }
 
@@ -1230,7 +1224,7 @@ void DisableALLbySampleRate(unsigned int SampleRate)
 
 void EnableI2SDivPower(unsigned int Diveder_name, bool bEnable)
 {
-	pr_aud("%s, bEnable = %d, Diveder_name %u\n",
+	pr_debug("%s, bEnable = %d, Diveder_name %u\n",
 		__func__, bEnable, Diveder_name);
 
 	if (bEnable)
@@ -1241,13 +1235,13 @@ void EnableI2SDivPower(unsigned int Diveder_name, bool bEnable)
 
 void EnableI2SCLKDiv(unsigned int I2snum, bool bEnable)
 {
-	pr_aud("%s mI2SAPLLDivSelect = %d, i2snum = %d\n", __func__, mI2SAPLLDivSelect[I2snum], I2snum);
+	pr_debug("%s mI2SAPLLDivSelect = %d, i2snum = %d\n", __func__, mI2SAPLLDivSelect[I2snum], I2snum);
 	EnableI2SDivPower(mI2SAPLLDivSelect[I2snum], bEnable);
 }
 
 void EnableApll1(bool enable)
 {
-	pr_aud("%s enable = %d Aud_APLL_DIV_APLL1_cntr = %d\n", __func__, enable, Aud_APLL_DIV_APLL1_cntr);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
@@ -1269,7 +1263,7 @@ void EnableApll1(bool enable)
 
 void EnableApll2(bool enable)
 {
-	pr_aud("%s enable = %d Aud_APLL_DIV_APLL2_cntr = %d\n", __func__, enable, Aud_APLL_DIV_APLL2_cntr);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
