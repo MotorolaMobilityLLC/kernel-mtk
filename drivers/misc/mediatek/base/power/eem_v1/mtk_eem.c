@@ -412,7 +412,7 @@ static int get_devinfo(void)
 		val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
 		val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
 		/* soc */
-		val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
+		val[10] = get_devinfo_with_index(DEVINFO_IDX_VOLT_BIN);
 		val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
 
 		val[12] = get_devinfo_with_index(DEVINFO_IDX_FTPGM);

@@ -118,6 +118,14 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_oppidx;
 	uint8_t gpu_dvfs_status;
 
+	uint32_t ptp_devinfo_0;
+	uint32_t ptp_devinfo_1;
+	uint32_t ptp_devinfo_2;
+	uint32_t ptp_devinfo_3;
+	uint32_t ptp_devinfo_4;
+	uint32_t ptp_devinfo_5;
+	uint32_t ptp_devinfo_6;
+	uint32_t ptp_devinfo_7;
 	uint32_t ptp_e0;
 	uint32_t ptp_e1;
 	uint32_t ptp_e2;
@@ -1257,6 +1265,62 @@ u8 aee_rr_curr_gpu_dvfs_status(void)
 	return LAST_RR_VAL(gpu_dvfs_status);
 }
 
+void aee_rr_rec_ptp_devinfo_0(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_0, val);
+}
+
+void aee_rr_rec_ptp_devinfo_1(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_1, val);
+}
+
+void aee_rr_rec_ptp_devinfo_2(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_2, val);
+}
+
+void aee_rr_rec_ptp_devinfo_3(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_3, val);
+}
+
+void aee_rr_rec_ptp_devinfo_4(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_4, val);
+}
+
+void aee_rr_rec_ptp_devinfo_5(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_5, val);
+}
+
+void aee_rr_rec_ptp_devinfo_6(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_6, val);
+}
+
+void aee_rr_rec_ptp_devinfo_7(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_devinfo_7, val);
+}
+
 void aee_rr_rec_ptp_e0(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1657,6 +1721,46 @@ void aee_rr_rec_ocp_enable(u8 val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(ocp_enable, val);
+}
+
+u32 aee_rr_curr_ptp_devinfo_0(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_0);
+}
+
+u32 aee_rr_curr_ptp_devinfo_1(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_1);
+}
+
+u32 aee_rr_curr_ptp_devinfo_2(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_2);
+}
+
+u32 aee_rr_curr_ptp_devinfo_3(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_3);
+}
+
+u32 aee_rr_curr_ptp_devinfo_4(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_4);
+}
+
+u32 aee_rr_curr_ptp_devinfo_5(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_5);
+}
+
+u32 aee_rr_curr_ptp_devinfo_6(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_6);
+}
+
+u32 aee_rr_curr_ptp_devinfo_7(void)
+{
+	return LAST_RR_VAL(ptp_devinfo_7);
 }
 
 u32 aee_rr_curr_ptp_e0(void)
@@ -2297,6 +2401,46 @@ void aee_rr_show_gpu_dvfs_status(struct seq_file *m)
 	seq_printf(m, "gpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_status));
 }
 
+void aee_rr_show_ptp_devinfo_0(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo0 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_0));
+}
+
+void aee_rr_show_ptp_devinfo_1(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo1 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_1));
+}
+
+void aee_rr_show_ptp_devinfo_2(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo2 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_2));
+}
+
+void aee_rr_show_ptp_devinfo_3(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo3 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_3));
+}
+
+void aee_rr_show_ptp_devinfo_4(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo4 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_4));
+}
+
+void aee_rr_show_ptp_devinfo_5(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo5 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_5));
+}
+
+void aee_rr_show_ptp_devinfo_6(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo6 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_6));
+}
+
+void aee_rr_show_ptp_devinfo_7(struct seq_file *m)
+{
+	seq_printf(m, "EEM devinfo7 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_7));
+}
+
 void aee_rr_show_ptp_e0(struct seq_file *m)
 {
 	seq_printf(m, "M_HW_RES0 = 0x%X\n", LAST_RRR_VAL(ptp_e0));
@@ -2860,6 +3004,14 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
+	aee_rr_show_ptp_devinfo_0,
+	aee_rr_show_ptp_devinfo_1,
+	aee_rr_show_ptp_devinfo_2,
+	aee_rr_show_ptp_devinfo_3,
+	aee_rr_show_ptp_devinfo_4,
+	aee_rr_show_ptp_devinfo_5,
+	aee_rr_show_ptp_devinfo_6,
+	aee_rr_show_ptp_devinfo_7,
 	aee_rr_show_ptp_e0,
 	aee_rr_show_ptp_e1,
 	aee_rr_show_ptp_e2,
