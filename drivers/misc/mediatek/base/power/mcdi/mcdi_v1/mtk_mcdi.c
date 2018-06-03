@@ -39,7 +39,7 @@
 
 #include <sspm_mbox.h>
 #include <trace/events/mtk_idle_event.h>
-
+#include <linux/irqchip/mtk-gic-extend.h>
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
@@ -521,12 +521,13 @@ static int mcdi_debugfs_init(void)
 static void __go_to_wfi(int cpu)
 {
 	trace_rgidle_rcuidle(cpu, 1);
-
+	remove_cpu_from_prefer_schedule_domain(cpu);
 	isb();
 	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
 
+	add_cpu_to_prefer_schedule_domain(cpu);
 	trace_rgidle_rcuidle(cpu, 0);
 }
 

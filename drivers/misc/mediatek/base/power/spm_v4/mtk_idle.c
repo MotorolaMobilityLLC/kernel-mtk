@@ -31,7 +31,7 @@
 #include <linux/kallsyms.h>
 
 #include <linux/irqchip/mtk-gic.h>
-
+#include <linux/irqchip/mtk-gic-extend.h>
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
 #include <mtk_gpt.h>
@@ -1234,6 +1234,8 @@ int rgidle_enter(int cpu)
 	mcdi_heart_beat_log_dump();
 #endif
 
+	remove_cpu_from_prefer_schedule_domain(cpu);
+
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
 	idle_refcnt_inc();
@@ -1243,6 +1245,8 @@ int rgidle_enter(int cpu)
 	idle_refcnt_dec();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
+
+	add_cpu_to_prefer_schedule_domain(cpu);
 
 	return ret;
 }
