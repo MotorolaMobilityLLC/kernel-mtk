@@ -267,7 +267,12 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 		if (nrg_diff >= 0 && !cpu_isolated(task_cpu(p))) {
 			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
 					(int)task_util(p), nrg_diff, false, is_tiny);
-			return task_cpu(p);
+
+			/* if previous cpu not idle, choose better another silbing */
+			if (idle_cpu(task_cpu(p)))
+				return task_cpu(p);
+			else
+				return select_max_spare_capacity_cpu(p, task_cpu(p));
 		}
 	}
 
