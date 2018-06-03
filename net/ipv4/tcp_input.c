@@ -5425,9 +5425,18 @@ void tcp_finish_connect(struct sock *sk, struct sk_buff *skb)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct inet_connection_sock *icsk = inet_csk(sk);
+#ifdef CONFIG_MTK_NET_LOGGING
+	struct tcphdr *th = tcp_hdr(skb);
+#endif
 
 	tcp_set_state(sk, TCP_ESTABLISHED);
 
+#ifdef CONFIG_MTK_NET_LOGGING
+	if (skb) {
+		pr_info("[mtk_net][tcp_finish_connect] inode = %lu; sport = %d; dport = %d\n",
+			sk->sk_socket ? SOCK_INODE(sk->sk_socket)->i_ino : 0, ntohs(th->dest), ntohs(th->source));
+	}
+#endif
 	if (skb) {
 		icsk->icsk_af_ops->sk_rx_dst_set(sk, skb);
 		security_inet_conn_established(sk, skb);
