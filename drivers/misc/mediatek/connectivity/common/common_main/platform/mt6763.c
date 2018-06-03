@@ -408,15 +408,10 @@ static INT32 consys_co_clock_type(VOID)
 static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_CLOCK_BUF_CTRL
-	if (enable == MTK_WCN_BOOL_TRUE) {
+	if (enable == MTK_WCN_BOOL_TRUE)
 		clk_buf_ctrl(CLK_BUF_CONN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
-	} else if (enable == MTK_WCN_BOOL_FALSE) {
+	else if (enable == MTK_WCN_BOOL_FALSE)
 		clk_buf_ctrl(CLK_BUF_CONN, 0);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 0);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 0);
-	}
 #endif
 	return 0;
 }
@@ -811,7 +806,23 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 /* Wayne Chen - This function was copied from mt6759.c */
 static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 {
-	/* Will be set in clk_buf_ctrl() */
+#if CONSYS_PMIC_CTRL_ENABLE
+	if (enable) {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 1);
+#endif
+	} else {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 0);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
+#endif
+	}
+#endif
 }
 
 /* Wayne Chen - This function was copied from mt6759.c */
@@ -823,11 +834,12 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 #if defined(CONFIG_MTK_LEGACY)
 		hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800 * 1000, "wcn_drv");
 #else
-		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
-			if (regulator_enable(reg_VCN28))
-				WMT_PLAT_ERR_FUNC("WMT do VCN28 PMIC on fail!\n");
-		}
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 1);
+#endif
 #endif
 		WMT_PLAT_INFO_FUNC("turn on vcn28 for fm/gps usage in co-clock mode\n");
 	} else {
@@ -835,8 +847,12 @@ static INT32 consys_hw_vcn28_ctrl(UINT32 enable)
 #if defined(CONFIG_MTK_LEGACY)
 		hwPowerDown(MT6351_POWER_LDO_VCN28, "wcn_drv");
 #else
-		if (reg_VCN28)
-			regulator_disable(reg_VCN28);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 0);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
+#endif
 #endif
 		WMT_PLAT_INFO_FUNC("turn off vcn28 for fm/gps usage in co-clock mode\n");
 	}
