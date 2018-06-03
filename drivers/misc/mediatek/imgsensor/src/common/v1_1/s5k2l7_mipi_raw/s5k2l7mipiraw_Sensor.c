@@ -66,7 +66,7 @@
 /****************************	Modify end	  *******************************************/
 #define LOG_INF(fmt, args...)	pr_debug(PFX "[%s] " fmt, __func__, ##args)
 
-#define MULTI_WRITE 0
+#define MULTI_WRITE 1
 
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 1020	/* trans# max is 255, each 4 bytes */
@@ -227,7 +227,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5A, 0xFF},
-	.i2c_speed = 300,
+	.i2c_speed = 1000,
 };
 
 _S5K2L7_MODE1_SENSOR_INFO_;
