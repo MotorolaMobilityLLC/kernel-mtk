@@ -521,8 +521,7 @@ struct mem_thread_param {
 };
 static struct mem_thread_param thread_param[TRUSTED_MEM_MAX]
 					   [MEM_SPAWN_THREAD_COUNT];
-static struct task_struct
-	*mem_kthread[TRUSTED_MEM_MAX][MEM_SPAWN_THREAD_COUNT] = {NULL};
+static struct task_struct *mem_kthread[TRUSTED_MEM_MAX][MEM_SPAWN_THREAD_COUNT];
 
 static int mem_thread_alloc_test(void *data)
 {
