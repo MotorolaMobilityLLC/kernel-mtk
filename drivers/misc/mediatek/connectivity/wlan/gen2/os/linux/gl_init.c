@@ -2518,6 +2518,8 @@ VOID wlanProcessInfoFile(IN P_ADAPTER_T prAdapter)
 	ucOffset = 0;
 
 	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "%s\n", "#softap.info");
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
 		, "DualBandConcurrency=%s\n", "no");
 	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
 		, "5G=%s\n", (prAdapter->prGlueInfo->rRegInfo.ucEnable5GBand)?"yes":"no");
