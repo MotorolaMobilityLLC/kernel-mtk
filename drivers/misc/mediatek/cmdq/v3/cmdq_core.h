@@ -473,6 +473,8 @@ struct TaskStruct {
 	u64 flushData;	/* for callbacks & error handling */
 	struct work_struct autoReleaseWork;	/* Work item when auto release is used */
 	atomic_t useWorkQueue;
+	u64 res_engine_flag_acquire;	/* task start use share sram */
+	u64 res_engine_flag_release;	/* task stop use share sram */
 
 	/* Output section for "read from reg to mem" */
 	uint32_t regCount;
@@ -514,6 +516,12 @@ struct TaskStruct {
 
 	/* Custom profile marker */
 	struct cmdqProfileMarkerStruct profileMarker;
+};
+
+struct CmdqRecExtend {
+	/* task access share sram engine */
+	u64 res_engine_flag_acquire;
+	u64 res_engine_flag_release;
 };
 
 struct EngineStruct {
@@ -634,8 +642,8 @@ struct ResourceUnitStruct {
 	bool lend;				/* indicate resource is lend by client or not */
 	bool delaying;			/* indicate resource is in delay check or not */
 	enum CMDQ_EVENT_ENUM lockEvent;	/* SW token to lock in GCE thread */
-	uint64_t engine_id;			/* which engine is resource */
-	uint64_t engine_flag;			/* engine flag */
+	u32 engine_id;			/* which engine is resource */
+	u64 engine_flag;		/* engine flag */
 	CmdqResourceAvailableCB availableCB;
 	CmdqResourceReleaseCB releaseCB;
 	struct delayed_work delayCheckWork;	/* Delay Work item when delay check is used */
@@ -774,8 +782,8 @@ extern "C" {
  *      >=0 for success; else the error code is returned
  */
 	int32_t cmdqCoreSubmitTaskAsync(struct cmdqCommandStruct *pCommandDesc,
-					CmdqInterruptCB loopCB,
-					unsigned long loopData, struct TaskStruct **ppTaskOut);
+		struct CmdqRecExtend *ext, CmdqInterruptCB loopCB,
+		unsigned long loopData, struct TaskStruct **ppTaskOut);
 
 /**
  * Wait for completion of the given CmdQ task
@@ -835,7 +843,7 @@ extern "C" {
  * Return:
  *     >=0 for success; else the error code is returned
  */
-	int32_t cmdqCoreSubmitTask(struct cmdqCommandStruct *pCommandDesc);
+	int32_t cmdqCoreSubmitTask(struct cmdqCommandStruct *pCommandDesc, struct CmdqRecExtend *ext);
 
 
 /**
@@ -1043,8 +1051,8 @@ extern "C" {
 					   int rowsize, int groupsize, const void *buf, size_t len);
 
 	void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify);
-	bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent);
-	void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent);
+	bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent, u64 *engine_flag_out);
+	void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent, u64 *engine_flag_out);
 	void cmdqCoreSetResourceCallback(enum CMDQ_EVENT_ENUM resourceEvent,
 								CmdqResourceAvailableCB resourceAvailable,
 								CmdqResourceReleaseCB resourceRelease);
