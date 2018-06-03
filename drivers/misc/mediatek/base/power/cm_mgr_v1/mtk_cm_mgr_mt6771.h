@@ -40,6 +40,8 @@ enum {
 	CM_MGR_MAX,
 };
 
+extern spinlock_t sw_zq_tx_lock;
+
 extern void __iomem *mcucfg_mp0_counter_base;
 extern void __iomem *mcucfg_mp2_counter_base;
 
