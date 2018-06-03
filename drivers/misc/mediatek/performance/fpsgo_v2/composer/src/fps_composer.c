@@ -522,12 +522,13 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 }
 
 void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
-	unsigned long long t_frame_start)
+	unsigned long long t_frame_start, unsigned long long id)
 {
 	struct ui_pid_info *ui;
 	struct render_info *pos, *next;
+	int i;
 
-	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
+	FPSGO_COM_TRACE("%s pid[%d] id[%llu]", __func__, pid, id);
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -541,7 +542,20 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 
 	list_for_each_entry_safe(pos, next, &ui->render_list, ui_list) {
 		fpsgo_thread_lock(&pos->thr_mlock);
-		if (pos->frame_type != BY_PASS_TYPE && pos->render) {
+		if (pos->frame_type != BY_PASS_TYPE) {
+			if (pos->render_method != GLSURFACE) {
+				for (i = 0; i < 2; i++) {
+					if (pos->frame_id[i].complete == 1) {
+						pos->frame_id[i].id = id;
+						pos->frame_id[i].complete = 0;
+						pos->frame_id[i].draw = 0;
+						FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
+							__func__, pos->pid, pos->frame_id[i].id,
+							pos->frame_id[i].complete, pos->frame_id[i].draw);
+						break;
+					}
+				}
+			}
 			fpsgo_systrace_c_fbt_gm(-300, pos->self_time,
 				"%d_%d-frame_time", pos->pid, pos->frame_type);
 			fpsgo_comp2fbt_frame_start(pos, t_frame_start, pos->sleep_time);
@@ -551,12 +565,14 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 	fpsgo_render_tree_unlock(__func__);
 }
 
-void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long long t_frame_done)
+void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid,
+	int render, unsigned long long t_frame_done, unsigned long long id)
 {
 	struct ui_pid_info *ui;
 	struct render_info *pos, *next;
+	int i;
 
-	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
+	FPSGO_COM_TRACE("%s pid[%d] render[%d] id[%llu]", __func__, pid, render, id);
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -572,6 +588,17 @@ void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long 
 		fpsgo_thread_lock(&pos->thr_mlock);
 		if (pos->frame_type != BY_PASS_TYPE) {
 			pos->render = render;
+			if (pos->render_method != GLSURFACE) {
+				for (i = 0; i < 2; i++) {
+					if (pos->frame_id[i].id == id) {
+						pos->frame_id[i].complete = 1;
+						FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
+							__func__, pos->pid, pos->frame_id[i].id,
+							pos->frame_id[i].complete, pos->frame_id[i].draw);
+						break;
+					}
+				}
+			}
 			fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pos->pid, pos->frame_type);
 			FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d] type[%d] render[%d]",
 				__func__, pos->pid, pos->ui_pid, pos->frame_type, render);
@@ -583,13 +610,51 @@ void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long 
 
 }
 
+void fpsgo_ctrl2comp_vysnc_aligned_draw_start(int pid, unsigned long long id)
+{
+	struct ui_pid_info *ui;
+	struct render_info *pos, *next;
+	int i;
+
+	FPSGO_COM_TRACE("%s pid[%d] id[%llu]", __func__, pid, id);
+
+	fpsgo_render_tree_lock(__func__);
+
+	ui = fpsgo_com_search_and_add_ui_pid_info(pid, 0);
+
+	if (!ui) {
+		fpsgo_render_tree_unlock(__func__);
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n", __func__, pid);
+		return;
+	}
+
+	list_for_each_entry_safe(pos, next, &ui->render_list, ui_list) {
+		fpsgo_thread_lock(&pos->thr_mlock);
+		if (pos->frame_type != BY_PASS_TYPE && pos->render_method != GLSURFACE) {
+			for (i = 0; i < 2; i++) {
+				if (pos->frame_id[i].id == id) {
+					pos->frame_id[i].draw++;
+					FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
+						__func__, pos->pid, pos->frame_id[i].id,
+						pos->frame_id[i].complete, pos->frame_id[i].draw);
+					break;
+				}
+			}
+		}
+		fpsgo_thread_unlock(&pos->thr_mlock);
+	}
+	fpsgo_render_tree_unlock(__func__);
+
+}
+
 void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 	int ui_pid, unsigned long long frame_time, int render,
-	unsigned long long t_frame_done, int render_method)
+	unsigned long long t_frame_done, int render_method, unsigned long long id)
 {
 	struct render_info *f_render;
+	int i;
 
-	FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d]", __func__, pid, ui_pid);
+	FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d] render[%d] id[%llu]", __func__, pid, ui_pid, render, id);
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -619,6 +684,8 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 
 		f_render->frame_type = VSYNC_ALIGNED_TYPE;
 		f_render->ui_pid = ui_pid;
+		f_render->frame_id[0].complete = 1;
+		f_render->frame_id[1].complete = 1;
 		list_add(&(f_render->ui_list), &(ui->render_list));
 		FPSGO_COM_TRACE("%s: add ui info : ui_pid:%d !!!!\n",
 				__func__, ui_pid);
@@ -645,17 +712,43 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 	f_render->render = render;
 	f_render->render_method = render_method;
 	if (render) {
+		int frame_done;
+
 		f_render->self_time = frame_time;
 		f_render->Q2Q_time = frame_time;
+
+		if (f_render->render_method == GLSURFACE) {
+			fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
+			goto out;
+		}
+
+		for (i = 0; i < 2; i++) {
+			if (f_render->frame_id[i].id == id) {
+				if (f_render->frame_id[i].draw > 1)
+					f_render->frame_id[i].draw--;
+				else
+					f_render->frame_id[i].complete = 1;
+				frame_done = f_render->frame_id[i].complete;
+				FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
+					__func__, f_render->pid, f_render->frame_id[i].id,
+					f_render->frame_id[i].complete, f_render->frame_id[i].draw);
+				fpsgo_systrace_c_fbt_gm(-300, f_render->frame_id[i].complete,
+						"%d_%d-complete", f_render->pid, f_render->frame_type);
+				break;
+			}
+		}
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-			f_render->render_method, t_frame_done, f_render->buffer_id, f_render->api);
+				f_render->render_method, t_frame_done, f_render->buffer_id, f_render->api);
+		if (frame_done == 1)
+			fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
 	}
+
+out:
 	fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pid, f_render->frame_type);
-	fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
 	FPSGO_COM_TRACE("frame_done pid[%d] ui[%d] type[%d] frame_t:%llu render:%d method:%d",
 		pid, f_render->ui_pid, f_render->frame_type, frame_time, render, render_method);
-
 	fpsgo_thread_unlock(&f_render->thr_mlock);
+
 }
 
 void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long buffer_id, int api)

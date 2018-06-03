@@ -41,6 +41,7 @@ enum FPSGO_NOTIFIER_PUSH_TYPE {
 	FPSGO_NOTIFIER_CONNECT				= 0x04,
 	FPSGO_NOTIFIER_CPU_CAP				= 0x05,
 	FPSGO_NOTIFIER_DFRC_FPS				= 0x06,
+	FPSGO_NOTIFIER_DRAW_START			= 0x07,
 };
 
 /* TODO: use union*/
@@ -69,6 +70,7 @@ struct FPSGO_NOTIFIER_PUSH_TAG {
 	unsigned long long frame_time;
 	int render_method;
 	int render;
+	unsigned long long frame_id;
 
 	int dfrc_fps;
 
@@ -103,14 +105,15 @@ static void fpsgo_notifier_wq_cb_dfrc_fps(int dfrc_fps)
 	fpsgo_ctrl2fbt_dfrc_fps(dfrc_fps);
 }
 
-static void fpsgo_notifier_wq_cb_intended_vsync(int cur_pid, unsigned long long cur_ts)
+static void fpsgo_notifier_wq_cb_intended_vsync(int cur_pid,
+	unsigned long long cur_ts, unsigned long long frame_id)
 {
 	FPSGO_LOGI("[FPSGO_CB] intended_vsync: pid %d, ts %llu\n", cur_pid, cur_ts);
 
 	if (!fpsgo_is_enable())
 		return;
 
-	fpsgo_ctrl2comp_vysnc_aligned_frame_start(cur_pid, cur_ts);
+	fpsgo_ctrl2comp_vysnc_aligned_frame_start(cur_pid, cur_ts, frame_id);
 }
 
 static void fpsgo_notifier_wq_cb_connect(int pid, unsigned long long bufID, int connectedAPI)
@@ -124,7 +127,7 @@ static void fpsgo_notifier_wq_cb_connect(int pid, unsigned long long bufID, int 
 }
 
 static void fpsgo_notifier_wq_cb_framecomplete(int cur_pid, int ui_pid, unsigned long long frame_time,
-						int render_method, int render, unsigned long long cur_ts)
+				int render_method, int render, unsigned long long cur_ts, unsigned long long frame_id)
 {
 	FPSGO_LOGI("[FPSGO_CB] framecomplete: cur_pid %d, ui_pid %d, frame_time %llu, render %d, render_method %d\n",
 				cur_pid, ui_pid, frame_time, render, render_method);
@@ -134,9 +137,19 @@ static void fpsgo_notifier_wq_cb_framecomplete(int cur_pid, int ui_pid, unsigned
 
 	if (render)
 		fpsgo_ctrl2comp_vysnc_aligned_frame_done(cur_pid, ui_pid, frame_time,
-			render, cur_ts, render_method);
+			render, cur_ts, render_method, frame_id);
 	else
-		fpsgo_ctrl2comp_vysnc_aligned_no_render(cur_pid, render, cur_ts);
+		fpsgo_ctrl2comp_vysnc_aligned_no_render(ui_pid, render, cur_ts, frame_id);
+}
+
+static void fpsgo_notifier_wq_cb_draw_start(int pid, unsigned long long frame_id)
+{
+	FPSGO_LOGI("[FPSGO_CB] draw_start: pid %d\n", pid);
+
+	if (!fpsgo_is_enable())
+		return;
+
+	fpsgo_ctrl2comp_vysnc_aligned_draw_start(pid, frame_id);
 }
 
 static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigned long long bufID,
@@ -221,11 +234,11 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 					vpPush->pid, vpPush->cur_ts);
 		break;
 	case FPSGO_NOTIFIER_INTENDED_VSYNC:
-		fpsgo_notifier_wq_cb_intended_vsync(vpPush->pid, vpPush->cur_ts);
+		fpsgo_notifier_wq_cb_intended_vsync(vpPush->pid, vpPush->cur_ts, vpPush->frame_id);
 		break;
 	case FPSGO_NOTIFIER_FRAME_COMPLETE:
 		fpsgo_notifier_wq_cb_framecomplete(vpPush->pid, vpPush->ui_pid, vpPush->frame_time,
-					vpPush->render_method, vpPush->render, vpPush->cur_ts);
+					vpPush->render_method, vpPush->render, vpPush->cur_ts, vpPush->frame_id);
 		break;
 	case FPSGO_NOTIFIER_CONNECT:
 		fpsgo_notifier_wq_cb_connect(vpPush->pid, vpPush->bufID, vpPush->connectedAPI);
@@ -242,6 +255,9 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		break;
 	case FPSGO_NOTIFIER_DFRC_FPS:
 		fpsgo_notifier_wq_cb_dfrc_fps(vpPush->dfrc_fps);
+		break;
+	case FPSGO_NOTIFIER_DRAW_START:
+		fpsgo_notifier_wq_cb_draw_start(vpPush->pid, vpPush->frame_id);
 		break;
 	default:
 		FPSGO_LOGE("[FPSGO_CTRL] unhandled push type = %d\n", vpPush->ePushType);
@@ -324,7 +340,7 @@ void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long buf
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
 }
 
-void fpsgo_notify_intended_vsync(int pid)
+void fpsgo_notify_intended_vsync(int pid, unsigned long long frame_id)
 {
 	unsigned long long cur_ts;
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
@@ -353,13 +369,14 @@ void fpsgo_notify_intended_vsync(int pid)
 	vpPush->ePushType = FPSGO_NOTIFIER_INTENDED_VSYNC;
 	vpPush->pid = pid;
 	vpPush->cur_ts = cur_ts;
+	vpPush->frame_id = frame_id;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
 }
 
 void fpsgo_notify_framecomplete(int ui_pid, unsigned long long frame_time,
-								int render_method, int render)
+					int render_method, int render, unsigned long long frame_id)
 {
 	unsigned long long cur_ts;
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
@@ -394,6 +411,38 @@ void fpsgo_notify_framecomplete(int ui_pid, unsigned long long frame_time,
 	vpPush->frame_time = frame_time;
 	vpPush->render = render;
 	vpPush->render_method = render_method;
+	vpPush->frame_id = frame_id;
+
+	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
+	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
+}
+
+void fpsgo_notify_drawstart(int pid, unsigned long long frame_id)
+{
+	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
+
+	FPSGO_LOGI("[FPSGO_CTRL] drawstart: ui_pid %d\n", pid);
+
+	if (!fpsgo_is_enable())
+		return;
+
+	vpPush =
+		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+
+	if (!vpPush) {
+		FPSGO_LOGE("[FPSGO_CTRL] OOM\n");
+		return;
+	}
+
+	if (!g_psNotifyWorkQueue) {
+		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
+		fpsgo_free(vpPush, sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+		return;
+	}
+
+	vpPush->ePushType = FPSGO_NOTIFIER_DRAW_START;
+	vpPush->pid = pid;
+	vpPush->frame_id = frame_id;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
@@ -638,6 +687,8 @@ static int __init fpsgo_init(void)
 	fpsgo_notify_intended_vsync_fp = fpsgo_notify_intended_vsync;
 	fpsgo_notify_framecomplete_fp = fpsgo_notify_framecomplete;
 	fpsgo_notify_connect_fp = fpsgo_notify_connect;
+
+	fpsgo_notify_draw_start_fp = fpsgo_notify_drawstart;
 
 	return 0;
 }

@@ -54,17 +54,19 @@ enum {
 typedef struct _FPSGO_PACKAGE {
 	__u32 tid;
 	union {
-		__u64 frame_time;
-		__u64 bufID;
-	};
-	union {
 		__u32 start;
 		__u32 connectedAPI;
 		__u32 render_method;
 	};
+	union {
+		__u64 frame_time;
+		__u64 bufID;
+	};
+	__u64 frame_id; /* for HWUI only*/
 } FPSGO_PACKAGE;
 
 #define FPSGO_QUEUE                  _IOW('g', 1, FPSGO_PACKAGE)
+#define FPSGO_DRAW_START             _IOW('g', 2, FPSGO_PACKAGE)
 #define FPSGO_DEQUEUE                _IOW('g', 3, FPSGO_PACKAGE)
 #define FPSGO_VSYNC                  _IOW('g', 5, FPSGO_PACKAGE)
 #define FPSGO_ACT_SWITCH             _IOW('g', 8, FPSGO_PACKAGE)

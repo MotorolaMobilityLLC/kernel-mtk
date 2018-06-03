@@ -45,9 +45,11 @@ void fpsgo_composer_exit(void);
 
 void fpsgo_ctrl2comp_vysnc_aligned_frame_done
 	(int pid, int ui_pid, unsigned long long frame_time,
-	int render, unsigned long long t_frame_done, int render_method);
-void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid, unsigned long long t_frame_start);
-void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long long t_frame_done);
+	int render, unsigned long long t_frame_done, int render_method, unsigned long long id);
+void fpsgo_ctrl2comp_vysnc_aligned_frame_start
+	(int pid, unsigned long long t_frame_start, unsigned long long id);
+void fpsgo_ctrl2comp_vysnc_aligned_no_render
+	(int pid, int render, unsigned long long t_frame_done, unsigned long long id);
 void fpsgo_ctrl2comp_dequeue_end(int pid, unsigned long long dequeue_end_time, unsigned long long bufferID);
 void fpsgo_ctrl2comp_dequeue_start(int pid, unsigned long long dequeue_start_time, unsigned long long bufferID);
 void fpsgo_ctrl2comp_enqueue_end(int pid, unsigned long long enqueue_end_time, unsigned long long bufferID);
@@ -58,6 +60,8 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int ap
 void fpsgo_fstb2comp_check_connect_api(void);
 void fpsgo_base2com_delete_ui_pid_info(int ui_pid);
 void fpsgo_base2com_clear_ui_pid_info(void);
+void fpsgo_ctrl2comp_vysnc_aligned_draw_start(int pid, unsigned long long id);
+
 
 #endif
 
