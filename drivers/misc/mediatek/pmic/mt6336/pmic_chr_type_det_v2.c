@@ -754,7 +754,8 @@ static enum power_supply_property mt_usb_properties[] = {
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static void do_charger_detection_work(struct work_struct *data)
 {
-	do_charger_detect();
+	if (upmu_get_rgs_chrdet() == true)
+		do_charger_detect();
 }
 #endif
 
