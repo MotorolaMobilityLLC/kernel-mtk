@@ -114,9 +114,9 @@ void nanohub_ipi_comms_init(struct nanohub_ipi_data *ipi_data)
 	struct nanohub_comms *comms = &ipi_data->data.comms;
 
 	comms->seq = 1;
-	comms->timeout_write = msecs_to_jiffies(1024);
-	comms->timeout_ack = msecs_to_jiffies(1024);
-	comms->timeout_reply = msecs_to_jiffies(1024);
+	comms->timeout_write = msecs_to_jiffies(512);
+	comms->timeout_ack = msecs_to_jiffies(3);
+	comms->timeout_reply = msecs_to_jiffies(3);
 	comms->open = nanohub_ipi_open;
 	comms->close = nanohub_ipi_close;
 	comms->write = nanohub_ipi_write;
