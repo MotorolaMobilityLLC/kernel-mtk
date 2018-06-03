@@ -573,7 +573,7 @@ static void start_devapc(void)
 		readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
-	pr_err("[DEVAPC] Clear INFRA VIO_STA and unmask INFRA VIO_MASK...\n",
+	pr_err("[DEVAPC] Clear INFRA VIO_STA and unmask INFRA VIO_MASK...\n");
 
 	for (i = 0; i < ARRAY_SIZE(devapc_infra_devices); i++)
 		if (true == devapc_infra_devices[i].enable_vio_irq) {
@@ -638,12 +638,12 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
 				mt_reg_sync_writel(0x1, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
 				for (shift_done = 0; (shift_done < 0x100)
-					&& (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 != 0x3); ++shift_done)
+					&& ((readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3) != 0x3); ++shift_done)
 					DEVAPC_VIO_MSG("[DEVAPC] Syncing INFRA DBG0 & DBG1 (%d, %d)\n", i, shift_done);
 
 				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL), readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
-				if (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 == 0x3) {
+				if ((readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3) == 0x3) {
 					DEVAPC_VIO_MSG("[DEVAPC] Sync INFRA DBG0 & DBG1 (%d) SUCCESS\n", i);
 					shift_done = 1;
 				} else {
