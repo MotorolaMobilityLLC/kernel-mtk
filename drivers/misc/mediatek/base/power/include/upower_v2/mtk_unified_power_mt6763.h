@@ -35,7 +35,11 @@ extern "C" {
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #endif
 
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define EARLY_PORTING_EEM
+#else
 /* #define EARLY_PORTING_EEM */
+#endif
 /* #define EARLY_PORTING_SPOWER */
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
