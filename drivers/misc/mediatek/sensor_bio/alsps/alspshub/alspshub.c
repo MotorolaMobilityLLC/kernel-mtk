@@ -51,6 +51,7 @@ struct alspshub_ipi_data {
 
 static struct alspshub_ipi_data *obj_ipi_data;
 static int set_psensor_threshold(void);
+static int ps_get_data(int *value, int *status);
 
 static int intr_flag = 1;
 
@@ -367,6 +368,8 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	int ps_cali = 0;
 	int threshold[2];
 	struct data_unit_t data;
+	int value = 0;
+	int status = 0;
 
 	switch (cmd) {
 	case ALSPS_SET_PS_MODE:
@@ -535,10 +538,12 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_TEST_RESULT:
-		err = alspshub_read_ps(&obj->ps);
-		if (err)
+		/* err = alspshub_read_ps(&obj->ps); */
+		err = ps_get_data(&value, &status);
+		if (err < 0)
 			goto err_out;
-		if (obj->ps > atomic_read(&obj->ps_thd_val_low))
+		/* if (obj->ps > atomic_read(&obj->ps_thd_val_low)) */
+		if (value == 0)
 			ps_result = 0;
 		else
 			ps_result = 1;
