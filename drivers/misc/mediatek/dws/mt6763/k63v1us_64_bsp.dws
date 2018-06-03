@@ -90,7 +90,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint4>
             <eint6>
-                <varName>ALS</varName>
+                <varName>ALSPS_MTK</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
