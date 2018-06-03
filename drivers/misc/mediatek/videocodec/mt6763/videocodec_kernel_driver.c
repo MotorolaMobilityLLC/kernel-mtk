@@ -721,6 +721,7 @@ static long vcodec_lockhw(unsigned long arg)
 	VAL_UINT32_T u4TimeInterval;
 	VAL_ULONG_T ulFlagsLockHW;
 	VAL_UINT32_T u4VcodecSel;
+	VAL_UINT32_T u4DeBlcoking = 1;
 
 	MODULE_MFV_LOGD("VCODEC_LOCKHW + tid = %d\n", current->pid);
 
@@ -1018,10 +1019,14 @@ static long vcodec_lockhw(unsigned long arg)
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
 		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
 		u4VcodecSel = 0x2;
-	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) {
 		u4VcodecSel = 0x1;
-	} else if rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+		if (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x24) == 0) {
+			do {
+				VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x24, u4DeBlcoking);
+			} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x24) != u4DeBlcoking);
+		}
+	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 		u4VcodecSel = 0x4;
 	} else {
 		u4VcodecSel = 0x0;
