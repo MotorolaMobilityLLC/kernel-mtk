@@ -266,7 +266,7 @@ enum vpu_power_opp {
 struct vpu_power {
 	uint8_t opp_step;
 	uint8_t freq_step;
-	uint32_t bw;
+	uint32_t bw; /* unit: MByte/s */
 };
 
 
