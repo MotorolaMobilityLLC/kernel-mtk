@@ -304,10 +304,7 @@ extern INT32 wmt_set_pmic_voltage(UINT32 level);
 ********************************************************************************
 */
 
-INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime);
-
-INT32 wmt_plat_soc_init(UINT32 co_clock_type);
-
+INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type);
 INT32 wmt_plat_deinit(VOID);
 INT32 wmt_plat_merge_if_flag_get(VOID);
 INT32 wmt_plat_set_comm_if_type(ENUM_STP_TX_IF_TYPE type);
@@ -352,7 +349,7 @@ INT32 wmt_plat_get_dump_info(UINT32 offset);
 UINT32 wmt_plat_get_soc_chipid(VOID);
 UINT32 wmt_plat_soc_co_clock_flag_get(VOID);
 INT32 wmt_plat_set_dbg_mode(UINT32 flag);
-VOID wmt_plat_set_dynamic_dumpmem(UINT32 *buf);
+INT32 wmt_plat_set_dynamic_dumpmem(PUINT32 buf);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif

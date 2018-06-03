@@ -57,27 +57,6 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID);
 static _osal_inline_ INT32 stp_dbg_soc_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len);
 static _osal_inline_ VOID stp_dbg_soc_emi_dump_buffer(UINT8 *buffer, UINT32 len);
 
-INT32 __weak wmt_plat_get_dump_info(UINT32 offset)
-{
-	STP_DBG_ERR_FUNC("wmt_plat_get_dump_info is not define!!!\n");
-
-	return 0;
-}
-
-INT32 __weak wmt_plat_set_host_dump_state(ENUM_HOST_DUMP_STATE state)
-{
-	STP_DBG_ERR_FUNC("wmt_plat_set_host_dump_state is not define!!!\n");
-
-	return 0;
-}
-
-INT32 __weak wmt_plat_update_host_sync_num(VOID)
-{
-	STP_DBG_ERR_FUNC("wmt_plat_update_host_sync_num is not define!!!\n");
-
-	return 0;
-}
-
 static _osal_inline_ VOID stp_dbg_soc_emi_dump_buffer(UINT8 *buffer, UINT32 len)
 {
 	UINT32 i = 0;

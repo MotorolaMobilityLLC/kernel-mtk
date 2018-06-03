@@ -127,13 +127,6 @@ static _osal_inline_ VOID stp_dbg_cpupcr_deinit(P_STP_DBG_CPUPCR_T pCpupcr);
 static _osal_inline_ P_STP_DBG_DMAREGS_T stp_dbg_dmaregs_init(VOID);
 static _osal_inline_ VOID stp_dbg_dmaregs_deinit(P_STP_DBG_DMAREGS_T pDmaRegs);
 
-UINT32 __weak wmt_plat_read_cpupcr(VOID)
-{
-	STP_DBG_ERR_FUNC("wmt_plat_read_cpupcr is not define!!!\n");
-
-	return 0;
-}
-
 INT32 __weak mtk_btif_rxd_be_blocked_flag_get(VOID)
 {
 	STP_DBG_ERR_FUNC("mtk_btif_rxd_be_blocked_flag_get is not define!!!\n");
