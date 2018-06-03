@@ -77,7 +77,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW11_INIT_VAL			0x8000
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
@@ -159,6 +159,18 @@ static void pmic_clk_buf_ctrl_nfc(short on)
 		pmic_config_interface(PMIC_DCXO_CW00_CLR_ADDR, 0x1,
 				      PMIC_XO_EXTBUF3_EN_M_MASK,
 				      PMIC_XO_EXTBUF3_EN_M_SHIFT);
+}
+
+static void pmic_clk_buf_ctrl_cel(short on)
+{
+	if (on)
+		pmic_config_interface(PMIC_DCXO_CW00_SET_ADDR, 0x1,
+				      PMIC_XO_EXTBUF4_EN_M_MASK,
+				      PMIC_XO_EXTBUF4_EN_M_SHIFT);
+	else
+		pmic_config_interface(PMIC_DCXO_CW00_CLR_ADDR, 0x1,
+				      PMIC_XO_EXTBUF4_EN_M_MASK,
+				      PMIC_XO_EXTBUF4_EN_M_SHIFT);
 }
 
 static void pmic_clk_buf_ctrl_aud(short on)
@@ -326,6 +338,24 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 		clk_buf_pr_info("%s: id=%d, onoff=%d, DCXO_ENABLE=0x%x, pwrap_dcxo_en_flag=0x%x\n",
 			     __func__, id, onoff, clkbuf_readl(DCXO_ENABLE),
 			     pwrap_dcxo_en_flag);
+		break;
+	case CLK_BUF_RF:
+		if (onoff) {
+			CLK_BUF4_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL;
+			pmic_config_interface(PMIC_DCXO_CW00_SET, RG_XO4_MODE,
+					      PMIC_XO_EXTBUF4_MODE_MASK,
+					      PMIC_XO_EXTBUF4_MODE_SHIFT);
+			pmic_clk_buf_ctrl_cel(1);
+			pmic_clk_buf_swctrl[XO_CEL] = 1;
+		} else {
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO4_MODE,
+					      PMIC_XO_EXTBUF4_MODE_MASK,
+					      PMIC_XO_EXTBUF4_MODE_SHIFT);
+			pmic_clk_buf_ctrl_cel(0);
+			pmic_clk_buf_swctrl[XO_CEL] = 0;
+			CLK_BUF4_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
+		}
+		clk_buf_pr_info("%s: id=%d, onoff=%d\n", __func__, id, onoff);
 		break;
 	case CLK_BUF_UFS:
 		if (onoff) {
@@ -847,6 +877,10 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 			clk_buf_ctrl(CLK_BUF_NFC, true);
 		else if (debug == 19)
 			clk_buf_ctrl(CLK_BUF_NFC, false);
+		else if (debug == 20)
+			clk_buf_ctrl_internal(CLK_BUF_RF, false);
+		else if (debug == 21)
+			clk_buf_ctrl_internal(CLK_BUF_RF, true);
 		else
 			clk_buf_pr_info("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
 	} else
