@@ -2985,7 +2985,7 @@ static void sched_freq_tick(int cpu)
 			int opp_jump_step;
 
 			for (idx = 0; idx < nr_cap_states; idx++) {
-				if (sge->cap_states[idx].cap > capacity_curr+1)
+				if (sge->cap_states[idx].cap > capacity_curr+3)
 					break;
 			}
 
