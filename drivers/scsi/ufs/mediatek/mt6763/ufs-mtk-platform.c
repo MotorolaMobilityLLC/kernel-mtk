@@ -28,7 +28,14 @@
 #include <mtk_reboot.h>
 #include <upmu_common.h>
 #endif
+/*
+ * Temp workaround: Force ufs use low speed PWMG4 in meta mode
+ * to avoid meta calibration in BBLPM mode may disable
+ * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
+*/
+#include <mt-plat/mtk_boot_common.h>
 
+static void __iomem *ufs_mtk_mmio_base_gpio;
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
@@ -36,6 +43,29 @@ static struct pinctrl *ufs_mtk_pinctrl;
 static struct pinctrl_state *ufs_mtk_pins_default;
 static struct pinctrl_state *ufs_mtk_pins_va09_on;
 static struct pinctrl_state *ufs_mtk_pins_va09_off;
+
+/**
+ * ufs_mtk_pltfrm_pwr_change_final_gear - change pwr mode fianl gear value.
+ */
+void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_layer_attr *final)
+{
+	/*
+	 * Temp workaround: Force ufs use low speed PWMG4 in meta mode
+	 * to avoid meta calibration in BBLPM mode may disable
+	 * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
+	*/
+	if (is_meta_mode()) {
+		dev_err(hba->dev, "UFS enter PWMG4 mode in meta mode!!!\n");
+		final->gear_rx = 4;
+		final->gear_tx = 4;
+		final->lane_rx = 1;
+		final->lane_tx = 1;
+		final->hs_rate = PA_HS_MODE_B;
+		final->pwr_rx = SLOW_MODE;
+		final->pwr_tx = SLOW_MODE;
+	}
+}
+
 
 #ifdef MTK_UFS_HQA
 
@@ -54,6 +84,28 @@ void random_delay(struct ufs_hba *hba)
 void wdt_pmic_full_reset(void)
 {
 	/* Need porting for SPOH test */
+}
+#endif
+
+#include <mt-plat/upmu_common.h>
+#define PMIC_REG_MASK (0xFFFF)
+#define PMIC_REG_SHIFT (0)
+void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
+{
+	/* Need porting for UFS Debug */
+}
+
+#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+#include <mt-plat/mtk_gpio.h>
+#define gpioPin (177UL)
+void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
+{
+	/* Need porting for UFS Debug*/
+	/* Set gpio mode */
+	/* Set gpio output */
+	/* Set gpio default low */
+	dev_err(hba->dev, "%s: trigger_gpio_init!!!\n",
+				__func__);
 }
 #endif
 
@@ -76,6 +128,9 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
 	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 
+#endif
+#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+	ufs_mtk_pltfrm_gpio_trigger_init(hba);
 #endif
 
 	return 0;
@@ -255,9 +310,25 @@ int ufs_mtk_pltfrm_init(void)
 
 int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 {
+	struct device_node *node_gpio;
 	struct device_node *node_pericfg;
 	struct device_node *node_ufs_mphy;
 	int err = 0;
+
+	/* get ufs_mtk_gpio */
+	node_gpio = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
+
+	if (node_gpio) {
+		ufs_mtk_mmio_base_gpio = of_iomap(node_gpio, 0);
+
+		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_gpio)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_gpio);
+			dev_err(hba->dev, "error: ufs_mtk_mmio_base_gpio init fail\n");
+			ufs_mtk_mmio_base_gpio = NULL;
+		}
+	} else
+		dev_err(hba->dev, "error: node_gpio init fail\n");
+
 
 	/* get ufs_mtk_mmio_base_pericfg */
 

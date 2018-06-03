@@ -51,6 +51,7 @@ enum {
 /*
  * Platform-dependent APIs
  */
+void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_layer_attr *final);
 int  ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_deepidle_check_h8(void);
 void ufs_mtk_pltfrm_deepidle_leave(void);
@@ -61,6 +62,7 @@ int  ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option);
 int  ufs_mtk_pltfrm_resume(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_suspend(struct ufs_hba *hba);
+void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba);
 
 #ifdef MTK_UFS_HQA
 void random_delay(struct ufs_hba *hba);
