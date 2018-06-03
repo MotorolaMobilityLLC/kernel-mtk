@@ -80,8 +80,8 @@ extern u32 vcore_to_vcore_dvfs_level[];
 extern u32 emi_to_vcore_dvfs_level[];
 extern u32 vcore_dvfs_to_vcore_dvfs_level[];
 
-extern void dvfsrc_set_vcore_request(unsigned int mask, unsigned int vcore_level);
-extern void dvfsrc_set_scp_vcore_request(unsigned int vcore_level);
+extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
+extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
 
 #define DVFSRC_REG(dvfsrc, offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(dvfsrc, offset) (dvfsrc->sram_regs + offset)

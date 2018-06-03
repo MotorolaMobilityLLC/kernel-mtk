@@ -35,6 +35,11 @@
 #include "mmdvfs_mgr.h"
 
 #include <helio-dvfsrc-opp.h>
+#include <mtk_spm_vcore_dvfs_ipi.h>
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <sspm_ipi.h>
+#include <sspm_ipi_pin.h>
+#endif
 
 __weak unsigned int get_dram_data_rate(void)
 {
@@ -554,6 +559,32 @@ int vcorefs_late_init_dvfs(void)
 	return 0;
 }
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
+void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_VCORE_OPP;
+	qos_d.u.vcore_opp.opp = opp;
+	qos_d.u.vcore_opp.vcore_uv = vcore_uv;
+
+	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+}
+
+void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_DDR_OPP;
+	qos_d.u.ddr_opp.opp = opp;
+	qos_d.u.ddr_opp.ddr_khz = ddr_khz;
+
+	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+}
+#endif
+#endif
+
 void vcorefs_init_opp_table(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -572,9 +603,18 @@ void vcorefs_init_opp_table(void)
 		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 		opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
+		dvfsrc_update_sspm_vcore_opp_table(opp,
+				opp_ctrl_table[opp].vcore_uv);
+		dvfsrc_update_sspm_ddr_opp_table(opp,
+				opp_ctrl_table[opp].ddr_khz);
+#endif
+#endif
+
 		vcorefs_crit("opp %u: vcore_uv: %u, ddr_khz: %u\n", opp,
-								opp_ctrl_table[opp].vcore_uv,
-								opp_ctrl_table[opp].ddr_khz);
+				opp_ctrl_table[opp].vcore_uv,
+				opp_ctrl_table[opp].ddr_khz);
 	}
 
 #if defined(CONFIG_MACH_MT6775)

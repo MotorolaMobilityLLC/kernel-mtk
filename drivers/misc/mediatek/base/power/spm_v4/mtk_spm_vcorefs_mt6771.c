@@ -424,7 +424,7 @@ void dvfsrc_md_scenario_update(bool suspend)
 	}
 }
 
-static void dvfsrc_set_vcore_request(unsigned int mask, unsigned int val)
+void dvfsrc_set_vcore_request(unsigned int mask, unsigned int val)
 {
 	unsigned long flags;
 	unsigned int new_value = 0;
