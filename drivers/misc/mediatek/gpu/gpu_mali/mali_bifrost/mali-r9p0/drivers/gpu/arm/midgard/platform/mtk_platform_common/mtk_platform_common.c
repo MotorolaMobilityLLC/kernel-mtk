@@ -27,18 +27,14 @@
 
 #include <linux/workqueue.h>
 
-
 /* on:1, off:0 */
 int g_vgpu_power_on_flag;
 DEFINE_MUTEX(g_flag_lock);
-
 
 int g_mtk_gpu_efuse_set_already;
 
 #ifdef ENABLE_MTK_MEMINFO
 int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
-atomic_t g_mtk_gpu_total_memory_usage_in_pages;
-atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
 
 void mtk_kbase_gpu_memory_debug_init(void)
@@ -94,41 +90,7 @@ bool mtk_kbase_dump_gpu_memory_usage(void)
 KBASE_EXPORT_TEST_API(mtk_kbase_report_gpu_memory_usage)
 unsigned int mtk_kbase_report_gpu_memory_usage(void)
 {
-#if 0
-	ssize_t ret = 0;
-	struct list_head *entry;
-	const struct list_head *kbdev_list;
-	int pages = 0;
-
-	kbdev_list = kbase_dev_list_get();
-	list_for_each(entry, kbdev_list) {
-		struct kbase_device *kbdev = NULL;
-		kbasep_kctx_list_element *element;
-
-		kbdev = list_entry(entry, struct kbase_device, entry);
-		pages = atomic_read(&(kbdev->memdev.used_pages));
-	}
-	kbase_dev_list_put(kbdev_list);
-#endif
-	/* printk(KERN_EMERG "gpu total memory %d\n", pages*4096); */
-	return (atomic_read(&g_mtk_gpu_total_memory_usage_in_pages)*4096);
-}
-
-int mtk_kbase_report_gpu_memory_peak(void)
-{
-	return (atomic_read(&g_mtk_gpu_peak_memory_usage_in_pages)*4096);
-}
-
-void mtk_kbase_set_gpu_memory_peak(void)
-{
-	int curr;
-	int peak;
-
-	curr = atomic_read(&g_mtk_gpu_total_memory_usage_in_pages);
-	peak = atomic_read(&g_mtk_gpu_peak_memory_usage_in_pages);
-
-	if (curr > peak)
-		atomic_set(&g_mtk_gpu_peak_memory_usage_in_pages, curr);
+	return (g_mtk_gpu_total_memory_usage_in_pages_debugfs * 4096);
 }
 #endif /* ENABLE_MTK_MEMINFO */
 
@@ -183,12 +145,8 @@ static int proc_gpu_memoryusage_show(struct seq_file *m, void *v)
 #ifdef ENABLE_MTK_MEMINFO
 	int i = 0;
 	int total_size_in_bytes;
-	int peak_size_in_bytes;
 
 	total_size_in_bytes = mtk_kbase_report_gpu_memory_usage();
-	peak_size_in_bytes = mtk_kbase_report_gpu_memory_peak();
-
-	seq_printf(m, "curr: %10u byte, peak %10u byte\n", total_size_in_bytes, peak_size_in_bytes);
 
 	/* output the total memory usage and cap for this device */
 	seq_printf(m, "%10s\t%16s\n", "PID", "GPU Memory by Page");
@@ -200,9 +158,8 @@ static int proc_gpu_memoryusage_show(struct seq_file *m, void *v)
 	}
 
 	seq_puts(m, "============================\n");
-	seq_printf(m, "%10s\t%16u\n",
-		"Total",
-		g_mtk_gpu_total_memory_usage_in_pages_debugfs);
+	seq_printf(m, "%10s\t%16u(%u bytes)\n", "Total",
+			g_mtk_gpu_total_memory_usage_in_pages_debugfs, total_size_in_bytes);
 	seq_puts(m, "============================\n");
 #endif /* ENABLE_MTK_MEMINFO */
 
