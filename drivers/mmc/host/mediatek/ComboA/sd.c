@@ -707,7 +707,7 @@ static u32 msdc_max_busy_timeout_ms(struct msdc_host *host)
 	if (host->sclk == 0) {
 		timeout = 0;
 	} else {
-		timeout = 8192 * (1UL << 20) * 1000;
+		timeout = 8192 * (1ULL << 20) * 1000;
 		do_div(timeout, host->sclk);
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
 		/* DDR mode timeout will be in half */
