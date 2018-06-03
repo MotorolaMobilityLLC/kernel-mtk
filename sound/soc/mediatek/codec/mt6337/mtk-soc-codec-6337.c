@@ -66,6 +66,7 @@
 
 #include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
+#include "mtk-soc-afe-control.h"
 #ifdef _GIT318_READY
 #include <mtk_clkbuf_ctl.h>
 #endif
@@ -597,13 +598,13 @@ static void VOW12MCK_Enable(bool enable)
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW12MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x0080, 0x0080);
+			Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x0040, 0x0040);
 		/* Enable  TOP_CKPDN_CON0 bit6 for enable VOW 12M clock */
 		VOW12MCKCount++;
 	} else {
 		VOW12MCKCount--;
 		if (VOW12MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x0080, 0x0080);
+			Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x0040, 0x0040);
 		/* disable TOP_CKPDN_CON0 bit6 for enable VOW 12M clock */
 
 		if (VOW12MCKCount < 0) {
@@ -620,14 +621,14 @@ static void VOW32KCK_Enable(bool enable)
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW32KCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON5_CLR, 0x0040, 0x0040);
-		/* Enable  TOP_CKPDN_CON5 bit6 for enable VOW 32k clock (for periodic on/off use)*/
+			Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x0020, 0x0020);
+		/* Enable  TOP_CKPDN_CON0 bit5 for enable VOW 32k clock (for periodic on/off use)*/
 		VOW32KCKCount++;
 	} else {
 		VOW32KCKCount--;
 		if (VOW32KCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON5_SET, 0x0040, 0x0040);
-		/* disable TOP_CKPDN_CON5 bit6 for enable VOW 32k clock */
+			Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x0020, 0x0020);
+		/* disable TOP_CKPDN_CON0 bit5 for enable VOW 32k clock */
 
 		if (VOW32KCKCount < 0) {
 			pr_warn("VOW32KCKCount <0 =%d\n ", VOW32KCKCount);
@@ -3749,6 +3750,9 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 {
 	int i = 0;
 	uint16 (*pBuf)[22];
+
+	/* give a default value */
+	pBuf = Handset_AMIC_DCC_PeriodicOnOff;
 
 	if ((MicType == AUDIO_VOW_MIC_TYPE_Headset_MIC)
 	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_AMIC)
