@@ -758,7 +758,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 }
 
 #ifdef GED_ENABLE_FB_DVFS
-static int gx_gpu_dvfs_margin = 5;
+static int gx_gpu_dvfs_margin = 15;
 module_param(gx_gpu_dvfs_margin, int, 0644);
 #define GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM 4
 static int is_fb_dvfs_triggered;
@@ -792,6 +792,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 
 	if (force_fallback) {
 		ged_set_backup_timer_timeout((u64)t_gpu_target);
+		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
 		goto FB_RET;
 	} else {
 		ged_set_backup_timer_timeout(0);
@@ -870,6 +871,20 @@ FB_RET:
 	return ret_freq;
 }
 #endif
+
+static int _loading_avg(int ui32loading)
+{
+	static int data[8];
+	static int idx;
+	static int sum;
+
+	int cidx = ++idx % ARRAY_SIZE(data);
+
+	sum += ui32loading - data[cidx];
+	data[cidx] = ui32loading;
+
+	return sum / ARRAY_SIZE(data);
+}
 
 static bool ged_dvfs_policy(
 		unsigned int ui32GPULoading, unsigned int* pui32NewFreqID,
@@ -952,14 +967,6 @@ static bool ged_dvfs_policy(
 		}
 
 		g_CommitType = MTK_GPU_DVFS_TYPE_TIMERBASED;
-	} else if (phase == GED_DVFS_TIMER_BACKUP) {
-		/* easy to boost in offscreen cases */
-		if (ui32GPULoading >= 50)
-			i32NewFreqID -= 1;
-		else if (ui32GPULoading <= 30)
-			i32NewFreqID += 1;
-
-		g_CommitType = MTK_GPU_DVFS_TYPE_TIMERBASED;
 	} else {
 		/* vsync-based fallback mode */
 		static int init;
@@ -969,13 +976,15 @@ static bool ged_dvfs_policy(
 			_init_loading_ud_table();
 		}
 
+		ui32GPULoading = _loading_avg(ui32GPULoading);
+
 		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
 		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
 			i32NewFreqID += 1;
 
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
-				gpu_loading,
+				ui32GPULoading,
 				ui32GPUFreq,
 				loading_ud_table[ui32GPUFreq].freq,
 				loading_ud_table[ui32GPUFreq].up,

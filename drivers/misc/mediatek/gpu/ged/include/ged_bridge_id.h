@@ -264,6 +264,7 @@ typedef struct GED_BRIDGE_IN_GPU_TIMESTAMP_TAG {
 /* Bridge out structure for creation */
 typedef struct GED_BRIDGE_OUT_GPU_TIMESTAMP_TAG {
 	GED_ERROR eError;
+	int is_ged_kpi_enabled;
 } GED_BRIDGE_OUT_GPU_TIMESTAMP;
 
 /*****************************************************************************
