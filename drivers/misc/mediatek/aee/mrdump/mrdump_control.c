@@ -160,6 +160,12 @@ __init void mrdump_cblock_init(void)
 		goto end;
 	}
 
+	if (mrdump_cb.size < sizeof(struct mrdump_control_block)) {
+		pr_notice("%s: not enough space for mrdump control block\n",
+			  __func__);
+		goto end;
+	}
+
 	mrdump_cblock = ioremap_wc(mrdump_cb.start_addr, mrdump_cb.size);
 	if (mrdump_cblock == NULL) {
 		pr_notice("%s: mrdump_cb not mapped\n", __func__);
