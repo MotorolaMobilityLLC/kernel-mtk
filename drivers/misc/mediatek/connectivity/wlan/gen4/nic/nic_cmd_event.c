@@ -2819,16 +2819,15 @@ VOID nicEventStaAgingTimeout(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent
 		if (prStaRec == NULL)
 			return;
 
-		DBGLOG(NIC, INFO, "EVENT_ID_STA_AGING_TIMEOUT %u " MACSTR "\n",
+		DBGLOG(NIC, INFO, "EVENT_ID_STA_AGING_TIMEOUT: STA[%u] " MACSTR "\n",
 			prEventStaAgingTimeout->ucStaRecIdx, MAC2STR(prStaRec->aucMacAddr));
 
 		prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prStaRec->ucBssIndex);
 
 		bssRemoveClient(prAdapter, prBssInfo, prStaRec);
 
-		/* Call False Auth */
 		if (prAdapter->fgIsP2PRegistered) {
-			p2pFuncDisconnect(prAdapter, prBssInfo, prStaRec, TRUE,
+			p2pFuncDisconnect(prAdapter, prBssInfo, prStaRec, FALSE,
 				REASON_CODE_DISASSOC_INACTIVITY);
 		}
 
