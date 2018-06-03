@@ -219,7 +219,7 @@ static void hs_slew_rate_cal(void)
 		value = (unsigned char)(x / 1000);
 		if ((x - value * 1000) / 100 >= 5)
 			value += 1;
-		DBG(0, "[USBPHY]slew calibration:FM_OUT =%lu,x=%lu,value=%d\n", data, x, value);
+		DBG(1, "[USBPHY]slew calibration:FM_OUT =%lu,x=%lu,value=%d\n", data, x, value);
 	}
 
 	/* disable Frequency and disable free run clock. */

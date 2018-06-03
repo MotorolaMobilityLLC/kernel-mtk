@@ -1299,7 +1299,7 @@ static int __init mt_usb_init(struct musb *musb)
 {
 	int ret;
 
-	DBG(0, "mt_usb_init\n");
+	DBG(1, "mt_usb_init\n");
 
 	usb_phy_generic_register();
 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
@@ -1338,8 +1338,7 @@ static int __init mt_usb_init(struct musb *musb)
 		if (ret < 0) {
 			pr_err("regulator_enable vusb failed: %d\n", ret);
 			regulator_put(reg_vusb);
-		} else
-			DBG(0, "enable USB regulator\n");
+		}
 	} else
 		pr_err("regulator_get vusb failed\n");
 
@@ -1350,8 +1349,7 @@ static int __init mt_usb_init(struct musb *musb)
 		if (ret < 0) {
 			pr_err("regulator_enable va12 failed: %d\n", ret);
 			regulator_put(reg_va12);
-		} else
-			DBG(0, "enable USB regulator\n");
+		}
 	} else
 		pr_err("regulator_get va12 failed\n");
 
@@ -1363,7 +1361,7 @@ static int __init mt_usb_init(struct musb *musb)
 
 	musb->isr = mt_usb_interrupt;
 	musb_writel(musb->mregs, MUSB_HSDMA_INTR, 0xff | (0xff << DMA_INTR_UNMASK_SET_OFFSET));
-	DBG(0, "musb platform init %x\n", musb_readl(musb->mregs, MUSB_HSDMA_INTR));
+	DBG(1, "musb platform init %x\n", musb_readl(musb->mregs, MUSB_HSDMA_INTR));
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* FIXME, workaround for device_qmu + host_dma */
