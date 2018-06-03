@@ -147,12 +147,10 @@ static int rsz_power_off(enum DISP_MODULE_ENUM module, void *qhandle)
 	return 0;
 }
 
-static int rsz_get_input(struct disp_ddp_path_config *pconfig, u32 *w, u32 *h)
+static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
+			     u32 *in_w, u32 *in_h, u32 *out_w, u32 *out_h)
 {
 	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
-
-	*w = pconfig->dst_w;
-	*h = pconfig->dst_h;
 
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
 		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
@@ -163,23 +161,19 @@ static int rsz_get_input(struct disp_ddp_path_config *pconfig, u32 *w, u32 *h)
 	do {
 		if (!oc->layer_en)
 			break;
-		if (oc->dst_w == pconfig->dst_w) {
-			*w = oc->src_w;
-			break;
+		if (oc->src_w < oc->dst_w) {
+			*in_w = oc->src_w;
+			*out_w = oc->dst_w;
 		}
-		if (oc->src_w < oc->dst_w && oc->src_w != 0)
-			*w = pconfig->dst_w * oc->src_w / oc->dst_w;
 	} while (0);
 
 	do {
 		if (!oc->layer_en)
 			break;
-		if (oc->dst_h == pconfig->dst_h) {
-			*h = oc->src_h;
-			break;
+		if (oc->src_h < oc->dst_h) {
+			*in_h = oc->src_h;
+			*out_h = oc->dst_h;
 		}
-		if (oc->src_h < oc->dst_h && oc->src_h != 0)
-			*h = pconfig->dst_h * oc->src_h / oc->dst_h;
 	} while (0);
 
 	return 0;
@@ -231,6 +225,7 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 	u32 reg_val = 0;
 	u32 tile_idx = 0;
 	u32 frm_in_w = pconfig->dst_w, frm_in_h = pconfig->dst_h;
+	u32 frm_out_w = pconfig->dst_w, frm_out_h = pconfig->dst_h;
 
 	/* platform dependent: color_fmt, tile_mode */
 	enum RSZ_COLOR_FORMAT fmt = RGB888;
@@ -244,9 +239,12 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 		rsz_config->frm_out_h = pconfig->dst_h;
 	}
 
-	rsz_get_input(pconfig, &frm_in_w, &frm_in_h);
+	rsz_get_in_out_roi(pconfig, &frm_in_w, &frm_in_h,
+			   &frm_out_w, &frm_out_h);
 	rsz_config->frm_in_w = frm_in_w;
 	rsz_config->frm_in_h = frm_in_h;
+	rsz_config->frm_out_w = frm_out_w;
+	rsz_config->frm_out_h = frm_out_h;
 
 	if (rsz_check_params(rsz_config))
 		return -EINVAL;
