@@ -289,7 +289,7 @@ typedef enum _ENUM_DMA_ISSUE_TYPE_ {
 	DMA_REGS_MAX
 } ENUM_DMA_ISSUE_TYPE;
 #define STP_PATCH_TIME_SIZE 12
-#define STP_DBG_CPUPCR_NUM 512
+#define STP_DBG_CPUPCR_NUM 30
 #define STP_DBG_DMAREGS_NUM 16
 #define STP_PATCH_BRANCH_SZIE 8
 #define STP_ASSERT_INFO_SIZE 164
@@ -311,6 +311,8 @@ typedef struct stp_dbg_cpupcr_t {
 	UINT32 count;
 	UINT32 stop_flag;
 	UINT32 buffer[STP_DBG_CPUPCR_NUM];
+	UINT64 sec_buffer[STP_DBG_CPUPCR_NUM];
+	ULONG nsec_buffer[STP_DBG_CPUPCR_NUM];
 	UINT8 assert_info[STP_ASSERT_INFO_SIZE];
 	UINT32 fwTaskId;
 	UINT32 fwRrq;

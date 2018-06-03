@@ -46,6 +46,7 @@
 #include "stp_exp.h"
 #include "hif_sdio.h"
 #include "stp_sdio.h"
+#include "stp_dbg.h"
 
 /*******************************************************************************
 *                          C O N S T A N T S
@@ -281,3 +282,9 @@ INT32 mtk_wcn_stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	return 0;
 }
 EXPORT_SYMBOL(mtk_wcn_stp_sdio_wake_up_ctrl);
+
+INT32 mtk_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
+{
+	return stp_dbg_poll_cpupcr(times, sleep, cmd);
+}
+EXPORT_SYMBOL(mtk_stp_dbg_poll_cpupcr);
