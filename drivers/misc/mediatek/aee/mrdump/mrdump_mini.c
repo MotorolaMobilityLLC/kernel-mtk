@@ -662,7 +662,8 @@ static void mrdump_mini_build_elf_misc(void)
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_KERNEL_LOG_");
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_hang_detect_buffer(&misc.vaddr, &misc.size, &misc.start);
-	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_HANG_DETECT_");
+	if (misc.size != 0)
+		mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_HANG_DETECT_");
 #if defined(CONFIG_TRUSTY_LOG)
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_gz_log_buffer(&misc.vaddr, &misc.size, &misc.start);
