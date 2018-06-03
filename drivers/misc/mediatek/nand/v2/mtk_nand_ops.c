@@ -455,9 +455,14 @@ static inline int get_list_item_index(
 	struct list_node *item;
 
 	item = head->next;
-	while (item != cur) {
+	while ((item != cur) && (item != NULL)) {
 		item = item->next;
 		index++;
+	}
+
+	if (item != cur) {
+		nand_err("check no node cur:%p", cur);
+		return 0;
 	}
 
 	return index;
@@ -469,8 +474,13 @@ static inline struct list_node *get_list_item_prev(
 	struct list_node *item;
 
 	item = head;
-	while (item->next != cur)
+	while ((item->next != cur) && (item->next != NULL))
 		item = item->next;
+
+	if (item->next != cur) {
+		nand_err("check no node cur:%p", cur);
+		return NULL;
+	}
 
 	return item;
 }
@@ -1289,7 +1299,9 @@ static int mtk_nand_work_thread(void *u)
 		if (try_to_freeze())
 			continue;
 
-
+#ifdef MTK_NAND_OPS_BG_CTRL
+		wait_for_completion(&data_info->ops_ctrl);
+#endif
 		ret = mtk_nand_process_list(info, elist_ctrl, 0);
 		ret  |= mtk_nand_process_list(info, wlist_ctrl, 0);
 
@@ -1555,14 +1567,9 @@ int mtk_nand_chip_write_page(struct mtk_nand_chip_info *info,
 	struct nand_work *work;
 	struct mtk_nand_chip_operation *ops;
 	int total_num;
-	unsigned int ready_cnt;
 
 	nand_debug("%s, block:0x%x page:0x%x more_page:0x%x",
 		__func__, block, page, more_page);
-
-	/* Grab the lock and see if the device is available */
-	nand_get_device(data_info->mtd, FL_WRITING);
-	mtk_nand_release_device(data_info->mtd);
 
 	if (oob_buffer == NULL) {
 		nand_err("data_buffer is null");
@@ -1580,14 +1587,23 @@ int mtk_nand_chip_write_page(struct mtk_nand_chip_info *info,
 		return -EINVAL;
 	}
 
+	list_ctrl = &data_info->wlist_ctrl;
+	total_num = get_list_work_cnt(list_ctrl);
+
+	while (total_num >= info->max_keep_pages) {
+		nand_debug("total_num:%d", total_num);
+		mtk_nand_process_list(info,
+				list_ctrl, info->max_keep_pages);
+		list_ctrl = &data_info->wlist_ctrl;
+		total_num = get_list_work_cnt(list_ctrl);
+	};
+
 	work = kmalloc(sizeof(struct nand_work), GFP_KERNEL);
 	if (work == NULL)
 		return -ENOMEM;
 
 	work->list.next = NULL;
 	ops = &work->ops;
-
-	list_ctrl = &data_info->wlist_ctrl;
 
 	ops->info = info;
 	ops->types = MTK_NAND_OP_WRITE;
@@ -1602,16 +1618,15 @@ int mtk_nand_chip_write_page(struct mtk_nand_chip_info *info,
 	nand_debug("block:%d, page:%d, add(%p)",
 		block, page, &work->list);
 
+	list_ctrl = &data_info->wlist_ctrl;
+
 	add_list_node(list_ctrl, &work->list);
 
-	total_num = get_list_work_cnt(list_ctrl);
-
-	if (total_num > info->max_keep_pages)
-		mtk_nand_process_list(info,
-				list_ctrl, info->max_keep_pages);
-	else if (list_ctrl->is_ready_func(info,
-				&list_ctrl->head, &work->list, &ready_cnt))
-		wake_up_process(data_info->nand_bgt);
+#ifdef MTK_NAND_OPS_BG_CTRL
+	complete(&data_info->ops_ctrl);
+#else
+	wake_up_process(data_info->nand_bgt);
+#endif
 
 	return 0;
 }
@@ -1635,7 +1650,6 @@ int mtk_nand_chip_erase_block(struct mtk_nand_chip_info *info,
 	struct nand_work *work;
 	struct mtk_nand_chip_operation *ops;
 	int total_num;
-	unsigned int ready_cnt;
 
 	nand_debug("%s, block:0x%x more_page:0x%x",
 		__func__, block, more_block);
@@ -1645,9 +1659,16 @@ int mtk_nand_chip_erase_block(struct mtk_nand_chip_info *info,
 		return -EINVAL;
 	}
 
-	/* Grab the lock and see if the device is available */
-	nand_get_device(data_info->mtd, FL_WRITING);
-	mtk_nand_release_device(data_info->mtd);
+	list_ctrl = &data_info->elist_ctrl;
+	total_num = get_list_work_cnt(list_ctrl);
+
+	while (total_num >= info->max_keep_pages) {
+		nand_debug("total_num:%d", total_num);
+		mtk_nand_process_list(info,
+				list_ctrl, info->max_keep_pages);
+		list_ctrl = &data_info->elist_ctrl;
+		total_num = get_list_work_cnt(list_ctrl);
+	};
 
 	work = kmalloc(sizeof(struct nand_work), GFP_KERNEL);
 	if (work == NULL)
@@ -1655,8 +1676,6 @@ int mtk_nand_chip_erase_block(struct mtk_nand_chip_info *info,
 
 	work->list.next = NULL;
 	ops = &work->ops;
-
-	list_ctrl = &data_info->elist_ctrl;
 
 	ops->info = info;
 	ops->types = MTK_NAND_OP_ERASE;
@@ -1668,16 +1687,18 @@ int mtk_nand_chip_erase_block(struct mtk_nand_chip_info *info,
 	ops->callback = callback;
 	ops->userdata = userdata;
 
-	add_list_node(list_ctrl, &work->list);
-	total_num = get_list_work_cnt(list_ctrl);
+	list_ctrl = &data_info->elist_ctrl;
 
-	if (total_num > info->plane_num)
-		mtk_nand_process_list(info,
-					list_ctrl,
-					info->plane_num);
-	else if (list_ctrl->is_ready_func(info,
-			&list_ctrl->head, &work->list, &ready_cnt))
-		wake_up_process(data_info->nand_bgt);
+	nand_debug("block:%d, page:%d, add(%p)",
+		block, page, &work->list);
+
+	add_list_node(list_ctrl, &work->list);
+
+#ifdef MTK_NAND_OPS_BG_CTRL
+	complete(&data_info->ops_ctrl);
+#else
+	wake_up_process(data_info->nand_bgt);
+#endif
 
 	return 0;
 }
@@ -2209,6 +2230,10 @@ int mtk_nand_ops_init(struct mtd_info *mtd, struct nand_chip *chip)
 	init_list_ctrl(&data_info->wlist_ctrl,
 		complete_write_count,
 		mtk_nand_do_write);
+
+#ifdef MTK_NAND_OPS_BG_CTRL
+	init_completion(&data_info->ops_ctrl);
+#endif
 
 	data_info->nand_bgt = kthread_create(mtk_nand_work_thread,
 				data_info, "nand_bgt");
