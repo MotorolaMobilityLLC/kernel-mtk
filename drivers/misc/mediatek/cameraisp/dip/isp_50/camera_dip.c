@@ -3064,7 +3064,10 @@ static signed int DIP_open(
 	g_regScen = 0xa5a5a5a5;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*  */
+
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	g_bIonBufferAllocated = MFALSE;
+
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 	g_dip_p2_imem_buf.handle = NULL;
 	g_dip_p2_imem_buf.ion_fd = 0;
@@ -3082,8 +3085,6 @@ static signed int DIP_open(
 		g_bIonBufferAllocated = MTRUE;
 	}
 #endif
-	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
-
 	if (g_bIonBufferAllocated == MTRUE) {
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 		g_pPhyDIPBuffer = (unsigned int *)(uintptr_t)(g_dip_p2_imem_buf.va);
