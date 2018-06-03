@@ -79,7 +79,7 @@
 #define RG_FMETER_MIN_FREQUENCY	(1 << 12)
 #define RG_FMETER_EN	(1 << 24)
 
-#define CPUTOP_NON_WFX_COUNTER_EN 0
+#define CPUTOP_NON_WFX_COUNTER_EN (1 << 0)
 
 #define cm_mgr_read(addr)	__raw_readl((void __force __iomem *)(addr))
 #define cm_mgr_write(addr, val)	mt_reg_sync_writel(val, addr)
