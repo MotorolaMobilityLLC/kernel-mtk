@@ -85,6 +85,10 @@ void cmdq_mdp_init(void)
 		pm_qos_add_request(&mdp_clk_qos_request[i], PM_QOS_MDP_FREQ, PM_QOS_DEFAULT_VALUE);
 		pm_qos_add_request(&isp_bw_qos_request[i],  PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
 		pm_qos_add_request(&isp_clk_qos_request[i], PM_QOS_IMG_FREQ, PM_QOS_DEFAULT_VALUE);
+		snprintf(mdp_bw_qos_request[i].owner, sizeof(mdp_bw_qos_request[i].owner) - 1, "mdp_bw_%d", i);
+		snprintf(mdp_clk_qos_request[i].owner, sizeof(mdp_clk_qos_request[i].owner) - 1, "mdp_clk_%d", i);
+		snprintf(isp_bw_qos_request[i].owner, sizeof(isp_bw_qos_request[i].owner) - 1, "isp_bw_%d", i);
+		snprintf(isp_clk_qos_request[i].owner, sizeof(isp_clk_qos_request[i].owner) - 1, "isp_clk_%d", i);
 	}
 	/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
 	result = mmdvfs_qos_get_freq_steps(

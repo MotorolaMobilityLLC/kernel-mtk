@@ -2921,6 +2921,11 @@ static int vcodec_probe(struct platform_device *dev)
 	pm_qos_add_request(&vcodec_qos_request2, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&vcodec_qos_request_f, PM_QOS_VDEC_FREQ, PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&vcodec_qos_request_f2, PM_QOS_VENC_FREQ, PM_QOS_DEFAULT_VALUE);
+	snprintf(vcodec_qos_request.owner, sizeof(vcodec_qos_request.owner) - 1, "vdec_bw");
+	snprintf(vcodec_qos_request2.owner, sizeof(vcodec_qos_request2.owner) - 1, "venc_bw");
+	snprintf(vcodec_qos_request_f.owner, sizeof(vcodec_qos_request_f.owner) - 1, "vdec_freq");
+	snprintf(vcodec_qos_request_f2.owner, sizeof(vcodec_qos_request_f2.owner) - 1, "venc_freq");
+
 #endif
 
 	dec_step_size = 1;
