@@ -28,7 +28,7 @@
 #ifdef ENABLE_MTK_DEBUG
 #include <mtk_gpu_log.h>
 #else
-#define GPULOG(...) do {} while (0)
+#define GPULOG2(...) do {} while (0)
 #endif
 
 /*
@@ -196,16 +196,16 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 							(unsigned long)ms);
 
 					/* 1.try dump information before hard-stop command issue */
-					GPULOG("hard-stop trigger, +dump_gpu_info_before_COMMAND_HARD_STOP");
+					GPULOG2("hard-stop trigger, +dump_gpu_info_before_COMMAND_HARD_STOP");
 					kbase_try_dump_gpu_debug_info(kbdev);
-					GPULOG("hard-stop trigger, -dump_gpu_info_before_COMMAND_HARD_STOP");
+					GPULOG2("hard-stop trigger, -dump_gpu_info_before_COMMAND_HARD_STOP");
 
 					kbase_job_slot_hardstop(atom->kctx, s, atom);
 
 					/* 2.try dump information again after hard-stop command issue */
-					GPULOG("hard-stop trigger, +dump_gpu_info_after_COMMAND_HARD_STOP");
+					GPULOG2("hard-stop trigger, +dump_gpu_info_after_COMMAND_HARD_STOP");
 					kbase_try_dump_gpu_debug_info(kbdev);
-					GPULOG("hard-stop trigger, -dump_gpu_info_after_COMMAND_HARD_STOP");
+					GPULOG2("hard-stop trigger, -dump_gpu_info_after_COMMAND_HARD_STOP");
 #endif
 				} else if (ticks == gpu_reset_ticks) {
 					/* Job has been scheduled for at least

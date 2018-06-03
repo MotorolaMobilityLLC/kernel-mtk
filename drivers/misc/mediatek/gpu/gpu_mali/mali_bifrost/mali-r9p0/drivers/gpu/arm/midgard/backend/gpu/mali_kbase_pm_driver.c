@@ -50,7 +50,7 @@
 #include <mtk_gpufreq.h>
 #include <mtk_gpu_log.h>
 #else
-#define GPULOG(...) do { } while (0)
+#define GPULOG2(...) do { } while (0)
 #endif
 
 /**
@@ -1402,7 +1402,7 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 
 	KBASE_TLSTREAM_JD_GPU_SOFT_RESET(kbdev);
 
-	GPULOG("dump_gpu_debug_reg, before issue GPU_COMMAND_SOFT_RESET");
+	GPULOG2("dump_gpu_debug_reg, before issue GPU_COMMAND_SOFT_RESET");
 	kbase_try_dump_gpu_debug_info(kbdev);
 
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
@@ -1445,7 +1445,7 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 		return -EINVAL;
 	}
 
-	GPULOG("dump_gpu_debug_reg, before issue GPU_COMMAND_HARD_RESET");
+	GPULOG2("dump_gpu_debug_reg, before issue GPU_COMMAND_HARD_RESET");
 	kbase_try_dump_gpu_debug_info(kbdev);
 
 	/* The GPU doesn't seem to be responding to the reset so try a hard

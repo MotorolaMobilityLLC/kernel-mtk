@@ -302,7 +302,9 @@
  * Operation Definition
  **************************************************/
 #define VOLT_NORMALIZATION(volt)		((volt % 625) ? (volt - (volt % 625) + 625) : volt)
+#ifndef MIN
 #define MIN(x, y)						(((x) < (y)) ? (x) : (y))
+#endif
 #define GPUOP(khz, volt, vsram, idx)	\
 	{	\
 		.gpufreq_khz = khz,	\
