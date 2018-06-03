@@ -214,6 +214,8 @@
 
 	/* Global variable for I DVFS use */
 	unsigned int infoIdvfs;
+	static DEFINE_SPINLOCK(eem_spinlock);
+
 #else /* if EEM_ENABLE_TINYSYS_SSPM */
 	/* #define NR_FREQ 8 */ /* for sspm struct eem_det */
 	phys_addr_t eem_log_phy_addr, eem_log_virt_addr;
@@ -228,8 +230,6 @@
 * common variables for legacy and sspm ptp
 *******************************************
 */
-static DEFINE_SPINLOCK(eem_spinlock);
-
 #if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !(EARLY_PORTING)
 	struct clk *clk_mfg_core1, *clk_mfg_core0;
 #endif
@@ -4618,175 +4618,166 @@ late_initcall(eem_init); /* late_initcall */
 #else /*if EEM_ENABLE_TINYSYS_SSPM */
 
 #define EEM_IPI_SEND_DATA_LEN 4 /* size of cmd and args = 4 slot */
-/* ipi_send() return code
- * IPI_DONE 0
- * IPI_RETURN 1
- * IPI_BUSY -1
- * IPI_TIMEOUT_AVL -2
- * IPI_TIMEOUT_ACK -3
- * IPI_MODULE_ID_ERROR -4
- * IPI_HW_ERROR -5
- */
 static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 {
 	unsigned int ackData = 0;
 	unsigned int len = EEM_IPI_SEND_DATA_LEN;
 	unsigned int ret;
-	#define IPI_ID IPI_ID_PTPOD /* IPI_ID_VCORE_DVFS */
+
 	FUNC_ENTER(FUNC_LV_MODULE);
 	switch (cmd) {
 	case IPI_EEM_INIT:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT) ret:%d - %d\n", ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	case IPI_EEM_PROBE:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_PROBE) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_PROBE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	case IPI_EEM_INIT01:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT01) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT01) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	case IPI_EEM_INIT02:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT02) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT02) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
+
 	#ifdef EEM_VCORE_IN_SSPM
 	case IPI_EEM_VCORE_GET_VOLT:
-			eem_data->cmd = cmd;
-			/* defined at sspm_ipi.h, id is difined at elbrus/sspm_ipi_pin.h */
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_GET_VOLT) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		/* defined at sspm_ipi.h, id is difined at elbrus/sspm_ipi_pin.h */
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_GET_VOLT) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 	#endif
 
 	#if 0
 	case IPI_EEM_GPU_DVFS_GET_STATUS:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_GPU_DVFS_GET_STATUS) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_GPU_DVFS_GET_STATUS) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 	#endif
 
 	case IPI_EEM_DEBUG_PROC_SHOW:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_SHOW) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_SHOW) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	case IPI_EEM_DEBUG_PROC_WRITE:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_WRITE) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_WRITE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	#ifdef EEM_LOG_EN
 	case IPI_EEM_LOGEN_PROC_SHOW:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_SHOW) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			eem_debug("eem_to_sspm (logen): ret %d\n", ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_SHOW) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	case IPI_EEM_LOGEN_PROC_WRITE:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_WRITE) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_WRITE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 	#endif
 
 	#ifdef EEM_OFFSET
 	case IPI_EEM_OFFSET_PROC_WRITE:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_OFFSET_PROC_WRITE) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_OFFSET_PROC_WRITE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 	#endif
 
 	case IPI_EEM_VCORE_INIT:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_INIT) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_INIT) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
+
 	case IPI_EEM_VCORE_UPDATE_PROC_WRITE:
-			/* ackData will be 0 if set newVolt successfully*/
-			/* ackData will be 1 if newVolt is illegal */
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_UPDATE_PROC_WRITE) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		/* ackData will be 0 if set newVolt successfully*/
+		/* ackData will be 1 if newVolt is illegal */
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_UPDATE_PROC_WRITE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 
 	#ifdef EEM_CUR_VOLT_PROC_SHOW
 	case IPI_EEM_CUR_VOLT_PROC_SHOW:
-			eem_data->cmd = cmd;
-			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
-			if (ret != 0)
-				eem_error("sspm_ipi_send_sync error(IPI_EEM_CUR_VOLT_PROC_SHOW) ret:%d - %d\n",
-							ret, ackData);
-			else if (ackData < 0)
-				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-			break;
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_CUR_VOLT_PROC_SHOW) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
 	#endif
+
 	default:
 			eem_error("cmd(%d) wrong!!\n", cmd);
 			break;
@@ -4811,7 +4802,6 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 	struct eem_ipi_data eem_data;
 	int ret = 0;
 	struct eem_det *det = (struct eem_det *)m->private;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
@@ -4822,12 +4812,10 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 		   "disabled"
 		   );
 	} else {
-		spin_lock_irqsave(&eem_spinlock, flags);
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = det_to_id(det);
 		/* return det EEMEN by det->ops->get_status */
 		ret = eem_to_sspm(IPI_EEM_DEBUG_PROC_SHOW, &eem_data);
-		spin_unlock_irqrestore(&eem_spinlock, flags);
 
 		seq_printf(m, "[%s] %s (0x%X)\n",
 		   ((char *)(det->name) + 8),
@@ -4856,7 +4844,6 @@ static ssize_t eem_debug_proc_write(struct file *file,
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 	struct eem_ipi_data eem_data;
 	int ipi_ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -4879,12 +4866,10 @@ static ssize_t eem_debug_proc_write(struct file *file,
 
 	if (!kstrtoint(buf, 10, &enabled)) {
 		ret = 0;
-		spin_lock_irqsave(&eem_spinlock, flags);
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = det_to_id(det);
 		eem_data.u.data.arg[1] = enabled;
 		ipi_ret = eem_to_sspm(IPI_EEM_DEBUG_PROC_WRITE, &eem_data);
-		spin_unlock_irqrestore(&eem_spinlock, flags);
 	} else
 		ret = -EINVAL;
 
@@ -4903,7 +4888,6 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det = (struct eem_det *)m->private;
 	u32 i;
-	unsigned long flags;
 	struct eem_ipi_data eem_data;
 	unsigned char num_freq_tbl;
 	unsigned int locklimit = 0, ret;
@@ -4911,12 +4895,10 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = det_to_id(det);
 	/* return det current volt by det->ops->get_volt */
 	ret = eem_to_sspm(IPI_EEM_CUR_VOLT_PROC_SHOW, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	/* rdata = det->ops->get_volt(det); */
 	while (1) {
@@ -5140,14 +5122,11 @@ static int eem_log_en_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	ipi_ret = eem_to_sspm(IPI_EEM_LOGEN_PROC_SHOW, &eem_data);
 	seq_printf(m, "%d\n", ipi_ret);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return 0;
@@ -5161,7 +5140,6 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	char *buf = (char *) __get_free_page(GFP_USER);
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -5190,11 +5168,9 @@ static ssize_t eem_log_en_proc_write(struct file *file,
 	}
 
 	ret = 0;
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = eem_log_en;
 	ipi_ret = eem_to_sspm(IPI_EEM_LOGEN_PROC_WRITE, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 out:
 	free_page((unsigned long)buf);
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -5231,7 +5207,6 @@ static ssize_t eem_offset_proc_write(struct file *file,
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 	unsigned int ipi_ret = 0;
 	struct eem_ipi_data eem_data;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -5254,12 +5229,10 @@ static ssize_t eem_offset_proc_write(struct file *file,
 
 	if (!kstrtoint(buf, 10, &offset)) {
 		ret = 0;
-		spin_lock_irqsave(&eem_spinlock, flags);
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = det_to_id(det);
 		eem_data.u.data.arg[1] = offset;
 		ipi_ret = eem_to_sspm(IPI_EEM_OFFSET_PROC_WRITE, &eem_data);
-		spin_unlock_irqrestore(&eem_spinlock, flags);
 		/* to show in eem_offset_proc_show */
 		det->volt_offset = (signed char)offset;
 		eem_debug("set volt_offset %d(%d)\n", offset, det->volt_offset);
@@ -5325,7 +5298,6 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 	unsigned int index = 0;
 	unsigned int newVolt = 0;
 	struct eem_ipi_data eem_data;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -5363,13 +5335,11 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 		}
 		#endif
 		eem_error("set eem_vcore[%d]=%d\n", index, newVolt);
-		spin_lock_irqsave(&eem_spinlock, flags);
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = index;
 		eem_data.u.data.arg[1] = newVolt;
 		/* ret 0 */
 		ret = eem_to_sspm(IPI_EEM_VCORE_UPDATE_PROC_WRITE, &eem_data);
-		spin_unlock_irqrestore(&eem_spinlock, flags);
 	} else {
 		ret = -EINVAL;
 		eem_debug("bad argument!! argument should be \"0\"1\n");
@@ -5386,16 +5356,13 @@ static int eem_vcore_enable_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	/* eem_data.u.data.arg[0] = det_to_id(det); */
 	/* return ctrl_VCORE_Volt_Enable from sspm */
 	ipi_ret = eem_to_sspm(IPI_EEM_VCORE_ENABLE_PROC_SHOW, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 	seq_printf(m, "%d\n", ipi_ret);
 
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -5413,7 +5380,6 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 	/* unsigned int i = 0; */
 	struct eem_ipi_data eem_data;
 	unsigned int ipi_ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -5441,11 +5407,9 @@ static ssize_t eem_vcore_enable_proc_write(struct file *file,
 
 	ret = 0;
 
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = enable;
 	ipi_ret = eem_to_sspm(IPI_EEM_VCORE_ENABLE_PROC_WRITE, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 out:
 	free_page((unsigned long)buf);
@@ -5721,14 +5685,11 @@ static int __init vcore_ptp_init(void)
 /* return ack from sspm spm_vcorefs_pwarp_cmd */
 unsigned int mt_eem_vcorefs_set_volt(void)
 {
-	unsigned long flags;
 	struct eem_ipi_data eem_data;
 	int ret = 0;
 
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	ret = eem_to_sspm(IPI_EEM_VCORE_INIT, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 	return ret;
 }
 
@@ -5738,14 +5699,11 @@ unsigned int get_vcore_ptp_volt(unsigned int seg)
 #if 0
 	struct eem_ipi_data eem_data;
 	int ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = seg;
 	ret = eem_to_sspm(IPI_EEM_VCORE_GET_VOLT, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 	return ret;
@@ -5761,14 +5719,11 @@ unsigned int get_eem_status_for_gpu(void)
 {
 	struct eem_ipi_data eem_data;
 	int ret = 0;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_GPU_DVFS_GET_STATUS, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 	return ret;
@@ -5793,7 +5748,6 @@ static int eem_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct eem_ipi_data eem_data;
-	unsigned long flags;
 	struct eem_det *det;
 	#ifdef CONFIG_OF
 	struct device_node *node = NULL;
@@ -5823,11 +5777,9 @@ static int eem_probe(struct platform_device *pdev)
 	ptp_data[0] = 0xffffffff;
 
 	/* let ptp to disable gpu dvfs and enable vgpu buck */
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_PROBE, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	eem_debug("IPI PROBE done\n");
 	/* enable big cluster and enable gpu clock */
@@ -5841,21 +5793,17 @@ static int eem_probe(struct platform_device *pdev)
 	#endif/*ifdef __KERNEL__*/
 
 	/* let ptp run init01 */
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_INIT01, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	/* disable big cluster and disable gpu clock */
 	eem_init_postprocess();
 
 	/* let ptp to enable gpu dvfs*/
-	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_INIT02, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	for_each_det(det)
 		inherit_base_det(det);
@@ -5935,7 +5883,6 @@ static int __init eem_init(void)
 {
 	int err = 0;
 	struct eem_ipi_data eem_data;
-	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
@@ -5952,9 +5899,7 @@ static int __init eem_init(void)
 	/* read efuse data to dram log */
 	get_devinfo();
 
-	spin_lock_irqsave(&eem_spinlock, flags);
 	eem_disable = eem_to_sspm(IPI_EEM_INIT, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	#ifdef __KERNEL__
 	create_procfs();
