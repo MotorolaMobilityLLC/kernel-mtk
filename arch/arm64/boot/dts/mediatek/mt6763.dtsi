@@ -309,6 +309,19 @@
 		reg = <0 0x40000000 0 0x1e605000>;
 	};
 
+	cpu_dbgapb: cpu_dbgapb {
+		compatible = "mediatek,hw_dbg";
+		num = <8>;
+		reg =	<0 0x0d410000 0 0x1000>,
+			<0 0x0d510000 0 0x1000>,
+			<0 0x0d610000 0 0x1000>,
+			<0 0x0d710000 0 0x1000>,
+			<0 0x0d810000 0 0x1000>,
+			<0 0x0d910000 0 0x1000>,
+			<0 0x0da10000 0 0x1000>,
+			<0 0x0db10000 0 0x1000>;
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;

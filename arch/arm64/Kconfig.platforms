@@ -191,6 +191,7 @@ config MACH_MT6763
 	select MTK_BOUNCING_CHECK
 	select MTK_SYSTRACKER_V2
 	select MTK_PLAT_SRAM_FLAG
+	select MTK_WATCHPOINT
 	help
 	  This enables support for MediaTek MT6763
 	  Support for aarch64 Architecture
