@@ -1075,9 +1075,17 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0x1f00);
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
+
+		/* HP Aux loop gain setting */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200);
+
 	} else {
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000); /* for depop? */
 		/* Pull-down HPL/R to AVSS30_AUD */
+
+		/* HP Aux loop gain setting */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0200);
+
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x1f00);
 		/* Disable HPDET circuit */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0009);
@@ -1113,8 +1121,10 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 {
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
+	/* 6355 auxResolution: 32768 (resolution: 15bit => 1 << 15 = 32768) */
+	/* Need to confirm pmic_get_auxadc_value returns raw data with AUXADC owner */
 	/* R = V /I */
-	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
+	/* V = auxDiff (raw data) * (1800mv /auxResolution)  /TrimBufGain */
 	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
 	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
 }
