@@ -88,10 +88,10 @@ typedef struct {
 
 /* Structures */
 typedef struct {
-	int i4OISHallPosX;
-	int i4OISHallPosY;
-	int i4OISHallMaxX;
-	int i4OISHallMaxY;
+	int i4OISHallPosXum;
+	int i4OISHallPosYum;
+	int i4OISHallFactorX;
+	int i4OISHallFactorY;
 } stAF_MotorOisInfo;
 
 /* Structures */

@@ -318,6 +318,20 @@ static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
 	case 1:
 		setOISMode((int)1); /* 1 : disable */
 		break;
+	case 2:
+		if (*g_pAF_Opened == 2 && stMotorCmd.u4Param > 0) {
+			unsigned short PosX, PosY;
+
+			PosX = stMotorCmd.u4Param / 10000;
+			PosY = stMotorCmd.u4Param - PosX * 10000;
+
+			LOG_INF("OIS mode : %x\n", I2C_OIS_mem__read(0x7F));
+			I2C_OIS_mem_write(0x7F, 0x2C0C); /* Set manual mode */
+			I2C_OIS_mem_write(0x17, PosX); /* move Lens to target position of X-axis */
+			I2C_OIS_mem_write(0x97, PosY); /* move Lens to target position of Y-axis */
+			LOG_INF("Target : (%d ,  %d)\n", PosX, PosY);
+		}
+		break;
 	}
 
 	return 0;
@@ -327,8 +341,18 @@ static inline int getOISInfo(__user stAF_MotorOisInfo * pstMotorOisInfo)
 {
 	stAF_MotorOisInfo stMotorOisInfo;
 
-	stMotorOisInfo.i4OISHallPosX = 0;
-	stMotorOisInfo.i4OISHallPosY = 0;
+	if (*g_pAF_Opened == 2) {
+		stMotorOisInfo.i4OISHallPosXum = ((short)I2C_OIS_mem__read(0x3F)) * 1000;
+		stMotorOisInfo.i4OISHallPosYum = ((short)I2C_OIS_mem__read(0xBF)) * 1000;
+	} else {
+		stMotorOisInfo.i4OISHallPosXum = 0;
+		stMotorOisInfo.i4OISHallPosYum = 0;
+	}
+	stMotorOisInfo.i4OISHallFactorX = 26487; /* 26.487 [LSB/um] */
+	stMotorOisInfo.i4OISHallFactorY = 26487;
+	/* Res(um) = HallPosX / 26.487 */
+
+	/* LOG_INF("HALL [%d %d]\n", stMotorOisInfo.i4OISHallPosXum, stMotorOisInfo.i4OISHallPosYum); */
 
 	if (copy_to_user(pstMotorOisInfo, &stMotorOisInfo, sizeof(stAF_MotorOisInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
