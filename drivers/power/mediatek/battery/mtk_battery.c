@@ -299,6 +299,9 @@ bool is_recovery_mode(void)
 {
 	int boot_mode = get_boot_mode();
 
+	if (is_evb_load())
+		return false;
+
 	bm_debug("mtk_battery boot mode =%d\n", boot_mode);
 	if (boot_mode == RECOVERY_BOOT) {
 		bm_err("Recovery boot~! mtk_battery boot mode =%d\n", boot_mode);
@@ -5361,13 +5364,13 @@ static int __init battery_probe(struct platform_device *dev)
 
 	wake_unlock(&battery_lock);
 
-	if (is_recovery_mode())
-		battery_recovery_init();
-
 	if (bis_evb) {
 		bm_err("disable GM 3.0\n");
 		disable_fg();
 	}
+
+	if (is_recovery_mode())
+		battery_recovery_init();
 
 #if defined(CONFIG_MTK_DISABLE_GAUGE)
 	bm_err("disable GM 3.0\n");

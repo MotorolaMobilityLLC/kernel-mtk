@@ -677,5 +677,6 @@ extern int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, boo
 
 /* evb or phone load */
 extern bool is_evb_load(void);
+extern bool fg_interrupt_check(void);
 
 #endif /* __MTK_BATTERY_INTF_H__ */
