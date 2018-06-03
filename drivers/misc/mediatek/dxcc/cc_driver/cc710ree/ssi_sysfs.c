@@ -271,8 +271,8 @@ static ssize_t ssi_sys_stat_cc_db_show(struct kobject *kobj,
 /* TOP LEVEL ATTRIBUTES */
 static struct kobj_attribute ssi_sys_top_level_attrs[] = {
 	__ATTR(fw_ver, 0444, ssi_sys_fw_ver_show, NULL),
-	__ATTR(stats_host, 0666, ssi_sys_stat_host_db_show, ssi_sys_stats_host_db_clear),
-	__ATTR(stats_cc, 0666, ssi_sys_stat_cc_db_show, ssi_sys_stats_cc_db_clear),
+	__ATTR(stats_host, 0664, ssi_sys_stat_host_db_show, ssi_sys_stats_host_db_clear),
+	__ATTR(stats_cc, 0664, ssi_sys_stat_cc_db_show, ssi_sys_stats_cc_db_clear),
 };
 
 void update_host_stat(unsigned int op_type, unsigned int phase, cycles_t result)

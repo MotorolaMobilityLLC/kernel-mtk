@@ -90,6 +90,7 @@ void ssi_buffer_mgr_copy_scatterlist_portion(u8 *dest, struct scatterlist *sg, u
 
 void ssi_buffer_mgr_zero_sgl(struct scatterlist *sgl, uint32_t data_len);
 
+
 #ifdef DX_DMA_48BIT_SIM
 dma_addr_t ssi_buff_mgr_update_dma_addr(dma_addr_t orig_addr, uint32_t data_len);
 dma_addr_t ssi_buff_mgr_restore_dma_addr(dma_addr_t orig_addr);

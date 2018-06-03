@@ -73,7 +73,7 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 	SSI_LOG_DEBUG("after wait_for_completion_interruptible_timeout .\n");
 
 	if (timeout ==0) {
-		SSI_LOG_ERR("wait_for_completion_interruptible_timeout reached timeout.\n");
+		SSI_LOG_DEBUG("wait_for_completion_interruptible_timeout reached timeout.\n");
 		rc = -EFAULT;
 		return rc;
 	}

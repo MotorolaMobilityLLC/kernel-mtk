@@ -130,12 +130,12 @@ static inline void ssi_set_hash_endianity(uint32_t mode, HwDesc_s *desc)
 	}
 }
 
-static int ssi_hash_map_result(struct device *dev, 
-								struct ahash_req_ctx *state, 
+static int ssi_hash_map_result(struct device *dev,
+								struct ahash_req_ctx *state,
 								unsigned int digestsize)
 {
-	state->digest_result_dma_addr = 
-		dma_map_single(dev, (void *)state->digest_result_buff,
+	state->digest_result_dma_addr =
+		dma_map_single(dev, (void *)state->heap_buff->digest_result_buff,
 			       digestsize,
 			       DMA_BIDIRECTIONAL);
 	if (unlikely(dma_mapping_error(dev, state->digest_result_dma_addr))) {
@@ -147,14 +147,14 @@ static int ssi_hash_map_result(struct device *dev,
 						digestsize);
 	SSI_LOG_DEBUG("Mapped digest result buffer %u B "
 		     "at va=%pK to dma=0x%llX\n",
-		digestsize, state->digest_result_buff,
+		digestsize, state->heap_buff->digest_result_buff,
 		(unsigned long long)state->digest_result_dma_addr);
 
 	return 0;
 }
 
-static int ssi_hash_map_request(struct device *dev, 
-								struct ahash_req_ctx *state, 
+static int ssi_hash_map_request(struct device *dev,
+								struct ahash_req_ctx *state,
 								struct ssi_hash_ctx *ctx)
 {
 	bool is_hmac = ctx->is_hmac;
@@ -164,28 +164,16 @@ static int ssi_hash_map_request(struct device *dev,
 	HwDesc_s desc;
 	int rc = -ENOMEM;
 
-	state->buff0 = kzalloc(SSI_MAX_HASH_BLCK_SIZE, GFP_KERNEL|GFP_DMA);
-	if (!state->buff0) {
-		SSI_LOG_ERR("Allocating buff0 in context failed\n");
+	state->heap_buff = kzalloc(sizeof(*state->heap_buff), GFP_KERNEL|GFP_DMA);
+	if (!state->heap_buff) {
+		SSI_LOG_ERR("Allocating heap_buff in context failed\n");
 		goto fail0;
-	}
-
-	state->buff1 = kzalloc(SSI_MAX_HASH_BLCK_SIZE, GFP_KERNEL|GFP_DMA);
-	if (!state->buff1) {
-		SSI_LOG_ERR("Allocating buff1 in context failed\n");
-		goto fail1;
-	}
-
-	state->digest_result_buff = kzalloc(SSI_MAX_HASH_DIGEST_SIZE, GFP_KERNEL|GFP_DMA);
-	if (!state->digest_result_buff) {
-		SSI_LOG_ERR("Allocating digest_result_buff in context failed\n");
-		goto fail2;
 	}
 
 	state->digest_buff = kzalloc(ctx->inter_digestsize, GFP_KERNEL|GFP_DMA);
 	if (!state->digest_buff) {
 		SSI_LOG_ERR("Allocating digest-buffer in context failed\n");
-		goto fail3;
+		goto fail1;
 	}
 
 	SSI_LOG_DEBUG("Allocated digest-buffer in context ctx->digest_buff=@%p\n", state->digest_buff);
@@ -193,7 +181,7 @@ static int ssi_hash_map_request(struct device *dev,
 		state->digest_bytes_len = kzalloc(HASH_LEN_SIZE, GFP_KERNEL|GFP_DMA);
 		if (!state->digest_bytes_len) {
 			SSI_LOG_ERR("Allocating digest-bytes-len in context failed\n");
-			goto fail4;
+			goto fail2;
 		}
 		SSI_LOG_DEBUG("Allocated digest-bytes-len in context state->>digest_bytes_len=@%p\n", state->digest_bytes_len);
 	} else {
@@ -203,7 +191,7 @@ static int ssi_hash_map_request(struct device *dev,
 	state->opad_digest_buff = kzalloc(ctx->inter_digestsize, GFP_KERNEL|GFP_DMA);
 	if (!state->opad_digest_buff) {
 		SSI_LOG_ERR("Allocating opad-digest-buffer in context failed\n");
-		goto fail5;
+		goto fail3;
 	}
 	SSI_LOG_DEBUG("Allocated opad-digest-buffer in context state->digest_bytes_len=@%p\n", state->opad_digest_buff);
 
@@ -211,9 +199,9 @@ static int ssi_hash_map_request(struct device *dev,
 	if (dma_mapping_error(dev, state->digest_buff_dma_addr)) {
 		SSI_LOG_ERR("Mapping digest len %d B at va=%pK for DMA failed\n",
 		ctx->inter_digestsize, state->digest_buff);
-		goto fail6;
+		goto fail4;
 	}
-	SSI_UPDATE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr, 
+	SSI_UPDATE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr,
 							ctx->inter_digestsize);
 	SSI_LOG_DEBUG("Mapped digest %d B at va=%pK to dma=0x%llX\n",
 		ctx->inter_digestsize, state->digest_buff,
@@ -222,7 +210,7 @@ static int ssi_hash_map_request(struct device *dev,
 	if (is_hmac) {
 		SSI_RESTORE_DMA_ADDR_TO_48BIT(ctx->digest_buff_dma_addr);
 		dma_sync_single_for_cpu(dev, ctx->digest_buff_dma_addr, ctx->inter_digestsize, DMA_BIDIRECTIONAL);
-		SSI_UPDATE_DMA_ADDR_TO_48BIT(ctx->digest_buff_dma_addr, 
+		SSI_UPDATE_DMA_ADDR_TO_48BIT(ctx->digest_buff_dma_addr,
 							ctx->inter_digestsize);
 		if ((ctx->hw_mode == SEP_CIPHER_XCBC_MAC) || (ctx->hw_mode == SEP_CIPHER_CMAC)) {
 			memset(state->digest_buff, 0, ctx->inter_digestsize);
@@ -240,16 +228,16 @@ static int ssi_hash_map_request(struct device *dev,
 		}
 		SSI_RESTORE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr);
 		dma_sync_single_for_device(dev, state->digest_buff_dma_addr, ctx->inter_digestsize, DMA_BIDIRECTIONAL);
-		SSI_UPDATE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr, 
+		SSI_UPDATE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr,
 							ctx->inter_digestsize);
 
 		if (ctx->hash_mode != SEP_HASH_NULL) {
 			SSI_RESTORE_DMA_ADDR_TO_48BIT(ctx->opad_tmp_keys_dma_addr);
 			dma_sync_single_for_cpu(dev, ctx->opad_tmp_keys_dma_addr, ctx->inter_digestsize, DMA_BIDIRECTIONAL);
 			memcpy(state->opad_digest_buff, ctx->opad_tmp_keys_buff, ctx->inter_digestsize);
-			SSI_UPDATE_DMA_ADDR_TO_48BIT(ctx->opad_tmp_keys_dma_addr, 
+			SSI_UPDATE_DMA_ADDR_TO_48BIT(ctx->opad_tmp_keys_dma_addr,
 							ctx->inter_digestsize);
-		} 
+		}
 	} else { /*hash*/
 		/* Copy the initial digests if hash flow. The SRAM contains the
 		initial digests in the expected order for all SHA* */
@@ -261,7 +249,7 @@ static int ssi_hash_map_request(struct device *dev,
 		rc = ssi_send_request(ctx->drvdata, &ssi_req, &desc, 1, 0);
 		if (unlikely(rc != 0)) {
 			SSI_LOG_ERR("send_request() failed (rc=%d)\n", rc);
-			goto fail7;
+			goto fail5;
 		}
 	}
 
@@ -270,7 +258,7 @@ static int ssi_hash_map_request(struct device *dev,
 		if (dma_mapping_error(dev, state->digest_bytes_len_dma_addr)) {
 			SSI_LOG_ERR("Mapping digest len %u B at va=%pK for DMA failed\n",
 			HASH_LEN_SIZE, state->digest_bytes_len);
-			goto fail7;
+			goto fail5;
 		}
 		SSI_UPDATE_DMA_ADDR_TO_48BIT(state->digest_bytes_len_dma_addr,
 								HASH_LEN_SIZE);
@@ -286,7 +274,7 @@ static int ssi_hash_map_request(struct device *dev,
 		if (dma_mapping_error(dev, state->opad_digest_dma_addr)) {
 			SSI_LOG_ERR("Mapping opad digest %d B at va=%pK for DMA failed\n",
 			ctx->inter_digestsize, state->opad_digest_buff);
-			goto fail8;
+			goto fail6;
 		}
 		SSI_UPDATE_DMA_ADDR_TO_48BIT(state->opad_digest_dma_addr,
 							ctx->inter_digestsize);
@@ -303,42 +291,39 @@ static int ssi_hash_map_request(struct device *dev,
 
 	return 0;
 
-fail8:
+fail6:
 	if (state->digest_bytes_len_dma_addr != 0) {
 		SSI_RESTORE_DMA_ADDR_TO_48BIT(state->digest_bytes_len_dma_addr);
 		dma_unmap_single(dev, state->digest_bytes_len_dma_addr, HASH_LEN_SIZE, DMA_BIDIRECTIONAL);
 		state->digest_bytes_len_dma_addr = 0;
 	}
-fail7:
+fail5:
 	if (state->digest_buff_dma_addr != 0) {
 		SSI_RESTORE_DMA_ADDR_TO_48BIT(state->digest_buff_dma_addr);
 		dma_unmap_single(dev, state->digest_buff_dma_addr, ctx->inter_digestsize, DMA_BIDIRECTIONAL);
 		state->digest_buff_dma_addr = 0;
 	}
-fail6:
+fail4:
 	if (state->opad_digest_buff != NULL)
 		kfree(state->opad_digest_buff);
-fail5:
+fail3:
 	if (state->digest_bytes_len != NULL)
 		kfree(state->digest_bytes_len);
-fail4:
+fail2:
 	if (state->digest_buff != NULL)
 		kfree(state->digest_buff);
-fail3:	
-	if (state->digest_result_buff != NULL)
-		kfree(state->digest_result_buff);
-fail2:
-	if (state->buff1 != NULL)
-		kfree(state->buff1);
+
 fail1:
-	if (state->buff0 != NULL)
-		kfree(state->buff0);
+	if (state->heap_buff != NULL) {
+		kfree(state->heap_buff);
+		state->heap_buff = NULL;
+	}
 fail0:
 	return rc;
 }
 
-static void ssi_hash_unmap_request(struct device *dev, 
-									struct ahash_req_ctx *state, 
+static void ssi_hash_unmap_request(struct device *dev,
+									struct ahash_req_ctx *state,
 									struct ssi_hash_ctx *ctx)
 {
 	if (state->digest_buff_dma_addr != 0) {
@@ -360,7 +345,7 @@ static void ssi_hash_unmap_request(struct device *dev,
 	if (state->opad_digest_dma_addr != 0) {
 		SSI_RESTORE_DMA_ADDR_TO_48BIT(state->opad_digest_dma_addr);
 		dma_unmap_single(dev, state->opad_digest_dma_addr,
-				 ctx->inter_digestsize, DMA_TO_DEVICE);
+				 ctx->inter_digestsize, DMA_BIDIRECTIONAL);
 		SSI_LOG_DEBUG("Unmapped opad-digest: opad_digest_dma_addr=0x%llX\n",
 			(unsigned long long)state->opad_digest_dma_addr);
 		state->opad_digest_dma_addr = 0;
@@ -372,16 +357,13 @@ static void ssi_hash_unmap_request(struct device *dev,
 		kfree(state->digest_bytes_len);
 	if (state->digest_buff != NULL)
 		kfree(state->digest_buff);
-	if (state->digest_result_buff != NULL)
-		kfree(state->digest_result_buff);
-	if (state->buff1 != NULL)
-		kfree(state->buff1);
-	if (state->buff0 != NULL)
-		kfree(state->buff0);
+	if (state->heap_buff != NULL)
+		kfree(state->heap_buff);
+
 }
 
-static void ssi_hash_unmap_result(struct device *dev, 
-									struct ahash_req_ctx *state, 
+static void ssi_hash_unmap_result(struct device *dev,
+									struct ahash_req_ctx *state,
 									unsigned int digestsize, u8 *result)
 {
 	if (state->digest_result_dma_addr != 0) {
@@ -389,14 +371,14 @@ static void ssi_hash_unmap_result(struct device *dev,
 		dma_unmap_single(dev,
 				 state->digest_result_dma_addr,
 				 digestsize,
-				  DMA_BIDIRECTIONAL);	
+				  DMA_BIDIRECTIONAL);
 		SSI_LOG_DEBUG("unmpa digest result buffer "
 			     "va (%pK) pa (%llx) len %u\n",
-			     state->digest_result_buff, 
+			     state->heap_buff->digest_result_buff,
 			     (unsigned long long)state->digest_result_dma_addr,
 			     digestsize);
 		memcpy(result,
-		       state->digest_result_buff,
+		       state->heap_buff->digest_result_buff,
 		       digestsize);
 	}
 	state->digest_result_dma_addr = 0;
@@ -2486,6 +2468,7 @@ init_digest_const_err:
 int ssi_hash_alloc(struct ssi_drvdata *drvdata)
 {
 	struct ssi_hash_handle *hash_handle;
+	struct ssi_hash_alg *t_alg;
 	ssi_sram_addr_t sram_buff;
 	uint32_t sram_size_to_alloc;
 	int rc = 0;
@@ -2533,9 +2516,11 @@ int ssi_hash_alloc(struct ssi_drvdata *drvdata)
 
 	/* ahash registration */
 	for (alg = 0; alg < ARRAY_SIZE(driver_hash); alg++) {
-		struct ssi_hash_alg *t_alg;
-		
+		if (driver_hash[alg].synchronize)
+			continue;
+
 		/* register hmac version */
+
 		if ((((struct ssi_hash_template)driver_hash[alg]).hw_mode != SEP_CIPHER_XCBC_MAC) &&
 			(((struct ssi_hash_template)driver_hash[alg]).hw_mode != SEP_CIPHER_CMAC)) {
 			t_alg = ssi_hash_create_alg(&driver_hash[alg], true);
@@ -2577,17 +2562,17 @@ int ssi_hash_alloc(struct ssi_drvdata *drvdata)
 			goto fail;
 		}
 		t_alg->drvdata = drvdata;
-		
+
 		if (t_alg->synchronize) {
 			rc = crypto_register_shash(&t_alg->shash_alg);
 			if (unlikely(rc != 0)) {
-				SSI_LOG_ERR("%s alg registration failed %d, %u, %u, %u\n",
-					t_alg->shash_alg.base.cra_driver_name, rc, t_alg->shash_alg.digestsize, t_alg->shash_alg.descsize, t_alg->shash_alg.statesize);
+				SSI_LOG_ERR("%s alg registration failed\n",
+					t_alg->shash_alg.base.cra_driver_name);
 				kfree(t_alg);
 				goto fail;
 			} else
-				list_add_tail(&t_alg->entry, &hash_handle->hash_list);	
-				
+				list_add_tail(&t_alg->entry, &hash_handle->hash_list);
+
 		} else {
 			rc = crypto_register_ahash(&t_alg->ahash_alg);
 			if (unlikely(rc != 0)) {

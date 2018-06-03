@@ -37,38 +37,40 @@
 #define XCBC_MAC_K2_OFFSET 16
 #define XCBC_MAC_K3_OFFSET 32
 
+
 struct aeshash_state {
 	u8 state[AES_BLOCK_SIZE];
 	unsigned int count;
 	u8 buffer[AES_BLOCK_SIZE];
 };
 
+struct heap_buff_aligned {
+	uint8_t buff0[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;
+	uint8_t buff1[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;
+	uint8_t digest_result_buff[SSI_MAX_HASH_DIGEST_SIZE] ____cacheline_aligned;
+};
+
 /* ahash state */
 struct ahash_req_ctx {
-//	uint8_t buff0[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;  //128  vs  64
-//	uint8_t buff1[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;  //128  vs  64
-//	uint8_t digest_result_buff[SSI_MAX_HASH_DIGEST_SIZE] ____cacheline_aligned;  //128  vs  32
-	struct async_gen_req_ctx gen_ctx ____cacheline_aligned;  //16  vs  16
-	uint8_t *buff0; //[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;
-	uint8_t *buff1; //[SSI_MAX_HASH_BLCK_SIZE] ____cacheline_aligned;
-	uint8_t *digest_result_buff; //[SSI_MAX_HASH_DIGEST_SIZE] ____cacheline_aligned;
-	enum ssi_req_dma_buf_type data_dma_buf_type;  //8
-	uint8_t *digest_buff;  //8
-	uint8_t *opad_digest_buff;  //8
-	uint8_t *digest_bytes_len;  //8
-	dma_addr_t opad_digest_dma_addr;  //8
-	dma_addr_t digest_buff_dma_addr;  //8
-	dma_addr_t digest_bytes_len_dma_addr;  //8
-	dma_addr_t digest_result_dma_addr;  //8
-	uint32_t buff0_cnt;  ///4
-	uint32_t buff1_cnt;  ///4
-	uint32_t buff_index;  ///4
-	uint32_t xcbc_count; /* count xcbc update operatations */  ///4
-	struct scatterlist buff_sg[2];  //64
-	struct scatterlist *curr_sg;  //8
-	uint32_t in_nents;  ///4
-	uint32_t mlli_nents;  ///4
-	struct mlli_params mlli_params;  //32
+	struct async_gen_req_ctx gen_ctx ____cacheline_aligned;
+	struct heap_buff_aligned *heap_buff;
+	enum ssi_req_dma_buf_type data_dma_buf_type;
+	uint8_t *digest_buff;
+	uint8_t *opad_digest_buff;
+	uint8_t *digest_bytes_len;
+	dma_addr_t opad_digest_dma_addr;
+	dma_addr_t digest_buff_dma_addr;
+	dma_addr_t digest_bytes_len_dma_addr;
+	dma_addr_t digest_result_dma_addr;
+	uint32_t buff0_cnt;
+	uint32_t buff1_cnt;
+	uint32_t buff_index;
+	uint32_t xcbc_count; /* count xcbc update operatations */
+	struct scatterlist buff_sg[2];
+	struct scatterlist *curr_sg;
+	uint32_t in_nents;
+	uint32_t mlli_nents;
+	struct mlli_params mlli_params;
 };
 
 int ssi_hash_alloc(struct ssi_drvdata *drvdata);
@@ -77,22 +79,22 @@ int ssi_hash_free(struct ssi_drvdata *drvdata);
 
 /*!
  * Gets the initial digest length
- * 
- * \param drvdata 
+ *
+ * \param drvdata
  * \param mode The Hash mode. Supported modes: MD5/SHA1/SHA224/SHA256/SHA384/SHA512
- * 
+ *
  * \return uint32_t returns the address of the initial digest length in SRAM
  */
 ssi_sram_addr_t
 ssi_ahash_get_initial_digest_len_sram_addr(void *drvdata, uint32_t mode);
 
 /*!
- * Gets the address of the initial digest in SRAM 
+ * Gets the address of the initial digest in SRAM
  * according to the given hash mode
- * 
- * \param drvdata 
+ *
+ * \param drvdata
  * \param mode The Hash mode. Supported modes: MD5/SHA1/SHA224/SHA256/SHA384/SHA512
- * 
+ *
  * \return uint32_t The address of the inital digest in SRAM
  */
 ssi_sram_addr_t ssi_ahash_get_larval_digest_sram_addr(void *drvdata, uint32_t mode);

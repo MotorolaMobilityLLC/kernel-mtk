@@ -474,22 +474,23 @@ static int ssi_buffer_mgr_map_scatterlist(
 		if (unlikely(dma_map_sg(dev, sg, 1, direction) != 1)) {
 			SSI_LOG_ERR("dma_map_sg() single buffer failed\n");
 			return -ENOMEM;
-		} 
+		}
 		SSI_LOG_DEBUG("Mapped sg: dma_address=0x%llX "
 			     "page_link=0x%08lX addr=%pK offset=%u "
 			     "length=%u\n",
-			     (unsigned long long)sg_dma_address(sg), 
-			     sg->page_link, 
-			     sg_virt(sg), 
+			     (unsigned long long)sg_dma_address(sg),
+			     sg->page_link,
+			     sg_virt(sg),
 			     sg->offset, sg->length);
 		*lbytes = nbytes;
 		*nents = 1;
 		*mapped_nents = 1;
 		SSI_UPDATE_DMA_ADDR_TO_48BIT(sg_dma_address(sg), sg_dma_len(sg));
 	} else {  /*sg_is_last*/
-		*nents = ssi_buffer_mgr_get_sgl_nents(sg, nbytes, lbytes, 
+		*nents = ssi_buffer_mgr_get_sgl_nents(sg, nbytes, lbytes,
 						     &is_chained);
 		if (*nents > max_sg_nents) {
+			*nents = 0;
 			SSI_LOG_ERR("Too many fragments. current %d max %d\n",
 				   *nents, max_sg_nents);
 			return -ENOMEM;
@@ -499,6 +500,7 @@ static int ssi_buffer_mgr_map_scatterlist(
 			be changed from the original sgl nents */
 			*mapped_nents = dma_map_sg(dev, sg, *nents, direction);
 			if (unlikely(*mapped_nents == 0)){
+				*nents = 0;
 				SSI_LOG_ERR("dma_map_sg() sg buffer failed\n");
 				return -ENOMEM;
 			}
@@ -510,6 +512,7 @@ static int ssi_buffer_mgr_map_scatterlist(
 								 *nents,
 								 direction);
 			if (unlikely(*mapped_nents != *nents)){
+				*nents = *mapped_nents;
 				SSI_LOG_ERR("dma_map_sg() sg buffer failed\n");
 				return -ENOMEM;
 			}
@@ -1398,8 +1401,8 @@ static inline int ssi_buffer_mgr_aead_chain_data(
 
 	}
 
-	size_for_map += (direct == SEP_CRYPTO_DIRECTION_ENCRYPT) ? authsize:0;	
-	src_mapped_nents = ssi_buffer_mgr_get_sgl_nents(req->src,size_for_map,&src_last_bytes, &chained); 
+	size_for_map += (direct == SEP_CRYPTO_DIRECTION_ENCRYPT) ? authsize:0;
+	src_mapped_nents = ssi_buffer_mgr_get_sgl_nents(req->src, size_for_map, &src_last_bytes, &chained);
 	sg_index = areq_ctx->srcSgl->length;
 	//check where the data starts
 	while (sg_index <= size_to_skip) {
@@ -1772,11 +1775,11 @@ int ssi_buffer_mgr_map_hash_request_final(
 {
 	struct ahash_req_ctx *areq_ctx = (struct ahash_req_ctx *)ctx;
 	struct device *dev = &drvdata->plat_dev->dev;
-	uint8_t* curr_buff = areq_ctx->buff_index ? areq_ctx->buff1 :
-			areq_ctx->buff0;
+	uint8_t *curr_buff = areq_ctx->buff_index ? areq_ctx->heap_buff->buff1 :
+			areq_ctx->heap_buff->buff0;
 	uint32_t *curr_buff_cnt = areq_ctx->buff_index ? &areq_ctx->buff1_cnt :
 			&areq_ctx->buff0_cnt;
-	struct mlli_params *mlli_params = &areq_ctx->mlli_params;	
+	struct mlli_params *mlli_params = &areq_ctx->mlli_params;
 	struct buffer_array sg_data;
 	struct buff_mgr_handle *buff_mgr = drvdata->buff_mgr_handle;
 	uint32_t dummy = 0;
@@ -1864,15 +1867,15 @@ int ssi_buffer_mgr_map_hash_request_update(
 {
 	struct ahash_req_ctx *areq_ctx = (struct ahash_req_ctx *)ctx;
 	struct device *dev = &drvdata->plat_dev->dev;
-	uint8_t* curr_buff = areq_ctx->buff_index ? areq_ctx->buff1 :
-			areq_ctx->buff0;
+	uint8_t *curr_buff = areq_ctx->buff_index ? areq_ctx->heap_buff->buff1 :
+			areq_ctx->heap_buff->buff0;
 	uint32_t *curr_buff_cnt = areq_ctx->buff_index ? &areq_ctx->buff1_cnt :
 			&areq_ctx->buff0_cnt;
-	uint8_t* next_buff = areq_ctx->buff_index ? areq_ctx->buff0 :
-			areq_ctx->buff1;
+	uint8_t *next_buff = areq_ctx->buff_index ? areq_ctx->heap_buff->buff0 :
+			areq_ctx->heap_buff->buff1;
 	uint32_t *next_buff_cnt = areq_ctx->buff_index ? &areq_ctx->buff0_cnt :
 			&areq_ctx->buff1_cnt;
-	struct mlli_params *mlli_params = &areq_ctx->mlli_params;	
+	struct mlli_params *mlli_params = &areq_ctx->mlli_params;
 	unsigned int update_data_len;
 	uint32_t total_in_len = nbytes + *curr_buff_cnt;
 	struct buffer_array sg_data;
@@ -1880,7 +1883,7 @@ int ssi_buffer_mgr_map_hash_request_update(
 	unsigned int swap_index = 0;
 	uint32_t dummy = 0;
 	uint32_t mapped_nents = 0;
-		
+
 	SSI_LOG_DEBUG(" update params : curr_buff=%pK "
 		     "curr_buff_cnt=0x%X nbytes=0x%X "
 		     "src=%pK curr_index=%u \n",
@@ -1898,12 +1901,12 @@ int ssi_buffer_mgr_map_hash_request_update(
 			     "*curr_buff_cnt=0x%X copy_to=%pK\n",
 			curr_buff, *curr_buff_cnt,
 			&curr_buff[*curr_buff_cnt]);
-		areq_ctx->in_nents = 
+		areq_ctx->in_nents =
 			ssi_buffer_mgr_get_sgl_nents(src,
 						    nbytes,
 						    &dummy, NULL);
 		sg_copy_to_buffer(src, areq_ctx->in_nents,
-				  &curr_buff[*curr_buff_cnt], nbytes); 
+				  &curr_buff[*curr_buff_cnt], nbytes);
 		*curr_buff_cnt += nbytes;
 		return 1;
 	}
