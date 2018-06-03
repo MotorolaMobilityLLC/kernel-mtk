@@ -702,7 +702,7 @@ unsigned char mt_eem_get_turbo(void)
 	#if !(EEM_ENABLE_TINYSYS_SSPM)
 	ret = eem_devinfo.CPU_L_TURBO;
 	#else
-	/* eem_error("big efuse: 0x%0x\n", eem_logs->hw_res[HW_RES_IDX_TURBO]); */
+	/* eem_debug("big efuse: 0x%0x\n", eem_logs->hw_res[HW_RES_IDX_TURBO]); */
 	ret = GET_BITS_VAL(27:27, eem_logs->hw_res[HW_RES_IDX_TURBO]);
 	#endif
 
@@ -965,12 +965,12 @@ int base_ops_mon_mode(struct eem_det *det)
 		det->BTS =  BTS_VAL; /* orig: 0x80E, 4 * TS_INTERCEPT; */
 	#endif
 	/*
-	eem_error("[base_ops_mon_mode] Bk = %d, MTS = 0x%08X, BTS = 0x%08X\n",
+	eem_debug("[base_ops_mon_mode] Bk = %d, MTS = 0x%08X, BTS = 0x%08X\n",
 				det->ctrl_id, det->MTS, det->BTS);
 	*/
 	#if 0
 	if ((det->EEMINITEN == 0x0) || (det->EEMMONEN == 0x0)) {
-		eem_error("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
+		eem_debug("EEMINITEN = 0x%08X, EEMMONEN = 0x%08X\n", det->EEMINITEN, det->EEMMONEN);
 		FUNC_EXIT(FUNC_LV_HELP);
 		return 1;
 	}
@@ -1132,7 +1132,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	/* clear all pending EEM interrupt & config EEMINTEN */
 	eem_write(EEMINTSTS, 0xffffffff);
 
-	/* eem_error(" %s set phase = %d\n", ((char *)(det->name) + 8), phase); */
+	/* eem_debug(" %s set phase = %d\n", ((char *)(det->name) + 8), phase); */
 	switch (phase) {
 	case EEM_PHASE_INIT01:
 		eem_write(EEMINTEN, 0x00005f01);
@@ -1317,7 +1317,7 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 		if (det->features == 0)
 			continue;
 
-		eem_error("Timer Bk=%d (%d)(%d, %d, %d, %d, %d, %d, %d, %d)(0x%x)\n",
+		eem_debug("Timer Bk=%d (%d)(%d, %d, %d, %d, %d, %d, %d, %d)(0x%x)\n",
 			det->ctrl_id,
 			det->ops->get_temp(det),
 			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[0]),
@@ -1330,7 +1330,7 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[7]),
 			det->t250);
 		#if ITurbo
-		eem_error("sts(%d), It(%d)\n",
+		eem_debug("sts(%d), It(%d)\n",
 			det->ops->get_status(det),
 			ITurboRun
 			);
@@ -1409,7 +1409,7 @@ static int eem_volt_thread_handler(void *data)
 
 		det->ops->set_volt(det);
 		#if 0
-		eem_error("B=%d,T=%d,DC=%x,V30=%x,F30=%x,sts=%x,250=%x\n",
+		eem_debug("B=%d,T=%d,DC=%x,V30=%x,F30=%x,sts=%x,250=%x\n",
 		det->ctrl_id,
 		det->ops->get_temp(det),
 		det->dcvalues[EEM_PHASE_INIT01],
@@ -1773,7 +1773,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 	/* eem_debug("det->vmax = %d\n", det->VMAX); */
 
 	/*
-	*eem_error("Temp=(%d) ITR=(%d), ITRS=(%d)\n", det->temp, ITurboRun, ITurboRunSet);
+	*eem_debug("Temp=(%d) ITR=(%d), ITRS=(%d)\n", det->temp, ITurboRun, ITurboRunSet);
 	*eem_debug("ctrl->volt_update |= EEM_VOLT_UPDATE\n");
 	*/
 
@@ -1815,7 +1815,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 
 			#if 0
 			if (eem_log_en)
-				eem_error("L->hw_v[%d]=0x%X, V(%d)L(%d)I(%d)P(%d) volt_tbl_pmic[%d]=0x%X (%d)\n",
+				eem_debug("L->hw_v[%d]=0x%X, V(%d)L(%d)I(%d)P(%d) volt_tbl_pmic[%d]=0x%X (%d)\n",
 					i, det->volt_tbl[i],
 					det->volt_offset, low_temp_offset, ITurbo_offset[i], det->pi_offset,
 					i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
@@ -2107,7 +2107,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
-	/* eem_error("mode = init2 %s-isr\n", ((char *)(det->name) + 8)); */
+	/* eem_debug("mode = init2 %s-isr\n", ((char *)(det->name) + 8)); */
 
 	det->dcvalues[EEM_PHASE_INIT02]		= eem_read(EEM_DCVALUES);
 	det->freqpct30[EEM_PHASE_INIT02]	= eem_read(EEM_FREQPCT30);
@@ -2226,11 +2226,11 @@ static inline void handle_init02_isr(struct eem_det *det)
 		}
 		#endif
 		#if 0
-		eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
+		eem_debug("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
 		if (NR_FREQ > 8) {
-			eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
+			eem_debug("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i+1, det->volt_tbl[i+1], det->ops->pmic_2_volt(det, det->volt_tbl[i+1]));
 		}
 		#endif
@@ -2300,7 +2300,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
-	/* eem_error("mode = mon %s-isr\n", ((char *)(det->name) + 8)); */
+	/* eem_debug("mode = mon %s-isr\n", ((char *)(det->name) + 8)); */
 
 	#if 0 /* defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL) */
 	eem_isr_info("LL_temp=%d, L_temp=%d, CCI_temp=%d, GPU_temp=%d, SOC_temp=%d\n",
@@ -2409,7 +2409,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	/* check if thermal sensor init completed? */
 	det->t250 = eem_read(TEMP);
-	/* eem_error("ptp TEMP ----- (0x%08X) degree !!\n", det->t250); */
+	/* eem_debug("ptp TEMP ----- (0x%08X) degree !!\n", det->t250); */
 
 	/* 0x64 mappint to 100 + 25 = 125C,
 	*   0xB2 mapping to 178 - 128 = 50, -50 + 25 = -25C
@@ -2501,7 +2501,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		}
 		#endif
 		/*
-		*eem_error("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
+		*eem_debug("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 		*	det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
 		*if (NR_FREQ > 8) {
@@ -2745,7 +2745,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	cpus = cpumask_weight(&cpu_online_cpumask);
 
 	if (eem_log_en)
-		eem_error("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
+		eem_debug("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
 		, __func__, __LINE__, cpu, action, online_cpus, cluster_id, cpus);
 
 	dev = get_cpu_device(cpu);
@@ -2777,7 +2777,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! DEAD (%d), BIG_cc(%d)\n",
+					eem_debug("Turbo(%d)ed !! DEAD (%d), BIG_cc(%d)\n",
 						ITurboRun, online_cpus, big_cpus);
 			}
 		break;
@@ -2785,7 +2785,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 		case CPU_DOWN_PREPARE:
 			if ((ITurboRun == 1) && (big_cpus == ITURBO_CPU_NUM) && (cluster_id == MT_EEM_CPU_B)) {
 				if (eem_log_en)
-					eem_error("Turbo(0) DP (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
+					eem_debug("Turbo(0) DP (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
 				mt_ptp_lock(&flags);
 				ITurboRun = 0;
 				/* Restore BIG private table */
@@ -2801,14 +2801,14 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! DP (%d), BIG_cc(%d)\n",
+					eem_debug("Turbo(%d)ed !! DP (%d), BIG_cc(%d)\n",
 						ITurboRun, online_cpus, big_cpus);
 			}
 		break;
 
 		case CPU_UP_PREPARE:
 			if ((ITurboRun == 0) && (cpu == 8) && (big_cpus == 0)) {
-				eem_error("Turbo(1) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
+				eem_debug("Turbo(1) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
 				mt_ptp_lock(&flags);
 				ITurboRun = 1;
 				/* Revise BIG private table */
@@ -2824,7 +2824,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mt_ptp_unlock(&flags);
 			} else if ((ITurboRun == 1) && (big_cpus == ITURBO_CPU_NUM) && (cluster_id == MT_EEM_CPU_B)) {
 				if (eem_log_en)
-					eem_error("Turbo(0) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
+					eem_debug("Turbo(0) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
 				mt_ptp_lock(&flags);
 				ITurboRun = 0;
 				/* Restore BIG private table */
@@ -2840,7 +2840,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! UP (%d), BIG_cc(%d)\n",
+					eem_debug("Turbo(%d)ed !! UP (%d), BIG_cc(%d)\n",
 						ITurboRun, online_cpus, big_cpus);
 			}
 		break;
@@ -2857,7 +2857,7 @@ void eem_init02(const char *str)
 	struct eem_ctrl *ctrl;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
-	eem_error("eem_init02 called by [%s]\n", str);
+	eem_debug("eem_init02 called by [%s]\n", str);
 	for_each_det_ctrl(det, ctrl) {
 		if (HAS_FEATURE(det, FEA_INIT02)) {
 			unsigned long flag;
@@ -5321,7 +5321,7 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 				eem_debug("volt should be set between index %d - %d\n", index-1, index+1);
 		}
 		#endif
-		eem_error("set eem_vcore[%d]=%d\n", index, newVolt);
+		eem_debug("set eem_vcore[%d]=%d\n", index, newVolt);
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = index;
 		eem_data.u.data.arg[1] = newVolt;
