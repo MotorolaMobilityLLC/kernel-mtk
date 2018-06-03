@@ -765,9 +765,9 @@ static void imx499_apply_LRC(void)
 	char puSendCmd[75];
 	kal_uint32 tosend;
 
+#if 0
 	pr_debug("E  Is_Read_LRC_Data=%d", Is_Read_LRC_Data);
 
-#if 0
 	for (i = 0; i < 140; i++)
 		pr_debug("dump LRC[i]=%d", i, imx499_LRC_data[i]);
 #endif
@@ -1058,61 +1058,33 @@ static kal_uint16 set_gain(kal_uint16 gain)
 }				/*    set_gain  */
 
 
-#if 0
-static void set_mirror_flip(kal_uint8 image_mirror)
-{
-	pr_debug("image_mirror = %d\n", image_mirror);
-	switch (image_mirror) {
-	case IMAGE_NORMAL:
+
+static void set_PD_pdc(kal_uint8 enable)
+{/*enable mean PD point->Pure RAW*/
+	pr_debug("set_PD_pdc = %d\n", enable);
+	if (enable) {
 		write_cmos_sensor(0x0101, 0x00);
-		write_cmos_sensor(0x3A27, 0x00);
-		write_cmos_sensor(0x3A28, 0x00);
-		write_cmos_sensor(0x3A29, 0x01);
-		write_cmos_sensor(0x3A2A, 0x00);
-		write_cmos_sensor(0x3A2B, 0x00);
-		write_cmos_sensor(0x3A2C, 0x00);
-		write_cmos_sensor(0x3A2D, 0x01);
-		write_cmos_sensor(0x3A2E, 0x01);
-		break;
-	case IMAGE_H_MIRROR:
-		write_cmos_sensor(0x0101, 0x01);
-		write_cmos_sensor(0x3A27, 0x01);
-		write_cmos_sensor(0x3A28, 0x01);
-		write_cmos_sensor(0x3A29, 0x00);
-		write_cmos_sensor(0x3A2A, 0x00);
-		write_cmos_sensor(0x3A2B, 0x01);
-		write_cmos_sensor(0x3A2C, 0x00);
-		write_cmos_sensor(0x3A2D, 0x00);
-		write_cmos_sensor(0x3A2E, 0x01);
-		break;
-	case IMAGE_V_MIRROR:
-		write_cmos_sensor(0x0101, 0x02);
-		write_cmos_sensor(0x3A27, 0x10);
-		write_cmos_sensor(0x3A28, 0x10);
-		write_cmos_sensor(0x3A29, 0x01);
-		write_cmos_sensor(0x3A2A, 0x01);
-		write_cmos_sensor(0x3A2B, 0x00);
-		write_cmos_sensor(0x3A2C, 0x01);
-		write_cmos_sensor(0x3A2D, 0x01);
-		write_cmos_sensor(0x3A2E, 0x00);
-		break;
-	case IMAGE_HV_MIRROR:
-		write_cmos_sensor(0x0101, 0x03);
-		write_cmos_sensor(0x3A27, 0x11);
-		write_cmos_sensor(0x3A28, 0x11);
-		write_cmos_sensor(0x3A29, 0x00);
-		write_cmos_sensor(0x3A2A, 0x01);
-		write_cmos_sensor(0x3A2B, 0x01);
-		write_cmos_sensor(0x3A2C, 0x01);
-		write_cmos_sensor(0x3A2D, 0x00);
-		write_cmos_sensor(0x3A2E, 0x00);
-		break;
-	default:
-		pr_debug("Error image_mirror setting\n");
+		write_cmos_sensor(0x0B00, 0x00);
+		write_cmos_sensor(0x3606, 0x01);
+		write_cmos_sensor(0x3E3A, 0x01);
+		write_cmos_sensor(0x3E39, 0x01);
+	} else {
+		write_cmos_sensor(0x0101, 0x00);
+		write_cmos_sensor(0x0B00, 0x00);
+		write_cmos_sensor(0x3606, 0x00);
+		write_cmos_sensor(0x3E3A, 0x00);
+		write_cmos_sensor(0x3E39, 0x01);
 	}
+	imx499_apply_LRC();
+
+#ifdef HV_MIRROR_FLIP
+	write_cmos_sensor(0x0101, IMAGE_HV_MIRROR);
+#else
+	write_cmos_sensor(0x0101, IMAGE_NORMAL);
+#endif
 
 }
-#endif
+
 /************************************************************************
  * FUNCTION
  *    night_mode
@@ -1365,6 +1337,8 @@ static void preview_setting(void)
 	addr_data_pair_preview_imx499,
 	sizeof(addr_data_pair_preview_imx499) / sizeof(kal_uint16));
 
+	set_PD_pdc(1);/*Always disable PDAF for preview*/
+
 	if (PDAF_RAW_mode)
 		write_cmos_sensor(0x3E3B, 0x00);
 	else
@@ -1462,10 +1436,14 @@ static void capture_setting(kal_uint16 currefps)
 	imx499_table_write_cmos_sensor(addr_data_pair_capture_imx499,
 		sizeof(addr_data_pair_capture_imx499) / sizeof(kal_uint16));
 
-	if (PDAF_RAW_mode)
+	if (PDAF_RAW_mode) {
+		set_PD_pdc(0);
 		write_cmos_sensor(0x3E3B, 0x00);
-	else
+	} else {
+		set_PD_pdc(1);
 		write_cmos_sensor(0x3E3B, 0x01);
+	}
+
 }
 
 kal_uint16 addr_data_pair_video_imx499[] = {
@@ -1558,10 +1536,14 @@ static void normal_video_setting(kal_uint16 currefps)
 	imx499_table_write_cmos_sensor(addr_data_pair_video_imx499,
 		sizeof(addr_data_pair_video_imx499) / sizeof(kal_uint16));
 
-	if (PDAF_RAW_mode)
+	if (PDAF_RAW_mode) {
+		set_PD_pdc(0);
 		write_cmos_sensor(0x3E3B, 0x00);
-	else
+	} else {
+		set_PD_pdc(1);
 		write_cmos_sensor(0x3E3B, 0x01);
+	}
+
 }
 
 kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
@@ -1833,7 +1815,7 @@ static kal_uint32 open(void)
 
 	pr_debug("IMX499, MIPI 4LANE %d\n", PDAF_RAW_mode);
 	pr_debug(
-	 "preview 2328*1746@30fps; video 4656*3496@30fps; capture 21M@24fps\n");
+	 "preview 2328*1746@30fps; video 4656*3496@30fps; capture 13M@30fps\n");
 
 
 	KD_SENSOR_PROFILE_INIT();
@@ -1883,29 +1865,6 @@ static kal_uint32 open(void)
 	imgsensor.test_pattern = KAL_FALSE;
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
-
-
-	if (PDAF_RAW_mode) {
-		write_cmos_sensor(0x0101, 0x00);
-		write_cmos_sensor(0x0B00, 0x00);
-		write_cmos_sensor(0x3606, 0x00);
-		write_cmos_sensor(0x3E3A, 0x00);
-		write_cmos_sensor(0x3E39, 0x01);
-	} else {
-		write_cmos_sensor(0x0101, 0x00);
-		write_cmos_sensor(0x0B00, 0x00);
-		write_cmos_sensor(0x3606, 0x01);
-		write_cmos_sensor(0x3E3A, 0x01);
-		write_cmos_sensor(0x3E39, 0x01);
-	}
-	imx499_apply_LRC();
-
-#ifdef HV_MIRROR_FLIP
-		write_cmos_sensor(0x0101, IMAGE_HV_MIRROR);
-#else
-		write_cmos_sensor(0x0101, IMAGE_NORMAL);
-#endif
-
 
 	KD_SENSOR_PROFILE("open_2");
 	return ERROR_NONE;
@@ -2050,7 +2009,6 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	normal_video_setting(imgsensor.current_fps);
 
 	KD_SENSOR_PROFILE("nv_setting");
-	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
 
 	return ERROR_NONE;
 } /*    normal_video   */
@@ -2806,10 +2764,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		/*END OF HDR CMD */
 		/*PDAF CMD */
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-		pr_debug(
-		    "SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%llu\n",
-		    *feature_data);
-
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 1;
@@ -2824,12 +2778,23 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 1;
+			if (PDAF_RAW_mode)
+				*(MUINT32 *) (uintptr_t)
+					(*(feature_data + 1)) = 0;
+			else
+				*(MUINT32 *) (uintptr_t)
+					(*(feature_data + 1)) = 1;
 			break;
 		default:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
 			break;
 		}
+
+		pr_debug(
+		    "SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%llu=%d\n",
+		    *feature_data,
+		    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)));
+
 		break;
 	case SENSOR_FEATURE_SET_PDAF:
 		pr_debug("PDAF mode :%d\n", *feature_data_16);
