@@ -159,19 +159,21 @@ int ged_bridge_gpu_timestamp(
 	GED_BRIDGE_IN_GPU_TIMESTAMP * psGpuBeginINT,
 	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT)
 {
-	if (psGpuBeginINT->QedBuffer_length != -1)
-		psGpuBeginOUT->eError =
-			ged_kpi_queue_buffer_ts(psGpuBeginINT->pid,
-									psGpuBeginINT->ullWnd,
-									psGpuBeginINT->i32FrameID,
-									psGpuBeginINT->fence_fd,
-									psGpuBeginINT->QedBuffer_length,
-									psGpuBeginINT->isSF);
-	else
-		psGpuBeginOUT->eError =
-			ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
-									psGpuBeginINT->ullWnd,
-									psGpuBeginINT->i32FrameID);
+	if (ged_kpi_enabled() == 1) {
+		if (psGpuBeginINT->QedBuffer_length != -1)
+			psGpuBeginOUT->eError =
+				ged_kpi_queue_buffer_ts(psGpuBeginINT->pid,
+										psGpuBeginINT->ullWnd,
+										psGpuBeginINT->i32FrameID,
+										psGpuBeginINT->fence_fd,
+										psGpuBeginINT->QedBuffer_length,
+										psGpuBeginINT->isSF);
+		else
+			psGpuBeginOUT->eError =
+				ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
+										psGpuBeginINT->ullWnd,
+										psGpuBeginINT->i32FrameID);
+	}
 	return 0;
 }
 /* ----------------------------------------------------------------------------- */
