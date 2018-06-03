@@ -179,7 +179,7 @@ static int lt_reg_save(void)
 	elm_valid = 1;
 	spin_unlock_irqrestore(&elm_lock, flags);
 
-#if 1
+#if 0
 	pr_info(
 		"[EMI ELM] ddr data rate: %d, valid: 0x%08x\n"
 		"%s: 0x%08x\n%s: 0x%08x\n%s: 0x%08x\n%s: 0x%08x\n"

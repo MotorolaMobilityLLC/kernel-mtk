@@ -397,10 +397,10 @@ static int __init dvfs_bwct_init(void)
 
 	switch (ch_num) {
 	case 1:
-		BM_SetBW(0x05000400);
+		BM_SetBW(0x05000407);
 		break;
 	case 2:
-		BM_SetBW(0x0a000700);
+		BM_SetBW(0x0a000707);
 		break;
 	default:
 		pr_err("[EMI] unsupported channel number\n");
