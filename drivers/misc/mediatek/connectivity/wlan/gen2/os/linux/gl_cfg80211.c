@@ -1915,8 +1915,7 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 		if (request->match_sets && (&(request->match_sets[i]))) {
 			DBGLOG(SCN, TRACE, "match : (%d)[%s]\n", i, request->match_sets[i].ssid.ssid);
 			/*driver ingored the null ssid*/
-			if (request->match_sets[i].ssid.ssid_len == 0 ||
-				request->match_sets[i].ssid.ssid == NULL)
+			if (request->match_sets[i].ssid.ssid_len == 0)
 				DBGLOG(SCN, WARN, "ignore the null ssid, index:%d\n", i);
 			else {
 				COPY_SSID(prSchedScanRequest->arMatchSsid[num].aucSsid,
