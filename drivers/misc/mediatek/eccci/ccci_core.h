@@ -766,6 +766,21 @@ typedef enum {
 	CCCI_CCMNI18_TX                 = 145,
 	CCCI_CCMNI18_TX_ACK             = 146,
 	CCCI_CCMNI18_DLACK_RX           = 147,
+	CCCI_CCMNI19_RX                 = 148,
+	CCCI_CCMNI19_RX_ACK             = 149,
+	CCCI_CCMNI19_TX                 = 150,
+	CCCI_CCMNI19_TX_ACK             = 151,
+	CCCI_CCMNI19_DLACK_RX           = 152,
+	CCCI_CCMNI20_RX                 = 153,
+	CCCI_CCMNI20_RX_ACK             = 154,
+	CCCI_CCMNI20_TX                 = 155,
+	CCCI_CCMNI20_TX_ACK             = 156,
+	CCCI_CCMNI20_DLACK_RX           = 157,
+	CCCI_CCMNI21_RX                 = 158,
+	CCCI_CCMNI21_RX_ACK             = 159,
+	CCCI_CCMNI21_TX                 = 160,
+	CCCI_CCMNI21_TX_ACK             = 161,
+	CCCI_CCMNI21_DLACK_RX           = 162,
 
 	/*5 chs for C2K only*/
 	CCCI_C2K_PPP_DATA,		/* data ch for c2k */
