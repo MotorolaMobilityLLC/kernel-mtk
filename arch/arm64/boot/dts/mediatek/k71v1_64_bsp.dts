@@ -529,9 +529,7 @@ initcall_debug=1";
 };
 /* USB TYPEC GPIO end */
 
-#if 0
 #include <k71v1_64_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
-#endif
 
 
