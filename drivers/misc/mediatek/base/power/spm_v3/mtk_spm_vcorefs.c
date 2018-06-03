@@ -1217,7 +1217,7 @@ static void dvfsrc_init(void)
 	/* enable DVFSRC */
 	spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (0x3));
 
-	mtk_rgu_cfg_emi_dcs(1);
+	mtk_rgu_cfg_dvfsrc(1);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
