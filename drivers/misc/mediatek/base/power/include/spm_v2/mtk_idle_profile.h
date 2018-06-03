@@ -42,7 +42,7 @@ struct mtk_idle_buf {
 #define reset_idle_buf(idle) ((idle).p_idx = (idle).buf)
 #define get_idle_buf(idle)   ((idle).buf)
 #define idle_buf_append(idle, fmt, args...) \
-	((idle).p_idx += snprintf((idle).p_idx, IDLE_LOG_BUF_LEN - strlen((idle).buf), fmt, ##args))
+	((idle).p_idx += scnprintf((idle).p_idx, IDLE_LOG_BUF_LEN - strlen((idle).buf), fmt, ##args))
 
 extern const char *reason_name[NR_REASONS];
 
