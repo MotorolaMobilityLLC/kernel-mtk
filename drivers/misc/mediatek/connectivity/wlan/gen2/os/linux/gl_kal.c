@@ -1495,7 +1495,6 @@ UINT_32 kalReadExtCfg(IN P_GLUE_INFO_T prGlueInfo)
 	return prGlueInfo->u4ExtCfgLength;
 }
 #endif
-
 /*----------------------------------------------------------------------------*/
 /*!
  * @brief This inline function is to extract some packet information, including
@@ -1530,6 +1529,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	UINT_32 u4PacketLen;
 
 	UINT_8 ucUserPriority = USER_PRIORITY_DEFAULT;	/* Default */
+	UINT_8 ucEtherType;
 	UINT_16 u2EtherTypeLen;
 	struct sk_buff *prSkb = (struct sk_buff *)prPacket;
 	PUINT_8 aucLookAheadBuf = NULL;
@@ -1549,6 +1549,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	*pfgIsPAL = FALSE;
 
 	/* 4 <3> Obtain the User Priority for WMM */
+	ucEtherType = kalGetPktEtherType(aucLookAheadBuf);
 	u2EtherTypeLen = (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET] << 8) | (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET + 1]);
 
 	/* <4> Network type */
@@ -1698,7 +1699,11 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			}
 		}
 	}
-	/* 4 <5> Return the value of Priority Parameter. */
+	/* 4 <5> Check ethernet type and return the value of Priority Parameter. */
+	if (ucEtherType == ENUM_PKT_DHCP || ucEtherType == ENUM_PKT_ARP) {
+		ucUserPriority = 6; /* use VO priority */
+		DBGLOG(TX, TRACE, "change UserPriority = %d\n", ucUserPriority);
+	}
 	*pucPriorityParam = ucUserPriority;
 
 	/* 4 <6> Retrieve Packet Information - DA */
@@ -3087,6 +3092,101 @@ VOID kalReleaseIOBuffer(IN PVOID pvAddr, IN UINT_32 u4Size)
 		/* fault tolerance */
 		kalMemFree(pvAddr, PHY_MEM_TYPE, u4Size);
 	}
+}
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief decode ethernet type from package head
+*
+* \param[in]
+*           none
+*
+* \return
+*           none
+*/
+/*----------------------------------------------------------------------------*/
+
+UINT_8 kalGetPktEtherType(IN PUINT_8 pucPkt)
+{
+	UINT_16 u2EtherType;
+	PUINT_8 pucEthBody;
+	UINT_8 ucResult = ENUM_PKT_FLAG_NUM;
+
+	if (pucPkt == NULL) {
+		DBGLOG(INIT, WARN, "kalGetPktEtherType pucPkt is null!\n");
+		return ucResult;
+	}
+
+	u2EtherType = (pucPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pucPkt[ETH_TYPE_LEN_OFFSET + 1]);
+	pucEthBody = &pucPkt[ETH_HLEN];
+
+	switch (u2EtherType) {
+	case ETH_P_ARP:
+	{
+		DBGLOG(INIT, LOUD, "kalGetPktEtherType : ARP\n");
+		ucResult = ENUM_PKT_ARP;
+		break;
+	}
+	case ETH_P_IP:
+	{
+		UINT_8 ucIpProto = pucEthBody[9]; /* IP header without options */
+
+		switch (ucIpProto) {
+		case IP_PRO_ICMP:
+		{
+			DBGLOG(INIT, LOUD, "kalGetPktEtherType : ICMP\n");
+			ucResult = ENUM_PKT_ICMP;
+			break;
+		}
+		case IP_PRO_UDP:
+		{
+			PUINT_8 pucUdp = &pucEthBody[20];
+			UINT_16 u2UdpSrcPort;
+			UINT_16 u2UdpDstPort;
+
+			u2UdpDstPort = (pucUdp[2] << 8) | pucUdp[3];
+			u2UdpSrcPort = (pucUdp[0] << 8) | pucUdp[1];
+
+			if ((u2UdpDstPort == UDP_PORT_DHCPS) || (u2UdpDstPort == UDP_PORT_DHCPC)) {
+				DBGLOG(INIT, LOUD, "kalGetPktEtherType : DHCP\n");
+				ucResult = ENUM_PKT_DHCP;
+				break;
+			} else if (u2UdpSrcPort == UDP_PORT_DNS) {
+				DBGLOG(INIT, LOUD, "kalGetPktEtherType : DNS\n");
+				ucResult = ENUM_PKT_DNS;
+				break;
+			}
+		}
+		}
+			break;
+	}
+	case ETH_P_PRE_1X:
+	{
+		ucResult = ENUM_PKT_PROTECTED_1X;
+		break;
+	}
+	case ETH_P_1X:
+	{
+		ucResult = ENUM_PKT_1X;
+		break;
+	}
+	case TDLS_FRM_PROT_TYPE:
+	{
+		ucResult = ENUM_PKT_TDLS;
+		break;
+	}
+	case ETH_WPI_1X:
+	{
+		ucResult = ENUM_PKT_WPI_1X;
+		break;
+
+	}
+	default:
+		DBGLOG(INIT, LOUD, "unSupport pkt type:u2EtherType:0x%x\n"
+			, u2EtherType);
+		break;
+	}
+
+	return ucResult;
 }
 
 /*----------------------------------------------------------------------------*/
