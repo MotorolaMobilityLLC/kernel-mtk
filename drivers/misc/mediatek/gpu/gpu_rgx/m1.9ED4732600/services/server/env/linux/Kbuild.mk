@@ -459,7 +459,7 @@ endif
 # Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
 ifeq ($(CONFIG_L4),)
 ifneq ($(W),1)
-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
+$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Wno-error))
 endif
 endif
 
@@ -472,6 +472,6 @@ CFLAGS_trace_events.o := -Wno-missing-prototypes
 CFLAGS_mem_utils.o := -ffreestanding
 
 # Chrome OS kernel adds some issues
-ccflags-y += -Wno-ignored-qualifiers
+ccflags-y += -Wno-ignored-qualifiers -Wno-error
 
 include $(TOP)/services/system/$(PVR_SYSTEM)/Kbuild.mk
