@@ -132,6 +132,40 @@ static int eem_log_en;
 static unsigned int eem_checkEfuse = 1;
 static unsigned int informEEMisReady;
 
+/* The EMM controller list managed by Picachu. */
+static unsigned int pi_eem_ctrl_id[] = {
+#if ENABLE_LOO
+	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI, EEM_CTRL_L_HI, EEM_CTRL_2L_HI
+#else
+	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI
+#endif
+};
+
+#define PI_MDES_BDES_MASK	(0xFFFF)
+#define PI_MTDES_MASK		(0xFF)
+
+struct pi_efuse_index {
+	unsigned int mdes_bdes_index : 8;
+	unsigned int mdes_bdes_shift : 8;
+
+	unsigned int mtdes_index : 8;
+	unsigned int mtdes_shift : 8;
+};
+
+static struct pi_efuse_index pi_efuse_idx[] = {
+#if ENABLE_LOO
+	{1, 0, 2, 16},		/* EEM_CTRL_2L */
+	{3, 0, 2, 0},		/* EEM_CTRL_L */
+	{4, 0, 5, 16},		/* EEM_CTRL_CCI */
+	{9, 0, 8, 0},		/* EEM_CTRL_L_HI */
+	{7, 0, 8, 16},		/* EEM_CTRL_2L_HI */
+#else
+	{10, 0, 11, 16},	/* EEM_CTRL_2L */
+	{12, 0, 11, 0},		/* EEM_CTRL_L */
+	{4, 0, 5, 16},		/* EEM_CTRL_CCI */
+#endif
+};
+
 /* Global variable for slow idle*/
 unsigned int ptp_data[3] = {0, 0, 0};
 #ifdef CONFIG_OF
@@ -158,10 +192,12 @@ static struct eem_det *id_to_eem_det(enum eem_det_id id)
 
 static int get_devinfo(void)
 {
-	int ret = 0;
-	int *val;
-	int i = 0;
+	struct pi_efuse_index *p;
+	unsigned int n, tmp, idx;
 	struct eem_det *det;
+	int ret = 0;
+	int i = 0;
+	int *val;
 
 	val = (int *)&eem_devinfo;
 
@@ -226,6 +262,36 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES16 = 0x%08X\n", val[10]);
 	eem_debug("M_HW_RES17 = 0x%08X\n", val[11]);
 	eem_debug("M_HW_RES18 = 0x%08X\n", val[12]);
+
+	n = sizeof(pi_eem_ctrl_id) / sizeof(unsigned int);
+
+	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+	for (i = 0; i < n; i++) {
+		det = id_to_eem_det(pi_eem_ctrl_id[i]);
+
+		idx = i % det->pi_efuse_count;
+
+		if (!det->pi_efuse[idx])
+			continue;
+
+		p = &pi_efuse_idx[i];
+
+		/* Get mdes/bdes efuse data from Picachu */
+		tmp = (det->pi_efuse[idx] >> 8) & PI_MDES_BDES_MASK;
+
+		/* Update mdes/bdes */
+		val[p->mdes_bdes_index] &=
+				~(PI_MDES_BDES_MASK << p->mdes_bdes_shift);
+
+		val[p->mdes_bdes_index] |= (tmp << p->mdes_bdes_shift);
+
+		/* Get mtdes efuse data from Picachu */
+		tmp = det->pi_efuse[idx] & PI_MTDES_MASK;
+
+		/* Update mtdes */
+		val[p->mtdes_index] &= ~(PI_MTDES_MASK << p->mtdes_shift);
+		val[p->mtdes_index] |= (tmp << p->mtdes_shift);
+	}
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -3569,6 +3635,16 @@ static int create_procfs(void)
 	return 0;
 }
 #endif /* CONFIG_PROC_FS */
+
+void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	if (det->pi_efuse_count >= NR_PI_SHARED_CTRL)
+		return;
+
+	det->pi_efuse[det->pi_efuse_count++] = pi_efuse;
+}
 
 unsigned int get_efuse_status(void)
 {
