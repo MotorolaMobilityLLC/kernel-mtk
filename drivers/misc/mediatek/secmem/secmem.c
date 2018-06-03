@@ -541,7 +541,11 @@ static int secmem_region_alloc(void)
 	}
 
 	/* allocate secure memory region */
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+	ret = svp_region_offline64(&pa, &size);
+#else
 	ret = svp_region_offline(&pa, &size);
+#endif
 	if (ret) {
 		MSG(ERR, "%s: svp_region_offline failed! ret=%d\n", __func__, ret);
 		return -1;
