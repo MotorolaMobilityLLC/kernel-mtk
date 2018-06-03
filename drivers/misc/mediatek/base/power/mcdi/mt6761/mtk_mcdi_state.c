@@ -57,7 +57,7 @@ static struct cpuidle_driver mtk_cpuidle_driver_set_0 = {
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
 		.exit_latency		= 300,
-		.target_residency	= 1500,
+		.target_residency	= 5000,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
@@ -87,14 +87,14 @@ static struct cpuidle_driver
 		.states[1] = {
 			.enter              = NULL,
 			.exit_latency       = 300,
-			.target_residency   = 1500,
+			.target_residency   = 5000,
 			.name               = "cpu_off",
 			.desc               = "cpu_off",
 		},
 		.states[2] = {
 			.enter              = NULL,
 			.exit_latency       = 600,
-			.target_residency   = 1500,
+			.target_residency   = 5000,
 			.name               = "cluster_off",
 			.desc               = "cluster_off",
 		},
