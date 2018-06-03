@@ -62,18 +62,18 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
 	},
 	[1] = {
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_SB),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_SB),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_SB),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_SB),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_SB),
-	},
-	[2] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
+	},
+	[2] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_3_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_FY),
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */
@@ -126,14 +126,13 @@ int upower_bank_to_spower_bank(int upower_bank)
  ***************************************************/
 void get_original_table(void)
 {
-	/* M17+, M17 (0), M17- (1) */
 	unsigned int upower_proj_ver = 0;
 	unsigned int binLevel = 0;
 	unsigned short idx = 0;
 	unsigned int i, j;
 
 	upower_proj_ver = is_ext_buck_exist();
-	/* if M17+, use FY or SB */
+	/* if M17+, idx = 0*/
 	if (upower_proj_ver == 1) {
 		binLevel = get_devinfo_with_index(UPOWER_FUNC_CODE_EFUSE_INDEX) >> 8 & 0xff;
 		if (binLevel == 0)
@@ -145,14 +144,11 @@ void get_original_table(void)
 		else
 			idx = 0;
 	} else {
-	/* if M17, use FY */
+	/* if M17, idx = 2 */
+	/* if M17T, idx = 3 */
 		idx = 0;
 	}
 
-#if 0
-	if (M17-)
-		idx = 2;
-#endif
 	upower_error("projver, binLevel, idx=%d, %d, %d\n", upower_proj_ver, binLevel, idx);
 
 	/* get location of reference table */
