@@ -571,7 +571,7 @@ int spm_mtcmos_ctrl_md1(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Set PWR_RST_B = 0" */
-		/*  spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~PWR_RST_B);*/
+		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~PWR_ON);
 		/* TINFO="Set PWR_ON_2ND = 0" */
