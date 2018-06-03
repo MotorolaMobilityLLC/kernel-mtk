@@ -36,6 +36,7 @@
 #include <backend/gpu/mali_kbase_jm_internal.h>
 
 #ifdef ENABLE_MTK_DEBUG
+#include <mtk_gpufreq.h>
 #include <mtk_gpu_log.h>
 #endif
 
@@ -1232,6 +1233,7 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 
 	if (!silent) {
 #ifdef ENABLE_MTK_DEBUG
+		mfg_latency_debug_stopRead();
 		if (mt_gpufreq_check_GPU_non_idle_infra_idle() == 1)
 			need_reset_MFG_wrapper = 1;
 #endif

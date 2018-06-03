@@ -132,6 +132,9 @@ static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
 	writel(0x00000001, g_MFG_base + 0x130);
 
+	/* enable latency_debug */
+	mfg_latency_debug_enable();
+
 	/* merge_w off */
 	writel(0x0, g_MFG_base + 0x8b0);
 	/* merge_r off */

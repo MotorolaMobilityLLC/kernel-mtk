@@ -66,6 +66,8 @@ extern void mt_gpufreq_set_MMU_AS_ACTIVE(int enable);
 extern unsigned int mt_gpufreq_get_MMU_AS_ACTIVE(void);
 extern int mt_gpufreq_check_GPU_non_idle_infra_idle(void);
 extern void mt_gpufreq_reset_MFG_wrapper(void);
+extern void mfg_latency_debug_enable(void);
+extern void mfg_latency_debug_stopRead(void);
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
