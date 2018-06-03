@@ -107,6 +107,8 @@ static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
 static bool g_aal_hw_offset;
 static bool g_aal_dre_offset_separate;
 static volatile int g_aal_dre_is_init_valid;
+static atomic_t g_aal_force_enable_irq = ATOMIC_INIT(0);
+
 
 #define AAL0_OFFSET (0)
 #define AAL1_OFFSET (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE)
@@ -138,6 +140,9 @@ static volatile bool g_aal_is_clock_on[AAL_TOTAL_MODULE_NUM];
 #ifdef CONFIG_MTK_AAL_SUPPORT
 static DEFINE_SPINLOCK(g_aal0_hist_lock);
 static DEFINE_SPINLOCK(g_aal1_hist_lock);
+static DEFINE_SPINLOCK(g_aal_irq_en_lock);
+
+
 
 #define aal_index_hist_spin_trylock(index, flags, getlock)				\
 do {												\
@@ -315,12 +320,14 @@ static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module, int e
 {
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	const int offset = aal_get_offset(module);
+	unsigned long flags;
 
 	if (g_aal_is_clock_on[index_of_aal(module)] != true) {
 		AAL_DBG("disp_aal_set_interrupt_by_module: clock is off");
 		return;
 	}
 
+	spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 	if (enabled) {
 		if (DISP_REG_GET(DISP_AAL_EN + offset) == 0)
 			AAL_DBG("[WARNING] module(%d) DISP_AAL_EN not enabled!", module);
@@ -337,6 +344,7 @@ static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module, int e
 			/* Continue interrupt until AALService can get the latest histogram. */
 		}
 	}
+	spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 #else
 	AAL_ERR("AAL driver is not enabled");
 #endif
@@ -1268,6 +1276,7 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
 	if (g_aal_is_init_regs_valid) {
+		atomic_set(&g_aal_force_enable_irq, 1);
 		disp_aal_set_interrupt(1);
 		/* Backlight latency should be as smaller as possible */
 		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
@@ -1310,6 +1319,8 @@ static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 			break;
 #endif
 	} while (0);
+
+	atomic_set(&g_aal_force_enable_irq, 0);
 
 	AAL_DBG("disp_aal_copy_hist_to_user: %d", ret);
 
@@ -2048,6 +2059,12 @@ static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void
 			if (copy_from_user(&enabled, (void *)arg, sizeof(enabled))) {
 				AAL_ERR("DISP_IOCTL_AAL_EVENTCTL: copy_from_user() failed");
 				return -EFAULT;
+			}
+
+			if (atomic_read(&g_aal_force_enable_irq) == 1) {
+				if (enabled == 0)
+					AAL_NOTICE("force enable aal irq 0-->1");
+				enabled = 1;
 			}
 
 			disp_aal_set_interrupt_by_module(module, enabled);
