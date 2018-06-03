@@ -894,7 +894,7 @@ static void spm_dvfsfw_init(void)
 {
 	unsigned long flags;
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4408, 0x2202, 0x1101};
 
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1245,7 +1245,7 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 		spm_vcorefs_dump_dvfs_regs(NULL);
 	}
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_write(SPM_SW_NONSERSV_3, (spm_read(SPM_SW_NONSERSV_3) & ~(1U << msdc)) | (enable << msdc));
 #else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, msdc, enable);
@@ -1269,11 +1269,11 @@ void spm_go_to_vcorefs(int spm_flags)
 {
 	unsigned long flags;
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	} else {

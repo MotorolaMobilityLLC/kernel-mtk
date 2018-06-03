@@ -19,8 +19,9 @@
 #include <mach/upmu_hw.h> /* for PMIC power settings */
 
 extern void __iomem *spm_base;
-extern void __iomem *spm_cksys_base;
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 extern void __iomem *spm_mcucfg;
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 extern u32 spm_irq_0;
 extern int spm_for_gps_flag;
 

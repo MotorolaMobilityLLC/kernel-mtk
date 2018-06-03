@@ -47,11 +47,13 @@
  **************************************/
 DEFINE_SPINLOCK(__spm_lock);
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #define PCM_TIMER_RAMP_BASE_DPIDLE      80          /*  80/32000 =  2.5 ms */
 #define PCM_TIMER_RAMP_BASE_SUSPEND_50MS	0xA0
 #define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT	0x7D000 /* 16sec */
 #define PCM_TIMER_RAMP_BASE_SUSPEND_LONG	0x927C00 /* 5min */
 static u32 pcm_timer_ramp_max_sec_loop = 1;
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 const char *wakesrc_str[32] = {
 	[0] = " R12_PCMTIMER",
@@ -88,36 +90,6 @@ const char *wakesrc_str[32] = {
 	[31] = " R12_BIT31",
 };
 
-/* CPU_PWR_STATUS */
-#define MP0_CPU0                (1U << 0)
-#define MP0_CPU1                (1U << 1)
-#define MP0_CPU2                (1U << 2)
-#define MP0_CPU3                (1U << 3)
-#define MP1_CPU0                (1U << 4)
-#define MP1_CPU1                (1U << 5)
-#define MP1_CPU2                (1U << 6)
-#define MP1_CPU3                (1U << 7)
-
-unsigned int spm_cpu_bitmask[NR_CPUS] = {
-	MP0_CPU0,
-	MP0_CPU1,
-	MP0_CPU2,
-	MP0_CPU3,
-	MP1_CPU0,
-	MP1_CPU1,
-	MP1_CPU2,
-	MP1_CPU3,
-};
-
-unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
-	MP0_CPU1 |
-	MP0_CPU2 |
-	MP0_CPU3 |
-	MP1_CPU0 |
-	MP1_CPU1 |
-	MP1_CPU2 |
-	MP1_CPU2;
-
 /**************************************
  * Function and API
  **************************************/
@@ -147,6 +119,7 @@ int __spm_check_opp_level(int ch)
 	return level[opp];
 }
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 void __spm_set_cpu_status(int cpu)
 {
 	if (cpu >= 0 && cpu < 4) {
@@ -170,7 +143,6 @@ void __spm_set_cpu_status(int cpu)
 
 static void spm_code_swapping(void)
 {
-#if 1
 	u32 con1;
 	int retry = 0, timeout = 5000;
 
@@ -207,8 +179,6 @@ static void spm_code_swapping(void)
 
 	/* disable pcm timer after leaving FW */
 	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~RG_PCM_TIMER_EN_LSB));
-
-#endif
 }
 
 void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
@@ -519,11 +489,11 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 		((pwrctrl->mcu17_wfi_en & 0x1) << 0));
 	/* Auto-gen End */
 
-	/* for gps only case */
+	/* for gps only case at suspend and sodi3 */
 	if (spm_for_gps_flag) {
 		u32 value;
 
-		spm_crit2("for gps only case\n");
+		/* spm_crit2("for gps only case\n"); */
 		value = spm_read(SPM_CLK_CON);
 		value &= (~(0x1 << 6));
 		value &= (~(0x1 << 13));
@@ -627,6 +597,33 @@ void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 	spm_write(PCM_CON0, con0 | SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB);
 }
 
+void __spm_clean_after_wakeup(void)
+{
+	/* [Vcorefs] can not switch back to POWER_ON_VAL0 here,
+	 * the FW stays in VCORE DVFS which use r0 to Ctrl MEM
+	 */
+	/* disable r0 and r7 to control power */
+	/* spm_write(PCM_PWR_IO_EN, 0); */
+
+	/* clean CPU wakeup event */
+	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
+
+	/* [Vcorefs] not disable pcm timer here, due to the
+	 * following vcore dvfs will use it for latency check
+	 */
+	/* clean PCM timer event */
+	/* spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~RG_PCM_TIMER_EN_LSB)); */
+
+	/* clean wakeup event raw status (for edge trigger event) */
+	spm_write(SPM_WAKEUP_EVENT_MASK, ~0);
+
+	/* clean ISR status (except TWAM) */
+	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
+	spm_write(SPM_IRQ_STA, ISRC_ALL_EXC_TWAM);
+	spm_write(SPM_SWINT_CLR, PCM_SW_INT_ALL);
+}
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+
 void __spm_get_wakeup_status(struct wake_status *wakesta)
 {
 	/* get PC value if PCM assert (pause abort) */
@@ -654,32 +651,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 
 	/* get ISR status */
 	wakesta->isr = spm_read(SPM_IRQ_STA);
-}
-
-void __spm_clean_after_wakeup(void)
-{
-	/* [Vcorefs] can not switch back to POWER_ON_VAL0 here,
-	 * the FW stays in VCORE DVFS which use r0 to Ctrl MEM
-	 */
-	/* disable r0 and r7 to control power */
-	/* spm_write(PCM_PWR_IO_EN, 0); */
-
-	/* clean CPU wakeup event */
-	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
-
-	/* [Vcorefs] not disable pcm timer here, due to the
-	 * following vcore dvfs will use it for latency check
-	 */
-	/* clean PCM timer event */
-	/* spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~RG_PCM_TIMER_EN_LSB)); */
-
-	/* clean wakeup event raw status (for edge trigger event) */
-	spm_write(SPM_WAKEUP_EVENT_MASK, ~0);
-
-	/* clean ISR status (except TWAM) */
-	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
-	spm_write(SPM_IRQ_STA, ISRC_ALL_EXC_TWAM);
-	spm_write(SPM_SWINT_CLR, PCM_SW_INT_ALL);
 }
 
 #define spm_print(suspend, fmt, args...)	\
@@ -747,21 +718,6 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	return wr;
 }
 
-unsigned int spm_get_cpu_pwr_status(void)
-{
-	unsigned int stat = 0;
-	unsigned int ret_stat = 0;
-	int i;
-
-	stat = spm_read(CPU_PWR_STATUS) & spm_cpu_bitmask_all;
-
-	for (i = 0; i < nr_cpu_ids; i++)
-		if (stat & spm_cpu_bitmask[i])
-			ret_stat |= (1 << i);
-
-	return ret_stat;
-}
-
 long int spm_get_current_time_ms(void)
 {
 	struct timeval t;
@@ -799,7 +755,7 @@ void spm_set_dummy_read_addr(int debug)
 		spm_crit("dummy read addr(4GB: %d): rank0: 0x%llx, rank1: 0x%llx\n",
 				enable_4G(), rank0_addr, rank1_addr);
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_write(SPM_PASR_DPD_2, rank0_addr & 0xffffffff);
 	spm_write(SPM_PASR_DPD_3, rank1_addr & 0xffffffff);
 	if ((rank1_addr >> 32) & 0x1)
