@@ -377,6 +377,10 @@ typedef struct {
 #define AFE_INTERNAL_SRAM_VIR_BASE  (AUDIO_HW_VIRTUAL_BASE - 0x70000+0x8000)
 #define AFE_INTERNAL_SRAM_SIZE  (0x9000) /* 36k, for normal mode */
 
+/* APLL clock base */
+#define APLL_44K_BASE (180633600)
+#define APLL_48K_BASE (196608000)
+
 /*****************************************************************************
  *                         M A C R O
  *****************************************************************************/
@@ -405,11 +409,9 @@ typedef struct {
 #define APLL2_CON3 0x02c0
 
 /* move to clksys */
-#ifndef CONFIG_FPGA_EARLY_PORTING /* no cksys in ep */
 #define CLK_AUDDIV_0              (0x0320)
 #define CLK_AUDDIV_1              (0x0324)
 #define CLK_AUDDIV_2              (0x0328)
-#endif
 
 /* audiosys */
 #define AUDIO_TOP_CON0             (AFE_BASE + 0x0000)

@@ -77,7 +77,9 @@
 /*
  *    global variable control
  */
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static DEFINE_SPINLOCK(clksys_set_reg_lock);
+#endif
 static const unsigned int SramCaptureOffSet = (16 * 1024);
 
 static const struct regmap_config mtk_afe_regmap_config = {
@@ -205,6 +207,7 @@ void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask)
 /* function to access clksys */
 unsigned int clksys_get_reg(unsigned int offset)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
 	volatile unsigned int *value;
 
@@ -216,10 +219,14 @@ unsigned int clksys_get_reg(unsigned int offset)
 	value = (volatile unsigned int *)(address);
 	pr_aud("%s offset=%x address = %lx value = 0x%x\n", __func__, offset, address, *value);
 	return *value;
+#else
+	return 0;
+#endif
 }
 
 void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
 	volatile unsigned int *val_addr = (volatile unsigned int *)address;
 	volatile unsigned int val_tmp;
@@ -237,6 +244,7 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 	val_tmp |= (value & mask);
 	mt_reg_sync_writel(val_tmp, val_addr);
 	spin_unlock_irqrestore(&clksys_set_reg_lock, flags);
+#endif
 }
 
 void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
