@@ -48,7 +48,7 @@
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(6) /* phy(4+2) + ext(3+3) */
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12) /* phy(4+2) + ext(3+3) */
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
 #define MEMORY_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
