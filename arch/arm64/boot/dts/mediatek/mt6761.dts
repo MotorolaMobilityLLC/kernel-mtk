@@ -2623,13 +2623,6 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		};
 	};
 
-	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
-		compatible = "mediatek,pmic_clock_buffer";
-		mediatek,clkbuf-quantity = <7>;
-		mediatek,clkbuf-config = <2 1 1 2 0 0 0>;
-		mediatek,clkbuf-driving-current = <1 1 1 1 1 1 1>;
-	};
-
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
