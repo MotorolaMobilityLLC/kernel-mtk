@@ -3,10 +3,8 @@ CONFIG_ACCDET_EINT,PLATFORM,darren.liao,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ACCDET_EINT_IRQ,PLATFORM,darren.liao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ACCDET_SUPPORT_EINT0,PLATFORM,luhua.xu,,X,,,X,,y,y,y,y,X
 CONFIG_ACCDET_SUPPORT_EINT1,PLATFORM,xuexi.bai,,X,X,y,y,X,X,X,X,X,y
+CONFIG_ANDROID_DEFAULT_SETTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_AEABI,PLATFORM,,,y,X,X,X,X,y,y,X,y,X
-CONFIG_ANDROID,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_ANDROID_BINDER_IPC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_ANDROID_LOW_MEMORY_KILLER,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ARCH_MT6580,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ARCH_MT6735,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ARCH_MT6735M,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
@@ -27,16 +25,12 @@ CONFIG_ARM_PSCI,PLATFORM,scott.shu,,y,X,X,X,X,y,y,X,y,X
 CONFIG_ARM_UNWIND,PLATFORM,Ji.Zhang,,N,X,X,X,X,N,N,X,N,X
 CONFIG_ARM64_CRYPTO,PLATFORM,Calvin.Liao,,X,y,y,y,y,X,X,y,X,y
 CONFIG_ARM64_ERRATUM_836870,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
-CONFIG_ARMV8_DEPRECATED,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
-CONFIG_ASHMEM,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ASYMMETRIC_KEY_TYPE,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE,PROJECT,pangyen.chen,,,,,,,,,,,
-CONFIG_AUDIT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_AUTO_ZRELADDR,PLATFORM,,,y,X,X,X,X,X,X,X,X,X
 CONFIG_BACKLIGHT_SUPPORT_LM3697,PROJECT,joan.cho,new config in this commit c1d836e76318074d6d130e603374f18cfca53661,,,,,,,,,,
 CONFIG_BLK_DEV_BSG,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_BLK_DEV_DM,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_BLK_DEV_INITRD,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_BLK_DEV_LOOP,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_BLK_DEV_SD,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_BOUNCE,PLATFORM,miles.chen,,N,N,N,N,N,X,X,N,X,N
@@ -59,14 +53,9 @@ CONFIG_CFG80211_DEFAULT_PS,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_CFG80211_DEVELOPER_WARNINGS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CFG80211_INTERNAL_REGDB,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CFG80211_WEXT,COMMON,Peiyong.Feng,,X,X,X,X,X,X,X,X,X,X
-CONFIG_CGROUP_CPUACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CGROUP_DEBUG,PLATFORM,jing-ting.wu,,y,y,y,y,y,X,y,y,y,y
-CONFIG_CGROUP_FREEZER,COMMON,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CGROUP_SCHED,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CGROUP_SCHEDTUNE,PLATFORM,jing-ting.wu,,X,X,y,y,y,y,y,y,y,y
 CONFIG_CHARGER_RT9458,PROJECT,vend_gene_chen001,,,,,,,,,,,
 CONFIG_CHARGER_RT9465,PROJECT,vend_shufan_lee001,,,,,,,,,,,
-CONFIG_CGROUPS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CLS_U32_MARK,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CLS_U32_PERF,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CMA,PROJECT,Miles.Chen,Specific usage,,,,,,,,,,
@@ -74,18 +63,6 @@ CONFIG_CMA_DEBUG,PROJECT,Miles.Chen,Specific usage,,,,,,,,,,
 CONFIG_CMDLINE,COMMON,,,"console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O ","console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O "
 CONFIG_COMPAT,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
 CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS,COMMON,,,N,N,N,N,N,N,N,N,N,N
-CONFIG_CP15_BARRIER_EMULATION,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
-CONFIG_CPU_FREQ,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_GOV_ONDEMAND,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_GOV_PERFORMANCE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_GOV_POWERSAVE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_GOV_SCHED,PLATFORM,rita.chan,,X,,,,,y,y,,y,
-CONFIG_CPU_FREQ_GOV_SCHEDPLUS,PLATFORM,michael.jiang,,X,X,X,X,y,y,y,y,y,y
-CONFIG_CPU_FREQ_GOV_USERSPACE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPU_FREQ_SCHED_ASSIST,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,X,y,y
-CONFIG_CPU_FREQ_STAT_DETAILS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_CPUSETS,PLATFORM,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CROSS_COMPILE,PLATFORM,,,arm-eabi-,aarch64-linux-android-,aarch64-linux-android-,aarch64-linux-android-,aarch64-linux-android-,arm-eabi-,arm-eabi-,aarch64-linux-android-,arm-eabi-,aarch64-linux-android-
 CONFIG_CRYPTO_AES_ARM,PLATFORM,Calvin.Liao,,y,X,X,X,X,X,X,X,X,X
 CONFIG_CRYPTO_AES_ARM64_CE,PLATFORM,Calvin.Liao,,X,y,y,y,y,X,X,y,X,y
@@ -161,7 +138,6 @@ CONFIG_DMA_API_DEBUG,USER,miles.chen,,X,X,X,X,X,X,X,X,X,X
 CONFIG_DUAL_ROLE_USB_INTF,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_DYNAMIC_DEBUG,PLATFORM,,,y,y,y,y,y,X,y,y,y,y
 CONFIG_EFI,PLATFORM,my.chuang,arm64 only,X,N,N,N,N,X,X,N,X,N
-CONFIG_EMBEDDED,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ENABLE_DEFAULT_TRACERS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ETHERNET,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_EXT4_DEBUG,USER;PROJECT,perry.hsu,nand project,,,,,,,,,,
@@ -224,7 +200,6 @@ CONFIG_HID_TOPSEED,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_HID_TWINHAN,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_HID_ZEROPLUS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_HIDRAW,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_HIGH_RES_TIMERS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_HIGHMEM,PLATFORM,,,y,X,X,X,X,y,y,X,y,X
 CONFIG_HIGHPTE,PLATFORM,miles.chen,,N,X,X,X,X,N,N,X,N,X
 CONFIG_HMP_FREQUENCY_INVARIANT_SCALE,PLATFORM,michael.jiang,,y,y,y,X,X,X,X,X,X,X
@@ -233,20 +208,8 @@ CONFIG_HW_RANDOM,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_HWMON,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_I2C,COMMON,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_IFB,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IKCONFIG,COMMON,jades.shih,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IKCONFIG_PROC,COMMON,jades.shih,,y,y,y,y,y,y,y,y,y,y
 CONFIG_IMGSENSOR_MAIN,PROJECT,josepchi.tsai,,X,X,X,X,X,X,O,O,O,O
 CONFIG_IMGSENSOR_MAIN2,PROJECT,josepchi.tsai,,X,X,X,X,X,X,O,O,O,O
-CONFIG_INET,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET_AH,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET_DIAG_DESTROY,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET_ESP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET_IPCOMP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET_LRO,COMMON,,,N,N,N,N,N,N,N,N,N,N
-CONFIG_INET6_AH,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET6_ESP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET6_IPCOMP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_INPUT_EVDEV,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_INPUT_KEYCHORD,COMMON,Unused,,X,X,X,X,X,X,X,X,X,X
 CONFIG_INPUT_MISC,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -258,46 +221,6 @@ CONFIG_INPUT_TOUCHSCREEN,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_INPUT_UINPUT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ION,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_IOMMU_SUPPORT,COMMON,ning.feng,useless in 71/75,X,X,X,X,X,X,X,X,X,X
-CONFIG_IP_ADVANCED_ROUTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_MROUTE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_MROUTE_MULTIPLE_TABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_MULTICAST,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_MULTIPLE_TABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_ARPTABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_FILTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_IPTABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_MANGLE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_NAT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_RAW,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_TARGET_MASQUERADE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_TARGET_NETMAP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_TARGET_REDIRECT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_TARGET_REJECT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_PIMSM_V1,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_PIMSM_V2,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_PNP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_PNP_BOOTP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_PNP_DHCP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_FILTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_IPTABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_MANGLE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_MATCH_FRAG,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_MATCH_IPV6HEADER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_MATCH_RPFILTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_RAW,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_TARGET_HL,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP6_NF_TARGET_REJECT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6,PROJECT,hw.tung,,X,X,X,,,,,,,
-CONFIG_IPV6_MIP6,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_MROUTE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_MULTIPLE_TABLES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_OPTIMISTIC_DAD,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_PIMSM_V2,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_ROUTE_INFO,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_ROUTER_PREF,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_SIT_6RD,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_SUBTREES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_TUNNEL,COMMON,Zhen.Jiang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ISO9660_FS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_JOLIET,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_KASAN,USER;PROJECT,walter-zh.wu,,X,X,X,O,O,O,O,O,O,O
@@ -331,7 +254,6 @@ CONFIG_MACH_MT6758,PLATFORM,,,X,X,X,X,y,X,X,X,X,X
 CONFIG_MACH_MT6763,PLATFORM,,,X,X,X,y,X,X,X,X,X,X
 CONFIG_MACH_MT6771,PLATFORM,,,X,X,X,X,X,X,y,y,X,X
 CONFIG_MACH_MT6775,PLATFORM,,,X,X,X,X,X,X,X,X,y,y
-CONFIG_MAGIC_SYSRQ,USER,my.chuang,this is COMMON config eng is selected by KGDB,y,y,y,y,y,y,y,y,y,y
 CONFIG_MD,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MEDIATEK_SOLUTION,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MFD_MT6370_PMU,PROJECT,wilma.wu,,O,O,X,O,O,,,O,,O
@@ -710,63 +632,7 @@ CONFIG_MTPROF,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MT_TRUSTY_DEBUGFS,USER;PROJECT,rita.chan,,,,,,,O,O,,O,
 CONFIG_MU3_PHY,PLATFORM,marvin.lin,new config in this commit 9c994a5422e4766902530dd5802569f681162b20,y,y,y,X,y,X,y,y,X,X
 CONFIG_NEON,PLATFORM,,,y,X,X,X,X,y,y,X,y,X
-CONFIG_NET,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_9P,PROJECT,,,X,X,X,O,O,O,O,O,O,O
-CONFIG_NET_ACT_IPT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_ACT_MIRRED,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_ACT_POLICE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_CLS_ACT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_CLS_FLOW,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_CLS_FW,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_CLS_IND,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_CLS_U32,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_IPIP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_KEY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_SCH_HTB,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_SCH_INGRESS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_SCHED,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETDEVICES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_CONNBYTES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_IPRANGE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_LENGTH,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_LIMIT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_MAC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_MARK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_MULTIPORT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_PHYSDEV,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_POLICY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_QTAGUID,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_QUOTA,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_QUOTA2,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_QUOTA2_LOG,COMMON,kang.ouyang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_REALM,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_RECENT,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_SOCKET,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_STATE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_STATISTIC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_STRING,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_TCPMSS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_TIME,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_U32,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_CLASSIFY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_IDLETIMER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_MARK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_NFLOG,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_NFQUEUE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_TCPMSS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETWORK_FILESYSTEMS,COMMON,linger.lee,,N,N,N,N,N,N,N,N,N,N
 CONFIG_NEW_LEDS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_EVENTS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_FTP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_IPV4,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_IPV6,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_PPTP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_SIP,COMMON,kang.ouyang,android recommend not enable. enable this may result in sip packet more than 1538 test fail,X,X,X,X,X,X,X,X,X,X
-CONFIG_NF_CONNTRACK_TFTP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CT_NETLINK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CT_PROTO_UDPLITE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NFC,COMMON,qiuhuan.zhao,we use CONFIG_MTK_NFC_SUPPORT,X,X,X,X,X,X,X,X,X,X
 CONFIG_NFC_MT6605,PROJECT,thomas-ch.chen,,,,,,,,,,,
 CONFIG_NL80211_TESTMODE,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -775,37 +641,22 @@ CONFIG_NLS_CODEPAGE_437,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NLS_CODEPAGE_950,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NLS_ISO8859_1,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NLS_UTF8,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NO_HZ,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NOP_USB_XCEIV,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NR_CPUS,PLATFORM,Frank.Lin,,8,8,10,8,8,X,8,8,8,8
 CONFIG_ONEKEY_REBOOT_NORMAL_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_ONEKEY_REBOOT_OTHER_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_OPROFILE,COMMON,ian-y.chen,,X,X,X,X,X,X,X,X,X,X
-CONFIG_PACKET,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PANIC_ON_OOPS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PANIC_TIMEOUT,USER,my.chuang,,1,1,1,1,1,1,1,1,1,1
 CONFIG_PHYS_OFFSET,PLATFORM,miles.chen,,0x40000000,X,X,X,X,X,X,X,X,X
 CONFIG_PHY_MTK_SSUSB,PLATFORM,arvin.wang,,X,X,X,X,y,X,X,X,X,X
 CONFIG_PM_AUTOSLEEP,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PM_DEVFREQ,PLATFORM,Howard.Hsu,DVFS related options,X,X,X,X,X,X,y,y,y,y
-CONFIG_PM_WAKELOCKS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_POWER_RESET,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_POWER_SUPPLY,PLATFORM,,,X,X,X,X,X,y,y,X,y,X
-CONFIG_PPP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_ASYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_BSDCOMP,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_DEFLATE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_FILTER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_MPPE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_MULTILINK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPP_SYNC_TTY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPPOE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPPOLAC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PPPOPNS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PREEMPT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PREEMPT_MONITOR,USER;PROJECT,kobe-cp.wu,,X(USER),X(USER),X(USER),X(USER),X(USER),X(USER),X(USER),X(USER),X(USER),X(USER)
 CONFIG_PRINTK_TIME,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_PROFILING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PROJECT_PHY,PLATFORM,marvin.lin,,y,y,y,X,X,X,y,y,X,X
 CONFIG_PROVE_LOCKING,USER;PROJECT,kobe-cp.wu,,X,X,X,X,X,X,X,X,X,X
 CONFIG_PSTORE,COMMON,ji.zhang,,y,y,y,y,y,y,y,y,y,y
@@ -835,9 +686,7 @@ CONFIG_RT5081_PMU_LDO,PROJECT,vend_gene_chen001,,O,O,X,O,O,O,O,O,O,O
 CONFIG_RT7207_ADAPTER,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_RT9465_PWR_EN_TO_MT6336,PROJECT,,,,,,O,,,,O,,O
 CONFIG_RT_FLASHLIGHT,PROJECT,simon-tch.wang,,y,y,X,y,y,y,y,y,y,y
-CONFIG_RT_GROUP_SCHED,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_RT_REGMAP,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
-CONFIG_RTC_CLASS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_RTC_SYSTOHC,COMMON,,,N,N,N,N,N,N,N,N,N,N
 CONFIG_SCHED_HMP,PLATFORM,yt.chang,new config in this commit 1d29c1469e7c1f7b410b1694eff82ee1376d3933,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCHED_HMP_PLUS,PLATFORM,yt.chang,new config in this commit 1d29c1469e7c1f7b410b1694eff82ee1376d3933,y,y,y,y,y,y,y,y,y,y
@@ -850,14 +699,8 @@ CONFIG_SCSI,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCSI_LOWLEVEL,PROJECT,chun-hung.wu,,N,N,O,,,,,,,
 CONFIG_SCSI_SCAN_ASYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SDCARD_FS,PROJECT,perry.hsu,new config in this commit f8cb18613009e6d05030b8866b8347ee5fddbdf4,X,X,X,,,,,,,
-CONFIG_SECCOMP,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SECTION_MISMATCH_WARN_ONLY,COMMON,jades.shih,force build error if section mismatch,,,,X,,,,X,,X
-CONFIG_SECURITY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SECURITY_NETWORK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SECURITY_SELINUX,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SECURITY_SELINUX_BOOTPARAM,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SERIO,COMMON,Unused,,N,N,N,N,N,N,N,N,N,N
-CONFIG_SETEND_EMULATION,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
 CONFIG_SLUB_DEBUG,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SLUB_DEBUG_ON,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SLOB,PROJECT,miles.chen,,X,X,X,X,X,X,X,X,X,X
@@ -886,13 +729,10 @@ CONFIG_SOUND_PRIME,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SPECIFY_IMGSENSOR,PROJECT,josepchi.tsai,,X,X,X,X,X,X,O,O,O,O
 CONFIG_SPI,COMMON,Freddy.Hsin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SPI_MT65XX,PLATFORM,Freddy.Hsin,,X,X,X,X,y,y,y,y,y,y
-CONFIG_STAGING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SW_SYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SW_SYNC_USER,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SWITCH,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SWP_EMULATION,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
 CONFIG_SYN_COOKIES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SYSCTL_SYSCALL,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TCPC_CLASS,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_TCPC_RT1711H,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
@@ -914,7 +754,6 @@ CONFIG_TRUSTONIC_TEE_SUPPORT,PROJECT,tryout.chen,,,,,,,,,,,
 CONFIG_TRUSTONIC_TRUSTED_UI,PROJECT,weiguo.li,new config in this commit,,,,,,,,,,
 CONFIG_TRUSTY,PROJECT,tristan.shieh,,,,,,,,,,,
 CONFIG_TRUSTY_INTERRUPT_MAP,PROJECT,tristan.shieh,,X,X,X,X,O,O,O,X,O,X
-CONFIG_TUN,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TWOKEY_REBOOT_NORMAL_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_TWOKEY_REBOOT_OTHER_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_U3_PHY_AHB_SUPPORT,PLATFORM,marvin.lin,,y,y,y,X,y,X,y,y,X,X
@@ -923,8 +762,6 @@ CONFIG_UBIFS_FS,PROJECT,linger.lee,,,,,,,,,,,
 CONFIG_UBIFS_FS_ADVANCED_COMPR,PROJECT,linger.lee,,,,,,,,,,,
 CONFIG_UBIFS_FS_LZ4K,PROJECT,linger.lee,,,,,,,,,,,
 CONFIG_UHID,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_UID_SYS_STATS,COMMON,May.Huang,new config db35d391a485746c9a12f4413a17961a94792323,y,y,y,y,y,y,y,y,y,y
-CONFIG_UNIX,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_ACM,COMMON,Arvin.Wang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_C_SWITCH_U3_MUX,PLATFORM,eddie.hung,,X,X,X,X,y,X,y,y,X,X
@@ -933,8 +770,6 @@ CONFIG_USB_C_SWITCH_SII70XX,PROJECT,justin.hsieh,new config in this commit 7ddbc
 CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE,COMMON,chihhao.chen,new config in this commit 57c8a01463206721e18e958ecbc0692d08cf01eb,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_C_SWITCH_MT6336,PROJECT,justin.hsieh,,X,X,O,,,,,,,
 CONFIG_USB_G_ANDROID,PLATFORM,,,y,y,y,y,y,y,y,y,X,X
-CONFIG_USB_GADGET,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_GADGET_VBUS_DRAW,PLATFORM,marvin.lin,,500,500,500,500,500,500,500,500,X,X
 CONFIG_USB_MTK_DUALMODE,PROJECT,Arvin.Wang,,,,,,,,,,,
 CONFIG_USB_MTK_IDDIG,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,,,,,,,,,,
 CONFIG_USB_MTK_OTG_SWITCH,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,O,O,O,,,,,,,
@@ -989,7 +824,6 @@ CONFIG_DMAUSER_PAGES,PROJECT,Miles.Chen,new config 246784055571763c932926925ddb5
 CONFIG_DRM,PLATFORM,vincent.sung,whitney gpu requirement,X,X,y,X,X,X,X,X,X,X
 CONFIG_MTK_PQ_COLOR_MODE,PROJECT,Yj.li, new config I1b7b0441f385f77703b529b6efe6b78d122676b1,O,O,O,,,,,,,
 CONFIG_MTK_PERIODIC_DATA_COLLECTION,PROJECT,,,y,y,y,,,,,,,
-CONFIG_ANDROID_INTF_ALARM_DEV,PROJECT,,,y,y,y,,,,,,,
 CONFIG_DM_VERITY_FEC,PROJECT,pangyen.chen, new config I1b7b0441f385f77703b529b6efe6b78d122676b1,y,y,y,X,y,X,X,X,y,y
 CONFIG_MTK_DM_VERITY_OFF,PROJECT,denis.hsu,set Y for A-GO,O,O,O,O,O,O,O,O,O,O
 CONFIG_ARM_CRYPTO,PROJECT,Calvin.Liao,,y,N,N,,,y,y,,y,
@@ -1057,7 +891,6 @@ CONFIG_MTK_WATCHDOG_COMMON,PLATFORM,zh.chen,,X,X,X,y,X,y,y,y,y,X
 CONFIG_MTK_WATCHDOG_COMMON_V2,PLATFORM,zh.chen,,X,X,X,y,X,y,y,y,y,X
 CONFIG_MNTL_SUPPORT,PROJECT,isaac.lee,,X,X,X,X,X,O,O,X,O,X
 CONFIG_MTK_NAND_BITFLIP,PROJECT,chienwei.chang,,X,X,X,X,X,O,O,X,O,X
-CONFIG_HARDENED_USERCOPY,COMMON,Yun.Hsiang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_LATE_MOUNT,PROJECT,juju.sung,,N,N,N,N,N,,,N,,N
 CONFIG_TARGET_COPY_OUT_ODM,PROJECT,lucas-sr.wei,,y,y,y,y,y,,,y,,y
 CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT,PROJECT,marvin.lin,,,,,,,,,,,
@@ -1074,49 +907,13 @@ CONFIG_DM_ANDROID_VERITY,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_MTK_AKM09911,PROJECT,jy.lan,,,,,,,,,,,
 CONFIG_MTK_SENSORS_1_0,PROJECT,jy.lan,,,,,,,,,,,
 CONFIG_QUOTA_NETLINK_INTERFACE,COMMON,Light.Hsieh,File System default enable in Android O,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_ARPFILTER,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_ARP_MANGLE,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_MATCH_AH,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_MATCH_ECN,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_MATCH_TTL,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IP_NF_SECURITY,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_EMATCH,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NET_EMATCH_U32,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_COMMENT,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_CONNLIMIT,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_CONNMARK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_CONNTRACK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_HASHLIMIT,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_HELPER,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_PKTTYPE,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_MATCH_PHYSDEV,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_CONNMARK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_CONNSECMARK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_SECMARK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_TPROXY,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NETFILTER_XT_TARGET_TRACE,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_AMANDA,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_H323,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_IRC,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_NETBIOS_NS,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_SANE,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CONNTRACK_SECMARK,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CT_PROTO_DCCP,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NF_CT_PROTO_SCTP,COMMON,Zhuoliang.Zhang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_RANDOMIZE_BASE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SECURITY_PERF_EVENTS_RESTRICT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_CONFIGFS_F_ACC,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_CONFIGFS_F_AUDIO_SRC,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_CONFIGFS_F_FS,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_CONFIGFS_F_MIDI,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_MTP,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_PTP,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_CONFIGFS_UEVENT,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USELIB,COMMON,sophie.wang,File System,N,N,N,N,N,N,N,N,N,N
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
-CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,hongxu.zhao,timer,X,X,X,y,X,X,y,y,y,y
