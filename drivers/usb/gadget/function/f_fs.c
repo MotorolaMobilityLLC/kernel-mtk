@@ -729,6 +729,27 @@ static void abortion_user(void)
 	schedule_delayed_work(&abortion_work, msecs_to_jiffies(ABORTION_WORK_DELAY));
 }
 
+static int write_in;
+static int write_out;
+#define ADB_WRITE_MONITOR_DELAY 5000
+static struct delayed_work adb_write_monitor_work;
+static void do_adb_write_monitor_work(struct work_struct *work)
+{
+	static int state;
+	static int last_write_in;
+
+	if ((write_in != write_out) && (last_write_in == write_in)) {
+		if (state == 2)
+			pr_notice("USB write stuck, <%d,%d,%d>\n",
+					write_in, write_out, last_write_in);
+		else
+			state++;
+	} else
+		state = 0;
+
+	last_write_in = write_in;
+	schedule_delayed_work(&adb_write_monitor_work, msecs_to_jiffies(ADB_WRITE_MONITOR_DELAY));
+}
 static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 {
 	struct ffs_epfile *epfile = file->private_data;
@@ -913,6 +934,17 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 				req->context  = done;
 			}
 
+			if (!io_data->read) {
+				static bool inited;
+
+				if (!inited) {
+					INIT_DEFERRABLE_WORK(&adb_write_monitor_work, do_adb_write_monitor_work);
+					schedule_delayed_work(&adb_write_monitor_work, 0);
+					inited = true;
+				}
+				write_in++;
+			}
+
 			ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
 
 			if (!io_data->read)
@@ -981,6 +1013,8 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 						ret = -EFAULT;
 				}
 			}
+			if (!io_data->read)
+				write_out++;
 			kfree(data);
 		}
 	}
