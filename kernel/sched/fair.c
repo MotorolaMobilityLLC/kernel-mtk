@@ -5552,10 +5552,23 @@ unsigned long group_max_util(struct energy_env *eenv)
 {
 	int i, delta;
 	unsigned long max_util = 0;
+	unsigned long task_delta = task_util(eenv->task);
+	unsigned long cpu_util;
 
 	for_each_cpu(i, sched_group_cpus(eenv->sg_cap)) {
+
 		delta = calc_util_delta(eenv, i);
-		max_util = max(max_util, __cpu_util(i, delta));
+
+		if (i == eenv->src_cpu) {
+			cpu_util = __src_cpu_util(i, delta, task_delta);
+			max_util = max(max_util, cpu_util);
+		} else {
+			max_util = max(max_util, __cpu_util(i, delta));
+		}
+
+		mt_sched_printf(sched_eas_energy_calc,
+			"%s: cpu=%d cpu_util=%d task_delta=%d",
+			__func__, i, (int)__cpu_util(i, delta), delta);
 	}
 
 	return max_util;
@@ -5576,10 +5589,19 @@ long group_norm_util(struct energy_env *eenv, struct sched_group *sg)
 	int i, delta;
 	unsigned long util_sum = 0;
 	unsigned long capacity = sg->sge->cap_states[eenv->cap_idx].cap;
+	unsigned long task_delta = task_util(eenv->task);
 
 	for_each_cpu(i, sched_group_cpus(sg)) {
 		delta = calc_util_delta(eenv, i);
-		util_sum += __cpu_norm_util(i, capacity, delta);
+		if (i == eenv->src_cpu)
+			util_sum += __src_cpu_norm_util(i, capacity,
+							delta, task_delta);
+		else
+			util_sum += __cpu_norm_util(i, capacity, delta);
+		mt_sched_printf(sched_eas_energy_calc,
+			"%s: cpu=%d norm_util=%d delta=%d target_cap=%d curr_cap=%d ",
+			__func__, i, (int)__cpu_norm_util(i, capacity, delta),
+			delta, (int)capacity, (int)capacity_curr_of(i));
 	}
 
 	if (util_sum > SCHED_CAPACITY_SCALE)
@@ -5867,6 +5889,7 @@ static inline int __energy_diff(struct energy_env *eenv)
 		.util_delta	= 0,
 		.src_cpu	= eenv->src_cpu,
 		.dst_cpu	= eenv->dst_cpu,
+		.task           = eenv->task,
 		.nrg		= { 0, 0, 0, 0},
 		.cap		= { 0, 0, 0 },
 	};
@@ -6792,6 +6815,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 		return -1;
 	}
 
+
 	/* Scan CPUs in all SDs */
 	sg = sd->groups;
 	do {
@@ -6983,6 +7007,9 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 
 	} while (sg = sg->next, sg != sd->groups);
 
+	if (target_capacity >= best_idle_min_cap_orig)
+		target_cpu = best_idle_cpu;
+
 	/*
 	 * For non latency sensitive tasks, cases B and C in the previous loop,
 	 * we pick the best IDLE CPU only if we was not able to find a target
@@ -7094,6 +7121,9 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 			goto unlock;
 		}
 	}
+
+	if (task_util(p) <= 0)
+		goto unlock;
 
 	if (target_cpu != prev_cpu) {
 		struct energy_env eenv = {
