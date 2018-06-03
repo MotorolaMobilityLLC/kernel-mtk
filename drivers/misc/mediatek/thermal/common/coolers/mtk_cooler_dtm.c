@@ -38,10 +38,11 @@
 #include "mtk_cpufreq.h"
 #endif
 #include <linux/uidgid.h>
+#if defined(THERMAL_VPU_SUPPORT)
 #if defined(CONFIG_MTK_VPU_SUPPORT)
 #include "vpu_dvfs.h"
 #endif
-
+#endif
 /*=============================================================
  *Local variable definition
  *=============================================================
