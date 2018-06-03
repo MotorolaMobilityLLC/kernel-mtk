@@ -179,10 +179,13 @@ config CUSTOM_KERNEL_CAM_CAL_DRV
 
 config MTK_SEC_VIDEO_PATH_SUPPORT
 	bool "Enable MTK Secure Video Path Support"
+	default n
 	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY) || (MICROTRUST_TEE_SUPPORT)
 	help
-	  This enable MTK Secure Video Path Support. (depending on
-	  MTK In-House TEE Support or Trustonic TEE Support)
+	  This enable MTK Secure Video Path Support.
+	  depending on
+	  MTK In-House TEE Support
+	  or Trustonic TEE Support
 
 config MTK_TEE_GP_SUPPORT
 	bool "Enable MTK GlobalPlatform support in TEE related modules"
