@@ -557,6 +557,23 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
 #endif
+	{
+		.name = "Voice_USB",
+		.stream_name = MT_SOC_VOICE_USB_STREAM_NAME,
+		.cpu_dai_name	= "snd-soc-dummy-dai",
+		.platform_name	= MT_SOC_VOICE_USB,
+		.codec_dai_name = MT_SOC_CODEC_VOICE_USBDAI_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+	},
+	{
+		.name = "Voice_USB_ECHOREF",
+		.stream_name = MT_SOC_VOICE_USB_ECHOREF_STREAM_NAME,
+		.cpu_dai_name	= "snd-soc-dummy-dai",
+		.platform_name	= MT_SOC_VOICE_USB_ECHOREF,
+		.codec_dai_name = MT_SOC_CODEC_VOICE_USB_ECHOREF_DAI_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+		.playback_only = true,
+	},
 };
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {

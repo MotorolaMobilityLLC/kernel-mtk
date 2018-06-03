@@ -308,6 +308,7 @@ bool ConditionEnterSuspend(void)
 bool get_internalmd_status(void)
 {
 	bool ret = (get_voice_bt_status() ||
+		    get_voice_usb_status() ||
 		    get_voice_status() ||
 		    get_voice_md2_status() ||
 		    get_voice_md2_bt_status());
@@ -1621,6 +1622,30 @@ bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
 	return true;
 }
 
+int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size)
+{
+	if (pbuf_size >= 0 && pbuf_size < MEMIF_PBUF_SIZE_NUM) {
+		pr_err("%s(), invalid pbuf_size %d\n", __func__, pbuf_size);
+		return -EINVAL;
+	}
+
+	switch (aud_blk) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, pbuf_size << 0, 0x3 << 0);
+		Afe_Set_Reg(AFE_MEMIF_MINLEN, pbuf_size << 0, 0xf << 0);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, pbuf_size << 2, 0x3 << 2);
+		Afe_Set_Reg(AFE_MEMIF_MINLEN, pbuf_size << 8, 0xf << 8);
+		break;
+	default:
+		pr_err("%s(): invalid aud_blk %d\n", __func__, aud_blk);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 /*****************************************************************************
  * FUNCTION
  *  AudDrv_Allocate_DL1_Buffer / AudDrv_Free_DL1_Buffer
@@ -2042,6 +2067,15 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	if (Mem_Block == NULL)
 		return;
 
+	if (get_voice_usb_status() &&
+	    GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1)) {
+		if (Mem_Block->substreamL != NULL) {
+			if (Mem_Block->substreamL->substream != NULL)
+				snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+		}
+		return;
+	}
+
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false) {
@@ -2172,7 +2206,10 @@ void Auddrv_DL2_Interrupt_Handler(void)
 		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
 	}
 
-	Afe_consumed_bytes = Afe_consumed_bytes & MAGIC_NUMBER;	/* 64 bytes align */
+	if (get_voice_usb_status())
+		Afe_consumed_bytes = Afe_consumed_bytes & 0xFFFFFFF8;	/* 8 bytes align */
+	else
+		Afe_consumed_bytes = Afe_consumed_bytes & MAGIC_NUMBER;	/* 64 bytes align */
 
 	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
 	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
