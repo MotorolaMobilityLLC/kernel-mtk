@@ -1892,7 +1892,8 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
 		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
 		 */
-		queue_work(hba->pd_wq, &hba->wait_vbus_off_then_drive_attached_src);
+		if (hba->task_state != PD_STATE_SNK_SWAP_STANDBY)
+			queue_work(hba->pd_wq, &hba->wait_vbus_off_then_drive_attached_src);
 	}
 
 	/*transition from Attached.SRC to TryWait.SNK*/
