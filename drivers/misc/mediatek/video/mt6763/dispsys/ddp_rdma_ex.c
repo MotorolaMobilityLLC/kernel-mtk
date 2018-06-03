@@ -249,11 +249,14 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
+	unsigned long long consume_rate_div_tmp = 0;
+	unsigned int consume_rate_div = 0;
 	unsigned int fifo_valid_size = 320;
 	unsigned int fifo_off_drs_enter = 0;
 	unsigned int fifo_off_drs_leave = 0;
 	unsigned int fifo_off_spm = 0;  /*SPM latency*/
 	unsigned int fifo_off_dvfs = 0;
+	unsigned int fifo_off_ultra = 0;
 
 	/* working variables */
 	unsigned int preultra_low;
@@ -268,6 +271,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	unsigned int drs_leave = 0;
 
 	unsigned int issue_req_threshold;
+	unsigned int issue_req_offset;
 	unsigned int output_valid_fifo_threshold;
 
 	unsigned int sodi_threshold_high;
@@ -337,7 +341,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		fifo_off_drs_enter = 4;
 		fifo_off_drs_leave = 1;
 		fifo_off_spm = 50; /* 10 times*/
-		fifo_off_dvfs = 4;
+		fifo_off_dvfs = 2;
+		fifo_off_ultra = 2;
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
 				*frame_rate * Bytes_per_sec;
 		do_div(consume_rate, 1000);
@@ -347,6 +352,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		fifo_off_drs_leave = 0;
 		fifo_off_spm = 14; /* 10 times*/
 		fifo_off_dvfs = 2;
+		fifo_off_ultra = 0;
 		consume_rate = rdma_golden_setting->ext_dst_width
 				* rdma_golden_setting->ext_dst_height*frame_rate*Bytes_per_sec;
 
@@ -354,27 +360,29 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	}
 	consume_rate *= 1250;
 	do_div(consume_rate, 16*1000);
+	consume_rate_div_tmp = consume_rate;
+	do_div(consume_rate_div_tmp, 100);
+	consume_rate_div = DIV_ROUND_UP((unsigned int)consume_rate_div_tmp, 10);
 
-	preultra_low = (preultra_low_us + 2) * consume_rate;
-	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+	preultra_low = (preultra_low_us + fifo_off_ultra) * consume_rate_div;
 
-	preultra_high = (preultra_high_us + 2) * consume_rate;
-	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+	preultra_high = (preultra_high_us + fifo_off_ultra) * consume_rate_div;
 
-	ultra_low = (ultra_low_us + 2) * consume_rate;
-	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+	ultra_low = (ultra_low_us + fifo_off_ultra) * consume_rate_div;
 
 	ultra_high = preultra_low;
 	if (idx == 0) {
 		/* only rdma0 can share sram */
+		issue_req_offset = preultra_low_us * consume_rate_div;
 		if (is_wrot_sram)
 			fifo_valid_size = 2048;
 		else
 			fifo_valid_size = 320;
 	} else {
+		issue_req_offset = preultra_low;
 		fifo_valid_size = 128;
 	}
-	issue_req_threshold = min(fifo_valid_size - preultra_low, (unsigned int)255);
+	issue_req_threshold = min(fifo_valid_size - issue_req_offset, (unsigned int)255);
 
 	/* output valid should < total rdma data size, or hang will happen */
 	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * Bytes_per_sec;
@@ -419,14 +427,11 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		dvfs_threshold_low | (dvfs_threshold_high << 16));
 
 	/*DISP_RDMA_DVFS_SETTING_PREULTRA*/
-	dvfs_preultra_low = (preultra_low_us + fifo_off_dvfs) * consume_rate;
-	dvfs_preultra_low = DIV_ROUND_UP(dvfs_preultra_low, 1000);
+	dvfs_preultra_low = (preultra_low_us + fifo_off_dvfs) * consume_rate_div;
 
-	dvfs_preultra_high = (preultra_high_us + fifo_off_dvfs) * consume_rate;
-	dvfs_preultra_high = DIV_ROUND_UP(dvfs_preultra_high, 1000);
+	dvfs_preultra_high = (preultra_high_us + fifo_off_dvfs) * consume_rate_div;
 
-	dvfs_ultra_low = (ultra_low_us + fifo_off_dvfs) * consume_rate;
-	dvfs_ultra_low = DIV_ROUND_UP(dvfs_ultra_low, 1000);
+	dvfs_ultra_low = (ultra_low_us + fifo_off_dvfs) * consume_rate_div;
 
 	dvfs_ultra_high = dvfs_preultra_low;
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_DVFS_SETTING_PRE,
@@ -486,7 +491,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		DDPDBG("drs_enter	= %d\n", drs_enter);
 		DDPDBG("drs_leave	= %d\n", drs_leave);
 	}
-
 }
 
 #else
