@@ -586,7 +586,7 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 	static int last_cpu_real_temp;
 #endif
 #if THERMAL_LT_SET_HPM
-	int vcore_temp, vcore_r;
+	int ts_temp, r;
 #endif
 
 #ifdef FAST_RESPONSE_ATM
@@ -626,16 +626,16 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 
 #if THERMAL_LT_SET_HPM
 	if (enable_hpm_temp) {
-		vcore_temp = get_immediate_ts4_wrap();
-		if (vcore_temp > leave_hpm_temp) {
+		ts_temp = get_immediate_ts4_wrap();
+		if (ts_temp > leave_hpm_temp) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_UNREQ) {
-				tscpu_warn("setVcore: vcore_temp=%d leave HPM\n", vcore_temp);
-				vcore_r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_UNREQ);
+				tscpu_warn("ts4: temp=%d leave HPM\n", ts_temp);
+				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_UNREQ);
 			}
-		} else if (vcore_temp < enter_hpm_temp) {
+		} else if (ts_temp < enter_hpm_temp) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_PERF) {
-				tscpu_warn("setVcore: vcore_temp=%d enter HPM\n", vcore_temp);
-				vcore_r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_PERF);
+				tscpu_warn("ts4: temp=%d enter HPM\n", ts_temp);
+				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_PERF);
 			}
 		}
 	}
@@ -1160,17 +1160,17 @@ static ssize_t tscpu_write_fastpoll(struct file *file, const char __user *buffer
 #endif
 
 #if THERMAL_LT_SET_HPM
-static int tscpu_read_setVcore(struct seq_file *m, void *v)
+static int tscpu_read_ts4(struct seq_file *m, void *v)
 {
-	int vcore_temp = get_immediate_ts4_wrap();
+	int ts_temp = get_immediate_ts4_wrap();
 
-	seq_printf(m, "vcore_temp: %d\n", vcore_temp);
+	seq_printf(m, "ts4_temp: %d\n", ts_temp);
 	seq_printf(m, "enter_hpm: %d leave_hpm: %d enable: %d\n",
 			enter_hpm_temp, leave_hpm_temp, enable_hpm_temp);
 	return 0;
 }
 
-static ssize_t tscpu_write_setVcore(struct file *file, const char __user *buffer, size_t count,
+static ssize_t tscpu_write_ts4(struct file *file, const char __user *buffer, size_t count,
 				    loff_t *data)
 {
 	char desc[128];
@@ -1190,22 +1190,22 @@ static ssize_t tscpu_write_setVcore(struct file *file, const char __user *buffer
 	} else if (sscanf(desc, "%d %d", &trip1, &trip2) == 2) {
 		set_enable = 0;
 	} else {
-		tscpu_warn("tscpu_write_setVcore bad argument\n");
+		tscpu_warn("tscpu_write_ts4 bad argument\n");
 		return -EINVAL;
 	}
 
 	if ((trip1 >= 0) && (trip2 >= 0)) {
 		enter_hpm_temp = trip1;
 		leave_hpm_temp = trip2;
-		tscpu_warn("tscpu_write_setVcore applied enter_hpm: %d , leave_hpm: %d\n",
+		tscpu_warn("tscpu_write_ts4 applied enter_hpm: %d , leave_hpm: %d\n",
 				enter_hpm_temp, leave_hpm_temp);
 	} else {
-		tscpu_warn("tscpu_write_setVcore out of range\n");
+		tscpu_warn("tscpu_write_ts4 out of range\n");
 	}
 
 	if (set_enable) {
 		enable_hpm_temp = !!(enable);
-		tscpu_warn("tscpu_write_setVcore enable: %d (%d)\n", enable_hpm_temp, enable);
+		tscpu_warn("tscpu_write_ts4 enable: %d (%d)\n", enable_hpm_temp, enable);
 	}
 
 	return count;
@@ -2006,17 +2006,17 @@ static const struct file_operations mtktscpu_fastpoll_fops = {
 
 
 #if THERMAL_LT_SET_HPM
-static int tscpu_setVcore_open(struct inode *inode, struct file *file)
+static int tscpu_ts4_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, tscpu_read_setVcore, NULL);
+	return single_open(file, tscpu_read_ts4, NULL);
 }
 
-static const struct file_operations mtktscpu_setVcore_fops = {
+static const struct file_operations mtktscpu_ts4_fops = {
 	.owner = THIS_MODULE,
-	.open = tscpu_setVcore_open,
+	.open = tscpu_ts4_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.write = tscpu_write_setVcore,
+	.write = tscpu_write_ts4,
 	.release = single_release,
 };
 #endif
@@ -2512,8 +2512,8 @@ static void tscpu_create_fs(void)
 #endif
 #if THERMAL_LT_SET_HPM
 		entry =
-		    proc_create("tzcpu_setVcore", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir,
-				&mtktscpu_setVcore_fops);
+		    proc_create("tzcpu_ts4", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir,
+				&mtktscpu_ts4_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif
