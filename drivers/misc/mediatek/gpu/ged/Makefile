@@ -36,7 +36,8 @@ ccflags-y += \
 	     -I$(srctree)/drivers/misc/mediatek/video/include \
 	     -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox \
 	     -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys \
-		 -I$(srctree)/drivers/misc/mediatek/lcm/inc/
+		 -I$(srctree)/drivers/misc/mediatek/lcm/inc/ \
+         -I$(srctree)/drivers/misc/mediatek/dfrc/
 
 ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
 ccflags-y += \

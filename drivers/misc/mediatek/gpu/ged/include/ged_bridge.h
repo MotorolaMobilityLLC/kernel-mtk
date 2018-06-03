@@ -57,6 +57,7 @@ typedef enum
     GED_BRIDGE_COMMAND_DVFS_UM_RETURN,
 	GED_BRIDGE_COMMAND_EVENT_NOTIFY,
 	GED_BRIDGE_COMMAND_WAIT_HW_VSYNC,
+	GED_BRIDGE_COMMAND_QUERY_TARGET_FPS,
 	GED_BRIDGE_COMMAND_GE_ALLOC = 100,
 	GED_BRIDGE_COMMAND_GE_RETAIN,
 	GED_BRIDGE_COMMAND_GE_RELEASE,
@@ -83,6 +84,7 @@ typedef enum
 #define GED_BRIDGE_IO_GE_GET                GED_IOWR(GED_BRIDGE_COMMAND_GE_GET)
 #define GED_BRIDGE_IO_GE_SET                GED_IOWR(GED_BRIDGE_COMMAND_GE_SET)
 #define GED_BRIDGE_IO_WAIT_HW_VSYNC			GED_IOWR(GED_BRIDGE_COMMAND_WAIT_HW_VSYNC)
+#define GED_BRIDGE_IO_QUERY_TARGET_FPS			GED_IOWR(GED_BRIDGE_COMMAND_QUERY_TARGET_FPS)
 #define GED_BRIDGE_IO_GPU_TIMESTAMP			GED_IOWR(GED_BRIDGE_COMMAND_GPU_TIMESTAMP)
 #define GED_BRIDGE_IO_TARGET_FPS			GED_IOWR(GED_BRIDGE_COMMAND_TARGET_FPS)
 
@@ -169,15 +171,12 @@ typedef struct GED_BRIDGE_OUT_BOOSTGPUFREQ_TAG
 typedef struct GED_BRIDGE_IN_MONITOR3DFENCE_TAG
 {
     int fd;
-	int pid; /* For FRR 2.0 */
-	uint64_t cid; /* For FRR 2.0 */
 } GED_BRIDGE_IN_MONITOR3DFENCE;
 
 /* Bridge out structure for MONITOR3DFENCE */
 typedef struct GED_BRIDGE_OUT_MONITOR3DFENCE_TAG
 {
     GED_ERROR eError;
-	int fps; /* For FRR 2.0 */
 } GED_BRIDGE_OUT_MONITOR3DFENCE;
 
 /*****************************************************************************
@@ -378,6 +377,18 @@ typedef struct GED_BRIDGE_OUT_TARGET_FPS {
 } GED_BRIDGE_OUT_TARGET_FPS;
 
 /*****************************************************************************
+ *  QUERY_TARGET_FPS (for FRR20)
+ *****************************************************************************/
+typedef struct GED_BRIDGE_IN_QUERY_TARGET_FPS_TAG {
+	int pid;
+	uint64_t cid;
+} GED_BRIDGE_IN_QUERY_TARGET_FPS;
+
+typedef struct GED_BRIDGE_OUT_QUERY_TARGET_FPS_TAG {
+	int fps;
+} GED_BRIDGE_OUT_QUERY_TARGET_FPS;
+
+/*****************************************************************************
  *  BRIDGE FUNCTIONS
  *****************************************************************************/
 
@@ -450,4 +461,9 @@ int ged_bridge_target_fps(
 	GED_BRIDGE_OUT_TARGET_FPS *out);
 
 int ged_bridge_wait_hw_vsync(void);
+
+int ged_bridge_query_target_fps(
+	GED_BRIDGE_IN_QUERY_TARGET_FPS * in,
+	GED_BRIDGE_OUT_QUERY_TARGET_FPS *out);
+
 #endif
