@@ -18,6 +18,7 @@
 #include <mtk_idle_mcdi.h>
 
 #include <mtk_mcdi.h>
+#include <mtk_mcdi_governor.h>
 #include <mtk_mcdi_mbox.h>
 #include <mtk_mcdi_state.h>
 
@@ -52,11 +53,41 @@ struct mcdi_gov {
 	struct mcdi_status status[NF_CPU];
 };
 
+static unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
+static DEFINE_SPINLOCK(any_core_cpu_cond_spin_lock);
+
 static struct mcdi_gov mcdi_gov_data;
 
 static DEFINE_SPINLOCK(mcdi_gov_spin_lock);
 
 static int mcdi_residency_latency[NF_CPU];
+
+void any_core_cpu_cond_inc(int idx)
+{
+	unsigned long flags;
+
+	if (!(idx >= 0 && idx < NF_ANY_CORE_CPU_COND_INFO))
+		return;
+
+	spin_lock_irqsave(&any_core_cpu_cond_spin_lock, flags);
+
+	any_core_cpu_cond_info[idx]++;
+
+	spin_unlock_irqrestore(&any_core_cpu_cond_spin_lock, flags);
+}
+
+void any_core_cpu_cond_get(unsigned long buf[NF_ANY_CORE_CPU_COND_INFO])
+{
+	unsigned long flags;
+	int i;
+
+	spin_lock_irqsave(&any_core_cpu_cond_spin_lock, flags);
+
+	for (i = 0; i < NF_ANY_CORE_CPU_COND_INFO; i++)
+		buf[i] = any_core_cpu_cond_info[i];
+
+	spin_unlock_irqrestore(&any_core_cpu_cond_spin_lock, flags);
+}
 
 static inline unsigned long long idle_get_current_time_us(void)
 {
@@ -221,12 +252,18 @@ int any_core_deepidle_sodi_check(int cpu)
 #endif
 
 	/* Check power ON CPU status from SSPM */
-	if (!mcdi_cpu_cluster_on_off_stat_check(cpu))
+	if (!mcdi_cpu_cluster_on_off_stat_check(cpu)) {
+		any_core_cpu_cond_inc(CPU_ONOFF_STAT_FAIL_CNT);
 		goto end;
+	}
 
 	/* Check residency */
-	if (!any_core_deepidle_sodi_residency_check(cpu))
+	if (!any_core_deepidle_sodi_residency_check(cpu)) {
+		any_core_cpu_cond_inc(RESIDENCY_FAIL_CNT);
 		goto end;
+	}
+
+	any_core_cpu_cond_inc(CPU_COND_PASS_CNT);
 
 	state = MCDI_STATE_CLUSTER_OFF;
 
@@ -242,10 +279,9 @@ end:
 }
 
 /* Select deepidle/SODI/cluster OFF/CPU OFF/WFI */
-int mcdi_governor_select(int cpu)
+int mcdi_governor_select(int cpu, int cluster_idx)
 {
 	unsigned long flags;
-	int cluster_idx = cluster_idx_get(cpu);
 	int select_state = MCDI_STATE_WFI;
 	bool last_core_in_mcusys = false;
 	bool last_core_token_get = false;
@@ -314,6 +350,8 @@ int mcdi_governor_select(int cpu)
 
 		/* Pause MCDI */
 		mcdi_task_pause(true);
+
+		any_core_cpu_cond_inc(PAUSE_CNT);
 
 		select_state = any_core_deepidle_sodi_check(cpu);
 
