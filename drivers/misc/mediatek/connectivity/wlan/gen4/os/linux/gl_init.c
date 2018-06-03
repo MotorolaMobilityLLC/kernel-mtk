@@ -1565,7 +1565,6 @@ free_wdev:
 
 static void wlanDestroyWirelessDevice(void)
 {
-	set_wiphy_dev(gprWdev->wiphy, NULL);
 	wiphy_unregister(gprWdev->wiphy);
 	wiphy_free(gprWdev->wiphy);
 	kfree(gprWdev);
@@ -1624,7 +1623,12 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	glGetDev(pvData, &prDev);
 	if (!prDev)
 		DBGLOG(INIT, ERROR, "unable to get struct dev for wlan\n");
-	set_wiphy_dev(prWdev->wiphy, prDev);
+	/* don't set prDev as parent of wiphy->dev, because we have done device_add
+	** in driver init. if we set parent here, parent will be not able to know this child,
+	** and may occurs a KE in device_shutdown, to free wiphy->dev, because his parent
+	** has been freed.
+	**/
+	/* set_wiphy_dev(prWdev->wiphy, prDev); */
 
 	/* 4 <2> Create Glue structure */
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
