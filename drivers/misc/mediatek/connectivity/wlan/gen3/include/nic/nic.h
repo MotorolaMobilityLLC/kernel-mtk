@@ -317,4 +317,12 @@ UINT_8 nicGetChipEcoVer(VOID);
 BOOLEAN nicIsEcoVerEqualTo(UINT_8 ucEcoVer);
 BOOLEAN nicIsEcoVerEqualOrLaterTo(UINT_8 ucEcoVer);
 
+/*----------------------------------------------------------------------------*/
+/* uApsd setting                                                           */
+/*----------------------------------------------------------------------------*/
+
+WLAN_STATUS nicSetUapsdParam(IN P_ADAPTER_T prAdapter,
+			     IN P_PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T prUapsdParams,
+			     IN ENUM_NETWORK_TYPE_T eNetworkTypeIdx);
+
 #endif /* _NIC_H */

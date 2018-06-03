@@ -986,7 +986,7 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 		/* Reset Station Record Status. */
 		p2pFuncResetStaRecStatus(prAdapter, prStaRec);
 
-		 /**/ cnmStaRecFree(prAdapter, prStaRec);
+		cnmStaRecFree(prAdapter, prStaRec);
 
 		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) ||
 		    (prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0)) {
