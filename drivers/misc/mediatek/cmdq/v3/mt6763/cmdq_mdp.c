@@ -505,11 +505,11 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_COLOR);
 #endif
 	cmdq_dev_get_module_clock_by_name("disp_ovl0", "DISP_OVL0",
-					  &gCmdqMdpModuleClock.clk_DISP_OVL0);
-	cmdq_dev_get_module_clock_by_name("disp_ovl0", "DISP_OVL0_2L",
-					  &gCmdqMdpModuleClock.clk_DISP_OVL0);
-	cmdq_dev_get_module_clock_by_name("disp_ovl0", "DISP_OVL1_2L",
-					  &gCmdqMdpModuleClock.clk_DISP_OVL0);
+		&gCmdqMdpModuleClock.clk_DISP_OVL0);
+	cmdq_dev_get_module_clock_by_name("disp_ovl0_2l", "DISP_OVL0_2L",
+		&gCmdqMdpModuleClock.clk_DISP_OVL0_2L);
+	cmdq_dev_get_module_clock_by_name("disp_ovl1_2l", "DISP_OVL1_2L",
+		&gCmdqMdpModuleClock.clk_DISP_OVL1_2L);
 }
 /* MDP engine dump */
 void cmdq_mdp_dump_rsz(const unsigned long base, const char *label)
