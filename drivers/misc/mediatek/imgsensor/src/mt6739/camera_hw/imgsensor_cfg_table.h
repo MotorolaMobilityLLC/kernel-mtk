@@ -39,10 +39,7 @@ enum IMGSENSOR_HW_PIN {
 	IMGSENSOR_HW_PIN_MIPI_SWITCH_EN,
 	IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL,
 #endif
-	IMGSENSOR_HW_PIN_MCLK1,
-	IMGSENSOR_HW_PIN_MCLK2,
-	IMGSENSOR_HW_PIN_MCLK3,
-	IMGSENSOR_HW_PIN_MCLK4,
+	IMGSENSOR_HW_PIN_MCLK,
 
 	IMGSENSOR_HW_PIN_MAX_NUM,
 	IMGSENSOR_HW_PIN_UNDEF = -1
@@ -76,7 +73,7 @@ enum IMGSENSOR_POWER_TYPE {
 	VDD_None = IMGSENSOR_HW_PIN_NONE,
 
 	/* For backward compatible */
-	SensorMCLK = IMGSENSOR_HW_PIN_MCLK1
+	SensorMCLK = IMGSENSOR_HW_PIN_MCLK
 };
 
 enum IMGSENSOR_VOLTAGE {
@@ -105,11 +102,11 @@ enum IMGSENSOR_HW_ID {
 
 #define IMGSENSOR_I2C_DRV_NAME_0  "kd_camera_hw"
 #define IMGSENSOR_I2C_DRV_NAME_1  "kd_camera_hw_bus2"
-#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_trigger"
+#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_bus3"
 
 #define IMGSENSOR_I2C_OF_DRV_NAME_0 "mediatek,camera_main"
 #define IMGSENSOR_I2C_OF_DRV_NAME_1 "mediatek,camera_sub"
-#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_hw"
+#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_two"
 
 enum IMGSENSOR_I2C_DEV {
 	IMGSENSOR_I2C_DEV_0,

@@ -22,6 +22,8 @@
 #include "imgsensor_hw.h"
 #include "imgsensor_common.h"
 
+extern struct mutex pinctrl_mutex;
+
 enum GPIO_CTRL_STATE {
 	/* Main */
 	GPIO_CTRL_STATE_CAM0_PDN_H,
