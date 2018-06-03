@@ -47,6 +47,18 @@
 #include "mtk_charger_intf.h"
 #include "mtk_dual_switch_charging.h"
 
+static void _disable_all_charging(struct charger_manager *info)
+{
+	charger_dev_enable(info->chg1_dev, false);
+	charger_dev_enable(info->chg2_dev, false);
+
+	if (mtk_pe20_get_is_enable(info)) {
+		mtk_pe20_set_is_enable(info, false);
+		if (mtk_pe20_get_is_connect(info))
+			mtk_pe20_reset_ta_vchr(info);
+	}
+}
+
 /* TODO: Separate charging current into 2 chargers */
 static void dual_swchg_select_charging_current_limit(struct charger_manager *info)
 {
@@ -100,14 +112,16 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		mtk_pe20_set_charging_current(info, &pdata->charging_current_limit,
 						&pdata->input_current_limit);
 
-		/* No input current control for slave charger */
 		/* Only enable slave charger when PE+2.0 is connected */
-		/* TODO: Add state information */
 		if (mtk_pe20_get_is_enable(info)
 		    && mtk_pe20_get_is_connect(info)) {
+
+			/* Slave charger may not have input current control */
+			pdata2->input_current_limit
+					= info->data.ac_charger_input_current;
+
 			switch (swchgalg->state) {
 			case CHR_CC:
-				charger_dev_enable_termination(info->chg1_dev, false);
 				pdata->charging_current_limit
 					= info->data.chg1_ta_ac_charger_current;
 				pdata2->charging_current_limit
@@ -158,8 +172,9 @@ done:
 	charger_dev_set_input_current(info->chg1_dev, pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev, pdata->charging_current_limit);
 
-	/* TODO */
 	if (mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info)) {
+		charger_dev_set_input_current(info->chg2_dev,
+					pdata2->input_current_limit);
 		charger_dev_set_charging_current(info->chg2_dev,
 					pdata2->charging_current_limit);
 	}
@@ -192,6 +207,7 @@ static void swchg_select_cv(struct charger_manager *info)
 	mtk_get_dynamic_cv(info, &constant_voltage);
 
 	charger_dev_set_constant_voltage(info->chg1_dev, constant_voltage);
+	/* Set slave charger's CV to 100mV higher than master's */
 	charger_dev_set_constant_voltage(info->chg2_dev, constant_voltage + 100000);
 }
 
@@ -222,11 +238,18 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 		charger_dev_enable(info->chg1_dev, true);
 		if (mtk_pe20_get_is_enable(info) &&
 		    mtk_pe20_get_is_connect(info)) {
-			charger_dev_enable(info->chg2_dev, true);
-			/* Need to set to 450mA when it reach CC mode */
-			charger_dev_set_eoc_current(info->chg1_dev, 450000);
+			if (swchgalg->state != CHR_POSTCC) {
+				charger_dev_enable(info->chg2_dev, true);
+				charger_dev_set_eoc_current(info->chg1_dev, 450000);
+				charger_dev_enable_termination(info->chg1_dev, false);
+			} else {
+				charger_dev_enable(info->chg2_dev, false);
+				charger_dev_set_eoc_current(info->chg1_dev, 150000);
+				charger_dev_enable_termination(info->chg1_dev, true);
+			}
 		} else {
 			charger_dev_set_eoc_current(info->chg1_dev, 150000);
+			charger_dev_enable_termination(info->chg1_dev, true);
 		}
 	} else {
 		charger_dev_enable(info->chg1_dev, false);
@@ -266,7 +289,10 @@ static int mtk_dual_switch_charging_do_charging(struct charger_manager *info, bo
 		swchgalg->disable_charging = true;
 		swchgalg->state = CHR_ERROR;
 		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+
+		_disable_all_charging(info);
 	}
+
 	return 0;
 }
 
@@ -278,6 +304,7 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
 		if (pmic_is_bif_exist() != 1) {
+			pr_err("CONFIG_MTK_BIF_SUPPORT but no bif , stop charging\n");
 			swchgalg->state = CHR_ERROR;
 			charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
 		}
@@ -288,11 +315,10 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	dual_swchg_turn_on_charging(info);
 
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
-	/* FIXME: It should consider whether slave charger is enabled */
+	/* TODO: It should consider whether slave charger is enabled */
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
 		charger_dev_do_event(info->chg1_dev, EVENT_EOC, 0);
-
 		pr_err("battery full!\n");
 	}
 
@@ -310,48 +336,7 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 
 	return 0;
 }
-#if 0
-static int mtk_dual_switch_chr_tuning(struct charger_manager *info)
-{
-	bool chg_done = false;
-	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 
-	/* check bif */
-	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
-		if (pmic_is_bif_exist() != 1) {
-			swchgalg->state = CHR_ERROR;
-			charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
-		}
-	}
-
-	/* turn on LED */
-
-	dual_swchg_turn_on_charging(info);
-
-	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
-	/* FIXME: It should consider whether slave charger is enabled */
-#if 0
-	if (chg_done) {
-		swchgalg->state = CHR_BATFULL;
-		pr_err("battery full!\n");
-	}
-#endif
-
-	/* If it is not disabled by throttling,
-	 * enable PE+/PE+20, if it is disabled
-	 */
-	if (info->chg1_data.thermal_input_current_limit != -1 &&
-		info->chg1_data.thermal_input_current_limit < 300)
-		return 0;
-
-	if (!mtk_pe20_get_is_enable(info)) {
-		mtk_pe20_set_is_enable(info, true);
-		mtk_pe20_set_to_check_chr_type(info, true);
-	}
-
-	return 0;
-}
-#endif
 int mtk_dual_switch_chr_err(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
@@ -366,15 +351,8 @@ int mtk_dual_switch_chr_err(struct charger_manager *info)
 			swchgalg->state = CHR_CC;
 		}
 	}
-	charger_dev_enable(info->chg1_dev, false);
-	charger_dev_enable(info->chg2_dev, false);
 
-	if (mtk_pe20_get_is_enable(info)) {
-		mtk_pe20_set_is_enable(info, false);
-		if (mtk_pe20_get_is_connect(info))
-			mtk_pe20_reset_ta_vchr(info);
-	}
-
+	_disable_all_charging(info);
 	return 0;
 }
 
@@ -397,6 +375,7 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 
 		mtk_pe20_set_to_check_chr_type(info, true);
+		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
 	}
 
@@ -414,10 +393,10 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 10;
+	bool chg2_en;
 
 	pr_err("mtk_dual_switch_charging_run [%d]\n", swchgalg->state);
 
-	/* TODO: Check it */
 	mtk_pe20_check_charger(info);
 
 	switch (swchgalg->state) {
@@ -426,12 +405,6 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 	case CHR_POSTCC:
 		ret = mtk_dual_switch_chr_cc(info);
 		break;
-#if 0
-	case CHR_TUNING:
-	case CHR_POSTCC:
-		ret = mtk_dual_switch_chr_tuning(info);
-		break;
-#endif
 	case CHR_BATFULL:
 		ret = mtk_dual_switch_chr_full(info);
 		break;
@@ -442,7 +415,10 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 	}
 
 	charger_dev_dump_registers(info->chg1_dev);
-	charger_dev_dump_registers(info->chg2_dev);
+	charger_dev_is_enabled(info->chg2_dev, &chg2_en);
+	pr_err("chg2_en: %d\n", chg2_en);
+	if (chg2_en)
+		charger_dev_dump_registers(info->chg2_dev);
 	return 0;
 }
 
@@ -457,7 +433,6 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 
 	pr_err("charger_dev_event %ld\n", event);
 
-	/* TODO: Need to consider the case when slave is not enabled */
 	if (event == CHARGER_DEV_NOTIFY_EOC) {
 		ret = charger_dev_is_enabled(info->chg2_dev, &chg_en);
 		if (ret < 0) {
@@ -475,14 +450,8 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 			charger_dev_get_min_charging_current(info->chg2_dev,
 							 &ichg2_min);
 			pr_err("ichg2:%d, ichg2_min:%d\n", ichg2, ichg2_min);
-			if (ichg2 - 500000 <= ichg2_min) {
+			if (ichg2 - 500000 < ichg2_min) {
 				swchgalg->state = CHR_POSTCC;
-				charger_dev_set_eoc_current(info->chg1_dev,
-							    150000);
-				/* pdata2->charging_current_limit = 0; */
-				/* charger_dev_set_charging_current(info->chg2_dev, 0); */
-				charger_dev_enable(info->chg2_dev, false);
-				charger_dev_enable_termination(info->chg1_dev, true);
 			} else {
 				swchgalg->state = CHR_TUNING;
 				if (pdata2->charging_current_limit >= 500000)
@@ -499,31 +468,6 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 		/* _wake_up_charger(info); */
 	}
 	return NOTIFY_DONE;
-}
-
-static int mtk_dual_switch_charger_parse_dt(struct charger_manager *info)
-{
-	struct platform_device *pdev = info->pdev;
-	struct device_node *np = pdev->dev.of_node;
-
-	if (!np) {
-		pr_err("%s: no device node\n", __func__);
-		return -EINVAL;
-	}
-
-	if (of_property_read_u32(np, "chg1_ta_ac_charger_current",
-		&info->data.chg1_ta_ac_charger_current) < 0) {
-		pr_err("%s: no chg1 ta ac charger current\n", __func__);
-		info->data.chg1_ta_ac_charger_current = 1500000;
-	}
-
-	if (of_property_read_u32(np, "chg2_ta_ac_charger_current",
-		&info->data.chg2_ta_ac_charger_current) < 0) {
-		pr_err("%s: no chg2 ta ac charger current\n", __func__);
-		info->data.chg2_ta_ac_charger_current = 1500000;
-	}
-
-	return 0;
 }
 
 int mtk_dual_switch_charging_init(struct charger_manager *info)
@@ -545,8 +489,6 @@ int mtk_dual_switch_charging_init(struct charger_manager *info)
 		pr_err("Found secondary charger [%s]\n", info->chg2_dev->props.alias_name);
 	else
 		pr_err("*** Error : can't find secondary charger\n");
-
-	mtk_dual_switch_charger_parse_dt(info);
 
 	mutex_init(&swch_alg->ichg_aicr_access_mutex);
 
