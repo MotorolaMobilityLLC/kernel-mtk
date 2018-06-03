@@ -23,7 +23,8 @@ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediat
 ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/
 ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
 
-
+ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-y += mtk_battery_intf.o
-
-
+else
+obj-y += misc.o
+endif

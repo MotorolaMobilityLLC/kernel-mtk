@@ -53,7 +53,9 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
+ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-y += power/
+endif
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
