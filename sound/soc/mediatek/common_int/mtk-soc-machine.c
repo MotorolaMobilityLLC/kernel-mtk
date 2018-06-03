@@ -93,6 +93,7 @@
 #include <sound/jack.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
+#include "mtk-soc-speaker-amp.h"
 
 #include "mtk-hw-component.h"
 #if defined(CONFIG_SND_SOC_CS43130)
@@ -668,11 +669,6 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 #ifdef CONFIG_SND_SOC_MAX98926
 		.codec_dai_name = "max98926-aif1",
 		.codec_name = "MAX98926_MT",
-#elif defined(CONFIG_SND_SOC_RT5509)
-		.codec_dai_name = "rt5509-aif1",
-		.codec_name = "RT5509_MT_0",
-		.ignore_suspend = 1,
-		.ignore_pmdown_time = true,
 #elif defined(CONFIG_SND_SOC_CS35L35)
 		.codec_dai_name = "cs35l35-pcm",
 		.codec_name = "cs35l35.2-0040",
@@ -714,11 +710,34 @@ static void get_ext_dai_codec_name(void)
 	get_exthp_dai_codec_name(mt_soc_exthp_dai);
 }
 
+static void update_extspk_dai(void)
+{
+	int amp_type = get_amp_index();
+
+	switch (amp_type) {
+	case RICHTEK_RT5509:
+		mt_soc_extspk_dai[0].codec_dai_name = "rt5509-aif1";
+		mt_soc_extspk_dai[0].codec_name = "RT5509_MT_0";
+		mt_soc_extspk_dai[0].ignore_suspend = 1;
+		mt_soc_extspk_dai[0].ignore_pmdown_time = true;
+		break;
+	default:
+		break;
+	}
+
+	pr_info("%s, amp_type = %d, codec dai name = %s, codec name = %s\n",
+		__func__, amp_type, mt_soc_extspk_dai[0].codec_dai_name,
+		mt_soc_extspk_dai[0].codec_name);
+
+}
+
 static int mt_soc_snd_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = &mt_snd_soc_card_mt;
 	int ret;
 	int daiLinkNum = 0;
+
+	update_extspk_dai();
 
 	get_ext_dai_codec_name();
 	pr_debug("mt_soc_snd_probe dai_link = %p\n",
