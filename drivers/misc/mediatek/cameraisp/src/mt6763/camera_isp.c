@@ -6593,6 +6593,24 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+	case ISP_DFS_CTRL:
+		{
+			unsigned int dfs_ctrl;
+
+			if (copy_from_user(&dfs_ctrl, (void *)Param, sizeof(unsigned int)) == 0) {
+				if (dfs_ctrl == MTRUE) {
+					mmdvfs_pm_qos_add_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
+					LOG_VRB("CAMSYS PMQoS turn on");
+				} else {
+					mmdvfs_pm_qos_remove_request(&isp_qos);
+					LOG_VRB("CAMSYS PMQoS turn off");
+				}
+			} else {
+				LOG_ERR("ISP_DFS_CTRL copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
+		}
+		break;
 	case ISP_DFS_UPDATE:
 		{
 			unsigned int dfs_update;
@@ -7426,6 +7444,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
 	case ISP_LARB_MMU_CTL:
+	case ISP_DFS_CTRL:
 	case ISP_DFS_UPDATE:
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 	case ISP_GET_CUR_ISP_CLOCK:
@@ -7636,7 +7655,6 @@ EXIT:
 	} else {
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
-		mmdvfs_pm_qos_add_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
 
 		LOG_DBG("isp open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
 	}
@@ -7939,7 +7957,6 @@ EXIT:
 	*  2. CCF: call clk_enable/disable every time
 	*/
 	ISP_EnableClock(MFALSE);
-	mmdvfs_pm_qos_remove_request(&isp_qos);
 
 	LOG_DBG("isp release G_u4EnableClockCount: %d", G_u4EnableClockCount);
 

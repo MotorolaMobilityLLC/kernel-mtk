@@ -605,6 +605,7 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_GET_MARK2QUERY_TIME, /* query time information between read and mark */
 	ISP_CMD_FLUSH_IRQ_REQUEST, /* flush signal */
 	ISP_CMD_GET_START_TIME,
+	ISP_CMD_DFS_CTRL, /* turn on/off camsys pmqos */
 	ISP_CMD_DFS_UPDATE, /* Update clock at run time */
 	ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, /* Get supported isp clocks on current platform */
 	ISP_CMD_GET_CUR_ISP_CLOCK, /* Get cur isp clock level */
@@ -666,6 +667,7 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_GET_INT_ERR     _IOR(ISP_MAGIC, ISP_CMD_GET_INT_ERR,        unsigned char*)
 #define ISP_GET_DROP_FRAME  _IOWR(ISP_MAGIC, ISP_CMD_GET_DROP_FRAME,    unsigned long)
 #define ISP_GET_START_TIME  _IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME,    unsigned char*)
+#define ISP_DFS_CTRL              _IOWR(ISP_MAGIC, ISP_CMD_DFS_CTRL, unsigned int)
 #define ISP_DFS_UPDATE              _IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
 #define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
 #define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, unsigned int)
