@@ -45,7 +45,6 @@ static int off __read_mostly;
 static int initialized __read_mostly;
 
 
-#ifdef CONFIG_MTK_SCHED_CPU_ISOLATION
 /**
  * wake_up_avail_idle_cpus - break non-iso cpus out of idle
  * wake_up_avail_idle_cpus try to break non-iso cpus which is in idle state
@@ -68,7 +67,6 @@ void wake_up_avail_idle_cpus(void)
 	}
 	preempt_enable();
 }
-#endif
 
 int cpuidle_disabled(void)
 {
@@ -657,11 +655,14 @@ EXPORT_SYMBOL_GPL(cpuidle_register);
 static int cpuidle_latency_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-#ifdef CONFIG_MTK_SCHED_CPU_ISOLATION
+	/*
+	 * MTK patch:
+	 * only wakeup idle CPUs which is `online & !isolated`,
+	 * when PM_QoS CPU_DMA_LATENCY is updated
+	 */
+/*	wake_up_all_idle_cpus(); */
 	wake_up_avail_idle_cpus();
-#else
-	wake_up_all_idle_cpus();
-#endif
+
 	return NOTIFY_OK;
 }
 
