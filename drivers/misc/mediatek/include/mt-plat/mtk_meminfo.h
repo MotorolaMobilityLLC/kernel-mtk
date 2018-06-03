@@ -31,7 +31,7 @@ extern struct single_cma_registration memory_lowpower_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
-#define ZMC_MAX_ZONE_DMA_PHYS (0xc0000000)
+extern phys_addr_t zmc_max_zone_dma_phys;
 #define ZMC_ALLOC_ALL 0x01 /* allocate all memory reserved from dts */
 
 /* Priority of ZONE_MOVABLE_CMA users */

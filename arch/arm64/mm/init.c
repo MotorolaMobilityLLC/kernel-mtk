@@ -89,7 +89,7 @@ static phys_addr_t __init max_zone_dma_phys(void)
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 	if (is_zmc_inited())
-		return min(offset + ZMC_MAX_ZONE_DMA_PHYS, memblock_end_of_DRAM());
+		return min(offset + zmc_max_zone_dma_phys, memblock_end_of_DRAM());
 #endif
 	return min(offset + (1ULL << 32), memblock_end_of_DRAM());
 }
