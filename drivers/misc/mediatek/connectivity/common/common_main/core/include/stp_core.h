@@ -201,6 +201,8 @@ typedef struct {
 	UINT8 winspace;		/* current sliding window size */
 	UINT8 expected_rxseq;	/* last rx pkt's seq + 1 */
 	UINT8 retry_times;
+	UINT8 rx_resync;	/* num of 7f7f7f7f before expected_rxseq pkt, indicates if recv series of resync pkt */
+	UINT8 rx_resync_seq;	/* last resync pkg's seq (0xFF if not set), only valid if rx_resync != 0 */
 } mtkstp_sequence_context_struct;
 
 typedef struct {
