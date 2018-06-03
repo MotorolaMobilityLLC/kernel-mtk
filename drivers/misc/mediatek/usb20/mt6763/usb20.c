@@ -590,9 +590,10 @@ void pmic_chrdet_int_en(int is_on)
 {
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_MTK_PMIC
+	DBG(0, "is_on<%d>\n", is_on);
 	upmu_interrupt_chrdet_int_en(is_on);
+#else
 	DBG(0, "FIXME, no upmu_interrupt_chrdet_int_en ???\n");
-	/* upmu_interrupt_chrdet_int_en(is_on); */
 #endif
 #endif
 }

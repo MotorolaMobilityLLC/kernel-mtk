@@ -419,14 +419,23 @@ void musb_enable_host(struct musb *musb)
 	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
 #endif
 }
+static struct wake_lock host_test_wakelock;
 static void do_host_plug_test_work(struct work_struct *data)
 {
 	static ktime_t ktime_begin, ktime_end;
 	static s64 diff_time;
 	static int host_on;
+	static int wake_lock_inited;
+
+	if (!wake_lock_inited) {
+		DBG(0, "%s wake_lock_init\n", __func__);
+		wake_lock_init(&host_test_wakelock, WAKE_LOCK_SUSPEND, "host.test.lock");
+		wake_lock_inited = 1;
+	}
 
 	host_plug_test_triggered = 1;
 	mb();
+	wake_lock(&host_test_wakelock);
 	DBG(0, "BEGIN");
 	ktime_begin = ktime_get();
 
@@ -468,6 +477,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	/* wait host_work done */
 	msleep(1000);
 	host_plug_test_triggered = 0;
+	wake_unlock(&host_test_wakelock);
 	DBG(0, "END\n");
 }
 
@@ -531,12 +541,8 @@ static void musb_host_work(struct work_struct *data)
 	switch_set_state((struct switch_dev *)&otg_state, host_mode);
 
 	if (host_mode) {
+		/* switch to HOST state before turn on VBUS */
 		MUSB_HST_MODE(mtk_musb);
-
-#ifndef FPGA_PLATFORM
-		DBG(0, "will mask PMIC charger detection\n");
-		pmic_chrdet_int_en(0);
-#endif
 
 		/* to make sure all event clear */
 		msleep(32);
@@ -627,11 +633,8 @@ static void musb_host_work(struct work_struct *data)
 		/* to make sure all event clear */
 		msleep(32);
 
-#ifndef FPGA_PLATFORM
-		DBG(0, "will unmask PMIC charger detection\n");
-		pmic_chrdet_int_en(1);
-#endif
 		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
+		/* switch to DEV state after turn off VBUS */
 		MUSB_DEV_MODE(mtk_musb);
 	}
 out:
