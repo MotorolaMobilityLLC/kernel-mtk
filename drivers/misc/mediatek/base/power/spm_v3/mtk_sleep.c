@@ -147,14 +147,12 @@ void __attribute__ ((weak)) bus_tracer_enable(void)
 }
 #endif /* CONFIG_MTK_BUS_TRACER */
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
 __attribute__ ((weak))
 wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 {
 	pr_err("NO %s !!!\n", __func__);
 	return WR_NONE;
 }
-#endif /* CONFIG_FPGA_EARLY_PORTING */
 
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
