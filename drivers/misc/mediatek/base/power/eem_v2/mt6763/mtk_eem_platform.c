@@ -309,7 +309,7 @@ int set_volt_gpu(struct eem_det *det)
 	}
 
 	#if !defined(EARLY_PORTING_GPU) && (SET_PMIC_VOLT_TO_DVFS)
-		return mt_gpufreq_update_volt(output, NR_FREQ_GPU);
+		return mt_gpufreq_update_volt(output, det->num_freq_tbl);
 	#else
 		return 0;
 	#endif

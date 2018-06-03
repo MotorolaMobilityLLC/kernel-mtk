@@ -417,9 +417,6 @@ static void get_soc_efuse(void)
 
 	soc_efuse = get_devinfo_with_index(DEVINFO_IDX_10);
 
-	/* no voltage bin, use default opp 0 */
-	soc_efuse = 0;
-
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2) {
 		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
 		eem_vcore_index[1] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
@@ -1165,9 +1162,6 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEMINTEN, 0x00005f01);
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000001);
-#if defined(__MTK_SLT_)
-		mdelay(200);
-#endif
 		udelay(250); /* all banks' phase cannot be set without delay */
 		break;
 
@@ -1183,9 +1177,6 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		#endif
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000005);
-#if defined(__MTK_SLT_)
-		mdelay(200);
-#endif
 		udelay(200); /* all banks' phase cannot be set without delay */
 		break;
 
