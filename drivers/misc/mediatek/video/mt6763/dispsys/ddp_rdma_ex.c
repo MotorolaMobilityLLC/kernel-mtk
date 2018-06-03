@@ -342,7 +342,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		fifo_off_drs_leave = 1;
 		fifo_off_spm = 50; /* 10 times*/
 		fifo_off_dvfs = 2;
-		fifo_off_ultra = 2;
+		if (is_wrot_sram)
+			fifo_off_ultra = 50;
+		else
+			fifo_off_ultra = 2;
 		consume_rate = rdma_golden_setting->dst_width;
 		consume_rate = consume_rate * rdma_golden_setting->dst_height
 				*frame_rate * Bytes_per_sec;

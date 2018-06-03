@@ -159,7 +159,7 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 			   ovl_base + DISP_REG_OVL_INTEN, 1);
 #endif
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_LAYER_SMI_ID_EN,
-			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_NO_RND,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0x0);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_GCLAST_EN,
