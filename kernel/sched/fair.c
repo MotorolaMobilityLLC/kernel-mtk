@@ -8458,7 +8458,7 @@ static int idle_balance(struct rq *this_rq)
 	rcu_read_unlock();
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-	if (!energy_aware() && !pulled_task)
+	if ((!energy_aware() || cpu_overutilized(this_cpu)) && !pulled_task)
 		pulled_task = hmp_idle_pull(this_cpu);
 #endif
 	raw_spin_lock(&this_rq->lock);
