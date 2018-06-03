@@ -1102,6 +1102,10 @@ static int __init pmic_mt_init(void)
 #else
 	pmic_auxadc_init();
 #endif /* CONFIG_MTK_AUXADC_INTF */
+	/* update VBIF28 by AUXADC */
+	g_pmic_pad_vbif28_vol = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
+	pr_err(PMICTAG "[pmic_mt_init] VBIF28=%d\n", pmic_get_vbif28_volt());
+
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
 
 	return 0;
