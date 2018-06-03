@@ -57,6 +57,7 @@ struct imgsensor_mode_struct {
 
 	/*     following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario    */
 	kal_uint8 mipi_data_lp2hs_settle_dc;
+	kal_uint32 mipi_pixel_rate;
 
 	/*     following for GetDefaultFramerateByScenario()    */
 	kal_uint16 max_framerate;
