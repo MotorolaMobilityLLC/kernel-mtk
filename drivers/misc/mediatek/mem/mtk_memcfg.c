@@ -94,12 +94,6 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		goto debug_info;
 	}
 
-	//ret = check_mblock_version();
-	if (ret) {
-		seq_puts(m, "Get mblock information failed\n");
-		goto debug_info;
-	}
-
 	count = get_reserved_mem_count();
 
 	reserved_mem = kcalloc(MAX_RESERVED_COUNT,
