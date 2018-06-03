@@ -2295,7 +2295,9 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	int MVA_MAX_BLOCK_NR = 4095;
 	int MVA_BLOCK_SIZE_ORDER = 20;
 	struct M4U_MOUDLE m4u_module;
+#ifdef M4U_FPGAPORTING
 	M4U_PORT_STRUCT m4u_port;
+#endif
 	M4U_PORT_ID ModuleID;
 	struct M4U_CACHE m4u_cache_data;
 	struct M4U_DMA m4u_dma_data;
@@ -2427,7 +2429,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				m4u_dma_data.size, m4u_dma_data.mva,
 				m4u_dma_data.eDMAType, m4u_dma_data.eDMADir);
 		break;
-
+#ifdef M4U_FPGAPORTING
 	case MTK_M4U_T_CONFIG_PORT:
 		ret = copy_from_user(&m4u_port, (void *)arg, sizeof(M4U_PORT_STRUCT));
 		if (ret) {
@@ -2446,6 +2448,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		mutex_unlock(&gM4u_sec_init);
 #endif
 		break;
+#endif
 	case MTK_M4U_T_CACHE_FLUSH_ALL:
 		m4u_dma_cache_flush_all();
 		break;
