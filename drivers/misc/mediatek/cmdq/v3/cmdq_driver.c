@@ -40,6 +40,7 @@
 #include <mach/mt_boot.h>
 #endif
 
+#include <linux/pm_runtime.h>
 /**
  * @device tree porting note
  * alps/kernel-3.10/arch/arm64/boot/dts/{platform}.dts
@@ -490,6 +491,29 @@ bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 #endif
 }
 
+static s32 cmdq_driver_copy_task_prop_from_user(void *from, u32 size, void **to)
+{
+	void *task_prop = NULL;
+
+	if (from && size) {
+		task_prop = kzalloc(size, GFP_KERNEL);
+		if (!task_prop) {
+			CMDQ_ERR("allocate task_prop failed\n");
+			return -ENOMEM;
+		}
+
+		if (copy_from_user(task_prop, from, size)) {
+			CMDQ_ERR("cannot copy task property from user, size=%d\n", size);
+			kfree(task_prop);
+			return -EFAULT;
+		}
+	}
+
+	*to = task_prop;
+
+	return 0;
+}
+
 static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long param)
 {
 	struct cmdqCommandStruct command;
@@ -516,6 +540,12 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			!command.blockSize ||
 			command.blockSize > CMDQ_MAX_COMMAND_SIZE)
 			return -EINVAL;
+
+		/* copy from user again if property is given */
+		status = cmdq_driver_copy_task_prop_from_user((void *)CMDQ_U32_PTR(command.prop_addr),
+			command.prop_size, (void *)CMDQ_U32_PTR(&command.prop_addr));
+		if (status < 0)
+			return status;
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 		/* assign controller for secure case */
@@ -548,6 +578,12 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE)
 			return -EINVAL;
+
+		/* copy from user again if property is given */
+		status = cmdq_driver_copy_task_prop_from_user((void *)CMDQ_U32_PTR(job.command.prop_addr),
+			job.command.prop_size, (void *)CMDQ_U32_PTR(&job.command.prop_addr));
+		if (status < 0)
+			return status;
 
 		/* backup */
 		userRegCount = job.command.regRequest.count;
@@ -666,8 +702,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* make sure the task is running and wait for it */
 		status = cmdqCoreWaitResultAndReleaseTask(pTask,
-			&jobResult.regValue,
-			CMDQ_DEFAULT_TIMEOUT_MS);
+				&jobResult.regValue,
+				CMDQ_DEFAULT_TIMEOUT_MS);
 		if (status < 0) {
 			CMDQ_ERR("waitResultAndReleaseTask fail=%d\n", status);
 			/* free kernel space result buffer */
@@ -946,10 +982,20 @@ static int cmdq_create_debug_entries(void)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static struct dev_pm_domain cmdq_pm_domain = {
+	.ops = {
+		SET_RUNTIME_PM_OPS(cmdq_core_runtime_suspend,
+				cmdq_core_runtime_resume,
+				NULL)
+		}
+};
+#endif
+
 static int cmdq_probe(struct platform_device *pDevice)
 {
 	int status;
-	struct device *object;
+	struct device *cmdq_dev = &pDevice->dev;
 
 	CMDQ_MSG("CMDQ driver probe begin\n");
 
@@ -979,8 +1025,12 @@ static int cmdq_probe(struct platform_device *pDevice)
 	status = cdev_add(gCmdqCDev, gCmdqDevNo, 1);
 
 	gCMDQClass = class_create(THIS_MODULE, CMDQ_DRIVER_DEVICE_NAME);
-	object = device_create(gCMDQClass, NULL, gCmdqDevNo, NULL, CMDQ_DRIVER_DEVICE_NAME);
+	cmdq_dev = device_create(gCMDQClass, NULL, gCmdqDevNo, NULL, CMDQ_DRIVER_DEVICE_NAME);
 
+#ifdef CONFIG_PM
+	cmdq_dev->pm_domain = &cmdq_pm_domain;
+	pm_runtime_enable(cmdq_dev);
+#endif
 	status =
 	    request_irq(cmdq_dev_get_irq_id(), cmdq_irq_handler,
 			IRQF_TRIGGER_LOW | IRQF_SHARED, CMDQ_DRIVER_DEVICE_NAME, gCmdqCDev);
@@ -1016,7 +1066,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 #endif
 
 	CMDQ_MSG("CMDQ driver probe end\n");
-
+	cmdq_mdp_get_func()->mdp_probe();
 	return 0;
 }
 
@@ -1102,8 +1152,19 @@ static int __init cmdq_init(void)
 	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP,
 			   cmdq_mdp_get_func()->trackTask);
 
+	cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_MDP,
+		cmdq_mdp_get_func()->beginTask,
+		cmdq_mdp_get_func()->endTask);
+
+	cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_ISP,
+		cmdq_mdp_get_func()->beginISPTask,
+		cmdq_mdp_get_func()->endISPTask);
+
 	/* Register VENC callback */
 	cmdqCoreRegisterCB(CMDQ_GROUP_VENC, NULL, cmdq_mdp_get_func()->vEncDumpInfo, NULL, NULL);
+
+	cmdqCoreRegisterMonitorTaskCB(CMDQ_GROUP_MDP,
+		cmdq_mdp_get_func()->startTask_atomic, cmdq_mdp_get_func()->finishTask_atomic);
 
 	status = platform_driver_register(&gCmdqDriver);
 	if (status != 0) {

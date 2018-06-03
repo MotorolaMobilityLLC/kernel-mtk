@@ -46,6 +46,8 @@
 #include <linux/seq_file.h>
 #include <linux/kthread.h>
 #include <linux/math64.h>
+#include <linux/pm_qos.h>
+#include <linux/pm_runtime.h>
 #include "cmdq_record_private.h"
 
 /* #define CMDQ_PROFILE_COMMAND_TRIGGER_LOOP */
@@ -193,6 +195,8 @@ static struct ContextStruct gCmdqContext;
 static struct CmdqCBkStruct gCmdqGroupCallback[CMDQ_MAX_GROUP_COUNT];
 static struct CmdqDebugCBkStruct gCmdqDebugCallback;
 static struct cmdq_dts_setting g_dts_setting;
+
+static struct pm_qos_request mdp_qos_request;
 
 static struct dma_pool *g_task_buffer_pool;
 static atomic_t g_pool_buffer_count;
@@ -2484,6 +2488,30 @@ int32_t cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, uint64_t engineFl
 	return false;
 }
 
+static void cmdq_core_group_begin_task(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
+{
+	enum CMDQ_GROUP_ENUM group = 0;
+
+	for (group = 0; group < CMDQ_MAX_GROUP_COUNT; group++) {
+		if (!gCmdqGroupCallback[group].beginTask ||
+			!cmdq_core_is_group_flag(group, task->engineFlag))
+			continue;
+		gCmdqGroupCallback[group].beginTask(task, task_list, size);
+	}
+}
+
+static void cmdq_core_group_end_task(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
+{
+	enum CMDQ_GROUP_ENUM group = 0;
+
+	for (group = 0; group < CMDQ_MAX_GROUP_COUNT; group++) {
+		if (!gCmdqGroupCallback[group].endTask ||
+			!cmdq_core_is_group_flag(group, task->engineFlag))
+			continue;
+		gCmdqGroupCallback[group].endTask(task, task_list, size);
+	}
+}
+
 static inline uint32_t cmdq_core_get_task_timeout_cycle(struct ThreadStruct *pThread)
 {
 	/* if there is loop callback, this thread is in loop mode, */
@@ -2591,6 +2619,41 @@ s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 	return 0;
 }
 
+s32 cmdqCoreRegisterTaskCycleCB(enum CMDQ_GROUP_ENUM group,
+	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask)
+{
+	struct CmdqCBkStruct *callback;
+
+	if (!cmdq_core_is_valid_group(group))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' callback begin:%pf end:%pf\n",
+		group, beginTask, endTask);
+
+	callback = &gCmdqGroupCallback[group];
+
+	callback->beginTask = beginTask;
+	callback->endTask = endTask;
+	return 0;
+}
+
+s32 cmdqCoreRegisterMonitorTaskCB(enum CMDQ_GROUP_ENUM engGroup,
+	CmdqStartTaskCB_ATOMIC startTask, CmdqFinishTaskCB_ATOMIC finishTask)
+{
+	struct CmdqCBkStruct *pCallback;
+
+	if (!cmdq_core_is_valid_group(engGroup))
+		return -EFAULT;
+
+	CMDQ_LOG("Register %d monitor task CB (%pf,%pf)\n", engGroup, startTask, finishTask);
+
+	pCallback = &(gCmdqGroupCallback[engGroup]);
+
+	pCallback->startTask = startTask;
+	pCallback->finishTask = finishTask;
+	return 0;
+}
+
 struct TaskStruct *cmdq_core_get_task_ptr(void *task_handle)
 {
 	struct TaskStruct *ptr = NULL;
@@ -2664,6 +2727,12 @@ static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 	cmdq_core_release_buffer(pTask);
 	kfree(pTask->privateData);
 	pTask->privateData = NULL;
+	if (pTask->prop_addr) {
+		/* buffer create by cmdq */
+		kfree(pTask->prop_addr);
+		pTask->prop_addr = NULL;
+		pTask->prop_size = 0;
+	}
 
 	/* remove from active/waiting list */
 	list_del_init(&(pTask->listEntry));
@@ -3566,6 +3635,16 @@ static struct TaskStruct *cmdq_core_acquire_task(
 		atomic_set(&pTask->useWorkQueue, 0);
 		pTask->userDebugStr = NULL;
 		pTask->cmd_buffer_va = NULL;
+		/* copy since we may flush same handle multiple times */
+		if (pCommandDesc->prop_size && pCommandDesc->prop_addr) {
+			pTask->prop_addr = kzalloc(pCommandDesc->prop_size, GFP_KERNEL);
+			memcpy(pTask->prop_addr, (void *)CMDQ_U32_PTR(pCommandDesc->prop_addr),
+				pCommandDesc->prop_size);
+			pTask->prop_size = pCommandDesc->prop_size;
+		} else {
+			pTask->prop_addr = NULL;
+			pTask->prop_size = 0;
+		}
 
 		if (ext) {
 			pTask->ctrl = ext->ctrl;
@@ -3679,7 +3758,12 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
+#ifdef CONFIG_PM
+			pm_runtime_get_sync(cmdq_dev_get());
+#else
 			cmdq_get_func()->enableGCEClockLocked(enable);
+#endif
+
 			cmdq_core_reset_hw_events();
 			cmdq_core_config_prefetch_gsize();
 #ifdef CMDQ_ENABLE_BUS_ULTRA
@@ -3718,10 +3802,14 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
+#ifdef CONFIG_PM
+			pm_runtime_put_sync(cmdq_dev_get());
+#else
 			cmdq_get_func()->enableGCEClockLocked(enable);
 		} else if (clock_count < 0) {
 			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
 				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
+#endif
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
@@ -6565,13 +6653,25 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 	return status;
 }
 
+static void cmdq_core_monitor_task(const struct TaskStruct *task, bool is_start)
+{
+	u32 index;
+
+	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; index++) {
+		if (is_start && gCmdqGroupCallback[index].startTask &&
+			cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, task->engineFlag)) {
+			gCmdqGroupCallback[index].startTask(task, task->commandSize / CMDQ_INST_SIZE);
+		} else if (!is_start && gCmdqGroupCallback[index].finishTask &&
+			cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, task->engineFlag)) {
+			gCmdqGroupCallback[index].finishTask(task, task->commandSize / CMDQ_INST_SIZE);
+		}
+	}
+}
+
 static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 						   int32_t value, CMDQ_TIME *pGotIRQ,
 						   const uint32_t cookie)
 {
-#ifdef CMDQ_MDP_MET_STATUS
-	struct TaskStruct *pTask;
-#endif
 	struct ThreadStruct *pThread;
 	int32_t count;
 	int32_t inner;
@@ -6615,6 +6715,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 			/* MET MMSYS: Thread done */
 			if (met_mmsys_event_gce_thread_end)
 				met_mmsys_event_gce_thread_end(thread, (uintptr_t) pTask, pTask->engineFlag);
+			cmdq_core_monitor_task(pTask, false);
 #endif
 		}
 	}
@@ -6626,16 +6727,19 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 		pThread->waitCookie -= (CMDQ_MAX_COOKIE_VALUE + 1);	/* min cookie value is 0 */
 #ifdef CMDQ_MDP_MET_STATUS
 	/* MET MMSYS: GCE should trigger next waiting task */
-	if ((pThread->taskCount > 0) && met_mmsys_event_gce_thread_begin) {
+	if (pThread->taskCount > 0) {
 		count = pThread->nextCookie - pThread->waitCookie;
 		for (inner = (pThread->waitCookie % maxTaskNUM); count > 0; count--, inner++) {
 			if (inner >= maxTaskNUM)
 				inner = 0;
 
 			if (pThread->pCurTask[inner] != NULL) {
-				pTask = pThread->pCurTask[inner];
-				met_mmsys_event_gce_thread_begin(thread, (uintptr_t) pTask, pTask->engineFlag,
-					(void *)cmdq_core_task_get_first_va(pTask), pTask->commandSize);
+				struct TaskStruct *pTask = pThread->pCurTask[inner];
+
+				if (met_mmsys_event_gce_thread_begin)
+					met_mmsys_event_gce_thread_begin(thread, (uintptr_t) pTask, pTask->engineFlag,
+						(void *)cmdq_core_task_get_first_va(pTask), pTask->commandSize);
+				cmdq_core_monitor_task(pTask, true);
 				break;
 			}
 		}
@@ -7297,6 +7401,9 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 	uint32_t thread;
 	struct ThreadStruct *pThread = NULL;
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
+	struct TaskStruct *task_list[CMDQ_MAX_TASK_IN_THREAD] = { NULL };
+	struct TaskStruct *entry_task = NULL;
+	s32 task_list_count = 0;
 
 	status = 0;		/* Default status */
 
@@ -7365,6 +7472,21 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 	/* so the maximum total waiting time would be */
 	/* CMDQ_PREDUMP_TIMEOUT_MS * CMDQ_PREDUMP_RETRY_COUNT */
 	pTask->wakedUp = sched_clock();
+
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
+	/* snapshot from activelist without copy current task */
+	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
+		if (entry_task->thread == thread && entry_task != pTask) {
+			task_list[task_list_count] = entry_task;
+			task_list_count++;
+		}
+	}
+
+
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
+
+	cmdq_core_group_end_task(pTask, task_list, task_list_count);
+
 	CMDQ_MSG("WAIT: task 0x%p waitq=%d state=%d\n", pTask, waitQ, pTask->taskState);
 	CMDQ_PROF_END(current->pid, "wait_for_task_done");
 	if (pTask->profileMarker.hSlot) {
@@ -7553,6 +7675,9 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	dma_addr_t MVABase = 0;
 	/* for no suspend thread, we shift END before JUMP */
 	bool shift_end = false;
+	struct TaskStruct *task_list[CMDQ_MAX_TASK_IN_THREAD] = { NULL };
+	struct TaskStruct *entry_task = NULL;
+	s32 task_list_count = 0;
 
 	cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
 	cmdq_core_get_task_first_buffer(pTask, &pVABase, &MVABase);
@@ -7574,14 +7699,24 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 	pThread = &(gCmdqContext.thread[thread]);
 
-	pTask->trigger = sched_clock();
-
-	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, exec_task);
-
+	/* snapshot from activelist */
+	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
+		if (entry_task->thread == thread) {
+			task_list[task_list_count] = entry_task;
+			task_list_count++;
+		}
+	}
 	/* update task's thread info */
 	pTask->thread = thread;
 	pTask->irqFlag = 0;
 	pTask->taskState = TASK_STATE_BUSY;
+
+	/* update group before submit to HW */
+	cmdq_core_group_begin_task(pTask, task_list, task_list_count);
+
+	pTask->trigger = sched_clock();
+
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, exec_task);
 
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 	/* for loop command, we do not shift END before JUMP */
@@ -7669,6 +7804,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			met_mmsys_event_gce_thread_begin(thread, (uintptr_t) pTask, pTask->engineFlag,
 				(void *)pVABase, pTask->commandSize);
 		}
+		cmdq_core_monitor_task(pTask, true);
 #endif	/* end of CMDQ_MDP_MET_STATUS */
 	} else {
 		uint32_t last_cookie;
@@ -7852,6 +7988,18 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	CMDQ_MSG("<--EXEC: status: %d\n", status);
 
 	return status;
+}
+
+int cmdq_core_runtime_suspend(struct device *dev)
+{
+	cmdq_get_func()->enableGCEClockLocked(false);
+	return 0;
+}
+
+int cmdq_core_runtime_resume(struct device *dev)
+{
+	cmdq_get_func()->enableGCEClockLocked(true);
+	return 0;
 }
 
 int32_t cmdqCoreSuspend(void)
@@ -8981,6 +9129,8 @@ int32_t cmdqCoreInitialize(void)
 #ifdef CMDQ_PROFILE_MMP
 	cmdq_mmp_init();
 #endif
+	/* Initialize MDP */
+	cmdq_mdp_init();
 	/* Initialize secure path context */
 	cmdqSecInitialize();
 	/* Initialize test case structure */
@@ -9006,6 +9156,7 @@ int32_t cmdqCoreInitialize(void)
 	g_cmdq_mem_records[ARRAY_SIZE(g_cmdq_mem_records)-1].alloc_range = 256 * 1024;
 
 	g_delay_thread_inited = false;
+	pm_qos_add_request(&mdp_qos_request, PM_QOS_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
 
 	cmdq_core_create_buffer_pool();
 
@@ -9089,6 +9240,8 @@ void cmdqCoreDeInitialize(void)
 	cmdqSecDeInitialize();
 
 	cmdq_core_destroy_buffer_pool();
+	/* Deinitialize MDP */
+	cmdq_mdp_deinit();
 
 	kfree(g_dts_setting.prefetch_size);
 	g_dts_setting.prefetch_size = NULL;

@@ -54,6 +54,7 @@ void cmdq_dev_free_module_base_VA(const long VA);
 uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void);
 /* physical address */
 phys_addr_t cmdq_dev_get_reference_PA(const char *ref_name, int index);
+void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *endPA);
 phys_addr_t cmdq_dev_get_module_base_PA_GCE(void);
 /* GCE event */
 void cmdq_dev_init_event_table(struct device_node *node);

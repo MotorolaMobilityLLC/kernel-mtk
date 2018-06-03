@@ -41,6 +41,16 @@
 
 #define CMDQ_TASK_CPR_POSITION_ARRAY_UNIT_SIZE	(32)
 
+static void cmdq_task_release_property(struct cmdqRecStruct *handle)
+{
+	if (!handle)
+		return;
+
+	kfree(handle->prop_addr);
+	handle->prop_addr = NULL;
+	handle->prop_size = 0;
+}
+
 /* push a value into a stack */
 int32_t cmdq_op_condition_push(struct cmdq_stack_node **top_node, uint32_t position,
 								enum CMDQ_STACK_TYPE_ENUM stack_type)
@@ -840,6 +850,9 @@ int32_t cmdq_task_reset(struct cmdqRecStruct *handle)
 	/* profile marker */
 	cmdq_reset_profile_maker_data(handle);
 
+	/* initialize property */
+	cmdq_task_release_property(handle);
+
 	return 0;
 }
 
@@ -1427,6 +1440,8 @@ int32_t cmdq_task_flush(struct cmdqRecStruct *handle)
 	desc.engineFlag = handle->engineFlag;
 	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
 	desc.blockSize = handle->blockSize;
+	desc.prop_addr = (cmdqU32Ptr_t) (unsigned long)handle->prop_addr;
+	desc.prop_size = handle->prop_size;
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* replace instuction position */
@@ -1460,6 +1475,8 @@ int32_t cmdq_task_flush_and_read_register(struct cmdqRecStruct *handle, uint32_t
 	desc.regRequest.regAddresses = (cmdqU32Ptr_t) (unsigned long)addrArray;
 	desc.regValue.count = regCount;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)valueArray;
+	desc.prop_addr = (cmdqU32Ptr_t) (unsigned long)handle->prop_addr;
+	desc.prop_size = handle->prop_size;
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* replace instuction position */
@@ -1489,6 +1506,8 @@ int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle)
 	desc.regRequest.regAddresses = (cmdqU32Ptr_t) (unsigned long)NULL;
 	desc.regValue.count = 0;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)NULL;
+	desc.prop_addr = (cmdqU32Ptr_t) (unsigned long)handle->prop_addr;
+	desc.prop_size = handle->prop_size;
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* replace instuction position */
@@ -1537,6 +1556,8 @@ int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle,
 	desc.regRequest.regAddresses = (cmdqU32Ptr_t) (unsigned long)NULL;
 	desc.regValue.count = 0;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)NULL;
+	desc.prop_addr = (cmdqU32Ptr_t) (unsigned long)handle->prop_addr;
+	desc.prop_size = handle->prop_size;
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* replace instuction position */
@@ -1599,6 +1620,8 @@ s32 _cmdq_task_start_loop_callback(struct cmdqRecStruct *handle,
 	desc.engineFlag = handle->engineFlag;
 	desc.blockSize = handle->blockSize;
 	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
+	desc.prop_addr = (cmdqU32Ptr_t) (unsigned long)handle->prop_addr;
+	desc.prop_size = handle->prop_size;
 	if (strlen(SRAM_owner_name) > 0) {
 		CMDQ_MSG("Submit task loop in SRAM: %s\n", SRAM_owner_name);
 		desc.use_sram_buffer = true;
@@ -1840,7 +1863,8 @@ int32_t cmdq_task_destroy(struct cmdqRecStruct *handle)
 	vfree(handle->pBuffer);
 	handle->pBuffer = NULL;
 
-	/* Free command handle */
+	cmdq_task_release_property(handle);
+
 	kfree(handle);
 
 	return 0;
@@ -3288,4 +3312,30 @@ int32_t cmdqRecWriteAndReleaseResource(struct cmdqRecStruct *handle, enum CMDQ_E
 							uint32_t addr, uint32_t value, uint32_t mask)
 {
 	return cmdq_resource_release_and_write(handle, resourceEvent, addr, value, mask);
+}
+
+s32 cmdq_task_update_property(struct cmdqRecStruct *handle, void *prop_addr, u32 prop_size)
+{
+	void *pprop_addr = NULL;
+
+	if (!handle || !prop_addr || !prop_size) {
+		CMDQ_ERR("Invalid input: handle=%p, prop_addr=%p, prop_size=%d\n",
+			handle, prop_addr, prop_size);
+		return -EINVAL;
+	}
+
+	cmdq_task_release_property(handle);
+
+	/* copy another buffer so that we can release after used */
+	pprop_addr = kzalloc(prop_size, GFP_KERNEL);
+	if (!pprop_addr) {
+		CMDQ_ERR("alloc pprop_addr memory failed\n");
+		return -ENOMEM;
+	}
+
+	memcpy(pprop_addr, prop_addr, prop_size);
+	handle->prop_addr = pprop_addr;
+	handle->prop_size = prop_size;
+
+	return 0;
 }

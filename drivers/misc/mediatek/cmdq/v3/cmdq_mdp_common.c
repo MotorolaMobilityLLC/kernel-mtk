@@ -24,10 +24,66 @@
 #include "cmdq_engine.h"
 #endif
 #include "smi_public.h"
+#include <linux/slab.h>
+#include <linux/pm_qos.h>
+#include <linux/uaccess.h>
 
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
 static long g_cmdq_mmsys_base;
+#if 0
+static struct mdp_context gCmdqMdpContext;
+static struct pm_qos_request mdp_bw_qos_request[MDP_TOTAL_THREAD];
+static struct pm_qos_request mdp_clk_qos_request[MDP_TOTAL_THREAD];
+static struct pm_qos_request isp_bw_qos_request[MDP_TOTAL_THREAD];
+static struct pm_qos_request isp_clk_qos_request[MDP_TOTAL_THREAD];
+#endif
+
+#define DP_TIMER_GET_DURATION_IN_US(start, end, duration)                       \
+{                                                                               \
+	uint64_t time1;                                                         \
+	uint64_t time2;                                                         \
+										\
+	time1 = (uint64_t)(start.tv_sec) * 1000000 + (uint64_t)(start.tv_usec); \
+	time2 = (uint64_t)(end.tv_sec) * 1000000   + (uint64_t)(end.tv_usec);   \
+										\
+	duration = (int32_t)(time2 - time1);                                    \
+										\
+	if (duration < 0)							\
+		duration = 1;                                                   \
+										\
+}
+
+void cmdq_mdp_init(void)
+{
+#if 0
+	s32 i = 0;
+
+	INIT_LIST_HEAD(&gCmdqMdpContext.mdp_tasks);
+
+	for (i = 0; i < MDP_TOTAL_THREAD; i++) {
+		pm_qos_add_request(&mdp_bw_qos_request[i],  PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		pm_qos_add_request(&mdp_clk_qos_request[i], PM_QOS_MDP_FREQ, PM_QOS_DEFAULT_VALUE);
+		pm_qos_add_request(&isp_bw_qos_request[i],  PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		pm_qos_add_request(&isp_clk_qos_request[i], PM_QOS_IMG_FREQ, PM_QOS_DEFAULT_VALUE);
+	}
+#endif
+}
+
+void cmdq_mdp_deinit(void)
+{
+#if 0
+	s32 i = 0;
+
+	for (i = 0; i < MDP_TOTAL_THREAD; i++) {
+
+		pm_qos_remove_request(&isp_bw_qos_request[i]);
+		pm_qos_remove_request(&isp_clk_qos_request[i]);
+		pm_qos_remove_request(&mdp_bw_qos_request[i]);
+		pm_qos_remove_request(&mdp_clk_qos_request[i]);
+	}
+#endif
+}
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
@@ -37,6 +93,11 @@ struct RegDef {
 	int offset;
 	const char *name;
 };
+
+s32 cmdq_mdp_probe_virtual(void)
+{
+	return 0;
+}
 
 void cmdq_mdp_dump_mmsys_config_virtual(void)
 {
@@ -295,6 +356,38 @@ static void cmdq_mdp_enable_common_clock_virtual(bool enable)
 #endif	/* CMDQ_PWR_AWARE */
 }
 
+static u32 cmdq_mdp_meansure_bandwidth_virtual(u32 bandwidth)
+{
+	return bandwidth;
+}
+
+static void cmdq_mdp_isp_begin_task_virtual(struct TaskStruct *cmdq_task, struct TaskStruct *task_list[], u32 size)
+{
+
+}
+
+static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct TaskStruct *task_list[], u32 size)
+{
+
+}
+
+static void cmdq_mdp_isp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskStruct *task_list[], u32 size)
+{
+
+}
+
+static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskStruct *task_list[], u32 size)
+{
+
+}
+
+void cmdq_mdp_start_task_atomic_virtual(const struct TaskStruct *task, u32 instr_size)
+{
+}
+
+void cmdq_mdp_finish_task_atomic_virtual(const struct TaskStruct *task, u32 instr_size)
+{
+}
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -310,12 +403,22 @@ void cmdq_mdp_unmap_mmsys_VA(void)
 	cmdq_dev_free_module_base_VA(g_cmdq_mmsys_base);
 }
 
+void mdp_init(void)
+{
+	cmdq_mdp_get_func()->initModuleBaseVA();
+}
+
+void mdp_deinit(void)
+{
+	cmdq_mdp_get_func()->deinitModuleBaseVA();
+}
+
 void cmdq_mdp_virtual_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc;
 
 	pFunc = &(gMDPFunctionPointer);
-
+	pFunc->mdp_probe = cmdq_mdp_probe_virtual;
 	pFunc->dumpMMSYSConfig = cmdq_mdp_dump_mmsys_config_virtual;
 
 	pFunc->vEncDumpInfo = cmdqVEncDumpInfo_virtual;
@@ -349,6 +452,13 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
 	pFunc->errorReset = cmdq_mdp_error_reset_virtual;
 	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock_virtual;
+	pFunc->meansureBandwidth = cmdq_mdp_meansure_bandwidth_virtual;
+	pFunc->beginTask = cmdq_mdp_begin_task_virtual;
+	pFunc->endTask = cmdq_mdp_end_task_virtual;
+	pFunc->beginISPTask = cmdq_mdp_isp_begin_task_virtual;
+	pFunc->endISPTask = cmdq_mdp_isp_end_task_virtual;
+	pFunc->startTask_atomic = cmdq_mdp_start_task_atomic_virtual;
+	pFunc->finishTask_atomic = cmdq_mdp_finish_task_atomic_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)

@@ -413,6 +413,9 @@ struct cmdqCommandStruct {
 	uint32_t debugRegDump;
 	/* [Reserved] This is for CMDQ driver usage itself. Not for client. Do not access this field from User Space */
 	cmdqU32Ptr_t privateData;
+	/* task property */
+	u32 prop_size;
+	cmdqU32Ptr_t prop_addr;
 	struct cmdqProfileMarkerStruct profileMarker;
 	cmdqU32Ptr_t userDebugStr;
 	uint32_t userDebugStrLen;
