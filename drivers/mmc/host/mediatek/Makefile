@@ -38,19 +38,19 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/mt6757
 obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
 endif
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6798")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6798
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6798/$(MTK_PLATFORM)
-obj-$(CONFIG_MMC_MTK_PRO) += mt6798/
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/mt6799
+obj-$(CONFIG_MMC_MTK_PRO) += mt6799/
 endif
 
 ifeq ($(CONFIG_MTK_PLATFORM), "kiboplus")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/kiboplus
 obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
 endif
 
