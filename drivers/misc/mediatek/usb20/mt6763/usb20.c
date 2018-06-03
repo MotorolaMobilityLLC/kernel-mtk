@@ -895,6 +895,38 @@ bool is_saving_mode(void)
 	return saving_mode;
 }
 
+void usb_dump_debug_register(void)
+{
+	struct musb *musb = mtk_musb;
+
+	usb_enable_clock(true);
+
+	/* 1:Read 0x11200620; */
+	pr_notice("[IPI USB dump]addr: 0x620, value: %x\n", musb_readl(musb->mregs, 0x620));
+
+	/* 2: set 0x11200600[5:0]  = 0x23; */
+	/* Read 0x11200634; */
+	musb_writew(musb->mregs, 0x600, 0x23);
+	pr_notice("[IPI USB dump]addr: 0x634, 0x23 value: %x\n", musb_readl(musb->mregs, 0x634));
+
+	/* 3: set 0x11200600[5:0]  = 0x24; */
+	/* Read 0x11200634; */
+	musb_writew(musb->mregs, 0x600, 0x24);
+	pr_notice("[IPI USB dump]addr: 0x634, 0x24 value: %x\n", musb_readl(musb->mregs, 0x634));
+
+	/* 4:set 0x11200600[5:0]  = 0x25; */
+	/* Read 0x11200634; */
+	musb_writew(musb->mregs, 0x600, 0x25);
+	pr_notice("[IPI USB dump]addr: 0x634, 0x25 value: %x\n", musb_readl(musb->mregs, 0x634));
+
+	/* 5:set 0x11200600[5:0]  = 0x26; */
+	/* Read 0x11200634; */
+	musb_writew(musb->mregs, 0x600, 0x26);
+	pr_notice("[IPI USB dump]addr: 0x634, 0x26 value: %x\n", musb_readl(musb->mregs, 0x634));
+
+	usb_enable_clock(false);
+}
+
 DEVICE_ATTR(saving, 0664, mt_usb_show_saving_mode, mt_usb_store_saving_mode);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
