@@ -261,6 +261,29 @@ static unsigned int is_chr_det(void)
 }
 #endif
 
+void mt6336_init_setting(void)
+{
+	/* VCV/PAM status bias current setting */
+	mt6336_config_interface(0x52A, 0x88, 0xFF, 0);
+	/* Program the LG dead time control */
+	mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+	/* Loop GM enable control */
+	mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
+	mt6336_config_interface(0x51E, 0x02, 0xFF, 0);
+	/* GM MSB */
+	mt6336_config_interface(0x520, 0x04, 0xFF, 0);
+	mt6336_config_interface(0x55A, 0x00, 0xFF, 0);
+	mt6336_config_interface(0x455, 0x01, 0xFF, 0);
+	mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
+	mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
+	/* Set the software mode BATON switch control signal to be high */
+	mt6336_config_interface(0x5AF, 0x02, 0xFF, 0);
+	/* Enable the software mode of BATON switch control signal  */
+	mt6336_config_interface(0x64E, 0x02, 0xFF, 0);
+	mt6336_config_interface(0x402, 0x03, 0xFF, 0);
+	/* ICC/ICL status bias current setting */
+	mt6336_config_interface(0x529, 0x88, 0xFF, 0);
+}
 static int charging_hw_init(void *data)
 {
 	int status = STATUS_OK;
@@ -909,75 +932,16 @@ static int charging_sw_init(void *data)
 
 #endif
 
-	/* Set RG_T_TERM_EXT to 10 minutes */
-	mt6336_set_flag_register_value(MT6336_RG_T_TERM_EXT, 1);
+	/* Enable RG_EN_TERM */
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 
 	/* Register interrupt callback */
-	/* mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_PLUGIN, mt6336_init_setting); */
+	mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_PLUGIN, mt6336_init_setting);
 	/* mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_PLUGOUT, NULL); */
 
 	/* Enable interrupt */
-	/* mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_PLUGIN, "PLUGIN"); */
+	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_PLUGIN, "PLUGIN");
 	/* mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_PLUGOUT, "PLUGOUT"); */
-
-#if 0 /* TODO: Update initial setting */
-	/* AUXADC_AVG_NUM_SEL_L[7:0] */
-	mt6336_config_interface(0x34D, 0x04, 0xFF, 0);
-	/* [7:6]:AUXADC_TRIM_CH3_SEL[1:0];[5:4]:AUXADC_TRIM_CH2_SEL[1:0] */
-	mt6336_config_interface(0x355, 0xE0, 0xFF, 0);
-	/* [5:4]:AUXADC_TRIM_CH6_SEL[1:0];[1:0]:AUXADC_TRIM_CH4_SEL[1:0] */
-	mt6336_config_interface(0x356, 0x11, 0xFF, 0);
-	/* [3:2]:AUXADC_TRIM_CH9_SEL[1:0] */
-	mt6336_config_interface(0x357, 0x04, 0xFF, 0);
-	/* [0:0]:RG_EN_BUCK;[1:1]:RG_EN_CHARGE */
-	mt6336_config_interface(0x400, 0x03, 0xFF, 0);
-	/* [0:0]:RG_DIS_LOWQ_MODE */
-	mt6336_config_interface(0x409, 0x01, 0xFF, 0);
-	/* [0:0]:RG_BC12_RST;[2:2]:RG_BC12_TIMER_EN */
-	mt6336_config_interface(0x42B, 0x01, 0xFF, 0);
-	/* [0:0]:RG_EN_ICL150PIN */
-	mt6336_config_interface(0x438, 0x08, 0xFF, 0);
-	/* [0:0]:RG_FREQ_SEL */
-	mt6336_config_interface(0x43A, 0x02, 0xFF, 0);
-	/* [5:5]:RG_A_EN_TRIM_IBATSNS */
-	mt6336_config_interface(0x50E, 0x20, 0xFF, 0);
-	/* [0:0]:RG_A_LOOP_CLAMP_EN;[6:1]:RG_A_LOOP_GM_EN[5:0] */
-	mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_DPM_MSB[7:0] */
-	mt6336_config_interface(0x51A, 0x35, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_DPM_LSB[7:0] */
-	mt6336_config_interface(0x51B, 0x84, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_IBAT_MSB[7:0] */
-	mt6336_config_interface(0x51C, 0x01, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_IBAT_LSB[7:0] */
-	mt6336_config_interface(0x51D, 0x84, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_ICHIN_MSB[7:0] */
-	mt6336_config_interface(0x51E, 0x01, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_ICHIN_LSB[7:0] */
-	mt6336_config_interface(0x51F, 0x84, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_SYS_MSB[7:0] */
-	mt6336_config_interface(0x520, 0x34, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_SYS_LSB[7:0] */
-	mt6336_config_interface(0x521, 0x44, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_THR_MSB[7:0] */
-	mt6336_config_interface(0x522, 0x35, 0xFF, 0);
-	/* [7:0]:RG_A_LOOP_GM_TUNE_THR_LSB[7:0] */
-	mt6336_config_interface(0x523, 0x84, 0xFF, 0);
-	/* [3:0]:RG_A_LOOP_ICS[3:0] */
-	mt6336_config_interface(0x526, 0x04, 0xFF, 0);
-	/* [3:0]:RG_A_VRAMP_DCOS[3:0];[6:4]:RG_A_VRAMP_SLP[2:0] */
-	mt6336_config_interface(0x53D, 0x22, 0xFF, 0);
-	/* [3:0]:RG_A_VRAMP_VCS_RTUNE[3:0] */
-	mt6336_config_interface(0x53F, 0x09, 0xFF, 0);
-	/* [0:0]:RG_A_LOGIC_GDRI_MINOFF_DIS */
-	mt6336_config_interface(0x548, 0x11, 0xFF, 0);
-	/* [7:6]:RG_A_PWR_UG_DTC[1:0] */
-	mt6336_config_interface(0x552, 0xE8, 0xFF, 0);
-	/* [1:1]:rg_da_qi_en_adcin_vbaton */
-	mt6336_config_interface(0x5AF, 0x02, 0xFF, 0);
-	/* [1:1]:rg_da_qi_en_adcin_vbaton_sel */
-	mt6336_config_interface(0x64E, 0x02, 0xFF, 0);
-#endif
 
 	return status;
 }
