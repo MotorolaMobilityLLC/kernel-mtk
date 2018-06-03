@@ -265,9 +265,9 @@ static int acc_enable_and_batch(void)
 			atomic_set(&cxt->delay, mdelay);
 			/* the first sensor start polling timer */
 			if (cxt->is_polling_run == false) {
-				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
 				cxt->is_first_data_after_enable = true;
+				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 			}
 			ACC_LOG("acc set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
