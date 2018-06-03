@@ -3331,8 +3331,87 @@
 		pwm_data_invert = <0>;
 	};
 
+	mt_charger: mt_charger {
+		compatible = "mediatek,mt-charger";
+	};
+
+	charger: charger {
+		compatible = "mediatek,charger";
+		algorithm_name = "SwitchCharging";
+		/* enable_sw_jeita; */
+		enable_pe_plus;
+		enable_pe_2;
+		enable_pe_3;
+
+		/* common */
+		battery_cv = <4350000>;
+		max_charger_voltage = <6500000>;
+
+		/* charging current */
+		usb_charger_current_suspend = <0>;
+		usb_charger_current_unconfigured = <70000>;
+		usb_charger_current_configured = <500000>;
+		usb_charger_current = <500000>;
+		ac_charger_current = <2050000>;
+		ac_charger_input_current = <3200000>;
+		non_std_ac_charger_current = <500000>;
+		charging_host_charger_current = <500000>;
+		apple_1_0a_charger_current = <650000>;
+		apple_2_1a_charger_current = <800000>;
+		ta_ac_charger_current = <3000000>;
+
+		/* sw jeita */
+		jeita_temp_above_t4_cv_voltage = <4240000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
+		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
+		jeita_temp_below_t0_cv_voltage = <4040000>;
+		temp_t4_threshold = <50>;
+		temp_t4_thres_minus_x_degree = <47>;
+		temp_t3_threshold = <45>;
+		temp_t3_thres_minus_x_degree = <39>;
+		temp_t2_threshold = <10>;
+		temp_t2_thres_plus_x_degree = <16>;
+		temp_t1_threshold = <0>;
+		temp_t1_thres_plus_x_degree = <6>;
+		temp_t0_threshold = <0>;
+		temp_t0_thres_plus_x_degree = <0>;
+		temp_neg_10_threshold = <0>;
+
+		/* battery temperature protection */
+		enable_min_charge_temperature;
+		min_charge_temperature = <0>;
+		min_charge_temperature_plus_x_degree = <6>;
+		max_charge_temperature = <50>;
+		max_charge_temperature_minus_x_degree = <47>;
+
+		/* PE 2.0 */
+		pe20_ichg_level_threshold = <1000>;
+		ta_start_battery_soc = <0>;
+		ta_stop_battery_soc = <85>;
+
+		/* dual charger */
+		chg1_ta_ac_charger_current = <1500000>;
+		chg2_ta_ac_charger_current = <1500000>;
+
+		/* cable measurement impedance */
+		cable_imp_threshold = <699>;
+		vbat_cable_imp_threshold = <3900>;
+
+		/* bif */
+		bif_threshold1 = <4250000>;
+		bif_threshold2 = <4300000>;
+		bif_cv_under_threshold2 = <4450000>;
+	};
+
+	rt5081_pmu_eint: rt5081_pmu_eint {
+	};
+
+	rt5081_pd: rt5081_pd_eint {
+	};
 };
 
 #include "mt6356.dtsi"
-
+#include "rt5081.dtsi"
 #include "cust_mt6763_msdc.dtsi"
