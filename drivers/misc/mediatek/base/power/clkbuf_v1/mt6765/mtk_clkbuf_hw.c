@@ -26,15 +26,15 @@ static void __iomem *pwrap_base;
 #define PWRAP_REG(ofs)		(pwrap_base + ofs)
 
 /* PMICWRAP Reg */
-#define DCXO_ENABLE		PWRAP_REG(0x17C)
-#define DCXO_CONN_ADR0		PWRAP_REG(0x180)
-#define DCXO_CONN_WDATA0	PWRAP_REG(0x184)
-#define DCXO_CONN_ADR1		PWRAP_REG(0x188)
-#define DCXO_CONN_WDATA1	PWRAP_REG(0x18C)
-#define DCXO_NFC_ADR0		PWRAP_REG(0x190)
-#define DCXO_NFC_WDATA0		PWRAP_REG(0x194)
-#define DCXO_NFC_ADR1		PWRAP_REG(0x198)
-#define DCXO_NFC_WDATA1		PWRAP_REG(0x19C)
+#define DCXO_ENABLE		PWRAP_REG(0x188)
+#define DCXO_CONN_ADR0		PWRAP_REG(0x18C)
+#define DCXO_CONN_WDATA0	PWRAP_REG(0x190)
+#define DCXO_CONN_ADR1		PWRAP_REG(0x194)
+#define DCXO_CONN_WDATA1	PWRAP_REG(0x198)
+#define DCXO_NFC_ADR0		PWRAP_REG(0x19C)
+#define DCXO_NFC_WDATA0		PWRAP_REG(0x1A0)
+#define DCXO_NFC_ADR1		PWRAP_REG(0x1A4)
+#define DCXO_NFC_WDATA1		PWRAP_REG(0x1A8)
 
 #define PMIC_DCXO_CW00		MT6357_DCXO_CW00
 #define PMIC_DCXO_CW00_SET	MT6357_DCXO_CW00_SET
@@ -78,7 +78,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW15_INIT_VAL			0xA2AA
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
@@ -258,9 +258,7 @@ u32 clk_buf_bblpm_enter_cond(void)
 		return bblpm_cond;
 	}
 
-#if 0 /* FIXME: need confirm PWR_STATUS and CLKBUF_PWR_STATUS_MD */
 	pwr_sta = clkbuf_readl(PWR_STATUS);
-#endif
 
 	if (pwr_sta & CLKBUF_PWR_STATUS_MD)
 		bblpm_cond |= BBLPM_COND_CEL;
@@ -695,14 +693,13 @@ void clk_buf_dump_clkbuf_log(void)
 		pr_info("%s bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 				__func__, bblpm_switch, bblpm_cnt,
 				clk_buf_bblpm_enter_cond());
-#if 0	/* FIXME: wait spm ready */
+
 		pr_info("%s MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 				__func__,
 				clkbuf_readl(MD1_PWR_CON),
 				clkbuf_readl(PWR_STATUS),
 				clkbuf_readl(PCM_REG13_DATA),
 				clkbuf_readl(SPARE_ACK_MASK));
-#endif
 	}
 }
 
@@ -868,11 +865,6 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 		"DCXO_CW00/02/11/13/14/15/16=0x%x %x %x %x %x %x %x\n",
 		pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13, pmic_cw14,
 		pmic_cw15, pmic_cw16);
-	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &pmic_cw00,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	len += snprintf(buf+len, PAGE_SIZE-len,
-		"SRCLKEN_IN3_EN(srclken_conn)=0x%x\n", pmic_cw00);
-
 	buf2_mode = (pmic_cw00 >> PMIC_XO_EXTBUF2_MODE_SHIFT)
 		& PMIC_XO_EXTBUF2_MODE_MASK;
 	buf3_mode = (pmic_cw00 >> PMIC_XO_EXTBUF3_MODE_SHIFT)
@@ -897,6 +889,10 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 		"buf2/3/4/6/7 mode=%d/%d/%d/%d/%d, buf2/3/4/6/7 en_m=%d/%d/%d/%d/%d\n",
 		buf2_mode, buf3_mode, buf4_mode, buf6_mode, buf7_mode,
 		buf2_en_m, buf3_en_m, buf4_en_m, buf6_en_m, buf7_en_m);
+	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &pmic_cw00,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+		"SRCLKEN_IN3_EN(srclken_conn)=0x%x\n", pmic_cw00);
 
 	len += snprintf(buf+len, PAGE_SIZE-len,
 		"DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1=0x%x %x %x %x\n",
@@ -916,14 +912,12 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 		"bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 		bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
 
-#if 0 /* FIXME: wait SPM ready */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 			clkbuf_readl(MD1_PWR_CON),
 			clkbuf_readl(PWR_STATUS),
 			clkbuf_readl(PCM_REG13_DATA),
 			clkbuf_readl(SPARE_ACK_MASK));
-#endif
 	return len;
 }
 
