@@ -23,6 +23,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/hps_v3/
 
 ccflags-y += -I$(srctree)/drivers/scsi/ufs/
 
