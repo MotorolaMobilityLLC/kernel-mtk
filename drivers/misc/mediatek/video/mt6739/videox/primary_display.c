@@ -5950,6 +5950,7 @@ int primary_display_get_info(struct disp_session_info *info)
 
 	dispif_info->displayWidth = primary_display_get_width();
 	dispif_info->displayHeight = primary_display_get_height();
+	dispif_info->density = DISP_GetDensity();
 
 	dispif_info->physicalWidth = DISP_GetActiveWidth();
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
@@ -6452,6 +6453,18 @@ UINT32 DISP_GetScreenWidth(void)
 UINT32 DISP_GetScreenHeight(void)
 {
 	return primary_display_get_height();
+}
+UINT32 DISP_GetDensity(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null!\n");
+		return 0;
+	}
+	if (pgc->plcm->params)
+		return pgc->plcm->params->density;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
 }
 
 UINT32 DISP_GetActiveHeight(void)
