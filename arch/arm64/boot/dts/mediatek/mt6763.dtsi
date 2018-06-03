@@ -1463,9 +1463,9 @@
 		reg = <0 0x1401e000 0 0x1000>;
 	};
 
-	vdec_gcon@16000000 {
+	vdec_gcon@17000000 {
 		compatible = "mediatek,vdec_gcon";
-		reg = <0 0x16000000 0 0x1000>;
+		reg = <0 0x17000000 0 0x1000>;
 	};
 
 	vdec@17040000 {
