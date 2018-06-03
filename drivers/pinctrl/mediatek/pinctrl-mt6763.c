@@ -217,7 +217,7 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 		if (pull_val == GPIO_PULL_UP) {
 			enab = 1;
 			sel = 1;
-		} else if (pull_val == GPIO_PULL_UP) {
+		} else if (pull_val == GPIO_PULL_DOWN) {
 			enab = 1;
 			sel = 0;
 		} else if (pull_val == GPIO_NO_PULL) {
