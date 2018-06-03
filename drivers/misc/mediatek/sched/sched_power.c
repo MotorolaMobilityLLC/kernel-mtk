@@ -43,7 +43,12 @@ struct eas_data eas_info;
 
 static int ver_major = 1;
 static int ver_minor = 6;
+
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+static const char module_name[32] = "arctic, sched-assistDVFS";
+#else
 static const char module_name[32] = "arctic";
+#endif
 
 
 #define VOLT_SCALE 10
@@ -438,10 +443,11 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int len = 0;
 
 	for_each_possible_cpu(cpu)
-		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu\n",
+		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu util=%lu\n",
 				cpu, cpu_rq(cpu)->cpu_capacity_orig,
 				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
-				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0);
+				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
+				cpu_online(cpu)?cpu_util(cpu):0);
 
 	return len;
 }
@@ -529,6 +535,7 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 {
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
+	int max_cpu = -1, max_pid = 0, max_util = 0;
 
 	len += snprintf(buf, max_len, "version=%d.%d(%s)\n\n", ver_major, ver_minor, module_name);
 	len += show_cpu_capacity(buf+len, max_len - len);
@@ -538,6 +545,12 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n", power_tuning.watershed);
 	len += snprintf(buf+len, max_len - len, "turning_point=%d\n", power_tuning.turning_point);
+
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+	sched_max_util_task(&max_cpu, &max_pid, &max_util);
+#endif
+	len += snprintf(buf+len, max_len - len, "\nheaviest task pid=%d util=%d run in cpu%d\n\n",
+				max_pid, max_util, max_cpu);
 
 	return len;
 }
@@ -574,12 +587,40 @@ __ATTR(stune_task_thresh, S_IWUSR | S_IRUSR, show_stune_task_thresh_knob,
 static struct kobj_attribute eas_info_attr =
 __ATTR(info, S_IRUSR, show_eas_info_attr, NULL);
 
+/* To define capacity_margin */
+static ssize_t store_cap_margin_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0)
+		capacity_margin = val;
+
+	return count;
+}
+
+static ssize_t show_cap_margin_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "capacity_margin=%d\n", capacity_margin);
+
+	return len;
+}
+
+static struct kobj_attribute eas_cap_margin_attr =
+__ATTR(cap_margin, S_IWUSR | S_IRUSR, show_cap_margin_knob,
+		store_cap_margin_knob);
+
 static struct attribute *eas_attrs[] = {
 	&eas_info_attr.attr,
 	&eas_knob_attr.attr,
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
 	&eas_stune_task_thresh_attr.attr,
+	&eas_cap_margin_attr.attr,
 	NULL,
 };
 
