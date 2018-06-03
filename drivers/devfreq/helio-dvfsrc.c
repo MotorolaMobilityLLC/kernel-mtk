@@ -85,6 +85,7 @@ static void dvfsrc_get_timestamp(char *p)
 
 static void dvfsrc_set_force_start(int data)
 {
+	dvfsrc->opp_forced = 1;
 	dvfsrc_get_timestamp(dvfsrc->force_start);
 	dvfsrc_write(DVFSRC_FORCE, data);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
@@ -102,6 +103,7 @@ static void dvfsrc_release_force(void)
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
 	dvfsrc_write(DVFSRC_FORCE, 0);
 	dvfsrc_get_timestamp(dvfsrc->force_end);
+	dvfsrc->opp_forced = 0;
 }
 
 static void dvfsrc_set_sw_bw(int type, int data)
@@ -156,8 +158,9 @@ static int commit_data(int type, int data)
 
 		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
 
-		ret = wait_for_completion(get_cur_ddr_opp() <= opp,
-				DVFSRC_TIMEOUT);
+		if (!is_opp_forced())
+			ret = wait_for_completion(get_cur_ddr_opp() <= opp,
+					DVFSRC_TIMEOUT);
 		break;
 	case PM_QOS_VCORE_OPP:
 		if (data >= VCORE_OPP_NUM || data < 0)
@@ -168,8 +171,9 @@ static int commit_data(int type, int data)
 
 		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
 
-		ret = wait_for_completion(get_cur_vcore_opp() <= opp,
-				DVFSRC_TIMEOUT);
+		if (!is_opp_forced())
+			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
+					DVFSRC_TIMEOUT);
 		break;
 	case PM_QOS_SCP_VCORE_REQUEST:
 		if (data >= VCORE_OPP_NUM || data < 0)
@@ -181,8 +185,9 @@ static int commit_data(int type, int data)
 		dvfsrc_set_vcore_request(level,
 				VCORE_SCP_GEAR_MASK, VCORE_SCP_GEAR_SHIFT);
 
-		ret = wait_for_completion(get_cur_vcore_opp() <= opp,
-				DVFSRC_TIMEOUT);
+		if (!is_opp_forced())
+			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
+					DVFSRC_TIMEOUT);
 		break;
 	case PM_QOS_POWER_MODEL_DDR_REQUEST:
 		if (data >= DDR_OPP_NUM || data < 0)
@@ -250,6 +255,7 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 
 	dvfsrc->qos_enabled = 1;
 	dvfsrc->dvfsrc_enabled = dvfsrc_en;
+	dvfsrc->opp_forced = 0;
 	sprintf(dvfsrc->force_start, "0");
 	sprintf(dvfsrc->force_end, "0");
 
@@ -323,6 +329,14 @@ int is_dvfsrc_enabled(void)
 {
 	if (dvfsrc)
 		return dvfsrc->dvfsrc_enabled == 1;
+
+	return 0;
+}
+
+int is_opp_forced(void)
+{
+	if (dvfsrc)
+		return dvfsrc->opp_forced == 1;
 
 	return 0;
 }
