@@ -519,6 +519,8 @@ static int pbm_thread_handle(void *data)
 			continue;
 		}
 
+		set_current_state(TASK_RUNNING);
+
 		mutex_lock(&pbm_mutex);
 		if (g_dlpt_need_do == 1) {
 			if (g_dlpt_stop == 0) {
@@ -540,8 +542,6 @@ static int pbm_thread_handle(void *data)
 		atomic_dec(&kthread_nreq);
 		mutex_unlock(&pbm_mutex);
 	}
-
-	__set_current_state(TASK_RUNNING);
 
 	return 0;
 }
