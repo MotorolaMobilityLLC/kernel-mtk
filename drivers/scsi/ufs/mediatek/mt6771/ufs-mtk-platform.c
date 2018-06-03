@@ -372,7 +372,7 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 		return -EINVAL;
 	}
 	err = regulator_enable(reg_va09);
-	if (!err) {
+	if (err < 0) {
 		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, err);
 		return err;
 	}
@@ -412,7 +412,7 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 #endif
 	/* Set regulator to turn on VA09 LDO */
 	ret = regulator_enable(reg_va09);
-	if (!ret) {
+	if (ret < 0) {
 		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, ret);
 		return ret;
 	}
@@ -537,7 +537,7 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 #endif
 	/* Set regulator to turn off VA09 LDO */
 	ret = regulator_disable(reg_va09);
-	if (!ret) {
+	if (ret < 0) {
 		dev_info(hba->dev, "%s: disalbe va09 fail, err = %d\n", __func__, ret);
 		return ret;
 	}
