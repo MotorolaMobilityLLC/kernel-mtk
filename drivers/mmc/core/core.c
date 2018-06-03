@@ -661,12 +661,7 @@ int mmc_run_queue_thread(void *data)
 			}
 		}
 
-		/* Send Command 13' */
-		if (atomic_read(&host->cq_wait_rdy) > 0
-			&& atomic_read(&host->cq_rdy_cnt) == 0)
-			mmc_do_check(host);
-
-		else if (atomic_read(&host->cq_rw)) {
+		if (atomic_read(&host->cq_rw)) {
 			/* wait for event to wakeup */
 			/* wake up when new request arrived and dma done */
 			areq_cnt_chk = atomic_read(&host->areq_cnt);
@@ -696,6 +691,11 @@ int mmc_run_queue_thread(void *data)
 				}
 			}
 		}
+
+		/* Send Command 13' */
+		if (atomic_read(&host->cq_wait_rdy) > 0
+			&& atomic_read(&host->cq_rdy_cnt) == 0)
+			mmc_do_check(host);
 
 		/* Sleep when nothing to do */
 		mt_biolog_cmdq_check();

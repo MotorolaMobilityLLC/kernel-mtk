@@ -981,11 +981,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Disable HW DVFS */
 	if ((host->hw->host_function == MSDC_SDIO)
 	&& (host->use_hw_dvfs == 1)) {
-		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
-		MSDC_WRITE32(MSDC_CFG,
-			MSDC_READ32(MSDC_CFG) &
-			~(MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
-		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 	}
 
 	/* Reset */
@@ -2919,6 +2914,11 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 	host->dma.used_bd = 0;
 	host->dma.used_gpd = 0;
 	dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 0;
+	/* just for debug, will remove */
+	host->is_data_dma = 0;
+#endif
 
 	return 0;
 }
@@ -4179,19 +4179,10 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 static void msdc_unreq_vcore(struct work_struct *work)
 {
-	(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 }
 
 static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
 {
-	if (enable) {
-		/* true if dwork was pending, false otherwise */
-		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
-			(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
-	} else {
-		schedule_delayed_work(&(host->set_vcore_workq),
-			MSDC_DVFS_TIMEOUT);
-	}
 }
 
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -4203,9 +4194,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	    !(host->trans_lock.active))
 		__pm_stay_awake(&host->trans_lock);
 
-	/* SDIO need lock dvfs */
-	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
-		msdc_set_vcore_performance(host, 1);
+	/* SDIO need need lock dvfs */
 
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
@@ -4250,9 +4239,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	else
 		msdc_ops_request_legacy(mmc, mrq);
 
-	/* SDIO need lock dvfs */
-	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
-		msdc_set_vcore_performance(host, 0);
+	/* SDIO need check lock dvfs */
 
 	if ((host->hw->host_function == MSDC_SDIO) &&
 	    (host->trans_lock.active))
@@ -4281,6 +4268,14 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	spin_lock(&host->lock);
 	msdc_clk_enable_and_stable(host);
+
+	/*
+	 * Save timing setting if leaving current timing for restore
+	 * using.
+	 */
+	if (host->hw->host_function == MSDC_EMMC && host->timing != ios->timing
+			&& ios->timing == MMC_TIMING_LEGACY)
+		msdc_save_timing_setting(host);
 
 	if (host->power_mode != ios->power_mode) {
 		switch (ios->power_mode) {
@@ -4362,11 +4357,20 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 		msdc_set_mclk(host, ios->timing, ios->clock);
 
-		if (ios->timing == MMC_TIMING_MMC_HS400
+		/*
+		 * Only restore tune setting on resumming for saving
+		 * time.
+		 */
+		if (host->hw->host_function == MSDC_EMMC
+		&& mmc->card && mmc_card_suspended(mmc->card)
+		&& ios->timing != MMC_TIMING_LEGACY) {
+			msdc_restore_timing_setting(host);
+			pr_notice("[AUTOK]eMMC restored timing setting\n");
+		} else if (ios->timing == MMC_TIMING_MMC_HS400
 #ifdef MMC_K44_RETUNE
-		 && ios->clock == mmc->f_max
+		&& ios->clock == mmc->f_max
 #endif
-		   ) {
+		) {
 			msdc_execute_tuning(host->mmc,
 				MMC_SEND_TUNING_BLOCK_HS200);
 #ifndef MMC_K44_RETUNE
@@ -5051,23 +5055,8 @@ static void msdc_add_host(struct work_struct *work)
 }
 
 /* FIX ME */
-/* Check How MT6739 start DVFS */
 static void msdc_dvfs_kickoff(struct work_struct *work)
 {
-	struct msdc_host *host = NULL;
-
-	host = container_of(work, struct msdc_host, work_sdio.work);
-
-	/* Tell DVFS can start now in these case
-	 * 1. Device is not exist or power on fail.
-	 * 2. Host error when init, ex. clock fail.
-	 * 3. Host in low speed mode and no need AUTOK.
-	 */
-	if (host && !host->is_autok_done) {
-		pr_notice("%s: msdc%d SDIO AUTOK timeout\n",
-			__func__, host->id);
-		spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
-	}
 }
 
 /* use for SPM spm_resource_req */
@@ -5110,7 +5099,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_CMD23;
 #endif
-	mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
+	//mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
 	mmc->caps |= MMC_CAP_ERASE;
 
 	/* If 0  < mmc->max_busy_timeout < cmd.busy_timeout,

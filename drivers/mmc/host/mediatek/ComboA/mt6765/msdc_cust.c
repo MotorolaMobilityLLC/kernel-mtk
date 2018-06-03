@@ -301,8 +301,10 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 
 
 		/* Enable VMCH OC */
-		if (card_on)
+		if (card_on) {
+			mdelay(3);
 			pmic_enable_interrupt(INT_VMCH_OC, 1, "sdcard");
+		}
 
 		/* VMC VOLSEL */
 		/* rollback to 0mv in REG_VMC_VOSEL_CAL
@@ -611,8 +613,8 @@ void msdc_clk_enable_and_stable(struct msdc_host *host)
 #if !defined(FPGA_PLATFORM)
 void msdc_dump_vcore(void)
 {
-#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
-	pr_notice("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
+#if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS) && defined(VCOREFS_READY)
+	pr_notice("%s: Vcore %d\n", __func__, get_cur_vcore_opp());
 #endif
 }
 
