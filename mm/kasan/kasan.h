@@ -63,7 +63,7 @@ struct kasan_global {
  * Structures to keep alloc and free tracks *
  */
 
-#define KASAN_STACK_DEPTH 64
+#define KASAN_STACK_DEPTH 16
 
 struct kasan_track {
 	u32 pid;
