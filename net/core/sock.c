@@ -399,8 +399,8 @@ static int sock_set_timeout(long *timeo_p, char __user *optval, int optlen)
 		*timeo_p = 0;
 		if (warned < 10 && net_ratelimit()) {
 			warned++;
-			pr_info("%s: `%s' (pid %d) tries to set negative timeout\n",
-				__func__, current->comm, task_pid_nr(current));
+			pr_info_ratelimited("%s: `%s' (pid %d) tries to set negative timeout\n",
+					    __func__, current->comm, task_pid_nr(current));
 		}
 		return 0;
 	}
@@ -1458,8 +1458,8 @@ void sk_destruct(struct sock *sk)
 	sock_disable_timestamp(sk, SK_FLAGS_TIMESTAMP);
 
 	if (atomic_read(&sk->sk_omem_alloc))
-		pr_debug("%s: optmem leakage (%d bytes) detected\n",
-			 __func__, atomic_read(&sk->sk_omem_alloc));
+		pr_info_ratelimited("%s: optmem leakage (%d bytes) detected\n",
+				    __func__, atomic_read(&sk->sk_omem_alloc));
 
 	if (sk->sk_frag.page) {
 		put_page(sk->sk_frag.page);
@@ -1872,35 +1872,35 @@ void print_block_sock_info(unsigned long data)
 
 	u = unix_sk(sk);
 	do_div(time, HZ);
-	pr_info("----------------------sock alloc memory block info-----------------------\n");
-	pr_info("[mtk_net][sock]sockdbg %s[%d] is blocking more than %lld sec\n",
-		print_info->process, print_info->pid, time);
+	pr_info_ratelimited("----------------------sock alloc memory block info-----------------------\n");
+	pr_info_ratelimited("[mtk_net][sock]sockdbg %s[%d] is blocking more than %lld sec\n",
+			    print_info->process, print_info->pid, time);
 	if (u->path.dentry)
-		pr_info("[mtk_net][sock]sockdbg: socket-Name:%s\n", u->path.dentry->d_iname);
+		pr_info_ratelimited("[mtk_net][sock]sockdbg: socket-Name:%s\n", u->path.dentry->d_iname);
 	else
-		pr_info("[mtk_net][sock]sockdbg:socket Name (NULL)\n");
+		pr_info_ratelimited("[mtk_net][sock]sockdbg:socket Name (NULL)\n");
 	if (sk->sk_socket && SOCK_INODE(sk->sk_socket)) {
-		pr_info("[mtk_net][sock]sockdbg:socket Inode[%lu]\n",
-			SOCK_INODE(sk->sk_socket)->i_ino);
+		pr_info_ratelimited("[mtk_net][sock]sockdbg:socket Inode[%lu]\n",
+				    SOCK_INODE(sk->sk_socket)->i_ino);
 	}
 	peer = unix_sk(sk)->peer;
 	if (!peer) {
-		pr_info("[mtk_net][sock]sockdbg:peer is (NULL)\n");
+		pr_info_ratelimited("[mtk_net][sock]sockdbg:peer is (NULL)\n");
 	} else {
 		if (((struct unix_sock *)peer)->path.dentry) {
-			pr_info("[mtk_net][sock]sockdbg: Peer Name:%s\n",
-				((struct unix_sock *)peer)->path.dentry->d_iname);
+			pr_info_ratelimited("[mtk_net][sock]sockdbg: Peer Name:%s\n",
+					    ((struct unix_sock *)peer)->path.dentry->d_iname);
 		} else {
-			pr_info("[mtk_net][sock]sockdbg: Peer Name (NULL)\n");
+			pr_info_ratelimited("[mtk_net][sock]sockdbg: Peer Name (NULL)\n");
 		}
 			if (peer->sk_socket && SOCK_INODE(peer->sk_socket)) {
-				pr_info("[mtk_net][sock]sockdbg: Peer Inode [%lu]\n",
-					SOCK_INODE(peer->sk_socket)->i_ino);
+				pr_info_ratelimited("[mtk_net][sock]sockdbg: Peer Inode [%lu]\n",
+						    SOCK_INODE(peer->sk_socket)->i_ino);
 		}
-			pr_info("[mtk_net][sock]sockdbg: Peer Receive Queue len:%d\n",
-				peer->sk_receive_queue.qlen);
+			pr_info_ratelimited("[mtk_net][sock]sockdbg: Peer Receive Queue len:%d\n",
+					    peer->sk_receive_queue.qlen);
 		}
-		pr_info("----------------------sock alloc memory block info end-----------------------\n");
+		pr_info_ratelimited("----------------------sock alloc memory block info end-----------------------\n");
 }
 #endif
 
@@ -1965,10 +1965,10 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 	delay_time = jiffies - debug_block.when;
 	do_div(delay_time, HZ);
 	if (delay_time > 5) {
-		pr_info("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
-			header_len, data_len, timeo);
-		pr_info("[mtk_net][sock]sockdbg:Warning: Process %s[%d] Block %lld s\n",
-			debug_block.process, debug_block.pid, delay_time);
+		pr_info_ratelimited("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
+				    header_len, data_len, timeo);
+		pr_info_ratelimited("[mtk_net][sock]sockdbg:Warning: Process %s[%d] Block %lld s\n",
+				    debug_block.process, debug_block.pid, delay_time);
 	}
 		}
 #endif
