@@ -86,4 +86,6 @@ extern unsigned long long get_drs_all_self_cnt(unsigned int ch);
 extern unsigned long long get_drs_rank1_self_cnt(unsigned int ch);
 extern unsigned int mask_master_disable_drs(unsigned int master);
 extern unsigned int unmask_master_disable_drs(unsigned int master);
+extern unsigned long long get_drs_rank_prd(unsigned int ch);
+
 #endif  /* !__MT_EMI_MPU_H */

@@ -716,3 +716,27 @@ unsigned int unmask_master_disable_drs(unsigned int master)
 
 	return 0;
 }
+
+unsigned long long get_drs_rank_prd(unsigned int ch)
+{
+	unsigned long long rank_drs_prd = 0;
+
+	switch (ch) {
+	case 0:
+		rank_drs_prd = (readl(IOMEM(CHA_EMI_DRS_MON0)) >> 1) & 0x7;
+		break;
+	case 1:
+		rank_drs_prd = (readl(IOMEM(CHB_EMI_DRS_MON0)) >> 1) & 0x7;
+		break;
+	default:
+		rank_drs_prd = (readl(IOMEM(CHA_EMI_DRS_MON0)) >> 1) & 0x7;
+		pr_err("[EMI] wrong channel(%d) for CHN_EMI_DRS_MON0\n", ch);
+		break;
+	}
+
+	/*DRS monitor period = 16ms* (RANK_DRS_PRD+1)*/
+	rank_drs_prd = ((rank_drs_prd + 1) << 4);
+	pr_warn("[EMI] DRS monitor period: 0x%llx ms\n", rank_drs_prd);
+
+	return rank_drs_prd;
+}
