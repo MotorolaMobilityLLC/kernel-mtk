@@ -517,6 +517,8 @@ static void usb_phy_savecurrent_internal(void)
 	USBPHY_CLR32(0x68, (0x1 << 3));
 
 	udelay(1);
+
+	set_usb_phy_mode(PHY_IDLE_MODE);
 }
 
 void usb_phy_savecurrent(void)
@@ -617,9 +619,7 @@ void usb_phy_recover(void)
 	udelay(800);
 
 	/* force enter device mode */
-	USBPHY_CLR32(0x6C, (0x10<<0));
-	USBPHY_SET32(0x6C, (0x2F<<0));
-	USBPHY_SET32(0x6C, (0x3F<<8));
+	set_usb_phy_mode(PHY_DEV_ACTIVE);
 
 	hs_slew_rate_cal();
 
