@@ -43,6 +43,7 @@
 #include <linux/seq_file.h>
 #include <linux/compat.h>
 #include <linux/rculist.h>
+#include <mt-plat/fpsgo_common.h>
 
 /*
  * LOCKING:
@@ -1646,9 +1647,13 @@ fetch_events:
 			}
 
 			spin_unlock_irqrestore(&ep->lock, flags);
+			if (to && to->tv64)
+				xgf_igather_timer(current, 1);
 			if (!freezable_schedule_hrtimeout_range(to, slack,
 								HRTIMER_MODE_ABS))
 				timed_out = 1;
+			if (to && to->tv64)
+				xgf_igather_timer(current, 0);
 
 			spin_lock_irqsave(&ep->lock, flags);
 		}

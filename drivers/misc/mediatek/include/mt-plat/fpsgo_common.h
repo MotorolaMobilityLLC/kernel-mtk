@@ -163,10 +163,10 @@ static inline int fbt_cpu_set_floor_opp(int new_opp) { return 0; }
 #endif
 
 #ifdef CONFIG_MTK_FPSGO_FBT_GAME
-void xgf_igather_timer(const struct hrtimer * const, int);
+void xgf_igather_timer(const void * const, int);
 void xgf_qudeq_notify(unsigned int cmd, unsigned long arg);
 #else
-static inline void xgf_igather_timer(const struct hrtimer * const t, int v) { }
+static inline void xgf_igather_timer(const void * const t, int v) { }
 static inline void xgf_qudeq_notify(unsigned int cmd, unsigned long arg) { }
 #endif
 
