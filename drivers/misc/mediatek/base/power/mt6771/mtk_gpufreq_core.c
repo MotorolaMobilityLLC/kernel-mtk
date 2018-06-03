@@ -865,12 +865,17 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 	if (limited_power == 0) {
 		g_limited_idx_array[IDX_THERMAL_PROTECT_LIMITED] = 0;
 		__mt_gpufreq_update_max_limited_idx();
+
+		/* for DEMO, when there's no thermal limit, set freq to max freq */
+		mt_gpufreq_target(0);
 	} else {
 		limited_freq = __mt_gpufreq_get_limited_freq_by_power(limited_power);
 		for (i = 0; i < g_opp_idx_num; i++) {
 			if (g_opp_table[i].gpufreq_khz <= limited_freq) {
 				g_limited_idx_array[IDX_THERMAL_PROTECT_LIMITED] = i;
 				__mt_gpufreq_update_max_limited_idx();
+				if (g_cur_opp_freq > g_opp_table[i].gpufreq_khz)
+					mt_gpufreq_target(i);
 				break;
 			}
 		}
@@ -2161,7 +2166,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	g_debug = 0;
 	g_DVFS_off_by_ptpod_idx = 0;
 	/* Pause GPU DVFS for debug */
-	g_DVFS_is_paused_by_ptpod = true;
+	/* g_keep_opp_freq_state = true; */
 
 	node = of_find_matching_node(NULL, g_gpufreq_of_match);
 	if (!node)
