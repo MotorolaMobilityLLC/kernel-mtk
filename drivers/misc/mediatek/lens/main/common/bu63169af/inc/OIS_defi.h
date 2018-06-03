@@ -14,11 +14,6 @@
 #ifndef OIS_DEFINITION_H
 #define OIS_DEFINITION_H
 
-#ifdef	OIS_MAIN_C
-#define	EXT
-#else
-#define	EXT	extern
-#endif
 
 /* ================================================================= */
 /* Common */
@@ -639,7 +634,7 @@ struct _FACT_ADJ {
 
 /* Default Parameter of FACTORY Adjust data */
 /* --------------------------------------------- */
-EXT const struct _FACT_ADJ FADJ_DEF
+extern const struct _FACT_ADJ FADJ_DEF
 #ifdef	OIS_MAIN_C
 = {
 	0x0200,			/* gl_CURDAT; */
@@ -673,7 +668,7 @@ EXT const struct _FACT_ADJ FADJ_DEF
 /* data from above memory and write to the OIS */
 /* controller. */
 /* --------------------------------------------- */
-EXT struct _FACT_ADJ FADJ_MEM
+extern struct _FACT_ADJ FADJ_MEM
 #ifdef	OIS_MAIN_C
 = {
 	0x0201,			/* gl_CURDAT; */
@@ -702,15 +697,13 @@ EXT struct _FACT_ADJ FADJ_MEM
 
 /* Parameters for expanding OIS range */
 /* --------------------------------------------- */
-EXT double p_x, q_x;
-EXT double p_y, q_y;
-EXT short int zero_X;
-EXT short int zero_Y;
-EXT short int PREOUT_X_P, PREOUT_X_N;
-EXT short int PREOUT_Y_P, PREOUT_Y_N;
-EXT double alfa_X, beta_X;
-EXT double alfa_Y, beta_Y;
-
-#undef	EXT
+extern double p_x, q_x;
+extern double p_y, q_y;
+extern short int zero_X;
+extern short int zero_Y;
+extern short int PREOUT_X_P, PREOUT_X_N;
+extern short int PREOUT_Y_P, PREOUT_Y_N;
+extern double alfa_X, beta_X;
+extern double alfa_Y, beta_Y;
 
 #endif				/* OIS_DEFINITION_H */
