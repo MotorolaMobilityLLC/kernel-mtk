@@ -594,11 +594,14 @@ int primary_display_esd_recovery(void)
 		goto done;
 	}
 
-	primary_display_idlemgr_kick((char *)__func__, 0);
-	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 2);
+	/* In video mode, recovery don't need kick and blocking flush */
+	if (!primary_display_is_video_mode()) {
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 2);
 
-	/* blocking flush before stop trigger loop */
-	_blocking_flush();
+		/* blocking flush before stop trigger loop */
+		_blocking_flush();
+	}
 
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 3);
 

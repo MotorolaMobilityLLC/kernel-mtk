@@ -73,6 +73,8 @@ struct DDP_MMP_Events {
 	mmp_event present_fence_release;
 	mmp_event present_fence_get;
 	mmp_event present_fence_set;
+	mmp_event esd_recovery;
+	mmp_event esd_cmdq;
 	mmp_event idlemgr;
 	mmp_event idle_monitor;
 	mmp_event share_sram;
