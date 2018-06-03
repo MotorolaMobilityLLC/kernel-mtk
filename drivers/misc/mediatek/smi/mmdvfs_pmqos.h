@@ -16,7 +16,8 @@
 
 #define MAX_FREQ_STEP 6
 
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 /**
  * mmdvfs_qos_get_freq_steps - get available freq steps of each pmqos class
  * @pm_qos_class: pm_qos_class of each mm freq domain

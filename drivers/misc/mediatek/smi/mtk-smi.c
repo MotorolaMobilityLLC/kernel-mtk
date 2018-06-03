@@ -1633,7 +1633,8 @@ module_param_named(force_always_on_mm_clks_mask, force_always_on_mm_clks_mask,
 
 arch_initcall_sync(smi_init);
 
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 static struct kernel_param_ops qos_scenario_ops = {
 	.set = set_qos_scenario,
 	.get = get_qos_scenario,

@@ -266,7 +266,8 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
 	/* Change HW configuration */
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 	mmdvfs_qos_update(step_util, final_step);
 #else
 	adaptor->apply_hw_config(adaptor, final_step, original_step);
@@ -328,13 +329,15 @@ void mmdvfs_internal_notify_vcore_calibration(
 	}
 	if (event->event_type == MMDVFS_EVENT_PREPARE_CALIBRATION_START) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 0;
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 		mmdvfs_qos_enable(false);
 #endif
 		MMDVFSMSG("mmdvfs service is disabled for vcore calibration\n");
 	} else if (event->event_type  == MMDVFS_EVENT_PREPARE_CALIBRATION_END) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 		mmdvfs_qos_enable(true);
 #endif
 		MMDVFSMSG("mmdvfs service has been enabled\n");

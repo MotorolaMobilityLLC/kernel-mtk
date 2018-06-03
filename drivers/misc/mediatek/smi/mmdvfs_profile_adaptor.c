@@ -815,7 +815,8 @@ struct mmdvfs_step_util *g_mmdvfs_step_util;
 struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
 struct mmdvfs_thres_handler *g_mmdvfs_threshandler;
 
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 static int mask_concur[MMDVFS_OPP_NUM_LIMITATION];
 static void update_qos_scenario(void);
 #endif
@@ -863,7 +864,8 @@ void mmdvfs_config_util_init(void)
 		g_mmdvfs_non_force_step_util->init(
 			g_mmdvfs_non_force_step_util);
 
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 	update_qos_scenario();
 #endif
 }
@@ -985,7 +987,8 @@ u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req,
 	return 0;
 }
 
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 static int get_qos_step(s32 opp)
 {
 	if (opp == MMDVFS_FINE_STEP_UNREQUEST)
