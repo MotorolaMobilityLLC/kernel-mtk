@@ -326,7 +326,7 @@ int pmic_tracking_init(void)
 	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL_SLEEP_LB, 0x28);
 #endif
 #if defined(CONFIG_MACH_MT6775)
-	return 0;
+	return ret;
 #else
 #if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759)
 	ret = enable_vsram_vcore_hw_tracking(1);
@@ -335,8 +335,8 @@ int pmic_tracking_init(void)
 	ret = enable_vsram_vcore_hw_tracking(0);
 	PMICLOG("Disable VSRAM_VCORE hw tracking\n");
 #endif
-#endif
 	return ret;
+#endif
 }
 
 /*****************************************************************************
