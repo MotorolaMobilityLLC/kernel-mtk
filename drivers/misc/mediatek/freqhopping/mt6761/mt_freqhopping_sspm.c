@@ -138,7 +138,7 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* FH PLL5 MPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 1, UNINIT_DDS},	/* 0% ~ -1% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -1% */
 	 },
 
 	/* FH PLL6 MMPLL*/
