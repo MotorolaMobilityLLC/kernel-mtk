@@ -1031,6 +1031,7 @@ WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC);
 VOID halSerHifReset(IN P_ADAPTER_T prAdapter);
 
 VOID halProcessRxInterrupt(IN P_ADAPTER_T prAdapter);
+VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter);
 VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter);
 /* Hif power off wifi */
 WLAN_STATUS halHifPowerOffWifi(IN P_ADAPTER_T prAdapter);
