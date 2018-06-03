@@ -51,8 +51,6 @@
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
 
-static struct pm_qos_request mcdi_qos_request;
-
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
@@ -113,13 +111,6 @@ static inline long int get_current_time_ms(void)
 
 	do_gettimeofday(&t);
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
-}
-
-void set_mcdi_enable_by_pm_qos(bool en)
-{
-	s32 latency_req = en ? PM_QOS_DEFAULT_VALUE : 2;
-
-	pm_qos_update_request(&mcdi_qos_request, latency_req);
 }
 
 static int cluster_idx_map[NF_CPU] = {
@@ -223,11 +214,9 @@ static ssize_t mcdi_state_write(struct file *filp,
 	cmd_buf[count] = '\0';
 
 	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
-		if (!strcmp(cmd, "enable")) {
+		if (!strcmp(cmd, "enable"))
 			set_mcdi_enable_status(param);
-
-			set_mcdi_enable_by_pm_qos((param != 0));
-		} else if (!strcmp(cmd, "s_state"))
+		else if (!strcmp(cmd, "s_state"))
 			set_mcdi_s_state(param);
 		return count;
 	}
@@ -721,8 +710,6 @@ bool mcdi_pause(bool paused)
 		return true;
 
 	if (paused) {
-		set_mcdi_enable_by_pm_qos(false);
-
 		mcdi_state_pause(true);
 
 		wakeup_all_cpu();
@@ -730,8 +717,6 @@ bool mcdi_pause(bool paused)
 		wait_until_all_cpu_powered_on();
 	} else {
 		mcdi_state_pause(false);
-
-		set_mcdi_enable_by_pm_qos(true);
 	}
 
 	return true;
@@ -833,9 +818,6 @@ static void mcdi_of_init(void)
 
 static void __init mcdi_pm_qos_init(void)
 {
-	pm_qos_add_request(&mcdi_qos_request, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
-
-	set_mcdi_enable_by_pm_qos(true);
 }
 
 static int __init mcdi_init(void)
