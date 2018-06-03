@@ -74,6 +74,8 @@ int mm_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
 	{450, 312, 312, 312},
 };
 
+static enum HRT_LEVEL max_hrt_level = HRT_LEVEL_NUM - 1;
+
 /**
  * The layer mapping table define ovl layer dispatch rule for both
  * primary and secondary display.Each table has 16 elements which
@@ -390,6 +392,8 @@ int set_emi_bound_tb(int idx, int num, int *val)
 void layering_rule_init(void)
 {
 	l_rule_info.primary_fps = 60;
+	/* initialize max HRT level */
+	layering_rule_set_max_hrt_level();
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
 
 	set_layering_opt(LYE_OPT_RPO,
@@ -424,6 +428,22 @@ int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
 	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, dramc_type, opp_level);
 
 	return mm_freq_table[dramc_type][opp_level];
+}
+
+void layering_rule_set_max_hrt_level(void)
+{
+#if defined(CONFIG_MTK_DRAMC)
+	if (get_ddr_type() != TYPE_LPDDR3) {
+		/* LPDDR4-3733 */
+		if (dram_steps_freq(0) == 3600)
+			max_hrt_level = HRT_LEVEL_LEVEL2;  /* max request to OPP1 */
+	}
+#endif
+}
+
+int layering_rule_get_max_hrt_level(void)
+{
+	return max_hrt_level;
 }
 
 void antilatency_config_hrt(void)
