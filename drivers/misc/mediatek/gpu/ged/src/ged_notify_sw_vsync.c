@@ -29,11 +29,19 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged.h"
 
+#ifdef GED_ENABLE_FB_DVFS
+#define GED_DVFS_TIMER_TIMEOUT 100000000
+#else
 #define GED_DVFS_TIMER_TIMEOUT 25000000
+#endif
 
 #ifndef ENABLE_TIMER_BACKUP
 #undef GED_DVFS_TIMER_TIMEOUT
+#ifdef GED_ENABLE_FB_DVFS
+#define GED_DVFS_TIMER_TIMEOUT 100000000
+#else
 #define GED_DVFS_TIMER_TIMEOUT 25000000
+#endif
 #endif
 
 
@@ -179,6 +187,32 @@ extern unsigned long g_ulCalResetTS_us; // calculate loading reset time stamp
 extern unsigned long g_ulPreCalResetTS_us; // previous calculate loading reset time stamp
 extern unsigned long g_ulWorkingPeriod_us; // last frame half, t0
 
+#ifdef GED_ENABLE_FB_DVFS
+void ged_cancel_backup_timer(void)
+{
+	unsigned long long temp;
+
+	temp = ged_get_time();
+#ifdef ENABLE_TIMER_BACKUP
+	if (hrtimer_try_to_cancel(&g_HT_hwvsync_emu)) {
+		/* Timer is either queued or in cb
+		* cancel it to ensure it is not bother any way
+		*/
+		hrtimer_cancel(&g_HT_hwvsync_emu);
+		hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
+		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer Restart (ts=%llu)", temp);
+	} else {
+		/*
+		* Timer is not existed
+		*/
+		hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
+		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] New Timer Start (ts=%llu)", temp);
+		timer_switch_locked(true);
+	}
+#endif			/*	#ifdef ENABLE_TIMER_BACKUP	*/
+}
+#endif
+
 GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQueryData)
 {
 	ged_notification(GED_NOTIFICATION_TYPE_SW_VSYNC);
@@ -208,9 +242,14 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	if(g_gpu_timer_based_emu)
 	{
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Vsync ignored (ts=%llu)", temp);
+#ifndef GED_ENABLE_FB_DVFS
 		return GED_ERROR_INTENTIONAL_BLOCK;
+#endif
 	}
 
+#ifdef GED_ENABLE_FB_DVFS
+	return GED_ERROR_INTENTIONAL_BLOCK;
+#endif
 
 
 	/*critical session begin*/

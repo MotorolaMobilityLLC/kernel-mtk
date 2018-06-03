@@ -124,6 +124,12 @@ void ged_dvfs_system_exit(void);
 
 extern void (*ged_kpi_set_gpu_dvfs_hint_fp)(int t_gpu_target, int boost_accum_gpu);
 
+#ifdef GED_ENABLE_FB_DVFS
+extern int (*ged_kpi_gpu_dvfs_fp)(int t_gpu, int t_gpu_target);
+extern void (*ged_kpi_trigger_fb_dvfs_fp)(void);
+extern int (*ged_kpi_check_if_fallback_mode_fp)(void);
+#endif
+
 extern void (*mtk_get_gpu_dvfs_cal_freq_fp)(unsigned long *pulGpu_tar_freq, int *pmode);
 
 extern void mtk_gpu_ged_hint(int, int);

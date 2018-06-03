@@ -158,6 +158,7 @@ typedef struct GED_TIMESTAMP_TAG {
 	unsigned long long ullWnd;
 	unsigned long i32FrameID;
 	unsigned long long ullTimeStamp;
+	unsigned int i32GPUloading;
 	int i32QedBuffer_length;
 	int isSF;
 	struct work_struct sWork;
@@ -264,6 +265,42 @@ module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 #endif
 module_param(gx_game_mode, int, S_IRUGO|S_IWUSR);
 module_param(gx_3D_benchmark_on, int, S_IRUGO|S_IWUSR);
+
+
+/* ----------------------------------------------------------------------------- */
+#ifdef GED_ENABLE_FB_DVFS
+int (*ged_kpi_gpu_dvfs_fp)(int t_gpu, int t_gpu_target);
+
+static int ged_kpi_gpu_dvfs(int t_gpu, int t_gpu_target)
+{
+	if (ged_kpi_gpu_dvfs_fp)
+		return ged_kpi_gpu_dvfs_fp(t_gpu, t_gpu_target);
+	return 0;
+}
+EXPORT_SYMBOL(ged_kpi_gpu_dvfs_fp);
+
+/* ----------------------------------------------------------------------------- */
+void (*ged_kpi_trigger_fb_dvfs_fp)(void);
+
+void ged_kpi_trigger_fb_dvfs(void)
+{
+	if (ged_kpi_trigger_fb_dvfs_fp)
+		ged_kpi_trigger_fb_dvfs_fp();
+}
+EXPORT_SYMBOL(ged_kpi_trigger_fb_dvfs_fp);
+/* ----------------------------------------------------------------------------- */
+int (*ged_kpi_check_if_fallback_mode_fp)(void);
+
+int ged_kpi_check_if_fallback_mode(void)
+{
+	if (ged_kpi_check_if_fallback_mode_fp)
+		return ged_kpi_check_if_fallback_mode_fp();
+	else
+		return 1;
+}
+EXPORT_SYMBOL(ged_kpi_check_if_fallback_mode_fp);
+#endif /* GED_ENABLE_FB_DVFS */
+/* ----------------------------------------------------------------------------- */
 
 #ifdef GED_KPI_CPU_BOOST
 /* ----------------------------------------------------------------------------- */
@@ -575,7 +612,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
 		psHead->ullWnd,
 		psKPI->i32QueueID,
@@ -592,6 +629,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->boost_accum_gpu,
 		psKPI->t_cpu_remained_pred,
 		psKPI->t_cpu_target,
+		psKPI->t_gpu,
 		vsync_period,
 		psKPI->QedBufferDelay,
 		psKPI->cpu_max_freq_LL,
@@ -1208,6 +1246,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			struct list_head *psListEntry, *psListEntryTemp;
 			struct list_head *psList = &psHead->sList;
 			int boost_linear_gpu;
+#ifdef GED_ENABLE_FB_DVFS
+			static unsigned long long last_3D_done, cur_3D_done;
+			int time_spent;
+			static int gpu_freq_pre;
+#endif
 
 			list_for_each_prev_safe(psListEntry, psListEntryTemp, psList) {
 				psKPI = list_entry(psListEntry, GED_KPI, sList);
@@ -1238,8 +1281,22 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				ged_log_perf_trace_counter("gpu_freq", (int)psKPI->gpu_freq);
 				psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
 				psHead->i32Gpu_uncompleted--;
-				mtk_get_gpu_loading(&psKPI->gpu_loading);
 				ged_log_perf_trace_counter("gpu_loading", (int)psKPI->gpu_loading);
+				psKPI->gpu_loading = psTimeStamp->i32GPUloading;
+				if (psKPI->gpu_loading == 0)
+					mtk_get_gpu_loading(&psKPI->gpu_loading);
+#ifdef GED_ENABLE_FB_DVFS
+				cur_3D_done = psKPI->ullTimeStamp2;
+				if (psTimeStamp->i32GPUloading) { /* not fallback mode */
+					time_spent =
+						(int)(cur_3D_done - last_3D_done) / 100 * psTimeStamp->i32GPUloading;
+					psKPI->t_gpu = time_spent;
+				} else {
+					time_spent = 0;
+				}
+				gpu_freq_pre = ged_kpi_gpu_dvfs(time_spent/100000, psKPI->t_gpu_target/100000);
+				last_3D_done = cur_3D_done;
+#endif
 
 				if (psHead->last_TimeStamp1 != psKPI->ullTimeStamp1) {
 					psHead->last_QedBufferDelay =
@@ -1381,10 +1438,28 @@ static GED_ERROR ged_kpi_push_timestamp(
 
 	if (g_psWorkQueue && is_GED_KPI_enabled) {
 		GED_TIMESTAMP *psTimeStamp = (GED_TIMESTAMP *)ged_alloc_atomic(sizeof(GED_TIMESTAMP));
+#ifdef GED_ENABLE_FB_DVFS
+		unsigned int pui32Block, pui32Idle;
+#endif
 
 		if (!psTimeStamp) {
 			GED_PR_ERR("[GED_KPI]: GED_ERROR_OOM in %s\n", __func__);
 			return GED_ERROR_OOM;
+		}
+
+		if (eTimeStampType == GED_TIMESTAMP_TYPE_2) {
+#ifdef GED_ENABLE_FB_DVFS
+			mutex_lock(&gsGpuUtilLock);
+			if (!ged_kpi_check_if_fallback_mode()) {
+				ged_kpi_trigger_fb_dvfs();
+				ged_dvfs_cal_gpu_utilization(&(psTimeStamp->i32GPUloading), &pui32Block, &pui32Idle);
+			} else {
+				psTimeStamp->i32GPUloading = 0;
+			}
+			mutex_unlock(&gsGpuUtilLock);
+#else
+			psTimeStamp->i32GPUloading = 0;
+#endif
 		}
 
 		psTimeStamp->eTimeStampType = eTimeStampType;
