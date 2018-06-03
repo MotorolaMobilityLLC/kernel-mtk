@@ -35,13 +35,16 @@
 #include <linux/of_irq.h>
 #include <linux/clk.h>
 
+/* for bxx debug start */
 #include <../../misc/mediatek/systracker/systracker_v2.h>
 extern void print_enabled_clks_once(void);
 extern int systracker_watchpoint_disable(void);
+/* for bxx debug end */
+
 
 #define I2C_DEBUG_FS
 
-#define I2C_MAS_ERR			(0x01 << 8)
+#define I2C_BUS_ERR			(0x01 << 8)
 #define I2C_IBI				(0x01 << 7)
 #define I2C_DMAERR			(0x01 << 6)
 #define I2C_TIMEOUT			(0x01 << 5)
@@ -50,7 +53,7 @@ extern int systracker_watchpoint_disable(void);
 #define I2C_HS_NACKERR		(0x01 << 2)
 #define I2C_ACKERR			(0x01 << 1)
 #define I2C_TRANSAC_COMP	(0x01 << 0)
-#define I2C_INTR_ALL	(I2C_MAS_ERR | I2C_IBI | I2C_DMAERR | \
+#define I2C_INTR_ALL	(I2C_BUS_ERR | I2C_IBI | I2C_DMAERR | \
 				I2C_TIMEOUT | I2C_RS_MULTI | \
 				I2C_ARB_LOST | I2C_HS_NACKERR | \
 				I2C_ACKERR | I2C_TRANSAC_COMP)
