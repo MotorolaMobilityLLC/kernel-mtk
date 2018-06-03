@@ -5475,6 +5475,11 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 
 	memcpy(frame_cfg->input_cfg, session_input->config, sizeof(frame_cfg->input_cfg));
 
+	if (disp_validate_ioctl_params(frame_cfg)) {
+		ret = -EINVAL;
+		goto out;
+	}
+
 	_primary_path_lock(__func__);
 
 	atomic_set(&hwc_configing, 1);
@@ -5483,6 +5488,7 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 
 	_primary_path_unlock(__func__);
 
+out:
 	kfree(frame_cfg);
 	return ret;
 }

@@ -623,7 +623,7 @@ static int disp_validate_output_params(struct disp_output_config *cfg)
 	return 0;
 }
 
-static int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
+int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
 {
 	int i;
 
