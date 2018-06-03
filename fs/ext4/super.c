@@ -42,6 +42,7 @@
 
 #include <linux/kthread.h>
 #include <linux/freezer.h>
+#include <linux/hie.h>
 
 #include "ext4.h"
 #include "ext4_extents.h"	/* Needed for trace points definition */
@@ -5332,6 +5333,15 @@ static struct file_system_type ext4_fs_type = {
 };
 MODULE_ALIAS_FS("ext4");
 
+#ifdef CONFIG_EXT4_ENCRYPTION
+struct hie_fs ext4_hie = {
+	.name = "ext4",
+	.key_payload = ext4_key_payload,
+	.set_bio_context = ext4_set_bio_crypt_context,
+	.priv = NULL,
+};
+#endif
+
 /* Shared across all ext4 file systems */
 wait_queue_head_t ext4__ioend_wq[EXT4_WQ_HASH_SZ];
 struct mutex ext4__aio_mutex[EXT4_WQ_HASH_SZ];
@@ -5381,6 +5391,10 @@ static int __init ext4_init_fs(void)
 	err = register_filesystem(&ext4_fs_type);
 	if (err)
 		goto out;
+
+#ifdef CONFIG_EXT4_ENCRYPTION
+	hie_register_fs(&ext4_hie);
+#endif
 
 	return 0;
 out:

@@ -15,6 +15,7 @@
 #include <linux/file.h>
 #include <linux/random.h>
 #include <asm/uaccess.h>
+#include <linux/hie.h>
 #include "ext4_jbd2.h"
 #include "ext4.h"
 
@@ -696,6 +697,10 @@ encryption_policy_out:
 		err = ext4_get_policy(inode, &policy);
 		if (err)
 			return err;
+		/* for compliance to android */
+		if (S_ISDIR(inode->i_mode) &&
+			policy.contents_encryption_mode != EXT4_ENCRYPTION_MODE_INVALID)
+			policy.contents_encryption_mode = EXT4_ENCRYPTION_MODE_AES_256_XTS;
 		if (copy_to_user((void __user *)arg, &policy, sizeof(policy)))
 			return -EFAULT;
 		return 0;

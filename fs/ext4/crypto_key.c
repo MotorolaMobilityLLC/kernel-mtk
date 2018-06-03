@@ -13,6 +13,7 @@
 #include <linux/random.h>
 #include <linux/scatterlist.h>
 #include <uapi/linux/keyctl.h>
+#include <linux/hie.h>
 
 #include "ext4.h"
 #include "xattr.h"
@@ -194,6 +195,12 @@ void ext4_free_encryption_info(struct inode *inode,
 	ext4_free_crypt_info(ci);
 }
 
+int ext4_default_data_encryption_mode(void)
+{
+	return hie_is_ready() ? EXT4_ENCRYPTION_MODE_PRIVATE :
+		EXT4_ENCRYPTION_MODE_AES_256_XTS;
+}
+
 int ext4_get_encryption_info(struct inode *inode)
 {
 	struct ext4_inode_info *ei = EXT4_I(inode);
@@ -207,10 +214,17 @@ int ext4_get_encryption_info(struct inode *inode)
 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
 	struct crypto_ablkcipher *ctfm;
 	const char *cipher_str;
+	int for_fname = 0;
 	char raw_key[EXT4_MAX_KEY_SIZE];
-	char mode;
+	int mode;
 	int res;
 
+#ifdef CONFIG_HIE_DEBUG
+	int dbg = 0;
+
+	if (hie_debug_ino(inode->i_ino))
+		dbg = 1;
+#endif
 	if (ei->i_crypt_info)
 		return 0;
 
@@ -223,15 +237,30 @@ int ext4_get_encryption_info(struct inode *inode)
 	res = ext4_xattr_get(inode, EXT4_XATTR_INDEX_ENCRYPTION,
 				 EXT4_XATTR_NAME_ENCRYPTION_CONTEXT,
 				 &ctx, sizeof(ctx));
+
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_FS))
+		pr_info("HIE: %s: inode: %p, %ld, ext4_xattr_get: %d, default_mode: %d\n",
+			__func__, inode, inode->i_ino,
+			res, ext4_default_data_encryption_mode());
+#endif
+
 	if (res < 0) {
 		if (!DUMMY_ENCRYPTION_ENABLED(sbi))
 			return res;
-		ctx.contents_encryption_mode = EXT4_ENCRYPTION_MODE_AES_256_XTS;
+		ctx.contents_encryption_mode =
+			ext4_default_data_encryption_mode();
 		ctx.filenames_encryption_mode =
 			EXT4_ENCRYPTION_MODE_AES_256_CTS;
 		ctx.flags = 0;
-	} else if (res != sizeof(ctx))
+	} else if (res != sizeof(ctx)) {
+#ifdef CONFIG_HIE_DEBUG
+		if (dbg)
+			pr_info("HIE: %s: res %d != sizeof(ctx) %ld: ino=%ld, %d\n",
+				__func__, res, sizeof(ctx), inode->i_ino, -EINVAL);
+#endif
 		return -EINVAL;
+	}
 	res = 0;
 
 	crypt_info = kmem_cache_alloc(ext4_crypt_info_cachep, GFP_KERNEL);
@@ -244,12 +273,12 @@ int ext4_get_encryption_info(struct inode *inode)
 	crypt_info->ci_ctfm = NULL;
 	memcpy(crypt_info->ci_master_key, ctx.master_key_descriptor,
 	       sizeof(crypt_info->ci_master_key));
-	if (S_ISREG(inode->i_mode))
-		mode = crypt_info->ci_data_mode;
-	else if (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode))
-		mode = crypt_info->ci_filename_mode;
-	else
+	if (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode))
+		for_fname = 1;
+	else if (!S_ISREG(inode->i_mode))
 		BUG();
+	mode = for_fname ? crypt_info->ci_filename_mode :
+		crypt_info->ci_data_mode;
 	switch (mode) {
 	case EXT4_ENCRYPTION_MODE_AES_256_XTS:
 		cipher_str = "xts(aes)";
@@ -259,6 +288,9 @@ int ext4_get_encryption_info(struct inode *inode)
 		break;
 	case EXT4_ENCRYPTION_MODE_AES_256_HEH:
 		cipher_str = "heh(aes)";
+		break;
+	case EXT4_ENCRYPTION_MODE_PRIVATE:
+		cipher_str = "bugon";
 		break;
 	default:
 		printk_once(KERN_WARNING
@@ -281,9 +313,15 @@ int ext4_get_encryption_info(struct inode *inode)
 	keyring_key = request_key(&key_type_logon, full_key_descriptor, NULL);
 	if (IS_ERR(keyring_key)) {
 		res = PTR_ERR(keyring_key);
+#ifdef CONFIG_HIE_DEBUG
+		if (dbg)
+			pr_info("HIE: %s: request_key: ino=%ld, %d\n",
+				__func__, inode->i_ino, res);
+#endif
 		keyring_key = NULL;
 		goto out;
 	}
+	crypt_info->ci_keyring_key = keyring_key;
 	if (keyring_key->type != &key_type_logon) {
 		printk_once(KERN_WARNING
 			    "ext4: key type must be logon\n");
@@ -293,6 +331,13 @@ int ext4_get_encryption_info(struct inode *inode)
 	down_read(&keyring_key->sem);
 	ukp = user_key_payload(keyring_key);
 	if (ukp->datalen != sizeof(struct ext4_encryption_key)) {
+#ifdef CONFIG_HIE_DEBUG
+		if (dbg)
+			pr_info("HIE: %s: [%s] ukp->datalen %d != sizeof(ext4_encryption_key) %ld: ino=%ld, %d\n",
+				__func__, full_key_descriptor,
+				ukp->datalen, sizeof(struct ext4_encryption_key),
+				inode->i_ino, -EINVAL);
+#endif
 		res = -EINVAL;
 		up_read(&keyring_key->sem);
 		goto out;
@@ -313,12 +358,29 @@ int ext4_get_encryption_info(struct inode *inode)
 	if (res)
 		goto out;
 got_key:
-	ctfm = crypto_alloc_ablkcipher(cipher_str, 0, 0);
-	if (!ctfm || IS_ERR(ctfm)) {
-		res = ctfm ? PTR_ERR(ctfm) : -ENOMEM;
-		printk(KERN_DEBUG
-		       "%s: error %d (inode %u) allocating crypto tfm\n",
-		       __func__, res, (unsigned) inode->i_ino);
+	if (for_fname ||
+	    (crypt_info->ci_data_mode != EXT4_ENCRYPTION_MODE_PRIVATE)) {
+		ctfm = crypto_alloc_ablkcipher(cipher_str, 0, 0);
+		if (!ctfm || IS_ERR(ctfm)) {
+			res = ctfm ? PTR_ERR(ctfm) : -ENOMEM;
+			pr_debug("%s: error %d (inode %u) allocating crypto tfm\n",
+				__func__, res, (unsigned) inode->i_ino);
+			goto out;
+		}
+		crypt_info->ci_ctfm = ctfm;
+		crypto_ablkcipher_clear_flags(ctfm, ~0);
+		crypto_tfm_set_flags(crypto_ablkcipher_tfm(ctfm),
+				     CRYPTO_TFM_REQ_WEAK_KEY);
+		res = crypto_ablkcipher_setkey(ctfm, raw_key,
+					       ext4_encryption_key_size(mode));
+		if (res)
+			goto out;
+		memzero_explicit(raw_key,
+				sizeof(raw_key));
+	} else if (!hie_is_ready()) {
+		pr_info("%s: Hardware inline encryption is not available\n",
+		       __func__);
+		res = -EINVAL;
 		goto out;
 	}
 	crypt_info->ci_ctfm = ctfm;
@@ -337,7 +399,6 @@ out:
 		res = 0;
 	key_put(keyring_key);
 	ext4_free_crypt_info(crypt_info);
-	memzero_explicit(raw_key, sizeof(raw_key));
 	return res;
 }
 
@@ -347,3 +408,54 @@ int ext4_has_encryption_key(struct inode *inode)
 
 	return (ei->i_crypt_info != NULL);
 }
+
+int ext4_set_bio_crypt_context(struct inode *inode, struct bio *bio)
+{
+	struct ext4_crypt_info *ci = NULL;
+	int ret = -ENOENT;
+
+	if (inode->i_sb->s_magic != EXT4_SUPER_MAGIC)
+		return -EINVAL;
+
+	if (ext4_encrypted_inode(inode))
+		ci = ext4_encryption_info(inode);
+
+	if (S_ISREG(inode->i_mode) && ci &&
+	    (ci->ci_data_mode == EXT4_ENCRYPTION_MODE_PRIVATE)) {
+		WARN_ON(!hie_is_ready());
+		bio->bi_crypt_ctx.bc_flags |= (BC_CRYPT | BC_AES_256_XTS);
+		bio->bi_crypt_ctx.bc_key_size = EXT4_AES_256_XTS_KEY_SIZE;
+		bio->bi_crypt_ctx.bc_keyring_key = ci->ci_keyring_key;
+		bio->bi_crypt_ctx.bc_fs_type = EXT4_SUPER_MAGIC;
+
+#ifdef CONFIG_HIE_DEBUG
+		if (hie_debug(HIE_DBG_FS))
+			pr_info("HIE: %s: ino: %ld, bio: %p\n", __func__, inode->i_ino, bio);
+#endif
+		ret = 0;
+	} else
+		bio->bi_crypt_ctx.bc_flags &= ~BC_CRYPT;
+
+	return ret;
+}
+
+int ext4_key_payload(struct bio_crypt_ctx *ctx, const char *data, const unsigned char **key)
+{
+	struct ext4_encryption_key *master_key;
+
+	if (ctx->bc_fs_type != EXT4_SUPER_MAGIC)
+		return -EINVAL;
+
+	master_key = (struct ext4_encryption_key *)data;
+
+	if (!master_key) {
+		pr_info("%s: master key was not exist\n", __func__);
+		return -ENOKEY;
+	}
+
+	if (key)
+		*key = &master_key->raw[0];
+
+	return master_key->size;
+}
+

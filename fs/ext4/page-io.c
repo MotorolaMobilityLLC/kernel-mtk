@@ -24,6 +24,8 @@
 #include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/backing-dev.h>
+#include <linux/blk_types.h>
+#include <linux/hie.h>
 
 #include "ext4_jbd2.h"
 #include "xattr.h"
@@ -358,6 +360,13 @@ void ext4_io_submit(struct ext4_io_submit *io)
 		int io_op = io->io_wbc->sync_mode == WB_SYNC_ALL ?
 			    WRITE_SYNC : WRITE;
 		bio_get(io->io_bio);
+
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+		if (io->io_crypt_inode) {
+			ext4_set_bio_crypt_context(io->io_crypt_inode,
+						   io->io_bio);
+		}
+#endif
 		submit_bio(io_op, io->io_bio);
 		bio_put(io->io_bio);
 	}
@@ -370,6 +379,7 @@ void ext4_io_submit_init(struct ext4_io_submit *io,
 	io->io_wbc = wbc;
 	io->io_bio = NULL;
 	io->io_end = NULL;
+	io->io_crypt_inode = NULL;
 }
 
 static int io_submit_init_bio(struct ext4_io_submit *io,
@@ -414,14 +424,34 @@ submit_and_retry:
 	return 0;
 }
 
-int ext4_bio_write_page(struct ext4_io_submit *io,
+#ifdef CONFIG_HIE_DEBUG
+static const char *get_inode_name_nolock(struct inode *inode)
+{
+	struct dentry *dentry = NULL;
+	struct dentry *alias;
+
+	hlist_for_each_entry(alias, &inode->i_dentry, d_u.d_alias) {
+		dentry = alias;
+		if (dentry)
+			break;
+	}
+
+	if (dentry && dentry->d_name.name)
+		return dentry->d_name.name;
+
+	return "?";
+}
+#endif
+
+int ext4_bio_write_page_crypt(struct ext4_io_submit *io,
 			struct page *page,
 			int len,
 			struct writeback_control *wbc,
-			bool keep_towrite)
+			bool keep_towrite,
+			struct inode *inode)
+
 {
 	struct page *data_page = NULL;
-	struct inode *inode = page->mapping->host;
 	unsigned block_start, blocksize;
 	struct buffer_head *bh, *head;
 	int ret = 0;
@@ -484,12 +514,34 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 
 	bh = head = page_buffers(page);
 
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_FS)) {
+		struct ext4_crypt_info *ci = ext4_encryption_info(inode);
+
+		pr_info("HIE: %s: page: %p, inode: %p, ino: %ld, cypted: %d, ISREG: %d, nr: %d, hardware_ecnryption: %d, ci: %p, ci_data_mode: %d, name: %s\n",
+			__func__,
+			page,
+			inode,
+			inode->i_ino,
+			ext4_encrypted_inode(inode),
+			S_ISREG(inode->i_mode),
+			nr_to_submit,
+			ext4_using_hardware_encryption(inode),
+			ci,
+			ci ? ci->ci_data_mode : 0,
+			get_inode_name_nolock(inode));
+	}
+#endif
+
 	if (ext4_encrypted_inode(inode) && S_ISREG(inode->i_mode) &&
 	    nr_to_submit) {
 		gfp_t gfp_flags = GFP_NOFS;
 
 	retry_encrypt:
-		data_page = ext4_encrypt(inode, page, gfp_flags);
+		if (ext4_using_hardware_encryption(inode))
+			io->io_crypt_inode = inode;
+		else
+			data_page = ext4_encrypt(inode, page, gfp_flags);
 		if (IS_ERR(data_page)) {
 			ret = PTR_ERR(data_page);
 			if (ret == -ENOMEM && wbc->sync_mode == WB_SYNC_ALL) {
@@ -503,7 +555,8 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 			data_page = NULL;
 			goto out;
 		}
-	}
+	} else
+		io->io_crypt_inode = NULL;
 
 	/* Now submit buffers to write */
 	do {
@@ -540,4 +593,16 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 	if (!nr_submitted)
 		end_page_writeback(page);
 	return ret;
+}
+
+
+int ext4_bio_write_page(struct ext4_io_submit *io,
+			struct page *page,
+			int len,
+			struct writeback_control *wbc,
+			bool keep_towrite)
+{
+	return ext4_bio_write_page_crypt(
+		io, page, len, wbc,
+		keep_towrite, page->mapping->host);
 }

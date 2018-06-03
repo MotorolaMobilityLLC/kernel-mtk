@@ -63,6 +63,7 @@ struct ext4_encryption_context {
 #define EXT4_AES_256_CTS_KEY_SIZE 32
 #define EXT4_AES_256_HEH_KEY_SIZE 32
 #define EXT4_AES_256_XTS_KEY_SIZE 64
+#define EXT4_PRIVATE_KEY_SIZE 64
 #define EXT4_MAX_KEY_SIZE 64
 
 #define EXT4_KEY_DESC_PREFIX "ext4:"
@@ -80,6 +81,7 @@ struct ext4_crypt_info {
 	char		ci_filename_mode;
 	char		ci_flags;
 	struct crypto_ablkcipher *ci_ctfm;
+	struct key	*ci_keyring_key;
 	char		ci_master_key[EXT4_KEY_DESCRIPTOR_SIZE];
 };
 
@@ -115,6 +117,7 @@ static inline int ext4_encryption_key_size(int mode)
 {
 	switch (mode) {
 	case EXT4_ENCRYPTION_MODE_AES_256_XTS:
+	case EXT4_ENCRYPTION_MODE_PRIVATE:
 		return EXT4_AES_256_XTS_KEY_SIZE;
 	case EXT4_ENCRYPTION_MODE_AES_256_GCM:
 		return EXT4_AES_256_GCM_KEY_SIZE;
@@ -158,5 +161,8 @@ static inline u32 encrypted_symlink_data_len(u32 l)
 		l = EXT4_CRYPTO_BLOCK_SIZE;
 	return (l + sizeof(struct ext4_encrypted_symlink_data) - 1);
 }
+
+int ext4_set_bio_crypt_context(struct inode *inode, struct bio *bio);
+int ext4_key_payload(struct bio_crypt_ctx *ctx, const char *data, const unsigned char **key);
 
 #endif	/* _EXT4_CRYPTO_H */
