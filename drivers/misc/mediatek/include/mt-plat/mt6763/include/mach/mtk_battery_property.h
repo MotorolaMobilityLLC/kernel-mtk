@@ -126,12 +126,13 @@
 /* ZCV INTR */
 #define ZCV_SUSPEND_TIME 6
 #define SLEEP_CURRENT_AVG 100 /*0.1mA*/
+#define ZCV_CAR_GAP_PERCENTAGE 5
 
 /* Additional battery table */
 #define ADDITIONAL_BATTERY_TABLE_EN 0
 
 #define DC_RATIO_SEL	5
-#define DC_R_CNT	10	/* if set 0, dcr_start will not be 1*/
+#define DC_R_CNT	1000	/* if set 0, dcr_start will not be 1*/
 
 #define BAT_PAR_I 4000	/* not implement */
 
@@ -154,7 +155,9 @@
 
 /*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
-#define Battery_TMP_TO_DISABLE_NAFG -50
+#define BATTERY_TMP_TO_DISABLE_NAFG -25
+#define BATTERY_TMP_TO_ENABLE_NAFG -20
+/* #define GM30_DISABLE_NAFG */
 
 /* extern function */
 extern int get_rac(void);

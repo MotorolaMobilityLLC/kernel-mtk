@@ -11,6 +11,7 @@
 #include <dt-bindings/mmc/mt6763-msdc.h>
 /* mt6763-pinfunc.h will be removed after DCT auto gen check-in */
 #include <dt-bindings/pinctrl/mt6763-pinfunc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "mt6763";

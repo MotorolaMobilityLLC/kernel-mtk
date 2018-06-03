@@ -20,31 +20,31 @@
 #define RBAT_PULL_UP_VOLT_BY_BIF
 /* #define INIT_BAT_CUR_FROM_PTIM */
 
-#define FG_RG_INT_EN_CHRDET	5
+#define FG_RG_INT_EN_CHRDET	INT_CHRDET
 
-#define FG_RG_INT_EN_BAT2_H  20
-#define FG_RG_INT_EN_BAT2_L  21
+#define FG_RG_INT_EN_BAT2_H  INT_BAT2_H
+#define FG_RG_INT_EN_BAT2_L  INT_BAT2_L
 
-#define FG_RG_INT_EN_BAT_TEMP_H 22
-#define FG_RG_INT_EN_BAT_TEMP_L 23
+#define FG_RG_INT_EN_BAT_TEMP_H INT_BAT_TEMP_H
+#define FG_RG_INT_EN_BAT_TEMP_L INT_BAT_TEMP_L
 
-#define FG_RG_INT_EN_NAG_C_DLTV 25
+#define FG_RG_INT_EN_NAG_C_DLTV INT_NAG_C_DLTV
 
-#define FG_BAT0_INT_H_NO 80
-#define FG_BAT0_INT_L_NO 81
-#define FG_BAT_INT_H_NO 80
-#define FG_BAT_INT_L_NO 81
+#define FG_BAT0_INT_H_NO INT_FG_BAT0_H
+#define FG_BAT0_INT_L_NO INT_FG_BAT0_L
+#define FG_BAT_INT_H_NO INT_FG_BAT0_H
+#define FG_BAT_INT_L_NO INT_FG_BAT0_L
 
-#define FG_CUR_H_NO 82
-#define FG_CUR_L_NO 83
-#define FG_ZCV_NO 84
-#define FG_BAT1_INT_H_NO 85
-#define FG_BAT1_INT_L_NO 86
-#define FG_N_CHARGE_L_NO 87
-#define FG_IAVG_H_NO 88
-#define FG_IAVG_L_NO 89
-#define FG_TIME_NO 90
-#define FG_BAT_PLUGOUT_NO 106
+#define FG_CUR_H_NO INT_FG_CUR_H
+#define FG_CUR_L_NO INT_FG_CUR_L
+#define FG_ZCV_NO INT_FG_ZCV
+#define FG_BAT1_INT_H_NO INT_FG_BAT1_H
+#define FG_BAT1_INT_L_NO INT_FG_BAT1_L
+#define FG_N_CHARGE_L_NO INT_FG_N_CHARGE_L
+#define FG_IAVG_H_NO INT_FG_IAVG_H
+#define FG_IAVG_L_NO INT_FG_IAVG_L
+#define FG_TIME_NO INT_FG_TIME_H
+#define FG_BAT_PLUGOUT_NO INT_BATON_BAT_OUT
 
 
 /* ==============================================================================
