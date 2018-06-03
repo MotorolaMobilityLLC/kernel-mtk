@@ -2080,12 +2080,12 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 {
 	P_GL_IO_REQ_T prIoReq = NULL;
 	WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
-#if 0
+
 #if CFG_CHIP_RESET_SUPPORT
 	if (kalIsResetting())
 		return WLAN_STATUS_SUCCESS;
 #endif
-#endif
+
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
 

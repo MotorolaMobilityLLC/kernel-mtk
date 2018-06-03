@@ -7837,11 +7837,11 @@ BOOLEAN wlanIsChipNoAck(IN P_ADAPTER_T prAdapter)
 	BOOLEAN fgIsNoAck;
 
 	fgIsNoAck = prAdapter->fgIsChipNoAck
-#if 0
+
 #if CFG_CHIP_RESET_SUPPORT
 	    || kalIsResetting()
 #endif
-#endif
+
 	    || fgIsBusAccessFailed;
 
 	return fgIsNoAck;
