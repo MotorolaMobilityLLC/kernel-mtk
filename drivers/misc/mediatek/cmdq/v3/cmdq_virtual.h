@@ -15,6 +15,7 @@
 #define __CMDQ_CORE_VIRTUAL_H__
 
 #include "cmdq_def.h"
+#include "cmdq_helper_ext.h"
 
 /* get subsys LSB in arg_a */
 typedef u32(*CmdqGetSubsysLSBArgA) (void);
@@ -24,6 +25,9 @@ typedef bool(*CmdqIsSecureThread) (const s32 thread);
 
 /* is display scenario */
 typedef bool(*CmdqIsDispScenario) (const enum CMDQ_SCENARIO_ENUM scenario);
+
+/* is exclusive thread scenario */
+typedef bool(*CmdqIsDynamic) (const enum CMDQ_SCENARIO_ENUM scenario);
 
 /* should enable prefetch */
 typedef bool(*CmdqShouldEnablePrefetch) (
@@ -38,8 +42,7 @@ typedef int (*CmdqGetThreadID) (enum CMDQ_SCENARIO_ENUM scenario,
 
 /* priority from scenario */
 typedef enum CMDQ_HW_THREAD_PRIORITY_ENUM(*CmdqPriority) (
-
-enum CMDQ_SCENARIO_ENUM scenario);
+	enum CMDQ_SCENARIO_ENUM scenario);
 
 /*  force loop IRQ from scenario */
 typedef bool(*cmdq_force_loop_irq) (enum CMDQ_SCENARIO_ENUM scenario);
@@ -49,9 +52,9 @@ typedef bool(*cmdq_is_disp_loop) (enum CMDQ_SCENARIO_ENUM scenario);
 
 /* get register index from hwflag */
 typedef void(*CmdqGetRegID) (u64 hwflag,
-	enum CMDQ_DATA_REGISTER_ENUM *valueRegId,
-	enum CMDQ_DATA_REGISTER_ENUM *destRegId,
-	enum CMDQ_EVENT_ENUM *regAccessToken);
+	enum cmdq_gpr_reg *valueRegId,
+	enum cmdq_gpr_reg *destRegId,
+	enum cmdq_event *regAccessToken);
 
 /*  module from event index */
 typedef const char *(*CmdqModuleFromEvent) (const s32 event,
@@ -73,7 +76,11 @@ typedef void (*CmdqPrintStatusSeqClock) (struct seq_file *m);
 typedef void (*CmdqEnableGCEClockLocked) (bool enable);
 
 /* parse error module by hwflag */
-typedef const char *(*CmdqParseErrorModule) (const struct TaskStruct *pTask);
+typedef const char *(*CmdqParseErrorModule) (const struct cmdqRecStruct *pTask);
+
+/* parse error module by hwflag */
+typedef const char *(*CmdqParseHandleErrorModule) (
+const struct cmdqRecStruct *pHandle);
 
 /* dump SMI */
 typedef int (*CmdqDumpSMI) (const int showSmiDump);
@@ -103,6 +110,7 @@ struct cmdqCoreFuncStruct {
 	CmdqGetSubsysLSBArgA getSubsysLSBArgA;
 	CmdqIsSecureThread isSecureThread;
 	CmdqIsDispScenario isDispScenario;
+	CmdqIsDynamic isDynamic;
 	CmdqShouldEnablePrefetch shouldEnablePrefetch;
 	CmdqDispThread dispThread;
 	CmdqGetThreadID getThreadID;
@@ -117,6 +125,7 @@ struct cmdqCoreFuncStruct {
 	CmdqPrintStatusSeqClock printStatusSeqClock;
 	CmdqEnableGCEClockLocked enableGCEClockLocked;
 	CmdqParseErrorModule parseErrorModule;
+	CmdqParseHandleErrorModule parseHandleErrorModule;
 	CmdqDumpSMI dumpSMI;
 	CmdqDumpGPR dumpGPR;
 	CmdqFlagFromScenario flagFromScenario;

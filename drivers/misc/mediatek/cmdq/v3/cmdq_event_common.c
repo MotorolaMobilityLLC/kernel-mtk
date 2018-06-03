@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#include "cmdq_event_common.h"
+#include <linux/soc/mediatek/mtk-cmdq.h>
 #include "cmdq_device.h"
 
 #define DECLAR_EVENT(event_enum, dts_name) \

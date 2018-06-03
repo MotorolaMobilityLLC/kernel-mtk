@@ -75,9 +75,13 @@ struct cmdq_dts_setting {
 
 /* callback when read resource from device tree */
 typedef void(*CMDQ_DEV_INIT_RESOURCE_CB) (u32 engineFlag,
-	enum CMDQ_EVENT_ENUM resourceEvent);
+	enum cmdq_event resourceEvent);
 
 void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting);
 void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb);
+
+
+
+
 
 #endif				/* __CMDQ_DEVICE_H__ */

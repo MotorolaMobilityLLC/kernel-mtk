@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
 #ifdef CMDQ_MET_READY
@@ -1007,7 +1006,7 @@ uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 	return 0xF00;
 }
 
-const char *cmdq_mdp_parse_error_module(const struct TaskStruct *task)
+const char *cmdq_mdp_parse_error_module(const struct cmdqRecStruct *task)
 {
 	const char *module = NULL;
 	const u32 ISP_ONLY[2] = {

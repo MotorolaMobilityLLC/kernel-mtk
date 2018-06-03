@@ -14,7 +14,7 @@
 #ifndef __CMDQ_MMP_H__
 #define __CMDQ_MMP_H__
 
-#include "cmdq_core.h"
+#include "cmdq_helper_ext.h"
 #ifdef CMDQ_PROFILE_MMP
 #include "mmprofile.h"
 #endif

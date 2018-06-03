@@ -40,6 +40,29 @@ enum CMDQ_IWC_ADDR_METADATA_TYPE {
 	CMDQ_IWC_NMVA_2_MVA = 2, /* map normal MVA to secure world */
 };
 
+enum CMDQ_SEC_ENG_ENUM {
+	/* MDP */
+	CMDQ_SEC_MDP_RDMA0 = 0,
+	CMDQ_SEC_MDP_RDMA1,	/* 1 */
+	CMDQ_SEC_MDP_WDMA,	/* 2 */
+	CMDQ_SEC_MDP_WROT0,	/* 3 */
+	CMDQ_SEC_MDP_WROT1,	/* 4 */
+
+	/* DISP */
+	CMDQ_SEC_DISP_RDMA0,	/* 5 */
+	CMDQ_SEC_DISP_RDMA1,	/* 6 */
+	CMDQ_SEC_DISP_WDMA0,	/* 7 */
+	CMDQ_SEC_DISP_WDMA1,	/* 8 */
+	CMDQ_SEC_DISP_OVL0,	/* 9 */
+	CMDQ_SEC_DISP_OVL1,	/* 10 */
+	CMDQ_SEC_DISP_OVL2,	/* 11 */
+	CMDQ_SEC_DISP_2L_OVL0,	/* 12 */
+	CMDQ_SEC_DISP_2L_OVL1,	/* 13 */
+	CMDQ_SEC_DISP_2L_OVL2,	/* 14 */
+
+	CMDQ_SEC_MAX_ENG_COUNT	/* 15 */
+};
+
 /*  */
 /* IWC message */
 /*  */

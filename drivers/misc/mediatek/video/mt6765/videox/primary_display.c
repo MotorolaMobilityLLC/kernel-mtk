@@ -5046,8 +5046,8 @@ int primary_display_ipoh_restore(void)
 	primary_display_esd_check_enable(0);
 	DISPCHECK("ESD check stop[end]\n");
 	if (pgc->cmdq_handle_trigger) {
-		struct TaskStruct *pTask =
-			pgc->cmdq_handle_trigger->pRunningTask;
+		void *pTask =
+			pgc->cmdq_handle_trigger->running_task;
 
 		if (pTask) {
 			DISPCHECK(

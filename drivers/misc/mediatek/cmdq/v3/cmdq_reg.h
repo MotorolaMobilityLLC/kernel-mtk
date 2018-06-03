@@ -17,7 +17,7 @@
 #include <mt-plat/sync_write.h>
 #include <linux/io.h>
 
-#include "cmdq_core.h"
+#include "cmdq_helper_ext.h"
 #include "cmdq_device.h"
 
 #define GCE_BASE_PA			cmdq_dev_get_module_base_PA_GCE()
@@ -88,8 +88,8 @@
 #define CMDQ_REG_GET32(addr)		(readl((void *)addr) & 0xFFFFFFFF)
 #define CMDQ_REG_GET16(addr)		(readl((void *)addr) & 0x0000FFFF)
 
-#define CMDQ_REG_GET64_GPR_PX(id)	cmdq_core_get_GPR64(id)
-#define CMDQ_REG_SET64_GPR_PX(id, value)	cmdq_core_set_GPR64(id, value)
+#define CMDQ_REG_GET64_GPR_PX(id)	cmdq_core_get_gpr64(id)
+#define CMDQ_REG_SET64_GPR_PX(id, value)	cmdq_core_set_gpr64(id, value)
 
 #define CMDQ_GET_GPR_PX2RX_LOW(id)	((id & 0xf) * 2)
 #define CMDQ_GET_GPR_PX2RX_HIGH(id)	((id & 0xf) * 2 + 1)
