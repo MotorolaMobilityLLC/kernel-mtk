@@ -48,8 +48,6 @@ typedef struct {
 	size_t count;
 	struct list_head list[BT_HASH_TABLE_SIZE];
 } BtTable;
-
-extern int minidump_page_owner_memory_info(unsigned long *addr, int *size);
 #endif
 
 #else
