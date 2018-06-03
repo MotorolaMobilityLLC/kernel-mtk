@@ -196,12 +196,29 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
+
+		soter-shared-mem {
+			compatible = "microtrust,shared_mem";
+			no-map;
+			size = <0 0x500000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
 	};
 
 	/* ATF logger SW IRQ number 279 = 32 + 247 */
 	atf_logger {
 		compatible = "mediatek,atf_logger";
 		interrupts = <GIC_SPI 247 IRQ_TYPE_EDGE_RISING>;
+	};
+
+	/* Microtrust SW IRQ number 249(281) ~ 254(286) */
+	utos {
+		compatible = "microtrust,utos";
+		interrupts = <GIC_SPI 249 IRQ_TYPE_EDGE_RISING>,
+			<GIC_SPI 250 IRQ_TYPE_EDGE_RISING>;
+	};
+	utos_tester {
+		compatible = "microtrust,tester-v1";
 	};
 
 	gic: interrupt-controller@0c000000 {
