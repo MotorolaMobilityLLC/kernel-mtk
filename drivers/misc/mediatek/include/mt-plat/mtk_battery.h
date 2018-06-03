@@ -226,6 +226,7 @@ typedef enum {
 	FG_DAEMON_CMD_GET_RAC,
 	FG_DAEMON_CMD_GET_PTIM_VBAT,
 	FG_DAEMON_CMD_GET_PTIM_I,
+	FG_DAEMON_CMD_GET_PTIM_I_SIGN,
 	FG_DAEMON_CMD_IS_CHARGER_EXIST,
 	FG_DAEMON_CMD_GET_HW_OCV,
 	FG_DAEMON_CMD_GET_FG_HW_CAR,
@@ -372,6 +373,7 @@ typedef struct {
 	int debug_ptim_v_value;
 	int debug_ptim_r_en;
 	int debug_ptim_r_value;
+	int debug_ptim_r_value_sign;
 	int debug_fg_curr_en;
 	int debug_fg_curr_value;
 	int debug_bat_id_en;
@@ -505,6 +507,7 @@ struct fuel_gauge_custom_data {
 	int car_tune_value;
 	int fg_meter_resistance;
 	int r_fg_value;
+	int mtk_chr_exist;
 
 	/* Aging Compensation 1*/
 	int aging_one_en;
@@ -549,6 +552,7 @@ struct fuel_gauge_custom_data {
 	int difference_fgc_fgv_th_soc1;
 	int difference_fgc_fgv_th_soc2;
 	int nafg_time_setting;
+	int nafg_ratio;
 
 	/* mode select */
 	int pmic_shutdown_current;
