@@ -107,6 +107,154 @@ TRACE_EVENT(dpidle,
 	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
 );
 
+TRACE_EVENT(check_anycore,
+
+	TP_PROTO(
+		int cpu,
+		int enter,
+		int select_state
+	),
+
+	TP_ARGS(cpu, enter, select_state),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+		__field(int, select_state)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+		__entry->select_state = select_state;
+	),
+
+	TP_printk("cpu = %d %d %d", (int)__entry->cpu, (int)__entry->enter, (int)__entry->select_state)
+);
+
+TRACE_EVENT(mcdi_cpu_cluster_stat,
+
+	TP_PROTO(
+		int cpu,
+		unsigned int on_off_stat,
+		unsigned int check_mask
+	),
+
+	TP_ARGS(cpu, on_off_stat, check_mask),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(unsigned int, on_off_stat)
+		__field(unsigned int, check_mask)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->on_off_stat = on_off_stat;
+		__entry->check_mask = check_mask;
+	),
+
+	TP_printk("cpu = %d %x %x",
+				(int)__entry->cpu,
+				(unsigned int)__entry->on_off_stat,
+				(unsigned int)__entry->check_mask
+	)
+);
+
+TRACE_EVENT(mcdi_multi_core,
+
+	TP_PROTO(
+		int cpu,
+		unsigned int on_off_stat,
+		unsigned int check_mask
+	),
+
+	TP_ARGS(cpu, on_off_stat, check_mask),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(unsigned int, on_off_stat)
+		__field(unsigned int, check_mask)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->on_off_stat = on_off_stat;
+		__entry->check_mask = check_mask;
+	),
+
+	TP_printk("cpu = %d %x %x",
+				(int)__entry->cpu,
+				(unsigned int)__entry->on_off_stat,
+				(unsigned int)__entry->check_mask
+	)
+);
+
+TRACE_EVENT(any_core_residency,
+
+	TP_PROTO(
+		int cpu
+	),
+
+	TP_ARGS(cpu),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+	),
+
+	TP_printk("cpu = %d", (int)__entry->cpu)
+);
+
+TRACE_EVENT(mtk_idle_select,
+
+	TP_PROTO(
+		int cpu,
+		int mtk_idle_state
+	),
+
+	TP_ARGS(cpu, mtk_idle_state),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, mtk_idle_state)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->mtk_idle_state = mtk_idle_state;
+	),
+
+	TP_printk("cpu = %d %d",
+				(int)__entry->cpu,
+				(int)__entry->mtk_idle_state
+	)
+);
+
+TRACE_EVENT(mcdi_task_pause,
+	TP_PROTO(
+		int cpu,
+		int enter
+	),
+
+	TP_ARGS(cpu, enter),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+	),
+
+	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
+);
+
 #endif /* _TRACE_MTK_IDLE_EVENT_H */
 
 /* This part must be outside protection */
