@@ -364,6 +364,9 @@ struct mtp_instance {
 	struct mtp_dev *dev;
 	char mtp_ext_compat_id[16];
 	struct usb_os_desc mtp_os_desc;
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	struct device *mtp_device;
+#endif
 };
 
 /* temporary variable used between mtp_open() and mtp_gadget_bind() */
@@ -1416,7 +1419,7 @@ static int mtp_ctrlrequest(struct usb_composite_dev *cdev,
 
 		if (ctrl->bRequest == MTP_REQ_CANCEL && w_index == 0
 				&& w_value == 0) {
-			DBG(cdev, "MTP_REQ_CANCEL\n");
+			ERROR(cdev, "MTP_REQ_CANCEL\n");
 
 			spin_lock_irqsave(&dev->lock, flags);
 			if (dev->state == STATE_BUSY) {
@@ -1757,6 +1760,62 @@ static struct config_item_type mtp_func_type = {
 	.ct_owner       = THIS_MODULE,
 };
 
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+static int cpumask_to_int(const struct cpumask *cpu_mask)
+{
+	int mask = 0;
+	int cpu;
+
+	for_each_cpu(cpu, cpu_mask) {
+		pr_debug("[USB]%d\n", cpu);
+		mask |= (1 << cpu);
+	}
+
+	return mask;
+}
+
+static ssize_t cpu_mask_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct cpumask *cpu_mask = mtp_get_cpu_mask();
+
+	return sprintf(buf, "0x%X\n",
+		(cpu_mask?cpumask_to_int(cpu_mask):0xFFFFFFFF));
+}
+
+static ssize_t cpu_mask_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned int mask;
+
+	if (kstrtouint(buf, 16, &mask) != 0)
+		return -EINVAL;
+
+	pr_info("Store => 0x%x\n", mask);
+
+	mtp_set_cpu_mask(mask);
+
+	return size;
+}
+
+static DEVICE_ATTR(cpu_mask, 0644, cpu_mask_show,
+					       cpu_mask_store);
+
+static ssize_t mtp_server_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mtp_get_mtp_server());
+}
+
+static DEVICE_ATTR(mtp_server, 0444, mtp_server_show,
+					       NULL);
+
+static struct device_attribute *mtp_function_attributes[] = {
+	&dev_attr_cpu_mask,
+	&dev_attr_mtp_server,
+	NULL
+};
+#endif
 
 static struct mtp_instance *to_fi_mtp(struct usb_function_instance *fi)
 {
@@ -1789,6 +1848,10 @@ static void mtp_free_inst(struct usb_function_instance *fi)
 
 	fi_mtp = to_fi_mtp(fi);
 	kfree(fi_mtp->name);
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	device_destroy(fi_mtp->mtp_device->class,
+			fi_mtp->mtp_device->devt);
+#endif
 	mtp_cleanup();
 	//kfree(fi_mtp->mtp_os_desc.group.default_groups);
 	kfree(fi_mtp);
@@ -1800,6 +1863,12 @@ struct usb_function_instance *alloc_inst_mtp_ptp(bool mtp_config)
 	int ret = 0;
 	struct usb_os_desc *descs[1];
 	char *names[1];
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+	struct device *dev;
+	int err = 0;
+#endif
 
 	fi_mtp = kzalloc(sizeof(*fi_mtp), GFP_KERNEL);
 	if (!fi_mtp)
@@ -1827,6 +1896,31 @@ struct usb_function_instance *alloc_inst_mtp_ptp(bool mtp_config)
 
 	usb_os_desc_prepare_interf_dir(&fi_mtp->func_inst.group, 1,
 					descs, names, THIS_MODULE);
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	if (mtp_config) {
+		dev = create_function_device("f_mtp");
+
+		if (IS_ERR(dev)) {
+			kfree(fi_mtp);
+			pr_info("Error create_function_device\n");
+			return (void *)dev;
+		}
+
+		fi_mtp->mtp_device = dev;
+
+		attrs = mtp_function_attributes;
+		if (attrs) {
+			while ((attr = *attrs++) && !err)
+				err = device_create_file(dev, attr);
+			if (err) {
+				device_destroy(dev->class, dev->devt);
+				kfree(fi_mtp);
+				pr_info("Error device_create_file\n");
+				return ERR_PTR(-EINVAL);
+			}
+		}
+	}
+#endif
 
 	return  &fi_mtp->func_inst;
 }
