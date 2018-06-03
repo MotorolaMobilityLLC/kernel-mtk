@@ -672,7 +672,7 @@ int schedtune_task_capacity_min(struct task_struct *p)
 }
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-static void update_freq_fastpath(void)
+void update_freq_fastpath(void)
 {
 	int cid;
 
@@ -742,9 +742,7 @@ static void update_freq_fastpath(void)
 	met_tag_oneshot(0, "sched_dvfsfast_path", 0);
 #endif
 }
-#endif
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 void set_min_boost_freq(int boost_value, int cpu_clus)
 {
 	int max_clus_nr = arch_get_nr_clusters();
@@ -776,6 +774,53 @@ void set_cap_min_freq(int cap_min)
 	}
 }
 #endif
+
+int stune_task_threshold_for_perf_idx(bool filter)
+{
+	if (!default_stune_threshold)
+		return -EINVAL;
+
+	if (filter)
+		stune_task_threshold = default_stune_threshold;
+	else
+		stune_task_threshold = 0;
+
+	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
+
+	return 0;
+}
+
+int capacity_min_write_for_perf_idx(int idx, int capacity_min)
+{
+	struct schedtune *ct = allocated_group[idx];
+
+	if (!ct)
+		return -EINVAL;
+
+	if (capacity_min < 0 || capacity_min > 1024) {
+		printk_deferred("warning: capacity_min should be 0~1024\n");
+		if (capacity_min > 1024)
+			capacity_min = 1024;
+		else if (capacity_min < 0)
+			capacity_min = 0;
+	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	set_cap_min_freq(capacity_min);
+#endif
+	rcu_read_lock();
+	ct->capacity_min = capacity_min;
+
+	/* Update CPU capacity_min */
+	schedtune_boostgroup_update_capacity_min(ct->idx, ct->capacity_min);
+	rcu_read_unlock();
+
+	/* top-app */
+	if (ct->idx == 3)
+		met_tag_oneshot(0, "sched_boost_top_capacity_min", ct->capacity_min);
+
+	return 0;
+}
 
 int boost_write_for_perf_idx(int group_idx, int boost_value)
 {
