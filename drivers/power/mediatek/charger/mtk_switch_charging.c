@@ -214,9 +214,11 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 	if (en) {
 		swchgalg->disable_charging = false;
 		swchgalg->state = CHR_CC;
+		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 	} else {
 		swchgalg->disable_charging = true;
 		swchgalg->state = CHR_ERROR;
+		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
 	}
 	return 0;
 }
@@ -227,8 +229,10 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
-		if (pmic_is_bif_exist() != 1)
+		if (pmic_is_bif_exist() != 1) {
 			swchgalg->state = CHR_ERROR;
+			charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+		}
 	}
 
 	/* turn on LED */
@@ -343,7 +347,7 @@ int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 
 	if (event == CHARGER_DEV_NOTIFY_EOC) {
 		charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
-		wake_up_charger(info);
+		_wake_up_charger(info);
 	}
 	return NOTIFY_DONE;
 }

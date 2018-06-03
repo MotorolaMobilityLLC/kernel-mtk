@@ -129,7 +129,7 @@ int mtk_chr_is_charger_exist(unsigned char *exist)
 
 /*=============== fix me==================*/
 
-void wake_up_charger(struct charger_manager *info)
+void _wake_up_charger(struct charger_manager *info)
 {
 	unsigned long flags;
 
@@ -171,7 +171,7 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 
 	if (info != NULL) {
 		info->thermal_input_current_limit = input_current;
-		wake_up_charger(info);
+		_wake_up_charger(info);
 		return 0;
 	}
 	return -EBUSY;
@@ -184,7 +184,7 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 
 	if (info != NULL) {
 		info->thermal_charging_current_limit = charging_current;
-		wake_up_charger(info);
+		_wake_up_charger(info);
 		return 0;
 	}
 	return -EBUSY;
@@ -441,7 +441,7 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 		if (!ret) {
 			tmp = val.intval;
 			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN)
-				wake_up_charger(info);
+				_wake_up_charger(info);
 		}
 	}
 
@@ -460,7 +460,7 @@ void mtk_charger_int_handler(void)
 	if (pinfo == NULL)
 		return;
 
-	wake_up_charger(info);
+	_wake_up_charger(info);
 }
 
 static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_type)
@@ -668,7 +668,7 @@ enum hrtimer_restart charger_kthread_hrtimer_func(struct hrtimer *timer)
 {
 	struct charger_manager *info = container_of(timer, struct charger_manager, charger_kthread_timer);
 
-	wake_up_charger(info);
+	_wake_up_charger(info);
 	return HRTIMER_NORESTART;
 }
 
@@ -676,7 +676,7 @@ int charger_kthread_fgtimer_func(struct fgtimer *data)
 {
 	struct charger_manager *info = container_of(data, struct charger_manager, charger_kthread_fgtimer);
 
-	wake_up_charger(info);
+	_wake_up_charger(info);
 	return 0;
 }
 

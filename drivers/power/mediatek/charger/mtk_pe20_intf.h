@@ -14,6 +14,27 @@
 #ifndef __MTK_PE20_INTF_H__
 #define __MTK_PE20_INTF_H__
 
+/* pe 2.0*/
+typedef struct pe20_profile {
+	unsigned int vbat;
+	unsigned int vchr;
+} pe20_profile_t, *p_pe20_profile_t;
+
+struct mtk_pe20 {
+	struct mutex access_lock;
+	struct mutex pmic_sync_lock;
+	struct wake_lock suspend_lock;
+	int ta_vchr_org;
+	int idx;
+	int vbus;
+	bool to_check_chr_type;
+	bool is_cable_out_occur; /* Plug out happened while detect PE+20 */
+	bool is_connect;
+	bool is_enabled;
+	pe20_profile_t profile[10];
+
+};
+
 extern int mtk_pe20_init(struct charger_manager *pinfo);
 extern int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo);
 extern int mtk_pe20_check_charger(struct charger_manager *pinfo);
