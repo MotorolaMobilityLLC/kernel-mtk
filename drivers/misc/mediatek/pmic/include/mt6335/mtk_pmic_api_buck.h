@@ -14,6 +14,9 @@
 #ifndef _MT_PMIC_API_BUCK_H_
 #define _MT_PMIC_API_BUCK_H_
 
+void vmd1_pmic_setting_on(void);
+void vmd1_pmic_setting_off(void);
+
 typedef enum {
 	SW,
 	SPM,
@@ -32,8 +35,84 @@ typedef enum {
 #define SPM_ON	1
 #define SPM_LP	3
 
-void vmd1_pmic_setting_on(void);
-void vmd1_pmic_setting_off(void);
+typedef enum {
+	VCORE,
+	VDRAM,
+	VMODEM,
+	VMD1,
+	VS1,
+	VS2,
+	VIMVO,
+	VSRAM_VCORE,
+	VSRAM_DVFS1,
+	VSRAM_DVFS2,
+	VSRAM_VGPU,
+	VSRAM_VMD,
+	VRF18_1,
+	VRF18_2,
+	VRF12,
+	VCN28,
+	VCAMD1,
+	VCAMD2,
+	VCAMIO,
+	VCAMAF,
+	VA10,
+	VA12,
+	VA18,
+	VSIM2,
+	VSIM1,
+	VTOUCH,
+	VMC,
+	VMCH,
+	VEMC,
+	VUFS18,
+	VEFUSE,
+	VUSB33,
+	VIO18,
+	VIO28,
+	VBIF28,
+	VMIPI,
+	VGP3,
+	VIBR,
+	VXO22,
+	VFE28,
+	TABLE1_COUNT_END
+} PMU_LP_TABLE1_ENUM;
+
+typedef enum {
+	VCN33,
+	VCN18,
+	TABLE2_COUNT_END
+} PMU_LP_TABLE2_ENUM;
+
+typedef enum {
+	VPA1,
+	VCAMA1,
+	VCAMA2,
+	TABLE3_COUNT_END
+} PMU_LP_TABLE3_ENUM;
+
+typedef struct {
+	PMU_LP_TABLE1_ENUM flagname;
+	unsigned short op_en;
+	unsigned short op_cfg;
+	unsigned short en_lp;
+} PMU_LP_TABLE1_ENTRY;
+
+typedef struct {
+	PMU_LP_TABLE2_ENUM flagname;
+	unsigned short op_en_0;
+	unsigned short op_cfg_0;
+	unsigned short en_lp_0;
+	unsigned short op_en_1;
+	unsigned short op_cfg_1;
+	unsigned short en_lp_1;
+} PMU_LP_TABLE2_ENTRY;
+
+typedef struct {
+	PMU_LP_TABLE3_ENUM flagname;
+	unsigned short en_lp;
+} PMU_LP_TABLE3_ENTRY;
 
 extern int pmic_buck_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vdram_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
@@ -43,9 +122,12 @@ extern int pmic_buck_vs1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned
 extern int pmic_buck_vs2_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vpa1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vimvo_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_dvfs1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
-extern int pmic_ldo_vsram_dvfs2_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_vsram_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en,
+				   unsigned char op_cfg);
+extern int pmic_ldo_vsram_dvfs1_lp(BUCK_LDO_EN_USER user, unsigned char op_en,
+				   unsigned char op_cfg);
+extern int pmic_ldo_vsram_dvfs2_lp(BUCK_LDO_EN_USER user, unsigned char op_en,
+				   unsigned char op_cfg);
 extern int pmic_ldo_vsram_vgpu_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_ldo_vsram_vmd_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_ldo_vrf18_1_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
