@@ -144,7 +144,7 @@ void __iomem *venc_gcon_base;
 
 #if MT_CCF_BRINGUP
 #define INFRA_CG0 0x032f8100/*[25:24][21][19:15][8]*/
-#define INFRA_CG1 0x00000a00/*[11][9]*/
+#define INFRA_CG1 0x08000a00/*[27][11][9]*/
 #define INFRA_CG2 0x00000005/*[2][0]*/
 #define INFRA_CG3 0xFFFFFFFF
 #define CAMSYS_CG	0x1FFF

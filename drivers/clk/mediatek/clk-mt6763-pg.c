@@ -1729,7 +1729,7 @@ static int subsys_is_on(enum subsys_id id)
 int allow[NR_SYSS] = {
 1,	/*SYS_MD1 = 0,*/
 1,	/*SYS_CONN = 1,*/
-0,	/*SYS_DIS = 2,*//*can HS, but resume fail*/
+1,	/*SYS_DIS = 2,*//*can HS, but resume fail*/
 1,	/*SYS_MFG = 3,*/
 1,	/*SYS_ISP = 4,*/
 1,	/*SYS_VEN = 5,*/
