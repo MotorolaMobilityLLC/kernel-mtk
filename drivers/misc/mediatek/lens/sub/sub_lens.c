@@ -29,6 +29,11 @@
 #include <linux/compat.h>
 #endif
 
+/* kernel standard for PMIC*/
+#if 1 /* ndef CONFIG_MTK_LEGACY */
+#include <linux/regulator/consumer.h>
+#endif
+
 #include "lens_info.h"
 
 #define AF_DRVNAME "SUBAF"
@@ -66,24 +71,12 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 
 
 static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
-	#ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_BU6429AF_SUPPORT
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_DW9714AF_SUPPORT
 	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl, DW9714AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
 	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl, DW9718AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
 	{1, AFDRV_LC898212AF, LC898212AF_SetI2Cclient, LC898212AF_Ioctl, LC898212AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release},
-	#endif
 };
 
 static stAF_DrvList *g_pstAF_CurDrv;
@@ -97,6 +90,12 @@ static struct i2c_client *g_pstAF_I2Cclient;
 static dev_t g_AF_devno;
 static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
+static struct device *lens_device;
+
+/* PMIC */
+#if 1 /* ndef CONFIG_MTK_LEGACY */
+static struct regulator *regVCAMAF;
+#endif
 
 static long AF_SetMotorName(__user stAF_MotorName *pstMotorName)
 {
@@ -124,6 +123,49 @@ static long AF_SetMotorName(__user stAF_MotorName *pstMotorName)
 	return i4RetValue;
 }
 
+static long AF_SetLensMotorName(stAF_MotorName stMotorName)
+{
+	long i4RetValue = -1;
+	int i;
+
+	LOG_INF("AF_SetLensMotorName - Set Motor Name : %s\n", stMotorName.uMotorName);
+
+	for (i = 0; i < MAX_NUM_OF_LENS; i++) {
+		if (g_stAF_DrvList[i].uEnable != 1)
+			break;
+
+		LOG_INF("AF_SetLensMotorName - Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
+		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
+			g_pstAF_CurDrv = &g_stAF_DrvList[i];
+			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			i4RetValue = 1;
+			break;
+		}
+	}
+	return i4RetValue;
+}
+
+static void AFRegulatorInit(void)
+{
+	struct device_node *node, *kd_node;
+
+	if (1) {
+		/* check if customer camera node defined */
+		node = of_find_compatible_node(NULL, NULL, "mediatek,CAMERA_SUB_AF");
+
+		if (node) {
+			kd_node = lens_device->of_node;
+			lens_device->of_node = node;
+
+			if (regVCAMAF == NULL) {
+				regVCAMAF = regulator_get(lens_device, "vcamaf");
+				LOG_INF("[AFRegulatorInit] regulator_get\n");
+			}
+			lens_device->of_node = kd_node;
+		}
+	}
+}
+
 /* ////////////////////////////////////////////////////////////// */
 static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -132,6 +174,51 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 	switch (a_u4Command) {
 	case AFIOC_S_SETDRVNAME:
 		i4RetValue = AF_SetMotorName((__user stAF_MotorName *)(a_u4Param));
+		break;
+
+	#if 1 /* ndef CONFIG_MTK_LEGACY */
+	case AFIOC_S_SETPOWERCTRL:
+		LOG_INF("AFIOC_S_SETPOWERCTRL\n");
+
+		if (a_u4Param > 0) {
+
+			if (!regulator_is_enabled(regVCAMAF)) {
+				LOG_INF("AF Power disable\n");
+
+				if (regulator_set_voltage(regVCAMAF, 2800000, 2800000) != 0)
+					LOG_INF("regulator_set_voltage fail\n");
+
+				LOG_INF("AF Power On\n");
+
+				if (regulator_enable(regVCAMAF) != 0)
+					LOG_INF("regulator_enable fail\n");
+			} else {
+				LOG_INF("AF Power disable\n");
+			}
+
+		} else {
+			if (regulator_is_enabled(regVCAMAF)) {
+				LOG_INF("Camera Power enable\n");
+
+				if (regulator_disable(regVCAMAF) != 0)
+					LOG_INF("Fail to regulator_disable\n");
+			}
+		}
+		break;
+	#endif
+
+	case AFIOC_S_SETLENSTEST:
+
+		LOG_INF("AFIOC_S_SETLENSTEST\n");
+
+		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
+
+		if (0 /*strncmp(CONFIG_ARCH_MTK_PROJECT, "k99v1", 5) == 0*/) {
+			stAF_MotorName stMotorName;
+
+			memcpy(stMotorName.uMotorName, AFDRV_AK7371AF, 32);
+			AF_SetLensMotorName(stMotorName);
+		}
 		break;
 
 	default:
@@ -213,8 +300,6 @@ static const struct file_operations g_stAF_fops = {
 
 static inline int Register_AF_CharDrv(void)
 {
-	struct device *vcm_device = NULL;
-
 	LOG_INF("Start\n");
 
 	/* Allocate char driver no. */
@@ -255,9 +340,9 @@ static inline int Register_AF_CharDrv(void)
 		return ret;
 	}
 
-	vcm_device = device_create(actuator_class, NULL, g_AF_devno, NULL, AF_DRVNAME);
+	lens_device = device_create(actuator_class, NULL, g_AF_devno, NULL, AF_DRVNAME);
 
-	if (NULL == vcm_device)
+	if (lens_device == NULL)
 		return -EIO;
 
 	LOG_INF("End\n");
@@ -332,6 +417,10 @@ static int AF_i2c_probe(struct i2c_client *client, const struct i2c_device_id *i
 	}
 
 	spin_lock_init(&g_AF_SpinLock);
+
+#if 1 /* ndef CONFIG_MTK_LEGACY */
+	AFRegulatorInit();
+#endif
 
 	LOG_INF("Attached!!\n");
 
