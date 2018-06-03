@@ -863,7 +863,7 @@ const char *cmdq_mdp_parse_error_module(const struct TaskStruct *task)
 	else if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
 		module = "JPGDEC";
 	else if ((ISP_ONLY[0] == task->engineFlag) || (ISP_ONLY[1] == task->engineFlag))
-		module = "ISP_ONLY";
+		module = "DIP_ONLY";
 
 	/* for secure path, use HW flag is sufficient */
 	do {
