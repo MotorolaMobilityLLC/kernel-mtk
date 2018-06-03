@@ -85,6 +85,17 @@ struct layer_statistic {
 static struct layer_statistic layer_stat;
 static int layer_statistic_enable;
 
+/**
+ * @param idleMs new idle wait time in ms unit
+ */
+int display_set_wait_idle_time(unsigned int idleMs)
+{
+	if (idle_check_interval != idleMs)
+		idle_check_interval = idleMs;
+
+	return 0;
+}
+
 static int _is_overlap(unsigned int x1, unsigned int y1, unsigned int w1, unsigned int h1,
 			unsigned int x2, unsigned int y2, unsigned int w2, unsigned int h2)
 {
