@@ -157,8 +157,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		return 0;
 	case ALSPS_GET_PS_THRESHOLD_HIGH:
 		if (alsps_factory.fops != NULL &&
-		    alsps_factory.fops->ps_get_threashold != NULL) {
-			err = alsps_factory.fops->ps_get_threashold(
+		    alsps_factory.fops->ps_get_threshold != NULL) {
+			err = alsps_factory.fops->ps_get_threshold(
 				threshold_data);
 			if (err < 0) {
 				pr_err(
@@ -175,8 +175,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		return 0;
 	case ALSPS_GET_PS_THRESHOLD_LOW:
 		if (alsps_factory.fops != NULL &&
-		    alsps_factory.fops->ps_get_threashold != NULL) {
-			err = alsps_factory.fops->ps_get_threashold(
+		    alsps_factory.fops->ps_get_threshold != NULL) {
+			err = alsps_factory.fops->ps_get_threshold(
 				threshold_data);
 			if (err < 0) {
 				pr_err(
@@ -195,12 +195,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		if (copy_from_user(threshold_data, ptr, sizeof(threshold_data)))
 			return -EFAULT;
 		if (alsps_factory.fops != NULL &&
-		    alsps_factory.fops->ps_set_threashold != NULL) {
-			err = alsps_factory.fops->ps_set_threashold(
+		    alsps_factory.fops->ps_set_threshold != NULL) {
+			err = alsps_factory.fops->ps_set_threshold(
 				threshold_data);
 			if (err < 0) {
-				pr_err(
-					"ALSPS_SET_PS_THRESHOLD read data fail!\n");
+				pr_err("ALSPS_SET_PS_THRESHOLD fail!\n");
 				return -EINVAL;
 			}
 		} else {
@@ -215,8 +214,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		    alsps_factory.fops->ps_set_cali != NULL) {
 			err = alsps_factory.fops->ps_set_cali(data);
 			if (err < 0) {
-				pr_err(
-					"ALSPS_IOCTL_SET_CALI read data fail!\n");
+				pr_err("ALSPS_IOCTL_SET_CALI fail!\n");
 				return -EINVAL;
 			}
 		} else {
@@ -239,11 +237,26 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		if (copy_to_user(ptr, &data, sizeof(data)))
 			return -EFAULT;
 		return 0;
+	case ALSPS_IOCTL_ALS_GET_CALI:
+		if (alsps_factory.fops != NULL &&
+			alsps_factory.fops->ps_get_cali != NULL) {
+			err = alsps_factory.fops->als_get_cali(&data);
+			if (err < 0) {
+				pr_err("ALSPS_IOCTL_ALS_GET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("ALSPS_IOCTL_ALS_GET_CALI NULL\n");
+			return -EINVAL;
+		}
+		if (copy_to_user(ptr, &data, sizeof(data)))
+			return -EFAULT;
+		return 0;
 	case ALSPS_IOCTL_CLR_CALI:
 		if (copy_from_user(&data, ptr, sizeof(data)))
 			return -EFAULT;
 		if (alsps_factory.fops != NULL &&
-		    alsps_factory.fops->ps_clear_cali != NULL) {
+			alsps_factory.fops->ps_clear_cali != NULL) {
 			err = alsps_factory.fops->ps_clear_cali();
 			if (err < 0) {
 				pr_err("ALSPS_IOCTL_CLR_CALI FAIL!\n");
@@ -256,7 +269,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		return 0;
 	case ALSPS_PS_ENABLE_CALI:
 		if (alsps_factory.fops != NULL &&
-		    alsps_factory.fops->ps_enable_calibration != NULL) {
+			alsps_factory.fops->ps_enable_calibration != NULL) {
 			err = alsps_factory.fops->ps_enable_calibration();
 			if (err < 0) {
 				pr_err("ALSPS_PS_ENABLE_CALI FAIL!\n");
@@ -274,8 +287,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	return 0;
 }
 #ifdef CONFIG_COMPAT
-static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd,
-				       unsigned long arg)
+static long alsps_factory_compat_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg)
 {
 	long err = 0;
 
@@ -295,6 +308,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd,
 	case COMPAT_ALSPS_SET_PS_THRESHOLD:
 	case COMPAT_ALSPS_IOCTL_SET_CALI:
 	case COMPAT_ALSPS_IOCTL_GET_CALI:
+	case COMPAT_ALSPS_IOCTL_ALS_GET_CALI:
 	case COMPAT_ALSPS_IOCTL_CLR_CALI:
 	case COMPAT_ALSPS_ALS_ENABLE_CALI:
 	case COMPAT_ALSPS_PS_ENABLE_CALI:

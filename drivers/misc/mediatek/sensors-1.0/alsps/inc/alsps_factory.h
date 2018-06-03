@@ -56,8 +56,8 @@ struct alsps_factory_fops {
 	int (*ps_clear_cali)(void);
 	int (*ps_set_cali)(int32_t offset);
 	int (*ps_get_cali)(int32_t *offset);
-	int (*ps_set_threashold)(int32_t threashold[2]);
-	int (*ps_get_threashold)(int32_t threashold[2]);
+	int (*ps_set_threshold)(int32_t threshold[2]);
+	int (*ps_get_threshold)(int32_t threshold[2]);
 };
 
 struct alsps_factory_public {
