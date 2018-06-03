@@ -131,10 +131,9 @@ static INT32 stp_process_rxack(VOID);
 static VOID stp_process_packet(VOID);
 static VOID stp_process_header_only_packet(VOID);
 static VOID stp_sdio_process_packet(VOID);
-#if 0
 static VOID stp_trace32_dump(VOID);
-#endif
 static VOID stp_sdio_trace32_dump(VOID);
+static UINT32 stp_parser_dmp_num(PUINT8 str);
 static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type);
 
 static INT32 stp_ctx_lock_init(mtkstp_context_struct *pctx)
@@ -313,13 +312,25 @@ static VOID stp_sdio_process_packet(VOID)
 	}
 }
 
-#if 0
+
 static VOID stp_trace32_dump(VOID)
 {
+	UINT32 dmp_num = 0;
+
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX)) {
 		if (stp_core_ctx.rx_counter != 0) {
 			STP_SET_READY(stp_core_ctx, 0);
 			mtk_wcn_stp_ctx_save();
+			if (stp_core_ctx.assert_info_cnt == 0) {
+				dmp_num = stp_parser_dmp_num(stp_core_ctx.rx_buf);
+				if (dmp_num > 0) {
+					STP_INFO_FUNC("parser dmp_num is %d\n", dmp_num);
+					stp_dbg_dump_num(dmp_num);
+				} else {
+					stp_dbg_dump_num(CORE_DUMP_NUM);
+				}
+				stp_core_ctx.assert_info_cnt++;
+			}
 			STP_INFO_FUNC("++ start to read paged dump and paged trace ++\n");
 			stp_btm_notify_wmt_dmp_wq(stp_core_ctx.btm);
 			STP_INFO_FUNC("++ start to read paged dump and paged trace --\n");
@@ -327,13 +338,12 @@ static VOID stp_trace32_dump(VOID)
 		STP_INFO_FUNC("[len=%d][type=%d]\n%s\n", stp_core_ctx.rx_counter,
 					stp_core_ctx.parser.type, stp_core_ctx.rx_buf);
 	}
-
 	/*Runtime FW Log */
-	else if (STP_IS_ENABLE_DBG(stp_core_ctx)
-			&& (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
+	else if (STP_IS_ENABLE_DBG(stp_core_ctx) &&
+		(stp_core_ctx.parser.type == INFO_TASK_INDX)) {
 		stp_dbg_log_pkt(g_mtkstp_dbg, STP_DBG_FW_LOG, STP_TASK_INDX, 5, 0, 0, 0,
-				(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
-				mtk_wcn_stp_dbg_dump_package();
+			(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
+		mtk_wcn_stp_dbg_dump_package();
 	}
 	/*Normal mode: whole chip reset */
 	else {
@@ -341,41 +351,90 @@ static VOID stp_trace32_dump(VOID)
 		/* (*sys_dbg_assert_aee)("[MT662x]f/w Assert", stp_core_ctx.rx_buf); */
 		mtk_wcn_stp_coredump_start_ctrl(0);
 		mtk_wcn_stp_dbg_dump_package();
+
 		osal_dbg_assert_aee(stp_core_ctx.rx_buf, stp_core_ctx.rx_buf);
 		/*Whole Chip Reset Procedure Invoke */
 		if (STP_IS_ENABLE_RST(stp_core_ctx)) {
 			STP_SET_READY(stp_core_ctx, 0);
 			stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
-		} else {
+		} else
 			STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-		}
 	}
 }
-#endif
+
+static UINT32 stp_parser_dmp_num(PUINT8 str)
+{
+	PUINT8 pParserDmpStr = "Dump=";
+	PUINT8 pStr = NULL;
+	PUINT8 pDtr = NULL;
+	PUINT8 pTemp = NULL;
+	INT32 ret = -1;
+	UINT32 len = 0;
+	UINT8 tempBuf[64] = {0};
+	ULONG res;
+
+
+	if (!str) {
+		STP_DBG_ERR_FUNC("NULL string source\n");
+		return -1;
+	}
+
+	pStr = str;
+	pDtr = osal_strstr(pStr, pParserDmpStr);
+	if (pDtr != NULL) {
+		pDtr += osal_strlen(pParserDmpStr);
+		pTemp = osal_strchr(pDtr, ' ');
+	} else {
+		STP_DBG_WARN_FUNC("parser string 'Dump=' is not found\n");
+		return -2;
+	}
+	if (pTemp == NULL) {
+		STP_DBG_ERR_FUNC("space is not found\n");
+		return -3;
+	}
+	len = pTemp - pDtr;
+	osal_memcpy(&tempBuf[0], pDtr, len);
+	tempBuf[len] = '\0';
+	ret = osal_strtol(tempBuf, 10, &res);
+	if (ret) {
+		STP_DBG_ERR_FUNC(" get 'Dump=' from firmware  failed (%d)", ret);
+		return -4;
+	}
+
+	return (UINT32)res;
+}
+
 static VOID stp_sdio_trace32_dump(VOID)
 {
+	UINT32 dmp_num = 0;
+
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX) &&
 			(mtk_wcn_stp_coredump_flag_get() != 0)) {
-		static UINT32 counter;
-
 		if (stp_core_ctx.rx_counter != 0) {
 			STP_SET_READY(stp_core_ctx, 0);
 			mtk_wcn_stp_ctx_save();
-
+			if (stp_core_ctx.assert_info_cnt == 0) {
+				dmp_num = stp_parser_dmp_num(stp_core_ctx.rx_buf);
+				if (dmp_num > 0) {
+					STP_INFO_FUNC("parser dmp_num is %d\n", dmp_num);
+					stp_dbg_dump_num(dmp_num);
+				} else {
+					stp_dbg_dump_num(CORE_DUMP_NUM);
+				}
+			}
 			/*STP_DBG_FW_ASSERT */
 			stp_dbg_log_pkt(g_mtkstp_dbg, STP_DBG_FW_DMP, STP_TASK_INDX, 0, 0, 0, 0,
 					(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
 		}
-		counter++;
-		if (counter == 20)
-			STP_INFO_FUNC("only dump 20 packages from the begging\n");
-		else if (counter < 20)
+		stp_core_ctx.assert_info_cnt++;
+		if (stp_core_ctx.assert_info_cnt == 20)
+			STP_INFO_FUNC("only dump 20 packages from the beginning\n");
+		else if (stp_core_ctx.assert_info_cnt < 20)
 			osal_err_print("[len=%d][type=%d]counter[%d]\n%s\n", stp_core_ctx.rx_counter,
-					stp_core_ctx.parser.type, counter, stp_core_ctx.rx_buf);
+					stp_core_ctx.parser.type, stp_core_ctx.assert_info_cnt, stp_core_ctx.rx_buf);
 		if (osal_strncmp("coredump end", stp_core_ctx.rx_buf + stp_core_ctx.rx_counter -
 				osal_strlen("coredump end") - 2, osal_strlen("coredump end")) == 0) {
-			STP_INFO_FUNC("%d coredump packets received\n", counter);
-			counter = 0;
+			STP_INFO_FUNC("%d coredump packets received\n", stp_core_ctx.assert_info_cnt);
 			STP_ERR_FUNC("coredump end\n");
 			/*mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);*/
 			/*mtk_wcn_stp_coredump_start_ctrl(0);*/
@@ -2257,43 +2316,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				*(stp_core_ctx.rx_buf + stp_core_ctx.rx_counter) = '\0';
 				/* STP_ERR_FUNC("%s [%d]\n", stp_core_ctx.rx_buf, stp_core_ctx.rx_counter); */
 				/*Trace32 Dump */
-				if (STP_IS_ENABLE_DBG(stp_core_ctx) &&
-					(stp_core_ctx.parser.type == STP_TASK_INDX)) {
-					if (stp_core_ctx.rx_counter != 0) {
-						STP_SET_READY(stp_core_ctx, 0);
-						mtk_wcn_stp_ctx_save();
-						STP_INFO_FUNC("++ start to read paged dump and paged trace ++\n");
-						stp_btm_notify_wmt_dmp_wq(stp_core_ctx.btm);
-						STP_INFO_FUNC("++ start to read paged dump and paged trace --\n");
-
-					}
-					STP_INFO_FUNC("[len=%d][type=%d]\n%s\n", stp_core_ctx.rx_counter,
-							stp_core_ctx.parser.type, stp_core_ctx.rx_buf);
-				}
-
-				/*Runtime FW Log */
-				else if (STP_IS_ENABLE_DBG(stp_core_ctx)
-						&& (stp_core_ctx.parser.type == INFO_TASK_INDX)) {
-					stp_dbg_log_pkt(g_mtkstp_dbg, STP_DBG_FW_LOG, STP_TASK_INDX, 5, 0, 0, 0,
-							(stp_core_ctx.rx_counter + 1), stp_core_ctx.rx_buf);
-					mtk_wcn_stp_dbg_dump_package();
-				}
-				/*Normal mode: whole chip reset */
-				else {
-					/*Aee Kernel Warning Message Shown First */
-					/* (*sys_dbg_assert_aee)("[MT662x]f/w Assert", stp_core_ctx.rx_buf); */
-					mtk_wcn_stp_coredump_start_ctrl(0);
-					mtk_wcn_stp_dbg_dump_package();
-
-					osal_dbg_assert_aee(stp_core_ctx.rx_buf, stp_core_ctx.rx_buf);
-					/*Whole Chip Reset Procedure Invoke */
-					if (STP_IS_ENABLE_RST(stp_core_ctx)) {
-						STP_SET_READY(stp_core_ctx, 0);
-						stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
-					} else {
-						STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-					}
-				}
+				stp_trace32_dump();
 				/*discard CRC */
 				if (i >= 2) {
 					STP_DBG_FUNC("crc discard.. i = %d\n", i);
@@ -3501,6 +3524,7 @@ VOID mtk_wcn_stp_ctx_save(void)
 
 VOID mtk_wcn_stp_ctx_restore(void)
 {
+	stp_core_ctx.assert_info_cnt = 0;
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
 	stp_btm_reset_btm_wq(STP_BTM_CORE(stp_core_ctx));
 

@@ -92,7 +92,7 @@ extern UINT32 gStpDbgLvl;
 #define MTKSTP_SDIO_MODE          STP_MODE_BIT(4)
 
 #define MTKSTP_BUFFER_SIZE  (16384)
-
+#define CORE_DUMP_NUM 100
 /*To check function driver's status by the the interface*/
 /*Operation definition*/
 #define OP_FUNCTION_ACTIVE         0
@@ -212,6 +212,7 @@ typedef struct {
 
 typedef struct {
 	UINT8 inband_rst_set;
+	UINT32 assert_info_cnt;
 	UINT32 rx_counter;	/* size of current processing pkt in rx_buf[] */
 	UINT8 rx_buf[MTKSTP_BUFFER_SIZE];	/* input buffer of STP, room for current processing pkt */
 	UINT32 tx_read;		/* read ptr of tx_buf[] */
