@@ -1195,7 +1195,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	int cnst_en = 0;
 
 	data->pre_addr = cfg->addr;
-	data->height = cfg->dst_h;
+	data->height = cfg->src_h;
+	data->width = cfg->src_w;
 	data->fmt = cfg->fmt;
 	data->ext_layer_num = ext_layer_num;
 	data->phy_layer = cfg->phy_layer;
@@ -1238,6 +1239,10 @@ static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 		(phy_reg[UPDATE]|phy_reg[TRANS_EN]|phy_reg[CNST_EN]);
 	ext_bit_dbg[module] =
 		(ext_reg[UPDATE]|ext_reg[TRANS_EN]|ext_reg[CNST_EN]);
+
+	DDPDBG("set bch reg phy:%x -- %x, ext:%x -- %x\n",
+				phy_bit_dbg[module], phy_value,
+				ext_bit_dbg[module], ext_value);
 
 	if (phy_bit_dbg[module] || phy_value)
 		mmprofile_log_ex(ddp_mmp_get_events()->sbch_set,
@@ -1285,7 +1290,8 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 		struct OVL_CONFIG_STRUCT *ext_cfg =
 					&pConfig->ovl_config[layer + j + 1];
 
-		if (sbch_data[layer + j + 1].height != ext_cfg->dst_h ||
+		if (sbch_data[layer + j + 1].height != ext_cfg->src_h ||
+			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
 			(sbch_data[layer + j + 1].pre_addr != ext_cfg->addr) ||
 			(sbch_data[layer + j + 1].fmt != ext_cfg->fmt))
 			return 1;
@@ -1415,7 +1421,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		 * maybe use BCH.
 		 */
 		if (sbch_data[i].pre_addr == ovl_cfg->addr &&
-			sbch_data[i].height == ovl_cfg->dst_h &&
+			sbch_data[i].height == ovl_cfg->src_h &&
+			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&
 			sbch_data[i].phy_layer == ovl_cfg->phy_layer) {
 			if (ovl_cfg->ext_layer == -1)
@@ -1472,12 +1479,18 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
 		int ovl_index = ovl_to_index(module);
 
-		if (!pConfig->sbch_enable) {
+		if (!pConfig->sbch_enable || pConfig->ovl_partial_dirty) {
 
 			DISPMSG("sbch disable\n");
 			memset(sbch_info, 0, sizeof(sbch_info));
+			DISP_REG_SET(handle, ovl_base_addr(module) +
+					DISP_REG_OVL_SBCH, 0);
+			DISP_REG_SET(handle, ovl_base_addr(module) +
+					DISP_REG_OVL_SBCH_EXT, 0);
+		} else {
+			sbch_calc(module, sbch_info[ovl_index],
+					pConfig, handle);
 		}
-		sbch_calc(module, sbch_info[ovl_index], pConfig, handle);
 	} else {
 	/* if don't enable bch feature, set bch reg to default value(0) */
 		DISP_REG_SET(handle,
