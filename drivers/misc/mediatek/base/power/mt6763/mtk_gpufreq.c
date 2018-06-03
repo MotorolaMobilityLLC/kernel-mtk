@@ -922,8 +922,9 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 			gpufreq_err("@%s: enable = %x, reg_val = %d\n", __func__, enable, reg_val);
 		}
 	} else {
-		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T) ||
-					(g_cur_gpu_freq == GPU_DVFS_FREQ1_6763);
+		g_cur_gpu_freq = _mt_gpufreq_get_cur_freq();
+		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPUFREQ_LAST_FREQ_LEVEL_6763T) ||
+					(g_cur_gpu_freq == GPUFREQ_LAST_FREQ_LEVEL_6763);
 
 		if (enable == BUCK_ON) {
 			if (!g_latest_freq_at_lowest)
@@ -1024,8 +1025,9 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 				goto SET_LPM_EXIT;
 		}
 	} else {
-		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T) ||
-					(g_cur_gpu_freq == GPU_DVFS_FREQ1_6763);
+		g_cur_gpu_freq = _mt_gpufreq_get_cur_freq();
+		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPUFREQ_LAST_FREQ_LEVEL_6763T) ||
+					(g_cur_gpu_freq == GPUFREQ_LAST_FREQ_LEVEL_6763);
 
 		if (enable_lpm) {
 			if (!mt_gpufreq_ptpod_disable)
