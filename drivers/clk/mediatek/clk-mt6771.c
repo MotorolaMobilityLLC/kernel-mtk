@@ -747,7 +747,7 @@ static const char * const aud_2_parents[] __initconst = {
 #define INVALID_MUX_GATE -1
 
 static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
-#if MT_CCF_BRINGUP
+#if 0/*MT_CCF_BRINGUP*/
 	/* CLK_CFG_0 */
 	MUX_CLR_SET_UPD(TOP_MUX_AXI, "axi_sel", axi_parents, CK_CFG_0,
 		CK_CFG_0_SET, CK_CFG_0_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
