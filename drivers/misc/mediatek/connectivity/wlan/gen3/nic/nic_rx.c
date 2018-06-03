@@ -1473,6 +1473,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	}
 }
 
+#if CFG_SUPPORT_GSCN
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Process GSCAN event packet
@@ -1484,179 +1485,103 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 *
 */
 /*----------------------------------------------------------------------------*/
-
 UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 {
-
+	P_SCAN_INFO_T prScanInfo;
 	P_WIFI_EVENT_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
-	P_SCAN_INFO_T prScanInfo;
-	P_EVENT_GSCAN_SCAN_AVAILABLE_T prEventGscnAvailable;
-	P_EVENT_GSCAN_RESULT_T prEventBuffer;
-	P_WIFI_GSCAN_RESULT_T prEventGscnResult;
-	P_PARAM_WIFI_GSCAN_RESULT prResults;
-	INT_32 i4Status = -EINVAL;
-	struct sk_buff *skb;
-	struct nlattr *attr;
-	UINT_32 scan_id;
-	UINT_8 scan_flag;
-	P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnGeofenceFound;
-	P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnSignificantChange;
-	UINT_32 real_num = 0;
 	struct wiphy *wiphy;
-	P_EVENT_GSCAN_SCAN_COMPLETE_T prEventGscnScnDone;
-	P_WIFI_GSCAN_RESULT_T prEventGscnFullResult;
-	P_PARAM_WIFI_GSCAN_RESULT prParamGscnFullResult;
-
-	ASSERT(prAdapter);
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-
-	if (!prScanInfo->prPscnParam->fgGScnEnable)
-		return -1;
-
-	DEBUGFUNC("nicRxProcessGSCNEvent");
-
-	DBGLOG(SCN, INFO, "nicRxProcessGSCNEvent\n");
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
 
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 	prGlueInfo = prAdapter->prGlueInfo;
-	/* Alloc the SKB for vendor_event */
-
 	/* Push the data to the skb */
-
 	wiphy = priv_to_wiphy(prGlueInfo);
 
-	DBGLOG(SCN, INFO, "Event Handling\n");
-
+	/* Event Handling */
 	switch (prEvent->ucEID) {
 	case EVENT_ID_GSCAN_SCAN_AVAILABLE:
 		{
+			P_EVENT_GSCAN_SCAN_AVAILABLE_T prEventGscnAvailable;
+
+			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_SCAN_AVAILABLE\n");
 			prEventGscnAvailable = (P_EVENT_GSCAN_SCAN_AVAILABLE_T) (prEvent->aucBuffer);
-
-			memcpy(prEventGscnAvailable, (P_EVENT_GSCAN_SCAN_AVAILABLE_T) (prEvent->aucBuffer),
-			       sizeof(EVENT_GSCAN_SCAN_AVAILABLE_T));
-
-			mtk_cfg80211_vendor_event_scan_results_available(wiphy, NULL,
-									 prEventGscnAvailable->u2Num);
+			mtk_cfg80211_vendor_event_scan_results_available(wiphy,
+				prGlueInfo->prDevHandler->ieee80211_ptr, prEventGscnAvailable->u2Num);
 		}
 		break;
 
 	case EVENT_ID_GSCAN_RESULT:
 		{
-			UINT_8 u1Buf = 0;
+			P_EVENT_GSCAN_RESULT_T prEventBuffer;
 
 			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_RESULT 2\n");
 			prEventBuffer = (P_EVENT_GSCAN_RESULT_T) (prEvent->aucBuffer);
-			prEventGscnResult = prEventBuffer->rResult;
-			/*
-			 * the following event struct should moved to kal and
-			 * use the kal api to avoid future porting effort
-			 */
-
-			scan_id = prEventBuffer->u2ScanId;
-			scan_flag = prEventBuffer->u2ScanFlags;
-			real_num = prEventBuffer->u2NumOfResults;
-
-			DBGLOG(SCN, INFO, "scan_id=%d, scan_flag =%d, real_num=%d\r\n", scan_id, scan_flag, real_num);
-
-			skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(PARAM_WIFI_GSCAN_RESULT) * real_num);
-
-			if (!skb) {
-				DBGLOG(RX, ERROR, "%s allocate skb failed:%x\n", __func__, i4Status);
-				return -ENOMEM;
-			}
-
-			attr = nla_nest_start(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS);
-			{
-				if (!NLA_PUT_U32(skb, GSCAN_ATTRIBUTE_SCAN_ID, &scan_id)) {
-					DBGLOG(SCN, INFO, "nla_put_failure\n");
-					return 0;
-				}
-
-				u1Buf = 1;
-				if (!NLA_PUT_U8(skb, GSCAN_ATTRIBUTE_SCAN_FLAGS, &u1Buf)) {
-					DBGLOG(SCN, INFO, "nla_put_failure\n");
-					return 0;
-				}
-				if (!NLA_PUT_U32(skb, GSCAN_ATTRIBUTE_NUM_OF_RESULTS, &real_num)) {
-					DBGLOG(SCN, INFO, "nla_put_failure\n");
-					return 0;
-				}
-				prResults = (P_PARAM_WIFI_GSCAN_RESULT) prEventGscnResult;
-				if (prResults)
-					DBGLOG(SCN, INFO, "ssid=%s, rssi=%d, channel=%d \r\n", prResults->ssid,
-					       prResults->rssi, prResults->channel);
-				if (!NLA_PUT(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS,
-					sizeof(PARAM_WIFI_GSCAN_RESULT) * real_num,
-					prResults)) {
-					DBGLOG(SCN, INFO, "nla_put_failure\n");
-					return 0;
-				}
-				DBGLOG(SCN, INFO, "NLA_PUT scan results over \t");
-			}
-			nla_nest_end(skb, attr);
-			u1Buf = 1;
-			/* report_events=1 */
-			if (!NLA_PUT_U8(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS_COMPLETE, &u1Buf)) {
-				DBGLOG(SCN, INFO, "nla_put_failure\n");
-				return 0;
-			}
-
-			i4Status = cfg80211_vendor_cmd_reply(skb);
-			/*cfg80211_vendor_event(skb, GFP_KERNEL); */
-
-			prScanInfo->fgGscnGetResWaiting = FALSE;
-
-			DBGLOG(SCN, INFO, " i4Status %d\n", i4Status);
-
+			/* scnFsmGSCNResults(prAdapter, prEventBuffer); */
 		}
 		break;
 
 	case EVENT_ID_GSCAN_CAPABILITY:
 		{
-			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_CAPABILITY\n");
+			P_EVENT_GSCAN_CAPABILITY_T prEventGscnCapbiblity;
 
-			/*nla_put_nohdr(skb, sizeof(EVENT_GSCAN_CAPABILITY_T), prEventGscnCapbiblity); */
+			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_CAPABILITY\n");
+			prEventGscnCapbiblity = (P_EVENT_GSCAN_CAPABILITY_T) (prEvent->aucBuffer);
+			mtk_cfg80211_vendor_get_gscan_capabilities(wiphy, prGlueInfo->prDevHandler->ieee80211_ptr,
+				prEventGscnCapbiblity, sizeof(EVENT_GSCAN_CAPABILITY_T));
 		}
 		break;
 
 	case EVENT_ID_GSCAN_SCAN_COMPLETE:
 		{
+			P_EVENT_GSCAN_SCAN_COMPLETE_T prEventGscnScnDone;
+
+			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_SCAN_COMPLETE\n");
 			prEventGscnScnDone = (P_EVENT_GSCAN_SCAN_COMPLETE_T) (prEvent->aucBuffer);
-
-			memcpy(prEventGscnScnDone, (P_EVENT_GSCAN_SCAN_COMPLETE_T) (prEvent->aucBuffer),
-			       sizeof(EVENT_GSCAN_SCAN_COMPLETE_T));
-
-			mtk_cfg80211_vendor_event_complete_scan(wiphy, NULL,
-								prEventGscnScnDone->ucScanState);
+			mtk_cfg80211_vendor_event_complete_scan(wiphy,
+				prGlueInfo->prDevHandler->ieee80211_ptr, prEventGscnScnDone->ucScanState);
 		}
 		break;
 
 	case EVENT_ID_GSCAN_FULL_RESULT:
 		{
-			prEventGscnFullResult =
-			    (P_WIFI_GSCAN_RESULT_T) ((prEvent->aucBuffer) + sizeof(EVENT_GSCAN_FULL_RESULT_T));
+			UINT_32 ie_len = 0;
+			P_EVENT_GSCAN_FULL_RESULT_T prEventGscnFullResult;
+			/* P_PARAM_WIFI_GSCAN_FULL_RESULT prParamGscnFullResult; */
 
-			prEventGscnFullResult = kalMemAlloc(sizeof(WIFI_GSCAN_RESULT_T), VIR_MEM_TYPE);
-			memcpy(prEventGscnFullResult, (P_WIFI_GSCAN_RESULT_T) (prEvent->aucBuffer),
-			       sizeof(WIFI_GSCAN_RESULT_T));
+			DBGLOG(SCN, TRACE, "EVENT_ID_GSCAN_FULL_RESULT\n");
 
-			prParamGscnFullResult = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_RESULT), VIR_MEM_TYPE);
-			kalMemZero(prParamGscnFullResult, sizeof(PARAM_WIFI_GSCAN_RESULT));
-			memcpy(prParamGscnFullResult, prEventGscnFullResult, sizeof(WIFI_GSCAN_RESULT_T));
+			prEventGscnFullResult = (P_EVENT_GSCAN_FULL_RESULT_T)(prEvent->aucBuffer);
+			ie_len = min(prEventGscnFullResult->u4IeLength, (UINT_32)CFG_IE_BUFFER_SIZE);
+
+			DBGLOG(SCN, LOUD, "arSsid=%s, bssid="MACSTR", u4Channel=%d u4IeLength=%d\n",
+				prEventGscnFullResult->rResult.arSsid,
+				MAC2STR(prEventGscnFullResult->rResult.arMacAddr),
+				prEventGscnFullResult->rResult.u4Channel, prEventGscnFullResult->u4IeLength);
+
+			kalMemZero(prScanInfo->prGscnFullResult,
+				offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
+			/* WIFI_GSCAN_RESULT_T similar to PARAM_WIFI_GSCAN_RESULT*/
+			kalMemCopy(&prScanInfo->prGscnFullResult->fixed, &prEventGscnFullResult->rResult,
+				sizeof(WIFI_GSCAN_RESULT_T));
+			prScanInfo->prGscnFullResult->u4BucketMask = prEventGscnFullResult->u4BucketMask;
+			prScanInfo->prGscnFullResult->ie_length = prEventGscnFullResult->u4IeLength;
+			kalMemCopy(prScanInfo->prGscnFullResult->ie_data, prEventGscnFullResult->ucIeData, ie_len);
 
 			mtk_cfg80211_vendor_event_full_scan_results(wiphy,
-								    NULL,
-								    prParamGscnFullResult,
-								    sizeof(PARAM_WIFI_GSCAN_RESULT));
+					prGlueInfo->prDevHandler->ieee80211_ptr,
+					prScanInfo->prGscnFullResult,
+					offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + ie_len);
 		}
 		break;
 
 	case EVENT_ID_GSCAN_SIGNIFICANT_CHANGE:
 		{
+			P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnSignificantChange;
+
 			prEventGscnSignificantChange = (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer);
 			memcpy(prEventGscnSignificantChange, (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer),
 			       sizeof(EVENT_GSCAN_SIGNIFICANT_CHANGE_T));
@@ -1665,22 +1590,22 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	case EVENT_ID_GSCAN_GEOFENCE_FOUND:
 		{
-			prEventGscnGeofenceFound = (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer);
+			P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T prEventGscnGeofenceFound;
 
+			prEventGscnGeofenceFound = (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer);
 			memcpy(prEventGscnGeofenceFound, (P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T) (prEvent->aucBuffer),
 			       sizeof(EVENT_GSCAN_SIGNIFICANT_CHANGE_T));
 		}
 		break;
 
 	default:
-		DBGLOG(SCN, INFO, "not GSCN event ????\n");
+		DBGLOG(SCN, ERROR, "not a GSCN event\n");
 		break;
 	}
 
-	DBGLOG(SCN, INFO, "Done with GSCN event handling\n");
-
-	return real_num;
+	return 0;
 }
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -1700,6 +1625,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	P_WIFI_EVENT_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
 	BOOLEAN fgIsNewVersion;
+	struct wiphy *wiphy;
 
 	DEBUGFUNC("nicRxProcessEventPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -1709,6 +1635,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 	prGlueInfo = prAdapter->prGlueInfo;
+	wiphy = priv_to_wiphy(prGlueInfo);
 
 	if (prEvent->ucEID != EVENT_ID_DEBUG_MSG)
 		DBGLOG(RX, EVENT, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
@@ -2405,27 +2332,19 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			wlanPrintFwLog(pucMsg, u2MsgSize, ucMsgType);
 		}
 		break;
-#if CFG_SUPPORT_SCN_PSCN
 
+#if CFG_SUPPORT_GSCN
 	case EVENT_ID_GSCAN_SCAN_AVAILABLE:
 	case EVENT_ID_GSCAN_CAPABILITY:
 	case EVENT_ID_GSCAN_SCAN_COMPLETE:
 	case EVENT_ID_GSCAN_FULL_RESULT:
 	case EVENT_ID_GSCAN_SIGNIFICANT_CHANGE:
 	case EVENT_ID_GSCAN_GEOFENCE_FOUND:
+	case EVENT_ID_GSCAN_RESULT:
 		nicRxProcessGSCNEvent(prAdapter, prSwRfb);
 		break;
-
-	case EVENT_ID_GSCAN_RESULT:
-		{
-			UINT_8 realnum = 0;
-
-			DBGLOG(SCN, TRACE, "nicRxProcessGSCNEvent  ----->\n");
-			realnum = nicRxProcessGSCNEvent(prAdapter, prSwRfb);
-			DBGLOG(SCN, TRACE, "nicRxProcessGSCNEvent  <-----\n");
-		}
-		break;
 #endif
+
 #if CFG_SUPPORT_BATCH_SCAN
 	case EVENT_ID_BATCH_RESULT:
 		DBGLOG(SCN, TRACE, "Got EVENT_ID_BATCH_RESULT");
@@ -2444,6 +2363,18 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 		break;
 #endif /* CFG_SUPPORT_BATCH_SCAN */
+
+	case EVENT_ID_RSSI_MONITOR:
+		{
+			INT_32 rssi = 0;
+
+			kalMemCopy(&rssi, prEvent->aucBuffer, sizeof(INT_32));
+			DBGLOG(RX, TRACE, "EVENT_ID_RSSI_MONITOR value=%d\n", rssi);
+
+			mtk_cfg80211_vendor_event_rssi_beyond_range(wiphy,
+				prGlueInfo->prDevHandler->ieee80211_ptr, rssi);
+		}
+		break;
 
 #if CFG_SUPPORT_TDLS
 	case EVENT_ID_TDLS:

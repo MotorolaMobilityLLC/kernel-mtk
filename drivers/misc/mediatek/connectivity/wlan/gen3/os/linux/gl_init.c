@@ -271,10 +271,8 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_cfg80211_testmode_cmd,
 #endif
-#if 0	/* Remove schedule_scan because we need more verification for NLO */
 	.sched_scan_start = mtk_cfg80211_sched_scan_start,
 	.sched_scan_stop = mtk_cfg80211_sched_scan_stop,
-#endif
 #if CFG_SUPPORT_TDLS
 	.tdls_oper = mtk_cfg80211_tdls_oper,
 	.tdls_mgmt = mtk_cfg80211_tdls_mgmt,
@@ -299,13 +297,14 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
 	/* GSCAN */
+#if CFG_SUPPORT_GSCN
 	{
 		{
 			.vendor_id = GOOGLE_OUI,
 			.subcmd = GSCAN_SUBCMD_GET_CAPABILITIES
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = mtk_cfg80211_vendor_get_capabilities
+		.doit = mtk_cfg80211_vendor_get_gscan_capabilities
 	},
 	{
 		{
@@ -320,7 +319,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 			.vendor_id = GOOGLE_OUI,
 			.subcmd = GSCAN_SUBCMD_SET_SCAN_CONFIG
 		},
-		.flags = WIPHY_VENDOR_CMD_NEED_WDEV,
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_scan_config
 	},
 	{
@@ -345,8 +344,9 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 			.subcmd = GSCAN_SUBCMD_GET_SCAN_RESULTS
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-		.doit = mtk_cfg80211_vendor_get_scan_results
+		.doit = mtk_cfg80211_vendor_get_gscan_result
 	},
+#endif
 	{
 		{
 			.vendor_id = GOOGLE_OUI,
@@ -363,17 +363,50 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_hotlist
 	},
-	/*Link Layer Statistics */
-	/*
-	 * {
-	 * {
-	 * .vendor_id = GOOGLE_OUI,
-	 * .subcmd = LSTATS_SUBCMD_GET_INFO
-	 * },
-	 * .flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
-	 * .doit = NULL; //mtk_cfg80211_vendor_llstats_get_info
-	 * },
-	 */
+	/* RTT */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = RTT_SUBCMD_GETCAPABILITY
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_rtt_capabilities
+	},
+	/* Link Layer Statistics */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = LSTATS_SUBCMD_GET_INFO
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_llstats_get_info
+	},
+	/* RSSI Monitoring */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_SET_RSSI_MONITOR
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_rssi_monitoring
+	},
+	/* Packet Keep Alive */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_START_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_start
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_STOP_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_stop
+	},
 };
 
 static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
@@ -404,6 +437,10 @@ static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
 	{
 		.vendor_id = GOOGLE_OUI,
 		.subcmd = GSCAN_EVENT_HOTLIST_RESULTS_LOST
+	},
+	{
+		.vendor_id = GOOGLE_OUI,
+		.subcmd = WIFI_EVENT_RSSI_MONITOR
 	},
 };
 
@@ -1373,8 +1410,11 @@ static void createWirelessDevice(void)
 	}
 	/* 4 <1.3> configure wireless_dev & wiphy */
 	prWdev->iftype = NL80211_IFTYPE_STATION;
-	prWiphy->max_scan_ssids = 1;	/* FIXME: for combo scan */
+	prWiphy->max_scan_ssids = SCN_SSID_MAX_NUM + 1; /* include one wildcard ssid */
 	prWiphy->max_scan_ie_len = 512;
+	prWiphy->max_sched_scan_ssids     = CFG_SCAN_SSID_MAX_NUM;
+	prWiphy->max_match_sets           = CFG_SCAN_SSID_MATCH_MAX_NUM;
+	prWiphy->max_sched_scan_ie_len    = CFG_CFG80211_IE_BUF_LEN;
 	prWiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_ADHOC);
 	prWiphy->bands[IEEE80211_BAND_2GHZ] = &mtk_band_2ghz;
 	/*
@@ -1385,7 +1425,8 @@ static void createWirelessDevice(void)
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
 	prWiphy->cipher_suites = mtk_cipher_suites;
 	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
-	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL |
+		WIPHY_FLAG_SUPPORTS_SCHED_SCAN;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
 #if CFG_SUPPORT_TDLS
 	TDLSEX_WIPHY_FLAGS_INIT(prWiphy->flags);

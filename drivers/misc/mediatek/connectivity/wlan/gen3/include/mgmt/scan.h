@@ -121,6 +121,9 @@
 
 #define SCAN_NLO_CHECK_SSID_ONLY    0x00000001
 #define SCAN_NLO_DEFAULT_INTERVAL           30000
+/* PNO min period 30s, max period 300s */
+#define SCAN_NLO_MIN_INTERVAL               30
+#define SCAN_NLO_MAX_INTERVAL               300
 #define SCN_BSS_JOIN_FAIL_THRESOLD          4
 
 #define SWC_NUM_BSSID_THRESHOLD_DEFAULT 8
@@ -177,9 +180,9 @@ typedef struct _MSG_SCN_FSM_T {
 } MSG_SCN_FSM_T, *P_MSG_SCN_FSM_T;
 
 typedef enum _ENUM_PSCAN_STATE_T {
-	PSCN_IDLE = 1,
-	PSCN_SCANNING,
+	PSCN_IDLE = 0,
 	PSCN_RESET,
+	PSCN_SCANNING,
 	PSCAN_STATE_T_NUM
 } ENUM_PSCAN_STATE_T;
 
@@ -385,25 +388,9 @@ typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
 
 	/* Match SSID */
 	UINT_8 ucMatchSSIDNum;
-	UINT_8 ucMatchSSIDLen[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucMatchSSID[SCN_SSID_MATCH_MAX_NUM][ELEM_MAX_LEN_SSID];
-
-	UINT_8 aucCipherAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_16 au2AuthAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucChannelHint[SCN_SSID_MATCH_MAX_NUM][SCN_NLO_NETWORK_CHANNEL_NUM];
+	struct NLO_NETWORK rNLONetwork;
 	P_BSS_DESC_T aprPendingBssDescToInd[SCN_SSID_MATCH_MAX_NUM];
 } NLO_PARAM_T, *P_NLO_PARAM_T;
-
-typedef struct _PSCN_PARAM_T {
-	UINT_8 ucVersion;
-	CMD_NLO_REQ rCurrentCmdNloReq;
-	CMD_BATCH_REQ_T rCurrentCmdBatchReq;
-	CMD_GSCN_REQ_T rCurrentCmdGscnReq;
-	BOOLEAN fgNLOScnEnable;
-	BOOLEAN fgBatchScnEnable;
-	BOOLEAN fgGScnEnable;
-	UINT_32 u4BasePeriod;	/*GSCAN_ATTRIBUTE_BASE_PERIOD */
-} PSCN_PARAM_T, *P_PSCN_PARAM_T;
 
 typedef struct _SCAN_INFO_T {
 	ENUM_SCAN_STATE_T eCurrentState;	/* Store the STATE variable of SCAN FSM */
@@ -434,14 +421,17 @@ typedef struct _SCAN_INFO_T {
 	/* NLO scanning state tracking */
 	BOOLEAN fgNloScanning;
 #if CFG_SUPPORT_SCN_PSCN
-	BOOLEAN fgPscnOnnning;
+	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
-	P_PSCN_PARAM_T prPscnParam;
+	BOOLEAN fgGScnAction;
+	P_CMD_SET_PSCAN_PARAM prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
-	TIMER_T rWaitForGscanResutsTimer;
-	BOOLEAN fgGscnGetResWaiting;
 #endif
+#if CFG_SUPPORT_GSCN
+	P_PARAM_WIFI_GSCAN_FULL_RESULT prGscnFullResult;
+#endif
+
 	TIMER_T rScanDoneTimer;
 	UINT_8 ucScanDoneTimeoutCnt;
 	UINT_32 u4ScanUpdateIdx;
@@ -716,7 +706,8 @@ BOOLEAN scnQuerySparseChannel(IN P_ADAPTER_T prAdapter, P_ENUM_BAND_T prSparseBa
 BOOLEAN
 scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, IN UINT_32 u4IeLength, IN PUINT_8 pucIe, IN UINT_16 u2Interval);
+		       IN P_PARAM_SSID_T prSsid, PINT_8 pcRssiThresold, IN UINT_32 u4IeLength, IN PUINT_8 pucIe,
+		       IN UINT_16 u2Interval, UINT_8 ucChnlNum, PUINT_8 pucChannels);
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 
@@ -728,55 +719,38 @@ P_BSS_DESC_T scanSearchBssDescByBssidAndLatestUpdateTime(IN P_ADAPTER_T prAdapte
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
 #endif
 
-BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPscanAct);
+#if CFG_SUPPORT_SCN_PSCN
+BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAct);
 
 BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
 BOOLEAN scnFsmGSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
-#if 0
-
-BOOLEAN scnFsmGSCNSetRssiSignificatn(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
-#endif
-
 BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_SWC_BSSID prCmdPscnAddSWCBssId);
 
 BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_ADDR prCmdPscnSetMacAddr);
 
-#if 1
-BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
+BOOLEAN scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
+				 IN P_CMD_NLO_REQ prCmdNloReq,
+				 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
+				 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
+				 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
+				 IN BOOLEAN fgRemoveNLOfromPSCN,
+				 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
 
-#else
-BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_REQ_T prCmdGscnParam);
-
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
 #endif
 
-BOOLEAN
-scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
-			 IN P_CMD_NLO_REQ prCmdNloReq,
-			 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
-			 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
-			 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
-			 IN BOOLEAN fgRemoveNLOfromPSCN,
-			 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
+#if CFG_SUPPORT_GSCN
+BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
 
-BOOLEAN scnFsmSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
+BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
 
-BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_T prGetGscnScnResultCmd);
+BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter,
+			    IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd, OUT PUINT_32 pu4SetInfoLen);
 
-BOOLEAN
-scnPSCNFsm(IN P_ADAPTER_T prAdapter,
-	   ENUM_PSCAN_STATE_T eNextPSCNState,
-	   IN P_CMD_NLO_REQ prCmdNloReq,
-	   IN P_CMD_BATCH_REQ_T prCmdBatchReq,
-	   IN P_CMD_GSCN_REQ_T prCmdGscnReq,
-	   IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
-	   IN BOOLEAN fgRemoveNLOfromPSCN,
-	   IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN, IN BOOLEAN fgEnableGSCN);
-
-VOID scnGscnGetResultReplyCheck(IN P_ADAPTER_T prAdapter);
-
-VOID scnGscnGetResultReplyCheckTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T prEventBuffer);
+#endif
 
 VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 

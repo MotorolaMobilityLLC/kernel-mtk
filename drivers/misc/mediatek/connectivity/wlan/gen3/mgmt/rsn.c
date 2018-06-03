@@ -2330,6 +2330,8 @@ void rsnSaQueryAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	ASSERT(prBssSpecInfo);
 
 	prRxFrame = (P_ACTION_SA_QUERY_FRAME) prSwRfb->pvHeader;
+	if (!prRxFrame)
+		return;
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
 	if (!prStaRec)
 		return;

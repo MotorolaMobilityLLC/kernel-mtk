@@ -874,6 +874,10 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			prAisReq = aisFsmGetNextRequest(prAdapter);
 			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 
+			if (prAisReq)
+				DBGLOG(AIS, TRACE, "eReqType=%d, fgIsConnReqIssued=%d, DisByNonRequest=%d\n",
+					prAisReq->eReqType, prConnSettings->fgIsConnReqIssued,
+					prConnSettings->fgIsDisconnectedByNonRequest);
 			if (prAisReq == NULL || prAisReq->eReqType == AIS_REQUEST_RECONNECT) {
 				if (prConnSettings->fgIsConnReqIssued == TRUE &&
 				    prConnSettings->fgIsDisconnectedByNonRequest == FALSE) {
@@ -1261,7 +1265,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				u4size = sizeof(channel_t->arChnlInfoList);
 
 				DBGLOG(AIS, TRACE,
-					"SCAN: channel num = %d, total size=%d\n",
+					"Partial Scan: ucChannelListNum=%d, total size=%d\n",
 					prScanReqMsg->ucChannelListNum, u4size);
 
 				kalMemCopy(&(prScanReqMsg->arChnlInfoList), &(channel_t->arChnlInfoList),
@@ -3464,6 +3468,8 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
+	DBGLOG(AIS, TRACE, "eCurrentState=%d, fgIsScanReqIssued=%d\n",
+		prAisFsmInfo->eCurrentState, prConnSettings->fgIsScanReqIssued);
 	if (!prConnSettings->fgIsScanReqIssued) {
 		prConnSettings->fgIsScanReqIssued = TRUE;
 		scanInitEssResult(prAdapter);
@@ -3477,7 +3483,7 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 				  prAisFsmInfo->arScanSSID[0].u4SsidLen, prSsid->aucSsid, prSsid->u4SsidLen);
 		}
 
-		if (u4IeLength > 0) {
+		if (u4IeLength > 0 && u4IeLength <= MAX_IE_LENGTH) {
 			prAisFsmInfo->u4ScanIELength = u4IeLength;
 			kalMemCopy(prAisFsmInfo->aucScanIEBuf, pucIe, u4IeLength);
 		} else {
@@ -3510,7 +3516,7 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
 	}
 
-}				/* end of aisFsmScanRequest() */
+}	/* end of aisFsmScanRequest() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3544,6 +3550,9 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
+	DBGLOG(AIS, TRACE, "eCurrentState=%d, fgIsScanReqIssued=%d\n",
+			prAisFsmInfo->eCurrentState, prConnSettings->fgIsScanReqIssued);
+
 	if (!prConnSettings->fgIsScanReqIssued) {
 		prConnSettings->fgIsScanReqIssued = TRUE;
 		scanInitEssResult(prAdapter);
@@ -3560,7 +3569,7 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 			}
 		}
 
-		if (u4IeLength > 0) {
+		if (u4IeLength > 0 && u4IeLength <= MAX_IE_LENGTH) {
 			prAisFsmInfo->u4ScanIELength = u4IeLength;
 			kalMemCopy(prAisFsmInfo->aucScanIEBuf, pucIe, u4IeLength);
 		} else {
@@ -3593,7 +3602,7 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
 	}
 
-}				/* end of aisFsmScanRequestAdv() */
+} /* end of aisFsmScanRequestAdv() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -4086,6 +4095,7 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 		ASSERT(0);	/* Can't generate new message */
 		return FALSE;
 	}
+	DBGLOG(AIS, INFO, "aisFsmInsertRequest\n");
 
 	prAisReq->eReqType = eReqType;
 	prAisReq->pu8ChannelInfo = NULL;
@@ -4098,6 +4108,9 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 
 	/* attach request into pending request list */
 	LINK_INSERT_TAIL(&prAisFsmInfo->rPendingReqList, &prAisReq->rLinkEntry);
+
+	DBGLOG(AIS, TRACE, "eCurrentState=%d, eReqType=%d, u4NumElem=%d\n",
+		prAisFsmInfo->eCurrentState, eReqType, prAisFsmInfo->rPendingReqList.u4NumElem);
 
 	return TRUE;
 }

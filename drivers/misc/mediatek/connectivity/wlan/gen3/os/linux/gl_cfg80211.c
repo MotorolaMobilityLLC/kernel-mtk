@@ -580,22 +580,34 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	if (prGlueInfo->prScanRequest != NULL)
 		return -EBUSY;
 
+	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T));
+	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan(), original n_ssids=%d\n", request->n_ssids);
+
 	if (request->n_ssids == 0) {
 		rScanRequest.u4SsidNum = 0;
-	} else if (request->n_ssids <= SCN_SSID_MAX_NUM) {
+	} else if (request->n_ssids <= (SCN_SSID_MAX_NUM + 1)) {
+		if ((request->ssids[request->n_ssids - 1].ssid == NULL)
+			|| (request->ssids[request->n_ssids - 1].ssid_len == 0))
+			request->n_ssids--; /* remove the rear NULL SSID if this is a wildcard scan*/
+
+		if (request->n_ssids == (SCN_SSID_MAX_NUM + 1)) /* remove the rear SSID if this is a specific scan */
+			request->n_ssids--;
 		rScanRequest.u4SsidNum = request->n_ssids;
 
 		for (i = 0; i < request->n_ssids; i++) {
-			COPY_SSID(rScanRequest.rSsid[i].aucSsid,
-				  rScanRequest.rSsid[i].u4SsidLen, request->ssids[i].ssid, request->ssids[i].ssid_len);
+			COPY_SSID(rScanRequest.rSsid[i].aucSsid, rScanRequest.rSsid[i].u4SsidLen,
+				  request->ssids[i].ssid, request->ssids[i].ssid_len);
 		}
 	} else {
+		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
 		return -EINVAL;
 	}
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d\n", request->n_ssids);
 
-	rScanRequest.u4IELength = request->ie_len;
-	if (request->ie_len > 0)
+	if (request->ie_len > 0) {
+		rScanRequest.u4IELength = request->ie_len;
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
+	}
 
 	/* temp save request ieee80211_channel info */
 	rScanRequest.puPartialScanReq = (PUINT_8)request;
@@ -608,7 +620,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		prGlueInfo->prScanRequest = NULL;
-		DBGLOG(REQ, WARN, "scan error:%lx\n", rStatus);
+		DBGLOG(REQ, ERROR, "scan error:%x\n", rStatus);
 		return -EINVAL;
 	}
 
@@ -2071,6 +2083,9 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 	WLAN_STATUS rStatus;
 	UINT_32 i, u4BufLen;
 	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
+	P_SCAN_INFO_T prScanInfo;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -2083,9 +2098,12 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 		DBGLOG(SCN, INFO, "(request == NULL || request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM)\n");
 		/* invalid scheduled scan request */
 		return -EINVAL;
-	} else if (!request->n_ssids || !request->n_match_sets) {
+	} else if (!request->n_match_sets) {
 		/* invalid scheduled scan request */
 		return -EINVAL;
+	} else if (request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM) {
+		DBGLOG(SCN, INFO, "request->n_match_sets %d > CFG_SCAN_SSID_MATCH_MAX_NUM\n", request->n_match_sets);
+		request->n_match_sets = CFG_SCAN_SSID_MATCH_MAX_NUM;
 	}
 
 	prSchedScanRequest = (P_PARAM_SCHED_SCAN_REQUEST) kalMemAlloc(sizeof(PARAM_SCHED_SCAN_REQUEST), VIR_MEM_TYPE);
@@ -2102,6 +2120,7 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 			COPY_SSID(prSchedScanRequest->arSsid[i].aucSsid,
 				  prSchedScanRequest->arSsid[i].u4SsidLen,
 				  request->match_sets[i].ssid.ssid, request->match_sets[i].ssid.ssid_len);
+			prSchedScanRequest->acRssiThresold[i] = 0;/* (INT_8)request->match_sets[i].rssi_thold;*/
 		}
 	}
 
@@ -2111,14 +2130,26 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 
 	prSchedScanRequest->u2ScanInterval = (UINT_16) (request->scan_plans[0].interval);
 
+	prSchedScanRequest->ucChnlNum = (UINT_8)request->n_channels;
+	prSchedScanRequest->pucChannels = kalMemAlloc(request->n_channels, VIR_MEM_TYPE);
+	if (!prSchedScanRequest->pucChannels)
+		prSchedScanRequest->ucChnlNum = 0;
+	else
+		for (i = 0; i < request->n_channels; i++)
+			prSchedScanRequest->pucChannels[i] =
+				nicFreq2ChannelNum(request->channels[i]->center_freq * 1000);
+
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetStartSchedScan,
 			   prSchedScanRequest, sizeof(PARAM_SCHED_SCAN_REQUEST), FALSE, FALSE, TRUE, &u4BufLen);
 
+	kalMemFree(prSchedScanRequest->pucChannels, VIR_MEM_TYPE, request->n_channels);
 	kalMemFree(prSchedScanRequest, VIR_MEM_TYPE, sizeof(PARAM_SCHED_SCAN_REQUEST));
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(REQ, WARN, "scheduled scan error:%lx\n", rStatus);
+		DBGLOG(REQ, WARN, "scheduled scan error:%x\n", rStatus);
+		prScanInfo = &(prGlueInfo->prAdapter->rWifiVar.rScanInfo);
+		prScanInfo->fgNloScanning = FALSE;
 		return -EINVAL;
 	}
 
@@ -2136,6 +2167,8 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	/* check if there is any pending scan/sched_scan not yet finished */
 	if (prGlueInfo->prSchedScanRequest == NULL)
 		return -EBUSY;
@@ -2143,9 +2176,18 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 	rStatus = kalIoctl(prGlueInfo, wlanoidSetStopSchedScan, NULL, 0, FALSE, FALSE, TRUE, &u4BufLen);
 
 	if (rStatus == WLAN_STATUS_FAILURE) {
-		DBGLOG(REQ, WARN, "scheduled scan error:%lx\n", rStatus);
+		DBGLOG(REQ, WARN, "scheduled scan error:%x\n", rStatus);
 		return -EINVAL;
 	}
+
+#if CFG_SUPPORT_SCN_PSCN
+	if (prGlueInfo->prSchedScanRequest != NULL)
+		prGlueInfo->prSchedScanRequest = NULL;
+
+	DBGLOG(SCN, TRACE, "start work queue to send event\n");
+	schedule_delayed_work(&sched_workq, 0);
+	DBGLOG(SCN, TRACE, "tx_thread return from kalSchedScanStoppped\n");
+#endif
 
 	return 0;
 }
