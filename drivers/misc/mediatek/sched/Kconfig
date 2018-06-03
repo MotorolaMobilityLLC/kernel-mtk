@@ -1,3 +1,16 @@
+menu "MTK userspace global cpuset"
+config MTK_USER_SPACE_GLOBAL_CPUSET
+	bool "Enable user space global cpuset"
+	depends on CPUSETS
+	default n
+	help
+	  Interface for set user space global cpuset.
+	  It can set user space global cpuset to child
+	  group and once unsets, the child cpuset will
+	  restore by cpus.
+
+endmenu
+
 menu "MTK load balance and schedule enhancement"
 config MTK_SCHED_TRACE
 	bool "mtk scheduling trace, output mtk schedule trace into FTRACE"
