@@ -25,7 +25,7 @@
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
 #define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
 
-#define BYPASS_CLK_SELECT
+/* #define BYPASS_CLK_SELECT */
 
 /*****************************************************************************
  *
@@ -70,6 +70,10 @@ static void __iomem *disp_pmw_mux_base;
 #endif
 #ifndef OSC_ULPOSC_ADDR /* rosc control register address */
 #define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
+#endif
+
+#ifndef OSC_LOCK_ADDR /* unlock rosc control register address */
+#define OSC_LOCK_ADDR (disp_pmw_osc_base + 0)
 #endif
 
 /* clock hard code access API */
@@ -250,6 +254,8 @@ static int ulposc_on(void)
 	if (get_ulposc_base() == -1)
 		return -1;
 
+	clk_writel(OSC_LOCK_ADDR, 0x0b160001);
+
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* PWM_MSG("ULPOSC config : 0x%08x", regosc); */
 
@@ -258,19 +264,7 @@ static int ulposc_on(void)
 	clk_writel(OSC_ULPOSC_ADDR, regosc);
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* PWM_MSG("ULPOSC config : 0x%08x after en", regosc); */
-	udelay(11);
-
-	/* OSC RST	*/
-	regosc = regosc | 0x2;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	/* PWM_MSG("ULPOSC config : 0x%08x after rst 1", regosc); */
-	udelay(40);
-	regosc = regosc & 0xfffffffd;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	/* PWM_MSG("ULPOSC config : 0x%08x after rst 0", regosc); */
-	udelay(130);
+	udelay(30);
 
 	/* OSC CG_EN = 1 */
 	regosc = regosc | 0x4;
@@ -279,7 +273,6 @@ static int ulposc_on(void)
 	/* PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc); */
 
 	return 0;
-
 }
 
 static int ulposc_off(void)
@@ -288,6 +281,8 @@ static int ulposc_off(void)
 
 	if (get_ulposc_base() == -1)
 		return -1;
+
+	clk_writel(OSC_LOCK_ADDR, 0x0b160001);
 
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 
