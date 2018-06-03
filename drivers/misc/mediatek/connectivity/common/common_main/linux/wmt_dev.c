@@ -569,7 +569,7 @@ static UINT32 wmt_dev_tra_poll(VOID)
 LONG wmt_dev_tm_temp_query(VOID)
 {
 #define HISTORY_NUM       5
-#define TEMP_THRESHOLD   65
+#define TEMP_THRESHOLD   60
 #define REFRESH_TIME    300	/* sec */
 
 	static INT32 temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
@@ -599,9 +599,11 @@ LONG wmt_dev_tm_temp_query(VOID)
 		if (wmt_dev_tra_poll() == 0) {
 			query_cond = 1;
 			WMT_INFO_FUNC("traffic , we must query temperature..\n");
+		} else if (temp_table[idx_temp_table] >= TEMP_THRESHOLD) {
+			WMT_INFO_FUNC("temperature maybe greater than 60, query temperature\n");
+			query_cond = 1;
 		} else
 			WMT_DBG_FUNC("idle traffic ....\n");
-
 		/* only WIFI tx power might make temperature varies largely */
 #if 0
 		if (!query_cond) {
