@@ -167,6 +167,8 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 	unsigned long fmin = 2000 * MHZ;
 #elif defined(CONFIG_MACH_MT6739)
 	unsigned long fmin = 2000 * MHZ;
+#elif defined(CONFIG_MACH_MT6775)
+	unsigned long fmin = 2000 * MHZ;
 #else
 	unsigned long fmin = 1000 * MHZ;
 #endif
@@ -407,8 +409,16 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 			r &= ~CON0_BASE_EN;
 			writel(r, pll->base_addr + REG_CON0);
 
+			#if defined(CONFIG_MACH_MT6775)
+			udelay(1);
+			#endif
+
 			r = readl(pll->pwr_addr) | CON0_ISO_EN;
 			writel(r, pll->pwr_addr);
+
+			#if defined(CONFIG_MACH_MT6775)
+			udelay(1);
+			#endif
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
