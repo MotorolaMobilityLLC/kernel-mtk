@@ -712,7 +712,7 @@
 #define CFG_NEIGHBOR_AP_CHANNEL_NUM				50
 #define CFG_MAX_NUM_OF_CHNL_INFO				50
 #define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM		1
-#define CFG_SELECT_BSS_BASE_ON_RSSI				1
+#define CFG_SELECT_BSS_BASE_ON_RSSI				0
 #define CFG_SUPPORT_802_11K			0
 
 #define CFG_SUPPORT_802_11V                    0	/* Support 802.11v Wireless Network Management */
