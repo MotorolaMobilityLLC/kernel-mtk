@@ -321,7 +321,7 @@ u32 mt_irq_get_en_hw(unsigned int hwirq)
 	} else {
 		gic_populate_rdist(&base);
 		base += SZ_64K;
-		base = GIC_DIST_BASE + GIC_DIST_ENABLE_SET;
+		base = base + GIC_DIST_ENABLE_SET;
 	}
 
 	return (readl_relaxed(base + (hwirq/32)*4) & bit) ?
