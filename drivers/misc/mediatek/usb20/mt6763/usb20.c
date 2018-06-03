@@ -58,17 +58,9 @@ static void dpidle_timer_wakeup_func(unsigned long data)
 {
 	struct timer_list *timer = (struct timer_list *)data;
 
-	{
-		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-		static int skip_cnt;
-
-		if (__ratelimit(&ratelimit)) {
-			DBG(0, "dpidle_timer<%p> alive, skip_cnt<%d>\n", timer, skip_cnt);
-			skip_cnt = 0;
-		} else
-			skip_cnt++;
-	}
+	DBG_LIMIT(1, "dpidle_timer<%p> alive", timer);
 	DBG(2, "dpidle_timer<%p> alive...\n", timer);
+
 	if (dpidle_status == USB_DPIDLE_TIMER)
 		issue_dpidle_timer();
 	kfree(timer);
@@ -101,43 +93,16 @@ static void usb_6763_dpidle_request(int mode)
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
-		{
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-			static int skip_cnt;
-
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "USB_DPIDLE_ALLOWED, skip_cnt<%d>\n", skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
-		}
+		DBG_LIMIT(1, "USB_DPIDLE_ALLOWED");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
-		{
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-			static int skip_cnt;
-
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "USB_DPIDLE_FORBIDDEN, skip_cnt<%d>\n", skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
-		}
+		DBG_LIMIT(1, "USB_DPIDLE_FORBIDDEN");
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
-		{
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-			static int skip_cnt;
-
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "USB_DPIDLE_SRAM, skip_cnt<%d>\n", skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
-		}
+		DBG_LIMIT(1, "USB_DPIDLE_SRAM");
 		break;
 	case USB_DPIDLE_TIMER:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
@@ -429,19 +394,15 @@ void trigger_disconnect_check_work(void)
 static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 	unsigned long flags = 0;
 	bool usb_in = false;
 
-
-	if (mtk_musb) {
-		if (__ratelimit(&ratelimit))
-			DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
-					mtk_musb->power);
-	} else {
+	if (mtk_musb)
+		DBG_LIMIT(3, "is ready %d is_host %d power %d", mtk_musb->is_ready, mtk_musb->is_host,
+				mtk_musb->power);
+	else {
 		/* re issue delay work */
-		if (__ratelimit(&ratelimit))
-			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
+		DBG_LIMIT(3, "issue work after %d ms", CONN_WORK_DELAY);
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	}
@@ -450,8 +411,7 @@ void do_connection_work(struct work_struct *data)
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
-		if (__ratelimit(&ratelimit))
-			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
+		DBG_LIMIT(3, "issue work after %d ms", CONN_WORK_DELAY);
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	}

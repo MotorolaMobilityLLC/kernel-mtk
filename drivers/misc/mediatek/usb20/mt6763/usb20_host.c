@@ -489,7 +489,6 @@ static void musb_host_work(struct work_struct *data)
 	u8 devctl = 0;
 	unsigned long flags;
 	static int inited, timeout; /* default to 0 */
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 	static s64 diff_time;
 	int host_mode;
 
@@ -497,11 +496,10 @@ static void musb_host_work(struct work_struct *data)
 	if (!inited && !kernel_init_done && !mtk_musb->is_ready && !timeout) {
 		ktime_end = ktime_get();
 		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_start));
-		if (__ratelimit(&ratelimit)) {
-			DBG(0, "init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld\n",
-					kernel_init_done, mtk_musb->is_ready, inited, timeout,
-					diff_time);
-		}
+
+		DBG_LIMIT(3, "init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld",
+				kernel_init_done, mtk_musb->is_ready, inited, timeout,
+				diff_time);
 
 		if (diff_time > ID_PIN_WORK_BLOCK_TIMEOUT) {
 			DBG(0, "diff_time:%lld\n", diff_time);
@@ -771,11 +769,9 @@ static void do_ep0_stress_work(struct work_struct *data)
 {
 	int ret;
 	u16 status;
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 30);
 
 	ret = usb_get_status(udev, USB_RECIP_DEVICE, 0, &status);
-	if (__ratelimit(&ratelimit))
-		DBG(0, "usb_get_status, ret<%d>\n", ret);
+	DBG_LIMIT(30, "usb_get_status, ret<%d>", ret);
 
 	if (ret == 0)
 		schedule_delayed_work(&ep0_stress_work, 0);

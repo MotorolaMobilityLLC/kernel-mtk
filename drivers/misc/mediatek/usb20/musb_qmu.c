@@ -90,7 +90,6 @@ void low_power_timer_resource_reset(void)
 
 static void low_power_timer_wakeup_func(unsigned long data)
 {
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
 #ifdef TIMER_LOCK
 	unsigned long flags;
 
@@ -109,15 +108,14 @@ static void low_power_timer_wakeup_func(unsigned long data)
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 	mb();
 
-	if (__ratelimit(&ratelimit) && low_power_timer_trigger_cnt >= 2) {
-		DBG(0, "avg sleep(%lu/%d, %lu)us, avg wake(%lu/%d, %lu)us, mode<%d,%d>, local balanced<%d,%d>\n",
+	if (low_power_timer_trigger_cnt >= 2)
+		DBG_LIMIT(1, "avg sleep(%lu/%d, %lu)us, avg wake(%lu/%d, %lu)us, mode<%d,%d>, local balanced<%d,%d>",
 				low_power_timer_total_sleep, low_power_timer_trigger_cnt,
 				low_power_timer_total_sleep/low_power_timer_trigger_cnt,
 				low_power_timer_total_wake, (low_power_timer_trigger_cnt - 1),
 				low_power_timer_total_wake/(low_power_timer_trigger_cnt - 1)
 				, low_power_timer_mode, low_power_timer_mode2_option,
 				low_power_timer_trigger_cnt, low_power_timer_wake_cnt);
-	}
 
 	low_power_timer_activate = 0;
 	DBG(1, "sleep forbidden <%d,%d>\n",
@@ -570,20 +568,11 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
 
-			{
-				static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-				static int skip_cnt;
-
-				if (__ratelimit(&ratelimit)) {
-					DBG(0, "TXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d\n",
-							hw_ep->epnum, mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum],
-							mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum],
-							skip_cnt,
-							mtk_host_active_dev_cnt);
-					skip_cnt = 0;
-				} else
-					skip_cnt++;
-			}
+			DBG_LIMIT(1, "TXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d",
+					hw_ep->epnum, mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum],
+					mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum],
+					skip_cnt,
+					mtk_host_active_dev_cnt);
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 			DBG(1, "mode:%d, activate:%d, ep:%d-%s, mtk_host_active_dev_cnt:%d\n",
@@ -609,20 +598,11 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
 
-			{
-				static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-				static int skip_cnt;
-
-				if (__ratelimit(&ratelimit)) {
-					DBG(0, "RXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d\n",
-							hw_ep->epnum, mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum],
-							mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum],
-							skip_cnt,
-							mtk_host_active_dev_cnt);
-					skip_cnt = 0;
-				} else
-					skip_cnt++;
-			}
+			DBG_LIMIT(1, "RXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d",
+					hw_ep->epnum, mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum],
+					mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum],
+					skip_cnt,
+					mtk_host_active_dev_cnt);
 		}
 
 
