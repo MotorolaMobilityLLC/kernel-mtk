@@ -490,8 +490,7 @@ static ssize_t procDbgLevelWrite(struct file *file, const char *buffer, size_t c
 	UINT_8 *temp = &aucProcBuf[0];
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= count + 1)
-		u4CopySize = count;
+	u4CopySize = (count < u4CopySize) ? count : (u4CopySize - 1);
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
 		kalPrint("error of copy from user\n");
@@ -571,8 +570,7 @@ static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t 
 	UINT_8 aucModuleArray[][MODULE_NAME_LENGTH] = {"ARP", "DNS", "TCP", "UDP", "EAPOL", "DHCP", "ICMP"};
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= count + 1)
-		u4CopySize = count;
+	u4CopySize = (count < u4CopySize) ? count : (u4CopySize - 1);
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
 		kalPrint("error of copy from user\n");
