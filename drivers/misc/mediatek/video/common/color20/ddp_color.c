@@ -974,6 +974,13 @@ static unsigned long g_color0_dst_h;
 static unsigned long g_color1_dst_w;
 static unsigned long g_color1_dst_h;
 
+#if defined(CONFIG_MACH_MT6799)
+static unsigned int g_color_pos_x;
+#define DISP_COLOR_POS_MAIN_OFFSET (0x484)
+#define DISP_COLOR_POS_MAIN_POS_X_MASK (0x0000FFFF)
+#define DISP_COLOR_POS_MAIN_POS_Y_MASK (0xFFFF0000)
+#endif
+
 static struct MDP_COLOR_CAP mdp_color_cap;
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
@@ -2719,6 +2726,16 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 			}
 
 			pa = (unsigned int)rParams.reg;
+#if defined(CONFIG_MACH_MT6799)
+			/*handle capture coordinate of dual pipe tool tuning*/
+			COLOR_ERR("DISP_IOCTL_READ_REG, g_color_pos_x = %x , g_color0_dst_w = %lx\n",
+					g_color_pos_x, g_color0_dst_w);
+
+			if (primary_display_get_pipe_status() == DUAL_PIPE && g_color_pos_x > g_color0_dst_w
+				&& (pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_COLOR0]) {
+				pa = (pa & 0x00000FFF) | ddp_reg_pa_base[DISP_REG_COLOR1];
+			}
+#endif
 			va = color_pa2va(pa);
 
 			if (color_is_reg_addr_valid(va) == 0) {
@@ -2752,20 +2769,43 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 
 			pa = (unsigned int)wParams.reg;
 #if defined(CONFIG_MACH_MT6799)
+{
+			bool isCaptureCmd = (pa == (DISP_COLOR_POS_MAIN_OFFSET | ddp_reg_pa_base[DISP_REG_COLOR0]) ||
+				pa == (DISP_COLOR_POS_MAIN_OFFSET | ddp_reg_pa_base[DISP_REG_COLOR1])) ? true : false;
+
+			/*keep capture x-coordinate for dual pipe tool tuning*/
+			if (isCaptureCmd) {
+				g_color_pos_x = (wParams.val & DISP_COLOR_POS_MAIN_POS_X_MASK);
+				COLOR_ERR("DISP_IOCTL_WRITE_REG, g_color_pos_x = %x , wParams.val = %x\n",
+						g_color_pos_x, wParams.val);
+
+			}
+
 			if (module == DISP_MODULE_COLOR1) {
+				/*handle capture coordinate of dual pipe tool tuning*/
+				if (primary_display_get_pipe_status() == DUAL_PIPE && isCaptureCmd) {
+					if (g_color_pos_x <= g_color0_dst_w)
+						/*it's pipe0 x_pos, force pipe1 to write a over-bound x_pos*/
+						wParams.val |= 0xFFFF;
+					else
+						wParams.val = ((wParams.val & DISP_COLOR_POS_MAIN_POS_Y_MASK)
+										| (g_color_pos_x - g_color0_dst_w));
+				}
+
 				if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_COLOR0])
-					pa += (ddp_reg_pa_base[DISP_REG_COLOR1] - ddp_reg_pa_base[DISP_REG_COLOR0]);
+					pa = (pa & 0x00000FFF) | ddp_reg_pa_base[DISP_REG_COLOR1];
 				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_CCORR0])
-					pa += (ddp_reg_pa_base[DISP_REG_CCORR1] - ddp_reg_pa_base[DISP_REG_CCORR0]);
+					pa = (pa & 0x00000FFF) | ddp_reg_pa_base[DISP_REG_CCORR1];
 				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_AAL0])
-					pa += (ddp_reg_pa_base[DISP_REG_AAL1] - ddp_reg_pa_base[DISP_REG_AAL0]);
+					pa = (pa & 0x00000FFF) | ddp_reg_pa_base[DISP_REG_AAL1];
 				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_GAMMA0])
-					pa += (ddp_reg_pa_base[DISP_REG_GAMMA1] - ddp_reg_pa_base[DISP_REG_GAMMA0]);
+					pa = (pa & 0x00000FFF) | ddp_reg_pa_base[DISP_REG_GAMMA1];
 				else {
 					COLOR_DBG("DISP_IOCTL_WRITE_REG, not disp dual pipe PQ module\n");
 					break;
 				}
 			}
+}
 #endif
 			va = color_pa2va(pa);
 
