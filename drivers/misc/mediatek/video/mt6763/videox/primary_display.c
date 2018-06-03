@@ -3637,9 +3637,9 @@ static int _present_fence_release_worker_thread(void *data)
 			msleep(20);
 		} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 			/*dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);*/
-			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START, HZ/10);
 		} else {
-			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ/10);
 			/* dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_release, MMPROFILE_FLAG_PULSE,
 				1, 1);
@@ -4507,8 +4507,7 @@ int primary_display_suspend(void)
 	}
 	primary_display_idlemgr_kick(__func__, 0);
 
-	if (pgc->session_mode == DISP_SESSION_RDMA_MODE ||
-	    pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
+	if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
 		/* switch back to DL mode before suspend */
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					pgc->session_id, 0, NULL, 1);

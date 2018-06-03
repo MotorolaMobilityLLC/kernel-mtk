@@ -34,6 +34,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "dvfs");
 		DDP_MMP_Events.primary_trigger =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "trigger");
+		DDP_MMP_Events.primary_query_valid =
+			mmprofile_register_event(DDP_MMP_Events.primary_Parent, "query_valid_layer");
 		DDP_MMP_Events.primary_config =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "ovl_config");
 		DDP_MMP_Events.primary_rdma_config =
@@ -263,6 +265,14 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.dsi_te = mmprofile_register_event(DDP_MMP_Events.DDP, "dsi_te");
 
 		DDP_MMP_Events.DDP_IRQ = mmprofile_register_event(DDP_MMP_Events.DDP, "DDP_IRQ");
+		DDP_MMP_Events.DDP_event =
+		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "DDP_event");
+		DDP_MMP_Events.event_wait =
+					mmprofile_register_event(DDP_MMP_Events.DDP_event, "wait");
+		DDP_MMP_Events.event_signal =
+					mmprofile_register_event(DDP_MMP_Events.DDP_event, "signal");
+		DDP_MMP_Events.event_error =
+					mmprofile_register_event(DDP_MMP_Events.DDP_event, "error");
 		DDP_MMP_Events.MutexParent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "Mutex");
 		DDP_MMP_Events.MUTEX_IRQ[0] =
