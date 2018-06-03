@@ -61,7 +61,7 @@ static unsigned int c2k_wdt_irq_nr;
 
 #define CPU_IDLE_STA_OFFSET 10
 
-static unsigned int dbg_data[40];
+static unsigned long dbg_data[40];
 static int mtk_cpuidle_initialized;
 
 static void mtk_spm_irq_set_pending(int wakeup_src, int irq_nr)
