@@ -72,13 +72,13 @@ bool slp_dump_gpio;
 bool slp_dump_golden_setting;
 
 static u32 slp_spm_flags = {
-#if !(CPU_BUCK_CTRL)
-	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
-#endif
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 #ifndef CONFIG_MACH_MT6759
+#if !(CPU_BUCK_CTRL)
+		SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
+#endif
 	SPM_FLAG_DIS_VCORE_NORMAL_0P65 |
 #else
 	SPM_FLAG_ENABLE_ATF_ABORT |
