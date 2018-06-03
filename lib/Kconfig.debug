@@ -257,18 +257,6 @@ config PAGE_OWNER
 
 	  If unsure, say N.
 
-config PAGE_OWNER_SLIM
-	bool "slim page owner data structure"
-	depends on PAGE_OWNER
-	help
-	  Page owner track page allocation backtrace in struct page_ext.
-	  This implementation will cost extra memory each page for keeping
-	  backtrace. The page allocation backtrace come from limited number
-	  of combination. Use hash table to merge and management them will
-	  reduce the memory overhead when enable page owner.
-
-	  If unsure, say N.
-
 config DEBUG_FS
 	bool "Debug Filesystem"
 	help
