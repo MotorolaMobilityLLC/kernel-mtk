@@ -120,7 +120,7 @@ struct mmdvfs_pm_qos_request isp_qos;
 
 #define ISP_DEV_NAME           "camera-isp"
 #define SMI_LARB_MMU_CTL       (1)
-#define DUMMY_INT              (1)   /*for EP if load dont need to use camera*/
+#define DUMMY_INT              (0)   /*for EP if load dont need to use camera*/
 #define EP_NO_CLKMGR           /* for clkmgr*/
 /*#define ENABLE_WAITIRQ_LOG*/       /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/       /*show STT irq debug logs */
@@ -388,8 +388,8 @@ static const struct of_device_id isp_of_ids[] = {
 	{ .compatible = "mediatek,camsv2", },
 	{ .compatible = "mediatek,camsv3", },
 	{ .compatible = "mediatek,camsv4", },
-	{ .compatible = "mediatek,camsv5", },
-	{ .compatible = "mediatek,camsv6", },
+	/*{ .compatible = "mediatek,camsv5", },*/
+	/*{ .compatible = "mediatek,camsv6", },*/
 	{}
 };
 
@@ -585,7 +585,7 @@ void __iomem *SMI_LARB_BASE[8];
 #define ISP_MIPI_ANA_ADDR             (gISPSYS_Reg[ISP_MIPI_ANA_BASE_ADDR])
 #define ISP_GPIO_ADDR                 (gISPSYS_Reg[ISP_GPIO_BASE_ADDR])
 
-#define ISP_IMGSYS_BASE_PHY           0x15000000
+#define ISP_IMGSYS_BASE_PHY           0x1A000000
 
 #else
 #define ISP_ADDR                      (IMGSYS_BASE + 0x4000)
@@ -3797,7 +3797,7 @@ static inline void Prepare_Enable_ccf_clock(void)
 	#ifndef EP_MARK_SMI
 	/* enable through smi API */
 	pr_info("enable CG/MTCMOS through SMI CLK API\n");
-	smi_bus_prepare_enable(SMI_LARB6_REG_INDX, ISP_DEV_NAME, true);
+	smi_bus_prepare_enable(SMI_LARB3_REG_INDX, ISP_DEV_NAME, true);
 	smi_bus_prepare_enable(SMI_LARB5_REG_INDX, ISP_DEV_NAME, true);
 	smi_bus_prepare_enable(SMI_LARB2_REG_INDX, ISP_DEV_NAME, true);
 	#endif
@@ -3861,7 +3861,7 @@ static inline void Disable_Unprepare_ccf_clock(void)
 
 	#ifndef EP_MARK_SMI
 	pr_info("disable CG/MTCMOS through SMI CLK API\n");
-	smi_bus_disable_unprepare(SMI_LARB6_REG_INDX, ISP_DEV_NAME, true);
+	smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, ISP_DEV_NAME, true);
 	smi_bus_disable_unprepare(SMI_LARB5_REG_INDX, ISP_DEV_NAME, true);
 	smi_bus_disable_unprepare(SMI_LARB2_REG_INDX, ISP_DEV_NAME, true);
 	#endif
@@ -3874,7 +3874,7 @@ static inline void Prepare_Enable_cg_clock(void)
 
 	#ifndef EP_MARK_SMI
 	pr_info("enable CG through SMI CLK API\n");
-	smi_bus_prepare_enable(SMI_LARB6_REG_INDX, ISP_DEV_NAME, false);
+	smi_bus_prepare_enable(SMI_LARB3_REG_INDX, ISP_DEV_NAME, false);
 	#endif
 
 	ret = clk_prepare_enable(isp_clk.ISP_IMG_DIP);
@@ -3921,7 +3921,7 @@ static inline void Disable_Unprepare_cg_clock(void)
 
 	#ifndef EP_MARK_SMI
 	pr_info("disable CG through SMI CLK API\n");
-	smi_bus_disable_unprepare(SMI_LARB6_REG_INDX, ISP_DEV_NAME, false);
+	smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, ISP_DEV_NAME, false);
 	#endif
 }
 
@@ -3968,8 +3968,15 @@ static void ISP_EnableClock(bool En)
 			 * 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
+			pr_info("louis smt + CAMSYS(0x%x) IMGSYS(0x%x)\n",
+				ISP_RD32(CAMSYS_REG_CG_CON),
+				ISP_RD32(IMGSYS_REG_CG_CON));
+
 			ISP_WR32(CAMSYS_REG_CG_CLR, setReg);
 			ISP_WR32(IMGSYS_REG_CG_CLR, setReg);
+			pr_info("louis smt - CAMSYS(0x%x) IMGSYS(0x%x)\n",
+				ISP_RD32(CAMSYS_REG_CG_CON),
+				ISP_RD32(IMGSYS_REG_CG_CON));
 #else /* Everest not support CLKMGR, only CCF!!*/
 			/*pr_info("MTK_LEGACY:enable clk");*/
 			enable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
@@ -7871,8 +7878,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
-	#ifndef EP_MARK_MMDVFS
 	case ISP_DFS_CTRL:
+		#ifndef EP_MARK_MMDVFS
 		{
 			static unsigned int camsys_qos;
 			unsigned int dfs_ctrl;
@@ -7901,8 +7908,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
+		#endif
 		break;
 	case ISP_DFS_UPDATE:
+		#ifndef EP_MARK_MMDVFS
 		{
 			unsigned int dfs_update;
 
@@ -7916,8 +7925,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
+		#endif
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+		#ifndef EP_MARK_MMDVFS
 		/* To get how many clk levels this platform is supported */
 		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos,
 						MMDVFS_PM_QOS_SUB_SYS_CAMERA);
@@ -7940,8 +7951,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			pr_err("copy_to_user failed");
 			Ret = -EFAULT;
 		}
+		#endif
 		break;
 	case ISP_GET_CUR_ISP_CLOCK:
+		#ifndef EP_MARK_MMDVFS
 		{
 			unsigned int curclk;
 
@@ -7955,8 +7968,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
+		#endif
 		break;
-	#endif
 	case ISP_GET_VSYNC_CNT:
 		if (copy_from_user(&DebugFlag[0], (void *)Param,
 		    sizeof(unsigned int)) != 0) {
@@ -9454,7 +9467,7 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		}
 		break;
 	case GPIO_BASE_HW:
-		if (length > 0x1000) {
+		if (length > 0x100) {
 			pr_err(
 				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
 				pfn, length, 0x1000);
@@ -9462,10 +9475,18 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		}
 		break;
 	case GPIO_BASE_HW2:
-		if (length > 0x1000) {
+		if (length > 0x100) {
 			pr_err(
 				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
-				pfn, length, 0x1000);
+				pfn, length, 0x100);
+			return -EAGAIN;
+		}
+		break;
+	case GPIO_BASE_HW3:
+		if (length > 0x100) {
+			pr_err(
+				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
+				pfn, length, 0x100);
 			return -EAGAIN;
 		}
 		break;
@@ -10809,7 +10830,7 @@ static signed int __init ISP_Init(void)
 	}
 	pr_info("ISP_SENINF3_BASE: %p\n", ISP_SENINF3_BASE);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixedsys");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	if (!node) {
 		pr_err("find mediatek,apmixed node failed!!!\n");
 		return -ENODEV;
