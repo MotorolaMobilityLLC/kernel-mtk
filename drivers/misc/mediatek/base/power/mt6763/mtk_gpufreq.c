@@ -436,7 +436,6 @@ static unsigned int mt_gpufreq_fixed_voltage;
 static unsigned int mt_gpufreq_volt_enable;
 
 static unsigned int mt_gpufreq_volt_enable_state;
-static unsigned int mt_gpufreq_volt_lpm_state;
 #ifdef MT_GPUFREQ_INPUT_BOOST
 static unsigned int mt_gpufreq_input_boost_state = 1;
 #endif
@@ -818,6 +817,7 @@ static void mt_gpufreq_notify_pbm_gpuoff(struct work_struct *work)
 unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
 	int ret = 0;
+
 #ifdef MTK_SSPM
 	/*
 	* USE SSPM to switch VPROC
@@ -828,6 +828,10 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	unsigned int reg_val = 0;
 
 	mutex_lock(&mt_gpufreq_lock);
+
+	gpufreq_dbg("[Figo][+]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
+		__func__, enable, mt_gpufreq_volt_enable_state);
+
 
 #ifdef VPROC_SET_BY_PMIC
 	if (mt_gpufreq_ready == false) {
@@ -971,6 +975,8 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 #ifndef MTK_SSPM
 	mt_gpufreq_volt_enable_state = enable;
 SET_EXIT:
+	gpufreq_dbg("[Figo][-]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
+		__func__, enable, mt_gpufreq_volt_enable_state);
 	mutex_unlock(&mt_gpufreq_lock);
 #endif
 
@@ -1017,6 +1023,9 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 
 	mutex_lock(&mt_gpufreq_lock);
 
+	gpufreq_dbg("[Figo][+]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
+		__func__, enable_lpm, mt_gpufreq_volt_enable_state);
+
 	if (mt_gpufreq_ready == false) {
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
 		ret = DRIVER_NOT_READY;
@@ -1054,13 +1063,13 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 
 #ifndef MTK_SSPM
 	if (enable_lpm) {
-		mt_gpufreq_volt_lpm_state = 1;
 		mt_gpufreq_volt_enable_state = 0;
 	} else {
-		mt_gpufreq_volt_lpm_state = 0;
 		mt_gpufreq_volt_enable_state = 1;
 	}
 SET_LPM_EXIT:
+	gpufreq_dbg("[Figo][-]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
+		__func__, enable_lpm, mt_gpufreq_volt_enable_state);
 	mutex_unlock(&mt_gpufreq_lock);
 #endif
 
@@ -1518,8 +1527,7 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 
 	/* Step2. Modify gpupll_ck */
 	DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_div_order << POST_DIV_SHIFT) | dds);
-	DRV_WriteReg32(GPUPLL_CON0, 0x00000181);
-	udelay(20);
+	udelay(40);
 
 }
 #endif
@@ -1824,6 +1832,9 @@ static void _mt_gpufreq_kick_pbm(int enable)
 static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			   unsigned int volt_old, unsigned int volt_new)
 {
+
+	gpufreq_dbg("[Figo][+]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
+		__func__, freq_old, freq_new, volt_old, volt_new);
 	if (freq_new > freq_old) {
 		if (ext_buck_exist)
 			mt_gpufreq_volt_switch(volt_old, volt_new);
@@ -1837,6 +1848,10 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
 	}
+	gpufreq_dbg("[Figo][-]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
+		__func__, freq_old, freq_new, volt_old, volt_new);
+	gpufreq_dbg("[Figo][Status]@%s: freq:%d, volt:%d\n",
+		__func__, mt_get_ckgen_freq(7), _mt_gpufreq_get_cur_volt());
 
 	g_cur_gpu_freq = freq_new;
 	g_cur_gpu_volt = volt_new;
@@ -2956,7 +2971,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 	gpufreq_dbg("[Figo] Skip regulator init");
 	mt_gpufreq_volt_enable_state = 1;
-	mt_gpufreq_volt_lpm_state = 0;
 	gpufreq_dbg("[Figo] power init done");
 
 	/* init PLL
