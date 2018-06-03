@@ -437,17 +437,20 @@ static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
 					pd_request_power_swap(hba);
 
 					/*Tigger pd_task to do PR_SWAP*/
-					complete(&hba->event);
+					hba->rx_event = true;
+					wake_up(&hba->wq);
 				} else if (!strncasecmp(arg2, "data", 4)) {
 					pd_request_data_swap(hba);
 
 					/*Tigger pd_task to do DR_SWAP*/
-					complete(&hba->event);
+					hba->rx_event = true;
+					wake_up(&hba->wq);
 				} else if (!strncasecmp(arg2, "vconn", 5)) {
 					pd_request_vconn_swap(hba);
 
 					/*Tigger pd_task to do VCONN_SWAP*/
-					complete(&hba->event);
+					hba->rx_event = true;
+					wake_up(&hba->wq);
 				} else
 					dev_err(pdev, "swap [power|data|vconn] [0-9]+\n");
 #if RESET_STRESS_TEST

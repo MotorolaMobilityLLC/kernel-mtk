@@ -689,12 +689,13 @@ struct pd_policy {
 
 #define USB_VID_MEDIATEK 0x0e8d
 
-#define USB_GOOGLE_TYPEC_URL "http://www.google.com/chrome/devices/typec"
 /* USB Vendor ID assigned to Google Inc. */
 #define USB_VID_GOOGLE 0x18d1
 
 /* Other Vendor IDs */
 #define USB_VID_APPLE  0x05ac
+
+#define MTK_XID 2950
 
 /* Timeout for message receive in microseconds */
 #define USB_PD_RX_TMOUT_US 1800
