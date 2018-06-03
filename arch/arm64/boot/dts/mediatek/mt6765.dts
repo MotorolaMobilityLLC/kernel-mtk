@@ -2949,7 +2949,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 #endif
 			fstab {
 				compatible = "android,fstab";
-#ifndef CONFIG_MTK_AB_OTA_UPDATER
+#if !defined(CONFIG_SYSTEM_AS_ROOT) && !defined(CONFIG_MTK_AB_OTA_UPDATER)
 				system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/bootdevice/by-name/system";
