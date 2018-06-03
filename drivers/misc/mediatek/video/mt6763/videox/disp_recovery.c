@@ -308,11 +308,13 @@ int primary_display_switch_esd_mode(int mode)
 		/* 2.register irq handler */
 		node = of_find_compatible_node(NULL, NULL, "mediatek, DSI_TE-eint");
 		if (node) {
-			of_property_read_u32_array(node,
-						   "debounce",
-						   ints,
-						   ARRAY_SIZE(ints));
-			/* mt_gpio_set_debounce(ints[0], ints[1]); */
+			if (of_property_read_u32_array(node,
+							"debounce", ints, ARRAY_SIZE(ints)) == 0)
+				pr_debug("[%s]debounce:%d-%d\n", __func__, ints[0], ints[1]);
+				/*mt_gpio_set_debounce(ints[0], ints[1]); */
+			else
+				pr_info("[%s]debounce time not found\n", __func__);
+
 			irq = irq_of_parse_and_map(node, 0);
 			if (request_irq(irq, _esd_check_ext_te_irq_handler,
 					IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
@@ -825,8 +827,11 @@ int external_display_switch_esd_mode(int mode)
 
 	if (mode == GPIO_EINT_MODE) {
 		/* register irq handler */
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		/* mt_gpio_set_debounce(ints[0], ints[1]); */
+		if (of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints)) == 0)
+			pr_debug("[%s]debounce:%d-%d\n", __func__, ints[0], ints[1]);
+			/* mt_gpio_set_debounce(ints[0], ints[1]); */
+		else
+			pr_info("[%s]debounce time not found\n", __func__);
 		irq = irq_of_parse_and_map(node, 0);
 		if (request_irq(irq, extd_esd_check_ext_te_irq_handler, IRQF_TRIGGER_RISING, "dsi_te_1-eint", NULL))
 			DISPERR("[EXTD-ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
