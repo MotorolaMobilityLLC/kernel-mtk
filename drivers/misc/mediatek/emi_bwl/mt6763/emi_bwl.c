@@ -606,9 +606,11 @@ bool is_drs_enabled(unsigned char ch)
 	case 0:
 		if (readl(IOMEM(CHA_EMI_DRS)) & 0x1)
 			return true;
+		break;
 	case 1:
 		if (readl(IOMEM(CHB_EMI_DRS)) & 0x1)
 			return true;
+		break;
 	}
 
 	return false;
