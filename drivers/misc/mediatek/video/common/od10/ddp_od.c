@@ -117,7 +117,7 @@ enum OD_LOG_LEVEL {
 	OD_LOG_VERBOSE,
 	OD_LOG_DEBUG
 };
-static int od_log_level = 2;
+static int od_log_level = 1;
 #define ODDBG(level, fmt, arg...) \
 	do { \
 		if (od_log_level >= (level)) \
@@ -936,7 +936,7 @@ static int disp_od_ioctl(enum DISP_MODULE_ENUM module, int msg, unsigned long ar
 
 static void ddp_bypass_od(unsigned int width, unsigned int height, void *handle)
 {
-	ODNOTICE("ddp_bypass_od");
+	ODDBG(OD_LOG_DEBUG, "ddp_bypass_od");
 	DISP_REG_SET(handle, DISP_REG_OD_SIZE, (width << 16) | height);
 	DISP_REG_SET(handle, DISP_REG_OD_CFG, 0x1);
 	DISP_REG_SET(handle, DISP_REG_OD_EN, 0x0);
@@ -1001,7 +1001,7 @@ static int od_config_od(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 #else /* Not support OD */
 		ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
-		ODDBG(OD_LOG_ALWAYS, "od_config_od: Not support od bypass");
+		ODDBG(OD_LOG_DEBUG, "od_config_od: Not support od bypass");
 #endif
 	}
 
