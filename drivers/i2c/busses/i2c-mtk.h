@@ -152,6 +152,7 @@ enum I2C_REGS_OFFSET {
 	OFFSET_TIMING = 0x20,
 	OFFSET_START = 0x24,
 	OFFSET_EXT_CONF = 0x28,
+	OFFSET_LTIMING = 0x2c,
 	OFFSET_FIFO_STAT = 0x30,
 	OFFSET_FIFO_THRESH = 0x34,
 	OFFSET_FIFO_ADDR_CLR = 0x38,
@@ -194,6 +195,7 @@ struct mtk_i2c_compatible {
 	unsigned char idvfs_i2c; /* compatible before chip, set 1 if no TRANSFER_LEN_AUX */
 	unsigned char set_dt_div; /* use dt to set div */
 	unsigned char check_max_freq; /* check max freq */
+	unsigned char set_ltiming; /* need to set LTIMING */
 	u16 ext_time_config;
 	char clk_compatible[128];
 	u16 clk_sta_offset; /* I2C clock status register */
@@ -234,6 +236,7 @@ struct mt_i2c {
 	u16 msg_aux_len;		/* WRRD mode to set AUX_LEN register*/
 	u16 addr;	/* 7bit slave address, without read/write bit */
 	u16 timing_reg;
+	u16 ltiming_reg;
 	u16 high_speed_reg;
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
