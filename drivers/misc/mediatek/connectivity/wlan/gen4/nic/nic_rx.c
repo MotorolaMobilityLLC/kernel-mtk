@@ -528,7 +528,8 @@ P_SW_RFB_T incRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 		/* The last fragment frame */
 		if (ucFragNum) {
 			DBGLOG(RX, LOUD,
-			       "FC %04x M %04x SQ %04x\n", u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       "FC %04x M %04x SQ %04x\n",
+			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgLast = TRUE;
 		}
 		/* Non-fragment frame */
@@ -539,11 +540,13 @@ P_SW_RFB_T incRxDefragMPDU(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSWRfb, OUT 
 	else {
 		if (ucFragNum == 0) {
 			DBGLOG(RX, LOUD,
-			       "FC %04x M %04x SQ %04x\n", u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       "FC %04x M %04x SQ %04x\n",
+			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 			fgFirst = TRUE;
 		} else {
 			DBGLOG(RX, LOUD,
-			       "FC %04x M %04x SQ %04x\n", u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
+			       "FC %04x M %04x SQ %04x\n",
+			       u2FrameCtrl, (u2FrameCtrl & MASK_FC_MORE_FRAG), u2SeqCtrl);
 		}
 	}
 
@@ -781,7 +784,7 @@ BOOLEAN nicRxIsDuplicateFrame(IN OUT P_SW_RFB_T prSwRfb)
 			prSwRfb->prStaRec->au2CachedSeqCtrl[u4SeqCtrlCacheIdx] = u2SequenceControl;
 			if (fgIsAmsduSubframe == RX_PAYLOAD_FORMAT_FIRST_SUB_AMSDU)
 				prSwRfb->prStaRec->afgIsIgnoreAmsduDuplicate[u4SeqCtrlCacheIdx] = TRUE;
-			DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%lu] updated)\n", u2SequenceControl, u4SeqCtrlCacheIdx);
+			DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%u] updated)\n", u2SequenceControl, u4SeqCtrlCacheIdx);
 		} else {
 			/* A duplicate. */
 			if (prSwRfb->prStaRec->afgIsIgnoreAmsduDuplicate[u4SeqCtrlCacheIdx]) {
@@ -789,7 +792,7 @@ BOOLEAN nicRxIsDuplicateFrame(IN OUT P_SW_RFB_T prSwRfb)
 					prSwRfb->prStaRec->afgIsIgnoreAmsduDuplicate[u4SeqCtrlCacheIdx] = FALSE;
 			} else {
 				fgIsDuplicate = TRUE;
-				DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%lu] duplicate)\n",
+				DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%u] duplicate)\n",
 				       u2SequenceControl, u4SeqCtrlCacheIdx);
 			}
 		}
@@ -801,7 +804,7 @@ BOOLEAN nicRxIsDuplicateFrame(IN OUT P_SW_RFB_T prSwRfb)
 		prSwRfb->prStaRec->au2CachedSeqCtrl[u4SeqCtrlCacheIdx] = u2SequenceControl;
 		prSwRfb->prStaRec->afgIsIgnoreAmsduDuplicate[u4SeqCtrlCacheIdx] = FALSE;
 
-		DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%lu] updated)\n", u2SequenceControl, u4SeqCtrlCacheIdx);
+		DBGLOG(RX, LOUD, "RXM: SC= 0x%X (Cache[%u] updated)\n", u2SequenceControl, u4SeqCtrlCacheIdx);
 	}
 
 	return fgIsDuplicate;
@@ -1039,7 +1042,7 @@ VOID nicRxProcessGOBroadcastPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		}
 	} else {
 		DBGLOG(RX, WARN,
-		       "Stop to forward BMC packet due to less free Sw Rfb %lu\n", prRxCtrl->rFreeSwRfbList.u4NumElem);
+		       "Stop to forward BMC packet due to less free Sw Rfb %u\n", prRxCtrl->rFreeSwRfbList.u4NumElem);
 	}
 
 	/* 3. Indicate to host */
@@ -3075,7 +3078,7 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 
 	u4Status = halRxWaitResponse(prAdapter, ucPortIdx, pucRspBuffer, u4MaxRespBufferLen, pu4Length);
 	if (u4Status == WLAN_STATUS_SUCCESS) {
-		DBGLOG(RX, TRACE, "Dump Response buffer, length = 0x%lx\n", *pu4Length);
+		DBGLOG(RX, TRACE, "Dump Response buffer, length = 0x%x\n", *pu4Length);
 		DBGLOG_MEM8(RX, TRACE, pucRspBuffer, *pu4Length);
 
 		prEvent = (P_WIFI_EVENT_T) pucRspBuffer;
