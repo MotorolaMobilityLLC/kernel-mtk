@@ -548,6 +548,8 @@ int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 
 void _primary_display_disable_mmsys_clk(void)
 {
+	struct disp_ddp_path_config *data_config;
+
 	if (primary_get_sess_mode() == DISP_SESSION_RDMA_MODE) {
 		/* switch back to DL mode before suspend */
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
@@ -569,6 +571,10 @@ void _primary_display_disable_mmsys_clk(void)
 		_cmdq_stop_trigger_loop();
 		DISPINFO("[LP]1.display cmdq trigger loop stop[end]\n");
 	}
+
+	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+	if (disp_partial_is_support())
+		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
 
 	DISPINFO("[LP]2.primary display path stop[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
@@ -647,9 +653,6 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
-	if (disp_partial_is_support())
-		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
-
 	data_config->dst_dirty = 1;
 	data_config->ovl_dirty = 1;
 	data_config->rdma_dirty = 1;
