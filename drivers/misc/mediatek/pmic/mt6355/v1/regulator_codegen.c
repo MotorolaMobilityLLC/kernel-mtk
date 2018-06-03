@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_api.h"
@@ -345,9 +346,13 @@ static int pmic_ldo_vcamd1_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcamd1 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		dsb(sy);
+		mdelay(1);
+		dsb(sy);
+		pmic_set_register_value(PMIC_RG_INT_EN_VCAMD1_OC, 1);
+	} else {
 		pr_err("ldo vcamd1 don't have en_cb\n");
 		ret = -1;
 	}
@@ -369,9 +374,10 @@ static int pmic_ldo_vcamd1_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcamd1 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			pmic_set_register_value(PMIC_RG_INT_EN_VCAMD1_OC, 0);
+		} else {
 			pr_err("ldo vcamd1 don't have enable callback\n");
 			ret = -1;
 		}
@@ -2423,9 +2429,13 @@ static int pmic_ldo_vcamd2_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcamd2 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		dsb(sy);
+		mdelay(2);
+		dsb(sy);
+		pmic_set_register_value(PMIC_RG_INT_EN_VCAMD2_OC, 1);
+	} else {
 		pr_err("ldo vcamd2 don't have en_cb\n");
 		ret = -1;
 	}
@@ -2447,9 +2457,10 @@ static int pmic_ldo_vcamd2_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcamd2 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			pmic_set_register_value(PMIC_RG_INT_EN_VCAMD2_OC, 0);
+		} else {
 			pr_err("ldo vcamd2 don't have enable callback\n");
 			ret = -1;
 		}
@@ -2871,9 +2882,13 @@ static int pmic_ldo_vcama1_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcama1 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		dsb(sy);
+		mdelay(1);
+		dsb(sy);
+		pmic_set_register_value(PMIC_RG_INT_EN_VCAMA1_OC, 1);
+	} else {
 		pr_err("ldo vcama1 don't have en_cb\n");
 		ret = -1;
 	}
@@ -2895,9 +2910,10 @@ static int pmic_ldo_vcama1_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcama1 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			pmic_set_register_value(PMIC_RG_INT_EN_VCAMA1_OC, 0);
+		} else {
 			pr_err("ldo vcama1 don't have enable callback\n");
 			ret = -1;
 		}
@@ -4087,9 +4103,13 @@ static int pmic_ldo_vcama2_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcama2 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		dsb(sy);
+		mdelay(2);
+		dsb(sy);
+		pmic_set_register_value(PMIC_RG_INT_EN_VCAMA2_OC, 1);
+	} else {
 		pr_err("ldo vcama2 don't have en_cb\n");
 		ret = -1;
 	}
@@ -4111,9 +4131,10 @@ static int pmic_ldo_vcama2_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcama2 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			pmic_set_register_value(PMIC_RG_INT_EN_VCAMA2_OC, 0);
+		} else {
 			pr_err("ldo vcama2 don't have enable callback\n");
 			ret = -1;
 		}
