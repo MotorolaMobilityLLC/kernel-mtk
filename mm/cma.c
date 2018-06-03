@@ -38,6 +38,7 @@
 #include <trace/events/cma.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/swap.h>
 
 #include "cma.h"
 
@@ -520,6 +521,89 @@ bool cma_release(struct cma *cma, const struct page *pages, unsigned int count)
 	mutex_unlock(&cma_mutex);
 
 	return true;
+}
+
+#define MAX_SHRINK_PAGES  ((unsigned long)40*1024*1024/4096)
+
+/*
+ * Make sure we have at least @pages of free memory
+ * return number of pages freed
+ */
+static unsigned long try_shrink_memory(unsigned long pages)
+{
+	unsigned long free = nr_free_pages(), tfree = 0, ofree, alloc;
+	int max_retries;
+	unsigned long start, end;
+
+	start = sched_clock();
+
+	ofree = free;
+	max_retries = pages / MAX_SHRINK_PAGES + 5;
+	while (pages > free && max_retries--) {
+		/*
+		 * When shrinking large numbers of pages at once, vmscan
+		 * tends to free too much pages and using lots of time.
+		 *
+		 * Only shrink a maximum number of page at a time.
+		 */
+		alloc = min(MAX_SHRINK_PAGES, pages - free);
+		tfree += shrink_all_memory_no_swap(alloc);
+		free = nr_free_pages();
+	}
+
+	end = sched_clock();
+	pr_info("%s: free pages %lu, current free %lu, takes %lu us\n",
+		__func__, tfree, nr_free_pages(), end-start);
+
+	return tfree;
+}
+
+/**
+ * cma_alloc_large() - Allocate large chunk of memory from the cma zone.
+ * @cma:   Contiguous memory region for which the allocation is performed.
+ * @count: Requested number of pages.
+ * @align: Requested alignment of pages (in PAGE_SIZE order).
+ *
+ * Normal cma_alloc will easily to fail and/or take lots of time when user
+ * trying to allocate large chunk of memory from it. Add helper function
+ * to improve this usage.
+ *
+ * return first page of allocated memory.
+ */
+struct page *cma_alloc_large(struct cma *cma, int count, unsigned int align)
+{
+	struct page *page;
+	struct zone *zone;
+	unsigned long wmark_low = 0;
+	struct zone *zones = NODE_DATA(numa_node_id())->node_zones;
+	int retries = 0;
+
+	for_each_zone(zone)
+		if (zone != &zones[ZONE_MOVABLE])
+			wmark_low += zone->watermark[WMARK_LOW];
+
+	/*
+	 * Make sure we have enough free memory to fullfil this request.
+	 *
+	 * This helps to trigger memory shrinker faster and make sure cma_alloc
+	 * below will success.
+	 * Without this, pages migrate out from CMA ares might be freed when
+	 * CMA tries to make room to migrate more pages. This also reduces
+	 * pages CMA need to handle by freeing them first.
+	 *
+	 * Kernel will start memory reclaim when free memory is lower than
+	 * low watermark. To avoid this while we do cma_alloc, we should make
+	 * sure free memory is more than count + wmark_low
+	 */
+	try_shrink_memory(count + wmark_low);
+
+	for (retries = 0; retries < 3; retries++) {
+		page = cma_alloc(cma, count, align);
+		if (page)
+			return page;
+	}
+
+	return 0;
 }
 
 static int cma_usage_show(struct seq_file *m, void *v)
