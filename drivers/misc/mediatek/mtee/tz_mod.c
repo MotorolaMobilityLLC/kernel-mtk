@@ -129,6 +129,70 @@ struct clk *mtee_clk_get(const char *clk_name)
 	}
 	return NULL;
 }
+
+/*Used for power management*/
+#define PM_NAME_LEN 16
+struct mtee_pm {
+	struct list_head list;
+	char pm_name[PM_NAME_LEN];
+	struct device *dev;
+};
+static LIST_HEAD(mtee_pm_list);
+
+static void mtee_pms_init(struct platform_device *pdev)
+{
+	int pms_num;
+	int idx;
+
+	pms_num = of_property_count_strings(pdev->dev.of_node, "pm-names");
+	for (idx = 0; idx < pms_num; idx++) {
+		const char *pm_name;
+		struct platform_device *platdev;
+		struct mtee_pm *mtee_pm;
+		struct device_node *node;
+
+		if (of_property_read_string_index(pdev->dev.of_node,
+					"pm-names", idx, &pm_name)) {
+			pr_warn("[%s] get pm_name failed, index:%d\n",
+				MODULE_NAME,
+				idx);
+			continue;
+		}
+		if (strlen(pm_name) > PM_NAME_LEN-1) {
+			pr_warn("[%s] pm_name %s is longer than %d, trims to %d\n",
+				MODULE_NAME,
+				pm_name, PM_NAME_LEN-1, PM_NAME_LEN-1);
+		}
+		node = of_parse_phandle(pdev->dev.of_node, "pm-devs", 0);
+		if (!node)
+			continue;
+
+		platdev = of_find_device_by_node(node);
+		of_node_put(node);
+		if (!platdev)
+			continue;
+
+		mtee_pm = kzalloc(sizeof(struct mtee_pm), GFP_KERNEL);
+		strncpy(mtee_pm->pm_name, pm_name, PM_NAME_LEN-1);
+		mtee_pm->dev = &platdev->dev;
+
+		list_add(&mtee_pm->list, &mtee_pm_list);
+	}
+}
+
+struct device *mtee_pmdev_get(const char *pm_name)
+{
+	struct mtee_pm *cur;
+	struct mtee_pm *tmp;
+
+	list_for_each_entry_safe(cur, tmp, &mtee_pm_list, list) {
+		if (strncmp(cur->pm_name, pm_name,
+			strlen(cur->pm_name)) == 0)
+			return cur->dev;
+	}
+	return NULL;
+}
+
 #endif
 
 /*****************************************************************************
@@ -1525,6 +1589,7 @@ static int mtee_probe(struct platform_device *pdev)
 		pr_warn("No mtee device node\n");
 
 	mtee_clks_init(pdev);
+	mtee_pms_init(pdev);
 #endif /* CONFIG_OF */
 
 	tz_client_dev = MKDEV(MAJOR_DEV_NUM, 0);

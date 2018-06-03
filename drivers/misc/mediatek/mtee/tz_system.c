@@ -76,7 +76,12 @@ static const KREE_REE_Service_Func ree_service_funcs[] = {
 #ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
 	KREE_ServGetChunkmemPool,
 	KREE_ServReleaseChunkmemPool,
+#else
+	NULL,
+	NULL,
 #endif
+	KREE_ServPMGet,
+	KREE_ServPMPut,
 };
 
 #define ree_service_funcs_num \
