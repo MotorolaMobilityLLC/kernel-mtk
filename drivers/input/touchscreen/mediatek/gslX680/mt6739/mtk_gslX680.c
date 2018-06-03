@@ -168,7 +168,7 @@ static void msg_dma_release(void);
 #endif /* end #if GSL_DEBUG */
 
 #define GSL_LOGE(fmt, args...)   \
-		pr_err(GSLX680_NAME "<-err->[%04d] [@%s]" fmt, __LINE__, __func__, ##args)  \
+		pr_debug(GSLX680_NAME "<-err->[%04d] [@%s]" fmt, __LINE__, __func__, ##args)  \
 
 #ifdef TPD_HAVE_BUTTON
 static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
