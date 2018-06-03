@@ -2158,13 +2158,11 @@
 		clocks =
 				<&venc_gcon VENC_GCON_VDEC>,
 				<&venc_gcon VENC_GCON_VENC>,
-				<&scpsys SCP_SYS_DIS>,
 				<&scpsys SCP_SYS_VEN>,
 				<&scpsys SCP_SYS_VEN>;
 		clock-names =
 				"MT_CG_VDEC",
 				"MT_CG_VENC",
-				"MT_SCP_SYS_DIS",
 				"MT_SCP_SYS_VDE",
 				"MT_SCP_SYS_VEN";
 		#clock-cells = <1>;
