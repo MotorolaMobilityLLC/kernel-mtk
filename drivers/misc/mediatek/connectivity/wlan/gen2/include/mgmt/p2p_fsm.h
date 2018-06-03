@@ -375,7 +375,7 @@ typedef struct _MSG_P2P_START_AP_T {
 	UINT_32 u4BcnInterval;
 	UINT_8 aucSsid[32];
 	UINT_16 u2SsidLen;
-	ENUM_HIDDEN_SSID_TYPE_T eHiddenSsidType;
+	UINT_8 ucHiddenSsidType;
 	BOOLEAN fgIsPrivacy;
 	AP_CRYPTO_SETTINGS_T rEncryptionSettings;
 	INT_32 i4InactiveTimeout;

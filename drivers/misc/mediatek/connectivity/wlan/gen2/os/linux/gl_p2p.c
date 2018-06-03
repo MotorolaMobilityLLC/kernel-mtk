@@ -3548,16 +3548,18 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 
 		case P2P_CMD_ID_GET_OP_CH:
 			{
+				UINT_32 u4QueryInfoLen = 0;
+
 				prP2PReq->inBufferLength = 4;
 
 				status = wlanoidQueryP2pOpChannel(prGlueInfo->prAdapter,
 								  prP2PReq->aucBuffer,
-								  prP2PReq->inBufferLength, &prP2PReq->outBufferLength);
-
+								  prP2PReq->inBufferLength, &u4QueryInfoLen);
+				prP2PReq->outBufferLength = u4QueryInfoLen;
 				if (status == 0) {	/* WLAN_STATUS_SUCCESS */
 					if (copy_to_user(wrqu->data.pointer,
 							 &(prGlueInfo->prP2PInfo->aucOidBuf[0]),
-							 prP2PReq->outBufferLength + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT,
+							 u4QueryInfoLen + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT,
 											       aucBuffer))) {
 						DBGLOG(P2P, ERROR, "%s() copy_to_user() fail\n", __func__);
 						return -EIO;
