@@ -14,22 +14,6 @@
  * GNU General Public License for more details.
  *
  */
-
-	 /*
-	  * Copyright (C) 2016 MediaTek Inc.
-	  *
-	  * This program is free software; you can redistribute it and/or modify
-	  * it under the terms of the GNU General Public License version 2 as
-	  * published by the Free Software Foundation.
-	  *
-	  * This program is distributed in the hope that it will be useful,
-	  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-	  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-	  */
-	 
-
-
 /*****************************************************************************
 *
 * File Name: focaltech_flash.c
@@ -59,15 +43,15 @@
 *****************************************************************************/
 /* Upgrade FW/PRAMBOOT/LCD CFG */
 u8 fw_file[] = {
-#include FTS_UPGRADE_FW_FILE
+//#include FTS_UPGRADE_FW_FILE
 };
 
 u8 fw_file2[] = {
-#include FTS_UPGRADE_FW2_FILE
+//#include FTS_UPGRADE_FW2_FILE
 };
 
 u8 fw_file3[] = {
-#include FTS_UPGRADE_FW3_FILE
+//#include FTS_UPGRADE_FW3_FILE
 };
 
 struct upgrade_fw fw_list[] = {
