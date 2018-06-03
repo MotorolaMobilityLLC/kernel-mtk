@@ -22,7 +22,7 @@
 #include <linux/notifier.h>
 #include <linux/fb.h>
 #include <mt-plat/mtk_sched.h>
-#include <mt-plat/fpsgo_common.h>
+#include <mt-plat/fpsgo_v2_common.h>
 
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
@@ -76,7 +76,7 @@ void ext_launch_cond(int cond_check)
 #ifdef CONFIG_TRACING
 		eas_ctrl_extend_kernel_trace_begin("ext_launch_cond", cond_check, 0, 0);
 #endif
-		fpsgo_game_enable(0);
+		fpsgo_switch_enable_keep(0);
 		walt_mode(0);
 #ifdef CONFIG_TRACING
 		eas_ctrl_extend_kernel_trace_end();
@@ -88,7 +88,7 @@ void ext_launch_cond(int cond_check)
 		eas_ctrl_extend_kernel_trace_begin("ext_launch_cond", cond_check, 0, 1);
 #endif
 		walt_mode(0);
-		fpsgo_game_enable(1);
+		fpsgo_switch_enable_keep(1);
 #ifdef CONFIG_TRACING
 		eas_ctrl_extend_kernel_trace_end();
 #endif
@@ -109,7 +109,7 @@ void ext_launch_start(void)
 	eas_ctrl_extend_kernel_trace_begin("ext_launch_start", 0, 1, 0);
 #endif
 
-	fpsgo_game_enable(0);
+	fpsgo_switch_enable_keep(0);
 	walt_mode(1);
 
 #ifdef CONFIG_TRACING
@@ -125,7 +125,7 @@ void ext_launch_end(void)
 #ifdef CONFIG_TRACING
 	eas_ctrl_extend_kernel_trace_begin("ext_launch_end", 0, 0, 1);
 #endif
-	fpsgo_game_enable(1);
+	fpsgo_switch_enable_keep(1);
 	walt_mode(0);
 
 #ifdef CONFIG_TRACING
