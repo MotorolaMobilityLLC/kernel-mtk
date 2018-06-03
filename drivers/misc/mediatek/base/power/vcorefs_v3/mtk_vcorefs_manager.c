@@ -425,15 +425,15 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 	int kicker, val, r;
 	char cmd[32];
 
+	r = governor_debug_store(buf);
+	if (!r)
+		return count;
+
 	if (sscanf(buf, "%31s %d", cmd, &val) != 2)
 		return -EPERM;
 
 	if (pwrctrl->kr_log_mask != 65535) /* no log when DRAM HQA stress (0xFFFF)*/
 		vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
-
-	r = governor_debug_store(buf);
-	if (!r)
-		return count;
 
 	if (!strcmp(cmd, "feature_en")) {
 		mutex_lock(&vcorefs_mutex);
