@@ -1728,10 +1728,10 @@ static unsigned int __calculate_vgpu_sfchg_rate(bool isRising)
 	 */
 
 	if (isRising) {
-		/* sfchg_rate_reg is 19, (19+1)*0.038 = 0.76 */
+		/* sfchg_rate_reg is 19, (19+1)*0.038 = 0.76us */
 		sfchg_rate_vgpu = 1;
 	} else {
-		/* sfchg_rate_reg is 39, (39+1)*0.038 = 1.52 */
+		/* sfchg_rate_reg is 39, (39+1)*0.038 = 1.52us */
 		sfchg_rate_vgpu = 2;
 	}
 
@@ -1759,13 +1759,9 @@ static unsigned int __calculate_vsram_sfchg_rate(bool isRising)
 	 *    7'd25 : 1us
 	 */
 
-	if (isRising) {
-		/* sfchg_rate_reg is 7, (7+1)*0.038 = 0.304 */
-		sfchg_rate_vsram = 1;
-	} else {
-		/* sfchg_rate_reg is 15, (15+1)*0.038 = 0.608 */
-		sfchg_rate_vsram = 1;
-	}
+	/* sfchg_rate_reg is 7 for rising, (7+1)*0.038 = 0.304us */
+	/* sfchg_rate_reg is 15 for falling, (15+1)*0.038 = 0.608us */
+	sfchg_rate_vsram = 1;
 
 	gpufreq_pr_debug("@%s: isRising = %d, sfchg_rate_vsram = %d\n",
 			__func__, isRising, sfchg_rate_vsram);
