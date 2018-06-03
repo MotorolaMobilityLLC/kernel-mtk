@@ -5090,56 +5090,50 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										data[i].image.frm_cnt =
 										_INVALID_FRM_CNT_;
 #ifdef _rtbc_buf_que_2_0_
-				if (pstRTBuf->ring_buf[rt_dma].empty_count <
-									pstRTBuf->ring_buf[rt_dma].total_count)
-					pstRTBuf->ring_buf[rt_dma].
-										empty_count++;
+					if (pstRTBuf->ring_buf[rt_dma].empty_count <
+						pstRTBuf->ring_buf[rt_dma].total_count)
+						pstRTBuf->ring_buf[rt_dma].empty_count++;
 					else {
 						spin_unlock_irqrestore(&(IspInfo.SpinLockIrq
 							[irqT_Lock]), flags);
 							IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 							LOG_PR_ERR("[rtbc]error:dma(%d),PA(0x%x),over enque_2", rt_dma,
-									pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr);
-										return -EFAULT;
-						}
+							pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr);
+						return -EFAULT;
+					}
 
 									/* double check */
-				if (1) {
+					if (1) {
 					if (rt_buf_info.bufIdx !=
-								pstRTBuf->ring_buf[rt_dma].data[i].bufIdx)
+						pstRTBuf->ring_buf[rt_dma].data[i].bufIdx)
 						LOG_INF("[rtbc][replace2]error:	BufIdx MisMatch. 0x%x/0x%x",
-								rt_buf_info.bufIdx,
-								pstRTBuf->ring_buf[rt_dma].data[i].
-								 bufIdx);
-
-								}
+						rt_buf_info.bufIdx,
+						pstRTBuf->ring_buf[rt_dma].data[i].bufIdx);
+					}
 #else
-									pstRTBuf->ring_buf[rt_dma].empty_count++;
+					pstRTBuf->ring_buf[rt_dma].empty_count++;
 #endif
-									/* spin_unlock_irqrestore(&(IspInfo.*/
-									/*	SpinLockIrq[irqT]), flags); */
-									/* LOG_DBG("[rtbc]dma(%d),new(%d)*/
-									/*	PA(0x%x) VA(0x%x)",*/
-									/*	rt_dma,i,pstRTBuf->ring_buf[rt_dma].*/
-									/*	data[i].base_pAddr,pstRTBuf->*/
-									/*	ring_buf[rt_dma].data[i].base_vAddr);*/
-									break;
-							}
-						}
+						/* spin_unlock_irqrestore(&(IspInfo.*/
+						/*	SpinLockIrq[irqT]), flags); */
+						/* LOG_DBG("[rtbc]dma(%d),new(%d)*/
+						/*	PA(0x%x) VA(0x%x)",*/
+						/*	rt_dma,i,pstRTBuf->ring_buf[rt_dma].*/
+						/*	data[i].base_pAddr,pstRTBuf->*/
+						/*	ring_buf[rt_dma].data[i].base_vAddr);*/
+					break;
+					}
+				}
 				if (i == ISP_RT_BUF_SIZE) {
 					for (x = 0; x < ISP_RT_BUF_SIZE; x++)
-						LOG_DBG
-							("[rtbc]dma(%d),idx(%d) PA(0x%x) VA(0x%llx)",
-									 rt_dma, x, pstRTBuf->ring_buf[rt_dma].
-									 data[x].base_pAddr,
-									 pstRTBuf->ring_buf[rt_dma].
-									 data[x].base_vAddr);
+						LOG_DBG("[rtbc]dma(%d),idx(%d) PA(0x%x) VA(0x%llx)",
+						rt_dma, x, pstRTBuf->ring_buf[rt_dma].data[x].base_pAddr,
+						pstRTBuf->ring_buf[rt_dma].data[x].base_vAddr);
 
-						LOG_INF
-								("[rtbc][replace3]can't find thespecified Addr(0x%x)\n",
-								 rt_buf_info.base_pAddr);
-						}
+					LOG_INF("[rtbc][replace3]can't find thespecified Addr(0x%x)\n",
+					rt_buf_info.base_pAddr);
+					return -EFAULT;
 					}
+				}
 						/* set RCN_INC = 1; */
 						/* RCNT++ */
 						/* FBC_CNT-- */
