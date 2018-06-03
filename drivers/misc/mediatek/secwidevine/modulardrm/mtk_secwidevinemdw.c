@@ -14,7 +14,7 @@
 /**
  * @file   secwidevinemdwmdw.c
  * @brief  Open widevine modular drm secure driver and receive command from secure driver
- * @Author Rui Hu
+ * @Author MTK-54472
  *
  **/
 #include <linux/kernel.h>
@@ -36,14 +36,13 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
-/*#include <mach/memory.h>*/
 #include <linux/io.h>
 #include <linux/proc_fs.h>
 #include <linux/switch.h>
 
 /* only available for trustonic */
 #include "mobicore_driver_api.h"
-#include "secwidevinemdw.h"
+#include "mtk_secwidevinemdw.h"
 
 #define secwidevinemdw_NAME     "secwidevinemdw"
 #define DEFAULT_HANDLES_NUM (64)
@@ -75,7 +74,7 @@ do {    \
 #define HDCP_VERSION_2_1 210
 #define HDCP_VERSION_2_2 220
 
-struct task_struct *secwidevinemdwDci_th;
+static struct task_struct *secwidevinemdwDci_th;
 
 #define CMD_SEC_WIDEVINE_NOTIFY_HWC 1
 
