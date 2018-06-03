@@ -300,7 +300,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_scp_infra_req_mask_b = 1,
 	.reg_srcclkeni0_infra_mask_b = 0,
 	.reg_srcclkeni1_infra_mask_b = 0,
-	.reg_srcclkeni2_infra_mask_b = 0,
+	.reg_srcclkeni2_infra_mask_b = 1,
 	.reg_ccif0_md_event_mask_b = 1,
 	.reg_ccif0_ap_event_mask_b = 1,
 	.reg_ccif1_md_event_mask_b = 1,
@@ -315,7 +315,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_c2k_l1_rccif_wake_mask_b = 0,
 	.reg_ps_c2k_rccif_wake_mask_b = 1,
 	.reg_l1_c2k_rccif_wake_mask_b = 0,
-	.reg_disp2_req_mask_b = 1,
+	.reg_disp2_req_mask_b = 0,
 	.reg_md_ddr_en_0_mask_b = 1,
 	.reg_md_ddr_en_1_mask_b = 0,
 	.reg_conn_ddr_en_mask_b = 1,
@@ -323,7 +323,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	/* SPM_SRC2_MASK */
 	.reg_disp0_req_mask_b = 1,
 	.reg_disp1_req_mask_b = 1,
-	.reg_disp_od_req_mask_b = 1,
+	.reg_disp_od_req_mask_b = 0,
 	.reg_mfg_req_mask_b = 0,
 	.reg_vdec0_req_mask_b = 0,
 	.reg_gce_req_mask_b = 1,
@@ -348,7 +348,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-	/* .reg_gce_vrf18_req2_mask_b = 0, */ /* TODO */
+	/* .reg_gce_vrf18_req2_mask_b = 0, */
 
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
@@ -384,16 +384,14 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_conn_apsrc_sel = 0,
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
-	/* SPM_SRC4_MASK */ /* TODO */
-	/*
-	* .reg_ccif4_ap_event_mask_b = 0,
-	* .reg_ccif4_md_event_mask_b = 0,
-	* .reg_ccif5_ap_event_mask_b = 0,
-	* .reg_ccif5_md_event_mask_b = 0,
-	*/
+	/* SPM_SRC4_MASK */
+	/* .reg_ccif4_ap_event_mask_b = 1, */
+	/* .reg_ccif4_md_event_mask_b = 1, */
+	/* .reg_ccif5_ap_event_mask_b = 1, */
+	/* .reg_ccif5_md_event_mask_b = 1, */
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0282208,
+	.reg_wakeup_event_mask = 0xF1282208,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
