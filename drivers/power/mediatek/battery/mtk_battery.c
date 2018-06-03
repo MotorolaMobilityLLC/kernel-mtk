@@ -3353,7 +3353,7 @@ void fg_update_sw_low_battery_check(void)
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
 		return;
 
-	vbat = pmic_get_battery_voltage();
+	vbat = pmic_get_battery_voltage() * 10;
 
 	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
 		vbat, sw_low_battery_ht_en, sw_low_battery_ht_threshold,
@@ -4044,6 +4044,37 @@ static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribu
 }
 static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
 
+static ssize_t show_FG_meter_resistance(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show fg_meter_resistance : %d\n", fg_cust_data.fg_meter_resistance);
+	return sprintf(buf, "%d\n", fg_cust_data.fg_meter_resistance);
+}
+
+static ssize_t store_FG_meter_resistance(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[store_FG_meter_resistance]\n");
+
+	if (buf != NULL && size != 0) {
+		bm_err("[store_FG_meter_resistance] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err("[store_FG_meter_resistance] val is %d ??\n", (int)val);
+			val = 0;
+		} else
+			fg_cust_data.fg_meter_resistance = val;
+
+		bm_err("[store_FG_meter_resistance] FG_meter_resistance = %d\n", (int)val);
+	}
+
+	return size;
+
+}
+static DEVICE_ATTR(FG_meter_resistance, 0664, show_FG_meter_resistance, store_FG_meter_resistance);
+
 static ssize_t show_FG_nafg_disable(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	bm_trace("[FG] show nafg disable : %d\n", cmd_disable_nafg);
@@ -4716,6 +4747,7 @@ static int __init battery_probe(struct platform_device *dev)
 
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_disable_nafg);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_meter_resistance);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
