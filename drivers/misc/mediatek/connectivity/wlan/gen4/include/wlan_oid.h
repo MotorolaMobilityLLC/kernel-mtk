@@ -2358,6 +2358,9 @@ WLAN_STATUS
 wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 			      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
+WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, PVOID pvPacketFiltr,
+				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);
+
 WLAN_STATUS
 wlanoidQueryCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 				IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);

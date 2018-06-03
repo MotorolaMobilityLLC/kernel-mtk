@@ -446,19 +446,8 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 
 				if (fgUpdate == TRUE) {
 					rSetRxPacketFilter.u4RxPacketFilter = u4rxfilter;
-					rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
-								CMD_ID_SET_RX_FILTER,	/* ucCID */
-								TRUE,	/* fgSetQuery */
-								FALSE,	/* fgNeedResp */
-								FALSE,	/* fgIsOid */
-								NULL,	/* pfCmdDoneHandler */
-								NULL,	/* pfCmdTimeoutHandler */
-								sizeof(CMD_RX_PACKET_FILTER),/*u4SetQueryInfoLen*/
-								(PUINT_8)&rSetRxPacketFilter,/*pucInfoBuffer*/
-								NULL,	/* pvSetQueryBuffer */
-								0	/* un4SetQueryBufferLen */
-					);
-					u4rxfilter = rSetRxPacketFilter.u4RxPacketFilter;
+					rStatus =
+					wlanoidSetPacketFilter(prAdapter, &rSetRxPacketFilter, FALSE, NULL, 0);
 				}
 				/* DBGLOG(SW4, INFO,("SWCTRL_RX_FILTER:
 				* g_u4RXFilter %x ucOpt0 %x ucOpt1 %x fgUpdate %x u4rxfilter %x, rStatus %x\n",
