@@ -71,6 +71,10 @@ extern void __iomem *u3_sif2_base;
 
 #define U2_SR_COEF_E60802 28
 
+/* U3D_USB30_PHYA_REG1 */
+#define RG_SSUSB_VUSB09_ON (1<<29)
+#define RG_SSUSB_VUSB09_ON_OFST (29)
+
 /* ///////////////////////////////////////////////////////////////////////////// */
 
 struct u2phy_reg_e {
