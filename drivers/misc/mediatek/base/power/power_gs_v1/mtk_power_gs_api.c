@@ -506,11 +506,11 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 		else if (!strcmp(cmd, "filter"))
 			_golden.func[0] = '\0';
 		else if (!strcmp(cmd, "dump_suspend"))
-			mt_power_gs_suspend_compare();
+			mt_power_gs_suspend_compare(GS_ALL);
 		else if (!strcmp(cmd, "dump_dpidle"))
-			mt_power_gs_dpidle_compare();
+			mt_power_gs_dpidle_compare(GS_ALL);
 		else if (!strcmp(cmd, "dump_sodi"))
-			mt_power_gs_sodi_compare();
+			mt_power_gs_sodi_compare(GS_ALL);
 	}
 
 	free_page((size_t)buf);
