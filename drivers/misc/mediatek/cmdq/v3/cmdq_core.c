@@ -7607,7 +7607,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 		if (pPrev->priority < pTask->priority) {
 
 			task_pa = cmdq_core_task_get_first_pa(pPrev);
-			CMDQ_LOG(
+			CMDQ_MSG(
 				"Switch prev(%d, 0x%p 0x%08x) and curr(%d, 0x%p 0x%08x) order loop:%d jump:0x%pa\n",
 				prev, pPrev, pPrev->pCMDEnd[-1],
 				index, pTask, pTask->pCMDEnd[-1],
@@ -7632,7 +7632,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 			cmdq_core_invalidate_hw_fetched_buffer(thread);
 #endif
 			if (*pLast == pTask) {
-				CMDQ_LOG("update pLast from 0x%p (0x%08x) to 0x%p (0x%08x)\n",
+				CMDQ_MSG("update pLast from 0x%p (0x%08x) to 0x%p (0x%08x)\n",
 					pTask, pTask->pCMDEnd[-1],
 					pPrev, pPrev->pCMDEnd[-1]);
 				*pLast = pPrev;
