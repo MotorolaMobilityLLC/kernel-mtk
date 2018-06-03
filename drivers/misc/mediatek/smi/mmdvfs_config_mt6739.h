@@ -53,7 +53,7 @@ struct mmdvfs_clk_hw_map mt6739_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 			{-1, -1},
 			{-1, -1}
 		},
-		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_TOP_MMPLL_CK"}, -1, 2,
+		{ MMDVFS_CLK_CONFIG_NONE, { NULL, "MMDVFS_CLK_TOP_MMPLL_CK"}, -1, 2,
 			{-1, -1},
 			{MT6739_MMDVFS_CLK_TOP_VENCPLL_CK, MT6739_MMDVFS_CLK_TOP_SYSPLL2_D2}
 		},
