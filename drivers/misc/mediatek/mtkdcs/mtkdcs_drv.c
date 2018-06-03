@@ -424,6 +424,9 @@ int dcs_set_lbw_region(u64 start, u64 end)
 	if (dcs_core_initialized)
 		return 0;
 
+	start -= PHYS_OFFSET;
+	end -= PHYS_OFFSET;
+
 	/* sanity check */
 	if ((start > lbw_start) && (end < lbw_end))
 		goto out;
