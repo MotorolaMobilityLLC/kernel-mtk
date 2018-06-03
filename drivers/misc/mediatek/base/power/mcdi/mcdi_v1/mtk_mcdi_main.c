@@ -281,6 +281,7 @@ static int mcdi_procfs_init(void)
 static void __go_to_wfi(int cpu)
 {
 	isb();
+	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
 }
