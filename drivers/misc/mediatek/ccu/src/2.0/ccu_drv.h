@@ -287,6 +287,10 @@ struct ccu_cmd_s {
 	enum ccu_eng_status_e status;
 };
 
+#define CCU_IMPORT_BUF_NUM	12
+struct import_mem_s {
+	uint32_t memID[CCU_IMPORT_BUF_NUM];
+};
 /*---------------------------------------------------------------------------*/
 /*  IOCTL Command                                                            */
 /*---------------------------------------------------------------------------*/
@@ -315,5 +319,6 @@ struct ccu_cmd_s {
 #define CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR _IOR(CCU_MAGICNO,  24, int)
 #define CCU_IOCTL_GET_SENSOR_NAME           _IOR(CCU_MAGICNO,  25, int)
 #define CCU_IOCTL_GET_PLATFORM_INFO         _IOR(CCU_MAGICNO,  26, int)
+#define CCU_IOCTL_IMPORT_MEM		        _IOW(CCU_MAGICNO,  27, int)
 
 #endif

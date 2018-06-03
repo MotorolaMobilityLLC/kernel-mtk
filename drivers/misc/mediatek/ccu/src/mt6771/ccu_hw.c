@@ -529,7 +529,6 @@ int ccu_power(struct ccu_power_s *power)
 		ccuInfo.IsI2cPoweredOn = 1;
 		ccuInfo.IsCcuPoweredOn = 1;
 
-		ccu_ion_init();
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
 		ret = _ccu_powerdown();
@@ -643,7 +642,6 @@ static int _ccu_powerdown(void)
 	ccuInfo.IsI2cPowerDisabling = 0;
 	ccuInfo.IsCcuPoweredOn = 0;
 
-	ccu_ion_uninit();
 	return 0;
 }
 
