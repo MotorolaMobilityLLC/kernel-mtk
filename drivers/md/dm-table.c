@@ -372,13 +372,27 @@ dev_t dm_get_dev_t(const char *path)
 {
 	dev_t uninitialized_var(dev);
 	struct block_device *bdev;
+	char *dev_path = kstrdup(path, GFP_KERNEL);
 
-	bdev = lookup_bdev(path);
-	if (IS_ERR(bdev))
-		dev = name_to_dev_t(path);
-	else {
-		dev = bdev->bd_dev;
-		bdput(bdev);
+	if (!dev_path)
+		return -ENOMEM;
+
+	if (strncmp(dev_path, "PARTUUID=", 9) == 0) {
+		dev = name_to_dev_t(dev_path);
+		if (!dev) {
+			DMWARN("no dev found for %s", dev_path);
+			kfree(dev_path);
+			return -EINVAL;
+		}
+		kfree(dev_path);
+	} else {
+		bdev = lookup_bdev(path);
+		if (IS_ERR(bdev))
+			dev = name_to_dev_t(path);
+		else {
+			dev = bdev->bd_dev;
+			bdput(bdev);
+		}
 	}
 
 	return dev;
