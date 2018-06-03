@@ -57,8 +57,8 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x08040802,	/* INFRA0 */
-		0x03AFB900,	/* INFRA1 */
+		0x00040802,	/* INFRA0 */
+		0x03AFB800,	/* INFRA1 */
 		0x000000C5,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x000003FF,	/* MMSYS1 */
@@ -68,8 +68,8 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x0A040802,	/* INFRA0 */
-		0x03AFB900,	/* INFRA1 */
+		0x02040802,	/* INFRA0 */
+		0x03AFB800,	/* INFRA1 */
 		0x000000D1,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x000003FF,	/* MMSYS1 */
@@ -79,8 +79,8 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
-		0x08040802,	/* INFRA0 */
-		0x03AFB900,	/* INFRA1 */
+		0x00040802,	/* INFRA0 */
+		0x03AFB800,	/* INFRA1 */
 		0x000000C1,	/* INFRA2 */
 		0x000FFFE0,	/* MMSYS0 */
 		0x00000170,	/* MMSYS1 */
