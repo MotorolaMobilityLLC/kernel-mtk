@@ -67,18 +67,18 @@ struct ccci_smem_region md1_6293_noncacheable_fat[] = {
 {SMEM_USER_RAW_PHY_CAP,		1*1024*1024,	0*1024*1024,	SMF_NCLR_FIRST, },
 {SMEM_USER_MAX, }, /* tail guard */
 };
-
+#define CCB_CACHE_MIN_SIZE    (2 * 1024 * 1024)
 struct ccci_smem_region md1_6293_cacheable[] = {
 /*
  * all CCB user should be put together, and the total size is set in the first one, all reset
  * CCB users' address, offset and size will be re-calculated during port initialization.
  * and please be aware of that CCB user's size will be aligned to 4KB.
  */
-{SMEM_USER_CCB_DHL,		0*1024*1024,	2*1024*1024,	0, },
-{SMEM_USER_CCB_MD_MONITOR,	0*1024*1024,	2*1024*1024,	0, },
-{SMEM_USER_CCB_META,		0*1024*1024,	2*1024*1024,	0, },
-{SMEM_USER_RAW_DHL,		2*1024*1024,	20*1024*1024,	0, },
-{SMEM_USER_RAW_MDM,		2*1024*1024,	20*1024*1024,	0, },
+{SMEM_USER_CCB_DHL,		0*1024*1024,	CCB_CACHE_MIN_SIZE,	0, },
+{SMEM_USER_CCB_MD_MONITOR,	0*1024*1024,	CCB_CACHE_MIN_SIZE,	0, },
+{SMEM_USER_CCB_META,		0*1024*1024,	CCB_CACHE_MIN_SIZE,	0, },
+{SMEM_USER_RAW_DHL,		CCB_CACHE_MIN_SIZE,	20*1024*1024,	0, },
+{SMEM_USER_RAW_MDM,		CCB_CACHE_MIN_SIZE,	20*1024*1024,	0, },
 {SMEM_USER_MAX, },
 };
 
@@ -402,6 +402,23 @@ void ccci_md_config(struct ccci_modem *md)
 					break;
 				}
 			}
+			if (md->mem_layout.md_bank4_cacheable_total.size >= CCB_CACHE_MIN_SIZE) {
+				/*
+				* 2M is control part size, md1_6293_cacheable[0].size
+				* initial value but changed by collect_ccb_info
+				*/
+				for (i = (SMEM_USER_CCB_END - SMEM_USER_CCB_START + 1);
+					i < (sizeof(md1_6293_cacheable)/sizeof(struct ccci_smem_region)); i++) {
+					if (md1_6293_cacheable[i].id > SMEM_USER_CCB_END) {
+						md1_6293_cacheable[i].size =
+							md->mem_layout.md_bank4_cacheable_total.size -
+							CCB_CACHE_MIN_SIZE;
+						CCCI_BOOTUP_LOG(md->index, TAG, "RAW size:%d\n",
+							md1_6293_cacheable[i].size);
+					}
+				}
+			} else
+				md->mem_layout.md_bank4_cacheable = NULL;
 		}
 	} else {
 		WARN_ON(1);
@@ -493,8 +510,27 @@ struct ccci_smem_region *ccci_md_get_smem_by_user_id(int md_id, enum SMEM_USER_I
 
 void ccci_md_clear_smem(int md_id, int first_boot)
 {
+	struct ccci_smem_region *region;
+	unsigned int size;
+
+	/* MD will clear share memory itself after the first boot */
 	clear_smem_region(modem_sys[md_id]->mem_layout.md_bank4_noncacheable, first_boot);
 	clear_smem_region(modem_sys[md_id]->mem_layout.md_bank4_cacheable, first_boot);
+	if (!first_boot) {
+		CCCI_NORMAL_LOG(-1, TAG, "clear buffer ! first_boot\n");
+		region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCB_DHL);
+		if (region) {
+			/*clear ccb data smem*/
+			memset_io(region->base_ap_view_vir, 0, region->size);
+		}
+		region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_DHL);
+		if (region) {
+			/* clear first 1k bytes in dsp log buffer */
+			size = (region->size > (128 * sizeof(long long))) ? (128 * sizeof(long long)) : region->size;
+			memset_io(region->base_ap_view_vir, 0, size);
+			CCCI_NORMAL_LOG(-1, TAG, "clear buffer user_id = SMEM_USER_RAW_DHL, szie = 0x%x\n", size);
+		}
+	}
 }
 
 int ccci_md_pre_stop(unsigned char md_id, unsigned int stop_type)
@@ -894,13 +930,13 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 					rt_f_element.feature[1] = region->size;
 				}
 				/* ccb data second */
-				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCB_START);
-				if (region) {
-					rt_f_element.feature[2] = region->base_md_view_phy;
-					rt_f_element.feature[3] = 0;
-				}
 				for (j = SMEM_USER_CCB_START; j <= SMEM_USER_CCB_END; j++) {
 					region = ccci_md_get_smem_by_user_id(md_id, j);
+					if (j == SMEM_USER_CCB_START && region) {
+						rt_f_element.feature[2] = region->base_md_view_phy;
+						rt_f_element.feature[3] = 0;
+					} else if (j == SMEM_USER_CCB_START && region == NULL)
+						break;
 					if (region)
 						rt_f_element.feature[3] += region->size;
 				}
@@ -915,8 +951,12 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 					rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
 					rt_shm.addr = region->base_md_view_phy;
 					rt_shm.size = region->size;
-					append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				} else {
+					rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+					rt_shm.addr = 0;
+					rt_shm.size = 0;
 				}
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
 			case LWA_SHARE_MEMORY:
 				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_LWA);
