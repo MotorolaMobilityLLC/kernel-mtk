@@ -61,6 +61,11 @@ initcall_debug=1";
 };
 /* accdet end */
 
+&scp {
+	core_1 = "enable";
+	scp_sramSize = <0x00080000>;     /* scp_A_sram_size */
+};
+
 /* UART GPIO */
 &apuart0 {
 	pinctrl-names = "uart0_gpio_default",
