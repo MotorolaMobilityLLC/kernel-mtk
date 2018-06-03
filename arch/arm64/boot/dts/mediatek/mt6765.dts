@@ -876,13 +876,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	emi@10219000 {
 		compatible = "mediatek,emi";
-		reg = <0 0x10219000 0 0x1000>, /* CEN EMI */
-			<0 0x10226000 0 0x1000>, /* EMI MPU */
-			<0 0x1022d000 0 0x1000>, /* CHA EMI */
-			<0 0x10235000 0 0x1000>; /* CHB EMI */
-		interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_LOW>, /* MPU */
-				<GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>, /* CGM TBD*/
-				<GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>; /* ELM TBD*/
+		reg = <0 0x10219000 0 0x1000>;
+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+	};
+
+	chn_emi@1021a000 {
+		compatible = "mediatek,chn_emi";
+		reg = <0 0x1021a000 0 0x1000>;
 	};
 
 	apcldmain@1021b000 {
@@ -976,6 +976,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	bpi_bsi_slv2@10225000 {
 		compatible = "mediatek,bpi_bsi_slv2";
 		reg = <0 0x10225000 0 0x1000>;
+	};
+
+	emi_mpu@10226000 {
+		compatible = "mediatek,emi_mpu";
+		reg = <0 0x10226000 0 0x1000>;
 	};
 
 	dvfsp@10227000 {
