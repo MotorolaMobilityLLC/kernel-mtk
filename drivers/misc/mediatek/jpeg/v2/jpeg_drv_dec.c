@@ -437,7 +437,7 @@ void jpeg_drv_dec_set_dma_group(unsigned int McuInGroup, unsigned int GroupNum,
 	unsigned int u4Value;
 
 	u4Value = (((GroupNum_1 & 0x0100) >> 8) << 24) |
-	    ((McuInGroup_1 & 0x00FF) << 16) | ((GroupNum_1 & 0x007F) << 8) | (LastMcuNum_1 &
+	    ((McuInGroup_1 & 0x00FF) << 16) | ((GroupNum_1 & 0x00FF) << 8) | (LastMcuNum_1 &
 									      0x00FF);
 
 	IMG_REG_WRITE((u4Value), REG_ADDR_JPGDEC_WDMA_CTRL);	/*  */
