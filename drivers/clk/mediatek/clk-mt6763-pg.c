@@ -2350,10 +2350,8 @@ void subsys_if_on(void)
 		pr_debug("suspend warning: SYS_MFG_ASYNC is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 24)) && (sta_s & (1U << 24))) {
+	if ((sta & (1U << 24)) && (sta_s & (1U << 24)))
 		pr_debug("suspend warning: SYS_AUDIO is on!!!\n");
-		ret++;
-	}
 	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
 		pr_debug("suspend warning: SYS_CAM is on!!!\n");
 		ret++;
