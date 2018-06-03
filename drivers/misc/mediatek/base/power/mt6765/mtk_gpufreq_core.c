@@ -341,7 +341,10 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 void mt_gpufreq_enable_MTCMOS(bool bEnableHWAPM)
 {
 	/* enable PLL and set clk_mux to mfgpll */
-	clk_prepare_enable(g_clk->clk_mux);
+	if (clk_prepare_enable(g_clk->clk_mux))
+		gpufreq_perr("@%s: failed when enable top-clk\n",
+		__func__);
+
 	__mt_gpufreq_switch_to_clksrc(CLOCK_MAIN);
 
 	if (clk_prepare_enable(g_clk->mtcmos_mfg_async))
