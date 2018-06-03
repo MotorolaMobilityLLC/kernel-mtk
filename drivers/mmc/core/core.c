@@ -304,6 +304,11 @@ void mmc_do_check(struct mmc_host *host)
 			atomic_set(&host->cq_rdy_cnt, 0);
 		}
 
+		if (host->que_mrq.cmd->error == (unsigned int)-ENOMEDIUM) {
+			pr_notice("dump runtime pm flag usage_cnt in CMD13:%d",
+		atomic_read(&host->card->dev.power.usage_count));
+			BUG_ON(1);
+		}
 		if (!host->que_mrq.cmd->error ||
 			!host->que_mrq.cmd->retries)
 			break;
@@ -615,6 +620,12 @@ int mmc_run_queue_thread(void *data)
 					mmc_restore_tasks(host);
 					atomic_set(&host->cq_wait_rdy, 0);
 					atomic_set(&host->cq_rdy_cnt, 0);
+				} else if (cmd_mrq->cmd->error ==
+					(unsigned int)-ENOMEDIUM) {
+					pr_notice(
+			"dump runtime pm flag usage_cnt in CMD44/45 %d",
+			atomic_read(&host->card->dev.power.usage_count));
+					BUG_ON(1);
 				} else
 					atomic_inc(&host->cq_wait_rdy);
 

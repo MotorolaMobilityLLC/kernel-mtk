@@ -930,7 +930,7 @@ static int mmc_ffu_ioctl(struct block_device *bdev,
 		}
 	} else
 #endif
-		mmc_put_card(card);
+		mmc_get_card(card);
 
 	if (cmd.opcode == MMC_FFU_DOWNLOAD_OP) {
 		pr_notice("FFU Download start\n");
@@ -2918,10 +2918,6 @@ int mmc_blk_end_queued_req(struct mmc_host *host,
 
 		mq->mqrq[index].req = NULL;
 		host->areq_que[index] = NULL;
-		mmc_put_card(card);
-
-		atomic_set(&mq->mqrq[index].index, 0);
-		atomic_dec(&host->areq_cnt);
 
 		/*
 		 * If the blk_end_request function returns non-zero even
@@ -2934,6 +2930,9 @@ int mmc_blk_end_queued_req(struct mmc_host *host,
 				brq->data.bytes_xfered);
 			goto cmd_abort;
 		}
+		mmc_put_card(card);
+		atomic_set(&mq->mqrq[index].index, 0);
+		atomic_dec(&host->areq_cnt);
 		break;
 	case MMC_BLK_CMD_ERR:
 		ret = mmc_blk_cmd_err(md, card, brq, req, ret);
