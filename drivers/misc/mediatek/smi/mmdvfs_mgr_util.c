@@ -19,9 +19,9 @@
 static mmdvfs_state_change_cb quick_mmdvfs_state_change_cbs[MMDVFS_SCEN_COUNT];
 static mmdvfs_prepare_action_cb quick_mmdvfs_prepare_action_cbs[MMDVFS_SCEN_COUNT];
 
-mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
+enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 {
-	mmdvfs_lcd_size_enum result = MMDVFS_LCD_SIZE_HD;
+	enum mmdvfs_lcd_size_enum result = MMDVFS_LCD_SIZE_HD;
 	long lcd_resolution = 0;
 	long lcd_w = 0;
 	long lcd_h = 0;

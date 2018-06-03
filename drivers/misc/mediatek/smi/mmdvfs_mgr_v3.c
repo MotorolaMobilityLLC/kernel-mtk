@@ -70,7 +70,7 @@ static struct MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
 static struct MTK_MMDVFS_CMD g_mmdvfs_cmd;
 
 
-typedef struct {
+struct mmdvfs_context_struct {
 	spinlock_t scen_lock;
 	int is_mmdvfs_start;
 	int is_vp_high_fps_enable;
@@ -78,21 +78,21 @@ typedef struct {
 	int is_wfd_enable;
 	int is_mjc_enable;
 	int is_boost_disable;
-} mmdvfs_context_struct;
+};
 
 /* mmdvfs_query() return value, remember to sync with user space */
-typedef enum {
+enum mmdvfs_step_enum {
 	MMDVFS_STEP_LOW = 0, MMDVFS_STEP_HIGH,
 	MMDVFS_STEP_LOW2LOW, /* LOW */
 	MMDVFS_STEP_HIGH2LOW, /* LOW */
 	MMDVFS_STEP_LOW2HIGH, /* HIGH */
 	MMDVFS_STEP_HIGH2HIGH,
 /* HIGH */
-} mmdvfs_step_enum;
+};
 
 
-static mmdvfs_context_struct g_mmdvfs_mgr_cntx;
-static mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
+static struct mmdvfs_context_struct g_mmdvfs_mgr_cntx;
+static struct mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
 
 static int mmdvfs_get_default_step(void)
 {
