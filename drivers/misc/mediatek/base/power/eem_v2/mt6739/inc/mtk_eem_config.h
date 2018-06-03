@@ -25,6 +25,7 @@
 #define UPDATE_TO_UPOWER	(1)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(1)
+#define ENABLE_INIT1_STRESS     (1)
 
 /* These 4 configs are reserving for sspm EEM */
 /* #define EEM_CUR_VOLT_PROC_SHOW */

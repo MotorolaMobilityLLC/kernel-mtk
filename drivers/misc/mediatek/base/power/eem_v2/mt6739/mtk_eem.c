@@ -146,6 +146,12 @@
 */
 #if !(EEM_ENABLE_TINYSYS_SSPM)
 
+	#if ENABLE_INIT1_STRESS
+	static int eem_init1stress_en, testCnt;
+	wait_queue_head_t wqStress;
+	struct task_struct *threadStress;
+	#endif
+
 	#if EEM_ENABLE
 	static unsigned int ctrl_EEM_Enable = 1;
 	#else
@@ -184,6 +190,7 @@
 	static unsigned int mt_eem_update_vcore_volt(unsigned int index, unsigned int newVolt);
 	static unsigned int interpolate(unsigned int y1, unsigned int y0, unsigned int x1,
 				unsigned int x0, unsigned int ym);
+	static void eem_buck_set_mode(unsigned int mode);
 	#if DVT
 	unsigned int freq[NR_FREQ] = {0x64, 0x59, 0x4D, 0x3D, 0x35, 0x2C, 0x1E, 0x0E};
 	#endif /* DVT */
@@ -1588,6 +1595,91 @@ static int eem_volt_thread_handler(void *data)
 
 	return 0;
 }
+
+#if ENABLE_INIT1_STRESS
+static int eem_init1stress_thread_handler(void *data)
+{
+	struct eem_det *det;
+	struct eem_ctrl *ctrl;
+	unsigned long flag;
+	unsigned int out = 0, timeout = 0;
+
+	do {
+		wait_event_interruptible(wqStress, eem_init1stress_en);
+		eem_error("eem init1stress start\n");
+		testCnt = 0;
+
+		/* CPU/GPU pre-process */
+		mt_ppm_ptpod_policy_activate();
+
+		eem_buck_set_mode(1);
+
+		while (eem_init1stress_en) {
+			/* Start to clear previour ptp init status */
+			mt_ptp_lock(&flag);
+
+			for_each_det(det) {
+				det->ops->switch_bank(det, NR_EEM_PHASE);
+				eem_write(EEMEN, 0x0 | SEC_MOD_SEL);
+				/* Clear EEM INIT interrupt EEMINTSTS = 0x00ff0000 */
+				eem_write(EEMINTSTS, 0x00ff0000);
+				det->eem_eemEn[EEM_PHASE_INIT01] = 0;
+
+				det->features = FEA_INIT01;
+			}
+			mt_ptp_unlock(&flag);
+
+			if (testCnt++ % 200 == 0)
+				eem_error("eem_init1stress_thread_handler, test counter:%d\n", testCnt);
+
+			for_each_det_ctrl(det, ctrl) {
+				if (HAS_FEATURE(det, FEA_INIT01)) {
+					mt_ptp_lock(&flag); /* <-XXX */
+					det->ops->init01(det);
+					mt_ptp_unlock(&flag); /* <-XXX */
+				}
+			}
+
+			/* This patch is waiting for whole bank finish the init01 then go
+			 * next. Due to LL/L use same bulk PMIC, LL voltage table change
+			 * will impact L to process init01 stage, because L require a
+			 * stable 1V for init01.
+			*/
+			while (1) {
+				for_each_det(det) {
+					if (((out & BIT(det->ctrl_id)) == 0) &&
+						(det->eem_eemEn[EEM_PHASE_INIT01] == (1 | SEC_MOD_SEL)))
+						out |= BIT(det->ctrl_id);
+				}
+
+				/* Every banks have received init01 interrupt. */
+				if (out == (BIT(EEM_CTRL_2L) | BIT(EEM_CTRL_GPU))) {
+					timeout = 0;
+					break;
+				}
+				udelay(100);
+				timeout++;
+
+				if (timeout % 300 == 0) {
+					eem_error("init01 wait time is %d, bankmask:0x%x\n", timeout, out);
+					WARN_ON(1);
+				}
+			}
+			msleep(100);
+		}
+
+		/* CPU/GPU post-process */
+		eem_buck_set_mode(0);
+
+		mt_ppm_ptpod_policy_deactivate();
+
+		eem_error("eem init1stress end, total test counter:%d\n", testCnt);
+	} while (!kthread_should_stop());
+
+	return 0;
+}
+#endif
+
 
 static void inherit_base_det(struct eem_det *det)
 {
@@ -3453,6 +3545,14 @@ static int eem_probe(struct platform_device *pdev)
 	register_hotcpu_notifier(&_mt_eem_cpu_notifier);
 	#endif
 
+#if ENABLE_INIT1_STRESS
+	init_waitqueue_head(&wqStress);
+	threadStress = kthread_run(eem_init1stress_thread_handler, 0, "Init_1_Stress");
+
+	if (IS_ERR(threadStress))
+		eem_error("Create %s thread failed: %ld\n", "Init_1_Stress", PTR_ERR(threadStress));
+#endif
+
 	eem_debug("eem_probe ok\n");
 	FUNC_EXIT(FUNC_LV_MODULE);
 
@@ -4039,6 +4139,74 @@ out:
 	return (ret < 0) ? ret : count;
 }
 
+#if ENABLE_INIT1_STRESS
+static int eem_init1stress_en_proc_show(struct seq_file *m, void *v)
+{
+	FUNC_ENTER(FUNC_LV_HELP);
+	seq_printf(m, "%d\n", eem_init1stress_en);
+	FUNC_EXIT(FUNC_LV_HELP);
+
+	return 0;
+}
+
+static ssize_t eem_init1stress_en_proc_write(struct file *file,
+					 const char __user *buffer, size_t count, loff_t *pos)
+{
+	int ret;
+	char *buf = (char *) __get_free_page(GFP_USER);
+
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	if (!buf) {
+		FUNC_EXIT(FUNC_LV_HELP);
+		return -ENOMEM;
+	}
+
+	ret = -EINVAL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	ret = -EFAULT;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	ret = -EINVAL;
+
+	if (kstrtoint(buf, 10, &eem_init1stress_en)) {
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		goto out;
+	}
+
+	ret = 0;
+
+	switch (eem_init1stress_en) {
+	case 0:
+		eem_debug("eem stress init1 disabled.\n");
+		break;
+
+	case 1:
+		eem_debug("eem stress init1 enabled.\n");
+		wake_up_interruptible(&wqStress);
+		break;
+
+	default:
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		ret = -EINVAL;
+	}
+
+out:
+	free_page((unsigned long)buf);
+	FUNC_EXIT(FUNC_LV_HELP);
+
+	return (ret < 0) ? ret : count;
+}
+#endif
+
+
 /*
  * show EEM offset
  */
@@ -4378,7 +4546,9 @@ PROC_FOPS_RW(eem_offset);
 PROC_FOPS_RO(eem_dump);
 PROC_FOPS_RW(eem_log_en);
 PROC_FOPS_RW(eem_vcore_volt);
-/* PROC_FOPS_RW(eem_vcore_enable);*/
+#if ENABLE_INIT1_STRESS
+PROC_FOPS_RW(eem_init1stress_en);
+#endif
 
 #if ITurbo
 PROC_FOPS_RW(eem_iturbo_en);
@@ -4411,7 +4581,10 @@ static int create_procfs(void)
 	struct pentry eem_entries[] = {
 		PROC_ENTRY(eem_dump),
 		PROC_ENTRY(eem_log_en),
-		/* PROC_ENTRY(eem_vcore_enable), */
+		#if ENABLE_INIT1_STRESS
+		PROC_ENTRY(eem_init1stress_en),
+		#endif
+
 		#if ITurbo
 		PROC_ENTRY(eem_iturbo_en),
 		#endif
