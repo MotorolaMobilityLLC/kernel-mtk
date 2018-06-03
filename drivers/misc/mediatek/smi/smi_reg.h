@@ -393,6 +393,18 @@
 #define SMI_LARB_NUM     1
 #endif
 
+#define SMI_LARB0_REG_INDX 0
+#define SMI_LARB1_REG_INDX 1
+#define SMI_LARB2_REG_INDX 2
+#define SMI_LARB3_REG_INDX 3
+#define SMI_LARB4_REG_INDX 4
+#define SMI_LARB5_REG_INDX 5
+#define SMI_LARB6_REG_INDX 6
+#define SMI_LARB7_REG_INDX 7
+#define SMI_LARB8_REG_INDX 8
+#define SMI_COMMON_REG_INDX SMI_LARB_NUM
+#define SMI_REG_REGION_MAX (SMI_LARB_NUM + 1)
+
 #define SMI_LARB_STAT                   (0x0)
 #define SMI_LARB_IRQ_EN                 (0x4)
 #define SMI_LARB_IRQ_STATUS             (0x8)

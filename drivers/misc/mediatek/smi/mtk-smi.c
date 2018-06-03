@@ -117,17 +117,6 @@ unsigned int *g_mmdvfs_scen_log_mask = &mmdvfs_scen_log_mask;
 
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
-#define SMI_LARB0_REG_INDX 0
-#define SMI_LARB1_REG_INDX 1
-#define SMI_LARB2_REG_INDX 2
-#define SMI_LARB3_REG_INDX 3
-#define SMI_LARB4_REG_INDX 4
-#define SMI_LARB5_REG_INDX 5
-#define SMI_LARB6_REG_INDX 6
-#define SMI_LARB7_REG_INDX 7
-#define SMI_LARB8_REG_INDX 8
-#define SMI_COMMON_REG_INDX SMI_LARB_NUM
-#define SMI_REG_REGION_MAX (SMI_LARB_NUM + 1)
 #if defined(SMI_WHI)
 #define SMI_MMSYS_REG_INDX (SMI_COMMON_REG_INDX + 1)
 static unsigned long long mmsys_reg;
@@ -302,10 +291,10 @@ unsigned long get_common_base_addr(void)
 }
 
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
-unsigned int get_larb_clock_count(const int larb_id)
+unsigned int smi_clk_get_ref_count(const unsigned int reg_indx)
 {
-	if (larb_id < SMI_LARB_NUM)
-		return (unsigned int)atomic_read(&(larbs_clock_count[larb_id]));
+	if (reg_indx < SMI_REG_REGION_MAX)
+		return (unsigned int)atomic_read(&(larbs_clock_count[reg_indx]));
 	return 0;
 }
 
@@ -418,6 +407,8 @@ static int smi_bus_prepare_enable(const unsigned int reg_indx,
 			continue;
 		smi_clk_prepare_enable(i, SMI_COMMON_REG_INDX, user_name);
 	}
+	atomic_inc(&(larbs_clock_count[SMI_COMMON_REG_INDX]));
+
 	if (reg_indx < SMI_COMMON_REG_INDX) { /* larb */
 		for (i = 0; i < nr_mtcmos_clks[reg_indx]; i++) {
 			if (i == 0 && enable_mtcmos == false)
@@ -455,6 +446,8 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 			continue;
 		smi_clk_disable_unprepare(i, SMI_COMMON_REG_INDX, user_name);
 	}
+	atomic_dec(&(larbs_clock_count[SMI_COMMON_REG_INDX]));
+
 	SMIDBG(1, "smi_bus_disable_unprepare(%d, %s, %d): prepare=%d, enable=%d\n",
 		reg_indx, user_name, enable_mtcmos, smi_prepare_count, smi_enable_count);
 	return 0;
@@ -860,6 +853,10 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 	spin_unlock(&g_SMIInfo.SMI_lock);
 
 	/* Fake mode is not a real SMI profile, so we need to return here */
+#if !defined(SMI_ZIO)
+	if (result == 1)
+		return 0;
+#endif
 
 	smi_bus_optimization_clock_control(bus_optimization_sync, BUS_ENABLE);
 
