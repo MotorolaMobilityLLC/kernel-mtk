@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,25 +15,25 @@
 #define __MT_FHREG_H__
 
 #include <linux/bitops.h>
+/* #include <mach/mt_reg_base.h> */
 
-/*-------------------------------------------------------------------*/
-/* Common Macro                                                      */
-/*-------------------------------------------------------------------*/
-#ifdef CONFIG_OF
+
+/* **************************************************** */
+/* IP base address */
+/* **************************************************** */
+
 
 #ifdef CONFIG_ARM64
-#define REG_ADDR(x)                 ((unsigned long)g_fhctl_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned long)g_apmixed_base + (x))
+#define REG_ADDR(x)             ((unsigned long)g_fhctl_base + (x))
+#define REG_MCU_FHCTL_ADDR(x)   ((unsigned long)g_mcu_fhctl_base + (x))
+#define REG_APMIX_ADDR(x)       ((unsigned long)g_apmixed_base + (x))
+#define REG_MCUMIX_ADDR(x)      ((unsigned long)g_mcumixed_base + (x))
 #else
-#define REG_ADDR(x)                 ((unsigned int)g_fhctl_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned int)g_apmixed_base + (x))
+#define REG_ADDR(x)             ((unsigned int)g_fhctl_base + (x))
+#define REG_MCU_FHCTL_ADDR(x)   ((unsigned int)g_mcu_fhctl_base + (x))
+#define REG_APMIX_ADDR(x)       ((unsigned int)g_apmixed_base + (x))
+#define REG_MCUMIX_ADDR(x)      ((unsigned int)g_mcumixed_base + (x))
 #endif
-
-#else
-#define REG_ADDR(x)                 ((0xF0209F00) + (x))
-#define REG_APMIX_ADDR(x)           ((0xF0209000) + (x))
-#endif
-
 
 /* **************************************************** */
 /* FHCTL register */
@@ -127,39 +127,98 @@
 #define REG_FHCTL11_DVFS     REG_ADDR(0x0120)
 #define REG_FHCTL11_MON      REG_ADDR(0x0124)
 
-/****************************************************
- *	APMIXED CON0/CON1 Register
- ***************************************************/
- #define REG_PLL_NOT_SUPPORT		0xdeadbeef
+/* **************************************************** */
+/* APMIXED CON0/CON1 Register */
+/* **************************************************** */
+
+#define REG_PLL_NOT_SUPPORT 0xdeadbeef
 /*CON0, PLL enable status */
-#define REG_ARMPLL1_CON0	REG_APMIX_ADDR(0x0200)
-#define REG_ARMPLL2_CON0	REG_APMIX_ADDR(0x0210)
-#define REG_ARMPLL3_CON0	REG_PLL_NOT_SUPPORT
-#define REG_CCIPLL_CON0		REG_APMIX_ADDR(0x0290)
-#define REG_GPUPLL_CON0		REG_PLL_NOT_SUPPORT
-#define REG_MPLL_CON0			REG_APMIX_ADDR(0x0280)
-/* DRAM use MPLL instead */
-#define REG_MAINPLL_CON0	REG_APMIX_ADDR(0x0220)
-#define REG_MSDCPLL_CON0	REG_APMIX_ADDR(0x0250)
-#define REG_MMPLL_CON0		REG_APMIX_ADDR(0x0240)
-#define REG_VENCPLL_CON0	REG_APMIX_ADDR(0x0260)
-#define REG_TVDPLL_CON0		REG_APMIX_ADDR(0x0270)
+#define REG_ARMPLL1_CON0    REG_APMIX_ADDR(0x0200)
+#define REG_ARMPLL2_CON0    REG_APMIX_ADDR(0x0210)
+#define REG_ARMPLL3_CON0    REG_PLL_NOT_SUPPORT /* not support in Bianco */
+#define REG_CCIPLL_CON0     REG_APMIX_ADDR(0x0290)
+#define REG_GPUPLL_CON0     REG_APMIX_ADDR(0x0240) /* change name to MFGPLL in Bianco*/
+#define REG_MPLL_CON0       REG_APMIX_ADDR(0x0280)
+#define REG_MEMPLL_CON0     REG_PLL_NOT_SUPPORT /* dram use MPLL */
+#define REG_MAINPLL_CON0    REG_APMIX_ADDR(0x0220)
+#define REG_MSDCPLL_CON0    REG_APMIX_ADDR(0x0250)
+#define REG_MMPLL_CON0      REG_APMIX_ADDR(0x0270)
+#define REG_VDECPLL_CON0    REG_PLL_NOT_SUPPORT /* not support in Bianco */
+#define REG_TVDPLL_CON0     REG_APMIX_ADDR(0x0260)
 
 /*CON1, DDS value */
-#define REG_ARMPLL1_CON1	REG_APMIX_ADDR(0x0204)
-#define REG_ARMPLL2_CON1	REG_APMIX_ADDR(0x0214)
-#define REG_ARMPLL3_CON1	REG_PLL_NOT_SUPPORT
-#define REG_CCIPLL_CON1		REG_APMIX_ADDR(0x0294)
-#define REG_GPUPLL_CON1		REG_PLL_NOT_SUPPORT
-#define REG_MPLL_CON1			REG_APMIX_ADDR(0x0284)
-/* DRAM use MPLL instead */
-#define REG_MEMPLL_CON1		REG_PLL_NOT_SUPPORT
-#define REG_MAINPLL_CON1	REG_APMIX_ADDR(0x0224)
-#define REG_MSDCPLL_CON1	REG_APMIX_ADDR(0x0254)
-#define REG_MMPLL_CON1		REG_APMIX_ADDR(0x0244)
-#define REG_VENCPLL_CON1	REG_APMIX_ADDR(0x0264)
-#define REG_TVDPLL_CON1		REG_APMIX_ADDR(0x0274)
-/****************************************************/
+#define REG_ARMPLL1_CON1    REG_APMIX_ADDR(0x0204)
+#define REG_ARMPLL2_CON1    REG_APMIX_ADDR(0x0214)
+#define REG_ARMPLL3_CON1    REG_PLL_NOT_SUPPORT /* not support in Bianco */
+#define REG_CCIPLL_CON1     REG_APMIX_ADDR(0x0294)
+#define REG_GPUPLL_CON1     REG_APMIX_ADDR(0x0244) /* change name to MFGPLL in Bianco*/
+#define REG_MPLL_CON1       REG_APMIX_ADDR(0x0284)
+#define REG_MEMPLL_CON1     REG_PLL_NOT_SUPPORT /* dram use MPLL */
+#define REG_MAINPLL_CON1    REG_APMIX_ADDR(0x0224)
+#define REG_MSDCPLL_CON1    REG_APMIX_ADDR(0x0254)
+#define REG_MMPLL_CON1      REG_APMIX_ADDR(0x0274)
+#define REG_VDECPLL_CON1    REG_PLL_NOT_SUPPORT /* not support in Bianco */
+#define REG_TVDPLL_CON1     REG_APMIX_ADDR(0x0264)
+
+#define REG_FH_PLL0_CON0    REG_ARMPLL1_CON0
+#define REG_FH_PLL1_CON0    REG_ARMPLL2_CON0
+#define REG_FH_PLL2_CON0    REG_ARMPLL3_CON0
+#define REG_FH_PLL3_CON0    REG_CCIPLL_CON0
+#define REG_FH_PLL4_CON0    REG_GPUPLL_CON0
+#define REG_FH_PLL5_CON0    REG_MPLL_CON0
+#define REG_FH_PLL6_CON0    REG_MEMPLL_CON0
+#define REG_FH_PLL7_CON0    REG_MAINPLL_CON0
+#define REG_FH_PLL8_CON0    REG_MSDCPLL_CON0
+#define REG_FH_PLL9_CON0    REG_MMPLL_CON0
+#define REG_FH_PLL10_CON0   REG_VDECPLL_CON0
+#define REG_FH_PLL11_CON0   REG_TVDPLL_CON0
+
+#define REG_FH_PLL0_CON1    REG_ARMPLL1_CON1
+#define REG_FH_PLL1_CON1    REG_ARMPLL2_CON1
+#define REG_FH_PLL2_CON1    REG_ARMPLL3_CON1
+#define REG_FH_PLL3_CON1    REG_CCIPLL_CON1
+#define REG_FH_PLL4_CON1    REG_GPUPLL_CON1
+#define REG_FH_PLL5_CON1    REG_MPLL_CON1
+#define REG_FH_PLL6_CON1    REG_MEMPLL_CON1
+#define REG_FH_PLL7_CON1    REG_MAINPLL_CON1
+#define REG_FH_PLL8_CON1    REG_MSDCPLL_CON1
+#define REG_FH_PLL9_CON1    REG_MMPLL_CON1
+#define REG_FH_PLL10_CON1   REG_VDECPLL_CON1
+#define REG_FH_PLL11_CON1   REG_TVDPLL_CON1
+
+/***************************************************** */
+
+/* **************************************************** */
+/* FHCTL Register mask */
+/* **************************************************** */
+
+#define MASK_FRDDSX_DYS         (0xFU<<20)
+#define MASK_FRDDSX_DTS         (0xFU<<16)
+#define FH_FHCTLX_MON_SEL       (0x1U<<5)
+#define FH_FHCTLX_PAUSE         (0x1U<<4)
+#define FH_FHCTLX_CFG_PAUSE     (0x1U<<4)
+#define FH_DYSSCX_EN            (0x1U<<3)
+#define FH_SFSTRX_EN            (0x1U<<2)
+#define FH_FRDDSX_EN            (0x1U<<1)
+#define FH_FHCTLX_EN            (0x1U<<0)
+
+#define FH_FRDDSX_DNLMT         (0xFFU<<16)
+#define FH_FRDDSX_UPLMT         (0xFFU)
+
+#define FH_FHCTLX_PLL_TGL_ORG   (0x1U<<31)
+#define FH_FHCTLX_PLL_ORG       (0xFFFFFU)
+
+#define FH_MON_FHCTLX_PAUSE     (0x1U<<31)
+#define FH_MON_FHCTLX_PRD       (0x1U<<30)
+#define FH_MON_SFSTRX_PRD       (0x1U<<29)
+#define FH_MON_FRDDSX_PRD       (0x1U<<28)
+#define FH_FHCTLX_STATE         (0xFU<<24)
+#define FH_FHCTLX_PLL_DDS       (0xFFFFFFU)
+
+/* **************************************************** */
+/* Macro */
+/* **************************************************** */
+
 
 static inline unsigned int uffs(unsigned int x)
 {
@@ -178,36 +237,36 @@ static inline unsigned int uffs(unsigned int x)
 	if (!(x & 0xf)) {
 		x >>= 4;
 		r += 4;
-	}
+		}
 	if (!(x & 3)) {
 		x >>= 2;
 		r += 2;
-	}
+		}
 	if (!(x & 1)) {
 		x >>= 1;
 		r += 1;
-	}
+		}
 	return r;
 }
 
 #define fh_read8(reg)           readb(reg)
 #define fh_read16(reg)          readw(reg)
 #define fh_read32(reg)          readl((void __iomem *)reg)
-#define fh_write8(reg, val)      mt_reg_sync_writeb((val), (reg))
-#define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
-#define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg))
+#define fh_write8(reg, val)     mt_reg_sync_writeb((val), (reg))
+#define fh_write16(reg, val)    mt_reg_sync_writew((val), (reg))
+#define fh_write32(reg, val)    mt_reg_sync_writel((val), (reg))
 
 #define fh_set_field(reg, field, val) \
-	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
+	do { \
+		volatile unsigned int tv = fh_read32(reg); \
 		tv &= ~(field); \
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
 		fh_write32(reg, tv); \
 	} while (0)
 
 #define fh_get_field(reg, field, val) \
-	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
+	do { \
+		volatile unsigned int tv = fh_read32(reg); \
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 
