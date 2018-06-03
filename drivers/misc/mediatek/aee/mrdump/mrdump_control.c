@@ -231,7 +231,7 @@ static atomic_t waiting_for_crash_ipi;
 static void mrdump_stop_noncore_cpu(void *unused)
 {
 	local_irq_disable();
-	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
+	dis_D_inner_fL1L2();
 	while (1)
 		cpu_relax();
 }

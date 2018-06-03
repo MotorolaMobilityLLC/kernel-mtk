@@ -537,6 +537,7 @@ void aee_wdt_fiq_info(void *arg, void *regs, void *svc_sp)
 #ifdef CONFIG_TRUSTY_WDT_FIQ_ARMV7_SUPPORT
 		aee_fiq_ipi_cpu_stop(arg, regs, svc_sp);
 #endif
+		dis_D_inner_fL1L2();
 		/* loop forever here to avoid SMP deadlock
 		 * risk during panic flow
 		 */

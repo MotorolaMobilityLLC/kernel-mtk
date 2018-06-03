@@ -189,7 +189,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 #endif
 
 	mrdump_mini_ke_cpu_regs(dargs->regs);
-	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
+	dis_D_inner_fL1L2();
 
 #if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	LOGE("MLC/TLC project, disable ipanic flow\n");
