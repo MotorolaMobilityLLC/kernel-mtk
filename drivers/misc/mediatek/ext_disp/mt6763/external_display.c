@@ -900,6 +900,18 @@ static void deinit_cmdq_slots(cmdqBackupSlotHandle hSlot)
 	cmdqBackupFreeSlot(hSlot);
 }
 
+static int ext_disp_cmdq_dump(uint64_t engineFlag, int level)
+{
+	DISPFUNC();
+
+	if (pgc->dpmgr_handle != NULL)
+		ext_disp_diagnose();
+	else
+		DISPMSG("external display dpmgr_handle == NULL\n");
+
+	return 0;
+}
+
 static int ext_disp_init_hdmi(unsigned int session)
 {
 	struct disp_ddp_path_config *data_config = NULL;
@@ -1287,6 +1299,9 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	if (pgc->state != EXTD_DEINIT)
 		EXT_DISP_ERR("status is not EXTD_DEINIT!\n");
 
+	/* Register external session cmdq dump callback */
+	dpmgr_register_cmdq_dump_callback(ext_disp_cmdq_dump);
+
 	if (DISP_SESSION_DEV(session) == DEV_LCM)
 		ret = ext_disp_init_lcm(lcm_name, session);
 	else
@@ -1348,6 +1363,9 @@ int ext_disp_deinit(unsigned int session)
 		deinit_cmdq_slots(pgc->ext_ovl_rdma_status_info);
 #endif
 	}
+
+	/* Unregister external session cmdq dump callback */
+	dpmgr_unregister_cmdq_dump_callback(ext_disp_cmdq_dump);
 
 	pgc->state = EXTD_DEINIT;
 
@@ -1459,6 +1477,9 @@ int ext_disp_suspend(unsigned int session)
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 
+	/* Unregister external session cmdq dump callback */
+	dpmgr_unregister_cmdq_dump_callback(ext_disp_cmdq_dump);
+
 	pgc->state = EXTD_SUSPEND;
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	ext_disp_set_state(EXTD_SUSPEND);
@@ -1486,6 +1507,9 @@ int ext_disp_resume(unsigned int session)
 		EXT_DISP_ERR("EXTD_DEINIT/EXTD_INIT/EXTD_RESUME\n");
 		goto done;
 	}
+
+	/* Register external session cmdq dump callback */
+	dpmgr_register_cmdq_dump_callback(ext_disp_cmdq_dump);
 
 	init_roi = 1;
 

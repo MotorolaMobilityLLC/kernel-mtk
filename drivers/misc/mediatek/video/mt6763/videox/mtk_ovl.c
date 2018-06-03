@@ -99,33 +99,6 @@ enum CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
 	return ovl2mem_use_cmdq;
 }
 
-#if 0 /* defined but not used */
-static unsigned int cmdqDdpClockOn(uint64_t engineFlag)
-{
-	return 0;
-}
-
-static unsigned int cmdqDdpResetEng(uint64_t engineFlag)
-{
-	/* DISP_LOG_I("cmdqDdpResetEng\n"); */
-	return 0;
-}
-
-static unsigned int cmdqDdpClockOff(uint64_t engineFlag)
-{
-	return 0;
-}
-
-static unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
-{
-	DISPMSG("ovl2mem cmdq timeout:%llu\n", engineFlag);
-	if (pgcl->dpmgr_handle)
-		dpmgr_check_status(pgcl->dpmgr_handle);
-
-	return 0;
-}
-#endif
-
 static void _ovl2mem_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
@@ -333,6 +306,18 @@ static void deinit_cmdq_slots(cmdqBackupSlotHandle hSlot)
 	cmdqBackupFreeSlot(hSlot);
 }
 
+static int ovl2mem_cmdq_dump(uint64_t engineFlag, int level)
+{
+	DISPFUNC();
+
+	if (pgcl->dpmgr_handle != NULL)
+		dpmgr_check_status(pgcl->dpmgr_handle);
+	else
+		DISPMSG("ovl2mem dpmgr_handle == NULL\n");
+
+	return 0;
+}
+
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
@@ -357,6 +342,9 @@ int ovl2mem_init(unsigned int session)
 		init_cmdq_slots(&(pgcl->ovl2mem_subtractor_when_free), MEMORY_SESSION_INPUT_LAYER_COUNT, 0);
 		init_cmdq_slots(&(pgcl->ovl2mem_output_config_fence), 1, 0);
 	}
+
+	/* Register memory session cmdq dump callback */
+	dpmgr_register_cmdq_dump_callback(ovl2mem_cmdq_dump);
 
 	if (pgcl->cmdq_handle_config == NULL) {
 		ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgcl->cmdq_handle_config));
@@ -745,6 +733,9 @@ int ovl2mem_deinit(void)
 		deinit_cmdq_slots(pgcl->ovl2mem_subtractor_when_free);
 		deinit_cmdq_slots(pgcl->ovl2mem_output_config_fence);
 	}
+
+	/* Unregister memory session cmdq dump callback */
+	dpmgr_unregister_cmdq_dump_callback(ovl2mem_cmdq_dump);
 
 	pgcl->dpmgr_handle = NULL;
 	pgcl->cmdq_handle_config = NULL;

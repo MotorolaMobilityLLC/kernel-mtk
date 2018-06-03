@@ -2820,6 +2820,27 @@ static int _disp_primary_path_check_trigger_od(void *data)
 	return 0;
 }
 
+static int primary_display_cmdq_dump(uint64_t engineFlag, int level)
+{
+	DISPFUNC();
+
+	if (pgc->dpmgr_handle != NULL) {
+		primary_display_diagnose();
+
+		if (primary_display_is_decouple_mode())
+			ddp_dump_analysis(DISP_MODULE_OVL0);
+
+		ddp_dump_analysis(DISP_MODULE_WDMA0);
+
+		/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
+		/* cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF); */
+		/* cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF); */
+	} else
+		DISPMSG("primary display dpmgr_handle == NULL\n");
+
+	return 0;
+}
+
 unsigned int cmdqDdpClockOn(uint64_t engineFlag)
 {
 	return 0;
@@ -2830,19 +2851,11 @@ unsigned int cmdqDdpClockOff(uint64_t engineFlag)
 	return 0;
 }
 
-unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bufSize)
+unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, int level)
 {
-	DISPERR("cmdq timeout:%llu\n", engineFlag);
-	primary_display_diagnose();
-
-	if (primary_display_is_decouple_mode())
-		ddp_dump_analysis(DISP_MODULE_OVL0);
-
-	ddp_dump_analysis(DISP_MODULE_WDMA0);
-
-	/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
-	/* cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF); */
-	/* cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF); */
+	DISPINFO("cmdq timeout:%llu\n", engineFlag);
+	/* Invoke all session cmdq dump callback */
+	dpmgr_invoke_cmdq_dump_callbacks(engineFlag, level);
 
 	return 0;
 }
@@ -3440,6 +3453,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			ret = DISP_STATUS_ERROR;
 			goto done;
 		}
+
+		/* Register primary session cmdq dump callback */
+		dpmgr_register_cmdq_dump_callback(primary_display_cmdq_dump);
 
 		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config));
 		if (ret) {
@@ -4239,6 +4255,9 @@ done:
 	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND)
 		primary_display_esd_check_enable(0);
 
+	/* Unregister primary session cmdq dump callback */
+	dpmgr_unregister_cmdq_dump_callback(primary_display_cmdq_dump);
+
 	_primary_path_unlock(__func__);
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	_primary_path_switch_dst_unlock();
@@ -4321,6 +4340,9 @@ int primary_display_resume(void)
 		goto done;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 1);
+
+	/* Register primary session cmdq dump callback */
+	dpmgr_register_cmdq_dump_callback(primary_display_cmdq_dump);
 
 	if (is_ipoh_bootup) {
 		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");

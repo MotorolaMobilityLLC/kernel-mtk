@@ -425,4 +425,8 @@ void dpmgr_get_input_address(disp_path_handle dp_handle, unsigned long *addr);
 int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config);
 int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config);
 
+int dpmgr_register_cmdq_dump_callback(CmdqDumpInfoCB cb);
+int dpmgr_unregister_cmdq_dump_callback(CmdqDumpInfoCB cb);
+void dpmgr_invoke_cmdq_dump_callbacks(uint64_t engineFlag, int level);
+
 #endif
