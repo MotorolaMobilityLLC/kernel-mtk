@@ -587,7 +587,6 @@ static int dcs_thread_entry(void *p)
 		err = dcs_dram_channel_switch(DCS_NORMAL);
 		if (err) {
 			pr_err("[%d] fail: %d\n", __LINE__, err);
-			return err;
 		}
 	} while (1);
 
@@ -901,6 +900,14 @@ static int __init mtkdcs_init(void)
 	}
 
 	dcs_core_initialized = true;
+
+#ifdef DCS_SCREENOFF_ONLY_MODE
+	ret = dcs_enter_perf(DCS_KICKER_DEBUG);
+	if (ret) {
+		pr_err("enter perf failed, kick=%d\n", DCS_KICKER_DEBUG);
+		return ret;
+	}
+#endif
 
 	return 0;
 }
