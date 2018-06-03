@@ -111,10 +111,11 @@ static unsigned int mt6356_vproc1_transfer2volt(unsigned int val)
 
 static unsigned int mt6356_vproc1_settletime(unsigned int old_volt, unsigned int new_volt)
 {
+	/* 6.25mv/0.34us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1250 - 1) / 1250 + PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + 1800 - 1) / 1800 + PMIC_CMD_DELAY_TIME;
 	else
-		return (old_volt - new_volt) * 2 / 625 + PMIC_CMD_DELAY_TIME;
+		return ((old_volt - new_volt) + 1800 - 1) / 1800 + PMIC_CMD_DELAY_TIME;
 }
 
 /* MT6311 */
@@ -130,8 +131,10 @@ static unsigned int mt6311_vproc1_transfer2volt(unsigned int val)
 
 static unsigned int mt6311_vproc1_settletime(unsigned int old_volt, unsigned int new_volt)
 {
+	/* 6.25mv/0.67us/2us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1250 - 1) / 1250 + PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + 900 - 1) / 900 + PMIC_CMD_DELAY_TIME;
+		/* return ((new_volt - old_volt) + 1250 - 1) / 1250 + PMIC_CMD_DELAY_TIME; */
 	else
 		return (old_volt - new_volt) * 2 / 625 + PMIC_CMD_DELAY_TIME;
 }
@@ -212,11 +215,17 @@ struct buck_ctrl_t buck_ctrl[NR_MT_BUCK] = {
 /* PMIC Part */
 void prepare_pmic_config(struct mt_cpu_dvfs *p)
 {
-	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+	if (is_ext_buck_exist()) {
+#endif
+		struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 
-	vproc_p->name = __stringify(BUCK_MT6311_VPROC);
+		vproc_p->name = __stringify(BUCK_MT6311_VPROC);
 
-	vproc_p->buck_ops = &buck_ops_mt6311_vproc1;
+		vproc_p->buck_ops = &buck_ops_mt6311_vproc1;
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+	}
+#endif
 }
 
 int __attribute__((weak)) sync_dcm_set_mp0_freq(unsigned int mhz)
@@ -562,7 +571,9 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #if 0
 	turbo_flag = mt_eem_get_turbo();
 	cpufreq_info("turbo_flag = %d\n", turbo_flag);
+#endif
 
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	if (is_ext_buck_exist())
 		lv = CPU_LEVEL_2;
 #endif
