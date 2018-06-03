@@ -118,6 +118,7 @@ struct page_info {
 static size_t mm_heap_total_memory;
 unsigned int caller_pid;
 unsigned int caller_tid;
+unsigned long long alloc_large_fail_ts;
 
 static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 				      struct ion_buffer *buffer, unsigned long order) {
@@ -135,6 +136,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 
 	if (!page) {
 		IONMSG("[ion_dbg] alloc_pages order=%lu cache=%d\n", order, cached);
+		alloc_large_fail_ts = sched_clock();
 		return NULL;
 	}
 
@@ -194,6 +196,22 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 	return NULL;
 }
 
+static int ion_mm_pool_total(struct ion_system_heap *heap, unsigned long order, bool cached)
+{
+	struct ion_page_pool *pool;
+	int count;
+
+	if (!cached) {
+		pool = heap->pools[order_to_index(order)];
+		count = pool->low_count + pool->high_count;
+	} else {
+		pool = heap->cached_pools[order_to_index(order)];
+		count = (pool->low_count + pool->high_count);
+	}
+
+	return count;
+}
+
 static int ion_mm_heap_allocate(struct ion_heap *heap,
 				struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
@@ -249,6 +267,11 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 
 	INIT_LIST_HEAD(&pages);
 	start = sched_clock();
+
+	/* add time interval to alloc 64k page in low memory status*/
+	if (((start - alloc_large_fail_ts) < 500000000) &&
+	    (ion_mm_pool_total(sys_heap, orders[0], ion_buffer_cached(buffer)) < 10))
+		max_order = orders[1];
 
 	caller_pid = (unsigned int)current->pid;
 	caller_tid = (unsigned int)current->tgid;
