@@ -5477,8 +5477,10 @@ boosted_task_util(struct task_struct *task)
 void get_task_util(struct task_struct *p, unsigned long *util,
 	unsigned long *boost_util)
 {
+	/* heavytask: using pelt */
+	*util = p->se.avg.util_avg;
+
 	*boost_util = boosted_task_util(p);
-	*util = task_util(p);
 }
 
 /*
