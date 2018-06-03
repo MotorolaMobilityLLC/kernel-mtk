@@ -2127,6 +2127,14 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 255 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	dpe@15028000 {
+		compatible = "mediatek,dpe";
+		reg = <0 0x15028000 0 0x1000>;
+		interrupts = <GIC_SPI 256 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&imgsys CLK_IMG_DPE>;
+		clock-names = "DPE_CG_IMG_DPE";
+	};
+
 	smi_larb0: smi_larb0@14003000 {
 		cell-index = <0>;
 		compatible = "mediatek,smi_larb0", "mediatek,smi_larb";
