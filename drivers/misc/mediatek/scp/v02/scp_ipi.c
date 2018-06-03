@@ -45,19 +45,13 @@ void scp_A_ipi_handler(void)
 		/* scp_ipi_handler is null or ipi id abnormal */
 		pr_err("[SCP] scp A ipi handler is null or id abnormal, id = %d\n", scp_A_rcv_obj->id);
 	}
-#if SPM_REG_ENABLE
-	/*pr_debug("spm_sw_rsv_3:0x%x\n", *(volatile unsigned int*)SPM_SW_RSV_3);
+	/* AP side write 1 to clear SCP to SPM reg.
+	 * scp side write 1 to set SCP to SPM reg.
+	 * scp set      bit[0]
+	 * scp dual set bit[1]
 	 */
-	if ((*(volatile unsigned int*)SPM_SW_RSV_3 & 0xBABE0000) == 0xBABE0000) {
-		/* clear mailbox when it's a wakeup event from scp ipi
-		 * SPM_SW_RSV_3[31:16] is 0xBABE -> scp wakeup event
-		 */
-		*(volatile unsigned int*)SPM_SW_RSV_3 &= 0x0000FFFF;
-#endif
-		SCP_A_TO_SPM_REG = 0x0;
-#if SPM_REG_ENABLE
-	}
-#endif
+	SCP_TO_SPM_REG = 0x1;
+
 	/*pr_debug("scp_ipi_handler done\n");*/
 }
 
@@ -89,18 +83,13 @@ void scp_B_ipi_handler(void)
 		/* scp_ipi_handler is null or ipi id abnormal */
 		pr_err("[SCP] scp B ipi handler is null or id abnormal, id = %d\n", scp_B_rcv_obj->id);
 	}
-#if SPM_REG_ENABLE
-	/*pr_debug("spm_sw_rsv_3:0x%x\n", *(volatile unsigned int*)SPM_SW_RSV_3);*/
-	if ((*(volatile unsigned int*)SPM_SW_RSV_3 & 0xBABE0000) == 0xBABE0000) {
-		/* clear mailbox when it's a wakeup event from scp ipi
-		 * SPM_SW_RSV_3[31:16] is 0xBABE -> scp wakeup event
-		 */
-		*(volatile unsigned int*)SPM_SW_RSV_3 &= 0x0000FFFF;
-#endif
-		SCP_B_TO_SPM_REG = 0x0;
-#if SPM_REG_ENABLE
-	}
-#endif
+	/* AP side write 1 to clear SCP to SPM reg.
+	 * scp side write 1 to set SCP to SPM reg.
+	 * scp set      bit[0]
+	 * scp dual set bit[1]
+	 */
+	SCP_TO_SPM_REG = 0x2;
+
 	/*pr_debug("scp_ipi_handler done\n");*/
 }
 
