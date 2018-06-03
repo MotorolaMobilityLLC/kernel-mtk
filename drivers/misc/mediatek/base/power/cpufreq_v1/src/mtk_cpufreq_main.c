@@ -14,7 +14,7 @@
 #include <linux/random.h>
 #include <mt-plat/met_drv.h>
 /* project includes */
-#include "mtk_ppm_api.h"
+#include "mach/mtk_ppm_api.h"
 
 /* local includes */
 #include "mtk_cpufreq_internal.h"

@@ -14,7 +14,7 @@
 #ifndef __MTK_STATIC_POWER_MTK6758_H__
 #define __MTK_STATIC_POWER_MTK6758_H__
 
-#define SPOWER_NOT_READY 1
+#define SPOWER_NOT_READY 1 /* for bring up, remove for MP */
 
 /* #define WITHOUT_LKG_EFUSE */
 

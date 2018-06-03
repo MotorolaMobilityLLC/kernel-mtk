@@ -23,7 +23,7 @@
 /* #define CPU_DVFS_NOT_READY	1 */
 #define DRCC_SUPPORT 1
 #else
-#define CPU_DVFS_NOT_READY	1
+#define CPU_DVFS_NOT_READY	1 /* for bring up, remove for MP */
 #endif
 
 #define DVFS_CLUSTER_REMAPPING	1
