@@ -25,6 +25,12 @@
 
 #define WINDOW 20
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+#define RESCUE_TIMER_NUM 4
+#else
+#define RESCUE_TIMER_NUM 2
+#endif
+
 struct fbt_jerk {
 	int id;
 	int jerking;
@@ -33,7 +39,7 @@ struct fbt_jerk {
 };
 struct fbt_proc {
 	int active_jerk_id;
-	struct fbt_jerk jerks[2];
+	struct fbt_jerk jerks[RESCUE_TIMER_NUM];
 };
 
 struct fbt_frame_info {

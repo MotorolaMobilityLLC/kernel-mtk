@@ -97,6 +97,11 @@ static int vsync_percent;
 static int rescue_opp_f;
 static int rescue_opp_c;
 static int rescue_percent;
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+static int rescue_first_opp_f;
+static int rescue_first_opp_c;
+static int rescue_first_percent;
+#endif
 static int vsync_period;
 static int deqtime_bound;
 static int variance;
@@ -167,6 +172,9 @@ static int _gdfrc_cpu_target;
 
 static unsigned long long g_rescue_distance;
 static unsigned long long g_vsync_distance;
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+static unsigned long long g_rescue_first_distance;
+#endif
 
 /* lpp - should move to per-thread struct*/
 static unsigned int lpp_max_cap;
@@ -491,7 +499,7 @@ static void fbt_filter_ppm_log_locked(int filter)
 	ppm_game_mode_change_cb(filter);
 }
 
-static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld)
+static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld, int jerkid)
 {
 	unsigned int *blc_freq;
 	int i, cluster;
@@ -527,14 +535,33 @@ static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld)
 		}
 		clus_opp[cluster] = i;
 
-		blc_freq[cluster] =
-			cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_f), 0)];
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		if (jerkid < 2)
+			blc_freq[cluster] =
+				cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_first_opp_f), 0)];
+		else
+#endif
+			blc_freq[cluster] =
+				cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_f), 0)];
 		blc_freq[cluster] = min_t(unsigned int, blc_freq[cluster], lpp_clus_max_freq[cluster]);
 
 		pld[cluster].min = -1;
 		if (bypass_flag == 0 && suppress_ceiling) {
-			pld[cluster].max =
-				cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_c), 0)];
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+			if (jerkid < 2) {
+				int min_ceiling = 0;
+
+				pld[cluster].max =
+					cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_first_opp_c), 0)];
+				if (cluster == fbt_get_L_cluster_num()) {
+					min_ceiling = fbt_get_L_min_ceiling();
+					if (min_ceiling && pld[cluster].max < min_ceiling)
+						pld[cluster].max = min_ceiling;
+				}
+			} else
+#endif
+				pld[cluster].max =
+					cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_c), 0)];
 			pld[cluster].max = min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
 		} else
 			pld[cluster].max = -1;
@@ -561,13 +588,13 @@ static void fbt_do_jerk(struct work_struct *work)
 	int tofree = 0;
 
 	jerk = container_of(work, struct fbt_jerk, work);
-	if (!jerk || (jerk->id != 0 && jerk->id != 1)) {
+	if (!jerk || jerk->id < 0 || jerk->id > RESCUE_TIMER_NUM - 1) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
 		return;
 	}
 
 	proc = container_of(jerk, struct fbt_proc, jerks[jerk->id]);
-	if (!proc || (proc->active_jerk_id != 0 && proc->active_jerk_id != 1)) {
+	if (!proc || proc->active_jerk_id < 0 || proc->active_jerk_id > RESCUE_TIMER_NUM - 1) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
 		return;
 	}
@@ -587,11 +614,23 @@ static void fbt_do_jerk(struct work_struct *work)
 	fpsgo_render_tree_lock(__func__);
 	fpsgo_thread_lock(&(thr->thr_mlock));
 
-	if (jerk->id == proc->active_jerk_id && thr->linger == 0) {
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+	if ((jerk->id % 2) == proc->active_jerk_id
+#else
+	if (jerk->id == proc->active_jerk_id
+#endif
+		&& thr->linger == 0) {
+
 		unsigned int blc_wt = 0U;
 		struct ppm_limit_data *pld;
 		int temp_blc = 0;
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		if (jerk->id >= 2 &&
+			thr->boost_info.proc.jerks[proc->active_jerk_id].jerking == 1) {
+			xgf_trace("rescue overlap timer %d\n", jerk->id);
+		} else {
+#endif
 		mutex_lock(&blc_mlock);
 		if (thr->p_blc)
 			temp_blc = thr->p_blc->blc;
@@ -600,7 +639,7 @@ static void fbt_do_jerk(struct work_struct *work)
 		if (temp_blc) {
 			pld = kcalloc(cluster_num, sizeof(struct ppm_limit_data), GFP_KERNEL);
 			if (pld) {
-				blc_wt = fbt_get_new_base_blc(pld);
+				blc_wt = fbt_get_new_base_blc(pld, jerk->id);
 
 				if (blc_wt) {
 					fbt_set_boost_value(blc_wt);
@@ -615,12 +654,19 @@ static void fbt_do_jerk(struct work_struct *work)
 			}
 			kfree(pld);
 		}
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		}
+#endif
 	}
 
 	jerk->jerking = 0;
 
 	if (thr->boost_info.proc.jerks[0].jerking == 0 &&
 		thr->boost_info.proc.jerks[1].jerking == 0 &&
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		thr->boost_info.proc.jerks[2].jerking == 0 &&
+		thr->boost_info.proc.jerks[3].jerking == 0 &&
+#endif
 		thr->linger > 0)
 		tofree = 1;
 
@@ -1060,8 +1106,68 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 	return limited_cap;
 }
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+static int fbt_get_t2wnt(long long t_cpu_target,
+		unsigned long long queue_start,
+		unsigned long long *first_t2wnt,
+		unsigned long long *t2wnt)
+{
+	unsigned long long next_vsync, queue_end, temp;
+	int i;
+	int ret = 0;
+
+	if (!first_t2wnt || !t2wnt)
+		return 0;
+
+	mutex_lock(&fbt_mlock);
+
+	if (vsync_time == 0)
+		goto exit;
+
+	queue_end = queue_start + t_cpu_target;
+	next_vsync = vsync_time;
+	for (i = 1; i < 6; i++) {
+		if (next_vsync > queue_end)
+			break;
+		next_vsync = vsync_time + vsync_period * i;
+	}
+
+	if (next_vsync < queue_end)
+		goto exit;
+
+	temp = next_vsync - queue_start;
+
+	if (temp < g_rescue_first_distance) {
+		FPSGO_LOGI("ERROR %d\n", __LINE__);
+		goto exit;
+	}
+
+	ret = 1;
+
+	*first_t2wnt = temp - g_rescue_first_distance;
+	if (*first_t2wnt > TIME_100MS) {
+		FPSGO_LOGI("ERROR %d\n", __LINE__);
+		*first_t2wnt = 0ULL;
+	}
+
+	if (temp < g_rescue_distance) {
+		FPSGO_LOGI("ERROR %d\n", __LINE__);
+		goto exit;
+	}
+
+	*t2wnt = temp - g_rescue_distance;
+	if (*t2wnt > TIME_100MS) {
+		FPSGO_LOGI("ERROR %d\n", __LINE__);
+		*t2wnt = 0ULL;
+	}
+
+exit:
+	mutex_unlock(&fbt_mlock);
+	return ret;
+}
+#else
 static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
-										unsigned long long queue_start)
+		unsigned long long queue_start)
 {
 	unsigned long long next_vsync, queue_end;
 	unsigned long long t2wnt = 0ULL;
@@ -1104,6 +1210,7 @@ static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 
 	return t2wnt;
 }
+#endif
 
 int (*fpsgo_fbt2fstb_cpu_capability_fp)(
 	int pid, int frame_type,
@@ -1237,6 +1344,40 @@ static int fbt_boost_policy(
 
 	/*disable rescue frame for vag*/
 	if (!lpp_fps || !vag_fps) {
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		u64 first_t2wnt = 0ULL;
+		int ret = 0;
+
+		ret = fbt_get_t2wnt(target_time, ts, &first_t2wnt, &t2wnt);
+
+		if (ret) {
+			boost_info->proc.active_jerk_id ^= 1;
+			active_jerk_id = boost_info->proc.active_jerk_id;
+
+			if (first_t2wnt) {
+				timer = &(boost_info->proc.jerks[active_jerk_id].timer);
+				if (timer) {
+					if (boost_info->proc.jerks[active_jerk_id].jerking == 0) {
+						boost_info->proc.jerks[active_jerk_id].jerking = 1;
+						hrtimer_start(timer, ns_to_ktime(first_t2wnt), HRTIMER_MODE_REL);
+					}
+				} else
+					FPSGO_LOGE("ERROR timer\n");
+			}
+
+			if (t2wnt) {
+				active_jerk_id = active_jerk_id + 2;
+				timer = &(boost_info->proc.jerks[active_jerk_id].timer);
+				if (timer) {
+					if (boost_info->proc.jerks[active_jerk_id].jerking == 0) {
+						boost_info->proc.jerks[active_jerk_id].jerking = 1;
+						hrtimer_start(timer, ns_to_ktime(t2wnt), HRTIMER_MODE_REL);
+					}
+				} else
+					FPSGO_LOGE("ERROR timer\n");
+			}
+		}
+#else
 		t2wnt = (u64) fbt_get_t2wnt(target_time, ts);
 		if (t2wnt) {
 			boost_info->proc.active_jerk_id ^= 1;
@@ -1251,6 +1392,7 @@ static int fbt_boost_policy(
 			} else
 				FPSGO_LOGE("ERROR timer\n");
 		}
+#endif
 	}
 
 	return blc_wt;
@@ -1695,6 +1837,11 @@ void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit)
 	g_rescue_distance = _gdfrc_cpu_target * (unsigned long long)rescue_percent;
 	g_rescue_distance = div64_u64(g_rescue_distance, 100ULL);
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+	g_rescue_first_distance = _gdfrc_cpu_target * (unsigned long long)rescue_first_percent;
+	g_rescue_first_distance = div64_u64(g_rescue_first_distance, 100ULL);
+#endif
+
 	g_vsync_distance = _gdfrc_cpu_target * (unsigned long long)vsync_percent;
 	g_vsync_distance = div64_u64(g_vsync_distance, 100ULL);
 
@@ -1720,6 +1867,10 @@ void fpsgo_base2fbt_node_init(struct render_info *obj)
 	boost->fstb_target_fps = TARGET_UNLIMITED_FPS;
 	fbt_init_jerk(&(boost->proc.jerks[0]), 0);
 	fbt_init_jerk(&(boost->proc.jerks[1]), 1);
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+	fbt_init_jerk(&(boost->proc.jerks[2]), 2);
+	fbt_init_jerk(&(boost->proc.jerks[3]), 3);
+#endif
 
 	link = fbt_list_loading_add(obj->pid);
 	obj->pLoading = link;
@@ -2102,7 +2253,14 @@ int fbt_cpu_init(void)
 	vsync_percent = 50;
 	rescue_opp_c = (NR_FREQ_CPU - 1);
 	rescue_opp_f = 5;
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+	rescue_percent = 25;
+	rescue_first_opp_c = 4;
+	rescue_first_opp_f = 2;
+	rescue_first_percent = 50;
+#else
 	rescue_percent = 33;
+#endif
 	sf_bound_max = 10;
 	sf_bound_min = 3;
 	deqtime_bound = TIME_3MS;
@@ -2115,6 +2273,10 @@ int fbt_cpu_init(void)
 	_gdfrc_cpu_target = GED_VSYNC_MISS_QUANTUM_NS;
 	g_rescue_distance = _gdfrc_cpu_target * (unsigned long long)rescue_percent;
 	g_rescue_distance = div64_u64(g_rescue_distance, 100ULL);
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+	g_rescue_first_distance = _gdfrc_cpu_target * (unsigned long long)rescue_first_percent;
+	g_rescue_first_distance = div64_u64(g_rescue_first_distance, 100ULL);
+#endif
 	g_vsync_distance = _gdfrc_cpu_target * (unsigned long long)vsync_percent;
 	g_vsync_distance = div64_u64(g_vsync_distance, 100ULL);
 	vsync_period = GED_VSYNC_MISS_QUANTUM_NS;

@@ -322,8 +322,15 @@ void fpsgo_check_thread_status(void)
 			fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
 			n = rb_first(&render_pid_tree);
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+			if (iter->boost_info.proc.jerks[0].jerking == 0
+				&& iter->boost_info.proc.jerks[1].jerking == 0
+				&& iter->boost_info.proc.jerks[2].jerking == 0
+				&& iter->boost_info.proc.jerks[3].jerking == 0)
+#else
 			if (iter->boost_info.proc.jerks[0].jerking == 0
 				&& iter->boost_info.proc.jerks[1].jerking == 0)
+#endif
 				delete = 1;
 			else {
 				delete = 0;
@@ -375,8 +382,15 @@ void fpsgo_clear(void)
 		fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
 		n = rb_first(&render_pid_tree);
 
+#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
+		if (iter->boost_info.proc.jerks[0].jerking == 0
+			&& iter->boost_info.proc.jerks[1].jerking == 0
+			&& iter->boost_info.proc.jerks[2].jerking == 0
+			&& iter->boost_info.proc.jerks[3].jerking == 0)
+#else
 		if (iter->boost_info.proc.jerks[0].jerking == 0
 			&& iter->boost_info.proc.jerks[1].jerking == 0)
+#endif
 			delete = 1;
 		else {
 			delete = 0;

@@ -419,6 +419,14 @@ config MTK_FPSGO_FSTB
 	  power balance.
 	  If you are not sure about this, set n.
 
+config MTK_FPSGO_MULTI_STAGE_RESCUE
+	bool "Support FPSGO FBT multi-stage rescuer"
+	default n
+	depends on MTK_FPSGO
+	help
+	  Support FPSGO FBT milti-stage boost rescuer.
+	  If you are not sure about this, set n.
+
 endmenu  # PPT
 
 menu "Misc configs"
