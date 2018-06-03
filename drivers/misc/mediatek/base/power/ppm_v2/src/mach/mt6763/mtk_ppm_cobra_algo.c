@@ -426,25 +426,6 @@ void ppm_cobra_init(void)
 			state_info[i].min_pwr_idx, state_info[i].max_perf_idx);
 	}
 
-	/* decide min_pwr_idx and max_perf_idx for each state */
-	for_each_ppm_power_state(i) {
-		for_each_ppm_clusters(j) {
-			int max_core = state_info[i].cluster_limit->state_limit[j].max_cpu_core;
-			int min_core = state_info[i].cluster_limit->state_limit[j].min_cpu_core;
-			int idx = 4 * j;
-
-			if (max_core > get_cluster_max_cpu_core(j) || min_core < get_cluster_min_cpu_core(j))
-				continue;
-
-			state_info[i].min_pwr_idx += (min_core)
-				? cobra_tbl.basic_pwr_tbl[idx+min_core-1][DVFS_OPP_NUM-1].power_idx : 0;
-			state_info[i].max_perf_idx += (max_core)
-				? cobra_tbl.basic_pwr_tbl[idx+max_core-1][0].perf_idx : 0;
-		}
-		ppm_info("%s: min_pwr_idx = %d, max_perf_idx = %d\n", state_info[i].name,
-			state_info[i].min_pwr_idx, state_info[i].max_perf_idx);
-	}
-
 #if !PPM_COBRA_RUNTIME_CALC_DELTA
 	/* generate delta power and delta perf table for LxLL */
 	ppm_info("LxLL delta table:\n");

@@ -135,10 +135,10 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 
 	switch (cluster) {
 	case PPM_CLUSTER_LL:
-		temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK1) / 1000;
 		break;
 	case PPM_CLUSTER_L:
-		temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
 		break;
 	default:
 		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
@@ -151,8 +151,6 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 
 static int ppm_get_spower_devid(enum ppm_cluster cluster)
 {
-/* TODO: waiting SPOWER API ready */
-#if 0
 	int devid = -1;
 
 	switch (cluster) {
@@ -168,9 +166,6 @@ static int ppm_get_spower_devid(enum ppm_cluster cluster)
 	}
 
 	return devid;
-#else
-	return 0;
-#endif
 }
 
 
