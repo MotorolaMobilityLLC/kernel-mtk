@@ -2673,7 +2673,7 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 		}
 
 		if (((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
-			pThread->pCurTask[nextID]->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA) {
+			pThread->pCurTask[nextID]->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA_JUMP) {
 			/* We reached the last task */
 			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
 			loop, nextID, searchLoop, searchID);
@@ -2883,7 +2883,7 @@ bool cmdq_core_task_finalize_end(struct TaskStruct *pTask)
 		 * JUMP to next instruction case.
 		 * Set new JUMP to GCE end address
 		 */
-		pa = CMDQ_GCE_END_ADDR_PA;
+		pa = CMDQ_GCE_END_ADDR_PA_JUMP;
 		pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
 		pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 0x1);
 
@@ -5727,7 +5727,8 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 				continue;
 
 			is_last_end = (((pExecTask->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP) &&
-				(pExecTask->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA);
+				(pExecTask->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA_JUMP);
+
 			if (is_last_end) {
 				/* We reached the last task */
 				break;
