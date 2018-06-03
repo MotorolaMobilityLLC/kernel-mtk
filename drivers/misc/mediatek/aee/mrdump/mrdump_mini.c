@@ -752,10 +752,10 @@ void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 		mrdump_mini_save_regs(regs);
 	}
 	cpu = get_HW_cpuid();
-	mrdump_modules_info(NULL, -1);
 	mrdump_mini_cpu_regs(cpu, regs, current, 1);
 	mrdump_mini_add_loads();
 	mrdump_mini_build_task_info(regs);
+	mrdump_modules_info(NULL, -1);
 	if (once == 0) {
 		once = 1;
 		mrdump_mini_add_extra_misc((unsigned long)extra_members,
