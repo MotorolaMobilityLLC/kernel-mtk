@@ -2032,7 +2032,8 @@ void sensorHub_power_up_loop(void *data)
 	WRITE_ONCE(obj->SCP_sensorFIFO->wp, 0);
 	WRITE_ONCE(obj->SCP_sensorFIFO->rp, 0);
 	WRITE_ONCE(obj->SCP_sensorFIFO->FIFOSize,
-		(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) /
+		((long)scp_get_reserve_mem_size(SENS_MEM_ID) -
+		offsetof(struct sensorFIFO, data)) /
 		SENSOR_DATA_SIZE * SENSOR_DATA_SIZE);
 	pr_debug("obj->SCP_sensorFIFO =%p, wp =%d, rp =%d, size =%d\n",
 		READ_ONCE(obj->SCP_sensorFIFO),
