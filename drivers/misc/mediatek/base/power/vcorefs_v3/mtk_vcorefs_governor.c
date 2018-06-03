@@ -183,6 +183,7 @@ static struct governor_profile governor_ctrl = {
 };
 
 int kicker_table[LAST_KICKER] __nosavedata;
+EXPORT_SYMBOL(kicker_table);
 
 static struct opp_profile opp_table[NUM_OPP] __nosavedata;
 
@@ -308,11 +309,13 @@ int vcorefs_get_num_opp(void)
 {
 	return NUM_OPP;
 }
+EXPORT_SYMBOL(vcorefs_get_num_opp);
 
 int vcorefs_get_hw_opp(void)
 {
 	return spm_vcorefs_get_opp();
 }
+EXPORT_SYMBOL(vcorefs_get_hw_opp);
 
 int vcorefs_get_sw_opp(void)
 {
@@ -333,6 +336,7 @@ int vcorefs_get_curr_vcore(void)
 	return 0;
 #endif
 }
+EXPORT_SYMBOL(vcorefs_get_curr_vcore);
 
 int vcorefs_get_curr_ddr(void)
 {
@@ -346,6 +350,7 @@ int vcorefs_get_curr_ddr(void)
 	return 0;
 #endif
 }
+EXPORT_SYMBOL(vcorefs_get_curr_ddr);
 
 int vcorefs_get_vcore_by_steps(u32 opp)
 {
@@ -375,6 +380,7 @@ char *governor_get_kicker_name(int id)
 {
 	return kicker_name[id];
 }
+EXPORT_SYMBOL(governor_get_kicker_name);
 
 char *vcorefs_get_opp_table_info(char *p)
 {
