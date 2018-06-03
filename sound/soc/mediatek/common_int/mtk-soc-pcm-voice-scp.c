@@ -97,7 +97,6 @@ static struct snd_dma_buffer scp_voice_mddl_dma_buf;
 static struct snd_dma_buffer scp_voice_runtime_feedback_dma_buf;
 /* real time for IV feedback buffer */
 static struct snd_dma_buffer scp_voice_DL1Buffer;
-static struct snd_dma_buffer scp_voice_DebugBuffer;
 
 static struct SPK_PROTECT_SERVICE scp_voice_protect_service;
 static struct audio_resv_dram_t *p_scp_voice_resv_dram;
@@ -106,8 +105,6 @@ static struct audio_resv_dram_t *p_scp_voice_resv_dram_normal;
 static struct scp_reserve_mblock scp_voiceReserveBuffer;
 static struct snd_dma_buffer PlatformBuffer;
 static const int scpvoiceDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
-static const int scpvoiceDebugBufferOffset =
-	(SOC_NORMAL_USE_BUFFERSIZE_MAX * 2);
 static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
 static uint32_t scp_voice_ipi_payload_buf[VOICE_MAX_PARLOAD_SIZE];
 #endif
@@ -368,15 +365,6 @@ static int mtk_pcm_scp_voice_stop(struct snd_pcm_substream *substream)
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
 			  Soc_Aud_AFE_IO_Block_I2S3);
 
-	if (mscp_voice_iv_meminterface_type == Soc_Aud_Digital_Block_MEM_AWB2)
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_AWB2);
-	else
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
-
 	if (mscp_voice_md_select)
 		scp_voice_md2_enable(false, substream->runtime);
 	else
@@ -572,24 +560,6 @@ scp_voice_allocate_platformdl_buffer(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-/* Debug data can use Sram or Dram*/
-static int scp_voice_allocate_debug_buffer(struct snd_pcm_substream *substream,
-			  struct snd_pcm_hw_params *hw_params)
-{
-	unsigned int buffer_size = params_buffer_bytes(hw_params);
-
-	scp_voice_DebugBuffer.bytes = buffer_size;
-	scp_voice_DebugBuffer.addr = scp_voice_DramBuffer.addr +
-		scpvoiceDebugBufferOffset;
-	scp_voice_DebugBuffer.area =
-		(unsigned char *)scp_voice_DramBuffer.area + buffer_size;
-	pr_debug(
-		 "%s scp_voice_DebugBuffer.addr = %llx DebugBuffer.area = %p bytes  = %zu\n",
-		 __func__, scp_voice_DebugBuffer.addr,
-		 scp_voice_DebugBuffer.area,
-		 scp_voice_DebugBuffer.bytes);
-	return 0;
-}
 /* return for payload length*/
 static unsigned int
 scp_voice_packIpi_payload(uint16_t msg_id, uint32_t param1, uint32_t param2,
@@ -641,13 +611,6 @@ scp_voice_packIpi_payload(uint16_t msg_id, uint32_t param1, uint32_t param2,
 			(mscp_voice_iv_meminterface_type);
 		ret = sizeof(unsigned int) * 5;
 		break;
-	case SPK_PROTECT_SPEECH_DEBUGMEMPARAM:
-		scp_voice_ipi_payload_buf[0] = (kal_uint32) bmd_buffer->addr;
-		scp_voice_ipi_payload_buf[1] = (kal_uint32) (*bmd_buffer->area);
-		scp_voice_ipi_payload_buf[2] = bmd_buffer->bytes;
-		scp_voice_ipi_payload_buf[3] = true;
-		ret = sizeof(unsigned int) * 4;
-		break;
 	default:
 		pr_debug("%s param1=%d\n", __func__, param1);
 		break;
@@ -670,7 +633,6 @@ static int mtk_pcm_scp_voice_hw_params(struct snd_pcm_substream *substream,
 	scp_voice_allocate_platform_buffer(substream, hw_params);
 	scp_voice_allocate_feedback_buffer(substream, hw_params);
 	scp_voice_allocate_platformdl_buffer(substream, hw_params);
-	scp_voice_allocate_debug_buffer(substream, hw_params);
 
 	payloadlen = scp_voice_packIpi_payload(
 		SPK_PROTECT_SPEECH_MDFEEDBACKPARAM, 0, 0,
@@ -693,14 +655,6 @@ static int mtk_pcm_scp_voice_hw_params(struct snd_pcm_substream *substream,
 					  substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_SPEECH_IVMEMPARAM,
-				    payloadlen, 0,
-				    (char *)scp_voice_ipi_payload_buf);
-	payloadlen =
-		scp_voice_packIpi_payload(SPK_PROTECT_SPEECH_DEBUGMEMPARAM, 0,
-					  0, &scp_voice_DebugBuffer, substream);
-	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD,
-				    AUDIO_IPI_MSG_NEED_ACK,
-				    SPK_PROTECT_SPEECH_DEBUGMEMPARAM,
 				    payloadlen, 0,
 				    (char *)scp_voice_ipi_payload_buf);
 
@@ -1058,14 +1012,6 @@ static int mtk_pcm_scp_voice_start(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
 			  Soc_Aud_AFE_IO_Block_I2S3);
-	if (mscp_voice_iv_meminterface_type == Soc_Aud_Digital_Block_MEM_AWB2)
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_AWB2);
-	else
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	if (!in_interrupt())

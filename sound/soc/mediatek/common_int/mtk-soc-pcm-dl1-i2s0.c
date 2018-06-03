@@ -154,6 +154,13 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 				Soc_Aud_AFE_IO_Block_I2S0_CH2,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			break;
+		case 3:
+			/* SCP IV data */
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_I2S0,
+					  get_usage_digital_block_io
+					  (AUDIO_USAGE_SCP_SPK_IV_DATA));
+			break;
 		default:
 			break;
 		}
@@ -268,6 +275,10 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2,
 					    false);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_I2S0,
+					  get_usage_digital_block_io
+					  (AUDIO_USAGE_SCP_SPK_IV_DATA));
 		}
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);

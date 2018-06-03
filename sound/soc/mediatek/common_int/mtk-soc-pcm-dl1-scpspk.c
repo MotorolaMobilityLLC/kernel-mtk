@@ -96,8 +96,6 @@ static struct snd_dma_buffer
 
 static const int Dl1Spk_feedback_buf_offset =
 	(SOC_NORMAL_USE_BUFFERSIZE_MAX * 2);
-static const int Dl1Spk_debug_buf_offset =
-	(SOC_NORMAL_USE_BUFFERSIZE_MAX * 3);
 static unsigned int Dl1Spk_feedback_user;
 static unsigned int mspkPlaybackDramState;
 static unsigned int mspkPlaybackFeedbackDramState;
@@ -115,7 +113,6 @@ static const int platformBufferOffset;
 static struct snd_dma_buffer PlatformBuffer;
 static const int SpkDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
 static struct snd_dma_buffer SpkDL1Buffer;
-static struct snd_dma_buffer DebugBuffer;
 
 static int SpkIrq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
 static uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
@@ -275,14 +272,6 @@ static int mtk_pcm_dl1spk_stop(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
 			  Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
-	if (mspkiv_meminterface_type == Soc_Aud_Digital_Block_MEM_AWB2)
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_AWB2);
-	else
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
@@ -396,13 +385,6 @@ static unsigned int packIpi_payload(uint16_t msg_id, uint32_t param1,
 		ipi_payload_buf[4] = mspkiv_meminterface_type;
 		ret = sizeof(unsigned int) * 5;
 		break;
-	case SPK_PROTECT_DEBUGMEMPARAM:
-		ipi_payload_buf[0] = (kal_uint32) bmd_buffer->addr;
-		ipi_payload_buf[1] = (kal_uint32) (*bmd_buffer->area);
-		ipi_payload_buf[2] = bmd_buffer->bytes;
-		ipi_payload_buf[3] = true;
-		ret = sizeof(unsigned int) * 4;
-		break;
 	case SPK_PROTECT_DLCOPY:
 		ipi_payload_buf[0] = (kal_uint32)param1;
 		ipi_payload_buf[1] = (kal_uint32)param2;
@@ -428,6 +410,7 @@ static int dl1spk_get_scpdram_buffer(void)
 	ScpDramBuffer.addr = ScpReserveBuffer.start_phys;
 	ScpDramBuffer.area = (kal_uint8 *)ScpReserveBuffer.start_virt;
 	ScpDramBuffer.bytes = ScpReserveBuffer.size;
+	memset_io(ScpDramBuffer.area, 0, ScpDramBuffer.bytes);
 	pr_debug("%s ScpDramBuffer.addr = %llx ScpDramBuffer.area = %p bytes = %zu",
 		__func__, ScpDramBuffer.addr, ScpDramBuffer.area,
 		ScpDramBuffer.bytes);
@@ -447,6 +430,7 @@ static int dl1spk_allocate_platform_buffer(struct snd_pcm_substream *substream,
 	substream->runtime->dma_area = PlatformBuffer.area;
 	substream->runtime->dma_addr = PlatformBuffer.addr;
 	substream->runtime->dma_bytes = PlatformBuffer.bytes;
+	memset_io(PlatformBuffer.area, 0, PlatformBuffer.bytes);
 	pr_debug("%s PlatformBuffer.addr = %llx PlatformBuffer.area = %p bytes  = %zu\n",
 		__func__, PlatformBuffer.addr, PlatformBuffer.area,
 		PlatformBuffer.bytes);
@@ -482,6 +466,8 @@ static int dl1spk_allocate_feedback_buffer(struct snd_pcm_substream *substream,
 	set_memif_addr(mspkiv_meminterface_type,
 		       Dl1Spk_runtime_feedback_dma_buf.addr,
 		       Dl1Spk_runtime_feedback_dma_buf.bytes);
+	memset_io(Dl1Spk_runtime_feedback_dma_buf.area, 0,
+		  Dl1Spk_runtime_feedback_dma_buf.bytes);
 	pr_debug("%s addr = %llx area = %p bytes  = %zu mspkPlaybackFeedbackDramState = %u\n",
 		__func__, Dl1Spk_runtime_feedback_dma_buf.addr,
 		Dl1Spk_runtime_feedback_dma_buf.area,
@@ -569,21 +555,6 @@ dl1spk_allocate_platformdl_buffer(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-/* Debug data can use Sram or Dram*/
-static int dl1spk_allocate_debug_buffer(struct snd_pcm_substream *substream,
-					struct snd_pcm_hw_params *hw_params)
-{
-	unsigned int buffer_size = params_buffer_bytes(hw_params);
-
-	DebugBuffer.bytes = buffer_size;
-	DebugBuffer.addr = ScpDramBuffer.addr + Dl1Spk_debug_buf_offset;
-	DebugBuffer.area = (unsigned char *)ScpDramBuffer.area + buffer_size;
-	pr_debug(
-		 "%s DebugBuffer.addr = %llx DebugBuffer.area = %p bytes  = %zu\n",
-		 __func__, DebugBuffer.addr,
-		 DebugBuffer.area, DebugBuffer.bytes);
-	return 0;
-}
 void dl1scpspk_task_nnloaded_handling(void)
 {
 	pr_debug("%s()\n", __func__);
@@ -608,7 +579,6 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 	dl1spk_allocate_feedback_buffer(substream, hw_params);
 	dl1spk_allocate_platform_buffer(substream, hw_params);
 	dl1spk_allocate_platformdl_buffer(substream, hw_params);
-	dl1spk_allocate_debug_buffer(substream, hw_params);
 
 	payloadlen = packIpi_payload(SPK_PROTECT_PLATMEMPARAM, 0, 0,
 				     &PlatformBuffer, substream);
@@ -627,12 +597,6 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 				&Dl1Spk_runtime_feedback_dma_buf, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_IVMEMPARAM, payloadlen, 0,
-				    (char *)ipi_payload_buf);
-	payloadlen = packIpi_payload(SPK_PROTECT_DEBUGMEMPARAM, 0, 0,
-				     &DebugBuffer, substream);
-	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD,
-				    AUDIO_IPI_MSG_NEED_ACK,
-				    SPK_PROTECT_DEBUGMEMPARAM, payloadlen, 0,
 				    (char *)ipi_payload_buf);
 #endif
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
@@ -903,14 +867,6 @@ static int mtk_pcm_dl1spk_start(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
 			  Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
-	if (mspkiv_meminterface_type == Soc_Aud_Digital_Block_MEM_AWB2)
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_AWB2);
-	else
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_I2S0,
-				  Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
 			  Soc_Aud_AFE_IO_Block_MEM_DL1,
 			  Soc_Aud_AFE_IO_Block_I2S3);
@@ -1022,6 +978,7 @@ static int mtk_pcm_dl1spk_copy(struct snd_pcm_substream *substream, int channel,
 {
 	int ret = 0;
 	unsigned int payloadlen = 0;
+	int acktype = AUDIO_IPI_MSG_DIRECT_SEND;
 	snd_pcm_uframes_t framecount = count;
 
 	vcore_dvfs(&vcore_dvfs_enable, false);
@@ -1031,6 +988,9 @@ static int mtk_pcm_dl1spk_copy(struct snd_pcm_substream *substream, int channel,
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	payloadlen = packIpi_payload(SPK_PROTECT_DLCOPY, pos, framecount, NULL,
 				     substream);
+	if (substream->runtime->status->state != SNDRV_PCM_STATE_RUNNING)
+		acktype = AUDIO_IPI_MSG_NEED_ACK;
+
 	spkproc_service_ipicmd_send(
 		AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_DIRECT_SEND,
 		SPK_PROTECT_DLCOPY, payloadlen, 0, (char *)ipi_payload_buf);

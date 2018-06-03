@@ -58,7 +58,7 @@ enum { /* dump_data_t */
 	DUMP_PCM_PRE = 0,
 	DUMP_IV_DATA = 1,
 	DUMP_DEBUG_DATA = 2,
-	NUM_DUMP_DATA = 3,
+	NUM_DUMP_DATA,
 };
 
 
@@ -138,20 +138,20 @@ void spkprotect_open_dump_file(void)
 
 	sprintf(path_decode_pcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_decode_pcm);
-	pr_debug("%s path_decode_pcm= %s\n", __func__, path_decode_pcm);
+	pr_debug("%s(), path_decode_pcm= %s\n", __func__, path_decode_pcm);
 	sprintf(path_decode_ivpcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_iv_pcm);
-	pr_debug("%s path_decode_iv_pcm= %s\n", __func__, path_decode_ivpcm);
+	pr_debug("%s(), path_decode_iv_pcm= %s\n", __func__, path_decode_ivpcm);
 	sprintf(path_decode_debugpcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_debug_pcm);
-	pr_debug("%s path_decode_debug_pcm= %s\n", __func__,
+	pr_debug("%s(), path_decode_debug_pcm= %s\n", __func__,
 		path_decode_debugpcm);
 
 	file_spk_pcm = filp_open(path_decode_pcm,
 				 O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_spk_pcm)) {
-		pr_info("file_spk_pcm < 0,path_decode_pcm = %s\n",
-			path_decode_pcm);
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_pcm, PTR_ERR(file_spk_pcm));
 		return;
 	}
 
@@ -159,16 +159,17 @@ void spkprotect_open_dump_file(void)
 	file_spk_iv = filp_open(path_decode_ivpcm,
 				O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_spk_iv)) {
-		pr_info("file_spk_iv < 0,path_decode_ivpcm = %s\n",
-			path_decode_ivpcm);
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_ivpcm, PTR_ERR(file_spk_iv));
 		return;
 	}
 
 	file_spk_debug = filp_open(path_decode_debugpcm,
 				O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_spk_debug)) {
-		pr_info("file_spk_debug < 0,path_decode_debugpcm = %s\n",
-			path_decode_debugpcm);
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_debugpcm,
+			PTR_ERR(file_spk_debug));
 		return;
 	}
 
@@ -200,7 +201,7 @@ void spkprotect_close_dump_file(void)
 
 	b_enable_dump = false;
 
-	pr_debug("pass: %d\n", dump_data_routine_cnt_pass);
+	pr_debug("%s(), pass: %d\n", __func__, dump_data_routine_cnt_pass);
 
 	if (speaker_dump_task) {
 		kthread_stop(speaker_dump_task);
@@ -337,7 +338,7 @@ static int spkprotect_dump_kthread(void *data)
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
-	AUD_LOG_V("dump_queue = %p\n", dump_queue);
+	AUD_LOG_V("%s(), dump_queue = %p\n", __func__, dump_queue);
 
 	while (b_enable_dump && !kthread_should_stop()) {
 		spin_lock_irqsave(&dump_queue_lock, flags);
@@ -487,6 +488,7 @@ void audio_ipi_client_spkprotect_init(void)
 	init_waitqueue_head(&wq_dump_pcm);
 
 	speaker_dump_task = NULL;
+	dump_queue = NULL;
 
 	/* TODO: ring buf */
 	p_resv_dram = get_reserved_dram();
