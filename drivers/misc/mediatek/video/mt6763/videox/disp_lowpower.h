@@ -30,8 +30,8 @@ unsigned int get_kick_dump_size(void);
 /*return 1: display is idle*/
 int primary_display_is_idle(void);
 void primary_display_idlemgr_kick(const char *source, int need_lock);
-void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent);
-void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent);
+void enter_share_sram(void);
+void leave_share_sram(void);
 void set_hrtnum(unsigned int new_hrtnum);
 void set_enterulps(unsigned flag);
 void set_is_dc(unsigned int is_dc);

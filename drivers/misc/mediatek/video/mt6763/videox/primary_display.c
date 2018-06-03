@@ -4153,7 +4153,7 @@ int primary_display_suspend(void)
 
 	/* need leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		leave_share_sram();
 
 	/* switch to vencpll before disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -4578,7 +4578,7 @@ done:
 
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		enter_share_sram();
 	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
 		DSI_ForceConfig(0);
 
@@ -7502,7 +7502,7 @@ void stop_smart_ovl_nolock(void)
 	}
 	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++) {
 		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
-			leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+			leave_share_sram();
 	}
 	/* primary_display_esd_check_enable(0);*/
 }
@@ -7515,7 +7515,7 @@ void restart_smart_ovl_nolock(void)
 		disp_helper_set_option(tui_opt_backup[i].option, tui_opt_backup[i].value);
 	for (i = 0; i < (sizeof(tui_opt_backup) / sizeof((tui_opt_backup)[0])); i++) {
 		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
-			enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+			enter_share_sram();
 	}
 
 }
