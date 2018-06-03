@@ -981,10 +981,13 @@ static ssize_t BridgeStatsWrite(const char __user *pszBuffer,
 
 #endif /* defined(DEBUG_BRIDGE_KM) */
 
+
+#define MTK_RETRY 5
 PVRSRV_ERROR LinuxBridgeBlockClientsAccess(IMG_BOOL bShutdown)
 {
 	PVRSRV_ERROR eError;
 	IMG_HANDLE hEvent;
+	int retry = MTK_RETRY;
 
 	eError = OSEventObjectOpen(g_hDriverThreadEventObject, &hEvent);
 	if(eError != PVRSRV_OK)
@@ -1021,6 +1024,15 @@ PVRSRV_ERROR LinuxBridgeBlockClientsAccess(IMG_BOOL bShutdown)
 		 * process). Because of that this thread shouldn't and most likely
 		 * event cannot be frozen. */
 		OSEventObjectWait(hEvent);
+
+		if (bShutdown) {
+			retry--;
+			if (retry == 0) {
+				PVR_LOG(("%s: retried %u times, force abort", __func__,
+                        MTK_RETRY));
+				break;
+			}
+		}
 	}
 
 out_put:
