@@ -513,6 +513,9 @@ void register_all_oc_interrupts(void)
 		/* ignore pre_oc */
 		if (oc_interrupt == INT_VCORE_PREOC)
 			continue;
+		/* ignore SIM card oc */
+		if (oc_interrupt == INT_VSIM1_OC || oc_interrupt == INT_VSIM2_OC)
+			continue;
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 			if (oc_interrupt == INT_VCAMA1_OC || oc_interrupt == INT_VCAMA2_OC
 				|| oc_interrupt == INT_VCAMD1_OC || oc_interrupt == INT_VCAMD2_OC)
