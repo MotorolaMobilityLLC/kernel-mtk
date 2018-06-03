@@ -452,6 +452,8 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			goto CHECK_OUT;
 	}
 
+	mtk_ged_event_notify(g_ui32EventStatus);
+
 	if(ui32BeforeSwitchInterpret != g_ui32EventStatus || ui32BeforeDebugInterpret != g_ui32EventDebugStatus 
 			|| g_ui32EventDebugStatus&GED_EVENT_NOT_SYNC)
 	{

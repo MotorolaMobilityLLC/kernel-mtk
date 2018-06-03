@@ -18,7 +18,7 @@
 #include <linux/genalloc.h>
 #include <linux/sched.h>
 #include <linux/mutex.h>
-//#include <linux/xlog.h>
+#include<linux/slab.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/fb.h>
@@ -960,6 +960,85 @@ static int ged_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	}
 
 	return 0;
+}
+
+typedef struct {
+	ged_event_change_fp callback;
+	void *private_data;
+	char name[128];
+	struct list_head sList;
+} ged_event_change_entry_t;
+
+static struct {
+	struct mutex lock;
+	struct list_head listen;
+} g_ged_event_change = {
+	.lock     = __MUTEX_INITIALIZER(g_ged_event_change.lock),
+	.listen   = LIST_HEAD_INIT(g_ged_event_change.listen),
+};
+
+bool mtk_register_ged_event_change(const char *name, ged_event_change_fp callback, void *private_data)
+{
+	ged_event_change_entry_t *entry = NULL;
+
+	entry = kmalloc(sizeof(ged_event_change_entry_t), GFP_KERNEL);
+	if (entry == NULL)
+		return false;
+
+	entry->callback = callback;
+	entry->private_data = private_data;
+	strncpy(entry->name, name, sizeof(entry->name) - 1);
+	entry->name[sizeof(entry->name) - 1] = 0;
+	INIT_LIST_HEAD(&entry->sList);
+
+	mutex_lock(&g_ged_event_change.lock);
+
+	list_add(&entry->sList, &g_ged_event_change.listen);
+
+	mutex_unlock(&g_ged_event_change.lock);
+
+	return true;
+}
+
+bool mtk_unregister_ged_event_change(const char *name)
+{
+	struct list_head *pos, *head;
+	ged_event_change_entry_t *entry = NULL;
+
+	mutex_lock(&g_ged_event_change.lock);
+
+	head = &g_ged_event_change.listen;
+	list_for_each(pos, head) {
+		entry = list_entry(pos, ged_event_change_entry_t, sList);
+		if (strncmp(entry->name, name, sizeof(entry->name) - 1) == 0)
+			break;
+		entry = NULL;
+	}
+
+	if (entry) {
+		list_del(&entry->sList);
+		kfree(entry);
+	}
+
+	mutex_unlock(&g_ged_event_change.lock);
+
+	return true;
+}
+
+void mtk_ged_event_notify(int events)
+{
+	struct list_head *pos, *head;
+	ged_event_change_entry_t *entry = NULL;
+
+	mutex_lock(&g_ged_event_change.lock);
+
+	head = &g_ged_event_change.listen;
+	list_for_each(pos, head) {
+		entry = list_entry(pos, ged_event_change_entry_t, sList);
+		entry->callback(entry->private_data, events);
+	}
+
+	mutex_unlock(&g_ged_event_change.lock);
 }
 
 /* ----------------------------------------------------------------------------- */
