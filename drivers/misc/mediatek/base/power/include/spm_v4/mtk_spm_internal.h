@@ -455,6 +455,7 @@ enum {
 	SPM_OPT_GPS_STAT      = (1 << 2),
 	SPM_OPT_VCORE_LP_MODE = (1 << 3),
 	SPM_OPT_XO_UFS_OFF    = (1 << 4),
+	SPM_OPT_CLKBUF_ENTER_BBLPM = (1 << 5),
 	NF_SPM_OPT
 };
 

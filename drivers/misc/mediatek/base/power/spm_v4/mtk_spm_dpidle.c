@@ -556,6 +556,9 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
 					SPM_OPT_XO_UFS_OFF :
 					0;
+	spm_opt |= ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle) ?
+					SPM_OPT_CLKBUF_ENTER_BBLPM :
+					0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
@@ -586,6 +589,9 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_co
 	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
 	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
 					SPM_OPT_XO_UFS_OFF :
+					0;
+	spm_opt |= ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle) ?
+					SPM_OPT_CLKBUF_ENTER_BBLPM :
 					0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
