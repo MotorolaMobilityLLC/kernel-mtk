@@ -145,6 +145,44 @@ TRACE_EVENT(ppm_update,
 		__entry->root, __get_str(limits))
 );
 
+TRACE_EVENT(ppm_hica,
+
+	TP_PROTO(const char *cur_state,
+		 const char *target_state,
+		 long usage,
+		 long capacity,
+		 int heavy_tsk,
+		 int freq,
+		 int result),
+
+	TP_ARGS(cur_state, target_state, usage, capacity, heavy_tsk, freq, result),
+
+	TP_STRUCT__entry(
+		__string(cur, cur_state)
+		__string(target, target_state)
+		__field(long, usage)
+		__field(long, capacity)
+		__field(int, heavy_tsk)
+		__field(int, freq)
+		__field(int, result)
+	),
+
+	TP_fast_assign(
+		__assign_str(cur, cur_state);
+		__assign_str(target, target_state);
+		__entry->usage = usage;
+		__entry->capacity = capacity;
+		__entry->heavy_tsk = heavy_tsk;
+		__entry->freq = freq;
+		__entry->result = result;
+	),
+
+	TP_printk("%s->%s(%s), usage=%ld, capacity=%ld, heavy_tsk=%d, freq=%d",
+		__get_str(cur), __get_str(target),
+		(__entry->result) ? "O" : "X",
+		__entry->usage, __entry->capacity, __entry->heavy_tsk, __entry->freq)
+);
+
 TRACE_EVENT(ppm_overutil_update,
 
 	TP_PROTO(int overutil_l,
