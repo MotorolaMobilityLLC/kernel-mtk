@@ -44,14 +44,7 @@
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
 /* This is necessary for AEE */
-#define DEVAPC_TOTAL_SLAVES					237
-/* AEE trigger threshold for each module. */
-#define DEVAPC_VIO_AEE_TRIGGER_TIMES				10
-/* AEE trigger frequency for each module (ms) */
-#define DEVAPC_VIO_AEE_TRIGGER_FREQUENCY			1000
-/* Maximum populating AEE times for all the modules */
-#define DEVAPC_VIO_MAX_TOTAL_AEE_TRIGGER_TIMES			3
-
+#define DEVAPC_TOTAL_SLAVES					214
 #endif
 
 /* For Infra VIO_DBG */
