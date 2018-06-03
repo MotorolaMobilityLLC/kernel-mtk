@@ -548,6 +548,9 @@ void construct_mtd_partition(struct mtd_info *mtd)
 		g_exist_Partition[i].size = (uint64_t) lastest_part[i].size;	/* mtd partition */
 		g_exist_Partition[i].offset = (uint64_t) lastest_part[i].offset;
 
+		/* for mt8167 */
+		lastest_part[i].mask_flags = 0;
+
 		g_exist_Partition[i].mask_flags = lastest_part[i].mask_flags;
 
 		/* PartInfo[i].name = part_name[i];  //dumchar */
@@ -569,8 +572,8 @@ void construct_mtd_partition(struct mtd_info *mtd)
 			}
 #endif
 		}
-		pr_debug("partition %s %s size %llx type %llx\n", lastest_part[i].name, PartInfo[i].name,
-		       g_exist_Partition[i].offset, partition_type_array[i]);
+		pr_debug("partition %s %s size %llx type %llx mask_flags %d\n", lastest_part[i].name, PartInfo[i].name,
+		       g_exist_Partition[i].offset, partition_type_array[i], g_exist_Partition[i].mask_flags);
 
 #if 1
 		if (MLC_DEVICE == TRUE) {
