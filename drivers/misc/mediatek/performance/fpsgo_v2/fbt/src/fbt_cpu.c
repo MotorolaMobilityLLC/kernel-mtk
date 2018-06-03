@@ -963,12 +963,12 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 			mutex_unlock(&blc_mlock);
 		}
 		if (!ceiling_judge || fbt_find_freerun()) {
+			fpsgo_systrace_c_fbt(pid, -1, "cluster0 ceiling_freq");
+			fpsgo_systrace_c_fbt(pid, -1, "cluster1 ceiling_freq");
 			blc_wt = 0;
 			pid = 0;
 			fbt_free_bhr();
 			fbt_clear_boost_value();
-			fpsgo_systrace_c_fbt(pid, -1, "cluster0 ceiling_freq");
-			fpsgo_systrace_c_fbt(pid, -1, "cluster1 ceiling_freq");
 		} else
 			fbt_do_boost(blc_wt, pid);
 

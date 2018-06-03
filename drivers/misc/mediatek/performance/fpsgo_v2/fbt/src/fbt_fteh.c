@@ -48,6 +48,12 @@ enum FTEH_RESULT {
 	FTEH_CORRECT = 1,
 };
 
+enum FTEH_LOADING_SUM {
+	FTEH_HEAVY_LOADING = 0,
+	FTEH_LIGHT_LOADING = 1,
+	FTEH_INVALID_LOADING = 2,
+};
+
 static int g_fteh_state;
 static int g_cur_tracking_pid;
 static unsigned long long g_load_ts;
@@ -166,7 +172,7 @@ static int fteh_is_light_loading(int th, int check)
 	int i, sum = 0;
 
 	if (!g_load_arr || !g_load_valid_size)
-		return 0;
+		return FTEH_HEAVY_LOADING;
 
 	for (i = 0; i < g_load_valid_size; i++) {
 		FPSGO_FTEH_TRACE("[%d] %d", g_load_arr[i].pid, g_load_arr[i].loading);
@@ -174,12 +180,12 @@ static int fteh_is_light_loading(int th, int check)
 	}
 
 	if (check && !sum)
-		return 2;
+		return FTEH_INVALID_LOADING;
 
 	if (sum > th)
-		return 0;
+		return FTEH_HEAVY_LOADING;
 
-	return 1;
+	return FTEH_LIGHT_LOADING;
 }
 
 static int fteh_check_to_start_monitoring(void)
@@ -267,12 +273,12 @@ static int fteh_loading_monitor(int pid)
 	fpsgo_fteh2minitop_query(g_load_valid_size, g_load_arr);
 
 	ret = fteh_is_light_loading(enter_loading_th, 1);
-	if (ret == 2) {
+	if (ret == FTEH_INVALID_LOADING) {
 		fteh_update_dep_list_start(pid);
 		return FTEH_CORRECT;
 	}
 
-	if (ret) {
+	if (ret == FTEH_LIGHT_LOADING) {
 		g_fteh_state = FTEH_ACTIVE;
 		fteh_update_dep_list_start(pid);
 		return FTEH_LESS_HEADROOM;
