@@ -76,7 +76,7 @@ static int pe_set_mivr(struct charger_manager *pinfo, int uV)
 	if (pinfo->chg2_dev) {
 		ret = charger_dev_set_mivr(pinfo->chg2_dev, uV);
 		if (ret < 0)
-			pr_notice("%s: chg2 failed, ret = %d\n", __func__, ret);
+			pr_err("%s: chg2 failed, ret = %d\n", __func__, ret);
 	}
 
 	return ret;
