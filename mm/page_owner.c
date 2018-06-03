@@ -262,15 +262,16 @@ void __reset_page_owner(struct page *page, unsigned int order)
 	int i;
 	struct page_ext *page_ext;
 
+#ifdef CONFIG_PAGE_OWNER_SLIM
+	page_ext = lookup_page_ext(page);
+	if (page_ext && page_ext->entry) {
+		release_backtrace(page_ext->entry, 1 << page_ext->order);
+		page_ext->entry = NULL;
+	}
+#endif
 	for (i = 0; i < (1 << order); i++) {
 		page_ext = lookup_page_ext(page + i);
 		__clear_bit(PAGE_EXT_OWNER, &page_ext->flags);
-#ifdef CONFIG_PAGE_OWNER_SLIM
-		if (page_ext && page_ext->entry) {
-			release_backtrace(page_ext->entry, 1 << page_ext->order);
-			page_ext->entry = NULL;
-		}
-#endif
 	}
 }
 
