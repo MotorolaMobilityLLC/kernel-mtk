@@ -81,4 +81,7 @@ extern void mt_power_off(void);
 void __attribute__((weak)) rtc_clock_enable(int enable)
 {
 }
+void __attribute__((weak)) rtc_lpsd_restore_al_mask(void)
+{
+}
 #endif
