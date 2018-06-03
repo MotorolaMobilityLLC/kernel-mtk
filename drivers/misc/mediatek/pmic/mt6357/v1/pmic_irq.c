@@ -12,12 +12,6 @@
  */
 
 
-/* May be used */
-#if 0
-#include <mt-plat/mtk_rtc.h>
-#include <mach/mtk_spm_mtcmos.h>
-#endif
-
 #include <generated/autoconf.h>
 #include <linux/delay.h>
 #include <linux/device.h>
@@ -110,43 +104,7 @@ static struct pmic_sp_irq ldo_irqs[][PMIC_INT_WIDTH] = {
 		PMIC_SP_IRQ_GEN(1, INT_VCAMD_OC),
 		PMIC_SP_IRQ_GEN(1, INT_VCAMIO_OC),
 		PMIC_SP_IRQ_GEN(1, INT_VLDO28_OC),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-	},
-	{
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
 		PMIC_SP_IRQ_GEN(1, INT_VUSB33_OC),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-	},
-	{
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
-		PMIC_SP_IRQ_GEN(0, NO_USE),
 		PMIC_SP_IRQ_GEN(1, INT_VAUX18_OC),
 		PMIC_SP_IRQ_GEN(1, INT_VAUD28_OC),
 		PMIC_SP_IRQ_GEN(1, INT_VIO28_OC),
@@ -532,6 +490,8 @@ static unsigned int pmic_check_intNo(enum PMIC_IRQ_ENUM intNo,
 	*spNo = get_spNo(intNo);
 	*sp_conNo = (intNo - sp_interrupts[*spNo].int_offset) / PMIC_INT_WIDTH;
 	*sp_irqNo = intNo % PMIC_INT_WIDTH;
+	if (sp_interrupts[*spNo].sp_irqs[*sp_conNo][*sp_irqNo].used == 0)
+		return 2;	/* fail intNo */
 	return 0;
 }
 
