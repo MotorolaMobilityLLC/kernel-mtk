@@ -4364,7 +4364,7 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 		return prBssDesc->prBlack;
 
 	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
-		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
+		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
 			EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 			prEntry->aucSSID, prEntry->ucSSIDLen)) {
 			prBssDesc->prBlack = prEntry;
@@ -4409,7 +4409,7 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter)
 	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
 		fgDisappeared = TRUE;
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry) &&
+			if (prBssDesc->prBlack == prEntry || (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prEntry->aucBSSID) &&
 				EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
 				prEntry->aucSSID, prEntry->ucSSIDLen))) {
 				fgDisappeared = FALSE;
