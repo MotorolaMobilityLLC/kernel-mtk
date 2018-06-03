@@ -2331,15 +2331,15 @@ static irqreturn_t ISP_Irq_TSF(signed int Irq, void *DeviceId)
 	wake_up_interruptible(&TSFInfo.WaitQueueHead);
 
 	/* dump log, use tasklet */
-	IRQ_LOG_KEEPER(TSF_IRQ_TYPE_INT_TSF_ST, m_CurrentPPB, _LOG_INF,
-		       "ISP_Irq_TSF:%d, reg 0x%x : 0x%x\n", Irq, TSF_INT_HW, TSFIntStatus);
+	/* IRQ_LOG_KEEPER(TSF_IRQ_TYPE_INT_TSF_ST, m_CurrentPPB, _LOG_INF, */
+	/*	       "ISP_Irq_TSF:%d, reg 0x%x : 0x%x\n", Irq, TSF_INT_HW, TSFIntStatus); */
 
 	/* IRQ_LOG_KEEPER(TSF_IRQ_TYPE_INT_TSF_ST, m_CurrentPPB, _LOG_INF, "DveHWSta:0x%x, WmfeHWSta:0x%x,
 	**TSFDveSta0:0x%x\n", DveStatus, WmfeStatus, TSFDveSta0);
 	*/
 
-	if (TSFIntStatus & TSF_INT_ST)
-		tasklet_schedule(TSF_tasklet[TSF_IRQ_TYPE_INT_TSF_ST].pTSF_tkt);
+	/* if (TSFIntStatus & TSF_INT_ST) */
+	/*	tasklet_schedule(TSF_tasklet[TSF_IRQ_TYPE_INT_TSF_ST].pTSF_tkt); */
 
 	return IRQ_HANDLED;
 }
