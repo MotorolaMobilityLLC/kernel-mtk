@@ -1594,6 +1594,10 @@ void set_usb_rdy(void)
 {
 	os_printk(K_NOTICE, "set usb_rdy, wake up bat\n");
 	usb_rdy = 1;
+
+	/* yield CPU to make queued connection work exection */
+	msleep(200);
+
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	wake_up_bat();
 #endif
@@ -1632,11 +1636,18 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	if (is_usb_rdy() == false && is_on) {
 		set_usb_rdy();
 		if (!is_otg_enabled(musb)) {
-#define MY_DELAY 2000
+			int delay;
+
+			/* direct issue connection work if usb is forced on */
+			if (mu3d_force_on)
+				delay = 0;
+			else
+				delay = 8000;
+
 			INIT_DELAYED_WORK(&mu3d_clk_off_work, do_mu3d_clk_off_work);
 			mu3d_clk_off_musb = musb;
-			os_printk(K_NOTICE, "queue mu3d_clk_off_work, %d ms delayed\n", MY_DELAY);
-			schedule_delayed_work(&mu3d_clk_off_work, msecs_to_jiffies(MY_DELAY));
+			os_printk(K_NOTICE, "queue mu3d_clk_off_work, %d ms delayed\n", delay);
+			schedule_delayed_work(&mu3d_clk_off_work, msecs_to_jiffies(delay));
 		}
 	}
 
