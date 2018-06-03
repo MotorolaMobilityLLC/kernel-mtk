@@ -1660,13 +1660,14 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 	int pull_val = -1;
 	unsigned int i = 0;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(dev);
-	struct gpio_chip *chip = pctl->chip;
+	struct gpio_chip *chip;
 
-	if (!chip || !pctl || !buf) {
+	if (!pctl || !pctl->chip || !buf) {
 		pr_debug("[pinctrl] Err: NULL pointer!\n");
 		return len;
 	}
 
+	chip = pctl->chip;
 	len += snprintf(buf+len, bufLen-len,
 		"gpio base: 0x%x, pins: %03d\n",
 		chip->base, pctl->chip->ngpio);
@@ -1691,7 +1692,7 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 				"%03d: %1d%1d%1d%1d%2d%1d%1d%1d",
 				i,
 				mtk_pinmux_get(chip, i),
-				mtk_gpio_get_direction(chip, i),
+				!mtk_gpio_get_direction(chip, i),
 				mtk_gpio_get_out(chip, i),
 				mtk_gpio_get_in(chip, i),
 				mtk_driving_get(chip, i),
