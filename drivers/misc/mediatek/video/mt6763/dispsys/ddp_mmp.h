@@ -69,6 +69,7 @@ struct DDP_MMP_Events {
 	mmp_event present_fence_get;
 	mmp_event present_fence_set;
 	mmp_event idlemgr;
+	mmp_event idle_monitor;
 	mmp_event sec;
 	mmp_event svp_module[DISP_MODULE_NUM];
 	mmp_event tui;

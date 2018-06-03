@@ -909,7 +909,14 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 
 		interval = idle_check_interval * 1000 * 1000 - (local_clock() - idlemgr_pgc->idlemgr_last_kick_time);
 		do_div(interval, 1000000);
-		if (interval > 0)
+
+		mmprofile_log_ex(ddp_mmp_get_events()->idle_monitor, MMPROFILE_FLAG_PULSE,
+			idle_check_interval, interval);
+
+		interval = interval > 1000 ? 1000 : interval;	/* error handling */
+		if (idlemgr_pgc->idlemgr_last_kick_time == 0)	/* when starting up before the first time kick */
+			msleep_interruptible(idle_check_interval);
+		else if (interval > 0)
 			msleep_interruptible(interval);
 
 		primary_display_manual_lock();
