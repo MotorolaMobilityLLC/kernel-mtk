@@ -144,7 +144,7 @@ static inline struct cldma_request *cldma_ring_step_backward(
 	struct cldma_request *prev_req;
 
 	if (req->entry.prev == &ring->gpd_ring)
-		prev_req = list_first_entry(&ring->gpd_ring,
+		prev_req = list_last_entry(&ring->gpd_ring,
 			struct cldma_request, entry);
 	else
 		prev_req = list_entry(req->entry.prev,
