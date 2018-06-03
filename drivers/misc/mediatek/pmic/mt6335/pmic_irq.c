@@ -424,9 +424,6 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 	case INT_VCAMD1_OC:
 	case INT_VCAMD2_OC:
 	case INT_VCAMIO_OC:
-	case INT_VSIM1_OC:
-	case INT_VSIM2_OC:
-	case INT_VMCH_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
@@ -591,6 +588,11 @@ void register_all_oc_interrupts(void)
 		switch (oc_interrupt) {
 		case INT_VCORE_PREOC:
 			PMICLOG("[PMIC_INT] igonore preoc: %d\n", oc_interrupt);
+			continue;
+		case INT_VSIM1_OC:
+		case INT_VSIM2_OC:
+		case INT_VMCH_OC:
+			PMICLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
 			continue;
 		case INT_VCAMA1_OC:
 		case INT_VCAMA2_OC:
