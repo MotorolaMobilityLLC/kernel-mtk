@@ -202,7 +202,7 @@ void vcorefs_update_opp_table(void)
 
 	mutex_lock(&governor_mutex);
 	for (opp = 0; opp < NUM_OPP; opp++)
-		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
+		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(vcore_dvfs_to_vcore_opp[opp]);
 
 	mutex_unlock(&governor_mutex);
 }
@@ -731,8 +731,8 @@ void vcorefs_init_opp_table(void)
 							gvrctrl->curr_ddr_khz);
 
 	for (opp = 0; opp < NUM_OPP; opp++) {
-		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
-		opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
+		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(vcore_dvfs_to_vcore_opp[opp]);
+		opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(vcore_dvfs_to_ddr_opp[opp]);
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
