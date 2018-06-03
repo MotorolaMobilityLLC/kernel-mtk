@@ -103,6 +103,7 @@ wfd_smem-y += wfd_smem/wfd_smem_api.o
 ifneq ($(filter y,$(CONFIG_MTK_SECURE_MEM_SUPPORT) $(CONFIG_MTK_WFD_SMEM_SUPPORT)),)
 obj-y += tee_impl.o
 tee_impl-y += tee_impl/tee_common.o
+tee_impl-y += tee_impl/tee_invoke.o
 
 ifneq ($(filter y,$(CONFIG_MTK_TEE_GP_SUPPORT) $(CONFIG_TRUSTONIC_TEE_SUPPORT)),)
 tee_impl-y += tee_impl/tee_gp.o

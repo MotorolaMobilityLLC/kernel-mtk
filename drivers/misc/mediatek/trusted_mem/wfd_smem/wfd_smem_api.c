@@ -22,13 +22,14 @@
 
 #include "private/ut_entry.h"
 #include "tee_impl/tee_common.h"
+#include "tee_impl/tee_invoke.h"
 
 int wfd_smem_dump_info(void)
 {
 	struct trusted_driver_cmd_params cmd_params = {0};
 
 	cmd_params.cmd = CMD_WFD_SMEM_DUMP_MEM_INFO;
-	return tmem_core_invoke_command(TRUSTED_MEM_WFD, &cmd_params);
+	return tee_directly_invoke_cmd(&cmd_params);
 }
 
 int wfd_smem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,

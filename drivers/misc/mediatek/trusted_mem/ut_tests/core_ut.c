@@ -182,12 +182,6 @@ static enum UT_RET_STATE device_virt_region_alloc(struct ut_params *params)
 	ASSERT_EQ(0, ret, "pmem alloc chunk memory check");
 	ASSERT_EQ(1, pmem_ref_count, "pmem reference count check");
 	ASSERT_NE(0, pmem_handle, "pmem handle check");
-	ret = secmem_alloc_chunk(0, SIZE_64K, &secmem_ref_count, &secmem_handle,
-				 NULL, 0, 0);
-	ASSERT_NE(0, ret, "svp alloc chunk memory fail check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
-
-	mdelay(REGMGR_REGION_DEFER_OFF_DONE_DELAY_MS);
 	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 	ret = secmem_alloc_chunk(0, SIZE_64K, &secmem_ref_count, &secmem_handle,
 				 NULL, 0, 0);

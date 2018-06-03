@@ -273,54 +273,6 @@ int tmem_core_alloc_chunk(enum TRUSTED_MEM_TYPE mem_type, u32 alignment,
 	return TMEM_OK;
 }
 
-int tmem_core_invoke_command(enum TRUSTED_MEM_TYPE mem_type,
-			     struct trusted_driver_cmd_params *invoke_params)
-{
-	int ret = TMEM_OK;
-	struct trusted_mem_device *mem_device =
-		get_trusted_mem_device(mem_type);
-
-	if (unlikely(is_invalid_hooks(mem_device))) {
-		pr_err("%s:%d %d:mem device may not be registered!\n", __func__,
-		       __LINE__, mem_type);
-		return TMEM_OPERATION_NOT_REGISTERED;
-	}
-
-	if (unlikely(INVALID(invoke_params))) {
-		pr_err("%s:%d %d:invalid parameters!\n", __func__, __LINE__,
-		       mem_type);
-		return TMEM_PARAMETER_ERROR;
-	}
-
-	pr_debug("[%d] cmd is %d (0x%llx, 0x%llx, 0x%llx, 0x%llx)\n", mem_type,
-		 invoke_params->cmd, invoke_params->param0,
-		 invoke_params->param1, invoke_params->param2,
-		 invoke_params->param3);
-
-	if (unlikely(is_shared_device_region_busy(mem_type))) {
-		pr_err("%s:%d %d:share region is already activated!\n",
-		       __func__, __LINE__, mem_type);
-		return TMEM_SHARED_DEVICE_REGION_IS_BUSY;
-	}
-
-	ret = regmgr_online(mem_device->reg_mgr, mem_device->mem_type);
-	if (unlikely(ret))
-		return ret;
-
-	ret = mem_device->peer_mgr->mgr_sess_invoke_cmd(
-		invoke_params, mem_device->peer_ops,
-		&mem_device->peer_mgr->peer_mgr_data, mem_device->peer_priv);
-	if (unlikely(ret)) {
-		pr_err("[%d] invoke command failed:%d, cmd:%d\n", mem_type, ret,
-		       invoke_params->cmd);
-		regmgr_offline(mem_device->reg_mgr);
-		return ret;
-	}
-
-	regmgr_offline(mem_device->reg_mgr);
-	return TMEM_OK;
-}
-
 int tmem_core_unref_chunk(enum TRUSTED_MEM_TYPE mem_type, u32 sec_handle,
 			  u8 *owner, u32 id)
 {

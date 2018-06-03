@@ -25,8 +25,6 @@ int tmem_core_alloc_chunk(enum TRUSTED_MEM_TYPE mem_type, u32 alignment,
 			  u32 id, u32 clean);
 int tmem_core_unref_chunk(enum TRUSTED_MEM_TYPE mem_type, u32 sec_handle,
 			  u8 *owner, u32 id);
-int tmem_core_invoke_command(enum TRUSTED_MEM_TYPE mem_type,
-			     struct trusted_driver_cmd_params *invoke_params);
 
 bool tmem_core_is_regmgr_region_on(enum TRUSTED_MEM_TYPE mem_type);
 u64 tmem_core_get_regmgr_region_online_cnt(enum TRUSTED_MEM_TYPE mem_type);

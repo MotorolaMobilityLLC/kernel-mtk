@@ -58,25 +58,25 @@ static enum UT_RET_STATE fr_set_prot_region(struct ut_params *params)
 	ret = secmem_fr_set_prot_shared_region(PROT_TEST_PA_ADDR64_START,
 					       PROT_TEST_POOL_SIZE_NORMAL);
 	ASSERT_EQ(0, ret, "set valid pa region check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
+	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 	ret = secmem_fr_set_prot_shared_region(
 		PROT_TEST_PA_ADDR64_START, PROT_TEST_POOL_SIZE_MINIMAL_ALLOW);
 	ASSERT_EQ(0, ret, "set valid pa region size check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
+	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 
 	ret = secmem_fr_set_prot_shared_region(PROT_TEST_PA_ADDR64_START,
 					       PROT_TEST_POOL_SIZE_INVALID);
 	ASSERT_NE(0, ret, "set invalid region size check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
+	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 	ret = secmem_fr_set_prot_shared_region(PROT_TEST_PA_ADDR64_ZERO,
 					       PROT_TEST_POOL_SIZE_NORMAL);
 	ASSERT_NE(0, ret, "set invalid pa start addr check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
+	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 
 	ret = secmem_fr_set_prot_shared_region(PROT_TEST_PA_ADDR64_ZERO,
 					       PROT_TEST_POOL_SIZE_ZERO);
 	ASSERT_EQ(0, ret, "clean pa region check");
-	ASSERT_TRUE(fr_is_regmgr_region_on(), "FR region state on check");
+	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 	mdelay(REGMGR_REGION_DEFER_OFF_DONE_DELAY_MS);
 	ASSERT_FALSE(fr_is_regmgr_region_on(), "FR region state off check");
 
