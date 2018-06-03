@@ -83,6 +83,12 @@
 
 #define DDP_OUTPUT_LAYID 4
 
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+static int idle_flag = 1;
+static int smartovl_flag;
+/* wfd connected(session is existing whereas ext mode or dcm mode), or screenrecord */
+static int has_memory_session;
+#endif
 /* #define NO_PQ_IOCTL */
 
 static unsigned int session_config[MAX_SESSION_COUNT];
@@ -191,6 +197,17 @@ int disp_create_session(struct disp_session_config *config)
 	if (idx != -1) {
 		config->session_id = session;
 		session_config[idx] = session;
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
+			/* disable dynamic switch for screen idle, avoid conflict */
+			if (idle_flag)
+				idle_flag = set_idlemgr(0, 0);
+			/* disable idle manager, smart ovl */
+			smartovl_flag = disp_helper_get_option(DISP_OPT_SMART_OVL);
+			disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
+			has_memory_session = 1;
+		}
+#endif
 		DISPDBG("New session(0x%x)\n", session);
 	} else {
 		DISPERR("Invalid session creation request\n");
@@ -233,6 +250,15 @@ int disp_destroy_session(struct disp_session_config *config)
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
 		if (session_config[i] == session) {
 			session_config[i] = 0;
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+			if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
+				if (idle_flag)
+					set_idlemgr(idle_flag, 0);
+				if (smartovl_flag)
+					disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
+				has_memory_session = 0;
+			}
+#endif
 			ret = 0;
 			break;
 		}
@@ -1190,15 +1216,19 @@ int set_session_mode(struct disp_session_config *config_info, int force)
 
 		/* Ext mode -> DCm, disconnect Ext path first */
 		external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
-		if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+		if (has_memory_session)
 			primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 0);
+		else if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+			primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 		else
 			DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n",
 				config_info->session_id, config_info->mode);
 	} else {
 
-		if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+		if (has_memory_session)
 			primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 0);
+		else if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+			primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 		else
 			DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n",
 				config_info->session_id, config_info->mode);

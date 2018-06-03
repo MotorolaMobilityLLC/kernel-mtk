@@ -109,6 +109,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.idle_monitor =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "idle_monitor");
+		DDP_MMP_Events.share_sram =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "share_sram");
 		DDP_MMP_Events.sec = mmprofile_register_event(DDP_MMP_Events.primary_Parent, "sec");
 		DDP_MMP_Events.svp_module[DISP_MODULE_OVL0_2L] =
 			mmprofile_register_event(DDP_MMP_Events.sec, "ovl0_2L_sec");
