@@ -135,8 +135,7 @@ const char musb_driver_name[] = MUSB_DRIVER_NAME;
 struct musb *_mu3d_musb;
 
 
-u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
-/* u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO; */
+u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN /* | K_NOTICE | K_INFO */;
 u32 fake_CDP;
 
 module_param(debug_level, int, 0644);
@@ -2849,6 +2848,37 @@ static struct platform_driver musb_driver = {
 	.remove = musb_remove,
 	.shutdown = musb_shutdown,
 };
+int mu3d_force_on;
+static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
+{
+	int option;
+	int rv;
+
+	rv = kstrtoint(val, 10, &option);
+	if (rv != 0)
+		return rv;
+
+	os_printk(K_WARNIN, "mu3d_force_on:%d, option:%d\n", mu3d_force_on, option);
+	if (option == 0 || option == 1) {
+		os_printk(K_WARNIN, "update to %d\n", option);
+		mu3d_force_on = option;
+	}
+
+	switch (option) {
+	case 2:
+		os_printk(K_WARNIN, "trigger reconnect\n");
+		mt_usb_connect();
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops mu3d_force_on_param_ops = {
+	.set = set_mu3d_force_on,
+	.get = param_get_int,
+};
+module_param_cb(mu3d_force_on, &mu3d_force_on_param_ops, &mu3d_force_on, 0644);
 
 /*-------------------------------------------------------------------------*/
 #ifdef CONFIG_USBIF_COMPLIANCE
