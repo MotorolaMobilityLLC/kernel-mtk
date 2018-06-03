@@ -519,8 +519,9 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 				struct vm_area_struct *vma_temp;
 
 				vma_temp = find_vma(current->mm, va_align);
-				M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
-				vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
+				if (vma_temp)
+					M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, end=0x%lx, flag= 0x%lx\n",
+					       vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
 			}
 		}
 		if (ret) {
@@ -2764,6 +2765,11 @@ static int m4u_probe(struct platform_device *pdev)
 			M4UMSG("[DTS] get m4u platform_device id fail!!\n");
 	}
 	M4UINFO("m4u_probe 1, pdev id = %d name = %s\n", pdev->id, pdev->name);
+
+	if (pdev->id > TOTAL_M4U_NUM) {
+		M4UMSG("m4u_probe id(%d) is error...\n", pdev->id);
+		return 0;
+	}
 
 	gM4uDev->pDev[pdev->id] = &pdev->dev;
 	gM4uDev->m4u_base[pdev->id] = (unsigned long)of_iomap(node, 0);
