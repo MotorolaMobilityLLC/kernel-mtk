@@ -257,12 +257,13 @@ void get_freq_table_cpu(struct eem_det *det)
 			MT_CPU_DVFS_L;
 
 	det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu_id, 0);
-	for (i = 0; i < NR_FREQ_CPU; i++) {
-		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
-		/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
-
-		if (det->freq_tbl[i] == 0)
-			break;
+	if (det->max_freq_khz != 0) {
+		for (i = 0; i < NR_FREQ_CPU; i++) {
+			det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
+			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
+			if (det->freq_tbl[i] == 0)
+				break;
+		}
 	}
 	#endif
 
@@ -360,13 +361,15 @@ void get_freq_table_gpu(struct eem_det *det)
 	#else
 	#ifndef EARLY_PORTING_GPU
 	det->max_freq_khz = mt_gpufreq_get_freq_by_idx(0);
-	for (i = 0; i < NR_FREQ_GPU; i++) {
-		/* det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz); */
-		det->freq_tbl[i] = freq[i];
-		eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
+	if (det->max_freq_khz != 0) {
+		for (i = 0; i < NR_FREQ_GPU; i++) {
+			/* det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz); */
+			det->freq_tbl[i] = freq[i];
+			eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
+		}
 	}
 	#endif
-	#endif
+	#endif /* if DVT */
 
 	det->num_freq_tbl = i;
 	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
@@ -412,7 +415,7 @@ void get_orig_volt_table_vcore(struct eem_det *det)
 
 void get_freq_table_vcore(struct eem_det *det)
 {
-	int i;
+	int i = 0;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	#if DVT
@@ -423,11 +426,13 @@ void get_freq_table_vcore(struct eem_det *det)
 	}
 	#else
 	det->max_freq_khz = vcore_freq[0];
-	for (i = 0; i < VCORE_NR_FREQ; i++) {
-		det->freq_tbl[i] = PERCENT(vcore_freq[i], det->max_freq_khz);
-		eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
-		if (det->freq_tbl[i] == 0)
-			break;
+	if (det->max_freq_khz != 0) {
+		for (i = 0; i < VCORE_NR_FREQ; i++) {
+			det->freq_tbl[i] = PERCENT(vcore_freq[i], det->max_freq_khz);
+			eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
+			if (det->freq_tbl[i] == 0)
+				break;
+		}
 	}
 	#endif
 
