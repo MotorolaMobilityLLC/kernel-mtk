@@ -97,3 +97,19 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 
 	return 0;
 }
+
+int group_boost_read(int group_idx)
+{
+	struct schedtune *ct;
+	int boost = 0;
+
+	ct = allocated_group[group_idx];
+	if (ct) {
+		rcu_read_lock();
+		boost = ct->boost;
+		rcu_read_unlock();
+	}
+
+	return boost;
+}
+EXPORT_SYMBOL(group_boost_read);
