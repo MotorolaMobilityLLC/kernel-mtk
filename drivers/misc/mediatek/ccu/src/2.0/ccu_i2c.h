@@ -25,8 +25,8 @@ enum CCU_I2C_CHANNEL {
 struct ccu_i2c_buf_mva_ioarg {
 	enum CCU_I2C_CHANNEL i2c_controller_id;
 	uint32_t mva;
-	uint32_t pa_h;
-	uint32_t pa_l;
+	uint32_t va_h;
+	uint32_t va_l;
 	uint32_t i2c_id;
 };
 
