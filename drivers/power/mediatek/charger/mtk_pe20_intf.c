@@ -451,15 +451,13 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 		return -ENOTSUPP;
 
 	if (!pe20->is_enabled) {
-		pr_err("%s: stop, PE+20 is disabled\n",
+		pr_debug("%s: stop, PE+20 is disabled\n",
 			__func__);
 		return ret;
 	}
 
 	mutex_lock(&pe20->access_lock);
 	wake_lock(&pe20->suspend_lock);
-
-	pr_err("%s: starts\n", __func__);
 
 	if (pe20->is_cable_out_occur)
 		mtk_pe20_plugout_reset(pinfo);
@@ -522,21 +520,20 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
 	if (!pe20->is_enabled) {
-		pr_err("%s: stop, PE+20 is disabled\n",
+		pr_debug("%s: stop, PE+20 is disabled\n",
 			__func__);
 		return ret;
 	}
 
 	mutex_lock(&pe20->access_lock);
 	wake_lock(&pe20->suspend_lock);
-	pr_err("%s: starts\n", __func__);
 
 	if (pe20->is_cable_out_occur)
 		mtk_pe20_plugout_reset(pinfo);
 
 	if (!pe20->is_connect) {
 		ret = -EIO;
-		pr_err("%s: stop, PE+20 is not connected\n",
+		pr_debug("%s: stop, PE+20 is not connected\n",
 			__func__);
 		wake_unlock(&pe20->suspend_lock);
 		mutex_unlock(&pe20->access_lock);
