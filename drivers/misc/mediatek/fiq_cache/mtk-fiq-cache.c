@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/printk.h>
+#include <linux/kernel.h>
 #include <mt-plat/mtk_secure_api.h>
 
 unsigned long *aee_rr_rec_fiq_cache_step_pa(void);
@@ -22,7 +23,9 @@ static DEFINE_MUTEX(cache_mutex);
 void mt_fiq_cache_flush_all(void)
 {
 	mutex_lock(&cache_mutex);
+	trace_printk("[FIQ_CACHE] starts\n");
 	mt_secure_call(MTK_SIP_KERNEL_CACHE_FLUSH_FIQ, 0, 0, 0);
+	trace_printk("[FIQ_CACHE] done\n");
 	mutex_unlock(&cache_mutex);
 }
 
