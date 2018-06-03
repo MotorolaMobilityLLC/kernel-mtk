@@ -734,7 +734,7 @@ EXPORT_SYMBOL(emi_mpu_set_region_protection);
 
 static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 {
-	char *ptr = buf;
+	ssize_t ret;
 	unsigned long long start, end;
 	unsigned int reg_value;
 	int i, j, region;
@@ -748,22 +748,29 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 		"S_R_NS_RW"
 	};
 
+	ret = 0;
 	for (region = 0; region < EMI_MPU_REGION_NUMBER; region++) {
 		start = ((unsigned long long)mt_emi_reg_read(EMI_MPU_SA(region)) << 16) + emi_physical_offset;
 		end = ((unsigned long long)mt_emi_reg_read(EMI_MPU_EA(region)) << 16) + emi_physical_offset;
-		ptr += sprintf(ptr, "R%d-> 0x%llx to 0x%llx\n", region, start, end+0xFFFF);
+		if (ret >= PAGE_SIZE)
+			break;
+		ret += snprintf(buf + ret, PAGE_SIZE - ret, "R%d-> 0x%llx to 0x%llx\n", region, start, end+0xFFFF);
 
 		/* for(i=0; i<(EMI_MPU_DOMAIN_NUMBER/8); i++) { */
 		/* only print first 8 domain */
 		for (i = 0; i < 2; i++) {
 			reg_value = mt_emi_reg_read(EMI_MPU_APC(region, i*8));
 			for (j = 0; j < 8; j++) {
-				ptr += snprintf(ptr, 16, "%s, ", permission[((reg_value >> (j*3)) & 0x7)]);
-				if ((j == 3) || (j == 7))
-					ptr += sprintf(ptr, "\n");
+				if (ret < PAGE_SIZE) {
+					ret += snprintf(buf + ret, PAGE_SIZE - ret, "%s, ",
+						permission[((reg_value >> (j*3)) & 0x7)]);
+				}
+				if (((j == 3) || (j == 7)) && (ret < PAGE_SIZE))
+					ret += snprintf(buf + ret, PAGE_SIZE - ret, "\n");
 			}
 		}
-		ptr += sprintf(ptr, "\n");
+		if (ret < PAGE_SIZE)
+			ret += snprintf(buf + ret, PAGE_SIZE - ret, "\n");
 	}
 
 
