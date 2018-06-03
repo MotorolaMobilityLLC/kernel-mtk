@@ -55,6 +55,18 @@ enum {
 	QOS_TOTAL_AVE
 };
 
+/* met profile table index */
+enum met_info_index {
+	INFO_OPP_IDX = 0,
+	INFO_SW_RSV5_IDX,
+	INFO_MAX,
+};
+
+enum met_src_index {
+	SRC_MD2SPM_IDX = 0,
+	SRC_MAX
+};
+
 extern void spm_go_to_vcorefs(int spm_flags);
 extern int spm_set_vcore_dvfs(struct kicker_config *krconf);
 extern void spm_vcorefs_init(void);
@@ -74,5 +86,13 @@ extern int spm_get_vcore_opp(unsigned int opp);
 extern int spm_vcorefs_get_dvfs_opp(void);
 extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
 extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
+
+/* met profile function */
+extern int vcorefs_get_opp_info_num(void);
+extern char **vcorefs_get_opp_info_name(void);
+extern unsigned int *vcorefs_get_opp_info(void);
+extern int vcorefs_get_src_req_num(void);
+extern char **vcorefs_get_src_req_name(void);
+extern unsigned int *vcorefs_get_src_req(void);
 
 #endif /* __MTK_SPM_VCORE_DVFS_MT6771_H__ */

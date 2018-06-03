@@ -140,6 +140,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
 		p += sprintf(p, "DVFSRC_LEVEL           : 0x%x\n", spm_read(DVFSRC_LEVEL));
 		p += sprintf(p, "DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
+		p += sprintf(p, "DVFSRC_VCORE_REQUEST2  : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST2));
 		p += sprintf(p, "DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
 		p += sprintf(p, "DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
 		p += sprintf(p, "DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
@@ -203,6 +204,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
 		spm_vcorefs_warn("DVFSRC_LEVEL           : 0x%x\n", spm_read(DVFSRC_LEVEL));
 		spm_vcorefs_warn("DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
+		spm_vcorefs_warn("DVFSRC_VCORE_REQUEST2  : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST2));
 		spm_vcorefs_warn("DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
 		spm_vcorefs_warn("DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
 		spm_vcorefs_warn("DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
@@ -525,13 +527,14 @@ void dvfsrc_set_vcore_request(unsigned int mask, unsigned int shift, unsigned in
 	unsigned long flags;
 	unsigned int val;
 
-	opp = get_min_opp_for_vcore(level);
+	opp = VCORE_OPP_NUM - 1 - level;
+	opp = get_min_opp_for_vcore(opp);
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* check DVFS idle */
 	r = wait_spm_complete_by_condition(is_dvfs_in_progress() == 0, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
-		spm_vcorefs_warn("[%s]wait idle timeout!\n", __func__);
+		spm_vcorefs_warn("[%s]wait idle timeout!(level=%d, opp=%d)\n", __func__, level, opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		aee_kernel_warning("VCOREFS", "wait idle timeout");
 		goto out;
@@ -542,7 +545,7 @@ void dvfsrc_set_vcore_request(unsigned int mask, unsigned int shift, unsigned in
 
 	r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() <= opp, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
-		spm_vcorefs_warn("[%s]vcore wait complete timeout!\n", __func__);
+		spm_vcorefs_warn("[%s]vcore wait complete timeout!(level=%d, opp=%d)\n", __func__, level, opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		aee_kernel_warning("VCOREFS", "wait complete timeout");
 	}
@@ -737,14 +740,17 @@ void spm_go_to_vcorefs(int spm_flags)
 
 void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 {
-	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
+	u32 emi_req[NUM_OPP] = {0x2, 0x1, 0x1, 0x0};
+
+	if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
+		emi_req[1] = 0x2;
+	}
 
 	switch (id) {
 	case 0: /* ZQTX */
 		if (!((__spm_get_dram_type() == SPMFW_LP4X_2CH_3733) ||
 			(__spm_get_dram_type() == SPMFW_LP4X_2CH_3200)))
 			return;
-
 		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, id, emi_req[opp]);
 		break;
 	default:
@@ -804,5 +810,60 @@ void spm_vcorefs_init(void)
 		spm_vcorefs_warn("[%s] VCORE DVFS IS DISABLE\n", __func__);
 	}
 }
+
+/* met profile table */
+u32 met_vcorefs_info[INFO_MAX];
+u32 met_vcorefs_src[SRC_MAX];
+
+char *met_info_name[INFO_MAX] = {
+	"OPP",
+	"SW_RSV5",
+};
+
+char *met_src_name[SRC_MAX] = {
+	"MD2SPM",
+};
+
+/* met profile function */
+int vcorefs_get_opp_info_num(void)
+{
+	return INFO_MAX;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info_num);
+
+int vcorefs_get_src_req_num(void)
+{
+	return SRC_MAX;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req_num);
+
+char **vcorefs_get_opp_info_name(void)
+{
+	return met_info_name;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info_name);
+
+char **vcorefs_get_src_req_name(void)
+{
+	return met_src_name;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req_name);
+
+unsigned int *vcorefs_get_opp_info(void)
+{
+	met_vcorefs_info[INFO_OPP_IDX] = spm_vcorefs_get_dvfs_opp();
+	met_vcorefs_info[INFO_SW_RSV5_IDX] = spm_read(SPM_SW_RSV_5);
+
+	return met_vcorefs_info;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info);
+
+unsigned int *vcorefs_get_src_req(void)
+{
+	met_vcorefs_src[SRC_MD2SPM_IDX] = spm_read(MD2SPM_DVFS_CON);
+
+	return met_vcorefs_src;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req);
 
 MODULE_DESCRIPTION("SPM VCORE-DVFS DRIVER");

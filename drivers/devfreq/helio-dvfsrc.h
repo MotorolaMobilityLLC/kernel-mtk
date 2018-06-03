@@ -36,9 +36,9 @@ struct helio_dvfsrc {
 	struct mutex		lock;
 
 	int enable;
+	int skip;
 	int flag;
 	int dram_type;
-	int dram_issue;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;

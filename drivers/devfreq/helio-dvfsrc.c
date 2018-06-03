@@ -266,6 +266,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	if (!dvfsrc->enable)
 		goto out;
 
+	if (dvfsrc->skip)
+		goto out;
+
 	spm_check_status_before_dvfs();
 
 	ret = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, DVFSRC_TIMEOUT);
@@ -295,8 +298,6 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
-		if (data == PM_QOS_EMI_OPP_DEFAULT_VALUE)
-			break;
 		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= DDR_OPP_NUM)
 			data = DDR_OPP_NUM - 1;
@@ -322,8 +323,6 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 		break;
 	case PM_QOS_VCORE_OPP:
-		if (data == PM_QOS_VCORE_OPP_DEFAULT_VALUE)
-			break;
 		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= VCORE_OPP_NUM)
 			data = VCORE_OPP_NUM - 1;
@@ -349,8 +348,6 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		}
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
-		if (data == PM_QOS_VCORE_DVFS_FIXED_OPP_DEFAULT_VALUE)
-			break;
 		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= VCORE_DVFS_OPP_NUM)
 			data = VCORE_DVFS_OPP_NUM;
@@ -384,7 +381,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		break;
 	}
 
-	if (ret)
+	if (ret < 0)
 		pr_err("Failed to adjust dvfsrc level\n");
 
 out:
