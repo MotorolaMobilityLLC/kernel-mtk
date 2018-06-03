@@ -876,21 +876,21 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 
 		if ((int)tmp_target_limit - iter->target_fps > iter->target_fps * fps_error_threshold / 100) {
 			if (iter->target_fps >= 48)
-				target_limit = tmp_target_limit;
+				target_limit = clamp((int)tmp_target_limit, 48, CFG_MAX_FPS_LIMIT);
 			else if (iter->target_fps >= 45)
-				target_limit = 48;
+				target_limit = clamp((int)tmp_target_limit, 45, 48);
 			else if (iter->target_fps >= 36)
-				target_limit = 45;
+				target_limit = clamp((int)tmp_target_limit, 36, 45);
 			else if (iter->target_fps > 30)
-				target_limit = 36;
+				target_limit = clamp((int)tmp_target_limit, 30, 36);
 			else if (iter->target_fps == 30)
 				target_limit = 60;
 			else if (iter->target_fps >= 27)
-				target_limit = 30;
+				target_limit = clamp((int)tmp_target_limit, 27, 30);
 			else if (iter->target_fps >= 24)
-				target_limit = 27;
+				target_limit = clamp((int)tmp_target_limit, 24, 27);
 			else
-				target_limit = tmp_target_limit;
+				target_limit = clamp((int)tmp_target_limit, CFG_MIN_FPS_LIMIT, 24);
 		} else
 			target_limit = iter->target_fps;
 
