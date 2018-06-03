@@ -39,7 +39,8 @@
 #include "../kiboplus/mtk_clkbuf_ctl.h"
 
 #elif defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || \
-	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 
 #include "clkbuf_v1/mtk_clkbuf_ctl.h"
 
