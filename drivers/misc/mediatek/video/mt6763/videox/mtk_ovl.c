@@ -431,6 +431,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config, ovl2mem_cmdq_enabled());
 
+	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 	cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
@@ -682,7 +683,6 @@ int ovl2mem_deinit(void)
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	dpmgr_destroy_path_handle(pgc->dpmgr_handle);
-
 	cmdqRecDestroy(pgc->cmdq_handle_config);
 
 	pgc->dpmgr_handle = NULL;
