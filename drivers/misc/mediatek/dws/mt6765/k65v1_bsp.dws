@@ -1990,7 +1990,7 @@
                 <address>0x0C</address>
             </device9>
             <device10>
-                <varName>RT5509</varName>
+                <varName>SPEAKER_AMP</varName>
                 <channel>I2C_CHANNEL_3</channel>
                 <address>0x34</address>
             </device10>
