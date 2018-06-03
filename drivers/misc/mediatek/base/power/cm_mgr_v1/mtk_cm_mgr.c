@@ -345,6 +345,7 @@ void check_cm_mgr_status_internal(void)
 	unsigned long long result = 0;
 	ktime_t now, done;
 	int level;
+	unsigned long flags;
 
 	if (!is_dvfsrc_enabled())
 		return;
@@ -363,7 +364,7 @@ void check_cm_mgr_status_internal(void)
 	if (cm_mgr_perf_force_enable)
 		return;
 
-	if (spin_trylock(&cm_mgr_lock)) {
+	if (spin_trylock_irqsave(&cm_mgr_lock, flags)) {
 		int ret;
 		int max_ratio_idx[CM_MGR_CPU_CLUSTER];
 #if defined(LIGHT_LOAD) && defined(CONFIG_MTK_SCHED_RQAVG_US)
@@ -377,15 +378,12 @@ void check_cm_mgr_status_internal(void)
 
 		vcore_dram_opp_cur = get_cur_ddr_opp();
 		if (vcore_dram_opp_cur > CM_MGR_EMI_OPP) {
-			spin_unlock(&cm_mgr_lock);
+			spin_unlock_irqrestore(&cm_mgr_lock, flags);
 			return;
 		}
 
-		if (--cm_mgr_loop > 0) {
-			cm_mgr_update_met();
-			spin_unlock(&cm_mgr_lock);
-			return;
-		}
+		if (--cm_mgr_loop > 0)
+			goto cm_mgr_opp_end;
 		cm_mgr_loop = cm_mgr_loop_count;
 
 #if defined(LIGHT_LOAD) && defined(CONFIG_MTK_SCHED_RQAVG_US)
@@ -413,9 +411,7 @@ void check_cm_mgr_status_internal(void)
 		if ((cm_mgr_abs_load < light_load_cps) &&
 				(vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
 			cps_valid = 0;
-			cm_mgr_update_met();
-			spin_unlock(&cm_mgr_lock);
-			return;
+			goto cm_mgr_opp_end;
 		}
 #endif /* defined(LIGHT_LOAD) && defined(CONFIG_MTK_SCHED_RQAVG_US) */
 		cps_valid = 1;
@@ -573,7 +569,7 @@ cm_mgr_opp_end:
 		done = ktime_get();
 		if (!ktime_after(done, now)) {
 			/* pr_debug("ktime overflow!!\n"); */
-			spin_unlock(&cm_mgr_lock);
+			spin_unlock_irqrestore(&cm_mgr_lock, flags);
 			return;
 		}
 		result = ktime_to_us(ktime_sub(done, now));
@@ -591,7 +587,7 @@ cm_mgr_opp_end:
 			time_cnt_data[1]++;
 		else
 			time_cnt_data[0]++;
-		spin_unlock(&cm_mgr_lock);
+		spin_unlock_irqrestore(&cm_mgr_lock, flags);
 	}
 }
 
