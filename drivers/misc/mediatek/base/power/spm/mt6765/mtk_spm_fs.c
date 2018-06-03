@@ -515,19 +515,19 @@ static ssize_t suspend_ctrl_show(struct kobject *kobj,
 static ssize_t dpidle_ctrl_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(SPM_PWR_CTRL_DPIDLE, __spm_dpidle.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_DPIDLE, &pwrctrl_dp, buf);
 }
 
 static ssize_t sodi3_ctrl_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(SPM_PWR_CTRL_SODI3, __spm_sodi3.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_SODI3, &pwrctrl_so3, buf);
 }
 
 static ssize_t sodi_ctrl_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_SODI, &pwrctrl_so, buf);
 }
 
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj,

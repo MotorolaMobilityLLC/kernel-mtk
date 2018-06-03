@@ -310,9 +310,6 @@ void spm_vcorefs_init(void);
  * mtk_spm_fs.c
  ***********************************************************/
 extern struct spm_lp_scen __spm_suspend;
-extern struct spm_lp_scen __spm_dpidle;
-extern struct spm_lp_scen __spm_sodi3;
-extern struct spm_lp_scen __spm_sodi;
 
 
 #endif /* __MTK_SPM_INTERNAL_H__ */
