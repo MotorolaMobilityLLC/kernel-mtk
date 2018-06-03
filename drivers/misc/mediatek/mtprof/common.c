@@ -16,7 +16,7 @@
 #include <linux/interrupt.h>
 #include "internal.h"
 
-long long nsec_high(unsigned long long nsec)
+long long msec_high(unsigned long long nsec)
 {
 	if ((long long)nsec < 0) {
 		nsec = -nsec;
@@ -28,7 +28,7 @@ long long nsec_high(unsigned long long nsec)
 	return nsec;
 }
 
-unsigned long nsec_low(unsigned long long nsec)
+unsigned long msec_low(unsigned long long nsec)
 {
 	if ((long long)nsec < 0)
 		nsec = -nsec;
@@ -36,24 +36,44 @@ unsigned long nsec_low(unsigned long long nsec)
 	return do_div(nsec, 1000000);
 }
 
-long long usec_high(unsigned long long usec)
+long long usec_high(unsigned long long nsec)
 {
-	if ((long long)usec < 0) {
-		usec = -usec;
-		do_div(usec, 1000);
-		return -usec;
+	if ((long long)nsec < 0) {
+		nsec = -nsec;
+		do_div(nsec, 1000);
+		return -nsec;
 	}
-	do_div(usec, 1000);
+	do_div(nsec, 1000);
 
-	return usec;
+	return nsec;
 }
 
-unsigned long usec_low(unsigned long long usec)
+unsigned long usec_low(unsigned long long nsec)
 {
-	if ((long long)usec < 0)
-		usec = -usec;
+	if ((long long)nsec < 0)
+		nsec = -nsec;
 
-	return do_div(usec, 1000);
+	return do_div(nsec, 1000);
+}
+
+long long sec_high(unsigned long long nsec)
+{
+	if ((long long)nsec < 0) {
+		nsec = -nsec;
+		do_div(nsec, 1000000000);
+		return -nsec;
+	}
+	do_div(nsec, 1000000000);
+
+	return nsec;
+}
+
+unsigned long sec_low(unsigned long long nsec)
+{
+	if ((long long)nsec < 0)
+		nsec = -nsec;
+	/* remove nsec partition */
+	return do_div(nsec, 1000000000)/1000;
 }
 
 const char *isr_name(int irq)

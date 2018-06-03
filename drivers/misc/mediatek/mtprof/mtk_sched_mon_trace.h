@@ -19,7 +19,7 @@
 
 #include <linux/tracepoint.h>
 
-TRACE_EVENT(sched_mon_duration_warn,
+TRACE_EVENT(sched_mon_msg,
 
 	TP_PROTO(const char *buf),
 
