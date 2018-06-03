@@ -39,6 +39,7 @@ struct helio_dvfsrc {
 	int skip;
 	int flag;
 	int dram_type;
+	unsigned int log_mask;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;

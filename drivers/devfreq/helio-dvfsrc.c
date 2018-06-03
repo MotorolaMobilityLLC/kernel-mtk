@@ -282,7 +282,8 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	case PM_QOS_MEMORY_BANDWIDTH:
 		if (data == PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE)
 			break;
-		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+		if (dvfsrc->log_mask & (0x1 << type))
+			pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_0, data / 100);
 		break;
 	case PM_QOS_CPU_MEMORY_BANDWIDTH:
@@ -298,7 +299,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
-		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+		if (dvfsrc->log_mask & (0x1 << type))
+			pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+
 		if (data >= DDR_OPP_NUM)
 			data = DDR_OPP_NUM - 1;
 		else if (data < 0)
@@ -323,7 +326,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 		break;
 	case PM_QOS_VCORE_OPP:
-		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+		if (dvfsrc->log_mask & (0x1 << type))
+			pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+
 		if (data >= VCORE_OPP_NUM)
 			data = VCORE_OPP_NUM - 1;
 		else if (data < 0)
@@ -348,7 +353,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		}
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
-		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+		if (dvfsrc->log_mask & (0x1 << type))
+			pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
+
 		if (data >= VCORE_DVFS_OPP_NUM)
 			data = VCORE_DVFS_OPP_NUM;
 
