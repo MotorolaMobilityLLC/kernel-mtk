@@ -68,6 +68,7 @@ struct rpmb_ioc_param {
 #define RPMB_SZ_MAC   32
 #define RPMB_SZ_DATA  256
 #define RPMB_SZ_NONCE 16
+#define RPMB_IOC_MAX_BYTES (512L * 256) /* sync from linux/mmc/ioctl.h */
 
 struct s_rpmb {
 	unsigned char stuff[RPMB_SZ_STUFF];

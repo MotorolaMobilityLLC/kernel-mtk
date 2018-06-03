@@ -2735,9 +2735,13 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -EFAULT;
 	}
 
-	/* limit R/W arguments */
+	/* limit R/W arguments : less than RPMB area size
+	 * follow block.c: limit transfer size 128K(don't use
+	 * vmalloc for system performance)
+	 */
 	if ((param.data_len + param.addr * 256)
-		> card->ext_csd.raw_rpmb_size_mult * 128 * 1024)
+		> card->ext_csd.raw_rpmb_size_mult * 128 * 1024 ||
+		param.data_len > RPMB_IOC_MAX_BYTES)
 		return -EINVAL;
 
 	if (!param.key || !param.data)
@@ -2746,8 +2750,14 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	ukey = param.key;
 	udata = param.data;
 	param.key = kmalloc(32, GFP_KERNEL);
-	param.data = kmalloc(param.data_len, GFP_KERNEL);
 
+	/* follow block.c :  at least one block(RPMB
+	 * block size is:256) is allocated
+	 */
+	if (param.data_len < RPMB_SZ_DATA)
+		param.data = kmalloc(RPMB_SZ_DATA, GFP_KERNEL);
+	else
+		param.data = kmalloc(param.data_len, GFP_KERNEL);
 	if (param.key) {
 		err = copy_from_user(param.key, ukey, 32);
 		if (err != 0) {
