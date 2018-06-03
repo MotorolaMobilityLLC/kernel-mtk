@@ -79,6 +79,12 @@ config PINCTRL_MT6763
 	depends on !ARCH_MEDIATEK && MACH_MT6763
 	select PINCTRL_MTK_COMMON
 
+config PINCTRL_MT6775
+	bool "Mediatek MT6775 pin control"
+	default n
+	depends on (!ARCH_MEDIATEK) && (MACH_MT6775)
+	select PINCTRL_MTK_COMMON
+
 config PINCTRL_MT6799
 	bool "Mediatek MT699 pin control"
 	default n
