@@ -112,6 +112,7 @@ enum VpuCoreState {
 enum VpuPowerOnType {
 	VPT_PRE_ON		= 1,	/* power on previously by setPower */
 	VPT_ENQUE_ON	= 2,	/* power on by enque */
+	VPT_IMT_OFF		= 3,	/* power on by enque, but want to immediately off(when exception) */
 };
 
 
@@ -250,6 +251,12 @@ void vpu_hw_lock(struct vpu_user *user);
  * @user        the user asking to release vpu's lock
  */
 void vpu_hw_unlock(struct vpu_user *user);
+
+/**
+ * vpu_quick_suspend - suspend operation.
+ */
+int vpu_quick_suspend(int core);
+
 
 /**
  * vpu_alloc_shared_memory - allocate a memory, which shares with VPU
