@@ -74,7 +74,7 @@
 #ifdef VCODEC_DVFS_V2
 #include <linux/slab.h>
 #include "dvfs_v2.h"
-#define DVFS_DEBUG pr_debug
+#define DVFS_DEBUG(...)
 #else
 #define DVFS_DEBUG(...)
 #endif
