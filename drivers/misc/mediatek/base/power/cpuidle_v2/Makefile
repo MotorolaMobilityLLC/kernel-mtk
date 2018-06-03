@@ -6,8 +6,3 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 
 obj-y += mtk_cpuidle.o
 
-ifneq ($(CONFIG_ARM64), y)
-obj-y += cpu_dormant-v7.o
-else
-obj-y += cpu_dormant.o
-endif

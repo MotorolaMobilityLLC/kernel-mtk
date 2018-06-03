@@ -83,7 +83,7 @@ struct last_reboot_reason {
 	uint32_t sodi_data;
 	uint32_t spm_suspend_data;
 	uint32_t spm_common_scenario_data;
-	uint64_t cpu_dormant[NR_CPUS];
+	uint32_t mtk_cpuidle_footprint[NR_CPUS];
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
 
@@ -954,18 +954,18 @@ unsigned int *aee_rr_rec_mcdi_wfi(void)
 	return NULL;
 }
 
-unsigned long *aee_rr_rec_cpu_dormant(void)
+unsigned long *aee_rr_rec_mtk_cpuidle_footprint_va(void)
 {
 	if (ram_console_buffer)
-		return (unsigned long *)&RR_LINUX->cpu_dormant;
+		return (unsigned long *)&RR_LINUX->mtk_cpuidle_footprint;
 	else
 		return NULL;
 }
 
-unsigned long *aee_rr_rec_cpu_dormant_pa(void)
+unsigned long *aee_rr_rec_mtk_cpuidle_footprint_pa(void)
 {
 	if (ram_console_buffer_pa)
-		return (unsigned long *)&RR_LINUX_PA->cpu_dormant;
+		return (unsigned long *)&RR_LINUX_PA->mtk_cpuidle_footprint;
 	else
 		return NULL;
 }
@@ -2000,9 +2000,9 @@ void aee_rr_show_spm_common_scenario(struct seq_file *m)
 	seq_printf(m, "spm_common_scenario: 0x%x\n", LAST_RRR_VAL(spm_common_scenario_data));
 }
 
-void aee_rr_show_cpu_dormant(struct seq_file *m, int cpu)
+void aee_rr_show_mtk_cpuidle_footprint(struct seq_file *m, int cpu)
 {
-	seq_printf(m, "  cpu_dormant: 0x%llx\n", LAST_RRR_VAL(cpu_dormant[cpu]));
+	seq_printf(m, "  mtk_cpuidle_footprint: 0x%x\n", LAST_RRR_VAL(mtk_cpuidle_footprint[cpu]));
 }
 
 void aee_rr_show_clk(struct seq_file *m)
@@ -2719,7 +2719,7 @@ last_rr_show_cpu_t aee_rr_show_cpu[] = {
 	aee_rr_show_last_irq_exit,
 	aee_rr_show_jiffies_last_irq_exit,
 	aee_rr_show_hotplug_footprint,
-	aee_rr_show_cpu_dormant,
+	aee_rr_show_mtk_cpuidle_footprint,
 };
 
 last_rr_show_t aee_rr_last_xxx[] = {

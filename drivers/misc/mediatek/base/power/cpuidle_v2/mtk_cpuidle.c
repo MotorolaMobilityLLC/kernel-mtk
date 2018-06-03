@@ -13,8 +13,10 @@
  */
 
 #include <linux/cpuidle.h>
+#include <linux/cpu_pm.h>
 #include <linux/irqchip/mtk-gic.h>
 #include <linux/of_address.h>
+#include <linux/of_irq.h>
 #include <linux/of.h>
 #include <linux/psci.h>
 
@@ -24,368 +26,248 @@
 #include <asm/neon.h>
 #include <asm/suspend.h>
 
-/* #include <mt-plat/mt_dbg.h> */
+#include <mt-plat/mtk_dbg.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
+
+#include <mtk_clkmgr.h>
+#include <mtk_cpuidle.h>
 #if defined(CONFIG_MTK_RAM_CONSOLE) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include <mtk_secure_api.h>
 #endif
-#include <mtk_clkmgr.h>
-
-#include "mtk_cpuidle.h"
-#include "mtk_spm.h"
-#include "mtk_spm_misc.h"
-
-#define TAG "[MTK_CPUIDLE] "
-
-#define dormant_err(fmt, args...)	pr_err(TAG fmt, ##args)
-#define dormant_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
-#define dormant_debug(fmt, args...)	pr_debug(TAG fmt, ##args)
+#include <mtk_spm.h>
+#include <mtk_spm_misc.h>
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-unsigned long *sleep_aee_rec_cpu_dormant_pa;
-unsigned long *sleep_aee_rec_cpu_dormant_va;
+static volatile void __iomem *mtk_cpuidle_aee_phys_addr;
+static volatile void __iomem *mtk_cpuidle_aee_virt_addr;
 #endif
 
-static unsigned long gic_id_base;
-static unsigned int kp_irq_bit;
-static unsigned int conn_wdt_irq_bit;
-static unsigned int lowbattery_irq_bit;
-static unsigned int md1_wdt_irq_bit;
+static unsigned int kp_irq_nr;
+static unsigned int conn_wdt_irq_nr;
+static unsigned int lowbattery_irq_nr;
+static unsigned int md1_wdt_irq_nr;
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-static unsigned int c2k_wdt_irq_bit;
+static unsigned int c2k_wdt_irq_nr;
 #endif
 #endif
 
-#define CPUIDLE_CPU_IDLE_STA CPU_IDLE_STA
-#define CPUIDLE_CPU_IDLE_STA_OFFSET 10
-#define CPUIDLE_SPM_WAKEUP_MISC SPM_WAKEUP_MISC
-#define CPUIDLE_SPM_WAKEUP_STA SPM_WAKEUP_STA
-#define CPUIDLE_WAKE_SRC_R12_KP_IRQ_B WAKE_SRC_R12_KP_IRQ_B
-#define CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B WAKE_SRC_R12_CONN_WDT_IRQ_B
-#define CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B WAKE_SRC_R12_LOWBATTERY_IRQ_B
-#define CPUIDLE_WAKE_SRC_R12_MD1_WDT_B WAKE_SRC_R12_MD1_WDT_B
-#define CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B WAKE_SRC_R12_C2K_WDT_IRQ_B
+#define CPU_IDLE_STA_OFFSET 10
 
-#define MT_CPUIDLE_TIME_PROFILING 0
+static unsigned long dbg_data[40];
+static int mtk_cpuidle_initialized;
 
-#if MT_CPUIDLE_TIME_PROFILING
-#define MT_CPUIDLE_TIMESTAMP_COUNT 16
-#else
-#define MT_CPUIDLE_TIMESTAMP_COUNT 0
+static void mtk_spm_irq_set_pending(int wakeup_src, int irq_nr)
+{
+	if (spm_read(SPM_WAKEUP_STA) & wakeup_src)
+		mt_irq_set_pending(irq_nr);
+}
+
+static void mtk_spm_wakeup_src_restore(void)
+{
+	/* Set the pending bit for spm wakeup source that is edge triggerd */
+	mtk_spm_irq_set_pending(WAKE_SRC_R12_KP_IRQ_B, kp_irq_nr);
+	mtk_spm_irq_set_pending(WAKE_SRC_R12_CONN_WDT_IRQ_B, conn_wdt_irq_nr);
+	mtk_spm_irq_set_pending(WAKE_SRC_R12_LOWBATTERY_IRQ_B, lowbattery_irq_nr);
+	mtk_spm_irq_set_pending(WAKE_SRC_R12_MD1_WDT_B, md1_wdt_irq_nr);
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
+	mtk_spm_irq_set_pending(WAKE_SRC_R12_C2K_WDT_IRQ_B, c2k_wdt_irq_nr);
 #endif
-unsigned long long mt_cpuidle_timestamp[CONFIG_NR_CPUS][MT_CPUIDLE_TIMESTAMP_COUNT];
-unsigned long long timer_data[CONFIG_NR_CPUS][8];
-unsigned long dbg_data[40];
+#endif
+}
 
-static int mt_dormant_initialized;
+static void mtk_cpuidle_timestamp_init(void)
+{
+#if MTK_CPUIDLE_TIME_PROFILING
+	int i, k;
 
+	for (i = 0; i < CONFIG_NR_CPUS; i++)
+		for (k = 0; k < MTK_CPUIDLE_TIMESTAMP_COUNT; k++)
+			mtk_cpuidle_time[i][k] = 0;
+
+	kernel_smc_msg(0, 1, virt_to_phys(mtk_cpuidle_timestamp_log));
+#endif
+}
+
+static void mtk_cpuidle_timestamp_print(void)
+{
+#if MTK_CPUIDLE_TIME_PROFILING
+	int i;
+
+	request_uart_to_wakeup();
+
+	for (i = 0; i < MTK_CPUIDLE_TIMESTAMP_COUNT; i++)
+		pr_err("CPU%d,Time%d,%llu\n", cpu, i, mtk_cpuidle_time[cpu][i]);
+#endif
+}
+
+static void mtk_cpuidle_ram_console_init(void)
+{
 #ifdef CONFIG_MTK_RAM_CONSOLE
-#define MT_CPUIDLE_FOOTPRINT_LOG(cid, idx) (sleep_aee_rec_cpu_dormant_va[cid] |= (1 << idx))
-#define MT_CPUIDLE_FOOTPRINT_LOG_CLEAR(cid) (sleep_aee_rec_cpu_dormant_va[cid] = 0)
-#else
-#define MT_CPUIDLE_FOOTPRINT_LOG(cid, idx)
-#define MT_CPUIDLE_FOOTPRINT_LOG_CLEAR(cid)
+	mtk_cpuidle_aee_virt_addr = aee_rr_rec_mtk_cpuidle_footprint_va();
+	mtk_cpuidle_aee_phys_addr = aee_rr_rec_mtk_cpuidle_footprint_pa();
+
+	WARN_ON(!mtk_cpuidle_aee_virt_addr || !mtk_cpuidle_aee_phys_addr);
+
+	kernel_smc_msg(0, 2, (long) mtk_cpuidle_aee_phys_addr);
 #endif
-
-#if MT_CPUIDLE_TIME_PROFILING
-#define MT_CPUIDLE_TIMESTAMP_LOG(cpuid, idx) (mt_cpuidle_timestamp[cpuid][idx] = arch_counter_get_cntvct())
-#else
-#define MT_CPUIDLE_TIMESTAMP_LOG(cpuid, idx)
-#endif
-
-#define read_cpu_idx()						\
-	({							\
-		((read_cluster_id() >> 6) | read_cpu_id());	\
-	})
-
-unsigned int __weak *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
-{
-	return p;
-}
-void __weak mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid) { }
-void __weak mt_copy_dbg_regs(int to, int from) { }
-void __weak mt_save_banked_registers(unsigned int *container) { }
-void __weak mt_restore_banked_registers(unsigned int *container) { }
-void __weak mt_gic_cpu_init_for_low_power(void) { }
-void __weak switch_armpll_ll_hwmode(int enable) { }
-void __weak switch_armpll_l_hwmode(int enable) { }
-
-void stop_generic_timer(void)
-{
-	write_cntpctl(read_cntpctl() & ~1);
 }
 
-void start_generic_timer(void)
-{
-	write_cntpctl(read_cntpctl() | 1);
-}
-
-struct set_and_clear_regs {
-	volatile unsigned int set[32], clear[32];
+static const struct of_device_id kp_irq_match[] = {
+	{ .compatible = "mediatek,mt6757-keypad" },
+	{},
+};
+static const struct of_device_id consys_irq_match[] = {
+	{ .compatible = "mediatek,mt6757-consys" },
+	{},
+};
+static const struct of_device_id auxadc_irq_match[] = {
+	{ .compatible = "mediatek,mt6757-auxadc" },
+	{},
+};
+static const struct of_device_id mdcldma_irq_match[] = {
+	{ .compatible = "mediatek,mdcldma" },
+	{},
+};
+static const struct of_device_id ap2c2k_irq_match[] = {
+	{ .compatible = "mediatek,ap2c2k_ccif" },
+	{},
 };
 
-struct interrupt_distributor {
-	volatile unsigned int control;			/* 0x000 */
-	const unsigned int controller_type;
-	const unsigned int implementer;
-	const char padding1[116];
-	volatile unsigned int security[32];		/* 0x080 */
-	struct set_and_clear_regs enable;		/* 0x100 */
-	struct set_and_clear_regs pending;		/* 0x200 */
-	struct set_and_clear_regs active;		/* 0x300 */
-	volatile unsigned int priority[256];		/* 0x400 */
-	volatile unsigned int target[256];		/* 0x800 */
-	volatile unsigned int configuration[64];	/* 0xC00 */
-	const char padding3[256];			/* 0xD00 */
-	volatile unsigned int non_security_access_control[64]; /* 0xE00 */
-	volatile unsigned int software_interrupt;	/* 0xF00 */
-	volatile unsigned int sgi_clr_pending[4];	/* 0xF10 */
-	volatile unsigned int sgi_set_pending[4];	/* 0xF20 */
-	const char padding4[176];
-
-	unsigned const int peripheral_id[4];		/* 0xFE0 */
-	unsigned const int primecell_id[4];		/* 0xFF0 */
-};
-
-static void restore_gic_spm_irq(struct interrupt_distributor *id, int wake_src, int *irq_bit)
+static u32 get_dts_node_irq_nr(const struct of_device_id *matches, int index)
 {
-	int i, j;
+	const struct of_device_id *matched_np;
+	struct device_node *node;
+	unsigned int irq_nr;
 
-	if (spm_read(CPUIDLE_SPM_WAKEUP_STA) & wake_src) {
-		i = *irq_bit / 32;
-		j = *irq_bit % 32;
-		id->pending.set[i] |= (1 << j);
+	node = of_find_matching_node_and_match(NULL, matches, &matched_np);
+	if (!node)
+		pr_err("error: cannot find node [%s]\n", matches->compatible);
+
+	irq_nr = irq_of_parse_and_map(node, index);
+	if (!irq_nr)
+		pr_err("error: cannot property_read [%s]\n", matches->compatible);
+
+	of_node_put(node);
+	pr_debug("compatible = %s, irq_nr = %u\n", matched_np->compatible, irq_nr);
+
+	return irq_nr;
+}
+
+static int mtk_cpuidle_dts_map(void)
+{
+	kp_irq_nr = get_dts_node_irq_nr(kp_irq_match, 0);
+	conn_wdt_irq_nr = get_dts_node_irq_nr(consys_irq_match, 1);
+	lowbattery_irq_nr = get_dts_node_irq_nr(auxadc_irq_match, 0);
+	md1_wdt_irq_nr = get_dts_node_irq_nr(mdcldma_irq_match, 2);
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
+	c2k_wdt_irq_nr = get_dts_node_irq_nr(ap2c2k_irq_match, 1);
+#endif
+#endif
+
+	return 0;
+}
+
+static void mtk_dbg_save_restore(int cpu, int save)
+{
+	unsigned int cpu_idle_sta;
+	int nr_cpu_bit = (1 << CONFIG_NR_CPUS) - 1;
+
+	cpu_idle_sta = (spm_read(CPU_IDLE_STA) >> CPU_IDLE_STA_OFFSET) | (1 << cpu);
+
+	if ((cpu_idle_sta & nr_cpu_bit) == nr_cpu_bit) {
+		if (save)
+			mt_save_dbg_regs((unsigned int *) dbg_data, cpu);
+		else
+			mt_restore_dbg_regs((unsigned int *) dbg_data, cpu);
+	} else {
+		if (!save)
+			mt_copy_dbg_regs(cpu, __builtin_ffs(~cpu_idle_sta) - 1);
 	}
 }
 
-static void restore_edge_gic_spm_irq(unsigned long gic_distributor_address)
+static void mtk_platform_save_context(int cpu, int idx)
 {
-	struct interrupt_distributor *id = (struct interrupt_distributor *) gic_distributor_address;
-	unsigned int backup;
-
-	backup = id->control;
-	id->control = 0;
-
-	/* Set the pending bit for spm wakeup source that is edge triggerd */
-	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_KP_IRQ_B, &kp_irq_bit);
-	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B, &conn_wdt_irq_bit);
-	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B, &lowbattery_irq_bit);
-	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_MD1_WDT_B, &md1_wdt_irq_bit);
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B, &c2k_wdt_irq_bit);
-#endif
-#endif
-
-	id->control = backup;
+	mtk_dbg_save_restore(cpu, 1);
 }
 
-static void mt_cluster_restore(int flags)
+static void mtk_platform_restore_context(int cpu, int idx)
 {
-#if defined(CONFIG_ARM_GIC_V3)
-	mt_gic_cpu_init_for_low_power();
-#endif
+	if (idx > MTK_MCDI_MODE)
+		mtk_spm_wakeup_src_restore();
+
+	mtk_dbg_save_restore(cpu, 0);
 }
 
-void mt_cpu_save(void)
+int mtk_enter_idle_state(int idx)
 {
-	unsigned int sleep_sta;
-	int cpu_idx;
+	int cpu, ret;
 
-	cpu_idx = read_cpu_id();
+	if (!mtk_cpuidle_initialized)
+		return -EOPNOTSUPP;
 
-	mt_save_generic_timer((unsigned int *)timer_data[cpu_idx], 0x0);
-	stop_generic_timer();
+	cpu = smp_processor_id();
 
-	sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> CPUIDLE_CPU_IDLE_STA_OFFSET) & 0xff;
+	mtk_cpuidle_footprint_log(cpu, 0);
+	mtk_cpuidle_timestamp_log(cpu, 0);
+	ret = cpu_pm_enter();
+	if (!ret) {
+		mtk_cpuidle_footprint_log(cpu, 1);
 
-	if ((sleep_sta | (1 << cpu_idx)) == 0xff) /* last core */
-		mt_save_dbg_regs((unsigned int *)dbg_data, cpu_idx);
+		if (cpu < 4)
+			switch_armpll_ll_hwmode(1);
+		else if (cpu < 8)
+			switch_armpll_l_hwmode(1);
+
+		mtk_cpuidle_footprint_log(cpu, 2);
+		mtk_platform_save_context(cpu, idx);
+
+		mtk_cpuidle_footprint_log(cpu, 3);
+		/*
+		 * Pass idle state index to cpu_suspend which in turn will
+		 * call the CPU ops suspend protocol with idle index as a
+		 * parameter.
+		 */
+		ret = arm_cpuidle_suspend(idx);
+
+		mtk_cpuidle_footprint_log(cpu, 12);
+		mtk_platform_restore_context(cpu, idx);
+
+		mtk_cpuidle_footprint_log(cpu, 13);
+
+		if (cpu < 4)
+			switch_armpll_ll_hwmode(0);
+		else if (cpu < 8)
+			switch_armpll_l_hwmode(0);
+
+		mtk_cpuidle_footprint_log(cpu, 14);
+
+		cpu_pm_exit();
+
+		mtk_cpuidle_footprint_clr(cpu);
+		mtk_cpuidle_timestamp_log(cpu, 15);
+
+		mtk_cpuidle_timestamp_print();
+	}
+
+	return ret ? -1 : idx;
 }
 
-void mt_cpu_restore(void)
+int mtk_cpuidle_init(void)
 {
-	unsigned int sleep_sta;
-	int cpu_idx;
-
-	cpu_idx = read_cpu_id();
-
-	sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> CPUIDLE_CPU_IDLE_STA_OFFSET) & 0xff;
-	sleep_sta = (sleep_sta | (1 << cpu_idx));
-
-	if (sleep_sta == 0xff) /* first core */
-		mt_restore_dbg_regs((unsigned int *)dbg_data, cpu_idx);
-	else
-		mt_copy_dbg_regs(cpu_idx, __builtin_ffs(~sleep_sta) - 1);
-
-	mt_restore_generic_timer((unsigned int *)timer_data, 0x0);
-}
-
-void mt_platform_save_context(int flags)
-{
-	mt_cpu_save();
-}
-
-void mt_platform_restore_context(int flags)
-{
-	mt_cluster_restore(flags);
-	mt_cpu_restore();
-
-	if (IS_DORMANT_GIC_OFF(flags))
-		restore_edge_gic_spm_irq(gic_id_base);
-}
-
-int mt_cpu_dormant(unsigned long flags)
-{
-	int i, cpu_idx;
-
-	if (!mt_dormant_initialized)
-		return MT_CPU_DORMANT_BYPASS;
-
-	cpu_idx = read_cpu_idx();
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 0);
-	MT_CPUIDLE_TIMESTAMP_LOG(cpu_idx, 0);
-	if (cpu_idx < 4)
-		switch_armpll_ll_hwmode(1);
-	else if (cpu_idx < 8)
-		switch_armpll_l_hwmode(1);
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 1);
-	kernel_neon_begin();
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 2);
-	mt_platform_save_context(flags);
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 3);
-	arm_cpuidle_suspend(2);
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 12);
-	mt_platform_restore_context(flags);
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 13);
-	local_fiq_enable();
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 14);
-	kernel_neon_end();
-
-	MT_CPUIDLE_FOOTPRINT_LOG(cpu_idx, 15);
-	if (cpu_idx < 4)
-		switch_armpll_ll_hwmode(0);
-	else if (cpu_idx < 8)
-		switch_armpll_l_hwmode(0);
-
-	MT_CPUIDLE_FOOTPRINT_LOG_CLEAR(cpu_idx);
-	MT_CPUIDLE_TIMESTAMP_LOG(cpu_idx, 15);
-#if MT_CPUIDLE_TIME_PROFILING
-	request_uart_to_wakeup();
-#endif
-	for (i = 0; i < MT_CPUIDLE_TIMESTAMP_COUNT; i++)
-		dormant_err("CPU%d,Timestamp%d,%llu\n", cpu_idx, i, mt_cpuidle_timestamp[cpu_idx][i]);
-
-	return 0;
-}
-
-static unsigned long get_dts_node_address(char *node_compatible, int index)
-{
-	unsigned long node_address = 0;
-	struct device_node *node;
-
-	if (!node_compatible)
+	if (mtk_cpuidle_initialized == 1)
 		return 0;
 
-	node = of_find_compatible_node(NULL, NULL, node_compatible);
-	if (!node)
-		dormant_err("error: cannot find node [%s]\n", node_compatible);
+	mtk_cpuidle_dts_map();
 
-	node_address = (unsigned long)of_iomap(node, index);
-	if (!node_address)
-		dormant_err("error: cannot iomap [%s]\n", node_compatible);
+	mtk_cpuidle_timestamp_init();
 
-	of_node_put(node);
+	mtk_cpuidle_ram_console_init();
 
-	return node_address;
-}
-
-static u32 get_dts_node_irq_bit(char *node_compatible, const int int_size, int int_offset)
-{
-	struct device_node *node;
-	u32 node_interrupt[int_size];
-	unsigned int irq_bit;
-
-	if (!node_compatible)
-		return 0;
-
-	node = of_find_compatible_node(NULL, NULL, node_compatible);
-	if (!node)
-		dormant_err("error: cannot find node [%s]\n", node_compatible);
-
-	if (of_property_read_u32_array(node, "interrupts", node_interrupt, int_size))
-		dormant_err("error: cannot property_read [%s]\n", node_compatible);
-	/* irq[0] = 0 => spi */
-	irq_bit = ((1 - node_interrupt[int_offset]) << 5) + node_interrupt[int_offset+1];
-	of_node_put(node);
-	dormant_debug("compatible = %s, irq_bit = %u\n", node_compatible, irq_bit);
-
-	return irq_bit;
-}
-
-#if defined(CONFIG_MACH_MT6757)
-static void get_dts_nodes_address(void)
-{
-	gic_id_base = get_dts_node_address("arm,gic-v3", 0);
-}
-
-static void get_dts_nodes_irq_bit(void)
-{
-	kp_irq_bit = get_dts_node_irq_bit("mediatek,mt6757-keypad", 3, 0);
-	conn_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mt6757-consys", 6, 3);
-	lowbattery_irq_bit = get_dts_node_irq_bit("mediatek,mt6757-auxadc", 3, 0);
-	md1_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdcldma", 9, 6);
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
-	c2k_wdt_irq_bit = get_dts_node_irq_bit("mediatek,ap2c2k_ccif", 6, 3);
-#endif
-#endif
-}
-#endif
-
-static int mt_dormant_dts_map(void)
-{
-	get_dts_nodes_address();
-	get_dts_nodes_irq_bit();
-
-	return 0;
-}
-
-int mt_cpu_dormant_init(void)
-{
-	int i, k;
-
-	if (mt_dormant_initialized == 1)
-		return MT_CPU_DORMANT_BYPASS;
-
-	mt_dormant_dts_map();
-
-	for (i = 0; i < num_possible_cpus(); i++)
-		for (k = 0; k < MT_CPUIDLE_TIMESTAMP_COUNT; k++)
-			mt_cpuidle_timestamp[i][k] = 0;
-#if MT_CPUIDLE_TIME_PROFILING
-	kernel_smc_msg(0, 1, virt_to_phys(mt_cpuidle_timestamp));
-#endif
-
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	sleep_aee_rec_cpu_dormant_va = aee_rr_rec_cpu_dormant();
-	sleep_aee_rec_cpu_dormant_pa = aee_rr_rec_cpu_dormant_pa();
-
-	WARN_ON(!sleep_aee_rec_cpu_dormant_va || !sleep_aee_rec_cpu_dormant_pa);
-
-	kernel_smc_msg(0, 2, (long) sleep_aee_rec_cpu_dormant_pa);
-#endif
-
-	mt_dormant_initialized = 1;
+	mtk_cpuidle_initialized = 1;
 
 	return 0;
 }
