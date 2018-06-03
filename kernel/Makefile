@@ -3,6 +3,7 @@
 #
 
 subdir-ccflags-y += -Werror
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtprof
 
 obj-y     = fork.o exec_domain.o panic.o \
 	    cpu.o exit.o softirq.o resource.o \
