@@ -186,10 +186,10 @@ void init_cc_gpr7_interrupt(struct ssi_drvdata *drvdata)
 	unsigned int val;
 	void __iomem *cc_base = drvdata->cc_base;
 
-	/* Clear all pending interrupts */
+	/* Clear all pending interrupts except GPR7 interrupts */
 	val = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_IRR));
 	SSI_LOG_DEBUG("IRR=0x%08X\n", val);
-	WRITE_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_ICR), val);
+	WRITE_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_ICR), val & (~SSI_GPR7_IRQ_MASK));
 
 	/* Unmask relevant interrupt cause */
 	WRITE_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_IMR),~(SSI_GPR7_IRQ_MASK));
