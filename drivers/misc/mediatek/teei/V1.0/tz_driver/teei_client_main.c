@@ -1039,7 +1039,6 @@ return_fn:
 }
 
 
-
 /**
  * @brief
  *
@@ -1062,17 +1061,13 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	if (cmd == TEEI_CANCEL_COMMAND) {
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
 
-		ut_pm_mutex_lock(&pm_mutex);
-
-		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
-			IMSG_ERROR("Error: copy from user error\n");
-			ut_pm_mutex_unlock(&pm_mutex);
+		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE))
 			return -EINVAL;
-		}
+
+		if ((void *)cancel_message_buff != NULL)
+			return -EINVAL;
 
 		send_cancel_command(0);
-
-		ut_pm_mutex_unlock(&pm_mutex);
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
 		return 0;
@@ -1350,6 +1345,7 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	return retVal;
 }
 
+#ifdef CONFIG_ARM64
 /**
  * @brief
  * @fn teei_client_unioctl is used for 64bit system
@@ -1658,7 +1654,7 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	up(&api_lock);
 	return retVal;
 }
-
+#endif
 
 /**
  * @brief		The open operation of /dev/teei_client device node.
@@ -1895,7 +1891,11 @@ static int teei_client_release(struct inode *inode, struct file *file)
  */
 static const struct file_operations teei_client_fops = {
 	.owner = THIS_MODULE,
+#ifdef CONFIG_ARM64
 	.unlocked_ioctl = teei_client_unioctl,
+#else
+	.unlocked_ioctl = teei_client_ioctl,
+#endif
 	.compat_ioctl = teei_client_ioctl,
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,

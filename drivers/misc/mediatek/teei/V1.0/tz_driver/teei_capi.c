@@ -120,7 +120,7 @@ int teei_client_context_init(void *private_data, void *argp)
 	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	if (dev_found) {
-		strcpy(temp_cont->tee_name, ctx.name);
+		strncpy(temp_cont->tee_name, ctx.name, TEE_NAME_SIZE);
 		retVal = teei_smc_call(TEEI_CMD_TYPE_INITILIZE_CONTEXT, dev_file_id,
 								0, 0, 0, 0, name, 255, resp_flag, 4, NULL,
 								NULL, 0, NULL, &error_code, &(temp_cont->cont_lock));
@@ -175,7 +175,7 @@ int teei_client_context_close(void *private_data, void *argp)
 	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	if (dev_found) {
-		strcpy(temp_cont->tee_name, ctx.name);
+		strncpy(temp_cont->tee_name, ctx.name, TEE_NAME_SIZE);
 		retVal = teei_smc_call(TEEI_CMD_TYPE_FINALIZE_CONTEXT, dev_file_id,
 								0, 0, 0, 0,
 								NULL, 0, resp_flag, 4, NULL, NULL,
