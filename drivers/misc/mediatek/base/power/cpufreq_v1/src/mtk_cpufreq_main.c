@@ -924,18 +924,26 @@ static void _mt_cpufreq_dvfs_hps_request_wrapper(struct mt_cpu_dvfs *p, int new_
 	/* action switch */
 	switch (action & ~CPU_TASKS_FROZEN) {
 	case CPU_ONLINE:
+		aee_record_cpu_dvfs_cb(2);
 		if (act_p->armpll_is_available == 0 && act_p == p)
 			act_p->armpll_is_available = 1;
+#ifndef CONFIG_HYBRID_CPU_DVFS
 		cpufreq_ver("DVFS - %s, CPU_ONLINE to %d\n", cpu_dvfs_get_name(p), new_opp_idx);
 		_mt_cpufreq_set(p->mt_policy, p, new_opp_idx, MT_CPU_DVFS_ONLINE);
+#endif
 		break;
 	case CPU_DOWN_PREPARE:
+		aee_record_cpu_dvfs_cb(3);
+#ifndef CONFIG_HYBRID_CPU_DVFS
 		cpufreq_ver("DVFS - %s, CPU_DOWN_PREPARE to %d\n", cpu_dvfs_get_name(p), new_opp_idx);
 		_mt_cpufreq_set(p->mt_policy, p, new_opp_idx, MT_CPU_DVFS_DP);
+#endif
 		if (act_p->armpll_is_available == 1 && act_p == p) {
 			act_p->armpll_is_available = 0;
 #ifdef CONFIG_HYBRID_CPU_DVFS
+			aee_record_cpu_dvfs_cb(4);
 			cpuhvfs_set_cluster_on_off(arch_get_cluster_id(p->cpu_id), 0);
+			aee_record_cpu_dvfs_cb(9);
 #else
 #ifdef CLUSTER_BUCK_OFF
 			if (cpu_dvfs_is(act_p, MT_CPU_DVFS_L))
@@ -943,6 +951,7 @@ static void _mt_cpufreq_dvfs_hps_request_wrapper(struct mt_cpu_dvfs *p, int new_
 #endif
 #endif
 			act_p->mt_policy = NULL;
+			aee_record_cpu_dvfs_cb(10);
 		}
 		break;
 	default:
@@ -959,6 +968,7 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 	struct buck_ctrl_t *vproc_p;
 	int new_opp_idx;
 
+	aee_record_cpu_dvfs_cb(1);
 	/* for (i = 0; i < sizeof(cpu_dvfs_hp_action)/sizeof(cpu_dvfs_hp_action[0]); i++) { */
 	for (i = 0; i < ARRAY_SIZE(cpu_dvfs_hp_action); i++) {
 		if (cpu_dvfs_hp_action[i].cluster == cluster_id &&
@@ -989,6 +999,7 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 			cpufreq_unlock(flags);
 		}
 	}
+	aee_record_cpu_dvfs_cb(0);
 }
 
 static int turbo_core_match(unsigned int *cpus)
