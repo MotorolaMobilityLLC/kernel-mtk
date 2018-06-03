@@ -2888,6 +2888,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	firmware {
 		android {
 			compatible = "android,firmware";
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+			vbmeta {
+				compatible = "android,vbmeta";
+				parts = "vbmeta,boot,system,vendor";
+			};
+#endif
 			fstab {
 				compatible = "android,fstab";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
@@ -2897,7 +2903,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,avb";
+#else
 					fsmgr_flags = "wait,verify";
+#endif
 #else
 					fsmgr_flags = "wait";
 #endif
@@ -2911,16 +2921,24 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 #ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,avb";
+#else
 					fsmgr_flags = "wait,verify";
+#endif
 #else
 					fsmgr_flags = "wait";
 #endif
 #else
-					#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,slotselect,avb";
+#else
 					fsmgr_flags = "wait,slotselect,verify";
-					#else
+#endif
+#else
 					fsmgr_flags = "wait,slotselect";
-					#endif
+#endif
 #endif
 				};
 #endif
@@ -2932,13 +2950,25 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
-					fsmgr_flags = "wait";
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,avb";
 #else
-					#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,verify";
+#endif
+#else
+					fsmgr_flags = "wait";
+#endif
+#else
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,slotselect,avb";
+#else
 					fsmgr_flags = "wait,slotselect,verify";
-					#else
+#endif
+#else
 					fsmgr_flags = "wait,slotselect";
-					#endif
+#endif
 #endif
 				};
 #endif
