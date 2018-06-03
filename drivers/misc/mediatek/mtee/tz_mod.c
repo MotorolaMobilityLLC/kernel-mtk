@@ -1369,6 +1369,9 @@ TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
 {
 	struct ree_service_chunk_mem *chunkmem;
 
+	if (!tz_cma)
+		return TZ_RESULT_ERROR_OUT_OF_MEMORY;
+
 	/* get parameters */
 	chunkmem = (struct ree_service_chunk_mem *)uparam;
 
