@@ -750,9 +750,10 @@ int m4u_alloc_mva_sg(port_mva_info_t *port_info,
 	    | (port_info->security ? M4U_PROT_SEC : 0);
 
 	if (port_info->flags == M4U_FLAGS_FIX_MVA) {
-		if (port_info->iova_end > port_info->iova_start + port_info->BufSize)
+		if (port_info->iova_end > port_info->iova_start + port_info->BufSize) {
+			port_info->pRetMVABuf = &port_info->iova_start;
 			flags = M4U_FLAGS_START_FROM;
-		else
+		} else
 			flags = M4U_FLAGS_FIX_MVA;
 	}
 	ret = m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table,
