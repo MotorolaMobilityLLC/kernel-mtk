@@ -355,3 +355,13 @@ struct task_struct *met_kthread_create_on_cpu(int (*threadfn)(void *data),
 }
 EXPORT_SYMBOL(met_kthread_create_on_cpu);
 
+int met_smp_call_function_single(
+	int cpu,
+	smp_call_func_t func,
+	void *info,
+	int wait)
+{
+	return smp_call_function_single(cpu, func, info, wait);
+}
+EXPORT_SYMBOL(met_smp_call_function_single);
+
