@@ -23,6 +23,10 @@
 #include "mtk_hps_internal.h"
 #include <trace/events/mtk_events.h>
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mtk_iccs.h>
+#endif
+
 /*
  * static
  */
@@ -495,6 +499,14 @@ void hps_algo_main(void)
 	char *pwrseq_ptr = str_pwrseq;
 	char *bigtsk_ptr = str_bigtsk;
 	static unsigned int hrtbt_dbg;
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	unsigned char real_online_power_state_bitmask = 0;
+	unsigned char real_target_power_state_bitmask = 0;
+	unsigned char iccs_online_power_state_bitmask = 0;
+	unsigned char iccs_target_power_state_bitmask = iccs_get_target_power_state_bitmask();
+	unsigned char target_cache_shared_state_bitmask = 0;
+#endif
+
 	/* Initial value */
 	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
 	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
@@ -617,6 +629,38 @@ HPS_ALGO_END:
 	if (hps_sys.cluster_info[hps_sys.root_cluster_id].target_core_num <= 0)
 		hps_sys.cluster_info[hps_sys.root_cluster_id].target_core_num = 1;
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	real_online_power_state_bitmask = 0;
+	real_target_power_state_bitmask = 0;
+	for (i = 0; i < hps_sys.cluster_num; i++) {
+		real_online_power_state_bitmask |= ((hps_sys.cluster_info[i].online_core_num > 0) << i);
+		real_target_power_state_bitmask |= ((hps_sys.cluster_info[i].target_core_num > 0) << i);
+	}
+	iccs_online_power_state_bitmask = iccs_target_power_state_bitmask;
+	iccs_target_power_state_bitmask = real_target_power_state_bitmask;
+	iccs_get_target_state(&iccs_target_power_state_bitmask, &target_cache_shared_state_bitmask);
+
+	/*
+	 * pr_err("[%s] iccs_target_power_state_bitmask: 0x%x\n", __func__, iccs_target_power_state_bitmask);
+	 */
+
+	for (i = 0; i < hps_sys.cluster_num; i++) {
+		hps_sys.cluster_info[i].iccs_state = (((real_online_power_state_bitmask >> i) & 1) << 3) |
+						     (((real_target_power_state_bitmask >> i) & 1) << 2) |
+						     (((iccs_online_power_state_bitmask >> i) & 1) << 1) |
+						     (((iccs_target_power_state_bitmask >> i) & 1) << 0);
+
+		/*
+		 * pr_err("[%s] cluster: 0x%x iccs_state: 0x%x\n", __func__, i, hps_sys.cluster_info[i].iccs_state);
+		 */
+
+		if (hps_get_iccs_pwr_status(i) == 0x1)
+			iccs_cluster_on_off(i, 1);
+		else if (hps_get_iccs_pwr_status(i) == 0x2)
+			iccs_cluster_on_off(i, 0);
+	}
+#endif
+
 #if 1				/*Make sure that priority of power on action is higher than power down. */
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		if (hps_sys.cluster_info[i].target_core_num >
@@ -665,6 +709,21 @@ HPS_ALGO_END:
 		}
 	}
 
+#endif
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	for (i = 0; i < hps_sys.cluster_num; i++) {
+		if (hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id) !=
+				hps_sys.cluster_info[i].target_core_num) {
+			if (hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id) == 0)
+				iccs_target_power_state_bitmask &= ~(1 << i);
+			else if (hps_sys.cluster_info[i].target_core_num == 0)
+				iccs_target_power_state_bitmask |= (1 << i);
+		}
+	}
+	/*
+	 * pr_err("[%s] iccs_target_power_state_bitmask: 0x%x\n", __func__, iccs_target_power_state_bitmask);
+	 */
+	iccs_set_target_power_state_bitmask(iccs_target_power_state_bitmask);
 #endif
 HPS_END:
 	if (action_print || hrtbt_dbg) {

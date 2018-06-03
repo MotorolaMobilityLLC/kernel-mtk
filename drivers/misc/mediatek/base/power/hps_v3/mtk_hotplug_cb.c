@@ -33,6 +33,11 @@
 #include "mtk_etc.h"
 #endif
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mach/mtk_cpufreq_api.h>
+#include <mtk_iccs.h>
+#endif
+
 #define BUCK_CTRL_DBLOG		(0)
 
 static struct notifier_block cpu_hotplug_nb;
@@ -66,6 +71,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 		if (cpu < cpumask_weight(mtk_cpu_cluster0_mask)) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster0_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+				if (hps_get_iccs_pwr_status(cpu >> 2) == 0x7) {
+					iccs_set_cache_shared_state(cpu >> 2, 0);
+					break;
+				}
+#endif
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -86,6 +97,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				  cpumask_weight(mtk_cpu_cluster1_mask)))) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster1_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+				if (hps_get_iccs_pwr_status(cpu >> 2) == 0x7) {
+					iccs_set_cache_shared_state(cpu >> 2, 0);
+					break;
+				}
+#endif
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 #if BUCK_CTRL_DBLOG
@@ -146,6 +163,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				cpumask_weight(mtk_cpu_cluster2_mask))))  {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster2_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+				if (hps_get_iccs_pwr_status(cpu >> 2) == 0x7) {
+					iccs_set_cache_shared_state(cpu >> 2, 0);
+					break;
+				}
+#endif
 				/*1. Turn on ARM PLL*/
 				armpll_control(3, 1);
 
@@ -172,6 +195,13 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 		arch_get_cluster_cpus(&cpuhp_cpumask, arch_get_cluster_id(cpu));
 		cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
 		if (!cpumask_weight(&cpu_online_cpumask)) {
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+			if (hps_get_iccs_pwr_status(cpu >> 2) == 0xb) {
+				mt_cpufreq_set_iccs_frequency_by_cluster(1, cpu >> 2, iccs_get_shared_cluster_freq());
+				iccs_set_cache_shared_state(cpu >> 2, 1);
+				break;
+			}
+#endif
 			/*pr_info("Start to power off cluster %d\n", cpu/4);*/
 			if (cpu/4 == 2)
 				mtk_etc_power_off();
