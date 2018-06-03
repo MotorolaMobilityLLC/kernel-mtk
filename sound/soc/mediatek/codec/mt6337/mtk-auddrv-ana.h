@@ -308,6 +308,21 @@ typedef	int64 kal_int64;
 #define GPIO_MODE1          ((UINT32)(PMIC_REG_BASE + 0x1C28))
 #define GPIO_MODE2          ((UINT32)(PMIC_REG_BASE + 0x1C2E))
 
+/* Efuse register */
+#define OTP_DOUT_256_271       ((UINT32)(PMIC_REG_BASE + 0x123A))
+#define OTP_DOUT_272_287       ((UINT32)(PMIC_REG_BASE + 0x123C))
+#define OTP_DOUT_288_303       ((UINT32)(PMIC_REG_BASE + 0x123E))
+#define OTP_DOUT_304_319       ((UINT32)(PMIC_REG_BASE + 0x1240))
+#define OTP_DOUT_320_335       ((UINT32)(PMIC_REG_BASE + 0x1242))
+#define OTP_DOUT_336_351       ((UINT32)(PMIC_REG_BASE + 0x1244))
+#define OTP_DOUT_352_367       ((UINT32)(PMIC_REG_BASE + 0x1246))
+#define OTP_DOUT_368_383       ((UINT32)(PMIC_REG_BASE + 0x1248))
+#define OTP_DOUT_448_463       ((UINT32)(PMIC_REG_BASE + 0x1252))
+#define OTP_DOUT_464_479       ((UINT32)(PMIC_REG_BASE + 0x1254))
+#define OTP_DOUT_480_495       ((UINT32)(PMIC_REG_BASE + 0x1256))
+#define OTP_DOUT_496_511       ((UINT32)(PMIC_REG_BASE + 0x1258))
+
+
 void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask);
 uint32 Ana_Get_Reg(uint32 offset);
 
