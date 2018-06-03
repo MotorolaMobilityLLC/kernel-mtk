@@ -129,6 +129,47 @@ int mtk_chr_is_charger_exist(unsigned char *exist)
 
 /*=============== fix me==================*/
 
+/* log */
+#include <linux/string.h>
+
+char chargerlog[1000];
+#define LOG_LENGTH 500
+int chargerlog_level = 10;
+int chargerlogIdx;
+
+int charger_get_debug_level(void)
+{
+	return chargerlog_level;
+}
+
+void charger_log(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	vsprintf(chargerlog + chargerlogIdx, fmt, args);
+	va_end(args);
+	chargerlogIdx = strlen(chargerlog);
+	if (chargerlogIdx >= LOG_LENGTH) {
+		pr_err("%s", chargerlog);
+		chargerlogIdx = 0;
+		memset(chargerlog, 0, 1000);
+	}
+}
+
+void charger_log_flash(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	vsprintf(chargerlog + chargerlogIdx, fmt, args);
+	va_end(args);
+	pr_err("%s", chargerlog);
+	chargerlogIdx = 0;
+	memset(chargerlog, 0, 1000);
+}
+
+/* log */
 void _wake_up_charger(struct charger_manager *info)
 {
 	unsigned long flags;
@@ -153,7 +194,6 @@ static int _mtk_charger_change_current_setting(struct charger_manager *info)
 static int _mtk_charger_do_charging(struct charger_manager *info, bool en)
 {
 	if (info != NULL && info->do_charging) {
-		pr_err("_mtk_charger_do_charging\n");
 		info->do_charging(info, en);
 	}
 	return 0;
