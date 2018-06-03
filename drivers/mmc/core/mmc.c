@@ -2155,7 +2155,11 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	} else if (!mmc_host_is_spi(host))
 		err = mmc_deselect_cards(host);
 
-	if (!err) {
+	/*
+	 * Workaround for Hynix(H9TQ27ADFTMCUR)'s and others' issue:
+	 * not power off vcc when shutdown
+	 */
+	if (!err && is_suspend) {
 		mmc_power_off(host);
 		mmc_card_set_suspended(host->card);
 	}
