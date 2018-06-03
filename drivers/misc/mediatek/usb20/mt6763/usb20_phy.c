@@ -704,6 +704,11 @@ void usb_phy_recover(void)
 	/* wait 800 usec. */
 	udelay(800);
 
+	/* force enter device mode */
+	USBPHY_CLR32(0x6C, (0x10<<0));
+	USBPHY_SET32(0x6C, (0x2F<<0));
+	USBPHY_SET32(0x6C, (0x3F<<8));
+
 	hs_slew_rate_cal();
 
 	DBG(0, "usb recovery success\n");
