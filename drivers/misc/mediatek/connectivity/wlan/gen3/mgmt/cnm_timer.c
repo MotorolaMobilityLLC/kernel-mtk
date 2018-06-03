@@ -78,7 +78,9 @@
 *
 */
 /*----------------------------------------------------------------------------*/
-static BOOLEAN cnmTimerSetTimer(IN P_ADAPTER_T prAdapter, IN OS_SYSTIME rTimeout)
+static BOOLEAN cnmTimerSetTimer(IN P_ADAPTER_T prAdapter,
+				IN OS_SYSTIME rTimeout,
+				IN enum ENUM_TIMER_WAKELOCK_TYPE_T eType)
 {
 	P_ROOT_TIMER prRootTimer;
 	BOOLEAN fgNeedWakeLock;
@@ -89,7 +91,8 @@ static BOOLEAN cnmTimerSetTimer(IN P_ADAPTER_T prAdapter, IN OS_SYSTIME rTimeout
 
 	kalSetTimer(prAdapter->prGlueInfo, rTimeout);
 
-	if (rTimeout <= SEC_TO_SYSTIME(WAKE_LOCK_MAX_TIME)) {
+	if ((eType == TIMER_WAKELOCK_REQUEST) ||
+	    (rTimeout <= SEC_TO_SYSTIME(WAKE_LOCK_MAX_TIME) && (eType == TIMER_WAKELOCK_AUTO))) {
 		fgNeedWakeLock = TRUE;
 
 		if (!prRootTimer->fgWakeLocked) {
@@ -178,11 +181,17 @@ VOID cnmTimerDestroy(IN P_ADAPTER_T prAdapter)
 */
 /*----------------------------------------------------------------------------*/
 VOID
-cnmTimerInitTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer, IN PFN_MGMT_TIMEOUT_FUNC pfFunc, IN ULONG ulDataPtr)
+cnmTimerInitTimerOption(IN P_ADAPTER_T prAdapter,
+			IN P_TIMER_T prTimer,
+			IN PFN_MGMT_TIMEOUT_FUNC pfFunc,
+			IN ULONG ulDataPtr,
+			IN enum ENUM_TIMER_WAKELOCK_TYPE_T eType)
 {
 	ASSERT(prAdapter);
 
 	ASSERT(prTimer);
+
+	ASSERT((eType >= TIMER_WAKELOCK_AUTO) && (eType < TIMER_WAKELOCK_NUM));
 
 #if DBG
 	/* Note: NULL function pointer is permitted for HEM POWER */
@@ -215,7 +224,7 @@ cnmTimerInitTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer, IN PFN_MGMT_TI
 
 	prTimer->pfMgmtTimeOutFunc = pfFunc;
 	prTimer->ulDataPtr = ulDataPtr;
-
+	prTimer->eType = eType;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -333,7 +342,7 @@ VOID cnmTimerStartTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer, IN UINT_
 	if (LINK_IS_EMPTY(prTimerList) || TIME_BEFORE(rExpiredSysTime, prRootTimer->rNextExpiredSysTime)) {
 
 		prRootTimer->rNextExpiredSysTime = rExpiredSysTime;
-		cnmTimerSetTimer(prAdapter, rTimeoutSystime);
+		cnmTimerSetTimer(prAdapter, rTimeoutSystime, prTimer->eType);
 	}
 
 	/* Add this timer to checking list */
@@ -365,6 +374,7 @@ VOID cnmTimerDoTimeOutCheck(IN P_ADAPTER_T prAdapter)
 	PFN_MGMT_TIMEOUT_FUNC pfMgmtTimeOutFunc;
 	ULONG ulTimeoutDataPtr;
 	BOOLEAN fgNeedWakeLock;
+	enum ENUM_TIMER_WAKELOCK_TYPE_T eType = TIMER_WAKELOCK_NONE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -411,6 +421,11 @@ VOID cnmTimerDoTimeOutCheck(IN P_ADAPTER_T prAdapter)
 			prRootTimer->rNextExpiredSysTime = rCurSysTime + MGMT_MAX_TIMEOUT_INTERVAL;
 		} else if (TIME_BEFORE(prTimer->rExpiredSysTime, prRootTimer->rNextExpiredSysTime)) {
 			prRootTimer->rNextExpiredSysTime = prTimer->rExpiredSysTime;
+
+			if (prTimer->eType == TIMER_WAKELOCK_REQUEST)
+				eType = TIMER_WAKELOCK_REQUEST;
+			else if ((eType != TIMER_WAKELOCK_REQUEST) && (prTimer->eType == TIMER_WAKELOCK_AUTO))
+				eType = TIMER_WAKELOCK_AUTO;
 		}
 	}			/* end of for loop */
 
@@ -422,7 +437,8 @@ VOID cnmTimerDoTimeOutCheck(IN P_ADAPTER_T prAdapter)
 		ASSERT(TIME_AFTER(prRootTimer->rNextExpiredSysTime, rCurSysTime));
 
 		fgNeedWakeLock = cnmTimerSetTimer(prAdapter, (OS_SYSTIME)
-						  ((INT_32) prRootTimer->rNextExpiredSysTime - (INT_32) rCurSysTime));
+						  ((INT_32) prRootTimer->rNextExpiredSysTime - (INT_32) rCurSysTime),
+						  eType);
 	}
 
 	if (prRootTimer->fgWakeLocked && !fgNeedWakeLock) {
