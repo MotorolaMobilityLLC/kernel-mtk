@@ -108,7 +108,7 @@ if (cmdq_core_should_print_msg()) { \
 #define CMDQ_ERR(string, args...) \
 {			\
 if (1) {	\
-	pr_err("[CMDQ][ERR]"string, ##args); \
+	pr_notice("[CMDQ][ERR]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ][ERR]"string, ##args); \
 }			\
 }
