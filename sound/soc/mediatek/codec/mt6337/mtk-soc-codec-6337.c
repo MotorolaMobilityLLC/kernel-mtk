@@ -6414,6 +6414,7 @@ static int Audio_HyBridNLE_TurnOn_Set(struct snd_kcontrol *kcontrol, struct snd_
 	uint32 rg_nle_gain_ana_tar_idx;
 	unsigned char rg_nle_delay_ana = ucontrol->value.bytes.data[0];
 	uint32 rg_nle_delay_ana_idx;
+	int oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
 
 	if (ucontrol->value.bytes.data[1] == 1)
 		para_temp_value = ((int32) ucontrol->value.bytes.data[2]) * (-1);
@@ -6453,6 +6454,9 @@ static int Audio_HyBridNLE_TurnOn_Set(struct snd_kcontrol *kcontrol, struct snd_
 		pr_err("%s Err %d %d\n", __func__, rg_nle_r_gain_dig_tar, rg_nle_l_gain_dig_tar);
 		Audio_NLE_RegDump();
 	}
+	headset_volume_ramp(oldindex, rg_nle_gain_ana_tar_idx);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = (int32) rg_nle_gain_ana_tar_idx;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = (int32) rg_nle_gain_ana_tar_idx;
 	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
 	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
 	Ana_Set_Reg(AFE_DL_NLE_R_CFG3, (0 << 6) | rg_nle_delay_ana_idx, 0x7f);
@@ -6647,7 +6651,8 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 	} while (1);
 	Ana_Set_Reg(AFE_DL_NLE_L_CFG3, 0, 0x0080);
 	Ana_Set_Reg(AFE_DL_NLE_R_CFG3, (1 << 6), 0x00C0);  /* pdn last trigger on+pdn*/
-
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = rg_nle_gain_ana_tar_idx;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = rg_nle_gain_ana_tar_idx;
 	pr_aud("%s exit\n", __func__);
 	return 0;
 }
@@ -6877,6 +6882,7 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 		}
 		rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG2) & 0x01;
 		Ana_Set_Reg(AFE_DL_NLE_R_CFG2, rg_temp_value?0:1, 0x0001);
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = gainHPIndex;
 	} else if (nle_channel == AUDIO_NLE_CHANNEL_L) {
 		rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG3);
 		nle_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
@@ -6945,6 +6951,7 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 		}
 		rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG2) & 0x01;
 		Ana_Set_Reg(AFE_DL_NLE_L_CFG2, rg_temp_value?0:1, 0x0001);
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = gainHPIndex;
 	} else
 		pr_warn("%s err no channel match\n", __func__);
 	pr_aud("%s exit\n", __func__);
