@@ -76,6 +76,7 @@ void mrdump_cblock_init(void);
 int mrdump_platform_init(const struct mrdump_platform *plat);
 
 void mrdump_save_current_backtrace(struct pt_regs *regs);
+void mrdump_save_control_register(void *creg);
 
 extern int mrdump_rsv_conflict;
 extern void dis_D_inner_fL1L2(void);

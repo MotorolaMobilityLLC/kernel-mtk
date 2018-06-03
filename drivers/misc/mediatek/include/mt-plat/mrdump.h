@@ -33,11 +33,11 @@
 #define reg_fp	ARM_fp
 #endif
 
-#define MRDUMP_CPU_MAX 16
+#define MRDUMP_CPU_MAX 12
 
 #define MRDUMP_ENABLE_COOKIE 0x590d2ba3
 
-#define MRDUMP_GO_DUMP "MRDUMP07"
+#define MRDUMP_GO_DUMP "MRDUMP08"
 
 #define KSYM_32        1
 #define KSYM_64        2
@@ -45,11 +45,35 @@
 typedef uint32_t arm32_gregset_t[18];
 typedef uint64_t aarch64_gregset_t[34];
 
+struct arm32_ctrl_regs {
+	uint32_t sctlr;
+	uint64_t ttbcr;
+	uint64_t ttbr0;
+	uint64_t ttbr1;
+};
+
+struct aarch64_ctrl_regs {
+	uint32_t sctlr_el1;
+	uint32_t sctlr_el2;
+	uint32_t sctlr_el3;
+
+	uint64_t tcr_el1;
+	uint64_t tcr_el2;
+	uint64_t tcr_el3;
+
+	uint64_t ttbr0_el1;
+	uint64_t ttbr0_el2;
+	uint64_t ttbr0_el3;
+
+	uint64_t ttbr1_el1;
+
+	uint64_t sp_el[4];
+};
+
 struct mrdump_crash_record {
 	int reboot_mode;
 
 	char msg[128];
-	char backtrace[512];
 
 	uint32_t fault_cpu;
 
@@ -57,6 +81,11 @@ struct mrdump_crash_record {
 		arm32_gregset_t arm32_regs;
 		aarch64_gregset_t aarch64_regs;
 	} cpu_regs[MRDUMP_CPU_MAX];
+
+	union {
+		struct arm32_ctrl_regs arm32_creg;
+		struct aarch64_ctrl_regs aarch64_creg;
+	} cpu_creg[MRDUMP_CPU_MAX];
 };
 
 struct mrdump_ksyms_param {
@@ -195,6 +224,8 @@ struct mrdump_rsvmem_block {
 int mrdump_init(void);
 void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 		struct pt_regs *regs, const char *msg, ...);
+void mrdump_save_ctrlreg(void);
+void mrdump_save_per_cpu_reg(int cpu, struct pt_regs *regs);
 #if defined(CONFIG_MTK_AEE_IPANIC) || defined(CONFIG_MTK_AEE_MRDUMP)
 void mrdump_rsvmem(void);
 #else

@@ -108,33 +108,6 @@ static void crash_save_cpu(struct pt_regs *regs, int cpu)
 	final_note(buf);
 }
 
-static void save_current_task(void)
-{
-	int i;
-	struct stack_trace trace;
-	unsigned long stack_entries[16];
-	struct task_struct *tsk = current;
-	struct mrdump_crash_record *crash_record = &mrdump_cblock->crash_record;
-
-	/* Grab kernel task stack trace */
-	trace.nr_entries = 0;
-	trace.max_entries = ARRAY_SIZE(stack_entries);
-	trace.entries = stack_entries;
-	trace.skip = 1;
-	save_stack_trace_tsk(tsk, &trace);
-
-	for (i = 0; i < trace.nr_entries; i++) {
-		int off = strlen(crash_record->backtrace);
-		int plen = sizeof(crash_record->backtrace) - off;
-
-		if (plen > 16) {
-			snprintf(crash_record->backtrace + off, plen,
-				"[<%p>] %pS\n", (void *)stack_entries[i],
-				(void *)stack_entries[i]);
-		}
-	}
-}
-
 #if defined(CONFIG_FIQ_GLUE)
 
 static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
@@ -144,6 +117,7 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 
 	register int sp asm("sp");
 	struct pt_regs *ptregs = (struct pt_regs *)regs;
+	void *creg;
 
 	asm volatile("mov %0, %1\n\t"
 		     "mov fp, %2\n\t"
@@ -154,6 +128,10 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu],
 			ptregs);
 	crash_save_cpu((struct pt_regs *)regs, cpu);
+
+	creg = (void *)&crash_record->cpu_creg[cpu];
+	mrdump_save_control_register(creg);
+
 	local_fiq_disable();
 	local_irq_disable();
 
@@ -183,6 +161,7 @@ static void mrdump_stop_noncore_cpu(void *unused)
 {
 	struct mrdump_crash_record *crash_record = &mrdump_cblock->crash_record;
 	struct pt_regs regs;
+	void *creg;
 	int cpu = get_HW_cpuid();
 
 	mrdump_save_current_backtrace(&regs);
@@ -190,6 +169,9 @@ static void mrdump_stop_noncore_cpu(void *unused)
 	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu],
 			&regs);
 	crash_save_cpu((struct pt_regs *)&regs, cpu);
+
+	creg = (void *)&crash_record->cpu_creg[cpu];
+	mrdump_save_control_register(creg);
 
 	local_fiq_disable();
 	local_irq_disable();
@@ -223,6 +205,7 @@ static void __mrdump_reboot_va(enum AEE_REBOOT_MODE reboot_mode,
 {
 	struct mrdump_crash_record *crash_record;
 	int cpu;
+	void *creg;
 
 	if (mrdump_cblock) {
 		if (mrdump_cblock->enabled != MRDUMP_ENABLE_COOKIE)
@@ -247,7 +230,9 @@ static void __mrdump_reboot_va(enum AEE_REBOOT_MODE reboot_mode,
 		vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg,
 				ap);
 		crash_record->fault_cpu = cpu;
-		save_current_task();
+
+		creg = (void *)&crash_record->cpu_creg[cpu];
+		mrdump_save_control_register(creg);
 
 		/* FIXME: Check reboot_mode is valid */
 		crash_record->reboot_mode = reboot_mode;
@@ -260,6 +245,19 @@ static void __mrdump_reboot_va(enum AEE_REBOOT_MODE reboot_mode,
 	}
 
 	mrdump_plat->reboot();
+}
+
+void mrdump_save_ctrlreg(void)
+{
+	struct mrdump_crash_record *crash_record;
+	void *creg;
+	int cpu = get_HW_cpuid();
+
+	if (mrdump_cblock) {
+		crash_record = &mrdump_cblock->crash_record;
+		creg = (void *)&crash_record->cpu_creg[cpu];
+		mrdump_save_control_register(creg);
+	}
 }
 
 void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
@@ -275,11 +273,26 @@ void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 	va_end(ap);
 }
 
+void mrdump_save_per_cpu_reg(int cpu, struct pt_regs *regs)
+{
+	struct mrdump_crash_record *crash_record;
+
+	if (regs)
+		crash_save_cpu(regs, cpu);
+
+	if (mrdump_cblock) {
+		crash_record = &mrdump_cblock->crash_record;
+		elf_core_copy_kernel_regs(
+			(elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
+	}
+}
+
 void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 		struct pt_regs *regs, const char *msg, ...)
 {
 	va_list ap;
 	struct mrdump_crash_record *crash_record;
+	void *creg;
 	int cpu;
 
 	if (mrdump_cblock) {
@@ -302,13 +315,15 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 				regs);
 		}
 
+		creg = (void *)&crash_record->cpu_creg[cpu];
+		mrdump_save_control_register(creg);
+
 		va_start(ap, msg);
 		vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg,
 				ap);
 		va_end(ap);
 
 		crash_record->fault_cpu = cpu;
-		save_current_task();
 
 		/* FIXME: Check reboot_mode is valid */
 			crash_record->reboot_mode = reboot_mode;
