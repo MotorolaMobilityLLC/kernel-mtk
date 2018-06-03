@@ -4885,16 +4885,17 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 	}
 
 	if (handle->loop) {
-		if (handle->loop_cb) {
-			s32 loop_ret = 0;
+		s32 loop_ret = 0;
 
+		if (handle->loop_cb) {
 			/* for loop task only callback and no need to do more */
 			CMDQ_LOG("loop callback handle:0x%p\n", handle);
 			loop_ret = handle->loop_cb(handle->loop_user_data);
-			CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
-			      MMPROFILE_FLAG_PULSE, handle->thread, loop_ret);
 			CMDQ_LOG("loop callback done\n");
 		}
+
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
+			MMPROFILE_FLAG_PULSE, handle->thread, loop_ret);
 
 		if (data.err == -ECONNABORTED) {
 			/* loop stopped */
