@@ -24,6 +24,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi_bwl/$(MTK_PLATFORM)
 # security objects
 MASP_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/drivers/masp
 
+ifeq ($(CONFIG_MTK_QOS_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/devfreq/
+endif
+
 ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
 ifeq ($(CONFIG_CUSTOM_SEC_AUTH_SUPPORT), y)
 clean-files += $(CCCI_CUSTOM_DRIVER_DIR)/cust_auth.o

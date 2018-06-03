@@ -32,7 +32,7 @@
 #define RELOAD_TH           (3)
 
 /* EE dump cunstomization */
-#define CCCI_EE_SIZE_CCIF_SRAM (36) /* SRAM size we dump into smem */
+#define CCCI_EE_SIZE_CCIF_SRAM (72) /* SRAM size we dump into smem */
 /* CCIF dump offset in MD SS debug region */
 #define CCCI_EE_OFFSET_CCIF_SRAM (1024 - CCCI_EE_SIZE_CCIF_SRAM)
 /* flag to tell WDT is triggered by EPON or not, in MD SS debug region */
@@ -50,6 +50,7 @@
 #define IPC_L4C_MSG_ID_LEN   (0x40)
 
 /* feature option, always try using platform info first! */
+#define FEATURE_SCP_CCCI_SUPPORT
 /*#define ENABLE_EMI_PROTECTION*/
 #define ENABLE_32K_CLK_LESS
 /*#define CCCI_LOG_LEVEL     1*/
