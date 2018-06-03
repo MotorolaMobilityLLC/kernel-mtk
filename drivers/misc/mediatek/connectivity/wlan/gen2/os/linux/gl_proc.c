@@ -910,11 +910,6 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 	char *pDelimiter = " \t";
 	INT32 i4Ret = 0;
 
-	if (copy_from_user(gCoexBuf1.buffer, buffer, count))
-		return -EFAULT;
-	/* gCoexBuf1.availSize = count; */
-
-	/* return gCoexBuf1.availSize; */
 	DBGLOG(INIT, TRACE, "write parameter len = %d\n\r", (INT32) len);
 	if (len >= sizeof(buf)) {
 		DBGLOG(INIT, ERROR, "input handling fail!\n");
