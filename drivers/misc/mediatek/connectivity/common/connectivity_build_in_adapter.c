@@ -269,3 +269,14 @@ void connectivity_export_dump_thread_state(const char *name)
 	rcu_read_unlock();
 }
 EXPORT_SYMBOL(connectivity_export_dump_thread_state);
+
+/******************************************************************************
+ * GPIO dump information
+ ******************************************************************************/
+#ifndef CONFIG_MTK_GPIO
+void connectivity_export_dump_gpio_info(int start, int end)
+{
+	gpio_dump_regs_range(start, end);
+}
+EXPORT_SYMBOL(connectivity_export_dump_gpio_info);
+#endif
