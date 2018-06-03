@@ -169,8 +169,8 @@ int disp_partial_is_support(void)
 	struct disp_lcm_handle *plcm = primary_get_lcm();
 
 	if (disp_lcm_is_partial_support(plcm) &&
-		!disp_lcm_is_video_mode(plcm)
-		/*&& disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE)*/)
+		!disp_lcm_is_video_mode(plcm) &&
+		disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
 		return 1;
 
 	return 0;
