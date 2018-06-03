@@ -160,14 +160,11 @@ static int is_overlap_on_yaxis(struct layer_config *lhs, struct layer_config *rh
 
 bool is_layer_across_each_pipe(struct layer_config *layer_info)
 {
+#if 0
 	int dst_x, dst_w;
 
-#if 0
 	if (!disp_helper_get_option(DISP_OPT_DUAL_PIPE))
 		return true;
-#else
-	return true;
-#endif
 
 	dst_x = layer_info->dst_offset_x;
 	dst_w = layer_info->dst_width;
@@ -175,6 +172,9 @@ bool is_layer_across_each_pipe(struct layer_config *layer_info)
 		(dst_x > primary_display_get_width() / 2))
 		return false;
 	return true;
+#else
+	return true;
+#endif
 }
 
 /**

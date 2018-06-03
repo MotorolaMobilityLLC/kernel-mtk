@@ -267,6 +267,8 @@ int disp_helper_get_option(enum DISP_HELPER_OPT option)
 				return 0;
 			else if (_is_early_porting_stage())
 				return 0;
+			else
+				return 0;
 		}
 	default:
 		{
