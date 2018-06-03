@@ -47,6 +47,7 @@ struct charger_consumer {
 	void *cm;
 	struct notifier_block *pnb;
 	struct list_head list;
+	bool hv_charging_disabled;
 };
 
 /* ============================================= */

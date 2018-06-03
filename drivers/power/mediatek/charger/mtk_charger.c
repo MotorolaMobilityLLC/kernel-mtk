@@ -226,10 +226,10 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 	mutex_lock(&consumer_mutex);
 	puser->dev = dev;
 
-	if (pinfo == NULL)
-		list_add(&puser->list, &consumer_head);
-	else
-	puser->cm = pinfo;
+	list_add(&puser->list, &consumer_head);
+	if (pinfo != NULL)
+		puser->cm = pinfo;
+
 	mutex_unlock(&consumer_mutex);
 
 	return puser;
@@ -239,12 +239,39 @@ int charger_manager_enable_high_voltage_charging(struct charger_consumer *consum
 	bool en)
 {
 	struct charger_manager *info = consumer->cm;
+	struct list_head *pos;
+	struct list_head *phead = &consumer_head;
+	struct charger_consumer *ptr;
 
 	if (!info)
 		return -EINVAL;
 
-	pr_info("%s: enable = %d\n", __func__, en);
-	info->enable_hv_charging = en;
+	pr_debug("[%s] %s, %d\n", __func__, dev_name(consumer->dev), en);
+
+	if (!en && consumer->hv_charging_disabled == false)
+		consumer->hv_charging_disabled = true;
+	else if (en && consumer->hv_charging_disabled == true)
+		consumer->hv_charging_disabled = false;
+	else {
+		pr_info("[%s] already set: %d %d\n", __func__,
+			consumer->hv_charging_disabled, en);
+		return 0;
+	}
+
+	mutex_lock(&consumer_mutex);
+	list_for_each(pos, phead) {
+		ptr = container_of(pos, struct charger_consumer, list);
+		if (ptr->hv_charging_disabled == true) {
+			info->enable_hv_charging = false;
+			break;
+		}
+		if (list_is_last(pos, phead))
+			info->enable_hv_charging = true;
+	}
+	mutex_unlock(&consumer_mutex);
+
+	pr_info("%s: user: %s, en = %d\n", __func__, dev_name(consumer->dev),
+		info->enable_hv_charging);
 	_wake_up_charger(info);
 
 	return 0;
