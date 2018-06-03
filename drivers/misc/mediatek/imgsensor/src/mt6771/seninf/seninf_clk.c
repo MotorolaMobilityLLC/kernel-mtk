@@ -122,14 +122,21 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 		ret = clk_set_parent(pclk->mclk_sel[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM],
 				     pclk->mclk_sel[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
 	} else {
-		/* Workaround for timestamp: TG1 always ON */
-		clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
-		atomic_dec(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
+		if (atomic_read(&pclk->enable_cnt[i + SENINF_CLK_IDX_FREQ_MIN_NUM]) > 0) {
+			clk_disable_unprepare(pclk->mclk_sel[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
+			atomic_dec(&pclk->enable_cnt[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
+		}
 
-		clk_disable_unprepare(pclk->mclk_sel[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
-		atomic_dec(&pclk->enable_cnt[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
-		clk_disable_unprepare(pclk->mclk_sel[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
-		atomic_dec(&pclk->enable_cnt[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
+		if (atomic_read(&pclk->enable_cnt[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]) > 0) {
+			clk_disable_unprepare(pclk->mclk_sel[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
+			atomic_dec(&pclk->enable_cnt[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
+		}
+
+		/* Workaround for timestamp: TG1 always ON */
+		if (atomic_read(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]) > 0) {
+			clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
+			atomic_dec(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
+		}
 	}
 
 	return ret;
@@ -138,6 +145,8 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 void seninf_clk_open(struct SENINF_CLK *pclk)
 {
 	MINT32 i;
+
+	PK_DBG("open\n");
 
 	if (atomic_inc_return(&pclk->wakelock_cnt) == 1) {
 #ifdef CONFIG_PM_WAKELOCKS
@@ -159,6 +168,8 @@ void seninf_clk_release(struct SENINF_CLK *pclk)
 {
 	MINT32 i = SENINF_CLK_IDX_MAX_NUM;
 
+	PK_DBG("release\n");
+
 	do {
 		i--;
 		for (; atomic_read(&pclk->enable_cnt[i]) > 0;) {
@@ -174,5 +185,23 @@ void seninf_clk_release(struct SENINF_CLK *pclk)
 		wake_unlock(&pclk->seninf_wake_lock);
 #endif
 	}
+}
+
+unsigned int seninf_clk_get_meter(struct SENINF_CLK *pclk, unsigned int clk)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* workaround */
+	mt_get_ckgen_freq(1);
+
+	if (clk == 4) {
+		PK_DBG("CAMSYS_SENINF_CGPDN = %lu\n",
+			clk_get_rate(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]));
+		PK_DBG("TOP_MUX_SENINF = %lu\n",
+			clk_get_rate(pclk->mclk_sel[SENINF_CLK_IDX_SYS_TOP_MUX_SENINF]));
+	}
+	return mt_get_ckgen_freq(clk);
+#else
+	return 0;
+#endif
 }
 

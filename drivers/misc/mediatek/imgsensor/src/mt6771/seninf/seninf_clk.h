@@ -101,6 +101,10 @@ enum SENINF_RETURN seninf_clk_init(struct SENINF_CLK *pclk);
 int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk);
 void seninf_clk_open(struct SENINF_CLK *pclk);
 void seninf_clk_release(struct SENINF_CLK *pclk);
+unsigned int seninf_clk_get_meter(struct SENINF_CLK *pclk, unsigned int clk);
+
+extern unsigned int mt_get_ckgen_freq(int ID);
+extern unsigned long clk_get_rate(struct clk *clk);
 
 #endif
 

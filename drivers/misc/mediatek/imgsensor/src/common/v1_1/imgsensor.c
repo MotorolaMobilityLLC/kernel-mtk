@@ -1247,7 +1247,9 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 
 		break;
-
+	case SENSOR_FEATURE_DEBUG_IMGSENSOR:
+		imgsensor_hw_dump(&gimgsensor.hw);
+		break;
 	default:
 		ret = imgsensor_sensor_feature_control(psensor,
 						       pFeatureCtrl->FeatureId,

@@ -29,6 +29,5 @@ struct SENINF {
 	void __iomem *pseninf_base[SENINF_MAX_NUM];
 };
 
-extern unsigned int mt_get_ckgen_freq(int ID);
 #endif
 
