@@ -438,6 +438,10 @@ void spm_sodi3_init(void)
 {
 	sodi3_pr_debug("spm_sodi3_init\n");
 	spm_sodi3_aee_init();
+
+	sodi3_ctrl.wake_src = WAKE_SRC_FOR_SODI;
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI, PWR_WAKE_SRC, sodi3_ctrl.wake_src);
 }
 
 MODULE_DESCRIPTION("SPM-SODI3 Driver v0.1");
