@@ -53,7 +53,7 @@ static unsigned int avg_heavy_task_threshold = 65; /* max=99 for AHT, admission 
 static int htask_cpucap_ctrl = 1;
 
 /* max = 100, threshold for capacity overutiled */
-static int overutil_threshold = 80;
+static int overutil_threshold = 60;
 
 struct cpu_load_data {
 	cputime64_t prev_cpu_idle;
