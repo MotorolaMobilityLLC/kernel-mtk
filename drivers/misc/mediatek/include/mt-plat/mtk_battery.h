@@ -132,8 +132,8 @@ typedef enum {
 	BATTERY_METER_CMD_GET_PTIM_BAT_VOL,
 	BATTERY_METER_CMD_GET_PTIM_R_CURR,
 	BATTERY_METER_CMD_GET_PTIM_RAC_VAL,
-	BATTERY_METER_CMD_GET_FG_RESET_STATUS,
-	BATTERY_METER_CMD_SET_FG_RESET_STATUS,
+	BATTERY_METER_CMD_GET_IS_FG_INITIALIZED,
+	BATTERY_METER_CMD_SET_IS_FG_INITIALIZED,
 	BATTERY_METER_CMD_SET_FG_RESET_RTC_STATUS,
 	BATTERY_METER_CMD_GET_SHUTDOWN_DURATION_TIME,
 	BATTERY_METER_CMD_GET_BAT_PLUG_OUT_TIME,
@@ -144,6 +144,8 @@ typedef enum {
 	BATTERY_METER_CMD_SET_NAG_ZCV,
 	BATTERY_METER_CMD_SET_NAG_C_DLTV,
 	BATTERY_METER_CMD_SET_ZCV_INTR,
+	BATTERY_METER_CMD_SET_ZCV_INTR_EN,
+	BATTERY_METER_CMD_GET_ZCV_CURR,
 	BATTERY_METER_CMD_SET_SW_CAR_NAFG_EN,
 	BATTERY_METER_CMD_GET_SW_CAR_NAFG_CNT,
 	BATTERY_METER_CMD_GET_SW_CAR_NAFG_DLTV,
@@ -240,8 +242,8 @@ typedef enum {
 	FG_DAEMON_CMD_SET_SW_OCV,
 	FG_DAEMON_CMD_GET_SHUTDOWN_DURATION_TIME,
 	FG_DAEMON_CMD_GET_BAT_PLUG_OUT_TIME,
-	FG_DAEMON_CMD_GET_FG_RESET_STATUS,
-	FG_DAEMON_CMD_SET_FG_RESET_STATUS,
+	FG_DAEMON_CMD_GET_IS_FG_INITIALIZED,
+	FG_DAEMON_CMD_SET_IS_FG_INITIALIZED,
 	FG_DAEMON_CMD_SET_FG_RESET_RTC_STATUS,
 	FG_DAEMON_CMD_IS_HWOCV_UNRELIABLE,
 	FG_DAEMON_CMD_GET_FG_CURRENT_AVG,
@@ -490,6 +492,7 @@ struct fuel_gauge_custom_data {
 	int pseudo100_t4;
 	int pseudo1_en;
 	int pseudo100_en;
+	int pseudo100_en_dis;
 
 	/* vboot related */
 	int qmax_sel;
@@ -742,6 +745,8 @@ extern signed int battery_get_bat_uisoc(void);
 extern signed int battery_get_bat_temperature(void);
 extern signed int battery_get_ibus(void);
 extern signed int battery_get_vbus(void);
+extern unsigned int battery_get_is_kpoc(void);
+extern unsigned int bat_is_kpoc(void);
 extern bool battery_is_battery_exist(void);
 /************** End New Interface *******************/
 

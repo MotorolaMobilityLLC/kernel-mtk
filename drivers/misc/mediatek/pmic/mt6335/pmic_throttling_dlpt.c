@@ -977,7 +977,7 @@ int get_rac(void)
 
 int get_imix(void)
 {
-	return ptim_imix;
+	return g_imix_val;
 }
 
 int get_dlpt_imix_spm(void)
