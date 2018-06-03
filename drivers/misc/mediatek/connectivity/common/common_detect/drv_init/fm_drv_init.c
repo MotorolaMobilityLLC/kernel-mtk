@@ -20,11 +20,20 @@
 #include "wmt_detect.h"
 #include "fm_drv_init.h"
 
+#ifdef CONFIG_MTK_FMRADIO
+int __attribute__((weak)) mtk_wcn_fm_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_fm_init\n");
+	return 0;
+}
+#endif
+
 int do_fm_drv_init(int chip_id)
 {
 	WMT_DETECT_INFO_FUNC("start to do fm module init\n");
 
 #ifdef CONFIG_MTK_FMRADIO
+	/* move to kernel module init when insmod */
 	mtk_wcn_fm_init();
 #endif
 
