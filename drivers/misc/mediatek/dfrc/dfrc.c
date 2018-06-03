@@ -195,6 +195,14 @@ long dfrc_reg_policy_locked(const struct DFRC_DRV_POLICY *policy)
 	struct DFRC_DRV_POLICY_STATISTICS_SET *pss;
 	struct DFRC_DRV_POLICY_STATISTICS *ps;
 
+	if (policy == NULL) {
+		DFRC_WRN("reg_policy: parameter is null\n");
+		return -EINVAL;
+	} else if (policy->mode >= DFRC_DRV_MODE_MAXIMUM || policy->mode < DFRC_DRV_MODE_DEFAULT) {
+		DFRC_WRN("reg_policy: policy mode is invalid\n");
+		return -EINVAL;
+	}
+
 	list_for_each(iter, &g_fps_policy_list) {
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
 		if (node->policy.sequence == policy->sequence) {
@@ -284,6 +292,10 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 	struct DFRC_DRV_POLICY_STATISTICS *ps = NULL;
 
 	if (policy == NULL) {
+		DFRC_WRN("set_policy: parameter is null\n");
+		return -EINVAL;
+	} else if (policy->mode >= DFRC_DRV_MODE_MAXIMUM || policy->mode < DFRC_DRV_MODE_DEFAULT) {
+		DFRC_WRN("set_policy: policy mode is invalid\n");
 		return -EINVAL;
 	}
 
