@@ -30,6 +30,7 @@
 #include "ddp_ovl.h"
 #include "ddp_color.h"
 #include "ddp_clkmgr.h"
+#include "ddp_dsi.h"
 
 #include "ddp_log.h"
 #include "disp_drv_platform.h"
@@ -1374,10 +1375,14 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH
 		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_off) {
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power off -- bypass\n", ddp_get_module_name(module_name));
-			} else {
-				ddp_get_module_driver(module_name)->power_off(module_name,
-									   encmdq ? handle->cmdqhandle : NULL);
+				continue;
 			}
+			if (module_name != DISP_MODULE_DSI0 ||
+					!disp_helper_get_option(DISP_OPT_IDLEMGR_KEEP_LP11)) {
+				ddp_get_module_driver(module_name)->power_off(module_name,
+							   encmdq ? handle->cmdqhandle : NULL);
+			} else
+				ddp_dsi_enter_idle(module_name, encmdq ? handle->cmdqhandle : NULL);
 		}
 	}
 	handle->power_state = 0;
@@ -1408,10 +1413,14 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_on) {
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power on -- bypass\n", ddp_get_module_name(module_name));
-			} else {
-				ddp_get_module_driver(module_name)->power_on(module_name,
-									  encmdq ? handle->cmdqhandle : NULL);
+				continue;
 			}
+			if (module_name != DISP_MODULE_DSI0 ||
+					!disp_helper_get_option(DISP_OPT_IDLEMGR_KEEP_LP11)) {
+				ddp_get_module_driver(module_name)->power_on(module_name,
+							  encmdq ? handle->cmdqhandle : NULL);
+			} else
+				ddp_dsi_leave_idle(module_name, encmdq ? handle->cmdqhandle : NULL);
 		}
 	}
 	/* modules on this path will resume power on; */
