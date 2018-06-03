@@ -57,6 +57,11 @@ static int start(struct bus_tracer_plt *plt)
 	if (!plt->tracer)
 		return -ENOMEM;
 
+	/* we need to enable ATB clock to solve word shift problem */
+	/* enable ATB clk */
+	writel(0x1, plt->dem_base + DEM_ATB_CLK);
+	dsb(sy);
+
 	for (i = 0; i <= num_tracer-1; ++i) {
 		if (of_property_read_u32_index(node, "mediatek,enabled_tracer", i, &ret) == 0)
 			plt->tracer[i].enabled = ret & 0x1;
@@ -265,12 +270,19 @@ static int enable(struct bus_tracer_plt *plt, unsigned char force_enable, unsign
 	writel(0x1, plt->dem_base + DEM_ATB_CLK);
 	dsb(sy);
 
+
+	/* let etb will not reset by WDT */
+	CS_UNLOCK(plt->dem_base);
+	writel(0x0, plt->dem_base + DEM_DBGRST_ALL);
+	writel(0x1, plt->dem_base + DEM_DBGRST_ALL_TRACER);
+	CS_LOCK(plt->dem_base);
+
 	/* replicator 1 setup */
 	CS_UNLOCK(plt->funnel_base + REPLICATOR1_BASE);
 	writel((~(1 << (plt->tracer[0].at_id >> 4)) & 0xff),
 		plt->funnel_base + REPLICATOR1_BASE + REPLICATOR_IDFILTER0);
 
-	if (plt->num_tracer >= 1)
+	if (plt->num_tracer >= 2)
 		writel((~(1 << (plt->tracer[1].at_id >> 4)) & 0xff),
 			plt->funnel_base + REPLICATOR1_BASE + REPLICATOR_IDFILTER1);
 

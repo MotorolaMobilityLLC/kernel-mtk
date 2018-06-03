@@ -853,7 +853,6 @@ static int __init bus_tracer_init(void)
 	bus_tracer_dump(bus_tracer_dump_buf, bus_tracer_drv.cur_plt->min_buf_len);
 	/* force_enable=0 to enable all the tracers with enabled=1 */
 	bus_tracer_enable(0, -1);
-
 	return 0;
 }
 
