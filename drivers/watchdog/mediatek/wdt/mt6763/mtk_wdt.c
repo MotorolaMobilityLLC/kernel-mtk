@@ -484,6 +484,29 @@ int mtk_rgu_cfg_dvfsrc(int enable)
 	return 0;
 }
 
+/*
+ * Query if SYSRST has happened.
+ *
+ * Return:
+ * 1: Happened.
+ * 0: Not happened.
+ */
+int mtk_rgu_status_is_sysrst(void)
+{
+	return (__raw_readl(MTK_WDT_STATUS) & MTK_WDT_STATUS_SYSRST_RST) ? 1 : 0;
+}
+
+/*
+ * Query if EINTRST has happened.
+ *
+ * Return:
+ * 1: Happened.
+ * 0: Not happened.
+ */
+int mtk_rgu_status_is_eintrst(void)
+{
+	return (__raw_readl(MTK_WDT_STATUS) & MTK_WDT_STATUS_EINT_RST) ? 1 : 0;
+}
 
 int mtk_rgu_mcu_cache_preserve(int enable)
 {
