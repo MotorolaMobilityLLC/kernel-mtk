@@ -99,7 +99,6 @@ enum md1_scenario {
 	S_3G_DATALINK,
 	S_4G_DL_1CC,
 	S_4G_DL_2CC,
-	S_4G_DL_3CC,
 	SCENARIO_NUM
 };
 
@@ -214,8 +213,7 @@ enum md1_scenario_pwr_tbl {
 	PW_3G_TALKING = 142,
 	PW_3G_DATALINK = 258,
 	PW_4G_DL_1CC = 329,
-	PW_4G_DL_2CC = 449,
-	PW_4G_DL_3CC = 679
+	PW_4G_DL_2CC = 449
 };
 
 /*
