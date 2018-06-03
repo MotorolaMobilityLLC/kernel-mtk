@@ -276,6 +276,7 @@ int buck_set_mode(BUCK_TYPE type, unsigned char pmode)
 	}
 
 	/*---Make sure BUCK <NAME> ON before setting---*/
+	pr_err("[PMIC] Before set %s Mode to %d\n", mtk_bucks_class[type].name, pmode);
 	if (type == VCORE) {
 		if (pmode == 1) {
 			pmic_set_register_value(PMIC_RG_VCORE_CCSEL1, 0x2);
@@ -302,7 +303,7 @@ int buck_set_mode(BUCK_TYPE type, unsigned char pmode)
 		}
 	} else
 		pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
-
+	pr_err("[PMIC] After set %s Mode to %d\n", mtk_bucks_class[type].name, pmode);
 	if (pmic_get_register_value(mtk_bucks_class[type].mode) == pmode)
 		pr_debug("[PMIC] Set %s Mode to %d pass\n", mtk_bucks_class[type].name, pmode);
 	else
