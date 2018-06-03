@@ -23,9 +23,11 @@ enum mt_cpu_dvfs_id {
 };
 
 enum cpu_level {
-	CPU_LEVEL_0,
-	CPU_LEVEL_1,
-	CPU_LEVEL_2,
+	CPU_LEVEL_0, /* FY */
+	CPU_LEVEL_1, /* SB */
+	CPU_LEVEL_2, /* 65T */
+	CPU_LEVEL_3, /* 65 */
+	CPU_LEVEL_4, /* 62 */
 
 	NUM_CPU_LEVEL,
 };
