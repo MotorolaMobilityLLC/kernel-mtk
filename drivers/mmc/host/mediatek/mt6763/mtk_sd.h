@@ -354,6 +354,7 @@ struct msdc_host {
 	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
 	u32                     app_cmd_arg;
+	int                     pin_state;      /* for hw trapping */
 	struct timer_list       timer;
 	u32                     sw_timeout;
 	bool                    tuning_in_progress;

@@ -5069,7 +5069,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 			msdc_drv_pm_restore_noirq, &(pdev->dev));
 #endif
 
-	/* Use ordered workqueue to reduce msdc moudle init time */
+	/* Use ordered workqueue to reduce msdc module init time */
 	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
 		pr_err("msdc%d queue delay work failed WARN_ON,[%s]L:%d\n",
 			host->id, __func__, __LINE__);

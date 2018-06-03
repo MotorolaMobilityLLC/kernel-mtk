@@ -235,7 +235,7 @@
 	};
 
 	iocfg_tl@11f30000 {
-		compatible = "mediatek,iocfg_f3";
+		compatible = "mediatek,iocfg_tl";
 		reg = <0 0x11f30000 0 0x1000>;
 	};
 
