@@ -724,11 +724,9 @@
 
 	cq_dma@10212000 {
 		compatible = "mediatek,mt-cqdma-v1";
-		reg = <0 0x10212000 0 0x80>,
-			<0 0x10212080 0 0x80>;
-		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
-			<GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
-		nr_channel = <2>;
+		reg = <0 0x10212080 0 0x80>;
+		interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
+		nr_channel = <1>;
 		keep_clock_ao = "yes";
 		clocks = <&infracfg_ao CLK_INFRA_CQ_DMA>;
 		clock-names = "cqdma";
