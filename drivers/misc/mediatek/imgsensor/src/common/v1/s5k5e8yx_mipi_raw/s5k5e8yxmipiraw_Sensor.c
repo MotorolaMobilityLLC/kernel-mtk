@@ -68,7 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 168000000,	/* record different mode's pclk */
 		.linelength = 5200,	/* record different mode's linelength */
-		.framelength = 1074,	/* record different mode's framelength */
+		.framelength = 1080,	/* record different mode's framelength */
 		.startx = 0,	/* record different mode's startx of grabwindow */
 		.starty = 0,	/* record different mode's starty of grabwindow */
 		.grabwindow_width = 1296,	/* record different mode's width of grabwindow */
@@ -637,7 +637,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0387, 0x03);	/* y_odd_inc */
 	/* frame_length_lines */
 	write_cmos_sensor(0x0340, 0x04);
-	write_cmos_sensor(0x0341, 0x32);
+	write_cmos_sensor(0x0341, 0x38);
 	/* line_length_pck */
 	write_cmos_sensor(0x0342, 0x14);
 	write_cmos_sensor(0x0343, 0x50);
