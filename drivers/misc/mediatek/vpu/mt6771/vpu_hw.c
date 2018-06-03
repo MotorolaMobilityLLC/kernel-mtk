@@ -118,16 +118,22 @@ static struct clk *clk_mmsys_smi_common;
 #endif
 
 /* workqueue */
+struct my_struct_t {
+	int core;
+	struct delayed_work my_work;
+};
 static struct workqueue_struct *wq;
 static void vpu_power_counter_routine(struct work_struct *);
-static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);
+static struct my_struct_t power_counter_work[MTK_VPU_CORE];
+/*static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);*/
 
 /* power */
 static struct mutex power_mutex;
 static bool is_power_debug_lock;
 static bool is_power_dynamic = true;
 static struct mutex power_counter_mutex;
-static int power_counter;
+static int power_counter[MTK_VPU_CORE];
+
 
 /* dvfs */
 static struct vpu_dvfs_opps opps;
@@ -277,7 +283,7 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 }
 #endif
 
-static int vpu_enable_regulator_and_clock(void)
+static int vpu_enable_regulator_and_clock(int core)
 {
 	int ret = 0;
 
@@ -322,7 +328,7 @@ static int vpu_enable_regulator_and_clock(void)
 	ENABLE_VPU_CLK(clk_mmsys_gals_comm0);
 	ENABLE_VPU_CLK(clk_mmsys_gals_comm1);
 	ENABLE_VPU_CLK(clk_mmsys_smi_common);
-	ENABLE_VPU_CLK(clk_ipu_adl_cabgen);
+	/*ENABLE_VPU_CLK(clk_ipu_adl_cabgen);*/
 	ENABLE_VPU_CLK(clk_ipu_conn_dap_rx_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_apb2axi_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_apb2ahb_cg);
@@ -335,15 +341,22 @@ static int vpu_enable_regulator_and_clock(void)
 	ENABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	ENABLE_VPU_CLK(clk_ipu_conn_isp_cg);
-	ENABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
-	ENABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
-	ENABLE_VPU_CLK(clk_ipu_core0_jtag_cg);
-	ENABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
-	ENABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
-	ENABLE_VPU_CLK(clk_ipu_core1_jtag_cg);
-	ENABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
-	ENABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
+	/*ENABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
+	/*ENABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
+	/*ENABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
+	switch (core) {
+	case 0:
+	default:
+		/*ENABLE_VPU_CLK(clk_ipu_core0_jtag_cg);*/
+		ENABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
+		ENABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
+		break;
+	case 1:
+		/*ENABLE_VPU_CLK(clk_ipu_core1_jtag_cg);*/
+		ENABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
+		ENABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
+		break;
+	}
 	vpu_trace_end();
 #undef ENABLE_VPU_CLK
 #if 0
@@ -361,7 +374,7 @@ out:
 
 
 
-static int vpu_disable_regulator_and_clock(void)
+static int vpu_disable_regulator_and_clock(int core)
 {
 	int ret = 0;
 
@@ -374,13 +387,20 @@ static int vpu_disable_regulator_and_clock(void)
 		} \
 	}
 
-	DISABLE_VPU_CLK(clk_ipu_core0_jtag_cg);
-	DISABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
-	DISABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
-	DISABLE_VPU_CLK(clk_ipu_core1_jtag_cg);
-	DISABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
-	DISABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
-	DISABLE_VPU_CLK(clk_ipu_adl_cabgen);
+	switch (core) {
+	case 0:
+	default:
+		/*DISABLE_VPU_CLK(clk_ipu_core0_jtag_cg);*/
+		DISABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
+		DISABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
+		break;
+	case 1:
+		/*DISABLE_VPU_CLK(clk_ipu_core1_jtag_cg);*/
+		DISABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
+		DISABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
+		break;
+	}
+	/*DISABLE_VPU_CLK(clk_ipu_adl_cabgen);*/
 	DISABLE_VPU_CLK(clk_ipu_conn_dap_rx_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_apb2axi_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_apb2ahb_cg);
@@ -392,9 +412,14 @@ static int vpu_disable_regulator_and_clock(void)
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to1_slice);
 	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
+	/*DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
+	DISABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
+	DISABLE_VPU_CLK(clk_mmsys_gals_ipu12mm);
+	DISABLE_VPU_CLK(clk_mmsys_gals_comm0);
+	DISABLE_VPU_CLK(clk_mmsys_gals_comm1);
+	DISABLE_VPU_CLK(clk_mmsys_smi_common);
 #undef DISABLE_VPU_CLK
 
 #define DISABLE_VPU_MTCMOS(clk) \
@@ -750,29 +775,38 @@ static int vpu_get_power(int core)
 {
 	int ret = 0;
 
-	LOG_DBG("[vpu_%d] vpu_get_power +\n", core);
+	LOG_INF("[vpu_%d/%d] gp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex);
-	power_counter++;
+	power_counter[core]++;
 	ret = vpu_boot_up(core);
 	mutex_unlock(&power_counter_mutex);
-	LOG_DBG("[vpu_%d] vpu_get_power -\n", core);
+	LOG_DBG("[vpu_%d/%d] gp -\n", core, power_counter[core]);
 	return ret;
 }
 
-static void vpu_put_power(void)
+static void vpu_put_power(int core)
 {
+	LOG_INF("[vpu_%d/%d] pp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex);
-	if (--power_counter == 0)
-		mod_delayed_work(wq, &power_counter_work, msecs_to_jiffies(PWR_KEEP_TIME_MS));
+	if (--power_counter[core] == 0)
+		mod_delayed_work(wq, &(power_counter_work[core].my_work), msecs_to_jiffies(PWR_KEEP_TIME_MS));
 	mutex_unlock(&power_counter_mutex);
+	LOG_DBG("[vpu_%d/%d] pp -\n", core, power_counter[core]);
 }
 
 static void vpu_power_counter_routine(struct work_struct *work)
 {
+	int core = 0;
+	struct my_struct_t *my_work_core = container_of(work, struct my_struct_t, my_work.work);
+
+	core = my_work_core->core;
+	LOG_INF("vpu_%d counterR +", core);
+
 	mutex_lock(&power_counter_mutex);
-	if (power_counter == 0)
-		vpu_shut_down();
+	if (power_counter[core] == 0)
+		vpu_shut_down(core);
 	mutex_unlock(&power_counter_mutex);
+	LOG_DBG("vpu_%d counterR -", core);
 }
 
 int vpu_init_hw(int core, struct vpu_device *device)
@@ -811,6 +845,10 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		vpu_dev = device;
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+			power_counter[i] = 0;
+			INIT_DELAYED_WORK(&(power_counter_work[i].my_work), vpu_power_counter_routine);
+			power_counter_work[i].core = i;
+
 			vpu_service_cores[i].vpu_service_task =
 				(struct task_struct *)kmalloc(sizeof(struct task_struct), GFP_KERNEL);
 			if (vpu_service_cores[i].vpu_service_task != NULL) {
@@ -894,6 +932,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 
 		wq = create_workqueue("vpu_wq");
 
+
 		/* define the steps and OPP */
 #define DEFINE_VPU_STEP(step, m, v0, v1, v2, v3) \
 			{ \
@@ -952,6 +991,8 @@ int vpu_uninit_hw(void)
 	int i;
 
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		cancel_delayed_work(&(power_counter_work[i].my_work));
+
 		if (vpu_service_cores[i].vpu_service_task != NULL) {
 			kthread_stop(vpu_service_cores[i].vpu_service_task);
 			kfree(vpu_service_cores[i].vpu_service_task);
@@ -977,6 +1018,7 @@ int vpu_uninit_hw(void)
 	}
 
 	if (wq) {
+		flush_workqueue(wq);
 		destroy_workqueue(wq);
 		wq = NULL;
 	}
@@ -1052,7 +1094,7 @@ int vpu_hw_enable_jtag(bool enabled)
 	vpu_write_field(TEMP_CORE, FLD_DBG_EN, enabled);
 
 out:
-	vpu_put_power();
+	vpu_put_power(TEMP_CORE);
 	return ret;
 }
 
@@ -1303,7 +1345,7 @@ int vpu_boot_up(int core)
 
 	vpu_trace_begin("vpu_boot_up");
 
-	ret = vpu_enable_regulator_and_clock();
+	ret = vpu_enable_regulator_and_clock(core);
 	CHECK_RET("fail to enable regulator or clock\n");
 
 	ret = vpu_hw_boot_sequence(core);
@@ -1319,7 +1361,7 @@ int vpu_boot_up(int core)
 out:
 
 	if (ret) {
-		ret = vpu_disable_regulator_and_clock();
+		ret = vpu_disable_regulator_and_clock(core);
 		CHECK_RET("fail to disable regulator and clock\n");
 	}
 
@@ -1328,28 +1370,23 @@ out:
 	return ret;
 }
 
-int vpu_shut_down(void)
+int vpu_shut_down(int core)
 {
 	int ret;
-	int i;
-	/* CHRISTODO */
-	int TEMP_CORE = 0;
 
 	mutex_lock(&power_mutex);
-	if (!vpu_service_cores[TEMP_CORE].is_running) {
+	if (!vpu_service_cores[core].is_running) {
 		mutex_unlock(&power_mutex);
 		return 0;
 	}
 
 	vpu_trace_begin("vpu_shut_down");
 
-	ret = vpu_disable_regulator_and_clock();
+	ret = vpu_disable_regulator_and_clock(core);
 	CHECK_RET("fail to disable regulator and clock\n");
 
-	for (i = 0 ; i < MTK_VPU_CORE ; i++)
-		vpu_service_cores[i].current_algo = 0;
-
-	vpu_service_cores[TEMP_CORE].is_running = false;
+	vpu_service_cores[core].current_algo = 0;
+	vpu_service_cores[core].is_running = false;
 
 out:
 	vpu_trace_end();
@@ -1374,7 +1411,7 @@ int vpu_change_power_mode(uint8_t mode)
 	if (!dynamic)
 		ret = vpu_get_power(TEMP_CORE);
 	else
-		vpu_put_power();
+		vpu_put_power(TEMP_CORE);
 
 	if (ret == 0)
 		is_power_dynamic = dynamic;
@@ -1452,7 +1489,7 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 
 out:
 	unlock_command(core);
-	vpu_put_power();
+	vpu_put_power(core);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_load_algo -\n");
 	return ret;
@@ -1462,7 +1499,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 {
 	int ret;
 
-	LOG_DBG("[vpu] vpu_hw_enque_request + ");
+	LOG_INF("[vpu_%d/%d] eq + ", core, request->algo_id[core]);
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id[core]);
 	ret = vpu_get_power(core);
 	CHECK_RET("fail to get power!\n");
@@ -1516,7 +1553,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 
 out:
 	unlock_command(core);
-	vpu_put_power();
+	vpu_put_power(core);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_enque_request - (%d)", request->status);
 	return ret;
@@ -1603,7 +1640,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 
 out:
 	unlock_command(core);
-	vpu_put_power();
+	vpu_put_power(core);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_get_algo_info -\n");
 	return ret;
@@ -1627,8 +1664,11 @@ void vpu_hw_lock(struct vpu_user *user)
 
 void vpu_hw_unlock(struct vpu_user *user)
 {
+	/* CHRISTODO */
+	int TEMP_CORE = 0;
+
 	if (user->locked) {
-		vpu_put_power();
+		vpu_put_power(TEMP_CORE);
 		is_locked = false;
 		user->locked = false;
 		wake_up_interruptible(&lock_wait);
@@ -1993,7 +2033,7 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 			break;
 
 		/* force to set the frequency and voltage */
-		vpu_shut_down();
+		vpu_shut_down(TEMP_CORE);
 		vpu_boot_up(TEMP_CORE);
 
 		break;

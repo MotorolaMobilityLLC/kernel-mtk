@@ -782,7 +782,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	{
 		vpu_name_t name;
 		vpu_id_t algo_id[MTK_VPU_CORE];
-		vpu_id_t temp_algo_id;
+		int temp_algo_id;
 		struct vpu_algo *u_algo;
 
 		u_algo = (struct vpu_algo *) arg;
@@ -792,8 +792,11 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 			temp_algo_id = vpu_get_algo_id_by_name(i, name);
-			if (temp_algo_id < 0)
+			if (temp_algo_id < 0) {
 				LOG_ERR("[GET_ALGO] can not find algo, name=%s, id:%d\n", u_algo->name, temp_algo_id);
+				ret = -ESPIPE;
+				goto out;
+			}
 			else
 				LOG_INF("[GET_ALGO] core(%d) name=%s, id=%d\n", i, u_algo->name, temp_algo_id);
 			algo_id[i] = temp_algo_id;
@@ -1074,6 +1077,8 @@ static int vpu_remove(struct platform_device *pDev)
 	int irq_num, i;
 
 	/*  */
+	vpu_uninit_hw();
+	/* */
 	LOG_DBG("remove vpu driver");
 	/* unregister char driver. */
 	vpu_unreg_chardev();
