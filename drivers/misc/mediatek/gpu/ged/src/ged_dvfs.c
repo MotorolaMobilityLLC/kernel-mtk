@@ -10,6 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifdef GED_DVFS_STRESS_TEST
+#include<linux/random.h>
+#endif
 
 #include <linux/slab.h>
 #include <linux/sched.h>
@@ -283,7 +286,10 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 		}
 
 		g_ulCommitFreq = mt_gpufreq_get_freq_by_idx(ui32NewFreqID);
-
+#ifdef GED_DVFS_STRESS_TEST
+		get_random_bytes(&ui32NewFreqID, sizeof(ui32NewFreqID));
+		ui32NewFreqID = (ui32NewFreqID) % 16;
+#endif
 		// do change
 		if (ui32NewFreqID != ui32CurFreqID)
 		{
