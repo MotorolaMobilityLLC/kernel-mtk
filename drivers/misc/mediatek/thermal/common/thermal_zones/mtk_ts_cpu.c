@@ -2066,7 +2066,7 @@ static const struct file_operations mtktscpu_ttpct_fops = {
 
 
 #if THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET
-int tscpu_get_cpu_temp_met(MTK_THERMAL_SENSOR_CPU_ID_MET id)
+int tscpu_get_cpu_temp_met(enum mtk_thermal_sensor_cpu_id_met id)
 {
 	unsigned long flags;
 	int ret;

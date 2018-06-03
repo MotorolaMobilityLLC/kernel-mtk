@@ -85,7 +85,7 @@ extern int tscpu_get_min_cpu_pwr(void);
 extern int tscpu_get_min_gpu_pwr(void);
 
 /* Five thermal sensors. */
-typedef enum {
+enum mtk_thermal_sensor_cpu_id_met {
 	MTK_THERMAL_SENSOR_TS1 = 0,
 	MTK_THERMAL_SENSOR_TS2,
 	MTK_THERMAL_SENSOR_TS3,
@@ -97,9 +97,9 @@ typedef enum {
 	ATM_GPU_LIMIT,
 
 	MTK_THERMAL_SENSOR_CPU_COUNT
-} MTK_THERMAL_SENSOR_CPU_ID_MET;
+};
 
-extern int tscpu_get_cpu_temp_met(MTK_THERMAL_SENSOR_CPU_ID_MET id);
+extern int tscpu_get_cpu_temp_met(enum mtk_thermal_sensor_cpu_id_met id);
 
 typedef void (*met_thermalsampler_funcMET)(void);
 
