@@ -18,7 +18,6 @@
 #include "disp_drv_platform.h"
 #include "frame_queue.h"
 #include "disp_drv_log.h"
-#include "disp_lowpower.h"
 #include "mtkfb_fence.h"
 #include "mtk_disp_mgr.h"
 #include "ged_log.h"
