@@ -22,7 +22,7 @@
 #define SCP_LOGGER_ENABLE               (0)
 #define SCP_VCORE_TEST_ENABLE			(1)
 #define SCP_DVFS_INIT_ENABLE			(0)
-#define SCP_RESERVED_MEM				(0)
+#define SCP_RESERVED_MEM				(1)
 
 /* scp aed definition*/
 #define SCP_AED_STR_LEN		(512)
