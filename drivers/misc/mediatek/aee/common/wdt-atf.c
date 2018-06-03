@@ -535,6 +535,9 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 		aee_wdt_printf("Invalid atf_aee_debug_virt_addr, no register dump\n");
 	}
 
+	/* add __per_cpu_offset */
+	mrdump_mini_add_entry((unsigned long)__per_cpu_offset, MRDUMP_MINI_SECTION_SIZE);
+
 #ifdef CONFIG_MTK_SCHED_MONITOR
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
