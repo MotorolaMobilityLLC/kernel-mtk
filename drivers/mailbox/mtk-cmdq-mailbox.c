@@ -48,10 +48,11 @@
 #define CMDQ_THR_IRQ_ENABLE		0x14
 #define CMDQ_THR_CURR_ADDR		0x20
 #define CMDQ_THR_END_ADDR		0x24
+#define CMDQ_THR_CNT			0x28
 #define CMDQ_THR_WAIT_TOKEN		0x30
 #define CMDQ_THR_CFG			0x40
-#define CMDQ_THR_CNT			0x128
-#define CMDQ_THR_SPR			0x160
+#define CMDQ_THR_INST_CYCLES		0x50
+#define CMDQ_THR_SPR			0x60
 
 #define CMDQ_THR_ENABLED		0x1
 #define CMDQ_THR_DISABLED		0x0
@@ -60,6 +61,7 @@
 #define CMDQ_THR_STATUS_SUSPENDED	BIT(1)
 #define CMDQ_THR_DO_WARM_RESET		BIT(0)
 #define CMDQ_THR_ACTIVE_SLOT_CYCLES	0x3200
+#define CMDQ_INST_CYCLE_TIMEOUT		0x0
 #define CMDQ_THR_IRQ_DONE		0x1
 #define CMDQ_THR_IRQ_ERROR		0x12
 #define CMDQ_THR_IRQ_EN			(CMDQ_THR_IRQ_ERROR | CMDQ_THR_IRQ_DONE)
@@ -203,14 +205,15 @@ static void cmdq_thread_err_reset(struct cmdq *cmdq, struct cmdq_thread *thread,
 	cookie = readl(thread->base + CMDQ_THR_CNT);
 
 	cmdq_msg(
-		"reset backup pc:0x%08x end:0x%08x cookie:0x%08x spr:0x%x 0x%x 0x%x 0x%x",
-		pc, end, cookie, spr[0], spr[1], spr[2], spr[3]);
+		"reset backup thread:%d pc:0x%08x end:0x%08x cookie:0x%08x spr:0x%x 0x%x 0x%x 0x%x",
+		thread->idx, pc, end, cookie, spr[0], spr[1], spr[2], spr[3]);
 	WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
 	for (i = 0; i < 4; i++)
 		writel(spr[i], thread->base + CMDQ_THR_SPR + i * 4);
-	writel(pc, thread->base + CMDQ_THR_CURR_ADDR);
+	writel(CMDQ_INST_CYCLE_TIMEOUT, thread->base + CMDQ_THR_INST_CYCLES);
 	writel(end, thread->base + CMDQ_THR_END_ADDR);
+	writel(pc, thread->base + CMDQ_THR_CURR_ADDR);
 	writel(cookie, thread->base + CMDQ_THR_CNT);
 	writel(thd_pri, thread->base + CMDQ_THR_CFG);
 	writel(CMDQ_THR_IRQ_EN, thread->base + CMDQ_THR_IRQ_ENABLE);
@@ -517,7 +520,10 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 			&task->pa_base, pkt->cmd_buf_size, thread->base,
 			thread->idx);
 
-		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
+		writel(CMDQ_INST_CYCLE_TIMEOUT,
+			thread->base + CMDQ_THR_INST_CYCLES);
+		writel(pkt->hw_priority & CMDQ_THR_PRIORITY,
+			thread->base + CMDQ_THR_CFG);
 #ifdef CMDQ_MEMORY_JUMP
 		writel(cmdq_task_get_end_pa(pkt),
 			thread->base + CMDQ_THR_END_ADDR);
@@ -529,8 +535,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		writel(task->pa_base + pkt->cmd_buf_size,
 		       thread->base + CMDQ_THR_END_ADDR);
 #endif
-		writel(pkt->hw_priority & CMDQ_THR_PRIORITY,
-			thread->base + CMDQ_THR_CFG);
+		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 		writel(CMDQ_THR_IRQ_EN, thread->base + CMDQ_THR_IRQ_ENABLE);
 		writel(CMDQ_THR_ENABLED, thread->base + CMDQ_THR_ENABLE_TASK);
 
