@@ -19,6 +19,7 @@
 /* debug API */
 __weak void dump_emi_outstanding(void) {}
 __weak void mtk_spm_dump_debug_info(void) {}
+__weak void usb_dump_debug_register(void) {}
 
 /* platform callback when ipi timeout */
 void sspm_ipi_timeout_cb(int ipi_id)
@@ -30,6 +31,10 @@ void sspm_ipi_timeout_cb(int ipi_id)
 	/* for debug SPM */
 	pr_info("%s: mtk_spm_dump_debug_info\n", __func__);
 	mtk_spm_dump_debug_info();
+
+	/* for debug USB */
+	pr_info("%s: usb_dump_debug_register\n", __func__);
+	usb_dump_debug_register();
 
 }
 
