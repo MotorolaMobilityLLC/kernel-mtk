@@ -495,22 +495,22 @@ static s32 cmdq_driver_copy_task_prop_from_user(void *from, u32 size, void **to)
 {
 	void *task_prop = NULL;
 
-	if (!from || !size || !to)
-		return -EINVAL;
+	/* considering backward compatible, we won't return error when argument not available */
+	if (from && size && to) {
+		task_prop = kzalloc(size, GFP_KERNEL);
+		if (!task_prop) {
+			CMDQ_ERR("allocate task_prop failed\n");
+			return -ENOMEM;
+		}
 
-	task_prop = kzalloc(size, GFP_KERNEL);
-	if (!task_prop) {
-		CMDQ_ERR("allocate task_prop failed\n");
-		return -ENOMEM;
+		if (copy_from_user(task_prop, from, size)) {
+			CMDQ_ERR("cannot copy task property from user, size=%d\n", size);
+			kfree(task_prop);
+			return -EFAULT;
+		}
+
+		*to = task_prop;
 	}
-
-	if (copy_from_user(task_prop, from, size)) {
-		CMDQ_ERR("cannot copy task property from user, size=%d\n", size);
-		kfree(task_prop);
-		return -EFAULT;
-	}
-
-	*to = task_prop;
 
 	return 0;
 }
