@@ -405,7 +405,7 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
 	spin_lock_init(&new->queue_lock);
 	new->rq = blk_init_queue(mtd_blktrans_request, &new->queue_lock);
 #ifdef CONFIG_MTK_MTD_NAND
-	new->rq->backing_dev_info.ra_pages = 0;
+	new->rq->backing_dev_info->ra_pages = 0;
 #endif
 	if (!new->rq)
 		goto error3;
