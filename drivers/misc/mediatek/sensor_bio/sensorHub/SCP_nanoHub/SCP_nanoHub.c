@@ -877,6 +877,7 @@ static int sensor_send_dram_info_to_hub(void)
 	struct SCP_sensorHub_data *obj = obj_data;
 	SCP_SENSOR_HUB_DATA data;
 	unsigned int len = 0;
+	int err = 0;
 
 	obj->shub_dram_phys = scp_get_reserve_mem_phys(SENS_MEM_ID);
 	obj->shub_dram_virt = scp_get_reserve_mem_virt(SENS_MEM_ID);
@@ -887,7 +888,20 @@ static int sensor_send_dram_info_to_hub(void)
 
 	len = sizeof(data.set_config_req);
 
-	scp_sensorHub_req_send(&data, &len, 1);
+	err = scp_sensorHub_req_send(&data, &len, 1);
+	if (err < 0) {
+		err = scp_sensorHub_req_send(&data, &len, 1);
+		if (err < 0) {
+			err = scp_sensorHub_req_send(&data, &len, 1);
+			if (err < 0) {
+				err = scp_sensorHub_req_send(&data, &len, 1);
+				if (err < 0) {
+					SCP_ERR("sensor_send_dram_info_to_hub fail 4 times!\n");
+					return SCP_SENSOR_HUB_FAILURE;
+				}
+			}
+		}
+	}
 
 	return SCP_SENSOR_HUB_SUCCESS;
 }
@@ -1573,7 +1587,9 @@ static int sensorHub_probe(struct platform_device *pdev)
 	obj->SCP_sensorFIFO->rp = 0;
 	obj->SCP_sensorFIFO->FIFOSize =
 	    (SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) / SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
+	SCP_ERR("[Lomen] sensor_send_dram_info_to_hub+\n");
 	sensor_send_dram_info_to_hub();
+	SCP_ERR("[Lomen] sensor_send_dram_info_to_hub-\n");
 	SCP_ERR("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
 		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
 	/* init receive scp dram data worker */
