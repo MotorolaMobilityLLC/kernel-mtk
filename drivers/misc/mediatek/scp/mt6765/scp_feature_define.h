@@ -30,8 +30,8 @@
 #define SCP_REGISTER_SUB_SENSOR         (1)
 
 /* emi mpu define*/
-#define ENABLE_SCP_EMI_PROTECTION       (0)
-#define MPU_REGION_ID_SCP_SMEM       6
+#define ENABLE_SCP_EMI_PROTECTION       (1)
+#define MPU_REGION_ID_SCP_SMEM          (27)
 
 /* scp feature ID list */
 enum feature_id {
