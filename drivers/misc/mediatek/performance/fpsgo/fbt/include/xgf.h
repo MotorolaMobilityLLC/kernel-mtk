@@ -64,8 +64,7 @@ struct xgf_proc {
 
 	struct rb_root deps_rec;
 	int render_thread_called_count;
-	int has_increase_thread_count;
-	int total_increase_count;
+	int dep_timer_count;
 };
 
 struct xgf_timer {
@@ -87,7 +86,7 @@ struct xgf_deps {
 	int render_count;
 	int render_dep;
 	int render_dep_deep;
-	int has_increase;
+	int has_timer;
 
 	struct xgf_tick queue;
 	struct xgf_tick deque;
@@ -95,6 +94,7 @@ struct xgf_deps {
 	unsigned long long slptime;
 	unsigned long long quetime;
 	unsigned long long deqtime;
+	unsigned long long has_timer_renew_ts;
 };
 
 struct render_dep {
