@@ -3646,7 +3646,8 @@ static struct TaskStruct *cmdq_core_acquire_task(
 		pTask->userDebugStr = NULL;
 		pTask->cmd_buffer_va = NULL;
 		/* copy since we may flush same handle multiple times */
-		if (pCommandDesc->prop_size && pCommandDesc->prop_addr) {
+		if (pCommandDesc->prop_size && pCommandDesc->prop_addr &&
+			pCommandDesc->prop_size < CMDQ_MAX_USER_PROP_SIZE) {
 			pTask->prop_addr = kzalloc(pCommandDesc->prop_size, GFP_KERNEL);
 			memcpy(pTask->prop_addr, (void *)CMDQ_U32_PTR(pCommandDesc->prop_addr),
 				pCommandDesc->prop_size);

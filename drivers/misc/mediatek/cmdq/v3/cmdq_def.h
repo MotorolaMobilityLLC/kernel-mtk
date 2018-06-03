@@ -135,6 +135,7 @@ typedef u64 CMDQ_VARIABLE;
 #define CMDQ_DELAY_SET_MAX_CPR		(3)
 #define CMDQ_DELAY_THD_SIZE		(64)	/* delay inst in bytes */
 
+#define CMDQ_MAX_USER_PROP_SIZE		(1024)
 /* #define CMDQ_DUMP_GIC (0) */
 /* #define CMDQ_PROFILE_MMP (0) */
 
