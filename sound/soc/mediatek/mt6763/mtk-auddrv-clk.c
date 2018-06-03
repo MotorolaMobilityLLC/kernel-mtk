@@ -1138,7 +1138,7 @@ void AudDrv_Emi_Clk_On(void)
 	if (Aud_EMI_cntr == 0) {
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
-		spm_resource_req(SPM_RESOURCE_USER_AUDIO, SPM_RESOURCE_DRAM);
+		spm_resource_req(SPM_RESOURCE_USER_AUDIO, SPM_RESOURCE_ALL);
 #endif
 	}
 	Aud_EMI_cntr++;

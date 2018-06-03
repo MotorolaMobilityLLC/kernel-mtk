@@ -11,29 +11,6 @@
  * GNU General Public License for more details.
  */
 
-/*******************************************************************************
- *
- * Filename:
- * ---------
- *  mt6797_sound.c
- *
- * Project:
- * --------
- *   MT6797  Audio Driver Kernel Function
- *
- * Description:
- * ------------
- *   Audio register
- *
- * Author:
- * -------
- * Chipeng Chang
- *
- *------------------------------------------------------------------------------
- *
- *******************************************************************************/
-
-
 /*****************************************************************************
  *                     C O M P I L E R   F L A G S
  *****************************************************************************/
@@ -1252,7 +1229,6 @@ bool CleanPreDistortion(void)
 	return false;
 }
 
-/* Follow 6755 */
 bool SetDLSrc2(uint32 rate)
 {
 	uint32 AfeAddaDLSrc2Con0, AfeAddaDLSrc2Con1;
@@ -1274,6 +1250,8 @@ bool SetDLSrc2(uint32 rate)
 	AfeAddaDLSrc2Con1 = 0xf74f0000;
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, AfeAddaDLSrc2Con0, MASK_ALL);
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, AfeAddaDLSrc2Con1, MASK_ALL);
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 
 	return true;
 }
@@ -2189,11 +2167,9 @@ static int get_trim_buffer_diff(int channels)
 	}
 
 	/* Buffer Off and Get Auxadc value */
-	OpenTrimBufferHardware(true); /* buffer off setting */
 	setHpGainZero();
 
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	setOffsetTrimMux(channels);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP);
 	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
 	EnableTrimbuffer(true);
 	usleep_range(1 * 1000, 10 * 1000);
@@ -2202,15 +2178,8 @@ static int get_trim_buffer_diff(int channels)
 
 	EnableTrimbuffer(false);
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
-
-	OpenTrimBufferHardware(false);
 
 	/* Buffer On and Get Auxadc values */
-	OpenAnalogHeadphone(true); /* buffer on setting */
-	setHpGainZero();
-
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 	setOffsetTrimMux(channels);
 	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
 	EnableTrimbuffer(true);
@@ -2220,9 +2189,6 @@ static int get_trim_buffer_diff(int channels)
 
 	EnableTrimbuffer(false);
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
-
-	OpenAnalogHeadphone(false);
 
 	diffValue = onValue - offValue;
 	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
@@ -2250,10 +2216,12 @@ int get_audio_trim_offset(int channel)
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	OpenAfeDigitaldl1(true);
+	OpenTrimBufferHardware(true);
 
 	for (counter = 0; counter < kTrimTimes; counter++)
 		trimOffset[counter] = get_trim_buffer_diff(channel);
 
+	OpenTrimBufferHardware(false);
 	OpenAfeDigitaldl1(false);
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
@@ -2265,6 +2233,7 @@ int get_audio_trim_offset(int channel)
 	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
 
 	return averageOffset;
+
 #else
 	return 0;
 #endif
@@ -2403,6 +2372,38 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 	return true;
 }
 
+void SetSdmLevel(unsigned int level)
+{
+	Afe_Set_Reg(AFE_ADDA_DL_SDM_DCCOMP_CON, level, 0x3f);
+}
+
+/* mtk_codec_ops */
+static int enable_dc_compensation(bool enable)
+{
+	Afe_Set_Reg(AFE_ADDA_DL_SDM_DCCOMP_CON,
+		    (enable ? 1 : 0) << 8,
+		    0x1 << 8);
+	return 0;
+}
+
+static int set_lch_dc_compensation(int value)
+{
+	Afe_Set_Reg(AFE_ADDA_DL_DC_COMP_CFG0, value, MASK_ALL);
+	return 0;
+}
+
+static int set_rch_dc_compensation(int value)
+{
+	Afe_Set_Reg(AFE_ADDA_DL_DC_COMP_CFG1, value, MASK_ALL);
+	return 0;
+}
+
+static struct mtk_codec_ops mtk_codec_platform_ops = {
+	.enable_dc_compensation = enable_dc_compensation,
+	.set_lch_dc_compensation = set_lch_dc_compensation,
+	.set_rch_dc_compensation = set_rch_dc_compensation,
+};
+
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
 };
@@ -2413,4 +2414,6 @@ void init_afe_ops(void)
 	pr_warn("%s\n", __func__);
 	set_mem_blk_ops(&mem_blk_ops);
 	set_afe_platform_ops(&afe_platform_ops);
+
+	set_codec_ops(&mtk_codec_platform_ops);
 }

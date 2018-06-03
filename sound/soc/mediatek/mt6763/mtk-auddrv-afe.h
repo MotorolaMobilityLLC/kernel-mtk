@@ -291,6 +291,13 @@ typedef enum {
 	I5I6 = 2,
 } STF_SRC_T;
 
+typedef enum {
+	AUDIO_SDM_LEVEL_MUTE = 0,
+	AUDIO_SDM_LEVEL_NORMAL = 0x1d,
+	/* if you change level normal */
+	/* you need to change formula of hp impedance and dc trim too */
+} AUDIO_SDM_LEVEL;
+
 /* Sine wave generator related */
 typedef enum {
 	SINE_TONE_CH1 = 0,
@@ -771,5 +778,7 @@ int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch);
 bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite);
 
 ssize_t AudDrv_Reg_Dump(char *buffer, int size);
+
+void SetSdmLevel(unsigned int level);
 
 #endif
