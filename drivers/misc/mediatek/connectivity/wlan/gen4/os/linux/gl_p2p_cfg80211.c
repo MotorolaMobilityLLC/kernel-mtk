@@ -1378,7 +1378,7 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 	P_GL_P2P_DEV_INFO_T prGlueP2pDevInfo = (P_GL_P2P_DEV_INFO_T) NULL;
 	P_MSG_P2P_CHNL_REQUEST_T prMsgChnlReq = (P_MSG_P2P_CHNL_REQUEST_T) NULL;
 
-	DBGLOG(P2P, STATE, "mtk_p2p_cfg80211_remain_on_channel\n");
+	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_remain_on_channel\n");
 
 	do {
 		if ((wiphy == NULL) ||
@@ -1400,7 +1400,7 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_remain_on_channel:%d\n", (INT_32) *cookie);
+		DBGLOG(P2P, INFO, "Remain on channel, cookie: 0x%llx\n", *cookie);
 
 		prMsgChnlReq->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_REQ;
 		prMsgChnlReq->u8Cookie = *cookie;
@@ -1443,7 +1443,7 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy, struct wirele
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_cancel_remain_on_channel%d\n", (INT_32) cookie);
+		DBGLOG(P2P, INFO, "Cancel remain on channel, cookie: 0x%llx\n", cookie);
 
 		prMsgChnlAbort->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_ABORT;
 		prMsgChnlAbort->u8Cookie = cookie;

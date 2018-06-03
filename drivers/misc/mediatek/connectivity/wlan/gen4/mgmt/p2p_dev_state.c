@@ -213,7 +213,8 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 VOID
 p2pDevStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 			      IN P_BSS_INFO_T prP2pBssInfo,
-			      IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo)
+			      IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo,
+			      IN ENUM_P2P_DEV_STATE_T eNextState)
 {
 	do {
 		ASSERT_BREAK((prAdapter != NULL) || (prChnlReqInfo != NULL));
@@ -224,12 +225,14 @@ p2pDevStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eOriBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eOriChnlSco;
 
-		kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
-					     prChnlReqInfo->u8Cookie,
-					     prChnlReqInfo->ucReqChnlNum,
-					     prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco);
+		if (eNextState != P2P_DEV_STATE_CHNL_ON_HAND) {
+			kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
+						     prChnlReqInfo->u8Cookie,
+						     prChnlReqInfo->ucReqChnlNum,
+						     prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco);
 
-		p2pFuncReleaseCh(prAdapter, prP2pDevFsmInfo->ucBssIndex, prChnlReqInfo);
+			p2pFuncReleaseCh(prAdapter, prP2pDevFsmInfo->ucBssIndex, prChnlReqInfo);
+		}
 	} while (FALSE);
 }				/* p2pDevStateAbort_CHNL_ON_HAND */
 
