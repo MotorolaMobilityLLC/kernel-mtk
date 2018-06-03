@@ -195,6 +195,7 @@ extern int spm_mtcmos_ctrl_mfg2(int state);
 extern int mt_eem_status(enum eem_det_id id);
 extern unsigned int get_vcore_ptp_volt(unsigned int uv);
 /* extern void eem_set_pi_offset(enum eem_ctrl_id id, int step); */
+extern void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse);
 extern unsigned int get_efuse_status(void);
 extern unsigned int mt_eem_is_enabled(void);
 extern unsigned int mt_eem_vcorefs_set_volt(void);

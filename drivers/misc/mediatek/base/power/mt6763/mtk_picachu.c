@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -41,18 +41,22 @@
 
 #include "mtk_eem.h"
 
-#define PICACHU_BASE	0x0011C1C0
-#define PICACHU_SIZE	0x40
+#define PICACHU_SIGNATURE		(0xA5)
+#define PICACHU_PTP1_EFUSE_MASK		(0xFFFFFF)
+#define PICACHU_VMIN_SHIFT_BIT          (0)
+#define PICACHU_OFFSET_SHIFT_BIT        (8)
+#define PICACHU_WFE_STATUS_SHIFT_BIT    (16)
+#define PICACHU_SIGNATURE_SHIFT_BIT     (24)
 
-#define PICACHU_BARRIER_START	0x0011C200
-#define PICACHU_BARRIER_END	0x0011C210
-#define PICACHU_BARRIER_SIZE	(PICACHU_BARRIER_END - PICACHU_BARRIER_START)
+#define PICACHU_SUPPORT_CLUSTERS	3
 
-#define PARA_PATH       "/dev/block/platform/bootdevice/by-name/para"
-#define CFG_ENV_SIZE    0x1000
-#define CFG_ENV_OFFSET  0x40000
+#define EEM_BASEADDR	(0x1100B000)
+#define EEM_SIZE	(0x1000)
 
-#define NR_OPPS         1
+#define EEMSPARE0	(eem_base_addr + 0xF20)
+#define EEMSPARE1	(eem_base_addr + 0xF24)
+#define EEMSPARE2	(eem_base_addr + 0xF28)
+#define EEMSPARE3	(eem_base_addr + 0xF2C)
 
 #undef TAG
 #define TAG     "[Picachu] "
@@ -79,189 +83,48 @@
 	pr_cont(fmt, ##args)
 
 
+#define picachu_read(addr)		__raw_readl((void __iomem *)(addr))
+#define picachu_write(addr, val)	mt_reg_sync_writel(val, addr)
+
 struct picachu_info {
-	unsigned int magic;
-	int vmin[NR_OPPS];
+	int vmin;
 	int offset;
 	unsigned int wfe_status;
-	unsigned int timestamp;
-	unsigned int checksum;
-	unsigned int udi_mbist_max_cpus;
-	unsigned int clear_emmc;
-	int enable;
+
+	/*
+	 * Bit[7:0]: MTDES
+	 * Bit[15:8]: BDES
+	 * Bit[23:16]: MDES
+	 */
+	unsigned int ptp1_efuse[PICACHU_SUPPORT_CLUSTERS]; /* 2L, L and CCI */
 };
 
-static struct picachu_info *picachu_data;
+struct pentry {
+	const char *name;
+	const struct file_operations *fops;
+};
+
+static struct picachu_info picachu_data;
 static unsigned int picachu_debug;
 
-#if defined(CONFIG_MTK_DISABLE_PICACHU)
-static int picachu_enable;
-#else
-/* FIXME: Disable Picachu temporarily. */
-/* static int picachu_enable = 1; */
-static int picachu_enable;
-#endif
+static void __iomem *eem_base_addr;
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 {
-	int i;
+	unsigned int i;
 
-	seq_printf(m, "0x%X\n", info->magic);
-	for (i = 0; i < NR_OPPS; i++)
-		seq_printf(m, "0x%X\n", info->vmin[i]);
-
+	seq_printf(m, "0x%X\n", info->vmin);
 	seq_printf(m, "0x%X\n", info->offset);
 	seq_printf(m, "0x%X\n", info->wfe_status);
-	seq_printf(m, "0x%X\n", info->timestamp);
-	seq_printf(m, "0x%X\n", info->checksum);
-	seq_printf(m, "0x%X\n", info->clear_emmc);
-	seq_printf(m, "0x%X\n", info->enable);
-	seq_printf(m, "0x%X\n", info->udi_mbist_max_cpus);
-}
 
-static int picachu_enable_proc_show(struct seq_file *m, void *v)
-{
-	if (picachu_data != NULL)
-		seq_printf(m, "0x%X\n", picachu_data->enable);
+	for (i = EEM_CTRL_2L; i <= EEM_CTRL_CCI; i++)
+		seq_printf(m, "0x%X\n", info->ptp1_efuse[i]);
 
-	return 0;
-}
-
-static int picachu_clear_emmc_proc_show(struct seq_file *m, void *v)
-{
-	if (picachu_data != NULL)
-		seq_printf(m, "0x%X\n", picachu_data->clear_emmc);
-
-	return 0;
-}
-
-static ssize_t picachu_enable_proc_write(struct file *file,
-					 const char __user *buffer,
-					 size_t count, loff_t *pos)
-{
-	char *buf = (char *) __get_free_page(GFP_USER);
-	int enable = 0;
-	int ret;
-
-	if (!buf)
-		return -ENOMEM;
-
-	ret = -EINVAL;
-
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	ret = -EFAULT;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
-
-	if (kstrtoint(buf, 10, &enable)) {
-		ret = -EINVAL;
-		picachu_dbg("bad argument_1!! argument should be 0/1\n");
-	} else {
-		ret = 0;
-		if (picachu_data != NULL)
-			picachu_data->enable = enable;
-	}
-
-out:
-	free_page((unsigned long)buf);
-
-	return (ret < 0) ? ret : count;
-}
-
-static ssize_t picachu_clear_emmc_proc_write(struct file *file,
-					     const char __user *buffer,
-					     size_t count, loff_t *pos)
-{
-	char *buf = (char *) __get_free_page(GFP_USER);
-	int clear_emmc = 0;
-	int ret;
-
-	if (!buf)
-		return -ENOMEM;
-
-	ret = -EINVAL;
-
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	ret = -EFAULT;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
-
-	if (kstrtoint(buf, 10, &clear_emmc)) {
-		ret = -EINVAL;
-		picachu_dbg("bad argument_1!! argument should be 0/1\n");
-	} else {
-		ret = 0;
-		if (picachu_data != NULL)
-			picachu_data->clear_emmc = clear_emmc;
-	}
-
-out:
-	free_page((unsigned long)buf);
-
-	return (ret < 0) ? ret : count;
-}
-static int picachu_offset_proc_show(struct seq_file *m, void *v)
-{
-	if (picachu_data != NULL)
-		seq_printf(m, "0x%X\n", picachu_data->offset);
-
-	return 0;
-}
-
-static ssize_t picachu_offset_proc_write(struct file *file,
-				     const char __user *buffer, size_t count, loff_t *pos)
-{
-	char *buf = (char *) __get_free_page(GFP_USER);
-	int offset = 0;
-	int ret;
-
-	if (!buf)
-		return -ENOMEM;
-
-	ret = -EINVAL;
-
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	ret = -EFAULT;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
-
-	if (kstrtoint(buf, 10, &offset)) {
-		ret = -EINVAL;
-		picachu_dbg("bad argument_1!! argument should be 0/1\n");
-	} else {
-		ret = 0;
-		if (picachu_data != NULL) {
-			picachu_data->offset = offset;
-			eem_set_pi_offset(EEM_CTRL_2L, offset);
-			eem_set_pi_offset(EEM_CTRL_L, offset);
-		}
-	}
-
-out:
-	free_page((unsigned long)buf);
-
-	return (ret < 0) ? ret : count;
 }
 
 static int picachu_dump_proc_show(struct seq_file *m, void *v)
 {
-	if (picachu_data != NULL)
-		dump_picachu_info(m, picachu_data);
+	dump_picachu_info(m, &picachu_data);
 
 	return 0;
 }
@@ -299,70 +162,86 @@ static int picachu_dump_proc_show(struct seq_file *m, void *v)
 
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
-PROC_FOPS_RW(picachu_enable);
-PROC_FOPS_RW(picachu_offset);
-PROC_FOPS_RW(picachu_clear_emmc);
 PROC_FOPS_RO(picachu_dump);
 
 static int create_procfs(void)
 {
 	int i;
 	struct proc_dir_entry *dir = NULL;
-	struct pentry {
-		const char *name;
-		const struct file_operations *fops;
-	};
 
 	struct pentry entries[] = {
-		PROC_ENTRY(picachu_enable),
-		PROC_ENTRY(picachu_offset),
 		PROC_ENTRY(picachu_dump),
-		PROC_ENTRY(picachu_clear_emmc),
 	};
 
 	dir = proc_mkdir("picachu", NULL);
 
 	if (!dir) {
 		picachu_dbg("[%s]: mkdir /proc/picachu failed\n", __func__);
-		return -1;
+		return -ENOMEM;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
 			picachu_dbg("[%s]: create /proc/picachu/%s failed\n", __func__, entries[i].name);
-			return -3;
+			return -ENOMEM;
 		}
 	}
 
 	return 0;
 }
 
+static void picachu_get_data(void)
+{
+	unsigned int i, val, tmp;
+
+	for (i = 0; i < PICACHU_SUPPORT_CLUSTERS; i++) {
+
+		val = picachu_read(EEMSPARE0 + (i << 2));
+
+		tmp = (val >> PICACHU_SIGNATURE_SHIFT_BIT) & 0xff;
+		if (tmp != PICACHU_SIGNATURE)
+			continue;
+
+		picachu_data.ptp1_efuse[i] = val & PICACHU_PTP1_EFUSE_MASK;
+	}
+
+	val = picachu_read(EEMSPARE3);
+
+	tmp = (val >> PICACHU_SIGNATURE_SHIFT_BIT) & 0xff;
+	if (tmp != PICACHU_SIGNATURE)
+		return;
+
+	picachu_data.vmin = (val >> PICACHU_VMIN_SHIFT_BIT) & 0xff;
+	picachu_data.offset = (val >> PICACHU_OFFSET_SHIFT_BIT) & 0xff;
+	picachu_data.wfe_status = (val >> PICACHU_WFE_STATUS_SHIFT_BIT) & 0xff;
+}
+
 static int __init picachu_init(void)
 {
-	int offset = 0;
+	unsigned int i;
 
-	picachu_data = (struct picachu_info *) ioremap_nocache(PICACHU_BASE,
-								PICACHU_SIZE);
+	eem_base_addr = ioremap(EEM_BASEADDR, EEM_SIZE);
 
-	if (!picachu_data) {
-		picachu_err("cannot allocate resource for picachu data\n");
+	if (!eem_base_addr) {
+		picachu_info("eem_base_addr NULL!\n");
 		return -ENOMEM;
 	}
 
-	picachu_data->enable = picachu_enable;
-
-	if (picachu_enable == 1) {
-		offset = picachu_data->offset;
-		picachu_info("pi_off = %d\n", picachu_data->offset);
-	}
-
-	eem_set_pi_offset(EEM_CTRL_2L, offset);
-	eem_set_pi_offset(EEM_CTRL_L, offset);
+	picachu_get_data();
 
 	create_procfs();
 
-	if (picachu_data->udi_mbist_max_cpus == 4)
-		aee_kernel_warning("PICACHU", "CPU truncate to 4 only");
+	/* Update Picachu calibration data if the data is valid. */
+	for (i = EEM_CTRL_2L; i <= EEM_CTRL_CCI; i++) {
+
+		if (!picachu_data.ptp1_efuse[i])
+			continue;
+
+		picachu_info("ptp1_efuse[%d]: 0x%x\n", i,
+						picachu_data.ptp1_efuse[i]);
+
+		eem_set_pi_efuse(i, picachu_data.ptp1_efuse[i]);
+	}
 
 	return 0;
 }
@@ -371,12 +250,12 @@ static void __exit picachu_exit(void)
 {
 	picachu_dbg("Picachu de-initialization\n");
 
-	if (picachu_data)
-		iounmap(picachu_data);
+	if (eem_base_addr)
+		iounmap(eem_base_addr);
 
 }
 
-late_initcall(picachu_init);
+subsys_initcall(picachu_init);
 
 MODULE_DESCRIPTION("MediaTek Picachu Driver v0.1");
 MODULE_LICENSE("GPL");

@@ -26,6 +26,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(MTK_PLATFORM)/inc/
 endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
@@ -45,7 +46,7 @@ obj-$(CONFIG_MACH_MT6763) += mtk_gpufreq.o
 #obj-$(CONFIG_MACH_MT6763M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
-#obj-y += mtk_picachu.o
+obj-y += mtk_picachu.o
 #obj-y += mtk_cpufreq.o
 #obj-y += mtk_cpufreq_hybrid.o
 #obj-y += mt_gpufreq.o
