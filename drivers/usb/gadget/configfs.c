@@ -1631,7 +1631,10 @@ static void android_disconnect(struct usb_gadget *gadget)
 	acc_disconnect();
 #endif
 	gi->connected = 0;
-	schedule_work(&gi->work);
+	if (strstr(current->comm, "init") && !in_interrupt())
+		pr_notice("%s, skip work\n", __func__);
+	else
+		schedule_work(&gi->work);
 	composite_disconnect(gadget);
 }
 #endif
