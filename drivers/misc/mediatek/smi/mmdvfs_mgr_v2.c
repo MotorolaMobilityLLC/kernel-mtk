@@ -624,12 +624,7 @@ static int get_venc_step(int venc_resolution)
 	int lpm_size_limit = 0;
 	int venc_step = MMDVFS_VOLTAGE_LOW;
 
-	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_WQHD)
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 4096 * 1716;
-	else
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 4096 * 1716;
+	lpm_size_limit = 4096 * 1716;
 
 	/* Check recording video resoltuion */
 	if (venc_resolution >= lpm_size_limit)
@@ -1186,9 +1181,10 @@ static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
 
 void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disabled\n");
+		return;
+	}
 
 	/* MMDVFSMSG("MMDVFS handle cmd %u s %d\n", cmd->type, cmd->scen); */
 
@@ -1281,9 +1277,10 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 
 void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disabled\n");
+		return;
+	}
 
 	/* MMDVFSMSG("leave %d\n", scen); */
 	if (scen == SMI_BWC_SCEN_WFD)
@@ -1311,9 +1308,11 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	mmdvfs_lcd_size_enum lcd_size_detected = MMDVFS_LCD_SIZE_WQHD;
 
 	lcd_size_detected = mmdvfs_get_lcd_resolution();
-#if !MMDVFS_ENABLE
-	return;
-#endif
+
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disabled\n");
+		return;
+	}
 
 	/* Leave display idle mode before set scenario */
 	if (current_mmsys_clk == MMSYS_CLK_LOW && scen != SMI_BWC_SCEN_NORMAL)
@@ -1419,17 +1418,22 @@ static void mmdvfs_init_ddr(void)
 
 void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
-
-#ifdef MMDVFS_O1
 	int i = 0;
 
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable\n");
+		return;
+	}
+
 	mmdvfs_init_ddr();
+
 	for (i = 0; i < MMDVFS_SCEN_COUNT; i++)
+#ifdef MMDVFS_O1
 		g_mmdvfs_scenario_voltage[i] = MMDVFS_VOLTAGE_DEFAULT_STEP;
+#else
+		g_mmdvfs_scenario_voltage[i] = MMDVFS_VOLTAGE_DEFAULT;
 #endif /*MMDVFS_O1*/
+
 	spin_lock_init(&g_mmdvfs_mgr->scen_lock);
 	/* set current step as the default step */
 	g_mmdvfs_current_step = mmdvfs_get_default_step();
@@ -1821,9 +1825,8 @@ int mmdvfs_notify_mmclk_switch_request(int event)
 	int i = 0;
 	MTK_SMI_BWC_SCEN current_smi_scenario = smi_get_current_profile();
 
-#ifdef MMDVFS_E1
-	return 0;
-#endif
+	if (is_mmdvfs_freq_mux_disabled())
+		return 0;
 
 	/* Don't get the lock since there is no need to synchronize the is_cam_monior_work here*/
 	if (is_cam_monior_work != 0) {
