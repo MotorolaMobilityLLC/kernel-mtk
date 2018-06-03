@@ -362,12 +362,12 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 		}
 #if MULTI_WRITE
 
-	if (tosend >= I2C_BUFFER_LEN || IDX == len || addr != addr_last) {
+	if ((I2C_BUFFER_LEN - tosend) < 4 || IDX == len || addr != addr_last) {
 		iBurstWriteReg_multi(
 		puSendCmd, tosend, imgsensor.i2c_write_id, 4,
 				     imgsensor_info.i2c_speed);
 		tosend = 0;
-		}
+	}
 #else
 		iWriteRegI2CTiming(puSendCmd, 4,
 			imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
@@ -2608,33 +2608,33 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		break;
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-			pr_debug(
-			  "SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n",
-				(UINT16)*feature_data);
-			/*PDAF capacity enable or not*/
-			switch (*feature_data) {
-			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-				break;
-			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-				/* video & capture use same setting*/
-				break;
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-				break;
-			case MSDK_SCENARIO_ID_SLIM_VIDEO:
-				/*need to check*/
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-				break;
-			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-				break;
-			default:
-				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-				break;
-			}
+		pr_debug(
+		  "SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n",
+			(UINT16)*feature_data);
+		/*PDAF capacity enable or not*/
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			/* video & capture use same setting*/
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			/*need to check*/
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+			break;
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			break;
+		}
+		break;
 	case SENSOR_FEATURE_GET_PDAF_DATA:	/*get cal data from eeprom*/
 			pr_debug("SENSOR_FEATURE_GET_PDAF_DATA\n");
 			read_2P7_eeprom((kal_uint16)(*feature_data),
