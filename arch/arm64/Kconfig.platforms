@@ -339,6 +339,7 @@ config MACH_MT6739
 	select IRQ_DOMAIN
 	select IRQ_DOMAIN_DEBUG
 	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
 	select ARMV7_COMPAT
 	select ARMV7_COMPAT_CPUINFO
 	select CPU_IDLE
@@ -346,12 +347,15 @@ config MACH_MT6739
 	select PINCTRL_MT6739
 	select MFD_SYSCON
 	select MTK_BASE_POWER
+	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_BOUNCING_CHECK
 	select ARM64_ERRATUM_845719
 	select MTK_CQDMA
+	select MTK_SYSIRQ
+	select FAST_CIRQ_CLONE_FLUSH
 	help
 	  This enables support for MediaTek MT6739.
 	  It enables all necessary feature for MP including
