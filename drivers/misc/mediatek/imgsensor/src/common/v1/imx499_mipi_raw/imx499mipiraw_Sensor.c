@@ -296,123 +296,157 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 };
 
 
-#define IMX499MIPI_MaxGainIndex (115)
+#define IMX499MIPI_MaxGainIndex (150)
 kal_uint16 IMX499MIPI_sensorGainMapping[IMX499MIPI_MaxGainIndex][2] = {
 	{64, 0},
-	{65, 8},
-	{66, 16},
-	{67, 25},
-	{68, 30},
-	{69, 37},
-	{70, 45},
-	{71, 51},
-	{72, 57},
-	{73, 63},
-	{74, 67},
-	{75, 75},
-	{76, 81},
-	{77, 85},
-	{78, 92},
-	{79, 96},
-	{80, 103},
-	{81, 107},
-	{82, 112},
-	{83, 118},
-	{84, 122},
-	{86, 133},
-	{88, 140},
-	{89, 144},
-	{90, 148},
-	{93, 159},
-	{96, 171},
-	{97, 175},
-	{99, 182},
-	{101, 188},
-	{102, 192},
-	{104, 197},
-	{106, 202},
-	{107, 206},
-	{109, 211},
-	{112, 220},
-	{113, 222},
-	{115, 228},
-	{118, 235},
-	{120, 239},
-	{125, 250},
-	{126, 252},
-	{128, 256},
-	{129, 258},
-	{130, 260},
-	{132, 264},
-	{133, 266},
-	{135, 269},
-	{136, 271},
-	{138, 274},
-	{139, 276},
-	{141, 279},
-	{142, 282},
-	{144, 285},
-	{145, 286},
-	{147, 290},
-	{149, 292},
-	{150, 294},
-	{155, 300},
-	{157, 303},
-	{158, 305},
-	{161, 309},
-	{163, 311},
-	{170, 319},
-	{172, 322},
-	{174, 324},
-	{176, 326},
-	{179, 329},
-	{181, 331},
-	{185, 335},
-	{189, 339},
-	{193, 342},
-	{195, 344},
-	{196, 345},
-	{200, 348},
-	{202, 350},
-	{205, 352},
-	{207, 354},
-	{210, 356},
-	{211, 357},
-	{214, 359},
-	{217, 361},
-	{218, 362},
-	{221, 364},
-	{224, 366},
-	{231, 370},
-	{237, 374},
-	{246, 379},
-	{250, 381},
-	{252, 382},
-	{256, 384},
-	{260, 386},
-	{262, 387},
-	{273, 392},
-	{275, 393},
-	{280, 395},
-	{290, 399},
-	{306, 405},
-	{312, 407},
-	{321, 410},
-	{331, 413},
-	{345, 417},
-	{352, 419},
-	{360, 421},
-	{364, 422},
-	{372, 424},
-	{386, 427},
-	{400, 430},
-	{410, 432},
-	{420, 434},
-	{431, 436},
-	{437, 437},
-	{449, 439},
-	{468, 442},
-	{512, 448},
+	{65, 16},
+	{66, 32},
+	{67, 46},
+	{68, 61},
+	{69, 75},
+	{70, 88},
+	{71, 101},
+	{72, 114},
+	{73, 127},
+	{74, 139},
+	{75, 151},
+	{76, 162},
+	{77, 173},
+	{78, 184},
+	{79, 195},
+	{80, 205},
+	{81, 215},
+	{82, 225},
+	{83, 235},
+	{84, 244},
+	{85, 253},
+	{86, 262},
+	{87, 271},
+	{88, 280},
+	{89, 288},
+	{90, 296},
+	{91, 305},
+	{92, 312},
+	{93, 320},
+	{94, 327},
+	{95, 335},
+	{96, 342},
+	{97, 349},
+	{98, 356},
+	{99, 363},
+	{100, 369},
+	{101, 376},
+	{102, 382},
+	{103, 388},
+	{104, 394},
+	{105, 400},
+	{106, 406},
+	{107, 412},
+	{108, 418},
+	{109, 423},
+	{112, 439},
+	{113, 445},
+	{115, 455},
+	{118, 470},
+	{120, 478},
+	{125, 500},
+	{126, 505},
+	{128, 512},
+	{129, 517},
+	{130, 520},
+	{132, 528},
+	{133, 532},
+	{135, 539},
+	{136, 543},
+	{138, 550},
+	{139, 553},
+	{141, 560},
+	{142, 563},
+	{144, 568},
+	{145, 573},
+	{147, 579},
+	{149, 585},
+	{150, 588},
+	{155, 602},
+	{157, 607},
+	{158, 610},
+	{161, 618},
+	{163, 622},
+	{170, 639},
+	{172, 644},
+	{174, 648},
+	{176, 652},
+	{179, 658},
+	{181, 663},
+	{185, 670},
+	{189, 678},
+	{193, 685},
+	{195, 688},
+	{196, 690},
+	{200, 697},
+	{202, 700},
+	{205, 705},
+	{207, 708},
+	{210, 712},
+	{211, 714},
+	{214, 718},
+	{217, 722},
+	{218, 724},
+	{221, 728},
+	{224, 732},
+	{231, 741},
+	{237, 748},
+	{246, 758},
+	{250, 762},
+	{252, 764},
+	{256, 768},
+	{260, 772},
+	{262, 774},
+	{273, 784},
+	{275, 786},
+	{280, 790},
+	{289, 798},
+	{306, 810},
+	{312, 814},
+	{321, 820},
+	{332, 827},
+	{346, 835},
+	{352, 838},
+	{360, 842},
+	{364, 844},
+	{372, 848},
+	{387, 855},
+	{399, 860},
+	{402, 861},
+	{404, 862},
+	{431, 872},
+	{436, 874},
+	{448, 878},
+	{451, 879},
+	{468, 884},
+	{468, 890},
+	{508, 895},
+	{528, 900},
+	{550, 905},
+	{574, 910},
+	{601, 915},
+	{630, 920},
+	{661, 925},
+	{697, 930},
+	{736, 935},
+	{780, 940},
+	{829, 945},
+	{885, 950},
+	{897, 951},
+	{910, 952},
+	{923, 953},
+	{936, 954},
+	{949, 955},
+	{963, 956},
+	{978, 957},
+	{992, 958},
+	{1008, 959},
+	{1024, 960},
 };
 
 /* add for imx499 pdaf */
@@ -450,7 +484,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 #endif
 };
 
-static kal_uint16 test_Pmode;
+static kal_uint16 PDAF_RAW_mode;/*if not 0, Sensor will only send raw data*/
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -1067,7 +1101,6 @@ kal_uint16 addr_data_pair_preview_imx499[] = {
 
 	0x3E20, 0x02,
 
-	0x3E3B, 0x01,/*PD*/
 	0x4434, 0x02,
 	0x4435, 0x30,
 	0x8271, 0x00,
@@ -1094,6 +1127,12 @@ static void preview_setting(void)
 	imx499_table_write_cmos_sensor(
 	addr_data_pair_preview_imx499,
 	sizeof(addr_data_pair_preview_imx499) / sizeof(kal_uint16));
+
+	if (PDAF_RAW_mode)
+		write_cmos_sensor(0x3E3B, 0x00);
+	else
+		write_cmos_sensor(0x3E3B, 0x01);
+
 }				/*    preview_setting  */
 
 
@@ -1157,7 +1196,7 @@ kal_uint16 addr_data_pair_capture_imx499[] = {
 	0x0823, 0x00,
 
 	0x3E20, 0x02,
-	0x3E3B, 0x01,
+
 	0x4434, 0x02,
 	0x4435, 0x30,
 	0x8271, 0x00,
@@ -1185,6 +1224,11 @@ static void capture_setting(kal_uint16 currefps)
 {
 	imx499_table_write_cmos_sensor(addr_data_pair_capture_imx499,
 		sizeof(addr_data_pair_capture_imx499) / sizeof(kal_uint16));
+
+	if (PDAF_RAW_mode)
+		write_cmos_sensor(0x3E3B, 0x00);
+	else
+		write_cmos_sensor(0x3E3B, 0x01);
 }
 
 kal_uint16 addr_data_pair_video_imx499[] = {
@@ -1247,7 +1291,6 @@ kal_uint16 addr_data_pair_video_imx499[] = {
 	0x0823, 0x00,
 
 	0x3E20, 0x02,
-	0x3E3B, 0x01,/*PD*/
 
 	0x4434, 0x02,
 	0x4435, 0x30,
@@ -1277,6 +1320,11 @@ static void normal_video_setting(kal_uint16 currefps)
 	pr_debug("E! %s:%d\n", __func__, currefps);
 	imx499_table_write_cmos_sensor(addr_data_pair_video_imx499,
 		sizeof(addr_data_pair_video_imx499) / sizeof(kal_uint16));
+
+	if (PDAF_RAW_mode)
+		write_cmos_sensor(0x3E3B, 0x00);
+	else
+		write_cmos_sensor(0x3E3B, 0x01);
 }
 
 kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
@@ -1546,7 +1594,7 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
 
-	pr_debug("IMX499, MIPI 4LANE %d\n", test_Pmode);
+	pr_debug("IMX499, MIPI 4LANE %d\n", PDAF_RAW_mode);
 	pr_debug(
 	 "preview 2328*1746@30fps; video 4656*3496@30fps; capture 21M@24fps\n");
 
@@ -1600,7 +1648,7 @@ static kal_uint32 open(void)
 	spin_unlock(&imgsensor_drv_lock);
 
 
-	if (test_Pmode) {
+	if (PDAF_RAW_mode) {
 		write_cmos_sensor(0x0101, 0x00);
 		write_cmos_sensor(0x0B00, 0x00);
 		write_cmos_sensor(0x3606, 0x00);
@@ -1915,7 +1963,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode */
-	if (test_Pmode == 1)
+	if (PDAF_RAW_mode == 1)
 		sensor_info->PDAF_Support = PDAF_SUPPORT_RAW_LEGACY;
 	else/*default*/
 		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV;
@@ -2434,13 +2482,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	case SENSOR_FEATURE_SET_PDAF_TYPE:
 		if (strstr(&(*feature_para), "type3")) {
-			test_Pmode = 1;
+			PDAF_RAW_mode = 1;
 			/*PDAF_SUPPORT_RAW_LEGACY case*/
 		} else {
-			test_Pmode = 0;
+			PDAF_RAW_mode = 0;
 			/*default: PDAF_SUPPORT_CAMSV*/
 		}
-		pr_debug("set Pinfo = %d\n", test_Pmode);
+		pr_debug("set Pinfo = %d\n", PDAF_RAW_mode);
 		break;
 
 
