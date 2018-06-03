@@ -24,8 +24,7 @@ obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_DCS) += mtkdcs/
 
 
-#obj-$(CONFIG_MTK_BASE_POWER) += base/
-obj-y += base/
+obj-$(CONFIG_MTK_BASE_POWER) += base/
 #obj-$(CONFIG_MTK_POWER_GS) += power_gs/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
 #obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
