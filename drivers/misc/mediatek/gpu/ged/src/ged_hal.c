@@ -1116,7 +1116,7 @@ GED_ERROR ged_hal_init(void)
 	err = ged_debugFS_create_entry(
 			"media_event",
 			gpsHALDir,
-			NULL,
+			&gsVsync_offset_enableReadOps,
 			ged_vsync_offset_enable_write_entry,
 			NULL,
 			&gpsVsyncOffsetEnableEntry);
