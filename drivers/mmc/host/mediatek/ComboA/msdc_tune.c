@@ -200,10 +200,6 @@ int msdc_data_timeout_cont_chk(struct msdc_host *host)
 	return 0;
 }
 
-/*  HS400 can not lower frequence
- *  1. Change to HS200 mode, reinit
- *  2. Lower frequence
- */
 int emmc_reinit_tuning(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -217,9 +213,13 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 		return -1;
 	}
 
-	if (mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400) {
-		mmc->card->mmc_avail_type &= ~EXT_CSD_CARD_TYPE_HS400;
-		pr_notice("msdc%d: witch to HS200 mode, reinit card\n", host->id);
+	/* Switch to DDR/HS mode */
+	if (mmc->card->mmc_avail_type
+	  & (EXT_CSD_CARD_TYPE_HS200 | EXT_CSD_CARD_TYPE_HS400)) {
+		mmc->card->mmc_avail_type &=
+			~(EXT_CSD_CARD_TYPE_HS200|EXT_CSD_CARD_TYPE_HS400);
+		pr_notice("msdc%d: switch to DDR/HS mode, reinit card\n",
+			host->id);
 		if (mmc->caps & MMC_CAP_HW_RESET) {
 			caps_hw_reset = 1;
 		} else {
@@ -229,34 +229,58 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 		mmc->ios.timing = MMC_TIMING_LEGACY;
 		mmc->ios.clock = 260000;
 		msdc_ops_set_ios(mmc, &mmc->ios);
+		host->hs400_mode = false;
 		if (mmc_hw_reset(mmc))
-			pr_notice("msdc%d switch HS200 failed\n", host->id);
-		/* recovery MMC_CAP_HW_RESET */
+			pr_notice("msdc%d fail to switch to DDR/HS mode\n",
+				host->id);
+		/* restore MMC_CAP_HW_RESET */
 		if (!caps_hw_reset)
 			mmc->caps &= ~MMC_CAP_HW_RESET;
 		goto done;
 	}
 
-	/* lower frequence */
-	if (mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS200) {
-		mmc->card->mmc_avail_type &= ~EXT_CSD_CARD_TYPE_HS200;
-		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, div);
-		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
-		div += 1;
-		if (div > EMMC_MAX_FREQ_DIV) {
-			pr_notice("msdc%d: max lower freq: %d\n", host->id, div);
-			return 1;
-		}
-		msdc_clk_stable(host, mode, div, 0);
-		host->sclk =
-			(div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
-		pr_notice("msdc%d: HS200 mode lower frequence to %dMhz\n",
-			host->id, host->sclk / 1000000);
+	/* Reduce to lower frequency */
+	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, div);
+	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
+	div += 1;
+	if (div > EMMC_MAX_FREQ_DIV) {
+		pr_notice("msdc%d: max lower freq: %d\n", host->id, div);
+		return 1;
 	}
+	msdc_clk_stable(host, mode, div, 0);
+	host->sclk = (div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
+	pr_notice("msdc%d: reduce frequence to %dMhz\n",
+		host->id, host->sclk / 1000000);
 
 done:
 	return 0;
 
+}
+
+int sdcard_hw_reset(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	int ret = 0;
+
+	/* power reset sdcard */
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	/* do not set same as HOST_MIN_MCLK
+	 * or else it will be set as block_bad_card when power off
+	 */
+	mmc->ios.clock = 300000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
+	ret = mmc_hw_reset(mmc);
+	if (ret) {
+		if (++host->power_cycle_cnt > MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS)
+			msdc_set_bad_card_and_remove(host);
+		pr_notice("msdc%d power reset (%d) failed, block_bad_card = %d\n",
+			host->id, host->power_cycle_cnt, host->block_bad_card);
+	} else {
+		host->power_cycle_cnt = 0;
+		pr_notice("msdc%d power reset success\n", host->id);
+	}
+
+	return ret;
 }
 
 /* SDcard will change speed mode and power reset
@@ -304,26 +328,20 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	}
 
 	/* force remove card for continuous data timeout */
-	if (msdc_data_timeout_cont_chk(host))
-		return -1;
-
-	/* power reset sdcard */
-	mmc->ios.timing = MMC_TIMING_LEGACY;
-	/* do not set same as HOST_MIN_MCLK
-	 * or else it will be set as block_bad_card when power off
-	 */
-	mmc->ios.clock = 300000;
-	msdc_ops_set_ios(mmc, &mmc->ios);
-	ret = mmc_hw_reset(mmc);
+	ret = msdc_data_timeout_cont_chk(host);
 	if (ret) {
-		if (++host->power_cycle_cnt > MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS)
-			msdc_set_bad_card_and_remove(host);
-		pr_notice("msdc%d power reset (%d) failed, block_bad_card = %d\n",
-			host->id, host->power_cycle_cnt, host->block_bad_card);
-	} else {
-		host->power_cycle_cnt = 0;
-		pr_notice("msdc%d power reset success\n", host->id);
+		ret = -1;
+		goto done;
 	}
+
+	/* power cycle sdcard */
+	ret = sdcard_hw_reset(mmc);
+	if (ret) {
+		ret = -1;
+		goto done;
+	}
+
+done:
 	return ret;
 }
 /*
@@ -404,7 +422,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		else
 			autok_init_sdr104(host);
 
-		vcore = vcorefs_get_hw_opp();
+		vcore = msdc_vcorefs_get_hw_opp(host);
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;

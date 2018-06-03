@@ -142,6 +142,11 @@ struct mmc_request {
 	struct list_head	link;
 	struct list_head	hlist;
 #endif
+
+#ifdef CONFIG_MTK_HW_FDE
+	unsigned int            bi_hw_fde;
+	unsigned int            bi_key_idx;
+#endif
 	ktime_t			io_start;
 #ifdef CONFIG_BLOCK
 	int			lat_hist_enabled;

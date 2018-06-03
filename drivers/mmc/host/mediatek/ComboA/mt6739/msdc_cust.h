@@ -481,6 +481,10 @@
 /* driver will force remove card */
 #define MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS (3)
 
+/* sdcard esd recovery */
+/* power reset sdcard when sdcard hang from esd */
+#define SDCARD_ESD_RECOVERY
+
 /* #define MSDC_HQA */
 /* #define SDIO_HQA */
 

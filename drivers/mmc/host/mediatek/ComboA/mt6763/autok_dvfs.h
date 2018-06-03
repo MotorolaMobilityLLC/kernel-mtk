@@ -87,6 +87,7 @@ extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void msdc_dvfs_reg_backup_init(struct msdc_host *host);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
 extern void msdc_dump_autok(struct msdc_host *host, struct seq_file *m);
+extern int msdc_vcorefs_get_hw_opp(struct msdc_host *host);
 
 #endif /* _AUTOK_DVFS_H_ */
 

@@ -1,3 +1,11 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * MMC ioctl user api header definitions.
+ */
+
 #ifndef LINUX_MMC_IOCTL_H
 #define LINUX_MMC_IOCTL_H
 
@@ -63,6 +71,8 @@ struct mmc_ioc_multi_cmd {
  *	commands in array in sequence to card.
  */
 #define MMC_IOC_MULTI_CMD _IOWR(MMC_BLOCK_MAJOR, 1, struct mmc_ioc_multi_cmd)
+#define MMC_IOC_FFU_CMD _IOWR(MMC_BLOCK_MAJOR, 2, struct mmc_ioc_cmd)
+
 /*
  * Since this ioctl is only meant to enhance (and not replace) normal access
  * to the mmc bus device, an upper data transfer limit of MMC_IOC_MAX_BYTES
@@ -71,4 +81,5 @@ struct mmc_ioc_multi_cmd {
  */
 #define MMC_IOC_MAX_BYTES  (512L * 256)
 #define MMC_IOC_MAX_CMDS    255
+#define MMC_FFU_IOC_MAX_BYTES  (512L * 1024)
 #endif /* LINUX_MMC_IOCTL_H */

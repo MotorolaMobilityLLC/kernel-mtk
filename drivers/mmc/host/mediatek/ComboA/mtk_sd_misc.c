@@ -134,9 +134,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	struct mmc_command msdc_cmd = { 0 };
 	struct mmc_command msdc_stop;
 	int ret = 0;
-#ifdef CONFIG_EMMC_SUPPORT
 	char part_id;
-#endif
 	int no_single_rw;
 	u32 total_size;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
@@ -210,7 +208,6 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	}
 #endif
 
-#ifdef CONFIG_EMMC_SUPPORT
 	if (host_ctl->hw->host_function == MSDC_EMMC) {
 		switch (msdc_ctl->partition) {
 		case EMMC_PART_BOOT1:
@@ -228,7 +225,6 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		if (msdc_switch_part(host_ctl, part_id))
 			goto rw_end;
 	}
-#endif
 
 	if (no_single_rw) {
 		memset(&msdc_stop, 0, sizeof(struct mmc_command));
@@ -352,8 +348,9 @@ skip_sbc_prepare:
 	memset(sg_msdc_multi_buffer, 0, total_size);
 	goto rw_end_without_release;
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 rw_end:
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
 		ret = mmc_blk_cmdq_switch(mmc->card, 1);
@@ -448,6 +445,7 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 	struct mmc_host *mmc;
 	int ret = 0;
 	int bootpart = 0;
+	unsigned int __user *user_buffer;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
@@ -456,7 +454,7 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 	}
 	mmc = host_ctl->mmc;
 
-	if (msdc_ctl->buffer == NULL)
+	if (get_user(user_buffer, &(msdc_ctl->buffer)))
 		return -EINVAL;
 
 	mmc_claim_host(mmc);
@@ -565,8 +563,6 @@ end:
 static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 {
 	int ret = 0;
-
-#ifdef CONFIG_EMMC_SUPPORT
 	struct msdc_host *host_ctl;
 	unsigned long long partitionsize = 0;
 	struct mmc_host *mmc;
@@ -582,7 +578,7 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	mmc_claim_host(mmc);
 
-	MMC_IOCTL_PR_DBG("user want get size of partition=%d\n", msdc_ctl->partition);
+	MMC_IOCTL_PR_DBG("get size of partition=%d\n", msdc_ctl->partition);
 
 	switch (msdc_ctl->partition) {
 	case EMMC_PART_BOOT1:
@@ -611,7 +607,6 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 	msdc_ctl->result = ret;
 
 	mmc_release_host(mmc);
-#endif
 
 	return ret;
 }
@@ -688,119 +683,10 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 }
 
 /*  to ensure format operate is clean the emmc device fully(partition erase) */
-struct mbr_part_info {
-	unsigned int start_sector;
-	unsigned int nr_sects;
-	unsigned int part_no;
-	unsigned char *part_name;
-};
-
 #define MBR_PART_NUM            6
 #define __MMC_ERASE_ARG         0x00000000
 #define __MMC_TRIM_ARG          0x00000001
 #define __MMC_DISCARD_ARG       0x00000003
-
-/* FIX ME: invoked by dumchar, check if any kernel 4.4 need dumchar */
-int msdc_get_info(enum STORAGE_TPYE storage_type, enum GET_STORAGE_INFO info_type,
-	struct storage_info *info)
-{
-	struct msdc_host *host = NULL;
-
-	if (!info)
-		return -EINVAL;
-
-	switch (storage_type) {
-	case EMMC_CARD_BOOT:
-	case EMMC_CARD:
-		host = mtk_msdc_host[0];
-		break;
-	case SD_CARD_BOOT:
-	case SD_CARD:
-		host = mtk_msdc_host[1];
-		break;
-	default:
-		pr_notice("No supported storage type!");
-		return 0;
-	}
-	if (!host || !host->mmc) {
-		pr_notice("host or mmc is NULL\n");
-		return -EINVAL;
-	}
-	switch (info_type) {
-	/* FIX ME: check if any user space program use this EMMC_XXX */
-	case CARD_INFO:
-		if (host->mmc->card)
-			info->card = host->mmc->card;
-		else {
-			pr_notice("CARD was not ready<get card>!");
-			return 0;
-		}
-		break;
-	case DISK_INFO:
-#ifdef CONFIG_EMMC_SUPPORT
-		if (host->mmc->card)
-			info->disk = mmc_get_disk(host->mmc->card);
-		else {
-			pr_notice("CARD was not ready<get disk>!");
-			return 0;
-		}
-#endif
-		break;
-	case EMMC_USER_CAPACITY:
-		/* used by dumchar.c and pmt.c */
-		info->emmc_user_capacity = msdc_get_capacity(0);
-		break;
-	case EMMC_CAPACITY:
-		/* used by dumchar.c and pmt.c */
-		info->emmc_capacity = msdc_get_capacity(1);
-		break;
-	case EMMC_RESERVE:
-		/* FIX ME: check if this case can be removed */
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-		info->emmc_reserve = 0;
-#endif
-		break;
-	default:
-		pr_notice("Please check INFO_TYPE");
-		return 0;
-	}
-	return 1;
-}
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-static int simple_mmc_get_disk_info(struct mbr_part_info *mpi,
-	unsigned char *name)
-{
-	struct disk_part_iter piter;
-	struct hd_struct *part;
-	struct msdc_host *host;
-	struct gendisk *disk;
-
-	host = mtk_msdc_host[0];
-
-	disk = mmc_get_disk(host->mmc->card);
-
-	/* Find partition info in this way to
-	 * avoid addr translation in scatter file and 64bit address calculate
-	 */
-	disk_part_iter_init(&piter, disk, 0);
-	while ((part = disk_part_iter_next(&piter))) {
-		MMC_IOCTL_PR_DBG("part_name = %s name = %s\n",
-			part->info->volname, name);
-		if (!strncmp(part->info->volname, name,
-			PARTITION_NAME_LENGTH)) {
-			mpi->start_sector = part->start_sect;
-			mpi->nr_sects = part->nr_sects;
-			mpi->part_no = part->partno;
-			mpi->part_name = part->info->volname;
-			disk_part_iter_exit(&piter);
-			return 0;
-		}
-	}
-	disk_part_iter_exit(&piter);
-
-	return 1;
-}
 
 /* call mmc block layer interface for userspace to do erase operate */
 static int simple_mmc_erase_func(unsigned int start, unsigned int size)
@@ -845,7 +731,6 @@ end:
 
 	return 0;
 }
-#endif
 
 /* These definitiona and functions are coded by reference to
  * mmc_blk_issue_discard_rq()@block.c
@@ -918,9 +803,7 @@ out:
 
 static int simple_mmc_erase_partition(unsigned char *name)
 {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-	struct mbr_part_info mbr_part;
-	int l_ret;
+	struct hd_struct part = {0};
 
 	/* just support erase cache & data partition now */
 	if (name &&
@@ -929,18 +812,14 @@ static int simple_mmc_erase_partition(unsigned char *name)
 		/* find erase start address and erase size,
 		 * just support high capacity emmc card now
 		 */
-		l_ret = simple_mmc_get_disk_info(&mbr_part, name);
 
-		if (l_ret == 0) {
-			/* do erase */
-			pr_debug("erase %s start sector: 0x%x size: 0x%x\n",
-				mbr_part.part_name,
-				mbr_part.start_sector, mbr_part.nr_sects);
-			simple_mmc_erase_func(mbr_part.start_sector,
-				mbr_part.nr_sects);
+		if (msdc_get_part_info(name, &part)) {
+			pr_debug("erase %s, start sector: 0x%x, size: 0x%x\n",
+				name, (u32)part.start_sect, (u32)part.nr_sects);
+			simple_mmc_erase_func(part.start_sect, part.nr_sects);
 		}
 	}
-#endif
+
 	return 0;
 
 }

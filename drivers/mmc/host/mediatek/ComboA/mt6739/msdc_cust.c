@@ -415,11 +415,13 @@ void msdc_set_host_power_control(struct msdc_host *host)
 /* #define MSDC_HQA_HV */
 #define MSDC_HQA_NV
 /* #define MSDC_HQA_LV */
+/* #define MSDC_HQA_HVCore_LVio */
+/* #define MSDC_HQA_LVCore_HVio */
 
 void msdc_HQA_set_voltage(struct msdc_host *host)
 {
-#if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
 	static int vcore_orig = -1, vio_cal_orig = -1;
+#if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
 	u32 vcore, vio_cal = 0, val_delta;
 #endif
 
@@ -427,28 +429,43 @@ void msdc_HQA_set_voltage(struct msdc_host *host)
 		return;
 
 	if (vcore_orig < 0)
-		pmic_read_interface(REG_VCORE_VOSEL, &vcore_orig, 0x7F, 0);
+		pmic_read_interface(REG_VCORE_VOSEL, &vcore_orig,
+			MASK_VCORE_VOSEL, SHIFT_VCORE_VOSEL);
 	if (vio_cal_orig < 0)
-		pmic_read_interface(REG_VIO18_VOCAL, &vio_cal_orig, 0xF, 8);
-	pr_info("[MSDC%d HQA] orig Vcore 0x%x, Vio_cal 0x%x\n",
+		pmic_read_interface(REG_VIO18_VOCAL, &vio_cal_orig,
+			MASK_VIO18_VOCAL, SHIFT_VIO18_VOCAL);
+	pr_info("[MSDC~%d HQA] orig Vcore 0x%x, Vio_cal 0x%x\n",
 		host->id, vcore_orig, vio_cal_orig);
 
-#if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
-	val_delta = (VCORE_MIN_UV + vcore_orig * VCORE_STEP_UV) / 20 / VCORE_STEP_UV;
+#if !defined(MSDC_HQA_NV)
+	val_delta = (VCORE_MIN_UV + vcore_orig * VCORE_STEP_UV)
+		/ 20 / VCORE_STEP_UV;
 
 	#ifdef MSDC_HQA_HV
 	vcore = vcore_orig + val_delta;
-	vio_cal = 10; /* MT6737 support at most +10 steps */
+	vio_cal = 10; /* MT6357 support at most +10 steps */
+	#endif
+
+	#ifdef MSDC_HQA_HVCore_LVio
+	vcore = vcore_orig + val_delta;
+	vio_cal = 0; /* MT6357 does not support minus adjustion */
 	#endif
 
 	#ifdef MSDC_HQA_LV
 	vcore = vcore_orig - val_delta;
-	vio_cal = 0; /* MT6737 support does not support minus adjustion */
+	vio_cal = 0; /* MT6357 does not support minus adjustion */
 	#endif
 
-	pmic_config_interface(REG_VCORE_VOSEL, vcore, 0x7F, 0);
+	#ifdef MSDC_HQA_LVCore_HVio
+	vcore = vcore_orig - val_delta;
+	vio_cal = 10; /* MT6357 support at most +10 steps */
+	#endif
 
-	pmic_config_interface(REG_VIO18_VOCAL, vio_cal, 0xF, 8);
+	pmic_config_interface(REG_VCORE_VOSEL, vcore,
+		MASK_VCORE_VOSEL, SHIFT_VCORE_VOSEL);
+
+	pmic_config_interface(REG_VIO18_VOCAL, vio_cal,
+		MASK_VIO18_VOCAL, SHIFT_VIO18_VOCAL);
 
 	pr_info("[MSDC%d HQA] adj Vcore 0x%x, Vio_cal 0x%x\n",
 		host->id, vcore, vio_cal);

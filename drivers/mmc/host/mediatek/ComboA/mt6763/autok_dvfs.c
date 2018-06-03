@@ -500,7 +500,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 			 * "maybe-uninitialized" error
 			 */
 			host->use_hw_dvfs = 1;
-			vcore = vcorefs_get_hw_opp();
+			vcore = msdc_vcorefs_get_hw_opp();
 		}
 
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
@@ -1139,3 +1139,25 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 #endif
 }
 
+int msdc_vcorefs_get_hw_opp(struct msdc_host *host)
+{
+	int vcore;
+
+	if (host->hw->host_function == MSDC_SD) {
+		vcore = AUTOK_VCORE_LEVEL0;
+	} else if (host->hw->host_function == MSDC_EMMC
+		|| host->use_hw_dvfs == 0) {
+		if (host->lock_vcore == 0)
+			vcore = AUTOK_VCORE_MERGE;
+		else
+			vcore = AUTOK_VCORE_LEVEL0;
+	} else {
+		/* not supported */
+		pr_notice("SDIO use_hw_dvfs wrongly set\n");
+		host->use_hw_dvfs = 0;
+		host->lock_vcore = 1;
+		vcore = AUTOK_VCORE_LEVEL0;
+	}
+
+	return vcore;
+}

@@ -70,6 +70,34 @@ u64 msdc_get_user_capacity(struct msdc_host *host)
 	return capacity;
 }
 
+int msdc_get_part_info(unsigned char *name, struct hd_struct *part)
+{
+	struct disk_part_iter piter;
+	struct hd_struct *l_part;
+	struct msdc_host *host;
+	struct gendisk *disk;
+	int ret = 0;
+
+	host = mtk_msdc_host[0];
+
+	if (!host || !host->mmc || !host->mmc->card)
+		return 0;
+
+	disk = mmc_get_disk(host->mmc->card);
+
+	disk_part_iter_init(&piter, disk, 0);
+	while ((l_part = disk_part_iter_next(&piter))) {
+		if (!strncmp(l_part->info->volname, name, strlen(name))) {
+			memcpy(part, l_part, sizeof(struct hd_struct));
+			ret = 1;
+			break;
+		}
+	}
+	disk_part_iter_exit(&piter);
+
+	return ret;
+}
+
 #ifdef MTK_MSDC_USE_CACHE
 unsigned long long g_cache_part_start;
 unsigned long long g_cache_part_end;
@@ -105,35 +133,23 @@ int msdc_can_apply_cache(unsigned long long start_addr,
 
 void msdc_get_cache_region(struct work_struct *work)
 {
-	struct hd_struct *lp_hd_struct = NULL;
+	struct hd_struct part = {0};
 
-	lp_hd_struct = get_part("cache");
-	if (likely(lp_hd_struct)) {
-		g_cache_part_start = lp_hd_struct->start_sect;
-		g_cache_part_end = g_cache_part_start + lp_hd_struct->nr_sects;
-		put_part(lp_hd_struct);
-	} else {
-		g_cache_part_start = (sector_t)(-1);
-		g_cache_part_end = (sector_t)(-1);
-		pr_info("There is no cache info\n");
+	if (msdc_get_part_info("cache", &part)) {
+		g_cache_part_start = part.start_sect;
+		g_cache_part_end = g_cache_part_start + part.nr_sects;
 	}
 
-	lp_hd_struct = NULL;
-	lp_hd_struct = get_part("userdata");
-	if (likely(lp_hd_struct)) {
-		g_usrdata_part_start = lp_hd_struct->start_sect;
-		g_usrdata_part_end = g_usrdata_part_start
-			+ lp_hd_struct->nr_sects;
-		put_part(lp_hd_struct);
-	} else {
-		g_usrdata_part_start = (sector_t)(-1);
-		g_usrdata_part_end = (sector_t)(-1);
-		pr_info("There is no userdata info\n");
+	memset(&part, 0, sizeof(struct hd_struct));
+	if (msdc_get_part_info("userdata", &part)) {
+		g_usrdata_part_start = part.start_sect;
+		g_usrdata_part_end = g_usrdata_part_start + part.nr_sects;
 	}
 
 	pr_info("cache(0x%llX~0x%llX, usrdata(0x%llX~0x%llX)\n",
 		g_cache_part_start, g_cache_part_end,
 		g_usrdata_part_start, g_usrdata_part_end);
+
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
 
@@ -169,27 +185,7 @@ u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 	return device_other_capacity;
 }
 
-u64 msdc_get_capacity(int get_emmc_total)
-{
-	u64 user_size = 0;
-	u32 other_size = 0;
-	u64 total_size = 0;
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-	struct msdc_host *host;
-
-	host = mtk_msdc_host[0];
-	user_size = msdc_get_user_capacity(host);
-	if (get_emmc_total)
-		other_size = msdc_get_other_capacity(host, NULL);
-#endif
-
-	total_size = user_size + (u64) other_size;
-	return total_size / 512;
-}
-EXPORT_SYMBOL(msdc_get_capacity);
-
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
+#ifdef CONFIG_PROC_FS
 struct mmc_blk_data {
 	spinlock_t lock;
 	struct gendisk *disk;

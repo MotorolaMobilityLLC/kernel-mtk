@@ -680,11 +680,11 @@ static int autok_simple_score(char *res_str, unsigned int result)
 	unsigned int old = 0;
 
 	if (result == 0) {
-		strcpy(res_str, "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");	/* maybe result is 0 */
+		strncpy(res_str, "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", 33);
 		return 32;
 	}
 	if (result == 0xFFFFFFFF) {
-		strcpy(res_str, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		strncpy(res_str, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
 		return 0;
 	}
 
@@ -716,13 +716,15 @@ static int autok_simple_score64(char *res_str64, u64 result64)
 	unsigned int old = 0;
 
 	if (result64 == 0) {
-		/* maybe result is 0 */
-		strcpy(res_str64, "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+		strncpy(res_str64,
+			"OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",
+			65);
 		return 64;
 	}
 	if (result64 == 0xFFFFFFFFFFFFFFFF) {
-		strcpy(res_str64,
-		       "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		strncpy(res_str64,
+			"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+			65);
 		return 0;
 	}
 
@@ -1742,9 +1744,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (DATA_K_VALUE_SEL);
@@ -1763,9 +1763,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_RXDLY_SEL);
@@ -1854,9 +1852,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY);
@@ -1875,9 +1871,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY_SEL);
@@ -1896,9 +1890,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY2);
@@ -1917,9 +1909,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY2_SEL);
@@ -1938,9 +1928,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY);
@@ -1959,9 +1947,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY_SEL);
@@ -1980,9 +1966,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2);
@@ -2001,9 +1985,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2_SEL);
@@ -2062,9 +2044,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_rx_enhance_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_rx_enhance_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_rx_enhance_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (AUTOK_TOP_SDC_RX_ENHANCE_EN);
@@ -2083,9 +2063,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_CTL0;
 			field = (u32) (PAD_CLK_TXDLY);
@@ -2144,9 +2122,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY1);
@@ -2165,9 +2141,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY_SEL);
@@ -2186,9 +2160,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2);
@@ -2207,9 +2179,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2_SEL);
@@ -2228,9 +2198,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY3);
@@ -2249,9 +2217,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_TX_DLY);
@@ -2270,9 +2236,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT0_TUNE;
 			field = (u32) (PAD_DAT0_TX_DLY);
@@ -2291,9 +2255,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT1_TUNE;
 			field = (u32) (PAD_DAT1_TX_DLY);
@@ -2312,9 +2274,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT2_TUNE;
 			field = (u32) (PAD_DAT2_TX_DLY);
@@ -2333,9 +2293,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_pad_dly_top == 1))
-			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_pad_dly_top == 1))) {
+		if (host->base_top) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT3_TUNE;
 			field = (u32) (PAD_DAT3_TX_DLY);
@@ -2354,7 +2312,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if ((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1)) {
+		if ((host->hw->host_function == MSDC_EMMC) && (host->base_top)) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT4_TUNE;
 			field = (u32) (PAD_DAT4_TX_DLY);
@@ -2373,7 +2331,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if ((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1)) {
+		if ((host->hw->host_function == MSDC_EMMC) && (host->base_top)) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT5_TUNE;
 			field = (u32) (PAD_DAT5_TX_DLY);
@@ -2392,7 +2350,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if ((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1)) {
+		if ((host->hw->host_function == MSDC_EMMC) && (host->base_top)) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT6_TUNE;
 			field = (u32) (PAD_DAT6_TX_DLY);
@@ -2411,7 +2369,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if ((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_pad_dly_top == 1)) {
+		if ((host->hw->host_function == MSDC_EMMC) && (host->base_top)) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DAT7_TUNE;
 			field = (u32) (PAD_DAT7_TX_DLY);
@@ -2723,13 +2681,20 @@ static int autok_write_param(struct msdc_host *host, enum AUTOK_PARAM param, u32
 int autok_path_sel(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
+	void __iomem *base_top = host->base_top;
+	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 	struct AUTOK_PLAT_PARA_RX platform_para_rx;
 	struct AUTOK_PLAT_FUNC platform_para_func;
+	struct AUTOK_PLAT_TOP_CTRL platform_top_ctrl;
 
+	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	memset(&platform_para_rx, 0, sizeof(struct AUTOK_PLAT_PARA_RX));
 	memset(&platform_para_func, 0, sizeof(struct AUTOK_PLAT_FUNC));
+	memset(&platform_top_ctrl, 0, sizeof(struct AUTOK_PLAT_TOP_CTRL));
+	get_platform_para_tx(platform_para_tx);
 	get_platform_para_rx(platform_para_rx);
 	get_platform_func(platform_para_func);
+	get_platform_top_ctrl(platform_top_ctrl);
 
 	autok_write_param(host, READ_DATA_SMPL_SEL, 0);
 	autok_write_param(host, WRITE_DATA_SMPL_SEL, 0);
@@ -2772,6 +2737,45 @@ int autok_path_sel(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC_PATCH_BIT1, 0x3 << 19, 3);
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
+	}
+
+	/* duty bypass that may influence timing */
+	if ((host->hw->host_function == MSDC_EMMC)
+		&& (platform_para_func.msdc0_bypass_duty_modify == 1)) {
+		if (host->base_top) {
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, DCC_SEL,
+				platform_para_tx.msdc0_duty_bypass);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, HL_SEL,
+				platform_para_tx.msdc0_hl_duty_sel);
+		} else {
+			MSDC_SET_FIELD(EMMC50_PAD_CTL0, MSDC_EMMC50_PAD_CTL0_DCCSEL,
+				platform_para_tx.msdc0_duty_bypass);
+			MSDC_SET_FIELD(EMMC50_PAD_CTL0, MSDC_EMMC50_PAD_CTL0_HLSEL,
+				platform_para_tx.msdc0_hl_duty_sel);
+		}
+	}
+	if ((host->hw->host_function == MSDC_SD)
+		&& (platform_para_func.msdc1_bypass_duty_modify == 1)) {
+		if (host->base_top) {
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, DCC_SEL,
+				platform_para_tx.msdc1_duty_bypass);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, HL_SEL,
+				platform_para_tx.msdc1_hl_duty_sel);
+		}
+	}
+	if ((host->hw->host_function == MSDC_SDIO)
+		&& (platform_para_func.msdc2_bypass_duty_modify == 1)) {
+		if (host->base_top) {
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, DCC_SEL,
+				platform_para_tx.msdc2_duty_bypass);
+			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0, HL_SEL,
+				platform_para_tx.msdc2_hl_duty_sel);
+		} else {
+			MSDC_SET_FIELD(EMMC50_PAD_CTL0, MSDC_EMMC50_PAD_CTL0_DCCSEL,
+				platform_para_tx.msdc2_duty_bypass);
+			MSDC_SET_FIELD(EMMC50_PAD_CTL0, MSDC_EMMC50_PAD_CTL0_HLSEL,
+				platform_para_tx.msdc2_hl_duty_sel);
+		}
 	}
 
 	return 0;
@@ -3147,7 +3151,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	}
 	RawData64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	msdc_autok_window_apply(DS_DATA_WIN, RawData64, p_autok_tune_res);
 	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
@@ -3315,9 +3319,9 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 			ret = autok_send_tune_cmd(host, opcode, TUNE_LATCH_CK, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT("[AUTOK]Error Autok CMD Failed while tune LATCH CK\r\n");
-				break;
+				return 0;
 			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
-				AUTOK_RAWPRINT("[AUTOK]Error Autok  tune LATCH_CK error %d\r\n", j);
+				AUTOK_RAWPRINT("[AUTOK]Autok tune LATCH_CK %d need to be adjusted\r\n", j);
 				break;
 			}
 		}
@@ -3328,8 +3332,7 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 	}
 	host->tune_latch_ck_cnt = 0;
 
-	return j;
-
+	return (j >= 8) ? 7 : j;
 }
 
 /* online tuning for eMMC4.5(hs200) */
@@ -5302,6 +5305,7 @@ int autok_sdio30_plus_tuning(struct msdc_host *host, u8 *res)
 	unsigned int value = 0;
 	unsigned int dvfs_en = 0;
 	unsigned int dvfs_hw = 0;
+	unsigned int dtoc = 0;
 
 	do_gettimeofday(&tm_s);
 
@@ -5310,9 +5314,11 @@ int autok_sdio30_plus_tuning(struct msdc_host *host, u8 *res)
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, dvfs_en);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, dvfs_hw);
+	MSDC_GET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, 3);
 
 	/* store pre autok parameter */
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
@@ -5344,6 +5350,7 @@ int autok_sdio30_plus_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, dvfs_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, dvfs_hw);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 
 	do_gettimeofday(&tm_e);
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
@@ -5366,6 +5373,7 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	unsigned int value = 0;
 	unsigned int dvfs_en = 0;
 	unsigned int dvfs_hw = 0;
+	unsigned int dtoc = 0;
 
 	do_gettimeofday(&tm_s);
 
@@ -5374,9 +5382,11 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, dvfs_en);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, dvfs_hw);
+	MSDC_GET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, 3);
 
 	/* store pre autok parameter */
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
@@ -5405,6 +5415,7 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, dvfs_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, dvfs_hw);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 
 	do_gettimeofday(&tm_e);
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
@@ -5425,12 +5436,15 @@ int hs400_execute_tuning(struct msdc_host *host, u8 *res)
 	u8 autok_tune_res[TUNING_PARAM_COUNT];
 	unsigned int i = 0;
 	unsigned int value = 0;
+	unsigned int dtoc = 0;
 
 	do_gettimeofday(&tm_s);
 	int_en = MSDC_READ32(MSDC_INTEN);
 	MSDC_WRITE32(MSDC_INTEN, 0);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
+	MSDC_GET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, 3);
 
 	/* store pre autok parameter */
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
@@ -5457,6 +5471,7 @@ int hs400_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_WRITE32(MSDC_INT, 0xffffffff);
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, dtoc);
 
 	do_gettimeofday(&tm_e);
 	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;

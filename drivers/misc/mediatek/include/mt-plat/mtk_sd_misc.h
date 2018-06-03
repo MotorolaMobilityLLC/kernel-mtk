@@ -151,7 +151,6 @@ enum BOOT_PARTITION_EN {
 	EMMC_BOOT_END
 };
 
-#ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
 enum Region {
 	EMMC_PART_UNKNOWN = 0,
 	EMMC_PART_BOOT1,
@@ -164,7 +163,6 @@ enum Region {
 	EMMC_PART_USER,
 	EMMC_PART_END,
 };
-#endif
 
 enum GET_STORAGE_INFO {
 	CARD_INFO = 0,

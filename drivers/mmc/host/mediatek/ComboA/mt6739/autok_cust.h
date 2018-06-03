@@ -17,7 +17,7 @@
 #include <mt-plat/mtk_chip.h>
 #endif
 
-#define AUTOK_VERSION                   (0x17052411)
+#define AUTOK_VERSION                   (0x17080217)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -60,6 +60,13 @@ struct AUTOK_PLAT_PARA_TX {
 	u8 sdio30_plus_dat1tx;
 	u8 sdio30_plus_dat2tx;
 	u8 sdio30_plus_dat3tx;
+
+	u8 msdc0_duty_bypass;
+	u8 msdc0_hl_duty_sel;
+	u8 msdc1_duty_bypass;
+	u8 msdc1_hl_duty_sel;
+	u8 msdc2_duty_bypass;
+	u8 msdc2_hl_duty_sel;
 };
 
 struct AUTOK_PLAT_PARA_RX {
@@ -148,6 +155,9 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_hs;
 	u8 multi_sync;
 	u8 rx_enhance;
+	u8 msdc0_bypass_duty_modify;
+	u8 msdc1_bypass_duty_modify;
+	u8 msdc2_bypass_duty_modify;
 };
 
 #define get_platform_para_tx(autok_para_tx) \
@@ -187,6 +197,12 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.sdio30_plus_dat1tx = 0; \
 		autok_para_tx.sdio30_plus_dat2tx = 0; \
 		autok_para_tx.sdio30_plus_dat3tx = 0; \
+		autok_para_tx.msdc0_duty_bypass = 0; \
+		autok_para_tx.msdc0_hl_duty_sel = 0; \
+		autok_para_tx.msdc1_duty_bypass = 0; \
+		autok_para_tx.msdc1_hl_duty_sel = 0; \
+		autok_para_tx.msdc2_duty_bypass = 0; \
+		autok_para_tx.msdc2_hl_duty_sel = 0; \
 	} while (0)
 
 #define get_platform_para_rx(autok_para_rx) \
@@ -270,6 +286,9 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_func.new_path_hs = 1; \
 		autok_para_func.multi_sync = 1; \
 		autok_para_func.rx_enhance = 1; \
+		autok_para_func.msdc0_bypass_duty_modify = 1; \
+		autok_para_func.msdc1_bypass_duty_modify = 0; \
+		autok_para_func.msdc2_bypass_duty_modify = 0; \
 	} while (0)
 
 #define PORT0_PB0_RD_DAT_SEL_VALID
