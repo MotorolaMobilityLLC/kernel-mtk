@@ -260,7 +260,11 @@ static inline int room_on_ring(struct xhci_hcd *xhci, struct xhci_ring *ring,
 	if (ring->num_trbs_free < num_trbs)
 		return 0;
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (!(xhci->quirks & XHCI_MTK_HOST))
+#endif
 	if (ring->type != TYPE_COMMAND && ring->type != TYPE_EVENT) {
+
 		num_trbs_in_deq_seg = ring->dequeue - ring->deq_seg->trbs;
 		if (ring->num_trbs_free < num_trbs + num_trbs_in_deq_seg)
 			return 0;
