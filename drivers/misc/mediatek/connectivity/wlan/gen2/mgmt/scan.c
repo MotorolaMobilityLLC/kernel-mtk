@@ -2600,6 +2600,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 #endif
 			} else {
 				/* Can't pass the Encryption Status Check, get next one */
+				DBGLOG(RSN, WARN, "Can't pass the Encryption Status Check, get next one\n");
 				continue;
 			}
 #endif

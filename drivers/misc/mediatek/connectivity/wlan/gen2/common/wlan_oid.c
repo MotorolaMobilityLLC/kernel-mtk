@@ -2339,9 +2339,9 @@ _wlanoidSetAddKey(IN P_ADAPTER_T prAdapter,
 		else {
 #if CFG_SUPPORT_802_11W
 			if (prCmdKey->ucKeyId >= 4) {
-				prCmdKey->ucAlgorithmId = CIPHER_SUITE_BIP;
 				P_AIS_SPECIFIC_BSS_INFO_T prAisSpecBssInfo;
 
+				prCmdKey->ucAlgorithmId = CIPHER_SUITE_BIP;
 				prAisSpecBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
 				prAisSpecBssInfo->fgBipKeyInstalled = TRUE;
 			} else
