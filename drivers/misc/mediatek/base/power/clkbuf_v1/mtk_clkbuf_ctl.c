@@ -74,6 +74,10 @@ void __attribute__((weak)) clk_buf_init_pmic_wrap(void)
 {
 }
 
+void __attribute__((weak)) clk_buf_ctrl_bblpm_hw(short on)
+{
+}
+
 /* for spm driver use */
 bool is_clk_buf_under_flightmode(void)
 {
@@ -84,6 +88,10 @@ bool is_clk_buf_under_flightmode(void)
 void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
 	g_is_flightmode_on = is_flightmode_on;
+	if (is_flightmode_on)
+		clk_buf_ctrl_bblpm_hw(true);
+	else
+		clk_buf_ctrl_bblpm_hw(false);
 }
 
 void clk_buf_get_swctrl_status(enum CLK_BUF_SWCTRL_STATUS_T *status)

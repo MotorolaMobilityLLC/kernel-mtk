@@ -112,6 +112,6 @@ void clk_buf_init_pmic_clkbuf(void);
 void clk_buf_init_pmic_wrap(void);
 void clk_buf_init_pmic_swctrl(void);
 bool clk_buf_ctrl_combine(enum clk_buf_id id, bool onoff);
-
+void clk_buf_ctrl_bblpm_hw(short on);
 #endif
 
