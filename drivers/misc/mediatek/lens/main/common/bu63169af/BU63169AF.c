@@ -282,6 +282,7 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_lock(g_pAF_SpinLock);
 		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
 		spin_unlock(g_pAF_SpinLock);
+		return -1;
 	}
 
 	return 0;
