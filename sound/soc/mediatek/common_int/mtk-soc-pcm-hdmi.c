@@ -63,7 +63,7 @@
 
 /* information about */
 
-static AFE_MEM_CONTROL_T *pMemControl;
+static struct afe_mem_control_t *pMemControl;
 static bool mHDMIPrepareDone;
 static struct audio_hdmi_format mAudioHDMIFormat;
 
@@ -505,7 +505,7 @@ static struct snd_pcm_hardware mtk_hdmi_hardware = {
 
 static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 {
-	AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock);
+	struct afe_block_t *Afe_Block = &(pMemControl->rBlock);
 
 	pr_warn("mtk_pcm_hdmi_stop\n");
 
@@ -537,7 +537,7 @@ static snd_pcm_uframes_t mtk_pcm_hdmi_pointer(struct snd_pcm_substream *substrea
 	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_uint32 Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
-	AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock);
+	struct afe_block_t *Afe_Block = &(pMemControl->rBlock);
 
 	PRINTK_AUD_HDMI(" %s Afe_Block->u4DMAReadIdx = 0x%x\n", __func__, Afe_Block->u4DMAReadIdx);
 
@@ -575,7 +575,7 @@ static void SetHDMIBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw
 	kal_uint32 u4tmpMrg1;
 
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	AFE_BLOCK_T *pblock = &(pMemControl->rBlock);
+	struct afe_block_t *pblock = &(pMemControl->rBlock);
 
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;
@@ -856,7 +856,7 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 			     int channel, snd_pcm_uframes_t pos,
 			     void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_BLOCK_T *Afe_Block = NULL;
+	struct afe_block_t *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	unsigned long flags;
 	char *data_w_ptr = (char *)dst;

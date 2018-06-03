@@ -66,7 +66,7 @@
 #include "mtk_mcdi_governor_hint.h"
 #endif
 
-static AFE_MEM_CONTROL_T *pI2S0dl1MemControl;
+static struct afe_mem_control_t *pI2S0dl1MemControl;
 static struct snd_dma_buffer Dl1I2S0_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
 
@@ -184,7 +184,7 @@ static struct snd_pcm_hardware mtk_I2S0dl1_hardware = {
 
 static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 {
-	/* AFE_BLOCK_T *Afe_Block = &(pI2S0dl1MemControl->rBlock); */
+	/* struct afe_block_t *Afe_Block = &(pI2S0dl1MemControl->rBlock); */
 
 	pr_warn("%s\n", __func__);
 

@@ -773,8 +773,8 @@ static snd_pcm_uframes_t mtk_voice_usb_pointer_play
 	kal_uint32 Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
 	int stream = substream->stream;
-	AFE_MEM_CONTROL_T *mem_ctl = Get_Mem_ControlT(usb_mem_blk[stream]);
-	AFE_BLOCK_T *Afe_Block = &mem_ctl->rBlock;
+	struct afe_mem_control_t *mem_ctl = Get_Mem_ControlT(usb_mem_blk[stream]);
+	struct afe_block_t *Afe_Block = &mem_ctl->rBlock;
 	unsigned long flags;
 
 	spin_lock_irqsave(&mem_ctl->substream_lock, flags);
@@ -833,7 +833,7 @@ static snd_pcm_uframes_t mtk_voice_usb_pointer_cap
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	AFE_BLOCK_T *Awb_Block = &Get_Mem_ControlT(usb_mem_blk[stream])->rBlock;
+	struct afe_block_t *Awb_Block = &Get_Mem_ControlT(usb_mem_blk[stream])->rBlock;
 
 	pr_usbc("%s(), Awb_Block->u4WriteIdx = 0x%x\n",
 		__func__, Awb_Block->u4WriteIdx);
@@ -907,8 +907,8 @@ static int mtk_voice_usb_copy_cap(struct snd_pcm_substream *substream,
 				  int channel, snd_pcm_uframes_t pos,
 				  void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_MEM_CONTROL_T *pAWB_MEM_ConTrol = NULL;
-	AFE_BLOCK_T  *Awb_Block = NULL;
+	struct afe_mem_control_t *pAWB_MEM_ConTrol = NULL;
+	struct afe_block_t  *Awb_Block = NULL;
 	char *Read_Data_Ptr = (char *)dst;
 	kal_int32 DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	unsigned long flags;
@@ -1056,7 +1056,7 @@ static int mtk_voice_usb_copy_play(struct snd_pcm_substream *substream,
 				   int channel, snd_pcm_uframes_t pos,
 				   void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_BLOCK_T  *Afe_Block = NULL;
+	struct afe_block_t  *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	unsigned long flags;
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */

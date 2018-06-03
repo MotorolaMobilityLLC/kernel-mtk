@@ -100,7 +100,7 @@ static struct snd_compr_stream *offload_stream;
 static struct device *offload_dev;
 
 
-static AFE_MEM_CONTROL_T *mem_control;
+static struct afe_mem_control_t *mem_control;
 static unsigned int playback_dram_state;
 static bool prepare_done;
 static bool irq7_user;
@@ -264,7 +264,7 @@ static int mtk_offload_dl3_close(void)
 
 static void SetDL3Buffer(void)
 {
-	AFE_BLOCK_T *pblock = &mem_control->rBlock;
+	struct afe_block_t *pblock = &mem_control->rBlock;
 
 	pblock->pucPhysBufAddr = (kal_uint32)afe_offload_block.hw_buffer_addr;
 	pblock->pucVirtBufAddr =  afe_offload_block.hw_buffer_area;

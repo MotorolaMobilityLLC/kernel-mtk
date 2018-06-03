@@ -67,7 +67,7 @@
 /* #define CAPTURE_FORCE_USE_DRAM //foruse DRAM for record */
 
 /* information about */
-AFE_MEM_CONTROL_T  *VUL_Control_context;
+struct afe_mem_control_t  *VUL_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;

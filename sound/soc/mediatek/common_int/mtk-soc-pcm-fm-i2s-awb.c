@@ -61,7 +61,7 @@
 
 
 /* information about */
-static AFE_MEM_CONTROL_T  *FM_I2S_AWB_Control_context;
+static struct afe_mem_control_t  *FM_I2S_AWB_Control_context;
 static struct snd_dma_buffer *Awb_Capture_dma_buf;
 
 static int fm_capture_mem_blk;

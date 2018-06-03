@@ -61,7 +61,7 @@
 #include "mtk-soc-pcm-platform.h"
 
 /* information about */
-static AFE_MEM_CONTROL_T  *Dl1_AWB_Control_context;
+static struct afe_mem_control_t  *Dl1_AWB_Control_context;
 static struct snd_dma_buffer *Awb_Capture_dma_buf;
 static int deep_buffer_mem_blk_io;
 
