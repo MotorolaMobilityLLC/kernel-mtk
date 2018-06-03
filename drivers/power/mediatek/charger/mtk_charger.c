@@ -996,7 +996,9 @@ static int charger_routine_thread(void *arg)
 		mutex_lock(&info->charger_lock);
 		info->charger_thread_timeout = false;
 		i++;
-		pr_err("charger_routine_thread wake up %d %d\n", mtk_is_charger_on(info), i);
+		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d\n", battery_get_bat_voltage(),
+			battery_get_bat_current(), battery_get_vbus(), battery_get_bat_temperature(),
+			battery_get_bat_soc(), battery_get_bat_uisoc());
 
 		charger_update_data(info);
 		charger_check_status(info);
