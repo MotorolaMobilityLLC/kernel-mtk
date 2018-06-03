@@ -214,6 +214,12 @@
 		method          = "smc";
 	};
 
+	pmu {
+		compatible = "arm,cortex-a7-pmu";
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	memory {
 		device_type = "memory";
 		reg = <0 0x40000000 0 0x1e605000>;
