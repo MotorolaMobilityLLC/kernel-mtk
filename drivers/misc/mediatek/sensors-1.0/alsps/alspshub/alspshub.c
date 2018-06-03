@@ -101,14 +101,17 @@ long alspshub_read_ps(u8 *ps)
 long alspshub_read_als(u16 *als)
 {
 	long res = 0;
+	struct data_unit_t data_t;
 
-	res = sensor_set_cmd_to_hub(ID_LIGHT, CUST_ACTION_GET_RAW_DATA, als);
+	res = sensor_get_data_from_hub(ID_LIGHT, &data_t);
 	if (res < 0) {
 		*als = -1;
-		pr_err("sensor_set_cmd_to_hub fail,(ID: %d),(action: %d)\n",
-			ID_LIGHT, CUST_ACTION_GET_RAW_DATA);
+		pr_err_ratelimited("sensor_get_data_from_hub fail, (ID: %d)\n",
+			ID_LIGHT);
 		return -1;
 	}
+	*als = data_t.light;
+
 	return 0;
 }
 
