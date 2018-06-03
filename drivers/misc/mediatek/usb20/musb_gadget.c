@@ -1955,6 +1955,77 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 	spin_unlock_irqrestore(&musb->lock, flags);
 }
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+static void musb_gadget_suspend_control(struct usb_ep *ep)
+{
+	struct musb_ep	*musb_ep = to_musb_ep(ep);
+	struct musb	*musb = musb_ep->musb;
+	u8		epnum = musb_ep->current_epnum;
+	unsigned long	flags;
+
+	DBG(2, "musb_gadget_suspend_control : %s...", ep->name);
+
+	spin_lock_irqsave(&musb->lock, flags);
+
+	nuke(musb_ep, -ECONNRESET);
+
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	if (musb_ep->is_in) { /* TX */
+		musb_writeb(musb->mregs, MUSB_QIMSR, musb_readb(musb->mregs, MUSB_QIMSR) | ((1<<0)<<(epnum)));
+	} else {
+		musb_writeb(musb->mregs, MUSB_QIMSR, musb_readb(musb->mregs, MUSB_QIMSR) | ((1<<8)<<(epnum)));
+	}
+#endif
+
+
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+
+static void musb_gadget_resume_control(struct usb_ep *ep)
+{
+	struct musb_ep	*musb_ep = to_musb_ep(ep);
+	struct musb	*musb = musb_ep->musb;
+	u8		epnum = musb_ep->current_epnum;
+	unsigned long	flags;
+
+	int timeout_count = 100; /* 50ms*100 */
+	u32 int_md = musb_readb(musb->mregs, MUSB_USB_MDL1INTM);
+
+	DBG(2, "%s : %s...", __func__, ep->name);
+
+	/* check if MD finish deactivate follow */
+
+	while (int_md && (timeout_count != 0)) {
+		mdelay(50);
+		int_md = musb_readb(musb->mregs, MUSB_USB_MDL1INTM);
+		DBG(2, "%s : int_md: %d\n", __func__, int_md);
+		timeout_count--;
+	}
+
+	DBG(2, "musb_gadget_resume_control : timeout_count: %d\n", timeout_count);
+
+	if (int_md)
+		DBG(2, "ep resume timeout, U3D_LV1IER_MD:%x\n", int_md);
+
+	spin_lock_irqsave(&musb->lock, flags);
+
+	nuke(musb_ep, -ECONNRESET);
+
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	if (musb_ep->is_in) { /* TX */
+		musb_writeb(musb->mregs, MUSB_USBGCSR, musb_readb(musb->mregs, MUSB_USBGCSR) | ((1<<0)<<(epnum)));
+		musb_writeb(musb->mregs, MUSB_QIMCR, musb_readb(musb->mregs, MUSB_QIMCR) | ((1<<0)<<(epnum)));
+		musb_restart_qmu(musb, epnum, 0);
+	} else {
+		musb_writeb(musb->mregs, MUSB_USBGCSR, musb_readb(musb->mregs, MUSB_USBGCSR) | ((16<<0)<<(epnum)));
+		musb_writeb(musb->mregs, MUSB_QIMCR, musb_readb(musb->mregs, MUSB_QIMCR) | ((8<<0)<<(epnum)));
+		musb_restart_qmu(musb, epnum, 1);
+	}
+#endif
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+#endif
+
 static const struct usb_ep_ops musb_ep_ops = {
 	.enable = musb_gadget_enable,
 	.disable = musb_gadget_disable,
@@ -1965,7 +2036,11 @@ static const struct usb_ep_ops musb_ep_ops = {
 	.set_halt = musb_gadget_set_halt,
 	.set_wedge = musb_gadget_set_wedge,
 	.fifo_status = musb_gadget_fifo_status,
-	.fifo_flush = musb_gadget_fifo_flush
+	.fifo_flush = musb_gadget_fifo_flush,
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	.suspend_control = musb_gadget_suspend_control,
+	.resume_control	= musb_gadget_resume_control,
+#endif
 };
 
 /* ----------------------------------------------------------------------- */
