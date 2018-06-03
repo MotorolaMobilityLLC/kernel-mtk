@@ -56,6 +56,7 @@
 #include <linux/version.h>
 #include <linux/suspend.h>
 #include <linux/of.h>
+#include <linux/ratelimit.h>
 
 #include "include/mtk_uart_internal.h"
 
@@ -1982,6 +1983,7 @@ static void mtk_uart_set_termios(struct uart_port *port, struct ktermios *termio
 	int datalen, mode;
 	int parity = 0;
 	int stopbit = 1;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
 
 	MSG_FUNC_ENTRY();
 
@@ -2058,16 +2060,20 @@ static void mtk_uart_set_termios(struct uart_port *port, struct ktermios *termio
 	MSG(CFG, "c_lflag:%X, c_iflag:%X, c_oflag:%X, c_cflag:%X\n", termios->c_lflag, termios->c_iflag,
 	    termios->c_oflag, termios->c_cflag);
 	if (HW_FLOW_CTRL_PORT(uart) && (termios->c_cflag & CRTSCTS) && (!(termios->c_iflag & 0x80000000))) {
-		pr_debug("Hardware Flow Control\n");
+		if (__ratelimit(&ratelimit))
+			pr_debug("Hardware Flow Control\n");
 		mode = UART_FC_HW;
 	} else if (termios->c_iflag & 0x80000000) {
-		pr_debug("MTK Software Flow Control\n");
+		if (__ratelimit(&ratelimit))
+			pr_debug("MTK Software Flow Control\n");
 		mode = UART_FC_SW;
 	} else if (termios->c_iflag & (IXON | IXOFF | IXANY)) {
-		pr_debug("Linux default SW Flow Control\n");
+		if (__ratelimit(&ratelimit))
+			pr_debug("Linux default SW Flow Control\n");
 		mode = UART_FC_NONE;
 	} else {
-		pr_debug("No Flow Control\n");
+		if (__ratelimit(&ratelimit))
+			pr_debug("No Flow Control\n");
 		mode = UART_FC_NONE;
 	}
 	mtk_uart_set_flow_ctrl(uart, mode);
@@ -2423,6 +2429,7 @@ static int mtk_uart_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	int ret = 0;
 	struct mtk_uart *uart = platform_get_drvdata(pdev);
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
 
 	if (!uart)
 		return -1;
@@ -2432,7 +2439,8 @@ static int mtk_uart_suspend(struct platform_device *pdev, pm_message_t state)
 
 	if ((uart->nport < UART_NR) && (uart != bt_port)) {
 		ret = uart_suspend_port(&mtk_uart_drv, &uart->port);
-		pr_debug("[UART%d] Suspend(%d)!\n", uart->nport, ret);
+		if (__ratelimit(&ratelimit))
+			pr_debug("[UART%d] Suspend(%d)!\n", uart->nport, ret);
 		mtk_uart_switch_rx_to_gpio(uart);
 	}
 	return ret;
@@ -2442,12 +2450,15 @@ static int mtk_uart_suspend(struct platform_device *pdev, pm_message_t state)
 static int mtk_uart_resume(struct platform_device *pdev)
 {
 	int ret = 0;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
+
 	struct mtk_uart *uart = platform_get_drvdata(pdev);
 
 	if (uart && (uart->nport < UART_NR) && (uart != bt_port)) {
 		mtk_uart_switch_to_rx(uart);
 		ret = uart_resume_port(&mtk_uart_drv, &uart->port);
-		pr_debug("[UART%d] Resume(%d)!\n", uart->nport, ret);
+		if (__ratelimit(&ratelimit))
+			pr_debug("[UART%d] Resume(%d)!\n", uart->nport, ret);
 	}
 	return ret;
 }
