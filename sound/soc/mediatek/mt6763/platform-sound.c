@@ -53,6 +53,7 @@
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
 #include "mtk-soc-codec-63xx.h"
+#include "mtk-soc-analog-type.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
