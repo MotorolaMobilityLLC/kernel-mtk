@@ -274,6 +274,9 @@ static int virt_enable = 0, virt_disable;
 static void mt_usb_enable(struct musb *musb)
 {
 	unsigned long flags;
+	#ifdef CONFIG_MTK_UART_USB_SWITCH
+	static int is_check;
+	#endif
 
 	virt_enable++;
 	DBG(0, "begin <%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
@@ -284,7 +287,12 @@ static void mt_usb_enable(struct musb *musb)
 	flags = musb_readl(musb->mregs, USB_L1INTM);
 
 	mdelay(10);
-
+	#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (!is_check) {
+		usb_phy_check_in_uart_mode();
+	    is_check = 1;
+	}
+	#endif
 	usb_phy_recover();
 
 	/* update musb->power & mtk_usb_power in the same time */
