@@ -19,6 +19,8 @@
 #endif
 #endif
 
+#include "usrtch.h"
+
 #define TAG "PERF_IOCTL"
 
 void (*fpsgo_notify_qudeq_fp)(int qudeq,
@@ -131,8 +133,8 @@ static long device_ioctl(struct file *filp,
 					msgKM->bufID, msgKM->connectedAPI);
 		break;
 	case FPSGO_TOUCH:
-#if 0
-		fbc_ioctl(cmd, msgKM->frame_time);
+#if 1
+		usrtch_ioctl(cmd, msgKM->frame_time);
 #endif
 		break;
 	case FPSGO_ACT_SWITCH:
@@ -202,6 +204,9 @@ static int __init init_perfctl(void)
 #endif
 #endif
 
+#ifdef CONFIG_MTK_FPSGO
+	init_usrtch();
+#endif
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
 		pr_debug(TAG"%s failed with %d\n",
