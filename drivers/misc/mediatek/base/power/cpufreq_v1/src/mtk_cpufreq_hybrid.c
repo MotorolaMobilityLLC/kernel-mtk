@@ -373,6 +373,13 @@ static void __iomem *csram_base;
 #define OFFS_SCHED_S		0x03a4 /* 233 */
 #define OFFS_SCHED_E		0x03c8 /* 242 */
 
+/* PPM idx */
+#define OFFS_PPM_LIMIT_S  0x0320 /* 200 */
+
+/* EEM Update Flag */
+#define OFFS_EEM_S		0x0300 /* 192 */
+#define OFFS_EEM_E		0x030c /* 195 */
+
 #define NR_FREQ       16
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
@@ -458,6 +465,10 @@ int cpuhvfs_set_cluster_on_off(int cluster_id, int state)
 
 int cpuhvfs_set_mix_max(int cluster_id, int base, int limit)
 {
+#ifdef PPM_AP2SSPM
+	csram_write((OFFS_PPM_LIMIT_S + (cluster_id * 4)),
+		(limit << 16 | base));
+#endif
 	return 0;
 }
 
@@ -689,12 +700,29 @@ int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, 
 }
 #endif
 
-/*
-* Module driver
-*/
 u32 *recordRef;
 static unsigned int *recordTbl;
 
+#ifdef EEM_AP2SSPM
+int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl, char nr_volt_tbl)
+{
+	int i;
+	int index;
+
+	for (i = 0; i < nr_volt_tbl; i++) {
+		index = (cluster_id * 36) + i;
+		recordRef[index] = ((volt_tbl[i] & 0xFFF) << 16) |
+			(recordRef[index] & 0xFFFF);
+	}
+	csram_write((OFFS_EEM_S + (cluster_id * 4)), 1);
+
+	return 0;
+}
+#endif
+
+/*
+* Module driver
+*/
 void cpuhvfs_pvt_tbl_create(void)
 {
 	int i;
