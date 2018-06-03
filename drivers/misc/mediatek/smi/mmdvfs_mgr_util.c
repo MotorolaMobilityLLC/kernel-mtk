@@ -19,7 +19,6 @@
 static mmdvfs_state_change_cb quick_mmdvfs_state_change_cbs[MMDVFS_SCEN_COUNT];
 static mmdvfs_prepare_action_cb quick_mmdvfs_prepare_action_cbs[MMDVFS_SCEN_COUNT];
 
-
 mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 {
 	mmdvfs_lcd_size_enum result = MMDVFS_LCD_SIZE_HD;
@@ -66,6 +65,7 @@ int register_mmdvfs_prepare_cb(int mmdvfs_client_id, mmdvfs_prepare_action_cb fu
 void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
 {
 		int i = 0;
+
 		mmdvfs_internal_notify_vcore_calibration(event);
 
 		MMDVFSMSG("mmdvfs_notify_prepare_action: %d\n", event->event_type);
@@ -104,4 +104,3 @@ void mmdvfs_internal_handle_state_change(struct mmdvfs_state_change_event *event
 				func(event);
 		}
 }
-

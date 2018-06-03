@@ -86,6 +86,18 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj = {
 	mmdvfs_single_profile_dump,
 };
 
+static const struct mmdvfs_vpu_steps_setting
+	*get_vpu_setting_impl(struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
+
+struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj = {
+	MMDVFS_VPU_OPP_NUM_LIMITATION,
+	MMDVFS_VPU_INTERNAL_VPU_CLK_NUM,
+	MMDVFS_VPU_INTERNAL_VPU_IF_CLK_NUM,
+	MMDVFS_VPU_INTERNAL_VIMVO_VOL_NUM,
+	mmdvfs_vpu_steps_settings,
+	get_vpu_setting_impl
+};
+
 /* Member function implementation */
 static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self,
 int mmdvfs_step, const int current_step)
@@ -344,6 +356,7 @@ static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self)
 	MMDVFSDEBUG(3, "MMDVFS DUMP (%d):\n", profile_mapping->mmdvfs_step);
 	for (i = 0; i < profile_mapping->total_profiles; i++) {
 		struct mmdvfs_profile *profile = profile_mapping->profiles + i;
+
 		mmdvfs_single_profile_dump(profile);
 	}
 }
@@ -601,6 +614,7 @@ struct mmdvfs_step_util *self, int mmclk_step)
 		step_ret = -1;
 	} else {
 		int *step_ptr = self->mmclk_oop_to_legacy_step + mmclk_step;
+
 		step_ret = -1;
 
 		if (step_ptr != NULL)
@@ -609,6 +623,16 @@ struct mmdvfs_step_util *self, int mmclk_step)
 	return step_ret;
 }
 
+static const struct mmdvfs_vpu_steps_setting
+	*get_vpu_setting_impl(struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp)
+{
+	if (vpu_opp < 0 || vpu_opp > self->nr_vpu_steps)
+		return NULL;
+	else
+		return (const struct mmdvfs_vpu_steps_setting *)&(self->mmdvfs_vpu_steps_settings[vpu_opp]);
+}
+
+struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor = &mmdvfs_vpu_dvfs_configurator_obj;
 struct mmdvfs_adaptor *g_mmdvfs_adaptor = &mmdvfs_adaptor_obj;
 struct mmdvfs_step_util *g_mmdvfs_step_util = &mmdvfs_step_util_obj;
 

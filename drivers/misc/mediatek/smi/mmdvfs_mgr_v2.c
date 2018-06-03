@@ -1912,3 +1912,7 @@ void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event
 {
 	MMDVFSMSG("mmdvfs_internal_notify_vcore_calibration doesn't support in this platform\n");
 }
+
+struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor;
+struct mmdvfs_adaptor *g_mmdvfs_adaptor;
+struct mmdvfs_step_util *g_mmdvfs_step_util;

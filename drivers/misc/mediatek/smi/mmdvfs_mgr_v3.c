@@ -61,6 +61,8 @@ static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 /* Record the current step */
 static int g_mmdvfs_current_step;
 
+static int g_mmdvfs_current_vpu_step;
+
 /* Record the enabled client */
 static unsigned int g_mmdvfs_concurrency;
 static MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
@@ -261,7 +263,8 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 
 	legacy_clk = mmdvfs_get_stable_isp_clk();
 
-	if (g_mmdvfs_rt_debug_disable_mask && ((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
+	if (g_mmdvfs_rt_debug_disable_mask &&
+			((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
 		MMDVFSDEBUG(3,
 		"Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
 		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
@@ -360,6 +363,45 @@ static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
 	return 0;
 }
 
+static void mmdvfs_handle_vpu_dvfs_set_cmd(MTK_MMDVFS_CMD *cmd)
+{
+	/* Check if the scenrio is normal for VPU here */
+	if (cmd->scen != SMI_BWC_SCEN_NORMAL) {
+		int current_vpu_step_config = 0;
+		int update_vpu_step = 0;
+		int result = -1;
+
+		spin_lock(&g_mmdvfs_mgr->scen_lock);
+		current_vpu_step_config = g_mmdvfs_current_vpu_step;
+		spin_unlock(&g_mmdvfs_mgr->scen_lock);
+
+		if (cmd->camera_mode == MMDVFS_IOCTL_CMD_VPU_STEP_UNREQUEST)
+			update_vpu_step = -1;
+		else
+			update_vpu_step = cmd->camera_mode;
+
+		result = mmdvfs_internal_set_vpu_step(current_vpu_step_config, update_vpu_step);
+
+		if (result)	{
+			MMDVFSMSG("mmdvfs_internal_set_vpu_step failed: %d, req:%d, current:%d\n",
+			result, update_vpu_step, current_vpu_step_config);
+			cmd->ret = -1;
+		}	else	{
+			spin_lock(&g_mmdvfs_mgr->scen_lock);
+			g_mmdvfs_current_vpu_step = update_vpu_step;
+			spin_unlock(&g_mmdvfs_mgr->scen_lock);
+			cmd->ret = 0;
+		}
+	}	else {
+		MMDVFSMSG("mmdvfs_handle_vpu_dvfs_set_cmd must with normal scenario\n");
+	}
+}
+
+static void mmdvfs_handle_vpu_dvfs_get_cmd(MTK_MMDVFS_CMD *cmd)
+{
+	cmd->ret = g_mmdvfs_current_vpu_step;
+}
+
 void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 {
 	if (is_mmdvfs_disabled()) {
@@ -384,9 +426,8 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 		}
 		break;
 
-	case MTK_MMDVFS_CMD_TYPE_QUERY: { /* query with some parameters */
+	case MTK_MMDVFS_CMD_TYPE_QUERY:  /* query with some parameters */
 		{
-
 			int query_fine_step = mmdvfs_query(cmd->scen, cmd);
 			int current_fine_step =	mmdvfs_get_current_fine_step();
 
@@ -433,7 +474,14 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 		/* Get the target step from step field */
 		cmd->ret = handle_step_mmmclk_set(cmd);
 		break;
-	}
+
+	case MTK_MMDVFS_CMD_TYPE_VPU_STEP_SET:
+		mmdvfs_handle_vpu_dvfs_set_cmd(cmd);
+		break;
+
+	case MTK_MMDVFS_CMD_TYPE_VPU_STEP_GET:
+		mmdvfs_handle_vpu_dvfs_get_cmd(cmd);
+		break;
 
 	default:
 		MMDVFSMSG("invalid mmdvfs cmd\n");
@@ -742,6 +790,56 @@ void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request)
 	}
 }
 
+
+int mmdvfs_internal_set_vpu_step(int current_step, int update_step)
+{
+	/* Fill event object */
+	struct mmdvfs_state_change_event evt = {0};
+	const struct mmdvfs_vpu_steps_setting *setting;
+
+	if (!g_mmdvfs_vpu_adaptor) {
+		MMDVFSMSG("mmdvfs_internal_set_vpu_step: g_mmdvfs_vpu_adaptor can't be NULL\n");
+		return -1;
+	}
+
+	setting = g_mmdvfs_vpu_adaptor->get_vpu_setting(g_mmdvfs_vpu_adaptor, update_step);
+
+	if (!setting) {
+		MMDVFSMSG("g_mmdvfs_vpu_adaptor->get_vpu_setting return NULL for step: %d\n",
+		update_step);
+		return -1;
+	}
+
+	if (update_step == -1) {
+		evt.vcore_vol_step = -1;
+		evt.vpu_clk_step = -1;
+		evt.vpu_if_clk_step = -1;
+		evt.vimvo_vol_step = -1;
+	} else {
+		evt.vcore_vol_step = setting->mmdvfs_step;
+		evt.vpu_clk_step = setting->vpu_clk_step;
+		evt.vpu_if_clk_step = setting->vpu_if_clk_step;
+		evt.vimvo_vol_step = setting->vimvo_vol_step;
+	}
+
+	/* Rising */
+	if (current_step == -1 || ((update_step != -1) && (update_step
+		< current_step))) {
+		MMDVFSDEBUG(3, "Apply MMDVFS setting");
+		mmdvfs_set_fine_step(MMDVFS_SCEN_VPU, evt.vcore_vol_step);
+		MMDVFSDEBUG(3, "Apply VPU setting:\n");
+		mmdvfs_internal_handle_state_change(&evt);
+	} else {
+		/* Falling */
+		MMDVFSDEBUG(3, "Apply VPU setting:\n");
+		mmdvfs_internal_handle_state_change(NULL);
+		MMDVFSDEBUG(3, "Apply MMDVFS setting");
+		mmdvfs_set_fine_step(MMDVFS_SCEN_VPU, evt.vcore_vol_step);
+		mmdvfs_internal_handle_state_change(&evt);
+	}
+
+	return 0;
+}
 
 void dump_mmdvfs_info(void)
 {
