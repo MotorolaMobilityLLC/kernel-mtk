@@ -23,7 +23,6 @@
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
 #endif
-#include <mtk_uart_api.h>
 #include <mtk_spm_irq.h>
 
 #include <mtk_spm_internal.h>
@@ -101,7 +100,7 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
-		mtk_uart_restore();
+		mtk8250_restore_dev();
 }
 
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
@@ -325,7 +324,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (request_uart_to_sleep()) {
+	if (mtk8250_request_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
@@ -338,7 +337,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spm_suspend_footprint(SPM_SUSPEND_LEAVE_WFI);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	request_uart_to_wakeup();
+	mtk8250_request_to_wakeup();
 RESTORE_IRQ:
 #endif
 

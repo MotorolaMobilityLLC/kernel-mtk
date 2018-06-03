@@ -347,9 +347,17 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
 	struct uart_8250_port *up =
 		container_of(port, struct uart_8250_port, port);
 
+	/*
+	 * If the uart is console port, and uart device tree also
+	 * set dma parameters, need to release the dma pointer.
+	 */
 #ifdef CONFIG_SERIAL_8250_DMA
-	if (up->dma != NULL)
+	if (up->dma != NULL && !uart_console(port))
 		mtk8250_dma_enable(up);
+	if (up->dma != NULL && uart_console(port)) {
+		devm_kfree(up->port.dev, up->dma);
+		up->dma = NULL;
+	}
 #endif
 
 	serial8250_do_set_termios(port, termios, old);

@@ -19,7 +19,6 @@
 #if 0 /* FIXME: Golden setting dump not ready */
 #include <mtk_power_gs_api.h>
 #endif
-#include <mtk_uart_api.h> /* request_uart_to_sleep request_uart_to_wakeup*/
 #if defined(CONFIG_THERMAL)
 #include <mtk_thermal.h> /* mtkTTimer_start/cancel_timer */
 #endif
@@ -282,9 +281,9 @@ int mtk_idle_enter(
 	__mtk_idle_footprint(IDLE_FP_UART_SLEEP);
 
 	/* uart sleep */
-	#if defined(CONFIG_MTK_SERIAL)
+	#if defined(CONFIG_SERIAL_8250_MT6577)
 	if (!(idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)) {
-		if (request_uart_to_sleep()) {
+		if (mtk8250_request_to_sleep()) {
 			pr_notice("Power/swap Fail to request uart sleep\n");
 			goto RESTORE_UART;
 		}
@@ -301,9 +300,9 @@ int mtk_idle_enter(
 	__mtk_idle_footprint(IDLE_FP_LEAVE_WFI);
 
 	/* uart resume */
-	#if defined(CONFIG_MTK_SERIAL)
+	#if defined(CONFIG_SERIAL_8250_MT6577)
 	if (!(idle_flag & MTK_IDLE_LOG_DUMP_LP_GS))
-		request_uart_to_wakeup();
+		mtk8250_request_to_wakeup();
 RESTORE_UART:
 	#endif
 

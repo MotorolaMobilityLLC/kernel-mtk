@@ -185,4 +185,8 @@ extern void spm_resource_req_block_dump(void);
 extern void spm_resource_req_dump(void);
 extern void dvfsrc_md_scenario_update(bool suspend);
 
+/* call uart to sleep and wakeup*/
+extern int mtk8250_request_to_sleep(void);
+extern int mtk8250_request_to_wakeup(void);
+
 #endif /* __MTK_IDLE_INTERNAL_H__ */

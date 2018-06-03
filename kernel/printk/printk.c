@@ -50,9 +50,6 @@
 
 #include <asm/uaccess.h>
 #include <asm/sections.h>
-#ifdef CONFIG_MTK_SERIAL
-#include <include/mtk_uart_api.h>
-#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/printk.h>
@@ -462,14 +459,14 @@ struct __conwrite_stat_struct {
 	u64 time_after_conwrite; /* the last record after write */
 	char con_write_statbuf[256]; /* con write status buf*/
 };
-u64 time_con_write_ttyMT, time_con_write_pstore;
-u64 len_con_write_ttyMT, len_con_write_pstore;
+u64 time_con_write_ttyS, time_con_write_pstore;
+u64 len_con_write_ttyS, len_con_write_pstore;
 static struct __conwrite_stat_struct conwrite_stat_struct = {
 	.con = NULL,
 	.time_before_conwrite = 0,
 	.time_after_conwrite = 0
 };
-unsigned long rem_nsec_con_write_ttyMT, rem_nsec_con_write_pstore;
+unsigned long rem_nsec_con_write_ttyS, rem_nsec_con_write_pstore;
 bool console_status_detected;
 #endif
 
@@ -1918,9 +1915,9 @@ static void call_console_drivers(int level,
 			interval_con_write =
 				conwrite_stat_struct.time_after_conwrite -
 				conwrite_stat_struct.time_before_conwrite;
-			if (!strcmp(con->name, "ttyMT")) {
-				time_con_write_ttyMT += interval_con_write;
-				len_con_write_ttyMT += len;
+			if (!strcmp(con->name, "ttyS")) {
+				time_con_write_ttyS += interval_con_write;
+				len_con_write_ttyS += len;
 			} else if (!strcmp(con->name, "pstore")) {
 				time_con_write_pstore += interval_con_write;
 				len_con_write_pstore += len;
@@ -2802,9 +2799,9 @@ void console_unlock(void)
 	u64 con_dura_time = local_clock();
 	u64 current_time;
 
-	len_con_write_ttyMT = len_con_write_pstore = 0;
-	time_con_write_ttyMT = time_con_write_pstore = 0;
-	rem_nsec_con_write_ttyMT = rem_nsec_con_write_pstore = 0;
+	len_con_write_ttyS = len_con_write_pstore = 0;
+	time_con_write_ttyS = time_con_write_pstore = 0;
+	rem_nsec_con_write_ttyS = rem_nsec_con_write_pstore = 0;
 #endif
 	if (console_suspended) {
 		up_console_sem();
@@ -2875,8 +2872,8 @@ skip:
 			block_overtime = true;
 			console_status_detected = true;
 
-			rem_nsec_con_write_ttyMT = do_div
-				(time_con_write_ttyMT, 1000000000);
+			rem_nsec_con_write_ttyS = do_div
+				(time_con_write_ttyS, 1000000000);
 			rem_nsec_con_write_pstore = do_div
 				(time_con_write_pstore, 1000000000);
 			tmp_rem_nsec_start = do_div(con_dura_time, 1000000000);
@@ -2887,15 +2884,15 @@ skip:
 			snprintf(conwrite_stat_struct.con_write_statbuf,
 				sizeof(conwrite_stat_struct.con_write_statbuf)
 				- 1,
-"cpu%d [%lu.%06lu]--[%lu.%06lu] 'ttyMT' %lubytes %lu.%06lus, 'pstore' %lubytes %lu.%06lus\n",
+"cpu%d [%lu.%06lu]--[%lu.%06lu] 'ttyS' %lubytes %lu.%06lus, 'pstore' %lubytes %lu.%06lus\n",
 				smp_processor_id(),
 				(unsigned long)con_dura_time,
 				tmp_rem_nsec_start/1000,
 				(unsigned long)current_time,
 				tmp_rem_nsec_end/1000,
-				(unsigned long)len_con_write_ttyMT,
-				(unsigned long)time_con_write_ttyMT,
-				rem_nsec_con_write_ttyMT/1000,
+				(unsigned long)len_con_write_ttyS,
+				(unsigned long)time_con_write_ttyS,
+				rem_nsec_con_write_ttyS/1000,
 				(unsigned long)len_con_write_pstore,
 				(unsigned long)time_con_write_pstore,
 				rem_nsec_con_write_pstore/1000);
