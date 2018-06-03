@@ -70,11 +70,11 @@ void fpsgo_cond(int cond_check)
 	switch (cond_check) {
 	case 0:
 		pr_debug("fpsgo_lcm_off\n");
-		fpsgo_switch_enable_keep(0);
+		fpsgo_switch_enable(0);
 		break;
 	case 1:
 		pr_debug("fpsgo_lcm_on\n");
-		fpsgo_switch_enable_keep(1);
+		fpsgo_switch_enable(1);
 		break;
 	default:
 		break;
