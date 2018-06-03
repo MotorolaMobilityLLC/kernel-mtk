@@ -182,7 +182,6 @@ static DEFINE_SPINLOCK(dma_drv_lock);
 
 #define PDN_APDMA_MODULE_NAME ("CQDMA")
 #define GDMA_WARM_RST_TIMEOUT   (100)	/* ms */
-volatile unsigned int DMA_INT_DONE;
 
 /*
  * mt_req_gdma: request a general DMA.
@@ -671,7 +670,7 @@ EXPORT_SYMBOL(mt_reset_gdma);
  */
 static irqreturn_t gdma1_irq_handler(int irq, void *dev_id)
 {
-	volatile unsigned glbsta;
+	unsigned int glbsta;
 	unsigned int i;
 
 	for (i = 0; i < nr_cqdma_channel; i++)
