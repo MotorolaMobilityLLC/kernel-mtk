@@ -644,5 +644,6 @@ extern INT32 mtk_wcn_sys_if_rx(UINT8 *data, INT32 size);
 VOID mtk_stp_sdio_retry_flag_ctrl(INT32 flag);
 VOID mtk_stp_dbg_sdio_retry_flag_ctrl(INT32 flag);
 INT32 mtk_stp_sdio_retry_flag_get(VOID);
+VOID mtk_stp_dump_sdio_register(VOID);
 
 #endif				/* _STP_CORE_H_ */
