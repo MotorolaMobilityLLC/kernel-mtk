@@ -737,13 +737,13 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 				break;
 			}
 		}
-		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-				f_render->render_method, t_frame_done, f_render->buffer_id, f_render->api);
 		if (frame_done == 1)
 			fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
 	}
 
 out:
+	fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
+			f_render->render_method, t_frame_done, f_render->buffer_id, f_render->api);
 	fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pid, f_render->frame_type);
 	FPSGO_COM_TRACE("frame_done pid[%d] ui[%d] type[%d] frame_t:%llu render:%d method:%d",
 		pid, f_render->ui_pid, f_render->frame_type, frame_time, render, render_method);
