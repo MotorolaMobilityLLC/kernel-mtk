@@ -376,10 +376,10 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	case CCCI_STATUS_TX:
 	case CCCI_STATUS_RX:
 		if (is_tx)
-			CCCI_MEM_LOG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+			CCCI_MEM_LOG_TAG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
 				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
 		else
-			CCCI_MEM_LOG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
+			CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
 				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
 		if (data_len > 0)
 			c2k_mem_dump(skb->data + sizeof(struct ccci_header), dump_len);
@@ -558,9 +558,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			count++;
-			ccci_md_check_rx_seq_num(md, &ccci_hdr, queue->index);
 			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_hdr, (ret >= 0 ? 0 : 1));
 			ccci_channel_update_packet_counter(md, &ccci_hdr);
+			ccci_md_check_rx_seq_num(md, &ccci_hdr, queue->index);
 
 			if (queue->debug_id) {
 				CCCI_REPEAT_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
@@ -827,14 +827,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 			if (md_ctrl->channel_id & (1 << (i + D2H_RINGQ0))) {
 				md->latest_q_rx_isr_time[i] = local_clock();
 				clear_bit(i + D2H_RINGQ0, &md_ctrl->channel_id);
-				if (atomic_read(&md_ctrl->rxq[i].rx_on_going)) {
-					CCCI_DEBUG_LOG(md->index, TAG, "Q%d rx is on-going(%d)2\n",
-						     md_ctrl->rxq[i].index,
-						     atomic_read(&md_ctrl->rxq[i].rx_on_going));
-					continue;
-				}
-				if (md->md_state == EXCEPTION || ccci_md_napi_check_and_notice(md, i) == 0)
-					queue_work(md_ctrl->rxq[i].worker, &md_ctrl->rxq[i].qwork);
+				queue_work(md_ctrl->rxq[i].worker, &md_ctrl->rxq[i].qwork);
 			} else
 				md_ccif_check_ringbuf(md, i);
 		}
@@ -1123,7 +1116,6 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 		}
 		ccci_md_inc_tx_seq_num(md, ccci_h);
 
-		md_ccif_tx_rx_printk(md, skb, qno, 1);
 		ccci_channel_update_packet_counter(md, ccci_h);
 
 		if (md->index == MD_SYS3) {
@@ -1152,6 +1144,7 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 			if (ccci_h->data[1] == C2K_HB_MSG)
 				CCCI_NORMAL_LOG(md->index, TAG, "hb: 0x%x\n", ccci_h->channel);
 		}
+		md_ccif_tx_rx_printk(md, skb, qno, 1);
 		/*copy skb to ringbuf */
 		ret = ccci_ringbuf_write(md->index, queue->ringbuf, skb->data, skb->len);
 		if (ret != skb->len)
@@ -1373,6 +1366,8 @@ static void md_ccif_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	u32 pending = mt_irq_get_pending(md_ctrl->ccif_irq_id);
+	unsigned long long ts = 0;
+	unsigned long nsec_rem = 0;
 
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx %d\n", md_ctrl->channel_id, pending);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue%d Control\n", qno);
@@ -1384,6 +1379,12 @@ static void md_ccif_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 		qno, md_ctrl->rxq[qno].ringbuf->rx_control.write,
 		md_ctrl->rxq[qno].ringbuf->rx_control.read,
 		md_ctrl->rxq[qno].ringbuf->rx_control.length);
+	ts = md->latest_q_rx_isr_time[qno];
+	nsec_rem = do_div(ts, NSEC_PER_SEC);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d RX: last isr %5llu.%06lu\n", qno, ts, nsec_rem / 1000);
+	ts = md->latest_q_rx_time[qno];
+	nsec_rem = do_div(ts, NSEC_PER_SEC);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d RX: last wq  %5llu.%06lu\n", qno, ts, nsec_rem / 1000);
 	ccci_md_dump_log_history(md, 0, qno, qno);
 }
 
