@@ -82,6 +82,8 @@
 #define TCP_HDR_TCP_CSUM_OFFSET                 16
 #define UDP_HDR_UDP_CSUM_OFFSET                 6
 
+#define DHCP_MAGIC_NUMBER                       0x63825363
+
 #define LLC_LEN                                 8	/* LLC(3) + SNAP(3) + EtherType(2) */
 
 #define NULL_MAC_ADDR                           {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
@@ -1056,6 +1058,15 @@
 #define ACTION_SA_TIMEOUT_ASSOC_COMEBACK            3
 #endif
 
+/* MTK Vendor Specific OUI */
+#define ELEM_MIN_LEN_MTK_OUI                        7
+#define VENDOR_OUI_MTK                              { 0x00, 0x0C, 0xE7 }
+#define MTK_SYNERGY_CAP_SUPPORT_24G_MCS89           BIT(3)
+#define MTK_SYNERGY_CAP0                            (MTK_SYNERGY_CAP_SUPPORT_24G_MCS89)
+#define MTK_SYNERGY_CAP1                            0x0
+#define MTK_SYNERGY_CAP2                            0x0
+#define MTK_SYNERGY_CAP3                            0x0
+
 /* 7.4.10.1 HT action frame details */
 #define ACTION_HT_NOTIFY_CHANNEL_WIDTH              0	/* Notify Channel Width */
 #define ACTION_HT_SM_POWER_SAVE                     1	/* SM Power Save */
@@ -1160,6 +1171,24 @@ typedef struct _ETH_FRAME_T {
 	UINT_16 u2TypeLen;
 	UINT_8 aucData[1];
 } __KAL_ATTRIB_PACKED__ ETH_FRAME_T, *P_ETH_FRAME_T;
+
+typedef struct _BOOTP_PROTOCOL_T {
+	UINT_8 ucOperation;
+	UINT_8 ucHdrType;
+	UINT_8 ucHdrLen;
+	UINT_8 ucHops;
+	UINT_32 u4TransId;
+	UINT_16 u2Seconds;
+	UINT_16 u2Flags;
+	UINT_32 u4CIAddr;
+	UINT_32 u4YIAddr;
+	UINT_32 u4SIAddr;
+	UINT_32 u4GIAddr;
+	UINT_8 aucCHAddr[16];
+	UINT_8 aucServerName[64];
+	UINT_8 aucFileName[128];
+	UINT_8 aucOptions[0];
+} __KAL_ATTRIB_PACKED__ BOOTP_PROTOCOL_T, *P_BOOTP_PROTOCOL_T;
 
 /* IEEE 802.11 WLAN Frame Structure */
 /* WLAN MAC Header (without Address 4 and QoS Control fields) */
@@ -2221,6 +2250,14 @@ typedef struct _WAPI_INFO_ELEM_T {
 	UINT_16 u2AuthKeyMgtSuiteCount;
 	UCHAR aucAuthKeyMgtSuite1[4];
 } __KAL_ATTRIB_PACKED__ WAPI_INFO_ELEM_T, *P_WAPI_INFO_ELEM_T;
+/* Information Elements from MTK Synergies.*/
+typedef struct _IE_MTK_OUI_T {
+	UINT_8 ucId;
+	UINT_8 ucLength;
+	UINT_8 aucOui[3];
+	UINT_8 aucCapability[4];
+	UINT_8 aucInfoElem[1];
+} __KAL_ATTRIB_PACKED__ IE_MTK_OUI_T, *P_IE_MTK_OUI_T;
 
 #if defined(WINDOWS_DDK) || defined(WINDOWS_CE)
 #pragma pack()
@@ -2291,6 +2328,8 @@ typedef struct _WAPI_INFO_ELEM_T {
 #define SUP_OPERATING_CLASS_IE(fp) ((P_IE_SUP_OPERATING_CLASS_T) fp)
 
 #define QUIET_IE(fp)            ((P_IE_QUIET_T) fp)
+#define MTK_OUI_IE(fp)          ((P_IE_MTK_OUI_T) fp)
+
 
 #if CFG_SUPPORT_DFS		/* Add by Enlai */
 #define SUPPORTED_CHANNELS_IE(fp) ((P_IE_SUPPORTED_CHANNELS_T)fp)

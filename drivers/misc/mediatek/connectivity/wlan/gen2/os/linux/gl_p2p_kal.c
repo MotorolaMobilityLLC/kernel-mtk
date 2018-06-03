@@ -953,7 +953,8 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 		/* Return this structure. */
 		if (!prCfg80211Bss) {
-			DBGLOG(P2P, WARN, "inform bss to cfg80211 failed, bss channel %d, rcpi %d\n",
+			DBGLOG(P2P, WARN, "inform bss[%pM]: to cfg80211 failed, bss channel %d, rcpi %d\n",
+					prBcnProbeRspFrame->bssid,
 					prChannelInfo->ucChannelNum, i4SignalStrength);
 		} else {
 			cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
@@ -1152,6 +1153,12 @@ struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo
 			u4TblSize = bands[IEEE80211_BAND_2GHZ]->n_channels;
 			break;
 		case BAND_5G:
+#ifdef CONFIG_MTK_TC1_FEATURE
+			if (bands[IEEE80211_BAND_5GHZ] == NULL) {
+				DBGLOG(P2P, ERROR, "kalP2pFuncGetChannelEntry NULL Bands!!\n");
+				break;
+			}
+#endif
 			prTargetChannelEntry = bands[IEEE80211_BAND_5GHZ]->channels;
 			u4TblSize = bands[IEEE80211_BAND_5GHZ]->n_channels;
 			break;

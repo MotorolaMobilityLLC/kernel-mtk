@@ -5623,6 +5623,7 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 			      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	UINT_32 u4NewPacketFilter;
+	UINT_32 u4RealPacketFilter;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 
 	ASSERT(prAdapter);
@@ -5684,8 +5685,9 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 
 		prAdapter->u4OsPacketFilter &= PARAM_PACKET_FILTER_P2P_MASK;
 		prAdapter->u4OsPacketFilter |= u4NewPacketFilter;
+		u4RealPacketFilter = prAdapter->u4OsPacketFilter | swCrGetDNSRxFilter();
 
-		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
+		rStatus = wlanoidSetPacketFilter(prAdapter, u4RealPacketFilter,
 					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
 	DBGLOG(REQ, INFO, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
@@ -7377,6 +7379,9 @@ wlanoidSetWapiAssocInfo(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_LENGTH;
 	}
 
+	if (u4SetBufferLen > sizeof(prAdapter->prGlueInfo->aucWapiAssocInfoIEs))
+		return WLAN_STATUS_INVALID_LENGTH;
+
 	prAdapter->rWifiVar.rConnSettings.fgWapiMode = TRUE;
 
 	/* if (prWapiInfo->ucElemId != ELEM_ID_WAPI) */
@@ -7652,6 +7657,9 @@ wlanoidSetWSCAssocInfo(IN P_ADAPTER_T prAdapter,
 	DBGLOG(OID, LOUD, "\r\n");
 
 	if (u4SetBufferLen == 0)
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	if (u4SetBufferLen > sizeof(prAdapter->prGlueInfo->aucWapiAssocInfoIEs))
 		return WLAN_STATUS_INVALID_LENGTH;
 
 	*pu4SetInfoLen = u4SetBufferLen;
@@ -8503,7 +8511,7 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 
 	/* Force to re-search country code in country domains */
 	prAdapter->prDomainInfo = NULL;
-	rlmDomainSendCmd(prAdapter, TRUE);
+	rlmDomainSendCmd(prAdapter, FALSE);
 
 	/* Update supported channel list in channel table based on current country domain */
 	wlanUpdateChannelTable(prAdapter->prGlueInfo);
@@ -9526,7 +9534,7 @@ batchSetCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBuff
 		return -EINVAL;
 	}
 
-	wlanSendSetQueryCmd(prAdapter,
+	rStatus = wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_BATCH_REQ,
 			    TRUE, FALSE, TRUE, NULL, NULL, sizeof(CMD_BATCH_REQ_T), (PUINT_8) &rCmdBatchReq, NULL, 0);
 
@@ -10381,6 +10389,49 @@ wlanoidSetTxRateInfo(
 }
 #endif /* CFG_SUPPORT_TXR_ENC */
 
+
+WLAN_STATUS
+wlanoidSetAlwaysScan(
+IN  P_ADAPTER_T prAdapter,
+IN  PVOID       pvSetBuffer,
+IN  UINT_32     u4SetBufferLen,
+OUT PUINT_32    pu4SetInfoLen
+)
+{
+	WLAN_STATUS rStatus;
+	UINT_8 u8AlwaysScan;
+
+	DEBUGFUNC("wlanoidSetAlwaysScan");
+
+	if (!prAdapter || !pvSetBuffer)
+		return WLAN_STATUS_INVALID_DATA;
+
+	u8AlwaysScan = *(PUINT_8)pvSetBuffer - '0';
+
+	if ((u8AlwaysScan != 0) && (u8AlwaysScan != 1))
+		return WLAN_STATUS_INVALID_DATA;
+
+	rStatus = wlanSendSetQueryCmd(
+				prAdapter,                  /* prAdapter */
+				CMD_ID_SET_ALWAYS_SCAN_PARAM,/* ucCID */
+				TRUE,                       /* fgSetQuery */
+				FALSE,                      /* fgNeedResp */
+				TRUE,                       /* fgIsOid */
+				nicCmdEventSetCommon,		/* pfCmdDoneHandler*/
+				nicOidCmdTimeoutCommon,		/* pfCmdTimeoutHandler */
+				sizeof(u8AlwaysScan),		/* u4SetQueryInfoLen */
+				(PUINT_8)&u8AlwaysScan,      /* pucInfoBuffer */
+				NULL,                       /* pvSetQueryBuffer */
+				0                           /* u4SetQueryBufferLen */
+				);
+	DBGLOG(OID, INFO, "u8AlwaysScan %d rStatus %x\n", u8AlwaysScan, rStatus);
+
+	ASSERT(rStatus == WLAN_STATUS_PENDING);
+
+	return rStatus;
+
+}
+
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
@@ -10416,18 +10467,17 @@ wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
 
 	rTdlsPs.ucIsEnablePs = *(PUINT_8)pvSetBuffer - '0';
 	DBGLOG(OID, INFO, "enable tdls ps %d\n", rTdlsPs.ucIsEnablePs);
-	wlanSendSetQueryCmd(prAdapter,
-							CMD_ID_TDLS_PS,
-							TRUE,
-							FALSE,
-							FALSE,
-							NULL,
-							nicOidCmdTimeoutCommon,
-							sizeof(rTdlsPs),
-							(PUINT_8)&rTdlsPs,
-							NULL,
-							0);
-	return WLAN_STATUS_SUCCESS;
+	return wlanSendSetQueryCmd(prAdapter,
+						CMD_ID_TDLS_PS,
+						TRUE,
+						FALSE,
+						TRUE,
+						nicCmdEventSetCommon,
+						nicOidCmdTimeoutCommon,
+						sizeof(rTdlsPs),
+						(PUINT_8)&rTdlsPs,
+						NULL,
+						0);
 }
 #endif
 

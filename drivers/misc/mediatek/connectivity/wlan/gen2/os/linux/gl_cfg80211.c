@@ -3041,9 +3041,11 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 						   pprBssDesc[i]->ucChannelNum,
 						   RCPI_TO_dBm(pprBssDesc[i]->ucRCPI));
 	}
-	DBGLOG(SCN, INFO, "pending %d sched scan results\n", i);
-	if (i > 0)
+
+	if (i > 0) {
+		DBGLOG(SCN, INFO, "pending %d sched scan results\n", i);
 		kalMemZero(&pprBssDesc[0], i * sizeof(P_BSS_DESC_T));
+	}
 end:
 	kalHaltUnlock();
 	return 0;
@@ -3066,7 +3068,19 @@ INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_3
 		DBGLOG(REQ, WARN, "not support tdls\n");
 		return -EOPNOTSUPP;
 #endif
-	} else
+	} else if (kalStrniCmp(cmd, "SETALWAYSSCANSTATE ", 19) == 0) {
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetAlwaysScan,
+					(PVOID)(cmd+19),
+					sizeof(UINT_8),
+					FALSE,
+					FALSE,
+					TRUE,
+					FALSE,
+					&u4SetInfoLen);
+
+	}  else
 		return -EOPNOTSUPP;
 
 	if (rStatus == WLAN_STATUS_SUCCESS)

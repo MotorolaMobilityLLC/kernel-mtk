@@ -133,8 +133,9 @@ typedef enum _ENUM_CMD_ID_T {
 #ifdef FW_CFG_SUPPORT
 		CMD_ID_GET_SET_CUSTOMER_CFG = 0x70,
 #endif
+	CMD_ID_SET_ALWAYS_SCAN_PARAM = 0x73,/*0x73(set)*/
 	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
-	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
+	CMD_ID_TDLS_PS = 0x75,	/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -157,9 +158,13 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SEC_CHECK,	/* 0xc7 (Set / Query) */
 #endif
 	CMD_ID_DUMP_MEM,	/* 0xc8 (Query) */
-
+#if CFG_SUPPORT_TX_BACKOFF
+	CMD_ID_SET_TX_PWR_OFFSET = 0xC9,	/* 0xc9 (Set) */
+#endif
 	CMD_ID_CHIP_CONFIG = 0xCA,	/* 0xca (Set / Query) */
-
+#if CFG_SUPPORT_TX_BACKOFF
+	CMD_ID_SET_TX_PWR_BACKOFF = 0xCC,	/* 0xcc (Set) */
+#endif
 #if CFG_SUPPORT_RDD_TEST_MODE
 	CMD_ID_SET_RDD_CH = 0xE1,
 #endif
@@ -1138,6 +1143,12 @@ typedef struct _CMD_5G_PWR_OFFSET_T {
 	INT_8 cOffsetBand7;	/* 5.700-5.825G */
 } CMD_5G_PWR_OFFSET_T, *P_CMD_5G_PWR_OFFSET_T;
 
+#if CFG_SUPPORT_TX_BACKOFF
+typedef struct _CMD_MITIGATED_PWR_OFFSET_T {
+	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
+} CMD_MITIGATED_PWR_OFFSET_T, *P_CMD_MITIGATED_PWR_OFFSET_T;
+#endif
+
 typedef struct _CMD_PWR_PARAM_T {
 	UINT_32 au4Data[28];
 	UINT_32 u4RefValue1;
@@ -1427,6 +1438,11 @@ typedef struct _CMD_NLO_REQ {
 	NLO_NETWORK arNetworkList[16];
 	UINT_8 aucIE[0];
 	UINT_8 ucScanType;
+#if CFG_NLO_MSP
+	BOOLEAN fgNLOMspEnable; /*Flag for NLO/PNO MSP enable indicator*/
+	UINT_8 ucNLOMspEntryNum; /*indicates the entry num of MSP List */
+	UINT_16 au2NLOMspList[10];
+#endif
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
 typedef struct _CMD_NLO_CANCEL_T {

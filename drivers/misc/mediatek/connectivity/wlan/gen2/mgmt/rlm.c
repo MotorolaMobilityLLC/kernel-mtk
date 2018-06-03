@@ -204,7 +204,8 @@ VOID rlmRspGenerateHtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
-	if (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
+	if ((prMsduInfo->ucNetworkType == NETWORK_TYPE_P2P_INDEX) ||
+	    (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))))
 		rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
 }
 
@@ -258,7 +259,8 @@ VOID rlmRspGenerateHtOpIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType];
 	ASSERT(prBssInfo);
 
-	if (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
+	if ((prMsduInfo->ucNetworkType == NETWORK_TYPE_P2P_INDEX) ||
+	    (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))))
 		rlmFillHtOpIE(prAdapter, prBssInfo, prMsduInfo);
 }
 
@@ -309,7 +311,40 @@ VOID rlmRspGenerateErpIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		prMsduInfo->u2FrameLength += IE_SIZE(prErpIe);
 	}
 }
+#if CFG_SUPPORT_MTK_SYNERGY
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This function is used to generate MTK Vendor Specific OUI
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID rlmGenerateMTKOuiIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
+{
+	PUINT_8 pucBuffer;
+	UINT_8 aucMtkOui[] = VENDOR_OUI_MTK;
 
+	ASSERT(prAdapter);
+	ASSERT(prMsduInfo);
+
+	pucBuffer = (PUINT_8) ((ULONG) prMsduInfo->prPacket + (ULONG) prMsduInfo->u2FrameLength);
+	MTK_OUI_IE(pucBuffer)->ucId = ELEM_ID_VENDOR;
+	MTK_OUI_IE(pucBuffer)->ucLength = ELEM_MIN_LEN_MTK_OUI;
+	MTK_OUI_IE(pucBuffer)->aucOui[0] = aucMtkOui[0];
+	MTK_OUI_IE(pucBuffer)->aucOui[1] = aucMtkOui[1];
+	MTK_OUI_IE(pucBuffer)->aucOui[2] = aucMtkOui[2];
+
+	MTK_OUI_IE(pucBuffer)->aucCapability[0] = MTK_SYNERGY_CAP0 & (prAdapter->rWifiVar.aucMtkFeature[0]);
+	MTK_OUI_IE(pucBuffer)->aucCapability[1] = MTK_SYNERGY_CAP1 & (prAdapter->rWifiVar.aucMtkFeature[1]);
+	MTK_OUI_IE(pucBuffer)->aucCapability[2] = MTK_SYNERGY_CAP2 & (prAdapter->rWifiVar.aucMtkFeature[2]);
+	MTK_OUI_IE(pucBuffer)->aucCapability[3] = MTK_SYNERGY_CAP3 & (prAdapter->rWifiVar.aucMtkFeature[3]);
+
+	prMsduInfo->u2FrameLength += IE_SIZE(pucBuffer);
+	pucBuffer += IE_SIZE(pucBuffer);
+}				/* rlmGenerateMTKOuiIE */
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief

@@ -297,11 +297,13 @@ scanSearchBssDescByBssidAndSsid(IN P_ADAPTER_T prAdapter,
 				return prBssDesc;
 			} else if (prDstBssDesc == NULL && prBssDesc->fgIsHiddenSSID == TRUE) {
 				prDstBssDesc = prBssDesc;
-			} else {
-				/*
-				 * 20120206 frog: Equal BSSID but not SSID, SSID not hidden,
+			} else if (prBssDesc->eBSSType == BSS_TYPE_P2P_DEVICE) {
+				/* 20120206 frog: Equal BSSID but not SSID, SSID not hidden,
 				 * SSID must be updated.
 				 */
+				 /* 20160823:Permit the scan reusult which there are same BSSID
+				  * but different SSID in what AIS STATE
+				  */
 				COPY_SSID(prBssDesc->aucSSID,
 					  prBssDesc->ucSSIDLen, prSsid->aucSsid, prSsid->u4SsidLen);
 				return prBssDesc;
@@ -2086,8 +2088,20 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 #endif
 			rsnCheckSecurityModeChanged(prAdapter, prAisBssInfo, prBssDesc)) {
 				DBGLOG(SCN, INFO, "Beacon security mode change detected\n");
+				DBGLOG_MEM8(SCN, INFO, prSwRfb->pvHeader, prSwRfb->u2PacketLen);
 				fgNeedDisconnect = FALSE;
-				aisBssSecurityChanged(prAdapter);
+				if (!prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStartTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer,
+						SEC_TO_MSEC(3));
+					prConnSettings->fgSecModeChangeStartTimer = TRUE;
+				}
+			} else {
+				if (prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStopTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer);
+					prConnSettings->fgSecModeChangeStartTimer = FALSE;
+				}
 			}
 #endif
 
@@ -3233,7 +3247,7 @@ try_again:
 				aisCalculateBlackListScore(prAdapter, prBssDesc);
 
 		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
-		DBGLOG(SCN, INFO, "cRSSI %d, %pM\n", cRssi, prBssDesc->aucBSSID);
+
 #if CFG_SELECT_BSS_BASE_ON_RSSI
 		if (cMaxRssi >= -55) {
 			if (cRssi < -55)
@@ -3271,8 +3285,8 @@ try_again:
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
 
 		DBGLOG(SCN, INFO,
-			"%pM Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
-			prBssDesc->aucBSSID, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
+			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
 			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
 		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 		*	if (!prCandBssDescForLowRssi) {

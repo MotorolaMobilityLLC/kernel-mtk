@@ -1152,7 +1152,7 @@ VOID rsnGenerateWPAIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 		((prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA) ||
 		(prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA_PSK)))) {
 #endif
-		if (prP2pSpecificBssInfo->u2WpaIeLen != 0) {
+		if (prAdapter->fgIsP2PRegistered && prP2pSpecificBssInfo && prP2pSpecificBssInfo->u2WpaIeLen != 0) {
 			kalMemCopy(pucBuffer, prP2pSpecificBssInfo->aucWpaIeBuffer, prP2pSpecificBssInfo->u2WpaIeLen);
 			prMsduInfo->u2FrameLength += prP2pSpecificBssInfo->u2WpaIeLen;
 			return;
@@ -2049,7 +2049,7 @@ void rsnStartSaQueryTimer(IN P_ADAPTER_T prAdapter)
 		DBGLOG(RSN, ERROR, "MFP: Fail to alloc buffer for sa query id list\n");
 		if (pucTmp)
 			kalMemFree(pucTmp, VIR_MEM_TYPE,
-			  (prBssSpecInfo->u4SaQueryCount - 1) * ACTION_SA_QUERY_TR_ID_LEN);
+			..(prBssSpecInfo->u4SaQueryCount - 1) * ACTION_SA_QUERY_TR_ID_LEN);
 		return;
 	}
 

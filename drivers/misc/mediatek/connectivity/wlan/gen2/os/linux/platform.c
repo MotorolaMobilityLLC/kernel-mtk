@@ -434,13 +434,41 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 *           FALSE
 */
 /*----------------------------------------------------------------------------*/
+BOOLEAN kalCfgDataRead(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset,
+					IN UINT_32 u4Len, OUT PUINT_16 pu2Data)
+{
+	if (pu2Data == NULL)
+		return FALSE;
+
+	if (nvram_read(WIFI_NVRAM_FILE_NAME,
+		(char *)pu2Data, u4Len, u4Offset) != u4Len) {
+		return FALSE;
+	} else {
+		return TRUE;
+	}
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief API for reading data on NVRAM
+*
+* \param[in]
+*           prGlueInfo
+*           u4Offset
+* \param[out]
+*           pu2Data
+* \return
+*           TRUE
+*           FALSE
+*/
+/*----------------------------------------------------------------------------*/
 BOOLEAN kalCfgDataRead16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, OUT PUINT_16 pu2Data)
 {
 	if (pu2Data == NULL)
 		return FALSE;
 
 	if (nvram_read(WIFI_NVRAM_FILE_NAME,
-		       (char *)pu2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short)) {
+		(char *)pu2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short)) {
 		return FALSE;
 	} else {
 		return TRUE;

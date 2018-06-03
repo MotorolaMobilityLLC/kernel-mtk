@@ -161,6 +161,9 @@ typedef struct _CONNECTION_SETTINGS_T {
 
 	BOOLEAN fgUseOkc;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	BOOLEAN fgSecModeChangeStartTimer;
+#endif
 	struct LINK_MGMT rBlackList;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
@@ -535,7 +538,11 @@ typedef struct _WIFI_VAR_T {
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	BOOLEAN fgEnableReportIndependentPkt;
 #endif
-
+#if CFG_SUPPORT_MTK_SYNERGY
+	UINT_8 ucMtkOui;
+	UINT_32 u4MtkOuiCap;
+	UINT_8 aucMtkFeature[4];
+#endif
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

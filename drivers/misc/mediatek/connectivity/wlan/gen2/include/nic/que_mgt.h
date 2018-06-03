@@ -877,6 +877,7 @@ VOID qmHandleMissTimeout(IN P_RX_BA_ENTRY_T prReorderQueParm);
 VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 VOID qmResetArpDetect(VOID);
 VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
+VOID qmHandleRxDhcpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
 #endif
 VOID qmHandleRxIpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, UINT_16 *flag);
 

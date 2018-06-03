@@ -38,6 +38,8 @@ const UINT_8 aucPriorityParam2TC[] = {
 	TC3_INDEX
 };
 
+#define WLAN_WAIT_READY_BIT_TIMEOUT		3000
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -393,7 +395,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* 3b. engage divided firmware downloading */
 		if (fgValidHead == TRUE) {
 			DBGLOG(INIT, TRACE, "wlanAdapterStart(): fgValidHead == TRUE\n");
-
+			wlanDumpMcuChipId(prAdapter);
 			for (i = 0; i < prFwHead->u4NumOfEntries; i++) {
 
 #if CFG_START_ADDRESS_IS_1ST_SECTION_ADDR
@@ -789,6 +791,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i, u4Value = 0;
+	UINT_32 u4CurrTick;
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 
 	ASSERT(prAdapter);
@@ -822,20 +825,25 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 			};
 
 			/* 3. Wait til RDY bit has been cleaerd */
-			i = 0;
+			u4CurrTick = kalGetTimeTick();
 			while (1) {
 				HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
 
 				if ((u4Value & WCIR_WLAN_READY) == 0)
 					break;
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
-					 || fgIsBusAccessFailed == TRUE || i >= CFG_RESPONSE_POLLING_TIMEOUT) {
+					 || fgIsBusAccessFailed == TRUE ||
+					CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick, WLAN_WAIT_READY_BIT_TIMEOUT)) {
 					g_IsNeedDoChipReset = 1;
+					wlanDumpCommandFwStatus();
+					wlanDumpTcResAndTxedCmd(NULL, 0);
+					cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+					glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+					/* dump TC4[0] ~ TC4[3] TX_DESC */
+					wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 					kalSendAeeWarning("[Read WCIR_WLAN_READY fail!]", __func__);
 					break;
 				}
-				i++;
-				kalMsleep(10);
 			}
 		}
 
@@ -2789,7 +2797,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 
 	/* free the packet */
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
-	DBGLOG(TX, INFO, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
+	DBGLOG(TX, TRACE, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3654,6 +3662,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		if (prRegInfo->ucTxPwrValid != 0) {
 			/* send to F/W */
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
+#if CFG_SUPPORT_TX_BACKOFF
+			nicUpdateTxPowerOffset(prAdapter,
+				(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
+#endif
 		}
 	}
 
@@ -4150,9 +4162,15 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	P_SET_TXPWR_CTRL_T prTxpwr;
-
+#if CFG_SUPPORT_TX_BACKOFF
+	P_REG_INFO_T prRegInfo;
+#endif
 	ASSERT(prGlueInfo);
 
+#if CFG_SUPPORT_TX_BACKOFF
+	prRegInfo = &prGlueInfo->rRegInfo;
+	ASSERT(prRegInfo);
+#endif
 	prTxpwr = &prGlueInfo->rTxPwr;
 
 	prTxpwr->c2GLegacyStaPwrOffset = 0;
@@ -4176,6 +4194,21 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	for (i = 0; i < 2; i++)
 		prTxpwr->acReserved2[i] = 0;
 
+#if CFG_SUPPORT_TX_BACKOFF
+	for (i = 0; i < 40; i++) {
+		/* 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].channel =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].channel;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt20 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt20;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt40 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt40;
+	}
+#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -5255,6 +5288,14 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 #if 0
 	if (prWifiVar->ucCert11nMode == 1)
 		nicWriteMcr(prAdapter, 0x11111115, 1);
+#endif
+#if CFG_SUPPORT_MTK_SYNERGY
+	prWifiVar->ucMtkOui = (UINT_8) wlanCfgGetUint32(prAdapter, "MtkOui", 1);
+	prWifiVar->u4MtkOuiCap = (UINT_32) wlanCfgGetUint32(prAdapter, "MtkOuiCap", 0);
+	prWifiVar->aucMtkFeature[0] = 0xff;
+	prWifiVar->aucMtkFeature[1] = 0xff;
+	prWifiVar->aucMtkFeature[2] = 0xff;
+	prWifiVar->aucMtkFeature[3] = 0xff;
 #endif
 
 	if (wlanCfgGet(prAdapter, "5G_support", aucValue, "", 0) == WLAN_STATUS_SUCCESS)
