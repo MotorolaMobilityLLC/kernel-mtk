@@ -2892,6 +2892,8 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 
 			prRetMsduInfo->ucNetworkType = NETWORK_TYPE_P2P_INDEX;
 		}
+
+		prRetMsduInfo->ucStaRecIndex = 0xFF;
 		/* 3 Compose / Re-compose probe response frame. */
 		bssComposeBeaconProbeRespFrameHeaderAndFF((PUINT_8)
 							  ((ULONG) (prRetMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD),
