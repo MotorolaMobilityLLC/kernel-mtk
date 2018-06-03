@@ -189,6 +189,10 @@ static struct {
 	int down;
 } loading_ud_table[16];
 
+static int gx_tb_dvfs_margin;
+static int gx_tb_dvfs_margin_cur;
+#define GED_DVFS_TIMER_BASED_DVFS_MARGIN 30
+module_param(gx_tb_dvfs_margin, int, 0644);
 static void _init_loading_ud_table(void)
 {
 	int i;
@@ -196,14 +200,15 @@ static void _init_loading_ud_table(void)
 
 	for (i = 0; i < num; ++i) {
 		loading_ud_table[i].freq = mt_gpufreq_get_freq_by_idx(i);
-		loading_ud_table[i].up = 90;
+		loading_ud_table[i].up = (100 - gx_tb_dvfs_margin_cur);
 	}
 
 	for (i = 0; i < num - 1; ++i) {
 		int a = loading_ud_table[i].freq;
 		int b = loading_ud_table[i+1].freq;
 
-		loading_ud_table[i].down = (90 * b) / a;
+		loading_ud_table[i].down
+			= ((100 - gx_tb_dvfs_margin_cur) * b) / a;
 	}
 
 	if (num >= 2)
@@ -759,8 +764,8 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 }
 
 #ifdef GED_ENABLE_FB_DVFS
-static int gx_gpu_dvfs_margin = 10;
-module_param(gx_gpu_dvfs_margin, int, 0644);
+static int gx_fb_dvfs_margin = 10;
+module_param(gx_fb_dvfs_margin, int, 0644);
 #define GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM 4
 static int is_fb_dvfs_triggered;
 static int is_fallback_mode_triggered;
@@ -790,7 +795,15 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 	int gpu_busy_cycle = 0;
 	int busy_cycle_cur;
 	unsigned long ui32IRQFlags;
+	static int force_fallback_pre;
 
+	if (force_fallback_pre != force_fallback) {
+		force_fallback_pre = force_fallback;
+		if (force_fallback == 1)
+			ged_dvfs_gpu_freq_commit(0
+				, mt_gpufreq_get_freq_by_idx(0)
+				, GED_DVFS_DEFAULT_COMMIT);
+	}
 	if (force_fallback) {
 		ged_set_backup_timer_timeout((u64)t_gpu_target);
 		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
@@ -820,7 +833,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 		goto FB_RET;
 	}
 
-	t_gpu_target = t_gpu_target * (100 - gx_gpu_dvfs_margin) / 100;
+	t_gpu_target = t_gpu_target * (100 - gx_fb_dvfs_margin) / 100;
 	i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
 	gpu_freq_pre = mt_gpufreq_get_cur_freq() >> 10;
 
@@ -976,6 +989,17 @@ static bool ged_dvfs_policy(
 
 		if (init == 0) {
 			init = 1;
+			gx_tb_dvfs_margin_cur
+				= gx_tb_dvfs_margin
+				= GED_DVFS_TIMER_BASED_DVFS_MARGIN;
+			_init_loading_ud_table();
+		}
+
+		if (gx_tb_dvfs_margin != gx_tb_dvfs_margin_cur
+				&& gx_tb_dvfs_margin < 100
+				&& gx_tb_dvfs_margin > 0) {
+			gx_tb_dvfs_margin_cur
+				= gx_tb_dvfs_margin;
 			_init_loading_ud_table();
 		}
 
