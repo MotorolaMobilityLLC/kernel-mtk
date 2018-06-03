@@ -390,6 +390,7 @@ u16 rtc_rdwr_uart_bits(u16 *val)
 void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
+#ifdef CONFIG_MTK_SMART_BATTERY
 	unsigned char exist;
 	bool charger_status;
 
@@ -399,8 +400,11 @@ void rtc_bbpu_power_down(void)
 	else
 		charger_status = false;
 	rtc_xinfo("charger_status = %d\n", charger_status);
+#endif
 	spin_lock_irqsave(&rtc_lock, flags);
+#ifdef CONFIG_MTK_SMART_BATTERY
 	hal_rtc_bbpu_pwdn(charger_status);
+#endif
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
@@ -408,7 +412,9 @@ void mt_power_off(void)
 {
 #if !defined(CONFIG_POWER_EXT)
 	int count = 0;
+#ifdef CONFIG_MTK_SMART_BATTERY
 	unsigned char exist;
+#endif
 #endif
 
 	rtc_xinfo("mt_power_off\n");
