@@ -52,6 +52,13 @@ struct basic_dram_setting {
 	} channel[MAX_CHANNELS];
 };
 
+enum {
+	mSPM,
+	mRGU,
+	mDISP,
+	mISP
+};
+
 #define LOCK	1
 #define UNLOCK	0
 
@@ -72,4 +79,11 @@ extern void *mt_emi_reg_base_get(void);
 extern int emi_mpu_get_violation_port(void);
 extern unsigned int mt_emi_reg_read(unsigned int offset);
 extern void mt_emi_reg_write(unsigned int data, unsigned int offset);
+extern void dump_emi_latency(void);
+extern int DRS_enable(void);
+extern int DRS_disable(void);
+extern unsigned long long get_drs_all_self_cnt(unsigned int ch);
+extern unsigned long long get_drs_rank1_self_cnt(unsigned int ch);
+extern unsigned int mask_master_disable_drs(unsigned int master);
+extern unsigned int unmask_master_disable_drs(unsigned int master);
 #endif  /* !__MT_EMI_MPU_H */

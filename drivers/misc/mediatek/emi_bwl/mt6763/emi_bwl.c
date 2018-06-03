@@ -22,6 +22,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/printk.h>
+#include <linux/spinlock.h>
 
 #define MET_USER_EVENT_SUPPORT
 /* #include <linux/met_drv.h> */
@@ -33,12 +34,14 @@
 #include "emi_mbw.h"
 
 DEFINE_SEMAPHORE(emi_bwl_sem);
+static DEFINE_SPINLOCK(emi_drs_lock);
 
 static void __iomem *CEN_EMI_BASE;
 static void __iomem *CHA_EMI_BASE;
 static void __iomem *CHB_EMI_BASE;
 static void __iomem *EMI_MPU_BASE;
 static unsigned int mpu_irq;
+static bool force_drs_disable;
 
 static emi_info_t emi_info;
 
@@ -55,6 +58,8 @@ static int emi_probe(struct platform_device *pdev)
 		pr_err("get EMI_MPU irq = %d\n", mpu_irq);
 	} else
 		mpu_irq = 0;
+
+	force_drs_disable = false;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	CEN_EMI_BASE = devm_ioremap_resource(&pdev->dev, res);
@@ -488,9 +493,20 @@ int disable_drs(unsigned char *backup)
 {
 	int count;
 	unsigned int drs_status;
+	unsigned long flags;
 
-	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL))
+	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL)) {
+		pr_err("[EMI] can not get base to disable DRS\n");
 		return -1;
+	}
+
+	spin_lock_irqsave(&emi_drs_lock, flags);
+	if (force_drs_disable) {
+		spin_unlock_irqrestore(&emi_drs_lock, flags);
+		return -1;
+	}
+	force_drs_disable = true;
+	spin_unlock_irqrestore(&emi_drs_lock, flags);
 
 	*backup = (readl(IOMEM(CHA_EMI_DRS)) << 4) & 0x10;
 	*backup |= (readl(IOMEM(CHB_EMI_DRS)) & 0x01);
@@ -509,6 +525,7 @@ int disable_drs(unsigned char *backup)
 	}
 
 	if (count == 0) {
+		enable_drs(*backup);
 		/* pr_err("[EMI] disable DRS fail\n"); */
 		return -1;
 	}
@@ -518,11 +535,138 @@ int disable_drs(unsigned char *backup)
 
 void enable_drs(unsigned char enable)
 {
-	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL))
-		return;
+	unsigned long flags;
+
+	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL)) {
+		pr_err("[EMI] can not get base to enable DRS\n");
+		goto out;
+	}
 
 	writel(readl(IOMEM(CHA_EMI_DRS)) | ((enable >> 4) & 0x1),
 		IOMEM(CHA_EMI_DRS));
 	writel(readl(IOMEM(CHB_EMI_DRS)) | (enable & 0x1),
 		IOMEM(CHB_EMI_DRS));
+
+out:
+	spin_lock_irqsave(&emi_drs_lock, flags);
+	force_drs_disable = false;
+	spin_unlock_irqrestore(&emi_drs_lock, flags);
+}
+
+int DRS_enable(void)
+{
+	unsigned char status;
+	unsigned int count;
+
+	count = 0;
+	while (disable_drs(&status)) {
+		if (count > 1000000) {
+			pr_err("[EMI] waiting to enable DRS\n");
+			count = 0;
+		} else
+			count++;
+	}
+
+	enable_drs(0x11);
+
+	return 0;
+}
+
+int DRS_disable(void)
+{
+	unsigned char status;
+	unsigned int count;
+
+	count = 0;
+	while (disable_drs(&status)) {
+		if (count > 1000000) {
+			pr_err("[EMI] waiting to disable DRS\n");
+			count = 0;
+		} else
+			count++;
+	}
+
+	enable_drs(0x00);
+
+	return 0;
+}
+
+unsigned long long get_drs_all_self_cnt(unsigned int ch)
+{
+	unsigned long long cnt = 0;
+
+	switch (ch) {
+	case 0:
+		cnt = (readl(IOMEM(CHA_EMI_DRS_ST4)) & 0x3fffff);
+		break;
+	case 1:
+		cnt = (readl(IOMEM(CHB_EMI_DRS_ST4)) & 0x3fffff);
+		break;
+	default:
+		cnt = (readl(IOMEM(CHA_EMI_DRS_ST4)) & 0x3fffff);
+		pr_err("[EMI] wrong channel(%d) for CHA_EMI_DRS_ST4\n", ch);
+		break;
+	}
+
+	/* unit:38.5ns , transfer to 38500 ps */
+	cnt = cnt * 38500;
+	pr_warn("[EMI] all self-refresh count: 0x%llx\n", cnt);
+
+	return cnt;
+}
+
+unsigned long long get_drs_rank1_self_cnt(unsigned int ch)
+{
+	unsigned long long cnt = 0;
+
+	switch (ch) {
+	case 0:
+		cnt = (readl(IOMEM(CHA_EMI_DRS_ST3)) & 0x3fffff);
+		break;
+	case 1:
+		cnt = (readl(IOMEM(CHB_EMI_DRS_ST3)) & 0x3fffff);
+		break;
+	default:
+		cnt = (readl(IOMEM(CHA_EMI_DRS_ST3)) & 0x3fffff);
+		pr_err("[EMI] wrong channel(%d) for CHA_EMI_DRS_ST3\n", ch);
+		break;
+	}
+
+	/* unit:38.5ns , transfer to 38500 ps */
+	cnt = cnt * 38500;
+	pr_warn("[EMI] rank1 self-refresh count: 0x%llx\n", cnt);
+
+	return cnt;
+}
+
+unsigned int mask_master_disable_drs(unsigned int master)
+{
+	unsigned int tmp;
+
+	tmp = (readl(IOMEM(CHA_EMI_DRS)) >> 20) & 0xf;
+	master = (~master & tmp) << 20;
+
+	tmp = readl(IOMEM(CHA_EMI_DRS)) & ~(0xf << 20);
+	writel(tmp | master, IOMEM(CHA_EMI_DRS));
+
+	tmp = readl(IOMEM(CHB_EMI_DRS)) & ~(0xf << 20);
+	writel(tmp | master, IOMEM(CHB_EMI_DRS));
+
+	return 0;
+}
+
+unsigned int unmask_master_disable_drs(unsigned int master)
+{
+	unsigned int tmp;
+
+	tmp = (readl(IOMEM(CHA_EMI_DRS)) >> 20) & 0xf;
+	master = (master | tmp) << 20;
+
+	tmp = readl(IOMEM(CHA_EMI_DRS)) & ~(0xf << 20);
+	writel(tmp | master, IOMEM(CHA_EMI_DRS));
+
+	tmp = readl(IOMEM(CHB_EMI_DRS)) & ~(0xf << 20);
+	writel(tmp | master, IOMEM(CHB_EMI_DRS));
+
+	return 0;
 }

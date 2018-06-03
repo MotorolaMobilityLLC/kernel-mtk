@@ -30,9 +30,13 @@
 #define EMI_ARBH		(CEN_EMI_BASE + 0x0138)
 
 #define CHA_EMI_DRS		(CHA_EMI_BASE + 0x0168)
+#define CHA_EMI_DRS_ST3		(CHA_EMI_BASE + 0x0180)
+#define CHA_EMI_DRS_ST4		(CHA_EMI_BASE + 0x0184)
 #define CHA_EMI_DRS_ST5		(CHA_EMI_BASE + 0x0188)
 
 #define CHB_EMI_DRS		(CHB_EMI_BASE + 0x0168)
+#define CHB_EMI_DRS_ST3		(CHB_EMI_BASE + 0x0180)
+#define CHB_EMI_DRS_ST4		(CHB_EMI_BASE + 0x0184)
 #define CHB_EMI_DRS_ST5		(CHB_EMI_BASE + 0x0188)
 
 /*
@@ -40,6 +44,8 @@
  */
 #define MAX_CH	2
 #define MAX_RK	2
+
+#define ENABLE_EMI_DRS
 
 /* define supported DRAM types */
 enum {
@@ -63,6 +69,14 @@ enum {
 
 #define EN_CON_SCE_STR "ON"
 #define DIS_CON_SCE_STR "OFF"
+
+/* define DRS HW mask bit */
+enum {
+	mSPM,
+	mRGU,
+	mDISP,
+	mISP,
+};
 
 /*
  * Define data structures.
@@ -95,6 +109,12 @@ extern void __iomem *mt_chn_emi_base_get(int chn);
 extern void __iomem *mt_emi_mpu_base_get(void);
 extern void enable_drs(unsigned char enable);
 extern int disable_drs(unsigned char *backup);
+extern int DRS_enable(void);
+extern int DRS_disable(void);
+extern unsigned long long get_drs_all_self_cnt(unsigned int ch);
+extern unsigned long long get_drs_rank1_self_cnt(unsigned int ch);
+extern unsigned int mask_master_disable_drs(unsigned int master);
+extern unsigned int unmask_master_disable_drs(unsigned int master);
 
 #endif  /* !__MT_EMI_BWL_H__ */
 
