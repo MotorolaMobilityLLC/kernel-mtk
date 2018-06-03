@@ -698,6 +698,7 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 			cmd |= 1 << SPI_CMD_RX_DMA_OFFSET;
 		}
 	}
+	/* All register must be prepared before setting the dma bit [SMP] */
 	mb();
 	spi_writel(ms, SPI_CMD_REG, cmd);
 
