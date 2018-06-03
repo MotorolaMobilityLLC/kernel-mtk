@@ -660,11 +660,10 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		fl_arg.arg = 0;
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
 		fl_arg.arg = pt_is_low(pt_low_vol, pt_low_bat, pt_over_cur);
-		fl_pr_debug("Pt status: (%d,%d,%d)\n",
-				pt_low_vol, pt_low_bat, pt_over_cur);
+		if (fl_arg.arg)
+			fl_pr_debug("Pt status: (%d,%d,%d)\n",
+					pt_low_vol, pt_low_bat, pt_over_cur);
 #endif
-		fl_pr_debug("FLASH_IOC_IS_LOW_POWER(%d,%d,%d): %d\n",
-				type, ct, part, fl_arg.arg);
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
 					sizeof(struct flashlight_user_arg))) {
 			fl_pr_err("Failed to copy power status to user\n");
