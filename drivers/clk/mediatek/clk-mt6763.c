@@ -65,6 +65,7 @@ void __iomem *pericfg_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
+#define CLK_CFG_0		(cksys_base + 0x040)
 #define CLK_CFG_9		(cksys_base + 0x0d0)
 #define CLK_MISC_CFG_0		(cksys_base + 0x104)
 #define CLK_DBG_CFG		(cksys_base + 0x10C)
@@ -109,6 +110,7 @@ void __iomem *venc_gcon_base;
 #define TVDPLL_CON0		(apmixed_base + 0x0260)
 #define TVDPLL_PWR_CON0		(apmixed_base + 0x026C)
 #define MMPLL_CON0		(apmixed_base + 0x0270)
+#define MMPLL_CON1		(apmixed_base + 0x0274)
 #define MMPLL_PWR_CON0		(apmixed_base + 0x027C)
 #define CCIPLL_CON0		(apmixed_base + 0x0290)
 #define CCIPLL_PWR_CON0		(apmixed_base + 0x029C)
@@ -2027,6 +2029,16 @@ void armpll_control(int id, int on)
 			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) & 0xfffffffe), ARMPLL_L_PWR_CON0);
 		}
 	}
+}
+
+void check_mm0_clk_sts(void)
+{
+	/* confirm mm0 clk */
+	pr_debug("%s: MM_CG = 0x%08x, 0x%08x\n", __func__, clk_readl(MM_CG_CON0), clk_readl(MM_CG_CON1));
+	pr_debug("%s: CLK_CFG_0 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_0));
+	pr_debug("%s: MMPLL_CON0 = 0x%08x, 0x%08x\r\n", __func__, clk_readl(MMPLL_CON0), clk_readl(MMPLL_CON1));
+	pr_debug("%s: mmck = %dkhz\r\n", __func__, mt_get_ckgen_freq(3));
+	pr_debug("%s: mmpll = %dkhz\r\n", __func__, mt_get_abist_freq(27));
 }
 
 static int __init clk_mt6763_init(void)
