@@ -3337,6 +3337,9 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
 
+	/* reset cb after use */
+	cmdqCoreSetResourceCallback(resourceEvent, NULL, NULL);
+
 	/* value check */
 	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
 	if (value != PATTERN) {
