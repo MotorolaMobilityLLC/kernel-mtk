@@ -230,3 +230,13 @@ config MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	  The process is done in DSP.
 	  Select Y to enable CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT for DSP playback.
 
+config MT8183_QUERY_PCB_ID_METHOD
+	bool "Queary PCB ID to check ACC mode or DCC mode"
+	default n
+	help
+	  This is only for MT8183 board.
+	  Queary PCB ID for mic mode to get PCB version and check which mic-mode is supported.
+	  mt8183: we get pcb info by AUXIN2 voltage
+	  STM1 is 0v which is DCC mode,SMT2 is about 0.9v which is ACC mode
+	  If you say Y, enable MT8183_QUERY_PCB_ID_METHOD
+

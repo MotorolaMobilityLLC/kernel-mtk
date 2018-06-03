@@ -81,6 +81,10 @@
 
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
+#ifdef CONFIG_MT8183_QUERY_PCB_ID_METHOD
+#include<mtk_auxadc.h>
+#endif
+
 
 #define ANALOG_HPTRIM
 
@@ -4629,6 +4633,7 @@ enum AUDIO_MIC_MODE {
 };
 
 #ifdef CONFIG_MT6771_QUERY_PCB_ID
+#ifndef CONFIG_MT8183_QUERY_PCB_ID_METHOD
 enum pcb_id_index {
 	PCD_ID_1 = 0, /* GPIO175 */
 	PCD_ID_2 = 1, /* GPIO111 */
@@ -4670,13 +4675,39 @@ static int get_pcb_id_state(int pcd_id)
 
 	return ret;
 }
+#endif
 
 static int get_mic_mode(void)
 {
-	int gpioval_1 = 0, gpioval_2 = 0;
 	int ret = -1;
 
-	pr_debug("%s\n", __func__);
+#ifdef CONFIG_MT8183_QUERY_PCB_ID_METHOD
+	int data[4];
+	int rawdata;
+
+	ret = IMM_GetOneChannelValue(2, data, &rawdata);
+	/*
+	 *   Mapping rule:
+	 *
+	 *   AUXIN2    PCB_ID  Mic_Mode
+	 *   0~0.5V     SMT1     DCC
+	 *   0.7~1.1V   SMT2     ACC
+	 *
+	 */
+	if (ret < 0 || rawdata < 0) {
+		pr_debug("%s(), get auxadc channel value error %d %d\n", __func__, ret, rawdata);
+		return -1;
+	}
+
+	if ((rawdata >= 0) && (rawdata <= 1366))
+		ret = AUDIO_MIC_MODE_DCC;
+	else if ((rawdata >= 1911) && (rawdata <= 3004))
+		ret = AUDIO_MIC_MODE_ACC;
+	else
+		ret = AUDIO_MIC_MODE_ACC;
+
+#else
+	int gpioval_1 = 0, gpioval_2 = 0;
 
 	gpioval_1 = get_pcb_id_state(PCD_ID_1);
 	if (gpioval_1 < 0) {
@@ -4707,7 +4738,7 @@ static int get_mic_mode(void)
 		ret = AUDIO_MIC_MODE_ACC;
 	else
 		ret = AUDIO_MIC_MODE_ACC;
-
+#endif
 	pr_debug("%s(), return  mic_mode = %d\n", __func__, ret);
 
 	return ret;
