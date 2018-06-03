@@ -140,6 +140,10 @@ static noinline int mt_secure_call(u32 function_id,
 #define tbase_trigger_aee_dump() \
 	mt_secure_call(TBASE_SMC_AEE_DUMP, 0, 0, 0)
 #endif
+
+#define dram_smc_dcs(OnOff) \
+mt_secure_call(MTK_SIP_KERNEL_DRAM_DCS_CHB, OnOff, 0, 0)
+
 #define emi_mpu_smc_write(offset, val) \
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_WRITE, offset, val, 0)
 
