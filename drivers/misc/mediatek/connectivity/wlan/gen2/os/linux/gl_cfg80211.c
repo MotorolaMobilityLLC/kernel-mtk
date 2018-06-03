@@ -898,6 +898,31 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 
 	return 0;
 }
+/*----------------------------------------------------------------------------*/
+/*!
+ * @brief This routine is responsible for abort an ongoing scan. The driver shall
+ *        indicate the status of the scan through cfg80211_scan_done()
+ *
+ * @param wiphy - pointer of wireless hardware description
+ *        wdev - pointer of  wireless device state
+ *
+ */
+/*----------------------------------------------------------------------------*/
+void mtk_cfg80211_abort_scan(struct wiphy *wiphy, struct wireless_dev *wdev)
+{
+	UINT_32 u4SetInfoLen = 0;
+	WLAN_STATUS rStatus;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	rStatus = kalIoctl(prGlueInfo,
+					   wlanoidAbortScan,
+					   NULL, 1, FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		DBGLOG(REQ, ERROR, "wlanoidAbortScan fail 0x%x\n", rStatus);
+}
 
 static UINT_8 wepBuf[48];
 
