@@ -165,4 +165,5 @@ endif
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761"))
 obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 endif
