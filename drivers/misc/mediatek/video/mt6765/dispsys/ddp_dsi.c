@@ -1764,6 +1764,9 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
+	if (cmdq)
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA,
+			0x00000020, 0x00000000);
 
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module);
@@ -1778,6 +1781,13 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module,
 			DSI_REG[0]->DSI_START, VM_CMD_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG,
 			DSI_REG[0]->DSI_START, VM_CMD_START, 1);
+	}
+
+	if (cmdq) {
+		DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA,
+				0x00000020, 0x00000020);
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA,
+				0x00000020, 0x00000000);
 	}
 	return DSI_STATUS_OK;
 }
@@ -3166,7 +3176,7 @@ static void _dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
 				DSI_REG[1]->DSI_INTEN, VM_DONE, 1);
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-				DSI_REG[0]->DSI_INTEN, VM_CMD_DONE, 1);
+				DSI_REG[0]->DSI_INTEN, VM_CMD_DONE, 0);
 		}
 
 		DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
@@ -3205,7 +3215,7 @@ static void _dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
 			DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
 		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG,
-			DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+			DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 0);
 	}
 
 	DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
