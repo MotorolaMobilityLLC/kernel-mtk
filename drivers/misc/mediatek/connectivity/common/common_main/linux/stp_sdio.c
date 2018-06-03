@@ -321,12 +321,12 @@ static _osal_inline_ INT32 stp_sdio_host_info_op(INT32 opId)
 			    ("memory allocate for g_stp_sdio_host_info.pkt_buf.tx_buf fail!\n");
 			iRet = -1;
 		} else {
-			STPSDIO_INFO_FUNC
+			STPSDIO_DBG_FUNC
 			    ("memory allocate for g_stp_sdio_host_info.pkt_buf.tx_buf succeed!\n");
 			iRet = 0;
 		}
 	} else {
-		STPSDIO_INFO_FUNC
+		STPSDIO_DBG_FUNC
 		    ("memory already allocated for g_stp_sdio_host_info.pkt_buf.tx_buf!\n");
 		iRet = 0;
 	}
@@ -337,12 +337,12 @@ static _osal_inline_ INT32 stp_sdio_host_info_op(INT32 opId)
 			    ("memory allocate for g_stp_sdio_host_info.pkt_buf.rx_buf fail!\n");
 			iRet = -1;
 		} else {
-			STPSDIO_INFO_FUNC
+			STPSDIO_DBG_FUNC
 			    ("memory allocate for g_stp_sdio_host_info.pkt_buf.rx_buf succeed!\n");
 			iRet = 0;
 		}
 	} else {
-		STPSDIO_INFO_FUNC
+		STPSDIO_DBG_FUNC
 		    ("memory already allocated for g_stp_sdio_host_info.pkt_buf.rx_buf!\n");
 		iRet = 0;
 	}
@@ -2565,7 +2565,7 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 
 	STPSDIO_LOUD_FUNC("start\n");
 	if (g_stp_sdio_host_info.sdio_cltctx == clt_ctx)
-		STPSDIO_INFO_FUNC("sdio_cltctx(%d) found\n", clt_ctx);
+		STPSDIO_DBG_FUNC("sdio_cltctx(%d) found\n", clt_ctx);
 	else {
 		STPSDIO_ERR_FUNC("sdio_cltctx(%d) not found\n", clt_ctx);
 		return -1;

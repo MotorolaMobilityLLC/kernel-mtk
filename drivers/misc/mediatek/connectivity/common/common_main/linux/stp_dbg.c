@@ -2024,7 +2024,7 @@ INT32 stp_dbg_set_version_info(UINT32 chipid, PUINT8 pRomVer, PUINT8 pPatchVer, 
 		return -1;
 	}
 
-	STP_DBG_INFO_FUNC("chipid(0x%x),romver(%s),patchver(%s),branchver(%s)\n",
+	STP_DBG_DBG_FUNC("chipid(0x%x),romver(%s),patchver(%s),branchver(%s)\n",
 			g_stp_dbg_cpupcr->chipId,
 			&g_stp_dbg_cpupcr->romVer[0],
 			&g_stp_dbg_cpupcr->patchVer[0],

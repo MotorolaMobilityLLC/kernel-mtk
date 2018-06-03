@@ -348,13 +348,13 @@ static _osal_inline_ INT32 hif_sdio_deep_sleep_info_dmp(MTK_WCN_HIF_SDIO_DS_INFO
 	UINT32 ctl_info_array_size = ARRAY_SIZE(p_ds_info->clt_info);
 
 	mutex_lock(&p_ds_info->lock);
-	HIF_SDIO_INFO_FUNC("p_ds_info: 0x%08x, chipid:0x%x, reg_offset:0x%x, value:0x%x\n",
+	HIF_SDIO_DBG_FUNC("p_ds_info: 0x%08x, chipid:0x%x, reg_offset:0x%x, value:0x%x\n",
 			   p_ds_info, p_ds_info->chip_id, p_ds_info->reg_offset, p_ds_info->value);
 
 	for (i = 0; i < ctl_info_array_size; i++) {
 		ctl_info = &p_ds_info->clt_info[i];
 
-		HIF_SDIO_INFO_FUNC
+		HIF_SDIO_DBG_FUNC
 		    ("ctl_info[%d]--ctx:0x%08x, func_num:%d, act_flag:%d, en_flag:%d\n", i,
 		     ctl_info->ctx, ctl_info->func_num, ctl_info->act_flag, ctl_info->ds_en_flag);
 	}
@@ -427,7 +427,7 @@ static _osal_inline_ INT32 hif_sdio_deep_sleep_info_set_act(UINT32 chipid, UINT1
 	p_ds_clt_info->ds_en_flag = 0;
 	mutex_unlock(&g_hif_sdio_ds_info_list[i].lock);
 
-	HIF_SDIO_INFO_FUNC("set act_flag to %d for ctx:0x%x whose chipid:0x%x, func_num:%d done\n",
+	HIF_SDIO_DBG_FUNC("set act_flag to %d for ctx:0x%x whose chipid:0x%x, func_num:%d done\n",
 			   act_flag, ctx, chipid, func_num);
 	/* hif_sdio_deep_sleep_info_dmp(&g_hif_sdio_ds_info_list[0]); */
 
@@ -1858,7 +1858,7 @@ static VOID hif_sdio_remove(struct sdio_func *func)
 	INT32 registed_list_index = 0;
 #endif
 
-	HIF_SDIO_INFO_FUNC("start!\n");
+	HIF_SDIO_DBG_FUNC("start!\n");
 	HIF_SDIO_ASSERT(func);
 
 	/* 4 <1> check input parameter is valid and has been probed previously */
@@ -2068,7 +2068,7 @@ static _osal_inline_ INT32 hif_sdio_stp_on(VOID)
 
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
 
-	HIF_SDIO_INFO_FUNC("start!\n");
+	HIF_SDIO_INFO_FUNC("hif_sdio_stp_on, start!\n");
 
 	/* 4 <1> If stp client drv has not been probed, return error code */
 	/* MT6620 */
@@ -2171,7 +2171,7 @@ stp_on_exist:
 							 func_info->blk_sz, probe_index), 1);
 
 
-		HIF_SDIO_INFO_FUNC("ok!\n");
+		HIF_SDIO_INFO_FUNC("hif_sdio_stp_on, ok!\n");
 
 		return 0;
 #else
@@ -2208,7 +2208,7 @@ static _osal_inline_ INT32 hif_sdio_stp_off(VOID)
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
 
-	HIF_SDIO_INFO_FUNC("start!\n");
+	HIF_SDIO_INFO_FUNC("hif_sdio_stp_off, start!\n");
 
 	/* 4 <1> If stp client drv has not been probed, return error code */
 	/* MT6620 */
@@ -2293,7 +2293,7 @@ stp_off_exist:
 		if (ret2)
 			HIF_SDIO_WARN_FUNC("sdio_release_irq() for stp fail(%d)\n", ret2);
 		else
-			HIF_SDIO_INFO_FUNC("sdio_release_irq() for stp ok\n");
+			HIF_SDIO_DBG_FUNC("sdio_release_irq() for stp ok\n");
 
 		/* 4 <5> Callback to client driver's remove() func */
 		ret =
@@ -2304,7 +2304,7 @@ stp_off_exist:
 		if (ret)
 			HIF_SDIO_WARN_FUNC("clt_remove for stp fail(%d)\n", ret);
 		else
-			HIF_SDIO_INFO_FUNC("ok!\n");
+			HIF_SDIO_INFO_FUNC("hif_sdio_stp_off, ok!\n");
 
 		/*set deep sleep information to global data struct */
 		func_info = g_hif_sdio_clt_drv_list[clt_index].func_info;
