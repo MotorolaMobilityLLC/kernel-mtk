@@ -5841,6 +5841,7 @@ static int stress_rdn_len_rx_done_thread(void *data)
 	/*struct usb_host_endpoint *ep_tx, *ep_rx;*/
 	/*int ep_index_tx, ep_index_rx;*/
 	/*int max_esit_payload;*/
+	struct usb_host_endpoint *ep_rx;
 	int tx_index;
 	int rx_status;
 	char is_running;
@@ -5909,14 +5910,21 @@ static int stress_rdn_len_rx_done_thread(void *data)
 		urb_tx = str_data->urb_tx_list[tx_index];
 		urb_tx->status = URB_STATUS_IDLE;
 		urb_rx->status = -EINPROGRESS;
+		ep_rx = urb_rx->ep;
 
 		tx_index++;
 		if (tx_index == TOTAL_URB) {
 			count++;
-			if (count == 100) {
-				xhci_err(xhci, "[STRESS] stress is running, dev %d ep %d\n", str_data->dev_num,
+			if (usb_endpoint_xfer_isoc(&ep_rx->desc)) {
+				pr_alert("[STRESS] stress is running, dev %d ep %d\n", str_data->dev_num,
 					str_data->ep_num);
 				count = 0;
+			} else {
+			if (count == 100) {
+				pr_alert("[STRESS] stress is running, dev %d ep %d\n", str_data->dev_num,
+					str_data->ep_num);
+				count = 0;
+			}
 			}
 			tx_index = 0;
 		}

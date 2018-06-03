@@ -80,6 +80,31 @@ extern int xhci_usbif_nirq;
 #define SSUSB_IP_SW_RST   (1<<0)
 #endif
 #define SSUSB_IP_PW_CTRL_1  (SIFSLV_IPPC+0x4)
+#define SSUSB_IP_PW_STS_1  (SIFSLV_IPPC+0x10)
+/* U3D_SSUSB_IP_PW_STS1 */
+#define SSUSB_IP_REF_CK_DIS_STS                   (0x1<<31)	/* 31:31 */
+#define SSUSB_IP_SLEEP_STS                        (0x1<<30)	/* 30:30 */
+#define SSUSB_U2_MAC_RST_B_STS_5P                 (0x1<<29)	/* 29:29 */
+#define SSUSB_U2_MAC_RST_B_STS_4P                 (0x1<<28)	/* 28:28 */
+#define SSUSB_U2_MAC_RST_B_STS_3P                 (0x1<<27)	/* 27:27 */
+#define SSUSB_U2_MAC_RST_B_STS_2P                 (0x1<<26)	/* 26:26 */
+#define SSUSB_U2_MAC_RST_B_STS_1P                 (0x1<<25)	/* 25:25 */
+#define SSUSB_U2_MAC_RST_B_STS                    (0x1<<24)	/* 24:24 */
+#define SSUSB_U3_MAC_RST_B_STS_3P                 (0x1<<19)	/* 19:19 */
+#define SSUSB_U3_MAC_RST_B_STS_2P                 (0x1<<18)	/* 18:18 */
+#define SSUSB_U3_MAC_RST_B_STS_1P                 (0x1<<17)	/* 17:17 */
+#define SSUSB_U3_MAC_RST_B_STS                    (0x1<<16)	/* 16:16 */
+#define SSUSB_DEV_DRAM_RST_B_STS                  (0x1<<13)	/* 13:13 */
+#define SSUSB_XHCI_DRAM_RST_B_STS                 (0x1<<12)	/* 12:12 */
+#define SSUSB_XHCI_RST_B_STS                      (0x1<<11)	/* 11:11 */
+#define SSUSB_SYS125_RST_B_STS                    (0x1<<10)	/* 10:10 */
+#define SSUSB_SYS60_RST_B_STS                     (0x1<<9)	/* 9:9 */
+#define SSUSB_REF_RST_B_STS                       (0x1<<8)	/* 8:8 */
+#define SSUSB_DEV_RST_B_STS                       (0x1<<3)	/* 3:3 */
+#define SSUSB_DEV_BMU_RST_B_STS                   (0x1<<2)	/* 2:2 */
+#define SSUSB_DEV_QMU_RST_B_STS                   (0x1<<1)	/* 1:1 */
+#define SSUSB_SYSPLL_STABLE                       (0x1<<0)	/* 0:0 */
+
 #define SSUSB_IP_PDN    (1<<0)
 #define SSUSB_U3_CTRL(p)  (SIFSLV_IPPC+0x30+(p*0x08))
 #if 0
@@ -726,13 +751,21 @@ struct MUSB_DeviceDescriptor {
 
 #ifdef MTK_TEST_DBG
 #define mtk_test_dbg(fmt, args...) \
-	pr_debug("%s(%d):" fmt, __func__, __LINE__, ##args)
+	pr_crit("%s(%d):" fmt, __func__, __LINE__, ##args)
+#define mtk_test_crit(fmt, args...) \
+	pr_alert("%s(%d):" fmt, __func__, __LINE__, ##args)
+#define mtk_test_alert(fmt, args...) \
+	pr_alert("%s(%d):" fmt, __func__, __LINE__, ##args)
 #else
 #define mtk_test_dbg(fmt, args...)
+#define mtk_test_crit(fmt, args...)
+
 #endif
 
 extern void usb_phy_recover(unsigned int clk_on);
 extern void usb_phy_savecurrent(unsigned int clk_on);
+extern void usb20_pll_settings(bool host, bool forceOn);
+
 extern void mu3d_hal_dump_register(void);
 extern void mtk_set_host_mode_in_host(void);
 extern void mtk_set_host_mode_out(void);
