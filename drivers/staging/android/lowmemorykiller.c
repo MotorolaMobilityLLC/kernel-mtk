@@ -120,16 +120,18 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 					zone_page_state(z, NR_FREE_PAGES);
 				new_other_free -= high_wmark_pages(z);
 				new_other_file +=
-					zone_page_state(z, NR_FILE_PAGES);
-				new_other_file -= zone_page_state(z, NR_SHMEM);
+				zone_page_state(z, NR_ZONE_ACTIVE_FILE) +
+				zone_page_state(z, NR_ZONE_INACTIVE_FILE);
 
 				/* Compute memory pressure level */
 				memory_pressure +=
-					zone_page_state(z, NR_ACTIVE_FILE) +
-					zone_page_state(z, NR_INACTIVE_FILE) +
-					zone_page_state(z, NR_ACTIVE_ANON) +
-					zone_page_state(z, NR_INACTIVE_ANON) +
-					new_other_free;
+				zone_page_state(z, NR_ZONE_ACTIVE_FILE) +
+				zone_page_state(z, NR_ZONE_INACTIVE_FILE) +
+#ifdef CONFIG_SWAP
+				zone_page_state(z, NR_ZONE_ACTIVE_ANON) +
+				zone_page_state(z, NR_ZONE_INACTIVE_ANON) +
+#endif
+				new_other_free;
 			}
 
 			/*
