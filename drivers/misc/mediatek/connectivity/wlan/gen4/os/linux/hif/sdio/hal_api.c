@@ -1802,6 +1802,8 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 		glSendResetRequest();
 #endif
 	}
+	if (u4IntrBits & WHISR_D2H_WKUP_BY_RX_PACKET)
+		DBGLOG(RX, INFO, "Wake up by Rx\n");
 
 	if (u4IntrBits & WHISR_D2H_SW_RD_MAILBOX_INT)
 		halPrintMailbox(prAdapter);
@@ -1818,7 +1820,8 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 		nicSerStopTxRx(prAdapter);
 	}
 
-	DBGLOG(REQ, WARN, "u4IntrBits: 0x%lx\n", u4IntrBits);
+	if ((u4IntrBits & ~WHISR_D2H_WKUP_BY_RX_PACKET) != 0)
+		DBGLOG(SW4, WARN, "u4IntrBits: 0x%lx\n", u4IntrBits);
 
 } /* end of halProcessSoftwareInterrupt() */
 
