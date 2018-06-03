@@ -582,8 +582,14 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 	struct ui_pid_info *ui;
 	struct render_info *pos, *next;
 	int i;
+	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d] id[%llu]", __func__, pid, id);
+
+	check_render = fpsgo_com_check_is_surfaceflinger(pid);
+
+	if (check_render != FPSGO_COM_IS_RENDER)
+		return;
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -631,9 +637,15 @@ void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid,
 	struct ui_pid_info *ui;
 	struct render_info *pos, *next;
 	int i;
+	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d] render[%d] id[%llu]",
 		__func__, pid, render, id);
+
+	check_render = fpsgo_com_check_is_surfaceflinger(pid);
+
+	if (check_render != FPSGO_COM_IS_RENDER)
+		return;
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -683,8 +695,14 @@ void fpsgo_ctrl2comp_vysnc_aligned_draw_start(int pid, unsigned long long id)
 	struct ui_pid_info *ui;
 	struct render_info *pos, *next;
 	int i;
+	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d] id[%llu]", __func__, pid, id);
+
+	check_render = fpsgo_com_check_is_surfaceflinger(pid);
+
+	if (check_render != FPSGO_COM_IS_RENDER)
+		return;
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -727,9 +745,15 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 {
 	struct render_info *f_render;
 	int i;
+	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d] render[%d] id[%llu]",
 		__func__, pid, ui_pid, render, id);
+
+	check_render = fpsgo_com_check_is_surfaceflinger(ui_pid);
+
+	if (check_render != FPSGO_COM_IS_RENDER)
+		return;
 
 	fpsgo_render_tree_lock(__func__);
 
@@ -746,6 +770,12 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 
 	if (ui_pid != f_render->ui_pid) {
 		struct ui_pid_info *ui;
+
+		if (!list_empty(&f_render->ui_list)) {
+			list_del_init(&(f_render->ui_list));
+			pr_debug(COMP_TAG"%s ui_pid:%d f_render->ui_pid:%d",
+				__func__, ui_pid, f_render->ui_pid);
+		}
 
 		ui = fpsgo_com_search_and_add_ui_pid_info(ui_pid, 1);
 
