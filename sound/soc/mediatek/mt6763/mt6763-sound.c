@@ -1247,9 +1247,20 @@ bool CleanPreDistortion(void)
 	return false;
 }
 
+static void set_adda_dl_src_gain(bool mute)
+{
+	if (mute) {
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, 0, MASK_ALL);
+	} else {
+		/* SA suggest apply -0.3db to audio/speech path */
+		/* 2013.02.22 for voice mode degrade 0.3 db */
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, 0xf74f0000, MASK_ALL);
+	}
+}
+
 bool SetDLSrc2(uint32 rate)
 {
-	uint32 AfeAddaDLSrc2Con0, AfeAddaDLSrc2Con1;
+	uint32 AfeAddaDLSrc2Con0;
 
 	AfeAddaDLSrc2Con0 = SampleRateTransform(rate,
 						Soc_Aud_Digital_Block_ADDA_DL);
@@ -1262,12 +1273,10 @@ bool SetDLSrc2(uint32 rate)
 		AfeAddaDLSrc2Con0 = (AfeAddaDLSrc2Con0 << 28) | (0x03 << 24) | (0x03 << 11);
 	}
 
-	/* SA suggest apply -0.3db to audio/speech path */
-	/* 2013.02.22 for voice mode degrade 0.3 db */
 	AfeAddaDLSrc2Con0 = AfeAddaDLSrc2Con0 | (0x01 << 1);
-	AfeAddaDLSrc2Con1 = 0xf74f0000;
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, AfeAddaDLSrc2Con0, MASK_ALL);
-	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, AfeAddaDLSrc2Con1, MASK_ALL);
+
+	set_adda_dl_src_gain(false);
 
 	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 
@@ -2361,11 +2370,47 @@ static int set_ap_dmic(bool enable)
 	return 0;
 }
 
+static int set_hp_impedance_ctl(bool enable)
+{
+	/* open adda dl path for dc compensation */
+	if (enable) {
+		AudDrv_Clk_On();
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			SetI2SDacOut(48000, false, Soc_Aud_I2S_WLEN_WLEN_32BITS);
+			SetI2SDacEnable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			pr_err("%s(), this should not happen\n", __func__);
+		}
+
+		/* set data mute */
+		set_adda_dl_src_gain(true);
+
+		EnableAfe(true);
+	} else {
+		/* unmute data */
+		set_adda_dl_src_gain(false);
+
+		/* stop DAC output */
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
+		if (GetI2SDacEnable() == false)
+			SetI2SDacEnable(false);
+
+		EnableAfe(false);
+
+		AudDrv_Clk_Off();
+	}
+
+	return 0;
+}
+
 static struct mtk_codec_ops mtk_codec_platform_ops = {
 	.enable_dc_compensation = enable_dc_compensation,
 	.set_lch_dc_compensation = set_lch_dc_compensation,
 	.set_rch_dc_compensation = set_rch_dc_compensation,
 	.set_ap_dmic = set_ap_dmic,
+	.set_hp_impedance_ctl = set_hp_impedance_ctl,
 };
 
 static struct mtk_afe_platform_ops afe_platform_ops = {
