@@ -39,5 +39,5 @@ ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)
     obj-y += secmem_gp.o
   endif
 else
-  obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem.o
+  obj-y += secmem.o
 endif

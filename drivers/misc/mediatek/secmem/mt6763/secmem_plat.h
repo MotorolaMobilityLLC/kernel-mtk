@@ -22,13 +22,11 @@
 
 /* Enable secure memory API */
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) \
-	|| defined(CONFIG_MICROTRUST_TEE_SUPPORT) \
 	|| defined(CONFIG_BLOWFISH_TEE_SUPPORT)
 #define SECMEM_KERNEL_API
 #endif
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) \
-	|| defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #define SECMEM_64BIT_PHYS_SUPPORT /* TODO: Removed since mt6799? */
 #endif
 
