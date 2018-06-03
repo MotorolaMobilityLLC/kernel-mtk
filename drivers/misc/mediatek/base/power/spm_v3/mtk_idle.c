@@ -572,7 +572,7 @@ void disable_soidle3_by_bit(int id)
 }
 EXPORT_SYMBOL(disable_soidle3_by_bit);
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 #define clk_readl(addr)			__raw_readl((void __force __iomem *)(addr))
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
@@ -786,7 +786,7 @@ out:
 
 void soidle_before_wfi(int cpu)
 {
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	faudintbus_pll2sq();
 #endif
 
@@ -797,7 +797,7 @@ void soidle_after_wfi(int cpu)
 {
 	timer_setting_after_wfi(false);
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	faudintbus_sq2pll();
 #endif
 
@@ -1284,7 +1284,7 @@ static unsigned int dpidle_pre_process(int cpu)
 	mtkTTimer_cancel_timer();
 #endif
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	if (op_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
 		clk_ufs_card_switch_backup();
 	faudintbus_pll2sq();
@@ -1305,7 +1305,7 @@ static void dpidle_post_process(int cpu, unsigned int op_cond)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi(false);
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	faudintbus_sq2pll();
 
 	if (op_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
@@ -1544,7 +1544,7 @@ int soidle3_enter(int cpu)
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE3_ENTER);
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	/* switch audio clock to allow vcore lp mode */
 	faudintbus_pll2sq();
 	/* backup and clear ufs_card_sel to 0 */
@@ -1578,7 +1578,7 @@ int soidle3_enter(int cpu)
 
 	soidle_post_handler();
 
-#if 1 /* TODO: defined(CONFIG_MACH_MT6799) */
+#ifdef CONFIG_MACH_MT6799
 	/* restore ufs_card_sel */
 	if (operation_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
 		clk_ufs_card_switch_restore();
