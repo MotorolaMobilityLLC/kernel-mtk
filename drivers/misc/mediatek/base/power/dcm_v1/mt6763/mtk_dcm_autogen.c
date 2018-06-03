@@ -2670,8 +2670,8 @@ void dcm_mcu_misccfg_mcu_misc_dcm(int on)
 }
 
 #define MCU_MISC1CFG_MCSIA_DCM_REG0_MASK ((0xffff << 16))
-#define MCU_MISC1CFG_MCSIA_DCM_REG0_ON ((0x0 << 16))
-#define MCU_MISC1CFG_MCSIA_DCM_REG0_OFF ((0xffff << 16))
+#define MCU_MISC1CFG_MCSIA_DCM_REG0_ON ((0xffff << 16))
+#define MCU_MISC1CFG_MCSIA_DCM_REG0_OFF ((0x0 << 16))
 
 bool dcm_mcu_misc1cfg_mcsia_dcm_is_on(void)
 {
