@@ -199,7 +199,7 @@ static int32_t cmdq_create_variable_if_need(struct cmdqRecStruct *handle, CMDQ_V
 			break;
 		}
 
-		if (handle->local_var_num > CMDQ_THR_FREE_USR_VAR_MAX) {
+		if (handle->local_var_num >= CMDQ_THR_FREE_USR_VAR_MAX) {
 			CMDQ_ERR("Exceed max number of local variable in one task, please review your instructions.\n");
 			status = -EFAULT;
 			break;
@@ -222,8 +222,9 @@ int32_t cmdq_reset_v3_struct(struct cmdqRecStruct *handle)
 
 	/* reset local variable setting */
 	handle->local_var_num = CMDQ_THR_SPR_START;
-	handle->arg_poll_source = CMDQ_TASK_CPR_INITIAL_VALUE;
-	handle->arg_poll_value = CMDQ_TASK_CPR_INITIAL_VALUE;
+	handle->arg_source = CMDQ_TASK_CPR_INITIAL_VALUE;
+	handle->arg_value = CMDQ_TASK_CPR_INITIAL_VALUE;
+	handle->arg_timeout = CMDQ_TASK_CPR_INITIAL_VALUE;
 
 	do {
 		/* check if-else stack */
@@ -960,13 +961,13 @@ int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 	CMDQ_VARIABLE arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
 	u32 condition_value = value & mask;
 
-	cmdq_op_assign(handle, &handle->arg_poll_value, condition_value);
+	cmdq_op_assign(handle, &handle->arg_value, condition_value);
 	cmdq_op_assign(handle, &arg_loop_debug, 0);
-	cmdq_op_read_reg(handle, addr, &handle->arg_poll_source, mask);
-	cmdq_op_while(handle, handle->arg_poll_value, CMDQ_NOT_EQUAL, handle->arg_poll_source);
+	cmdq_op_read_reg(handle, addr, &handle->arg_source, mask);
+	cmdq_op_while(handle, handle->arg_value, CMDQ_NOT_EQUAL, handle->arg_source);
 		cmdq_op_add(handle, &arg_loop_debug, arg_loop_debug, 1);
 		cmdq_op_wait(handle, CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_BIT);
-		cmdq_op_read_reg(handle, addr, &handle->arg_poll_source, mask);
+		cmdq_op_read_reg(handle, addr, &handle->arg_source, mask);
 	cmdq_op_end_while(handle);
 	return 0;
 }
@@ -2859,26 +2860,23 @@ s32 cmdq_op_wait_event_timeout(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_
 	* }
 	*/
 
-	CMDQ_VARIABLE arg_start = CMDQ_TASK_CPR_INITIAL_VALUE,
-				arg_timeout = CMDQ_TASK_CPR_INITIAL_VALUE,
-				  arg_event = CMDQ_TASK_CPR_INITIAL_VALUE,
-			 arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
+	CMDQ_VARIABLE arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
 	const CMDQ_VARIABLE arg_tpr = CMDQ_TASK_TPR_VAR;
 	u32 timeout_TPR_value = timeout_time*26;
 	u32 wait_event_id = cmdq_core_get_event_value(wait_event);
 
-	cmdq_op_add(handle, &arg_start, arg_tpr, 0);
-	cmdq_op_assign(handle, &arg_timeout, timeout_TPR_value);
+	cmdq_op_add(handle, &handle->arg_value, arg_tpr, 0);
+	cmdq_op_assign(handle, &handle->arg_timeout, timeout_TPR_value);
 	cmdq_op_assign(handle, &arg_loop_debug, 0);
 	cmdq_op_while(handle, 0, CMDQ_EQUAL, 0);
 		cmdq_op_add(handle, &arg_loop_debug, arg_loop_debug, 1);
-		cmdq_op_subtract(handle, arg_out, arg_tpr, arg_start);
+		cmdq_op_subtract(handle, arg_out, arg_tpr, handle->arg_value);
 		/* get event value by APB register write and read */
 		cmdq_op_write_reg(handle, CMDQ_SYNC_TOKEN_ID_PA, wait_event_id, 0x3FF);
-		cmdq_op_read_reg(handle, CMDQ_SYNC_TOKEN_VAL_PA, &arg_event, ~0);
-		cmdq_op_if(handle, arg_event, CMDQ_EQUAL, 1);
+		cmdq_op_read_reg(handle, CMDQ_SYNC_TOKEN_VAL_PA, &handle->arg_source, ~0);
+		cmdq_op_if(handle, handle->arg_source, CMDQ_EQUAL, 1);
 			cmdq_op_break(handle);
-		cmdq_op_else_if(handle, *arg_out, CMDQ_GREATER_THAN_AND_EQUAL, arg_timeout);
+		cmdq_op_else_if(handle, *arg_out, CMDQ_GREATER_THAN_AND_EQUAL, handle->arg_timeout);
 			cmdq_op_assign(handle, arg_out, 0);
 			cmdq_op_break(handle);
 		cmdq_op_else(handle);
