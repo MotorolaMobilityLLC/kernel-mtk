@@ -381,7 +381,7 @@ void md_power_meter_ut(void)
 
 			memset(fake_share_mem, 0, sizeof(u32) *
 				SECTION_LEVLE_2G);
-			get_md1_power(i);
+			get_md1_power(i, true);
 
 			for (k = 0; k < SECTION_NUM; k++) {
 				if (mt_mdpm_debug)
@@ -389,7 +389,7 @@ void md_power_meter_ut(void)
 					k + 1);
 
 				/* test if share_mem not change */
-				md_power = get_md1_power(i);
+				md_power = get_md1_power(i, true);
 				if (mt_mdpm_debug)
 					pr_info("[UT] md_power:%d ====(dbm=0)\n",
 					md_power);
@@ -399,7 +399,7 @@ void md_power_meter_ut(void)
 					fake_share_mem[l] |= 1 <<
 						section_level[k+1];
 
-				md_power = get_md1_power(i);
+				md_power = get_md1_power(i, true);
 				if (mt_mdpm_debug)
 					pr_info("[UT] md_power:%d ====\n",
 					md_power);
@@ -409,7 +409,7 @@ void md_power_meter_ut(void)
 					fake_share_mem[l] |= 0x10 <<
 						section_level[k+1];
 
-				md_power = get_md1_power(i);
+				md_power = get_md1_power(i, true);
 				if (mt_mdpm_debug)
 					pr_info("[UT] md_power:%d ====\n",
 					md_power);
@@ -419,7 +419,7 @@ void md_power_meter_ut(void)
 					fake_share_mem[l] |= SECTION_VALUE <<
 						section_level[k+1];
 
-				md_power = get_md1_power(i);
+				md_power = get_md1_power(i, true);
 				if (mt_mdpm_debug)
 					pr_info("[UT] md_power:%d ====\n",
 					md_power);

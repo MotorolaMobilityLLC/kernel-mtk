@@ -33,6 +33,6 @@ enum pbm_kicker {
 };
 
 extern void init_md_section_level(enum pbm_kicker kicker);
-extern int get_md1_power(unsigned int power_category);
+extern int get_md1_power(unsigned int power_category, bool need_update);
 
 #endif
