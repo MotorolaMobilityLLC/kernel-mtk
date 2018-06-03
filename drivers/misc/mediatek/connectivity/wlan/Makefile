@@ -1,11 +1,20 @@
 ifeq ($(CONFIG_MTK_COMBO_WIFI),y)
     subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
+    hif=sdio
+    export CONFIG_MTK_COMBO_WIFI_HIF=$(hif)
+    export CONFIG_MTK_WIFI_ONLY=n
+endif
+
+ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
+$(warning include 6632)
+	obj-y   +=  gen4/
 endif
 
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
 $(warning include gen3)
 	obj-y   +=  gen3/
 endif
+
 ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
 $(warning include gen3)
 	subdir-ccflags-y += -D MT6797
