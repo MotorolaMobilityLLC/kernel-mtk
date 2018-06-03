@@ -2760,6 +2760,13 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 
 	subpmic_pmu_eint: mt6370_pmu_eint {
 	};
+
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+		compatible = "mediatek,pmic_clock_buffer";
+		mediatek,clkbuf-quantity = <7>;
+		mediatek,clkbuf-config = <2 1 1 2 0 0 0>;
+		mediatek,clkbuf-driving-current = <1 1 1 1 1 1 1>;
+	};
 };
 
 #include "cust_mt6761_msdc.dtsi"
