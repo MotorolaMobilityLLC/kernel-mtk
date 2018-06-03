@@ -9671,10 +9671,6 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	int cid = arch_get_cluster_id(target); /* cid of target CPU */
 	int cpu = task_cpu(p);
 
-	/* idle prefer */
-	if (idle_cpu(target))
-		return target;
-
 	/* If the prevous cpu is cache affine and idle, choose it first. */
 	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
 		return cpu;
