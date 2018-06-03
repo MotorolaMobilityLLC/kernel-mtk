@@ -530,7 +530,7 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id,
 		break;
 	}
 
-	FH_MSG("%s, [Pll_ID]:%d [current dds(CON1)]:0x%x, [target dds]:%d",
+	FH_MSG_DEBUG("%s, [Pll_ID]:%d [cur dds(CON1)]:0x%x, [target dds]:%d",
 	       __func__, pll_id,
 	       (fh_read32(g_reg_pll_con1[pll_id]) & FH_DDS_MASK),
 	       target_dds);
