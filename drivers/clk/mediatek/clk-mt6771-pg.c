@@ -993,6 +993,7 @@ int spm_mtcmos_ctrl_mfg(int state)
 		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 1" */
 		while ((spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK) != MFG_SRAM_PDN_ACK) {
 				/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
+				/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
 		}
 #endif
 		/* TINFO="Set PWR_ISO = 1" */
