@@ -565,6 +565,7 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_DFS_UPDATE, /* Update clock at run time */
 	ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, /* Get supported isp clocks on current platform */
 	ISP_CMD_GET_CUR_ISP_CLOCK, /* Get cur isp clock level */
+	ISP_CMD_GET_GLOBAL_TIME, /* Get the global time */
 	ISP_CMD_VF_LOG, /* dbg only, prt log on kernel when vf_en is driven */
 	ISP_CMD_GET_VSYNC_CNT,
 	ISP_CMD_RESET_VSYNC_CNT,
@@ -621,6 +622,7 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_DFS_UPDATE              _IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
 #define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
 #define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, struct ISP_GET_CLK_INFO)
+#define ISP_GET_GLOBAL_TIME   _IOWR(ISP_MAGIC, ISP_CMD_GET_GLOBAL_TIME, unsigned long long)
 #define ISP_SET_PM_QOS        _IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
 #define ISP_SET_PM_QOS_INFO        _IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS_INFO, struct ISP_PM_QOS_INFO_STRUCT)
 

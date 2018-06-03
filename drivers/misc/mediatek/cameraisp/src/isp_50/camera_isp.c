@@ -104,6 +104,8 @@ struct mmdvfs_pm_qos_request isp_qos;
 static u32 target_clk;
 #endif
 
+#include <archcounter_timesync.h>
+
 /*  */
 #ifndef MTRUE
 #define MTRUE               1
@@ -2834,6 +2836,24 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+	case ISP_GET_GLOBAL_TIME:
+		{
+			u64 hwTickCnt, globalTime;
+
+			if (copy_from_user(&hwTickCnt, (void *)Param, sizeof(u64)) == 0) {
+				globalTime = archcounter_timesync_to_monotonic(hwTickCnt); /* ns */
+				do_div(globalTime, 1000); /* ns to us */
+
+				if (copy_to_user((void *)Param, &globalTime, sizeof(u64)) != 0) {
+					LOG_NOTICE("ISP_GET_GLOBAL_TIME copy_to_user failed");
+					Ret = -EFAULT;
+				}
+			} else {
+				LOG_NOTICE("ISP_GET_GLOBAL_TIME copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
+		}
+		break;
 	case ISP_SET_PM_QOS_INFO:
 		{
 			struct ISP_PM_QOS_INFO_STRUCT pm_qos_info;
@@ -3550,6 +3570,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_DFS_UPDATE:
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 	case ISP_GET_CUR_ISP_CLOCK:
+	case ISP_GET_GLOBAL_TIME:
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
 	case ISP_GET_INT_ERR:
@@ -3656,6 +3677,8 @@ static int ISP_open(
 	/* create ion client*/
 	ISP_ion_init();
 #endif
+
+	archcounter_timesync_init(MTRUE); /* Global timer enable */
 
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (ISP_DBG_INT);
@@ -4574,6 +4597,8 @@ static int ISP_resume(struct platform_device *pDev)
 
 	if (module < 0)
 		return ret;
+
+	archcounter_timesync_init(MTRUE); /* Global timer enable */
 
 	ISP_EnableClock(MTRUE);
 
