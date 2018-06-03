@@ -1558,6 +1558,50 @@ static inline int rt5509_codec_unregister(struct rt5509_chip *chip)
 	return 0;
 }
 
+static const struct snd_soc_codec_driver rt5509_dummy_codec_drv;
+
+static struct snd_soc_dai_driver rt5509_dummy_i2s_dais[] = {
+	{
+		.name = "rt5509-aif1",
+		.playback = {
+			.stream_name = "AIF1 Playback",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = RT5509_RATES,
+			.formats = RT5509_FORMATS,
+		},
+		.capture = {
+			.stream_name = "AIF1 Capture",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = RT5509_RATES,
+			.formats = RT5509_FORMATS,
+		},
+	},
+	{
+		.name = "rt5509-aif2",
+		.playback = {
+			.stream_name = "AIF2 Playback",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = RT5509_RATES,
+			.formats = RT5509_FORMATS,
+		},
+	},
+};
+
+static inline int rt5509_dummy_codec_register(struct device *dev)
+{
+	return snd_soc_register_codec(dev, &rt5509_dummy_codec_drv,
+		rt5509_dummy_i2s_dais, ARRAY_SIZE(rt5509_dummy_i2s_dais));
+}
+
+static inline int rt5509_dummy_codec_unregister(struct device *dev)
+{
+	snd_soc_unregister_codec(dev);
+	return 0;
+}
+
 static int rt5509_handle_pdata(struct rt5509_chip *chip)
 {
 	return 0;
@@ -1802,13 +1846,18 @@ err_simulate:
 err_parse_dt:
 	if (client->dev.of_node)
 		devm_kfree(&client->dev, pdata);
-	return ret;
+	dev_err(&client->dev, "error %d\n", ret);
+	i2c_set_clientdata(client, NULL);
+	dev_set_name(&client->dev, "%s", "RT5509_MT");
+	return rt5509_dummy_codec_register(&client->dev);
 }
 
 static int rt5509_i2c_remove(struct i2c_client *client)
 {
 	struct rt5509_chip *chip = i2c_get_clientdata(client);
 
+	if (!chip)
+		goto out_remove_dummy;
 	rt5509_codec_unregister(chip);
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->rd);
@@ -1827,6 +1876,8 @@ static int rt5509_i2c_remove(struct i2c_client *client)
 	chip->pdata = client->dev.platform_data = NULL;
 	dev_dbg(&client->dev, "driver removed\n");
 	return 0;
+out_remove_dummy:
+	return rt5509_dummy_codec_unregister(&client->dev);
 }
 
 #ifdef CONFIG_PM
