@@ -1009,15 +1009,8 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 	if (bEnable == true) {
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
 
-		/* Disable headphone short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
-		/* Disable handset short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
-		/* Disable linout short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 		/* Reduce ESD resistance of AU_REFN */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
-
 		/* Turn on DA_600K_NCP_VA18 */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
 		/* Set NCP clock as 604kHz // 26MHz/43 = 604KHz */
@@ -1039,25 +1032,39 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable AUD_ZCD */
 		Hp_Zcd_Enable(false);
 
+		/* Disable headphone short-circuit protection */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
+
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
+
 		/* Disable HPR/L STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
-		/* Enable HP main CMFB Switch */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+
+		/* Disable Pull-down HPL/R to AVSS28_AUD */
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0xffff);
 
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
+
 		/* Enable Audio L channel DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+
+		/* Enable Trim buffer VA28 reference */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0002, 0x00ff);
 
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0xffff);
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0203, 0xffff);
+		/* Enable TRIMBUF circuit, select HPR as TRIMBUF input */
+		/* Set TRIMBUF gain as 18dB */
+		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1972, 0xffff);
 	} else {
 		/* disable HPDET circuit */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0xff00);
+
+		/* Disable Trim buffer VA28 reference */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x00ff);
 
 		/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
@@ -1077,18 +1084,15 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable HP aux CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0, 0xff << 8);
 
-		/* Enable HP main CMFB Switch */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x2 << 8, 0xff << 8);
-
-		/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0xa8, 0xff);
-
 		/* Disable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
+
 		/* Disable NV regulator (-1.2V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0, 0x1);
+
 		/* Disable cap-less LDOs (1.5V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0, 0x1055);
+
 		/* Disable NCP */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
 
@@ -1165,7 +1169,6 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
 	return r_tmp;
 }
 
-#define PARALLEL_OHM 470
 static int detect_impedance(void)
 {
 	const unsigned int kDetectTimes = 8;
@@ -1283,16 +1286,6 @@ static int detect_impedance(void)
 			break;
 		}
 		usleep_range(1*200, 1*200);
-	}
-
-	if (PARALLEL_OHM != 0) {
-		if (impedance < PARALLEL_OHM) {
-			impedance = DIV_ROUND_CLOSEST(impedance * PARALLEL_OHM,
-						      PARALLEL_OHM - impedance);
-		} else {
-			pr_warn("%s(), PARALLEL_OHM %d <= impedance %d\n",
-				 __func__, PARALLEL_OHM, impedance);
-		}
 	}
 
 	pr_debug("%s(), phase %d [dc,detect]Sum %d times [%d,%d], hp_impedance %d, pick_impedance %d, AUXADC_CON10 0x%x\n",
