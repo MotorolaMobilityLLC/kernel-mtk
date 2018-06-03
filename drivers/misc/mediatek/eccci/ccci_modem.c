@@ -127,7 +127,11 @@ void ccci_md_config(struct ccci_modem *md)
 	md->smem_layout.ccci_exp_smem_ccci_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCCI_DEBUG;
 	md->smem_layout.ccci_exp_smem_ccci_debug_size = CCCI_SMEM_SIZE_CCCI_DEBUG;
 	md->smem_layout.ccci_exp_smem_mdss_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_MDSS_DEBUG;
-#ifdef MD_UMOLY_EE_SUPPORT
+#if defined(MD_EE_V3_SUPPORT)
+	if (md->index == MD_SYS1)
+		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_SIZE_MDSS_DEBUG_V3;
+	else
+#elif defined(MD_UMOLY_EE_SUPPORT)
 	if (md->index == MD_SYS1)
 		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_SIZE_MDSS_DEBUG_UMOLY;
 	else
