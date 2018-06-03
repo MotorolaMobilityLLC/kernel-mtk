@@ -37,9 +37,12 @@
 #define FLASHLIGHT_PROTOCOL_VERSION 1
 
 /* scenario */
-#define FLASHLIGHT_SCENARIO_CAMERA 0
-#define FLASHLIGHT_SCENARIO_FLASHLIGHT 1
-#define FLASHLIGHT_SCENARIO_TEMP 2
+#define FLASHLIGHT_SCENARIO_CAMERA_MASK 1
+#define FLASHLIGHT_SCENARIO_DECOUPLE_MASK 2
+#define FLASHLIGHT_SCENARIO_FLASHLIGHT (0 << 0)
+#define FLASHLIGHT_SCENARIO_CAMERA     (1 << 0)
+#define FLASHLIGHT_SCENARIO_COUPLE     (0 << 1)
+#define FLASHLIGHT_SCENARIO_DECOUPLE   (1 << 1)
 
 /* power throttling */
 #define PT_NOTIFY_NUM 3
@@ -69,10 +72,12 @@
 #define FLASHLIGHT_CT_MAX 2
 #define FLASHLIGHT_PART_MAX 2
 struct flashlight_device_id {
-	char name[FLASHLIGHT_NAME_SIZE];
 	int type;
 	int ct;
 	int part;
+	char name[FLASHLIGHT_NAME_SIZE]; /* device name */
+	int channel;                     /* device channel */
+	int decouple;                    /* device decouple */
 };
 
 extern const struct flashlight_device_id flashlight_id[];
@@ -95,6 +100,7 @@ struct flashlight_arg {
 	int type;
 	int ct;
 	int part;
+	int channel;
 	int level;
 	int dur;
 };
@@ -102,6 +108,11 @@ struct flashlight_arg {
 struct flashlight_user_arg {
 	int type_id;
 	int ct_id;
+	int arg;
+};
+
+struct flashlight_dev_arg {
+	int channel;
 	int arg;
 };
 
@@ -119,12 +130,12 @@ int flashlight_dev_register(const char *name, struct flashlight_operations *dev_
 int flashlight_dev_unregister(const char *name);
 
 /* get id and index */
-int fl_get_type_id(int type_index);
-int fl_get_ct_id(int ct_index);
-int fl_get_part_id(int part_index);
-int fl_get_type_index(int type_id);
-int fl_get_ct_index(int ct_id);
-int fl_get_part_index(int part_id);
+int flashlight_get_type_id(int type_index);
+int flashlight_get_ct_id(int ct_index);
+int flashlight_get_part_id(int part_index);
+int flashlight_get_type_index(int type_id);
+int flashlight_get_ct_index(int ct_id);
+int flashlight_get_part_index(int part_id);
 
 /* verify functionis */
 int flashlight_type_index_verify(int type_index);
