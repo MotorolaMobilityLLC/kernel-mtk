@@ -321,6 +321,7 @@ static int _hps_task_main(void *data)
 	int idx;
 	unsigned int total_big_task = 0;
 	unsigned int total_hvy_task = 0;
+	unsigned int cpu_onoff = 0;
 #endif
 	void (*algo_func_ptr)(void);
 
@@ -377,10 +378,9 @@ ACAO_HPS_START:
 			break;
 
 		if (cpumask_test_cpu(i, hps_ctxt.online_core))
-			pr_info("CPU %d ==>1\n", i);
-		else
-			pr_info("CPU %d ==>0\n", i);
+			cpu_onoff |= (1<<i);
 	}
+	pr_info("CPU request is 0x%x\n", cpu_onoff);
 
 	if (!cpumask_empty(hps_ctxt.online_core)) {
 		aee_rr_rec_hps_cb_footprint(3);
