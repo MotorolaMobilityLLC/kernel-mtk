@@ -70,6 +70,7 @@
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
+#include <pmic.h>
 
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
@@ -399,6 +400,13 @@ int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
 
 	if (info != NULL) {
 		struct charger_device *pchr;
+
+		if (!upmu_get_rgs_chrdet()) {
+			pr_debug("[%s] No cable in, skip it\n", __func__);
+			*tchg_min = -127;
+			*tchg_max = -127;
+			return -EINVAL;
+		}
 
 		if (idx == MAIN_CHARGER)
 			pchr = info->chg1_dev;
