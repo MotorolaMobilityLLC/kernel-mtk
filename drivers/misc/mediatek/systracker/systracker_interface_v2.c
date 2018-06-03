@@ -35,6 +35,7 @@
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
 void __iomem *BUS_DBG_BASE;
+void __iomem *BUS_DBG_CON_REG;
 int systracker_irq;
 struct systracker_config_t track_config;
 struct systracker_entry_t track_entry;
@@ -79,6 +80,9 @@ static struct mt_systracker_driver mt_systracker_drv = {
 
 static int systracker_platform_probe_default(struct platform_device *pdev)
 {
+	void __iomem *infra_ao_base;
+	unsigned int bus_dbg_con_offset;
+
 	pr_err("systracker probe\n");
 
 	/* iomap register */
@@ -89,6 +93,20 @@ static int systracker_platform_probe_default(struct platform_device *pdev)
 	}
 
 	pr_err("of_iomap for systracker @ 0x%p\n", BUS_DBG_BASE);
+
+	/* iomap register */
+	infra_ao_base = of_iomap(pdev->dev.of_node, 1);
+	if (!infra_ao_base) {
+		pr_err("[systracker] bus_dbg_con is in infra\n");
+		BUS_DBG_CON_REG = BUS_DBG_BASE;
+	} else {
+		pr_err("[systracker] bus_dbg_con is in infra_ao\n");
+		if (of_property_read_u32(pdev->dev.of_node, "mediatek,bus_dbg_con_offset", &bus_dbg_con_offset)) {
+			pr_err("[systracker] cannot get bus_dbg_con_offset\n");
+			return -ENODEV;
+		}
+		BUS_DBG_CON_REG = infra_ao_base + bus_dbg_con_offset;
+	}
 
 	/* get irq #  */
 	systracker_irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
