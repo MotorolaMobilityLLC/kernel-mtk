@@ -667,8 +667,10 @@ void update_cpu_capacity_request(int cpu, bool request, int type)
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
 	new_capacity = scr->cfs + scr->rt;
+
 	new_capacity = new_capacity * capacity_margin_dvfs
 		/ SCHED_CAPACITY_SCALE;
+
 	new_capacity += scr->dl;
 
 #ifndef CONFIG_CPU_FREQ_SCHED_ASSIST

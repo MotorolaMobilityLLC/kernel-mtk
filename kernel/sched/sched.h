@@ -1570,9 +1570,19 @@ static inline unsigned long __cpu_util(int cpu, int delta)
 	unsigned long capacity = capacity_orig_of(cpu);
 
 #ifdef CONFIG_SCHED_WALT
+	/*
+	 * [FIXME] mark ee4cebd75ed7: power is out of control
+	 * while cumulative_runnable_avg for task placement.
+	 */
+#if 0
 	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
-		util = div64_u64((cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT),
-			walt_ravg_window);
+		util = div64_u64(cpu_rq(cpu)->cumulative_runnable_avg,
+				walt_ravg_window >> SCHED_LOAD_SHIFT);
+#else
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+		util = div64_u64(cpu_rq(cpu)->prev_runnable_sum,
+				walt_ravg_window >> SCHED_LOAD_SHIFT);
+#endif
 #endif
 	delta += util;
 	if (delta < 0)
@@ -1584,6 +1594,19 @@ static inline unsigned long __cpu_util(int cpu, int delta)
 static inline unsigned long cpu_util(int cpu)
 {
 	return __cpu_util(cpu, 0);
+}
+
+static inline unsigned long cpu_util_freq(int cpu)
+{
+	unsigned long util = cpu_rq(cpu)->cfs.avg.util_avg;
+	unsigned long capacity = capacity_orig_of(cpu);
+
+#ifdef CONFIG_SCHED_WALT
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+		util = div64_u64(cpu_rq(cpu)->prev_runnable_sum,
+				walt_ravg_window >> SCHED_LOAD_SHIFT);
+#endif
+	return (util >= capacity) ? capacity : util;
 }
 
 unsigned long boosted_cpu_util(int cpu);
@@ -1610,7 +1633,7 @@ enum cpu_dvfs_sched_type {
 	SCHE_IOWAIT,
 	SCHE_RT,
 	SCHE_DL,
-
+	SCHE_TICK,
 	NUM_SCHE_TYPE
 };
 
@@ -2093,9 +2116,3 @@ extern bool is_rt_throttle(int cpu);
 #endif
 
 extern inline bool energy_aware(void);
-
-#ifdef CONFIG_MACH_MT6771
-#define jump_step(idx, nr, st) { *st = 1; }
-#else
-#define jump_step(idx, nr, st) { *st = (idx < nr/3) ? 2 : 1; }
-#endif
