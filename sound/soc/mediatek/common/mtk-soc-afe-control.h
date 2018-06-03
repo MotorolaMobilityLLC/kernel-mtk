@@ -338,6 +338,6 @@ int get_LowLatencyDebug(void);
 void set_LowLatencyDebug(uint32 bFlag);
 
 /* DC trim API, implement by platform */
-int get_trim_buffer_diff(int channels);
+int get_audio_trim_offset(int channel);
 
 #endif
