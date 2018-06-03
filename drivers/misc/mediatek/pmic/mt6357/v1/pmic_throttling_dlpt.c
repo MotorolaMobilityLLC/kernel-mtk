@@ -1038,6 +1038,11 @@ static int get_dlpt_imix_charging(void)
 static int g_low_per_timer;
 static int g_low_per_timeout_val = 60;
 
+bool __attribute__ ((weak)) mtk_dpidle_is_active(void)
+{
+	return false;
+}
+
 int dlpt_notify_handler(void *unused)
 {
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
