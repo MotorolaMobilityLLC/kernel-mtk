@@ -275,7 +275,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_GPU,
 #endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT_GPU,
 	},
 
 

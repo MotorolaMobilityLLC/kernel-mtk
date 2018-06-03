@@ -2681,10 +2681,11 @@ void eem_init01(void)
 		);
 #endif
 		}
-
+		timeout = 0;
 		while (det->real_vboot != det->VBOOT) {
 			det->real_vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
-			eem_debug("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
+			if (timeout % 300 == 0)
+				eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 					__func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
 		}
 		/* BUG_ON(det->real_vboot != det->VBOOT); */
@@ -2712,10 +2713,11 @@ void eem_init01(void)
 			);
 #endif
 			}
-
+			timeout = 0;
 			while (det->real_vboot != det->VBOOT) {
 				det->real_vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
-				eem_debug("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
+				if (timeout % 300 == 0)
+					eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 						__func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
 			}
 			/* BUG_ON(det->real_vboot != det->VBOOT); */
@@ -2746,6 +2748,7 @@ void eem_init01(void)
 	 * will impact L to process init01 stage, because L require a
 	 * stable 1V for init01.
 	*/
+	timeout = 0;
 	while (1) {
 #if ENABLE_LOO
 		/* For share cci bank */
