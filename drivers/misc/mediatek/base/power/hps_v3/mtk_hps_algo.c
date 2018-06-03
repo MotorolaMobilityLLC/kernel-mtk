@@ -356,8 +356,6 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 	int i, cpu;
 
 	mutex_lock(&hps_ctxt.para_lock);
-	if (core_val == 0)
-		goto out;
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num = 0;
 #if 1
@@ -494,12 +492,10 @@ void hps_algo_main(void)
 
 	if (!hps_ctxt.enabled)
 		goto HPS_END;
-#if 0
 	if (hps_ctxt.eas_indicator) {
 		/*Set cpu cores by scheduler*/
 		goto HPS_ALGO_END;
 	}
-#endif
 	/*
 	 * algo - begin
 	 */
@@ -576,7 +572,7 @@ void hps_algo_main(void)
 	if (hps_sys.action_id == 0)
 		goto HPS_END;
 
-/*HPS_ALGO_END:*/
+HPS_ALGO_END:
 	/*
 	 * algo - end
 	 */
