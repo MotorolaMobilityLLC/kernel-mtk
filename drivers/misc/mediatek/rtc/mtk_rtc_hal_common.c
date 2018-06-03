@@ -39,13 +39,6 @@
 #define hal_rtc_xinfo(fmt, args...)		\
 		pr_notice(fmt, ##args)
 
-#define hal_rtc_xerror(fmt, args...)	\
-		pr_err(fmt, ##args)
-
-#define hal_rtc_xfatal(fmt, args...)	\
-		pr_emerg(fmt, ##args)
-
-
 u16 rtc_read(u16 addr)
 {
 	u32 rdata = 0;
@@ -67,8 +60,9 @@ void rtc_busy_wait(void)
 		if ((rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY) == 0)
 			break;
 		else if (sched_clock() > timeout) {
-			pr_err("%s, wait cbusy timeout, %x, %x, %x\n", __func__,
-				rtc_read(RTC_BBPU), rtc_read(RTC_POWERKEY1), rtc_read(RTC_POWERKEY2));
+			pr_err("%s, wait cbusy timeout, %x, %x, %x, %d\n", __func__,
+				rtc_read(RTC_BBPU), rtc_read(RTC_POWERKEY1),
+				rtc_read(RTC_POWERKEY2), rtc_read(RTC_TC_SEC));
 			break;
 		}
 	} while (1);
@@ -297,7 +291,7 @@ void rtc_lp_exception(void)
 	mdelay(2000);
 	sec2 = rtc_read(RTC_TC_SEC);
 
-	hal_rtc_xfatal("!!! 32K WAS STOPPED !!!\n"
+	pr_emerg("!!! 32K WAS STOPPED !!!\n"
 		       "RTC_BBPU      = 0x%x\n"
 		       "RTC_IRQ_STA   = 0x%x\n"
 		       "RTC_IRQ_EN    = 0x%x\n"
