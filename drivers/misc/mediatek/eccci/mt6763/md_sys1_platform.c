@@ -22,6 +22,7 @@
 #include <linux/clk.h>
 #include <mach/mtk_pbm.h>
 #include <mach/emi_mpu.h>
+#include <emi_mbw.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
@@ -338,6 +339,26 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
 }
 
+static int dump_emi_last_bm(struct ccci_modem *md)
+{
+	u32 buf_len = 1024;
+	char *buf = NULL;
+
+	buf = kzalloc(buf_len, GFP_ATOMIC);
+	if (!buf) {
+		CCCI_MEM_LOG_TAG(md->index, TAG, "alloc memory failed for emi last bm\n");
+		return -1;
+	}
+
+	dump_last_bm(buf, buf_len);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump EMI last bm\n");
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, buf, buf_len);
+
+	kfree(buf);
+
+	return 0;
+}
+
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
 	/* MD no need dump because of bus hang happened - open for debug */
@@ -346,6 +367,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct ccci_per_md *per_md_data = &md->per_md_data;
 
 	/*dump_emi_latency();*/
+	dump_emi_last_bm(md);
 
 	md_cd_lock_modem_clock_src(1);
 
