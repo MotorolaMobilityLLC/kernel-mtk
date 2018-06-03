@@ -1415,11 +1415,16 @@ bool SetDLSrc2(unsigned int rate)
 
 enum {
 	UL_IIR_SW = 0,
-	UL_IIR_5HZ,
-	UL_IIR_10HZ,
-	UL_IIR_25HZ,
-	UL_IIR_50HZ,
-	UL_IIR_75HZ,
+	/* 3.3 Hz if 32kHz mode ; 5 Hz if 48kHz mode ; 10Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL1,
+	/* 6.6 Hz if 32kHz mode ; 10Hz if 48kHz mode ; 20Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL2,
+	/* 16.6 Hz if 32kHz mode ; 25Hz if 48kHz mode ; 50Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL3,
+	/* 33.3 Hz if 32kHz mode ; 50Hz if 48kHz mode ; 100Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL4,
+	/* 50 Hz if 32kHz mode ; 75Hz if 48kHz mode ; 150Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL5,
 };
 
 bool set_chip_adc_in(unsigned int rate)
@@ -1441,7 +1446,7 @@ bool set_chip_adc_in(unsigned int rate)
 
 	ul_src_con0 |= (voice_mode << 17) & (0x7 << 17);
 	ul_src_con0 |= (enable_iir << 10) & (0x1 << 10);
-	ul_src_con0 |= UL_IIR_50HZ << 7;
+	ul_src_con0 |= UL_IIR_HW_LEVEL1 << 7;
 
 	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, ul_src_con0, MASK_ALL);
 
