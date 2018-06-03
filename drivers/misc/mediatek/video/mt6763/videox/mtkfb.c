@@ -1519,6 +1519,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return -EFAULT;
 
 			info->var.yoffset = var.yoffset;
+
+			/* check var.yoffset passed by user space */
+			if (info->var.yres + info->var.yoffset > info->var.yres_virtual)
+				info->var.yoffset = info->var.yres_virtual - info->var.yres;
+
 			init_framebuffer(info);
 
 			return mtkfb_pan_display_impl(&var, info);

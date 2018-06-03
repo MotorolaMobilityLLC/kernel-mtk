@@ -5188,8 +5188,13 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		_convert_disp_input_to_ovl(ovl_cfg, input_cfg);
 
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
-				   ovl_cfg->layer | (ovl_cfg->layer_en << 16), ovl_cfg->addr);
-		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, ovl_cfg->src_x, ovl_cfg->src_y);
+			((ovl_cfg->layer & 0xF) << 28) | ((ovl_cfg->layer_en & 0xF) << 24) |
+			((ovl_cfg->ext_layer & 0xF) << 20) | ((ovl_cfg->ext_sel_layer & 0xF) << 16) |
+			((ovl_cfg->yuv_range & 0xF) << 12) | ((UFMT_GET_RGB(ovl_cfg->fmt) & 0xF) << 8) |
+			(UFMT_GET_ID(ovl_cfg->fmt) & 0xFF), ovl_cfg->addr);
+		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG,
+			((ovl_cfg->dst_x & 0xFFFF) << 16) | (ovl_cfg->dst_y & 0xFFFF),
+			((ovl_cfg->dst_w & 0xFFFF) << 16) | (ovl_cfg->dst_h & 0xFFFF));
 
 		dprec_mmp_dump_ovl_layer(ovl_cfg, layer, 1);
 
