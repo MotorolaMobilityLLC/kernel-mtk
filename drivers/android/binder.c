@@ -4876,6 +4876,10 @@ retry:
 			if (cmd == BR_DEAD_BINDER)
 				goto done; /* DEAD_BINDER notifications can cause transactions */
 		} break;
+		default: {
+			binder_inner_proc_unlock(proc);
+			pr_info("unknown work: type %d\n", w->type);
+		} break;
 		}
 
 		if (!t)
