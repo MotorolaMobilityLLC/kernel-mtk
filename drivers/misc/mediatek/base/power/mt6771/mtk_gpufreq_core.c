@@ -2260,7 +2260,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			g_clk->subsys_mfg_cg, g_clk->mtcmos_mfg_async, g_clk->mtcmos_mfg,
 			g_clk->mtcmos_mfg_core0, g_clk->mtcmos_mfg_core1, g_clk->mtcmos_mfg_core2);
 
-	/* check EFUSE register 0x11f10050 ... */
+	/* check EFUSE register 0x11f10050[27:24] */
 	/* Free Version : 4'b0000 */
 	/* 1GHz Version : 4'b0001 */
 	/* 950MHz Version : 4'b0010 */
@@ -2275,14 +2275,14 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		gpufreq_pr_err("@%s: EFUSEC iomap failed", __func__);
 		return -ENOENT;
 	}
-	g_efuse_id = readl(g_efuse_base + 0x50) & 0x00000FFF;
-	if (g_efuse_id == 0x011) {
+	g_efuse_id = (readl(g_efuse_base + 0x50) & 0x0F000000) >> 24;
+	if ((g_efuse_id & 0x7) == 0x3) {
 		/* 900MHz Version */
 		g_segment_id = MT6771_SEGMENT_1;
-	} else if (g_efuse_id == 0x101) {
+	} else if ((g_efuse_id & 0x7) == 0x5) {
 		/* 800MHz Version */
 		g_segment_id = MT6771_SEGMENT_2;
-	} else if (g_efuse_id == 0x111) {
+	} else if ((g_efuse_id & 0x7) == 0x7) {
 		/* 700MHz Version */
 		g_segment_id = MT6771_SEGMENT_3;
 	} else {
