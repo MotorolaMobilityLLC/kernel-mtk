@@ -6800,6 +6800,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 		wlanCfgGetUint32(prAdapter, "WakeLockThreadTO", WAKE_LOCK_THREAD_WAKEUP_TIMEOUT);
 
 	prWifiVar->ucSmartRTS = (UINT_8) wlanCfgGetUint32(prAdapter, "SmartRTS", 0);
+	prWifiVar->ePowerMode = (PARAM_POWER_MODE) wlanCfgGetUint32(prAdapter, "PowerSave", Param_PowerModeMax);
 #if 1
 	/* add more cfg from RegInfo */
 	prWifiVar->u4UapsdAcBmp = (UINT_32) wlanCfgGetUint32(prAdapter, "UapsdAcBmp", 0);
