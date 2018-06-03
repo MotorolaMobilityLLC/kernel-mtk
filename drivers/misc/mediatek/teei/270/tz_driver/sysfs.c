@@ -199,7 +199,7 @@ static int open_driver_session(struct ut_drv_entry *ut_drv)
 				NULL, NULL, NULL);
 
 	if (res != TEEC_SUCCESS) {
-		IMSG_ERROR("failed to load driver, res 0x%0x\n", res);
+		IMSG_DEBUG("failed to load driver, res 0x%0x\n", res);
 		return -EINVAL;
 	}
 
@@ -322,7 +322,7 @@ int tz_load_drv_by_str(const char *buf)
 
 	res = load_ut_drv(&uuid);
 	if (res)
-		IMSG_ERROR("load secure driver failed(uuid: %s)\n",
+		IMSG_DEBUG("load secure driver failed(uuid: %s)\n",
 				buf);
 
 	return res;
