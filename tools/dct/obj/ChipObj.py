@@ -355,6 +355,7 @@ class MT6739(MT6763):
         ChipObj.replace_obj(self, 'gpio', GpioObj_MT6739())
         ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
         ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
