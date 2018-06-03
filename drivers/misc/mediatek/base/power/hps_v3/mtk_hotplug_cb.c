@@ -75,7 +75,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	unsigned int first_cpu;
 
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
-	/*int ret;*/
+	int ret;
 #endif
 	switch (action) {
 	case CPU_UP_PREPARE:
@@ -131,7 +131,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 
 #if defined(CONFIG_MACH_MT6771)
-#if 0
+#if 1
 					ret = regulator_enable(cpu_vsram11_id);
 					if (ret)
 						pr_info("regulator_enable vsram11 failed\n");
@@ -264,7 +264,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 
 #if defined(CONFIG_MACH_MT6771)
-#if 0
+#if 1
 					regulator_disable(cpu_vproc11_id);
 					regulator_disable(cpu_vsram11_id);
 					MP1_BUCK_STATUS = MP_BUCK_OFF;
