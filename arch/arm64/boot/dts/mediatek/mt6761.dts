@@ -32,6 +32,7 @@
 	chosen: chosen {
 	bootargs = "console=tty0 console=ttyS0,921600n1 root=/dev/ram\
 initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
+		kaslr-seed = <0 0>;
 	};
 
 	cpus {
