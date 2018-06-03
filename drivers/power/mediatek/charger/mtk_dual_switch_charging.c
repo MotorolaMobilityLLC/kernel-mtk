@@ -677,10 +677,10 @@ int mtk_dual_switch_chr_err(struct charger_manager *info)
 			info->sw_jeita.error_recovery_flag = true;
 			swchgalg->state = CHR_CC;
 		}
+	} else {
+		if (info->thermal.sm == BAT_TEMP_NORMAL)
+			swchgalg->state = CHR_CC;
 	}
-
-	if (info->thermal.sm == BAT_TEMP_NORMAL)
-		swchgalg->state = CHR_CC;
 
 	_disable_all_charging(info);
 	return 0;
