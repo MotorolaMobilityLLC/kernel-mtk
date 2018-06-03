@@ -724,7 +724,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 
 			if (rSrcClk.u2OutputFramerate == 600) {	/* frame rate 60 case */
 #ifdef CONFIG_MTK_SMI_EXT
-				ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VPMJC, MMDVFS_FINE_STEP_OPP2);
+				ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VPMJC, MMDVFS_FINE_STEP_OPP3);
 				if (ret) {
 					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 					MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
