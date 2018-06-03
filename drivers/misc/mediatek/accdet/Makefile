@@ -5,6 +5,9 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include/mt63
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335/
 else
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6355),y)
+subdir-ccflags-y += -Werror -I$(srctree)/sound/soc/mediatek/codec/mt6355/
+endif
 endif
 
 
