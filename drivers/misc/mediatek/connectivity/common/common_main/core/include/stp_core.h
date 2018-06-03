@@ -92,6 +92,7 @@ extern UINT32 gStpDbgLvl;
 #define MTKSTP_SDIO_MODE          STP_MODE_BIT(4)
 
 #define MTKSTP_BUFFER_SIZE  (16384)
+#define PARSER_CORE_DUMP_NUM 200
 #define CORE_DUMP_NUM 100
 /*To check function driver's status by the the interface*/
 /*Operation definition*/
