@@ -263,16 +263,26 @@ void mt6355_auxadc_monitor_mts_regs(void)
 
 	if ((mts_count > 15)) {
 		pr_err("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
-		/*--AUXADC CH7--*/
-		pr_err("AUXADC_LIST_TSX = %d\n", mt6355_get_auxadc_value(AUXADC_LIST_TSX));
-		/*--AUXADC--*/
-		pr_err("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC36));
+		/*--AUXADC MDRT--*/
+		pr_err("AUXADC_ADC36  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC36));
+		pr_err("AUXADC_ADC42  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC42));
 		pr_err("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_0));
 		pr_err("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_1));
 		pr_err("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_2));
+		pr_err("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_3));
+		pr_err("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_4));
+		/*--AUXADC SPI AVG SEL--*/
+		pr_err("AUXADC_CON2  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_CON2));
+		pr_err("AUXADC_CON5  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_CON5));
+		pr_err("AUXADC_CON8  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_CON8));
+		pr_err("AUXADC_CON9  = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_CON9));
 		/*--AUXADC CLK--*/
-		pr_err("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
-		pr_err("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		pr_err("TOP_CKPDN_CON0  = 0x%x\n", upmu_get_reg_value(MT6355_TOP_CKPDN_CON0));
+		pr_err("TOP_CKHWEN_CON0 = 0x%x\n", upmu_get_reg_value(MT6355_TOP_CKHWEN_CON0));
+		pr_err("TOP_CKHWEN_CON1 = 0x%x\n", upmu_get_reg_value(MT6355_TOP_CKHWEN_CON1));
+
+		/*--AUXADC CH7--*/
+		pr_err("AUXADC_LIST_TSX = %d\n", mt6355_get_auxadc_value(AUXADC_LIST_TSX));
 		mts_count = 0;
 	}
 	mts_adc = mts_adc_tmp;
