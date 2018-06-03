@@ -359,7 +359,7 @@ int btif_log_output_enable(P_BTIF_LOG_QUEUE_T p_log_que);
 int btif_log_output_disable(P_BTIF_LOG_QUEUE_T p_log_que);
 int btif_log_buf_reset(P_BTIF_LOG_QUEUE_T p_log_que);
 int btif_log_buf_init(p_mtk_btif p_btif);
-int btif_dump_reg(p_mtk_btif p_btif);
+int btif_dump_reg(p_mtk_btif p_btif, ENUM_BTIF_REG_ID flag);
 int btif_rx_notify_reg(p_mtk_btif p_btif, MTK_BTIF_RX_NOTIFY rx_notify);
 int btif_raise_wak_signal(p_mtk_btif p_btif);
 int btif_clock_ctrl(p_mtk_btif p_btif, int en);
