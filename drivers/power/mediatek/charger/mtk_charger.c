@@ -1061,6 +1061,7 @@ static int charger_routine_thread(void *arg)
 	static int i;
 	unsigned long flags;
 	bool curr_sign, is_charger_on;
+	int bat_current;
 
 	while (1) {
 		wait_event(info->wait_que, (info->charger_thread_timeout == true));
@@ -1069,9 +1070,9 @@ static int charger_routine_thread(void *arg)
 		info->charger_thread_timeout = false;
 		i++;
 		curr_sign = battery_get_bat_current_sign();
+		bat_current = battery_get_bat_current();
 		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
-			curr_sign ? battery_get_bat_current() :
-					-1 * battery_get_bat_current(),
+			curr_sign ? bat_current : -1 * bat_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type);
