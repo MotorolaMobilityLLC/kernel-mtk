@@ -34,6 +34,8 @@
 #include <sspm_ipi_pin.h>
 #endif
 
+#include <mtk_vcorefs_governor.h>
+
 #include <mt-plat/aee.h>
 
 __weak void helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc) { }
@@ -43,6 +45,51 @@ __weak int vcore_opp_init(void) { return 0; }
 
 static struct opp_profile opp_table[VCORE_DVFS_OPP_NUM];
 struct helio_dvfsrc *dvfsrc;
+
+
+int get_cur_vcore_dvfs_opp(void)
+{
+	int dvfsrc_level_bit = dvfsrc_read(dvfsrc, DVFSRC_LEVEL) >> 16;
+	int dvfsrc_level = 0;
+
+	for (dvfsrc_level = 0; dvfsrc_level < VCORE_DVFS_OPP_NUM - 1; dvfsrc_level++)
+		if ((dvfsrc_level_bit & (1 << dvfsrc_level)) > 0)
+			break;
+
+	return VCORE_DVFS_OPP_NUM - dvfsrc_level - 1;
+}
+
+void dvfsrc_update_opp_table(void)
+{
+	struct opp_profile *opp_ctrl_table = opp_table;
+	int opp;
+
+	mutex_lock(&dvfsrc->devfreq->lock);
+	for (opp = 0; opp < VCORE_DVFS_OPP_NUM; opp++)
+		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
+
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+char *dvfsrc_get_opp_table_info(char *p)
+{
+	struct opp_profile *opp_ctrl_table = opp_table;
+	int i;
+	char *buff_end = p + PAGE_SIZE;
+
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
+		p += snprintf(p, buff_end - p, "[OPP%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
+			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
+		p += snprintf(p, buff_end - p, "[OPP%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
+		p += snprintf(p, buff_end - p, "\n");
+	}
+
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
+		p += snprintf(p, buff_end - p, "OPP%d  : %u\n", i, opp_ctrl_table[i].vcore_uv);
+
+	return p;
+}
+#if !defined(CONFIG_MACH_MT6771)
 
 int dvfsrc_get_bw(int type)
 {
@@ -77,49 +124,6 @@ int dvfsrc_get_bw(int type)
 	return ret;
 }
 
-int get_cur_vcore_dvfs_opp(void)
-{
-	int dvfsrc_level_bit = dvfsrc_read(dvfsrc, DVFSRC_LEVEL) >> 16;
-	int dvfsrc_level = 0;
-
-	for (dvfsrc_level = 0; dvfsrc_level < VCORE_DVFS_OPP_NUM - 1; dvfsrc_level++)
-		if ((dvfsrc_level_bit & (1 << dvfsrc_level)) > 0)
-			break;
-
-	return VCORE_DVFS_OPP_NUM - dvfsrc_level - 1;
-}
-
-void dvfsrc_update_opp_table(void)
-{
-	struct opp_profile *opp_ctrl_table = opp_table;
-	int opp;
-
-	mutex_lock(&dvfsrc->devfreq->lock);
-	for (opp = 0; opp < VCORE_DVFS_OPP_NUM; opp++)
-		opp_ctrl_table[opp].vcore_uv = dvfsrc_get_vcore_by_steps(opp);
-
-	mutex_unlock(&dvfsrc->devfreq->lock);
-}
-
-char *dvfsrc_get_opp_table_info(char *p)
-{
-	struct opp_profile *opp_ctrl_table = opp_table;
-	int i;
-	char *buff_end = p + PAGE_SIZE;
-
-	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
-		p += snprintf(p, buff_end - p, "[OPP%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
-			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-		p += snprintf(p, buff_end - p, "[OPP%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
-		p += snprintf(p, buff_end - p, "\n");
-	}
-
-	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
-		p += snprintf(p, buff_end - p, "OPP%d  : %u\n", i, opp_ctrl_table[i].vcore_uv);
-
-	return p;
-}
-
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 int qos_ipi_to_sspm_command(void *buffer, int slot)
 {
@@ -149,6 +153,7 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 }
 
 #endif
+#endif
 
 void dvfsrc_init_opp_table(void)
 {
@@ -164,8 +169,8 @@ void dvfsrc_init_opp_table(void)
 			dvfsrc->curr_ddr_khz);
 
 	for (opp = 0; opp < VCORE_DVFS_OPP_NUM; opp++) {
-		opp_ctrl_table[opp].vcore_uv = dvfsrc_get_vcore_by_steps(opp);
-		opp_ctrl_table[opp].ddr_khz = dvfsrc_get_ddr_by_steps(opp);
+		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
+		opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		dvfsrc_update_sspm_vcore_opp_table(opp, opp_ctrl_table[opp].vcore_uv);
@@ -181,7 +186,7 @@ void dvfsrc_init_opp_table(void)
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-int is_vcorefs_can_work(void)
+int is_qos_can_work(void)
 {
 	if (dvfsrc)
 		return dvfsrc->enable;
@@ -238,10 +243,12 @@ static void helio_dvfsrc_enable(struct helio_dvfsrc *dvfsrc)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
 
+#if !defined(CONFIG_MACH_MT6771)
 	dvfsrc_write(dvfsrc, DVFSRC_VCORE_REQUEST,
 			(dvfsrc_read(dvfsrc, DVFSRC_VCORE_REQUEST) & ~(0x3 << 20)));
 	dvfsrc_write(dvfsrc, DVFSRC_EMI_REQUEST,
 			(dvfsrc_read(dvfsrc, DVFSRC_EMI_REQUEST) & ~(0x3 << 20)));
+#endif
 
 	dvfsrc->enable = 1;
 
@@ -252,6 +259,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 {
 	int ret = 0;
 	int level = 0;
+	int opp = 0;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
 
@@ -269,6 +277,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
+		if (data == PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE)
+			break;
+		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_0, data / 100);
 		break;
 	case PM_QOS_CPU_MEMORY_BANDWIDTH:
@@ -284,16 +295,26 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
+		if (data == PM_QOS_EMI_OPP_DEFAULT_VALUE)
+			break;
+		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= DDR_OPP_NUM)
+			data = DDR_OPP_NUM - 1;
+		else if (data < 0)
 			data = DDR_OPP_NUM - 1;
 
 		level = DDR_OPP_NUM - data - 1;
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0x3)) | level);
-
+#if defined(CONFIG_MACH_MT6771)
+		opp = get_min_opp_for_ddr(data);
+		ret = wait_for_completion(spm_vcorefs_get_dvfs_opp() <= opp,
+				SPM_DVFS_TIMEOUT);
+#else
 		ret = wait_for_completion(get_dvfsrc_level(dvfsrc) >= emi_to_vcore_dvfs_level[level],
 				SPM_DVFS_TIMEOUT);
+#endif
 		if (ret < 0) {
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
@@ -301,23 +322,36 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 		break;
 	case PM_QOS_VCORE_OPP:
+		if (data == PM_QOS_VCORE_OPP_DEFAULT_VALUE)
+			break;
+		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= VCORE_OPP_NUM)
 			data = VCORE_OPP_NUM - 1;
+		else if (data < 0)
+			data = VCORE_OPP_NUM - 1;
 
-		level = ((VCORE_OPP_NUM - data - 1) << 2);
-		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
-				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
-				& ~(0xC)) | level);
+		level = ((VCORE_OPP_NUM - data - 1) << 24);
+		dvfsrc_write(dvfsrc, DVFSRC_VCORE_REQUEST2,
+				(dvfsrc_read(dvfsrc, DVFSRC_VCORE_REQUEST2)
+				& ~(0x03000000)) | level);
 
+#if defined(CONFIG_MACH_MT6771)
+		opp = get_min_opp_for_vcore(data);
+		ret = wait_for_completion(spm_vcorefs_get_dvfs_opp() <= opp,
+				SPM_DVFS_TIMEOUT);
+#else
 		ret = wait_for_completion(get_dvfsrc_level(dvfsrc) >= vcore_to_vcore_dvfs_level[level],
 				SPM_DVFS_TIMEOUT);
+#endif
 		if (ret < 0) {
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
 		}
-
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
+		if (data == PM_QOS_VCORE_DVFS_FIXED_OPP_DEFAULT_VALUE)
+			break;
+		pr_info("[%s] class: %d, data: 0x%x\n", __func__, type, data);
 		if (data >= VCORE_DVFS_OPP_NUM)
 			data = VCORE_DVFS_OPP_NUM;
 
@@ -333,9 +367,12 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
 					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
 					| (1 << 15)));
-
+#if defined(CONFIG_MACH_MT6771)
+			ret = wait_for_completion(spm_vcorefs_get_dvfs_opp() == data, SPM_DVFS_TIMEOUT);
+#else
 			ret = wait_for_completion(get_dvfsrc_level(dvfsrc) == vcore_dvfs_to_vcore_dvfs_level[level],
 					SPM_DVFS_TIMEOUT);
+#endif
 			if (ret < 0) {
 				spm_vcorefs_dump_dvfs_regs(NULL);
 				aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
@@ -356,7 +393,7 @@ out:
 	return ret;
 }
 
-#if 0
+#if !defined(CONFIG_MACH_MT6771)
 void dvfsrc_set_vcore_request(unsigned int mask, unsigned int vcore_level)
 {
 	int r = 0;
@@ -534,6 +571,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 						 &helio_devfreq_profile,
 						 "helio_dvfsrc",
 						 NULL);
+#if !defined(CONFIG_MACH_MT6771)
 	vcore_opp_init();
 	dvfsrc_init_opp_table();
 	spm_check_status_before_dvfs();
@@ -541,6 +579,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 	ret = helio_dvfsrc_reg_config(dvfsrc, dvfsrc->init_config);
 	if (ret)
 		return ret;
+#endif
 
 	pm_qos_notifier_register(dvfsrc);
 	helio_dvfsrc_enable(dvfsrc);

@@ -28,21 +28,21 @@ __weak int spm_vcorefs_pwarp_cmd(void) { return 0; }
 __weak int get_ddr_type(void) { return TYPE_LPDDR4X; }
 
 /* SOC v1 Voltage (10uv)*/
-static unsigned int vcore_opp_L4_2CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int vcore_opp_L4_2CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 725000, 700000 },
 	{ 725000, 700000 },
 	{ 725000, 700000 },
 };
 
-static unsigned int vcore_opp_L4_2CH_CASE2[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int vcore_opp_L4_2CH_CASE2[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 800000, 800000 },
 	{ 725000, 700000 },
 	{ 725000, 700000 },
 };
 
-static unsigned int vcore_opp_L3_1CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int vcore_opp_L3_1CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 800000, 800000 },
 	{ 725000, 700000 },
@@ -61,10 +61,10 @@ int vcore_dvfs_to_ddr_opp[]   = {
 unsigned int (*vcore_opp)[VCORE_OPP_EFUSE_NUM];
 
 /* final vcore opp table */
-unsigned int vcore_opp_table[VCORE_OPP_NUM];
+unsigned int vcore_opp_table[VCORE_DVFS_OPP_NUM];
 
 /* record index for vcore opp table from efuse */
-unsigned int vcore_opp_efuse_idx[VCORE_OPP_NUM] = { 0 };
+unsigned int vcore_opp_efuse_idx[VCORE_DVFS_OPP_NUM] = { 0 };
 
 unsigned int get_cur_vcore_opp(void)
 {
@@ -78,9 +78,9 @@ unsigned int get_cur_ddr_opp(void)
 
 unsigned int get_min_opp_for_vcore(int vcore_opp)
 {
-	int i = VCORE_OPP_NUM;
+	int i = VCORE_DVFS_OPP_NUM;
 
-	for (i = VCORE_OPP_NUM; i >= 0 ; i--) {
+	for (i = VCORE_DVFS_OPP_NUM; i >= 0 ; i--) {
 		if (vcore_dvfs_to_vcore_opp[i] == vcore_opp)
 			break;
 	}
@@ -89,9 +89,9 @@ unsigned int get_min_opp_for_vcore(int vcore_opp)
 
 unsigned int get_min_opp_for_ddr(int ddr_opp)
 {
-	int i = DDR_OPP_NUM;
+	int i = VCORE_DVFS_OPP_NUM;
 
-	for (i = DDR_OPP_NUM; i >= 0; i--) {
+	for (i = VCORE_DVFS_OPP_NUM; i >= 0; i--) {
 		if (vcore_dvfs_to_ddr_opp[i] == ddr_opp)
 			break;
 	}
@@ -100,7 +100,7 @@ unsigned int get_min_opp_for_ddr(int ddr_opp)
 
 unsigned int get_vcore_opp_volt(unsigned int opp)
 {
-	if (opp >= VCORE_OPP_NUM) {
+	if (opp >= VCORE_DVFS_OPP_NUM) {
 		pr_info("WRONG OPP: %u\n", opp);
 		return 0;
 	}
@@ -115,7 +115,7 @@ static unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
 	int i;
 #endif
 
-	if ((opp < VCORE_OPP_NUM) && (opp >= 0))
+	if ((opp < VCORE_DVFS_OPP_NUM) && (opp >= 0))
 		vcore_opp_table[opp] = vcore_uv;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -144,7 +144,7 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 
 	if (soc_efuse > 1) {
 		pr_info("WRONG VCORE EFUSE(%d)\n", soc_efuse);
-		for (i = 0; i < VCORE_OPP_NUM; i++)
+		for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 			vcore_opp_table[i] = *(vcore_opp[i]); /* set to default table */
 		return;
 	}
@@ -172,18 +172,21 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 		return;
 	}
 
-	for (i = 0; i < VCORE_OPP_NUM; i++)
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 		vcore_opp_table[i] = *(vcore_opp[i] + vcore_opp_efuse_idx[i]);
 
-	for (i = VCORE_OPP_NUM - 2; i >= 0; i--)
+	for (i = VCORE_DVFS_OPP_NUM - 2; i >= 0; i--)
 		vcore_opp_table[i] = max(vcore_opp_table[i], vcore_opp_table[i + 1]);
+
+	pr_info("table(d=%d, ef=%d): %d, %d, %d, %d\n",
+		ddr_type, soc_efuse, vcore_opp_table[0], vcore_opp_table[1], vcore_opp_table[2], vcore_opp_table[3]);
 }
 
 static int vcore_opp_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int i = 0;
 
-	for (i = 0; i < VCORE_OPP_NUM; i++)
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 		seq_printf(m, "%d ", get_vcore_opp_volt(i));
 	seq_puts(m, "\n");
 
@@ -198,7 +201,7 @@ static ssize_t vcore_opp_proc_write(struct file *file,
 	if (sscanf(buffer, "%d %d", &opp, &vcore_uv) != 2)
 		return -EINVAL;
 
-	if (opp < 0 || opp >= VCORE_OPP_NUM || vcore_uv < 0)
+	if (opp < 0 || opp >= VCORE_DVFS_OPP_NUM || vcore_uv < 0)
 		return -EINVAL;
 
 	update_vcore_opp_uv(opp, vcore_uv);

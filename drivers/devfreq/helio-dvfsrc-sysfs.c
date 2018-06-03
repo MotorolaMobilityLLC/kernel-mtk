@@ -22,13 +22,16 @@
 
 #include <linux/pm_qos.h>
 #include <helio-dvfsrc-opp.h>
+#include <mtk_vcorefs_governor.h>
+
+static struct pm_qos_request dvfsrc_emi_request;
+static struct pm_qos_request dvfsrc_vcore_request;
+
+#if !defined(CONFIG_MACH_MT6771)
 
 __weak unsigned int get_dram_data_rate(void) { return 0; }
 __weak unsigned int get_vcore_opp_volt(unsigned int seg) { return 0; }
 __weak int dram_steps_freq(unsigned int step) { return 0; }
-
-static struct pm_qos_request dvfsrc_emi_request;
-static struct pm_qos_request dvfsrc_vcore_request;
 
 int vcorefs_get_curr_vcore(void)
 {
@@ -47,6 +50,7 @@ int vcorefs_get_curr_ddr(void)
 	return get_dram_data_rate() * 1000;
 }
 
+
 int dvfsrc_get_vcore_by_steps(u32 opp)
 {
 	return vcore_pmic_to_uv(get_vcore_opp_volt(opp));
@@ -60,6 +64,7 @@ int dvfsrc_get_ddr_by_steps(u32 opp)
 
 	return ddr_khz;
 }
+#endif
 
 static ssize_t opp_table_show(struct device *dev,
 				 struct device_attribute *attr,

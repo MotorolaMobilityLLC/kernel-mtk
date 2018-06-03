@@ -205,6 +205,9 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
 		spm_vcorefs_warn("DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
 		spm_vcorefs_warn("DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
+		spm_vcorefs_warn("DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
+		spm_vcorefs_warn("DVFSRC_SW_REQ          : 0x%x\n", spm_read(DVFSRC_SW_REQ));
+		spm_vcorefs_warn("DVFSRC_SW_REQ2         : 0x%x\n", spm_read(DVFSRC_SW_REQ2));
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
@@ -283,11 +286,11 @@ int spm_vcorefs_pwarp_cmd(void)
 
 	/* 0.7V opp */
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 0,
-			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_3)));
+			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_DVFS_OPP_3)));
 
 	/* 0.8V opp */
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 1,
-			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_0)));
+			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_DVFS_OPP_0)));
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
@@ -425,8 +428,9 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	/* check DVFS idle */
 	r = wait_spm_complete_by_condition(is_dvfs_in_progress() == 0, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
+		spm_vcorefs_warn("[%s]wait idle timeout !\n", __func__);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
+		aee_kernel_warning("VCOREFS", "wait idle timeout");
 		return -1;
 	}
 
@@ -451,8 +455,9 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 		r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() <= opp, SPM_DVFS_TIMEOUT);
 
 	if (r < 0) {
+		spm_vcorefs_warn("[%s]wait complete timeout!\n", __func__);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
+		/* aee_kernel_warning("VCOREFS", "wait complete timeout"); */
 		return -1;
 	}
 
@@ -519,14 +524,14 @@ void dvfsrc_set_vcore_request(unsigned int mask, unsigned int shift, unsigned in
 	unsigned int val;
 
 	opp = get_min_opp_for_vcore(level);
-
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* check DVFS idle */
 	r = wait_spm_complete_by_condition(is_dvfs_in_progress() == 0, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
+		spm_vcorefs_warn("[%s]wait idle timeout!\n", __func__);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		aee_kernel_exception("VCOREFS", "dvfsrc cannot be idle.");
+		aee_kernel_warning("VCOREFS", "wait idle timeout");
 		goto out;
 	}
 
@@ -535,8 +540,9 @@ void dvfsrc_set_vcore_request(unsigned int mask, unsigned int shift, unsigned in
 
 	r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() <= opp, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
+		spm_vcorefs_warn("[%s]vcore wait complete timeout!\n", __func__);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+		aee_kernel_warning("VCOREFS", "wait complete timeout");
 	}
 
 out:
@@ -568,7 +574,7 @@ static void dvfsrc_init(void)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	if (__spm_get_dram_type() == SPMFW_LP3_1CH_1866) {
-		/* LP3 1CH */
+		/* LP3 1CH 1866 */
 		spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00100000);
 		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210011);
 		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01100100);
@@ -580,8 +586,8 @@ static void dvfsrc_init(void)
 
 		/* todo: EMI/VCORE HRT, MD2SPM, BW setting */
 
-	} else {
-		/* LP4 2CH */
+	} else if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
+		/* LP4 2CH 3200 */
 		spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00100000);
 		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210020);
 		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01100100);
@@ -597,6 +603,23 @@ static void dvfsrc_init(void)
 		spm_write(DVFSRC_EMI_MD2SPM0, 0xF8);
 		spm_write(DVFSRC_EMI_MD2SPM1, 0x8000);
 		spm_write(DVFSRC_VCORE_MD2SPM0, 0x80C0);
+	} else if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3733) {
+		/* LP4 2CH 3600 */
+		spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00100000);
+		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210011);
+		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01100100);
+		spm_write(DVFSRC_LEVEL_LABEL_6_7, 0x01210111);
+		spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02100200);
+		spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x02210211);
+		spm_write(DVFSRC_LEVEL_LABEL_12_13, 0x03210321);
+		spm_write(DVFSRC_LEVEL_LABEL_14_15, 0x03210321);
+
+		/* todo: EMI/VCORE HRT, MD2SPM, BW setting */
+		spm_write(DVFSRC_EMI_QOS0, 0x32);
+		spm_write(DVFSRC_EMI_QOS1, 0x66);
+		spm_write(DVFSRC_EMI_MD2SPM0, 0x80F8);
+		spm_write(DVFSRC_EMI_MD2SPM1, 0x0);
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x80C0);
 	}
 
 	spm_write(DVFSRC_RSRV_1, 0x0000001C);
@@ -604,12 +627,13 @@ static void dvfsrc_init(void)
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
 	spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
-	/* spm_write(DVFSRC_EMI_REQUEST3, 0x29292929); */
+
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
-	/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29292929); */
+	/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29000000); */
 
 #if defined(CONFIG_MTK_QOS_SUPPORT)
 	spm_write(DVFSRC_QOS_EN, 0x0000407F);
+	spm_write(DVFSRC_EMI_REQUEST3, 0x09000000);
 #else
 	spm_write(DVFSRC_QOS_EN, 0x00000000);
 #endif

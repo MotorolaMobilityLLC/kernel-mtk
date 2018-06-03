@@ -34,6 +34,27 @@ enum vcorefs_smc_cmd {
 	NUM_VCOREFS_SMC_CMD,
 };
 
+
+#define QOS_SRAM_BASE (qos_sram_base)
+
+#define QOS_TOTAL_BW_BUF_SIZE 8
+
+#define QOS_TOTAL_BW_BUF(idx) (QOS_SRAM_BASE + idx * 4)
+#define QOS_TOTAL_BW          (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4)
+#define QOS_CPU_BW            (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x4)
+#define QOS_MM_BW             (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
+#define QOS_GPU_BW            (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
+#define QOS_MD_PERI_BW        (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
+
+enum {
+	QOS_TOTAL = 0,
+	QOS_CPU,
+	QOS_MM,
+	QOS_GPU,
+	QOS_MD_PERI,
+	QOS_TOTAL_AVE
+};
+
 extern void spm_go_to_vcorefs(int spm_flags);
 extern int spm_set_vcore_dvfs(struct kicker_config *krconf);
 extern void spm_vcorefs_init(void);

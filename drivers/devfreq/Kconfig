@@ -98,6 +98,14 @@ config ARM_TEGRA_DEVFREQ
          It reads ACTMON counters of memory controllers and adjusts the
          operating frequencies and voltages with OPP support.
 
+config MTK_QOS_SUPPORT
+	bool "MTK QOS SUPPORT"
+	default n
+	---help---
+	  This kernel config can be used to enable MTK QOS support.
+	  If unsure, say N.
+
+
 source "drivers/devfreq/event/Kconfig"
 
 endif # PM_DEVFREQ
