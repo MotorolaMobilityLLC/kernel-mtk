@@ -32,7 +32,7 @@ static bool dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
 static struct rw_semaphore dcs_rwsem;
-static DEFINE_SPINLOCK(dcs_kicker_lock);
+static DEFINE_MUTEX(dcs_kicker_lock);
 static unsigned long dcs_kicker;
 static struct task_struct *dcs_thread;
 #define DCS_PROFILE
@@ -360,15 +360,18 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
  */
 int dcs_enter_perf(enum dcs_kicker kicker)
 {
+	unsigned long k;
+
 	if (!dcs_initialized)
 		return -ENODEV;
 	if (kicker >= DCS_NR_KICKER)
 		return -EINVAL;
 
-	spin_lock(&dcs_kicker_lock);
-	dcs_kicker |= (1 << kicker);
-	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
-	spin_unlock(&dcs_kicker_lock);
+	mutex_lock(&dcs_kicker_lock);
+	k = dcs_kicker |= (1 << kicker);
+	mutex_unlock(&dcs_kicker_lock);
+
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, k);
 
 	/* wakeup thread */
 	pr_info("wakeup dcs_thread\n");
@@ -390,15 +393,18 @@ int dcs_enter_perf(enum dcs_kicker kicker)
  */
 int dcs_exit_perf(enum dcs_kicker kicker)
 {
+	unsigned long k;
+
 	if (!dcs_initialized)
 		return -ENODEV;
 	if (kicker >= DCS_NR_KICKER)
 		return -EINVAL;
 
-	spin_lock(&dcs_kicker_lock);
-	dcs_kicker &= ~(1 << kicker);
-	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
-	spin_unlock(&dcs_kicker_lock);
+	mutex_lock(&dcs_kicker_lock);
+	k = dcs_kicker &= ~(1 << kicker);
+	mutex_unlock(&dcs_kicker_lock);
+
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, k);
 
 	return 0;
 }
@@ -412,27 +418,25 @@ int dcs_exit_perf(enum dcs_kicker kicker)
 int dcs_switch_to_lowpower(void)
 {
 	int err;
-	unsigned long kicker = false;
 
 	if (!dcs_initialized)
 		return -ENODEV;
-	if (kicker >= DCS_NR_KICKER)
-		return -EINVAL;
 
-	spin_lock(&dcs_kicker_lock);
-	kicker = dcs_kicker;
+	mutex_lock(&dcs_kicker_lock);
 	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
-	spin_unlock(&dcs_kicker_lock);
 
-	if (!kicker) {
+	if (!dcs_kicker) {
 		err = dcs_dram_channel_switch(DCS_LOWPOWER);
 		if (err) {
 			pr_err("[%d]fail: %d\n", __LINE__, err);
+			mutex_unlock(&dcs_kicker_lock);
 			return err;
 		}
 		pr_info("entering lowpower mode\n");
 	} else
 		pr_info("not entering lowpower mode\n");
+
+	mutex_unlock(&dcs_kicker_lock);
 
 	return 0;
 }
