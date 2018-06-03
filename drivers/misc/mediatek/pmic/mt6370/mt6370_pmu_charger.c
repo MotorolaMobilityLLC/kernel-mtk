@@ -3643,7 +3643,7 @@ static struct charger_ops mt6370_chg_ops = {
 	.send_ta_current_pattern = mt6370_set_pep_current_pattern,
 	.set_pe20_efficiency_table = mt6370_set_pep20_efficiency_table,
 	.send_ta20_current_pattern = mt6370_set_pep20_current_pattern,
-	.set_ta20_reset = mt6370_set_pep20_reset,
+	.reset_ta = mt6370_set_pep20_reset,
 	.enable_cable_drop_comp = mt6370_enable_cable_drop_comp,
 
 	/* ADC */
