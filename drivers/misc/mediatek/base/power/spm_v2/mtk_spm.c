@@ -141,11 +141,6 @@ u32 spm_irq_7 = 204;
 u32 spm_irq_0 = 180;
 #endif
 
-#ifdef SPM_VCORE_EN_MT6755
-u32 spm_vcorefs_start_irq = 152;
-u32 spm_vcorefs_end_irq = 153;
-#endif
-
 #define	NF_EDGE_TRIG_IRQS		5
 static u32 edge_trig_irqs[NF_EDGE_TRIG_IRQS];
 
@@ -164,11 +159,6 @@ struct spm_irq_desc {
 };
 
 static twam_handler_t spm_twam_handler;
-
-#ifdef SPM_VCORE_EN_MT6755
-static vcorefs_handler_t vcorefs_handler;
-static vcorefs_start_handler_t vcorefs_start_handler;
-#endif
 
 void __attribute__((weak)) spm_sodi3_init(void)
 {
@@ -343,37 +333,6 @@ static int spm_irq_register(void)
 	return r;
 }
 
-#ifdef SPM_VCORE_EN_MT6755
-void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler)
-{
-	vcorefs_handler = handler;
-	vcorefs_start_handler = start_handler;
-}
-EXPORT_SYMBOL(spm_vcorefs_register_handler);
-
-static irqreturn_t spm_vcorefs_start_handler(int irq, void *dev_id)
-{
-	if (vcorefs_start_handler)
-		vcorefs_start_handler();
-
-	mt_eint_virq_soft_clr(irq);
-	return IRQ_HANDLED;
-}
-
-static irqreturn_t spm_vcorefs_end_handler(int irq, void *dev_id)
-{
-	u32 opp = 0;
-
-	if (vcorefs_handler) {
-		opp = spm_read(SPM_SW_RSV_5) & SPM_SW_RSV_5_LSB;
-		vcorefs_handler(opp);
-	}
-
-	mt_eint_virq_soft_clr(irq);
-	return IRQ_HANDLED;
-}
-#endif
-
 static void spm_register_init(void)
 {
 	unsigned long flags;
@@ -483,40 +442,6 @@ static void spm_register_init(void)
 		spm_err("[DDRPHY] base failed\n");
 #endif
 
-#ifdef SPM_VCORE_EN_MT6755
-	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_start_eint");
-	if (!node) {
-		spm_err("find spm_vcorefs_start_eint failed\n");
-	} else {
-		int ret;
-		u32 ints[2];
-
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		mt_gpio_set_debounce(ints[0], ints[1]);
-		spm_vcorefs_start_irq = irq_of_parse_and_map(node, 0);
-		ret =
-		    request_irq(spm_vcorefs_start_irq, spm_vcorefs_start_handler,
-				IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND, "spm_vcorefs_start_eint",
-				NULL);
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_end_eint");
-	if (!node) {
-		spm_err("find spm_vcorefs_end_eint failed\n");
-	} else {
-		int ret;
-		u32 ints[2];
-
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		mt_gpio_set_debounce(ints[0], ints[1]);
-		spm_vcorefs_end_irq = irq_of_parse_and_map(node, 0);
-		ret =
-		    request_irq(spm_vcorefs_end_irq, spm_vcorefs_end_handler,
-				IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND, "spm_vcorefs_end_eint", NULL);
-	}
-	spm_err("spm_vcorefs_start_irq = %d, spm_vcorefs_end_irq = %d\n", spm_vcorefs_start_irq,
-		spm_vcorefs_end_irq);
-#endif
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	spm_err("spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n",
