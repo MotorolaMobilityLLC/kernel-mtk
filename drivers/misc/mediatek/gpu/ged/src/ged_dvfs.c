@@ -88,8 +88,8 @@ static unsigned int gpu_pre_loading = 0;
 unsigned int gpu_loading = 0;
 unsigned int gpu_av_loading = 0;
 unsigned int gpu_sub_loading = 0;
-static unsigned int gpu_block = 0;
-static unsigned int gpu_idle = 0;
+unsigned int gpu_block;
+unsigned int gpu_idle;
 unsigned long g_um_gpu_tar_freq = 0;
 
 
@@ -148,7 +148,6 @@ extern unsigned long (*mtk_get_gpu_custom_upbound_freq_fp)(void);
 
 extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 
-
 static unsigned int g_ui32TargetPeriod_us = 16666;
 static unsigned int g_ui32BoostValue = 100;
 
@@ -156,6 +155,7 @@ void ged_dvfs_last_and_target_cb(int t_gpu_target, int boost_accum_gpu)
 {
 	g_ui32TargetPeriod_us = t_gpu_target;
 	g_ui32BoostValue = boost_accum_gpu;
+	mtk_gpu_ged_hint(g_ui32TargetPeriod_us, g_ui32BoostValue);
 }
 
 static bool ged_dvfs_policy(
@@ -307,6 +307,7 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 			// call to DVFS module
 
 			ged_dvfs_gpu_freq_commit_fp(ui32NewFreqID, eCommitType, &bCommited);
+			/* bCommited = true; */
 			/* 
 			 * To-Do: refine previous freq contributions, 
 			 * since it is possible to have multiple freq settings in previous execution period
@@ -315,8 +316,8 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, eCommitType);
 			if(true==bCommited)
 			{
-				ged_log_trace_counter("Freq-idx",ui32NewFreqID);
-				ged_log_trace_counter("commit-type",eCommitType);
+				/* ged_log_trace_counter("Freq-idx",ui32NewFreqID); */
+				/* ged_log_trace_counter("commit-type",eCommitType); */
 				ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] commited true");
 				g_ui32PreFreqID = ui32CurFreqID;
 			}
@@ -423,8 +424,8 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 	if(ui32BeforeSwitchInterpret != g_ui32EventStatus || ui32BeforeDebugInterpret != g_ui32EventDebugStatus 
 			|| g_ui32EventDebugStatus&GED_EVENT_NOT_SYNC)
 	{
-		ged_log_trace_counter("vsync-offset event",g_ui32EventStatus);
-		ged_log_trace_counter("vsync-offset debug",g_ui32EventDebugStatus);
+		/* ged_log_trace_counter("vsync-offset event",g_ui32EventStatus); */
+		/* ged_log_trace_counter("vsync-offset debug",g_ui32EventDebugStatus); */
 		ret = ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
 	}
 
@@ -436,7 +437,7 @@ CHECK_OUT:
 void ged_dvfs_vsync_offset_level_set(int i32level)
 {
 	g_VsyncOffsetLevel = i32level;
-	ged_log_trace_counter("vsync-offset",g_VsyncOffsetLevel);
+	/* ged_log_trace_counter("vsync-offset",g_VsyncOffsetLevel); */
 }
 
 int ged_dvfs_vsync_offset_level_get()
@@ -494,6 +495,9 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
 	gpu_pre_loading = gpu_av_loading;
 	gpu_av_loading = gpu_loading;
+#ifdef GED_SSPM
+	mt_gpufreq_set_loading(gpu_av_loading);
+#endif
 
 
 	g_ulPreDVFS_TS_us = gL_ulCalResetTS_us;
@@ -596,8 +600,12 @@ static bool ged_dvfs_policy(
 		gpu_pre_loading = gpu_av_loading;
 		ui32GPULoading = gpu_loading;
 		gpu_av_loading = gpu_loading;
+#ifdef GED_SSPM
+		mt_gpufreq_set_loading(gpu_av_loading);
+#endif
 	}
 
+	ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] timer: loading %u", ui32GPULoading);
 
 	if(g_gpu_timer_based_emu) // conventional timer-based policy
 	{
@@ -1261,8 +1269,15 @@ GED_ERROR ged_dvfs_system_init()
 	mtk_get_gpu_dvfs_cal_freq_fp = ged_get_gpu_dvfs_cal_freq;
 
 	spin_lock_init(&g_sSpinLock);
-
+#else
+	/* tmp solution */
+	mtk_get_gpu_loading_fp = ged_dvfs_get_gpu_loading;
+	mtk_get_gpu_block_fp = ged_dvfs_get_gpu_blocking;
+	mtk_get_gpu_idle_fp = ged_dvfs_get_gpu_idle;
+	ged_kpi_set_gpu_dvfs_hint_fp = ged_dvfs_last_and_target_cb;
 #endif
+
+
 
 	return GED_OK;
 }

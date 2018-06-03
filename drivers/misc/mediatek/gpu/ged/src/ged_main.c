@@ -43,6 +43,7 @@
 #include "ged_kpi.h"
 #include "ged_ge.h"
 #include "ged_frr.h"
+#include "ged_fdvfs.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
@@ -367,6 +368,8 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
 
+	ged_fdvfs_exit();
+
 	ged_frr_system_exit();
 
 	ged_kpi_system_exit();
@@ -461,9 +464,16 @@ static int ged_init(void)
 		GED_LOGE("ged: failed to init FRR Table!\n");
 		goto ERROR;
 	}
+#ifdef GED_FDVFS_ENABLE
+	err = ged_fdvfs_system_init();
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to init FDVFS!\n");
+		goto ERROR;
+	}
+#endif
 
 	/* common gpu info buffer */
-	ged_log_buf_alloc(32, 128 * 32, GED_LOG_BUF_TYPE_QUEUEBUFFER, "gpuinfo", "gpuinfo");
+	ged_log_buf_alloc(1024, 64 * 1024, GED_LOG_BUF_TYPE_RINGBUFFER, "gpuinfo", "gpuinfo");
 
 #ifdef GED_DEBUG
 	ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);

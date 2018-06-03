@@ -502,6 +502,14 @@ uint32_t g_sspm_power;
 struct delayed_work notify_pbm_gpuoff_work;
 #endif
 
+/* SSPM reserved memory */
+/* #ifdef MTK_SSPM */
+phys_addr_t gpu_fdvfs_phy_addr, gpu_fdvfs_virt_addr;
+uint32_t gpu_dvfs_mem_size;
+
+/* #endif */
+
+
 int __attribute__ ((weak))
 get_immediate_gpu_wrap(void)
 {
@@ -2851,6 +2859,13 @@ static void mt_gpufreq_sspm_recv_daemon_init(void)
 	wake_up_process(g_kt);
 }
 #endif
+
+void mt_gpufreq_set_loading(unsigned int gpu_loading)
+{
+#ifdef MTK_SSPM
+	mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_GPU_LOADING, gpu_loading);
+#endif
+}
 
 static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 {

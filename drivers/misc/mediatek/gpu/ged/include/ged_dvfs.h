@@ -10,6 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef GED_DVFS_H
+#define GED_DVFS_H
+
 
 #include <linux/types.h>
 #include "ged_type.h"
@@ -123,3 +126,6 @@ extern void (*ged_kpi_set_gpu_dvfs_hint_fp)(int t_gpu_target, int boost_accum_gp
 
 extern void (*mtk_get_gpu_dvfs_cal_freq_fp)(unsigned long *pulGpu_tar_freq, int *pmode);
 
+extern void mtk_gpu_ged_hint(int, int);
+
+#endif
