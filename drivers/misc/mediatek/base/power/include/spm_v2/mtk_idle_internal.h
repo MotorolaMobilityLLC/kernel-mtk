@@ -22,10 +22,6 @@
 
 #include <mtk_idle_mt6757.h>
 
-#elif defined(CONFIG_ARCH_MT6797)
-
-#include <mt_idle_mt6797.h>
-
 #endif
 
 /*

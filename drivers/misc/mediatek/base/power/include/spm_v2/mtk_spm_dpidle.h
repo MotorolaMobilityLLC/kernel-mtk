@@ -18,10 +18,6 @@
 
 #include "mtk_spm_dpidle_mt6757.h"
 
-#elif defined(CONFIG_ARCH_MT6797)
-
-#include "mt_spm_dpidle_mt6797.h"
-
 #endif
 
 extern void spm_dpidle_pre_process(void);

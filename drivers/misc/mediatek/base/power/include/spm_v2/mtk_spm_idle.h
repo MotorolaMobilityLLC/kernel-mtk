@@ -55,11 +55,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);
 bool spm_set_dpidle_pcm_init_flag(void);
 
-#if defined(CONFIG_ARCH_MT6797)
-void set_vcorefs_fw_mode(void);
-u32 get_vcorefs_fw_mode(void);
-#endif
-
 #define DEEPIDLE_LOG_NONE      0
 #define DEEPIDLE_LOG_REDUCED   1
 #define DEEPIDLE_LOG_FULL      2

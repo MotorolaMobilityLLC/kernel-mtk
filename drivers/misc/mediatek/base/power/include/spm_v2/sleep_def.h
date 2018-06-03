@@ -18,10 +18,6 @@
 
 #include "sleep_def_mt6757.h"
 
-#elif defined(CONFIG_ARCH_MT6797)
-
-#include "sleep_def_mt6797.h"
-
 #endif
 
 #endif /* __SLEEP_DEF_H__ */
