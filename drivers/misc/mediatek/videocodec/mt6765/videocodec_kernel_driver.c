@@ -1472,7 +1472,9 @@ static long vcodec_lockhw(unsigned long arg)
 
 		/* pr_debug("VCODEC_LOCKHWed - tid = %d\n", current->pid); */
 	} else {
-		pr_info("[WARNING] VCODEC_LOCKHW Unknown instance\n");
+		pr_info("[WARNING] VCODEC_LOCKHW Unknown instance type %d timeout %u\n",
+			rHWLock.eDriverType,
+			rHWLock.u4TimeoutMs);
 		return -EFAULT;
 	}
 
