@@ -3006,6 +3006,20 @@ unsigned long long task_sched_runtime(struct task_struct *p)
  *  1205 : 15%
  *  1137 : 10%
  */
+#ifdef CONFIG_MACH_MT6771
+#define jump_step(idx, nr, st) { *st = 1; }
+
+static inline bool is_margin_less(void)
+{
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+	return false; /* PP: consider margin  */
+#else
+	return true; /* marginless */
+#endif
+}
+
+#else /* end of MT6771 */
+#define jump_step(idx, nr, st) { *st = (idx < nr/3) ? 2 : 1; }
 
 static inline bool is_margin_less(void)
 {
@@ -3013,6 +3027,7 @@ static inline bool is_margin_less(void)
 		return true;
 	return false;
 }
+#endif
 
 static inline
 unsigned long add_capacity_margin(unsigned long cpu_capacity)
@@ -3051,12 +3066,6 @@ static void sched_freq_tick_pelt(int cpu)
 	cpu_utilization = cpu_utilization * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
 	set_cfs_cpu_capacity(cpu, true, cpu_utilization, SCHE_TICK);
 }
-
-#ifdef CONFIG_MACH_MT6771
-#define jump_step(idx, nr, st) { *st = 1; }
-#else
-#define jump_step(idx, nr, st) { *st = (idx < nr/3) ? 2 : 1; }
-#endif
 
 static void _sched_freq_tick_marginless(int cpu)
 {
