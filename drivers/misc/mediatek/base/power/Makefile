@@ -20,6 +20,7 @@ obj-$(CONFIG_MACH_MT6758) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6763) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6739) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += udi_v1/
@@ -103,6 +104,7 @@ obj-$(CONFIG_MACH_MT6799) += ppm_v2/
 obj-$(CONFIG_MACH_MT6758) += spm_v3/
 obj-$(CONFIG_MACH_MT6759) += spm_v3/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/
+obj-$(CONFIG_MACH_MT6739) += spm_v4/
 obj-$(CONFIG_MACH_MT6763) += spm_v4/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6739) += clkbuf_v1/
