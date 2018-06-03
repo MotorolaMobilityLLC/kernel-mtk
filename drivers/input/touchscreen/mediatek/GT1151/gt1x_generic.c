@@ -1729,7 +1729,7 @@ s32 gt1x_init(void)
 		} else {
 			tpd_load_status = 1;
 			check_flag = true;
-			wake_up_interruptible(&init_waiter);
+			wake_up(&init_waiter);
 		}
 
 		ret = gt1x_i2c_read_dbl_check(0x41E4, reg_val, 1);
