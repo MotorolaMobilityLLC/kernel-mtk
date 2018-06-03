@@ -31,7 +31,7 @@
 			interrupt-names = "adc_donei", "chg_mivr",
 				"chg_aiclmeasi", "pumpx_donei", "attachi",
 				"ovpctrl_uvp_d_evt", "chg_wdtmri", "chg_vbusov",
-				"chg_ieoci", "chg_tmri", "chg_rechgi";
+				"chg_ieoci", "chg_tmri", "chg_rechgi", "chg_treg";
 			charger_name = "primary_chg";
 			load_switch_name = "primary_load_switch";
 			ichg = <2000000>;	/* uA */

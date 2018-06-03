@@ -535,6 +535,12 @@ static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		goto out;
 
+	/* Trigger any ADC before disabling ZCV */
+	ret = rt5081_pmu_reg_write(chg_data->chip, RT5081_PMU_REG_CHGADC,
+		0x11);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: trigger ADC failed\n", __func__);
+
 	/* Disable ZCV */
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_OSCCTRL,
 		0x04);
@@ -661,8 +667,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		else
 			dev_err(chg_data->dev, "%s: reg0x3E = 0x%02X\n", __func__, ret);
 
-		ret = -EINVAL;
-		goto out;
+		/* Do not return fail here, read adc data for debug */
 	}
 
 	mdelay(1);
@@ -1102,17 +1107,23 @@ static void rt5081_aicl_work_handler(struct work_struct *work)
 
 	chg_mgr = charger_dev_get_drvdata(chg_data->chg_dev);
 	if (!chg_mgr)
-		return;
+		goto out;
 
 	if (mtk_is_pe30_running(chg_mgr) || mtk_pe20_get_is_connect(chg_mgr)) {
 		dev_dbg_ratelimited(chg_data->dev, "%s: in PE, stop AICL\n",
 			__func__);
-		return;
+		goto out;
 	}
 
 	ret = rt5081_run_aicl(chg_data);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: run aicl failed\n", __func__);
+out:
+	/* Enable MIVR IRQ */
+	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
+		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: en MIVR IRQ failed\n", __func__);
 }
 
 static int _rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
@@ -2389,10 +2400,22 @@ static int rt5081_detect_apple_samsung_ta(
 
 static irqreturn_t rt5081_pmu_chg_treg_irq_handler(int irq, void *data)
 {
+	int ret = 0;
+	bool treg_stat = false;
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_err(chg_data->dev, "%s\n", __func__);
+
+	/* Read treg status */
+	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT1,
+		RT5081_SHIFT_CHG_TREG, &treg_stat);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: read treg stat failed\n", __func__);
+	else
+		dev_err(chg_data->dev, "%s: treg stat = %d\n", __func__,
+			treg_stat);
+
 	return IRQ_HANDLED;
 }
 
@@ -2417,18 +2440,28 @@ static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 		RT5081_SHIFT_MIVR_STAT, &mivr_stat);
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: read mivr stat failed\n", __func__);
-		return IRQ_HANDLED;
+		goto out;
 	}
 
 	if (!mivr_stat) {
 		dev_info(chg_data->dev, "%s: mivr stat not act\n", __func__);
-		return IRQ_HANDLED;
+		goto out;
+	}
+
+	/* Disable MIVR IRQ */
+	ret = rt5081_pmu_reg_set_bit(chg_data->chip,
+		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: disable mivr IRQ failed\n",
+			__func__);
+		goto out;
 	}
 
 	if (!queue_work(chg_data->aicl_wq, &chg_data->aicl_work))
 		dev_err(chg_data->dev, "%s: queue aicl work failed\n",
 			__func__);
 
+out:
 	return IRQ_HANDLED;
 }
 
@@ -3513,6 +3546,8 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
  * (1) Add a adc flag for adc_done IRQ
  * (2) Not waitting ssfinish IRQ after enabling OTG
  * (3) Add debug information for ADC
+ * (4) For degug, read ADC data even if conversation failed
+ * (5) Trigger any ADC before disabling ZCV
  *
  * 1.1.6_MTK
  * (1) Read USB STATUS(0x27) instead of device type(0x22)
