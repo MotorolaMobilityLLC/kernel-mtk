@@ -667,13 +667,13 @@ fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
 			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			WCN_DBG(FM_INF | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
 			if (FM_LOCK(cmd_buf_lock))
 				return -FM_ELOCK;
 			pkt_size =
 			    fm_patch_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
 						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			WCN_DBG(FM_INF | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
 			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_PATCH, SW_RETRY_CNT, PATCH_TIMEOUT, NULL);
 			FM_UNLOCK(cmd_buf_lock);
 
@@ -689,13 +689,13 @@ fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
 			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			WCN_DBG(FM_INF | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
 			if (FM_LOCK(cmd_buf_lock))
 				return -FM_ELOCK;
 			pkt_size =
 			    fm_coeff_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
 						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			WCN_DBG(FM_INF | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
 			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_COEFF, SW_RETRY_CNT, COEFF_TIMEOUT, NULL);
 			FM_UNLOCK(cmd_buf_lock);
 
