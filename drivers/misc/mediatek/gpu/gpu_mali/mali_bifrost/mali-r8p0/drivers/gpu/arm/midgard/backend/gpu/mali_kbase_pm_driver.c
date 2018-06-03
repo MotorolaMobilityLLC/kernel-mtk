@@ -1146,7 +1146,7 @@ bool kbase_pm_clock_off(struct kbase_device *kbdev, bool is_suspend)
 		kbdev->pm.backend.mtk_gpu_suspend = true;
 	} else if (is_suspend && kbdev->pm.backend.callback_mtk_power_suspend
 		&& kbdev->pm.backend.mtk_gpu_suspend) {
-		dev_dbg(kbdev->dev, "DDK double suspend !!??")
+		dev_dbg(kbdev->dev, "DDK double suspend !!??");
 	}
 	return true;
 }
