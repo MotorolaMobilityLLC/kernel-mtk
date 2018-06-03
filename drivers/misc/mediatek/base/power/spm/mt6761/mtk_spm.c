@@ -33,16 +33,11 @@
 #include <mtk_sspm.h>
 
 #include <mtk_idle_sysfs.h>
+#include <mach/upmu_sw.h>
+
 DEFINE_SPINLOCK(__spm_lock);
 
 void __attribute__ ((weak)) mtk_idle_cond_check_init(void)
-{
-	aee_sram_printk("NO %s !!!\n", __func__);
-	pr_info("[SPM] NO %s !!!\n", __func__);
-}
-
-/* Note: implemented in mtk_spm_vcorefs.c */
-void  __attribute__ ((weak)) spm_vcorefs_init(void)
 {
 	aee_sram_printk("NO %s !!!\n", __func__);
 	pr_info("[SPM] NO %s !!!\n", __func__);
@@ -313,7 +308,8 @@ static int spm_module_init(void)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX, spm_get_spmfw_idx(), 0);
 
-	spm_vcorefs_init();
+	if (is_pmic_mrv())
+		SMC_CALL(ARGS, SPM_ARGS_PMIC_MRV, 0, 0);
 
 	return 0;
 }
