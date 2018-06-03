@@ -87,6 +87,7 @@ static unsigned int slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
+bool slp_dump_golden_setting;
 static bool slp_dump_regs = 1;
 static bool slp_check_mtcmos_pll = 1;
 
@@ -498,6 +499,7 @@ module_param(slp_ck26m_on, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
+module_param(slp_dump_golden_setting, bool, 0644);
 module_param(slp_dump_regs, bool, 0644);
 module_param(slp_check_mtcmos_pll, bool, 0644);
 
