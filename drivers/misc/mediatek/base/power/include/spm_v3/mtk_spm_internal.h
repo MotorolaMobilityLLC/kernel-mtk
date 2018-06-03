@@ -630,7 +630,7 @@ extern void __spm_clean_after_wakeup(void);
 
 extern void __spm_get_wakeup_status(struct wake_status *wakesta);
 extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
-					      const struct pcm_desc *pcmdesc, bool suspend);
+		const struct pcm_desc *pcmdesc, bool suspend, const char *scenario);
 
 extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl);
 
