@@ -95,7 +95,7 @@ struct mmdvfs_clk_hw_map mt6763_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 
 #define MT6763_MMDVFS_SENSOR_MIN (19000000)
 /* A.1 [LP4 2-ch] Scenarios of each MM DVFS Step (force kicker) */
-/* OOP 0 scenarios */
+/* OPP 0 scenarios */
 #define MT6763_MMDVFS_OPP0_NUM 16
 struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles[MT6763_MMDVFS_OPP0_NUM] = {
 	{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
@@ -119,13 +119,13 @@ struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles[MT6763_MMDVFS_OPP0_NUM] = {
 	{"4K VR/ VSS (VENC)", SMI_BWC_SCEN_VENC, {0, 0, 0}, {4096, 1716, 0} },
 };
 
-/* OOP 1 scenarios */
+/* OPP 1 scenarios */
 #define MT6763_MMDVFS_OPP1_NUM 1
 struct mmdvfs_profile mt6763_mmdvfs_opp1_profiles[MT6763_MMDVFS_OPP1_NUM] = {
 	{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
 };
 
-/* OOP 2 scenarios */
+/* OPP 2 scenarios */
 #define MT6763_MMDVFS_OPP2_NUM 3
 struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles[MT6763_MMDVFS_OPP2_NUM] = {
 	{"vFB Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
@@ -133,7 +133,7 @@ struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles[MT6763_MMDVFS_OPP2_NUM] = {
 	{"vFB Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 };
 
-/* OOP 3 scenarios */
+/* OPP 3 scenarios */
 #define MT6763_MMDVFS_OPP3_NUM 9
 struct mmdvfs_profile mt6763_mmdvfs_opp3_profiles[MT6763_MMDVFS_OPP3_NUM] = {
 	{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
@@ -148,7 +148,7 @@ struct mmdvfs_profile mt6763_mmdvfs_opp3_profiles[MT6763_MMDVFS_OPP3_NUM] = {
 };
 
 /* A.2 [LP4 1-ch] Scenarios of each MM DVFS Step (force kicker) */
-/* OOP 0 scenarios */
+/* OPP 0 scenarios */
 #define MT6763_LP4_1CH_MMDVFS_OPP0_NUM 17
 struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles_lp4_1ch[MT6763_LP4_1CH_MMDVFS_OPP0_NUM] = {
 	{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
@@ -173,7 +173,7 @@ struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles_lp4_1ch[MT6763_LP4_1CH_MMDVFS_
 	{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
 };
 
-/* OOP 1 scenarios */
+/* OPP 1 scenarios */
 #define MT6763_LP4_1CH_MMDVFS_OPP1_NUM 4
 struct mmdvfs_profile mt6763_mmdvfs_opp1_profiles_lp4_1ch[MT6763_LP4_1CH_MMDVFS_OPP1_NUM] = {
 	{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
@@ -182,7 +182,7 @@ struct mmdvfs_profile mt6763_mmdvfs_opp1_profiles_lp4_1ch[MT6763_LP4_1CH_MMDVFS_
 	{"VENC", SMI_BWC_SCEN_VENC, {0, 0, 0}, {0, 0, 0} },
 };
 
-/* OOP 2 scenarios */
+/* OPP 2 scenarios */
 #define MT6763_LP4_1CH_MMDVFS_OPP2_NUM 8
 struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles_lp4_1ch[MT6763_LP4_1CH_MMDVFS_OPP2_NUM] = {
 	{"vFB Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
@@ -226,18 +226,18 @@ struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles_lp3[MT6763_LP3_MMDVFS_OPP0_NUM
 	{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
 };
 
-/* OOP 1 scenarios */
-#define MT6763_LP3_MMDVFS_OPP1_NUM 4
-struct mmdvfs_profile mt6763_mmdvfs_opp1_profiles_lp3[MT6763_LP3_MMDVFS_OPP1_NUM] = {
+/* OPP 2 scenarios */
+#define MT6763_LP3_MMDVFS_OPP2_NUM 4
+struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles_lp3[MT6763_LP3_MMDVFS_OPP2_NUM] = {
 	{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
 	{"Camera Recording", SMI_BWC_SCEN_VR, {0, 0, 0}, {0, 0, 0 } },
 	{"VENC", SMI_BWC_SCEN_VENC, {0, 0, 0}, {0, 0, 0} },
 	{"VSS", SMI_BWC_SCEN_VSS, {0, 0, 0}, {0, 0, 0 } },
 };
 
-/* OOP 2 scenarios */
-#define MT6763_LP3_MMDVFS_OPP2_NUM 8
-struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles_lp3[MT6763_LP3_MMDVFS_OPP2_NUM] = {
+/* OPP 3 scenarios */
+#define MT6763_LP3_MMDVFS_OPP3_NUM 8
+struct mmdvfs_profile mt6763_mmdvfs_opp3_profiles_lp3[MT6763_LP3_MMDVFS_OPP3_NUM] = {
 	{"vFB Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 	{"vFB Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
 	{"vFB Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_VFB, 0}, {0, 0, 0 } },
@@ -247,9 +247,9 @@ struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles_lp3[MT6763_LP3_MMDVFS_OPP2_NUM
 	{"WFD", SMI_BWC_SCEN_WFD, {0, 0, 0}, {0, 0, 0 } },
 	{"High frame rate video playback", SMI_BWC_SCEN_VP_HIGH_FPS, {0, 0, 0}, {0, 0, 0 } },};
 
-/* OOP 3 scenarios */
-#define MT6763_LP3_MMDVFS_OPP3_NUM 0
-struct mmdvfs_profile mt6763_mmdvfs_opp3_profiles_lp3[MT6763_LP3_MMDVFS_OPP3_NUM] = {
+/* OPP 1 scenarios */
+#define MT6763_LP3_MMDVFS_OPP1_NUM 0
+struct mmdvfs_profile mt6763_mmdvfs_opp1_profiles_lp3[MT6763_LP3_MMDVFS_OPP1_NUM] = {
 };
 
 /* Defined the smi scenarios whose DVFS is controlled by low-level driver */
