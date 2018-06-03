@@ -131,10 +131,14 @@ static int get_gpio_id_from_dt(struct device_node *node,
 {
 	int gpio_id = -1;
 	int md_view_gpio_id = -1;
+	int ret;
 
 	/* For new API, there is a shift between AP GPIO ID and MD GPIO ID */
 	gpio_id = of_get_named_gpio(node, gpio_name, 0);
-	of_property_read_u32_index(node, gpio_name, 1, &md_view_gpio_id);
+	ret = of_property_read_u32_index(node, gpio_name, 1, &md_view_gpio_id);
+	if (ret)
+		return ret;
+
 	if (gpio_id >= 0)
 		*md_view_id = md_view_gpio_id;
 	return gpio_id;
