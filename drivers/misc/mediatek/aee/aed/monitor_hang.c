@@ -682,7 +682,7 @@ static void show_bt_by_pid(int task_pid)
 
 
 				/*
-				* !!!!!!!!!do need to send sigcontinue£¿£¿£¿
+				* !!!!!!!!!do need to send sigcontinueÂ£Â¿Â£Â¿Â£Â¿
 				* if thread has been stopped before do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, t, true),
 				* so need not to send sigcont
 				*/
@@ -858,6 +858,10 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hd_detect_enabled = 1;
 			hang_detect_counter = hd_timeout =
 			    ((long)lParam + HD_INTER - 1) / (HD_INTER);
+		}
+		if (hd_timeout < 10) { /*  hang detect min timeout is 10 (5min) */
+			hang_detect_counter = 10;
+			hd_timeout = 10;
 		}
 		pr_info("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
