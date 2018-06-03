@@ -2343,6 +2343,8 @@
 		compatible = "mediatek,fdvt";
 		reg = <0 0x1502b000 0 0x1000>;
 		interrupts = <GIC_SPI 252 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&imgsys IMG_FDVT>;
+		clock-names = "IMG_FDVT";
 	};
 
 	fdvt_dma@1502b000 {
