@@ -23,7 +23,6 @@
 #define EMI_READY
 #endif
 /* #define RUNTIME_SHMOO */
-#define PLAT_DBG_INFO_MANAGE
 
 #if defined(CONFIG_MTK_ENG_BUILD)
 #define DRAMC_MEMTEST_DEBUG_SUPPORT
