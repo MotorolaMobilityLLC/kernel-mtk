@@ -120,6 +120,8 @@ bool SetI2SDacOut(uint32 SampleRate, bool Lowgitter, bool I2SWLen);
 bool Set2ndI2SEnable(bool bEnable);
 bool set_i2s_dac_out_source(uint32 aud_block);
 
+int get_dai_rate(Soc_Aud_Digital_Block digitalBlock);
+
 bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep);
 bool SetHwDigitalGainEnable(int GainType, bool Enable);
 bool SetHwDigitalGain(uint32 Gain, int GainType);

@@ -76,7 +76,8 @@ static int capture_hdinput_control;
 static const void *irq_user_id;
 static uint32 irq2_cnt;
 static bool mPrepareDone;
-
+static int use_adc2_for_ch1_ch2;
+static bool is_adc1_closed_before;
 
 /*
  *    function implementation
@@ -93,7 +94,7 @@ static const struct soc_enum Audio_capture_Enum[] = {
 };
 
 static int Audio_capture_hdinput_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+				     struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("Audio_AmpR_Get = %d\n", capture_hdinput_control);
 	ucontrol->value.integer.value[0] = capture_hdinput_control;
@@ -101,7 +102,7 @@ static int Audio_capture_hdinput_Get(struct snd_kcontrol *kcontrol,
 }
 
 static int Audio_capture_hdinput_Set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+				     struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(capture_HD_input)) {
@@ -154,11 +155,74 @@ static int Audio_Irq2cnt_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	return 0;
 }
 
+static int capture_use_adc2_for_ch1_ch2_get(struct snd_kcontrol *kcontrol,
+					       struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), mtk_ap_dmic_control %d\n", __func__, use_adc2_for_ch1_ch2);
+	ucontrol->value.integer.value[0] = use_adc2_for_ch1_ch2;
+
+	return 0;
+}
+
+static int capture_use_adc2_for_ch1_ch2_set(struct snd_kcontrol *kcontrol,
+					       struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(capture_HD_input)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	use_adc2_for_ch1_ch2 = ucontrol->value.integer.value[0];
+	pr_debug("%s(), use_adc2_for_ch1_ch2 %d\n", __func__, use_adc2_for_ch1_ch2);
+	AudDrv_Clk_On();
+
+	if (use_adc2_for_ch1_ch2) {
+		uint32 eSamplingRate = get_dai_rate(Soc_Aud_Digital_Block_ADDA_UL);
+
+		/* turn off adc1 */
+		is_adc1_closed_before = true;
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+			set_adc_enable(false);
+
+		/* turn on adc2 */
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+			pr_warn("%s(), sample rate = %d", __func__, eSamplingRate);
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+			set_adc2_in(eSamplingRate);
+			set_adc2_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+		}
+
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+		EnableAfe(true);
+	} else {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+			set_adc2_enable(false);
+
+		EnableAfe(false);
+	}
+
+	AudDrv_Clk_Off();
+	return 0;
+}
+
 static const struct snd_kcontrol_new Audio_snd_capture_controls[] = {
 	SOC_ENUM_EXT("Audio_capture_hd_Switch", Audio_capture_Enum[0],
-		Audio_capture_hdinput_Get, Audio_capture_hdinput_Set),
+		     Audio_capture_hdinput_Get, Audio_capture_hdinput_Set),
 	SOC_SINGLE_EXT("Audio IRQ2 CNT", SND_SOC_NOPM, 0, IRQ_MAX_RATE, 0,
-		Audio_Irq2cnt_Get, Audio_Irq2cnt_Set),
+		     Audio_Irq2cnt_Get, Audio_Irq2cnt_Set),
+	SOC_ENUM_EXT("capture_use_adc2_for_ch1_ch2", Audio_capture_Enum[0],
+		     capture_use_adc2_for_ch1_ch2_get,
+		     capture_use_adc2_for_ch1_ch2_set),
 };
 
 static struct snd_pcm_hardware mtk_capture_hardware = {
@@ -343,12 +407,17 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	if (mPrepareDone == true) {
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+		if (!is_adc1_closed_before) {
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
+					  Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
-			set_adc_enable(false);
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+				set_adc_enable(false);
+
+			is_adc1_closed_before = false;
+		}
 
 		/* 3-mic setting */
 		if (substream->runtime->channels > 2) {
