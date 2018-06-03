@@ -84,7 +84,9 @@ struct mrp {
 enum pbm_kicker {
 	KR_DLPT,		/* 0 */
 	KR_MD1,			/* 1 */
+#if !defined(DISABLE_PBM_MD3)
 	KR_MD3,			/* 2 */
+#endif
 	KR_CPU,			/* 3 */
 	KR_GPU,			/* 4 */
 	KR_FLASH		/* 5 */
@@ -289,16 +291,50 @@ enum md3_pa_pwr_tbl_c2k {
 /*
  * MD1/MD3 RF power
  */
-enum md1_rf_power {
-	PW_MD1_RF_2G = 32,
-	PW_MD1_RF_3G = 99,
-	PW_MD1_RF_4G_UPL1 = 201,
-	PW_MD1_RF_4G_UPL2 = 201
+enum md1_rf_pwr_tbl_2g {
+	PW_MD1_RF_2G_SECTION_1 = 32,
+	PW_MD1_RF_2G_SECTION_2 = 32,
+	PW_MD1_RF_2G_SECTION_3 = 32,
+	PW_MD1_RF_2G_SECTION_4 = 32,
+	PW_MD1_RF_2G_SECTION_5 = 32,
+	PW_MD1_RF_2G_SECTION_6 = 32
+};
+
+enum md1_rf_pwr_tbl_3g {
+	PW_MD1_RF_3G_SECTION_1 = 99,
+	PW_MD1_RF_3G_SECTION_2 = 99,
+	PW_MD1_RF_3G_SECTION_3 = 99,
+	PW_MD1_RF_3G_SECTION_4 = 99,
+	PW_MD1_RF_3G_SECTION_5 = 99,
+	PW_MD1_RF_3G_SECTION_6 = 99
+};
+
+enum md1_rf_pwr_tbl_4g_upL1 {
+	PW_MD1_RF_4G_upL1_SECTION_1 = 201,
+	PW_MD1_RF_4G_upL1_SECTION_2 = 201,
+	PW_MD1_RF_4G_upL1_SECTION_3 = 201,
+	PW_MD1_RF_4G_upL1_SECTION_4 = 201,
+	PW_MD1_RF_4G_upL1_SECTION_5 = 201,
+	PW_MD1_RF_4G_upL1_SECTION_6 = 201
+};
+
+enum md1_rf_pwr_tbl_4g_upL2 {
+	PW_MD1_RF_4G_upL2_SECTION_1 = 201,
+	PW_MD1_RF_4G_upL2_SECTION_2 = 201,
+	PW_MD1_RF_4G_upL2_SECTION_3 = 201,
+	PW_MD1_RF_4G_upL2_SECTION_4 = 201,
+	PW_MD1_RF_4G_upL2_SECTION_5 = 201,
+	PW_MD1_RF_4G_upL2_SECTION_6 = 201
 };
 
 #if !defined(DISABLE_PBM_MD3)
-enum md3_rf_power {
-	PW_MD3_RF_C2K = 310
+enum md3_rf_pwr_tbl_c2k {
+	PW_MD3_RF_C2K_SECTION_1 = 310,
+	PW_MD3_RF_C2K_SECTION_2 = 310,
+	PW_MD3_RF_C2K_SECTION_3 = 310,
+	PW_MD3_RF_C2K_SECTION_4 = 310,
+	PW_MD3_RF_C2K_SECTION_5 = 310,
+	PW_MD3_RF_C2K_SECTION_6 = 310
 };
 #endif
 

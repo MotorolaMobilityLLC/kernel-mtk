@@ -229,6 +229,49 @@ static int md3_pa_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
 					 PW_MD3_PA_C2K_SECTION_5,
 					 PW_MD3_PA_C2K_SECTION_6 };
 #endif /*!defined(DISABLE_PBM_MD3)*/
+
+static int md1_rf_pwr_2g[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_RF_2G_SECTION_1,
+					    PW_MD1_RF_2G_SECTION_2,
+					    PW_MD1_RF_2G_SECTION_3,
+					    PW_MD1_RF_2G_SECTION_4,
+					    PW_MD1_RF_2G_SECTION_5,
+					    PW_MD1_RF_2G_SECTION_6 };
+
+static int md1_rf_pwr_3g[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_RF_3G_SECTION_1,
+					    PW_MD1_RF_3G_SECTION_2,
+					    PW_MD1_RF_3G_SECTION_3,
+					    PW_MD1_RF_3G_SECTION_4,
+					    PW_MD1_RF_3G_SECTION_5,
+					    PW_MD1_RF_3G_SECTION_6 };
+
+static int md1_rf_pwr_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_RF_4G_upL1_SECTION_1,
+					    PW_MD1_RF_4G_upL1_SECTION_2,
+					    PW_MD1_RF_4G_upL1_SECTION_3,
+					    PW_MD1_RF_4G_upL1_SECTION_4,
+					    PW_MD1_RF_4G_upL1_SECTION_5,
+					    PW_MD1_RF_4G_upL1_SECTION_6 };
+
+static int md1_rf_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_RF_4G_upL2_SECTION_1,
+					    PW_MD1_RF_4G_upL2_SECTION_2,
+					    PW_MD1_RF_4G_upL2_SECTION_3,
+					    PW_MD1_RF_4G_upL2_SECTION_4,
+					    PW_MD1_RF_4G_upL2_SECTION_5,
+					    PW_MD1_RF_4G_upL2_SECTION_6 };
+
+#if !defined(DISABLE_PBM_MD3)
+static int md3_rf_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+					 PW_MD3_RF_C2K_SECTION_1,
+					 PW_MD3_RF_C2K_SECTION_2,
+					 PW_MD3_RF_C2K_SECTION_3,
+					 PW_MD3_RF_C2K_SECTION_4,
+					 PW_MD3_RF_C2K_SECTION_5,
+					 PW_MD3_RF_C2K_SECTION_6 };
+#endif /*!defined(DISABLE_PBM_MD3)*/
+
 #endif /*MD_POWER_METER_ENABLE*/
 
 int g_dlpt_need_do = 1;
@@ -620,7 +663,7 @@ static int get_md1_2g_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_2g[section];
 
 			/* get RF power */
-			rf_power = PW_MD1_RF_2G;
+			rf_power = md1_rf_pwr_2g[section];
 
 			pbm_debug("MD1 2G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_2G_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -652,7 +695,7 @@ static int get_md1_3g_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_3g[section];
 
 			/* get RF power */
-			rf_power = PW_MD1_RF_3G;
+			rf_power = md1_rf_pwr_3g[section];
 
 			pbm_debug("MD1 3G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_3G_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -684,7 +727,7 @@ static int get_md1_4g_upL1_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_4g_upL1[section];
 
 			/* get RF power */
-			rf_power = PW_MD1_RF_4G_UPL1;
+			rf_power = md1_rf_pwr_4g_upL1[section];
 
 			pbm_debug("MD1 4G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_4G_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -716,7 +759,7 @@ static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_4g_upL2[section];
 
 			/* get RF power */
-			rf_power = PW_MD1_RF_4G_UPL2;
+			rf_power = md1_rf_pwr_4g_upL2[section];
 
 			pbm_debug("MD1 4G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_4G_1_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -743,8 +786,8 @@ static int get_md3_dBm_power(void)
 
 	if (share_mem == NULL) {
 		pbm_debug("MD3 share_mem is NULL, , use max pa and rf power (%d + %d)\n",
-			md3_pa_pwr_c2k[1], PW_MD3_RF_C2K);
-		return md3_pa_pwr_c2k[1] + PW_MD3_RF_C2K;
+			md3_pa_pwr_c2k[1], md3_rf_pwr_c2k[1]);
+		return md3_pa_pwr_c2k[1] + md3_rf_pwr_c2k[1];
 	}
 
 	/* TO-DO:
@@ -776,7 +819,7 @@ static int get_md3_dBm_power(void)
 			pa_power = md3_pa_pwr_c2k[section];
 
 			/* get RF power */
-			rf_power = PW_MD3_RF_C2K;
+			rf_power = md3_rf_pwr_c2k[section];
 
 			pbm_debug("MD3 dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_C2K_1_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -807,8 +850,8 @@ static int get_md1_dBm_power(int scenario)
 	if (share_mem == NULL) {
 		pbm_debug("MD1 share_mem is NULL, use max pa and rf power (%d + %d)\n",
 			md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1],
-			PW_MD1_RF_4G_UPL1 + PW_MD1_RF_4G_UPL2);
-		return md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1] + PW_MD1_RF_4G_UPL1 + PW_MD1_RF_4G_UPL2;
+			md1_rf_pwr_4g_upL1[1] + md1_rf_pwr_4g_upL2[1]);
+		return md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1] + md1_rf_pwr_4g_upL1[1] + md1_rf_pwr_4g_upL2[1];
 	}
 
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
@@ -866,6 +909,57 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_2G_TABLE] |= y;
 			get_md1_2g_dbm_power(section);
+		}
+	}
+
+	for (i = 1; i <= SECTION_NUM; i++) {
+		for (j = 1; j <= SECTION_VALUE; j++) {
+
+			/* get section level value to y */
+			y = (section[DBM_3G_TABLE] >> section_level[i]) & SECTION_VALUE;
+			y = (y+1) << section_level[i];
+
+			/* clean need assign section level to 0 */
+			z = ~((z | SECTION_VALUE) << section_level[i]);
+			section[DBM_3G_TABLE] &= z;
+
+			/* re-assign the value from y to section table */
+			section[DBM_3G_TABLE] |= y;
+			get_md1_3g_dbm_power(section);
+		}
+	}
+
+	for (i = 1; i <= SECTION_NUM; i++) {
+		for (j = 1; j <= SECTION_VALUE; j++) {
+
+			/* get section level value to y */
+			y = (section[DBM_4G_TABLE] >> section_level[i]) & SECTION_VALUE;
+			y = (y+1) << section_level[i];
+
+			/* clean need assign section level to 0 */
+			z = ~((z | SECTION_VALUE) << section_level[i]);
+			section[DBM_4G_TABLE] &= z;
+
+			/* re-assign the value from y to section table */
+			section[DBM_4G_TABLE] |= y;
+			get_md1_4g_upL1_dbm_power(section);
+		}
+	}
+
+	for (i = 1; i <= SECTION_NUM; i++) {
+		for (j = 1; j <= SECTION_VALUE; j++) {
+
+			/* get section level value to y */
+			y = (section[DBM_4G_1_TABLE] >> section_level[i]) & SECTION_VALUE;
+			y = (y+1) << section_level[i];
+
+			/* clean need assign section level to 0 */
+			z = ~((z | SECTION_VALUE) << section_level[i]);
+			section[DBM_4G_1_TABLE] &= z;
+
+			/* re-assign the value from y to section table */
+			section[DBM_4G_1_TABLE] |= y;
+			get_md1_4g_upL2_dbm_power(section);
 		}
 	}
 }
@@ -1488,7 +1582,7 @@ static int __init pbm_module_init(void)
 	ret = create_pbm_kthread();
 
 	#ifdef TEST_MD_POWER
-	pbm_crit("share_reg: %x", spm_vcorefs_get_MD_status());
+	/* pbm_crit("share_reg: %x", spm_vcorefs_get_MD_status());*/
 	test_md_dbm_power();
 	get_md1_scenario();
 	#endif
