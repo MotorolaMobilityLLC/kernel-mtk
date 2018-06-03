@@ -447,7 +447,7 @@ static int hang_detect_thread(void *arg)
 			if (hang_detect_counter == 0) {
 				if (aee_mode != AEE_MODE_CUSTOMER_USER) {
 					LOGE("[Hang_Detect] we should triger Kernel API DB	...\n");
-					aee_kernel_warning_api
+					aee_kernel_exception_api
 						(__FILE__, __LINE__,
 						 DB_OPT_NE_JBT_TRACES | DB_OPT_DISPLAY_HANG_DUMP,
 						 "\nCRDISPATCH_KEY:SS Hang\n",
@@ -455,11 +455,6 @@ static int hang_detect_thread(void *arg)
 					msleep(30 * 1000);
 				} else {	/* only Customer user load  trigger KE */
 					LOGE("[Hang_Detect] we should triger KE...\n");
-					aee_kernel_exception_api(__FILE__, __LINE__,
-						 DB_OPT_NE_JBT_TRACES | DB_OPT_DISPLAY_HANG_DUMP,
-						 "\nCRDISPATCH_KEY:SS Hang\n",
-						 "we triger Kernel API DB ");
-					msleep(30 * 1000);
 					BUG();
 				}
 			}
