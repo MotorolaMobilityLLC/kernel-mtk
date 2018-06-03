@@ -311,7 +311,7 @@ static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 			mreg_desc->rdesc.name, buck_id, ret);
 	if (ret != 0 && ret != 1)
 		return -EINVAL;
-	return 0;
+	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
