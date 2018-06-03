@@ -85,12 +85,15 @@ enum spm_deepidle_step {
 	SPM_DEEPIDLE_SLEEP_DPIDLE = 0x80000000
 };
 
+#define CPU_FOOTPRINT_SHIFT 24
+
 static int spm_dormant_sta;
+static u32 cpu_footprint;
 
 static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_deepidle_val(step);
+	aee_rr_rec_deepidle_val(step | cpu_footprint);
 #endif
 }
 
@@ -779,6 +782,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
+	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
@@ -911,6 +915,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
+	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
@@ -977,7 +982,11 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
+	trace_dpidle(cpu, 1);
+
 	spm_trigger_wfi_for_dpidle(pwrctrl);
+
+	trace_dpidle(cpu, 0);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
 
