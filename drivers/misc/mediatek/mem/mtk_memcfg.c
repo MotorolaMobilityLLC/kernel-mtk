@@ -159,6 +159,11 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		goto debug_info;
 	}
 
+	if (kptr_restrict == 2) {
+		seq_puts(m, "Do not show memory layout because of kptr_restrict level\n");
+		goto debug_info;
+	}
+
 	reserved_mem = kcalloc(MAX_RESERVED_REGIONS,
 				sizeof(struct reserved_mem_ext),
 				GFP_KERNEL);
