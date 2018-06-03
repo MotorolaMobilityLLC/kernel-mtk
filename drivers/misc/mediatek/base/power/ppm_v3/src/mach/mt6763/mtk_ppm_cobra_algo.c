@@ -27,7 +27,7 @@ struct ppm_cobra_data cobra_tbl;
 struct ppm_cobra_lookup cobra_lookup_data;
 
 static int Core_limit[NR_PPM_CLUSTERS] = {CORE_NUM_LL, CORE_NUM_L};
-
+static int cobra_init_done;
 
 #define ACT_CORE(cluster)	(active_core[PPM_CLUSTER_##cluster])
 #define CORE_LIMIT(cluster)	(core_limit_tmp[PPM_CLUSTER_##cluster])
@@ -130,7 +130,8 @@ void ppm_cobra_update_limit(void *user_req)
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
 
 	/* skip if DVFS is not ready (we cannot get current freq...) */
-	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
+	/* skip if COBRA is not init yet */
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb || !cobra_init_done)
 		return;
 
 	if (!user_req)
@@ -524,6 +525,8 @@ void ppm_cobra_init(void)
 		}
 	}
 #endif
+
+	cobra_init_done = 1;
 
 	ppm_info("COBRA init done!\n");
 }
