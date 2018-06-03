@@ -5471,8 +5471,11 @@ static int ext4_quota_off(struct super_block *sb, int type)
 		goto out_put;
 
 	inode_lock(inode);
-	/* Update modification times of quota files when userspace can
-	 * start looking at them */
+	/*
+	 * Update modification times of quota files when userspace can
+	 * start looking at them. If we fail, we return success anyway since
+	 * this is not a hard failure and quotas are already disabled.
+	 */
 	handle = ext4_journal_start(inode, EXT4_HT_QUOTA, 1);
 	if (IS_ERR(handle))
 		goto out_unlock;
@@ -5484,6 +5487,7 @@ static int ext4_quota_off(struct super_block *sb, int type)
 out_unlock:
 	inode_unlock(inode);
 out_put:
+	lockdep_set_quota_inode(inode, I_DATA_SEM_NORMAL);
 	iput(inode);
 	return err;
 out:
