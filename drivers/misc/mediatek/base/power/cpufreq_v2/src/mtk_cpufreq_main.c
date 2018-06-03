@@ -846,7 +846,7 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 					 struct mt_cpu_freq_info *freqs, int num)
 {
 	struct mt_cpu_dvfs *p;
-	/* int ret = 0; */
+	int ret = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
