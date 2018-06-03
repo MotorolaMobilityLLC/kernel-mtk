@@ -55,13 +55,13 @@ typedef enum {
 	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_DL2,
 	Soc_Aud_Digital_Block_MEM_VUL,
+	Soc_Aud_Digital_Block_MEM_VUL2,
 	Soc_Aud_Digital_Block_MEM_DAI,
 	Soc_Aud_Digital_Block_MEM_DL3,
 	Soc_Aud_Digital_Block_MEM_AWB,
 	Soc_Aud_Digital_Block_MEM_MOD_DAI,
 	/* currently no use */
 	Soc_Aud_Digital_Block_MEM_VUL_DATA2,
-	Soc_Aud_Digital_Block_MEM_VUL2,
 	Soc_Aud_Digital_Block_MEM_DAI2,
 	Soc_Aud_Digital_Block_MEM_AWB2,
 	Soc_Aud_Digital_Block_MEM_I2S,		/* this is not actually a mem if... */
@@ -169,6 +169,7 @@ enum audio_usage_id {
 	AUDIO_USAGE_PCM_CAPTURE,
 	AUDIO_USAGE_SCP_SPK_IV_DATA,
 	AUDIO_USAGE_DEEPBUFFER_PLAYBACK,
+	AUDIO_USAGE_FM_CAPTURE,
 };
 
 typedef enum {
