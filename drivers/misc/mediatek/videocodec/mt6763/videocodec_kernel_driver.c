@@ -70,10 +70,6 @@
 #include <linux/compat.h>
 #endif
 
-#ifdef CONFIG_MTK_DRS
-#include <mach/emi_mpu.h>
-#endif
-
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define VCODEC_FPGAPORTING
 #endif
@@ -1277,9 +1273,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		}
 		mutex_unlock(&DecEMILock);
 
-#ifdef CONFIG_MTK_DRS
-		DRS_enable();
-#endif
 		MODULE_MFV_PR_DEBUG("VCODEC_INC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
@@ -1304,9 +1297,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		}
 		mutex_unlock(&DecEMILock);
 
-#ifdef CONFIG_MTK_DRS
-		DRS_disable();
-#endif
 		MODULE_MFV_PR_DEBUG("VCODEC_DEC_DEC_EMI_USER - tid = %d\n", current->pid);
 	}
 	break;
