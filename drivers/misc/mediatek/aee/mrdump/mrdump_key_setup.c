@@ -28,9 +28,6 @@
 enum MRDUMP_RST_SOURCE {
 	MRDUMP_SYSRST,
 	MRDUMP_EINT};
-enum MRDUMP_NOTIFY_MODE {
-	MRDUMP_IRQ,
-	MRDUMP_RST};
 
 #ifdef CONFIG_MTK_PMIC_COMMON
 enum MRDUMP_LONG_PRESS_MODE {
@@ -49,7 +46,7 @@ static int __init mrdump_key_init(void)
 	struct wd_api *wd_api = NULL;
 #endif
 	enum MRDUMP_RST_SOURCE source = MRDUMP_EINT;
-	enum MRDUMP_NOTIFY_MODE mode = MRDUMP_IRQ;
+	enum wk_req_mode mode = WD_REQ_IRQ_MODE;
 #ifdef CONFIG_MTK_PMIC_COMMON
 	enum MRDUMP_LONG_PRESS_MODE long_press_mode
 			= LONG_PRESS_NONE;
@@ -105,7 +102,7 @@ static int __init mrdump_key_init(void)
 
 	if (!of_property_read_string(node, "mode", &mode_str)) {
 		if (strcmp(mode_str, "RST") == 0)
-			mode = MRDUMP_RST;
+			mode = WD_REQ_RST_MODE;
 	} else
 		pr_notice("MRDUMP_KEY: no mode property,default IRQ");
 
