@@ -2,7 +2,7 @@
  * Copyright (C) 2010 - 2017 Novatek, Inc.
  *
  * $Revision: 18364 $
- * $Date: 2017-11-07 14:36:11 +0800 (週二, 07 十一月 2017) $
+ * $Date: 2017-11-16 17:42:51 +0800 (週四, 16 十一月 2017) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -785,9 +785,9 @@ info_retry:
 		ts->fw_ver = 0;
 		ts->x_num = 18;
 		ts->y_num = 32;
-		ts->abs_x_max = 1080;
-		ts->abs_y_max = 1920;
-		ts->max_button_num = 0;
+		ts->abs_x_max = TOUCH_DEFAULT_MAX_WIDTH;
+		ts->abs_y_max = TOUCH_DEFAULT_MAX_HEIGHT;
+		ts->max_button_num = TOUCH_KEY_NUM;
 
 		if(retry_count < 3) {
 			retry_count++;
@@ -1389,6 +1389,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		NVT_ERR("failed to allocated memory for nvt ts data\n");
 		return -ENOMEM;
 	}
+
 	ts->client = client;
 	i2c_set_clientdata(client, ts);
 
@@ -1718,6 +1719,7 @@ static void nvt_ts_suspend(struct device *dev)
 #else
 	CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 2);
 #endif
+
 	enable_irq_wake(ts->client->irq);
 
 	NVT_LOG("Enabled touch wakeup gesture\n");
@@ -1776,7 +1778,6 @@ static void nvt_ts_resume(struct device *dev)
 	// please make sure display reset(RESX) sequence and mipi dsi cmds sent before this
 	nvt_bootloader_reset();
 	nvt_check_fw_reset_state(RESET_STATE_REK);
-
 
 #if !WAKEUP_GESTURE
 	enable_irq(ts->client->irq);

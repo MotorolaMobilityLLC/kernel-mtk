@@ -2,7 +2,7 @@
  * Copyright (C) 2010 - 2017 Novatek, Inc.
  *
  * $Revision: 15504 $
- * $Date: 2017-08-16 11:11:40 +0800 (週三, 16 八月 2017) $
+ * $Date: 2017-11-16 17:42:51 +0800 (週四, 16 十一月 2017) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@
 #define NVT_TS_NAME "NVTCapacitiveTouchScreen"
 
 //---Touch info.---
+#define TOUCH_DEFAULT_MAX_WIDTH 1080
+#define TOUCH_DEFAULT_MAX_HEIGHT 1920
 #define TOUCH_MAX_FINGER_NUM 10
 #define TOUCH_KEY_NUM 0
 #if TOUCH_KEY_NUM > 0
