@@ -4415,8 +4415,6 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 				system_overutil = true;
 		}
 
-		schedtune_enqueue_task(p, cpu_of(rq));
-
 		/*
 		 * We want to potentially trigger a freq switch
 		 * request only for tasks that are waking up; this is
@@ -4448,6 +4446,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			rq->vip_cache = p;
 #endif
 	}
+
+	/* Update SchedTune accouting */
+	schedtune_enqueue_task(p, cpu_of(rq));
 
 	hrtick_update(rq);
 
@@ -4515,7 +4516,6 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		sub_nr_running(rq, 1);
-		schedtune_dequeue_task(p, cpu_of(rq));
 
 		walt_dec_cumulative_runnable_avg(rq, p);
 
@@ -4545,6 +4545,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			rq->vip_cache = NULL;
 #endif
 	}
+
+	/* Update SchedTune accouting */
+	schedtune_dequeue_task(p, cpu_of(rq));
 
 	hrtick_update(rq);
 
