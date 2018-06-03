@@ -974,7 +974,8 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		}
 
 	} while (FALSE);
-
+	/*start dump pkt info*/
+	wlanPktDebugDumpInfo(prAdapter);
 	return;
 
 }				/* p2pFuncDisconnect */

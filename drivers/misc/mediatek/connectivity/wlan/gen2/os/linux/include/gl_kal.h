@@ -1044,9 +1044,8 @@ INT_32 kalHaltTryLock(VOID);
 VOID kalHaltUnlock(VOID);
 VOID kalSetHalted(BOOLEAN fgHalt);
 BOOLEAN kalIsHalted(VOID);
-VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 type,
-		IN UINT32 index, OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen);
-
+VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 u4StartAddr
+		, IN UINT32 u4Offset, IN UINT32 index, OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen);
 
 INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);

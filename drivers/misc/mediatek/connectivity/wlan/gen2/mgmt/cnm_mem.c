@@ -842,6 +842,12 @@ static VOID cnmStaSendUpdateCmd(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 
 	prCmdContent->ucUapsdAc = prStaRec->ucBmpTriggerAC | (prStaRec->ucBmpDeliveryAC << 4);
 	prCmdContent->ucUapsdSp = prStaRec->ucUapsdSp;
+	/* if AP's max idle time is greater than 30s, then we send keep alive packets every 30 sec */
+	prCmdContent->ucKeepAliveDuration = (UINT_8)prStaRec->u2MaxIdlePeriod;
+	prCmdContent->ucKeepAliveOption = prStaRec->ucIdleOption;
+
+	if (prCmdContent->ucKeepAliveDuration > 0)
+		DBGLOG(CNM, INFO, "keep-alive duration is %d\n", prCmdContent->ucKeepAliveDuration);
 
 	rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
 				      CMD_ID_UPDATE_STA_RECORD,	/* ucCID */

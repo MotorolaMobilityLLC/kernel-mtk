@@ -138,6 +138,7 @@ typedef enum _ENUM_PSCAN_STATE_T {
 /*----------------------------------------------------------------------------*/
 struct _BSS_DESC_T {
 	LINK_ENTRY_T rLinkEntry;
+	LINK_ENTRY_T rLinkEntryEss;
 
 	UINT_8 aucBSSID[MAC_ADDR_LEN];
 	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* For IBSS, the SrcAddr is different from BSSID */
@@ -248,8 +249,19 @@ struct _BSS_DESC_T {
 	ULARGE_INTEGER u8TimeStamp;	/* Place u8TimeStamp before aucIEBuf[1] to force DW align */
 	UINT_8 aucRawBuf[CFG_RAW_BUFFER_SIZE];
 	UINT_8 aucIEBuf[CFG_IE_BUFFER_SIZE];
-	UINT_8 ucJoinFailureCount;
+
 	OS_SYSTIME rJoinFailTime;
+	struct AIS_BLACKLIST_ITEM *prBlack;
+	UINT_16 u2StaCnt;
+	UINT_16 u2AvaliableAC; /* Available Admission Capacity */
+	UINT_8 ucJoinFailureCount;
+	UINT_8 ucChnlUtilization;
+	UINT_8 ucSNR;
+	BOOLEAN fgSeenProbeResp;
+	BOOLEAN fgExsitBssLoadIE;
+	BOOLEAN fgMultiAnttenaAndSTBC;
+	BOOLEAN fgDeauthLastTime;
+	UINT_32 u4UpdateIdx;
 };
 
 struct _ROAM_BSS_DESC_T {
@@ -446,12 +458,12 @@ typedef struct _SCAN_INFO_T {
 
 	/* NLO scanning state tracking */
 	BOOLEAN fgNloScanning;
-	BOOLEAN fgPscnOnnning;
+	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
 	P_PSCN_PARAM_T prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
-
+	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;
 
 /* use to save partial scan channel information */
@@ -779,3 +791,6 @@ scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 #if CFG_SUPPORT_AGPS_ASSIST
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
 #endif
+P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter);
+VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
+

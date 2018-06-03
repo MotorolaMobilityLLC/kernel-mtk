@@ -39,6 +39,9 @@
 ********************************************************************************
 */
 #define GOOGLE_OUI 0x001A11
+#define OUI_QCA 0x001374
+
+#define QCA_NL80211_VENDOR_SUBCMD_SETBAND 105
 
 typedef enum {
 	/* Don't use 0 as a valid subcommand */
@@ -247,6 +250,13 @@ typedef enum {
 	WIFI_SCAN_BUFFER_FULL,
 	WIFI_SCAN_COMPLETE,
 } WIFI_SCAN_EVENT;
+
+/* QCA Vender CMD */
+typedef enum {
+	QCA_SETBAND_AUTO,
+	QCA_SETBAND_5G,
+	QCA_SETBAND_2G,
+} QCA_SET_BAND;
 
 #define GSCAN_MAX_REPORT_THRESHOLD   1024000
 #define GSCAN_MAX_CHANNELS                 8
@@ -679,5 +689,9 @@ int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wirele
 					 P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wireless_dev *wdev, INT_32 rssi);
+
+int mtk_cfg80211_vendor_set_band(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len);
+
 
 #endif /* _GL_VENDOR_H */

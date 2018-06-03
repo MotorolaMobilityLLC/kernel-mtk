@@ -3090,26 +3090,20 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 */
 /*----------------------------------------------------------------------------*/
 
-VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 type,
-		IN UINT32 index, OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen)
+VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 u4StartAddr
+		, IN UINT32 u4Offset, IN UINT32 index, OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen)
 {
 
 	PUINT8 descBaseAddr;
 
-	if (type == MTK_AMPDU_TX_DESC)
-		descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + AP_MCU_TX_DESC_ADDR
-		+(AP_MUC_BANK_OFFSET * index));
-	else if (type == MTK_AMPDU_RX_DESC)
-		descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + AP_MUC_RX_DESC_ADDR
-		+(AP_MUC_BANK_OFFSET * index));
-	else {
-		descBaseAddr = NULL;
-		DBGLOG(INIT, ERROR, "Error type : %d", type);
-	}
+	DBGLOG(INIT, TRACE, "TC start addr:0x%x, index:%d, offset:0x%x len:%d"
+		, u4StartAddr, index, u4Offset, u4BufferLen);
 
-	if (descBaseAddr)
+	descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + u4StartAddr
+	+(u4Offset * index));
+
+	if ((descBaseAddr != NULL) && (pucBuffer != NULL))
 		kalMemCopy(pucBuffer, descBaseAddr, u4BufferLen);
-
 
 }
 

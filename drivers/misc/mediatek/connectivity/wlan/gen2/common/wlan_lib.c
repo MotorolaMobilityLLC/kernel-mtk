@@ -2109,10 +2109,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 	P_INIT_EVENT_CMD_RESULT prEventCmdResult;
 	UINT_32 u4RxPktLength;
 	WLAN_STATUS u4Status;
-	UINT_32 au4WTSR[2];
-	P_HIF_TX_DESC_T prTxDesc;
-	P_HIF_RX_DESC_T prRxDesc;
-	UINT32 index;
+
 	ASSERT(prAdapter);
 
 	do {
@@ -2124,40 +2121,13 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					aucBuffer,
 					sizeof(INIT_HIF_RX_HEADER_T) + sizeof(INIT_EVENT_CMD_RESULT),/* 4B + 4B */
 					&u4RxPktLength) != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "nicRxWaitResponse fail\n");
+			DBGLOG(INIT, ERROR, "nicRxWaitResponse fail at SeqNo (%d)\n", ucCmdSeqNum);
 
 			/*Dump WLAN TX Status Register TQ0_CNT, make sure FW write ROM success before CMD send*/
-			HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
-			DBGLOG(INIT, ERROR, "ucCmdSeqNum =%d, WTSR[1]=%d, WTSR[0]=%d, tc0freebuffCNT=%d\n"
-			, ucCmdSeqNum, au4WTSR[1], au4WTSR[0], prAdapter->rTxCtrl.rTc.aucFreeBufferCount[0]);
-			prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T), VIR_MEM_TYPE);
-			DBGLOG(INIT, ERROR, "Start dump tx_desc from APMCU\n");
-
-			for (index = 0; index < NIC_TX_INIT_BUFF_COUNT_TC0 ; index++) {
-				HAL_GET_APMCU_MEM(prAdapter, MTK_AMPDU_TX_DESC, index, (PUINT_8)prTxDesc
-					, sizeof(HIF_TX_DESC_T));
-				DBGLOG(INIT, INFO
-					, "TX[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,StartAddr: 0x%08x,R2:%x\n"
-					, index, prTxDesc->ucOwn, prTxDesc->ucDescChksum
-					, prTxDesc->u2Rsrv1, prTxDesc->u4NextDesc
-					, prTxDesc->u4BufStartAddr, prTxDesc->u4Rsrv2);
-			}
-			kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
-
-			prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T), VIR_MEM_TYPE);
-			DBGLOG(INIT, ERROR, "Start dump rx_desc from APMCU\n");
-			for (index = 0; index < NIC_TX_INIT_BUFF_COUNT_TC0 ; index++) {
-				HAL_GET_APMCU_MEM(prAdapter, MTK_AMPDU_RX_DESC, index, (PUINT_8)prRxDesc
-					, sizeof(HIF_RX_DESC_T));
-				DBGLOG(INIT, INFO
-					, "RX[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,StartAddr:0x%08x,len:%x,R1:%x\n"
-					, index, prRxDesc->ucOwn, prRxDesc->ucDescChksum
-					, prRxDesc->ucEtherTypeOffset, prRxDesc->ucChkSumInfo
-					, prRxDesc->u4NextDesc, prRxDesc->u4BufStartAddr
-					, prRxDesc->u2RxBufLen, prRxDesc->u2Rsrv1);
-			}
-			kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
-
+			wlanDumpTxReleaseCount(prAdapter);
+			/*Dump  TX_DESC and RX_DESC*/
+			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC0_INDEX);
+			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_RX_DESC, DEBUG_TC0_INDEX);
 
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
@@ -3122,6 +3092,8 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->rVerInfo.u2FwProductID = prEventNicCapability->u2ProductID;
 	prAdapter->rVerInfo.u2FwOwnVersion = prEventNicCapability->u2FwVersion;
 	prAdapter->rVerInfo.u2FwPeerVersion = prEventNicCapability->u2DriverVersion;
+	prAdapter->rVerInfo.u2FwOwnVersionExtend = prEventNicCapability->aucReserved[0];
+
 	prAdapter->fgIsHw5GBandDisabled = (BOOLEAN) prEventNicCapability->ucHw5GBandDisabled;
 	prAdapter->fgIsEepromUsed = (BOOLEAN) prEventNicCapability->ucEepromUsed;
 	prAdapter->fgIsEfuseValid = (BOOLEAN) prEventNicCapability->ucEfuseValid;
@@ -3129,6 +3101,12 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 
 	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 	mtk_wcn_wmt_set_wifi_ver(u4FwIDVersion);
+
+	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x\n"
+		, prAdapter->rVerInfo.u2FwProductID
+		, prAdapter->rVerInfo.u2FwOwnVersion
+		, prAdapter->rVerInfo.u2FwOwnVersionExtend);
+
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
 		prAdapter->fgTdlsIsSup = TRUE;
@@ -5305,3 +5283,45 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 	/* TODO: Apply other Config */
 }
 #endif /* CFG_SUPPORT_CFG_FILE */
+
+VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)
+{
+	P_QUE_T prCmdQue;
+	QUE_T rTempCmdQue;
+	P_QUE_T prTempCmdQue = &rTempCmdQue;
+	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
+	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	ASSERT(prAdapter);
+	DBGLOG(OID, INFO, "Remove pending Cmd: CID %d\n", ucCid);
+
+	/* 1: Clear Pending OID in prAdapter->rPendingCmdQueue */
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+
+	prCmdQue = &prAdapter->rPendingCmdQueue;
+	QUEUE_MOVE_ALL(prTempCmdQue, prCmdQue);
+
+	QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	while (prQueueEntry) {
+		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
+		if (prCmdInfo->ucCID != ucCid) {
+			QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
+			continue;
+		}
+
+		if (prCmdInfo->pfCmdTimeoutHandler) {
+			prCmdInfo->pfCmdTimeoutHandler(prAdapter, prCmdInfo);
+		} else if (prCmdInfo->fgIsOid) {
+			kalOidComplete(prAdapter->prGlueInfo,
+					   prCmdInfo->fgSetQuery, 0, WLAN_STATUS_FAILURE);
+		}
+
+		cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
+		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	}
+
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+}
+

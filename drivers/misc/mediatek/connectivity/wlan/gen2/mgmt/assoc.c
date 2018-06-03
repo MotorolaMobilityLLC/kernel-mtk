@@ -299,7 +299,8 @@ static inline VOID assocBuildReAssocReqFrameCommonIEs(IN P_ADAPTER_T prAdapter, 
 
 		/* TODO(Kevin): For P2P, we shouldn't send support rate set which contains 11b rate */
 
-		rateGetDataRatesFromRateSet(u2SupportedRateSet, 0, aucAllSupportedRates, &ucAllSupportedRatesLen);
+		rateGetDataRatesFromRateSet(u2SupportedRateSet, prStaRec->u2BSSBasicRateSet,
+			aucAllSupportedRates, &ucAllSupportedRatesLen);
 
 		ucSupRatesLen = ((ucAllSupportedRatesLen > ELEM_MAX_LEN_SUP_RATES) ?
 				 ELEM_MAX_LEN_SUP_RATES : ucAllSupportedRatesLen);
