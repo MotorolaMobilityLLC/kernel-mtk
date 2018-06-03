@@ -6398,6 +6398,7 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 	/* no need to dump detail log for esd case */
 	if (task->scenario == CMDQ_SCENARIO_DISP_ESD_CHECK) {
 		cmdq_core_release_nginfo(nginfo);
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, est_timeout);
 		return;
 	}
 
