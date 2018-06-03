@@ -68,6 +68,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 289000000,
 	},
 	.cap = {
 		.pclk = 144000000,
@@ -79,6 +80,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 289000000,
 	},
 	.cap1 = { /*capture for 15fps*/
 		.pclk = 144000000,
@@ -90,6 +92,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 150,
+		.mipi_pixel_rate = 289000000,
 	},
 	.normal_video = { /* cap*/
 		.pclk = 144000000,
@@ -101,6 +104,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
+		.mipi_pixel_rate = 289000000,
 	},
 	.hs_video = {
 		.pclk = 144000000, /*record different mode's pclk*/
@@ -116,6 +120,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
+		.mipi_pixel_rate = 290000000,
 	},
 	.slim_video = {/*pre*/
 		.pclk = 144000000, /*record different mode's pclk*/
@@ -135,6 +140,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 289000000,
 	},
 	.margin = 6,			/*sensor framelength & shutter margin*/
 	.min_shutter = 6,		/*min shutter*/
@@ -1928,6 +1934,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
 	unsigned long long *feature_data = (unsigned long long *) feature_para;
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
+	UINT32 fps = 0;
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 				  (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
@@ -2088,6 +2095,38 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter(*feature_data);
 
 		streaming_control(KAL_TRUE);
+		break;
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+		fps = (MUINT32)(*(feature_data + 2));
+
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			if (fps == 150)
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap1.mipi_pixel_rate;
+			else
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
+
 		break;
 
 	default:
