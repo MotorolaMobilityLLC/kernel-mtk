@@ -653,6 +653,8 @@ typedef struct _ccb_layout {
 	unsigned int ccb_data_buffer_size;
 } ccb_layout_t;
 static ccb_layout_t ccb_info;
+static unsigned int md1_phy_cap_size;
+static unsigned int md1_bank4_cache_offset;
 
 static void share_memory_info_parsing(void)
 {
@@ -675,6 +677,21 @@ static void share_memory_info_parsing(void)
 
 	CCCI_UTIL_INF_MSG("ccci_util get ccb: data:%llx data_size:%d\n", ccb_info.ccb_data_buffer_addr,
 			ccb_info.ccb_data_buffer_size);
+
+	/* Get md1_phy_cap_size  */
+	md1_phy_cap_size = 0;
+	if (find_ccci_tag_inf("md1_phy_cap", (char *)&md1_phy_cap_size, sizeof(md1_phy_cap_size))
+			!= sizeof(md1_phy_cap_size))
+		CCCI_UTIL_ERR_MSG("using 0 as phy capture size\n");
+
+	CCCI_UTIL_INF_MSG("ccci_util get md1_phy_cap_size: 0x%x\n", md1_phy_cap_size);
+
+	/* Get smem cachable offset  */
+	md1_bank4_cache_offset = 0;
+	if (find_ccci_tag_inf("md1_smem_cahce_offset", (char *)&md1_bank4_cache_offset, sizeof(md1_bank4_cache_offset))
+			!= sizeof(md1_bank4_cache_offset))
+		md1_bank4_cache_offset = 0x8000000; /* Using 128MB offset as default */
+	CCCI_UTIL_INF_MSG("smem cachable offset 0x%X\n", md1_bank4_cache_offset);
 
 	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]ccci_share_mem at LK  :  0x%llx - 0x%llx  (0x%llx)\n",
 				smem_layout.base_addr,
@@ -1173,6 +1190,23 @@ int get_md_resv_ccb_info(int md_id, phys_addr_t *ccb_data_base, unsigned int *cc
 
 	return 0;
 }
+
+unsigned int get_md_resv_phy_cap_size(int md_id)
+{
+	if (md_id == MD_SYS1)
+		return md1_phy_cap_size;
+
+	return 0;
+}
+
+unsigned int get_md_smem_cachable_offset(int md_id)
+{
+	if (md_id == MD_SYS1)
+		return md1_bank4_cache_offset;
+
+	return 0;
+}
+
 
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size, phys_addr_t *srw_base,
 			 unsigned int *srw_size)
