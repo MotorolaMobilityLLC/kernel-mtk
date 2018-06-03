@@ -100,14 +100,25 @@ struct hl7005_info {
 	struct power_supply *psy;
 	struct charger_properties chg_props;
 	struct device *dev;
+	struct gtimer otg_kthread_gtimer;
+	struct workqueue_struct *otg_boost_workq;
+	struct work_struct kick_work;
+	unsigned int polling_interval;
+	bool polling_enabled;
+
 	const char *chg_dev_name;
 	const char *eint_name;
 	CHARGER_TYPE chg_type;
 	int irq;
 };
 
+static struct hl7005_info *g_info;
 static struct i2c_client *new_client;
 static const struct i2c_device_id hl7005_i2c_id[] = { {"hl7005", 0}, {} };
+
+static void enable_boost_polling(bool poll_en);
+static void usbotg_boost_kick_work(struct work_struct *work);
+static int usbotg_gtimer_func(struct gtimer *data);
 
 unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size,
 					const unsigned int val)
@@ -757,6 +768,54 @@ static int hl7005_reset_watch_dog_timer(struct charger_device *chg_dev)
 	return 0;
 }
 
+static int hl7005_charger_enable_otg(struct charger_device *chg_dev, bool en)
+{
+	hl7005_set_opa_mode(en);
+	enable_boost_polling(en);
+	return 0;
+}
+
+static void enable_boost_polling(bool poll_en)
+{
+	if (g_info) {
+		if (poll_en) {
+			gtimer_start(&g_info->otg_kthread_gtimer,
+				     g_info->polling_interval);
+			g_info->polling_enabled = true;
+		} else {
+			g_info->polling_enabled = false;
+			gtimer_stop(&g_info->otg_kthread_gtimer);
+		}
+	}
+}
+
+static void usbotg_boost_kick_work(struct work_struct *work)
+{
+
+	struct hl7005_info *boost_manager =
+		container_of(work, struct hl7005_info, kick_work);
+
+	pr_debug_ratelimited("usbotg_boost_kick_work\n");
+
+	hl7005_set_tmr_rst(1);
+
+	if (boost_manager->polling_enabled == true)
+		gtimer_start(&boost_manager->otg_kthread_gtimer,
+			     boost_manager->polling_interval);
+}
+
+static int usbotg_gtimer_func(struct gtimer *data)
+{
+	struct hl7005_info *boost_manager =
+		container_of(data, struct hl7005_info,
+			     otg_kthread_gtimer);
+
+	queue_work(boost_manager->otg_boost_workq,
+		   &boost_manager->kick_work);
+
+	return 0;
+}
+
 static struct charger_ops hl7005_chg_ops = {
 
 	/* Normal charging */
@@ -770,7 +829,8 @@ static struct charger_ops hl7005_chg_ops = {
 	.set_constant_voltage = hl7005_set_cv_voltage,
 	.kick_wdt = hl7005_reset_watch_dog_timer,
 	.is_charging_done = hl7005_get_charging_status,
-
+	/* OTG */
+	.enable_otg = hl7005_charger_enable_otg,
 	.event = hl7005_do_event,
 };
 
@@ -829,6 +889,14 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 	hl7005_reg_config_interface(0x04, 0x1A);	/* 146mA */
 
 	hl7005_dump_register(info->chg_dev);
+
+	gtimer_init(&info->otg_kthread_gtimer, info->dev, "otg_boost");
+	info->otg_kthread_gtimer.callback = usbotg_gtimer_func;
+
+	info->otg_boost_workq = create_singlethread_workqueue("otg_boost_workq");
+	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
+	info->polling_interval = 20;
+	g_info = info;
 
 	return 0;
 }
