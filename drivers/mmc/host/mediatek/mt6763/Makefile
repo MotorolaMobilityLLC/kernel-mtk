@@ -43,6 +43,3 @@ ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 msdc-y += $(MTK_PLATFORM)/msdc_fpga_io.o
 endif
 
-ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
-msdc-y += emmc_otp.o
-endif
