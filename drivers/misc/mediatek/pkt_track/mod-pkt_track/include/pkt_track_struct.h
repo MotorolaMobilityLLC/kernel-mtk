@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef __PKT_TRACK_STRUCT_H__
 #define __PKT_TRACK_STRUCT_H__
 
@@ -21,14 +34,6 @@ enum pkt_track_data_usage_cmd_e {
 	MSG_ID_MDT_ALERT_IQUOTA_IND,
 	MSG_ID_MDT_DEL_IQUOTA_REQ,
 };
-
-#if 0
-struct local_para_struct {
-	u8    ref_count;
-	u8    lp_reserved;
-	u16   msg_len;
-};
-#endif
 
 struct pkt_track_iquota_t {
 	struct delayed_work dwork;
