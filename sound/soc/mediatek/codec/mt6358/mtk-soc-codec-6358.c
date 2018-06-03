@@ -3359,8 +3359,6 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 /*
 * Temp solution, query gpio of PCB_ID of board
 */
-#ifdef CONFIG_MT6771_QUERY_PCB_ID
-
 enum AUDIO_MIC_MODE {
 	AUDIO_MIC_MODE_ACC = 1,
 	AUDIO_MIC_MODE_DCC,
@@ -3370,6 +3368,7 @@ enum AUDIO_MIC_MODE {
 	AUDIO_MIC_MODE_DCCECMSINGLE,
 };
 
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 enum pcb_id_index {
 	PCD_ID_1 = 0, /* GPIO175 */
 	PCD_ID_2 = 1, /* GPIO111 */
@@ -5935,7 +5934,12 @@ static int mt6358_codec_probe(struct snd_soc_codec *codec)
 	get_hp_lr_trim_offset();
 
 #ifdef CONFIG_MTK_ACCDET
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 	accdet_late_init(get_mic_mode());
+#else
+	/* By default, set mic mode as AUDIO_MIC_MODE_ACC */
+	accdet_late_init(AUDIO_MIC_MODE_ACC);
+#endif
 #endif
 
 	return 0;
