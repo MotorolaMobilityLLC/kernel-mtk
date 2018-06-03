@@ -72,6 +72,14 @@ static char met_dvfs_info2[5][32] = {
 	"NULL",
 	"NULL"
 };
+
+static char met_dvfs_info3[5][32] = {
+	"sched_dvfs_capmin_cid0",
+	"sched_dvfs_capmin_cid1",
+	"sched_dvfs_capmin_cid2",
+	"NULL",
+	"NULL"
+};
 #endif
 
 static int
@@ -752,6 +760,21 @@ void set_min_boost_freq(int boost_value, int cpu_clus)
 	floor_freq = (floor_cap * max_freq / max_cap);
 	min_boost_freq[cpu_clus] = mt_cpufreq_find_close_freq(cpu_clus, floor_freq);
 }
+
+void set_cap_min_freq(int cap_min)
+{
+	int max_clus_nr = arch_get_nr_clusters();
+	int max_freq, max_cap, min_freq;
+	int i;
+
+	for (i = 0; i < max_clus_nr; i++) {
+		max_freq = schedtune_target_cap[i].freq;
+		max_cap = schedtune_target_cap[i].cap;
+
+		min_freq = (cap_min * max_freq / max_cap);
+		cap_min_freq[i] = mt_cpufreq_find_close_freq(i, min_freq);
+	}
+}
 #endif
 
 int boost_write_for_perf_idx(int group_idx, int boost_value)
@@ -762,42 +785,19 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	bool dvfs_on_demand = false;
 	int idx = 0;
 	int cluster;
+	int cap_min = 0;
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int floor = 0;
 	int i;
 	int c0, c1;
-	int dvfs_floor;
 #endif
 	int ctl_no = div64_s64(boost_value, 1000);
 
 	switch (ctl_no) {
 	case 4:
+		/* min cpu capacity request */
 		boost_value -= ctl_no * 1000;
-		cluster = (int)boost_value / 100;
-		dvfs_floor = (int)boost_value % 100;
 
-		/* dvfs floor */
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
-			floor = 1;
-			c0 = cluster & 0x1;
-			c1 = cluster & 0x2;
-
-			/* cluster 0 */
-			if (c0)
-				set_min_boost_freq(dvfs_floor, 0);
-			else
-				min_boost_freq[0] = 0;
-
-			/* cluster 1 */
-			if (c1)
-				set_min_boost_freq(dvfs_floor, 1);
-			else
-				min_boost_freq[1] = 0;
-		}
-#endif
-
-		/* update capacity_min */
 		if (boost_value < 0 || boost_value > 100) {
 			/* printk_deferred("warning: boost for capacity_min should be 0~100\n"); */
 			if (boost_value > 100)
@@ -808,8 +808,13 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 
 		ct = allocated_group[group_idx];
 		if (ct) {
+			cap_min = div64_s64(boost_value * 1024, 100);
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+			set_cap_min_freq(cap_min);
+#endif
 			rcu_read_lock();
-			ct->capacity_min = div64_s64(boost_value * 1024, 100);
+			ct->capacity_min = cap_min;
 			/* Update CPU capacity_min */
 			schedtune_boostgroup_update_capacity_min(ct->idx, ct->capacity_min);
 			rcu_read_unlock();
@@ -822,7 +827,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		stune_task_threshold = default_stune_threshold;
 		break;
 	case 3:
-		/* dvfs floor */
+		/* a floor of cpu frequency */
 		boost_value -= ctl_no * 1000;
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
@@ -878,13 +883,15 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		boost_value = -100;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-	if (!floor) {
-		for (i = 0; i < cpu_cluster_nr; i++)
+	for (i = 0; i < cpu_cluster_nr; i++) {
+		if (!floor)
 			min_boost_freq[i] = 0;
-	}
+		if (!cap_min)
+			cap_min_freq[i] = 0;
 
-	for (i = 0; i < cpu_cluster_nr; i++)
 		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
+	}
 
 	/* bypass change boost */
 	if (ctl_no == 4)
@@ -1149,36 +1156,14 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int floor = 0;
 	int i;
 	int c0, c1;
-	int dvfs_floor;
 #endif
 	int ctl_no = div64_s64(boost, 1000);
+	int cap_min = 0;
 
 	switch (ctl_no) {
 	case 4:
+		/* min cpu capacity request */
 		boost -= ctl_no * 1000;
-		cluster = (int)boost / 100;
-		dvfs_floor = (int)boost % 100;
-
-		/* dvfs floor */
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
-			floor = 1;
-			c0 = cluster & 0x1;
-			c1 = cluster & 0x2;
-
-			/* cluster 0 */
-			if (c0)
-				set_min_boost_freq(dvfs_floor, 0);
-			else
-				min_boost_freq[0] = 0;
-
-			/* cluster 1 */
-			if (c1)
-				set_min_boost_freq(dvfs_floor, 1);
-			else
-				min_boost_freq[1] = 0;
-		}
-#endif
 
 		/* update capacity_min */
 		if (boost < 0 || boost > 100) {
@@ -1188,9 +1173,13 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 			else if (boost < 0)
 				boost = 0;
 		}
+		cap_min = div64_s64(boost * 1024, 100);
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		set_cap_min_freq(cap_min);
+#endif
 		rcu_read_lock();
-		st->capacity_min = div64_s64(boost * 1024, 100);
+		st->capacity_min = cap_min;
 		/* Update CPU capacity_min */
 		schedtune_boostgroup_update_capacity_min(st->idx, st->capacity_min);
 		rcu_read_unlock();
@@ -1202,7 +1191,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		stune_task_threshold = default_stune_threshold;
 		break;
 	case 3:
-		/* dvfs floor */
+		/* a floor of cpu frequency */
 		boost -= ctl_no * 1000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
@@ -1255,13 +1244,15 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	}
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-	if (!floor) {
-		for (i = 0; i < cpu_cluster_nr; i++)
+	for (i = 0; i < cpu_cluster_nr; i++) {
+		if (!floor)
 			min_boost_freq[i] = 0;
-	}
+		if (!cap_min)
+			cap_min_freq[i] = 0;
 
-	for (i = 0; i < cpu_cluster_nr; i++)
 		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
+	}
 
 	/* bypass change boost */
 	if (ctl_no == 4)
