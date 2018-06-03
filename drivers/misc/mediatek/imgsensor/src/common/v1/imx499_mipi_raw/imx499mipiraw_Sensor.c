@@ -150,15 +150,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.hs_video = {		/*data rate 1428.0 Mbps/lane */
-		.pclk = 544000000,/*VTP Pixel rate*/
+		.pclk = 580000000,/*VTP Pixel rate*/
 		.linelength = 5120,
-		.framelength = 884,
+		.framelength = 944,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1280,
 		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
-		.mipi_pixel_rate = 652800000,
+		.mipi_pixel_rate = 348000000,
 		.max_framerate = 1200,
 	},
 	.slim_video = {/*data rate 360 Mbps/lane */
@@ -1573,7 +1573,7 @@ kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
 	0x0343, 0x00,
 
 	0x0340, 0x03,
-	0x0341, 0x74,
+	0x0341, 0xB0,
 
 	0x0344, 0x00,
 	0x0345, 0x00,
@@ -1612,21 +1612,21 @@ kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
 	0x0303, 0x02,
 	0x0305, 0x02,
 	0x0306, 0x00,
-	0x0307, 0x88,
-	0x030B, 0x01,
+	0x0307, 0x91,
+	0x030B, 0x02,
 	0x030D, 0x02,
 	0x030E, 0x01,
 	0x030F, 0x22,
 	0x0310, 0x00,
-	0x0820, 0x19,
-	0x0821, 0x80,
+	0x0820, 0x0D,
+	0x0821, 0x98,
 	0x0822, 0x00,
 	0x0823, 0x00,
 
 	0x3E20, 0x02,
 	0x3E3B, 0x00,/*No PD Data 2018.02.14*/
-	0x4434, 0x02,
-	0x4435, 0x30,
+	0x4434, 0x00,
+	0x4435, 0x00,
 	0x8271, 0x00,
 /*Other setting*/
 	0x0106, 0x00,
@@ -1638,7 +1638,7 @@ kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
 	0x3F79, 0xF9,
 
 	0x0202, 0x03,
-	0x0203, 0x62,
+	0x0203, 0x9E,
 
 	0x0204, 0x00,
 	0x0205, 0x00,
