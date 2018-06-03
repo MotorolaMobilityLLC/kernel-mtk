@@ -65,6 +65,7 @@
 
 #include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
+#include "mtk-soc-afe-control.h"
 #ifdef _GIT318_READY
 #include <mtk_clkbuf_ctl.h>
 #endif
@@ -756,6 +757,8 @@ void setOffsetTrimBufferGain(unsigned int gain)
 
 static int mHplTrimOffset = 2048;
 static int mHprTrimOffset = 2048;
+static int dctrim_calibrated;
+static const char * const dctrim_control_state[] = { "Not_Yet", "Calibrating", "Calibrated"};
 static int mhpimpedance;
 
 void CalculateDCCompenForEachdB_L(void)
@@ -768,22 +771,10 @@ void CalculateDCCompenForEachdB_R(void)
 
 void SetHplTrimOffset(int Offset)
 {
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHplTrimOffset = Offset;
-	if ((Offset > 2198) || (Offset < 1898)) {
-		mHplTrimOffset = 2048;
-		pr_err("SetHplTrimOffset offset may be invalid offset = %d\n", Offset);
-	}
 }
 
 void SetHprTrimOffset(int Offset)
 {
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHprTrimOffset = Offset;
-	if ((Offset > 2198) || (Offset < 1898)) {
-		mHprTrimOffset = 2048;
-		pr_err("SetHprTrimOffset offset may be invalid offset = %d\n", Offset);
-	}
 }
 
 void set_hp_impedance(int impedance)
@@ -874,6 +865,126 @@ void OpenTrimBufferHardware(bool enable)
 		/* from yoyo HQA script */
 		TurnOffDacPower();
 	}
+}
+
+static int get_trim_buffer_diff(int channels)
+{
+	int diffValue = 0, onValue = 0, offValue = 0;
+
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	OpenTrimBufferHardware(true); /* buffer off setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenTrimBufferHardware(false);
+
+	/* Buffer On and Get Auxadc values */
+	OpenAnalogHeadphone(true); /* buffer on setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenAnalogHeadphone(false);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
+}
+
+static int get_hp_trim_offset(int channel)
+{
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = get_trim_buffer_diff(channel);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+}
+
+static int pmic_dc_offset_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), %d, %d\n", __func__, mHplTrimOffset, mHprTrimOffset);
+	ucontrol->value.integer.value[0] = mHplTrimOffset;
+	ucontrol->value.integer.value[1] = mHprTrimOffset;
+	return 0;
+}
+
+static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s(), %ld, %ld\n", __func__, ucontrol->value.integer.value[0], ucontrol->value.integer.value[1]);
+	mHplTrimOffset = ucontrol->value.integer.value[0];
+	mHprTrimOffset = ucontrol->value.integer.value[1];
+	return 0;
+}
+
+static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), dctrim_calibrated = %d\n", __func__, dctrim_calibrated);
+	ucontrol->value.integer.value[0] = dctrim_calibrated;
+	return 0;
+}
+
+static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(dctrim_control_state)) {
+		pr_err("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (ucontrol->value.integer.value[0] == 1) {
+		pr_debug("%s(), Start DCtrim Calibrating", __func__);
+		mHplTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
+		mHprTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		dctrim_calibrated = 2;
+		pr_debug("%s(), End DCtrim Calibrating", __func__);
+	} else {
+		dctrim_calibrated = ucontrol->value.integer.value[0];
+	}
+	return 0;
 }
 
 void OpenAnalogTrimHardware(bool enable)
@@ -5389,24 +5500,25 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 
 static const struct soc_enum Pmic_Test_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_LPBK_function), Pmic_LPBK_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dctrim_control_state), dctrim_control_state)
 };
 
 static const struct snd_kcontrol_new mt6331_pmic_Test_controls[] = {
 	SOC_ENUM_EXT("SineTable_DAC_HP", Pmic_Test_Enum[0], SineTable_DAC_HP_Get,
 		     SineTable_DAC_HP_Set),
-	SOC_ENUM_EXT("DAC_LOOP_DAC_HS", Pmic_Test_Enum[1], ADC_LOOP_DAC_HS_Get,
+	SOC_ENUM_EXT("DAC_LOOP_DAC_HS", Pmic_Test_Enum[0], ADC_LOOP_DAC_HS_Get,
 		     ADC_LOOP_DAC_HS_Set),
-	SOC_ENUM_EXT("DAC_LOOP_DAC_HP", Pmic_Test_Enum[2], ADC_LOOP_DAC_HP_Get,
+	SOC_ENUM_EXT("DAC_LOOP_DAC_HP", Pmic_Test_Enum[0], ADC_LOOP_DAC_HP_Get,
 		     ADC_LOOP_DAC_HP_Set),
-	SOC_ENUM_EXT("Voice_Call_DAC_DAC_HS", Pmic_Test_Enum[3], Voice_Call_DAC_DAC_HS_Get,
+	SOC_ENUM_EXT("Voice_Call_DAC_DAC_HS", Pmic_Test_Enum[0], Voice_Call_DAC_DAC_HS_Get,
 		     Voice_Call_DAC_DAC_HS_Set),
-	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[4], SineTable_UL2_Get, SineTable_UL2_Set),
-	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[5], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[0], SineTable_UL2_Get, SineTable_UL2_Set),
+	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[1], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_ENUM_EXT("Dctrim_Control_Switch", Pmic_Test_Enum[2],
+		     pmic_dctrim_control_get, pmic_dctrim_control_set),
+	SOC_DOUBLE_EXT("DcTrim_DC_Offset", SND_SOC_NOPM, 0, 1, 0x20000, 0,
+		       pmic_dc_offset_get, pmic_dc_offset_set),
 };
 
 static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
