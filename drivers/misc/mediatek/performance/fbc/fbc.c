@@ -615,7 +615,7 @@ static void notify_twanted_timeout_eas(void)
 
 	if (chase_boost1 > 100)
 		chase_boost1 = 100;
-	perfmgr_kick_fg_boost(KIR_FBC, chase_boost1);
+	perfmgr_kick_fg_boost(KIR_FBC, chase_boost1 + 2000);
 	fbc_tracer(-3, "boost_value", chase_boost1);
 
 	boost_flag = 1;
@@ -826,7 +826,7 @@ void notify_frame_complete_eas(unsigned long frame_time)
 		fbc_tracer(-3, "boost_value", 0);
 		boost_flag = 0;
 	} else {
-		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	}
@@ -891,7 +891,7 @@ void notify_intended_vsync_eas(void)
 	}
 
 	if (chase == 0) {
-		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	} else if (chase == 1) {
@@ -904,7 +904,7 @@ void notify_intended_vsync_eas(void)
 
 		if (chase_boost2 > 100)
 			chase_boost2 = 100;
-		perfmgr_kick_fg_boost(KIR_FBC, chase_boost2);
+		perfmgr_kick_fg_boost(KIR_FBC, chase_boost2 + 2000);
 		fbc_tracer(-3, "boost_value", chase_boost2);
 	}
 
