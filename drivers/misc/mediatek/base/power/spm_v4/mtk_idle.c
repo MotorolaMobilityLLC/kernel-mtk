@@ -92,7 +92,7 @@ static bool mt_dpidle_chk_golden;
 void go_to_wfi(void)
 {
 	isb();
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 }
 
@@ -920,7 +920,7 @@ static void go_to_slidle(int cpu)
 {
 	slidle_before_wfi(cpu);
 
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 
 	slidle_after_wfi(cpu);
