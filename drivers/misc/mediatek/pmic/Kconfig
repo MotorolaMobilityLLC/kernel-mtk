@@ -102,6 +102,7 @@ config MTK_AUXADC_INTF
 config REGULATOR_ISL91302A
 	bool "Intersil Spi Ext Buck Isl91302a"
 	depends on MTK_EXTBUCK
+	select RT_REGMAP
 	default n
 	---help---
 	 Intersil SPI Interface
