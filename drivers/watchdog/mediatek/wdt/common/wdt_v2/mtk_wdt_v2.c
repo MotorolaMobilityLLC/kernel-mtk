@@ -69,22 +69,6 @@ static const struct of_device_id rgu_of_match[] = {
 #define AP_RGU_WDT_IRQ_ID       wdt_irq_id
 #define AP_RGU_SSPM_WDT_IRQ_ID  wdt_sspm_irq_id
 
-/**
- * Set the reset length: we will set a special magic key.
- * For Power off and power on reset, the INTERVAL default value is 0x7FF.
- * We set Interval[1:0] to different value to distinguish different stage.
- * Enter pre-loader, we will set it to 0x0
- * Enter u-boot, we will set it to 0x1
- * Enter kernel, we will set it to 0x2
- * And the default value is 0x3 which means reset from
- * a power off and power on reset
- */
-#define POWER_OFF_ON_MAGIC	(0x3)
-#define PRE_LOADER_MAGIC	(0x0)
-#define U_BOOT_MAGIC		(0x1)
-#define KERNEL_MAGIC		(0x2)
-#define MAGIC_NUM_MASK		(0x3)
-
 #ifdef CONFIG_KICK_SPM_WDT
 #include <mach/mt_spm.h>
 static void spm_wdt_init(void);
@@ -100,6 +84,16 @@ static bool wdt_intr_has_trigger; /* For test use */
 #ifndef CONFIG_KICK_SPM_WDT
 static unsigned int timeout;
 #endif
+
+static void mtk_wdt_mark_stage(unsigned int stage)
+{
+	unsigned int reg = __raw_readl(MTK_WDT_NONRST_REG2);
+
+	reg = (reg & ~(RGU_STAGE_MASK << MTK_WDT_NONRST2_STAGE_OFS))
+		| (stage << MTK_WDT_NONRST2_STAGE_OFS);
+
+	mt_reg_sync_writel(reg, MTK_WDT_NONRST_REG2);
+}
 
 /*
  *   this function set the timeout value.
@@ -994,7 +988,6 @@ int mtk_wdt_dfd_timeout(int value) {return 0; }
 static int mtk_wdt_probe(struct platform_device *dev)
 {
 	int ret = 0;
-	unsigned int interval_val;
 	struct device_node *node;
 	u32 ints[2] = { 0, 0 };
 
@@ -1007,6 +1000,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 			return -ENODEV;
 		}
 	}
+
+	mtk_wdt_mark_stage(RGU_STAGE_KERNEL);
 
 	/* get irq for AP WDT */
 	if (!wdt_irq_id) {
@@ -1107,14 +1102,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	wdt_enable = 0;
 	#endif
 
-	/* Update interval register value and check reboot flag */
-	interval_val = __raw_readl(MTK_WDT_INTERVAL);
-	interval_val &= ~(MAGIC_NUM_MASK);
-	interval_val |= (KERNEL_MAGIC);
-	interval_val |= MTK_WDT_INTERNAL_KEY;
-	/* Write back INTERVAL REG */
-	mt_reg_sync_writel(interval_val, MTK_WDT_INTERVAL);
-
 	/* Reset External debug key */
 	mtk_wdt_request_en_set(MTK_WDT_REQ_MODE_SYSRST, WD_REQ_DIS);
 	mtk_wdt_request_en_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_DIS);
@@ -1123,7 +1110,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 #else /* __USING_DUMMY_WDT_DRV__ */
 
-	interval_val = 0; /* dummy assignment */
+	/* dummy assignment */
 
 #endif /* __USING_DUMMY_WDT_DRV__ */
 
