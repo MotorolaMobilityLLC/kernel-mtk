@@ -157,7 +157,7 @@
 	static int isGPUDCBDETOverflow, is2LDCBDETOverflow;
 	static int isLDCBDETOverflow, isCCIDCBDETOverflow;
 	/* static unsigned int ateVer; */
-
+	#ifndef EARLY_PORTING_PMIC
 	/* for setting pmic pwm mode and auto mode */
 	struct regulator *eem_regulator_proc1;
 	struct regulator *eem_regulator_proc2;
@@ -165,6 +165,7 @@
 	static unsigned int eem_vproc1_is_enabled_by_eem;
 	static unsigned int eem_vproc2_is_enabled_by_eem;
 	static unsigned int eem_vgpu_is_enabled_by_eem;
+	#endif
 	#if 0 /* no record table */
 	u32 *recordRef;
 	#endif
@@ -221,7 +222,6 @@
 	phys_addr_t eem_log_phy_addr, eem_log_virt_addr;
 	uint32_t eem_log_size;
 	static unsigned int eem_disable = 1;
-	/* static unsigned int checkEfuse; */
 	struct eem_log *eem_logs;
 
 #endif /* if EEM_ENABLE_TINYSYS_SSPM */
@@ -234,27 +234,30 @@
 	struct clk *clk_mfg_core1, *clk_mfg_core0;
 #endif
 
-#if 1
-/* SOC Voltage (10uv)*/
-unsigned int vcore_opp[VCORE_NR_FREQ][4] = {
-	{90000, 102500, 100000, 97500},/* 80000 */
-	{90000, 97500, 95000, 92500}, /* 80000 */
-	{80000, 87500, 85000, 82500}, /* 70000 */
-	{80000, 87500, 85000, 82500}, /* 65000 */
+/* SOC E1 Voltage (10uv)*/
+static unsigned int vcore_opp_1[VCORE_NR_FREQ][4] = {
+	{90000, 0, 0, 0},
+	{90000, 0, 0, 0},
+	{80000, 0, 0, 0},
+	{80000, 0, 0, 0},
 };
-#else
-unsigned int vcore_opp[VCORE_NR_FREQ][4] = {
-	{90000, 102500, 100000, 97500},/* 80000 */
-	{90000, 97500, 95000, 92500}, /* 80000 */
-	{80000, 87500, 85000, 82500}, /* 70000 */
-	{80000, 87500, 85000, 82500}, /* 65000 */
+/* SOC E2 Voltage (10uv)*/
+static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
+	{84000, 815000, 79000, 76500},
+	{79000, 765000, 74000, 71500},
+	{74000, 71500, 69000, 66500},
+	{69000, 66500, 64000, 61500},
 };
-#endif
 
+/* ptr that points to E1 or E2 opp table */
+unsigned int (*vcore_opp)[VCORE_NR_FREQ];
+/* final vcore opp table */
 unsigned int eem_vcore[VCORE_NR_FREQ];
+/* record index for vcore opp table from efuse */
 unsigned int eem_vcore_index[VCORE_NR_FREQ] = {0};
-
+static unsigned int eem_chip_ver;
 static int eem_log_en;
+static unsigned int eem_checkEfuse = 1;
 /* static unsigned int informGpuEEMisReady;*/
 
 /* Global variable for slow idle*/
@@ -268,6 +271,38 @@ static u32 eem_irq_number;
 * common functions for both ap and sspm eem
 *=============================================================
 */
+static void get_vcore_opp(void)
+{
+	eem_chip_ver = mt_get_chip_sw_ver();
+	/* chip ver = 0 if E1 */
+	if (eem_chip_ver == CHIP_SW_VER_01)
+		vcore_opp = &vcore_opp_1[0];
+	else
+		vcore_opp = &vcore_opp_2[0];
+
+	eem_debug("chip ver=%d\n", eem_chip_ver);
+}
+
+#if !EEM_BANK_SOC
+static void get_soc_efuse(void)
+{
+	unsigned int soc_efuse;
+	/* if E2, use volt bin */
+	if (eem_chip_ver == CHIP_SW_VER_01)
+		soc_efuse = 0;
+	else
+		soc_efuse = get_devinfo_with_index(DEVINFO_IDX_VOLT_BIN);
+
+	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
+	eem_vcore_index[0] = (soc_efuse >> 4) & 0x03;
+	eem_vcore_index[1] = (soc_efuse >> 2) & 0x03;
+	eem_vcore_index[2] = soc_efuse & 0x03;
+	eem_vcore_index[3] = 0;
+	eem_error("eem_vcore_index:%d, %d, %d, %d\n", eem_vcore_index[0], eem_vcore_index[1],
+				eem_vcore_index[2], eem_vcore_index[3]);
+}
+#endif
+
 static struct eem_det *id_to_eem_det(enum eem_det_id id)
 {
 	if (likely(id < NR_EEM_DET))
@@ -335,6 +370,8 @@ static int get_devinfo(void)
 {
 	int ret = 0;
 	int *val;
+	int i = 0;
+	struct eem_det *det;
 
 	/* if legacy eem, save efuse data into eem_devinfo */
 	/* if sspm eem, save efuse data into logs */
@@ -441,18 +478,19 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
 	eem_debug("M_HW_RES11 = 0x%08X\n", val[11]);
 	FUNC_ENTER(FUNC_LV_HELP);
-	#if 0
+
 	/* NR_HW_RES_FOR_BANK =  12 for 6 banks efuse */
-	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
+	for (i = 0; i < NR_HW_RES_FOR_BANK-2; i++) {
 		if (val[i] == 0) {
 			ret = 1;
-			infoIdvfs = 0x55;
-			checkEfuse = 0;
+			/* infoIdvfs = 0x55; */
+			eem_checkEfuse = 0;
 			eem_error("No EEM EFUSE available, will turn off EEM (val[%d] !!\n", i);
+			for_each_det(det)
+				det->disabled = 1;
 			break;
 		}
 	}
-	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 	return ret;
@@ -970,7 +1008,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 #if defined(__MTK_SLT_)
 		mdelay(200);
 #endif
-		udelay(100); /* all banks' phase cannot be set without delay */
+		udelay(250); /* all banks' phase cannot be set without delay */
 		break;
 
 	case EEM_PHASE_INIT02:
@@ -988,7 +1026,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 #if defined(__MTK_SLT_)
 		mdelay(200);
 #endif
-		udelay(100); /* all banks' phase cannot be set without delay */
+		udelay(200); /* all banks' phase cannot be set without delay */
 		break;
 
 	case EEM_PHASE_MON:
@@ -1480,7 +1518,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 
 	 /* for DVT SOC input values are the same as CCI*/
-	#if EEM_BANK_SOC
 	case EEM_DET_SOC:
 		det->MDES	= devinfo->SOC_MDES;
 		det->BDES	= devinfo->SOC_BDES;
@@ -1491,7 +1528,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->AGEDELTA	= devinfo->SOC_AGEDELTA;
 		det->MTDES	= devinfo->SOC_MTDES;
 		break;
-	#endif
+
 	default:
 		eem_debug("[%s]: Unknown det_id %d\n", __func__, det_id);
 		break;
@@ -2731,6 +2768,7 @@ void eem_init02(void)
 }
 
 /* get regulator reference */
+#ifndef EARLY_PORTING_PMIC
 static int eem_buck_get(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -2841,7 +2879,9 @@ static void eem_buck_disable(void)
 static void eem_buck_set_mode(unsigned int mode)
 {
 	unsigned int final_mode;
+	#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
 	int ret = 0;
+	#endif
 
 	final_mode = (mode == 1) ? REGULATOR_MODE_FAST : REGULATOR_MODE_NORMAL;
 	/* set pwm mode for each buck */
@@ -2859,6 +2899,7 @@ static void eem_buck_set_mode(unsigned int mode)
 		#endif
 	#endif /* if EEM_BANK_SOC */
 }
+#endif /* ifndef EARLY_PORTING_PMIC */
 
 void eem_init01(void)
 {
@@ -2926,10 +2967,10 @@ void eem_init01(void)
 	mt_eem_enable_big_cluster(0);
 
 	/* set non PWM mode*/
-	#if !EARLY_PORTING
+	#ifndef EARLY_PORTING_PMIC
 		eem_buck_set_mode(0);
 		eem_buck_disable();
-	#endif /* ifndef EARLY_PORTING */
+	#endif /* ifndef EARLY_PORTING_PMIC */
 
 	#ifdef __KERNEL__
 	mt_eem_disable_mtcmos();
@@ -3109,7 +3150,7 @@ static int eem_probe(struct platform_device *pdev)
 	#endif
 
 	/* set PWM mode*/
-	#if !EARLY_PORTING
+	#ifndef EARLY_PORTING_PMIC
 		/* get regulator reference */
 		ret = eem_buck_get(pdev);
 		if (ret != 0)
@@ -3117,7 +3158,7 @@ static int eem_probe(struct platform_device *pdev)
 
 		eem_buck_enable();
 		eem_buck_set_mode(1);
-	#endif /* ifndef EARLY_PORTING */
+	#endif /* ifndef EARLY_PORTING_PMIC */
 
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
@@ -4368,7 +4409,7 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 /*
 unsigned int get_efuse_status(void)
 {
-	return checkEfuse;
+	return eem_checkEfuse;
 }
 */
 
@@ -4452,23 +4493,15 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 			vcore0, vcore1, vcore2);
 	}
 	#endif
-	#if !EEM_BANK_SOC
-	unsigned int soc_efuse;
-	#endif
 	int i = 0;
 	struct eem_det *det;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+	get_vcore_opp();
+
 	#if !EEM_BANK_SOC
-	/* Read EFUSE */
-	/* soc_efuse = get_devinfo_with_index(54);*/
-	soc_efuse = 0;
-	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
-	eem_vcore_index[0] = (soc_efuse >> 4) & 0x03;
-	eem_vcore_index[1] = (soc_efuse >> 2) & 0x03;
-	eem_vcore_index[2] = soc_efuse & 0x03;
-	eem_vcore_index[3] = 0;
+	get_soc_efuse();
 	#endif
 
 	det = id_to_eem_det(EEM_DET_SOC);
@@ -4476,7 +4509,7 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 
 	if (det->ops->volt_2_pmic) {
 		for (i = 0; i < VCORE_NR_FREQ; i++)
-			eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
+			eem_vcore[i] = det->ops->volt_2_pmic(det, *(vcore_opp[i]+eem_vcore_index[i]));
 	}
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
@@ -4569,7 +4602,7 @@ int __init eem_init(void)
 	create_procfs();
 	#endif
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
-	if (ctrl_EEM_Enable == 0) {
+	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0) {
 		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
@@ -4690,16 +4723,6 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 		break;
 	#endif
 
-	case IPI_EEM_DEBUG_PROC_SHOW:
-		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
-		if (ret != 0)
-			eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_SHOW) ret:%d - %d\n",
-						ret, ackData);
-		else if (ackData < 0)
-			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
-		break;
-
 	case IPI_EEM_DEBUG_PROC_WRITE:
 		eem_data->cmd = cmd;
 		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
@@ -4799,7 +4822,6 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
  */
 static int eem_debug_proc_show(struct seq_file *m, void *v)
 {
-	struct eem_ipi_data eem_data;
 	int ret = 0;
 	struct eem_det *det = (struct eem_det *)m->private;
 
@@ -4812,14 +4834,14 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 		   "disabled"
 		   );
 	} else {
-		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
-		eem_data.u.data.arg[0] = det_to_id(det);
-		/* return det EEMEN by det->ops->get_status */
-		ret = eem_to_sspm(IPI_EEM_DEBUG_PROC_SHOW, &eem_data);
+		if ((det->ctrl_id == EEM_CTRL_SOC) && (det->features == 0))
+			ret = 1;
+		else
+			ret = det->disabled;
 
 		seq_printf(m, "[%s] %s (0x%X)\n",
 		   ((char *)(det->name) + 8),
-		   ret ? "disabled" : "enable",
+		   ret ? "disable" : "enable",
 		   ret
 		   );
 	}
@@ -4870,6 +4892,7 @@ static ssize_t eem_debug_proc_write(struct file *file,
 		eem_data.u.data.arg[0] = det_to_id(det);
 		eem_data.u.data.arg[1] = enabled;
 		ipi_ret = eem_to_sspm(IPI_EEM_DEBUG_PROC_WRITE, &eem_data);
+		det->disabled = enabled;
 	} else
 		ret = -EINVAL;
 
@@ -5640,32 +5663,23 @@ static int __init vcore_ptp_init(void)
 {
 	int i = 0;
 	struct eem_det *det;
-	#if !EEM_BANK_SOC
-	unsigned int soc_efuse;
-	#endif
+
+	get_vcore_opp();
 
 	eem_log_phy_addr = sspm_reserve_mem_get_phys(PTPOD_MEM_ID);
 	eem_log_virt_addr = sspm_reserve_mem_get_virt(PTPOD_MEM_ID);
 	eem_log_size = sspm_reserve_mem_get_size(PTPOD_MEM_ID);
 	eem_logs = (struct eem_log *)eem_log_virt_addr;
 
-	/* if voltage bin, choose idx from efuse */
-	/* if PTP bin, index will be 0 for each opp */
 	#if !EEM_BANK_SOC
-	soc_efuse = get_devinfo_with_index(54);
-	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
-	eem_vcore_index[0] = (soc_efuse >> 4) & 0x03;
-	eem_vcore_index[1] = (soc_efuse >> 2) & 0x03;
-	eem_vcore_index[2] = soc_efuse & 0x03;
-	eem_vcore_index[3] = 0;
-	/* eem_vcore_index[4] = 0; */
+	get_soc_efuse();
 	#endif
 
 	det = id_to_eem_det(EEM_DET_SOC);
 	inherit_base_det(det);
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_vcore[i] = det->ops->volt_2_pmic(det, vcore_opp[i][eem_vcore_index[i]]);
+		eem_vcore[i] = det->ops->volt_2_pmic(det, *(vcore_opp[i]+eem_vcore_index[i]));
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
@@ -5906,7 +5920,7 @@ static int __init eem_init(void)
 	#endif
 
 	/* use eem_disable to decide what procfs to create */
-	if (eem_disable > 0) {
+	if (eem_disable > 0 || eem_checkEfuse == 0) {
 		eem_error("EEM disabled\n");
 		/* informGpuEEMisReady = 1;*/
 		FUNC_EXIT(FUNC_LV_MODULE);
