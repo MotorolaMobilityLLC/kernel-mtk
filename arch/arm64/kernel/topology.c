@@ -728,8 +728,6 @@ const struct sched_group_energy *cpu_core_energy(int cpu)
 	int cluster_id = cpu_topology[cpu].cluster_id;
 	struct sched_group_energy *cpu_core_ptr;
 #ifdef CONFIG_MTK_UNIFY_POWER
-	struct upower_tbl_info **addr_ptr_tbl_info;
-	struct upower_tbl_info *ptr_tbl_info;
 	struct upower_tbl *ptr_tbl;
 #endif
 
@@ -743,10 +741,7 @@ const struct sched_group_energy *cpu_core_energy(int cpu)
 		return NULL;
 
 #ifdef CONFIG_MTK_UNIFY_POWER
-	addr_ptr_tbl_info = upower_get_tbl();
-	ptr_tbl_info = *addr_ptr_tbl_info;
-
-	ptr_tbl = ptr_tbl_info[UPOWER_BANK_LL+cluster_id].p_upower_tbl;
+	ptr_tbl = upower_get_core_tbl(cpu);
 
 	cpu_core_ptr->nr_cap_states = ptr_tbl->row_num;
 	cpu_core_ptr->cap_states = ptr_tbl->row;

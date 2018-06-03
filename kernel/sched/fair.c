@@ -6009,7 +6009,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		}
 
 	/* no need energy calculation if the same domain */
-	if (is_intra_domain(task_cpu(p), target_cpu))
+	if (is_intra_domain(task_cpu(p), target_cpu) && target_cpu != l_plus_cpu)
 		return target_cpu;
 
 	if (task_util(p) <= 0)
