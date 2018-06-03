@@ -5279,7 +5279,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			aal_request_partial_support(1);
 
-		if (!aal_is_partial_support() && !ddp_debug_force_roi())
+		if ((!aal_is_partial_support() || PanelMaster_is_enable() == 1) && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
 		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
@@ -7051,6 +7051,9 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	 * 4: unlock path
 	 * 1: stop path
 	 */
+	 primary_display_idlemgr_kick(__func__, 0);
+	_blocking_flush();
+	/* blocking flush before stop trigger loop */
 	_cmdq_stop_trigger_loop();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
@@ -7063,6 +7066,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 			ret = -1;
 		}
 	}
+
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[ESD]stop dpmgr path[end]\n");
 
@@ -7082,8 +7086,10 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 			pLcm_drv->init();
 		else
 			ret = -1;
+
 		force_trigger_path = 1;
 	}
+
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (primary_display_is_video_mode()) {
 		/* for video mode, we need to force trigger here */
@@ -7092,6 +7098,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 
 		force_trigger_path = 0;
 	}
+
 	_cmdq_start_trigger_loop();
 
 	/* when we stop trigger loop*/
@@ -7100,6 +7107,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	DISPCHECK("[Pmaster]start cmdq trigger loop\n");
+
 done:
 	_primary_path_unlock(__func__);
 
@@ -7107,6 +7115,9 @@ done:
 		primary_display_trigger(0, NULL, 0);
 		DISPCHECK("[Pmaster]force trigger display path\r\n");
 	}
+
+	if (!strcmp(name, "DRIVER_IC_RESET") || !strcmp(name, "PM_DDIC_CONFIG"))
+		primary_display_esd_check_enable(1);
 
 	return ret;
 }

@@ -3241,7 +3241,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 
-	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);
+	/*DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);*/
 
 	return 0;
 }
@@ -4686,6 +4686,14 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, enum MIPI_SETTING_TYPE type)
 	}
 	dsi_val = 0;
 	return dsi_val;
+}
+
+unsigned int PanelMaster_is_enable(void)
+{
+	if (atomic_read(&PMaster_enable) == 1)
+		return 1;
+	else
+		return 0;
 }
 
 unsigned int PanelMaster_set_PM_enable(unsigned int value)
