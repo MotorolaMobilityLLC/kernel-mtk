@@ -900,11 +900,12 @@ static void fbt_do_boost(int *clus_opp, unsigned int *clus_floor_freq, int pid)
 				pld[cluster].max = min_ceiling;
 		}
 
+		base_freq[cluster] = clus_floor_freq[cluster];
+
 		fpsgo_systrace_c_fbt(pid, pld[cluster].max, "cluster%d ceiling_freq", cluster);
 	}
 
 	tgt_freq = clus_floor_freq[max_freq_cluster];
-	base_freq[cluster] = tgt_freq;
 	final_blc = tgt_freq * 100;
 	do_div(final_blc, cpu_max_freq);
 	final_blc = clamp(final_blc, 1U, 100U);
@@ -1978,6 +1979,7 @@ static int fbt_switch_idleprefer_show(struct seq_file *m, void *unused)
 	mutex_lock(&fbt_mlock);
 	SEQ_printf(m, "fbt_idleprefer_enable:%d\n", fbt_idleprefer_enable);
 	mutex_unlock(&fbt_mlock);
+
 	return 0;
 }
 
