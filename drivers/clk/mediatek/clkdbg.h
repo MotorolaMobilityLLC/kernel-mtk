@@ -65,6 +65,7 @@ struct provider_clk {
 	const char *provider_name;
 	u32 idx;
 	struct clk *ck;
+	u32 pwr_mask;
 };
 
 struct clkdbg_ops {
@@ -75,6 +76,7 @@ struct clkdbg_ops {
 	const struct regname *(*get_all_regnames)(void);
 	const char * const *(*get_all_clk_names)(void);
 	const char * const *(*get_pwr_names)(void);
+	void (*setup_provider_clk)(struct provider_clk *pvdck);
 };
 
 void set_clkdbg_ops(const struct clkdbg_ops *ops);
