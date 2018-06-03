@@ -47,7 +47,7 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail\n", __func__, RegNum);
@@ -78,7 +78,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 		return mt6337_config_interface_nolock(RegNum, val, MASK, SHIFT);
 #ifndef IPIMB
 	mutex_lock(&mt6337_access_mutex);
-	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[%s] Reg[0x%x] val=0x%x MASK=0x%x SHIFT=%d pmic_wrap read data fail\n",
@@ -92,7 +92,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	return_value = pwrap_wacs2_audio_write((RegNum), pmic_reg);
+	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		pr_err("[%s] Reg[0x%x] val=0x%x MASK=0x%x SHIFT=%d pmic_wrap write data fail\n",
 			__func__, RegNum, val, MASK, SHIFT);
@@ -124,7 +124,7 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
+	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[%s] Reg[0x%x] val=0x%x MASK=0x%x SHIFT=%d pmic_wrap read data fail\n",
@@ -137,7 +137,7 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	return_value = pwrap_wacs2_audio_write((RegNum), pmic_reg);
+	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		pr_err("[%s] Reg[0x%x] val=0x%x MASK=0x%x SHIFT=%d pmic_wrap write data fail\n",
 			__func__, RegNum, val, MASK, SHIFT);
