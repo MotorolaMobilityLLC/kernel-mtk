@@ -93,7 +93,7 @@ struct ccci_fsm_command {
 #define CCCI_CMD_FLAG_FLIGHT_MODE (1 << 1)
 
 #define EVENT_POLL_INTEVAL 500 /* ms */
-#define BOOT_TIMEOUT 10000
+#define BOOT_TIMEOUT (6*10000)/* 10000 */
 #define MD_EX_CCIF_TIMEOUT 10000
 #define MD_EX_REC_OK_TIMEOUT 10000
 #define MD_EX_PASS_TIMEOUT 10000

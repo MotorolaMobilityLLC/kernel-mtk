@@ -88,6 +88,11 @@ bool __weak is_clk_buf_from_pmic(void)
 	return false;
 }
 
+void __weak clk_buf_get_swctrl_status(void *swctrl_status)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+}
+
 void __weak clk_buf_get_rf_drv_curr(void *rf_drv_curr)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
