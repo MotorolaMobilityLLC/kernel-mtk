@@ -59,6 +59,13 @@
  */
 #define CONFIG_MTK_TIMER_AEE_DUMP
 
+#ifdef CONFIG_MTK_TIMER_AEE_DUMP
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#include <mt-plat/mtk_ram_console.h>
+
+static char gpt_clkevt_aee_dump_buf[128];
+#endif
+#endif
 
 #define GPT_CLKEVT_ID       (GPT1)
 #define GPT_CLKSRC_ID       (GPT2)
@@ -219,7 +226,7 @@ static struct irqaction gpt_irq = {
 };
 
 static uint64_t gpt_clkevt_last_interrupt_time;
-static uint64_t gpt_clkevt_last_setting_time;
+static uint64_t gpt_clkevt_last_setting_next_event_time;
 
 static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id)
 {
@@ -268,26 +275,77 @@ static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id)
 
 void mt_gpt_clkevt_aee_dump(void)
 {
+#if defined(CONFIG_MTK_RAM_CONSOLE) && defined(CONFIG_MTK_TIMER_AEE_DUMP)
+
+	/*
+	 * Notice: printk cannot be used during AEE flow to avoid lock issues.
+	 */
+
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
-	/* last interrutp time */
-	pr_info("[GPT] last interrupt time: %llu\n", gpt_clkevt_last_interrupt_time);
-	pr_info("[GPT] last setting time: %llu\n", gpt_clkevt_last_setting_time);
+	/* last interrupt time */
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] last interrupt time: %llu\n", gpt_clkevt_last_interrupt_time);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	/* last time of setting next event */
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] last setting next event time: %llu\n", gpt_clkevt_last_setting_next_event_time);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
 	/* global gpt status */
-	pr_info("[GPT] IRQEN: 0x%x\n", __raw_readl(GPT_IRQEN));
-	pr_info("[GPT] IRQSTA: 0x%x\n", __raw_readl(GPT_IRQSTA));
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] IRQEN: 0x%x\n", __raw_readl(GPT_IRQEN));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] IRQSTA: 0x%x\n", __raw_readl(GPT_IRQSTA));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
 	/* gpt1 status */
-	pr_info("[GPT1] CON: 0x%x\n", __raw_readl(dev->base_addr + GPT_CON));
-	pr_info("[GPT1] CLK: 0x%x\n", __raw_readl(dev->base_addr + GPT_CLK));
-	pr_info("[GPT1] CNT: 0x%x\n", __raw_readl(dev->base_addr + GPT_CNT));
-	pr_info("[GPT1] CMP: 0x%x\n", __raw_readl(dev->base_addr + GPT_CMP));
 
-	pr_info("[GPT1] irq affinity: %d\n", gpt_clockevent.irq_affinity_on);
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT1] CON: 0x%x\n", __raw_readl(dev->base_addr + GPT_CON));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
-	/* dump apxgpt irq status */
-	mt_irq_dump_status(xgpt_timers.tmr_irq);
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT1] CLK: 0x%x\n", __raw_readl(dev->base_addr + GPT_CLK));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT1] CNT: 0x%x\n", __raw_readl(dev->base_addr + GPT_CNT));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT1] CMP: 0x%x\n", __raw_readl(dev->base_addr + GPT_CMP));
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT1] irq affinity: %d\n", gpt_clockevent.irq_affinity_on);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	/*
+	 * TODO: dump apxgpt irq status
+	 *
+	 * Since printk cannot be used during AEE flow, we may need to
+	 * change printk way in mt_irq_dump_status().
+	 */
+
+	/* mt_irq_dump_status(xgpt_timers.tmr_irq); */
+
+#endif
 }
 
 static void __gpt_enable_irq(struct gpt_device *dev)
@@ -479,7 +537,7 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 	__gpt_wait_clrcnt_then_start(dev);
 
 #if defined(CONFIG_MTK_TIMER_AEE_DUMP)
-	gpt_clkevt_last_setting_time = sched_clock();
+	gpt_clkevt_last_setting_next_event_time = sched_clock();
 #endif
 	return 0;
 }
