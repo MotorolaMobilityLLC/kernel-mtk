@@ -1379,6 +1379,11 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case AEEIOCTL_SET_AEE_MODE:
 		{
+			if (strncmp(current->comm, "aee_aed", 7)) {
+				LOGD("unexpected user: %s", current->comm);
+				goto EXIT;
+			}
+
 			if (copy_from_user(&aee_mode_tmp, (void __user *)arg,
 					sizeof(aee_mode_tmp))) {
 				ret = -EFAULT;
@@ -1781,6 +1786,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 
 
 	#if 1
+	down_read(&current_task->mm->mmap_sem);
 	vma = current_task->mm->mmap;
 	while (vma && (mapcount < current_task->mm->map_count)) {
 		file = vma->vm_file;
@@ -1827,6 +1833,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		mapcount++;
 
 	}
+	up_read(&current_task->mm->mmap_sem);
 	#endif
 
 	LOGD("maps addr(0x%08lx), maps len:%d\n",
