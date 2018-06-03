@@ -126,12 +126,115 @@ static struct pm_qos_object memory_bandwidth_pm_qos = {
 };
 
 
+static BLOCKING_NOTIFIER_HEAD(cpu_memory_bandwidth_notifier);
+static struct pm_qos_constraints cpu_memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(cpu_memory_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(cpu_memory_bw_constraints.list),
+	.target_value = PM_QOS_CPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_CPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_CPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &cpu_memory_bandwidth_notifier,
+};
+static struct pm_qos_object cpu_memory_bandwidth_pm_qos = {
+	.constraints = &cpu_memory_bw_constraints,
+	.name = "cpu_memory_bandwidth",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(gpu_memory_bandwidth_notifier);
+static struct pm_qos_constraints gpu_memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(gpu_memory_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(gpu_memory_bw_constraints.list),
+	.target_value = PM_QOS_GPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_GPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_GPU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &gpu_memory_bandwidth_notifier,
+};
+static struct pm_qos_object gpu_memory_bandwidth_pm_qos = {
+	.constraints = &gpu_memory_bw_constraints,
+	.name = "gpu_memory_bandwidth",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(mm_memory_bandwidth_notifier);
+static struct pm_qos_constraints mm_memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(mm_memory_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(mm_memory_bw_constraints.list),
+	.target_value = PM_QOS_MM_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &mm_memory_bandwidth_notifier,
+};
+static struct pm_qos_object mm_memory_bandwidth_pm_qos = {
+	.constraints = &mm_memory_bw_constraints,
+	.name = "mm_memory_bandwidth",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(md_peri_memory_bandwidth_notifier);
+static struct pm_qos_constraints md_peri_memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(md_peri_memory_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(md_peri_memory_bw_constraints.list),
+	.target_value = PM_QOS_MD_PERI_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_MD_PERI_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MD_PERI_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &md_peri_memory_bandwidth_notifier,
+};
+static struct pm_qos_object md_peri_memory_bandwidth_pm_qos = {
+	.constraints = &md_peri_memory_bw_constraints,
+	.name = "md_peri_memory_bandwidth",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(emi_opp_notifier);
+static struct pm_qos_constraints emi_opp_constraints = {
+	.req_list = LIST_HEAD_INIT(emi_opp_constraints.req_list),
+	.list = PLIST_HEAD_INIT(emi_opp_constraints.list),
+	.target_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
+	.default_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &emi_opp_notifier,
+};
+static struct pm_qos_object emi_opp_pm_qos = {
+	.constraints = &emi_opp_constraints,
+	.name = "emi_opp",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(vcore_opp_notifier);
+static struct pm_qos_constraints vcore_opp_constraints = {
+	.req_list = LIST_HEAD_INIT(vcore_opp_constraints.req_list),
+	.list = PLIST_HEAD_INIT(vcore_opp_constraints.list),
+	.target_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
+	.default_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &vcore_opp_notifier,
+};
+static struct pm_qos_object vcore_opp_pm_qos = {
+	.constraints = &vcore_opp_constraints,
+	.name = "vcore_opp",
+};
+
 static struct pm_qos_object *pm_qos_array[] = {
 	&null_pm_qos,
 	&cpu_dma_pm_qos,
 	&network_lat_pm_qos,
 	&network_throughput_pm_qos,
 	&memory_bandwidth_pm_qos,
+
+	&cpu_memory_bandwidth_pm_qos,
+	&gpu_memory_bandwidth_pm_qos,
+	&mm_memory_bandwidth_pm_qos,
+	&md_peri_memory_bandwidth_pm_qos,
+
+	&emi_opp_pm_qos,
+	&vcore_opp_pm_qos,
 };
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
@@ -448,7 +551,7 @@ EXPORT_SYMBOL_GPL(pm_qos_request_active);
 static void __pm_qos_update_request(struct pm_qos_request *req,
 			   s32 new_value)
 {
-	trace_pm_qos_update_request(req->pm_qos_class, new_value);
+	trace_pm_qos_update_request(req->pm_qos_class, new_value, req->owner);
 
 	if (new_value != req->node.prio) {
 		pm_qos_update_target(
@@ -504,7 +607,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
 
 	req->pm_qos_class = pm_qos_class;
 	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
-	trace_pm_qos_add_request(pm_qos_class, value);
+	trace_pm_qos_add_request(pm_qos_class, value, req->owner);
 	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
 			     &req->node, PM_QOS_ADD_REQ, value);
 	pm_qos_update_target_req_list(pm_qos_array[pm_qos_class]->constraints,
@@ -592,7 +695,7 @@ void pm_qos_remove_request(struct pm_qos_request *req)
 
 	cancel_delayed_work_sync(&req->work);
 
-	trace_pm_qos_remove_request(req->pm_qos_class, PM_QOS_DEFAULT_VALUE);
+	trace_pm_qos_remove_request(req->pm_qos_class, PM_QOS_DEFAULT_VALUE, req->owner);
 	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
 			     &req->node, PM_QOS_REMOVE_REQ,
 			     PM_QOS_DEFAULT_VALUE);
