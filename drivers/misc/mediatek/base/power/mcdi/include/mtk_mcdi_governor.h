@@ -29,6 +29,7 @@ struct mcdi_feature_status {
 	bool any_core;
 	int s_state;
 	unsigned int buck_off;
+	unsigned int pauseby;
 };
 
 int mcdi_governor_select(int cpu, int cluster_idx);
@@ -41,7 +42,7 @@ void set_mcdi_buck_off_mask(unsigned int buck_off_mask);
 void get_mcdi_feature_status(struct mcdi_feature_status *stat);
 void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask);
 int get_residency_latency_result(int cpu);
-void mcdi_state_pause(bool pause);
+void mcdi_state_pause(unsigned int id, bool pause);
 void any_core_cpu_cond_get(unsigned long buf[NF_ANY_CORE_CPU_COND_INFO]);
 void any_core_cpu_cond_inc(int idx);
 bool is_mcdi_working(void);
@@ -54,5 +55,6 @@ void idle_refcnt_inc(void);
 void idle_refcnt_dec(void);
 int all_cpu_idle_ratio_get(void);
 bool is_all_cpu_idle_criteria(void);
+unsigned int mcdi_get_boot_time_check(void);
 
 #endif /* __MTK_MCDI_GOVERNOR_H__ */

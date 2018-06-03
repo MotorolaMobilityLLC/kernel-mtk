@@ -21,6 +21,13 @@ enum {
 	NF_SYSTEM_IDLE_HINT
 };
 
+enum {
+	MCDI_PAUSE_BY_HOTPLUG = 1,
+	MCDI_PAUSE_BY_EEM,
+
+	NF_MCDI_PAUSE
+};
+
 void __attribute__((weak))
 mcdi_cpu_iso_mask(unsigned int iso_mask)
 {
@@ -45,4 +52,8 @@ mcdi_is_buck_off(int cluster_idx)
 	return false;
 }
 
+void __attribute__((weak))
+mcdi_pause(unsigned int id, bool paused)
+{
+}
 #endif /* __MTK_MCDI_COMMON_H__ */

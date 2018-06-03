@@ -548,7 +548,7 @@ int mcdi_enter(int cpu)
 	return 0;
 }
 
-bool mcdi_pause(bool paused)
+bool __mcdi_pause(unsigned int id, bool paused)
 {
 	struct mcdi_feature_status feature_stat;
 
@@ -557,12 +557,15 @@ bool mcdi_pause(bool paused)
 	if (!feature_stat.enable)
 		return true;
 
+	if (!mcdi_get_boot_time_check())
+		return true;
+
 	if (paused) {
-		mcdi_state_pause(true);
+		mcdi_state_pause(id, true);
 		mcdi_wakeup_all_cpu();
 
 	} else {
-		mcdi_state_pause(false);
+		mcdi_state_pause(id, false);
 	}
 
 	return true;
@@ -637,7 +640,7 @@ static int mcdi_cpu_callback(struct notifier_block *nfb,
 	case CPU_UP_PREPARE_FROZEN:
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
-		mcdi_pause(true);
+		__mcdi_pause(MCDI_PAUSE_BY_HOTPLUG, true);
 		break;
 	}
 
@@ -658,7 +661,7 @@ static int mcdi_cpu_callback_leave_hotplug(struct notifier_block *nfb,
 	case CPU_DEAD_FROZEN:
 		mcdi_avail_cpu_cluster_update();
 
-		mcdi_pause(false);
+		__mcdi_pause(MCDI_PAUSE_BY_HOTPLUG, false);
 
 		break;
 	}
