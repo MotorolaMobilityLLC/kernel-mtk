@@ -140,6 +140,10 @@ int get_scp_semaphore(int flag)
 	int count = 0;
 	int ret = -1;
 
+	/* return 1 to prevent from access when scp is down */
+	if (!scp_A_ready)
+		return -1;
+
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -179,6 +183,10 @@ int release_scp_semaphore(int flag)
 	int read_back;
 	int ret = -1;
 
+	/* return 1 to prevent from access when scp is down */
+	if (!scp_A_ready)
+		return -1;
+
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -212,6 +220,9 @@ int scp_get_semaphore_3way(int flag)
 	int count = 0;
 	int ret = -1;
 
+	/* return 1 to prevent from access when scp is down */
+	if (!scp_A_ready)
+		return -1;
 	if (flag >= SEMA_3WAY_TOTAL) {
 		pr_err("[SCP] get sema. 3way flag=%d > total numbers ERROR\n", flag);
 		return ret;
@@ -362,13 +373,13 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
 	unsigned int scp_notify_flag = sws->flags;
 
+	scp_A_ready = scp_notify_flag;
 	if (scp_notify_flag) {
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
 	}
 
-	scp_A_ready = scp_notify_flag;
 
 	if (!scp_A_ready)
 		scp_aed(EXCEP_RESET);
@@ -1044,6 +1055,10 @@ uint32_t scp_get_freq(void)
 void scp_register_feature(feature_id_t id)
 {
 	uint32_t i;
+
+	/*prevent from access when scp is down*/
+	if (!scp_A_ready)
+		return;
 	/* because feature_table is a global variable, use mutex lock to protect it from
 	 * accessing in the same time
 	 */
@@ -1060,6 +1075,9 @@ void scp_deregister_feature(feature_id_t id)
 {
 	uint32_t i;
 
+	/*prevent from access when scp is down*/
+	if (!scp_A_ready)
+		return;
 	mutex_lock(&scp_feature_mutex);
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
@@ -1098,6 +1116,11 @@ int scp_request_freq(void)
 	int timeout = 50;
 	int ret = 0;
 	int flag = 0;
+
+	/* return -1 to prevent from access when scp is down */
+	if (!scp_A_ready)
+		return -1;
+
 	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
 	 * use wake lock to prevent AP from entering suspend state
 	 */
