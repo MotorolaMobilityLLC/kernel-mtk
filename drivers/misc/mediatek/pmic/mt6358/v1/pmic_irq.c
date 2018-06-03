@@ -332,9 +332,13 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 			pmic_get_register_value(PMIC_RG_LDO_VIO18_OCFB_EN));
 		vio18_oc_times++;
 		if (vio18_oc_times >= 2) {
-			pmic_enable_interrupt(INT_VIO18_OC, 0, "PMIC");
-			pr_notice("VIO18 OC and trigger KE\n");
-			BUG_ON(1);
+			snprintf(oc_str, 30, "PMIC OC:%s", int_name);
+			aee_kernel_warning(
+				oc_str,
+				"\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s",
+				int_name);
+			pmic_enable_interrupt(intNo, 0, "PMIC");
+			pr_notice("disable OC interrupt: %s\n", int_name);
 		}
 		break;
 	default:
@@ -724,8 +728,6 @@ void PMIC_EINT_SETTING(void)
 	int ret = 0;
 	unsigned int spNo, sp_conNo;
 	unsigned int enable_reg;
-
-	pmic_set_register_value(PMIC_LDO_DEGTD_SEL, 0);
 
 	/* unmask PMIC TOP interrupt */
 	pmic_set_register_value(PMIC_TOP_INT_MASK_CON0_CLR, 0x1FF);
