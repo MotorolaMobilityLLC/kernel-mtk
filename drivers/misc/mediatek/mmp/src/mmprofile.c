@@ -1149,6 +1149,76 @@ long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_
 }
 EXPORT_SYMBOL(mmprofile_log_meta_bitmap);
 
+long mmprofile_log_meta_yuv_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *p_meta_data)
+{
+	int ret = 0;
+
+	if (!mmprofile_globals.enable)
+		return 0;
+	if (event >= MMPROFILE_MAX_EVENT_COUNT)
+		return -3;
+	if (in_interrupt())
+		return 0;
+	if (event == MMP_INVALID_EVENT)
+		return 0;
+
+	if (bmmprofile_init_buffer && mmprofile_globals.start
+	    && (mmprofile_globals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
+		mmp_metadata_t meta_data;
+		char *p_src, *p_dst;
+		long pitch;
+
+		meta_data.data1 = p_meta_data->data1;
+		meta_data.data2 = p_meta_data->data2;
+		meta_data.data_type = MMPROFILE_META_RAW;
+		meta_data.size = p_meta_data->data_size;
+		meta_data.p_data = vmalloc(meta_data.size);
+		if (!meta_data.p_data)
+			return -1;
+		p_src = (char *)p_meta_data->p_data + p_meta_data->start_pos;
+		p_dst = (char *)((unsigned long)(meta_data.p_data));
+		pitch = p_meta_data->pitch;
+
+		if (pitch < 0)
+			((mmp_metadata_bitmap_t *) (meta_data.p_data))->pitch = -pitch;
+		if ((pitch > 0) && (p_meta_data->down_sample_x == 1)
+		    && (p_meta_data->down_sample_y == 1))
+			memcpy(p_dst, p_src, p_meta_data->data_size);
+		else {
+			unsigned int x, y, x0, y0;
+			unsigned int new_width, new_height, new_pitch;
+			unsigned int bpp = p_meta_data->bpp / 8;
+			unsigned int x_offset = p_meta_data->down_sample_x * 2;
+
+			new_width = (p_meta_data->width - 1) / p_meta_data->down_sample_x + 1;
+			new_height = (p_meta_data->height - 1) / p_meta_data->down_sample_y + 1;
+			new_pitch = new_width * bpp;
+			MMP_LOG(ANDROID_LOG_DEBUG, "n(%u,%u,%u),o(%u, %u,%d,%u) ", new_width,
+				new_height, new_pitch, p_meta_data->width, p_meta_data->height,
+				p_meta_data->pitch, p_meta_data->bpp);
+			for (y = 0, y0 = 0; y < p_meta_data->height;
+			     y0++, y += p_meta_data->down_sample_y) {
+				if (x_offset == 2)
+					memcpy(p_dst + new_pitch * y0,
+					       p_src + p_meta_data->pitch * y, p_meta_data->pitch);
+				else {
+					for (x = 0, x0 = 0; x < p_meta_data->width;
+					     x0 += 2, x += x_offset) {
+						memcpy(p_dst + new_pitch * y0 + x0 * bpp,
+						       p_src + p_meta_data->pitch * y + x * bpp,
+						       bpp * 2);
+					}
+				}
+			}
+			meta_data.size = new_pitch * new_height;
+		}
+		ret = mmprofile_log_meta(event, type, &meta_data);
+		vfree(meta_data.p_data);
+	}
+	return ret;
+}
+EXPORT_SYMBOL(mmprofile_log_meta_yuv_bitmap);
+
 /* Exposed APIs end */
 
 /* Debug FS begin */
