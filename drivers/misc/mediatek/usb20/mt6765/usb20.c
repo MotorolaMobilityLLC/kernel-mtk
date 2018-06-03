@@ -95,7 +95,9 @@ static void usb_6765_dpidle_request(int mode)
 
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
+#if 0
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
+#endif
 		if (likely(!dpidle_debug)) {
 			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
 
@@ -106,7 +108,9 @@ static void usb_6765_dpidle_request(int mode)
 		}
 		break;
 	case USB_DPIDLE_FORBIDDEN:
+#if 0
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
+#endif
 		if (likely(!dpidle_debug)) {
 			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
 
@@ -117,8 +121,10 @@ static void usb_6765_dpidle_request(int mode)
 		}
 		break;
 	case USB_DPIDLE_SRAM:
+#if 0
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
+#endif
 		if (likely(!dpidle_debug)) {
 			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
 
@@ -129,8 +135,10 @@ static void usb_6765_dpidle_request(int mode)
 		}
 		break;
 	case USB_DPIDLE_TIMER:
+#if 0
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
+#endif
 		pr_debug("USB_DPIDLE_TIMER\n");
 		issue_dpidle_timer();
 		break;
