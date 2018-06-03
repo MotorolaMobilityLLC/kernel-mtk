@@ -426,6 +426,24 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6771 = {
 	mmdvfs_single_profile_dump,
 };
 
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6771_3600 = {
+	KIR_MM,
+	0, 0, 0,
+	mt6771_mmdvfs_clk_sources_setting, MT6771_MMDVFS_CLK_SOURCE_NUM,
+	mt6771_mmdvfs_clk_hw_map_setting, MMDVFS_CLK_MUX_NUM,
+	mt6771_step_profile_3600, MT6771_MMDVFS_OPP_MAX,
+	MT6771_MMDVFS_SMI_USER_CONTROL_SCEN_MASK,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_configuration_dump,
+	mmdvfs_hw_configuration_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_configurtion_by_step,
+	mmdvfs_apply_vcore_hw_configurtion_by_step,
+	mmdvfs_apply_clk_hw_configurtion_by_step,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
+
 struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6771_lp3 = {
 	KIR_MM,
 	0, 0, 0,
@@ -508,6 +526,11 @@ struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6739 
 #elif defined(SMI_SYL)
 struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6771 = {
 	mt6771_mmdvfs_threshold_settings,
+	MMDVFS_PM_QOS_SUB_SYS_NUM,
+	get_step_by_threshold
+};
+struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6771_3600 = {
+	mt6771_mmdvfs_threshold_settings_3600,
 	MMDVFS_PM_QOS_SUB_SYS_NUM,
 	get_step_by_threshold
 };
@@ -1207,7 +1230,7 @@ struct mmdvfs_step_util *g_mmdvfs_step_util;
 struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
 struct mmdvfs_thresholds_dvfs_handler *g_mmdvfs_thresholds_dvfs_handler;
 
-#ifdef MMDVFS_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 static int mask_concur[MMDVFS_OPP_NUM_LIMITATION];
 static void update_qos_scenario(void);
 #endif
@@ -1274,11 +1297,16 @@ void mmdvfs_config_util_init(void)
 		break;
 	case MMDVFS_PROFILE_SYL:
 #if defined(SMI_SYL)
+		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6771;
 #if defined(USE_DDR_TYPE)
 		if (get_dram_type() == TYPE_LPDDR3) {
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6771_lp3;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp3\n");
-		} else {
+		} else if (dram_steps_freq(0) == 3600) {
+			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6771_3600;
+			g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6771_3600;
+			MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch (3600)\n");
+		} else{
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6771;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch\n");
 		}
@@ -1287,7 +1315,6 @@ void mmdvfs_config_util_init(void)
 		MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch\n");
 #endif
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6771;
-		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6771;
 #endif
 		break;
 	case MMDVFS_PROFILE_CAN:
@@ -1311,7 +1338,7 @@ void mmdvfs_config_util_init(void)
 	if (g_mmdvfs_non_force_step_util)
 		g_mmdvfs_non_force_step_util->init(g_mmdvfs_non_force_step_util);
 
-#ifdef MMDVFS_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 	update_qos_scenario();
 #endif
 }
@@ -1417,7 +1444,7 @@ u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qo
 	return clk_rate_mhz;
 }
 
-#ifdef MMDVFS_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 static int get_qos_step(s32 opp)
 {
 	if (opp == MMDVFS_FINE_STEP_UNREQUEST)

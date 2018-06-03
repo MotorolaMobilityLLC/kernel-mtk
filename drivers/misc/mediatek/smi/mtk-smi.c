@@ -2003,7 +2003,7 @@ module_param_named(enable_ioctl, enable_ioctl, uint, S_IRUGO | S_IWUSR);
 module_param_named(enable_bw_optimization, enable_bw_optimization, uint, S_IRUGO | S_IWUSR);
 module_param_named(clk_mux_mask, clk_mux_mask, uint, S_IRUGO | S_IWUSR);
 
-#ifdef MMDVFS_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 static struct kernel_param_ops qos_scenario_ops = {
 	.set = set_qos_scenario,
 	.get = get_qos_scenario,

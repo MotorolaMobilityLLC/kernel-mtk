@@ -68,6 +68,8 @@ static u32 step_size;
 static s32 vopp_steps[MAX_FREQ_STEP];
 static s32 current_max_step = STEP_UNREQUEST;
 static s32 force_step = STEP_UNREQUEST;
+static bool mmdvfs_enable;
+static struct pm_qos_request vcore_request;
 
 static int mm_freq_notify(struct notifier_block *nb,
 		unsigned long freq_value, void *v);
@@ -117,10 +119,10 @@ static struct mm_freq_config img_freq = {
 struct mm_freq_config *all_freqs[] = {
 	&disp_freq, &mdp_freq, &vdec_freq, &venc_freq, &cam_freq, &img_freq};
 
-static s32 mm_apply_vcore(s32 vopp)
+static void mm_apply_vcore(s32 vopp)
 {
 	pr_notice("set vcore step: %d\n", vopp);
-	return vcorefs_request_dvfs_opp(KIR_MM, vopp);
+	pm_qos_update_request(&vcore_request, vopp);
 }
 
 static s32 mm_apply_clk(struct mm_freq_config *config, u32 step)
@@ -191,6 +193,11 @@ static void update_step(void)
 	u32 i;
 	s32 old_max_step;
 
+	if (!mmdvfs_enable) {
+		pr_notice("mmdvfs qos is disabled\n");
+		return;
+	}
+
 	if (!step_size) {
 		pr_notice("no step available skip\n");
 		return;
@@ -247,17 +254,12 @@ static int mm_freq_notify(struct notifier_block *nb,
 	step = step_size - 1;
 	if (freq_value == PM_QOS_MM_FREQ_DEFAULT_VALUE) {
 		mm_freq->current_step = STEP_UNREQUEST;
-		pr_notice("[%s] freq: %lu, unrequest\n",
-			mm_freq->prop_name, freq_value);
 	} else {
 		for (; step >= 1; step--) {
 			if (freq_value <= mm_freq->freq_steps[step])
 				break;
 		}
 		mm_freq->current_step = step;
-		pr_notice("[%s] freq: %lu, final: %llu, vopp: %d\n",
-			mm_freq->prop_name, freq_value,
-			mm_freq->freq_steps[step], vopp_steps[step]);
 	}
 	update_step();
 
@@ -353,6 +355,9 @@ static int mmdvfs_probe(struct platform_device *pdev)
 	struct mm_freq_config *mm_freq;
 	const __be32 *p;
 
+	mmdvfs_enable = true;
+	pm_qos_add_request(&vcore_request, PM_QOS_VCORE_OPP,
+		PM_QOS_VCORE_OPP_DEFAULT_VALUE);
 	step_size = 0;
 	of_property_for_each_u32(node, vcore_node_name, prop, p, vopp) {
 		if (step_size >= MAX_FREQ_STEP) {
@@ -393,6 +398,7 @@ static int mmdvfs_remove(struct platform_device *pdev)
 {
 	u32 i;
 
+	pm_qos_remove_request(&vcore_request);
 	for (i = 0; i < ARRAY_SIZE(all_freqs); i++)
 		pm_qos_remove_notifier(all_freqs[i]->pm_qos_class, &all_freqs[i]->nb);
 
@@ -505,6 +511,34 @@ static struct kernel_param_ops force_step_ops = {
 };
 module_param_cb(force_step, &force_step_ops, &force_step, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(force_step, "force mmdvfs to specified step, -1 for unset");
+
+void mmdvfs_qos_enable(bool enable)
+{
+	mmdvfs_enable = enable;
+	pr_notice("mmdvfs enabled? %d\n", enable);
+}
+EXPORT_SYMBOL_GPL(mmdvfs_qos_enable);
+
+int set_enable(const char *val, const struct kernel_param *kp)
+{
+	int result;
+	bool enable;
+
+	result = kstrtobool(val, &enable);
+	if (result) {
+		pr_notice("force set enable: %d\n", result);
+		return result;
+	}
+	mmdvfs_qos_enable(enable);
+	return 0;
+}
+
+static struct kernel_param_ops mmdvfs_enable_ops = {
+	.set = set_enable,
+	.get = param_get_bool,
+};
+module_param_cb(mmdvfs_enable, &mmdvfs_enable_ops, &mmdvfs_enable, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(mmdvfs_enable, "enable or disable mmdvfs");
 
 arch_initcall(mmdvfs_pmqos_init);
 module_exit(mmdvfs_pmqos_exit);

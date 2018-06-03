@@ -155,6 +155,53 @@ struct mmdvfs_profile mt6771_mmdvfs_opp3_profiles[MT6771_MMDVFS_OPP3_NUM] = {
 	{"High frame rate video playback", SMI_BWC_SCEN_VP_HIGH_FPS, {0, 0, 0}, {0, 0, 0 } },
 };
 
+/* A.1 [LP4 2-ch (3600)] Scenarios of each MM DVFS Step (force kicker) */
+/* OPP 0 scenarios */
+#define MT6771_3600_MMDVFS_OPP0_NUM 0
+struct mmdvfs_profile mt6771_mmdvfs_opp0_profiles_3600[MT6771_3600_MMDVFS_OPP0_NUM] = {
+};
+
+/* OPP 1 scenarios */
+#define MT6771_3600_MMDVFS_OPP1_NUM 12
+struct mmdvfs_profile mt6771_mmdvfs_opp1_profiles_3600[MT6771_3600_MMDVFS_OPP1_NUM] = {
+	{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
+	{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
+	{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MT6771_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MT6771_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MT6771_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"Stereo Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
+	{"Stereo Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
+	{"Stereo Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
+	{"Dual zoom preview (reserved)", SMI_BWC_SCEN_CAM_CP,
+		{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+	{"EIS 4K Feature Recording", SMI_BWC_SCEN_VR,
+		{MT6771_MMDVFS_SENSOR_MIN, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
+	{"4K VR/ VSS (VENC)", SMI_BWC_SCEN_VENC, {0, 0, 0}, {4096, 1716, 0} },
+	{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
+};
+
+/* OPP 2 scenarios */
+#define MT6771_3600_MMDVFS_OPP2_NUM 0
+struct mmdvfs_profile mt6771_mmdvfs_opp2_profiles_3600[MT6771_3600_MMDVFS_OPP2_NUM] = {
+};
+
+/* OPP 3 scenarios */
+#define MT6771_3600_MMDVFS_OPP3_NUM 11
+struct mmdvfs_profile mt6771_mmdvfs_opp3_profiles_3600[MT6771_3600_MMDVFS_OPP3_NUM] = {
+	{"Dual zoom preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+	{"Dual zoom preview (reserved)", SMI_BWC_SCEN_VR,
+		{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+	{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
+	{"Camera Preview", SMI_BWC_SCEN_CAM_PV, {0, 0, 0}, {0, 0, 0 } },
+	{"Camera Capture", SMI_BWC_SCEN_CAM_CP, {0, 0, 0}, {0, 0, 0 } },
+	{"Camera Recording", SMI_BWC_SCEN_VR, {0, 0, 0}, {0, 0, 0 } },
+	{"VSS", SMI_BWC_SCEN_VSS, {0, 0, 0}, {0, 0, 0 } },
+	{"VENC", SMI_BWC_SCEN_VENC, {0, 0, 0}, {0, 0, 0} },
+	{"MHL", MMDVFS_SCEN_MHL, {0, 0, 0}, {0, 0, 0 } },
+	{"WFD", SMI_BWC_SCEN_WFD, {0, 0, 0}, {0, 0, 0 } },
+	{"High frame rate video playback", SMI_BWC_SCEN_VP_HIGH_FPS, {0, 0, 0}, {0, 0, 0 } },
+};
+
 /* A.2 [LP3] Scenarios of each MM DVFS Step (force kicker) */
 /* OOP 0 scenarios */
 #define MT6771_LP3_MMDVFS_OPP0_NUM 10
@@ -247,6 +294,38 @@ struct mmdvfs_step_to_profile_mapping mt6771_step_profile[MT6771_MMDVFS_OPP_MAX]
 		},
 };
 
+/* LP4 2-ch (3600) */
+struct mmdvfs_step_to_profile_mapping mt6771_step_profile_3600[MT6771_MMDVFS_OPP_MAX] = {
+		{0, mt6771_mmdvfs_opp0_profiles_3600, MT6771_MMDVFS_OPP0_NUM,
+		{OPP_0,
+		{MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
+		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
+		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0}, MMDVFS_CLK_MUX_NUM
+		}
+		},
+		{1, mt6771_mmdvfs_opp1_profiles_3600, MT6771_MMDVFS_OPP1_NUM,
+		{OPP_1,
+		{MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
+		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0,
+		MMDVFS_MMCLK_OPP0, MMDVFS_MMCLK_OPP0}, MMDVFS_CLK_MUX_NUM
+		}
+		},
+		{2, mt6771_mmdvfs_opp2_profiles_3600, MT6771_MMDVFS_OPP2_NUM,
+		{OPP_2,
+		{MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
+		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
+		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1}, MMDVFS_CLK_MUX_NUM
+		}
+		},
+		{3, mt6771_mmdvfs_opp3_profiles_3600, MT6771_MMDVFS_OPP3_NUM,
+		{OPP_3,
+		{MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
+		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1,
+		MMDVFS_MMCLK_OPP1, MMDVFS_MMCLK_OPP1}, MMDVFS_CLK_MUX_NUM
+		}
+		},
+};
+
 /* LP3 */
 struct mmdvfs_step_to_profile_mapping mt6771_step_profile_lp3[MT6771_MMDVFS_OPP_MAX] = {
 		{0, mt6771_mmdvfs_opp0_profiles_lp3, MT6771_LP3_MMDVFS_OPP0_NUM,
@@ -310,10 +389,16 @@ int mt6771_mmdvfs_mmclk_opp_to_legacy_mmclk_step[MT6771_MMDVFS_OPP_MAX] = {
 #define MMDVFS_ISP_THRESHOLD_NUM 2
 int mt6771_mmdvs_isp_threshold_setting[MMDVFS_ISP_THRESHOLD_NUM] = {546, 364};
 int mt6771_mmdvs_isp_threshold_opp[MMDVFS_ISP_THRESHOLD_NUM] = {MMDVFS_FINE_STEP_OPP0, MMDVFS_FINE_STEP_OPP3};
+int mt6771_mmdvs_isp_threshold_opp_3600[MMDVFS_ISP_THRESHOLD_NUM] = {MMDVFS_FINE_STEP_OPP1, MMDVFS_FINE_STEP_OPP3};
 
 struct mmdvfs_threshold_setting mt6771_mmdvfs_threshold_settings[MMDVFS_PM_QOS_SUB_SYS_NUM] = {
 	{ MMDVFS_PM_QOS_SUB_SYS_CAMERA, mt6771_mmdvs_isp_threshold_setting,
 	mt6771_mmdvs_isp_threshold_opp, MMDVFS_ISP_THRESHOLD_NUM, MMDVFS_PMQOS_ISP},
+};
+
+struct mmdvfs_threshold_setting mt6771_mmdvfs_threshold_settings_3600[MMDVFS_PM_QOS_SUB_SYS_NUM] = {
+	{ MMDVFS_PM_QOS_SUB_SYS_CAMERA, mt6771_mmdvs_isp_threshold_setting,
+	mt6771_mmdvs_isp_threshold_opp_3600, MMDVFS_ISP_THRESHOLD_NUM, MMDVFS_PMQOS_ISP},
 };
 
 #endif /* __MMDVFS_CONFIG_MT6771_H__ */
