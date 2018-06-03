@@ -928,12 +928,8 @@ static long teei_config_ioctl(struct file *file,
 
 			teei_flags = 1;
 
-			for (i = 0; i < param.uuid_count; i++) {
-				res = tz_load_drv_by_str(param.uuids[i]);
-				if (res)
-					IMSG_ERROR("failed to load secure driver (uuid: %s)\n",
-							param.uuids[i]);
-			}
+			for (i = 0; i < param.uuid_count; i++)
+				tz_load_drv_by_str(param.uuids[i]);
 
 			param.flag = teei_flags;
 

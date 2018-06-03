@@ -31,6 +31,7 @@
 
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
+#define DEFAULT_CAPABILITY "bta_loader"
 
 static inline long ioctl(struct file *filp, unsigned int cmd, void *arg)
 {
@@ -72,7 +73,6 @@ static struct file *teec_open_dev(const char *devname, const char *capabilities)
 	struct file *file;
 	struct tee_ioctl_set_hostname_arg arg;
 	int err;
-	char hostname[TEE_MAX_HOSTNAME_SIZE] = "bta_loader";
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -83,20 +83,21 @@ static struct file *teec_open_dev(const char *devname, const char *capabilities)
 	if (IS_ERR_OR_NULL(file))
 		return file;
 
-	if (capabilities && (strcmp(capabilities, "tta") == 0)) {
-		IMSG_DEBUG("client request will be serviced by GPTEE");
-		memset(hostname, 0, sizeof(hostname));
-		memcpy(hostname, capabilities, strlen(capabilities));
-	} else {
-		IMSG_DEBUG("client request will be serviced by BTA Loader");
-	}
-
 	memset(&arg, 0, sizeof(arg));
-	strncpy((char *)arg.hostname, hostname, TEE_MAX_HOSTNAME_SIZE-1);
+
+	if (capabilities && (strcmp(capabilities, "tta") == 0)) {
+		IMSG_DEBUG("client request serviced by GPTEE\n");
+		strncpy((char *)arg.hostname, capabilities,
+				TEE_MAX_HOSTNAME_SIZE-1);
+	} else {
+		IMSG_DEBUG("client request serviced by BTA Loader\n");
+		strncpy((char *)arg.hostname, DEFAULT_CAPABILITY,
+				TEE_MAX_HOSTNAME_SIZE-1);
+	}
 
 	err = ioctl(file, TEE_IOC_SET_HOSTNAME, &arg);
 	if (err) {
-		IMSG_ERROR("TEE_IOC_SET_HOSTNAME failed");
+		IMSG_ERROR("TEE_IOC_SET_HOSTNAME failed\n");
 		goto exit;
 	}
 
