@@ -402,7 +402,7 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
-			#if !defined(CONFIG_MACH_MT6758) || !defined(CONFIG_MACH_MT6739)
+			#if defined(CONFIG_MACH_MT6763)
 			if (!strcmp(__clk_get_name(hw->clk), "univpll"))
 				univpll_192m_en(0);
 			#endif
