@@ -706,7 +706,7 @@ INT32 _stp_psm_release_data(MTKSTP_PSM_T *stp_psm)
 	INT32 ret = 0;
 	UINT8 type = 0;
 	UINT32 len = 0;
-	UINT8 delimiter[2];
+	UINT8 delimiter[2] = {0};
 	INT32 winspace_flag = 0;
 
 	/* STP_PSM_ERR_FUNC("++++++++++release data++len=%d\n", osal_fifo_len(&stp_psm->hold_fifo)); */
