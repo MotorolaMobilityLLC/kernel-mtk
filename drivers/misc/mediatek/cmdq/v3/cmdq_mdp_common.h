@@ -106,6 +106,14 @@ struct cmdqMDPFuncStruct {
 	CmdqMdpEnableCommonClock mdpEnableCommonClock;
 	CmdqBeginTaskCB beginTask;
 	CmdqEndTaskCB endTask;
+	CmdqBeginTaskCB beginISPTask;
+	CmdqEndTaskCB endISPTask;
+};
+
+struct mdp_pmqos_record {
+	uint32_t mdp_throughput;
+	struct timeval submit_tm;
+	struct timeval end_tm;
 };
 
 /* track MDP task */
@@ -117,6 +125,7 @@ struct cmdqMDPFuncStruct {
 #define MDP_BUF_INFO_STR_LEN 8 /* each buf info length */
 /* dispatch key format is MDP_(ThreadName) */
 #define MDP_DISPATCH_KEY_STR_LEN (TASK_COMM_LEN + 5)
+#define MDP_TOTAL_THREAD 8
 
 /* MDP common kernel logic */
 
@@ -151,6 +160,7 @@ void cmdq_mdp_suspend(void);
 void cmdq_mdp_resume(void);
 void cmdq_mdp_release_task_by_file_node(void *file_node);
 void cmdq_mdp_init(void);
+void cmdq_mdp_deinit_pmqos(void);
 
 /* Platform dependent function */
 
