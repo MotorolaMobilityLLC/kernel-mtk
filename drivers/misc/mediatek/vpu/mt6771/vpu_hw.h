@@ -247,7 +247,7 @@ void vpu_dump_debug_stack(int core, int size);
 /**
  * vpu_dump_code_segment - for vpu timeout debug, dump code segment in algo execution area.
  */
-void vpu_dump_code_segment(int core, int size);
+void vpu_dump_code_segment(int core);
 
 /**
  * vpu_dump_algo_segment - for vpu timeout debug, dump source algo segment from bin file.

@@ -290,7 +290,7 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 			LOG_DBG("[vpu] (%d) FD.0x%lx\n", cnt, (unsigned long)(uintptr_t)(req->buf_ion_infos[cnt]));
 			handle = ion_import_dma_buf(my_ion_client, req->buf_ion_infos[cnt]);
 			if (IS_ERR(handle)) {
-				LOG_WRN("[vpu_drv] import ion handle failed!\n");
+				LOG_WRN("[vpu_drv] import ion handle(0x%p) failed!\n", handle);
 			} else {
 				if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
 					LOG_INF("[vpu_drv] (cnt_%d) ion_import_dma_buf handle(0x%p)!\n", cnt, handle);
@@ -1112,11 +1112,12 @@ static int vpu_probe(struct platform_device *pdev)
 				return -ENODEV;
 			}
 
-			LOG_INF("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
-				core, phy_addr, phy_size);
+			/* bin_base for cpu read/write */
 			vpu_device->bin_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			vpu_device->bin_pa = phy_addr;
 			vpu_device->bin_size = phy_size;
+			LOG_INF("probe core:%d, bin_base:0x%lx phy_addr: 0x%x, phy_size: 0x%x\n",
+				core, (unsigned long)vpu_device->bin_base, phy_addr, phy_size);
 
 			/* get smi common register */
 			#ifdef MTK_VPU_SMI_DEBUG_ON
