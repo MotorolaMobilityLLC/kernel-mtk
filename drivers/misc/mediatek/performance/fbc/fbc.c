@@ -31,7 +31,7 @@ static unsigned long __read_mostly mark_addr;
 
 static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_render_aware, fbc_render_aware_pre;
 static int fbc_game, fbc_trace;
-static long long frame_budget, twanted, twanted_ms, avg_frame_time;
+static long long frame_budget, twanted, twanted_ms, avg_frame_time, queue_time;
 static int ema, boost_method, super_boost, boost_flag, big_enable;
 static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost1, chase_boost2;
 static int first_frame, first_vsync, frame_done, chase, last_frame_done_in_budget, act_switched;
@@ -754,7 +754,7 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	/* evaluate overall frame_time */
 	frame_time = 0;
 	for (i = 0; i < MAX_THREAD && frame_info[i][0] != -1; i++) {
-		frame_time = MAX(frame_time, frame_info[i][1]);
+		frame_time = MAX(frame_time, frame_info[i][1]) - queue_time;
 		frame_info[i][1] = 0;
 	}
 
@@ -842,6 +842,7 @@ void notify_frame_complete_eas(unsigned long frame_time)
 
 	fbc_tracer(-3, "avg_frame_time", avg_frame_time);
 	fbc_tracer(-3, "frame_time", frame_time);
+	fbc_tracer(-3, "queue_time", queue_time);
 	fbc_tracer(-3, "avg_boost", avg_boost);
 	fbc_tracer(-3, "boost_linear", boost_linear);
 	fbc_tracer(-3, "boost_real", boost_real);
@@ -1103,6 +1104,13 @@ ssize_t device_ioctl(struct file *filp,
 	if (!is_ux_fbc_active())
 		goto ret_ioctl;
 		fbc_op->no_render();
+		break;
+
+	/*receive queue_time signal*/
+	case IOCTL_WRITE_QB:
+	if (!is_ux_fbc_active())
+		goto ret_ioctl;
+		queue_time = arg;
 		break;
 
 	default:
