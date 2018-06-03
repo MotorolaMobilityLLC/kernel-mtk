@@ -1129,3 +1129,4 @@ CONFIG_MTK_IRIS_SUPPORT,PROJECT,yicheng.chen,new config in this commit Ie6ddb084
 CONFIG_F2FS_FS,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
 CONFIG_F2FS_FS_SECURITY,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
 CONFIG_F2FS_FS_ENCRYPTION,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
+CONFIG_MTK_IO_BOOST,PLATFORM,stanley.chu,new config in this commit 1cffc6e30a93fed02682ab9de3a7fef7d189cc4d,X,X,X,X,X,X,y,y,X,X
