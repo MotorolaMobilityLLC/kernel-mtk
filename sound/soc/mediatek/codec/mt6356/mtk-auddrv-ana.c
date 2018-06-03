@@ -49,6 +49,7 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 #include "mtk-auddrv-ana.h"
+#include "mtk-soc-codec-63xx.h"
 
 #ifdef AUDIO_USING_WRAP_DRIVER
 /*#include <mach/mt_pmic_wrap.h>*/
@@ -106,6 +107,7 @@ EXPORT_SYMBOL(Ana_Set_Reg);
 
 void Ana_Log_Print(void)
 {
+	audckbufEnable(true);
 	pr_debug("AUD_TOP_ID = 0x%x\n", Ana_Get_Reg(AUD_TOP_ID));
 	pr_debug("AUD_TOP_REV0 = 0x%x\n", Ana_Get_Reg(AUD_TOP_REV0));
 	pr_debug("AUD_TOP_REV1 = 0x%x\n", Ana_Get_Reg(AUD_TOP_REV1));
@@ -138,8 +140,8 @@ void Ana_Log_Print(void)
 	pr_debug("AFE_DL_SRC2_CON0_L = 0x%x\n", Ana_Get_Reg(AFE_DL_SRC2_CON0_L));
 	pr_debug("AFE_UL_SRC_CON0_H = 0x%x\n", Ana_Get_Reg(AFE_UL_SRC_CON0_H));
 	pr_debug("AFE_UL_SRC_CON0_L = 0x%x\n", Ana_Get_Reg(AFE_UL_SRC_CON0_L));
-	pr_debug("PMIC_AFE_TOP_CON0 = 0x%x\n", Ana_Get_Reg(AFE_TOP_CON0));
-	pr_debug("PMIC_AUDIO_TOP_CON0 = 0x%x\n", Ana_Get_Reg(AUDIO_TOP_CON0));
+	pr_debug("PMIC_AFE_TOP_CON0 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_TOP_CON0));
+	pr_debug("PMIC_AUDIO_TOP_CON0 = 0x%x\n", Ana_Get_Reg(PMIC_AUDIO_TOP_CON0));
 	pr_debug("AFE_MON_DEBUG0 = 0x%x\n", Ana_Get_Reg(AFE_MON_DEBUG0));
 	pr_debug("AFUNC_AUD_CON0 = 0x%x\n", Ana_Get_Reg(AFUNC_AUD_CON0));
 	pr_debug("AFUNC_AUD_CON1 = 0x%x\n", Ana_Get_Reg(AFUNC_AUD_CON1));
@@ -154,7 +156,7 @@ void Ana_Log_Print(void)
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_MON1 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_MON1));
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_MON2 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_MON2));
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_MON3 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_MON3));
-	pr_debug("AFE_ADDA_MTKAIF_CFG0 = 0x%x\n", Ana_Get_Reg(AFE_ADDA_MTKAIF_CFG0));
+	pr_debug("PMIC_AFE_ADDA_MTKAIF_CFG0 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0));
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_RX_CFG0 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_RX_CFG0));
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_RX_CFG1 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_RX_CFG1));
 	pr_debug("PMIC_AFE_ADDA_MTKAIF_RX_CFG2 = 0x%x\n", Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_RX_CFG2));
@@ -211,6 +213,8 @@ void Ana_Log_Print(void)
 	pr_debug("GPIO_MODE3 = 0x%x\n", Ana_Get_Reg(GPIO_MODE3));
 	pr_debug("GPIO_DIR0 = 0x%x\n", Ana_Get_Reg(GPIO_DIR0));
 	pr_debug("DRV_CON3 = 0x%x\n", Ana_Get_Reg(DRV_CON3));
+
+	audckbufEnable(false);
 
 	pr_debug("-Ana_Log_Print\n");
 }
@@ -284,10 +288,10 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(AFE_UL_SRC_CON0_H));
 	n += scnprintf(buffer + n, size - n, "AFE_UL_SRC_CON0_L = 0x%x\n",
 		       Ana_Get_Reg(AFE_UL_SRC_CON0_L));
-	n += scnprintf(buffer + n, size - n, "AFE_TOP_CON0 = 0x%x\n",
-		       Ana_Get_Reg(AFE_TOP_CON0));
-	n += scnprintf(buffer + n, size - n, "AUDIO_TOP_CON0 = 0x%x\n",
-		       Ana_Get_Reg(AUDIO_TOP_CON0));
+	n += scnprintf(buffer + n, size - n, "PMIC_AFE_TOP_CON0 = 0x%x\n",
+		       Ana_Get_Reg(PMIC_AFE_TOP_CON0));
+	n += scnprintf(buffer + n, size - n, "PMIC_AUDIO_TOP_CON0 = 0x%x\n",
+		       Ana_Get_Reg(PMIC_AUDIO_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_MON_DEBUG0 = 0x%x\n",
 		       Ana_Get_Reg(AFE_MON_DEBUG0));
 	n += scnprintf(buffer + n, size - n, "AFUNC_AUD_CON0 = 0x%x\n",
@@ -316,8 +320,8 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_MON2));
 	n += scnprintf(buffer + n, size - n, "PMIC_AFE_ADDA_MTKAIF_MON3 = 0x%x\n",
 		       Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_MON3));
-	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_CFG0 = 0x%x\n",
-		       Ana_Get_Reg(AFE_ADDA_MTKAIF_CFG0));
+	n += scnprintf(buffer + n, size - n, "PMIC_AFE_ADDA_MTKAIF_CFG0 = 0x%x\n",
+		       Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_CFG0));
 	n += scnprintf(buffer + n, size - n, "PMIC_AFE_ADDA_MTKAIF_RX_CFG0 = 0x%x\n",
 		       Ana_Get_Reg(PMIC_AFE_ADDA_MTKAIF_RX_CFG0));
 	n += scnprintf(buffer + n, size - n, "PMIC_AFE_ADDA_MTKAIF_RX_CFG1 = 0x%x\n",
