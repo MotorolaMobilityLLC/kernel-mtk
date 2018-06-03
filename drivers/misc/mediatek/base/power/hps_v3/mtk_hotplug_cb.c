@@ -114,39 +114,24 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
-#if BUCK_CTRL_DBLOG
-					pr_info("MP1_ON:[1,");
-#endif
 					/*1. Power ON VSram*/
 					ret = buck_enable(VSRAM_DVFS2, 1);
 					if (ret != 1)
 						WARN_ON(1);
-#if BUCK_CTRL_DBLOG
-					pr_info("1],[2,");
-#endif
 					/*2. Set the stttle time to 3000us*/
 					dsb(sy);
 					mdelay(3);
 					dsb(sy);
-#if BUCK_CTRL_DBLOG
-					pr_info("2],[3,");
-#endif
 					/*3. Power ON Vproc2*/
 					hps_power_on_vproc2();
 					dsb(sy);
 					mdelay(1);
 					dsb(sy);
-#if BUCK_CTRL_DBLOG
-					pr_info("3],[4,");
-#endif
 #endif
 				}
 #endif
 					/*4. Turn on ARM PLL*/
 					armpll_control(2, 1);
-#if BUCK_CTRL_DBLOG
-					pr_info("4],[5,");
-#endif
 
 					/*5. Non-pause FQHP function*/
 #if 0
@@ -155,15 +140,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					else
 #endif
 					mt_pause_armpll(FH_PLL1, 0);
-#if BUCK_CTRL_DBLOG
-					pr_info("5],[6,");
-#endif
 
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
-#if BUCK_CTRL_DBLOG
-					pr_info("6]\n");
-#endif
 #endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
 			}
@@ -232,43 +211,25 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				armpll_control(1, 0);
 				break;
 			case 1:
-#if BUCK_CTRL_DBLOG
-				pr_info("MP1_OFF:[1,");
-#endif
 				/*1. Switch to SW mode*/
 				mp_enter_suspend(1, 0);
-#if BUCK_CTRL_DBLOG
-				pr_info("1],[2,");
-#endif
 				/*2. Pause FQHP function*/
 				if (action == CPU_DEAD_FROZEN)
 					mt_pause_armpll(FH_PLL1, 0x11);
 				else
 					mt_pause_armpll(FH_PLL1, 0x01);
-#if BUCK_CTRL_DBLOG
-				pr_info("2],[3,");
-#endif
 				/*3. Turn off ARM PLL*/
 				armpll_control(2, 0);
-#if BUCK_CTRL_DBLOG
-				pr_info("3],[4,");
-#endif
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 					/*4. Power off Vproc2*/
 					hps_power_off_vproc2();
-#if BUCK_CTRL_DBLOG
-					pr_info("4],[5,");
-#endif
 
 					/*5. Turn off VSram*/
 					ret = buck_enable(VSRAM_DVFS2, 0);
 					if (ret == 1)
 						WARN_ON(1);
-#if BUCK_CTRL_DBLOG
-					pr_info("5]\n");
-#endif
 #endif
 				}
 #endif
