@@ -57,22 +57,39 @@ static int get_vb_volt(int vcore_opp)
 void dvfsrc_opp_level_mapping(void)
 {
 	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv;
+	int is_flavor = 0;
+
+#if defined(CONFIG_ARM64)
+	if (strcmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES,
+				"mediatek/k65v1_64_bsp_ctig") == 0)
+		is_flavor = 1;
+
+	pr_info("flavor check: %s, is_flavor: %d\n",
+			CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES,
+			is_flavor);
+#endif
 
 	set_pwrap_cmd(VCORE_OPP_0, 0);
 	set_pwrap_cmd(VCORE_OPP_1, 2);
 	set_pwrap_cmd(VCORE_OPP_2, 3);
 	set_pwrap_cmd(VCORE_OPP_3, 4);
 
-	vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
-	vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
-	vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
-	pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d\n", __func__,
-			vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
+	if (is_flavor) {
+		vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
+		vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
+		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
+		pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d\n", __func__,
+				vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
 
-	vcore_opp_1_uv = max(vcore_opp_0_uv - 100000, vcore_opp_1_uv);
-	vcore_opp_1_uv = max(vcore_opp_1_uv, vcore_opp_2_uv);
-	pr_info("%s: DRAM vcore_opp_uv: %d, %d, %d\n", __func__,
-			vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
+		vcore_opp_1_uv = max(vcore_opp_0_uv - 100000, vcore_opp_1_uv);
+		vcore_opp_1_uv = max(vcore_opp_1_uv, vcore_opp_2_uv);
+		pr_info("%s: DRAM vcore_opp_uv: %d, %d, %d\n", __func__,
+				vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
+	} else {
+		vcore_opp_0_uv = 800000;
+		vcore_opp_1_uv = 700000;
+		vcore_opp_2_uv = 700000;
+	}
 
 	set_vcore_uv_table(VCORE_OPP_0, vcore_opp_0_uv);
 	set_vcore_uv_table(VCORE_OPP_1, vcore_opp_1_uv);
