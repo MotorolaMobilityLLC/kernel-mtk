@@ -144,10 +144,10 @@ void __iomem *venc_gcon_base;
 #define VENC_CG_CLR		(venc_gcon_base + 0x0008)
 
 #if MT_CCF_BRINGUP
-#define INFRA_CG0 0x032f8110/*[25:24][21][19:15][8][4]*/
-#define INFRA_CG1 0x08020a64/*[27][11][9], [17][6][5][2]*/
-#define INFRA_CG2 0x00000005/*[2][0]*/
-#define INFRA_CG3 0x00000047/*[6][2:0]*/
+#define INFRA_CG0 0x132f8110/*[25:24][21][19:15][8][4]*/
+#define INFRA_CG1 0x080a0a64/*[27][11][9], [17][6][5][2], [19]*/
+#define INFRA_CG2 0x08000005/*[2][0], [27]*/
+#define INFRA_CG3 0x000001c7/*[6][2:0], [8:7]*/
 #define CAMSYS_CG	0x1FFF
 #define IMG_CG	0x3FFF
 #define MFG_CG	0x1
@@ -1402,9 +1402,9 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	clk_writel(cksys_base + CK_CFG_4_CLR, 0x00008080);
 	clk_writel(cksys_base + CK_CFG_4_SET, 0x00008080);
 
-	/* scp15 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00008000);
-	clk_writel(cksys_base + CK_CFG_5_SET, 0x00008000);
+	/* scp15, atb23 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_5_SET, 0x00808000);
 
 	/* dpi0 7, scam 15 MUX PDN */
 	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00008080);
