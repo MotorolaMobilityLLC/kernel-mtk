@@ -102,6 +102,7 @@ typedef struct GED_KPI_TAG {
 	int boost_real;
 	int boost_accum;
 	long long t_cpu_remained_pred;
+	unsigned long long t_acquire_period;
 } GED_KPI;
 
 typedef struct GED_TIMESTAMP_TAG {
@@ -168,6 +169,7 @@ static unsigned int g_gpu_freq_accum;
 static unsigned int g_frame_count;
 
 static int gx_game_mode;
+static int is_game_control_frame_rate;
 static unsigned int gx_fps;
 static unsigned int gx_cpu_time_avg;
 static unsigned int gx_gpu_time_avg;
@@ -194,7 +196,44 @@ static GED_ERROR ged_kpi_push_timestamp(
 	int i32FrameID,
 	int QedBuffer_length,
 	int isSF);
+/* ----------------------------------------------------------------------------- */
+static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
+{
+	static GED_KPI psKPI_list[30];
+	static int continuous_frame_cnt;
+	static int detected_frame_cnt;
+	static int cur_frame;
+	GED_KPI *psKPI_head = NULL;
+	GED_BOOL ret = GED_FALSE;
 
+	if (main_head == psHead) {
+		if (continuous_frame_cnt < 30)
+			continuous_frame_cnt++;
+		else
+			psKPI_head = &psKPI_list[cur_frame];
+
+		if ((psKPI_head != NULL) &&
+			(psKPI_head->t_acquire_period > 29000000) &&
+			(psKPI_head->t_acquire_period < 37000000))
+			detected_frame_cnt--;
+		if ((psKPI->t_acquire_period > 29000000) && (psKPI->t_acquire_period < 37000000))
+			detected_frame_cnt++;
+
+		psKPI_list[cur_frame] = *psKPI;
+		cur_frame++;
+		cur_frame %= 30;
+
+		if ((continuous_frame_cnt == 30) && (detected_frame_cnt * 100 / 30) >= 80)
+			ret = GED_TRUE;
+	}
+
+	if (ret == GED_TRUE)
+		is_game_control_frame_rate = 1;
+	else
+		is_game_control_frame_rate = 0;
+
+	return ret;
+}
 /* ----------------------------------------------------------------------------- */
 static inline void ged_kpi_clean_kpi_info(void)
 {
@@ -303,9 +342,10 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	unsigned long ulID = (unsigned long) psKPI->ullWnd;
 
 	ged_kpi_calc_kpi_info(ulID, psKPI, psHead);
+	ged_kpi_frame_rate_control_detect(psHead, psKPI);
 
 	/* statistics */
-	ged_log_buf_print(ghLogBuf, "%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%u,%lld,%lld,%d,%d,%d,%lld",
+	ged_log_buf_print(ghLogBuf, "%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%u,%lld,%lld,%d,%d,%d,%lld,%d",
 		psHead->pid,
 		psHead->isSF,
 		psHead->ullWnd,
@@ -325,7 +365,8 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->boost_linear,
 		psKPI->boost_real,
 		psKPI->boost_accum,
-		psKPI->t_cpu_remained_pred
+		psKPI->t_cpu_remained_pred,
+		psHead->t_cpu_target
 		);
 }
 /* ----------------------------------------------------------------------------- */
@@ -424,7 +465,8 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		if ((long long)psHead->t_cpu_target > t_gpu_cur)
 			t_cpu_target = (long long)psHead->t_cpu_target;
 		else
-			t_cpu_target = t_gpu_cur;
+			/* when GPU bound, CPU frame time is targeted to chase close to GPU frame time*/
+			t_cpu_target = t_gpu_cur + 2000000;
 
 		cpu_target_loss = t_cpu_cur - t_cpu_target;
 
@@ -669,6 +711,8 @@ static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED
 					psKPI_prev->t_cpu_remained = vsync_period;
 					psKPI_prev->t_cpu_remained -=
 						(long long)(psKPI_prev->ullTimeStamp1 - psHead->last_TimeStampS);
+					psKPI_prev->t_acquire_period =
+						psTimeStamp->ullTimeStamp - psHead->last_TimeStampS;
 					psHead->last_TimeStampS =
 						psTimeStamp->ullTimeStamp;
 					psKPI_prev->i32AcquireID = psTimeStamp->i32FrameID;
@@ -691,6 +735,7 @@ static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED
 			psHead->t_cpu_remained = psTimeStamp->ullTimeStamp - psKPI->ullTimeStamp1;
 			psKPI->t_cpu_remained = vsync_period; /* fixed value since vsync period unchange */
 			psKPI->t_cpu_remained -= (long long)(psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
+			psKPI->t_acquire_period = psTimeStamp->ullTimeStamp - psHead->last_TimeStampS;
 			psHead->last_TimeStampS = psTimeStamp->ullTimeStamp;
 #ifdef GED_KPI_DEBUG
 			if (psTimeStamp->i32FrameID != psKPI->i32QueueID)
@@ -775,6 +820,11 @@ static GED_BOOL ged_kpi_iterator_delete_func(unsigned long ulID, void *pvoid, vo
 static void ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead)
 {
 	if (psHead) {
+		if (is_game_control_frame_rate)
+			gx_dfps = 30;
+		else
+			gx_dfps = 60;
+
 		psHead->target_fps = gx_dfps;
 		psHead->t_cpu_target = 1000000000/gx_dfps;
 		psHead->t_gpu_target = psHead->t_cpu_target;
@@ -862,6 +912,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		if (g_i32Pos >= GED_KPI_TOTAL_ITEMS)
 			g_i32Pos = 0;
 
+
 		/* remove */
 		ulID = (unsigned long) psKPI->ullWnd;
 		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
@@ -923,11 +974,30 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 
 			if (ged_kpi_find_and_delete_miss_tag(ulID, psTimeStamp->i32FrameID
 									, GED_TIMESTAMP_TYPE_S) == GED_TRUE) {
-				ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_S,
-										psTimeStamp->ullTimeStamp,
-										psTimeStamp->pid,
-										psTimeStamp->ullWnd,
-										psTimeStamp->i32FrameID, -1, -1);
+
+				if (!psHead) {
+					GED_LOGE("[GED_KPI][Exception] TYPE_S: no hashtable head for ulID: %lu\n",
+							ulID);
+					return;
+				}
+
+				psTimeStamp->eTimeStampType = GED_TIMESTAMP_TYPE_S;
+				ged_kpi_tag_type_s(ulID, psHead, psTimeStamp);
+				psHead->i32DebugQedBuffer_length -= 1;
+
+#ifdef GED_KPI_DEBUG
+				GED_LOGE("[GED_KPI] timestamp matched, Type_S: psHead: %p\n", psHead);
+#endif
+
+				if ((main_head != NULL && gx_game_mode == 1) &&
+					(main_head->t_cpu_remained > (-1)*SCREEN_IDLE_PERIOD)) {
+#ifdef GED_KPI_DEBUG
+					GED_LOGE("[GED_KPI] t_cpu_remained: %lld, main_head: %p\n",
+							 main_head->t_cpu_remained, main_head);
+#endif
+					ged_kpi_set_cpu_remained_time(main_head->t_cpu_remained,
+											main_head->i32QedBuffer_length);
+				}
 			}
 
 #ifdef GED_KPI_DEBUG
@@ -949,6 +1019,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	case GED_TIMESTAMP_TYPE_2:
 		ulID = (unsigned long) psTimeStamp->ullWnd;
 		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+
+
 		if (psHead) {
 			struct list_head *psListEntry, *psListEntryTemp;
 			struct list_head *psList = &psHead->sList;
@@ -1004,6 +1076,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		ulID = (unsigned long) psTimeStamp->ullWnd;
 		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
 
+
 		if (!psHead) {
 			GED_LOGE("[GED_KPI][Exception] TYPE_S: no hashtable head for ulID: %lu\n", ulID);
 			return;
@@ -1031,6 +1104,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	case GED_TIMESTAMP_TYPE_H:
 		ged_hashtable_iterator(gs_hashtable, ged_kpi_h_iterator_func, (void *)psTimeStamp);
 		ged_kpi_update_target_time_and_target_fps(main_head);
+
 #ifdef GED_KPI_DEBUG
 		{
 			long long t_cpu_remained, t_gpu_remained;
@@ -1061,6 +1135,8 @@ static GED_ERROR ged_kpi_push_timestamp(
 	int QedBuffer_length,
 	int isSF)
 {
+	static int event_QedBuffer_cnt, event_3d_fence_cnt, event_hw_vsync;
+
 	if (g_psWorkQueue) {
 		GED_TIMESTAMP *psTimeStamp = (GED_TIMESTAMP *)ged_alloc_atomic(sizeof(GED_TIMESTAMP));
 
@@ -1076,6 +1152,27 @@ static GED_ERROR ged_kpi_push_timestamp(
 		psTimeStamp->isSF = isSF;
 		INIT_WORK(&psTimeStamp->sWork, ged_kpi_work_cb);
 		queue_work(g_psWorkQueue, &psTimeStamp->sWork);
+		switch (eTimeStampType) {
+		case GED_TIMESTAMP_TYPE_1:
+			event_QedBuffer_cnt++;
+			ged_log_trace_counter("GED_KPI_QedBuffer_CNT", event_QedBuffer_cnt);
+			event_3d_fence_cnt++;
+			ged_log_trace_counter("GED_KPI_3D_fence_CNT", event_3d_fence_cnt);
+			break;
+		case GED_TIMESTAMP_TYPE_2:
+			event_3d_fence_cnt--;
+			ged_log_trace_counter("GED_KPI_3D_fence_CNT", event_3d_fence_cnt);
+			break;
+		case GED_TIMESTAMP_TYPE_S:
+			event_QedBuffer_cnt--;
+			ged_log_trace_counter("GED_KPI_QedBuffer_CNT", event_QedBuffer_cnt);
+			break;
+		case GED_TIMESTAMP_TYPE_H:
+			ged_log_trace_counter("GED_KPI_HW_Vsync", event_hw_vsync);
+			event_hw_vsync++;
+			event_hw_vsync %= 2;
+			break;
+		}
 	}
 #ifdef GED_KPI_DEBUG
 	else {
