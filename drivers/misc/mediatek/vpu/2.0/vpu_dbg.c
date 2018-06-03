@@ -375,16 +375,18 @@ static int vpu_test_lock(void)
 static int vpu_test_set_power(void)
 {
 	struct vpu_user *user;
+#if 0
 	struct vpu_power power;
+#endif
 
 	vpu_create_user(&user);
-
+#if 0
 	/* keep power on for 10s */
 	power.mode = VPU_POWER_MODE_ON;
 	power.opp = 0;
 	vpu_set_power(user, &power);
 	msleep(10 * 1000);
-
+#endif
 	vpu_delete_user(user);
 
 	return 0;

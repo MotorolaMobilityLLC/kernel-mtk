@@ -194,48 +194,6 @@ int vpu_create_user(struct vpu_user **user)
 	return 0;
 }
 
-static int vpu_renew_power_operation(void)
-{
-	int ret;
-	struct vpu_user *u;
-	struct list_head *head;
-	uint8_t power_mode = VPU_POWER_MODE_DYNAMIC;
-	uint8_t power_opp = VPU_POWER_OPP_UNREQUEST;
-
-	mutex_lock(&vpu_device->user_mutex);
-	list_for_each(head, &vpu_device->user_list)
-	{
-		u = vlist_node_of(head, struct vpu_user);
-		if (u->power_mode == VPU_POWER_MODE_ON)
-			power_mode = VPU_POWER_MODE_ON;
-		if (u->power_opp < power_opp)
-			power_opp = u->power_opp;
-	}
-	mutex_unlock(&vpu_device->user_mutex);
-
-	ret = vpu_change_power_opp(power_opp);
-	CHECK_RET("fail to renew power opp:%d\n", power_opp);
-
-	ret = vpu_change_power_mode(power_mode);
-	CHECK_RET("fail to renew power mode:%d\n", power_mode);
-
-	LOG_DBG("changed power mode:%d opp:%d\n", power_mode, power_opp);
-out:
-	return ret;
-
-}
-int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
-{
-	LOG_DBG("set power mode:%d opp:%d, pid=%d, tid=%d\n",
-			power->mode, power->opp,
-			user->open_pid, user->open_tgid);
-
-	user->power_mode = power->mode;
-	user->power_opp = power->opp;
-
-	return vpu_renew_power_operation();
-}
-
 static int vpu_write_register(struct vpu_reg_values *regs)
 {
 	return 0;
@@ -275,45 +233,46 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 		LOG_WRN("push a request while deleting the user\n");
 		return -ENONET;
 	}
-
+	#if 0
 	LOG_DBG("[vpu] push request to euque 0x%lx/0x%lx\n", (unsigned long)req->user_id,
 		(unsigned long)&(req->user_id));
 	LOG_DBG("[vpu] push request to euque CORE_IDNEX (0x%x)...\n", req->requested_core);
+	#endif
 
 	/* CHRISTODO, specific vpu */
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-		LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));
+		/*LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));*/
 		if (req->requested_core == (0x1 << i)) {
 			request_core_index = i;
 			break;
 		}
 	}
 
+	#if 0
 	LOG_DBG("[vpu] push request to euque CORE_IDNEX (0x%x/0x%x)...\n",
 		req->requested_core, request_core_index);
+	#endif
 
 	if (request_core_index >= MTK_VPU_CORE)
 		LOG_ERR("wrong core index (0x%x/%d/%d)", req->requested_core, request_core_index, MTK_VPU_CORE);
 
 	if (request_core_index > -1 && request_core_index < MTK_VPU_CORE) {
-		LOG_DBG("[vpu] push self pool, index(%d/0x%x)\n", request_core_index, req->requested_core);
+		/*LOG_DBG("[vpu] push self pool, index(%d/0x%x)\n", request_core_index, req->requested_core);*/
 		mutex_lock(&vpu_device->servicepool_mutex[request_core_index]);
 		list_add_tail(vlist_link(req, struct vpu_request), &vpu_device->servicepool_list[request_core_index]);
 		vpu_device->servicepool_list_size[request_core_index] += 1;
-		LOG_DBG("[vpu] push self pool(%d) size (%d)\n", request_core_index,
-			vpu_device->servicepool_list_size[request_core_index]);
 		mutex_unlock(&vpu_device->servicepool_mutex[request_core_index]);
 	} else {
-		LOG_DBG("[vpu] push common pool, index(%d,0x%x)\n", request_core_index, req->requested_core);
+		/*LOG_DBG("[vpu] push common pool, index(%d,0x%x)\n", request_core_index, req->requested_core);*/
 		mutex_lock(&vpu_device->commonpool_mutex);
 		list_add_tail(vlist_link(req, struct vpu_request), &vpu_device->commonpool_list);
 		vpu_device->commonpool_list_size += 1;
-		LOG_DBG("[vpu] push common pool size (%d)\n", vpu_device->commonpool_list_size);
+		/*LOG_DBG("[vpu] push common pool size (%d)\n", vpu_device->commonpool_list_size);*/
 		mutex_unlock(&vpu_device->commonpool_mutex);
 	}
 
 	wake_up(&vpu_device->req_wait);
-	LOG_DBG("[vpu] vpu_push_request_to_queue ---\n");
+	/*LOG_DBG("[vpu] vpu_push_request_to_queue ---\n");*/
 
 	return 0;
 }
@@ -498,8 +457,6 @@ int vpu_delete_user(struct vpu_user *user)
 	list_del(vlist_link(user, struct vpu_user));
 	mutex_unlock(&vpu_device->user_mutex);
 
-	vpu_renew_power_operation();
-
 	LOG_DBG("deleted user[%d]\n", user->id);
 	kfree(user);
 
@@ -612,14 +569,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case VPU_IOCTL_SET_POWER:
 	{
-		struct vpu_power power;
-
-		ret = copy_from_user(&power, (void *) arg, sizeof(struct vpu_power));
-		CHECK_RET("[SET_POWER] copy 'struct power' failed, ret=%d\n", ret);
-
-		ret = vpu_set_power(user, &power);
-		CHECK_RET("[SET_POWER] set power failed, ret=%d\n", ret);
-
+		LOG_ERR("2.0 do not support this cmd\n");
 		break;
 	}
 	case VPU_IOCTL_ENQUE_REQUEST:
@@ -627,7 +577,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_request *req;
 		struct vpu_request *u_req;
 
-		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST + ");
+		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST +\n");
 
 		ret = vpu_alloc_request(&req);
 		CHECK_RET("[ENQUE alloc request failed, ret=%d\n", ret);
@@ -643,10 +593,15 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret |= get_user(req->sett_ptr, &u_req->sett_ptr);
 		ret |= get_user(req->sett_length, &u_req->sett_length);
 		ret |= get_user(req->priv, &u_req->priv);
+		ret |= get_user(req->power_param.bw, &u_req->power_param.bw);
+		ret |= get_user(req->power_param.freq_step, &u_req->power_param.freq_step);
+		ret |= get_user(req->power_param.opp_step, &u_req->power_param.opp_step);
 		req->user_id = (unsigned long *)user;
+		#if 0
 		LOG_DBG("[vpu] enque test: user_id_0x%lx/0x%lx", (unsigned long)user, (unsigned long)(req->user_id));
 		LOG_DBG("[vpu] enque test: request_id_0x%lx\n", (unsigned long)req->request_id);
 		LOG_DBG("[vpu] enque test: core_index_0x%x\n", req->requested_core);
+		#endif
 
 		if (ret)
 			LOG_ERR("[ENQUE] get params failed, ret=%d\n", ret);

@@ -19,7 +19,7 @@
 
 #define VPU_MAX_NUM_CODE_SEGMENTS       (50)
 #define VPU_MAX_NUM_ALGOS               (50)
-#define VPU_MAX_NUM_STEPS               (4)
+#define VPU_MAX_NUM_STEPS               (8)
 #define VPU_MAX_NUM_OPPS                (10)
 
 /* MVA */
@@ -80,8 +80,9 @@ struct vpu_dvfs_steps {
 
 struct vpu_dvfs_opps {
 	struct vpu_dvfs_steps vcore;
-	struct vpu_dvfs_steps dsp;
-	struct vpu_dvfs_steps ipu_if;
+	struct vpu_dvfs_steps dsp;	/* ipu_conn */
+	struct vpu_dvfs_steps dspcore[MTK_VPU_CORE];	/* ipu_core# */
+	struct vpu_dvfs_steps ipu_if;	/* ipusys_vcore, interface */
 	uint8_t index;
 	uint8_t count;
 };

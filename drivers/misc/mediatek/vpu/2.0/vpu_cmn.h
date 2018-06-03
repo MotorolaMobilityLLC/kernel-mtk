@@ -181,20 +181,6 @@ int vpu_boot_up(int core);
 int vpu_shut_down(int core);
 
 /**
- * vpu_change_power_mode - change power mode
- * @mode        the power mode
- */
-int vpu_change_power_mode(uint8_t mode);
-
-/**
- * vpu_change_power_opp - change the opp.
- * @index       the OPP index
- *
- * May not be changed immediately, depended on the hardware capability.
- */
-int vpu_change_power_opp(uint8_t index);
-
-/**
  * vpu_hw_load_algo - call vpu program to load algo, by specifying the start address
  * @core:	core index of device.
  * @algo:       the pointer to struct algo, which has right binary-data info.
@@ -310,13 +296,6 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args);
  * @ruser:      return the created user.
  */
 int vpu_create_user(struct vpu_user **ruser);
-
-/**
- * vpu_set_power - set the power mode by a user
- * @user:       the pointer to user.
- * @power:      the user's power mode.
- */
-int vpu_set_power(struct vpu_user *user, struct vpu_power *power);
 
 /**
  * vpu_delete_user - delete vpu user, and remove it from user list
