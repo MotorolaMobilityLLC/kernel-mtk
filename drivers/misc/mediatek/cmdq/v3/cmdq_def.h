@@ -133,7 +133,7 @@ typedef u64 CMDQ_VARIABLE;
 #ifdef CMDQ_DELAY_IN_DRAM
 #define CMDQ_DELAY_TPR_MASK_BIT	(11)
 #else
-#define CMDQ_DELAY_TPR_MASK_VALUE	(1 << 18 | 1 << 15 | 1 << 11 | 1 << 8)
+#define CMDQ_DELAY_TPR_MASK_VALUE	(1 << 17 | 1 << 14 | 1 << 11)
 #endif
 
 #define CMDQ_DELAY_MAX_SET		(3)

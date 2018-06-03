@@ -72,10 +72,11 @@
 
 #define CMDQ_THR_CURR_ADDR_PA(id)	(GCE_BASE_PA + (0x080 * id) + 0x120)
 #define CMDQ_THR_END_ADDR_PA(id)	(GCE_BASE_PA + (0x080 * id) + 0x124)
+#define CMDQ_THR_EXEC_CNT_PA(id)	(GCE_BASE_PA + (0x080 * id) + 0x128)
 
 #define CMDQ_SYNC_TOKEN_ID_PA		(GCE_BASE_PA + 0x060)
 #define CMDQ_SYNC_TOKEN_VAL_PA		(GCE_BASE_PA + 0x064)
-#define CMDQ_THR_EXEC_CNT_PA(id)	(GCE_BASE_PA + (0x080 * id) + 0x128)
+#define CMDQ_TPR_MASK_PA		(GCE_BASE_PA + 0x0D0)
 
 #define CMDQ_GCE_END_ADDR_PA		(GCE_BASE_PA + 0xC00)
 #define CMDQ_THR_FIX_END_ADDR(id)	(CMDQ_GCE_END_ADDR_PA | (id << 4))
