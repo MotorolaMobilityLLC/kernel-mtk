@@ -449,7 +449,6 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 		if (recovery_retry_cnt < 0) {
 			recovery_retry_cnt = 100;
 			if (g_dsi_ddp_notify != NULL) {
-				DDPERR("call dsi_ddp_notify\n");
 				primary_display_set_recovery_module(DISP_MODULE_RDMA0);
 				g_dsi_ddp_notify(DISP_MODULE_DSI0, DISP_PATH_EVENT_DISP_RECOVERY);
 			}
