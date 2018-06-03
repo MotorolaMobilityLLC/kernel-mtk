@@ -469,7 +469,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		return ERR_PTR(-EINVAL);
 	}
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagStart, len, 0);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_START,
+			 (unsigned long)client, len);
 	start = sched_clock();
 
 	down_read(&dev->lock);
@@ -521,7 +522,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("warn: ion alloc buffer size: %zu time: %lld ns\n", buffer->size, end - start);
 	}
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagEnd, buffer->size, 0);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_END,
+			 (unsigned long)client, (unsigned long)handle);
 
 	return handle;
 }
@@ -549,6 +551,8 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
 	mutex_lock(&client->lock);
 	ion_free_nolock(client, handle);
 	mutex_unlock(&client->lock);
+	mmprofile_log_ex(ion_mmp_events[PROFILE_FREE], MMPROFILE_FLAG_PULSE,
+			 (unsigned long)client, (unsigned long)handle);
 }
 EXPORT_SYMBOL(ion_free);
 
@@ -559,8 +563,8 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 	int ret;
 
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagStart,*/
-			/*(unsigned long)client, (unsigned long)handle);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_GET_PHYS], MMPROFILE_FLAG_START,
+			 (unsigned long)client, (unsigned long)handle);
 
 	mutex_lock(&client->lock);
 	if (!ion_handle_validate(client, handle)) {
@@ -581,7 +585,7 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_GET_PHYS], MMProfileFlagEnd, buffer->size, *addr);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_GET_PHYS], MMPROFILE_FLAG_END, buffer->size, *addr);
 
 	return ret;
 }
@@ -631,9 +635,11 @@ static void ion_buffer_kmap_put(struct ion_buffer *buffer)
 	buffer->kmap_cnt--;
 	if (!buffer->kmap_cnt) {
 		/*avoid camelcase, will modify in a letter*/
-		/*MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagStart, buffer->size, 0);*/
+		mmprofile_log_ex(ion_mmp_events[PROFILE_UNMAP_KERNEL], MMPROFILE_FLAG_START,
+				 buffer->size, buffer->kmap_cnt);
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
-		/*MMProfileLogEx(ION_MMP_Events[PROFILE_UNMAP_KERNEL], MMProfileFlagEnd, buffer->size, 0);*/
+		mmprofile_log_ex(ion_mmp_events[PROFILE_UNMAP_KERNEL], MMPROFILE_FLAG_END,
+				 buffer->size, buffer->kmap_cnt);
 		buffer->vaddr = NULL;
 	}
 }
@@ -1089,7 +1095,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	struct ion_buffer *buffer = dmabuf->priv;
 	int ret = 0;
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagStart, buffer->size, vma->vm_start);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_MAP_USER], MMPROFILE_FLAG_START, buffer->size, vma->vm_start);
 
 	if (!buffer->heap->ops->map_user) {
 		pr_err("%s: this heap does not define a method for mapping to userspace\n",
@@ -1119,7 +1125,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 		pr_err("%s: failure mapping buffer to userspace\n",
 		       __func__);
 	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_MAP_USER], MMProfileFlagEnd, buffer->size, vma->vm_start);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_MAP_USER], MMPROFILE_FLAG_END, buffer->size, vma->vm_start);
 
 	return ret;
 }
@@ -1226,6 +1232,8 @@ int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle)
 	struct dma_buf *dmabuf;
 	int fd;
 
+	mmprofile_log_ex(ion_mmp_events[PROFILE_SHARE], MMPROFILE_FLAG_START,
+			 (unsigned long)client, (unsigned long)handle);
 	dmabuf = ion_share_dma_buf(client, handle);
 	if (IS_ERR(dmabuf)) {
 		IONMSG("%s dmabuf is err 0x%p.\n", __func__, dmabuf);
@@ -1233,6 +1241,7 @@ int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle)
 	}
 
 	fd = dma_buf_fd(dmabuf, O_CLOEXEC);
+	mmprofile_log_ex(ion_mmp_events[PROFILE_SHARE], MMPROFILE_FLAG_END, (unsigned long)client, fd);
 	if (fd < 0) {
 		IONMSG("%s dma_buf_fd failed %d.\n", __func__, fd);
 		dma_buf_put(dmabuf);
@@ -1248,8 +1257,6 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 	struct ion_buffer *buffer;
 	struct ion_handle *handle;
 	int ret;
-	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagStart, 1, 1);*/
 
 	dmabuf = dma_buf_get(fd);
 	if (IS_ERR(dmabuf)) {
@@ -1274,6 +1281,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 		mutex_unlock(&client->lock);
 		goto end;
 	}
+	mmprofile_log_ex(ion_mmp_events[PROFILE_IMPORT], MMPROFILE_FLAG_START, (unsigned long)client, fd);
 
 	handle = ion_handle_create(client, buffer);
 	if (IS_ERR(handle)) {
@@ -1291,10 +1299,11 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 		IONMSG("ion_import: ion_handle_add fail %d\n", ret);
 	}
 
+	mmprofile_log_ex(ion_mmp_events[PROFILE_IMPORT], MMPROFILE_FLAG_END, (unsigned long)client,
+			 (unsigned long)handle);
+
 end:
 	dma_buf_put(dmabuf);
-	/*avoid camelcase, will modify in a letter*/
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_IMPORT], MMProfileFlagEnd, 1, 1);*/
 
 	return handle;
 }

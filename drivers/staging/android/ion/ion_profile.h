@@ -24,6 +24,7 @@ enum ION_PROFILE_TYPE {
 	PROFILE_UNMAP_USER,
 	PROFILE_CUSTOM_IOC,
 	PROFILE_GET_PHYS,
+	PROFILE_MM_HEAP_DEBUG,
 	PROFILE_DMA_CLEAN_RANGE,
 	PROFILE_DMA_FLUSH_RANGE,
 	PROFILE_DMA_INVALID_RANGE,
@@ -35,15 +36,15 @@ enum ION_PROFILE_TYPE {
 
 #define ION_PROFILE
 
+#define mmp_root_event 1
+
 #ifndef ION_PROFILE
-/*
-* avoid CamelCase, will modify in a letter
-*#define MMProfileLogEx(...)
-*#define MMProfileEnable(...)
-*#define MMProfileStart(...)
-*#define MMP_Event unsigned int
-*#define MMP_RootEvent 1
-*/
+
+#define mmprofile_log_ex(...)
+#define mmprofile_enable(...)
+#define mmprofile_start(...)
+#define mmp_event unsigned int
+
 #else
 #include <mmprofile.h>
 
@@ -53,6 +54,6 @@ void mmprofile_start(int start);
 void ion_profile_init(void);
 #endif
 
-/*extern MMP_Event ION_MMP_Events[PROFILE_MAX];*/
+extern mmp_event ion_mmp_events[PROFILE_MAX];
 
 #endif

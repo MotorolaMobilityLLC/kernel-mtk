@@ -582,6 +582,8 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 			mutex_unlock(&client->lock);
 		}
 	}
+	ION_PRINT_LOG_OR_SEQ(s,
+			     "current time is %lld, ion_t %16zu!!\n", sched_clock(), mm_heap_total_memory);
 	up_read(&dev->lock);
 
 	return 0;
