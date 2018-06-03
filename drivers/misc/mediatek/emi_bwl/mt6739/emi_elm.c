@@ -78,7 +78,7 @@ void enable_elm(void)
 	writel(0x00020001, IOMEM(EMI_MSEL));
 	writel(0x00000018, IOMEM(EMI_MSEL2));
 	writel(0x02000000, IOMEM(EMI_BMEN2));
-	writel(0x55555555, IOMEM(EMI_BMRW0));
+	writel(0xffffffff, IOMEM(EMI_BMRW0));
 	mt_reg_sync_writel(readl(IOMEM(EMI_BMEN)) | 0x1, EMI_BMEN);
 
 	/* Setup and enable CGM */
