@@ -45,6 +45,7 @@ enum vcorefs_smc_cmd {
 #define QOS_MM_BW             (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
 #define QOS_GPU_BW            (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
 #define QOS_MD_PERI_BW        (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
+#define QOS_SRAM_SEG          (QOS_SRAM_BASE + 0x7C)
 
 enum {
 	QOS_TOTAL = 0,
