@@ -17,6 +17,7 @@
 #include "ged_type.h"
 #include "eas_controller.h"
 #include <linux/sched.h>
+#include <linux/cpufreq.h>
 #include <linux/topology.h>
 
 GED_ERROR ged_kpi_dequeue_buffer_ts(int pid,
@@ -55,7 +56,7 @@ void ged_kpi_set_game_hint(int mode);
 unsigned int ged_kpi_enabled(void);
 
 extern int linear_real_boost(int linear_boost);
-extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
+/* extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu); */
 extern unsigned long arch_scale_get_max_freq(int cpu);
 
 #endif

@@ -390,6 +390,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		/* move to cpufreq.c if sched-asisted */
 		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 		per_cpu(freq_scale, cpu) = scale;
+		arch_scale_set_curr_freq(cpu, cur);
 		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
 		arch_scale_set_min_freq(cpu, policy->min);
@@ -400,6 +401,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		/* move to cpufreq.c if sched-asisted */
 		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 		per_cpu(freq_scale, cpu) = scale;
+		arch_scale_set_curr_freq(cpu, cur);
 		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
 		arch_scale_set_min_freq(cpu, policy->min);
