@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_DVFSRC_REG_H__
-#define __MTK_DVFSRC_REG_H__
+#ifndef __MTK_DVFSRC_REG_MT6771_H
+#define __MTK_DVFSRC_REG_MT6771_H
 
 #include <linux/io.h>
 
@@ -179,4 +179,4 @@ extern void __iomem *dvfsrc_base;
 #define DVFSRC_RSRV_4              (DVFSRC_BASE + 0x610)
 #define DVFSRC_RSRV_5              (DVFSRC_BASE + 0x614)
 
-#endif /* __MTK_DVFSRC_REG_H__ */
+#endif /* __MTK_DVFSRC_REG_MT6771_H */

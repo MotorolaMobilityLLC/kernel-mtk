@@ -44,6 +44,9 @@
 #include <mmdvfs_mgr.h>
 #endif
 
+#include <helio-dvfsrc-opp.h>
+#include <helio-dvfsrc.h>
+
 #define is_dvfs_in_progress()    (spm_read(DVFSRC_LEVEL) & 0xFFFF)
 #define get_dvfs_level()         (spm_read(DVFSRC_LEVEL) >> 16)
 
@@ -75,6 +78,25 @@ enum spm_vcorefs_step {
 	SPM_VCOREFS_DVFS_END = 0x000001ff,
 	SPM_VCOREFS_LEAVE = 0x000007ff,
 };
+
+__weak int vcore_opp_init(void) { return 0; }
+__weak unsigned int get_vcore_opp_volt(unsigned int opp) { return 800000; }
+
+int vcore_map[NUM_OPP] = {
+	VCORE_OPP_0,
+	VCORE_OPP_1,
+	VCORE_OPP_1,
+	VCORE_OPP_1
+};
+
+int spm_get_vcore_opp(unsigned int opp)
+{
+	if (opp < 0 || opp >= NUM_OPP) {
+		spm_vcorefs_err("invalid input opp:%d\n", opp);
+		opp = 0;
+	}
+	return vcore_map[opp];
+}
 
 static inline void spm_vcorefs_footprint(enum spm_vcorefs_step step)
 {
@@ -249,8 +271,12 @@ int spm_vcorefs_pwarp_cmd(void)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 0, get_vcore_ptp_volt(0)); /* 0.7V opp */
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 1, get_vcore_ptp_volt(1)); /* 0.8V opp */
+	/* 0.7V opp */
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 0,
+			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_1)));
+	/* 0.8V opp */
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 1,
+			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_0)));
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
@@ -310,28 +336,20 @@ int spm_vcorefs_get_opp(void)
 	return level;
 }
 
-static void dvfsrc_hw_policy_mask(bool force)
+void dvfsrc_hw_policy_mask(bool mask)
 {
-	if (force || vcorefs_i_hwpath_en()) {
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 4));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 8));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 16));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 0));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
-		spm_write(DVFSRC_VCORE_MD2SPM0, 0x0);
-		spm_write(DVFSRC_MD_REQUEST, 0x0);
-		spm_request_dvfs_opp(0, OPP_3);
+	if (mask) {
+		spm_write(DVFSRC_EMI_REQUEST, 0);
+		spm_write(DVFSRC_EMI_REQUEST2, 0);
+		spm_write(DVFSRC_EMI_REQUEST3, 0);
+		spm_write(DVFSRC_VCORE_REQUEST, 0);
+		spm_write(DVFSRC_VCORE_REQUEST, 0);
 	} else {
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 0));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 4));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x2 << 8));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 16));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 0));
-		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 5));
-		spm_write(DVFSRC_VCORE_MD2SPM0, 0x8000C0C0);
+		spm_write(DVFSRC_EMI_REQUEST, 0x00209209);
+		spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
+		spm_write(DVFSRC_EMI_REQUEST3, 0x29292929);
+		spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
+		spm_write(DVFSRC_VCORE_REQUEST, 0x29292929);
 	}
 }
 
@@ -636,10 +654,11 @@ void spm_vcorefs_init(void)
 	dvfsrc_register_init();
 	vcorefs_module_init();
 	plat_info_init();
+	vcore_opp_init();
+	vcorefs_init_opp_table();
 
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();
-		vcorefs_init_opp_table();
 		spm_dvfsfw_init(spm_vcorefs_get_opp());
 		spm_go_to_vcorefs(flag);
 		dvfsrc_init();

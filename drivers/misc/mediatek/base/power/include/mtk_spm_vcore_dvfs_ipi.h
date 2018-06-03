@@ -18,6 +18,10 @@
 
 #include "spm_v3/mtk_spm_vcore_dvfs_ipi_mt6775.h"
 
+#elif defined(CONFIG_MACH_MT6771)
+
+#include "spm_v4/mtk_spm_vcore_dvfs_ipi_mt6771.h"
+
 #endif
 
 #endif

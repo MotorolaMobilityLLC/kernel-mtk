@@ -34,7 +34,7 @@
 #include <mtk_eem.h>
 #include "mmdvfs_mgr.h"
 
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 #include <mtk_dvfsrc_reg.h>
 #include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs_ipi.h>
@@ -351,6 +351,8 @@ int vcorefs_get_vcore_by_steps(u32 opp)
 {
 #if defined(CONFIG_MACH_MT6775)
 	return vcore_pmic_to_uv(get_vcore_opp_volt(opp));
+#elif defined(CONFIG_MACH_MT6771)
+	return get_vcore_opp_volt(spm_get_vcore_opp(opp));
 #else
 	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
 #endif
@@ -476,7 +478,10 @@ int governor_debug_store(const char *buf)
 		} else if (!strcmp(cmd, "isr_debug")) {
 			vcorefs_enable_debug_isr(val);
 		} else if (!strcmp(cmd, "i_hwpath")) {
-			gvrctrl->i_hwpath = val;
+			gvrctrl->i_hwpath = !!val;
+#if defined(CONFIG_MACH_MT6771)
+			dvfsrc_hw_policy_mask(gvrctrl->i_hwpath);
+#endif
 		} else {
 			r = -EPERM;
 		}
@@ -688,7 +693,7 @@ void vcorefs_init_opp_table(void)
 				opp_ctrl_table[opp].ddr_khz);
 	}
 
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 	spm_vcorefs_pwarp_cmd();
 #else
 	mt_eem_vcorefs_set_volt();
