@@ -143,7 +143,7 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 
 	case CCCI_IPC_UPDATE_TIME:
 #ifdef FEATURE_MD_GET_CLIB_TIME
-		CCCI_DEBUG_LOG(port->md_id, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
+		CCCI_REPEAT_LOG(port->md_id, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
 		ret = send_new_time_to_md(port->modem, (int)arg);
 #else
@@ -154,7 +154,7 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 	case CCCI_IPC_WAIT_TIME_UPDATE:
 		CCCI_DEBUG_LOG(port->md_id, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
 		ret = wait_time_update_notify();
-		CCCI_REPEAT_LOG(port->md_id, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
+		CCCI_DEBUG_LOG(port->md_id, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
 		break;
 
 	case CCCI_IPC_UPDATE_TIMEZONE:

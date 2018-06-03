@@ -41,6 +41,7 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
+#include <mt-plat/mtk_ccci_common.h>
 #include <generated/timeconst.h>
 #include "timekeeping.h"
 
@@ -184,6 +185,7 @@ int do_sys_settimeofday(const struct timespec *tv, const struct timezone *tz)
 			if (!tv)
 				warp_clock();
 		}
+		notify_time_update();
 	}
 	if (tv)
 		return do_settimeofday(tv);
@@ -761,4 +763,12 @@ struct timespec timespec_add_safe(const struct timespec lhs,
 		res.tv_sec = TIME_T_MAX;
 
 	return res;
+}
+
+/*
+ * Add dummy API to avoid build error,
+ * which happen on ccci not enable project
+ */
+void __weak notify_time_update(void)
+{
 }

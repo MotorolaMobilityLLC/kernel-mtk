@@ -71,11 +71,6 @@ unsigned int __weak mt_irq_get_pending(unsigned int irq)
 	return 0;
 }
 
-void __weak notify_time_update(void)
-{
-	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
-}
-
 unsigned long __weak ccci_get_md_boot_count(int md_id)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
