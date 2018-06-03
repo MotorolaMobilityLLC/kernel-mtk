@@ -2251,6 +2251,7 @@
 		reg = <0 0x14019000 0 0x1000>;
 		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>,
 			<&smi_larb3>, <&smi_larb4>, <&smi_larb5>, <&smi_larb6>;
+		mmsys_config = <&mmsys_config>;
 		clocks = <&scpsys SCP_SYS_DIS>, <&mmsys_config MMSYS_GALS_COMM0>,
 			<&mmsys_config MMSYS_GALS_COMM1>, <&mmsys_config MMSYS_SMI_COMMON>,
 			<&topckgen TOP_MUX_MM>, <&topckgen TOP_MUX_CAM>, <&topckgen TOP_MUX_IMG>,
