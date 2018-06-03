@@ -616,6 +616,7 @@ extern void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc);
 extern void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc);
 extern void __spm_init_pcm_register(void);
 extern void __spm_init_event_vector(const struct pcm_desc *pcmdesc);
+extern void __spm_src_req_update(const struct pwr_ctrl *pwrctrl);
 extern void __spm_set_power_control(const struct pwr_ctrl *pwrctrl);
 extern void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl);
 extern void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl);

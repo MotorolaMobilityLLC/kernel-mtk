@@ -17,9 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -539,7 +537,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_DPIDLE,
 
 #if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 0,
+	.syspwreq_mask = 1,
 #endif
 
 	/* Auto-gen Start */
@@ -846,8 +844,6 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
 		struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	unsigned int resource_usage = 0;
-
 	__spm_set_cpu_status(cpu);
 
 	__spm_reset_and_init_pcm(pcmdesc);
@@ -860,17 +856,14 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
 
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	if (!sleep_dpidle) {
-		resource_usage = spm_get_resource_usage();
-
-		pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
-		pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-		pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-		pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
-	}
-
 	__spm_set_power_control(pwrctrl);
+
+	/*
+	 * Get SPM resource request and update SPM_SRC_REQ
+	 * after __spm_set_power_control
+	 */
+	if (!sleep_dpidle)
+		__spm_src_req_update(pwrctrl);
 
 	__spm_set_wakeup_event(pwrctrl);
 
