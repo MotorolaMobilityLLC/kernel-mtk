@@ -1563,10 +1563,12 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(MSDCPLL_CON0, PLL_EN);
 	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+#if 0
 /*MMPLL*/
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
+#endif
 /*TVDPLL*/
 	clk_clrl(TVDPLL_CON0, PLL_EN);
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
