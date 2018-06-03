@@ -283,7 +283,8 @@ static int tpd_debug_log_release(struct inode *inode, struct file *file)
 {
 	/* struct tpd_debug_log_buf *tpd_buf = (tpd_debug_log_buf *)file->private_data; */
 	pr_debug("[tpd_em_log]: close log file\n");
-	vfree(tpd_buf.buffer);
+	if (tpd_buf.buffer)
+		vfree(tpd_buf.buffer);
 	tpd_buf.buffer = NULL;
 	/* free(tpd_buf); */
 	return 0;
@@ -519,6 +520,7 @@ void tpd_em_log_release(void)
 
 static int __init tpd_log_init(void)
 {
+	memset(&tpd_buf, 0, sizeof(struct tpd_debug_log_buf));
 	if (misc_register(&tpd_debug_log_dev) < 0) {
 		pr_err("[tpd_em_log] :register device failed\n");
 		return -1;
