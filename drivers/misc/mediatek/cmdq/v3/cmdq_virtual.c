@@ -667,6 +667,7 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event,
 	case CMDQ_EVENT_GEPF_EOF:
 	case CMDQ_EVENT_GEPF_TEMP_EOF:
 	case CMDQ_EVENT_GEPF_BYPASS_EOF:
+	case CMDQ_EVENT_WPE_A_EOF:
 		module = "ISP";
 		group = CMDQ_GROUP_ISP;
 		break;
@@ -884,6 +885,9 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
 			break;
 		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(pTask->engineFlag)) {
 			module = "GEPF";
+			break;
+		} else if (CMDQ_ENG_WPE_GROUP_FLAG(pTask->engineFlag)) {
+			module = "WPE";
 			break;
 		}
 
