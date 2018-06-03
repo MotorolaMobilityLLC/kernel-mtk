@@ -222,6 +222,9 @@ void tscpu_met_unlock(unsigned long *flags)
 EXPORT_SYMBOL(tscpu_met_unlock);
 
 #endif
+static int g_is_temp_valid;
+static void temp_valid_lock(unsigned long *flags);
+static void temp_valid_unlock(unsigned long *flags);
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -299,9 +302,14 @@ long long thermal_get_current_time_us(void)
 static void tscpu_fast_initial_sw_workaround(void)
 {
 	int i = 0;
+	unsigned long flags;
 
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
 		tscpu_thermal_fast_init(i);
+
+	temp_valid_lock(&flags);
+	g_is_temp_valid = 0;
+	temp_valid_unlock(&flags);
 }
 
 int tscpu_max_temperature(void)
@@ -1671,6 +1679,51 @@ int tscpu_get_cpu_temp_met(MTK_THERMAL_SENSOR_CPU_ID_MET id)
 EXPORT_SYMBOL(tscpu_get_cpu_temp_met);
 #endif
 
+static DEFINE_SPINLOCK(temp_valid_spinlock);
+static void temp_valid_lock(unsigned long *flags)
+{
+	spin_lock_irqsave(&temp_valid_spinlock, *flags);
+}
+
+static void temp_valid_unlock(unsigned long *flags)
+{
+	spin_unlock_irqrestore(&temp_valid_spinlock, *flags);
+}
+
+static void check_all_temp_valid(void)
+{
+	int i, j, raw;
+
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		for (j = 0; j < tscpu_g_tc[i].ts_number; j++) {
+			raw = tscpu_ts_temp_r[tscpu_g_tc[i].ts[j]];
+
+			if (raw == THERMAL_INIT_VALUE)
+				return;	/* The temperature is not valid. */
+		}
+	}
+
+	g_is_temp_valid = 1;
+}
+
+int tscpu_is_temp_valid(void)
+{
+	int is_valid = 0;
+	unsigned long flags;
+
+	temp_valid_lock(&flags);
+	if (g_is_temp_valid == 0) {
+		check_all_temp_valid();
+		if (g_is_temp_valid == 1)
+			tscpu_warn("Driver is ready to report valid temperatures\n");
+	}
+
+	is_valid = g_is_temp_valid;
+	temp_valid_unlock(&flags);
+
+	return is_valid;
+}
+
 static void read_all_tc_temperature(void)
 {
 	int i = 0, j = 0;
@@ -1678,6 +1731,8 @@ static void read_all_tc_temperature(void)
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
 		for (j = 0; j < tscpu_g_tc[i].ts_number; j++)
 			tscpu_thermal_read_tc_temp(i, tscpu_g_tc[i].ts[j], j);
+
+	tscpu_is_temp_valid();
 }
 
 void tscpu_update_tempinfo(void)
