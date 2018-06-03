@@ -396,6 +396,8 @@ int sspm_ipi_send_async(int mid, int opts, void *buffer, int slot)
 		return IPI_SERVICE_NOT_AVAILABLE;
 
 	pin = &(send_pintable[mid]);
+	if (!pin->async)
+		return IPI_PIN_MISUES;
 	if (slot > pin->size)
 		return IPI_NO_MEMORY;
 
@@ -475,7 +477,8 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retslot)
 		return IPI_SERVICE_NOT_AVAILABLE;
 
 	pin = &(send_pintable[mid]);
-
+	if (!pin->async)
+		return IPI_PIN_MISUES;
 	if (retslot > pin->size)
 		return IPI_NO_MEMORY;
 

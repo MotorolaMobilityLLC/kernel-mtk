@@ -45,6 +45,7 @@ struct ipi_action {
 #define IPI_HW_ERROR        -5
 #define IPI_NO_MEMORY       -6
 #define IPI_USED_IN_WAIT    -7
+#define IPI_PIN_MISUES      -8
 
 extern int sspm_ipi_init(void);
 
