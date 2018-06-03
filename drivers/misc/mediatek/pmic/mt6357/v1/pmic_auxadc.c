@@ -287,6 +287,12 @@ int pmic_get_auxadc_channel_max(void)
 	return MT6357_AUXADC_CHANNEL_MAX;
 }
 
+bool is_isense_supported(void)
+{
+	/* PMIC MT6357 supports ISENSE */
+	return true;
+}
+
 static int mts_timestamp;
 static unsigned int mts_count;
 static unsigned int mts_adc;
@@ -590,7 +596,7 @@ int mt_get_auxadc_value(u8 channel)
 #endif
 			if (is_charging == 0)
 				bat_cur = 0 - bat_cur;
-			pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n"
+			pr_notice("[%s]ch_idx=%d,channel=%d,bat_cur=%d,reg_val=0x%x,adc_result=%d\n"
 				  , __func__
 				  , channel
 				  , auxadc_channel->ch_num
@@ -598,7 +604,7 @@ int mt_get_auxadc_value(u8 channel)
 				  , reg_val
 				  , adc_result);
 		} else {
-			pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n"
+			pr_notice("[%s]ch_idx=%d,channel=%d,reg_val=0x%x,adc_result=%d\n"
 				  , __func__
 				  , channel
 				  , auxadc_channel->ch_num
@@ -606,7 +612,7 @@ int mt_get_auxadc_value(u8 channel)
 				  , adc_result);
 		}
 	} else {
-		pr_info("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n"
+		HKLOG("[%s]ch_idx=%d,channel=%d,reg_val=0x%x,adc_result=%d\n"
 		      ,	__func__
 		      , channel
 		      , auxadc_channel->ch_num
