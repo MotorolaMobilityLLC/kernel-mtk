@@ -176,7 +176,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0xF90, "MDP_PRZ1_MOUT_EN"},
 		{0xF94, "MDP_COLOR_MOUT_EN"},
 		{0xF98, "IPU_MOUT_EN"},
-		{0xF9C, "MDP_AAL_MOUT_EN"},
+		{0xFE8, "MDP_AAL_MOUT_EN"},
 		/* {0x02C, "MDP_TDSHP_MOUT_EN"},*/
 		{0xF00, "DISP_OVL0_MOUT_EN"},
 		{0xF04, "DISP_OVL0_2L_MOUT_EN"},
@@ -203,7 +203,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 		/* {0xFDC, "DISP_COLOR_SEL_IN"}, */
 		{0xFE0, "MDP_PATH0_SEL_IN"},
 		{0xFE4, "MDP_PATH1_SEL_IN"},
-		{0xFE8, "MDP_AAL_SEL_IN"},
+		{0xFEC, "MDP_AAL_SEL_IN"},
 		{0xFF0, "MDP_CCORR_SEL_IN"},
 		{0xFF4, "MDP_CCORR_SOUT_SEL"},
 		/* {0x070, "DISP_WDMA1_SEL_IN"}, */
@@ -223,12 +223,21 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0x8D4, "MDP_DL_READY_0"},
 		{0x8D8, "MDP_DL_READY_1"},
 		{0x8E8, "MDP_MOUT_MASK"},
+		{0x948, "MDP_DL_VALID_2"},
+		{0x94C, "MDP_DL_READY_2"},
+		{0x950, "DISP_DL_VALID_2"},
+		{0x954, "DISP_DL_READY_2"},
 		{0x100, "MMSYS_CG_CON0"},
 		{0x110, "MMSYS_CG_CON1"},
 		/* Async DL related */
+		{0x960, "TOP_RELAY_FSM_RD"},
+		{0x934, "MDP_ASYNC_CFG_WD"},
+		{0x938, "MDP_ASYNC_CFG_RD"},
 		{0x958, "MDP_ASYNC_CFG_OUT_RD"},
+		{0x95C, "MDP_ASYNC_IPU_CFG_OUT_RD"},
 		{0x994, "ISP_RELAY_CFG_WD"},
 		{0x998, "ISP_RELAY_CNT_RD"},
+		{0x99C, "ISP_RELAY_CNT_LATCH_RD"},
 		{0x9A0, "IPU_RELAY_CFG_WD"},
 		{0x9A4, "IPU_RELAY_CNT_RD"},
 		{0x9A8, "IPU_RELAY_CNT_LATCH_RD"}
@@ -291,10 +300,9 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 		CMDQ_ENG_MDP_CAMIN2,    /* bit  11 : CAM2_MDP */
 		-1,                     /* bit  12 : MDP_COLOR_MOUT */
 		-1,                     /* bit  13 : MDP_COLOR_MOUT */
-		-1,                     /* bit  14 : MDP_COLOR_MOUT */
-		CMDQ_ENG_MDP_AAL0,      /* bit  15 : MDP_AAL */
-		CMDQ_ENG_MDP_CCORR0,    /* bit  16 : MDP_CCORR */
-		[17 ... 31] = -1
+		CMDQ_ENG_MDP_AAL0,      /* bit  14 : MDP_AAL */
+		CMDQ_ENG_MDP_CCORR0,    /* bit  15 : MDP_CCORR */
+		[16 ... 31] = -1
 	};
 
 	for (i = 0; i < 32; ++i) {
@@ -682,12 +690,10 @@ int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 {
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0))
 		cmdq_mdp_dump_rdma(MDP_RDMA0_BASE, "RDMA0");
-#if 0
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_AAL0))
 		cmdq_mdp_dump_aal(MDP_AAL_BASE, "AAL0");
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_CCORR0))
 		cmdq_mdp_dump_ccorr(MDP_CCORR_BASE, "CCORR0");
-#endif
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ0))
 		cmdq_mdp_get_func()->mdpDumpRsz(MDP_RSZ0_BASE, "RSZ0");
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ1))
