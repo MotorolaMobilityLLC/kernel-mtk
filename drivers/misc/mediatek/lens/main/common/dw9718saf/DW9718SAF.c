@@ -50,13 +50,13 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 	char puReadCmd[1] = {(char)(a_u2Addr)};
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
-	if (i4RetValue != 2) {
+	if (i4RetValue < 0) {
 		LOG_INF(" I2C write failed!!\n");
 		return -1;
 	}
 
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (char *)a_puBuff, 1);
-	if (i4RetValue != 1) {
+	if (i4RetValue < 0) {
 		LOG_INF(" I2C read failed!!\n");
 		return -1;
 	}
@@ -66,7 +66,7 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 
 static u8 read_data(u8 addr)
 {
-	u8 get_byte = 0;
+	u8 get_byte = 0xFF;
 
 	i2c_read(addr, &get_byte);
 
@@ -126,6 +126,7 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 
 static int initdrv(void)
 {
+	u8 data = 0xFF;
 	int i4RetValue = 0;
 	char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
 	char puSendCmd2[2] = {0x01, 0x39};
@@ -133,17 +134,34 @@ static int initdrv(void)
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
-	if (i4RetValue < 0)
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x00 failed!!\n");
+		return -1;
+	}
+
+	data = read_data(0x00);
+	LOG_INF("Addr:0x00 Data:0x%x\n", data);
+
+	if (data != 0x0)
 		return -1;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
-	if (i4RetValue < 0)
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x01 failed!!\n");
 		return -1;
+	}
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 
-	return i4RetValue;
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x05 failed!!\n");
+		return -1;
+	}
+
+	LOG_INF("driver init success!!\n");
+
+	return 0;
 }
 
 static inline int moveAF(unsigned long a_u4Position)
@@ -158,10 +176,10 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 
-		initdrv();
-		ret = s4DW9718SAF_ReadReg(&InitPos);
+		ret = initdrv();
 
 		if (ret == 0) {
+			ret = s4DW9718SAF_ReadReg(&InitPos);
 			LOG_INF("Init Pos %6d\n", InitPos);
 
 			spin_lock(g_pAF_SpinLock);
