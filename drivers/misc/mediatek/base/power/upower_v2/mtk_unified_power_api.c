@@ -23,7 +23,7 @@ void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsign
 	upower_debug("(%s) bank = %d, opp_num = %d\n", __func__, bank, opp_num);
 
 	if (bank >= NR_UPOWER_BANK) {
-		upower_error("(%s) No this bank\n", __func__);
+		upower_debug("(%s) No this bank\n", __func__);
 		return;
 	}
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
@@ -59,7 +59,7 @@ void upower_update_degree_by_eem(enum upower_bank bank, int deg)
 
 	upower_debug("(%s) bank = %d, deg = %d\n", __func__, bank, deg);
 	if (bank >= NR_UPOWER_BANK) {
-		upower_error("(%s) No this bank\n", __func__);
+		upower_debug("(%s) No this bank\n", __func__);
 		return;
 	}
 

@@ -54,6 +54,7 @@ int degree_set[NR_UPOWER_DEGREE] = {
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
 struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
+	/* MT6763+ */
 	[0] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
@@ -61,6 +62,7 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
 	},
+	/* MT6763 */
 	[1] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
@@ -68,12 +70,21 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
 	},
+	/* MT6763T_FY */
 	[2] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_FY),
+	},
+	/* MT6763T_SB */
+	[3] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_3_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_SB),
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */
@@ -124,32 +135,45 @@ int upower_bank_to_spower_bank(int upower_bank)
  * upower_tbl_ref points to it to store target      *
  * power tbl.                                       *
  ***************************************************/
+
 void get_original_table(void)
 {
 	unsigned int upower_proj_ver = 0;
-	unsigned int binLevel = 0;
+	unsigned int bin = 0;
 	unsigned short idx = 0;
 	unsigned int i, j;
 
-	upower_proj_ver = is_ext_buck_exist();
-	/* if M17+, idx = 0*/
-	if (upower_proj_ver == 1) {
-		binLevel = get_devinfo_with_index(UPOWER_FUNC_CODE_EFUSE_INDEX) >> 8 & 0xff;
-		if (binLevel == 0)
-			idx = 0;
-		else if (binLevel == 1)
-			idx = 0;
-		else if (binLevel == 2)
-			idx = 0;
-		else
-			idx = 0;
-	} else {
-	/* if M17, idx = 2 */
-	/* if M17T, idx = 3 */
-		idx = 0;
-	}
+#if 0
+#define SEG_EFUSE 30
+#define BIN_EFUSE 52 /* 588 */
+#define TURBO_EFUSE 54 /* 590 */
 
-	upower_error("projver, binLevel, idx=%d, %d, %d\n", upower_proj_ver, binLevel, idx);
+	upower_proj_ver = is_ext_buck_exist();
+	/* 0x588 bit[2:0] */
+	bin = get_devinfo_with_index(BIN_EFUSE);
+	bin = _GET_BITS_VAL_(2:0, bin);
+	if (get_devinfo_with_index(SEG_EFUSE) == n_seg)
+		idx = 1; /* MT6763 */
+	else if (get_devinfo_with_index(SEG_EFUSE) == t_seg) {
+		if (bin == 1)
+			idx = 3; /* MT6763T_SB */
+		else
+			idx = 2; /* MT6763T_FY */
+	} else if (get_devinfo_with_index(SEG_EFUSE) == tt_seg) {
+		if (upower_proj_ver)
+			idx = 0; /* MT6763+ */
+		else {
+			if (bin == 1)
+				idx = 3; /* MT6763T_SB */
+			else
+				idx = 2; /* MT6763T_FY */
+		}
+	}
+#else
+	idx = 2; /* MT6763T_FY */
+#endif
+
+	upower_error("projver, bin, idx=%d, %d, %d\n", upower_proj_ver, bin, idx);
 
 	/* get location of reference table */
 	upower_tbl_infos = &upower_tbl_infos_list[idx][0];
