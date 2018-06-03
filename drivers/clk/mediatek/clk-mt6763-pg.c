@@ -2324,29 +2324,50 @@ void subsys_if_on(void)
 {
 	unsigned int sta = spm_read(PWR_STATUS);
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
+	int ret = 0;
 
 	if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
 		pr_debug("suspend warning: SYS_MD1 is on!!!\n");
 	if ((sta & (1U << 1)) && (sta_s & (1U << 1)))
 		pr_debug("suspend warning: SYS_CONN is on!!!\n");
-	if ((sta & (1U << 3)) && (sta_s & (1U << 3)))
+	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
 		pr_debug("suspend warning: SYS_DIS is on!!!\n");
-	if ((sta & (1U << 4)) && (sta_s & (1U << 4)))
+		ret++;
+	}
+	if ((sta & (1U << 4)) && (sta_s & (1U << 4))) {
 		pr_debug("suspend warning: SYS_MFG is on!!!\n");
-	if ((sta & (1U << 5)) && (sta_s & (1U << 5)))
+		ret++;
+	}
+	if ((sta & (1U << 5)) && (sta_s & (1U << 5))) {
 		pr_debug("suspend warning: SYS_ISP is on!!!\n");
-	if ((sta & (1U << 21)) && (sta_s & (1U << 21)))
+		ret++;
+	}
+	if ((sta & (1U << 21)) && (sta_s & (1U << 21))) {
 		pr_debug("suspend warning: SYS_VEN is on!!!\n");
-	if ((sta & (1U << 23)) && (sta_s & (1U << 23)))
+		ret++;
+	}
+	if ((sta & (1U << 23)) && (sta_s & (1U << 23))) {
 		pr_debug("suspend warning: SYS_MFG_ASYNC is on!!!\n");
-	if ((sta & (1U << 24)) && (sta_s & (1U << 24)))
+		ret++;
+	}
+	if ((sta & (1U << 24)) && (sta_s & (1U << 24))) {
 		pr_debug("suspend warning: SYS_AUDIO is on!!!\n");
-	if ((sta & (1U << 27)) && (sta_s & (1U << 27)))
+		ret++;
+	}
+	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
 		pr_debug("suspend warning: SYS_CAM is on!!!\n");
-	if ((sta & (1U << 30)) && (sta_s & (1U << 30)))
+		ret++;
+	}
+	if ((sta & (1U << 30)) && (sta_s & (1U << 30))) {
 		pr_debug("suspend warning: SYS_MFG_CORE1 is on!!!\n");
-	if ((sta & (1U << 31)) && (sta_s & (1U << 31)))
+		ret++;
+	}
+	if ((sta & (1U << 31)) && (sta_s & (1U << 31))) {
 		pr_debug("suspend warning: SYS_MFG_CORE0 is on!!!\n");
+		ret++;
+	}
+	if (ret > 0)
+		BUG_ON(1);
 }
 
 #if 1 /*only use for suspend test*/
