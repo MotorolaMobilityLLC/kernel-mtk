@@ -395,12 +395,15 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 	default:
 		break;
 	}
+	snprintf(oc_str, 30, "PMIC OC:%s", int_name);
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:MD OC\nOC Interrupt: %s", int_name);
 	ret = exec_ccci_kern_func_by_md_id(MD_SYS1, ID_PMIC_INTR, (char *)&data_int32, 4);
 #endif
 	if (ret)
 		pr_notice("[%s] - exec_ccci_kern_func_by_md_id - msg fail\n", __func__);
+	pmic_enable_interrupt(intNo, 0, "PMIC");
+	pr_info(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 	pr_info("[%s]Send msg pass\n", __func__);
 }
 #endif
