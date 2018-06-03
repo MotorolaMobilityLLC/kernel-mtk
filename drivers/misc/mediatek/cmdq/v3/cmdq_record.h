@@ -631,7 +631,7 @@ extern "C" {
  * Parameter:
  *	   arg: the variable you want to Initialize
  */
-	void cmdq_init_op_variable(CMDQ_VARIABLE *arg);
+	void cmdq_op_init_variable(CMDQ_VARIABLE *arg);
 
 /**
  * Append logic command for assign
