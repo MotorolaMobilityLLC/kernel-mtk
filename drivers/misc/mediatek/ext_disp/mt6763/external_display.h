@@ -133,7 +133,6 @@ int ext_disp_get_max_layer(void);
 void extd_disp_drv_set_util_funcs(const struct EXTERNAL_DISPLAY_UTIL_FUNCS *util);
 
 extern int is_dim_layer(unsigned long mva);
-void ext_disp_suspend_notify(int suspend);
 
 int ext_disp_manual_lock(void);
 int ext_disp_manual_unlock(void);

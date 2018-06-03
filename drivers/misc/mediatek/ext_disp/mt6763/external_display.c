@@ -71,7 +71,6 @@ static struct disp_lcm_handle *plcm_interface;
 static int is_context_inited;
 static int init_roi;
 
-static int LCM_SUSPEND;
 static struct mutex esd_check_lock;
 struct ext_disp_path_context {
 	enum EXTD_POWER_STATE state;
@@ -836,10 +835,6 @@ static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int user
 {
 /*	EXT_DISP_FUNC();	*/
 
-	if (LCM_SUSPEND) {
-		EXT_DISP_LOG("LCM is suspended\n");
-		return -2;
-	}
 	if (pgc->lcm_state == EXTD_LCM_NO_INIT) {
 /*		disp_lcm_init(pgc->plcm, 1);	*/
 		external_display_esd_check_enable(1);
@@ -1110,11 +1105,6 @@ done:
 	return ret;
 }
 
-void ext_disp_suspend_notify(int suspend)
-{
-	LCM_SUSPEND = suspend;
-}
-
 void ext_disp_esd_check_lock(void)
 {
 	mutex_lock(&esd_check_lock);
@@ -1175,48 +1165,48 @@ int ext_disp_esd_recovery(void)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 3);
 
-/*	EXT_DISP_LOG("[ESD]display cmdq trigger loop stop[begin]\n");*/
+	DISPINFO("[ESD]display cmdq trigger loop stop[begin]\n");
 	_cmdq_stop_extd_trigger_loop();
-/*	EXT_DISP_LOG("[ESD]display cmdq trigger loop stop[end]\n");*/
+	DISPINFO("[ESD]display cmdq trigger loop stop[end]\n");
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 4);
 
-/*	EXT_DISP_LOG("[ESD]stop dpmgr path[begin]\n");*/
+	DISPINFO("[ESD]stop dpmgr path[begin]\n");
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
-/*	EXT_DISP_LOG("[ESD]stop dpmgr path[end]\n");*/
+	DISPINFO("[ESD]stop dpmgr path[end]\n");
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
-/*		EXT_DISP_LOG("[ESD]external display path is busy after stop\n");*/
+		DISPINFO("[ESD]external display path is busy after stop\n");
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
-/*		EXT_DISP_LOG("[ESD]wait frame done ret:%d\n", ret);*/
+		DISPINFO("[ESD]wait frame done ret:%d\n", ret);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 5);
 
-/*	EXT_DISP_LOG("[ESD]reset display path[begin]\n");*/
+	DISPINFO("[ESD]reset display path[begin]\n");
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
-/*	EXT_DISP_LOG("[ESD]reset display path[end]\n");*/
+	DISPINFO("[ESD]reset display path[end]\n");
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 6);
 
-/*	EXT_DISP_LOG("[ESD]lcm suspend[begin]\n");*/
+	DISPINFO("[ESD]lcm suspend[begin]\n");
 	disp_lcm_suspend(pgc->plcm);
-/*	EXT_DISP_LOG("[ESD]lcm force init[begin]\n");*/
+	DISPINFO("[ESD]lcm force init[begin]\n");
 	disp_lcm_init(pgc->plcm, 1);
-/*	EXT_DISP_LOG("[ESD]lcm force init[end]\n");*/
+	DISPINFO("[ESD]lcm force init[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 8);
 
-/*	EXT_DISP_LOG("[ESD]start dpmgr path[begin]\n");*/
+	DISPINFO("[ESD]start dpmgr path[begin]\n");
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
-/*	EXT_DISP_LOG("[ESD]start dpmgr path[end]\n");*/
+	DISPINFO("[ESD]start dpmgr path[end]\n");
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 		EXT_DISP_ERR("[ESD]Fatal error, we didn't trigger display path but it's already busy\n");
 		ret = -1;
 	}
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 9);
-/*	EXT_DISP_LOG("[ESD]start cmdq trigger loop[begin]\n");*/
+	DISPINFO("[ESD]start cmdq trigger loop[begin]\n");
 	_cmdq_start_extd_trigger_loop();
-/*	EXT_DISP_LOG("[ESD]start cmdq trigger loop[end]\n");*/
+	DISPINFO("[ESD]start cmdq trigger loop[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 10);
 	if (disp_lcm_is_video_mode(pgc->plcm)) {
 		/* for video mode, we need to force trigger here */
@@ -1228,7 +1218,7 @@ int ext_disp_esd_recovery(void)
 	ddp_dump_reg(DISP_MODULE_RDMA1);
 done:
 	_ext_disp_path_unlock();
-/*	EXT_DISP_LOG("[ESD]ESD recovery end\n");*/
+	DISPINFO("[ESD]ESD recovery end\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_END, 0, 0);
 
 	return ret;
@@ -1345,18 +1335,19 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 
 	/*EXT_DISP_FUNC();*/
 
-	if (LCM_SUSPEND) {
-		EXT_DISP_LOG("LCM is suspended\n");
-		return -2;
-	}
-
 	if (pgc->state != EXTD_RESUME) {
+		EXT_DISP_LOG("%s: External display path is suspended\n", __func__);
 		mdelay(20);
 		return -1;
 	}
 
-	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	if ((pgc->lcm_state == EXTD_LCM_SUSPEND) || (pgc->lcm_state == EXTD_LCM_NO_INIT)) {
+		EXT_DISP_LOG("%s: SUB LCM is suspended\n", __func__);
+		return -2;
+	}
+
+	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
 	external_display_idlemgr_kick((char *)__func__, 1);
 #endif
 
@@ -1707,14 +1698,6 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	/* EXT_DISP_FUNC(); */
 	_ext_disp_path_lock();
-
-	if (DISP_SESSION_DEV(session) == DEV_LCM) {
-		if (LCM_SUSPEND) {
-			EXT_DISP_LOG("LCM is suspended\n");
-			_ext_disp_path_unlock();
-			return -2;
-		}
-	}
 
 	if (pgc->state != EXTD_INIT && pgc->state != EXTD_RESUME && pgc->suspend_config != 1) {
 		EXT_DISP_LOG("config ext disp is already slept, state:%d\n", pgc->state);
@@ -2275,7 +2258,9 @@ int external_display_setbacklight(unsigned int level)
 	_ext_disp_path_lock();
 
 	if (pgc->state == EXTD_SUSPEND) {
-		DISPERR("external sleep state set backlight invald\n");
+		EXT_DISP_LOG("%s: external sleep state set backlight invald\n", __func__);
+	} else if ((pgc->lcm_state == EXTD_LCM_SUSPEND) || (pgc->lcm_state == EXTD_LCM_NO_INIT)) {
+		EXT_DISP_LOG("%s: SUB LCM is suspended\n", __func__);
 	} else {
 		external_display_idlemgr_kick((char *)__func__, 0);
 		if (ext_disp_cmdq_enabled()) {
