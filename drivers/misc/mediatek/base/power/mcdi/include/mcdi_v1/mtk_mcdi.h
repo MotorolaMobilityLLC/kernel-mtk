@@ -48,5 +48,6 @@ unsigned int mcdi_get_buck_ctrl_mask(void);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
+void mcdi_wakeup_all_cpu(void);
 
 #endif /* __MTK_MCDI_H__ */

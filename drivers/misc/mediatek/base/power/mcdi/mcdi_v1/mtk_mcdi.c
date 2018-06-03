@@ -205,6 +205,28 @@ unsigned int get_pwr_stat_check_map(int type, int idx)
 	return cpu_cluster_pwr_stat_map[type][idx];
 }
 
+void wakeup_all_cpu(void)
+{
+	int cpu = 0;
+
+	for (cpu = 0; cpu < NF_CPU; cpu++) {
+		if (cpu_online(cpu))
+			smp_send_reschedule(cpu);
+	}
+}
+
+void wait_until_all_cpu_powered_on(void)
+{
+	while (!(mcdi_get_gov_data_num_mcusys() == 0x0))
+		;
+}
+
+void mcdi_wakeup_all_cpu(void)
+{
+	wakeup_all_cpu();
+
+	wait_until_all_cpu_powered_on();
+}
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
@@ -801,22 +823,6 @@ int mcdi_enter(int cpu)
 	return 0;
 }
 
-void wakeup_all_cpu(void)
-{
-	int cpu = 0;
-
-	for (cpu = 0; cpu < NF_CPU; cpu++) {
-		if (cpu_online(cpu))
-			smp_send_reschedule(cpu);
-	}
-}
-
-void wait_until_all_cpu_powered_on(void)
-{
-	while (!(mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT) == 0x0))
-		;
-}
-
 bool mcdi_pause(bool paused)
 {
 	struct mcdi_feature_status feature_stat;
@@ -828,10 +834,8 @@ bool mcdi_pause(bool paused)
 
 	if (paused) {
 		mcdi_state_pause(true);
+		mcdi_wakeup_all_cpu();
 
-		wakeup_all_cpu();
-
-		wait_until_all_cpu_powered_on();
 	} else {
 		mcdi_state_pause(false);
 	}
