@@ -91,6 +91,22 @@ void spm_set_sysclk_settle(void)
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
 
+/* #define SPM_PMIC_DEBUG */
+#ifdef SPM_PMIC_DEBUG
+static void spm_dump_pmic_reg(void)
+{
+	unsigned int pmic_reg[] = {0x1020, 0x1062};
+	int i = 0;
+	unsigned int val;
+
+	for (i = 0; i < ARRAY_SIZE(pmic_reg); i++) {
+		pmic_read_interface_nolock(pmic_reg[i], &val, 0xffff, 0);
+		spm_crit2("#@# %s(%d) pmic reg(0x%x) = 0x%x\n", __func__, __LINE__,
+				pmic_reg[i], val);
+	}
+}
+#endif
+
 static int mt_power_gs_dump_suspend_count = 2;
 void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
@@ -135,6 +151,10 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
+
+#ifdef SPM_PMIC_DEBUG
+	spm_dump_pmic_reg();
+#endif /* SPM_PMIC_DEBUG */
 }
 
 void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
@@ -154,6 +174,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
 #else
+#ifdef SPM_PMIC_DEBUG
+	spm_dump_pmic_reg();
+#endif /* SPM_PMIC_DEBUG */
+
 	/* VCORE */
 	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,

@@ -582,22 +582,70 @@ struct ddrphy_golden_cfg {
 static struct ddrphy_golden_cfg ddrphy_setting_lp4_2ch[] = {
 	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
 	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
-	{PHY_AO_CHA, 0x284, 0x001bfe00, 0x00000000},
-	{PHY_AO_CHB, 0x284, 0x00100000, 0x00000000},
+	/* LP4-2ch +++ */
+	{PHY_AO_CHA, 0x284, 0x001bff00, 0x00000100},
+	{PHY_AO_CHB, 0x284, 0x001bff00, 0x00000100},
 	{PHY_AO_CHA, 0xc20, 0xfff00000, 0x00200000},
 	{PHY_AO_CHB, 0xc20, 0xfff00000, 0x00200000},
 	{PHY_AO_CHA, 0xca0, 0xfff00000, 0x00200000},
 	{PHY_AO_CHB, 0xca0, 0xfff00000, 0x00200000},
-	{PHY_AO_CHA, 0xd20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xd20, 0xfff00000, 0x00000000},
+	{PHY_AO_CHB, 0xd20, 0xfff00000, 0x00000000},
+	{PHY_AO_CHA, 0x298, 0x00770000, 0x00470000},
+	{PHY_AO_CHB, 0x298, 0x00770000, 0x00470000},
+	/* LP4-2ch --- */
+	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
+	/* {PHY_AO_CHA, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHA, 0xc80, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f}, */
+};
+
+static struct ddrphy_golden_cfg ddrphy_setting_lp4_1ch[] = {
+	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
+	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
+	/* LP4-1ch +++ */
+	{PHY_AO_CHA, 0x284, 0x001bff00, 0x00100000},
+	{PHY_AO_CHB, 0x284, 0x001bff00, 0x00000100},
+	{PHY_AO_CHA, 0xc20, 0xfff00000, 0x00000000},
+	{PHY_AO_CHB, 0xc20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xca0, 0xfff00000, 0x00000000},
+	{PHY_AO_CHB, 0xca0, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xd20, 0xfff00000, 0x00000000},
+	{PHY_AO_CHB, 0xd20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0x298, 0x00770000, 0x00000000},
+	{PHY_AO_CHB, 0x298, 0x00770000, 0x00470000},
+	/* LP4-1ch --- */
+	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
+	/* {PHY_AO_CHA, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHA, 0xc80, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f}, */
+};
+
+static struct ddrphy_golden_cfg ddrphy_setting_lp3_1ch[] = {
+	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
+	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
+	/* LP3-1ch +++ */
+	{PHY_AO_CHA, 0x284, 0x001bff00, 0x00000100},
+	{PHY_AO_CHB, 0x284, 0x001bff00, 0x00100000},
+	{PHY_AO_CHA, 0xc20, 0xfff00000, 0x00000000},
+	{PHY_AO_CHB, 0xc20, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xca0, 0xfff00000, 0x00200000},
+	{PHY_AO_CHB, 0xca0, 0xfff00000, 0x00200000},
+	{PHY_AO_CHA, 0xd20, 0xfff00000, 0x00000000},
 	{PHY_AO_CHB, 0xd20, 0xfff00000, 0x00200000},
 	{PHY_AO_CHA, 0x298, 0x00770000, 0x00470000},
 	{PHY_AO_CHB, 0x298, 0x00770000, 0x00470000},
+	/* LP3-1ch --- */
 	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
 	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
-	{PHY_AO_CHA, 0xc00, 0x0001000f, 0x0001000f},
-	{PHY_AO_CHA, 0xc80, 0x0001000f, 0x0001000f},
-	{PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f},
-	{PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f},
+	/* {PHY_AO_CHA, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHA, 0xc80, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f}, */
+	/* {PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f}, */
 };
 
 int spm_golden_setting_cmp(bool en)
@@ -614,12 +662,12 @@ int spm_golden_setting_cmp(bool en)
 		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
 		break;
 	case SPMFW_LP4X_1CH:
-		ddrphy_setting = ddrphy_setting_lp4_2ch;
-		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
+		ddrphy_setting = ddrphy_setting_lp4_1ch;
+		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_1ch);
 		break;
 	case SPMFW_LP3_1CH:
-		ddrphy_setting = ddrphy_setting_lp4_2ch;
-		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
+		ddrphy_setting = ddrphy_setting_lp3_1ch;
+		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp3_1ch);
 		break;
 	default:
 		return r;
