@@ -352,7 +352,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	int32_t acquireResult;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
-	DISPMSG("%s\n", __func__);
+	DISPDBG("%s\n", __func__);
 	if (use_wrot_sram()) {
 		DISPERR("already acquired sram!!!");
 		return;
@@ -418,9 +418,9 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
 
-	DISPMSG("%s\n", __func__);
+	DISPDBG("%s\n", __func__);
 	if (use_wrot_sram() == 0) {
-		DISPERR("no acquired sram to release!!!\n");
+		DISPDBG("no acquired sram to release!!!\n");
 		return;
 	}
 	/* 1.create and reset cmdq */

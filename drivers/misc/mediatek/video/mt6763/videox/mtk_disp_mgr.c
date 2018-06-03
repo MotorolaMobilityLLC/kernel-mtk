@@ -746,9 +746,10 @@ int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
 		if (i >= _get_max_layer(cfg->session_id))
 			break;
 		if (!cfg->input_cfg[i].layer_enable || !cfg->input_cfg[i].dirty_roi_num)
-			break;
+			continue;
 
 		kfree(cfg->input_cfg[i].dirty_roi_addr);
+		cfg->input_cfg[i].dirty_roi_num = 0;
 		cfg->input_cfg[i].dirty_roi_addr = NULL;
 	}
 	return 0;
