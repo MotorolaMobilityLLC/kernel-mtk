@@ -1296,6 +1296,8 @@ VOID wlanSchedScanStoppedWorkQueue(struct work_struct *work)
 * \retval NETDEV_TX_BUSY - on failure, packet will be discarded by upper layer.
 */
 /*----------------------------------------------------------------------------*/
+#define STATS_ENV_TX_DETECT_TIMEOUT_SEC 20
+
 int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 {
 	P_GLUE_INFO_T prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
@@ -1303,6 +1305,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	P_QUE_ENTRY_T prQueueEntry = NULL;
 	P_QUE_T prTxQueue = NULL;
 	UINT_16 u2QueueIdx = 0;
+	OS_SYSTIME rCurTime;
+	UINT_32 u4NumPending;
 #if (CFG_SUPPORT_TDLS_DBG == 1)
 	UINT16 u2Identifier = 0;
 #endif
@@ -1431,6 +1435,28 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	/* pr->u4Flag |= GLUE_FLAG_TXREQ; */
 	/* wake_up_interruptible(&prGlueInfo->waitq); */
 	kalSetEvent(prGlueInfo);
+
+	/* Maybe the Packet is pending on queue and on TC resource */
+	u4NumPending = prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0]
+		+ prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1]
+		+ prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2]
+		+ prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3];
+
+	GET_CURRENT_SYSTIME(&rCurTime);
+	if (CHECK_FOR_TIMEOUT(rCurTime, prGlueInfo->prAdapter->rStasEnvReportDetectTime,
+			  SEC_TO_SYSTIME(STATS_ENV_TX_DETECT_TIMEOUT_SEC)) && u4NumPending > 0) {
+		DBGLOG(TX, WARN, "%s rCurTime=%u PendingPKT Num(%u %u %u %u)TC4 resource (%d %d %d %d %d)\n",
+				__func__, rCurTime,
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
+				prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3],
+				prGlueInfo->prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC0_INDEX],
+				prGlueInfo->prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC1_INDEX],
+				prGlueInfo->prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC2_INDEX],
+				prGlueInfo->prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC3_INDEX],
+				prGlueInfo->prAdapter->rTxCtrl.rTc.aucFreeBufferCount[TC4_INDEX]);
+	}
 
 	/* For Linux, we'll always return OK FLAG, because we'll free this skb by ourself */
 	return NETDEV_TX_OK;
