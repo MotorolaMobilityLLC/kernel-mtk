@@ -1122,10 +1122,16 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	pParamConn = (P_PARAM_CONNECT_T) pvSetBuffer;
 	prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 
-	if (pParamConn->u4SsidLen > 32)
+	if (pParamConn->u4SsidLen > 32) {
+		cnmMemFree(prAdapter, prAisAbortMsg);
+		DBGLOG(OID, WARN, "SsidLen [%d] is invalid!\n",
+			pParamConn->u4SsidLen);
 		return WLAN_STATUS_INVALID_LENGTH;
-	else if (!pParamConn->pucBssid && !pParamConn->pucSsid)
+	} else if (!pParamConn->pucBssid && !pParamConn->pucSsid) {
+		cnmMemFree(prAdapter, prAisAbortMsg);
+		DBGLOG(OID, WARN, "Bssid or ssid is invalid!\n");
 		return WLAN_STATUS_INVALID_LENGTH;
+	}
 
 	prGlueInfo = prAdapter->prGlueInfo;
 	kalMemZero(prConnSettings->aucSSID, sizeof(prConnSettings->aucSSID));
