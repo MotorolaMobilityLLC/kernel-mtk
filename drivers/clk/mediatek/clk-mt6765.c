@@ -427,7 +427,7 @@ void __iomem *venc_gcon_base;
 #if MT_CG_ENABLE
 #define INFRA_CG0		0x80000000
 #define INFRA_CG1		0x00000004
-#define INFRA_CG2		0x98Bfff00
+#define INFRA_CG2		0x983fff00
 #define INFRA_CG3		0x86947E16
 #define INFRA_CG4		0x2ffc06dd
 #define INFRA_CG5		0x00030fe7
