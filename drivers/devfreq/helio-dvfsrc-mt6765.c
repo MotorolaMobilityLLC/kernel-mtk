@@ -46,14 +46,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_EMI_MD2SPM1_T,		0x00000038 },
 		{ DVFSRC_EMI_MD2SPM2_T,		0x000080C0 },
 
-		{ DVFSRC_VCORE_REQUEST,		0x000E0000 },
 		{ DVFSRC_VCORE_HRT,		0x00000020 },
-		{ DVFSRC_VCORE_MD2SPM0,		0x0000003F },
-		{ DVFSRC_VCORE_MD2SPM1,		0x000080C0 },
-		{ DVFSRC_VCORE_MD2SPM2,		0x00000000 },
-		{ DVFSRC_VCORE_MD2SPM0_T,	0x0000003F },
-		{ DVFSRC_VCORE_MD2SPM1_T,	0x000080C0 },
-		{ DVFSRC_VCORE_MD2SPM2_T,	0x00000000 },
 
 		{ DVFSRC_MD_SW_CONTROL,		0x20000000 },
 
@@ -304,8 +297,11 @@ void get_dvfsrc_record(char *p)
 			dvfsrc_read(DVFSRC_RECORD_MD_5),
 			dvfsrc_read(DVFSRC_RECORD_MD_6),
 			dvfsrc_read(DVFSRC_RECORD_MD_7));
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_RECORD_COUNT",
 			dvfsrc_read(DVFSRC_RECORD_COUNT));
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"DVFSRC_RSRV_0",
+			dvfsrc_read(DVFSRC_RSRV_0));
 }
 

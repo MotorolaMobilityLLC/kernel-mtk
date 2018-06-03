@@ -101,17 +101,17 @@ void get_spm_reg(char *p)
 			"PCM_REG_DATA_12~15",
 			spm_read(PCM_REG12_DATA), spm_read(PCM_REG13_DATA),
 			spm_read(PCM_REG14_DATA), spm_read(PCM_REG15_DATA));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+			"SPM_DVFS_CMD0~4",
+			spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1),
+			spm_read(SPM_DVFS_CMD2), spm_read(SPM_DVFS_CMD3),
+			spm_read(SPM_DVFS_CMD4));
 	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
 			"MD_SPM_DVFS_CMD16~19",
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD16),
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD17),
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD18),
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD19));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
-			"SPM_DVFS_CMD0~4",
-			spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1),
-			spm_read(SPM_DVFS_CMD2), spm_read(SPM_DVFS_CMD3),
-			spm_read(SPM_DVFS_CMD4));
 	p += sprintf(p, "%-24s: 0x%08x (%u)\n",
 			"PCM_IM_PTR",
 			spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
