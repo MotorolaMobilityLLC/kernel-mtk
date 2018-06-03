@@ -97,7 +97,7 @@ HTBConfigure(
  @Input         hSrvHandle      Server Handle
 
  @Input         ui32NumFlagGroups Number of group enable flags words
- 
+
  @Input         aui32GroupEnable  Flags words controlling groups to be logged
 
  @Input         ui32LogLevel    Log level to record

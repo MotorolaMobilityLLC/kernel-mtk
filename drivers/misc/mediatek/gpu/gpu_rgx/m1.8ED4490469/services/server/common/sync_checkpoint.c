@@ -337,7 +337,7 @@ _SyncCheckpointBlockUnimport(RA_PERARENA_HANDLE hArena,
 static INLINE IMG_UINT32 _SyncCheckpointGetOffset(_SYNC_CHECKPOINT *psSyncInt)
 {
 	IMG_UINT64 ui64Temp;
-	
+
 	ui64Temp =  psSyncInt->uiSpanAddr - psSyncInt->psSyncCheckpointBlock->uiSpanBase;
 	PVR_ASSERT(ui64Temp<IMG_UINT32_MAX);
 	return (IMG_UINT32)ui64Temp;

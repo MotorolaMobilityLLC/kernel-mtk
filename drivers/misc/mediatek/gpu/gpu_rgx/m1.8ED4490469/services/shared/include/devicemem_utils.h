@@ -83,7 +83,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct _DEVMEM_CONTEXT_ {
 
 	SHARED_DEV_CONNECTION hDevConnection;
-	
+
     /* Number of heaps that have been created in this context
        (regardless of whether they have allocations) */
     IMG_UINT32 uiNumHeaps;

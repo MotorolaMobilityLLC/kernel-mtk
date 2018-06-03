@@ -393,7 +393,7 @@ static INLINE IMG_UINT64 RGXReadHWTimerReg(PVRSRV_RGXDEV_INFO *psDevInfo)
  * RGXSetFirmwareAddress Flags
  *****************************************************************************/
 #define RFW_FWADDR_FLAG_NONE		(0)			/*!< Void flag */
-#define RFW_FWADDR_NOREF_FLAG		(1U << 0)	/*!< It is safe to immediately release the reference to the pointer, 
+#define RFW_FWADDR_NOREF_FLAG		(1U << 0)	/*!< It is safe to immediately release the reference to the pointer,
 												  otherwise RGXUnsetFirmwareAddress() must be call when finished. */
 
 IMG_BOOL RGXTraceBufferIsInitRequired(PVRSRV_RGXDEV_INFO *psDevInfo);
@@ -512,7 +512,7 @@ PVRSRV_ERROR FWCommonContextAllocate(CONNECTION_DATA *psConnection,
 									 RGX_COMMON_CONTEXT_INFO *psInfo,
 									 RGX_SERVER_COMMON_CONTEXT **ppsServerCommonContext);
 
-									 
+
 
 void FWCommonContextFree(RGX_SERVER_COMMON_CONTEXT *psServerCommonContext);
 
@@ -576,7 +576,7 @@ PVRSRV_ERROR RGXSendCommandWithPowLock(PVRSRV_RGXDEV_INFO 	*psDevInfo,
 @Function       RGXSendCommand
 
 @Description    Sends a command to a particular DM without honouring
-				pending cache operations or the power lock. 
+				pending cache operations or the power lock.
                 The function flushes any deferred KCCB commands first.
 
 @Input          psDevInfo			Device Info
@@ -618,20 +618,20 @@ PVRSRV_ERROR RGXScheduleCommand(PVRSRV_RGXDEV_INFO 	*psDevInfo,
 /*************************************************************************/ /*!
 @Function       RGXScheduleCommandAndWait
 
-@Description    Schedules the command with RGXScheduleCommand and then waits 
+@Description    Schedules the command with RGXScheduleCommand and then waits
 				for the FW to update a sync. The sync must be piggy backed on
 				the cmd, either by passing a sync cmd or a cmd that contains the
 				sync which the FW will eventually update. The sync is created in
-				the function, therefore the function provides a FWAddr and 
+				the function, therefore the function provides a FWAddr and
 				UpdateValue for that cmd.
 
 @Input          psDevInfo			Device Info
 @Input          eDM				To which DM the cmd is sent.
 @Input          psKCCBCmd			The cmd to send.
 @Input          ui32CmdSize			The cmd size.
-@Input          puiSyncObjFWAddr	Pointer to the location with the FWAddr of 
+@Input          puiSyncObjFWAddr	Pointer to the location with the FWAddr of
 									the sync.
-@Input          puiUpdateValue		Pointer to the location with the update 
+@Input          puiUpdateValue		Pointer to the location with the update
 									value of the sync.
 @Input          ui32PDumpFlags		PDump flags
 
@@ -656,7 +656,7 @@ PVRSRV_ERROR RGXFirmwareUnittests(PVRSRV_RGXDEV_INFO *psDevInfo);
 @param          pbyGPUFRegisterList
 @param          ui32FrameworkRegisterSize
 
-@returns        PVRSRV_ERROR 
+@returns        PVRSRV_ERROR
 */ /**************************************************************************/
 PVRSRV_ERROR PVRSRVRGXFrameworkCopyCommand(DEVMEM_MEMDESC	*psFWFrameworkMemDesc,
 										   IMG_PBYTE		pbyGPUFRegisterList,
@@ -670,7 +670,7 @@ PVRSRV_ERROR PVRSRVRGXFrameworkCopyCommand(DEVMEM_MEMDESC	*psFWFrameworkMemDesc,
 @param          ppsFWFrameworkMemDesc
 @param          ui32FrameworkRegisterSize
 
-@returns        PVRSRV_ERROR 
+@returns        PVRSRV_ERROR
 */ /**************************************************************************/
 PVRSRV_ERROR PVRSRVRGXFrameworkCreateKM(PVRSRV_DEVICE_NODE * psDeviceNode,
 										DEVMEM_MEMDESC     ** ppsFWFrameworkMemDesc,
@@ -958,11 +958,11 @@ void RGXCheckFirmwareCCB(PVRSRV_RGXDEV_INFO *psDevInfo);
  @Input        bCheckAfterTimePassed  When TRUE, the function will also test for
                                       firmware queues and polls not changing
                                       since the previous test.
-                                      
+
                                       Note: if not enough time has passed since
                                       the last call, false positives may occur.
 
- @returns      PVRSRV_ERROR 
+ @returns      PVRSRV_ERROR
  ******************************************************************************/
 PVRSRV_ERROR RGXUpdateHealthStatus(PVRSRV_DEVICE_NODE* psDevNode,
                                    IMG_BOOL bCheckAfterTimePassed);

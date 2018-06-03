@@ -99,8 +99,8 @@ static int HandleIterFuncWrapper(int id, void *data, void *iter_data)
  @Return	Error code or PVRSRV_OK
 
 ******************************************************************************/
-static PVRSRV_ERROR AcquireHandle(HANDLE_IMPL_BASE *psBase, 
-				  IMG_HANDLE *phHandle, 
+static PVRSRV_ERROR AcquireHandle(HANDLE_IMPL_BASE *psBase,
+				  IMG_HANDLE *phHandle,
 				  void *pvData)
 {
 	int id;
@@ -138,7 +138,7 @@ static PVRSRV_ERROR AcquireHandle(HANDLE_IMPL_BASE *psBase,
 	{
 		if (result == -ENOSPC)
 		{
-			PVR_DPF((PVR_DBG_ERROR, "%s: Limit of %u handles reached", 
+			PVR_DPF((PVR_DBG_ERROR, "%s: Limit of %u handles reached",
 				 __FUNCTION__, psBase->ui32MaxHandleValue));
 
 			return PVRSRV_ERROR_UNABLE_TO_ADD_HANDLE;
@@ -170,8 +170,8 @@ static PVRSRV_ERROR AcquireHandle(HANDLE_IMPL_BASE *psBase,
  @Return	PVRSRV_OK or PVRSRV_ERROR
 
 ******************************************************************************/
-static PVRSRV_ERROR ReleaseHandle(HANDLE_IMPL_BASE *psBase, 
-				  IMG_HANDLE hHandle, 
+static PVRSRV_ERROR ReleaseHandle(HANDLE_IMPL_BASE *psBase,
+				  IMG_HANDLE hHandle,
 				  void **ppvData)
 {
 	int id = HANDLE_TO_ID(hHandle);
@@ -179,7 +179,7 @@ static PVRSRV_ERROR ReleaseHandle(HANDLE_IMPL_BASE *psBase,
 
 	PVR_ASSERT(psBase);
 
-	/* Get the data associated with the handle. If we get back NULL then 
+	/* Get the data associated with the handle. If we get back NULL then
 	   it's an invalid handle */
 
 	pvData = idr_find(&psBase->sIdr, id);
@@ -191,7 +191,7 @@ static PVRSRV_ERROR ReleaseHandle(HANDLE_IMPL_BASE *psBase,
 
 	if (pvData == NULL)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "%s: Handle out of range (%u > %u)", 
+		PVR_DPF((PVR_DBG_ERROR, "%s: Handle out of range (%u > %u)",
 			 __FUNCTION__, id, psBase->ui32TotalHandCount));
 		return PVRSRV_ERROR_HANDLE_INDEX_OUT_OF_RANGE;
 	}
@@ -220,8 +220,8 @@ static PVRSRV_ERROR ReleaseHandle(HANDLE_IMPL_BASE *psBase,
  @Return	Error code or PVRSRV_OK
 
 ******************************************************************************/
-static PVRSRV_ERROR GetHandleData(HANDLE_IMPL_BASE *psBase, 
-				  IMG_HANDLE hHandle, 
+static PVRSRV_ERROR GetHandleData(HANDLE_IMPL_BASE *psBase,
+				  IMG_HANDLE hHandle,
 				  void **ppvData)
 {
 	int id = HANDLE_TO_ID(hHandle);
@@ -257,8 +257,8 @@ static PVRSRV_ERROR GetHandleData(HANDLE_IMPL_BASE *psBase,
  @Return	Error code or PVRSRV_OK
 
 ******************************************************************************/
-static PVRSRV_ERROR SetHandleData(HANDLE_IMPL_BASE *psBase, 
-				  IMG_HANDLE hHandle, 
+static PVRSRV_ERROR SetHandleData(HANDLE_IMPL_BASE *psBase,
+				  IMG_HANDLE hHandle,
 				  void *pvData)
 {
 	int id = HANDLE_TO_ID(hHandle);
@@ -402,7 +402,7 @@ static PVRSRV_ERROR DestroyHandleBase(HANDLE_IMPL_BASE *psBase)
 }
 
 
-static const HANDLE_IMPL_FUNCTAB g_sHandleFuncTab = 
+static const HANDLE_IMPL_FUNCTAB g_sHandleFuncTab =
 {
 	.pfnAcquireHandle = AcquireHandle,
 	.pfnReleaseHandle = ReleaseHandle,
@@ -421,7 +421,7 @@ PVRSRV_ERROR PVRSRVHandleGetFuncTable(HANDLE_IMPL_FUNCTAB const **ppsFuncs)
 
 	if (bAcquired)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "%s: Function table already acquired", 
+		PVR_DPF((PVR_DBG_ERROR, "%s: Function table already acquired",
 			 __FUNCTION__));
 		return PVRSRV_ERROR_RESOURCE_UNAVAILABLE;
 	}

@@ -126,7 +126,7 @@ RA_Create (IMG_CHAR *name,
  *
  *  To delete a resource arena. All resources allocated from the arena
  *  must be freed before deleting the arena.
- *                  
+ *
  *  @Input  pArena - the arena to delete.
  *  @Return None
  */
@@ -178,7 +178,7 @@ RA_Add (RA_ARENA *pArena,
  *  @Return PVRSRV_OK - success
  */
 PVRSRV_ERROR
-RA_Alloc (RA_ARENA *pArena, 
+RA_Alloc (RA_ARENA *pArena,
           RA_LENGTH_T uSize,
           IMG_UINT8 uImportMultiplier,
           RA_FLAGS_T uFlags,
@@ -192,7 +192,7 @@ RA_Alloc (RA_ARENA *pArena,
  *  @Function   RA_Free
  *
  *  @Description    To free a resource segment.
- *  
+ *
  *  @Input  pArena - the arena the segment was originally allocated from.
  *  @Input  base - the base of the resource span to free.
  *  @Input  bFreeBackingStore - Should backing store memory be freed?

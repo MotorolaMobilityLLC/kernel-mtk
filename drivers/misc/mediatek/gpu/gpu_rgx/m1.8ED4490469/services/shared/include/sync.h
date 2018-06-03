@@ -255,7 +255,7 @@ SyncPrimPDump(PVRSRV_CLIENT_SYNC_PRIM *psSync);
 /*************************************************************************/ /*!
 @Function       SyncPrimPDumpValue
 
-@Description    PDump the ui32Value as the value of the synchronisation 
+@Description    PDump the ui32Value as the value of the synchronisation
 				primitive (regardless of the current value).
 
 @Input          psSync          The synchronisation primitive to PDump
@@ -274,7 +274,7 @@ SyncPrimPDumpValue(PVRSRV_CLIENT_SYNC_PRIM *psSync, IMG_UINT32 ui32Value);
 
 @Input          psSync                  The synchronisation primitive to PDump
 
-@Input          ui32Value               Value to poll for 
+@Input          ui32Value               Value to poll for
 
 @Input          ui32Mask                PDump mask operator
 

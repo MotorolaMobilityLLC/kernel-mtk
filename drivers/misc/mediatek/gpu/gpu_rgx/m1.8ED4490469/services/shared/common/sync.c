@@ -339,7 +339,7 @@ SyncPrimBlockUnimport(RA_PERARENA_HANDLE hArena,
 static INLINE IMG_UINT32 SyncPrimGetOffset(SYNC_PRIM *psSyncInt)
 {
 	IMG_UINT64 ui64Temp;
-	
+
 	PVR_ASSERT(psSyncInt->eType == SYNC_PRIM_TYPE_LOCAL);
 
 	/* FIXME: Subtracting a 64-bit address from another and then implicit
@@ -453,7 +453,7 @@ static IMG_UINT32 SyncPrimGetFirmwareAddrLocal(SYNC_PRIM *psSyncInt)
 	SYNC_PRIM_BLOCK *psSyncBlock;
 
 	psSyncBlock = psSyncInt->u.sLocal.psSyncBlock;
-	return psSyncBlock->ui32FirmwareAddr + SyncPrimGetOffset(psSyncInt);	
+	return psSyncBlock->ui32FirmwareAddr + SyncPrimGetOffset(psSyncInt);
 }
 
 static IMG_UINT32 SyncPrimGetFirmwareAddrServer(SYNC_PRIM *psSyncInt)
@@ -1148,8 +1148,8 @@ IMG_INTERNAL PVRSRV_ERROR SyncPrimDumpSyncs(IMG_UINT32 ui32SyncCount, PVRSRV_CLI
 					 pui32CurrentOp[i],
 					 pui32NextOp[i],
 					 pui32UID[i],
-					 (pui32NextOp[i] - pui32CurrentOp[i] == 1) ? " *" : 
-					 (pui32NextOp[i] - pui32CurrentOp[i] >  1) ? " **" : 
+					 (pui32NextOp[i] - pui32CurrentOp[i] == 1) ? " *" :
+					 (pui32NextOp[i] - pui32CurrentOp[i] >  1) ? " **" :
 					 ""));
 		}
 	}
@@ -1237,7 +1237,7 @@ PVRSRV_ERROR SyncPrimOpCreate(IMG_UINT32 ui32SyncCount,
 	ui32ClientAllocSize = ui32ClientSyncCount * (5 * sizeof(IMG_UINT32));
 	ui32TotalAllocSize = sizeof(SYNC_OP_COOKIE) +
 							 (sizeof(PVRSRV_CLIENT_SYNC_PRIM *) * ui32SyncCount) +
-							 ui32ServerAllocSize + 
+							 ui32ServerAllocSize +
 							 ui32ClientAllocSize;
 
 	psNewCookie = OSAllocMem(ui32TotalAllocSize);
@@ -1586,7 +1586,7 @@ PVRSRV_ERROR SyncPrimOpResolve(PSYNC_OP_COOKIE psCookie,
 	IMG_BOOL bServerSync;
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-	psSyncOps = OSAllocMem(sizeof(PVRSRV_CLIENT_SYNC_PRIM_OP) * 
+	psSyncOps = OSAllocMem(sizeof(PVRSRV_CLIENT_SYNC_PRIM_OP) *
 						   psCookie->ui32SyncCount);
 	if (!psSyncOps)
 	{
@@ -1608,8 +1608,8 @@ PVRSRV_ERROR SyncPrimOpResolve(PSYNC_OP_COOKIE psCookie,
 		}
 		else
 		{
-			psSyncOps[i].ui32FenceValue = psCookie->paui32FenceValue[ui32ClientIndex]; 
-			psSyncOps[i].ui32UpdateValue = psCookie->paui32UpdateValue[ui32ClientIndex]; 
+			psSyncOps[i].ui32FenceValue = psCookie->paui32FenceValue[ui32ClientIndex];
+			psSyncOps[i].ui32UpdateValue = psCookie->paui32UpdateValue[ui32ClientIndex];
 			psSyncOps[i].ui32Flags = psCookie->paui32Flags[ui32ClientIndex];
 			ui32ClientIndex++;
 		}
@@ -2000,7 +2000,7 @@ IMG_INTERNAL void SyncPrimOpPDumpPol(PSYNC_OP_COOKIE psCookie,
 				"%s: failed with error %d",
 				__FUNCTION__, eError));
 	}
-	
+
     PVR_ASSERT(eError == PVRSRV_OK);
 }
 

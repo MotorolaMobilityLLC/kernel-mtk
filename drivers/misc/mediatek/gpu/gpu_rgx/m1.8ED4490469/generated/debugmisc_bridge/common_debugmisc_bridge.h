@@ -67,7 +67,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            DebugMiscSLCSetBypassState          
+            DebugMiscSLCSetBypassState
  *******************************************/
 
 /* Bridge in structure for DebugMiscSLCSetBypassState */
@@ -85,7 +85,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEBUGMISCSLCSETBYPASSSTATE_TAG
 
 
 /*******************************************
-            RGXDebugMiscSetFWLog          
+            RGXDebugMiscSetFWLog
  *******************************************/
 
 /* Bridge in structure for RGXDebugMiscSetFWLog */
@@ -102,7 +102,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDEBUGMISCSETFWLOG_TAG
 
 
 /*******************************************
-            RGXDebugMiscDumpFreelistPageList          
+            RGXDebugMiscDumpFreelistPageList
  *******************************************/
 
 /* Bridge in structure for RGXDebugMiscDumpFreelistPageList */
@@ -119,7 +119,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDEBUGMISCDUMPFREELISTPAGELIST_TAG
 
 
 /*******************************************
-            PhysmemImportSecBuf          
+            PhysmemImportSecBuf
  *******************************************/
 
 /* Bridge in structure for PhysmemImportSecBuf */
@@ -140,7 +140,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PHYSMEMIMPORTSECBUF_TAG
 
 
 /*******************************************
-            RGXDebugMiscSetHCSDeadline          
+            RGXDebugMiscSetHCSDeadline
  *******************************************/
 
 /* Bridge in structure for RGXDebugMiscSetHCSDeadline */
@@ -157,7 +157,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDEBUGMISCSETHCSDEADLINE_TAG
 
 
 /*******************************************
-            RGXDebugMiscSetOSidPriority          
+            RGXDebugMiscSetOSidPriority
  *******************************************/
 
 /* Bridge in structure for RGXDebugMiscSetOSidPriority */
@@ -175,7 +175,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDEBUGMISCSETOSIDPRIORITY_TAG
 
 
 /*******************************************
-            RGXDebugMiscSetOSNewOnlineState          
+            RGXDebugMiscSetOSNewOnlineState
  *******************************************/
 
 /* Bridge in structure for RGXDebugMiscSetOSNewOnlineState */

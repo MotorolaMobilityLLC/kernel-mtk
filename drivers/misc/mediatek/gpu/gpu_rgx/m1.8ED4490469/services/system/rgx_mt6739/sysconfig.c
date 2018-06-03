@@ -234,7 +234,7 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 		struct resource *irq_res;
 		struct resource *reg_res;
 dump_stack();
-        gpsPVRCfgDev = to_platform_device((struct device *)pvOSDevice);
+		gpsPVRCfgDev = to_platform_device((struct device *)pvOSDevice);
 		irq_res = platform_get_resource(gpsPVRCfgDev, IORESOURCE_IRQ, 0);
 
 		if (irq_res)

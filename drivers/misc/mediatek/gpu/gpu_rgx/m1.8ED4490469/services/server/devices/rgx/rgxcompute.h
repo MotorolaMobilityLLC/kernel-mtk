@@ -63,12 +63,12 @@ typedef struct _RGX_SERVER_COMPUTE_CONTEXT_ RGX_SERVER_COMPUTE_CONTEXT;
  @Function	PVRSRVRGXCreateComputeContextKM
 
  @Description
-	
 
- @Input pvDeviceNode 
- @Input psCmpCCBMemDesc - 
- @Input psCmpCCBCtlMemDesc - 
- @Output ppsFWComputeContextMemDesc - 
+
+ @Input pvDeviceNode
+ @Input psCmpCCBMemDesc -
+ @Input psCmpCCBCtlMemDesc -
+ @Output ppsFWComputeContextMemDesc -
 
  @Return   PVRSRV_ERROR
 ******************************************************************************/
@@ -83,14 +83,14 @@ PVRSRV_ERROR PVRSRVRGXCreateComputeContextKM(CONNECTION_DATA			*psConnection,
 											 IMG_DEV_VIRTADDR			sServicesSignalAddr,
 											 RGX_SERVER_COMPUTE_CONTEXT	**ppsComputeContext);
 
-/*! 
+/*!
 *******************************************************************************
  @Function	PVRSRVRGXDestroyComputeContextKM
 
  @Description
 	Server-side implementation of RGXDestroyComputeContext
 
- @Input psCleanupData - 
+ @Input psCleanupData -
 
  @Return   PVRSRV_ERROR
 ******************************************************************************/

@@ -2,7 +2,7 @@
 @File           rgxkicksync.h
 @Title          Server side of the sync only kick API
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    
+@Description
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.

@@ -160,7 +160,7 @@ IMG_BOOL RGXDumpFreeListPageList(RGX_FREELIST *psFreeList);
 /* Create HWRTDataSet */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
-                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
+                               PVRSRV_DEVICE_NODE	*psDeviceNode,
 							   IMG_UINT32			psRenderTarget,
 							   IMG_DEV_VIRTADDR		psPMMListDevVAddr,
 							   IMG_DEV_VIRTADDR		psVFPPageTableAddr,
@@ -282,7 +282,7 @@ PVRSRV_ERROR RGXGrowFreeList(RGX_FREELIST *psFreeList,
 /* Create free list */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
-                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
+                               PVRSRV_DEVICE_NODE	*psDeviceNode,
 							   IMG_UINT32			ui32MaxFLPages,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,

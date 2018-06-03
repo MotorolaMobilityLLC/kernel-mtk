@@ -82,7 +82,7 @@ PVRSRVRGXEndTimerQueryKM(CONNECTION_DATA    * psConnection,
 	PVRSRV_RGXDEV_INFO * psDevInfo = (PVRSRV_RGXDEV_INFO *)psDeviceNode->pvDevice;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	/* clear off the flags set by Begin(). Note that _START_TIME is
 	 * probably already cleared by Kick()
 	 */
@@ -105,7 +105,7 @@ PVRSRVRGXQueryTimerKM(CONNECTION_DATA    * psConnection,
 	IMG_UINT32         ui32Completed;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (ui32QueryId >= RGX_MAX_TIMER_QUERIES)
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;

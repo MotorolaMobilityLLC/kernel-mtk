@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            DevmemIntExportCtx          
+            DevmemIntExportCtx
  *******************************************/
 
 /* Bridge in structure for DevmemIntExportCtx */
@@ -80,7 +80,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTEXPORTCTX_TAG
 
 
 /*******************************************
-            DevmemIntUnexportCtx          
+            DevmemIntUnexportCtx
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnexportCtx */
@@ -97,7 +97,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNEXPORTCTX_TAG
 
 
 /*******************************************
-            DevmemIntAcquireRemoteCtx          
+            DevmemIntAcquireRemoteCtx
  *******************************************/
 
 /* Bridge in structure for DevmemIntAcquireRemoteCtx */

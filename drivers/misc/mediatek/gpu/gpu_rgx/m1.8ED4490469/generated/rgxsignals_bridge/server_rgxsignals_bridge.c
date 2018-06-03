@@ -70,7 +70,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeRGXNotifySignalUpdate(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_RGXNOTIFYSIGNALUPDATE *psRGXNotifySignalUpdateIN,
@@ -149,8 +149,8 @@ RGXNotifySignalUpdate_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;

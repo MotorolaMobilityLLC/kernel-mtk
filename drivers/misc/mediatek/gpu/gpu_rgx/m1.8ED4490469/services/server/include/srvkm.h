@@ -62,7 +62,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVDriverInit(void);
 /*************************************************************************/ /*!
 @Function     PVRSRVDriverInit
 @Description  Performs one time de-initialisation of Services.
-@Return       void 
+@Return       void
 */ /**************************************************************************/
 void IMG_CALLCONV PVRSRVDriverDeInit(void);
 
@@ -114,15 +114,15 @@ LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
 		bTimeout = IMG_FALSE;
 		break;
 	}
-	
+
 	OSWaitus(MAX_HW_TIME_US/WAIT_TRY_COUNT);
 } END_LOOP_UNTIL_TIMEOUT();
 
 -----------------------------------------------------------------------------*/
 
-/*	uiNotLastLoop will remain at 1 until the timeout has expired, at which time		
+/*	uiNotLastLoop will remain at 1 until the timeout has expired, at which time
  * 	it will be decremented and the loop executed one final time. This is necessary
- *	when preemption is enabled. 
+ *	when preemption is enabled.
  */
 /* PRQA S 3411,3431 12 */ /* critical format, leave alone */
 #define LOOP_UNTIL_TIMEOUT(TIMEOUT) \

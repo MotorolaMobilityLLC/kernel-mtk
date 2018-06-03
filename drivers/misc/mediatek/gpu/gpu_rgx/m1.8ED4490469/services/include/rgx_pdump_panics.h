@@ -61,7 +61,7 @@ typedef enum
 	RGX_PDUMP_PANIC_FREELISTS_RECONSTRUCTION = 104, /*!< Requests freelists reconstruction */
 	RGX_PDUMP_PANIC_SPARSEMEM_SWAP			= 105, /*!<	Requests sparse remap memory swap feature */
 } RGX_PDUMP_PANIC;
- 
+
 
 #endif /* RGX_PDUMP_PANICS_H_ */
 

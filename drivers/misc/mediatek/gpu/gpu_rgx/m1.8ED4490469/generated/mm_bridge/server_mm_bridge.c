@@ -79,7 +79,7 @@ static PVRSRV_ERROR ReleasePMRExport(void *pvData)
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgePMRExportPMR(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_PMREXPORTPMR *psPMRExportPMRIN,
@@ -132,7 +132,7 @@ PVRSRVBridgePMRExportPMR(IMG_UINT32 ui32DispatchTableEntry,
 
 	/*
 	 * For cases where we need a cross process handle we actually allocate two.
-	 * 
+	 *
 	 * The first one is a connection specific handle and it gets given the real
 	 * release function. This handle does *NOT* get returned to the caller. It's
 	 * purpose is to release any leaked resources when we either have a bad or
@@ -140,7 +140,7 @@ PVRSRVBridgePMRExportPMR(IMG_UINT32 ui32DispatchTableEntry,
 	 * wouldn't be freed until driver unload. If the resource is freed normally,
 	 * this handle can be looked up via the cross process handle and then
 	 * released accordingly.
-	 * 
+	 *
 	 * The second one is a cross process handle and it gets given a noop release
 	 * function. This handle does get returned to the caller.
 	 */
@@ -839,7 +839,7 @@ PVRSRVBridgePhysmemNewRamBackedPMR(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psPhysmemNewRamBackedPMRIN->ui32NumPhysChunks * sizeof(IMG_UINT32)) +
 			(psPhysmemNewRamBackedPMRIN->ui32AnnotationLength * sizeof(IMG_CHAR)) +
 			0;
@@ -970,7 +970,7 @@ PVRSRVBridgePhysmemNewRamBackedLockedPMR(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psPhysmemNewRamBackedLockedPMRIN->ui32NumVirtChunks * sizeof(IMG_UINT32)) +
 			(psPhysmemNewRamBackedLockedPMRIN->ui32AnnotationLength * sizeof(IMG_CHAR)) +
 			0;
@@ -2071,7 +2071,7 @@ PVRSRVBridgeChangeSparseMem(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psChangeSparseMemIN->ui32AllocPageCount * sizeof(IMG_UINT32)) +
 			(psChangeSparseMemIN->ui32FreePageCount * sizeof(IMG_UINT32)) +
 			0;
@@ -2523,7 +2523,7 @@ PVRSRVBridgeHeapCfgHeapConfigName(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psHeapCfgHeapConfigNameIN->ui32HeapConfigNameBufSz * sizeof(IMG_CHAR)) +
 			0;
 
@@ -2597,7 +2597,7 @@ PVRSRVBridgeHeapCfgHeapDetails(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psHeapCfgHeapDetailsIN->ui32HeapNameBufSz * sizeof(IMG_CHAR)) +
 			0;
 
@@ -2732,8 +2732,8 @@ DevmemIntRegisterPFNotifyKM_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;

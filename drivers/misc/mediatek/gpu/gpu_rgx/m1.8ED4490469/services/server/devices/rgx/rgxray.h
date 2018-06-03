@@ -131,7 +131,7 @@ struct _RGX_RPM_FREELIST_ {
 
 	IMG_PID					ownerPid;			/* Pid of the owner of the list */
 
-	/* 
+	/*
 	 * External freelists don't use common RPM memory and are not added to global list of freelists.
 	 * They're created and destroyed on demand, e.g. when loading offline hierarchies.
 	 */
@@ -151,7 +151,7 @@ struct _RGX_RPM_FREELIST_ {
 
 /*!
  *	RGXCreateRPMFreeList
- * 
+ *
  * @param	ui32MaxFLPages
  * @param	ui32InitFLPages
  * @param	ui32GrowFLPages
@@ -165,7 +165,7 @@ struct _RGX_RPM_FREELIST_ {
  */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateRPMFreeList(CONNECTION_DATA *psConnection,
-							   PVRSRV_DEVICE_NODE	 *psDeviceNode, 
+							   PVRSRV_DEVICE_NODE	 *psDeviceNode,
 							   RGX_SERVER_RPM_CONTEXT	*psRPMContext,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,
@@ -192,7 +192,7 @@ PVRSRV_ERROR RGXDestroyRPMFreeList(RGX_RPM_FREELIST *psFreeList);
  */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateRPMContext(CONNECTION_DATA *psConnection,
-								 PVRSRV_DEVICE_NODE	 *psDeviceNode, 
+								 PVRSRV_DEVICE_NODE	 *psDeviceNode,
 								 RGX_SERVER_RPM_CONTEXT	**ppsRPMContext,
 								 IMG_UINT32			ui32TotalRPMPages,
 								 IMG_UINT32			uiLog2DopplerPageSize,
@@ -218,7 +218,7 @@ void RGXProcessRequestRPMGrow(PVRSRV_RGXDEV_INFO *psDevInfo,
 							  IMG_UINT32 ui32FreelistID);
 
 
-/*! 
+/*!
 	RGXAddBlockToRPMFreeListKM
 */
 IMG_EXPORT

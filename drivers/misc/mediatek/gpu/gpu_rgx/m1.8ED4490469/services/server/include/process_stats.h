@@ -52,7 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *  The publishing of Process Stats is controlled by the
  *  PVRSRV_ENABLE_PROCESS_STATS build option. The recording of all Memory
  *  allocations is controlled by the PVRSRV_ENABLE_MEMORY_STATS build option.
- * 
+ *
  *  Note: There will be a performance degradation with memory allocation
  *        recording enabled!
  */

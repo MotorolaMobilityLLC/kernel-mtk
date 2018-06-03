@@ -50,6 +50,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgxfwload.h"
 #include "pvr_debug.h"
 #include "srvkm.h"
+#include "mtk_mfgsys.h"
 
 struct RGXFW
 {
@@ -263,7 +264,7 @@ RGXLoadFirmware(SHARED_DEV_CONNECTION psDeviceNode, const IMG_CHAR *pszBVNCStrin
 			if (res != 0)
 			{
 				PVR_DPF((PVR_DBG_WARNING, "%s: request_firmware('%s') failed (%d), trying '%s'",
-										__func__, pszBVpNCString, res, RGX_FW_FILENAME));
+							__func__, pszBVpNCString, res, RGX_FW_FILENAME));
 				res = request_firmware(&psFW, RGX_FW_FILENAME, psDeviceNode->psDevConfig->pvOSDevice);
 			}
 		}

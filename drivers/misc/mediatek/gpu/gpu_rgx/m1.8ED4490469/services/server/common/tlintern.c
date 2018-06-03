@@ -2,7 +2,7 @@
 @File
 @Title          Transport Layer kernel side API implementation.
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Transport Layer functions available to driver components in 
+@Description    Transport Layer functions available to driver components in
                 the driver.
 @License        Dual MIT/GPLv2
 
@@ -128,7 +128,7 @@ TLInit(PVRSRV_DEVICE_NODE *psDevNode)
 	{
 		goto e0;
 	}
-	
+
 	/* Allocate the event object used to signal global TL events such as
 	 * new stream created */
 	eError = OSEventObjectCreate("TLGlobalEventObj", &sTLGlobalData.hTLEventObj);
@@ -136,7 +136,7 @@ TLInit(PVRSRV_DEVICE_NODE *psDevNode)
 	{
 		goto e1;
 	}
-	
+
 	PVR_DPF_RETURN_OK;
 
 /* Don't allow the driver to start up on error */
@@ -260,7 +260,7 @@ void TLAddStreamNode(PTL_SNODE psAdd)
 	PVR_ASSERT(psAdd);
 	psAdd->psNext = TLGGD()->psHead;
 	TLGGD()->psHead = psAdd;
-	
+
 	PVR_DPF_RETURN;
 }
 
@@ -429,7 +429,7 @@ IMG_BOOL TLTryRemoveStreamAndFreeStreamNode(PTL_SNODE psRemove)
 		PVR_DPF_RETURN_VAL (IMG_FALSE);
 	}
 
-	/* Remove stream from TL_GLOBAL_DATA's list and free stream node */	
+	/* Remove stream from TL_GLOBAL_DATA's list and free stream node */
 	psRemove->psStream = NULL;
 	RemoveAndFreeStreamNode(psRemove);
 
@@ -482,6 +482,6 @@ IMG_BOOL TLUnrefDescAndTryFreeStreamNode(PTL_SNODE psNodeToRemove,
 	 * context */
 	psNodeToRemove->psStream = NULL;
 	RemoveAndFreeStreamNode(psNodeToRemove);
-	
+
 	PVR_DPF_RETURN_VAL (IMG_TRUE);
 }

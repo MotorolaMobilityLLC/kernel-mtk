@@ -71,7 +71,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeAllocSyncPrimitiveBlock(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_ALLOCSYNCPRIMITIVEBLOCK *psAllocSyncPrimitiveBlockIN,
@@ -363,7 +363,7 @@ PVRSRVBridgeServerSyncAlloc(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psServerSyncAllocIN->ui32ClassNameSize * sizeof(IMG_CHAR)) +
 			0;
 
@@ -583,7 +583,7 @@ PVRSRVBridgeServerSyncGetStatus(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psServerSyncGetStatusIN->ui32SyncCount * sizeof(SERVER_SYNC_PRIMITIVE *)) +
 			(psServerSyncGetStatusIN->ui32SyncCount * sizeof(IMG_HANDLE)) +
 			(psServerSyncGetStatusIN->ui32SyncCount * sizeof(IMG_UINT32)) +
@@ -615,7 +615,7 @@ PVRSRVBridgeServerSyncGetStatus(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psSyncHandleInt = (SERVER_SYNC_PRIMITIVE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psServerSyncGetStatusIN->ui32SyncCount * sizeof(SERVER_SYNC_PRIMITIVE *);
-		hSyncHandleInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hSyncHandleInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psServerSyncGetStatusIN->ui32SyncCount * sizeof(IMG_HANDLE);
 	}
 
@@ -794,7 +794,7 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psSyncPrimOpCreateIN->ui32SyncBlockCount * sizeof(SYNC_PRIMITIVE_BLOCK *)) +
 			(psSyncPrimOpCreateIN->ui32SyncBlockCount * sizeof(IMG_HANDLE)) +
 			(psSyncPrimOpCreateIN->ui32ClientSyncCount * sizeof(IMG_UINT32)) +
@@ -822,7 +822,7 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psBlockListInt = (SYNC_PRIMITIVE_BLOCK **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psSyncPrimOpCreateIN->ui32SyncBlockCount * sizeof(SYNC_PRIMITIVE_BLOCK *);
-		hBlockListInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hBlockListInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psSyncPrimOpCreateIN->ui32SyncBlockCount * sizeof(IMG_HANDLE);
 	}
 
@@ -878,7 +878,7 @@ PVRSRVBridgeSyncPrimOpCreate(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psServerSyncInt = (SERVER_SYNC_PRIMITIVE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psSyncPrimOpCreateIN->ui32ServerSyncCount * sizeof(SERVER_SYNC_PRIMITIVE *);
-		hServerSyncInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hServerSyncInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psSyncPrimOpCreateIN->ui32ServerSyncCount * sizeof(IMG_HANDLE);
 	}
 
@@ -1062,7 +1062,7 @@ PVRSRVBridgeSyncPrimOpTake(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psSyncPrimOpTakeIN->ui32ClientSyncCount * sizeof(IMG_UINT32)) +
 			(psSyncPrimOpTakeIN->ui32ClientSyncCount * sizeof(IMG_UINT32)) +
 			(psSyncPrimOpTakeIN->ui32ClientSyncCount * sizeof(IMG_UINT32)) +
@@ -1749,7 +1749,7 @@ PVRSRVBridgeSyncAllocEvent(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psSyncAllocEventIN->ui32ClassNameSize * sizeof(IMG_CHAR)) +
 			0;
 
@@ -1844,8 +1844,8 @@ PVRSRVBridgeSyncFreeEvent(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;

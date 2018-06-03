@@ -65,10 +65,10 @@ PVRSRV_ERROR PVRSRVRGXSetBreakpointKM(CONNECTION_DATA    * psConnection,
 	RGXFWIF_KCCB_CMD 	sBPCmd;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (psDevInfo->bBPSet == IMG_TRUE)
 		return PVRSRV_ERROR_BP_ALREADY_SET;
-	
+
 	sBPCmd.eCmdType = RGXFWIF_KCCB_CMD_BP;
 	sBPCmd.uCmdData.sBPData.ui32BPAddr = ui32BPAddr;
 	sBPCmd.uCmdData.sBPData.ui32HandlerAddr = ui32HandlerAddr;
@@ -76,11 +76,11 @@ PVRSRV_ERROR PVRSRVRGXSetBreakpointKM(CONNECTION_DATA    * psConnection,
 	sBPCmd.uCmdData.sBPData.bEnable = IMG_TRUE;
 	sBPCmd.uCmdData.sBPData.ui32Flags = RGXFWIF_BPDATA_FLAGS_WRITE;
 
-	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext, 
-				psFWMemContextMemDesc, 
-				0 , 
+	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext,
+				psFWMemContextMemDesc,
+				0 ,
 				RFW_FWADDR_NOREF_FLAG);
-		
+
 	eError = RGXScheduleCommand(psDevInfo,
 				eFWDataMaster,
 				&sBPCmd,
@@ -103,7 +103,7 @@ PVRSRV_ERROR PVRSRVRGXSetBreakpointKM(CONNECTION_DATA    * psConnection,
 
 	psDevInfo->eBPDM = eFWDataMaster;
 	psDevInfo->bBPSet = IMG_TRUE;
-	
+
 	return eError;
 }
 
@@ -117,16 +117,16 @@ PVRSRV_ERROR PVRSRVRGXClearBreakpointKM(CONNECTION_DATA    * psConnection,
 	RGXFWIF_KCCB_CMD 	sBPCmd;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	sBPCmd.eCmdType = RGXFWIF_KCCB_CMD_BP;
 	sBPCmd.uCmdData.sBPData.ui32BPAddr = 0;
 	sBPCmd.uCmdData.sBPData.ui32HandlerAddr = 0;
 	sBPCmd.uCmdData.sBPData.bEnable = IMG_FALSE;
 	sBPCmd.uCmdData.sBPData.ui32Flags = RGXFWIF_BPDATA_FLAGS_WRITE | RGXFWIF_BPDATA_FLAGS_CTL;
-	
-	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext, 
-				psFWMemContextMemDesc, 
-				0 , 
+
+	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext,
+				psFWMemContextMemDesc,
+				0 ,
 				RFW_FWADDR_NOREF_FLAG);
 
 	eError = RGXScheduleCommand(psDevInfo,
@@ -150,7 +150,7 @@ PVRSRV_ERROR PVRSRVRGXClearBreakpointKM(CONNECTION_DATA    * psConnection,
 	}
 
 	psDevInfo->bBPSet = IMG_FALSE;
-	
+
 	return eError;
 }
 
@@ -167,14 +167,14 @@ PVRSRV_ERROR PVRSRVRGXEnableBreakpointKM(CONNECTION_DATA    * psConnection,
 
 	if (psDevInfo->bBPSet == IMG_FALSE)
 		return PVRSRV_ERROR_BP_NOT_SET;
-	
+
 	sBPCmd.eCmdType = RGXFWIF_KCCB_CMD_BP;
 	sBPCmd.uCmdData.sBPData.bEnable = IMG_TRUE;
 	sBPCmd.uCmdData.sBPData.ui32Flags = RGXFWIF_BPDATA_FLAGS_CTL;
-	
-	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext, 
-				psFWMemContextMemDesc, 
-				0 , 
+
+	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext,
+				psFWMemContextMemDesc,
+				0 ,
 				RFW_FWADDR_NOREF_FLAG);
 
 	eError = RGXScheduleCommand(psDevInfo,
@@ -196,7 +196,7 @@ PVRSRV_ERROR PVRSRVRGXEnableBreakpointKM(CONNECTION_DATA    * psConnection,
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXEnableBreakpointKM: Wait for completion aborted with error (%u)", eError));
 		return eError;
 	}
-	
+
 	return eError;
 }
 
@@ -210,19 +210,19 @@ PVRSRV_ERROR PVRSRVRGXDisableBreakpointKM(CONNECTION_DATA    * psConnection,
 	RGXFWIF_KCCB_CMD 	sBPCmd;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (psDevInfo->bBPSet == IMG_FALSE)
 		return PVRSRV_ERROR_BP_NOT_SET;
-	
+
 	sBPCmd.eCmdType = RGXFWIF_KCCB_CMD_BP;
 	sBPCmd.uCmdData.sBPData.bEnable = IMG_FALSE;
 	sBPCmd.uCmdData.sBPData.ui32Flags = RGXFWIF_BPDATA_FLAGS_CTL;
-	
-	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext, 
-				psFWMemContextMemDesc, 
-				0 , 
+
+	RGXSetFirmwareAddress(&sBPCmd.uCmdData.sBPData.psFWMemContext,
+				psFWMemContextMemDesc,
+				0 ,
 				RFW_FWADDR_NOREF_FLAG);
-	
+
 	eError = RGXScheduleCommand(psDevInfo,
 				psDevInfo->eBPDM,
 				&sBPCmd,
@@ -242,7 +242,7 @@ PVRSRV_ERROR PVRSRVRGXDisableBreakpointKM(CONNECTION_DATA    * psConnection,
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXDisableBreakpointKM: Wait for completion aborted with error (%u)", eError));
 		return eError;
 	}
-				
+
 	return eError;
 }
 
@@ -255,7 +255,7 @@ PVRSRV_ERROR PVRSRVRGXOverallocateBPRegistersKM(CONNECTION_DATA    * psConnectio
 	RGXFWIF_KCCB_CMD 	sBPCmd;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	sBPCmd.eCmdType = RGXFWIF_KCCB_CMD_BP;
 	sBPCmd.uCmdData.sBPData.ui32Flags = RGXFWIF_BPDATA_FLAGS_REGS;
 	sBPCmd.uCmdData.sBPData.ui32TempRegs = ui32TempRegs;

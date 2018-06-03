@@ -133,7 +133,7 @@ typedef struct PVRSRV_DATA_TAG
 #ifdef SUPPORT_PVRSRV_GPUVIRT
 	IMG_HANDLE					hVzData;					/*! Additional virtualization data */
 #endif
-	
+
 	IMG_BOOL					bUnload;					/*!< Driver unload is in progress */
 } PVRSRV_DATA;
 

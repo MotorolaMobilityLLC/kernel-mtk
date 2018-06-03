@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            PhysmemImportDmaBuf          
+            PhysmemImportDmaBuf
  *******************************************/
 
 /* Bridge in structure for PhysmemImportDmaBuf */
@@ -82,7 +82,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PHYSMEMIMPORTDMABUF_TAG
 
 
 /*******************************************
-            PhysmemExportDmaBuf          
+            PhysmemExportDmaBuf
  *******************************************/
 
 /* Bridge in structure for PhysmemExportDmaBuf */
@@ -100,7 +100,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PHYSMEMEXPORTDMABUF_TAG
 
 
 /*******************************************
-            PhysmemImportSparseDmaBuf          
+            PhysmemImportSparseDmaBuf
  *******************************************/
 
 /* Bridge in structure for PhysmemImportSparseDmaBuf */

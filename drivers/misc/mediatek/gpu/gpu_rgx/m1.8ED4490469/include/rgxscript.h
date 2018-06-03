@@ -72,7 +72,7 @@ typedef	enum _RGX_INIT_OPERATION
 typedef union _RGX_INIT_COMMAND_
 {
 	RGX_INIT_OPERATION eOp;
-	
+
 	struct {
 		RGX_INIT_OPERATION eOp;
 		IMG_UINT32 ui32Offset;
@@ -84,34 +84,34 @@ typedef union _RGX_INIT_COMMAND_
 		IMG_UINT32 ui32Offset;
 		IMG_UINT32 ui32Value;
 	} sPDumpHWReg;
-	
-	struct 
+
+	struct
 	{
 		RGX_INIT_OPERATION eOp;
 		IMG_UINT32 ui32Offset;
 		IMG_UINT64 ui64Value;
-		IMG_UINT64 ui64Mask;		
+		IMG_UINT64 ui64Mask;
 	} sPoll64HWReg;
 
-	struct 
+	struct
 	{
 		RGX_INIT_OPERATION eOp;
 		IMG_UINT32 ui32Offset;
 		IMG_UINT32 ui32Value;
-		IMG_UINT32 ui32Mask;		
+		IMG_UINT32 ui32Mask;
 	} sPollHWReg;
-	
-	struct 
+
+	struct
 	{
 		RGX_INIT_OPERATION eOp;
 		IMG_UINT32 ui32CondOffset;
 		IMG_UINT32 ui32CondValue;
-		IMG_UINT32 ui32CondMask;		
+		IMG_UINT32 ui32CondMask;
 		IMG_UINT32 ui32Offset;
 		IMG_UINT32 ui32Value;
-		IMG_UINT32 ui32Mask;		
+		IMG_UINT32 ui32Mask;
 	} sCondPollHWReg;
-	
+
 	struct
 	{
 		RGX_INIT_OPERATION eOp;
@@ -126,7 +126,7 @@ typedef union _RGX_INIT_COMMAND_
 
 	} sConditionalBranchPoint;
 
-	struct 
+	struct
 	{
 		RGX_INIT_OPERATION eOp;
 		IMG_UINT32 ui32Offset;

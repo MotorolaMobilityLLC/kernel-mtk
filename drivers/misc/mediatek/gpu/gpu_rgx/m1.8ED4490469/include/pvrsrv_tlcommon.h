@@ -66,7 +66,7 @@ typedef IMG_HANDLE PVRSRVTL_SD;
  * There are 3 types of packet: normal (has data), data lost and padding,
  * see packet flags. Header kept small to reduce data overhead.
  *
- * if the ORDER of the structure members is changed, please UPDATE the 
+ * if the ORDER of the structure members is changed, please UPDATE the
  *   PVRSRVTL_PACKET_FLAG_OFFSET macro.
  */
 typedef struct _PVRSRVTL_PACKETHDR_

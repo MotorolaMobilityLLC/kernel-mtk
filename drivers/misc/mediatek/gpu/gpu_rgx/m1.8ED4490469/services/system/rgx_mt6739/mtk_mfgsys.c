@@ -228,7 +228,7 @@ void MTKSetICVerion(void)
 {
 }
 
-static bool isPowerOn = false;
+static bool isPowerOn;
 static IMG_VOID MTKEnableMfgClock(IMG_BOOL bForce)
 {
 #ifdef MTK_GPU_DVFS
@@ -244,8 +244,8 @@ static IMG_VOID MTKEnableMfgClock(IMG_BOOL bForce)
 	/* MTKCLK_disable_unprepare(mfg_clk_top); */
 
 #ifdef MTCMOS_CONTROL
-	if (bForce == IMG_TRUE || isPowerOn == false) // enable mfg mtcmos 0 only for resume
-	{
+	/* enable mfg mtcmos 0 only when status is off */
+	if (isPowerOn == false) {
 		if (gpu_debug_enable)
 			PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0 (0x%p)", mtcmos_mfg0));
 		MTKCLK_prepare_enable(mtcmos_mfg0);
@@ -279,8 +279,8 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg1"));
 	MTKCLK_disable_unprepare(mtcmos_mfg1);
 	#endif
-	if (bForce == IMG_TRUE && isPowerOn == true) // disable mfg mtcmos 0 only for suspend
-	{
+	/* disable mfg mtcmos 0 only for suspend */
+	if (bForce == IMG_TRUE && isPowerOn == true) {
 		if (gpu_debug_enable)
 			PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg0"));
 		MTKCLK_disable_unprepare(mtcmos_mfg0);
@@ -420,7 +420,7 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
         PVRSRVGetDevicePowerState(ui32RGXDevIdx, &ePowerState);
         if (ePowerState != PVRSRV_DEV_POWER_STATE_ON)
         {
-            MTKEnableMfgClock(IMG_FALSE);
+			MTKEnableMfgClock(IMG_FALSE);
         }
 
         mt_gpufreq_target(ui32NewFreqID);
@@ -559,7 +559,7 @@ static void MTKCommitFreqIdx(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE e
 
     #ifdef MTK_DEBUG
 		if (gpu_debug_enable)
-			pr_debug("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
+			pr_err("PVR_K: 3DFreq=%d, Volt=%d\n", ui32GPUFreq, mt_gpufreq_get_cur_volt());
     #endif
 
             if (PVRSRV_OK == eResult)
@@ -1033,7 +1033,7 @@ PVRSRV_ERROR MTKDevPrePowerState(IMG_HANDLE hSysData, PVRSRV_DEV_POWER_STATE eNe
 #if defined(MTK_USE_HW_APM)
         MTKDeInitHWAPM();
 #endif
-        MTKDisableMfgClock(bForced);
+		MTKDisableMfgClock(bForced);
     }
 	return PVRSRV_OK;
 }
@@ -1045,7 +1045,7 @@ PVRSRV_ERROR MTKDevPostPowerState(IMG_HANDLE hSysData, PVRSRV_DEV_POWER_STATE eN
     if( PVRSRV_DEV_POWER_STATE_OFF == eCurrentPowerState &&
         PVRSRV_DEV_POWER_STATE_ON == eNewPowerState)
     {
-        MTKEnableMfgClock(bForced);
+		MTKEnableMfgClock(bForced);
 #if defined(MTK_USE_HW_APM)
         MTKInitHWAPM();
 #endif

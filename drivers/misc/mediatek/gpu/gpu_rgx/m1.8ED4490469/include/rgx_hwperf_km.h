@@ -43,7 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef RGX_HWPERF_KM_H_
 #define RGX_HWPERF_KM_H_
 
-/* 
+/*
  * This header file holds the HWPerf related macros and types needed by the
  * code in the Kernel Mode (KM) server/driver module and its content is
  * intended to be suitable for distribution under a public software license.
@@ -140,7 +140,7 @@ extern "C" {
  * multiple of 64 bits, 8 bytes to allow the FW to write 8 byte quantities
  * at 8 byte aligned addresses.  RGX_FW_STRUCT_*_ASSERT() is used to check this.
  */
- 
+
 /*! Type used to encode the event that generated the HW performance packet.
  * NOTE: When this type is updated the corresponding hwperfbin2json tool source
  * needs to be updated as well. The RGX_HWPERF_EVENT_MASK_* macros will also need
@@ -301,7 +301,7 @@ typedef struct
 	                             * Use RGX_HWPERF_MAKE_SIZE_* and RGX_HWPERF_GET_SIZE
 	                             * macros to set/get, never write directly. */
 
-	IMG_UINT32  eTypeId;        /*!< Fields layout as shown: 
+	IMG_UINT32  eTypeId;        /*!< Fields layout as shown:
 								 * |<--------------------------32-bits----------------------------->|
 								 * |<---8---->|<----5----->|<----3----->|<---1---->|<------15------>|
 								 * |   OSID   |  RESERVED  |  STREAM-ID | META TID |    EventType   |
@@ -352,7 +352,7 @@ RGX_FW_STRUCT_SIZE_ASSERT(RGX_HWPERF_V2_PACKET_HDR);
 #define RGX_HWPERF_MAKE_SIZE_FIXED(_struct)       ((IMG_UINT32)(RGX_HWPERF_SIZE_MASK&(sizeof(RGX_HWPERF_V2_PACKET_HDR)+PVR_ALIGN(sizeof(_struct), PVRSRVTL_PACKET_ALIGNMENT))))
 
 /*! Macro which takes the number of bytes written in the data payload of a
- * packet for a variable size payload packet, rounded up to 8 bytes to 
+ * packet for a variable size payload packet, rounded up to 8 bytes to
  * align packets for 64 bit architectures. */
 #define RGX_HWPERF_MAKE_SIZE_VARIABLE(_size)      ((IMG_UINT32)(RGX_HWPERF_SIZE_MASK&(sizeof(RGX_HWPERF_V2_PACKET_HDR)+PVR_ALIGN(_size, PVRSRVTL_PACKET_ALIGNMENT))))
 
@@ -426,7 +426,7 @@ static_assert((RGX_HWPERF_STREAM_ID_LAST - 1) < (RGX_HWPERF_TYPEID_STREAM_MASK >
 #define RGX_HWPERF_ONE_OR_MORE_ELEMENTS  1U
 
 /* This macro is not a real array size, but indicates the array is optional
- * and if present has a variable length only known at run-time. The final 
+ * and if present has a variable length only known at run-time. The final
  * size of the array is deduced from the size field of a packet header. */
 #define RGX_HWPERF_ZERO_OR_MORE_ELEMENTS 1U
 
@@ -640,7 +640,7 @@ typedef enum
 	RGX_CNTBLK_COUNTER4_ID	  = 4,
 	RGX_CNTBLK_COUNTER5_ID	  = 5,
 	/* MAX value used in server handling of counter config arrays */
-	RGX_CNTBLK_COUNTERS_MAX 
+	RGX_CNTBLK_COUNTERS_MAX
 } RGX_HWPERF_CNTBLK_COUNTER_ID;
 
 /* sets all the bits from bit _b1 to _b2, in a IMG_UINT64 type */
@@ -689,12 +689,12 @@ typedef enum
 
 /*! Type used in the RGX API RGXConfigureAndEnableHWPerfCounters()
  * It is used to configure the performance counter module in a layout
- * block and allows one or more counters in the block to be 
+ * block and allows one or more counters in the block to be
  * configured in one operation based on the counter select mask. The bit
  * shifts for this are the values in RGX_HWPERF_CNTBLK_COUNTER_ID. This mask
  * also encodes which values in the arrays are valid, for example, if bit 1 set
  * then aui8Mode[1], aui16GroupSelect[1], aui16BitSelect[1], aui32BatchMax[1],
- * and aui32BatchMin[1] must be set. If these array elements are all set to 
+ * and aui32BatchMin[1] must be set. If these array elements are all set to
  * 0 then the counter will not count and will not be in the HW event,
  * effectively disabling the counter from the callers point of view.
  * If any are non zero then the counter will be included in the HW event.

@@ -51,20 +51,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * This comparison function is defined as:
  * A {CmpFunc} B
  * A is a reference value, e.g., incoming depth etc.
- * B is the sample value, e.g., value in depth buffer. 
+ * B is the sample value, e.g., value in depth buffer.
  */
 typedef enum _IMG_COMPFUNC_
 {
 	IMG_COMPFUNC_NEVER,			/**< The comparison never succeeds */
 	IMG_COMPFUNC_LESS,			/**< The comparison is a less-than operation */
 	IMG_COMPFUNC_EQUAL,			/**< The comparison is an equal-to operation */
-	IMG_COMPFUNC_LESS_EQUAL,	/**< The comparison is a less-than or equal-to 
+	IMG_COMPFUNC_LESS_EQUAL,	/**< The comparison is a less-than or equal-to
 									 operation */
-	IMG_COMPFUNC_GREATER,		/**< The comparison is a greater-than operation 
+	IMG_COMPFUNC_GREATER,		/**< The comparison is a greater-than operation
 								*/
 	IMG_COMPFUNC_NOT_EQUAL,		/**< The comparison is a no-equal-to operation
 								*/
-	IMG_COMPFUNC_GREATER_EQUAL,	/**< The comparison is a greater-than or 
+	IMG_COMPFUNC_GREATER_EQUAL,	/**< The comparison is a greater-than or
 									 equal-to operation */
 	IMG_COMPFUNC_ALWAYS,		/**< The comparison always succeeds */
 } IMG_COMPFUNC;
@@ -80,9 +80,9 @@ typedef enum _IMG_STENCILOP_
 	IMG_STENCILOP_INCR_SAT,	/**< Increment stencil entry, clamping to max */
 	IMG_STENCILOP_DECR_SAT,	/**< Decrement stencil entry, clamping to zero */
 	IMG_STENCILOP_INVERT,	/**< Invert bits in stencil entry */
-	IMG_STENCILOP_INCR,		/**< Increment stencil entry, 
+	IMG_STENCILOP_INCR,		/**< Increment stencil entry,
 								 wrapping if necessary */
-	IMG_STENCILOP_DECR,		/**< Decrement stencil entry, 
+	IMG_STENCILOP_DECR,		/**< Decrement stencil entry,
 								 wrapping if necessary */
 } IMG_STENCILOP;
 
@@ -103,21 +103,21 @@ typedef enum _IMG_BLEND_
 	IMG_BLEND_INV_SRC_ALPHA,   /**< Blend factor is the inverted source alpha
 									(i.e. 1-src_alpha) */
 	IMG_BLEND_DEST_ALPHA,      /**< Blend factor is the destination alpha */
-	IMG_BLEND_INV_DEST_ALPHA,  /**< Blend factor is the inverted destination 
+	IMG_BLEND_INV_DEST_ALPHA,  /**< Blend factor is the inverted destination
 									alpha */
 	IMG_BLEND_DEST_COLOUR,     /**< Blend factor is the destination colour */
-	IMG_BLEND_INV_DEST_COLOUR, /**< Blend factor is the inverted destination 
+	IMG_BLEND_INV_DEST_COLOUR, /**< Blend factor is the inverted destination
 									colour */
-	IMG_BLEND_SRC_ALPHASAT,    /**< Blend factor is the alpha saturation (the 
-									minimum of (Src alpha, 
+	IMG_BLEND_SRC_ALPHASAT,    /**< Blend factor is the alpha saturation (the
+									minimum of (Src alpha,
 									1 - destination alpha)) */
 	IMG_BLEND_BLEND_FACTOR,    /**< Blend factor is a constant */
 	IMG_BLEND_INVBLEND_FACTOR, /**< Blend factor is a constant (inverted)*/
-	IMG_BLEND_SRC1_COLOUR,     /**< Blend factor is the colour outputted from 
+	IMG_BLEND_SRC1_COLOUR,     /**< Blend factor is the colour outputted from
 									the pixel shader */
-	IMG_BLEND_INV_SRC1_COLOUR, /**< Blend factor is the inverted colour 
+	IMG_BLEND_INV_SRC1_COLOUR, /**< Blend factor is the inverted colour
 									outputted from the pixel shader */
-	IMG_BLEND_SRC1_ALPHA,      /**< Blend factor is the alpha outputted from 
+	IMG_BLEND_SRC1_ALPHA,      /**< Blend factor is the alpha outputted from
 									the pixel shader */
 	IMG_BLEND_INV_SRC1_ALPHA   /**< Blend factor is the inverted alpha
 									outputted from the pixel shader */

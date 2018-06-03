@@ -70,7 +70,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeRGXTDMCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_RGXTDMCREATETRANSFERCONTEXT *psRGXTDMCreateTransferContextIN,
@@ -85,7 +85,7 @@ PVRSRVBridgeRGXTDMCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXTDMCreateTransferContextIN->ui32FrameworkCmdize * sizeof(IMG_BYTE)) +
 			0;
 
@@ -309,7 +309,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXTDMSubmitTransferIN->ui32ClientFenceCount * sizeof(SYNC_PRIMITIVE_BLOCK *)) +
 			(psRGXTDMSubmitTransferIN->ui32ClientFenceCount * sizeof(IMG_HANDLE)) +
 			(psRGXTDMSubmitTransferIN->ui32ClientFenceCount * sizeof(IMG_UINT32)) +
@@ -359,7 +359,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psFenceUFOSyncPrimBlockInt = (SYNC_PRIMITIVE_BLOCK **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ClientFenceCount * sizeof(SYNC_PRIMITIVE_BLOCK *);
-		hFenceUFOSyncPrimBlockInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hFenceUFOSyncPrimBlockInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ClientFenceCount * sizeof(IMG_HANDLE);
 	}
 
@@ -415,7 +415,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psUpdateUFOSyncPrimBlockInt = (SYNC_PRIMITIVE_BLOCK **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ClientUpdateCount * sizeof(SYNC_PRIMITIVE_BLOCK *);
-		hUpdateUFOSyncPrimBlockInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hUpdateUFOSyncPrimBlockInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ClientUpdateCount * sizeof(IMG_HANDLE);
 	}
 
@@ -489,7 +489,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psServerSyncInt = (SERVER_SYNC_PRIMITIVE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ServerSyncCount * sizeof(SERVER_SYNC_PRIMITIVE *);
-		hServerSyncInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hServerSyncInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32ServerSyncCount * sizeof(IMG_HANDLE);
 	}
 
@@ -505,7 +505,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 					goto RGXTDMSubmitTransfer_exit;
 				}
 			}
-	
+
 	{
 		uiUpdateFenceNameInt = (IMG_CHAR*)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += 32 * sizeof(IMG_CHAR);
@@ -563,7 +563,7 @@ PVRSRVBridgeRGXTDMSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psSyncPMRsInt = (PMR **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32SyncPMRCount * sizeof(PMR *);
-		hSyncPMRsInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hSyncPMRsInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXTDMSubmitTransferIN->ui32SyncPMRCount * sizeof(IMG_HANDLE);
 	}
 
@@ -995,8 +995,8 @@ RGXTDMNotifyWriteOffsetUpdate_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;

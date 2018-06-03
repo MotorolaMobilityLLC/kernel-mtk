@@ -552,7 +552,7 @@ ErrorExit:
 				 "%s: Transition to %d FAILED (%s)",
 				 __func__, eNewPowerState, PVRSRVGetErrorStringKM(eError)));
 	}
-	
+
 	return eError;
 }
 
@@ -571,7 +571,7 @@ PVRSRV_ERROR PVRSRVSetDeviceSystemPowerState(PVRSRV_DEVICE_NODE *psDeviceNode,
 	PVRSRV_ERROR	eError;
 	IMG_UINT        uiStage = 0;
 
-	PVRSRV_DEV_POWER_STATE eNewDevicePowerState = 
+	PVRSRV_DEV_POWER_STATE eNewDevicePowerState =
 	  _IsSystemStatePowered(eNewSysPowerState)? PVRSRV_DEV_POWER_STATE_DEFAULT : PVRSRV_DEV_POWER_STATE_OFF;
 
 	/* require a proper power state */
@@ -590,7 +590,7 @@ PVRSRV_ERROR PVRSRVSetDeviceSystemPowerState(PVRSRV_DEVICE_NODE *psDeviceNode,
 		return PVRSRV_OK;
 	}
 
-	if ((eNewDevicePowerState == PVRSRV_DEV_POWER_STATE_OFF) || 
+	if ((eNewDevicePowerState == PVRSRV_DEV_POWER_STATE_OFF) ||
 		(eNewDevicePowerState == PVRSRV_DEV_POWER_STATE_DEFAULT))
 	{
 		/* If setting devices to default state, selectively force idle all devices whose default state is off */
@@ -734,7 +734,7 @@ PVRSRV_ERROR PVRSRVRemovePowerDevice(PVRSRV_DEVICE_NODE *psDeviceNode)
 	Return the device power state
 
  @Input		psDeviceNode : Device node
- @Output	psPowerState : Current power state 
+ @Output	psPowerState : Current power state
 
  @Return	PVRSRV_ERROR_UNKNOWN_POWER_STATE if device could not be found. PVRSRV_OK otherwise.
 

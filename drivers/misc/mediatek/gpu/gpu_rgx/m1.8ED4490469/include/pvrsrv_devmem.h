@@ -94,22 +94,22 @@ typedef struct _PVRSRV_EXPORT_DEVMEMCTX_ *PVRSRV_EXPORT_DEVMEMCTX;
                 space on the CPU will also have its own virtual space on the GPU.
                 Thus there is loosely a one-to-one correspondence between process
                 and device memory context, but this is not enforced at this API.
- 
+
                 Every process must create the device memory context before any
                 memory allocations are made, and is responsible for freeing all
                 such allocations before destroying the context
-     
+
                 This is a wrapper function above the "bare-metal" device memory
                 context creation function which would create just a context and no
                 heaps.  This function will also create the heaps, according to the
                 heap config that the device specific initialization code has
                 nominated for use by this API.
-     
+
                 The number of heaps thus created is returned to the caller, such
                 that the caller can allocate an array and the call in to fetch
                 details of each heap, or look up the heap with the "Find Heap" API
                 described below.
-     
+
                 In order to derive the details of the MMU configuration for the
                 device, and for retrieving the "bridge handle" for communication
                 internally in services, it is necessary to pass in a
@@ -128,7 +128,7 @@ PVRSRVCreateDeviceMemContext(PVRSRV_DEV_CONNECTION *psDevConnection,
 /**************************************************************************/ /*!
 @Function       PVRSRVDestroyDeviceMemContext
 @Description    Destroy cannot fail.  Well.  It shouldn't, assuming the caller
-                has obeyed the protocol, i.e. has freed all his allocations 
+                has obeyed the protocol, i.e. has freed all his allocations
                 beforehand.
 @Input          hCtx            Handle to a DevMem Context
 @Return         None
@@ -139,21 +139,21 @@ PVRSRVDestroyDeviceMemContext(PVRSRV_DEVMEMCTX hCtx);
 /**************************************************************************/ /*!
 @Function       PVRSRVFindHeapByName
 @Description    Returns the heap handle for the named heap which is assumed to
-                exist in this context. PVRSRV_HEAP *phHeapOut,  
+                exist in this context. PVRSRV_HEAP *phHeapOut,
 
                 N.B.  No need for acquire/release semantics here, as when using
                 this wrapper layer, the heaps are automatically instantiated at
-                context creation time and destroyed when the context is 
+                context creation time and destroyed when the context is
                 destroyed.
 
-                The caller is required to know the heap names already as these 
+                The caller is required to know the heap names already as these
                 will vary from device to device and from purpose to purpose.
 @Input          hCtx            Handle to a DevMem Context
 @Input          pszHeapName     Name of the heap to look for
-@Output         phHeapOut       a handle to the heap, for use in future calls 
-                                to OpenAllocation / AllocDeviceMemory / Map 
+@Output         phHeapOut       a handle to the heap, for use in future calls
+                                to OpenAllocation / AllocDeviceMemory / Map
                                 DeviceClassMemory, etc. (The PVRSRV_HEAP type
-                                to be regarded by caller as an opaque, but 
+                                to be regarded by caller as an opaque, but
                                 strongly typed, handle)
 @Return         PVRSRV_ERROR:   PVRSRV_OK on success. Otherwise, a PVRSRV_
                                 error code
@@ -260,7 +260,7 @@ PVRSRVAcquireCPUMapping(PVRSRV_MEMDESC hMemDesc,
 
 /**************************************************************************/ /*!
 @Function       PVRSRVReleaseCPUMapping
-@Description    Relinquishes the cpu mapping acquired with 
+@Description    Relinquishes the cpu mapping acquired with
                 PVRSRVAcquireCPUMapping()
 @Input          hMemDesc            Handle of the memory descriptor
 @Return         None
@@ -320,7 +320,7 @@ PVRSRVMapToDeviceAddress(DEVMEM_MEMDESC *psMemDesc,
 /**************************************************************************/ /*!
 @Function       PVRSRVAcquireDeviceMapping
 @Description    Acquire a reference on the device mapping the allocation.
-                If the allocation wasn't mapped into the device then 
+                If the allocation wasn't mapped into the device then
                 and the device virtual address returned in the
                 PVRSRV_ERROR_DEVICEMEM_NO_MAPPING will be returned as
                 PVRSRVMapToDevice must be called first.
@@ -402,11 +402,11 @@ PVRSRV_ERROR PVRSRVDevmemGetImportUID(PVRSRV_MEMDESC hMemDesc,
 @Function       PVRSRVAllocExportableDevMem
 @Description    Allocate memory without mapping into device memory context.  This
                 memory is exported and ready to be mapped into the device memory
-                context of other processes, or to CPU only with 
-                PVRSRVMapMemoryToCPUOnly(). The caller agrees to later call 
+                context of other processes, or to CPU only with
+                PVRSRVMapMemoryToCPUOnly(). The caller agrees to later call
                 PVRSRVFreeUnmappedExportedMemory(). The caller must give the page
-                size of the heap into which this memory may be subsequently 
-                mapped, or the largest of such page sizes if it may be mapped 
+                size of the heap into which this memory may be subsequently
+                mapped, or the largest of such page sizes if it may be mapped
                 into multiple places.  This information is to be communicated in
                 the Log2Align field.
 
@@ -656,12 +656,12 @@ PVRSRV_ERROR PVRSRVUnexportDevMem(PVRSRV_MEMDESC hMemDesc,
                 process, it doesn't map it into the device or CPU.
 
 @Input          psConnection    Connection to services
-@Input          phExportCookie  Ptr to the handle of the export-cookie 
-                                identifying                          
+@Input          phExportCookie  Ptr to the handle of the export-cookie
+                                identifying
 @Output         phMemDescOut    On Success, a handle to a new memory descriptor
                                 representing the memory as mapped into the
                                 local process address space.
-@Input          uiFlags         Device memory mapping flags                                
+@Input          uiFlags         Device memory mapping flags
 @Input          pszText     	Text to describe the import
 @Return         PVRSRV_ERROR:   PVRSRV_OK on success. Otherwise, a PVRSRV_
                                 error code

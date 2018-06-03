@@ -60,7 +60,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct _BT_;
 
-typedef struct img_splay_tree 
+typedef struct img_splay_tree
 {
 	/* left child/subtree */
     struct img_splay_tree * psLeft;

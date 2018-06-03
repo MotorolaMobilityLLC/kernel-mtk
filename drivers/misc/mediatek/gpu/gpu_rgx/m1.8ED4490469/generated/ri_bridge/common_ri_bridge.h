@@ -68,7 +68,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RIWritePMREntry          
+            RIWritePMREntry
  *******************************************/
 
 /* Bridge in structure for RIWritePMREntry */
@@ -88,7 +88,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIWRITEPMRENTRY_TAG
 
 
 /*******************************************
-            RIWriteMEMDESCEntry          
+            RIWriteMEMDESCEntry
  *******************************************/
 
 /* Bridge in structure for RIWriteMEMDESCEntry */
@@ -113,7 +113,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIWRITEMEMDESCENTRY_TAG
 
 
 /*******************************************
-            RIWriteProcListEntry          
+            RIWriteProcListEntry
  *******************************************/
 
 /* Bridge in structure for RIWriteProcListEntry */
@@ -135,7 +135,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIWRITEPROCLISTENTRY_TAG
 
 
 /*******************************************
-            RIUpdateMEMDESCAddr          
+            RIUpdateMEMDESCAddr
  *******************************************/
 
 /* Bridge in structure for RIUpdateMEMDESCAddr */
@@ -153,7 +153,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIUPDATEMEMDESCADDR_TAG
 
 
 /*******************************************
-            RIUpdateMEMDESCPinning          
+            RIUpdateMEMDESCPinning
  *******************************************/
 
 /* Bridge in structure for RIUpdateMEMDESCPinning */
@@ -171,7 +171,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIUPDATEMEMDESCPINNING_TAG
 
 
 /*******************************************
-            RIUpdateMEMDESCBacking          
+            RIUpdateMEMDESCBacking
  *******************************************/
 
 /* Bridge in structure for RIUpdateMEMDESCBacking */
@@ -189,7 +189,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIUPDATEMEMDESCBACKING_TAG
 
 
 /*******************************************
-            RIDeleteMEMDESCEntry          
+            RIDeleteMEMDESCEntry
  *******************************************/
 
 /* Bridge in structure for RIDeleteMEMDESCEntry */
@@ -206,7 +206,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIDELETEMEMDESCENTRY_TAG
 
 
 /*******************************************
-            RIDumpList          
+            RIDumpList
  *******************************************/
 
 /* Bridge in structure for RIDumpList */
@@ -223,7 +223,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIDUMPLIST_TAG
 
 
 /*******************************************
-            RIDumpAll          
+            RIDumpAll
  *******************************************/
 
 /* Bridge in structure for RIDumpAll */
@@ -240,7 +240,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RIDUMPALL_TAG
 
 
 /*******************************************
-            RIDumpProcess          
+            RIDumpProcess
  *******************************************/
 
 /* Bridge in structure for RIDumpProcess */

@@ -54,7 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @return the resulting tree after the splay operation.
  */
 IMG_INTERNAL
-IMG_PSPLAY_TREE PVRSRVSplay (IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree) 
+IMG_PSPLAY_TREE PVRSRVSplay (IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 {
 	IMG_SPLAY_TREE sTmp1;
 	IMG_PSPLAY_TREE psLeft;
@@ -65,13 +65,13 @@ IMG_PSPLAY_TREE PVRSRVSplay (IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 	{
 		return NULL;
 	}
-	
+
 	sTmp1.psLeft = NULL;
 	sTmp1.psRight = NULL;
 
 	psLeft = &sTmp1;
 	psRight = &sTmp1;
-	
+
     for (;;)
 	{
 		if (ui32Flags < psTree->ui32Flags)
@@ -80,7 +80,7 @@ IMG_PSPLAY_TREE PVRSRVSplay (IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 			{
 				break;
 			}
-			
+
 			if (ui32Flags < psTree->psLeft->ui32Flags)
 			{
 				/* if we get to this point, we need to rotate right the tree */
@@ -151,7 +151,7 @@ IMG_PSPLAY_TREE PVRSRVSplay (IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
  * @return The resulting with the node in it
  */
 IMG_INTERNAL
-IMG_PSPLAY_TREE PVRSRVInsert(IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree) 
+IMG_PSPLAY_TREE PVRSRVInsert(IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 {
     IMG_PSPLAY_TREE psNew;
 
@@ -163,14 +163,14 @@ IMG_PSPLAY_TREE PVRSRVInsert(IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 			return psTree;
 		}
 	}
-	
+
 	psNew = (IMG_PSPLAY_TREE) OSAllocMem(sizeof(IMG_SPLAY_TREE));
 	if (psNew == NULL)
 	{
 		PVR_DPF ((PVR_DBG_ERROR, "Error: failed to allocate memory to add a node to the splay tree."));
 		return NULL;
 	}
-	
+
 	psNew->ui32Flags = ui32Flags;
 	OSCachedMemSet(&(psNew->buckets[0]), 0, sizeof(psNew->buckets));
 
@@ -191,7 +191,7 @@ IMG_PSPLAY_TREE PVRSRVInsert(IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 		psNew->psRight = psTree;
 		psTree->psLeft = NULL;
     }
-	else 
+	else
 	{
 		psNew->psRight  = psTree->psRight;
 		psNew->psLeft   = psTree;
@@ -205,9 +205,9 @@ IMG_PSPLAY_TREE PVRSRVInsert(IMG_UINT32 ui32Flags, IMG_PSPLAY_TREE psTree)
 /**
  * Deletes a node from the tree (unless it is not there, in which case it is
  * equivalent to a splay operation)
- * 
+ *
  * @param ui32Flags the value of the node to remove
- * @param psTree the tree into which the node must be removed 
+ * @param psTree the tree into which the node must be removed
  * @return the resulting tree
  */
 IMG_INTERNAL

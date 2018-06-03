@@ -82,11 +82,11 @@ DevmemPDumpLoadZeroMem(DEVMEM_MEMDESC *psMemDesc,
 
 /*
  * DevmemPDumpMemValue()
- * 
+ *
  * As above but dumps the value at a dword-aligned address in plain
  * text to the pdump script2 file. Useful for patching a buffer at
  * pdump playback by simply editing the script output file.
- * 
+ *
  * (The same functionality can be achieved by the above function but
  *  the binary PARAM file must be patched in that case.)
  */

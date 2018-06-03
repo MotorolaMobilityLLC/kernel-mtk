@@ -91,14 +91,14 @@ static INLINE IMG_UINT64 rgx_bnc_pack(IMG_UINT32 ui32B, IMG_UINT32 ui32N,
 /**************************************************************************//**
  * Utility function for packing BNC and V to be used by compatibility check.
  * BNC is packed into 48 bit format.
- * If the array pointed to by pszV is a string that is shorter than 
+ * If the array pointed to by pszV is a string that is shorter than
  * ui32OutVMaxLen characters, null characters are appended to the copy in the
  * array pointed to by pszOutV, until 'ui32OutVMaxLen' characters in all have
  * been written.
  *
  * @param:      pui64OutBNC       Output containing packed BNC.
  * @param       pszOutV           Output containing version string.
- * @param       ui32OutVMaxLen    Max characters that can be written to 
+ * @param       ui32OutVMaxLen    Max characters that can be written to
                                   pszOutV (excluding terminating null character)
  * @param       ui32B             Input 'B' value
  * @param       pszV              Input 'V' string
@@ -123,7 +123,7 @@ void rgx_bvnc_packed(IMG_UINT64 *pui64OutBNC, IMG_CHAR *pszOutV, IMG_UINT32 ui32
 		 */
 		PVR_COMPAT_ASSERT(OSStringLength(pszV) <= ui32OutVMaxLen);
 
-		
+
 		for (; ui32OutVMaxLen > 0 && *pszV != '\0'; --ui32OutVMaxLen)
 		{
 			/* When copying the V, omit any characters as these would cause
@@ -151,12 +151,12 @@ void rgx_bvnc_packed(IMG_UINT64 *pui64OutBNC, IMG_CHAR *pszOutV, IMG_UINT32 ui32
  * Input B,N and C is packed into 48 bit format.
  * Input V is converted into string. If number of characters required to
  * represent 16 bit wide version number is less than ui32OutVMaxLen, than null
- * characters are appended to pszOutV, until ui32OutVMaxLen characters in all 
+ * characters are appended to pszOutV, until ui32OutVMaxLen characters in all
  * have been written.
  *
  * @param:      pui64OutBNC       Output containing packed BNC.
  * @param       pszOutV           Output containing version string.
- * @param       ui32OutVMaxLen    Max characters that can be written to 
+ * @param       ui32OutVMaxLen    Max characters that can be written to
                                   pszOutV (excluding terminating null character)
  * @param       ui32B             Input 'B' value (16 bit wide)
  * @param       ui32V             Input 'V' value (16 bit wide)
@@ -194,10 +194,10 @@ void rgx_bvnc_pack_hw(IMG_UINT64 *pui64OutBNC, IMG_CHAR *pszOutV, IMG_UINT32 ui3
 		pszPointer+=2;
 	else
 		pszPointer+=1;
-	
+
 	*pszPointer-- = '\0';
 	*pszPointer = '0';
-	
+
 	while (ui32V > 0)
 	{
 		*pszPointer-- = (ui32V % 10) + '0';

@@ -160,8 +160,8 @@ static PVRSRV_ERROR _AllocateSLC3Fence(PVRSRV_RGXDEV_INFO* psDevInfo, RGXFWIF_IN
 							1,
 							ui32CacheLineSize,
 							PVRSRV_MEMALLOCFLAG_GPU_READABLE |
-                            PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE | 
-							PVRSRV_MEMALLOCFLAG_UNCACHED | 
+                            PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
+							PVRSRV_MEMALLOCFLAG_UNCACHED |
 							PVRSRV_MEMALLOCFLAG_FW_LOCAL,
 							"SLC3 Fence WA",
 							ppsSLC3FenceMemDesc);
@@ -423,7 +423,7 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 
 		/* Check in the devmem flags whether this memory is cached/uncached */
 		DevmemGetFlags(psSrc, &uiDevFlags);
-	
+
 		/* Honour the META cache flags */
 		bCachedInMETA = (PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) & uiDevFlags) != 0;
 
@@ -437,7 +437,7 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 			ui32Offset |= RGXFW_SEGMMU_DATA_META_CACHED;
 		}
 		else
-		{	
+		{
 			ui32Offset |= RGXFW_SEGMMU_DATA_META_UNCACHED;
 		}
 
@@ -461,7 +461,7 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 	{
 		DevmemReleaseDevVirtAddr(psSrc);
 	}
-	
+
 }
 
 void RGXSetMetaDMAAddress(RGXFWIF_DMA_ADDR		*psDest,
@@ -1328,9 +1328,9 @@ static PVRSRV_ERROR RGXHwBrn37200(PVRSRV_RGXDEV_INFO *psDevInfo)
 		DEVMEM_FLAGS_T			uiFlags;
 		IMG_DEV_VIRTADDR		sTmpDevVAddr;
 		size_t				uiPageSize;
-	
+
 		uiPageSize = OSGetPageSize();
-		
+
 		uiFlags =	PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
 					PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 					PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
@@ -1743,7 +1743,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 		RGXSetFirmwareAddress(&psRGXFWInit->sCorememDataStore.pbyFWAddr,
 							  psDevInfo->psRGXFWIfCorememDataStoreMemDesc,
 							  0, RFW_FWADDR_NOREF_FLAG);
-	
+
 		if (bMetaDMA)
 		{
 			RGXSetMetaDMAAddress(&psRGXFWInit->sCorememDataStore,
@@ -2594,7 +2594,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 
 			const IMG_DEVMEM_OFFSET_T uiOSIDOff
 			= (IMG_DEVMEM_OFFSET_T)(uintptr_t)&(((RGXFWIF_INIT *)0)->sPIDFilter.asItems[i].ui32OSID);
-			
+
 			PDUMPCOMMENT("(PID and OSID pair %u)", i);
 
 			PDUMPCOMMENT("(PID)");
@@ -5065,7 +5065,7 @@ PVRSRV_ERROR IMG_CALLCONV RGXClientConnectCompatCheck_ClientAgainstFW(PVRSRV_DEV
 #if !defined(NO_HARDWARE)
 	RGXFWIF_INIT	*psRGXFWInit = NULL;
 	IMG_UINT32		ui32BuildOptionsMismatch;
-	IMG_UINT32		ui32BuildOptionsFW;      
+	IMG_UINT32		ui32BuildOptionsFW;
 
 	eError = DevmemAcquireCpuVirtAddr(psDevInfo->psRGXFWIfInitMemDesc,
 												(void **)&psRGXFWInit);
@@ -5087,7 +5087,7 @@ PVRSRV_ERROR IMG_CALLCONV RGXClientConnectCompatCheck_ClientAgainstFW(PVRSRV_DEV
 	} END_LOOP_UNTIL_TIMEOUT();
 #endif
 
-#if defined(PDUMP)                                                                                                                             
+#if defined(PDUMP)
 	PDUMPCOMMENT("Compatibility check: client and FW build options");
 	eError = DevmemPDumpDevmemPol32(psDevInfo->psRGXFWIfInitMemDesc,
 												offsetof(RGXFWIF_INIT, sRGXCompChecks) +
@@ -5101,7 +5101,7 @@ PVRSRV_ERROR IMG_CALLCONV RGXClientConnectCompatCheck_ClientAgainstFW(PVRSRV_DEV
 		PVR_DPF((PVR_DBG_ERROR, "RGXDevInitCompatCheck: problem pdumping POL for psRGXFWIfInitMemDesc (%d)", eError));
 		return eError;
 	}
-#endif                                                                                                                                         
+#endif
 
 #if !defined(NO_HARDWARE)
 	if (psRGXFWInit == NULL)

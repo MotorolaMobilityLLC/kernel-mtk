@@ -1,6 +1,6 @@
 /*************************************************************************/ /*!
 @File
-@Title          Event Object 
+@Title          Event Object
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 @License        Dual MIT/GPLv2
 

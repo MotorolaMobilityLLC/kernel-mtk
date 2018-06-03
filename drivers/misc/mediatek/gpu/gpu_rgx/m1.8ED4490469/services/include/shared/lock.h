@@ -226,7 +226,7 @@ IMG_INT OSAtomicRead(ATOMIC_T *pCounter);
 IMG_INTERNAL
 void OSAtomicWrite(ATOMIC_T *pCounter, IMG_INT v);
 
-/* For the following atomic operations, in addition to being SMP-safe, 
+/* For the following atomic operations, in addition to being SMP-safe,
    should also  have a memory barrier around each operation  */
 /*************************************************************************/ /*!
 @Function       OSAtomicIncrement

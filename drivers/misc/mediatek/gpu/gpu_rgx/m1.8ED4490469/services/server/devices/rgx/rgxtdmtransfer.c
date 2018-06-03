@@ -203,7 +203,7 @@ PVRSRV_ERROR PVRSRVRGXTDMCreateTransferContextKM(
 		goto fail_syncalloc;
 	}
 
-	/* 
+	/*
 	 * Create the FW framework buffer
 	 */
 	eError = PVRSRVRGXFrameworkCreateKM(psDeviceNode,
@@ -252,9 +252,9 @@ PVRSRV_ERROR PVRSRVRGXTDMCreateTransferContextKM(
 	}
 
 	*ppsTransferContext = psTransferContext;
-	
+
 	return PVRSRV_OK;
-	
+
 fail_tdmtransfercontext:
 fail_frameworkcopy:
 	DevmemFwFree(psDevInfo, psTransferContext->psFWFrameworkMemDesc);
@@ -541,7 +541,7 @@ PVRSRV_ERROR PVRSRVRGXTDMSubmitTransferKM(
 	/*
 		Acquire space for all the commands in one go
 	*/
-	
+
 	eError = RGXCmdHelperAcquireCmdCCB(1, psCmdHelper);
 	if (eError != PVRSRV_OK)
 	{
@@ -693,7 +693,7 @@ fail_populate_sync_addr_list:
 	OSFreeMem(psCmdHelper);
 fail_allochelper:
 	return eError;
-	
+
 
 }
 
@@ -741,9 +741,9 @@ PVRSRV_ERROR PVRSRVRGXTDMSetTransferContextPriorityKM(CONNECTION_DATA *psConnect
 												   IMG_UINT32 ui32Priority)
 {
 	PVRSRV_ERROR eError;
-	
+
 	PVR_UNREFERENCED_PARAMETER(psDeviceNode);
-	
+
 	if (psTransferContext->sTDMData.ui32Priority != ui32Priority)
 	{
 		eError = ContextSetPriority(psTransferContext->sTDMData.psServerCommonContext,

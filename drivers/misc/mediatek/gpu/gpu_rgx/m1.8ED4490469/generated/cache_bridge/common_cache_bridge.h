@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            CacheOpQueue          
+            CacheOpQueue
  *******************************************/
 
 /* Bridge in structure for CacheOpQueue */
@@ -85,7 +85,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CACHEOPQUEUE_TAG
 
 
 /*******************************************
-            CacheOpExec          
+            CacheOpExec
  *******************************************/
 
 /* Bridge in structure for CacheOpExec */
@@ -105,7 +105,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CACHEOPEXEC_TAG
 
 
 /*******************************************
-            CacheOpSetTimeline          
+            CacheOpSetTimeline
  *******************************************/
 
 /* Bridge in structure for CacheOpSetTimeline */
@@ -122,7 +122,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CACHEOPSETTIMELINE_TAG
 
 
 /*******************************************
-            CacheOpLog          
+            CacheOpLog
  *******************************************/
 
 /* Bridge in structure for CacheOpLog */
@@ -144,7 +144,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CACHEOPLOG_TAG
 
 
 /*******************************************
-            CacheOpGetLineSize          
+            CacheOpGetLineSize
  *******************************************/
 
 /* Bridge in structure for CacheOpGetLineSize */

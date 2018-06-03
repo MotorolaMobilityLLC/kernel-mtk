@@ -77,12 +77,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 typedef struct _RGX_RPM_DATA_RTU_FREE_PAGE_LIST {
-     IMG_UINT32 u32_0; 
+     IMG_UINT32 u32_0;
 } RGX_RPM_DATA_RTU_FREE_PAGE_LIST;
 
 /*
 Page table index.
-                                                        The field is a pointer to a free page 
+                                                        The field is a pointer to a free page
 */
 #define RGX_RPM_DATA_RTU_FREE_PAGE_LIST_PTI_WOFF          (0U)
 #define RGX_RPM_DATA_RTU_FREE_PAGE_LIST_PTI_SHIFT         (0U)
@@ -91,14 +91,14 @@ Page table index.
 #define RGX_RPM_DATA_RTU_FREE_PAGE_LIST_GET_PTI(_ft_)     (((_ft_).u32_0  >>  (0)) & 0x003fffff)
 
 typedef struct _RGX_RPM_DATA_RTU_PAGE_TABLE {
-     IMG_UINT32 u32_0; 
+     IMG_UINT32 u32_0;
 } RGX_RPM_DATA_RTU_PAGE_TABLE;
 
 /*
  Page Table State
                                                         <br> 00: Empty Block
                                                         <br> 01: Full Block
-                                                        <br> 10: Fragmented Block: Partially full page 
+                                                        <br> 10: Fragmented Block: Partially full page
 */
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_PTS_WOFF              (0U)
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_PTS_SHIFT             (30U)
@@ -108,7 +108,7 @@ typedef struct _RGX_RPM_DATA_RTU_PAGE_TABLE {
 /*
  Primitives in Page.
                                                         Number of unique primitives stored in this page.
-                                                        The memory manager will re-use this page when the RCNT drops to zero.  
+                                                        The memory manager will re-use this page when the RCNT drops to zero.
 */
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_RCNT_WOFF             (0U)
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_RCNT_SHIFT            (22U)
@@ -117,7 +117,7 @@ typedef struct _RGX_RPM_DATA_RTU_PAGE_TABLE {
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_GET_RCNT(_ft_)        (((_ft_).u32_0  >>  (22)) & 0x000000ff)
 /*
 Next page table index.
-                                                        The field is a pointer to the next page for this primitive.  
+                                                        The field is a pointer to the next page for this primitive.
 */
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_NPTI_WOFF             (0U)
 #define RGX_RPM_DATA_RTU_PAGE_TABLE_NPTI_SHIFT            (0U)
@@ -134,7 +134,7 @@ typedef struct {
 	DEVMEM_MEMDESC				*psContextStateMemDesc;
 	RGX_SERVER_COMMON_CONTEXT	*psServerCommonContext;
 	IMG_UINT32					ui32Priority;
-#if 0	
+#if 0
 	/* FIXME - multiple frame contexts? */
 	RGX_RPM_FREELIST				*psSHFFreeList;
 	RGX_RPM_FREELIST				*psSHGFreeList;
@@ -208,7 +208,7 @@ static
 void sleep_for_ever(void)
 {
 #if defined(__KLOCWORK__) // klocworks would report an infinite loop because of while(1).
-	PVR_ASSERT(0); 
+	PVR_ASSERT(0);
 #else
 	while(1)
 	{
@@ -299,7 +299,7 @@ PVRSRV_ERROR _CreateSHContext(CONNECTION_DATA *psConnection,
 				eError));
 		goto fail_shcommoncontext;
 	}
-	
+
 	/*
 	 * Dump the FW SH context suspend state buffer
 	 */
@@ -433,22 +433,22 @@ PVRSRV_ERROR _DestroyRSContext(RGX_SERVER_RAY_RS_DATA *psRSData,
 
 /*
  * RPM driver management rev 2
- * 
+ *
  * The RPM freelists are opaque to the client driver. Scene Hierarchy pages
  * are managed in Blocks (analogous to PB blocks) which are alloc'd in KM
  * and mapped into the client MMU context.
- * 
+ *
  * Page tables are set up for each existing Scene Memory Block.
- * 
+ *
  * Freelist entries are also updated according to the list of Scene Memory Blocks.
- * 
+ *
  * NOTES:
- * 
+ *
  * (1) Scene Hierarchy shrink is not expected to be used.
  * (2) The RPM FreeLists are Circular buffers and must be contiguous in virtual space
  * (3) Each PMR is created with no phys backing pages. Pages are mapped in on-demand
  * via RGXGrowRPMFreeList.
- * 
+ *
  */
 #if defined(DEBUG)
 static PVRSRV_ERROR _ReadRPMFreePageList(PMR		 *psPMR,
@@ -468,7 +468,7 @@ static PVRSRV_ERROR _ReadRPMFreePageList(PMR		 *psPMR,
 		PVR_DPF((PVR_DBG_ERROR, "_WriteRPMPageList: failed to allocate scratch page table"));
 		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
-	
+
 	/* Read scratch buffer from PMR (FPL entries must be contiguous) */
 	eError = PMR_ReadBytes(psPMR,
 				 uiLogicalOffset,
@@ -527,7 +527,7 @@ static PVRSRV_ERROR _UpdateFwRPMFreelistSize(RGX_RPM_FREELIST *psFreeList,
 	sGPCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_DOPPLER_MEMORY_GROW;
 	sGPCCBCmd.uCmdData.sFreeListGSData.sFreeListFWDevVAddr.ui32Addr = psFreeList->sFreeListFWDevVAddr.ui32Addr;
 	sGPCCBCmd.uCmdData.sFreeListGSData.ui32DeltaSize = ui32DeltaSize;
-	sGPCCBCmd.uCmdData.sFreeListGSData.ui32NewSize = 
+	sGPCCBCmd.uCmdData.sFreeListGSData.ui32NewSize =
 		((bRestartRPM) ? RGX_FREELIST_GSDATA_RPM_RESTART_EN : 0) |
 		psFreeList->ui32CurrentFLPages;
 
@@ -648,7 +648,7 @@ static void _CheckRPMFreelist(RGX_RPM_FREELIST *psFreeList,
 		        psFreeList, ui64ExpectedCheckSum, *pui64CalculatedCheckSum));
 		bFreelistBad = IMG_TRUE;
 	}
-    
+
     if (bFreelistBad)
     {
 		PVR_LOG(("_CheckRPMFreelist: Sleeping for ever!"));
@@ -676,20 +676,20 @@ static PVRSRV_ERROR _WriteRPMFreePageList(PMR		 *psPMR,
 		PVR_DPF((PVR_DBG_ERROR, "_WriteRPMPageList: failed to allocate scratch page table"));
 		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
-	
+
 	for (uiIdx = 0; uiIdx < ui32PageCount; uiIdx ++, ui32NextPageIndex ++)
 	{
 		psFreeListBuffer[uiIdx].u32_0 = 0;
 		RGX_RPM_DATA_RTU_FREE_PAGE_LIST_SET_PTI(psFreeListBuffer[uiIdx], ui32NextPageIndex);
 	}
-	
+
 	/* Copy scratch buffer to PMR */
 	eError = PMR_WriteBytes(psPMR,
 				 uiLogicalOffset,
 				 (IMG_UINT8 *) psFreeListBuffer,
 				 ui32PageCount * sizeof(RGX_RPM_DATA_RTU_FREE_PAGE_LIST),
 				 &uNumBytesCopied);
-	
+
 	/* Free scratch buffer */
 	OSFreeMem(psFreeListBuffer);
 
@@ -723,7 +723,7 @@ static RGX_RPM_FREELIST* FindRPMFreeList(PVRSRV_RGXDEV_INFO *psDevInfo, IMG_UINT
 		}
 	}
 	OSLockRelease(psDevInfo->hLockRPMFreeList);
-	
+
 	return psFreeList;
 }
 
@@ -779,7 +779,7 @@ void RGXProcessRequestRPMGrow(PVRSRV_RGXDEV_INFO *psDevInfo,
 		sVRDMCCBCmd.eCmdType = RGXFWIF_KCCB_CMD_DOPPLER_MEMORY_GROW;
 		sVRDMCCBCmd.uCmdData.sFreeListGSData.sFreeListFWDevVAddr.ui32Addr = psFreeList->sFreeListFWDevVAddr.ui32Addr;
 		sVRDMCCBCmd.uCmdData.sFreeListGSData.ui32DeltaSize = ui32GrowValue;
-		sVRDMCCBCmd.uCmdData.sFreeListGSData.ui32NewSize = 
+		sVRDMCCBCmd.uCmdData.sFreeListGSData.ui32NewSize =
 			((bRestartRPM) ? RGX_FREELIST_GSDATA_RPM_RESTART_EN : 0) |
 			(psFreeList->ui32CurrentFLPages);
 
@@ -815,14 +815,14 @@ void RGXProcessRequestRPMGrow(PVRSRV_RGXDEV_INFO *psDevInfo,
  * RGXGrowRPMFreeList
  *
  * Allocate and map physical backing pages for RPM buffers
- * 
+ *
  * @param	ppsRPMDevMemDesc - RPM buffer descriptor representing new Scene memory block
  * 								and its associated RPM page table and free page list entries
  * @param	psRPMContext - RPM context
  * @param	psFreeList - RPM freelist descriptor
  * @param	ui32RequestNumPages - number of RPM pages to add to Doppler scene hierarchy
  * @param	pListHeader - linked list of RGX_RPM_DEVMEM_DESC blocks
- * 
+ *
  */
 PVRSRV_ERROR RGXGrowRPMFreeList(RGX_RPM_FREELIST *psFreeList,
 								IMG_UINT32 ui32RequestNumPages,
@@ -870,7 +870,7 @@ PVRSRV_ERROR RGXGrowRPMFreeList(RGX_RPM_FREELIST *psFreeList,
 	PVR_DPF((PVR_DBG_MESSAGE, "RGXGrowRPMFreeList: mapping %d pages for Doppler scene memory to VA 0x%llx with heap ID %p",
 			ui32RequestNumPages, psRPMContext->sSceneMemoryBaseAddr.uiAddr, psRPMContext->psSceneHeap));
 
-	/* 
+	/*
 	 * 1. Doppler scene hierarchy
 	 */
 	PDUMPCOMMENT("Allocate %d pages with mapping index %d for Doppler scene memory.",
@@ -888,7 +888,7 @@ PVRSRV_ERROR RGXGrowRPMFreeList(RGX_RPM_FREELIST *psFreeList,
 		goto ErrorSceneBlock;
 	}
 
-	/* 
+	/*
 	 * 2. RPM page list
 	 */
 	if (ui32RequestNumPages > psRPMContext->ui32RPMEntriesInPage)
@@ -953,12 +953,12 @@ PVRSRV_ERROR RGXGrowRPMFreeList(RGX_RPM_FREELIST *psFreeList,
 	}
 
 	{
-		/* 
+		/*
 		 * Update the entries remaining in the last mapped RPM and FPL pages.
-		 * 
+		 *
 		 * psRPMDevMemDesc->sRPMPageListNode.ui32NumPhysPages * 1024 entries are added (can be zero)
 		 * ui32RequestNumPages entries are committed
-		 * 
+		 *
 		 * The number of entries remaining should always be less than a full page.
 		 */
 		IMG_UINT32	ui32PTEntriesPerChunk = OSGetPageSize() / sizeof(RGX_RPM_DATA_RTU_FREE_PAGE_LIST);
@@ -1005,7 +1005,7 @@ ErrorFreeListBlock:
 ErrorPageTableBlock:
 	/* TODO: unmap sparse block for scene hierarchy */
 
-ErrorSceneBlock:	
+ErrorSceneBlock:
 	OSLockRelease(psFreeList->psDevInfo->hLockRPMContext);
 	OSLockRelease(psFreeList->psDevInfo->hLockRPMFreeList);
 	OSFreeMem(psRPMDevMemDesc);
@@ -1065,8 +1065,8 @@ static PVRSRV_ERROR RGXShrinkRPMFreeList(PDLLIST_NODE pListHeader,
 			goto UnMapError;
 		}
 
-		/* 
-		 * If the grow size is sub OS page size then the page lists may not need updating 
+		/*
+		 * If the grow size is sub OS page size then the page lists may not need updating
 		 */
 		if (psRPMDevMemNode->sRPMPageListNode.eNodeType != NODE_EMPTY)
 		{
@@ -1142,21 +1142,21 @@ UnMapError:
 
 /*!
  *	_RGXCreateRPMSparsePMR
- * 
+ *
  * Creates a PMR container with no phys pages initially. Phys pages will be allocated
  * and mapped later when requested by client or by HW RPM Out of Memory event.
  * The PMR is created with zero phys backing pages.
  * The sparse PMR is associated to either the RPM context or to the RPM freelist(s):
- * 
+ *
  * RGX_SERVER_RPM_CONTEXT - Scene hierarchy, page table
  * RGX_RPM_FREELIST - free page list PMR
- * 
+ *
  * @param	eBlockType - whether block is for scene hierarchy pages or page
  * 				tables. This parameter is used to calculate size.
  * @param	ui32NumPages - total number of pages
  * @param	uiLog2DopplerPageSize - log2 Doppler/RPM page size
  * @param	ppsPMR - (Output) new PMR container.
- * 
+ *
  * See the documentation for more details.
  */
 static
@@ -1189,7 +1189,7 @@ PVRSRV_ERROR _RGXCreateRPMSparsePMR(CONNECTION_DATA *psConnection,
 			uiMaxSize = (IMG_DEVMEM_SIZE_T)ui32NumPages * sizeof(RGX_RPM_DATA_RTU_PAGE_TABLE);
 			break;
 		case NODE_RPM_FREE_PAGE_LIST:
-			/* 
+			/*
 			 * Each RPM free page list (FPL) supports the maximum range.
 			 * In practise the maximum range is divided between allocations in each FPL
 			 */
@@ -1221,19 +1221,19 @@ PVRSRV_ERROR _RGXCreateRPMSparsePMR(CONNECTION_DATA *psConnection,
 				 "_RGXCreateRPMSparsePMR: Failed to allocate sparse PMR of size: 0x%016llX",
 				 (IMG_UINT64)uiMaxSize));
 	}
-	
+
 	return eError;
 }
 
 /*!
  *	_RGXMapRPMPBBlock
- * 
+ *
  * Maps in a block of phys pages for one of the following:
- * 
+ *
  * NODE_SCENE_HIERARCHY - scene hierarchy
  * NODE_RPM_PAGE_TABLE - RPM page table entries
  * NODE_RPM_FREE_PAGE_LIST - RPM free page list entries
- * 
+ *
  * @param	psDevMemNode - device mem block descriptor (allocated by caller)
  * @param	psFreeList - free list descriptor
  * @param	eBlockType - block type: scene memory, RPM page table or RPM page free list
@@ -1241,7 +1241,7 @@ PVRSRV_ERROR _RGXCreateRPMSparsePMR(CONNECTION_DATA *psConnection,
  * @param	ui32NumPages - number of pages for scene memory, OR
  * 							number of PT entries for RPM page table or page free list
  * @param	sDevVAddrBase - GPU virtual base address i.e. base address at start of sparse allocation
- * 
+ *
  * @return	PVRSRV_OK if no error occurred
  */
 static
@@ -1289,7 +1289,7 @@ PVRSRV_ERROR _RGXMapRPMPBBlock(RGX_DEVMEM_NODE	*psDevMemNode,
 		/* no default case because the build should error out if a case is unhandled */
 	}
 
-	/* 
+	/*
 	 * Round size up to multiple of the sparse chunk size = OS page size.
 	 */
 	uiSize = (uiSize + ui32ChunkSize - 1) & ~(ui32ChunkSize - 1);
@@ -1356,7 +1356,7 @@ PVRSRV_ERROR _RGXMapRPMPBBlock(RGX_DEVMEM_NODE	*psDevMemNode,
 		PMRUnlockSysPhysAddresses(psDevMemNode->psPMR);
 	}
 
-	/* 
+	/*
 	 * Update the mapping index for the next allocation.
 	 * The virtual pages should be contiguous.
 	 */
@@ -1379,15 +1379,15 @@ ErrorAllocHost:
 
 /*!
  * _RGXUnmapRPMPBBlock
- * 
+ *
  * NOTE: because the SHF and SHG requests for memory are interleaved, the
  * page mapping offset cannot be updated (non-contiguous virtual mapping
  * is not supported).
- * 
+ *
  * So either
  *  (i) the allocated virtual address range is unusable after unmap
  * (ii) all of the scene memory must be freed
- * 
+ *
  * @param	psDevMemNode - block to free
  * @param	psFreeList - RPM free list
  * @param	sDevVAddrBase - the virtual base address (i.e. where page 1 of the PMR is mapped)
@@ -1481,7 +1481,7 @@ ErrorAllocHost:
 
 /*!
  *	RGXCreateRPMFreeList
- * 
+ *
  * @param	ui32InitFLPages - initial allocation of mapped-in physical pages
  * @param	ui32GrowFLPages - physical pages to add to scene hierarchy if RPM OOM occurs
  * @param	sFreeListDevVAddr - virtual base address of free list
@@ -1493,7 +1493,7 @@ ErrorAllocHost:
  */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateRPMFreeList(CONNECTION_DATA *psConnection,
-							   PVRSRV_DEVICE_NODE	 *psDeviceNode, 
+							   PVRSRV_DEVICE_NODE	 *psDeviceNode,
 							   RGX_SERVER_RPM_CONTEXT	*psRPMContext,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,
@@ -1533,7 +1533,7 @@ PVRSRV_ERROR RGXCreateRPMFreeList(CONNECTION_DATA *psConnection,
 	 * Otherwise this allocation is only used by the FW.
 	 * Therefore the GPU cache doesn't need coherency,
 	 * and write-combine is suffice on the CPU side (WC buffer will be flushed at the first TA-kick)
-	 * 
+	 *
 	 * TODO - RPM freelist will be modified after creation, but only from host-side.
 	 */
 	eError = DevmemFwAllocate(psDevInfo,
@@ -1549,7 +1549,7 @@ PVRSRV_ERROR RGXCreateRPMFreeList(CONNECTION_DATA *psConnection,
 							PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE,
 							"FwRPMFreeList",
 							&psFWRPMFreelistMemDesc);
-	if (eError != PVRSRV_OK) 
+	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "RGXCreateRPMFreeList: DevmemAllocate for RGXFWIF_FREELIST failed"));
 		goto ErrorFWFreeListAlloc;
@@ -1808,7 +1808,7 @@ PVRSRV_ERROR RGXDestroyRPMFreeList(RGX_RPM_FREELIST *psFreeList)
 
 /*!
  *	RGXAddBlockToRPMFreeListKM
- * 
+ *
  * NOTE: This API isn't used but it's provided for symmetry with the parameter
  * management API.
 */
@@ -1856,7 +1856,7 @@ PVRSRV_ERROR RGXAddBlockToRPMFreeListKM(RGX_RPM_FREELIST *psFreeList,
  */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateRPMContext(CONNECTION_DATA * psConnection,
-								 PVRSRV_DEVICE_NODE	 *psDeviceNode, 
+								 PVRSRV_DEVICE_NODE	 *psDeviceNode,
 								 RGX_SERVER_RPM_CONTEXT	**ppsRPMContext,
 								 IMG_UINT32			ui32TotalRPMPages,
 								 IMG_UINT32			uiLog2DopplerPageSize,
@@ -1939,7 +1939,7 @@ PVRSRV_ERROR RGXCreateRPMContext(CONNECTION_DATA * psConnection,
 							PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE,
 							"FwRPMContext",
 							ppsMemDesc);
-	if (eError != PVRSRV_OK) 
+	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "RGXCreateRPMContext: DevmemAllocate for RGXFWIF_FREELIST failed"));
 		goto ErrorFWRPMContextAlloc;
@@ -1994,7 +1994,7 @@ ErrorSyncAlloc:
 ErrorAllocHost:
 	PVR_ASSERT(eError != PVRSRV_OK);
 	return eError;
-}	
+}
 
 
 /*
@@ -2128,7 +2128,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 				eError));
 		goto fail_fwraycontext;
 	}
-					   
+
 	/* Allocate cleanup sync */
 	eError = SyncPrimAlloc(psDeviceNode->hSyncPrimContext,
 						   &psRayContext->psCleanupSync,
@@ -2139,8 +2139,8 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 				eError));
 		goto fail_syncalloc;
 	}
-	
-	/* 
+
+	/*
 	 * Create the FW framework buffer
 	 */
 	eError = PVRSRVRGXFrameworkCreateKM(psDeviceNode, &psRayContext->psFWFrameworkMemDesc, ui32FrameworkRegisterSize);
@@ -2150,7 +2150,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 				eError));
 		goto fail_frameworkcreate;
 	}
-	
+
 	/* Copy the Framework client data into the framework buffer */
 	eError = PVRSRVRGXFrameworkCopyCommand(psRayContext->psFWFrameworkMemDesc, pabyFrameworkRegisters, ui32FrameworkRegisterSize);
 	if (eError != PVRSRV_OK)
@@ -2162,7 +2162,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 
 	sInfo.psFWFrameworkMemDesc = psRayContext->psFWFrameworkMemDesc;
 	sInfo.psMCUFenceAddr = &sMCUFenceAddr;
-	
+
 	eError = _CreateSHContext(psConnection,
 							  psDeviceNode,
 							  psRayContext->psFWRayContextMemDesc,
@@ -2189,7 +2189,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 	{
 		goto fail_rscontext;
 	}
-		
+
 	/*
 		Temporarily map the firmware context to the kernel and init it
 	*/
@@ -2203,7 +2203,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 		goto fail_rscontext;
 	}
 
-	
+
 	for (i = 0; i < DPX_MAX_RAY_CONTEXTS; i++)
 	{
 		/* Allocate the frame context client CCB */
@@ -2232,13 +2232,13 @@ PVRSRV_ERROR PVRSRVRGXCreateRayContextKM(CONNECTION_DATA				*psConnection,
 							  psRayContext->sRSData.psFCClientCCBCtrlMemDesc[i],
 							  0, RFW_FWADDR_FLAG_NONE);
 	}
-	
+
 	pFWRayContext->ui32ActiveFCMask = 0;
 	pFWRayContext->ui32NextFC = RGXFWIF_INVALID_FRAME_CONTEXT;
 
 	/* We've finished the setup so release the CPU mapping */
-	DevmemReleaseCpuVirtAddr(psRayContext->psFWRayContextMemDesc);	
-		
+	DevmemReleaseCpuVirtAddr(psRayContext->psFWRayContextMemDesc);
+
 	/*
 		As the common context alloc will dump the SH and RS common contexts
 		after the've been setup we skip of the 2 common contexts and dump the
@@ -2337,7 +2337,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyRayContextKM(RGX_SERVER_RAY_CONTEXT *psRayContext)
 	RGXDestroyRPMFreeList(psRayContext->sSHData.psSHFFreeList);
 	RGXDestroyRPMFreeList(psRayContext->sSHData.psSHGFreeList);
 #endif
-	
+
 	for (i = 0; i < DPX_MAX_RAY_CONTEXTS; i++)
 	{
 		RGXUnsetFirmwareAddress(psRayContext->sRSData.psFCClientCCBMemDesc[i]);
@@ -2353,7 +2353,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyRayContextKM(RGX_SERVER_RAY_CONTEXT *psRayContext)
 	{
 		/* Free the framework buffer */
 		DevmemFwFree(psDevInfo, psRayContext->psFWFrameworkMemDesc);
-	
+
 		/* Free the firmware ray context */
 		DevmemFwFree(psDevInfo, psRayContext->psFWRayContextMemDesc);
 
@@ -2413,7 +2413,7 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	PRGXFWIF_TIMESTAMP_ADDR pPreAddr;
 	PRGXFWIF_TIMESTAMP_ADDR pPostAddr;
 	PRGXFWIF_UFO_ADDR       pRMWUFOAddr;
-	
+
 	ui32JobId = OSAtomicIncrement(&psRayContext->hJobId);
 
 	eError = SyncAddrListPopulate(&psRayContext->sSyncAddrListFence,
@@ -2513,10 +2513,10 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	{
 		goto PVRSRVRGXKickRSKM_Exit;
 	}
-	
+
 	ui32FCWoff = RGXCmdHelperGetCommandSize(IMG_ARR_NUM_ELEMS(asFCCmdHelperData),
 	                                        asFCCmdHelperData);
-	
+
 	*(IMG_UINT32*)pui8FCDMCmd = RGXGetHostWriteOffsetCCB(psRSData->psFCClientCCB[ui32FrameContextID]) + ui32FCWoff;
 
 	/*
@@ -2563,8 +2563,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	{
 		goto PVRSRVRGXKickRSKM_Exit;
 	}
-	
-	
+
+
 	/*
 		We should reserved space in the kernel CCB here and fill in the command
 		directly.
@@ -2585,7 +2585,7 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 		RGXCmdHelperReleaseCmdCCB(IMG_ARR_NUM_ELEMS(asFCCmdHelperData),
 		                          asFCCmdHelperData, "FC", 0);
 	}
-		
+
 	if (eError1 == PVRSRV_OK)
 	{
 		/*
@@ -2597,7 +2597,7 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 		                          asRSCmdHelperData, "RS",
 		                          FWCommonContextGetFWAddress(psRSData->psServerCommonContext).ui32Addr);
 	}
-	
+
 	/*
 	 * Construct the kernel RTU CCB command.
 	 * (Safe to release reference to ray context virtual address because
@@ -2763,8 +2763,8 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	{
 		goto PVRSRVRGXKickSHKM_Exit;
 	}
-	
-	
+
+
 	/*
 		We should reserve space in the kernel CCB here and fill in the command
 		directly.
@@ -2785,7 +2785,7 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 		ui32SHGCmdOffset = RGXGetHostWriteOffsetCCB(FWCommonContextGetClientCCB(psSHData->psServerCommonContext));
 		RGXCmdHelperReleaseCmdCCB(1, &sCmdHelperData, "SH", FWCommonContextGetFWAddress(psSHData->psServerCommonContext).ui32Addr);
 	}
-	
+
 	/*
 	 * Construct the kernel SHG CCB command.
 	 * (Safe to release reference to ray context virtual address because

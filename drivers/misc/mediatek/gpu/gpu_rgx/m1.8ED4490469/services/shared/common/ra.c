@@ -60,7 +60,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  segments in a table index by pvr_log2(segment size). ie Each table index
  n holds 'free' segments in the size range 2^n -> 2^(n+1) - 1.
 
- Allocation policy is based on an *almost* good fit strategy. 
+ Allocation policy is based on an *almost* good fit strategy.
 
  Allocated segments are inserted into a self scaling hash table which
  maps the base resource of the span to the relevant boundary
@@ -146,7 +146,7 @@ struct _BT_
 	/* doubly linked un-ordered list of free segments with the same flags. */
 	struct _BT_ * next_free;
 	struct _BT_ * prev_free;
-	
+
 	/* a user reference associated with this span, user references are
 	 * currently only provided in the callback mechanism */
     IMG_HANDLE hPriv;
@@ -184,7 +184,7 @@ struct _RA_ARENA_
 	void *pImportHandle;
 
 	IMG_PSPLAY_TREE per_flags_buckets;
-	
+
 	/* resource segment list */
 	BT *pHeadSegment;
 
@@ -246,7 +246,7 @@ _RequestAllocFail (RA_PERARENA_HANDLE _h,
     static_assert((sizeof(((IMG_PSPLAY_TREE) 0)->buckets) / sizeof(((IMG_PSPLAY_TREE) 0)->buckets[0]))
 				  < 8 * sizeof(((IMG_PSPLAY_TREE) 0)->bHasEltsMapping),
 				  "Too many buckets for bHasEltsMapping bitmap");
-#endif 
+#endif
 
 
 /*************************************************************************/ /*!
@@ -262,7 +262,7 @@ _RequestAllocFail (RA_PERARENA_HANDLE _h,
    if someone changes RA_LENGTH to unsigned long, then use __builtin_clzl
    if it changes to unsigned int, use __builtin_clz
 
-   if it changes for something bigger than unsigned long long, 
+   if it changes for something bigger than unsigned long long,
    then revert the pvr_log2 to the classic implementation */
 static_assert(sizeof(RA_LENGTH_T) == sizeof(unsigned long long),
 			  "RA log routines not tuned for sizeof(RA_LENGTH_T)");
@@ -414,16 +414,16 @@ static int is_arena_valid(struct _RA_ARENA_ * arena)
 		for (i = 0; i < FREE_TABLE_LIMIT; ++i)
 		{
 			/* verify that the bHasEltsMapping is correct for this flags bucket */
-			PVR_ASSERT( 
+			PVR_ASSERT(
 				((arena->per_flags_buckets->buckets[i] == NULL) &&
 				 (( (arena->per_flags_buckets->bHasEltsMapping & ((IMG_ELTS_MAPPINGS) 1 << i)) == 0)))
 				||
 				((arena->per_flags_buckets->buckets[i] != NULL) &&
 				 ((  (arena->per_flags_buckets->bHasEltsMapping & ((IMG_ELTS_MAPPINGS) 1 << i)) != 0)))
-				);		
+				);
 		}
 	}
-#endif	
+#endif
 
 	/* if arena was not valid, one of the assert before should have triggered */
 	return 1;
@@ -491,7 +491,7 @@ static void
 _SegmentListRemove (RA_ARENA *pArena, BT *pBT)
 {
 	PVR_ASSERT (_IsInSegmentList(pArena, pBT));
-	
+
 	if (pBT->pPrevSegment == NULL)
 		pArena->pHeadSegment = pBT->pNextSegment;
 	else
@@ -651,7 +651,7 @@ _FreeListRemove (RA_ARENA *pArena, BT *pBT)
 		}
 #endif
 	}
-	
+
 
 	PVR_ASSERT (!_IsInFreeList(pArena, pBT));
 	pBT->type = btt_live;
@@ -688,7 +688,7 @@ _InsertResource (RA_ARENA *pArena,
 			OSFreeMem(pBT);
 			return NULL;
 		}
-		
+
 		pArena->per_flags_buckets = tmp;
 		_SegmentListInsert (pArena, pBT);
 		_FreeListInsert (pArena, pBT);
@@ -802,7 +802,7 @@ _FreeBT (RA_ARENA *pArena, BT *pBT)
 		_FreeListInsert (pArena, pBT);
 		PVR_ASSERT( (!pBT->is_rightmost) || (!pBT->is_leftmost) || (!pBT->free_import) );
 	}
-	
+
 	PVR_ASSERT(is_arena_valid(pArena));
 }
 
@@ -818,7 +818,7 @@ _FreeBT (RA_ARENA *pArena, BT *pBT)
   nb_max_try is used to limit the number of elements considered.
   This is used to only consider the first nb_max_try elements in the
   free-list. The special value ~0 is used to say unlimited i.e. consider
-  all elements in the free list 
+  all elements in the free list
  */
 static INLINE
 struct _BT_ * find_chunk_in_bucket(struct _BT_ * first_elt,
@@ -833,7 +833,7 @@ struct _BT_ * find_chunk_in_bucket(struct _BT_ * first_elt,
 		const RA_BASE_T aligned_base = (uAlignment > 1) ?
 			(walker->base + uAlignment - 1) & ~(uAlignment - 1)
 			: walker->base;
-		
+
 		if (walker->base + walker->uSize >= aligned_base + uSize)
 		{
 			return walker;
@@ -858,7 +858,7 @@ struct _BT_ * find_chunk_in_bucket(struct _BT_ * first_elt,
 @Output         phPriv		 The user references associated with
                              the imported segment. (optional)
 @Input          flags        Allocation flags
-@Input          uAlignment   Required uAlignment, or 0. 
+@Input          uAlignment   Required uAlignment, or 0.
                              Must be a power of 2 if not 0
 @Output         base         Allocated resource base (non optional, must not be NULL)
 @Return         IMG_FALSE failure
@@ -874,8 +874,8 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 {
 
 	IMG_UINT32 index_low;
-	IMG_UINT32 index_high; 
-	IMG_UINT32 i; 
+	IMG_UINT32 index_high;
+	IMG_UINT32 i;
 	struct _BT_ * pBT = NULL;
 	RA_BASE_T aligned_base;
 
@@ -891,7 +891,7 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 
 	index_low = pvr_log2(uSize);
 	index_high = pvr_log2(uSize + uAlignment - 1);
-	
+
 	PVR_ASSERT(index_low < FREE_TABLE_LIMIT);
 	PVR_ASSERT(index_high < FREE_TABLE_LIMIT);
 	PVR_ASSERT(index_low <= index_high);
@@ -914,7 +914,7 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 	{
 		for (i = index_high; (i != index_low - 1) && (pBT == NULL); --i)
 		{
-			pBT = find_chunk_in_bucket(pArena->per_flags_buckets->buckets[i], uSize, uAlignment, (unsigned int) ~0);			
+			pBT = find_chunk_in_bucket(pArena->per_flags_buckets->buckets[i], uSize, uAlignment, (unsigned int) ~0);
 		}
 	}
 
@@ -963,23 +963,23 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 			_FreeListInsert (pArena, pBT);
 			return IMG_FALSE;
 		}
-	
+
 		_FreeListInsert (pArena, pNeighbour);
 	}
 nosplit:
 	pBT->type = btt_live;
-	
+
 	if (!HASH_Insert_Extended (pArena->pSegmentHash, &pBT->base, (uintptr_t)pBT))
 	{
 		_FreeBT (pArena, pBT);
 		return IMG_FALSE;
 	}
-	
+
 	if (phPriv != NULL)
 		*phPriv = pBT->hPriv;
-	
+
 	*base = pBT->base;
-	
+
 	return IMG_TRUE;
 }
 
@@ -1003,9 +1003,9 @@ IMG_INTERNAL RA_ARENA *
 RA_Create (IMG_CHAR *name,
 		   RA_LOG2QUANTUM_T uLog2Quantum,
 		   IMG_UINT32 ui32LockClass,
-		   PVRSRV_ERROR (*imp_alloc)(RA_PERARENA_HANDLE h, 
+		   PVRSRV_ERROR (*imp_alloc)(RA_PERARENA_HANDLE h,
                                  RA_LENGTH_T uSize,
-                                 RA_FLAGS_T _flags, 
+                                 RA_FLAGS_T _flags,
                                  const IMG_CHAR *pszAnnotation,
                                  /* returned data */
                                  RA_BASE_T *pBase,
@@ -1025,7 +1025,7 @@ RA_Create (IMG_CHAR *name,
 		PVR_DPF ((PVR_DBG_ERROR, "RA_Create: invalid parameter 'name' (NULL not accepted)"));
 		return NULL;
 	}
-	
+
 	PVR_DPF ((PVR_DBG_MESSAGE, "RA_Create: name='%s'", name));
 
 	pArena = OSAllocMem(sizeof (*pArena));

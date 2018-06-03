@@ -60,7 +60,7 @@ CopyFromUserWrapper(CONNECTION_DATA *psConnection,
 					void *pvSrc,
 					IMG_UINT32 ui32Size);
 PVRSRV_ERROR
-CopyToUserWrapper(CONNECTION_DATA *psConnection, 
+CopyToUserWrapper(CONNECTION_DATA *psConnection,
 				  IMG_UINT32 ui32DispatchTableEntry,
 				  void *pvDest,
 				  void *pvSrc,
@@ -81,7 +81,7 @@ typedef struct _PVRSRV_BRIDGE_DISPATCH_TABLE_ENTRY
 {
 	BridgeWrapperFunction pfFunction; /*!< The wrapper function that validates the ioctl
 										arguments before calling into srvkm proper */
-	POS_LOCK	hBridgeLock;	/*!< The bridge lock which needs to be acquired 
+	POS_LOCK	hBridgeLock;	/*!< The bridge lock which needs to be acquired
 						before calling the above wrapper */
 	IMG_BOOL    bUseLock;                 /*!< Specify whether to use a bridge lock at all */
 #if defined(DEBUG_BRIDGE_KM)

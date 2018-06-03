@@ -53,7 +53,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /**
- * Debug utility macro for printing FW IRQ count and Last sampled IRQ count in 
+ * Debug utility macro for printing FW IRQ count and Last sampled IRQ count in
  * LISR for each RGX FW thread.
  * Macro takes pointer to PVRSRV_RGXDEV_INFO as input.
  */

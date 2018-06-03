@@ -71,17 +71,17 @@ typedef struct _TL_SNODE_* PTL_SNODE;
  *                  AcquireData/ReleaseData() calls. Thus this lock only
  *                  protects the stream members from simultaneous writers.
  *
- *      ui32Read < ui32Write <= ui32Pending 
+ *      ui32Read < ui32Write <= ui32Pending
  *        where < and <= operators are overloaded to make sense in a circular way.
  */
-typedef struct _TL_STREAM_ 
+typedef struct _TL_STREAM_
 {
 	IMG_CHAR 			szName[PRVSRVTL_MAX_STREAM_NAME_SIZE];	/*!< String name identifier */
-	IMG_BOOL 			bDrop; 					/*!< Flag: When buffer is full drop new data instead of 
+	IMG_BOOL 			bDrop; 					/*!< Flag: When buffer is full drop new data instead of
 														   overwriting older data */
 	IMG_BOOL 			bBlock;					/*!< Flag: When buffer is full reserve will block until there is
 														   enough free space in the buffer to fullfil the request. */
-	IMG_BOOL 			bWaitForEmptyOnDestroy; /*!< Flag: On destroying a non empty stream block until 
+	IMG_BOOL 			bWaitForEmptyOnDestroy; /*!< Flag: On destroying a non empty stream block until
 														   stream is drained. */
 	IMG_BOOL            bNoSignalOnCommit;      /*!< Flag: Used to avoid the TL signalling waiting consumers
                                                            that new data is available on every commit. Producers
@@ -120,7 +120,7 @@ typedef struct _TL_STREAM_
 static_assert(!(BUFFER_RESERVED_SPACE&(PVRSRVTL_PACKET_ALIGNMENT-1)),
 			  "BUFFER_RESERVED_SPACE must be a multiple of PVRSRVTL_PACKET_ALIGNMENT");
 
-/* Define the largest value that a uint that matches the 
+/* Define the largest value that a uint that matches the
  * PVRSRVTL_PACKET_ALIGNMENT size can hold */
 #define MAX_UINT 0xffffFFFF
 
@@ -208,10 +208,10 @@ void TLReturnStreamNode(PTL_SNODE psNode);
 
 /****************************************************************************************
  Function Name	: TLTryRemoveStreamAndFreeStreamNode
- 
+
  Inputs		: PTL_SNODE	Pointer to the TL_SNODE whose stream is requested
  			to be removed from TL_GLOBAL_DATA's list
- 
+
  Return Value	: IMG_TRUE	-	If the stream was made NULL and this
  					TL_SNODE was removed from the
 					TL_GLOBAL_DATA's list
@@ -223,18 +223,18 @@ void TLReturnStreamNode(PTL_SNODE psNode);
  		  	This function removes this TL_SNODE from the
 			TL_GLOBAL_DATA's list. The caller is responsible for the
 			cleanup of the TL_STREAM whose TL_SNODE may be removed
-		  
+
 		  Otherwise, this function does nothing
 *****************************************************************************************/
 IMG_BOOL  TLTryRemoveStreamAndFreeStreamNode(PTL_SNODE psRemove);
 
 /*****************************************************************************************
  Function Name	: TLUnrefDescAndTryFreeStreamNode
- 
+
  Inputs		: PTL_SNODE	Pointer to the TL_SNODE whose descriptor is
  			requested to be removed
  			: PTL_STREAM_DESC	Pointer to the STREAM_DESC
- 
+
  Return Value	: IMG_TRUE	-	If this	TL_SNODE was removed from the
 					TL_GLOBAL_DATA's list
 
@@ -261,9 +261,9 @@ IMG_BOOL TLStreamEOS(PTL_STREAM psStream);
 
 /****************************************************************************************
  Function Name	: TLStreamDestroy
-  
+
  Inputs		: PTL_STREAM	Pointer to the TL_STREAM to be destroyed
- 
+
  Description	: This function performs all the clean-up operations required for
  			destruction of this stream
 *****************************************************************************************/

@@ -78,7 +78,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCreateHWRTData          
+            RGXCreateHWRTData
  *******************************************/
 
 /* Bridge in structure for RGXCreateHWRTData */
@@ -120,7 +120,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATEHWRTDATA_TAG
 
 
 /*******************************************
-            RGXDestroyHWRTData          
+            RGXDestroyHWRTData
  *******************************************/
 
 /* Bridge in structure for RGXDestroyHWRTData */
@@ -137,7 +137,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYHWRTDATA_TAG
 
 
 /*******************************************
-            RGXCreateRenderTarget          
+            RGXCreateRenderTarget
  *******************************************/
 
 /* Bridge in structure for RGXCreateRenderTarget */
@@ -156,7 +156,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATERENDERTARGET_TAG
 
 
 /*******************************************
-            RGXDestroyRenderTarget          
+            RGXDestroyRenderTarget
  *******************************************/
 
 /* Bridge in structure for RGXDestroyRenderTarget */
@@ -173,7 +173,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRENDERTARGET_TAG
 
 
 /*******************************************
-            RGXCreateZSBuffer          
+            RGXCreateZSBuffer
  *******************************************/
 
 /* Bridge in structure for RGXCreateZSBuffer */
@@ -194,7 +194,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATEZSBUFFER_TAG
 
 
 /*******************************************
-            RGXDestroyZSBuffer          
+            RGXDestroyZSBuffer
  *******************************************/
 
 /* Bridge in structure for RGXDestroyZSBuffer */
@@ -211,7 +211,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYZSBUFFER_TAG
 
 
 /*******************************************
-            RGXPopulateZSBuffer          
+            RGXPopulateZSBuffer
  *******************************************/
 
 /* Bridge in structure for RGXPopulateZSBuffer */
@@ -229,7 +229,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXPOPULATEZSBUFFER_TAG
 
 
 /*******************************************
-            RGXUnpopulateZSBuffer          
+            RGXUnpopulateZSBuffer
  *******************************************/
 
 /* Bridge in structure for RGXUnpopulateZSBuffer */
@@ -246,7 +246,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXUNPOPULATEZSBUFFER_TAG
 
 
 /*******************************************
-            RGXCreateFreeList          
+            RGXCreateFreeList
  *******************************************/
 
 /* Bridge in structure for RGXCreateFreeList */
@@ -271,7 +271,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATEFREELIST_TAG
 
 
 /*******************************************
-            RGXDestroyFreeList          
+            RGXDestroyFreeList
  *******************************************/
 
 /* Bridge in structure for RGXDestroyFreeList */
@@ -288,7 +288,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYFREELIST_TAG
 
 
 /*******************************************
-            RGXAddBlockToFreeList          
+            RGXAddBlockToFreeList
  *******************************************/
 
 /* Bridge in structure for RGXAddBlockToFreeList */
@@ -306,7 +306,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXADDBLOCKTOFREELIST_TAG
 
 
 /*******************************************
-            RGXRemoveBlockFromFreeList          
+            RGXRemoveBlockFromFreeList
  *******************************************/
 
 /* Bridge in structure for RGXRemoveBlockFromFreeList */
@@ -323,7 +323,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXREMOVEBLOCKFROMFREELIST_TAG
 
 
 /*******************************************
-            RGXCreateRenderContext          
+            RGXCreateRenderContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateRenderContext */
@@ -346,7 +346,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATERENDERCONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyRenderContext          
+            RGXDestroyRenderContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyRenderContext */
@@ -363,7 +363,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRENDERCONTEXT_TAG
 
 
 /*******************************************
-            RGXKickTA3D          
+            RGXKickTA3D
  *******************************************/
 
 /* Bridge in structure for RGXKickTA3D */
@@ -438,7 +438,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXKICKTA3D_TAG
 
 
 /*******************************************
-            RGXSetRenderContextPriority          
+            RGXSetRenderContextPriority
  *******************************************/
 
 /* Bridge in structure for RGXSetRenderContextPriority */
@@ -456,7 +456,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXSETRENDERCONTEXTPRIORITY_TAG
 
 
 /*******************************************
-            RGXGetLastRenderContextResetReason          
+            RGXGetLastRenderContextResetReason
  *******************************************/
 
 /* Bridge in structure for RGXGetLastRenderContextResetReason */
@@ -475,7 +475,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXGETLASTRENDERCONTEXTRESETREASON_TAG
 
 
 /*******************************************
-            RGXGetPartialRenderCount          
+            RGXGetPartialRenderCount
  *******************************************/
 
 /* Bridge in structure for RGXGetPartialRenderCount */

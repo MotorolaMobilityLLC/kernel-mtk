@@ -41,7 +41,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 /* for the offsetof macro */
-#include <stddef.h> 
+#include <stddef.h>
 
 #include "pdump_km.h"
 #include "pvr_debug.h"
@@ -142,7 +142,7 @@ static
 void sleep_for_ever(void)
 {
 #if defined(__KLOCWORK__) // klocworks would report an infinite loop because of while(1).
-	PVR_ASSERT(0); 
+	PVR_ASSERT(0);
 #else
 	while(1)
 	{
@@ -427,7 +427,7 @@ static void _CheckFreelist(RGX_FREELIST *psFreeList,
 		        psFreeList, ui64ExpectedCheckSum, *pui64CalculatedCheckSum));
 		bFreelistBad = IMG_TRUE;
 	}
-    
+
     if (bFreelistBad)
     {
 		PVR_LOG(("_CheckFreelist: Sleeping for ever!"));
@@ -913,7 +913,7 @@ static PVRSRV_ERROR RGXReconstructFreeList(RGX_FREELIST *psFreeList)
 	if (psFreeList->bCheckFreelist)
 	{
 		IMG_UINT64  ui64CheckSum;
-		
+
 		_CheckFreelist(psFreeList, psFreeList->ui32CurrentFLPages, psFreeList->ui64FreelistChecksum, &ui64CheckSum);
 	}
 
@@ -929,7 +929,7 @@ void RGXProcessRequestFreelistsReconstruction(PVRSRV_RGXDEV_INFO *psDevInfo,
 	DLLIST_NODE       *psNode, *psNext;
 	IMG_UINT32        ui32Loop;
 	RGXFWIF_KCCB_CMD  sTACCBCmd;
-	
+
 	PVR_ASSERT(psDevInfo != NULL);
 	PVR_ASSERT(ui32FreelistsCount <= (MAX_HW_TA3DCONTEXTS * RGXFW_MAX_FREELISTS));
 
@@ -1068,7 +1068,7 @@ PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
 	RGX_RTDATA_CLEANUP_DATA *psTmpCleanup;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	/* Prepare cleanup struct */
 	psTmpCleanup = OSAllocZMem(sizeof(*psTmpCleanup));
 	if (psTmpCleanup == NULL)
@@ -1112,7 +1112,7 @@ PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
 							PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE,
 							"FwHWRTData",
 							ppsMemDesc);
-	if (eError != PVRSRV_OK) 
+	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "RGXCreateHWRTData: DevmemAllocate for RGX_FWIF_HWRTDATA failed"));
 		goto FWRTDataAllocateError;
@@ -1159,14 +1159,14 @@ PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
 	{
 		psTmpCleanup->apsFreeLists[ui32Loop] = apsFreeLists[ui32Loop];
 		psTmpCleanup->apsFreeLists[ui32Loop]->ui32RefCount++;
-		psHWRTData->apsFreeLists[ui32Loop].ui32Addr = psTmpCleanup->apsFreeLists[ui32Loop]->sFreeListFWDevVAddr.ui32Addr;		
+		psHWRTData->apsFreeLists[ui32Loop].ui32Addr = psTmpCleanup->apsFreeLists[ui32Loop]->sFreeListFWDevVAddr.ui32Addr;
 		/* invalid initial snapshot value, the snapshot is always taken during first kick
 		 * and hence the value get replaced during the first kick anyway. So it's safe to set it 0.
 		*/
 		psHWRTData->aui32FreeListHWRSnapshot[ui32Loop] = 0;
 	}
 	OSLockRelease(psDevInfo->hLockFreeList);
-	
+
 	PDUMPCOMMENT("Allocate RGXFW RTA control");
 	eError = DevmemFwAllocate(psDevInfo,
 										sizeof(RGXFWIF_RTA_CTL),
@@ -1189,7 +1189,7 @@ PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
 	RGXSetFirmwareAddress(&psHWRTData->psRTACtl,
 								   *ppsRTACtlMemDesc,
 								   0, RFW_FWADDR_FLAG_NONE);
-	
+
 	eError = DevmemAcquireCpuVirtAddr(*ppsRTACtlMemDesc, (void **)&psRTACtl);
 	PVR_LOGG_IF_ERROR(eError, "Devmem AcquireCpuVirtAddr", FWRTACpuMapError);
 	psRTACtl->ui32RenderTargetIndex = 0;
@@ -1252,7 +1252,7 @@ PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
 		psRTACtl->sNumRenders.ui32Addr = 0;
 		psRTACtl->ui16MaxRTs = 1;
 	}
-		
+
 	PDUMPCOMMENT("Dump HWRTData 0x%08X", *puiHWRTData);
 	DevmemPDumpLoadMem(*ppsMemDesc, 0, sizeof(*psHWRTData), PDUMP_FLAGS_CONTINUOUS);
 	PDUMPCOMMENT("Dump RTACtl");
@@ -1332,10 +1332,10 @@ PVRSRV_ERROR RGXDestroyHWRTData(RGX_RTDATA_CLEANUP_DATA *psCleanupData)
 		RGXUnsetFirmwareAddress(psCleanupData->psRTACtlMemDesc);
 		DevmemFwFree(psDevInfo, psCleanupData->psRTACtlMemDesc);
 	}
-	
+
 	RGXUnsetFirmwareAddress(psCleanupData->psFWHWRTDataMemDesc);
 	DevmemFwFree(psDevInfo, psCleanupData->psFWHWRTDataMemDesc);
-	
+
 	if(psCleanupData->psRTArrayMemDesc)
 	{
 		RGXUnsetFirmwareAddress(psCleanupData->psRTArrayMemDesc);
@@ -1366,7 +1366,7 @@ PVRSRV_ERROR RGXDestroyHWRTData(RGX_RTDATA_CLEANUP_DATA *psCleanupData)
 
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
-                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
+                               PVRSRV_DEVICE_NODE	*psDeviceNode,
 							   IMG_UINT32			ui32MaxFLPages,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,
@@ -1422,7 +1422,7 @@ PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
 							PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE,
 							"FwFreeList",
 							&psFWFreelistMemDesc);
-	if (eError != PVRSRV_OK) 
+	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "RGXCreateFreeList: DevmemAllocate for RGXFWIF_FREELIST failed"));
 		goto FWFreeListAlloc;
@@ -1582,12 +1582,12 @@ PVRSRV_ERROR RGXDestroyFreeList(RGX_FREELIST *psFreeList)
 		RGXFWIF_FREELIST  *psFWFreeList;
 		IMG_UINT64        ui32CurrentStackTop;
 		IMG_UINT64        ui64CheckSum;
-		
+
 		/* Get the current stack pointer for this free list */
 		DevmemAcquireCpuVirtAddr(psFreeList->psFWFreelistMemDesc, (void **)&psFWFreeList);
 		ui32CurrentStackTop = psFWFreeList->ui32CurrentStackTop;
 		DevmemReleaseCpuVirtAddr(psFreeList->psFWFreelistMemDesc);
-		
+
 		if (ui32CurrentStackTop == psFreeList->ui32CurrentFLPages-1)
 		{
 			/* Do consistency tests (as the list is fully populated) */
@@ -1697,7 +1697,7 @@ PVRSRV_ERROR RGXRemoveBlockFromFreeListKM(RGX_FREELIST *psFreeList)
 */
 IMG_EXPORT
 PVRSRV_ERROR RGXCreateRenderTarget(CONNECTION_DATA      *psConnection,
-                                   PVRSRV_DEVICE_NODE	*psDeviceNode, 
+                                   PVRSRV_DEVICE_NODE	*psDeviceNode,
 								   IMG_DEV_VIRTADDR		psVHeapTableDevVAddr,
 								   RGX_RT_CLEANUP_DATA 	**ppsCleanupData,
 								   IMG_UINT32			*sRenderTargetFWDevVAddr)
@@ -1709,7 +1709,7 @@ PVRSRV_ERROR RGXCreateRenderTarget(CONNECTION_DATA      *psConnection,
 	RGX_RT_CLEANUP_DATA		*psCleanupData;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	psCleanupData = OSAllocZMem(sizeof(*psCleanupData));
 	if (psCleanupData == NULL)
 	{
@@ -2377,7 +2377,7 @@ PVRSRV_ERROR _CreateTAContext(CONNECTION_DATA *psConnection,
 				eError));
 		goto fail_tacommoncontext;
 	}
-	
+
 	/*
 	 * Dump the FW 3D context suspend state buffer
 	 */
@@ -2529,7 +2529,7 @@ PVRSRV_ERROR PVRSRVRGXCreateRenderContextKM(CONNECTION_DATA				*psConnection,
 		goto fail_syncalloc;
 	}
 
-	/* 
+	/*
 	 * Create the FW framework buffer
 	 */
 	eError = PVRSRVRGXFrameworkCreateKM(psDeviceNode,
@@ -2716,7 +2716,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyRenderContextKM(RGX_SERVER_RENDER_CONTEXT *psRender
 
 		/* Free the framework buffer */
 		DevmemFwFree(psDevInfo, psRenderContext->psFWFrameworkMemDesc);
-	
+
 		/* Free the firmware render context */
 		DevmemFwFree(psDevInfo, psRenderContext->psFWRenderContextMemDesc);
 
@@ -2746,7 +2746,7 @@ e0:
 }
 
 
-/* TODO !!! this was local on the stack, and we managed to blow the stack for the kernel. 
+/* TODO !!! this was local on the stack, and we managed to blow the stack for the kernel.
  * THIS - 46 argument function needs to be sorted out.
  */
 /* 1 command for the TA */
@@ -3061,7 +3061,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	}
 
 #if defined(SUPPORT_NATIVE_FENCE_SYNC)
-	/* 
+	/*
 	 * The hardware requires a PR to be submitted if there is a TA (otherwise
 	 * it can wedge if we run out of PB space with no PR to run)
 	 *
@@ -3543,7 +3543,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 					ui32FWCtx, ui32JobId, RGX_HWPERF_KICK_TYPE_TA3D);
 #endif
 	}
-	
+
 	if (ui323DCmdCount)
 	{
 		RGXFWIF_KCCB_CMD s3DKCCBCmd;
@@ -3624,7 +3624,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 			/* If we fail here, we cannot rollback the syncs as the hw already
 			 * has references to resources they may be protecting in the kick
 			 * so fallthrough */
-	
+
 			eError = PVRSRV_ERROR_INVALID_PARAMS;
 			goto fail_3dacquirecmd;
 		}
@@ -3696,7 +3696,7 @@ PVRSRV_ERROR PVRSRVRGXSetRenderContextPriorityKM(CONNECTION_DATA *psConnection,
 	PVRSRV_ERROR eError;
 
 	PVR_UNREFERENCED_PARAMETER(psDeviceNode);
-	
+
 	if (psRenderContext->sTAData.ui32Priority != ui32Priority)
 	{
 		eError = ContextSetPriority(psRenderContext->sTAData.psServerCommonContext,
@@ -3747,7 +3747,7 @@ PVRSRV_ERROR PVRSRVRGXGetLastRenderContextResetReasonKM(RGX_SERVER_RENDER_CONTEX
 	RGX_SERVER_COMMON_CONTEXT     *psCurrentServerTACommonCtx, *psCurrentServer3DCommonCtx;
 	RGXFWIF_CONTEXT_RESET_REASON  eLastTAResetReason, eLast3DResetReason;
 	IMG_UINT32                    ui32LastTAResetJobRef, ui32Last3DResetJobRef;
-	
+
 	PVR_ASSERT(psRenderContext != NULL);
 	PVR_ASSERT(peLastResetReason != NULL);
 	PVR_ASSERT(pui32LastResetJobRef != NULL);
@@ -3756,7 +3756,7 @@ PVRSRV_ERROR PVRSRVRGXGetLastRenderContextResetReasonKM(RGX_SERVER_RENDER_CONTEX
 	psCurrentServerTACommonCtx = psRenderCtxTAData->psServerCommonContext;
 	psRenderCtx3DData          = &(psRenderContext->s3DData);
 	psCurrentServer3DCommonCtx = psRenderCtx3DData->psServerCommonContext;
-	
+
 	/* Get the last reset reasons from both the TA and 3D so they are reset... */
 	eLastTAResetReason = FWCommonContextGetLastResetReason(psCurrentServerTACommonCtx, &ui32LastTAResetJobRef);
 	eLast3DResetReason = FWCommonContextGetLastResetReason(psCurrentServer3DCommonCtx, &ui32Last3DResetJobRef);

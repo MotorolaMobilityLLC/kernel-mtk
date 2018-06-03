@@ -495,12 +495,12 @@ typedef struct _PMR_IMPL_FUNCTAB_ {
     PVRSRV_ERROR (*pfnMapMemoryObject)(PMR_IMPL_PRIVDATA pvPriv,
     											IMG_HANDLE *phMemObj);
     PVRSRV_ERROR (*pfnUnmapMemoryObject)(PMR_IMPL_PRIVDATA pvPriv);
-	
+
 #if defined(USING_HYPERVISOR)
     IMG_HANDLE (*pfnGetPmr)(PMR_IMPL_PRIVDATA pvPriv, size_t ulOffset);
 #endif
 #endif
-    
+
     PFN_READ_BYTES_FN pfnReadBytes;
     PFN_WRITE_BYTES_FN pfnWriteBytes;
 

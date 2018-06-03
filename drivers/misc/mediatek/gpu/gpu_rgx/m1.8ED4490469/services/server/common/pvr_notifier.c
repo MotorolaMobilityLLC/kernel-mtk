@@ -99,7 +99,7 @@ PVRSRVCmdCompleteDeinit(void)
 			PVRSRV_CMDCOMP_NOTIFY *psNotify;
 
 			dllist_remove_node(psNode);
-			
+
 			psNotify = IMG_CONTAINER_OF(psNode, PVRSRV_CMDCOMP_NOTIFY, sListNode);
 			OSFreeMem(psNotify);
 
@@ -133,7 +133,7 @@ PVRSRVRegisterCmdCompleteNotify(IMG_HANDLE *phNotify,
 		PVR_DPF((PVR_DBG_ERROR,
 				 "%s: Not enough memory to allocate CmdCompleteNotify function",
 				 __func__));
-		return PVRSRV_ERROR_OUT_OF_MEMORY;		
+		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
 
 	/* Set-up the notify data */
@@ -443,7 +443,7 @@ PVRSRVDebugRequest(PVRSRV_DEVICE_NODE *psDevNode,
 	PVR_DUMPDEBUG_LOG("DDK info: %s (%s) %s",
 					   PVRVERSION_STRING, PVR_BUILD_TYPE, PVR_BUILD_DIR);
 	PVR_DUMPDEBUG_LOG("Time now: %015llu", OSClockus64());
-	
+
 	if (!pfnDumpDebugPrintf)
 	{
 		MTKPP_LOGTIME(MTKPP_ID_FW, "Dump Debug Data");

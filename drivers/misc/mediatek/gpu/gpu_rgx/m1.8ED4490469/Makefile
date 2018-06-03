@@ -14,9 +14,9 @@ $(info *RGX_TOP = $(RGX_TOP))
 $(info CONFIG_SW_SYNC_USER = $(CONFIG_SW_SYNC_USER))
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/ 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/ 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/
 
 
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
@@ -162,16 +162,14 @@ pvrsrvkm-y += \
  generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
  services/server/common/devicemem_history_server.o
 
-ifeq ($(MTK_PLATFORM),mt6799)
+#ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/server/devices/rgx/rgxsignals.o \
  generated/rgxsignals_bridge/server_rgxsignals_bridge.o
-endif
+#endif
 
 ifeq ($(MTK_PLATFORM),mt8167)
 pvrsrvkm-y += \
- generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
- services/server/devices/rgx/rgxsignals.o \
  services/server/devices/rgx/rgxmipsmmuinit.o
 endif
 

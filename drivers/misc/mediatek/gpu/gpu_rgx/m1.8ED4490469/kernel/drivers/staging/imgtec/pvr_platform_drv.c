@@ -228,7 +228,7 @@ static int __init pvr_init(void)
 	(LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))
 	pvr_drm_platform_driver.set_busid = drm_platform_set_busid;
 #endif
-
+	MTKSetICVerion();
 	err = PVRSRVCommonDriverInit();
 	if (err)
 		return err;
@@ -237,10 +237,7 @@ static int __init pvr_init(void)
 	if (err)
 		return err;
 	err = pvr_devices_register();
-  
-#if defined(CONFIG_MACH_MT8167)
 	MTKCommonDisablePowerDomain();
-#endif
 
 	return err;
 }

@@ -73,7 +73,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            Connect          
+            Connect
  *******************************************/
 
 /* Bridge in structure for Connect */
@@ -97,7 +97,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CONNECT_TAG
 
 
 /*******************************************
-            Disconnect          
+            Disconnect
  *******************************************/
 
 /* Bridge in structure for Disconnect */
@@ -114,7 +114,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DISCONNECT_TAG
 
 
 /*******************************************
-            InitSrvDisconnect          
+            InitSrvDisconnect
  *******************************************/
 
 /* Bridge in structure for InitSrvDisconnect */
@@ -132,7 +132,7 @@ typedef struct PVRSRV_BRIDGE_OUT_INITSRVDISCONNECT_TAG
 
 
 /*******************************************
-            AcquireGlobalEventObject          
+            AcquireGlobalEventObject
  *******************************************/
 
 /* Bridge in structure for AcquireGlobalEventObject */
@@ -150,7 +150,7 @@ typedef struct PVRSRV_BRIDGE_OUT_ACQUIREGLOBALEVENTOBJECT_TAG
 
 
 /*******************************************
-            ReleaseGlobalEventObject          
+            ReleaseGlobalEventObject
  *******************************************/
 
 /* Bridge in structure for ReleaseGlobalEventObject */
@@ -167,7 +167,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RELEASEGLOBALEVENTOBJECT_TAG
 
 
 /*******************************************
-            EventObjectOpen          
+            EventObjectOpen
  *******************************************/
 
 /* Bridge in structure for EventObjectOpen */
@@ -185,7 +185,7 @@ typedef struct PVRSRV_BRIDGE_OUT_EVENTOBJECTOPEN_TAG
 
 
 /*******************************************
-            EventObjectWait          
+            EventObjectWait
  *******************************************/
 
 /* Bridge in structure for EventObjectWait */
@@ -202,7 +202,7 @@ typedef struct PVRSRV_BRIDGE_OUT_EVENTOBJECTWAIT_TAG
 
 
 /*******************************************
-            EventObjectClose          
+            EventObjectClose
  *******************************************/
 
 /* Bridge in structure for EventObjectClose */
@@ -219,7 +219,7 @@ typedef struct PVRSRV_BRIDGE_OUT_EVENTOBJECTCLOSE_TAG
 
 
 /*******************************************
-            DumpDebugInfo          
+            DumpDebugInfo
  *******************************************/
 
 /* Bridge in structure for DumpDebugInfo */
@@ -236,7 +236,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DUMPDEBUGINFO_TAG
 
 
 /*******************************************
-            GetDevClockSpeed          
+            GetDevClockSpeed
  *******************************************/
 
 /* Bridge in structure for GetDevClockSpeed */
@@ -254,7 +254,7 @@ typedef struct PVRSRV_BRIDGE_OUT_GETDEVCLOCKSPEED_TAG
 
 
 /*******************************************
-            HWOpTimeout          
+            HWOpTimeout
  *******************************************/
 
 /* Bridge in structure for HWOpTimeout */
@@ -271,7 +271,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HWOPTIMEOUT_TAG
 
 
 /*******************************************
-            AlignmentCheck          
+            AlignmentCheck
  *******************************************/
 
 /* Bridge in structure for AlignmentCheck */
@@ -289,7 +289,7 @@ typedef struct PVRSRV_BRIDGE_OUT_ALIGNMENTCHECK_TAG
 
 
 /*******************************************
-            GetDeviceStatus          
+            GetDeviceStatus
  *******************************************/
 
 /* Bridge in structure for GetDeviceStatus */
@@ -307,7 +307,7 @@ typedef struct PVRSRV_BRIDGE_OUT_GETDEVICESTATUS_TAG
 
 
 /*******************************************
-            EventObjectWaitTimeout          
+            EventObjectWaitTimeout
  *******************************************/
 
 /* Bridge in structure for EventObjectWaitTimeout */
@@ -322,6 +322,5 @@ typedef struct PVRSRV_BRIDGE_OUT_EVENTOBJECTWAITTIMEOUT_TAG
 {
 	PVRSRV_ERROR eError;
 } __attribute__((packed)) PVRSRV_BRIDGE_OUT_EVENTOBJECTWAITTIMEOUT;
-
 
 #endif /* COMMON_SRVCORE_BRIDGE_H */

@@ -69,7 +69,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCreateRPMFreeList          
+            RGXCreateRPMFreeList
  *******************************************/
 
 /* Bridge in structure for RGXCreateRPMFreeList */
@@ -92,7 +92,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATERPMFREELIST_TAG
 
 
 /*******************************************
-            RGXDestroyRPMFreeList          
+            RGXDestroyRPMFreeList
  *******************************************/
 
 /* Bridge in structure for RGXDestroyRPMFreeList */
@@ -109,7 +109,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRPMFREELIST_TAG
 
 
 /*******************************************
-            RGXCreateRPMContext          
+            RGXCreateRPMContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateRPMContext */
@@ -135,7 +135,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATERPMCONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyRPMContext          
+            RGXDestroyRPMContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyRPMContext */
@@ -152,7 +152,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRPMCONTEXT_TAG
 
 
 /*******************************************
-            RGXKickRS          
+            RGXKickRS
  *******************************************/
 
 /* Bridge in structure for RGXKickRS */
@@ -188,7 +188,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXKICKRS_TAG
 
 
 /*******************************************
-            RGXKickVRDM          
+            RGXKickVRDM
  *******************************************/
 
 /* Bridge in structure for RGXKickVRDM */
@@ -221,7 +221,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXKICKVRDM_TAG
 
 
 /*******************************************
-            RGXCreateRayContext          
+            RGXCreateRayContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateRayContext */
@@ -244,7 +244,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATERAYCONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyRayContext          
+            RGXDestroyRayContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyRayContext */
@@ -261,7 +261,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRAYCONTEXT_TAG
 
 
 /*******************************************
-            RGXSetRayContextPriority          
+            RGXSetRayContextPriority
  *******************************************/
 
 /* Bridge in structure for RGXSetRayContextPriority */

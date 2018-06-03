@@ -62,7 +62,7 @@ typedef struct _RGXMEM_PROCESS_INFO_
 } RGXMEM_PROCESS_INFO;
 
 IMG_DEV_PHYADDR GetPC(MMU_CONTEXT * psContext);
-	
+
 /* FIXME: SyncPrim should be stored on the memory context */
 void RGXMMUSyncPrimAlloc(PVRSRV_DEVICE_NODE *psDeviceNode);
 void RGXMMUSyncPrimFree(void);

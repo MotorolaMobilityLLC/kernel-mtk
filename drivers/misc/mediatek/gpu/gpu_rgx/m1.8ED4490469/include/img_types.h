@@ -177,7 +177,7 @@ typedef int             IMG_OS_CONNECTION;
  * and a memory block is only mapped by the MMU once.
  *
  * Different devices could have offset views of the physical address space.
- * 
+ *
  */
 
 

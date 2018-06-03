@@ -59,7 +59,7 @@ typedef IMG_UINT32 PDUMP_FLAGS_T;
 
 #define PDUMP_FLAGS_DEBUG			0x00010000U  /*<! For internal debugging use */
 
-#define PDUMP_FLAGS_NOHW			0x00000001U  /* For internal use: Skip sending instructions to the hardware */ 
+#define PDUMP_FLAGS_NOHW			0x00000001U  /* For internal use: Skip sending instructions to the hardware */
 
 #define PDUMP_FILEOFFSET_FMTSPEC "0x%08X"
 typedef IMG_UINT32 PDUMP_FILEOFFSET_T;

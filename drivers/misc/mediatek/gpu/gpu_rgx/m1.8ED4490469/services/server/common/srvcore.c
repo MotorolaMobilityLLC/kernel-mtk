@@ -161,7 +161,7 @@ void BridgeDispatchTableStartOffsetsInit(void)
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_HTBUFFER][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_HTBUFFER_DISPATCH_FIRST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_HTBUFFER][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_HTBUFFER_DISPATCH_LAST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_DCPLAT][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_DCPLAT_DISPATCH_FIRST;
-	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_DCPLAT][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_DCPLAT_DISPATCH_LAST;	
+	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_DCPLAT][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_DCPLAT_DISPATCH_LAST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_MMEXTMEM][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_MMEXTMEM_DISPATCH_FIRST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_MMEXTMEM][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_MMEXTMEM_DISPATCH_LAST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_SYNCTRACKING][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_SYNCTRACKING_DISPATCH_FIRST;
@@ -194,7 +194,7 @@ void BridgeDispatchTableStartOffsetsInit(void)
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXKICKSYNC][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_RGXKICKSYNC_DISPATCH_LAST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXSIGNALS][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_RGXSIGNALS_DISPATCH_FIRST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXSIGNALS][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_RGXSIGNALS_DISPATCH_LAST;
-	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXTQ2][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_RGXTQ2_DISPATCH_FIRST;	
+	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXTQ2][PVR_DISPATCH_OFFSET_FIRST_FUNC] = PVRSRV_BRIDGE_RGXTQ2_DISPATCH_FIRST;
 	g_BridgeDispatchTableStartOffsets[PVRSRV_BRIDGE_RGXTQ2][PVR_DISPATCH_OFFSET_LAST_FUNC] = PVRSRV_BRIDGE_RGXTQ2_DISPATCH_LAST;
 #endif
 }
@@ -268,7 +268,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	/* Clear the flags */
 	*pui32CapabilityFlags = 0;
 	psDevInfo = (PVRSRV_RGXDEV_INFO *) psDeviceNode->pvDevice;
-	
+
 	psSRVData = PVRSRVGetPVRSRVData();
 
 	psConnection->ui32ClientFlags = ui32Flags;
@@ -399,8 +399,8 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	else
 	{
 		/*
-		 * This check has to be done here (before the client against kernel check) 
-		 * while the client options have not yet been modified 
+		 * This check has to be done here (before the client against kernel check)
+		 * while the client options have not yet been modified
 		 */
 		eError = RGXClientConnectCompatCheck_ClientAgainstFW(psDeviceNode, ui32ClientBuildOptions);
 		if(eError != PVRSRV_OK)
@@ -539,7 +539,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 				__FUNCTION__,
 				PVRVERSION_MAJ, PVRVERSION_MIN, PVRVERSION_MAJ, PVRVERSION_MIN));
 	}
-	
+
 	/*
 	 * Validate DDK build
 	 */
@@ -661,7 +661,7 @@ PVRSRVDumpDebugInfoKM(CONNECTION_DATA *psConnection,
 	PVR_LOG(("User requested PVR debug info"));
 
 	PVRSRVDebugRequest(psDeviceNode, ui32VerbLevel, NULL, NULL);
-									   
+
 	return PVRSRV_OK;
 }
 
@@ -1223,7 +1223,7 @@ PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
 	}
 #if defined(DEBUG_BRIDGE_KM)
 	PVR_DPF((PVR_DBG_MESSAGE, "%s: Dispatch table entry=%d, (bridge module %d, function %d)",
-			__FUNCTION__, 
+			__FUNCTION__,
 			ui32DispatchTableEntry, psBridgePackageKM->ui32BridgeID, psBridgePackageKM->ui32FunctionID));
 	PVR_DPF((PVR_DBG_MESSAGE, "%s: %s",
 			 __FUNCTION__,
@@ -1275,7 +1275,7 @@ PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
 		err = PVRSRV_ERROR_BRIDGE_ERANGE;
 		goto unlock_and_return_error;
 	}
-	
+
 #if !defined(INTEGRITY_OS)
 	if (psBridgePackageKM->ui32OutBufferSize > ui32BridgeOutBufferSize)
 	{
@@ -1312,7 +1312,7 @@ PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
 
 	pfBridgeHandler =
 		(BridgeWrapperFunction)g_BridgeDispatchTable[ui32DispatchTableEntry].pfFunction;
-	
+
 	if (pfBridgeHandler == NULL)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: ui32DispatchTableEntry = %d is not a registered function!",
@@ -1320,7 +1320,7 @@ PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
 		err = PVRSRV_ERROR_BRIDGE_EFAULT;
 		goto unlock_and_return_error;
 	}
-	
+
 	/* pfBridgeHandler functions do not fail and return an IMG_INT.
 	 * The value returned is either 0 or PVRSRV_OK (0).
 	 * In the event this changes an error may be +ve or -ve,
@@ -1337,7 +1337,7 @@ PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
 		goto unlock_and_return_error;
 	}
 
-	/* 
+	/*
 	   This should always be true as a.t.m. all bridge calls have to
    	   return an error message, but this could change so we do this
    	   check to be safe.
@@ -1423,3 +1423,4 @@ return_error:
 	}
 	return err;
 }
+

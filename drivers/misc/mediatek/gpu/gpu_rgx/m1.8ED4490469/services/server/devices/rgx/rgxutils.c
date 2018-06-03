@@ -228,7 +228,7 @@ PVRSRV_ERROR RGXRunScript(PVRSRV_RGXDEV_INFO *psDevInfo,
 					}
 					else
 					{
-						PVR_DPF((PVR_DBG_WARNING, 
+						PVR_DPF((PVR_DBG_WARNING,
 						"RGXRunScript: Skipping Poll for Reg (0x%x) because the condition is not met (Reg 0x%x ANDed with mask 0x%x equal to 0x%x but value 0x%x found instead).",
 						psComm->sCondPollHWReg.ui32Offset,
 						psComm->sCondPollHWReg.ui32CondOffset,

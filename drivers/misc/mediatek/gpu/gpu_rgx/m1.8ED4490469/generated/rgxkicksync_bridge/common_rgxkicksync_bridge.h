@@ -62,7 +62,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCreateKickSyncContext          
+            RGXCreateKickSyncContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateKickSyncContext */
@@ -80,7 +80,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATEKICKSYNCCONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyKickSyncContext          
+            RGXDestroyKickSyncContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyKickSyncContext */
@@ -97,7 +97,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYKICKSYNCCONTEXT_TAG
 
 
 /*******************************************
-            RGXKickSync          
+            RGXKickSync
  *******************************************/
 
 /* Bridge in structure for RGXKickSync */

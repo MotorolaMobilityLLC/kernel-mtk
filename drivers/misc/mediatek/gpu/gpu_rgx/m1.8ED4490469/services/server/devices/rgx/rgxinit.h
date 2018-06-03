@@ -101,7 +101,7 @@ PVRSRV_ERROR PVRSRVRGXInitMipsWrapperRegistersKM(PVRSRV_DEVICE_NODE *psDeviceNod
 												 IMG_UINT32 ui32WrapperConfigOffset,
 												 IMG_UINT32 ui32BootCodeOffset);
 
-IMG_EXPORT 
+IMG_EXPORT
 PVRSRV_ERROR IMG_CALLCONV PVRSRVRGXInitGuestKM(CONNECTION_DATA			*psConnection,
 												PVRSRV_DEVICE_NODE		*psDeviceNode,
 												IMG_BOOL				bEnableSignatureChecks,

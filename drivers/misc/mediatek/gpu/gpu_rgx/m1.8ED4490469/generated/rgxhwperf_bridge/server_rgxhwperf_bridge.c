@@ -69,7 +69,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeRGXCtrlHWPerf(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_RGXCTRLHWPERF *psRGXCtrlHWPerfIN,
@@ -111,7 +111,7 @@ PVRSRVBridgeRGXConfigEnableHWPerfCounters(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXConfigEnableHWPerfCountersIN->ui32ArrayLen * sizeof(RGX_HWPERF_CONFIG_CNTBLK)) +
 			0;
 
@@ -183,7 +183,7 @@ PVRSRVBridgeRGXCtrlHWPerfCounters(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXCtrlHWPerfCountersIN->ui32ArrayLen * sizeof(IMG_UINT16)) +
 			0;
 
@@ -256,7 +256,7 @@ PVRSRVBridgeRGXConfigCustomCounters(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXConfigCustomCountersIN->ui16NumCustomCounters * sizeof(IMG_UINT32)) +
 			0;
 
@@ -320,8 +320,8 @@ RGXConfigCustomCounters_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;
