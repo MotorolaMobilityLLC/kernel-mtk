@@ -56,6 +56,8 @@
 
 #define  CCMNI_TX_PRINT_F	(0x1 << 0)
 
+#define MDT_TAG_PATTERN         0x46464646
+
 typedef struct ccmni_ctl_block ccmni_ctl_block_t;
 
 struct ccmni_ch {
@@ -123,6 +125,16 @@ struct ccmni_dev_ops {
 	int (*is_ack_skb)(int md_id, struct sk_buff *skb);
 };
 
+typedef struct md_drt_tag {
+	u8  in_netif_id;
+	u8  out_netif_id;
+	u16 port;
+} md_drt_tag_t;
+
+typedef struct md_tag_packet {
+	u32 guard_pattern; /* 0x46464646 */
+	md_drt_tag_t info;
+} md_tag_packet_t;
 
 typedef enum {
 	CCMNI_DRV_V0   = 0,			/* for eemcs/eccci */
