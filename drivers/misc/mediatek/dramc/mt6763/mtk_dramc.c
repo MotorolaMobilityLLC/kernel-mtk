@@ -1124,6 +1124,10 @@ unsigned int get_dram_data_rate(void)
 	if (DRAM_TYPE == TYPE_LPDDR3) {
 		if (u4DataRate == 1859)
 			u4DataRate = 1866;
+		else if (u4DataRate == 1599)
+			u4DataRate = 1600;
+		else if (u4DataRate == 1196)
+			u4DataRate = 1200;
 		else
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
