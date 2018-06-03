@@ -60,7 +60,7 @@ MTK_PROC_PRINT_DATA *MTKPP_GetData(MTKPP_ID id);
 void MTKPP_LOGTIME(MTKPP_ID id, const char *);
 
 /* trigger AEE to generate a DB */
-void MTKPP_TriggerAEE(void);
+void MTKPP_TriggerAEE(int bug_on);
 
 #else
 
