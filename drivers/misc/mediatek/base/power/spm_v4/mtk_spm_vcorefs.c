@@ -35,6 +35,7 @@
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_eem.h>
 #include <ext_wd_drv.h>
+#include "mtk_devinfo.h"
 
 #ifdef CONFIG_MTK_SMI_EXT
 #include <mmdvfs_mgr.h>
@@ -56,6 +57,7 @@ void __iomem *dvfsrc_base;
 
 u32 plat_channel_num;
 u32 plat_chip_ver;
+u32 dram_issue;
 
 #define VMODEM_VCORE_COBUCK 1
 
@@ -237,6 +239,7 @@ struct spm_lp_scen __spm_vcorefs = {
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
+		p += sprintf(p, "dram_issue: 0x%x\n", dram_issue);
 		/* p += sprintf(p, "(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
@@ -373,7 +376,7 @@ static void spm_dvfsfw_init(int curr_opp)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, 0);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, dram_issue);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
@@ -682,9 +685,9 @@ void spm_go_to_vcorefs(int spm_flags)
 	spm_vcorefs_warn("[%s] done\n", __func__);
 }
 
-#if 0
 static void plat_info_init(void)
 {
+#if 0
 	/* HW chip version */
 	plat_chip_ver = mt_get_chip_sw_ver();
 
@@ -697,8 +700,12 @@ static void plat_info_init(void)
 
 	spm_vcorefs_warn("chip_ver: %d, lcd_resolution: %d channel_num: %d\n",
 						plat_chip_ver, plat_lcd_resolution, plat_channel_num);
-}
 #endif
+	dram_issue = get_devinfo_with_index(138);
+	dram_issue = (dram_issue & (1U << 8));
+
+	spm_vcorefs_warn("dram_issue: 0x%x\n", dram_issue);
+}
 
 void spm_vcorefs_init(void)
 {
@@ -706,7 +713,7 @@ void spm_vcorefs_init(void)
 
 	dvfsrc_register_init();
 	vcorefs_module_init();
-	/* plat_info_init(); */
+	plat_info_init();
 
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();
