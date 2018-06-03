@@ -827,9 +827,10 @@ int ite66121_pmic_power_on(void)
 	int ret;
 
 	pinctrl_select_state(hdmi_pinctrl, pins_hdmi_func);
-	ret = regulator_enable(hdmi_vcn33);
-	ret = regulator_enable(hdmi_vcn18);
+
 	ret = regulator_enable(hdmi_vrf12);
+	ret = regulator_enable(hdmi_vcn18);
+	ret = regulator_enable(hdmi_vcn33);
 
 	if (ret != 0)
 		IT66121_LOG("hdmi regolator error\n");
