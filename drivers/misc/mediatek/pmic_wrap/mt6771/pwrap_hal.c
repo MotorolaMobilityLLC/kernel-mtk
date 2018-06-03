@@ -228,7 +228,7 @@ static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long lon
 	if (cur_time < start_time_ns) {
 		PWRAPLOG("@@@@Timer overflow! start%lld cur timer%lld\n", start_time_ns, cur_time);
 		start_time_ns = cur_time;
-		timeout_time_ns = 2000 * 1000;	/* 2000us */
+		timeout_time_ns = TIMEOUT_WAIT_IDLE * 1000;	/* 10000us */
 		PWRAPLOG("@@@@reset timer! start%lld setting%lld\n", start_time_ns,
 			 timeout_time_ns);
 	}
@@ -240,6 +240,7 @@ static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long lon
 		/* timeout */
 		PWRAPLOG("@@@@Timeout: elapse time%lld,start%lld setting timer%lld\n",
 			 elapse_time, start_time_ns, timeout_time_ns);
+		pwrap_dump_ap_register();
 		aee_kernel_warning("WRAPPER:ERR DUMP", "WRAP");
 		return 1;
 	}

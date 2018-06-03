@@ -129,10 +129,10 @@ extern signed int pwrap_init(void);
 	#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_KERNEL)
 	#ifdef PMIC_WRAP_DEBUG
-		#define PWRAPDEB(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-		#define PWRAPLOG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
-		#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
-		#define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+		#define PWRAPDEB(fmt, arg...)   pr_notice(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
+		#define PWRAPLOG(fmt, arg...)   pr_notice(PWRAPTAG fmt, ##arg)
+		#define PWRAPFUC(fmt, arg...)   pr_notice(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
+		#define PWRAPREG(fmt, arg...)   pr_notice(PWRAPTAG fmt, ##arg)
 	#else
 		#define PWRAPDEB(fmt, arg...)
 		#define PWRAPLOG(fmt, arg...)
@@ -230,9 +230,9 @@ extern signed int pwrap_init(void);
 #define WACS_SYNC_BUSY              (0x00)
 
 /**** timeout time, unit :us ***********/
-#define TIMEOUT_RESET           (0xFF)
-#define TIMEOUT_READ            (0xFF)
-#define TIMEOUT_WAIT_IDLE       (0x7D0) /* 2000us */
+#define TIMEOUT_RESET           (0x2710) /* 10000us */
+#define TIMEOUT_READ            (0x2710) /* 10000us */
+#define TIMEOUT_WAIT_IDLE       (0x2710) /* 10000us */
 
 /*-----macro for manual commnd ---------------------------------*/
 #define OP_WR    (0x1)
