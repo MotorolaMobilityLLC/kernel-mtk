@@ -1576,19 +1576,6 @@ static bool SetIrqEnable(unsigned int irqmode, bool bEnable)
 		    (bEnable << irqOnReg->sbit),
 		    (irqOnReg->mask << irqOnReg->sbit));
 
-	/* set irq signal target */
-	irqEnReg = &GetIRQCtrlReg(irqmode)->en;
-	for (purposeIndex = 0; purposeIndex < Soc_Aud_IRQ_PURPOSE_NUM; purposeIndex++) {
-		irqPurposeEnReg = GetIRQPurposeReg(purposeIndex);
-		enSet = bEnable &&
-			(GetIRQCtrlReg(irqmode)->irqPurpose == purposeIndex);
-		enShift = irqPurposeEnReg->sbit + irqEnReg->sbit;
-		if (irqPurposeEnReg->reg != AFE_REG_UNDEFINED)
-			Afe_Set_Reg(irqPurposeEnReg->reg,
-					(enSet << enShift),
-					(irqEnReg->mask << enShift));
-	}
-
 	/* clear irq status */
 	if (bEnable == false) {
 		irqClrReg = &GetIRQCtrlReg(irqmode)->clr;
@@ -1603,6 +1590,19 @@ static bool SetIrqEnable(unsigned int irqmode, bool bEnable)
 		Afe_Set_Reg(irqMissClrReg->reg,
 			    (1 << irqMissClrReg->sbit),
 			    (irqMissClrReg->mask << irqMissClrReg->sbit));
+	}
+
+	/* set irq signal target */
+	irqEnReg = &GetIRQCtrlReg(irqmode)->en;
+	for (purposeIndex = 0; purposeIndex < Soc_Aud_IRQ_PURPOSE_NUM; purposeIndex++) {
+		irqPurposeEnReg = GetIRQPurposeReg(purposeIndex);
+		enSet = bEnable &&
+			(GetIRQCtrlReg(irqmode)->irqPurpose == purposeIndex);
+		enShift = irqPurposeEnReg->sbit + irqEnReg->sbit;
+		if (irqPurposeEnReg->reg != AFE_REG_UNDEFINED)
+			Afe_Set_Reg(irqPurposeEnReg->reg,
+				    (enSet << enShift),
+				    (irqEnReg->mask << enShift));
 	}
 
 	return true;
