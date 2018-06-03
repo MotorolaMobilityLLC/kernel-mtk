@@ -150,8 +150,6 @@ SECTIONS
 
 	NOTES
 
-	_etext = .;			/* End of text and rodata section */
-
 #ifndef CONFIG_XIP_KERNEL
 # ifdef CONFIG_ARM_KERNMEM_PERMS
 	. = ALIGN(1<<SECTION_SHIFT);
@@ -159,6 +157,8 @@ SECTIONS
 	. = ALIGN(PAGE_SIZE);
 # endif
 #endif
+
+	_etext = .;			/* End of text and rodata section */
 
 #ifdef CONFIG_MTK_AEE_MRDUMP
 	.mrdump ALIGN (0x400): {
