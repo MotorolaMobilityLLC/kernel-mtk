@@ -179,7 +179,8 @@ enum spm_suspend_step {
 static inline void spm_suspend_footprint(enum spm_suspend_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_spm_suspend_val(step);
+#define CPU_FOOTPRINT_SHIFT	24
+	aee_rr_rec_spm_suspend_val(step | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 
