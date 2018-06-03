@@ -3372,6 +3372,7 @@
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
+		power_path_support;
 
 		/* common */
 		battery_cv = <4350000>;
