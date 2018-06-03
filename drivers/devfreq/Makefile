@@ -21,6 +21,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
 
 obj-y					+= helio-dvfsrc.o helio-dvfsrc-opp.o helio-dvfsrc-sysfs.o helio-dvfsrc-ipi.o
 obj-$(CONFIG_MACH_MT6765)		+= helio-dvfsrc-mt6765.o helio-dvfsrc-opp-mt6765.o
