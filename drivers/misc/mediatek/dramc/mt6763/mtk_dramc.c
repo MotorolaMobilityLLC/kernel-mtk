@@ -1503,7 +1503,7 @@ void zqcs_timer_callback(unsigned long data)
 	res[0] = TX_DONE;
 	res[1] = TX_DONE;
 
-	udelay(3);
+	udelay(200);
 	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))	{
 		local_irq_save(save_flags);
 		if (acquire_dram_ctrl() != 0) {
@@ -1517,7 +1517,7 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 		}
 
-	udelay(3);
+	udelay(200);
 
 		local_irq_save(save_flags);
 		if (acquire_dram_ctrl() != 0) {
