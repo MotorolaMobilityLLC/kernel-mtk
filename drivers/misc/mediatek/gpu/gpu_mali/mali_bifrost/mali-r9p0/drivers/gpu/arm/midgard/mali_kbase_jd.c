@@ -402,7 +402,7 @@ static inline void jd_resolve_dep(struct list_head *out_list,
 			KBASE_DEBUG_ASSERT(dep_atom->status !=
 						KBASE_JD_ATOM_STATE_UNUSED);
 
-			if ((dep_atom->core_req & BASE_JD_REQ_SOFT_REPLAY)
+			if ((dep_atom->core_req & BASE_JD_REQ_SOFT_JOB_TYPE)
 					!= BASE_JD_REQ_SOFT_REPLAY) {
 				dep_atom->will_fail_event_code =
 					dep_atom->event_code;
@@ -815,6 +815,7 @@ bool jd_submit_atom(struct kbase_context *kctx, const struct base_jd_atom_v2 *us
 	katom->x_pre_dep = NULL;
 	katom->x_post_dep = NULL;
 	katom->will_fail_event_code = BASE_JD_EVENT_NOT_STARTED;
+	katom->softjob_data = NULL;
 
 	/* Implicitly sets katom->protected_state.enter as well. */
 	katom->protected_state.exit = KBASE_ATOM_EXIT_PROTECTED_CHECK;
