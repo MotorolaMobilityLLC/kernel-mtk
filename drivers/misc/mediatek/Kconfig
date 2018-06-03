@@ -53,6 +53,36 @@ config MTK_FREQ_HOPPING
 	  If you want to use MediaTek freqhopping, say Y here.If unsure, say N.
 	  Please choose your desired freqhopping driver as well. E.g: MTK2712_FREQ_HOPPING=y
 
+config MTK_MEMORY_LOWPOWER
+	bool "Support Mediatek memory lowpower technology"
+	depends on CMA && ZONE_MOVABLE_CMA
+	default n
+	help
+	  Mediatek DRAM low power technology.
+	  It tries to safe DRAM power by switching
+	  different DRAM mode dynamically. It's a
+	  platform-dependent feature.
+
+config MTK_PASR
+	bool "Support Mediatek DRAM PASR mechanism"
+	depends on MTK_MEMORY_LOWPOWER && (MTK_EMI || MTK_EMI_MPU)
+	default n
+	help
+	  Mediatek DRAM PASR mechanism.
+	  It tries to turn off free DRAM segment's self-refresh.
+	  This can help system reduce power consumption.
+	  It is based on MTK_MEMORY_LOWPOWER technology.
+
+config MTK_PERIODIC_DATA_COLLECTION
+	bool "Support Mediatek memory lowpower technology"
+	depends on MTK_MEMORY_LOWPOWER
+	default n
+	help
+	  Mediatek DRAM low power technology.
+	  It tries to compact memory periodically and
+	  to create a unused contiguous memory. The
+	  DRAM can enter low power state if it is idle.
+
 source "drivers/misc/mediatek/base/power/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/pmic/Kconfig"
@@ -172,6 +202,24 @@ source "drivers/misc/mediatek/vpu/Kconfig"
 endmenu # Peripheral
 
 menu "Misc configs"
+
+config MTK_MEM
+	bool "Support platform memory information"
+	default y
+	help
+	  MTK_MEM provides basic platform memory information
+	  for mediatek platform drivers. It also provides
+	  some debug features. Please see
+	  MTK_MEMCFG.
+
+config MTK_MEMCFG
+	bool "Support enhanced memory configurations"
+	depends on MTK_MEM
+	help
+	  MTK_MEMCFG provides debug features such as
+	  platform memory layout information and
+	  fragmentation test tools. The features
+	  cost additional memory.
 
 source "drivers/misc/mediatek/mtprof/Kconfig"
 
