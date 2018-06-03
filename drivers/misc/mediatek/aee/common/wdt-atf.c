@@ -551,7 +551,14 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 
 	dump_emi_outstanding();
 
-	__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
+#ifdef CONFIG_MTK_WATCHDOG
+	if ((mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst())) {
+		aee_sram_fiq_log("\nreboot by MRDUMP_KEY\n");
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_MRDUMP_KEY, regs, "MRDUMP_KEY");
+	} else
+#endif
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
+
 	emergency_restart();
 }
 
