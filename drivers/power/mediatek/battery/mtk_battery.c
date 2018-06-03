@@ -3603,7 +3603,7 @@ void fg_update_sw_low_battery_check(unsigned int thd)
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
 		return;
 
-	vbat = thd * 10;
+	vbat = pmic_get_battery_voltage() * 10;
 	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
 		vbat, sw_low_battery_ht_en, sw_low_battery_ht_threshold,
 		sw_low_battery_lt_en, sw_low_battery_lt_threshold);
