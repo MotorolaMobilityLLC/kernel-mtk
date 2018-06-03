@@ -2226,13 +2226,13 @@ static int gf_probe(struct spi_device *spi)
 	gf_dev->probe_finish = 1;
 	gf_dev->is_sleep_mode = 0;
 	gf_debug(INFO_LOG, "%s probe finished\n", __func__);
-	gf_spi_clk_enable(gf_dev, 0);
 
 #ifdef SUPPORT_REE_MILAN_A
 	gf_spi_read_bytes_ree(gf_dev, 0x0142, 2, tmp_buf);
 	gf_debug(INFO_LOG, "%s line:%d ChipID:0x%x  0x%x\n", __func__, __LINE__, tmp_buf[0], tmp_buf[1]);
 	memcpy(id_buf, tmp_buf, 2);
 #endif
+	gf_spi_clk_enable(gf_dev, 0);
 
 	FUNC_EXIT();
 	return 0;
