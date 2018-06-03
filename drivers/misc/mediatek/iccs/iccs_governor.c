@@ -31,7 +31,7 @@ void policy_update(struct iccs_governor *gov, enum transition new_policy)
 			break;
 	case PERFORMANCE:
 		spin_lock(&gov->spinlock);
-		gov->iccs_cache_shared_useful_bitmask = 0x7;
+		gov->iccs_cache_shared_useful_bitmask = ALL_CLUSTER_ICCS_ENABLE;
 		gov->policy = new_policy;
 		spin_unlock(&gov->spinlock);
 		break;
@@ -44,7 +44,7 @@ void policy_update(struct iccs_governor *gov, enum transition new_policy)
 		break;
 	case POWERSAVE:
 		spin_lock(&gov->spinlock);
-		gov->iccs_cache_shared_useful_bitmask = 0x0;
+		gov->iccs_cache_shared_useful_bitmask = ALL_CLUSTER_ICCS_DISABLE;
 		gov->policy = new_policy;
 		spin_unlock(&gov->spinlock);
 		break;
@@ -67,7 +67,7 @@ void sampling_update(struct iccs_governor *gov, unsigned long long new_rate)
 static int iccs_governor_task(void *data)
 {
 	struct iccs_governor *gov = data;
-	unsigned char cache_shared_useful_bitmask = 0x0;
+	unsigned char cache_shared_useful_bitmask = 0x7;
 
 	if (unlikely(!gov))
 		return -EINVAL;
