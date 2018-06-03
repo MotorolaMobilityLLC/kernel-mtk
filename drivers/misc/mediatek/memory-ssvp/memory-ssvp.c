@@ -113,7 +113,7 @@ struct debug_dummy_alloc dummy_alloc = {
  * Use for zone-movable-cma callback
  */
 
-#define SSVP_FEATURES_DT_UNAME "memory-ssvp-features"
+#define SSVP_FEATURES_DT_UNAME "memory-ssmr-features"
 
 #define SSVP_FEATURES_DT_SVP_SIZE "svp-size"
 #define SSVP_FEATURES_DT_IRIS_RECOGNITION_SIZE "iris-recognition-size"
