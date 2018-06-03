@@ -15,7 +15,7 @@
  *
  * Filename:
  * ---------
- *     s5k2l7_setting.h
+ *     s5k2l7_pdaf_cal.h
  *
  * Project:
  * --------
@@ -25,23 +25,16 @@
  * ------------
  *     CMOS sensor setting file
  *
+ * Setting Release Date:
+ * ------------
+ *     2016.09.01
+ *
  ****************************************************************************/
-#ifndef _s5k2l7MIPI_SETTING_H_
-#define _s5k2l7MIPI_SETTING_H_
+#ifndef _s5k2l7_PDAF_CAL_H_
+#define _s5k2l7_PDAF_CAL_H_
 
-#include "kd_camera_typedef.h"
-#include "s5k2l7_setting_mode1.h"
-#include "s5k2l7_setting_mode2.h"
-#include "s5k2l7_setting_mode3.h"
-#include "s5k2l7_setting_mode1_v2.h"
-#include "s5k2l7_setting_mode2_v2.h"
-#include "s5k2l7_setting_mode3_v2.h"
-
-
-#define S5K2L7_SENSOR_MODE 3	/* default m3 */
-
-UINT16 pdaf_sensor_mode = S5K2L7_SENSOR_MODE;
-UINT16 proc_pdaf_sensor_mode = S5K2L7_SENSOR_MODE;
-
+extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData,
+		       u16 i2cId);
+extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 
 #endif

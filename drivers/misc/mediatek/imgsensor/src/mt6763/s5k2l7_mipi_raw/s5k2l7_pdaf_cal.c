@@ -19,8 +19,8 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-//#include <linux/xlog.h>
-//#include <asm/system.h>
+/* #include <linux/xlog.h> */
+/* #include <asm/system.h> */
 
 #include <linux/proc_fs.h>
 
@@ -30,103 +30,103 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
+#include "s5k2l7_pdaf_cal.h"
 
 
 #include "s5k2l7mipiraw_Sensor.h"
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "s5k2l7_camera_pdaf"
-//#define LOG_1 LOG_INF("s5k2l7,MIPI 4LANE\n")
-//#define LOG_2 LOG_INF("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
+/* #define LOG_1 LOG_INF("s5k2l7,MIPI 4LANE\n") */
+/* #define LOG_2 LOG_INF
+ * ("preview 2096*1552@30fps,640Mbps/lane; video 4192*3104@30fps,1.2Gbps/lane; capture 13M@30fps,1.2Gbps/lane\n")
+ */
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __func__, ##args)
 
-//#include "ov13850_otp.h"
+/* #include "ov13850_otp.h" */
 struct otp_pdaf_struct {
-unsigned char pdaf_flag; //bit[7]--0:empty; 1:Valid
-unsigned char data1[496];//output data1
-unsigned char data2[806];//output data2
-unsigned char data3[102];//output data3
-unsigned char pdaf_checksum;//checksum of pd, SUM(0x0801~0x0D7C)%255+1
+	unsigned char pdaf_flag;	/* bit[7]--0:empty; 1:Valid */
+	unsigned char data1[496];	/* output data1 */
+	unsigned char data2[806];	/* output data2 */
+	unsigned char data3[102];	/* output data3 */
+	unsigned char pdaf_checksum;	/* checksum of pd, SUM(0x0801~0x0D7C)%255+1 */
 
 };
 
 
-
-
-extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
-extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
-//#define EEPROM_READ_ID  0xA1
-//#define EEPROM_WRITE_ID   0xA0
-#define I2C_SPEED        400  //CAT24C512 can support 1Mhz
+/* #define EEPROM_READ_ID  0xA1 */
+/* #define EEPROM_WRITE_ID   0xA0 */
+#define I2C_SPEED        400	/* CAT24C512 can support 1Mhz */
 
 #define START_OFFSET     0x800
 
 #define Delay(ms)  mdelay(ms)
-//static unsigned char OV13853MIPI_WRITE_ID = (0xA0 >> 1);
+/* static unsigned char OV13853MIPI_WRITE_ID = (0xA0 >> 1); */
 #define EEPROM_READ_ID  0xA1
 #define EEPROM_WRITE_ID   0xA0
 #define MAX_OFFSET       0x1e59
 #define DATA_SIZE 4096
-//BYTE eeprom_data[DATA_SIZE]= {0};
-static bool get_done = false;
-static int last_size = 0;
-static int last_offset = 0;
-static unsigned int eeprom_rd_id = 0;
+/* BYTE eeprom_data[DATA_SIZE]= {0}; */
+static bool get_done;
+static int last_size;
+static int last_offset;
+static unsigned int eeprom_rd_id;
 
 
-////
-
-static bool s5k2l7_selective_read_eeprom(kal_uint16 addr, BYTE* data)
+static bool s5k2l7_selective_read_eeprom(kal_uint16 addr, BYTE *data)
 {
-	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-    if(addr > MAX_OFFSET)
-        return false;
+	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
 
-	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, eeprom_rd_id)<0)
+	if (addr > MAX_OFFSET)
 		return false;
-    return true;
+
+	if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, eeprom_rd_id) < 0)
+		return false;
+	return true;
 }
 
 
-static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
+static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
+{
 	int i = 0;
-	//int offset = addr;
+	/* int offset = addr; */
 	int offset = 0x763;
-	for(i = 0; i < 2048; i++) {
-		if(!s5k2l7_selective_read_eeprom(offset, &data[i])){
-			LOG_INF("read_eeprom 0x%0x %d fail \n",offset, data[i]);
+	/* for(i = 0; i < 1404; i++) { */
+	for (i = 0; i < 2048; i++) {
+		if (!s5k2l7_selective_read_eeprom(offset, &data[i])) {
+			LOG_INF("read_eeprom 0x%0x %d fail\n", offset, data[i]);
 			return false;
 		}
-		/*LOG_INF("read_eeprom 0x%0x 0x%x.\n",offset, data[i]);*/
+		LOG_INF("read_eeprom 0x%0x 0x%x.\n", offset, data[i]);
 		offset++;
 	}
 	get_done = true;
 	last_size = size;
 	last_offset = addr;
-    return true;
+	return true;
 }
 
-bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size, kal_uint32 sensor_id){
+bool s5k2l7_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size, kal_uint32 sensor_id)
+{
 
 	LOG_INF("read_otp_pdaf_data enter [%x]", sensor_id);
 
-    if( sensor_id==0x20C7) eeprom_rd_id = 0xA1;
-    else eeprom_rd_id = 0xA2;
-    
-	if(!get_done || last_size != size || last_offset != addr) {
-		//if(!_read_eeprom(addr, eeprom_data, size)){
-		if(!s5k2l7_read_eeprom(addr, data, size)){
+	if (sensor_id == 0x20C7)
+		eeprom_rd_id = 0xA1;
+	else
+		eeprom_rd_id = 0xA2;
+
+	if (!get_done || last_size != size || last_offset != addr) {
+		if (!s5k2l7_read_eeprom(addr, data, size)) {
 			get_done = 0;
-            last_size = 0;
-            last_offset = 0;
+			last_size = 0;
+			last_offset = 0;
 			LOG_INF("read_otp_pdaf_data fail");
 			return false;
 		}
 	}
-	//memcpy(data, eeprom_data, size);
+	/* memcpy(data, eeprom_data, size); */
 	LOG_INF("read_otp_pdaf_data end");
-    return true;
+	return true;
 }
-
-//
