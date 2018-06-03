@@ -744,6 +744,8 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 			dprec_submit(&session_info->event_frame_cfg, cfg->input_cfg[i].next_buff_idx,
 						 (cfg->input_layer_num << 28) | (cfg->input_cfg[i].layer_id << 24)
 						 | (cfg->input_cfg[i].src_fmt << 12) | cfg->input_cfg[i].layer_enable);
+			dprec_submit(&session_info->event_frame_cfg,  cfg->input_cfg[i].next_buff_idx,
+						 (unsigned long)cfg->input_cfg[i].src_phy_addr);
 		}
 	}
 	return 0;

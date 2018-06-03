@@ -1158,6 +1158,8 @@ struct mtkfb_fence_buf_info *disp_sync_prepare_buf(struct disp_buffer_info *buf)
 		     disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id), timeline_id,
 		     buf_info->idx, buf_info->fence, buf_info->mva, buf_info->size);
 
+	dprec_submit(&session_info->event_prepare,  buf_info->idx, buf_info->mva);
+	dprec_submit(&session_info->event_prepare,	buf_info->idx, buf_info->size);
 	dprec_done(&session_info->event_prepare, buf_info->idx, buf_info->fence);
 
 	return buf_info;

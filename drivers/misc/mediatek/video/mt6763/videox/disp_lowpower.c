@@ -951,11 +951,15 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			primary_display_set_idle_stat(1);
 		}
 #ifdef MTK_FB_MMDVFS_SUPPORT
+#if 0
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		if (get_ddr_type() == TYPE_LPDDR3)
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_ULPM);
 		else
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_ULPM);
+#endif
+		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_ULPM);
+
 #endif
 		primary_display_manual_unlock();
 
