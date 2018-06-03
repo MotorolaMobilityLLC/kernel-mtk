@@ -568,32 +568,6 @@ static void imx338_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 	return;
 }
 
-
-static void imx338_get_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
-{
-    int i, idx;
-    for( i=0; i<regNum; i++)
-    {
-        idx = 2*i;
-        regDa[idx+1] = read_cmos_sensor(regDa[idx]);
-        //LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
-    }
-}
-
-static void imx338_set_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
-{
-    int i, idx;
-    for( i=0; i<regNum; i++)
-    {
-        idx = 2*i;
-        write_cmos_sensor(regDa[idx], regDa[idx+1]);
-        //LOG_INF("%x %x", regDa[idx], regDa[idx+1]);
-    }
-}
-
-
-
-
 static void imx338_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
@@ -1116,6 +1090,33 @@ static kal_uint16 imx338_table_write_cmos_sensor(kal_uint16* para, kal_uint32 le
 #endif
    }
    return 0;
+}
+
+
+
+static void imx338_get_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
+{
+	int i, idx;
+
+	for (i = 0; i < regNum; i++) {
+		idx = 2 * i;
+		regDa[idx + 1] = read_cmos_sensor(regDa[idx]);
+		/* LOG_INF("%x %x", regDa[idx], regDa[idx + 1]); */
+	}
+}
+
+static void imx338_set_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
+{
+	imx338_table_write_cmos_sensor(regDa, regNum * 2);
+#if 0
+	int i, idx;
+
+	for (i = 0; i < regNum; i++) {
+		idx = 2 * i;
+		write_cmos_sensor(regDa[idx], regDa[idx+1]);
+		/* LOG_INF("%x %x", regDa[idx], regDa[idx + 1]); */
+	}
+#endif
 }
 
 
