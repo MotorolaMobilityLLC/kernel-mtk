@@ -254,45 +254,14 @@ int ion_sec_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 			  struct vm_area_struct *vma)
 {
 #if ION_RUNTIME_DEBUGGER
-	struct sg_table *table = buffer->sg_table;
-	unsigned long addr = vma->vm_start;
-	unsigned long offset = vma->vm_pgoff * PAGE_SIZE;
-	struct scatterlist *sg;
-	int i;
 	int ret;
 
-	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
-
-	for_each_sg(table->sgl, sg, table->nents, i) {
-		struct page *page = sg_page(sg);
-		unsigned long remainder = vma->vm_end - addr;
-		unsigned long len = sg->length;
-
-		if (offset >= sg->length) {
-			offset -= sg->length;
-			continue;
-		} else if (offset) {
-			page += offset / PAGE_SIZE;
-			len = sg->length - offset;
-			offset = 0;
-		}
-		len = min(len, remainder);
-		ret = remap_pfn_range(vma, addr, page_to_pfn(page), len,
-				      vma->vm_page_prot);
-		if (ret) {
-			IONMSG("%s remap_pfn_range failed vma:0x%p, addr = %lu, pfn = %lu, len = %lu, ret = %d.\n",
-			       __func__, vma, addr, page_to_pfn(page), len, ret);
-			return ret;
-		}
-		addr += len;
-		if (addr >= vma->vm_end)
-			return 0;
-	}
-	IONMSG("%s exit\n", __func__);
-	return 0;
+	ret = ion_heap_map_user(heap, buffer, vma);
+	IONMSG("%s vm_start=0x%lx, vm_end=0x%lx exit\n", __func__, vma->vm_start, vma->vm_end);
+	return ret;
 #else
 	IONMSG("%s do not suppuprt\n", __func__);
-	return  (-ENOMEM);
+	return	(-ENOMEM);
 #endif
 }
 

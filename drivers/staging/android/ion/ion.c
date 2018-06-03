@@ -42,6 +42,7 @@
 #include "ion_profile.h"
 #include "mtk/mtk_ion.h"
 #include "mtk/ion_sec_heap.h"
+#include "mtk/ion_drv_priv.h"
 
 #define DEBUG_HEAP_SHRINKER
 
@@ -535,6 +536,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_END,
 			 (unsigned long)client, (unsigned long)handle);
 
+	ion_history_count_kick(true, len);
 	return handle;
 }
 EXPORT_SYMBOL(ion_alloc);
@@ -552,6 +554,7 @@ static void ion_free_nolock(struct ion_client *client, struct ion_handle *handle
 		return;
 	}
 	ion_handle_put_nolock(handle);
+	ion_history_count_kick(false, 0);
 }
 
 void ion_free(struct ion_client *client, struct ion_handle *handle)
