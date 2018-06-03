@@ -33,6 +33,40 @@ extern "C" {
 #include <linux/module.h>
 #include <linux/ktime.h>
 
+#define UPOWER_ENABLE (1)
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
+#else
+	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
+#endif
+
+#if UPOWER_ENABLE_TINYSYS_SSPM
+	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
+	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
+	/* #define UPOWER_UT*/
+	/* #define UPOWER_PROFILE_API_TIME */
+	#define UPOWER_RCU_LOCK
+#else
+	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
+	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
+	/* #define UPOWER_UT */
+	/* #define UPOWER_PROFILE_API_TIME */
+	#define UPOWER_RCU_LOCK
+#endif
+
+/* for unified power driver internal use */
+#define UPOWER_LOG (1)
+#define UPOWER_TAG "[UPOWER]"
+
+#if UPOWER_LOG
+	#define upower_error(fmt, args...) pr_err(UPOWER_TAG fmt, ##args)
+	#define upower_debug(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
+#else
+	#define upower_error(fmt, args...)
+	#define upower_debug(fmt, args...)
+#endif
+
 #ifdef UPOWER_RCU_LOCK
 extern void upower_read_lock(void);
 extern void upower_read_unlock(void);

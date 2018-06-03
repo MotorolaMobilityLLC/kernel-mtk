@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mtk_unified_power.h"
 #include "mtk_unified_power_internal.h"
+#include "mtk_unified_power.h"
 
 #ifdef UPOWER_PROFILE_API_TIME
 #define TEST_TIMES (10)
