@@ -1747,14 +1747,13 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		/* check sanity of local tx information */
 		stp_sdio_check_tx_sanity(p_info, 1);
 
-		p_info->txwkr_flag = 0;
-
 		/* check if Tx ring buffer is empty */
 		if (p_info->pkt_buf.wr_cnt == p_info->pkt_buf.rd_cnt) {
 			/* full flag is use less in this condition */
 			STPSDIO_DBG_FUNC("Tx entry ring buffer empty\n");
 			break;
 		}
+		p_info->txwkr_flag = 0;
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXPERFDBG
 		++stp_sdio_txperf_worker_cnt;
 #endif
@@ -1961,14 +1960,13 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		stp_sdio_tx_wkr_comp(p_info);
 		stp_sdio_check_tx_sanity(p_info, 1);
 
-		p_info->txwkr_flag = 0;
-
 		/* check if Tx ring buffer is empty */
 		if ((p_info->pkt_buf.wr_idx == p_info->pkt_buf.rd_idx)
 		    && (p_info->pkt_buf.full_flag == MTK_WCN_BOOL_FALSE)) {
 			STPSDIO_DBG_FUNC("Tx ring buffer is empty\n");
 			break;
 		}
+		p_info->txwkr_flag = 0;
 
 		/* George: no race condition here! Updating rd_idx content will not be
 		 * put into more data by stp_sdio_tx
