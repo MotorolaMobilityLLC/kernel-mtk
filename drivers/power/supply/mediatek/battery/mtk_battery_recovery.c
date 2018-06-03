@@ -102,6 +102,7 @@ int ht_gap;
 int lt_gap;
 int low_tracking_enable;
 int fg_vbat2_lt;
+int fg_vbat2_ht;
 
 /* Interrupt control */
 int fg_bat_int2_ht_en;
@@ -330,11 +331,22 @@ void fg_set_int1(void)
 	set_fg_bat_tmp_c_gap(fg_bat_tmp_c_gap);
 	bm_err("[fg_set_int1]fg_bat_tmp_c_gap %d\n", fg_bat_tmp_c_gap);
 
-	set_fg_vbat2_l_th(pdata->vbat2_det_voltage1);
+	fg_vbat2_lt = pdata->vbat2_det_voltage1;
+	set_fg_vbat2_l_th(fg_vbat2_lt);
+	enable_fg_vbat2_l_int(true);
 
 	ret = set_kernel_soc(soc);
 	ret = set_kernel_uisoc(ui_soc);
 	ret = set_kernel_init_vbat(get_ptim_vbat());
+
+	set_rtc_ui_soc((ui_soc+50) / 100);
+
+	if (soc <= 100)
+		set_con0_soc(100);
+	else if (soc >= 12000)
+		set_con0_soc(10000);
+	else
+		set_con0_soc(soc);
 
 	bm_err("[FGADC_intr_end][INTR_Initialize]fg_set_int1 done\n");
 
@@ -409,7 +421,9 @@ void fgr_bat_int2_h_handler(void)
 void fg_time_handler(void)
 {
 	int is_charger_exist = get_charger_exist();
-	/* int charger_status = get_charger_status(); */
+
+	bm_err("[fg_time_handler][IN] chr:%d, low_tracking:%d ui_soc:%d\n",
+		is_charger_exist, low_tracking_enable, ui_soc);
 
 	if (low_tracking_enable) {
 		if (is_charger_exist)
@@ -417,8 +431,8 @@ void fg_time_handler(void)
 
 		if (is_charger_exist == false) {
 			ui_soc = ui_soc - 100;
-			if (ui_soc < 100) {
-				ui_soc = 100;
+			if (ui_soc <= 0) {
+				ui_soc = 0;
 				low_tracking_enable = 0;
 			}
 		}
@@ -459,8 +473,11 @@ void dlpt_sd_handler(void)
 void fgr_vbat2_h_int_handler(void)
 {
 	enable_fg_vbat2_h_int(false);
-	set_fg_vbat2_l_th(pdata->vbat2_det_voltage1);
+	fg_vbat2_lt = pdata->vbat2_det_voltage1;
+	set_fg_vbat2_l_th(fg_vbat2_lt);
 	enable_fg_vbat2_l_int(true);
+	bm_err("[fgr_vbat2_h_int_handler]fg_vbat2_lt=%d %d\n",
+		fg_vbat2_lt, fg_vbat2_ht);
 }
 
 
@@ -468,11 +485,18 @@ void fgr_vbat2_l_int_handler(void)
 {
 	if (fg_vbat2_lt == pdata->vbat2_det_voltage1) {
 		set_shutdown_cond(LOW_BAT_VOLT);
-		set_fg_vbat2_l_th(pdata->vbat2_det_voltage2);
-		set_fg_vbat2_h_th(pdata->vbat2_det_voltage3);
+		fg_vbat2_lt = pdata->vbat2_det_voltage2;
+		fg_vbat2_ht = pdata->vbat2_det_voltage3;
+		set_fg_vbat2_l_th(fg_vbat2_lt);
+		set_fg_vbat2_h_th(fg_vbat2_ht);
 		enable_fg_vbat2_l_int(true);
 		enable_fg_vbat2_h_int(true);
 	}
+	bm_err("[fgr_vbat2_l_int_handler]fg_vbat2_lt=%d %d,[%d %d %d]\n",
+		fg_vbat2_lt, fg_vbat2_ht,
+		pdata->vbat2_det_voltage1,
+		pdata->vbat2_det_voltage2,
+		pdata->vbat2_det_voltage3);
 }
 
 void fgr_bat_int2_l_handler(void)
