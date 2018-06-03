@@ -90,6 +90,49 @@ function parse_config_item
     PCI_RESULT=$(echo $PCI_RESULT | sed 's/,$//g')
 }
 
+PDC_RESULT=""
+function parse_dot_config_value
+{
+	PARSE_FILE=$1
+	PARSE_CONFIG_NAME=$2
+
+	while read DOT_CONFIG_LINE
+	do
+		# 1. skip comment
+		if [ "$(echo $DOT_CONFIG_LINE | grep "CONFIG_")" == "" ]; then
+			continue
+		fi
+
+		# 2. find config name
+		if [ "$(echo $DOT_CONFIG_LINE | grep "#")" == "" ]; then
+			DOT_CONFIG_NAME=$(echo $DOT_CONFIG_LINE | awk '{ print $1 }' | sed 's/=.*//g' )
+		else
+			DOT_CONFIG_NAME=$(echo $DOT_CONFIG_LINE | awk '{ print $2 }')
+		fi
+
+		# 3. find value
+		if [ "${CONFIG_TABLE_HASH[$PARSE_CONFIG_NAME,CONFIG]}" == "$DOT_CONFIG_NAME" ]; then
+			if [ "$(echo $DOT_CONFIG_LINE | grep "is not set")" != "" ]; then
+				# case N
+				DOT_CONFIG_VALUE="N"
+			elif [ "$(echo $DOT_CONFIG_LINE | grep \")" != "" ]; then
+				# case string
+				DOT_CONFIG_VALUE="$(echo $DOT_CONFIG_LINE | awk -F\" '{ print $2 }')"
+			else
+				# case value
+				DOT_CONFIG_VALUE=$(echo $DOT_CONFIG_LINE | awk -F= '{ print $2 }')
+				# support kernel module m=y
+				if [ "$DOT_CONFIG_VALUE" == "m" ]; then
+					DOT_CONFIG_VALUE="y"
+				fi
+			fi
+			break
+		fi
+	done < $PARSE_FILE
+
+	PDC_RESULT=$DOT_CONFIG_VALUE
+}
+
 if [ $# == 0 ]; then
     # check local modification
     echo "check local modification"
@@ -167,8 +210,17 @@ do
             continue
         fi
     fi
+
+     # generate .config and output .config to ./$FILE folder
+    DEFCONFIG_NAME=$(echo "$FILE" | sed 's/.*configs\///g')
+#   "+" must escape one level to use regular expression
+#    DEFCONFIG_NAME=$(echo "$FILE" | sed 's/.\+configs\///g')
+
     if [ "$(echo $FILE | grep "arch/arm64/configs")" != "" ]; then
         FILE_PLATFORM=$FILE_PLATFORM"_64"
+        make ARCH=arm64 O=./$DEFCONFIG_NAME $DEFCONFIG_NAME
+	else
+        make ARCH=arm O=./$DEFCONFIG_NAME $DEFCONFIG_NAME
     fi
 
     # A. Find Old Setting of Configs
@@ -205,7 +257,9 @@ do
         CONFIG_TABLE_HASH[$CONFIG_NAME,CONFIG]="$CONFIG_NAME"
         CONFIG_TABLE_HASH[$CONFIG_NAME,ORI_VALUE]="$ORI_VALUE"
         # 3. give new value as a default value "X"
-        CONFIG_TABLE_HASH[$CONFIG_NAME,VALUE]="X"
+        # use .config value instead
+		parse_dot_config_value "./$DEFCONFIG_NAME/.config" "$CONFIG_NAME"
+		CONFIG_TABLE_HASH[$CONFIG_NAME,VALUE]=$PDC_RESULT
         CONFIG_TABLE_HASH[$CONFIG_NAME,LINE]="$LINE"
         CONFIG_VALUE="X"
         # 4. CONFIG_LIST will list all modified CONFIG_NAME
@@ -226,7 +280,7 @@ do
     # 3. Add modified Configs into CONFIG_LIST
     while read LINE
     do
-        # 1. find new setting in config file, the lines which lead by "-"
+        # 1. find new setting in config file, the lines which lead by "+"
         if [ "$(echo $LINE | grep "#")" == "" ]; then
             CONFIG_NAME=$(echo $LINE | awk '{ print $1 }' | sed 's/+//g' | sed 's/=.*//g')
         else
@@ -255,6 +309,8 @@ do
         fi
     done < <($GIT_CMD --pretty="format:" $GIT_COMMIT_ID $FILE | grep "^+.*CONFIG_")
 
+	# remove defconfig folder
+    rm -rf $DEFCONFIG_NAME
 
     # C. Compare Config to Correct table
     # 1. Check if it is a new Config
