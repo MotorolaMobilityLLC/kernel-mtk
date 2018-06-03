@@ -18,6 +18,13 @@ obj-y += cputopo.o
 
 # For RT monitor
 obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
+#
+# RQ stats for TLP estimation
+#
+# For user space operation
+obj-$(CONFIG_MTK_SCHED_RQAVG_US) += rq_stats.o
+# For kernel space operation
+obj-$(CONFIG_MTK_SCHED_RQAVG_KS) += sched_avg.o
 
 # sysfs interface for user to get EAS related info
 obj-y += eas_plus.o

@@ -3340,9 +3340,20 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 	 * track group sched_entity load average for task_h_load calc in migration
 	 */
 	if (se->avg.last_update_time && !(flags & SKIP_AGE_LOAD)) {
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+		if (entity_is_task(se) && se->on_rq)
+			inc_nr_heavy_running("__update_load_avg-",
+				task_of(se), -1, false);
+#endif
 		__update_load_avg(now, cpu, &se->avg,
 			  se->on_rq * scale_load_down(se->load.weight),
 			  cfs_rq->curr == se, NULL);
+
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+		if (entity_is_task(se) && se->on_rq)
+			inc_nr_heavy_running("__update_load_avg+",
+				task_of(se), 1, false);
+#endif
 	}
 
 	decayed  = update_cfs_rq_load_avg(now, cfs_rq, true);
@@ -4889,8 +4900,12 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		update_cfs_shares(se);
 	}
 
-	if (!se)
+	if (!se) {
 		add_nr_running(rq, 1);
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+		inc_nr_heavy_running(__func__, p, 1, false);
+#endif
+	}
 
 #ifdef CONFIG_SMP
 
@@ -5010,8 +5025,12 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		update_cfs_shares(se);
 	}
 
-	if (!se)
+	if (!se) {
 		sub_nr_running(rq, 1);
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+		inc_nr_heavy_running(__func__, p, -1, false);
+#endif
+	}
 
 #ifdef CONFIG_SMP
 
