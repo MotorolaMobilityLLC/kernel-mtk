@@ -43,7 +43,7 @@ enum {
 	BOOT_REASON_INITIALIZED = 2,
 } BOOT_REASON_STATE;
 
-enum boot_reason_t g_boot_reason __nosavedata = BR_UNKNOWN;
+enum boot_reason_t g_boot_reason = BR_UNKNOWN;
 
 static atomic_t g_br_state = ATOMIC_INIT(BOOT_REASON_UNINIT);
 static atomic_t g_br_errcnt = ATOMIC_INIT(0);
@@ -76,7 +76,7 @@ static int __init dt_get_boot_reason(unsigned long node, const char *uname, int 
 #endif
 
 
-void init_boot_reason(unsigned int line)
+void __init init_boot_reason(unsigned int line)
 {
 #ifdef CONFIG_OF
 	int rc;
@@ -111,7 +111,9 @@ void init_boot_reason(unsigned int line)
 /* return boot reason */
 enum boot_reason_t get_boot_reason(void)
 {
-	init_boot_reason(__LINE__);
+	if (atomic_read(&g_br_state) != BOOT_REASON_INITIALIZED)
+		pr_warn("%s (%d) state(%d)\n", __func__, __LINE__, atomic_read(&g_br_state));
+
 	return g_boot_reason;
 }
 
