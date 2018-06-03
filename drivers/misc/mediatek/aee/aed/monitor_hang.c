@@ -75,13 +75,6 @@ static int system_server_pid;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
-#ifdef CONFIG_MNTL_SUPPORT
-typedef void (*io_hang_detect_dump)(void);
-io_hang_detect_dump mntl_dbg_hang_detect_dump;
-EXPORT_SYMBOL(mntl_dbg_hang_detect_dump);
-#endif
-
-
 /* bleow code is added by QHQ  for hang detect */
 /* For the condition, where kernel is still alive, but system server is not scheduled. */
 
@@ -315,6 +308,31 @@ static void Log2HangInfo(const char *fmt, ...)
 	Hang_Info_Size += len;
 }
 
+static void Buff2HangInfo(const char *buff, unsigned long size)
+{
+	if (((unsigned long)Hang_Info_Size + size)
+		>= (unsigned long)MaxHangInfoSize) {
+		LOGE("Buff2HangInfo Buffer overflow len(0x%x), MaxHangInfoSize:0x%lx !!!!!!!\n",
+			 Hang_Info_Size, (long)MaxHangInfoSize);
+		return;
+	}
+	memcpy(&Hang_Info[Hang_Info_Size], buff, size);
+	Hang_Info_Size += size;
+
+}
+
+static void DumpMsdc2HangInfo(void)
+{
+	char *buff_add;
+	unsigned long buff_size;
+
+	if (get_msdc_aee_buffer) {
+		get_msdc_aee_buffer((unsigned long *)&buff_add, &buff_size);
+		if (buff_size != 0 && buff_size <= 30 * 1024)
+			Buff2HangInfo(buff_add, buff_size);
+	}
+}
+
 
 static void get_kernel_bt(struct task_struct *tsk)
 {
@@ -330,6 +348,26 @@ static void get_kernel_bt(struct task_struct *tsk)
 	save_stack_trace_tsk(tsk, &trace);
 	for (i = 0; i < trace.nr_entries; i++)
 		Log2HangInfo("<%lx> %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
+}
+
+
+static void DumpMemInfo(void)
+{
+	char *buff_add;
+	int buff_size;
+
+	if (mlog_get_buffer) {
+		mlog_get_buffer(&buff_add, &buff_size);
+		if (buff_size <= 0) {
+			pr_info("hang_detect: mlog_get_buffer size %d.\n", buff_size);
+			return;
+		}
+
+		if (buff_size > 3*1024)
+			buff_size = 3*1024;
+
+		Buff2HangInfo(buff_add, buff_size);
+	}
 }
 
 static long long nsec_high(unsigned long long nsec)
@@ -376,12 +414,11 @@ void sched_show_task_local(struct task_struct *p)
 	ppid = task_pid_nr(rcu_dereference(p->real_parent));
 	pid = task_pid_nr(p);
 	rcu_read_unlock();
-	LOGV("%lld.%06ld %5d %lld 0x%08lx\n", nsec_high(p->se.vruntime), nsec_low(p->se.vruntime),
-			 task_pid_nr(p), (long long)(p->nvcsw + p->nivcsw), (unsigned long)task_thread_info(p)->flags);
 
 	Log2HangInfo("%-15.15s %c ", p->comm, state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%lld.%06ld %d %1ld 0x%lx\n", nsec_high(p->se.vruntime), nsec_low(p->se.vruntime), task_pid_nr(p),
-		(long long)(p->nvcsw + p->nivcsw), (unsigned long)task_thread_info(p)->flags);
+	Log2HangInfo("%lld.%06ld %d %1ld %1ld 0x%lx\n", nsec_high(p->se.sum_exec_runtime),
+		nsec_low(p->se.sum_exec_runtime), task_pid_nr(p), (long long)p->nvcsw,
+		(long long)p->nivcsw, (unsigned long)task_thread_info(p)->flags);
 	get_kernel_bt(p);	/* Catch kernel-space backtrace */
 
 }
@@ -783,17 +820,6 @@ static void show_state_filter_local(void)
 	} while_each_thread(g, p);
 }
 
-static void show_storage_status(void)
-{
-#if 0
-	ufs_mtk_dbg_hang_detect_dump();
-#endif
-#ifdef CONFIG_MNTL_SUPPORT
-	if (mntl_dbg_hang_detect_dump)
-		mntl_dbg_hang_detect_dump();
-#endif
-}
-
 static void ShowStatus(void)
 {
 #define DUMP_PROCESS_NUM 10
@@ -820,8 +846,15 @@ static void ShowStatus(void)
 	}
 	read_unlock(&tasklist_lock);
 
-	if (Hang_Detect_first == false)
+	if (Hang_Detect_first == false) {
+		DumpMemInfo();
 		show_state_filter_local();
+	} else {
+#ifndef __aarch64__
+		show_state_filter_local();
+#endif
+		DumpMsdc2HangInfo();
+	}
 
 	for (i = 0; i < dump_count; i++)
 		show_bt_by_pid(dumppids[i]);
@@ -832,7 +865,6 @@ static void ShowStatus(void)
 	if (system_server_task != NULL)
 		do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, system_server_task, true);
 
-	show_storage_status();
 	/* debug_locks = 1; */
 	debug_show_all_locks();
 
