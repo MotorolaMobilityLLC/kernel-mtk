@@ -985,7 +985,7 @@ static void sensor_init(void)
 {
 	LOG_INF("E\n");
 	/* external clock setting */
-	write_cmos_sensor(0x0100, 0x00);
+
 	write_cmos_sensor(0x0136, 0x18);
 	write_cmos_sensor(0x0137, 0x00);
 	/* Global setting */
@@ -1994,7 +1994,6 @@ static void sensor_init(void)
 	write_cmos_sensor(0xC65C, 0x01);
 	write_cmos_sensor(0xC669, 0x01);
 
-	write_cmos_sensor(0x0100, 0x00);
 
 }				/*    sensor_init  */
 
@@ -2002,7 +2001,6 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	LOG_INF("E\n");
-	write_cmos_sensor(0x0100, 0x00);
 
 	/*************mode setting************/
 	write_cmos_sensor(0x0114, 0x03);
@@ -2092,13 +2090,11 @@ static void preview_setting(void)
 	/*******NR Setting*****************/
 	write_cmos_sensor(0x3058, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }				/*    preview_setting  */
 
 static void preview_setting_HDR_ES2(void)
 {
 	LOG_INF("Enter\n");
-	write_cmos_sensor(0x0100, 0x00);
 	/*************mode setting***************/
 	write_cmos_sensor(0x0114, 0x03);
 	write_cmos_sensor(0x0220, 0x03);
@@ -2209,14 +2205,11 @@ static void preview_setting_HDR_ES2(void)
 	write_cmos_sensor(0x310d, 0x18);
 	write_cmos_sensor(0x310e, 0x01);	/* x_end */
 	write_cmos_sensor(0x310f, 0x16);
-	write_cmos_sensor(0x0100, 0x01);
-	mdelay(50);
 }				/*    preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
-	write_cmos_sensor(0x0100, 0x00);
 
 	/*************mode setting************/
 	write_cmos_sensor(0x0114, 0x03);
@@ -2306,14 +2299,12 @@ static void capture_setting(kal_uint16 currefps)
 	/*******NR Setting*****************/
 	write_cmos_sensor(0x3058, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void capture_setting_pdaf(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
 	if (currefps == 150) {
-		write_cmos_sensor(0x0100, 0x00);
 		/*************mode setting************/
 		write_cmos_sensor(0x0114, 0x03);
 		write_cmos_sensor(0x0220, 0x00);
@@ -2424,9 +2415,7 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 		write_cmos_sensor(0x310d, 0x30);
 		write_cmos_sensor(0x310e, 0x02);	/* y_end */
 		write_cmos_sensor(0x310f, 0x2c);
-		write_cmos_sensor(0x0100, 0x01);
 	} else {
-		write_cmos_sensor(0x0100, 0x00);
 		/*************mode setting************/
 		write_cmos_sensor(0x0114, 0x03);
 		write_cmos_sensor(0x0220, 0x00);
@@ -2537,14 +2526,12 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 		write_cmos_sensor(0x310d, 0x30);
 		write_cmos_sensor(0x310e, 0x02);	/* y_end */
 		write_cmos_sensor(0x310f, 0x2c);
-		write_cmos_sensor(0x0100, 0x01);
 	}
 }
 
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	write_cmos_sensor(0x0100, 0x00);
 
 	/*************mode setting************/
 	write_cmos_sensor(0x0114, 0x03);
@@ -2634,12 +2621,10 @@ static void normal_video_setting(kal_uint16 currefps)
 	/*******NR Setting*****************/
 	write_cmos_sensor(0x3058, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void hs_video_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x00);
 	/*************mode setting******/
 	write_cmos_sensor(0x0114, 0x03);
 	write_cmos_sensor(0x0220, 0x00);
@@ -2728,12 +2713,10 @@ static void hs_video_setting(void)
 	/*******NR Setting****************/
 	write_cmos_sensor(0x3058, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x00);
 
 	/*************mode setting*********/
 	write_cmos_sensor(0x0114, 0x03);
@@ -2823,7 +2806,6 @@ static void slim_video_setting(void)
 	/*******NR setting*********/
 	write_cmos_sensor(0x3058, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
@@ -3482,6 +3464,16 @@ static kal_uint32 imx398_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 	return ERROR_NONE;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
+
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
@@ -3682,6 +3674,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		imgsensor.pdaf_mode = *feature_data_16;
 		break;
 		/*End of PDAF */
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 	default:
 		break;
 	}

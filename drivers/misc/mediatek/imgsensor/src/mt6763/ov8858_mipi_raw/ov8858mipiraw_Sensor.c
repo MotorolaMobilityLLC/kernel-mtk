@@ -1368,8 +1368,17 @@ kal_uint16 addr_data_pair_preview_ov8858[] =
 	0x382d, 0x7f,
 	0x3031, 0x08,/* 8 bits */
 	0x4316, 0x00,/* DPCM off */
-	0x0100, 0x01,
 };
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
 
 static void preview_setting(void)
 {
@@ -1377,7 +1386,7 @@ static void preview_setting(void)
 
 //3.2 Raw 10bit 1632x1224 30fps 2lane 720M bps/lane
 //;XVCLK=24Mhz, SCLK=72Mhz, MIPI 720Mbps, DACCLK=180Mhz, Tline = 8.925926us
-	write_cmos_sensor(0x0100, 0x00);
+
 	//mdelay(5);
 #if 1 //MULTI_WRITE
 ov8858_table_write_cmos_sensor(addr_data_pair_preview_ov8858, sizeof(addr_data_pair_preview_ov8858)/sizeof(kal_uint16));
@@ -1490,7 +1499,7 @@ ov8858_table_write_cmos_sensor(addr_data_pair_preview_ov8858, sizeof(addr_data_p
 
 kal_uint16 addr_data_pair_capture_30fps_ov8858[] =
 {
-	0x0100, 0x00,
+
     0x0302, 0x2e,
     0x030e, 0x00,
     0x0312, 0x01,
@@ -1596,7 +1605,7 @@ kal_uint16 addr_data_pair_capture_30fps_ov8858[] =
 };
 kal_uint16 addr_data_pair_capture_15fps_ov8858[] =
 {
-	0x0100, 0x00,
+
 	0x0302, 0x1e,
 	0x030e, 0x02,
 	0x0312, 0x03,
@@ -1703,7 +1712,7 @@ kal_uint16 addr_data_pair_capture_15fps_ov8858[] =
 };
 kal_uint16 addr_data_pair_capture_24fps_ov8858[] =
 {
-	0x0100, 0x00,
+
 	0x0302, 0x2e,
 	0x030e, 0x00,
 	0x0312, 0x01,
@@ -1828,7 +1837,7 @@ static void capture_setting(kal_uint16 currefps)
 	}
 	if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT )
 			write_cmos_sensor(0x4316, 0x01);//DPCM
-	write_cmos_sensor(0x0100, 0x01);
+
 }
 
 
@@ -1845,7 +1854,7 @@ static void hs_video_setting(void)
 //;;MIPI=720Mbps, SysClk=144Mhz,Dac Clock=360Mhz
 //;;2306x520x120
 //100 99 640 480
-    write_cmos_sensor(0x0100, 0x00);
+
     write_cmos_sensor(0x0302, 0x1e);
     write_cmos_sensor(0x030e, 0x00);
     write_cmos_sensor(0x0312, 0x01);
@@ -1943,7 +1952,6 @@ static void hs_video_setting(void)
     write_cmos_sensor(0x4837, 0x16);
     write_cmos_sensor(0x5901, 0x04);
     write_cmos_sensor(0x382d, 0x7f);
-    write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
@@ -2889,6 +2897,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
             ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
             break;
+		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+			streaming_control(KAL_FALSE);
+			break;
+		case SENSOR_FEATURE_SET_STREAMING_RESUME:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+			if (*feature_data != 0)
+				set_shutter(*feature_data);
+			streaming_control(KAL_TRUE);
+			break;
+
         default:
             break;
     }

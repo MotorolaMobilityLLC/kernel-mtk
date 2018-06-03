@@ -1698,6 +1698,28 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 
 	return ERROR_NONE;
 }
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	int timeout = (10000 / imgsensor.current_fps) + 1;
+	int i = 0;
+
+	if (enable) {
+		write_cmos_sensor(0x0100, 0X01);
+		mDELAY(10);
+	} else {
+		write_cmos_sensor(0x0100, 0x00);
+		for (i = 0; i < timeout; i++) {
+			if (read_cmos_sensor(0x0005) != 0xFF)
+				mDELAY(1);
+			else
+				break;
+
+		}
+		LOG_INF("streaming_off exit\n");
+	}
+	return ERROR_NONE;
+}
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
@@ -1839,13 +1861,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
-			       sizeof(SET_PD_BLOCK_INFO_T));
-			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+			       sizeof(SET_PD_BLOCK_INFO_T));
 			break;
 		}
 		break;
@@ -1984,7 +2005,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 		LOG_INF("get PDAF type = %d\n", pdaf_sensor_mode);
 		break;
-
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 	case SENSOR_FEATURE_SET_PDAF_TYPE:
 		if (strstr(&(*feature_para), "mode1")) {
 			LOG_INF("configure PDAF as mode 1\n");

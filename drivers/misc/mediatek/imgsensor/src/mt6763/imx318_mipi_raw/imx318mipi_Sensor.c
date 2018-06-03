@@ -1357,7 +1357,7 @@ static void sensor_init(void)
 
 static void preview_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x00);
+
 
 	write_cmos_sensor(0x0111, 0x02);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -1479,14 +1479,14 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0218, 0x01);
 	write_cmos_sensor(0x0219, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
+
 }    /*    preview_setting  */
 
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
-	write_cmos_sensor(0x0100, 0x00);
+
 
 	write_cmos_sensor(0x0111, 0x02);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -1586,14 +1586,14 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x56FF, 0x50);
 	write_cmos_sensor(0x9323, 0x10);
 
-	write_cmos_sensor(0x0100, 0x01);
+
 }
 
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
-	write_cmos_sensor(0x0100, 0x00);
+
 
 	write_cmos_sensor(0x0111, 0x02);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -1717,7 +1717,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0218, 0x01);
 	write_cmos_sensor(0x0219, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
+
 }
 
 #ifndef HIGH_SPEED_240FPS
@@ -1725,7 +1725,7 @@ static void hs_video_setting(void)
 {
 	LOG_INF("E\n");
 
-	write_cmos_sensor(0x0100, 0x00);
+
 
 	write_cmos_sensor(0x0111, 0x02);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -1897,13 +1897,13 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0218, 0x01);
 	write_cmos_sensor(0x0219, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
+
 }
 #else
 
 static void hs_video_setting(void)
 {
-	write_cmos_sensor(0x0100, 0x00);
+
 
 	write_cmos_sensor(0x0111, 0x02);
 	write_cmos_sensor(0x0112, 0x0A);
@@ -2078,6 +2078,15 @@ static void hs_video_setting(void)
 }
 #endif
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
 
 static void slim_video_setting(void)
 {
@@ -2949,6 +2958,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		LOG_INF("SENSOR_FEATURE_SET_IMX318_PDFOCUS_AREA Start Pos=%d, Size=%d\n", (UINT32)*feature_data, (UINT32)*(feature_data+1));
 		imx318_set_pd_focus_area(*feature_data, *(feature_data+1));
 		break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
+
 	default:
 		break;
 	}

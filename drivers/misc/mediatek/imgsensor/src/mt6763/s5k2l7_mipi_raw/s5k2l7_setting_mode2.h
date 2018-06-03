@@ -2018,12 +2018,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
  *
  ****************************************************************************/
 #define _S5K2L7_MODE2_PREVIEW_ do {                    \
-	/* Stream Off */                               \
-	write_cmos_sensor(0x0100, 0x00);               \
-	while (1) {                                    \
-		if (read_cmos_sensor(0x0005) == 0xFF)  \
-			break;                         \
-	}                                              \
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X7970);     \
 	write_cmos_sensor_twobyte(0X6218, 0X7150);     \
@@ -2175,7 +2169,7 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
 	sensor_WDR_zhdr();                             \
-	write_cmos_sensor(0X0100, 0X01);               \
+
 } while (0)
 
 
@@ -2187,12 +2181,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
  *
  ****************************************************************************/
 #define _S5K2L7_MODE2_CAPTURE_ do {                    \
-	/* Stream Off */                               \
-	write_cmos_sensor(0x0100, 0x00);               \
-	while (1) {                                    \
-		if (read_cmos_sensor(0x0005) == 0xFF)  \
-			break;                         \
-	}                                              \
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X7970);     \
 	write_cmos_sensor_twobyte(0X6218, 0X7150);     \
@@ -2344,7 +2332,7 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
 	sensor_WDR_zhdr();                             \
-	write_cmos_sensor(0X0100, 0X01);               \
+
 } while (0)
 
 
@@ -2356,12 +2344,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
  *
  ****************************************************************************/
 #define _S5K2L7_MODE2_HS_VIDEO_ do {                   \
-	/* Stream Off */                               \
-	write_cmos_sensor(0x0100, 0x00);               \
-	while (1) {                                    \
-		if (read_cmos_sensor(0x0005) == 0xFF)  \
-			break;                         \
-	}                                              \
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X7970);     \
 	write_cmos_sensor_twobyte(0X6218, 0X7150);     \
@@ -2512,7 +2494,7 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
-	write_cmos_sensor(0X0100, 0X01);               \
+
 } while (0)
 
 /*****************************************************************************
@@ -2523,12 +2505,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
  *
  ****************************************************************************/
 #define _S5K2L7_MODE2_SLIM_VIDEO_ do {                 \
-	/* Stream Off */                               \
-	write_cmos_sensor(0x0100, 0x00);               \
-	while (1) {                                    \
-		if (read_cmos_sensor(0x0005) == 0xFF)  \
-			break;                         \
-	}                                              \
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X7970);     \
 	write_cmos_sensor_twobyte(0X6218, 0X7150);     \
@@ -2679,7 +2655,7 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
-	write_cmos_sensor(0X0100, 0X01);               \
+
 } while (0)
 
 /*****************************************************************************

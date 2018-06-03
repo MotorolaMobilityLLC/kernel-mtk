@@ -1217,8 +1217,6 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	LOG_INF("preview E\n");
-    write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -1315,8 +1313,6 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0220,0x00);
     write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
 
-    write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 }
 
@@ -1327,8 +1323,6 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 	if(curretfps == 150)
 	{
 		LOG_INF("PIP15fps capture E\n");
-		write_cmos_sensor(0x0100,0x00);
-		mdelay(10);
 
 		write_cmos_sensor(0x0112,0x0A);
 		write_cmos_sensor(0x0113,0x0A);
@@ -1433,14 +1427,11 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 		}
 		write_cmos_sensor(0x0220,0x00);
 		write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
-		write_cmos_sensor(0x0100,0x01);
-		mdelay(10);
+
 	}
 	else if(curretfps == 240)
 	{
 		LOG_INF("PIP24fps capture E\n");
-		write_cmos_sensor(0x0100,0x00);
-		mdelay(10);
 
 		write_cmos_sensor(0x0112,0x0A);
 		write_cmos_sensor(0x0113,0x0A);
@@ -1546,14 +1537,10 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 
 		write_cmos_sensor(0x0220,0x00);
 		write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
-		write_cmos_sensor(0x0100,0x01);
-		mdelay(10);
 
 	}
 	else
 	{
-		write_cmos_sensor(0x0100,0x00);
-		mdelay(10);
 
 		write_cmos_sensor(0x0112,0x0A);
 		write_cmos_sensor(0x0113,0x0A);
@@ -1660,8 +1647,6 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 		write_cmos_sensor(0x0220,0x00);
 		write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
 
-		write_cmos_sensor(0x0100,0x01);
-		mdelay(10);
 	}
 }
 
@@ -1669,8 +1654,6 @@ static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 static void PIP24fps_capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 {
 	LOG_INF("PIP24fps capture E\n");
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -1764,8 +1747,6 @@ static void PIP24fps_capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 	}
 	write_cmos_sensor(0x0220,0x00);
 	write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 }
 
@@ -1871,8 +1852,6 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8  pdaf_mode)
 {
 	LOG_INF("normal video E\n");
 	LOG_INF("E! currefps:%d\n",currefps);
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -2017,16 +1996,12 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8  pdaf_mode)
 	LOG_INF("imgsensor.hdr_mode in video mode:%d\n",imgsensor.hdr_mode);
 
 
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 }
 static void hs_video_setting(void)
 {
 	LOG_INF("hs_video E\n");
 
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -2122,8 +2097,6 @@ static void hs_video_setting(void)
 	LOG_INF("0x3032=%d\n",read_cmos_sensor(0x3032));
 	write_cmos_sensor(0x0220,0x00);
 
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 
 }
@@ -2131,8 +2104,6 @@ static void hs_video_setting(void)
 static void slim_video_setting(void)
 {
 	LOG_INF("slim video E\n");
-    write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -2230,8 +2201,6 @@ static void slim_video_setting(void)
 
     write_cmos_sensor(0x0350, 0x01); /* Enable auto extend */
 
-    write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 }
 
@@ -2239,8 +2208,6 @@ static void custom2_setting(void)
 {
 	LOG_INF("custom2 E\n");
     //binning mode,  2100 X 1560  24fps
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
@@ -2341,8 +2308,6 @@ static void custom2_setting(void)
 	LOG_INF("0x3032=%d\n",read_cmos_sensor(0x3032));
 	write_cmos_sensor(0x0220,0x00);
 
-    write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 }
 
 /*************************************************************************
@@ -3092,6 +3057,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 		write_cmos_sensor(0x0100, 0X01);
 	else
 		write_cmos_sensor(0x0100, 0x00);
+	mdelay(10);
 	return ERROR_NONE;
 }
 

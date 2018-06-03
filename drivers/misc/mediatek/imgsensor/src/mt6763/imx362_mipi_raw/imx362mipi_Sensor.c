@@ -1103,7 +1103,6 @@ static void preview_setting(void)
 {
 	int i=0;
 	LOG_INF("preview E %ld %ld %ld\n", sizeof(preview_setting_array), sizeof(i2c_write_array), sizeof(preview_setting_array)/sizeof(i2c_write_array));
-	write_cmos_sensor(0x0100,0x00);
 	mdelay(10);
 	for(i = 0 ; i < sizeof(preview_setting_array)/sizeof(i2c_write_array);i++){
 		write_cmos_sensor(preview_setting_array[i].addr,preview_setting_array[i].para);
@@ -1169,16 +1168,13 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0310,0x01);//PLL_MULT_DRIV
 #endif
 	//     write_cmos_sensor(0x0220,0x00);//HDR mode disable
-	write_cmos_sensor(0x0100,0x01);//stream on
-	mdelay(10);
-
 }
 
 static void capture_setting(kal_uint16 curretfps, MUINT32 linelength)
 {
 	int i=0;
 	LOG_INF("capture E, linelength:%d\n", linelength);
-	write_cmos_sensor(0x0100,0x00);
+
 	mdelay(10);
 	for(i = 0 ; i < sizeof(capture_setting_array)/sizeof(i2c_write_array);i++){
 		write_cmos_sensor(capture_setting_array[i].addr,capture_setting_array[i].para);
@@ -1250,8 +1246,6 @@ static void capture_setting(kal_uint16 curretfps, MUINT32 linelength)
 #endif
 
 	//write_cmos_sensor(0x0220,0x00);
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -1259,8 +1253,6 @@ static void normal_video_setting(kal_uint16 currefps)
 	LOG_INF("normal video E\n");
 	LOG_INF("E! currefps:%d\n",currefps);
 	/*Mode2-03 FHD(HDR off)H:2016 V:1136*/
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
 	write_cmos_sensor(0x0114,0x03);
@@ -1319,8 +1311,6 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0220,0x00);
 	LOG_INF("imgsensor.hdr_mode in video mode:%d\n",imgsensor.hdr_mode);
 
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 }
 /*
    static void hs_video_setting(void)
@@ -1394,14 +1384,10 @@ mdelay(10);
 static void slim_video_setting(void)
 {
 	LOG_INF("slim video E\n");
-	write_cmos_sensor(0x0100,0x00);
-	mdelay(10);
 
 
 	write_cmos_sensor(0x0220,0x00);
 
-	write_cmos_sensor(0x0100,0x01);
-	mdelay(10);
 
 }
 
@@ -2043,6 +2029,16 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	mdelay(10);
+	return ERROR_NONE;
+}
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -2212,6 +2208,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 		set_shutter_frame_time((UINT16)*feature_data,(UINT16)*(feature_data+1));
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
 		break;
 	default:
 		break;
