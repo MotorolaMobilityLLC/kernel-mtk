@@ -189,7 +189,8 @@ static void gov_slack_timer_start(struct interactive_cpu *icpu, int cpu)
 	struct interactive_tunables *tunables = icpu->ipolicy->tunables;
 
 	icpu->slack_timer.expires = jiffies + tunables->timer_slack_delay;
-	add_timer_on(&icpu->slack_timer, cpu);
+	if (!timer_pending(&icpu->slack_timer))
+		add_timer_on(&icpu->slack_timer, cpu);
 }
 
 static void gov_slack_timer_modify(struct interactive_cpu *icpu)
