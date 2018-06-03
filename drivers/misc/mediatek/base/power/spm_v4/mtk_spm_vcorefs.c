@@ -566,7 +566,7 @@ static void dvfsrc_init(void)
 		} else {
 			/* LP3 1CH */
 			spm_write(DVFSRC_EMI_HRT, 0x00001810);
-			spm_write(DVFSRC_EMI_HRT, 0x00001818);
+			spm_write(DVFSRC_VCORE_HRT, 0x00001818);
 		}
 	}
 
