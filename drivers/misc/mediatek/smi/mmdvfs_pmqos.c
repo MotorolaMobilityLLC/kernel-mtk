@@ -153,6 +153,7 @@ static s32 mm_set_mux_clk(struct mm_freq_config *config, u32 step)
 {
 	struct mm_freq_step_config step_config;
 	s32 ret = 0;
+
 	step_config = config->step_config[step];
 	if (step_config.clk_mux == NULL ||
 		step_config.clk_source == NULL) {
