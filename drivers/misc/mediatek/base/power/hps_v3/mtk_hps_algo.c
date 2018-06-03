@@ -64,6 +64,8 @@ int hps_current_core(void)
 	    (hps_ctxt.cur_loads % hps_ctxt.up_threshold ? 1 : 0);
 	return max(tlp_cores, load_cores);
 }
+
+#ifdef CONFIG_HPS
 static int hps_algo_big_task_det(void)
 {
 	int i, j, ret;
@@ -137,6 +139,8 @@ BIG_TASK_DET:
 	}
 	return ret;
 }
+#endif /* CONFIG_HPS */
+
 #if 0
 static int hps_algo_heavytsk_det(void)
 {
@@ -327,6 +331,8 @@ static int hps_algo_heavytsk_det(void)
 	return ret;
 }
 #endif
+
+#ifdef CONFIG_HPS
 static int hps_algo_check_criteria(void)
 {
 	int ret, i;
@@ -368,7 +374,9 @@ static int hps_algo_check_criteria(void)
 		hps_warn("[Info]Condition break!!\n");
 	return ret;
 }
+#endif /* CONFIG_HPS */
 
+#ifdef CONFIG_HPS
 static int hps_algo_do_cluster_action(unsigned int cluster_id)
 {
 	int cpu, target_cores, online_cores, cpu_id_min, cpu_id_max;
@@ -423,6 +431,7 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 	}
 	return 0;
 }
+#endif /* CONFIG_HPS */
 
 unsigned int hps_get_cluster_cpus(unsigned int cluster_id)
 {
@@ -549,6 +558,7 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_IDLE_DET);
 }
 
+#ifdef CONFIG_HPS
 void hps_algo_main(void)
 {
 	unsigned int i, val, base_val, action_print, origin_root, action_break;
@@ -974,3 +984,9 @@ hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
 	action_break = 0;
 	mutex_unlock(&hps_ctxt.lock);
 }
+#else /* CONFIG_HPS */
+void hps_algo_main(void)
+{
+
+}
+#endif /* !CONFIG_HPS */
