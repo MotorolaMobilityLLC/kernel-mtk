@@ -20,6 +20,9 @@ struct ion_fb_buffer_info {
 	unsigned int coherent;
 	void *VA;
 	unsigned int MVA;
+	unsigned int FIXED_MVA;
+	unsigned long iova_start;
+	unsigned long iova_end;
 	ion_phys_addr_t priv_phys;
 	struct ion_mm_buf_debug_info dbg_info;
 	struct ion_mm_sf_buf_info sf_buf_info;
