@@ -1409,6 +1409,7 @@ static struct ctl_table vm_table[] = {
 		.mode           = 0444 /* read-only */,
 		.proc_handler   = pdflush_proc_obsolete,
 	},
+#ifdef CONFIG_MEMCG
 	{
 		.procname	= "vmpressure_level_med",
 		.data		= &vmpressure_level_med,
@@ -1435,6 +1436,7 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 	},
+#endif
 	{
 		.procname	= "swappiness",
 		.data		= &vm_swappiness,
