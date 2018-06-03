@@ -20,9 +20,6 @@ ENABLE_CCCI_UTIL=n
 ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
 ENABLE_CCCI_UTIL=y
 endif
-ifeq ($(CONFIG_MTK_CCCI_EXT), y)
-ENABLE_CCCI_UTIL=y
-endif
 
 ifeq ($(ENABLE_CCCI_UTIL), y)
 
