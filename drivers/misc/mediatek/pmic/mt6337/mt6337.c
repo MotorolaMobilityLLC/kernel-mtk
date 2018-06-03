@@ -423,6 +423,8 @@ static int mt6337_probe(struct platform_device *dev)
 	MT6337LOG("[PMIC] device_create_file for EM : done.\n");
 
 	/*pwrkey_sw_workaround_init(); */
+	/* To prevent from writing Main PMIC when accessing MT6337, need this setting */
+	mt6337_set_register_value(MT6337_PMIC_RG_REG_CK_PDN_HWEN, 0x0);
 	return 0;
 }
 
