@@ -3954,7 +3954,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode);
 			/* micbias0 DCCopuleNP */
 
-			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0121, 0x01ff);
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0121, 0x0fff);
 			/* Enable MICBIAS0 MICBIAS2, MISBIAS0/MICBIAS2 = 1P9V */
 			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0005, 0x0007);
 			/* DMIC enable */
@@ -4988,7 +4988,7 @@ static int channel_map_to_device(enum AUDIO_ANALOG_UL_ARRAY_TYPE channel)
 static bool audio_preamp1_sel(int mul_sel)
 {
 	pr_aud("%s mul_sel = %d ", __func__, mul_sel);
-	if (mul_sel == 0)
+	if (mul_sel == 0 || mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DMIC)
 		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00c0);	/* pinumx open */
 	else if (mul_sel == 1)
 		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0040, 0x00c0);	/* AIN0 */
@@ -5028,7 +5028,7 @@ static bool audio_preamp2_sel(int mul_sel)
 {
 	pr_aud("%s mul_sel = %d ", __func__, mul_sel);
 
-	if (mul_sel == 0)
+	if (mul_sel == 0 || mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DMIC)
 		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x00c0);	/* pinumx open */
 	else if (mul_sel == 1)
 		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0040, 0x00c0);	/* AIN0 */
