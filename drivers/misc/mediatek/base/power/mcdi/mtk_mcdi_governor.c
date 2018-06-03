@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <linux/pm_qos.h>
 #include <linux/spinlock.h>
 #include <linux/timekeeping.h>
@@ -285,6 +286,50 @@ static int mtk_idle_state_mapping[NR_TYPES] = {
 #endif
 #endif
 
+#define NF_CHECK_MCDI_CONTROLLER_TOKEN          50
+#define CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US    100
+
+bool mcdi_controller_token_get(int cpu)
+{
+	/* Try to get token from MCDI controller, which means only 1 CPU power ON */
+	bool token_get = false;
+	bool last_core_in_mcusys = false;
+	int cnt = 0;
+	unsigned long flags;
+
+	mcdi_task_pause(true);
+
+	for (cnt = 0; cnt < NF_CHECK_MCDI_CONTROLLER_TOKEN; cnt++) {
+
+		if (mcdi_cpu_cluster_on_off_stat_check(cpu)) {
+			token_get = true;
+			break;
+		}
+
+		/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
+		spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+
+		last_core_in_mcusys
+			= (mcdi_gov_data.num_mcusys == mcdi_gov_data.avail_cnt_mcusys);
+
+		spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
+
+		if (!last_core_in_mcusys) {
+			token_get = false;
+			break;
+		}
+
+		/* Resume MCDI task and wait for a while, then re-check */
+		mcdi_task_pause(false);
+
+		udelay(CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US);
+
+		mcdi_task_pause(true);
+	}
+
+	return token_get;
+}
+
 bool any_core_deepidle_sodi_residency_check(int cpu)
 {
 	bool ret = true;
@@ -322,8 +367,11 @@ int any_core_deepidle_sodi_check(int cpu)
 	int mtk_idle_state = IDLE_TYPE_RG;
 #endif
 
-	/* Check power ON CPU status from SSPM */
-	if (!mcdi_cpu_cluster_on_off_stat_check(cpu)) {
+	bool token_get = false;
+
+	token_get = mcdi_controller_token_get(cpu);
+
+	if (!token_get) {
 		any_core_cpu_cond_inc(MULTI_CORE_CNT);
 		goto end;
 	}
@@ -427,9 +475,6 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 
 	/* Check if any core deepidle/SODI can entered */
 	if (mcdi_feature_stat.any_core && last_core_token_get) {
-
-		/* Pause MCDI */
-		mcdi_task_pause(true);
 
 		any_core_cpu_cond_inc(PAUSE_CNT);
 
