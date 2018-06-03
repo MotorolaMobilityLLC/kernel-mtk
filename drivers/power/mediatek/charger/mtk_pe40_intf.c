@@ -117,14 +117,13 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 	struct switch_charging_alg_data *swchgalg = pinfo->algorithm_data;
 	struct mtk_pe40 *pe40;
 
-	pinfo->polling_interval = 10;
-	swchgalg->state = CHR_CC;
-
 	pe40 = &pinfo->pe4;
 
 	if (pe40->is_connect == true) {
 		charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
 		charger_enable_vbus_ovp(pinfo, true);
+		pinfo->polling_interval = 10;
+		swchgalg->state = CHR_CC;
 	}
 
 	pe40->cap.nr = 0;
