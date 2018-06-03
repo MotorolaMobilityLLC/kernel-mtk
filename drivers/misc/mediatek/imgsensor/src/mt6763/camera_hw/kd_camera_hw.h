@@ -26,8 +26,9 @@
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
 
-#define VOL2500 2500000
+
 #define VOL2800 2800000
+#define VOL2500 2500000
 #define VOL1800 1800000
 #define VOL1500 1500000
 #define VOL1200 1200000
@@ -35,6 +36,9 @@
 #define VOL1220 1220000
 #define VOL1000 1000000
 #define VOL1100 1100000
+#define VOL1050 1050000
+
+
 
 typedef enum {
 	VDD_None,
@@ -57,14 +61,15 @@ typedef enum {
 	Vol_Low = 0,
 	Vol_High = 1,
 	Vol_1000 = VOL1000,
+	Vol_1050 = VOL1050,
 	Vol_1100 = VOL1100,
 	Vol_1200 = VOL1200,
 	Vol_1210 = VOL1210,
 	Vol_1220 = VOL1220,
 	Vol_1500 = VOL1500,
 	Vol_1800 = VOL1800,
-	Vol_2800 = VOL2800,
 	Vol_2500 = VOL2500,
+	Vol_2800 = VOL2800,
 } Voltage;
 #define CAMERA_CMRST_PIN            0
 #define CAMERA_CMRST_PIN_M_GPIO     0

@@ -136,7 +136,7 @@
     .mclk = 24,                                                                                                \
     .mipi_lane_num = SENSOR_MIPI_4_LANE,                                                                       \
     .i2c_addr_table = { 0x5A, 0x20, 0xFF},                                                                     \
-    .i2c_speed = 1000,                                                                                          \
+	.i2c_speed = 400,                                                                                          \
 };
 
 /* full_w; full_h; x0_offset; y0_offset; w0_size; h0_size; scale_w; scale_h; x1_offset;  y1_offset;  w1_size;  h1_size;

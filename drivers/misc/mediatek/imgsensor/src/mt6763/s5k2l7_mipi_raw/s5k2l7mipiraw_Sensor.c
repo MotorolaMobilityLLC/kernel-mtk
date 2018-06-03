@@ -219,7 +219,7 @@ static imgsensor_info_struct imgsensor_info =
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = { 0x20, 0x5A, 0xFF},
-    .i2c_speed = 1000,
+	.i2c_speed = 400,
 };
 
 _S5K2L7_MODE1_SENSOR_INFO_
