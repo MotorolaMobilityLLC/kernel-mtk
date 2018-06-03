@@ -1280,16 +1280,19 @@ static signed int ConfigMFBHW(MFB_Config *pMfbConfig)
 	cmdqRecWrite(handle, MFB_MFBO_STRIDE_HW, pMfbConfig->MFB_MFBO_STRIDE, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFBO_XSIZE_HW, (pMfbConfig->MFB_MFBO_STRIDE & 0xFFFF)-1, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFBO_YSIZE_HW, pMfbConfig->MFB_MFBO_YSIZE, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, MFB_MFBO_CON_HW, 0x80000040, CMDQ_REG_MASK);
 
 	cmdqRecWrite(handle, MFB_MFBO_B_BASE_ADDR_HW, pMfbConfig->MFB_MFBO_B_ADDR, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFBO_B_STRIDE_HW, pMfbConfig->MFB_MFBO_B_STRIDE, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFBO_B_XSIZE_HW, (pMfbConfig->MFB_MFBO_B_STRIDE & 0xFFFF)-1, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFBO_B_YSIZE_HW, pMfbConfig->MFB_MFBO_B_YSIZE, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, MFB_MFBO_B_CON_HW, 0x80000020, CMDQ_REG_MASK);
 
 	cmdqRecWrite(handle, MFB_MFB2O_BASE_ADDR_HW, pMfbConfig->MFB_MFB2O_ADDR, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFB2O_STRIDE_HW, pMfbConfig->MFB_MFB2O_STRIDE, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFB2O_XSIZE_HW, (pMfbConfig->MFB_MFB2O_STRIDE & 0xFFFF)-1, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_MFB2O_YSIZE_HW, pMfbConfig->MFB_MFB2O_YSIZE, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, MFB_MFB2O_CON_HW, 0x80000020, CMDQ_REG_MASK);
 
 	cmdqRecWrite(handle, MFB_TDRI_BASE_ADDR_HW, pMfbConfig->MFB_TDRI_ADDR, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, MFB_TDRI_XSIZE_HW, pMfbConfig->MFB_TDRI_XSIZE, CMDQ_REG_MASK);
