@@ -74,6 +74,9 @@
 #define SENSOR_TYPE_ANSWER_CALL						44
 #define SENSOR_TYPE_GEOFENCE						45
 #define SENSOR_TYPE_FLOOR_COUNTER					46
+#define SENSOR_TYPE_EKG								47
+#define SENSOR_TYPE_PPG1							48
+#define SENSOR_TYPE_PPG2							49
 /* end sensor type */
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -125,8 +128,11 @@
 #define ID_ANSWER_CALL                  (ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
 #define ID_GEOFENCE                     (ID_BASE + SENSOR_TYPE_GEOFENCE - 1)
 #define ID_FLOOR_COUNTER                     (ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
+#define ID_EKG                          (ID_BASE+SENSOR_TYPE_EKG-1)
+#define ID_PPG1                         (ID_BASE+SENSOR_TYPE_PPG1-1)
+#define ID_PPG2                         (ID_BASE+SENSOR_TYPE_PPG2-1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
+#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_PPG2 - 1)
 #define ID_NONE							(ID_SENSOR_MAX_HANDLE + 1)
 #define ID_OFFSET                       (1)
 #define ID_SCP_MAX_SENSOR_TYPE			(57)
@@ -307,6 +313,8 @@
 #define SITU_PL_DEV_NAME                 "m_situ_pl"
 #define SITU_INPUTDEV_NAME               "m_situ_input"
 #define SITU_MISC_DEV_NAME               "m_situ_misc"
+
+#define BIO_MISC_DEV_NAME               "m_bio_misc"
 
 #define EVENT_TYPE_SENSOR				0x01
 #define EVENT_TYPE_SENSOR_EXT				0x02
