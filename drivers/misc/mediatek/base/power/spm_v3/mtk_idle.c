@@ -51,6 +51,7 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
+#include <mtk_clkbuf_ctl.h>
 
 #include "ufs-mtk.h"
 
@@ -1229,19 +1230,22 @@ static u32 slp_spm_MCSODI_flags = {
 
 unsigned int ufs_cb_before_xxidle(void)
 {
-#if defined(CONFIG_MTK_UFS_BOOTING)
 	unsigned int op_cond = 0;
+	bool bblpm_check = false;
+
+#if defined(CONFIG_MTK_UFS_BOOTING)
 	int ufs_in_hibernate = -1;
 
 	/* Turn OFF/ON XO_UFS only when UFS_H8 */
 	ufs_in_hibernate = ufs_mtk_deepidle_hibern8_check();
 	op_cond = (ufs_in_hibernate == UFS_H8) ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
 	op_cond |= (ufs_in_hibernate == UFS_H8) ? DEEPIDLE_OPT_UFSCARD_MUX_SWITCH : 0;
+#endif
+
+	bblpm_check = !clk_buf_bblpm_enter_cond();
+	op_cond |= bblpm_check ? DEEPIDLE_OPT_CLKBUF_BBLPM : 0;
 
 	return op_cond;
-#else
-	return 0;
-#endif
 }
 
 void ufs_cb_after_xxidle(void)
