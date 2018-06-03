@@ -80,6 +80,9 @@ config MACH_MT6757
 	select MTK_SEC_DEINT_SUPPORT
 	select MTK_BOUNCING_CHECK
 	select FAST_CIRQ_CLONE_FLUSH
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek Helio P20 - MT6757
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -120,6 +123,9 @@ config MACH_MT6758
 	select MTK_SYSTRACKER_V2
 	select MTK_USB2JTAG_SUPPORT
 	select MTK_FIQ_CACHE
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6758
 	  Support for aarch64 Architecture
@@ -156,6 +162,9 @@ config MACH_MT6759
 	select MTK_USB2JTAG_SUPPORT
 	select MTK_CPU_STRESS
 	select MTK_SYSTRACKER_V2
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6759
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -193,6 +202,9 @@ config MACH_KIBOPLUS
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_BOUNCING_CHECK
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for KIBOPLUS
 	  Support for aarch64 Architecture
@@ -230,6 +242,9 @@ config MACH_MT6763
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_SEC_DEINT_SUPPORT
 	select MTK_FIQ_CACHE
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6763
 	  Support for aarch64 Architecture
@@ -259,6 +274,9 @@ config MACH_MT6771
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_SYSIRQ
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6771
 	  Support for aarch64 Architecture
@@ -285,6 +303,9 @@ config MACH_MT6775
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6775
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -322,6 +343,9 @@ config MACH_MT6799
 	select ARM64_ERRATUM_845719
 	select MTK_SEC_DEINT_SUPPORT
 	select MTK_IRQ_NEW_DESIGN
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6799
 	  Support for aarch64 Architecture
@@ -357,6 +381,9 @@ config MACH_MT6739
 	select MTK_CQDMA
 	select MTK_SYSIRQ
 	select FAST_CIRQ_CLONE_FLUSH
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT6739.
 	  It enables all necessary feature for MP including
@@ -388,6 +415,9 @@ config MACH_MT8167
 	select MTK_SYS_CIRQ
 	select HAVE_MTK_IN_HOUSE_TEE_SUPPORT
 	select MTK_ICE_DEBUG
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
 	help
 	  This enables support for MediaTek MT8167
 
