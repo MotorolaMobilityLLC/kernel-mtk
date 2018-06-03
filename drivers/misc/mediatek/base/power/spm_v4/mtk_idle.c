@@ -57,6 +57,7 @@
 
 #include <linux/uaccess.h>
 #include <mtk_cpufreq_api.h>
+#include "mtk_clk_id_internal.h"
 
 #define FEATURE_ENABLE_SODI2P5
 

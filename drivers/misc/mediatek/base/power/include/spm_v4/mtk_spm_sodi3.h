@@ -21,7 +21,7 @@
 #include "mtk_spm_pmic_wrap.h"
 #include "mtk_spm_misc.h"
 #include "mtk_spm_internal.h"
-
+#include "mtk_spm_sodi.h"
 
 #ifdef SPM_SODI3_PROFILE_TIME
 extern unsigned int	soidle3_profile[4];
@@ -79,7 +79,6 @@ static inline void spm_sodi3_aee_init(void)
 #define spm_sodi3_reset_footprint() spm_sodi3_aee_init()
 
 
-extern void spm_trigger_wfi_for_sodi(u32 pcm_flags);
 extern void spm_enable_mmu_smi_async(void);
 extern void spm_disable_mmu_smi_async(void);
 
