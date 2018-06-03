@@ -3093,15 +3093,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	return 0;
 }
 
-/*Panel_Master_dsi_config_entry will use the api*/
-int dsi_te_irq_enable(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
-{
-	if (module == DISP_MODULE_DSI0)
-		DSI_OUTREGBIT(handle, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, TE_RDY, enable);
-
-	return 0;
-}
-
 int dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	_dsi_basic_irq_enable(module, cmdq);
