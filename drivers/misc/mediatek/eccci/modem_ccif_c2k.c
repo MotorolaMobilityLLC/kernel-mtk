@@ -1297,7 +1297,7 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 
 	ccif_write32(&ap_rt_data->head_pattern, 0, AP_FEATURE_QUERY_PATTERN);
 
-	ccif_write32(&ap_rt_data->share_memory_support, 0, 1);
+	ccif_write32(&ap_rt_data->share_memory_support, 0, INTERNAL_MODEM);
 
 	ccif_write32(&ap_rt_data->ap_runtime_data_addr, 0, md->smem_layout.ccci_rt_smem_base_phy -
 		     md->mem_layout.smem_offset_AP_to_MD);

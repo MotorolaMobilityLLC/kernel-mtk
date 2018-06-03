@@ -214,6 +214,13 @@ void mdee_monitor_func(struct md_ee *mdee)
 	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump MD layout struct\n");
 	ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, mem_layout, sizeof(struct ccci_mem_layout));
 
+	/* Dump CCB memory */
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump CCB CTRL share memory\n");
+	ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, smem_layout->ccci_ccb_ctrl_base_vir,
+			smem_layout->ccci_ccb_ctrl_size);
+#endif
+
 	spin_lock_irqsave(&mdee->ctrl_lock, flags);
 	if (MD_EE_PASS_MSG_GET & mdee->ee_info_flag)
 		CCCI_ERROR_LOG(md_id, KERN, "MD exception timer 2 has been set!\n");

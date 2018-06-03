@@ -39,16 +39,25 @@ struct tx_notify_task {
 	struct ccci_port *port;
 };
 
+struct ccci_ccb_ctrl {
+	unsigned char *ctrl_addr_phy;
+	unsigned char *ctrl_addr_vir;
+};
+
 struct ccci_smem_port {
 	SMEM_USER_ID user_id;
 	unsigned char type;
 
 	unsigned char state;
-	unsigned char wakeup;
+	unsigned int wakeup;
+	unsigned char wk_cnt;
 	phys_addr_t addr_phy;
 	unsigned char *addr_vir;
 	unsigned int length;
 	struct ccci_port *port;
 	wait_queue_head_t rx_wq;
+	int ccb_ctrl_offset;
+
+	spinlock_t write_lock;
 };
 #endif
