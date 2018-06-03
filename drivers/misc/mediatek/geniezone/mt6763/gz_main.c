@@ -513,6 +513,46 @@ static int run_internal_test(void *args)
 	return 0;
 }
 
+#define TEST_STR_LEN 512
+static void gzreg_test(void)
+{
+	unsigned int v;
+	int i;
+	char *ptr;
+	unsigned long long reg_base = GZ_REG_BASE;
+	unsigned long long dreg_base = DATA_REG_BASE;
+
+	void __iomem *io = ioremap(GZ_REG_BASE, GZ_REG_SIZE);
+	void __iomem *data_io = ioremap(DATA_REG_BASE, DATA_REG_SIZE);
+
+	/** GZ register test **/
+	KREE_DEBUG("gzreg: GZ_REG_BASE=0x%llx\n", reg_base);
+	KREE_DEBUG("gzreg: DATA_REG_BASE=0x%llx\n", dreg_base);
+	/** read data reg **/
+	KREE_DEBUG("gzreg: read data reg\n");
+	ptr = (char *)data_io;
+	if (ptr) {
+		for (i = 0; i < 4; i++)
+			KREE_DEBUG("r[%d] = %c\n", i, ptr[i]);
+
+		KREE_DEBUG("gzreg: write data reg\n");
+		for (i = 0; i < TEST_STR_LEN; i++)
+			ptr[i] = 'd';
+	} else
+		KREE_DEBUG("gzreg: null data_io\n");
+
+	if (io) {
+		KREE_DEBUG("gzreg: write control reg\n");
+		writel(0x00000002, io + (1 * GZ_REG_WIDTH));
+		writel(0x00000001, io + (2 * GZ_REG_WIDTH));
+		v = readl(io + (4 * GZ_REG_WIDTH));
+		KREE_DEBUG("gzreg: read %#08x\n", v);
+		v = readl(io + (5 * GZ_REG_WIDTH));
+		KREE_DEBUG("gzreg: read %#08x\n", v);
+	} else
+		KREE_DEBUG("gzreg: null io\n");
+}
+
 static int shm_mem_service_process(KREE_SHAREDMEM_PARAM *shm_param, int numOfPA)
 {
 	KREE_SESSION_HANDLE shm_session;
