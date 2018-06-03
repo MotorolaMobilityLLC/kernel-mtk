@@ -1430,7 +1430,7 @@ enum {
 bool set_chip_adc_in(unsigned int rate)
 {
 	unsigned int voice_mode;
-	unsigned int enable_iir = 1;
+	unsigned int enable_iir = 0;
 	unsigned int ul_src_con0 = 0;	/* default value */
 
 	/* enable aud_pad_top fifo, need set after GPIO enable, pmic miso clk on */
