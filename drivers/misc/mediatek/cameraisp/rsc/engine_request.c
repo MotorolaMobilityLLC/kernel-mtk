@@ -29,9 +29,9 @@
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
-#define LOG_WRN(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
+#define LOG_WRN(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
 
 /*
 * Single ring ctl init

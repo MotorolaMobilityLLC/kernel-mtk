@@ -1187,7 +1187,7 @@ signed int rsc_deque_cb(struct frame *frames, void *req)
 	fcnt = _req->m_ReqNum;
 	for (f = 0; f < fcnt; f++) {
 		memcpy(&_req->m_pRscConfig[f], frames[f].data, sizeof(struct RSC_Config));
-		LOG_INF("[%s]request dequeued frame(%d/%d).", __func__, f, fcnt);
+		LOG_DBG("[%s]request dequeued frame(%d/%d).", __func__, f, fcnt);
 
 		pRscConfig = &_req->m_pRscConfig[f];
 #if 0
@@ -1222,7 +1222,7 @@ signed int CmdqRSCHW(struct frame *frame)
 	if (frame == NULL)
 		return -1;
 
-	LOG_ERR("%s request sent to CMDQ driver", __func__);
+	LOG_DBG("%s request sent to CMDQ driver", __func__);
 	pRscConfig = (struct RSC_Config *) frame->data;
 
 	LOG_DBG("RSC_CTRL_REG:0x%x!\n", pRscConfig->RSC_CTRL);
@@ -2436,7 +2436,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				*  consuming speed from being faster than SW frame-queue update speed.
 				*/
 				if (req_delayed == false) {
-					LOG_INF("direct request_handler\n");
+					LOG_DBG("direct request_handler\n");
 					req_delayed = request_handler(&rsc_reqs,
 							&(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
 				}
