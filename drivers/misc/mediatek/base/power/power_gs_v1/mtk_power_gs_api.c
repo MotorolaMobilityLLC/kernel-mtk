@@ -35,7 +35,7 @@ static struct pmic_manual_dump _pmic_manual_dump;
 
 static bool _is_pmic_addr(unsigned int addr)
 {
-	return (addr & 0xF0000000) ? 0 : 1;
+	return (addr >> 16) ? 0 : 1;
 }
 
 static u16 gs_pmic_read(u16 reg)
