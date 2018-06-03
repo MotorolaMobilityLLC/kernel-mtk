@@ -115,6 +115,38 @@ int select_max_spare_capacity(struct task_struct *p, int target)
 		return task_cpu(p);
 }
 
+
+int
+find_best_idle_cpu_in_domain(struct task_struct *p, struct hmp_domain *domain)
+{
+	int i;
+	int best_idle_cpu = -1;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+
+	for_each_cpu(i, &domain->possible_cpus) {
+
+		if (!cpu_online(i) || cpu_isolated(i) ||
+				!cpumask_test_cpu(i, tsk_cpus_allow))
+			continue;
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		if (cpu_rq(i)->rt.rt_nr_running &&
+			likely(!is_rt_throttle(i)))
+		continue;
+#endif
+
+		/* favoring tasks that prefer idle cpus
+		 * to improve latency.
+		 */
+		if (idle_cpu(i)) {
+			best_idle_cpu = i;
+			break;
+		}
+	}
+
+	return best_idle_cpu;
+}
+
 /*
  * @p: the task want to be located at.
  *
@@ -125,36 +157,27 @@ int select_max_spare_capacity(struct task_struct *p, int target)
  */
 int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 {
-	int iter_cpu;
+	int B_first;
 	int best_idle_cpu = -1;
-	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 	struct hmp_domain *domain;
 
-	for_each_hmp_domain_L_first(domain) {
-		for_each_cpu(iter_cpu, &domain->possible_cpus) {
+	/* tsk with prefer idle to find bigger idle cpu */
+	B_first = (sched_boost() || (prefer_idle &&
+			(task_util(p) > stune_task_threshold)));
 
-			/* tsk with prefer idle to find bigger idle cpu */
-			int i = (sched_boost() || (prefer_idle &&
-				(task_util(p) > stune_task_threshold)))
-				?  nr_cpu_ids-iter_cpu-1 : iter_cpu;
+	if (B_first) {
+		for_each_hmp_domain_B_first(domain) {
+			best_idle_cpu = find_best_idle_cpu_in_domain(p, domain);
 
-			if (!cpu_online(i) || cpu_isolated(i) ||
-					!cpumask_test_cpu(i, tsk_cpus_allow))
-				continue;
-
-#ifdef CONFIG_MTK_SCHED_INTEROP
-			if (cpu_rq(i)->rt.rt_nr_running &&
-					likely(!is_rt_throttle(i)))
-				continue;
-#endif
-
-			/* favoring tasks that prefer idle cpus
-			 * to improve latency.
-			 */
-			if (idle_cpu(i)) {
-				best_idle_cpu = i;
+			if (best_idle_cpu  >= 0)
 				break;
-			}
+		}
+	} else {
+		for_each_hmp_domain_L_first(domain) {
+			best_idle_cpu = find_best_idle_cpu_in_domain(p, domain);
+
+			if (best_idle_cpu  >= 0)
+				break;
 		}
 	}
 
