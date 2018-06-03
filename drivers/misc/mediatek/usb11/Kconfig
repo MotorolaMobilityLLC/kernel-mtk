@@ -37,3 +37,21 @@ config MTK_MUSBFSH_QMU_SUPPORT
 	  controller based on the MTK MUSBFSH IP.
 	  QMU is some kind of enhanced DMA mode by HW queeu rather
 	  than SW queue to reduce SW effort.
+
+config MUSBFSH_VBUS
+	bool "HOST VBUS CONTROL of MediaTek MUSBFSH"
+	depends on MTK_USBFSH
+	---help---
+	  Say Y here if your system has support USB11
+	  controller based on the MTK MUSBFSH IP. And the HOST
+	  power can be control when you want to close or open
+	  the USB11 VBUS.
+
+config MUSBFSH_IDDIG
+	bool "HOST IDDIG CONTROL of MediaTek MUSBFSH"
+	depends on MTK_USBFSH
+	---help---
+	  Say Y here if your system has support USB11
+	  controller based on the MTK MUSBFSH IP. And the HOST
+	  related power and clock can be control when you plug
+	  or unplug usb via PORT1 IDDIG pin.

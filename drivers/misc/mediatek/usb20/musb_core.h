@@ -58,6 +58,10 @@ extern struct clk *usbmcu_clk;
 extern struct clk *usb_clk;
 extern struct clk *icusb_clk;
 
+#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+extern bool musb_shutted;
+#endif
+
 /* to prevent 32 bit project misuse */
 #if defined(CONFIG_MTK_MUSB_DRV_36BIT) && !defined(CONFIG_64BIT)
 #error

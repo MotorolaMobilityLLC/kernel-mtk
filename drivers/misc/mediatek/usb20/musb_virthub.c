@@ -237,15 +237,6 @@ int musb_hub_control(struct usb_hcd *hcd,
 	u32 temp;
 	int retval = 0;
 	unsigned long flags;
-	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
-	bool usb_active = true;
-
-	if (!mtk_usb_power) {
-		musb_platform_enable(musb);
-		usb_active = false;
-		DBG(1, "musb was in-active!!!\n");
-	}
-	#endif
 
 	musb_platform_prepare_clk(musb);
 
@@ -355,8 +346,7 @@ int musb_hub_control(struct usb_hcd *hcd,
 					  & ~MUSB_PORT_STAT_RESUME), (__le32 *) buf);
 
 		/* port change status is more interesting */
-		DBG(0, "port status %08x,devctl=0x%x\n", musb->port1_status,
-		    musb_readb(musb->mregs, MUSB_DEVCTL));
+		DBG(0, "port status %08x\n", musb->port1_status);
 		break;
 	case SetPortFeature:
 		if ((wIndex & 0xff) != 1)
@@ -439,9 +429,5 @@ error:
 
 	musb_platform_unprepare_clk(musb);
 
-	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
-	if (!usb_active)
-		musb_platform_disable(musb);
-	#endif
 	return retval;
 }
