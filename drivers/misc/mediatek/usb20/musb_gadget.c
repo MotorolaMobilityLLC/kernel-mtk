@@ -2134,15 +2134,26 @@ static int musb_gadget_set_self_powered(struct usb_gadget *gadget, int is_selfpo
 
 static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 {
-	u8 power;
+	u8 power, suspend;
 
 	DBG(0, "MUSB: gadget pull up %d start, musb->power:%d\n", is_on, musb->power);
 	if (musb->power) {
 		power = musb_readb(musb->mregs, MUSB_POWER);
-		if (is_on)
+		/*MUSB_SUSPEND bit7' indicate phy enter the suspend status*/
+		/*Then mac can't bypass signal to phy*/
+		suspend = musb_readb(musb->mregs, 0x631) >> 7;
+		if (is_on) {
 			power |= MUSB_POWER_SOFTCONN;
-		else
+		} else {
+			if (!suspend) {
+				DBG(0, "MUSB: gadget pull up %d & suspend = %d\n", is_on, suspend);
+				/*When phy enter suspend status*/
+				/*we need resume it when do device function switch*/
+				USBPHY_SET8(0x68, 0x08);
+				USBPHY_SET8(0x6a, 0x04);
+			}
 			power &= ~MUSB_POWER_SOFTCONN;
+		}
 		musb_writeb(musb->mregs, MUSB_POWER, power);
 	}
 	DBG(0, "MUSB: gadget pull up %d end\n", is_on);
