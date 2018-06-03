@@ -40,13 +40,17 @@
 #define MTK_FB_ALIGNMENT 32 /* HW 3D */
 #endif
 
+/* Wrap SPM/MMDVFS code for early porting */
+/* #define MTK_FB_SPM_SUPPORT */
+/* #define MTK_FB_MMDVFS_SUPPORT */
+
 #define MTK_FB_ION_SUPPORT
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12) /* phy(4+2) + ext(3+3) */
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(4 /*4+6*/) /* 4 is enough, no need ext layer */
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
+#define MEMORY_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
 
 /* Display HW Capabilities */
@@ -63,9 +67,6 @@ enum DISP_SESSION_ENUM {
 
 #define MAX_SESSION_COUNT					5
 
-/* macros for display path hardware */
-#define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	3
-#define DISP_HW_HRT_LYAERS_FOR_HI_PERF		4
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
 
 /* Other platform-dependent features */
