@@ -25,11 +25,13 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include <linux/spinlock_types.h>
-
 #include <linux/vmalloc.h>
 #include <linux/memblock.h>
 #include <linux/blk_types.h>
 #include <linux/module.h>
+#include <linux/vmstat.h>
+
+#define BLOCKIO_MIN_VER	"3.09"
 
 #ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
@@ -107,7 +109,8 @@ static size_t mtk_btag_seq_pidlog_usedmem(char **buff, unsigned long *size,
 	return size_l;
 }
 
-#define biolog_fmt "wl:%d%%,%lld,%lld,%d.vm:%lld,%lld,%lld,%lld,%lld.cpu:%llu,%llu,%llu,%llu,%llu,%llu,%llu.pid:%d,"
+#define biolog_fmt "wl:%d%%,%lld,%lld,%d.vm:%lld,%lld,%lld,%lld,%lld,%lld." \
+	"cpu:%llu,%llu,%llu,%llu,%llu,%llu,%llu.pid:%d,"
 #define biolog_fmt_wt "wt:%d,%d,%lld."
 #define biolog_fmt_rt "rt:%d,%d,%lld."
 #define pidlog_fmt "{%05d:%05d:%08d:%05d:%08d}"
@@ -241,11 +244,26 @@ EXPORT_SYMBOL_GPL(mtk_btag_pidlog_write_begin);
 /* evaluate vmstat trace from global_page_state() */
 void mtk_btag_vmstat_eval(struct mtk_btag_vmstat *vm)
 {
-	vm->file_pages = ((global_page_state(NR_FILE_PAGES)) << (PAGE_SHIFT - 10));
-	vm->file_dirty = ((global_page_state(NR_FILE_DIRTY)) << (PAGE_SHIFT - 10));
-	vm->dirtied = ((global_page_state(NR_DIRTIED))	<< (PAGE_SHIFT - 10));
-	vm->writeback = ((global_page_state(NR_WRITEBACK))	<< (PAGE_SHIFT - 10));
+	int cpu;
+	struct vm_event_state *this;
+
+	vm->file_pages = ((global_page_state(NR_FILE_PAGES))
+		<< (PAGE_SHIFT - 10));
+	vm->file_dirty = ((global_page_state(NR_FILE_DIRTY))
+		<< (PAGE_SHIFT - 10));
+	vm->dirtied = ((global_page_state(NR_DIRTIED))
+		<< (PAGE_SHIFT - 10));
+	vm->writeback = ((global_page_state(NR_WRITEBACK))
+		<< (PAGE_SHIFT - 10));
 	vm->written = ((global_page_state(NR_WRITTEN))	<< (PAGE_SHIFT - 10));
+
+	/* file map fault */
+	vm->fmflt = 0;
+
+	for_each_online_cpu(cpu) {
+		this = &per_cpu(vm_event_states, cpu);
+		vm->fmflt += this->event[PGFMFAULT];
+	}
 }
 EXPORT_SYMBOL_GPL(mtk_btag_vmstat_eval);
 
@@ -391,6 +409,7 @@ static void mtk_btag_klog_entry(char **ptr, int *len, struct mtk_btag_trace *tr)
 		tr->vmstat.dirtied,
 		tr->vmstat.writeback,
 		tr->vmstat.written,
+		tr->vmstat.fmflt,
 		tr->cpu.user,
 		tr->cpu.nice,
 		tr->cpu.system,
@@ -536,6 +555,7 @@ static void mtk_btag_seq_trace(char **buff, unsigned long *size,
 		tr->vmstat.dirtied,
 		tr->vmstat.writeback,
 		tr->vmstat.written,
+		tr->vmstat.fmflt,
 		tr->cpu.user,
 		tr->cpu.nice,
 		tr->cpu.system,
@@ -608,7 +628,8 @@ static void mtk_btag_seq_debug_show_ringtrace(char **buff, unsigned long *size,
 	if (rt->index >= rt->max || rt->index < 0)
 		rt->index = 0;
 
-	SPREAD_PRINTF(buff, size, seq, "<%s: blocktag trace>\n", btag->name);
+	SPREAD_PRINTF(buff, size, seq, "<%s: blocktag trace %s>\n",
+		btag->name, BLOCKIO_MIN_VER);
 
 	spin_lock_irqsave(&rt->lock, flags);
 	end = (rt->index > 0) ? rt->index-1 : rt->max-1;
