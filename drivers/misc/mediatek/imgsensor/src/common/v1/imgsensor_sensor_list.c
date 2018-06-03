@@ -409,6 +409,13 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 #if defined(T8EV5_YUV)
 	{T8EV5_SENSOR_ID, SENSOR_DRVNAME_T8EV5_YUV, T8EV5_YUV_SensorInit},
 #endif
+	/*Test*/
+#if defined(OV13870_MIPI_RAW_5MP)
+	{OV13870_SENSOR_ID, SENSOR_DRVNAME_OV13870_MIPI_RAW_5MP, OV13870_MIPI_RAW_SensorInit},
+#endif
+#if defined(OV8856_MIPI_RAW_5MP)
+	{OV8856_SENSOR_ID, SENSOR_DRVNAME_OV8856_MIPI_RAW_5MP, OV8856_MIPI_RAW_SensorInit},
+#endif
 
 	/*  ADD sensor driver before this line */
 	{0, {0}, NULL}, /* end of list */
