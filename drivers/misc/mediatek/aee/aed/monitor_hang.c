@@ -224,8 +224,9 @@ static int hang_detect_init(void);
 static int __init monitor_hang_init(void)
 {
 	int err = 0;
+#ifdef CONFIG_MTK_ENG_BUILD
 	struct proc_dir_entry *pe;
-
+#endif
 	/* bleow code is added by QHQ  for hang detect */
 	err = misc_register(&aed_wdt_RT_Monitor_dev);
 	if (unlikely(err)) {
