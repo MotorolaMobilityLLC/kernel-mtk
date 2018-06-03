@@ -41,7 +41,7 @@
 #endif
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mt-plat/battery_common.h>
+/*#include <mt-plat/battery_common.h>*/
 /*#include <mach/mtk_battery_meter.h> TBD*/
 /*#include <mt-plat/battery_meter.h> TBD*/
 #endif
