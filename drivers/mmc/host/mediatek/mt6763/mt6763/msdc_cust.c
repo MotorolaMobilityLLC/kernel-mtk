@@ -402,7 +402,7 @@ void msdc_HQA_set_voltage(struct msdc_host *host)
 		return;
 
 	if (vcore_orig < 0)
-		pmic_read_interface(0xBE8, &vcore_orig, 0x3F, 0);
+		pmic_read_interface(0xBE8, &vcore_orig, 0x7F, 0);
 	if (vio_orig < 0)
 		pmic_read_interface(0x1296, &vio_orig, 0xF, 8);
 	pmic_read_interface(0x1296, &vio_cal, 0xF, 0);
