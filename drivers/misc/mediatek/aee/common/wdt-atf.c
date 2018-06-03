@@ -362,7 +362,9 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 #ifdef CONFIG_ARM64
 			/* work around for unknown reason do_mem_abort stack abnormal */
 			excp_regs = (void *)(cur_frame.fp + 0x10 + 0xa0);
-			unwind_frame(current, &cur_frame);	/* skip do_mem_abort & el1_da */
+			if (unwind_frame(current, &cur_frame) < 0) {	/* skip do_mem_abort & el1_da */
+				aee_wdt_percpu_printf(cpu, "in_exception_text unwind_frame < 0\n");
+			}
 #else
 			excp_regs = (void *)(cur_frame.fp + 4);
 #endif
