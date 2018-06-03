@@ -1540,7 +1540,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	/*clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);*/
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0x007d5550);/* MPLL, CCIPLL, MAINPLL, TDCLKSQ, CLKSQ1 */
 	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0x7f5);
-	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xffffffef);/*[4]PLL_SSUSB26M_EN*/
+	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff6af);/*[4]SSUSB26M, [11][6]MIPIC camera, [8] mm26m*/
 #if 0
 /*MFGPLL*/
 	clk_clrl(MFGPLL_CON0, PLL_EN);
