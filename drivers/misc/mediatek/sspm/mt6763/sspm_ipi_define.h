@@ -13,51 +13,7 @@
 #ifndef __SSPM_IPI_DEFINE_H__
 #define __SSPM_IPI_DEFINE_H__
 
-#define IPI_MBOX_TOTAL  3
-#define IPI_MBOX0_64D   0
-#define IPI_MBOX1_64D   0
-#define IPI_MBOX2_64D   0
-#define IPI_MBOX3_64D   0
-#define IPI_MBOX4_64D   0
-#define IPI_MBOX_MODE   ((IPI_MBOX4_64D<<4)|(IPI_MBOX3_64D<<3)|(IPI_MBOX2_64D<<2)|(IPI_MBOX1_64D<<1)|IPI_MBOX0_64D)
-
-#define IPI_MBOX0_SLOTS ((IPI_MBOX0_64D+1)*32)
-#define IPI_MBOX1_SLOTS ((IPI_MBOX1_64D+1)*32)
-#define IPI_MBOX2_SLOTS ((IPI_MBOX2_64D+1)*32)
-#define IPI_MBOX3_SLOTS ((IPI_MBOX3_64D+1)*32)
-#define IPI_MBOX4_SLOTS ((IPI_MBOX4_64D+1)*32)
-
-
-/* definition of slot size for received PINs */
-#define PINS_SIZE_PLATFORM       3  /* the following will use mbox 0 */
-#define PINS_SIZE_CPU_DVFS       4
-#define PINS_SIZE_GPU_DVFS       3
-#define PINS_SIZE_FHCTL          9
-#define PINS_SIZE_PMIC           5
-/* ============================================================ */
-#define PINS_SIZE_MCDI           2  /* the following will use mbox 1 */
-#define PINS_SIZE_SPM_SUSPEND    8
-/* ============================================================ */
-
-
-/* definition of slot offset for PINs */
-#define PINS_OFFSET_PLATFORM     0  /* the following will use mbox 0 */
-#define PINS_OFFSET_CPU_DVFS     (PINS_OFFSET_PLATFORM + PINS_SIZE_PLATFORM)
-#define PINS_OFFSET_GPU_DVFS     (PINS_OFFSET_CPU_DVFS + PINS_SIZE_CPU_DVFS)
-#define PINS_OFFSET_FHCTL        (PINS_OFFSET_GPU_DVFS + PINS_SIZE_GPU_DVFS)
-#define PINS_OFFSET_PMIC         (PINS_OFFSET_FHCTL + PINS_SIZE_FHCTL)
-#define PINS_MBOX0_USED          (PINS_OFFSET_PMIC + PINS_SIZE_PMIC)
-#if (PINS_MBOX0_USED > IPI_MBOX0_SLOTS)
-#error "MBOX0 cannot hold all pin definitions"
-#endif
-/* ============================================================ */
-#define PINS_OFFSET_MCDI         0  /* the following will use mbox 1 */
-#define PINS_OFFSET_SPM_SUSPEND  (PINS_OFFSET_MCDI + PINS_SIZE_MCDI)
-#define PINS_MBOX1_USED          (PINS_OFFSET_SPM_SUSPEND + PINS_SIZE_SPM_SUSPEND)
-#if (PINS_MBOX1_USED > IPI_MBOX1_SLOTS)
-#error "MBOX1 cannot hold all pin definitions"
-#endif
-/* ============================================================ */
+#include "sspm_ipi_mbox_layout.h"
 
 /* mutex_send, sema_ack, mbox, slot, size, shared, retdata, lock, share_grp, polling, unused */
 struct _pin_send send_pintable[] = {
@@ -73,18 +29,6 @@ struct _pin_send send_pintable[] = {
 };
 #define TOTAL_SEND_PIN      (sizeof(send_pintable)/sizeof(struct _pin_send))
 
-/* definition of slot size for received PINs */
-#define PINR_SIZE_PLATFORM       3  /* the following will use mbox 2 */
-#define PINR_SIZE_CPU_DVFS       4
-#define PINR_SIZE_GPU_DVFS       3
-/* definition of slot offset for PINs */
-#define PINR_OFFSET_PLATFORM     0  /* the following will use mbox 0 */
-#define PINR_OFFSET_CPU_DVFS     (PINR_OFFSET_PLATFORM + PINR_SIZE_PLATFORM)
-#define PINR_OFFSET_GPU_DVFS     (PINR_OFFSET_CPU_DVFS + PINR_SIZE_CPU_DVFS)
-#define PINR_MBOX2_USED          (PINR_OFFSET_GPU_DVFS + PINR_SIZE_GPU_DVFS)
-#if (PINR_MBOX2_USED > IPI_MBOX2_SLOTS)
-#error "MBOX2 cannot hold all pin definitions"
-#endif
 
 /* act, mbox, slot, size, shared, retdata, lock, share_grp, unused */
 struct _pin_recv recv_pintable[] = {
@@ -99,6 +43,7 @@ struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 	{0, 4, PINS_MBOX0_USED, 2, 0},  /* mbox 0 for send */
 	{5, 6, PINS_MBOX1_USED, 2, 0}, /* mbox 1 for send */
 	{0, 2, PINR_MBOX2_USED, 1, 0},  /* mbox 2 for recv */
+	{0, 0, 0, 0, 0}, /* mbox 3 */
 };
 
 static char *pin_name[IPI_ID_TOTAL] = {
