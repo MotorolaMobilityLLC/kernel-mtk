@@ -517,7 +517,7 @@ __spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int
 		}
 
 		if (unlikely(strlen(buf) >= LOG_BUF_SIZE))
-			strcpy(buf, "None (LOG BUFFER OVERFLOW)");
+			strncpy(buf, "None (LOG BUFFER OVERFLOW)", sizeof(buf));
 
 		so_warn(flags, "wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d\n",
 					    buf, vcore_status, spm_read(SPM_PASR_DPD_0),
