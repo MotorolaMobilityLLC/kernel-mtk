@@ -179,7 +179,8 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		if (Afe_Block->u4DataRemained < 0)
-			pr_warn("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
+			if (get_LowLatencyDebug())
+				pr_warn("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
 		Frameidx = audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
 	} else {
 		Frameidx = audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
