@@ -129,176 +129,129 @@ static struct act_context *act_context_alloc_object(void)
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	obj->is_batch_enable = false;
+	obj->power = 0;
+	obj->enable = 0;
+	obj->delay_ns = -1;
+	obj->latency_ns = -1;
 	mutex_init(&obj->act_op_mutex);
 	ACT_LOG("act_context_alloc_object----\n");
 	return obj;
 }
 
-static int act_real_enable(int enable)
+static int act_enable_and_batch(void)
 {
-	int err = 0;
-	struct act_context *cxt = NULL;
+	struct act_context *cxt = act_context_obj;
+	int err;
 
-	cxt = act_context_obj;
-	if (1 == enable) {
-
-		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
-			err = cxt->act_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->act_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->act_ctl.enable_nodata(1);
-					if (err)
-						ACT_ERR("act enable(%d) err 3 timers = %d\n",
-							enable, err);
-				}
-			}
-			ACT_LOG("act real enable\n");
+	/* power on -> power off */
+	if (cxt->power == 1 && cxt->enable == 0) {
+		ACT_LOG("ACT disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->act_ctl.is_report_input_direct == false &&
+			cxt->is_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			del_timer_sync(&cxt->timer);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report);
+			cxt->drv_data.probability[0] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[1] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[2] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[3] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[4] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[5] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[6] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[7] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[8] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[9] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[10] = ACT_INVALID_VALUE;
+			cxt->drv_data.probability[11] = ACT_INVALID_VALUE;
+			cxt->is_polling_run = false;
+			ACT_LOG("act stop polling done\n");
 		}
-	}
-	if (0 == enable) {
-		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
-			err = cxt->act_ctl.enable_nodata(0);
-			if (err)
-				ACT_ERR("act enable(%d) err = %d\n", enable, err);
-
-			ACT_LOG("act real disable\n");
+		/* turn off the power */
+		err = cxt->act_ctl.enable_nodata(0);
+		if (err) {
+			ACT_ERR("act turn off power err = %d\n", err);
+			return -1;
 		}
+		ACT_LOG("act turn off power done\n");
+
+		cxt->power = 0;
+		cxt->delay_ns = -1;
+		ACT_LOG("ACT disable done\n");
+		return 0;
 	}
+	/* power off -> power on */
+	if (cxt->power == 0 && cxt->enable == 1) {
+		ACT_LOG("ACT power on\n");
+		err = cxt->act_ctl.enable_nodata(1);
+		if (err) {
+			ACT_ERR("act turn on power err = %d\n", err);
+			return -1;
+		}
+		ACT_LOG("act turn on power done\n");
 
-	return err;
-}
-
-static int act_enable_data(int enable)
-{
-	struct act_context *cxt = NULL;
-
-	cxt = act_context_obj;
-	if (NULL == cxt->act_ctl.open_report_data) {
-		ACT_ERR("no act control path\n");
-		return -1;
+		cxt->power = 1;
+		ACT_LOG("ACT power on done\n");
 	}
+	/* rate change */
+	if (cxt->power == 1 && cxt->delay_ns >= 0) {
+		ACT_LOG("ACT set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->act_ctl.is_support_batch)
+			err = cxt->act_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+		else
+			err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
+		if (err) {
+			ACT_ERR("act set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		ACT_LOG("act set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->act_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->delay_ns;
 
-	if (1 == enable) {
-		ACT_LOG("act enable data\n");
-		cxt->is_active_data = true;
-		cxt->is_first_data_after_enable = true;
-		cxt->act_ctl.open_report_data(1);
-		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
-			if (false == cxt->act_ctl.is_report_input_direct) {
+			do_div(mdelay, 1000000);
+			atomic_set(&cxt->delay, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_polling_run == false) {
 				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+					jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
 				cxt->is_polling_run = true;
+				cxt->is_first_data_after_enable = true;
 			}
+			ACT_LOG("act set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
+		ACT_LOG("ACT batch done\n");
 	}
-	if (0 == enable) {
-		ACT_LOG("act disable\n");
+	/* just for debug, remove it when everything is ok */
+	if (cxt->power == 0 && cxt->delay_ns >= 0)
+		ACT_ERR("batch will call firstly in API1.3, do nothing\n");
 
-		cxt->is_active_data = false;
-		cxt->act_ctl.open_report_data(0);
-		if (true == cxt->is_polling_run) {
-			if (false == cxt->act_ctl.is_report_input_direct) {
-				cxt->is_polling_run = false;
-				del_timer_sync(&cxt->timer);
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.probability[0] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[1] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[2] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[3] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[4] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[5] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[6] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[7] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[8] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[9] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[10] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[11] = ACT_INVALID_VALUE;
-			}
-		}
-
-	}
-	act_real_enable(enable);
 	return 0;
-}
-
-
-
-int act_enable_nodata(int enable)
-{
-	struct act_context *cxt = NULL;
-
-	cxt = act_context_obj;
-	if (NULL == cxt->act_ctl.enable_nodata) {
-		ACT_ERR("act_enable_nodata:act ctl path is NULL\n");
-		return -1;
-	}
-
-	if (1 == enable)
-		cxt->is_active_nodata = true;
-
-	if (0 == enable)
-		cxt->is_active_nodata = false;
-
-	act_real_enable(enable);
-	return 0;
-}
-
-
-static ssize_t act_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	ACT_LOG(" not support now\n");
-	return len;
-}
-
-static ssize_t act_store_enable_nodata(struct device *dev, struct device_attribute *attr,
-				       const char *buf, size_t count)
-{
-	struct act_context *cxt = NULL;
-	/* int err =0; */
-	ACT_LOG("act_store_enable nodata buf=%s\n", buf);
-	mutex_lock(&act_context_obj->act_op_mutex);
-	cxt = act_context_obj;
-	if (NULL == cxt->act_ctl.enable_nodata) {
-		ACT_LOG("act_ctl enable nodata NULL\n");
-		mutex_unlock(&act_context_obj->act_op_mutex);
-		return count;
-	}
-	if (!strncmp(buf, "1", 1))
-		act_enable_nodata(1);
-	else if (!strncmp(buf, "0", 1))
-		act_enable_nodata(0);
-	else
-		ACT_ERR(" act_store enable nodata cmd error !!\n");
-
-	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
 }
 
 static ssize_t act_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct act_context *cxt = NULL;
+	struct act_context *cxt = act_context_obj;
+	int err = -1;
 
 	ACT_LOG("act_store_active buf=%s\n", buf);
 	mutex_lock(&act_context_obj->act_op_mutex);
-	cxt = act_context_obj;
-	if (NULL == cxt->act_ctl.open_report_data) {
-		ACT_LOG("act_ctl enable NULL\n");
-		mutex_unlock(&act_context_obj->act_op_mutex);
-		return count;
-	}
 	if (!strncmp(buf, "1", 1))
-		act_enable_data(1);
+		cxt->enable = 1;
 	else if (!strncmp(buf, "0", 1))
-		act_enable_data(0);
-	else
+		cxt->enable = 0;
+	else {
 		ACT_ERR(" act_store_active error !!\n");
-
-	mutex_unlock(&act_context_obj->act_op_mutex);
+		err = -1;
+		goto err_out;
+	}
+	err = act_enable_and_batch();
 	ACT_LOG(" act_store_active done\n");
+err_out:
+	mutex_unlock(&act_context_obj->act_op_mutex);
 	return count;
 }
 
@@ -318,82 +271,23 @@ static ssize_t act_show_active(struct device *dev, struct device_attribute *attr
 	/* return len; */
 }
 
-static ssize_t act_store_delay(struct device *dev, struct device_attribute *attr,
-			       const char *buf, size_t count)
-{
-	/* struct act_context *devobj = (struct act_context*)dev_get_drvdata(dev); */
-	int delay;
-	int mdelay = 0;
-	struct act_context *cxt = NULL;
-	int err = 0;
-
-	mutex_lock(&act_context_obj->act_op_mutex);
-	cxt = act_context_obj;
-	if (NULL == cxt->act_ctl.set_delay) {
-		ACT_LOG("act_ctl set_delay NULL\n");
-		mutex_unlock(&act_context_obj->act_op_mutex);
-		return count;
-	}
-
-	err = kstrtoint(buf, 10, &delay);
-	if (0 != err) {
-		ACT_ERR("invalid format!!\n");
-		mutex_unlock(&act_context_obj->act_op_mutex);
-		return count;
-	}
-
-	if (false == cxt->act_ctl.is_report_input_direct) {
-		mdelay = (int)delay / 1000 / 1000;
-		atomic_set(&act_context_obj->delay, mdelay);
-	}
-	cxt->act_ctl.set_delay(delay);
-	ACT_LOG(" act_delay %d ns\n", delay);
-	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
-}
-
-static ssize_t act_show_delay(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	ACT_LOG(" not support now\n");
-	return len;
-}
-
 static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	struct act_context *cxt = NULL;
+	struct act_context *cxt = act_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
-	int mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
-	if (err != 4)
+	ACT_LOG(" act_store_batch %s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+		&cxt->delay_ns, &cxt->latency_ns);
+	if (err != 4) {
 		ACT_ERR("act_store_batch param error: err = %d\n", err);
-
-	ACT_LOG("act_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+		return -1;
+	}
 	mutex_lock(&act_context_obj->act_op_mutex);
-	cxt = act_context_obj;
-	if (false == cxt->act_ctl.is_report_input_direct) {
-		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
-		atomic_set(&act_context_obj->delay, mdelay);
-	}
-	if (!cxt->act_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		ACT_LOG(" act_store_batch not support\n");
-	}
-	if (NULL != cxt->act_ctl.batch)
-		err = cxt->act_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		ACT_ERR("ACT DRIVER OLD ARCHITECTURE DON'T SUPPORT ACT COMMON VERSION BATCH\n");
-	if (err < 0)
-		ACT_ERR("act enable batch err %d\n", err);
+	err = act_enable_and_batch();
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	ACT_LOG(" act_store_batch done: %d\n", cxt->is_batch_enable);
-	return count;
-
+	return err;
 }
 
 static ssize_t act_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
@@ -563,17 +457,13 @@ static int act_misc_init(struct act_context *cxt)
 	return err;
 }
 
-DEVICE_ATTR(actenablenodata, S_IWUSR | S_IRUGO, act_show_enable_nodata, act_store_enable_nodata);
 DEVICE_ATTR(actactive, S_IWUSR | S_IRUGO, act_show_active, act_store_active);
-DEVICE_ATTR(actdelay, S_IWUSR | S_IRUGO, act_show_delay, act_store_delay);
 DEVICE_ATTR(actbatch, S_IWUSR | S_IRUGO, act_show_batch, act_store_batch);
 DEVICE_ATTR(actflush, S_IWUSR | S_IRUGO, act_show_flush, act_store_flush);
 DEVICE_ATTR(actdevnum, S_IWUSR | S_IRUGO, act_show_devnum, NULL);
 
 static struct attribute *act_attributes[] = {
-	&dev_attr_actenablenodata.attr,
 	&dev_attr_actactive.attr,
-	&dev_attr_actdelay.attr,
 	&dev_attr_actbatch.attr,
 	&dev_attr_actflush.attr,
 	&dev_attr_actdevnum.attr,
