@@ -278,13 +278,13 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 			return -EBUSY;
 		}
 		/* poll status */
-		msleep(700);
+		mdelay(700);
 		while (retry > 0) {
 			err = dcs_get_status_ipi(&sys_dcs_status);
 			if (!err)
 				break;
 			pr_warn("dcs get status (%d)\n", retry);
-			msleep(100);
+			mdelay(100);
 			retry--;
 		}
 		if (retry == 0)
