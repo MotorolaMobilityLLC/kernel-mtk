@@ -11,7 +11,6 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/tracepoint.h>
@@ -21,6 +20,8 @@
 
 #include <linux/kallsyms.h>
 #include <linux/printk.h>
+#include <linux/perf_event.h>
+#include <linux/kthread.h>
 
 /******************************************************************************
  * Tracepoints
@@ -313,4 +314,18 @@ void met_show_pmic_info(unsigned int RegNum, unsigned int pmic_reg)
 {
 }
 EXPORT_SYMBOL(met_show_pmic_info);
+
+u64 met_perf_event_read_local(struct perf_event *ev)
+{
+	return perf_event_read_local(ev);
+}
+EXPORT_SYMBOL(met_perf_event_read_local);
+
+struct task_struct *met_kthread_create_on_cpu(int (*threadfn)(void *data),
+				void *data, unsigned int cpu,
+				const char *namefmt)
+{
+	return kthread_create_on_cpu(threadfn, data, cpu, namefmt);
+}
+EXPORT_SYMBOL(met_kthread_create_on_cpu);
 
