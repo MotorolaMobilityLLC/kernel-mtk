@@ -350,6 +350,7 @@ extern int pmic_get_charging_current(void);
 extern int pmic_get_battery_voltage(void);
 extern int pmic_get_bif_battery_voltage(int *vbat);
 extern int pmic_is_bif_exist(void);
+extern int pmic_enable_hw_vbus_ovp(bool enable);
 extern bool pmic_is_battery_exist(void);
 
 /* FIXME */

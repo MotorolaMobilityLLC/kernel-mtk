@@ -39,24 +39,13 @@ static bool cancel_pe(struct charger_manager *pinfo)
 	return false;
 }
 
-static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
-{
-	int ret = 0;
-
-	ret = pmic_set_register_value(PMIC_RG_VCDT_HV_EN, enable);
-	if (ret != 0)
-		chr_err("%s: failed, ret = %d\n", __func__, ret);
-
-	return ret;
-}
-
 /* Enable/Disable HW & SW VBUS OVP */
 static int pe_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
 
 	/* Enable/Disable HW(PMIC) OVP */
-	ret = pe_enable_hw_vbus_ovp(pinfo, enable);
+	ret = pmic_enable_hw_vbus_ovp(enable);
 	if (ret < 0) {
 		chr_err("%s: failed, ret = %d\n", __func__, ret);
 		return ret;

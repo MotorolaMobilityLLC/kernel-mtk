@@ -124,6 +124,7 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 		tcpm_set_pd_charging_policy(pinfo->tcpc,
 			DPM_CHARGING_POLICY_VSAFE5V, NULL);
 		charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+		pmic_enable_hw_vbus_ovp(true);
 		charger_enable_vbus_ovp(pinfo, true);
 		pinfo->polling_interval = 10;
 		swchgalg->state = CHR_CC;
@@ -507,6 +508,7 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 	chr_err("set TD false\n");
 	charger_dev_enable_termination(pinfo->chg1_dev, false);
 
+	pmic_enable_hw_vbus_ovp(false);
 	charger_enable_vbus_ovp(pinfo, false);
 
 	pdata2 = &pinfo->chg2_data;
