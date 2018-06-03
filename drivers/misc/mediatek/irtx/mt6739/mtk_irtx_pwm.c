@@ -30,12 +30,10 @@
 #include <linux/irq.h>
 #include <linux/clk.h>
 
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#endif
 
 #include <mt-plat/mtk_pwm.h>
 #include <mach/mtk_pwm_hal.h>
@@ -251,7 +249,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	u32 major = 0, minor = 0;
 	int ret = 0;
 
-#ifdef CONFIG_OF
 	if (plat_dev->dev.of_node == NULL) {
 		pr_err("[IRTX] irtx OF node is NULL\n");
 		return -1;
@@ -264,7 +261,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	of_property_read_u32(plat_dev->dev.of_node, "pwm_data_invert", &mt_irtx_dev.pwm_data_invert);
 	pr_debug("[IRTX] device tree info: major=%d pwm=%d invert=%d\n",
 			major, mt_irtx_dev.pwm_ch, mt_irtx_dev.pwm_data_invert);
-#endif
 
 	mt_irtx_dev.ppinctrl_irtx = devm_pinctrl_get(&plat_dev->dev);
 	if (IS_ERR(mt_irtx_dev.ppinctrl_irtx)) {
@@ -323,12 +319,10 @@ static int irtx_probe(struct platform_device *plat_dev)
 	return ret;
 }
 
-#ifdef CONFIG_OF
 static const struct of_device_id irtx_of_ids[] = {
 	{.compatible = "mediatek,irtx-pwm",},
 	{}
 };
-#endif
 
 static struct platform_driver irtx_driver = {
 	.driver = {
@@ -342,11 +336,7 @@ static int __init irtx_init(void)
 	int ret = 0;
 
 	pr_info("[IRTX] irtx init\n");
-#ifdef CONFIG_OF
 	irtx_driver.driver.of_match_table = irtx_of_ids;
-#else
-	pr_info("[IRTX] irtx needs device tree!\n");
-#endif
 
 	ret = platform_driver_register(&irtx_driver);
 	if (ret) {
