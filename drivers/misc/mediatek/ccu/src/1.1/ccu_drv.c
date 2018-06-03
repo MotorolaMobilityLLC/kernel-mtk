@@ -212,8 +212,10 @@ static int ccu_mmap(struct file *flip, struct vm_area_struct *vma);
 
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg);
 
+#ifdef CONFIG_COMPAT
 static long ccu_compat_ioctl(struct file *flip, unsigned int cmd,
 	unsigned long arg);
+#endif
 
 static const struct file_operations ccu_fops = {
 	.owner = THIS_MODULE,
@@ -221,8 +223,10 @@ static const struct file_operations ccu_fops = {
 	.release = ccu_release,
 	.mmap = ccu_mmap,
 	.unlocked_ioctl = ccu_ioctl,
+#ifdef CONFIG_COMPAT
 	/*for 32bit usersapce program doing ioctl, compat_ioctl will be called*/
 	.compat_ioctl = ccu_compat_ioctl
+#endif
 };
 
 /*---------------------------------------------------------------------------*/
@@ -426,6 +430,7 @@ static int ccu_open(struct inode *inode, struct file *flip)
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
 static long ccu_compat_ioctl(struct file *flip, unsigned int cmd,
 	unsigned long arg)
 {
@@ -526,6 +531,7 @@ static long ccu_compat_ioctl(struct file *flip, unsigned int cmd,
 	}
 	return ret;
 }
+#endif
 
 static int ccu_alloc_command(struct ccu_cmd_s **rcmd)
 {

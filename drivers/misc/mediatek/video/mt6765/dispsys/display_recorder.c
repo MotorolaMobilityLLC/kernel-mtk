@@ -924,7 +924,7 @@ int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source,
 	int len = 0;
 	struct dprec_logger *l = &logger[source];
 	unsigned long long fps_high = 0;
-	unsigned long fps_low = 0;
+	unsigned long long fps_low = 0;
 	unsigned long long avg;
 	unsigned long long count;
 	unsigned long long total = 0;
