@@ -628,6 +628,8 @@ static void fbt_list_find_next_max_blc(unsigned int *temp_max_blc,
 static void fbt_list_clear(void)
 {
 	struct fbt_thread_info *pos, *next;
+	struct fbt_thread_bypass *pos2, *next2;
+
 	unsigned long flags;
 	int delete = 0;
 
@@ -662,6 +664,12 @@ static void fbt_list_clear(void)
 	spin_unlock_irqrestore(&loading_slock, flags);
 
 	mutex_lock(&bypasslist_lock);
+	list_for_each_entry_safe(pos2, next2, &bypass_list, entry) {
+		if (pos2) {
+			list_del(&pos2->entry);
+			kfree(pos2);
+		}
+	}
 	INIT_LIST_HEAD(&bypass_list);
 	mutex_unlock(&bypasslist_lock);
 }
