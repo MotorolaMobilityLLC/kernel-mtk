@@ -800,7 +800,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret =
 		    smi_bus_prepare_enable(larb, smi_clk_name[larb], true);
 	if (ret != 0)
@@ -816,7 +816,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret =
 		    smi_bus_disable_unprepare(larb, smi_clk_name[larb], true);
 	if (ret != 0)
@@ -1595,6 +1595,34 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	M4U_PRINT_SEQ(seq, "\n");
 }
 
+
+void m4u_print_port_status_ext(struct seq_file *seq, int tf_port)
+{
+	int mmu_en = 0;
+	int m4u_index, larb, l_port;
+	unsigned long larb_base;
+
+	M4U_PRINT_SEQ(seq, "port_status_ext larb %d========>\n", tf_port);
+
+	m4u_index = m4u_port_2_m4u_id(tf_port);
+	larb = m4u_port_2_larbid(tf_port);
+
+	if (larb >= SMI_LARB_NR) {
+		M4U_PRINT_SEQ(seq, "port_status_ext errror larb %d\n", larb);
+		return;
+	}
+	if (m4u_index == 0) {
+		l_port = m4u_port_2_larb_port(tf_port);
+		larb_base = gLarbBaseAddr[larb];
+		mmu_en = m4uHw_get_field_by_mask(larb_base,
+						 SMI_LARB_NON_SEC_CONx(l_port),
+						 F_SMI_NON_SEC_MMU_EN(1));
+
+	}
+
+	M4U_PRINT_SEQ(seq, "%s(%d)\n", m4u_get_port_name(tf_port), !!mmu_en);
+}
+
 int m4u_register_reclaim_callback(int port, m4u_reclaim_mva_callback_t *fn, void *data)
 {
 	if (port >= M4U_PORT_UNKNOWN) {
@@ -1810,12 +1838,10 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 		m4u_port = m4u_get_port_by_tf_id(m4u_index, regval);
 
 		/* dump something quickly */
-		dump_pgd_info(fault_mva);
 		///m4u_dump_rs_info(m4u_index, slave_id);
 		m4u_dump_invalid_main_tlb(m4u_index, m4u_slave_id);
-		m4u_dump_reg(m4u_index, 0);
-		///m4u_dump_reg(m4u_index, 0x900);
-		///m4u_dump_main_tlb(m4u_index, 0);
+		/* m4u_dump_reg(m4u_index, 0x860); */
+		/* m4u_dump_main_tlb(m4u_index, 0); */
 		/* m4u_dump_pfh_tlb(m4u_index); */
 
 		if (IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)) {
@@ -1845,7 +1871,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 			if (gM4uPort[m4u_port].enable_tf == 1 && bypass_DISP_TF == 0) {
 				m4u_dump_pte_nolock(m4u_get_domain_by_port(m4u_port), fault_mva);
-				m4u_print_port_status(NULL, 1);
+				m4u_print_port_status_ext(NULL, m4u_port);
 
 				/* call user's callback to dump user registers */
 				if (m4u_port < M4U_PORT_UNKNOWN && gM4uPort[m4u_port].fault_fn) {
