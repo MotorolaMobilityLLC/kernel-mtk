@@ -92,6 +92,7 @@ struct governor_profile {
 	bool ddr_dfs;
 	bool mm_clk;
 	bool isr_debug;
+	bool i_hwpath;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
@@ -107,6 +108,7 @@ static struct governor_profile governor_ctrl = {
 	.ddr_dfs = SPM_DDR_DFS_EN,
 	.mm_clk = SPM_MM_CLK_EN,
 	.isr_debug = 0,
+	.i_hwpath = 0,
 
 	.late_init_opp = LATE_INIT_OPP,
 
@@ -201,6 +203,13 @@ bool vcorefs_mm_clk_en(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
 	return gvrctrl->mm_clk;
+}
+
+bool vcorefs_i_hwpath_en(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	return gvrctrl->i_hwpath;
 }
 
 int vcorefs_enable_debug_isr(bool enable)
@@ -395,6 +404,8 @@ int governor_debug_store(const char *buf)
 			set_vcorefs_en();
 		} else if (!strcmp(cmd, "isr_debug")) {
 			vcorefs_enable_debug_isr(val);
+		} else if (!strcmp(cmd, "i_hwpath")) {
+			gvrctrl->i_hwpath = val;
 		} else {
 			r = -EPERM;
 		}
@@ -419,6 +430,7 @@ char *governor_get_dvfs_info(char *p)
 	p += snprintf(p, buff_end - p, "[ddr_dfs  ]: %d\n", gvrctrl->ddr_dfs);
 	p += snprintf(p, buff_end - p, "[mm_clk   ]: %d\n", gvrctrl->mm_clk);
 	p += snprintf(p, buff_end - p, "[isr_debug]: %d\n", gvrctrl->isr_debug);
+	p += snprintf(p, buff_end - p, "[i_hwpath] : %d\n", gvrctrl->i_hwpath);
 	p += snprintf(p, buff_end - p, "\n");
 
 	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
