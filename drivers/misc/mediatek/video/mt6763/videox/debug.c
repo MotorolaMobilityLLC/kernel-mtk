@@ -264,6 +264,7 @@ static int alloc_buffer_from_ion(size_t size, struct test_buf_info *buf_info)
 	struct ion_mm_data mm_data;
 	struct ion_handle *handle;
 	size_t mva_size;
+	ion_phys_addr_t phy_addr;
 
 	client = ion_client_create(g_ion_device, "disp_test");
 	buf_info->ion_client = client;
@@ -293,7 +294,8 @@ static int alloc_buffer_from_ion(size_t size, struct test_buf_info *buf_info)
 		return -1;
 	}
 
-	ion_phys(client, handle, &buf_info->buf_mva, (size_t *)&mva_size);
+	ion_phys(client, handle, &phy_addr, (size_t *)&mva_size);
+	buf_info->buf_mva = (unsigned int)phy_addr;
 	if (buf_info->buf_mva == 0) {
 		DISPERR("Fatal Error, get mva failed\n");
 		ion_free(client, handle);

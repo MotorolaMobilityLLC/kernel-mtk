@@ -1834,6 +1834,7 @@ static int sec_buf_ion_alloc(int buf_size)
 	/*ion_phys_addr_t sec_hnd = 0;*/
 	unsigned long align = 0;/*4096 align*/
 	struct ion_mm_data mm_data;
+	ion_phys_addr_t phy_addr;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	ion_client = ion_client_create(g_ion_device, "display_dc_secmem");
@@ -1868,12 +1869,13 @@ static int sec_buf_ion_alloc(int buf_size)
 	}
 
 	/*2. query sec hnd*/
-	if (ion_phys(ion_client, sec_ion_handle, (unsigned long int *)&sec_hnd, (size_t *)&mva_size)) {
+	if (ion_phys(ion_client, sec_ion_handle, &phy_addr, (size_t *)&mva_size)) {
 		DISPERR("can't query ion buffer physical address!\n");
 		ion_free(ion_client, sec_ion_handle);
 		ion_client_destroy(ion_client);
 		return -1;
 	}
+	sec_hnd = (unsigned int)phy_addr;
 
 	if (sec_hnd == 0) {
 		DISPERR("Fatal Error, get mva failed\n");
@@ -2415,6 +2417,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 	void *buffer_va = NULL;
 	unsigned int buffer_mva = 0;
 	unsigned int mva_size = 0;
+	ion_phys_addr_t phy_addr;
 
 	struct ion_mm_data mm_data;
 
@@ -2454,7 +2457,8 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 			return NULL;
 		}
 
-		ion_phys(client, handle, (unsigned long int *)&buffer_mva, (size_t *)&mva_size);
+		ion_phys(client, handle, &phy_addr, (size_t *)&mva_size);
+		buffer_mva = (unsigned int)phy_addr;
 		if (buffer_mva == 0) {
 			DISPERR("Fatal Error, get mva failed\n");
 			ion_free(client, handle);

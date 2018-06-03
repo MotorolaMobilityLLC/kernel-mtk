@@ -216,6 +216,7 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 {
 	struct ion_mm_data mm_data;
 	unsigned int mva_size;
+	ion_phys_addr_t phy_addr;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	mm_data.config_buffer_param.module_id = port;
@@ -230,7 +231,8 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 		return -1;
 	}
 
-	ion_phys(client, handle, (unsigned long int *)mva, (size_t *)&mva_size);
+	ion_phys(client, handle, &phy_addr, (size_t *)&mva_size);
+	*mva = (unsigned int)phy_addr;
 	DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
 	return 0;
 }
