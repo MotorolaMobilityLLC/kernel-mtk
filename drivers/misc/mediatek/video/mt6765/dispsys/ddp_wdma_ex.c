@@ -1241,7 +1241,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module,
 		do_div(wdma_bw, 1000);
 		wdma_bw *= 1250;
 		do_div(wdma_bw, 1000);
-		DDPMSG("W:width=%u,height=%u,Bpp:%u,bw:%llu\n",
+		DDPDBG("W:width=%u,height=%u,Bpp:%u,bw:%llu\n",
 			config->clipWidth, config->clipHeight, bwBpp, wdma_bw);
 
 		/* bandwidth report */

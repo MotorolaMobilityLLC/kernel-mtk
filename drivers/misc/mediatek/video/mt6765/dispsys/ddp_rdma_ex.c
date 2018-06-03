@@ -1239,7 +1239,7 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module,
 	do_div(rdma_bw, 1000);
 	rdma_bw *= 1250;
 	do_div(rdma_bw, 1000);
-	DDPMSG("R:width=%u,height=%u,Bpp:%u,bw:%llu\n",
+	DDPDBG("R:width=%u,height=%u,Bpp:%u,bw:%llu\n",
 		width, height, bwBpp, rdma_bw);
 
 	/* bandwidth report */

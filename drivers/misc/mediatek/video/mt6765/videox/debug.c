@@ -459,9 +459,10 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 {
 	int ret = 0;
 	unsigned long size_align;
-	unsigned int mva  = 0;
 
 #ifndef CONFIG_MTK_IOMMU_V2
+	unsigned int mva = 0;
+
 	size_align = round_up(size, PAGE_SIZE);
 
 	arch_setup_dma_ops(disp_get_device(), 0, 0, NULL, false);
@@ -477,10 +478,8 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 	buf_info->size = size;
 
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-#ifdef CONFIG_MTK_M4U
 		static struct sg_table table;
 		struct sg_table *sg_table = &table;
-		unsigned int mva;
 
 		sg_alloc_table(sg_table, 1, GFP_KERNEL);
 
@@ -495,11 +494,17 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 			M4U_PROT_READ | M4U_PROT_WRITE, 0, &mva);
 		if (ret)
 			DISPWARN("m4u_alloc_mva returns fail: %d\n", ret);
-#endif
 	}
+	buf_info->buf_mva = mva;
+	DISPMSG("%s MVA is 0x%x PA is 0x%pa\n",
+		__func__, mva, &buf_info->buf_pa);
+	return ret;
+
 #else
+
 	struct ion_client *ion_display_client = NULL;
 	struct ion_handle *ion_display_handle = NULL;
+	unsigned long mva = 0;
 
 	size_align = round_up(size, PAGE_SIZE);
 	ion_display_client = disp_ion_create("disp_cap_ovl");
@@ -518,14 +523,14 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 		goto out;
 	}
 	disp_ion_get_mva(ion_display_client, ion_display_handle,
-		(unsigned long *)&mva, DISP_M4U_PORT_DISP_WDMA0);
+		&mva, DISP_M4U_PORT_DISP_WDMA0);
 
 out:
-#endif
 	buf_info->buf_mva = mva;
-	DISPMSG("%s MVA is 0x%x PA is 0x%pa\n",
+	DISPMSG("%s MVA is 0x%lx PA is 0x%pa\n",
 		__func__, mva, &buf_info->buf_pa);
 	return ret;
+#endif
 }
 
 static int release_test_buf(struct test_buf_info *buf_info)
