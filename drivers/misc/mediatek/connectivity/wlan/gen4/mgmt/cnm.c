@@ -1389,12 +1389,20 @@ VOID cnmRunEventReqChnlUtilTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 	DBGLOG(CNM, INFO, "Request Channel Utilization timeout\n");
 	wlanReleasePendingCmdById(prAdapter, CMD_ID_REQ_CHNL_UTILIZATION);
 	prMsgChUtil = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsgChUtil));
+	if (!prMsgChUtil) {
+		DBGLOG(CNM, ERROR, "Alloc msgChUtil buffer failed\n");
+		return;
+	}
 	kalMemZero(prMsgChUtil, sizeof(*prMsgChUtil));
 	prMsgChUtil->rMsgHdr.eMsgId = prCnmInfo->u2ReturnMID;
 	prMsgChUtil->ucChnlNum = 0;
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
 	/* tell scan_fsm to continue to process scan request, if there's any pending */
 	prScanReqMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prScanReqMsg));
+	if (!prScanReqMsg) {
+		DBGLOG(CNM, ERROR, "Alloc scanReqMsg buffer failed\n");
+		return;
+	}
 	kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
 	prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
