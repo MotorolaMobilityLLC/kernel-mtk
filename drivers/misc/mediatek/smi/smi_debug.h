@@ -54,4 +54,7 @@ extern unsigned short smi_subsys_larb_mapping_table[SMI_SUBSYS_NUM];
 
 extern void smi_dump_clk_status(void);
 extern void smi_dump_larb_m4u_register(int larb);
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+extern void __iomem *mmsys_config_reg;
+#endif
 #endif				/* _SMI_DEBUG_H__ */

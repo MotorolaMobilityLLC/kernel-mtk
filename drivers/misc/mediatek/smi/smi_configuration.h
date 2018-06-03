@@ -339,14 +339,15 @@
 #define SMI_COMMON_PORT_NUM 8
 
 #elif defined(SMI_SYL)
-#define SMI_LARB0_DEBUG_OFFSET_NUM 105
-#define SMI_LARB1_DEBUG_OFFSET_NUM 105
-#define SMI_LARB2_DEBUG_OFFSET_NUM 105
-#define SMI_LARB3_DEBUG_OFFSET_NUM 105
-#define SMI_LARB4_DEBUG_OFFSET_NUM 105
-#define SMI_LARB5_DEBUG_OFFSET_NUM 105
-#define SMI_LARB6_DEBUG_OFFSET_NUM 105
-#define SMI_COMMON_DEBUG_OFFSET_NUM 40
+#define SMI_LARB0_DEBUG_OFFSET_NUM 108
+#define SMI_LARB1_DEBUG_OFFSET_NUM 108
+#define SMI_LARB2_DEBUG_OFFSET_NUM 108
+#define SMI_LARB3_DEBUG_OFFSET_NUM 108
+#define SMI_LARB4_DEBUG_OFFSET_NUM 108
+#define SMI_LARB5_DEBUG_OFFSET_NUM 108
+#define SMI_LARB6_DEBUG_OFFSET_NUM 108
+#define SMI_COMMON_DEBUG_OFFSET_NUM 43
+#define SMI_MMSYS_DEBUG_OFFSET_NUM 12
 
 #define SMI_BASIC_LARB0_SETTING_NUM 6
 #define SMI_BASIC_LARB1_SETTING_NUM 1
@@ -412,6 +413,9 @@ enum SMI_CLK_ID {
 extern unsigned long smi_common_debug_offset[SMI_COMMON_DEBUG_OFFSET_NUM];
 extern int smi_larb_debug_offset_num[SMI_LARB_NUM];
 extern unsigned long *smi_larb_debug_offset[SMI_LARB_NUM];
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+extern unsigned long smi_mmsys_debug_offset[SMI_MMSYS_DEBUG_OFFSET_NUM];
+#endif
 extern struct SMI_SETTING_VALUE smi_vc_setting[SMI_VC_SETTING_NUM];
 extern struct SMI_CLK_INFO smi_clk_info[SMI_CLK_CNT];
 extern struct SMI_SETTING_VALUE *smi_larb_restore[SMI_LARB_NUM];

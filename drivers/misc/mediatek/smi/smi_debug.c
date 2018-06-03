@@ -153,6 +153,27 @@ void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer)
 		    smi_larb_debug_offset_num[u4Index], false);
 }
 
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+void smi_dump_mmsys(int output_gce_buffer)
+{
+	unsigned long u4Base = (unsigned long)mmsys_config_reg;
+	unsigned int smiCommonClkEnabled = 1;
+
+	smiCommonClkEnabled = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
+	if (u4Base == SMI_ERROR_ADDR) {
+		SMIMSG3(output_gce_buffer, "Doesn't support reg dump for mmsys\n");
+		return;
+	} else if (smiCommonClkEnabled == 0) {
+		SMIMSG3(output_gce_buffer, "========== mmsys mtcmos is disable ==========\n");
+		return;
+	}
+
+	SMIMSG3(output_gce_buffer, "========== mmsys reg dump, CLK: %d ==========\n", smiCommonClkEnabled);
+	smi_dumpper(output_gce_buffer, smi_mmsys_debug_offset, u4Base,
+		    SMI_MMSYS_DEBUG_OFFSET_NUM, false);
+}
+#endif
+
 void smi_dumpLarb(unsigned int index)
 {
 	unsigned long u4Base;
@@ -305,6 +326,10 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 				}
 			}
 		}
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+		if (show_dump)
+			smi_dump_mmsys(output_gce_buffer);
+#endif
 	}
 	/* Show the checked result */
 	for (i = 0; i < SMI_LARB_NUM; i++) {	/* Check each larb */

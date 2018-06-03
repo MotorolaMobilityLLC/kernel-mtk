@@ -43,7 +43,7 @@
 
 #define SMIERR(string, args...)\
 	do {\
-		pr_debug("error: " string, ##args); \
+		pr_notice("error: " string, ##args); \
 		aee_kernel_warning(SMI_LOG_TAG, "error: "string, ##args);  \
 	} while (0)
 #define smi_aee_print(string, args...)\
