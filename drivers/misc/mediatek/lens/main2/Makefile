@@ -32,6 +32,9 @@ MAIN2_CFILES  += common/lc898212xdaf_f/LC898212XDAF_F.c
 MAIN2_CFILES  += common/lc898212xdaf_f/LC89821x_STMV.c
 MAIN2_CFILES  += common/lc898217af/LC898217AF.c
 MAIN2_CFILES  += common/ak7371af/AK7371AF.c
+ifeq ($(CONFIG_MTK_LENS_DW9800WAF_SUPPORT), y)
+  MAIN2_CFILES  += common/dw9800waf/DW9800WAF.c
+endif
 MAIN2_CFILES  += common/bu6429af/bu64748af.c
 MAIN2_CFILES  += common/bu6429af/bu64748_function.c
 
@@ -43,6 +46,9 @@ else
 obj-y += main2_lens.o
 obj-y += common/lc898212xdaf_f/
 obj-y += common/ak7371af/
+ifeq ($(CONFIG_MTK_LENS_DW9800WAF_SUPPORT), y)
+  obj-y += common/dw9800waf/
+endif
 obj-y += common/bu64748af/
 obj-y += common/lc898217af/
 
