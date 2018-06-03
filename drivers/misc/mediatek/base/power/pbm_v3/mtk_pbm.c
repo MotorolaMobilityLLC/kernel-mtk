@@ -72,20 +72,15 @@ char log_buffer[128];
 int usedBytes;
 #endif
 
-#define pbm_emerg(fmt, args...)		pr_emerg(fmt, ##args)
-#define pbm_alert(fmt, args...)		pr_alert(fmt, ##args)
-#define pbm_crit(fmt, args...)		pr_crit(fmt, ##args)
-#define pbm_err(fmt, args...)		pr_err(fmt, ##args)
-#define pbm_warn(fmt, args...)		pr_warn(fmt, ##args)
-#define pbm_notice(fmt, args...)	pr_debug(fmt, ##args)
-#define pbm_info(fmt, args...)		pr_debug(fmt, ##args)
-#define pbm_warn_limit(fmt, args...)	pr_warn_ratelimited(fmt, ##args)
-
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
+#define pr_fmt(fmt) "[PBM] " fmt
 
 #define pbm_debug(fmt, args...)	\
 	do {			\
 		if (mt_pbm_debug)		\
-			pr_notice(fmt, ##args);	\
+			pr_info(fmt, ##args);	\
 	} while (0)
 
 #define BIT_CHECK(a, b) ((a) & (1<<(b)))
@@ -299,27 +294,27 @@ static atomic_t kthread_nreq = ATOMIC_INIT(0);
 int __attribute__ ((weak))
 tscpu_get_min_cpu_pwr(void)
 {
-	pbm_warn_limit("%s not ready\n", __func__);
+	pr_warn_ratelimited("%s not ready\n", __func__);
 	return 0;
 }
 
 unsigned int __attribute__ ((weak))
 mt_gpufreq_get_leakage_mw(void)
 {
-	pbm_warn_limit("%s not ready\n", __func__);
+	pr_warn_ratelimited("%s not ready\n", __func__);
 	return 0;
 }
 
 void __attribute__ ((weak))
 mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 {
-	pbm_warn_limit("%s not ready\n", __func__);
+	pr_warn_ratelimited("%s not ready\n", __func__);
 }
 
 u32 __attribute__ ((weak))
 spm_vcorefs_get_MD_status(void)
 {
-	pbm_warn_limit("%s not ready\n", __func__);
+	pr_warn_ratelimited("%s not ready\n", __func__);
 	return 0;
 }
 
@@ -336,7 +331,7 @@ unsigned int ma_to_mw(unsigned int val)
 
 	bat_vol = get_battery_volt();	/* return mV */
 	ret_val = (bat_vol * val) / 1000;	/* mW = (mV * mA)/1000 */
-	pbm_crit("[%s] %d(mV) * %d(mA) = %d(mW)\n",
+	pr_info("[%s] %d(mV) * %d(mA) = %d(mW)\n",
 		__func__, bat_vol, val, ret_val);
 
 	return ret_val;
@@ -472,23 +467,23 @@ static void init_md1_section_level(void)
 	share_mem[SECTION_LEVLE_TDD] = mem_tdd;
 	share_mem[SECTION_1_LEVLE_C2K] = mem_c2k;
 
-	pbm_crit("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), ",
+	pr_info("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), ",
 			mem_2g, share_mem[SECTION_LEVLE_2G],
 			mem_3g, share_mem[SECTION_LEVLE_3G]);
 #if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6765) || \
 	defined(CONFIG_MACH_MT6771)
-pbm_crit("4G_upL1:0x%x(0x%x),4G_upL2:0x%x(0x%x),TDD:0x%x(0x%x),addr:0x%p\n",
+pr_info("4G_upL1:0x%x(0x%x),4G_upL2:0x%x(0x%x),TDD:0x%x(0x%x),addr:0x%p\n",
 			mem_4g_upL1, share_mem[SECTION_LEVLE_4G],
 			mem_4g_upL2, share_mem[SECTION_1_LEVLE_4G],
 			mem_tdd, share_mem[SECTION_LEVLE_TDD],
 			share_mem);
 #else
-	pbm_crit("4G_upL1: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
+	pr_info("4G_upL1: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
 		mem_4g_upL1, share_mem[SECTION_LEVLE_4G],
 		mem_tdd, share_mem[SECTION_LEVLE_TDD],
 		share_mem);
 #endif
-	pbm_crit("C2K section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
+	pr_info("C2K section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
 			mem_c2k, share_mem[SECTION_1_LEVLE_C2K],
 			share_mem);
 }
@@ -501,10 +496,10 @@ void init_md_section_level(enum pbm_kicker kicker)
 		init_md1_section_level();
 		hpfmgr->md1_ccci_ready = 1;
 	} else {
-		pbm_crit("unknown MD kicker: %d\n", kicker);
+		pr_warn("unknown MD kicker: %d\n", kicker);
 	}
 
-	pbm_crit("MD section level init, MD1: %d\n", hpfmgr->md1_ccci_ready);
+	pr_info("MD section level init, MD1: %d\n", hpfmgr->md1_ccci_ready);
 }
 
 static int is_scenario_hit(u32 share_reg, int scenario)
@@ -583,7 +578,7 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 #endif /* CONFIG_MACH_MT6763 */
 #endif /* defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763) */
 	default:
-		pbm_crit("[%s] ERROR, unknown scenario [%d]\n",
+		pr_err("[%s] ERROR, unknown scenario [%d]\n",
 			__func__, scenario);
 		WARN_ON_ONCE(1);
 		break;
@@ -656,7 +651,7 @@ static u32 set_fake_share_reg(int scenario)
 #endif /* CONFIG_MACH_MT6763 */
 #endif /* defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763) */
 	default:
-		pbm_crit("[%s] ERROR, unknown scenario [%d]\n",
+		pr_err("[%s] ERROR, unknown scenario [%d]\n",
 			__func__, scenario);
 		break;
 	}
@@ -1016,7 +1011,7 @@ static int get_md1_dBm_power(int scenario)
 #else
 void init_md_section_level(enum pbm_kicker kicker)
 {
-	pbm_crit("MD_POWER_METER_ENABLE:0\n");
+	pr_notice("MD_POWER_METER_ENABLE:0\n");
 }
 #endif
 
@@ -1261,7 +1256,7 @@ multiple, cpu_lower_bound);
 			pre_tocpu = tocpu;
 			pre_togpu = togpu;
 		} else if ((cpu > tocpu) || (gpu > togpu)) {
-			pbm_warn_limit
+			pr_warn_ratelimited
 ("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
 cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
 		} else {
@@ -1303,7 +1298,7 @@ static bool pbm_update_table_info(enum pbm_kicker kicker, struct mrp *mrpmgr)
 		}
 		break;
 	case KR_MD3:		/* kicker 2 */
-		pr_notice("should not kicker KR_MD3\n");
+		pr_warn("should not kicker KR_MD3\n");
 		break;
 	case KR_CPU:		/* kicker 3 */
 		hpfmgr->cpu_volt = mrpmgr->cpu_volt;
@@ -1586,9 +1581,9 @@ static ssize_t mt_pbm_debug_proc_write
 		else if (debug == 1)
 			mt_pbm_debug = 1;
 		else
-			pbm_warn("should be [0:disable,1:enable]\n");
+			pr_notice("should be [0:disable,1:enable]\n");
 	} else
-		pbm_warn("should be [0:disable,1:enable]\n");
+		pr_notice("should be [0:disable,1:enable]\n");
 
 	return count;
 }
@@ -1629,10 +1624,10 @@ static ssize_t mt_pbm_debug_log_reduc_proc_write
 			mt_pbm_debug = 1;
 			mt_pbm_log_counter = 0;
 		} else {
-			pbm_warn("Should be >=0 [0:disable,other:enable]\n");
+			pr_notice("Should be >=0 [0:disable,other:enable]\n");
 		}
 	} else
-		pbm_warn("Should be >=0 [0:disable,other:enable]\n");
+		pr_notice("Should be >=0 [0:disable,other:enable]\n");
 
 	return count;
 }
