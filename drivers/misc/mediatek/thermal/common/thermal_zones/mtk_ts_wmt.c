@@ -68,9 +68,9 @@ struct linux_thermal_ctrl_if {
 	struct thermal_cooling_device *cl_pa2_dev;
 };
 
-typedef struct wmt_tm {
+struct wmt_tm_t {
 	struct linux_thermal_ctrl_if linux_if;
-} wmt_tm_t;
+};
 
 struct wmt_stats {
 	unsigned long pre_time;
@@ -151,8 +151,8 @@ static unsigned int g_trip_temp[COOLER_NUM] = { 125000, 115000, 105000, 85000, 0
 static int g_thermal_trip[COOLER_NUM] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 /* - Cooler info - */
 
-wmt_tm_t g_wmt_tm;
-wmt_tm_t *pg_wmt_tm = &g_wmt_tm;
+static struct wmt_tm_t g_wmt_tm;
+static struct wmt_tm_t *pg_wmt_tm = &g_wmt_tm;
 
 #define init_wifi_tput_ratio (100)
 

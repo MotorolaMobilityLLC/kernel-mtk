@@ -84,10 +84,10 @@ do {									\
 
 #define PMIC6333_INT_TEMP_CUNT 0xF
 /* static __u32 tempsetting_count=0; */
-typedef struct {
+struct pmic6333_TEMPERATURE {
 	__s32 regsetting;
 	__s32 Temperature;
-} pmic6333_TEMPERATURE;
+};
 
 #define mtkts6311_dprintk(fmt, args...)   \
 do {									\

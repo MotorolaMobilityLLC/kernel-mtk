@@ -121,10 +121,10 @@ pr_debug("[Thermal/TZ/BTSMDPA]" fmt, ##args)
 *    return sys_open(fname, flag, 0);
 *}
 */
-typedef struct {
+struct BTSMDPA_TEMPERATURE {
 	__s32 BTSMDPA_Temp;
 	__s32 TemperatureR;
-} BTSMDPA_TEMPERATURE;
+};
 
 static int g_RAP_pull_up_R = BTSMDPA_RAP_PULL_UP_R;
 static int g_TAP_over_critical_low = BTSMDPA_TAP_OVER_CRITICAL_LOW;
@@ -133,9 +133,9 @@ static int g_RAP_ntc_table = BTSMDPA_RAP_NTC_TABLE;
 static int g_RAP_ADC_channel = BTSMDPA_RAP_ADC_CHANNEL;
 
 static int g_btsmdpa_TemperatureR;
-/* BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {0}; */
+/* struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {0}; */
 
-static BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {
 	{0, 0},
 	{0, 0},
 	{0, 0},
@@ -174,7 +174,7 @@ static BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {
 
 
 /* AP_NTC_BL197 */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table1[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table1[] = {
 	{-40, 74354},		/* FIX_ME */
 	{-35, 74354},		/* FIX_ME */
 	{-30, 74354},		/* FIX_ME */
@@ -212,7 +212,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table1[] = {
 };
 
 /* AP_NTC_TSM_1 */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table2[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table2[] = {
 	{-40, 70603},		/* FIX_ME */
 	{-35, 70603},		/* FIX_ME */
 	{-30, 70603},		/* FIX_ME */
@@ -250,7 +250,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table2[] = {
 };
 
 /* AP_NTC_10_SEN_1 */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table3[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table3[] = {
 	{-40, 74354},		/* FIX_ME */
 	{-35, 74354},		/* FIX_ME */
 	{-30, 74354},		/* FIX_ME */
@@ -289,7 +289,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table3[] = {
 
 #if 0
 /* AP_NTC_10 */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
 	{-20, 68237},
 	{-15, 53650},
 	{-10, 42506},
@@ -310,7 +310,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
 };
 #else
 /* AP_NTC_10(TSM0A103F34D1RZ) */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
 	{-40, 188500},
 	{-35, 144290},
 	{-30, 111330},
@@ -349,7 +349,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table4[] = {
 #endif
 
 /* AP_NTC_47 */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table5[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table5[] = {
 	{-40, 483954},		/* FIX_ME */
 	{-35, 483954},		/* FIX_ME */
 	{-30, 483954},		/* FIX_ME */
@@ -388,7 +388,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table5[] = {
 
 
 /* NTCG104EF104F(100K) */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table6[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table6[] = {
 	{-40, 4251000},
 	{-35, 3005000},
 	{-30, 2149000},
@@ -426,7 +426,7 @@ BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table6[] = {
 };
 
 /* NCP15WF104F03RC(100K) */
-BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table7[] = {
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table7[] = {
 	{-40, 4397119},
 	{-35, 3088599},
 	{-30, 2197225},
@@ -472,7 +472,7 @@ static __s16 mtkts_btsmdpa_thermistor_conver_temp(__s32 Res)
 	__s32 RES1 = 0, RES2 = 0;
 	__s32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
 
-	asize = (sizeof(BTSMDPA_Temperature_Table) / sizeof(BTSMDPA_TEMPERATURE));
+	asize = (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
 	/* mtkts_btsmdpa_dprintk("mtkts_btsmdpa_thermistor_conver_temp() : asize = %d, Res = %d\n",asize,Res); */
 	if (Res >= BTSMDPA_Temperature_Table[0].TemperatureR) {
 		TAP_Value = -40;	/* min */
@@ -922,12 +922,12 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 }
 
 
-void mtkts_btsmdpa_copy_table(BTSMDPA_TEMPERATURE *des, BTSMDPA_TEMPERATURE *src)
+void mtkts_btsmdpa_copy_table(struct BTSMDPA_TEMPERATURE *des, struct BTSMDPA_TEMPERATURE *src)
 {
 	int i = 0;
 	int j = 0;
 
-	j = (sizeof(BTSMDPA_Temperature_Table) / sizeof(BTSMDPA_TEMPERATURE));
+	j = (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
 	/* mtkts_btsmdpa_dprintk("mtkts_btsmdpa_copy_table() : j = %d\n",j); */
 	for (i = 0; i < j; i++)
 		des[i] = src[i];
@@ -975,7 +975,7 @@ void mtkts_btsmdpa_prepare_table(int table_num)
 	{
 		int i = 0;
 
-		for (i = 0; i < (sizeof(BTSMDPA_Temperature_Table) / sizeof(BTSMDPA_TEMPERATURE));
+		for (i = 0; i < (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
 		     i++) {
 			mtkts_btsmdpa_dprintk("BTSMDPA_Temperature_Table[%d].APteryTemp =%d\n", i,
 					      BTSMDPA_Temperature_Table[i].BTSMDPA_Temp);
