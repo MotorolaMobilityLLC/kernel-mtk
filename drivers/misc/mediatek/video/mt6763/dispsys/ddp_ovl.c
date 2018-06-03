@@ -509,7 +509,7 @@ int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 		enum DISP_MODULE_ENUM next, int connect, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
-	u32 val = 0;
+	/*u32 val = 0;*/
 
 	if (connect && is_module_ovl(prev))
 		DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_BGCLR_IN_SEL,
@@ -519,8 +519,9 @@ int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 				   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
 	/* OVL clamp_out */
 	/*val = is_module_rsz(next);*/
-	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
-			   ovl_base + DISP_REG_OVL_DATAPATH_CON, val);
+	/*DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
+	 *ovl_base + DISP_REG_OVL_DATAPATH_CON, val);
+	 */
 	return 0;
 }
 
