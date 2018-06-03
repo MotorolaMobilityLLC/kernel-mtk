@@ -674,13 +674,13 @@ static struct battery_data battery_main = {
 	.BAT_batt_vol = 4200,
 	.BAT_batt_temp = 22,
 	/* Dual battery */
-	.status_smb = POWER_SUPPLY_STATUS_NOT_CHARGING,
+	.status_smb = POWER_SUPPLY_STATUS_DISCHARGING,
 	.capacity_smb = 50,
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
 #else
-	.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING,
+	.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
 	.BAT_PRESENT = 1,
 	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
@@ -688,7 +688,7 @@ static struct battery_data battery_main = {
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
 	/* Dual battery */
-	.status_smb = POWER_SUPPLY_STATUS_NOT_CHARGING,
+	.status_smb = POWER_SUPPLY_STATUS_DISCHARGING,
 	.capacity_smb = 50,
 	.present_smb = 0,
 	/* ADB CMD discharging */
@@ -2208,7 +2208,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			/* charger status need charger API */
 			/* CHR_ERR = -1 */
 			/* CHR_NORMAL = 0 */
-			if (battery_main.BAT_STATUS == POWER_SUPPLY_STATUS_NOT_CHARGING)
+			if (battery_main.BAT_STATUS == POWER_SUPPLY_STATUS_DISCHARGING)
 				charger_status = -1;
 			else
 				charger_status = 0;
@@ -4546,14 +4546,14 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 	case CHARGER_NOTIFY_STOP_CHARGING:
 		{
 /* STOP CHARGING */
-			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING;
 			battery_update(&battery_main);
 		}
 		break;
 	case CHARGER_NOTIFY_ERROR:
 		{
 /* charging enter error state */
-		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING;
 		battery_update(&battery_main);
 		}
 		break;
