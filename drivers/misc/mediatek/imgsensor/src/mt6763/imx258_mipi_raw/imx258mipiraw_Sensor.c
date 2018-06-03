@@ -3053,15 +3053,15 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	if(imx258_type == IMX258_HDR_TYPE)
-		sensor_info->PDAF_Support = 2; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode, 3:PDAF Binning mode*/
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode, 3:PDAF Binning mode*/
 	else if(imx258_type == IMX258_BINNING_TYPE)
-		sensor_info->PDAF_Support = 3;
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV_LEGACY;
 	else if(imx258_type == IMX258_HDD_TYPE)
-		sensor_info->PDAF_Support = 2; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
     else if(imx258_type == IMX258_RAW_TYPE)
-        sensor_info->PDAF_Support = 1;
+        sensor_info->PDAF_Support = PDAF_SUPPORT_RAW;
 	else
-		sensor_info->PDAF_Support = 0;
+		sensor_info->PDAF_Support = PDAF_SUPPORT_NA;
 
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;

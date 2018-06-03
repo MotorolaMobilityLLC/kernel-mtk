@@ -1787,9 +1787,9 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	if(imx362_type == IMX362_HDR_TYPE)
-		sensor_info->PDAF_Support = 4; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
+		sensor_info->PDAF_Support = PDAF_SUPPORT_RAW_DUALPD; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
 	else
-		sensor_info->PDAF_Support = 3; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV_LEGACY; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
 	//sensor_info->PDAF_Support = 0; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
 
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;

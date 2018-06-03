@@ -2476,7 +2476,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_LE_FirstLine          = imgsensor_info.ihdr_le_firstline;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
 	sensor_info->SensorModeNum              = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support               = 0; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
+	sensor_info->PDAF_Support               = PDAF_SUPPORT_NA; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
 
 	sensor_info->SensorMIPILaneNumber       = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq            = imgsensor_info.mclk;

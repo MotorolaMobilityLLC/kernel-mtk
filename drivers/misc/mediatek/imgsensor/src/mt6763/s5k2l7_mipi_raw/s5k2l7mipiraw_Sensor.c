@@ -1426,11 +1426,11 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	 * 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode
 	 */
 	if (pdaf_sensor_mode == 1)
-		sensor_info->PDAF_Support = 4;
+		sensor_info->PDAF_Support = PDAF_SUPPORT_RAW_DUALPD;
 	else if (pdaf_sensor_mode == 3)
-		sensor_info->PDAF_Support = 5;
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV_DUALPD;
 	else
-		sensor_info->PDAF_Support = 0;
+		sensor_info->PDAF_Support = PDAF_SUPPORT_NA;
 
 	sensor_info->HDR_Support = 3;	/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR */
 

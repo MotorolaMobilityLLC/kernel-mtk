@@ -3455,7 +3455,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->TEMPERATURE_SUPPORT = imgsensor_info.temperature_support;
     sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 2; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
+	sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
 #if defined(IMX338_ZHDR)
 	sensor_info->HDR_Support = 3; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	/*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
