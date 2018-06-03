@@ -70,12 +70,20 @@ void bm_timer_callback(unsigned long data)
 	int emi_dcm_status;
 	void __iomem *CEN_EMI_BASE;
 
-	if (!is_dump_latency()) {
-		del_bm_timer();
+	CEN_EMI_BASE = mt_cen_emi_base_get();
+
+	if (CEN_EMI_BASE == NULL) {
+		mod_timer(&bm_timer, jiffies + msecs_to_jiffies(RUNTIME_PERIOD));
 		return;
 	}
 
-	CEN_EMI_BASE = mt_cen_emi_base_get();
+	if (!is_dump_latency()) {
+		emi_dcm_status = BM_GetEmiDcm();
+		BM_SetEmiDcm(0xff);
+		writel(readl(EMI_BMEN) & 0xfffffffc, EMI_BMEN);
+		BM_SetEmiDcm(emi_dcm_status);
+		return;
+	}
 
 	/* backup and disable EMI DCM */
 	emi_dcm_status = BM_GetEmiDcm();
