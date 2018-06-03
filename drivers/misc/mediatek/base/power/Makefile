@@ -67,6 +67,7 @@ obj-$(CONFIG_MACH_MT6799) += cpuidle_v2/
 obj-$(CONFIG_MACH_MT6759) += cpuidle_v2/
 obj-$(CONFIG_MACH_MT6763) += cpuidle_v2/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
+obj-$(CONFIG_MACH_MT6739) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6799) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6759) += power_gs_v1/
