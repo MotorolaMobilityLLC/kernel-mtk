@@ -446,12 +446,12 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 
 	__gpt_stop(dev);
 
-	__gpt_set_cmp(dev, cycles, 0);
-
 	if (cycles < 3) {
 		pr_info("[mt_gpt] invalid cycles < 3\n");
 		cycles = 3;
 	}
+
+	__gpt_set_cmp(dev, cycles, 0);
 
 	__gpt_ack_irq(dev);
 
