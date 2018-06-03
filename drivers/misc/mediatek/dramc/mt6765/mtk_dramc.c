@@ -38,7 +38,7 @@
 #include "mtk_dramc.h"
 #include "dramc.h"
 #ifdef EMI_READY
-#include "emi_bwl.h"
+#include "mt_emi_api.h"
 #endif
 
 #include <mt-plat/aee.h>
