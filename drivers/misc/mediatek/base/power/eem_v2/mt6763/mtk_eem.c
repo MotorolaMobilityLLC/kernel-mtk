@@ -697,7 +697,7 @@ static int get_devinfo(void)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* NR_HW_RES_FOR_BANK =  10 for 5 banks efuse */
-	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
+	for (i = 1; i < NR_HW_RES_FOR_BANK; i++) {
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
@@ -2639,7 +2639,7 @@ static inline void eem_isr_handler(struct eem_det *det)
 	eemintsts = eem_read(EEMINTSTS);
 	eemen = eem_read(EEMEN);
 
-	#if 0
+	#if 1
 	eem_debug("Bk_# = %d %s-isr, 0x%X, 0x%X\n",
 		det->ctrl_id, ((char *)(det->name) + 8), eemintsts, eemen);
 	#endif

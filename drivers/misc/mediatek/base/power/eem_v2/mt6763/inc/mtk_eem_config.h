@@ -22,7 +22,7 @@
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
 	#define EEM_ENABLE		(1) /* enable; after pass HPT mini-SQC */
-	#define EEM_FAKE_EFUSE		(1)
+	#define EEM_FAKE_EFUSE		(0)
 #define UPDATE_TO_UPOWER	(1)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(0)
