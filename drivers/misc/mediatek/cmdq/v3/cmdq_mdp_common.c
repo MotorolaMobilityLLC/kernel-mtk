@@ -23,7 +23,9 @@
 #else
 #include "cmdq_engine.h"
 #endif
+#ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
+#endif
 
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
@@ -301,13 +303,13 @@ long cmdq_mdp_get_module_base_VA_MMSYS_CONFIG(void)
 static void cmdq_mdp_enable_common_clock_virtual(bool enable)
 {
 #ifdef CMDQ_PWR_AWARE
-#ifdef CONFIG_MTK_SMI
+#ifdef CONFIG_MTK_SMI_EXT
 	if (enable) {
 		/* Use SMI clock API */
-		smi_bus_enable(SMI_LARB_MMSYS0, "CMDQ");
+		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "CMDQ", true);
 	} else {
 		/* disable, reverse the sequence */
-		smi_bus_disable(SMI_LARB_MMSYS0, "CMDQ");
+		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "CMDQ", true);
 	}
 #endif
 #endif	/* CMDQ_PWR_AWARE */
