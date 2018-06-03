@@ -2491,7 +2491,7 @@ VOID wlanProcessInfoFile(IN P_ADAPTER_T prAdapter)
 	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
 		, "%s\n", "Mediatek");
 	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
-		, "DRIVER_VER: %s\n", NIC_DRIVER_VERSION_STRING);
+		, "DRIVER_VER: %s%s000\n", RELEASE_DATE, SERIAL_NUMBER);
 	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
 		, "FW_VER: %x.%x.%x\n", prAdapter->rVerInfo.u2FwOwnVersion >> 8,
 		prAdapter->rVerInfo.u2FwOwnVersion & 0xff,
