@@ -60,23 +60,6 @@ static int extd_create_path(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 
 	return ret;
 }
-
-/*
- *
-static int extd_recompute_bg(int src_w, int src_h, unsigned int session)
-{
-	int ret = 0;
-	int device_id = (session & 0x0FF) - 1;
-
-	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->ioctl)
-		ret = extd_driver[DEV_MHL]->ioctl(RECOMPUTE_BG_CMD, src_w, src_h, NULL);
-	else if (device_id == DEV_EINK && extd_driver[DEV_EINK]->ioctl)
-		ret = extd_driver[DEV_EINK]->ioctl(RECOMPUTE_BG_CMD, src_w, src_h, NULL);
-
-	return ret;
-}
-*/
-
 static int extd_get_device_type(unsigned int session)
 {
 	int ret = -1;

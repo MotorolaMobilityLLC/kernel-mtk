@@ -76,121 +76,13 @@ static unsigned int ovl_layer_num;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the gloable variable~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 LCM_PARAMS  extd_interface_params;
-/*
-* struct task_struct *fence_release_task = NULL;
-* wait_queue_head_t fence_release_wq;
-* atomic_t fence_release_event = ATOMIC_INIT(0);
-*/
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the definition~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#define LCM_SESSION_ID          (0x20003)
+#define EXTD_LCM_SESSION_ID          (0x20003)
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-
-unsigned int lcm_get_width(void)
-{
-	return extd_interface_params.width;
-
-}
-
-unsigned int lcm_get_height(void)
-{
-	return extd_interface_params.height;
-}
-
-#if 0
-static void rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
-{
-	if (param & 0x2) {	/* start */
-		atomic_set(&fence_release_event, 1);
-		wake_up_interruptible(&fence_release_wq);
-	}
-}
-
-static int fence_release_kthread(void *data)
-{
-	int layid = 0;
-	int ovl_release = 0;
-	unsigned int session_id = 0;
-	int fence_idx = 0;
-	bool ovl_reg_updated = false;
-	unsigned long input_curr_addr[EXTD_OVERLAY_CNT];
-	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
-
-	sched_setscheduler(current, SCHED_RR, &param);
-
-	for (;;) {
-		wait_event_interruptible(fence_release_wq, atomic_read(&fence_release_event));
-		atomic_set(&fence_release_event, 0);
-
-		ovl_reg_updated = false;
-		session_id = ext_disp_get_sess_id();
-		fence_idx = -1;
-
-		/*LCM_LOG("fence_release_kthread wake up\n");*/
-		if (session_id == 0 || !ext_disp_is_alive())
-			continue;
-
-		if (ext_disp_path_source_is_RDMA(LCM_SESSION_ID)) {
-			if (ext_disp_get_ovl_req_status(LCM_SESSION_ID) == EXTD_OVL_REMOVED) {
-				ext_disp_path_change(EXTD_OVL_NO_REQ, LCM_SESSION_ID);
-
-				if ((ovl_release == 1) && (EXTD_OVERLAY_CNT > 1)) {
-					for (layid = 1; layid < EXTD_OVERLAY_CNT; layid++) {
-						fence_idx = disp_sync_find_fence_idx_by_addr(session_id,
-										layid, ovl_config_address[layid]);
-						fence_idx = ((fence_idx >= 0) ? (fence_idx + 1) : fence_idx);
-						mtkfb_release_fence(session_id, layid, fence_idx);
-					}
-
-					ovl_release = 0;
-				}
-			}
-
-			ext_disp_get_curr_addr(input_curr_addr, 0);
-			fence_idx = disp_sync_find_fence_idx_by_addr(session_id, 0, input_curr_addr[0]);
-			mtkfb_release_fence(session_id, 0, fence_idx);
-
-		} else {
-			if (ext_disp_get_ovl_req_status(LCM_SESSION_ID) == EXTD_OVL_INSERTED)
-				ext_disp_path_change(EXTD_OVL_NO_REQ, LCM_SESSION_ID);
-
-			ext_disp_get_curr_addr(input_curr_addr, 1);
-			for (layid = 0; layid < EXTD_OVERLAY_CNT; layid++) {
-				if (ovl_config_address[layid] != input_curr_addr[layid]) {
-					ovl_config_address[layid] = input_curr_addr[layid];
-					ovl_reg_updated = true;
-					ovl_release = 1;
-				}
-
-				if (ext_disp_is_dim_layer(input_curr_addr[layid]) == 1)
-					fence_idx = disp_sync_find_fence_idx_by_addr(session_id, layid, 0);
-				else
-					fence_idx = disp_sync_find_fence_idx_by_addr(session_id,
-										layid, input_curr_addr[layid]);
-				LCM_LOG("Donglei - ovl release, mva:0x%lx, fence_idx:%d\n",
-						input_curr_addr[layid], fence_idx);
-				mtkfb_release_fence(session_id, layid, fence_idx);
-			}
-
-			if (ovl_reg_updated == false) {
-				MMProfileLogEx(ddp_mmp_get_events()->Extd_trigger,
-						MMProfileFlagPulse, input_curr_addr[0], input_curr_addr[1]);
-			}
-
-			MMProfileLogEx(ddp_mmp_get_events()->Extd_UsedBuff,
-					MMProfileFlagPulse, input_curr_addr[0], input_curr_addr[1]);
-		}
-
-		if (kthread_should_stop())
-			break;
-	}
-
-	return 0;
-}
-#endif
-
 int lcm_get_dev_info(int is_sf, void *info)
 {
 	int ret = 0;
@@ -218,27 +110,11 @@ int lcm_get_dev_info(int is_sf, void *info)
 		dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
 
 		dispif_info->isConnected = 1;
-/*
-*		LCM_LOG("DEV_INFO configuration displayHeight:%u, displayWidth:%u, mode:%u\n",
-*			dispif_info->displayHeight, dispif_info->displayWidth, dispif_info->displayMode);
-*/
 	}
 
 	return ret;
 }
-/*
- *
-	int lcm_power_enable(int enable)
-	{
-		if (enable) {
-			ext_disp_resume(0x20003);
-		} else {
-			ext_disp_suspend(0x20003);
-		}
 
-		return 0;
-	}
-*/
 void lcm_set_layer_num(int layer_num)
 {
 	if (layer_num >= 0)
@@ -281,16 +157,6 @@ int lcm_post_init(void)
 			memcpy(&extd_interface_params, lcm_param, sizeof(LCM_PARAMS));
 	}
 
-/*
-*	init_waitqueue_head(&fence_release_wq);
-*
-*	if (!fence_release_task) {
-*		disp_register_module_irq_callback(DISP_MODULE_RDMA, rdma_irq_handler);
-*		fence_release_task = kthread_create(fence_release_kthread,
-*							NULL, "fence_release_kthread");
-*		wake_up_process(fence_release_task);
-*	}
-*/
 	Extd_DBG_Init();
 	return 0;
 }
