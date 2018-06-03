@@ -161,6 +161,10 @@ int ovl2mem_get_info(void *info)
 	return 0;
 }
 
+void *mtk_ovl_get_dpmgr_handle(void)
+{
+	return pgcl->dpmgr_handle;
+}
 
 static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp_input_config *src)
 {

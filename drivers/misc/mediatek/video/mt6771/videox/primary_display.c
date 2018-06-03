@@ -96,6 +96,7 @@
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #include <linux/pm_qos.h>
 #endif
+#include "mtk_ovl.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -2598,9 +2599,11 @@ static int _DC_switch_to_DL_fast(int block)
 	/*[SVP]switch ddp mosule to nonsec when deinit the extension path*/
 	switch_module_to_nonsec(pgc->ovl2mem_path_handle, NULL, DISP_MODULE_WDMA0, __func__);
 #endif
-	/*before power off, we should wait wdma0_eof first!!!*/
-	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
-	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	if (!mtk_ovl_get_dpmgr_handle()) {
+		/* before power off, we should wait wdma0_eof first!!! */
+		_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
+		cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	}
 	/* wait and get_mutex in the last frame configs */
 
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
