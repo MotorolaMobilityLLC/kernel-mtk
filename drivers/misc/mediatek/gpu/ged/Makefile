@@ -23,9 +23,10 @@ ccflags-y += -DMTK_GED_KPI
 ccflags-y += -DGED_KPI_CPU_BOOST
 endif
 
-
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6775" "mt6771"))
+ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DGED_ENABLE_FB_DVFS
+endif
 endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763"))

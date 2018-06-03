@@ -59,12 +59,12 @@ static int g_dvfs_skip_round;
 static unsigned int gpu_power;
 static unsigned int gpu_dvfs_enable;
 static unsigned int gpu_debug_enable;
-static unsigned int boost_gpu_enable;
 
 MTK_GPU_DVFS_TYPE g_CommitType;
 unsigned long g_ulCommitFreq;
 
 #ifdef ENABLE_COMMON_DVFS
+static unsigned int boost_gpu_enable;
 static unsigned int gpu_bottom_freq;
 static unsigned int gpu_cust_boost_freq;
 static unsigned int gpu_cust_upbound_freq;
@@ -413,8 +413,10 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			break;
 		case GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT:
 			/* touch boost */
+#ifdef ENABLE_COMMON_DVFS
 			if (bSwitch == GED_TRUE)
 				ged_dvfs_boost_gpu_freq();
+#endif
 
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_TOUCH) :
 				(g_ui32EventStatus &= (~GED_EVENT_TOUCH));
@@ -827,6 +829,7 @@ static bool ged_dvfs_policy(
 }
 
 
+#ifdef ENABLE_COMMON_DVFS
 static void ged_dvfs_freq_input_boostCB(unsigned int ui32BoostFreqID)
 {
 	if (g_iSkipCount > 0)
@@ -847,7 +850,6 @@ static void ged_dvfs_freq_input_boostCB(unsigned int ui32BoostFreqID)
 	mutex_unlock(&gsDVFSLock);
 }
 
-#ifdef ENABLE_COMMON_DVFS
 static void ged_dvfs_freq_thermal_limitCB(unsigned int ui32LimitFreqID)
 {
 	if (0 < g_iSkipCount)
@@ -1319,7 +1321,9 @@ GED_ERROR ged_dvfs_system_init()
 
 	/* GPU HAL fp mount */
 	mt_gpufreq_power_limit_notify_registerCB(ged_dvfs_freq_thermal_limitCB);
+#ifdef ENABLE_COMMON_DVFS
 	mtk_boost_gpu_freq_fp = ged_dvfs_boost_gpu_freq;
+#endif
 	mtk_set_bottom_gpu_freq_fp = ged_dvfs_set_bottom_gpu_freq;
 	mtk_get_bottom_gpu_freq_fp = ged_dvfs_get_bottom_gpu_freq;
 	mtk_custom_get_gpu_freq_level_count_fp = ged_dvfs_get_gpu_freq_level_count;
