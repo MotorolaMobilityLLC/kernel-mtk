@@ -36,6 +36,11 @@
 #define CPUDVFS_POWER_MODE
 #endif
 
+#if defined(CONFIG_MACH_MT6763) && \
+	defined(CONFIG_MTK_ACAO_SUPPORT)
+#include "../misc/mediatek/include/mt-plat/mt6763/include/mach/mtk_cpufreq_api.h"
+#endif
+
 #ifdef CPUDVFS_POWER_MODE
 static unsigned int hispeed_freq_perf;
 static unsigned int min_sample_time_perf;
@@ -499,7 +504,15 @@ pass_t:
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
 	cpumask_set_cpu(data, &speedchange_cpumask);
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+
+#if defined(CONFIG_MACH_MT6763) && \
+	defined(CONFIG_MTK_ACAO_SUPPORT)
+	/* Not to wake up speedchange_task if schedule hint enable */
+	if (!mt_cpufreq_get_sched_enable())
+		wake_up_process(speedchange_task);
+#else
 	wake_up_process(speedchange_task);
+#endif
 
 rearm:
 	if (!timer_pending(&pcpu->cpu_timer))

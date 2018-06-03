@@ -35,6 +35,7 @@ extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched
 extern int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq);
 #endif
 extern unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq);
+extern int mt_cpufreq_get_sched_enable(void);
 
 /* ICCS */
 extern int mt_cpufreq_set_iccs_frequency_by_cluster(int en, unsigned int cluster_id, unsigned int freq);

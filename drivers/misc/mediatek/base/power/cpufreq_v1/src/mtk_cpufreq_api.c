@@ -223,3 +223,8 @@ int mt_cpufreq_get_ppb_state(void)
 {
 	return dvfs_power_mode;
 }
+
+int mt_cpufreq_get_sched_enable(void)
+{
+	return sched_dvfs_enable;
+}
