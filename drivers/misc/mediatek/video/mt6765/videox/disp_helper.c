@@ -346,15 +346,15 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 
 	/* =================Begin: lowpower option setting================= */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 0);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
-	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	0);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 0);
 	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	0);
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
