@@ -75,7 +75,7 @@ static DEVICE_ATTR_RO(name);
 
 static inline bool init_done(struct zram *zram)
 {
-	return zram->disksize;
+	return zram ? zram->disksize : 0;
 }
 
 static inline struct zram *dev_to_zram(struct device *dev)
