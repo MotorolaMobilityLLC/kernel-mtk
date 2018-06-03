@@ -2422,7 +2422,7 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
 
 	/* get hw consume bytes */
-	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
+	if (HW_memory_index >= Afe_Block->u4DMAReadIdx) {
 		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
 	} else {
 		Afe_consumed_bytes =
@@ -2473,8 +2473,10 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}

@@ -61,6 +61,7 @@
 #include "audio_ipi_client_spkprotect.h"
 #include "audio_dma_buf_control.h"
 #include "mtk-auddrv-scp-spkprotect-common.h"
+#include "audio_spkprotect_msg_id.h"
 
 #include <linux/wakelock.h>
 #include <linux/dma-mapping.h>
@@ -104,6 +105,8 @@ static int mspkiv_meminterface_type;
 static bool vcore_dvfs_enable;
 
 
+static struct audio_resv_dram_t *p_resv_dram;
+static struct SPK_PROTECT_SERVICE spk_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static struct audio_resv_dram_t *p_resv_dram_normal;
 static scp_reserve_mblock_t ScpReserveBuffer;
@@ -125,23 +128,34 @@ static int mtk_dl1spk_probe(struct platform_device *pdev);
 static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream);
 static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform);
 static void set_dl1_spkbuffer(struct snd_pcm_substream *substream,
-			struct snd_pcm_hw_params *hw_params);
+			      struct snd_pcm_hw_params *hw_params);
 static void stop_spki2s2adc2_hardware(struct snd_pcm_substream *substream);
 static void start_spki2s2adc2_hardware(struct snd_pcm_substream *substream);
+static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol);
+static int audio_spk_pcm_dump_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol);
+
 
 static int mdl1spk_hdoutput_control;
 static bool mdl1spkPrepareDone;
 
 static const void *spk_irq_user_id;
 static unsigned int spk_irq_cnt;
-
 static struct device *mDev;
-
 static const char * const dl1_scpspk_HD_output[] = {"Off", "On"};
+static const char * const dl1_scpspk_pcmdump[] = {"Off", "On"};
+static bool scpspk_pcmdump;
+
 
 static const struct soc_enum Audio_dl1spk_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dl1_scpspk_HD_output), dl1_scpspk_HD_output),
 };
+
+static const struct soc_enum audio_dl1spk_pcmdump_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dl1_scpspk_pcmdump), dl1_scpspk_pcmdump),
+};
+
 
 static int audio_dl1spk_hdoutput_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
@@ -213,9 +227,11 @@ static int audio_irqcnt7_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static const struct snd_kcontrol_new Audio_snd_dl1spk_controls[] = {
 	SOC_ENUM_EXT("Audio_dl1spk_hd_Switch", Audio_dl1spk_Enum[0],
-	audio_dl1spk_hdoutput_get, audio_dl1spk_hdoutput_set),
+		     audio_dl1spk_hdoutput_get, audio_dl1spk_hdoutput_set),
 	SOC_SINGLE_EXT("Audio spk IRQ7 CNT", SND_SOC_NOPM, 0, IRQ_MAX_RATE, 0,
-	audio_irqcnt7_spk_get, audio_irqcnt7_set),
+		       audio_irqcnt7_spk_get, audio_irqcnt7_set),
+	SOC_ENUM_EXT("Audio_spk_pcm_dump", audio_dl1spk_pcmdump_enum[0],
+		     audio_spk_pcm_dump_get, audio_spk_pcm_dump_set),
 };
 
 static struct snd_pcm_hardware mtk_dl1spk_hardware = {
@@ -244,6 +260,13 @@ static int mtk_pcm_dl1spk_stop(struct snd_pcm_substream *substream)
 	spk_irq_user_id = NULL;
 	irq_remove_user(substream, SpkIrq_mode);
 
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	if (!in_interrupt()) {
+		spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_DIRECT_SEND, SPK_PROTECT_STOP,
+		1, 0, NULL);
+	}
+#endif
+
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 	stop_spki2s2adc2_hardware(substream);
 
@@ -263,13 +286,6 @@ static int mtk_pcm_dl1spk_stop(struct snd_pcm_substream *substream)
 
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 
-#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	if (!in_interrupt()) {
-		spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_STOP,
-			1, 0, NULL);
-	}
-#endif
-
 	return 0;
 }
 
@@ -281,6 +297,7 @@ static snd_pcm_uframes_t mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substr
 	kal_int32 Afe_consumed_bytes = 0;
 	struct afe_block_t *Afe_Block = &pdl1spkMemControl->rBlock;
 	unsigned long flags;
+	bool underflow = false;
 
 	if (pdl1spkMemControl == NULL) {
 		pr_debug("%s err afe_mem_control = NULL", __func__);
@@ -310,7 +327,8 @@ static snd_pcm_uframes_t mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substr
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		if (Afe_Block->u4DataRemained < 0) {
-			pr_debug("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
+			pr_info("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
+			underflow = true;
 		};
 		Frameidx = bytes_to_frames(substream->runtime, Afe_Block->u4DMAReadIdx);
 	} else {
@@ -318,6 +336,8 @@ static snd_pcm_uframes_t mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substr
 	}
 
 	spin_unlock_irqrestore(&pdl1spkMemControl->substream_lock, flags);
+	if (underflow == true)
+		return -1;
 	return Frameidx;
 }
 
@@ -378,7 +398,7 @@ static int dl1spk_get_scpdram_buffer(void)
 {
 	memset(&ScpReserveBuffer, 0, sizeof(ScpReserveBuffer));
 	ScpReserveBuffer.num = SPK_PROTECT_MEM_ID;
-	p_resv_dram_normal = get_reserved_dram();
+	p_resv_dram_normal = get_reserved_dram_spkprotect();
 	ScpReserveBuffer.start_phys = scp_get_reserve_mem_phys(ScpReserveBuffer.num);
 	ScpReserveBuffer.start_virt = scp_get_reserve_mem_virt(ScpReserveBuffer.num);
 	ScpReserveBuffer.size = scp_get_reserve_mem_size(ScpReserveBuffer.num);
@@ -524,26 +544,26 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 
 	audio_task_register_callback(
 		TASK_SCENE_SPEAKER_PROTECTION,
-		spkprocservice_ipicmd_received,
+		spkproc_service_ipicmd_received,
 		dl1scpspk_task_nnloaded_handling
 	);
 
 	/* audio_reg_recv_message(TASK_SCENE_SPEAKER_PROTECTION, spkprocservice_ipicmd_received);*/
 	dl1spk_get_scpdram_buffer();
+	dl1spk_allocate_feedback_buffer(substream, hw_params);
 	dl1spk_allocate_platform_buffer(substream, hw_params);
 	dl1spk_allocate_platformdl_buffer(substream, hw_params);
-	dl1spk_allocate_feedback_buffer(substream, hw_params);
 
 	payloadlen = packIpi_payload(SPK_PROTECT_PLATMEMPARAM, 0, 0, &PlatformBuffer, substream);
-	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_PLATMEMPARAM,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_PLATMEMPARAM,
 			payloadlen, 0, (char *) ipi_payload_buf);
 
 	payloadlen = packIpi_payload(SPK_PROTECT_DLMEMPARAM, 0, 0, &SpkDL1Buffer, substream);
-	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_DLMEMPARAM,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_DLMEMPARAM,
 			payloadlen, 0, (char *)ipi_payload_buf);
 
 	payloadlen = packIpi_payload(SPK_PROTECT_IVMEMPARAM, 0, 0, &Dl1Spk_runtime_feedback_dma_buf, substream);
-	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_IVMEMPARAM,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_IVMEMPARAM,
 			payloadlen, 0, (char *)ipi_payload_buf);
 
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
@@ -589,6 +609,7 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	mspkPlaybackDramState = false;
+	p_resv_dram = get_reserved_dram();
 
 	pr_debug("mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
 		mtk_dl1spk_hardware.buffer_bytes_max, mspkPlaybackDramState);
@@ -624,22 +645,22 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	scp_register_feature(SPEAKER_PROTECT_FEATURE_ID);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_OPEN,
+	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_OPEN,
 			1, 0, NULL);
 #endif
 
 	return 0;
 }
 
-static int dl1spk_close;
+static int dl1spk_close_count;
 static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s\n", __func__);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_CLOSE,
-			dl1spk_close, 0, NULL);
-	dl1spk_close++;
+	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, SPK_PROTECT_CLOSE,
+			dl1spk_close_count, 0, NULL);
+	dl1spk_close_count++;
 #endif
 
 	if (mdl1spkPrepareDone == true) {
@@ -765,12 +786,11 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 		}
 
 		EnableAfe(true);
-
 		mdl1spkPrepareDone = true;
 	}
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	payloadlen = packIpi_payload(SPK_PROTECT_PREPARE, 0, 0, NULL, substream);
-	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_PREPARE,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_PREPARE,
 			payloadlen, dl1spk_prepare_count, (char *)ipi_payload_buf);
 	dl1spk_prepare_count++;
 #endif
@@ -799,8 +819,8 @@ static int mtk_pcm_dl1spk_start(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	if (!in_interrupt())
-		spkprocservice_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_START,
-			1, 0, NULL);
+		spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_DIRECT_SEND, SPK_PROTECT_START,
+		1, 0, NULL);
 #endif
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);
@@ -809,6 +829,7 @@ static int mtk_pcm_dl1spk_start(struct snd_pcm_substream *substream)
 
 	start_spki2s2adc2_hardware(substream);
 
+	/* here to set interrupt */
 	irq_add_user(substream,
 		Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
 		substream->runtime->rate,
@@ -817,6 +838,66 @@ static int mtk_pcm_dl1spk_start(struct snd_pcm_substream *substream)
 
 	EnableAfe(true);
 
+	return 0;
+}
+
+
+#define SPK_IPIMSG_TIMEOUT            50
+#define SPK_WAITCHECK_INTERVAL_MS      (2)
+static bool spkprotect_service_ipicmd_wait(int id)
+{
+	int timeout = 0;
+
+	while (spk_protect_service.ipiwait) {
+		msleep(SPK_WAITCHECK_INTERVAL_MS);
+		if (timeout++ >= SPK_IPIMSG_TIMEOUT) {
+			/* pr_debug("Error: IPI MSG timeout:id_%x\n", id); */
+			spk_protect_service.ipiwait = false;
+			return false;
+		}
+	}
+	return true;
+}
+
+
+static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s = %d\n", __func__, m_scpspk_pcmdump);
+
+	if (m_scpspk_pcmdump == false && ucontrol->value.integer.value[0] == true) {
+		m_scpspk_pcmdump = true;
+		spkprotect_open_dump_file();
+		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+					    AUDIO_IPI_MSG_BYPASS_ACK,
+					    SPK_PROTTCT_PCMDUMP_ON,
+					    p_resv_dram->size,
+					    m_scpspk_pcmdump,
+					    p_resv_dram->phy_addr);
+		spk_protect_service.ipiwait = true;
+	} else if (m_scpspk_pcmdump == true && ucontrol->value.integer.value[0] == false) {
+		m_scpspk_pcmdump = false;
+		spkprotect_service_ipicmd_wait(SPK_PROTECT_PCMDUMP_OK);
+		spkprotect_close_dump_file();
+		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+					    AUDIO_IPI_MSG_BYPASS_ACK,
+					    SPK_PROTTCT_PCMDUMP_OFF,
+					    p_resv_dram->size,
+					    m_scpspk_pcmdump,
+					    p_resv_dram->phy_addr);
+	}
+	return 0;
+}
+
+static int audio_spk_pcm_dump_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(dl1_scpspk_pcmdump)) {
+		pr_debug("return -EINVAL\n");
+		return -EINVAL;
+	}
+	ucontrol->value.integer.value[0] = m_scpspk_pcmdump;
 	return 0;
 }
 
@@ -848,7 +929,7 @@ static int mtk_pcm_dl1spk_copy(struct snd_pcm_substream *substream,
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	payloadlen = packIpi_payload(SPK_PROTECT_DLCOPY, pos, framecount, NULL, substream);
-	spkprocservice_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK, SPK_PROTECT_DLCOPY,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_DIRECT_SEND, SPK_PROTECT_DLCOPY,
 			payloadlen, 0, (char *)ipi_payload_buf);
 #endif
 	return ret;
@@ -907,6 +988,10 @@ static int mtk_dl1spk_probe(struct platform_device *pdev)
 				&mtk_dl1spk_soc_platform);
 }
 
+static struct spk_dump_ops dump_ops = {
+	.spk_dump_callback = spkprotect_dump_message,
+};
+
 static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 {
 	pr_debug("mtk_afe_dl1spk_probe\n");
@@ -935,9 +1020,12 @@ static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 	wake_lock_init(&scp_spk_suspend_lock, WAKE_LOCK_SUSPEND, "scpspk lock");
 #endif
 
+	audio_ipi_client_spkprotect_init();
+	spkproc_service_set_spk_dump_message(&dump_ops);
+
 	audio_task_register_callback(
 		TASK_SCENE_SPEAKER_PROTECTION,
-		spkprocservice_ipicmd_received,
+		spkproc_service_ipicmd_received,
 		dl1scpspk_task_nnloaded_handling
 	);
 
@@ -947,6 +1035,7 @@ static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 static int mtk_dl1spk_remove(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
+	audio_ipi_client_spkprotect_deinit();
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }

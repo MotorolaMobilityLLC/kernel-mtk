@@ -487,7 +487,7 @@ static int mtk_pcm_scp_voice_hw_params(struct snd_pcm_substream *substream,
 
 	audio_task_register_callback(
 		TASK_SCENE_SPEAKER_PROTECTION,
-		spkprocservice_ipicmd_received,
+		spkproc_service_ipicmd_received,
 		NULL
 	);
 
