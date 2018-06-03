@@ -1867,7 +1867,7 @@ void print_block_sock_info(unsigned long data)
 	struct sock *peer = NULL;
 	unsigned long long time = jiffies - print_info->when;
 
-	if (sk->sk_family != AF_UNIX)
+	if (!sk || (sk->sk_family != AF_UNIX))
 		return;
 
 	u = unix_sk(sk);
