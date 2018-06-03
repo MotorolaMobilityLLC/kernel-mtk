@@ -921,6 +921,7 @@ void dump_emi_outstanding_for_md(void)
 
 void dump_emi_latency(void)
 {
+#if 0
 	int emi_dcm_status;
 	unsigned int temp;
 	unsigned int bw_total, bw_apmcu, bw_mdmcu, bw_mm;
@@ -1024,4 +1025,7 @@ void dump_emi_latency(void)
 	BM_SetEmiDcm(emi_dcm_status);
 
 	dump_emi_outstanding_for_md();
+#else
+	return;
+#endif
 }
