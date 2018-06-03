@@ -1075,7 +1075,7 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 	}
 
 	if (get_devinfo() == C_MT6763TT) {
-		if (enable_lpm) {
+		if (enable_lpm && !mt_gpufreq_ptpod_disable) {
 			/* Enable VPROC LPM */
 			ret = _mt_gpufreq_get_lpm_status(VPROC);
 			if (ret != 1) {
@@ -1120,7 +1120,7 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 		gpufreq_info("@%s: [Set LPM] enable_lpm:%d VPROC:%d\n", __func__, enable_lpm, ret);
 #endif
 	} else {
-		if (enable_lpm)
+		if (enable_lpm && !mt_gpufreq_ptpod_disable)
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		else
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
@@ -1133,10 +1133,13 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 #endif /* MTK_SSPM */
 
 #ifndef MTK_SSPM
-	if (enable_lpm)
+	if (enable_lpm) {
 		mt_gpufreq_volt_lpm_state = 1;
-	else
+		mt_gpufreq_volt_enable_state = 0;
+	} else {
 		mt_gpufreq_volt_lpm_state = 0;
+		mt_gpufreq_volt_enable_state = 1;
+	}
 SET_LPM_EXIT:
 	mutex_unlock(&mt_gpufreq_lock);
 #endif
@@ -1152,10 +1155,8 @@ EXPORT_SYMBOL(mt_gpufreq_voltage_lpm_set);
 void mt_gpufreq_enable_by_ptpod(void)
 {
 #ifdef VOLT_SET_READY
-#ifdef PTPOD_READY
 	gpufreq_warn("[Figo] Power off by mt_gpufreq_enable_by_ptpod\n");
 	mt_gpufreq_voltage_enable_set(0);
-#endif
 #endif
 #ifdef MTK_GPU_SPM
 	if (mt_gpufreq_ptpod_disable)
@@ -1187,6 +1188,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 #endif
 
 	mt_gpufreq_ptpod_disable = true;
+	mt_gpufreq_voltage_lpm_set(0);
 	gpufreq_info("mt_gpufreq disabled by ptpod\n");
 
 	for (i = 0; i < mt_gpufreqs_num; i++) {
@@ -1198,10 +1200,8 @@ void mt_gpufreq_disable_by_ptpod(void)
 	mt_gpufreq_ptpod_disable_idx = target_idx;
 
 #ifdef VOLT_SET_READY
-#ifdef PTPOD_READY
 	gpufreq_warn("[Figo] Power on by mt_gpufreq_disable_by_ptpod\n");
 	mt_gpufreq_voltage_enable_set(1);
-#endif
 #endif
 	mt_gpufreq_target(target_idx);
 }
@@ -4142,7 +4142,10 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 #endif
 		gpufreq_dbg("@ %s, mt_gpufreq_volt_switch2 fix frq = %d, fix volt = %d, volt = %d\n",
 			__func__, mt_gpufreq_fixed_frequency, mt_gpufreq_fixed_voltage, g_cur_gpu_volt);
-		mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
+		if (get_devinfo() == C_MT6763TT)
+			mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
+		else
+			mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
 		g_cur_gpu_volt = mt_gpufreq_fixed_voltage;
 	}
 }
