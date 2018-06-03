@@ -186,7 +186,7 @@ static int mtk_afe_set_i2s_out(struct mtk_afe *afe, unsigned int rate,
 	if (bit_width > 16)
 		val |= AFE_I2S_CON1_WLEN_32BIT;
 
-	regmap_update_bits(afe->regmap, AFE_I2S_CON1, ~AFE_I2S_CON1_EN, val);
+	regmap_update_bits(afe->regmap, AFE_I2S_CON1, ~(u32)AFE_I2S_CON1_EN, val);
 
 	return 0;
 }
@@ -207,7 +207,7 @@ static int mtk_afe_set_2nd_i2s_out(struct mtk_afe *afe, unsigned int rate,
 	if (bit_width > 16)
 		val |= AFE_I2S_CON3_WLEN_32BIT;
 
-	regmap_update_bits(afe->regmap, AFE_I2S_CON3, ~AFE_I2S_CON3_EN, val);
+	regmap_update_bits(afe->regmap, AFE_I2S_CON3, ~(u32)AFE_I2S_CON3_EN, val);
 
 	return 0;
 }
@@ -228,7 +228,7 @@ static int mtk_afe_set_i2s_in(struct mtk_afe *afe, unsigned int rate,
 	if (bit_width > 16)
 		val |= AFE_I2S_CON2_WLEN_32BIT;
 
-	regmap_update_bits(afe->regmap, AFE_I2S_CON2, ~AFE_I2S_CON2_EN, val);
+	regmap_update_bits(afe->regmap, AFE_I2S_CON2, ~(u32)AFE_I2S_CON2_EN, val);
 
 	regmap_update_bits(afe->regmap, AFE_ADDA_TOP_CON0, 0x1, 0x1);
 
@@ -254,7 +254,7 @@ static int mtk_afe_set_2nd_i2s_in(struct mtk_afe *afe, unsigned int rate,
 	if (bit_width > 16)
 		val |= AFE_I2S_CON_WLEN_32BIT;
 
-	regmap_update_bits(afe->regmap, AFE_I2S_CON, ~AFE_I2S_CON_EN, val);
+	regmap_update_bits(afe->regmap, AFE_I2S_CON, ~(u32)AFE_I2S_CON_EN, val);
 
 	return 0;
 }
@@ -1204,7 +1204,7 @@ static int mtk_afe_hdmi_prepare(struct snd_pcm_substream *substream,
 	      AFE_TDM_CON1_32_BCK_CYCLES |
 	      AFE_TDM_CON1_LRCK_WIDTH(32);
 
-	regmap_update_bits(afe->regmap, AFE_TDM_CON1, ~AFE_TDM_CON1_EN, val);
+	regmap_update_bits(afe->regmap, AFE_TDM_CON1, ~(u32)AFE_TDM_CON1_EN, val);
 
 	/* set tdm2 config */
 	switch (runtime->channels) {
@@ -1262,12 +1262,12 @@ static int mtk_afe_hdmi_trigger(struct snd_pcm_substream *substream, int cmd,
 				   AUD_TCON0_PDN_HDMI | AUD_TCON0_PDN_SPDF, 0);
 
 		/* TODO: align the connection logic with HDMI Tx */
-		/* set connections:  O30~O37: L/R/LS/RS/C/LFE/CH7/CH8 */
+		/* set connections:  O28~O35: L/R/LFE/C/LS/RS/CH7/CH8 */
 		regmap_write(afe->regmap, AFE_HDMI_CONN0,
-			     AFE_HDMI_CONN0_O30_I30 | AFE_HDMI_CONN0_O31_I31 |
-			     AFE_HDMI_CONN0_O32_I34 | AFE_HDMI_CONN0_O33_I35 |
-			     AFE_HDMI_CONN0_O34_I32 | AFE_HDMI_CONN0_O35_I33 |
-			     AFE_HDMI_CONN0_O36_I36 | AFE_HDMI_CONN0_O37_I37);
+			     AFE_HDMI_CONN0_O28_I28 | AFE_HDMI_CONN0_O29_I29 |
+			     AFE_HDMI_CONN0_O30_I31 | AFE_HDMI_CONN0_O31_I30 |
+			     AFE_HDMI_CONN0_O32_I32 | AFE_HDMI_CONN0_O33_I33 |
+			     AFE_HDMI_CONN0_O34_I34 | AFE_HDMI_CONN0_O35_I35);
 
 		/* enable Out control */
 		regmap_update_bits(afe->regmap, AFE_HDMI_OUT_CON0, 0x1, 0x1);
