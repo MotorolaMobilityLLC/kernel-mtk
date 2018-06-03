@@ -33,10 +33,10 @@ static unsigned int curr_res_usage;
 
 static const char * const spm_resource_name[] = {
 	"mainpll",
-	"dram",
-	"26m",
+	"dram   ",
+	"26m    ",
 	"axi_bus",
-	"cpu"
+	"cpu    "
 };
 
 static struct dentry *spm_resource_req_file;
