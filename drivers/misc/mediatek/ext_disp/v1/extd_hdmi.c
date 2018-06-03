@@ -267,6 +267,22 @@ int hdmi_cable_fake_connect(int connect)
 	return 0;
 }
 
+int hdmi_audio_setting(void *audio_param)
+{
+	int ret = 0;
+	struct HDMITX_AUDIO_PARA audio_para;
+
+	if (copy_from_user(&audio_para, audio_param, sizeof(audio_para))) {
+		HDMI_LOG("copy_from_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	} else {
+		if (hdmi_drv->audiosetting)
+			hdmi_drv->audiosetting(&audio_para);
+	}
+
+	return ret;
+}
+
 int hdmi_allocate_hdmi_buffer(void)
 {
 /*
@@ -1615,6 +1631,7 @@ const struct EXTD_DRIVER *EXTD_HDMI_Driver(void)
 		.fake_connect = hdmi_cable_fake_connect,
 		.factory_mode_test = NULL,
 		.ioctl = hdmi_ioctl,
+		.audio_setting = hdmi_audio_setting,
 #else
 		.init = 0,
 #endif
