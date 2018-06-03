@@ -1634,7 +1634,7 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 		break;
 	}
 	case 1: {
-		bw_cal = (G_PM_QOS[module].bw_sum / 1000000) * G_PM_QOS[module].fps; /* MByte/s */
+		bw_cal = (G_PM_QOS[module].bw_sum * G_PM_QOS[module].fps) / 1000000; /* MByte/s */
 		bw_cal = bw_cal * margin;/* MByte/s */
 		break;
 	}
@@ -2778,34 +2778,38 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_SET_PM_QOS:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 2) == 0) {
-			#ifdef CONFIG_MTK_QOS_SUPPORT
-			static int bw_request[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
-			if (DebugFlag[1] < ISP_IRQ_TYPE_INT_CAM_A_ST ||
-				DebugFlag[1] > ISP_IRQ_TYPE_INT_CAM_C_ST) {
-				LOG_NOTICE("HW_module error:%d", DebugFlag[1]);
-				Ret = -EFAULT;
-				break;
-			}
-			if (DebugFlag[0] == 1) {
-				pm_qos_add_request(&camsys_qos_request[DebugFlag[1]], PM_QOS_MM_MEMORY_BANDWIDTH,
-							PM_QOS_DEFAULT_VALUE);
-				Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
-				bw_request[DebugFlag[1]]++;
-			} else {
-				if (bw_request[DebugFlag[1]] == 0)
+		{
+			if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 2) == 0) {
+				#ifdef CONFIG_MTK_QOS_SUPPORT
+				static int bw_request[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
+
+				if (DebugFlag[1] < ISP_IRQ_TYPE_INT_CAM_A_ST ||
+					DebugFlag[1] > ISP_IRQ_TYPE_INT_CAM_C_ST) {
+					LOG_NOTICE("HW_module error:%d", DebugFlag[1]);
+					Ret = -EFAULT;
 					break;
-				Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
-				pm_qos_remove_request(&camsys_qos_request[DebugFlag[1]]);
-				bw_request[DebugFlag[1]]--;
+				}
+				if (DebugFlag[0] == 1) {
+					if (++bw_request[DebugFlag[1]] == 1) {
+						pm_qos_add_request(&camsys_qos_request[DebugFlag[1]],
+						PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+					}
+					Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
+				} else {
+					if (bw_request[DebugFlag[1]] == 0)
+						break;
+					Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
+					pm_qos_remove_request(&camsys_qos_request[DebugFlag[1]]);
+					bw_request[DebugFlag[1]] = 0;
+				}
+				#else
+				LOG_NOTICE("ISP_SET_PM_QOS is not supported\n");
+				break;
+				#endif
+			} else {
+				LOG_NOTICE("ISP_SET_PM_QOS copy_from_user failed\n");
+				Ret = -EFAULT;
 			}
-			#else
-			LOG_NOTICE("ISP_SET_PM_QOS is not supported\n");
-			break;
-			#endif
-		} else {
-			LOG_NOTICE("ISP_SET_PM_QOS copy_from_user failed\n");
-			Ret = -EFAULT;
 		}
 		break;
 #endif
