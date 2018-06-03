@@ -420,7 +420,7 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
 	reg_buff_addr2 = PWM_register[pwm_no] + 4 * PWM_BUF_BASE_ADDR2;
-
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 	if (addr > 0xFFFFFFFF) {
 		/* addr bit[36:32] */
 		CLRREG32(reg_buff_addr2, 0x1F);
@@ -431,7 +431,10 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 		CLRREG32(reg_buff_addr2, 0x1F);
 		OUTREG32_DMA(reg_buff0_addr, addr);
 	}
-
+#else
+	CLRREG32(reg_buff_addr2, 0x1F);
+	OUTREG32_DMA(reg_buff0_addr, addr);
+#endif
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
