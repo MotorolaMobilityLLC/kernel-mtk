@@ -324,7 +324,7 @@ static ssize_t mtktstsx_write(struct file *file, const char __user *buffer, size
 
 	if (sscanf
 	    (ptr_mtktstsx_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktstsx_data->trip[0], &ptr_mtktstsx_data->t_type[0], ptr_mtktstsx_data->bind0,
 		&ptr_mtktstsx_data->trip[1], &ptr_mtktstsx_data->t_type[1], ptr_mtktstsx_data->bind1,

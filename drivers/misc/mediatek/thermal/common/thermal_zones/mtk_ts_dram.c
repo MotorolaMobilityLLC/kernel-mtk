@@ -303,7 +303,7 @@ static ssize_t mtktsdram_write(struct file *file, const char __user *buffer, siz
 
 	if (sscanf
 	    (ptr_mtktsdram_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktsdram_data->trip[0], &ptr_mtktsdram_data->t_type[0], ptr_mtktsdram_data->bind0,
 		&ptr_mtktsdram_data->trip[1], &ptr_mtktsdram_data->t_type[1], ptr_mtktsdram_data->bind1,

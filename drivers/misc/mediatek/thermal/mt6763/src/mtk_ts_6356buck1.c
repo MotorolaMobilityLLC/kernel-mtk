@@ -318,7 +318,7 @@ static ssize_t mt6356tsbuck1_write(struct file *file, const char __user *buffer,
 
 	if (sscanf
 	    (ptr_mt6356tsbuck1_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mt6356tsbuck1_data->trip[0], &ptr_mt6356tsbuck1_data->t_type[0], ptr_mt6356tsbuck1_data->bind0,
 		&ptr_mt6356tsbuck1_data->trip[1], &ptr_mt6356tsbuck1_data->t_type[1], ptr_mt6356tsbuck1_data->bind1,
