@@ -47,7 +47,9 @@
 #include "imgsensor_hw.h"
 #include "imgsensor_i2c.h"
 #include "imgsensor_proc.h"
+#ifdef IMGSENSOR_OC_ENABLE
 #include "imgsensor_oc.h"
+#endif
 #include "imgsensor.h"
 
 static DEFINE_MUTEX(gimgsensor_mutex);
@@ -1592,7 +1594,10 @@ static int imgsensor_probe(struct platform_device *pplatform_device)
 	imgsensor_i2c_create();
 	imgsensor_proc_init();
 	imgsensor_init_sensor_list();
+
+#ifdef IMGSENSOR_OC_ENABLE
 	imgsensor_oc_init();
+#endif
 
 	return 0;
 }
