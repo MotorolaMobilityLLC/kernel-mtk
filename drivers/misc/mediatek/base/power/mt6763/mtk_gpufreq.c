@@ -75,7 +75,7 @@ static void __iomem *g_apmixed_base;
 
 #include <linux/regulator/consumer.h>
 #include <mtk_vcorefs_manager.h>
-#include "mtk_devinfo.h"
+#include <mtk_devinfo.h>
 
 /* #define BRING_UP */
 /* #define SET_EXT_FREQ_LEVEL */
@@ -91,10 +91,15 @@ static void __iomem *g_apmixed_base;
  **************************************************/
 
 #ifndef MTK_SSPM
-/* #define STATIC_PWR_READY2USE */
+#define STATIC_PWR_READY2USE
 #else
 #include "sspm_ipi.h"
 #include "mtk_gpufreq_ipi.h"
+#endif
+
+#ifdef STATIC_PWR_READY2USE
+#include "mtk_static_power.h"
+#include "mtk_static_power_mt6763.h"
 #endif
 
 /*
@@ -711,8 +716,8 @@ static struct input_handler mt_gpufreq_input_handler = {
 static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 					  unsigned int volt, unsigned int temp)
 {
-#define GPU_ACT_REF_POWER		845	/* mW  */
-#define GPU_ACT_REF_FREQ		850000	/* KHz */
+#define GPU_ACT_REF_POWER		1018	/* mW  */
+#define GPU_ACT_REF_FREQ		950000	/* KHz */
 #define GPU_ACT_REF_VOLT		90000	/* mV x 100 */
 
 	unsigned int p_total = 0, p_dynamic = 0, ref_freq = 0, ref_volt = 0;
@@ -728,7 +733,7 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 
 #ifdef STATIC_PWR_READY2USE
 	p_leakage =
-		mt_spower_get_leakage(MT_SPOWER_GPU, (volt / 100), temp);
+		mt_spower_get_leakage(MTK_SPOWER_GPU, (volt / 100), temp);
 	if (!mt_gpufreq_volt_enable_state || p_leakage < 0)
 		p_leakage = 0;
 #else
@@ -2582,7 +2587,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 #endif
 
 #ifdef STATIC_PWR_READY2USE
-	leak_power = mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
+	leak_power = mt_spower_get_leakage(MTK_SPOWER_GPU, cur_vcore, temp);
 	if (mt_gpufreq_volt_enable_state && leak_power > 0)
 		return leak_power;
 	else
