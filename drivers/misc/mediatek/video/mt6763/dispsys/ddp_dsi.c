@@ -783,6 +783,10 @@ void DSI_clk_HS_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, b
 			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_PHY_PCPAT, 0x55);
 			DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 					EARLY_HS_POE, 0);
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+					TRAIL_FIX, 0);
+			DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+					EARLY_DRDY, 0);
 			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_HS_TX_EN, 1);
 		} else if (!enter) {
@@ -1333,6 +1337,7 @@ enum DSI_STATUS DSI_PS_Control(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
 		DSI_OUTREGBIT(cmdq, struct DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_SEL,
 			      ps_sel_bitvalue);
+		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_SIZE_CON, h<<16 | w);
 	}
 
 	return DSI_STATUS_OK;
@@ -4117,6 +4122,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	int i = 0;
 	unsigned int data_array[16];
 
+	DISPFUNC();
 	if (_dsi_context[i].dsi_params.mode == CMD_MODE) {
 		data_array[0] = 0x002c3909;
 		DSI_set_cmdq(module, cmdq, data_array, 1, 0);

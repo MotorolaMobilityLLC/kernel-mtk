@@ -694,6 +694,7 @@ static int _fps_ctx_reset(struct fps_ctx_t *fps_ctx, int reserve_num)
 	return 0;
 }
 
+#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix exception, please remove me. */
 static int _fps_ctx_update(struct fps_ctx_t *fps_ctx, unsigned int fps, unsigned long long time_ns)
 {
 	int i;
@@ -714,6 +715,7 @@ static int _fps_ctx_update(struct fps_ctx_t *fps_ctx, unsigned int fps, unsigned
 	return 0;
 }
 
+#endif
 static int fps_ctx_init(struct fps_ctx_t *fps_ctx, int wnd_sz)
 {
 	if (fps_ctx->is_inited)
@@ -790,6 +792,7 @@ static int _fps_ctx_check_drastic_change(struct fps_ctx_t *fps_ctx, unsigned int
 
 static int fps_ctx_update(struct fps_ctx_t *fps_ctx)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix exception, please remove me. */
 	unsigned int abs_fps, avg_fps;
 	unsigned long long ns = sched_clock();
 
@@ -812,6 +815,7 @@ static int fps_ctx_update(struct fps_ctx_t *fps_ctx)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->fps_set, MMPROFILE_FLAG_PULSE, abs_fps, fps_ctx->cur_wnd_sz);
 	mutex_unlock(&fps_ctx->lock);
+#endif
 	return 0;
 }
 
@@ -5420,15 +5424,14 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 		DISPERR("session input config size not equal frame config size\n");
 		return -1;
 	}
-
 	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
 	if (frame_cfg == NULL)
 		return -ENOMEM;
-
 	frame_cfg->session_id = session_input->session_id;
 	frame_cfg->setter = session_input->setter;
 	frame_cfg->input_layer_num = session_input->config_layer_num;
 	frame_cfg->overlap_layer_num = 4;
+
 	memcpy(frame_cfg->input_cfg, session_input->config, sizeof(frame_cfg->input_cfg));
 
 	_primary_path_lock(__func__);
