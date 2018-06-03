@@ -91,9 +91,10 @@ int show_cpu_capacity(char *buf, int buf_size)
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 #endif
 		len += snprintf(buf+len, buf_size-len,
-			"cpu=%d orig_cap=%lu cap=%lu max_cap=%lu max=%lu min=%lu ",
+			"cpu=%d orig=%4lu(%4lu) cap=%4lu max_cap=%4lu max=%4lu min=%4lu ",
 			cpu,
 			cpu_rq(cpu)->cpu_capacity_orig,
+			cpu_rq(cpu)->cpu_capacity_hw,
 			cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
 			cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
 			/* limited frequency */
@@ -102,7 +103,7 @@ int show_cpu_capacity(char *buf, int buf_size)
 			);
 
 		len += snprintf(buf+len, buf_size-len,
-			"cur_freq=%luMHZ, cur=%lu util=%lu cfs=%lu rt=%lu (%s)\n",
+			"cur_freq=%4luMHZ, cur=%4lu util=%4lu cfs=%4lu rt=%4lu (%s)\n",
 			/* current frequency */
 			cpu_online(cpu)?capacity_curr_of(cpu) *
 			arch_scale_get_max_freq(cpu) /
@@ -224,6 +225,12 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 
 	len += snprintf(buf+len, max_len - len, "max_cap_cpu=%d\n",
 		cpu_rq(0)->rd->max_cpu_capacity.cpu);
+
+	len += snprintf(buf+len, max_len - len, "max_cap_orig_cpu=%d\n",
+		cpu_rq(0)->rd->max_cap_orig_cpu);
+
+	len += snprintf(buf+len, max_len - len, "min_cap_orig_cpu=%d\n",
+		cpu_rq(0)->rd->min_cap_orig_cpu);
 
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n",
 		power_tuning.watershed);

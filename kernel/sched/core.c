@@ -7854,12 +7854,12 @@ static int build_sched_domains(const struct cpumask *cpu_map,
 		int max_cpu = READ_ONCE(d.rd->max_cap_orig_cpu);
 		int min_cpu = READ_ONCE(d.rd->min_cap_orig_cpu);
 
-		if ((max_cpu < 0) || (cpu_rq(i)->cpu_capacity_orig >
-		    cpu_rq(max_cpu)->cpu_capacity_orig))
+		if ((max_cpu < 0) || (cpu_rq(i)->cpu_capacity_hw >
+		    cpu_rq(max_cpu)->cpu_capacity_hw))
 			WRITE_ONCE(d.rd->max_cap_orig_cpu, i);
 
-		if ((min_cpu < 0) || (cpu_rq(i)->cpu_capacity_orig <
-		    cpu_rq(min_cpu)->cpu_capacity_orig))
+		if ((min_cpu < 0) || (cpu_rq(i)->cpu_capacity_hw <
+		    cpu_rq(min_cpu)->cpu_capacity_hw))
 			WRITE_ONCE(d.rd->min_cap_orig_cpu, i);
 
 		sd = *per_cpu_ptr(d.sd, i);

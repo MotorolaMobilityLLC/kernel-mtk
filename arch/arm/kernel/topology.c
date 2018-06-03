@@ -398,3 +398,18 @@ void __init init_cpu_topology(void)
 
 	init_sched_energy_costs();
 }
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+	static int
+cpu_capacity_sync(void)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		update_cpu_capacity(cpu);
+
+	return 0;
+}
+
+late_initcall_sync(cpu_capacity_sync)
+#endif
