@@ -128,6 +128,8 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.self_refresh = mmprofile_register_event(DDP_MMP_Events.primary_Parent, "self_refresh");
 		DDP_MMP_Events.fps_set =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_set");
 		DDP_MMP_Events.fps_get =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_get");
+		DDP_MMP_Events.fps_ext_set =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_ext_set");
+		DDP_MMP_Events.fps_ext_get =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_ext_get");
 
 		DDP_MMP_Events.primary_error =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_error");
@@ -340,6 +342,8 @@ void init_ddp_mmp_events(void)
 		mmprofile_enable_event(DDP_MMP_Events.primary_sw_mutex, 0);
 		mmprofile_enable_event(DDP_MMP_Events.fps_get, 0);
 		mmprofile_enable_event(DDP_MMP_Events.fps_set, 0);
+		mmprofile_enable_event(DDP_MMP_Events.fps_ext_get, 1);
+		mmprofile_enable_event(DDP_MMP_Events.fps_ext_set, 1);
 		mmprofile_enable_event_recursive(DDP_MMP_Events.primary_seq_info, 0);
 	}
 }

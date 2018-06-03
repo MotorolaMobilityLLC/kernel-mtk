@@ -75,6 +75,8 @@ struct DDP_MMP_Events {
 	mmp_event self_refresh;
 	mmp_event fps_set;
 	mmp_event fps_get;
+	mmp_event fps_ext_set;
+	mmp_event fps_ext_get;
 	mmp_event primary_error;
 	mmp_event ovl_trigger;
 	mmp_event interface_trigger;

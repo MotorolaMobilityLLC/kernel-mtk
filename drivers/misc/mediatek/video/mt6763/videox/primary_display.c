@@ -667,6 +667,17 @@ struct fps_ctx_t {
 	int is_inited;
 } primary_fps_ctx;
 
+#define INTERVAL_MS	10000	/* 10 sec */
+struct fps_ext_ctx_t {
+	unsigned long long last_trig;
+	unsigned long long total;
+	unsigned long long interval;	/* ns */
+	unsigned int fps;
+	unsigned int stable;
+	struct mutex lock;
+	int is_inited;
+} primary_fps_ext_ctx;
+
 #if 0 /* defined but not used */
 static struct task_struct *fps_monitor;
 static int fps_monitor_thread(void *data);
@@ -869,6 +880,119 @@ static int fps_ctx_set_wnd_sz(struct fps_ctx_t *fps_ctx, unsigned int wnd_sz)
 	return 0;
 }
 
+static int fps_ext_ctx_init(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
+{
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT) == 0)
+		return 0;
+
+	if (fps_ctx == NULL) {
+		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
+		return -1;
+	}
+	if (ms > INTERVAL_MS) {
+		DISPERR("%s:%d, interval is too big:%d ms, max:%d ms\n", __func__, __LINE__, ms, INTERVAL_MS);
+		return -1;
+	}
+
+	if (fps_ctx->is_inited)
+		return 0;
+
+	memset(fps_ctx, 0, sizeof(*fps_ctx));
+	mutex_init(&fps_ctx->lock);
+	fps_ctx->interval = (unsigned long long)ms * 1000000;	/* ms to ns */
+
+	fps_ctx->is_inited = 1;
+
+	return 0;
+}
+
+static int fps_ext_ctx_update(struct fps_ext_ctx_t *fps_ctx)
+{
+	unsigned long long ns = sched_clock();
+	unsigned long long delta;
+	unsigned long long fps;
+
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT) == 0)
+		return 0;
+
+	if (fps_ctx == NULL) {
+		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
+		return -1;
+	}
+
+	mutex_lock(&fps_ctx->lock);
+	fps_ctx->total++;
+
+	delta = ns - fps_ctx->last_trig;
+	if (delta > fps_ctx->interval) {
+		/* calculate fps */
+		fps = fps_ctx->interval * fps_ctx->total;
+		do_div(fps, delta);
+		fps_ctx->fps = (unsigned int)fps;
+		fps_ctx->last_trig = ns;
+
+		/* reset frame count */
+		fps_ctx->total = 0;
+		fps_ctx->stable = 0;
+	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->fps_ext_set, MMPROFILE_FLAG_PULSE, fps_ctx->fps, fps_ctx->stable);
+	mutex_unlock(&fps_ctx->lock);
+
+	return 0;
+}
+
+static int fps_ext_ctx_get_fps(struct fps_ext_ctx_t *fps_ctx, unsigned int *fps, int *stable)
+{
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT) == 0)
+		return 0;
+
+	if (fps_ctx == NULL) {
+		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
+		return -1;
+	}
+	if (fps == NULL) {
+		DISPERR("%s:%d, fps is null\n", __func__, __LINE__);
+		return -1;
+	}
+	if (stable == NULL) {
+		DISPERR("%s:%d, stable is null\n", __func__, __LINE__);
+		return -1;
+	}
+
+	mutex_lock(&fps_ctx->lock);
+	*fps = fps_ctx->fps;
+	*stable = fps_ctx->stable;
+
+	mmprofile_log_ex(ddp_mmp_get_events()->fps_ext_get, MMPROFILE_FLAG_PULSE, fps_ctx->fps, fps_ctx->stable);
+	mutex_unlock(&fps_ctx->lock);
+
+	return 0;
+}
+
+static int fps_ext_ctx_set_interval(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
+{
+	if (!fps_ctx->is_inited)
+		return fps_ext_ctx_init(fps_ctx, ms);
+
+	if (fps_ctx == NULL) {
+		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
+		return -1;
+	}
+	if (ms > INTERVAL_MS) {
+		DISPERR("%s:%d, interval is too big:%d ms, max:%d ms\n", __func__, __LINE__, ms, INTERVAL_MS);
+		return -1;
+	}
+
+	mutex_lock(&fps_ctx->lock);
+
+	fps_ctx->total = 0;
+	fps_ctx->interval = (unsigned long long)ms * 1000000;	/* ms to ns */
+
+	mutex_unlock(&fps_ctx->lock);
+	return 0;
+}
+
 #if 0 /* defined but not used */
 static int fps_ctx_get_wnd_sz(struct fps_ctx_t *fps_ctx, unsigned int *cur_wnd, unsigned int *max_wnd)
 {
@@ -885,6 +1009,11 @@ static int fps_ctx_get_wnd_sz(struct fps_ctx_t *fps_ctx, unsigned int *cur_wnd, 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz)
 {
 	return fps_ctx_set_wnd_sz(&primary_fps_ctx, wnd_sz);
+}
+
+int primary_fps_ext_ctx_set_interval(unsigned int interval)
+{
+	return fps_ext_ctx_set_interval(&primary_fps_ext_ctx, interval);
 }
 
 #if 0 /* defined but not used */
@@ -3283,6 +3412,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	mutex_init(&(pgc->switch_dst_lock));
 
 	fps_ctx_init(&primary_fps_ctx, disp_helper_get_option(DISP_OPT_FPS_CALC_WND));
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT))
+		fps_ext_ctx_init(&primary_fps_ext_ctx, disp_helper_get_option(DISP_OPT_FPS_EXT_INTERVAL));
 
 	_primary_path_lock(__func__);
 
@@ -5283,6 +5414,10 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
 		fps_ctx_update(&primary_fps_ctx);
+
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT))
+		fps_ext_ctx_update(&primary_fps_ext_ctx);
+
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO))
 		primary_show_basic_debug_info(cfg);
 
@@ -5887,7 +6022,11 @@ int primary_display_get_info(struct disp_session_info *info)
 
 	dispif_info->isConnected = 1;
 
-	fps_ctx_get_fps(&primary_fps_ctx, &dispif_info->updateFPS, &dispif_info->is_updateFPS_stable);
+	if (disp_helper_get_option(DISP_OPT_FPS_EXT))
+		fps_ext_ctx_get_fps(&primary_fps_ext_ctx, &dispif_info->updateFPS, &dispif_info->is_updateFPS_stable);
+	else
+		fps_ctx_get_fps(&primary_fps_ctx, &dispif_info->updateFPS, &dispif_info->is_updateFPS_stable);
+
 	dispif_info->updateFPS *= 100;
 
 	return 0;

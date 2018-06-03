@@ -123,6 +123,8 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_SCREEN_CAP_FROM_DITHER",
 	"DISP_OPT_BYPASS_OVL",
 	"DISP_OPT_FPS_CALC_WND",
+	"DISP_OPT_FPS_EXT",
+	"DISP_OPT_FPS_EXT_INTERVAL",
 	"DISP_OPT_SMART_OVL",
 	"DISP_OPT_DYNAMIC_DEBUG",
 	"DISP_OPT_SHOW_VISUAL_DEBUG_INFO",
@@ -168,6 +170,14 @@ int disp_helper_set_option(enum DISP_HELPER_OPT option, int value)
 		ret = primary_fps_ctx_set_wnd_sz(value);
 		if (ret) {
 			DISPERR("%s error to set fps_wnd_sz to %d\n", __func__, value);
+			return ret;
+		}
+	}
+
+	if (option == DISP_OPT_FPS_EXT_INTERVAL) {
+		ret = primary_fps_ext_ctx_set_interval(value);
+		if (ret) {
+			DISPERR("%s error to set fps_ext_interval to %d\n", __func__, value);
 			return ret;
 		}
 	}
@@ -366,6 +376,10 @@ void disp_helper_option_init(void)
 
 	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
+	/* report external fps statistics */
+	disp_helper_set_option(DISP_OPT_FPS_EXT, 1);
+	/* set external fps interval (ms) */
+	disp_helper_set_option(DISP_OPT_FPS_EXT_INTERVAL, 1000);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 	disp_helper_set_option(DISP_OPT_HRT, 0);
