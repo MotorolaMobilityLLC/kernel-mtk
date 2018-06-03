@@ -13,6 +13,7 @@
 
 obj-$(CONFIG_MTK_CACHE_DUMP) += icache_dump.o
 obj-$(CONFIG_MTK_MEMCFG) += mtk_memcfg.o
+obj-$(CONFIG_MTK_MEMCFG) += mtk_memcfg_reserve_info.o
 ifneq ($(CONFIG_ARM64), y)
 # For arm32
 obj-y += mtk_common_hooks.o
