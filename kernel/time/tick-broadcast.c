@@ -546,10 +546,11 @@ static uint64_t tick_broadcast_enter_prev;
 static uint64_t tick_broadcast_enter_count[NR_CPUS];
 static uint64_t tick_broadcast_fail_count[NR_CPUS];
 static uint64_t tick_broadcast_success_count[NR_CPUS];
+static uint64_t tick_broadcast_interrupt_count[NR_CPUS];
 static uint64_t _tick_broadcast_enter_count[NR_CPUS];
 static uint64_t _tick_broadcast_fail_count[NR_CPUS];
 static uint64_t _tick_broadcast_success_count[NR_CPUS];
-#define tick_broadcast_dump_time 5000000000
+static uint64_t _tick_broadcast_interrupt_count[NR_CPUS];
 
 #define LOG_BUF_LEN         1024
 struct tick_broadcast_dump_buf {
@@ -703,6 +704,9 @@ static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
 	bool bc_local;
 
 	raw_spin_lock(&tick_broadcast_lock);
+#ifdef _MTK_TICK_BROADCAST_AEE_DUMP
+	tick_broadcast_interrupt_count[smp_processor_id()]++;
+#endif
 	dev->next_event.tv64 = KTIME_MAX;
 	next_event.tv64 = KTIME_MAX;
 	cpumask_clear(tmpmask);
@@ -997,10 +1001,13 @@ out:
 					tick_broadcast_fail_count[i];
 				_tick_broadcast_success_count[i] =
 					tick_broadcast_success_count[i];
+				_tick_broadcast_interrupt_count[i] =
+					tick_broadcast_interrupt_count[i];
 
 				tick_broadcast_enter_count[i] = 0;
 				tick_broadcast_fail_count[i] = 0;
 				tick_broadcast_success_count[i] = 0;
+				tick_broadcast_interrupt_count[i] = 0;
 			}
 		}
 	}
@@ -1035,6 +1042,14 @@ out:
 		for_each_possible_cpu(i) {
 			bc_dump_buf_append(bc_dump_buf, "%lld, ",
 				_tick_broadcast_fail_count[i]);
+		}
+
+		bc_dump_buf_append(bc_dump_buf,
+			"interrupt counter cpu: ");
+
+		for_each_possible_cpu(i) {
+			bc_dump_buf_append(bc_dump_buf, "%lld, ",
+				_tick_broadcast_interrupt_count[i]);
 		}
 		pr_info("%s\n", get_bc_dump_buf(bc_dump_buf));
 	}
