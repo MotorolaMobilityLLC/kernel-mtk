@@ -3742,7 +3742,8 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 			sizeof(p_autok_tune_res) / sizeof(u8));
 	}
 
-	return 0;
+	/* must return ret for emmc reset when error happen */
+	return ret;
 }
 
 /* online tuning for latch ck */
