@@ -3360,8 +3360,8 @@ bool MTKGetMemStatDump(void)
 	PVRSRV_PROCESS_STATS *psProcessStats = g_psLiveList;
 	IMG_UINT32 ui32_pages;
 	/* output the total memory usage and cap for this device */
-	pr_debug("%10s\t%16s\n", "PID", "Memory by Page");
-	pr_debug("============================\n");
+	pr_warn("%10s\t%16s\n", "PID", "Memory by Page");
+	pr_warn("============================\n");
 
 	OSLockAcquire(g_psLinkedListLock);
 	while (psProcessStats != NULL) {
@@ -3372,7 +3372,7 @@ bool MTKGetMemStatDump(void)
 
 		ui32_pages /= PAGE_SIZE;
 
-		pr_debug("%10d\t%16d\n", psProcessStats->pid, ui32_pages);
+		pr_warn("%10d\t%16d\n", psProcessStats->pid, ui32_pages);
 		psProcessStats = psProcessStats->psNext;
 	}
 	OSLockRelease(g_psLinkedListLock);
@@ -3381,9 +3381,9 @@ bool MTKGetMemStatDump(void)
 
 	ui32_pages /= PAGE_SIZE;
 
-	pr_debug("============================\n");
-	pr_debug("%10s\t%16u\n", "Total", ui32_pages);
-	pr_debug("============================\n");
+	pr_warn("============================\n");
+	pr_warn("%10s\t%16u\n", "Total", ui32_pages);
+	pr_warn("============================\n");
 
 	return true;
 } /* MTKGetMemStatDump */
