@@ -21,6 +21,16 @@ config TOUCHSCREEN_MTK
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
 
+config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
+	bool "MediaTek Touch Panel Rotation With LCM"
+	default y
+	help
+	  Say N here if touch panel is not physical rotated as LCM does.
+	  Physically rotated means that this driver will map
+	  the reported coordination to diagonal position.
+
+	  If unsure, say Y.
+
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
