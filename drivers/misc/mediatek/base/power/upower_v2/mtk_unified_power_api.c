@@ -32,6 +32,7 @@ void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsign
 				index = opp_num - j - 1; /* reorder index of volt */
 				upower_tbl_ref[i].row[index].volt = volt[j];
 			}
+			upower_tbl_ref[i].lkg_idx = 0; /* default degree as 85 */
 			upower_debug("(upower bk %d)volt = %u, (eem bk %d)volt = %u\n",
 						i, upower_tbl_ref[i].row[0].volt, bank, volt[0]);
 		}
