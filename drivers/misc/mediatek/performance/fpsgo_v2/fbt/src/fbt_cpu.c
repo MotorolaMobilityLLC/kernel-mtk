@@ -2119,7 +2119,7 @@ int fbt_cpu_init(void)
 	deqtime_bound = TIME_3MS;
 	variance = 40;
 	floor_bound = 3;
-	kmin = 1;
+	kmin = 10;
 	floor_opp = 2;
 
 	_gdfrc_fps_limit = TARGET_UNLIMITED_FPS;
