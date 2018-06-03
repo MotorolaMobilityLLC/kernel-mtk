@@ -139,7 +139,7 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 #define drcc_write_field(addr, range, val)	\
 	drcc_write(addr, (drcc_read(addr) & ~BITMASK(range)) | BITS(range, val))
 
-#define DRCC_K_CHECK
+/* #define DRCC_K_CHECK */
 #ifdef DRCC_K_CHECK
 /************************************************
  * call back registeration
