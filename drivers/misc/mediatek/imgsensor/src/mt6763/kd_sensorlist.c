@@ -67,19 +67,43 @@
 
 #ifndef CONFIG_MTK_CLKMGR
 /*CCF*/
-struct clk *g_camclk_camtg_sel;
-struct clk *g_camclk_camtg2_sel;
-struct clk *g_camclk_cam_sel;
-struct clk *g_camclk_univpll_d208; /*6m*/
-struct clk *g_camclk_univpll_d104; /*12m*/
-struct clk *g_camclk_univpll_d52; /*24*/
-struct clk *g_camclk_univpll_d26; /*48m*/
-struct clk *g_camclk_univpll2_d32; /*13m*/
-struct clk *g_camclk_univpll2_d16; /*26m*/
-struct clk *g_camclk_univpll2_d8; /*52m*/
-struct clk *g_camclk_clk26m;
-struct clk *g_camclk_cg_camtg;
-struct clk *g_camclk_cg_cam_seninf;
+
+
+#define _MAX_MCLK_ 2
+char *_seninf_tg_mux_name[_MAX_MCLK_] = {
+	"TOP_CAMTG_SEL",
+	"TOP_CAMTG2_SEL",
+	/* "TOP_CAMTG3_SEL", */
+};
+
+struct clk *g_seninf_tg_mux[_MAX_MCLK_];
+
+typedef enum {
+	MCLK_26MHZ,
+	MCLK_24MHZ,
+	MCLK_52MHZ,
+	MCLK_48MHZ,
+	MCLK_26MHZ_2,
+	MCLK_13MHZ,
+	MCLK_12MHZ,
+	MCLK_6MHZ,
+	MCLK_MAX,
+} MCLK_TG_SRC_ENUM;
+
+#define _MAX_TG_SRC_ MCLK_MAX
+char *_seninf_tg_src_mclk_name[_MAX_TG_SRC_] = {
+	"TOP_CLK26M",
+	"TOP_UNIVPLL_D52",
+	"TOP_UNIVPLL2_D8",
+	"TOP_UNIVPLL_D26",
+	"TOP_UNIVPLL2_D16",
+	"TOP_UNIVPLL2_D32",
+	"TOP_UNIVPLL_D104",
+	"TOP_UNIVPLL_D208",
+};
+struct clk *g_seninf_tg_mclk_src[_MAX_TG_SRC_];
+
+
 #endif
 /* kernel standard for PMIC*/
 #if !defined(CONFIG_MTK_LEGACY)
@@ -3435,32 +3459,20 @@ inline static int kdSetSensorMclk(int *pBuf)
 ********************************************************************************/
 static inline void Get_ccf_clk(struct platform_device *pdev)
 {
+	int i = 0;
+
 	if (pdev == NULL) {
 		PK_ERR("[%s] pdev is null\n", __func__);
 		return;
 	}
 	/* get all possible using clocks */
-	g_camclk_camtg_sel = devm_clk_get(&pdev->dev, "TOP_CAMTG_SEL");
-	BUG_ON(IS_ERR(g_camclk_camtg_sel));
-	g_camclk_camtg2_sel = devm_clk_get(&pdev->dev, "TOP_CAMTG2_SEL");
-	BUG_ON(IS_ERR(g_camclk_camtg2_sel));
+	for (i = 0; i < _MAX_MCLK_; i++)
+		g_seninf_tg_mux[i] = devm_clk_get(&pdev->dev, _seninf_tg_mux_name[i]);
 
-	g_camclk_univpll_d208 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_D208"); /*6m*/
-	BUG_ON(IS_ERR(g_camclk_univpll_d208));
-	g_camclk_univpll_d104 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_D104"); /*12m*/
-	BUG_ON(IS_ERR(g_camclk_univpll_d104));
-	g_camclk_univpll_d52 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_D52"); /*24*/
-	BUG_ON(IS_ERR(g_camclk_univpll_d52));
-	g_camclk_univpll_d26 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL_D26"); /*48m*/
-	BUG_ON(IS_ERR(g_camclk_univpll_d26));
-	g_camclk_univpll2_d32 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL2_D32"); /*13m*/
-	BUG_ON(IS_ERR(g_camclk_univpll2_d32));
-	g_camclk_univpll2_d16 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL2_D16"); /*26m*/
-	BUG_ON(IS_ERR(g_camclk_univpll2_d16));
-	g_camclk_univpll2_d8 = devm_clk_get(&pdev->dev, "TOP_UNIVPLL2_D8"); /*52m*/
-	BUG_ON(IS_ERR(g_camclk_univpll2_d8));
-	g_camclk_clk26m = devm_clk_get(&pdev->dev, "TOP_CLK26M");
-	BUG_ON(IS_ERR(g_camclk_clk26m));
+	for (i = 0; i < _MAX_TG_SRC_; i++)
+		g_seninf_tg_mclk_src[i] = devm_clk_get(&pdev->dev, _seninf_tg_src_mclk_name[i]);
+
+
 	/*g_camclk_cg_camtg = devm_clk_get(&pdev->dev, "CG_CAMTG");
 	BUG_ON(IS_ERR(g_camclk_cg_camtg));*/
 	return;
@@ -3468,17 +3480,14 @@ static inline void Get_ccf_clk(struct platform_device *pdev)
 
 static inline void Check_ccf_clk(void)
 {
-	BUG_ON(IS_ERR(g_camclk_camtg_sel));
-	BUG_ON(IS_ERR(g_camclk_camtg2_sel));
-	BUG_ON(IS_ERR(g_camclk_univpll_d208));
-	BUG_ON(IS_ERR(g_camclk_univpll_d104));
-	BUG_ON(IS_ERR(g_camclk_univpll_d52));
-	BUG_ON(IS_ERR(g_camclk_univpll_d26));
-	BUG_ON(IS_ERR(g_camclk_univpll2_d32));
-	BUG_ON(IS_ERR(g_camclk_univpll2_d16));
-	BUG_ON(IS_ERR(g_camclk_univpll2_d8));
-	BUG_ON(IS_ERR(g_camclk_clk26m));
-	/* BUG_ON(IS_ERR(g_camclk_cg_camtg)); */
+	int i = 0;
+
+	for (i = 0; i < _MAX_MCLK_; i++)
+		WARN_ON(IS_ERR(g_seninf_tg_mux[i]));
+
+
+	for (i = 0; i < _MAX_TG_SRC_; i++)
+		WARN_ON(IS_ERR(g_seninf_tg_mclk_src[i]));
 
 	return;
 }
@@ -3489,24 +3498,16 @@ static inline int kdSetSensorMclk(int *pBuf)
 #ifndef CONFIG_MTK_FPGA
 	ACDK_SENSOR_MCLK_STRUCT *pSensorCtrl = (ACDK_SENSOR_MCLK_STRUCT *)pBuf;
 
-	PK_DBG("[CAMERA SENSOR] CCF kdSetSensorMclk on=%d, freq= %d\n", pSensorCtrl->on, pSensorCtrl->freq);
+	PK_DBG("[CAMERA SENSOR] CCF kdSetSensorMclk on=%d tg %d, freq= %d\n",
+		pSensorCtrl->on, pSensorCtrl->TG, pSensorCtrl->freq);
 
 	Check_ccf_clk();
 	if (1 == pSensorCtrl->on) {
-		if (pSensorCtrl->TG == 1){
-			if (pSensorCtrl->freq == MCLK_24MHZ_GROUP) {
-				/*CAM_PLL_24_GROUP */
-				ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_d52);
-			} else if (pSensorCtrl->freq == MCLK_26MHZ_GROUP) {
-				/*CAM_PLL_26_GROUP */
-				ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_clk26m);
-			}
+		if ((pSensorCtrl->TG < _MAX_MCLK_) && (pSensorCtrl->freq < _MAX_TG_SRC_)) {
+			ret = clk_set_parent(g_seninf_tg_mux[pSensorCtrl->TG], g_seninf_tg_mclk_src[pSensorCtrl->freq]);
 		} else {
-			if (pSensorCtrl->freq == MCLK_24MHZ_GROUP) {
-				ret = clk_set_parent(g_camclk_camtg2_sel, g_camclk_univpll_d52);
-			} else if (pSensorCtrl->freq == MCLK_26MHZ_GROUP) {
-				ret = clk_set_parent(g_camclk_camtg2_sel, g_camclk_clk26m);
-			}
+			PK_ERR("[CAMERA SENSOR] CCF kdSetSensorMclk tg=%d, freq= %d\n",
+				pSensorCtrl->TG, pSensorCtrl->freq);
 		}
 	}
 #endif
@@ -4242,6 +4243,7 @@ int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
 ********************************************************************************/
 static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	int i = 0;
     /* reset once in multi-open */
     if (atomic_read(&g_CamDrvOpenCnt) == 0) {
 	mipic_26m_en(1);
@@ -4256,16 +4258,12 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 		mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
 #endif
     }
-	clk_prepare_enable(g_camclk_camtg_sel);
-	clk_prepare_enable(g_camclk_camtg2_sel);
-	clk_prepare_enable(g_camclk_univpll_d208);
-	clk_prepare_enable(g_camclk_univpll_d104);
-	clk_prepare_enable(g_camclk_univpll_d52);
-	clk_prepare_enable(g_camclk_univpll_d26);
-	clk_prepare_enable(g_camclk_univpll2_d32);
-	clk_prepare_enable(g_camclk_univpll2_d16);
-	clk_prepare_enable(g_camclk_univpll2_d8);
-	clk_prepare_enable(g_camclk_clk26m);
+	for (i = 0; i < _MAX_MCLK_; i++)
+		clk_prepare_enable(g_seninf_tg_mux[i]);
+
+	for (i = 0; i < _MAX_TG_SRC_; i++)
+		clk_prepare_enable(g_seninf_tg_mclk_src[i]);
+
 
     /*  */
     atomic_inc(&g_CamDrvOpenCnt);
@@ -4282,6 +4280,8 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 ********************************************************************************/
 static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	int i = 0;
+
     atomic_dec(&g_CamDrvOpenCnt);
 	if (atomic_read(&g_CamDrvOpenCnt) == 0) {
 #ifdef CONFIG_MTK_SMI_EXT
@@ -4289,16 +4289,13 @@ static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 #endif
 		mipic_26m_en(0);
 	}
-	clk_disable_unprepare(g_camclk_camtg_sel);
-	clk_disable_unprepare(g_camclk_camtg2_sel);
-	clk_disable_unprepare(g_camclk_univpll_d208);
-	clk_disable_unprepare(g_camclk_univpll_d104);
-	clk_disable_unprepare(g_camclk_univpll_d52);
-	clk_disable_unprepare(g_camclk_univpll_d26);
-	clk_disable_unprepare(g_camclk_univpll2_d32);
-	clk_disable_unprepare(g_camclk_univpll2_d16);
-	clk_disable_unprepare(g_camclk_univpll2_d8);
-	clk_disable_unprepare(g_camclk_clk26m);
+
+	for (i = 0; i < _MAX_MCLK_; i++)
+		clk_disable_unprepare(g_seninf_tg_mux[i]);
+
+	for (i = 0; i < _MAX_TG_SRC_; i++)
+		clk_disable_unprepare(g_seninf_tg_mclk_src[i]);
+
 
     return 0;
 }
