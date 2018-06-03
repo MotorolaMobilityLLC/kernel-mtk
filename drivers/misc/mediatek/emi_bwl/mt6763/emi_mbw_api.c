@@ -30,6 +30,8 @@ static void __iomem *CEN_EMI_BASE; /* not initialise statics to 0 or NULL */
 static void __iomem *CHA_EMI_BASE;
 static void __iomem *CHB_EMI_BASE;
 static void __iomem *INFRACFG_BASE;
+static void __iomem *INFRA_AO_BASE;
+static void __iomem *PERICFG_BASE;
 
 void BM_Init(void)
 {
@@ -46,6 +48,24 @@ void BM_Init(void)
 			pr_err("get INFRACFG_BASE@ %p\n", INFRACFG_BASE);
 		} else
 			pr_err("can't find compatible node for INFRACFG_BASE\n");
+	}
+
+	if (INFRA_AO_BASE == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+		if (node) {
+			INFRA_AO_BASE = of_iomap(node, 0);
+			pr_info("get INFRA_AO_BASE@ %p\n", INFRACFG_BASE);
+		} else
+			pr_info("can't find compatible node for INFRA_AO_BASE\n");
+	}
+
+	if (PERICFG_BASE == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+		if (node) {
+			PERICFG_BASE = of_iomap(node, 0);
+			pr_info("get PERICFG_BASE@ %p\n", PERICFG_BASE);
+		} else
+			pr_info("can't find compatible node for PERICFG_BASE\n");
 	}
 }
 
@@ -486,13 +506,60 @@ void dump_emi_outstanding(void)
 	if (!CHB_EMI_BASE)
 		return;
 
+	/* INFRACFG_BASE: 0x10001000 */
+	if (!INFRA_AO_BASE)
+		return;
+
 	/* INFRACFG_BASE: 0x1020E000 */
 	if (!INFRACFG_BASE)
 		return;
 
+	/* PERICFG_BASE: 0x10003000 */
+	if (!PERICFG_BASE)
+		return;
+
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001220 = 0x%x\n",
+		(INFRA_AO_BASE + 0x220));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001224 = 0x%x\n",
+		(INFRA_AO_BASE + 0x224));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001228 = 0x%x\n",
+		(INFRA_AO_BASE + 0x228));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001250 = 0x%x\n",
+		(INFRA_AO_BASE + 0x250));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001254 = 0x%x\n",
+		(INFRA_AO_BASE + 0x254));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001258 = 0x%x\n",
+		(INFRA_AO_BASE + 0x258));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001284 = 0x%x\n",
+		(INFRA_AO_BASE + 0x284));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10001d04 = 0x%x\n",
+		(INFRA_AO_BASE + 0xd04));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10003500 = 0x%x\n",
+		(PERICFG_BASE + 0x500));
+	EMI_DBG_SIMPLE_R("[EMI] 0x10003504 = 0x%x\n",
+		(PERICFG_BASE + 0x504));
+
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x102190e8 = 0x%x\n",
 		(CEN_EMI_BASE + 0x0e8), readl(CEN_EMI_BASE + 0x0e8) | 0x100);
 
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e000 = 0x%x\n",
+		(INFRACFG_BASE + 0x000));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e004 = 0x%x\n",
+		(INFRACFG_BASE + 0x004));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e008 = 0x%x\n",
+		(INFRACFG_BASE + 0x008));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e028 = 0x%x\n",
+		(INFRACFG_BASE + 0x028));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e180 = 0x%x\n",
+		(INFRACFG_BASE + 0x180));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e184 = 0x%x\n",
+		(INFRACFG_BASE + 0x184));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e188 = 0x%x\n",
+		(INFRACFG_BASE + 0x188));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e18c = 0x%x\n",
+		(INFRACFG_BASE + 0x028));
+	EMI_DBG_SIMPLE_R("[EMI] 0x1020e190 = 0x%x\n",
+		(INFRACFG_BASE + 0x190));
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x1020e100 = 0x%x\n",
 		(INFRACFG_BASE + 0x100), 0x00000104 >> 3);
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x1020e104 = 0x%x\n",
