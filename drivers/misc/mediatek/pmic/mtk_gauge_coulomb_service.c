@@ -78,7 +78,9 @@ void wake_up_gauge_coulomb(void)
 		return;
 	}
 
-	ft_debug("wake_up_gauge_coulomb\n");
+	ft_debug("wake_up_gauge_coulomb %d %d\n",
+		wake_lock_active(&wlock),
+		coulomb_thread_timeout);
 	spin_lock_irqsave(&slock, flags);
 	if (wake_lock_active(&wlock) == 0)
 		wake_lock(&wlock);
@@ -86,6 +88,7 @@ void wake_up_gauge_coulomb(void)
 
 	coulomb_thread_timeout = true;
 	wake_up(&wait_que);
+	ft_debug("wake_up_gauge_coulomb end\n");
 }
 
 void gauge_coulomb_set_log_level(int x)
@@ -110,6 +113,10 @@ void gauge_coulomb_dump_list(void)
 		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
 		return;
 	}
+
+	ft_debug("gauge_coulomb_dump_list %d %d\n",
+		wake_lock_active(&wlock),
+		coulomb_thread_timeout);
 
 	mutex_coulomb_lock();
 	car = gauge_get_coulomb();
@@ -330,8 +337,8 @@ void gauge_coulomb_int_handler(void)
 					mutex_coulomb_unlock();
 					ptr->callback(ptr);
 					mutex_coulomb_lock();
+					pos = coulomb_head_plus.next;
 				}
-
 			} else
 				break;
 		}
@@ -367,6 +374,7 @@ void gauge_coulomb_int_handler(void)
 					mutex_coulomb_unlock();
 					ptr->callback(ptr);
 					mutex_coulomb_lock();
+					pos = coulomb_head_minus.next;
 				}
 
 			} else
@@ -400,18 +408,19 @@ static int gauge_coulomb_thread(void *arg)
 		wait_event(wait_que, (coulomb_thread_timeout == true));
 		coulomb_thread_timeout = false;
 		get_monotonic_boottime(&start);
+		ft_trace("[gauge_coulomb_thread]=>\n");
 		mutex_coulomb_lock();
 		gauge_coulomb_int_handler();
+		mutex_coulomb_unlock();
 
 		spin_lock_irqsave(&slock, flags);
 		wake_unlock(&wlock);
 		spin_unlock_irqrestore(&slock, flags);
 
-		mutex_coulomb_unlock();
+
 		get_monotonic_boottime(&end);
 		duraction = timespec_sub(end, start);
 
-		if ((duraction.tv_nsec / 1000000) > 50)
 			ft_err("gauge_coulomb_thread time:%d ms %d %d\n", (int)(duraction.tv_nsec / 1000000),
 				(int)(sstart[0].tv_nsec / 1000000),
 				(int)(sstart[1].tv_nsec / 1000000));

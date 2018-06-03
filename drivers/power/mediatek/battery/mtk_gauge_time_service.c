@@ -228,6 +228,7 @@ static void gtimer_handler(void)
 				mutex_gtimer_unlock();
 				ptr->callback(ptr);
 				mutex_gtimer_lock();
+				pos = gtimer_head.next;
 			}
 		} else
 			pos = pos->next;
