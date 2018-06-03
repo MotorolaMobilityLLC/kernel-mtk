@@ -38,15 +38,6 @@
 #include "mtk_dramc.h"
 #include "dramc.h"
 
-#ifdef DRAM_HQA
-#if defined(HQA_LPDDR4)
-#include <fan53526.h>
-#elif defined(HQA_LPDDR4X)
-#include <fan53526.h>
-#include <fan53528buc08x.h>
-#endif
-#endif
-
 #ifdef CONFIG_OF_RESERVED_MEM
 #define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"
 #define DRAM_R1_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r1_dummy_read"
@@ -56,10 +47,6 @@
 
 #include <mt-plat/aee.h>
 #include <mt-plat/mtk_chip.h>
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
-#include <linux/regulator/consumer.h>
-#endif
 
 void __iomem *DRAMC_AO_CHA_BASE_ADDR;
 void __iomem *DRAMC_AO_CHB_BASE_ADDR;
@@ -94,11 +81,6 @@ phys_addr_t dram_rank0_addr, dram_rank1_addr;
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
-struct regulator *_reg_VCORE;
-struct regulator *_reg_VDRAM1;
-struct regulator *_reg_VDRAM2;
-#endif
 #ifdef MIX_MODE
 static unsigned int cbt_mode_rank[2];
 #endif
@@ -1120,6 +1102,7 @@ unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset)
 	else
 		return 0;
 }
+EXPORT_SYMBOL(lpDram_Register_Read);
 
 /************************************************
 * CL#46077
@@ -1206,6 +1189,7 @@ int get_ddr_type(void)
 	return DRAM_TYPE;
 
 }
+EXPORT_SYMBOL(get_ddr_type);
 
 int get_emi_ch_num(void)
 {
@@ -1217,13 +1201,18 @@ int get_emi_ch_num(void)
 
 	get_emi_base = (void __iomem *)symbol_get(mt_emi_base_get);
 	if (get_emi_base == NULL) {
-		pr_err("[get_emi_ch_num] mt_emi_base_get is NULL\n");
+		pr_err("[DRAMC] get_emi_ch_num: mt_emi_base_get is NULL\n");
 		return 0;
 	}
 
 	emi_base = get_emi_base();
 	symbol_put(mt_emi_base_get);
 	get_emi_base = NULL;
+
+	if (!emi_base) {
+		pr_err("[DRAMC] get_emi_ch_num: emi_base is NULL\n");
+		return 0;
+	}
 
 	emi_cona = readl(IOMEM(emi_base+0x000));
 
@@ -1238,10 +1227,11 @@ int get_emi_ch_num(void)
 		CH_NUM = 4;
 		break;
 	default:
-		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+		pr_err("[DRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
 	}
 	return CH_NUM;
 }
+EXPORT_SYMBOL(get_emi_ch_num);
 
 int dram_steps_freq(unsigned int step)
 {
@@ -1297,6 +1287,7 @@ int dram_steps_freq(unsigned int step)
 	}
 	return freq;
 }
+EXPORT_SYMBOL(dram_steps_freq);
 
 int dram_can_support_fh(void)
 {
@@ -1305,6 +1296,7 @@ int dram_can_support_fh(void)
 	else
 		return 1;
 }
+EXPORT_SYMBOL(dram_can_support_fh);
 
 #ifdef CONFIG_OF_RESERVED_MEM
 int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
@@ -1679,166 +1671,6 @@ static struct platform_driver dram_test_drv = {
 #endif
 		},
 };
-
-#ifdef DRAM_HQA
-static unsigned int hqa_vcore;
-
-int calculate_voltage(unsigned int x)
-{
-	return (600+((625*x)/100));
-}
-
-static void set_vdram(unsigned int vdram)
-{
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	regulator_set_voltage(_reg_VDRAM1, vdram, MAX_VDRAM1);
-#else
-#if defined(HQA_LPDDR3)
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
-	fan53526_set_voltage((unsigned long)vdram);
-#endif
-#endif
-}
-
-static void set_vddq(unsigned int vddq)
-{
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	regulator_set_voltage(_reg_VDRAM2, vddq, MAX_VDRAM2);
-#else
-#ifdef HQA_LPDDR4X
-	fan53528buc08x_set_voltage((unsigned long)vddq);
-#endif
-#endif
-}
-
-static unsigned int get_vdram(void)
-{
-	unsigned int vdram;
-
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	vdram = regulator_get_voltage(_reg_VDRAM1);
-#else
-#if defined(HQA_LPDDR3)
-	pmic_read_interface(MT6351_VDRAM_ANA_CON0, &vdram, 0x71f, 0);
-#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
-	vdram = (unsigned int)fan53526_get_voltage();
-#endif
-#endif
-	return vdram;
-}
-
-static unsigned int get_vddq(void)
-{
-	unsigned int vddq = 0;
-
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	vddq = regulator_get_voltage(_reg_VDRAM2);
-#else
-#ifdef HQA_LPDDR4X
-	vddq = (unsigned int)fan53528buc08x_get_voltage();
-#endif
-#endif
-
-	return vddq;
-}
-
-static void print_HQA_voltage(void)
-{
-#if defined(HVCORE_HVDRAM)
-	pr_err("[HQA] Vcore HV, Vdram HV\n");
-#elif defined(NVCORE_NVDRAM)
-	pr_err("[HQA] Vcore NV, Vdram NV\n");
-#elif defined(LVCORE_LVDRAM)
-	pr_err("[HQA] Vcore LV, Vdram LV\n");
-#elif defined(HVCORE_LVDRAM)
-	pr_err("[HQA] Vcore HV, Vdram LV\n");
-#elif defined(LVCORE_HVDRAM)
-	pr_err("[HQA] Vcore LV, Vdram HV\n");
-#else
-	pr_err("[HQA] Undefined HQA condition\n");
-#endif
-
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	pr_err("[HQA] Vcore = %d uV (should be %d uV)\n",
-		regulator_get_voltage(_reg_VCORE),
-		hqa_vcore);
-	pr_err("[HQA] Vdram = %d uV (should be %d uV)\n",
-		get_vdram(), HQA_VDRAM);
-	pr_err("[HQA] vddq = %d uV (should be %d uV)\n",
-		get_vddq(), HQA_VDDQ);
-#else
-	pr_err("[HQA] Vcore = %d mV(should be %d mV)\n",
-		calculate_voltage(upmu_get_reg_value(MT6351_BUCK_VCORE_CON4)),
-		calculate_voltage(hqa_vcore));
-	pr_err("[HQA] Vdram = 0x%x (should be 0x%x)\n",
-		get_vdram(), HQA_VDRAM);
-#ifdef HQA_LPDDR4X
-	pr_err("[HQA] vddq = 0x%x (should be 0x%x)\n",
-		get_vddq(), HQA_VDDQ);
-#endif
-#endif
-}
-
-void dram_HQA_adjust_voltage(void)
-{
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-	regulator_set_voltage(_reg_VCORE, hqa_vcore, MAX_VCORE);
-#else
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, hqa_vcore, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, hqa_vcore, 0x7F, 0);
-#endif
-	set_vdram(HQA_VDRAM);
-	set_vddq(HQA_VDDQ);
-
-	print_HQA_voltage();
-}
-
-static int __init dram_hqa_init(void)
-{
-	int ret = 0;
-
-	ret = platform_driver_register(&dram_test_drv);
-	if (ret) {
-		pr_warn("fail to create dram_test platform driver\n");
-		return ret;
-	}
-
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_emi_clk_mem_test);
-	if (ret) {
-		pr_warn("fail to create the emi_clk_mem_test sysfs files\n");
-		return ret;
-	}
-
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_read_dram_data_rate);
-	if (ret) {
-		pr_warn("fail to create the read dram data rate sysfs files\n");
-		return ret;
-	}
-
-	if (mt_get_chip_hw_ver() == 0xCA00) {
-		pr_err("[HQA] set Vcore to HPM\n");
-		hqa_vcore = HQA_VCORE_HPM;
-	} else if (mt_get_chip_hw_ver() == 0xCA01) {
-		pr_err("[HQA] set Vcore to LPM\n");
-		hqa_vcore = HQA_VCORE_LPM;
-	} else if (mt_get_chip_hw_ver() == 0xCB01) {
-		pr_err("[HQA] set Vcore to HPM\n");
-		hqa_vcore = HQA_VCORE_HPM;
-	} else {
-		pr_err("[HQA] chip ID error!\n");
-		hqa_vcore = HQA_VCORE_HPM;
-		/* return 0; */
-		/* TODO: BUG(); */
-	}
-	dram_HQA_adjust_voltage();
-	return 0;
-}
-
-late_initcall(dram_hqa_init);
-#endif /*DRAM_HQA*/
 
 /* int __init dram_test_init(void) */
 static int __init dram_test_init(void)

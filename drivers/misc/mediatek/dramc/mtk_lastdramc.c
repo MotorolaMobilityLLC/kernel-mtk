@@ -190,7 +190,7 @@ static int dram_calib_perf_check_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
 	void __iomem *DRAMC_SRAM_DEBUG_BASE_ADDR;
-	unsigned long val;
+	unsigned long val, last_dramc_ofs;
 
 	if (node) {
 		DRAMC_SRAM_DEBUG_BASE_ADDR = of_iomap(node, 0);
@@ -199,7 +199,27 @@ static int dram_calib_perf_check_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + LAST_DRAMC_SRAM_SIZE + DRAMC_STORAGE_API_ERR_OFFSET);
+	last_dramc_ofs = 0;
+
+#ifdef LAST_DRAMC_SRAM_MGR
+	for (last_dramc_ofs = 0; last_dramc_ofs < DBG_INFO_TYPE_MAX; last_dramc_ofs++) {
+		val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + (last_dramc_ofs * 4));
+
+		if ((val >> 16) == LASTDRAMC_KEY)
+			break;
+	}
+
+	if (last_dramc_ofs == DBG_INFO_TYPE_MAX) {
+		pr_err("[DRAMC] lastdramc with sram mgr not found\n");
+		return 0;
+	}
+
+	last_dramc_ofs = val & 0xFFFF;
+#else
+	last_dramc_ofs = LAST_DRAMC_SRAM_SIZE;
+#endif
+
+	val = Reg_Readl(DRAMC_SRAM_DEBUG_BASE_ADDR + last_dramc_ofs + DRAMC_STORAGE_API_ERR_OFFSET);
 	if ((val & STORAGE_READ_API_MASK) == ERR_PL_UPDATED) {
 		pr_err("[DRAMC] calibration time too long: PL version updated (0x%08lx)\n", val);
 	} else if (val != 0) {
