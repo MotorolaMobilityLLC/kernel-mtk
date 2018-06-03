@@ -4792,7 +4792,7 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 		if (pDumpTask->sram_base > 0)
 			CMDQ_ERR("** This is SRAM task: sram base:%u", pDumpTask->sram_base);
 
-		if (dumpCmd) {
+		if (dumpCmd && pVABase) {
 			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
 				pVABase, (pDumpTask->commandSize), true);
 		}
