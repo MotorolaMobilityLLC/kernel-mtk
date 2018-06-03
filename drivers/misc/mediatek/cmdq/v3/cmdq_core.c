@@ -5252,36 +5252,27 @@ void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
 	}
 }
 
-static s32 cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
-	u32 *va_pc, struct NGTaskInfoStruct **nginfo_out)
+static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
+	u32 *va_pc, struct NGTaskInfoStruct *nginfo_out)
 {
 	u8 *buffer = NULL;
-	struct NGTaskInfoStruct *nginfo = NULL;
 	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	/* copy ngtask info */
+	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+	nginfo_out->va_start = cmd_buffer->pVABase;
+	nginfo_out->va_pc = va_pc;
+	nginfo_out->buffer = (u32 *)buffer;
+	nginfo_out->engine_flag = ngtask->engineFlag;
+	nginfo_out->scenario = ngtask->scenario;
+	nginfo_out->ngtask = ngtask;
+	nginfo_out->buffer_size = ngtask->bufferSize;
 
 	buffer = kzalloc(ngtask->bufferSize, GFP_ATOMIC);
 	if (!buffer) {
 		CMDQ_ERR("fail to allocate NG buffer\n");
-		return -ENOMEM;
+		return;
 	}
-
-	nginfo = kzalloc(sizeof(*nginfo), GFP_ATOMIC);
-	if (!nginfo) {
-		CMDQ_ERR("fail to allocate NG info\n");
-		kfree(buffer);
-		return -ENOMEM;
-	}
-
-	/* copy ngtask info */
-	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-	nginfo->va_start = cmd_buffer->pVABase;
-	nginfo->va_pc = va_pc;
-	nginfo->buffer = (u32 *)buffer;
-	nginfo->engine_flag = ngtask->engineFlag;
-	nginfo->scenario = ngtask->scenario;
-	nginfo->ngtask = ngtask;
-	nginfo->buffer_size = ngtask->bufferSize;
-	*nginfo_out = nginfo;
 
 	list_for_each_entry(cmd_buffer, &ngtask->cmd_buffer_list, listEntry) {
 		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &ngtask->cmd_buffer_list) ?
@@ -5298,21 +5289,19 @@ static s32 cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 	}
 
 	/* only dump to pc */
-	nginfo->dump_size = buffer - (u8 *)nginfo->buffer;
+	nginfo_out->dump_size = buffer - (u8 *)nginfo_out->buffer;
 
-	return 0;
+	return;
 }
 
 static void cmdq_core_release_nginfo(struct NGTaskInfoStruct *nginfo)
 {
-	if (nginfo) {
-		kfree(nginfo->buffer);
-		kfree(nginfo);
-	}
+	kfree(nginfo->buffer);
+	nginfo->buffer = NULL;
 }
 
 static void cmdq_core_dump_summary(const struct TaskStruct *pTask, s32 thread,
-	const struct TaskStruct **ngtask_out, struct NGTaskInfoStruct **nginfo_out)
+	const struct TaskStruct **ngtask_out, struct NGTaskInfoStruct *nginfo_out)
 {
 	uint32_t *pcVA = NULL;
 	uint32_t insts[4] = { 0 };
@@ -5375,13 +5364,11 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, s32 thread,
 	if (!nginfo_out)
 		return;
 
-	if (cmdq_core_create_nginfo(pNGTask, pcVA, nginfo_out) < 0)
-		return;
-
-	(*nginfo_out)->module = module;
-	(*nginfo_out)->irq_flag = irqFlag;
-	(*nginfo_out)->inst[1] = instA;
-	(*nginfo_out)->inst[0] = instB;
+	cmdq_core_create_nginfo(pNGTask, pcVA, nginfo_out);
+	nginfo_out->module = module;
+	nginfo_out->irq_flag = irqFlag;
+	nginfo_out->inst[1] = instA;
+	nginfo_out->inst[0] = instB;
 }
 
 void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
@@ -6221,7 +6208,7 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
 }
 
 static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t thread,
-	u32 **pc_out, struct NGTaskInfoStruct **nginfo_out)
+	u32 **pc_out, struct NGTaskInfoStruct *nginfo_out)
 {
 	const struct TaskStruct *ngtask = NULL;
 	u64 eng_flag = 0;
@@ -6340,7 +6327,7 @@ static void cmdq_core_dump_task_command(const struct TaskStruct *task,
 	u32 *pc, const struct NGTaskInfoStruct *nginfo)
 {
 	/* Begin is not first, save NG task but print pTask as well */
-	if (nginfo && nginfo->ngtask != task) {
+	if (nginfo && nginfo->buffer && nginfo->ngtask != task) {
 		CMDQ_ERR("========== [CMDQ] Error Command Buffer (NG Task) ==========\n");
 		cmdq_core_dump_ng_error_buffer(nginfo);
 	}
@@ -6357,7 +6344,7 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 	u32 *pc = NULL;
 	s32 error_num = gCmdqContext.errNum;
 	bool detail_log = false;
-	struct NGTaskInfoStruct *nginfo = NULL;
+	struct NGTaskInfoStruct nginfo = {0};
 
 	if (!task) {
 		CMDQ_ERR("attach error failed since pTask is NULL");
@@ -6371,25 +6358,25 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 	cmdq_core_attach_cmdq_error(task, thread, &pc, &nginfo);
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, attach_error_done);
 
-	if (ngtask_out && nginfo && nginfo->ngtask)
-		*ngtask_out = nginfo->ngtask;
+	if (ngtask_out && nginfo.ngtask)
+		*ngtask_out = nginfo.ngtask;
 
-	if (module_out && irq_flag_out && inst_a_out && inst_b_out && nginfo) {
-		*module_out = nginfo->module;
-		*irq_flag_out = nginfo->irq_flag;
-		*inst_a_out = nginfo->inst[1];
-		*inst_b_out = nginfo->inst[0];
+	if (module_out && irq_flag_out && inst_a_out && inst_b_out) {
+		*module_out = nginfo.module;
+		*irq_flag_out = nginfo.irq_flag;
+		*inst_a_out = nginfo.inst[1];
+		*inst_b_out = nginfo.inst[0];
 	}
 
 	/* skip internal testcase */
 	if (CMDQ_TASK_IS_INTERNAL(task)) {
-		cmdq_core_release_nginfo(nginfo);
 		CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error_simple);
+		cmdq_core_release_nginfo(&nginfo);
 		return;
 	}
 
-	if (nginfo && ((nginfo->inst[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
-		const u32 event = nginfo->inst[1] & ~0xFF000000;
+	if (((nginfo.inst[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
+		const u32 event = nginfo.inst[1] & ~0xFF000000;
 
 		if (event >= CMDQ_SYNC_RESOURCE_WROT0)
 			cmdq_core_dump_resource_status(event);
@@ -6397,21 +6384,21 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 
 	/* no need to dump detail log for esd case */
 	if (task->scenario == CMDQ_SCENARIO_DISP_ESD_CHECK) {
-		cmdq_core_release_nginfo(nginfo);
 		CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, est_timeout);
+		cmdq_core_release_nginfo(&nginfo);
 		return;
 	}
 
 	detail_log = error_num <= 2 || error_num % 16 == 0 || cmdq_core_should_full_error();
-	cmdq_core_attach_engine_error(task, thread, nginfo, !detail_log);
+	cmdq_core_attach_engine_error(task, thread, &nginfo, !detail_log);
 	if (detail_log)
-		cmdq_core_dump_task_command(task, pc, nginfo);
+		cmdq_core_dump_task_command(task, pc, &nginfo);
 
 	CMDQ_ERR("================= [CMDQ] End of Full Error %d ================\n",
 		error_num);
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error);
 
-	cmdq_core_release_nginfo(nginfo);
+	cmdq_core_release_nginfo(&nginfo);
 }
 
 void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t thread)
