@@ -1895,76 +1895,26 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 								(kal_uint32)(*(feature_data+2)));
 		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA success\n");
 		break;
-		/******************** PDAF START >>> *********/
-		/*
-		 * case SENSOR_FEATURE_GET_PDAF_INFO:
-		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", (UINT16)*feature_data);
-		 * PDAFinfo = (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
-		 * switch (*feature_data) {
-		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG: //full
-		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW: //2x2 binning
-		 * memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T)); //need to check
-		 * break;
-		 * case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		 * case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		 * default:
-		 * break;
-		 * }
-		 * break;
-		 * case SENSOR_FEATURE_GET_VC_INFO:
-		 * LOG_INF("SENSOR_FEATURE_GET_VC_INFO %d\n", (UINT16)*feature_data);
-		 * pvcinfo = (SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
-		 * switch (*feature_data_32) {
-		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2],sizeof(SENSOR_VC_INFO_STRUCT));
-		 * break;
-		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof(SENSOR_VC_INFO_STRUCT));
-		 * break;
-		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-		 * default:
-		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(SENSOR_VC_INFO_STRUCT));
-		 * break;
-		 * }
-		 * break;
-		 * case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-		 * LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", (UINT16)*feature_data);
-		 * //PDAF capacity enable or not
-		 * switch (*feature_data) {
-		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		 * (MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-		 * break;
-		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1; // video & capture use same setting
-		 * break;
-		 * case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-		 * break;
-		 * case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0; //need to check
-		 * break;
-		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
-		 * break;
-		 * default:
-		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
-		 * break;
-		 * }
-		 * break;
-		 * case SENSOR_FEATURE_GET_PDAF_DATA:    //get cal data from eeprom
-		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
-		 * read_3P8_eeprom((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),
-		 * (kal_uint32)(*(feature_data+2)));
-		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA success\n");
-		 * break;
-		 * case SENSOR_FEATURE_SET_PDAF:
-		 * LOG_INF("PDAF mode :%d\n", *feature_data_16);
-		 * imgsensor.pdaf_mode= *feature_data_16;
-		 * break;
-		 */
-		/******************** PDAF END   <<< *********/
+	case SENSOR_FEATURE_GET_4CELL_DATA:	/*get 4 cell data from eeprom*/
+	{
+		int type = (kal_uint16)(*feature_data);
 
+		if (type == FOUR_CELL_CAL_TYPE_ALL) {/*Size,Data... | Size,Data... | Size,Data...*/
+			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA type=%d\n", type);
+			s5k3p8_read_4cell_from_eeprom((char *)(*(feature_data+1)),
+									(kal_uint32)(*(feature_data+2)));
+			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA success\n");
+		} else if (type == FOUR_CELL_CAL_TYPE_GAIN_TBL) {/*only copy GAIN_TBL Table*/
+			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA type=%d\n", type);
+			s5k3p8_read_4cell_from_eeprom((char *)(*(feature_data+1)),
+									(kal_uint32)(*(feature_data+2)));
+			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA success\n");
+		} else {
+			memset((void *)(*(feature_data+1)), 0, 4);
+			LOG_INF("No type %d buffer on this sensor\n", type);
+		}
+		break;
+	}
 	default:
 		break;
 	}
