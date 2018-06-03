@@ -31,7 +31,7 @@
 #define SCP_REGISTER_SUB_SENSOR         (1)
 
 /* emi mpu define*/
-#ifdef CONFIG_MTK_EMI_MPU
+#ifdef CONFIG_MTK_EMI
 	#define ENABLE_SCP_EMI_PROTECTION       (1)
 #else
 	#define ENABLE_SCP_EMI_PROTECTION       (0)

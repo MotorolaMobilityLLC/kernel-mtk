@@ -52,11 +52,6 @@
 #include "scp_reservedmem_define.h"
 #endif
 
-
-#if ENABLE_SCP_EMI_PROTECTION
-#include <emi_mpu.h>
-#endif
-
 /* scp awake timout count definition*/
 #define SCP_AWAKE_TIMEOUT 5000
 /* scp semaphore timout count definition*/
@@ -936,31 +931,6 @@ static int scp_reserve_memory_ioremap(void)
 }
 #endif
 
-#if ENABLE_SCP_EMI_PROTECTION
-void set_scp_mpu(void)
-{
-	unsigned long long shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr;
-	int shr_mem_mpu_id;
-
-	shr_mem_mpu_id = MPU_REGION_ID_SCP_SMEM;
-	shr_mem_phy_start = scp_mem_base_phys;
-	shr_mem_phy_end = scp_mem_base_phys + scp_mem_size - 0x1;
-	shr_mem_mpu_attr = SET_ACCESS_PERMISSON(UNLOCK,
-			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-			NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION);
-	pr_debug("[SCP] MPU Start protect SCP Share region<%d:%08llx:%08llx> %llx\n",
-			shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
-
-	emi_mpu_set_region_protection(
-			shr_mem_phy_start,        /*START_ADDR */
-			shr_mem_phy_end,  /*END_ADDR */
-			shr_mem_mpu_id,   /*region */
-			shr_mem_mpu_attr);
-
-}
-#endif
 
 void scp_register_feature(enum feature_id id)
 {
