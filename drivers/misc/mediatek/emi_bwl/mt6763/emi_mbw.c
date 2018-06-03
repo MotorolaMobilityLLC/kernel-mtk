@@ -220,10 +220,10 @@ bool is_dump_latency(void)
 
 static int __init dvfs_bwct_init(void)
 {
-	int dram_type;
+	unsigned int dram_type;
 	unsigned int ch_num;
 
-	dram_type = get_ddr_type();
+	dram_type = get_dram_type();
 	ch_num = get_ch_num();
 
 	pr_err("[EMI] set BWCT for DRAM type(%d), ch(%d)\n",

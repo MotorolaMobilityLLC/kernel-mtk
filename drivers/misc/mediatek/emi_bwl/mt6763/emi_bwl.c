@@ -18,6 +18,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
+#include <linux/of_fdt.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/printk.h>
@@ -38,6 +39,8 @@ static void __iomem *CHA_EMI_BASE;
 static void __iomem *CHB_EMI_BASE;
 static void __iomem *EMI_MPU_BASE;
 static unsigned int mpu_irq;
+
+static emi_info_t emi_info;
 
 static int emi_probe(struct platform_device *pdev)
 {
@@ -182,11 +185,6 @@ static const unsigned int emi_conm_lpddr4_val[] = {
 #undef X_CON_SCE
 };
 
-int get_dram_type(void)
-{
-	return LPDDR4;
-}
-
 /*
  * mtk_mem_bw_ctrl: set EMI bandwidth limiter for memory bandwidth control
  * @sce: concurrency scenario ID
@@ -229,7 +227,7 @@ int mtk_mem_bw_ctrl(int sce, int op)
 
 	/* set new EMI bandwidth limiter value */
 	if (highest != cur_con_sce) {
-		if (get_dram_type() == LPDDR4) {
+		if (get_dram_type()) {
 			writel(emi_arba_lpddr4_val[highest], EMI_ARBA);
 			writel(emi_arbb_lpddr4_val[highest], EMI_ARBB);
 			writel(emi_arbc_lpddr4_val[highest], EMI_ARBC);
@@ -239,7 +237,10 @@ int mtk_mem_bw_ctrl(int sce, int op)
 			writel(emi_arbg_lpddr4_val[highest], EMI_ARBG);
 			writel(emi_arbh_lpddr4_val[highest], EMI_ARBH);
 			mt_reg_sync_writel(emi_conm_lpddr4_val[highest], EMI_CONM);
+		} else {
+			pr_err("[EMI BWL] undefined dram_type\n");
 		}
+
 		cur_con_sce = highest;
 	}
 
@@ -368,6 +369,7 @@ DRIVER_ATTR(dump_latency_ctrl, 0644, dump_latency_ctrl_show, dump_latency_ctrl_s
 static int __init emi_ctrl_init(void)
 {
 	int ret;
+	int i;
 
 	/* register EMI ctrl interface */
 	ret = platform_driver_register(&emi_ctrl);
@@ -381,6 +383,29 @@ static int __init emi_ctrl_init(void)
 	ret = driver_create_file(&emi_ctrl.driver, &driver_attr_dump_latency_ctrl);
 	if (ret)
 		pr_err("[EMI/MBW] fail to create dump_latency_ctrl file\n");
+
+	/* get EMI info from boot tags */
+	if (of_chosen) {
+		ret = of_property_read_u32(of_chosen, "emi_info,dram_type", &(emi_info.dram_type));
+		if (ret)
+			pr_err("[EMI] fail to get dram_type\n");
+		ret = of_property_read_u32(of_chosen, "emi_info,ch_num", &(emi_info.ch_num));
+		if (ret)
+			pr_err("[EMI] fail to get ch_num\n");
+		ret = of_property_read_u32(of_chosen, "emi_info,rk_num", &(emi_info.rk_num));
+		if (ret)
+			pr_err("[EMI] fail to get rk_num\n");
+		ret = of_property_read_u32_array(of_chosen, "emi_info,rank_size",
+			emi_info.rank_size, MAX_RK);
+		if (ret)
+			pr_err("[EMI] fail to get rank_size\n");
+	}
+
+	pr_err("[EMI] dram_type(%d)\n", get_dram_type());
+	pr_err("[EMI] ch_num(%d)\n", get_ch_num());
+	pr_err("[EMI] rk_num(%d)\n", get_rk_num());
+	for (i = 0; i < get_rk_num(); i++)
+		pr_err("[EMI] rank%d_size(0x%x)", i, get_rank_size(i));
 
 	return 0;
 }
@@ -397,13 +422,30 @@ static void __exit emi_ctrl_exit(void)
 postcore_initcall(emi_ctrl_init);
 module_exit(emi_ctrl_exit);
 
+unsigned int get_dram_type(void)
+{
+	return emi_info.dram_type;
+}
+
 unsigned int get_ch_num(void)
 {
-	unsigned int ch_shift;
+	return emi_info.ch_num;
+}
 
-	ch_shift = (readl(IOMEM(EMI_CONA)) >> 8) & 0x3;
+unsigned int get_rk_num(void)
+{
+	if (emi_info.rk_num > MAX_RK)
+		pr_err("[EMI] rank overflow\n");
 
-	return (0x1 << ch_shift);
+	return emi_info.rk_num;
+}
+
+unsigned int get_rank_size(unsigned int rank_index)
+{
+	if (rank_index < emi_info.rk_num)
+		return emi_info.rank_size[rank_index];
+
+	return 0;
 }
 
 void __iomem *mt_cen_emi_base_get(void)

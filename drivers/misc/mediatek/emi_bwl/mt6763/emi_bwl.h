@@ -38,6 +38,8 @@
 /*
  * Define constants.
  */
+#define MAX_CH	2
+#define MAX_RK	2
 
 /* define supported DRAM types */
 enum {
@@ -71,13 +73,22 @@ struct emi_bwl_ctrl {
 	unsigned int ref_cnt;
 };
 
+typedef struct {
+	unsigned int dram_type;
+	unsigned int ch_num;
+	unsigned int rk_num;
+	unsigned int rank_size[MAX_RK];
+} emi_info_t;
+
 /*
  * Define function prototype.
  */
 
 extern int mtk_mem_bw_ctrl(int sce, int op);
-extern int get_ddr_type(void);
+extern unsigned int get_dram_type(void);
 extern unsigned int get_ch_num(void);
+extern unsigned int get_rk_num(void);
+extern unsigned int get_rank_size(unsigned int rank_index); /* unit: all channels */
 extern void __iomem *mt_emi_base_get(void); /* legacy API */
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(int chn);
