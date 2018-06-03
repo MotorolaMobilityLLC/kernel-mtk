@@ -1027,7 +1027,7 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
 				global_cpus_set.bits[0],
 				cs->cpus_requested->bits[0]);
 
-		set_user_space_global_cpuset(&global_cpus_set);
+		set_user_space_global_cpuset(&global_cpus_set, 0);
 		return 0;
 	}
 #endif
@@ -1434,7 +1434,7 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
 		if (bit == CS_USER_SPACE_GLOBAL_CPUSET &&
 		    cs == &top_cpuset && global_cpuset_flag) {
 			global_cpuset_flag = false;
-			unset_user_space_global_cpuset();
+			unset_user_space_global_cpuset(0);
 		}
 #endif
 	}
@@ -2527,8 +2527,9 @@ void cpuset_update_active_cpus(bool cpu_online)
  * Only change user space mask.
  * If global cpuset and original cs request no intersects,
  * use original cs request.
+ * cgroup_id: if 0, set all child groups.
  */
-void set_user_space_global_cpuset(struct cpumask *global_cpus)
+void set_user_space_global_cpuset(struct cpumask *global_cpus, int cgroup_id)
 {
 	bool need_rebuild_sched_domains = false;
 	struct cpuset *cs;
@@ -2539,7 +2540,8 @@ void set_user_space_global_cpuset(struct cpumask *global_cpus)
 		struct cpumask *final_set_cpus = cs->cpus_allowed;
 		struct cpuset *parent;
 
-		if (cs == &top_cpuset || !css_tryget_online(&cs->css))
+		if (cs == &top_cpuset || !css_tryget_online(&cs->css) ||
+			(cgroup_id != 0 && cs->css.cgroup->id != cgroup_id))
 			continue;
 
 		parent = parent_cs(cs);
@@ -2577,8 +2579,9 @@ void set_user_space_global_cpuset(struct cpumask *global_cpus)
 
 		printk_deferred("[name:global_cpuset&]final set:0x%lx cgroup:",
 				cs->effective_cpus->bits[0]);
-		pr_cont_cgroup_name(cs->css.cgroup);
-		printk_deferred("\n");
+		printk_deferred("%s, id:%d\n",
+				cs->css.cgroup->kn->name,
+				cs->css.cgroup->id);
 
 		/* use cs->effective_cpus to update cs cpumask */
 		update_tasks_cpumask(cs);
@@ -2605,8 +2608,9 @@ void set_user_space_global_cpuset(struct cpumask *global_cpus)
  * mtk: unset user space global cpuset
  * When no need global cpuset, restore original cpu request.
  * If original cs request is empty, use parent effective_cpus.
+ * cgroup_id: if 0, unset all child groups.
  */
-void unset_user_space_global_cpuset(void)
+void unset_user_space_global_cpuset(int cgroup_id)
 {
 	bool need_rebuild_sched_domains = false;
 	struct cpuset *cs;
@@ -2624,7 +2628,8 @@ void unset_user_space_global_cpuset(void)
 		struct cpumask restore_cpus;
 		struct cpuset *parent;
 
-		if (cs == &top_cpuset || !css_tryget_online(&cs->css))
+		if (cs == &top_cpuset || !css_tryget_online(&cs->css) ||
+			(cgroup_id != 0 && cs->css.cgroup->id != cgroup_id))
 			continue;
 
 		parent = parent_cs(cs);
@@ -2655,8 +2660,10 @@ void unset_user_space_global_cpuset(void)
 			!cpumask_equal(cs->cpus_allowed, cs->effective_cpus));
 
 		printk_deferred("[name:global_cpuset&]final unset:");
-		printk_deferred("0x%lx cgroup:",
-				cs->effective_cpus->bits[0]);
+		printk_deferred("0x%lx cgroup:%s, id:%d\n",
+				cs->effective_cpus->bits[0],
+				cs->css.cgroup->kn->name,
+				cs->css.cgroup->id);
 		pr_cont_cgroup_name(cs->css.cgroup);
 		printk_deferred("\n");
 

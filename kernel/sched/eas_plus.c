@@ -29,11 +29,6 @@ static inline int energy_diff(struct energy_env *eenv);
 static int l_plus_cpu = -1;
 #endif
 
-bool __weak sched_boost(void)
-{
-	return 0;
-}
-
 static bool is_intra_domain(int prev, int target)
 {
 #ifdef CONFIG_ARM64

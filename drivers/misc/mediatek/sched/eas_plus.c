@@ -49,6 +49,20 @@ static char module_name[128];
 /* A lock for scheduling switcher */
 DEFINE_SPINLOCK(sched_switch_lock);
 
+int sched_scheduler_switch(enum SCHED_LB_TYPE new_sched)
+{
+	unsigned long flags;
+
+	if (sched_type >= SCHED_UNKNOWN_LB)
+		return -1;
+
+	spin_lock_irqsave(&sched_switch_lock, flags);
+	sched_type = new_sched;
+	spin_unlock_irqrestore(&sched_switch_lock, flags);
+
+	return 0;
+}
+EXPORT_SYMBOL(sched_scheduler_switch);
 
 bool is_game_mode;
 
