@@ -122,7 +122,7 @@ config MTK_COMBO_COMM_NPWR
 config MTK_COMBO_COMM_APO
 	depends on MTK_COMBO_COMM
 	bool "Enable always power on support"
-	default y
+	default n
 	help
 	  Enable chip will always power on
 
