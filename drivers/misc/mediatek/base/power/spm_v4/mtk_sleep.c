@@ -249,7 +249,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n");
+	/* slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n"); */
 
 #if defined(CONFIG_MACH_MT6739)
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
@@ -329,7 +329,7 @@ static void slp_suspend_ops_finish(void)
 static void slp_suspend_ops_end(void)
 {
 	/* legacy log */
-	slp_notice("@@@@@@@@@@@@@@@@@@@@\tChip_pm_end\t@@@@@@@@@@@@@@@@@@@@\n");
+	/* slp_notice("@@@@@@@@@@@@@@@@@@@@\tChip_pm_end\t@@@@@@@@@@@@@@@@@@@@\n"); */
 }
 
 static const struct platform_suspend_ops slp_suspend_ops = {
