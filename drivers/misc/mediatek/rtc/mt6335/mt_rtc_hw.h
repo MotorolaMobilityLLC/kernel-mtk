@@ -312,6 +312,10 @@ unsigned int MASK, unsigned int SHIFT);
 #define RTC_PWRON_DOM_MASK     0xf800
 #define RTC_PWRON_DOM_SHIFT     11
 
+#define RTC_INT_CNT            (RTC_BASE + 0x0202)
+#define RTC_INT_CNT_MASK        0x7FF
+#define RTC_INT_CNT_SHIFT       0
+
 extern u16 rtc_spare_reg[][3];
 
 #define MT_VRTC_PWM_CON0                     ((MT_PMIC_REG_BASE+0x0FAE))
