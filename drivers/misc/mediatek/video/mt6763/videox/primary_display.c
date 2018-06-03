@@ -142,7 +142,6 @@ static struct task_struct *primary_od_trigger_task;
 static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
-static struct sg_table table;
 
 static int decouple_mirror_update_rdma_config_thread(void *data);
 static int decouple_trigger_worker_thread(void *data);
@@ -549,11 +548,13 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 	static MFC_HANDLE mfc_handle;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
+#ifndef CONFIG_MTK_IOMMU
 		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 		if (ret < 0) {
 			pr_debug("m4u_query_mva_info error\n");
 			return -1;
 		}
+#endif
 		ret = m4u_mva_map_kernel(real_mva, real_size, &kva, &mapped_size);
 		if (ret < 0) {
 			pr_debug("m4u_mva_map_kernel fail.\n");
@@ -6659,6 +6660,70 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enu
 	return 0;
 }
 
+#ifdef CONFIG_MTK_IOMMU
+int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COLOR_FMT ufmt)
+{
+	int ret = 0;
+	struct ion_client *ion_display_client = NULL;
+	struct ion_handle *ion_display_handle = NULL;
+	unsigned int mva = 0;
+	unsigned int w_xres = primary_display_get_width();
+	unsigned int h_yres = primary_display_get_height();
+	unsigned int pixel_byte = primary_display_get_bpp() / 8;
+	int buffer_size = h_yres * w_xres * pixel_byte;
+	enum DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
+	int tmp;
+
+	DISPMSG("primary capture: begin\n");
+
+	disp_sw_mutex_lock(&(pgc->capture_lock));
+
+	if (primary_display_is_sleepd()) {
+		memset((void *)pbuf, 0, buffer_size);
+		DISPMSG("primary capture: Fail black End\n");
+		goto out;
+	}
+
+	ion_display_client = disp_ion_create("disp_cap_ovl");
+	if (ion_display_client == NULL) {
+		DISPERR("primary capture:Fail to create ion\n");
+		ret = -1;
+		goto out;
+	}
+
+	ion_display_handle = disp_ion_alloc(ion_display_client,
+			ION_HEAP_MULTIMEDIA_MAP_MVA_MASK, pbuf, buffer_size);
+	if (ret != 0) {
+		DISPERR("primary capture:Fail to allocate buffer\n");
+		ret = -1;
+		goto out;
+	}
+
+	disp_ion_get_mva(ion_display_client, ion_display_handle, &mva, DISP_M4U_PORT_DISP_WDMA0);
+	disp_ion_cache_flush(ion_display_client, ion_display_handle, ION_CACHE_FLUSH_ALL);
+
+	tmp = disp_helper_get_option(DISP_OPT_SCREEN_CAP_FROM_DITHER);
+	if (tmp == 0)
+		after_eng = DISP_MODULE_OVL0;
+
+	if (primary_display_cmdq_enabled())
+		_screen_cap_by_cmdq(mva, ufmt, after_eng);
+	else
+		_screen_cap_by_cpu(mva, ufmt, after_eng);
+
+	disp_ion_cache_flush(ion_display_client, ion_display_handle, ION_CACHE_INVALID_BY_RANGE);
+out:
+	if (ion_display_client != NULL)
+		disp_ion_free_handle(ion_display_client, ion_display_handle);
+
+	if (ion_display_client != 0)
+		disp_ion_destroy(ion_display_client);
+
+	disp_sw_mutex_unlock(&(pgc->capture_lock));
+	DISPMSG("primary capture: end\n");
+	return ret;
+}
+#else
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COLOR_FMT ufmt)
 {
 	int ret = 0;
@@ -6725,7 +6790,7 @@ out:
 	DISPMSG("primary capture: end\n");
 	return ret;
 }
-
+#endif
 int primary_display_capture_framebuffer(unsigned long pbuf)
 {
 	unsigned int fb_layer_id = primary_display_get_option("FB_LAYER");
@@ -6824,46 +6889,6 @@ UINT32 DISP_GetVRamSizeBoot(char *cmdline)
 	DISPCHECK("[DT]display vram size = 0x%08x|%d\n", vramsize, vramsize);
 	return vramsize;
 }
-
-int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
-				  unsigned long *mva)
-{
-	int ret = 0;
-
-	*va = (unsigned long)ioremap_nocache(pa_start, pa_end - pa_start + 1);
-	pr_debug("disphal_allocate_fb, pa_start=0x%pa, pa_end=0x%pa, va=0x%lx\n", &pa_start,
-		 &pa_end, *va);
-
-	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-		m4u_client_t *client;
-
-		struct sg_table *sg_table = &table;
-
-		sg_alloc_table(sg_table, 1, GFP_KERNEL);
-
-		sg_dma_address(sg_table->sgl) = pa_start;
-		sg_dma_len(sg_table->sgl) = (pa_end - pa_start + 1);
-		client = m4u_create_client();
-		if (IS_ERR_OR_NULL(client))
-			DISPERR("create client fail!\n");
-
-
-		*mva = pa_start & 0xffffffffULL;
-		ret = m4u_alloc_mva(client, DISP_M4U_PORT_DISP_OVL0, 0, sg_table, (pa_end - pa_start + 1),
-				    M4U_PROT_READ | M4U_PROT_WRITE, M4U_FLAGS_FIX_MVA, (unsigned int *)mva);
-		/* m4u_alloc_mva(M4U_PORT_DISP_OVL0, pa_start, (pa_end - pa_start + 1), 0, 0, mva); */
-		if (ret)
-			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
-
-		pr_debug("[DISPHAL] FB MVA is 0x%lx PA is 0x%pa\n", *mva, &pa_start);
-
-	} else {
-		*mva = pa_start & 0xffffffffULL;
-	}
-
-	return 0;
-}
-
 
 unsigned int primary_display_get_option(const char *option)
 {

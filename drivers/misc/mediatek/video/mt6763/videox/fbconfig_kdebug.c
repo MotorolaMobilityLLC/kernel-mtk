@@ -521,12 +521,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			 layer_size, ovl_all[global_layer_id].src_pitch, ovl_all[global_layer_id].src_h, mva);
 
 		if ((layer_size != 0) && (ovl_all[global_layer_id].layer_en != 0)) {
+#ifndef CONFIG_MTK_IOMMU
 			ret = m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 			if (ret < 0) {
 				pr_debug("m4u_query_mva_info error: ret=%d mva=0x%x layer_size=%d\n",
 					ret, mva, layer_size);
 				return ret;
 			}
+#endif
 			ret = m4u_mva_map_kernel(real_mva, real_size, &kva, &mapped_size);
 			if (ret < 0) {
 				pr_debug("m4u_mva_map_kernel error: ret=%d real_mva=0x%x real_size=%d\n",

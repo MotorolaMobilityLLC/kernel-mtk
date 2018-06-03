@@ -252,6 +252,7 @@ struct RDMA_CONFIG_STRUCT {
 };
 
 struct WDMA_CONFIG_STRUCT {
+	unsigned idx;		/* instance index */
 	unsigned srcWidth;
 	unsigned srcHeight;	/* input */
 	unsigned clipX;

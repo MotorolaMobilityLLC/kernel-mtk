@@ -1291,6 +1291,13 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	return 0;
 }
 
+int m4u_config_port_ext(M4U_PORT_STRUCT *pM4uPort)
+{
+	int ret = m4u_config_port(pM4uPort);
+
+	return ret;
+}
+
 void m4u_port_array_init(struct m4u_port_array *port_array)
 {
 	memset(port_array, 0, sizeof(struct m4u_port_array));

@@ -12,7 +12,7 @@
 /* mt6763-pinfunc.h will be removed after DCT auto gen check-in */
 #include <dt-bindings/pinctrl/mt6763-pinfunc.h>
 #include <generated/autoconf.h>
-
+#include <dt-bindings/memory/mt6763-larb-port.h>
 / {
 	model = "mt6763";
 	compatible = "mediatek,mt6763";
@@ -3869,6 +3869,87 @@
 			bias-disable;     /* pull: disabled */
 		};
 	};
+
+	iommu: m4u@0 {
+			cell-index = <0>;
+			compatible = "mediatek,iommu-m4u";
+			#iommu-cells = <1>;
+		};
+
+		pseudo-m4u {
+			compatible = "mediatek,pseudo-m4u";
+			iommus = <&iommu M4U_PORT_DISP_RDMA0>;
+		};
+
+		pseudo-m4u-larb0 {
+			compatible = "mediatek,pseudo-port-m4u";
+			mediatek,larbid = <0>;
+			iommus = <&iommu M4U_PORT_DISP_OVL0>,
+				 <&iommu M4U_PORT_DISP_2L_OVL0_LARB0>,
+				 <&iommu M4U_PORT_DISP_2L_OVL1_LARB0>,
+				 <&iommu M4U_PORT_DISP_RDMA0>,
+				 <&iommu M4U_PORT_DISP_RDMA1>,
+				 <&iommu M4U_PORT_DISP_WDMA0>,
+				 <&iommu M4U_PORT_MDP_RDMA0>,
+				 <&iommu M4U_PORT_MDP_WROT0>,
+				 <&iommu M4U_PORT_MDP_WDMA0>,
+				 <&iommu M4U_PORT_DISP_FAKE0>;
+		};
+
+		pseudo-m4u-larb1 {
+			compatible = "mediatek,pseudo-port-m4u";
+			mediatek,larbid = <1>;
+			iommus = <&iommu M4U_PORT_CAM_IMGI>,
+				 <&iommu M4U_PORT_CAM_IMG2O>,
+				 <&iommu M4U_PORT_CAM_IMG3O>,
+				 <&iommu M4U_PORT_CAM_VIPI>,
+				 <&iommu M4U_PORT_CAM_LCEI>,
+				 <&iommu M4U_PORT_CAM_FD_RP>,
+				 <&iommu M4U_PORT_CAM_FD_WR>,
+				 <&iommu M4U_PORT_CAM_FD_RB>,
+				 <&iommu M4U_PORT_CAM_DPE_RDMA>,
+				 <&iommu M4U_PORT_CAM_DPE_WDMA>;
+		};
+
+		pseudo-m4u-larb2 {
+			compatible = "mediatek,pseudo-port-m4u";
+			mediatek,larbid = <2>;
+			iommus = <&iommu M4U_PORT_CAM_IMGO>,
+				 <&iommu M4U_PORT_CAM_RRZO>,
+				 <&iommu M4U_PORT_CAM_AAO>,
+				 <&iommu M4U_PORT_CAM_AFO>,
+				 <&iommu M4U_PORT_CAM_LSCI_0>,
+				 <&iommu M4U_PORT_CAM_LSC3I>,
+				 <&iommu M4U_PORT_CAM_RSSO>,
+				 <&iommu M4U_PORT_CAM_SV0>,
+				 <&iommu M4U_PORT_CAM_SV1>,
+				 <&iommu M4U_PORT_CAM_SV2>,
+				 <&iommu M4U_PORT_CAM_LCSO>,
+				 <&iommu M4U_PORT_CAM_UFEO>,
+				 <&iommu M4U_PORT_CAM_BPCI>,
+				 <&iommu M4U_PORT_CAM_PDO>,
+				 <&iommu M4U_PORT_CAM_RAWI>,
+				 <&iommu M4U_PORT_CAM_CCUI>,
+				 <&iommu M4U_PORT_CAM_CCUO>,
+				 <&iommu M4U_PORT_CAM_CCUG>;
+		};
+
+		pseudo-m4u-larb3 {
+			compatible = "mediatek,pseudo-port-m4u";
+			mediatek,larbid = <3>;
+			iommus = <&iommu M4U_PORT_VENC_RCPU>,
+				 <&iommu M4U_PORT_VENC_REC>,
+				 <&iommu M4U_PORT_VENC_BSDMA>,
+				 <&iommu M4U_PORT_VENC_SV_COMV>,
+				 <&iommu M4U_PORT_VENC_RD_COMV>,
+				 <&iommu M4U_PORT_JPGENC_RDMA>,
+				 <&iommu M4U_PORT_JPGENC_BSDMA>,
+				 <&iommu M4U_PORT_VENC_CUR_LUMA>,
+				 <&iommu M4U_PORT_VENC_CUR_CHROMA>,
+				 <&iommu M4U_PORT_VENC_REF_LUMA>,
+				 <&iommu M4U_PORT_VENC_REF_CHROMA>;
+		};
+
 };
 
 #include "mt6356.dtsi"

@@ -152,7 +152,9 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 {
 	int ret = 0;
 	unsigned long size_align;
+	unsigned int mva  = 0;
 
+#ifndef CONFIG_MTK_IOMMU
 	size_align = round_up(size, PAGE_SIZE);
 
 	buf_info->buf_va = dma_alloc_coherent(disp_get_device(), size, &buf_info->buf_pa, GFP_KERNEL);
@@ -179,11 +181,33 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 		if (ret)
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
 
-		buf_info->buf_mva = mva;
-		DISPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, mva, &buf_info->buf_pa);
+	}
+#else
+	struct ion_client *ion_display_client = NULL;
+	struct ion_handle *ion_display_handle = NULL;
+
+	size_align = round_up(size, PAGE_SIZE);
+	ion_display_client = disp_ion_create("disp_cap_ovl");
+	if (ion_display_client == NULL) {
+		DISPERR("primary capture:Fail to create ion\n");
+		ret = -1;
+		goto out;
 	}
 
-	return 0;
+	ion_display_handle = disp_ion_alloc(ion_display_client,
+			ION_HEAP_MULTIMEDIA_PA2MVA_MASK, buf_info->buf_pa, size_align);
+	if (ret != 0) {
+		DISPERR("primary capture:Fail to allocate buffer\n");
+		ret = -1;
+		goto out;
+	}
+	disp_ion_get_mva(ion_display_client, ion_display_handle, (unsigned int *)&mva, DISP_M4U_PORT_DISP_WDMA0);
+
+out:
+#endif
+	buf_info->buf_mva = mva;
+	DISPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, mva, &buf_info->buf_pa);
+	return ret;
 }
 
 static int release_test_buf(struct test_buf_info *buf_info)

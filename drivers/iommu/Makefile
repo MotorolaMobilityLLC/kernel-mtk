@@ -1,4 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ccflags-$(CONFIG_MTK_M4U) += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
+ccflags-$(CONFIG_MTK_M4U) += -I$(srctree)/drivers/misc/mediatek/m4u/2.0/
 
 obj-$(CONFIG_IOMMU_API) += iommu.o
 obj-$(CONFIG_IOMMU_API) += iommu-traces.o
@@ -22,7 +24,7 @@ obj-$(CONFIG_IRQ_REMAP) += intel_irq_remapping.o irq_remapping.o
 ifdef CONFIG_MACH_MT8167
 obj-$(CONFIG_MTK_IOMMU) += mtk_iommu_mt8167.o
 else
-obj-$(CONFIG_MTK_IOMMU) += mtk_iommu.o
+obj-$(CONFIG_MTK_IOMMU) += mtk_iommu_$(MTK_PLATFORM).o
 endif
 obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
 obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o

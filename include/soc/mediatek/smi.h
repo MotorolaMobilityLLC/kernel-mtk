@@ -17,8 +17,6 @@
 #include <linux/bitops.h>
 #include <linux/device.h>
 
-#ifdef CONFIG_MTK_SMI
-
 #define MTK_LARB_NR_MAX		8
 
 #define MTK_SMI_MMU_EN(port)	BIT(port)
@@ -33,6 +31,7 @@ struct mtk_smi_iommu {
 	struct mtk_smi_larb_iommu larb_imu[MTK_LARB_NR_MAX];
 };
 
+#if (defined(CONFIG_MTK_SMI) && (!defined(CONFIG_MTK_SMI_EXT)))
 /*
  * mtk_smi_larb_get: Enable the power domain and clocks for this local arbiter.
  *                   It also initialize some basic setting(like iommu).

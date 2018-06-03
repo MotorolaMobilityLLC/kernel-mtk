@@ -276,6 +276,7 @@ static int ovl2mem_callback(unsigned int userdata)
 			if (data_config) {
 				struct WDMA_CONFIG_STRUCT wdma_layer;
 
+				wdma_layer.idx = 0;
 				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
 				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
 				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;

@@ -18,7 +18,7 @@
 #include "ddp_reg.h"
 #include "ddp_log.h"
 
-#include "m4u.h"
+#include "ddp_m4u.h"
 
 static struct DDP_MMP_Events DDP_MMP_Events;
 
@@ -355,13 +355,17 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 	mmp_metadata_bitmap_t Bitmap;
 	mmp_metadata_t meta;
 	int raw = 0;
+	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
 
-	if (session == 1)
+	if (session == 1) {
 		mmprofile_log_ex(DDP_MMP_Events.layer_dump_parent, MMPROFILE_FLAG_START, pLayer->layer,
 			       pLayer->layer_en);
-	else if (session == 2)
+		module = DISP_MODULE_OVL0;
+	} else if (session == 2) {
 		mmprofile_log_ex(DDP_MMP_Events.Extd_layer_dump_parent, MMPROFILE_FLAG_START,
 			       pLayer->layer, pLayer->layer_en);
+	       module = DISP_MODULE_OVL1;
+	}
 
 	if (pLayer->layer_en) {
 		Bitmap.data1 = pLayer->vaddr;
@@ -406,8 +410,8 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			Bitmap.data_size = Bitmap.pitch * Bitmap.height;
 			Bitmap.down_sample_x = down_sample_x;
 			Bitmap.down_sample_y = down_sample_y;
-			if (m4u_mva_map_kernel
-			    (pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
+			if (disp_mva_map_kernel
+			    (module, pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
 			     &Bitmap.data_size) == 0) {
 				if (session == 1)
 					mmprofile_log_meta_bitmap(DDP_MMP_Events.
@@ -417,7 +421,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 					mmprofile_log_meta_bitmap(DDP_MMP_Events.
 								  ovl1layer_dump[pLayer->layer],
 								  MMPROFILE_FLAG_PULSE, &Bitmap);
-				m4u_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
+				disp_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
 						     (unsigned long)Bitmap.p_data);
 			} else {
 				DDPERR("ddp_mmp_ovl_layer(),fail to dump rgb(0x%x)\n", pLayer->fmt);
@@ -425,8 +429,8 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 		} else {
 			meta.data_type = MMPROFILE_META_RAW;
 			meta.size = pLayer->src_pitch * pLayer->src_h;
-			if (m4u_mva_map_kernel
-			    (pLayer->addr, meta.size, (unsigned long *)&meta.p_data,
+			if (disp_mva_map_kernel
+			    (module, pLayer->addr, meta.size, (unsigned long *)&meta.p_data,
 			     &meta.size) == 0) {
 				if (session == 1)
 					mmprofile_log_meta(DDP_MMP_Events.layer_dump[pLayer->layer],
@@ -435,7 +439,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 					mmprofile_log_meta(DDP_MMP_Events.
 							   ovl1layer_dump[pLayer->layer],
 							   MMPROFILE_FLAG_PULSE, &meta);
-				m4u_mva_unmap_kernel(pLayer->addr, meta.size,
+				disp_mva_unmap_kernel(pLayer->addr, meta.size,
 						     (unsigned long)meta.p_data);
 			} else {
 				DDPERR("ddp_mmp_ovl_layer(),fail to dump raw(0x%x)\n", pLayer->fmt);
@@ -512,12 +516,12 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 		Bitmap.data_size = Bitmap.pitch * Bitmap.height;
 		Bitmap.down_sample_x = down_sample_x;
 		Bitmap.down_sample_y = down_sample_y;
-		if (m4u_mva_map_kernel
-		    (wdma_layer->dstAddress, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
+		if (disp_mva_map_kernel
+		    (DISP_MODULE_WDMA0, wdma_layer->dstAddress, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
 		     &Bitmap.data_size) == 0) {
 			mmprofile_log_meta_bitmap(DDP_MMP_Events.wdma_dump[wdma_num],
 						  MMPROFILE_FLAG_PULSE, &Bitmap);
-			m4u_mva_unmap_kernel(wdma_layer->dstAddress, Bitmap.data_size,
+			disp_mva_unmap_kernel(wdma_layer->dstAddress, Bitmap.data_size,
 					     (unsigned long)Bitmap.p_data);
 		} else {
 			DDPERR("dprec_mmp_dump_wdma_layer(),fail to dump rgb(0x%x)\n",
@@ -526,11 +530,13 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 	} else {
 		meta.data_type = MMPROFILE_META_RAW;
 		meta.size = wdma_layer->dstPitch * wdma_layer->srcHeight;
-		if (m4u_mva_map_kernel
-		    (wdma_layer->dstAddress, meta.size, (unsigned long *)&meta.p_data,
+		if (disp_mva_map_kernel
+		    (DISP_MODULE_WDMA0, wdma_layer->dstAddress, meta.size, (unsigned long *)&meta.p_data,
 		     &meta.size) == 0) {
 			mmprofile_log_meta(DDP_MMP_Events.wdma_dump[wdma_num], MMPROFILE_FLAG_PULSE,
 					   &meta);
+			disp_mva_unmap_kernel(wdma_layer->dstAddress, Bitmap.data_size,
+					     (unsigned long)Bitmap.p_data);
 		} else {
 			DDPERR("dprec_mmp_dump_wdma_layer(),fail to dump raw(0x%x)\n",
 			       wdma_layer->outputFormat);
@@ -544,7 +550,10 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 	mmp_metadata_bitmap_t Bitmap;
 	mmp_metadata_t meta;
 	int raw = 0;
+	enum DISP_MODULE_ENUM module = DISP_MODULE_RDMA0;
 
+	if (rdma_layer->idx == 1)
+		module = DISP_MODULE_RDMA1;
 	if (rdma_num > 1) {
 		DDPERR("dump_rdma_layer is error %d\n", rdma_num);
 		return;
@@ -597,11 +606,11 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 		Bitmap.data_size = Bitmap.pitch * Bitmap.height;
 		Bitmap.down_sample_x = down_sample_x;
 		Bitmap.down_sample_y = down_sample_y;
-		if (m4u_mva_map_kernel(rdma_layer->address, Bitmap.data_size,
+		if (disp_mva_map_kernel(module, rdma_layer->address, Bitmap.data_size,
 				       (unsigned long *)&Bitmap.p_data, &Bitmap.data_size) == 0) {
 			mmprofile_log_meta_bitmap(DDP_MMP_Events.rdma_dump[rdma_num],
 						  MMPROFILE_FLAG_PULSE, &Bitmap);
-			m4u_mva_unmap_kernel(rdma_layer->address, Bitmap.data_size,
+			disp_mva_unmap_kernel(rdma_layer->address, Bitmap.data_size,
 					     (unsigned long)Bitmap.p_data);
 		} else {
 			DDPERR("dump_rdma_layer(),fail to dump rgb(0x%x)\n",
@@ -610,11 +619,11 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 	} else {
 		meta.data_type = MMPROFILE_META_RAW;
 		meta.size = rdma_layer->pitch * rdma_layer->height;
-		if (m4u_mva_map_kernel(rdma_layer->address, meta.size,
+		if (disp_mva_map_kernel(module, rdma_layer->address, meta.size,
 				       (unsigned long *)(&meta.p_data), &meta.size) == 0) {
 			mmprofile_log_meta(DDP_MMP_Events.rdma_dump[rdma_num], MMPROFILE_FLAG_PULSE,
 					   &meta);
-			m4u_mva_unmap_kernel(rdma_layer->address, meta.size,
+			disp_mva_unmap_kernel(rdma_layer->address, meta.size,
 					     (unsigned long)meta.p_data);
 		} else {
 			DDPERR("dprec_mmp_dump_rdma_layer(),fail to dump raw(0x%x)\n",
