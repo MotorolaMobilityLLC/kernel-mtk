@@ -22,7 +22,7 @@
 #define R_FG_VALUE	10				/* mOhm */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
-#define FG_METER_RESISTANCE	50
+#define FG_METER_RESISTANCE	200
 #define CAR_TUNE_VALUE	100 /*1.00 */
 
 #define SHUTDOWN_GAUGE0 1

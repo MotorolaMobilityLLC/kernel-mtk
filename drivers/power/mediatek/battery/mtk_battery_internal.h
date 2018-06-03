@@ -92,7 +92,7 @@
 
 
 
-typedef enum {
+enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_PRINT_LOG,
 	FG_DAEMON_CMD_GET_CUSTOM_SETTING,
 	FG_DAEMON_CMD_IS_BAT_EXIST,
@@ -175,10 +175,10 @@ typedef enum {
 
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
-} FG_DAEMON_CTRL_CMD_FROM_USER;
+};
 
 /* kernel cmd */
-typedef enum {
+enum Fg_kernel_cmds {
 	FG_KERNEL_CMD_NO_ACTION,
 	FG_KERNEL_CMD_DUMP_REGULAR_LOG,
 	FG_KERNEL_CMD_DISABLE_NAFG,
@@ -186,9 +186,9 @@ typedef enum {
 
 	FG_KERNEL_CMD_FROM_USER_NUMBER
 
-} FG_KERNEL_CTRL_CMD;
+};
 
-typedef enum {
+enum Fg_interrupt_flags {
 	FG_INTR_0 = 0,
 	FG_INTR_TIMER_UPDATE  = 1,
 	FG_INTR_BAT_CYCLE = 2,
@@ -217,7 +217,7 @@ typedef enum {
 	FG_INTR_BAT_INT1_CHECK = 0x1000000,
 	FG_INTR_KERNEL_CMD = 0x2000000,
 
-} FG_INTERRUPT_FLAG;
+};
 
 struct fgd_nl_msg_t {
 	unsigned int fgd_cmd;
@@ -494,7 +494,7 @@ struct fuel_gauge_table_custom_data {
 	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
 };
 
-typedef struct {
+struct PMU_ChargerStruct {
 	bool bat_exist;
 	bool bat_full;
 	signed int bat_charging_state;
@@ -521,7 +521,7 @@ typedef struct {
 	unsigned int nPercent_ZCV;
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
-} PMU_ChargerStruct;		/* BMT_status */
+};		/* BMT_status */
 
 struct battery_data {
 	struct power_supply_desc psd;
@@ -583,7 +583,7 @@ enum {
 };
 
 extern struct fuel_gauge_custom_data fg_cust_data;
-extern PMU_ChargerStruct BMT_status;
+extern struct PMU_ChargerStruct BMT_status;
 extern struct BAT_EC_Struct Bat_EC_ctrl;
 extern struct gauge_hw_status FG_status;
 
