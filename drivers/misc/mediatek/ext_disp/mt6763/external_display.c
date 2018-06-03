@@ -385,10 +385,12 @@ static int _build_path_direct_link(unsigned int session)
 	EXT_DISP_FUNC();
 	pgc->mode = EXTD_DIRECT_LINK_MODE;
 
-	if (DISP_SESSION_DEV(session) == DEV_LCM)
+	if (DISP_SESSION_DEV(session) == DEV_LCM) {
 		pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_DISP, pgc->cmdq_handle_config);
-	else	/* If DP max resolution is 4K, It need use  DDP_SCENARIO_SUB_DISP_4K. */
+	} else {	/* If DP max resolution is 4K, It need use  DDP_SCENARIO_SUB_DISP_4K. */
 		pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_DISP, pgc->cmdq_handle_config);
+		ret = 0;
+	}
 
 	if (pgc->dpmgr_handle)
 		EXT_DISP_LOG("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
