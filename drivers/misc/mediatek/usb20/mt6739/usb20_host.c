@@ -170,7 +170,7 @@ void _set_vbus(struct musb *musb, int is_on)
 
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 
 	DBG(0, "is_on<%d>, control<%d>\n", is_on, vbus_control);
 

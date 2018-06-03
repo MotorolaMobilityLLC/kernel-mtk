@@ -24,7 +24,7 @@
 
 #include <mt-plat/mtk_boot_common.h>
 
-#ifdef FPGA_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #include <linux/i2c.h>
 #include "mtk-phy-a60810.h"
 #endif
@@ -37,22 +37,7 @@
 #include <mt-plat/mtk_usb2jtag.h>
 #endif
 
-/* to avoid build error due to PMIC module not ready */
-#ifndef CONFIG_MTK_SMART_BATTERY
-typedef enum {
-	CHARGER_UNKNOWN = 0,
-	STANDARD_HOST,		/* USB : 450mA */
-	CHARGING_HOST,
-	NONSTANDARD_CHARGER,	/* AC : 450mA~1A */
-	STANDARD_CHARGER,	/* AC : ~1A */
-	APPLE_2_1A_CHARGER,	/* 2.1A apple charger */
-	APPLE_1_0A_CHARGER,	/* 1A apple charger */
-	APPLE_0_5A_CHARGER,	/* 0.5A apple charger */
-	WIRELESS_CHARGER,
-} CHARGER_TYPE;
-#endif
-
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include "mtk_spm_resource_req.h"
 
 static int dpidle_status = USB_DPIDLE_ALLOWED;
@@ -143,7 +128,7 @@ static void usb_dpidle_request(int mode)
 #endif
 
 static u32 cable_mode = CABLE_MODE_NORMAL;
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 struct clk *musb_clk;
 static struct regulator *reg_vusb;
 static struct regulator *reg_va12;
@@ -421,7 +406,7 @@ void do_connection_work(struct work_struct *data)
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	} else if (!exceed_gap) {
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		s64 diff_time;
 		ktime_t ktime_now;
 
@@ -691,7 +676,7 @@ bool is_switch_charger(void)
 
 void pmic_chrdet_int_en(int is_on)
 {
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_MTK_PMIC
 	DBG(0, "is_on<%d>\n", is_on);
 	upmu_interrupt_chrdet_int_en(is_on);
@@ -703,7 +688,7 @@ void pmic_chrdet_int_en(int is_on)
 
 void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 
 	DBG(0, "BATTERY_SetUSBState, state=%d\n", usb_state);
 #ifdef CONFIG_MTK_SMART_BATTERY
@@ -982,7 +967,7 @@ static ssize_t mt_usb_show_uart_path(struct device *dev, struct device_attribute
 DEVICE_ATTR(uartpath, 0444, mt_usb_show_uart_path, NULL);
 #endif
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static struct device_attribute *mt_usb_attributes[] = {
 	&dev_attr_saving,
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -1011,7 +996,7 @@ out_unreg:
 }
 #endif
 
-#ifdef FPGA_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 static struct i2c_client *usb_i2c_client;
 static const struct i2c_device_id usb_i2c_id[] = { {"mtk-usb", 0}, {} };
 
@@ -1305,7 +1290,7 @@ static int add_usb_i2c_driver(void)
 	DBG(0, "[MUSB]usb_i2c_driver initialization succeed!!\n");
 	return 0;
 }
-#endif				/* End of FPGA_PLATFORM */
+#endif	/* End of CONFIG_FPGA_EARLY_PORTING */
 
 static int __init mt_usb_init(struct musb *musb)
 {
@@ -1328,13 +1313,13 @@ static int __init mt_usb_init(struct musb *musb)
 	musb->power = false;
 	musb->is_host = false;
 	musb->fifo_size = 8 * 1024;
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	musb->usb_rev6_setting = usb_rev6_setting;
 #endif
 
 	wake_lock_init(&musb->usb_lock, WAKE_LOCK_SUSPEND, "USB suspend lock");
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	reg_vusb = regulator_get(musb->controller, "vusb");
 	if (!IS_ERR(reg_vusb)) {
 #ifdef NEVER
@@ -1399,7 +1384,7 @@ static int __init mt_usb_init(struct musb *musb)
 static int mt_usb_exit(struct musb *musb)
 {
 	del_timer_sync(&musb_idle_timer);
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (reg_vusb)
 		regulator_put(reg_vusb);
 	if (reg_va12)
@@ -1539,7 +1524,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 	mtk_host_qmu_force_isoc_restart = 0;
 #endif
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	register_usb_hal_dpidle_request(usb_dpidle_request);
 #endif
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
@@ -1550,7 +1535,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
 	mtk_usb_power = false;
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	musb_clk = devm_clk_get(&pdev->dev, "usb0");
 	if (IS_ERR(musb_clk)) {
 		DBG(0, KERN_WARNING "cannot get musb clock\n");
@@ -1577,11 +1562,11 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 	DBG(0, "USB probe done!\n");
 
-#if defined(FPGA_PLATFORM) || defined(FOR_BRING_UP)
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(FOR_BRING_UP)
 	musb_force_on = 1;
 #endif
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (get_boot_mode() == META_BOOT) {
 		DBG(0, "in special mode %d\n", get_boot_mode());
 		musb_force_on = 1;
@@ -1589,7 +1574,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 	return 0;
 
-#ifndef FPGA_PLATFORM
+#ifndef CONFIG_FPGA_EARLY_PORTING
 err3:
 	clk_unprepare(musb_clk);
 #endif
@@ -1635,7 +1620,7 @@ static int __init usb20_init(void)
 
 	ret = platform_driver_register(&mt_usb_driver);
 
-#ifdef FPGA_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	add_usb_i2c_driver();
 #endif
 

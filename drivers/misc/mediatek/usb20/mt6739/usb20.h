@@ -14,25 +14,19 @@
 #ifndef __USB20_H__
 #define __USB20_H__
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
-#define FPGA_PLATFORM
-#endif
-
 struct mt_usb_glue {
 	struct device *dev;
 	struct platform_device *musb;
 };
 
-#ifndef FPGA_PLATFORM
+
 #if CONFIG_MTK_GAUGE_VERSION == 30
 extern unsigned int upmu_get_rgs_chrdet(void);
 extern bool upmu_is_chr_det(void);
 #else
 extern kal_bool upmu_is_chr_det(void);
 #endif
-#endif
 
-/* extern CHARGER_TYPE mt_charger_type_detection(void); */
 extern void BATTERY_SetUSBState(int usb_state);
 extern void upmu_interrupt_chrdet_int_en(unsigned int val);
 
@@ -56,7 +50,7 @@ extern void usb_phy_switch_to_usb(void);
 extern void usb_phy_switch_to_uart(void);
 #endif
 
-#ifdef FPGA_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 extern void USB_PHY_Write_Register8(u8 var, u8 addr);
 extern u8 USB_PHY_Read_Register8(u8 addr);
 #endif
@@ -75,11 +69,6 @@ extern void __iomem *ap_gpio_base;
 extern bool in_uart_mode;
 #endif
 extern int usb20_phy_init_debugfs(void);
-#ifndef FPGA_PLATFORM
-extern CHARGER_TYPE mt_get_charger_type(void);
-#include <upmu_common.h>
-bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
-#endif
 
 #define PHY_IDLE_MODE       0
 #define PHY_DEV_ACTIVE      1

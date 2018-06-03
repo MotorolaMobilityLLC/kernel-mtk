@@ -32,7 +32,7 @@
 #define FRA (48)
 #define PARA (28)
 
-#ifdef FPGA_PLATFORM
+#ifdef CONFIG_FPGA_EARLY_PORTING
 bool usb_enable_clock(bool enable)
 {
 	return true;
