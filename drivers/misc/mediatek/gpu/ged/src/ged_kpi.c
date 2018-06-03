@@ -16,7 +16,6 @@
 #include <linux/time.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
-#include <linux/sched.h>
 #include <linux/atomic.h>
 #include <linux/module.h>
 #include <linux/version.h>
@@ -120,6 +119,12 @@ typedef struct GED_KPI_TAG {
 	long long t_cpu_remained_pred;
 	unsigned long long t_acquire_period;
 	unsigned long long QedBufferDelay;
+	unsigned long cpu_max_freq_LL;
+	unsigned long cpu_max_freq_L;
+	unsigned long cpu_max_freq_B;
+	unsigned long cpu_cur_freq_LL;
+	unsigned long cpu_cur_freq_L;
+	unsigned long cpu_cur_freq_B;
 } GED_KPI;
 
 typedef struct GED_TIMESTAMP_TAG {
@@ -201,14 +206,14 @@ static unsigned int gx_cpu_remained_time_avg;
 static unsigned int gx_gpu_freq_avg;
 
 static int boost_accum;
-/* static long target_t_cpu_remained = 4000000; */  /* for non-60-FPS cases */
+static long target_t_cpu_remained = 16000000; /* for non-60-FPS cases */
 /* static long target_t_cpu_remained_min = 8300000; */ /* default 0.5 vsync period */
 static int cpu_boost_policy = 1;
 static int boost_extra;
 static int boost_amp = 100;
 static int boost_upper_bound = 100;
 static void (*ged_kpi_cpu_boost_policy_fp)(GED_KPI_HEAD *psHead, GED_KPI *psKPI);
-/* module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR); */
+module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR);
 module_param(gx_game_mode, int, S_IRUGO|S_IWUSR);
 module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
@@ -365,8 +370,8 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	ged_kpi_frame_rate_control_detect(psHead, psKPI);
 
 	/* statistics */
-	ged_log_buf_print(ghLogBuf
-		, "%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%u,%lld,%lld,%d,%d,%d,%lld,%d,%lld,%u,%d,%llu",
+	ged_log_buf_print(ghLogBuf,
+"%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%d,%d,%d,%lld,%d,%lld,%u,%d,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
 		psHead->isSF,
 		psHead->ullWnd,
@@ -380,9 +385,6 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->i32DebugQedBuffer_length,
 		psKPI->i32Gpu_uncompleted,
 		psKPI->gpu_freq,
-		psKPI->gpu_loading,
-		psKPI->t_cpu_remained,
-		psKPI->t_gpu_remained,
 		psKPI->boost_linear,
 		psKPI->boost_real,
 		psKPI->boost_accum,
@@ -391,7 +393,13 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		vsync_period,
 		(unsigned int)psHead->frc_mode,
 		psHead->frc_client,
-		psKPI->QedBufferDelay
+		psKPI->QedBufferDelay,
+		psKPI->cpu_max_freq_LL,
+		psKPI->cpu_max_freq_L,
+		psKPI->cpu_max_freq_B,
+		psKPI->cpu_cur_freq_LL,
+		psKPI->cpu_cur_freq_L,
+		psKPI->cpu_cur_freq_B
 		);
 }
 /* ----------------------------------------------------------------------------- */
@@ -508,7 +516,7 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 
-			if (t_cpu_rem_cur < psHead->t_cpu_target) {
+			if (t_cpu_rem_cur < target_t_cpu_remained) {
 				if ((temp_cpu_target_loss < 0) && (psKPI->QedBufferDelay == 0))
 					temp_cpu_target_loss = 0;
 			} else {
@@ -571,6 +579,12 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->boost_real = boost_real;
 		psKPI->boost_accum = boost_accum;
 		boost_accum = temp_boost_accum;
+		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
+		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
+		psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
+		psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024;
+		psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024;
+		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
 
 #ifdef GED_KPI_MET_DEBUG
 		met_tag_oneshot(0, "ged_pframeb_boost_accum", boost_accum);
@@ -1082,7 +1096,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					}
 					/* notify gpu performance info to GPU DVFS module */
 					ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000000)
-							, (int)(psHead->t_gpu_latest)/1000000);
+							, (int)(psHead->t_gpu_latest/1000000));
 					break;
 				}
 #ifdef GED_KPI_DEBUG
