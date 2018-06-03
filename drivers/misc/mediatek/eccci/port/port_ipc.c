@@ -29,6 +29,15 @@
 #include "ccci_modem.h"
 #include "ccci_fsm.h"
 #include "port_t.h"
+
+#define uint32 unsigned int
+
+/* AP Status Indication For Garbage Filter  */
+struct ap_status_ind {
+	uint32 em_ap_status;
+	uint32 bm_cmd;
+} __packed;
+
 static struct ipc_task_id_map ipc_msgsvc_maptbl[] = {
 
 #define __IPC_ID_TABLE
@@ -476,5 +485,53 @@ int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info)
 	emi_info->ap_view_bank4_base = mem_layout->md_bank4_noncacheable_total.base_md_view_phy;
 	emi_info->bank4_size = mem_layout->md_bank4_noncacheable_total.size;
 	return 0;
+}
+
+/* Send suspend/resume msg to MD for Garbage filter feature */
+void ccci_garbage_filter(int val)
+{
+	int ret = 0;
+	struct ipc_ilm *in_ilm = NULL;
+	struct ap_status_ind *ccci_ap_status_ind = NULL;
+	struct local_para *s_local_para = NULL;
+
+	in_ilm = kzalloc(sizeof(struct ipc_ilm), GFP_KERNEL);
+	if (!in_ilm) {
+		CCCI_ERROR_LOG(-1, IPC, "Allocation in_ilm failed !");
+		goto out;
+	}
+	ccci_ap_status_ind = kzalloc(sizeof(struct ap_status_ind), GFP_KERNEL);
+	if (!ccci_ap_status_ind) {
+		CCCI_ERROR_LOG(-1, IPC, "Allocation ccci_ap_status_ind failed !");
+		goto out;
+	}
+	s_local_para = kzalloc(sizeof(struct local_para)+sizeof(struct ap_status_ind), GFP_KERNEL);
+	if (!s_local_para) {
+		CCCI_ERROR_LOG(-1, IPC, "Allocation s_local_para failed !");
+		goto out;
+	}
+
+	s_local_para->ref_count = 0;
+	s_local_para->_stub = 0;
+	ccci_ap_status_ind->em_ap_status = val ? 0 : 1;
+	ccci_ap_status_ind->bm_cmd = val ? 1 : 0;
+
+	memcpy(s_local_para->data, ccci_ap_status_ind, sizeof(struct ap_status_ind));
+	s_local_para->msg_len = sizeof(struct local_para)+sizeof(struct ap_status_ind);
+
+	in_ilm->src_mod_id = AP_MOD_CCCIIPC;
+	in_ilm->dest_mod_id = MD_MOD_IPCORE;
+	in_ilm->sap_id = 0;
+	in_ilm->msg_id = IPC_MSG_ID_AP_STATUS_IND;
+	in_ilm->local_para_ptr = s_local_para;
+	in_ilm->peer_buff_ptr = 0;
+
+	ret = ccci_ipc_send_ilm(0, in_ilm);
+	if (unlikely(ret < 0))
+		CCCI_ERROR_LOG(-1, IPC, "Garbage filter ccci_ipc_send_ilm fail for garbage filter %d\n", ret);
+out:
+	kfree(in_ilm);
+	kfree(ccci_ap_status_ind);
+	kfree(s_local_para);
 }
 

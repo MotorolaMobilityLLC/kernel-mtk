@@ -33,10 +33,14 @@
 #include <mtk_vcorefs_manager.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
+#include "port_ipc.h"
 
 #include "md_sys1_platform.h"
 #include "cldma_reg.h"
 #include "modem_reg_base.h"
+
+#define ON 1
+#define OFF 0
 
 static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"scp-sys-md1-main"},
@@ -1040,6 +1044,8 @@ int ccci_modem_suspend(struct platform_device *dev, pm_message_t state)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
 
+	ccci_garbage_filter(ON);
+
 	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_suspend\n");
 	return 0;
 }
@@ -1047,6 +1053,8 @@ int ccci_modem_suspend(struct platform_device *dev, pm_message_t state)
 int ccci_modem_resume(struct platform_device *dev)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
+
+	ccci_garbage_filter(OFF);
 
 	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_resume\n");
 	return 0;
