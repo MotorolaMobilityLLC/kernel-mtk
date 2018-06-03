@@ -790,11 +790,12 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 	struct cpumask cpuhp_cpumask;
 	struct cpumask cpu_online_cpumask;
 
+	dcm_pr_dbg("\n******** dcm_hotplug_nc *********ac=%lx\n", action);
 	switch (action) {
 	case CPU_ONLINE:
 		arch_get_cluster_cpus(&cpuhp_cpumask, arch_get_cluster_id(cpu));
 		cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
-		if (cpumask_weight(&cpu_online_cpumask) == 1) {
+		if (cpumask_weight(&cpu_online_cpumask)) {
 			switch (cpu / 4) {
 			case 0:
 				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, LL CPU_ONLINE\n",
@@ -804,7 +805,7 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 			case 1:
 				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, L CPU_ONLINE\n",
 					__func__, action, cpu);
-				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_L;
+				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 				break;
 			case 2:
 				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, B CPU_ONLINE\n",
@@ -812,6 +813,8 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 				break;
 			default:
+				dcm_pr_info("%s: action=0x%lx, cpu=%u\n",
+					__func__, action, cpu);
 				break;
 			}
 		}
@@ -829,7 +832,7 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 			case 1:
 				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, L CPU_DOWN_PREPARE\n",
 					__func__, action, cpu);
-				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_L;
+				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_B;
 				break;
 			case 2:
 				dcm_pr_dbg("%s: action=0x%lx, cpu=%u, B CPU_DOWN_PREPARE\n",
@@ -837,6 +840,8 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_B;
 				break;
 			default:
+				dcm_pr_info("%s: action=0x%lx, cpu=%u\n",
+					__func__, action, cpu);
 				break;
 			}
 		}
