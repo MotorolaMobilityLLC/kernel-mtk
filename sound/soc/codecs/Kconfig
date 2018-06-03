@@ -423,6 +423,9 @@ config SND_SOC_CS4349
 	tristate "Cirrus Logic CS4349 CODEC"
 	depends on I2C
 
+config SND_SOC_CS4382A
+	tristate
+
 config SND_SOC_CX20442
 	tristate
 	depends on TTY
