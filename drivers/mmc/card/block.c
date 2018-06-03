@@ -1000,8 +1000,9 @@ cmd_err:
 
 int mmc_otp_ops_check_bdev(struct block_device *bdev)
 {
-	if (strcmp(bdev->bd_part->info->volname, "otp"))
-		return 0;
+	if (bdev && bdev->bd_part && bdev->bd_part->info)
+		if (strcmp(bdev->bd_part->info->volname, "otp"))
+			return 0;
 	return 1;
 }
 
