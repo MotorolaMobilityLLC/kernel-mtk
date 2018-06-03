@@ -442,6 +442,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	}
 
 	cmdqRecClearEventToken(pgcl->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
+	cmdqRecClearEventToken(pgcl->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 	dpmgr_path_start(pgcl->dpmgr_handle, ovl2mem_cmdq_enabled());
 
 	dpmgr_path_trigger(pgcl->dpmgr_handle, pgcl->cmdq_handle_config, ovl2mem_cmdq_enabled());
