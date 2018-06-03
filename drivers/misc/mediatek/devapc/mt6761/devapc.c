@@ -400,6 +400,7 @@ static void unmask_infra_module_irq(unsigned int module)
 }
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
+#ifdef DBG_ENABLE
 static void mask_infra_module_irq(unsigned int module)
 {
 	unsigned int apc_index = 0;
@@ -415,6 +416,7 @@ static void mask_infra_module_irq(unsigned int module)
 
 	*DEVAPC_PD_INFRA_VIO_MASK(apc_index) |= (1 << apc_bit_index);
 }
+#endif
 #endif
 
 static int clear_infra_vio_status(unsigned int module)
