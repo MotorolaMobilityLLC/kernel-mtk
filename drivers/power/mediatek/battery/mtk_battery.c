@@ -708,6 +708,7 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	seq_puts(m, "Command Table list\n");
 	seq_puts(m, "0: dump dtsi\n");
 	seq_puts(m, "1: dump v-mode table\n");
+	seq_puts(m, "2: dump gauge hw register\n");
 	seq_printf(m, "current command:%d\n", proc_cmd_id);
 
 	switch (proc_cmd_id) {
@@ -725,6 +726,9 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 
 		break;
 
+	case 2:
+		gauge_dev_dump(gauge_dev, m);
+		break;
 	default:
 		seq_printf(m, "do not support command:%d\n", proc_cmd_id);
 		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, proc_cmd_id);
@@ -2761,7 +2765,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_h_en;
 
 		memcpy(&fg_vbat_h_en, &msg->fgd_data[0], sizeof(fg_vbat_h_en));
-		gauge_dev_enable_vbat_low_interrupt(gauge_dev, fg_vbat_h_en);
+		gauge_dev_enable_vbat_high_interrupt(gauge_dev, fg_vbat_h_en);
 		bm_debug("[fg_res] FG_DAEMON_CMD_ENABLE_FG_VBAT_H_INT = %d\n", fg_vbat_h_en);
 	}
 	break;
