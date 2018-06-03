@@ -171,6 +171,5 @@ static inline int check_table_tag(int mcnt)
 	return 0;
 }
 
-#define sspm_ipi_lock_spm_scenario(start, id, opt, name)
 
 #endif /* __SSPM_IPI_DEFINE_H__ */
