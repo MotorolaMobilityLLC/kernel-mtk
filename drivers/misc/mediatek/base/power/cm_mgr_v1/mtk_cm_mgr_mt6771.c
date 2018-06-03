@@ -77,6 +77,7 @@ struct stall_s {
 
 static struct stall_s stall_all;
 static struct stall_s *pstall_all = &stall_all;
+static int cm_mgr_idx = -1;
 
 #ifdef USE_DEBUG_LOG
 void debug_stall(int cpu)
@@ -101,6 +102,34 @@ void debug_stall_all(void)
 		debug_stall(i);
 }
 #endif
+
+static int cm_mgr_check_dram_type(void)
+{
+#ifdef CONFIG_MTK_DRAMC
+	int ddr_type = get_ddr_type();
+	int ddr_hz = dram_steps_freq(0);
+
+	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600)
+		cm_mgr_idx = CM_MGR_LP4X_2CH_3600;
+	else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
+		cm_mgr_idx = CM_MGR_LP4X_2CH_3200;
+	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
+		cm_mgr_idx = CM_MGR_LP3_1CH_1866;
+	pr_info("#@# %s(%d) cm_mgr_idx 0x%x\n", __func__, __LINE__, cm_mgr_idx);
+#else
+	cm_mgr_idx = 0;
+	pr_info("#@# %s(%d) !!!! NO CONFIG_MTK_DRAMC !!! set cm_mgr_idx to 0x%x\n", __func__, __LINE__, cm_mgr_idx);
+#endif
+	return cm_mgr_idx;
+};
+
+int cm_mgr_get_idx(void)
+{
+	if (cm_mgr_idx < 0)
+		return cm_mgr_check_dram_type();
+	else
+		return cm_mgr_idx;
+};
 
 int cm_mgr_get_stall_ratio(int cpu)
 {

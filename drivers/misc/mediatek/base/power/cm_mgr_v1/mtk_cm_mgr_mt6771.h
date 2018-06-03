@@ -25,7 +25,6 @@
 #define CM_MGR_LOWER_OPP 10
 #define CM_MGR_CPU_CLUSTER 2
 #define CM_MGR_CPU_COUNT 8
-#define CM_MGR_IS_LP3 1
 
 #define VCORE_ARRAY_SIZE CM_MGR_EMI_OPP
 #define CM_MGR_CPU_ARRAY_SIZE (CM_MGR_CPU_CLUSTER * CM_MGR_EMI_OPP)
@@ -33,9 +32,17 @@
 #define IS_UP 1
 #define IS_DOWN 0
 
+enum {
+	CM_MGR_LP4X_2CH_3600 = 0,
+	CM_MGR_LP4X_2CH_3200,
+	CM_MGR_LP3_1CH_1866,
+	CM_MGR_MAX,
+};
+
 extern void __iomem *mcucfg_mp0_counter_base;
 extern void __iomem *mcucfg_mp2_counter_base;
 
+extern int cm_mgr_get_idx(void);
 extern int cm_mgr_get_stall_ratio(int cpu);
 extern int cm_mgr_get_cpu_count(int cluster);
 extern int cm_mgr_get_max_stall_ratio(int cluster);
