@@ -4144,7 +4144,9 @@ static void nand_resume(struct mtd_info *mtd)
  */
 static void nand_shutdown(struct mtd_info *mtd)
 {
+#ifndef CONFIG_MNTL_SUPPORT
 	nand_get_device(mtd, FL_PM_SUSPENDED);
+#endif
 }
 
 /* Set default functions */
