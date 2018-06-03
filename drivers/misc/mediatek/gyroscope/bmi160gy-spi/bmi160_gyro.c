@@ -711,9 +711,10 @@ static ssize_t store_cali_value(struct device_driver *ddri,
 {
 	int err = 0;
 	int dat[BMG_AXES_NUM] = {0};
+	struct bmg_gyro_data *obj = obj_data;
 
 	if (!strncmp(buf, "rst", 3)) {
-		err = bmg_reset_calibration(NULL);
+		err = bmg_reset_calibration(obj);
 		if (err)
 			GYRO_ERR("reset offset err = %d\n", err);
 	} else if (BMG_AXES_NUM == sscanf(buf, "0x%02X 0x%02X 0x%02X",
@@ -1138,7 +1139,7 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 			}
 			break;
 		case GYROSCOPE_IOCTL_CLR_CALI:
-			err = bmg_reset_calibration(NULL);
+			err = bmg_reset_calibration(obj);
 			break;
 		case GYROSCOPE_IOCTL_GET_CALI:
 			data = (void __user *)arg;
@@ -1166,11 +1167,42 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_bmg_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	GYRO_FUN();
+
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		GYRO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+
+	switch (cmd) {
+	case COMPAT_GYROSCOPE_IOCTL_INIT:
+	case COMPAT_GYROSCOPE_IOCTL_READ_SENSORDATA:
+	case COMPAT_GYROSCOPE_IOCTL_SET_CALI:
+	case COMPAT_GYROSCOPE_IOCTL_CLR_CALI:
+	case COMPAT_GYROSCOPE_IOCTL_GET_CALI:{
+			GYRO_LOG("compat_ion_ioctl : GYROSCOPE_IOCTL_XXX command is 0x%x\n", cmd);
+			return filp->f_op->unlocked_ioctl(filp, cmd,
+							  (unsigned long)compat_ptr(arg));
+		}
+	default:{
+			GYRO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+			return -ENOIOCTLCMD;
+		}
+	}
+}
+#endif
+
 static const struct file_operations bmg_fops = {
 	.owner = THIS_MODULE,
 	.open = bmg_open,
 	.release = bmg_release,
 	.unlocked_ioctl = bmg_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_bmg_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice bmg_device = {
