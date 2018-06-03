@@ -278,6 +278,8 @@ void aee_wdt_printf(const char *fmt, ...);
 
 void aee_fiq_ipi_cpu_stop(void *arg, void *regs, void *svc_sp);
 
+extern void rtc_mark_wdt_aee(void) __attribute__((weak));
+
 #if defined(CONFIG_MTK_AEE_DRAM_CONSOLE)
 void aee_dram_console_reserve_memory(void);
 #else

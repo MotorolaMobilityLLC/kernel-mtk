@@ -25,6 +25,9 @@
 #include <linux/mfd/mt6397/core.h>
 #include <linux/mfd/mt6397/rtc_misc.h>
 #include <linux/pm.h>
+#include <linux/reboot.h>
+#include <linux/notifier.h>
+#include <linux/kdebug.h>
 
 #define RTC_BBPU		0x0000
 #define RTC_BBPU_CBUSY		BIT(6)
@@ -32,6 +35,7 @@
 #define RTC_WRTGR		0x003c
 
 #define RTC_AL_HOU		0x001c
+#define RTC_AL_DOM		0x001e
 #define RTC_PDN1		0x002c
 #define RTC_PDN2		0x002e
 #define RTC_SPAR0		0x0030
@@ -56,7 +60,10 @@ static const u16 rtc_spare_reg[][3] = {
 	{RTC_PDN2, 0x1, 7},
 	{RTC_PDN2, 0x1, 15},
 	{RTC_SPAR0, 0x1, 6},
-	{RTC_SPAR0, 0x1, 7}
+	{RTC_SPAR0, 0x1, 7},
+	{RTC_AL_DOM, 0x1, 8},
+	{RTC_AL_DOM, 0x1, 9},
+	{RTC_AL_DOM, 0x1, 10},
 };
 
 enum rtc_spare_enum {
@@ -74,6 +81,9 @@ enum rtc_spare_enum {
 	RTC_PWRON_LOGO,
 	RTC_32K_LESS,
 	RTC_LP_DET,
+	RTC_KERNEL_PANIC,
+	RTC_KERNEL_RESTART,
+	RTC_WDT_AEE,
 	RTC_SPAR_NUM
 };
 
@@ -275,6 +285,59 @@ void mtk_misc_mark_fast(void)
 	mutex_unlock(&rtc_misc->lock);
 }
 
+static void mtk_set_kernel_panic_reg(void)
+{
+	mutex_lock(&rtc_misc->lock);
+	__mtk_misc_set_spare_register(RTC_KERNEL_PANIC, 0x1);
+	mutex_unlock(&rtc_misc->lock);
+}
+
+static int rtc_mark_kernel_panic(struct notifier_block *self,
+			    unsigned long val,
+			    void *data)
+{
+	pr_info("[LY]rtc_mark_kernel_panic!!!\n");
+	mtk_set_kernel_panic_reg();
+	return 0;
+}
+
+static int rtc_mark_aee_kernel_panic(struct notifier_block *self, unsigned long cmd, void *ptr)
+{
+	pr_info("[LY]rtc_mark_aee_kernel_panic!!!\n");
+	mtk_set_kernel_panic_reg();
+	return 0;
+}
+
+static int rtc_mark_kernel_restart(struct notifier_block *this,
+					unsigned long code, void *unused)
+{
+	pr_info("[LY]rtc_mark_kernel_reboot!!!\n");
+	mutex_lock(&rtc_misc->lock);
+	__mtk_misc_set_spare_register(RTC_KERNEL_RESTART, 0x1);
+	mutex_unlock(&rtc_misc->lock);
+	return 0;
+}
+
+static struct notifier_block rtc_kernel_panic_mark_nb = {
+		.notifier_call	= rtc_mark_kernel_panic,
+		.priority		= 1,
+};
+
+static struct notifier_block rtc_aee_kernel_panic_mark_nb = {
+		.notifier_call	= rtc_mark_aee_kernel_panic,
+		.priority		= 1,
+};
+
+static struct notifier_block rtc_kernel_reboot_mark_nb = {
+		.notifier_call	= rtc_mark_kernel_restart,
+};
+
+void rtc_mark_wdt_aee(void)
+{
+	mutex_lock(&rtc_misc->lock);
+	__mtk_misc_set_spare_register(RTC_WDT_AEE, 0x1);
+	mutex_unlock(&rtc_misc->lock);
+}
 static void mt_power_off(void)
 {
 	u32 bbpu;
@@ -319,6 +382,9 @@ static int mt6397_misc_probe(struct platform_device *pdev)
 	if (pm_off && !pm_power_off)
 		pm_power_off = mt_power_off;
 
+	atomic_notifier_chain_register(&panic_notifier_list, &rtc_kernel_panic_mark_nb);
+	register_die_notifier(&rtc_aee_kernel_panic_mark_nb);
+	register_reboot_notifier(&rtc_kernel_reboot_mark_nb);
 	return 0;
 }
 
