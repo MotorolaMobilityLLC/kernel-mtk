@@ -17,7 +17,7 @@
 #include <mtk_platform_debug.h>
 
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 
 #ifdef CONFIG_MTK_LASTPC_V2
 static void mrdump_set_sram_lastpc_flag(void)
