@@ -287,10 +287,12 @@ static unsigned int g_log_def_constraint;
 #define ISP_REG_ADDR_IMGO_SV_XSIZE              (ISP_ADDR +     0x5210)
 #define ISP_REG_ADDR_IMGO_SV_YSIZE              (ISP_ADDR +     0x5214)
 #define ISP_REG_ADDR_IMGO_SV_STRIDE             (ISP_ADDR +     0x5218)
+#define ISP_REG_ADDR_IMGO_SV_CROP               (ISP_ADDR +     0x5224)
 #define ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR        (ISP_ADDR +     0x5228)
 #define ISP_REG_ADDR_IMGO_SV_D_XSIZE            (ISP_ADDR +     0x5230)
 #define ISP_REG_ADDR_IMGO_SV_D_YSIZE            (ISP_ADDR +     0x5234)
 #define ISP_REG_ADDR_IMGO_SV_D_STRIDE           (ISP_ADDR +     0x5238)
+#define ISP_REG_ADDR_IMGO_SV_D_CROP             (ISP_ADDR +     0x5244)
 #define TG_REG_ADDR_GRAB_W                      (ISP_ADDR +     0x418)
 #define TG2_REG_ADDR_GRAB_W                     (ISP_ADDR +     0x2418)
 #define TG_REG_ADDR_GRAB_H                      (ISP_ADDR +     0x41C)
@@ -298,6 +300,11 @@ static unsigned int g_log_def_constraint;
 
 #define ISP_REG_ADDR_CAMSV_TG_VF_CON            (ISP_ADDR +     0x5414)
 #define ISP_REG_ADDR_CAMSV_TG2_VF_CON           (ISP_ADDR +     0x5C14)
+#define CAMSV_TG_REG_ADDR_GRAB_W                (ISP_ADDR +     0x5418)
+#define CAMSV_TG2_REG_ADDR_GRAB_W               (ISP_ADDR +     0x5C18)
+#define CAMSV_TG_REG_ADDR_GRAB_H                (ISP_ADDR +     0x541C)
+#define CAMSV_TG2_REG_ADDR_GRAB_H               (ISP_ADDR +     0x5C1C)
+
 /* spare register */
 /* #define ISP_REG_ADDR_TG_MAGIC_0                 (ISP_ADDR + 0x94) */
 /* #define ISP_REG_ADDR_TG_MAGIC_1                 (ISP_ADDR + 0x9C) */
@@ -396,6 +403,11 @@ static unsigned int g_log_def_constraint;
 #define ISP_REG_SW_CTL_SW_RST_P2_TRIG   (0x00000010)
 #define ISP_REG_SW_CTL_SW_RST_P2_STATUS (0x00000020)
 #define ISP_REG_SW_CTL_HW_RST_P2        (0x00000040)
+/* CAMSV_SW_CTL */
+#define ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG   (0x00000001)
+#define ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST     (0x00000002)
+#define ISP_REG_CAMSV_SW_CTL_SW_RST          (0x00000004)
+
 #define ISP_REG_SW_CTL_RST_CAM_P1       (1)
 #define ISP_REG_SW_CTL_RST_CAM_P2       (2)
 #define ISP_REG_SW_CTL_RST_CAMSV        (3)
@@ -768,6 +780,18 @@ static struct ISP_EDBUF_MGR_STRUCT P2_EDBUF_MgrList[_MAX_SUPPORT_P2_PACKAGE_NUM_
 
 static unsigned int g_regScen = 0xa5a5a5a5;
 static spinlock_t SpinLockRegScen;
+
+enum CAMSV_ENUM {
+	_camsv_1 = 0,
+	_camsv_2,
+	_camsv_max
+};
+static unsigned int g_firstCnt[_camsv_max];
+static spinlock_t SpinLockMagNum;
+/* queue camsv magnum */
+static unsigned int g_magQue[_camsv_max][ISP_RT_BUF_SIZE];
+/* g_magQIdx[][0]: write index, g_magQIdx[][1]: read index*/
+static unsigned int g_magQIdx[_camsv_max][2];
 
 /* maximum number for supporting user to do     interrupt operation  */
 /* index 0 is for all the user that     do not do register irq first */
@@ -1183,7 +1207,8 @@ static struct tasklet_struct isp_tasklet;
 static bool bSlowMotion = MFALSE;
 static bool bRawEn = MFALSE;
 static bool bRawDEn = MFALSE;
-
+static bool bCamSVEn = MFALSE;
+static bool bCamSVDEn = MFALSE;
 
 static struct ISP_INFO_STRUCT IspInfo;
 
@@ -1494,7 +1519,7 @@ static unsigned int ISP_DumpDmaDeepDbg(void)
 #define RegDump(start, end) {\
 		unsigned int i;\
 		for (i = start; i <= end; i += 0x10) {\
-			LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]", \
+			LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n", \
 				(unsigned int)(ISP_TPIPE_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i), \
 				(unsigned int)(ISP_TPIPE_ADDR + i+0x4), (unsigned int)ISP_RD32(ISP_ADDR + i+0x4), \
 				(unsigned int)(ISP_TPIPE_ADDR + i+0x8), (unsigned int)ISP_RD32(ISP_ADDR + i+0x8), \
@@ -1933,7 +1958,7 @@ bool ISP_chkModuleSetting(void)
 	/* xsize/ysize */
 	xsize = af_blk_xnum*af_blk_sz;
 	if (afo_d_xsize != (xsize - 1)) {
-		LOG_INF("afo xsize mismatch:0x%x_0x%x\n", af_blk_xsize, (xsize - 1));
+		LOG_INF("afo xsize mismatch:0x%x_0x%x\n", afo_d_xsize, (xsize - 1));
 		rst = MFALSE;
 	}
 	ysize = af_blk_ynum;
@@ -2274,8 +2299,8 @@ AF_EXIT:
 			LOG_INF("eis_sel:%d, scenario:%d, sgg_sel:%d, twin_mode:%d", eis_sel,
 				scenario, sgg_sel, bmx_enable);
 			LOG_INF
-			("EIS_IMG_WIDTH:%d, EIS_IMG_HEIGHT:%d, rrz_out_width:%d, rrz_out_height:%d",
-			 EIS_IMG_WIDTH, EIS_IMG_HEIGHT, rrz_out_width, rrz_out_height);
+			("EIS_IMG_WIDTH:%d, EIS_IMG_HEIGHT:%d, rrz_out_width:%d, rrz_out_height:%d, hbin2_en:%d",
+			 EIS_IMG_WIDTH, EIS_IMG_HEIGHT, rrz_out_width, rrz_out_height, hbin2_en);
 			LOG_INF("grab_width:%d, grab_height:%d, bmx_width:%d, bmx_height:%d",
 				grab_width, grab_height, bmx_width, bmx_height);
 		}
@@ -2736,6 +2761,17 @@ static signed int ISP_DumpReg(void)
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x43B8));
 	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x43BC),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x43BC));
+	/* NSCI2 2 debug */
+	ISP_WR32((ISP_ADDR + 0x47B8), 0x02);
+	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47B8),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47B8));
+	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47BC),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47BC));
+	ISP_WR32((ISP_ADDR + 0x47B8), 0x12);
+	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47B8),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47B8));
+	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47BC),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47BC));
 	/* NSCI2 3 debug */
 	ISP_WR32((ISP_ADDR + 0x4BB8), 0x02);
 	LOG_PR_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4BB8),
@@ -2762,6 +2798,15 @@ static signed int ISP_DumpReg(void)
 	RegDump(0x4520, 0x4560);
 	RegDump(0x4600, 0x4610);
 	RegDump(0x4760, 0x47f0);
+	RegDump(0x5000, 0x5020); /*CAMSV_MODULE*/
+	RegDump(0x5800, 0x5820); /*CAMSV2_MODULE*/
+	RegDump(0x5410, 0x541C); /*CAMSV_TG*/
+	RegDump(0x5C10, 0x5C1C); /*CAMSV_TG2*/
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x5448),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x5448),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x5C48),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x5C48));
+	RegDump(0x5208, 0x5254); /*CAMSV_IMGO_SV, CAMSV_IMGO_SV_D*/
 	/* LSC_D */
 	RegDump(0x2530, 0x2550);
 	/* awb_d */
@@ -3376,29 +3421,27 @@ static inline void ISP_Reset(signed int rst_path)
 		ISP_WR32(ISP_REG_ADDR_CAM_SW_CTL, 0);
 #endif
 	} else if (rst_path == ISP_REG_SW_CTL_RST_CAMSV) {
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_SW_CTL_SW_RST_TRIG);
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, 0);
+		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG);
 		i = LoopCnt;
 		do {
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV_SW_CTL);
-			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
+			if (Reg & ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST)
 				break;
 			udelay(100);
 		} while (--i);
 
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_SW_CTL_HW_RST);
+		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_CAMSV_SW_CTL_SW_RST);
 		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, 0);
 	} else if (rst_path == ISP_REG_SW_CTL_RST_CAMSV2) {
-		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_SW_CTL_SW_RST_TRIG);
-		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, 0);
+		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG);
 		i = LoopCnt;
 		do {
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV2_SW_CTL);
-			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
+			if (Reg & ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST)
 				break;
 			udelay(100);
 		} while (--i);
-		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_SW_CTL_HW_RST);
+		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_CAMSV_SW_CTL_SW_RST);
 		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, 0);
 	}
 #if     0
@@ -3922,7 +3965,7 @@ static signed int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 			LOG_PR_ERR("HoldTime(%d), VD(%d ms), Expdone(%d ms), Tasklet(%d ms)",
 				IspInfo.HoldInfo.Time, TimeVd, TimeExpdone, TimeTasklet);
 			ISP_BufWrite_Dump();
-			ISP_DumpReg();
+			/* ISP_DumpReg(); */
 			Ret = -EFAULT;
 			goto EXIT;
 		}
@@ -4315,15 +4358,12 @@ static signed int ISP_RTBC_ENQUE(signed int dma, struct ISP_RT_BUF_INFO_STRUCT *
 		}
 #endif
 		else if (_camsv_imgo_ == rt_dma) {
-			/*ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
-			 *	pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
-			 */
-			LOG_INF("[rtbc][ENQUE]IMGO_SV:addr should write by MVHDR");
+			ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
+				pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
+
 		} else if (_camsv2_imgo_ == rt_dma) {
-			/*ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
-			 *	 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
-			 */
-			LOG_INF("[rtbc][ENQUE]IMGO_SV_D:addr should write by PD");
+			ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
+				pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
 		}
 
 		/* if(IspInfo.DebugMask & ISP_DBG_BUF_CTRL)     { */
@@ -4339,10 +4379,10 @@ static signed int ISP_RTBC_ENQUE(signed int dma, struct ISP_RT_BUF_INFO_STRUCT *
 		 pstRTBuf->ring_buf[rt_dma].empty_count);
 #else
 		LOG_DBG
-		("[rtbc][ENQUE]:dma(%d),base_pAddr(0x%x)/imgo(0x%x)/rrzo(0x%x)/empty_count(%d)    ",
+		("[rtbc][ENQUE]:dma(%d),base_pAddr(0x%x)/imgo(0x%x)/rrzo(0x%x)/camsv_imgo(0x%x)/empty_count(%d)",
 		 rt_dma, pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr,
 		 ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR), ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
-		 pstRTBuf->ring_buf[rt_dma].empty_count);
+		 ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR), pstRTBuf->ring_buf[rt_dma].empty_count);
 #endif
 
 		/* } */
@@ -4571,6 +4611,7 @@ static void ISP_FBC_DUMP(unsigned int dma_id, unsigned int VF_1, unsigned int VF
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
 				sprintf(str2, "%d_", dma_en_recorder[dma][z]);
 				strncat(str, str2, strLeng - strlen(str));
+				LOG_INF("magic queue=0x%x", g_magQue[_camsv_1][z]);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("================================\n");
@@ -4609,6 +4650,7 @@ static void ISP_FBC_DUMP(unsigned int dma_id, unsigned int VF_1, unsigned int VF
 		for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
 			sprintf(str2, "%d_", dma_en_recorder[dma][z]);
 			strncat(str, str2, strLeng - strlen(str));
+			LOG_INF("magic queue=0x%x", g_magQue[_camsv_2][z]);
 		}
 		LOG_INF("%s", str);
 		LOG_INF("================================\n");
@@ -5005,7 +5047,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					return -EFAULT;
 					}
 					LOG_DBG(
-					"[rtbc]replace2]dma(%d),old(%d)	PA(0x%x) VA(0x%x)",
+					"[rtbc]replace2]dma(%d),old(%d)	PA(0x%x) VA(0x%llx)",
 									rt_dma, i, pstRTBuf->ring_buf[rt_dma].data[i].
 									base_pAddr, pstRTBuf->ring_buf[rt_dma].data[i].
 									base_vAddr);
@@ -5200,150 +5242,79 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									/**/            /**/
 		} else {
 /* rcnt_sync only work when multi-dma ch enabled. but in order to support multi-enque, these mech. also to be */
-									/* worked under 1 dma ch enabled */
-			if (MTRUE ==
-						pstRTBuf->ring_buf[rt_dma].active) {
+		/* worked under 1 dma ch enabled */
+			if (pstRTBuf->ring_buf[rt_dma].active == MTRUE) {
 				if (rt_buf_ctrl.ex_data_ptr != 0) {
-					if (((p1_fbc[rt_dma].Bits.
-										 FB_NUM - p1_fbc[rt_dma].
-										 Bits.FBC_CNT) == 0)
-										||
-										(((p1_fbc[rt_dma].Bits.
-										FB_NUM - 1) -
-										p1_fbc[rt_dma].Bits.
-										FBC_CNT) == 0)) {
-						mFwRcnt.bLoadBaseAddr
-										[irqT] = MTRUE;
-									}
-								}
-								dma_en_recorder
-								[rt_dma]
-									[mFwRcnt.
-									 DMA_IDX
-									 [rt_dma]] =
-										 MTRUE;
-								mFwRcnt.
-									DMA_IDX[rt_dma]
-										=
-										(++mFwRcnt.
-										 DMA_IDX[rt_dma]
-										 >=
-										 ISP_RT_BUF_SIZE)
-										? (mFwRcnt.
-										   DMA_IDX
-										   [rt_dma] -
-										   ISP_RT_BUF_SIZE)
-										: (mFwRcnt.
-										   DMA_IDX
-										   [rt_dma]);
+					if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0)
+						|| (((p1_fbc[rt_dma].Bits.FB_NUM - 1)
+						- p1_fbc[rt_dma].Bits.FBC_CNT) == 0)) {
+						mFwRcnt.bLoadBaseAddr[irqT] = MTRUE;
+					}
+				}
+				dma_en_recorder[rt_dma][mFwRcnt.DMA_IDX[rt_dma]] = MTRUE;
+				mFwRcnt.DMA_IDX[rt_dma]	= (++mFwRcnt.DMA_IDX[rt_dma] >= ISP_RT_BUF_SIZE) ?
+					(mFwRcnt.DMA_IDX[rt_dma] - ISP_RT_BUF_SIZE) :
+					(mFwRcnt.DMA_IDX[rt_dma]);
 
-					for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-					if (dma_en_recorder[
-									rt_dma][mFwRcnt.rdIdx[irqT]]) {
-						mFwRcnt.INC
-								[irqT][mFwRcnt.curIdx
-										[irqT]++]
-											= 1;
-											dma_en_recorder[rt_dma]
-											[mFwRcnt.rdIdx[irqT]]
-											= MFALSE;
-											mFwRcnt.rdIdx[irqT]
-											=
-											(++mFwRcnt.rdIdx[irqT]
-											>=
-											ISP_RT_BUF_SIZE) ?
-											(mFwRcnt.rdIdx[irqT]
-											- ISP_RT_BUF_SIZE)
-											:
-											(mFwRcnt.rdIdx[irqT]);
-											/**/
+				for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
+					if (dma_en_recorder[rt_dma][mFwRcnt.rdIdx[irqT]]) {
+						mFwRcnt.INC[irqT][mFwRcnt.curIdx[irqT]++] = 1;
+						dma_en_recorder[rt_dma][mFwRcnt.rdIdx[irqT]] = MFALSE;
+						mFwRcnt.rdIdx[irqT] =
+							(++mFwRcnt.rdIdx[irqT] >= ISP_RT_BUF_SIZE) ?
+							(mFwRcnt.rdIdx[irqT] - ISP_RT_BUF_SIZE)	:
+							(mFwRcnt.rdIdx[irqT]);
+					/**/
 					} else {
 						break;
-								}
-								}
-										/**/
-				} else {
-					spin_unlock_irqrestore
-								(&
-								 (IspInfo.
-								  SpinLockIrq
-								  [irqT_Lock]),
-								 flags);
-								LOG_PR_ERR
-								("[rtbc]error:dma(%d) are not being activated(%d)",
-									 rt_dma,
-									 pstRTBuf->
-									 ring_buf
-									 [rt_dma].
-									 active);
-									return -EFAULT;
-							}
-						}
-
-								/**/
+					}
+				}
+			/**/
+			} else {
+				spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
+				LOG_PR_ERR("[rtbc]error:dma(%d) are not being activated(%d)", rt_dma,
+					pstRTBuf->ring_buf[rt_dma].active);
+				return -EFAULT;
+			}
+		}
+	/**/
 	} else {        /*     camsv case */
 		if (pstRTBuf->ring_buf[rt_dma].active == MTRUE) {
 			if (rt_buf_ctrl.ex_data_ptr != 0) {
-				if ((p1_fbc[rt_dma].Bits.FB_NUM ==
-									p1_fbc[rt_dma].Bits.FBC_CNT)
-									|| ((p1_fbc[rt_dma].Bits.
-									FB_NUM - 1) ==
-								p1_fbc[rt_dma].Bits.FBC_CNT)) {
-					mFwRcnt.bLoadBaseAddr[irqT] =
-								MTRUE;
-								}
-							}
-							dma_en_recorder[rt_dma]
-							[mFwRcnt.
-							 DMA_IDX[rt_dma]] =
-								 MTRUE;
-							mFwRcnt.DMA_IDX[rt_dma] =
-								(++mFwRcnt.
-								 DMA_IDX[rt_dma] >=
-								 ISP_RT_BUF_SIZE)
-								? (mFwRcnt.
-								   DMA_IDX[rt_dma] -
-								   ISP_RT_BUF_SIZE)
-								: (mFwRcnt.
-								   DMA_IDX[rt_dma]);
+				if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0)
+					|| ((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
+					p1_fbc[rt_dma].Bits.FBC_CNT)) {
+					mFwRcnt.bLoadBaseAddr[irqT] = MTRUE;
+				}
+			}
+			dma_en_recorder[rt_dma][mFwRcnt.DMA_IDX[rt_dma]] = MTRUE;
+			mFwRcnt.DMA_IDX[rt_dma] =
+				(++mFwRcnt.DMA_IDX[rt_dma] >= ISP_RT_BUF_SIZE) ?
+				(mFwRcnt.DMA_IDX[rt_dma] - ISP_RT_BUF_SIZE) :
+				(mFwRcnt.DMA_IDX[rt_dma]);
 
 				for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-					if (dma_en_recorder[rt_dma]
-								[mFwRcnt.rdIdx[irqT]]) {
-						mFwRcnt.INC[irqT]
-								[mFwRcnt.curIdx[irqT]++]
-									= 1;
-									dma_en_recorder[rt_dma]
-									[mFwRcnt.rdIdx[irqT]]
-									= MFALSE;
-									mFwRcnt.rdIdx[irqT] =
-									(++mFwRcnt.rdIdx[irqT]
-									>=
-									ISP_RT_BUF_SIZE) ?
-									(mFwRcnt.rdIdx[irqT]
-									- ISP_RT_BUF_SIZE)
-									:
-									(mFwRcnt.rdIdx[irqT]);
-
+					if (dma_en_recorder[rt_dma][mFwRcnt.rdIdx[irqT]]) {
+						mFwRcnt.INC[irqT][mFwRcnt.curIdx[irqT]++] = 1;
+						dma_en_recorder[rt_dma][mFwRcnt.rdIdx[irqT]]
+							= MFALSE;
+						mFwRcnt.rdIdx[irqT] =
+							(++mFwRcnt.rdIdx[irqT] >= ISP_RT_BUF_SIZE) ?
+							(mFwRcnt.rdIdx[irqT] - ISP_RT_BUF_SIZE)	:
+							(mFwRcnt.rdIdx[irqT]);
 					} else {
 						break;
-								}
-							}
-									/**/
-					} else {
-						spin_unlock_irqrestore(&
-										       (IspInfo.
-											SpinLockIrq
-											[irqT_Lock]),
-										       flags);
-								LOG_PR_ERR
-								("[rtbc]error:dma(%d) are not being activated(%d)",
-									rt_dma,
-									pstRTBuf->ring_buf[rt_dma].active);
-								return -EFAULT;
-							}
-						}
-							/**/
+					}
+				}
+		/**/
+		} else {
+			spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
+			LOG_PR_ERR("[rtbc]error:dma(%d) are not being activated(%d)",
+				rt_dma,	pstRTBuf->ring_buf[rt_dma].active);
+			return -EFAULT;
+		}
+	}
+	/**/
 					} else {        /* immediate enque mode */
 						unsigned int _openedDma = 1;
 						bool _bypass = MFALSE;
@@ -5477,37 +5448,28 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						/*ZO(0x%x),O_D(0x%x),ZO_D(0x%x),camsv(0x%x/0x%x)*/
 						/*fps(%d/%d/%d/%d)us", */
 #if (ISP_RAW_D_SUPPORT == 1)
-					LOG_DBG
-					("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x),O_D(0x%x),ZO_D(0x%x),",
-					 rt_dma, rt_buf_info.base_pAddr,
-					 ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR),
-					 ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
-					 ISP_RD32(ISP_REG_ADDR_IMGO_D_BASE_ADDR),
-					 ISP_RD32(ISP_REG_ADDR_RRZO_D_BASE_ADDR));
-					LOG_DBG
-					("camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
-					 ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR),
-					 ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
-					 avg_frame_time[_PASS1],
-					 avg_frame_time[_PASS1_D],
-					 avg_frame_time[_CAMSV],
-					 avg_frame_time[_CAMSV_D],
-					 rt_buf_ctrl.ctrl);
+				LOG_DBG
+				("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x),O_D(0x%x),ZO_D(0x%x)\n",
+				 rt_dma, rt_buf_info.base_pAddr,
+				 ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR), ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
+				 ISP_RD32(ISP_REG_ADDR_IMGO_D_BASE_ADDR), ISP_RD32(ISP_REG_ADDR_RRZO_D_BASE_ADDR));
+				LOG_DBG
+				("[rtbc][ENQUE]:camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
+				 ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR),
+				 ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
+				 avg_frame_time[_PASS1], avg_frame_time[_PASS1_D],
+				 avg_frame_time[_CAMSV], avg_frame_time[_CAMSV_D],
+				 rt_buf_ctrl.ctrl);
+
 #else
-					LOG_DBG
-					("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x)",
-					rt_dma, rt_buf_info.base_pAddr,
-					ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR),
-					ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR));
-					LOG_DBG
-					(",camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
-					ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR),
-					ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
-					avg_frame_time[_PASS1],
-					avg_frame_time[_PASS1_D],
-					avg_frame_time[_CAMSV],
-					avg_frame_time[_CAMSV_D],
-					rt_buf_ctrl.ctrl);
+		LOG_DBG
+		("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x),camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
+		rt_dma, rt_buf_info.base_pAddr,
+		ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR), ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
+		ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR), ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
+		avg_frame_time[_PASS1],	avg_frame_time[_PASS1_D],
+		avg_frame_time[_CAMSV],	avg_frame_time[_CAMSV_D],
+		rt_buf_ctrl.ctrl);
 #endif
 					}
 				}
@@ -5918,8 +5880,18 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				       sizeof(unsigned int) * (nDMA_ERR - nDMA_ERR_P1));
 				break;
 			case _camsv_imgo_:
+				memset((char *)&g_magQue[_camsv_1], 0x0,
+					sizeof(unsigned int)*ISP_RT_BUF_SIZE);
+				memset((char *)&g_magQIdx[_camsv_1], 0x0,
+					sizeof(unsigned int)*2);
+				g_firstCnt[_camsv_1] = 0;
 				break;
 			case _camsv2_imgo_:
+				memset((char *)&g_magQue[_camsv_2], 0x0,
+					sizeof(unsigned int)*ISP_RT_BUF_SIZE);
+				memset((char *)&g_magQIdx[_camsv_2], 0x0,
+					sizeof(unsigned int)*2);
+				g_firstCnt[_camsv_2] = 0;
 				break;
 			default:
 				LOG_PR_ERR("[rtbc][CLEAR]N.S.(%d)\n", rt_dma);
@@ -6038,6 +6010,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 				bRawEn = MFALSE;
 				bRawDEn = MFALSE;
+				bCamSVEn = MFALSE;
+				bCamSVDEn = MFALSE;
 				for (z = 0; z < _rt_dma_max_; z++) {
 					pstRTBuf->ring_buf[z].active = array[z];
 					/**/                    if (array[z] == 0)
@@ -6056,6 +6030,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				    (pstRTBuf->ring_buf[_rrzo_d_].active == MTRUE)) {
 					bRawDEn = MTRUE;
 				}
+				if (pstRTBuf->ring_buf[_camsv_imgo_].active == MTRUE)
+					bCamSVEn = MTRUE;
+				if (pstRTBuf->ring_buf[_camsv2_imgo_].active == MTRUE)
+					bCamSVDEn = MTRUE;
 			} else {
 				LOG_PR_ERR("[rtbc][DMA_EN]:copy_from_user failed");
 				Ret = -EFAULT;
@@ -6583,17 +6561,6 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 		/* last update buffer index     */
 		camsv_imgo_idx = (camsv_fbc.Bits.WCNT % camsv_fbc.Bits.FB_NUM); /* nest frame */
 
-		/* mark this: CAMSV_IMGO_* might be changed here, but it should be changed by MVHDR or PDAF*/
-		/*if (_camsv_imgo_ == dma)
-		 *	ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
-		 *		 pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr);
-		 *	LOG_INF("[SOF]IMGO_SV:addr should write by MVHDR");
-		 *else
-		 *	ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
-		 *		 pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr);
-		 *	LOG_INF("[SOF]IMGO_SV_D:addr should write by PD");
-		 */
-
 		/*      */
 		camsv_imgo_idx =
 			(camsv_imgo_idx > 0) ? (camsv_imgo_idx - 1) : (camsv_fbc.Bits.FB_NUM - 1);
@@ -6607,34 +6574,120 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 		/* camsv support no inner address, these information are truely untrustful, but */
 		/* because of no resize in camsv, so these r also ok. */
 		if (dma == _camsv_imgo_) {
-			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.w =
+			unsigned int _tmp = ISP_RD32(CAMSV_TG_REG_ADDR_GRAB_W);
+
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.xsize =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_XSIZE) & 0x3FFF);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.w =
+				((_tmp >> 16) & 0x7FFF) - (_tmp & 0x7FFF);
+			_tmp = ISP_RD32(CAMSV_TG_REG_ADDR_GRAB_H);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.h =
-				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_YSIZE) & 0x1FFF);
+				((_tmp >> 16) & 0x1FFF) - (_tmp & 0x1FFF);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.stride =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_STRIDE) & 0x3FFF);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.bus_size =
+				((ISP_RD32(ISP_REG_ADDR_IMGO_SV_STRIDE) >> 16) & 0x03);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.fmt =
-				(ISP_RD32(ISP_REG_ADDR_CAMSV_FMT_SEL) & 0x30000);
+				((ISP_RD32(ISP_REG_ADDR_CAMSV_FMT_SEL) & 0x30000) >> 16);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.frm_cnt =
+				((ISP_RD32(ISP_REG_ADDR_CAMSV_TG_INTER_ST) & 0xFF0000) >> 16);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.x =
+				ISP_RD32(ISP_REG_ADDR_IMGO_SV_CROP) & 0x3fff;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.y =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_CROP) >> 16) & 0x1fff;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.w =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_XSIZE) & 0x3FFF) + 1;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_YSIZE) & 0x1FFF) + 1;
+			/* Use m_num_0 instead of phy magic num. */
+			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
+			if (g_firstCnt[_camsv_1] < camsv_fbc.Bits.FB_NUM) {
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+			} else {
+				unsigned int lastIdx = 0;
+
+				if (g_magQIdx[_camsv_1][1] >= ISP_RT_BUF_SIZE)
+					g_magQIdx[_camsv_1][1] = 0;
+				if (g_magQIdx[_camsv_1][1] == 0)
+					lastIdx = ISP_RT_BUF_SIZE - 1;
+				else
+					lastIdx = g_magQIdx[_camsv_1][1] - 1;
+				/* Choose current or last g_magQue because */
+				/* configFrame do not comes per-frame. */
+				if (g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]] >=
+					g_magQue[_camsv_1][lastIdx]) {
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+						g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]];
+					g_magQIdx[_camsv_1][1]++;
+				} else {
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+						g_magQue[_camsv_1][lastIdx];
+				}
+			}
 		} else {
-			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.w =
+			unsigned int _tmp = ISP_RD32(CAMSV_TG2_REG_ADDR_GRAB_W);
+
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.xsize =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_XSIZE) & 0x3FFF);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.w =
+				((_tmp >> 16) & 0x7FFF) - (_tmp & 0x7FFF);
+			_tmp = ISP_RD32(CAMSV_TG2_REG_ADDR_GRAB_H);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.h =
-				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_YSIZE) & 0x1FFF);
+				((_tmp >> 16) & 0x1FFF) - (_tmp & 0x1FFF);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.stride =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_STRIDE) & 0x3FFF);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.bus_size =
+				((ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_STRIDE) >> 16) & 0x03);
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.fmt =
-				(ISP_RD32(ISP_REG_ADDR_CAMSV2_FMT_SEL) & 0x30000);
+				((ISP_RD32(ISP_REG_ADDR_CAMSV2_FMT_SEL) & 0x30000) >> 16);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.frm_cnt =
+				((ISP_RD32(ISP_REG_ADDR_CAMSV_TG2_INTER_ST) & 0xFF0000) >> 16);
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.x =
+				ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_CROP) & 0x3fff;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.y =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_CROP) >> 16) & 0x1fff;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.w =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_XSIZE) & 0x3FFF) + 1;
+			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
+				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_YSIZE) & 0x1FFF) + 1;
+			/* Use m_num_0 instead of phy magic num. */
+			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
+			if (g_firstCnt[_camsv_2] < camsv_fbc.Bits.FB_NUM) {
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+			} else {
+				unsigned int lastIdx = 0;
+
+				if (g_magQIdx[_camsv_2][1] >= ISP_RT_BUF_SIZE)
+					g_magQIdx[_camsv_2][1] = 0;
+				if (g_magQIdx[_camsv_2][1]  == 0)
+					lastIdx = ISP_RT_BUF_SIZE - 1;
+				else
+					lastIdx = g_magQIdx[_camsv_2][1] - 1;
+				/* Choose current or last g_magQue because */
+				/* configFrame do not comes per-frame. */
+				if (g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]] >=
+					g_magQue[_camsv_2][lastIdx]) {
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+						g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]];
+					g_magQIdx[_camsv_2][1]++;
+				} else {
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+						g_magQue[_camsv_2][lastIdx];
+				}
+			}
 		}
 
 		/*      */
 		if (IspInfo.DebugMask & ISP_DBG_INT_2) {
 			IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF,
-				       "sv%d T(%d.%06d),cur(%d),addr(0x%x),prv(0x%x),fbc(0x%08x)\n",
-				       dma, pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].timeStampS,
-				       pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].timeStampUs,
-				       camsv_imgo_idx,
-				       pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr,
-				       PrvAddr[out], camsv_fbc.Reg_val);
+				"sv%d T(%d.%06d),cur(%d),addr(0x%x),prv(0x%x),fbc(0x%08x),mag(0x%08x),fcnt(0x%08x)\n",
+				dma, pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].timeStampS,
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].timeStampUs,
+				camsv_imgo_idx,
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr,
+				PrvAddr[out], camsv_fbc.Reg_val,
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0,
+				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.frm_cnt);
 		}
 		/*      */
 	}
@@ -6649,8 +6702,14 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 			avg_frame_time[out] = (sec * 1000000 + usec) - start_time[out];
 		}
 	}
+	if ((dma == _camsv_imgo_) && (g_firstCnt[_camsv_1] < 256))
+		g_firstCnt[_camsv_1]++;
+	else if ((dma == _camsv2_imgo_) && (g_firstCnt[_camsv_2] < 256))
+		g_firstCnt[_camsv_2]++;
 
 	sof_count[out]++;
+	if (sof_count[out] > 255) /* for match vsync cnt */
+		sof_count[out] -= 256;
 
 	pstRTBuf->state = ISP_RTBC_STATE_SOF;
 	return 0;
@@ -8799,19 +8858,15 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 			gSof_camsvdone[0] = 0;
 		}
 #ifdef _rtbc_buf_que_2_0_
-		/*              unsigned int z;*/
 
-		if (mFwRcnt.bLoadBaseAddr[_CAMSV_IRQ] == 1) {
-			if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
-				/*IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
-				 *	 CAMSV_TAG "wr2Phy,");
-				 *ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
-				 *	pstRTBuf->ring_buf[_camsv_imgo_].data[pstRTBuf->
-				 *	ring_buf[_camsv_imgo_].start].base_pAddr);
-				 */
-				LOG_INF("[no wr2Phy]IMGO_SV:addr should write by MVHDR");
+		if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
+			if (pstRTBuf->ring_buf[_camsv_imgo_].empty_count > 0) {
+				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
+					CAMSV_TAG "wr2Phy,");
+				ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
+					pstRTBuf->ring_buf[_camsv_imgo_].data[pstRTBuf->
+					ring_buf[_camsv_imgo_].start].base_pAddr);
 			}
-			mFwRcnt.bLoadBaseAddr[_CAMSV_IRQ] = 0;
 		}
 		/* equal case is for clear curidx */
 		for (z = 0; z <= mFwRcnt.curIdx[_CAMSV_IRQ]; z++) {
@@ -8856,15 +8911,21 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		sec = time.tv64;
 		do_div(sec, 1000);      /*     usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
+		curr_pa = ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR);
 
 		ISP_CAMSV_SOF_Buf_Get(_camsv_imgo_, fbc, curr_pa, sec, usec, gSof_camsvdone[0]);
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_CAMSV_IRQ]));
 #ifdef ISR_LOG_ON
-	IRQ_LOG_PRINTER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF);
-	IRQ_LOG_PRINTER_PR_ERR(_CAMSV_IRQ, m_CurrentPPB, _LOG_ERR);
+	/*IRQ_LOG_PRINTER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF);*/
+	/*IRQ_LOG_PRINTER_PR_ERR(_CAMSV_IRQ, m_CurrentPPB, _LOG_ERR);*/
 #endif
 	wake_up_interruptible_all(&IspInfo.WaitQueueHead);
+
+	if ((IrqStatus_CAMSV & (ISP_IRQ_CAMSV_STATUS_PASS1_DON_ST)) ||
+		(IrqStatus_CAMSV & (ISP_IRQ_CAMSV_STATUS_TG_SOF1_ST))) {
+		tasklet_schedule(&isp_tasklet);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -8982,17 +9043,14 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		}
 #ifdef _rtbc_buf_que_2_0_
 
-		if (mFwRcnt.bLoadBaseAddr[_CAMSV_D_IRQ] == 1) {
-			if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
-				/*IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
-				 *	CAMSV2_TAG "wr2Phy,");
-				 *ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
-				 *	 pstRTBuf->ring_buf[_camsv2_imgo_].data[pstRTBuf->
-				 *	 ring_buf[_camsv2_imgo_].start].base_pAddr);
-				 */
-				LOG_INF("[no wr2Phy]IMGO_SV_D:addr should write by PD");
+		if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
+			if (pstRTBuf->ring_buf[_camsv2_imgo_].empty_count > 0) {
+				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
+					 CAMSV_TAG "wr2Phy,");
+				ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
+					pstRTBuf->ring_buf[_camsv2_imgo_].data[pstRTBuf->
+					ring_buf[_camsv2_imgo_].start].base_pAddr);
 			}
-			mFwRcnt.bLoadBaseAddr[_CAMSV_D_IRQ] = 0;
 		}
 		/* equal case is for clear curidx */
 		for (z = 0; z <= mFwRcnt.curIdx[_CAMSV_D_IRQ]; z++) {
@@ -9041,16 +9099,23 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		sec = time.tv64;
 		do_div(sec, 1000);      /*     usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
+		curr_pa = ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR);
 
 		ISP_CAMSV_SOF_Buf_Get(_camsv2_imgo_, fbc, curr_pa, sec, usec, gSof_camsvdone[1]);
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_CAMSV_D_IRQ]));
 	/* dump log     during spin     lock */
 #ifdef ISR_LOG_ON
-	IRQ_LOG_PRINTER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF);
-	IRQ_LOG_PRINTER_PR_ERR(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_ERR);
+	/*IRQ_LOG_PRINTER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF);*/
+	/*IRQ_LOG_PRINTER_PR_ERR(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_ERR);*/
 #endif
 	wake_up_interruptible_all(&IspInfo.WaitQueueHead);
+
+	if ((IrqStatus_CAMSV2 & (ISP_IRQ_CAMSV2_STATUS_PASS1_DON_ST)) ||
+		(IrqStatus_CAMSV2 & (ISP_IRQ_CAMSV2_STATUS_TG_SOF1_ST))) {
+		tasklet_schedule(&isp_tasklet);
+	}
+
 	return IRQ_HANDLED;
 }
 
@@ -9065,7 +9130,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(signed int Irq, void *DeviceId)
 	/* LOG_DBG("- E.");*/
 	unsigned int i;
 
-	unsigned int IrqStatus[ISP_IRQ_TYPE_AMOUNT];
+	unsigned int IrqStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 	/* unsigned int IrqStatus_fbc_int; */
 	union CQ_RTBC_FBC p1_fbc[4];
 
@@ -9764,9 +9829,15 @@ static void ISP_TaskletFunc(unsigned long data)
 			/*	(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -*/
 			/*				 1) : (sof_count[_PASS1_D]));*/
 		}
+		if (bCamSVEn == MTRUE)
+			IRQ_LOG_PRINTER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF);
+		if (bCamSVDEn == MTRUE)
+			IRQ_LOG_PRINTER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF);
 	} else {
 		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
 		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF);
 	}
 }
 
@@ -9790,6 +9861,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	signed int burstQNum;
 	unsigned int wakelock_ctrl;
 	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
+	unsigned int magInfo[2] = {0};
 	int userKey = -1;
 	struct ISP_REGISTER_USERKEY_STRUCT RegUserKey;
 	/*      */
@@ -10397,6 +10469,38 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 #endif
+	case ISP_UPDATE_MAGNUM:
+		if (copy_from_user(magInfo, (void *)Param, sizeof(magInfo)) == 0) {
+			if ((magInfo[1] != _camsv_tg_) && (magInfo[1] != _camsv2_tg_)) {
+				LOG_PR_ERR("invalid channel(0x%x)\n", magInfo[1]);
+				Ret = -EFAULT;
+				break;
+			}
+			spin_lock((spinlock_t *)(&SpinLockMagNum));
+			if (magInfo[1] == _camsv_tg_) {
+				if (g_magQIdx[_camsv_1][0] >= ISP_RT_BUF_SIZE)
+					g_magQIdx[_camsv_1][0] = 0;
+				g_magQue[_camsv_1][g_magQIdx[_camsv_1][0]] = magInfo[0];
+				/*LOG_INF("ISP_UPDATE_MAGNUM: idx1=%d mag=0x%x",
+				 *   g_magQIdx[_camsv_1][0], magInfo[0]);
+				 */
+				g_magQIdx[_camsv_1][0]++;
+
+			} else if (magInfo[1] == _camsv2_tg_) {
+				if (g_magQIdx[_camsv_2][0] >= ISP_RT_BUF_SIZE)
+					g_magQIdx[_camsv_2][0] = 0;
+				g_magQue[_camsv_2][g_magQIdx[_camsv_2][0]] = magInfo[0];
+				/*LOG_INF("ISP_UPDATE_MAGNUM: idx2=%d mag=0x%x",
+				 *   g_magQIdx[_camsv_2][0], magInfo[0]);
+				 */
+				g_magQIdx[_camsv_2][0]++;
+			}
+			spin_unlock((spinlock_t *)(&SpinLockMagNum));
+		} else {
+			LOG_PR_ERR("copy_from_user	failed");
+			Ret = -EFAULT;
+		}
+		break;
 
 	default:
 		LOG_PR_ERR("Unknown Cmd(%d)", Cmd);
@@ -10858,8 +10962,6 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 			return -EFAULT;
 
 		err = compat_get_isp_buf_ctrl_struct_data(data32, data);
-		if (err)
-			return err;
 		if (err) {
 			LOG_INF("compat_get_isp_buf_ctrl_struct_data error!!!\n");
 			return err;
@@ -10942,6 +11044,13 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		ret =
 			filp->f_op->unlocked_ioctl(filp, ISP_GET_DMA_ERR,
 						   (unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_UPDATE_MAGNUM: {
+	/* compat_ptr(arg) will convert the     arg     */
+	ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_UPDATE_MAGNUM,
+			(unsigned long)compat_ptr(arg));
 		return ret;
 	}
 	case ISP_GET_CUR_SOF:
@@ -11689,7 +11798,7 @@ static signed int ISP_probe(struct platform_device *pDev)
 	spin_lock_init(&(SpinLockEDBufQueList));
 	spin_lock_init((spinlock_t *)(&(SpinLockRegScen)));
 	spin_lock_init((spinlock_t *)(&(SpinLock_UserKey)));
-
+	spin_lock_init((spinlock_t *)(&(SpinLockMagNum)));
 	/* Request CAM_ISP IRQ */
 #ifndef CONFIG_OF
 	/* FIXME */
