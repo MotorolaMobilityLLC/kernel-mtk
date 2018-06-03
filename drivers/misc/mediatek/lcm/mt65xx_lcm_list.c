@@ -69,6 +69,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&vvx10f008b00_wuxga_dsi_vdo_lcm_drv,
 #endif
 
+#if defined(KD070D5450NHA6_RGB_DPI)
+	&kd070d5450nha6_rgb_dpi_lcm_drv,
+#endif
+
 #if defined(KR101IA2S_DSI_VDO)
 	&kr101ia2s_dsi_vdo_lcm_drv,
 #endif
