@@ -3336,6 +3336,8 @@ VOID kalScanDone(IN P_GLUE_INFO_T prGlueInfo, IN ENUM_KAL_NETWORK_TYPE_INDEX_T e
 {
 	ASSERT(prGlueInfo);
 
+	scanLogEssResult(prGlueInfo->prAdapter);
+
 	scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_INFRASTRUCTURE, NULL);
 
 	/* check for system configuration for generating error message on scan list */

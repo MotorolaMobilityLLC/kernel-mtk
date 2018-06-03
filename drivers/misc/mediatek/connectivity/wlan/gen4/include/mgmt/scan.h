@@ -724,4 +724,7 @@ P_BSS_DESC_T scanSearchBssDescByBssidAndLatestUpdateTime(IN P_ADAPTER_T prAdapte
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
 #endif
 
+VOID scanLogEssResult(P_ADAPTER_T prAdapter);
+VOID scanInitEssResult(P_ADAPTER_T prAdapter);
+
 #endif /* _SCAN_H */
