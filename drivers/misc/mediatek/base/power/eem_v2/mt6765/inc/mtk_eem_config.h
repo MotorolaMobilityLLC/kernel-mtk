@@ -14,14 +14,14 @@
 #define _MTK_EEM_CONFIG_H_
 
 /* CONFIG (SW related) */
-/* #define EEM_NOT_READY (1) */ /* for bring up, remove for MP */
+#define EEM_NOT_READY (1) /* for bring up, remove for MP */
 #define CONFIG_EEM_SHOWLOG (0)
 #define EN_ISR_LOG (0)
 #define EEM_BANK_SOC (0) /* use voltage bin, so disable it */
 #define EARLY_PORTING (0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE (1)
 #define EEM_ENABLE (1) /* enable; after pass HPT mini-SQC */
-#define EEM_FAKE_EFUSE (1)
+#define EEM_FAKE_EFUSE (0)
 /* FIX ME */
 #define UPDATE_TO_UPOWER (1)
 #define EEM_LOCKTIME_LIMIT (3000)
@@ -40,32 +40,24 @@
 #define DEVINFO_IDX_4 54	/* 590 */
 #define DEVINFO_IDX_5 55	/* 594 */
 #define DEVINFO_IDX_6 56	/* 598 */
-#define DEVINFO_IDX_7 57	/* 59C */
-#define DEVINFO_IDX_8 58	/* 5A0 */
 
 /* Fake EFUSE */
 #define DEVINFO_0 0x0000FF00
-/* L_LOW */
-#define DEVINFO_1 0x09EA96E5 /*1-line*/
-/* LL_LOW + L_LOW */
-#define DEVINFO_2 0x00420042 /*1-line*/
-/* LL_LOW */
-#define DEVINFO_3 0x09EA76FE /*1-line*/
-/* L_HIGH */
-#define DEVINFO_4 0x09EA96E5 /*1-line*/
-/* LL_HIGH + L_HIGH */
-#define DEVINFO_5 0x00420042 /*1-line*/
-/* LL_HIGH */
-#define DEVINFO_6 0x09EA76FE /*1-line*/
+/* L */
+#define DEVINFO_1 0x10BD3C1B
+#define DEVINFO_2 0x00550000
+/* LL */
+#define DEVINFO_3 0x10BD3C1B
+#define DEVINFO_4 0x00550000
 /* CCI */
-#define DEVINFO_7 0x09EA85F2 /*1-line*/
-#define DEVINFO_8 0x00420042 /*1-line*/
+#define DEVINFO_5 0x10BD3C1B
+#define DEVINFO_6 0x00550000
 
 /*****************************************
  * eem sw setting
  ******************************************
  */
-#define NR_HW_RES_FOR_BANK	(9) /* real eem banks for efuse */
+#define NR_HW_RES_FOR_BANK	(7) /* real eem banks for efuse */
 #define EEM_INIT01_FLAG (0x7) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
 
 #define NR_FREQ 16
@@ -75,7 +67,7 @@
  * 100 us, This is the EEM Detector sampling time as represented in
  * cycles of bclk_ck during INIT. 52 MHz
  */
-#define DETWINDOW_VAL		0xA28
+#define DETWINDOW_VAL		0x514
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
@@ -85,19 +77,19 @@
 
 /* 1mV=>10uV */
 /* EEM */
-#define EEM_V_BASE		(50000)
+#define EEM_V_BASE		(40000)
 #define EEM_STEP		(625)
 
 /* CPU */
 #define CPU_PMIC_BASE_6357	(51875)
-#define CPU_PMIC_STEP		(625)
+#define CPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
 
 /* common part: for cci, LL, L */
-#define VBOOT_VAL		(0x30)
-#define VMAX_VAL		(0x64)
-#define VMIN_VAL		(0x10)
-#define VCO_VAL			(0x10)
-#define DVTFIXED_VAL	(0x9)
+#define VBOOT_VAL		(0x2d) /* volt domain: 0.8v */
+#define VMAX_VAL		(0x5d) /* volt domain: 1.12v*/
+#define VMIN_VAL		(0xd) /* volt domain: 0.6v*/
+#define VCO_VAL			(0xd)
+#define DVTFIXED_VAL	(0x7)
 
 #define DTHI_VAL		(0x01) /* positive */
 #define DTLO_VAL		(0xfe) /* negative (2's compliment) */
@@ -123,6 +115,7 @@
 #define EEM_CTL0_L (0x00000001)
 #define EEM_CTL0_2L (0x00010001)
 #define EEM_CTL0_CCI (0x00100003)
+#define EEM_CTL0_GPU (0x00020001)
 #endif
 
 #if EEM_FAKE_EFUSE	/* select PTP secure mode based on efuse config. */

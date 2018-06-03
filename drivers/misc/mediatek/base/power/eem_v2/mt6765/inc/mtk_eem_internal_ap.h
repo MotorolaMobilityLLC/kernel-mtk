@@ -145,66 +145,52 @@ struct eem_devinfo {
 	unsigned int RSV2:16;
 
 	/* M_HW_RES1 */
-	unsigned int CPU_L_LOW_BDES:8;
-	unsigned int CPU_L_LOW_MDES:8;
-	unsigned int CPU_L_LOW_DCBDET:8;
-	unsigned int CPU_L_LOW_DCMDET:8;
+	unsigned int CPU_L_BDES:8;
+	unsigned int CPU_L_MDES:8;
+	unsigned int CPU_L_DCBDET:8;
+	unsigned int CPU_L_DCMDET:8;
 
 	/* M_HW_RES2 */
-	unsigned int CPU_2L_LOW_MTDES:8;
-	unsigned int CPU_2L_LOW_INITEN:1;
-	unsigned int CPU_2L_LOW_MONEN:1;
-	unsigned int CPU_2L_LOW_DVFS_LOW:3;
-	unsigned int CPU_2L_LOW_SPEC:3;
-	unsigned int CPU_L_LOW_MTDES:8;
-	unsigned int CPU_L_LOW_INITEN:1;
-	unsigned int CPU_L_LOW_MONEN:1;
-	unsigned int CPU_L_LOW_DVFS_LOW:3;
-	unsigned int CPU_L_LOW_SPEC:3;
+	unsigned int CPU_L_SPEC:3;
+	unsigned int CPU_L_TURBO:1;
+	unsigned int CPU_L_DVFS_LOW:2;
+	unsigned int CPU_L_INITEN:1;
+	unsigned int CPU_L_MONEN:1;
+	unsigned int CPU_L_LEAKAGE:8;
+	unsigned int CPU_L_MTDES:8;
+	unsigned int CPU_L_AGEDELTA:8;
 
 	/* M_HW_RES3 */
-	unsigned int CPU_2L_LOW_BDES:8;
-	unsigned int CPU_2L_LOW_MDES:8;
-	unsigned int CPU_2L_LOW_DCBDET:8;
-	unsigned int CPU_2L_LOW_DCMDET:8;
+	unsigned int CPU_2L_BDES:8;
+	unsigned int CPU_2L_MDES:8;
+	unsigned int CPU_2L_DCBDET:8;
+	unsigned int CPU_2L_DCMDET:8;
 
 	/* M_HW_RES4 */
-	unsigned int CPU_L_HIGH_BDES:8;
-	unsigned int CPU_L_HIGH_MDES:8;
-	unsigned int CPU_L_HIGH_DCBDET:8;
-	unsigned int CPU_L_HIGH_DCMDET:8;
+	unsigned int CPU_2L_SPEC:3;
+	unsigned int CPU_2L_TURBO:1;
+	unsigned int CPU_2L_DVFS_LOW:2;
+	unsigned int CPU_2L_INITEN:1;
+	unsigned int CPU_2L_MONEN:1;
+	unsigned int CPU_2L_LEAKAGE:8;
+	unsigned int CPU_2L_MTDES:8;
+	unsigned int CPU_2L_AGEDELTA:8;
 
 	/* M_HW_RES5 */
-	unsigned int CPU_2L_HIGH_MTDES:8;
-	unsigned int CPU_2L_HIGH_INITEN:1;
-	unsigned int CPU_2L_HIGH_MONEN:1;
-	unsigned int CPU_2L_HIGH_DVFS_LOW:3;
-	unsigned int CPU_2L_HIGH_SPEC:3;
-	unsigned int CPU_L_HIGH_MTDES:8;
-	unsigned int CPU_L_HIGH_INITEN:1;
-	unsigned int CPU_L_HIGH_MONEN:1;
-	unsigned int CPU_L_HIGH_DVFS_LOW:3;
-	unsigned int CPU_L_HIGH_SPEC:3;
-
-	/* M_HW_RES6 */
-	unsigned int CPU_2L_HIGH_BDES:8;
-	unsigned int CPU_2L_HIGH_MDES:8;
-	unsigned int CPU_2L_HIGH_DCBDET:8;
-	unsigned int CPU_2L_HIGH_DCMDET:8;
-
-	/* M_HW_RES7 */
 	unsigned int CCI_BDES:8;
 	unsigned int CCI_MDES:8;
 	unsigned int CCI_DCBDET:8;
 	unsigned int CCI_DCMDET:8;
 
-	/* M_HW_RES8 */
-	unsigned int CCI_RSV:16;
-	unsigned int CCI_MTDES:8;
+	/* M_HW_RES6 */
+	unsigned int CCI_SPEC:3;
+	unsigned int CCI_TURBO:1;
+	unsigned int CCI_DVFS_LOW:2;
 	unsigned int CCI_INITEN:1;
 	unsigned int CCI_MONEN:1;
-	unsigned int CCI_DVFS_LOW:3;
-	unsigned int CCI_SPEC:3;
+	unsigned int CCI_LEAKAGE:8;
+	unsigned int CCI_MTDES:8;
+	unsigned int CCI_AGEDELTA:8;
 };
 
 /*********************************************
