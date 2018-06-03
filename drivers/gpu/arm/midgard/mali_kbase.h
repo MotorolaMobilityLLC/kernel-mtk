@@ -20,6 +20,7 @@
 #ifndef _KBASE_H_
 #define _KBASE_H_
 
+#undef CONFIG_SYNC
 #include <mali_malisw.h>
 
 #include <mali_kbase_debug.h>
