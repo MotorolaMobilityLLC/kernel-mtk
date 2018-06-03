@@ -2348,7 +2348,7 @@
 
 	vdec@16020000 {
 		compatible = "mediatek,vdec";
-		reg = <0 0x16020000 0 0x1000>;
+		reg = <0 0x16020000 0 0x10000>;
 		interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_LOW>;
 	};
 

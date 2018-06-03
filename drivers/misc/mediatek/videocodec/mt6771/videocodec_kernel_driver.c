@@ -562,7 +562,7 @@ void vdec_power_off(void)
 	if (gu4VdecPWRCounter == 0) {
 		MODULE_MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
-		/*vdec_polling_status();*/
+		vdec_polling_status();
 		gu4VdecPWRCounter--;
 		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
