@@ -215,11 +215,10 @@ static int geofence_probe(void)
 
 	GEOFENCE_LOG("geofence_probe\n");
 	devobj = kzalloc(sizeof(*devobj), GFP_KERNEL);
-	if (devobj == NULL) {
+	if (devobj == NULL)
 		goto err_out;
-	} else {
+	else
 		alloc_ret = 0;
-	}
 	sema_init(&wr_mtx, 1);
 	sema_init(&rd_mtx, 1);
 	GEOFENCE_LOG("alloc devobj\n");
