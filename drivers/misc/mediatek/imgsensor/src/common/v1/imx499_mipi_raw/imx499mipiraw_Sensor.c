@@ -100,8 +100,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	/* record sensor id defined in Kd_imgsensor.h */
 	.sensor_id = IMX499_SENSOR_ID,
 
-	/* checksum value for Camera Auto Test 2018.02.27 */
-	.checksum_value = 0xf50b67cd,
+	/* checksum value for Camera Auto Test 2018.05.30*/
+	/* 0x5e601056 for 4656x3492 */
+	.checksum_value = 0x5e601056,
 
 	.pre = {/*data rate 840 Mbps/lane */
 		.pclk = 280000000,	/* VTP Pixel rate */
