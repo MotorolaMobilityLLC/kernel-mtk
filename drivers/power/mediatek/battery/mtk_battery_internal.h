@@ -637,4 +637,7 @@ extern unsigned int upmu_get_rgs_chrdet(void);
 /* DLPT */
 extern int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging);
 
+/* evb or phone load */
+extern bool is_evb_load(void);
+
 #endif /* __MTK_BATTERY_INTF_H__ */

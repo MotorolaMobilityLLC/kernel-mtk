@@ -180,6 +180,8 @@ static struct gtimer g1, g2, g3, g4, g5;
 static bool gDisableGM30;
 static bool cmd_disable_nafg;
 static bool ntc_disable_nafg;
+static bool bis_evb;
+static int g_disable_mtkbattery;
 
 static struct gauge_device *gauge_dev;
 
@@ -188,6 +190,28 @@ bool is_fg_disable(void)
 	return gDisableGM30;
 }
 
+bool check_isevb_dtsi(struct platform_device *dev)
+{
+	struct device_node *np = dev->dev.of_node;
+	unsigned int val;
+
+	if (!of_property_read_u32(np, "DISABLE_MTKBATTERY", &val)) {
+		g_disable_mtkbattery = (int)val;
+		bm_err("read DISABLE_MTKBATTERY=%d, g_disable_mtkbattery=%d\n", val, g_disable_mtkbattery);
+	} else {
+		bm_err("read DISABLE_MTKBATTERY fail\n");
+	}
+
+	return 0;
+}
+
+bool is_evb_load(void)
+{
+	if (IS_ENABLED(CONFIG_POWER_EXT) || (g_disable_mtkbattery == 1))
+		return true;
+	else
+		return false;
+}
 
 static int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 static int loglevel_count;
@@ -277,9 +301,13 @@ bool gauge_get_current(int *bat_current)
 {
 	bool is_charging = false;
 
-#if defined(CONFIG_POWER_EXT)
-	*bat_current = 0;
-#else
+	bis_evb = is_evb_load();
+
+	if (bis_evb) {
+		*bat_current = 0;
+		return is_charging;
+	}
+
 	if (Bat_EC_ctrl.debug_fg_curr_en == 1) {
 		*bat_current = Bat_EC_ctrl.debug_fg_curr_value;
 		return false;
@@ -291,7 +319,6 @@ bool gauge_get_current(int *bat_current)
 	}
 
 	gauge_dev_get_current(gauge_dev, &is_charging, bat_current);
-#endif
 	return is_charging;
 }
 
@@ -299,45 +326,52 @@ int gauge_get_average_current(bool *valid)
 {
 	int iavg = 0;
 
-#if defined(CONFIG_POWER_EXT)
-	iavg = 0;
-#else
-	gauge_dev_get_average_current(gauge_dev, &iavg, valid);
-#endif
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		iavg = 0;
+	else
+		gauge_dev_get_average_current(gauge_dev, &iavg, valid);
+
 	return iavg;
 }
 
 int gauge_get_coulomb(void)
 {
 	int columb = 0;
-#if defined(CONFIG_POWER_EXT)
-#else
+
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return columb;
+
 	gauge_dev_get_coulomb(gauge_dev, &columb);
-#endif
 	return columb;
 }
 
 int gauge_reset_hw(void)
 {
-#if defined(CONFIG_POWER_EXT)
-#else
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return 0;
+
 	gauge_coulomb_before_reset();
 	gauge_dev_reset_hw(gauge_dev);
 	gauge_coulomb_after_reset();
 	get_monotonic_boottime(&sw_iavg_time);
 	sw_iavg_car = gauge_get_coulomb();
-#endif
+
 	return 0;
 }
 
 int gauge_get_hwocv(void)
 {
 	int hwocv = 37000;
-#if defined(CONFIG_POWER_EXT)
-	hwocv = 37000;
-#else
-	gauge_dev_get_hwocv(gauge_dev, &hwocv);
-#endif
+
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		hwocv = 37000;
+	else
+		gauge_dev_get_hwocv(gauge_dev, &hwocv);
+
 	return hwocv;
 }
 
@@ -371,7 +405,11 @@ int gauge_get_zcv(int *zcv)
 
 int gauge_set_nag_en(int nafg_zcv_en)
 {
-#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT)
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return 0;
+
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
 #else
 	if (disable_nafg_int == false)
 		gauge_dev_enable_nag_interrupt(gauge_dev, nafg_zcv_en);
@@ -542,37 +580,39 @@ bool fg_interrupt_check(void)
 
 signed int battery_meter_get_tempR(signed int dwVolt)
 {
-#if defined(CONFIG_POWER_EXT)
-	return 0;
-#else
+
 	int TRes;
 
-	TRes = (RBAT_PULL_UP_R * dwVolt) / (RBAT_PULL_UP_VOLT - dwVolt);
+	TRes = 0;
 
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return 0;
+
+	TRes = (RBAT_PULL_UP_R * dwVolt) / (RBAT_PULL_UP_VOLT - dwVolt);
 	return TRes;
-#endif
 }
 
 signed int battery_meter_get_tempV(void)
 {
-#if defined(CONFIG_POWER_EXT)
-	return 0;
-#else
+
 	int val = 0;
 
-	val = 1;		/* set avg times */
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return 0;
+
 	val = pmic_get_v_bat_temp();
 	return val;
-#endif
 }
 
 signed int battery_meter_get_VSense(void)
 {
-#if defined(CONFIG_POWER_EXT)
-	return 0;
-#else
-	return pmic_get_ibus();
-#endif
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return 0;
+	else
+		return pmic_get_ibus();
 }
 
 void battery_update_psd(struct battery_data *bat_data)
@@ -688,21 +728,6 @@ static struct battery_data battery_main = {
 		.get_property = battery_get_property,
 		},
 
-#if defined(CONFIG_POWER_EXT)
-	.BAT_STATUS = POWER_SUPPLY_STATUS_FULL,
-	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
-	.BAT_PRESENT = 1,
-	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
-	.BAT_CAPACITY = 100,
-	.BAT_batt_vol = 4200,
-	.BAT_batt_temp = 22,
-	/* Dual battery */
-	.status_smb = POWER_SUPPLY_STATUS_DISCHARGING,
-	.capacity_smb = 50,
-	.present_smb = 0,
-	/* ADB CMD discharging */
-	.adjust_power = -1,
-#else
 	.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
 	.BAT_PRESENT = 1,
@@ -716,8 +741,24 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
-#endif
 };
+
+void evb_battery_init(void)
+{
+	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
+	battery_main.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
+	battery_main.BAT_PRESENT = 1;
+	battery_main.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
+	battery_main.BAT_CAPACITY = 100;
+	battery_main.BAT_batt_vol = 4200;
+	battery_main.BAT_batt_temp = 22;
+	/* Dual battery */
+	battery_main.status_smb = POWER_SUPPLY_STATUS_DISCHARGING;
+	battery_main.capacity_smb = 50;
+	battery_main.present_smb = 0;
+	/* ADB CMD discharging */
+	battery_main.adjust_power = -1;
+}
 
 static void battery_update(struct battery_data *bat_data)
 {
@@ -732,9 +773,10 @@ static void battery_update(struct battery_data *bat_data)
 	return;
 #endif
 
-#if defined(CONFIG_POWER_EXT)
-	bat_data->BAT_CAPACITY = 50;
-#endif
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		bat_data->BAT_CAPACITY = 50;
+
 	power_supply_changed(bat_psy);
 }
 
@@ -2055,12 +2097,19 @@ int force_get_tbat_internal(bool update)
 
 int force_get_tbat(bool update)
 {
-#if defined(CONFIG_POWER_EXT) || defined(FIXED_TBAT_25)
+	int bat_temperature_val = 0;
+	int counts = 0;
+
+	bis_evb = is_evb_load();
+	if (bis_evb) {
+		bm_debug("[force_get_tbat] fixed TBAT=25 t\n");
+		return 25;
+	}
+
+#if defined(FIXED_TBAT_25)
 	bm_debug("[force_get_tbat] fixed TBAT=25 t\n");
 	return 25;
 #else
-	int bat_temperature_val = 0;
-	int counts = 0;
 
 	bat_temperature_val = force_get_tbat_internal(update);
 
@@ -3363,11 +3412,16 @@ void fg_nafg_int_handler(void)
 
 void fg_bat_temp_int_init(void)
 {
-#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT) || defined(FIXED_TBAT_25)
+	int tmp = 0;
+	int fg_bat_new_ht, fg_bat_new_lt;
+
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		return;
+#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(FIXED_TBAT_25)
 	return;
 #else
-	int tmp = force_get_tbat(true);
-	int fg_bat_new_ht, fg_bat_new_lt;
+	tmp = force_get_tbat(true);
 
 	fg_bat_new_ht = TempToBattVolt(tmp + 1, 1);
 	fg_bat_new_lt = TempToBattVolt(tmp - 1, 0);
@@ -3381,13 +3435,22 @@ void fg_bat_temp_int_init(void)
 
 void fg_bat_temp_int_internal(void)
 {
-#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT) || defined(FIXED_TBAT_25)
+	int tmp = 0;
+	int fg_bat_new_ht, fg_bat_new_lt;
+
+	bis_evb = is_evb_load();
+	if (bis_evb) {
+		battery_main.BAT_batt_temp = 25;
+		battery_update(&battery_main);
+		return;
+	}
+
+#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(FIXED_TBAT_25)
 	battery_main.BAT_batt_temp = 25;
 	battery_update(&battery_main);
 	return;
 #else
-	int tmp = force_get_tbat(true);
-	int fg_bat_new_ht, fg_bat_new_lt;
+	tmp = force_get_tbat(true);
 
 	gauge_dev_enable_battery_tmp_lt_interrupt(gauge_dev, false, 0);
 	gauge_dev_enable_battery_tmp_ht_interrupt(gauge_dev, false, 0);
@@ -4993,6 +5056,10 @@ static int __init battery_probe(struct platform_device *dev)
 
 	fg_custom_init_from_header();
 
+	bis_evb = is_evb_load();
+	if (bis_evb)
+		evb_battery_init();
+
 #ifdef BAT_PSEUDO_THREAD
 	kthread_run(battery_update_routine, NULL, "battery_thread");
 	fg_drv_thread_hrtimer_init();
@@ -5126,7 +5193,12 @@ static int __init battery_probe(struct platform_device *dev)
 
 	wake_unlock(&battery_lock);
 
-#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT)
+	if (bis_evb) {
+		bm_err("disable GM 3.0\n");
+		disable_fg();
+	}
+
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
 	bm_err("disable GM 3.0\n");
 	disable_fg();
 #endif
@@ -5155,6 +5227,7 @@ static int battery_dts_probe(struct platform_device *dev)
 		return ret;
 	}
 
+	check_isevb_dtsi(dev);
 	fg_custom_init_from_dts(dev);
 
 	return 0;
