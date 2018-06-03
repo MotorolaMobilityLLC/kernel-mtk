@@ -759,42 +759,6 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
-* @brief bypass BSS Descriptors from current list according to specific BSSID.
-*
-* @param[in] prAdapter  Pointer to the Adapter structure.
-* @param[in] aucBSSID   Given BSSID.
-*
-* @return (none)
-*/
-/*----------------------------------------------------------------------------*/
-BOOLEAN scanByPassRemoveBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
-{
-	P_SCAN_INFO_T prScanInfo;
-	P_SCAN_PARAM_T prScanParam;
-	UINT_8 ucIndex = 0;
-	BOOLEAN	fgIsByPassRemove = FALSE;
-
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	prScanParam = &prScanInfo->rScanParam;
-
-	for (ucIndex = 0; ucIndex < prScanParam->ucSSIDNum; ucIndex++) {
-		if (EQUAL_SSID(prBssDesc->aucSSID,
-		    prBssDesc->ucSSIDLen,
-		    prScanParam->aucSpecifiedSSID[ucIndex],
-			prScanParam->ucSpecifiedSSIDLen[ucIndex])) {
-			fgIsByPassRemove = TRUE;
-			DBGLOG(INIT, INFO, "scanByPassRemoveBssDesc %s | %s\n",
-			prBssDesc->aucSSID, prScanParam->aucSpecifiedSSID[ucIndex]);
-			break;
-	    }
-	}
-	return fgIsByPassRemove;
-}
-
-
-
-/*----------------------------------------------------------------------------*/
-/*!
 * @brief Delete BSS Descriptors from current list according to given Remove Policy.
 *
 * @param[in] u4RemovePolicy     Remove Policy.
@@ -836,12 +800,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				continue;
 			}
 
-			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID) &&
-			    scanByPassRemoveBssDesc(prAdapter, prBssDesc)) {
-				/* Don't remove the one currently we are looking for specifi SSID. */
-				continue;
-			}
-
 			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 					      SEC_TO_SYSTIME(SCN_BSS_DESC_REMOVE_TIMEOUT_SEC))) {
 
@@ -872,11 +830,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_CONNECTED) &&
 			    (prBssDesc->fgIsConnected || prBssDesc->fgIsConnecting)) {
 				/* Don't remove the one currently we are connected. */
-				continue;
-			}
-			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID) &&
-			    scanByPassRemoveBssDesc(prAdapter, prBssDesc)) {
-				/* Don't remove the one currently we are looking for specifi SSID. */
 				continue;
 			}
 
@@ -921,11 +874,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_CONNECTED) &&
 			    (prBssDesc->fgIsConnected || prBssDesc->fgIsConnecting)) {
 				/* Don't remove the one currently we are connected. */
-				continue;
-			}
-			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID) &&
-			    scanByPassRemoveBssDesc(prAdapter, prBssDesc)) {
-				/* Don't remove the one currently we are looking for specifi SSID. */
 				continue;
 			}
 
@@ -984,11 +932,7 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				/* Don't remove the one currently we are connected. */
 				continue;
 			}
-			if ((u4RemovePolicy & SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID) &&
-			    scanByPassRemoveBssDesc(prAdapter, prBssDesc)) {
-				/* Don't remove the one currently we are looking for specifi SSID. */
-				continue;
-			}
+
 			if (!prBssDesc->prBlack)
 				aisQueryBlackList(prAdapter, prBssDesc);
 			if (prBssDesc->prBlack)
@@ -1350,8 +1294,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* 4 <1.2.2> Hidden is useless, remove the oldest hidden ssid. (for passive scan) */
 			scanRemoveBssDescsByPolicy(prAdapter,
 						   (SCN_RM_POLICY_EXCLUDE_CONNECTED |
-						    SCN_RM_POLICY_OLDEST_HIDDEN | SCN_RM_POLICY_TIMEOUT |
-						    SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID));
+						    SCN_RM_POLICY_OLDEST_HIDDEN | SCN_RM_POLICY_TIMEOUT));
 
 			/* 4 <1.2.3> Second tail of allocation */
 			prBssDesc = scanAllocateBssDesc(prAdapter);
@@ -1364,8 +1307,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			 */
 			scanRemoveBssDescsByPolicy(prAdapter,
 						   (SCN_RM_POLICY_EXCLUDE_CONNECTED |
-						   SCN_RM_POLICY_SMART_WEAKEST |
-						   SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID));
+						   SCN_RM_POLICY_SMART_WEAKEST));
 
 			/* 4 <1.2.5> reallocation */
 			prBssDesc = scanAllocateBssDesc(prAdapter);
