@@ -67,6 +67,12 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_MASK				0xFFFF
 #define PMIC_REG_SHIFT				0
 
+#define RG_XO1_MODE				0x1
+#define RG_XO2_MODE				0x3
+#define RG_XO3_MODE				0x0
+#define RG_XO4_MODE				0x3
+#define RG_XO6_MODE				0x0
+#define RG_XO7_MODE				0x0
 #define PMIC_CW00_INIT_VAL			0x4E1D
 #define PMIC_CW11_INIT_VAL			0x8000
 
@@ -272,18 +278,9 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_CONN:
 		if (onoff) {
 			CLK_BUF2_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
-			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_SET, RG_XO2_MODE,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
-#else
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
-					      PMIC_XO_EXTBUF2_MODE_MASK,
-					      PMIC_XO_EXTBUF2_MODE_SHIFT);
-			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x2,
-					      PMIC_XO_EXTBUF2_MODE_MASK,
-					      PMIC_XO_EXTBUF2_MODE_SHIFT);
-#endif
 			pmic_clk_buf_ctrl_wcn(1);
 			pmic_clk_buf_swctrl[XO_WCN] = 1;
 
@@ -293,7 +290,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_CONN_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO2_MODE,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 			pmic_clk_buf_ctrl_wcn(0);
@@ -307,7 +304,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_NFC:
 		if (onoff) {
 			CLK_BUF3_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
-			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_SET, RG_XO3_MODE,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_clk_buf_ctrl_nfc(1);
@@ -319,7 +316,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_NFC_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO3_MODE,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_clk_buf_ctrl_nfc(0);
@@ -846,6 +843,10 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 			bblpm_switch = 1;
 		else if (debug == 17)
 			bblpm_switch = 0;
+		else if (debug == 18)
+			clk_buf_ctrl(CLK_BUF_NFC, true);
+		else if (debug == 19)
+			clk_buf_ctrl(CLK_BUF_NFC, false);
 		else
 			clk_buf_pr_info("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
 	} else
