@@ -174,7 +174,12 @@ void __attribute__((weak)) idle_refcnt_dec(void)
 
 #endif
 
-static int idle_force_vcore_lp_mode;
+#define IDLE_VCORE_CHECK_FOR_LP_MODE        0
+#define IDLE_VCORE_FORCE_LP_MODE            1
+#define IDLE_VCORE_FORCE_NORMAL_MODE        2
+#define IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE 3
+
+static int idle_force_vcore_lp_mode = IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE;
 static bool idle_by_pass_secure_cg;
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 static bool clkmux_cond[NR_TYPES];
@@ -274,25 +279,32 @@ static unsigned int check_and_update_vcore_lp_mode_cond(int type)
 {
 	unsigned int op_cond = 0;
 
+	if (idle_force_vcore_lp_mode == IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE)
+		goto END;
+
 	memset(clkmux_block_mask[type],	0, NF_CLK_CFG * sizeof(unsigned int));
 
 	clkmux_cond[type] = mtk_idle_check_clkmux(type, clkmux_block_mask);
 
 	switch (idle_force_vcore_lp_mode) {
-	case 0:
+	case IDLE_VCORE_CHECK_FOR_LP_MODE:
 		/* by clkmux check */
 		op_cond |= (clkmux_cond[type] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
 		break;
-	case 1:
+	case IDLE_VCORE_FORCE_LP_MODE:
 		/* enter LP mode */
 		op_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
 		break;
-	case 2:
+	case IDLE_VCORE_FORCE_NORMAL_MODE:
 		/* no enter LP mode */
 		op_cond = (op_cond & ~DEEPIDLE_OPT_VCORE_LP_MODE);
 		break;
+	default:
+		op_cond = 0;
+		break;
 	}
 
+END:
 	return op_cond;
 }
 
@@ -845,15 +857,15 @@ u32 slp_spm_deepidle_flags = {
 };
 
 static u32 slp_spm_SODI3_flags1 = {
-	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
+	0
 };
 
 static u32 slp_spm_SODI_flags1 = {
-	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
+	0
 };
 
 static u32 slp_spm_deepidle_flags1 = {
-	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
+	0
 };
 
 #endif

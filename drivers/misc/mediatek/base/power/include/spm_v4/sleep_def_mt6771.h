@@ -57,7 +57,7 @@
 #define SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT       (1U << 2)
 #define SPM_FLAG1_DISABLE_PWRAP_CLK_SWITCH    (1U << 3)
 #define SPM_FLAG1_DISABLE_ULPOSC_OFF          (1U << 4)
-#define SPM_FLAG1_RESERVED_BIT5               (1U << 5)
+#define SPM_FLAG1_VCORE_LP_0P7V               (1U << 5)
 #define SPM_FLAG1_DISABLE_MCDSR               (1U << 6)
 #define SPM_FLAG1_DISABLE_NO_RESUME           (1U << 7)
 #define SPM_FLAG1_BIG_BUCK_OFF_ENABLE         (1U << 8)
