@@ -431,6 +431,7 @@ VOID wlanFWDLDebugDumpInfo(VOID);
 
 VOID wlanFWDLDebugUninit(VOID);
 
+UINT_32 wlanFWDLDebugGetPktCnt(VOID);
 
 VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter);
 
