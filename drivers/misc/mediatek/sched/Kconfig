@@ -51,6 +51,44 @@ config MTK_SCHED_EAS_POWER_SUPPORT
 	  return correct power of core and cluster for
 	  scheduler to refer.
 
+config CPU_FREQ_DEFAULT_GOV_SCHEDPLUS
+	bool "To make sched+ as default governor"
+	select CPU_FREQ_GOV_SCHEDPLUS
+	help
+	  Use the CPUfreq governor 'schedplus' as default.
+	  This scales cpu frequency using CPU utilization estimates
+	  from the scheduler not only but also support some of
+	  platform dependent features.
+
+config CPU_FREQ_SCHED_ASSIST
+	bool "'sched-assist sched' cpufreq"
+	select CPU_FREQ_GOV_SCHEDPLUS
+	help
+	  sched-assist is NOT a governor, which MUST be dependent on
+	  sched+ governor which scales cpu frequency from the scheduler as a function
+	  of cpu capacity utilization. It does not evaluate utilization on
+	  a periodic basis (as ondemand does) but instead is event-driven
+	  by the scheduler. Also provided hint of scheduler for other governors
+	  and workable with hotplug.
+
+	  If in doubt, say N.
+
+config CPU_FREQ_GOV_SCHEDPLUS
+	bool "'sched+' cpufreq governor"
+	depends on CPU_FREQ
+	select CPU_FREQ_GOV_COMMON
+	help
+	  'sched+' - this governor scales cpu frequency from the
+	  scheduler as a function of cpu capacity utilization. It does
+	  not evaluate utilization on a periodic basis (as ondemand
+	  does) but instead is event-driven by the scheduler and support
+	  below additional features.
+	  1) platform dependent(micro controller).
+	  2) sched-assistant (a assistnat for major governor).
+	  3) hotplug (cpu on/off).
+
+	  If in doubt, say N.
+
 endmenu
 
 menu "MTK Heterogenous MultiProcessor Scheduler"

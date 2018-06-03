@@ -10,8 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
 int sys_boosted;
+
 int boost_write_for_perf_idx(int group_idx, int boost_value)
 {
 	struct schedtune *ct;
@@ -20,7 +20,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int idx = 0;
 	int ctl_no = div64_s64(boost_value, 1000);
 	int cluster;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	bool dvfs_on_demand = false;
 	int floor = 0;
 	int i;
@@ -35,7 +35,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -60,7 +60,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		/* dvfs short cut */
 		boost_value -= 2000;
 		stune_task_threshold = default_stune_threshold;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		dvfs_on_demand = true;
 #endif
 		break;
@@ -86,7 +86,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	else if (boost_value <= -100)
 		boost_value = -100;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	if (!floor) {
 		for (i = 0; i < cpu_cluster_nr; i++)
 			min_boost_freq[i] = 0;
@@ -149,7 +149,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		}
 	}
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif

@@ -4820,7 +4820,7 @@ unsigned long boosted_cpu_util(int cpu);
 #endif
 
 #ifdef CONFIG_SMP
-static void update_capacity_of(int cpu)
+static void update_capacity_of(int cpu, int type)
 {
 	unsigned long req_cap;
 
@@ -4830,7 +4830,7 @@ static void update_capacity_of(int cpu)
 	/* Convert scale-invariant capacity to cpu. */
 	req_cap = boosted_cpu_util(cpu);
 	req_cap = req_cap * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
-	set_cfs_cpu_capacity(cpu, true, req_cap);
+	set_cfs_cpu_capacity(cpu, true, req_cap, type);
 }
 #endif
 
@@ -4933,8 +4933,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 * in these cases it seems wise to trigger as single
 		 * request after load balancing is done.
 		 */
-		if (task_new || task_wakeup)
-			update_capacity_of(cpu_of(rq));
+		if (task_new || task_wakeup) {
+			/*
+			 * If in_iowait is set, the code below may not trigger
+			 * any cpufreq utilization updates, so do it here
+			 * explicitly with the IOWAIT flag passed.
+			 */
+			if (p->in_iowait)
+				update_capacity_of(cpu_of(rq), SCHE_IOWAIT);
+			else
+				update_capacity_of(cpu_of(rq), SCHE_VALID);
+		}
 	}
 
 #endif /* CONFIG_SMP */
@@ -5028,9 +5037,10 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 */
 		if (task_sleep) {
 			if (rq->cfs.nr_running)
-				update_capacity_of(cpu_of(rq));
+				update_capacity_of(cpu_of(rq), SCHE_ONESHOT);
 			else if (sched_freq())
-				set_cfs_cpu_capacity(cpu_of(rq), false, 0);
+				set_cfs_cpu_capacity(cpu_of(rq), false, 0,
+						SCHE_ONESHOT);
 		}
 	}
 
@@ -8190,7 +8200,7 @@ static void attach_one_task(struct rq *rq, struct task_struct *p)
 	/*
 	 * We want to potentially raise target_cpu's OPP.
 	 */
-	update_capacity_of(cpu_of(rq));
+	update_capacity_of(cpu_of(rq), SCHE_VALID);
 	raw_spin_unlock(&rq->lock);
 }
 
@@ -8215,7 +8225,7 @@ static void attach_tasks(struct lb_env *env)
 	/*
 	 * We want to potentially raise env.dst_cpu's OPP.
 	 */
-	update_capacity_of(env->dst_cpu);
+	update_capacity_of(env->dst_cpu, SCHE_VALID);
 
 	raw_spin_unlock(&env->dst_rq->lock);
 }
@@ -9599,7 +9609,7 @@ more_balance:
 		 * We want to potentially lower env.src_cpu's OPP.
 		 */
 		if (cur_ld_moved)
-			update_capacity_of(env.src_cpu);
+			update_capacity_of(env.src_cpu, SCHE_ONESHOT);
 
 		/*
 		 * We've detached some tasks from busiest_rq. Every
@@ -9928,7 +9938,7 @@ out:
 		 * No task pulled and someone has been migrated away.
 		 * Good case to trigger an OPP update.
 		 */
-		update_capacity_of(this_cpu);
+		update_capacity_of(this_cpu, SCHE_VALID);
 	}
 
 	return pulled_task;
@@ -9993,7 +10003,7 @@ static int active_load_balance_cpu_stop(void *data)
 			/*
 			 * We want to potentially lower env.src_cpu's OPP.
 			 */
-			update_capacity_of(env.src_cpu);
+			update_capacity_of(env.src_cpu, SCHE_ONESHOT);
 			/* Active balancing done, reset the failure counter. */
 			sd->nr_balance_failed = 0;
 		} else {
