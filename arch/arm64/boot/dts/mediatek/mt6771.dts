@@ -2195,6 +2195,18 @@
 	vdec_gcon: vdec_gcon@16000000 {
 		compatible = "mediatek,vdec_gcon", "syscon";
 		reg = <0 0x16000000 0 0x1000>;
+		clocks =
+			<&scpsys SCP_SYS_DIS> ,
+			<&scpsys SCP_SYS_VDE> ,
+			<&scpsys SCP_SYS_VEN> ,
+			<&vdec_gcon VDEC_VDEC> ,
+			<&venc_gcon VENC_GCON_VENC>;
+		clock-names =
+			"MT_SCP_SYS_DIS" ,
+			"MT_SCP_SYS_VDE" ,
+			"MT_SCP_SYS_VEN" ,
+			"MT_CG_VDEC"     ,
+			"MT_CG_VENC";
 		#clock-cells = <1>;
 	};
 
