@@ -84,7 +84,7 @@ struct ext_disp_path_context {
 	enum EXT_DISP_PATH_MODE mode;
 	unsigned int last_vsync_tick;
 	struct mutex lock;
-	struct mutex vsync_lock;
+	char *mutex_locker;
 	struct disp_lcm_handle *plcm;
 	struct cmdqRecStruct *cmdq_handle_config;
 	struct cmdqRecStruct *cmdq_handle_trigger;
@@ -150,53 +150,34 @@ void ext_disp_path_set_mode(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 	init_roi = 1;
 }
 
-static void _ext_disp_path_lock(void)
+static void _ext_disp_path_lock(const char *caller)
 {
-	int ret = 0;
-
-	do {
-		ret = extd_sw_mutex_lock(NULL);
-	} while (ret < 0);
+	extd_sw_mutex_lock(&(pgc->lock));
+	pgc->mutex_locker = (char *)caller;
+/*	EXT_DISP_LOG("_ext_disp_path_lock caller: %s\n", pgc->mutex_locker);*/
 }
 
-static void _ext_disp_path_unlock(void)
+static void _ext_disp_path_unlock(const char *caller)
 {
-	extd_sw_mutex_unlock(NULL);	/* (&(pgc->lock)); */
+	pgc->mutex_locker = NULL;
+	extd_sw_mutex_unlock(&(pgc->lock));
+/*	EXT_DISP_LOG("_ext_disp_path_unlock caller: %s\n", pgc->mutex_locker);*/
 }
 
 int ext_disp_manual_lock(void)
 {
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	return 0;
 }
 
 int ext_disp_manual_unlock(void)
 {
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	return 0;
 }
 
-static void _ext_disp_vsync_lock(unsigned int session)
-{
-	mutex_lock(&(pgc->vsync_lock));
-}
-
-static void _ext_disp_vsync_unlock(unsigned int session)
-{
-	mutex_unlock(&(pgc->vsync_lock));
-}
-/*
-*
-	static enum DISP_MODULE_ENUM _get_dst_module_by_lcm(disp_path_handle pHandle)
-	{
-		if (dst_is_dsi)
-			return DISP_MODULE_DSI1;
-		else
-			return DISP_MODULE_DPI;
-	}
-*/
 
 /***************************************************************
 ***trigger operation:    VDO+CMDQ  CMD+CMDQ VDO+CPU  CMD+CPU
@@ -334,47 +315,6 @@ static int _should_config_ovl_input(void)
 
 		return ret;
 	}
-*/
-
-#define OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-static long int get_current_time_us(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return (t.tv_sec & 0xFFF) * 1000000 + t.tv_usec;
-}
-
-/*
- *
-static enum hrtimer_restart _DISP_CmdModeTimer_handler(struct hrtimer *timer)
-{
-	EXT_DISP_LOG("fake timer, wake up\n");
-	dpmgr_signal_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
-#if 0
-	if ((get_current_time_us() - pgc->last_vsync_tick) > 16666) {
-		dpmgr_signal_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
-		pgc->last_vsync_tick = get_current_time_us();
-	}
-#endif
-	return HRTIMER_RESTART;
-}
-
-static int _init_vsync_fake_monitor(int fps)
-{
-	static struct hrtimer cmd_mode_update_timer;
-	static ktime_t cmd_mode_update_timer_period;
-
-	if (fps == 0)
-		fps = 60;
-
-	cmd_mode_update_timer_period = ktime_set(0, 1000 / fps * 1000);
-	EXT_DISP_LOG("[MTKFB] vsync timer_period=%d\n", 1000 / fps);
-	hrtimer_init(&cmd_mode_update_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	cmd_mode_update_timer.function = _DISP_CmdModeTimer_handler;
-
-	return 0;
-}
 */
 
 static int _build_path_direct_link(unsigned int session)
@@ -1010,7 +950,6 @@ static int ext_disp_init_hdmi(unsigned int session)
 	atomic_set(&g_extd_trigger_ticket, 1);
 	atomic_set(&g_extd_release_ticket, 0);
 
-	mutex_init(&(pgc->vsync_lock));
 	pgc->state = EXTD_INIT;
 	pgc->ovl_req_state = EXTD_OVL_NO_REQ;
  done:
@@ -1124,7 +1063,6 @@ static int ext_disp_init_lcm(char *lcm_name, unsigned int session)
 	external_display_lowpower_init();
 #endif
 
-	mutex_init(&(pgc->vsync_lock));
 	pgc->state = EXTD_INIT;
 	pgc->ovl_req_state = EXTD_OVL_NO_REQ;
 	pgc->session = session;
@@ -1152,7 +1090,7 @@ int ext_disp_esd_recovery(void)
 
 /*	EXT_DISP_FUNC();*/
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_START, 0, 0);
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE,
 		       ext_disp_is_video_mode(), 1);
 
@@ -1245,7 +1183,7 @@ int ext_disp_esd_recovery(void)
 	ddp_dump_reg(DISP_MODULE_OVL1);
 	ddp_dump_reg(DISP_MODULE_RDMA1);
 done:
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 	DISPINFO("[ESD]ESD recovery end\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_END, 0, 0);
 
@@ -1285,6 +1223,8 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	dpmgr_init();
 
+	_ext_disp_path_lock(__func__);
+
 	if (pgc->state == EXTD_DEINIT) {
 		init_cmdq_slots(&(pgc->ext_cur_config_fence), EXTD_OVERLAY_CNT, 0);
 		init_cmdq_slots(&(pgc->ext_subtractor_when_free), EXTD_OVERLAY_CNT, 0);
@@ -1293,8 +1233,6 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 		init_cmdq_slots(&(pgc->ext_ovl_rdma_status_info), 1, 0);
 #endif
 	}
-
-	_ext_disp_path_lock();
 
 	if (pgc->state != EXTD_DEINIT)
 		EXT_DISP_ERR("status is not EXTD_DEINIT!\n");
@@ -1307,7 +1245,7 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	else
 		ret = ext_disp_init_hdmi(session);
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	return ret;
 }
@@ -1318,15 +1256,15 @@ int ext_disp_deinit(unsigned int session)
 
 	EXT_DISP_FUNC();
 
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state == EXTD_DEINIT)
 		goto deinit_exit;
 
 	while (((atomic_read(&g_extd_trigger_ticket) - atomic_read(&g_extd_release_ticket)) != 1) && (loop_cnt < 10)) {
-		_ext_disp_path_unlock();
+		_ext_disp_path_unlock(__func__);
 		usleep_range(5000, 6000);
-		_ext_disp_path_lock();
+		_ext_disp_path_lock(__func__);
 		/* wait the last configuration done */
 		loop_cnt++;
 	}
@@ -1334,9 +1272,9 @@ int ext_disp_deinit(unsigned int session)
 	if (DISP_SESSION_DEV(session) == DEV_LCM) {
 		external_display_esd_check_enable(0);
 		if (pgc->state == EXTD_RESUME) {
-			_ext_disp_path_unlock();
+			_ext_disp_path_unlock(__func__);
 			ext_disp_suspend(session);
-			_ext_disp_path_lock();
+			_ext_disp_path_lock(__func__);
 		}
 	}
 
@@ -1370,8 +1308,7 @@ int ext_disp_deinit(unsigned int session)
 	pgc->state = EXTD_DEINIT;
 
  deinit_exit:
-	_ext_disp_path_unlock();
-	is_context_inited = 0;
+	_ext_disp_path_unlock(__func__);
 	EXT_DISP_LOG("ext_disp_deinit done\n");
 	return 0;
 }
@@ -1379,7 +1316,6 @@ int ext_disp_deinit(unsigned int session)
 int ext_disp_wait_for_vsync(void *config, unsigned int session)
 {
 	int ret = 0;
-	struct disp_session_vsync_config *c = (struct disp_session_vsync_config *) config;
 
 	/*EXT_DISP_FUNC();*/
 
@@ -1392,27 +1328,21 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	if ((pgc->lcm_state == EXTD_LCM_SUSPEND) || (pgc->lcm_state == EXTD_LCM_NO_INIT)) {
 		EXT_DISP_LOG("%s: SUB LCM is suspended\n", __func__);
-		return -2;
+		return -1;
 	}
 
 	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
 	external_display_idlemgr_kick((char *)__func__, 1);
 #endif
 
-	_ext_disp_vsync_lock(session);
-
 	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ / 10);
 
 	if (ret == -2) {
 		EXT_DISP_LOG("vsync for ext display path not enabled yet\n");
-		_ext_disp_vsync_unlock(session);
 		return -1;
 	}
 	/*EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");*/
-	c->vsync_ts = get_current_time_us();
-	c->vsync_cnt++;
 
-	_ext_disp_vsync_unlock(session);
 	return ret;
 }
 
@@ -1440,7 +1370,7 @@ int ext_disp_suspend(unsigned int session)
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	ext_disp_esd_check_lock();
 #endif
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || session != pgc->session) {
 		EXT_DISP_ERR("status is not EXTD_RESUME or session is not match\n");
@@ -1485,7 +1415,7 @@ int ext_disp_suspend(unsigned int session)
 	ext_disp_set_state(EXTD_SUSPEND);
 #endif
  done:
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	ext_disp_esd_check_unlock();
 #endif
@@ -1501,7 +1431,7 @@ int ext_disp_resume(unsigned int session)
 
 	EXT_DISP_FUNC();
 
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state != EXTD_SUSPEND || session != pgc->session) {
 		EXT_DISP_ERR("EXTD_DEINIT/EXTD_INIT/EXTD_RESUME\n");
@@ -1594,7 +1524,7 @@ int ext_disp_resume(unsigned int session)
 #endif
 
  done:
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 	EXT_DISP_LOG("ext_disp_resume done\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_PULSE, Resume, 1);
 	return ret;
@@ -1623,7 +1553,7 @@ int ext_fence_release_callback(unsigned long userdata)
 			ext_disp_path_change(EXTD_OVL_NO_REQ, pgc->session);
 	}
 
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	for (i = 0; i < EXTD_OVERLAY_CNT; i++) {
 		cmdqBackupReadSlot(pgc->ext_cur_config_fence, i, &fence_idx);
@@ -1669,7 +1599,7 @@ int ext_fence_release_callback(unsigned long userdata)
 
 	atomic_set(&g_extd_release_ticket, userdata);
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	/* EXT_DISP_LOG("ext_fence_release_callback done\n"); */
 
@@ -1681,12 +1611,12 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 	int ret = 0;
 
 /*	EXT_DISP_FUNC();	*/
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || pgc->need_trigger_overlay < 1) {
 		EXT_DISP_LOG("trigger ext display is already slept\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Trigger, 0);
-		_ext_disp_path_unlock();
+		_ext_disp_path_unlock(__func__);
 		return -1;
 	}
 
@@ -1709,7 +1639,7 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 
 	pgc->state = EXTD_RESUME;
 done:
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 /*	EXT_DISP_LOG("ext_disp_trigger done\n");	*/
 
 	return ret;
@@ -1721,12 +1651,12 @@ int ext_disp_suspend_trigger(void *callback, unsigned int userdata, unsigned int
 
 	EXT_DISP_FUNC();
 
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state != EXTD_RESUME) {
 		EXT_DISP_LOG("trigger ext display is already slept\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Trigger, 0);
-		_ext_disp_path_unlock();
+		_ext_disp_path_unlock(__func__);
 		return -1;
 	}
 
@@ -1758,7 +1688,7 @@ int ext_disp_suspend_trigger(void *callback, unsigned int userdata, unsigned int
 
 	pgc->state = EXTD_SUSPEND;
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_PULSE, Suspend, 1);
 	return ret;
@@ -1778,13 +1708,13 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	unsigned int session = cfg->session_id;
 
 	/* EXT_DISP_FUNC(); */
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state != EXTD_INIT && pgc->state != EXTD_RESUME && pgc->suspend_config != 1) {
 		EXT_DISP_LOG("config ext disp is already slept, state:%d\n", pgc->state);
 		mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Config,
 			cfg->input_cfg[0].next_buff_idx);
-		_ext_disp_path_unlock();
+		_ext_disp_path_unlock(__func__);
 		return -2;
 	}
 
@@ -1969,7 +1899,7 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 				data_config->rdma_config.address);
 	}
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	return ret;
 }
@@ -1987,9 +1917,9 @@ int ext_disp_is_alive(void)
 	unsigned int temp = 0;
 
 	EXT_DISP_FUNC();
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 	temp = pgc->state;
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	return temp;
 }
@@ -1998,9 +1928,9 @@ int ext_disp_is_sleepd(void)
 {
 	unsigned int temp = 0;
 	/* EXT_DISP_FUNC(); */
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 	temp = !pgc->state;
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 
 	return temp;
 }
@@ -2063,12 +1993,12 @@ enum CMDQ_SWITCH ext_disp_cmdq_enabled(void)
 
 int ext_disp_switch_cmdq(enum CMDQ_SWITCH use_cmdq)
 {
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	ext_disp_use_cmdq = use_cmdq;
 	EXT_DISP_LOG("display driver use %s to config register now\n", (use_cmdq == CMDQ_ENABLE) ? "CMDQ" : "CPU");
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 	return ext_disp_use_cmdq;
 }
 
@@ -2380,7 +2310,7 @@ int external_display_setbacklight(unsigned int level)
 		return 0;
 
 	ext_disp_esd_check_lock();
-	_ext_disp_path_lock();
+	_ext_disp_path_lock(__func__);
 
 	if (pgc->state == EXTD_SUSPEND) {
 		EXT_DISP_LOG("%s: external sleep state set backlight invald\n", __func__);
@@ -2399,7 +2329,7 @@ int external_display_setbacklight(unsigned int level)
 		last_level = level;
 	}
 
-	_ext_disp_path_unlock();
+	_ext_disp_path_unlock(__func__);
 	ext_disp_esd_check_unlock();
 
 	DISPDBG("external_display_setbacklight done\n");
