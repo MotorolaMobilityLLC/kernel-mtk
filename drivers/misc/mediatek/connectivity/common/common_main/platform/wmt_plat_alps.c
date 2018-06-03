@@ -341,7 +341,7 @@ INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type)
 
 	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
 		iret = mtk_wcn_consys_co_clock_type();
-		if (iret >= 0)
+		if (co_clock_type == 0)
 			co_clock_type = iret;
 		wmt_plat_soc_co_clock_flag_set(co_clock_type);
 	}
