@@ -414,6 +414,11 @@
 		};
 	};
 
+	dramc_sram_debug: dramc_sram_debug@0011d800 {
+		compatible = "mediatek,dramc_sram_debug";
+		reg = <0 0x0011d800 0 0x100>;
+	};
+
 	topckgen: topckgen@10000000 {
 		compatible = "mediatek,topckgen";
 		reg = <0 0x10000000 0 0x1000>;
