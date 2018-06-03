@@ -111,7 +111,6 @@ static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, un
  * ===============================================
  */
 
-GED_LOG_BUF_HANDLE _mtk_gpu_log_hnd;
 static struct mt_gpufreq_power_table_info *g_power_table;
 static struct g_opp_table_info *g_opp_table;
 static struct g_opp_table_info *g_opp_table_default;
@@ -255,6 +254,9 @@ static void *g_INFRA_base;
 static void *g_DBGAPB_base;
 static void *g_TOPCKGEN_base;
 phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
+
+GED_LOG_BUF_HANDLE _mtk_gpu_log_hnd;
+static int g_clock_on;
 
 /**
  * ===============================================
@@ -410,6 +412,8 @@ void mt_gpufreq_enable_CG(void)
 
 	gpufreq_pr_debug("@%s: enable CG done\n", __func__);
 
+	g_clock_on = 1;
+
 	mutex_unlock(&mt_gpufreq_lock);
 }
 
@@ -419,6 +423,8 @@ void mt_gpufreq_enable_CG(void)
 void mt_gpufreq_disable_CG(void)
 {
 	mutex_lock(&mt_gpufreq_lock);
+
+	g_clock_on = 0;
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xD0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
@@ -1050,6 +1056,13 @@ void mt_gpufreq_dump_reg(void)
 		return;
 	}
 
+	mutex_lock(&mt_gpufreq_lock);
+
+	if (!g_clock_on) {
+		gpufreq_pr_info("@%s: skip, clock is not enabled", __func__);
+		goto unlock_out;
+	}
+
 	/* gpu ip <-> merge */
 	gpufreq_pr_info("@%s: gpu ip <-> merge ...\n", __func__);
 	writel(0x10, g_MFG_base + 0x180); /* write 0x13000180 = 0x10, [7:4]=0x1, [3:0]=0x0 */
@@ -1198,6 +1211,9 @@ void mt_gpufreq_dump_reg(void)
 	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
 
 	mt_gpufreq_dump_status();
+
+unlock_out:
+	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
