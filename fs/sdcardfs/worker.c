@@ -107,6 +107,32 @@ static inline void sdcardfs_unlock_dinode(struct dentry *entry)
 	mutex_unlock(&d_inode(entry)->i_mutex);
 }
 
+static const struct cred *override_fsids_and_keys(struct sdcardfs_sb_info *sbi,
+	const struct cred *owner_cred)
+{
+	struct cred *cred;
+	const struct cred *old_cred;
+
+	cred = prepare_creds();
+	if (!cred)
+		return NULL;
+
+	cred->fsuid = make_kuid(&init_user_ns, sbi->options.fs_low_uid);
+	cred->fsgid = make_kgid(&init_user_ns, sbi->options.fs_low_gid);
+
+#ifdef CONFIG_KEYS
+	cred->jit_keyring = owner_cred->jit_keyring;
+	cred->session_keyring = owner_cred->session_keyring;
+	cred->process_keyring = owner_cred->process_keyring;
+	cred->thread_keyring = owner_cred->thread_keyring;
+	cred->request_key_auth = owner_cred->request_key_auth;
+#endif
+
+	old_cred = override_creds(cred);
+
+	return old_cred;
+}
+
 static int touch(char *abs_path, mode_t mode)
 {
 	struct file *filp = filp_open(abs_path, O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW, mode);
@@ -115,8 +141,6 @@ static int touch(char *abs_path, mode_t mode)
 		if (PTR_ERR(filp) == -EEXIST)
 			return 0;
 
-		pr_err("sdcardfs: failed to open(%s): %ld\n",
-					abs_path, PTR_ERR(filp));
 		return PTR_ERR(filp);
 	}
 	filp_close(filp, current->files);
@@ -193,7 +217,7 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 	int touch_err = 0;
 
 	/* save current_cred and override it */
-	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb));
+	saved_cred = override_fsids_and_keys(SDCARDFS_SB(dir->i_sb), pw->owner->cred);
 	if (!saved_cred) {
 		err = -ENOMEM;
 		goto out_cred;
@@ -286,7 +310,7 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 		touch_err = touch(nomedia_fullpath, 0664);
 		if (touch_err) {
 			pr_err("sdcardfs: failed to touch(%s): %d\n",
-							nomedia_fullpath, touch_err);
+				nomedia_fullpath, touch_err);
 			kfree(nomedia_fullpath);
 			goto out_touch;
 		}
