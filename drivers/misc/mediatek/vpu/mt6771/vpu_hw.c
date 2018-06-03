@@ -480,6 +480,7 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 		clk_src = clk_top_syspll_d3_d2;
 		break;
 	default:
+		LOG_ERR("wrong freq step(%d)", step);
 		return -EINVAL;
 	}
 
@@ -503,7 +504,8 @@ static int vpu_get_hw_vcore_opp(int core)
 }
 
 
-
+/* expected range, vcore_index: 0~1 */
+/* expected range, freq_index: 0~7 */
 static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 {
 	int i = 0;
@@ -656,6 +658,7 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 	int vcore_opp_index = 0;
 	int vpu_freq_index = 0;
 
+	#if 0
 	if ((int)vpu_opp < 4) {
 		vcore_opp_index = 0;
 		vpu_freq_index = vpu_opp;
@@ -663,6 +666,17 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 		vcore_opp_index = 1;
 		vpu_freq_index = vpu_opp;
 	}
+	#else
+	if (vpu_opp < VPU_MAX_NUM_OPPS) {
+		vcore_opp_index = opps.vcore.opp_map[vpu_opp];
+		vpu_freq_index = opps.dsp.opp_map[vpu_opp];
+	} else {
+		LOG_ERR("vpu_thermal_en wrong opp(%d)\n", vpu_opp);
+		return -1;
+	}
+	#endif
+	LOG_INF("vpu_thermal_en_throttle_cb, opp(%d)->(%d/%d)\n",
+		vpu_opp, vcore_opp_index, vpu_freq_index);
 
 	for (i = 0 ; i < MTK_VPU_CORE ; i++)
 		vpu_opp_check(i, vcore_opp_index, vpu_freq_index);
@@ -673,36 +687,40 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 			switch (vpu_freq_index) {
 			case 0:
 			default:
-				LOG_INF("thermal force change dsp freq to 525MHz");
+				LOG_INF("thermal force change dsp freq to 525MHz\n");
 				break;
 			case 1:
-				LOG_INF("thermal force change dsp freq to 450MHz");
+				LOG_INF("thermal force change dsp freq to 450MHz\n");
 				break;
 			case 2:
-				LOG_INF("thermal force change dsp freq to 416MHz");
+				LOG_INF("thermal force change dsp freq to 416MHz\n");
 				break;
 			case 3:
-				LOG_INF("thermal force change dsp freq to 364MHz");
+				LOG_INF("thermal force change dsp freq to 364MHz\n");
 				break;
 			case 4:
-				LOG_INF("thermal force change dsp freq to 312MHz");
+				LOG_INF("thermal force change dsp freq to 312MHz\n");
 				break;
 			case 5:
-				LOG_INF("thermal force change dsp freq to 273MHz");
+				LOG_INF("thermal force change dsp freq to 273MHz\n");
 				break;
 			case 6:
-				LOG_INF("thermal force change dsp freq to 208MHz");
+				LOG_INF("thermal force change dsp freq to 208MHz\n");
 				break;
 			case 7:
-				LOG_INF("thermal force change dsp freq to 182MHz");
+				LOG_INF("thermal force change dsp freq to 182MHz\n");
 				break;
 			}
+			mutex_lock(&opp_mutex);
 			max_dsp_freq = vpu_freq_index;
+			mutex_unlock(&opp_mutex);
 			vpu_change_opp(i, OPPTYPE_DSPFREQ);
 		} else if (force_change_vcore_opp[i]) {
 			/* vcore change should wait */
-			LOG_INF("thermal force change vcore opp to %d", vcore_opp_index);
+			LOG_INF("thermal force change vcore opp to %d\n", vcore_opp_index);
+			mutex_lock(&opp_mutex);
 			max_vcore_opp = vcore_opp_index;
+			mutex_unlock(&opp_mutex);
 			/* vcore only need to change one time from thermal request*/
 			if (i == 0)
 				vpu_change_opp(i, OPPTYPE_VCORE);
@@ -716,10 +734,12 @@ int32_t vpu_thermal_dis_throttle_cb(void)
 {
 	int ret = 0;
 
+	LOG_INF("vpu_thermal_dis_throttle_cb +\n");
 	mutex_lock(&opp_mutex);
 	max_vcore_opp = 0;
 	max_dsp_freq = 0;
 	mutex_unlock(&opp_mutex);
+	LOG_INF("vpu_thermal_dis_throttle_cb -\n");
 
 	return ret;
 }
