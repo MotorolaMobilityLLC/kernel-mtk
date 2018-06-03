@@ -38,6 +38,43 @@ struct SENSOR_DATA {
 	int z;
 };
 
+struct biometric_cali {
+	unsigned int pga6;
+	unsigned int ambdac5_5;
+};
+
+struct biometric_test_data {
+	int ppg_ir;
+	int ppg_r;
+	int ekg;
+};
+
+struct biometric_threshold {
+	int ppg_ir_threshold;
+	int ppg_r_threshold;
+	int ekg_threshold;
+};
+
+#ifdef CONFIG_COMPAT
+
+struct compat_biometric_cali {
+	compat_uint_t pga6;
+	compat_uint_t ambdac5_5;
+};
+
+struct compat_biometric_test_data {
+	compat_int_t ppg_ir;
+	compat_int_t ppg_r;
+	compat_int_t ekg;
+};
+
+struct compat_biometric_threshold {
+	compat_int_t ppg_ir_threshold;
+	compat_int_t ppg_r__threshold;
+	compat_int_t ekg_threshold;
+};
+
+#endif
 
 #define GSENSOR								0x85
 #define GSENSOR_IOCTL_INIT					_IO(GSENSOR,  0x01)
@@ -215,6 +252,28 @@ struct SENSOR_DATA {
 #define COMPAT_BAROMETER_GET_TEMP_DATA			_IOR(BROMETER, 0x03, compat_int_t)
 #define COMPAT_BAROMETER_IOCTL_READ_CHIPINFO	_IOR(BROMETER, 0x04, compat_int_t)
 #define COMPAT_BAROMETER_IOCTL_ENABLE_CALI		_IO(BROMETER, 0x05)
+#endif
+
+#define BIOMETRIC							0X90
+#define BIOMETRIC_IOCTL_INIT					_IO(BIOMETRIC, 0x01)
+#define BIOMETRIC_IOCTL_DO_CALI				_IOW(BIOMETRIC, 0x02, struct biometric_cali)
+#define BIOMETRIC_IOCTL_SET_CALI				_IOW(BIOMETRIC, 0x03, struct biometric_cali)
+#define BIOMETRIC_IOCTL_GET_CALI				_IOW(BIOMETRIC, 0x04, struct biometric_cali)
+#define BIOMETRIC_IOCTL_CLR_CALI				_IO(BIOMETRIC, 0x05)
+#define BIOMETRIC_IOCTL_FTM_START				_IO(BIOMETRIC, 0x06)
+#define BIOMETRIC_IOCTL_FTM_END				_IO(BIOMETRIC, 0x07)
+#define BIOMETRIC_IOCTL_FTM_GET_DATA			_IOW(BIOMETRIC, 0x08, struct biometric_test_data)
+#define BIOMETRIC_IOCTL_FTM_GET_THRESHOLD		_IOW(BIOMETRIC, 0x09, struct biometric_threshold)
+#ifdef CONFIG_COMPAT
+#define COMPAT_BIOMETRIC_IOCTL_INIT				_IO(BIOMETRIC, 0x01)
+#define COMPAT_BIOMETRIC_IOCTL_DO_CALI				_IOW(BIOMETRIC, 0x02, struct compat_biometric_cali)
+#define COMPAT_BIOMETRIC_IOCTL_SET_CALI				_IOW(BIOMETRIC, 0x03, struct compat_biometric_cali)
+#define COMPAT_BIOMETRIC_IOCTL_GET_CALI				_IOW(BIOMETRIC, 0x04, struct compat_biometric_cali)
+#define COMPAT_BIOMETRIC_IOCTL_CLR_CALI				_IO(BIOMETRIC, 0x05)
+#define COMPAT_BIOMETRIC_IOCTL_FTM_START			_IO(BIOMETRIC, 0x06)
+#define COMPAT_BIOMETRIC_IOCTL_FTM_END				_IO(BIOMETRIC, 0x07)
+#define COMPAT_BIOMETRIC_IOCTL_FTM_GET_DATA			_IOW(BIOMETRIC, 0x08, struct compat_biometric_test_data)
+#define COMPAT_BIOMETRIC_IOCTL_FTM_GET_THRESHOLD		_IOW(BIOMETRIC, 0x09, struct compat_biometric_threshold)
 #endif
 
 #endif

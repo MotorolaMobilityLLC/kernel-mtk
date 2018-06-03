@@ -25,9 +25,6 @@
 /* Setting variables */
 INT32 ppg_control_adjust_flag[PPG_CTRL_CH_MAX];
 INT32 ppg_control_led_current[PPG_CTRL_CH_MAX];
-INT32 ppg_control_tia_gain[PPG_CTRL_CH_MAX];
-INT32 ppg_control_ambdac[PPG_CTRL_CH_MAX];
-INT32 ppg_control_ambdac_amb;
 
 INT32 ppg_dc_limit_h;
 INT32 ppg_dc_limit_l;
@@ -69,7 +66,6 @@ enum ppg_control_status_t ppg_control_init(void)
 		ppg_ctrl_cur_state[ch] = PPG_CONTROL_STATE_RESET;
 		ppg_ctrl_pre_state[ch] = PPG_CONTROL_STATE_RESET;
 		ppg_control_timer[ch] = 0;
-
 		ppg_control_init_flag[ch] = 0;
 		ppg_ctrl_cnt_pos_edge[ch] = 0;
 		ppg_ctrl_cnt_neg_edge[ch] = 0;
@@ -90,13 +86,8 @@ enum ppg_control_status_t ppg_control_init(void)
 	ppg_ctrl_time_limit = PPG_CONTROL_TIME_LIMIT;
 
 	/* initial setting */
-	ppg_control_ambdac_amb = PPG_INIT_AMBDAC2;
-	ppg_control_ambdac[0] = PPG_INIT_AMBDAC1;
-	ppg_control_ambdac[1] = PPG_INIT_AMBDAC1;
 	ppg_control_led_current[0] = PPG_INIT_LED1;
 	ppg_control_led_current[1] = PPG_INIT_LED2;
-	ppg_control_tia_gain[0] = PPG_INIT_TIA1;
-	ppg_control_tia_gain[1] = PPG_INIT_TIA2;
 
 	/* set driver */
 #if defined(PPG_CTRL_DRIVER_ON)
@@ -138,7 +129,7 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 	ppg_control_timer[ch] += ppg_sample_length;
 
 #if defined(LOG_PPG_CONTROL_ENABLE)
-	pr_debug("MT6381_AGC start, timer%d=%d, state=%d, led=%d, idx=%d, fs=%d, l=%d\n", ch,
+	pr_notice("MT6381_AGC start, timer%d=%d, state=%d, led=%d, idx=%d, fs=%d, l=%d\n", ch,
 	       ppg_control_timer[ch], ppg_ctrl_cur_state[ch], ppg_control_led_current[ch],
 	       ppg_ctrl_buf_idx[ch], fs_input, ppg_sample_length);
 #endif				/* #if defined(LOG_PPG_CONTROL_ENABLE) */
@@ -164,13 +155,13 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 
 		/* Downsampling. PPG DC estimation */
 		if (ppg_ctrl_in_count[ch] == 0) {
-			/* current input[i] is LED-AMB, value will become LED value */
+			/* current input is LED-AMB, value will become LED phase */
 			value = input[i] + input_amb[i];
 
 #if defined(LOG_PPG_CONTROL_ENABLE)
-			pr_debug("MT6381_AGC input, PPG%d = %d, LED = %d, AMB = %d, idx = %d\n", ch,
+			pr_notice("MT6381_AGC input, PPG%d = %d, LED = %d, AMB = %d, idx = %d\n", ch,
 			       input[i], value, input_amb[i], ppg_ctrl_buf_idx[ch]);
-#endif				/* #if defined(LOG_PPG_CONTROL_ENABLE) */
+#endif
 
 			/* buffer update */
 			ppg_ctrl_buf[ch][ppg_ctrl_buf_idx[ch]] = value;
@@ -230,14 +221,14 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 			}	/* end AC update */
 			value_ac = window_ac_max - window_ac_min;
 
-			if (window_dc_max < PPG_DC_ENLARGE_BOUND && value_ac < PPG_AC_TARGET) {
-				ppg_ctrl_cur_state[ch] = PPG_CONTROL_STATE_INC;
-				ppg_control_adjust_flag[ch] = 1;
-			}	/*else if(window_dc_min > (PPG_DC_POS_EDGE - (PPG_DC_POS_EDGE>>3))) {
-				 * ppg_ctrl_cur_state[ch] = PPG_CONTROL_STATE_DEC;
-				 * ppg_control_adjust_flag[ch] = 1;
-				 * }
-				 */
+			/* if (window_dc_max < PPG_DC_ENLARGE_BOUND && value_ac < PPG_AC_TARGET) {
+			 *	ppg_ctrl_cur_state[ch] = PPG_CONTROL_STATE_INC;
+			 *	ppg_control_adjust_flag[ch] = 1;
+			 * }	else if(window_dc_min > (PPG_DC_POS_EDGE - (PPG_DC_POS_EDGE>>3))) {
+			 *	 ppg_ctrl_cur_state[ch] = PPG_CONTROL_STATE_DEC;
+			 *	 ppg_control_adjust_flag[ch] = 1;
+			 *	 }
+			 */
 		}
 		/* reset */
 		if (ppg_control_adjust_flag[ch] == 1 || ppg_ctrl_buf_idx[ch] >= PPG_CTRL_FS_OPERATE) {
@@ -282,8 +273,8 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 				led_step = PPG_LED_STEP_FINE;
 			else
 				led_step = PPG_LED_STEP_MIN;
-		}
-
+		} else if (ppg_ctrl_cur_state[ch] == PPG_CONTROL_STATE_DEC)
+			;
 		/* reset buffers/timers */
 		ppg_ctrl_buf_idx[ch] = 0;
 
@@ -295,10 +286,10 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 			ppg_control_led_current[ch] = PPG_MIN_LED_CURRENT;
 
 #if defined(LOG_PPG_CONTROL_ENABLE)
-		pr_debug("MT6381_AGC write, state%d = %d->%d, led = %d, step = %d\n", ch,
+		pr_notice("MT6381_AGC write, state%d = %d->%d, led = %d, step = %d\n", ch,
 		       ppg_ctrl_pre_state[ch], ppg_ctrl_cur_state[ch], ppg_control_led_current[ch],
 		       led_step);
-#endif				/* #if defined(LOG_PPG_CONTROL_ENABLE) */
+#endif
 
 #if defined(PPG_CTRL_DRIVER_ON)
 		/*if(ch==0) { //PPG1
@@ -312,7 +303,7 @@ INT32 ppg_control_process(struct ppg_control_t *ppg_control_input)
 #endif				/* #if defined(PPG_CTRL_DRIVER_ON) */
 
 	}
-	/* end adjustment */
+
 	return ppg_control_adjust_flag[ch];
 }
 
@@ -324,7 +315,7 @@ void ppg_ctrl_set_driver_ch(INT32 ch)
 	UINT32 ppg_reg_value;
 	struct bus_data_t ppg_reg_info;
 
-	/* write register: LED current (MT2511: 0x332C) */
+	/* write register: LED current (MT6381: 0x332C) */
 	ppg_reg_value = ppg_control_led_current[0] + (ppg_control_led_current[1] << 8);
 	ppg_reg_info.addr = 0x33;
 	ppg_reg_info.reg = 0x2C;
@@ -335,7 +326,6 @@ void ppg_ctrl_set_driver_ch(INT32 ch)
 }
 
 #endif
-
 
 
 INT32 ppg_control_get_status(INT32 ppg_control_internal_config)
