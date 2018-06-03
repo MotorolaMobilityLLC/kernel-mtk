@@ -44,11 +44,6 @@
 #endif
 #include <linux/seq_file.h>
 #include <linux/kthread.h>
-#ifndef CMDQ_OF_SUPPORT
-#include <mach/mt_reg_base.h>
-#include <mach/mt_irq.h>
-#include "ddp_reg.h"
-#endif
 #include <mt-plat/mtk_lpae.h>
 #include "cmdq_record_private.h"
 
@@ -239,6 +234,10 @@ ACTION(CMDQ_ENG_MDP_WDMA,   MDP_WDMA)	\
 }
 
 static struct cmdqDTSDataStruct gCmdqDtsData;
+static struct SubsysStruct gAddOnSubsys = {.msb = 0,
+				.subsysID = -1,
+				.mask = 0,
+				.grpName = "AddOn"};
 
 /* task memory usage monitor */
 static DEFINE_SPINLOCK(gCmdqMemMonitorLock);
@@ -4350,6 +4349,14 @@ static void cmdq_core_reset_hw_engine(int32_t engineFlag)
 	CMDQ_MSG("Reset hardware engine end\n");
 }
 
+void cmdq_core_set_addon_subsys(u32 msb, s32 subsys_id, u32 mask)
+{
+	gAddOnSubsys.msb = msb;
+	gAddOnSubsys.subsysID = subsys_id;
+	gAddOnSubsys.mask = mask;
+	CMDQ_LOG("Set AddOn Subsys: msb:0x%08x, mask: 0x%08x, id:%d\n", msb, mask, subsys_id);
+}
+
 uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a)
 {
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
@@ -4361,9 +4368,14 @@ uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a)
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
 		if (gCmdqDtsData.subsys[i].subsysID == subsys_id) {
 			base_addr = gCmdqDtsData.subsys[i].msb;
-			offset = (arg_a & ~gCmdqDtsData.subsys[i].mask);
+			offset = arg_a & ~gCmdqDtsData.subsys[i].mask;
 			break;
 		}
+	}
+
+	if (!base_addr && gAddOnSubsys.subsysID > 0 && subsys_id == gAddOnSubsys.subsysID) {
+		base_addr = gAddOnSubsys.msb;
+		offset = arg_a & ~gAddOnSubsys.mask;
 	}
 
 	return base_addr | offset;
@@ -4376,10 +4388,10 @@ const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr)
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
-		if (-1 == gCmdqDtsData.subsys[i].subsysID)
+		if (gCmdqDtsData.subsys[i].subsysID == -1)
 			continue;
 
-		addr_base_shifted = (reg_addr & gCmdqDtsData.subsys[i].mask);
+		addr_base_shifted = reg_addr & gCmdqDtsData.subsys[i].mask;
 		if (gCmdqDtsData.subsys[i].msb == addr_base_shifted) {
 			module = gCmdqDtsData.subsys[i].grpName;
 			break;
@@ -4396,19 +4408,25 @@ int32_t cmdq_core_subsys_from_phys_addr(uint32_t physAddr)
 	uint32_t i;
 
 	for (i = 0; i < CMDQ_SUBSYS_MAX_COUNT; i++) {
-		if (-1 == gCmdqDtsData.subsys[i].subsysID)
+		if (gCmdqDtsData.subsys[i].subsysID == -1)
 			continue;
 
-		msb = (physAddr & gCmdqDtsData.subsys[i].mask);
+		msb = physAddr & gCmdqDtsData.subsys[i].mask;
 		if (msb == gCmdqDtsData.subsys[i].msb) {
 			subsysID = gCmdqDtsData.subsys[i].subsysID;
 			break;
 		}
 	}
 
-	if (-1 == subsysID) {
+	if (subsysID == -1 && gAddOnSubsys.subsysID > 0) {
+		msb = physAddr & gAddOnSubsys.mask;
+		if (msb == gAddOnSubsys.msb)
+			subsysID = gAddOnSubsys.subsysID;
+	}
+
+	if (subsysID == -1) {
 		/* if not supported physAddr is GCE base address, then tread as special address */
-		msb = (physAddr & GCE_BASE_PA);
+		msb = physAddr & GCE_BASE_PA;
 		if (msb == GCE_BASE_PA)
 			subsysID = CMDQ_SPECIAL_SUBSYS_ADDR;
 		else
@@ -5973,16 +5991,6 @@ static void cmdq_core_track_task_record(struct TaskStruct *pTask, uint32_t threa
 	}
 }
 
-void cmdq_core_dump_GIC(void)
-{
-#ifndef CMDQ_OF_SUPPORT		/* OF Support removes mt_irq.h, mt_irq_dump_status support will be added later. */
-#if CMDQ_DUMP_GIC
-	mt_irq_dump_status(cmdq_dev_get_irq_id());
-	mt_irq_dump_status(cmdq_dev_get_irq_secure_id());
-#endif
-#endif
-}
-
 static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t *hwPC)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
@@ -6176,9 +6184,6 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 		}
 
 	}
-
-	CMDQ_ERR("=============== [CMDQ] GIC dump ===============\n");
-	cmdq_core_dump_GIC();
 
 	/* Begin is not first, save NG task but print pTask as well */
 	if (pNGTask != NULL && pNGTask != pTask) {

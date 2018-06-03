@@ -669,29 +669,38 @@ const char *cmdq_virtual_parse_module_from_reg_addr(uint32_t reg_addr)
 	/* defined in mt_reg_base.h */
 	/* TODO: comfirm with SS if IO_VIRT_TO_PHYS workable when enable device tree? */
 	switch (addr_base_and_page) {
-	case 0x14001000: /* MDP_RDMA */
-	case 0x14002000: /* MDP_RSZ0 */
-	case 0x14003000: /* MDP_RSZ1 */
-	case 0x14004000: /* MDP_WDMA */
-	case 0x14005000: /* MDP_WROT */
-	case 0x14006000: /* MDP_TDSHP */
+	case 0x14001000: /* MDP_RDMA0 */
+	case 0x14002000: /* MDP_RDMA1 */
+	case 0x14003000: /* MDP_RSZ0 */
+	case 0x14004000: /* MDP_RSZ1 */
+	case 0x14005000: /* MDP_RSZ2 */
+	case 0x14006000: /* MDP_WDMA */
+	case 0x14007000: /* MDP_WROT0 */
+	case 0x14008000: /* MDP_WROT1 */
+	case 0x14009000: /* MDP_TDSHP */
 		return "MDP";
-	case 0x1400C000: /* DISP_COLOR */
+	case 0x14014000: /* DISP_COLOR0 */
+	case 0x14015000: /* DISP_COLOR1 */
 		return "COLOR";
-	case 0x1400D000: /* DISP_COLOR */
+	case 0x14016000: /* DISP_COLOR0 */
+	case 0x14017000: /* DISP_COLOR1 */
 		return "CCORR";
-	case 0x14007000: /* DISP_OVL0 */
+	case 0x1400B000: /* DISP_OVL0 */
+	case 0x1400D000: /* DISP_OVL0_2L */
 		return "OVL0";
-	case 0x14008000: /* DISP_OVL1 */
+	case 0x1400C000: /* DISP_OVL1 */
+	case 0x1400E000: /* DISP_OVL1_2L */
 		return "OVL1";
-	case 0x1400E000: /* DISP_AAL */
-	case 0x1400F000: /* DISP_GAMMA */
+	case 0x14018000: /* DISP_AAL0 */
+	case 0x14019000: /* DISP_AAL1 */
+	case 0x1401a000: /* DISP_GAMMA0 */
+	case 0x1401b000: /* DISP_GAMMA1 */
 		return "AAL";
-	case 0x17002FFF: /* VENC */
+	case 0x17020000: /* VENC */
 		return "VENC";
-	case 0x17003FFF: /* JPGENC */
+	case 0x17030000: /* JPGENC */
 		return "JPGENC";
-	case 0x17004FFF: /* JPGDEC */
+	case 0x17040000: /* JPGDEC */
 		return "JPGDEC";
 	}
 
@@ -994,66 +1003,6 @@ void cmdq_virtual_test_cleanup(void)
 
 void cmdq_virtual_init_module_PA_stat(void)
 {
-#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_INSTRUCTION_COUNT)
-	int32_t i;
-	CmdqModulePAStatStruct *modulePAStat = cmdq_core_Initial_and_get_module_stat();
-
-	/* Get MM_SYS config registers range */
-	cmdq_dev_get_module_PA("mediatek,mmsys_config", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MMSYS_CONFIG],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MMSYS_CONFIG]);
-	/* Get MDP module registers range */
-	cmdq_dev_get_module_PA("mediatek,mdp_rdma", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RDMA],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RDMA]);
-	cmdq_dev_get_module_PA("mediatek,mdp_rsz0", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RSZ0],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RSZ0]);
-	cmdq_dev_get_module_PA("mediatek,mdp_rsz1", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_RSZ1],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_RSZ1]);
-	cmdq_dev_get_module_PA("mediatek,mdp_wdma", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_WDMA],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_WDMA]);
-	cmdq_dev_get_module_PA("mediatek,mdp_wrot", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_WROT],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_WROT]);
-	cmdq_dev_get_module_PA("mediatek,mdp_tdshp", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MDP_TDSHP],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MDP_TDSHP]);
-	cmdq_dev_get_module_PA("mediatek,MM_MUTEX", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_MM_MUTEX],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_MM_MUTEX]);
-	cmdq_dev_get_module_PA("mediatek,VENC", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_VENC],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_VENC]);
-	/* Get DISP module registers range */
-	for (i = CMDQ_MODULE_STAT_DISP_OVL0; i <= CMDQ_MODULE_STAT_DISP_DPI0; i++) {
-		cmdq_dev_get_module_PA("mediatek,DISPSYS",
-						    (i - CMDQ_MODULE_STAT_DISP_OVL0),
-						    &modulePAStat->start[i], &modulePAStat->end[i]);
-	}
-	cmdq_dev_get_module_PA("mediatek,DISPSYS", 31,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_DISP_OD],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_DISP_OD]);
-	/* Get CAM module registers range */
-	cmdq_dev_get_module_PA("mediatek,CAM0", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM0],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM0]);
-	cmdq_dev_get_module_PA("mediatek,CAM1", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM1],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM1]);
-	cmdq_dev_get_module_PA("mediatek,CAM2", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM2],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM2]);
-	cmdq_dev_get_module_PA("mediatek,CAM3", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_CAM3],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_CAM3]);
-	/* Get SODI registers range */
-	cmdq_dev_get_module_PA("mediatek,SLEEP", 0,
-					    &modulePAStat->start[CMDQ_MODULE_STAT_SODI],
-					    &modulePAStat->end[CMDQ_MODULE_STAT_SODI]);
-#endif
 }
 
 void cmdq_virtual_function_setting(void)

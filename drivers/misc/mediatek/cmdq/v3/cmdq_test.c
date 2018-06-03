@@ -30,6 +30,7 @@
 #include "cmdq_virtual.h"
 #include "cmdq_mdp_common.h"
 #include "cmdq_device.h"
+#include "smi_public.h"
 
 #define CMDQ_TEST
 
@@ -952,13 +953,14 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 		cmdq_dev_enable_gce_clock(true);
 	} else {
 		/* Turn on MDP engines */
+		smi_bus_enable(SMI_LARB_MMSYS0, "CMDQ");
 		cmdq_mdp_get_func()->enableMdpClock(true, engine);
 	}
 
 	CMDQ_REG_SET32(testWriteReg, testWriteValue);
 	value = CMDQ_REG_GET32(testReadReg);
 	if ((true == verifyWriteResult) && (testWriteValue != value)) {
-		CMDQ_ERR("when enable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
+		CMDQ_ERR("%s: when enable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
 		/* BUG(); */
 	}
 
@@ -969,6 +971,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 		cmdq_dev_enable_gce_clock(false);
 	} else {
 		/* Turn on MDP engines */
+		smi_bus_disable(SMI_LARB_MMSYS0, "CMDQ");
 		cmdq_mdp_get_func()->enableMdpClock(false, engine);
 	}
 
@@ -976,7 +979,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	CMDQ_REG_SET32(testWriteReg, testWriteValue);
 	value = CMDQ_REG_GET32(testReadReg);
 	if (value != 0) {
-		CMDQ_ERR("when disable clock reg(0x%lx) = 0x%08x\n", testReadReg, value);
+		CMDQ_ERR("%s: when disable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
 		/* BUG(); */
 	}
 #endif
@@ -1151,27 +1154,19 @@ static void testcase_long_command(void)
 
 static void testcase_perisys_apb(void)
 {
-#ifdef CMDQ_GPR_SUPPORT
 	/* write value to PERISYS register */
 	/* we use MSDC debug to test: */
 	/* write SEL, read OUT. */
 
-	const uint32_t MSDC_SW_DBG_SEL_PA = 0x11230000 + 0xA0;
-	const uint32_t MSDC_SW_DBG_OUT_PA = 0x11230000 + 0xA4;
-	const uint32_t AUDIO_TOP_CONF0_PA = 0x11220000;
+	const long MSDC_PA_START = cmdq_dev_get_reference_PA("msdc0", 0);
+	const long AUDIO_TOP_CONF0_PA = cmdq_dev_get_reference_PA("audio", 0);
+	const long MSDC_SW_DBG_SEL_PA = MSDC_PA_START + 0xA0;
+	const long MSDC_SW_DBG_OUT_PA = MSDC_PA_START + 0xA4;
 
-#ifdef CMDQ_OF_SUPPORT
-	const unsigned long MSDC_VA_BASE = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MSDC0");
-	const unsigned long AUDIO_VA_BASE = cmdq_dev_alloc_module_base_VA_by_name("mediatek,AUDIO");
+	const unsigned long MSDC_VA_BASE = cmdq_dev_alloc_reference_VA_by_name("msdc0");
+	const unsigned long AUDIO_VA_BASE = cmdq_dev_alloc_reference_VA_by_name("audio");
 	const unsigned long MSDC_SW_DBG_OUT = MSDC_VA_BASE + 0xA4;
 	const unsigned long AUDIO_TOP_CONF0 = AUDIO_VA_BASE;
-
-	/* CMDQ_LOG("MSDC_VA_BASE:  VA:%lx, PA: 0x%08x\n", MSDC_VA_BASE, 0x11230000); */
-	/* CMDQ_LOG("AUDIO_VA_BASE: VA:%lx, PA: 0x%08x\n", AUDIO_TOP_CONF0_PA, 0x11220000); */
-#else
-	const uint32_t MSDC_SW_DBG_OUT = 0xF1230000 + 0xA4;
-	const uint32_t AUDIO_TOP_CONF0 = 0xF1220000;
-#endif
 
 	const uint32_t AUDIO_TOP_MASK = ~0 & ~(1 << 28 |
 					       1 << 21 |
@@ -1185,19 +1180,27 @@ static void testcase_perisys_apb(void)
 	uint32_t data = 0;
 	uint32_t dataRead = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
+	CMDQ_LOG("MSDC_VA_BASE:  VA:0x%lx, PA: 0x%lx\n", MSDC_VA_BASE, MSDC_PA_START);
+	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA: 0x%lx\n", AUDIO_VA_BASE, AUDIO_TOP_CONF0_PA);
+
+	if (cmdq_core_subsys_from_phys_addr(MSDC_PA_START) < 0)
+		cmdq_core_set_addon_subsys(MSDC_PA_START & 0xffff0000, 99, 0xffff0000);
+
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, false);
 	cmdq_op_write_reg(handle, MSDC_SW_DBG_SEL_PA, 1, ~0);
+	cmdq_task_dump_command(handle);
+
 	cmdq_task_flush(handle);
 	/* verify data */
 	data = CMDQ_REG_GET32(MSDC_SW_DBG_OUT);
 	if (data != ~0) {
 		/* MSDC_SW_DBG_OUT would not same as sel setting */
 		CMDQ_MSG("write 0xFFFFFFFF to MSDC_SW_DBG_OUT = 0x%08x=====\n", data);
-		CMDQ_MSG("MSDC_SW_DBG_OUT: PA(0x%x) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
+		CMDQ_MSG("MSDC_SW_DBG_OUT: PA(0x%lx) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
 	}
 
 	/* test read from AP_DMA_GLOBAL_SLOW_DOWN to CMDQ GPR */
@@ -1211,44 +1214,44 @@ static void testcase_perisys_apb(void)
 	if (data != dataRead || data == 0) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: CMDQ_DATA_REG_PQ_COLOR is 0x%08x, different=====\n", dataRead);
-		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(0x%x) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
+		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(0x%lx) VA(0x%lx) =====\n", MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
 	}
+
+	if (cmdq_core_subsys_from_phys_addr(AUDIO_TOP_CONF0_PA) < 0)
+		cmdq_core_set_addon_subsys(AUDIO_TOP_CONF0_PA & 0xffff0000, 99, 0xffff0000);
 
 	CMDQ_REG_SET32(AUDIO_TOP_CONF0, ~0);
 	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
 	if (data != ~0) {
 		CMDQ_ERR("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%x) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%lx) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+	} else {
+		CMDQ_LOG("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
 	}
 	CMDQ_REG_SET32(AUDIO_TOP_CONF0, 0);
 	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
-	CMDQ_MSG("Before AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
+	CMDQ_LOG("Before AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
 	cmdq_task_reset(handle);
-	cmdq_op_write_reg(handle, AUDIO_TOP_CONF0_PA, ~0, AUDIO_TOP_MASK);
+	cmdq_op_write_reg(handle, AUDIO_TOP_CONF0_PA, 0xffffffff, AUDIO_TOP_MASK);
+	cmdq_task_dump_command(handle);
 	cmdq_task_flush(handle);
 	/* verify data */
 	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
-	CMDQ_MSG("after AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
+	CMDQ_LOG("after AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
 	if (data != AUDIO_TOP_MASK) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: AUDIO_TOP_CONF0 is 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%x) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+		CMDQ_ERR("AUDIO_TOP_CONF0: PA(0x%lx) VA(0x%lx) =====\n", AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
 	}
 
 	cmdq_task_destroy(handle);
 
-#ifdef CMDQ_OF_SUPPORT
 	/* release registers map */
 	cmdq_dev_free_module_base_VA(MSDC_VA_BASE);
 	cmdq_dev_free_module_base_VA(AUDIO_VA_BASE);
-#endif
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 	return;
-
-#else
-	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-#endif				/* CMDQ_GPR_SUPPORT */
 }
 
 static void testcase_write_address(void)
@@ -6575,7 +6578,9 @@ static void testcase_general_handling(int32_t testID)
 		testcase_long_command();
 		break;
 	case 80:
+		cmdq_dev_enable_gce_clock(false);
 		testcase_clkmgr();
+		cmdq_dev_enable_gce_clock(true);
 		break;
 	case 79:
 		testcase_perisys_apb();
