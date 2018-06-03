@@ -43,6 +43,38 @@
 #include "include/extbuck/fan53526.h"
 #endif
 
+static unsigned int vmd1_trim;
+
+void vmd1_pmic_trim_setting(bool enable)
+{
+	unsigned int hwcid = pmic_get_register_value(PMIC_HWCID_ADDR);
+
+	PMICLOG("vmd1_pmic_trim_setting HWCID: 0x%X\n", hwcid);
+	if (hwcid != 0x5520)
+		return;
+
+	if (vmd1_trim == 0)
+		vmd1_trim = pmic_get_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR);
+
+	/*Set Trim Value*/
+	if (enable) {
+		unsigned int vmd1_trim_new = vmd1_trim+9;
+
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim_new);
+		PMICLOG("vmd1_pmic_trim_setting ON, zxos trim 0x%X, new_value: 0x%X\n",
+			vmd1_trim,
+			vmd1_trim_new
+			);
+	} else {
+		/*Set Trim Value*/
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim);
+		PMICLOG("vmd1_pmic_trim_setting OFF, zxos trim 0x%X, new_value: 0x%X\n",
+			vmd1_trim,
+			vmd1_trim
+			);
+	}
+}
+
 void vmd1_pmic_setting_on(void)
 {
 #ifdef CONFIG_MACH_MT6759
@@ -56,13 +88,16 @@ void vmd1_pmic_setting_on(void)
 	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.93125V */
 	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x42); /* set to 0.93125V */
 #endif
+
+	/* Apply new trim value */
+	vmd1_pmic_trim_setting(true);
 	/* Enable FPFM before enable BUCK, SW workaround to avoid VMODEM overshoot */
 	pmic_config_interface(0x128E, 0x1, 0x1, 12);	/* 0x128E[12] = 1 */
 	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
 		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
 	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_EN, 1);
-	udelay(220);
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
+	udelay(500);
 
 	/* Disable FPFM after enable BUCK, SW workaround to avoid VMODME overshoot */
 	pmic_config_interface(0x128E, 0x0, 0x1, 12);	/* 0x128E[12] = 0 */
@@ -95,6 +130,9 @@ void vmd1_pmic_setting_off(void)
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
 	/* 2.Call PMIC driver API configure VSRAM_MD off */
 	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_EN, 0);
+	/* recover trim setting */
+	vmd1_pmic_trim_setting(false);
+
 	PMICLOG("vmd1_pmic_setting_off vmodem en %d\n",
 		(pmic_get_register_value(PMIC_DA_VMODEM_EN) & 0x1));
 	PMICLOG("vmd1_pmic_setting_off vsram_md en %d\n",
