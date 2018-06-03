@@ -47,7 +47,7 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_M
     ccflags-y += -DCOLOR_2_1
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6799)))
     ccflags-y += -DCOLOR_3_0
 endif
 
