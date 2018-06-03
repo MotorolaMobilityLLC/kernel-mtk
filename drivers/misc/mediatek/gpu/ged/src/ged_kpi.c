@@ -330,7 +330,7 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 				int is_fps_grp_aligned = 1;
 
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
-					if (fps_records[i] <= 25)
+					if (fps_records[i] <= 26)
 						fps_grp[i] = 24;
 					else if (fps_records[i] <= 28)
 						fps_grp[i] = 27;
@@ -360,7 +360,7 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 				}
 
 			} else {
-				if (fps <= 25)
+				if (fps <= 26)
 					fps = 24;
 				else if (fps <= 28)
 					fps = 27;
@@ -382,7 +382,7 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		} else {
 			if (fps_recorded_num == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) {
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
-					if (fps_records[i] <= 25)
+					if (fps_records[i] <= 26)
 						fps_grp[i] = 24;
 					else if (fps_records[i] <= 28)
 						fps_grp[i] = 27;
