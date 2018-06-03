@@ -65,24 +65,12 @@ void __iomem *pericfg_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
-#if 0
-#define CLK_CFG_0		(cksys_base + 0x040)
-#define CLK_CFG_1		(cksys_base + 0x050)
-#define CLK_CFG_2		(cksys_base + 0x060)
-#define CLK_CFG_5		(cksys_base + 0x150)
-#define CLK_CFG_7		(cksys_base + 0x170)
-#define CLK_CFG_9		(cksys_base + 0x190)
-#define CLK_CFG_10		(cksys_base + 0x1a0)
-#define CLK_CFG_20		(cksys_base + 0x210)
-#define CLK_CFG_21		(cksys_base + 0x214)
-#define CLK_MISC_CFG_1		(cksys_base + 0x414)
-#define CLK26CALI_0		(cksys_base + 0x520)
-#define CLK26CALI_1		(cksys_base + 0x524)
-#define CLK26CALI_2		(cksys_base + 0x528)
-#define TOP_CLK2		(cksys_base + 0x0120)
-#define CLK_SCP_CFG_0		(cksys_base + 0x0400)
-#define CLK_SCP_CFG_1		(cksys_base + 0x0404)
-#endif
+#define CLK_MISC_CFG_0		(cksys_base + 0x104)
+#define CLK_DBG_CFG		(cksys_base + 0x10C)
+#define CLK26CALI_0		(cksys_base + 0x220)
+#define CLK26CALI_1		(cksys_base + 0x224)
+#define CLK_SCP_CFG_0		(cksys_base + 0x0200)
+#define CLK_SCP_CFG_1		(cksys_base + 0x0204)
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
 #define INFRA_PDN_CLR0		(infracfg_base + 0x0084)
@@ -1723,22 +1711,21 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,venc_gcon",
 		mtk_venc_global_con_init);
 
-#if 0
+
 unsigned int mt_get_ckgen_freq(unsigned int ID)
 {
 	int output = 0, i = 0;
-	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_2;
+	unsigned int temp, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1 = 0;
 
-	clk_dbg_cfg = clk_readl(CLK_CFG_21);
-	clk_writel(CLK_CFG_21, (clk_dbg_cfg & 0xFF80FFFF)|(ID << 16));
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFC0FC)|(ID << 8)|(0x1));
 
-	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
-	clk_writel(CLK_MISC_CFG_1, 0x00000000);
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));
 
-	clk26cali_2 = clk_readl(CLK26CALI_2);
-	clk26cali_0 = clk_readl(CLK26CALI_0);
-	clk_writel(CLK26CALI_0, 0x80);
-	clk_writel(CLK26CALI_0, 0x90);
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
 
 	/* wait frequency meter finish */
 	while (clk_readl(CLK26CALI_0) & 0x10) {
@@ -1748,39 +1735,38 @@ unsigned int mt_get_ckgen_freq(unsigned int ID)
 		break;
 	}
 
-	temp = clk_readl(CLK26CALI_2) & 0xFFFF;
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
 
 	output = (temp * 26000) / 1024;
 
-	clk_writel(CLK_CFG_21, clk_dbg_cfg);
-	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
-	clk_writel(CLK26CALI_0, clk26cali_0);
-	clk_writel(CLK26CALI_2, clk26cali_2);
+	clk_writel(CLK_DBG_CFG, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	/*clk_writel(CLK26CALI_0, clk26cali_0);*/
+	/*clk_writel(CLK26CALI_1, clk26cali_1);*/
 
 	/*print("ckgen meter[%d] = %d Khz\n", ID, output);*/
 	return output;
 
 }
 
-unsigned int mt_get_abist_freq(unsigned int ID)
+unsigned int mt_get_abist_freq(unsigned int ID, unsigned int DIV)
 {
 	int output = 0, i = 0;
-	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_1;
+	unsigned int temp, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1 = 0;
 
-	clk_dbg_cfg = clk_readl(CLK_CFG_20);
-	clk_writel(CLK_CFG_20, (clk_dbg_cfg & 0xFFFF80FF)|(ID << 8)|(0x01 << 31));
+	clk_dbg_cfg = clk_readl(CLK_DBG_CFG);
+	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC)|(ID << 16));
 
-	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
-	clk_writel(CLK_MISC_CFG_1, 0x00000000);
+	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF) | (DIV << 24));
 
 	clk26cali_1 = clk_readl(CLK26CALI_1);
-	clk26cali_0 = clk_readl(CLK26CALI_0);
 
-	clk_writel(CLK26CALI_0, 0x80);
-	clk_writel(CLK26CALI_0, 0x81);
+	clk_writel(CLK26CALI_0, 0x1000);
+	clk_writel(CLK26CALI_0, 0x1010);
 
 	/* wait frequency meter finish */
-	while (clk_readl(CLK26CALI_0) & 0x01) {
+	while (clk_readl(CLK26CALI_0) & 0x10) {
 		mdelay(10);
 		i++;
 		if (i > 10)
@@ -1791,16 +1777,16 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 
 	output = (temp * 26000) / 1024;
 
-	clk_writel(CLK_CFG_20, clk_dbg_cfg);
-	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
-	clk_writel(CLK26CALI_0, clk26cali_0);
-	clk_writel(CLK26CALI_1, clk26cali_1);
+	clk_writel(CLK_DBG_CFG, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	/*clk_writel(CLK26CALI_0, clk26cali_0);*/
+	/*clk_writel(CLK26CALI_1, clk26cali_1);*/
 
 	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
-	return output;
+	return (output * (DIV + 1));
 }
 
-
+#if 0
 void mp_enter_suspend(int id, int suspend)
 {
 	/* mp0*/
