@@ -2519,6 +2519,12 @@ sub process {
 			}
 		}
 
+# check for ARCH_MTXXXX, please use MACH_MTXXXX instead
+		if ($line =~ /^\+.*\CONFIG_ARCH_MT\s*[0-9]/) {
+			ERROR("USE_ARCH_MTXXXX",
+				"please use MACH_MTXXXX instead of ARCH_MTXXXXX\n" . $herecurr);
+		}
+
 # ignore non-hunk lines and lines being removed
 		next if (!$hunk_line || $line =~ /^-/);
 
