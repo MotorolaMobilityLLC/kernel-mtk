@@ -332,8 +332,11 @@ static ssize_t mcdi_state_write(struct file *filp,
 	} else if (!strncmp(cmd_str, "s_state", sizeof("s_state"))) {
 		set_mcdi_s_state(param);
 		return count;
-	} else if (!strncmp(cmd_str, "buck_off", sizeof("buck_off"))) {
+	} else if (!strncmp(cmd_str, "set_buck_off", sizeof("set_buck_off"))) {
 		set_mcdi_buck_off_mask(param);
+		return count;
+	} else if (!strncmp(cmd_str, "en_buck_off", sizeof("en_buck_off"))) {
+		mcdi_enable_buck_off(param);
 		return count;
 	} else if (!strncmp(cmd_str, "hint", sizeof("hint"))) {
 		system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST, param != 0);

@@ -777,6 +777,7 @@ void set_mcdi_s_state(int state)
 
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 }
+EXPORT_SYMBOL(set_mcdi_s_state);
 
 void set_mcdi_buck_off_mask(unsigned int buck_off_mask)
 {
@@ -791,6 +792,15 @@ void set_mcdi_buck_off_mask(unsigned int buck_off_mask)
 
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 }
+
+void mcdi_enable_buck_off(unsigned int enable)
+{
+	if (enable)
+		set_mcdi_buck_off_mask(mcdi_get_buck_ctrl_mask());
+	else
+		set_mcdi_buck_off_mask(0);
+}
+EXPORT_SYMBOL(mcdi_enable_buck_off);
 
 bool mcdi_is_buck_off(int cluster_idx)
 {
