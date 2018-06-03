@@ -769,7 +769,7 @@ static int pmic_ldo_vcama_enable(struct regulator_dev *rdev)
 	PMICLOG("ldo vcama enable\n");
 	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-#if ENABLE_ALL_OC_IRQ
+#if 0/*ENABLE_ALL_OC_IRQ*/
 		dsb(sy);
 		mdelay(3);
 		dsb(sy);
@@ -800,7 +800,7 @@ static int pmic_ldo_vcama_disable(struct regulator_dev *rdev)
 	} else {
 		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-#if ENABLE_ALL_OC_IRQ
+#if 0/*ENABLE_ALL_OC_IRQ*/
 			/* after disable power, this OC interrupt should be disabled as well */
 			pmic_enable_interrupt(INT_VCAMA_OC, 0, "PMIC");
 #endif
