@@ -34,6 +34,10 @@ extern void __iomem *mt_chn_emi_base_get(unsigned int channel_index);
 extern void __iomem *mt_emi_mpu_base_get(void);
 extern void dump_last_bm(char *buf, unsigned int leng);
 
+/* Camera workaround */
+extern unsigned int BM_GetBW(void);
+extern int BM_SetBW(const unsigned int BW_config);
+
 #include <mpu_v1.h>
 #include <pasr_api_v1.h>
 

@@ -74,6 +74,9 @@
 #define EMI_TTYPE1	(CEN_EMI_BASE + 0x500)
 #define EMI_TTYPE(i)	(EMI_TTYPE1 + (i*8))
 
+/* Camera workaround */
+#define EMI_BWCT0	(CEN_EMI_BASE + 0x5B0)
+
 #include <mt_emi_api.h>
 #include <bwl_v1.h>
 #include <elm_v1.h>

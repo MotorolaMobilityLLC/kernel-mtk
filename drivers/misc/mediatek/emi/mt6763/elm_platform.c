@@ -215,3 +215,15 @@ void save_debug_reg(void)
 
 	elm_valid = 1;
 }
+
+unsigned int BM_GetBW(void)
+{
+	return readl(IOMEM(EMI_BWCT0));
+}
+
+int BM_SetBW(const unsigned int BW_config)
+{
+	mt_reg_sync_writel(BW_config, EMI_BWCT0);
+	return 0;
+}
+
