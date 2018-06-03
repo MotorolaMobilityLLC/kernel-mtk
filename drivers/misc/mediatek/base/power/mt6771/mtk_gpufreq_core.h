@@ -217,9 +217,9 @@
 #define ROUNDING_VALUE					(5)
 #define DDS_SHIFT						(14)
 #define GPUPLL_FIN						(26)
-/*#define GPUPLL_CON0					(REG_GPUPLL_CON0)*/
-/*#define GPUPLL_CON1					(REG_GPUPLL_CON1)*/
-#define GPUPLL_CON1						(0x1000C000 + 0x0244)
+#define GPUPLL_CON0						(g_apmixed_base + 0x240)
+#define GPUPLL_CON1						(g_apmixed_base + 0x244)
+#define GPUPLL_PWR_CON0					(g_apmixed_base + 0x24C)
 
 /**************************************************
  * Reference Power Setting
@@ -342,10 +342,6 @@ enum g_limited_idx_enum {
 	IDX_BATT_OC_LIMITED,
 	IDX_PBM_LIMITED,
 	NUMBER_OF_LIMITED_IDX,
-};
-enum g_pmic_mode {
-	AUTO_MODE = 0,
-	PWM_MODE,
 };
 #ifdef MT_GPUFREQ_AEE_RR_REC
 enum gpu_dvfs_state_enum {

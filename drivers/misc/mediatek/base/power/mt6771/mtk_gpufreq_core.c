@@ -31,9 +31,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/uaccess.h>
-#ifdef MT_GPUFREQ_OPP_STRESS_TEST
-#include <linux/random.h>
-#endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
 
 #include "mtk_gpufreq_core.h"
 #include "upmu_common.h"
@@ -49,6 +46,10 @@
 #include "mt6771_clkmgr.h"
 #include "mtk_dramc.h"
 #include "mtk_gpufreq.h"
+
+#ifdef MT_GPUFREQ_OPP_STRESS_TEST
+#include <linux/random.h>
+#endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
 #undef MT_GPUFREQ_STATIC_PWR_READY2USE
 #ifdef MT_GPUFREQ_STATIC_PWR_READY2USE
 #include "mtk_static_power.h"
@@ -474,10 +475,10 @@ SET_EXIT:
 void mt_gpufreq_enable_by_ptpod(void)
 {
 	/* Set GPU Buck to leave PWM mode */
-	__mt_gpufreq_vgpu_set_mode(AUTO_MODE);
+	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_NORMAL);
 
 	/* Freerun GPU DVFS */
-	g_DVFS_is_paused_by_ptpod = false;
+	/* g_DVFS_is_paused_by_ptpod = false; */
 
 	/* Turn off GPU MTCMOS */
 	mt_gpufreq_disable_MTCMOS();
@@ -522,7 +523,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 	mt_gpufreq_target(target_idx);
 
 	/* Set GPU Buck to enter PWM mode */
-	__mt_gpufreq_vgpu_set_mode(PWM_MODE);
+	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_FAST);
 
 	gpufreq_pr_debug("@%s: DVFS is disabled by ptpod\n", __func__);
 }
@@ -1437,7 +1438,7 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 	if (g_parking) {
 		/* mfgpll_ck to clk26m */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_SUB);
-		/* dds = MFGPLL_CON1[21:0], POST_DIVIDER = MFGPLL_CON1[24:26] */
+		/* dds = GPUPLL_CON1[21:0], POST_DIVIDER = GPUPLL_CON1[24:26] */
 		DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_divider_power << POST_DIV_SHIFT) | dds);
 		udelay(20);
 		/* clk26m to mfgpll_ck */
@@ -1582,6 +1583,8 @@ static void __mt_gpufreq_bucks_disable(void)
 
 /*
  * set AUTO_MODE or PWM_MODE to PMIC(VGPU)
+ * REGULATOR_MODE_FAST: PWM Mode
+ * REGULATOR_MODE_NORMAL: Auto Mode
  */
 static void __mt_gpufreq_vgpu_set_mode(unsigned int mode)
 {
@@ -1589,7 +1592,8 @@ static void __mt_gpufreq_vgpu_set_mode(unsigned int mode)
 
 	ret = regulator_set_mode(g_pmic->reg_vgpu, mode);
 	if (ret == 0)
-		gpufreq_pr_debug("@%s: set AUTO_MODE(0) or PWM_MODE(1) to PMIC(VGPU), mode = %d\n", __func__, mode);
+		gpufreq_pr_debug("@%s: set AUTO_MODE(%d) or PWM_MODE(%d) to PMIC(VGPU), mode = %d\n",
+				__func__, REGULATOR_MODE_NORMAL, REGULATOR_MODE_FAST, mode);
 	else
 		gpufreq_pr_err("@%s: failed to configure mode, ret = %d, mode = %d\n", __func__, ret, mode);
 }
@@ -1636,7 +1640,7 @@ static unsigned int __mt_gpufreq_calculate_dds(unsigned int freq_khz,
 
 	gpufreq_pr_debug("@%s: request freq = %d, post_divider = %d\n", __func__, freq_khz, (1 << post_divider_power));
 
-	/* [MT6771] dds is MFGPLL_CON1[21:0] */
+	/* [MT6771] dds is GPUPLL_CON1[21:0] */
 	if ((freq_khz >= SEG1_GPU_DVFS_FREQ15) && (freq_khz <= SEG1_GPU_DVFS_FREQ0)) {
 		dds = (((freq_khz / TO_MHz_HEAD * (1 << post_divider_power)) << DDS_SHIFT)
 				/ GPUPLL_FIN + ROUNDING_VALUE) / TO_MHz_TAIL;
@@ -2155,6 +2159,9 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	gpufreq_pr_debug("@%s: gpufreq driver probe\n", __func__);
 
 	g_debug = 0;
+	g_DVFS_off_by_ptpod_idx = 0;
+	/* Pause GPU DVFS for debug */
+	g_DVFS_is_paused_by_ptpod = true;
 
 	node = of_find_matching_node(NULL, g_gpufreq_of_match);
 	if (!node)
@@ -2262,7 +2269,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	/* setup OPP table by device ID */
 	gpufreq_pr_debug("@%s: setup OPP table\n", __func__);
-	__mt_gpufreq_setup_opp_table(g_opp_table_segment3, ARRAY_SIZE(g_opp_table_segment1));
+	__mt_gpufreq_setup_opp_table(g_opp_table_segment2, ARRAY_SIZE(g_opp_table_segment2));
 
 	/* setup PMIC init value */
 	g_vgpu_sfchg_rrate = __calculate_vgpu_sfchg_rate(true);
@@ -2307,7 +2314,6 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			"g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
 			__func__, __mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt() / 100,
 			g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_idx, g_cur_opp_cond_idx);
-	g_DVFS_is_ready = true;
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
 	g_low_batt_limited_idx_lvl_0 = 0;
@@ -2351,6 +2357,8 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			, __func__, g_vgpu_sfchg_rrate, g_vgpu_sfchg_frate, g_vsram_sfchg_rrate, g_vsram_sfchg_frate,
 			VGPU_ENABLE_TIME_US, VSRAM_GPU_ENABLE_TIME_US, PMIC_SRCLKEN_HIGH_TIME_US);
 
+	g_DVFS_is_ready = true;
+
 	return 0;
 }
 
@@ -2363,9 +2371,6 @@ static int __init __mt_gpufreq_init(void)
 
 	gpufreq_pr_debug("@%s: start to initialize gpufreq driver, clock is %d KHZ\n",
 			__func__, mt_get_ckgen_freq(9));
-
-	/* for bring-up */
-	return 0;
 
 #ifdef CONFIG_PROC_FS
 	if (__mt_gpufreq_create_procfs())
