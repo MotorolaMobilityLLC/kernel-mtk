@@ -89,7 +89,6 @@ void cmdq_dev_init_module_base_VA(void)
 
 void cmdq_dev_deinit_module_base_VA(void)
 {
-	cmdq_dev_free_module_base_VA(cmdq_dev_get_module_base_VA_MMSYS_CONFIG());
 	cmdq_mdp_get_func()->deinitModuleBaseVA();
 }
 
@@ -499,6 +498,8 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		CMDQ_LOG("set dma mask result: %d\n", gCmdqDev.dma_mask_result);
 	}
 
+	/* map MMSYS VA */
+	cmdq_mdp_map_mmsys_VA();
 	/* init module VA */
 	cmdq_dev_init_module_base_VA();
 	/* init module clock */
@@ -511,6 +512,8 @@ void cmdq_dev_init(struct platform_device *pDevice)
 
 void cmdq_dev_deinit(void)
 {
+	/* unmap MMSYS VA */
+	cmdq_mdp_unmap_mmsys_VA();
 	cmdq_dev_deinit_module_base_VA();
 
 	/* deinit cmdq device dependent data */

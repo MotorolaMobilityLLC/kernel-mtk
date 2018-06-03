@@ -26,6 +26,7 @@
 
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
+static long g_cmdq_mmsys_base;
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
@@ -275,10 +276,25 @@ void cmdq_mdp_error_reset_virtual(u64 engineFlag)
 {
 }
 
+long cmdq_mdp_get_module_base_VA_MMSYS_CONFIG(void)
+{
+	return g_cmdq_mmsys_base;
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
 static struct cmdqMDPFuncStruct gMDPFunctionPointer;
+
+void cmdq_mdp_map_mmsys_VA(void)
+{
+	g_cmdq_mmsys_base = cmdq_dev_alloc_reference_VA_by_name("mmsys_config");
+}
+
+void cmdq_mdp_unmap_mmsys_VA(void)
+{
+	cmdq_dev_free_module_base_VA(g_cmdq_mmsys_base);
+}
 
 void cmdq_mdp_virtual_function_setting(void)
 {

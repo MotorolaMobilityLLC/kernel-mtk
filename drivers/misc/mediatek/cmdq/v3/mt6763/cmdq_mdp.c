@@ -26,7 +26,6 @@
 
 #include "cmdq_device.h"
 struct CmdqMdpModuleBaseVA {
-	long MMSYS_CONFIG;
 	long MDP_RDMA0;
 	long MDP_RDMA1;
 	long MDP_RSZ0;
@@ -99,10 +98,6 @@ static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
 	CMDQ_ENG_EAF_GROUP_BITS
 };
 
-long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
-{
-	return gCmdqMdpModuleBaseVA.MMSYS_CONFIG;
-}
 
 long cmdq_mdp_get_module_base_VA_MDP_RDMA0(void)
 {
@@ -144,7 +139,7 @@ long cmdq_mdp_get_module_base_VA_VENC(void)
 	return gCmdqMdpModuleBaseVA.VENC;
 }
 
-#define MMSYS_CONFIG_BASE	cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
+#define MMSYS_CONFIG_BASE	cmdq_mdp_get_module_base_VA_MMSYS_CONFIG()
 #define MDP_RDMA0_BASE		cmdq_mdp_get_module_base_VA_MDP_RDMA0()
 #define MDP_RDMA1_BASE		cmdq_mdp_get_module_base_VA_MDP_RDMA1()
 #define MDP_RSZ0_BASE		cmdq_mdp_get_module_base_VA_MDP_RSZ0()
@@ -364,7 +359,6 @@ void cmdq_mdp_init_module_base_VA(void)
 {
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(struct CmdqMdpModuleBaseVA));
 
-	gCmdqMdpModuleBaseVA.MMSYS_CONFIG = cmdq_dev_alloc_reference_VA_by_name("mmsys_config");
 	gCmdqMdpModuleBaseVA.MDP_RDMA0 = cmdq_dev_alloc_reference_VA_by_name("mdp_rdma0");
 	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_reference_VA_by_name("mdp_rsz0");
 	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_reference_VA_by_name("mdp_rsz1");
