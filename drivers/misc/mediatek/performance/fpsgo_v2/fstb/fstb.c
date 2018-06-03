@@ -939,9 +939,6 @@ static void fstb_fps_stats(struct work_struct *work)
 		fstb_idle_cnt = 0;
 	}
 
-	if (!fstb_active)
-		fpsgo_fstb2xgf_set_idle();
-
 	if (fstb_enable && fstb_active)
 		enable_fstb_timer();
 	else
@@ -950,6 +947,7 @@ static void fstb_fps_stats(struct work_struct *work)
 	mutex_unlock(&fstb_lock);
 
 	fpsgo_check_thread_status();
+	fpsgo_fstb2xgf_do_recycle(fstb_active);
 }
 
 static int set_fps_level(int nr_level, struct fps_level *level)
