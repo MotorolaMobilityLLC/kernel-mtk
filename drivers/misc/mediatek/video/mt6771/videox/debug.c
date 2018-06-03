@@ -651,6 +651,13 @@ static void process_dbg_opt(const char *opt)
 
 		DISPMSG("will set option %s to %d\n", option, value);
 		disp_helper_set_option_by_name(option, value);
+	} else if (strncmp(opt, "repaint:", 8) == 0) {
+		int repaint_type;
+
+		ret = sscanf(opt, "repaint:%d\n", &repaint_type);
+		trigger_repaint(repaint_type);
+
+		return;
 	} else if (strncmp(opt, "switch_mode:", 12) == 0) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;

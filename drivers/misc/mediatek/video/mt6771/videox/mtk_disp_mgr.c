@@ -96,6 +96,14 @@ static dev_t mtk_disp_mgr_devno;
 static struct cdev *mtk_disp_mgr_cdev;
 static struct class *mtk_disp_mgr_class;
 
+/*---------------- variable for repaint start ------------------*/
+static DEFINE_MUTEX(repaint_queue_lock);
+static DECLARE_WAIT_QUEUE_HEAD(repaint_wq);
+static LIST_HEAD(repaint_job_queue);
+static LIST_HEAD(repaint_job_pool);
+
+/*---------------- variable for repaint end ------------------*/
+
 static int mtk_disp_mgr_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -1117,6 +1125,8 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 	caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
 
+	caps_info.disp_feature |= DISP_FEATURE_DISP_SELF_REFRESH;
+
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
@@ -1300,6 +1310,76 @@ int _ioctl_get_ut_result(unsigned long arg)
 	return ret;
 }
 
+/*---------------- function for repaint start ------------------*/
+void trigger_repaint(int type)
+{
+	if (type > WAIT_FOR_REFRESH && type < REFRESH_TYPE_NUM) {
+		struct repaint_job_t *repaint_job;
+
+		/* get a repaint_job_t from pool */
+		mutex_lock(&repaint_queue_lock);
+		if (!list_empty(&repaint_job_pool)) {
+			repaint_job = list_first_entry(&repaint_job_pool,
+				struct repaint_job_t, link);
+			list_del_init(&repaint_job->link);
+		} else { /* create repaint_job_t if pool is empty */
+			repaint_job = kzalloc(sizeof(struct repaint_job_t),
+				GFP_KERNEL);
+			if (IS_ERR_OR_NULL(repaint_job)) {
+				disp_aee_print("allocate repaint_job_t fail\n");
+				return;
+			}
+			INIT_LIST_HEAD(&repaint_job->link);
+			DISPMSG("[REPAINT] allocate a new repaint_job_t\n");
+		}
+
+		/* init & insert repaint_job_t into queue */
+		repaint_job->type = type;
+		list_add_tail(&repaint_job->link, &repaint_job_queue);
+		mutex_unlock(&repaint_queue_lock);
+
+		DISPMSG("[REPAINT] insert new repaint_job in queue, type: %d\n", type);
+		wake_up_interruptible(&repaint_wq);
+	}
+}
+
+int _ioctl_wait_self_refresh_trigger(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int type;
+	struct repaint_job_t *repaint_job;
+
+	/* reset status & wake-up threads which wait for repainting */
+	DISPMSG("[REPAINT] HWC waits for repaint\n");
+
+	/*  wait for repaint */
+	ret = wait_event_interruptible(repaint_wq, !list_empty(&repaint_job_queue));
+	if (ret < 0) {
+		DISPERR("[REPAINT] wait_event interrupted unexpectedly, ret: %d\n", ret);
+		return ret;
+	}
+
+	/* retrieve first repaint_job_t from queue */
+	mutex_lock(&repaint_queue_lock);
+	repaint_job = list_first_entry(&repaint_job_queue,
+		struct repaint_job_t, link);
+	type = repaint_job->type;
+
+	/* remove from queue & add repaint_job_t in pool */
+	list_del_init(&repaint_job->link);
+	list_add_tail(&repaint_job->link, &repaint_job_pool);
+	mutex_unlock(&repaint_queue_lock);
+
+	DISPMSG("[REPAINT] trigger repaint, type: %d\n", type);
+	if (copy_to_user(argp, &type, sizeof(unsigned int))) {
+		DISPERR("[FB]: copy to user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+	return ret;
+}
+/*---------------- function for repaint end ------------------*/
+
 const char *_session_ioctl_spy(unsigned int cmd)
 {
 	switch (cmd) {
@@ -1455,6 +1535,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_GET_UT_RESULT:
 	{
 		return _ioctl_get_ut_result(arg);
+	}
+	case DISP_IOCTL_WAIT_DISP_SELF_REFRESH:
+	{
+		return _ioctl_wait_self_refresh_trigger(arg);
 	}
 	case DISP_IOCTL_SCREEN_FREEZE:
 		return _ioctl_screen_freeze(arg);
