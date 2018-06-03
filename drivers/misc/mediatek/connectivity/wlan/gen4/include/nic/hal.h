@@ -593,15 +593,13 @@ do { \
 
 #define HAL_WIFI_FUNC_OFF_CHECK(_prAdapter, _checkItem, _pfgResult) \
 do { \
-	UINT_32 u4Value, u4MailBoxStatus0, u4MailBoxStatus1; \
+	UINT_32 u4Value; \
 	*_pfgResult = FALSE; \
 	HAL_MCR_RD(_prAdapter, MCR_WCIR, &u4Value); \
 	if ((u4Value & WCIR_WLAN_READY) == 0) { \
 		*_pfgResult = TRUE; \
 	} \
-	halGetMailbox(_prAdapter, 0, &u4MailBoxStatus0); \
-	halGetMailbox(_prAdapter, 1, &u4MailBoxStatus1); \
-	DBGLOG(HAL, INFO, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1); \
+	halPrintMailbox(prAdapter);\
 	halPollDbgCr(_prAdapter, LP_DBGCR_POLL_ROUND); \
 } while (0)
 
@@ -1046,4 +1044,5 @@ BOOLEAN halIsPendingRx(IN P_ADAPTER_T prAdapter);
 WLAN_STATUS halAllocateIOBuffer(IN P_ADAPTER_T prAdapter);
 WLAN_STATUS halReleaseIOBuffer(IN P_ADAPTER_T prAdapter);
 VOID halDeAggRxPktWorker(struct work_struct *work);
+VOID halPrintHifDbgInfo(IN P_ADAPTER_T prAdapter);
 #endif /* _HAL_H */

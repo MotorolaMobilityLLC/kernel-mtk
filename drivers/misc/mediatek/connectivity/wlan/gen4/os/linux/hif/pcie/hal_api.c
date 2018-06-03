@@ -1674,3 +1674,8 @@ WLAN_STATUS halHifPowerOffWifi(IN P_ADAPTER_T prAdapter)
 	return rStatus;
 }
 
+VOID halPrintHifDbgInfo(IN P_ADAPTER_T prAdapter)
+{
+
+}
+
