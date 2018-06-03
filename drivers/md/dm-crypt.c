@@ -33,6 +33,11 @@
 
 #define DM_MSG_PREFIX "crypt"
 
+#if defined(CONFIG_MTK_HW_FDE_AES)
+#include <fde_aes.h>
+#include <fde_aes_dbg.h>
+#endif
+
 /*
  * context holding the current state of a multi-part conversion
  */
@@ -1198,6 +1203,13 @@ static int crypt_is_hw_fde(const char *path)
 
 	pr_debug("%s %d PATH : %s\n", __func__, __LINE__, path);
 
+#if defined(CONFIG_MTK_HW_FDE_AES)
+	if (fde_aes_check_cmd(FDE_AES_EN_SW_CRYPTO, fde_aes_get_sw(), 0)) {
+		FDEERR("%s use SW crypto\n", __func__);
+		return 0;
+	}
+#endif
+
 	if (sscanf(path, "%u:%u%c", &major, &minor, &dummy) == 2) {
 		/* Extract the major/minor numbers */
 		dev = MKDEV(major, minor);
@@ -1958,6 +1970,10 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 		goto bad;
 	}
 	cc->start = tmpll;
+
+#if defined(CONFIG_MTK_HW_FDE_AES)
+	FDEERR("%s %s %s %s %s %s\n", __func__, argv[0], argv[1], argv[2], argv[3], argv[4]);
+#endif
 
 	argv += 5;
 	argc -= 5;
