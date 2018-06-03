@@ -264,6 +264,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 	if (TGPD_IS_FLAGS_HWO(gpd)) {
 		qmu_printk(K_ERR, "[RXD][ERROR] HWO=1!!\n");
 		WARN_ON(1);
+		goto exit;
 	}
 
 	while (gpd != gpd_current && !TGPD_IS_FLAGS_HWO(gpd)) {
@@ -284,20 +285,19 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 			   gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd), rcv_len, buf_len,
 			   TGPD_GET_DATA(gpd));
 #endif
-		request->actual += rcv_len;
 #if defined(CONFIG_USB_MU3D_DRV_36BIT)
 		if (!TGPD_GET_NEXT_RX(gpd) || !TGPD_GET_DATA_RX(gpd)) {
-			qmu_printk(K_ERR, "[RXD][ERROR] %s EP%d ,gpd=%p\n", __func__, ep_num,
+			qmu_printk(K_WARNIN, "[RXD][WARN] %s EP%d ,gpd=%p\n", __func__, ep_num,
 				   gpd);
-			WARN_ON(1);
+			goto exit;
 		}
 
 		gpd = TGPD_GET_NEXT_RX(gpd);
 #else
 		if (!TGPD_GET_NEXT(gpd) || !TGPD_GET_DATA(gpd)) {
-			qmu_printk(K_ERR, "[RXD][ERROR] %s EP%d ,gpd=%p\n", __func__, ep_num,
+			qmu_printk(K_WARNIN, "[RXD][WARN] %s EP%d ,gpd=%p\n", __func__, ep_num,
 				   gpd);
-			WARN_ON(1);
+			goto exit;
 		}
 
 		gpd = TGPD_GET_NEXT(gpd);
@@ -308,8 +308,10 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 			qmu_printk(K_ERR, "[RXD][ERROR] %s EP%d ,gpd=%p\n", __func__, ep_num,
 				   gpd);
 			WARN_ON(1);
+			goto exit;
 		}
 
+		request->actual += rcv_len;
 		Rx_gpd_last[ep_num] = gpd;
 		musb_g_giveback(musb_ep, request, 0);
 		req = next_request(musb_ep);
@@ -339,7 +341,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 		qmu_printk(K_INFO, "[RXD][ERROR] RecvLen=%d, Endpoint=%d\n",
 			   (u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
 	}
-
+exit:
 	qmu_printk(K_DEBUG, "[RXD] %s EP%d, Last=%p, End=%p, complete\n", __func__,
 		   ep_num, Rx_gpd_last[ep_num], Rx_gpd_end[ep_num]);
 }
