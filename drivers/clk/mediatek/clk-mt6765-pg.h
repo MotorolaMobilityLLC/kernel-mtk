@@ -62,4 +62,6 @@ extern unsigned int mt_get_ckgen_freq(unsigned int ID);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_clk(int id, u32 val);
 #endif
+
+extern void print_enabled_clks_once(void);
 #endif/* __DRV_CLK_MT6758_PG_H */

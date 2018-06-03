@@ -492,6 +492,16 @@ static void check_mtcmos_off(void)
 	}
 }
 
+void print_enabled_clks_once(void)
+{
+	static bool first_flag = true;
+
+	if (first_flag) {
+		first_flag = false;
+		print_enabled_clks();
+	}
+}
+
 static int clkchk_syscore_suspend(void)
 {
 	check_pll_off();

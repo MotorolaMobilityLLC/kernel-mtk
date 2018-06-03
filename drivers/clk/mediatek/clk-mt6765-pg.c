@@ -197,6 +197,8 @@ static void __iomem *conn_base;/* connsys */
 
 /* CONN HIF */
 #define CONN_HIF_TOP_MISC		CONN_HIF_REG(0x0104)
+#define CONN_HIF_DBG_IDX		CONN_HIF_REG(0x012C)
+#define CONN_HIF_DBG_PROBE		CONN_HIF_REG(0x0130)
 #define CONN_HIF_BUSY_STATUS		CONN_HIF_REG(0x0138)
 
 /* Define MTCMOS Bus Protect Mask */
@@ -511,12 +513,6 @@ static void ram_console_update(void)
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);
-	if (DBG_ID == DBG_ID_CONN_BUS) {
-		data[++i] = clk_readl(CONN_HIF_TOP_MISC);
-		data[++i] = clk_readl(CONN_HIF_BUSY_STATUS);
-	}
-	for (j = 0; j <= i; j++)
-		aee_rr_rec_clk(j, data[j]);
 
 	if (pre_data == data[0])
 		k++;
@@ -525,10 +521,25 @@ static void ram_console_update(void)
 		pre_data = data[0];
 	}
 
-	if (k > 10000) {
+	if (k > 100000) {
 		k = 0;
-		pr_notice("%s: clk[0] = %lu\n", __func__, data[0]);
+		if (DBG_ID == DBG_ID_CONN_BUS) {
+			if (DBG_STEP == 1 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Release bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_CLR,
+						CONN_PROT_STEP1_0_MASK);
+			}
+			data[++i] = clk_readl(CONN_HIF_TOP_MISC);
+			data[++i] = clk_readl(CONN_HIF_BUSY_STATUS);
+			clk_writel(CONN_HIF_DBG_IDX, 0x3333);
+			data[++i] = clk_readl(CONN_HIF_DBG_PROBE);
+		}
+		print_enabled_clks_once();
+		pr_notice("%s: clk = %lu\n", __func__, data[0]);
 	}
+
+	for (j = 0; j <= i; j++)
+		aee_rr_rec_clk(j, data[j]);
 	/*todo: add each domain's debug register to ram console*/
 #endif
 }
