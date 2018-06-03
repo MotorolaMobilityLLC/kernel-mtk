@@ -355,8 +355,9 @@ bool mt_usb_is_device(void)
 #endif
 #if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
 	return !usb20_host_tcpc_boost_on;
-#endif
+#else
 	return !mtk_musb->is_host;
+#endif
 }
 static struct delayed_work disconnect_check_work;
 static bool musb_hal_is_vbus_exist(void);
