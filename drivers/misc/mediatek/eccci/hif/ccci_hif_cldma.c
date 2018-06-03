@@ -565,9 +565,11 @@ again:
 #endif
 #endif
 		/* check wakeup source */
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_MD wakeup source:(%d/%d/%x)\n",
-							queue->index, ccci_h.channel, ccci_h.reserved);
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+			md_ctrl->wakeup_count++;
+			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_MD wakeup source:(%d/%d/%x)(%u)\n",
+				queue->index, ccci_h.channel, ccci_h.reserved, md_ctrl->wakeup_count);
+		}
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
 						ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2),
 						ccci_h.reserved, queue->index,
@@ -853,9 +855,11 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		ccci_h = (struct ccci_header *)skb_free->data;
 #endif
 		/* check wakeup source */
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_AP wakeup source:(%d/%d)\n",
-							queue->index, ccci_h->channel);
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+			md_ctrl->wakeup_count++;
+			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_AP wakeup source:(%d/%d)(%u)\n",
+							queue->index, ccci_h->channel, md_ctrl->wakeup_count);
+		}
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
 			     ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, queue->index,
 			     tgpd->data_buff_len);
@@ -961,9 +965,11 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 		ccci_h = (struct ccci_header *)skb_free->data;
 #endif
 		/* check wakeup source */
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_AP wakeup source:(%d/%d)\n",
-							queue->index, ccci_h->channel);
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+			md_ctrl->wakeup_count++;
+			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_AP wakeup source:(%d/%d)(%u)\n",
+							queue->index, ccci_h->channel, md_ctrl->wakeup_count);
+		}
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
 			     ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, queue->index,
 			     skb_free->len);
