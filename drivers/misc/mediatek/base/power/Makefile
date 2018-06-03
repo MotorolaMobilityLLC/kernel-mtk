@@ -21,6 +21,7 @@ obj-$(CONFIG_MACH_MT6799) += upower_v1/
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += pbm_v1/
 obj-$(CONFIG_MACH_MT6799) += pbm_v2/
+obj-$(CONFIG_MACH_MT6759) += pbm_v2/
 obj-$(CONFIG_MACH_MT6757) += spm_v2/
 obj-$(CONFIG_MACH_MT6757) += vcorefs_v1/
 obj-$(CONFIG_MACH_MT6799) += vcorefs_v3/
