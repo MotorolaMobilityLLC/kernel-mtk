@@ -20,10 +20,29 @@
 #include "disp_drv_log.h"
 #include "mtkfb_fence.h"
 #include "mtk_disp_mgr.h"
+#include "ged_log.h"
 
 
 static struct frame_queue_head_t frame_q_head[MAX_SESSION_COUNT];
 DEFINE_MUTEX(frame_q_head_lock);
+
+static GED_LOG_BUF_HANDLE ghlog;
+atomic_t ged_log_inited = ATOMIC_INIT(0);
+#define GEDLOG(fmt, ...) \
+	do { \
+		if (atomic_read(&ged_log_inited) == 0) {\
+			if (ged_log_buf_get_early("FENCE", &ghlog) == 0) \
+				atomic_set(&ged_log_inited, 1); \
+			else \
+				break; \
+		} \
+		ged_log_buf_print2(ghlog, GED_LOG_ATTR_TIME_TPT, fmt, __VA_ARGS__); \
+	} while (0)
+
+void disp_init_ged_log_handle(void)
+{
+	ged_log_buf_get_early("FENCE", &ghlog);
+}
 
 static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 {
@@ -31,6 +50,11 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 
 	_DISP_PRINT_FENCE_OR_ERR(is_err, "fence[%p] %s: stat=%d ==>\n",
 		fence, fence->name, atomic_read(&fence->status));
+
+	if (is_err) {
+		GEDLOG("fence[%p] %s: stat=%d ==>\n",
+			fence, fence->name, atomic_read(&fence->status));
+	}
 
 	for (i = 0; i < fence->num_fences; ++i) {
 		struct fence *pt = fence->cbs[i].sync_pt;
@@ -48,6 +72,12 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 			i, timeline_name, drv_name,
 			fence_val, timeline_val,
 			fence_is_signaled(pt), pt->status);
+		if (is_err) {
+			GEDLOG("pt%d:tl=%s,drv=%s,val(%s/%s),sig=%d,stat=%d\n",
+				i, timeline_name, drv_name,
+				fence_val, timeline_val,
+				fence_is_signaled(pt), pt->status);
+		}
 	}
 	return 0;
 }
@@ -75,8 +105,12 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 	if (ret == -ETIME) {
 		DISPERR("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d,idx%d ==>\n",
 				ret, timeline, fence_fd, buf_idx);
+		GEDLOG("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
 	} else if (ret != 0) {
 		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
+		GEDLOG("== display fence wait status error. ret%d,layer%d,fd%d,idx%d ==>\n",
 				ret, timeline, fence_fd, buf_idx);
 	} else {
 		DISPDBG("== display fence wait done! ret%d,layer%d,fd%d,idx%d ==\n",
