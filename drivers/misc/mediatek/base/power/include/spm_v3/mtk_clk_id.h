@@ -327,7 +327,7 @@ enum mt_cg_clk_id {
 	MTK_CG_VENC1_GALS_DCM_OFF                                                = 640 + 24,
 
 	/* MJC */
-	MTK_CG_MJC_SMI LARB                                                      = 672 +  0,
+	MTK_CG_MJC_SMI_LARB                                                      = 672 +  0,
 	MTK_CG_MJC_MJC_TOP_CLOCK_GROUP_0                                         = 672 +  1,
 	MTK_CG_MJC_MJC_TOP_CLOCK_GROUP_1                                         = 672 +  2,
 	MTK_CG_MJC_MJC_TOP_CLOCK_GROUP_2                                         = 672 +  3,
