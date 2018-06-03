@@ -9491,6 +9491,10 @@ int find_best_idle_cpu(struct task_struct *p, int target)
 	/* then, find a idle CPU in cluster */
 	arch_get_cluster_cpus(&cls_cpus, cid);
 	for_each_cpu_and(cpu, tsk_cpus_allowed(p), &cls_cpus) {
+
+		if (!cpu_online(cpu))
+			continue;
+
 		if (idle_cpu(cpu))
 			return cpu;
 	}
@@ -9498,6 +9502,7 @@ int find_best_idle_cpu(struct task_struct *p, int target)
 	/* other, find idle CPU in ALL cpus */
 	cpumask_and(&allowed_mask, cpu_online_mask, tsk_cpus_allowed(p));
 	for_each_cpu(cpu, &allowed_mask) {
+
 		if (idle_cpu(cpu))
 			return cpu;
 	}
