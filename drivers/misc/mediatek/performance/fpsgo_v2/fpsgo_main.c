@@ -61,6 +61,7 @@ struct FPSGO_NOTIFIER_PUSH_TAG {
 
 	unsigned long long bufID;
 	int connectedAPI;
+	int queue_SF;
 
 	int frame_type;
 	unsigned long long Q2Q_time;
@@ -156,10 +157,10 @@ static void fpsgo_notifier_wq_cb_draw_start(int pid, unsigned long long frame_id
 }
 
 static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigned long long bufID,
-					int cur_pid, unsigned long long curr_ts)
+					int cur_pid, unsigned long long curr_ts, int queue_SF)
 {
-	FPSGO_LOGI("[FPSGO_CB] qudeq: %d-%d, buf %llu, pid %d, ts %llu\n",
-		qudeq, startend, bufID, cur_pid, curr_ts);
+	FPSGO_LOGI("[FPSGO_CB] qudeq: %d-%d, buf %llu, pid %d, ts %llu, queue_SF %d\n",
+		qudeq, startend, bufID, cur_pid, curr_ts, queue_SF);
 
 	if (!fpsgo_is_enable())
 		return;
@@ -167,20 +168,20 @@ static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigne
 	switch (qudeq) {
 	case 1:
 		if (startend) {
-			FPSGO_LOGI("[FPSGO_CTRL] QUEUE Start: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_enqueue_start(cur_pid, curr_ts, bufID);
+			FPSGO_LOGI("[FPSGO_CB] QUEUE Start: pid %d\n", cur_pid);
+			fpsgo_ctrl2comp_enqueue_start(cur_pid, curr_ts, bufID, queue_SF);
 		} else {
-			FPSGO_LOGI("[FPSGO_CTRL] QUEUE End: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_enqueue_end(cur_pid, curr_ts, bufID);
+			FPSGO_LOGI("[FPSGO_CB] QUEUE End: pid %d\n", cur_pid);
+			fpsgo_ctrl2comp_enqueue_end(cur_pid, curr_ts, bufID, queue_SF);
 		}
 		break;
 	case 0:
 		if (startend) {
-			FPSGO_LOGI("[FPSGO_CTRL] DEQUEUE Start: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_dequeue_start(cur_pid, curr_ts, bufID);
+			FPSGO_LOGI("[FPSGO_CB] DEQUEUE Start: pid %d\n", cur_pid);
+			fpsgo_ctrl2comp_dequeue_start(cur_pid, curr_ts, bufID, queue_SF);
 		} else {
-			FPSGO_LOGI("[FPSGO_CTRL] DEQUEUE End: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_dequeue_end(cur_pid, curr_ts, bufID);
+			FPSGO_LOGI("[FPSGO_CB] DEQUEUE End: pid %d\n", cur_pid);
+			fpsgo_ctrl2comp_dequeue_end(cur_pid, curr_ts, bufID, queue_SF);
 		}
 		break;
 	default:
@@ -234,7 +235,7 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		break;
 	case FPSGO_NOTIFIER_QUEUE_DEQUEUE:
 		fpsgo_notifier_wq_cb_qudeq(vpPush->qudeq_cmd, vpPush->queue_arg, vpPush->bufID,
-					vpPush->pid, vpPush->cur_ts);
+					vpPush->pid, vpPush->cur_ts, vpPush->queue_SF);
 		break;
 	case FPSGO_NOTIFIER_INTENDED_VSYNC:
 		fpsgo_notifier_wq_cb_intended_vsync(vpPush->pid, vpPush->cur_ts, vpPush->frame_id);
@@ -307,7 +308,7 @@ int fpsgo_fbt2fstb_cpu_capability(
 	return FPSGO_OK;
 }
 
-void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long bufID, int pid)
+void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long bufID, int pid, int queue_SF)
 {
 	unsigned long long cur_ts;
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
@@ -338,6 +339,7 @@ void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long buf
 	vpPush->qudeq_cmd = qudeq;
 	vpPush->queue_arg = startend;
 	vpPush->bufID = bufID;
+	vpPush->queue_SF = queue_SF;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);

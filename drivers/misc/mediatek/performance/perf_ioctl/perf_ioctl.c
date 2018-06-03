@@ -19,7 +19,7 @@
 
 #define TAG "PERF_IOCTL"
 
-void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, unsigned long long bufID, int pid);
+void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, unsigned long long bufID, int pid, int queue_SF);
 void (*fpsgo_notify_intended_vsync_fp)(int pid, unsigned long long frame_id);
 void (*fpsgo_notify_framecomplete_fp)(int ui_pid, unsigned long long frame_time,
 						int render_method, int render, unsigned long long frame_id);
@@ -102,11 +102,11 @@ static long device_ioctl(struct file *filp,
 		break;
 	case FPSGO_QUEUE:
 		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(1, msgKM->start, msgKM->bufID, msgKM->tid);
+			fpsgo_notify_qudeq_fp(1, msgKM->start, msgKM->bufID, msgKM->tid, msgKM->queue_SF);
 		break;
 	case FPSGO_DEQUEUE:
 		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(0, msgKM->start, msgKM->bufID, msgKM->tid);
+			fpsgo_notify_qudeq_fp(0, msgKM->start, msgKM->bufID, msgKM->tid, msgKM->queue_SF);
 		break;
 	case FPSGO_QUEUE_CONNECT:
 		if (fpsgo_notify_connect_fp)

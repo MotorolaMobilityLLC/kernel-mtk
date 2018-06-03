@@ -63,6 +63,7 @@ typedef struct _FPSGO_PACKAGE {
 		__u64 bufID;
 	};
 	__u64 frame_id; /* for HWUI only*/
+	__s32 queue_SF;
 } FPSGO_PACKAGE;
 
 #define FPSGO_QUEUE                  _IOW('g', 1, FPSGO_PACKAGE)
