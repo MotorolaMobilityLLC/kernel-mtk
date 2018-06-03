@@ -38,20 +38,20 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 }
 EXPORT_SYMBOL(tui_region_offline);
 
-extern int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
+extern int _secmem_region_offline(phys_addr_t *pa, unsigned long *size,
 		u64 upper_limit);
 
-int svp_region_offline64(phys_addr_t *pa, unsigned long *size)
+int secmem_region_offline64(phys_addr_t *pa, unsigned long *size)
 {
-	return _svp_region_offline(pa, size, UPPER_LIMIT64);
+	return _secmem_region_offline(pa, size, UPPER_LIMIT64);
 }
-EXPORT_SYMBOL(svp_region_offline64);
+EXPORT_SYMBOL(secmem_region_offline64);
 
-int svp_region_offline(phys_addr_t *pa, unsigned long *size)
+int secmem_region_offline(phys_addr_t *pa, unsigned long *size)
 {
-	return _svp_region_offline(pa, size, UPPER_LIMIT32);
+	return _secmem_region_offline(pa, size, UPPER_LIMIT32);
 }
-EXPORT_SYMBOL(svp_region_offline);
+EXPORT_SYMBOL(secmem_region_offline);
 
 #ifdef CONFIG_MTK_ION
 extern void ion_sec_heap_dump_info(void);

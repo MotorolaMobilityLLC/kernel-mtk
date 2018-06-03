@@ -53,32 +53,32 @@ static int is_pre_reserve_memory;
 #include <mt-plat/aee.h>
 #include "mt-plat/mtk_meminfo.h"
 
-static unsigned long svp_usage_count;
+static unsigned long ssmr_usage_count;
 static atomic_t svp_ref_count;
 
 enum ssmr_subtype {
-	SSMR_SVP,
+	SSMR_SECMEM,
 	SSMR_TUI,
 	__MAX_NR_SSMRSUBS,
 };
 
-enum svp_state {
-	SVP_STATE_DISABLED,
-	SVP_STATE_ONING_WAIT,
-	SVP_STATE_ONING,
-	SVP_STATE_ON,
-	SVP_STATE_OFFING,
-	SVP_STATE_OFF,
+enum ssmr_state {
+	SSMR_STATE_DISABLED,
+	SSMR_STATE_ONING_WAIT,
+	SSMR_STATE_ONING,
+	SSMR_STATE_ON,
+	SSMR_STATE_OFFING,
+	SSMR_STATE_OFF,
 	NR_STATES,
 };
 
-const char *const svp_state_text[NR_STATES] = {
-	[SVP_STATE_DISABLED]   = "[DISABLED]",
-	[SVP_STATE_ONING_WAIT] = "[ONING_WAIT]",
-	[SVP_STATE_ONING]      = "[ONING]",
-	[SVP_STATE_ON]         = "[ON]",
-	[SVP_STATE_OFFING]     = "[OFFING]",
-	[SVP_STATE_OFF]        = "[OFF]",
+const char *const ssmr_state_text[NR_STATES] = {
+	[SSMR_STATE_DISABLED]   = "[DISABLED]",
+	[SSMR_STATE_ONING_WAIT] = "[ONING_WAIT]",
+	[SSMR_STATE_ONING]      = "[ONING]",
+	[SSMR_STATE_ON]         = "[ON]",
+	[SSMR_STATE_OFFING]     = "[OFFING]",
+	[SSMR_STATE_OFF]        = "[OFF]",
 };
 
 struct SSMR_Region {
@@ -93,7 +93,7 @@ struct SSMR_Region {
 static struct task_struct *_svp_online_task; /* NULL */
 static DEFINE_MUTEX(svp_online_task_lock);
 static struct cma *cma;
-static struct SSMR_Region _svpregs[__MAX_NR_SSMRSUBS];
+static struct SSMR_Region _ssmregs[__MAX_NR_SSMRSUBS];
 
 #define pmd_unmapping(virt, size) set_pmd_mapping(virt, size, 0)
 #define pmd_mapping(virt, size) set_pmd_mapping(virt, size, 1)
@@ -197,14 +197,14 @@ static int __init ssmr_preinit(struct reserved_mem *rmem)
 	saved_memory_ssmr_registration.size = total_target_size;
 
 	if (total_target_size == 0) {
-		pr_info("%s, SSMR init: skipped, no requirement\n", __func__);
+		pr_alert("%s, SSMR init: skipped, no requirement\n", __func__);
 	} else if (total_target_size > 0 && total_target_size <= rmem->size) {
 		memory_ssmr_registration.align = (1 << SSMR_ALIGN_SHIFT);
 		saved_memory_ssmr_registration.align = (1 << SSMR_ALIGN_SHIFT);
 		pr_info("%s, SSMR init: continue\n", __func__);
 		rc = 0;
 	} else {
-		pr_info("%s, SSMR init: skip, rmem->size can't meet target\n",
+		pr_err("%s, SSMR init: skip, rmem->size can't meet target\n",
 			__func__);
 	}
 
@@ -247,7 +247,7 @@ static int __init memory_ssmr_init(struct reserved_mem *rmem)
 	ret = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
 
 	if (ret) {
-		pr_info("%s cma failed, ret: %d\n", __func__, ret);
+		pr_err("%s cma failed, ret: %d\n", __func__, ret);
 		return 1;
 	}
 
@@ -262,7 +262,7 @@ static int __init dedicate_tui_memory(struct reserved_mem *rmem)
 {
 	struct SSMR_Region *region;
 
-	region = &_svpregs[SSMR_TUI];
+	region = &_ssmregs[SSMR_TUI];
 
 	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
 		 __func__, rmem->name,
@@ -281,11 +281,11 @@ static int __init dedicate_tui_memory(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(tui_memory, "mediatek,memory-tui",
 			dedicate_tui_memory);
 
-static int __init dedicate_svp_memory(struct reserved_mem *rmem)
+static int __init dedicate_secmem_memory(struct reserved_mem *rmem)
 {
 	struct SSMR_Region *region;
 
-	region = &_svpregs[SSMR_SVP];
+	region = &_ssmregs[SSMR_SECMEM];
 
 	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
 		 __func__, rmem->name,
@@ -301,16 +301,16 @@ static int __init dedicate_svp_memory(struct reserved_mem *rmem)
 
 	return 0;
 }
-RESERVEDMEM_OF_DECLARE(svp_memory, "mediatek,memory-svp",
-			dedicate_svp_memory);
+RESERVEDMEM_OF_DECLARE(secmem_memory, "mediatek,memory-secmem",
+			dedicate_secmem_memory);
 
 /*
  * Check whether memory_ssmr is initialized
  */
 bool memory_ssmr_inited(void)
 {
-	return (_svpregs[SSMR_SVP].use_cache_memory ||
-		_svpregs[SSMR_TUI].use_cache_memory ||
+	return (_ssmregs[SSMR_SECMEM].use_cache_memory ||
+		_ssmregs[SSMR_TUI].use_cache_memory ||
 		cma != NULL);
 }
 
@@ -339,7 +339,7 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 			|| (size != (size & PMD_MASK))
 			|| !memblock_is_memory(virt_to_phys((void *)start))
 			|| !size || !start) {
-		pr_info("[invalid parameter]: start=0x%lx, size=%pa\n",
+		pr_err("[invalid parameter]: start=0x%lx, size=%pa\n",
 				start, &size);
 		return -1;
 	}
@@ -453,7 +453,7 @@ static int memory_region_offline(struct SSMR_Region *region,
 		phys_addr_t end = start + (region->count << PAGE_SHIFT);
 
 		if (end > upper_limit) {
-			pr_info("Reserve Over Limit, region end: %pa\n", &end);
+			pr_err("Reserve Over Limit, region end: %pa\n", &end);
 			cma_release(cma, page, region->count);
 			page = NULL;
 		}
@@ -462,12 +462,12 @@ static int memory_region_offline(struct SSMR_Region *region,
 	if (!page)
 		return -EBUSY;
 
-	svp_usage_count += region->count;
+	ssmr_usage_count += region->count;
 	ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(page))),
 			region->count << PAGE_SHIFT);
 
 	if (ret_map < 0) {
-		pr_info("[unmapping fail]: virt:0x%lx, size:0x%lx",
+		pr_err("[unmapping fail]: virt:0x%lx, size:0x%lx",
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
 
@@ -514,7 +514,7 @@ static int memory_region_online(struct SSMR_Region *region)
 				region->count << PAGE_SHIFT);
 
 		if (ret_map < 0) {
-			pr_info("[remapping fail]: virt:0x%lx, size:0x%lx",
+			pr_err("[remapping fail]: virt:0x%lx, size:0x%lx",
 					region_page_va,
 					region->count << PAGE_SHIFT);
 
@@ -538,7 +538,7 @@ static int memory_region_online(struct SSMR_Region *region)
 
 	if (!region->is_unmapping && !region->use_cache_memory) {
 		zmc_cma_release(cma, region->page, region->count);
-		svp_usage_count -= region->count;
+		ssmr_usage_count -= region->count;
 	}
 
 	region->page = NULL;
@@ -549,55 +549,55 @@ int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
 		u64 upper_limit)
 {
 	int retval = 0;
-	struct SSMR_Region *region = &_svpregs[SSMR_TUI];
+	struct SSMR_Region *region = &_ssmregs[SSMR_TUI];
 
 	pr_info("%s: >>>>>> state: %s, upper_limit:0x%llx\n", __func__,
-			svp_state_text[region->state], upper_limit);
+			ssmr_state_text[region->state], upper_limit);
 
-	if (region->state != SVP_STATE_ON) {
+	if (region->state != SSMR_STATE_ON) {
 		retval = -EBUSY;
 		goto out;
 	}
 
-	region->state = SVP_STATE_OFFING;
+	region->state = SSMR_STATE_OFFING;
 	retval = memory_region_offline(region, pa, size, upper_limit);
 	if (retval < 0) {
-		region->state = SVP_STATE_ON;
+		region->state = SSMR_STATE_ON;
 		retval = -EAGAIN;
 		goto out;
 	}
 
-	region->state = SVP_STATE_OFF;
+	region->state = SSMR_STATE_OFF;
 	pr_info("%s: [reserve done]: pa 0x%lx, size 0x%lx\n",
 			__func__, (unsigned long)page_to_phys(region->page),
 			region->count << PAGE_SHIFT);
 
 out:
 	pr_info("%s: <<<<<< state: %s, retval: %d\n", __func__,
-			svp_state_text[region->state], retval);
+			ssmr_state_text[region->state], retval);
 	return retval;
 }
 
 int tui_region_online(void)
 {
-	struct SSMR_Region *region = &_svpregs[SSMR_TUI];
+	struct SSMR_Region *region = &_ssmregs[SSMR_TUI];
 	int retval;
 
 	pr_info("%s: >>>>>> enter state: %s\n", __func__,
-			svp_state_text[region->state]);
+			ssmr_state_text[region->state]);
 
-	if (region->state != SVP_STATE_OFF) {
+	if (region->state != SSMR_STATE_OFF) {
 		retval = -EBUSY;
 		goto out;
 	}
 
-	region->state = SVP_STATE_ONING_WAIT;
+	region->state = SSMR_STATE_ONING_WAIT;
 	retval = memory_region_online(region);
-	region->state = SVP_STATE_ON;
+	region->state = SSMR_STATE_ON;
 
 out:
 	pr_info("%s: <<<<<< leave state: %s, retval: %d\n",
-			__func__, svp_state_text[region->state], retval);
+			__func__, ssmr_state_text[region->state], retval);
 
 	return retval;
 }
@@ -631,7 +631,7 @@ static int _svp_wdt_kthread_func(void *data)
 			return 0;
 		}
 
-		if (_svpregs[SSMR_SVP].state == SVP_STATE_ON) {
+		if (_ssmregs[SSMR_SECMEM].state == SSMR_STATE_ON) {
 			pr_info("[STOP COUNT DOWN]: SSMR has online\n");
 			reset_svp_online_task();
 			return 0;
@@ -640,11 +640,11 @@ static int _svp_wdt_kthread_func(void *data)
 				atomic_read(&svp_online_count_down));
 
 	}
-	pr_info("[COUNT DOWN FAIL]\n");
+	pr_err("[COUNT DOWN FAIL]\n");
 
 	ion_sec_heap_dump_info();
 
-	pr_info("Shareable SVP trigger kernel warning");
+	pr_debug("Shareable SecureMemoryRegion trigger kernel warning");
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT
 			| DB_OPT_DUMPSYS_ACTIVITY
 			| DB_OPT_LOW_MEMORY_KILLER
@@ -669,7 +669,7 @@ int svp_start_wdt(void)
 					NULL, "svp_online_kthread");
 		if (IS_ERR_OR_NULL(_svp_online_task)) {
 			mutex_unlock(&svp_online_task_lock);
-			pr_info("%s: fail to create svp_online_task\n",
+			pr_warn("%s: fail to create svp_online_task\n",
 					__func__);
 			return -1;
 		}
@@ -686,62 +686,62 @@ int svp_start_wdt(void)
 	return 0;
 }
 
-int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
+int _secmem_region_offline(phys_addr_t *pa, unsigned long *size,
 		u64 upper_limit)
 {
 	int retval = 0;
-	struct SSMR_Region *region = &_svpregs[SSMR_SVP];
+	struct SSMR_Region *region = &_ssmregs[SSMR_SECMEM];
 
 	pr_info("%s: >>>>>> state: %s, upper_limit:0x%llx\n", __func__,
-			svp_state_text[region->state], upper_limit);
+			ssmr_state_text[region->state], upper_limit);
 
-	if (region->state != SVP_STATE_ON) {
+	if (region->state != SSMR_STATE_ON) {
 		retval = -EBUSY;
 		goto out;
 	}
 
-	region->state = SVP_STATE_OFFING;
+	region->state = SSMR_STATE_OFFING;
 	retval = memory_region_offline(region, pa, size, upper_limit);
 	if (retval < 0) {
-		region->state = SVP_STATE_ON;
+		region->state = SSMR_STATE_ON;
 		retval = -EAGAIN;
 		goto out;
 	}
 
-	region->state = SVP_STATE_OFF;
+	region->state = SSMR_STATE_OFF;
 	pr_info("%s: [reserve done]: pa 0x%lx, size 0x%lx\n",
 			__func__, (unsigned long)page_to_phys(region->page),
 			region->count << PAGE_SHIFT);
 
 out:
 	pr_info("%s: <<<<<< state: %s, retval: %d\n", __func__,
-			svp_state_text[region->state], retval);
+			ssmr_state_text[region->state], retval);
 	return retval;
 }
 
-int svp_region_online(void)
+int secmem_region_online(void)
 {
-	struct SSMR_Region *region = &_svpregs[SSMR_SVP];
+	struct SSMR_Region *region = &_ssmregs[SSMR_SECMEM];
 	int retval;
 
 	pr_info("%s: >>>>>> enter state: %s\n", __func__,
-			svp_state_text[region->state]);
+			ssmr_state_text[region->state]);
 
-	if (region->state != SVP_STATE_OFF) {
+	if (region->state != SSMR_STATE_OFF) {
 		retval = -EBUSY;
 		goto out;
 	}
 
-	region->state = SVP_STATE_ONING_WAIT;
+	region->state = SSMR_STATE_ONING_WAIT;
 	retval = memory_region_online(region);
-	region->state = SVP_STATE_ON;
+	region->state = SSMR_STATE_ON;
 
 out:
 	pr_info("%s: <<<<<< leave state: %s, retval: %d\n",
-			__func__, svp_state_text[region->state], retval);
+			__func__, ssmr_state_text[region->state], retval);
 	return retval;
 }
-EXPORT_SYMBOL(svp_region_online);
+EXPORT_SYMBOL(secmem_region_online);
 
 static long svp_cma_ioctl(struct file *filp, unsigned int cmd,
 				unsigned long arg)
@@ -803,10 +803,10 @@ static ssize_t memory_ssmr_write(struct file *file,
 	buf[buf_size] = 0;
 
 	pr_info("%s: cmd> %s\n", __func__, buf);
-	if (strncmp(buf, "svp=on", 6) == 0)
-		svp_region_online();
-	else if (strncmp(buf, "svp=off", 7) == 0)
-		_svp_region_offline(NULL, NULL, ssmr_upper_limit);
+	if (strncmp(buf, "secmem=on", 9) == 0)
+		secmem_region_online();
+	else if (strncmp(buf, "secmem=off", 10) == 0)
+		_secmem_region_offline(NULL, NULL, ssmr_upper_limit);
 	else if (strncmp(buf, "tui=on", 6) == 0)
 		tui_region_online();
 	else if (strncmp(buf, "tui=off", 7) == 0)
@@ -826,10 +826,10 @@ static int memory_ssmr_show(struct seq_file *m, void *v)
 {
 	phys_addr_t cma_base = cma_get_base(cma);
 	phys_addr_t cma_end = cma_base + cma_get_size(cma);
-	unsigned long svp_reg_page_pa =
-		(unsigned long) page_to_phys(_svpregs[SSMR_SVP].page);
+	unsigned long secmem_reg_page_pa =
+		(unsigned long) page_to_phys(_ssmregs[SSMR_SECMEM].page);
 	unsigned long tui_reg_page_pa =
-		(unsigned long) page_to_phys(_svpregs[SSMR_TUI].page);
+		(unsigned long) page_to_phys(_ssmregs[SSMR_TUI].page);
 
 	seq_printf(m, "cma info: [%pa-%pa] (0x%lx)\n",
 		&cma_base, &cma_end,
@@ -840,19 +840,19 @@ static int memory_ssmr_show(struct seq_file *m, void *v)
 		__phys_to_pfn(cma_base), __phys_to_pfn(cma_end),
 		cma_get_size(cma) >> PAGE_SHIFT);
 
-	seq_printf(m, "svp region base:0x%lx, count %lu, state %s.%s\n",
-		_svpregs[SSMR_SVP].page == NULL ? 0 : svp_reg_page_pa,
-		_svpregs[SSMR_SVP].count,
-		svp_state_text[_svpregs[SSMR_SVP].state],
-		_svpregs[SSMR_SVP].use_cache_memory ? " (cache memory)" : "");
+	seq_printf(m, "secmem region base:0x%lx, count %lu, state %s.%s\n",
+		_ssmregs[SSMR_SECMEM].page == NULL ? 0 : secmem_reg_page_pa,
+		_ssmregs[SSMR_SECMEM].count,
+		ssmr_state_text[_ssmregs[SSMR_SECMEM].state],
+		_ssmregs[SSMR_SECMEM].use_cache_memory ? "(cache memory)" : "");
 
 	seq_printf(m, "tui region base:0x%lx, count %lu, state %s.%s\n",
-		_svpregs[SSMR_TUI].page == NULL ? 0 : tui_reg_page_pa,
-		_svpregs[SSMR_TUI].count,
-		svp_state_text[_svpregs[SSMR_TUI].state],
-		_svpregs[SSMR_TUI].use_cache_memory ? " (cache memory)" : "");
+		_ssmregs[SSMR_TUI].page == NULL ? 0 : tui_reg_page_pa,
+		_ssmregs[SSMR_TUI].count,
+		ssmr_state_text[_ssmregs[SSMR_TUI].state],
+		_ssmregs[SSMR_TUI].use_cache_memory ? "(cache memory)" : "");
 
-	seq_printf(m, "cma usage: %lu pages\n", svp_usage_count);
+	seq_printf(m, "cma usage: %lu pages\n", ssmr_usage_count);
 
 	seq_puts(m, "[CONFIG]:\n");
 	seq_printf(m, "ssmr_upper_limit: 0x%llx\n", ssmr_upper_limit);
@@ -879,15 +879,15 @@ static int __init ssmr_sanity(void)
 	u64 total_target_size = secmem_usable_size + tui_size;
 	char *err_msg = NULL;
 
-	if (_svpregs[SSMR_SVP].use_cache_memory ||
-		_svpregs[SSMR_TUI].use_cache_memory) {
+	if (_ssmregs[SSMR_SECMEM].use_cache_memory ||
+		_ssmregs[SSMR_TUI].use_cache_memory) {
 		pr_info("%s, dedicate reserved memory as source\n", __func__);
 		return 0;
 	}
 
 	if (!cma) {
-		pr_info("[INIT FAIL]: cma is not inited\n");
-		err_msg = "SVP sanity: CMA init fail\n";
+		pr_err("[INIT FAIL]: cma is not inited\n");
+		err_msg = "SSMR sanity: CMA init fail\n";
 		goto out;
 	}
 
@@ -896,10 +896,10 @@ static int __init ssmr_sanity(void)
 	size = cma_get_size(cma);
 
 	if (start + total_target_size > ssmr_upper_limit) {
-		pr_info("[INVALID REGION]: CMA PA over 32 bit\n");
+		pr_err("[INVALID REGION]: CMA PA over 32 bit\n");
 		pr_info("Total target size: %pa, cma start: %pa, size: %pa\n",
 				&total_target_size, &start, &size);
-		err_msg = "SVP sanity: invalid CMA region due to over 32bit\n";
+		err_msg = "SSMR sanity: invalid CMA region due to over 32bit\n";
 		goto out;
 	}
 
@@ -911,14 +911,14 @@ out:
 			| DB_OPT_DUMPSYS_ACTIVITY
 			| DB_OPT_PID_MEMORY_INFO /* smaps and hprof */
 			| DB_OPT_DUMPSYS_PROCSTATS,
-			"SVP Sanity fail.\nCRDISPATCH_KEY:SVP_SS1\n",
+			"SSMR Sanity fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 			err_msg);
 	return -1;
 }
 
 
 static int __init memory_ssmr_init_region(char *name, u64 size,
-		struct SSMR_Region *region,
+		struct SSMR_Region *region, char *proc_entry_name,
 		const struct file_operations *entry_fops)
 {
 	struct proc_dir_entry *procfs_entry;
@@ -926,14 +926,16 @@ static int __init memory_ssmr_init_region(char *name, u64 size,
 	bool has_region = (has_dedicate_memory || size > 0);
 
 	if (!has_region) {
-		region->state = SVP_STATE_DISABLED;
+		region->state = SSMR_STATE_DISABLED;
 		return -1;
 	}
 
-	if (entry_fops) {
-		procfs_entry = proc_create(name, 0444, NULL, entry_fops);
+	if (entry_fops && proc_entry_name) {
+		procfs_entry = proc_create(proc_entry_name, 0444, NULL,
+						entry_fops);
 		if (!procfs_entry) {
-			pr_info("Failed to create procfs svp_region file\n");
+			pr_err("Failed to create procfs %s file\n",
+					proc_entry_name);
 			return -1;
 		}
 	}
@@ -957,12 +959,12 @@ static int __init memory_ssmr_init_region(char *name, u64 size,
 				&memory_ssmr_registration);
 		region->use_cache_memory = true;
 		region->cache_page = page;
-		svp_usage_count += region->count;
+		ssmr_usage_count += region->count;
 		ret_map = pmd_unmapping(region_cache_page_va,
 				region->count << PAGE_SHIFT);
 
 		if (ret_map < 0) {
-			pr_info("[unmapping fail]: virt:0x%lx, size:0x%lx",
+			pr_err("[unmapping fail]: virt:0x%lx, size:0x%lx",
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
 
@@ -985,7 +987,7 @@ static int __init memory_ssmr_init_region(char *name, u64 size,
 	}
 
 region_init_done:
-	region->state = SVP_STATE_ON;
+	region->state = SSMR_STATE_ON;
 	pr_info("%s: %s is enable with size: %pa\n",
 			__func__, name, &size);
 	return 0;
@@ -996,7 +998,7 @@ static int __init memory_ssmr_debug_init(void)
 	struct dentry *dentry;
 
 	if (ssmr_sanity() < 0) {
-		pr_info("SSMR sanity fail\n");
+		pr_err("SSMR sanity fail\n");
 		return 1;
 	}
 
@@ -1005,12 +1007,12 @@ static int __init memory_ssmr_debug_init(void)
 	dentry = debugfs_create_file("memory-ssmr", 0644, NULL, NULL,
 			&memory_ssmr_fops);
 	if (!dentry)
-		pr_info("Failed to create debugfs memory_ssmr file\n");
+		pr_warn("Failed to create debugfs memory_ssmr file\n");
 
-	memory_ssmr_init_region("svp_region", secmem_usable_size,
-			&_svpregs[SSMR_SVP], &svp_cma_fops);
+	memory_ssmr_init_region("secmem_region", secmem_usable_size,
+			&_ssmregs[SSMR_SECMEM], "svp_region", &svp_cma_fops);
 	memory_ssmr_init_region("tui_region", tui_size,
-			&_svpregs[SSMR_TUI], NULL);
+			&_ssmregs[SSMR_TUI], NULL, NULL);
 
 	return 0;
 }
