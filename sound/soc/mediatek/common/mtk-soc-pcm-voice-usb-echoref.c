@@ -191,13 +191,13 @@ static int mtk_usb_echoref_close(struct snd_pcm_substream *substream)
 
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			if (usb_md_select) {
-				SetConnection(Soc_Aud_InterCon_DisConnect,
-					      Soc_Aud_InterConnectionInput_I05,
-					      Soc_Aud_InterConnectionOutput_O27);
+				SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+						  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+						  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			} else {
-				SetConnection(Soc_Aud_InterCon_DisConnect,
-					      Soc_Aud_InterConnectionInput_I05,
-					      Soc_Aud_InterConnectionOutput_O24);
+				SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+						  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+						  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
 			}
 
 			/* resume pbuf size */
@@ -274,13 +274,14 @@ static int mtk_usb_echoref_prepare(struct snd_pcm_substream *substream)
 		/* set connection */
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			if (usb_md_select) {
-				SetConnection(Soc_Aud_InterCon_Connection,
-					      Soc_Aud_InterConnectionInput_I05,
-					      Soc_Aud_InterConnectionOutput_O27);
+				SetIntfConnection(Soc_Aud_InterCon_Connection,
+						  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+						  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			} else {
-				SetConnection(Soc_Aud_InterCon_Connection,
-					      Soc_Aud_InterConnectionInput_I05,
-					      Soc_Aud_InterConnectionOutput_O24);
+				SetIntfConnection(Soc_Aud_InterCon_Connection,
+						  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+						  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+
 			}
 		}
 
