@@ -157,7 +157,7 @@ static ssize_t mt_app_is_sports_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -197,7 +197,7 @@ static ssize_t mt_app_is_running_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -231,7 +231,7 @@ static ssize_t mt_app_load_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -259,7 +259,7 @@ static ssize_t mt_app_tlp_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -287,7 +287,7 @@ static ssize_t mt_app_btask_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -315,7 +315,7 @@ static ssize_t mt_app_up_times_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -343,7 +343,7 @@ static ssize_t mt_app_down_times_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -371,7 +371,7 @@ static ssize_t mt_native_is_running_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -405,7 +405,7 @@ static ssize_t mt_native_btask_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -433,7 +433,7 @@ static ssize_t mt_native_up_times_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -461,7 +461,7 @@ static ssize_t mt_native_down_times_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -489,7 +489,7 @@ static ssize_t mt_native_pid_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -517,7 +517,7 @@ static ssize_t mt_java_btask_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -545,7 +545,7 @@ static ssize_t mt_java_up_times_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -573,7 +573,7 @@ static ssize_t mt_turbo_util_thresh_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -601,7 +601,7 @@ static ssize_t mt_smart_turbo_support_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -636,7 +636,7 @@ static ssize_t mt_smart_force_isolate_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -679,7 +679,7 @@ static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -714,7 +714,7 @@ static ssize_t mt_smart_trace_enable_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
@@ -749,7 +749,7 @@ static ssize_t mt_smart_uevent_enable_write(struct file *filp, const char *ubuf,
 
 	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
 
-	if (copy_from_user(&buf, ubuf, len))
+	if (copy_from_user(buf, ubuf, len))
 		return -EFAULT;
 	buf[cnt] = '\0';
 
