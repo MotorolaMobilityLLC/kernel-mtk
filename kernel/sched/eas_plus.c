@@ -272,7 +272,7 @@ static int __init parse_dt_eas(void)
 }
 core_initcall(parse_dt_eas)
 
-#if defined(CONFIG_SCHED_HMP) || defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
+#if defined(CONFIG_SCHED_HMP) && defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
 static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
 {
 	int tsk_cache_hot = 0;
@@ -506,7 +506,7 @@ static struct sched_entity
 {
 	int num_tasks = idle_prefer_max_tasks;
 	const struct cpumask *hmp_target_mask = NULL;
-	int target_capacity;
+	int target_capacity, src_capacity;
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se;
 
@@ -519,7 +519,8 @@ static struct sched_entity
 	 *	a. idle prefer
 	 *	b. task_capacity > belonged CPU
 	 */
-	target_capacity = capacity_orig_of(cpu);
+	src_capacity = capacity_orig_of(cpu);
+	target_capacity = capacity_orig_of(target_cpu);
 	cfs_rq = &cpu_rq(cpu)->cfs;
 	se = __pick_first_entity(cfs_rq);
 	while (num_tasks && se) {
@@ -529,14 +530,17 @@ static struct sched_entity
 			struct task_struct *p;
 
 			p = task_of(se);
+
 			if (check_min_cap &&
-			    (schedtune_task_capacity_min(p) >= target_capacity))
+			    (schedtune_task_capacity_min(p) >= src_capacity))
 				return se;
 
-			if (schedtune_prefer_idle(task_of(se))) {
+			if (schedtune_prefer_idle(task_of(se)) &&
+			    target_capacity >= schedtune_task_capacity_min(p)) {
 				if (!check_min_cap)
 					return se;
-				if (!backup_task) {
+
+				if (backup_task && !*backup_task) {
 					*backup_cpu = cpu;
 					/* get task and selection inside
 					 * rq lock
