@@ -58,7 +58,7 @@
  * Enable dump during debugging flow, for example, HWT.
  * The debugging information will be collected to DB.
  */
-/* #define CONFIG_MTK_TIMER_AEE_DUMP */
+#define CONFIG_MTK_TIMER_AEE_DUMP
 
 #ifdef CONFIG_MTK_TIMER_AEE_DUMP
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -221,11 +221,7 @@ static struct clock_event_device gpt_clockevent = {
 
 static struct irqaction gpt_irq = {
 	.name = "mt-gpt",
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW | IRQF_PERCPU,
-#else
-	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW,
-#endif
 	.handler = gpt_handler,
 	.dev_id = &gpt_clockevent,
 };
@@ -445,15 +441,12 @@ static void __gpt_start(struct gpt_device *dev)
 
 static void __gpt_wait_clrcnt(void)
 {
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	/*
 	 * if gpt is running in 32K domain, it needs 3T (~90 us) for clearing
 	 * old counter.
 	 */
 	#define WAIT_CLR_CNT_TIME_NS 100000
-#else
-	#define WAIT_CLR_CNT_TIME_NS 300
-#endif
+
 	uint64_t start_time = 0, end_time = 0;
 
 	start_time = sched_clock();
@@ -754,7 +747,6 @@ static inline void setup_clkevt(u32 freq, int irq)
 	clockevents_register_device(evt);
 }
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 static void __init mt_gpt_init_acao(struct device_node *node)
 {
 	u32 freq;
@@ -787,9 +779,6 @@ static void __init mt_gpt_init_acao(struct device_node *node)
 	pr_info("[mtk_gpt] acao clkevt, freq=%d\n",	freq);
 
 }
-#else
-static void __init mt_gpt_init_acao(struct device_node *node) {};
-#endif
 
 static int __init mt_gpt_init(struct device_node *node)
 {
