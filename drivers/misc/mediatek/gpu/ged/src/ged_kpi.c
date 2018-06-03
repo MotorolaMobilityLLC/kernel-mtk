@@ -404,6 +404,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 						fps_grp[i] = 45;
 					else if (fps_records[i] <= 49)
 						fps_grp[i] = 48;
+					else if (fps_records[i] <= 51)
+						fps_grp[i] = 50;
 					else
 						fps_grp[i] = 60;
 				}
@@ -436,6 +438,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					fps = 45;
 				else if (fps <= 49)
 					fps = 48;
+				else if (fps <= 51)
+					fps = 50;
 				else
 					fps = 60;
 
@@ -458,6 +462,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 						fps_grp[i] = 45;
 					else if (fps_records[i] <= 49)
 						fps_grp[i] = 48;
+					else if (fps_records[i] <= 51)
+						fps_grp[i] = 50;
 					else
 						fps_grp[i] = 60;
 				}
