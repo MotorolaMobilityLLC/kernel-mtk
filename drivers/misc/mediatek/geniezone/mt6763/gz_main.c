@@ -239,6 +239,11 @@ static int tipc_test_send(tipc_k_handle handle, void *param, int param_size)
 {
 	ssize_t rc;
 
+	if (!handle || !param) {
+		KREE_DEBUG("%s: invalid param\n", __func__);
+		return -1;
+	}
+
 	KREE_DEBUG(" ===> %s: param_size = %d.\n", __func__, param_size);
 	rc = tipc_k_write(handle, param, param_size, O_RDWR);
 	KREE_DEBUG(" ===> %s: tipc_k_write rc = %d.\n", __func__, (int)rc);
@@ -249,6 +254,11 @@ static int tipc_test_send(tipc_k_handle handle, void *param, int param_size)
 static int tipc_test_rcv(tipc_k_handle handle, void *data, size_t len)
 {
 	ssize_t rc;
+
+	if (!handle || !data) {
+		KREE_DEBUG("%s: invalid param\n", __func__);
+		return -1;
+	}
 
 	rc = tipc_k_read(handle, (void *)data, len, O_RDWR);
 	KREE_DEBUG(" ===> %s: tipc_k_read(1) rc = %d.\n", __func__, (int)rc);
@@ -287,7 +297,8 @@ int gz_tipc_test(void *args)
 	rc = tipc_test_rcv(h, buf1, sizeof(buf2));
 	CHECK_GT_ZERO(rc, "rcv 2");
 
-	rc = tipc_k_disconnect(h);
+	if (h)
+		rc = tipc_k_disconnect(h);
 	CHECK_EQ(0, rc, "disconnect");
 
 	mutex_unlock(&ut_mutex);

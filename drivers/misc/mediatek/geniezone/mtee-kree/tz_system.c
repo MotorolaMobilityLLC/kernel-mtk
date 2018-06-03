@@ -121,7 +121,7 @@ static TZ_RESULT KREE_OpenSysFd(void)
 
 	ret = tipc_k_connect(&_sys_service_h, GZ_SYS_SERVICE_NAME);
 	if (ret < 0) {
-		KREE_DEBUG("%s: Failed to connect to service\n", __func__);
+		KREE_DEBUG("%s: Failed to connect to service, ret = %d\n", __func__, ret);
 		return TZ_RESULT_ERROR_COMMUNICATION;
 	}
 	_sys_service_Fd = KREE_SESSION_HANDLE_MAX_SIZE;
@@ -146,7 +146,7 @@ static TZ_RESULT KREE_OpenFd(const char *port, int32_t *Fd)
 	KREE_DEBUG(" ===> %s: %s.\n", __func__, port);
 	ret = tipc_k_connect(&h, port);
 	if (ret < 0) {
-		KREE_DEBUG("%s: Failed to connect to service\n", __func__);
+		KREE_DEBUG("%s: Failed to connect to service, ret = %d\n", __func__, ret);
 		return TZ_RESULT_ERROR_COMMUNICATION;
 	}
 	tmp = _HandleToFd(h);
