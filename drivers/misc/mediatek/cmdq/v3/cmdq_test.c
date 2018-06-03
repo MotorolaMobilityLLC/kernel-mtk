@@ -5106,6 +5106,37 @@ void testcase_insert_when_jump(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+void testcase_engineflag_conflict_dump(void)
+{
+	struct cmdqRecStruct *handle, *handle2;
+	struct TaskStruct *task, *task2;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdq_op_wait_no_clear(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handle, false);
+
+	cmdq_task_create(CMDQ_SCENARIO_SUB_DISP, &handle2);
+	handle2->engineFlag |= CMDQ_ENG_DISP_AAL;
+	cmdq_op_wait_no_clear(handle2, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handle2, false);
+
+	_test_submit_async(handle, &task);
+	_test_submit_async(handle2, &task2);
+
+	/* After wait we should get conflict dump in log without crash. */
+	cmdqCoreAutoReleaseTask(task);
+	cmdqCoreAutoReleaseTask(task2);
+
+	cmdq_task_destroy(handle);
+	cmdq_task_destroy(handle2);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 
 enum ENGINE_POLICY_ENUM {
 	CMDQ_TESTCASE_ENGINE_NOT_SET,
@@ -6114,6 +6145,9 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 151:
+		testcase_engineflag_conflict_dump();
 		break;
 	case 150:
 		testcase_insert_when_jump();
