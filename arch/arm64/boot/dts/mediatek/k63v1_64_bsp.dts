@@ -615,6 +615,7 @@
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <91>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 91 0x0>;
+};
 #endif
 #ifdef CONFIG_TCPC_MT6370
 &mt6370_typec {
