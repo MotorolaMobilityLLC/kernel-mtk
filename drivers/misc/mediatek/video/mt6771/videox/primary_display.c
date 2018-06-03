@@ -6444,6 +6444,7 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 {
 	int i = 0;
 	bool rsz = false;
+	int path = 0;
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
@@ -6458,12 +6459,12 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 		}
 	}
 
-	if ((HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num)) !=
-	     2) && (rsz == true)) {
-		struct disp_input_config *c = &cfg->input_cfg[0];
+	path = HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num));
+	if ((path != 2 && path != 3) && (rsz == true)) {
+		struct disp_input_config *c = &cfg->input_cfg[i];
 
-		DISPERR("not RPO but L0(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
-			c->src_offset_x, c->src_offset_y, c->src_width,
+		DISPERR("not RPO but L%d(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
+			i, c->src_offset_x, c->src_offset_y, c->src_width,
 			c->src_height, c->tgt_offset_x, c->tgt_offset_y,
 			c->tgt_width, c->tgt_height);
 	}

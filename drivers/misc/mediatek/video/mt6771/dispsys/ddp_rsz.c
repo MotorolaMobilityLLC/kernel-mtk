@@ -151,7 +151,11 @@ static int rsz_power_off(enum DISP_MODULE_ENUM module, void *qhandle)
 static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
 			     u32 *in_w, u32 *in_h, u32 *out_w, u32 *out_h)
 {
-	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
+	struct OVL_CONFIG_STRUCT *oc = NULL;
+
+	oc = &pconfig->ovl_config[0];
+	if (oc->layer_en && oc->source == OVL_LAYER_SOURCE_RESERVED)
+		oc = &pconfig->ovl_config[1];
 
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
 		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
