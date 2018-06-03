@@ -503,7 +503,8 @@ static int mmdvfs_apply_vcore_hw_configurtion_by_step(
 		vcore_step = hw_config_ptr->vcore_step;
 	}
 
-	vcorefs_request_dvfs_opp(self->vcore_kicker, vcore_step);
+	if (vcorefs_request_dvfs_opp(self->vcore_kicker, vcore_step) != 0)
+		MMDVFSMSG("Set vcore step failed: %d\n", vcore_step);
 	/* Set vcore step */
 	MMDVFSDEBUG(3, "Set vcore step: %d\n", vcore_step);
 
