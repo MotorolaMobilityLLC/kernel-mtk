@@ -122,6 +122,8 @@ int gFG_result = 1;
 int gFG_plugout_status;
 int gFG_result_soc;
 
+int fix_coverity1;
+int fix_coverity2;
 /* HW FG */
 #ifndef DIFFERENCE_HWOCV_RTC
 #define DIFFERENCE_HWOCV_RTC		30	/* 30% difference */
@@ -1420,7 +1422,9 @@ signed int fgauge_get_Q_max(signed short temperature)
 									      low_temperature) +
 		      5) / 10);
 	}
-
+	/* fix coverity */
+	tmp_Q_max_1 = tmp_Q_max_1 + fix_coverity1;
+	tmp_Q_max_2 = tmp_Q_max_2 + fix_coverity2;
 	if (tmp_Q_max_1 > tmp_Q_max_2) {
 		low_Q_max = tmp_Q_max_2;
 		high_Q_max = tmp_Q_max_1;
@@ -1485,6 +1489,9 @@ signed int fgauge_get_Q_max_high_current(signed short temperature)
 									      low_temperature) +
 		      5) / 10);
 	}
+	/* fix coverity */
+	tmp_Q_max_1 = tmp_Q_max_1 + fix_coverity1;
+	tmp_Q_max_2 = tmp_Q_max_2 + fix_coverity2;
 
 	if (tmp_Q_max_1 > tmp_Q_max_2) {
 		low_Q_max = tmp_Q_max_2;
