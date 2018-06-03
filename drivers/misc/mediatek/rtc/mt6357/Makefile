@@ -12,7 +12,7 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 
 obj-$(CONFIG_MTK_RTC) := mtk_rtc_hal.o
 

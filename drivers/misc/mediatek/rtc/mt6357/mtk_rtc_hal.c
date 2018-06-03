@@ -168,6 +168,21 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x), RTC_CON = %x\n", user, enable, pdn1, rtc_read(RTC_CON));
 }
 
+void rtc_spar_alarm_clear_wait(void)
+{
+	unsigned long long timeout = sched_clock() + 500000000;
+
+	do {
+		if ((rtc_read(RTC_BBPU) & RTC_BBPU_CLR) == 0)
+			break;
+		else if (sched_clock() > timeout) {
+			pr_notice("%s, spar/alarm clear time out, %x,\n",
+				__func__, rtc_read(RTC_BBPU));
+			break;
+		}
+	} while (1);
+}
+
 void rtc_enable_k_eosc(void)
 {
 	u16 osc32;
@@ -234,7 +249,7 @@ void rtc_bbpu_pwrdown(bool auto_boot)
 
 void hal_rtc_bbpu_pwdn(bool charger_status)
 {
-	u16 con;
+	u16 con, bbpu;
 
 	rtc_disable_2sec_reboot();
 	rtc_enable_k_eosc();
@@ -245,6 +260,24 @@ void hal_rtc_bbpu_pwdn(bool charger_status)
 		rtc_write(RTC_CON, con);
 		rtc_write_trigger();
 	}
+	/* lpsd */
+	pr_notice("clear lpsd solution\n");
+	bbpu = RTC_BBPU_KEY | RTC_BBPU_CLR | RTC_BBPU_PWREN;
+	rtc_write(RTC_BBPU, bbpu);
+
+	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);	/* mask DOW */
+	rtc_write_trigger();
+
+	rtc_spar_alarm_clear_wait();
+
+	wk_pmic_enable_sdn_delay();
+
+	rtc_write(RTC_BBPU,
+			rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+	rtc_write_trigger();
+	pr_notice("RTC_AL_MASK= 0x%x RTC_IRQ_EN= 0x%x\n",
+			rtc_read(RTC_AL_MASK), rtc_read(RTC_IRQ_EN));
+	/* lpsd */
 	rtc_bbpu_pwrdown(true);
 }
 
@@ -385,4 +418,18 @@ void rtc_clock_enable(int enable)
 		pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
 			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 	}
+}
+
+void rtc_lpsd_restore_al_mask(void)
+{
+	pr_notice("rtc_lpsd_restore_al_mask\n");
+
+	rtc_write(RTC_BBPU,
+			rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+	rtc_write_trigger();
+	pr_notice("1st RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
+	/* mask DOW */
+	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);
+	rtc_write_trigger();
+	pr_notice("2nd RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
 }
