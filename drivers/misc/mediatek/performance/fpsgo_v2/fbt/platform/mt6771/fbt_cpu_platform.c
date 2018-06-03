@@ -19,12 +19,14 @@
 
 void fbt_set_boost_value(unsigned int base_blc)
 {
-	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, base_blc - 1 + 4000);
+	base_blc = (base_blc << 10) / 100U;
+	base_blc = clamp(base_blc, 1U, 1024U);
+	capacity_min_write_for_perf_idx(CGROUP_TA, (int)base_blc);
 }
 
 void fbt_clear_boost_value(void)
 {
-	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+	capacity_min_write_for_perf_idx(CGROUP_TA, 0);
 }
 
 int fbt_is_mips_different(void)
