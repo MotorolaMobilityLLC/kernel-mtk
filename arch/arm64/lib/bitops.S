@@ -17,6 +17,7 @@
  */
 
 #include <linux/linkage.h>
+#include <asm/alternative.h>
 #include <asm/assembler.h>
 #include <asm/lse.h>
 
@@ -31,6 +32,7 @@ ENTRY(	\name	)
 	eor	w0, w0, w3		// Clear low bits
 	mov	x2, #1
 	add	x1, x1, x0, lsr #3	// Get word offset
+alternative_insn  "nop", "dmb sy", ARM64_WORKAROUND_855872
 alt_lse "	prfm	pstl1strm, [x1]",	"nop"
 	lsl	x3, x2, x3		// Create mask
 
@@ -49,6 +51,7 @@ ENTRY(	\name	)
 	eor	w0, w0, w3		// Clear low bits
 	mov	x2, #1
 	add	x1, x1, x0, lsr #3	// Get word offset
+alternative_insn  "nop", "dmb sy", ARM64_WORKAROUND_855872
 alt_lse "	prfm	pstl1strm, [x1]",	"nop"
 	lsl	x4, x2, x3		// Create mask
 

@@ -31,6 +31,7 @@
 #include <linux/perf_event.h>
 #include <linux/preempt.h>
 
+#include <asm/alternative.h>
 #include <asm/bug.h>
 #include <asm/cpufeature.h>
 #include <asm/exception.h>
@@ -120,6 +121,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
 	 * hardware update of the access/dirty state.
 	 */
 	asm volatile("//	ptep_set_access_flags\n"
+	ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 	"	prfm	pstl1strm, %2\n"
 	"1:	ldxr	%0, %2\n"
 	"	and	%0, %0, %3		// clear PTE_RDONLY\n"

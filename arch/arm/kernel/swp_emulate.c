@@ -26,6 +26,7 @@
 #include <linux/syscalls.h>
 #include <linux/perf_event.h>
 
+#include <asm/barrier.h>
 #include <asm/opcodes.h>
 #include <asm/system_info.h>
 #include <asm/traps.h>
@@ -35,6 +36,8 @@
  * Error-checking SWP macros implemented using ldrex{b}/strex{b}
  */
 #define __user_swpX_asm(data, addr, res, temp, B)		\
+do {								\
+	errata_855872_dmb();					\
 	__asm__ __volatile__(					\
 	"0:	ldrex"B"	%2, [%3]\n"			\
 	"1:	strex"B"	%0, %1, [%3]\n"			\
@@ -54,7 +57,8 @@
 	"	.previous"					\
 	: "=&r" (res), "+r" (data), "=&r" (temp)		\
 	: "r" (addr), "i" (-EAGAIN), "i" (-EFAULT)		\
-	: "cc", "memory")
+	: "cc", "memory");					\
+} while (1)							\
 
 #define __user_swp_asm(data, addr, res, temp) \
 	__user_swpX_asm(data, addr, res, temp, "")
