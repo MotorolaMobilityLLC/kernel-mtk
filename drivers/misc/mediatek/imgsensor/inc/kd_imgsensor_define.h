@@ -228,6 +228,15 @@ typedef enum {
 } SENSOR_STATE_ENUM;
 
 typedef enum {
+	SENSOR_TEMPERATURE_UNKNOWN_STATUS           = (1 << 0), /* Init status, not finish search sensor flow */
+	SENSOR_TEMPERATURE_VALID                    = (1 << 1), /* Temperature is valid or not */
+	SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR     = (1 << 2), /* Cannot search sensor, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
+	SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL      = (1 << 3), /* Not support thermal, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
+	SENSOR_TEMPERATURE_NOT_POWER_ON             = (1 << 4), /* Not power on, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
+	SENSOR_TEMPERATURE_MAX
+} SENSOR_TEMPERATURE_STATE_ENUM;
+
+typedef enum {
 	SENSOR_AF_IDLE = 0,
 	SENSOR_AF_FOCUSING,
 	SENSOR_AF_FOCUSED,
