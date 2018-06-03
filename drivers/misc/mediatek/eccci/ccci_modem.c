@@ -444,11 +444,26 @@ int ccci_md_stop(unsigned char md_id, unsigned int stop_type)
 
 	return md->ops->stop(md, stop_type);
 }
+
+int __weak md_cd_vcore_config(unsigned int md_id, unsigned int hold_req)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+	return 0;
+}
+
+int ccci_md_pre_start(unsigned char md_id)
+{
+	return md_cd_vcore_config(md_id, 1);
+}
 int ccci_md_start(unsigned char md_id)
 {
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
 
 	return md->ops->start(md);
+}
+int ccci_md_post_start(unsigned char md_id)
+{
+	return md_cd_vcore_config(md_id, 0);
 }
 int ccci_md_soft_stop(unsigned char md_id, unsigned int sim_mode)
 {

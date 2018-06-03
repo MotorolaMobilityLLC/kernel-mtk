@@ -268,6 +268,7 @@ void cldma_dump_register(struct md_cd_ctrl *md_ctrl);
 void md_cldma_hw_reset(unsigned char md_id);
 int md_cd_pccif_send(struct ccci_modem *md, int channel_id);
 void md_cd_dump_pccif_reg(struct ccci_modem *md);
+int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req);
 
 /* ADD_SYS_CORE */
 int ccci_modem_syssuspend(void);

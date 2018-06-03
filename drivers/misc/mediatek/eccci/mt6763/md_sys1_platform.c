@@ -30,6 +30,7 @@
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
+#include <mtk_vcorefs_manager.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 
@@ -770,6 +771,27 @@ void md1_pll_init(struct ccci_modem *md)
 
 void __attribute__((weak)) kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 {
+}
+
+int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req)
+{
+	int ret = 0;
+	static int is_hold;
+
+	CCCI_BOOTUP_LOG(md_id, TAG, "md_cd_vcore_config: is_hold=%d, hold_req=%d\n", is_hold, hold_req);
+	if (hold_req && is_hold == 0) {
+		ret = vcorefs_request_dvfs_opp(KIR_APCCCI, OPP_0);
+		is_hold = 1;
+	} else if (hold_req == 0 && is_hold) {
+		ret = vcorefs_request_dvfs_opp(KIR_APCCCI, OPP_UNREQ);
+		is_hold = 0;
+	} else
+		CCCI_ERROR_LOG(md_id, TAG, "invalid hold_req: is_hold=%d, hold_req=%d\n", is_hold, hold_req);
+
+	if (ret)
+		CCCI_ERROR_LOG(md_id, TAG, "md_cd_vcore_config fail: ret=%d, hold_req=%d\n", ret, hold_req);
+
+	return ret;
 }
 
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)

@@ -365,6 +365,8 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 void ccci_md_exception_handshake(unsigned char md_id, int timeout);
 int ccci_md_send_ccb_tx_notify(unsigned char md_id, int core_id);
 int ccci_md_set_boot_data(unsigned char md_id, unsigned int data[], int len);
+int ccci_md_pre_start(unsigned char md_id);
+int ccci_md_post_start(unsigned char md_id);
 
 struct ccci_modem_cfg {
 	unsigned int load_type;
