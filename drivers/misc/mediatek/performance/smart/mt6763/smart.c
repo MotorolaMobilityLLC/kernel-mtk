@@ -36,6 +36,7 @@
 #include <trace.h>
 
 #include <linux/platform_device.h>
+#include <mt-plat/met_drv.h>
 #include "smart.h"
 
 #define SEQ_printf(m, x...)\
@@ -128,11 +129,14 @@ inline void smart_tracer(int pid, char *name, int count)
 {
 	if (!trace_enable || !name)
 		return;
-
+#if 0
 	preempt_disable();
 	event_trace_printk(mark_addr, "C|%d|%s|%d\n",
 			   pid, name, count);
 	preempt_enable();
+#else
+	met_tag_oneshot(0, name, count);
+#endif
 }
 
 
@@ -1009,13 +1013,13 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 		/* check turbo mode */
 		sched_get_cluster_util(0, &ll_util, &ll_cap);
 		prev_enable = turbo_mode_enable;
-		if (htask <= 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
+		if (htask == 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
 			turbo_mode_enable = 1;
 			if (log_enable)
 				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
 				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
 			if (turbo_mode_enable != prev_enable) {
-				smart_tracer(-1, "turbo_enable", 1);
+				smart_tracer(0, "turbo_mode_enable", 1);
 			}
 		} else {
 			turbo_mode_enable = 0;
@@ -1023,7 +1027,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
 				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
 			if (turbo_mode_enable != prev_enable) {
-				smart_tracer(-1, "turbo_enable", 0);
+				smart_tracer(0, "turbo_mode_enable", 0);
 			}
 		}
 
