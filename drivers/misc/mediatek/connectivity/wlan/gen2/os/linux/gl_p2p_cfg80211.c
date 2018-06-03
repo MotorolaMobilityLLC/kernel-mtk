@@ -1887,7 +1887,7 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 	RF_CHANNEL_INFO_T aucChannelList[MAX_2G_BAND_CHN_NUM];
 	UINT_8 ucNumOfChannel, i, ucIdx;
 	UINT_16 u2APNumScore = 0, u2UpThreshold = 0, u2LowThreshold = 0, ucInnerIdx = 0;
-	UINT_32 u4BufLen, u4LteSafeChnBitMask_2G = 0;
+	UINT_32 u4BufLen, u4LteSafeChnBitMask_2G = 0x7FFE;
 	UINT_32 u4AcsChnReport[5];
 
 	P_PARAM_GET_CHN_INFO prGetChnLoad, prQueryLteChn;
@@ -1996,6 +1996,11 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 
 		kalMemFree(prQueryLteChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_INFO));
 	}
+
+#if CFG_TC10_FEATURE
+	/* Restrict 2.4G band channel selection range to 1~11 per customer's request */
+	u4LteSafeChnBitMask_2G &= 0x0FFE;
+#endif
 
 	/* 4. Find out the best channel, skip LTE unsafe channels */
 	for (i = 0; i < ucNumOfChannel; i++) {
