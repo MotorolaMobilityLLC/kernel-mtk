@@ -96,6 +96,9 @@ obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-$(CONFIG_REG_MONITOR_DRIVER) += reg_monitor/
 obj-$(CONFIG_MTK_PMIC)	+= power/
+ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+obj-y	+= power/
+endif
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_PMIC_WRAP_HAL) += pmic_wrap/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
