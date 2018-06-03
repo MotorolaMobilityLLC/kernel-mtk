@@ -662,6 +662,47 @@ void ccci_power_off(void)
 	md1_pmic_setting_on();
 }
 
+static void md1_pre_access_md_reg(struct ccci_modem *md)
+{
+	/*clear dummy reg flag to access modem reg*/
+	RAnd2W(infra_ao_base, INFRA_AP2MD_DUMMY_REG, (~(0x1 << INFRA_AP2MD_DUMMY_BIT)));
+	CCCI_BOOTUP_LOG(md->index, TAG, "pre: ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
+		cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
+	/*disable MD to AP*/
+	ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
+	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
+			!= (0x1 << INFRA_MD2PERI_PROT_BIT))
+		;
+	CCCI_BOOTUP_LOG(md->index, TAG, "md2peri: en[0x%X], rdy[0x%X]\n",
+		cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_EN),
+		cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY));
+}
+
+static void md1_post_access_md_reg(struct ccci_modem *md)
+{
+	/*disable AP to MD*/
+	ROr2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (0x1 << INFRA_PERI2MD_PROT_BIT));
+	while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT))
+			!= (0x1 << INFRA_PERI2MD_PROT_BIT))
+		;
+	CCCI_BOOTUP_LOG(md->index, TAG, "peri2md: en[0x%X], rdy[0x%X]\n",
+		cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_EN),
+		cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY));
+
+	/*enable MD to AP*/
+	RAnd2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (~(0x1 << INFRA_MD2PERI_PROT_BIT)));
+	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT)))
+		;
+	CCCI_BOOTUP_LOG(md->index, TAG, "md2peri: en[0x%X], rdy[0x%X]\n",
+		cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_EN),
+		cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY));
+
+	/*set dummy reg flag and let md access AP*/
+	ROr2W(infra_ao_base, INFRA_AP2MD_DUMMY_REG, (0x1 << INFRA_AP2MD_DUMMY_BIT));
+	CCCI_BOOTUP_LOG(md->index, TAG, "post: ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
+		cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
+}
+
 void md1_pll_init(struct ccci_modem *md)
 {
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
@@ -745,6 +786,8 @@ int md_cd_power_on(struct ccci_modem *md)
 	if (ret)
 		return ret;
 
+	md1_pre_access_md_reg(md);
+
 	/*md1_pcore_sram_on(md);*/
 
 	/* step 3: MD srcclkena setting */
@@ -782,6 +825,9 @@ int md_cd_let_md_go(struct ccci_modem *md)
 	CCCI_BOOTUP_LOG(md->index, TAG, "set MD boot slave\n");
 
 	cldma_write32(md_info->md_boot_slave_En, 0, 1);	/* make boot vector take effect */
+	CCCI_BOOTUP_LOG(md->index, TAG, "MD boot slave = 0x%x\n", cldma_read32(md_info->md_boot_slave_En, 0));
+
+	md1_post_access_md_reg(md);
 	return 0;
 }
 
