@@ -660,7 +660,7 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 			if ((ch >= pasrdpd->channel_nr) || (rk >= get_rk_num())) {
 				pasrdpd->channel[ch].rank[rk].valid_rank = false;
 				pasrdpd->channel[ch].rank[rk].rank_size = 0;
-				pasrdpd->channel[0].rank[0].segment_nr = 0;
+				pasrdpd->channel[ch].rank[rk].segment_nr = 0;
 				continue;
 			}
 			pasrdpd->channel[ch].rank[rk].valid_rank = true;
