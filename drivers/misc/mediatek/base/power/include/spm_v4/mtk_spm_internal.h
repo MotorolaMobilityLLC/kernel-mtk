@@ -491,17 +491,18 @@ struct spm_data {
 struct wake_status {
 	u32 assert_pc;		/* PCM_REG_DATA_INI */
 	u32 r12;		/* PCM_REG12_DATA */
-	u32 r12_ext;		/* PCM_REG12_DATA */
-	u32 raw_sta;		/* SLEEP_ISR_RAW_STA */
+	u32 r12_ext;		/* PCM_REG12_EXT_DATA */
+	u32 raw_sta;		/* SPM_WAKEUP_STA */
 	u32 raw_ext_sta;	/* SPM_WAKEUP_EXT_STA */
-	u32 wake_misc;		/* SLEEP_WAKEUP_MISC */
+	u32 wake_misc;		/* SPM_WAKEUP_MISC */
 	u32 timer_out;		/* PCM_TIMER_OUT */
 	u32 r13;		/* PCM_REG13_DATA */
-	u32 idle_sta;		/* SLEEP_SUBSYS_IDLE_STA */
-	u32 debug_flag;		/* PCM_PASR_DPD_3 */
+	u32 idle_sta;		/* SUBSYS_IDLE_STA */
+	u32 req_sta;		/* SRC_REQ_STA */
+	u32 debug_flag;		/* SPM_SW_DEBUG */
 	u32 debug_flag1;	/* WDT_LATCH_SPARE0_FIX */
 	u32 event_reg;		/* PCM_EVENT_REG_STA */
-	u32 isr;		/* SLEEP_ISR_STATUS */
+	u32 isr;		/* SPM_IRQ_STA */
 	u32 log_index;
 };
 
