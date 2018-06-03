@@ -220,7 +220,6 @@ static void mmdvfs_stop_cam_monitor(void)
 
 static void mmdvfs_start_cam_monitor(int scen, int delay_hz)
 {
-
 	if (g_mmdvfs_mgr->is_boost_disable) {
 		MMDVFSMSG("MMDVFS boost (cam monitor) is disabled!!\n");
 		return;
