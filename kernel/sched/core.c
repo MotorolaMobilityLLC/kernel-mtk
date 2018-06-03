@@ -1832,8 +1832,8 @@ void scheduler_ipi(void)
 
 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()) {
 #ifdef CONFIG_MTK_SCHED_MONITOR
-		mt_trace_ISR_start(IPI_RESCHEDULE);
-		mt_trace_ISR_end(IPI_RESCHEDULE);
+		mt_trace_IPI_start(IPI_RESCHEDULE);
+		mt_trace_IPI_end(IPI_RESCHEDULE);
 #endif
 		return;
 	}
@@ -1854,7 +1854,7 @@ void scheduler_ipi(void)
 	 */
 	irq_enter();
 #ifdef CONFIG_MTK_SCHED_MONITOR
-	mt_trace_ISR_start(IPI_RESCHEDULE);
+	mt_trace_IPI_start(IPI_RESCHEDULE);
 #endif
 	sched_ttwu_pending();
 
@@ -1866,7 +1866,7 @@ void scheduler_ipi(void)
 		raise_softirq_irqoff(SCHED_SOFTIRQ);
 	}
 #ifdef CONFIG_MTK_SCHED_MONITOR
-	mt_trace_ISR_end(IPI_RESCHEDULE);
+	mt_trace_IPI_end(IPI_RESCHEDULE);
 #endif
 	irq_exit();
 }
