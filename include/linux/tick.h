@@ -105,6 +105,13 @@ extern void tick_nohz_irq_exit(void);
 extern ktime_t tick_nohz_get_sleep_length(void);
 extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
 extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+
+#ifdef CONFIG_MEDIATEK_SOLUTION
+extern void tick_set_cpu_plugoff_flag(int flag);
+extern u64 get_cpu_idle_time_us_wo_cpuoffline(int cpu, u64 *last_update_time);
+extern u64 get_cpu_iowait_time_us_wo_cpuoffline(int cpu, u64 *last_update_time);
+#endif
+
 #else /* !CONFIG_NO_HZ_COMMON */
 static inline int tick_nohz_tick_stopped(void) { return 0; }
 static inline void tick_nohz_idle_enter(void) { }
@@ -118,6 +125,13 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
 }
 static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
 static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+
+#ifdef CONFIG_MEDIATEK_SOLUTION
+static inline void tick_set_cpu_plugoff_flag(int flag) { }
+static inline u64 get_cpu_idle_time_us_wo_cpuoffline(int cpu, u64 *last_update_time) { return -1; }
+static inline u64 get_cpu_iowait_time_us_wo_cpuoffline(int cpu, u64 *last_update_time) { return -1; }
+#endif
+
 #endif /* !CONFIG_NO_HZ_COMMON */
 
 #ifdef CONFIG_NO_HZ_FULL
