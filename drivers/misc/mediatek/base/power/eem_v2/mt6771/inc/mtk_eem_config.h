@@ -47,34 +47,33 @@
 /* Fake EFUSE */
 #define DEVINFO_0 0xFF00
 /* LL_LOW */
-#define DEVINFO_1 0x1b3cbd10
+#define DEVINFO_1 0x10bd3c1b
 /* L_LOW + LL_LOW */
-#define DEVINFO_2 0x55005500
+#define DEVINFO_2 0x550055
 /* L_LOW */
-#define DEVINFO_3 0x1b3cbd10
+#define DEVINFO_3 0x10bd3c1b
 /* CCI */
-#define DEVINFO_4 0x1b3cbd10
+#define DEVINFO_4 0x10bd3c1b
 /* GPU + CCI */
-#define DEVINFO_5 0x55005500
+#define DEVINFO_5 0x550055
 /* GPU */
-#define DEVINFO_6 0x1b3cbd10
+#define DEVINFO_6 0x10bd3c1b
 /* LL_HIGH */
-#define DEVINFO_7 0x1b3cbd10
+#define DEVINFO_7 0x10bd3c1b
 /* L_HIGH + LL_HIGH */
-#define DEVINFO_8 0x55005500
+#define DEVINFO_8 0x550055
 /* L_HIGH */
-#define DEVINFO_9 0x1b3cbd10
+#define DEVINFO_9 0x10bd3c1b
 
 /*****************************************
 * eem sw setting
 ******************************************
 */
-/* FIX ME */
-#define NR_HW_RES_FOR_BANK	(4) /* real eem banks for efuse */
+#define NR_HW_RES_FOR_BANK	(10) /* real eem banks for efuse */
 #define EEM_INIT01_FLAG		(0x0F) /* should be 0x0F */
 
 #define NR_FREQ 16
-#define NR_FREQ_GPU 8
+#define NR_FREQ_GPU 16
 #define NR_FREQ_CPU 16
 
 /*
@@ -92,7 +91,7 @@
 
 /* 1mV=>10uV */
 /* EEM */
-#define EEM_V_BASE		(40000)
+#define EEM_V_BASE		(50000)
 #define EEM_STEP		(625)
 
 /* CPU */
