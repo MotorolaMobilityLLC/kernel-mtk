@@ -36,7 +36,9 @@ char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_MIPI_ANA_1A_CG",
 	"CLK_MIPI_ANA_1B_CG",
 	"CLK_MIPI_ANA_2A_CG",
-	"CLK_MIPI_ANA_2B_CG"
+	"CLK_MIPI_ANA_2B_CG",
+	"CLK_TOP_CAMTM_SEL_CG",
+	"CLK_TOP_CAMTM_208_CG",
 };
 
 
@@ -67,8 +69,11 @@ static inline void imgsensor_clk_check(struct IMGSENSOR_CLK *pclk)
 {
 	int i;
 
-	for (i = 0; i < IMGSENSOR_CCF_MAX_NUM; i++)
-		WARN_ON(IS_ERR(pclk->imgsensor_ccf[i]));
+	for (i = 0; i < IMGSENSOR_CCF_MAX_NUM; i++) {
+		if (IS_ERR(pclk->imgsensor_ccf[i]))
+			pr_debug("imgsensor_clk_check fail %s",
+					gimgsensor_mclk_name[i]);
+	}
 }
 
 /************************************************************************
@@ -177,6 +182,9 @@ void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 					i);
 			else
 				atomic_inc(&pclk->enable_cnt[i]);
+			/*pr_debug("imgsensor_clk_enable_all %s ok\n",*/
+				/*gimgsensor_mclk_name[i]);*/
+
 		}
 	}
 }

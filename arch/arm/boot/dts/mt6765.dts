@@ -2409,19 +2409,22 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<0x380 0x384 0x388 0x38c 0x390 0x394 0x398 0x39c>;
 	};
 
-	cam@1a003000 {
-		compatible = "mediatek,cam";
+	cam1@1a003000 {
+		compatible = "mediatek,cam1";
 		reg = <0 0x1a003000 0 0x1000>;
+		interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	cama@1a004000  {
-		compatible = "mediatek,cama";
+	cam2@1a004000  {
+		compatible = "mediatek,cam2";
 		reg = <0 0x1a004000  0 0x1000>;
+		interrupts = <GIC_SPI 236 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	camb@1a005000 {
-		compatible = "mediatek,camb";
+	cam3@1a005000 {
+		compatible = "mediatek,cam3";
 		reg = <0 0x1a005000 0 0x1000>;
+		interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	cam_set@1a00b000 {
@@ -2479,64 +2482,101 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x1a025000 0 0x1000>;
 	};
 
-	seiinfa@1a040000 {
-		compatible = "mediatek,seiinfa";
+	seninf1@1a040000 {
+		compatible = "mediatek,seninf1";
 		reg = <0 0x1a040000 0 0x1000>;
 	};
 
-	seiinfa@1a041000 {
-		compatible = "mediatek,seiinfa";
+	seninf2@1a041000 {
+		compatible = "mediatek,seninf2";
 		reg = <0 0x1a041000 0 0x1000>;
 	};
 
-	seiinfa@1a042000 {
-		compatible = "mediatek,seiinfa";
+	seninf3@1a042000 {
+		compatible = "mediatek,seninf3";
 		reg = <0 0x1a042000 0 0x1000>;
 	};
 
-	seiinfa@1a043000 {
-		compatible = "mediatek,seiinfa";
+	seninf4@1a043000 {
+		compatible = "mediatek,seninf4";
 		reg = <0 0x1a043000 0 0x1000>;
 	};
 
-	seiinfa@1a044000 {
-		compatible = "mediatek,seiinfa";
-		reg = <0 0x1a044000 0 0x1000>;
+	kd_camera_hw1: kd_camera_hw1@1a040000 {
+		compatible = "mediatek,camera_hw";
+		reg = <0 0x1a040000 0 0x1000>;
+		/* SENINF_ADDR */
+		/* Camera Common Clock Framework (CCF) */
+		clocks = <&topckgen CLK_TOP_CAMTG_SEL>,
+		<&topckgen CLK_TOP_CAMTG1_SEL>,
+		<&topckgen CLK_TOP_CAMTG2_SEL>,
+		<&topckgen CLK_TOP_CAMTG3_SEL>,
+		<&topckgen CLK_TOP_USB20_192M_D32>,
+		<&topckgen CLK_TOP_USB20_192M_D16>,
+		<&topckgen CLK_TOP_UNIVPLL2_D32>,
+		<&topckgen CLK_TOP_USB20_192M_D4>,
+		<&topckgen CLK_TOP_UNIVPLL2_D8>,
+		<&topckgen CLK_TOP_USB20_192M_D8>,
+		<&topckgen CLK_TOP_CLK26M>,
+		<&camsys CLK_CAM_SENINF>,
+		<&apmixed CLK_APMIXED_MIPIC0_26M>,
+		<&apmixed CLK_APMIXED_MIPIC1_26M>,
+		<&mipi_rx_ana_csi0a CLK_MIPI0A_CSR_CSI_EN_0A>,
+		<&mipi_rx_ana_csi0b CLK_MIPI0B_CSR_CSI_EN_0B>,
+		<&mipi_rx_ana_csi1a CLK_MIPI1A_CSR_CSI_EN_1A>,
+		<&mipi_rx_ana_csi1b CLK_MIPI1B_CSR_CSI_EN_1B>,
+		<&mipi_rx_ana_csi2a CLK_MIPI2A_CSR_CSI_EN_2A>,
+		<&mipi_rx_ana_csi2b CLK_MIPI2B_CSR_CSI_EN_2B>,
+		<&topckgen CLK_TOP_CAMTM_SEL>,
+		<&topckgen CLK_TOP_UNIVPLL2_D2>;
+
+
+		clock-names = "CLK_TOP_CAMTG_SEL",
+			"CLK_TOP_CAMTG1_SEL",
+			"CLK_TOP_CAMTG2_SEL",
+			"CLK_TOP_CAMTG3_SEL",
+			"CLK_MCLK_6M",
+			"CLK_MCLK_12M",
+			"CLK_MCLK_13M",
+			"CLK_MCLK_48M",
+			"CLK_MCLK_52M",
+			"CLK_MCLK_24M",
+			"CLK_MCLK_26M",
+			"CLK_CAM_SENINF_CG",
+			"CLK_MIPI_C0_26M_CG",
+			"CLK_MIPI_C1_26M_CG",
+			"CLK_MIPI_ANA_0A_CG",
+			"CLK_MIPI_ANA_0B_CG",
+			"CLK_MIPI_ANA_1A_CG",
+			"CLK_MIPI_ANA_1B_CG",
+			"CLK_MIPI_ANA_2A_CG",
+			"CLK_MIPI_ANA_2B_CG",
+			"CLK_TOP_CAMTM_SEL_CG",
+			"CLK_TOP_CAMTM_208_CG";
 	};
 
-	seiinfa@1a045000 {
-		compatible = "mediatek,seiinfa";
-		reg = <0 0x1a045000 0 0x1000>;
-	};
-
-	seiinfa@1a046000 {
-		compatible = "mediatek,seiinfa";
-		reg = <0 0x1a046000 0 0x1000>;
-	};
-
-	seiinfa@1a047000 {
-		compatible = "mediatek,seiinfa";
-		reg = <0 0x1a047000 0 0x1000>;
-	};
-
-	camsva@1a050000 {
-		compatible = "mediatek,camsva";
+	camsv1@1a050000 {
+		compatible = "mediatek,camsv1";
 		reg = <0 0x1a050000 0 0x1000>;
+		interrupts = <GIC_SPI 243 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	camsvb@1a051000 {
-		compatible = "mediatek,camsvb";
+	camsv2@1a051000 {
+		compatible = "mediatek,camsv2";
 		reg = <0 0x1a051000 0 0x1000>;
+		interrupts = <GIC_SPI 244 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	camsvc@1a052000 {
-		compatible = "mediatek,camsvc";
+	camsv3@1a052000 {
+		compatible = "mediatek,camsv3";
 		reg = <0 0x1a052000 0 0x1000>;
+		interrupts = <GIC_SPI 241 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	camsvd@1a053000 {
-		compatible = "mediatek,camsvd";
+	camsv4@1a053000 {
+		compatible = "mediatek,camsv4";
 		reg = <0 0x1a053000 0 0x1000>;
+		interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	flashlight_core: flashlight_core {
@@ -2907,7 +2947,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	irq_nfc: irq_nfc{};
 	md1_sim1_hot_plug_eint:md1_sim1_hot_plug_eint{};
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint{};
-	kd_camera_hw1: kd_camera_hw1{};
 
 };
 
