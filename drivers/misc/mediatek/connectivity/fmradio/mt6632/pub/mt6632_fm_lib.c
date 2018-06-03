@@ -1675,10 +1675,7 @@ static fm_u16 mt6632_chan_para_get(fm_u16 freq)
 		return 0;
 
 	pos = (freq - 6500) / 5;
-
 	size = ARRAY_SIZE(mt6632_chan_para_map);
-
-	pos = (pos < 0) ? 0 : pos;
 	pos = (pos > (size - 1)) ? (size - 1) : pos;
 
 	return mt6632_chan_para_map[pos];
