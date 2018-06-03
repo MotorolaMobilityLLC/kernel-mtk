@@ -127,7 +127,7 @@ void mt_cirq_ack_all(void)
 		 * , since cirq start irq might not be 32 aligned with gic,
 		 * need an exotic API to get proper vector of pending irq
 		 */
-		pend_vec = mt_irq_get_pending_vec(CIRQ_SPI_START+i*32);
+		pend_vec = mt_irq_get_pending_vec(CIRQ_SPI_START+(i+1)*32);
 		mask_vec = mt_cirq_get_mask_vec(i);
 		/* those should be acked are: "not (pending & not masked)",
 		 */
