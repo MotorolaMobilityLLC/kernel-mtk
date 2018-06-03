@@ -256,10 +256,14 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	unsigned int fifo_off_dvfs = 0;
 
 	/* working variables */
-	unsigned int ultra_low;
 	unsigned int preultra_low;
 	unsigned int preultra_high;
+	unsigned int ultra_low;
 	unsigned int ultra_high;
+	unsigned int dvfs_preultra_low;
+	unsigned int dvfs_preultra_high;
+	unsigned int dvfs_ultra_low;
+	unsigned int dvfs_ultra_high;
 	unsigned int drs_enter = 0;
 	unsigned int drs_leave = 0;
 
@@ -304,7 +308,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		mmsysclk = 300;
 		break;
 	case MMSYS_CLK_HIGH:
-		mmsysclk = 420;
+		mmsysclk = 400;
 		break;
 	default:
 		mmsysclk = 420; /* worse case */
@@ -331,7 +335,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	if (idx == 0) {
 		/* only for offset */
 		fifo_off_drs_enter = 4;
-		fifo_off_drs_leave = 2;
+		fifo_off_drs_leave = 1;
 		fifo_off_spm = 50; /* 10 times*/
 		fifo_off_dvfs = 4;
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
@@ -346,25 +350,25 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		consume_rate = rdma_golden_setting->ext_dst_width
 				* rdma_golden_setting->ext_dst_height*frame_rate*Bytes_per_sec;
 
-	do_div(consume_rate, 1000);
+		do_div(consume_rate, 1000);
 	}
 	consume_rate *= 1250;
 	do_div(consume_rate, 16*1000);
 
-	preultra_low = (preultra_low_us + fifo_off_drs_enter) * consume_rate;
+	preultra_low = (preultra_low_us + 2) * consume_rate;
 	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
 
-	preultra_high = (preultra_high_us + fifo_off_drs_enter) * consume_rate;
+	preultra_high = (preultra_high_us + 2) * consume_rate;
 	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
 
-	ultra_low = (ultra_low_us + fifo_off_drs_enter) * consume_rate;
+	ultra_low = (ultra_low_us + 2) * consume_rate;
 	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
 
 	ultra_high = preultra_low;
 	if (idx == 0) {
 		/* only rdma0 can share sram */
 		if (is_wrot_sram)
-		fifo_valid_size = 2048;
+			fifo_valid_size = 2048;
 		else
 			fifo_valid_size = 320;
 	} else {
@@ -415,21 +419,21 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		dvfs_threshold_low | (dvfs_threshold_high << 16));
 
 	/*DISP_RDMA_DVFS_SETTING_PREULTRA*/
-	preultra_low = (preultra_low_us + fifo_off_dvfs) * consume_rate;
-	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+	dvfs_preultra_low = (preultra_low_us + fifo_off_dvfs) * consume_rate;
+	dvfs_preultra_low = DIV_ROUND_UP(dvfs_preultra_low, 1000);
 
-	preultra_high = (preultra_high_us + fifo_off_dvfs) * consume_rate;
-	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+	dvfs_preultra_high = (preultra_high_us + fifo_off_dvfs) * consume_rate;
+	dvfs_preultra_high = DIV_ROUND_UP(dvfs_preultra_high, 1000);
 
-	ultra_low = (ultra_low_us + fifo_off_dvfs) * consume_rate;
-	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+	dvfs_ultra_low = (ultra_low_us + fifo_off_dvfs) * consume_rate;
+	dvfs_ultra_low = DIV_ROUND_UP(dvfs_ultra_low, 1000);
 
-	ultra_high = preultra_low;
+	dvfs_ultra_high = dvfs_preultra_low;
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_DVFS_SETTING_PRE,
-		preultra_low | (preultra_high << 16));
+		dvfs_preultra_low | (dvfs_preultra_high << 16));
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_DVFS_SETTING_ULTRA,
-		ultra_low | (ultra_high << 16));
+		dvfs_ultra_low | (dvfs_ultra_high << 16));
 
 	/*DISP_REG_RDMA_LEAVE_DRS_SETTING*/
 	drs_enter = (preultra_low_us + fifo_off_drs_enter) * consume_rate;
@@ -463,16 +467,24 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		DDPDBG("consume_rate	= %lld\n", consume_rate);
 		DDPDBG("ultra_low_us	= %d\n", ultra_low_us);
 		DDPDBG("ultra_high_us	= %d\n", ultra_high_us);
-		DDPDBG("preultra_high_us= %d\n", preultra_high_us);
-		DDPDBG("preultra_low	= %d\n", preultra_low);
-		DDPDBG("preultra_high	= %d\n", preultra_high);
-		DDPDBG("ultra_low	= %d\n", ultra_low);
-		DDPDBG("issue_req_threshold		= %d\n", issue_req_threshold);
-		DDPDBG("output_valid_fifo_threshold	= %d\n", output_valid_fifo_threshold);
-		DDPDBG("sodi_threshold_low	= %d\n", sodi_threshold_low);
-		DDPDBG("sodi_threshold_high	= %d\n", sodi_threshold_high);
-		DDPDBG("dvfs_threshold_low	= %d\n", dvfs_threshold_low);
-		DDPDBG("dvfs_threshold_high	= %d\n", dvfs_threshold_high);
+		DDPDBG("preultra_high_us = %d\n", preultra_high_us);
+		DDPDBG("preultra_threshold_low	 = %d\n", preultra_low);
+		DDPDBG("preultra_threshold_high = %d\n", preultra_high);
+		DDPDBG("ultra_threshold_low	= %d\n", ultra_low);
+		DDPDBG("ultra_threshold_high	= %d\n", ultra_low);
+		DDPDBG("issue_req_threshold	= %d\n", issue_req_threshold);
+		DDPDBG("output_valid_fifo_threshold = %d\n", output_valid_fifo_threshold);
+		DDPDBG("fifo_valid_size	 = %d\n", fifo_valid_size);
+		DDPDBG("sodi_threshold_low	 = %d\n", sodi_threshold_low);
+		DDPDBG("sodi_threshold_high = %d\n", sodi_threshold_high);
+		DDPDBG("dvfs_threshold_low	 = %d\n", dvfs_threshold_low);
+		DDPDBG("dvfs_threshold_high = %d\n", dvfs_threshold_high);
+		DDPDBG("dvfs_preultra_low	= %d\n", dvfs_preultra_low);
+		DDPDBG("dvfs_preultra_high	= %d\n", dvfs_preultra_high);
+		DDPDBG("dvfs_ultra_low	 = %d\n", dvfs_ultra_low);
+		DDPDBG("dvfs_ultra_high = %d\n", dvfs_ultra_high);
+		DDPDBG("drs_enter	= %d\n", drs_enter);
+		DDPDBG("drs_leave	= %d\n", drs_leave);
 	}
 
 }
