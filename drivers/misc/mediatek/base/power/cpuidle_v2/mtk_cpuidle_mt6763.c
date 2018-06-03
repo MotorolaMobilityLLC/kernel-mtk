@@ -16,7 +16,7 @@
 
 char *irq_match[] = {
 	"mediatek,kp",
-	"mediatek,consys",
+	"mediatek,mt6763-consys",
 	"mediatek,mdcldma",
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
@@ -42,8 +42,8 @@ int wake_src_irq[] = {
 
 int irq_offset[] = {
 	0,
-	0,
-	2,
+	1,
+	3,
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 	1,
