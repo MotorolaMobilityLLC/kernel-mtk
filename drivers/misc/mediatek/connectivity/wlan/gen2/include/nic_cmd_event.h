@@ -289,6 +289,17 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_FW_LOG_ENV = 0xFE,	/* 0xFE, FW real time debug log */
 } ENUM_EVENT_ID_T, *P_ENUM_EVENT_ID_T;
 
+#if CFG_SUPPORT_P2P_ECSA
+typedef enum _ENUM_ECSA_STATE_T {
+	ECSA_EVENT_STATUS_SUCCESS = 0,
+	ECSA_EVENT_STATUS_UPDATE_BEACON = 1, /*Notify Driver to update GO’s ECSA/CSA IE*/
+	ECSA_EVENT_STATUS_INVALID_PARAM = 2,
+	ECSA_EVENT_STATUS_CHNL_SWITCH_FAILED = 3,
+	ECSA_EVENT_STATUS_UNACCEPTABLE = 4,
+	ECSA_EVENT_STATUS_NUM,
+} ENUM_ECSA_STATE_T;
+#endif
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1746,14 +1757,8 @@ typedef struct _CMD_SET_ECSA_PARAM_T {
 	UINT_8  ucRfSco;
 	UINT_8  ucReserved[2];
 } CMD_SET_ECSA_PARAM, *P_CMD_SET_ECSA_PARAM;
-
 typedef struct _EVENT_ECSA_RESULT_T {
 	UINT_8 ucNetTypeIndex;
-#define ECSA_EVENT_STATUS_SUCCESS	0
-#define ECSA_EVENT_STATUS_UPDATE_BEACON	1
-#define ECSA_EVENT_STATUS_INVALID_PARAM	2
-#define ECSA_EVENT_STATUS_CHNL_SWITCH_FAILED	3
-#define ECSA_EVENT_STATUS_UNACCEPTABLE	4
 	UINT_8 ucStatus;	/*
 				 * 0: ECSA success
 				 * 1: update beacon success
