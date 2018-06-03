@@ -73,7 +73,7 @@ static void ppm_hica_status_change_cb(bool enable);
 static void ppm_hica_mode_change_cb(enum ppm_mode mode);
 
 #ifdef PPM_HICA_2P0
-int hica_is_limit_big_freq = 1;
+int hica_is_limit_big_freq;
 int hica_limit_idx = -1;
 #else
 #if PPM_HICA_VARIANT_SUPPORT
