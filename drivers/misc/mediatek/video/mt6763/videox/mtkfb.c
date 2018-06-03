@@ -323,11 +323,6 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 		mtkfb_late_resume();
 
 		debug_print_power_mode_check(prev_pm, FB_RESUME);
-
-		if (!lcd_fps)
-			msleep(30);
-		else
-			msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
 		break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
@@ -2810,8 +2805,6 @@ static void mtkfb_early_suspend(void)
 	DISPMSG("[FB Driver] enter early_suspend\n");
 
 	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
-
-	msleep(30);
 
 	ret = primary_display_suspend();
 
