@@ -29,7 +29,7 @@ static ssize_t charger_show_name(struct device *dev,
 {
 	struct charger_device *charger_dev = to_charger_device(dev);
 
-	return sprintf(buf, "%s\n",
+	return snprintf(buf, 20, "%s\n",
 		       charger_dev->props.alias_name ?
 		       charger_dev->props.alias_name : "anonymous");
 }

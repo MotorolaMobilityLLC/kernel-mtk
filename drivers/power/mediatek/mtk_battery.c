@@ -1321,7 +1321,7 @@ unsigned int TempToBattVolt(int temp, int update)
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
 	vbif28 = pmic_get_vbif28_volt();
 #endif
-	Vin = R_NTC * vbif28 * 10;	/* 0.1 mV */
+	Vin = (long long)R_NTC * vbif28 * 10;	/* 0.1 mV */
 	do_div(Vin, (R_NTC + RBAT_PULL_UP_R));
 
 	if (update == true) {
@@ -3435,7 +3435,7 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 		cmd_buf[1] = buf[1];
 		cmd_buf[2] = buf[2];
 		cmd_buf[3] = '\0';
-		strcpy(param_buf, buf+4);
+		strncpy(param_buf, buf + 4, size - 4);
 
 		bm_err("[FG_IT] cmd_buf %s, param_buf %s\n", cmd_buf, param_buf);
 
