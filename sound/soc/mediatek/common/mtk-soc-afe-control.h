@@ -299,7 +299,7 @@ struct mtk_mem_blk_ops {
 };
 
 struct mtk_afe_platform_ops {
-	bool (*set_sinegen)(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *(AudioMEMIF[]));
+	bool (*set_sinegen)(uint32 connection, bool direction, bool Enable);
 	void (*init_platform)(void);
 	bool (*set_smartpa_i2s)(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
 				int mtk_soc_always_hd);
