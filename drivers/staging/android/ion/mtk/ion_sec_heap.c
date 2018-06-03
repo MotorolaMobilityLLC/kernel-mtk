@@ -42,6 +42,8 @@ struct ion_sec_heap {
 	void *priv;
 };
 
+static size_t sec_heap_total_memory;
+
 #ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 static KREE_SESSION_HANDLE ion_session;
 KREE_SESSION_HANDLE ion_session_handle(void)
@@ -69,6 +71,10 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 
 	IONDBG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
 
+#ifdef CONFIG_PM
+	if (sec_heap_total_memory <= 0)
+		shrink_ion_by_scenario(0);
+#endif
 	pbufferinfo = kzalloc(sizeof(*pbufferinfo), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(pbufferinfo)) {
 		IONMSG("%s Error. Allocate pbufferinfo failed.\n", __func__);
@@ -101,7 +107,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 #endif
 
 	if (sec_handle <= 0) {
-		IONMSG("%s alloc security memory failed, handle(0x%x)\n", __func__, sec_handle);
+		IONMSG("%s alloc security memory failed, total size %zu\n", __func__, sec_heap_total_memory);
 		return -ENOMEM;
 	}
 
@@ -121,6 +127,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	buffer->priv_virt = pbufferinfo;
 	buffer->flags &= ~ION_FLAG_CACHED;
 	buffer->size = size;
+	sec_heap_total_memory += size;
 
 	IONDBG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
 	       pbufferinfo->priv_phys, buffer->size);
@@ -134,6 +141,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	u32 sec_handle = 0;
 
 	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	sec_heap_total_memory -= buffer->size;
 	sec_handle = ((struct ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
@@ -152,7 +160,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	buffer->priv_virt = NULL;
 	kfree(pbufferinfo);
 
-	IONDBG("%s exit\n", __func__);
+	IONDBG("%s exit, total %zu\n", __func__, sec_heap_total_memory);
 }
 
 struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,

@@ -1142,12 +1142,13 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 }
 
 #ifdef CONFIG_PM
-void shrink_ion_by_scenario(void)
+void shrink_ion_by_scenario(int need_lock)
 {
 	int nr_to_reclaim, nr_reclaimed;
 	int nr_to_try = 3;
 
-	struct ion_heap *movable_ion_heap = ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA, 1);
+	struct ion_heap *movable_ion_heap = ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
+							     need_lock);
 
 	do {
 		nr_to_reclaim = ion_mm_heap_shrink(movable_ion_heap, __GFP_CMA | __GFP_HIGHMEM, 0);
