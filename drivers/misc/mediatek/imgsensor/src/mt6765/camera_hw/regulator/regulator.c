@@ -12,6 +12,7 @@
  */
 
 #include "regulator.h"
+#include "upmu_common.h"
 
 
 static const int regulator_voltage[] = {
@@ -46,6 +47,66 @@ struct REGULATOR_CTRL regulator_control[REGULATOR_TYPE_MAX_NUM] = {
 
 static struct REGULATOR reg_instance;
 
+static void imgsensor_oc_handler1(void)
+{
+	pr_debug("[regulator]%s enter vcama oc %d\n",
+		__func__,
+		gimgsensor.status.oc);
+	gimgsensor.status.oc = 1;
+}
+static void imgsensor_oc_handler2(void)
+{
+	pr_debug("[regulator]%s enter vcamd oc %d\n",
+		__func__,
+		gimgsensor.status.oc);
+	gimgsensor.status.oc = 1;
+
+}
+static void imgsensor_oc_handler3(void)
+{
+	pr_debug("[regulator]%s enter vcamio oc %d\n",
+		__func__,
+		gimgsensor.status.oc);
+	gimgsensor.status.oc = 1;
+}
+
+
+enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
+{
+	pr_debug("[regulator] %s %d\n", __func__, enable);
+
+	mdelay(5);
+
+	gimgsensor.status.oc = 0;
+
+	if (enable) {
+		/* enable interrupt after power on */
+		/* At least delay 3ms after power for recommendation */
+		pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
+		pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
+		pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+	} else {
+		/* Disable interrupt before power off */
+		pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");
+		pmic_enable_interrupt(INT_VCAMD_OC, 0, "camera");
+		pmic_enable_interrupt(INT_VCAMIO_OC, 0, "camera");
+	}
+
+	return IMGSENSOR_RETURN_SUCCESS;
+}
+
+enum IMGSENSOR_RETURN imgsensor_oc_init(void)
+{
+	/* Register your interrupt handler of OC interrupt at first */
+	pmic_register_interrupt_callback(INT_VCAMA_OC, imgsensor_oc_handler1);
+	pmic_register_interrupt_callback(INT_VCAMD_OC, imgsensor_oc_handler2);
+	pmic_register_interrupt_callback(INT_VCAMIO_OC, imgsensor_oc_handler3);
+
+	gimgsensor.status.oc  = 0;
+	gimgsensor.imgsensor_oc_irq_enable = imgsensor_oc_interrupt;
+
+	return IMGSENSOR_RETURN_SUCCESS;
+}
 
 static enum IMGSENSOR_RETURN regulator_init(void *pinstance)
 {
@@ -79,7 +140,7 @@ static enum IMGSENSOR_RETURN regulator_init(void *pinstance)
 
 
 	pdevice->of_node = pof_node;
-
+	imgsensor_oc_init();
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 static enum IMGSENSOR_RETURN regulator_release(void *pinstance)

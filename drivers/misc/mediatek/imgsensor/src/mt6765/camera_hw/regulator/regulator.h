@@ -20,8 +20,11 @@
 #include <linux/regulator/consumer.h>
 
 #include "imgsensor_hw.h"
+#include "imgsensor.h"
+
 
 extern struct device *gimgsensor_device;
+extern struct IMGSENSOR gimgsensor;
 
 enum REGULATOR_VOLTAGE {
 	REGULATOR_VOLTAGE_0    = 0,
