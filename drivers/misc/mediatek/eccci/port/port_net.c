@@ -450,10 +450,7 @@ static void port_net_queue_state_notify(struct port_t *port, int dir, int qno, u
 	if (port->md_id != MD_SYS3) {
 		if (((state == TX_IRQ) &&
 				((!is_ack && ((port->flags & PORT_F_TX_DATA_FULLED) == 0)) ||
-				(is_ack && ((port->flags & PORT_F_TX_ACK_FULLED) == 0)))) ||
-			((state == TX_FULL) &&
-				((!is_ack && (port->flags & PORT_F_TX_DATA_FULLED)) ||
-				(is_ack && (port->flags & PORT_F_TX_ACK_FULLED)))))
+				(is_ack && ((port->flags & PORT_F_TX_ACK_FULLED) == 0)))))
 			return;
 	}
 	ccmni_ops.queue_state_callback(port->md_id, GET_CCMNI_IDX(port), state, is_ack);
