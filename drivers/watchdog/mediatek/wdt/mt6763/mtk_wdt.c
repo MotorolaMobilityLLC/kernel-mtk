@@ -261,13 +261,9 @@ void mtk_wdt_restart(enum wd_restart_type type)
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_debug("RGU iomap failed\n");
-		/* pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id); */
 	}
 
-    /* pr_debug("WDT:[mtk_wdt_restart] type  =%d, pid=%d\n",type,current->pid); */
-
 	if (type == WD_TYPE_NORMAL) {
-		/* printk("WDT:ext restart\n" ); */
 		spin_lock(&rgu_reg_operation_spinlock);
 	#ifdef CONFIG_KICK_SPM_WDT
 		spm_wdt_restart_timer();
@@ -406,7 +402,7 @@ void wdt_arch_reset(char mode)
 	while (1) {
 		/* check if system is alive for debugging */
 		mdelay(100);
-		pr_debug("wdt_arch_reset: still alive\n");
+		pr_info("wdt_arch_reset: still alive\n");
 		wdt_dump_reg();
 		cpu_relax();
 	}
@@ -430,7 +426,7 @@ int mtk_rgu_dram_reserved(int enable)
 		tmp |= MTK_WDT_MODE_KEY;
 		mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	}
-	pr_debug("mtk_rgu_dram_reserved:MTK_WDT_MODE(0x%x)\n", __raw_readl(MTK_WDT_MODE));
+	pr_info("%s: MTK_WDT_MODE(0x%x)\n", __func__, __raw_readl(MTK_WDT_MODE));
 
 	return 0;
 }
@@ -453,7 +449,7 @@ int mtk_rgu_cfg_emi_dcs(int enable)
 	tmp |= MTK_WDT_DEBUG_CTL2_KEY;
 	mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL2);
 
-	pr_debug("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL2));
+	pr_info("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL2));
 
 	return 0;
 }
@@ -476,14 +472,14 @@ int mtk_rgu_cfg_dvfsrc(int enable)
 		return -1;
 	}
 
-	dbg_ctl |= MTK_WDT_DEBUG_CTL_KEY;
+	dbg_ctl |= MTK_WDT_DEBUG_CTL2_KEY;
 	mt_reg_sync_writel(dbg_ctl, MTK_WDT_DEBUG_CTL2);
 
-	latch |= MTK_WDT_LATCH_CTL2_KEY;
+	latch |= MTK_WDT_LATCH_CTL_KEY;
 	mt_reg_sync_writel(latch, MTK_WDT_LATCH_CTL);
 
-	pr_debug("%s: MTK_WDT_DEBUG_CTL2(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL2));
-	pr_debug("%s: MTK_WDT_LATCH_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_info("%s: MTK_WDT_DEBUG_CTL2(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL2));
+	pr_info("%s: MTK_WDT_LATCH_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_LATCH_CTL));
 
 	return 0;
 }
@@ -505,7 +501,8 @@ int mtk_rgu_mcu_cache_preserve(int enable)
 		tmp |= MTK_WDT_DEBUG_CTL_KEY;
 		mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
 	}
-	pr_debug("mtk_rgu_mcu_cache_preserve:MTK_WDT_DEBUG_CTL(0x%x)\n", __raw_readl(MTK_WDT_DEBUG_CTL));
+
+	pr_info("%s: MTK_WDT_DEBUG_CTL(0x%x)\n", __func__, __raw_readl(MTK_WDT_DEBUG_CTL));
 
 	return 0;
 }
@@ -516,7 +513,7 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 
 	spin_lock(&rgu_reg_operation_spinlock);
 	wdt_sys_val = __raw_readl(MTK_WDT_SWSYSRST);
-	pr_debug("fwq2 before set wdt_sys_val =%x\n", wdt_sys_val);
+	pr_info("%s: before set wdt_sys_val =%x\n", __func__, wdt_sys_val);
 	wdt_sys_val |= MTK_WDT_SWSYS_RST_KEY;
 	switch (bit) {
 	case MTK_WDT_SWSYS_RST_MD_RST:
@@ -548,7 +545,9 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 	spin_unlock(&rgu_reg_operation_spinlock);
 
 	/* mdelay(10); */
-	pr_debug("after set wdt_sys_val =%x,wdt_sys_val=%x\n", __raw_readl(MTK_WDT_SWSYSRST), wdt_sys_val);
+	pr_info("%s: after set wdt_sys_val =%x,wdt_sys_val=%x\n", __func__,
+		__raw_readl(MTK_WDT_SWSYSRST), wdt_sys_val);
+
 	return 0;
 }
 
@@ -561,9 +560,11 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 	if (!toprgu_base) {
 		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 		toprgu_base = of_iomap(np_rgu, 0);
+
 		if (!toprgu_base)
 			pr_err("RGU iomap failed\n");
-		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
+
+		pr_info("RGU base: 0x%p, RGU irq: %d\n", toprgu_base, wdt_irq_id);
 	}
 
 	spin_lock(&rgu_reg_operation_spinlock);
@@ -978,7 +979,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 		if (ret != 0) {
 			pr_err("[RGU] failed to request wdt_sspm_irq_id %d, ret %d\n", wdt_sspm_irq_id, ret);
-			return ret;
+
+			/* bypass fail of SSPM IRQ related behavior because this is not critical */
 		}
 	}
 
