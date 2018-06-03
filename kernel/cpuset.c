@@ -220,7 +220,11 @@ static struct cpuset top_cpuset = {
 
 static bool cpuset_v2_behavior(void)
 {
+#if defined(CONFIG_CGROUPS) && !defined(CONFIG_MTK_ACAO)
 	return cgroup_subsys_on_dfl(cpuset_cgrp_subsys) || true;
+#else
+	return cgroup_subsys_on_dfl(cpuset_cgrp_subsys) || false;
+#endif
 }
 
 /**
