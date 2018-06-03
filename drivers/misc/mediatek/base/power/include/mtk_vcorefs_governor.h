@@ -20,6 +20,7 @@
 
 #elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771) \
 	|| defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6739) \
+	|| defined(CONFIG_MACH_MT6775)
 
 #include "vcorefs_v3/mtk_vcorefs_governor.h"
 

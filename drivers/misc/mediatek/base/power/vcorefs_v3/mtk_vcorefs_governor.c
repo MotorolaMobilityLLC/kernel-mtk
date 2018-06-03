@@ -108,6 +108,11 @@ __weak void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *eve
 	vcorefs_crit("NOT SUPPORT MM DVFS NOTIFY\n");
 }
 
+__weak unsigned short pmic_get_register_value(PMU_FLAGS_LIST_ENUM flagname)
+{
+	vcorefs_crit("PMIC FUNCTION IS NOT SUPPORTED\n");
+	return 0;
+}
 /*
  * __nosavedata will not be restored after IPO-H boot
  */
@@ -195,13 +200,11 @@ void vcorefs_update_opp_table(void)
  */
 bool is_vcorefs_feature_enable(void)
 {
-#if 1
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) /* TODO: 6759 EP */
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)  && !defined(CONFIG_MACH_MT6775)
 	if (!dram_can_support_fh()) {
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
 	}
-#endif
 #endif
 	if (!spm_load_firmware_status()) {
 		vcorefs_err("SPM FIRMWARE IS NOT READY\n");

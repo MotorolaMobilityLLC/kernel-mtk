@@ -650,6 +650,13 @@ struct spm_data {
 			unsigned int vcore_level1;
 		} vcorefs;
 
+#elif defined(CONFIG_MACH_MT6775)
+		struct {
+			unsigned int vcore_level0;
+			unsigned int vcore_level1;
+			unsigned int vcore_level2;
+		} vcorefs;
+
 #else
 		struct {
 			unsigned int pcm_flags;
