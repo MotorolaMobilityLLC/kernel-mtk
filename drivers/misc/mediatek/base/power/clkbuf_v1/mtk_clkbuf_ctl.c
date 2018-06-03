@@ -117,7 +117,6 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_SHIFT				0
 
 #define PMIC_CW00_INIT_VAL			0x4FFD
-#define PMIC_CW02_INIT_VAL			0xB86A
 #define PMIC_CW11_INIT_VAL			0xA400
 
 /* FIXME: manual mode of driving current */
@@ -126,7 +125,7 @@ static void __iomem *pwrap_base;
 						 | (0x2 << 8) | (0 << 12))
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 /* NOTE: CLKBUF_INIT_BY_LK is used in kernel if CLKBUF is enabled in LK */
 #define CLKBUF_INIT_BY_LK
 
@@ -345,27 +344,29 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
 }
 
-void clk_buf_disable(enum clk_buf_id id)
+static void clk_buf_disable(enum clk_buf_id id)
 {
-	if (!is_clkbuf_initiated)
-		return;
-
 	if (!is_pmic_clkbuf)
 		return;
-
-	clk_buf_dbg("%s: id=%d, pwrap_dcxo_en_flag=0x%x\n", __func__,
-		    id, pwrap_dcxo_en_flag);
 
 	mutex_lock(&clk_buf_ctrl_lock);
 
 	if (id == CLK_BUF_CONN) {
 		pwrap_dcxo_en_flag &= ~DCXO_CONN_ENABLE;
 		clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
-		clk_buf_warn("%s: DCXO_ENABLE=0x%x, pwrap_dcxo_en_flag=0x%x\n", __func__,
-			     clkbuf_readl(DCXO_ENABLE), pwrap_dcxo_en_flag);
 
+		pmic_config_interface(MT6335_DCXO_CW00_CLR, 0x3,
+				      PMIC_XO_EXTBUF2_MODE_MASK,
+				      PMIC_XO_EXTBUF2_MODE_SHIFT);
 		pmic_clk_buf_ctrl_wcn(0);
 		pmic_clk_buf_swctrl[XO_WCN] = 0;
+
+		clk_buf_warn("%s: id=%d, DCXO_ENABLE=0x%x, pwrap_dcxo_en_flag=0x%x\n", __func__,
+			     id, clkbuf_readl(DCXO_ENABLE), pwrap_dcxo_en_flag);
+	} else if (id == CLK_BUF_UFS) {
+		pmic_clk_buf_ctrl_ext(0);
+		pmic_clk_buf_swctrl[XO_EXT] = 0;
+		clk_buf_warn("%s: id=%d\n", __func__, id);
 	}
 
 	mutex_unlock(&clk_buf_ctrl_lock);
@@ -639,6 +640,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"PMIC switch on/off: echo pmic en1 en2 en3 en4 en5 en6 en7 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
+			"\n********** clock buffer debug info **********\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
 			"g_xo_drv_curr_val=0x%x, bblpm_cnt=%u\n",
 			g_xo_drv_curr_val, bblpm_cnt);
 	len += snprintf(buf+len, PAGE_SIZE-len, "pmic_drv_curr_vals=%d %d %d %d %d %d %d\n",
@@ -710,6 +713,8 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 #endif
 		else if (debug == 10)
 			clk_buf_disable(CLK_BUF_CONN);
+		else if (debug == 11)
+			clk_buf_disable(CLK_BUF_UFS);
 		else
 			clk_buf_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
 	} else
@@ -883,8 +888,11 @@ static void clk_buf_pmic_wrap_init(void)
 
 #ifndef CLKBUF_INIT_BY_LK
 	/* Setup initial PMIC clock buffer setting */
-	pmic_config_interface(MT6335_DCXO_CW02, PMIC_CW02_INIT_VAL,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_config_interface(MT6335_DCXO_CW02, 0,
+			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
+	udelay(100);
+	pmic_config_interface(MT6335_DCXO_CW02, 1,
+			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
 	mdelay(1);
 	pmic_config_interface(MT6335_DCXO_CW00, PMIC_CW00_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
@@ -973,6 +981,15 @@ int clk_buf_init(void)
 
 #ifdef CLKBUF_TWAM_DEBUG
 	INIT_DELAYED_WORK(&clkbuf_twam_dbg_work, clkbuf_twam_dbg_worker);
+#endif
+
+#ifdef CONFIG_MACH_MT6799
+	/* no need to use XO_CONN in this platform */
+	clk_buf_disable(CLK_BUF_CONN);
+#ifndef CONFIG_MTK_UFS_BOOTING
+	/* no need to use XO_EXT if storage is emmc */
+	clk_buf_disable(CLK_BUF_UFS);
+#endif
 #endif
 
 	is_clkbuf_initiated = true;

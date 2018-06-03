@@ -77,7 +77,6 @@ enum xo_id {
 
 int clk_buf_init(void);
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
-void clk_buf_disable(enum clk_buf_id id);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
 void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
 void clk_buf_set_by_flightmode(bool is_flightmode_on);
