@@ -73,6 +73,9 @@ static void mtk_clkevt_time_stop(struct mtk_clock_event_device *evt,
 {
 	u32 val;
 
+	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
+				evt->gpt_base + TIMER_CLK_REG(timer));
+
 	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
 	writel(val & ~TIMER_CTRL_ENABLE, evt->gpt_base +
 			TIMER_CTRL_REG(timer));
@@ -91,6 +94,9 @@ static void mtk_clkevt_time_start(struct mtk_clock_event_device *evt,
 
 	/* Acknowledge interrupt */
 	writel(GPT_IRQ_ACK(timer), evt->gpt_base + GPT_IRQ_ACK_REG);
+
+	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_RTC32K) | TIMER_CLK_DIV1,
+				evt->gpt_base + TIMER_CLK_REG(timer));
 
 	val = readl(evt->gpt_base + TIMER_CTRL_REG(timer));
 
@@ -195,7 +201,8 @@ static int __init mtk_timer_init(struct device_node *node)
 
 	evt->dev.name = "mtk_tick";
 	evt->dev.rating = 300;
-	evt->dev.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
+	evt->dev.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
+		CLOCK_EVT_FEAT_DYNIRQ;
 	evt->dev.set_state_shutdown = mtk_clkevt_shutdown;
 	evt->dev.set_state_periodic = mtk_clkevt_set_periodic;
 	evt->dev.set_state_oneshot = mtk_clkevt_shutdown;
@@ -292,3 +299,4 @@ err_kzalloc:
 	return -EINVAL;
 }
 CLOCKSOURCE_OF_DECLARE(mtk_mt6577, "mediatek,mt6577-timer", mtk_timer_init);
+CLOCKSOURCE_OF_DECLARE(mtk_mt6758, "mediatek,mt6758-timer", mtk_timer_init);
