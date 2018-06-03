@@ -1285,6 +1285,8 @@ static int mtk_voice_usb_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_USB);
 
+	usb_memif_lpbk.dev = &pdev->dev;
+
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_voice_usb_platform);
