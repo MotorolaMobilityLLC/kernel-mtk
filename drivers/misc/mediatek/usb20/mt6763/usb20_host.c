@@ -594,7 +594,6 @@ static void musb_host_work(struct work_struct *data)
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
 		wake_lock(&mtk_musb->usb_lock);
-		mt_usb_set_vbus(mtk_musb, 1);
 
 		/* this make PHY operation workable */
 		musb_platform_enable(mtk_musb);
@@ -618,6 +617,8 @@ static void musb_host_work(struct work_struct *data)
 		musb_start(mtk_musb);
 		if (!typec_control && !host_plug_test_triggered)
 			switch_int_to_device(mtk_musb);
+
+		mt_usb_set_vbus(mtk_musb, 1);
 
 		if (host_plug_test_enable && !host_plug_test_triggered)
 			queue_delayed_work(mtk_musb->st_wq, &host_plug_test_work, 0);
