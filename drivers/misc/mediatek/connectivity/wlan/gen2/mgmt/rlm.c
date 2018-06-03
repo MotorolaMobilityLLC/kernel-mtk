@@ -2698,19 +2698,21 @@ VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter)
 VOID rlmActivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
 			ENUM_NET_ACTIVE_SRC_T eNetActiveSrcIdx)
 {
+	bool isActive = false;
+
 	ASSERT(prAdapter);
 	ASSERT(eNetworkTypeIdx < NETWORK_TYPE_INDEX_NUM);
 
 	prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc |= eNetActiveSrcIdx;
 
-	if (!IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx)) {
+	isActive = IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx);
+	if (!isActive) {
 		SET_NET_ACTIVE(prAdapter, eNetworkTypeIdx);
 		/* sync with firmware */
-		DBGLOG(RLM, INFO, "nicActivateNetwork\n");
 		nicActivateNetwork(prAdapter, eNetworkTypeIdx);
 	}
-	DBGLOG(RLM, INFO, "rlmActivateNetwork, Type= %d, Src= %d, SrcVal= %d\n",
-		eNetworkTypeIdx, eNetActiveSrcIdx,
+	DBGLOG(RLM, INFO, "rlm: active=%d, Type=%d, Src=%d, SrcVal=%d\n",
+		isActive, eNetworkTypeIdx, eNetActiveSrcIdx,
 		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc);
 }
 
