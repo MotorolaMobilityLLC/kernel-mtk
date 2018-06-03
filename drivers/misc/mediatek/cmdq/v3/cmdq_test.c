@@ -6267,7 +6267,7 @@ static int _testcase_trigger_event_thread(void *data)
 		CMDQ_SYNC_TOKEN_USER_0,
 		CMDQ_SYNC_TOKEN_USER_1
 	};
-	const u64 dummy_poll_va = CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
+	const unsigned long dummy_poll_va = CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
 		CMDQ_DATA_REG_2D_SHARPNESS_0_DST));
 	u32 poll_bit_counter = 0xf;
 	u32 dummy_value = 0;
