@@ -238,6 +238,7 @@ static int gx_game_mode;
 static int gx_3D_benchmark_on;
 #ifdef GED_KPI_CPU_BOOST
 static int gx_force_cpu_boost;
+static int gx_top_app_pid;
 static int enable_game_self_frc_detect = 1;
 #endif
 static unsigned int gx_fps;
@@ -261,6 +262,7 @@ static int boost_upper_bound = 100;
 static void (*ged_kpi_cpu_boost_policy_fp)(GED_KPI_HEAD *psHead, GED_KPI *psKPI);
 module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR);
 module_param(gx_force_cpu_boost, int, S_IRUGO|S_IWUSR);
+module_param(gx_top_app_pid, int, S_IRUGO|S_IWUSR);
 module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
 module_param(boost_amp, int, S_IRUGO|S_IWUSR);
@@ -541,9 +543,11 @@ static GED_BOOL ged_kpi_find_main_head_func(unsigned long ulID, void *pvoid, voi
 #endif
 		if (psHead->isSF == 0) {
 			if (main_head == NULL || psHead->i32Count > main_head->i32Count) {
+				if (main_head && psHead) {
 #ifdef GED_KPI_DEBUG
-				GED_LOGE("[GED_KPI] main_head changes from %p to %p\n", main_head, psHead);
+					GED_LOGE("[GED_KPI] main_head changes from %p to %p\n", main_head, psHead);
 #endif
+				}
 				main_head = psHead;
 			}
 		}
@@ -700,7 +704,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 	int temp_boost_accum_cpu;
 	static int num_over_boost, num_monitored;
 
-	if (psHead == main_head) {
+	if (psHead->pid == gx_top_app_pid) {
 		boost_linear_cpu = 0;
 		boost_real_cpu = 0;
 
@@ -1258,11 +1262,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					gx_game_mode,
 					gx_force_cpu_boost,
 					enable_cpu_boost,
-					psHead == main_head);
+					psHead->pid == gx_top_app_pid);
 
 			if ((gx_game_mode == 1 || gx_force_cpu_boost == 1) && enable_cpu_boost == 1) {
 
-				if (ged_kpi_push_game_frame_time_fp_fbt && psHead == main_head) {
+				if (ged_kpi_push_game_frame_time_fp_fbt && psHead->pid == gx_top_app_pid) {
 					unsigned long long vRunningTime = psHead->t_cpu_latest;
 					unsigned long long vSleepTime = 0;
 
@@ -1275,7 +1279,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					psKPI->t_cpu_slptime = vSleepTime;
 				}
 
-				if (ged_kpi_push_app_self_fc_fp_fbt && psHead == main_head  && gx_game_mode == 1)
+				if (ged_kpi_push_app_self_fc_fp_fbt && (psHead->pid == gx_top_app_pid)
+						&& (gx_game_mode == 1))
 					ged_kpi_push_app_self_fc_fp_fbt(1, psHead->pid);
 
 				/* is_EAS_boost_off = 0; */
