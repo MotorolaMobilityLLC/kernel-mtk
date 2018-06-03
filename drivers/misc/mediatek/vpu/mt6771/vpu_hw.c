@@ -1181,7 +1181,8 @@ static int vpu_disable_regulator_and_clock(int core)
 	LOG_DBG("[vpu_%d] disable result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 out:
 	is_power_on[core] = false;
-	opps.dspcore[core].index = 7;
+	if (!is_power_debug_lock)
+		opps.dspcore[core].index = 7;
 	LOG_INF("[vpu_%d] dis_rc -\n", core);
 	return ret;
 
