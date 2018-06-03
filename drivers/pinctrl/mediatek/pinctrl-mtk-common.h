@@ -19,6 +19,10 @@
 #include <linux/regmap.h>
 #include <linux/pinctrl/pinconf-generic.h>
 
+/* just for bringpup, and will be revert after bringup */
+#define GPIO_BRINGUP
+
+
 #define NO_EINT_SUPPORT    255
 #define MT_EDGE_SENSITIVE           0
 #define MT_LEVEL_SENSITIVE          1
