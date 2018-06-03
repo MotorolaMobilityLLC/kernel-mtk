@@ -123,6 +123,16 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 
 	buffer->heap = heap;
 	buffer->flags = flags;
+
+	/* log task pid for debug +by k.zhang */
+	{
+		struct task_struct *task;
+
+		task = current->group_leader;
+		get_task_comm(buffer->task_comm, task);
+		buffer->pid = task_pid_nr(task);
+	}
+
 	kref_init(&buffer->ref);
 
 	ret = heap->ops->allocate(heap, buffer, len, align, flags);
@@ -175,14 +185,6 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	buffer->size = len;
 	INIT_LIST_HEAD(&buffer->vmas);
 
-	/* log task pid for debug +by k.zhang */
-	{
-		struct task_struct *task;
-
-		task = current->group_leader;
-		get_task_comm(buffer->task_comm, task);
-		buffer->pid = task_pid_nr(task);
-	}
 
 	mutex_init(&buffer->lock);
 	/*
@@ -537,6 +539,11 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 			 (unsigned long)client, (unsigned long)handle);
 
 	ion_history_count_kick(true, len);
+
+	handle->dbg.user_ts = end;
+	do_div(handle->dbg.user_ts, 1000000);
+	memcpy(buffer->alloc_dbg, client->dbg_name, ION_MM_DBG_NAME_LEN);
+
 	return handle;
 }
 EXPORT_SYMBOL(ion_alloc);
@@ -1263,7 +1270,7 @@ int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle)
 		IONMSG("%s dma_buf_fd failed %d.\n", __func__, fd);
 		dma_buf_put(dmabuf);
 	}
-
+	handle->dbg.fd = fd;
 	return fd;
 }
 EXPORT_SYMBOL(ion_share_dma_buf_fd);
@@ -1321,7 +1328,9 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 
 end:
 	dma_buf_put(dmabuf);
-
+	handle->dbg.fd = fd;
+	handle->dbg.user_ts = sched_clock();
+	do_div(handle->dbg.user_ts, 1000000);
 	return handle;
 }
 EXPORT_SYMBOL(ion_import_dma_buf);
@@ -1946,6 +1955,35 @@ struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_
 		up_write(&dev->lock);
 
 	return heap;
+}
+
+struct ion_buffer *ion_drv_file_to_buffer(struct file *file)
+{
+	struct dma_buf *dmabuf;
+	struct ion_buffer *buffer = NULL;
+	const char *pathname = NULL;
+
+	if (!file)
+		goto file2buf_exit;
+	if (!(file->f_path.dentry))
+		goto file2buf_exit;
+
+	pathname = file->f_path.dentry->d_name.name;
+	if (!pathname)
+		goto file2buf_exit;
+
+	if (strstr(pathname, "dmabuf")) {
+		dmabuf = file->private_data;
+		if (dmabuf->ops == &dma_buf_ops)
+			buffer = dmabuf->priv;
+	}
+
+file2buf_exit:
+
+	if (buffer)
+		return buffer;
+	else
+		return ERR_PTR(-EINVAL);
 }
 
 /* ============================================================================================= */
