@@ -94,15 +94,3 @@ config MTK_UFS_BOOTING
 	  Say Y if you want to use embedded UFS as default booting device.
 
 	  If unsure, say N.
-
-config MTK_UFS_HW_CRYPTO
-	bool "Enable hardware crypto feature in UFS host on MTK platform"
-	depends on MTK_UFS_BOOTING
-	default n
-	---help---
-	  This makes MediaTek UFS host driver have ability to handle cryptography
-	  task supported by UFS host.
-
-	  Say Y if you want to enable this feature.
-
-	  If unsure, say N.

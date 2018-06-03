@@ -175,7 +175,7 @@ struct ufshcd_lrb {
 	u8 lun; /* UPIU LUN id field is only 8-bit wide */
 	bool intr_cmd;
 
-#ifdef CONFIG_MTK_UFS_HW_CRYPTO
+#ifdef CONFIG_MTK_HW_FDE
 	u32 crypto_en;
 	u32 crypto_cfgid;
 	u32 crypto_dunl;
@@ -250,6 +250,12 @@ struct ufs_pwr_mode_info {
 	struct ufs_pa_layer_attr info;
 };
 
+enum ufs_scsi_dev_cfg {
+	UFS_SCSI_DEV_SLAVE_ALLOC,
+	UFS_SCSI_DEV_SLAVE_CONFIGURE,
+	UFS_SCSI_DEV_SLAVE_DESTROY
+};
+
 /**
  * struct ufs_hba_variant_ops - variant specific callbacks
  * @name: variant name
@@ -290,6 +296,14 @@ struct ufs_hba_variant_ops {
 	int     (*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int     (*resume)(struct ufs_hba *, enum ufs_pm_op);
 	void	(*dbg_register_dump)(struct ufs_hba *hba);
+/*
+	 * MTK PATCH:
+	 * Auto-hibern8 vops
+	 */
+	void    (*auto_hibern8)(struct ufs_hba *, bool);
+
+	/* SCSI device slave alloc/configure/destroy vops */
+	int     (*scsi_dev_cfg)(struct scsi_device *, enum ufs_scsi_dev_cfg);
 };
 
 /* clock gating state  */
@@ -540,10 +554,11 @@ struct ufs_hba {
 	struct ufs_clk_scaling clk_scaling;
 	bool is_sys_suspended;
 
-#ifdef CONFIG_MTK_UFS_BOOTING
-	u32 manu_id;               /* record vendor id for vendor-specific configurations */
-	unsigned int dev_quirks;
-#endif
+	/* MTK PATCH */
+	u32 manu_id;                          /* record vendor id for vendor-specific configurations */
+	u32 dev_quirks;                       /* device quirks */
+	struct device_attribute rpm_info_attr;
+	struct device_attribute spm_info_attr;
 };
 
 /* Returns true if clocks can be gated. Otherwise false */
@@ -600,6 +615,24 @@ void ufshcd_dealloc_host(struct ufs_hba *);
 int ufshcd_init(struct ufs_hba * , void __iomem * , unsigned int);
 void ufshcd_remove(struct ufs_hba *);
 
+/*
+ * MTK PATCH
+ * Wrapper function for safely calling variant operations
+ */
+static inline void ufshcd_vops_auto_hibern8(struct ufs_hba *hba, bool enable)
+{
+	if (hba->vops && hba->vops->auto_hibern8)
+		hba->vops->auto_hibern8(hba, enable);
+}
+
+static inline void ufshcd_vops_scsi_dev_cfg(struct scsi_device *sdev, enum ufs_scsi_dev_cfg op)
+{
+	struct ufs_hba *hba = shost_priv(sdev->host);
+
+	if (hba->vops && hba->vops->scsi_dev_cfg)
+		hba->vops->scsi_dev_cfg(sdev, op);
+}
+
 /**
  * ufshcd_hba_stop - Send controller to reset state
  * @hba: per adapter instance
@@ -607,6 +640,12 @@ void ufshcd_remove(struct ufs_hba *);
 static inline void ufshcd_hba_stop(struct ufs_hba *hba)
 {
 	ufshcd_writel(hba, CONTROLLER_DISABLE,  REG_CONTROLLER_ENABLE);
+
+	/*
+	 * MTK PATCH: AHIT will be reset to zero while hba stop, update
+	 * auto-hibern8 status here.
+	 */
+	ufshcd_vops_auto_hibern8(hba, false);
 }
 
 static inline void check_upiu_size(void)
@@ -692,6 +731,9 @@ static inline int ufshcd_dme_peer_get(struct ufs_hba *hba,
 {
 	return ufshcd_dme_get_attr(hba, attr_sel, mib_val, DME_PEER);
 }
+
+extern struct ufs_pm_lvl_states ufs_pm_lvl_states[];
+extern const int ufs_pm_lvl_states_size;
 
 int ufshcd_hold(struct ufs_hba *hba, bool async);
 void ufshcd_release(struct ufs_hba *hba);
@@ -800,11 +842,18 @@ static inline void ufshcd_vops_dbg_register_dump(struct ufs_hba *hba)
 		hba->vops->dbg_register_dump(hba);
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+/*
+ * MTK PATCH:
+ *
+ * API prototypes for MTK vendor-specific usage.
+ */
 void  ufshcd_enable_intr(struct ufs_hba *hba, u32 intrs);
+void  ufshcd_disable_intr(struct ufs_hba *hba, u32 intrs);
+int   ufshcd_hba_enable(struct ufs_hba *hba);
 int   ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_tr_ocs(struct ufshcd_lrb *lrbp);
+int   ufshcd_make_hba_operational(struct ufs_hba *hba);
 int   ufshcd_query_attr(struct ufs_hba *hba,
 							enum query_opcode opcode,
 							enum attr_idn idn,
@@ -825,7 +874,7 @@ int   ufshcd_read_string_desc(struct ufs_hba *hba, int desc_index, u8 *buf, u32 
 void  ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag);
 int   ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd);
 int   ufshcd_uic_change_pwr_mode(struct ufs_hba *hba, u8 mode);
+int   ufshcd_uic_hibern8_exit(struct ufs_hba *hba);
 void  ufshcd_utrl_clear(struct ufs_hba *hba, u32 pos);
-#endif
 
 #endif /* End of Header */

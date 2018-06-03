@@ -9,12 +9,11 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-#ifdef CONFIG_MTK_UFS_BOOTING
-
 #ifndef _UFSHCD_MTK_H
 #define _UFSHCD_MTK_H
 
 #define CONFIG_MTK_UFS_DEBUG
+/* #define CONFIG_MTK_UFS_DEBUG_QUEUECMD */
 
 #include <linux/of.h>
 #include "ufshcd.h"
@@ -22,6 +21,7 @@
 /*
  * Platform dependent definitions
  */
+#ifdef CONFIG_MACH_MT6799
 enum {
 	REG_UFS_PERICFG             = 0x12c,
 	REG_UFS_PERICFG_RST_N_BIT   = 17,
@@ -45,6 +45,7 @@ enum {
 	REG_UFSCPT_SW_RST_CLR       = 0x134,
 	REG_UFSCPT_SW_RST_CLR_BIT   = 15,
 };
+#endif
 
 enum {
 	SW_RST_TARGET_UFSHCI        = 0x1,
@@ -69,15 +70,6 @@ enum {
 	UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC   = 1,
 	UFS_CRYPTO_ALGO_AES_ECB             = 2,
 	UFS_CRYPTO_ALGO_ESSIV_AES_CBC       = 3,
-};
-
-enum ufs_dbg_lvl_t {
-	T_UFS_DBG_LVL_0 = 0, /* no debug information */
-	T_UFS_DBG_LVL_1 = 1, /* error decode */
-	T_UFS_DBG_LVL_2 = 2, /* UIC command dump */
-	T_UFS_DBG_LVL_3 = 3, /* scsi CDB dump & query function decode */
-	T_UFS_DBG_LVL_4 = 4, /* UTRD / request / response dump */
-	T_UFS_DBG_LVL_5 = 5, /* PRD table address, size */
 };
 
 struct ufs_cmd_str_struct {
@@ -258,6 +250,7 @@ struct ufs_crypto {
  */
 #define UFS_DEVICE_QUIRK_INCORRECT_PWM_BURST_CLOSURE_EXTENSION    (1 << 30)
 
+extern u32							ufs_mtk_auto_hibern8_timer_ms;
 extern struct ufs_cmd_str_struct	ufs_mtk_cmd_str_tbl[];
 extern enum ufs_dbg_lvl_t			ufs_mtk_dbg_lvl;
 extern bool							ufs_mtk_host_deep_stall_enable;
@@ -265,36 +258,15 @@ extern bool							ufs_mtk_host_scramble_enable;
 extern bool							ufs_mtk_tr_cn_used;
 extern const struct of_device_id			ufs_of_match[];
 
+void ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
-int  ufs_mtk_bootrom_deputy(struct ufs_hba *hba);
 void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
-void ufs_mtk_dump_asc_ascq(struct ufs_hba *hba, u8 asc, u8 ascq);
 int  ufs_mtk_get_cmd_str_idx(char cmd);
-int  ufs_mtk_init_mphy(struct ufs_hba *hba);
-int  ufs_mtk_init(struct ufs_hba *hba);
-int  ufs_mtk_link_startup_notify(struct ufs_hba *hba, enum ufs_notify_change_status stage);
-void ufs_mtk_print_request(struct ufshcd_lrb *lrbp);
-void ufs_mtk_print_response(struct ufshcd_lrb *lrbp);
-int  ufs_mtk_pwr_change_notify(struct ufs_hba *hba,
-	enum ufs_notify_change_status stage,
-	struct ufs_pa_layer_attr *desired,
-	struct ufs_pa_layer_attr *final);
-int  ufs_mtk_query_desc(struct ufs_hba *hba,
-	enum query_opcode opcode,
-	enum desc_idn idn,
-	u8 index,
-	void *desc,
-	int len);
-int  ufs_mtk_run_batch_uic_cmd(struct ufs_hba *hba, struct uic_command *cmds, int ncmds);
-int  ufs_mtk_send_uic_command(struct ufs_hba *hba, u32 cmd, u32 arg1, u32 arg2, u32 *arg3, u8 *err_code);
-void ufs_mtk_smc_set_crypto_cfg(u32 cap_id, u32 cfg_id);
+void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
+void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
+int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
+int  ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
+int  ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
+
 
 #endif /* !_UFSHCD_MTK_H */
-
-#else  /* !CONFIG_MTK_UFS_BOOTING */
-
-#define ufs_mtk_advertise_fixup_device(x)
-#define ufs_mtk_print_request(x)
-
-#endif /* CONFIG_MTK_UFS_BOOTING */
-
