@@ -53,6 +53,10 @@ EXPORT_SYMBOL(g_ion_device);
 #define dmac_unmap_area __dma_unmap_area
 #endif
 
+#ifndef dmac_flush_range
+#define dmac_flush_range __dma_flush_range
+#endif
+
 #define __ION_CACHE_SYNC_USER_VA_EN__
 
 static int ion_cache_sync_kernel(unsigned long start, size_t size,
@@ -79,7 +83,11 @@ static int ion_cache_sync_kernel(unsigned long start, size_t size,
 		   (sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_VA)) {
 		mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 				 MMPROFILE_FLAG_START, size, start);
+#ifdef CONFIG_ARM64
 		__dma_flush_area((void *)start, size);
+#else
+		dmac_flush_range((void *)start, (void *)(start + size - 1));
+#endif
 	}
 
 	return 0;
@@ -306,7 +314,11 @@ static int ion_cache_sync_flush(unsigned long start, size_t size,
 {
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 			 MMPROFILE_FLAG_START, size, 0);
+#ifdef CONFIG_ARM64
 	__dma_flush_area((void *)start, size);
+#else
+	dmac_flush_range((void *)start, (void *)(start + size - 1));
+#endif
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 			 MMPROFILE_FLAG_END, size, 0);
 
