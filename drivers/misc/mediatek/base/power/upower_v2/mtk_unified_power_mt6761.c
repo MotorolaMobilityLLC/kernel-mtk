@@ -128,7 +128,7 @@ unsigned char upower_recognize_by_eem[NR_UPOWER_BANK] = {
 #if 0
 	UPOWER_BANK_L, /* L EEM apply voltage to CLS_L upower bank */
 #endif
-	UPOWER_BANK_CLS_LL, /* LL EEM apply voltage to CLS_LL upower bank */
+	UPOWER_BANK_LL, /* LL EEM apply voltage to CLS_LL upower bank */
 	UPOWER_BANK_CCI, /* CCI EEM apply voltage to CCI upower bank */
 };
 
@@ -226,9 +226,8 @@ void get_original_table(void)
 	unsigned int i, j;
 
 	idx = mt_cpufreq_get_cpu_level();
-
 	/* get location of reference table */
-	upower_tbl_infos = &upower_tbl_list[idx][0];
+	upower_tbl_infos = &upower_tbl_list[0][0];
 
 	/* get location of target table */
 	upower_tbl_ref = &final_upower_tbl[0];

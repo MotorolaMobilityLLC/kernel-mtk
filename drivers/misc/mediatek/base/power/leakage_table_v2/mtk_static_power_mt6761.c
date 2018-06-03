@@ -15,8 +15,10 @@
 #include <mtk_common_static_power.h>
 
 char *spower_name[] = {
+#if 0
 	"MTK_SPOWER_CPUL",
 	"MTK_SPOWER_CPUL_CLUSTER",
+#endif
 	"MTK_SPOWER_CPULL",
 	"MTK_SPOWER_CPULL_CLUSTER",
 	"MTK_SPOWER_CCI",
@@ -24,6 +26,9 @@ char *spower_name[] = {
 	"MTK_SPOWER_VCORE",
 	"MTK_SPOWER_VMD",
 	"MTK_SPOWER_MODEM",
+	"MTK_SPOWER_VSRAM_CCI",
+	"MTK_SPOWER_VSRAM_GPU",
+	"MTK_SPOWER_VSRAM_OTHERS",
 
 	"MTK_SPOWER_MAX"
 };

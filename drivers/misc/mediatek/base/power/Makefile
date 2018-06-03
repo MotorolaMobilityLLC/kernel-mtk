@@ -24,7 +24,9 @@ obj-$(CONFIG_MACH_MT6761) += cpufreq_v1/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
 obj-$(CONFIG_MACH_MT6765) += eem_v2/
+obj-$(CONFIG_MACH_MT6761) += eem_v2/
 endif
+obj-$(CONFIG_MACH_MT6761) += upower_v2/
 ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6758) += upower_v2/
 obj-$(CONFIG_MACH_MT6765) += upower_v2/

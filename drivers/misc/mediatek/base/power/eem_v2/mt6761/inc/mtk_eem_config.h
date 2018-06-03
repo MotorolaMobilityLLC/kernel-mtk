@@ -25,7 +25,7 @@
 #define UPDATE_TO_UPOWER (1)
 #define EEM_LOCKTIME_LIMIT (3000)
 #define ENABLE_EEMCTL0 (1)
-#define ENABLE_LOO			(1)
+#define ENABLE_LOO			(0)
 #define ENABLE_INIT1_STRESS (1)
 
 #define EEM_OFFSET
@@ -51,21 +51,22 @@
  * eem sw setting
  ******************************************
  */
-#define NR_HW_RES_FOR_BANK	(12) /* real eem banks for efuse */
-#define EEM_INIT01_FLAG (0x7) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
+#define NR_HW_RES_FOR_BANK	(9) /* real eem banks for efuse */
+#define EEM_INIT01_FLAG (0x1) /* [0]:LL */
 #if ENABLE_LOO
 #define EEM_L_INIT02_FLAG (0x9) /* should be 0x0F=> [3]:L_HI, [0]:L */
-#define EEM_2L_INIT02_FLAG (0x12) /* should be 0x0F=> [4]:2L_HI, [1]:2L */
+#define EEM_2L_INIT02_FLAG (0x3) /* should be 0x0F=> [4]:2L_HI, [1]:2L */
 #endif
 
 #define NR_FREQ 16
 #define NR_FREQ_CPU 16
+#define NR_FREQ_GPU 16
 
 /*
  * 100 us, This is the EEM Detector sampling time as represented in
  * cycles of bclk_ck during INIT. 52 MHz
  */
-#define DETWINDOW_VAL		0x514
+#define DETWINDOW_VAL		0xA28
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
@@ -75,7 +76,7 @@
 
 /* 1mV=>10uV */
 /* EEM */
-#define EEM_V_BASE		(50000)
+#define EEM_V_BASE		(51875)
 #define EEM_STEP		(625)
 
 /* CPU */
@@ -83,10 +84,10 @@
 #define CPU_PMIC_STEP		(625)
 
 /* common part: for cci, LL, L */
-#define VBOOT_VAL		(0x30)
-#define VMAX_VAL		(0x54)
-#define VMIN_VAL		(0x10)
-#define VCO_VAL			(0x10)
+#define VBOOT_VAL		(0x2D)
+#define VMAX_VAL		(0x51)
+#define VMIN_VAL		(0x15)
+#define VCO_VAL			(0x15)
 #define DVTFIXED_VAL		(0x8)
 #define DVTFIXED_M_VAL		(0x4)
 
@@ -114,8 +115,8 @@
 
 #if ENABLE_EEMCTL0
 #define EEM_CTL0_L (0x00000001)
-#define EEM_CTL0_2L (0x00010001)
-#define EEM_CTL0_GPU (0x00100001)
+#define EEM_CTL0_2L (0x00000001)
+#define EEM_CTL0_GPU (0x00010001)
 #endif
 
 #if EEM_FAKE_EFUSE	/* select PTP secure mode based on efuse config. */
@@ -134,20 +135,20 @@
 
 /*2-line*/
 /* L_LOW */
-#define DEVINFO_1 0x12A446F6
+#define DEVINFO_1 0x10bd3c1b
 /* L_LOW + LL_LOW */
-#define DEVINFO_2 0x00510051
+#define DEVINFO_2 0x550055
 /* LL_LOW */
-#define DEVINFO_3 0x12A43602
+#define DEVINFO_3 0x10bd3c1b
 /* L_HIGH */
-#define DEVINFO_4 0x12A4FB97
+#define DEVINFO_4 0x10bd3c1b
 /* L_HIGH + LL_HIGH */
-#define DEVINFO_5 0x003A003B
+#define DEVINFO_5 0x550055
 /* LL_HIGH */
-#define DEVINFO_6 0x12A490EA
+#define DEVINFO_6 0x10bd3c1b
 /* CCI */
-#define DEVINFO_7 0x12A486F2
-#define DEVINFO_8 0x003B0000
+#define DEVINFO_7 0x10bd3c1b
+#define DEVINFO_8 0x550055
 
 /*1-line*/
 /* L */
@@ -163,11 +164,14 @@
 
 /*2-line*/
 /* L_LOW */
-#define DEVINFO_1 0x5DA40CB9
+//#define DEVINFO_1 0x5DA40CB9
+#define DEVINFO_1 0xFFFFFFFF
 /* L_LOW + LL_LOW */
-#define DEVINFO_2 0x001E001E
+//#define DEVINFO_2 0x001E001E
+#define DEVINFO_2 0xFFFFFFFF
 /* LL_LOW */
-#define DEVINFO_3 0x5DA47B4D
+//#define DEVINFO_3 0x5DA47B4D
+#define DEVINFO_3 0xFFFFFFFF
 /* L_HIGH */
 #define DEVINFO_4 0x5DA4B4D8
 /* L_HIGH + LL_HIGH */
@@ -175,8 +179,10 @@
 /* LL_HIGH */
 #define DEVINFO_6 0x5DA4DFA6
 /* CCI */
-#define DEVINFO_7 0x5DA4CABD
-#define DEVINFO_8 0x00740000
+//#define DEVINFO_7 0x5DA4CABD
+#define DEVINFO_7 0x59040DA7
+//#define DEVINFO_8 0x00740000
+#define DEVINFO_8 0x00240000
 
 /*1-line*/
 /* L */

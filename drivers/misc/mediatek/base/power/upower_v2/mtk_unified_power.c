@@ -31,6 +31,9 @@
 
 /* local include */
 #include "mtk_upower.h"
+#ifdef UPOWER_NUM_LARGER
+#include "mtk_eem.h"
+#endif
 
 #if UPOWER_ENABLE_TINYSYS_SSPM
 #include <sspm_reservedmem_define.h>
@@ -51,6 +54,9 @@
 unsigned char upower_enable = 1;
 #else
 unsigned char upower_enable;
+#endif
+#ifdef UPOWER_NUM_LARGER
+int iter;
 #endif
 
 /* for log print */
@@ -319,9 +325,38 @@ static void upower_wait_for_eem_volt_done(void)
 		if (!eem_volt_not_ready)
 			break;
 		/* if eem volt not ready, wait 100us */
+		upower_debug("wait for eem update\n");
 		udelay(100);
 	}
 }
+
+#ifdef UPOWER_NUM_LARGER
+static void upower_wait_for_eem_volt_done_upn_larger(void)
+{
+	unsigned char eem_volt_not_ready = 0;
+	int i;
+
+	iter = NR_UPOWER_BANK;
+	/* ensure upower bank num does not larger than eem det num */
+	iter =
+	(int)NR_EEM_DET < (int)NR_UPOWER_BANK ? NR_EEM_DET:NR_UPOWER_BANK;
+	udelay(100);
+	while (1) {
+		eem_volt_not_ready = 0;
+		for (i = 0; i < iter; i++) {
+			upower_debug("tbl_ref = %d iter %d\n",
+				upower_tbl_ref[i].row[UPOWER_OPP_NUM - 1].volt,
+				iter);
+			if (upower_tbl_ref[i].row[UPOWER_OPP_NUM - 1].volt == 0)
+				eem_volt_not_ready = 1;
+		}
+		if (!eem_volt_not_ready)
+			break;
+		/* if eem volt not ready, wait 100us */
+		udelay(100);
+	}
+}
+#endif
 
 static void upower_init_lkgidx(void)
 {
@@ -354,6 +389,20 @@ static void upower_init_volt(void)
 			upower_tbl_ref[i].row[j].volt = tbl->row[j].volt;
 	}
 }
+#ifdef UPOWER_NUM_LARGER
+static void confirm_volt(void)
+{
+	int i, j;
+	struct upower_tbl *tbl;
+
+	for (i = iter; i < NR_UPOWER_BANK; i++) {
+		tbl = upower_tbl_infos[i].p_upower_tbl;
+		for (j = 0; j < UPOWER_OPP_NUM; j++)
+			upower_tbl_ref[i].row[j].volt = tbl->row[j].volt;
+	}
+
+}
+#endif
 
 static int upower_update_tbl_ref(void)
 {
@@ -628,9 +677,12 @@ static int __init upower_init(void)
 #ifdef UPOWER_USE_DEF_CCI_TBL
 		upower_init_volt_cci();
 #endif
+#ifdef UPOWER_NUM_LARGER
+		upower_wait_for_eem_volt_done_upn_larger();
+		confirm_volt();
+#endif
 		upower_wait_for_eem_volt_done();
 	}
-
 	upower_update_dyn_pwr();
 	upower_update_lkg_pwr();
 #ifdef UPOWER_L_PLUS

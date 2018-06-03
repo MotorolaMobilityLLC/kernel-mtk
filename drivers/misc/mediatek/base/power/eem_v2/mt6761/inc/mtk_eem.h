@@ -22,11 +22,11 @@
 
 /* have 5 banks */
 enum eem_ctrl_id {
-	EEM_CTRL_L,
+//	EEM_CTRL_L,
 	EEM_CTRL_2L,
-	EEM_CTRL_GPU,
+//	EEM_CTRL_GPU,
 #if ENABLE_LOO
-	EEM_CTRL_L_HI,
+//	EEM_CTRL_L_HI,
 	EEM_CTRL_2L_HI,
 #endif
 
@@ -34,11 +34,11 @@ enum eem_ctrl_id {
 };
 
 enum eem_det_id {
-	EEM_DET_L	=	EEM_CTRL_L,
+//	EEM_DET_L	=	EEM_CTRL_L,
 	EEM_DET_2L	=	EEM_CTRL_2L,
-	EEM_DET_GPU	=	EEM_CTRL_GPU,
+//	EEM_DET_GPU	=	EEM_CTRL_GPU,
 #if ENABLE_LOO
-	EEM_DET_L_HI	=	EEM_CTRL_L_HI,
+//	EEM_DET_L_HI	=	EEM_CTRL_L_HI,
 	EEM_DET_2L_HI	=	EEM_CTRL_2L_HI,
 #endif
 
@@ -46,9 +46,9 @@ enum eem_det_id {
 };
 
 enum mt_eem_cpu_id {
-	MT_EEM_CPU_L,
+//	MT_EEM_CPU_L,
 	MT_EEM_CPU_LL,
-	MT_EEM_CPU_CCI,
+//	MT_EEM_CPU_CCI,
 
 	NR_MT_EEM_CPU,
 };
