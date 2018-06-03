@@ -834,6 +834,11 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, in
 		}
 	}
 
+	if (self->mmdvfs_scenario_mmdvfs_opp[MMDVFS_MGR] != MMDVFS_FINE_STEP_UNREQUEST) {
+		final_opp = self->mmdvfs_scenario_mmdvfs_opp[MMDVFS_MGR];
+		MMDVFSMSG("[force] set step (%d) by MMDVFS_MGR, force to use it!\n", final_opp);
+	}
+
 	return final_opp;
 }
 
