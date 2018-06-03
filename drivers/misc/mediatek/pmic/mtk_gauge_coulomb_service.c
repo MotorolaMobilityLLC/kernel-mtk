@@ -30,7 +30,7 @@ static spinlock_t slock;
 static struct wake_lock wlock;
 static wait_queue_head_t wait_que;
 static bool coulomb_thread_timeout;
-static int ftlog_level = 1;
+static int fgclog_level;
 static int pre_coulomb;
 static bool init;
 static int coulomb_lock_cnt, hw_coulomb_lock_cnt;
@@ -41,21 +41,21 @@ static int coulomb_lock_cnt, hw_coulomb_lock_cnt;
 
 #define ft_err(fmt, args...)   \
 do {									\
-	if (ftlog_level >= FTLOG_ERROR_LEVEL) {			\
+	if (fgclog_level >= FTLOG_ERROR_LEVEL) {			\
 		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define ft_debug(fmt, args...)   \
 do {									\
-	if (ftlog_level >= FTLOG_DEBUG_LEVEL) {		\
+	if (fgclog_level >= FTLOG_DEBUG_LEVEL) {		\
 		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define ft_trace(fmt, args...)\
 do {									\
-	if (ftlog_level >= FTLOG_TRACE_LEVEL) {			\
+	if (fgclog_level >= FTLOG_TRACE_LEVEL) {			\
 		pr_notice(fmt, ##args);\
 	}						\
 } while (0)
@@ -117,7 +117,7 @@ void wake_up_gauge_coulomb(void)
 
 void gauge_coulomb_set_log_level(int x)
 {
-	ftlog_level = x;
+	fgclog_level = x;
 }
 
 void gauge_coulomb_consumer_init(struct gauge_consumer *coulomb, struct device *dev, char *name)
@@ -388,6 +388,7 @@ void gauge_coulomb_int_handler(void)
 		ft_trace("+ list is empty\n");
 	} else
 		ft_trace("+ list is empty\n");
+
 
 	if (list_empty(&coulomb_head_minus) != true) {
 		pos = coulomb_head_minus.next;
