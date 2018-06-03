@@ -1770,6 +1770,8 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma,
 	struct cmdqRecStruct *cmdq_handle = NULL;
 	struct cmdqRecStruct *cmdq_wait_handle = NULL;
 	struct disp_ddp_path_config *pconfig = NULL;
+	int virtual_height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	int virtual_width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 
 	/* create config thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
@@ -1809,6 +1811,8 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma,
 		pconfig->wdma_config.dstPitch =
 			pconfig->wdma_config.srcWidth * 2;
 	}
+	pconfig->wdma_config.srcHeight = virtual_height;
+	pconfig->wdma_config.srcWidth = virtual_width;
 	pconfig->wdma_dirty = 1;
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
 
@@ -2555,8 +2559,10 @@ static int init_decouple_buffers(void)
 {
 	int i = 0;
 	enum UNIFIED_COLOR_FMT fmt = UFMT_RGB888;
-	int height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
-	int width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	int height = primary_display_get_height();
+	int width = primary_display_get_width();
+	int virtual_height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	int virtual_width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	int Bpp = UFMT_GET_Bpp(fmt);
 
 	int buffer_size = width * height * Bpp;
@@ -2577,10 +2583,8 @@ static int init_decouple_buffers(void)
 	decouple_rdma_config.security = DISP_NORMAL_BUFFER;
 	decouple_rdma_config.dst_x = 0;
 	decouple_rdma_config.dst_y = 0;
-	decouple_rdma_config.dst_w =
-		disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
-	decouple_rdma_config.dst_h =
-		disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	decouple_rdma_config.dst_w = virtual_width;
+	decouple_rdma_config.dst_h = virtual_height;
 
 	/* initialize wdma config */
 	decouple_wdma_config.srcHeight = height;
@@ -5406,10 +5410,10 @@ static int config_wdma_output(disp_path_handle disp_handle,
 
 	pconfig = dpmgr_path_get_last_config(disp_handle);
 	pconfig->wdma_config.dstAddress = (unsigned long)output->pa;
-	pconfig->wdma_config.srcHeight =
-		disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
-	pconfig->wdma_config.srcWidth =
-		disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+
+	pconfig->wdma_config.srcHeight = primary_display_get_height();
+	pconfig->wdma_config.srcWidth = primary_display_get_width();
+
 	pconfig->wdma_config.clipX = output->x;
 	pconfig->wdma_config.clipY = output->y;
 	pconfig->wdma_config.clipHeight = output->height;
