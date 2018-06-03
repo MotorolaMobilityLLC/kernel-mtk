@@ -1198,7 +1198,7 @@ static signed int ConfigMFBHW(MFB_Config *pMfbConfig)
 {
 #ifdef MFB_USE_GCE
 		struct cmdqRecStruct *handle;
-		uint64_t engineFlag = (1L << CMDQ_ENG_MFB);
+		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_MFB);
 #endif
 
 	if (MFB_DBG_DBGLOG == (MFB_DBG_DBGLOG & MFBInfo.DebugMask)) {
