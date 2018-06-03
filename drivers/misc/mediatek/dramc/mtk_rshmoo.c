@@ -36,6 +36,9 @@
 #include <mt-plat/mtk_meminfo.h>
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/aee.h>
+#ifdef CONFIG_MTK_WATCHDOG
+#include <mtk_wd_api.h>
+#endif
 
 #include "mtk_dramc.h"
 #include "dramc.h"
@@ -49,9 +52,15 @@ static unsigned int rshmoo_test_txvref;
 static unsigned int rshmoo_test_delay;
 static unsigned int rshmoo_test_ongoing;
 static unsigned int rshmoo_test_done;
+static struct timer_list rshmoo_timer;
+static unsigned int rshmoo_timer_counter;
 
 #define KEY_RSHMOO_STORE 0x9487
 #define RSHMOO_STORE_MAGIC 0x04879487
+
+#define RSHMOO_REBOOT_TIME	30
+#define TIMER_INTERVAL 500
+#define TIMER_EXPIRE_MINUTES(m)        ((m)*60*1000/TIMER_INTERVAL)
 
 struct rshmoo_store_info {
 	unsigned int magic;
@@ -91,6 +100,37 @@ int dram_rshmoo_mark_pass(void)
 		return 0;
 	}
 	return -1;
+}
+
+void dram_rshmoo_timer_callback(unsigned long data)
+{
+	unsigned int expire = TIMER_EXPIRE_MINUTES(RSHMOO_REBOOT_TIME);
+#ifdef CONFIG_MTK_WATCHDOG
+	int res;
+	struct wd_api *wd_api = NULL;
+#endif
+
+	rshmoo_timer_counter++;
+
+	if (rshmoo_timer_counter < expire) {
+		mod_timer(&rshmoo_timer, jiffies +
+				msecs_to_jiffies(TIMER_INTERVAL));
+		return;
+	}
+
+#ifdef CONFIG_MTK_WATCHDOG
+	res = get_wd_api(&wd_api);
+	if (res < 0) {
+		pr_info("arch_reset, get wd api error %d\n", res);
+		while (1)
+			cpu_relax();
+	} else {
+		pr_info("exception reboot\n");
+		wd_api->wd_sw_reset(WD_SW_RESET_BYPASS_PWR_KEY);
+	}
+#else
+	emergency_restart();
+#endif
 }
 
 static int dram_rshmoo_probe(struct platform_device *pdev)
@@ -167,6 +207,11 @@ static int dram_rshmoo_probe(struct platform_device *pdev)
 		pr_info("fail to create the rshmoo_test_info sysfs files\n");
 		return ret;
 	}
+
+	init_timer(&rshmoo_timer);
+	rshmoo_timer.function = dram_rshmoo_timer_callback;
+	rshmoo_timer.data = 0;
+	mod_timer(&rshmoo_timer, jiffies + msecs_to_jiffies(TIMER_INTERVAL));
 
 	return 0;
 }
