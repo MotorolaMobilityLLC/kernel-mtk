@@ -1599,6 +1599,15 @@
 		compatible = "mediatek,ufshci";
 		reg = <0 0x11270000 0 0x2300>;
 		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&infracfg_ao INFRACFG_AO_UFS_CG>,
+			<&infracfg_ao INFRACFG_AO_UFS_MP_SAP_BCLK_CG>;
+		clock-names =
+			"ufs0-clock",
+			"ufs0-mp-clk";
+		freq-table-hz =
+			<0 0>,
+			<0 0>;
 
 		/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
 		mediatek,auto-hibern8-timer = <0>;

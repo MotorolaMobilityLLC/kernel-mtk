@@ -18,6 +18,11 @@
 #include "ufs-mtk.h"
 #include "ufs-mtk-platform.h"
 
+#include "mtk_idle.h"
+#include "mtk_spm_resource_req.h"
+
+/* #define UFS_DEV_REF_CLK_CONTROL */
+
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
@@ -54,14 +59,66 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
  */
 int ufs_mtk_pltfrm_deepidle_check_h8(void)
 {
+	int ret = 0;
+	u32 tmp;
+
+	/**
+	 * If current device is not active, it means it is after ufshcd_suspend() through
+	 * a. runtime or system pm b. ufshcd_shutdown
+	 * Plus deepidle/SODI can not enter in ufs suspend/resume callback by idle_lock_by_ufs()
+	 * Therefore, it's guranteed that UFS is in H8 now and 26MHz ref clk is disabled by suspend callback
+	 * deepidle/SODI do not need to disable 26MHz ref clk here.
+	 * Not use hba->uic_link_state to judge it's after ufshcd_suspend() is because
+	 * hba->uic_link_state also used by ufshcd_gate_work()
+	 */
+	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE) {
+		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
+		return UFS_H8_SUSPEND;
+	}
+
+	/* Release all resources if entering H8 mode */
+	ret = ufs_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
+
+	if (ret) {
+		/* ret == -1 means there is outstanding req/task/uic/pm ongoing, not an error */
+		if (ret != -1)
+			dev_err(ufs_mtk_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
+		return ret;
+	}
+
+	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
+		/* Disable MPHY 26MHz ref clock in H8 mode */
+		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(UFS_DEV_REF_CLK_CONTROL)
+		clk_buf_ctrl(CLK_BUF_UFS, false);
+	#endif
+		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
+		return UFS_H8;
+	}
+
 	return -1;
 }
+
 
 /**
  * ufs_mtk_deepidle_leave - callback function for leaving Deepidle & SODI.
  */
 void ufs_mtk_pltfrm_deepidle_leave(void)
 {
+	/* Enable MPHY 26MHz ref clock after leaving deepidle */
+	/* SSPM project will enable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(UFS_DEV_REF_CLK_CONTROL)
+	/* If current device is not active, it means it is after ufshcd_suspend() through */
+	/* a. runtime or system pm b. ufshcd_shutdown */
+	/* And deepidle/SODI can not enter in ufs suspend/resume callback by idle_lock_by_ufs() */
+	/* Therefore, it's guranteed that UFS is in H8 now and 26MHz ref clk is disabled by suspend callback */
+	/* deepidle/SODI do not need to enable 26MHz ref clk here */
+	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE)
+		return;
+
+	clk_buf_ctrl(CLK_BUF_UFS, true);
+#endif
 }
 
 /**
@@ -71,6 +128,7 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
  */
 void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
 {
+	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
 }
 
 /**
@@ -80,6 +138,10 @@ void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba, unsigned int reso
  */
 void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
 {
+	if (lock)
+		idle_lock_by_ufs(1);
+	else
+		idle_lock_by_ufs(0);
 }
 
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
@@ -186,6 +248,21 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 
 int ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option)
 {
+	if (option == UFS_MTK_RESREQ_DMA_OP) {
+
+		/* request resource for DMA operations, e.g., DRAM */
+
+		ufshcd_vops_deepidle_resource_req(hba,
+		  SPM_RESOURCE_MAINPLL | SPM_RESOURCE_DRAM | SPM_RESOURCE_CK_26M);
+
+	} else if (option == UFS_MTK_RESREQ_MPHY_NON_H8) {
+
+		/* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
+
+		ufshcd_vops_deepidle_resource_req(hba,
+		  SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+	}
+
 	return 0;
 }
 
