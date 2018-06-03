@@ -172,6 +172,11 @@ bool is_vcorefs_feature_enable(void)
 	}
 #endif
 #endif
+	if (!spm_load_firmware_status()) {
+		vcorefs_err("SPM FIRMWARE IS NOT READY\n");
+		return false;
+	}
+
 	if (!vcorefs_vcore_dvs_en() && !vcorefs_dram_dfs_en()) {
 		vcorefs_err("DISABLE DVFS DUE TO BOTH DVS & DFS DISABLE\n");
 		return false;
