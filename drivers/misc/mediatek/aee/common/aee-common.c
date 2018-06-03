@@ -202,7 +202,7 @@ void aee_kernel_warning_api(const char *file, const int line, const int db_opt, 
 	offset += vsnprintf(msgbuf + offset, KERNEL_REPORT_LENGTH - offset, msg, args);
 	if (g_aee_api && g_aee_api->kernel_reportAPI) {
 #ifdef CONFIG_MTK_ENG_BUILD
-		if (strstr(module, "maybe have other hang_detect KE DB"))
+		if (module && strstr(module, "maybe have other hang_detect KE DB"))
 			g_aee_api->kernel_reportAPI(AE_DEFECT_FATAL, db_opt, module, msgbuf);
 		else
 #endif
