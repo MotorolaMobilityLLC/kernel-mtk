@@ -674,13 +674,7 @@ void mt_trace_rqlock_start(raw_spinlock_t *lock)
 void mt_trace_rqlock_end(raw_spinlock_t *lock)
 {
 	struct sched_lock_event *lock_e;
-#ifdef CONFIG_DEBUG_SPINLOCK
-	struct task_struct *owner = NULL;
 
-
-	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-		owner = lock->owner;
-#endif
 	lock_e = &__raw_get_cpu_var(rq_lock_mon);
 
 	lock_e->lock_te = sched_clock();
@@ -770,12 +764,7 @@ void mt_trace_RCU_SoftIRQ_end(void)
 void mt_trace_lock_spinning_start(raw_spinlock_t *lock)
 {
 	struct lock_block_event *b;
-	struct task_struct *owner = NULL;
 
-#ifdef CONFIG_DEBUG_SPINLOCK
-	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-		owner = lock->owner;
-#endif
 	b = &__raw_get_cpu_var(spinlock_mon);
 	b->try_lock_s = sched_clock();
 }
@@ -1028,7 +1017,7 @@ void MT_trace_hardirqs_on(void)
 
 			__raw_get_cpu_var(t_irq_on) = t_on;
 			if (t_dur > WARN_IRQ_DISABLE_DUR) {
-				char buf[144];
+				char buf[144], buf2[64];
 				struct lock_block_event *b;
 
 				snprintf(buf, sizeof(buf),
@@ -1043,12 +1032,18 @@ void MT_trace_hardirqs_on(void)
 					sec_high(t_off), sec_low(t_off),
 					sec_high(t_on), sec_low(t_on));
 				sched_mon_msg(buf, output);
-				snprintf(buf, sizeof(buf),
-					"hardirqs last disabled at (%u): [<%p>] %pS",
-					current->hardirq_disable_event,
+#ifdef CONFIG_TRACE_IRQFLAGS
+				snprintf(buf2, sizeof(buf2),
+					"[<%p>] %pS",
 					(void *)current->hardirq_disable_ip,
 					(void *)current->hardirq_disable_ip);
+				snprintf(buf, sizeof(buf),
+					"hardirqs last disabled at (%u): %s",
+					current->hardirq_disable_event, buf2);
 				sched_mon_msg(buf, output);
+#else
+				snprintf(buf2, sizeof(buf2), "<no info>");
+#endif
 				b = &__raw_get_cpu_var(spinlock_mon);
 				if (b->last_spinning_s > t_off) {
 					snprintf(buf, sizeof(buf),
@@ -1063,12 +1058,10 @@ void MT_trace_hardirqs_on(void)
 
 				if (t_dur > AEE_IRQ_DISABLE_DUR) {
 					snprintf(buf, sizeof(buf),
-					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at [<%p>] %pS",
+					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at %s",
 					msec_high(t_dur),
 					sec_high(t_off), sec_low(t_off),
-					sec_high(t_on), sec_low(t_on),
-					(void *)current->hardirq_disable_ip,
-					(void *)current->hardirq_disable_ip);
+					sec_high(t_on), sec_low(t_on), buf2);
 					sched_monitor_aee(evt_HARDIRQ,
 						buf, NULL);
 				}
