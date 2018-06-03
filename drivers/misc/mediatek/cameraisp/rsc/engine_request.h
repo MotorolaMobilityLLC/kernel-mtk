@@ -91,4 +91,6 @@ signed int deque_request(struct engine_requests *eng, unsigned int *fcnt, void *
 
 int update_request(struct engine_requests *eng, pid_t *pid);
 
+signed int request_dump(struct engine_requests *eng);
+
 #endif
