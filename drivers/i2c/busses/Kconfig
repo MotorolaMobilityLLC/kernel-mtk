@@ -662,7 +662,7 @@ config I2C_MT65XX
 
 config I2C_MTK
 	tristate "MediaTek I2C Driver"
-	depends on MTK_CHIP
+	depends on MEDIATEK_SOLUTION
 	default y
 	---help---
 	  This selects the MediaTek(R) Integrated Inter Circuit bus driver.
