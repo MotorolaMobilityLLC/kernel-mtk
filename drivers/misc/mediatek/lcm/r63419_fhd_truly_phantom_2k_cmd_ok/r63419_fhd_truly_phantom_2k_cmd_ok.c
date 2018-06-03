@@ -630,7 +630,7 @@ static void lcm_init(void)
 #else
 	set_gpio_lcd_enp(1);
 #endif
-	MDELAY(5);
+	/* MDELAY(5); */
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
 	if (ret)
@@ -661,15 +661,11 @@ static void lcm_init(void)
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
 #endif
 
-	SET_RESET_PIN(0);
-	MDELAY(10);
 	SET_RESET_PIN(1);
-	/* MDELAY(1); */
-	MDELAY(10);
+	MDELAY(1);
 	/* MDELAY(10); */
 	SET_RESET_PIN(0);
 	MDELAY(10);
-	/* MDELAY(10); */
 	SET_RESET_PIN(1);
 	MDELAY(10);
 
@@ -696,11 +692,6 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	SET_RESET_PIN(1);
-	SET_RESET_PIN(0);
-	MDELAY(10);
-	SET_RESET_PIN(1);
-	MDELAY(10);
 	lcm_init();
 }
 static void lcm_update(unsigned int x, unsigned int y,
