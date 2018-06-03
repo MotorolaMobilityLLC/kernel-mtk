@@ -89,6 +89,9 @@ module_param(mtp_skip_vfs_write, bool, 0644);
 
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
 
+unsigned int mtp_rx_req_len = MTP_BULK_BUFFER_SIZE;
+unsigned int mtp_tx_req_len = MTP_BULK_BUFFER_SIZE;
+
 struct mtp_dev {
 	struct usb_function function;
 	struct usb_composite_dev *cdev;
@@ -464,15 +467,24 @@ static void mtp_complete_in(struct usb_ep *ep, struct usb_request *req)
 	wake_up(&dev->write_wq);
 }
 
+static atomic_t usb_rdone;
+static int usb_rcnt;
+static int vfs_wcnt;
+static bool rx_cont_abort;
+static bool mtp_rx_cont = true;
+module_param(mtp_rx_cont, bool, 0644);
 static void mtp_complete_out(struct usb_ep *ep, struct usb_request *req)
 {
 	struct mtp_dev *dev = _mtp_dev;
 
 	dev->rx_done = 1;
-	if (req->status != 0)
+	if (req->status != 0) {
 		dev->state = STATE_ERROR;
+		rx_cont_abort = true;
+	}
 
 	wake_up(&dev->read_wq);
+	atomic_inc(&usb_rdone);
 }
 
 static void mtp_complete_intr(struct usb_ep *ep, struct usb_request *req)
@@ -495,6 +507,9 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 	struct usb_composite_dev *cdev = dev->cdev;
 	struct usb_request *req;
 	struct usb_ep *ep;
+	const unsigned int mtp_req_len[2] = { (MTP_BULK_BUFFER_SIZE*3),
+		MTP_BULK_BUFFER_SIZE};
+	int len_idx;
 	int i;
 
 	DBG(cdev, "create_bulk_endpoints dev: %p\n", dev);
@@ -526,21 +541,45 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 	ep->driver_data = dev;		/* claim the endpoint */
 	dev->ep_intr = ep;
 
+	len_idx = 0;
+retry_tx_alloc:
 	/* now allocate requests for our endpoints */
 	for (i = 0; i < TX_REQ_MAX; i++) {
-		req = mtp_request_new(dev->ep_in, MTP_BULK_BUFFER_SIZE);
-		if (!req)
-			goto fail;
+		req = mtp_request_new(dev->ep_in, mtp_req_len[len_idx]);
+		if (!req) {
+			if (len_idx >= (ARRAY_SIZE(mtp_req_len)-1))
+				goto fail;
+			while ((req = mtp_req_get(dev, &dev->tx_idle)))
+				mtp_request_free(req, dev->ep_in);
+			len_idx++;
+			pr_info("allocate TX fail. try %d\n",
+				mtp_req_len[len_idx]);
+			goto retry_tx_alloc;
+		}
 		req->complete = mtp_complete_in;
 		mtp_req_put(dev, &dev->tx_idle, req);
 	}
+	mtp_tx_req_len = mtp_req_len[len_idx];
+
+	len_idx = 0;
+retry_rx_alloc:
 	for (i = 0; i < RX_REQ_MAX; i++) {
-		req = mtp_request_new(dev->ep_out, MTP_BULK_BUFFER_SIZE);
-		if (!req)
-			goto fail;
+		req = mtp_request_new(dev->ep_out, mtp_req_len[len_idx]);
+		if (!req) {
+			if (len_idx >= (ARRAY_SIZE(mtp_req_len)-1))
+				goto fail;
+			for (--i; i >= 0; i--)
+				mtp_request_free(dev->rx_req[i], dev->ep_out);
+			len_idx++;
+			pr_info("allocate RX fail. try %d\n",
+				mtp_req_len[len_idx]);
+			goto retry_rx_alloc;
+		}
 		req->complete = mtp_complete_out;
 		dev->rx_req[i] = req;
 	}
+	mtp_rx_req_len = mtp_req_len[len_idx];
+
 	for (i = 0; i < INTR_REQ_MAX; i++) {
 		req = mtp_request_new(dev->ep_intr, INTR_BUFFER_SIZE);
 		if (!req)
@@ -548,6 +587,8 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 		req->complete = mtp_complete_intr;
 		mtp_req_put(dev, &dev->intr_idle, req);
 	}
+
+	pr_info("allocate RX=%d Tx=%d\n", mtp_rx_req_len, mtp_tx_req_len);
 
 	return 0;
 
@@ -892,8 +933,8 @@ static void send_file_work(struct work_struct *data)
 			break;
 		}
 
-		if (count > MTP_BULK_BUFFER_SIZE)
-			xfer = MTP_BULK_BUFFER_SIZE;
+		if (count > mtp_tx_req_len)
+			xfer = mtp_tx_req_len;
 		else
 			xfer = count;
 
@@ -985,8 +1026,8 @@ static void receive_file_work(struct work_struct *data)
 			read_req = dev->rx_req[cur_buf];
 			cur_buf = (cur_buf + 1) % RX_REQ_MAX;
 
-			read_req->length = (count > MTP_BULK_BUFFER_SIZE
-					? MTP_BULK_BUFFER_SIZE : count);
+			read_req->length = (count > mtp_rx_req_len
+					? mtp_rx_req_len : count);
 
 			if (total_size >= 0xFFFFFFFF)
 				read_req->short_not_ok = 0;
@@ -1077,6 +1118,153 @@ static void receive_file_work(struct work_struct *data)
 	/* write the result */
 	dev->xfer_result = r;
 	smp_wmb(); /* avoid context switch and race condiction */
+}
+
+/* #define MTP_RX_DBG_ON */
+#ifdef MTP_RX_DBG_ON
+#define MTP_RX_DBG(fmt, args...) \
+pr_notice("MTP_RX_DBG, <%s(), %d> " fmt, __func__, __LINE__, ## args)
+#else
+#define MTP_RX_DBG(fmt, args...) do {} while (0)
+#endif
+static void vfs_write_work(struct work_struct *data)
+{
+	struct mtp_dev *dev = _mtp_dev;
+	struct usb_request *write_req;
+	struct file *filp = dev->xfer_file;
+	loff_t offset = dev->xfer_file_offset;
+	int64_t req_cnt = dev->xfer_file_length;
+	int index = 0;
+
+	MTP_RX_DBG("write_cnt<%d>, read_cnt<%d>, req_cnt<%d>\n",
+			vfs_wcnt, usb_rcnt, (int)req_cnt);
+
+	while (!rx_cont_abort && (vfs_wcnt != req_cnt)) {
+		if (dev->state != STATE_BUSY) {
+			rx_cont_abort = true;
+			MTP_RX_DBG("state<%d>\n", dev->state);
+			break;
+		}
+		if (atomic_read(&usb_rdone) > 0) {
+			int rc;
+
+			write_req = dev->rx_req[index];
+			index = (index + 1) % RX_REQ_MAX;
+			atomic_dec(&usb_rdone);
+			MTP_RX_DBG("write_req<%p>, len<%d>, usb_rdone<%d>\n",
+					write_req, write_req->actual,
+					atomic_read(&usb_rdone));
+
+			usb_boost();
+			if (mtp_skip_vfs_write) {
+				rc = write_req->actual;
+				offset += rc;
+			} else
+				rc = vfs_write(filp, write_req->buf,
+					write_req->actual, &offset);
+
+			if (rc != write_req->actual)
+				MTP_RX_DBG("rc<%d> != actual<%d>\n",
+					rc, write_req->actual);
+			vfs_wcnt += write_req->actual;
+			MTP_RX_DBG("vfs_wcnt<%d>, usb_rcnt<%d>, req_cnt<%d>\n",
+					(int)vfs_wcnt, (int)usb_rcnt,
+					(int)req_cnt);
+
+
+			/* check next round existence */
+			if (usb_rcnt != req_cnt) {
+				int64_t count = (req_cnt - usb_rcnt);
+				struct usb_request *read_req = write_req;
+
+				read_req->length = (count > mtp_rx_req_len
+						? mtp_rx_req_len : count);
+				MTP_RX_DBG("read_req<%p>, len<%d>\n",
+					read_req, read_req->length);
+				rc = usb_ep_queue(dev->ep_out, read_req,
+					GFP_KERNEL);
+				if (unlikely(rc)) {
+					rx_cont_abort = true;
+					MTP_RX_DBG("rc<%d>\n", rc);
+					break;
+				}
+				usb_rcnt += read_req->length;
+				MTP_RX_DBG("vfs_wcnt%d,usb_rcnt%d,req_cnt%d\n",
+						(int)vfs_wcnt, (int)usb_rcnt,
+						(int)req_cnt);
+			}
+		}
+	};
+	MTP_RX_DBG("write_cnt<%d>, read_cnt<%d>, req_cnt<%d>\n",
+			vfs_wcnt, usb_rcnt, (int)req_cnt);
+}
+void trigger_rx_cont(void)
+{
+	int i;
+	struct usb_request *read_req;
+	struct mtp_dev *dev = _mtp_dev;
+	int64_t count = dev->xfer_file_length;
+	static struct work_struct work;
+	static int work_inited;
+
+	if (count <= 0) {
+		MTP_RX_DBG("count<%d> invalid\n", (int)count);
+		return;
+	}
+
+	/* reset condition */
+	atomic_set(&usb_rdone, 0);
+	usb_rcnt = vfs_wcnt = 0;
+	rx_cont_abort = false;
+
+	mb(); /* make all related status reset and sync */
+
+	MTP_RX_DBG("count<%d>\n", (int)count);
+
+	/* USB related */
+	for (i = 0; i < RX_REQ_MAX; i++) {
+		int rc;
+
+		read_req = dev->rx_req[i];
+		read_req->length = (count > mtp_rx_req_len
+				? mtp_rx_req_len : count);
+		MTP_RX_DBG("i<%d>, read_req<%p>, len<%d>\n",
+			i, read_req, read_req->length);
+		rc = usb_ep_queue(dev->ep_out, read_req, GFP_KERNEL);
+		if (unlikely(rc)) {
+			rx_cont_abort = true;
+			MTP_RX_DBG("rc<%d>\n", rc);
+			break;
+		}
+
+		usb_rcnt += read_req->length;
+		count -= read_req->length;
+		MTP_RX_DBG("count<%d>, usb_rcnt<%d>\n",
+			(int)count, (int)usb_rcnt);
+		if (!count)
+			break;
+	}
+
+	/* VFS related */
+	if (!work_inited) {
+		INIT_WORK(&work, vfs_write_work);
+		work_inited = 1;
+	}
+	queue_work(dev->wq, &work);
+	flush_workqueue(dev->wq);
+
+	/* check status */
+	if (unlikely(rx_cont_abort)) {
+		if (dev->state == STATE_CANCELED) {
+			dev->xfer_result = -ECANCELED;
+			/* recycle request */
+			for (i = 0; i < RX_REQ_MAX; i++)
+				usb_ep_dequeue(dev->ep_out,  dev->rx_req[i]);
+		} else
+			dev->xfer_result = -EIO;
+	} else
+		dev->xfer_result = 0;
+	MTP_RX_DBG("xfer_result<%d>\n", dev->xfer_result);
 }
 
 static int mtp_send_event(struct mtp_dev *dev, struct mtp_event *event)
@@ -1187,9 +1375,26 @@ static long mtp_ioctl(struct file *fp, unsigned code, unsigned long value)
 		 * in kernel context, which is necessary for vfs_read and
 		 * vfs_write to use our buffers in the kernel address space.
 		 */
-		queue_work(dev->wq, work);
-		/* wait for operation to complete */
-		flush_workqueue(dev->wq);
+		if (code != MTP_RECEIVE_FILE) {
+			queue_work(dev->wq, work);
+			/* wait for operation to complete */
+			flush_workqueue(dev->wq);
+		} else {
+			bool rx_cont = mtp_rx_cont;
+
+			/* deal with (512K + 1) ~ (0xFFFFFFFE) */
+			if (rx_cont && (dev->xfer_file_length <= 524288
+				|| dev->xfer_file_length == 0xFFFFFFFF))
+				rx_cont = false;
+
+			if (rx_cont)
+				trigger_rx_cont();
+			else {
+				queue_work(dev->wq, work);
+				/* wait for operation to complete */
+				flush_workqueue(dev->wq);
+			}
+		}
 		fput(filp);
 
 		/* read the result */

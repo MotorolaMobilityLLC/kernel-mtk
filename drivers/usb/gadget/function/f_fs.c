@@ -882,6 +882,43 @@ static ssize_t __ffs_epfile_read_data(struct ffs_epfile *epfile,
 	return ret;
 }
 
+/* Trigger re-start adbd ****************************************************/
+static pid_t tid;
+static struct delayed_work abortion_work;
+#define ABORTION_WORK_DELAY 300
+static int cnxn_cnt;
+
+void abortion(struct work_struct *data)
+{
+	/* send SIGKILL to adbd */
+	struct task_struct *t;
+	struct siginfo info;
+
+	memset(&info, 0, sizeof(struct siginfo));
+	info.si_signo = SIGPOLL;
+	info.si_code = POLL_ERR;
+
+	t = find_task_by_vpid(tid);
+	if (t != NULL) {
+		pr_info("%s, tid<%d>, comm<%s>\n", __func__, tid, t->comm);
+		send_sig_info(SIGKILL, &info, t);
+	}
+}
+
+static void abortion_user(void)
+{
+	static bool inited;
+
+	if (!inited) {
+		INIT_DELAYED_WORK(&abortion_work, abortion);
+		inited = true;
+	}
+
+	tid = current->pid;
+	schedule_delayed_work(&abortion_work,
+		msecs_to_jiffies(ABORTION_WORK_DELAY));
+}
+
 static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 {
 	struct ffs_epfile *epfile = file->private_data;
@@ -890,6 +927,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	char *data = NULL;
 	ssize_t ret, data_len = -EINVAL;
 	int halt;
+	char *cnxn_data = NULL;
 
 	/* Are we still active? */
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
@@ -1007,6 +1045,10 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		req->complete = ffs_epfile_io_complete;
 
 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
+
+		if (!io_data->read)
+			cnxn_cnt = 0;
+
 		if (unlikely(ret < 0))
 			goto error_lock;
 
@@ -1025,10 +1067,28 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 
 		if (interrupted)
 			ret = -EINTR;
-		else if (io_data->read && ep->status > 0)
+		else if (io_data->read && ep->status > 0) {
+			cnxn_data = req->buf;
+			if (req->actual == 24) {
+				if (cnxn_data[0] == 0x43 && cnxn_data[1] == 0x4e
+					&& cnxn_data[2] == 0x58
+					&& cnxn_data[3] == 0x4e) {
+					cnxn_cnt++;
+					pr_info("%s: cnxn_cnt=%d\n",
+						__func__, cnxn_cnt);
+				} else {
+					cnxn_cnt = 0;
+				}
+
+				if (cnxn_cnt == 3) {
+					cnxn_cnt = 0;
+					pr_info("%s trigger abort\n", __func__);
+					abortion_user();
+				}
+			}
 			ret = __ffs_epfile_read_data(epfile, data, ep->status,
 						     &io_data->data);
-		else
+		} else
 			ret = ep->status;
 		goto error_mutex;
 	} else if (!(req = usb_ep_alloc_request(ep->ep, GFP_KERNEL))) {
@@ -1875,8 +1935,8 @@ static int ffs_func_eps_enable(struct ffs_function *func)
 		ep->ep->desc = ds;
 
 		if (needs_comp_desc) {
-			comp_desc = (struct usb_ss_ep_comp_descriptor *)(ds +
-					USB_DT_ENDPOINT_SIZE);
+			comp_desc = (struct usb_ss_ep_comp_descriptor *)
+				((char *)ds + USB_DT_ENDPOINT_SIZE);
 			ep->ep->maxburst = comp_desc->bMaxBurst + 1;
 			ep->ep->comp_desc = comp_desc;
 		}
