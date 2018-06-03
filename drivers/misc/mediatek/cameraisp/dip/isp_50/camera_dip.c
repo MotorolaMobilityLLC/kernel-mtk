@@ -447,37 +447,13 @@ static int Tbl_RTBuf_MMPSize[DIP_IRQ_TYPE_AMOUNT];
 /* original pointer for kmalloc'd area as returned by kmalloc */
 static void *pBuf_kmalloc[DIP_IRQ_TYPE_AMOUNT];
 
-unsigned long FIP_g_Flash_SpinLock;
 
+static unsigned int G_u4DipEnClkCnt;
+static unsigned int g_u4DipCnt;
 
-static unsigned int G_u4EnableClockCount;
 
 int DIP_pr_detect_count;
 
-/*save ion fd*/
-/*#define ENABLE_KEEP_ION_HANDLE*/
-
-#ifdef ENABLE_KEEP_ION_HANDLE
-#define _ion_keep_max_   (64)/*32*/
-#include "ion_drv.h" /*g_ion_device*/
-static struct ion_client *pIon_client;
-/*static signed int G_WRDMA_IonCt[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };*/
-/*static signed int G_WRDMA_IonFd[2][_dma_max_wr_*_ion_keep_max_] = { {0}, {0} };*/
-/*static struct ion_handle *G_WRDMA_IonHnd[2][_dma_max_wr_*_ion_keep_max_] = { {NULL}, {NULL} };*/
-/*static spinlock_t SpinLock_IonHnd[2][_dma_max_wr_]; */ /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
-
-struct T_ION_TBL {
-	enum DIP_DEV_NODE_ENUM node;
-	signed int *pIonCt;
-	signed int *pIonFd;
-	struct ion_handle **pIonHnd;
-	spinlock_t *pLock;
-};
-
-static struct T_ION_TBL gION_TBL[DIP_DEV_NODE_NUM] = {
-	{DIP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
-};
-#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -551,17 +527,6 @@ struct DIP_TIME_LOG_STRUCT {
 	unsigned int     TaskletExpdone;
 };
 
-enum _eChannel {
-	_PASS1      = 0,
-	_PASS1_D    = 1,
-	_CAMSV      = 2,
-	_CAMSV_D    = 3,
-	_PASS2      = 4,
-	_ChannelMax = 5,
-} eChannel;
-
-
-
 /**********************************************************************/
 #define my_get_pow_idx(value)      \
 	({                                                          \
@@ -600,7 +565,6 @@ struct DIP_INFO_STRUCT {
 
 
 static struct DIP_INFO_STRUCT IspInfo;
-static bool    SuspnedRecord[DIP_DEV_NODE_NUM] = {0};
 
 enum _eLOG_TYPE {
 	_LOG_DBG = 0,   /* currently, only used at ipl_buf_ctrl. to protect critical section */
@@ -1270,8 +1234,8 @@ static void DIP_EnableClock(bool En)
 	if (En) {
 #if defined(EP_NO_CLKMGR)
 		spin_lock(&(IspInfo.SpinLockClock));
-		/* LOG_DBG("Camera clock enbled. G_u4EnableClockCount: %d.", G_u4EnableClockCount); */
-		switch (G_u4EnableClockCount) {
+		/* LOG_DBG("Camera clock enbled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt); */
+		switch (G_u4DipEnClkCnt) {
 		case 0:
 			/* Enable clock by hardcode*/
 			setReg = 0xFFFFFFFF;
@@ -1281,21 +1245,21 @@ static void DIP_EnableClock(bool En)
 		default:
 			break;
 		}
-		G_u4EnableClockCount++;
+		G_u4DipEnClkCnt++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else/*CCF*/
 		/*LOG_INF("CCF:prepare_enable clk");*/
 		spin_lock(&(IspInfo.SpinLockClock));
-		G_u4EnableClockCount++;
+		G_u4DipEnClkCnt++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
 	} else {                /* Disable clock. */
 #if defined(EP_NO_CLKMGR)
 		spin_lock(&(IspInfo.SpinLockClock));
-		/* LOG_DBG("Camera clock disabled. G_u4EnableClockCount: %d.", G_u4EnableClockCount); */
-		G_u4EnableClockCount--;
-		switch (G_u4EnableClockCount) {
+		/* LOG_DBG("Camera clock disabled. G_u4DipEnClkCnt: %d.", G_u4DipEnClkCnt); */
+		G_u4DipEnClkCnt--;
+		switch (G_u4DipEnClkCnt) {
 		case 0:
 			/* Disable clock by hardcode:
 			* 1. CAMSYS_CG_SET (0x1A000004) = 0xffffffff;
@@ -1312,7 +1276,7 @@ static void DIP_EnableClock(bool En)
 #else
 		/*LOG_INF("CCF:disable_unprepare clk\n");*/
 		spin_lock(&(IspInfo.SpinLockClock));
-		G_u4EnableClockCount--;
+		G_u4DipEnClkCnt--;
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Disable_Unprepare_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
@@ -2606,133 +2570,6 @@ static signed int DIP_WaitIrq(struct DIP_WAIT_IRQ_STRUCT *WaitIrq)
 	return Ret;
 }
 
-
-#ifdef ENABLE_KEEP_ION_HANDLE
-/*******************************************************************************
-*
-********************************************************************************/
-static void DIP_ion_init(void)
-{
-	if (!pIon_client && g_ion_device)
-		pIon_client = ion_client_create(g_ion_device, "camera_dip");
-
-	if (!pIon_client) {
-		LOG_ERR("invalid ion client!\n");
-		return;
-	}
-
-	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
-		LOG_INF("create ion client 0x%p\n", pIon_client);
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-static void DIP_ion_uninit(void)
-{
-	if (!pIon_client) {
-		LOG_ERR("invalid ion client!\n");
-		return;
-	}
-
-	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
-		LOG_INF("destroy ion client 0x%p\n", pIon_client);
-
-	ion_client_destroy(pIon_client);
-
-	pIon_client = NULL;
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-static struct ion_handle *DIP_ion_import_handle(struct ion_client *client, int fd)
-{
-	struct ion_handle *handle = NULL;
-
-	if (!client) {
-		LOG_ERR("invalid ion client!\n");
-		return handle;
-	}
-	if (fd == -1) {
-		LOG_ERR("invalid ion fd!\n");
-		return handle;
-	}
-
-	handle = ion_import_dma_buf(client, fd);
-
-	if (IS_ERR(handle)) {
-		LOG_ERR("import ion handle failed!\n");
-		return NULL;
-	}
-
-	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
-		LOG_INF("[ion_import_hd] Hd(0x%p)\n", handle);
-	return handle;
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-static void DIP_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
-{
-	if (!client) {
-		LOG_ERR("invalid ion client!\n");
-		return;
-	}
-	if (!handle)
-		return;
-
-	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
-		LOG_INF("[ion_free_hd] Hd(0x%p)\n", handle);
-
-	ion_free(client, handle);
-
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-static void DIP_ion_free_handle_by_module(unsigned int module)
-{
-	int i, j;
-	signed int nFd;
-	struct ion_handle *p_IonHnd;
-	struct T_ION_TBL *ptbl = &gION_TBL[module];
-
-	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
-		LOG_INF("[ion_free_hd_by_module]%d\n", module);
-
-	for (i = 0; i < _dma_max_wr_; i++) {
-		unsigned int jump = i*_ion_keep_max_;
-
-		for (j = 0; j < _ion_keep_max_ ; j++) {
-			spin_lock(&(ptbl->pLock[i]));
-			/* */
-			if (ptbl->pIonFd[jump + j] == 0) {
-				spin_unlock(&(ptbl->pLock[i]));
-				continue;
-			}
-			nFd = ptbl->pIonFd[jump + j];
-			p_IonHnd = ptbl->pIonHnd[jump + j];
-			/* */
-			ptbl->pIonFd[jump + j] = 0;
-			ptbl->pIonHnd[jump + j] = NULL;
-			ptbl->pIonCt[jump + j] = 0;
-			spin_unlock(&(ptbl->pLock[i]));
-			/* */
-			if (IspInfo.DebugMask & DIP_DBG_ION_CTRL) {
-				LOG_INF("ion_free: dev(%d)dma(%d)j(%d)fd(%d)Hnd(0x%p)\n",
-					module, i, j, nFd, p_IonHnd);
-			}
-			DIP_ion_free_handle(pIon_client, p_IonHnd);/*can't in spin_lock*/
-		}
-	}
-}
-
-#endif
-
-
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -2756,11 +2593,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	int userKey =  -1;
 	struct DIP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
-	#ifdef ENABLE_KEEP_ION_HANDLE
-	struct DIP_DEV_ION_NODE_STRUCT IonNode;
-	struct ion_handle *handle;
-	struct ion_handle *p_IonHnd;
-	#endif
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -2944,215 +2776,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 
 		break;
-	#ifdef ENABLE_KEEP_ION_HANDLE
-	case DIP_ION_IMPORT:
-		if (copy_from_user(&IonNode, (void *)Param, sizeof(struct DIP_DEV_ION_NODE_STRUCT)) == 0) {
-			struct T_ION_TBL *ptbl = NULL;
-			unsigned int jump;
-
-			if (!pIon_client) {
-				LOG_ERR("ion_import: invalid ion client!\n");
-				Ret = -EFAULT;
-				break;
-			}
-
-			if (IonNode.devNode >= DIP_DEV_NODE_NUM) {
-				LOG_ERR("[DIP_ION_IMPORT]devNode should be smaller than DIP_DEV_NODE_NUM");
-				Ret = -EFAULT;
-				break;
-			}
-
-			ptbl = &gION_TBL[IonNode.devNode];
-			if (ptbl->node != IonNode.devNode) {
-				LOG_ERR("ion_import: devNode not support(%d)!\n", IonNode.devNode);
-				Ret = -EFAULT;
-				break;
-			}
-			if (IonNode.dmaPort < 0 || IonNode.dmaPort >= _dma_max_wr_) {
-				LOG_ERR("ion_import: dmaport error:%d(0~%d)\n", IonNode.dmaPort, _dma_max_wr_);
-				Ret = -EFAULT;
-				break;
-			}
-			jump = IonNode.dmaPort*_ion_keep_max_;
-			if (IonNode.memID <= 0) {
-				LOG_ERR("ion_import: dma(%d)invalid ion fd(%d)\n", IonNode.dmaPort, IonNode.memID);
-				Ret = -EFAULT;
-				break;
-			}
-			spin_lock(&(ptbl->pLock[IonNode.dmaPort]));
-			/* */
-			/* check if memID is exist */
-			for (i = 0; i < _ion_keep_max_; i++) {
-				if (ptbl->pIonFd[jump + i] == IonNode.memID)
-					break;
-			}
-			spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-			/* */
-			if (i < _ion_keep_max_) {
-				if (IspInfo.DebugMask & DIP_DBG_ION_CTRL) {
-					LOG_INF("ion_import: already exist: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
-						IonNode.devNode, IonNode.dmaPort, i, IonNode.memID,
-						ptbl->pIonHnd[jump + i]);
-				}
-				/* User might allocate a big memory and divid it into many buffers,
-				*	the ion FD of these buffers is the same,
-				*	so we must check there has no users take this memory
-				*/
-				ptbl->pIonCt[jump + i]++;
-
-				break;
-			}
-			/* */
-			handle = DIP_ion_import_handle(pIon_client, IonNode.memID);
-			if (!handle) {
-				Ret = -EFAULT;
-				break;
-			}
-			/* */
-			spin_lock(&(ptbl->pLock[IonNode.dmaPort]));
-			for (i = 0; i < _ion_keep_max_; i++) {
-				if (ptbl->pIonFd[jump + i] == 0) {
-					ptbl->pIonFd[jump + i] = IonNode.memID;
-					ptbl->pIonHnd[jump + i] = handle;
-
-					/* User might allocate a big memory and divid it into many buffers,
-					* the ion FD of these buffers is the same,
-					* so we must check there has no users take this memory
-					*/
-					ptbl->pIonCt[jump + i]++;
-
-					if (IspInfo.DebugMask & DIP_DBG_ION_CTRL) {
-						LOG_INF("ion_import: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
-							IonNode.devNode, IonNode.dmaPort, i,
-							IonNode.memID, handle);
-					}
-					break;
-				}
-			}
-			spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-			/* */
-			if (i == _ion_keep_max_) {
-				LOG_ERR("ion_import: dma(%d)no empty space in list(%d_%d)\n",
-					IonNode.dmaPort, IonNode.memID, _ion_keep_max_);
-				DIP_ion_free_handle(pIon_client, handle);/*can't in spin_lock*/
-				Ret = -EFAULT;
-			}
-		} else {
-			LOG_ERR("[ion import]copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	case DIP_ION_FREE:
-		if (copy_from_user(&IonNode, (void *)Param, sizeof(struct DIP_DEV_ION_NODE_STRUCT)) == 0) {
-			struct T_ION_TBL *ptbl = NULL;
-			unsigned int jump;
-
-			if (!pIon_client) {
-				LOG_ERR("ion_free: invalid ion client!\n");
-				Ret = -EFAULT;
-				break;
-			}
-
-			if (IonNode.devNode >= DIP_DEV_NODE_NUM) {
-				LOG_ERR("[DIP_ION_FREE]devNode should be smaller than DIP_DEV_NODE_NUM");
-				Ret = -EFAULT;
-				break;
-			}
-
-			ptbl = &gION_TBL[IonNode.devNode];
-			if (ptbl->node != IonNode.devNode) {
-				LOG_ERR("ion_free: devNode not support(%d)!\n", IonNode.devNode);
-				Ret = -EFAULT;
-				break;
-			}
-			if (IonNode.dmaPort < 0 || IonNode.dmaPort >= _dma_max_wr_) {
-				LOG_ERR("ion_free: dmaport error:%d(0~%d)\n", IonNode.dmaPort, _dma_max_wr_);
-				Ret = -EFAULT;
-				break;
-			}
-			jump = IonNode.dmaPort*_ion_keep_max_;
-			if (IonNode.memID <= 0) {
-				LOG_ERR("ion_free: invalid ion fd(%d)\n", IonNode.memID);
-				Ret = -EFAULT;
-				break;
-			}
-
-			/* check if memID is exist */
-			spin_lock(&(ptbl->pLock[IonNode.dmaPort]));
-			for (i = 0; i < _ion_keep_max_; i++) {
-				if (ptbl->pIonFd[jump + i] == IonNode.memID)
-					break;
-			}
-			if (i == _ion_keep_max_) {
-				spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-				LOG_ERR("ion_free: can't find ion dev(%d)dma(%d)fd(%d) in list\n",
-					IonNode.devNode, IonNode.dmaPort, IonNode.memID);
-				Ret = -EFAULT;
-
-				break;
-			}
-			/* User might allocate a big memory and divid it into many buffers,
-			*	the ion FD of these buffers is the same,
-			*	so we must check there has no users take this memory
-			*/
-			if (--ptbl->pIonCt[jump + i] > 0) {
-				spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-				if (IspInfo.DebugMask & DIP_DBG_ION_CTRL) {
-					LOG_INF("ion_free: user ct(%d): dev(%d)dma(%d)i(%d)fd(%d)\n",
-						ptbl->pIonCt[jump + i],
-						IonNode.devNode, IonNode.dmaPort, i,
-						IonNode.memID);
-				}
-				break;
-			} else if (ptbl->pIonCt[jump + i] < 0) {
-				spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-				LOG_ERR("ion_free: free more than import (%d): dev(%d)dma(%d)i(%d)fd(%d)\n",
-						ptbl->pIonCt[jump + i],
-						IonNode.devNode, IonNode.dmaPort, i,
-						IonNode.memID);
-				Ret = -EFAULT;
-				break;
-			}
-
-			if (IspInfo.DebugMask & DIP_DBG_ION_CTRL) {
-				LOG_INF("ion_free: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)Ct(%d)\n",
-					IonNode.devNode, IonNode.dmaPort, i,
-					IonNode.memID,
-					ptbl->pIonHnd[jump + i],
-					ptbl->pIonCt[jump + i]);
-			}
-
-			p_IonHnd = ptbl->pIonHnd[jump + i];
-			ptbl->pIonFd[jump + i] = 0;
-			ptbl->pIonHnd[jump + i] = NULL;
-			spin_unlock(&(ptbl->pLock[IonNode.dmaPort]));
-			/* */
-			DIP_ion_free_handle(pIon_client, p_IonHnd);/*can't in spin_lock*/
-		} else {
-			LOG_ERR("[ion free]copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	case DIP_ION_FREE_BY_HWMODULE:
-		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) == 0) {
-			if (module >= DIP_DEV_NODE_NUM) {
-				LOG_ERR("[DIP_ION_FREE_BY_HWMODULE]module should be smaller than DIP_DEV_NODE_NUM");
-				Ret = -EFAULT;
-				break;
-			}
-			if (gION_TBL[module].node != module) {
-				LOG_ERR("module error(%d)\n", module);
-				Ret = -EFAULT;
-				break;
-			}
-
-			DIP_ion_free_handle_by_module(module);
-		} else {
-			LOG_ERR("[ion free by module]copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	#endif
 	case DIP_GET_DUMP_INFO: {
 		if (copy_to_user((void *)Param, &g_dumpInfo, sizeof(struct DIP_GET_DUMP_INFO_STRUCT)) != 0) {
 			LOG_ERR("DIP_GET_DUMP_INFO copy to user fail");
@@ -3559,11 +3182,6 @@ static signed int DIP_open(
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
-#ifdef ENABLE_KEEP_ION_HANDLE
-	/* create ion client*/
-	DIP_ion_init();
-#endif
-
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (DIP_DBG_INT);
 #endif
@@ -3576,15 +3194,26 @@ EXIT:
 		}
 	} else {
 		/* Enable clock */
+#ifdef CONFIG_PM_WAKELOCKS
+		__pm_stay_awake(&dip_wake_lock);
+#else
+		wake_lock(&dip_wake_lock);
+#endif
 		DIP_EnableClock(MTRUE);
+		g_u4DipCnt = 0;
+#ifdef CONFIG_PM_WAKELOCKS
+		__pm_relax(&dip_wake_lock);
+#else
+		wake_unlock(&dip_wake_lock);
+#endif
 #ifdef MMDVFS_PM_QOS_READY
 		mmdvfs_pm_qos_add_request(&dip_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
 #endif
-		LOG_DBG("dip open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
+		LOG_DBG("dip open G_u4DipEnClkCnt: %d\n", G_u4DipEnClkCnt);
 	}
 
 
-	LOG_INF("- X. Ret: %d. UserCount: %d.\n", Ret, IspInfo.UserCount);
+	LOG_INF("- X. Ret: %d. UserCount: %d, G_u4DipEnClkCnt: %d.\n", Ret, IspInfo.UserCount, G_u4DipEnClkCnt);
 	return Ret;
 
 }
@@ -3719,18 +3348,6 @@ static signed int DIP_release(
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
-	/*  */
-#ifdef ENABLE_KEEP_ION_HANDLE
-	/* free keep ion handles, then destroy ion client*/
-	for (i = 0; i < DIP_DEV_NODE_NUM; i++) {
-		if (gION_TBL[i].node != DIP_DEV_NODE_NUM)
-			DIP_ion_free_handle_by_module(i);
-	}
-
-	DIP_ion_uninit();
-#endif
-
-	/*  */
 	/* LOG_DBG("Before spm_enable_sodi()."); */
 	/* Enable sodi (Multi-Core Deep Idle). */
 
@@ -3741,17 +3358,27 @@ static signed int DIP_release(
 EXIT:
 
 	/* Disable clock.
-	*  1. clkmgr: G_u4EnableClockCount=0, call clk_enable/disable
+	*  1. clkmgr: G_u4DipEnClkCnt=0, call clk_enable/disable
 	*  2. CCF: call clk_enable/disable every time
 	*/
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&dip_wake_lock);
+#else
+	wake_lock(&dip_wake_lock);
+#endif
 	DIP_EnableClock(MFALSE);
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&dip_wake_lock);
+#else
+	wake_unlock(&dip_wake_lock);
+#endif
 
 #ifdef MMDVFS_PM_QOS_READY
 	mmdvfs_pm_qos_remove_request(&dip_qos);
 #endif
-	LOG_DBG("dip release G_u4EnableClockCount: %d", G_u4EnableClockCount);
+	LOG_DBG("dip release G_u4DipEnClkCnt: %d", G_u4DipEnClkCnt);
 
-	LOG_INF("- X. UserCount: %d.", IspInfo.UserCount);
+	LOG_INF("- X. UserCount: %d. G_u4DipEnClkCnt: %d", IspInfo.UserCount, G_u4DipEnClkCnt);
 	return 0;
 }
 
@@ -4021,14 +3648,6 @@ static signed int DIP_probe(struct platform_device *pDev)
 		spin_lock_init(&(SpinLock_P2FrameList));
 		spin_lock_init(&(SpinLockRegScen));
 		spin_lock_init(&(SpinLock_UserKey));
-		#ifdef ENABLE_KEEP_ION_HANDLE
-		for (i = 0; i < DIP_DEV_NODE_NUM; i++) {
-			if (gION_TBL[i].node != DIP_DEV_NODE_NUM) {
-				for (n = 0; n < _dma_max_wr_; n++)
-					spin_lock_init(&(gION_TBL[i].pLock[n]));
-			}
-		}
-		#endif
 
 #ifdef EP_NO_CLKMGR
 
@@ -4176,6 +3795,11 @@ static signed int DIP_suspend(
 	pm_message_t            Mesg
 )
 {
+	if (G_u4DipEnClkCnt > 0) {
+		DIP_EnableClock(MFALSE);
+		g_u4DipCnt++;
+	}
+
 	return 0;
 }
 
@@ -4184,6 +3808,10 @@ static signed int DIP_suspend(
 ********************************************************************************/
 static signed int DIP_resume(struct platform_device *pDev)
 {
+	if (g_u4DipCnt > 0) {
+		DIP_EnableClock(MTRUE);
+		g_u4DipCnt--;
+	}
 	return 0;
 }
 
@@ -4197,6 +3825,7 @@ int DIP_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/*pr_debug("calling %s()\n", __func__);*/
+	LOG_INF("DPE suspend G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
 
 	return DIP_suspend(pdev, PMSG_SUSPEND);
 }
@@ -4208,6 +3837,7 @@ int DIP_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/*pr_debug("calling %s()\n", __func__);*/
+	LOG_INF("DPE resume G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
 
 	return DIP_resume(pdev);
 }
@@ -4217,10 +3847,6 @@ int DIP_pm_resume(struct device *device)
 int DIP_pm_restore_noirq(struct device *device)
 {
 	/*pr_debug("calling %s()\n", __func__);*/
-#ifndef CONFIG_OF
-	mt_irq_set_sens(CAM0_IRQ_BIT_ID, MT_LEVEL_SENSITIVE);
-	mt_irq_set_polarity(CAM0_IRQ_BIT_ID, MT_POLARITY_LOW);
-#endif
 	return 0;
 
 }
@@ -4739,9 +4365,6 @@ static signed int __init DIP_Init(void)
 #endif
 	/* m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);*/
 
-	for (i = 0; i < DIP_DEV_NODE_NUM; i++)
-		SuspnedRecord[i] = 0;
-
 	LOG_DBG("- X. Ret: %d.", Ret);
 	return Ret;
 }
@@ -4790,7 +4413,7 @@ static void __exit DIP_Exit(void)
 int32_t DIP_MDPClockOnCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DIP_MDPClockOnCallback"); */
-	/*LOG_DBG("+MDPEn:%d", G_u4EnableClockCount);*/
+	/*LOG_DBG("+MDPEn:%d", G_u4DipEnClkCnt);*/
 	DIP_EnableClock(MTRUE);
 
 	return 0;
@@ -4817,15 +4440,15 @@ int32_t DIP_MDPClockOffCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DIP_MDPClockOffCallback"); */
 	DIP_EnableClock(MFALSE);
-	/*LOG_DBG("-MDPEn:%d", G_u4EnableClockCount);*/
+	/*LOG_DBG("-MDPEn:%d", G_u4DipEnClkCnt);*/
 	return 0;
 }
 
 
+#if DUMP_GCE_TPIPE
 #define DIP_IMGSYS_BASE_PHY_KK 0x15022000
 
 static uint32_t addressToDump[] = {
-#if 1
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x000),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x004),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x008),
@@ -4833,6 +4456,7 @@ static uint32_t addressToDump[] = {
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x010),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x014),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x018),
+(uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x01C),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x204),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x208),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x20C),
@@ -4840,23 +4464,26 @@ static uint32_t addressToDump[] = {
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x408),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x410),
 (uint32_t)(DIP_IMGSYS_BASE_PHY_KK + 0x414),
-#endif
 };
+
+#endif
 
 int32_t DIP_BeginGCECallback(uint32_t taskID, uint32_t *regCount, uint32_t **regAddress)
 {
+#if DUMP_GCE_TPIPE
 	LOG_DBG("+,taskID(%d)", taskID);
 
 	*regCount = sizeof(addressToDump) / sizeof(uint32_t);
 	*regAddress = (uint32_t *)addressToDump;
 
 	LOG_DBG("-,*regCount(%d)", *regCount);
-
+#endif
 	return 0;
 }
 
 int32_t DIP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValues)
 {
+#if DUMP_GCE_TPIPE
 	#define PER_LINE_LOG_SIZE   10
 	int32_t i, j, pos;
 	/* uint32_t add[PER_LINE_LOG_SIZE]; */
@@ -4890,7 +4517,7 @@ int32_t DIP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 			add[5], val[5], add[6], val[6], add[7], val[7], add[8], val[8], add[9], val[9]);
 	}
 
-#if DUMP_GCE_TPIPE
+
 	/* tpipePA = DIP_RD32(DIP_IMGSYS_BASE_PHY_KK + 0x204); */
 	tpipePA = val[7];
 	/* ctlStart = DIP_RD32(DIP_IMGSYS_BASE_PHY_KK + 0x000); */
@@ -4938,91 +4565,6 @@ int32_t DIP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 	return 0;
 }
 
-/* #define _debug_dma_err_ */
-#if defined(_debug_dma_err_)
-#define bit(x) (0x1<<(x))
-
-unsigned int DMA_ERR[3 * 12] = {
-	bit(1), 0xF50043A8, 0x00000011, /* IMGI */
-	bit(2), 0xF50043AC, 0x00000021, /* IMGCI */
-	bit(4), 0xF50043B0, 0x00000031, /* LSCI */
-	bit(5), 0xF50043B4, 0x00000051, /* FLKI */
-	bit(6), 0xF50043B8, 0x00000061, /* LCEI */
-	bit(7), 0xF50043BC, 0x00000071, /* VIPI */
-	bit(8), 0xF50043C0, 0x00000081, /* VIP2I */
-	bit(9), 0xF50043C4, 0x00000194, /* IMGO */
-	bit(10), 0xF50043C8, 0x000001a4, /* IMG2O */
-	bit(11), 0xF50043CC, 0x000001b4, /* LCSO */
-	bit(12), 0xF50043D0, 0x000001c4, /* ESFKO */
-	bit(13), 0xF50043D4, 0x000001d4, /* AAO */
-};
-
-static signed int DMAErrHandler(void)
-{
-	unsigned int err_ctrl = DIP_RD32(0xF50043A4);
-
-	LOG_DBG("err_ctrl(0x%08x)", err_ctrl);
-
-	unsigned int i = 0;
-
-	unsigned int *pErr = DMA_ERR;
-
-	for (i = 0; i < 12; i++) {
-		unsigned int addr = 0;
-
-#if 1
-		if (err_ctrl & (*pErr)) {
-			DIP_WR32(0xF5004160, pErr[2]);
-			addr = pErr[1];
-
-			LOG_DBG("(0x%08x, 0x%08x), dbg(0x%08x, 0x%08x)",
-				addr, DIP_RD32(addr),
-				DIP_RD32(0xF5004160), DIP_RD32(0xF5004164));
-		}
-#else
-		addr = pErr[1];
-		unsigned int status = DIP_RD32(addr);
-
-		if (status & 0x0000FFFF) {
-			DIP_WR32(0xF5004160, pErr[2]);
-			addr = pErr[1];
-
-			LOG_DBG("(0x%08x, 0x%08x), dbg(0x%08x, 0x%08x)",
-				addr, status,
-				DIP_RD32(0xF5004160), DIP_RD32(0xF5004164));
-		}
-#endif
-		pErr = pErr + 3;
-	}
-
-}
-#endif
-
-
-void DIP_IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, enum DIP_IRQ_TYPE_ENUM module)
-{
-	/* ERR print */
-	/* unsigned int i = 0; */
-	if (ErrStatus) {
-		switch (module) {
-		case DIP_IRQ_TYPE_INT_DIP_A_ST:
-			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-				"DIP_A:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
-			break;
-		default:
-			break;
-		}
-		/*SMI monitor*/
-/* ALSK TBD */
-		/*
-		* if (WarnStatus & (RRZO_ERR_ST|AFO_ERR_ST|IMGO_ERR_ST|AAO_ERR_ST|LCSO_ERR_ST|BNR_ERR_ST|LSC_ERR_ST)) {
-		*	for (i = 0 ; i < 5 ; i++)
-		*		smi_dumpDebugMsg();
-		* }
-		*/
-	}
-}
-
 irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 {
 	int i = 0;
@@ -5033,7 +4575,7 @@ irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 	/*LOG_DBG("DIP_Irq_DIP_A:%d\n", Irq);*/
 
 	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
-	if (G_u4EnableClockCount == 0)
+	if (G_u4DipEnClkCnt == 0)
 		return IRQ_HANDLED;
 
 	spin_lock(&(IspInfo.SpinLockIrq[DIP_IRQ_TYPE_INT_DIP_A_ST]));
