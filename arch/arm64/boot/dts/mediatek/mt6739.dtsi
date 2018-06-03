@@ -1276,8 +1276,8 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		reg = <0 0x1100c000 0 0x1000>,	/*btif base*/
-			<0 0x11000900 0 0x80>,	/*btif tx dma base*/
-			<0 0x11000980 0 0x80>;	/*btif rx dma base*/
+			<0 0x11000600 0 0x80>,	/*btif tx dma base*/
+			<0 0x11000680 0 0x80>;	/*btif rx dma base*/
 		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,	/*btif irq*/
 				<GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>,	/*btif tx dma irq*/
 				<GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;	/*btif rx dma irq*/
@@ -1684,7 +1684,7 @@
 	};
 
 	consys: consys@18070000 {
-		compatible = "mediatek,mt6763-consys";
+		compatible = "mediatek,mt6739-consys";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		reg = <0 0x18070000 0 0x0200>,  /*CONN_MCU_CONFIG_BASE */

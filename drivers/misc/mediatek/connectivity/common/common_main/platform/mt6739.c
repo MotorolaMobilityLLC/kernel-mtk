@@ -643,7 +643,7 @@ static INT32 polling_consys_chipid(VOID)
 	/*12.poll CONNSYS CHIP ID until chipid is returned  0x18070008 */
 	while (retry-- > 0) {
 		consysHwChipId = CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CHIP_ID_OFFSET);
-		if (consysHwChipId == 0x0690) {
+		if (consysHwChipId == 0x0699) {
 			WMT_PLAT_INFO_FUNC("retry(%d)consys chipId(0x%08x)\n", retry, consysHwChipId);
 			break;
 		}
@@ -667,7 +667,7 @@ static INT32 polling_consys_chipid(VOID)
 	while (retry-- > 0) {
 		WMT_PLAT_DBG_FUNC("CONSYS_CHIP_ID_REG(0x%08x)", CONSYS_REG_READ(CONSYS_CHIP_ID_REG));
 		consysHwChipId = CONSYS_REG_READ(CONSYS_CHIP_ID_REG);
-		if (consysHwChipId == 0x0690) {
+		if (consysHwChipId == 0x0699) {
 			WMT_PLAT_INFO_FUNC("retry(%d)consys chipId(0x%08x)\n", retry, consysHwChipId);
 			break;
 		}
