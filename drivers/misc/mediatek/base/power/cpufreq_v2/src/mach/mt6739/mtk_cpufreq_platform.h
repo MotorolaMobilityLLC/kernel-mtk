@@ -31,9 +31,9 @@
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		20000
 #define MIN_VSRAM_VOLT			115000
-#define MAX_VSRAM_VOLT			131000
+#define MAX_VSRAM_VOLT			131250
 #define MIN_VPROC_VOLT			95000
-#define MAX_VPROC_VOLT			131000
+#define MAX_VPROC_VOLT			130625
 
 #define PMIC_CMD_DELAY_TIME	5
 #define MIN_PMIC_SETTLE_TIME	5
@@ -65,5 +65,6 @@ extern unsigned char get_posdiv(struct pll_ctrl_t *pll_p);
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
 extern int mt_cpufreq_dts_map(void);
 extern unsigned int _mt_cpufreq_get_cpu_level(void);
+extern unsigned int _mt_cpufreq_disable_feature(void);
 
 #endif	/* __MTK_CPUFREQ_PLATFORM_H__ */

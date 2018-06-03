@@ -14,15 +14,21 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/regulator/consumer.h>
-
-/* FIXME */
-/* #include <mach/mtk_freqhopping.h> */
-/* #include <mt-plat/upmu_common.h> */
-#define FH_PLL0 0
-
+#ifdef CONFIG_MTK_FREQ_HOPPING
+#include <mach/mtk_freqhopping.h>
+#endif
 #include "mtk_cpufreq_platform.h"
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_devinfo.h"
+
+/* For feature enable decision */
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#include "upmu_common.h"
+#endif
+
+#ifndef CONFIG_MTK_FREQ_HOPPING
+#define FH_PLL0 0
+#endif
 
 static struct regulator *regulator_proc1;
 static struct regulator *regulator_sram1;
@@ -36,7 +42,8 @@ static unsigned long topckgen_base	= 0x10000000;
 #define TOPCKGEN_NODE		"mediatek,topckgen"
 
 #define ARMPLL_LL_CON1		(apmixed_base + 0x204)		/* ARMPLL1 [26:24] [21:0]*/
-#define CKDIV1_LL_CFG		(topckgen_ao_base + 0x7a0)	/* MP0_PLL_DIVIDER [4:0]*/
+#define CKDIV1_LL_CFG		(topckgen_ao_base + 0x02c)	/* MP0_PLL_DIVIDER [4:0]*/
+#define CKDIV1_LL_MUXSEL	(topckgen_ao_base)			/* MP0_PLL_DIVIDER [11:8]*/
 #define CLK_MISC_CFG_0		(topckgen_base + 0x104)		/*[4:4]*/
 
 struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
@@ -250,8 +257,9 @@ unsigned char get_clkdiv(struct pll_ctrl_t *pll_p)
 
 static void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds)
 {
-	/* FIXME */
-	/* mt_dfs_armpll(pll_p->hopping_id, dds); */
+#ifdef CONFIG_MTK_FREQ_HOPPING
+	mt_dfs_general_pll(pll_p->hopping_id, dds);
+#endif
 }
 
 /* Frequency API */
@@ -362,13 +370,13 @@ static void _cpu_clock_switch(struct pll_ctrl_t *pll_p, enum top_ckmuxsel sel)
 	switch (sel) {
 	case TOP_CKMUXSEL_CLKSQ:
 	case TOP_CKMUXSEL_ARMPLL:
-		cpufreq_write_mask(pll_p->armpll_div_addr, 11 : 8, sel);
+		cpufreq_write_mask(CKDIV1_LL_MUXSEL, 11 : 8, sel);
 		cpufreq_write_mask(CLK_MISC_CFG_0, 4 : 4, 0x0);
 		break;
 	case TOP_CKMUXSEL_MAINPLL:
 		cpufreq_write_mask(CLK_MISC_CFG_0, 4 : 4, 0x1);
 		udelay(3);
-		cpufreq_write_mask(pll_p->armpll_div_addr, 11 : 8, sel);
+		cpufreq_write_mask(CKDIV1_LL_MUXSEL, 11 : 8, sel);
 		break;
 	default:
 		break;
@@ -378,7 +386,7 @@ static void _cpu_clock_switch(struct pll_ctrl_t *pll_p, enum top_ckmuxsel sel)
 
 static enum top_ckmuxsel _get_cpu_clock_switch(struct pll_ctrl_t *pll_p)
 {
-	return _GET_BITS_VAL_(11:8, cpufreq_read(pll_p->armpll_div_addr));
+	return _GET_BITS_VAL_(11:8, cpufreq_read(CKDIV1_LL_MUXSEL));
 }
 
 /* upper layer CANNOT use 'set' function in secure path */
@@ -431,8 +439,6 @@ int mt_cpufreq_regulator_map(struct platform_device *pdev)
 	if (GEN_DB_ON(r, "Vsram_proc Enable Failed"))
 		return -EPERM;
 
-	/* already on, no need to wait for settle */
-
 	return 0;
 }
 
@@ -480,15 +486,26 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	unsigned int turbo_code = 0;
 
 	seg_code = get_devinfo_with_index(SEG_EFUSE);
-	seg_code = _GET_BITS_VAL_(6:0, seg_code);
 
 	turbo_code = get_devinfo_with_index(TURBO_EFUSE);
 	turbo_code = _GET_BITS_VAL_(21:20, turbo_code);
 
-	if (seg_code == 0x4 && turbo_code == 0x3)
+	if ((seg_code == 0x80 || seg_code == 0x88) && turbo_code == 0x3)
 		lv = CPU_LEVEL_1;
 	else
 		lv = CPU_LEVEL_0;
 
 	return lv;
+}
+
+unsigned int _mt_cpufreq_disable_feature(void)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	if (PMIC_LP_CHIP_VER() == 1)
+		return 1;
+	else
+		return 0;
+#else
+	return 1;
+#endif
 }

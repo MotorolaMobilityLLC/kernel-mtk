@@ -169,6 +169,7 @@ extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 #define cpu_dvfs_get_freq_by_idx(p, idx)		(p->opp_tbl[idx].cpufreq_khz)
 
 #define cpu_dvfs_get_max_freq(p)				(p->opp_tbl[0].cpufreq_khz)
+#define cpu_dvfs_get_max_volt(p)				(p->opp_tbl[0].cpufreq_volt)
 #define cpu_dvfs_get_normal_max_freq(p)			(p->opp_tbl[p->idx_normal_max_opp].cpufreq_khz)
 #define cpu_dvfs_get_min_freq(p)				(p->opp_tbl[p->nr_opp_tbl - 1].cpufreq_khz)
 
