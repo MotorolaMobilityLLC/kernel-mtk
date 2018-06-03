@@ -918,7 +918,7 @@ static bool g_bDmaERR_p2 = MFALSE;
 static bool g_bDmaERR_deepDump = MFALSE;
 static unsigned int g_ISPIntErr[_IRQ_MAX] = {0};
 
-#define nDMA_ERR_P1 (11)
+#define nDMA_ERR_P1 (12)
 #define nDMA_ERR_P1_D (7)
 #define nDMA_ERR (nDMA_ERR_P1 + nDMA_ERR_P1_D)
 static unsigned int g_DmaErr_p1[nDMA_ERR] = {0};
@@ -1286,25 +1286,27 @@ static unsigned int ISP_DumpDmaDeepDbg(void)
 		g_DmaErr_p1[8] = (unsigned int)ISP_RD32(ISP_ADDR + 0x3598);
 		g_DmaErr_p1[9] = (unsigned int)ISP_RD32(ISP_ADDR + 0x359c);
 		g_DmaErr_p1[10] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35a0);
-	log_err("IMGI:0x%x,BPCI:0x%x,LSCI=0x%x,UFDI=0x%x,LCEI=0x%x,imgo=0x%x, rrzo:0x%x,lcso:0x%x,esfko:0x%x,aao:0x%x,ufeo:0x%x",
+		g_DmaErr_p1[11] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35b8);
+
+	log_err("IMGI:0x%x,BPCI:0x%x,LSCI=0x%x,UFDI=0x%x,LCEI=0x%x,imgo=0x%x, rrzo:0x%x,lcso:0x%x,esfko:0x%x,aao:0x%x,ufeo:0x%x,afo:0x%x",
 			g_DmaErr_p1[0], g_DmaErr_p1[1], g_DmaErr_p1[2],
 			g_DmaErr_p1[3], g_DmaErr_p1[4], g_DmaErr_p1[5],
 			g_DmaErr_p1[6], g_DmaErr_p1[7], g_DmaErr_p1[8],
-			g_DmaErr_p1[9], g_DmaErr_p1[10]);
+			g_DmaErr_p1[9], g_DmaErr_p1[10], g_DmaErr_p1[11]);
 		g_bDmaERR_p1 = MFALSE;
 	}
 	if (g_bDmaERR_p1_d) {
-		g_DmaErr_p1[11] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35bc);
-		g_DmaErr_p1[12] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c0);
-		g_DmaErr_p1[13] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c4);
-		g_DmaErr_p1[14] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c8);
-		g_DmaErr_p1[15] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35cc);
-		g_DmaErr_p1[16] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35d0);
-		g_DmaErr_p1[17] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35d4);
+		g_DmaErr_p1[12] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35bc);
+		g_DmaErr_p1[13] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c0);
+		g_DmaErr_p1[14] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c4);
+		g_DmaErr_p1[15] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35c8);
+		g_DmaErr_p1[16] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35cc);
+		g_DmaErr_p1[17] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35d0);
+		g_DmaErr_p1[18] = (unsigned int)ISP_RD32(ISP_ADDR + 0x35d4);
 		log_err("BPCI_D:0x%x,LSCI_D:0x%x,IMGO_D=0x%x,RRZO_D=0x%x,LSCO_D=0x%x,AFO_D=0x%x,AAO_D:0x%x",
-			g_DmaErr_p1[11], g_DmaErr_p1[12], g_DmaErr_p1[13],
-			g_DmaErr_p1[14], g_DmaErr_p1[15], g_DmaErr_p1[16],
-			g_DmaErr_p1[17]);
+			g_DmaErr_p1[12], g_DmaErr_p1[13], g_DmaErr_p1[14],
+			g_DmaErr_p1[15], g_DmaErr_p1[16], g_DmaErr_p1[17],
+			g_DmaErr_p1[18]);
 		g_bDmaERR_p1_d = MFALSE;
 	}
 #if 0
