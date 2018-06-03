@@ -1061,8 +1061,8 @@ int __m4u_get_user_pages(int eModuleID, struct task_struct *tsk, struct mm_struc
 		}
 		if (((~vma->vm_flags) & (VM_IO | VM_PFNMAP | VM_SHARED | VM_WRITE)) == 0) {
 			M4UMSG("error: m4u_get_pages(): bypass pmem garbage pages!");
-			M4UMSG("vma->vm_flags=0x%x, start=0x%x, module=%d\n",
-				(unsigned int)(vma->vm_flags), (unsigned int)start, eModuleID);
+			M4UMSG("vma->vm_flags=0x%x, start=0x%lx, module=%d\n",
+				(unsigned int)(vma->vm_flags), start, eModuleID);
 			return i ? i : -EFAULT;
 		}
 		if (vma->vm_flags & VM_IO)
@@ -1070,8 +1070,8 @@ int __m4u_get_user_pages(int eModuleID, struct task_struct *tsk, struct mm_struc
 
 		if (vma->vm_flags & VM_PFNMAP) {
 			M4UMSG
-			    ("error: vma permission is not correct, vma->vm_flags=0x%x, start=0x%x, module=%d\n",
-			     (unsigned int)(vma->vm_flags), (unsigned int)start, eModuleID);
+			    ("error: vma permission is not correct, vma->vm_flags=0x%x, start=0x%lx, module=%d\n",
+			     (unsigned int)(vma->vm_flags), start, eModuleID);
 			M4UMSG
 			    ("hint: maybe the memory is remapped with un-permitted vma->vm_flags!\n");
 			/* m4u_dump_maps(start); */
@@ -1079,9 +1079,9 @@ int __m4u_get_user_pages(int eModuleID, struct task_struct *tsk, struct mm_struc
 		}
 		if (!(vm_flags & vma->vm_flags)) {
 			M4UMSG
-			    ("error: vm_flags invalid, vm_flags=0x%x, vma->vm_flags=0x%x, start=0x%x, module=%d\n",
+			    ("error: vm_flags invalid, vm_flags=0x%x, vma->vm_flags=0x%x, start=0x%lx, module=%d\n",
 			     (unsigned int)vm_flags, (unsigned int)(vma->vm_flags),
-			     (unsigned int)start, eModuleID);
+			     start, eModuleID);
 			/* m4u_dump_maps(start); */
 			return i ? : -EFAULT;
 		}
@@ -1240,7 +1240,7 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
 			up_read(&current->mm->mmap_sem);
 
 			for (i = 0; i < page_num; i++) {
-				unsigned int va_align = BufAddr & (~M4U_PAGE_MASK);
+				unsigned long va_align = BufAddr & (~M4U_PAGE_MASK);
 				int fault_cnt;
 
 				for (fault_cnt = 0; fault_cnt < 30; fault_cnt++) {
