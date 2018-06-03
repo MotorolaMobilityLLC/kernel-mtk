@@ -47,6 +47,8 @@ extern void prepare_pll_addr(enum mt_cpu_dvfs_pll_id pll_id);
 extern void prepare_pmic_config(struct mt_cpu_dvfs *p);
 extern unsigned int _cpu_dds_calc(unsigned int khz);
 extern unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p);
+extern unsigned char get_clkdiv(struct pll_ctrl_t *pll_p);
+extern unsigned char get_posdiv(struct pll_ctrl_t *pll_p);
 
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
 extern int mt_cpufreq_dts_map(void);

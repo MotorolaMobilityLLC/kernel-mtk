@@ -183,22 +183,13 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	int idx, ori_idx;
 	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
 	int new_opp_idx;
+	unsigned char cur_posdiv, cur_clkdiv;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
-	/* CUR_OPP_IDX */
-	opp_tbl_m[CUR_OPP_IDX].p = p;
-	ori_idx = _search_available_freq_idx(opp_tbl_m[CUR_OPP_IDX].p,
-		cur_khz, CPUFREQ_RELATION_L);
-
-	if (ori_idx != p->idx_opp_tbl) {
-		cpufreq_err("%s: ori_freq = %d(%d) != p->idx_opp_tbl(%d), target = %d\n"
-			, cpu_dvfs_get_name(p), cur_khz, ori_idx, p->idx_opp_tbl, target_khz);
-		p->idx_opp_tbl = ori_idx;
-	}
-	opp_tbl_m[CUR_OPP_IDX].slot = &p->freq_tbl[p->idx_opp_tbl];
-	cpufreq_ver("[CUR_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
-		cpu_dvfs_get_name(p), p->idx_opp_tbl, cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl));
+	/* Get from physical */
+	cur_posdiv = get_posdiv(pll_p);
+	cur_clkdiv = get_clkdiv(pll_p);
 
 	/* TARGET_OPP_IDX */
 	opp_tbl_m[TARGET_OPP_IDX].p = p;
@@ -219,7 +210,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	if (do_dvfs_stress_test)
 		cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
 			__func__, cpu_dvfs_get_name(p), cur_khz, p->idx_opp_tbl, target_khz, idx,
-			opp_tbl_m[CUR_OPP_IDX].slot->clk_div, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
+			cur_clkdiv, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
 	aee_record_cpu_dvfs_step(4);
 
@@ -234,13 +225,13 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	now[SET_FREQ] = ktime_get();
 
 	/* post_div 1 -> 2 */
-	if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div < opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
+	if (cur_posdiv < opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
 		pll_p->pll_ops->set_armpll_posdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 
 	aee_record_cpu_dvfs_step(6);
 
 	/* armpll_div 1 -> 2 */
-	if (opp_tbl_m[CUR_OPP_IDX].slot->clk_div < opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
+	if (cur_clkdiv < opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
 		pll_p->pll_ops->set_armpll_clkdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
 #if 0
@@ -257,13 +248,13 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	aee_record_cpu_dvfs_step(9);
 
 	/* armpll_div 2 -> 1 */
-	if (opp_tbl_m[CUR_OPP_IDX].slot->clk_div > opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
+	if (cur_clkdiv > opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
 		pll_p->pll_ops->set_armpll_clkdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
 	aee_record_cpu_dvfs_step(10);
 
 	/* post_div 2 -> 1 */
-	if (opp_tbl_m[CUR_OPP_IDX].slot->pos_div > opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
+	if (cur_posdiv > opp_tbl_m[TARGET_OPP_IDX].slot->pos_div)
 		pll_p->pll_ops->set_armpll_posdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 
 	aee_record_cpu_dvfs_step(11);
