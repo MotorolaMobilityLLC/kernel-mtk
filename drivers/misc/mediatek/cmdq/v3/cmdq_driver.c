@@ -388,6 +388,10 @@ static long cmdq_driver_process_command_request(struct cmdqCommandStruct *pComma
 		return -EFAULT;
 	}
 
+	/* avoid copy large string */
+	if (pCommand->userDebugStrLen > CMDQ_MAX_DBG_STR_LEN)
+		pCommand->userDebugStrLen = CMDQ_MAX_DBG_STR_LEN;
+
 	/* allocate secure medatata */
 	status = cmdq_driver_create_secure_medadata(pCommand);
 	if (status != 0)
@@ -543,6 +547,10 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		status = cmdq_driver_create_reg_address_buffer(&job.command);
 		if (status != 0)
 			return status;
+
+		/* avoid copy large string */
+		if (job.command.userDebugStrLen > CMDQ_MAX_DBG_STR_LEN)
+			job.command.userDebugStrLen = CMDQ_MAX_DBG_STR_LEN;
 
 		/* scenario id fixup */
 		cmdq_core_fix_command_scenario_for_user_space(&job.command);
