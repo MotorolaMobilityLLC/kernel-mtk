@@ -74,7 +74,9 @@ kal_bool is_usb_rdy(void)
 /* static bool platform_init_first = true; */
 static u32 cable_mode = CABLE_MODE_NORMAL;
 #ifndef FPGA_PLATFORM
-static struct regulator *reg;
+static struct regulator *reg_vusb;
+static struct regulator *reg_va12;
+
 #endif
 /* add for linux kernel 3.10 */
 
@@ -1291,25 +1293,38 @@ static int mt_usb_init(struct musb *musb)
 	wake_lock_init(&musb->usb_lock, WAKE_LOCK_SUSPEND, "USB suspend lock");
 
 #ifndef FPGA_PLATFORM
-	reg = regulator_get(musb->controller, "vusb33");
-	if (!IS_ERR(reg)) {
-#define	VUSB33_VOL_MIN 3300000
-#define	VUSB33_VOL_MAX 3300000
-		ret = regulator_set_voltage(reg, VUSB33_VOL_MIN, VUSB33_VOL_MAX);
+	reg_vusb = regulator_get(musb->controller, "vusb");
+	if (!IS_ERR(reg_vusb)) {
+#ifdef NEVER
+#define	VUSB33_VOL_MIN 3070000
+#define	VUSB33_VOL_MAX 3070000
+		ret = regulator_set_voltage(reg_vusb, VUSB33_VOL_MIN, VUSB33_VOL_MAX);
 		if (ret < 0)
-			DBG(0, "regulator set vol failed: %d\n", ret);
+			pr_err("regulator set vol failed: %d\n", ret);
 		else
 			DBG(0, "regulator set vol ok, <%d,%d>\n", VUSB33_VOL_MIN, VUSB33_VOL_MAX);
-		ret = regulator_enable(reg);
+#endif /* NEVER */
+		ret = regulator_enable(reg_vusb);
 		if (ret < 0) {
-			DBG(0, "regulator_enable failed: %d\n", ret);
-			regulator_put(reg);
-		} else {
+			pr_err("regulator_enable vusb failed: %d\n", ret);
+			regulator_put(reg_vusb);
+		} else
 			DBG(0, "enable USB regulator\n");
-		}
-	} else {
-		DBG(0, "regulator_get failed\n");
-	}
+	} else
+		pr_err("regulator_get vusb failed\n");
+
+
+	reg_va12 = regulator_get(musb->controller, "va12");
+	if (!IS_ERR(reg_va12)) {
+		ret = regulator_enable(reg_va12);
+		if (ret < 0) {
+			pr_err("regulator_enable va12 failed: %d\n", ret);
+			regulator_put(reg_va12);
+		} else
+			DBG(0, "enable USB regulator\n");
+	} else
+		pr_err("regulator_get va12 failed\n");
+
 #endif
 
 	/* mt_usb_enable(musb); */
@@ -1340,6 +1355,12 @@ static int mt_usb_init(struct musb *musb)
 static int mt_usb_exit(struct musb *musb)
 {
 	del_timer_sync(&musb_idle_timer);
+#ifndef FPGA_PLATFORM
+	if (reg_vusb)
+		regulator_put(reg_vusb);
+	if (reg_va12)
+		regulator_put(reg_va12);
+#endif
 	return 0;
 }
 

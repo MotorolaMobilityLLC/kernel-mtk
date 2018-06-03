@@ -1320,9 +1320,9 @@
 		mode = <2>;
 		multipoint = <1>;
 		num_eps = <16>;
+		clocks = <&infracfg_ao INFRACFG_AO_ICUSB_CG>;
+		clock-names = "usb0";
 		/*
-		 *clocks = <&perisys PERI_USB0>;
-		 *clock-names = "usb0";
 		 *vusb33-supply = <&mt_pmic_vusb33_ldo_reg>;
 		 *iddig_gpio = <0 1>;
 		 *drvvbus_gpio = <83 2>;
