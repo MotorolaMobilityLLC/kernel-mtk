@@ -41,7 +41,7 @@
 
 #define BARO_TAG					"<BAROMETER> "
 #define BARO_FUN(f)				pr_debug(BARO_TAG"%s\n", __func__)
-#define BARO_ERR(fmt, args...)	pr_err(BARO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define BARO_PR_ERR(fmt, args...)	pr_err(BARO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define BARO_LOG(fmt, args...)	pr_debug(BARO_TAG fmt, ##args)
 #define BARO_VER(fmt, args...)	pr_debug(BARO_TAG"%s: "fmt, __func__, ##args)
 
