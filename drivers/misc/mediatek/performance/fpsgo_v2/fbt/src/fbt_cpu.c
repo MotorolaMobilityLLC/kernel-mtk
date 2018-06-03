@@ -218,12 +218,17 @@ static int fbt_enable;
 static int fbt_idleprefer_enable;
 static int bypass_flag;
 static int vag_fps;
+static int walt_enable;
+static int set_idleprefer;
+static int suppress_ceiling;
 
 static unsigned int cpu_max_freq;
 static struct fbt_cpu_dvfs_info *cpu_dvfs;
+static int *cpu_capacity_ratio;
 
 static int *clus_max_freq;
 static int max_freq_cluster;
+static int max_cap_cluster;
 
 static unsigned int *base_freq;
 
@@ -516,6 +521,9 @@ static void fbt_list_loading_del(struct fbt_thread_loading *obj)
 {
 	unsigned long flags;
 
+	if (!obj)
+		return;
+
 	spin_lock_irqsave(&loading_slock, flags);
 	list_del(&obj->entry);
 	spin_unlock_irqrestore(&loading_slock, flags);
@@ -755,8 +763,7 @@ void fbt_check_thread_status(void)
 		spin_lock_irqsave(&xgf_slock, flags);
 		max_blc = temp_max_blc;
 		max_blc_pid = temp_max_blc_pid;
-		fpsgo_systrace_c_fbt_gm(-100, max_blc, "[FPSGO] max_blc");
-		fpsgo_systrace_c_fbt_gm(-100, max_blc_pid, "[FPSGO] max_blc_pid");
+		xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
 		spin_unlock_irqrestore(&xgf_slock, flags);
 	}
 
@@ -800,19 +807,20 @@ static void fbt_free_bhr(void)
 		pld[i].min = -1;
 	}
 
+	xgf_trace("fpsgo free bhr");
+
 	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 	kfree(pld);
 }
 
-static void fbt_get_new_base_blc(unsigned int *blc_wt)
+static void fbt_get_new_base_blc(unsigned int *blc_wt, struct ppm_limit_data *pld)
 {
-	struct ppm_limit_data *pld;
 	unsigned int *blc_freq;
 	int i, cluster;
 	int *clus_opp;
 	unsigned long flags;
 
-	if (!blc_wt) {
+	if (!blc_wt || !pld) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
 		return;
 	}
@@ -828,15 +836,6 @@ static void fbt_get_new_base_blc(unsigned int *blc_wt)
 		kzalloc(cluster_num * sizeof(unsigned int), GFP_KERNEL);
 	if (!blc_freq) {
 		kfree(clus_opp);
-		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
-		return;
-	}
-
-	pld =
-		kzalloc(cluster_num * sizeof(struct ppm_limit_data), GFP_KERNEL);
-	if (!pld) {
-		kfree(clus_opp);
-		kfree(blc_freq);
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
 		return;
 	}
@@ -858,19 +857,18 @@ static void fbt_get_new_base_blc(unsigned int *blc_wt)
 		do_div(blc_wt[cluster], cpu_max_freq);
 		blc_wt[cluster] = clamp(blc_wt[cluster], 1U, 100U);
 
-		pld[cluster].max =
-			cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_c), 0)];
 		pld[cluster].min = -1;
-		pld[cluster].max = min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
 
-		fpsgo_systrace_c_fbt_gm(-100, pld[cluster].max, "cluster%d ceiling", cluster);
+		if (bypass_flag == 0 && suppress_ceiling) {
+			pld[cluster].max =
+				cpu_dvfs[cluster].power[max((clus_opp[cluster] - rescue_opp_c), 0)];
+			pld[cluster].max = min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
+		} else
+			pld[cluster].max = -1;
 	}
 
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
-	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
-
-	kfree(pld);
 	kfree(clus_opp);
 	kfree(blc_freq);
 }
@@ -911,16 +909,21 @@ static void fbt_do_jerk(struct work_struct *work)
 
 	if (jerk->id == proc->active_jerk_id && thr->boosting && thr->linger == 0) {
 		unsigned int *blc_wt;
+		struct ppm_limit_data *pld;
 
 		blc_wt = kcalloc(cluster_num, sizeof(unsigned int), GFP_KERNEL);
-		if (blc_wt) {
-			fbt_get_new_base_blc(blc_wt);
+		pld = kcalloc(cluster_num, sizeof(struct ppm_limit_data), GFP_KERNEL);
+		if (blc_wt && pld) {
+			fbt_get_new_base_blc(blc_wt, pld);
 			for (cluster = 0 ; cluster < cluster_num; cluster++) {
-				xgf_trace("pid %d, cluster%d perf idx %d", thr->pid, cluster, blc_wt[cluster]);
+				fpsgo_systrace_c_fbt(thr->pid, blc_wt[cluster], "cluster%d perf_index", cluster);
+				fpsgo_systrace_c_fbt(thr->pid, pld[cluster].max, "cluster%d ceiling_freq", cluster);
 				fbt_set_boost_value(cluster, blc_wt[cluster]);
 			}
-			kfree(blc_wt);
+			update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 		}
+		kfree(blc_wt);
+		kfree(pld);
 	}
 
 	jerk->jerking = 0;
@@ -1085,8 +1088,7 @@ static void fbt_check_var(long long loading,
 			mips_diff = div64_s64(mips_diff, frame_info[*f_iter].mips);
 		else
 			mips_diff = frame_info[pre_iter].mips;
-		mips_diff = min(mips_diff, 100LL);
-		mips_diff = max(mips_diff, 1LL);
+		mips_diff = clamp(mips_diff, 1LL, 100LL);
 		frame_time = frame_info[pre_iter].q2q_time + frame_info[*f_iter].q2q_time;
 		frame_time = div64_u64(frame_time, (unsigned long long)NSEC_PER_USEC);
 
@@ -1144,7 +1146,7 @@ static void fbt_check_var(long long loading,
 	}
 }
 
-static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_floor_freq, unsigned int *clus_blc)
+static void fbt_do_boost(int *clus_opp, unsigned int *clus_floor_freq, int pid)
 {
 	struct ppm_limit_data *pld;
 	unsigned int tgt_freq;
@@ -1153,7 +1155,7 @@ static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_
 	unsigned int final_blc;
 	int cluster, i = 0;
 
-	if (!clus_opp || !clus_floor_freq || !clus_blc) {
+	if (!clus_opp || !clus_floor_freq) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
 		return;
 	}
@@ -1166,8 +1168,6 @@ static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_
 	}
 
 	for (cluster = 0 ; cluster < cluster_num; cluster++) {
-		pld[cluster].min = -1;
-
 		mbhr_opp = max((clus_opp[cluster] - bhr_opp), 0);
 
 		mbhr = clus_floor_freq[cluster] * 100U;
@@ -1182,10 +1182,15 @@ static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_
 		}
 		mbhr = cpu_dvfs[cluster].power[i];
 
-		pld[cluster].max =
-			max(mbhr, cpu_dvfs[cluster].power[mbhr_opp]);
-		pld[cluster].max =
-			min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
+		pld[cluster].min = -1;
+
+		if (bypass_flag == 0 && suppress_ceiling) {
+			pld[cluster].max =
+				max(mbhr, cpu_dvfs[cluster].power[mbhr_opp]);
+			pld[cluster].max =
+				min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
+		} else
+			pld[cluster].max = -1;
 
 		tgt_freq = clus_floor_freq[cluster];
 		base_freq[cluster] = tgt_freq;
@@ -1193,12 +1198,12 @@ static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_
 		final_blc = tgt_freq * 100;
 		do_div(final_blc, cpu_max_freq);
 		final_blc = clamp(final_blc, 1U, 100U);
-		clus_blc[cluster] = final_blc;
 
 		fbt_set_boost_value(cluster, final_blc);
 
-		xgf_trace("cluster%d perf_idx %d, pld.max %d freq %d",
-			cluster, clus_blc[cluster], pld[cluster].max, base_freq[cluster]);
+		fpsgo_systrace_c_fbt(pid, final_blc, "cluster%d perf_index", cluster);
+		fpsgo_systrace_c_fbt(pid, base_freq[cluster], "cluster%d floor_freq", cluster);
+		fpsgo_systrace_c_fbt(pid, pld[cluster].max, "cluster%d ceiling_freq", cluster);
 	}
 
 	if (bypass_flag == 0)
@@ -1207,74 +1212,25 @@ static void fbt_do_boost(unsigned int blc_wt, int *clus_opp, unsigned int *clus_
 	kfree(pld);
 }
 
-static int fbt_check_target_cluster(int freq, int type)
-{
-	int new_cluster = 0;
-
-	switch (type) {
-	case FBT_CPU_FREQ_BOUND:
-		switch (cluster_num) {
-		case 2:
-			new_cluster = freq > cluster_freq_bound[0] ? 1 : 0;
-			return new_cluster;
-		case 3:
-			if (freq > cluster_freq_bound[1])
-				new_cluster = 2;
-			else if (freq > cluster_freq_bound[0])
-				new_cluster = 1;
-			else
-				new_cluster = 0;
-			return new_cluster;
-		default:
-			return new_cluster;
-		}
-	case FBT_CPU_RESCUE_BOUND:
-		switch (cluster_num) {
-		case 2:
-			new_cluster = freq > cluster_rescue_bound[0] ? 1 : 0;
-			return new_cluster;
-		case 3:
-			if (freq > cluster_rescue_bound[1])
-				new_cluster = 2;
-			else if (freq > cluster_rescue_bound[0])
-				new_cluster = 1;
-			else
-				new_cluster = 0;
-			return new_cluster;
-		default:
-			return new_cluster;
-		}
-	default:
-		return new_cluster;
-	}
-}
-
-static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid, int *out_tgt_clus_blc)
+static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid)
 {
 	int *clus_opp;
 	unsigned int *clus_floor_freq;
 
 	unsigned int tgt_freq;
 	int tgt_opp = 0;
+	unsigned int orig_freq = 0;
+	int orig_opp = 0;
 
-	unsigned int var_blc = blc_wt;
-	unsigned int var_freq;
-	int var_opp = 0;
-	unsigned int *clus_blc;
-	int target_cluster = 0;
-	int cluster, i = 0;
+	int cluster;
 	int doboost = 0;
-
-	if (!out_tgt_clus_blc) {
-		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
-		return var_blc;
-	}
+	unsigned int temp_freq;
 
 	clus_opp =
 		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
 	if (!clus_opp) {
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
-		return var_blc;
+		return blc_wt;
 	}
 
 	clus_floor_freq =
@@ -1282,75 +1238,75 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 	if (!clus_floor_freq) {
 		kfree(clus_opp);
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
-		return var_blc;
+		return blc_wt;
 	}
 
-	clus_blc =
-		kzalloc(cluster_num * sizeof(unsigned int), GFP_KERNEL);
-	if (!clus_blc) {
-		kfree(clus_opp);
-		kfree(clus_floor_freq);
-		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
-		return var_blc;
+	if (cpu_max_freq <= 1)
+		fpsgo_systrace_c_fbt(pid, cpu_max_freq, "cpu_max_freq");
+
+	if (floor > 1) {
+		orig_freq = blc_wt * cpu_max_freq;
+		do_div(orig_freq, 100U);
+
+		blc_wt = (blc_wt * ((unsigned int)floor + 100));
+		do_div(blc_wt, 100U);
+		blc_wt = clamp(blc_wt, 1U, 100U);
 	}
 
 	tgt_freq = blc_wt * cpu_max_freq;
 	do_div(tgt_freq, 100U);
 
-	var_freq = tgt_freq;
-	if (floor > 1) {
-		var_blc = (blc_wt * ((unsigned int)floor + 100));
-		do_div(var_blc, 100U);
-		var_blc = clamp(var_blc, 1U, 100U);
-		var_freq = var_blc * cpu_max_freq;
-		do_div(var_freq, 100U);
-	}
-
 	for (cluster = 0; cluster < cluster_num; cluster++) {
-		var_opp = 0;
-		tgt_opp = 0;
-		for (i = (NR_FREQ_CPU - 1); i > 0; i--) {
-			if (var_opp == 0 && cpu_dvfs[cluster].power[i] >= var_freq)
-				var_opp = i;
-			if (tgt_opp == 0 && cpu_dvfs[cluster].power[i] >= tgt_freq)
-				tgt_opp = i;
-			if (var_opp != 0 && tgt_opp != 0)
+		if (fbt_is_mips_different() && (cluster != max_cap_cluster))
+			temp_freq = (tgt_freq * cpu_capacity_ratio[cluster]) >> 7;
+		else
+			temp_freq = tgt_freq;
+
+		for (tgt_opp = (NR_FREQ_CPU - 1); tgt_opp > 0; tgt_opp--) {
+			if (cpu_dvfs[cluster].power[tgt_opp] >= temp_freq)
 				break;
 		}
-		if (var_freq != tgt_freq) {
-			if (cpu_dvfs[cluster].power[tgt_opp] == cpu_dvfs[cluster].power[var_opp])
-				var_opp = max((int)(var_opp - floor_opp), 0);
+
+		if (floor > 1) {
+			if (fbt_is_mips_different() && (cluster != max_cap_cluster))
+				temp_freq = (orig_freq * cpu_capacity_ratio[cluster]) >> 7;
+			else
+				temp_freq = orig_freq;
+
+			for (orig_opp = (NR_FREQ_CPU - 1); orig_opp > 0; orig_opp--) {
+				if (cpu_dvfs[cluster].power[orig_opp] >= temp_freq)
+					break;
+			}
+
+			if (orig_freq != tgt_freq && tgt_opp == orig_opp)
+				tgt_opp = max((int)(orig_opp - floor_opp), 0);
 		}
 
-		clus_opp[cluster] = var_opp;
-		clus_floor_freq[cluster] = cpu_dvfs[cluster].power[var_opp];
-		clus_floor_freq[cluster] = min(clus_floor_freq[cluster], lpp_clus_max_freq[cluster]);
-		xgf_trace("cluster %d, clus_opp %d, clus_floor_freq %d",
+		clus_floor_freq[cluster] = cpu_dvfs[cluster].power[tgt_opp];
+		clus_opp[cluster] = tgt_opp;
+
+		xgf_trace("cluster %d, opp %d, floor_freq %d",
 			cluster, clus_opp[cluster], clus_floor_freq[cluster]);
 	}
 
-	var_blc = clamp(var_blc, 1U, 100U);
-	*out_tgt_clus_blc = var_blc;
+	blc_wt = clus_floor_freq[max_freq_cluster] * 100;
+	do_div(blc_wt, cpu_max_freq);
+	blc_wt = clamp(blc_wt, 1U, 100U);
 
-	if (var_blc > max_blc || pid == max_blc_pid) {
-		max_blc = var_blc;
+	if (blc_wt > max_blc || pid == max_blc_pid) {
+		max_blc = blc_wt;
 		max_blc_pid = pid;
 		doboost = 1;
 	}
-
 	xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
 
-	if (doboost == 1) {
-		fbt_do_boost(var_blc, clus_opp, clus_floor_freq, clus_blc);
-		target_cluster = fbt_check_target_cluster(var_freq, FBT_CPU_FREQ_BOUND);
-		*out_tgt_clus_blc = clus_blc[target_cluster];
-	}
+	if (doboost == 1)
+		fbt_do_boost(clus_opp, clus_floor_freq, pid);
 
 	kfree(clus_opp);
 	kfree(clus_floor_freq);
-	kfree(clus_blc);
 
-	return var_blc;
+	return blc_wt;
 }
 
 static void fbt_update_userlimit_freq(void)
@@ -1376,6 +1332,10 @@ static void fbt_update_userlimit_freq(void)
 		if (clus_max_freq[i] > max_freq) {
 			max_freq = clus_max_freq[i];
 			max_freq_cluster = i;
+		} else if (clus_max_freq[i] == max_freq
+			&& cpu_capacity_ratio[i] < cpu_capacity_ratio[max_freq_cluster]) {
+			max_freq = clus_max_freq[i];
+			max_freq_cluster = i;
 		}
 	}
 
@@ -1383,8 +1343,8 @@ static void fbt_update_userlimit_freq(void)
 
 	for (i = 0 ; i < cluster_num; i++)
 		fpsgo_systrace_c_fbt_gm(-100, clus_max_freq[i], "cluster%d max freq", i);
-
 	fpsgo_systrace_c_fbt_gm(-100, max_freq_cluster, "max_freq_cluster");
+
 	kfree(clus_max_idx);
 }
 
@@ -1458,14 +1418,13 @@ int (*fpsgo_fbt2fstb_cpu_capability_fp)(
 	unsigned long long Q2Q_time,
 	unsigned long long Running_time);
 
-static void fbt_boost_policy(
+static int fbt_boost_policy(
 	long long t_cpu_cur,
 	long long t_cpu_target,
 	unsigned long long t_cpu_slptime,
 	unsigned int target_fps,
 	struct fbt_thread_info *thread_info,
-	unsigned long long ts,
-	int *out_tgt_clus_blc)
+	unsigned long long ts)
 {
 	unsigned int blc_wt = 0U;
 	unsigned long long target_time = 0ULL;
@@ -1479,12 +1438,11 @@ static void fbt_boost_policy(
 	int frame_type;
 	struct hrtimer *timer;
 	u64 t2wnt = 0ULL;
-	int is_self_control = 0;
 	int active_jerk_id = 0;
 
 	if (!thread_info) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
-		return;
+		return 0;
 	}
 
 	spin_lock_irqsave(&xgf_slock, flags);
@@ -1513,7 +1471,7 @@ static void fbt_boost_policy(
 		target_time = (unsigned long long)(FBTCPU_SEC_DIVIDER / target_fps);
 		boost_info->middle_enable = 0;
 	} else if (frame_type == NON_VSYNC_ALIGNED_TYPE) {
-		is_self_control = fbt_check_self_control(target_time, &boost_info->middle_enable,
+		fbt_check_self_control(target_time, &boost_info->middle_enable,
 				&boost_info->sf_check, boost_info->sf_bound,
 				boost_info->q2q_time, boost_info->deq_time);
 
@@ -1533,7 +1491,7 @@ static void fbt_boost_policy(
 	}
 
 	boost_info->last_target_fps = target_fps;
-	fpsgo_systrace_c_fbt_gm(pid, boost_info->middle_enable, "middle_enable");
+	fpsgo_systrace_c_fbt(pid, boost_info->middle_enable, "middle_enable");
 	fpsgo_systrace_c_fbt_gm(pid, boost_info->sf_check, "sf_check");
 
 	if (boost_info->middle_enable) {
@@ -1551,7 +1509,7 @@ static void fbt_boost_policy(
 			}
 		}
 	}
-	fpsgo_systrace_c_fbt(pid, target_time, "target_time");
+	fpsgo_systrace_c_fbt_gm(pid, target_time, "target_time");
 
 	spin_lock_irqsave(&loading_slock, flags2);
 	aa = atomic_read(&thread_info->pLoading->loading);
@@ -1587,7 +1545,7 @@ static void fbt_boost_policy(
 		fbt_check_var(aa, target_fps, nsec_to_usec(target_time),
 		&(boost_info->f_iter), &(boost_info->frame_info[0]), &(boost_info->floor),
 		&(boost_info->floor_count), &(boost_info->reset_floor_bound));
-	fpsgo_systrace_c_fbt_gm(pid, boost_info->floor, "variance");
+	fpsgo_systrace_c_fbt(pid, boost_info->floor, "variance");
 
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
@@ -1599,13 +1557,12 @@ static void fbt_boost_policy(
 	if (boost_info->middle_enable && reset_asfc)
 		fpsgo_fbt2fstb_reset_asfc(pid, 0);
 
+	fbt_update_userlimit_freq();
+
 	blc_wt = min(blc_wt, lpp_max_cap);
 	blc_wt = clamp(blc_wt, 1U, 100U);
 
-	fbt_update_userlimit_freq();
-
-	*out_tgt_clus_blc = blc_wt;
-	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, out_tgt_clus_blc);
+	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid);
 
 	boost_info->last_blc = blc_wt;
 	fpsgo_systrace_c_fbt(pid, blc_wt, "perf idx");
@@ -1620,9 +1577,7 @@ static void fbt_boost_policy(
 
 			timer = &(boost_info->proc.jerks[active_jerk_id].timer);
 			if (timer) {
-				if (boost_info->proc.jerks[active_jerk_id].jerking == 1)
-					FPSGO_LOGE("ERROR jerk\n");
-				else {
+				if (boost_info->proc.jerks[active_jerk_id].jerking == 0) {
 					boost_info->proc.jerks[active_jerk_id].jerking = 1;
 					hrtimer_start(timer, ns_to_ktime(t2wnt), HRTIMER_MODE_REL);
 				}
@@ -1630,6 +1585,8 @@ static void fbt_boost_policy(
 				FPSGO_LOGE("ERROR timer\n");
 		}
 	}
+
+	return blc_wt;
 }
 
 static unsigned long long fbt_est_loading(int cur_ts, atomic_t last_ts, unsigned int obv)
@@ -1748,7 +1705,7 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 	unsigned int limited_cap;
 	unsigned long flags;
 	int new_ts;
-	int out_tgt_clus_blc = 0;
+	int blc_wt = 0;
 
 	if (!fbt_enable)
 		return;
@@ -1803,7 +1760,7 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 	spin_unlock_irqrestore(&loading_slock, flags);
 	fpsgo_systrace_c_fbt_gm(thr->pid, atomic_read(&thr->pLoading->last_cb_ts), "last_cb_ts");
 
-	fbt_boost_policy(runtime, targettime, slptime, targetfps, thr, ts, &out_tgt_clus_blc);
+	blc_wt = fbt_boost_policy(runtime, targettime, slptime, targetfps, thr, ts);
 
 	fbt_list_thread_unlock(&(thr->thr_mlock));
 
@@ -1811,7 +1768,7 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 	fpsgo_systrace_c_fbt_gm(pid, limited_cap, "limited_cap");
 
 	if (fpsgo_fbt2fstb_cpu_capability_fp)
-		fpsgo_fbt2fstb_cpu_capability_fp(pid, type, out_tgt_clus_blc,
+		fpsgo_fbt2fstb_cpu_capability_fp(pid, type, blc_wt,
 							limited_cap, boost->last_target_fps,
 							q2q_time, runtime);
 
@@ -1892,11 +1849,14 @@ void fpsgo_comp2fbt_frame_complete(int pid, int type, int render, unsigned long 
 		spin_lock_irqsave(&xgf_slock, flags);
 		max_blc_pid = 0;
 		max_blc = 0;
+		memset(base_freq, 0, cluster_num * sizeof(unsigned int));
 		spin_unlock_irqrestore(&xgf_slock, flags);
 		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
 		fbt_free_bhr();
-		if (fbt_idleprefer_enable)
+		if (fbt_idleprefer_enable && set_idleprefer) {
 			prefer_idle_for_perf_idx(CGROUP_TA, 0);
+			set_idleprefer = 0;
+		}
 	} else if (cancel == 1) {
 		unsigned int temp_max_blc = 0;
 		int temp_max_blc_pid = 0;
@@ -1925,6 +1885,7 @@ void fpsgo_comp2fbt_bypass_connect(int pid)
 	if (!bypass_flag) {
 		bypass_flag = 1;
 		free_bhr = 1;
+		walt_enable = 1;
 		xgf_trace("bypass_flag %d", bypass_flag);
 	}
 	spin_unlock_irqrestore(&xgf_slock, flags);
@@ -1932,6 +1893,7 @@ void fpsgo_comp2fbt_bypass_connect(int pid)
 	if (free_bhr) {
 		fbt_free_bhr();
 		sched_walt_enable(LT_WALT_FPSGO, 1);
+		xgf_trace("fpsgo enable walt");
 	}
 }
 
@@ -1939,6 +1901,7 @@ void fpsgo_comp2fbt_bypass_disconnect(int pid)
 {
 	unsigned long flags;
 	int clear = 0;
+	int disable_walt = 0;
 
 	if (!fbt_enable)
 		return;
@@ -1953,14 +1916,21 @@ void fpsgo_comp2fbt_bypass_disconnect(int pid)
 	if (!bypass_flag) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
 	} else {
-		if (clear)
+		if (clear) {
 			bypass_flag = 0;
+			if (walt_enable) {
+				walt_enable = 0;
+				disable_walt = 1;
+			}
+		}
 		xgf_trace("bypass_flag %d", bypass_flag);
 	}
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
-	if (clear)
+	if (disable_walt) {
 		sched_walt_enable(LT_WALT_FPSGO, 0);
+		xgf_trace("fpsgo disable walt");
+	}
 }
 
 void fpsgo_comp2fbt_enq_start(int pid, unsigned long long ts)
@@ -2101,7 +2071,7 @@ void fpsgo_comp2fbt_deq_end(int pid, unsigned long long ts, unsigned long long d
 	fbt_list_thread_unlock(&(thr->thr_mlock));
 
 	fpsgo_systrace_c_fbt_gm(pid, atomic_read(&thr->pLoading->last_cb_ts), "last_cb_ts");
-	fpsgo_systrace_c_fbt_gm(pid, boost->deqend_time, "deqend_time");
+	fpsgo_systrace_c_fbt_gm(pid, boost->deq_time, "deq_time");
 }
 
 void fpsgo_fstb2fbt_target_fps(int pid, int target_fps, int queue_fps)
@@ -2122,7 +2092,7 @@ void fpsgo_fstb2fbt_target_fps(int pid, int target_fps, int queue_fps)
 
 		if (boost->fstb_target_fps != target_fps) {
 			boost->middle_enable = 0;
-			fpsgo_systrace_c_fbt_gm(pid, boost->middle_enable, "middle_enable");
+			fpsgo_systrace_c_fbt(pid, boost->middle_enable, "middle_enable");
 		}
 
 		boost->fstb_target_fps = target_fps;
@@ -2147,8 +2117,8 @@ void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit)
 
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
-	fpsgo_systrace_c_fbt_gm(-100, _gdfrc_fps_limit, "_gdfrc_fps_limit");
-	fpsgo_systrace_c_fbt_gm(-100, _gdfrc_cpu_target, "_gdfrc_cpu_target");
+	xgf_trace("_gdfrc_fps_limit %d", _gdfrc_fps_limit);
+	xgf_trace("_gdfrc_cpu_target %d", _gdfrc_cpu_target);
 }
 
 static void fbt_update_pwd_tbl(void)
@@ -2157,6 +2127,7 @@ static void fbt_update_pwd_tbl(void)
 	struct cpumask cluster_cpus;
 	int cpu;
 	const struct sched_group_energy *core_energy;
+	unsigned long long max_cap = 0ULL;
 
 	for (cluster = 0; cluster < cluster_num ; cluster++) {
 		for (opp = 0; opp < NR_FREQ_CPU; opp++) {
@@ -2173,12 +2144,34 @@ static void fbt_update_pwd_tbl(void)
 		}
 	}
 
+	if (fbt_is_mips_different()) {
+		for (cluster = 0; cluster < cluster_num ; cluster++) {
+			if (cpu_dvfs[cluster].capacity[0] > max_cap) {
+				max_cap = cpu_dvfs[cluster].capacity[0];
+				max_cap_cluster = cluster;
+			}
+		}
+	}
+
+	for (cluster = 0; cluster < cluster_num ; cluster++) {
+		if (fbt_is_mips_different() && cpu_dvfs[cluster].capacity[0])
+			cpu_capacity_ratio[cluster] =
+			(max_cap << 7) / cpu_dvfs[cluster].capacity[0];
+		else
+			cpu_capacity_ratio[cluster] = 128;
+	}
+
 	cpu_max_freq = cpu_dvfs[cluster_num - 1].power[0];
+	if (!cpu_max_freq) {
+		FPSGO_LOGE("NULL power table\n");
+		cpu_max_freq = 1;
+	}
 }
 
 static void fbt_setting_exit(void)
 {
 	unsigned long flags;
+	int disable_walt = 0;
 
 	spin_lock_irqsave(&xgf_slock, flags);
 	last_obv = 0;
@@ -2190,15 +2183,26 @@ static void fbt_setting_exit(void)
 	memset(base_freq, 0, cluster_num * sizeof(unsigned int));
 	max_blc = 0;
 	max_blc_pid = 0;
+	if (walt_enable) {
+		walt_enable = 0;
+		disable_walt = 1;
+	}
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
 	fbt_list_clear();
 
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
-	if (fbt_idleprefer_enable)
+	if (fbt_idleprefer_enable && set_idleprefer) {
 		prefer_idle_for_perf_idx(CGROUP_TA, 0);
+		set_idleprefer = 0;
+	}
 
 	fbt_free_bhr();
+
+	if (disable_walt) {
+		xgf_trace("fpsgo disable walt");
+		sched_walt_enable(LT_WALT_FPSGO, 0);
+	}
 }
 
 int fpsgo_ctrl2fbt_switch_fbt(int enable)
@@ -2217,8 +2221,10 @@ int fpsgo_ctrl2fbt_switch_fbt(int enable)
 	if (!enable)
 		fbt_setting_exit();
 	else {
-		if (fbt_idleprefer_enable)
+		if (fbt_idleprefer_enable) {
 			prefer_idle_for_perf_idx(CGROUP_TA, 1);
+			set_idleprefer = 1;
+		}
 	}
 
 	mutex_unlock(&fbt_mlock);
@@ -2229,18 +2235,61 @@ int fbt_switch_idleprefer(int enable)
 {
 	unsigned long flags;
 	int last_enable;
+	int do_set = 0;
+
+	mutex_lock(&fbt_mlock);
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+	mutex_unlock(&fbt_mlock);
 
 	spin_lock_irqsave(&xgf_slock, flags);
 
 	last_enable = fbt_idleprefer_enable;
 	fbt_idleprefer_enable = enable;
 
-	if (last_enable && !fbt_idleprefer_enable)
-		prefer_idle_for_perf_idx(CGROUP_TA, 0);
-	else if (fbt_enable && !last_enable && fbt_idleprefer_enable)
-		prefer_idle_for_perf_idx(CGROUP_TA, 1);
+	if (last_enable && !fbt_idleprefer_enable) {
+		do_set = 1;
+		set_idleprefer = 0;
+	} else if (!last_enable && fbt_idleprefer_enable) {
+		do_set = 1;
+		set_idleprefer = 1;
+	}
 
 	spin_unlock_irqrestore(&xgf_slock, flags);
+
+	if (do_set)
+		prefer_idle_for_perf_idx(CGROUP_TA, enable);
+
+	return 0;
+}
+
+int fbt_switch_ceiling(int enable)
+{
+	unsigned long flags;
+	int last_enable;
+	int do_free_bhr = 0;
+
+	mutex_lock(&fbt_mlock);
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+	mutex_unlock(&fbt_mlock);
+
+	spin_lock_irqsave(&xgf_slock, flags);
+
+	last_enable = suppress_ceiling;
+	suppress_ceiling = enable;
+
+	if (last_enable && !suppress_ceiling)
+		do_free_bhr = 1;
+
+	spin_unlock_irqrestore(&xgf_slock, flags);
+
+	if (do_free_bhr)
+		fbt_free_bhr();
 
 	return 0;
 }
@@ -2306,14 +2355,44 @@ static ssize_t fbt_switch_idleprefer_write(struct file *flip,
 
 FBT_DEBUGFS_ENTRY(switch_idleprefer);
 
+static int fbt_switch_ceiling_show(struct seq_file *m, void *unused)
+{
+	SEQ_printf(m, "suppress_ceiling:%d\n", suppress_ceiling);
+	return 0;
+}
+
+static ssize_t fbt_switch_ceiling_write(struct file *flip,
+		const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	fbt_switch_ceiling(val);
+
+	return cnt;
+}
+
+FBT_DEBUGFS_ENTRY(switch_ceiling);
+
 static int fbt_thread_info_show(struct seq_file *m, void *unused)
 {
 	struct fbt_thread_info *pos, *next;
 	struct fbt_thread_bypass *pos2, *next2;
 
-	SEQ_printf(m, "enable\tbypass\tmax_blc\tmax_pid\tdfrc_fps\tvsync\n");
-	SEQ_printf(m, "%d\t%d\t%d\t%d\t%d\t\t%llu\n\n",
-		fbt_enable, bypass_flag, max_blc, max_blc_pid, _gdfrc_fps_limit, vsync_time);
+	SEQ_printf(m, "enable\tbypass\twalt\tmax_blc\tmax_pid\tdfrc_fps\tvsync\n");
+	SEQ_printf(m, "%d\t%d\t%d\t%d\t%d\t%d\t\t%llu\n\n",
+		fbt_enable, bypass_flag, walt_enable, max_blc, max_blc_pid, _gdfrc_fps_limit, vsync_time);
+
+	mutex_lock(&fbt_mlock);
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+	mutex_unlock(&fbt_mlock);
 
 	SEQ_printf(m, "pid\ttype\tboost\ttfps\t");
 	SEQ_printf(m, "q2q_t\t\tmiddle\tblc\tvar\tloading\t\n");
@@ -2368,6 +2447,7 @@ void fbt_cpu_exit(void)
 	kfree(clus_obv);
 	kfree(cpu_dvfs);
 	kfree(clus_max_freq);
+	kfree(cpu_capacity_ratio);
 
 	kfree(lpp_clus_max_freq);
 
@@ -2396,9 +2476,11 @@ int fbt_cpu_init(void)
 	_gdfrc_fps_limit = TARGET_UNLIMITED_FPS;
 	_gdfrc_cpu_target = GED_VSYNC_MISS_QUANTUM_NS;
 	fbt_idleprefer_enable = 1;
+	suppress_ceiling = 1;
 
 	cluster_num = arch_get_nr_clusters();
 	max_freq_cluster = min((cluster_num - 1), 0);
+	max_cap_cluster = min((cluster_num - 1), 0);
 
 	base_freq =
 		kzalloc(cluster_num * sizeof(unsigned int), GFP_KERNEL);
@@ -2410,6 +2492,9 @@ int fbt_cpu_init(void)
 		kzalloc(cluster_num * sizeof(struct fbt_cpu_dvfs_info), GFP_KERNEL);
 
 	clus_max_freq =
+		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
+
+	cpu_capacity_ratio =
 		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
 
 	fbt_update_pwd_tbl();
@@ -2433,6 +2518,11 @@ int fbt_cpu_init(void)
 					fbt_debugfs_dir,
 					NULL,
 					&fbt_switch_idleprefer_fops);
+			debugfs_create_file("suppress_ceiling",
+					S_IRUGO | S_IWUSR | S_IWGRP,
+					fbt_debugfs_dir,
+					NULL,
+					&fbt_switch_ceiling_fops);
 		}
 	}
 
