@@ -2579,7 +2579,10 @@ void mtk_cpuidle_framework_init(void)
 
 	mtk_idle_gpt_init();
 
+#ifndef CONFIG_MACH_MT6759
 	dpidle_by_pass_pg = true;
+#endif
+
 	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
