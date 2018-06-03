@@ -192,6 +192,12 @@ extern UINT_32 g_au4IQData[256];
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+
+struct SUB_ELEMENT_LIST {
+	struct SUB_ELEMENT_LIST *prNext;
+	struct SUB_ELEMENT_T rSubIE;
+};
+
 #if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
 typedef struct _RLM_CAL_RESULT_ALL_V2_T {
 	/* Used for checking the Cal Data is damaged */
@@ -371,7 +377,8 @@ WLAN_STATUS rlmTriggerCalBackup(
 
 VOID rlmModifyVhtBwPara(PUINT_8 pucVhtChannelFrequencyS1, PUINT_8 pucVhtChannelFrequencyS2, PUINT_8 pucVhtChannelWidth);
 
-
+VOID rlmProcessNeighborReportResonse(P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen);
+VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, struct SUB_ELEMENT_LIST *prSubIEs);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

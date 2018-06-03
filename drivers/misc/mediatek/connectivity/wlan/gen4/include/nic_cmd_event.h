@@ -489,6 +489,8 @@ typedef enum _ENUM_CMD_ID_T {
 #endif
 	CMD_ID_SET_SUSPEND_MODE = 0x58,	/* 0x58 (Set) */
 
+	CMD_ID_REQ_CHNL_UTILIZATION = 0x5C, /* 0x5C (Get) */
+
 #if CFG_WOW_SUPPORT
 	CMD_ID_SET_PF_CAPAILITY = 0x59,	/* 0x59 (Set) */
 #endif
@@ -619,6 +621,8 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_GET_CHIPID,	/* 0x42 (Query - CMD_ID_GET_CHIPID) */
 	EVENT_ID_SLT_STATUS,	/* 0x43 (Query - CMD_ID_SET_SLTINFO) */
 	EVENT_ID_CHIP_CONFIG,	/* 0x44 (Query - CMD_ID_CHIP_CONFIG) */
+
+	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
 #if CFG_SUPPORT_QA_TOOL
 	EVENT_ID_ACCESS_RX_STAT,	/* 0x45 (Query - CMD_ID_ACCESS_RX_STAT) */
 #endif /* CFG_SUPPORT_QA_TOOL */
@@ -1835,7 +1839,8 @@ typedef struct _CMD_UPDATE_STA_RECORD_T {
 
 	UINT_8 ucTxBaSize;
 	UINT_8 ucRxBaSize;
-	UINT_8 aucReserved3[2];
+	UINT_8 ucKeepAliveDuration; /* unit is 1s */
+	UINT_8 ucKeepAliveOption; /* only bit0 is used now */
 
 	TXBF_PFMU_STA_INFO rTxBfPfmuInfo;
 
@@ -2845,6 +2850,23 @@ typedef struct _CMD_SUSPEND_MODE_SETTING_T {
 	UINT_8 ucReserved2[64];
 } CMD_SUSPEND_MODE_SETTING_T, *P_CMD_SUSPEND_MODE_SETTING_T;
 
+struct CMD_REQ_CHNL_UTILIZATION {
+	UINT_16 u2MeasureDuration;
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelList[48];
+	UINT_8 aucReserved[13];
+};
+
+struct EVENT_RSP_CHNL_UTILIZATION {
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelMeasureList[48];
+	UINT_8 aucReserved0[15];
+	UINT_8 aucChannelUtilization[48];
+	UINT_8 aucReserved1[16];
+	UINT_8 aucChannelBusyTime[48];
+	UINT_8 aucReserved2[16];
+};
+
 typedef struct _EVENT_UPDATE_COEX_PHYRATE_T {
 	UINT_8 ucVersion;
 	UINT_8 aucReserved1[3];    /* 4 byte alignment */
@@ -3025,7 +3047,7 @@ VOID nicEventAssertDump(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventHifCtrl(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventRddSendPulse(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventUpdateCoexPhyrate(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
-
+VOID nicEventRspChnlUtilization(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

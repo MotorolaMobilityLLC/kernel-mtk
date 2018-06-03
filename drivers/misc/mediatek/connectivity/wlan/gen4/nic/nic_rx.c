@@ -178,7 +178,8 @@ static RX_EVENT_HANDLER_T arEventTable[] = {
 #endif
 	{EVENT_ID_HIF_CTRL,			nicEventHifCtrl},
 	{EVENT_ID_RDD_SEND_PULSE,		nicEventRddSendPulse},
-	{EVENT_ID_UPDATE_COEX_PHYRATE,		nicEventUpdateCoexPhyrate}
+	{EVENT_ID_UPDATE_COEX_PHYRATE,		nicEventUpdateCoexPhyrate},
+	{EVENT_ID_RSP_CHNL_UTILIZATION,		nicEventRspChnlUtilization}
 };
 
 /*******************************************************************************
@@ -2431,7 +2432,15 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		rlmProcessVhtAction(prAdapter, prSwRfb);
 		break;
 #endif
-
+#if CFG_SUPPORT_802_11K
+	case CATEGORY_RM_ACTION:
+		switch (prActFrame->ucAction) {
+		case RM_ACTION_REIGHBOR_RESPONSE:
+			rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+			break;
+		}
+		break;
+#endif
 	default:
 		break;
 	}			/* end of switch case */
