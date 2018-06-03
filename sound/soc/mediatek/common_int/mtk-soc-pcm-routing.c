@@ -102,7 +102,8 @@ static const char *const DAC_DL_SINEGEN_SAMEPLRATE[] = {
 static int mDac_Sinegen_Amplitude = 6; /* "1/2" */
 static const char *const DAC_DL_SINEGEN_AMPLITUE[] = {
 	"1/128", "1/64", "1/32", "1/16", "1/8", "1/4", "1/2", "1"};
-static const char * const speaker_index[] = {"0", "1", "2", "3"};
+static const char *const spk_type_str[] = {"MTK_SPK_NOT_SMARTPA",
+					   "MTK_SPK_RICHTEK_RT5509"};
 
 static bool mEnableSideToneFilter;
 static const char *const ENABLESTF[] = {"Off", "On"};
@@ -721,33 +722,19 @@ static int Audio_AssignDRAM_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int speaker_amp_type_set(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol)
+static int spk_type_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("speaker_amp_index_set no support\n");
-	return 0;
-}
-
-static int speaker_amp_type_get(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol)
-{
-	int index = get_amp_index();
+	int index = mtk_spk_get_type();
 
 	pr_debug("speaker_amp_index_get = %d\n", index);
 	ucontrol->value.integer.value[0] = index;
 	return 0;
 }
 
-static const struct soc_enum speaker_amp_enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(speaker_index), speaker_index),
+static const struct soc_enum spk_type_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(spk_type_str), spk_type_str),
 };
-
-static const struct snd_kcontrol_new speaker_amp_controls[] = {
-	SOC_ENUM_EXT("speaker_amp_type_query",
-		     speaker_amp_enum[0], speaker_amp_type_get,
-		     speaker_amp_type_set),
-};
-
 
 static const struct soc_enum Audio_Routing_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_SINEGEN), DAC_DL_SINEGEN),
@@ -763,7 +750,7 @@ static const struct soc_enum Audio_Routing_Enum[] = {
 			    Audio_Debug_Setting),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_IPOH_State), Audio_IPOH_State),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_I2S1_Setting), Audio_I2S1_Setting),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(speaker_index), speaker_index),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(spk_type_str), spk_type_str),
 };
 
 static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
@@ -798,9 +785,8 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     audio_dpd_set),
 	SOC_SINGLE_EXT("Audio_Assign_DRAM", SND_SOC_NOPM, 0, 0x20000, 0,
 		       Audio_AssignDRAM_Get, Audio_AssignDRAM_Set),
-	SOC_ENUM_EXT("speaker_amp_type_query",
-		     Audio_Routing_Enum[9], speaker_amp_type_get,
-		     speaker_amp_type_set),
+	SOC_ENUM_EXT("MTK_SPK_TYPE_GET",
+		     Audio_Routing_Enum[9], spk_type_get, NULL),
 };
 
 void EnAble_Anc_Path(int state)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,26 +15,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *
- * Filename:
- * ---------
- *	mtk-soc-speaker-amp.c
- *
- * Project:
- * --------
- *	Speaker amp co-load function
- *
- * Description:
- * ------------
- *	Every speaker amp register in theis file
- *
- * Author:
- * -------
- *	Shane Chien
- *
- */
-
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -42,101 +22,130 @@
 #include <linux/i2c.h>
 /* alsa sound header */
 #include <sound/soc.h>
-#include <sound/tlv.h>
 #include <sound/pcm_params.h>
+
 #include "mtk-soc-speaker-amp.h"
 #if defined(CONFIG_SND_SOC_RT5509)
-#include <rt5509.h>
+#include "../../codecs/rt5509.h"
 #endif
 
-#define AMP_DEVICE_NAME		"speaker_amp"
-
-static int amp_index;
-static struct amp_i2c_control amp_list[AMP_TYPE_NUM] = {
+static unsigned int mtk_spk_type;
+static struct mtk_spk_i2c_ctrl mtk_spk_list[MTK_SPK_TYPE_NUM] = {
+	[MTK_SPK_NOT_SMARTPA] = {
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+	},
 #if defined(CONFIG_SND_SOC_RT5509)
-	[RICHTEK_RT5509] = {
+	[MTK_SPK_RICHTEK_RT5509] = {
 		.i2c_probe = rt5509_i2c_probe,
 		.i2c_remove = rt5509_i2c_remove,
 		.i2c_shutdown = rt5509_i2c_shutdown,
+		.codec_dai_name = "rt5509-aif1",
+		.codec_name = "RT5509_MT_0",
 	},
 #endif
 };
 
-static int speaker_amp_i2c_probe(struct i2c_client *client,
-				 const struct i2c_device_id *id)
+static int mtk_spk_i2c_probe(struct i2c_client *client,
+			     const struct i2c_device_id *id)
 {
 	int i, ret = 0;
 
-	pr_info("%s()\n", __func__);
+	dev_info(&client->dev, "%s()\n", __func__);
 
-	amp_index = NOT_SMARTPA;
-	for (i = 0; i < AMP_TYPE_NUM; i++) {
-		if (amp_list[i].i2c_probe == NULL)
+	mtk_spk_type = MTK_SPK_NOT_SMARTPA;
+	for (i = 0; i < MTK_SPK_TYPE_NUM; i++) {
+		if (!mtk_spk_list[i].i2c_probe)
 			continue;
 
-		ret = amp_list[i].i2c_probe(client, id);
-		if (ret < 0)
+		ret = mtk_spk_list[i].i2c_probe(client, id);
+		if (ret)
 			continue;
 
-		amp_index = i;
+		mtk_spk_type = i;
 		break;
 	}
+
+	return ret;
+}
+
+static int mtk_spk_i2c_remove(struct i2c_client *client)
+{
+	dev_info(&client->dev, "%s()\n", __func__);
+
+	if (mtk_spk_list[mtk_spk_type].i2c_remove)
+		mtk_spk_list[mtk_spk_type].i2c_remove(client);
+
 	return 0;
 }
 
-static int speaker_amp_i2c_remove(struct i2c_client *client)
+static void mtk_spk_i2c_shutdown(struct i2c_client *client)
 {
-	pr_info("%s()\n", __func__);
+	dev_info(&client->dev, "%s()\n", __func__);
 
-	if (amp_list[amp_index].i2c_remove != NULL)
-		amp_list[amp_index].i2c_remove(client);
+	if (mtk_spk_list[mtk_spk_type].i2c_shutdown)
+		mtk_spk_list[mtk_spk_type].i2c_shutdown(client);
+}
+
+int mtk_spk_get_type(void)
+{
+	return mtk_spk_type;
+}
+EXPORT_SYMBOL(mtk_spk_get_type);
+
+int mtk_spk_update_dai_link(struct snd_soc_dai_link *mtk_spk_dai_link,
+			    struct platform_device *pdev)
+{
+	struct snd_soc_dai_link *dai_link = mtk_spk_dai_link;
+
+	dev_info(&pdev->dev, "%s(), mtk_spk_type %d\n",
+		 __func__, mtk_spk_type);
+
+	/* update spk codec dai name and codec name */
+	dai_link[0].codec_dai_name =
+		mtk_spk_list[mtk_spk_type].codec_dai_name;
+	dai_link[0].codec_name =
+		mtk_spk_list[mtk_spk_type].codec_name;
+	dai_link[0].ignore_pmdown_time = 1;
+	dev_info(&pdev->dev,
+		 "%s(), %s, codec dai name = %s, codec name = %s\n",
+		 __func__, dai_link[0].name,
+		 dai_link[0].codec_dai_name,
+		 dai_link[0].codec_name);
 
 	return 0;
 }
+EXPORT_SYMBOL(mtk_spk_update_dai_link);
 
-static void speaker_amp_i2c_shutdown(struct i2c_client *client)
-{
-	pr_info("%s()\n", __func__);
 
-	if (amp_list[amp_index].i2c_shutdown != NULL)
-		amp_list[amp_index].i2c_shutdown(client);
-}
-
-int get_amp_index(void)
-{
-	return amp_index;
-}
-EXPORT_SYMBOL(get_amp_index);
-
-static const struct i2c_device_id speaker_amp_i2c_id[] = {
+static const struct i2c_device_id mtk_spk_i2c_id[] = {
 	{ "speaker_amp", 0},
 	{}
 };
-MODULE_DEVICE_TABLE(i2c, speaker_amp_i2c_id);
+MODULE_DEVICE_TABLE(i2c, mtk_spk_i2c_id);
 
 #ifdef CONFIG_OF
-static const struct of_device_id speaker_amp_match_table[] = {
+static const struct of_device_id mtk_spk_match_table[] = {
 	{.compatible = "mediatek,speaker_amp",},
 	{},
 };
-MODULE_DEVICE_TABLE(of, speaker_amp_match_table);
+MODULE_DEVICE_TABLE(of, mtk_spk_match_table);
 #endif /* #ifdef CONFIG_OF */
 
-static struct i2c_driver speaker_amp_i2c_driver = {
+static struct i2c_driver mtk_spk_i2c_driver = {
 	.driver = {
-		.name = AMP_DEVICE_NAME,
+		.name = "speaker_amp",
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(speaker_amp_match_table),
+		.of_match_table = of_match_ptr(mtk_spk_match_table),
 	},
-	.probe = speaker_amp_i2c_probe,
-	.remove = speaker_amp_i2c_remove,
-	.shutdown = speaker_amp_i2c_shutdown,
-	.id_table = speaker_amp_i2c_id,
+	.probe = mtk_spk_i2c_probe,
+	.remove = mtk_spk_i2c_remove,
+	.shutdown = mtk_spk_i2c_shutdown,
+	.id_table = mtk_spk_i2c_id,
 };
 
-module_i2c_driver(speaker_amp_i2c_driver);
+module_i2c_driver(mtk_spk_i2c_driver);
 
-
-MODULE_DESCRIPTION("speaker amp register driver");
-MODULE_LICENSE("GPL");
-
+MODULE_DESCRIPTION("Mediatek speaker amp register driver");
+MODULE_AUTHOR("Shane Chien <shane.chien@mediatek.com>");
+MODULE_LICENSE("GPL v2");
