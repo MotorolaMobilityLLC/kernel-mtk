@@ -640,7 +640,7 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 #endif
 
 	if (va && sg_table) {
-		M4UMSG("%s, va or sg_table are both valid: va=0x%lx, sg=0x%p\n", __func__,
+		M4ULOG_MID("%s, va or sg_table are both valid: va=0x%lx, sg=0x%p\n", __func__,
 		       va, sg_table);
 	}
 
