@@ -876,7 +876,8 @@ int ccu_power(struct ccu_power_s *power)
 		/*Pause CCU, but don't pullup CG*/
 
 		/*Check CCU halt status*/
-		while ((ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT) == 0) && timeout > 0) {
+		while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2)
+										&& (timeout >= 0)) {
 			mdelay(1);
 			LOG_DBG("wait ccu halt done\n");
 			LOG_DBG("ccu halt stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
