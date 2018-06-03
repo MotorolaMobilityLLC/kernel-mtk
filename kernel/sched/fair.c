@@ -684,7 +684,7 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 
 #ifdef CONFIG_SMP
 static int select_idle_sibling(struct task_struct *p, int cpu);
-static int find_best_idle_cpu(struct task_struct *p, int target);
+static inline int find_best_idle_cpu(struct task_struct *p, bool prefer_idle);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
 static unsigned long task_h_load(struct task_struct *p);
 
@@ -5993,10 +5993,16 @@ CONSIDER_EAS:
 		}
 		else if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
 			if (true) {
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+				bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+				bool prefer_idle = true;
+#endif
 				int idle_cpu;
 
-				idle_cpu = find_best_idle_cpu(p, new_cpu);
-				if (idle_cpu < nr_cpu_ids) {
+
+				idle_cpu = find_best_idle_cpu(p, prefer_idle);
+				if (idle_cpu >= 0) {
 					new_cpu = idle_cpu;
 					policy |= LB_IDLEST;
 				} else {
@@ -6052,6 +6058,14 @@ CONSIDER_EAS:
 	/*  Consider hmp if no EAS  or over-utiled in hybrid mode. */
 	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
 		(hybrid_support() && cpu_rq(cpu)->rd->overutilized)) {
+
+		/* consider idle prefer to improve latency in HMP. */
+		if (idle_cpu(new_cpu)) {
+#ifdef CONFIG_MTK_SCHED_TRACERS
+			trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
+#endif
+			return new_cpu;
+		}
 
 		new_cpu = hmp_select_task_rq_fair(sd_flag, p, prev_cpu, new_cpu);
 #ifdef CONFIG_MTK_SCHED_TRACERS
@@ -9589,50 +9603,40 @@ __init void init_sched_fair_class(void)
 
 /*
  * @p: the task want to be located at.
- * @prev_cpu: last cpu p located at.
  *
  * Return:
  *
  * cpu id or
- * nr_cpu_ids if target CPU is not found
+ * -1 if target CPU is not found
  */
-static
-int find_best_idle_cpu(struct task_struct *p, int target)
+static inline
+int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 {
-	struct cpumask allowed_mask;
-	struct cpumask cls_cpus;
-	int cid = arch_get_cluster_id(target); /* cid of target CPU */
-	int cpu = task_cpu(p);
+	int iter_cpu;
+	int best_idle_cpu = -1;
 
-	/* idle prefer */
-	if (idle_cpu(target))
-		return target;
+	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
+		/* foreground task prefer idle to find bigger idle cpu */
+		int i = (prefer_idle && (task_util(p) > stune_task_threshold)) ?
+				nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
-	/* If the prevous cpu is cache affine and idle, choose it first. */
-	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
-		return cpu;
-
-	/* then, find a idle CPU in cluster */
-	arch_get_cluster_cpus(&cls_cpus, cid);
-	for_each_cpu_and(cpu, tsk_cpus_allowed(p), &cls_cpus) {
-
-		if (!cpu_online(cpu))
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allowed(p)))
 			continue;
 
-		if (idle_cpu(cpu))
-			return cpu;
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		if (cpu_rq(i)->rt.rt_nr_running && likely(!is_rt_throttle(i)))
+			continue;
+#endif
+
+		/* favoring tasks that prefer idle cpus to improve latency. */
+		if (idle_cpu(i)) {
+			best_idle_cpu = i;
+			break;
+		}
 	}
 
-	/* other, find idle CPU in ALL cpus */
-	cpumask_and(&allowed_mask, cpu_online_mask, tsk_cpus_allowed(p));
-	for_each_cpu(cpu, &allowed_mask) {
-
-		if (idle_cpu(cpu))
-			return cpu;
-	}
-
-	/* no idle CPU */
-	return nr_cpu_ids;
+	return best_idle_cpu;
 }
 
 /* To find a CPU with max spare capacity in the same cluster with target */
