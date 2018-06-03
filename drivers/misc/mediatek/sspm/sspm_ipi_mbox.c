@@ -44,6 +44,23 @@ u64 ipi_t5[IPI_TS_TEST_MAX];
 static int test_cnt;
 #endif
 
+#define IPI_MONITOR
+#ifdef IPI_MONITOR
+#define IPI_MONITOR_TIMESTAMP
+struct ipi_monitor {
+	unsigned int has_time: 1,    /* 0: has no timestamp of t1/t2/t3 otherwise 1*/
+				 state   : 2,    /* 0: no IPI, 1: t1 finished, 2: t2 finished, 3: t3 finished */
+				 seqno   : 29;   /* count of the IPI pin used */
+#ifdef IPI_MONITOR_TIMESTAMP
+	unsigned long long t0;
+	unsigned long long t4;
+	unsigned long long t5;
+#endif /* IPI_MONITOR_TIMESTAMP */
+};
+static struct ipi_monitor ipimon[IPI_ID_TOTAL];
+static int ipi_last;
+#endif
+
 atomic_t lock_send[TOTAL_SEND_PIN];
 atomic_t lock_ack[TOTAL_SEND_PIN];
 spinlock_t lock_polling[TOTAL_SEND_PIN];
@@ -67,6 +84,11 @@ int sspm_ipi_init(void)
 		atomic_set(&lock_ack[i], 0);
 		spin_lock_init(&lock_polling[i]);
 	}
+
+#ifdef IPI_MONITOR_TIMESTAMP
+	for (i = 0; i < IPI_ID_TOTAL; i++)
+		ipimon[i].has_time = 1;
+#endif
 
 	/* IPI HW initialize and ISR registration */
 	if (sspm_mbox_init(IPI_MBOX_MODE, IPI_MBOX_TOTAL, ipi_isr_cb) != 0) {
@@ -147,7 +169,13 @@ static void ipi_do_ack(struct _mbox_info *mbox, unsigned int in_irq, void __iome
 #ifdef GET_IPI_TIMESTAMP
 			if ((i == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX))
 				ipi_t4[test_cnt] = cpu_clock(0);
-#endif
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+#ifdef IPI_MONITOR_TIMESTAMP
+			ipimon[i].t4 = cpu_clock(0);
+#endif /* IPI_MONITOR_TIMESTAMP */
+			ipimon[i].state = 2;
+#endif /* IPI_MONITOR */
 
 			if (pin->retdata)
 				pin->prdata = (uint32_t *)(base + ((pin->slot) * MBOX_SLOT_SIZE));
@@ -261,12 +289,20 @@ int sspm_ipi_send_async(int mid, int opts, void *buffer, int len)
 #ifdef SSPM_STF_ENABLED
 	if (test_table[mid].data)
 		test_table[mid].start_us = (unsigned int)(cpu_clock(0)/1000);
-#endif
-
+#endif /* SSPM_STF_ENABLED */
 #ifdef GET_IPI_TIMESTAMP
 	if ((mid == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX))
 		ipi_t0[test_cnt] = cpu_clock(0);
-#endif
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+	ipimon[mid].seqno++;
+#ifdef IPI_MONITOR_TIMESTAMP
+	ipimon[mid].t0 = cpu_clock(0);
+	ipimon[mid].t4 = 0;
+	ipimon[mid].t5 = 0;
+#endif /* IPI_MONITOR_TIMESTAMP */
+	ipimon[mid].state = 1;
+#endif /* IPI_MONITOR */
 
 	pin = &(send_pintable[mid]);
 	if (len > pin->size)
@@ -423,8 +459,7 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 			pdata[cnt].ack_data_feedback = 0;
 		test_table[mid].test_cnt++;
 	}
-#endif
-
+#endif /* SSPM_STF_ENABLED */
 #ifdef GET_IPI_TIMESTAMP
 	if ((mid == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX)) {
 		ipi_t5[test_cnt] = cpu_clock(0);
@@ -438,7 +473,31 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 				   i, ipi_t0[i], ipi_t4[i], ipi_t5[i]);
 		test_cnt = 0;
 	}
-#endif
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+	if (ret == 0) {
+#ifdef IPI_MONITOR_TIMESTAMP
+		ipimon[mid].t5 = cpu_clock(0);
+#endif /* IPI_MONITOR_TIMESTAMP */
+		ipimon[mid].state = 3;
+		ipi_last = mid;
+	} else {
+		int i;
+
+		pr_err("Error: IPI (total=%d, lastOK=%d) pinID=%d mode=%d timeout\n",
+			   IPI_ID_TOTAL, ipi_last, mid, opts);
+		for (i = 0; i < IPI_ID_TOTAL; i++) {
+#ifdef IPI_MONITOR_TIMESTAMP
+			pr_err("IPI %d: seqno=%d, state=%d, t0=%lld, t4=%lld, t5=%lld\n",
+				   i, ipimon[i].seqno, ipimon[i].state,
+	   ipimon[i].t0, ipimon[i].t4, ipimon[i].t5);
+#else
+			pr_err("IPI %d: seqno=%d, state=%d\n",
+				   i, ipimon[i].seqno, ipimon[i].state);
+#endif /* IPI_MONITOR_TIMESTAMP */
+		}
+	}
+#endif /* IPI_MONITOR */
 
 	return ret;
 }
@@ -502,6 +561,24 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int len,
 	if ((len > pin->size) || (retlen > pin->size))
 		return IPI_NO_MEMORY;
 
+#ifdef SSPM_STF_ENABLED
+	if (test_table[mid].data)
+		test_table[mid].start_us = (unsigned int)(cpu_clock(0)/1000);
+#endif /* SSPM_STF_ENABLED */
+#ifdef GET_IPI_TIMESTAMP
+	if ((mid == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX))
+		ipi_t0[test_cnt] = cpu_clock(0);
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+	ipimon[mid].seqno++;
+#ifdef IPI_MONITOR_TIMESTAMP
+	ipimon[mid].t0 = cpu_clock(0);
+	ipimon[mid].t4 = 0;
+	ipimon[mid].t5 = 0;
+#endif /* IPI_MONITOR_TIMESTAMP */
+	ipimon[mid].state = 1;
+#endif /* IPI_MONITOR */
+
 	/* check if IPI can be send in different mode */
 	if (opts&IPI_OPT_POLLING) {  /* POLLING mode */
 
@@ -512,6 +589,7 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int len,
 			pr_err("Warning: IPI pin=%d has been used in WAIT mode\n", mid);
 			return IPI_USED_IN_WAIT;
 		}
+
 	} else {                       /* WAIT mode */
 		/* Check if users call in atomic/interrupt/IRQ disabled */
 		if (preempt_count() || in_interrupt() || irqs_disabled()) {
@@ -563,6 +641,58 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int len,
 		}
 		mutex_unlock(&pin->mutex_send);
 	}
+
+#ifdef SSPM_STF_ENABLED
+	if (test_table[mid].data) {
+		struct chk_data *pdata = test_table[mid].data;
+		int cnt = test_table[mid].test_cnt;
+
+		pdata[cnt].time_spent = ((unsigned int)(cpu_clock(0)/1000) - test_table[mid].start_us);
+		if (retbuf)
+			pdata[cnt].ack_data_feedback = *((unsigned int *)retbuf);
+		else
+			pdata[cnt].ack_data_feedback = 0;
+		test_table[mid].test_cnt++;
+	}
+#endif /* SSPM_STF_ENABLED */
+#ifdef GET_IPI_TIMESTAMP
+	if ((mid == IPI_TS_TEST_PIN) && (test_cnt < IPI_TS_TEST_MAX)) {
+		ipi_t5[test_cnt] = cpu_clock(0);
+		test_cnt++;
+	}
+	if (test_cnt >= IPI_TS_TEST_MAX) {
+		int i;
+
+		for (i = 0; i < IPI_TS_TEST_MAX; i++)
+			pr_err("IPI %d: t0=%llu, t4=%llu, t5=%llu\n",
+				   i, ipi_t0[i], ipi_t4[i], ipi_t5[i]);
+		test_cnt = 0;
+	}
+#endif /* GET_IPI_TIMESTAMP */
+#ifdef IPI_MONITOR
+	if (ret == 0) {
+#ifdef IPI_MONITOR_TIMESTAMP
+		ipimon[mid].t5 = cpu_clock(0);
+#endif /* IPI_MONITOR_TIMESTAMP */
+		ipimon[mid].state = 3;
+		ipi_last = mid;
+	} else {
+		int i;
+
+		pr_err("Error: IPI (total=%d, lastOK=%d) pinID=%d mode=%d timeout\n",
+			   IPI_ID_TOTAL, ipi_last, mid, opts);
+		for (i = 0; i < IPI_ID_TOTAL; i++) {
+#ifdef IPI_MONITOR_TIMESTAMP
+			pr_err("IPI %d: seqno=%d, state=%d, t0=%lld, t4=%lld, t5=%lld\n",
+					i, ipimon[i].seqno, ipimon[i].state,
+					ipimon[i].t0, ipimon[i].t4, ipimon[i].t5);
+#else
+			pr_err("IPI %d: seqno=%d, state=%d\n",
+					i, ipimon[i].seqno, ipimon[i].state);
+#endif /* IPI_MONITOR_TIMESTAMP */
+		}
+	}
+#endif /* IPI_MONITOR */
 
 	return ret;
 }
