@@ -648,7 +648,8 @@ struct ResourceUnitStruct {
 	CMDQ_TIME delay;			/* delay start time from module release*/
 	CMDQ_TIME acquire;		/* acquire time from module acquire */
 	CMDQ_TIME release;		/* release time from module release */
-	bool used;				/* indicate resource is in use or not */
+	bool used;				/* indicate resource is in use by owner or not */
+	bool lend;				/* indicate resource is lend by client or not */
 	bool delaying;			/* indicate resource is in delay check or not */
 	enum CMDQ_EVENT_ENUM lockEvent;	/* SW token to lock in GCE thread */
 	uint64_t engine;			/* which engine is resource */
