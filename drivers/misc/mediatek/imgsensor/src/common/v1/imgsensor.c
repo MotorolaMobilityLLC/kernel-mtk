@@ -1425,6 +1425,13 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 		kal_uint32 *pReg = NULL;
 
+		/* buffer size exam */
+		if ((u4RegLen * sizeof(kal_uint8)) > FEATURE_CONTROL_MAX_DATA_SIZE) {
+			kfree(pFeaturePara);
+			PK_PR_ERR(" buffer size (%u) is too large\n", u4RegLen);
+			return -EINVAL;
+		}
+
 		pReg = kmalloc_array(u4RegLen, sizeof(kal_uint8), GFP_KERNEL);
 		if (pReg == NULL) {
 			kfree(pFeaturePara);
@@ -1618,6 +1625,15 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		char *pPdaf_data = NULL;
 		unsigned long long *pFeaturePara_64 = (unsigned long long *) pFeaturePara;
 		void *usr_ptr = (void *)(uintptr_t)(*(pFeaturePara_64 + 1));
+		kal_uint32 buf_sz = (kal_uint32) (*(pFeaturePara_64 + 2));
+
+		/* buffer size exam */
+		if (buf_sz > PDAF_DATA_SIZE) {
+			kfree(pFeaturePara);
+			PK_PR_ERR(" buffer size (%u) can't larger than %d bytes\n",
+				  buf_sz, PDAF_DATA_SIZE);
+			return -EINVAL;
+		}
 
 		pPdaf_data = kmalloc(sizeof(char) * PDAF_DATA_SIZE, GFP_KERNEL);
 		if (pPdaf_data == NULL) {
@@ -1638,7 +1654,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 		if (copy_to_user((void __user *)usr_ptr,
 							(void *)pPdaf_data,
-							(kal_uint32) (*(pFeaturePara_64 + 2)))) {
+							buf_sz)) {
 			PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail\n");
 		}
 		kfree(pPdaf_data);
