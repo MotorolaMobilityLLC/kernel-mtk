@@ -19,6 +19,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 # Include clkbuf header mtk_clkbuf_ctl.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/
+# Include soc header mtk-soc-afe-control.h
+ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
+ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/common_int/
+endif
 
 obj-y += mtk_idle.o
 obj-y += mtk_idle_select.o

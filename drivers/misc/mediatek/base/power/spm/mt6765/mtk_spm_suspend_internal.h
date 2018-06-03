@@ -79,6 +79,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
 extern void mt_eint_print_status(void);
 #endif
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_spm_suspend_val(u32 val);
+#endif
+
 extern int request_uart_to_sleep(void);
 extern int request_uart_to_wakeup(void);
 extern void mtk_uart_restore(void);
