@@ -35,8 +35,8 @@
 
 #define GPIOTAG                 "[GPIO] "
 #define GPIOLOG(fmt, arg...)    pr_debug(GPIOTAG fmt, ##arg)
-#define GPIOMSG(fmt, arg...)    pr_warn(fmt, ##arg)
-#define GPIOERR(fmt, arg...)    pr_err(GPIOTAG "%5d: " fmt, __LINE__, ##arg)
+#define GPIOMSG(fmt, arg...)    pr_info(fmt, ##arg)
+#define GPIOERR(fmt, arg...)    pr_notice(GPIOTAG "%5d: " fmt, __LINE__, ##arg)
 #define GPIOFUC(fmt, arg...)	/* printk(GPIOTAG "%s\n", __FUNCTION__) */
 /*----------------------------------------------------------------------------*/
 /* Error Code No. */
@@ -68,7 +68,7 @@ enum {
 	} else if ((pin >= 0) && (pin < 200)) {\
 		ret = -1;\
 		GPIOFUC("pin in ext is %d\n", (int)pin);\
-	} else{\
+	} else {\
 		GPIOERR("Pin number error %d\n", (int)pin);	\
 		ret = -1;\
 	} \
@@ -84,30 +84,13 @@ enum {
 	} else if ((pin >= MT_GPIO_EXT_START) && (pin < MT_GPIO_EXT_MAX)) {\
 		ret = MT_EXT;\
 		GPIOFUC("pin in ext is %d\n", (int)pin);\
-	} else{\
+	} else {\
 		GPIOERR("Pin number error %d\n", (int)pin);	\
 		ret = -1;\
 	} \
 	ret; })
 
 #endif
-/* int where_is(unsigned long pin) */
-/* { */
-/* int ret = -1; */
-/* //    GPIOLOG("pin is %d\n",pin); */
-/* if((pin >= MT_GPIO_BASE_START) && (pin < MT_GPIO_BASE_MAX)){ */
-/* ret = MT_BASE; */
-/* //GPIOLOG("pin in base is %d\n",pin); */
-/* }else if((pin >= MT_GPIO_EXT_START) && (pin < MT_GPIO_EXT_MAX)){ */
-/* ret = MT_EXT; */
-/* //GPIOLOG("pin in ext is %d\n",pin); */
-/* }else{ */
-/* GPIOERR("Pin number error %d\n",pin); */
-/* ret = -1; */
-/* } */
-/* return ret; */
-/* } */
-/*decrypt pin*/
 
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_dir_base(unsigned long pin, unsigned long dir);

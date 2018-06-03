@@ -25,7 +25,8 @@ static struct mutex sim_gpio_lock;
 /***************** MACRO Definition******************************/
 #define MT6306_GPIOTAG                "[MT6306_GPIO] "
 #define MT6306_GPIOLOG(fmt, arg...)   pr_debug(MT6306_GPIOTAG fmt, ##arg)
-#define MT6306_GPIOMSG(fmt, arg...)   pr_warn(MT6306_GPIOTAG fmt, ##arg)
+#define MT6306_GPIOMSG(fmt, arg...)   pr_info(MT6306_GPIOTAG fmt, ##arg)
+#define MT6306_GPIOERR(fmt, arg...)   pr_notice(MT6306_GPIOTAG fmt, ##arg)
 /*----------------------------------------------------------------------------*/
 static struct i2c_client *mt6306_i2c_client;
 static const struct i2c_device_id mt6306_i2c_id[] = { {"mt6306", 0}, {} };
@@ -401,7 +402,7 @@ static int __init mt6306_gpio_driver_init(void)
 /*    i2c_register_board_info(MT6306_I2C_NUMBER, &i2c_6306, 1);*/
 
 	if (i2c_add_driver(&mt6306_i2c_driver) != 0) {
-		MT6306_GPIOMSG("mt6306_i2c_driver initialization failed!!\n");
+		MT6306_GPIOERR("mt6306_i2c_driver initialization failed!!\n");
 		return -1;
 	}
 	MT6306_GPIOMSG("mt6306_i2c_driver initialization succeed!!\n");
