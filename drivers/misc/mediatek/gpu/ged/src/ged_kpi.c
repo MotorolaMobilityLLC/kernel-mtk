@@ -246,7 +246,7 @@ static int gx_3D_benchmark_on;
 #ifdef GED_KPI_CPU_BOOST
 static int gx_force_cpu_boost;
 static int gx_top_app_pid;
-static int enable_game_self_frc_detect = 1;
+static int enable_game_self_frc_detect;
 #endif
 static unsigned int gx_fps;
 static unsigned int gx_cpu_time_avg;
