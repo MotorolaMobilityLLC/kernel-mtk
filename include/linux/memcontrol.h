@@ -379,6 +379,9 @@ static inline bool mem_cgroup_lruvec_online(struct lruvec *lruvec)
 	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
 	memcg = mz->memcg;
 
+	if (unlikely(!memcg))
+		return true;
+
 	return !!(memcg->css.flags & CSS_ONLINE);
 }
 
