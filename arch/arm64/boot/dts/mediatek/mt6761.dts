@@ -225,6 +225,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "microtrust,tester-v1";
 	};
 
+	/* ATF logger SW IRQ number 110 = 32 + 78 */
+	atf_logger {
+		compatible = "mediatek,atf_logger";
+		interrupts = <GIC_SPI 78 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	gic: interrupt-controller@0c000000 {
 		compatible = "arm,gic-v3";
 		#interrupt-cells = <3>;
