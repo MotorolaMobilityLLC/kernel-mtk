@@ -199,7 +199,11 @@ static ssize_t st21nfc_dev_read(struct file *filp, char __user *buf,
 	    || ((pinlev == 0)
 		&& (st21nfc_dev->platform_data.active_polarity == 1))) {
 		pr_info("%s : read called but no IRQ.\n", __func__);
-		return -EIO;
+		memset(tmp, 0x7E, count);
+		ret = copy_to_user(buf, tmp, count);
+		if (ret < 0)
+			return -EIO;
+		return count;
 	}
 
 	mutex_lock(&st21nfc_dev->platform_data.read_mutex);
