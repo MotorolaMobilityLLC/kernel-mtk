@@ -34,6 +34,7 @@ enum ipi_msg_id_call_t {
 
 	/* device environment info, 0xAD1-  */
 	IPI_MSG_A2D_TASK_CFG = IPI_MSG_A2D_BASE + 0x10,
+	IPI_MSG_A2D_LIB_CFG,
 	IPI_MSG_A2D_SPH_PARAM,
 
 	/* function control, 0xAD2-*/
