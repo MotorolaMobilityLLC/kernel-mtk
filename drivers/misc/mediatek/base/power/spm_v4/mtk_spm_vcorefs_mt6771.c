@@ -640,7 +640,7 @@ static void dvfsrc_init(void)
 	}
 
 	spm_write(DVFSRC_RSRV_1, 0x0000001C);
-	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000028);
+	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000013);
 	spm_write(DVFSRC_INT_EN, 0x2);
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
