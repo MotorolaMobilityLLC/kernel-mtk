@@ -42,11 +42,6 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 		.name = __stringify(EEM_CTRL_CCI),
 		.det_id = EEM_DET_CCI,
 	},
-
-	[EEM_CTRL_GPU] = {
-		.name = __stringify(EEM_CTRL_GPU),
-		.det_id = EEM_DET_GPU,
-	},
 };
 
 #define BASE_OP(fn)	.fn = base_ops_ ## fn
@@ -170,37 +165,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.DCCONFIG	= DCCONFIG_VAL,
 #if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_CCI,
-#endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
-	},
-
-	[EEM_DET_GPU] = {
-		.name		= __stringify(EEM_DET_GPU),
-		.ops		= &gpu_det_ops,
-#ifdef EEM_OFFSET_PROC_SHOW
-		.volt_offset	= 0,
-#endif
-		.ctrl_id	= EEM_CTRL_GPU,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 680000, /* Normal, Pochao */
-		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
-		.VMAX		= VMAX_VAL_GPU,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step	= EEM_STEP,
-		.pmic_base	= GPU_PMIC_BASE,
-		.pmic_step	= GPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL_GPU,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-#if ENABLE_EEMCTL0
-		.EEMCTL0	= EEM_CTL0_GPU,
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
