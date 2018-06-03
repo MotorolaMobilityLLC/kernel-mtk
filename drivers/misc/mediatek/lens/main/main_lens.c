@@ -132,7 +132,16 @@ void AF_PowerDown(void)
 		AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
 		AK7371AF_PowerDown();
 		#endif
+
+		if (strcmp(CONFIG_MTK_PLATFORM, "mt6758") == 0) {
+			AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			AK7371AF_PowerDown();
+
+			BU63169AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			BU63169AF_PowerDown();
+		}
 	}
+	MAIN2AF_PowerDown();
 }
 EXPORT_SYMBOL(AF_PowerDown);
 

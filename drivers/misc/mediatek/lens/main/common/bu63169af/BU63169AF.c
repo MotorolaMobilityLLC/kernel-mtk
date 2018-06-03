@@ -122,6 +122,36 @@ static int s4AK7372AF_WriteReg(unsigned short a_u2Addr, unsigned short a_u2Data)
 	return 0;
 }
 
+static int s4AK7372AF_ReadReg(u8 a_uAddr, u16 *a_pu2Result)
+{
+	int i4RetValue = 0;
+	char pBuff;
+	char puSendCmd[1];
+
+	puSendCmd[0] = a_uAddr;
+
+	g_pstAF_I2Cclient->addr = AK7372AF_I2C_SLAVE_ADDR;
+
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 1);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C read - send failed!!\n");
+		return -1;
+	}
+
+	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, &pBuff, 1);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C read - recv failed!!\n");
+		return -1;
+	}
+	*a_pu2Result = pBuff;
+
+	return 0;
+}
+
 static inline int setAK7372AFPos(unsigned long a_u4Position)
 {
 	int i4RetValue = 0;
@@ -426,6 +456,35 @@ int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 
 	LOG_INF("End\n");
+
+	return 0;
+}
+
+int BU63169AF_PowerDown(void)
+{
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+		unsigned short data = 0;
+		int cnt = 0;
+
+		while (1) {
+			data = 0;
+
+			s4AK7372AF_WriteReg(0x02, 0x20);
+
+			s4AK7372AF_ReadReg(0x02, &data);
+
+			LOG_INF("Addr : 0x02 , Data : %x\n", data);
+
+			OIS_Standby();
+
+			if (data == 0x20 || cnt == 1)
+				break;
+
+			cnt++;
+		}
+	}
+	LOG_INF("-\n");
 
 	return 0;
 }

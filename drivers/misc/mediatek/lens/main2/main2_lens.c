@@ -66,7 +66,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
-#define LOG_INF(format, args...) pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -95,6 +95,18 @@ static struct device *lens_device;
 static struct regulator *regVCAMAF;
 static int g_regVCAMAFEn;
 #endif
+
+void MAIN2AF_PowerDown(void)
+{
+	if (g_pstAF_I2Cclient != NULL) {
+		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
+
+		if (strcmp(CONFIG_MTK_PLATFORM, "mt6758") == 0) {
+			AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			AK7371AF_PowerDown();
+		}
+	}
+}
 
 static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 {

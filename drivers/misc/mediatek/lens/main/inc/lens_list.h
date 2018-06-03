@@ -15,6 +15,8 @@
 
 #define _LENS_LIST_H
 
+extern void MAIN2AF_PowerDown(void);
+
 #define AK7371AF_SetI2Cclient AK7371AF_SetI2Cclient_Main
 #define AK7371AF_Ioctl AK7371AF_Ioctl_Main
 #define AK7371AF_Release AK7371AF_Release_Main
@@ -49,9 +51,11 @@ extern int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #define BU63169AF_SetI2Cclient BU63169AF_SetI2Cclient_Main
 #define BU63169AF_Ioctl BU63169AF_Ioctl_Main
 #define BU63169AF_Release BU63169AF_Release_Main
+#define BU63169AF_PowerDown BU63169AF_PowerDown_Main
 extern int BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int BU63169AF_PowerDown(void);
 #endif
 
 #define DW9714AF_SetI2Cclient DW9714AF_SetI2Cclient_Main
