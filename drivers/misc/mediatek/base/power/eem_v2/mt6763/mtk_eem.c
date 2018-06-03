@@ -319,7 +319,7 @@ unsigned int eem_vcore_index[VCORE_NR_FREQ] = {0};
 /* static unsigned int eem_chip_ver;*/
 static int eem_log_en;
 static unsigned int eem_checkEfuse = 1;
-/* static unsigned int informGpuEEMisReady;*/
+static unsigned int informEEMisReady;
 
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
@@ -3019,8 +3019,6 @@ void eem_init01(void)
 	/* mt_fh_popod_restore(); */
 	#endif
 
-	/* informGpuEEMisReady = 1;*/
-
 	/* This patch is waiting for whole bank finish the init01 then go
 	 * next. Due to LL/L use same bulk PMIC, LL voltage table change
 	 * will impact L to process init01 stage, because L require a
@@ -4424,14 +4422,10 @@ unsigned int get_efuse_status(void)
 	return eem_checkEfuse;
 }
 
-
-#if 0 /* gpu dvfs no need this anymore */
-unsigned int get_eem_status_for_gpu(void)
+unsigned int mt_eem_is_enabled(void)
 {
-	/* return informGpuEEMisReady;*/
-	return 0;
+	return informEEMisReady;
 }
-#endif
 
 #ifdef __KERNEL__
 #if 0
@@ -4508,11 +4502,11 @@ int __init eem_init(void)
 	#endif
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
 	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0) {
-		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
 	}
+	informEEMisReady = 1;
 
 	#if ITurbo
 	/* Read E-Fuse to control ITurbo mode */
@@ -5593,8 +5587,6 @@ static void eem_init_postprocess(void)
 	/* enable frequency hopping (main PLL) */
 	/* mt_fh_popod_restore(); */
 	#endif /* ifdef __KERNEL__ */
-	/* must be set after gpu dvfs is enabled */
-	/* informGpuEEMisReady = 1; */
 	ptp_data[0] = 0;
 }
 
@@ -5765,7 +5757,6 @@ static int __init eem_init(void)
 	/* use eem_disable to decide what procfs to create */
 	if (eem_disable > 0 || eem_checkEfuse == 0) {
 		eem_error("EEM disabled\n");
-		/* informGpuEEMisReady = 1;*/
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
 	}
