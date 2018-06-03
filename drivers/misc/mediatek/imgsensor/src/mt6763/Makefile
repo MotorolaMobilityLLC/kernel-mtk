@@ -38,8 +38,8 @@ obj-y				+= imgsensor_i2c.o
 obj-y				+= imgsensor_legacy.o
 obj-y				+= imgsensor_proc.o
 obj-y				+= imgsensor_clk.o
-obj-y				+= imgsensor_custom.o
-obj-y				+= kd_sensorlist.o
+obj-y				+= imgsensor_cfg_table.o
+obj-y				+= imgsensor_sensor_list.o
 
 #$(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
 

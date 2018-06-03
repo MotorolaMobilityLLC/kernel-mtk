@@ -11,11 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __IMGSENSOR_HW_H__
-#define __IMGSENSOR_HW_H__
+#ifndef __IMGSENSOR_PWR_CTRL_H__
+#define __IMGSENSOR_PWR_CTRL_H__
 
 #include "imgsensor_sensor.h"
-#include "imgsensor_custom.h"
+#include "imgsensor_cfg_table.h"
 #include "imgsensor_common.h"
 
 enum IMGSENSOR_HW_POWER_STATUS {

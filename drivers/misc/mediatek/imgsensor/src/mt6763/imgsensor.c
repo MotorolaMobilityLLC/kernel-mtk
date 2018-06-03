@@ -22,10 +22,10 @@
 #include <linux/init.h>
 #include <linux/types.h>
 
-
 #ifdef CONFIG_MTK_SMI_EXT
 #include "mmdvfs_mgr.h"
 #endif
+
 #ifdef CONFIG_OF
 /* device tree */
 #include <linux/of.h>
@@ -41,14 +41,14 @@
 #include "ccu_inc.h"
 #endif
 
-#include "imgsensor_custom.h"
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
 #include "kd_imgsensor_errcode.h"
-#include "kd_sensorlist.h"
 
+#include "imgsensor_cfg_table.h"
+#include "imgsensor_sensor_list.h"
 #include "imgsensor_hw.h"
 #include "imgsensor_i2c.h"
 #include "imgsensor_proc.h"

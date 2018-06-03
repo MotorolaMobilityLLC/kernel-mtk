@@ -46,6 +46,8 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
+#include "imgsensor_legacy.h"
+
 #include "imx338mipi_Sensor.h"
 
 /****************************Modify Following Strings for Debug****************************/
@@ -3878,7 +3880,7 @@ static kal_uint32 get_sensor_temperature(void)
 	else
 		temperature_convert = (INT8)temperature;
 
-	/* LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature); */
+	 LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature);
 
 	return temperature_convert;
 }
@@ -4124,5 +4126,8 @@ UINT32 IMX338_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
     /* To Do : Check Sensor status here */
     if (pfFunc!=NULL)
         *pfFunc=&sensor_func;
+
+	imgsensor_legacy_init(&sensor_func);
+
     return ERROR_NONE;
 }    /*    IMX230_MIPI_RAW_SensorInit    */

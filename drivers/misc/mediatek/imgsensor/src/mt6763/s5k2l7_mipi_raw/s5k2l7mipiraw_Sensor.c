@@ -48,6 +48,8 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
+#include "imgsensor_legacy.h"
+
 #include "s5k2l7mipiraw_Sensor.h"
 #include "s5k2l7_setting.h"
 
@@ -2023,5 +2025,8 @@ UINT32 S5K2L7_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
+
+	imgsensor_legacy_init(&sensor_func);
+
 	return ERROR_NONE;
 }				/*    s5k2l7_MIPI_RAW_SensorInit        */

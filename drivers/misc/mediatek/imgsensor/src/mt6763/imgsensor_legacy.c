@@ -22,52 +22,39 @@ void kdSetI2CSpeed(u16 i2cSpeed)
 
 }
 
-int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
-{
-	return imgsensor_i2c_read(pgi2c_cfg_legacy, a_pSendData, a_sizeSendData, a_pRecvData, a_sizeRecvData, i2cId, IMGSENSOR_I2C_SPEED);
-}
-
 int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId, u16 timing)
 {
-	return imgsensor_i2c_read(pgi2c_cfg_legacy, a_pSendData, a_sizeSendData, a_pRecvData, a_sizeRecvData, i2cId, timing * 1000);
-}
-
-int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
-{
-	return imgsensor_i2c_write(pgi2c_cfg_legacy, a_pSendData, a_sizeSendData, a_sizeSendData, i2cId, IMGSENSOR_I2C_SPEED);
-}
-
-int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing)
-{
-	return imgsensor_i2c_write(pgi2c_cfg_legacy, a_pSendData, a_sizeSendData, a_sizeSendData, i2cId, timing * 1000);
-}
-
-int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
-{
-	return imgsensor_i2c_write(pgi2c_cfg_legacy, pData, lens, lens, i2cId, IMGSENSOR_I2C_SPEED);
+	return imgsensor_i2c_read(pgi2c_cfg_legacy, a_pSendData, a_sizeSendData, a_pRecvData, a_sizeRecvData, i2cId, timing);
 }
 
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing)
 {
-	return imgsensor_i2c_write(pgi2c_cfg_legacy, pData, bytes, transfer_length, i2cId, timing * 1000);
+	return imgsensor_i2c_write(pgi2c_cfg_legacy, pData, bytes, transfer_length, i2cId, timing);
+}
+
+int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
+{
+	return iReadRegI2CTiming(a_pSendData, a_sizeSendData, a_pRecvData, a_sizeRecvData, i2cId, IMGSENSOR_I2C_SPEED);
+}
+
+int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing)
+{
+	return iBurstWriteReg_multi(a_pSendData, a_sizeSendData, a_sizeSendData, i2cId, timing);
+}
+
+int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
+{
+	return iWriteRegI2CTiming(a_pSendData, a_sizeSendData, i2cId, IMGSENSOR_I2C_SPEED);
+}
+
+int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
+{
+	return iWriteRegI2CTiming(pData, lens, i2cId, IMGSENSOR_I2C_SPEED);
 }
 
 int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId)
 {
-    return iBurstWriteReg_multi(pData, bytes, i2cId, bytes, IMGSENSOR_I2C_SPEED / 1000);
+    return iWriteRegI2CTiming(pData, bytes, i2cId, IMGSENSOR_I2C_SPEED);
 }
 #endif
-
-void ISP_MCLK1_EN(BOOL En)
-{
-}
-void ISP_MCLK2_EN(BOOL En)
-{
-}
-void ISP_MCLK3_EN(BOOL En)
-{
-}
-void ISP_MCLK4_EN(BOOL En)
-{
-}
 

@@ -12,7 +12,7 @@
  */
 
 #include "kd_imgsensor.h"
-#include "kd_sensorlist.h"
+#include "imgsensor_sensor_list.h"
 
 //! Add Sensor Init function here
 //! Note:

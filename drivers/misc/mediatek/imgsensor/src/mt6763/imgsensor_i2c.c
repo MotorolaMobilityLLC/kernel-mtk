@@ -169,12 +169,12 @@ int imgsensor_i2c_read(
 	pinst->msg[1].len = read_length;
 	pinst->msg[1].buf = pread_data;
 
-	if ((ret = mtk_i2c_transfer(
+	if (mtk_i2c_transfer(
 		pinst->pi2c_client->adapter,
 		pinst->msg,
 		IMGSENSOR_I2C_MSG_SIZE_READ,
 		0,
-		((speed > 0) && (speed <= 1000)) ? (speed * 1000) : IMGSENSOR_I2C_SPEED)) != IMGSENSOR_I2C_MSG_SIZE_READ) {
+		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000) != IMGSENSOR_I2C_MSG_SIZE_READ) {
 		PK_ERR("I2C read failed (0x%x)! speed(0=%d) \n", ret, speed);
 		ret = -1;
 	}
@@ -217,7 +217,7 @@ int imgsensor_i2c_write(
 		pinst->msg,
 		i,
 		0,
-		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED) != i) {
+		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000) != i) {
 		PK_ERR("I2C write failed (0x%x)! speed(0=%d) \n", ret, speed);
 		ret = -1;
 	}

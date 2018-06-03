@@ -19,7 +19,7 @@
 
 #include "i2c-mtk.h"
 
-#include "imgsensor_custom.h"
+#include "imgsensor_cfg_table.h"
 #include "imgsensor_common.h"
 
 #define IMGSENSOR_I2C_MSG_SIZE_READ      2
@@ -29,9 +29,9 @@
 #define IMGSENSOR_I2C_BUFF_MODE_DEV      IMGSENSOR_I2C_DEV_2
 
 #ifdef IMGSENSOR_I2C_1000K
-#define IMGSENSOR_I2C_SPEED              1000000
+#define IMGSENSOR_I2C_SPEED              1000
 #else
-#define IMGSENSOR_I2C_SPEED              400000
+#define IMGSENSOR_I2C_SPEED              400
 #endif
 
 struct IMGSENSOR_I2C_STATUS {

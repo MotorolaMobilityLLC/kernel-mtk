@@ -53,6 +53,8 @@
 #include "kd_imgsensor_errcode.h"
 #include "kd_camera_feature.h"
 
+#include "imgsensor_legacy.h"
+
 #include "ov8858mipiraw_Sensor.h"
 
 
@@ -2911,5 +2913,8 @@ UINT32 OV8858_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
 		*pfFunc=&sensor_func;
+
+	imgsensor_legacy_init(&sensor_func);
+
 	return ERROR_NONE;
 }	/*	OV5693_MIPI_RAW_SensorInit	*/
