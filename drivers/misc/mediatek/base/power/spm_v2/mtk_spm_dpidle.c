@@ -47,6 +47,7 @@
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include "mtk_dramc.h"
 #include "mtk_spm_dpidle_mt6757.h"
+#include <linux/irqchip/mtk-gic-extend.h> /* for mt_irq_dump_status() */
 #endif
 /*
  * only for internal debug

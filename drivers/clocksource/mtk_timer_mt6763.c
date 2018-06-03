@@ -33,11 +33,32 @@
 #include <mach/mtk_gpt.h>
 #include <mt-plat/sync_write.h>
 
+#include <linux/irqchip/mtk-gic-extend.h> /* for aee dump */
+
 /*
+ * CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0:
+ *
  * Always force irq affinity to cpu 0. For debugging purpose only.
  */
 
-/* #define CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY */
+/* #define CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0 */
+
+/*
+ * CONFIG_MTK_TIMER_DEBUG:
+ *
+ * Enable debugging mechanism.
+ */
+
+/* #define CONFIG_MTK_TIMER_DEBUG */
+
+/*
+ * CONFIG_MTK_TIMER_AEE_DUMP:
+ *
+ * Enable dump during debugging flow, for example, HWT.
+ * The debugging information will be collected to DB.
+ */
+#define CONFIG_MTK_TIMER_AEE_DUMP
+
 
 #define GPT_CLKEVT_ID       (GPT1)
 #define GPT_CLKSRC_ID       (GPT2)
@@ -76,7 +97,6 @@
 #define GPT_BIT_MASK_H 0xFFFFFFFF00000000
 /****************************************************/
 
-
 struct mt_xgpt_timers {
 	int tmr_irq;
 	void __iomem *tmr_regs;
@@ -93,7 +113,6 @@ struct gpt_device {
 	int features;
 	void __iomem *base_addr;
 };
-
 
 static struct mt_xgpt_timers xgpt_timers;
 static struct gpt_device gpt_devs[NR_GPTS];
@@ -148,9 +167,11 @@ static void task_sched(unsigned long data)
 	tasklet_schedule(&task[id]);
 }
 
-static irqreturn_t gpt_handler(int irq, void *dev_id);
+static void __gpt_ack_irq(struct gpt_device *dev);
 static cycle_t mt_gpt_read(struct clocksource *cs);
-static int mt_gpt_set_next_event(unsigned long cycles, struct clock_event_device *evt);
+static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id);
+static int mt_gpt_clkevt_next_event(unsigned long cycles,
+				   struct clock_event_device *evt);
 static int mt_gpt_clkevt_shutdown(struct clock_event_device *clk);
 static int mt_gpt_clkevt_oneshot(struct clock_event_device *clk);
 static int mt_gpt_clkevt_resume(struct clock_event_device *clk);
@@ -172,14 +193,14 @@ static struct clock_event_device gpt_clockevent = {
 	 *                        dynamically in broadcast mode.
 	 * CLOCK_EVT_FEAT_ONESHOT: Use one-shot mode for tick broadcast.
 	 */
-#ifdef CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+#ifdef CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0
 	.features = CLOCK_EVT_FEAT_ONESHOT,
 #else
 	.features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_DYNIRQ,
 #endif
 	.shift          = 32,
 	.rating         = 300,
-	.set_next_event = mt_gpt_set_next_event,
+	.set_next_event = mt_gpt_clkevt_next_event,
 	.set_state_shutdown = mt_gpt_clkevt_shutdown,
 	.set_state_periodic = mt_gpt_set_periodic,
 	.set_state_oneshot = mt_gpt_clkevt_oneshot,
@@ -193,40 +214,78 @@ static struct irqaction gpt_irq = {
 #else
 	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW,
 #endif
-	.handler = gpt_handler,
+	.handler = mt_gpt_clkevt_interrupt,
 	.dev_id     = &gpt_clockevent,
 };
 
-static inline unsigned int gpt_get_and_ack_irq(void)
-{
-	unsigned int id;
-	unsigned int mask;
-	unsigned int status = __raw_readl(GPT_IRQSTA);
+static uint64_t gpt_clkevt_last_interrupt_time;
 
-	for (id = GPT1; id < NR_GPTS; id++) {
-		mask = 0x1 << id;
-		if (status & mask) {
-			mt_reg_sync_writel(mask, GPT_IRQACK);
-			break;
+static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id)
+{
+	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
+	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
+
+#if defined(CONFIG_MTK_TIMER_AEE_DUMP)
+	gpt_clkevt_last_interrupt_time = sched_clock();
+#endif
+
+#if defined(CONFIG_MTK_TIMER_DEBUG) && !defined(CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0)
+	int cpu;
+	int err = 0;
+
+	cpu = mt_irq_dump_cpu(evt->irq);
+
+	if (cpu < 0) {
+		pr_info("[mt_gpt] invalid irq query! ret %d\n", cpu);
+		err = 1;
+	} else {
+		if (cpu != smp_processor_id()) {
+			pr_info("[mt_gpt] wrong irq! irq_cpu %d, cur_cpu %d\n",
+				cpu, smp_processor_id());
+			err = 1;
+		}
+
+		if (cpu != evt->irq_affinity_on) {
+			pr_info("[mt_gpt] wrong affinity! irq_cpu %d, affinity %d\n",
+				cpu, evt->irq_affinity_on);
+			err = 1;
 		}
 	}
-	return id;
-}
 
-static irqreturn_t gpt_handler(int irq, void *dev_id)
-{
-	unsigned int id = gpt_get_and_ack_irq();
-	struct gpt_device *dev = id_to_dev(id);
+	if (!err)
+		mt_irq_dump_status(evt->irq);
+#endif
 
-	if (likely(dev)) {
-		if (!(dev->flags & GPT_ISR))
-			handlers[id](id);
-		else
-			handlers[id]((unsigned long)dev_id);
-	} else
-		pr_err("GPT id is %d\n", id);
+	/* acknowledge clkevt (timer0) irq */
+	__gpt_ack_irq(dev);
+
+	/* run event handler */
+	evt->event_handler(evt);
 
 	return IRQ_HANDLED;
+}
+
+void mt_gpt_clkevt_aee_dump(void)
+{
+	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
+
+	/* last interrutp time */
+	pr_info("[GPT] last interrupt: %llu\n", gpt_clkevt_last_interrupt_time);
+
+	/* global gpt status */
+	pr_info("[GPT] IRQEN: 0x%x\n", __raw_readl(GPT_IRQEN));
+	pr_info("[GPT] IRQSTA: 0x%x\n", __raw_readl(GPT_IRQSTA));
+
+	/* gpt1 status */
+	pr_info("[GPT1] CON: 0x%x\n", __raw_readl(dev->base_addr + GPT_CON));
+	pr_info("[GPT1] CLK: 0x%x\n", __raw_readl(dev->base_addr + GPT_CLK));
+	pr_info("[GPT1] CNT: 0x%x\n", __raw_readl(dev->base_addr + GPT_CNT));
+	pr_info("[GPT1] CMP: 0x%x\n", __raw_readl(dev->base_addr + GPT_CMP));
+
+	pr_info("[GPT1] irq affinity: %d\n", gpt_clockevent.irq_affinity_on);
+
+	/* dump apxgpt irq status */
+	mt_irq_dump_status(xgpt_timers.tmr_irq);
 }
 
 static void __gpt_enable_irq(struct gpt_device *dev)
@@ -246,7 +305,6 @@ static void __gpt_ack_irq(struct gpt_device *dev)
 
 static void __gpt_reset(struct gpt_device *dev)
 {
-
 	mt_reg_sync_writel(0x0, dev->base_addr + GPT_CON);
 	__gpt_disable_irq(dev);
 	__gpt_ack_irq(dev);
@@ -319,18 +377,15 @@ static void __gpt_start(struct gpt_device *dev)
 	mt_gpt_set_reg(GPT_CON_ENABLE, dev->base_addr + GPT_CON);
 }
 
+static void __gpt_clrcnt_and_start(struct gpt_device *dev)
+{
+	mt_gpt_set_reg(GPT_CON_ENABLE | GPT_CON_CLRCNT, dev->base_addr + GPT_CON);
+}
+
 static void __gpt_stop(struct gpt_device *dev)
 {
 	mt_gpt_clr_reg(GPT_CON_ENABLE, dev->base_addr + GPT_CON);
 }
-
-static void __gpt_start_from_zero(struct gpt_device *dev)
-{
-    /* DRV_SetReg32(dev->base_addr + GPT_CON, GPT_CON_ENABLE | GPT_CON_CLRCNT); */
-	__gpt_clrcnt(dev);
-	__gpt_start(dev);
-}
-
 static void __gpt_set_flags(struct gpt_device *dev, unsigned int flags)
 {
 	dev->flags |= flags;
@@ -384,18 +439,27 @@ static void setup_gpt_dev_locked(struct gpt_device *dev, unsigned int mode,
 		__gpt_start(dev);
 }
 
-static int mt_gpt_set_next_event(unsigned long cycles,
-		struct clock_event_device *evt)
+static int mt_gpt_clkevt_next_event(unsigned long cycles,
+				   struct clock_event_device *evt)
 {
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
 	__gpt_stop(dev);
+
 	__gpt_set_cmp(dev, cycles, 0);
+
+	if (cycles < 3) {
+		pr_info("[mt_gpt] invalid cycles < 3\n");
+		cycles = 3;
+	}
+
+	__gpt_ack_irq(dev);
 
 	/* ensure IRQ is enabled before next running */
 	__gpt_enable_irq(dev);
 
-	__gpt_start_from_zero(dev);
+	__gpt_clrcnt_and_start(dev);
+
 	return 0;
 }
 
@@ -417,7 +481,14 @@ static int mt_gpt_clkevt_resume(struct clock_event_device *clk)
 
 static int mt_gpt_clkevt_oneshot(struct clock_event_device *clk)
 {
-	return mt_gpt_clkevt_shutdown(clk);
+	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
+
+	__gpt_stop(dev);
+	__gpt_set_mode(dev, GPT_ONE_SHOT);
+	__gpt_enable_irq(dev);
+	__gpt_clrcnt_and_start(dev);
+
+	return 0;
 }
 
 static int mt_gpt_set_periodic(struct clock_event_device *clk)
@@ -427,44 +498,11 @@ static int mt_gpt_set_periodic(struct clock_event_device *clk)
 	__gpt_stop(dev);
 	__gpt_set_mode(dev, GPT_REPEAT);
 	__gpt_enable_irq(dev);
-	__gpt_start_from_zero(dev);
+	__gpt_clrcnt_and_start(dev);
 
 	return 0;
 }
-#if 0
-static void mt_gpt_set_mode(enum clock_event_mode mode,
-				struct clock_event_device *evt)
-{
-	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
-    /* printk("[%s]entry, mode=%d\n", __func__, mode); */
-	switch (mode) {
-	case CLOCK_EVT_MODE_PERIODIC:
-	__gpt_stop(dev);
-	__gpt_set_mode(dev, GPT_REPEAT);
-	__gpt_enable_irq(dev);
-	__gpt_start_from_zero(dev);
-	break;
-
-	case CLOCK_EVT_MODE_ONESHOT:
-	__gpt_stop(dev);
-	__gpt_set_mode(dev, GPT_ONE_SHOT);
-	__gpt_enable_irq(dev);
-	__gpt_start_from_zero(dev);
-	break;
-
-	case CLOCK_EVT_MODE_UNUSED:
-	case CLOCK_EVT_MODE_SHUTDOWN:
-	__gpt_stop(dev);
-	__gpt_disable_irq(dev);
-	__gpt_ack_irq(dev);
-	break;
-	case CLOCK_EVT_MODE_RESUME:
-	default:
-	break;
-	}
-}
-#endif
 static cycle_t mt_gpt_read(struct clocksource *cs)
 {
 	cycle_t cycles;
@@ -485,13 +523,6 @@ static cycle_t mt_gpt_read(struct clocksource *cs)
 	return cycles;
 }
 
-static void clkevt_handler(unsigned long data)
-{
-	struct clock_event_device *evt = (struct clock_event_device *)data;
-
-	evt->event_handler(evt);
-}
-
 static inline void setup_clksrc(u32 freq)
 {
 	struct clocksource *cs = &gpt_clocksource;
@@ -500,8 +531,9 @@ static inline void setup_clksrc(u32 freq)
 	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 
+	/* add GPT_NOIRQEN flag to avoid irq asserted because clksrc is not used */
 	setup_gpt_dev_locked(dev, GPT_FREE_RUN, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
-		0, NULL, 0);
+		0, NULL, GPT_NOIRQEN);
 
 	/* clocksource_register(cs); */
 	clocksource_register_hz(cs, freq);
@@ -530,10 +562,10 @@ static inline void setup_clkevt(u32 freq, int irq)
 	 * 2. Configure this device as ONESHOT mode as tick broadcast device.
 	 */
 	setup_gpt_dev_locked(dev, GPT_ONE_SHOT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
-		freq / HZ, clkevt_handler, GPT_ISR);
+		freq / HZ, NULL, GPT_ISR);
 #else
 	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
-		freq / HZ, clkevt_handler, GPT_ISR);
+		freq / HZ, NULL, GPT_ISR);
 #endif
 
 	__gpt_get_cmp(dev, cmp);
@@ -590,7 +622,7 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	setup_clksrc(freq[0]);
 
-#ifdef CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+#ifdef CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0
 	irq_force_affinity(xgpt_timers.tmr_irq, cpumask_of(0));
 #endif
 
@@ -604,9 +636,6 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	pr_alert("[mtk_gpt] GPT2: CNT=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
 	gpt_update_unlock(save_flags);
-
-	/* Init GPT3 as 32K free-run counter */
-	request_gpt(GPT3, GPT_FREE_RUN, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1, 0, NULL, 0);
 }
 
 static void release_gpt_dev_locked(struct gpt_device *dev)

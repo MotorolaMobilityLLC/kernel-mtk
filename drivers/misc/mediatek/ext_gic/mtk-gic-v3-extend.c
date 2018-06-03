@@ -456,6 +456,28 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	return ptr;
 }
 
+int mt_irq_dump_cpu(int irq)
+{
+	int rc;
+	unsigned int result;
+
+	irq = virq_to_hwirq(irq);
+
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#else
+	rc = -1;
+#endif
+
+	if (rc < 0)
+		return rc;
+
+	/* get target cpu mask */
+	result = (rc >> 14) & 0xffff;
+
+	return (int)(find_first_bit((unsigned long *)&result, 16));
+}
+
 void mt_irq_dump_status(int irq)
 {
 	char *buf = kmalloc(2048, GFP_ATOMIC);
