@@ -20,6 +20,9 @@ extern void __iomem *sspm_base;
 extern void __iomem *mcdi_mcupm_base;
 extern void __iomem *mcdi_mcupm_sram_base;
 
+/* dummy definition, not used */
+#define MCUPM_CFGREG_WFI_EN_SET              (MCUPM_SRAM_MBOX_BASE + 0x00)
+
 /* cluster counter */
 #define MCUPM_CFGREG_MP0_SLEEP_TH            (mcdi_mcupm_base + 0x0080)
 #define MCUPM_CFGREG_MP0_CPU0_RES            (mcdi_mcupm_base + 0x0084)

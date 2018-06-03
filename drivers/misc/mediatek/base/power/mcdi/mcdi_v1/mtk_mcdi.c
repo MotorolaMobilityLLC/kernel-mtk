@@ -191,6 +191,16 @@ static unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
 		0x0000F,
 		0x0000F,
 		0x0000F
+	},
+	[OTHER_CLUSTER_IDX] = {
+		1,
+		1,
+		1,
+		1,
+		0,
+		0,
+		0,
+		0
 	}
 };
 

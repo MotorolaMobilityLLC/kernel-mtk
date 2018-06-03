@@ -56,6 +56,13 @@ unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
 		0x0000F,
 		0x0000F,
 #endif
+	},
+	/* dummy definition, since MT6739 contains only 1 cluster */
+	[OTHER_CLUSTER_IDX] = {
+		0,
+		0,
+		0,
+		0,
 	}
 };
 
