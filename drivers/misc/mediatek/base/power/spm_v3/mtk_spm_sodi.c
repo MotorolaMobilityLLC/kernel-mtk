@@ -29,7 +29,7 @@
 #include <mach/mtk_gpt.h>
 
 #include <mt-plat/mtk_boot.h>
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -261,6 +261,7 @@ struct spm_lp_scen __spm_sodi = {
 /* 0:power-down mode, 1:CG mode */
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
+static bool gSpm_lcm_vdo_mode;
 
 static void spm_sodi_pre_process(void)
 {
@@ -274,9 +275,8 @@ static void spm_sodi_pre_process(void)
 								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_1_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
 								value);
 
 	/* VSRAM_DVFS2 */
@@ -285,9 +285,8 @@ static void spm_sodi_pre_process(void)
 								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_2_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
 								value);
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
@@ -598,7 +597,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -650,7 +649,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 RESTORE_IRQ:
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
@@ -674,12 +673,12 @@ RESTORE_IRQ:
 
 void spm_sodi_set_vdo_mode(bool vdo_mode)
 {
-
+	gSpm_lcm_vdo_mode = vdo_mode;
 }
 
 bool spm_get_cmd_mode(void)
 {
-	return true;
+	return !gSpm_lcm_vdo_mode;
 }
 
 void spm_sodi_mempll_pwr_mode(bool pwr_mode)
