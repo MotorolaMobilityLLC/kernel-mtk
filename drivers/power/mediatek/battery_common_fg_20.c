@@ -421,6 +421,11 @@ bool __attribute__((weak)) mt_usb_is_device(void)
 	return true;
 }
 
+int __attribute__((weak)) mtk_chr_reset_aicr_upper_bound(void)
+{
+	return 0;
+}
+
 kal_bool upmu_is_chr_det(void)
 {
 #if !defined(CONFIG_POWER_EXT)
@@ -1604,32 +1609,13 @@ static DEVICE_ATTR(Charger_Type, 0664, show_Charger_Type, store_Charger_Type);
 
 static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *attr, char *buf)
 {
-#if defined(PUMP_EXPRESS_SERIES)
-	int icount = 20;	/* max debouncing time 20 * 0.2 sec */
-#endif
 	int is_ta_detected = 0;
 
 	battery_log(BAT_LOG_CRTI, "[%s]show_Pump_Express chr_type:%d UISOC2:%d startsoc:%d stopsoc:%d\n", __func__,
 	BMT_status.charger_type, BMT_status.UI_SOC2,
 	batt_cust_data.ta_start_battery_soc, batt_cust_data.ta_stop_battery_soc);
 
-
 #if defined(PUMP_EXPRESS_SERIES)
-	if (BMT_status.charger_type == STANDARD_CHARGER &&
-		mtk_pep20_get_to_check_chr_type() &&
-		mtk_pep_get_to_check_chr_type() &&
-		batt_cust_data.ta_stop_battery_soc > BMT_status.UI_SOC2) {
-		do {
-			icount--;
-			msleep(200);
-			battery_log(BAT_LOG_CRTI, "[%s]icount:%d\n", __func__, icount);
-		} while (icount &&
-			mtk_pep20_get_to_check_chr_type() &&
-			mtk_pep_get_to_check_chr_type() &&
-			KAL_TRUE
-		);
-	}
-
 	/* Is PE+20 connect */
 	if (mtk_pep20_get_is_connect())
 		is_ta_detected = 1;
@@ -1646,12 +1632,6 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	/* Is PE connect */
-	if ((ta_check_chr_type == KAL_TRUE) && (BMT_status.charger_type == STANDARD_CHARGER)) {
-		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
-		do {
-			msleep(200);
-		} while (ta_check_chr_type);
-	}
 	if (is_ta_connect == KAL_TRUE)
 		is_ta_detected = 1;
 #endif
@@ -1688,7 +1668,8 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->present_smb = g_present_smb;
 	battery_log(BAT_LOG_FULL, "status_smb = %d, capacity_smb = %d, present_smb = %d\n",
 		    bat_data->status_smb, bat_data->capacity_smb, bat_data->present_smb);
-	if ((BMT_status.UI_SOC2 == 100) && (BMT_status.charger_exist == KAL_TRUE))
+	if ((BMT_status.UI_SOC2 == 100) && (BMT_status.charger_exist == KAL_TRUE)
+	    && (BMT_status.bat_charging_state != CHR_ERROR))
 		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
@@ -2852,7 +2833,8 @@ void do_chrdet_int_task(void)
 		/* Place charger detection and battery update here is used to speed up charging icon display. */
 
 		mt_battery_charger_detect_check();
-		if (BMT_status.UI_SOC2 == 100 && BMT_status.charger_exist == KAL_TRUE) {
+		if (BMT_status.UI_SOC2 == 100 && BMT_status.charger_exist == KAL_TRUE
+		    && BMT_status.bat_charging_state != CHR_ERROR) {
 			BMT_status.bat_charging_state = CHR_BATFULL;
 			BMT_status.bat_full = KAL_TRUE;
 			g_charging_full_reset_bat_meter = KAL_TRUE;
