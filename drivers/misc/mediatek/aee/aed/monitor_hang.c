@@ -79,6 +79,8 @@ static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
 #ifdef CONFIG_MTK_ENG_BUILD
 static int hang_aee_warn = 2;
+#else
+static int hang_aee_warn;
 #endif
 static int system_server_pid;
 static bool watchdog_thread_exist;
@@ -252,7 +254,21 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 		return ret;
 	}
 
-	return -1;
+	if ((cmd == AEEIOCTL_SET_HANG_FLAG) &&
+		(!strncmp(current->comm, "aee_aed", 7))) {
+		const struct cred *cred = current_cred();
+
+		if (!uid_eq(cred->euid, GLOBAL_ROOT_UID))
+			return -EACCES;
+
+		if ((int)arg == 1) {
+			hang_aee_warn = 2;
+			pr_info("hang_detect: aee enable system_server coredump.\n");
+		}
+
+	}
+
+	return ret;
 }
 
 
@@ -1579,7 +1595,7 @@ void reset_hang_info(void)
 	memset(&Hang_Info, 0, MaxHangInfoSize);
 	Hang_Info_Size = 0;
 }
-#ifdef CONFIG_MTK_ENG_BUILD
+
 static int hang_detect_warn_thread(void *arg)
 {
 
@@ -1596,23 +1612,22 @@ static int hang_detect_warn_thread(void *arg)
 	pr_notice("hang_detect create warning api: %s.", string_tmp);
 #ifdef __aarch64__
 		aee_kernel_warning_api(__FILE__, __LINE__,
-		DB_OPT_PROCESS_COREDUMP | DB_OPT_AARCH64,
+		DB_OPT_PROCESS_COREDUMP | DB_OPT_AARCH64 | DB_OPT_FTRACE,
 		"maybe have other hang_detect KE DB, please send together!!\n",
 		string_tmp);
 #else
 		aee_kernel_warning_api(__FILE__, __LINE__,
-		DB_OPT_PROCESS_COREDUMP,
+		DB_OPT_PROCESS_COREDUMP | DB_OPT_FTRACE,
 		"maybe have other hang_detect KE DB, please send together!!\n",
 		string_tmp);
 #endif
 	return 0;
 }
-#endif
+
 static int hang_detect_dump_thread(void *arg)
 {
-#ifdef CONFIG_MTK_ENG_BUILD
 	struct task_struct *hd_thread;
-#endif
+
 
 	/* unsigned long flags; */
 	struct sched_param param = {
@@ -1624,14 +1639,12 @@ static int hang_detect_dump_thread(void *arg)
 	dump_bt_done = 1;
 	while (1) {
 		wait_event_interruptible(dump_bt_start_wait, dump_bt_done == 0);
-#ifdef CONFIG_MTK_ENG_BUILD
 		if (hang_aee_warn == 1) {
 			hd_thread = kthread_create(hang_detect_warn_thread,
 				NULL, "hang_detect2");
 			if (hd_thread != NULL)
 				wake_up_process(hd_thread);
 		} else
-#endif
 		ShowStatus();
 		dump_bt_done = 1;
 		wake_up_interruptible(&dump_bt_done_wait);
@@ -1662,7 +1675,7 @@ static int hang_detect_thread(void *arg)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
-#ifdef CONFIG_MTK_ENG_BUILD
+
 			if (hang_detect_counter == 1 && hang_aee_warn == 2
 				&& hd_timeout != 11) {
 				hang_detect_counter = hd_timeout / 2;
@@ -1676,7 +1689,6 @@ static int hang_detect_thread(void *arg)
 				hang_aee_warn = 0;
 
 			}
-#endif
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo(
 					"[Hang_detect]Dump the %d time process bt.\n",
