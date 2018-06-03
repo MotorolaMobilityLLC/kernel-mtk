@@ -1009,7 +1009,7 @@ static void dump_retrieve_info(void)
 	}
 }
 
-static int __init early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
+static int early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
