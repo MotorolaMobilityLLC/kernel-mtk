@@ -16,3 +16,10 @@ obj-y += fbc.o
 ifeq ($(CONFIG_MTK_FBC),y)
 ccflags-y += -DMTK_FBC_SUPPORT
 endif
+
+
+ccflags-y += \
+	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v1/inc \
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v1  \
+	-I$(srctree)/kernel/trace/ \
+
