@@ -228,6 +228,8 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
 
 		EnableAfe(true);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+			SetI2SADDAEnable(true);
 		mPrepareDone = true;
 	}
 	return 0;
@@ -240,6 +242,7 @@ static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 	pr_aud("%s\n", __func__);
 	if (mPrepareDone == true) {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
+		SetI2SADDAEnable(false);
 		if (GetI2SDacEnable() == false)
 			SetI2SDacEnable(false);
 

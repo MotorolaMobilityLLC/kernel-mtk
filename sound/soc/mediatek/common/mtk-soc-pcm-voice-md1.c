@@ -217,6 +217,7 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
+	SetI2SADDAEnable(false);
 	SetI2SAdcEnable(false);
 	SetI2SDacEnable(false);
 	SetModemPcmEnable(MODEM_1, false);
@@ -300,9 +301,11 @@ static int mtk_voice1_prepare(struct snd_pcm_substream *substream)
 	SetI2SDacEnable(true);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-	SetI2SAdcEnable(true);
 	EnableAfe(true);
-	switch (runtimeStream->rate)	{
+	SetI2SAdcEnable(true);
+	SetI2SADDAEnable(true);
+
+	switch (runtimeStream->rate) {
 	case 8000:
 		Voice1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_8K;
 		break;
