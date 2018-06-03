@@ -81,6 +81,7 @@ PVRSRV_ERROR OSInstallSystemLISR(IMG_HANDLE *phLISR,
 				 IMG_UINT32 ui32Flags)
 {
 	LISR_DATA *psLISRData;
+    int irq_ret=0;
 	unsigned long ulIRQFlags = 0;
 
 	if (pfnLISR == NULL || pvData == NULL)
@@ -122,11 +123,18 @@ PVRSRV_ERROR OSInstallSystemLISR(IMG_HANDLE *phLISR,
 	psLISRData->pfnLISR = pfnLISR;
 	psLISRData->pvData = pvData;
 
-	if (request_irq(ui32IRQ, SystemISRWrapper, ulIRQFlags, pszDevName, psLISRData))
+    irq_ret = request_irq(ui32IRQ, SystemISRWrapper, ulIRQFlags, pszDevName, psLISRData);
+    PVR_DPF((PVR_DBG_ERROR, "[DEBUG] %s: irq_ret=%d ui32IRQ=%u name=%s, psLISRData=%p \n", __FUNCTION__, irq_ret, ui32IRQ, pszDevName, psLISRData));
+    
+    if(irq_ret)
+	/* if (request_irq(ui32IRQ, SystemISRWrapper, ulIRQFlags, pszDevName, psLISRData)) */
 	{
+        PVR_DPF((PVR_DBG_ERROR, "[REAL ERROR] %s: irq_ret=%d ui32IRQ=%u name=%s, psLISRData=%p \n Drop to no IRQ mode (should be slow)\n", __FUNCTION__, irq_ret, ui32IRQ, pszDevName, psLISRData));    
+        /*
 		OSFreeMem(psLISRData);
 
 		return PVRSRV_ERROR_UNABLE_TO_REGISTER_ISR_HANDLER;
+        */
 	}
 
 	*phLISR = (IMG_HANDLE)psLISRData;
