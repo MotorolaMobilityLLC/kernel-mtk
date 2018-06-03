@@ -97,6 +97,7 @@
 #include "disp_partial.h"
 #include "ddp_aal.h"
 #include "ddp_gamma.h"
+#include <linux/wakelock.h>
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -185,6 +186,8 @@ static int dvfs_last_ovl_req = HRT_LEVEL_LPM;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
+/* hold the wakelock to make kernel awake when primary display is on*/
+struct wake_lock pri_wk_lock;
 
 static unsigned long long mutex_time_start;
 static unsigned long long mutex_time_end;
@@ -4044,6 +4047,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	DISPCHECK("primary_display_init done\n");
 
 done:
+	DISPDBG("init and hold wakelock...\n");
+	wake_lock_init(&pri_wk_lock, WAKE_LOCK_SUSPEND, "pri_disp_wakelock");
+	wake_lock(&pri_wk_lock);
+
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
 	layering_rule_init();
@@ -4598,6 +4605,9 @@ done:
 	/* Unregister primary session cmdq dump callback */
 	dpmgr_unregister_cmdq_dump_callback(primary_display_cmdq_dump);
 
+	DISPDBG("release wakelock...\n");
+	wake_unlock(&pri_wk_lock);
+
 	_primary_path_unlock(__func__);
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	_primary_path_switch_dst_unlock();
@@ -4949,6 +4959,9 @@ done:
 
 	if (primary_display_get_power_mode_nolock() == DOZE)
 		primary_display_esd_check_enable(1);
+
+	DISPDBG("hold the wakelock...\n");
+	wake_lock(&pri_wk_lock);
 
 	_primary_path_unlock(__func__);
 	DISPMSG("skip_update:%d\n", skip_update);
