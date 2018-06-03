@@ -45,9 +45,11 @@
 #include <mtk_idle_profile.h>
 #include <mtk_spm_reg.h>
 #include <mtk_spm_internal.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 #include <mtk_cpufreq_hybrid.h>
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include <mtk_dramc.h>
 #endif
 #include <linux/uaccess.h>
@@ -59,7 +61,7 @@
 
 #define FEATURE_ENABLE_SODI2P5
 
-#if defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6755)
 #define USING_STD_TIMER_OPS
 #endif
 
@@ -484,7 +486,8 @@ void enable_soidle3_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	enable_soidle3_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(enable_soidle3_by_bit);
@@ -494,7 +497,8 @@ void disable_soidle3_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	disable_soidle3_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(disable_soidle3_by_bit);
@@ -568,7 +572,7 @@ bool soidle3_can_enter(int cpu)
 	}
 #endif
 
-	if (cpu % 4) {
+	if ((cpu % 4) || (spm_get_resource_usage() & SPM_RESOURCE_CPU)) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -800,7 +804,8 @@ void enable_soidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	enable_soidle_by_mask(grp, mask);
 	/* enable the settings for SODI3 at the same time */
 	enable_soidle3_by_mask(grp, mask);
@@ -812,7 +817,8 @@ void disable_soidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	disable_soidle_by_mask(grp, mask);
 	/* disable the settings for SODI3 at the same time */
 	disable_soidle3_by_mask(grp, mask);
@@ -857,7 +863,7 @@ bool soidle_can_enter(int cpu)
 	}
 #endif
 
-	if (cpu % 4) {
+	if ((cpu % 4) || (spm_get_resource_usage() & SPM_RESOURCE_CPU)) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -1192,7 +1198,8 @@ void enable_dpidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	enable_dpidle_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(enable_dpidle_by_bit);
@@ -1202,7 +1209,8 @@ void disable_dpidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	disable_dpidle_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(disable_dpidle_by_bit);
@@ -1255,7 +1263,7 @@ static bool dpidle_can_enter(int cpu)
 	}
 #endif
 
-	if (cpu % 4) {
+	if ((cpu % 4) || (spm_get_resource_usage() & SPM_RESOURCE_CPU)) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -1451,7 +1459,8 @@ void enable_slidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	enable_slidle_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(enable_slidle_by_bit);
@@ -1461,7 +1470,8 @@ void disable_slidle_by_bit(int id)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
-	/*BUG_ON(INVALID_GRP_ID(grp));*/
+	if (INVALID_GRP_ID(grp))
+		return;
 	disable_slidle_by_mask(grp, mask);
 }
 EXPORT_SYMBOL(disable_slidle_by_bit);
@@ -1542,7 +1552,7 @@ static noinline void go_to_rgidle(int cpu)
 static inline void soidle_pre_handler(void)
 {
 	hps_del_timer();
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		del_zqcs_timer();
 #endif
@@ -1556,7 +1566,7 @@ static inline void soidle_pre_handler(void)
 static inline void soidle_post_handler(void)
 {
 	hps_restart_timer();
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		add_zqcs_timer();
 #endif
@@ -1611,7 +1621,7 @@ u32 slp_spm_deepidle_flags = {
 static inline void dpidle_pre_handler(void)
 {
 	hps_del_timer();
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		del_zqcs_timer();
 #endif
@@ -1626,7 +1636,7 @@ static inline void dpidle_pre_handler(void)
 static inline void dpidle_post_handler(void)
 {
 	hps_restart_timer();
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
 		add_zqcs_timer();
 #endif

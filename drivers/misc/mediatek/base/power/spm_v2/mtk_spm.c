@@ -24,6 +24,7 @@
 #include "mtk_spm_vcore_dvfs.h"
 #include "mtk_vcorefs_governor.h"
 #include "mtk_spm_internal.h"
+#include "mtk_spm_resource_req_internal.h"
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -1061,6 +1062,7 @@ int spm_module_late_init(void)
 		dyna_load_pcm[i].ready = 0;
 
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
+	spm_resource_req_debugfs_init(spm_dir);
 
 	ret = register_pm_notifier(&spm_pm_notifier_func);
 	if (ret) {
