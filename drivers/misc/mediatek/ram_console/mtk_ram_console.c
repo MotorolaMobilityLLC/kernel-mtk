@@ -166,8 +166,8 @@ struct last_reboot_reason {
 	uint16_t idvfs_swreq_next_pct_x100;
 	uint8_t idvfs_state_manchine;
 
-	uint32_t ocp_2_target_limit;
-	uint8_t ocp_2_enable;
+	uint32_t ocp_target_limit[4];
+	uint8_t ocp_enable;
 	uint32_t scp_pc;
 	uint32_t scp_lr;
 
@@ -1529,18 +1529,24 @@ void aee_rr_rec_idvfs_state_manchine(u8 val)
 	LAST_RR_SET(idvfs_state_manchine, val);
 }
 
-void aee_rr_rec_ocp_2_target_limit(u32 val)
+void aee_rr_rec_ocp_target_limit(int id, u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ocp_2_target_limit, val);
+
+	if (id < 0 || id >= 4) {
+		pr_err("%s: Invalid ocp id = %d\n", __func__, id);
+		return;
+	}
+
+	LAST_RR_SET_WITH_ID(ocp_target_limit, id, val);
 }
 
-void aee_rr_rec_ocp_2_enable(u8 val)
+void aee_rr_rec_ocp_enable(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ocp_2_enable, val);
+	LAST_RR_SET(ocp_enable, val);
 }
 
 u32 aee_rr_curr_ptp_e0(void)
@@ -1796,14 +1802,17 @@ u8 aee_rr_curr_idvfs_state_manchine(void)
 	return LAST_RR_VAL(idvfs_state_manchine);
 }
 
-u32 aee_rr_curr_ocp_2_target_limit(void)
+u32 aee_rr_curr_ocp_target_limit(int id)
 {
-	return LAST_RR_VAL(ocp_2_target_limit);
+	if (id < 0 || id >= 4)
+		return 0;
+	else
+		return LAST_RR_VAL(ocp_target_limit[id]);
 }
 
-u8 aee_rr_curr_ocp_2_enable(void)
+u8 aee_rr_curr_ocp_enable(void)
 {
-	return LAST_RR_VAL(ocp_2_enable);
+	return LAST_RR_VAL(ocp_enable);
 }
 
 void aee_rr_rec_scp_pc(u32 val)
@@ -2480,14 +2489,17 @@ void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
 	}
 }
 
-void aee_rr_show_ocp_2_target_limit(struct seq_file *m)
+void aee_rr_show_ocp_target_limit(struct seq_file *m)
 {
-	seq_printf(m, "ocp_2_target_limit = %u mW\n", LAST_RRR_VAL(ocp_2_target_limit));
+	int i = 0;
+
+	for (i = 0; i < 4; i++)
+		seq_printf(m, "ocp_target_limit[%d]: %d\n", i, LAST_RRR_VAL(ocp_target_limit[i]));
 }
 
-void aee_rr_show_ocp_2_enable(struct seq_file *m)
+void aee_rr_show_ocp_enable(struct seq_file *m)
 {
-	seq_printf(m, "ocp_2_enable = %d\n", LAST_RRR_VAL(ocp_2_enable));
+	seq_printf(m, "ocp_enable = 0x%x\n", LAST_RRR_VAL(ocp_enable));
 }
 
 void aee_rr_show_thermal_status(struct seq_file *m)
@@ -2698,8 +2710,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_swreq_curr_pct_x100,
 	aee_rr_show_idvfs_swreq_next_pct_x100,
 	aee_rr_show_idvfs_state_manchine,
-	aee_rr_show_ocp_2_target_limit,
-	aee_rr_show_ocp_2_enable,
+	aee_rr_show_ocp_target_limit,
+	aee_rr_show_ocp_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
 	aee_rr_show_hotplug_status,
