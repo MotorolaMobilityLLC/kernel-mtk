@@ -586,6 +586,129 @@ int unregister_charger_manager_notifier(struct charger_consumer *consumer,
 
 /* user interface end*/
 
+/* factory mode */
+#define CHARGER_DEVNAME "charger_ftm"
+#define GET_IS_SLAVE_CHARGER_EXIST _IOW('k', 13, int)
+
+static struct class *charger_class;
+static struct cdev *charger_cdev;
+static int charger_major;
+static dev_t charger_devno;
+
+static int is_slave_charger_exist(void)
+{
+	if (get_charger_by_name("secondary_chg") == NULL)
+		return 0;
+	return 1;
+}
+
+static long charger_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret = 0;
+	int out_data = 0;
+	void __user *user_data = (void __user *)arg;
+
+	switch (cmd) {
+	case GET_IS_SLAVE_CHARGER_EXIST:
+		out_data = is_slave_charger_exist();
+		ret = copy_to_user(user_data, &out_data, sizeof(out_data));
+		chr_err("[%s] GET_IS_SLAVE_CHARGER_EXIST: %d\n", __func__, out_data);
+		break;
+	default:
+		chr_err("[%s] Error ID\n", __func__);
+		break;
+	}
+
+	return ret;
+}
+#ifdef CONFIG_COMPAT
+static long charger_ftm_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret = 0;
+
+	switch (cmd) {
+	case GET_IS_SLAVE_CHARGER_EXIST:
+		ret = file->f_op->unlocked_ioctl(file, cmd, arg);
+		break;
+	default:
+		chr_err("[%s] Error ID\n", __func__);
+		break;
+	}
+
+	return ret;
+}
+#endif
+static int charger_ftm_open(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static int charger_ftm_release(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static const struct file_operations charger_ftm_fops = {
+	.owner = THIS_MODULE,
+	.unlocked_ioctl = charger_ftm_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = charger_ftm_compat_ioctl,
+#endif
+	.open = charger_ftm_open,
+	.release = charger_ftm_release,
+};
+
+void charger_ftm_init(void)
+{
+	struct class_device *class_dev = NULL;
+	int ret = 0;
+
+	ret = alloc_chrdev_region(&charger_devno, 0, 1, CHARGER_DEVNAME);
+	if (ret < 0) {
+		chr_err("[%s]Can't get major num for charger_ftm\n", __func__);
+		return;
+	}
+
+	charger_cdev = cdev_alloc();
+	if (!charger_cdev) {
+		chr_err("[%s]cdev_alloc fail\n", __func__);
+		goto unregister;
+	}
+	charger_cdev->owner = THIS_MODULE;
+	charger_cdev->ops = &charger_ftm_fops;
+
+	ret = cdev_add(charger_cdev, charger_devno, 1);
+	if (ret < 0) {
+		chr_err("[%s] cdev_add failed\n", __func__);
+		goto free_cdev;
+	}
+
+	charger_major = MAJOR(charger_devno);
+	charger_class = class_create(THIS_MODULE, CHARGER_DEVNAME);
+	if (IS_ERR(charger_class)) {
+		chr_err("[%s] class_create failed\n", __func__);
+		goto free_cdev;
+	}
+
+	class_dev = (struct class_device *)device_create(charger_class,
+				NULL, charger_devno, NULL, CHARGER_DEVNAME);
+	if (IS_ERR(class_dev)) {
+		chr_err("[%s] device_create failed\n", __func__);
+		goto free_class;
+	}
+
+	pr_debug("%s done\n", __func__);
+	return;
+
+free_class:
+	class_destroy(charger_class);
+free_cdev:
+	cdev_del(charger_cdev);
+unregister:
+	unregister_chrdev_region(charger_devno, 1);
+}
+/* factory mode end */
+
 /* sw jeita */
 void do_sw_jeita_state_machine(struct charger_manager *info)
 {
@@ -2106,7 +2229,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->enable_pe_3 = false;
 
 	mtk_pdc_init(info);
-
+	charger_ftm_init();
 
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {
