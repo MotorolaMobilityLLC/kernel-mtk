@@ -2246,7 +2246,7 @@
 		compatible = "mediatek,gps";
 	};
 
-	alsps_mtk: alsps_mtk {
+	als: als_ps@0 {
 		compatible = "mediatek,als_ps";
 	};
 
