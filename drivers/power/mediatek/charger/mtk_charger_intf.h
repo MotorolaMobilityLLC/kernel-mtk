@@ -124,6 +124,9 @@ struct battery_thermal_protection_data {
 };
 
 struct charger_custom_data {
+	int battery_cv;	/* uv */
+	int max_charger_voltage;
+
 	int usb_charger_current_suspend;
 	int usb_charger_current_unconfigured;
 	int usb_charger_current_configured;
@@ -134,14 +137,86 @@ struct charger_custom_data {
 	int charging_host_charger_current;
 	int ta_ac_charger_current;
 
-	int max_charger_voltage;
-	int pe20_ichg_level_threshold;
+	/* sw jeita */
+	int jeita_temp_above_t4_cv_voltage;
+	int jeita_temp_t3_to_t4_cv_voltage;
+	int jeita_temp_t2_to_t3_cv_voltage;
+	int jeita_temp_t1_to_t2_cv_voltage;
+	int jeita_temp_t0_to_t1_cv_voltage;
+	int jeita_temp_below_t0_cv_voltage;
+	int temp_t4_threshold;
+	int temp_t4_thres_minus_x_degree;
+	int temp_t3_threshold;
+	int temp_t3_thres_minus_x_degree;
+	int temp_t2_threshold;
+	int temp_t2_thres_plus_x_degree;
+	int temp_t1_threshold;
+	int temp_t1_thres_plus_x_degree;
+	int temp_t0_threshold;
+	int temp_t0_thres_plus_x_degree;
+	int temp_neg_10_threshold;
+
+	/* battery temperature protection */
+	int mtk_temperature_recharge_support;
+	int max_charge_temperature;
+	int max_charge_temperature_minus_x_degree;
+	int min_charge_temperature;
+	int min_charge_temperature_plus_x_degree;
+
+	/* pe2.0 */
+	int pe20_ichg_level_threshold;	/* ma */
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
+
+	/* pe3.0 */
+	int cv_limit;	/* vbus upper bound (mv)*/
+	int bat_upper_bound;	/* battery upper bound (mv)*/
+	int bat_lower_bound;	/* battery low bound (mv)*/
+
+	int cc_ss_init;	/*init charging current (ma)*/
+	int cc_init;	/*max charging current (ma)*/
+	int cc_init_bad_cable1;	/*charging current(ma) for bad cable1*/
+	int cc_init_bad_cable2;	/*charging current(ma) for bad cable2*/
+	int cc_init_r;	/*good cable max impedance*/
+	int cc_init_bad_cable1_r;	/*bad cable1 max impedance*/
+	int cc_init_bad_cable2_r;	/*bad cable2 max impedance*/
+
+	int cc_normal;	/*normal charging ibus oc threshold (ua)*/
+	int cc_max;	/*pe3.0 ibus oc threshold (ua)*/
+	int cc_end;	/*pe3.0 min charging current (ma)*/
+	int cc_step;	/*cc state charging current step (ma)*/
+	int cc_ss_step;	/*soft start state charging current step (ma)*/
+	int cc_ss_step2;	/*soft start state charging current step (ma),when battery voltage > cc_ss_step2*/
+	int cc_ss_step3;	/*soft start state charging current step (ma),when battery voltage > cc_ss_step3*/
+	int cv_ss_step2;	/*battery voltage threshold for cc_ss_step2*/
+	int cv_ss_step3;	/*battery voltage threshold for cc_ss_step3*/
+	int cc_ss_blanking;	/*polling duraction for init/soft start state(ms)*/
+	int cc_blanking;	/*polling duraction for cc state(ms)*/
+	int charger_temp_max;	/*max charger ic temperature*/
+	int ta_temp_max;	/*max adapter temperature*/
+	int vbus_ov_gap;
+	int fod_current;	/*fod current threshold*/
+	int r_vbat_min;	/*min r_vbat*/
+	int r_sw_min;	/*min r_sw*/
+	int pe30_max_charging_time;	/*pe3.0 max chargint time (sec)*/
+	int battery_temp_min;
+	int battery_temp_max;
+
+	/* dual charger */
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	u32 chg1_ta_ac_charger_current;
 	u32 chg2_ta_ac_charger_current;
 #endif
+
+	/* cable measurement impedance */
+	int cable_imp_threshold;
+	int vbat_cable_imp_threshold;
+
+	/* bif */
+	int bif_threshold1;	/* uv */
+	int bif_threshold2;	/* uv */
+	int bif_cv_under_threshold2;	/* uv */
+
 };
 
 struct charger_data {

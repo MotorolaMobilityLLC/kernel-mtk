@@ -296,6 +296,9 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 	int ret = false;
 	struct mtk_pe30 *pe3 = &info->pe3;
 
+	if (pmic_is_bif_exist() == false)
+		goto _fail;
+
 	if (info->enable_pe_3 == false)
 		goto _fail;
 
@@ -320,20 +323,20 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 		ret = true;
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
-		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit());
+		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
 
 	return ret;
 
 _fail:
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
-		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit());
+		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
 
 
 
