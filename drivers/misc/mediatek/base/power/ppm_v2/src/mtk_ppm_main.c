@@ -52,7 +52,11 @@ struct ppm_data ppm_main_info = {
 
 	.cur_mode = PPM_MODE_PERFORMANCE,
 	.cur_power_state = PPM_POWER_STATE_NONE,
+#ifdef PPM_DISABLE_LL_ONLY
+	.fixed_root_cluster = PPM_CLUSTER_L,
+#else
 	.fixed_root_cluster = -1,
+#endif
 	.min_power_budget = ~0,
 
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
