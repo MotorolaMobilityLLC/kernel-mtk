@@ -35,6 +35,7 @@ static inline void dpm_extract_apdo_info(
 		if (pdo & APDO_PPS_CURR_FOLDBACK)
 			info->apdo_type |= DPM_APDO_TYPE_PPS_CF;
 
+		info->pwr_limit = APDO_PPS_EXTRACT_PWR_LIMIT(pdo);
 		info->ma = APDO_PPS_EXTRACT_CURR(pdo);
 		info->vmin = APDO_PPS_EXTRACT_MIN_VOLT(pdo);
 		info->vmax = APDO_PPS_EXTRACT_MAX_VOLT(pdo);

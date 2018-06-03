@@ -169,6 +169,7 @@
 #define APDO_PPS_EXTRACT_MAX_VOLT_RAW(raw)	(((raw) >> 17) & 0xff)
 #define APDO_PPS_EXTRACT_MIN_VOLT_RAW(raw)	(((raw) >> 8) & 0Xff)
 #define APDO_PPS_EXTRACT_CURR_RAW(raw)	(((raw) >> 0) & 0x7f)
+#define APDO_PPS_EXTRACT_PWR_LIMIT(raw)        ((raw >> 27) & 0x1)
 
 #define APDO_PPS_EXTRACT_MAX_VOLT(raw)	\
 	(APDO_PPS_EXTRACT_MAX_VOLT_RAW(raw) * 100)
@@ -1027,6 +1028,12 @@ struct pd_port {
 	uint8_t country_nr;
 	struct pd_country_authority *country_info;
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY */
+
+#ifdef CONFIG_USB_POWER_DELIVERY
+	/* for MTK only, handle battery plug out */
+	struct notifier_block bat_nb;
+#endif /* CONFIG_USB_POWER_DELIVERY */
+
 };
 
 static inline struct dp_data *pd_get_dp_data(struct pd_port *pd_port)
