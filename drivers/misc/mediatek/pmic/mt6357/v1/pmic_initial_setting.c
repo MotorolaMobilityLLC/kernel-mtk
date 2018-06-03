@@ -23,7 +23,7 @@
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
 
-#define LP_INIT_SETTING_VERIFIED	0
+#define LP_INIT_SETTING_VERIFIED	1
 
 /* used for Zion E1/E2 PMIC clear interrupt */
 unsigned int g_pmic_chip_version = 1;
