@@ -324,6 +324,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		#clock-cells = <1>;
 	};
 
+	mcdi@0010fc00 {
+		compatible = "mediatek,mt6765-mcdi";
+		reg = <0 0x0010fc00 0 0x800>;
+	};
+
 	scpsys: scpsys@10001000 {
 		compatible = "mediatek,scpsys", "syscon";
 		reg =	<0 0x10001000 0 0x1000>, /* infra_ao */

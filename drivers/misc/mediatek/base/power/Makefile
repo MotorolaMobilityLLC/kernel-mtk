@@ -29,6 +29,7 @@ obj-$(CONFIG_MACH_MT6765) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6765) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 obj-$(CONFIG_MACH_MT6758) += mcdi/
+obj-$(CONFIG_MACH_MT6765) += mcdi/
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6765) += pbm_v3/
 obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
