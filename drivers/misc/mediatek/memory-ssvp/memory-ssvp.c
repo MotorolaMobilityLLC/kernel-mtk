@@ -33,6 +33,8 @@
 #include <asm/tlbflush.h>
 #include "sh_svp.h"
 
+const int is_pre_reserve_memory;
+
 #define _SSVP_MBSIZE_ (CONFIG_MTK_SVP_RAM_SIZE + CONFIG_MTK_TUI_RAM_SIZE)
 #define SVP_MBSIZE CONFIG_MTK_SVP_RAM_SIZE
 #define TUI_MBSIZE CONFIG_MTK_TUI_RAM_SIZE
@@ -812,15 +814,15 @@ void memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 		region->count = (size * SZ_1M) >> PAGE_SHIFT;
 		region->state = SVP_STATE_ON;
 
-		if (IS_ENABLED(CONFIG_MTK_MEMORY_SSVP_WRAP)) {
+		if (is_pre_reserve_memory) {
 			int ret_map;
 			struct page *page;
 
-			page = zmc_cma_alloc(cma, size * SZ_1M >> PAGE_SHIFT,
+			page = zmc_cma_alloc(cma, region->count,
 					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
 			region->use_cache_memory = true;
 			region->cache_page = page;
-			svp_usage_count += region->count >> PAGE_SHIFT;
+			svp_usage_count += region->count;
 			ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(region->cache_page))),
 					region->count << PAGE_SHIFT);
 
