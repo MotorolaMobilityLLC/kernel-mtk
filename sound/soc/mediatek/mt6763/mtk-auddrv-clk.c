@@ -278,9 +278,17 @@ void AudDrv_Bus_Init(void)
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
+/* should only be used when auddrv_clk_on */
 void AudDrv_AUDINTBUS_Sel(int parentidx)
 {
 	int ret = 0;
+
+	if (!aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_SYSPLL1_D4].clk_prepare ||
+	    !aud_clks[CLOCK_CLK26M].clk_prepare) {
+		pr_warn("%s(), clk_prepare = false\n", __func__);
+		goto EXIT;
+	}
 
 	PRINTK_AUD_CLK("+AudDrv_AUDINTBUS_Sel, parentidx = %d\n", parentidx);
 	if (parentidx == 1) {
@@ -309,6 +317,15 @@ EXIT:
 static int apll1_mux_setting(bool enable)
 {
 	int ret = 0;
+
+	if (!aud_clks[CLOCK_TOP_MUX_AUD_1].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL1_CK].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL1_D8].clk_prepare ||
+	    !aud_clks[CLOCK_CLK26M].clk_prepare) {
+		pr_warn("%s(), clk_prepare = false\n", __func__);
+		return -EINVAL;
+	}
 
 	PRINTK_AUD_CLK("+%s(), enable %d\n", __func__, enable);
 	if (enable) {
@@ -373,6 +390,15 @@ EXIT:
 static int apll2_mux_setting(bool enable)
 {
 	int ret = 0;
+
+	if (!aud_clks[CLOCK_TOP_MUX_AUD_2].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL2_CK].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_MUX_AUD_ENG2].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL2_D8].clk_prepare ||
+	    !aud_clks[CLOCK_CLK26M].clk_prepare) {
+		pr_warn("%s(), clk_prepare = false\n", __func__);
+		return -EINVAL;
+	}
 
 	PRINTK_AUD_CLK("+%s(), enable %d\n", __func__, enable);
 	if (enable) {
@@ -448,7 +474,7 @@ void AudDrv_Clk_On(void)
 {
 	int ret = 0;
 
-	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	pr_debug("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	mutex_lock(&auddrv_clk_mutex);
 	Aud_AFE_Clk_cntr++;
 	if (Aud_AFE_Clk_cntr == 1) {
@@ -507,7 +533,7 @@ EXPORT_SYMBOL(AudDrv_Clk_On);
 
 void AudDrv_Clk_Off(void)
 {
-	PRINTK_AUD_CLK("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	pr_debug("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	mutex_lock(&auddrv_clk_mutex);
 
 	Aud_AFE_Clk_cntr--;
