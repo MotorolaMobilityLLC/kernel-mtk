@@ -472,7 +472,7 @@ static void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	if (psHead == main_head) {
-		long long cpu_target_loss;
+		long long cpu_target_loss, temp_cpu_target_loss;
 		int boost_linear, boost_real;
 		long long t_cpu_cur, t_gpu_cur, t_cpu_target;
 		long long t_cpu_rem_cur = 0;
@@ -495,37 +495,38 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		}
 
 		cpu_target_loss = t_cpu_cur - t_cpu_target;
-
-		if (!is_gpu_bound) {
+		temp_cpu_target_loss = cpu_target_loss;
 			/* ARR mode and default mode with 60 FPS */
-			if (!(psHead->frc_mode & GED_KPI_FRC_FRR_MODE)
-				&& !((psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE)
-				&& psHead->target_fps != 60)) {
-				t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
-				t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
+		if (!(psHead->frc_mode & GED_KPI_FRC_FRR_MODE)
+			&& !((psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE)
+			&& psHead->target_fps != 60)) {
 
-				if (t_cpu_rem_cur < (psHead->t_cpu_target * 3 / 2)) {
-					if ((cpu_target_loss < 0) && (psKPI->QedBufferDelay == 0))
-						cpu_target_loss = 0;
-				} else {
-					if (cpu_target_loss > 0)
-						cpu_target_loss = 0;
-				}
+			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
+			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 
-			} else {  /* FRR mode or (default mode && FPS != 60) */
-				t_cpu_rem_cur = psHead->t_cpu_target;
-				t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
-				/* asking half of the remained time loss back as well */
-				if (t_cpu_rem_cur < target_t_cpu_remained) {
-					if (cpu_target_loss < 0)
-						cpu_target_loss = 0;
-				} else {
-					if (cpu_target_loss > 0)
-						cpu_target_loss = 0;
-				}
+			if (t_cpu_rem_cur < (psHead->t_cpu_target * 3 / 2)) {
+				if ((temp_cpu_target_loss < 0) && (psKPI->QedBufferDelay == 0))
+					temp_cpu_target_loss = 0;
+			} else {
+				if (temp_cpu_target_loss > 0)
+					temp_cpu_target_loss = 0;
 			}
-			psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
+		} else {  /* FRR mode or (default mode && FPS != 60) */
+			t_cpu_rem_cur = psHead->t_cpu_target;
+			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
+			/* asking half of the remained time loss back as well */
+			if (t_cpu_rem_cur < target_t_cpu_remained) {
+				if (temp_cpu_target_loss < 0)
+					temp_cpu_target_loss = 0;
+			} else {
+				if (temp_cpu_target_loss > 0)
+					temp_cpu_target_loss = 0;
+			}
 		}
+		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
+
+		if (!is_gpu_bound)
+			cpu_target_loss = temp_cpu_target_loss;
 
 		boost_linear = (int)(cpu_target_loss * 100 / t_cpu_target);
 
@@ -534,7 +535,8 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		else
 			boost_real = linear_real_boost(boost_linear);
 
-		boost_real *= boost_amp/100;
+		if (boost_real > 0)
+			boost_real *= boost_amp/100;
 
 		if (boost_real != 0) {
 			if (boost_accum <= 0) {
