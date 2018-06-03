@@ -1835,7 +1835,7 @@ int mtk_transmit_tx_packet(u32 pkt_len)
 	tx_desc->DDONE = 0;
 	tx_desc->SDL1 = 0;
 	tx_desc->SDP1 = 0;
-	mb();
+	mb(); /* For memory barrier */
 
 	tx_ring = mtk_dev->tx_ring_buffer + MAX_DMA_LENGTH * cpu_idx;
 

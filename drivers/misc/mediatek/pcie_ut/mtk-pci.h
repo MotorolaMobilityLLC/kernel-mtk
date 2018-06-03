@@ -38,13 +38,13 @@ extern int mtk_pcie_warm_reset(struct pci_dev *dev, int pe_rst);
 
 
 
-typedef struct _TEST_PKT_T {
+struct _TEST_PKT_T {
 	u8		ucFixedHdr[4];
 	u16		packet_Length;
 	u8		dma_mode;
 	u8		data_pattern;
 	u8		ucPayload[];
-} TEST_PKT_T, *P_TEST_PKT_T;
+};
 
 
 struct mtk_pci_driver {
@@ -70,13 +70,14 @@ struct mtk_pci_dev {
 
 	/* (in) associated data buffer */
 	void			*transfer_buffer;
-	volatile dma_addr_t	transfer_dma;	/* (in) dma addr for transfer_buffer */
+
+	dma_addr_t	transfer_dma;	/* (in) dma addr for transfer_buffer */
 	u32			transfer_data_length;	/* (in) data buffer length */
 	dma_addr_t		ep_data_buffer;	/* (in) EP data buffer for loopback*/
-	volatile u32		actual_length;	/* (return) actual transfer length */
-	volatile u32		dma_done;	/* (return) dma status */
+	u32		actual_length;	/* (return) actual transfer length */
+	u32		dma_done;	/* (return) dma status */
 	u32			buffer_offset;	/* dma buffer offset*/
-	volatile u32		pme_event;	/* (return) receive pme event */
+	u32		pme_event;	/* (return) receive pme event */
 	struct mtk_pci_driver	*driver;
 
 	/* tx/rx descriptor */
