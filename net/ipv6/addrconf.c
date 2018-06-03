@@ -6094,14 +6094,8 @@ static int __net_init addrconf_init_net(struct net *net)
 	dflt->autoconf = ipv6_defaults.autoconf;
 	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
 
-#ifdef CONFIG_MTK_NET_RFC7217
-	/* MTK_NET:Enable stable address */
-	dflt->stable_secret.initialized = true;
-	all->stable_secret.initialized = true;
-#else
 	dflt->stable_secret.initialized = false;
 	all->stable_secret.initialized = false;
-#endif
 
 	net->ipv6.devconf_all = all;
 	net->ipv6.devconf_dflt = dflt;
