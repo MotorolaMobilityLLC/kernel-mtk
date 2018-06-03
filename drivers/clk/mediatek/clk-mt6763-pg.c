@@ -850,16 +850,24 @@ void mfg_way_en(int way_en)
 		/* TINFO="Set bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET, MFG_PROT_BIT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & MFG_PROT_BIT_ACK_MASK) != MFG_PROT_BIT_ACK_MASK) {
-			/**/
-			/**/
+			retry++;
+			if (retry > 1000) {
+				/*check mfg idle status[20:19]*/
+				pr_debug("%s(%d):%08x\n", __func__, way_en, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				break;
+			}
 		}
 		/* TINFO="Set bus protect" */
+		retry = 0;
 		spm_write(INFRA_TOPAXI_PROTECTEN_SET, MFG_PROT_BIT_2ND_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & MFG_PROT_BIT_ACK_2ND_MASK)
 			!= MFG_PROT_BIT_ACK_2ND_MASK) {
 			retry++;
-			if (retry > 100) /*check mfg idle status[20:19]*/
-				pr_debug("%s:%08x\n", __func__, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+			if (retry > 1000) {
+				/*check mfg idle status[20:19]*/
+				pr_debug("%s-2nd(%d):%08x\n", __func__, way_en, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				break;
+			}
 		}
 	}
 }

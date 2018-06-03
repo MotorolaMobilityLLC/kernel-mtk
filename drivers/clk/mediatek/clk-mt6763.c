@@ -1133,7 +1133,7 @@ static const struct mtk_gate_regs mfg_cfg_cg_regs = {
 	}
 
 static const struct mtk_gate mfg_cfg_clks[] __initconst = {
-	GATE_MFG_CFG(MFGCFG_BG3D, "mfg_cfg_bg3d", "mfg_sel", 0)
+	GATE_MFG_CFG(MFGCFG_BG3D, "mfg_cfg_bg3d", "mfg_sel", 10)
 };
 
 static const struct mtk_gate_regs audio0_cg_regs = {
