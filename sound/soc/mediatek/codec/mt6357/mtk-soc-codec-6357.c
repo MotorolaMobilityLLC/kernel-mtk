@@ -53,9 +53,6 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-#ifdef CONFIG_MTK_ACCDET
-#include "accdet.h"
-#endif
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <mach/mtk_pmic.h>
