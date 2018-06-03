@@ -1761,16 +1761,16 @@ static void testcase_backup_register(void)
 	struct cmdqRecStruct *handle = NULL;
 	int ret = 0;
 	uint32_t regAddr[3] = { CMDQ_TEST_GCE_DUMMY_PA,
-		CMDQ_GPR_R32_PA(CMDQ_DATA_REG_PQ_COLOR),
-		CMDQ_GPR_R32_PA(CMDQ_DATA_REG_2D_SHARPNESS_0)
+		CMDQ_THR_CURR_ADDR_PA(5),
+		CMDQ_THR_END_ADDR_PA(5)
 	};
 	uint32_t regValue[3] = { 0 };
 
 	CMDQ_MSG("%s\n", __func__);
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xAAAAAAAA);
-	CMDQ_REG_SET32(CMDQ_GPR_R32(CMDQ_DATA_REG_PQ_COLOR), 0xBBBBBBBB);
-	CMDQ_REG_SET32(CMDQ_GPR_R32(CMDQ_DATA_REG_2D_SHARPNESS_0), 0xCCCCCCCC);
+	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(5), 0xBBBBBBBB);
+	CMDQ_REG_SET32(CMDQ_THR_END_ADDR(5), 0xCCCCCCCC);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
