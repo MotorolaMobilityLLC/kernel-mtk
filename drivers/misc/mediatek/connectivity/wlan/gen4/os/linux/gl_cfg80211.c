@@ -647,22 +647,34 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	if (prGlueInfo->prScanRequest != NULL)
 		return -EBUSY;
 
+	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T));
+	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan(), original n_ssids=%d\n", request->n_ssids);
+
 	if (request->n_ssids == 0) {
 		rScanRequest.u4SsidNum = 0;
-	} else if (request->n_ssids <= SCN_SSID_MAX_NUM) {
+	} else if (request->n_ssids <= (SCN_SSID_MAX_NUM + 1)) {
+		if ((request->ssids[request->n_ssids - 1].ssid == NULL)
+			|| (request->ssids[request->n_ssids - 1].ssid_len == 0))
+			request->n_ssids--; /* remove the rear NULL SSID if this is a wildcard scan*/
+
+		if (request->n_ssids == (SCN_SSID_MAX_NUM + 1)) /* remove the rear SSID if this is a specific scan */
+			request->n_ssids--;
 		rScanRequest.u4SsidNum = request->n_ssids;
 
 		for (i = 0; i < request->n_ssids; i++) {
-			COPY_SSID(rScanRequest.rSsid[i].aucSsid,
-				  rScanRequest.rSsid[i].u4SsidLen, request->ssids[i].ssid, request->ssids[i].ssid_len);
+			COPY_SSID(rScanRequest.rSsid[i].aucSsid, rScanRequest.rSsid[i].u4SsidLen,
+				  request->ssids[i].ssid, request->ssids[i].ssid_len);
 		}
 	} else {
+		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
 		return -EINVAL;
 	}
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(), n_ssids=%d\n", request->n_ssids);
 
-	rScanRequest.u4IELength = request->ie_len;
-	if (request->ie_len > 0)
+	if (request->ie_len > 0) {
+		rScanRequest.u4IELength = request->ie_len;
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
+	}
 
 	prGlueInfo->prScanRequest = request;
 	rStatus = kalIoctl(prGlueInfo,
@@ -671,7 +683,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		prGlueInfo->prScanRequest = NULL;
-		DBGLOG(REQ, WARN, "scan error:%lx\n", rStatus);
+		DBGLOG(REQ, ERROR, "scan error:%x\n", rStatus);
 		return -EINVAL;
 	}
 
