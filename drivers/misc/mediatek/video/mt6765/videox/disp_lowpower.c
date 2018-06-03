@@ -896,11 +896,11 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			MMPROFILE_FLAG_PULSE, idle_check_interval, interval);
 
 		/* error handling */
-		interval = interval > 1000 ? 1000 : interval;
+		interval = (long long)interval > 1000 ? 1000 : interval;
 		/* when starting up before the first time kick */
 		if (idlemgr_pgc->idlemgr_last_kick_time == 0)
 			msleep_interruptible(idle_check_interval);
-		else if (interval > 0)
+		else if ((long long)interval > 0)
 			msleep_interruptible(interval);
 
 		primary_display_manual_lock();

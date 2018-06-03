@@ -703,10 +703,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
 
 	temp_for_div = 5000 * (fill_rate - consume_rate);
-	WARN_ON(temp_for_div < 0);
+	WARN_ON((long long)temp_for_div < 0);
 	do_div(temp_for_div, 1000000);
 	temp = fifo_valid_size - temp_for_div;
-	if (temp < 0)
+	if ((long long)temp < 0)
 		sodi_threshold_high = preultra_high;
 	else
 		sodi_threshold_high =
