@@ -1097,7 +1097,7 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (PVRSRV_DEVICE_NODE	*psDeviceNode,
 			Normal/Hyperv Drivers: Supports power management
 			Guest Drivers: Do not currently support power management
 	*/
-PVR_DPF((PVR_DBG_ERROR, "%s: PVRSRVRegisterPowerDevice starts", __func__));
+PVR_DPF((PVR_DBG_MESSAGE, "%s: PVRSRVRegisterPowerDevice starts", __func__));
 	eError = PVRSRVRegisterPowerDevice(psDeviceNode,
 									   &RGXPrePowerState, &RGXPostPowerState,
 									   psDevConfig->pfnPrePowerState, psDevConfig->pfnPostPowerState,
@@ -1112,7 +1112,7 @@ PVR_DPF((PVR_DBG_ERROR, "%s: PVRSRVRegisterPowerDevice starts", __func__));
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVRGXInitDevPart2KM: failed to register device with power manager"));
 		return eError;
 	}
-PVR_DPF((PVR_DBG_ERROR, "%s: PVRSRVRegisterPowerDevice done", __func__));
+PVR_DPF((PVR_DBG_MESSAGE, "%s: PVRSRVRegisterPowerDevice done", __func__));
 
 	eError = RGXSetPowerParams(psDevInfo, psDevConfig);
 	if (eError != PVRSRV_OK) return eError;
