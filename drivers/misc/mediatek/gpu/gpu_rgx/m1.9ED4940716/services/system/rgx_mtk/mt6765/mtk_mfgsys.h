@@ -20,8 +20,8 @@
 
 /* Control SW APM is enabled or not  */
 #ifndef MTK_BRINGUP
-#define MTK_PM_SUPPORT 0
-#define MTCMOS_CONTROL 0
+#define MTK_PM_SUPPORT 1
+#define MTCMOS_CONTROL 1
 #else
 #define MTK_PM_SUPPORT 0
 #endif
