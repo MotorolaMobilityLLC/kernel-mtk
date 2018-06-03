@@ -1055,6 +1055,19 @@ struct energy_env {
 	int                     dst_cpu;
 	int                     energy;
 	int                     opp_idx[3]; /* [FIXME] cluster may > 3 */
+	int                     payoff;
+	struct task_struct      *task;
+	struct {
+		int before;
+		int after;
+		int delta;
+		int diff;
+	} nrg;
+	struct {
+		int before;
+		int after;
+		int delta;
+	} cap;
 };
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT

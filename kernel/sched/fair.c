@@ -34,6 +34,7 @@
 #include <trace/events/sched.h>
 
 #include "sched.h"
+#include "tune.h"
 
 #include "hmp.c"
 
@@ -4249,6 +4250,8 @@ static inline void hrtick_update(struct rq *rq)
 }
 #endif
 
+static inline unsigned long boosted_cpu_util(int cpu);
+
 static void update_capacity_of(int cpu)
 {
 	unsigned long req_cap;
@@ -4257,7 +4260,8 @@ static void update_capacity_of(int cpu)
 		return;
 
 	/* Convert scale-invariant capacity to cpu. */
-	req_cap = cpu_util(cpu) * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
+	req_cap = boosted_cpu_util(cpu);
+	req_cap = req_cap * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
 	set_cfs_cpu_capacity(cpu, true, req_cap);
 }
 
@@ -4312,6 +4316,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		if (!task_new && !rq->rd->overutilized &&
 				cpu_overutilized(rq->cpu))
 			rq->rd->overutilized = true;
+
+		schedtune_enqueue_task(p, cpu_of(rq));
 
 		/*
 		 * We want to potentially trigger a freq switch
@@ -4396,6 +4402,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		sub_nr_running(rq, 1);
+		schedtune_dequeue_task(p, cpu_of(rq));
 
 		/*
 		 * We want to potentially trigger a freq switch
@@ -4825,11 +4832,13 @@ static inline unsigned long task_util(struct task_struct *p)
 
 unsigned int capacity_margin = 1280; /* ~20% margin */
 
+static inline unsigned long boosted_task_util(struct task_struct *task);
+
 static inline bool __task_fits(struct task_struct *p, int cpu, int util)
 {
 	unsigned long capacity = capacity_of(cpu);
 
-	util += task_util(p);
+	util += boosted_task_util(p);
 
 	return (capacity * 1024) > (util * capacity_margin);
 }
@@ -5060,6 +5069,22 @@ static int sched_group_energy(struct energy_env *eenv)
 					eenv->sg_cap = sg;
 
 				cap_idx = find_new_capacity(eenv, sg->sge);
+
+				if (sg->group_weight == 1) {
+					/* Remove capacity of src CPU (before task move) */
+					if (eenv->util_delta == 0 &&
+					    cpumask_test_cpu(eenv->src_cpu, sched_group_cpus(sg))) {
+						eenv->cap.before = sg->sge->cap_states[cap_idx].cap;
+						eenv->cap.delta -= eenv->cap.before;
+					}
+					/* Add capacity of dst CPU  (after task move) */
+					if (eenv->util_delta != 0 &&
+					    cpumask_test_cpu(eenv->dst_cpu, sched_group_cpus(sg))) {
+						eenv->cap.after = sg->sge->cap_states[cap_idx].cap;
+						eenv->cap.delta += eenv->cap.after;
+					}
+				}
+
 				idle_idx = group_idle_state(sg);
 				group_util = group_norm_util(eenv, sg);
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
@@ -5115,6 +5140,151 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 	return cpu != -1 && cpumask_test_cpu(cpu, sched_group_cpus(sg));
 }
 
+#ifdef CONFIG_SCHED_TUNE
+
+static unsigned long
+schedtune_margin(unsigned long signal, unsigned long boost)
+{
+	unsigned long long margin = 0;
+
+	/*
+	 * Signal proportional compensation (SPC)
+	 *
+	 * The Boost (B) value is used to compute a Margin (M) which is
+	 * proportional to the complement of the original Signal (S):
+	 *   M = B * (SCHED_LOAD_SCALE - S)
+	 * The obtained M could be used by the caller to "boost" S.
+	 */
+	margin  = SCHED_LOAD_SCALE - signal;
+	margin *= boost;
+
+	/*
+	 * Fast integer division by constant:
+	 *  Constant   :                 (C) = 100
+	 *  Precision  : 0.1%            (P) = 0.1
+	 *  Reference  : C * 100 / P     (R) = 100000
+	 *
+	 * Thus:
+	 *  Shift bits : ceil(log(R,2))  (S) = 17
+	 *  Mult const : round(2^S/C)    (M) = 1311
+	 *
+	 *
+	 */
+	margin  *= 1311;
+	margin >>= 17;
+
+	return margin;
+}
+
+static inline unsigned int
+schedtune_cpu_margin(unsigned long util, int cpu)
+{
+	unsigned int boost;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost = schedtune_cpu_boost(cpu);
+#else
+	boost = get_sysctl_sched_cfs_boost();
+#endif
+	if (boost == 0)
+		return 0;
+
+	return schedtune_margin(util, boost);
+}
+
+static inline unsigned long
+schedtune_task_margin(struct task_struct *task)
+{
+	unsigned int boost;
+	unsigned long util;
+	unsigned long margin;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost = schedtune_task_boost(task);
+#else
+	boost = get_sysctl_sched_cfs_boost();
+#endif
+	if (boost == 0)
+		return 0;
+
+	util = task_util(task);
+	margin = schedtune_margin(util, boost);
+
+	return margin;
+}
+
+#else /* CONFIG_SCHED_TUNE */
+
+static inline unsigned int
+schedtune_cpu_margin(unsigned long util, int cpu)
+{
+	return 0;
+}
+
+static inline unsigned int
+schedtune_task_margin(struct task_struct *task)
+{
+	return 0;
+}
+
+#endif /* CONFIG_SCHED_TUNE */
+
+static inline unsigned long
+boosted_cpu_util(int cpu)
+{
+	unsigned long util = cpu_util(cpu);
+	unsigned long margin = schedtune_cpu_margin(util, cpu);
+
+	return util + margin;
+}
+
+static inline unsigned long
+boosted_task_util(struct task_struct *task)
+{
+	unsigned long util = task_util(task);
+	unsigned long margin = schedtune_task_margin(task);
+
+	return util + margin;
+}
+
+#ifdef CONFIG_SCHED_TUNE
+static int energy_diff_evaluate(struct energy_env *eenv)
+{
+	unsigned int boost;
+	int nrg_delta;
+
+	/* Return energy diff when boost margin is 0 */
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost = schedtune_task_boost(eenv->task);
+#else
+	boost = get_sysctl_sched_cfs_boost();
+#endif
+	if (boost == 0)
+		return eenv->nrg.diff;
+
+	/* Compute normalized energy diff */
+	nrg_delta = schedtune_normalize_energy(eenv->nrg.diff);
+	eenv->nrg.delta = nrg_delta;
+
+	eenv->payoff = schedtune_accept_deltas(
+			eenv->nrg.delta,
+			eenv->cap.delta,
+			eenv->task);
+
+	/*
+	 * When SchedTune is enabled, the energy_diff() function will return
+	 * the computed energy payoff value. Since the energy_diff() return
+	 * value is expected to be negative by its callers, this evaluation
+	 * function return a negative value each time the evaluation return a
+	 * positive payoff, which is the condition for the acceptance of
+	 * a scheduling decision
+	 */
+	return -eenv->payoff;
+}
+#else /* CONFIG_SCHED_TUNE */
+#define energy_diff_evaluate(eenv) eenv->nrg.diff
+#endif
+
 /*
  * energy_diff(): Estimate the energy impact of changing the utilization
  * distribution. eenv specifies the change: utilisation amount, source, and
@@ -5131,6 +5301,8 @@ static int energy_diff(struct energy_env *eenv)
 		.util_delta	= 0,
 		.src_cpu	= eenv->src_cpu,
 		.dst_cpu	= eenv->dst_cpu,
+		.nrg		= { 0, 0, 0, 0},
+		.cap		= { 0, 0, 0 },
 	};
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	int i;
@@ -5165,13 +5337,22 @@ static int energy_diff(struct energy_env *eenv)
 				return 0; /* Invalid result abort */
 			energy_before += eenv_before.energy;
 
+			/* Keep track of SRC cpu (before) capacity */
+			eenv->cap.before = eenv_before.cap.before;
+			eenv->cap.delta = eenv_before.cap.delta;
+
 			if (sched_group_energy(eenv))
 				return 0; /* Invalid result abort */
 			energy_after += eenv->energy;
 		}
 	} while (sg = sg->next, sg != sd->groups);
 
-	return energy_after-energy_before;
+	eenv->nrg.before = energy_before;
+	eenv->nrg.after = energy_after;
+	eenv->nrg.diff = eenv->nrg.after - eenv->nrg.before;
+	eenv->payoff = 0;
+
+	return energy_diff_evaluate(eenv);
 }
 
 /*
@@ -5499,7 +5680,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		 * so prev_cpu will receive a negative bias due to the double
 		 * accounting. However, the blocked utilization may be zero.
 		 */
-		int new_util = cpu_util(i) + task_util(p);
+		int new_util = cpu_util(i) + boosted_task_util(p);
 
 		if (new_util > capacity_orig_of(i))
 			continue;
@@ -5520,6 +5701,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 			.util_delta	= task_util(p),
 			.src_cpu	= task_cpu(p),
 			.dst_cpu	= target_cpu,
+			.task		= p,
 		};
 
 		/* Not enough spare capacity on previous cpu */
