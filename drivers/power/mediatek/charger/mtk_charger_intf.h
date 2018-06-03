@@ -135,6 +135,8 @@ struct charger_custom_data {
 	int ac_charger_input_current;
 	int non_std_ac_charger_current;
 	int charging_host_charger_current;
+	int apple_1_0a_charger_current;
+	int apple_2_1a_charger_current;
 	int ta_ac_charger_current;
 
 	/* sw jeita */
