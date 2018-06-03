@@ -25,28 +25,27 @@
 
 #include "mtk_gpufreq.h"
 
+
 /*
- * Bank0: CPU-L		(TS_MCU1)
- * Bank1: CPU-LL	(TS_MCU2)
- * Bank2: CCI		(TS_MCU1 + TS_MCU2)
- * Bank3: GPU		(TS_MCU3)
- * Bank4: SoC		(TS_MCU4 + TS_MCU5)
+ *Bank0: CA7L (TSMCU1)
+ *Bank3: GPU  (TSMCU2)
+ *Bank4: SoC  (TSMCU3)
+ */
+
+/*
+ * TC0: (TS_MCU1, TS_MCU2, TS_MCU3)
  */
 enum thermal_sensor {
 	TS_MCU1 = 0,
 	TS_MCU2,
 	TS_MCU3,
-	TS_MCU4,
-	TS_MCU5,
 	TS_ENUM_MAX,
 };
 
 enum thermal_bank_name {
 	THERMAL_BANK0     = 0,
-	THERMAL_BANK1     = 1,
-	THERMAL_BANK2     = 2,
-	THERMAL_BANK3     = 3,
-	THERMAL_BANK4     = 4,
+	THERMAL_BANK3     = 1,
+	THERMAL_BANK4     = 2,
 	THERMAL_BANK_NUM
 };
 
@@ -90,8 +89,6 @@ enum mtk_thermal_sensor_cpu_id_met {
 	MTK_THERMAL_SENSOR_TS1 = 0,
 	MTK_THERMAL_SENSOR_TS2,
 	MTK_THERMAL_SENSOR_TS3,
-	MTK_THERMAL_SENSOR_TS4,
-	MTK_THERMAL_SENSOR_TS5,
 
 	ATM_CPU_LIMIT,
 	ATM_GPU_LIMIT,
