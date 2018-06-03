@@ -1460,7 +1460,6 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
 
-	write_cmos_sensor(0x0100, 0x01);
 }	/* preview_setting */
 
 static void capture_setting(kal_uint16 currefps)
@@ -1547,7 +1546,6 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-	write_cmos_sensor(0x0100, 0x01);/* stream on? */
 	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 }	/* capture setting */
 
@@ -1639,8 +1637,6 @@ static void hd_4k_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -1735,7 +1731,6 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-	write_cmos_sensor(0x0100, 0x01);
 	LOG_INF("start streamming. 0x0100 =%d\n", read_cmos_sensor(0x0100));
 
 }
@@ -1830,8 +1825,6 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void slim_video_setting(void)
@@ -1924,8 +1917,6 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0213, 0x00);
 	write_cmos_sensor(0x0214, 0x01);
 	write_cmos_sensor(0x0215, 0x00);
-
-	write_cmos_sensor(0x0100, 0x01);
 }
 
 static void custom1_mode(void)
