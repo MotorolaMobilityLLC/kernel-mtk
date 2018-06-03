@@ -295,6 +295,10 @@ el1_sync:
 el1_sync_nest:
 	cmp	w4, #0x2
 	b.lt	el1_sync_nest_skip
+	b.gt	el1_sync_nest_stop
+	cmp	x24, #ESR_ELx_EC_DABT_CUR	// data abort in EL1
+	b.eq	el1_sync_nest_skip
+el1_sync_nest_stop:
 	bl	aee_stop_nested_panic
 el1_sync_nest_skip:
 	mrs	x1, esr_el1			// read the syndrome register
