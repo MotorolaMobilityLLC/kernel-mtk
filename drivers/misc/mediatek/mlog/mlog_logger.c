@@ -489,7 +489,7 @@ static void mlog_meminfo(void)
 	memfree = P2K(global_page_state(NR_FREE_PAGES) +
 			mtkpasr_show_page_reserved());
 	swapfree = P2K(atomic_long_read(&nr_swap_pages));
-	cached = P2K(global_page_state(NR_FILE_PAGES) -
+	cached = P2K(global_node_page_state(NR_FILE_PAGES) -
 			total_swapcache_pages());
 	/*
 	 * use following code if kernel version is under 3.10.
@@ -517,12 +517,12 @@ static void mlog_meminfo(void)
 	zram = 0;
 #endif
 
-	active = P2K(global_page_state(NR_ACTIVE_ANON) +
-			global_page_state(NR_ACTIVE_FILE));
-	inactive = P2K(global_page_state(NR_INACTIVE_ANON) +
-			global_page_state(NR_INACTIVE_FILE));
+	active = P2K(global_node_page_state(NR_ACTIVE_ANON) +
+			global_node_page_state(NR_ACTIVE_FILE));
+	inactive = P2K(global_node_page_state(NR_INACTIVE_ANON) +
+			global_node_page_state(NR_INACTIVE_FILE));
 	/* MLOG_PRINTK("active: %lu, inactive: %lu\n", active, inactive); */
-	shmem = P2K(global_page_state(NR_SHMEM));
+	shmem = P2K(global_node_page_state(NR_SHMEM));
 
 #ifdef CONFIG_MTK_ION
 	ion = B2K((unsigned long)ion_mm_heap_total_memory());
