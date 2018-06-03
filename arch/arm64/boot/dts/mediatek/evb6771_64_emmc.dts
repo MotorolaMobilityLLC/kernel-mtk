@@ -409,24 +409,24 @@ initcall_debug=1";
 	};
 	uart0_rx_set_cfg:uart0_rx_set@gpio95 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO95__FUNC_URXD0>; */
+			pins = <PINMUX_GPIO95__FUNC_URXD0>;
 		};
 	};
 	uart0_rx_clr_cfg:uart0_rx_clear@gpio95 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO95__FUNC_GPIO95>; */
+			pins = <PINMUX_GPIO95__FUNC_GPIO95>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	uart0_tx_set_cfg:uart0_tx_set@gpio96 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO96__FUNC_UTXD0>; */
+			pins = <PINMUX_GPIO96__FUNC_UTXD0>;
 		};
 	};
 	uart0_tx_clr_cfg:uart0_tx_clear@gpio96 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO96__FUNC_GPIO96>; */
+			pins = <PINMUX_GPIO96__FUNC_GPIO96>;
 			slew-rate = <1>;
 			output-high;
 		};
