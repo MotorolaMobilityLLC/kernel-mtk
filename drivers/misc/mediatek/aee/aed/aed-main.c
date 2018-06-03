@@ -1837,7 +1837,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	return 0;
 }
 
-static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const char *module,
+static void kernel_reportAPI(const enum AE_DEFECT_ATTR attr, const int db_opt, const char *module,
 			     const char *msg)
 {
 	struct aee_oops *oops;

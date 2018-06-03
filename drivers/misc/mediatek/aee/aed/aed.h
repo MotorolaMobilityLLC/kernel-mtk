@@ -115,7 +115,7 @@ struct AE_Msg {
 	};
 	union {
 		unsigned int arg;	/* simple argument */
-		AE_EXP_CLASS cls;	/* exception/error/defect class */
+		enum AE_EXP_CLASS cls;	/* exception/error/defect class */
 	};
 	union {
 		unsigned int len;	/* dynamic length argument */

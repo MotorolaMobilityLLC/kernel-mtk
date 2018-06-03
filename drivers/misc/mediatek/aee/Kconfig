@@ -41,4 +41,8 @@ config MTK_AEE_MRDUMP
 	bool "MT-RAMDUMP support"
 	default n
 	help
-	  MT-RAMDUMP support full system ramdump when kernel occur.
+	  MTK_AEE_MRDUMP is the kernel config of MRDUMP feature
+	  MRDUMP (Memory RAM Dump) based on MT-RAMDUMP is designed as a memory
+	  dump mechanism for debugging system to dump DRAM content at MTK
+	  android phone platform
+

@@ -109,14 +109,12 @@ void aee_trigger_kdb(void)
 }
 #endif
 
-struct aee_oops *aee_oops_create(AE_DEFECT_ATTR attr, AE_EXP_CLASS clazz, const char *module)
+struct aee_oops *aee_oops_create(enum AE_DEFECT_ATTR attr, enum AE_EXP_CLASS clazz, const char *module)
 {
 	struct aee_oops *oops = kzalloc(sizeof(struct aee_oops), GFP_ATOMIC);
 
-	if (oops == NULL) {
-		pr_notice("%s : kzalloc() fail\n", __func__);
+	if (oops == NULL)
 		return NULL;
-	}
 	oops->attr = attr;
 	oops->clazz = clazz;
 	if (module != NULL)

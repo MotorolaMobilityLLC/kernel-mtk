@@ -365,7 +365,7 @@ int ipanic_data_to_sd(int dt, void *data)
 	return errno;
 }
 
-void ipanic_mrdump_mini(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
+void ipanic_mrdump_mini(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 {
 	int ret;
 	struct ipanic_header *ipanic_hdr;
