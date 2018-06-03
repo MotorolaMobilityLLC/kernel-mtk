@@ -21,9 +21,9 @@
 #define PMIC_WRAP_CTP            0
 
 #define PMIC_WRAP_DEBUG
-#define PMIC_WRAP_DEBUG_LOGGING
 #define PMIC_WRAP_SUPPORT
 #define PMIC_WRAP_CRC_SUPPORT
+/* #define PMIC_WRAP_MATCH_SUPPORT */
 /****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
 #if (PMIC_WRAP_PRELOADER)
 	#if CFG_FPGA_PLATFORM
