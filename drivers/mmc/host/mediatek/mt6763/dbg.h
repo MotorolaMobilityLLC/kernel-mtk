@@ -15,19 +15,14 @@
 #define __MT_MSDC_DEUBG__
 #include "mtk_sd.h"
 
-#include "msdc_tune.h"
-
 /* #define MTK_MSDC_ERROR_TUNE_DEBUG */
 
 enum {
 	SD_TOOL_ZONE = 0,
 	SD_TOOL_DMA_SIZE  = 1,
-	SD_TOOL_PM_ENABLE = 2,
 	SD_TOOL_SDIO_PROFILE = 3,
-	SD_TOOL_CLK_SRC_SELECT = 4,
 	SD_TOOL_REG_ACCESS = 5,
 	SD_TOOL_SET_DRIVING = 6,
-	SD_TOOL_DESENSE = 7,
 	RW_BIT_BY_BIT_COMPARE = 8,
 	SMP_TEST_ON_ONE_HOST = 9,
 	SMP_TEST_ON_ALL_HOST = 10,
@@ -48,8 +43,7 @@ enum {
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 	SDIO_AUTOK_RESULT = 30,
 	MMC_CMDQ_STATUS = 31,
-	MMC_DMA_RETRY = 32,
-	MSDC_DUMP_STATUS = 33,
+	SD_TOOL_TOP_REG_ACCESS = 32,
 };
 
 /* Debug message event */
@@ -147,8 +141,7 @@ do { \
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
-void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode,
-	int cmdq);
+
 void sdio_get_time(struct mmc_request *mrq, struct timespec *time_now);
 void sdio_calc_time(struct mmc_request *mrq, struct timespec *time_start);
 
@@ -156,14 +149,12 @@ void msdc_error_tune_debug1(struct msdc_host *host,
 	struct mmc_command *cmd, struct mmc_command *sbc, u32 *intsts);
 void msdc_error_tune_debug2(struct msdc_host *host,
 	struct mmc_command *stop, u32 *intsts);
-void msdc_error_tune_debug3(struct msdc_host *host,
-	struct mmc_command *cmd, u32 *intsts);
 int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
 void mmc_cmd_dump(struct mmc_host *mmc);
 #endif
-void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m);
+void msdc_cmdq_status_print(struct msdc_host *host);
 
 #endif

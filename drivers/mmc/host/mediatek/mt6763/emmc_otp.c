@@ -85,7 +85,7 @@ struct compat_otp_ctl {
 #define OTP_ERROR_NOMEM         -4
 #define OTP_ERROR_RESET         -5
 
-#include <mt-plat/mtk_partition.h>
+#include <mt-plat/mtk-partition.h>
 #define DRV_NAME_MISC           "otp"
 #define PROCNAME                "driver/otp"
 
@@ -112,6 +112,7 @@ unsigned int emmc_get_wp_size(void)
 	int ret = 0;
 	u32 *csd = NULL;
 	u32 write_prot_grpsz = 0;
+	int err;
 
 	if (sg_wp_size == 0) {
 		/* not to change ERASE_GRP_DEF after card initialized */
@@ -372,7 +373,7 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int is_cmdq_en;
 	int ret;
-#endif
+#enndif
 
 	/* check parameter */
 	l_addr = emmc_otp_start();

@@ -26,17 +26,6 @@
 extern const struct of_device_id msdc_of_ids[];
 extern unsigned int cd_gpio;
 
-#define MSDC_MIN_CLK           (260000)
-#define MSDC_350K_CLK          (350000)
-#define MSDC_400K_CLK          (400000)
-#define MSDC_25M_CLK           (25000000)
-#define MSDC_26M_CLK           (26000000)
-#define MSDC_50M_CLK           (50000000)
-#define MSDC_52M_CLK           (52000000)
-#define MSDC_100M_CLK          (100000000)
-#define MSDC_200M_CLK          (200000000)
-#define MSDC_208M_CLK          (208000000)
-
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 
 /**************************************************************/
@@ -45,22 +34,21 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
 void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_pmic_force_vcore_pwm(bool enable);
+void msdc_sd_power_off(void);
 
 #if !defined(FPGA_PLATFORM)
-int msdc_oc_check(struct msdc_host *host);
-void msdc_sd_power_off(void);
+int msdc_oc_check(struct msdc_host *host, u32 en);
 void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_vcore(struct msdc_host *host);
 
 #else
 #define msdc_power_calibration_init(host)
 void msdc_fpga_pwr_init(void);
-#define msdc_oc_check(msdc_host)	(0)
+#define msdc_oc_check(msdc_host, en)	(0)
 extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
-#define msdc_sd_power_off()
 #define msdc_dump_ldo_sts(host)
 
 #endif
@@ -72,6 +60,7 @@ extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 
 #if defined(FPGA_PLATFORM)
 extern  u32 hclks_msdc[];
+#define msdc_dump_dvfs_reg(host)
 #define msdc_dump_clock_sts(host)
 #define dbg_msdc_dump_clock_sts(m, host)
 #define msdc_get_hclk(host, src)        MSDC_SRC_FPGA
@@ -82,11 +71,43 @@ static inline int msdc_clk_enable(struct msdc_host *host) { return 0; }
 
 #if !defined(FPGA_PLATFORM)
 extern u32 *hclks_msdc_all[];
+extern void msdc_dump_dvfs_reg(struct msdc_host *host);
 void msdc_dump_clock_sts(struct msdc_host *host);
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 #define msdc_get_hclk(id, src)		hclks_msdc_all[id][src]
-#define msdc_clk_enable(host)		clk_enable(host->clock_control)
-#define msdc_clk_disable(host)		clk_disable(host->clock_control)
+
+#ifdef CONFIG_MTK_HW_FDE_AES
+#define msdc_clk_enable(host) \
+	do { \
+		if (host->hw->host_function != MSDC_SDIO) \
+			fde_aes_check_enable(host->id, 1); \
+		(void)clk_enable(host->clk_ctl); \
+		if (host->hclk_ctl) \
+			(void)clk_enable(host->hclk_ctl); \
+	} while (0)
+#define msdc_clk_disable(host) \
+	do { \
+		clk_disable(host->clk_ctl); \
+		if (host->hclk_ctl) \
+			clk_disable(host->hclk_ctl); \
+		if (host->hw->host_function != MSDC_SDIO) \
+			fde_aes_check_enable(host->id, 0); \
+	} while (0)
+#else
+#define msdc_clk_enable(host) \
+	do { \
+		(void)clk_enable(host->clk_ctl); \
+		if (host->hclk_ctl) \
+			(void)clk_enable(host->hclk_ctl); \
+	} while (0)
+#define msdc_clk_disable(host) \
+	do { \
+		clk_disable(host->clk_ctl); \
+		if (host->hclk_ctl) \
+			clk_disable(host->hclk_ctl); \
+	} while (0)
+#endif
+
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host);
 #endif

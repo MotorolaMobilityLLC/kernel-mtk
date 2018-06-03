@@ -22,36 +22,22 @@
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
 	};
 
-	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
-	mtk-msdc.0 {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
+	msdc0:msdc@11230000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11230000 0x0 0x10000>;
+		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+	};
 
-		mmc0: msdc0@11230000 {
-			compatible = "mediatek,mt6763-mmc";
-			reg = <0x11230000 0x10000>;
-			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRACFG_AO_MSDC0_CG>;*/
-			clock-names = "MSDC0-CLOCK";
-		};
+	msdc1:msdc@11240000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11240000 0x0 0x10000>;
+		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
+	};
 
-		mmc1: msdc1@11240000 {
-			compatible = "mediatek,mt6763-mmc";
-			reg = <0x11240000 0x10000>;
-			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRACFG_AO_MSDC1_CG>;*/
-			clock-names = "MSDC1-CLOCK";
-		};
-
-		mmc2: msdc2@11250000 {
-			compatible = "mediatek,mt6763-mmc";
-			reg = <0x11250000 0x10000>;
-			interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
-			/*clocks = <&infrasys INFRACFG_AO_MSDC2_CG>;*/
-			clock-names = "MSDC2-CLOCK";
-		};
+	msdc2:msdc@11250000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11250000 0x0 0x10000>;
+		interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	msdc1_ins: msdc1_ins@0 {
@@ -1143,30 +1129,6 @@
 	audio_sram@11221000 {
 		compatible = "mediatek,audio_sram";
 		reg = <0 0x11221000 0 0x9000>;
-	};
-
-	msdc0@11230000 {
-		compatible = "mediatek,msdc0";
-		reg = <0 0x11230000 0 0x1000>;
-		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	msdc1@11240000 {
-		compatible = "mediatek,msdc1";
-		reg = <0 0x11240000 0 0x1000>;
-		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	msdc2@11250000 {
-		compatible = "mediatek,msdc2";
-		reg = <0 0x11250000 0 0x1000>;
-		interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	msdc3@11260000 {
-		compatible = "mediatek,msdc3";
-		reg = <0 0x11260000 0 0x1000>;
-		interrupts = <GIC_SPI 138 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	usb3@11270000 {

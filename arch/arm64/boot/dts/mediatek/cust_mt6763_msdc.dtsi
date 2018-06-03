@@ -2,7 +2,8 @@
  *MT6757 MSDC DTSI File
 ********************************************/
 
-&mmc0 {
+&msdc0 {
+	index = /bits/ 8 <0>;
 	clk_src = /bits/ 8 <MSDC50_CLKSRC_400MHZ>;
 	bus-width = <8>;
 	max-frequency = <200000000>;
@@ -12,15 +13,19 @@
 	/*mmc-hs200-1_8v;*/
 	/*mmc-hs400-1_8v;*/
 	non-removable;
-	/*pinctl = <&mmc0_pins_default>;*/
-	/*register_setting = <&mmc0_register_setting_default>;*/
+	/*pinctl = <&msdc0_pins_default>;*/
+	/*register_setting = <&msdc0_register_setting_default>;*/
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	bootable;
-	status = "okay";
+	status = "disable";
 	/*vmmc-supply = <&mt_pmic_vemc_ldo_reg>;*/
+	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>, <&topckgen CLK_TOP_MSDC50_HCLK_SEL>;*/
+	/*clock-names = "msdc0-clock", "msdc0-hclock";*/
+	hw_dvfs = /bits/ 8 <1>;
 };
 
-&mmc1 {
+&msdc1 {
+	index = /bits/ 8 <1>;
 	clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
@@ -31,20 +36,24 @@
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
 	sd-uhs-ddr50;
-	/*pinctl = <&mmc1_pins_default>;*/
-	/*pinctl_sdr104 = <&mmc1_pins_sdr104>;*/
-	/*pinctl_sdr50 = <&mmc1_pins_sdr50>;*/
-	/*pinctl_ddr50 = <&mmc1_pins_ddr50>;*/
-	/*register_setting = <&mmc1_register_setting_default>;*/
+	/*pinctl = <&msdc1_pins_default>;*/
+	/*pinctl_sdr104 = <&msdc1_pins_sdr104>;*/
+	/*pinctl_sdr50 = <&msdc1_pins_sdr50>;*/
+	/*pinctl_ddr50 = <&msdc1_pins_ddr50>;*/
+	/*register_setting = <&msdc1_register_setting_default>;*/
 	host_function = /bits/ 8 <MSDC_SD>;
 	cd_level = /bits/ 8 <MSDC_CD_LOW>;
 	/*cd-gpios = <&pio 3 0>;*/
-	status = "disabled";
+	status = "okay";
 	/*vmmc-supply = <&mt_pmic_vmch_ldo_reg>;*/
 	/*vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;*/
+	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC1>;*/
+	/*clock-names = "msdc1-clock";*/
+	hw_dvfs = /bits/ 8 <0>;
 };
 
-&mmc2 {
+&msdc2 {
+	index = /bits/ 8 <2>;
 	clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
@@ -56,15 +65,18 @@
 	sd-uhs-ddr50;
 	keep-power-in-suspend;
 	non-removable;
-	/*pinctl = <&mmc2_pins_default>;*/
-	/*register_setting = <&mmc2_register_setting_default>;*/
+	/*pinctl = <&msdc2_pins_default>;*/
+	/*register_setting = <&msdc2_register_setting_default>;*/
 	host_function = /bits/ 8 <MSDC_SDIO>;
-	status = "disabled";
+	status = "disable";
+	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC3>, <&topckgen CLK_TOP_MSDC53_HCLK_SEL>;*/
+	/*clock-names = "msdc3-clock", "msdc3-hclock";*/
+	hw_dvfs = /bits/ 8 <1>;
 };
 
 #if 0
 &pio {
-	mmc0_pins_default: mmc0@default {
+	msdc0_pins_default: msdc0@default {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -82,7 +94,7 @@
 		};
 	};
 
-	mmc0_register_setting_default: mmc0@register_default {
+	msdc0_register_setting_default: msdc0@register_default {
 		datrddly      = /bits/ 8 <0 0 0 0 0 0 0 0>;
 		datwrddly      = /bits/ 8 <0>;
 		cmdrrddly      = /bits/ 8 <0>;
@@ -92,7 +104,7 @@
 		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 	};
 
-	mmc1_pins_default: mmc1@default {
+	msdc1_pins_default: msdc1@default {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -104,7 +116,7 @@
 		};
 	};
 
-	mmc1_pins_sdr104: mmc1@sdr104 {
+	msdc1_pins_sdr104: msdc1@sdr104 {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -116,7 +128,7 @@
 		};
 	};
 
-	mmc1_pins_sdr50: mmc1@sdr50 {
+	msdc1_pins_sdr50: msdc1@sdr50 {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -128,7 +140,7 @@
 		};
 	};
 
-	mmc1_pins_ddr50: mmc1@ddr50 {
+	msdc1_pins_ddr50: msdc1@ddr50 {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -140,17 +152,13 @@
 		};
 	};
 
-	mmc1_register_setting_default: mmc1@register_default {
-		datrddly       = /bits/ 8 <0 0 0 0 0 0 0 0>;
-		datwrddly      = /bits/ 8 <0>;
-		cmdrrddly      = /bits/ 8 <0>;
-		cmdrddly       = /bits/ 8 <0>;
+	msdc1_register_setting_default: msdc1@register_default {
 		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 	};
 
-	mmc2_pins_default: mmc2@default {
+	msdc2_pins_default: msdc2@default {
 		pins_cmd {
 			drive-strength = /bits/ 8 <3>;
 		};
@@ -162,11 +170,7 @@
 		};
 	};
 
-	mmc2_register_setting_default: mmc2@register_default {
-		datrddly       = /bits/ 8 <0 0 0 0 0 0 0 0>;
-		datwrddly      = /bits/ 8 <0>;
-		cmdrrddly      = /bits/ 8 <0>;
-		cmdrddly       = /bits/ 8 <0>;
+	msdc2_register_setting_default: msdc2@register_default {
 		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;

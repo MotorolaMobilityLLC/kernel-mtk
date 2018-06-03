@@ -48,7 +48,7 @@
 #define PICACHU_BARRIER_END	0x0011C210
 #define PICACHU_BARRIER_SIZE	(PICACHU_BARRIER_END - PICACHU_BARRIER_START)
 
-#define PARA_PATH       "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/para"
+#define PARA_PATH       "/dev/block/platform/bootdevice/by-name/para"
 #define CFG_ENV_SIZE    0x1000
 #define CFG_ENV_OFFSET  0x40000
 
