@@ -390,8 +390,10 @@ void hps_power_off_vproc2(void)
 		ret = regulator_is_enabled(mtk_regulator_vproc2);
 		if (ret == 0)
 			hps_warn("[%s]Vproc2 Status ==> Disable\n", __func__);
-		else
+		else {
 			hps_warn("[%s]Vproc2 Status ==> Enable\n", __func__);
+			WARN_ON(1);
+		}
 	}
 }
 
@@ -406,8 +408,10 @@ void hps_power_on_vproc2(void)
 			hps_warn("Enabled vproc2 fail\n");
 	}
 	ret = regulator_is_enabled(mtk_regulator_vproc2);
-	if (ret == 0)
+	if (ret == 0) {
 		hps_warn("[%s]Vproc2 Status ==> Disable\n", __func__);
+		WARN_ON(1);
+	}
 	else
 		hps_warn("[%s]Vproc2 Status ==> Enable\n", __func__);
 }
