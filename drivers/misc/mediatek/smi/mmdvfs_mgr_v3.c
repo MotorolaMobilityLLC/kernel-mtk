@@ -16,6 +16,8 @@
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
 #include <linux/clk.h>
+#include <linux/pm_qos.h>
+
 #include <mt-plat/mtk_chip.h>
 
 #include <aee.h>
@@ -27,6 +29,7 @@
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_config_util.h"
 #include "mmdvfs_internal.h"
+#include "mmdvfs_pmqos.h"
 
 #undef pr_fmt
 #define pr_fmt(fmt) "[" MMDVFS_LOG_TAG "]" fmt
@@ -68,7 +71,6 @@ static int g_mmdvfs_current_vpu_step;
 static unsigned int g_mmdvfs_concurrency;
 static struct MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
 static struct MTK_MMDVFS_CMD g_mmdvfs_cmd;
-
 
 struct mmdvfs_context_struct {
 	spinlock_t scen_lock;
@@ -277,7 +279,11 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
 	/* Change HW configuration */
+#ifdef MMDVFS_PMQOS
+	mmdvfs_qos_update(step_util, final_step);
+#else
 	adaptor->apply_hw_configurtion_by_step(adaptor, final_step, original_step);
+#endif
 
 	if (notify_clk_change)
 		notify_camsys_clk_change(original_step, final_step);
@@ -496,7 +502,6 @@ void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd)
 		} else {
 			/* determine the step and apply the HW setting */
 			cmd->ret = mmdvfs_set_fine_step(cmd->scen,	mmdvfs_query(cmd->scen, cmd));
-
 		}
 		break;
 
@@ -670,7 +675,6 @@ void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 
 void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 {
-
 	spin_lock_init(&g_mmdvfs_mgr->scen_lock);
 
 	/* set current step as the default step */
@@ -692,7 +696,6 @@ void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_CAN)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
-
 }
 
 /* To be implemented */

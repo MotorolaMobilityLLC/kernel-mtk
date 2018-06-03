@@ -45,6 +45,7 @@
 #ifdef USE_DDR_TYPE
 #include "mt_emi_api.h"
 #endif
+#include "mmdvfs_pmqos.h"
 
 
 /* Class: mmdvfs_step_util */
@@ -1205,6 +1206,12 @@ struct mmdvfs_adaptor *g_mmdvfs_non_force_adaptor;
 struct mmdvfs_step_util *g_mmdvfs_step_util;
 struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
 struct mmdvfs_thresholds_dvfs_handler *g_mmdvfs_thresholds_dvfs_handler;
+
+#ifdef MMDVFS_PMQOS
+static int mask_concur[MMDVFS_OPP_NUM_LIMITATION];
+static void update_qos_scenario(void);
+#endif
+
 void mmdvfs_config_util_init(void)
 {
 	int mmdvfs_profile_id = mmdvfs_get_mmdvfs_profile();
@@ -1303,6 +1310,10 @@ void mmdvfs_config_util_init(void)
 
 	if (g_mmdvfs_non_force_step_util)
 		g_mmdvfs_non_force_step_util->init(g_mmdvfs_non_force_step_util);
+
+#ifdef MMDVFS_PMQOS
+	update_qos_scenario();
+#endif
 }
 
 void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class, u32 new_value)
@@ -1406,3 +1417,96 @@ u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qo
 	return clk_rate_mhz;
 }
 
+#ifdef MMDVFS_PMQOS
+static int get_qos_step(s32 opp)
+{
+	if (opp == MMDVFS_FINE_STEP_UNREQUEST)
+		return opp;
+	if (opp >= ARRAY_SIZE(legacy_to_qos_step))
+		return MMDVFS_FINE_STEP_UNREQUEST;
+
+	return legacy_to_qos_step[opp].qos_step;
+}
+
+void mmdvfs_qos_update(struct mmdvfs_step_util *step_util, int new_step)
+{
+	int i;
+	int *concur = step_util->mmdvfs_concurrency_of_opps;
+
+	i = ARRAY_SIZE(qos_apply_profiles) - 1;
+	if (qos_apply_profiles[i].smi_scenario_id == QOS_ALL_SCENARIO) {
+		MMDVFSMSG("force update qos step: %d\n", new_step);
+		mmdvfs_qos_force_step(get_qos_step(new_step));
+		return;
+	}
+	for (i = 0; i < MMDVFS_OPP_NUM_LIMITATION; i++) {
+		if (mask_concur[i] & concur[i]) {
+			/* scenario matched, check */
+			MMDVFSMSG("qos match,S(%d,%d,0x%0x,0x%0x)\n",
+				new_step, i, mask_concur[i],
+				step_util->mmdvfs_concurrency_of_opps[i]);
+			mmdvfs_qos_force_step(get_qos_step(i));
+			return;
+		}
+	}
+	/* No scenario is matched, cancel qos step anyway */
+	mmdvfs_qos_force_step(get_qos_step(MMDVFS_FINE_STEP_UNREQUEST));
+}
+
+static void update_qos_scenario(void)
+{
+	int i;
+
+	memset(&mask_concur, 0, sizeof(mask_concur));
+	for (i = 0; i < ARRAY_SIZE(qos_apply_profiles); i++) {
+		int opp = qos_apply_profiles[i].mask_opp;
+
+		if (opp >= MMDVFS_OPP_NUM_LIMITATION || opp < 0)
+			continue;
+		mask_concur[opp] |= (1 << qos_apply_profiles[i].smi_scenario_id);
+	}
+}
+
+int set_qos_scenario(const char *val, const struct kernel_param *kp)
+{
+	int i, result, scenario, opp;
+
+	result = sscanf(val, "%d %d", &scenario, &opp);
+	if (result != 2) {
+		MMDVFSMSG("invalid input: %s, result(%d)\n", val, result);
+		return -EINVAL;
+	}
+	if (scenario != QOS_ALL_SCENARIO &&
+		(scenario < 0 || scenario > MMDVFS_SCEN_COUNT)) {
+		MMDVFSMSG("scenario %d not in %d~%d\n", scenario, 0, MMDVFS_SCEN_COUNT);
+		return -EINVAL;
+	}
+	if (opp < MMDVFS_FINE_STEP_UNREQUEST || opp > MMDVFS_FINE_STEP_OPP5) {
+		MMDVFSMSG("opp %d not in %d~%d\n", opp,
+			MMDVFS_FINE_STEP_UNREQUEST, MMDVFS_FINE_STEP_OPP5);
+		return -EINVAL;
+	}
+	/* only update latest debug entry */
+	i = ARRAY_SIZE(qos_apply_profiles) - 1;
+	qos_apply_profiles[i].smi_scenario_id = scenario;
+	qos_apply_profiles[i].mask_opp = opp;
+
+	update_qos_scenario();
+	return 0;
+}
+
+int get_qos_scenario(char *buf, const struct kernel_param *kp)
+{
+	int i, off = 0;
+
+	for (i = 0; i < ARRAY_SIZE(qos_apply_profiles); i++) {
+		off += snprintf(buf + off, PAGE_SIZE - off,
+			"[%d]%s: %d / %d\n", i,
+			qos_apply_profiles[i].profile_name,
+			qos_apply_profiles[i].smi_scenario_id,
+			qos_apply_profiles[i].mask_opp);
+	}
+	buf[off] = '\0';
+	return off;
+}
+#endif

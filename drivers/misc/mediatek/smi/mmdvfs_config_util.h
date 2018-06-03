@@ -15,6 +15,7 @@
 #ifndef __MMDVFS_CONFIG_UTIL_H__
 #define __MMDVFS_CONFIG_UTIL_H__
 
+#include <linux/module.h>
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
 
@@ -101,6 +102,12 @@ struct mmdvfs_profile {
 	struct mmdvfs_video_property video_limit;
 };
 
+struct mmdvfs_profile_mask {
+	const char *profile_name;
+	int smi_scenario_id;
+	int mask_opp;
+};
+
 /* HW Configuration Management */
 
 struct mmdvfs_clk_desc {
@@ -138,6 +145,12 @@ struct mmdvfs_step_to_profile_mapping {
 	struct mmdvfs_profile *profiles;
 	int total_profiles;
 	struct mmdvfs_hw_configurtion hw_config;
+};
+
+/* For a single mmdvfs step's profiles and associated hardware configuration */
+struct mmdvfs_step_to_qos_step {
+	int mmdvfs_step;
+	int qos_step;
 };
 
 /* For VPU DVFS configuration */
@@ -241,4 +254,9 @@ extern u32 camera_bw_config;
 
 void mmdvfs_config_util_init(void);
 
+#ifdef MMDVFS_PMQOS
+void mmdvfs_qos_update(struct mmdvfs_step_util *step_util, int new_step);
+int set_qos_scenario(const char *val, const struct kernel_param *kp);
+int get_qos_scenario(char *buf, const struct kernel_param *kp);
+#endif
 #endif /* __MMDVFS_CONFIG_UTIL_H__ */
