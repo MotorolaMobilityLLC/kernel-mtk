@@ -1629,6 +1629,10 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			if (!tok)
 				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
+
+			if (disp_id > HRT_SECONDARY)
+				goto end;
+
 			if (layer_num != 0)
 				disp_info->input_config[disp_id] =
 					kzalloc(sizeof(struct layer_config) * layer_num, GFP_KERNEL);
@@ -1799,6 +1803,7 @@ int gen_hrt_pattern(void)
 	struct layer_config *layer_info;
 	int i;
 
+	memset(&disp_info, 0x0, sizeof(struct disp_layer_info));
 	disp_info.gles_head[0] = -1;
 	disp_info.gles_head[1] = -1;
 	disp_info.gles_tail[0] = -1;
