@@ -424,7 +424,7 @@ ENDPROC(el1_error_invalid)
 el1_sync:
 	kernel_entry 1
 	mov	x0, sp
-	and	x20, x0, #~(THREAD_SIZE - 1)	// top of stack
+	get_thread_info x20	// top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	add	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
@@ -477,7 +477,7 @@ el1_da:
 	mov	x2, sp				// struct pt_regs
 	bl	do_mem_abort
 	mov	x5, sp
-	and	x20, x5, #~(THREAD_SIZE - 1)	// top of stack
+	get_thread_info x20	// top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	sub	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
@@ -511,7 +511,7 @@ el1_dbg:
 	mov	x2, sp				// struct pt_regs
 	bl	do_debug_exception
 	mov	x5, sp
-	and	x20, x5, #~(THREAD_SIZE - 1)	// top of stack
+	get_thread_info x20	// top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	sub	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
