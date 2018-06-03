@@ -269,7 +269,7 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 
 	/* <2> Start skip roaming scan mechanism if there is no candidate in current SCAN result list */
 	if (!fgIsRoamingSSID) {
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);  /* Get current BssDesc */
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;  /* Get current BssDesc */
 		if (prBssDesc) {
 
 			/*rCmdSwCtrl.u4Id = 0xa0280000;*/
@@ -314,7 +314,7 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 					    FALSE, NULL, NULL, sizeof(CMD_ROAMING_SKIP_ONE_AP_T),
 					    (PUINT_8)&rCmdRoamingSkipOneAP, NULL, 0);
 		} else
-			DBGLOG(ROAMING, WARN, "Can't find the current associated AP in BssDescList\n");
+			DBGLOG(ROAMING, WARN, "Target BssDesc in AisFsmInfo is NULL\n");
 	}
 
 	return fgIsNeedScan;
@@ -476,7 +476,7 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN P_CMD_ROAMING_TRAN
 
 		/* sync. rcpi with firmware */
 		prAisBssInfo = prAdapter->prAisBssInfo;
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (prTransit->u2Data & 0xff);
 			DBGLOG(ROAMING, STATE, "EVENT-ROAMING DISCOVERY: Current Time = %ld, RCPI = %d\n",

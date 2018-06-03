@@ -729,7 +729,8 @@ VOID aisFsmStateAbort_JOIN(IN P_ADAPTER_T prAdapter)
 	prJoinAbortMsg->ucSeqNum = prAisFsmInfo->ucSeqNumOfReqMsg;
 	prJoinAbortMsg->prStaRec = prAisFsmInfo->prTargetStaRec;
 
-	scanRemoveConnFlagOfBssDescByBssid(prAdapter, prAisFsmInfo->prTargetStaRec->aucMacAddr);
+	prAisFsmInfo->prTargetBssDesc->fgIsConnected = FALSE;
+	prAisFsmInfo->prTargetBssDesc->fgIsConnecting = FALSE;
 
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prJoinAbortMsg, MSG_SEND_METHOD_BUF);
 
@@ -2306,7 +2307,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 				prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
 				prAisFsmInfo->ucJoinFailCntAfterScan++;
 
-				prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+				prBssDesc = prAisFsmInfo->prTargetBssDesc;
 
 				if (prBssDesc == NULL)
 					break;
@@ -2892,7 +2893,7 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 	prAisBssInfo->fgIsQBSS = prStaRec->fgIsQoS;
 
 	/* 3 <4> Update BSS_INFO_T from BSS_DESC_T */
-	prBssDesc = scanSearchBssDescByBssid(prAdapter, prAssocRspFrame->aucBSSID);
+	prBssDesc = prAisFsmInfo->prTargetBssDesc;
 	if (prBssDesc) {
 		prBssDesc->fgIsConnecting = FALSE;
 		prBssDesc->fgIsConnected = TRUE;
@@ -3265,6 +3266,9 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 				aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
 				aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
 			}
+		} else {
+			prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc->fgIsConnected = FALSE;
+			prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc->fgIsConnecting = FALSE;
 		}
 
 		if (fgDelayIndication) {
@@ -4093,8 +4097,17 @@ VOID aisFsmRoamingDisconnectPrevAP(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 	/* rlmBssAborted(prAdapter, prAisBssInfo); */
 
 	/* 4 <3> Unset the fgIsConnected flag of BSS_DESC_T and send Deauth if needed. */
-	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED)
-		scanRemoveConnFlagOfBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
+		PARAM_SSID_T rSsid;
+		P_BSS_DESC_T prBssDesc = NULL;
+
+		COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen);
+		prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, prAisBssInfo->aucBSSID, TRUE, &rSsid);
+		if (prBssDesc) {
+			prBssDesc->fgIsConnected = FALSE;
+			prBssDesc->fgIsConnecting = FALSE;
+		}
+	}
 
 	/* 4 <4> Change Media State immediately. */
 	aisChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
