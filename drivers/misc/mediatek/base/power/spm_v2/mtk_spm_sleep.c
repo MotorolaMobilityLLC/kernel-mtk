@@ -882,8 +882,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	slp_count++;
-	spm_crit2("slp_count = %d, vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
-		   slp_count, vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
+	spm_crit2("slp_count = %d, ddr_type = %d, vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
+		   slp_count, get_ddr_type(), vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
 
 	spm_r15 = spm_read(PCM_REG15_DATA);
 	if ((spm_r15 > 0) && (spm_r15 < pcmdesc->size)) {
