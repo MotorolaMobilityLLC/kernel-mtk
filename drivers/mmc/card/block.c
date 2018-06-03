@@ -1282,6 +1282,9 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 	int ret;
 	struct mmc_blk_data *main_md = dev_get_drvdata(&card->dev);
 	u8 part_config;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	int err = 0;
+#endif
 
 #if defined(CONFIG_MTK_EMMC_CQ_SUPPORT)
 	/* add for emmc reset when error happen */
@@ -1329,10 +1332,10 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		/* enable cmdq at boot1/boot2/user partition */
 		if ((!card->ext_csd.cmdq_mode_en)
 		 && (md->part_type <= 2)) {
-			mmc_blk_cmdq_switch(card, 1);
-			/* do not return error,
-			 * just work without command queue
-			 */
+			err = mmc_blk_cmdq_switch(card, 1);
+			if (err)
+				pr_notice("%s enable CMDQ error %d, so just work without CMDQ\n",
+						mmc_hostname(card->host), err);
 		}
 #endif
 	}
