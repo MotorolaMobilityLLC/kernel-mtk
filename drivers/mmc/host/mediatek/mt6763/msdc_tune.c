@@ -131,7 +131,9 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		pr_err("WARN: host is NULL");
 		return;
 	}
+
 	host->card_inserted = 0;
+	host->block_bad_card = 1;
 
 	if ((host->mmc == NULL) || (host->mmc->card == NULL)) {
 		ERR_MSG("WARN: mmc or card is NULL");
@@ -140,29 +142,62 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 
 	if (host->mmc->card) {
 		spin_lock_irqsave(&host->remove_bad_card, flags);
-		host->block_bad_card = 1;
-
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
 #ifndef CONFIG_GPIOLIB
 		ERR_MSG("Cannot get gpio %d level", cd_gpio);
 #else
-		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
-		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
+		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
+			ERR_MSG("Schedule mmc_rescan");
 			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else
 #endif
 		{
-			mmc_remove_card(host->mmc->card);
-			host->mmc->card = NULL;
-			mmc_detach_bus(host->mmc);
-			mmc_power_off(host->mmc);
+			/*
+			 * prevent from calling device_del with mmcqd/X,
+			 * it will cause dead lock
+			 */
+			ERR_MSG("Schedule msdc_remove_card");
+			schedule_delayed_work(&host->remove_card,
+				msecs_to_jiffies(200));
 		}
 
 		ERR_MSG("Remove the bad card, block_bad_card=%d, card_inserted=%d",
 			host->block_bad_card, host->card_inserted);
 	}
+}
+
+void msdc_remove_card(struct work_struct *work)
+{
+	struct msdc_host *host =
+		container_of(work, struct msdc_host, remove_card.work);
+
+	if (!host->mmc || !host->mmc->card) {
+		ERR_MSG("WARN: mmc or card is NULL");
+		return;
+	}
+
+	ERR_MSG("Remove card");
+	mmc_claim_host(host->mmc);
+	mmc_remove_card(host->mmc->card);
+	host->mmc->card = NULL;
+	mmc_detach_bus(host->mmc);
+	mmc_power_off(host->mmc);
+	mmc_release_host(host->mmc);
+}
+
+int msdc_data_timeout_cont_chk(struct msdc_host *host)
+{
+	if ((host->hw->host_function == MSDC_SD) &&
+		(host->data_timeout_cont >= MSDC_MAX_DATA_TIMEOUT_CONTINUOUS)) {
+		ERR_MSG("force remove bad card, data timeout continuous %d",
+			host->data_timeout_cont);
+		msdc_set_bad_card_and_remove(host);
+		return 1;
+	}
+
+	return 0;
 }
 
 /*  HS400 can not lower frequence
@@ -268,20 +303,23 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 		pr_err("msdc%d: ds card just reinit card\n", host->id);
 	}
 
+	/* force remove card for continuous data timeout */
+	if (msdc_data_timeout_cont_chk(host))
+		return -1;
+
+	/* power reset sdcard */
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	/* do not set same as HOST_MIN_MCLK
 	 * or else it will be set as block_bad_card when power off
 	 */
 	mmc->ios.clock = 300000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
-	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
 	if (ret) {
-		if (++host->power_cycle_cnt > 3)
-			host->block_bad_card = 1;
+		if (++host->power_cycle_cnt > MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS)
+			msdc_set_bad_card_and_remove(host);
 		pr_err("msdc%d power reset (%d) failed, block_bad_card = %d\n",
 			host->id, host->power_cycle_cnt, host->block_bad_card);
-		mmc_detect_change(mmc, msecs_to_jiffies(200));
 	} else {
 		host->power_cycle_cnt = 0;
 		pr_err("msdc%d power reset success\n", host->id);

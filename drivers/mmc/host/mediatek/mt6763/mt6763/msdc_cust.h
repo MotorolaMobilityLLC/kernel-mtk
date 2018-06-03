@@ -99,16 +99,16 @@
 #define SHIFT_VMCH_OC_STATUS    PMIC_RG_INT_STATUS_VMCH_OC_SHIFT
 #define FIELD_VMCH_OC_STATUS    (MASK_VMCH_OC_STATUS << SHIFT_VMCH_OC_STATUS)
 
-#define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : (cal/10))
+#define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : ((cal)/10))
 #define VEMC_VOSEL_2V9          (0xa)
 #define VEMC_VOSEL_3V           (0xb)
 #define VEMC_VOSEL_3V3          (0xd)
-#define VMC_VOSEL_CAL_mV(cal)   ((cal <= 0) ? (0) : (cal/10))
+#define VMC_VOSEL_CAL_mV(cal)   ((cal <= 0) ? (0) : ((cal)/10))
 #define VMC_VOSEL_1V8           (0x4)
 #define VMC_VOSEL_2V9           (0xa)
 #define VMC_VOSEL_3V            (0xb)
 #define VMC_VOSEL_3V3           (0xd)
-#define VMCH_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : (cal/10))
+#define VMCH_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : ((cal)/10))
 #define VMCH_VOSEL_2V9          (0xa)
 #define VMCH_VOSEL_3V           (0xb)
 #define VMCH_VOSEL_3V3          (0xd)
@@ -417,6 +417,18 @@
 #define HOST_MAX_MCLK           (200000000)
 #endif
 #define HOST_MIN_MCLK           (260000)
+
+
+/* SD card, bad card handling settings */
+
+/* if continuous data timeout reach the limit */
+/* driver will force remove card */
+#define MSDC_MAX_DATA_TIMEOUT_CONTINUOUS (100)
+
+/* if continuous power cycle fail reach the limit */
+/* driver will force remove card */
+#define MSDC_MAX_POWER_CYCLE_FAIL_CONTINUOUS (3)
+
 
 /* #define MSDC_HQA */
 /* #define SDIO_HQA */

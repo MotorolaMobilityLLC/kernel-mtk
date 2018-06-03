@@ -40,7 +40,7 @@
  * @param data Data to be processed
  */
 struct cmd_t {
-	dciCommandHeader_t  header;     /**< Command header */
+	struct dciCommandHeader_t header;     /**< Command header */
 	uint32_t            len;        /**< Length of data to process */
 };
 
@@ -48,7 +48,7 @@ struct cmd_t {
  * Response structure
  */
 struct rsp_t {
-	dciResponseHeader_t header;     /**< Response header */
+	struct dciResponseHeader_t header;     /**< Response header */
 	uint32_t            len;
 };
 

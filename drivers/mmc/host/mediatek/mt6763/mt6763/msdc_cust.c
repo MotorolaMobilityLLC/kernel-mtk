@@ -192,6 +192,10 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
 	if (host->id == 1) {
+		/* VMC cal +60mV when power on */
+		if (on)
+			pmic_set_register_value(PMIC_RG_VMC_VOCAL, 0x6);
+
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1860,
 			&host->power_io);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
@@ -243,9 +247,9 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 			MASK_VMCH_OC_RAW_STATUS, SHIFT_VMCH_OC_RAW_STATUS);
 
 		if (val) {
-			host->block_bad_card = 1;
 			pr_err("msdc1 OC status = %x\n", val);
 			host->power_control(host, 0);
+			msdc_set_bad_card_and_remove(host);
 
 			/*need clear status for 6335*/
 			upmu_set_reg_value(REG_VMCH_OC_STATUS, FIELD_VMCH_OC_STATUS);
@@ -299,6 +303,10 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);
+
+		/* Clear VMC cal when power off */
+		if (!on)
+			pmic_set_register_value(PMIC_RG_VMC_VOCAL, 0x0);
 		break;
 
 	default:
@@ -684,7 +692,7 @@ int msdc_io_check(struct msdc_host *host)
 		return 0;
 
 	if (host->block_bad_card)
-		goto POWER_OFF;
+		goto SET_BAD_CARD;
 
 	for (i = 0; i < 3; i++) {
 		MSDC_GET_FIELD(pupd_addr[i], pupd_mask[i], orig_pull);
@@ -694,7 +702,7 @@ int msdc_io_check(struct msdc_host *host)
 			if (time_after(jiffies, polling_tmo)) {
 				pr_err("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
 					host->id, i, MSDC_READ32(MSDC_PS));
-				goto POWER_OFF;
+				goto SET_BAD_CARD;
 			}
 		}
 		MSDC_SET_FIELD(pupd_addr[i], pupd_mask[i], orig_pull);
@@ -702,9 +710,8 @@ int msdc_io_check(struct msdc_host *host)
 
 	return 0;
 
-POWER_OFF:
-	host->block_bad_card = 1;
-	host->power_control(host, 0);
+SET_BAD_CARD:
+	msdc_set_bad_card_and_remove(host);
 	return 1;
 }
 
