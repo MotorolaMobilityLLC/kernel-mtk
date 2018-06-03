@@ -464,6 +464,7 @@ static int __maybe_unused mtk8250_runtime_resume(struct device *dev)
 		err = clk_prepare_enable(data->bus_clk);
 		if (err) {
 			dev_warn(dev, "Can't enable bus clock\n");
+			spin_unlock(&data->lock);
 			return err;
 		}
 		data->clk_count++;
