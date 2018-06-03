@@ -2435,6 +2435,19 @@ static uint8_t parse_861_short_descriptors (
 								MHL_TX_EDID_INFO(mhl_edid_3d_data->dev_context,
 										"EDID -> Short Descriptor Colorimetry Block\n");
 								break;
+				case ETC_VENDOR_SPECIFIC_VIDEO_DATA_BLOCK:
+				case ETC_VESA_VIDEO_DISPLAY_DEVICE_INFORMATION_DATA_BLOCK:
+				case ETC_VESA_VIDEO_DATA_BLOCK:
+				case ETC_HDMI_VIDEO_DATA_BLOCK:
+				case ETC_VIDEO_RELATED:
+				case ETC_CEA_MISC_AUDIO_FIELDS:
+				case ETC_VENDOR_SPECIFIC_AUDIO_DATA_BLOCK:
+				case ETC_HDMI_AUDIO_DATA_BLOCK:
+				case ETC_AUDIO_RELATED:
+				case ETC_GENERAL:
+					break;
+				default:
+					break;
 						}
 					}
 
