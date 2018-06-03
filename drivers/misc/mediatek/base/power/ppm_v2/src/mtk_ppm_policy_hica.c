@@ -72,9 +72,13 @@ static void ppm_hica_update_limit_cb(enum ppm_power_state new_state);
 static void ppm_hica_status_change_cb(bool enable);
 static void ppm_hica_mode_change_cb(enum ppm_mode mode);
 
+#ifdef PPM_HICA_2P0
+int hica_is_limit_big_freq = 1;
+#else
 #if PPM_HICA_VARIANT_SUPPORT
 int cur_hica_variant = 1;
 int hica_overutil = 80;
+#endif
 #endif
 
 /* other members will init by ppm_main */
@@ -168,6 +172,16 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 				goto end;
 			} else {
 				ppm_hica_algo_data.new_state = cur_state;
+#ifdef PPM_HICA_2P0
+				ppm_dbg(HICA, "[%s(%d)]hold in %s state, capacity_hold_cnt = %d, hvytsk_hold_cnt = %d, freq_hold_cnt = %d\n",
+					(i == 0) ? "PERF" : "PWR",
+					j,
+					ppm_get_power_state_name(cur_state),
+					data->transition_data[j].capacity_hold_cnt,
+					data->transition_data[j].hvytsk_hold_cnt,
+					data->transition_data[j].freq_hold_cnt
+					);
+#else
 #if PPM_HICA_VARIANT_SUPPORT
 				ppm_dbg(HICA, "[%s(%d)]hold in %s state, loading_cnt = %d, freq_cnt = %d, overutil_l_hold_cnt = %d, .overutil_h_hold_cnt = %d\n",
 					(i == 0) ? "PERF" : "PWR",
@@ -186,6 +200,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 					data->transition_data[j].loading_hold_cnt,
 					data->transition_data[j].freq_hold_cnt
 					);
+#endif
 #endif
 			}
 		}
@@ -235,6 +250,11 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 		/* ignore HICA min freq setting for L cluster in L_ONLY state */
 		if (state == PPM_POWER_STATE_L_ONLY && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY)
 			policy->req.limit[1].min_cpufreq_idx = get_cluster_min_cpufreq_idx(1);
+#endif
+
+#ifdef PPM_HICA_2P0
+	if (state == PPM_POWER_STATE_ALL && hica_is_limit_big_freq)
+		policy->req.limit[i].max_cpufreq_idx = PPM_HICA_B_LIMITED_OPP;
 #endif
 
 	FUNC_EXIT(FUNC_LV_HICA);
@@ -393,11 +413,17 @@ static void ppm_hica_reset_data_for_state(enum ppm_power_state state)
 			data = state_info[state].transfer_by_perf;
 
 		for (j = 0; j < data->size; j++) {
+#ifdef PPM_HICA_2P0
+			data->transition_data[j].capacity_hold_cnt = 0;
+			data->transition_data[j].hvytsk_hold_cnt = 0;
+			data->transition_data[j].freq_hold_cnt = 0;
+#else
 			data->transition_data[j].freq_hold_cnt = 0;
 			data->transition_data[j].loading_hold_cnt = 0;
 #if PPM_HICA_VARIANT_SUPPORT
 			data->transition_data[j].overutil_l_hold_cnt = 0;
 			data->transition_data[j].overutil_h_hold_cnt = 0;
+#endif
 #endif
 		}
 	}
@@ -498,6 +524,36 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 	return count;
 }
 
+#ifdef PPM_HICA_2P0
+static int ppm_hica_is_limit_big_freq_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "\nhica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+	seq_puts(m, "\nNote: echo 0 to unlimit big freq!\n");
+
+	return 0;
+}
+
+static ssize_t ppm_hica_is_limit_big_freq_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	int is_limit;
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &is_limit)) {
+		hica_is_limit_big_freq = is_limit;
+		ppm_info("hica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+		mt_ppm_main();
+	} else
+		ppm_err("echo <is_limit> > /proc/ppm/policy/hica_is_limit_big_freq\n");
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+#else
 #if PPM_HICA_VARIANT_SUPPORT
 static int ppm_hica_variant_proc_show(struct seq_file *m, void *v)
 {
@@ -554,7 +610,22 @@ static ssize_t ppm_hica_overutil_proc_write(struct file *file, const char __user
 	return count;
 }
 #endif
+#endif
+
 PROC_FOPS_RW(hica_power_state);
+#ifdef PPM_HICA_2P0
+PROC_FOPS_RW(hica_is_limit_big_freq);
+PROC_FOPS_RW_HICA_SETTINGS(mode_mask, p->mode_mask);
+PROC_FOPS_RW_HICA_SETTINGS(capacity_hold_time, p->capacity_hold_time);
+PROC_FOPS_RO_HICA_SETTINGS(capacity_hold_cnt, p->capacity_hold_cnt);
+PROC_FOPS_RW_HICA_SETTINGS(capacity_bond, p->capacity_bond);
+PROC_FOPS_RW_HICA_SETTINGS(hvytsk_hold_time, p->hvytsk_hold_time);
+PROC_FOPS_RO_HICA_SETTINGS(hvytsk_hold_cnt, p->hvytsk_hold_cnt);
+PROC_FOPS_RW_HICA_SETTINGS(hvytsk_l_bond, p->hvytsk_l_bond);
+PROC_FOPS_RW_HICA_SETTINGS(hvytsk_h_bond, p->hvytsk_h_bond);
+PROC_FOPS_RW_HICA_SETTINGS(freq_hold_time, p->freq_hold_time);
+PROC_FOPS_RO_HICA_SETTINGS(freq_hold_cnt, p->freq_hold_cnt);
+#else /* 1p0, 1p5, 1p75 */
 PROC_FOPS_RW_HICA_SETTINGS(mode_mask, p->mode_mask);
 PROC_FOPS_RW_HICA_SETTINGS(loading_delta, p->loading_delta);
 PROC_FOPS_RW_HICA_SETTINGS(loading_hold_time, p->loading_hold_time);
@@ -570,6 +641,7 @@ PROC_FOPS_RW_HICA_SETTINGS(overutil_l_hold_time, p->overutil_l_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(overutil_l_hold_cnt, p->overutil_l_hold_cnt);
 PROC_FOPS_RW_HICA_SETTINGS(overutil_h_hold_time, p->overutil_h_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(overutil_h_hold_cnt, p->overutil_h_hold_cnt);
+#endif
 #endif
 
 #define OUTPUT_BUF_SIZE	32
@@ -588,6 +660,25 @@ static int __init ppm_hica_policy_init(void)
 		const struct file_operations *fops;
 	};
 
+#ifdef PPM_HICA_2P0
+	const struct pentry entries[] = {
+		PROC_ENTRY(hica_power_state),
+		PROC_ENTRY(hica_is_limit_big_freq),
+	};
+
+	const struct pentry trans_rule_entries[] = {
+		PROC_ENTRY(mode_mask),
+		PROC_ENTRY(capacity_hold_time),
+		PROC_ENTRY(capacity_hold_cnt),
+		PROC_ENTRY(capacity_bond),
+		PROC_ENTRY(hvytsk_hold_time),
+		PROC_ENTRY(hvytsk_hold_cnt),
+		PROC_ENTRY(hvytsk_l_bond),
+		PROC_ENTRY(hvytsk_h_bond),
+		PROC_ENTRY(freq_hold_time),
+		PROC_ENTRY(freq_hold_cnt),
+	};
+#else
 	const struct pentry entries[] = {
 		PROC_ENTRY(hica_power_state),
 #if PPM_HICA_VARIANT_SUPPORT
@@ -612,6 +703,7 @@ static int __init ppm_hica_policy_init(void)
 		PROC_ENTRY(overutil_h_hold_cnt),
 #endif
 	};
+#endif
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
