@@ -49,6 +49,15 @@ static struct lock_class_key buffer_lock_key[ID_SENSOR_MAX_HANDLE];
  * (2)for continues sensor, mtk data flow is from a work report data, when sensor_input_event
  * ringbuffer is full, we could sleep a while until hal read the ringbuffer empty, because this case is not in
  * interrupt context.
+ * there are some conditions:
+ * (1)data report and flush report in different context, we should use spin_lock_irqsave protect data report
+ * and flush report, like alsps.c
+ * (2)if several sensor share one event buffer like step counter step detector smd and floor counter, these datas
+ * may come from interrupt or thread, so we should use spin_lock_irqsave protect
+ * context:
+ *     (1)continues sensor data and flush report in thread context;
+ *     (2)oneshot sensor data and flush report in interrupt context;
+ *     (3)onchange sensor like als step counter data in thread context, flush in interrupt context;
  */
 int sensor_input_event(unsigned char handle,
 			 const struct sensor_event *event)
