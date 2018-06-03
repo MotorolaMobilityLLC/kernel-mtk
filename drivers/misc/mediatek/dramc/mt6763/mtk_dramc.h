@@ -204,7 +204,6 @@ static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { retur
 
 /* DRAMC API config */
 extern unsigned int DMA_TIMES_RECORDER;
-extern phys_addr_t get_max_DRAM_size(void);
 
 void *mt_dramc_chn_base_get(int channel);
 void *mt_dramc_nao_chn_base_get(int channel);

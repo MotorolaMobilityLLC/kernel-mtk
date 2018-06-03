@@ -110,18 +110,6 @@ struct regulator *_reg_VDRAM2;
 	aee_kernel_warning(DRAMC_RSV_TAG, "[ERR]"string, ##args);  \
 } while (0)
 
-static unsigned int check_DRAM_size(void)
-{
-	int ret = 0;
-	phys_addr_t max_dram_size = get_max_DRAM_size();
-
-	if (max_dram_size > 0x100000000ULL)    /* dram size = 6GB or 5GB*/
-		ret = 1;
-	else if (max_dram_size == 0x100000000ULL)	/* dram size = 4GB*/
-		ret = 2;
-	return ret;
-}
-
 /* Return 0 if success, -1 if failure */
 static int __init dram_dummy_read_fixup(void)
 {
@@ -179,7 +167,7 @@ const char *uname, int depth, void *data)
 		pr_err("[DRAMC] dram info dram rank number = %d\n",
 		g_dram_info_dummy_read->rank_num);
 
-		if ((dram_rank_num == SINGLE_RANK) || (check_DRAM_size() == 1)) {
+		if (dram_rank_num == SINGLE_RANK) {
 			dram_info_dummy_read.rank_info[0].start = dram_rank0_addr;
 			dram_info_dummy_read.rank_info[1].start = dram_rank0_addr;
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
@@ -192,10 +180,7 @@ const char *uname, int depth, void *data)
 			}
 
 			dram_info_dummy_read.rank_info[0].start = dram_rank0_addr;
-			if (check_DRAM_size() == 2)
-				dram_info_dummy_read.rank_info[1].start = 0xC0000000;
-			else
-				dram_info_dummy_read.rank_info[1].start = dram_rank1_addr;
+			dram_info_dummy_read.rank_info[1].start = dram_rank1_addr;
 			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[0].start);
 			pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
@@ -1966,6 +1951,12 @@ static int __init dram_emi_init(void)
 
 	return 0;
 }
+
+void *mt_emi_base_get(void)
+{
+	return EMI_BASE_ADDR;
+}
+EXPORT_SYMBOL(mt_emi_base_get);
 
 postcore_initcall(dram_emi_init);
 #endif
