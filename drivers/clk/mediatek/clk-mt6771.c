@@ -2025,23 +2025,25 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	#if 0 /* race condition access */
 	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff6af);/*[4]SSUSB26M, [11][6]MIPIC camera, [8] mm26m*/
 	#endif
+
 #if 0
-/*MFGPLL*/
-	clk_clrl(MFGPLL_CON0, PLL_EN);
-	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(MFGPLL_PWR_CON0, PLL_PWR_ON);
-/*UNIVPLL*/
-	clk_clrl(UNIVPLL_CON0, PLL_EN);
-	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
-/*MSDCPLL*/
-	clk_clrl(MSDCPLL_CON0, PLL_EN);
-	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
 /*MMPLL*/
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
+/*MSDCPLL*/
+	clk_clrl(MSDCPLL_CON0, PLL_EN);
+	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+/*MFGPLL*/
+	clk_clrl(MFGPLL_CON0, PLL_EN);
+	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MFGPLL_PWR_CON0, PLL_PWR_ON);
+#endif
+/*UNIVPLL*/
+	clk_clrl(UNIVPLL_CON0, PLL_EN);
+	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
 /*TVDPLL*/
 	clk_clrl(TVDPLL_CON0, PLL_EN);
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
@@ -2054,7 +2056,6 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(APLL2_CON0, PLL_EN);
 	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
-#endif
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,apmixed",
 		mtk_apmixedsys_init);
