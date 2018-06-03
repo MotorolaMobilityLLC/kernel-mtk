@@ -260,7 +260,7 @@ obj-$(CONFIG_THERMAL) += mtk_ts_bif.o
 endif
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758" "mt6775"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
