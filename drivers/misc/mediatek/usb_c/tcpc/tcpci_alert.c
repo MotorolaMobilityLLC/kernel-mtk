@@ -385,6 +385,17 @@ EXPORT_SYMBOL(tcpci_alert);
  * [BLOCK] TYPEC device changed
  */
 
+static inline void tcpci_attach_wake_lock(struct tcpc_device *tcpc)
+{
+#ifdef CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT
+	wake_lock_timeout(&tcpc->attach_wake_lock,
+		CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT * HZ);
+#else
+	wake_lock(&tcpc->attach_wake_lock);
+#endif     /* CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT */
+}
+
+
 int tcpci_set_wake_lock(
 	struct tcpc_device *tcpc, bool pd_lock, bool user_lock)
 {
@@ -403,7 +414,7 @@ int tcpci_set_wake_lock(
 	if (new_lock != ori_lock) {
 		if (new_lock) {
 			TCPC_DBG("wake_lock=1\r\n");
-			wake_lock(&tcpc->attach_wake_lock);
+			tcpci_attach_wake_lock(tcpc);
 			if (tcpc->typec_watchdog)
 				tcpci_set_intrst(tcpc, true);
 		} else {
