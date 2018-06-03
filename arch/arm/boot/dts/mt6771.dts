@@ -1832,7 +1832,7 @@
 			<0 0>;
 
 		/* Regulators */
-		/* In MT6763, only VCC is available to be controlled by UFS driver */
+		/* In MT6771, only VCC is available to be controlled by UFS driver */
 		/* VCCQ:  Provided by external LDO. SW control is not necessary */
 		/* VCCQ2: Not supported by current UFS devices */
 		vcc-supply = <&mt_pmic_vemc_ldo_reg>;

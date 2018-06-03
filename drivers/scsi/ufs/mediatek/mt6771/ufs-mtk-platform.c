@@ -52,7 +52,7 @@ void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_lay
 
 #ifdef MTK_UFS_HQA
 
-/* UFS write is performance  200MB/s, 4KB will take around 20us */
+/* UFS write is performance 200MB/s, 4KB will take around 20us */
 /* Set delay before reset to 100us to cover 4KB & >4KB write */
 
 #define UFS_SPOH_USDELAY_BEFORE_RESET (100)
@@ -66,12 +66,20 @@ void random_delay(struct ufs_hba *hba)
 void wdt_pmic_full_reset(struct ufs_hba *hba)
 {
 	/*
-	  *   Cmd issue to PMIC on MT6763 will take around 20us ~ 30us, in order to speed up VEMC disable time,
-	  * we disable VEMC first coz PMIC cold reset may take longer to disable VEMC in it's reset flow.
-	  * Can not use regulator_disable() here because it can not use in  preemption disabled context.
-	  * Use pmic raw API without nlock instead.
-	  */
+	 * Cmd issue to PMIC on MT6771 will take around 20us ~ 30us, in order to speed up VEMC disable time,
+	 * we disable VEMC first coz PMIC cold reset may take longer to disable VEMC in it's reset flow.
+	 * Can not use regulator_disable() here because it can not use in  preemption disabled context.
+	 * Use pmic raw API without nlock instead.
+	 */
 	pmic_set_register_value_nolock(PMIC_RG_LDO_VEMC_EN, 0);
+
+	/* Need reset external LDO for VUFS18, UFS needs VEMC&VUFS18 reset at the same time */
+	pmic_set_register_value_nolock(PMIC_RG_STRUP_EXT_PMIC_SEL, 0x1);
+
+	/* VA09 off, may not require */
+	/* pmic_set_register_value_nolock(PMIC_RG_STRUP_EXT_PMIC_EN, 0x1); */
+	/* pmic_set_register_value_nolock(PMIC_RG_STRUP_EXT_PMIC_SEL, 0x2); */
+
 	/* PMIC cold reset */
 	pmic_set_register_value_nolock(PMIC_RG_CRST, 1);
 }
