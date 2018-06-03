@@ -234,7 +234,7 @@ static DEFINE_SPINLOCK(eem_spinlock);
 #if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !(EARLY_PORTING)
 	/* struct clk *clk_thermal; */
 	/*struct clk *clk_mfg_main, *clk_mfg_async, *clk_mfg, *clk_mfg_core3; */
-	struct clk *clk_mfg_core2, *clk_mfg_core1, *clk_mfg_core0;
+	struct clk *clk_mfg_core1, *clk_mfg_core0;
 #endif
 
 #if 1
@@ -297,10 +297,6 @@ static void mt_eem_enable_big_cluster(unsigned int enable)
 static void mt_eem_get_clk(struct platform_device *pdev)
 {
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
-	clk_mfg_core2 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core2");
-	if (IS_ERR(clk_mfg_core2))
-		eem_error("cannot get mtcmos-mfg-core2\n");
-
 	clk_mfg_core1 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core1");
 	if (IS_ERR(clk_mfg_core1))
 		eem_error("cannot get mtcmos-mfg-core1\n");
@@ -309,15 +305,13 @@ static void mt_eem_get_clk(struct platform_device *pdev)
 	if (IS_ERR(clk_mfg_core0))
 		eem_error("cannot get mtcmos-mfg-core0\n");
 
-	eem_debug("clk_mfg_core2=%p, clk_mfg_core1=%p, clk_mfg_core0=%p",
-		clk_mfg_core2, clk_mfg_core1, clk_mfg_core0);
+	/* eem_debug("clk_mfg_core1=%p, clk_mfg_core0=%p", clk_mfg_core1, clk_mfg_core0);*/
 	#endif
 }
 static void mt_eem_enable_mtcmos(void)
 {
 	/* spm_mtcmos_ctrl_mfg1(enable); */
 	/* spm_mtcmos_ctrl_mfg2(enable); */
-#if EEM_ENABLE_TINYSYS_SSPM
 	int ret;
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
 	ret = clk_prepare_enable(clk_mfg_core0); /* gpu mtcmos enable*/
@@ -327,23 +321,17 @@ static void mt_eem_enable_mtcmos(void)
 	ret = clk_prepare_enable(clk_mfg_core1); /* gpu mtcmos enable*/
 	if (ret)
 		eem_error("clk_prepare_enable failed when enabling clk_mfg_core1\n");
-
-	ret = clk_prepare_enable(clk_mfg_core2); /* gpu mtcmos enable*/
-	if (ret)
-		eem_error("clk_prepare_enable failed when enabling clk_mfg_core2\n");
 	#endif /* if !defined CONFIG_MTK_CLKMGR */
-#endif
+	/* eem_debug("mt_eem_enable_mtcmos\n");*/
 }
 
 static void mt_eem_disable_mtcmos(void)
 {
-#if EEM_ENABLE_TINYSYS_SSPM
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
-	clk_disable_unprepare(clk_mfg_core2);
 	clk_disable_unprepare(clk_mfg_core1);
 	clk_disable_unprepare(clk_mfg_core0);
 	#endif /* EARLY_PORTING */
-#endif
+	/* eem_debug("mt_eem_disable_mtcmos\n");*/
 }
 
 static int get_devinfo(void)
@@ -4642,6 +4630,25 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
 			break;
 
+	case IPI_EEM_INIT01:
+			eem_data->cmd = cmd;
+			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
+			if (ret != 0)
+				eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT01) ret:%d - %d\n",
+							ret, ackData);
+			else if (ackData < 0)
+				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+			break;
+
+	case IPI_EEM_INIT02:
+			eem_data->cmd = cmd;
+			ret = sspm_ipi_send_sync(IPI_ID, IPI_OPT_LOCK_POLLING, eem_data, len, &ackData);
+			if (ret != 0)
+				eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT02) ret:%d - %d\n",
+							ret, ackData);
+			else if (ackData < 0)
+				eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+			break;
 #ifdef EEM_VCORE_IN_SSPM
 	case IPI_EEM_VCORE_GET_VOLT:
 			eem_data->cmd = cmd;
@@ -5752,19 +5759,16 @@ unsigned int get_eem_status_for_gpu(void)
 
 static void eem_init_postprocess(void)
 {
-	FUNC_ENTER(FUNC_LV_MODULE);
 	#ifdef __KERNEL__
 	mt_eem_disable_mtcmos();
 	mt_eem_enable_big_cluster(0);
+
 	/* enable frequency hopping (main PLL) */
 	/* mt_fh_popod_restore(); */
 	#endif /* ifdef __KERNEL__ */
 	/* must be set after gpu dvfs is enabled */
 	/* informGpuEEMisReady = 1; */
 	ptp_data[0] = 0;
-
-	FUNC_EXIT(FUNC_LV_MODULE);
-
 }
 
 static int eem_probe(struct platform_device *pdev)
@@ -5777,26 +5781,42 @@ static int eem_probe(struct platform_device *pdev)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-
-
-	#ifdef __KERNEL__
-	/* disable frequency hopping (main PLL) */
-	/* mt_fh_popod_save(); */
-
-	/* call hotplug api to enable L bulk */
-	mt_eem_enable_big_cluster(1);
-	mt_eem_get_clk(pdev);
-	mt_eem_enable_mtcmos();
-	#endif/*ifdef __KERNEL__*/
-
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
+
+	/* let ptp to disable gpu dvfs and enable vgpu buck */
 	spin_lock_irqsave(&eem_spinlock, flags);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 	eem_data.u.data.arg[0] = 0;
 	ret = eem_to_sspm(IPI_EEM_PROBE, &eem_data);
 	spin_unlock_irqrestore(&eem_spinlock, flags);
+
+	/* enable big cluster and enable gpu clock */
+	#ifdef __KERNEL__
+	/* disable frequency hopping (main PLL) */
+	/* mt_fh_popod_save(); */
+
+	mt_eem_enable_big_cluster(1);
+	mt_eem_get_clk(pdev);
+	mt_eem_enable_mtcmos();
+	#endif/*ifdef __KERNEL__*/
+
+	/* let ptp run init01 */
+	spin_lock_irqsave(&eem_spinlock, flags);
+	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
+	eem_data.u.data.arg[0] = 0;
+	ret = eem_to_sspm(IPI_EEM_INIT01, &eem_data);
+	spin_unlock_irqrestore(&eem_spinlock, flags);
+
+	/* disable big cluster and disable gpu clock */
 	eem_init_postprocess();
+
+	/* let ptp to enable gpu dvfs*/
+	spin_lock_irqsave(&eem_spinlock, flags);
+	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
+	eem_data.u.data.arg[0] = 0;
+	ret = eem_to_sspm(IPI_EEM_INIT02, &eem_data);
+	spin_unlock_irqrestore(&eem_spinlock, flags);
 
 	for_each_det(det)
 		inherit_base_det(det);

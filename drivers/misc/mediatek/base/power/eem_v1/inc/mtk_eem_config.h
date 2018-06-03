@@ -55,19 +55,19 @@
 /* fake devinfo for early verification */
 /* big */
 #define DEVINFO_0 0x10E0660C
-#define DEVINFO_1 0x004E0061
+#define DEVINFO_1 0x004E0063
 /* cci */
 #define DEVINFO_2 0x10E077F1
-#define DEVINFO_3 0x004E0061
+#define DEVINFO_3 0x004E0063
 /* gpu */
 #define DEVINFO_4 0x10C856E1
-#define DEVINFO_5 0x00240061
+#define DEVINFO_5 0x00240063
 /* LL */
 #define DEVINFO_6 0x10E097C0
-#define DEVINFO_7 0x004E0061
+#define DEVINFO_7 0x004E0063
 /* L */
 #define DEVINFO_8 0x10E081E2
-#define DEVINFO_9 0x004E0061
+#define DEVINFO_9 0x004E0063
 /* soc */
 #define DEVINFO_10 0x00000000
 #define DEVINFO_11 0x00000000
@@ -89,7 +89,7 @@
  * if max freq = 4, NR_FREQ = 8, NR_FREQ_CPU = 4
 */
     #define NR_FREQ 16
-    #define NR_FREQ_GPU 15
+    #define NR_FREQ_GPU 16
     #define NR_FREQ_CPU 16
 #endif
 
