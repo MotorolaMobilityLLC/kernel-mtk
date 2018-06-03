@@ -34,6 +34,7 @@ static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
 /* scp: 0x10001000 , mmsys: 0x14000000*/
 static unsigned long scpsysbaseaddr;
+static unsigned long dbgmem_addr;
 static unsigned long mmsyscfgbaseaddr;
 static unsigned int gM4UTagCount[] = { 64 };
 
@@ -2141,6 +2142,8 @@ int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA, int m4u
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,scpsys");
 	scpsysbaseaddr = (unsigned long)of_iomap(node, 0);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dbg_mem");
+	dbgmem_addr = (unsigned long)of_iomap(node, 0);
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
 	mmsyscfgbaseaddr = (unsigned long)of_iomap(node, 0);
 	/* ============================================= */
@@ -2314,6 +2317,8 @@ int m4u_hw_deinit(struct m4u_device *m4u_dev, int m4u_id)
 
 int m4u_dump_reg_for_smi_hang_issue(void)
 {
+	int i;
+	unsigned int val;
 	/*NOTES: m4u_monitor_start() must be called before using m4u */
 	/*please check m4u_hw_init() to ensure that */
 
@@ -2354,6 +2359,35 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x914, 0x920);
 		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x96c, 0x974);
 		M4UMSG("====== dump mmsyscfg reg end =======>\n");
+	}
+
+	if (dbgmem_addr > 0) {
+		val = M4U_ReadReg32(dbgmem_addr, 0x44);
+		M4U_WriteReg32(dbgmem_addr, 0x44, val | (1 << 0));
+
+		val = M4U_ReadReg32(scpsysbaseaddr, 0x90);
+		if ((!(val << 24) & 0x1))
+			M4U_WriteReg32(scpsysbaseaddr, 0x90, val | (1 << 24));
+
+		val = M4U_ReadReg32(dbgmem_addr, 0x44);
+		M4U_WriteReg32(dbgmem_addr, 0x44, val | 0x49);
+		for (i = 0; i < 3; i++)
+			M4UINFO("gals 0x40=0x%x\n", M4U_ReadReg32(dbgmem_addr, 0x40));
+
+		val = M4U_ReadReg32(dbgmem_addr, 0x44);
+		M4U_WriteReg32(dbgmem_addr, 0x44, val | 0x4B);
+		for (i = 0; i < 3; i++)
+			M4UINFO("gals 0x40=0x%x\n", M4U_ReadReg32(dbgmem_addr, 0x40));
+
+		val = M4U_ReadReg32(dbgmem_addr, 0x44);
+		M4U_WriteReg32(dbgmem_addr, 0x44, val | 0x4D);
+		for (i = 0; i < 3; i++)
+			M4UINFO("gals 0x40=0x%x\n", M4U_ReadReg32(dbgmem_addr, 0x40));
+
+		val = M4U_ReadReg32(dbgmem_addr, 0x44);
+		M4U_WriteReg32(dbgmem_addr, 0x44, val | 0x41);
+		for (i = 0; i < 3; i++)
+			M4UINFO("gals 0x40=0x%x\n", M4U_ReadReg32(dbgmem_addr, 0x40));
 	}
 
 	return 0;
