@@ -46,7 +46,7 @@ extern int BU63165AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t
 extern long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #else
-#define BU63169AF_SetI2Cclient BU63165AF_SetI2Cclient_Main
+#define BU63169AF_SetI2Cclient BU63169AF_SetI2Cclient_Main
 #define BU63169AF_Ioctl BU63169AF_Ioctl_Main
 #define BU63169AF_Release BU63169AF_Release_Main
 extern int BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
@@ -135,9 +135,11 @@ extern int LC898214AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #define LC898217AF_SetI2Cclient LC898217AF_SetI2Cclient_Main
 #define LC898217AF_Ioctl LC898217AF_Ioctl_Main
 #define LC898217AF_Release LC898217AF_Release_Main
+#define LC898217AF_PowerDown LC898217AF_PowerDown_Main
 extern int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long LC898217AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int LC898217AF_PowerDown(void);
 
 #define AD5820AF_SetI2Cclient AD5820AF_SetI2Cclient_Main
 #define AD5820AF_Ioctl AD5820AF_Ioctl_Main
