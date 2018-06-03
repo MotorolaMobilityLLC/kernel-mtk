@@ -192,6 +192,27 @@ int capacity_min_write_for_perf_idx(int idx, int capacity_min)
 	return 0;
 }
 
+int prefer_idle_for_perf_idx(int idx, int prefer_idle)
+{
+	struct schedtune *ct = allocated_group[idx];
+
+	if (!ct)
+		return -EINVAL;
+
+	rcu_read_lock();
+	ct->prefer_idle = prefer_idle;
+	rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+	/* top-app */
+	if (ct->idx == 3)
+		met_tag_oneshot(0, "sched_top_prefer_idle",
+				ct->prefer_idle);
+#endif
+
+	return 0;
+}
+
 int boost_write_for_perf_idx(int group_idx, int boost_value)
 {
 	struct schedtune *ct;
