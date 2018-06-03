@@ -201,6 +201,9 @@ static void hps_get_sysinfo(void)
  */
 static int _hps_task_main(void *data)
 {
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	unsigned int cpu, first_cpu;
+#endif
 	int cnt = 0;
 	void (*algo_func_ptr)(void);
 
@@ -229,6 +232,32 @@ static int _hps_task_main(void *data)
 			goto HPS_WAIT_EVENT;
 		}
 #endif
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+ACAO_HPS_START:
+	mutex_lock(&hps_ctxt.para_lock);
+	memcpy(&hps_ctxt.online_core, &hps_ctxt.online_core_req, sizeof(cpumask_var_t));
+	mutex_unlock(&hps_ctxt.para_lock);
+
+	if (hps_ctxt.online_core) {
+		first_cpu = cpumask_first(hps_ctxt.online_core);
+		if (!cpu_online(first_cpu))
+			cpu_up(first_cpu);
+		for_each_possible_cpu(cpu, hps_ctxt.online_core) {
+			if (cpumask_test_cpu(cpu, hps_ctxt.online_core)) {
+				if (!cpu_online(cpu))
+					cpu_up(cpu);
+			} else {
+				if (cpu_online(cpu))
+					cpu_down(cpu);
+			}
+			if (!cpumask_equal(&hps_ctxt.online_core, &hps_ctxt.online_core_req))
+				goto ACAO_HPS_START;
+		}
+	}
+
+	set_current_state(TASK_INTERRUPTIBLE);
+	schedule();
+#else
 
 		/* if (!hps_ctxt.is_interrupt) { */
 		/*Get sys status */
@@ -277,7 +306,7 @@ HPS_WAIT_EVENT:
 			} else
 				atomic_set(&hps_ctxt.is_ondemand, 0);
 		}
-
+#endif
 		if (kthread_should_stop())
 			break;
 
@@ -355,22 +384,10 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	int i;
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	unsigned int cpu, first_cpu;
-
-	if (p->online_core) {
-		first_cpu = cpumask_first(p->online_core);
-		if (!cpu_online(first_cpu))
-			cpu_up(first_cpu);
-		for_each_possible_cpu(cpu, p->online_core) {
-			if (cpumask_test_cpu(cpu, p->online_core)) {
-				if (!cpu_online(cpu))
-					cpu_up(cpu);
-			} else {
-				if (cpu_online(cpu))
-					cpu_down(cpu);
-			}
-		}
-	}
+	mutex_lock(&hps_ctxt.para_lock);
+	memcpy(&hps_ctxt.online_core_req, p->online_core, sizeof(cpumask_var_t));
+	mutex_unlock(&hps_ctxt.para_lock);
+	hps_task_wakeup_nolock();
 #else
 
 	mutex_lock(&hps_ctxt.para_lock);
@@ -407,6 +424,7 @@ int hps_core_init(void)
 {
 	int r = 0;
 
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	hps_warn("hps_core_init\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*init timer */
@@ -424,14 +442,13 @@ int hps_core_init(void)
 		hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
 
 	}
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#endif
 	/* init and start task */
 	r = hps_task_start();
 	if (r) {
 		hps_error("hps_task_start fail(%d)\n", r);
 		return r;
 	}
-#endif
 	mt_ppm_register_client(PPM_CLIENT_HOTPLUG, &ppm_limit_callback);	/* register PPM callback */
 
 	return r;
