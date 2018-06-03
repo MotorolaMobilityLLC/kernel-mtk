@@ -208,15 +208,16 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 	if (!aud_gpios[_type].gpio_prepare) {
 		pr_err("%s(), error, gpio type %d not prepared\n",
 		       __func__, _type);
-		AUDIO_AEE("error, gpio type %d not prepared");
+		return -EIO;
 	}
 
 	ret = pinctrl_select_state(pinctrlaud,
 				   aud_gpios[_type].gpioctrl);
-	if (ret)
+	if (ret) {
 		pr_err("%s(), error, can not set gpio type %d\n",
 		       __func__, _type);
-
+		AUDIO_AEE("error, cannot set gpio");
+	}
 	return ret;
 #else
 	return 0;
