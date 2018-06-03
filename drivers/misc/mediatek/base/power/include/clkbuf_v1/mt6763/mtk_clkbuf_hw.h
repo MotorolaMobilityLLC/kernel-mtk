@@ -58,14 +58,19 @@ enum xo_id {
 };
 
 enum {
-	BBLPM_COND_SKIP = 1,
-	BBLPM_COND_CEL,
-	BBLPM_COND_NFC,
-	BBLPM_COND_WCN,
-	BBLPM_COND_EXT,
+	BBLPM_COND_SKIP	= (1 << 0),
+	BBLPM_COND_WCN	= (1 << CLK_BUF_CONN),
+	BBLPM_COND_NFC	= (1 << CLK_BUF_NFC),
+	BBLPM_COND_CEL	= (1 << CLK_BUF_RF),
+	BBLPM_COND_EXT	= (1 << CLK_BUF_UFS),
 };
 
-/* #define CLKBUF_USE_BBLPM */
+enum {
+	PWR_STATUS_MD	= (1 << 0),
+	PWR_STATUS_CONN	= (1 << 1),
+};
+
+#define CLKBUF_USE_BBLPM
 
 void clk_buf_post_init(void);
 void clk_buf_init_pmic_clkbuf(void);

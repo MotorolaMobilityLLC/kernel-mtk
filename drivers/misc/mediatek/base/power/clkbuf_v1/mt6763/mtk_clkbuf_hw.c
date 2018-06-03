@@ -20,6 +20,9 @@
 #include <mtk_spm.h>
 #include <mtk_clkbuf_ctl.h>
 #include <mtk_clkbuf_common.h>
+#ifdef CONFIG_MTK_UFS_BOOTING
+#include "ufs-mtk.h"
+#endif
 
 static void __iomem *pwrap_base;
 
@@ -77,6 +80,9 @@ static void __iomem *pwrap_base;
 
 /* FIXME: Before MP, using suggested driving current to test. */
 /* #define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP */
+
+/* TODO: enable BBLPM if its function is ready (set as 1) */
+static unsigned int bblpm_switch;
 
 static unsigned int pwrap_dcxo_en_flag = (DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
 
@@ -230,32 +236,37 @@ void clk_buf_control_bblpm(bool on)
  */
 u32 clk_buf_bblpm_enter_cond(void)
 {
-	u32 bblpm_cond = 0;
+	u32 bblpm_cond = 0, pwr_sta = 0;
 
 #ifdef CLKBUF_USE_BBLPM
-	if (!is_clkbuf_initiated || !is_pmic_clkbuf) {
+	if (!is_clkbuf_initiated || !is_pmic_clkbuf || !bblpm_switch) {
 		bblpm_cond |= BBLPM_COND_SKIP;
 		return bblpm_cond;
 	}
 
-	if ((clkbuf_readl(MD1_PWR_CON) & 0x4) || (clkbuf_readl(C2K_PWR_CON) & 0x4))
+	pwr_sta = clkbuf_readl(PWR_STATUS);
+
+	if (pwr_sta & PWR_STATUS_MD)
 		bblpm_cond |= BBLPM_COND_CEL;
+
+	if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
+	    (pwr_sta & PWR_STATUS_CONN))
+		bblpm_cond |= BBLPM_COND_WCN;
 
 	if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
 		bblpm_cond |= BBLPM_COND_NFC;
 
-#if 0 /* Check by caller in SSPM */
 #ifdef CONFIG_MTK_UFS_BOOTING
-	if (ufs_mtk_deepidle_hibern8_check())
+	if (ufs_mtk_deepidle_hibern8_check() < 0)
 		bblpm_cond |= BBLPM_COND_EXT;
 #endif
+#else /* !CLKBUF_USE_BBLPM */
+	bblpm_cond |= BBLPM_COND_SKIP;
 #endif
 
 	if (!bblpm_cond)
 		bblpm_cnt++;
-#else /* !CLKBUF_USE_BBLPM */
-	bblpm_cond |= BBLPM_COND_SKIP;
-#endif
+
 	return bblpm_cond;
 }
 
@@ -269,6 +280,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	switch (id) {
 	case CLK_BUF_CONN:
 		if (onoff) {
+			CLK_BUF2_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
 #ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
@@ -295,6 +307,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 			pmic_clk_buf_ctrl_wcn(0);
 			pmic_clk_buf_swctrl[XO_WCN] = 0;
+			CLK_BUF2_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
 		}
 		clk_buf_warn("%s: id=%d, onoff=%d, DCXO_ENABLE=0x%x, pwrap_dcxo_en_flag=0x%x\n",
 			     __func__, id, onoff, clkbuf_readl(DCXO_ENABLE),
@@ -302,6 +315,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 		break;
 	case CLK_BUF_NFC:
 		if (onoff) {
+			CLK_BUF3_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
 			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
@@ -319,6 +333,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_clk_buf_ctrl_nfc(0);
 			pmic_clk_buf_swctrl[XO_NFC] = 0;
+			CLK_BUF3_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
 		}
 		clk_buf_warn("%s: id=%d, onoff=%d, DCXO_ENABLE=0x%x, pwrap_dcxo_en_flag=0x%x\n",
 			     __func__, id, onoff, clkbuf_readl(DCXO_ENABLE),
@@ -326,11 +341,13 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 		break;
 	case CLK_BUF_UFS:
 		if (onoff) {
+			CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
 			pmic_clk_buf_ctrl_ext(1);
 			pmic_clk_buf_swctrl[XO_EXT] = 1;
 		} else {
 			pmic_clk_buf_ctrl_ext(0);
 			pmic_clk_buf_swctrl[XO_EXT] = 0;
+			CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
 		}
 		clk_buf_warn("%s: id=%d, onoff=%d\n", __func__, id, onoff);
 		break;
@@ -365,14 +382,14 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_BB_MD:
 		if (CLK_BUF1_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		break;
 	case CLK_BUF_CONN:
 		if (CLK_BUF2_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		if (!(pwrap_dcxo_en_flag & DCXO_CONN_ENABLE)) {
@@ -388,7 +405,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_NFC:
 		if (CLK_BUF3_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		/* record the status of NFC from caller for checking BBLPM */
@@ -397,14 +414,14 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_RF:
 		if (CLK_BUF4_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		break;
 	case CLK_BUF_AUDIO:
 		if (CLK_BUF6_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		if (onoff)
@@ -416,7 +433,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_CHG:
 		if (CLK_BUF6_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		if (onoff)
@@ -428,7 +445,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_UFS:
 		if (CLK_BUF7_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
 			ret = -1;
-			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
+			clk_buf_warn("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
 		pmic_clk_buf_ctrl_ext(onoff);
@@ -671,26 +688,32 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/CW02/CW11/CW14/CW16=0x%x/0x%x/0x%x/0x%x/0x%x\n",
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/CW02/CW11/CW14/CW16=0x%x 0x%x 0x%x 0x%x 0x%x\n",
 			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	len += snprintf(buf+len, PAGE_SIZE-len, "SRCLKEN_IN3_EN(srclken_conn)=0x%x\n", pmic_cw00);
 
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1=0x%x/%x/%x/%x\n",
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1=0x%x %x %x %x\n",
 		     clkbuf_readl(DCXO_CONN_ADR0),
 		     clkbuf_readl(DCXO_CONN_WDATA0),
 		     clkbuf_readl(DCXO_CONN_ADR1),
 		     clkbuf_readl(DCXO_CONN_WDATA1));
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_NFC_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x/%x/%x/%x/%x\n",
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_NFC_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x %x %x %x %x\n",
 		     clkbuf_readl(DCXO_NFC_ADR0),
 		     clkbuf_readl(DCXO_NFC_WDATA0),
 		     clkbuf_readl(DCXO_NFC_ADR1),
 		     clkbuf_readl(DCXO_NFC_WDATA1),
 		     clkbuf_readl(DCXO_ENABLE));
 
-	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_cnt=%u, MD1_PWR_CON=0x%x\n",
-			bblpm_cnt, clkbuf_readl(MD1_PWR_CON));
+	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
+			bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
+			clkbuf_readl(MD1_PWR_CON),
+			clkbuf_readl(PWR_STATUS),
+			clkbuf_readl(PCM_REG13_DATA),
+			clkbuf_readl(SPARE_ACK_MASK));
 
 	return len;
 }
@@ -733,6 +756,10 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 			clk_buf_ctrl_internal(CLK_BUF_UFS, false);
 		else if (debug == 15)
 			clk_buf_ctrl_internal(CLK_BUF_UFS, true);
+		else if (debug == 16)
+			bblpm_switch = 1;
+		else if (debug == 17)
+			bblpm_switch = 0;
 		else
 			clk_buf_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
 	} else
