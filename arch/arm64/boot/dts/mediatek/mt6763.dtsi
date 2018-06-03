@@ -1822,6 +1822,16 @@
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	mt6356_gauge {
+		compatible = "mediatek,mt6356_gauge";
+		gauge_name = "gauge";
+		alias_name = "MT6356";
+	};
+
+	gauge_timer {
+		compatible = "mediatek,gauge_timer_service";
+	};
+
 	dispsys: dispsys@14000000 {
 		compatible = "mediatek,dispsys";
 
