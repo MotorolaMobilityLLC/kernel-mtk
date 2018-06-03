@@ -876,7 +876,7 @@ static int m4u_clock_off(void)
 }
 #endif
 
-char *smi_clk_name[] = {
+const char *smi_clk_name[] = {
 	"m4u_smi_common", "m4u_smi_larb0", "m4u_smi_larb1", "m4u_smi_larb2",
 	"m4u_smi_larb3"};
 
