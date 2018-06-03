@@ -73,6 +73,7 @@ obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
 obj-$(CONFIG_MTK_RAM_CONSOLE) += ram_console/
+obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
 obj-$(CONFIG_RT_FLASHLIGHT)     += flashlight/richtek/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
