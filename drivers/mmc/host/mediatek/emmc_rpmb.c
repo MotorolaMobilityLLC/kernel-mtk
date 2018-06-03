@@ -1504,6 +1504,10 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		rpmbinfor.size |= (*((unsigned char *)rpmb_buffer+2) << 16) | (*((unsigned char *)rpmb_buffer+3) << 24);
 		MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
 		err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
+		if (err < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, err);
+			return -1;
+		}
 		rpmbinfor.data_frame = (rpmb_buffer + 4);
 	}
 #endif
