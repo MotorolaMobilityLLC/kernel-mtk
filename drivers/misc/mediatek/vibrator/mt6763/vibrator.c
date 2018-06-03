@@ -45,25 +45,25 @@ static int debug_enable_vib_hal = 1;
 
 void vibr_Enable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 1);
 }
 
 void vibr_Disable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 0);
 }
 
 /******************************************
 * Set RG_VIBR_VOSEL	Output voltage select
 *  hw->vib_vol:  Voltage selection
-* 3'b000: 1.3V
-* 3'b001: 1.5V
-* 3'b010: 1.8V
-* 3'b011: 2.0V
-* 3'b100: 2.5V
-* 3'b101: 2.8V
-* 3'b110: 3.0V
-* 3'b111: 3.3V
+* 4'b0000 :1.2V
+* 4'b0001 :1.3V
+* 4'b0010 :1.5V
+* 4'b0100 :1.8V
+* 4'b1001 :2.8V
+* 4'b1010 :2.9V
+* 4'b1011 :3.0V
+* 4'b1101 :3.3V
 *******************************************/
 void init_cust_vibrator_dtsi(struct platform_device *pdev)
 {
