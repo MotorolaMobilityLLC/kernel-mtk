@@ -309,6 +309,7 @@ static int _hps_task_main(void *data)
 		/*Get sys status */
 		mutex_lock(&hps_ctxt.lock);
 		hps_get_sysinfo();
+		total_big_task = 0;
 		for (idx = 0; idx < hps_sys.cluster_num; idx++)
 			total_big_task += hps_sys.cluster_info[idx].bigTsk_value;
 		mutex_unlock(&hps_ctxt.lock);
