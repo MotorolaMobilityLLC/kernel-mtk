@@ -424,6 +424,9 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
 
 	mtk8250_set_flow_ctrl(up, mode);
 
+	if (uart_console(port))
+		up->port.cons->cflag = termios->c_cflag;
+
 	spin_unlock_irqrestore(&port->lock, flags);
 	/* Don't rewrite B0 */
 	if (tty_termios_baud_rate(termios))
@@ -750,59 +753,65 @@ static void mtk8250_save_dev(struct device *dev)
 void mtk8250_restore_dev(void)
 {
 	unsigned long flags;
+	int line = 0;
 	struct uart_8250_port *up;
 	struct mtk8250_data *data;
 	struct mtk8250_reg *reg;
 
-	up = serial8250_get_port(0);
-	data = dev_get_drvdata(up->port.dev);
-	reg = &data->reg;
+	for (line = 0; line < CONFIG_SERIAL_8250_NR_UARTS; line++) {
+		up = serial8250_get_port(line);
+		data = dev_get_drvdata(up->port.dev);
+		reg = &data->reg;
 
-	mtk8250_runtime_resume(up->port.dev);
-	pr_info("restore UART register start!\n");
+		if (!uart_console(&up->port))
+			continue;
 
-	spin_lock_irqsave(&up->port.lock, flags);
+		mtk8250_runtime_resume(up->port.dev);
+		pr_info("restore UART register start!\n");
 
-	/* restore when LCR = 0xBF */
-	serial_out(up, UART_LCR, 0xBF);
-	serial_out(up, UART_EFR, reg->efr);
-	serial_out(up, UART_LCR, reg->lcr);
-	serial_out(up, UART_FCR, reg->fcr_rd);
+		spin_lock_irqsave(&up->port.lock, flags);
 
-	/*restore baudrate */
-	serial_out(up, MTK_UART_HIGHS, reg->highspeed);
-	serial_out(up, MTK_UART_FRACDIV_L, reg->fracdiv_l);
-	serial_out(up, MTK_UART_FRACDIV_M, reg->fracdiv_m);
-	serial_out(up, UART_LCR, reg->lcr | UART_LCR_DLAB);
-	serial_out(up, UART_DLL, reg->dll);
-	serial_out(up, UART_DLM, reg->dlm);
-	serial_out(up, UART_LCR, reg->lcr);
-	serial_out(up, MTK_UART_SAMPLE_COUNT, reg->sample_count);
-	serial_out(up, MTK_UART_SAMPLE_POINT, reg->sample_point);
-	serial_out(up, MTK_UART_GUARD, reg->guard);
+		/* restore when LCR = 0xBF */
+		serial_out(up, UART_LCR, 0xBF);
+		serial_out(up, UART_EFR, reg->efr);
+		serial_out(up, UART_LCR, reg->lcr);
+		serial_out(up, UART_FCR, reg->fcr_rd);
 
-	/* restore flow control */
-	serial_out(up, UART_MCR, reg->mcr);
-	serial_out(up, UART_IER, reg->ier);
-	serial_out(up, UART_XON1, reg->xon1);
-	serial_out(up, UART_XON2, reg->xon2);
-	serial_out(up, UART_XOFF1, reg->xoff1);
-	serial_out(up, UART_XOFF2, reg->xoff2);
-	serial_out(up, MTK_UART_ESCAPE_DAT, reg->escape_dat);
-	serial_out(up, MTK_UART_SLEEP_EN, reg->sleep_en);
+		/*restore baudrate */
+		serial_out(up, MTK_UART_HIGHS, reg->highspeed);
+		serial_out(up, MTK_UART_FRACDIV_L, reg->fracdiv_l);
+		serial_out(up, MTK_UART_FRACDIV_M, reg->fracdiv_m);
+		serial_out(up, UART_LCR, reg->lcr | UART_LCR_DLAB);
+		serial_out(up, UART_DLL, reg->dll);
+		serial_out(up, UART_DLM, reg->dlm);
+		serial_out(up, UART_LCR, reg->lcr);
+		serial_out(up, MTK_UART_SAMPLE_COUNT, reg->sample_count);
+		serial_out(up, MTK_UART_SAMPLE_POINT, reg->sample_point);
+		serial_out(up, MTK_UART_GUARD, reg->guard);
 
-	/* restore others */
-	serial_out(up, MTK_UART_ESCAPE_EN, reg->escape_en);
-	serial_out(up, UART_MSR, reg->msr);
-	serial_out(up, UART_SCR, reg->scr);
+		/* restore flow control */
+		serial_out(up, UART_MCR, reg->mcr);
+		serial_out(up, UART_IER, reg->ier);
+		serial_out(up, UART_XON1, reg->xon1);
+		serial_out(up, UART_XON2, reg->xon2);
+		serial_out(up, UART_XOFF1, reg->xoff1);
+		serial_out(up, UART_XOFF2, reg->xoff2);
+		serial_out(up, MTK_UART_ESCAPE_DAT, reg->escape_dat);
+		serial_out(up, MTK_UART_SLEEP_EN, reg->sleep_en);
 
-	serial_out(up, MTK_UART_DMA_EN, reg->dma_en);
-	serial_out(up, MTK_UART_RXTRI_AD, reg->rxtri_ad);
-	serial_out(up, MTK_UART_FCR_RD, reg->fcr_rd);
-	serial_out(up, MTK_UART_RX_SEL, reg->rx_sel);
-	spin_unlock_irqrestore(&up->port.lock, flags);
+		/* restore others */
+		serial_out(up, MTK_UART_ESCAPE_EN, reg->escape_en);
+		serial_out(up, UART_MSR, reg->msr);
+		serial_out(up, UART_SCR, reg->scr);
 
-	pr_info("restore UART register finish!\n");
+		serial_out(up, MTK_UART_DMA_EN, reg->dma_en);
+		serial_out(up, MTK_UART_RXTRI_AD, reg->rxtri_ad);
+		serial_out(up, MTK_UART_FCR_RD, reg->fcr_rd);
+		serial_out(up, MTK_UART_RX_SEL, reg->rx_sel);
+		spin_unlock_irqrestore(&up->port.lock, flags);
+
+		pr_info("restore UART register finish!\n");
+	}
 }
 EXPORT_SYMBOL(mtk8250_restore_dev);
 
