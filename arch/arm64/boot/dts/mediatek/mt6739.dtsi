@@ -1397,6 +1397,14 @@
 		clock-names = "CAM_MDP";
 	};
 
+	flashlight_core: flashlight_core {
+		compatible = "mediatek,flashlight_core";
+	};
+
+	flashlights_rt4505: flashlights_rt4505 {
+		compatible = "mediatek,flashlights_rt4505";
+	};
+
 	mtkfb: mtkfb {
 		compatible = "mediatek,mtkfb";
 	};
