@@ -15,6 +15,8 @@
 #define _MTK_BATTERY_H
 
 #include <linux/list.h>
+#include <linux/notifier.h>
+
 
 /* ============================================================ */
 /* typedef */
@@ -42,6 +44,16 @@ extern void gauge_coulomb_before_reset(void);
 extern void gauge_coulomb_after_reset(void);
 extern void gauge_coulomb_set_log_level(int x);
 /* coulomb sub system end */
+
+
+/* battery notify charger_consumer */
+enum {
+	EVENT_BATTERY_PLUG_OUT,
+};
+
+extern int register_battery_notifier(struct notifier_block *nb);
+extern int unregister_battery_notifier(struct notifier_block *nb);
+/* battery notify charger_consumer end*/
 
 
 /* battery common interface */
