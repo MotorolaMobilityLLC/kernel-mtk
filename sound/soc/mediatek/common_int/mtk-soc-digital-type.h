@@ -52,6 +52,7 @@
 typedef enum {
 	/* memmory interfrace */
 	Soc_Aud_Digital_Block_MEM_DL1 = 0,
+	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_DL2,
 	Soc_Aud_Digital_Block_MEM_VUL,
 	Soc_Aud_Digital_Block_MEM_DAI,
@@ -59,7 +60,6 @@ typedef enum {
 	Soc_Aud_Digital_Block_MEM_AWB,
 	Soc_Aud_Digital_Block_MEM_MOD_DAI,
 	/* currently no use */
-	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_VUL_DATA2,
 	Soc_Aud_Digital_Block_MEM_VUL2,
 	Soc_Aud_Digital_Block_MEM_DAI2,
@@ -105,6 +105,7 @@ typedef enum {
 	/* memory interfrace */
 	Soc_Aud_AFE_IO_Block_MEM_DL1 = 0,
 	Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+	Soc_Aud_AFE_IO_Block_MEM_DL1_DATA2,
 	Soc_Aud_AFE_IO_Block_MEM_DL2,
 	Soc_Aud_AFE_IO_Block_MEM_VUL,
 	Soc_Aud_AFE_IO_Block_MEM_DAI,
@@ -167,6 +168,7 @@ typedef enum {
 enum audio_usage_id {
 	AUDIO_USAGE_PCM_CAPTURE,
 	AUDIO_USAGE_SCP_SPK_IV_DATA,
+	AUDIO_USAGE_DEEPBUFFER_PLAYBACK,
 };
 
 typedef enum {

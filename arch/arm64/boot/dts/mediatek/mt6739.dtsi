@@ -1199,6 +1199,10 @@
 		reg = <0 0x11221000 0 0xf000>;
 	};
 
+	mt_soc_dl1_data2_pcm {
+		compatible = "mediatek,mt_soc_pcm_dl1_data2";
+	};
+
 	efusec@11c00000 {
 		compatible = "mediatek,efusec";
 		reg = <0 0x11c00000 0 0x10000>;

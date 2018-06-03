@@ -3570,6 +3570,10 @@
 		compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
 	};
 
+	mt_soc_dl1_data2_pcm {
+		compatible = "mediatek,mt_soc_pcm_dl1_data2";
+	};
+
 	mt_soc_ul1_pcm {
 		compatible = "mediatek,mt_soc_pcm_capture";
 	};
