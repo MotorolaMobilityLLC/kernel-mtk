@@ -47,12 +47,12 @@
 /*****************************************************************************
  *                ENUM DEFINITION
  ******************************************************************************/
-enum HDMI_DISPLAY_TYPE {
+enum hdmi_display_type {
 	HDMI_DISPLAY_MHL = 0,
 	HDMI_DISPLAY_SILMPORT = 1,
 };
 
-typedef struct {
+struct audio_hdmi_format {
 	uint8 mHDMI_DisplayType;
 	uint32 mI2Snum;
 	uint32 mI2S_MCKDIV;
@@ -70,7 +70,6 @@ typedef struct {
 	bool mSdata1;
 	bool mSdata2;
 	bool mSdata3;
-} AudioHDMIFormat;
-
+};
 
 #endif
