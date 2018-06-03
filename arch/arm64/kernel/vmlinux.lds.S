@@ -96,10 +96,6 @@ SECTIONS
 		_text = .;
 		HEAD_TEXT
 	}
-#ifdef CONFIG_MTK_AEE_IPANIC
-	.mrdump ALIGN (0x400): {
-	}
-#endif
 	ALIGN_DEBUG_RO_MIN(PAGE_SIZE)
 	.text : {			/* Real text segment		*/
 		_stext = .;		/* Text and read-only data	*/

@@ -21,6 +21,14 @@
 
 static void mrdump_hw_enable(bool enabled)
 {
+	if (enabled) {
+		mrdump_cblock->enabled = MRDUMP_ENABLE_COOKIE;
+		pr_info("%s: mrdump enabled!\n", __func__);
+	} else {
+		mrdump_cblock->enabled = 0;
+		pr_info("%s: mrdump disabled!\n", __func__);
+	}
+	__inner_flush_dcache_all();
 }
 
 static void mrdump_reboot(void)

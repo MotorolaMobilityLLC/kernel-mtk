@@ -880,10 +880,13 @@ int mrdump_mini_init(void)
 	fill_elf_note_phdr(&mrdump_mini_ehdr->phdrs[1], sizeof(mrdump_mini_ehdr->misc),
 			   offsetof(struct mrdump_mini_elf_header, misc));
 
-	mrdump_mini_add_entry((unsigned long)&mrdump_cblock, sizeof(mrdump_cblock) + 2 * PAGE_SIZE);
-	mrdump_mini_add_entry((unsigned long)mrdump_cblock.machdesc.kallsyms.start_addr +
-			      (mrdump_cblock.machdesc.kallsyms.size / 2 - PAGE_SIZE),
-			      mrdump_cblock.machdesc.kallsyms.size + 2 * PAGE_SIZE);
+	if (mrdump_cblock) {
+		mrdump_mini_add_entry((unsigned long)mrdump_cblock,
+				sizeof(struct mrdump_control_block) + 2 * PAGE_SIZE);
+		mrdump_mini_add_entry((unsigned long)mrdump_cblock->machdesc.kallsyms.start_addr +
+				      (mrdump_cblock->machdesc.kallsyms.size / 2 - PAGE_SIZE),
+				      mrdump_cblock->machdesc.kallsyms.size + 2 * PAGE_SIZE);
+	}
 
 	return 0;
 }
