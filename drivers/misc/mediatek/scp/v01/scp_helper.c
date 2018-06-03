@@ -944,13 +944,8 @@ void scp_register_feature(feature_id_t id)
 	int ret = 0;
 
 	/*prevent from access when scp is down*/
-#if defined(CONFIG_MACH_MT6759)
 	if (!scp_ready[SCP_A_ID]) {
-		pr_err("scp_register_feature:not ready, A=%u\n", scp_ready[SCP_A_ID]);
-#else
-	if (!scp_ready[SCP_A_ID]) {
-		pr_err("scp_register_feature:not ready, A=%u\n", scp_ready[SCP_A_ID]);
-#endif
+		pr_debug("scp_register_feature:not ready, scp=%u\n", scp_ready[SCP_A_ID]);
 		return;
 	}
 
@@ -1000,11 +995,7 @@ void scp_deregister_feature(feature_id_t id)
 	int ret = 0;
 
 	/* prevent from access when scp is down */
-#if defined(CONFIG_MACH_MT6759)
 	if (!scp_ready[SCP_A_ID])
-#else
-	if (!scp_ready[SCP_A_ID])
-#endif
 		return;
 
 	mutex_lock(&scp_feature_mutex);
