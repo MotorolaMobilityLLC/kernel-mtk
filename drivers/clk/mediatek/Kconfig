@@ -6,6 +6,12 @@ config COMMON_CLK_MEDIATEK
 	---help---
 	  Mediatek SoCs' clock support.
 
+config COMMON_CLK_MEDIATEK_NEW
+	bool
+	select COMMON_CLK_MEDIATEK
+	---help---
+	  A newer version of Mediatek clock common code support.
+
 config COMMON_CLK_MEDIATEK_V1
 	bool
 	select COMMON_CLK_MEDIATEK
@@ -22,3 +28,14 @@ config COMMON_CLK_MT6757
 	  Use the config to support CCF on MT6757,
 	  instead of old clkmgr architecture.
 	  MT6757 default will use CCF.
+
+config COMMON_CLK_MT6799
+	bool "Clock driver for Mediatek MT6799"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_NEW
+	default y if MACH_MT6799 && !MTK_CLKMGR
+	---help---
+	  This driver supports Mediatek MT6799 clocks.
+	  Use the config to support CCF on MT6799,
+	  instead of old clkmgr architecture.
+	  MT6799 default will use CCF.
