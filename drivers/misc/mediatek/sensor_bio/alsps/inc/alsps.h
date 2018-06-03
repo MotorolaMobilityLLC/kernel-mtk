@@ -162,6 +162,14 @@ struct alsps_context {
 	bool is_ps_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
 	bool is_get_valid_ps_data_after_enable;
 	bool is_get_valid_als_data_after_enable;
+	int als_power;
+	int als_enable;
+	int64_t als_delay_ns;
+	int64_t als_latency_ns;
+	int ps_power;
+	int ps_enable;
+	int64_t ps_delay_ns;
+	int64_t ps_latency_ns;
 };
 
 /* AAL Functions */

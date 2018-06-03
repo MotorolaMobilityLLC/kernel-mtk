@@ -156,168 +156,115 @@ static struct baro_context *baro_context_alloc_object(void)
 	obj->is_polling_run = false;
 	mutex_init(&obj->baro_op_mutex);
 	obj->is_batch_enable = false;	/* for batch mode init */
+	obj->power = 0;
+	obj->enable = 0;
+	obj->delay_ns = -1;
+	obj->latency_ns = -1;
 
 	BARO_LOG("baro_context_alloc_object----\n");
 	return obj;
 }
 
-static int baro_real_enable(int enable)
+static int baro_enable_and_batch(void)
 {
-	int err = 0;
-	struct baro_context *cxt = NULL;
+	struct baro_context *cxt = baro_context_obj;
+	int err;
 
-	cxt = baro_context_obj;
-	if (enable == 1) {
-
-		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
-			err = cxt->baro_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->baro_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->baro_ctl.enable_nodata(1);
-					if (err)
-						BARO_ERR("baro enable(%d) err 3 timers = %d\n",
-							 enable, err);
-				}
-			}
-			BARO_LOG("baro real enable\n");
+	/* power on -> power off */
+	if (cxt->power == 1 && cxt->enable == 0) {
+		BARO_LOG("BARO disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->baro_ctl.is_report_input_direct == false
+			&& cxt->is_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			stopTimer(&cxt->hrTimer);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report);
+			cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
+			cxt->is_polling_run = false;
+			BARO_LOG("baro stop polling done\n");
 		}
-
-	}
-	if (enable == 0) {
-		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
-			err = cxt->baro_ctl.enable_nodata(0);
-			if (err)
-				BARO_ERR("baro enable(%d) err = %d\n", enable, err);
-			BARO_LOG("baro real disable\n");
+		/* turn off the power */
+		err = cxt->baro_ctl.enable_nodata(0);
+		if (err) {
+			BARO_ERR("baro turn off power err = %d\n", err);
+			return -1;
 		}
+		BARO_LOG("baro turn off power done\n");
 
+		cxt->power = 0;
+		cxt->delay_ns = -1;
+		BARO_LOG("BARO disable done\n");
+		return 0;
 	}
+	/* power off -> power on */
+	if (cxt->power == 0 && cxt->enable == 1) {
+		BARO_LOG("BARO power on\n");
+		err = cxt->baro_ctl.enable_nodata(1);
+		if (err) {
+			BARO_ERR("baro turn on power err = %d\n", err);
+			return -1;
+		}
+		BARO_LOG("baro turn on power done\n");
 
-	return err;
-}
-
-static int baro_enable_data(int enable)
-{
-	struct baro_context *cxt = NULL;
-
-	cxt = baro_context_obj;
-	if (cxt->baro_ctl.open_report_data == NULL) {
-		BARO_ERR("no baro control path\n");
-		return -1;
+		cxt->power = 1;
+		BARO_LOG("BARO power on done\n");
 	}
+	/* rate change */
+	if (cxt->power == 1 && cxt->delay_ns >= 0) {
+		BARO_LOG("BARO set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->baro_ctl.is_support_batch)
+			err = cxt->baro_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+		else
+			err = cxt->baro_ctl.batch(0, cxt->delay_ns, 0);
+		if (err) {
+			BARO_ERR("baro set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		BARO_LOG("baro set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->baro_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->delay_ns;
 
-	if (enable == 1) {
-		BARO_LOG("BARO enable data\n");
-		cxt->is_active_data = true;
-		cxt->is_first_data_after_enable = true;
-		cxt->baro_ctl.open_report_data(1);
-		baro_real_enable(enable);
-		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
-			if (false == cxt->baro_ctl.is_report_input_direct) {
+			do_div(mdelay, 1000000);
+			atomic_set(&cxt->delay, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_polling_run == false) {
 				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
+				cxt->is_first_data_after_enable = true;
 			}
+			BARO_LOG("baro set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
+		BARO_LOG("BARO batch done\n");
 	}
-	if (enable == 0) {
-		BARO_LOG("BARO disable\n");
-		cxt->is_active_data = false;
-		cxt->baro_ctl.open_report_data(0);
-		if (true == cxt->is_polling_run) {
-			if (false == cxt->baro_ctl.is_report_input_direct) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
-			}
-		}
-		baro_real_enable(enable);
-	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->power == 0 && cxt->delay_ns >= 0)
+		BARO_ERR("batch will call firstly in API1.3, do nothing\n");
+
 	return 0;
-}
-
-
-
-int baro_enable_nodata(int enable)
-{
-	struct baro_context *cxt = NULL;
-
-	cxt = baro_context_obj;
-	if (cxt->baro_ctl.enable_nodata == NULL) {
-		BARO_ERR("baro_enable_nodata:baro ctl path is NULL\n");
-		return -1;
-	}
-
-	if (enable == 1)
-		cxt->is_active_nodata = true;
-
-	if (enable == 0)
-		cxt->is_active_nodata = false;
-
-	baro_real_enable(enable);
-	return 0;
-}
-
-
-static ssize_t baro_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	BARO_LOG(" not support now\n");
-	return len;
-}
-
-static ssize_t baro_store_enable_nodata(struct device *dev, struct device_attribute *attr,
-					const char *buf, size_t count)
-{
-	struct baro_context *cxt = NULL;
-
-	BARO_LOG("baro_store_enable nodata buf=%s\n", buf);
-	mutex_lock(&baro_context_obj->baro_op_mutex);
-
-	cxt = baro_context_obj;
-	if (cxt->baro_ctl.enable_nodata == NULL) {
-		BARO_LOG("baro_ctl enable nodata NULL\n");
-		mutex_unlock(&baro_context_obj->baro_op_mutex);
-		return count;
-	}
-
-	if (!strncmp(buf, "1", 1))
-		baro_enable_nodata(1);
-	else if (!strncmp(buf, "0", 1))
-		baro_enable_nodata(0);
-	else
-		BARO_ERR(" baro_store enable nodata cmd error !!\n");
-
-	mutex_unlock(&baro_context_obj->baro_op_mutex);
-
-	return count;
 }
 
 static ssize_t baro_store_active(struct device *dev, struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
-	struct baro_context *cxt = NULL;
+	struct baro_context *cxt = baro_context_obj;
+	int err = 0;
 
 	BARO_LOG("baro_store_active buf=%s\n", buf);
 	mutex_lock(&baro_context_obj->baro_op_mutex);
-
-	cxt = baro_context_obj;
-	if (cxt->baro_ctl.open_report_data == NULL) {
-		BARO_LOG("baro_ctl enable NULL\n");
-		mutex_unlock(&baro_context_obj->baro_op_mutex);
-		return count;
-	}
 	if (!strncmp(buf, "1", 1))
-		baro_enable_data(1);
+		cxt->enable = 1;
 	else if (!strncmp(buf, "0", 1))
-		baro_enable_data(0);
-	else
+		cxt->enable = 0;
+	else {
 		BARO_ERR(" baro_store_active error !!\n");
-
+		err = -1;
+		goto err_out;
+	}
+	err = baro_enable_and_batch();
+err_out:
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_active done\n");
 	return count;
@@ -336,82 +283,20 @@ static ssize_t baro_show_active(struct device *dev, struct device_attribute *att
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 }
 
-static ssize_t baro_store_delay(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	int64_t delay;
-	int64_t mdelay = 0;
-	int ret = 0;
-	struct baro_context *cxt = NULL;
-
-	mutex_lock(&baro_context_obj->baro_op_mutex);
-
-	cxt = baro_context_obj;
-	if (cxt->baro_ctl.set_delay == NULL) {
-		BARO_LOG("baro_ctl set_delay NULL\n");
-		mutex_unlock(&baro_context_obj->baro_op_mutex);
-		return count;
-	}
-
-	ret = kstrtoll(buf, 10, &delay);
-	if (ret != 0) {
-		BARO_ERR("invalid format!!\n");
-		mutex_unlock(&baro_context_obj->baro_op_mutex);
-		return count;
-	}
-
-	if (false == cxt->baro_ctl.is_report_input_direct) {
-		mdelay = delay;
-		do_div(mdelay, 1000000);
-		atomic_set(&baro_context_obj->delay, mdelay);
-	}
-	cxt->baro_ctl.set_delay(delay);
-	BARO_LOG(" baro_delay %lld ns\n", delay);
-	mutex_unlock(&baro_context_obj->baro_op_mutex);
-	return count;
-
-}
-
-static ssize_t baro_show_delay(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	BARO_LOG(" not support now\n");
-	return len;
-}
-
 
 static ssize_t baro_store_batch(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct baro_context *cxt = NULL;
+	struct baro_context *cxt = baro_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+			&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4)
 		BARO_ERR("grav_store_batch param error: err = %d\n", err);
 
-	BARO_LOG("grav_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&baro_context_obj->baro_op_mutex);
-
-	cxt = baro_context_obj;
-	if (false == cxt->baro_ctl.is_report_input_direct) {
-		mdelay = samplingPeriodNs;
-		do_div(mdelay, 1000000);
-		atomic_set(&baro_context_obj->delay, mdelay);
-	}
-	if (!cxt->baro_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		BARO_LOG("baro_store_batch not supported\n");
-	}
-	if (cxt->baro_ctl.batch != NULL)
-		err = cxt->baro_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		BARO_ERR("BARO DRIVER OLD ARCHITECTURE DON'T SUPPORT BARO COMMON VERSION BATCH\n");
-	if (err < 0)
-		BARO_ERR("baro enable batch err %d\n", err);
+	err = baro_enable_and_batch();
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_batch done: %d\n", cxt->is_batch_enable);
 	return count;
@@ -587,18 +472,14 @@ static int baro_misc_init(struct baro_context *cxt)
 	return err;
 }
 
-DEVICE_ATTR(baroenablenodata, S_IWUSR | S_IRUGO, baro_show_enable_nodata, baro_store_enable_nodata);
 DEVICE_ATTR(baroactive, S_IWUSR | S_IRUGO, baro_show_active, baro_store_active);
-DEVICE_ATTR(barodelay, S_IWUSR | S_IRUGO, baro_show_delay, baro_store_delay);
 DEVICE_ATTR(barobatch, S_IWUSR | S_IRUGO, baro_show_batch, baro_store_batch);
 DEVICE_ATTR(baroflush, S_IWUSR | S_IRUGO, baro_show_flush, baro_store_flush);
 DEVICE_ATTR(barodevnum, S_IWUSR | S_IRUGO, baro_show_devnum, NULL);
 
 
 static struct attribute *baro_attributes[] = {
-	&dev_attr_baroenablenodata.attr,
 	&dev_attr_baroactive.attr,
-	&dev_attr_barodelay.attr,
 	&dev_attr_barobatch.attr,
 	&dev_attr_baroflush.attr,
 	&dev_attr_barodevnum.attr,

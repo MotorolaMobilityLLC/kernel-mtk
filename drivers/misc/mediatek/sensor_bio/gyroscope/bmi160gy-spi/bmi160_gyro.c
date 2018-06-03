@@ -101,8 +101,6 @@ struct bmg_gyro_data {
 	 * +/-125 = 250 ]
 	 */
 	u16 sensitivity;
-	bool power;
-	int64_t samplingPeriodNs;
 	/*misc */
 	struct mutex lock;
 	atomic_t trace;
@@ -1013,6 +1011,7 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 	return err;
 }
 
+#if 0
 static int bmg_open(struct inode *inode, struct file *file)
 {
 	file->private_data = obj_data;
@@ -1165,6 +1164,7 @@ static struct miscdevice bmg_device = {
 	.name = "gyroscope",
 	.fops = &bmg_fops,
 };
+#endif
 
 #ifdef CONFIG_PM
 static int bmg_suspend(void)
@@ -1223,27 +1223,44 @@ static int bmi160_gyro_open_report_data(int open)
 	return 0;
 }
 
-static int bmi160_gyro_enable_and_batch(void)
+static int bmi160_gyro_enable_nodata(int en)
 {
 	int err = 0;
-	u8 bwrate;
-	int value = (int)obj_data->samplingPeriodNs / 1000 / 1000;
+	int retry = 0;
+	bool power = false;
 
-	if (obj_data->power && obj_data->samplingPeriodNs) {
-		/* power on */
-		err = bmg_set_powermode(obj_data, true);
-		if (err < 0)
-			goto power_failed;
-		/* set ODR */
-		if (value <= 5)
-			bwrate = BMI160_GYRO_ODR_400HZ;
-		else if (value <= 10)
-			bwrate = BMI160_GYRO_ODR_200HZ;
-		else
-			bwrate = BMI160_GYRO_ODR_100HZ;
-		err = bmg_set_datarate(obj_data, bwrate);
-		if (err < 0)
-			goto batch_failed;
+	if (en == 1)
+		power = true;
+	else
+		power = false;
+
+	for (retry = 0; retry < 3; retry++) {
+		err = bmg_set_powermode(NULL, power);
+		if (err == 0) {
+			GYRO_LOG("bmi160_gyro_SetPowerMode ok.\n");
+			break;
+		}
+	}
+	if (err < 0)
+		GYRO_LOG("bmi160_gyro_SetPowerMode fail!\n");
+
+	return err;
+}
+
+static int bmi160_gyro_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	int err;
+	int value = (int)samplingPeriodNs/1000/1000;
+	/* Currently, fix data rate to 100Hz. */
+	int sample_delay = BMI160_GYRO_ODR_100HZ;
+	struct bmg_gyro_data *priv = obj_data;
+
+	err = bmg_set_datarate(NULL, sample_delay);
+	if (err < 0)
+		GYRO_ERR("set data rate failed.\n");
+	if (value >= 40)
+		atomic_set(&priv->filter, 0);
+	else {
 #if defined(CONFIG_BMG_LOWPASS)
 		priv->fir.num = 0;
 		priv->fir.idx = 0;
@@ -1252,41 +1269,9 @@ static int bmi160_gyro_enable_and_batch(void)
 		priv->fir.sum[BMG_AXIS_Z] = 0;
 		atomic_set(&priv->filter, 1);
 #endif
-	} else if (obj_data->power == false) {
-		/* power off */
-		err = bmg_set_powermode(obj_data, false);
-		if (err < 0)
-			goto power_failed;
-		obj_data->samplingPeriodNs = 0;
 	}
-	return err;
-power_failed:
-	GYRO_ERR("BMI160_GYRO_SetPowerMode failed.\n");
-	return -1;
-batch_failed:
-	GYRO_ERR("set delay parameter error!\n");
-	return -1;
-}
-
-static int bmi160_gyro_enable_nodata(int en)
-{
-	int err = 0;
-
-	if (en == 1)
-		obj_data->power = true;
-	else if (en == 0)
-		obj_data->power = false;
-
-	err = bmi160_gyro_enable_and_batch();
-	GYRO_LOG("bmi160_gyro_enable_nodata ok!\n");
-	return err;
-}
-
-static int bmi160_gyro_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
-{
-	obj_data->samplingPeriodNs = samplingPeriodNs;
-
-	return bmi160_gyro_enable_and_batch();
+	GYRO_LOG("set gyro delay = %d\n", sample_delay);
+	return 0;
 }
 
 static int bmi160_gyro_flush(void)
@@ -1354,6 +1339,100 @@ static int bmi160_gyro_get_data(int *x, int *y, int *z, int *status)
 	return 0;
 }
 
+
+static int bmg_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err = 0;
+
+	err = bmi160_gyro_enable_nodata(enabledisable == true ? 1 : 0);
+	if (err) {
+		GYRO_ERR("%s enable failed!\n", __func__);
+		return -1;
+	}
+	err = bmi160_gyro_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GYRO_ERR("%s set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int bmg_factory_get_data(int32_t data[3], int *status)
+{
+	return bmi160_gyro_get_data(&data[0], &data[1], &data[2], status);
+}
+static int bmg_factory_get_raw_data(int32_t data[3])
+{
+	GYRO_ERR("don't support bmg_factory_get_raw_data!\n");
+	return 0;
+}
+static int bmg_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int bmg_factory_clear_cali(void)
+{
+	int err = 0;
+
+	err = bmg_reset_calibration(obj_data);
+	if (err) {
+		GYRO_ERR("bmg_ResetCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int bmg_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	cali[BMG_AXIS_X] = data[0] * obj_data->sensitivity / BMI160_FS_250_LSB;
+	cali[BMG_AXIS_Y] = data[1] * obj_data->sensitivity / BMI160_FS_250_LSB;
+	cali[BMG_AXIS_Z] = data[2] * obj_data->sensitivity / BMI160_FS_250_LSB;
+	err = bmg_write_calibration(obj_data, cali);
+	if (err) {
+		GYRO_ERR("bmg_WriteCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int bmg_factory_get_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+	int raw_offset[BMG_BUFSIZE] = { 0 };
+
+	err = bmg_read_calibration(NULL, cali, raw_offset);
+	if (err) {
+		GYRO_ERR("bmg_ReadCalibration failed!\n");
+		return -1;
+	}
+	data[0] = cali[BMG_AXIS_X] * BMI160_FS_250_LSB / obj_data->sensitivity;
+	data[1] = cali[BMG_AXIS_Y] * BMI160_FS_250_LSB / obj_data->sensitivity;
+	data[2] = cali[BMG_AXIS_Z] * BMI160_FS_250_LSB / obj_data->sensitivity;
+	return 0;
+}
+static int bmg_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct gyro_factory_fops bmg_factory_fops = {
+	.enable_sensor = bmg_factory_enable_sensor,
+	.get_data = bmg_factory_get_data,
+	.get_raw_data = bmg_factory_get_raw_data,
+	.enable_calibration = bmg_factory_enable_calibration,
+	.clear_cali = bmg_factory_clear_cali,
+	.set_cali = bmg_factory_set_cali,
+	.get_cali = bmg_factory_get_cali,
+	.do_self_test = bmg_factory_do_self_test,
+};
+
+static struct gyro_factory_public bmg_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &bmg_factory_fops,
+};
+
 static int bmg_spi_probe(struct spi_device *spi)
 {
 	int err = 0;
@@ -1398,7 +1477,8 @@ static int bmg_spi_probe(struct spi_device *spi)
 	if (err)
 		goto exit_init_client_failed;
 
-	err = misc_register(&bmg_device);
+	/* err = misc_register(&bmg_device); */
+	err = gyro_factory_device_register(&bmg_factory_device);
 	if (err) {
 		GYRO_ERR("misc device register failed, err = %d\n", err);
 		goto exit_misc_device_register_failed;
@@ -1440,7 +1520,7 @@ static int bmg_spi_probe(struct spi_device *spi)
 	return 0;
 
 exit_create_attr_failed:
-	misc_deregister(&bmg_device);
+	/* misc_deregister(&bmg_device); */
 exit_misc_device_register_failed:
 exit_init_client_failed:
 exit_hwmsen_get_convert_failed:
@@ -1459,7 +1539,8 @@ static int bmg_spi_remove(struct spi_device *spi)
 	if (err)
 		GYRO_ERR("bmg_delete_attr failed, err = %d\n", err);
 
-	misc_deregister(&bmg_device);
+	/* misc_deregister(&bmg_device); */
+	gyro_factory_device_deregister(&bmg_factory_device);
 
 	obj_data = NULL;
 	kfree(obj_data);
