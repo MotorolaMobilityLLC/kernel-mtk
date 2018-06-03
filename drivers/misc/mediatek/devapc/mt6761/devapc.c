@@ -522,6 +522,7 @@ static void start_devapc(void)
 }
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
+#ifdef DBG_ENABLE
 
 /* violation index corresponds to subsys */
 static const char *index_to_subsys(unsigned int index)
@@ -578,6 +579,7 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 	);
 }
 
+#endif
 #endif // AEE_FEATURE
 
 static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
