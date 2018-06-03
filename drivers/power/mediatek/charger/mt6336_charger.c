@@ -477,7 +477,8 @@ static int mt6336_get_eoc(struct charger_device *chr_dev)
 
 	val = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
 	pr_err("mt6336_get_eoc: %d\n", val);
-	return 0;
+
+	return val;
 }
 
 static int mt6336_dump_register(struct charger_device *chg_dev)
