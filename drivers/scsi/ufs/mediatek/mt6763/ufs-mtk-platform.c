@@ -28,12 +28,6 @@
 #include <mtk_reboot.h>
 #include <upmu_common.h>
 #endif
-/*
- * Temp workaround: Force ufs use low speed PWMG4 in meta mode
- * to avoid meta calibration in BBLPM mode may disable
- * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
-*/
-#include <mt-plat/mtk_boot_common.h>
 
 static void __iomem *ufs_mtk_mmio_base_gpio;
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
@@ -49,21 +43,7 @@ static struct pinctrl_state *ufs_mtk_pins_va09_off;
  */
 void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_layer_attr *final)
 {
-	/*
-	 * Temp workaround: Force ufs use low speed PWMG4 in meta mode
-	 * to avoid meta calibration in BBLPM mode may disable
-	 * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
-	*/
-	if (is_meta_mode()) {
-		dev_err(hba->dev, "UFS enter PWMG4 mode in meta mode!!!\n");
-		final->gear_rx = 4;
-		final->gear_tx = 4;
-		final->lane_rx = 1;
-		final->lane_tx = 1;
-		final->hs_rate = PA_HS_MODE_B;
-		final->pwr_rx = SLOW_MODE;
-		final->pwr_tx = SLOW_MODE;
-	}
+	/* Change final gear if necessary */
 }
 
 
