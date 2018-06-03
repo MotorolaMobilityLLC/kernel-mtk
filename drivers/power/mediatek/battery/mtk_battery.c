@@ -3773,8 +3773,9 @@ void fg_nafg_monitor(void)
 			wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DISABLE_NAFG, true);
 		}
 	}
-	bm_debug("[fg_nafg_monitor]time:%d nafg_cnt:%d\n",
-		(int)dtime.tv_sec, last_nafg_cnt);
+	bm_debug("[fg_nafg_monitor]time:%d nafg_cnt:%d, now:%d, last_t:%d\n",
+		(int)dtime.tv_sec, last_nafg_cnt,
+		(int)now_time.tv_sec, (int)last_nafg_update_time.tv_sec);
 }
 
 void fg_update_sw_low_battery_check(unsigned int thd)
@@ -5506,6 +5507,9 @@ static int battery_resume(struct platform_device *dev)
 		if (gauge_dev->fg_hw_info.iavg_lt > 0)
 			pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
 	}
+	/* reset nafg monitor time to avoid suspend for too long case */
+	get_monotonic_boottime(&last_nafg_update_time);
+
 	fg_update_sw_iavg();
 	return 0;
 }
