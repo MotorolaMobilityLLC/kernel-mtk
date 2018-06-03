@@ -77,6 +77,9 @@
 #define MTP_RESPONSE_DEVICE_BUSY    0x2019
 #define DRIVER_NAME "mtp"
 
+#define MTP_SEND_EVENT_TIMEOUT_CNT 5
+static int mtp_send_event_timeout_cnt;
+
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
 
 struct mtp_dev {
@@ -414,6 +417,8 @@ static void mtp_req_put(struct mtp_dev *dev, struct list_head *head,
 
 	spin_lock_irqsave(&dev->lock, flags);
 	list_add_tail(&req->list, head);
+	if (unlikely(head == &dev->intr_idle))
+		mtp_send_event_timeout_cnt = 0;
 	spin_unlock_irqrestore(&dev->lock, flags);
 }
 
@@ -980,11 +985,18 @@ static int mtp_send_event(struct mtp_dev *dev, struct mtp_event *event)
 	if (dev->state == STATE_OFFLINE)
 		return -ENODEV;
 
+	if (mtp_send_event_timeout_cnt > MTP_SEND_EVENT_TIMEOUT_CNT) {
+		pr_warn("%s, timeout count<%d> exceed %d, directly return\n",
+				__func__, mtp_send_event_timeout_cnt, MTP_SEND_EVENT_TIMEOUT_CNT);
+		return -ETIME;
+	}
+
 	ret = wait_event_interruptible_timeout(dev->intr_wq,
 			(req = mtp_req_get(dev, &dev->intr_idle)),
 			msecs_to_jiffies(1000));
 	if (!req) {
-		pr_warn("%s, timeout\n", __func__);
+		mtp_send_event_timeout_cnt++;
+		pr_warn("%s, timeout count<%d>\n", __func__, mtp_send_event_timeout_cnt);
 		return -ETIME;
 	}
 
