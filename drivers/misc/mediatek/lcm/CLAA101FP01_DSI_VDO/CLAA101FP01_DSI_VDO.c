@@ -136,6 +136,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.PLL_CLOCK = 481;
 
+	params->dsi.null_packet_en = TRUE;
 	params->dsi.lane_swap_en = 1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_CK;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_0] = MIPITX_PHY_LANE_0;
