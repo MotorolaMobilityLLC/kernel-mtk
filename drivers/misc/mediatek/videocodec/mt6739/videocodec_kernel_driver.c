@@ -1684,7 +1684,7 @@ enum COPY_DIRECTION {
 	COPY_TO_USER,
 };
 
-struct COMPAT_VAL_HW_LOCK {
+struct COMPAT_VAL_HW_LOCK_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1703,7 +1703,7 @@ struct COMPAT_VAL_HW_LOCK {
 	char                bSecureInst;
 };
 
-struct COMPAT_VAL_POWER {
+struct COMPAT_VAL_POWER_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1720,7 +1720,7 @@ struct COMPAT_VAL_POWER {
 	/* VAL_UINT32_T        u4L2CUser; */
 };
 
-struct COMPAT_VAL_ISR {
+struct COMPAT_VAL_ISR_T {
 	/* [IN]     The video codec driver handle */
 	compat_uptr_t       pvHandle;
 	/* [IN]     The size of video codec driver handle */
@@ -1741,7 +1741,7 @@ struct COMPAT_VAL_ISR {
 	compat_uint_t       u4IrqStatus[IRQ_STATUS_MAX_NUM];
 };
 
-struct COMPAT_VAL_MEMORY {
+struct COMPAT_VAL_MEMORY_T {
 	/* [IN]     The allocation memory type */
 	compat_uint_t       eMemType;
 	/* [IN]     The size of memory allocation */
@@ -1789,7 +1789,7 @@ static int compat_copy_struct(
 	case VAL_HW_LOCK_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			struct COMPAT_VAL_HW_LOCK __user *from32 = (COMPAT_VAL_HW_LOCK_T *)data32;
+			struct COMPAT_VAL_HW_LOCK_T __user *from32 = (struct COMPAT_VAL_HW_LOCK_T *)data32;
 			VAL_HW_LOCK_T __user *to = (VAL_HW_LOCK_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1809,7 +1809,7 @@ static int compat_copy_struct(
 			err |= get_user(c, &(from32->bSecureInst));
 			err |= put_user(c, &(to->bSecureInst));
 		} else {
-			struct COMPAT_VAL_HW_LOCK __user *to32 = (COMPAT_VAL_HW_LOCK_T *)data32;
+			struct COMPAT_VAL_HW_LOCK_T __user *to32 = (struct COMPAT_VAL_HW_LOCK_T *)data32;
 			VAL_HW_LOCK_T __user *from = (VAL_HW_LOCK_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1834,7 +1834,7 @@ static int compat_copy_struct(
 	case VAL_POWER_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			struct COMPAT_VAL_POWER __user *from32 = (COMPAT_VAL_POWER_T *)data32;
+			struct COMPAT_VAL_POWER_T __user *from32 = (struct COMPAT_VAL_POWER_T *)data32;
 			VAL_POWER_T __user *to = (VAL_POWER_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1850,7 +1850,7 @@ static int compat_copy_struct(
 			err |= get_user(u, &(from32->u4ReservedSize));
 			err |= put_user(u, &(to->u4ReservedSize));
 		} else {
-			struct COMPAT_VAL_POWER __user *to32 = (COMPAT_VAL_POWER_T *)data32;
+			struct COMPAT_VAL_POWER_T __user *to32 = (struct COMPAT_VAL_POWER_T *)data32;
 			VAL_POWER_T __user *from = (VAL_POWER_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1873,7 +1873,7 @@ static int compat_copy_struct(
 		int i = 0;
 
 		if (eDirection == COPY_FROM_USER) {
-			struct COMPAT_VAL_ISR __user *from32 = (COMPAT_VAL_ISR_T *)data32;
+			struct COMPAT_VAL_ISR_T __user *from32 = (struct COMPAT_VAL_ISR_T *)data32;
 			VAL_ISR_T __user *to = (VAL_ISR_T *)data;
 
 			err = get_user(p, &(from32->pvHandle));
@@ -1899,7 +1899,7 @@ static int compat_copy_struct(
 			return err;
 
 		} else {
-			struct COMPAT_VAL_ISR __user *to32 = (COMPAT_VAL_ISR_T *)data32;
+			struct COMPAT_VAL_ISR_T __user *to32 = (struct COMPAT_VAL_ISR_T *)data32;
 			VAL_ISR_T __user *from = (VAL_ISR_T *)data;
 
 			err = get_uptr_to_32(&p, &(from->pvHandle));
@@ -1928,7 +1928,7 @@ static int compat_copy_struct(
 	case VAL_MEMORY_TYPE:
 	{
 		if (eDirection == COPY_FROM_USER) {
-			struct COMPAT_VAL_MEMORY __user *from32 = (struct COMPAT_VAL_MEMORY *)data32;
+			struct COMPAT_VAL_MEMORY_T __user *from32 = (struct COMPAT_VAL_MEMORY_T *)data32;
 
 			VAL_MEMORY_T __user *to = (VAL_MEMORY_T *)data;
 
@@ -1957,7 +1957,7 @@ static int compat_copy_struct(
 			err |= get_user(l, &(from32->u4ReservedSize));
 			err |= put_user(l, &(to->u4ReservedSize));
 			} else {
-			struct COMPAT_VAL_MEMORY __user *to32 = (struct COMPAT_VAL_MEMORY *)data32;
+			struct COMPAT_VAL_MEMORY_T __user *to32 = (struct COMPAT_VAL_MEMORY_T *)data32;
 
 			VAL_MEMORY_T __user *from = (VAL_MEMORY_T *)data;
 
