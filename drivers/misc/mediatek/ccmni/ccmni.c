@@ -469,7 +469,7 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		ccmni->tx_met_time = jiffies;
 		ccmni->tx_met_bytes = dev->stats.tx_bytes;
 	} else if (time_after_eq(jiffies, ccmni->tx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
-		sprintf(tag_name, "%s_tx_bytes", dev->name);
+		snprintf(tag_name, 32, "%s_tx_bytes", dev->name);
 		tag_id = CCMNI_TX_MET_ID + ccmni->index;
 		met_tag_oneshot(tag_id, tag_name, (dev->stats.tx_bytes - ccmni->tx_met_bytes));
 		ccmni->tx_met_bytes = dev->stats.tx_bytes;
@@ -1109,7 +1109,7 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 		ccmni->rx_met_time = jiffies;
 		ccmni->rx_met_bytes = dev->stats.rx_bytes;
 	} else if (time_after_eq(jiffies, ccmni->rx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
-		sprintf(tag_name, "%s_rx_bytes", dev->name);
+		snprintf(tag_name, 32, "%s_rx_bytes", dev->name);
 		tag_id = CCMNI_RX_MET_ID + ccmni_idx;
 		met_tag_oneshot(tag_id, tag_name, (dev->stats.rx_bytes - ccmni->rx_met_bytes));
 		ccmni->rx_met_bytes = dev->stats.rx_bytes;
