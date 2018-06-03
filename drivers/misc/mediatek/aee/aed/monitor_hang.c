@@ -921,7 +921,7 @@ void get_hang_detect_buffer(unsigned long *addr, unsigned long *size,
 {
 	*addr = (unsigned long)Hang_Info;
 	*start = 0;
-	*size = Hang_Info_Size;
+	*size = MaxHangInfoSize;
 }
 
 #ifdef CONFIG_MTK_BOOT
