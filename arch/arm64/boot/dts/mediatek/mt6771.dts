@@ -1450,7 +1450,7 @@
 		mdp_tdshp0 = <&mdp_tdshp>;
 		mdp_aal0 = <&mdp_aal>;
 		mdp_ccorr0 = <&mdp_ccorr>;
-		disp_color0 = <&disp_color0>;
+		mdp_color0 = <&disp_color0>;
 		venc = <&venc>;
 		msdc0 = <&msdc0>;
 		audio = <&audio>;

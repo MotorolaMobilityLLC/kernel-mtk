@@ -540,7 +540,7 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
 	cmdq_dev_get_module_clock_by_name("mdp_wrot0", "MDP_WROT0",
 					  &gCmdqMdpModuleClock.clk_MDP_WROT0);
-	cmdq_dev_get_module_clock_by_name("mdp_wdma", "MDP_WDMA",
+	cmdq_dev_get_module_clock_by_name("mdp_wdma0", "MDP_WDMA",
 					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
 	cmdq_dev_get_module_clock_by_name("mdp_tdshp0", "MDP_TDSHP",
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
