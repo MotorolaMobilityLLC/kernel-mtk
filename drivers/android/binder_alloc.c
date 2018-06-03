@@ -508,13 +508,6 @@ static void binder_delete_free_buffer(struct binder_alloc *alloc,
 					   next->data);
 		}
 	}
-<<<<<<< HEAD
-
-	if (PAGE_ALIGNED(buffer->data)) {
-||||||| merged common ancestors
-	list_del(&buffer->entry);
-	if (free_page_start || free_page_end) {
-=======
 
 	if (PAGE_ALIGNED(buffer->data)) {
 		binder_alloc_debug(BINDER_DEBUG_BUFFER_ALLOC,
@@ -524,47 +517,16 @@ static void binder_delete_free_buffer(struct binder_alloc *alloc,
 	}
 
 	if (to_free) {
->>>>>>> android-4.4-o-mr1
 		binder_alloc_debug(BINDER_DEBUG_BUFFER_ALLOC,
-<<<<<<< HEAD
-				   "%d: merge free, buffer start %pK is page aligned\n",
-				   alloc->pid, buffer->data);
-		to_free = false;
-||||||| merged common ancestors
-			     "%d: merge free, buffer %pK do not share page%s%s with %pK or %pK\n",
-			     alloc->pid, buffer, free_page_start ? "" : " end",
-			     free_page_end ? "" : " start", prev, next);
-		binder_update_page_range(alloc, 0, free_page_start ?
-			buffer_start_page(buffer) : buffer_end_page(buffer),
-			(free_page_end ? buffer_end_page(buffer) :
-			buffer_start_page(buffer)) + PAGE_SIZE, NULL);
-=======
 				   "%d: merge free, buffer %pK do not share page with %pK or %pK\n",
 				   alloc->pid, buffer->data,
 				   prev->data, next ? next->data : NULL);
 		binder_update_page_range(alloc, 0, buffer_start_page(buffer),
 					 buffer_start_page(buffer) + PAGE_SIZE,
 					 NULL);
->>>>>>> android-4.4-o-mr1
-	}
-<<<<<<< HEAD
-
-	if (to_free) {
-		binder_alloc_debug(BINDER_DEBUG_BUFFER_ALLOC,
-				   "%d: merge free, buffer %pK do not share page with %pK or %pK\n",
-				   alloc->pid, buffer->data,
-				   prev->data, next->data);
-		binder_update_page_range(alloc, 0, buffer_start_page(buffer),
-					 buffer_start_page(buffer) + PAGE_SIZE,
-					 NULL);
 	}
 	list_del(&buffer->entry);
 	kfree(buffer);
-||||||| merged common ancestors
-=======
-	list_del(&buffer->entry);
-	kfree(buffer);
->>>>>>> android-4.4-o-mr1
 }
 
 static void binder_free_buf_locked(struct binder_alloc *alloc,
