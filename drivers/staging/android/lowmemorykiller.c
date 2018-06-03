@@ -182,11 +182,11 @@ static short lowmem_amr_check(int *to_be_aggressive, int other_file)
 #else
 #define ENABLE_AMR_RAMSIZE	(0x40000)	/* > 1GB */
 #endif
-
 	unsigned long swap_pages = 0;
 	short amr_adj = OOM_SCORE_ADJ_MAX + 1;
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
 	int i;
-
+#endif
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
 	if (swap_pages * 2 < total_swap_pages)
