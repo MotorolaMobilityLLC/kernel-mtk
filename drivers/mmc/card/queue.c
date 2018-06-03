@@ -23,6 +23,7 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include "queue.h"
+#include "mtk_mmc_block.h"
 
 #define MMC_QUEUE_BOUNCESZ	65536
 
@@ -103,6 +104,7 @@ static int mmc_queue_thread(void *d)
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
+	mt_bio_queue_alloc(current);
 	do {
 		struct request *req = NULL;
 		unsigned int cmd_flags = 0;
@@ -220,6 +222,7 @@ fetch_done:
 		}
 
 	} while (1);
+	mt_bio_queue_free(current);
 	up(&mq->thread_sem);
 
 	return 0;

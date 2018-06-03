@@ -48,6 +48,7 @@
 #include "mmc_ops.h"
 #include "sd_ops.h"
 #include "sdio_ops.h"
+#include "../card/mtk_mmc_block.h"
 
 EXPORT_TRACEPOINT_SYMBOL_GPL(mmc_blk_erase_start);
 EXPORT_TRACEPOINT_SYMBOL_GPL(mmc_blk_erase_end);
@@ -73,16 +74,6 @@ static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
  */
 bool use_spi_crc = 1;
 module_param(use_spi_crc, bool, 0);
-
-/* FIX ME: add mt_bio* later */
-#define mt_bio_queue_alloc(current)
-#define mt_biolog_cmdq_check()
-#define mt_biolog_cmdq_dma_end(task_id)
-#define mt_biolog_cmdq_dma_start(task_id)
-#define mt_biolog_cmdq_isdone_start(task_id, mrq_que)
-#define mt_biolog_cmdq_isdone_end(task_id)
-#define mt_biolog_cmdq_queue_task(task_id, cmd_mrq)
-#define mt_bio_queue_free(current)
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 static void mmc_enqueue_queue(struct mmc_host *host, struct mmc_request *mrq)
@@ -1258,6 +1249,8 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 			 * nothing to return
 			 */
 			return NULL;
+		} else {
+			mt_biolog_mmcqd_req_end(host->areq->mrq->data);
 		}
 		/*
 		 * Check BKOPS urgency for each R1 response
@@ -1288,8 +1281,10 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 			start_err = __mmc_start_data_req(host, areq->mrq_que);
 		else
 #endif
-
-			start_err = __mmc_start_data_req(host, areq->mrq);
+			do {
+				start_err = __mmc_start_data_req(host, areq->mrq);
+				mt_biolog_mmcqd_req_start(host);
+			} while (0);
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
