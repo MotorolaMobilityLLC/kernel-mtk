@@ -4,3 +4,5 @@ config MTK_SYSENV
 	help
 	  Define sysenv driver config to enable sysenv driver.
 	  Sysenv driver is used for storing settings needed by bootloader.
+	  Set Y to support.
+	  Set N to disable.
