@@ -930,6 +930,23 @@ static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 	return 0;
 }
 
+static int mt6370_enable_vsafe0v_detect(
+	struct tcpc_device *tcpc, bool enable)
+{
+	int ret = mt6370_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+
+	if (ret < 0)
+		return ret;
+
+	if (enable)
+		ret |= MT6370_REG_M_VBUS_80;
+	else
+		ret &= ~MT6370_REG_M_VBUS_80;
+
+	mt6370_i2c_write8(tcpc, MT6370_REG_MT_MASK, (uint8_t) ret);
+	return ret;
+}
+
 static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 {
 	int ret;
@@ -945,8 +962,10 @@ static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 		ret = mt6370_i2c_write8(
 			tcpc, TCPC_V10_REG_ROLE_CTRL, data);
 
-		if (ret == 0)
+		if (ret == 0) {
+			mt6370_enable_vsafe0v_detect(tcpc, false);
 			ret = mt6370_command(tcpc, TCPM_CMD_LOOK_CONNECTION);
+		}
 	} else {
 #ifdef CONFIG_USB_POWER_DELIVERY
 		if (pull == TYPEC_CC_RD && tcpc->pd_wait_pr_swap_complete)
@@ -1028,15 +1047,24 @@ static int mt6370_set_low_power_mode(
 {
 	int rv = 0;
 	uint8_t data;
+	uint16_t power_status;
 
 	if (en) {
 		data = MT6370_REG_BMCIO_LPEN;
 
 		if (pull & TYPEC_CC_RP)
 			data |= MT6370_REG_BMCIO_LPRPRD;
-	} else
+
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+		data |= MT6370_REG_VBUS_DET_EN;
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
+	} else {
 		data = MT6370_REG_BMCIO_BG_EN |
 			MT6370_REG_VBUS_DET_EN | MT6370_REG_BMCIO_OSC_EN;
+
+		mt6370_enable_vsafe0v_detect(tcpc_dev, true);
+		tcpci_get_power_status(tcpc_dev, &power_status);
+	}
 
 	rv = mt6370_i2c_write8(tcpc_dev, MT6370_REG_BMC_CTRL, data);
 	return rv;
