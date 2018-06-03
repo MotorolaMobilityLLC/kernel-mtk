@@ -2041,9 +2041,8 @@ static INT_32 wlanProbe(PVOID pvData)
 			prRegInfo->u4LoadAddress = u4FwLoadAddr;
 			prRegInfo->u4StartAddress = u4FwStartAddr;
 
-			/* Trigger the action of switching Pwr state to drv_own */
-			prAdapter->fgIsFwOwn = TRUE;
-			nicPmTriggerDriverOwn(prAdapter);
+			/* Trigger the action of switching power state to DRV_OWN */
+			nicpmCheckAndTriggerDriverOwn(prAdapter);
 
 			/* Load NVRAM content to REG_INFO_T */
 			glLoadNvram(prGlueInfo, prRegInfo);

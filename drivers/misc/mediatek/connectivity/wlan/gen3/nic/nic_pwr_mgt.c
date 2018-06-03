@@ -124,16 +124,33 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 	DBGLOG(NIC, INFO, "FW OWN\n");
 }
 
-VOID nicPmTriggerDriverOwn(IN P_ADAPTER_T prAdapter)
+VOID nicpmCheckAndTriggerDriverOwn(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4RegValue = 0;
 
 	HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
 
-	if (u4RegValue & WHLPCR_FW_OWN_REQ_SET)
-		prAdapter->fgIsFwOwn = FALSE;
-	else
-		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
+	if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
+		/* WLAN_DRV_OWN is asserted on initial stage, but chip WLAN function is FW_OWN state actually,
+		 * this is an issue due to HIF un-sync reset.
+		 *
+		 * Trigger FW_OWN to let HIF clear WLAN_DRV_OWN bit and make power state synchronized.
+		 * F/W should remember to clear the residual bit in HWFISR.DRV_SET_FW_OWN.
+		 */
+		DBGLOG(NIC, WARN, "DRIVER OWN already set on initial stage!! trigger FW OWN to sync power state\n");
+		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_SET);
+
+		HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
+		if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
+			/* Impossible case, H/W will clear WLAN_DRV_OWN bit immediately after
+			 * WHLPCR.FW_OWN_REQ_SET is set
+			 */
+			DBGLOG(NIC, ERROR, "FW OWN fail, anyway continue to trigger DRIVER OWN\n");
+		}
+	}
+
+	prAdapter->fgIsFwOwn = TRUE;
+	HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
 }
 
 /*----------------------------------------------------------------------------*/
