@@ -34,9 +34,9 @@
 /*-------pmic_dbg_level global variable-------*/
 unsigned int gPMICDbgLvl;
 unsigned int gPMICHKDbgLvl;
-unsigned int gPMICCOMDbgLvl;
 unsigned int gPMICIRQDbgLvl;
 unsigned int gPMICREGDbgLvl;
+unsigned int gPMICCOMDbgLvl; /* so far no used */
 
 #define DUMP_ALL_REG 0
 
@@ -256,27 +256,29 @@ static ssize_t pmic_dbg_level_write(struct file *file,
 				    loff_t *ppos)
 {
 	char info[10];
-	int value = 0;
+	unsigned int value = 0;
+	int ret = 0;
 
 	memset(info, 0, 10);
 
-	if (copy_from_user(info, buf, size))
-		return -EFAULT;
+	ret = simple_write_to_buffer(info, sizeof(info) - 1, ppos, buf, size);
+	if (ret < 0)
+		return ret;
 
-	if ((info[0] >= '0') && (info[0] <= '9'))
-		value = (info[0] - 48);
+	ret = kstrtou32(info, 16, (unsigned int *)&value);
+	if (ret)
+		return ret;
 
-	if (value < 5) {
+	pr_info("[%s] value=0x%x\n", __func__, value);
+	if (value != 0xFFFF) {
 		pmic_dbg_level_set(value);
-		pr_info("D %d, HK %d, COM %d, IRQ %d, REG %d\n",
-				gPMICDbgLvl, gPMICHKDbgLvl, gPMICCOMDbgLvl,
-				gPMICIRQDbgLvl, gPMICREGDbgLvl);
+		pr_info("D %d, HK %d, IRQ %d, REG %d, COM %d\n",
+			gPMICDbgLvl, gPMICHKDbgLvl, gPMICIRQDbgLvl,
+			gPMICREGDbgLvl, gPMICCOMDbgLvl);
 	} else {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		pmic_ipi_test_code();
-		pr_debug("pmic_ipi_test_code\n");
-#else
-		pr_debug("pmic_dbg_level should < 5\n");
+		pr_info("pmic_ipi_test_code\n");
 #endif
 	}
 
@@ -292,9 +294,9 @@ static int pmic_dbg_level_show(struct seq_file *s, void *unused)
 	seq_puts(s, "0:PMIC_LOG_ERR\n");
 	seq_printf(s, "PMIC_Dbg_Lvl = %d\n", gPMICDbgLvl);
 	seq_printf(s, "PMIC_HK_Dbg_Lvl = %d\n", gPMICHKDbgLvl);
-	seq_printf(s, "PMIC_COM_Dbg_Lvl = %d\n", gPMICCOMDbgLvl);
 	seq_printf(s, "PMIC_IRQ_Dbg_Lvl = %d\n", gPMICIRQDbgLvl);
 	seq_printf(s, "PMIC_REG_Dbg_Lvl = %d\n", gPMICREGDbgLvl);
+	seq_printf(s, "PMIC_COM_Dbg_Lvl = %d\n", gPMICCOMDbgLvl);
 	return 0;
 }
 
@@ -345,7 +347,7 @@ int pmic_debug_init(struct platform_device *dev)
 
 	mtk_pmic_dir = debugfs_create_dir("mtk_pmic", NULL);
 	if (!mtk_pmic_dir) {
-		pr_info(PMICTAG "fail to mkdir /sys/kernel/debug/mtk_pmic\n");
+		pr_notice(PMICTAG "fail to mkdir /sys/kernel/debug/mtk_pmic\n");
 		return -ENOMEM;
 	}
 

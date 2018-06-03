@@ -64,7 +64,7 @@ void mtk_auxadc_init(void)
 	pmic_auxadc_intf.channel_num = pmic_get_auxadc_channel_max();
 
 	if (register_mtk_auxadc_intf(&pmic_auxadc_intf) < 0)
-		pr_info("[%s] register MTK Auxadc Intf Fail\n", __func__);
+		pr_notice("[%s] register MTK Auxadc Intf Fail\n", __func__);
 }
 
 static ssize_t mtk_auxadc_store(struct device *dev,
@@ -114,7 +114,7 @@ static ssize_t mtk_auxadc_store(struct device *dev,
 	case AUXADC_CHANNEL:
 		ret = get_parameters((char *)buf, &val, 1);
 		if (ret < 0) {
-			pr_info("get parameter fail\n");
+			pr_notice("get parameter fail\n");
 			return -EINVAL;
 		}
 		auxadc_intf->dbg_chl = val;
@@ -201,7 +201,7 @@ static int mtk_auxadc_intf_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, auxadc_intf);
 	ret = create_sysfs_interface(&pdev->dev);
 	if (ret < 0) {
-		pr_info("%s create sysfs fail\n", __func__);
+		pr_notice("%s create sysfs fail\n", __func__);
 		return -EINVAL;
 	}
 
