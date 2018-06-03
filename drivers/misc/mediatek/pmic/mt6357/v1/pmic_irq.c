@@ -320,7 +320,7 @@ void pwrkey_int_handler(void)
 		timer_pre = sched_clock();
 #endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	kpd_pwrkey_pmic_handler(0x1);
 #endif
 }
@@ -345,7 +345,7 @@ void pwrkey_int_handler_r(void)
 	}
 #endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	kpd_pwrkey_pmic_handler(0x0);
 #endif
 }
