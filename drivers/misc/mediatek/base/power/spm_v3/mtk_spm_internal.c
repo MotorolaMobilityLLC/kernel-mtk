@@ -900,13 +900,16 @@ u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 	return period;
 }
 
-int get_channel_lock(void)
+int get_channel_lock(bool blocking)
 {
 #ifdef CONFIG_MTK_DCS
 	int ch = 0, ret = -1;
 	enum dcs_status dcs_status;
 
-	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
+	if (blocking)
+		ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
+	else
+		ret = dcs_get_dcs_status_trylock(&ch, &dcs_status);
 
 	if (!ret) {
 		spm_crit("dcs currnet channel number: %d, status: %d\n", ch, dcs_status);

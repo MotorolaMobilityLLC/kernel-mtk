@@ -1323,7 +1323,7 @@ static void plat_info_init(void)
 	#endif
 
 	/* DRAM Channel */
-	plat_channel_num = get_channel_lock();
+	plat_channel_num = get_channel_lock(1);
 	get_channel_unlock();
 
 	spm_vcorefs_warn("chip_ver: %d, lcd_resolution: %d channel_num: %d\n",

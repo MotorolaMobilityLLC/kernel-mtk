@@ -1028,7 +1028,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_set_dummy_read_addr(false);
 
 	/* need be called before spin_lock_irqsave() */
-	ch = get_channel_lock();
+	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val =
 						__spm_get_vcore_volt_pmic_val(
@@ -1189,7 +1189,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #endif
 
 	/* need be called before spin_lock_irqsave() */
-	ch = get_channel_lock();
+	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 
