@@ -127,26 +127,3 @@ bool s5k3p8_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size)
 
 	return true;
 }
-
-
-bool s5k3p8_read_4cell_from_eeprom(char *data, kal_uint32 size)
-{
-	int i = 0;
-	int offset = 0x763;
-
-	data[0] = 0x00;/*Low*/
-	data[1] = 0x08;/*High*/
-
-	for (i = 2; i < 1026; i += 2) {
-		if (!s5k3p8_selective_read_eeprom(offset, &data[i])) {
-			LOG_INF("read_eeprom 0x%0x %d fail\n", offset, data[i]);
-			return false;
-		}
-		offset += 2;
-	}
-	return true;
-}
-
-
-
-

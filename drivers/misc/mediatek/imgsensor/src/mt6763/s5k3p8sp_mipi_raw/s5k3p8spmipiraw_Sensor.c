@@ -166,7 +166,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,	/* sensor_interface_type */
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,	/* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
 	.mipi_settle_delay_mode = 0,	/* 0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL */
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gb,
 	.mclk = 24,		/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5a, 0xff},	/* record sensor support all write id addr,
@@ -176,7 +176,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
+	.mirror = IMAGE_HV_MIRROR,	/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,	/* IMGSENSOR_MODE enum value,record current sensor mode,such as:
 						 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
 						 */
@@ -521,7 +521,7 @@ static void night_mode(kal_bool enable)
 
 /*************************************************************************
  * FUNCTION
- *	check_streamoff
+ *	check_stremoff
  *
  * DESCRIPTION
  *	waiting function until sensor streaming finish.
@@ -535,22 +535,19 @@ static void night_mode(kal_bool enable)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-
-static void check_streamoff(void)
+static void check_stremoff(kal_uint16 fps)
 {
-	unsigned int i = 0;
-	int timeout = (10000 / imgsensor.current_fps) + 1;
+	unsigned int i = 0, framecnt = 0;
+	int timeout = (10000/fps)+1;
 
-	mdelay(3);
 	for (i = 0; i < timeout; i++) {
-		if (read_cmos_sensor_8(0x0005) != 0xFF)
-			mdelay(1);
-		else
-			break;
+		framecnt = read_cmos_sensor_8(0x0005);
+		if (framecnt == 0xFF)
+			return;
+		mdelay(1);
 	}
-	LOG_INF(" check_streamoff exit!\n");
+	LOG_INF(" Stream Off Fail1!\n");
 }
-
 
 #define USE_TNP_BURST	0
 #if USE_TNP_BURST
@@ -795,6 +792,9 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	LOG_INF("preview_setting() E\n");
+	/* stream off */
+	write_cmos_sensor_8(0x0100, 0x00);
+	check_stremoff(imgsensor_info.pre.max_framerate);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -826,13 +826,18 @@ static void preview_setting(void)
 	write_cmos_sensor(0x6F12, 0x8011);
 	write_cmos_sensor(0x317A, 0x0007);
 	write_cmos_sensor(0x31A4, 0x0102);
+
+	/* stream on */
+	write_cmos_sensor_8(0x0100, 0x01);
 }				/*      preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting() E! currefps:%d\n", currefps);
 
-
+	/* stream off */
+	write_cmos_sensor_8(0x0100, 0x00);
+	check_stremoff(currefps);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -865,12 +870,17 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
+	/* stream on */
+	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("normal_video_setting() E! currefps:%d\n", currefps);
 
+	/* stream off */
+	write_cmos_sensor_8(0x0100, 0x00);
+	check_stremoff(imgsensor_info.normal_video.max_framerate);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -903,12 +913,16 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
+	/* stream on */
+	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void hs_video_setting(void)
 {
 	LOG_INF("hs_video_setting() E\n");
 	/* 720p 120fps */
+	write_cmos_sensor_8(0x0100, 0x00);
+	check_stremoff(imgsensor_info.hs_video.max_framerate);
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -989,6 +1003,7 @@ static void hs_video_setting(void)
 		write_cmos_sensor(0x6F12, 0x00AF);
 
 		write_cmos_sensor(0x31A4, 0x0102);
+		write_cmos_sensor_8(0x0100, 0x01);
 	}
 }
 
@@ -996,6 +1011,8 @@ static void slim_video_setting(void)
 {
 	LOG_INF("slim_video_setting() E\n");
 	/* 1080p 60fps */
+	write_cmos_sensor_8(0x0100, 0x00);
+	check_stremoff(imgsensor_info.slim_video.max_framerate);
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -1076,6 +1093,7 @@ static void slim_video_setting(void)
 		write_cmos_sensor(0x6F12, 0x002F);
 
 		write_cmos_sensor(0x31A4, 0x0102);
+		write_cmos_sensor_8(0x0100, 0x01);
 	}
 
 
@@ -1530,18 +1548,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }				/*      get_info  */
 
-static kal_uint32 streaming_control(kal_bool enable)
-{
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
-
-	if (enable) {
-		write_cmos_sensor_8(0x0100, 0X01);
-	} else {
-		write_cmos_sensor_8(0x0100, 0x00);
-		check_streamoff();
-	}
-	return ERROR_NONE;
-}
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
 			  MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -1828,15 +1834,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%d\n",  *feature_data_32);
+		LOG_INF("current fps :%d\n", (UINT32) *feature_data);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = (UINT16)*feature_data_32;
+		imgsensor.current_fps = *feature_data;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("ihdr enable :%d\n", *feature_data_32);
+		LOG_INF("ihdr enable :%d\n", (BOOL)*feature_data);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_mode = (UINT8)*feature_data_32;
+		imgsensor.ihdr_mode = *feature_data;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
@@ -1888,36 +1894,76 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 								(kal_uint32)(*(feature_data+2)));
 		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA success\n");
 		break;
-	case SENSOR_FEATURE_GET_4CELL_DATA:	/*get 4 cell data from eeprom*/
-	{
-		int type = (kal_uint16)(*feature_data);
+		/******************** PDAF START >>> *********/
+		/*
+		 * case SENSOR_FEATURE_GET_PDAF_INFO:
+		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", (UINT16)*feature_data);
+		 * PDAFinfo = (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
+		 * switch (*feature_data) {
+		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG: //full
+		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW: //2x2 binning
+		 * memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T)); //need to check
+		 * break;
+		 * case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+		 * case MSDK_SCENARIO_ID_SLIM_VIDEO:
+		 * default:
+		 * break;
+		 * }
+		 * break;
+		 * case SENSOR_FEATURE_GET_VC_INFO:
+		 * LOG_INF("SENSOR_FEATURE_GET_VC_INFO %d\n", (UINT16)*feature_data);
+		 * pvcinfo = (SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+		 * switch (*feature_data_32) {
+		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2],sizeof(SENSOR_VC_INFO_STRUCT));
+		 * break;
+		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof(SENSOR_VC_INFO_STRUCT));
+		 * break;
+		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		 * default:
+		 * memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(SENSOR_VC_INFO_STRUCT));
+		 * break;
+		 * }
+		 * break;
+		 * case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+		 * LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", (UINT16)*feature_data);
+		 * //PDAF capacity enable or not
+		 * switch (*feature_data) {
+		 * case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+		 * (MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+		 * break;
+		 * case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1; // video & capture use same setting
+		 * break;
+		 * case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+		 * break;
+		 * case MSDK_SCENARIO_ID_SLIM_VIDEO:
+		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0; //need to check
+		 * break;
+		 * case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+		 * break;
+		 * default:
+		 * *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+		 * break;
+		 * }
+		 * break;
+		 * case SENSOR_FEATURE_GET_PDAF_DATA:    //get cal data from eeprom
+		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
+		 * read_3P8_eeprom((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),
+		 * (kal_uint32)(*(feature_data+2)));
+		 * LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA success\n");
+		 * break;
+		 * case SENSOR_FEATURE_SET_PDAF:
+		 * LOG_INF("PDAF mode :%d\n", *feature_data_16);
+		 * imgsensor.pdaf_mode= *feature_data_16;
+		 * break;
+		 */
+		/******************** PDAF END   <<< *********/
 
-		if (type == FOUR_CELL_CAL_TYPE_ALL) {/*Size,Data... | Size,Data... | Size,Data...*/
-			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA type=%d\n", type);
-			s5k3p8_read_4cell_from_eeprom((char *)(*(feature_data+1)),
-									(kal_uint32)(*(feature_data+2)));
-			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA success\n");
-		} else if (type == FOUR_CELL_CAL_TYPE_GAIN_TBL) {/*only copy GAIN_TBL Table*/
-			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA type=%d\n", type);
-			s5k3p8_read_4cell_from_eeprom((char *)(*(feature_data+1)),
-									(kal_uint32)(*(feature_data+2)));
-			LOG_INF("SENSOR_FEATURE_GET_4CELL_DATA success\n");
-		} else {
-			memset((void *)(*(feature_data+1)), 0, 4);
-			LOG_INF("No type %d buffer on this sensor\n", type);
-		}
-		break;
-	}
-	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
-		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
-		streaming_control(KAL_FALSE);
-		break;
-	case SENSOR_FEATURE_SET_STREAMING_RESUME:
-		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
-		if (*feature_data != 0)
-			set_shutter(*feature_data);
-		streaming_control(KAL_TRUE);
-		break;
 	default:
 		break;
 	}
