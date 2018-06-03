@@ -30,6 +30,20 @@
 #define spm_res_dbg(fmt, args...)     pr_debug(SPM_RES_TAG fmt, ##args)
 
 #define NF_SPM_USER_USAGE_STRUCT	2
+#define res_test_bit(val, offset) (val & (1UL << offset))
+#define dump_user_name(buf, usage, user_name) do {							\
+		if (usage) {										\
+			int user_idx;									\
+			for (user_idx = 0; user_idx < NF_SPM_RESOURCE_USER; user_idx++) {		\
+				if (res_test_bit(usage, user_idx) && user_name[user_idx])		\
+					buf += snprintf(buf, DBG_BUF_LEN - strlen(dbg_buf), "%s, ",	\
+									user_name[user_idx]);		\
+			}										\
+		} else {										\
+			buf += snprintf(buf, DBG_BUF_LEN - strlen(dbg_buf), "None, ");			\
+		}											\
+	} while (0)
+
 
 DEFINE_SPINLOCK(spm_resource_desc_update_lock);
 
@@ -47,6 +61,11 @@ static const char * const spm_resource_name[] = {
 	"26m",
 	"axi_bus",
 	"cpu"
+};
+
+static const char * const spm_resource_user_name[NF_SPM_USER_USAGE_STRUCT][32] = {
+	{"SPM", "UFS", "SSUSB", "AUDIO", "UART", "CONN"},
+	{NULL}
 };
 
 static struct dentry *spm_resource_req_file;
@@ -149,6 +168,7 @@ static ssize_t resource_req_read(struct file *filp,
 				char __user *userbuf, size_t count, loff_t *f_pos)
 {
 	int i, k, len = 0;
+	int in_use, usage_mask;
 	char *p = dbg_buf;
 
 	for (i = 0; i < NF_SPM_RESOURCE; i++) {
@@ -156,25 +176,26 @@ static ssize_t resource_req_read(struct file *filp,
 		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "resource_req[%-10s] bypass_stat = ",
 							spm_resource_name[i]);
 
-		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++)
-			p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "%x, ",
-							~resc_desc[i].user_usage_mask[k]);
+		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++) {
+			usage_mask = ~resc_desc[i].user_usage_mask[k];
+			dump_user_name(p, usage_mask, spm_resource_user_name[k]);
+		}
 
 		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "user_usage = ");
 
-		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++)
-			p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "%x, ",
-							resc_desc[i].user_usage[k]);
-
+		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++) {
+			in_use = resc_desc[i].user_usage[k] & resc_desc[i].user_usage_mask[k];
+			dump_user_name(p, in_use, spm_resource_user_name[k]);
+		}
 		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	}
-
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			"user bits : [0]SPM, [1]UFS, [2]SSUSB, [3]AUDIO, [4]UART [5]CONN\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "enable:\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo enable [bit] > /d/spm/resource_req\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "bypass:\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo bypass [bit] > /d/spm/resource_req\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[1]: UFS [2]: SSUSB [3]: AUDIO [4]: UART\n");
 
 	len = p - dbg_buf;
 
@@ -255,10 +276,11 @@ bool spm_resource_req_init(void)
 	return true;
 }
 
+
 void spm_resource_req_dump(void)
 {
 	char *p = dbg_buf;
-	int i, k;
+	int i, k, in_use;
 	unsigned long flags;
 
 	if (resource_usage == 0)
@@ -268,10 +290,15 @@ void spm_resource_req_dump(void)
 
 	for (i = 0; i < NF_SPM_RESOURCE; i++) {
 
+		if (!res_test_bit(resource_usage, i))
+			continue;
+
 		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[%s]: ", spm_resource_name[i]);
 
-		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++)
-			p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "%x, ", resc_desc[i].user_usage[k]);
+		for (k = 0; k < NF_SPM_USER_USAGE_STRUCT; k++) {
+			in_use = resc_desc[i].user_usage[k];
+			dump_user_name(p, in_use, spm_resource_user_name[k]);
+		}
 	}
 
 	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
