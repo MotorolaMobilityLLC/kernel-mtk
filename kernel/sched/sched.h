@@ -1365,7 +1365,8 @@ unsigned long to_ratio(u64 period, u64 runtime);
 extern void init_entity_runnable_average(struct sched_entity *se);
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
-void sched_update_nr_prod(int cpu, unsigned long nr_running, int inc);
+extern void sched_update_nr_prod(int cpu, unsigned long nr_running, int inc);
+extern void sched_max_util_task(int *cpu, int *pid, int *util);
 #endif
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
