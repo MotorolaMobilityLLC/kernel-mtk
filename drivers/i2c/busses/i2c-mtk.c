@@ -757,7 +757,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			dev_err(i2c->dev, "Clock div error\n");
 			return -EINVAL;
 		}
-		i2c_writew((i2c->clk_src_div - 1), i2c, OFFSET_CLOCK_DIV);
+		i2c_writew(((i2c->clk_src_div - 1) << 8) + (i2c->clk_src_div - 1),
+			i2c, OFFSET_CLOCK_DIV);
 	}
 
 	/* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
