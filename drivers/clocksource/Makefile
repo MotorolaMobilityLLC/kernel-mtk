@@ -52,7 +52,11 @@ obj-$(CONFIG_MACH_MT6757)	+= mtk_cpuxgpt_mt6757.o mtk_timer_mt6757.o arm_arch_ti
 obj-$(CONFIG_MACH_MT6799)	+= mtk_timer_mt6799.o arm_arch_timer_mt6799.o
 obj-$(CONFIG_MACH_MT6759)	+= mtk_timer_mt6759.o arm_arch_timer_mt6759.o
 obj-$(CONFIG_MACH_MT6758)	+= mtk_timer_mt6758.o arm_arch_timer_mt6758.o
+ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
 obj-$(CONFIG_MACH_MT6763)	+= mtk_timer_mt6763.o arm_arch_timer_mt6763.o
+else
+obj-$(CONFIG_MACH_MT6763)	+= mtk_timer_hps_mt6763.o arm_arch_timer_mt6763.o
+endif
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 
