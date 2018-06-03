@@ -1733,14 +1733,10 @@ static irqreturn_t mxt_process_messages_t44(struct mxt_data *data)
 	if (num_left) {
 		//printk("mxt_process_messages_t44 going to handle left 0x%x messages\n", num_left);
 		ret = mxt_read_and_process_messages(data, num_left);
-		if (ret < 0){
-           
+		if (ret < 0) {
 			goto end;
-        }
-		else if (ret != num_left)
-			//printk("mxt: Unexpected invalid message in left messages\n");
 	}
-
+	}
 end:
 	if (data->update_input) {
 		mxt_input_sync(data);
@@ -2496,11 +2492,6 @@ static int mxt_parse_object_table(struct mxt_data *data,
 			min_id = 0;
 			max_id = 0;
 		}
-
-		pr_deug( "mxt: T%u Start:%u Size:%zu Instances:%zu Report IDs:%u-%u\n",
-			object->type, object->start_address,
-			mxt_obj_size(object), mxt_obj_instances(object),
-			min_id, max_id);
 
 		switch (object->type) {
 			case MXT_GEN_MESSAGE_T5:
@@ -4780,9 +4771,6 @@ void tpd_gpio_output_ATEML(int pin, int level)
 		else
 			pinctrl_select_state(pinctrl2, power_output0);
 	} 
-	else
-		//printk("mxt:NO pins define\n");
-	//mutex_unlock(&data->debug_msg_lock);
 }
 
 int tpd_gpio_enable_regulator_output(int flag2)
