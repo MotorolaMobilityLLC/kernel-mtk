@@ -4993,13 +4993,6 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		/* [3]update global pointer */
 		ISP_P2_BufQue_Update_ListCIdx(property, ISP_P2_BUFQUE_LIST_TAG_UNIT);
 		/* [4]erase node in ring buffer list */
-		if (idx2 ==  -1) {
-			spin_unlock(&(SpinLock_P2FrameList));
-			LOG_ERR("ERRRRRRRRRRR findmatch index 2 fail (%d_0x%x_0x%x_%d, %d_%d)",
-			param.property, param.processID, param.callerID, param.frameNum, param.cQIdx, param.dupCQIdx);
-			ret =  -EFAULT;
-			return ret;
-		}
 		ISP_P2_BufQue_Erase(property, ISP_P2_BUFQUE_LIST_TAG_UNIT, idx2);
 		spin_unlock(&(SpinLock_P2FrameList));
 		/* [5]wake up thread user that wait for a specific buffer and the thread that wait for deque */
