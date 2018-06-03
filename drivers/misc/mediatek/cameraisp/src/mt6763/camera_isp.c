@@ -6496,9 +6496,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_START_TIME:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
+			S_START_T *pTstp = NULL;
+
 			#if (TIMESTAMP_QUEUE_EN == 1)
 			S_START_T tstp;
-			S_START_T *pTstp = NULL;
 			MUINT32 dma_id = DebugFlag[1];
 
 			if (_cam_max_ == DebugFlag[1]) {
@@ -6532,7 +6533,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			if (Ret != 0)
 				break;
 			#else
-			S_START_T *pTstp = &gSTime[DebugFlag[0]];
+			if (DebugFlag[0] < ISP_IRQ_TYPE_INT_CAM_A_ST || DebugFlag[0] > ISP_IRQ_TYPE_INT_UNI_A_ST) {
+				Ret = -EFAULT;
+				break;
+			}
+			pTstp = &gSTime[DebugFlag[0]];
 			#endif
 
 			switch (DebugFlag[0]) {
