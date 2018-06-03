@@ -578,43 +578,34 @@ void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 	void *base = vfifo->base;
 
 #ifdef ENABE_HRTIMER_FLUSH
-	if (dma && uart) {
-		if (UART_READ32(VFF_FLUSH(base)) == 0) {
-			reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
-			if (!timeout)
-				hrtimer_try_to_cancel(&vfifo->flush);
-			MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
-		} else {
-			/*the ns used to transfer the data in TX VFIFO */
-			u32 size = UART_READ32(VFF_VALID_SIZE(base));
-			s64 t = size * 10 * (NSEC_PER_SEC / uart->baudrate);
-			ktime_t cur = ktime_get();
-			ktime_t nxt = ktime_add_ns(cur, t);
-
+	if (UART_READ32(VFF_FLUSH(base)) == 0) {
+		reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
+		if (!timeout)
 			hrtimer_try_to_cancel(&vfifo->flush);
-			hrtimer_start(&vfifo->flush, nxt, HRTIMER_MODE_ABS);
-#if defined(ENABLE_VFIFO_DEBUG)
-			{
-				struct timespec a = ktime_to_timespec(cur);
-				struct timespec b = ktime_to_timespec(nxt);
-
-				MSG(MSC, "start: [%ld %ld] [%ld %ld] [%d %lld]\n",
-				    a.tv_sec, a.tv_nsec, b.tv_sec, b.tv_nsec, size, t);
-			}
-#endif
-		}
+		MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
 	} else {
-		MSG(ERR, "%p, %p\n", dma, uart);
-		/* del_timer(&dma->vfifo->timer); */
+		/*the ns used to transfer the data in TX VFIFO */
+		u32 size = UART_READ32(VFF_VALID_SIZE(base));
+		s64 t = size * 10 * (NSEC_PER_SEC / uart->baudrate);
+		ktime_t cur = ktime_get();
+		ktime_t nxt = ktime_add_ns(cur, t);
+
+		hrtimer_try_to_cancel(&vfifo->flush);
+		hrtimer_start(&vfifo->flush, nxt, HRTIMER_MODE_ABS);
+#if defined(ENABLE_VFIFO_DEBUG)
+		{
+			struct timespec a = ktime_to_timespec(cur);
+			struct timespec b = ktime_to_timespec(nxt);
+
+			MSG(MSC, "start: [%ld %ld] [%ld %ld] [%d %lld]\n",
+			    a.tv_sec, a.tv_nsec, b.tv_sec, b.tv_nsec, size, t);
+		}
+#endif
 	}
 #else
-	if (dma && uart) {
-		if (UART_READ32(VFF_FLUSH(base)) == 0) {
-			reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
-			MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
-		}
-	} else {
-		MSG(ERR, "%p, %p\n", dma, uart);
+	if (UART_READ32(VFF_FLUSH(base)) == 0) {
+		reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
+		MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
 	}
 #endif				/* ENABE_HRTIMER_FLUSH */
 }
