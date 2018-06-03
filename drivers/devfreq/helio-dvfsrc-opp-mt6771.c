@@ -255,15 +255,21 @@ static ssize_t vcore_opp_proc_write(struct file *file,
 		return -EINVAL;
 
 	if (sscanf(buf, "%d %d", &opp, &vcore_uv) != 2)
-		return -EINVAL;
+		goto err;
 
 	if (opp < 0 || opp >= VCORE_DVFS_OPP_NUM || vcore_uv < 0)
-		return -EINVAL;
+		goto err;
 
 	update_vcore_opp_uv(opp, vcore_uv);
 
 	free_page((unsigned long)buf);
+
 	return count;
+
+err:
+	free_page((unsigned long)buf);
+
+	return -EINVAL;
 }
 
 #define PROC_FOPS_RW(name)					\
