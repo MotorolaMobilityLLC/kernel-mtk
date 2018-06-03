@@ -55,7 +55,7 @@
 #define PSEUDO100_EN 1
 #define PSEUDO100_EN_DIS 1
 
-#define DIFF_SOC_SETTING 100	/* 0.01% */
+#define DIFF_SOC_SETTING 50	/* 0.01% */
 #define DIFF_BAT_TEMP_SETTING 1
 #define DIFF_BAT_TEMP_SETTING_C 10
 #define DISCHARGE_TRACKING_TIME 10
@@ -132,7 +132,7 @@
 #define ZCV_CAR_GAP_PERCENTAGE 5
 
 /* Additional battery table */
-#define ADDITIONAL_BATTERY_TABLE_EN 0
+#define ADDITIONAL_BATTERY_TABLE_EN 1
 
 #define DC_RATIO_SEL	5
 #define DC_R_CNT	1000	/* if set 0, dcr_start will not be 1*/
