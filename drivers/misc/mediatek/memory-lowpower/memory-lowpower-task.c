@@ -589,51 +589,50 @@ static int periodic_dc_entry(void *p)
 static int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
 {
 	struct fb_event *fb_event = data;
-	int *blank = fb_event->data;
-	int new_status = *blank ? 1 : 0;
+	int new_status;
 	static unsigned long debounce_time;
 
-	switch (event) {
-	case FB_EVENT_BLANK:
-		/* Which action */
-		if (new_status == 0) {
-			MLPT_PRINT("%s: SCREENON!\n", __func__);
-			memory_lowpower_action = MLP_SCREENON;
-			debounce_time = jiffies + HZ;
-		} else {
-			MLPT_PRINT("%s: SCREENOFF!\n", __func__);
-			/* Check whether we are still in debounce_time before applying SCREENOFF action */
-			if (time_before_eq(jiffies, debounce_time)) {
-				MLPT_PRINT("%s: Bye SCREENOFF!\n", __func__);
-				goto out;
-			}
-			memory_lowpower_action = MLP_SCREENOFF;
+	if (event != FB_EVENT_BLANK)
+		return NOTIFY_DONE;
+
+	new_status = *(int *)fb_event->data ? 1 : 0;
+
+	/* Which action */
+	if (new_status == 0) {
+		MLPT_PRINT("%s: SCREENON!\n", __func__);
+		memory_lowpower_action = MLP_SCREENON;
+		debounce_time = jiffies + HZ;
+	} else {
+		MLPT_PRINT("%s: SCREENOFF!\n", __func__);
+		/* Check whether we are still in debounce_time before applying SCREENOFF action */
+		if (time_before_eq(jiffies, debounce_time)) {
+			MLPT_PRINT("%s: Bye SCREENOFF!\n", __func__);
+			goto out;
 		}
+		memory_lowpower_action = MLP_SCREENOFF;
+	}
 
-		/* Action is changed */
-		atomic_set(&action_changed, MLPT_SET_ACTION);
+	/* Action is changed */
+	atomic_set(&action_changed, MLPT_SET_ACTION);
 retry:
-		/*
-		 * Try to wake it up.
-		 * If it is running, to make sure action is cleared for MLP_SCREENON
-		 */
-		if (!wake_up_process(memory_lowpower_task)) {
-			pr_warn("It was already running.\n");
-			if (IS_ACTION_SCREENON(memory_lowpower_action) &&
-					atomic_read(&action_changed) == MLPT_SET_ACTION) {
-
-				/* SCREENOFF is not finished, just leave. */
-				if (MlpsScreenOn(&memory_lowpower_state))
-					goto out;
-
-				/* It might be at the time before going to schedule. */
-				pr_warn("No action executed for screen-on, retry it.\n");
-				goto retry;
-			}
+	/*
+	 * Try to wake it up.
+	 * If it is running, to make sure action is cleared for MLP_SCREENON
+	 */
+	if (!wake_up_process(memory_lowpower_task)) {
+		pr_warn("It was already running.\n");
+		if (IS_ACTION_SCREENON(memory_lowpower_action) &&
+				atomic_read(&action_changed) == MLPT_SET_ACTION) {
+			/* SCREENOFF is not finished, just leave. */
+			if (MlpsScreenOn(&memory_lowpower_state))
+				goto out;
+			/* It might be at the time before going to schedule. */
+			pr_warn("No action executed for screen-on, retry it.\n");
+			goto retry;
 		}
 	}
 out:
-	return NOTIFY_DONE;
+	return NOTIFY_OK;
 }
 
 static struct notifier_block fb_notifier_block = {
