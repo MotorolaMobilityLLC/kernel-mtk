@@ -158,7 +158,7 @@ static int vcorefs_autok_set_vcore(int kicker, enum dvfs_opp opp)
 /*
  * Sub-main function
  */
-static int _get_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
+int _get_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	unsigned int dvfs_opp = UINT_MAX;
 	int i, group;
