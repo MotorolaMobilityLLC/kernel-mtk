@@ -193,13 +193,14 @@ static int show_dal_layer(int enable)
 	struct disp_session_input_config *session_input;
 	struct disp_input_config *input;
 	int ret;
-
+	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
 	if (!session_input)
 		return -ENOMEM;
 
 	session_input->setter = SESSION_USER_AEE;
 	session_input->config_layer_num = 1;
+	session_input->session_id = session_id;
 	input = &session_input->config[0];
 
 	input->src_phy_addr = (void *)dal_fb_pa;

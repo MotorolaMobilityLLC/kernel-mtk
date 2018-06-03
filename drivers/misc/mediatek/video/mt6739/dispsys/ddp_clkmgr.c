@@ -279,7 +279,7 @@ int ddp_main_modules_clk_on(void)
 			/* module driver power on */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_on\n", ddp_get_module_name(module));
+				DDPDBG("%s power_on\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_on(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -295,7 +295,7 @@ int ddp_main_modules_clk_on(void)
 	else
 		ddp_get_module_driver(module)->power_on(module, NULL);
 
-	pr_info("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
+	DDPMSG("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
 									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return ret;
 }
@@ -326,7 +326,7 @@ int ddp_ext_modules_clk_on(void)
 			/* module driver power on */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_on\n", ddp_get_module_name(module));
+				DDPDBG("%s power_on\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_on(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -335,7 +335,7 @@ int ddp_ext_modules_clk_on(void)
 		}
 	}
 
-	pr_info("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
+	DDPMSG("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
 									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return ret;
 }
@@ -366,7 +366,7 @@ int ddp_ovl2mem_modules_clk_on(void)
 			/* module driver power on */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_on\n", ddp_get_module_name(module));
+				DDPDBG("%s power_on\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_on(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -375,7 +375,7 @@ int ddp_ovl2mem_modules_clk_on(void)
 		}
 	}
 
-	pr_info("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
+	DDPMSG("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
 									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return ret;
 }
@@ -403,7 +403,7 @@ int ddp_main_modules_clk_off(void)
 			/* module driver power off */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_off\n", ddp_get_module_name(module));
+				DDPDBG("%s power_off\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_off(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -451,7 +451,7 @@ int ddp_ext_modules_clk_off(void)
 			/* module driver power off */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_off\n", ddp_get_module_name(module));
+				DDPDBG("%s power_off\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_off(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -489,7 +489,7 @@ int ddp_ovl2mem_modules_clk_off(void)
 			/* module driver power off */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				pr_info("%s power_off\n", ddp_get_module_name(module));
+				DDPDBG("%s power_off\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_off(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -518,10 +518,10 @@ int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t)
 	enum DISP_MODULE_ENUM module_id = DISP_MODULE_UNKNOWN;
 
 	number = ddp_get_module_num_by_t(module_t);
-	pr_info("[ddp_module_clk_enable] module type = %d, module num on this type = %d\n", module_t, number);
+	DDPDBG("[ddp_module_clk_enable] module type = %d, module num on this type = %d\n", module_t, number);
 	for (i = 0; i < number; i++) {
 		module_id = ddp_get_module_id_by_idx(module_t, i);
-		pr_info("[ddp_module_clk_enable] module id = %d\n", module_id);
+		DDPDBG("[ddp_module_clk_enable] module id = %d\n", module_id);
 		for (j = 0; j < MAX_DISP_CLK_CNT; j++) {
 			if (ddp_clks[j].module_id == module_id)
 				ddp_clk_prepare_enable(j);
@@ -543,7 +543,7 @@ int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t)
 	pr_info("[ddp_module_clk_disable] module type = %d, module num on this type = %d\n", module_t, number);
 	for (i = 0; i < number; i++) {
 		module_id = ddp_get_module_id_by_idx(module_t, i);
-		pr_info("[ddp_module_clk_disable] module id = %d\n", module_id);
+		DDPDBG("[ddp_module_clk_disable] module id = %d\n", module_id);
 		for (j = 0; j < MAX_DISP_CLK_CNT; j++) {
 			if (ddp_clks[j].module_id == module_id)
 				ddp_clk_disable_unprepare(j);

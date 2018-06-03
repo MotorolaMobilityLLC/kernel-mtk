@@ -100,7 +100,6 @@ int config_display_m4u_port(void)
 	M4U_PORT_STRUCT sPort;
 	char *m4u_usage = disp_helper_get_option(DISP_OPT_USE_M4U) ? "virtual" : "physical";
 
-	DISPERR("config_display_m4u_port enter\n");
 	sPort.ePortID = DISP_M4U_PORT_DISP_OVL0;
 	sPort.Virtuality = disp_helper_get_option(DISP_OPT_USE_M4U);
 	sPort.Security = 0;
@@ -116,7 +115,6 @@ int config_display_m4u_port(void)
 			return -1;
 		}
 	}
-	DISPERR("config_display_m4u_port leave\n");
 	return ret;
 }
 #if 0
