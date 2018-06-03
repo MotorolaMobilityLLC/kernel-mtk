@@ -52,6 +52,8 @@ threshold_gains[] = {
 	{ 5, 0 }  /* <= 100% */
 };
 
+bool global_negative_flag;
+
 static int
 __schedtune_accept_deltas(int nrg_delta, int cap_delta,
 			  int perf_boost_idx, int perf_constrain_idx)
@@ -273,7 +275,15 @@ schedtune_cpu_update(int cpu)
 	 * are neagtive. Avoids under-accounting of cpu capacity which may cause
 	 * task stacking and frequency spikes.
 	 */
-	boost_max = max(boost_max, 0);
+	/* mtk:
+	 * If original path, max(boost_max, 0)
+	 * If use mtk perfservice kernel API to update negative boost,
+	 * when all group are neagtive, boost_max should lower than 0
+	 * and it can decrease frequency.
+	 */
+	if (!global_negative_flag)
+		boost_max = max(boost_max, 0);
+
 	bg->boost_max = boost_max;
 }
 
@@ -578,6 +588,7 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	unsigned threshold_idx;
 	int boost_pct;
 	bool dvfs_on_demand = false;
+	int idx = 0;
 
 	if (group_idx == 0) {
 		printk_deferred("error: don't boost GED task at root: idx=%d\n", group_idx);
@@ -604,45 +615,61 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	else if (boost_value <= -100)
 		boost_value = -100;
 
-	ct = allocated_group[group_idx];
+	if (boost_value < 0)
+		global_negative_flag = true; /* set all group negative */
 
-	if (ct) {
-		rcu_read_lock();
+	for (idx = 0; idx < BOOSTGROUPS_COUNT; idx++) {
+		if (!global_negative_flag) /* positive path or google original path */
+			idx = group_idx;
 
-		boost_pct = boost_value;
+		ct = allocated_group[idx];
 
-		/*
-		 * Update threshold params for Performance Boost (B)
-		 * and Performance Constraint (C) regions.
-		 * The current implementatio uses the same cuts for both
-		 * B and C regions.
-		 */
-		threshold_idx = clamp(boost_pct, 0, 99) / 10;
-		ct->perf_boost_idx = threshold_idx;
-		ct->perf_constrain_idx = threshold_idx;
+		if (ct) {
+			rcu_read_lock();
 
-		ct->boost = boost_value;
+			boost_pct = boost_value;
 
-		/* Update CPU boost */
-		schedtune_boostgroup_update(ct->idx, ct->boost);
-		rcu_read_unlock();
+			/*
+			 * Update threshold params for Performance Boost (B)
+			 * and Performance Constraint (C) regions.
+			 * The current implementatio uses the same cuts for both
+			 * B and C regions.
+			 */
+			threshold_idx = clamp(boost_pct, 0, 99) / 10;
+			ct->perf_boost_idx = threshold_idx;
+			ct->perf_constrain_idx = threshold_idx;
 
-	} else {
-		printk_deferred("error: GED boost for stune group no exist: idx=%d\n", group_idx);
-		return -EINVAL;
+			ct->boost = boost_value;
+
+			trace_sched_tune_config(ct->boost);
+
+			/* Update CPU boost */
+			schedtune_boostgroup_update(ct->idx, ct->boost);
+			rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+			/* GED: foreground */
+			if (ct->idx == 1)
+				met_tag_oneshot(0, "sched_boost_ged", ct->boost);
+#endif
+
+			if (!global_negative_flag)
+				break;
+
+		} else {
+			if (!global_negative_flag) { /* positive path or google original path */
+				printk_deferred("error: GED boost for stune group no exist: idx=%d\n",
+						idx);
+				return -EINVAL;
+			}
+
+			break;
+		}
 	}
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	if (dvfs_on_demand)
 		update_freq_fastpath();
-#endif
-
-	trace_sched_tune_config(ct->boost);
-
-#if MET_STUNE_DEBUG
-	/* GED: foreground */
-	if (ct->idx == 1)
-		met_tag_oneshot(0, "sched_boost_ged", ct->boost);
 #endif
 
 	return 0;
@@ -775,6 +802,9 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		stune_task_threshold = default_stune_threshold;
 		return -EINVAL;
 	}
+
+	if (boost < 0)
+		global_negative_flag = false;
 
 	boost_pct = boost;
 
