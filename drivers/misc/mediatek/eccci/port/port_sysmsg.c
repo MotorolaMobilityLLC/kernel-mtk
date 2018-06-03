@@ -16,7 +16,7 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/kernel.h>
-/* #include <mt-plat/battery_common.h> */
+#include <mt-plat/mtk_battery.h>
 
 #include "ccci_config.h"
 #include "ccci_core.h"

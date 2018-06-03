@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/* #include <mt-plat/battery_common.h> */
+#include <mt-plat/mtk_battery.h>
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 #include <mt-plat/env.h>
 #endif

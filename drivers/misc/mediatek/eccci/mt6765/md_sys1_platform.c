@@ -32,8 +32,12 @@
 
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
-#include <mtk_spm_sleep.h>
-#include <mtk_vcorefs_manager.h>
+/*#include <mtk_spm_sleep.h>*/
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <linux/pm_qos.h>
+#include <helio-dvfsrc-opp.h>
+#endif
 #include "ccci_core.h"
 #include "ccci_platform.h"
 
@@ -1076,15 +1080,23 @@ int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req)
 {
 	int ret = 0;
 	static int is_hold;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	static struct pm_qos_request md_qos_vcore_request;
+#endif
 
 	CCCI_BOOTUP_LOG(md_id, TAG,
 		"md_cd_vcore_config: is_hold=%d, hold_req=%d\n",
 		is_hold, hold_req);
 	if (hold_req && is_hold == 0) {
-		ret = vcorefs_request_dvfs_opp(KIR_APCCCI, OPP_0);
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		pm_qos_add_request(&md_qos_vcore_request,
+		PM_QOS_VCORE_OPP, VCORE_OPP_0);
+#endif
 		is_hold = 1;
 	} else if (hold_req == 0 && is_hold) {
-		ret = vcorefs_request_dvfs_opp(KIR_APCCCI, OPP_UNREQ);
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		pm_qos_remove_request(&md_qos_vcore_request);
+#endif
 		is_hold = 0;
 	} else
 		CCCI_ERROR_LOG(md_id, TAG,

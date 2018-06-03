@@ -44,7 +44,7 @@
 #include <mt-plat/mtk_boot_common.h>
 #include <mt-plat/mtk_ccci_common.h>
 
-/* #include <mt-plat/mtk_memcfg.h> */
+#include <mt-plat/mtk_memcfg.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "ccci_util_log.h"
 #include "ccci_util_lib_main.h"
@@ -1928,7 +1928,7 @@ void ccci_md_mem_reserve(void)
 #define CCCI_MD2_MEM_RESERVED_KEY "mediatek,reserve-memory-ccci_md2"
 #define CCCI_MD3_MEM_RESERVED_KEY "mediatek,reserve-memory-ccci_md3_ccif"
 #define CCCI_MD1MD3_SMEM_RESERVED_KEY "mediatek,reserve-memory-ccci_share"
-/* #include <mt-plat/mtk_memcfg.h> */
+#include <mt-plat/mtk_memcfg.h>
 int ccci_reserve_mem_of_init(struct reserved_mem *rmem)
 {
 	phys_addr_t rptr = 0;

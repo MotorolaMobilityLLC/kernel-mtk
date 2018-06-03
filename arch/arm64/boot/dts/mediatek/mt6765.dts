@@ -493,22 +493,17 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	apcldmain_ao@10014000 {
 		compatible = "mediatek,apcldmain_ao";
-		reg = <0 0x10014000 0 0x0>;
+		reg = <0 0x10014000 0 0x1000>;
 	};
 
 	apcldmaout_ao@10014400 {
 		compatible = "mediatek,apcldmaout_ao";
-		reg = <0 0x10014400 0 0x0>;
+		reg = <0 0x10014400 0 0x1000>;
 	};
 
 	apcldmamisc_ao@10014800 {
 		compatible = "mediatek,apcldmamisc_ao";
-		reg = <0 0x10014800 0 0x0>;
-	};
-
-	apcldmamisc_ao@10014c00 {
-		compatible = "mediatek,apcldmamisc_ao";
-		reg = <0 0x10014c00 0 0x0>;
+		reg = <0 0x10014800 0 0x1000>;
 	};
 
 	ddrphy@10015000 {
@@ -676,24 +671,24 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	ap_ccif0@10209000 {
 		compatible = "mediatek,ap_ccif0";
-		reg = <0 0x10209000 0 0x0>;
+		reg = <0 0x10209000 0 0x1000>;
 		interrupts = <GIC_SPI 148 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	md_ccif0@1020a000 {
 		compatible = "mediatek,md_ccif0";
-		reg = <0 0x1020a000 0 0x0>;
+		reg = <0 0x1020a000 0 0x1000>;
 	};
 
 	ap_ccif1@1020b000 {
 		compatible = "mediatek,ap_ccif1";
-		reg = <0 0x1020b000 0 0x0>;
+		reg = <0 0x1020b000 0 0x1000>;
 		interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	md_ccif1@1020c000 {
 		compatible = "mediatek,md_ccif1";
-		reg = <0 0x1020c000 0 0x0>;
+		reg = <0 0x1020c000 0 0x1000>;
 	};
 
 	infra_mbist@1020d000 {
@@ -766,53 +761,75 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	apcldmain@1021b000 {
 		compatible = "mediatek,apcldmain";
-		reg = <0 0x1021b000 0 0x0>;
-	};
-
-	apcldmain@1021b100 {
-		compatible = "mediatek,apcldmain";
-		reg = <0 0x1021b100 0 0x0>;
+		reg = <0 0x1021b000 0 0x1000>;
 	};
 
 	apcldmaout@1021b400 {
 		compatible = "mediatek,apcldmaout";
-		reg = <0 0x1021b400 0 0x0>;
-	};
-
-	apcldmaout@1021b500 {
-		compatible = "mediatek,apcldmaout";
-		reg = <0 0x1021b500 0 0x0>;
+		reg = <0 0x1021b400 0 0x1000>;
 	};
 
 	apcldmamisc@1021b800 {
 		compatible = "mediatek,apcldmamisc";
-		reg = <0 0x1021b800 0 0x0>;
+		reg = <0 0x1021b800 0 0x1000>;
 		interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_HIGH>;
-	};
-
-	apcldmamisc@1021b900 {
-		compatible = "mediatek,apcldmamisc";
-		reg = <0 0x1021b900 0 0x0>;
 	};
 
 	mdcldmain@1021c000 {
 		compatible = "mediatek,mdcldmain";
-		reg = <0 0x1021c000 0 0x0>;
+		reg = <0 0x1021c000 0 0x1000>;
 	};
 
 	mdcldmaout@1021c400 {
 		compatible = "mediatek,mdcldmaout";
-		reg = <0 0x1021c400 0 0x0>;
+		reg = <0 0x1021c400 0 0x1000>;
 	};
 
-	mdcldmamisc@1021c000 {
+	mdcldmamisc@1021c800 {
 		compatible = "mediatek,mdcldmamisc";
-		reg = <0 0x1021c000 0 0x0>;
+		reg = <0 0x1021c800 0 0x1000>;
 	};
 
-	mdcldmamisc@1021c900 {
-		compatible = "mediatek,mdcldmamisc";
-		reg = <0 0x1021c900 0 0x0>;
+	mdcldma:mdcldma@10014000 {
+		compatible = "mediatek,mdcldma";
+		/*
+		 * AP_CLDMA_AO "mediatek,apcldmain_ao"
+		 * AP_CLDMA_PDN "mediatek,apcldmain"
+		 * AP_CCIF_BASE "mediatek,ap_ccif0"
+		 * MD_CCIF_BASE "mediatek,md_ccif0"
+		 */
+		reg =	<0 0x10014000 0 0x1000>,
+			<0 0x1021b000 0 0x1000>,
+			<0 0x10209000 0 0x1000>,
+			<0 0x1020a000 0 0x1000>;
+		/*
+		 * IRQ_CLDMA "mediatek,apcldmamisc"
+		 * IRQ_CCIF0 "mediatek,ap_ccif0"
+		 * IRQ_CCIF1
+		 * IRQ_MDWDT "mediatek,md_rgu"
+		 */
+		interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 148 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 149 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 261 IRQ_TYPE_EDGE_FALLING>;
+		mediatek,md_id = <0>;
+		mediatek,cldma_capability = <6>;
+		clocks = <&scpsys SCP_SYS_MD1>,
+			<&infracfg_ao CLK_IFR_CLDMA_BCLK>,
+			<&infracfg_ao CLK_IFR_CCIF_AP>,
+			<&infracfg_ao CLK_IFR_CCIF_MD>,
+			<&infracfg_ao CLK_IFR_CCIF1_AP>,
+			<&infracfg_ao CLK_IFR_CCIF1_MD>,
+			<&infracfg_ao CLK_IFR_CCIF2_AP>,
+			<&infracfg_ao CLK_IFR_CCIF2_MD>;
+		clock-names = "scp-sys-md1-main",
+			"infra-cldma-bclk",
+			"infra-ccif-ap",
+			"infra-ccif-md",
+			"infra-ccif1-ap",
+			"infra-ccif1-md",
+			"infra-ccif2-ap",
+			"infra-ccif2-md";
 	};
 
 	dramc_nao@1021d000 {
@@ -1046,24 +1063,24 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	ap_ccif2@1023c000 {
 		compatible = "mediatek,ap_ccif2";
-		reg = <0 0x1023c000 0 0x0>;
+		reg = <0 0x1023c000 0 0x1000>;
 		interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	md_ccif2@1023d000 {
 		compatible = "mediatek,md_ccif2";
-		reg = <0 0x1023d000 0 0x0>;
+		reg = <0 0x1023d000 0 0x1000>;
 	};
 
 	ap_ccif3@1023e000 {
 		compatible = "mediatek,ap_ccif3";
-		reg = <0 0x1023e000 0 0x0>;
+		reg = <0 0x1023e000 0 0x1000>;
 		interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	md_ccif3@1023f000 {
 		compatible = "mediatek,md_ccif3";
-		reg = <0 0x1023f000 0 0x0>;
+		reg = <0 0x1023f000 0 0x1000>;
 	};
 
 	sspm@10440000 {
