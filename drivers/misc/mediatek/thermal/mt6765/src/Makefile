@@ -22,7 +22,7 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/mt6765/inc/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/pmic/include/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 
-#obj-$(CONFIG_THERMAL) += mtk_tc.o
+obj-$(CONFIG_THERMAL) += mtk_tc.o
 #obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
 
