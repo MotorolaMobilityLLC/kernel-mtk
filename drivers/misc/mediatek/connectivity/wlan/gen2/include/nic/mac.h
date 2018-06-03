@@ -2174,6 +2174,16 @@ struct ACTION_NEIGHBOR_REPORT_FRAME {
 	UINT_8 ucDialogToken;	/* Dialog Token */
 	UINT_8 aucInfoElem[1];	/* subelements */
 };
+struct IE_WFA_OSEN {
+	UINT_8 ucId;
+	UINT_8 ucLength;
+	UINT_8 aucOui[3];
+	UINT_8 ucOuiType;
+	UINT_32 u4GroupKeyCipherSuite;
+	UINT_16 u2PairwiseKeyCipherSuiteCount;
+	UINT_8 aucPairwiseKeyCipherSuite1[4];
+};
+
 
 /* 3 Information Elements from WFA. */
 typedef struct _IE_WFA_T {

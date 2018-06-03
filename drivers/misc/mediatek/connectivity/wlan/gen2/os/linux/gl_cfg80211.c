@@ -960,6 +960,8 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 		case WLAN_CIPHER_SUITE_AES_CMAC:
 			prGlueInfo->rWpaInfo.u4CipherGroup = IW_AUTH_CIPHER_CCMP;
 			break;
+		case WLAN_CIPHER_SUITE_NO_GROUP_ADDR:
+			break;
 		default:
 			DBGLOG(REQ, WARN, "invalid cipher group (%d)\n", sme->crypto.cipher_group);
 			return -EINVAL;
@@ -989,6 +991,14 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 			case WLAN_AKM_SUITE_PSK:
 				eAuthMode = AUTH_MODE_WPA2_PSK;
 				break;
+
+
+#if CFG_SUPPORT_HOTSPOT_2_0
+			case WLAN_AKM_SUITE_OSEN:
+				eAuthMode = AUTH_MODE_WPA_OSEN;
+			break;
+#endif
+
 			default:
 				DBGLOG(REQ, WARN, "invalid cipher group (%d)\n", sme->crypto.cipher_group);
 				return -EINVAL;
@@ -1053,6 +1063,10 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 				/* Do nothing */
 				/* printk(KERN_INFO "[HS20] set HS20 assoc info error:%lx\n", rStatus); */
 			}
+		} else if (wextSrchDesiredOsenIE(pucIEStart, sme->ie_len, (PUINT_8 *) &prDesiredIE)) {
+			/* we can reuse aucHS20AssocInfoIE because hs20 indication IE is not present when OSEN exist */
+			kalMemCopy(prGlueInfo->aucHS20AssocInfoIE, prDesiredIE, IE_SIZE(prDesiredIE));
+			prGlueInfo->u2HS20AssocInfoIELen = (UINT_16)IE_SIZE(prDesiredIE);
 		}
 		if (wextSrchDesiredInterworkingIE(pucIEStart, sme->ie_len, (PUINT_8 *) &prDesiredIE)) {
 			rStatus = kalIoctl(prGlueInfo,
