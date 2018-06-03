@@ -17,7 +17,6 @@
 extern unsigned long boot_soter_flag;
 extern unsigned long message_buff;
 extern unsigned long bdrv_message_buff;
-unsigned long teei_vfs_flag;
 extern struct semaphore smc_lock;
 
 extern struct completion VFS_rd_comp;

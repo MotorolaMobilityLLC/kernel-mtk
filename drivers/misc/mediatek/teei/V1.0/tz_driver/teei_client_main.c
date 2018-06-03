@@ -79,7 +79,6 @@ extern struct semaphore keymaster_api_lock;
 
 struct semaphore boot_decryto_lock;
 
-unsigned long cpu_notify_flag = 0;
 static  int current_cpu_id = 0x00;
 
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
@@ -374,11 +373,9 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	int retVal = 0;
 	retVal = add_work_entry(BOOT_STAGE1, &boot_stage1_entry);
 #else
-	/* get_online_cpus(); */
 	cpu_id = get_current_cpuid();
 	pr_debug("current cpu id [%d]\n", cpu_id);
 	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
-	/* put_online_cpus(); */
 #endif
 
 	/* with a rmb() */
@@ -386,6 +383,30 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 }
 
 static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
+
+int handle_switch_core(int cpu)
+{
+	int i = 0;
+	int switch_to_cpu_id = 0;
+	struct cpumask mtee_mask = { CPU_BITS_NONE };
+
+	for_each_online_cpu(i) {
+		pr_debug("current on line cpu [%d]\n", i);
+		if (i == cpu)
+			continue;
+
+		switch_to_cpu_id = i;
+	}
+	pr_debug("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
+
+	cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
+	nt_sched_core(teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
+	current_cpu_id = switch_to_cpu_id;
+	pr_debug("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
+
+	return 0;
+}
 
 static int tz_driver_cpu_callback(struct notifier_block *self,
                                   unsigned long action, void *hcpu)
@@ -402,49 +423,11 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 		case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				pr_debug("cpu down prepare ************************\n");
-				down(&smc_lock);
-				if (retVal == 1)
-					return NOTIFY_BAD;
-				else {
-					cpu_notify_flag = 1;
-					for_each_online_cpu(i) {
-						/*pr_debug("current on line cpu [%d]\n", i);*/
-						if (i == cpu) {
-							continue;
-						}
-						switch_to_cpu_id = i;
-					}
-					/*pr_debug("current cpu id = [%d]\n", current_cpu_id);*/
-					nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
-
-					/*pr_debug("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
-#if 1
-					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
-					set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
-					/*pr_debug("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
-					current_cpu_id = switch_to_cpu_id;
-					pr_debug("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
-#endif
-
-				}
+				add_work_entry(SWITCH_CORE, cpu);
 			}
 			break;
 
-		case CPU_DOWN_FAILED:
-			if (cpu_notify_flag == 1) {
-				pr_debug("cpu down failed *************************\n");
-				up(&smc_lock);
-				cpu_notify_flag = 0;
-			}
-			break;
-
-		case CPU_DEAD:
-		case CPU_DEAD_FROZEN:
-			if (cpu_notify_flag == 1) {
-				pr_debug("cpu down success ***********************\n");
-				up(&smc_lock);
-				cpu_notify_flag = 0;
-			}
+		default:
 			break;
 	}
 
@@ -505,10 +488,8 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	Flush_Dcache_By_Area((unsigned long)&init_cmdbuf_entry, (unsigned long)&init_cmdbuf_entry + sizeof(struct init_cmdbuf_struct));
 	retVal = add_work_entry(INIT_CMD_CALL, (unsigned long)&init_cmdbuf_entry);
 #else
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
-	put_online_cpus();
 #endif
 	/* with a rmb() */
 	rmb();
@@ -767,6 +748,7 @@ static int init_teei_framework(void)
 	}
 
 	secure_wq = create_workqueue("Secure Call");
+	bdrv_wq = create_workqueue("Bdrv Call");
 
 #ifdef UT_DMA_ZONE
 	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
@@ -1718,6 +1700,7 @@ static int teei_client_init(void)
 	INIT_LIST_HEAD(&teei_contexts_head.context_list);
 
 	init_tlog_entry();
+	init_sched_work_ent();
 
 	sema_init(&(smc_lock), 1);
 
@@ -1729,10 +1712,6 @@ static int teei_client_init(void)
 	pr_debug("begin to create sub_thread.\n");
 
 #if 0
-	sub_pid = kernel_thread(global_fn, NULL, CLONE_KERNEL);
-	retVal = sys_setpriority(PRIO_PROCESS, sub_pid, -3);
-#endif
-
 	/* struct sched_param param = {.sched_priority = -20 }; */
 	teei_fastcall_task = kthread_create(global_fn, NULL, "teei_fastcall_thread");
 	if (IS_ERR(teei_fastcall_task)) {
@@ -1743,6 +1722,7 @@ static int teei_client_init(void)
 	/* sched_setscheduler_nocheck(teei_fastcall_task, SCHED_NORMAL, &param); */
 	/* get_task_struct(teei_fastcall_task); */
 	wake_up_process(teei_fastcall_task);
+#endif
 
 	/* create the switch thread */
 	teei_switch_task = kthread_create(kthread_worker_fn, &ut_fastcall_worker, "teei_switch_thread");

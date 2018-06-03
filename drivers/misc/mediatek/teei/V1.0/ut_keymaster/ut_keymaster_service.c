@@ -92,10 +92,8 @@ static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_ph
 	/* with a wmb() */
 	wmb();
 
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
-	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();

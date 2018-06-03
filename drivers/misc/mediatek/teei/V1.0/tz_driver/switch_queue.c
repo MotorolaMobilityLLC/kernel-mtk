@@ -44,6 +44,8 @@ extern void secondary_invoke_fastcall(void *info);
 extern void secondary_load_tee(void *info);
 extern void secondary_boot_stage1(void *info);
 extern void secondary_load_func(void);
+extern int handle_switch_core(int cpu);
+
 struct switch_head_struct {
 	struct list_head head;
 };
@@ -84,7 +86,6 @@ extern struct kthread_worker ut_fastcall_worker;
 extern int forward_call_flag;
 extern int fp_call_flag;
 extern int keymaster_call_flag;
-extern int teei_vfs_flag;
 extern int irq_call_flag;
 
 extern void nt_sched_t_call(void);
@@ -183,6 +184,7 @@ static int check_work_type(int work_type)
 		case LOAD_TEE:
 		case LOCK_PM_MUTEX:
 		case UNLOCK_PM_MUTEX:
+		case SWITCH_CORE:
 			return 0;
 
 		default:
@@ -374,38 +376,6 @@ int handle_bdrv_call(void *buff)
 
 int handle_switch_call(void *buff)
 {
-
-#if 0
-
-	if (forward_call_flag == GLSCH_FOR_SOTER) {
-		forward_call_flag = GLSCH_NONE;
-		msleep(10);
-		nt_sched_t_call();
-	} else if (irq_call_flag == GLSCH_HIGH) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		irq_call_flag = GLSCH_NONE;
-		nt_sched_t_call();
-		/*msleep_interruptible(10);*/
-	} else if (fp_call_flag == GLSCH_HIGH) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		if (teei_vfs_flag == 0) {
-			nt_sched_t_call();
-		} else {
-			msleep_interruptible(1);
-		}
-	} else if (forward_call_flag == GLSCH_LOW) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		if (teei_vfs_flag == 0) {
-			nt_sched_t_call();
-		} else {
-			msleep_interruptible(1);
-		}
-	} else {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		msleep_interruptible(1);
-	}
-
-#else
 	unsigned long smc_type = 2;
 
 	nt_sched_t(&smc_type);
@@ -415,7 +385,6 @@ int handle_switch_call(void *buff)
 		nt_sched_t(&smc_type);
 	}
 	pr_debug("[%s][%d] smc_type = %lu\n", __func__, __LINE__, smc_type);
-#endif
 	return 0;
 }
 
@@ -491,6 +460,9 @@ static void switch_fn(struct kthread_work *work)
 			break;
 		case UNLOCK_PM_MUTEX:
 			handle_unlock_pm_mutex((struct mutext *)(switch_ent->buff_addr));
+			break;
+		case SWITCH_CORE:
+			handle_switch_core((int)(switch_ent->buff_addr));
 			break;
 		default:
 			pr_err("switch fn handles a undefined call!\n");
