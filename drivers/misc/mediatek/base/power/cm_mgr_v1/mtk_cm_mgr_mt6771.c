@@ -266,6 +266,8 @@ int cm_mgr_cps_check(void)
 	for_each_online_cpu(cpu) {
 		int tmp;
 
+		if (cpu > CM_MGR_CPU_COUNT)
+			break;
 		tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
 		sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
 		cm_mgr_abs_load += abs_load * tmp;
