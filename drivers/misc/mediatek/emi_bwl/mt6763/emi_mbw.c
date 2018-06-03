@@ -217,3 +217,31 @@ bool is_dump_latency(void)
 {
 	return dump_latency_status;
 }
+
+static int __init dvfs_bwct_init(void)
+{
+	int dram_type;
+	unsigned int ch_num;
+
+	dram_type = get_ddr_type();
+	ch_num = get_ch_num();
+
+	pr_err("[EMI] set BWCT for DRAM type(%d), ch(%d)\n",
+		dram_type, ch_num);
+
+	switch (ch_num) {
+	case 1:
+		BM_SetBW(0x05000405);
+		break;
+	case 2:
+		BM_SetBW(0x0a000705);
+		break;
+	default:
+		pr_err("[EMI] unsupported channel number\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+late_initcall(dvfs_bwct_init);

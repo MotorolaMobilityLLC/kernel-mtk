@@ -397,6 +397,15 @@ static void __exit emi_ctrl_exit(void)
 postcore_initcall(emi_ctrl_init);
 module_exit(emi_ctrl_exit);
 
+unsigned int get_ch_num(void)
+{
+	unsigned int ch_shift;
+
+	ch_shift = (readl(IOMEM(EMI_CONA)) >> 8) & 0x3;
+
+	return (0x1 << ch_shift);
+}
+
 void __iomem *mt_cen_emi_base_get(void)
 {
 	return CEN_EMI_BASE;

@@ -18,6 +18,7 @@
  * Define EMI hardware registers.
  */
 
+#define EMI_CONA		(CEN_EMI_BASE + 0x0000)
 #define EMI_CONM		(CEN_EMI_BASE + 0x0060)
 #define EMI_ARBA		(CEN_EMI_BASE + 0x0100)
 #define EMI_ARBB		(CEN_EMI_BASE + 0x0108)
@@ -76,6 +77,7 @@ struct emi_bwl_ctrl {
 
 extern int mtk_mem_bw_ctrl(int sce, int op);
 extern int get_ddr_type(void);
+extern unsigned int get_ch_num(void);
 extern void __iomem *mt_emi_base_get(void); /* legacy API */
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(int chn);
