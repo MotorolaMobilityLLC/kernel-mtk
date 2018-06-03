@@ -1675,9 +1675,12 @@ static inline void MFB_Reset(void)
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
 
 		/* Reset MFB flow */
-		/* MFB_WR32(MFB_SW_RST_REG, 0x100); */
-		/* while ((MFB_RD32(MFB_SW_RST_REG) != 0x0)) LOG_DBG("MFB resetting...\n"); */
-		/* MFB_WR32(MFB_TOP_CFG1_REG, 0); */
+		MFB_WR32(MFB_SW_RST_REG, 0x001);
+		while ((MFB_RD32(MFB_SW_RST_REG) && 0x00000002 != 0x00000002))
+			LOG_DBG("MFB resetting...\n");
+		MFB_WR32(MFB_SW_RST_REG, 0x101);
+		MFB_WR32(MFB_SW_RST_REG, 0x100);
+		MFB_WR32(MFB_SW_RST_REG, 0x0);
 		LOG_DBG(" MFB Reset end!\n");
 	}
 
