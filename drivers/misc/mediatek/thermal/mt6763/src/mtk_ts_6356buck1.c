@@ -34,9 +34,10 @@
  *Local variable definition
  *=============================================================
  */
-static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
+static int isTimerCancelled;
 
 /**
  * If curr_temp >= polling_trip_temp1, use interval
@@ -333,6 +334,7 @@ static ssize_t mt6356tsbuck1_write(struct file *file, const char __user *buffer,
 		&ptr_mt6356tsbuck1_data->trip[9], &ptr_mt6356tsbuck1_data->t_type[9], ptr_mt6356tsbuck1_data->bind9,
 		&ptr_mt6356tsbuck1_data->time_msec) == 32) {
 
+		down(&sem_mutex);
 		mtktspmic_dprintk("[mt6356tsbuck1_write] mt6356tsbuck1_unregister_thermal\n");
 		mt6356tsbuck1_unregister_thermal();
 
@@ -343,6 +345,7 @@ static ssize_t mt6356tsbuck1_write(struct file *file, const char __user *buffer,
 			#endif
 			mtktspmic_dprintk("[mt6356tsbuck1_write] bad argument\n");
 			kfree(ptr_mt6356tsbuck1_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -390,6 +393,7 @@ static ssize_t mt6356tsbuck1_write(struct file *file, const char __user *buffer,
 
 		mtktspmic_dprintk("[mt6356tsbuck1_write] mt6356tsbuck1_register_thermal\n");
 		mt6356tsbuck1_register_thermal();
+		up(&sem_mutex);
 		kfree(ptr_mt6356tsbuck1_data);
 		return count;
 	}
@@ -409,17 +413,35 @@ static void mt6356tsbuck1_cancel_thermal_timer(void)
 	/* pr_debug("mtkts_pmic_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
-	if (thz_dev && !doing_tz_unregister)
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
+		isTimerCancelled = 1;
+	}
+
+	up(&sem_mutex);
 }
 
 static void mt6356tsbuck1_start_thermal_timer(void)
 {
 	/* pr_debug("mtkts_pmic_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
+
+	if (!isTimerCancelled)
+		return;
+
+	isTimerCancelled = 0;
+
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_power_efficient_wq,
 				&(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+
+	up(&sem_mutex);
 }
 
 static int mt6356tsbuck1_register_cooler(void)
@@ -453,10 +475,8 @@ static void mt6356tsbuck1_unregister_thermal(void)
 	mtktspmic_dprintk("[mt6356tsbuck1_unregister_thermal]\n");
 
 	if (thz_dev) {
-		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
-		doing_tz_unregister = 0;
 	}
 }
 
