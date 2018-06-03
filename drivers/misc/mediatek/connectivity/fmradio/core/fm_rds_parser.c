@@ -426,7 +426,7 @@ static fm_s32 rds_grp_tp_get(fm_u16 crc, fm_u16 blk, fm_u8 *tp, fm_bool *dirty)
 		*dirty = fm_false;	/* TP is the same as last one */
 	}
 
-	WCN_DBG(FM_NTC | RDSC, "TP=%d, %s\n", (fm_s32) *tp, *dirty ? "new" : "old");
+	/* WCN_DBG(FM_NTC | RDSC, "TP=%d, %s\n", (fm_s32) *tp, *dirty ? "new" : "old"); */
 	return ret;
 }
 
@@ -681,7 +681,7 @@ static fm_s32 rds_g0_ps_cmp(fm_u8 addr, fm_u16 cbc, fm_u8 *fresh,
 		*valid = fm_false;
 #endif
 	/* WCN_DBG(FM_NTC | RDSC, "PS seg=%s\n", *valid == fm_true ? "fm_true" : "fm_false"); */
-	WCN_DBG(FM_NTC | RDSC, "bitmap=%x\n", *bm);
+	/* WCN_DBG(FM_NTC | RDSC, "bitmap=%x\n", *bm); */
 	WCN_DBG(FM_NTC | RDSC, "PS[1]=%x %x %x %x %x %x %x %x\n", once[0], once[1], once[2],
 		once[3], once[4], once[5], once[6], once[7]);
 	WCN_DBG(FM_NTC | RDSC, "PS[2]=%x %x %x %x %x %x %x %x\n", twice[0], twice[1], twice[2],
@@ -955,20 +955,20 @@ static fm_s32 rds_g2_rt_cmp(fm_u8 addr, fm_u16 cbc, fm_u8 subtype, fm_u8 *fresh,
 		if (fresh[j * addr + i] == once[j * addr + i]) {
 			twice[j * addr + i] = once[j * addr + i];	/* get the same byte 2 times */
 			cnt++;
-			WCN_DBG(FM_NTC | RDSC, "twice=%d\n", j * addr + i);
+			/* WCN_DBG(FM_NTC | RDSC, "twice=%d\n", j * addr + i); */
 		} else {
 			once[j * addr + i] = fresh[j * addr + i];	/* use new val */
-			WCN_DBG(FM_NTC | RDSC, "once=%d\n", j * addr + i);
+			/* WCN_DBG(FM_NTC | RDSC, "once=%d\n", j * addr + i); */
 		}
 	}
 #else
 	for (i = 0; i < j; i++) {
 		if (twice[j * addr + i] == once[j * addr + i]) {
 			cnt++;
-			WCN_DBG(FM_NTC | RDSC, "twice=%d\n", j * addr + i);
+			/* WCN_DBG(FM_NTC | RDSC, "twice=%d\n", j * addr + i); */
 		} else {
 			twice[j * addr + i] = once[j * addr + i];
-			WCN_DBG(FM_NTC | RDSC, "once=%d\n", j * addr + i);
+			/* WCN_DBG(FM_NTC | RDSC, "once=%d\n", j * addr + i); */
 		}
 	}
 #endif
