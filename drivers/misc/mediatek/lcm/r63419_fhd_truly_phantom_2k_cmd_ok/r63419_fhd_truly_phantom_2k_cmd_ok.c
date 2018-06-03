@@ -58,9 +58,9 @@ static const unsigned char LCD_MODULE_ID = 0x01; /*  haobing modified 2013.07.11
 /**
  * Local Constants
  */
-#define LCM_DSI_CMD_MODE	0
-#define FRAME_WIDTH		(1440)
-#define FRAME_HEIGHT		(2560)
+#define LCM_DSI_CMD_MODE	1
+#define FRAME_WIDTH		(1080)
+#define FRAME_HEIGHT		(1920)
 
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
 
@@ -102,6 +102,8 @@ static LCM_UTIL_FUNCS lcm_util;
 #define dsi_swap_port(swap)				lcm_util.dsi_swap_port(swap)
 
 #define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
+
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 
 #ifndef BUILD_LK
 #include <linux/kernel.h>
@@ -264,22 +266,28 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xB0, 1, {0x00} },
 	{0xD6, 1, {0x01} },
 #if (LCM_DSI_CMD_MODE)
-	{0xB3, 3, {0x04, 0x00, 0x00} },	/* Command mode WEM bit 1 */
+	{0xB3, 3, {0x00, 0x00, 0x00} },/* Command mode WEM bit 1 */
 #else
-	{0xB3, 3, {0x14, 0x00, 0x00} },	/* Video Mode */
+	{0xB3, 3, {0x18, 0x00, 0x00} },/* Video Mode */
 #endif
 	{0xB4, 1, {0x00} },
-	{0xB6, 2, {0x3A, 0xD3} },	/* 740Mbps ~ 1000Mbps */
+	{0xB6, 2, {0x3A, 0xC3} },/* 740Mbps ~ 1000Mbps */
 	{0xBE, 1, {0x04} },	/* This register controls DSI virtual channel of PortA setting. */
 	{0xC3, 3, {0x00, 0x00, 0x00} },	/* This register set to enable VSOUT, HSOUT output */
 	{0xC5, 1, {0x00} },
 	{0xC0, 4, {0x00, 0x00, 0x00, 0x00} },	/* #SOUT Slew rate adjustment */
 	/* Display setting 1 */
+#if (LCM_DSI_CMD_MODE)
+	{0xC1, 35, {0x00, 0x61, 0x00, 0x20, 0x8C, 0xA4, 0x16, 0xFB, 0xBF, 0x98, 0x83,
+		    0x9A, 0x7B, 0xCF, 0x35, 0x74, 0x4C, 0xF9, 0x9F, 0x2D, 0x95, 0x88,
+		    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x63, 0x23, 0x03, 0x00, 0xFF, 0x11} },
+#else
 	{0xC1, 35, {0x00, 0x61, 0x00, 0x20, 0x8C, 0xA4, 0x16, 0xFB, 0xBF, 0x98, 0x83, 0x9A, 0x7B,
 		    0xCF, 0x35, 0x74, 0x4C, 0xF9, 0x9F, 0x2D, 0x95, 0x88, 0x00, 0x00, 0x00,
 		    0x00, 0x00, 0x00, 0x02, 0x63, 0x23, 0x03, 0x00, 0xFF, 0x11} },
+#endif
 	/* Display setting 2 */
-	{0xC2, 8, {0x0A, 0x0A, 0x00, 0x08, 0x08, 0xF0, 0x00, 0x04} },	/*vbp, vfp */
+	{0xC2, 8, {0x0A, 0x0A, 0x00, 0x04, 0x04, 0xF0, 0x00, 0x04} },/* vbp,vfp */
 	/* Source timing setting */
 	{0xC4, 14,
 	 {0x70, 0x00, 0x00, 0x33, 0x33, 0x033, 0x33, 0x33, 0x33, 0x33, 0x33, 0x01, 0x05, 0x01} },
@@ -455,6 +463,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->height = FRAME_HEIGHT;
 	params->lcm_if = LCM_INTERFACE_DSI_DUAL;
 	params->lcm_cmd_if = LCM_INTERFACE_DSI0;
+	params->virtual_width = ALIGN_TO(FRAME_WIDTH, 32);
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode   = CMD_MODE;
@@ -473,8 +482,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* Highly depends on LCD driver capability. */
 	params->dsi.packet_size = 256;
-	params->dsi.ssc_disable = 0;
-	params->dsi.ssc_range = 3;
+	params->dsi.ssc_disable = 1;
+	/* params->dsi.ssc_range = 3; */
 	/* video mode timing */
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
@@ -499,7 +508,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.ufoe_params.lr_mode_en = 1;
 
 	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable      = 1;
+	params->dsi.customization_esd_check_enable      = 0;
 	params->dsi.lcm_esd_check_table[0].cmd          = 0x53;/* 0x0A; */
 	params->dsi.lcm_esd_check_table[0].count        = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x2C;/* 0x1C; */
@@ -692,7 +701,6 @@ static void lcm_resume(void)
 static void lcm_update(unsigned int x, unsigned int y,
 		       unsigned int width, unsigned int height)
 {
-#if (LCM_DSI_CMD_MODE)
 	unsigned int x0 = x;
 	unsigned int y0 = y;
 	unsigned int x1 = x0 + width - 1;
@@ -726,7 +734,6 @@ static void lcm_update(unsigned int x, unsigned int y,
 
 	data_array[0] = 0x002c3909;
 	dsi_set_cmdq(data_array, 1, 0);
-#endif
 }
 
 #define LCM_ID_R63419 (0x3419)
@@ -791,31 +798,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
   #endif
 }
 
-
-#define PARTIAL_WIDTH_ALIGN_LINE
-static inline int align_to(int value, int n, int lower_align)
-{
-	int x = value;
-
-	value = (((x) + ((n) - 1)) & ~((n) - 1));
-
-	if (lower_align) {
-		if (value > x)
-			value -= n;
-	} else {
-#ifndef PARTIAL_WIDTH_ALIGN_LINE
-		if (value <= x)
-			value += n;
-#else
-		if (value < x)
-			value += n;
-#endif
-	}
-	return value;
-}
-
-LCM_DRIVER r63419_wqhd_truly_phantom_vdo_lcm_drv = {
-	.name		= "r63419_wqhd_truly_phantom_2k_vdo_ok",
+LCM_DRIVER r63419_fhd_truly_phantom_lcm_drv = {
+	.name		= "r63419_fhd_truly_phantom_2k_cmd_ok",
 	.set_util_funcs	= lcm_set_util_funcs,
 	.get_params	= lcm_get_params,
 	.init		= lcm_init,
@@ -827,6 +811,8 @@ LCM_DRIVER r63419_wqhd_truly_phantom_vdo_lcm_drv = {
 	.suspend_power	= lcm_suspend_power,
 	.ata_check	= lcm_ata_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
+#if (LCM_DSI_CMD_MODE)
 	.update		= lcm_update,
+#endif
 };
 /* END PN:DTS2013053103858 , Added by d00238048, 2013.05.31*/
