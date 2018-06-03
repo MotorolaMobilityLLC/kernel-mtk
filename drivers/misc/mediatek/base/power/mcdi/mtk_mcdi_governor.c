@@ -312,17 +312,17 @@ int any_core_deepidle_sodi_check(int cpu)
 
 	/* Check power ON CPU status from SSPM */
 	if (!mcdi_cpu_cluster_on_off_stat_check(cpu)) {
-		any_core_cpu_cond_inc(CPU_ONOFF_STAT_FAIL_CNT);
+		any_core_cpu_cond_inc(MULTI_CORE_CNT);
 		goto end;
 	}
 
 	/* Check residency */
 	if (!any_core_deepidle_sodi_residency_check(cpu)) {
-		any_core_cpu_cond_inc(RESIDENCY_FAIL_CNT);
+		any_core_cpu_cond_inc(RESIDENCY_CNT);
 		goto end;
 	}
 
-	any_core_cpu_cond_inc(CPU_COND_PASS_CNT);
+	any_core_cpu_cond_inc(LAST_CORE_CNT);
 
 	state = MCDI_STATE_CLUSTER_OFF;
 
