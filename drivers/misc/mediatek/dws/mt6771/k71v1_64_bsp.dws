@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="09.26.2017.13:53:56"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.23.2017.09:48:50"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -91,7 +91,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint6>
             <eint7>
-                <varName>HEADSET</varName>
+                <varName>ACCDET</varName>
                 <debounce_time>256</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
