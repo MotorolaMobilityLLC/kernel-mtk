@@ -74,19 +74,47 @@
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+};
 
+&i2c1 {
 /*  start sensor */
-	cust_accel@0 {
-		compatible = "mediatek,mc3410";
+	gsensor@4c {
 		i2c_num	= <1>;
 		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	};
+
+	msensor@0c {
+		i2c_num = <1>;
+		i2c_addr = <0x0d 0 0 0>;
+		direction = <8>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		is_batch_supported = <0>;
+	};
+
+	gyro@68 {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&gyro_intpin_default>;
+		pinctrl-1 = <&gyro_intpin_cfg>;
+		i2c_num = <1>;
+		i2c_addr = <0x68 0 0 0>;
+		direction = <5>;
 		power_id = <0xffff>;
 		power_vol = <0>;
 		firlen = <0>;
 		is_batch_supported = <0>;
 	};
-	cust_alsps@0 {
-		compatible = "mediatek,cm36558";
+
+	alsps@51 {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&alsps_intpin_default>;
+		pinctrl-1 = <&alsps_intpin_cfg>;
+		status = "okay";
+		/* customization */
 		i2c_num = <1>;
 		i2c_addr = <0x51 0 0 0>;
 		polling_mode_ps = <0>;
@@ -100,31 +128,10 @@
 		is_batch_supported_ps = <0>;
 		is_batch_supported_als = <0>;
 	};
-	cust_mag@0 {
-		compatible			= "mediatek,akm09918";
-		i2c_num				= <1>;
-		/* i2c_addr			= <0x0C 0 0 0>; */
-		direction			= <8>;
-		power_id			= <0xffff>;
-		power_vol			= <0>;
-		/* is_batch_supported		= <0>; */
-	};
 
-	cust_gyro@0 {
-		compatible			= "mediatek,itg1010";
-		i2c_num				= <1>;
-		/* i2c_addr			= <0x68 0 0 0>; */
-		direction			= <5>;
-		power_id			= <0xffff>;
-		power_vol			= <0>;
-		firlen				= <0>;
-		is_batch_supported		= <0>;
-	};
-
-	cust_baro@0 {
-		compatible = "mediatek,bmp280new";
+	barometer@77 {
 		i2c_num = <1>;
-		/* i2c_addr = <0x77 0 0 0>; */
+		i2c_addr = <0x77 0 0 0>;
 		direction = <0>;
 		power_id = <0xffff>;
 		power_vol = <0>;
@@ -151,14 +158,6 @@
 	};
 };
 
-&gyro {
-	pinctrl-names = "pin_default", "pin_cfg";
-	pinctrl-0 = <&gyro_intpin_default>;
-	pinctrl-1 = <&gyro_intpin_cfg>;
-	status = "okay";
-
-};
-
 &pio {
 	alsps_intpin_cfg: alspspincfg {
 
@@ -174,12 +173,6 @@
 	};
 };
 
-&alsps_mtk {
-	pinctrl-names = "pin_default", "pin_cfg";
-	pinctrl-0 = <&alsps_intpin_default>;
-	pinctrl-1 = <&alsps_intpin_cfg>;
-	status = "okay";
-};
 /* sensor end */
 
 /* DISPSYS GPIO standardization */
