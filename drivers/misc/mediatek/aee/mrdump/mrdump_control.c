@@ -122,6 +122,7 @@ static int __init mrdump_get_cb(char *p)
 }
 early_param("mrdump_cb", mrdump_get_cb);
 
+#if defined(CONFIG_KALLSYMS) && !defined(CONFIG_KALLSYMS_BASE_RELATIVE)
 static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *kparam)
 {
 	unsigned long start_addr = (unsigned long) &kallsyms_addresses;
@@ -157,6 +158,12 @@ static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *kparam)
 	kparam->token_index_off =
 		(unsigned long)&kallsyms_token_index - start_addr;
 }
+#else
+static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *unused)
+{
+}
+
+#endif
 
 __init void mrdump_cblock_init(void)
 {
