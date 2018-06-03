@@ -144,7 +144,7 @@ int systracker_handler(unsigned long addr,
 }
 
 /* ARM32 version */
-static int systracker_platform_hook_fault(void)
+static int __init systracker_platform_hook_fault(void)
 {
 
 #ifdef CONFIG_ARM_LPAE
