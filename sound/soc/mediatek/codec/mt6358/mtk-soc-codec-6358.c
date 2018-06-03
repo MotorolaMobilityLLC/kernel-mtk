@@ -199,6 +199,7 @@ static int apply_n12db_gain;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
+static bool mIsNeedPullDown = true;
 
 int (*enable_dc_compensation)(bool enable) = NULL;
 int (*set_lch_dc_compensation)(int value) = NULL;
@@ -1405,7 +1406,11 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		return false;
 
 	if (bEnable == true) {
+		mIsNeedPullDown = false;
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
+
+		/* Disable headphone short-circuit protection */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 
 		/* Reduce ESD resistance of AU_REFN */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
@@ -1415,8 +1420,8 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON2, 0x002c, 0xffff);
 		/* Toggle RG_DIVCKS_CHG */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON0, 0x0001, 0xffff);
-		/* Set NCP soft start mode as default mode: 100us */
-		Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
+		/* Set NCP soft start mode as default mode: 150us */
+		Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0002, 0xffff);
 		/* Enable NCP */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
 		udelay(250);
@@ -1429,9 +1434,6 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 
 		/* Disable AUD_ZCD */
 		Hp_Zcd_Enable(false);
-
-		/* Disable headphone short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
@@ -1494,7 +1496,17 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable NCP */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
 
+		/* Set HPL/HPR gain to mute */
+		Ana_Set_Reg(ZCD_CON2, DL_GAIN_N_10DB_REG, 0xffff);
+
+		/* Set HPP/N STB enhance circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x33, 0xff);
+
+		/* Increase ESD resistance of AU_REFN */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0, 0x1 << 14);
+
 		TurnOffDacPower();
+		mIsNeedPullDown = true;
 	}
 	return true;
 }
@@ -1946,7 +1958,7 @@ static void get_hp_trim_offset(void)
 #else
 #define TRIM_TIMES 26
 #endif
-#define TRIM_DISCARD_NUM 3
+#define TRIM_DISCARD_NUM 1
 #define TRIM_USEFUL_NUM (TRIM_TIMES - (TRIM_DISCARD_NUM * 2))
 
 	int on_valueL[TRIM_TIMES], on_valueR[TRIM_TIMES];
@@ -3006,8 +3018,10 @@ static void TurnOnDacPower(int device)
 	/* Enable AUDGLB */
 	NvregEnable(true);
 
-	/* Pull-down HPL/R to AVSS28_AUD */
-	hp_pull_down(true);
+	if (mIsNeedPullDown) {
+		/* Pull-down HPL/R to AVSS28_AUD */
+		hp_pull_down(true);
+	}
 	/* release HP CMFB gate rstb */
 	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x1 << 6, 0x1 << 6);
 
@@ -3069,8 +3083,10 @@ static void TurnOffDacPower(void)
 
 	/* Set HP CMFB gate rstb */
 	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0, 0x1 << 6);
-	/* disable Pull-down HPL/R to AVSS28_AUD */
-	hp_pull_down(false);
+	if (mIsNeedPullDown) {
+		/* disable Pull-down HPL/R to AVSS28_AUD */
+		hp_pull_down(false);
+	}
 
 	NvregEnable(false);
 	audckbufEnable(false);
@@ -7194,6 +7210,7 @@ static void InitGlobalVarDefault(void)
 	ClsqCount = 0;
 	TopCkCount = 0;
 	NvRegCount = 0;
+	mIsNeedPullDown = true;
 }
 
 static struct task_struct *dc_trim_task;
