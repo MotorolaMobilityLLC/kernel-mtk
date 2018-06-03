@@ -96,6 +96,7 @@
 struct pm_qos_request isp_qos;
 struct pm_qos_request camsys_qos_request[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
 static struct ISP_PM_QOS_STRUCT G_PM_QOS[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
+static u32 PMQoS_BW_value;
 #else
 struct mmdvfs_pm_qos_request isp_qos;
 #endif
@@ -1716,8 +1717,12 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 		break;
 	}
 	pm_qos_update_request(&camsys_qos_request[module], bw_cal);
-	LOG_INF("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n", module, cmd,
-		G_PM_QOS[module].bw_sum, G_PM_QOS[module].fps, bw_cal);
+
+	if (PMQoS_BW_value != bw_cal) {
+		LOG_INF("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n", module, cmd,
+			G_PM_QOS[module].bw_sum, G_PM_QOS[module].fps, bw_cal);
+		PMQoS_BW_value = bw_cal;
+	}
 
 	return Ret;
 }
@@ -2784,6 +2789,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				ispclks.clklevel[lv] = freq_steps[lv];
 				LOG_VRB("DFS Clk level[%d]:%d", lv, ispclks.clklevel[lv]);
 			}
+
+			target_clk = ispclks.clklevel[ispclks.clklevelcnt - 1];
 		#else
 			/* To get how many clk levels this platform is supported */
 			ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
@@ -2800,6 +2807,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 							MMDVFS_PM_QOS_SUB_SYS_CAMERA, lv);
 				LOG_VRB("DFS Clk level[%d]:%d", lv, ispclks.clklevel[lv]);
 			}
+
+			target_clk = ispclks.clklevel[ispclks.clklevelcnt - 1];
 		#endif
 			if (copy_to_user((void *)Param, &ispclks, sizeof(struct ISP_CLK_INFO)) != 0) {
 				LOG_NOTICE("copy_to_user failed");
@@ -2812,7 +2821,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			struct ISP_GET_CLK_INFO getclk;
 
 			#ifdef CONFIG_MTK_QOS_SUPPORT
-			getclk.curClk = pm_qos_request(PM_QOS_CAM_FREQ);
+			getclk.curClk = (u32)mmdvfs_qos_get_freq(PM_QOS_CAM_FREQ);
 			#else
 			getclk.curClk = mmdvfs_qos_get_cur_thres(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
 			#endif
