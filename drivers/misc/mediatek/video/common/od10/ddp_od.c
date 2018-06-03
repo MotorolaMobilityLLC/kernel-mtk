@@ -205,9 +205,9 @@ static void _od_reg_init(void *cmdq)
 
 static void od_refresh_screen(void)
 {
-#if defined(CONFIG_ARCH_ELBRUS)
+#if defined(CONFIG_MACH_ELBRUS)
 	return;
-#elif defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6795)
+#elif defined(CONFIG_MACH_MT6753) || defined(CONFIG_MACH_MT6795)
 	if (g_od_ddp_notify != NULL)
 		g_od_ddp_notify(DISP_MODULE_OD, DISP_PATH_EVENT_TRIGGER);
 #else
@@ -709,7 +709,7 @@ void disp_od_set_smi_clock(int enabled)
 
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_ARCH_ELBRUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_ELBRUS)
 	larb_clk = DISP0_SMI_LARB4;
 #elif defined(CONFIG_MACH_MT6799)
 	larb_clk = DISP0_SMI_LARB1;
@@ -884,7 +884,7 @@ static int disp_od_ioctl_ctlcmd(enum DISP_MODULE_ENUM module, int msg, unsigned 
 	return 0;
 }
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6797)
 static int _od_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
@@ -1207,7 +1207,7 @@ struct DDP_MODULE_DRIVER ddp_driver_od = {
 	.set_lcm_utils   = NULL,
 	.cmd             = disp_od_ioctl,
 	.set_listener    = od_set_listener,
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6797)
 	.ioctl           = disp_od_io
 #endif
 };

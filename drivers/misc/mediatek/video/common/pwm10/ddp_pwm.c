@@ -22,9 +22,9 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -574,10 +574,10 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 #ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
-#if defined(CONFIG_ARCH_MT6752)
+#if defined(CONFIG_MACH_MT6752)
 		enable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		enable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_MACH_MT6580)
 		enable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
 #else
 		enable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
@@ -620,10 +620,10 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	if (module == DISP_MODULE_PWM0) {
 		atomic_set(&g_pwm_backlight[0], 0);
 #ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
-#if defined(CONFIG_ARCH_MT6752)
+#if defined(CONFIG_MACH_MT6752)
 		disable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		disable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_MACH_MT6580)
 		disable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
 #else
 		disable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");

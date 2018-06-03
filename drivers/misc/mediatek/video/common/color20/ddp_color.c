@@ -17,15 +17,15 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <disp_drv_platform.h>
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
 
-#if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #include <mach/mt_clkmgr.h>
-#elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+#elif defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #include "ddp_clkmgr.h"
@@ -37,7 +37,7 @@
 #include "ddp_color.h"
 #include "cmdq_def.h"
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
@@ -971,11 +971,11 @@ static int g_tdshp_flag;	/* 0: normal, 1: tuning mode */
 int ncs_tuning_mode;
 int tdshp_index_init;
 
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #define TDSHP_PA_BASE   0x14009000
 #define TDSHP1_PA_BASE  0x1400A000
 static unsigned long g_tdshp1_va;
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define TDSHP_PA_BASE   0x14009000
 #else
@@ -983,7 +983,7 @@ static unsigned long g_tdshp1_va;
 #endif
 
 #ifdef DISP_MDP_COLOR_ON
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define MDP_COLOR_PA_BASE 0x1400A000
 #else
@@ -1159,7 +1159,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
 #endif
 
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
 #else
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x11, 0x11); /* also set no rounding on Y2R */
@@ -1193,11 +1193,11 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 				, 0x00FF00FF);
 	}
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6799)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_ARCH_MT6797) && !defined(CONFIG_MACH_MT6799)
+#if !defined(CONFIG_MACH_MT6797) && !defined(CONFIG_MACH_MT6799)
 	/* set cboost_en = 0 for projects before 6755 */
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 #endif
@@ -1458,7 +1458,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
 #endif
 
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
 #else
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x11, 0x11); /* also set no rounding on Y2R */
@@ -1489,11 +1489,11 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 			(color_reg->PARTIAL_Y[2 * index + 1] << 16)), 0x00FF00FF);
 	}
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6799)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_ARCH_MT6797) && !defined(CONFIG_MACH_MT6799)
+#if !defined(CONFIG_MACH_MT6797) && !defined(CONFIG_MACH_MT6799)
 	/* set cboost_en = 0 for projects before 6755 */
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 #endif
@@ -1751,7 +1751,7 @@ static unsigned long color_get_TDSHP_VA(void)
 {
 	unsigned long VA;
 	struct device_node *node = NULL;
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp0");
 #else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_tdshp");
@@ -1762,7 +1762,7 @@ static unsigned long color_get_TDSHP_VA(void)
 	return VA;
 }
 
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 static unsigned long color_get_TDSHP1_VA(void)
 {
 	unsigned long VA;
@@ -1900,7 +1900,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "TDSHP0");
 		return 2;
 	}
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	else if ((addr >= g_tdshp1_va) && (addr < (g_tdshp1_va + 0x1000))) {	/* TDSHP1 */
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "TDSHP1");
 		return 2;
@@ -1931,7 +1931,7 @@ static unsigned long color_pa2va(unsigned int addr)
 			  TDSHP_PA_BASE, g_tdshp_va);
 		return g_tdshp_va + (addr - TDSHP_PA_BASE);
 	}
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	/* TDSHP1 */
 	if ((addr >= TDSHP1_PA_BASE) && (addr < (TDSHP1_PA_BASE + 0x1000))) {
 		COLOR_DBG("color_pa2va(), TDSHP1 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
@@ -1998,7 +1998,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	switch (reg_id) {
 	case SWREG_COLOR_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_ELBRUS) \
 	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
 #else
@@ -2009,7 +2009,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACHMT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
 		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; */
@@ -2019,7 +2019,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_AAL_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_AAL0];
 #else
@@ -2031,7 +2031,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CCORR_SUPPORT)
 	case SWREG_CCORR_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
 #else
@@ -2185,13 +2185,13 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
 		enable_clock(MT_CG_DISP0_DISP_COLOR0, "DDP");
 		COLOR_DBG("color[0]_clock_on CG 0x%x\n",
@@ -2223,13 +2223,13 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	if (module == DISP_MODULE_COLOR0) {
 		COLOR_DBG("color[0]_clock_off\n");
 		disable_clock(MT_CG_DISP0_DISP_COLOR0, "DDP");
@@ -2264,7 +2264,7 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #ifdef DISP_MDP_COLOR_ON
 	g_mdp_color_va = color_get_MDP_COLOR_VA();
 #endif
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 	g_tdshp1_va = color_get_TDSHP1_VA();
 #endif
 #if defined(SUPPORT_ULTRA_RESOLUTION)
@@ -2301,7 +2301,7 @@ static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 		g_color1_dst_w = pConfig->dst_w;
 		g_color1_dst_h = pConfig->dst_h;
 		offset = C1_OFFSET;
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, pConfig->dst_w
 			, 0x00003FFF);  /* wrapper width */
@@ -2353,7 +2353,7 @@ static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 static int _color_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	if (module == DISP_MODULE_COLOR1) {
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
 		/* set bypass to COLOR1 */
 		{
@@ -2404,7 +2404,7 @@ static int _color_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *
 		g_color1_dst_w = width;
 		g_color1_dst_h = height;
 		offset = C1_OFFSET;
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, width
 			, 0x00003FFF);  /* wrapper width */
@@ -2922,7 +2922,7 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
 #endif
 
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 		_color_reg_mask(NULL, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);	/* also set no rounding on Y2R */
 #else
 		_color_reg_mask(NULL, DISP_COLOR_CM2_EN + offset, 0x11, 0x11);	/* also set no rounding on Y2R */
@@ -2943,7 +2943,7 @@ static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_ha
 
 	/* only get COLOR HIST on primary display */
 	if ((module == DISP_MODULE_COLOR0) && (state == CMDQ_AFTER_STREAM_EOF)) {
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_ELBRUS) \
 	|| defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
