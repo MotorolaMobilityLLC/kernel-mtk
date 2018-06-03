@@ -455,7 +455,6 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 /*
  * PMIC Interrupt service
  */
-static DEFINE_MUTEX(pmic_mutex);
 struct task_struct *pmic_thread_handle;
 
 #if !defined CONFIG_HAS_WAKELOCKS
@@ -703,15 +702,11 @@ int pmic_thread_kthread(void *x)
 	/* try to modify pmic irq priority to NICE = -19 */
 	set_user_nice(current, (MIN_NICE + 1));
 #endif
-	set_current_state(TASK_INTERRUPTIBLE);
 
 	PMICLOG("[PMIC_INT] enter\n");
 
-	/*pmic_enable_charger_detection_int(0);*/
-
 	/* Run on a process content */
 	while (1) {
-		mutex_lock(&pmic_mutex);
 #ifdef IPIMB
 #else
 		pwrap_eint_status = pmic_wrap_eint_status();
@@ -730,7 +725,6 @@ int pmic_thread_kthread(void *x)
 					status_reg, sp_int_status);
 			}
 		}
-		mutex_unlock(&pmic_mutex);
 		pmic_wake_unlock(&pmicThread_lock);
 
 		set_current_state(TASK_INTERRUPTIBLE);

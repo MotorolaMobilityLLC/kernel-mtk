@@ -369,7 +369,7 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 /*
  * PMIC Interrupt service
  */
-static DEFINE_MUTEX(pmic_mutex);
+/*static DEFINE_MUTEX(pmic_mutex);*/
 struct task_struct *pmic_thread_handle;
 
 #if !defined CONFIG_HAS_WAKELOCKS
@@ -561,7 +561,7 @@ int pmic_thread_kthread(void *x)
 	struct sched_param param = {.sched_priority = 98 };
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
-	set_current_state(TASK_INTERRUPTIBLE);
+	/*set_current_state(TASK_INTERRUPTIBLE);*/
 
 	PMICLOG("[PMIC_INT] enter\n");
 
@@ -570,7 +570,7 @@ int pmic_thread_kthread(void *x)
 	/* Run on a process content */
 	while (1) {
 		set_current_state(TASK_RUNNING);
-		mutex_lock(&pmic_mutex);
+		/*mutex_lock(&pmic_mutex);*/
 #ifdef IPIMB
 #else
 		pwrap_eint_status = pmic_wrap_eint_status();
@@ -592,7 +592,7 @@ int pmic_thread_kthread(void *x)
 
 		/*mdelay(1); TBD*/
 
-		mutex_unlock(&pmic_mutex);
+		/*mutex_unlock(&pmic_mutex);*/
 		pmic_wake_unlock(&pmicThread_lock);
 
 		set_current_state(TASK_INTERRUPTIBLE);
