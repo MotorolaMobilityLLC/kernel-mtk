@@ -22,6 +22,7 @@
 #include <linux/atomic.h>
 #include <linux/fs.h>
 #include <linux/file.h>
+#include <linux/seq_file.h>
 
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <aee.h>
@@ -333,6 +334,8 @@ void mtk_iommu_log_dump(void *seq_file)
 		return;
 
 	s = (struct seq_file *)seq_file;
+	seq_puts(s, "---------------------------------------------------\n");
+	seq_puts(s, "Time  | Action |iova_start | size  | port |iova_end\n");
 	for (i = 0; i < IOMMU_MAX_EVENT_COUNT; i++) {
 		unsigned int end_iova = 0;
 
@@ -342,7 +345,7 @@ void mtk_iommu_log_dump(void *seq_file)
 		event_id = iommu_globals.record[i].event_id;
 		if (event_id <= IOMMU_UNMAP)
 			end_iova = iommu_globals.record[i].data1 +
-				iommu_globals.record[i].data2;
+				iommu_globals.record[i].data2 - 1;
 
 		seq_printf(s, "%d.%-7d |%10s |0x%-8x |%9u |0x%-8x |0x%-8x\n",
 			   iommu_globals.record[i].time_high,
@@ -360,8 +363,9 @@ static void mtk_iommu_system_time(unsigned int *low, unsigned int *high)
 	unsigned long long temp;
 
 	temp = sched_clock();
-	*low = (unsigned int)((temp & 0xffffffff) / 1000);
-	*high = (unsigned int)((temp >> 32) & 0xffffffff);
+	do_div(temp, 1000);
+	*low = do_div(temp, 1000000);
+	*high = (unsigned int)temp;
 }
 
 void mtk_iommu_trace_rec_write(int event,
