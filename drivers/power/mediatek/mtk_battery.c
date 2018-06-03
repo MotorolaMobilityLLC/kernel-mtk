@@ -3399,6 +3399,7 @@ static ssize_t store_FG_daemon_log_level(struct device *dev, struct device_attri
 			val = 0;
 		}
 		gFG_daemon_log_level = val;
+		Enable_BATDRV_LOG = val;
 		bm_err("[FG_daemon_log_level] gFG_daemon_log_level=%d\n", gFG_daemon_log_level);
 	}
 	return size;
@@ -3445,6 +3446,27 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 	return size;
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
+
+static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct device_attribute *attr,
+						  char *buf)
+{
+	int ret_value = 8888;
+
+	ret_value = battery_get_bat_avg_current();
+	bm_err("[EM] FG_Battery_CurrentConsumption : %d/10 mA\n", ret_value);
+	return sprintf(buf, "%d\n", ret_value);
+}
+
+static ssize_t store_FG_Battery_CurrentConsumption(struct device *dev,
+						   struct device_attribute *attr, const char *buf,
+						   size_t size)
+{
+	bm_err("[EM] Not Support Write Function\n");
+	return size;
+}
+
+static DEVICE_ATTR(FG_Battery_CurrentConsumption, 0664, show_FG_Battery_CurrentConsumption,
+		   store_FG_Battery_CurrentConsumption);
 
 static int battery_callback(struct notifier_block *nb, unsigned long event, void *v)
 {
@@ -3762,8 +3784,10 @@ static int battery_probe(struct platform_device *dev)
 	int ret;
 	struct class_device *class_dev = NULL;
 	const char *fg_swocv_v = NULL;
+	char fg_swocv_v_tmp[10];
 	int fg_swocv_v_len = 0;
 	const char *fg_swocv_i = NULL;
+	char fg_swocv_i_tmp[10];
 	int fg_swocv_i_len = 0;
 
 /********* adc_cdev **********/
@@ -3860,6 +3884,7 @@ static int battery_probe(struct platform_device *dev)
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
 	fgtimer_service_init();
 
 	fgtimer_init(&tracking_timer, &dev->dev, "tracking_timer");
@@ -3880,9 +3905,10 @@ static int battery_probe(struct platform_device *dev)
 	if (fg_swocv_v == NULL) {
 		bm_err(" fg_swocv_v == NULL len = %d\n", fg_swocv_v_len);
 	} else {
-		ret = kstrtoint(fg_swocv_v, 10, &ptim_lk_v);
-		bm_err(" fg_swocv_v = %s len %d fg_swocv_v[%d]\n",
-			fg_swocv_v, fg_swocv_v_len, ptim_lk_v);
+		snprintf(fg_swocv_v_tmp, (fg_swocv_v_len + 1), "%s", fg_swocv_v);
+		ret = kstrtoint(fg_swocv_v_tmp, 10, &ptim_lk_v);
+		bm_err(" fg_swocv_v = %s len %d fg_swocv_v_tmp %s ptim_lk_v[%d]\n",
+			fg_swocv_v, fg_swocv_v_len, fg_swocv_v_tmp, ptim_lk_v);
 	}
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
@@ -3890,13 +3916,14 @@ static int battery_probe(struct platform_device *dev)
 	if (fg_swocv_i == NULL) {
 		bm_err(" fg_swocv_i == NULL len = %d\n", fg_swocv_i_len);
 	} else {
-		ret = kstrtoint(fg_swocv_i, 10, &ptim_lk_i);
+		snprintf(fg_swocv_i_tmp, (fg_swocv_i_len + 1), "%s", fg_swocv_i);
+		ret = kstrtoint(fg_swocv_i_tmp, 10, &ptim_lk_i);
 		if (ptim_lk_i < 0) {
 			ptim_lk_i_sign = 1;
 			ptim_lk_i = 0 - ptim_lk_i;
 		}
-		bm_err(" fg_swocv_i = %s len %d fg_swocv_i[%d] sign[%d]\n",
-			fg_swocv_i, fg_swocv_i_len, ptim_lk_i, ptim_lk_i_sign);
+		bm_err(" fg_swocv_i = %s len %d fg_swocv_i_tmp %s ptim_lk_i[%d] sign[%d]\n",
+			fg_swocv_i, fg_swocv_i_len, fg_swocv_i_tmp, ptim_lk_i, ptim_lk_i_sign);
 	}
 
 #endif

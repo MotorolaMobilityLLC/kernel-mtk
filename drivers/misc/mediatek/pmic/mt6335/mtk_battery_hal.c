@@ -2573,8 +2573,11 @@ static signed int read_hw_ocv(void *data)
 				}
 			}
 		} else {
-			_hw_ocv = _hw_ocv_35_plugin;
-			_hw_ocv_src = FROM_6335_PLUG_IN;
+			/* fixme: swocv is workaround */
+			/*_hw_ocv = _hw_ocv_35_plugin;*/
+			/*_hw_ocv_src = FROM_6335_PLUG_IN;*/
+			_hw_ocv = _sw_ocv;
+			_hw_ocv_src = FROM_SW_OCV;
 			if (MTK_CHR_EXIST != 1) {
 				if ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
 					_prev_hw_ocv = _hw_ocv;
