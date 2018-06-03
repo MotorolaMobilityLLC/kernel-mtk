@@ -53,7 +53,7 @@ struct DISP_EXEC_COMMAND {
 /* PQ */
 #define COLOR_TUNING_INDEX 19
 #define THSHP_TUNING_INDEX 12
-#define THSHP_PARAM_MAX 121 /*Everest Revision*/
+#define THSHP_PARAM_MAX 83
 #define PARTIAL_Y_INDEX 10
 
 #define GLOBAL_SAT_SIZE 10
@@ -68,8 +68,6 @@ struct DISP_EXEC_COMMAND {
 #define GRASS_TONE_SIZE 6	/* (-2) */
 #define SKY_TONE_SIZE 3
 #define CCORR_COEF_CNT 4 /* ccorr feature */
-#define S_GAIN_BY_Y_CONTROL_CNT 5
-#define S_GAIN_BY_Y_HUE_PHASE_CNT 20
 
 struct DISP_PQ_PARAM {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
@@ -126,10 +124,7 @@ struct DISPLAY_PQ_T {
 	unsigned int SKIN_TONE_H[COLOR_TUNING_INDEX][SKIN_TONE_SIZE];
 	unsigned int GRASS_TONE_H[COLOR_TUNING_INDEX][GRASS_TONE_SIZE];
 	unsigned int SKY_TONE_H[COLOR_TUNING_INDEX][SKY_TONE_SIZE];
-	unsigned int  CCORR_COEF[CCORR_COEF_CNT][3][3];
-	unsigned int S_GAIN_BY_Y[S_GAIN_BY_Y_CONTROL_CNT][S_GAIN_BY_Y_HUE_PHASE_CNT];
-	unsigned int S_GAIN_BY_Y_EN;
-	unsigned int LSP_EN;
+	unsigned int CCORR_COEF[CCORR_COEF_CNT][3][3];
 };
 
 struct DISPLAY_COLOR_REG {
@@ -145,9 +140,6 @@ struct DISPLAY_COLOR_REG {
 	unsigned int SKIN_TONE_H[SKIN_TONE_SIZE];
 	unsigned int GRASS_TONE_H[GRASS_TONE_SIZE];
 	unsigned int SKY_TONE_H[SKY_TONE_SIZE];
-	unsigned int S_GAIN_BY_Y[S_GAIN_BY_Y_CONTROL_CNT][S_GAIN_BY_Y_HUE_PHASE_CNT];
-	unsigned int S_GAIN_BY_Y_EN;
-	unsigned int LSP_EN;
 };
 
 
