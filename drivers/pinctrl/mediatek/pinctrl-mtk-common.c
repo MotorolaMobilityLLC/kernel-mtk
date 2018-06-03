@@ -2192,6 +2192,105 @@ int mtk_pctrl_get_gpio_chip_base(void)
 #endif
 }
 
+#ifdef CONFIG_PINCTRL_TEST
+static void mtk_pinctrl_test(void)
+{
+	int i, val, res;
+
+	pr_info("pinctrl test start\n");
+
+	pr_info("pinctrl mode test start\n");
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		for (val = 0; val < 8; val++) {
+			res = mtk_pinctrl_set_gpio_mode(pctl, i, val);
+			if (res)
+				pr_warn("GPIO %d set mode %d failed\n", i, val);
+			if (val != mtk_pinctrl_get_gpio_mode(pctl, i))
+				pr_warn("GPIO %d get mode %d failed, real get %d\n",
+				i, val, mtk_pinctrl_get_gpio_mode(pctl, i));
+		}
+	}
+	pr_info("pinctrl mode test end\n");
+
+	pr_info("pinctrl direction test start\n");
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
+		for (val = 0; val < 2; val++) {
+			res = mtk_pinctrl_set_gpio_direction(pctl, i, val);
+			if (res)
+				pr_warn("GPIO %d set dir %d failed\n", i, val);
+			if (val != mtk_pinctrl_get_gpio_direction(pctl, i))
+				pr_warn("GPIO %d get dir %d failed, real get %d\n",
+				i, val, mtk_pinctrl_get_gpio_direction(pctl, i));
+		}
+	}
+	pr_info("pinctrl direction test end\n");
+
+	pr_info("pinctrl output test start\n");
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
+		mtk_pinctrl_set_gpio_direction(pctl, i, 1);
+		for (val = 0; val < 2; val++) {
+			res = mtk_pinctrl_set_gpio_output(pctl, i, val);
+			if (res)
+				pr_warn("GPIO %d set output %d failed\n", i, val);
+			if (val != mtk_pinctrl_get_gpio_output(pctl, i))
+				pr_warn("GPIO %d get output %d failed, real get %d\n",
+				i, val, mtk_pinctrl_get_gpio_output(pctl, i));
+		}
+	}
+	pr_info("pinctrl output test end\n");
+
+	pr_info("pinctrl smt test start\n");
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
+		for (val = 0; val < 2; val++) {
+			res = mtk_pinctrl_set_gpio_smt(pctl, i, val);
+			if (res)
+				pr_warn("GPIO %d set smt %d failed\n", i, val);
+			if (val != mtk_pinctrl_get_gpio_smt(pctl, i))
+				pr_warn("GPIO %d get smt %d failed, real get %d\n",
+				i, val, mtk_pinctrl_get_gpio_smt(pctl, i));
+		}
+	}
+	pr_info("pinctrl output test end\n");
+
+	pr_info("pinctrl pull test start\n");
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		mtk_pinctrl_set_gpio_mode(pctl, i, 0);
+		/*pull disable test*/
+		pctl->devdata->mtk_pctl_set_pull(pctl, i,
+						false, false, 0x0);
+		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
+		if (res)
+			pr_warn("GPIO %d get pullen 0 failed, real 1\n", i);
+		/*pull down test*/
+		pctl->devdata->mtk_pctl_set_pull(pctl, i,
+						true, false, 0x3);
+		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
+		if (!res)
+			pr_warn("GPIO %d get pullen 1 failed, real 0\n", i);
+		res = pctl->devdata->mtk_pctl_get_pull_sel(pctl, i);
+		res = (res >= 0) ? (res&1) : -1;
+		if (res)
+			pr_warn("GPIO %d get pullsel 0 failed, real 1\n", i);
+		/*pull up test*/
+		pctl->devdata->mtk_pctl_set_pull(pctl, i,
+						true, true, 0x3);
+		res = pctl->devdata->mtk_pctl_get_pull_en(pctl, i);
+		if (!res)
+			pr_warn("GPIO %d get pullen 1 failed, real 0\n", i);
+		res = pctl->devdata->mtk_pctl_get_pull_sel(pctl, i);
+		res = (res >= 0) ? (res&1) : -1;
+		if (!res)
+			pr_warn("GPIO %d get pullsel 1 failed, real 0\n", i);
+		}
+	pr_info("pinctrl pull test end\n");
+
+	pr_info("pinctrl test end\n");
+}
+#endif
+
 int mtk_pctrl_init(struct platform_device *pdev,
 		const struct mtk_pinctrl_devdata *data,
 		struct regmap *regmap)
@@ -2301,6 +2400,9 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		ret = -EINVAL;
 		goto chip_error;
 	}
+#ifdef CONFIG_PINCTRL_TEST
+	mtk_pinctrl_test();
+#endif
 
 	if (mt_gpio_create_attr(&pdev->dev))
 		pr_warn("mt_gpio create attribute error\n");
