@@ -48,7 +48,8 @@
 /* #define MTK_NAND_CHIP_TEST */
 /* #define MTK_NAND_CHIP_DUMP_DATA_TEST */
 #define MTK_NAND_CHIP_MULTI_PLANE_TEST
-#define MTK_NAND_READ_COMPARE
+/* #define MTK_NAND_READ_COMPARE */
+#define MTK_NAND_PERFORMANCE_TEST
 
 extern flashdev_info_t devinfo;
 extern bool tlc_snd_phyplane;
