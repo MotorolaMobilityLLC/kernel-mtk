@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,6 +21,10 @@
 #elif defined(CONFIG_MACH_MT6799)
 
 #include "spm_v3/mtk_spm_reg.h"
+
+#elif defined(CONFIG_MACH_MT6775)
+
+#include "spm_v3/mtk_spm_reg_mt6775.h"
 
 #elif defined(CONFIG_MACH_MT6759)
 

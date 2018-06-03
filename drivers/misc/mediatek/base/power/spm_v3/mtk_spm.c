@@ -240,6 +240,7 @@ int spm_load_firmware_status(void)
 	if (local_spm_load_firmware_status == -1)
 		local_spm_load_firmware_status =
 			mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
+
 	return local_spm_load_firmware_status;
 }
 
@@ -707,6 +708,7 @@ EXPORT_SYMBOL(mt_spm_for_gps_only);
 void mt_spm_dcs_s1_setting(int enable, int flags)
 {
 	flags &= 0xf;
+
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DCS_S1, enable, flags, 0);
 }
 EXPORT_SYMBOL(mt_spm_dcs_s1_setting);

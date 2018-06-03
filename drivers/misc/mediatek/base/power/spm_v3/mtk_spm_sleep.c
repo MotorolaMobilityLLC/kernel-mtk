@@ -259,13 +259,23 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_conn_ddr_en_mask_b = 1,
 
 	/* SPM_SRC2_MASK */
+#if defined(CONFIG_MACH_MT6775)
+	.reg_disp0_apsrc_req_mask_b = 0,
+	.reg_disp1_apsrc_req_mask_b = 0,
+#else
 	.reg_disp0_req_mask_b = 0,
 	.reg_disp1_req_mask_b = 0,
+#endif
 	.reg_disp_od_req_mask_b = 0,
 	.reg_mfg_req_mask_b = 0,
 	.reg_vdec0_req_mask_b = 0,
+#if defined(CONFIG_MACH_MT6775)
+	.reg_gce_apsrc_req_mask_b = 0,
+	.reg_gce_ddr_en_req_mask_b = 0,
+#else
 	.reg_gce_req_mask_b = 0,
 	.reg_gce_vrf18_req_mask_b = 0,
+#endif
 	.reg_lpdma_req_mask_b = 0,
 	.reg_conn_srcclkena_cksel2_mask_b = 0,
 	.reg_sspm_apsrc_req_ddren_mask_b = 1,
@@ -288,11 +298,14 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_dqssoc_req_mask_b = 0,
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	.reg_gce_vrf18_req2_mask_b = 0,
-#ifdef CONFIG_MACH_MT6758
+#elif defined(CONFIG_MACH_MT6775)
+	.reg_gce_busclk_req_mask_b = 0,
+#endif
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	.reg_ufs_srcclkena_mask_b = 0,
 	.reg_ufs_vrf18_req_mask_b = 0,
 #endif
-#endif
+
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
@@ -326,12 +339,18 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_conn_mask_b = 1,
 	.reg_conn_apsrc_sel = 0,
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	/* SPM_SRC4_MASK */
 	.reg_ccif4_ap_event_mask_b = 1,
 	.reg_ccif4_md_event_mask_b = 1,
 	.reg_ccif5_ap_event_mask_b = 1,
 	.reg_ccif5_md_event_mask_b = 1,
+#endif
+#if defined(CONFIG_MACH_MT6775)
+	.reg_disp0_ddren_req_mask_b = 0,
+	.reg_disp1_ddren_req_mask_b = 0,
 #endif
 	/* SPM_WAKEUP_EVENT_MASK */
 	.reg_wakeup_event_mask = 0xF1782218,
@@ -392,7 +411,9 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SLEEP_MCU17_WFI_EN */
 	.mcu17_wfi_en = 0,
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	/* SPM_RSV_CON2 */
 	.spm_rsv_con2 = 0,
 #endif
@@ -432,7 +453,9 @@ static int mt_power_gs_dump_suspend_count = 2;
 #endif
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) \
+	&& !defined(CONFIG_MACH_MT6758) \
+	&& !defined(CONFIG_MACH_MT6775)
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,

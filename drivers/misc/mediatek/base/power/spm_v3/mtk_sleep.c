@@ -77,7 +77,9 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) \
+	&& !defined(CONFIG_MACH_MT6758) \
+	&& !defined(CONFIG_MACH_MT6775)
 #if !(CPU_BUCK_CTRL)
 		SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 #endif
@@ -108,7 +110,7 @@ u32 slp_spm_data;
 #if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	return 0;
 #else
 	return state == PM_SUSPEND_MEM;

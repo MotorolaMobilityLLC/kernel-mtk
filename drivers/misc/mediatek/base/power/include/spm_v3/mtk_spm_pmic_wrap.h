@@ -28,7 +28,9 @@
 #elif defined(CONFIG_MACH_MT6763)        /* PMIC MT6356 */
 #define VOLT_TO_PMIC_VAL(volt)  (((volt) - 50000 + 625 - 1) / 625)
 #define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 50000)
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)      /* PMIC MT6355 */
+#elif defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775) /* PMIC MT6355 */
 #define VOLT_TO_PMIC_VAL(volt)  (((volt) - 40625 + 625 - 1) / 625)
 #define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 40625)
 #endif
@@ -60,7 +62,7 @@ enum {
 	IDX_ALL_VPROC_SLEEP,           /* F */
 	NR_IDX_ALL,
 };
-#elif defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 enum {
 	CMD_0,        /* 0 *//* PMIC_WRAP_PHASE_ALLINONE */
 	CMD_1,        /* 1 */

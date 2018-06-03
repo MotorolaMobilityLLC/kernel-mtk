@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -223,13 +223,23 @@ struct pwr_ctrl {
 	u8 reg_conn_ddr_en_mask_b;
 
 	/* SPM_SRC2_MASK */
+#if defined(CONFIG_MACH_MT6775)
+	u8 reg_disp0_apsrc_req_mask_b;
+	u8 reg_disp1_apsrc_req_mask_b;
+#else
 	u8 reg_disp0_req_mask_b;
 	u8 reg_disp1_req_mask_b;
+#endif
 	u8 reg_disp_od_req_mask_b;
 	u8 reg_mfg_req_mask_b;
 	u8 reg_vdec0_req_mask_b;
+#if defined(CONFIG_MACH_MT6775)
+	u8 reg_gce_apsrc_req_mask_b;
+	u8 reg_gce_ddr_en_req_mask_b;
+#else
 	u8 reg_gce_req_mask_b;
 	u8 reg_gce_vrf18_req_mask_b;
+#endif
 	u8 reg_lpdma_req_mask_b;
 	u8 reg_conn_srcclkena_cksel2_mask_b;
 	u8 reg_sspm_apsrc_req_ddren_mask_b;
@@ -252,8 +262,10 @@ struct pwr_ctrl {
 	u8 reg_dqssoc_req_mask_b;
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	u8 reg_gce_vrf18_req2_mask_b;
+#elif defined(CONFIG_MACH_MT6775)
+	u8 reg_gce_busclk_req_mask_b;
 #endif
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	u8 reg_ufs_srcclkena_mask_b;
 	u8 reg_ufs_vrf18_req_mask_b;
 #endif
@@ -291,12 +303,18 @@ struct pwr_ctrl {
 	u8 reg_conn_apsrc_sel;
 	u8 reg_md_srcclkena_0_vrf18_mask_b;
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	/* SPM_SRC4_MASK */
 	u8 reg_ccif4_md_event_mask_b;
 	u8 reg_ccif4_ap_event_mask_b;
 	u8 reg_ccif5_md_event_mask_b;
 	u8 reg_ccif5_ap_event_mask_b;
+#endif
+#if defined(CONFIG_MACH_MT6775)
+	u8 reg_disp0_ddren_req_mask_b;
+	u8 reg_disp1_ddren_req_mask_b;
 #endif
 
 	/* SPM_WAKEUP_EVENT_MASK */
@@ -359,7 +377,9 @@ struct pwr_ctrl {
 	/* MCU17_WFI_EN */
 	u8 mcu17_wfi_en;
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	u8 spm_rsv_con2;
 #endif
 	/* Auto-gen End */
@@ -442,13 +462,23 @@ enum pwr_ctrl_enum {
 	PWR_REG_MD_DDR_EN_0_MASK_B,
 	PWR_REG_MD_DDR_EN_1_MASK_B,
 	PWR_REG_CONN_DDR_EN_MASK_B,
+#if defined(CONFIG_MACH_MT6775)
+	PWR_REG_DISP0_APSRC_REQ_MASK_B,
+	PWR_REG_DISP1_APSRC_REQ_MASK_B,
+#else
 	PWR_REG_DISP0_REQ_MASK_B,
 	PWR_REG_DISP1_REQ_MASK_B,
+#endif
 	PWR_REG_DISP_OD_REQ_MASK_B,
 	PWR_REG_MFG_REQ_MASK_B,
 	PWR_REG_VDEC0_REQ_MASK_B,
+#if defined(CONFIG_MACH_MT6775)
+	PWR_REG_GCE_APSRC_REQ_MASK_B,
+	PWR_REG_GCE_DDR_EN_REQ_MASK_B,
+#else
 	PWR_REG_GCE_REQ_MASK_B,
 	PWR_REG_GCE_VRF18_REQ_MASK_B,
+#endif
 	PWR_REG_LPDMA_REQ_MASK_B,
 	PWR_REG_CONN_SRCCLKENA_CKSEL2_MASK_B,
 	PWR_REG_SSPM_APSRC_REQ_DDREN_MASK_B,
@@ -471,8 +501,10 @@ enum pwr_ctrl_enum {
 	PWR_REG_DQSSOC_REQ_MASK_B,
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	PWR_REG_GCE_VRF18_REQ2_MASK_B,
+#elif defined(CONFIG_MACH_MT6775)
+	PWR_REG_GCE_BUSCLK_REQ_MASK_B,
 #endif
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	PWR_REG_UFS_SRCCLKENA_MASK_B,
 	PWR_REG_UFS_VRF18_REQ_MASK_B,
 #endif
@@ -508,11 +540,17 @@ enum pwr_ctrl_enum {
 	PWR_REG_CONN_MASK_B,
 	PWR_REG_CONN_APSRC_SEL,
 	PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B,
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	PWR_REG_CCIF4_MD_EVENT_MASK_B,
 	PWR_REG_CCIF4_AP_EVENT_MASK_B,
 	PWR_REG_CCIF5_MD_EVENT_MASK_B,
 	PWR_REG_CCIF5_AP_EVENT_MASK_B,
+#endif
+#if defined(CONFIG_MACH_MT6775)
+	PWR_REG_DISP0_DDREN_REQ_MASK_B,
+	PWR_REG_DISP1_DDREN_REQ_MASK_B,
 #endif
 	PWR_REG_WAKEUP_EVENT_MASK,
 	PWR_REG_EXT_WAKEUP_EVENT_MASK,
@@ -534,7 +572,9 @@ enum pwr_ctrl_enum {
 	PWR_MCU15_WFI_EN,
 	PWR_MCU16_WFI_EN,
 	PWR_MCU17_WFI_EN,
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	PWR_SPM_RSV_CON2,
 #endif
 	PWR_MAX_COUNT,
