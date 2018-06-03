@@ -23,7 +23,7 @@
 
 #define MD_CORE_TOTAL_NUM   (9)
 #define MD_CORE_NAME_LEN    (11)
-#define MD_CORE_NAME_DEBUG  (MD_CORE_NAME_LEN + 5 + 16) /* +5 for 16, +16 for md32 TDD FDD */
+#define MD_CORE_NAME_DEBUG  (MD_CORE_NAME_LEN + 5 + 16) /* +5 for 16, +16 for str TDD FDD */
 
 typedef struct EX_STEP_V3 {
 	u32 step;
@@ -176,7 +176,7 @@ typedef struct dump_info_fatal {
 	int err_code2;
 	int err_code3;
 	char *ExStr;
-	char offender[9];
+	char offender[8];
 } DUMP_INFO_FATAL;
 
 enum {

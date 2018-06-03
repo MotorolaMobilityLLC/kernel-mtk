@@ -254,7 +254,7 @@ static void strmncopy(char *src, char *dst, int src_len, int dst_len)
 
 static EX_OVERVIEW_T *md_ee_get_buf_ptr(struct md_ee *mdee, u8 *buf_type)
 {
-	unsigned char ccif_sram[CCCC_SMEM_CCIF_SRAM_SIZE] = { 0 };
+	unsigned int ccif_sram[CCCC_SMEM_CCIF_SRAM_SIZE/4] = { 0 };
 	struct mdee_dumper_v3 *dumper = mdee->dumper_obj;
 	struct ccci_smem_layout *smem_layout = ccci_md_get_smem(mdee->md_obj);
 	EX_OVERVIEW_T *tar_ptr;
@@ -290,11 +290,10 @@ static int mdee_set_core_name(int md_id, char *core_name, EX_OVERVIEW_T *ex_over
 	}
 
 	if (core_id == 0) {
-		brief_info =  (EX_BRIEF_MAININFO_T *)((char *)ex_overview->main_reson +
-					ex_overview->core_num * sizeof(EX_MAIN_REASON_V3_T));
+		brief_info =  &ex_overview->ex_info;
 		temp_sys_inf_1 = brief_info->system_info1;
 		temp_sys_inf_2 = brief_info->system_info2;
-		snprintf(core_name, 256, "%s_core%d,vpe%d,tc%d(VPE%d)", core_name,
+		snprintf(core_name, MD_CORE_NAME_DEBUG, "%s_core%d,vpe%d,tc%d(VPE%d)", core_name,
 			(temp_sys_inf_1>>2), (temp_sys_inf_1&0x1), temp_sys_inf_2, temp_sys_inf_1);
 	}
 	CCCI_NORMAL_LOG(md_id, KERN, "brief_info: core_name = %s", core_name);
@@ -408,7 +407,7 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src, DUMP_INFO_FATAL *fata
 	if ((fatal_src->offender[0] != 0xCC) && (fatal_src->offender[0] != 0)) {
 		strmncopy(fatal_src->offender, temp_str,
 			sizeof(fatal_src->offender), sizeof(temp_str));
-		snprintf(fata_tar->offender, 23,
+		snprintf(fata_tar->offender, sizeof(fata_tar->offender),
 			"MD Offender:%s\n", temp_str);
 		CCCI_NORMAL_LOG(-1, KERN, "offender: %s\n",
 			     fata_tar->offender);
@@ -448,8 +447,7 @@ static void mdee_info_prepare_v3(struct md_ee *mdee)
 	}
 	core_id = mdee_set_core_name(md_id, debug_info->core_name, ex_overview);/* core_name */
 	/* ======== exception type ========= */
-	brief_info = (EX_BRIEF_MAININFO_T *)((char *)ex_overview->main_reson +
-			ex_overview->core_num * sizeof(EX_MAIN_REASON_V3_T));
+	brief_info = &ex_overview->ex_info;
 	debug_info->type = brief_info->maincontent_type;
 	debug_info->ex_type = brief_info->ex_type;
 	md_ee_set_exp_type(brief_info, core_id, &debug_info->name);
