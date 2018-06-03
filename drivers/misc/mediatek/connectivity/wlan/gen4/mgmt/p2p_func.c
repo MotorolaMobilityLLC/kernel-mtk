@@ -2183,9 +2183,11 @@ VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		}
 		/* TODO: */
 
-		if (PARAM_PACKET_FILTER_ACTION_FRAME) {
+		if (prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_ACTION_FRAME) {
 			/* Leave the Action frame to p2p_supplicant. */
 			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, fgIsDevInterface, ucRoleIdx);
+		} else {
+			DBGLOG(P2P, INFO, "do not indicate action frame as filter closed\n");
 		}
 
 	} while (FALSE);
