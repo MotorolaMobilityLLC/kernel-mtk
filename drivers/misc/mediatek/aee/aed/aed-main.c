@@ -38,6 +38,7 @@
 #include <mt-plat/aee.h>
 #include <linux/seq_file.h>
 #include <linux/completion.h>
+#include <linux/rtc.h>
 #include "aed.h"
 
 struct aee_req_queue {
@@ -1815,12 +1816,20 @@ static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const 
 {
 	struct aee_oops *oops;
 	int n = 0;
+	struct rtc_time tm;
+	struct timeval tv = { 0 };
 
 	if (aee_mode == AEE_MODE_CUSTOMER_USER || (aee_mode == AEE_MODE_CUSTOMER_ENG && attr == AE_DEFECT_WARNING))
 		return;
 	oops = aee_oops_create(attr, AE_KERNEL_PROBLEM_REPORT, module);
 	if (oops != NULL) {
+		do_gettimeofday(&tv);
+		rtc_time_to_tm(tv.tv_sec - sys_tz.tz_minuteswest * 60, &tm);
 		n += snprintf(oops->backtrace, AEE_BACKTRACE_LENGTH, msg);
+		n += snprintf(oops->backtrace + n, AEE_BACKTRACE_LENGTH - n,
+				"\nTrigger time:[%d-%02d-%02d %02d:%02d:%02d.%03d]\n",
+				tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour,
+				tm.tm_min, tm.tm_sec, (unsigned int)tv.tv_usec);
 		snprintf(oops->backtrace + n, AEE_BACKTRACE_LENGTH - n, "\nBacktrace:\n");
 		aed_get_traces(oops->backtrace);
 		oops->detail = (char *)(oops->backtrace);
@@ -1915,6 +1924,9 @@ static void external_exception(const char *assert_type, const int *log, int log_
 {
 	int *ee_log = NULL;
 	struct aed_eerec *eerec;
+	struct rtc_time tm;
+	struct timeval tv = { 0 };
+	char trigger_time[60];
 
 	LOGD("%s : [%s] log ptr %p size %d, phy ptr %p size %d\n", __func__,
 	     assert_type, log, log_size, phy, phy_size);
@@ -1945,12 +1957,18 @@ static void external_exception(const char *assert_type, const int *log, int log_
 		return;
 	}
 
-
+	do_gettimeofday(&tv);
+	rtc_time_to_tm(tv.tv_sec - sys_tz.tz_minuteswest * 60, &tm);
+	snprintf(trigger_time, sizeof(trigger_time),
+			"Trigger time:[%d-%02d-%02d %02d:%02d:%02d.%03d]\n",
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour,
+			tm.tm_min, tm.tm_sec, (unsigned int)tv.tv_usec);
 	memset(eerec->assert_type, 0, sizeof(eerec->assert_type));
 	strncpy(eerec->assert_type, assert_type, sizeof(eerec->assert_type) - 1);
 	memset(eerec->exp_filename, 0, sizeof(eerec->exp_filename));
-	strncpy(eerec->exp_filename, detail, sizeof(eerec->exp_filename) - 1);
-	LOGD("EE [%s]\n", eerec->assert_type);
+	strncpy(eerec->exp_filename, trigger_time, sizeof(eerec->exp_filename) - 1);
+	strncat(eerec->exp_filename, detail, sizeof(eerec->exp_filename) - 1 - strlen(trigger_time));
+	LOGD("EE %s\n", eerec->assert_type);
 
 	eerec->exp_linenum = 0;
 	eerec->fatal1 = 0;
