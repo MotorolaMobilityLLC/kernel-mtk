@@ -51,6 +51,7 @@
 /*#include <mach/mtk_battery_meter.h> TBD*/
 /*#include <mt-plat/battery_meter.h> TBD*/
 #endif
+#include <mt-plat/mtk_ccci_common.h>
 
 /*---IPI Mailbox define---*/
 /*#define IPIMB*/
@@ -432,8 +433,9 @@ void auxadc_imp_int_handler_r(void)
 	pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP, 0);
 }
 
+#if ENABLE_ALL_OC_IRQ
 /* General OC Int Handler */
-void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
+static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	char oc_str[30] = "";
 
@@ -449,6 +451,36 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 		break;
 	}
 }
+
+static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
+{
+	int ret = 0;
+	int data_int32 = 0;
+
+	switch (intNo) {
+	case INT_VPA_OC:
+		data_int32 = 1 << 0;
+		break;
+	case INT_VFE28_OC:
+		data_int32 = 1 << 1;
+		break;
+	case INT_VRF12_OC:
+		data_int32 = 1 << 2;
+		break;
+	case INT_VRF18_OC:
+		data_int32 = 1 << 3;
+		break;
+	default:
+		break;
+	}
+#ifdef CONFIG_MTK_CCCI_DEVICES
+	ret = exec_ccci_kern_func_by_md_id(MD_SYS1, ID_PMIC_INTR, (char *)&data_int32, 4);
+#endif
+	if (ret)
+		pr_notice("[%s] - exec_ccci_kern_func_by_md_id - msg fail\n", __func__);
+	pr_info("[%s]Send msg pass\n", __func__);
+}
+#endif
 
 /*
  * PMIC Interrupt service
@@ -603,7 +635,17 @@ void pmic_register_oc_interrupt_callback(enum PMIC_IRQ_ENUM intNo)
 		return;
 	}
 	IRQLOG("[%s] intNo=%d\n", __func__, intNo);
-	sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo].oc_callback = oc_int_handler;
+	switch (intNo) {
+	case INT_VPA_OC:
+	case INT_VFE28_OC:
+	case INT_VRF12_OC:
+	case INT_VRF18_OC:
+		sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo].oc_callback = md_oc_int_handler;
+		break;
+	default:
+		sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo].oc_callback = oc_int_handler;
+		break;
+	}
 }
 
 /* register and enable all oc interrupt */

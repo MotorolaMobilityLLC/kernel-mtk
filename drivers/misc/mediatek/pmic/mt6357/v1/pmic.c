@@ -47,9 +47,11 @@ void vmd1_pmic_setting_on(void)
 	unsigned char vmodem_segment = (unsigned char)((segment & 0x00002000) >> 13);
 
 	if (!vcore_segment)
-		vcore_vosel = 0x6C;/* VCORE 1.19375V: 0x6C */
-	else
+		vcore_vosel = 0x6D;/* VCORE 1.20V: 0x6D */
+	else if (vcore_segment & (1 << 0))
 		vcore_vosel = 0x65;/* VCORE 1.15V: 0x65 */
+	else if (vcore_segment & (1 << 1))
+		vcore_vosel = 0x5F;/* VCORE 1.1125:0x5F */
 
 	if (!vmodem_segment)
 		vmodem_vosel = 0x6F;/* VMODEM 1.19375V: 0x6F */
