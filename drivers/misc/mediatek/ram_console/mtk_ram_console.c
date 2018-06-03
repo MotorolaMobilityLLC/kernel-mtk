@@ -2127,6 +2127,8 @@ void aee_rr_rec_last_init_func(unsigned long val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
+	if (LAST_RR_VAL(last_init_func) == ~(unsigned long)(0))
+		return;
 	LAST_RR_SET(last_init_func, val);
 }
 
