@@ -900,6 +900,7 @@ struct ISP_TIMESTPQ_INFO_STRUCT {
 
 
 static unsigned int g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
+static unsigned int g_ISPIntErr_SMI[ISP_IRQ_TYPE_AMOUNT] = {0};
 static unsigned int g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
 
 
@@ -2603,11 +2604,6 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 		pr_err("unsupported module:0x%x\n", module);
 		break;
 	}
-
-#ifdef CONFIG_MTK_SMI_EXT
-	smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
-	/* smi_dumpDebugMsg(); */
-#endif
 }
 
 
@@ -4995,6 +4991,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					gPrevSofTimestp[rt_buf_ctrl.module] = 0;
 					#endif
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
+					g_ISPIntErr_SMI[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt =
 						0;
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -5014,6 +5011,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					sof_count[rt_buf_ctrl.module] = 0;
 					g1stSof[rt_buf_ctrl.module] = MTRUE;
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
+					g_ISPIntErr_SMI[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt =
 						0;
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -5025,6 +5023,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				sof_count[rt_buf_ctrl.module] = 0;
 				g1stSof[rt_buf_ctrl.module] = MTRUE;
 				g_ISPIntErr[rt_buf_ctrl.module] = 0;
+				g_ISPIntErr_SMI[rt_buf_ctrl.module] = 0;
 				pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
 				pstRTBuf[rt_buf_ctrl.module]->state = 0;
 				break;
@@ -11419,6 +11418,9 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_A_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAM_A_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_A_ST];
+
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAM_A:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11431,6 +11433,9 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAM_B_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_B_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAM_B_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_B_ST];
+
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAM_B:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11443,6 +11448,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_0_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_0_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_0_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV0:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11450,6 +11457,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_1_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_1_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_1_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV1:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11457,6 +11466,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_2_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_2_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_2_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV2:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11464,6 +11475,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_3_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_3_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_3_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV3:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11471,6 +11484,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_4_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_4_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_4_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV4:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11478,6 +11493,8 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
 			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_5_ST] |=
 				(ErrStatus|WarnStatus);
+			g_ISPIntErr_SMI[ISP_IRQ_TYPE_INT_CAMSV_5_ST] =
+				g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_5_ST];
 			IRQ_LOG_KEEPER_PR_ERR(module, m_CurrentPPB, _LOG_ERR,
 				"CAMSV5:int_err:0x%x_0x%x\n",
 				WarnStatus, ErrStatus);
@@ -11490,14 +11507,6 @@ void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus,
 		default:
 			break;
 		}
-		/*SMI monitor*/
-		/*
-		 * if (WarnStatus & (RRZO_ERR_ST|AFO_ERR_ST|IMGO_ERR_ST|
-		 *     AAO_ERR_ST|LCSO_ERR_ST|BNR_ERR_ST|LSC_ERR_ST)) {
-		 *	for (i = 0 ; i < 5 ; i++)
-		 *		smi_dumpDebugMsg();
-		 * }
-		 */
 	}
 }
 
@@ -14917,57 +14926,88 @@ LB_CAMB_SOF_IGNORE:
  *
  *****************************************************************************/
 
+static void SMI_INFO_DUMP(enum ISP_IRQ_TYPE_ENUM irq_module)
+{
+#ifndef EP_MARK_SMI
+	switch (irq_module) {
+	case ISP_IRQ_TYPE_INT_CAM_A_ST:
+	case ISP_IRQ_TYPE_INT_CAM_B_ST:
+		if (g_ISPIntErr_SMI[irq_module] &
+			(DMA_ERR_ST | INT_ST_MASK_CAM_WARN | CQ_VS_ERR_ST)) {
+			pr_info("ERR:SMI_DUMP by module:%d\n", irq_module);
+			smi_debug_bus_hang_detect(
+				SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
+			g_ISPIntErr_SMI[irq_module] = 0;
+		}
+		break;
+	case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
+	case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
+	case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
+	case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
+	case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
+	case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
+		if (g_ISPIntErr_SMI[irq_module] &
+			(SV_IMGO_ERR | SV_IMGO_OVERRUN)) {
+			pr_info("ERR:SMI_DUMP by module:%d\n", irq_module);
+			smi_debug_bus_hang_detect(
+				SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
+
+			g_ISPIntErr_SMI[irq_module] = 0;
+		}
+		break;
+	default:
+		pr_info("error:unsupported module:%d\n", irq_module);
+		break;
+	}
+#endif
+}
 
 static void ISP_TaskletFunc_CAM_A(unsigned long data)
 {
-#if 1
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAM_A_ST, m_CurrentPPB, _LOG_INF);
-#else
-	unsigned int reg, flags;
-
-	spin_lock_irqsave(
-		&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]), flags);
-	reg = IspInfo.IrqInfo.Status[ISP_IRQ_TYPE_INT_CAM_A_ST][0];
-	spin_unlock_irqrestore(
-		&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]), flags);
-	pr_info("ISP_IRQ_CAM_A Status User0: 0x%x\n", reg);
-
-#endif
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAM_A_ST);
 }
 
 static void ISP_TaskletFunc_CAM_B(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAM_B_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAM_B_ST);
 }
 
 static void ISP_TaskletFunc_SV_0(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_0_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_0_ST);
 }
 
 static void ISP_TaskletFunc_SV_1(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_1_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_1_ST);
 }
 
 static void ISP_TaskletFunc_SV_2(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_2_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_2_ST);
 }
 
 static void ISP_TaskletFunc_SV_3(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_3_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_3_ST);
 }
 
 static void ISP_TaskletFunc_SV_4(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_4_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_4_ST);
 }
 
 static void ISP_TaskletFunc_SV_5(unsigned long data)
 {
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAMSV_5_ST, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(ISP_IRQ_TYPE_INT_CAMSV_5_ST);
 }
 
 #if (ISP_BOTTOMHALF_WORKQ == 1)
@@ -14978,6 +15018,7 @@ static void ISP_BH_Workqueue(struct work_struct *pWork)
 
 	IRQ_LOG_PRINTER_PR_ERR(pWorkTable->module, m_CurrentPPB, _LOG_ERR);
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_INF);
+	SMI_INFO_DUMP(pWorkTable->module);
 }
 #endif
 
