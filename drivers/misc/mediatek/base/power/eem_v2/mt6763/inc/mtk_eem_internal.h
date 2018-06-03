@@ -47,17 +47,17 @@
 #define EEM_TAG	 "[xxxxEEM] "
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
-	#define eem_error(fmt, args...)	 pr_err(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)
-	#define eem_warning(fmt, args...)   pr_warn(ANDROID_LOG_WARN, EEM_TAG, fmt, ##args)
-	#define eem_notice(fmt, args...)	pr_info(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
-	#define eem_info(fmt, args...)	  pr_info(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
+	#define eem_error(fmt, args...)	 pr_debug(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)
+	#define eem_warning(fmt, args...)   pr_debug(ANDROID_LOG_WARN, EEM_TAG, fmt, ##args)
+	#define eem_notice(fmt, args...)	pr_debug(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
+	#define eem_info(fmt, args...)	  pr_debug(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
 	#define eem_debug(fmt, args...)	 pr_debug(ANDROID_LOG_DEBUG, EEM_TAG, fmt, ##args)
 #else
-	#define eem_error(fmt, args...)	 pr_err(EEM_TAG fmt, ##args)
-	#define eem_warning(fmt, args...)   pr_warn(EEM_TAG fmt, ##args)
-	#define eem_notice(fmt, args...)	pr_notice(EEM_TAG fmt, ##args)
-	#define eem_info(fmt, args...)	  pr_info(EEM_TAG fmt, ##args)
-	#define eem_debug(fmt, args...)	 pr_err(EEM_TAG"(%d)" fmt, __LINE__, ##args)
+	#define eem_error(fmt, args...)	 pr_debug(EEM_TAG fmt, ##args)
+	#define eem_warning(fmt, args...)   pr_debug(EEM_TAG fmt, ##args)
+	#define eem_notice(fmt, args...)	pr_debug(EEM_TAG fmt, ##args)
+	#define eem_info(fmt, args...)	  pr_debug(EEM_TAG fmt, ##args)
+	#define eem_debug(fmt, args...)	 pr_debug(EEM_TAG"(%d)" fmt, __LINE__, ##args)
 									/* pr_debug(EEM_TAG fmt, ##args) */
 #endif
 
