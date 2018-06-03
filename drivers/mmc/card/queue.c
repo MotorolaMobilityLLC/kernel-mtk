@@ -99,6 +99,7 @@ static int mmc_queue_thread(void *d)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int rt, issue;
 	int cmdq_full = 0;
+	unsigned int tmo;
 #endif
 
 	current->flags |= PF_MEMALLOC;
@@ -212,7 +213,12 @@ fetch_done:
 				down(&mq->thread_sem);
 			} else {
 				cmdq_full = 0;
-				/* msleep(20); */
+				/* call schedule when queue full */
+				tmo = schedule_timeout(HZ);
+				if (!tmo)
+					pr_info("%s:sched_tmo,areq_cnt=%d\n",
+						__func__,
+						atomic_read(&mq->card->host->areq_cnt));
 			}
 #else
 			up(&mq->thread_sem);
