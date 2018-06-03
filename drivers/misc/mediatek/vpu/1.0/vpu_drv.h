@@ -99,9 +99,16 @@ typedef char vpu_name_t[32];
  *     struct vpu_request req;
  *     ioctl(fd, VPU_IOCTL_DEQUE_REQUEST, req);
  *
- * - VPU_IOCTL_FLUSH_REQUEST: flush all running request, and return failure if not fishied
+ * - VPU_IOCTL_FLUSH_REQUEST: flush all running request, and return failure if not finished
  *
  *     ioctl(fd, VPU_IOCTL_FLUSH_REQUEST, 0);
+ *
+ * - VPU_IOCTL_SET_POWER: request power mode and the performance.
+ *
+ *     struct vpu_power power;
+ *     power.mode = VPU_POWER_MODE_DYNAMIC;
+ *     power.opp = VPU_POWER_OPP_UNREQUEST;
+ *     ioctl(fd, VPU_IOCTL_SET_POWER, power);
  *
  */
 
@@ -236,11 +243,21 @@ struct vpu_reg_values {
 /*---------------------------------------------------------------------------*/
 /*  VPU Power                                                                */
 /*---------------------------------------------------------------------------*/
+
+/*
+ * Provide two power modes:
+ * - dynamic: power-saving mode, it's on request to power on device.
+ * - on: power on immediately
+ */
 enum vpu_power_mode {
 	VPU_POWER_MODE_DYNAMIC,
 	VPU_POWER_MODE_ON,
 };
 
+/*
+ * Provide a set of OPPs(operation performance point)
+ * The default opp is at the minimun performance, and users could request the performance.
+ */
 enum vpu_power_opp {
 	VPU_POWER_OPP_UNREQUEST = 0xFF,
 };
