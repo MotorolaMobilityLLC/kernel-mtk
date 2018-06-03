@@ -712,7 +712,7 @@ static void __cirq_fast_clone(void)
 		event = list_entry(cur, struct cirq_reg, the_link);
 		writel(event->sen, CIRQ_SENS_CLR_BASE + (event->reg_num << 2));
 
-		for_each_set_bit(cur_bit, (unsigned long *) &event->mask, 32) {
+		for_each_set_bit(cur_bit, (unsigned int *) &event->mask, 32) {
 			cirq_id = (event->reg_num << 5) + cur_bit;
 #ifdef FAST_CIRQ_DEBUG
 			pr_info("[CIRQ] reg_num: %d, bit:%d, cirq_id %d\n", event->reg_num, cur_bit, cirq_id);
