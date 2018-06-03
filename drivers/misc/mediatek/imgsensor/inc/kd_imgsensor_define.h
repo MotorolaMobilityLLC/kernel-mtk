@@ -444,6 +444,8 @@ typedef struct {
 	MUINT8 SCAM_SOF_src;
 	MUINT32 SCAM_Timout_Cali;
 	MUINT32 SensorMIPIDeskew;
+	MUINT16 SensorHorFOV;
+	MUINT16 SensorVerFOV;
 } ACDK_SENSOR_INFO_STRUCT, *PACDK_SENSOR_INFO_STRUCT;
 
 typedef struct {
@@ -546,6 +548,9 @@ typedef struct {
 	MUINT8 SCAM_SOF_src;
 	MUINT32 SCAM_Timout_Cali;
 	MUINT32 SensorMIPIDeskew;
+	MUINT16 SensorHorFOV;
+	MUINT16 SensorVerFOV;
+
 } ACDK_SENSOR_INFO2_STRUCT, *PACDK_SENSOR_INFO2_STRUCT;
 
 
