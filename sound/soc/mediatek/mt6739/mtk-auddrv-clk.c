@@ -1140,10 +1140,7 @@ void SetckSel(unsigned int I2snum, unsigned int SampleRate)
 {
 	unsigned int ApllSource;
 
-	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
-		ApllSource = 0;
-	else
-		ApllSource = 1;
+	ApllSource = 0;/* mt6739 only has one apll */
 
 	switch (I2snum) {
 	case Soc_Aud_I2S0:
@@ -1271,7 +1268,7 @@ void EnableApll2(bool enable)
 	if (enable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			/* 196.608 / 8 = 24.576MHz */
-			clksys_set_reg(CLK_AUDDIV_0, 7 << 28, 0xf << 28);
+			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 			AudDrv_APLL24M_Clk_On();
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 1, 0x1 << 1);
 		}
