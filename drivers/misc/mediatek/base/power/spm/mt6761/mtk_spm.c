@@ -215,7 +215,7 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		ret = spm_to_sspm_command(SPM_SUSPEND_PREPARE, &spm_d);
 		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
-			pr_err("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n",
+			pr_info("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n",
 				__func__, __LINE__, ret);
 			return NOTIFY_BAD;
 		}
@@ -225,7 +225,7 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		ret = spm_to_sspm_command(SPM_POST_SUSPEND, &spm_d);
 		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
-			pr_err("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n",
+			pr_info("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n",
 				__func__, __LINE__, ret);
 			return NOTIFY_BAD;
 		}
