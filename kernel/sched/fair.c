@@ -5972,6 +5972,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int sync = wake_flags & WF_SYNC;
 	int policy = 0;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+	bool prefer_idle = 0;
+#endif
+
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 	/* mtk: If task is VIP task, prefer most efficiency idle cpu */
 	if (is_vip_task(p)) {
@@ -5979,7 +5985,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 		vip_idle_cpu = find_idle_vip_cpu(p);
 		if (vip_idle_cpu >= 0) {
-			trace_sched_select_task_rq(p, (LB_VIP | vip_idle_cpu), prev_cpu, vip_idle_cpu);
+			trace_sched_select_task_rq(p, (LB_VIP | vip_idle_cpu), prev_cpu, vip_idle_cpu,
+					task_util(p), boosted_task_util(p), prefer_idle);
 			return vip_idle_cpu;
 		}
 	}
@@ -6004,7 +6011,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			new_cpu = prev_cpu;
 		else {
 #ifdef CONFIG_MTK_SCHED_TRACERS
-			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
+			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu,
+					task_util(p), boosted_task_util(p), prefer_idle);
 #endif
 			return new_cpu;
 		}
@@ -6046,19 +6054,18 @@ CONSIDER_EAS:
 
 	if (!sd) {
 		if (energy_aware() && !system_overutilized(cpu)) {
-			new_cpu = select_energy_cpu_plus(p, prev_cpu);
+			new_cpu = select_energy_cpu_plus(p, prev_cpu, prefer_idle);
 			policy |= LB_EAS;
 		}
 		else if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
 			if (true) {
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-				bool prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-				bool prefer_idle = true;
-#endif
 				int idle_cpu;
 
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 				idle_cpu = find_best_idle_cpu(p, prefer_idle);
+#else
+				idle_cpu = find_best_idle_cpu(p, true);
+#endif
 				if (idle_cpu >= 0) {
 					new_cpu = idle_cpu;
 					policy |= LB_IDLEST;
@@ -6124,7 +6131,7 @@ CONSIDER_EAS:
 	}
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
+	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu, task_util(p), boosted_task_util(p), prefer_idle);
 #endif
 
 	return new_cpu;

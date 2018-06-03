@@ -14,7 +14,7 @@
 static bool is_intra_domain(int prev, int target);
 static int select_prefer_idle_cpu(struct task_struct *p);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
-static int select_energy_cpu_plus(struct task_struct *p, int target);
+static int select_energy_cpu_plus(struct task_struct *p, int target,  bool prefer_idle);
 static int __energy_diff(struct energy_env *eenv);
 #ifdef CONFIG_SCHED_TUNE
 static inline int energy_diff(struct energy_env *eenv);
@@ -185,7 +185,7 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 	return best_idle_cpu;
 }
 
-static int select_energy_cpu_plus(struct task_struct *p, int target)
+static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer_idle)
 {
 	int target_max_cap = INT_MAX;
 	int target_cpu = task_cpu(p);
@@ -196,11 +196,6 @@ static int select_energy_cpu_plus(struct task_struct *p, int target)
 	struct cpumask cluster_cpus;
 	int max_cap_cpu = 0;
 	int best_cpu = 0;
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-	bool prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-	bool prefer_idle = 0;
-#endif
 
 	/* prefer idle for stune */
 	if (prefer_idle) {
