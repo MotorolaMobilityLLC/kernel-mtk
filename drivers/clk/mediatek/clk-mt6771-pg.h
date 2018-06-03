@@ -53,6 +53,7 @@ extern void check_mm0_clk_sts(void);
 extern void check_img_clk_sts(void);
 extern void check_ven_clk_sts(void);
 extern void check_cam_clk_sts(void);
+extern void cam_mtcmos_check(void);
 /*ram console api*/
 /*
 *[0] bus protect reg
