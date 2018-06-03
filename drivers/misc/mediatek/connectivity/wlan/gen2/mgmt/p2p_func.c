@@ -2238,6 +2238,7 @@ VOID p2pFuncParseBeaconIEs(IN P_ADAPTER_T prAdapter,
 				 * ELEM_ID_SUP_RATES should be placed before ELEM_ID_EXTENDED_SUP_RATES.
 				*/
 				DBGLOG(P2P, TRACE, "Extended Supported Rate IE\n");
+				ASSERT(prP2pBssInfo->ucAllSupportedRatesLen <= RATE_NUM);
 				kalMemCopy(&(prP2pBssInfo->aucAllSupportedRates[prP2pBssInfo->ucAllSupportedRatesLen]),
 					   EXT_SUP_RATES_IE(pucIE)->aucExtSupportedRates,
 					   EXT_SUP_RATES_IE(pucIE)->ucLength);

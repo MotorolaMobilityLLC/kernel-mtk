@@ -9275,6 +9275,7 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 			rUapsdParams.fgEnAPSD_AcVi = 1;
 			rUapsdParams.fgEnAPSD_AcVo = 1;
 			rUapsdParams.ucMaxSpLen = 0; /* default:0, Do not limit delivery pkt num */
+			memset(rUapsdParams.aucResv, 0, ARRAY_SIZE(rUapsdParams.aucResv));
 
 			nicSetUApsdParam(prAdapter, rUapsdParams, NETWORK_TYPE_P2P_INDEX);
 		}

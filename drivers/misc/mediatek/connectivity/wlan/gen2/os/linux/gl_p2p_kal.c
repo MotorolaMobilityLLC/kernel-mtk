@@ -901,6 +901,10 @@ kalP2PIndicateChannelReady(IN P_GLUE_INFO_T prGlueInfo,
 
 		kalP2pFuncGetChannelType(eSco, &eChnlType);
 
+		if (!prIEEE80211ChnlStruct) {
+			DBGLOG(P2P, WARN, "prIEEE80211ChnlStruct is NULL\n");
+			break;
+		}
 		cfg80211_ready_on_channel(prGlueInfo->prP2PInfo->prWdev,	/* struct wireless_dev, */
 					  u8SeqNum,	/* u64 cookie, */
 					  prIEEE80211ChnlStruct,	/* struct ieee80211_channel * chan, */
@@ -941,6 +945,10 @@ VOID kalP2PIndicateChannelExpired(IN P_GLUE_INFO_T prGlueInfo, IN P_P2P_CHNL_REQ
 
 		kalP2pFuncGetChannelType(prChnlReqInfo->eChnlSco, &eChnlType);
 
+		if (!prIEEE80211ChnlStruct) {
+			DBGLOG(P2P, WARN, "prIEEE80211ChnlStruct is NULL\n");
+			break;
+		}
 		cfg80211_remain_on_channel_expired(prGlueP2pInfo->prWdev,	/* struct wireless_dev, */
 						   prChnlReqInfo->u8Cookie, prIEEE80211ChnlStruct, GFP_KERNEL);
 	} while (FALSE);
