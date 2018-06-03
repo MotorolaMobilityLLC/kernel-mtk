@@ -38,20 +38,17 @@ obj-$(CONFIG_MTK_FB) += 			\
 			fbconfig_kdebug.o
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT8167)))
-obj-y += aal20/
-else
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739)))
-obj-y += aal30/
-endif
-endif
-
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT8167) $(CONFIG_MACH_MT6739)))
 obj-y += pwm10/
 obj-y += corr10/
+obj-y += color20/
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT8167)))
+obj-y += aal20/
+else
+obj-y += aal30/
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)  $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_MACH_MT6797)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)  $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS)))
 obj-y += od10/
 endif
 
@@ -68,10 +65,6 @@ endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763)))
 obj-y += layering_rule_base/v1/
-endif
-
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6755) $(CONFIG_MACH_MT6795) $(CONFIG_MACH_MT8167) $(CONFIG_MACH_MT6739)))
-obj-y += color20/
 endif
 
 ccflags-y += \
