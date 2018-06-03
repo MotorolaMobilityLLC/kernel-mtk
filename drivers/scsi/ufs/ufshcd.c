@@ -1464,6 +1464,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	/* issue command to the controller */
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	ufshcd_send_command(hba, tag);
+
 /* MTK patch for SPOH */
 #ifdef MTK_UFS_HQA
 	if (!err && (cmd->request->cmd_flags & REQ_POWER_LOSS)) {
@@ -1471,9 +1472,22 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 		wdt_pmic_full_reset();
 	}
 #endif
+
 out_unlock:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
-	ufs_mtk_biolog_send_command(tag);
+
+	/*
+	 * MTK PATCH:
+	 *
+	 * Logging "send_cmd" in blocktag after command is actually sent.
+	 *
+	 * We use "err" as condition because command will be sent only
+	 * if "err" is 0.
+	 *
+	 * Note we always try to avoid logging while holding mutexes.
+	 */
+	if (!err)
+		ufs_mtk_biolog_send_command(tag);
 out:
 	return err;
 }
