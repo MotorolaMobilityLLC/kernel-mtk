@@ -525,10 +525,8 @@ extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 
 extern void rekick_vcorefs_scenario(void);
 
-#if 0
 /* set dram dummy read address */
 void spm_set_dummy_read_addr(int debug);
-#endif
 
 extern int spm_fs_init(void);
 

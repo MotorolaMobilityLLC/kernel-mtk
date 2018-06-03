@@ -31,7 +31,7 @@
 #include <mt-plat/mtk_gpio.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
-/* #include <mtk-soc-afe-control.h> */
+#include <mtk-soc-afe-control.h>
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 
 /**************************************
@@ -67,6 +67,7 @@ static wake_reason_t slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
+bool slp_dump_golden_setting;
 
 /* FIXME: */
 static u32 slp_spm_flags = {
@@ -192,6 +193,14 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		goto LEAVE_SLEEP;
 	}
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	if (is_sspm_ipi_lock_spm()) {
+		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
 		slp_error("SPM FIRMWARE IS NOT READY\n");
@@ -314,5 +323,6 @@ module_param(slp_ck26m_on, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
+module_param(slp_dump_golden_setting, bool, 0644);
 
 MODULE_DESCRIPTION("Sleep Driver v0.1");
