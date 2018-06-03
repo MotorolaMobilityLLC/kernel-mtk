@@ -1663,7 +1663,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	/* LSP */
 	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (0x7F << 0) | (0x7F << 7) | (0x0 << 14) | (0x0 << 22)
 					, 0x1FFFFFFF);
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x50 << 16) | (0x7 << 23)
+	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x0 << 16) | (0x7F << 23)
 					, 0x3FFF7F7F);
 #endif
 
