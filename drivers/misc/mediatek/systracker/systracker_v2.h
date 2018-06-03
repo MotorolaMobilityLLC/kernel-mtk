@@ -32,10 +32,12 @@
 #define BUS_DBG_AW_TRACK_H(__n)		(BUS_DBG_BASE + 0x0204 + 8 * (__n))
 #define BUS_DBG_AW_TRANS_TID(__n)	(BUS_DBG_BASE + 0x0280 + 4 * (__n))
 
-#ifndef CONFIG_MACH_MT6758
-	#define BUS_DBG_BUS_MHZ             (266)
-#else
+#if defined(CONFIG_MACH_MT6758)
 	#define BUS_DBG_BUS_MHZ             (135)
+#elif defined(CONFIG_MACH_MT6765)
+	#define BUS_DBG_BUS_MHZ             (156)
+#else
+	#define BUS_DBG_BUS_MHZ             (266)
 #endif
 #define BUS_DBG_NUM_TRACKER         (8)
 
