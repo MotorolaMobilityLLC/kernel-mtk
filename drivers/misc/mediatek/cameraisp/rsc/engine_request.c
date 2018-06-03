@@ -171,8 +171,10 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 		}
 	}
 
-	eng->req_running = false;
 	seqlock_init(&eng->seqlock);
+	write_seqlock(&eng->seqlock);
+	eng->req_running = false;
+	write_sequnlock(&eng->seqlock);
 
 	/* init and inc for 1st request_handler use */
 	init_completion(&eng->req_handler_done);
