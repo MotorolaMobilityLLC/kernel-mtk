@@ -1264,10 +1264,10 @@ static int SetDcCompenSation(bool enable)
 	abs_lch = sign_lch * diff_lch;
 	abs_rch = sign_rch * diff_rch;
 	times = abs_lch > abs_rch ? (abs_lch / ramp_step) : (abs_rch / ramp_step);
-	pr_debug("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d, ramp_step %d\n",
+	pr_debug("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d, ramp_step %d, mic_vinp_mv %d\n",
 	       __func__, enable, index_lgain, times,
 	       last_lch_comp_value, lch_value,
-	       last_rch_comp_value, rch_value, ramp_step);
+	       last_rch_comp_value, rch_value, ramp_step, mic_vinp_mv);
 
 	if (enable) {
 		enable_dc_compensation(true);
@@ -1863,6 +1863,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 		/* here pmic analog control */
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
+
+			mic_vinp_mv = get_accdet_auxadc();
+
 			/* switch to ground to de pop-noise */
 			/*HP_Switch_to_Ground();*/
 
@@ -3245,10 +3248,8 @@ static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 
 	ucontrol->value.integer.value[0] = hp_impedance;
 
-	mic_vinp_mv = get_accdet_auxadc();
-
-	pr_debug("%s(), hp_impedance = %d, efuse = %d, mic_vinp_mv = %d\n",
-		 __func__, hp_impedance, efuse_current_calibrate, mic_vinp_mv);
+	pr_debug("%s(), hp_impedance = %d, efuse = %d\n",
+		 __func__, hp_impedance, efuse_current_calibrate);
 	return 0;
 }
 
