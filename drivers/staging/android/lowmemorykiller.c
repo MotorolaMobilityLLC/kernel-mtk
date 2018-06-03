@@ -572,7 +572,7 @@ static struct shrinker lowmem_shrinker = {
 static int __init lowmem_init(void)
 {
 #if defined(CONFIG_ZRAM) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
-	vm_swappiness = 150;
+	vm_swappiness = 100;
 #endif
 	register_shrinker(&lowmem_shrinker);
 	return 0;
