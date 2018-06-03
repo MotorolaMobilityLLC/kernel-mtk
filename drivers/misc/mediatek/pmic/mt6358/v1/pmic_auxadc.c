@@ -267,6 +267,7 @@ struct pmic_auxadc_channel_new mt6358_auxadc_channel[] = {
 		PMIC_AUXADC_ADC_RDY_CH6, PMIC_AUXADC_ADC_OUT_CH6},
 };
 
+#ifdef CONFIG_MTK_MD1_SUPPORT
 static int mts_timestamp;
 static unsigned int mts_count;
 static unsigned int mts_adc;
@@ -408,6 +409,9 @@ int mts_kthread(void *x)
 	return 0;
 }
 /*--Monitor MTS reg End--*/
+#else
+static unsigned int mts_adc;
+#endif
 
 static void mt6358_auxadc_timeout_dump(unsigned short ch_num)
 {
@@ -570,9 +574,12 @@ int mt6358_get_auxadc_value(u8 channel)
 			wk_auxadc_battmp_dbg(adc_result);
 		battmp = adc_result;
 	}
+
+#ifdef CONFIG_MTK_MD1_SUPPORT
 	/*--Monitor MTS Thread--*/
 	if (channel == AUXADC_LIST_BATADC)
 		mt6358_auxadc_monitor_mts_regs();
+#endif
 
 	return adc_result;
 }
@@ -598,6 +605,7 @@ void adc_dbg_init(void)
 	adc_dbg_addr[i++] = MT6358_PCHR_VREF_ELR_1;
 }
 
+#ifdef CONFIG_MTK_MD1_SUPPORT
 static void mts_thread_init(void)
 {
 	mts_thread_handle = kthread_create(mts_kthread, (void *)NULL, "mts_thread");
@@ -608,6 +616,7 @@ static void mts_thread_init(void)
 		HKLOG("[adc_kthread] kthread_create Done\n");
 	}
 }
+#endif
 
 void mt6358_auxadc_init(void)
 {
@@ -615,20 +624,24 @@ void mt6358_auxadc_init(void)
 	wake_lock_init(&pmic_auxadc_wake_lock,
 			WAKE_LOCK_SUSPEND, "PMIC AuxADC wakelock");
 	mutex_init(&pmic_adc_mutex);
+
+#ifdef CONFIG_MTK_MD1_SUPPORT
 	wake_lock_init(&mts_monitor_wake_lock,
 			WAKE_LOCK_SUSPEND, "PMIC MTS Monitor wakelock");
 	mutex_init(&mts_monitor_mutex);
-	/* Remove register setting which is set by PMIC initial setting in PL */
-
-	battmp = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
 	mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+	mts_thread_init();
+#endif
+
+	/* Remove register setting which is set by PMIC initial setting in PL */
+	battmp = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
+
 	/* update VBIF28 by AUXADC */
 	g_pmic_pad_vbif28_vol = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
 	pr_info("****[%s] VBIF28 = %d, BAT TEMP = %d, MTS_ADC = 0x%x\n",
 		__func__, pmic_get_vbif28_volt(), battmp, mts_adc);
 
 	adc_dbg_init();
-	mts_thread_init();
 	pr_info("****[%s] DONE, BAT TEMP = %d, MTS_ADC = 0x%x\n",
 		__func__, battmp, mts_adc);
 }
