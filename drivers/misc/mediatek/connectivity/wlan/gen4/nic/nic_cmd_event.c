@@ -3156,3 +3156,8 @@ VOID nicEventUpdateCoexPhyrate(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEve
 		DBGLOG(NIC, INFO, "Coex:BSS[%d]R:%d\n", i, prAdapter->aprBssInfo[i]->u4CoexPhyRateLimit);
 	}
 }
+
+VOID nicEventBaFwDropSn(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	qmHandleEventDropByFW(prAdapter, prEvent);
+}

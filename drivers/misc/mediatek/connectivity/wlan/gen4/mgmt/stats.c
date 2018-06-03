@@ -61,6 +61,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, struct sk_buff *skb, UINT_8 status
 
 		switch (eventType) {
 		case EVENT_RX:
+			GLUE_SET_INDEPENDENT_PKT(skb, TRUE);
 			if (u2OpCode == ARP_PRO_REQ)
 				DBGLOG(RX, TRACE, "<RX> Arp Req From IP: %d.%d.%d.%d\n",
 					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
@@ -102,6 +103,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, struct sk_buff *skb, UINT_8 status
 			u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
 			switch (eventType) {
 			case EVENT_RX:
+				GLUE_SET_INDEPENDENT_PKT(skb, TRUE);
 				DBGLOG(RX, TRACE, "<RX> ICMP: Type %d, Id BE 0x%04x, Seq BE 0x%04x\n",
 							ucIcmpType, u2IcmpId, u2IcmpSeq);
 				break;
@@ -127,6 +129,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, struct sk_buff *skb, UINT_8 status
 				u4TransID = pucBootp[4]<<24  | pucBootp[5]<<16 | pucBootp[6]<<8  | pucBootp[7];
 				switch (eventType) {
 				case EVENT_RX:
+					GLUE_SET_INDEPENDENT_PKT(skb, TRUE);
 					DBGLOG(RX, INFO, "<RX> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%04x\n",
 									u2IpId, pucBootp[0], u4TransID);
 					break;
