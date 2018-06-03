@@ -1120,6 +1120,8 @@ static void fstb_fps_stats(struct work_struct *work)
 				target_limit = 27;
 			else
 				target_limit = tmp_target_limit;
+			if (target_limit < fstb_fps_cur_limit)
+				target_limit = fstb_fps_cur_limit;
 		} else
 			target_limit = fstb_fps_cur_limit;
 		target_limit = check_vag(target_limit);
