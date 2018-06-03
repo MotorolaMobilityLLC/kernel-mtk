@@ -19,7 +19,7 @@
 static int qos_recv_thread(void *arg)
 {
 	struct ipi_action qos_isr;
-	struct qos_data qos_d;
+	struct qos_ipi_data qos_d;
 	unsigned int rdata, ret;
 
 	qos_isr.data = &qos_d;
@@ -46,7 +46,7 @@ static int qos_recv_thread(void *arg)
 
 void helio_dvfsrc_sspm_ipi_init(int dvfsrc_en)
 {
-	struct qos_data qos_d;
+	struct qos_ipi_data qos_d;
 	struct task_struct *qos_task;
 
 	qos_task = kthread_run(qos_recv_thread, NULL, "qos_recv");

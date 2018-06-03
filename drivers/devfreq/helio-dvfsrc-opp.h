@@ -40,5 +40,8 @@ extern int get_cur_ddr_opp(void);
 extern int get_cur_ddr_khz(void);
 extern void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp);
 
+extern void set_vcore_uv_table(int vcore_opp, int vcore_uv);
+extern int get_vcore_uv_table(int vcore_opp);
+
 #endif /* __HELIO_DVFSRC_OPP_H */
 

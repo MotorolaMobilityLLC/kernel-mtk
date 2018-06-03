@@ -23,6 +23,7 @@
 
 #include <mt-plat/aee.h>
 #include <spm/mtk_spm.h>
+#include <mtk_dramc.h>
 
 #include "helio-dvfsrc.h"
 #include "mtk_dvfsrc_reg.h"
@@ -30,7 +31,6 @@
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
-#include "helio-dvfsrc-ipi.h"
 #endif
 
 static struct helio_dvfsrc *dvfsrc;
@@ -60,31 +60,6 @@ void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift)
 #define dvfsrc_sram_read(offset) \
 	readl(DVFSRC_SRAM_REG(offset))
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
-{
-	struct qos_data qos_d;
-
-	qos_d.cmd = QOS_IPI_VCORE_OPP;
-	qos_d.u.vcore_opp.opp = opp;
-	qos_d.u.vcore_opp.vcore_uv = vcore_uv;
-
-	qos_ipi_to_sspm_command(&qos_d, 3);
-}
-
-void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
-{
-	struct qos_data qos_d;
-
-	qos_d.cmd = QOS_IPI_DDR_OPP;
-	qos_d.u.ddr_opp.opp = opp;
-	qos_d.u.ddr_opp.ddr_khz = ddr_khz;
-
-	qos_ipi_to_sspm_command(&qos_d, 3);
-}
-
-#endif
-
 void helio_dvfsrc_enable(int dvfsrc_en)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
@@ -98,39 +73,29 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-static void helio_dvfsrc_pwrap_cmd(void)
-{
-}
-
 static void dvfsrc_opp_table_init(void)
 {
 	int i;
+	int vcore_opp, ddr_opp;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
-
 	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
-		dvfsrc->opp_table[i].vcore_uv = get_vcore_uv(i);
-		dvfsrc->opp_table[i].ddr_khz = get_ddr_khz(i);
+		vcore_opp = get_vcore_opp(i);
+		ddr_opp = get_ddr_opp(i);
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-		dvfsrc_update_sspm_vcore_opp_table(i,
-				dvfsrc->opp_table[i].vcore_uv);
-		dvfsrc_update_sspm_ddr_opp_table(i,
-				dvfsrc->opp_table[i].ddr_khz);
-#endif
-
-		pr_info("opp %u: vcore_uv: %u, ddr_khz: %u\n", i,
-				dvfsrc->opp_table[i].vcore_uv,
-				dvfsrc->opp_table[i].ddr_khz);
+		if (vcore_opp == VCORE_OPP_UNREQ || ddr_opp == DDR_OPP_UNREQ) {
+			set_opp_table(i, 0, 0);
+			continue;
+		}
+		set_opp_table(i, get_vcore_uv_table(vcore_opp),
+				dram_steps_freq(ddr_opp) * 1000);
 	}
-
-	helio_dvfsrc_pwrap_cmd();
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static int helio_dvfsrc_platform_init(void)
 {
-	vcore_volt_init();
+	dvfsrc_opp_level_mapping();
 	dvfsrc_opp_table_init();
 
 /* ToDo: framebuffer notifier for md table */

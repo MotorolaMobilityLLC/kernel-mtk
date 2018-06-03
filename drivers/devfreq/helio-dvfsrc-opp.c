@@ -13,10 +13,12 @@
 
 #include <helio-dvfsrc.h>
 #include <helio-dvfsrc-opp.h>
+#include <helio-dvfsrc-ipi.h>
 
 static struct opp_profile opp_table[VCORE_DVFS_OPP_NUM];
-static int vcore_dvfs_opp_to_vcore_opp[VCORE_DVFS_OPP_NUM];
-static int vcore_dvfs_opp_to_ddr_opp[VCORE_DVFS_OPP_NUM];
+static int vcore_dvfs_to_vcore_opp[VCORE_DVFS_OPP_NUM];
+static int vcore_dvfs_to_ddr_opp[VCORE_DVFS_OPP_NUM];
+static int vcore_uv_table[VCORE_OPP_NUM];
 
 /* ToDo: Copy Opp Table to AEE Dump */
 int get_cur_vcore_dvfs_opp(void)
@@ -26,13 +28,33 @@ int get_cur_vcore_dvfs_opp(void)
 
 void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
 {
+	struct qos_ipi_data qos_d;
+
 	opp_table[vcore_dvfs_opp].vcore_uv = vcore_uv;
 	opp_table[vcore_dvfs_opp].ddr_khz = ddr_khz;
+
+	qos_d.cmd = QOS_IPI_OPP_TABLE;
+	qos_d.u.opp_table.vcore_dvfs_opp = vcore_dvfs_opp;
+	qos_d.u.opp_table.vcore_uv = vcore_uv;
+	qos_d.u.opp_table.ddr_khz = ddr_khz;
+	qos_ipi_to_sspm_command(&qos_d, 4);
+}
+
+void set_vcore_opp(int vcore_dvfs_opp, int vcore_opp)
+{
+	struct qos_ipi_data qos_d;
+
+	vcore_dvfs_to_vcore_opp[vcore_dvfs_opp] = vcore_opp;
+
+	qos_d.cmd = QOS_IPI_VCORE_OPP;
+	qos_d.u.vcore_opp.vcore_dvfs_opp = vcore_dvfs_opp;
+	qos_d.u.vcore_opp.vcore_opp = vcore_opp;
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
 
 int get_vcore_opp(int opp)
 {
-	return vcore_dvfs_opp_to_vcore_opp[opp];
+	return vcore_dvfs_to_vcore_opp[opp];
 }
 
 int get_vcore_uv(int opp)
@@ -42,22 +64,37 @@ int get_vcore_uv(int opp)
 
 int get_cur_vcore_opp(void)
 {
-	return vcore_dvfs_opp_to_vcore_opp[get_cur_vcore_dvfs_opp()];
+	int idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+		return VCORE_OPP_UNREQ;
+	return vcore_dvfs_to_vcore_opp[idx];
 }
 
 int get_cur_vcore_uv(void)
 {
-	return opp_table[get_cur_vcore_dvfs_opp()].vcore_uv;
+	int idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+		return 0;
+	return opp_table[idx].vcore_uv;
 }
 
-void set_vcore_opp(int vcore_dvfs_opp, int vcore_opp)
+void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp)
 {
-	vcore_dvfs_opp_to_vcore_opp[vcore_dvfs_opp] = vcore_opp;
+	struct qos_ipi_data qos_d;
+
+	vcore_dvfs_to_ddr_opp[vcore_dvfs_opp] = ddr_opp;
+
+	qos_d.cmd = QOS_IPI_DDR_OPP;
+	qos_d.u.ddr_opp.vcore_dvfs_opp = vcore_dvfs_opp;
+	qos_d.u.ddr_opp.ddr_opp = ddr_opp;
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
 
 int get_ddr_opp(int opp)
 {
-	return vcore_dvfs_opp_to_ddr_opp[opp];
+	return vcore_dvfs_to_ddr_opp[opp];
 }
 
 int get_ddr_khz(int opp)
@@ -67,15 +104,29 @@ int get_ddr_khz(int opp)
 
 int get_cur_ddr_opp(void)
 {
-	return vcore_dvfs_opp_to_ddr_opp[get_cur_vcore_dvfs_opp()];
+	int idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM ||  is_dvfsrc_enabled() != 1)
+		return DDR_OPP_UNREQ;
+	return vcore_dvfs_to_ddr_opp[idx];
 }
 
 int get_cur_ddr_khz(void)
 {
-	return opp_table[get_cur_vcore_dvfs_opp()].ddr_khz;
+	int idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+		return 0;
+	return opp_table[idx].ddr_khz;
 }
 
-void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp)
+/* ToDo: Send SMC to ATF for PWRAP */
+void set_vcore_uv_table(int vcore_opp, int vcore_uv)
 {
-	vcore_dvfs_opp_to_ddr_opp[vcore_dvfs_opp] = ddr_opp;
+	vcore_uv_table[vcore_opp] = vcore_uv;
+}
+
+int get_vcore_uv_table(int vcore_opp)
+{
+	return vcore_uv_table[vcore_opp];
 }

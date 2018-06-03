@@ -103,7 +103,7 @@ extern void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift);
 
 extern int helio_dvfsrc_add_interface(struct device *dev);
 extern void helio_dvfsrc_remove_interface(struct device *dev);
-extern void vcore_volt_init(void);
+extern void dvfsrc_opp_level_mapping(void);
 extern void helio_dvfsrc_sspm_ipi_init(int dvfsrc_en);
 extern void get_opp_info(char *p);
 extern void get_dvfsrc_reg(char *p);
