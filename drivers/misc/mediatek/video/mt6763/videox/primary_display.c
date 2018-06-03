@@ -4226,6 +4226,15 @@ int primary_display_suspend(void)
 					pgc->session_id, 0, NULL, 1);
 	}
 
+	/* Should be DL(Ext) mode here */
+	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
+		pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
+		DISPERR("HWC DOES NOT set_mode DL before suspend!!!\n");
+		/* switch back to DL mode before suspend */
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+					pgc->session_id, 0, NULL, 1);
+	}
+
 	/* restore to 60 fps */
 	_display_set_lcm_refresh_rate(60);
 
