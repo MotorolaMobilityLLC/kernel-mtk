@@ -286,18 +286,6 @@ void typec_auxadc_unregister(struct typec_hba *hba)
 }
 #endif
 
-/* read/write function calls */
-#if FPGA_PLATFORM
-void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg)
-{
-	writew(val, hba->mmio_base + reg);
-}
-
-uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
-{
-	return readw(hba->mmio_base + reg);
-}
-#else
 void typec_write8(struct typec_hba *hba, uint8_t val, unsigned int reg)
 {
 	if (mt6336_set_register_value(reg, val) == -1)
@@ -332,7 +320,6 @@ uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
 
 	return ret;
 }
-#endif
 
 void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigned int reg)
 {
@@ -526,52 +513,6 @@ void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable)
 	hba->vbus_det_en = (enable ? 1 : 0);
 	typec_sw_probe(hba, DBG_VBUS_DET_EN, (enable<<DBG_VBUS_DET_EN_OFST));
 }
-
-#if FPGA_PLATFORM
-int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl)
-{
-	uint16_t tmp;
-
-	tmp = typec_readw(hba, TYPE_C_FPGA_STATUS);
-	#if DETECT_VSAFE_0V
-	if (((lvl == TYPEC_VSAFE_5V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N))
-		|| ((lvl == TYPEC_VSAFE_0V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_0V_MON_N)))
-		return 1;
-	#else
-	if (((lvl == TYPEC_VSAFE_5V) && !(tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N))
-		|| ((lvl == TYPEC_VSAFE_0V) && (tmp & TYPE_C_FPGA_VBUS_VSAFE_5V_MON_N)))
-		return 1;
-	#endif
-	else
-		return 0;
-}
-
-void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
-{
-	typec_writew_msk(hba, TYPE_C_FPGA_VBSU_PWR_EN,
-		(on ? TYPE_C_FPGA_VBSU_PWR_EN : 0), TYPE_C_FPGA_CTRL);
-
-	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
-		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
-
-	hba->vbus_en = (on ? 1 : 0);
-	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
-}
-
-#if SUPPORT_PD
-void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
-{
-	typec_writew_msk(hba, TYPE_C_SW_DA_DRIVE_VCONN_EN,
-		(on ? TYPE_C_SW_DA_DRIVE_VCONN_EN : 0), TYPE_C_CC_SW_CTRL);
-
-	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vconn_en != on))
-		dev_err(hba->dev, "VCONN %s", (on ? "ON" : "OFF"));
-
-	hba->vconn_en = (on ? 1 : 0);
-	typec_sw_probe(hba, DBG_VCONN_EN, (on<<DBG_VCONN_EN_OFST));
-}
-#endif
-#else
 
 #ifdef MT6336_E1
 #define MAIN_CON5 (0x0405) /*0x00*/
@@ -777,7 +718,6 @@ unsigned int vbus_val(struct typec_hba *hba)
 
 	return vbus_val;
 }
-#endif
 
 int typec_is_vbus_present(struct typec_hba *hba, enum enum_vbus_lvl lvl)
 {
@@ -1892,15 +1832,6 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		goto out_error;
 	}
 
-#if FPGA_PLATFORM
-	if (!mmio_base) {
-		dev_err(dev,
-		"Invalid memory reference for mmio_base is NULL\n");
-		err = -ENODEV;
-		goto out_error;
-	}
-#endif
-
 	/*initialize controller data*/
 	hba = kzalloc(sizeof(struct typec_hba), GFP_KERNEL);
 	hba->dev = dev;
@@ -1934,19 +1865,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	if (hba->mode == 0)
 		goto next;
 
-	/*register IRQ*/
-#if FPGA_PLATFORM
-	dev_dbg(dev, "IRQ registration\n");
-	err = devm_request_irq(dev, irq, typec_top_intr, IRQF_SHARED | IRQF_TRIGGER_LOW, TYPEC, hba);
-	if (err) {
-		dev_err(hba->dev, "request irq failed\n");
-		goto out_error;
-	}
-#else
 	/*trigger by PMIC INTR*/
 	INIT_WORK(&hba->irq_work, typec_irq_work);
-#endif
-
 
 #ifdef MT6336_E1
 	/*INT_STATUS5 8th*/

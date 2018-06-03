@@ -49,8 +49,6 @@
 
 #include <linux/cdev.h>
 
-#include "typec-test.h"
-
 #include "pd.h"
 #include "usb_pd.h"
 
@@ -64,7 +62,6 @@
 
 /* configurations */
 /*platform dependent*/
-#define FPGA_PLATFORM 0 /*set to 1 if V7 FPGA is used*/
 #define USE_AUXADC 0 /*set to 1 if AUXADC is used*/
 #define CC_STANDALONE_COMPLIANCE 0 /*set to 1 use CC only. No related to USB function*/
 #define SUPPORT_PD 1
@@ -106,27 +103,10 @@
 #define DETECT_VSAFE_0V 1
 
 /*reference clock*/
-#if FPGA_PLATFORM
-#define REF_CLK_DIVIDEND 234 /*23.4k*/
-#define REF_CLK_DIVIDER 10
-#else
 #define REF_CLK_DIVIDEND 750 /*75k*/
 #define REF_CLK_DIVIDER 10
-#endif
 
 /*DAC reference voltage*/
-#if FPGA_PLATFORM
-#define SRC_VRD_DEFAULT_DAC_VAL 3
-#define SRC_VOPEN_DEFAULT_DAC_VAL 30
-#define SRC_VRD_15_DAC_VAL 5
-#define SRC_VOPEN_15_DAC_VAL 30
-#define SRC_VRD_30_DAC_VAL 15
-#define SRC_VOPEN_30_DAC_VAL 50
-
-#define SNK_VRPUSB_DAC_VAL 3
-#define SNK_VRP15_DAC_VAL 13
-#define SNK_VRP30_DAC_VAL 24
-#else
 #define SRC_VRD_DEFAULT_DAC_VAL 2
 #define SRC_VOPEN_DEFAULT_DAC_VAL 37
 #define SRC_VRD_15_DAC_VAL 7
@@ -137,7 +117,6 @@
 #define SNK_VRPUSB_DAC_VAL 2
 #define SNK_VRP15_DAC_VAL 14
 #define SNK_VRP30_DAC_VAL 29
-#endif
 
 #if USE_AUXADC
 
@@ -193,23 +172,8 @@ enum sink_power_states {
 #define POLLING_PERIOD_MS 2000
 #define POLLING_MAX_TIME (POLLING_PERIOD_MS / POLLING_INTERVAL_MS)
 
-/*Type-c base address*/
-#if FPGA_PLATFORM
-	#define CC_REG_BASE 0x0
-#elif defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	#define CC_REG_BASE 0x100
-#else
-	/*For MT6336*/
-	#define CC_REG_BASE 0x100
-#endif
-
-/*PD base address*/
-#if FPGA_PLATFORM
-	#define PD_REG_BASE 0x100
-#else
-	/*For MT6336*/
-	#define PD_REG_BASE 0x200
-#endif
+#define CC_REG_BASE 0x100
+#define PD_REG_BASE 0x200
 
 enum enum_typec_dbg_lvl {
 	TYPEC_DBG_LVL_0 = 0, /*nothing*/
@@ -418,9 +382,7 @@ struct typec_hba {
 	/* The state to go to after timeout */
 	enum pd_states timeout_state;
 	/* Timeout for the current state. Set to 0 for no timeout. */
-#if FPGA_PLATFORM
-	unsigned long timeout_jiffies;
-#endif
+
 	unsigned long timeout_ms;
 	struct hrtimer timeout_timer;
 	unsigned long timeout_user;
@@ -605,10 +567,6 @@ extern struct typec_hba *get_hba(void);
 extern int pd_task(void *data);
 extern void pd_set_data_role(struct typec_hba *hba, int role);
 extern void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload);
-
-#if FPGA_PLATFORM
-extern int ts_pd(struct file *file, int argc, char **argv);
-#endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 extern int mt_dual_role_phy_init(struct typec_hba *hba);

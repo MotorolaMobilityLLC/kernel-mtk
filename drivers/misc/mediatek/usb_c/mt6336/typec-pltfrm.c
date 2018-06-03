@@ -102,43 +102,9 @@ static int typec_pltfrm_probe(struct platform_device *pdev)
 {
 	struct typec_hba *hba;
 	void __iomem *mmio_base = NULL;
-#if FPGA_PLATFORM
-	struct resource *mem_res;
-	resource_size_t mem_size;
-#endif
+
 	int irq = 0, err;
 	struct device *dev = &pdev->dev;
-
-#if FPGA_PLATFORM
-	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!mem_res) {
-		dev_err(dev, "Memory resource not available\n");
-		err = -ENODEV;
-		goto out;
-	}
-
-	mem_size = resource_size(mem_res);
-	if (!devm_request_mem_region(dev, mem_res->start, mem_size, "typec")) {
-		dev_err(&pdev->dev,
-			"Cannot reserve the memory resource\n");
-		err = -EBUSY;
-		goto out;
-	}
-
-	mmio_base = devm_ioremap_nocache(dev, mem_res->start, mem_size);
-	if (!mmio_base) {
-		dev_err(&pdev->dev, "memory map failed\n");
-		err = -ENOMEM;
-		goto out;
-	}
-
-	irq = platform_get_irq(pdev, 0);
-	if (irq < 0) {
-		dev_err(dev, "IRQ resource not available\n");
-		err = -ENODEV;
-		goto out;
-	}
-#endif
 
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
@@ -156,9 +122,7 @@ static int typec_pltfrm_probe(struct platform_device *pdev)
 out_disable_rpm:
 	pm_runtime_disable(&pdev->dev);
 	pm_runtime_set_suspended(&pdev->dev);
-#if FPGA_PLATFORM
-out:
-#endif
+
 	return err;
 }
 
