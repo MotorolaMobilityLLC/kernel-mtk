@@ -600,6 +600,8 @@ static struct timeval g_now;
 static struct completion g_comp_AHB_Done;
 static struct completion g_comp_WR_Done;
 static struct completion g_comp_ER_Done;
+static struct completion g_comp_Busy_Ret;
+
 static struct NAND_CMD g_kCMD;
 bool g_bInitDone;
 static int g_i4Interrupt;
@@ -1723,7 +1725,11 @@ static irqreturn_t mtk_nand_irq_handler(int irqno, void *dev_id)
 	u16 u16IntStatus = DRV_Reg16(NFI_INTR_REG16);
 
 	/* pr_debug("mtk_nand_irq_handler 0x%x here\n", u16IntStatus); */
-	/* (void)irqno; */
+	if (u16IntStatus & (u16) INTR_BSY_RTN) {
+		NFI_CLN_REG16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+		complete(&g_comp_Busy_Ret);
+	}
+
 	if (u16IntStatus & (u16) INTR_WR_DONE) {
 		NFI_CLN_REG16(NFI_INTR_EN_REG16, INTR_WR_DONE_EN);
 		complete(&g_comp_WR_Done);
@@ -6775,14 +6781,14 @@ int mtk_chip_erase_blocks(struct mtd_info *mtd, int page, int page1)
 	if ((devinfo.advancedmode & MULTI_PLANE) && snd_real_row_addr) {
 		pr_debug("%s multi-plane real_row_addr:0x%x snd_real_row_addr:0x%x\n",
 			__func__, real_row_addr, snd_real_row_addr);
+		NFI_SET_REG16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
 		mtk_nand_set_mode(CNFG_OP_CUST);
 		mtk_nand_set_command(NAND_CMD_ERASE1);
 		mtk_nand_set_address(0, real_row_addr, 0, devinfo.addr_cycle - 2);
 		mtk_nand_set_command(NAND_CMD_ERASE1);
 		mtk_nand_set_address(0, snd_real_row_addr, 0, devinfo.addr_cycle - 2);
 		mtk_nand_set_command(NAND_CMD_ERASE2);
-		while (DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY)
-			;
+		wait_for_completion(&g_comp_Busy_Ret);
 		mtk_nand_reset();
 
 		result = chip->waitfunc(mtd, chip);
@@ -9822,6 +9828,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 
 	init_completion(&g_comp_WR_Done);
 	init_completion(&g_comp_ER_Done);
+	init_completion(&g_comp_Busy_Ret);
 #ifdef CONFIG_OF
 	err = request_irq(MT_NFI_IRQ_ID, mtk_nand_irq_handler, IRQF_TRIGGER_NONE, "mtk-nand", NULL);
 #else
