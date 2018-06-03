@@ -318,8 +318,8 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 		ret = true;
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
-		info->enable_pe_3,
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
+		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
 		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit());
 
@@ -328,8 +328,8 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 _fail:
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
-		info->enable_pe_3,
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d thermal:%d\n",
+		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
 		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit());
 
@@ -348,6 +348,7 @@ static void mtk_pe30_start(struct charger_manager *info)
 	pe3->pe30_charging_state = DC_INIT;
 	get_monotonic_boottime(&pe3->startTime);
 	wake_up_pe30_thread(info);
+	pe30_dc_enable_chip(info, true);
 	mutex_unlock(&pe3->pe30_mutex);
 
 }
@@ -426,6 +427,7 @@ static void _mtk_pe30_end(struct charger_manager *info, bool reset)
 		if (reset == true)
 			mtk_pe30_ta_hard_reset(info);
 		_wake_up_charger(info);
+		pe30_dc_enable_chip(info, false);
 	}
 	mutex_unlock(&pe3->pe30_mutex);
 }

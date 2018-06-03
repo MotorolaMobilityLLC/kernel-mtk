@@ -46,10 +46,14 @@ struct charger_consumer {
 /* charger consumer interface */
 extern struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 	const char *supply_name);
-extern int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
-	int input_current);
-extern int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
-	int charging_current);
+int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
+	int idx, int input_current);
+int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
+	int idx, int charging_current);
+int charger_manager_set_pe30_input_current_limit(struct charger_consumer *consumer,
+	int idx, int input_current);
+int charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer,
+	int idx, int *input_current);
 extern int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb);
 extern int unregister_charger_manager__notifier(struct charger_consumer *consumer,
