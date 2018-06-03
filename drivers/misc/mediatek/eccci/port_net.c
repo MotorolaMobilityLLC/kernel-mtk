@@ -303,7 +303,11 @@ struct ccmni_ccci_ops eccci_ccmni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
 	.ccmni_num = 18,
 	.name = "ccmni",
+#ifndef FEATURE_DIRECT_TETHERING_LOGGING
 	.md_ability = MODEM_CAP_DATA_ACK_DVD | MODEM_CAP_CCMNI_MQ,
+#else
+	.md_ability = MODEM_CAP_DATA_ACK_DVD | MODEM_CAP_CCMNI_MQ | MODEM_CAP_DIRECT_TETHERING,
+#endif
 	.irat_md_id = -1,
 	.napi_poll_weigh = NAPI_POLL_WEIGHT,
 	.send_pkt = ccmni_send_pkt,
