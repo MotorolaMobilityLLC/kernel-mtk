@@ -36,6 +36,8 @@
 ********************************************************************************
 */
 
+#define OPEN_FIRMWARE_BY_REQUEST		1
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -109,6 +111,105 @@ VOID kalHifAhbKalWakeLockTimeout(IN P_GLUE_INFO_T prGlueInfo)
 
 #if CFG_ENABLE_FW_DOWNLOAD
 
+#if OPEN_FIRMWARE_BY_REQUEST
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is used to load firmware image
+*
+* \param pvGlueInfo     Pointer of GLUE Data Structure
+* \param ppvMapFileBuf  Pointer of pointer to memory-mapped firmware image
+* \param pu4FileLength  File length and memory mapped length as well
+
+* \retval Map File Handle, used for unammping
+*/
+/*----------------------------------------------------------------------------*/
+PVOID kalFirmwareImageMapping(IN P_GLUE_INFO_T prGlueInfo, OUT PPVOID ppvMapFileBuf, OUT PUINT_32 pu4FileLength)
+{
+	GL_HIF_INFO_T *prHifInfo = &prGlueInfo->rHifInfo;
+	INT_32 i4Ret = 0;
+	UINT_8 aucFilePath[32];
+
+	DEBUGFUNC("kalFirmwareImageMapping");
+
+	ASSERT(prGlueInfo);
+	ASSERT(ppvMapFileBuf);
+	ASSERT(pu4FileLength);
+
+	prGlueInfo->prFw = NULL;
+	kalMemZero(aucFilePath, sizeof(aucFilePath));
+
+#if defined(MT6620) & CFG_MULTI_ECOVER_SUPPORT
+	switch (mtk_wcn_wmt_hwver_get()) {
+	case WMTHWVER_MT6620_E1:
+	case WMTHWVER_MT6620_E2:
+	case WMTHWVER_MT6620_E3:
+	case WMTHWVER_MT6620_E4:
+	case WMTHWVER_MT6620_E5:
+		kalMemCopy(aucFilePath, CFG_FW_FILENAME,
+			strlen(CFG_FW_FILENAME));
+		break;
+	case WMTHWVER_MT6620_E6:
+	default:
+		kalMemCopy(aucFilePath, CFG_FW_FILENAME "_E6",
+			strlen(CFG_FW_FILENAME "_E6"));
+		break;
+	}
+#elif defined(MT6628)
+#if 0				/* new wifi ram code mechanism, waiting firmware ready, then we can enable these code */
+	kalMemCopy(aucFilePath, CFG_FW_FILENAME "_AD",
+		strlen(CFG_FW_FILENAME "_AD"));
+#endif
+	kalMemCopy(aucFilePath, CFG_FW_FILENAME "_",
+		strlen(CFG_FW_FILENAME "_"));
+	glGetChipInfo(prGlueInfo, &aucFilePath[strlen(CFG_FW_FILENAME "_")]);
+#else
+	kalMemCopy(aucFilePath, CFG_FW_FILENAME,
+		strlen(CFG_FW_FILENAME));
+#endif
+
+	/* <1> Open firmware */
+	do {
+		i4Ret = request_firmware(&prGlueInfo->prFw, aucFilePath, prHifInfo->Dev);
+	} while (i4Ret == -EAGAIN); /* By programming guide */
+
+	if (i4Ret == WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, INFO, "FW %s: request done [%d]\n", aucFilePath, i4Ret);
+	} else {
+		DBGLOG(INIT, ERROR, "FW %s: request failed [%d]\n", aucFilePath, i4Ret);
+		return NULL;
+	}
+
+	*pu4FileLength = prGlueInfo->prFw->size;
+	*ppvMapFileBuf = ((u8 *) prGlueInfo->prFw->data);
+
+	return ((u8 *) prGlueInfo->prFw->data);
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is used to unload firmware image mapped memory
+*
+* \param pvGlueInfo     Pointer of GLUE Data Structure
+* \param pvFwHandle     Pointer to mapping handle
+* \param pvMapFileBuf   Pointer to memory-mapped firmware image
+*
+* \retval none
+*/
+/*----------------------------------------------------------------------------*/
+
+VOID kalFirmwareImageUnmapping(IN P_GLUE_INFO_T prGlueInfo, IN PVOID prFwHandle, IN PVOID pvMapFileBuf)
+{
+	DEBUGFUNC("kalFirmwareImageUnmapping");
+
+	ASSERT(prGlueInfo);
+	ASSERT(pvMapFileBuf);
+
+	release_firmware(prGlueInfo->prFw);
+
+}
+
+#else
+
 static struct file *filp;
 static uid_t orgfsuid;
 static gid_t orgfsgid;
@@ -130,8 +231,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 {
 	UINT_8 aucFilePath[50];
 
-	/*
-	 * FIX ME: since we don't have hotplug script in the filesystem,
+	/* FIX ME: since we don't have hotplug script in the filesystem,
 	 * so the request_firmware() KAPI can not work properly
 	 */
 
@@ -377,76 +477,9 @@ VOID kalFirmwareImageUnmapping(IN P_GLUE_INFO_T prGlueInfo, IN PVOID prFwHandle,
 	kalFirmwareClose(prGlueInfo);
 }
 
-#endif
+#endif /* OPEN_FIRMWARE_BY_REQUEST */
 
-#if 0
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is used to load firmware image
-*
-* \param pvGlueInfo     Pointer of GLUE Data Structure
-* \param ppvMapFileBuf  Pointer of pointer to memory-mapped firmware image
-* \param pu4FileLength  File length and memory mapped length as well
-
-* \retval Map File Handle, used for unammping
-*/
-/*----------------------------------------------------------------------------*/
-
-PVOID kalFirmwareImageMapping(IN P_GLUE_INFO_T prGlueInfo, OUT PPVOID ppvMapFileBuf, OUT PUINT_32 pu4FileLength)
-{
-	INT_32 i4Ret = 0;
-
-	DEBUGFUNC("kalFirmwareImageMapping");
-
-	ASSERT(prGlueInfo);
-	ASSERT(ppvMapFileBuf);
-	ASSERT(pu4FileLength);
-
-	do {
-		GL_HIF_INFO_T *prHifInfo = &prGlueInfo->rHifInfo;
-
-		prGlueInfo->prFw = NULL;
-
-		/* <1> Open firmware */
-		i4Ret = request_firmware(&prGlueInfo->prFw, CFG_FW_FILENAME, prHifInfo->Dev);
-
-		if (i4Ret) {
-			DBGLOG(INIT, TRACE, "fw %s:request failed %d\n", CFG_FW_FILENAME, i4Ret);
-			break;
-		}
-		*pu4FileLength = prGlueInfo->prFw->size;
-		*ppvMapFileBuf = prGlueInfo->prFw->data;
-		return prGlueInfo->prFw->data;
-
-	} while (FALSE);
-
-	return NULL;
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is used to unload firmware image mapped memory
-*
-* \param pvGlueInfo     Pointer of GLUE Data Structure
-* \param pvFwHandle     Pointer to mapping handle
-* \param pvMapFileBuf   Pointer to memory-mapped firmware image
-*
-* \retval none
-*/
-/*----------------------------------------------------------------------------*/
-
-VOID kalFirmwareImageUnmapping(IN P_GLUE_INFO_T prGlueInfo, IN PVOID prFwHandle, IN PVOID pvMapFileBuf)
-{
-	DEBUGFUNC("kalFirmwareImageUnmapping");
-
-	ASSERT(prGlueInfo);
-	ASSERT(pvMapFileBuf);
-
-	release_firmware(prGlueInfo->prFw);
-
-}
-#endif
+#endif /* CFG_ENABLE_FW_DOWNLOAD */
 
 /*----------------------------------------------------------------------------*/
 /*!
