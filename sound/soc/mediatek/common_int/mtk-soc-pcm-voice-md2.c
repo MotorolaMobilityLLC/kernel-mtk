@@ -66,7 +66,6 @@
 
 static int mtk_voice_md2_probe(struct platform_device *pdev);
 static int mtk_voice_md2_close(struct snd_pcm_substream *substream);
-static int mtk_soc_voice_md2_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_voice_md2_platform_probe(struct snd_soc_platform *platform);
 
 #define MAX_PCM_DEVICES     4
@@ -329,7 +328,6 @@ static struct snd_pcm_ops mtk_voice_md2_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_voice_md2_platform = {
 	.ops        = &mtk_voice_md2_ops,
-	.pcm_new    = mtk_soc_voice_md2_new,
 	.probe      = mtk_voice_md2_platform_probe,
 };
 
@@ -345,14 +343,6 @@ static int mtk_voice_md2_probe(struct platform_device *pdev)
 	pr_warn("%s(), dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_voice_md2_platform);
-}
-
-static int mtk_soc_voice_md2_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_warn("%s()\n", __func__);
-	return ret;
 }
 
 static int mtk_voice_md2_platform_probe(struct snd_soc_platform *platform)

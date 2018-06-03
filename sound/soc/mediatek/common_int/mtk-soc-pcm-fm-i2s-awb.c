@@ -73,7 +73,6 @@ static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream);
 static void StopAudioFMI2SAWBHardware(struct snd_pcm_substream *substream);
 static int mtk_fm_i2s_awb_probe(struct platform_device *pdev);
 static int mtk_fm_i2s_awb_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_fm_i2s_awb_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_fm_i2s_awb_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_mgrrx_awb_hardware = {
@@ -347,14 +346,11 @@ static struct snd_pcm_ops mtk_fm_i2s_awb_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_fm_i2s_awb_ops,
-	.pcm_new    = mtk_asoc_fm_i2s_awb_pcm_new,
 	.probe      = mtk_afe_fm_i2s_awb_probe,
 };
 
 static int mtk_fm_i2s_awb_probe(struct platform_device *pdev)
 {
-	pr_warn("mtk_fm_i2s_awb_probe\n");
-
 	fm_capture_mem_blk = get_usage_digital_block(AUDIO_USAGE_FM_CAPTURE);
 	if (fm_capture_mem_blk < 0) {
 		pr_debug("%s(), invalid mem blk %d, use default\n",
@@ -376,16 +372,9 @@ static int mtk_fm_i2s_awb_probe(struct platform_device *pdev)
 					 &mtk_soc_platform);
 }
 
-static int mtk_asoc_fm_i2s_awb_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_warn("mtk_asoc_fm_i2s_awb_pcm_new\n");
-	return 0;
-}
-
-
 static int mtk_afe_fm_i2s_awb_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_afe_fm_i2s_awb_probe\n");
+	pr_debug("mtk_afe_fm_i2s_awb_probe\n");
 	AudDrv_Allocate_mem_Buffer(platform->dev, fm_capture_mem_blk,
 				   FM_I2S_MAX_BUFFER_SIZE);
 	Awb_Capture_dma_buf =  Get_Mem_Buffer(fm_capture_mem_blk);
@@ -427,7 +416,7 @@ static int __init mtk_soc_fm_i2s_awb_platform_init(void)
 {
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_fm_i2s_capture_dev = platform_device_alloc(MT_SOC_FM_I2S_AWB_PCM, -1);
 	if (!soc_fm_i2s_capture_dev)
@@ -445,7 +434,7 @@ static int __init mtk_soc_fm_i2s_awb_platform_init(void)
 
 static void __exit mtk_soc_fm_i2s_awb_platform_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	platform_driver_unregister(&mtk_fm_i2s_awb_capture_driver);
 }
 

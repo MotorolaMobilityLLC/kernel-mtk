@@ -104,7 +104,6 @@ static const struct snd_kcontrol_new lpbk_controls[] = {
 
 static int mtk_uldlloopback_probe(struct platform_device *pdev);
 static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_uldlloopback_hardware = {
@@ -124,8 +123,6 @@ static struct snd_pcm_hardware mtk_uldlloopback_hardware = {
 	.periods_max =      MAX_PERIOD_SIZE,
 	.fifo_size =        0,
 };
-
-static struct snd_soc_pcm_runtime *pruntimepcm;
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
@@ -377,7 +374,6 @@ static struct snd_pcm_ops mtk_afe_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_dummy_platform = {
 	.ops        = &mtk_afe_ops,
-	.pcm_new    = mtk_asoc_uldlloopbackpcm_new,
 	.probe      = mtk_afe_uldlloopback_probe,
 };
 
@@ -396,16 +392,6 @@ static int mtk_uldlloopback_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_dummy_platform);
 }
-
-static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pruntimepcm  = rtd;
-	pr_warn("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform)
 {

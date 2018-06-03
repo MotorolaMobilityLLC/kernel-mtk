@@ -380,14 +380,6 @@ static int mtk_pcm_btcvsd_rx_silence(struct snd_pcm_substream *substream,
 	return 0; /* do nothing */
 }
 
-static int mtk_asoc_pcm_btcvsd_rx_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	LOGBT("%s\n", __func__);
-	return ret;
-}
-
 static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 	.open =     mtk_pcm_btcvsd_rx_open,
 	.close =    mtk_pcm_btcvsd_rx_close,
@@ -589,7 +581,6 @@ static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
 
 static struct snd_soc_platform_driver mtk_btcvsd_rx_soc_platform = {
 	.ops        = &mtk_btcvsd_rx_ops,
-	.pcm_new    = mtk_asoc_pcm_btcvsd_rx_new,
 	.probe = mtk_asoc_pcm_btcvsd_rx_probe,
 };
 

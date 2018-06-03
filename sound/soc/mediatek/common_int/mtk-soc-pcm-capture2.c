@@ -69,7 +69,6 @@ static bool mPrepareDone;
  */
 static int mtk_capture2_probe(struct platform_device *pdev);
 static int mtk_capture2_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_capture2_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_capture2_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_capture2_hardware = {
@@ -358,7 +357,6 @@ static struct snd_pcm_ops mtk_afe_capture2_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_afe_capture2_ops,
-	.pcm_new    = mtk_asoc_capture2_pcm_new,
 	.probe      = mtk_afe_capture2_probe,
 };
 
@@ -377,13 +375,6 @@ static int mtk_capture2_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
-
-static int mtk_asoc_capture2_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_warn("mtk_asoc_capture2_pcm_new\n");
-	return 0;
-}
-
 
 static int mtk_afe_capture2_probe(struct snd_soc_platform *platform)
 {

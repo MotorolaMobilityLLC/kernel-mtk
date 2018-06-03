@@ -82,7 +82,6 @@
 
 static int mtk_afe_routing_probe(struct platform_device *pdev);
 static int mtk_routing_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_routing_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_routing_platform_probe(struct snd_soc_platform *platform);
 
 static int mDac_Sinegen = 27;	/* "OFF" */
@@ -775,8 +774,6 @@ static const struct snd_kcontrol_new Afe_Anc_controls[] = {
 	SOC_ENUM_EXT("Pmic_Anc_Switch", Afe_Anc_Enum[0], Afe_Anc_Get, Afe_Anc_Set),
 };
 
-static struct snd_soc_pcm_runtime *pruntimepcm;
-
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
 	.list = soc_high_supported_sample_rates,
@@ -892,7 +889,6 @@ static struct snd_pcm_ops mtk_afe_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_routing_platform = {
 	.ops = &mtk_afe_ops,
-	.pcm_new = mtk_asoc_routing_pcm_new,
 	.probe = mtk_afe_routing_platform_probe,
 };
 
@@ -909,15 +905,6 @@ static int mtk_afe_routing_probe(struct platform_device *pdev)
 
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_routing_platform);
-}
-
-static int mtk_asoc_routing_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pruntimepcm = rtd;
-	pr_warn("%s\n", __func__);
-	return ret;
 }
 
 static int mtk_afe_routing_platform_probe(struct snd_soc_platform *platform)

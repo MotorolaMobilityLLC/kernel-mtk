@@ -65,7 +65,6 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream);
 static void StopAudioBtDaiHardware(struct snd_pcm_substream *substream);
 static int mtk_bt_dai_probe(struct platform_device *pdev);
 static int mtk_bt_dai_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_bt_dai_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_btdai_hardware = {
@@ -490,7 +489,6 @@ static struct snd_pcm_ops mtk_bt_dai_ops = {
 
 static struct snd_soc_platform_driver mtk_bt_dai_soc_platform = {
 	.ops        = &mtk_bt_dai_ops,
-	.pcm_new    = mtk_asoc_bt_dai_pcm_new,
 	.probe      = mtk_asoc_bt_dai_probe,
 };
 
@@ -508,12 +506,6 @@ static int mtk_bt_dai_probe(struct platform_device *pdev)
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_bt_dai_soc_platform);
-}
-
-static int mtk_asoc_bt_dai_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_warn("mtk_asoc_bt_dai_pcm_new\n");
-	return 0;
 }
 
 static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform)

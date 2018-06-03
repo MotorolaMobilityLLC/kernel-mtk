@@ -77,7 +77,6 @@ static int bt_dl_mem_blk_io = Soc_Aud_AFE_IO_Block_MEM_DL2;
 
 static int mtk_dl1bt_probe(struct platform_device *pdev);
 static int mtk_Dl1Bt_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_Dl1Bt_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_dl1bt_pcm_hardware = {
@@ -344,7 +343,6 @@ static struct snd_pcm_ops mtk_d1lbt_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_dl1bt_platform = {
 	.ops        = &mtk_d1lbt_ops,
-	.pcm_new    = mtk_asoc_Dl1Bt_pcm_new,
 	.probe      = mtk_asoc_dl1bt_probe,
 };
 
@@ -366,15 +364,6 @@ static int mtk_dl1bt_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_dl1bt_platform);
 }
-
-static int mtk_asoc_Dl1Bt_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUDDRV("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
 {

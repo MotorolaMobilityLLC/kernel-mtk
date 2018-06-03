@@ -4727,17 +4727,6 @@ static int read_efuse_hp_impedance_current_calibration(void)
 	return value;
 }
 
-static const struct snd_soc_dapm_widget mt6356_dapm_widgets[] = {
-	/* Outputs */
-	SND_SOC_DAPM_OUTPUT("EARPIECE"),
-	SND_SOC_DAPM_OUTPUT("HEADSET"),
-	SND_SOC_DAPM_OUTPUT("SPEAKER"),
-};
-
-static const struct snd_soc_dapm_route mtk_audio_map[] = {
-	{"VOICE_Mux_E", "Voice Mux", "SPEAKER PGA"},
-};
-
 static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 {
 	pr_debug("%s\n", __func__);
@@ -4803,15 +4792,10 @@ static void InitGlobalVarDefault(void)
 
 static int mt6356_codec_probe(struct snd_soc_codec *codec)
 {
-	struct snd_soc_dapm_context *dapm = &codec->component.dapm;
-
 	pr_debug("%s()\n", __func__);
 
 	if (mInitCodec == true)
 		return 0;
-
-	snd_soc_dapm_new_controls(dapm, mt6356_dapm_widgets, ARRAY_SIZE(mt6356_dapm_widgets));
-	snd_soc_dapm_add_routes(dapm, mtk_audio_map, ARRAY_SIZE(mtk_audio_map));
 
 	/* add codec controls */
 	snd_soc_add_codec_controls(codec, mt6356_snd_controls, ARRAY_SIZE(mt6356_snd_controls));
@@ -4865,16 +4849,6 @@ static struct snd_soc_codec_driver soc_mtk_codec = {
 
 	.read = mt6356_read,
 	.write = mt6356_write,
-
-	/* use add control to replace */
-	/* .controls = mt6356_snd_controls, */
-	/* .num_controls = ARRAY_SIZE(mt6356_snd_controls), */
-
-	.dapm_widgets = mt6356_dapm_widgets,
-	.num_dapm_widgets = ARRAY_SIZE(mt6356_dapm_widgets),
-	.dapm_routes = mtk_audio_map,
-	.num_dapm_routes = ARRAY_SIZE(mtk_audio_map),
-
 };
 
 static int mtk_mt6356_codec_dev_probe(struct platform_device *pdev)

@@ -70,7 +70,6 @@ static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream);
 static void StopAudioAWBHardware(struct snd_pcm_substream *substream);
 static int mtk_mrgrx_awb_probe(struct platform_device *pdev);
 static int mtk_mrgrx_awb_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_mrgrx_awb_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_mrgrx_awb_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_mgrrx_awb_hardware = {
@@ -323,7 +322,6 @@ static struct snd_pcm_ops mtk_mrgrx_awb_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_mrgrx_awb_ops,
-	.pcm_new    = mtk_asoc_mrgrx_awb_pcm_new,
 	.probe      = mtk_afe_mrgrx_awb_probe,
 };
 
@@ -342,13 +340,6 @@ static int mtk_mrgrx_awb_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
-
-static int mtk_asoc_mrgrx_awb_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_warn("mtk_asoc_mrgrx_awb_pcm_new\n");
-	return 0;
-}
-
 
 static int mtk_afe_mrgrx_awb_probe(struct snd_soc_platform *platform)
 {

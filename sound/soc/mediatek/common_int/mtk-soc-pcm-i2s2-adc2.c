@@ -74,7 +74,6 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream);
 static void StopAudioI2S2adc2Hardware(struct snd_pcm_substream *substream);
 static int mtk_i2s2_adc2_probe(struct platform_device *pdev);
 static int mtk_i2s2_adc2_pcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_i2s2_adc2_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_i2s2_adc2_data_probe(struct snd_soc_platform *platform);
 
 static struct snd_pcm_hardware mtk_I2S2_adc2_hardware = {
@@ -283,7 +282,6 @@ static struct snd_pcm_ops mtk_i2s2_adc2_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops        = &mtk_i2s2_adc2_ops,
-	.pcm_new    = mtk_asoc_i2s2_adc2_pcm_new,
 	.probe      = mtk_i2s2_adc2_data_probe,
 };
 
@@ -302,12 +300,6 @@ static int mtk_i2s2_adc2_probe(struct platform_device *pdev)
 	mDev = &pdev->dev;
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
-}
-
-static int mtk_asoc_i2s2_adc2_pcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	pr_debug("mtk_asoc_i2s2_adc2_pcm_new\n");
-	return 0;
 }
 
 static int mtk_i2s2_adc2_data_probe(struct snd_soc_platform *platform)

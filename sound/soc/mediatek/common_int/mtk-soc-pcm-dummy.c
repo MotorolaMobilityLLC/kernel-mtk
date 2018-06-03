@@ -65,11 +65,7 @@
 
 static int mtk_dummy_probe(struct platform_device *pdev);
 static int mtk_dummypcm_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_dummypcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_dummy_probe(struct snd_soc_platform *platform);
-
-
-static struct snd_soc_pcm_runtime *pruntimepcm;
 
 static struct snd_pcm_hardware mtk_dummy_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
@@ -178,7 +174,6 @@ static struct snd_pcm_ops mtk_afe_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_dummy_platform = {
 	.ops        = &mtk_afe_ops,
-	.pcm_new    = mtk_asoc_dummypcm_new,
 	.probe      = mtk_afe_dummy_probe,
 };
 
@@ -196,15 +191,6 @@ static int mtk_dummy_probe(struct platform_device *pdev)
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_dummy_platform);
-}
-
-static int mtk_asoc_dummypcm_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pruntimepcm  = rtd;
-	pr_warn("%s\n", __func__);
-	return ret;
 }
 
 static int mtk_afe_dummy_probe(struct snd_soc_platform *platform)
