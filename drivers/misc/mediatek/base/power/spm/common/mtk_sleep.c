@@ -65,11 +65,11 @@ static u32 slp_spm_deepidle_flags = {
 };
 
 static u32 slp_spm_flags1 = {
-	SPM_FLAG1_DIS_CKSQ_OFF
+	0
 };
 
 static u32 slp_spm_deepidle_flags1 = {
-	SPM_FLAG1_DIS_CKSQ_OFF
+	0
 };
 
 static u32 slp_spm_flags1;
