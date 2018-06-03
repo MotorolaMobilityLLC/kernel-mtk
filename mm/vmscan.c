@@ -2081,6 +2081,64 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 	return shrink_inactive_list(nr_to_scan, lruvec, sc, lru);
 }
 
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+/* threshold of swapin and out */
+static int swpinout_threshold = 3000;
+module_param_named(threshold, swpinout_threshold, int, 0644);
+static int vmscan_swap_file_ratio = 1;
+module_param_named(swap_file_ratio, vmscan_swap_file_ratio, int, 0644);
+static bool is_swap_thrashing(void)
+{
+	static unsigned long prev_time;
+	static unsigned long prev_swpinout;
+	int cpu;
+	bool thrashing = false;
+	unsigned long swpinout = 0;
+
+	if (prev_time == 0)
+		prev_time = jiffies;
+
+	if (time_after(jiffies, prev_time + (HZ >> 2))) {
+		for_each_online_cpu(cpu) {
+			struct vm_event_state *this =
+					&per_cpu(vm_event_states, cpu);
+
+			swpinout += this->event[PSWPIN] + this->event[PSWPOUT];
+		}
+
+		if (((swpinout - prev_swpinout) /
+		    (jiffies - prev_time + 1) * HZ) >
+		    swpinout_threshold)
+			thrashing = true;
+		else
+			thrashing = false;
+
+		prev_swpinout = swpinout;
+		prev_time = jiffies;
+	}
+
+	return thrashing;
+}
+
+static unsigned long get_adaptive_anon_prio(int swappiness, unsigned long anon,
+					    unsigned long file,
+					    unsigned long *file_prio)
+{
+	unsigned long anon_prio;
+
+	if (likely(vmscan_swap_file_ratio) && !is_swap_thrashing()) {
+		anon_prio = (swappiness * anon) / (anon + file + 1);
+		*file_prio = (unsigned long)(200 - swappiness) * file /
+			     (anon + file + 1);
+	} else {
+		anon_prio = swappiness;
+		*file_prio = (unsigned long)(200 - swappiness);
+	}
+
+	return anon_prio;
+}
+#endif
+
 enum scan_balance {
 	SCAN_EQUAL,
 	SCAN_FRACT,
@@ -2235,6 +2293,11 @@ static void get_scan_count(struct lruvec *lruvec, struct mem_cgroup *memcg,
 		lruvec_lru_size(lruvec, LRU_INACTIVE_ANON, MAX_NR_ZONES);
 	file  = lruvec_lru_size(lruvec, LRU_ACTIVE_FILE, MAX_NR_ZONES) +
 		lruvec_lru_size(lruvec, LRU_INACTIVE_FILE, MAX_NR_ZONES);
+
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	/* Compute anon_prio adaptively */
+	anon_prio = get_adaptive_anon_prio(swappiness, anon, file, &file_prio);
+#endif
 
 	spin_lock_irq(&pgdat->lru_lock);
 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
@@ -2442,8 +2505,9 @@ static void shrink_node_memcg(struct pglist_data *pgdat, struct mem_cgroup *memc
 	memcpy(targets, nr, sizeof(nr));
 
 	/* Give a chance to migrate anon pages */
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && nr[LRU_INACTIVE_ANON] == 0)
-		nr[LRU_INACTIVE_ANON] = SWAP_CLUSTER_MAX;
+	if (!IS_ENABLED(CONFIG_MTK_GMO_RAM_OPTIMIZE) &&
+	    IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && nr[LRU_INACTIVE_ANON] == 0)
+		nr[LRU_INACTIVE_ANON] = 1;
 
 	/*
 	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
