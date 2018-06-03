@@ -586,20 +586,31 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
 		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_LP);
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
+		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
+		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_LP);
+#endif
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
 		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
 		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
 		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
+#endif
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
