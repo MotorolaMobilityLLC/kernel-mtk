@@ -121,6 +121,8 @@ struct mtp_dev {
 	uint16_t xfer_command;
 	uint32_t xfer_transaction_id;
 	int xfer_result;
+	int is_boost;
+	struct cpumask cpu_mask;
 };
 
 static struct usb_interface_descriptor mtp_interface_desc = {
@@ -545,6 +547,44 @@ fail:
 	return -1;
 }
 
+struct cpumask *mtp_get_cpu_mask(void)
+{
+	struct mtp_dev *dev = _mtp_dev;
+
+	if (dev)
+		return &(dev->cpu_mask);
+	else
+		return NULL;
+}
+
+void mtp_set_cpu_mask(unsigned int mask)
+{
+	struct mtp_dev *dev = _mtp_dev;
+	int i = 1, idx = 0;
+
+	cpumask_clear(&(dev->cpu_mask));
+
+	while (i <= mask) {
+		if (i & mask) {
+			cpumask_set_cpu(idx, &(dev->cpu_mask));
+			pr_info("Set CPU[%d] On\n", idx);
+		}
+		idx++;
+		i = i << 1;
+	}
+	dev->is_boost = 0;
+}
+
+int mtp_get_mtp_server(void)
+{
+	struct mtp_dev *dev = _mtp_dev;
+
+	if (dev)
+		return dev->is_boost;
+	else
+		return -ENODEV;
+}
+
 #define MTP_QUEUE_DBG(fmt, args...)		\
 	pr_warn("MTP_QUEUE_DBG, <%s(), %d> " fmt, __func__, __LINE__, ## args)
 #define MTP_QUEUE_DBG_STR_SZ 128
@@ -596,6 +636,11 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	}
 
 	DBG(cdev, "mtp_read(%zu)\n", count);
+
+	if (true) {
+		set_cpus_allowed_ptr(current, &dev->cpu_mask);
+		dev->is_boost = current->pid;
+	}
 
 	if (count > MTP_BULK_BUFFER_SIZE)
 		return -EINVAL;
@@ -1134,6 +1179,8 @@ static int mtp_release(struct inode *ip, struct file *fp)
 {
 	pr_info("mtp_release\n");
 
+	_mtp_dev->is_boost = 0;
+
 	mtp_unlock(&_mtp_dev->open_excl);
 	return 0;
 }
@@ -1467,6 +1514,9 @@ static int __mtp_setup(struct mtp_instance *fi_mtp)
 	}
 	INIT_WORK(&dev->send_file_work, send_file_work);
 	INIT_WORK(&dev->receive_file_work, receive_file_work);
+
+	dev->is_boost = 0;
+	cpumask_clear(&(dev->cpu_mask));
 
 	_mtp_dev = dev;
 

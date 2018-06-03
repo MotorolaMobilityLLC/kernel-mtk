@@ -32,7 +32,7 @@ struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
 /* -1 denote not used*/
-struct act_arg_obj cpu_freq_test_arg = {2000000, -1, -1};
+struct act_arg_obj cpu_freq_test_arg = {2500000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
 #elif defined(CONFIG_ARCH_MT6XXX)
 /* add new here */
