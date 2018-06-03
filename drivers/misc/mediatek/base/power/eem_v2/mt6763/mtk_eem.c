@@ -259,28 +259,6 @@ static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	 71875, 71875, 71875, 71875},
 };
 
-static unsigned int vcore_opp_L4_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{79375, 78750, 78125, 77500,
-	 76875, 76250, 75625, 75000,
-	 74375, 73750, 73125, 72500,
-	 71875, 71250, 70625, 70000},
-
-	{79375, 78750, 78125, 77500,
-	 76875, 76250, 75625, 75000,
-	 74375, 73750, 73125, 72500,
-	 71875, 71250, 70625, 70000},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
-};
-
 static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	{79375, 78750, 78125, 77500,
 	 76875, 76250, 75625, 75000,
@@ -376,7 +354,7 @@ static void get_vcore_opp(void)
 	 * The opp table selection is depend on DRAM type and
 	 * DRAM channel, need to consult with Max Yu for the
 	 * relative api.
-	 * vcore_opp_L4_2CH, vcore_opp_L4_1CH, vcore_opp_L3_1CH
+	 * vcore_opp_L4_2CH, vcore_opp_L3_1CH
 	*/
 
 	#if 1
@@ -389,8 +367,6 @@ static void get_vcore_opp(void)
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
 		vcore_opp = &vcore_opp_L4_2CH[0];
-	else if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 1)
-		vcore_opp = &vcore_opp_L4_1CH[0];
 	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
 		vcore_opp = &vcore_opp_L3_1CH[0];
 	else {
