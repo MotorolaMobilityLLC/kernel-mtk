@@ -1566,7 +1566,7 @@
 		reg = <0 0x11290000 0 0x1000>;
 	};
 
-	ufshci@11270000 {
+	ufshci:ufshci@11270000 {
 		compatible = "mediatek,ufshci";
 		reg = <0 0x11270000 0 0x2300>;
 		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_LOW>;
@@ -1579,6 +1579,13 @@
 		freq-table-hz =
 			<0 0>,
 			<0 0>;
+
+		/* Regulators */
+		/* In MT6763, only VCC is available to be controlled by UFS driver */
+		/* VCCQ:  Provided by external LDO. SW control is not necessary */
+		/* VCCQ2: Not supported by current UFS devices */
+		vcc-supply = <&mt_pmic_vemc_ldo_reg>;
+		vcc-fixed-regulator;
 
 		/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
 		mediatek,auto-hibern8-timer = <0>;
@@ -1595,6 +1602,11 @@
 
 		/* 3. Runtime Suspend Level */
 		mediatek,rpm-level = <3>;
+	};
+
+	ufs_mphy@11fa0000 {
+		compatible = "mediatek,ufs_mphy";
+		reg = <0 0x11fa0000 0 0xc000>;
 	};
 
 	ca9peri@10e00000 {
@@ -3413,6 +3425,42 @@
 
 	rt-pd-manager {
 		compatible = "mediatek,rt-pd-manager";
+	};
+};
+
+&ufshci {
+	pinctrl-names =
+			"default",
+			"state_va09_on",
+			"state_va09_off";
+
+	pinctrl-0 = <&ufshci_pins_default>;
+	pinctrl-1 = <&ufshci_pins_state_va09_on>;
+	pinctrl-2 = <&ufshci_pins_state_va09_off>;
+	status = "okay";
+};
+
+&pio {
+	ufshci_pins_default: ufshci_default {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
+		};
+	};
+	ufshci_pins_state_va09_on: ufshci_va09on {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
+			slew-rate = <1>;  /* direction: output */
+			output-low;      /* output: VA09 ON */
+			bias-disable;     /* pull: disabled */
+		};
+	};
+	ufshci_pins_state_va09_off: ufshci_va09off {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
+			slew-rate = <1>;  /* direction: output */
+			output-high;       /* output: VA09 OFF */
+			bias-disable;     /* pull: disabled */
+		};
 	};
 };
 

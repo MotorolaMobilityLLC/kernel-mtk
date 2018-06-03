@@ -11,6 +11,7 @@
 
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/pinctrl/pinctrl.h>
 
 #include "ufs.h"
 #include "ufshcd.h"
@@ -20,12 +21,17 @@
 
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"
+#include "mtk_secure_api.h"
 
 /* #define UFS_DEV_REF_CLK_CONTROL */
 
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
+static struct pinctrl *ufs_mtk_pinctrl;
+static struct pinctrl_state *ufs_mtk_pins_default;
+static struct pinctrl_state *ufs_mtk_pins_va09_on;
+static struct pinctrl_state *ufs_mtk_pins_va09_off;
 
 /*
  * In early-porting stage, because of no bootrom, something finished by bootrom shall be finished here instead.
@@ -226,6 +232,7 @@ int ufs_mtk_pltfrm_init(void)
 int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 {
 	struct device_node *node_pericfg;
+	struct device_node *node_ufs_mphy;
 	int err = 0;
 
 	/* get ufs_mtk_mmio_base_pericfg */
@@ -242,6 +249,59 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 		}
 	} else
 		dev_err(hba->dev, "error: node_pericfg init fail\n");
+
+	/* get ufs_mtk_mmio_base_ufs_mphy */
+
+	node_ufs_mphy = of_find_compatible_node(NULL, NULL, "mediatek,ufs_mphy");
+
+	if (node_ufs_mphy) {
+		ufs_mtk_mmio_base_ufs_mphy = of_iomap(node_ufs_mphy, 0);
+
+		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_ufs_mphy)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_ufs_mphy);
+			dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
+			ufs_mtk_mmio_base_ufs_mphy = NULL;
+		}
+	} else
+		dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
+
+	/* get and configure pinctrl */
+
+	ufs_mtk_pinctrl = devm_pinctrl_get(hba->dev);
+
+	if (IS_ERR(ufs_mtk_pinctrl)) {
+		err = PTR_ERR(ufs_mtk_pinctrl);
+		dev_err(hba->dev, "error: ufs_mtk_pinctrl init fail\n");
+		return err;
+	}
+
+	ufs_mtk_pins_default = pinctrl_lookup_state(ufs_mtk_pinctrl, "default");
+
+	if (IS_ERR(ufs_mtk_pins_default)) {
+		err = PTR_ERR(ufs_mtk_pins_default);
+		dev_err(hba->dev, "error: ufs_mtk_pins_default init fail\n");
+		return err;
+	}
+
+	ufs_mtk_pins_va09_on = pinctrl_lookup_state(ufs_mtk_pinctrl, "state_va09_on");
+
+	if (IS_ERR(ufs_mtk_pins_va09_on)) {
+		err = PTR_ERR(ufs_mtk_pins_va09_on);
+		ufs_mtk_pins_va09_on = NULL;
+		dev_err(hba->dev, "error: ufs_mtk_pins_va09_on init fail\n");
+		return err;
+	}
+
+	ufs_mtk_pins_va09_off = pinctrl_lookup_state(ufs_mtk_pinctrl, "state_va09_off");
+
+	if (IS_ERR(ufs_mtk_pins_va09_off)) {
+		err = PTR_ERR(ufs_mtk_pins_va09_off);
+		ufs_mtk_pins_va09_off = NULL;
+		dev_err(hba->dev, "error: ufs_mtk_pins_va09_off init fail\n");
+		return err;
+	}
+
+	pinctrl_select_state(ufs_mtk_pinctrl, ufs_mtk_pins_va09_on);
 
 	return err;
 }
@@ -268,11 +328,146 @@ int ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option)
 
 int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 {
-	return 0;
+	int ret = 0;
+	u32 reg;
+
+#if defined(UFS_DEV_REF_CLK_CONTROL)
+	/* Enable MPHY 26MHz ref clock */
+	clk_buf_ctrl(CLK_BUF_UFS, true);
+#endif
+
+	/* Set GPIO to turn on VA09 LDO */
+	if (ufs_mtk_pins_va09_on)
+		pinctrl_select_state(ufs_mtk_pinctrl, ufs_mtk_pins_va09_on);
+
+	/* wait 156 us to stablize VA09 */
+	udelay(156);
+
+	/* Step 1: Set RG_VA09_ON to 1 */
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 1, 0);
+
+	/* Step 2: release DA_MP_PLL_PWR_ON */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg | (0x1 << 11);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg & ~(0x1 << 10);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+
+	/* Step 3: release DA_MP_PLL_ISO_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg & ~(0x1 << 9);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg & ~(0x1 << 8);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+
+	/* Step 4: release DA_MP_CDR_PWR_ON */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg | (0x1 << 18);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg & ~(0x1 << 17);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+
+	/* Step 5: release DA_MP_CDR_ISO_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg & ~(0x1 << 20);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg & ~(0x1 << 19);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+
+	/* Step 6: release DA_MP_RX0_SQ_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = reg | (0x1 << 1);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = reg & ~(0x1);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+
+	/* Delay 1us to wait DIFZ stable */
+	udelay(1);
+
+	/* Step 7: release DIFZ */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+	reg = reg & ~(0x1 << 18);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+
+	return ret;
 }
 
 int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 {
-	return 0;
+	int ret = 0;
+	u32 reg;
+
+	/* Step 1: force DIFZ */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+	reg = reg | (0x1 << 18);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+
+	/* Step 2: force DA_MP_RX0_SQ_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = reg | (0x1);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+	reg = reg & ~(0x1 << 1);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA0AC);
+
+	/* Step 3: force DA_MP_CDR_ISO_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg | (0x1 << 19);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg | (0x1 << 20);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+
+	/* Step 4: force DA_MP_CDR_PWR_ON */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg | (0x1 << 17);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+	reg = reg & ~(0x1 << 18);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA044);
+
+	/* Step 5: force DA_MP_PLL_ISO_EN */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg | (0x1 << 8);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg | (0x1 << 9);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+
+	/* Step 6: force DA_MP_PLL_PWR_ON */
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg | (0x1 << 10);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+	reg = reg & ~(0x1 << 11);
+	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
+
+	/* Step 7: Set RG_VA09_ON to 0 */
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 0, 0);
+
+	/* delay awhile to satisfy T_HIBERNATE */
+	mdelay(15);
+
+#if defined(UFS_DEV_REF_CLK_CONTROL)
+	/* Disable MPHY 26MHz ref clock in H8 mode */
+	clk_buf_ctrl(CLK_BUF_UFS, false);
+#endif
+
+	/* Set GPIO to turn off VA09 LDO */
+	if (ufs_mtk_pins_va09_off)
+		pinctrl_select_state(ufs_mtk_pinctrl, ufs_mtk_pins_va09_off);
+
+#if 0
+	/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
+	ufs_mtk_pltfrm_host_sw_rst(hba, SW_RST_TARGET_UFSHCI);
+#endif
+
+	return ret;
 }
+
 
