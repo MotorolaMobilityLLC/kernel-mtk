@@ -934,8 +934,12 @@ EXIT:
 static int ccu_read_platform_info_from_dt(struct device_node *node)
 {
 	uint32_t reg[4] = {0, 0, 0, 0};
+	int ret = 0;
 
-	of_property_read_u32_array(node, "reg", reg, 4);
+	ret = of_property_read_u32_array(node, "reg", reg, 4);
+	if (ret < 0)
+		LOG_ERR("of_property_read_u32_array ERR : %d\n", ret);
+
 	g_ccu_platform_info.ccu_hw_base = reg[1];
 	of_property_read_u32(node, "ccu_hw_offset", &(g_ccu_platform_info.ccu_hw_offset));
 	of_property_read_u32(node, "ccu_pmem_base", &(g_ccu_platform_info.ccu_pmem_base));
@@ -953,24 +957,24 @@ static int ccu_read_platform_info_from_dt(struct device_node *node)
 	of_property_read_u32(node, "ccu_sensor_pm_size", &(g_ccu_platform_info.ccu_sensor_pm_size));
 	of_property_read_u32(node, "ccu_sensor_dm_size", &(g_ccu_platform_info.ccu_sensor_dm_size));
 
-	LOG_ERR("ccu read dt property ccu_hw_base = %x\n", g_ccu_platform_info.ccu_hw_base);
-	LOG_ERR("ccu read dt property ccu_hw_offset = %x\n", g_ccu_platform_info.ccu_hw_offset);
-	LOG_ERR("ccu read dt property ccu_pmem_base = %x\n", g_ccu_platform_info.ccu_pmem_base);
-	LOG_ERR("ccu read dt property ccu_pmem_size = %x\n", g_ccu_platform_info.ccu_pmem_size);
-	LOG_ERR("ccu read dt property ccu_dmem_base = %x\n", g_ccu_platform_info.ccu_dmem_base);
-	LOG_ERR("ccu read dt property ccu_dmem_size = %x\n", g_ccu_platform_info.ccu_dmem_size);
-	LOG_ERR("ccu read dt property ccu_dmem_offset = %x\n", g_ccu_platform_info.ccu_dmem_offset);
-	LOG_ERR("ccu read dt property ccu_log_base = %x\n", g_ccu_platform_info.ccu_log_base);
-	LOG_ERR("ccu read dt property ccu_log_size = %x\n", g_ccu_platform_info.ccu_log_size);
-	LOG_ERR("ccu read dt property ccu_hw_dump_size = %x\n", g_ccu_platform_info.ccu_hw_dump_size);
-	LOG_ERR("ccu read dt property ccu_camsys_base = %x\n", g_ccu_platform_info.ccu_camsys_base);
-	LOG_ERR("ccu read dt property ccu_camsys_size = %x\n", g_ccu_platform_info.ccu_camsys_size);
-	LOG_ERR("ccu read dt property ccu_n3d_a_base = %x\n", g_ccu_platform_info.ccu_n3d_a_base);
-	LOG_ERR("ccu read dt property ccu_n3d_a_size = %x\n", g_ccu_platform_info.ccu_n3d_a_size);
-	LOG_ERR("ccu read dt property ccu_sensor_pm_size = %x\n", g_ccu_platform_info.ccu_sensor_pm_size);
-	LOG_ERR("ccu read dt property ccu_sensor_dm_size = %x\n", g_ccu_platform_info.ccu_sensor_dm_size);
+	LOG_DBG("ccu read dt property ccu_hw_base = %x\n", g_ccu_platform_info.ccu_hw_base);
+	LOG_DBG("ccu read dt property ccu_hw_offset = %x\n", g_ccu_platform_info.ccu_hw_offset);
+	LOG_DBG("ccu read dt property ccu_pmem_base = %x\n", g_ccu_platform_info.ccu_pmem_base);
+	LOG_DBG("ccu read dt property ccu_pmem_size = %x\n", g_ccu_platform_info.ccu_pmem_size);
+	LOG_DBG("ccu read dt property ccu_dmem_base = %x\n", g_ccu_platform_info.ccu_dmem_base);
+	LOG_DBG("ccu read dt property ccu_dmem_size = %x\n", g_ccu_platform_info.ccu_dmem_size);
+	LOG_DBG("ccu read dt property ccu_dmem_offset = %x\n", g_ccu_platform_info.ccu_dmem_offset);
+	LOG_DBG("ccu read dt property ccu_log_base = %x\n", g_ccu_platform_info.ccu_log_base);
+	LOG_DBG("ccu read dt property ccu_log_size = %x\n", g_ccu_platform_info.ccu_log_size);
+	LOG_DBG("ccu read dt property ccu_hw_dump_size = %x\n", g_ccu_platform_info.ccu_hw_dump_size);
+	LOG_DBG("ccu read dt property ccu_camsys_base = %x\n", g_ccu_platform_info.ccu_camsys_base);
+	LOG_DBG("ccu read dt property ccu_camsys_size = %x\n", g_ccu_platform_info.ccu_camsys_size);
+	LOG_DBG("ccu read dt property ccu_n3d_a_base = %x\n", g_ccu_platform_info.ccu_n3d_a_base);
+	LOG_DBG("ccu read dt property ccu_n3d_a_size = %x\n", g_ccu_platform_info.ccu_n3d_a_size);
+	LOG_DBG("ccu read dt property ccu_sensor_pm_size = %x\n", g_ccu_platform_info.ccu_sensor_pm_size);
+	LOG_DBG("ccu read dt property ccu_sensor_dm_size = %x\n", g_ccu_platform_info.ccu_sensor_dm_size);
 
-	return 0;
+	return ret;
 }
 
 static int ccu_probe(struct platform_device *pdev)
