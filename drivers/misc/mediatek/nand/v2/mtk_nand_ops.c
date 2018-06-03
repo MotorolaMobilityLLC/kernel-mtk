@@ -151,11 +151,11 @@ static int mtk_nand_read_pages(struct mtk_nand_chip_info *info,
 	}
 
 	if (ret != 1)
-		ret = -EIO;
-	else if (mtd->ecc_stats.failed - stats.failed)
 		ret = -ENANDREAD;
+#if 0
 	else
 		ret =  mtd->ecc_stats.corrected - stats.corrected ? -ENANDFLIPS : 0;
+#endif
 
 exit:
 	kfree(fdm_buf);
