@@ -485,6 +485,9 @@ static int mtk_deep_buffer_dl_ack(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int copy_size = word_size_align(snd_pcm_playback_avail(runtime)*size_per_frame);
 
+	if (pMemControl == NULL || mPrepareDone == false)
+		return 0;
+
 	if (copy_size > CLEAR_BUFFER_SIZE)
 		copy_size = CLEAR_BUFFER_SIZE;
 
