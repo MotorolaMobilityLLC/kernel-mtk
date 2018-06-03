@@ -33,8 +33,8 @@ static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_render_aware, fbc_rend
 static int fbc_game, fbc_trace;
 static long long frame_budget, twanted, twanted_ms, avg_frame_time;
 static int ema, boost_method, super_boost, boost_flag, big_enable;
-static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost;
-static int first_frame, frame_done, chase, last_frame_done_in_budget, act_switched;
+static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost1, chase_boost2;
+static int first_frame, first_vsync, frame_done, chase, last_frame_done_in_budget, act_switched;
 static long long capacity, touch_capacity, current_max_capacity, avg_capacity, chase_capacity;
 static long long his_cap[2];
 static long long frame_info[MAX_THREAD][2]; /*0:current id, 1: frametime, if no render -1*/
@@ -300,6 +300,7 @@ static void enable_frame_twanted_timer(void)
 	unsigned long flags;
 	ktime_t ktime;
 
+	fbc_tracer(-6, "twanted_timer", 1);
 	spin_lock_irqsave(&tlock, flags);
 	ktime = ktime_set(0, NSEC_PER_MSEC * twanted_ms);
 	hrtimer_start(&hrt, ktime, HRTIMER_MODE_REL);
@@ -310,6 +311,7 @@ static void disable_frame_twanted_timer(void)
 {
 	unsigned long flags;
 
+	fbc_tracer(-6, "twanted_timer", 0);
 	spin_lock_irqsave(&tlock, flags);
 	hrtimer_cancel(&hrt);
 	spin_unlock_irqrestore(&tlock, flags);
@@ -609,16 +611,17 @@ static void notify_twanted_timeout_eas(void)
 
 	boost_real = linear_real_boost(super_boost);
 	if (boost_real != 0)
-		chase_boost = (100 + boost_real) * (100 + boost_value) / 100 - 100;
+		chase_boost1 = (100 + boost_real) * (100 + boost_value) / 100 - 100;
 
-	if (chase_boost > 100)
-		chase_boost = 100;
-	perfmgr_kick_fg_boost(KIR_FBC, chase_boost);
-	fbc_tracer(-3, "boost_value", chase_boost);
+	if (chase_boost1 > 100)
+		chase_boost1 = 100;
+	perfmgr_kick_fg_boost(KIR_FBC, chase_boost1);
+	fbc_tracer(-3, "boost_value", chase_boost1);
 
 	boost_flag = 1;
 	chase = 1;
 	fbc_tracer(-3, "chase", chase);
+	fbc_tracer(-3, "boost_linear", super_boost);
 
 	mutex_unlock(&notify_lock);
 }
@@ -633,25 +636,29 @@ void notify_fbc_enable_eas(int enable)
 	fbc_render_aware_pre = fbc_render_aware = 1;
 
 	if (enable) {
-		chase = 0;
-		first_frame = 1;
-		last_frame_done_in_budget = 1;
-		his_bv[0] = his_bv[1] = -1;
-
-		if (act_switched) {
-			boost_value = touch_boost_value;
-			act_switched = 0;
-		} else
-			boost_value = touch_boost_value = current_max_bv;
-
-		boost_touch_core_eas();
-
-		boost_flag = 0;
-	} else {
 		for (i = 0; i < MAX_THREAD; i++) {
 			frame_info[i][0] = -1;
 			frame_info[i][1] = -2;
 		}
+
+		chase = 0;
+		first_frame = 1;
+		first_vsync = 0;
+		fbc_tracer(-4, "first_frame", first_frame);
+		his_bv[0] = his_bv[1] = -1;
+
+		if (act_switched) {
+			touch_boost_value = TOUCH_BOOST_EAS;
+			act_switched = 0;
+		} else {
+			touch_boost_value = current_max_bv;
+		}
+
+		current_max_bv = 0;
+		boost_touch_core_eas();
+
+		boost_flag = 0;
+	} else {
 
 		release_core();
 		if (boost_flag) {
@@ -696,7 +703,7 @@ static void notify_no_render_eas(void)
 		;
 
 	if (i < MAX_THREAD && frame_info[i][0] == -1) {
-		last_frame_done_in_budget = 1;
+		chase = 0;
 		perfmgr_kick_fg_boost(KIR_FBC, -1);
 		fbc_tracer(-3, "boost_value", 0);
 		disable_frame_twanted_timer();
@@ -762,21 +769,16 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	fbc_tracer(-5, "frame_info[4][0]", frame_info[4][0]);
 	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
 
-	disable_render_aware_timer();
-	enable_render_aware_timer();
-	fbc_render_aware_pre = fbc_render_aware;
-	fbc_render_aware = 1;
-	fbc_tracer(-3, "render_aware", fbc_render_aware);
-
-	if (!fbc_render_aware_pre && fbc_render_aware)
-		boost_touch_core_eas();
 
 	if (chase == 1) {
-		chase = 0;
-		fbc_tracer(-3, "chase", chase);
 		avg_boost = (twanted * boost_value
-				+ ((long long)frame_time - twanted) * (chase_boost))
-			/ (long long)frame_time;
+				+ ((long long)frame_time - twanted) * (chase_boost1))
+				/ (long long)frame_time;
+	} else if (chase == 2) {
+		avg_boost = (twanted * boost_value
+				+ ((long long)frame_budget - twanted) * chase_boost1
+				+ ((long long)frame_time - frame_budget) * (chase_boost2))
+				/ (long long)frame_time;
 	} else
 		avg_boost = boost_value;
 
@@ -788,7 +790,12 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	else
 		avg_frame_time = (ema * frame_time + (10 - ema) * avg_frame_time) / 10;
 
-	boost_linear = (long long)((avg_frame_time - twanted) * 100 / twanted);
+	if (chase == 2) {
+		boost_linear = (long long)((avg_frame_time - (twanted-((long long)frame_time-frame_budget))) * 100
+					/ (twanted-(frame_time-frame_budget)));
+	} else {
+		boost_linear = (long long)((avg_frame_time - twanted) * 100 / twanted);
+	}
 
 	his_bv[1] = his_bv[0];
 	his_bv[0] = boost_value;
@@ -807,26 +814,25 @@ void notify_frame_complete_eas(unsigned long frame_time)
 		boost_value = 0;
 
 	if (first_frame) {
-		current_max_bv = 0;
-		first_frame = 0;
+		if (first_vsync)
+			first_frame = 0;
+		fbc_tracer(-4, "first_frame", first_frame);
 	} else {
 		current_max_bv = MAX(current_max_bv, boost_value);
 	}
 
-	if (frame_time < frame_budget) {
+	if (chase != 2) {
 		perfmgr_kick_fg_boost(KIR_FBC, -1);
 		fbc_tracer(-3, "boost_value", 0);
 		boost_flag = 0;
-		last_frame_done_in_budget = 1;
 	} else {
-		last_frame_done_in_budget = 0;
-	}
-
-	if (!last_frame_done_in_budget) {
 		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	}
+
+	chase = 0;
+	fbc_tracer(-3, "chase", chase);
 
 #if 0
 	pr_crit(TAG" pid:%d, frame complete FT=%lu, boost_linear=%lld, boost_real=%d, boost_value=%d\n",
@@ -846,10 +852,19 @@ void notify_frame_complete_eas(unsigned long frame_time)
 
 void notify_intended_vsync_eas(void)
 {
-	int i;
+	int i, boost_real;
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	disable_render_aware_timer();
+	enable_render_aware_timer();
+	fbc_render_aware_pre = fbc_render_aware;
+	fbc_render_aware = 1;
+	fbc_tracer(-3, "render_aware", fbc_render_aware);
+
+	if (!fbc_render_aware_pre && fbc_render_aware)
+		fbc_op->ux_enable(1);
 
 	frame_done = 0;
 
@@ -868,13 +883,30 @@ void notify_intended_vsync_eas(void)
 		frame_info[i][1] = -1;
 
 	enable_frame_twanted_timer();
-	if (last_frame_done_in_budget) {
+
+	if (first_frame && !first_vsync) {
+		boost_value = touch_boost_value;
+		first_vsync = 1;
+	}
+
+	if (chase == 0) {
 		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
+	} else if (chase == 1) {
+		chase = 2;
+		fbc_tracer(-3, "chase", chase);
+		boost_real = linear_real_boost(super_boost);
+		fbc_tracer(-3, "boost_linear", super_boost);
+		if (boost_real != 0)
+			chase_boost2 = (100 + boost_real) * (100 + chase_boost1) / 100 - 100;
+
+		if (chase_boost2 > 100)
+			chase_boost2 = 100;
+		perfmgr_kick_fg_boost(KIR_FBC, chase_boost2);
+		fbc_tracer(-3, "boost_value", chase_boost2);
 	}
 
-	fbc_tracer(-3, "last_frame_done_in_budget", last_frame_done_in_budget);
 	fbc_tracer(-5, "frame_info[0][0]", frame_info[0][0]);
 	fbc_tracer(-5, "frame_info[0][1]", frame_info[0][1]);
 	fbc_tracer(-5, "frame_info[1][0]", frame_info[1][0]);
@@ -1109,7 +1141,7 @@ static int __init init_fbc(void)
 	boost_method = EAS;
 	ema = 5;
 	super_boost = 30;
-	touch_boost_value = 50;
+	touch_boost_value = TOUCH_BOOST_EAS;
 	capacity = current_max_capacity = touch_capacity = 347;
 
 	update_pwd_tbl();

@@ -59,6 +59,7 @@
 #define TOUCH_TIMEOUT_SEC 5
 #define RENDER_AWARE_TIMEOUT_MSEC 300
 #define MAX_THREAD 5
+#define TOUCH_BOOST_EAS 100
 
 #define EAS 1
 #define LEGACY 2
