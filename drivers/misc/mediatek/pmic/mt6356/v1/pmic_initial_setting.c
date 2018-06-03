@@ -23,6 +23,11 @@
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
 
+int PMIC_MD_INIT_SETTING_V1(void)
+{
+	/* No need for PMIC MT6356 */
+	return 0;
+}
 
 int PMIC_check_wdt_status(void)
 {
