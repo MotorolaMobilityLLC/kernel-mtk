@@ -779,12 +779,16 @@ int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	p = id_to_cpu_dvfs(id);
 
+#ifndef ONE_CLUSTER
 #ifdef DVFS_CLUSTER_REMAPPING
 	cluster = (id == MT_CPU_DVFS_LL) ? DVFS_CLUSTER_LL :
 		(id == MT_CPU_DVFS_L) ? DVFS_CLUSTER_L : DVFS_CLUSTER_B;
 #else
 	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
 		(id == MT_CPU_DVFS_L) ? 1 : 2;
+#endif
+#else
+	cluster = 0;
 #endif
 
 	cpufreq_ver("ICCS: cluster = %d, freq = %d\n", cluster, freq);
@@ -808,12 +812,16 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	p = id_to_cpu_dvfs(id);
 
+#ifndef ONE_CLUSTER
 #ifdef DVFS_CLUSTER_REMAPPING
 	cluster = (id == MT_CPU_DVFS_LL) ? DVFS_CLUSTER_LL :
 		(id == MT_CPU_DVFS_L) ? DVFS_CLUSTER_L : DVFS_CLUSTER_B;
 #else
 	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
 		(id == MT_CPU_DVFS_L) ? 1 : 2;
+#endif
+#else
+	cluster = 0;
 #endif
 
 	cpufreq_ver("sched: cluster = %d, freq = %d\n", cluster, freq);
@@ -1093,7 +1101,11 @@ static void init_cpuhvfs_debug_repo(void)
 
 	dbg_repo[REPO_I_DATA_S] = REPO_GUARD0;
 
+#ifndef ONE_CLUSTER
 	for (c = 0; c < NR_MT_CPU_DVFS && c != MT_CPU_DVFS_CCI; c++) {
+#else
+	for (c = 0; c < NR_MT_CPU_DVFS; c++) {
+#endif
 		repo_i = OFFS_PPM_LIMIT_S / sizeof(u32) + c;
 		dbg_repo[repo_i] = (0 << 16) | (NR_FREQ - 1);
 	}
