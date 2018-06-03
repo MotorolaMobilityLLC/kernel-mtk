@@ -65,6 +65,7 @@ static struct pm_qos_object null_pm_qos;
 
 static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
 static struct pm_qos_constraints cpu_dma_constraints = {
+	.req_list = LIST_HEAD_INIT(cpu_dma_constraints.req_list),
 	.list = PLIST_HEAD_INIT(cpu_dma_constraints.list),
 	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
 	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
@@ -79,6 +80,7 @@ static struct pm_qos_object cpu_dma_pm_qos = {
 
 static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
 static struct pm_qos_constraints network_lat_constraints = {
+	.req_list = LIST_HEAD_INIT(network_lat_constraints.req_list),
 	.list = PLIST_HEAD_INIT(network_lat_constraints.list),
 	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
 	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
@@ -94,6 +96,7 @@ static struct pm_qos_object network_lat_pm_qos = {
 
 static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
 static struct pm_qos_constraints network_tput_constraints = {
+	.req_list = LIST_HEAD_INIT(network_tput_constraints.req_list),
 	.list = PLIST_HEAD_INIT(network_tput_constraints.list),
 	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
 	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
@@ -109,6 +112,7 @@ static struct pm_qos_object network_throughput_pm_qos = {
 
 static BLOCKING_NOTIFIER_HEAD(memory_bandwidth_notifier);
 static struct pm_qos_constraints memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(memory_bw_constraints.req_list),
 	.list = PLIST_HEAD_INIT(memory_bw_constraints.list),
 	.target_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
 	.default_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
@@ -194,6 +198,7 @@ static int pm_qos_dbg_show_requests(struct seq_file *s, void *unused)
 	unsigned long flags;
 	int tot_reqs = 0;
 	int active_reqs = 0;
+	struct list_head *l;
 
 	if (IS_ERR_OR_NULL(qos)) {
 		pr_err("%s: bad qos param!\n", __func__);
@@ -241,6 +246,13 @@ static int pm_qos_dbg_show_requests(struct seq_file *s, void *unused)
 	seq_printf(s, "Type=%s, Value=%d, Requests: active=%d / total=%d\n",
 		   type, pm_qos_get_value(c), active_reqs, tot_reqs);
 
+	/* dump req_list */
+	list_for_each(l, &c->req_list) {
+		req = list_entry(l, struct pm_qos_request, list_node);
+
+		seq_printf(s, "%s: %d\n", req->owner, req->node.prio);
+	}
+
 out:
 	spin_unlock_irqrestore(&pm_qos_lock, flags);
 	return 0;
@@ -258,6 +270,35 @@ static const struct file_operations pm_qos_debug_fops = {
 	.llseek         = seq_lseek,
 	.release        = single_release,
 };
+
+void pm_qos_update_target_req_list(struct pm_qos_constraints *c, struct pm_qos_request *req,
+			enum pm_qos_req_action action)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&pm_qos_lock, flags);
+
+	switch (action) {
+	case PM_QOS_REMOVE_REQ:
+		list_del(&req->list_node);
+		break;
+	case PM_QOS_UPDATE_REQ:
+		/*
+		 * to change the list, we atomically remove, reinit
+		 * with new value and add, then see if the extremal
+		 * changed
+		 */
+		list_del(&req->list_node);
+	case PM_QOS_ADD_REQ:
+		list_add(&req->list_node, &c->req_list);
+		break;
+	default:
+		/* no action */
+		break;
+	}
+
+	spin_unlock_irqrestore(&pm_qos_lock, flags);
+}
 
 /**
  * pm_qos_update_target - manages the constraints list and calls the notifiers
@@ -409,10 +450,14 @@ static void __pm_qos_update_request(struct pm_qos_request *req,
 {
 	trace_pm_qos_update_request(req->pm_qos_class, new_value);
 
-	if (new_value != req->node.prio)
+	if (new_value != req->node.prio) {
 		pm_qos_update_target(
 			pm_qos_array[req->pm_qos_class]->constraints,
 			&req->node, PM_QOS_UPDATE_REQ, new_value);
+		pm_qos_update_target_req_list(
+			pm_qos_array[req->pm_qos_class]->constraints,
+			req, PM_QOS_UPDATE_REQ);
+	}
 }
 
 /**
@@ -453,11 +498,17 @@ void pm_qos_add_request(struct pm_qos_request *req,
 		WARN(1, KERN_ERR "pm_qos_add_request() called for already added request\n");
 		return;
 	}
+
+	/* name of pm_qos reqester */
+	snprintf(req->owner, sizeof(req->owner) - 1, "%pf", __builtin_return_address(0));
+
 	req->pm_qos_class = pm_qos_class;
 	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);
 	trace_pm_qos_add_request(pm_qos_class, value);
 	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
 			     &req->node, PM_QOS_ADD_REQ, value);
+	pm_qos_update_target_req_list(pm_qos_array[pm_qos_class]->constraints,
+				req, PM_QOS_ADD_REQ);
 }
 EXPORT_SYMBOL_GPL(pm_qos_add_request);
 
@@ -508,10 +559,14 @@ void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
 
 	trace_pm_qos_update_request_timeout(req->pm_qos_class,
 					    new_value, timeout_us);
-	if (new_value != req->node.prio)
+	if (new_value != req->node.prio) {
 		pm_qos_update_target(
 			pm_qos_array[req->pm_qos_class]->constraints,
 			&req->node, PM_QOS_UPDATE_REQ, new_value);
+		pm_qos_update_target_req_list(
+			pm_qos_array[req->pm_qos_class]->constraints,
+			req, PM_QOS_UPDATE_REQ);
+	}
 
 	schedule_delayed_work(&req->work, usecs_to_jiffies(timeout_us));
 }
@@ -541,6 +596,8 @@ void pm_qos_remove_request(struct pm_qos_request *req)
 	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
 			     &req->node, PM_QOS_REMOVE_REQ,
 			     PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_target_req_list(pm_qos_array[req->pm_qos_class]->constraints,
+				req, PM_QOS_REMOVE_REQ);
 	memset(req, 0, sizeof(*req));
 }
 EXPORT_SYMBOL_GPL(pm_qos_remove_request);
