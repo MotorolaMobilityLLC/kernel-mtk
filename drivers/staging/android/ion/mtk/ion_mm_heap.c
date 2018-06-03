@@ -369,12 +369,10 @@ err1:
 	kfree(table);
 	IONMSG("error: alloc for sg_table fail\n");
 err:
-	if (info) {
-		list_for_each_entry_safe(info, tmp_info, &pages, list) {
-			free_buffer_page(sys_heap, buffer, info->page,
-					 info->order);
-			kfree(info);
-		}
+	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+		free_buffer_page(sys_heap, buffer, info->page,
+				 info->order);
+		kfree(info);
 	}
 	IONMSG("error: mm_alloc fail: size=%lu, flag=%lu.\n", size, flags);
 	caller_pid = 0;
