@@ -64,8 +64,11 @@ struct sys_timer_timesync_context_t {
 #endif
 
 	u8 base_ver;
-	u8 enabled;
 	u8 base_fz;
+	u8 enabled;
+
+	/* support on-chip sysram update */
+	u8 support_sysram;
 };
 
 #endif
