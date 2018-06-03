@@ -647,7 +647,6 @@ static void capture_setting(kal_uint16 currefps)
 {
 	pr_info("E! currefps:%d\n", currefps);
 	if (currefps == 150) {
-		mDELAY(34);
 		write_cmos_sensor(0x0136, 0X18);
 		write_cmos_sensor(0x0137, 0X00);
 		write_cmos_sensor(0x0305, 0X06);
@@ -703,7 +702,6 @@ static void capture_setting(kal_uint16 currefps)
 	else if (currefps == 240) { //24fps for PIP
 //[MCLK:24,Width:2592,Height:1944,Format:MIPI_RAW10,mipi_lane:2,
 		//mipi_datarate:836,pvi_pclk_inverwrite_cmos_sensor
-		mDELAY(10);
 		write_cmos_sensor(0x0136, 0X18);
 		write_cmos_sensor(0x0137, 0X00);
 		write_cmos_sensor(0x0305, 0X06);
@@ -871,7 +869,6 @@ static void hs_video_setting(void)
 	//VGA 120fps
 //$MV1[MCLK:24,Width:640,Height:480,Format:MIPI_RAW10,mipi_lane:2,
 //mipi_datarate:836,pvi_pclk_inverwrite_cmos_sensor(0xe:0]
-	mDELAY(50);
 	write_cmos_sensor(0x0136, 0x18);
 	write_cmos_sensor(0x0137, 0x00);
 	write_cmos_sensor(0x0305, 0x06);
