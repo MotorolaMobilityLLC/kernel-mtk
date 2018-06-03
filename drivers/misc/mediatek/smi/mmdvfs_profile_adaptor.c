@@ -30,6 +30,8 @@
 #include "mmdvfs_config_mt6739.h"
 #elif defined(SMI_SYL)
 #include "mmdvfs_config_mt6771.h"
+#elif defined(SMI_CAN)
+#include "mmdvfs_config_mt6775.h"
 #endif
 
 #include "mtk_smi.h"
@@ -190,6 +192,24 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6771 = {
 	MMDVFS_VOLTAGE_COUNT,
 	mt6771_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
 	MT6771_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_OPP0,
+	mmdvfs_step_util_init,
+	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
+	mmdvfs_get_opp_from_legacy_step,
+	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
+};
+
+#elif defined(SMI_CAN)
+struct mmdvfs_step_util mmdvfs_step_util_obj_mt6775 = {
+	{0},
+	MMDVFS_SCEN_COUNT,
+	{0},
+	MT6775_MMDVFS_OPP_MAX,
+	mt6775_mmdvfs_legacy_step_to_opp,
+	MMDVFS_VOLTAGE_COUNT,
+	mt6775_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
+	MT6775_MMDVFS_OPP_MAX,
 	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
@@ -422,6 +442,26 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6771_lp3 = {
 	mmdvfs_get_cam_sys_clk,
 	mmdvfs_single_profile_dump,
 };
+
+#elif defined(SMI_CAN)
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6775 = {
+	KIR_MM,
+	0, 0, 0,
+	mt6775_mmdvfs_clk_sources_setting, MT6775_MMDVFS_CLK_SOURCE_NUM,
+	mt6775_mmdvfs_clk_hw_map_setting, MMDVFS_CLK_MUX_NUM,
+	mt6775_step_profile, MT6775_MMDVFS_OPP_MAX,
+	MT6775_MMDVFS_SMI_USER_CONTROL_SCEN_MASK,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_configuration_dump,
+	mmdvfs_hw_configuration_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_configurtion_by_step,
+	mmdvfs_apply_vcore_hw_configurtion_by_step,
+	mmdvfs_apply_clk_hw_configurtion_by_step,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
+
 #endif
 
 /* class: ISP PMQoS Handler */
@@ -467,6 +507,13 @@ struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6739 
 #elif defined(SMI_SYL)
 struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6771 = {
 	mt6771_mmdvfs_threshold_settings,
+	MMDVFS_PM_QOS_SUB_SYS_NUM,
+	get_step_by_threshold
+};
+
+#elif defined(SMI_CAN)
+struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6775 = {
+	mt6775_mmdvfs_threshold_settings,
 	MMDVFS_PM_QOS_SUB_SYS_NUM,
 	get_step_by_threshold
 };
@@ -1234,6 +1281,13 @@ void mmdvfs_config_util_init(void)
 #endif
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6771;
 		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6771;
+#endif
+		break;
+	case MMDVFS_PROFILE_CAN:
+#if defined(SMI_CAN)
+		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6775;
+		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6775;
+		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6775;
 #endif
 		break;
 
