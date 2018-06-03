@@ -1284,6 +1284,9 @@ static int vpu_service_routine(void *arg)
 		}
 out:
 		/* if req is null, we should not do anything of following codes */
+		mutex_lock(&(vpu_service_cores[service_core].state_mutex));
+		vpu_service_cores[service_core].state = VCT_IDLE;
+		mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
 		mutex_lock(&vpu_dev->user_mutex);
 		LOG_DBG("[vpu] flag - 5.5 : ....\n");
 		/* check to avoid user had been removed from list, and kernel vpu thread finish the task */
@@ -1308,15 +1311,12 @@ out:
 				(int)(req->algo_id[service_core]), req->frame_magic);
 			user->running = false;
 			mutex_unlock(&user->data_mutex);
+			wake_up_interruptible_all(&user->deque_wait);
 		} else {
 			LOG_WRN("[vpu_%d]done request that the original user(0x%lx) is deleted\n",
 				service_core, (unsigned long)(user));
 		}
 		mutex_unlock(&vpu_dev->user_mutex);
-		mutex_lock(&(vpu_service_cores[service_core].state_mutex));
-		vpu_service_cores[service_core].state = VCT_IDLE;
-		mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
-		wake_up_interruptible_all(&user->deque_wait);
 		wake_up_interruptible(&waitq_change_vcore);
 		/* leave loop of round-robin */
 		if (is_locked)
