@@ -25,9 +25,31 @@
 #include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
 
+typedef struct pe20_profile {
+	unsigned int vbat;
+	unsigned int vchr;
+} pe20_profile_t, *p_pe20_profile_t;
+
+struct mtk_pe20 {
+	struct mutex access_lock;
+	struct mutex pmic_sync_lock;
+	struct wake_lock suspend_lock;
+	int ta_vchr_org;
+	int idx;
+	int vbus;
+	bool to_check_chr_type;
+	bool is_cable_out_occur; /* Plug out happened while detect PE+20 */
+	bool is_connect;
+	bool is_enabled;
+	pe20_profile_t profile[10];
+
+};
+
 /* charger_manager notify charger_consumer */
 enum {
 	CHARGER_NOTIFY_EOC,
+	CHARGER_NOTIFY_START_CHARGING,
+	CHARGER_NOTIFY_STOP_CHARGING,
 };
 
 /* charger_dev notify charger_manager */
@@ -88,11 +110,19 @@ struct charger_custom_data {
 	int ac_charger_input_current;
 	int non_std_ac_charger_current;
 	int charging_host_charger_current;
+	int ta_ac_charger_current;
+
+	int max_charger_voltage;
+	int pe20_ichg_level_threshold;
+	int ta_start_battery_soc;
+	int ta_stop_battery_soc;
 };
 
 struct charger_consumer {
 	struct device *dev;
 	struct charger_manager *cm;
+	struct notifier_block *pnb;
+	struct list_head list;
 };
 
 struct charger_manager {
@@ -139,7 +169,11 @@ struct charger_manager {
 
 	bool enable_sw_safety_timer;
 	bool enable_pe_plus;
+
+	/* pe 2.0 */
 	bool enable_pe_2;
+	struct mtk_pe20 pe2;
+
 	bool enable_pe_3;
 
 	/* thread related */
@@ -159,18 +193,18 @@ struct charger_manager {
 extern int charger_manager_notifier(struct charger_manager *info, int event);
 extern int mtk_switch_charging_init(struct charger_manager *);
 extern void wake_up_charger(struct charger_manager *);
+extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 
 /* charger consumer interface */
-extern struct charger_consumer *charger_manager_get(struct device *dev,
+extern struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 	const char *supply_name);
-extern void charger_manager_set_input_current_limit(struct charger_consumer *consumer,
+extern int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int input_current);
-extern void charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
+extern int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
 	int charging_current);
 extern int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb);
 extern int unregister_charger_manager__notifier(struct charger_consumer *consumer,
 				struct notifier_block *nb);
-
 
 #endif /* __MTK_CHARGER_H__ */
