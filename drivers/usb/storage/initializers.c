@@ -113,7 +113,7 @@ static int usb_stor_huawei_dongles_pid(struct us_data *us)
 
 	idesc = &us->pusb_intf->cur_altsetting->desc;
 	if (idesc != NULL) {
-		if ((idesc->bInterfaceNumber == 0x0000)) {
+		if (idesc->bInterfaceNumber == 0x0000) {
 			if ((us->pusb_dev->descriptor.idProduct >= 0x1401 &&
 				us->pusb_dev->descriptor.idProduct <= 0x1600)
 			    || (us->pusb_dev->descriptor.idProduct >= 0x1c02
@@ -244,7 +244,7 @@ int usb_stor_dlink_scsi_init(struct us_data *us)
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 	iProduct = us->pusb_dev->descriptor.idProduct;
-	if ((iProduct == 0xa708))
+	if (iProduct == 0xa708)
 		result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
 
 	return result;
