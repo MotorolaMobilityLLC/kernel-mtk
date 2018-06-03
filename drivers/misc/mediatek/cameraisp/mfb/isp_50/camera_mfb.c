@@ -138,7 +138,7 @@ struct MFB_CLK_STRUCT mfb_clk;
 #endif
 
 #define MFB_DEV_NAME                "camera-mfb"
-#define EP_NO_CLKMGR
+/* #define EP_NO_CLKMGR */
 #define BYPASS_REG         (0)
 /* #define MFB_WAITIRQ_LOG  */
 #define MFB_USE_GCE
@@ -1550,6 +1550,7 @@ static inline void MFB_Prepare_Enable_ccf_clock(void)
 #else
 	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_mfb");
 #endif
+
 	ret = clk_prepare_enable(mfb_clk.CG_IMGSYS_MFB);
 	if (ret)
 		LOG_ERR("cannot prepare and enable CG_IMGSYS_MFB clock\n");
@@ -2848,7 +2849,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	g_MFB_ReqRing.HWProcessIdx = 0x0;
 
 	/* Enable clock */
-	/*MFB_EnableClock(MTRUE);*/
+	MFB_EnableClock(MTRUE);
 	LOG_DBG("MFB open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 

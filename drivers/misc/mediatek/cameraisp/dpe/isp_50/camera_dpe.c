@@ -49,7 +49,7 @@
 #include <cmdq_core.h>
 #include <cmdq_record.h>
 
-#define __DPE_EP_NO_CLKMGR__
+/* #define __DPE_EP_NO_CLKMGR__ */
 
 /* Measure the kernel performance */
 /* #define __DPE_KERNEL_PERFORMANCE_MEASURE__ */
