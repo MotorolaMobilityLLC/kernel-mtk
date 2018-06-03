@@ -113,11 +113,11 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
-	CCCI_REPEAT_LOG(md_id, TAG, "before wait event, bitmask=%x\n", user_data);
+	CCCI_DEBUG_LOG(md_id, TAG, "before wait event, bitmask=%x\n", user_data);
 	ret = wait_event_interruptible(smem_port->rx_wq, smem_port->wakeup & user_data);
 	spin_lock_irqsave(&smem_port->write_lock, flags);
 	smem_port->wakeup &= ~user_data;
-	CCCI_REPEAT_LOG(md_id, TAG, "after wait event, wakeup=%x\n", smem_port->wakeup);
+	CCCI_DEBUG_LOG(md_id, TAG, "after wait event, wakeup=%x\n", smem_port->wakeup);
 	spin_unlock_irqrestore(&smem_port->write_lock, flags);
 
 	if (ret == -ERESTARTSYS)

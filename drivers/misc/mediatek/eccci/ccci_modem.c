@@ -767,7 +767,7 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 			return -1;
 		}
 
-		CCCI_BOOTUP_DUMP_LOG(md->index, TAG, "ftr %u mask %u, ver %u\n",
+		CCCI_DEBUG_LOG(md->index, TAG, "ftr %u mask %u, ver %u\n",
 				rt_feature.feature_id, md_feature->feature_set[i].support_mask,
 				md_feature->feature_set[i].version);
 
