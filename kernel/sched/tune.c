@@ -446,18 +446,8 @@ int schedtune_task_boost(struct task_struct *p)
 
 	return task_boost;
 }
+
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
-
-#if MET_STUNE_DEBUG
-static char met_dvfs_info[5][16] = {
-	"sched_dvfs_cid0",
-	"sched_dvfs_cid1",
-	"sched_dvfs_cid2",
-	"NULL",
-	"NULL"
-};
-#endif
-
 static void update_freq_fastpath(void)
 {
 	int cid;
@@ -466,7 +456,7 @@ static void update_freq_fastpath(void)
 		return;
 
 #if MET_STUNE_DEBUG
-	met_tag_oneshot(0, "sched_dvfs_fastpath", 1);
+	met_tag_oneshot(0, "sched_dvfsfast_path", 1);
 #endif
 
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
@@ -514,23 +504,18 @@ static void update_freq_fastpath(void)
 
 			trace_sched_cpufreq_fastpath_request(cpu, req_cap, cpu_util(cpu),
 					boosted_cpu_util(cpu), (int)scr->rt);
-		}
+		} /* visit cpu over cluster */
 
 		if (capacity > 0) { /* update freq in fast path */
 			freq_new = capacity * arch_scale_get_max_freq(first_cpu) >> SCHED_CAPACITY_SHIFT;
 
 			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
-#ifdef CONFIG_MTK_BASE_POWER
-			mt_cpufreq_set_by_schedule_load_cluster(cid, freq_new);
-#endif
-#if MET_STUNE_DEBUG
-			met_tag_oneshot(0, met_dvfs_info[cid], freq_new);
-#endif
-		}
 
-	}
+			update_cpu_freq_quick(first_cpu, freq_new);
+		}
+	} /* visit each cluster */
 #if MET_STUNE_DEBUG
-	met_tag_oneshot(0, "sched_dvfs_fastpath", 0);
+	met_tag_oneshot(0, "sched_dvfsfast_path", 0);
 #endif
 }
 #endif

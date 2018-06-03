@@ -426,8 +426,8 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 #endif
 }
 
-/* move to cpufreq.c if sched-asisted */
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+/* move to cpufreq.c if tinysys exist */
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
 {
 	return per_cpu(freq_scale, cpu);
