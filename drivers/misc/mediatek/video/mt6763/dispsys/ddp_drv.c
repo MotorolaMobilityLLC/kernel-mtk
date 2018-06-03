@@ -437,7 +437,8 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 #if defined(CONFIG_MT_ENG_BUILD)
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	a_pstVMArea->vm_page_prot = pgprot_noncached(a_pstVMArea->vm_page_prot);
 	if (remap_pfn_range(a_pstVMArea,
 			    a_pstVMArea->vm_start,
@@ -462,7 +463,8 @@ struct device *disp_get_device(void)
 	return &(mydev.dev);
 }
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 static struct miscdevice disp_misc_dev;
 #endif
 /* Kernel interface */
@@ -563,7 +565,8 @@ static int __init disp_probe_1(void)
 
 	pr_warn("disp driver(1) disp_probe_1 begin\n");
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	disp_misc_dev.minor = MISC_DYNAMIC_MINOR;
 	disp_misc_dev.name = "mtk_disp";
 	disp_misc_dev.fops = &disp_fops;
@@ -573,10 +576,11 @@ static int __init disp_probe_1(void)
 		pr_err("disp: fail to create mtk_disp node\n");
 		return (unsigned long)(ERR_PTR(ret));
 	}
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	/* secure video path implementation: a physical address is allocated to place a handle for decryption buffer. */
 	init_tplay_handle(disp_get_device());	/* non-zero value for valid VA */
 #endif
-
+#endif
 	/* do disp_init_irq before register irq */
 	disp_init_irq();
 
@@ -702,7 +706,8 @@ static int __init disp_probe_1(void)
 static int disp_remove(struct platform_device *pdev)
 {
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	misc_deregister(&disp_misc_dev);
 #endif
 	return 0;

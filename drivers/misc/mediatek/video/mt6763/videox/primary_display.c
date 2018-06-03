@@ -3122,7 +3122,8 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 #else
 static void decouple_mirror_irq_callback(enum DISP_MODULE_ENUM module, unsigned int reg_value)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	/* In TEE, we have to protect WDMA registers, so we can't enable WDMA interrupt */
 	/* here we use ovl frame done interrupt instead */
 	if ((module == DISP_MODULE_OVL0) && (primary_display_is_decouple_mode())) {
