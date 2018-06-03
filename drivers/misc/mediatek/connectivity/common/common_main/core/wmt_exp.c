@@ -38,6 +38,7 @@
 #include <psm_core.h>
 #include <hif_sdio.h>
 #include <stp_dbg.h>
+#include <stp_core.h>
 
 
 /*******************************************************************************
@@ -669,7 +670,13 @@ MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type)
 	};
 
 	WMT_INFO_FUNC("Subsystem trigger whole chip reset, reset source: %s\n", drv_name[type]);
-	iRet = wmt_lib_trigger_reset();
+	if (mtk_wcn_stp_get_wmt_trg_assert() == 0)
+		iRet = wmt_lib_trigger_reset();
+	else {
+		WMT_INFO_FUNC("assert has been triggered that no chip reset is required\n");
+		iRet = 0;
+	}
+
 	return iRet == 0 ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_do_reset);
