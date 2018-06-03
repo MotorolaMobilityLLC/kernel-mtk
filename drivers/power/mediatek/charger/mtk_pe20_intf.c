@@ -343,13 +343,15 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pr_err("Bad cable\n");
 	}
 
-	pr_err("%s: set aicr:%dmA, mivr_state:%d\n",
-		__func__, pe20->aicr_cable_imp / 1000, mivr_state);
+	pr_err("%s: set aicr:%dmA, vbat:%d, mivr_state:%d\n",
+		__func__, pe20->aicr_cable_imp / 1000,
+		pe20->vbat_orig, mivr_state);
 	return;
 
 end:
-	pr_err("%s not started: set aicr:%dmA, mivr_state:%d\n",
-		__func__, pe20->aicr_cable_imp / 1000, mivr_state);
+	pr_err("%s not started: set aicr:%dmA, vbat:%d mivr_state:%d\n",
+		__func__, pe20->aicr_cable_imp / 1000,
+		pe20->vbat_orig, mivr_state);
 }
 
 static int pe20_detect_ta(struct charger_manager *pinfo)
@@ -604,6 +606,8 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 			ret = pe20_set_ta_vchr(pinfo, pe20->vbus);
 			if (ret == 0)
 				pe20_set_mivr(pinfo, pe20->vbus - 1000);
+			else
+				pe20_leave(pinfo);
 		}
 		break;
 	}
@@ -680,6 +684,8 @@ bool mtk_pe20_get_is_enable(struct charger_manager *pinfo)
 
 int mtk_pe20_init(struct charger_manager *pinfo)
 {
+	int ret = 0;
+
 	wake_lock_init(&pinfo->pe2.suspend_lock, WAKE_LOCK_SUSPEND,
 		"PE+20 TA charger suspend wakelock");
 	mutex_init(&pinfo->pe2.access_lock);
@@ -712,6 +718,10 @@ int mtk_pe20_init(struct charger_manager *pinfo)
 	pinfo->pe2.profile[7].vchr = 9500;
 	pinfo->pe2.profile[8].vchr = 10000;
 	pinfo->pe2.profile[9].vchr = 10000;
+
+	ret = charger_dev_set_pe20_efficiency_table(pinfo->chg1_dev);
+	if (ret != 0)
+		pr_err("%s: use default table, %d\n", __func__, ret);
 
 	return 0;
 }
