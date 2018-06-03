@@ -45,10 +45,12 @@
 struct xo_dev {
 	struct device *dev;
 	void __iomem *base;
+	void __iomem *top_rtc32k;
 	struct clk *bsi_clk;
 	struct clk *rg_bsi_clk;
 	uint32_t cur_xo_capid;
 	bool has_ext_crystal;
+	bool crystal_check_done;
 };
 
 static struct xo_dev *xo_inst;
@@ -393,6 +395,11 @@ static int mt_xo_dts_probe(struct platform_device *pdev)
 	if (IS_ERR(xo_inst->base))
 		return PTR_ERR(xo_inst->base);
 
+	xo_inst->top_rtc32k = devm_ioremap(&pdev->dev, 0x10018000, PAGE_SIZE);
+	if (IS_ERR(xo_inst->top_rtc32k))
+		return PTR_ERR(xo_inst->top_rtc32k);
+
+	xo_inst->crystal_check_done = false;
 	xo_inst->dev = &pdev->dev;
 	platform_set_drvdata(pdev, xo_inst);
 
@@ -438,7 +445,14 @@ static int mt_xo_dts_remove(struct platform_device *pdev)
 
 static int xo_pm_suspend(struct device *device)
 {
-	xo_inst->has_ext_crystal = !mtk_misc_crystal_exist_status();
+	if (!xo_inst->crystal_check_done) {
+		xo_inst->has_ext_crystal = !mtk_misc_crystal_exist_status();
+		xo_inst->crystal_check_done = true;
+
+		/* let XO use external RTC32K */
+		if (xo_inst->has_ext_crystal)
+			WRITE_REGISTER_UINT32(xo_inst->top_rtc32k, READ_REGISTER_UINT32(xo_inst->top_rtc32k) | (1<<10));
+	}
 
 	return 0;
 }
