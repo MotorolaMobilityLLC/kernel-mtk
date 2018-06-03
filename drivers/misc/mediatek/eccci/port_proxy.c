@@ -1091,7 +1091,6 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	int md_type = 0;
 	long other_md_state_for_user = 0;
 	int md_id = proxy_p->md_id;
-	char md_protol[] = "DHL";
 	unsigned int sig = 0;
 	unsigned int pid = 0;
 	int retry;
@@ -1103,7 +1102,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
 		CCCI_ERROR_LOG(md_id, CHAR, "Call CCCI_IOC_GET_MD_PROTOCOL_TYPE!\n");
-		if (copy_to_user((void __user *)arg, md_protol, sizeof(md_protol))) {
+		if (copy_to_user((void __user *)arg, md_protol, strlen(md_protol))) {
 			CCCI_ERROR_LOG(md_id, CHAR, "copy_to_user MD_PROTOCOL failed !!\n");
 			return -EFAULT;
 		}
