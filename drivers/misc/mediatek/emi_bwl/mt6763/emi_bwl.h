@@ -118,6 +118,7 @@ extern void __iomem *mt_chn_emi_base_get(int chn);
 extern void __iomem *mt_emi_mpu_base_get(void);
 extern void restore_drs(unsigned char enable);
 extern int disable_drs(unsigned char *backup);
+extern bool is_drs_enabled(unsigned char ch);
 extern int DRS_enable(void);
 extern int DRS_disable(void);
 extern unsigned long long get_drs_all_self_cnt(unsigned int ch);

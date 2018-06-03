@@ -600,10 +600,27 @@ out:
 	spin_unlock_irqrestore(&emi_drs_lock, flags);
 }
 
+bool is_drs_enabled(unsigned char ch)
+{
+	switch (ch) {
+	case 0:
+		if (readl(IOMEM(CHA_EMI_DRS)) & 0x1)
+			return true;
+	case 1:
+		if (readl(IOMEM(CHB_EMI_DRS)) & 0x1)
+			return true;
+	}
+
+	return false;
+}
+
 int DRS_enable(void)
 {
 	unsigned char status;
 	unsigned int count;
+
+	if (is_drs_enabled(0) && is_drs_enabled(1))
+		return 0;
 
 	count = 0;
 	while (disable_drs(&status)) {
@@ -624,6 +641,9 @@ int DRS_disable(void)
 {
 	unsigned char status;
 	unsigned int count;
+
+	if (!(is_drs_enabled(0) || is_drs_enabled(1)))
+		return 0;
 
 	count = 0;
 	while (disable_drs(&status)) {
