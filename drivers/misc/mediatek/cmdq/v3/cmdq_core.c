@@ -397,6 +397,40 @@ void cmdq_delay_dump_thread(void)
 	CMDQ_LOG("======Delay Thread Task command END\n");
 }
 
+uint32_t *cmdq_core_task_get_va_by_offset(const struct TaskStruct *pTask, uint32_t offset)
+{
+	uint32_t offset_remaind = offset;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+		if (offset_remaind >= CMDQ_CMD_BUFFER_SIZE) {
+			offset_remaind -= CMDQ_CMD_BUFFER_SIZE;
+			continue;
+		}
+
+		return cmd_buffer->pVABase + (offset_remaind / sizeof(uint32_t));
+	}
+
+	return NULL;
+}
+
+dma_addr_t cmdq_core_task_get_pa_by_offset(const struct TaskStruct *pTask, uint32_t offset)
+{
+	uint32_t offset_remaind = offset;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+		if (offset_remaind >= CMDQ_CMD_BUFFER_SIZE) {
+			offset_remaind -= CMDQ_CMD_BUFFER_SIZE;
+			continue;
+		}
+
+		return cmd_buffer->MVABase + offset_remaind;
+	}
+
+	return 0;
+}
+
 static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 {
 	u32 i;
@@ -405,6 +439,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 	u32 thread_offset;
 	u32 *p_instr_position = CMDQ_U32_PTR(pTask->replace_instr.position);
 	u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
+	u32 inst_idx = 0;
 
 	if (pTask->replace_instr.number == 0)
 		return;
@@ -418,7 +453,11 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			break;
 		}
 
-	p_cmd_va = p_instr_position[i] * 2 + cmdq_core_task_get_first_va(pTask);
+		inst_idx = p_instr_position[i] +
+			p_instr_position[i] / ((CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE) - 1);
+		p_cmd_va = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
+			inst_idx * CMDQ_INST_SIZE);
+
 		arg_op_code = p_cmd_va[1] >> 24;
 		if (arg_op_code == CMDQ_CODE_WFE) {
 			u32 arg_event_id = p_cmd_va[1] & 0xFFFFFF;
@@ -428,6 +467,17 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 				arg_event_id = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
 				p_cmd_va[1] = (arg_op_code << 24) | arg_event_id;
 				CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
+			}
+		} else if (arg_op_code == CMDQ_CODE_JUMP) {
+			if ((p_cmd_va[1] & 0x1) == 0) {
+				u32 offset = (u32)p_instr_position[i] * CMDQ_INST_SIZE + p_cmd_va[0];
+
+				/* adjust offset due to we insert jumps between buffers */
+				offset += (offset / (CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE)) * CMDQ_INST_SIZE;
+
+				/* change to absolute to avoid jump cross buffer */
+				p_cmd_va[1] = p_cmd_va[1] | 0x1;
+				p_cmd_va[0] = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_pa_by_offset(pTask, offset));
 			}
 		} else {
 			u32 arg_header = (p_cmd_va[1] >> 16) & 0xFFFF;
@@ -452,6 +502,37 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
 		}
 
+		if (arg_op_code == CMDQ_CODE_JUMP_C_RELATIVE) {
+			u32 *p_cmd_logic = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
+				(p_instr_position[i] - 1) * CMDQ_INST_SIZE);
+
+			if ((p_cmd_logic[1] >> 24) == CMDQ_CODE_LOGIC) {
+				u32 jump_op = CMDQ_CODE_JUMP_C_ABSOLUTE << 24;
+				u32 jump_op_header = p_cmd_va[1] & 0xFFFFFF;
+				u32 offset_target = p_instr_position[i] * CMDQ_INST_SIZE + p_cmd_logic[0];
+				u32 dest_addr_pa = 0;
+
+				offset_target += offset_target /
+					(CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE) * CMDQ_INST_SIZE;
+				dest_addr_pa = cmdq_core_task_get_pa_by_offset(pTask, offset_target);
+
+				if (dest_addr_pa == 0) {
+					CMDQ_AEE("CMDQ",
+						"Wrong PA offset, task: 0x%p, instr_pos: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
+						pTask, p_instr_position[i], p_cmd_logic[1], p_cmd_logic[0],
+						p_cmd_logic);
+					continue;
+				}
+
+				p_cmd_logic[0] = CMDQ_PHYS_TO_AREG(dest_addr_pa);
+				p_cmd_va[1] = jump_op | jump_op_header;
+			} else {
+				/* unable to jump correctly since relative offset may cross page */
+				CMDQ_ERR(
+					"No logic before jump, task: 0x%p, instr_pos: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
+					pTask, p_instr_position[i], p_cmd_va[1], p_cmd_va[0], p_cmd_va);
+			}
+		}
 	}
 }
 
@@ -4328,6 +4409,8 @@ static const char *cmdq_core_parse_op(uint32_t op_code)
 		return "LOGIC";
 	case CMDQ_CODE_JUMP_C_RELATIVE:
 		return "JUMP_C related";
+	case CMDQ_CODE_JUMP_C_ABSOLUTE:
+		return "JUMP_C absolute";
 	}
 	return NULL;
 }
@@ -4987,6 +5070,7 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 		}
 		break;
 		case CMDQ_CODE_JUMP_C_RELATIVE:
+		case CMDQ_CODE_JUMP_C_ABSOLUTE:
 		{
 			const uint32_t subsys_bit = cmdq_get_func()->getSubsysLSBArgA();
 			const uint32_t s_op = (arg_a & CMDQ_ARG_A_SUBSYS_MASK) >> subsys_bit;
@@ -5188,11 +5272,26 @@ void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
 
 	for (i = 0; i < commandSize; i += CMDQ_INST_SIZE, pCmd += 2) {
 		cmdq_core_parse_instruction(pCmd, textBuf, 128);
-		CMDQ_LOG("%s", textBuf);
+		CMDQ_LOG("%p: %s", pCmd, textBuf);
 	}
 	CMDQ_LOG("TASK command buffer TRANSLATED END\n");
 
 	mutex_unlock(&gCmdqTaskMutex);
+}
+
+void cmdq_core_dump_task_mem(const struct TaskStruct *pTask)
+{
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+		if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list)) {
+			/* last one, dump according available size */
+			cmdqCoreDumpCommandMem(cmd_buffer->pVABase, CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size);
+		} else {
+			/* not last buffer, dump all */
+			cmdqCoreDumpCommandMem(cmd_buffer->pVABase, CMDQ_CMD_BUFFER_SIZE);
+		}
+	}
 }
 
 int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask)
@@ -5862,7 +5961,7 @@ void cmdq_core_dump_GIC(void)
 static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t *hwPC)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
-	uint32_t cmd_size = 0;
+	u32 cmd_size = 0, dump_size = 0;
 	bool dump = false;
 
 	if (list_empty(&pTask->cmd_buffer_list))
@@ -5874,31 +5973,26 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 				cmd_size = CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 			else
 				cmd_size = CMDQ_CMD_BUFFER_SIZE;
-			if (hwPC >= cmd_buffer->pVABase && hwPC < cmd_buffer->pVABase + cmd_size) {
-				/* because hwPC points to "start" of the instruction */
-				/* add offset 1 */
-				print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
-					cmd_buffer->pVABase, (2 + hwPC - cmd_buffer->pVABase) * sizeof(uint32_t), true);
-				cmdq_core_save_hex_first_dump("", 16, 4,
-					cmd_buffer->pVABase, (2 + hwPC - cmd_buffer->pVABase) * sizeof(uint32_t));
+			if (hwPC >= cmd_buffer->pVABase &&
+				hwPC < cmd_buffer->pVABase + (cmd_size / CMDQ_INST_SIZE)) {
+				/* because hwPC points to "start" of the instruction, add offset 1 */
+				dump_size = (u32)(2 + hwPC - cmd_buffer->pVABase) * sizeof(u32);
 				dump = true;
-				break;
+			} else {
+				dump_size = cmd_size;
 			}
+
+			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
+				cmd_buffer->pVABase, dump_size, true);
+			cmdq_core_save_hex_first_dump("", 16, 4, cmd_buffer->pVABase, dump_size);
+
+			if (dump)
+				break;
 		}
 	}
 
-	if (!dump) {
+	if (!dump)
 		CMDQ_ERR("hwPC is not in region, dump all\n");
-		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-			if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list))
-				cmd_size = CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
-			else
-				cmd_size = CMDQ_CMD_BUFFER_SIZE;
-			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
-				cmd_buffer->pVABase, (cmd_size), true);
-			cmdq_core_save_hex_first_dump("", 16, 4, cmd_buffer->pVABase, (cmd_size));
-		}
-	}
 }
 
 void cmdq_core_dump_thread(s32 thread, const char *tag)
@@ -9517,3 +9611,4 @@ bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return cmdq_core_get_feature(featureOption) == CMDQ_FEATURE_OFF_VALUE;
 }
+
