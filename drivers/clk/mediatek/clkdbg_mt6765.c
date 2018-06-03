@@ -717,7 +717,7 @@ static const char * const *get_pwr_names(void)
 		[4]  = "MFG",
 		[5]  = "ISP",
 		[6]  = "IFR",
-		[7]  = "VCODEC",
+		[7]  = "MFG_CORE0",
 		[8]  = "",
 		[9]  = "",
 		[10] = "",
@@ -732,16 +732,16 @@ static const char * const *get_pwr_names(void)
 		[19] = "",
 		[20] = "",
 		[21] = "",
-		[22] = "MFG",
+		[22] = "",
 		[23] = "MFG_ASYNC",
 		[24] = "AUDIO",
-		[25] = "",
-		[26] = "",
-		[27] = "CAM",
-		[28] = "",
+		[25] = "CAM",
+		[26] = "VCODEC",
+		[27] = "",
+		[28] = "C2K",
 		[29] = "",
 		[30] = "",
-		[31] = "MFG_CORE0",
+		[31] = "",
 	};
 
 	return pwr_names;
@@ -757,6 +757,12 @@ void setup_provider_clk(struct provider_clk *pvdck)
 		const char *pvdname;
 		u32 pwr_mask;
 	} pvd_pwr_mask[] = {
+		{"mfgcfg", BIT(4) | BIT(7) | BIT(23)},
+		{"mmsys", BIT(3)},
+		{"imgsys", BIT(3) | BIT(5)},
+		{"camsys", BIT(3) | BIT(5)},
+		{"venc_gcon", BIT(3) | BIT(26)},
+		{"mmsys", BIT(3)},
 	};
 
 	int i;
@@ -773,6 +779,10 @@ void setup_provider_clk(struct provider_clk *pvdck)
 	}
 }
 
+void set_all_clk_cg_disable(unsigned int disable)
+{
+	mtk_set_cg_disable(disable);
+}
 /*
  * chip_ver functions
  */
@@ -813,6 +823,7 @@ static struct clkdbg_ops clkdbg_mt6765_ops = {
 	.get_all_clk_names = get_all_clk_names,
 	.get_pwr_names = get_pwr_names,
 	.setup_provider_clk = setup_provider_clk,
+	.set_all_clk_cg_disable = set_all_clk_cg_disable,
 };
 
 static void __init init_custom_cmds(void)
@@ -827,7 +838,7 @@ static void __init init_custom_cmds(void)
 
 static int __init clkdbg_mt6765_init(void)
 {
-	if (!of_machine_is_compatible("mediatek,mt6765"))
+	if (!of_machine_is_compatible("mediatek,MT6765"))
 		return -ENODEV;
 
 	init_regbase();
