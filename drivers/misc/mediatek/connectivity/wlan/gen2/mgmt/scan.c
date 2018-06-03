@@ -909,7 +909,6 @@ VOID scanRemoveBssDescByBssid(IN P_ADAPTER_T prAdapter, IN UINT_8 aucBSSID[])
 			/* Remove this BSS Desc from the Ess Desc List */
 			if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
 				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
-
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
 
@@ -2119,7 +2118,6 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 *	return FALSE;
 *}
 */
-
 VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	UINT_16 u2IELength, PUINT_8 pucBssid, struct RM_BEACON_REPORT_PARAMS *prRepParams)
 {
@@ -2560,7 +2558,9 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 	BOOLEAN fgIsAbsentCandidateBss = TRUE;
 	ENUM_BAND_T eBand = 0;
 	UINT_8 ucChannel = 0;
-
+#if CFG_SUPPORT_NCHO
+	UINT_8 ucRCPIStep = ROAMING_NO_SWING_RCPI_STEP;
+#endif
 	ASSERT(prAdapter);
 
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
@@ -3094,11 +3094,14 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 							SCN_BSS_JOIN_FAIL_CNT_RESET_SEC);
 					}
 				}
-
 				/*
 				 * NOTE: To prevent SWING,
 				 * we do roaming only if target AP has at least 5dBm larger than us.
 				 */
+#if CFG_SUPPORT_NCHO
+				if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE)
+					ucRCPIStep = 2 * prAdapter->rNchoInfo.i4RoamDelta;
+#endif
 				if (prCandidateBssDesc->fgIsConnected) {
 					if (u4CandAdjRssi < u4PrimAdjRssi &&
 						prPrimaryBssDesc->ucJoinFailureCount < SCN_BSS_JOIN_FAIL_THRESOLD) {
@@ -3219,7 +3222,15 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 	kalMemZero(prEssChnlInfo, CFG_MAX_NUM_OF_CHNL_INFO * sizeof(struct ESS_CHNL_INFO));
 	while (!LINK_IS_EMPTY(prCurEssLink)) {
 		prBssDesc = LINK_PEEK_HEAD(prCurEssLink, BSS_DESC_T, rLinkEntryEss);
-		LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
+		if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss)) {
+			LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
+		} else {
+			DBGLOG(SCN, WARN, "scanGetCurrentEssChnlList: Invalid prPrev[%d] prNext[%d]\n",
+				((((P_LINK_ENTRY_T)&prBssDesc->rLinkEntryEss)->prPrev == NULL) ? -1:0),
+				((((P_LINK_ENTRY_T)&prBssDesc->rLinkEntryEss)->prNext == NULL) ? -1:0));
+			LINK_INITIALIZE(prCurEssLink);
+			break;
+		}
 	}
 	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
 		if (prBssDesc->ucChannelNum > 214)

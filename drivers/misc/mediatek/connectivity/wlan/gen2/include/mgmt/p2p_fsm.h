@@ -401,6 +401,19 @@ typedef struct _MSG_P2P_NETDEV_REGISTER_T {
 	UINT_8 ucMode;
 } MSG_P2P_NETDEV_REGISTER_T, *P_MSG_P2P_NETDEV_REGISTER_T;
 
+typedef struct _P2P_ECSA_SETTING_T {
+	u8 mode;
+	u8 channel;
+	u8 sco;
+	u8 op_class;
+	u8 count;
+} P2P_ECSA_SETTING_T, *P_P2P_ECSA_SETTING_T;
+
+typedef struct _MSG_P2P_ECSA_T {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	P2P_ECSA_SETTING_T rP2pECSA;
+} MSG_P2P_ECSA_T, *P_MSG_P2P_ECSA_T;
+
 #if CFG_SUPPORT_WFD
 typedef struct _MSG_WFD_CONFIG_SETTINGS_CHANGED_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
@@ -449,6 +462,9 @@ VOID p2pFsmRunEventMgmtFrameRegister(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 #endif
+
+VOID p2pFsmRunEventSendCSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 #if 0
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -1718,7 +1734,10 @@ VOID
 p2pProcessEvent_UpdateNOAParam(IN P_ADAPTER_T prAdapter,
 			       UINT_8 ucNetTypeIndex, P_EVENT_UPDATE_NOA_PARAMS_T prEventUpdateNoaParam);
 
+WLAN_STATUS p2pUpdateBeaconEcsaIE(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIndex);
+
 VOID p2pFuncCompleteIOCTL(IN P_ADAPTER_T prAdapter, IN WLAN_STATUS rWlanStatus);
+VOID p2pFsmRunEventTdlsTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam);
 
 /*******************************************************************************
 *                              F U N C T I O N S

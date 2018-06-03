@@ -907,3 +907,40 @@ ENUM_CHNL_EXT_T rlmDecideScoForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 
 	return eSCO;
 }
+#if CFG_SUPPORT_P2P_ECSA
+ENUM_CHNL_EXT_T rlmDecideSco(P_ADAPTER_T prAdapter, UINT_8 ucPrimaryChannel, ENUM_BAND_T eBand)
+{
+	P_DOMAIN_SUBBAND_INFO prSubband;
+	P_DOMAIN_INFO_ENTRY prDomainInfo;
+	UINT_8 i, j;
+	ENUM_CHNL_EXT_T eSCO;
+
+	eSCO = CHNL_EXT_SCN;
+
+	if (eBand == BAND_2G4) {
+		if (ucPrimaryChannel != 14)
+			eSCO = (ucPrimaryChannel > 7) ? CHNL_EXT_SCB : CHNL_EXT_SCA;
+	} else {
+		prDomainInfo = rlmDomainGetDomainInfo(prAdapter);
+		ASSERT(prDomainInfo);
+
+		for (i = 0; i < MAX_SUBBAND_NUM; i++) {
+			prSubband = &prDomainInfo->rSubBand[i];
+			if (prSubband->ucBand == eBand) {
+				for (j = 0; j < prSubband->ucNumChannels; j++) {
+					if ((prSubband->ucFirstChannelNum + j * prSubband->ucChannelSpan)
+					    == ucPrimaryChannel) {
+						eSCO = (j & 1) ? CHNL_EXT_SCB : CHNL_EXT_SCA;
+						break;
+					}
+				}
+
+				if (j < prSubband->ucNumChannels)
+					break;	/* Found */
+			}
+		}
+	}
+
+	return eSCO;
+}
+#endif

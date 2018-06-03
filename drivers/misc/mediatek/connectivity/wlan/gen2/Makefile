@@ -69,7 +69,6 @@ endif
 ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
     ccflags-y += -DCFG_TC10_FEATURE=1
     ccflags-y += -DCFG_SKIP_MAC_INFO_CHECK
-    ccflags-y += -DCFG_SUPPORT_TX_POWER_BACK_OFF
     ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
 else
     ccflags-y += -DCFG_TC10_FEATURE=0
@@ -285,6 +284,7 @@ ifeq ($(FW_CUSTOMIZATION), y)
     ccflags-y += -DENABLED_IN_ENGUSERDEBUG
 endif
 # ---------------------------------------------------
+
 
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)

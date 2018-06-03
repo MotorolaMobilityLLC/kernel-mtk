@@ -947,7 +947,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 			break;
 		}
 
-		prMsgTxReq->u8Cookie = *cookie;
+		prMgmtFrame->u8Cookie = *cookie;
 		prMsgTxReq->rMsgHdr.eMsgId = MID_MNY_P2P_MGMT_TX;
 
 		pucFrameBuf = (PUINT_8) ((ULONG) prMgmtFrame->prPacket + MAC_TX_RESERVED_FIELD);
@@ -1089,7 +1089,7 @@ int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, st
 
 		prDisconnectMsg->rMsgHdr.eMsgId = MID_MNY_P2P_CONNECTION_ABORT;
 		COPY_MAC_ADDR(prDisconnectMsg->aucTargetID, mac);
-		prDisconnectMsg->u2ReasonCode = REASON_CODE_UNSPECIFIED;
+		prDisconnectMsg->u2ReasonCode = REASON_CODE_DEAUTH_LEAVING_BSS;
 		prDisconnectMsg->fgSendDeauth = TRUE;
 
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prDisconnectMsg, MSG_SEND_METHOD_BUF);
@@ -1452,6 +1452,10 @@ int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev
 		i4Status = mtk_p2p_cfg80211_testmode_get_best_channel(wiphy, data, len);
 		break;
 #endif
+	case TESTMODE_CMD_ID_STR_CMD:
+		i4Status = mtk_cfg80211_process_str_cmd(prGlueInfo, (PUINT_8)(prParams + 1),
+				len - sizeof(*prParams));
+		break;
 	default:
 		i4Status = -EINVAL;
 		break;
@@ -1566,6 +1570,15 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	INT_32 value;
 	int status = 0;
 	UINT_32 u4Leng;
+	struct NL80211_DRIVER_P2P_NOA_PARAMS {
+		NL80211_DRIVER_TEST_PARAMS hdr;
+		UINT_32 idx;
+		UINT_32 value; /* should not be used in this case */
+		UINT_32 count;
+		UINT_32 interval;
+		UINT_32 duration;
+	};
+	struct NL80211_DRIVER_P2P_NOA_PARAMS *prNoaParams = NULL;
 
 	ASSERT(wiphy);
 
@@ -1595,9 +1608,17 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	case 1:		/* P2p mode */
 		break;
 	case 4:		/* Noa duration */
-		prP2pSpecificBssInfo->rNoaParam.u4NoaDurationMs = value;
+		prNoaParams = data;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaCount = prNoaParams->count;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaIntervalMs = prNoaParams->interval;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaDurationMs = prNoaParams->duration;
+		DBGLOG(P2P, INFO, "SET NOA: %d %d %d\n",
+		       prNoaParams->count, prNoaParams->interval, prNoaParams->duration);
+
 		/* only to apply setting when setting NOA count */
-		/* status = mtk_p2p_wext_set_noa_param(prDev, info, wrqu, (char *)&prP2pSpecificBssInfo->rNoaParam); */
+		kalIoctl(prGlueInfo, wlanoidSetNoaParam, &prP2pSpecificBssInfo->rNoaParam,
+			 sizeof(PARAM_CUSTOM_NOA_PARAM_STRUCT_T),
+			 FALSE, FALSE, TRUE, TRUE, &u4Leng);
 		break;
 	case 5:		/* Noa interval */
 		prP2pSpecificBssInfo->rNoaParam.u4NoaIntervalMs = value;
@@ -1633,7 +1654,11 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 		break;
 	case 107:		/* P2P set opps, CTWindowl */
 		prP2pSpecificBssInfo->rOppPsParam.u4CTwindowMs = value;
-		/* status = mtk_p2p_wext_set_oppps_param(prDev,info,wrqu,(char *)&prP2pSpecificBssInfo->rOppPsParam); */
+
+		DBGLOG(P2P, INFO, "SET OPPS: %d\n", value);
+		kalIoctl(prGlueInfo, wlanoidSetOppPsParam, &prP2pSpecificBssInfo->rOppPsParam,
+			 sizeof(PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T),
+			 FALSE, FALSE, TRUE, TRUE, &u4Leng);
 		break;
 	case 108:		/* p2p_set_power_save */
 		kalIoctl(prGlueInfo,

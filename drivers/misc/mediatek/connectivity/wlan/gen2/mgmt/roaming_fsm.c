@@ -175,7 +175,7 @@ VOID roamingFsmScanResultsUpdate(IN P_ADAPTER_T prAdapter)
 	GET_CURRENT_SYSTIME(&prRoamingFsmInfo->rRoamingDiscoveryUpdateTime);
 
 }				/* end of roamingFsmScanResultsUpdate() */
-
+#if !(CFG_SUPPORT_NCHO)
 static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 {
 	P_SCAN_INFO_T prScanInfo;
@@ -250,7 +250,7 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 
 	return fgIsNeedScan;
 }
-
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief The Core FSM engine of ROAMING for AIS Infra.
@@ -266,6 +266,10 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 	P_ROAMING_INFO_T prRoamingFsmInfo;
 	ENUM_ROAMING_STATE_T ePreviousState;
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
+#if CFG_SUPPORT_NCHO
+	UINT32 u4ScnResultsTimeout = ROAMING_DISCOVERY_TIMEOUT_SEC;
+	UINT_32 u4ReqScan = FALSE;
+#endif
 
 	prRoamingFsmInfo = (P_ROAMING_INFO_T) &(prAdapter->rWifiVar.rRoamingInfo);
 
@@ -298,6 +302,27 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 
 		case ROAMING_STATE_DISCOVERY:
 			{
+#if CFG_SUPPORT_NCHO
+				if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
+					u4ScnResultsTimeout = prAdapter->rNchoInfo.u4RoamScanPeriod;
+					DBGLOG(ROAMING, TRACE, "NCHO u4ScnResultsTimeout is %d\n", u4ScnResultsTimeout);
+				}
+
+				if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
+							  SEC_TO_SYSTIME(u4ScnResultsTimeout))) {
+					DBGLOG(ROAMING, LOUD, "DiscoveryUpdateTime Timeout");
+					u4ReqScan =  TRUE;
+				} else {
+					DBGLOG(ROAMING, LOUD, "DiscoveryUpdateTime Updated");
+#if CFG_SUPPORT_ROAMING_ENC
+					if (prAdapter->fgIsRoamingEncEnabled == TRUE)
+						u4ReqScan =  TRUE;
+					else
+#endif /* CFG_SUPPORT_ROAMING_ENC */
+						u4ReqScan = FALSE;
+				}
+				aisFsmRunEventRoamingDiscovery(prAdapter, u4ReqScan);
+#else
 				OS_SYSTIME rCurrentTime;
 				BOOLEAN fgIsNeedScan = FALSE;
 
@@ -305,7 +330,7 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 
 				GET_CURRENT_SYSTIME(&rCurrentTime);
 				if (CHECK_FOR_TIMEOUT(rCurrentTime, prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
-						      SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) && fgIsNeedScan) {
+						  SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) && fgIsNeedScan) {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
 					aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
 				} else {
@@ -317,7 +342,9 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 #endif /* CFG_SUPPORT_ROAMING_ENC */
 						aisFsmRunEventRoamingDiscovery(prAdapter, FALSE);
 				}
+#endif
 			}
+
 			break;
 
 		case ROAMING_STATE_ROAM:
@@ -417,8 +444,10 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN P_ROAMING_PARAM_T 
 		/* sync. rcpi with firmware */
 		prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
-		if (prBssDesc)
+		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (prParam->u2Data & 0xff);
+			DBGLOG(ROAMING, INFO, "RCPI %u\n", prBssDesc->ucRCPI);
+		}
 
 		roamingFsmSteps(prAdapter, eNextState);
 	}

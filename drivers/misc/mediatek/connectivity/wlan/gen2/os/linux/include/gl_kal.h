@@ -88,7 +88,6 @@ typedef enum _ENUM_SPIN_LOCK_CATEGORY_E {
 	SPIN_LOCK_TX_SEQ_NUM,
 	SPIN_LOCK_TX_COUNT,
 	SPIN_LOCK_TXS_COUNT,
-	/* end    */
 	SPIN_LOCK_TX,
 	SPIN_LOCK_IO_REQ,
 	SPIN_LOCK_INT,
@@ -104,6 +103,10 @@ typedef enum _ENUM_SPIN_LOCK_CATEGORY_E {
 
 	SPIN_LOCK_EHPI_BUS,	/* only for EHPI */
 	SPIN_LOCK_NET_DEV,
+
+#if CFG_SUPPORT_MULTITHREAD
+	SPIN_LOCK_RX_DATA_QUE,
+#endif
 	SPIN_LOCK_NUM
 } ENUM_SPIN_LOCK_CATEGORY_E;
 
@@ -251,12 +254,21 @@ struct KAL_HALT_CTRL_T {
 #define KAL_WAKE_UNLOCK(_prAdapter, _prWakeLock) \
 	wake_unlock(_prWakeLock)
 
+#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock) \
+	wake_lock_active(_prWakeLock)
+	typedef struct wake_lock KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock) \
+	struct wake_lock _lock
+
 #else
 #define KAL_WAKE_LOCK_INIT(_prAdapter, _prWakeLock, _pcName)
 #define KAL_WAKE_LOCK_DESTROY(_prAdapter, _prWakeLock)
 #define KAL_WAKE_LOCK(_prAdapter, _prWakeLock)
 #define KAL_WAKE_LOCK_TIMEOUT(_prAdapter, _prWakeLock, _u4Timeout)
 #define KAL_WAKE_UNLOCK(_prAdapter, _prWakeLock)
+typedef UINT_32 KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock)
+#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock)
 #endif
 
 /*----------------------------------------------------------------------------*/
@@ -795,6 +807,8 @@ PINT8 kalGetFwInfoFormEmi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len)
 */
 
 int tx_thread(void *data);
+int rx_thread(void *data);
+VOID kalWakeupRxThread(P_GLUE_INFO_T prGlueInfo);
 
 VOID kalHifAhbKalWakeLockTimeout(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalMetProfilingStart(IN P_GLUE_INFO_T prGlueInfo, IN struct sk_buff *prSkb);
@@ -830,4 +844,5 @@ VOID kalFbNotifierUnReg(VOID);
 #if CFG_SUPPORT_SET_CAM_BY_PROC
 VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
 #endif
+VOID kalChangeSchedParams(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgNormalThread);
 #endif /* _GL_KAL_H */

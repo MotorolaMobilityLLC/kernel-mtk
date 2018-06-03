@@ -38,7 +38,11 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
+#if CFG_TC10_FEATURE
+#define WIFI_NVRAM_FILE_NAME   "/system/etc/firmware/WIFI"
+#else
 #define WIFI_NVRAM_FILE_NAME   "/data/nvram/APCFG/APRDEB/WIFI"
+#endif
 #define WIFI_NVRAM_CUSTOM_NAME "/data/nvram/APCFG/APRDEB/WIFI_CUSTOM"
 
 /*******************************************************************************

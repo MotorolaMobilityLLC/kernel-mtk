@@ -338,7 +338,28 @@ enum RM_REQ_PRIORITY rlmGetRmRequestPriority(PUINT_8 pucDestAddr);
 VOID rlmRunEventProcessNextRm(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
 
 VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter);
+#if CFG_SUPPORT_P2P_ECSA
+void rlmGenActionCSHdr(u8 *buf,
+			u8 *da, u8 *sa, u8 *bssid,
+			u8 category, u8 action);
 
+void rlmGenActionCSA(u8 *buf,
+			u8 mode,
+			u8 channel,
+			u8 count,
+			u8 sco);
+
+void rlmGenActionECSA(u8 *buf,
+			u8 mode,
+			u8 channel,
+			u8 count,
+			u8 op_class);
+VOID rlmGenerateCSAIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
+VOID rlmGenerateECSAIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
+VOID  rlmFreqToChannelExt(unsigned int freq,
+			int sec_channel,
+			u8 *op_class, u8 *channel);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

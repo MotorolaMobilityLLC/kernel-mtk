@@ -191,6 +191,10 @@ extern VOID rlmCmd(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_32 u4InBufLen
 #define OID_802_11_WSC_ASSOC_INFO                       0xFFA0CB00
 #endif
 
+#if CFG_SUPPORT_NCHO
+#define CMD_NCHO_COMP_TIMEOUT			1500	/* ms */
+#define CMD_NCHO_AF_DATA_LENGTH			1040
+#endif
 /* Define magic key of test mode (Don't change it for future compatibity) */
 #define PRIV_CMD_TEST_MAGIC_KEY                         2011
 
@@ -279,6 +283,10 @@ priv_get_struct(IN struct net_device *prNetDev,
 UINT_32 CmdStringDecParse(IN UINT_8 *InStr, OUT UINT_8 **OutStr, OUT UINT_32 *OutLen);
 
 UINT_32 CmdStringMacParse(IN UINT_8 *InStr, OUT UINT_8 **OutStr, OUT UINT_32 *OutLen, OUT UINT_8 *OutMac);
+
+#if CFG_SUPPORT_NCHO
+UINT_8 CmdString2HexParse(IN UINT_8 *InStr, OUT UINT_8 **OutStr, OUT UINT_8 *OutLen);
+#endif
 
 int
 priv_set_string(IN struct net_device *prNetDev,
