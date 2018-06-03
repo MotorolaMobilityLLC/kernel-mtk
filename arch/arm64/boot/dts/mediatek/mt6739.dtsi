@@ -204,6 +204,15 @@
 			no-map;
 			reg = <0 0x44600000 0 0x10000>;
 		};
+		consys-reserve-memory {
+			compatible = "mediatek,consys-reserve-memory";
+			#address-cells = <2>;
+			#size-cells = <2>;
+			no-map;
+			size = <0 0x200000>;
+			alignment = <0 0x200000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
 	};
 
 	gic: interrupt-controller@40001000 {
@@ -1264,8 +1273,17 @@
 
 	btif@1100c000 {
 		compatible = "mediatek,btif";
-		reg = <0 0x1100c000 0 0x1000>;
-		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+		#address-cells = <2>;
+		#size-cells = <2>;
+		reg = <0 0x1100c000 0 0x1000>,	/*btif base*/
+			<0 0x11000900 0 0x80>,	/*btif tx dma base*/
+			<0 0x11000980 0 0x80>;	/*btif rx dma base*/
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,	/*btif irq*/
+				<GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>,	/*btif tx dma irq*/
+				<GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;	/*btif rx dma irq*/
+		/* clocks = <&infracfg_ao INFRACFG_AO_BTIF_CG>,*/	/*btif clock*/
+		/*		<&infracfg_ao INFRACFG_AO_AP_DMA_CG>;*/		/*ap dma clock*/
+		clock-names = "btifc","apdmac";
 	};
 
 	irtx@1100d000 {
@@ -1663,6 +1681,21 @@
 	odm: odm{
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
+	};
+
+	consys: consys@18070000 {
+		compatible = "mediatek,mt6763-consys";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		reg = <0 0x18070000 0 0x0200>,  /*CONN_MCU_CONFIG_BASE */
+			<0 0x10007000 0 0x0100>,  /*AP_RGU_BASE */
+			<0 0x10000000 0 0x2000>,  /*TOPCKGEN_BASE */
+			<0 0x10006000 0 0x1000>;  /*SPM_BASE */
+		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_LOW>, /*BGF_EINT */
+			<GIC_SPI 271 IRQ_TYPE_EDGE_FALLING>; /*WDT_EINT */
+		/*clocks = <&scpsys SCP_SYS_CONN>;
+		 *clock-names = "conn";
+		 */
 	};
 };
 

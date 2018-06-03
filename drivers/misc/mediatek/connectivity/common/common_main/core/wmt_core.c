@@ -984,6 +984,7 @@ static INT32 wmt_core_hw_check(VOID)
 	case 0x8167:
 	case 0x0507:
 	case 0x0688:
+	case 0x0699:
 		p_ops = &wmt_ic_ops_soc;
 		break;
 #endif
