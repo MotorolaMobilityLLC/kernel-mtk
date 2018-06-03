@@ -16,12 +16,33 @@
 
 void vmd1_pmic_setting_on(void);
 void vmd1_pmic_setting_off(void);
+int vcore_pmic_set_mode(unsigned char mode);
+int vproc_pmic_set_mode(unsigned char mode);
 void wk_auxadc_bgd_ctrl(unsigned char en);
 void wk_auxadc_bgd_ctrl_dbg(void);
 
+#ifdef LP_GOLDEN_SETTING
+#define LGS
+#endif
+
+#ifdef LP_GOLDEN_SETTING_W_SPM
+#define LGSWS
+#endif
+
+#if defined(LGS) || defined(LGSWS)
+#define PMIC_LP_BUCK_ENTRY(reg) {reg, MT6356_BUCK_##reg##_CON0}
+#define PMIC_LP_LDO_ENTRY(reg) {reg, MT6356_LDO_##reg##_CON0}
+#define PMIC_LP_LDO_VCN33_0_ENTRY(reg) {reg, MT6356_LDO_VCN33_CON0_0}
+#define PMIC_LP_LDO_VCN33_1_ENTRY(reg) {reg, MT6356_LDO_VCN33_CON0_1}
+#define PMIC_LP_LDO_VLDO28_0_ENTRY(reg) {reg, MT6356_LDO_VLDO28_CON0_0}
+#define PMIC_LP_LDO_VLDO28_1_ENTRY(reg) {reg, MT6356_LDO_VLDO28_CON0_1}
+#define PMIC_LP_LDO_VUSB_0_ENTRY(reg) {reg, MT6356_LDO_VUSB_CON0_0}
+#define PMIC_LP_LDO_VUSB_1_ENTRY(reg) {reg, MT6356_LDO_VUSB_CON0_1}
+#endif
+
 typedef enum {
 	SW,
-	SPM,
+	SPM = SW,
 	SRCLKEN0,
 	SRCLKEN1,
 	SRCLKEN2,
@@ -69,40 +90,22 @@ typedef enum {
 	VSIM2,
 	VIBR,
 	VBIF28,
-	TABLE1_COUNT_END
-} PMU_LP_TABLE1_ENUM;
-
-typedef enum {
-	VCN33,
-	VLDO28,
-	VUSB,
-	TABLE2_COUNT_END
-} PMU_LP_TABLE2_ENUM;
-
-typedef enum {
+	VCN33_0,
+	VCN33_1,
+	VLDO28_0,
+	VLDO28_1,
+	VUSB_0,
+	VUSB_1,
 	VPA,
-	TABLE3_COUNT_END
-} PMU_LP_TABLE3_ENUM;
+	TABLE_COUNT_END
+} PMU_LP_TABLE_ENUM;
 
 typedef struct {
-	PMU_LP_TABLE1_ENUM flagname;
-	unsigned short op_en;
-	unsigned short op_cfg;
-	unsigned short en_lp;
-} PMU_LP_TABLE1_ENTRY;
-
-typedef struct {
-	PMU_LP_TABLE2_ENUM flagname;
-	unsigned short op_en;
-	unsigned short op_cfg;
-	unsigned short en_lp_0;
-	unsigned short en_lp_1;
-} PMU_LP_TABLE2_ENTRY;
-
-typedef struct {
-	PMU_LP_TABLE3_ENUM flagname;
-	unsigned short en_lp;
-} PMU_LP_TABLE3_ENTRY;
+	PMU_LP_TABLE_ENUM flagname;
+#if defined(LGS) || defined(LGSWS)
+	unsigned short en_adr;
+#endif
+} PMU_LP_TABLE_ENTRY;
 
 extern int pmic_buck_vproc_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);

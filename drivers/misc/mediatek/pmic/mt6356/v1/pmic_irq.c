@@ -36,7 +36,7 @@
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
-#include "include/mtk_pmic_common.h"
+#include "include/pmic_debugfs.h"
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mt-plat/mtk_boot_common.h>
@@ -435,7 +435,7 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 	switch (intNo) {
 	default:
 		/* issue AEE exception and disable OC interrupt */
-		/* TBD: dump_exception_reg */
+		kernel_dump_exception_reg();
 		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
 		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
@@ -529,7 +529,6 @@ void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 		return;
 	}
 #endif
-	/*sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo];*/
 
 	enable_reg = sp_interrupts[spNo].enable + 0x6 * sp_conNo;
 	PMICLOG("[%s] intNo=%d en=%d str=%s spNo=%d sp_conNo=%d sp_irqNo=%d, Reg[0x%x]=0x%x\n", __func__,
@@ -598,31 +597,43 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 /* register general oc interrupt handler */
 void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 {
-	unsigned int shift, no;
+	unsigned int spNo, sp_conNo, sp_irqNo;
 
-	shift = intNo / PMIC_INT_WIDTH;
-	no = intNo % PMIC_INT_WIDTH;
-
-	if (shift >= interrupts_size) {
-		pr_err(PMICTAG "[%s] fail intno=%d\r\n", __func__, intNo);
+	if (pmic_check_intNo(intNo, &spNo, &sp_conNo, &sp_irqNo)) {
+		pr_err(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
 		return;
 	}
-	interrupts[shift].interrupts[no].oc_callback = oc_int_handler;
-
-	PMICLOG("[pmic_register_oc_interrupt_callback] intno=%d\r\n", intNo);
+	PMICLOG("[%s] intNo=%d\n", __func__, intNo);
+	sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo].oc_callback = oc_int_handler;
 }
 
 /* register and enable all oc interrupt */
 void register_all_oc_interrupts(void)
 {
-	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
+	PMIC_IRQ_ENUM oc_interrupt;
 
-	for (; oc_interrupt <= INT_VXO22_OC; oc_interrupt++) {
-		/* ignore pre_oc */
-		if (oc_interrupt == INT_VCORE_PREOC)
-			continue;
+	/* BUCK OC */
+	for (oc_interrupt = INT_VPROC_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+	}
+	/* LDO OC */
+	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VBIF28_OC; oc_interrupt++) {
+		switch (oc_interrupt) {
+		case INT_VSIM1_OC:
+		case INT_VSIM2_OC:
+		case INT_VMCH_OC:
+			PMICLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
+			break;
+		case INT_VCAMA_OC:
+			PMICLOG("[PMIC_INT] OC:%d should be enabled after power on\n", oc_interrupt);
+			pmic_register_oc_interrupt_callback(oc_interrupt);
+			break;
+		default:
+			pmic_register_oc_interrupt_callback(oc_interrupt);
+			pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+			break;
+		}
 	}
 }
 #endif
