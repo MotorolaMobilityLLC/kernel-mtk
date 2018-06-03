@@ -27,7 +27,7 @@
 #define MSDC0_CLK_NAME          "msdc0-clock"
 #define MSDC0_HCLK_NAME         "msdc0-hclock"
 #define MSDC1_CLK_NAME          "msdc1-clock"
-#define MSDC1_HCLK_NAME         NULL
+#define MSDC1_HCLK_NAME         "msdc1-hclock"
 #define MSDC2_CLK_NAME          "msdc2-clock"
 #define MSDC2_HCLK_NAME         "msdc2-hclock"
 #define MSDC0_IOCFG_NAME        "mediatek,iocfg_tl"

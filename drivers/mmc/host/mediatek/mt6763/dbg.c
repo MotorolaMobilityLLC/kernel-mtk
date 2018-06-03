@@ -1799,6 +1799,7 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 
 static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 {
+#ifdef MSDC_BRING_UP
 	int i, j;
 	int bit_pos, byte_pos, start;
 	char buf[65];
@@ -1904,6 +1905,7 @@ static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
 		seq_printf(m, "[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
 	}
+#endif
 }
 
 int g_count;

@@ -19,8 +19,8 @@
 	bootable;
 	status = "disable";
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
-	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>, <&topckgen CLK_TOP_MSDC50_HCLK_SEL>;*/
-	/*clock-names = "msdc0-clock", "msdc0-hclock";*/
+	clocks = <&infracfg_ao INFRACFG_AO_MSDC0_SCK_CG>, <&infracfg_ao INFRACFG_AO_MSDC0_CG>;
+	clock-names = "msdc0-clock", "msdc0-hclock";
 	hw_dvfs = /bits/ 8 <1>;
 };
 
@@ -47,8 +47,8 @@
 	status = "okay";
 	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
 	vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
-	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC1>;*/
-	/*clock-names = "msdc1-clock";*/
+	clocks = <&infracfg_ao INFRACFG_AO_MSDC1_SCK_CG>, <&infracfg_ao INFRACFG_AO_MSDC1_CG>;
+	clock-names = "msdc1-clock", "msdc1-hclock";
 	hw_dvfs = /bits/ 8 <0>;
 };
 
@@ -69,8 +69,8 @@
 	register_setting = <&msdc2_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SDIO>;
 	status = "disable";
-	/*clocks = <&pericfg CLK_PERICFG_RG_MSDC3>, <&topckgen CLK_TOP_MSDC53_HCLK_SEL>;*/
-	/*clock-names = "msdc3-clock", "msdc3-hclock";*/
+	clocks = <&infracfg_ao INFRACFG_AO_MSDC2_SCK_CG>, <&infracfg_ao INFRACFG_AO_MSDC2_CG>;
+	clock-names = "msdc2-clock", "msdc2-hclock";
 	hw_dvfs = /bits/ 8 <1>;
 };
 

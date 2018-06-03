@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _DT_BINDINGS_MMC_MT6757_H
-#define _DT_BINDINGS_MMC_MT6757_H
+#ifndef _DT_BINDINGS_MMC_MT6763_H
+#define _DT_BINDINGS_MMC_MT6763_H
 
 #define MSDC_EMMC               (0)
 #define MSDC_SD                 (1)

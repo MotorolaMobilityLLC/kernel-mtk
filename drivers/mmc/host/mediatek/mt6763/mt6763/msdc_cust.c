@@ -1156,11 +1156,15 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 
 #if !defined(FPGA_PLATFORM)
 	if (host->hw->host_function == MSDC_EMMC) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,msdc_top");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,msdc0_top");
 		host->base_top = of_iomap(np, 0);
+	} else if (host->hw->host_function == MSDC_SD)  {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,msdc1_top");
+		host->base_top = of_iomap(np, 0);
+	}
+	if (host->base_top)
 		pr_debug("of_iomap for MSDC%d TOP base @ 0x%p\n",
 			host->id, host->base_top);
-	}
 #endif
 
 #if defined(CFG_DEV_MSDC2)

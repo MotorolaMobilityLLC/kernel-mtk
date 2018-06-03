@@ -46,6 +46,16 @@
 		compatible = "mediatek,mt6763-sdcard-ins";
 	};
 
+	msdc0_top@11f50000 {
+		compatible = "mediatek,msdc0_top";
+		reg = <0 0x11f50000 0 0x1000>;
+	};
+
+	msdc1_top@11e10000 {
+		compatible = "mediatek,msdc1_top";
+		reg = <0 0x11e10000 0 0x1000>;
+	};
+
 	psci {
 		compatible	= "arm,SHELL ONLY";
 		method		= "smc";

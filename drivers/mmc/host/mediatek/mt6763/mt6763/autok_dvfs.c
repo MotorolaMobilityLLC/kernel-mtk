@@ -904,6 +904,7 @@ EXPORT_SYMBOL(sdio_autok);
 
 void msdc_dump_autok(struct msdc_host *host)
 {
+#ifdef MSDC_BRING_UP
 	int i, j;
 	int bit_pos, byte_pos, start;
 	char buf[65];
@@ -1009,4 +1010,5 @@ void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
 		pr_err("[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
 	}
+#endif
 }
