@@ -22,7 +22,7 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_internal.h>
 
-#if defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6799) | defined(CONFIG_MACH_MT6759)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SODI3 \

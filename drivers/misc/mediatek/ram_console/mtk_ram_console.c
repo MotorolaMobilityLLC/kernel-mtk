@@ -82,6 +82,7 @@ struct last_reboot_reason {
 	uint32_t deepidle_data;
 	uint32_t sodi3_data;
 	uint32_t sodi_data;
+	uint32_t mcsodi_data;
 	uint32_t spm_suspend_data;
 	uint32_t spm_common_scenario_data;
 	uint32_t mtk_cpuidle_footprint[NR_CPUS];
@@ -928,13 +929,6 @@ void aee_rr_rec_mcdi_r15_val(u32 val)
 	LAST_RR_SET(mcdi_r15, val);
 }
 
-void aee_rr_rec_sodi_val(u32 val)
-{
-	if (!ram_console_init_done || !ram_console_buffer)
-		return;
-	LAST_RR_SET(sodi_data, val);
-}
-
 void aee_rr_rec_sodi3_val(u32 val)
 {
 	if (!ram_console_init_done)
@@ -949,9 +943,28 @@ u32 aee_rr_curr_sodi3_val(void)
 	return LAST_RR_VAL(sodi3_data);
 }
 
+void aee_rr_rec_sodi_val(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(sodi_data, val);
+}
+
 u32 aee_rr_curr_sodi_val(void)
 {
 	return LAST_RR_VAL(sodi_data);
+}
+
+void aee_rr_rec_mcsodi_val(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(mcsodi_data, val);
+}
+
+u32 aee_rr_curr_mcsodi_val(void)
+{
+	return LAST_RR_VAL(mcsodi_data);
 }
 
 void aee_rr_rec_spm_suspend_val(u32 val)
@@ -2067,6 +2080,11 @@ void aee_rr_show_sodi(struct seq_file *m)
 	seq_printf(m, "sodi: 0x%x\n", LAST_RRR_VAL(sodi_data));
 }
 
+void aee_rr_show_mcsodi(struct seq_file *m)
+{
+	seq_printf(m, "mcsodi: 0x%x\n", LAST_RRR_VAL(mcsodi_data));
+}
+
 void aee_rr_show_spm_suspend(struct seq_file *m)
 {
 	seq_printf(m, "spm_suspend: 0x%x\n", LAST_RRR_VAL(spm_suspend_data));
@@ -2721,6 +2739,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_deepidle,
 	aee_rr_show_sodi3,
 	aee_rr_show_sodi,
+	aee_rr_show_mcsodi,
 	aee_rr_show_spm_suspend,
 	aee_rr_show_spm_common_scenario,
 	aee_rr_show_vcore_dvfs_opp,

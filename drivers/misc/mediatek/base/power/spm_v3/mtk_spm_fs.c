@@ -255,6 +255,14 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
 }
+#ifndef CONFIG_MACH_MT6759
+
+#ifdef SUP_MCSODI_FS
+static ssize_t mcsodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return show_pwr_ctrl(__spm_mcsodi.pwrctrl, buf);
+}
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -262,7 +270,7 @@ static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute 
 	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
 }
 #endif
-
+#endif
 
 /**************************************
  * xxx_ctrl_store Function
@@ -925,6 +933,15 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 {
 	return store_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf, count);
 }
+#ifndef CONFIG_MACH_MT6759
+
+#ifdef SUP_MCSODI_FS
+static ssize_t mcsodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
+			       const char *buf, size_t count)
+{
+	return store_pwr_ctrl(SPM_PWR_CTRL_MCSODI, __spm_mcsodi.pwrctrl, buf, count);
+}
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
@@ -935,7 +952,7 @@ static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute
 	return 0;
 }
 #endif
-
+#endif
 /**************************************
  * fm_suspend Function
  **************************************/
@@ -954,8 +971,13 @@ DEFINE_ATTR_RW(suspend_ctrl);
 DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
+#ifndef CONFIG_MACH_MT6759
+#ifdef SUP_MCSODI_FS
+DEFINE_ATTR_RW(mcsodi_ctrl);
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(vcore_dvfs_ctrl);
+#endif
 #endif
 DEFINE_ATTR_RO(fm_suspend);
 
@@ -965,8 +987,13 @@ static struct attribute *spm_attrs[] = {
 	__ATTR_OF(dpidle_ctrl),
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
+#ifndef CONFIG_MACH_MT6759
+#ifdef SUP_MCSODI_FS
+	__ATTR_OF(mcsodi_ctrl),
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(vcore_dvfs_ctrl),
+#endif
 #endif
 	__ATTR_OF(fm_suspend),
 

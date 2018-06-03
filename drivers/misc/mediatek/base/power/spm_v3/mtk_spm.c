@@ -355,14 +355,14 @@ int __init spm_module_init(void)
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
-
+#ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
 		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
 #endif /* CONFIG_MTK_DRAMC */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-
+#endif
 	ret = platform_driver_register(&spm_dev_drv);
 	if (ret) {
 		pr_debug("fail to register platform driver\n");
@@ -394,8 +394,9 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
+#ifndef CONFIG_MACH_MT6759
 	spm_vcorefs_init();
-
+#endif
 	return 0;
 }
 
@@ -501,6 +502,7 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
 /**************************************
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
+#ifndef CONFIG_MACH_MT6759
 #ifdef CONFIG_MTK_DRAMC
 struct ddrphy_golden_cfg {
 	u32 base;
@@ -548,7 +550,9 @@ int spm_golden_setting_cmp(bool en)
 
 }
 #endif /* CONFIG_MTK_DRAMC */
+#endif
 
+#ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
@@ -592,7 +596,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	prev_mode = mode;
 }
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
-
+#endif
 void *mt_spm_base_get(void)
 {
 	return spm_base;
@@ -623,6 +627,7 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
+#ifndef CONFIG_MACH_MT6759
 
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
@@ -640,7 +645,7 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-
+#endif
 	return ret;
 }
 
@@ -648,6 +653,7 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 {
 	int ack_data;
 	unsigned int ret = 0;
+#ifndef CONFIG_MACH_MT6759
 
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
@@ -669,7 +675,7 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-
+#endif
 	return ret;
 }
 
@@ -678,6 +684,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	int ack_data;
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
+#ifndef CONFIG_MACH_MT6759
 
 	switch (cmd) {
 	case SPM_SUSPEND:
@@ -736,13 +743,14 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-
+#endif
 	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 void unmask_edge_trig_irqs_for_cirq(void)
 {
+#ifndef CONFIG_MACH_MT6759
 	int i;
 
 	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
@@ -751,12 +759,14 @@ void unmask_edge_trig_irqs_for_cirq(void)
 			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
 		}
 	}
+#endif
 }
 
 static atomic_t ipi_lock_cnt;
 
 bool is_sspm_ipi_lock_spm(void)
 {
+
 	int lock_cnt = -1;
 	bool ret = false;
 
@@ -769,6 +779,7 @@ bool is_sspm_ipi_lock_spm(void)
 
 void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 {
+#ifndef CONFIG_MACH_MT6759
 	if (id == IPI_ID_SPM_SUSPEND)
 		return;
 
@@ -785,6 +796,7 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 		trace_sspm_ipi(start, id, opt);
 	else
 		trace_sspm_ipi(start, id, opt);
+#endif
 }
 
 MODULE_DESCRIPTION("SPM Driver v0.1");

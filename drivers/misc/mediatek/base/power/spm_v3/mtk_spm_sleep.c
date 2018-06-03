@@ -401,10 +401,12 @@ static void spm_set_sysclk_settle(void)
 	/* md_settle is keyword for suspend status */
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
-
+#ifndef CONFIG_MACH_MT6759
 static int mt_power_gs_dump_suspend_count = 2;
+#endif
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
+#ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
@@ -432,16 +434,19 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	if (--mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
+#endif
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
+#ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_auxadc_bgd_ctrl(1);
 	wk_mt6337_restore_lp_setting();
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
+#endif
 }
 
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
@@ -529,10 +534,10 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
 #endif
-
+#ifndef CONFIG_MACH_MT6759
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
-
+#endif
 	spm_crit2("suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d\n",
 		  spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count);
 	if (spm_ap_mdsrc_req_cnt != 0)

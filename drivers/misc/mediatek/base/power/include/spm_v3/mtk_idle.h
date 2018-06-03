@@ -46,6 +46,9 @@ void enable_soidle_by_bit(int id) {}
 void disable_soidle_by_bit(int id) {}
 #endif
 
+extern void enable_mcsodi_by_bit(int id);
+extern void disable_mcsodi_by_bit(int id);
+
 #define DPIDLE_START    1
 #define DPIDLE_END      2
 #define SOIDLE_START    3

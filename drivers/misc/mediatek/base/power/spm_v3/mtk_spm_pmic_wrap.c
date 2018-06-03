@@ -74,6 +74,7 @@ static struct pmic_wrap_setting pw = {
 	.addr = {{0, 0} },
 
 	.set[PMIC_WRAP_PHASE_ALLINONE] = {
+#ifndef CONFIG_MACH_MT6759
 		._[IDX_ALL_1_VSRAM_PWR_ON]      = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 1),},
 		._[IDX_ALL_1_VSRAM_SHUTDOWN]    = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 0),},
 		._[IDX_ALL_1_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS1_CON1, VOLT_TO_PMIC_VAL(80000),},
@@ -90,6 +91,7 @@ static struct pmic_wrap_setting pw = {
 		._[IDX_ALL_2_VSRAM_SHUTDOWN]    = {MT6335_LDO_VSRAM_DVFS2_CON0, _BITS_(0:0, 0),},
 		._[IDX_ALL_2_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS2_CON1, VOLT_TO_PMIC_VAL(80000),},
 		._[IDX_ALL_2_VSRAM_SLEEP]       = {MT6335_LDO_VSRAM_DVFS2_CON1, VOLT_TO_PMIC_VAL(65000),},
+#endif
 		.nr_idx = NR_IDX_ALL,
 	},
 };
