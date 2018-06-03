@@ -769,30 +769,38 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 	b_nr = _h_nr[1] + _l_nr[2];
 
 	/* big core nr */
-	if ((l_avg_time[2]/_l_nr[2]) > BIG_TASK_AVG_THRESHOLD)
-		*B_nr += _l_nr[2];
-	else
-		*B_nr += ((l_avg_time[2]/BIG_TASK_AVG_THRESHOLD) >= _l_nr[2]) ?
+	if (_l_nr[2]) {
+		if ((l_avg_time[2]/_l_nr[2]) > BIG_TASK_AVG_THRESHOLD)
+			*B_nr += _l_nr[2];
+		else
+			*B_nr += ((l_avg_time[2]/BIG_TASK_AVG_THRESHOLD) >= _l_nr[2]) ?
 				_l_nr[2] : (l_avg_time[2]/BIG_TASK_AVG_THRESHOLD);
+	}
 
-	if ((h_avg_time[1]/_h_nr[1]) > BIG_TASK_AVG_THRESHOLD)
-		*B_nr += _h_nr[1];
-	else
-		*B_nr += ((h_avg_time[1]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[1]) ?
+	if (_h_nr[1]) {
+		if ((h_avg_time[1]/_h_nr[1]) > BIG_TASK_AVG_THRESHOLD)
+			*B_nr += _h_nr[1];
+		else
+			*B_nr += ((h_avg_time[1]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[1]) ?
 				_h_nr[1] : (h_avg_time[1]/BIG_TASK_AVG_THRESHOLD);
+	}
 
 	/* L core nr */
-	if (((l_avg_time[1] - h_avg_time[1])/_l_nr[1]) > BIG_TASK_AVG_THRESHOLD)
-		*L_nr += _l_nr[1];
-	else
-		*L_nr += (((l_avg_time[1] - h_avg_time[1])/BIG_TASK_AVG_THRESHOLD) >= _l_nr[1]) ?
+	if (_l_nr[1]) {
+		if (((l_avg_time[1] - h_avg_time[1])/_l_nr[1]) > BIG_TASK_AVG_THRESHOLD)
+			*L_nr += _l_nr[1];
+		else
+			*L_nr += (((l_avg_time[1] - h_avg_time[1])/BIG_TASK_AVG_THRESHOLD) >= _l_nr[1]) ?
 				_l_nr[1] : ((l_avg_time[1] - h_avg_time[1])/BIG_TASK_AVG_THRESHOLD);
+	}
 
-	if ((h_avg_time[0]/_h_nr[0]) > BIG_TASK_AVG_THRESHOLD)
-		*L_nr += _h_nr[0];
-	else
-		*L_nr += ((h_avg_time[0]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[0]) ?
-					_h_nr[0] : (h_avg_time[0]/BIG_TASK_AVG_THRESHOLD);
+	if (_h_nr[0]) {
+		if ((h_avg_time[0]/_h_nr[0]) > BIG_TASK_AVG_THRESHOLD)
+			*L_nr += _h_nr[0];
+		else
+			*L_nr += ((h_avg_time[0]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[0]) ?
+				_h_nr[0] : (h_avg_time[0]/BIG_TASK_AVG_THRESHOLD);
+	}
 
 	/* if big core needed for performance */
 	if (!(*B_nr)) {
@@ -810,6 +818,11 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 		else if (is_game_mode && util > BIG_TASK_GAME_THRESHOLD)
 			*B_nr = 1;
 #endif
+	}
+
+	if (cluster_nr < 3) { /* no big core */
+		*L_nr += *B_nr;
+		*B_nr = 0;
 	}
 
 	/* reset big task tracking */
