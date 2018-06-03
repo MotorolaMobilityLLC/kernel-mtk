@@ -40,13 +40,13 @@
 #include "mtk_nand_chip.h"
 
 /* #define MTK_FORCE_SYNC_OPS */
-#define MTK_FORCE_READ_FULL_PAGE
+/* #define MTK_FORCE_READ_FULL_PAGE */
 
 /* UNIT TEST RELATED */
 /* #define MTK_NAND_CHIP_TEST */
-/* #define MTK_NAND_CHIP_DUMP_DATA_TEST */
+#define MTK_NAND_CHIP_DUMP_DATA_TEST
 /* #define MTK_NAND_CHIP_MULTI_PLANE_TEST */
-/* #define MTK_NAND_READ_COMPARE */
+#define MTK_NAND_READ_COMPARE
 
 extern flashdev_info_t devinfo;
 extern bool tlc_snd_phyplane;
