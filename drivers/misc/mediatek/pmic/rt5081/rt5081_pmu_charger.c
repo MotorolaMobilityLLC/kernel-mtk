@@ -39,7 +39,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.19_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.20_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
@@ -1327,6 +1327,13 @@ static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
+	bool ichg_wkard = false;
+
+	/* Workaround to make ichg always >= 900mA */
+	if (uA < 900000) {
+		ichg_wkard = true;
+		uA = 900000;
+	}
 
 	/* Find corresponding reg value */
 	reg_ichg = rt5081_find_closest_reg_value(
@@ -1356,7 +1363,10 @@ static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 		ret = __rt5081_set_ieoc(chg_data, chg_data->ieoc - 100000);
 	}
 
-	return ret;
+	if (ret < 0)
+		return ret;
+
+	return ichg_wkard ? -EINVAL : ret;
 }
 
 static int __rt5081_set_cv(struct rt5081_pmu_charger_data *chg_data, u32 uV)
@@ -1935,10 +1945,6 @@ static int rt5081_set_pep20_reset(struct charger_device *chg_dev)
 	if (ret < 0)
 		goto out;
 
-	ret = rt5081_set_ichg(chg_dev, 512000);
-	if (ret < 0)
-		goto out;
-
 	/* disable skip mode */
 	rt5081_enable_hidden_mode(chg_data, true);
 
@@ -2335,7 +2341,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	bool chg_en = 0;
 	int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0, adc_vbus = 0;
 	enum rt5081_charging_status chg_status = RT5081_CHG_STATUS_READY;
-	u8 chg_stat = 0;
+	u8 chg_stat = 0, chg_ctrl[2] = {0};
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
@@ -2353,6 +2359,8 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_VBUS_DIV5, &adc_vbus);
 
 	chg_stat = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGSTAT1);
+	ret = rt5081_pmu_reg_block_read(chg_data->chip, RT5081_PMU_REG_CHGCTRL1,
+		2, chg_ctrl);
 
 	if (chg_status == RT5081_CHG_STATUS_FAULT) {
 		for (i = 0; i < ARRAY_SIZE(rt5081_chg_reg_addr); i++) {
@@ -2371,12 +2379,15 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 		__func__, ichg / 1000, aicr / 1000, mivr / 1000, ieoc / 1000, cv / 1000);
 
 	dev_info(chg_data->dev,
-		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA, VBUS=%dmV\n",
+		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA, VBUS = %dmV\n",
 		__func__, adc_vsys / 1000, adc_vbat / 1000, adc_ibat / 1000,
 		adc_ibus / 1000, adc_vbus / 1000);
 
 	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s, CHG_STAT = 0x%02X\n",
 		__func__, chg_en, rt5081_chg_status_name[chg_status], chg_stat);
+
+	dev_info(chg_data->dev, "%s: CHG_CTRL1 = 0x%02X, CHG_CTRL2 = 0x%02X\n",
+		__func__, chg_ctrl[0], chg_ctrl[1]);
 
 	ret = 0;
 	return ret;
@@ -3668,6 +3679,10 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.20_MTK
+ * (1) Always keep setting of ichg >= 900mA
+ * (2) Remove setting ichg to 512mA in pep20_reset
+ *
  * 1.1.19_MTK
  * (1) Always disable charger detection first no matter use it or not
  *
