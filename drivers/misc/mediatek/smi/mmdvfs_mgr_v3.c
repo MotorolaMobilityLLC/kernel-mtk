@@ -15,6 +15,7 @@
 #include <linux/timer.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
+#include <linux/clk.h>
 
 #include <aee.h>
 
@@ -217,16 +218,11 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 	return mmdvfs_set_corse_step(scenario, step);
 }
 
-int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+
+int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
-
-	if (is_mmdvfs_disabled()) {
-		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
-		smi_scenario, mmdvfs_step);
-		return 0;
-	}
 
 	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) || (smi_scenario
 	< SMI_BWC_SCEN_NORMAL)) {
@@ -239,11 +235,6 @@ int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 	final_step = g_mmdvfs_step_util->set_step(g_mmdvfs_step_util, mmdvfs_step, smi_scenario);
 	g_mmdvfs_current_step = final_step;
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
-
-	/* Update HW runtime option */
-	g_mmdvfs_adaptor->enable_vcore = is_mmdvfs_disabled();
-	g_mmdvfs_adaptor->enable_pll_hopping = !is_mmdvfs_freq_hopping_disabled();
-	g_mmdvfs_adaptor->enable_clk_mux = !is_mmdvfs_freq_mux_disabled();
 
 	/* Change HW configuration */
 	g_mmdvfs_adaptor->apply_hw_configurtion_by_step(g_mmdvfs_adaptor, final_step, original_step);
@@ -259,7 +250,39 @@ int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 	return 0;
 }
 
+int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
+	int mmdvfs_step)
+{
+	int ret = 0;
 
+	/* Update HW runtime option */
+	g_mmdvfs_adaptor->enable_vcore = 1;
+	g_mmdvfs_adaptor->enable_clk_mux = 1;
+	ret = mmdvfs_internal_set_fine_step(smi_scenario, mmdvfs_step);
+
+	/* recover the original setting */
+	g_mmdvfs_adaptor->enable_vcore = !is_mmdvfs_disabled();
+	g_mmdvfs_adaptor->enable_clk_mux = !is_mmdvfs_freq_mux_disabled();
+
+	return ret;
+}
+
+int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+{
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
+		smi_scenario, mmdvfs_step);
+		return 0;
+	}
+
+	/* Update HW runtime option */
+	g_mmdvfs_adaptor->enable_vcore = !is_mmdvfs_disabled();
+	g_mmdvfs_adaptor->enable_pll_hopping = !is_mmdvfs_freq_hopping_disabled();
+	g_mmdvfs_adaptor->enable_clk_mux = !is_mmdvfs_freq_mux_disabled();
+
+	return mmdvfs_internal_set_fine_step(smi_scenario, mmdvfs_step);
+
+}
 
 
 static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
@@ -384,6 +407,11 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 		return;
 	}
 
+	if (is_force_max_mmsys_clk()) {
+		MMDVFSMSG("MMDVFS is always high\n");
+		return;
+	}
+
 	/* MMDVFSMSG("leave %d\n", scen); */
 	if (scen == SMI_BWC_SCEN_WFD)
 		g_mmdvfs_mgr->is_wfd_enable = 0;
@@ -395,9 +423,15 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 	if ((1 << scen & MMDVFS_CAMERA_SCENARIOS_MASK))
 		mmdvfs_start_cam_monitor(scen, 8);
 
+	/* If the scenario is defined in disable_auto_control_mask */
+	/* mmdvfs_mgr doesn't change the step automatically.       */
+	/* The kernel driver of the scenarios will change the step */
+	/* by mmdvfs_set_fine_step directly */
+	if (!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask))
+		mmdvfs_set_fine_step(scen, MMDVFS_FINE_STEP_UNREQUEST);
 	/* reset scenario voltage to default when it exits */
 	/* Also force the system to leave low low mode */
-	mmdvfs_set_fine_step(scen, MMDVFS_FINE_STEP_UNREQUEST);
+
 }
 
 
@@ -411,11 +445,22 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 		return;
 	}
 
+	if (is_force_max_mmsys_clk()) {
+		MMDVFSMSG("MMDVFS is always high\n");
+		return;
+	}
+
+	/* If the scenario is defined in disable_auto_control_mask */
+	/* mmdvfs_mgr doesn't change the step automatically.       */
+	/* The kernel driver of the scenarios will change the step */
+	/* by mmdvfs_set_fine_step directly */
+
+	if (!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask)) {
 	mmdvfs_fine_step = mmdvfs_determine_fine_step(scen, g_mmdvfs_cmd.sensor_size,
 		g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
-
 	mmdvfs_set_fine_step(scen, mmdvfs_fine_step);
+	}
 
 	/* Boost for ISP related scenario */
 	if ((1 << scen & MMDVFS_CAMERA_SCENARIOS_MASK))
@@ -552,6 +597,98 @@ static void notify_camsys_clk_change(int ori_mmdvfs_step, int update_mmdvfs_step
 		if (quick_mmclk_cbs[i] != NULL)
 			mmsys_clk_change_notify_checked(quick_mmclk_cbs[i], ori_cam_clk_mode,
 			update_cam_clk_mode, msg);
+	}
+}
+
+/* Default step configurtion (after boot up) */
+static unsigned int delayed_default_step_finished;
+
+void mmdvfs_default_step_set(int default_step)
+{
+	if (is_force_max_mmsys_clk()) {
+		MMDVFSMSG("Forcing max mm clks is enabled\n");
+		mmdvfs_set_fine_step_force(MMDVFS_MGR, default_step);
+	}
+
+}
+
+static void mmdvfs_default_step_delayed(struct work_struct *work)
+{
+	if (force_always_on_mm_clks())
+		mmdvfs_debug_set_mmdvfs_clks_enabled(1);
+
+	/* Set default high berfore MMDVFS feature is enabled */
+	if (is_force_max_mmsys_clk()) {
+		mmdvfs_default_step_set(MMDVFS_FINE_STEP_OPP0);
+		delayed_default_step_finished = 1;
+	}
+}
+
+static DECLARE_DELAYED_WORK(g_mmdvfs_set_default_step_delayed,
+	mmdvfs_default_step_delayed);
+
+void mmdvfs_default_start_delayed_setting(void)
+{
+		schedule_delayed_work(&g_mmdvfs_set_default_step_delayed, 60 * HZ);
+}
+
+void mmdvfs_default_stop_delayed_setting(void)
+{
+	/* Set default high berfore MMDVFS feature is enabled */
+	if (is_force_max_mmsys_clk() && (delayed_default_step_finished == 0))
+		cancel_delayed_work_sync(&g_mmdvfs_set_default_step_delayed);
+}
+
+/* Used for MMDVFS before CLK controlling is ready */
+static unsigned int mm_clks_enabled;
+
+void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request)
+{
+	int clk_idx = 0;
+	int ccf_ret = 0;
+	int always_on_mask = force_always_on_mm_clks();
+
+	if (mm_clks_enabled == 0 && clk_enable_request == 0) {
+		MMDVFSMSG("mmdvfs_debug_set_mmdvfs_clks_enabled: clk is already disabled\n");
+		return;
+	}
+
+	if (mm_clks_enabled == 1 && clk_enable_request == 1) {
+		MMDVFSMSG("mmdvfs_debug_set_mmdvfs_clks_enabled: clk is already enabled\n");
+		return;
+	}
+
+	for (clk_idx = 0; clk_idx < g_mmdvfs_adaptor->mmdvfs_clk_hw_maps_num; clk_idx++) {
+		/* Get the specific clk descriptor */
+		struct mmdvfs_clk_hw_map *clk_hw_map_ptr =
+			&(g_mmdvfs_adaptor->mmdvfs_clk_hw_maps[clk_idx]);
+
+		if (clk_hw_map_ptr->config_method
+			== MMDVFS_CLK_CONFIG_BY_MUX) {
+			if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL) {
+				MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
+				continue;
+			}
+
+			/* Check if the clk needs to be always on according the configurtion */
+			if (!((1 << clk_idx) & always_on_mask))
+				continue;
+
+			if (clk_enable_request == 1) {
+				MMDVFSMSG("set_mmdvfs_clks_enabled-clk_prepare_enable: handle = %lx\n",
+					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+				ccf_ret =
+					clk_prepare_enable((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+				if (ccf_ret) {
+					MMDVFSMSG("Failed to enable clk: %s\n",
+						clk_hw_map_ptr->clk_mux.ccf_name);
+					continue;
+				}
+			} else
+				MMDVFSMSG("set_mmdvfs_clks_enabled-clk_disable_unprepare: handle = %lx\n",
+					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+				clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+		}
 	}
 }
 

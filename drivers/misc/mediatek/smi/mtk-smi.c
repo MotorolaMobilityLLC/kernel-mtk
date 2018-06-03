@@ -212,6 +212,8 @@ static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
 static unsigned int disable_mmdvfs;
 static unsigned int clk_mux_mask;
 static unsigned int *pLarbRegBackUp[SMI_LARB_NUM];
+/* force_always_on_mm_clks_mask function is debug only */
+static unsigned int force_always_on_mm_clks_mask = 1;
 
 MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
 	0, 0, {0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0,
@@ -1507,8 +1509,7 @@ static struct class *pSmiClass;
 static int smi_mmdvfs_clks_init(void)
 {
 		int i = 0;
-		const int mmdvfs_disable_setting = disable_mmdvfs;
-		const int freq_mux_disable_setting = disable_freq_mux;
+
 		/* const int mmdvfs_disable_setting = disable_mmdvfs; */
 		/* init clk mux of each MM clks*/
 		for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_hw_maps_num; i++) {
@@ -1527,17 +1528,15 @@ static int smi_mmdvfs_clks_init(void)
 			get_smi_clk(g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_name);
 			}
 
+		/* Enanle the MASK for CLK change */
+		clk_mux_mask = 0xFFFF;
+
 		SMIMSG("Finishe smi_mmdvfs_clks_init\n");
 
-		/* Set default high berfore MMDVFS feature is enabled */
-		if (force_max_mmsys_clk) {
-			SMIMSG("Forcing max mm clks is enabled\n");
-			disable_mmdvfs = 0;
-			disable_freq_mux = 0;
-			mmdvfs_set_fine_step(MMDVFS_MGR, MMDVFS_FINE_STEP_OPP0);
-			disable_mmdvfs = mmdvfs_disable_setting;
-			disable_freq_mux = freq_mux_disable_setting;
-		}
+		/* Set default high berfore MMDVFS feature is enabled, */
+		/* Onlye work when force_max_mmsys_clk is enabled */
+		mmdvfs_default_start_delayed_setting();
+
 		return 0;
 }
 
@@ -1723,11 +1722,23 @@ static int smi_remove(struct platform_device *pdev)
 
 static int smi_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
+	/* Only work when force_max_mmsys_clk is enabled */
+	mmdvfs_default_stop_delayed_setting();
+	mmdvfs_default_step_set(MMDVFS_FINE_STEP_UNREQUEST);
+
+	/* Only work when force_always_on_mm_clks_mask is enabled */
+	mmdvfs_debug_set_mmdvfs_clks_enabled(0);
+
 	return 0;
 }
 
 static int smi_resume(struct platform_device *pdev)
 {
+	/* Only work when force_always_on_mm_clks_mask is enabled */
+	mmdvfs_debug_set_mmdvfs_clks_enabled(1);
+
+	/* Only work when force_max_mmsys_clk is enabled */
+	mmdvfs_default_step_set(MMDVFS_FINE_STEP_OPP0);
 	return 0;
 }
 
@@ -2062,6 +2073,11 @@ int is_force_camera_hpm(void)
 	return force_camera_hpm;
 }
 
+int force_always_on_mm_clks(void)
+{
+	return force_always_on_mm_clks_mask;
+}
+
 subsys_initcall(smi_init);
 
 static void smi_driver_setting(void)
@@ -2096,6 +2112,10 @@ static void smi_driver_setting(void)
 
 #ifdef SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK
 	force_max_mmsys_clk = !(SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK);
+#endif
+
+#ifdef SMI_PARAM_FORCE_MMSYS_CLKS_ALWAYS_ON
+	force_always_on_mm_clks_mask = SMI_PARAM_FORCE_MMSYS_CLKS_ALWAYS_ON;
 #endif
 
 }
@@ -2187,6 +2207,7 @@ module_param_named(disable_freq_hopping, disable_freq_hopping, uint, S_IRUGO | S
 module_param_named(disable_freq_mux, disable_freq_mux, uint, S_IRUGO | S_IWUSR);
 module_param_named(force_max_mmsys_clk, force_max_mmsys_clk, uint, S_IRUGO | S_IWUSR);
 module_param_named(force_camera_hpm, force_camera_hpm, uint, S_IRUGO | S_IWUSR);
+module_param_named(force_always_on_mm_clks_mask, force_always_on_mm_clks_mask, uint, S_IRUGO | S_IWUSR);
 module_param_named(smi_debug_level, smi_debug_level, uint, S_IRUGO | S_IWUSR);
 module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO | S_IWUSR);
 module_param_named(bus_optimization, bus_optimization, uint, S_IRUGO | S_IWUSR);

@@ -109,6 +109,7 @@ extern int is_mmdvfs_freq_mux_disabled(void);
 extern int is_force_max_mmsys_clk(void);
 extern int is_force_camera_hpm(void);
 extern int is_mmdvfs_disabled(void);
+extern int force_always_on_mm_clks(void);
 extern int mmdvfs_get_stable_isp_clk(void);
 extern int get_mmdvfs_clk_mux_mask(void);
 
@@ -186,6 +187,13 @@ extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
+
+/* The following interface can only used by mmdvfs itself for */
+/* default step configuration */
+extern void mmdvfs_default_step_set(int default_step);
+extern void mmdvfs_default_start_delayed_setting(void);
+extern void mmdvfs_default_stop_delayed_setting(void);
+extern void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request);
 
 #include "mmdvfs_config_util.h"
 
