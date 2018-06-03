@@ -3044,8 +3044,8 @@ void eem_init01(void)
 		eem_buck_disable();
 
 	#ifdef __KERNEL__
-	mt_eem_disable_mtcmos();
 		#ifndef EARLY_PORTING_GPU
+		mt_eem_disable_mtcmos();
 		mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
 		#endif
 
@@ -3196,16 +3196,17 @@ static int eem_probe(struct platform_device *pdev)
 
 		/* call hotplug api to enable B cluster, no need CONFIG_BIG_OFF */
 		/* mt_eem_enable_big_cluster(1); */
+		#ifndef EARLY_PORTING_GPU
+		mt_gpufreq_disable_by_ptpod();
 		mt_eem_get_clk(pdev);
 		mt_eem_enable_mtcmos();
+		#endif
+
 		/* disable DVFS and set vproc = 1v */
 		#ifndef EARLY_PORTING_PPM
 		mt_ppm_ptpod_policy_activate();
 		#endif
 
-		#ifndef EARLY_PORTING_GPU
-		mt_gpufreq_disable_by_ptpod();
-		#endif
 	#endif/*ifdef __KERNEL__*/
 
 	#if (defined(__KERNEL__) && !(EARLY_PORTING))
