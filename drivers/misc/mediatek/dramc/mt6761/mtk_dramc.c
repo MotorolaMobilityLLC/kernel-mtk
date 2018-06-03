@@ -71,12 +71,8 @@ unsigned int CBT_MODE;
 
 static unsigned int dram_rank_num;
 static unsigned int dram_mr_mode;
-#ifdef SW_TX_TRACKING
 static unsigned int dram_sw_tx;
-#endif
-#ifdef SW_ZQCS
 static unsigned int dram_sw_zq;
-#endif
 
 
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
@@ -1608,19 +1604,6 @@ tx_end:
 #endif
 }
 
-void del_zqcs_timer(void)
-{
-	if (dram_sw_tx || dram_sw_zq)
-		del_timer_sync(&zqcs_timer);
-}
-
-void add_zqcs_timer(void)
-{
-	/* add_timer(&zqcs_timer); */
-	if (dram_sw_tx || dram_sw_zq)
-		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-}
-
 static int dram_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1749,10 +1732,14 @@ static int dram_probe(struct platform_device *pdev)
 #ifdef SW_TX_TRACKING
 	dram_sw_tx = (readl(PDEF_DRAMC0_CHA_REG_0C8) >> 24) & 0x1;
 	dramc_info("SW_TX = %d\n", dram_sw_tx);
+#else
+	dram_sw_tx = 1;
 #endif
 #ifdef SW_ZQCS
 	dram_sw_zq = 0x1 - ((readl(PDEF_DRAMC0_CHA_REG_22C) >> 20) & 0x1);
 	dramc_info("SW_ZQ = %d\n", dram_sw_zq);
+#else
+	dram_sw_zq = 1;
 #endif
 
 	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) &&
