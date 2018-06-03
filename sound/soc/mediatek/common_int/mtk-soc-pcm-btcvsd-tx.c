@@ -242,12 +242,9 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 
 static int mtk_pcm_btcvsd_tx_close(struct snd_pcm_substream *substream)
 {
-	int ret = 0;
-
 	pr_warn("%s\n", __func__);
 
 	Set_BTCVSD_State(BT_SCO_TXSTATE_IDLE);
-	ret = AudDrv_btcvsd_Free_Buffer(0);
 
 	BT_CVSD_Mem.TX_substream = NULL;
 
@@ -469,8 +466,10 @@ module_init(mtk_btcvsd_tx_soc_platform_init);
 
 static void __exit mtk_btcvsd_tx_soc_platform_exit(void)
 {
-	LOGBT("%s\n", __func__);
+	int ret = 0;
 
+	LOGBT("%s\n", __func__);
+	ret = AudDrv_btcvsd_Free_Buffer(0);
 	platform_driver_unregister(&mtk_btcvsd_tx_driver);
 }
 module_exit(mtk_btcvsd_tx_soc_platform_exit);

@@ -263,21 +263,21 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 				return -1;
 			}
 
-			memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0, BT_CVSD_Mem.u4RXBufferSize);
-
-			LOGBT("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = %pad\n",
-						  BT_CVSD_Mem.pucRXVirtBufAddr,
-						  &BT_CVSD_Mem.pucRXPhysBufAddr);
-
-			btsco.pRX = (struct btsco_rx *)(BT_CVSD_Mem.pucRXVirtBufAddr);
-			btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM *
-							(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
-
-			/* AudDrv_Allocate_mem_Buffer */
-			BT_CVSD_Mem.RX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucRXVirtBufAddr;
-			BT_CVSD_Mem.RX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucRXPhysBufAddr;
-			BT_CVSD_Mem.RX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4RXBufferSize;
 		}
+		memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0, BT_CVSD_Mem.u4RXBufferSize);
+
+		LOGBT("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = %pad\n",
+					  BT_CVSD_Mem.pucRXVirtBufAddr,
+					  &BT_CVSD_Mem.pucRXPhysBufAddr);
+
+		btsco.pRX = (struct btsco_rx *)(BT_CVSD_Mem.pucRXVirtBufAddr);
+		btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM *
+						(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
+
+		/* AudDrv_Allocate_mem_Buffer */
+		BT_CVSD_Mem.RX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucRXVirtBufAddr;
+		BT_CVSD_Mem.RX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucRXPhysBufAddr;
+		BT_CVSD_Mem.RX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4RXBufferSize;
 	} else {
 		writeToBT_cnt = 0;
 		tx_timeout = false;
@@ -293,20 +293,20 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 				pr_warn("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent TX fail\n");
 				return -1;
 			}
-			memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
-
-			LOGBT("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = %pad\n",
-						  BT_CVSD_Mem.pucTXVirtBufAddr,
-						  &BT_CVSD_Mem.pucTXPhysBufAddr);
-
-			btsco.pTX = (struct btsco_tx *)(BT_CVSD_Mem.pucTXVirtBufAddr);
-			btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
-
-			/* AudDrv_Allocate_mem_Buffer */
-			BT_CVSD_Mem.TX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucTXVirtBufAddr;
-			BT_CVSD_Mem.TX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucTXPhysBufAddr;
-			BT_CVSD_Mem.TX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4TXBufferSize;
 		}
+		memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
+
+		LOGBT("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = %pad\n",
+					  BT_CVSD_Mem.pucTXVirtBufAddr,
+					  &BT_CVSD_Mem.pucTXPhysBufAddr);
+
+		btsco.pTX = (struct btsco_tx *)(BT_CVSD_Mem.pucTXVirtBufAddr);
+		btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
+
+		/* AudDrv_Allocate_mem_Buffer */
+		BT_CVSD_Mem.TX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucTXVirtBufAddr;
+		BT_CVSD_Mem.TX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucTXPhysBufAddr;
+		BT_CVSD_Mem.TX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4TXBufferSize;
 	}
 	pr_debug("%s(-)\n", __func__);
 	return 0;
