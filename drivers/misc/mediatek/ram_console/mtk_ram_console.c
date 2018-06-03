@@ -150,6 +150,8 @@ struct last_reboot_reason {
 	uint64_t ptp_temp;
 	uint8_t ptp_status;
 	uint8_t eem_pi_offset;
+	uint8_t etc_status;
+	uint8_t etc_mode;
 
 
 	int8_t thermal_temp[THERMAL_RESERVED_TZS];
@@ -1469,6 +1471,20 @@ void aee_rr_rec_eem_pi_offset(u8 val)
 	LAST_RR_SET(eem_pi_offset, val);
 }
 
+void aee_rr_rec_etc_status(u8 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(etc_status, val);
+}
+
+void aee_rr_rec_etc_mode(u8 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(etc_mode, val);
+}
+
 int aee_rr_init_thermal_temp(int num)
 {
 	if (num < 0 || num >= THERMAL_RESERVED_TZS) {
@@ -1783,6 +1799,16 @@ u8 aee_rr_curr_ptp_status(void)
 u8 aee_rr_curr_eem_pi_offset(void)
 {
 	return LAST_RR_VAL(eem_pi_offset);
+}
+
+u8 aee_rr_curr_etc_status(void)
+{
+	return LAST_RR_VAL(etc_status);
+}
+
+u8 aee_rr_curr_etc_mode(void)
+{
+	return LAST_RR_VAL(etc_mode);
 }
 
 s8 aee_rr_curr_thermal_temp(int index)
@@ -2491,6 +2517,16 @@ void aee_rr_show_eem_pi_offset(struct seq_file *m)
 	seq_printf(m, "eem_pi_offset : 0x%x\n", LAST_RRR_VAL(eem_pi_offset));
 }
 
+void aee_rr_show_etc_status(struct seq_file *m)
+{
+	seq_printf(m, "etc_status : 0x%x\n", LAST_RRR_VAL(etc_status));
+}
+
+void aee_rr_show_etc_mode(struct seq_file *m)
+{
+	seq_printf(m, "etc_mode : 0x%x\n", LAST_RRR_VAL(etc_mode));
+}
+
 void aee_rr_show_idvfs_ctrl_reg(struct seq_file *m)
 {
 	seq_printf(m, "idvfs_ctrl_reg = 0x%x\n", LAST_RRR_VAL(idvfs_ctrl_reg));
@@ -2798,6 +2834,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,
 	aee_rr_show_eem_pi_offset,
+	aee_rr_show_etc_status,
+	aee_rr_show_etc_mode,
 	aee_rr_show_thermal_temp,
 	aee_rr_show_thermal_status,
 	aee_rr_show_thermal_ATM_status,
