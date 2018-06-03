@@ -801,13 +801,6 @@ static INT32 wmt_core_stp_init(VOID)
 	ctrlPa1 = WMT_STP_CONF_RDY;
 	ctrlPa2 = 1;
 	iRet = wmt_core_ctrl(WMT_CTRL_STP_CONF, &ctrlPa1, &ctrlPa2);
-#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-	/*set deep sleep flag*/
-	if (wmt_core_deep_sleep_flag_get())
-		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_TRUE);
-	else
-		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
-#endif
 	return iRet;
 }
 
@@ -2541,23 +2534,6 @@ MTK_WCN_BOOL wmt_core_deep_sleep_ctrl(INT32 value)
 		bRet = MTK_WCN_BOOL_FALSE;
 	}
 	return bRet;
-}
-
-MTK_WCN_BOOL wmt_core_deep_sleep_flag_get(VOID)
-{
-	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
-	P_WMT_CTX pctx = &gMtkWmtCtx;
-
-	if ((pctx->p_ic_ops != NULL) && (pctx->p_ic_ops->deep_sleep_flag_get != NULL)) {
-		bRet = (*(pctx->p_ic_ops->deep_sleep_flag_get)) ();
-	} else {
-		if (pctx->p_ic_ops != NULL)
-			WMT_INFO_FUNC("deep sleep get function is not supported by 0x%x\n",
-				pctx->p_ic_ops->icId);
-		bRet = MTK_WCN_BOOL_FALSE;
-	}
-	return bRet;
-
 }
 #endif
 INT32 opfunc_pin_state(P_WMT_OP pWmtOp)

@@ -262,7 +262,7 @@ extern VOID wmt_lib_ps_irq_cb(VOID);
 #endif
 extern VOID wmt_lib_ps_set_sdio_psop(PF_WMT_SDIO_PSOP own_cb);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-extern VOID wmt_lib_sdio_deep_sleep_flag_set(PF_WMT_SDIO_DEEP_SLEEP flag_cb);
+extern VOID wmt_lib_sdio_deep_sleep_flag_set_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_cb);
 #endif
 extern VOID wmt_lib_sdio_reg_rw_cb(PF_WMT_SDIO_DEBUG reg_rw_cb);
 extern INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl);

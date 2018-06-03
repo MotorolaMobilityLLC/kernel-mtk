@@ -693,13 +693,13 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	clt_ctx = pInfo->sdio_cltctx;
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
-		if (CLTCTX_CID(clt_ctx) == 0x6632)
-			mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
+
 		while_loop_counter++;
 		osal_ftrace_print("%s|loop_count:%d\n", __func__, while_loop_counter);
 		/* <0> get CHLPCR information */
-		if (stp_sdio_get_own_state() == OWN_SET) {
-			STPSDIO_DBG_FUNC("OWN on fw side!\n");
+		if (pInfo->awake_flag == 0) {
+			if (CLTCTX_CID(clt_ctx) == 0x6632)
+				mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
 			if (stp_sdio_do_own_clr(0) == 0) {
 				STPSDIO_DBG_FUNC("set OWN to driver side ok!\n");
 				pInfo->awake_flag = 1;
@@ -720,10 +720,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				}
 				own_fail_counter++;
 			}
-		} else {
+		} else
 			STPSDIO_DBG_FUNC("OWN on driver side!\n");
-			pInfo->awake_flag = 1;
-		}
 
 		if ((pInfo->wakeup_flag != 0) && (pInfo->awake_flag != 0)) {
 			while_loop_counter = 0;
@@ -2492,6 +2490,7 @@ static INT32 stp_sdio_ownback_poll(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32
 		if (chlpcr & C_FW_COM_DRV_OWN) {
 			/* 4 <2> handle ownership back interrupt */
 			STPSDIO_INFO_FUNC("Driver own is polled!(%d)\n", retry);
+			gp_info->awake_flag = 1;
 			break;
 		}
 		udelay(delay_us);
