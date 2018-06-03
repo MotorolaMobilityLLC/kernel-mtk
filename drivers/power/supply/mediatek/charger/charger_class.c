@@ -586,6 +586,8 @@ struct charger_device *charger_device_register(const char *name,
 		const struct charger_properties *props)
 {
 	struct charger_device *chg_dev;
+	static struct lock_class_key key;
+	struct srcu_notifier_head *head;
 	int rc;
 
 	pr_debug("charger_device_register: name=%s\n", name);
@@ -599,7 +601,10 @@ struct charger_device *charger_device_register(const char *name,
 	chg_dev->dev.release = charger_device_release;
 	dev_set_name(&chg_dev->dev, name);
 	dev_set_drvdata(&chg_dev->dev, devdata);
-	srcu_init_notifier_head(&chg_dev->evt_nh);
+	head = &chg_dev->evt_nh;
+	srcu_init_notifier_head(head);
+	/* Rename srcu's lock to avoid LockProve warning */
+	lockdep_init_map(&(&head->srcu)->dep_map, name, &key, 0);
 
 	/* Copy properties */
 	if (props) {
