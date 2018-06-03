@@ -1447,8 +1447,17 @@ static void pwrap_logging_at_isr(void)
 	pr_info("WDATA_SEQ_5=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_5));
 	pr_info("WDATA_SEQ_6=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_6));
 	pr_info("WDATA_SEQ_7=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_7));
+
 	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
+
+#ifdef PMIC_WRAP_MATCH_SUPPORT
+	/* Matching mode and Stop recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x5); /* reenable */
+#else
+	/* Matching mode and Continue recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x1); /* reenable */
+#endif
+
 	for (i = 0; i <= 14; i++) {
 		offset = 0xc00 + i * 4;
 		reg_addr = (PMIC_WRAP_BASE + offset);
