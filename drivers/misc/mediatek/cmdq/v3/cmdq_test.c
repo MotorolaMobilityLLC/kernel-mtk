@@ -1197,7 +1197,7 @@ static void testcase_perisys_apb(void)
 	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA:%pa\n", AUDIO_VA_BASE, &AUDIO_TOP_CONF0_PA);
 	CMDQ_LOG("UART0: VA:0x%lx, PA:%pa\n", UART0_VA_BASE, &UART0_PA_BASE);
 
-	if (!MSDC_PA_START || !AUDIO_PA || !UART0_PA) {
+	if (!MSDC_PA_START || !AUDIO_TOP_CONF0_PA || !UART0_PA_BASE) {
 		CMDQ_TEST_FAIL("msdc or audio node does not porting.\n");
 		return;
 	}
@@ -1233,6 +1233,9 @@ static void testcase_perisys_apb(void)
 		/* test fail */
 		CMDQ_TEST_FAIL("CMDQ_DATA_REG_PQ_COLOR:0x%08x should be:0x%08x\n", dataRead, data);
 		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(%pa) VA(0x%lx) =====\n", &MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
+	} else {
+		/* also log success */
+		CMDQ_LOG("TEST SUCCESS: MSDC_SW_DBG_OUT 0x%08x == 0x%08x\n", dataRead, data);
 	}
 
 	if (cmdq_core_subsys_from_phys_addr(AUDIO_PA) < 0)
@@ -1244,7 +1247,7 @@ static void testcase_perisys_apb(void)
 		CMDQ_TEST_FAIL("write 0x%08x to AUDIO_VA result:0x%08x\n", write_pattern, data);
 		CMDQ_ERR("AUDIO_PA: PA(%pa) VA(0x%lx) =====\n", &AUDIO_PA, AUDIO_VA);
 	} else {
-		CMDQ_LOG("write 0x%08x to AUDIO_VA = 0x%08x=====\n", write_pattern, data);
+		CMDQ_LOG("TEST SUCCESS: write 0x%08x to AUDIO_VA = 0x%08x=====\n", write_pattern, data);
 	}
 	CMDQ_REG_SET32(AUDIO_VA, 0);
 	data = CMDQ_REG_GET32(AUDIO_VA);
@@ -1260,6 +1263,9 @@ static void testcase_perisys_apb(void)
 		/* test fail */
 		CMDQ_TEST_FAIL("AUDIO_VA:0x%08x should be:0x%08x\n", data, write_pattern);
 		CMDQ_ERR("AUDIO_VA: PA(%pa) VA(0x%lx) =====\n", &AUDIO_PA, AUDIO_VA);
+	} else {
+		/* also log success */
+		CMDQ_LOG("TEST SUCCESS: AUDIO_VA 0x%08x == 0x%08x\n", data, write_pattern);
 	}
 
 	if (cmdq_core_subsys_from_phys_addr(UART0_PA_BASE) < 0)
@@ -1270,6 +1276,9 @@ static void testcase_perisys_apb(void)
 	if ((data & 0x1) != 1) {
 		CMDQ_TEST_FAIL("CPU: write 0x1 to UAR0_BUS_VA = 0x%08x=====\n", data);
 		CMDQ_ERR("CPU: UAR0_BUS_VA: PA_BASE(%pa) VA(0x%lx) =====\n", &UART0_PA_BASE, UAR0_BUS_VA);
+	} else {
+		/* also log success */
+		CMDQ_LOG("TEST SUCCESS: UAR0_BUS_VA = 0x%08x\n", data);
 	}
 	CMDQ_REG_SET32(UAR0_BUS_VA, 0);
 	data = CMDQ_REG_GET32(UAR0_BUS_VA);
@@ -1286,6 +1295,9 @@ static void testcase_perisys_apb(void)
 		/* test fail */
 		CMDQ_TEST_FAIL("UAR0_BUS_VA:0x%08x should be:0x1\n", data);
 		CMDQ_ERR("UAR0_BUS_VA: PA_BASE(%pa) VA(0x%lx) =====\n", &UART0_PA_BASE, UAR0_BUS_VA);
+	} else {
+		/* also log success */
+		CMDQ_LOG("TEST SUCCESS: UAR0_BUS_VA = 0x%08x\n", data);
 	}
 
 	cmdq_task_destroy(handle);
