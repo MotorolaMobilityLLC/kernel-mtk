@@ -23,7 +23,7 @@
 #define EEM_BANK_SOC       (0)
 #define EARLY_PORTING      (0) /* for detecting real vboot in eem_init01 */
 #define ISRTIMER           (0)
-#define DUMP_DATA_TO_DE    (0)
+#define DUMP_DATA_TO_DE    (1)
 #define EEM_ENABLE         (0)
 #define EEM_FAKE_EFUSE     (0)
 #define UPDATE_TO_UPOWER   (0)
