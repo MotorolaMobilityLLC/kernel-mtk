@@ -593,18 +593,6 @@ static int _get_ptim_rac_val(void)
 /* functions */
 /* ============================================================ */
 
-void dis_GM3_SRC_SEL(void)
-{
-	unsigned int reset_sel;
-
-	reset_sel = pmic_get_register_value(PMIC_RG_FGADC_RST_SRC_SEL);
-
-	if (reset_sel == 1) {
-		pmic_set_register_value(PMIC_RG_FGADC_RST_SRC_SEL, 0);
-		bm_err("DISABLE GM3! set PMIC_RG_FGADC_RST_SRC_SEL to 0\n");
-	}
-}
-
 static void disable_fg(void)
 {
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
@@ -628,8 +616,6 @@ static void disable_fg(void)
 
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
-
-	dis_GM3_SRC_SEL();
 	gDisableGM30 = 1;
 	FG_status.ui_soc = 50;
 }
@@ -4270,8 +4256,6 @@ void fg_drv_thread_hrtimer_init(void)
 
 void exec_BAT_EC(int cmd, int param)
 {
-	unsigned int rst_sel = 0;
-
 	bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d\n", cmd, param);
 	switch (cmd) {
 	case 101:
@@ -4579,22 +4563,6 @@ void exec_BAT_EC(int cmd, int param)
 		{
 			fg_custom_data_check();
 			bm_err("[FG_IT] exe_BAT_EC cmd %d", cmd);
-		}
-		break;
-	case 742:
-		{
-			if (param == 0) {
-				g_disable_mtkbattery = 1;
-				disable_fg();
-				rst_sel = pmic_get_register_value(PMIC_RG_FGADC_RST_SRC_SEL);
-				bm_err("[FG_IT] exe_BAT_EC cmd %d,%d,disable GM3, PMIC_RG_FGADC_RST_SRC_SEL = %d\n",
-					cmd, param, rst_sel);
-			} else {
-				pmic_set_register_value(PMIC_RG_FGADC_RST_SRC_SEL, 1);
-				rst_sel = pmic_get_register_value(PMIC_RG_FGADC_RST_SRC_SEL);
-				bm_err("[FG_IT] exe_BAT_EC cmd %d,%d,PMIC_RG_FGADC_RST_SRC_SEL =%d\n",
-					cmd, param, rst_sel);
-			}
 		}
 		break;
 
