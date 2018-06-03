@@ -403,11 +403,19 @@ void musb_disable_host(struct musb *musb)
 	}
 
 #ifdef CONFIG_TCPC_CLASS
+	if (!otg_tcpc_dev) {
+		DBG(0, "host not inited, directly return\n");
+		return;
+	}
 	DBG(0, "OTG <%p, %p>\n",
 			otg_tcpc_dev,
 			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
 	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
 #else
+	if (!iddig_eint_num) {
+		DBG(0, "host not inited, directly return\n");
+		return;
+	}
 	DBG(0, "disable iddig<%d>\n", iddig_eint_num);
 	/* MASK IDDIG EVENT */
 	disable_irq(iddig_eint_num);
@@ -418,11 +426,19 @@ void musb_disable_host(struct musb *musb)
 void musb_enable_host(struct musb *musb)
 {
 #ifdef CONFIG_TCPC_CLASS
+	if (!otg_tcpc_dev) {
+		DBG(0, "host not inited, directly return\n");
+		return;
+	}
 	DBG(0, "OTG <%p, %p>\n",
 			otg_tcpc_dev,
 			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
 	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_DRP);
 #else
+	if (!iddig_eint_num) {
+		DBG(0, "host not inited, directly return\n");
+		return;
+	}
 	DBG(0, "iddig_req_host to 0\n");
 	iddig_req_host = 0;
 	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
