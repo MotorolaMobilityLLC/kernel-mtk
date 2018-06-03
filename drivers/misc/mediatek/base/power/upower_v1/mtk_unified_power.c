@@ -21,12 +21,17 @@
 #include <linux/module.h>
 #include <linux/ktime.h>
 #include <linux/io.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 /* local include */
 #include "mtk_unified_power.h"
 #include "mtk_unified_power_data.h"
 #include "mtk_unified_power_internal.h"
-/* #include "mtk_static_power.h" */
+
+#ifndef EARLY_PORTING_SPOWER
+	#include "mtk_static_power.h"
+#endif
 
 #if UPOWER_ENABLE
 unsigned char upower_enable = 1;
@@ -36,27 +41,38 @@ unsigned char upower_enable;
 
 /* upower table reference */
 struct upower_tbl *upower_tbl_ref;
-int degree_set[NR_UPOWER_DEGREE] = {45, 55, 65, 75, 85};
+int degree_set[NR_UPOWER_DEGREE] = {
+		UPOWER_DEGREE_0,
+		UPOWER_DEGREE_1,
+		UPOWER_DEGREE_2,
+		UPOWER_DEGREE_3,
+		UPOWER_DEGREE_4,
+		UPOWER_DEGREE_5,
+};
+
 /* collect all the raw tables */
+#define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
+
 struct upower_tbl_info upower_tbl_infos[NR_UPOWER_BANK] = {
-	{.p_upower_tbl = &upower_tbl_ll_FY},
-	{.p_upower_tbl = &upower_tbl_l_FY},
-	{.p_upower_tbl = &upower_tbl_b_FY},
-	{.p_upower_tbl = &upower_tbl_cluster_ll_FY},
-	{.p_upower_tbl = &upower_tbl_cluster_l_FY},
-	{.p_upower_tbl = &upower_tbl_cluster_b_FY},
-	{.p_upower_tbl = &upower_tbl_cci_FY},
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_B, upower_tbl_b_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_B, upower_tbl_cluster_b_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY),
 };
 
 struct upower_tbl_info upower_tbl_infos_SB[NR_UPOWER_BANK] = {
-	{.p_upower_tbl = &upower_tbl_ll_SB},
-	{.p_upower_tbl = &upower_tbl_l_SB},
-	{.p_upower_tbl = &upower_tbl_b_SB},
-	{.p_upower_tbl = &upower_tbl_cluster_ll_SB},
-	{.p_upower_tbl = &upower_tbl_cluster_l_SB},
-	{.p_upower_tbl = &upower_tbl_cluster_b_SB},
-	{.p_upower_tbl = &upower_tbl_cci_SB},
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_B, upower_tbl_b_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_B, upower_tbl_cluster_b_SB),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_SB),
 };
+
 /* points to all the raw tables */
 struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos[0];
 
@@ -111,30 +127,34 @@ void upower_ut(void)
 	struct upower_tbl *ptr_tbl;
 	int i, j;
 
-	upower_debug("----upower_get_tbl() test----\n");
+	upower_debug("----upower_get_tbl()----\n");
 	/* get addr of ptr which points to upower_tbl_infos[] */
 	addr_ptr_tbl_info = upower_get_tbl();
 	/* get ptr which points to upower_tbl_infos[] */
 	ptr_tbl_info = *addr_ptr_tbl_info;
+	upower_debug("get upower tbl location = %p\n", ptr_tbl_info[0].p_upower_tbl);
+	#if 0
 	upower_debug("ptr_tbl_info --> %p --> tbl %p (p_upower_tbl_infos --> %p)\n",
 				ptr_tbl_info, ptr_tbl_info[0].p_upower_tbl, p_upower_tbl_infos);
+	#endif
 
 	/* print all the tables that record in upower_tbl_infos[]*/
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		upower_debug("bank %d\n", i);
 		ptr_tbl = ptr_tbl_info[i].p_upower_tbl;
 		for (j = 0; j < OPP_NUM; j++) {
-			upower_debug(" cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u}\n",
+			upower_debug(" cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u, %u}\n",
 					ptr_tbl->row[j].cap, ptr_tbl->row[j].volt,
 					ptr_tbl->row[j].dyn_pwr, ptr_tbl->row[j].lkg_pwr[0],
 					ptr_tbl->row[j].lkg_pwr[1], ptr_tbl->row[j].lkg_pwr[2],
-					ptr_tbl->row[j].lkg_pwr[3], ptr_tbl->row[j].lkg_pwr[4]);
+					ptr_tbl->row[j].lkg_pwr[3], ptr_tbl->row[j].lkg_pwr[4],
+					ptr_tbl->row[j].lkg_pwr[5]);
 		}
 		upower_debug(" lkg_idx, num_row: %d, %d\n",
 					ptr_tbl->lkg_idx, ptr_tbl->row_num);
 	}
 
-	upower_debug("----upower_get_power() test----\n");
+	upower_debug("----upower_get_power()----\n");
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		upower_debug("bank %d\n", i);
 		upower_debug("[dyn] %u, %u, %u, %u, %u, %u, %u, %u\n",
@@ -190,25 +210,25 @@ static int upower_bank_to_spower_bank(int upower_bank)
 
 	switch (upower_bank) {
 	case UPOWER_BANK_LL:
-		ret = MT_SPOWER_CPULL;
+		ret = MTK_SPOWER_CPULL;
 		break;
 	case UPOWER_BANK_L:
-		ret = MT_SPOWER_CPUL;
+		ret = MTK_SPOWER_CPUL;
 		break;
 	case UPOWER_BANK_B:
-		ret = MT_SPOWER_CPUBIG;
+		ret = MTK_SPOWER_CPUBIG;
 		break;
 	case UPOWER_BANK_CLS_LL:
-		ret = MT_SPOWER_CPULL_CLUSTER;
+		ret = MTK_SPOWER_CPULL_CLUSTER;
 		break;
 	case UPOWER_BANK_CLS_L:
-		ret = MT_SPOWER_CPUL_CLUSTER;
+		ret = MTK_SPOWER_CPUL_CLUSTER;
 		break;
 	case UPOWER_BANK_CLS_B:
-		ret = MT_SPOWER_CPUBIG_CLUSTER;
+		ret = MTK_SPOWER_CPUBIG_CLUSTER;
 		break;
 	case UPOWER_BANK_CCI:
-		ret = MT_SPOWER_CCI;
+		ret = MTK_SPOWER_CCI;
 		break;
 	default:
 		ret = -1;
@@ -240,7 +260,7 @@ static void upower_update_lkg_pwr(void)
 		spower_bank_id = upower_bank_to_spower_bank(i);
 		/* wrong bank */
 		if (spower_bank_id == -1)
-			break;
+			continue;
 
 		for (j = 0; j < OPP_NUM; j++) {
 			volt = (unsigned int)upower_tbl_ref[i].row[j].volt;
@@ -250,14 +270,14 @@ static void upower_update_lkg_pwr(void)
 				upower_tbl_ref[i].row[j].lkg_pwr[k] =
 				mt_spower_get_leakage(spower_bank_id, (volt/100), degree) * 1000;
 			}
-#if 0
+			#if 0
 			upower_debug("volt[%u] deg[%d] lkg_pwr in tbl[%u, %u, %u, %u, %u]\n", volt, degree,
 							upower_tbl_ref[i].row[j].lkg_pwr[0],
 							upower_tbl_ref[i].row[j].lkg_pwr[1],
 							upower_tbl_ref[i].row[j].lkg_pwr[2],
 							upower_tbl_ref[i].row[j].lkg_pwr[3],
 							upower_tbl_ref[i].row[j].lkg_pwr[4]);
-#endif
+			#endif
 		}
 		#endif
 	}
@@ -294,7 +314,7 @@ static void upower_init_lkgidx(void)
 	int i;
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
-		upower_tbl_ref[i].lkg_idx = NR_UPOWER_DEGREE - 1;
+		upower_tbl_ref[i].lkg_idx = DEFAULT_LKG_IDX;
 		/*
 		*upower_error("[bank %d]lkg_idx=%d, row num = %d\n", i, upower_tbl_ref[i].lkg_idx,
 		*								upower_tbl_ref[i].row_num);
@@ -324,7 +344,7 @@ static int upower_update_tbl_ref(void)
 	upower_get_start_time_us(UPDATE_TBL_PTR);
 	#endif
 
-	new_p_tbl_infos = kzalloc(sizeof(new_p_tbl_infos) * NR_UPOWER_BANK, GFP_KERNEL);
+	new_p_tbl_infos = kzalloc(sizeof(struct upower_tbl_info *) * NR_UPOWER_BANK, GFP_KERNEL);
 	if (!new_p_tbl_infos) {
 		upower_error("Out of mem to create new_p_tbl_infos\n");
 		return -ENOMEM;
@@ -348,7 +368,6 @@ static int upower_update_tbl_ref(void)
 
 	return ret;
 }
-
 static int __init upower_get_tbl_ref(void)
 {
 	/* get table address on sram */
@@ -356,7 +375,7 @@ static int __init upower_get_tbl_ref(void)
 	if (upower_tbl_ref == NULL)
 		return -ENOMEM;
 
-	upower_error("upower_tbl_ref=%p, limit = %p\n",
+	upower_error("upower tbl location = %p, limit = %p\n",
 					upower_tbl_ref, upower_tbl_ref+UPOWER_TBL_TOTAL_SIZE);
 
 	memset_io((u8 *)upower_tbl_ref, 0x00, UPOWER_TBL_TOTAL_SIZE);
@@ -383,6 +402,77 @@ static void profile_api(void)
 }
 #endif
 
+static int upower_debug_proc_show(struct seq_file *m, void *v)
+{
+
+	struct upower_tbl_info **addr_ptr_tbl_info;
+	struct upower_tbl_info *ptr_tbl_info;
+	struct upower_tbl *ptr_tbl;
+	int i, j;
+
+	/* get addr of ptr which points to upower_tbl_infos[] */
+	addr_ptr_tbl_info = upower_get_tbl();
+	/* get ptr which points to upower_tbl_infos[] */
+	ptr_tbl_info = *addr_ptr_tbl_info;
+	upower_debug("get upower tbl location = %p\n", ptr_tbl_info[0].p_upower_tbl);
+
+	/* print all the tables that record in upower_tbl_infos[]*/
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
+		seq_printf(m, "%s\n", upower_tbl_infos[i].name);
+		ptr_tbl = ptr_tbl_info[i].p_upower_tbl;
+		for (j = 0; j < OPP_NUM; j++) {
+			seq_printf(m, " cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u, %u}\n",
+					ptr_tbl->row[j].cap, ptr_tbl->row[j].volt,
+					ptr_tbl->row[j].dyn_pwr, ptr_tbl->row[j].lkg_pwr[0],
+					ptr_tbl->row[j].lkg_pwr[1], ptr_tbl->row[j].lkg_pwr[2],
+					ptr_tbl->row[j].lkg_pwr[3], ptr_tbl->row[j].lkg_pwr[4],
+					ptr_tbl->row[j].lkg_pwr[5]);
+		}
+		seq_printf(m, " lkg_idx, num_row: %d, %d\n\n",
+					ptr_tbl->lkg_idx, ptr_tbl->row_num);
+	}
+
+	return 0;
+}
+
+/* create fops */
+PROC_FOPS_RO(upower_debug);
+
+static int create_procfs(void)
+{
+	struct proc_dir_entry *upower_dir = NULL;
+	int i = 0;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	struct pentry upower_entries[] = {
+		/* {__stringify(name), &name ## _proc_fops} */
+		PROC_ENTRY(upower_debug),
+	};
+
+	/* create proc/upower node */
+	upower_dir = proc_mkdir("upower", NULL);
+	if (!upower_dir) {
+		upower_error("[%s] mkdir /proc/upower failed\n", __func__);
+		return -1;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(upower_entries); i++) {
+		if (!proc_create(upower_entries[i].name,
+			S_IRUGO | S_IWUSR | S_IWGRP,
+			upower_dir,
+			upower_entries[i].fops)) {
+			upower_error("[%s]: create /proc/upower/%s failed\n", __func__,
+							upower_entries[i].name);
+			return -3;
+			}
+	}
+	return 0;
+}
+
 static int __init upower_init(void)
 {
 	if (upower_enable == 0) {
@@ -391,7 +481,7 @@ static int __init upower_init(void)
 	}
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
-	upower_debug("upower_tbl_infos[0](%p)= %p\n",
+	upower_debug("upower tbl orig location([0]:%p)= %p\n",
 					&upower_tbl_infos[0], upower_tbl_infos[0].p_upower_tbl);
 
 	#ifdef UPOWER_UT
@@ -401,6 +491,7 @@ static int __init upower_init(void)
 
 	/* init rownum to OPP_NUM*/
 	upower_init_rownum();
+
 	upower_init_cap();
 
 	#ifdef EARLY_PORTING_EEM
@@ -421,6 +512,8 @@ static int __init upower_init(void)
 	#ifdef UPOWER_PROFILE_API_TIME
 	profile_api();
 	#endif
+
+	create_procfs();
 	return 0;
 }
 #ifdef __KERNEL__
