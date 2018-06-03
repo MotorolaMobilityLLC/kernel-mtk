@@ -112,12 +112,12 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mi2s0_sidegen_control = ucontrol->value.integer.value[0];
-	pr_debug("%s(), mi2s0_sidegen = %d, samplerate = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d\n",
+	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d, mtk_soc_always_hd = %d\n",
 		 __func__,
 		 mi2s0_sidegen_control,
-		 samplerate,
 		 mi2s0_hdoutput_control,
-		 mi2s0_extcodec_echoref_control);
+		 mi2s0_extcodec_echoref_control,
+		 mtk_soc_always_hd);
 
 	/* Set SmartPa i2s by platform. Return false if no platform implement.*/
 	ret = set_smartpa_i2s(mi2s0_sidegen_control,
@@ -220,6 +220,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 			Afe_Set_Reg(AFE_I2S_CON, 0x1, 0x1);	/* Enable I2S0 */
 			Afe_Set_Reg(AFE_I2S_CON3, 0x1, 0x1);	/* Enable I2S3 */
+			pr_debug("%s(), Turn on, AFE_I2S_CON (0x%x), AFE_I2S_CON3(0x%x)\n",
+				 __func__, Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_I2S_CON3));
 			EnableAfe(true);
 
 		} else {
@@ -248,6 +250,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 						Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 				SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 						Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+				pr_debug("%s(), Turn off, AFE_I2S_CON (0x%x), AFE_I2S_CON3(0x%x)\n",
+					 __func__, Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_I2S_CON3));
 				EnableAfe(false);
 			}
 			if (!mtk_soc_always_hd)
