@@ -2335,6 +2335,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	MUINT32 uni_path;
 	MUINT32 flk2_sel;
 	MUINT32 hds2_sel;
+	MUINT32 i;
 	MUINT32 dmaerr[_cam_max_];
 	ISP_DEV_NODE_ENUM regModule; /* for read/write register */
 
@@ -2454,6 +2455,9 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 		LOG_ERR("unsupported module:0x%x\n", module);
 		break;
 	}
+
+	for (i = 0 ; i < 5 ; i++)
+		smi_dumpDebugMsg();
 }
 
 
