@@ -31,6 +31,7 @@
 #include "include/mtk_uart_intf.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/ratelimit.h>
 #include <mt-plat/mtk_lpae.h>
 #include "mtk_spm_resource_req.h"
 
@@ -1549,6 +1550,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	struct mtk_uart_setting *setting;
 	int clk_en_ret = 0;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
 
 	if (!uart || uart->nport >= UART_NR)
 		return;
@@ -1564,8 +1566,10 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 			pr_notice("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_main:%p\n", uart->nport,
 			       clk_en_ret, setting->clk_uart_main);
 		} else {
-			pr_debug("[UART%d][CCF]enabled clk_uart_main:%p\n", uart->nport,
-				  setting->clk_uart_main);
+			if (__ratelimit(&ratelimit)) {
+				pr_debug("[UART%d][CCF]enabled clk_uart_main:%p\n", uart->nport,
+					setting->clk_uart_main);
+			}
 			if ((uart != console_port)
 			    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
 				clk_en_ret = clk_enable(clk_uart_dma);
@@ -1589,6 +1593,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	struct mtk_uart_setting *setting;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
 
 	setting = uart->setting;
 
@@ -1599,9 +1604,10 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
 	} else {
 #ifdef POWER_FEATURE
-		pr_debug("[UART%d][CCF]disable clk_uart_main:%p\n", uart->nport,
-			  setting->clk_uart_main);
-
+		if (__ratelimit(&ratelimit)) {
+			pr_debug("[UART%d][CCF]disable clk_uart_main:%p\n", uart->nport,
+				setting->clk_uart_main);
+		}
 		clk_disable(setting->clk_uart_main);
 		if ((uart != console_port)
 		    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
@@ -2221,7 +2227,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 {
 	struct pinctrl *ppinctrl = NULL;
 	struct pinctrl_state *pins_uart = NULL;
-
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ,  5);
 
 	if ((uartport >= UART_NR) || (uartport > 3)) {
 		pr_notice("[UART%d][PinC]%s: port error!!\n", uartport, __func__);
@@ -2238,8 +2244,10 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 
 	if (IS_ERR(pins_uart)) {
-		pr_notice("[UART%d][PinC]%s pinctrl_lockup(%d, %s) fail!! pctrl:%p, err:%ld\n", uartport, __func__,
-		       uartport, uart_gpio_cmds[uartport][gpioopid], ppinctrl, PTR_ERR(pins_uart));
+		if (__ratelimit(&ratelimit)) {
+			pr_notice("[UART%d][PinC]%s pinctrl_lockup(%d, %s) fail!! pctrl:%p, err:%ld\n", uartport,
+				__func__, uartport, uart_gpio_cmds[uartport][gpioopid], ppinctrl, PTR_ERR(pins_uart));
+		}
 		return;
 	}
 
