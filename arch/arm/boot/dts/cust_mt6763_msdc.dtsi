@@ -22,9 +22,9 @@
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	msdc-sys-suspend;
-	/*mmc-ddr-1_8v;*/
-	/*mmc-hs200-1_8v;*/
-	/*mmc-hs400-1_8v;*/
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
 	non-removable;
 	pinctl = <&msdc0_pins_default>;
 	register_setting = <&msdc0_register_setting_default>;
@@ -34,7 +34,7 @@
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
 	clocks = <&infracfg_ao INFRACFG_AO_MSDC0_SCK_CG>, <&infracfg_ao INFRACFG_AO_MSDC0_CG>;
 	clock-names = "msdc0-clock", "msdc0-hclock";
-	hw_dvfs = /bits/ 8 <1>;
+	hw_dvfs = /bits/ 8 <0>;
 };
 
 &msdc1 {
