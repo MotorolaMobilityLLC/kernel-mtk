@@ -11,6 +11,5 @@
 # GNU General Public License for more details.
 #
 
-#LEGACY_CONTROLLER
 obj-y += cpu_ctrl.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/

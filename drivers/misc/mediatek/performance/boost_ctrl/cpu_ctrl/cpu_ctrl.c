@@ -84,12 +84,6 @@ static inline void lhd_kernel_trace(char *name, int id, int min, int max)
 #endif
 
 /*******************************************/
-int cpu_ctrl_get_nr_clusters(void)
-{
-	return arch_get_nr_clusters();
-}
-EXPORT_SYMBOL(cpu_ctrl_get_nr_clusters);
-
 int update_userlimit_cpu_freq(int kicker, int num_cluster
 			, struct ppm_limit_data *freq_limit)
 {
