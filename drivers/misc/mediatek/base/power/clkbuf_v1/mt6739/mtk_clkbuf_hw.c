@@ -485,53 +485,6 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 		return true;
 }
 
-void clk_buf_dump_dts_log(void)
-{
-	clk_buf_pr_info("%s: PMIC_CLK_BUF?_STATUS=%d %d %d %d %d %d %d\n", __func__,
-		     CLK_BUF1_STATUS_PMIC, CLK_BUF2_STATUS_PMIC,
-		     CLK_BUF3_STATUS_PMIC, CLK_BUF4_STATUS_PMIC,
-		     CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
-		     CLK_BUF7_STATUS_PMIC);
-	clk_buf_pr_info("%s: PMIC_CLK_BUF?_DRV_CURR=%d %d %d %d %d %d %d\n", __func__,
-		     PMIC_CLK_BUF1_DRIVING_CURR,
-		     PMIC_CLK_BUF2_DRIVING_CURR,
-		     PMIC_CLK_BUF3_DRIVING_CURR,
-		     PMIC_CLK_BUF4_DRIVING_CURR,
-		     PMIC_CLK_BUF5_DRIVING_CURR,
-		     PMIC_CLK_BUF6_DRIVING_CURR,
-		     PMIC_CLK_BUF7_DRIVING_CURR);
-}
-
-void clk_buf_dump_clkbuf_log(void)
-{
-	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0,
-	    pmic_cw13 = 0, pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0,
-	    pmic_cw20 = 0, top_spi_con1 = 0;
-
-	pmic_read_interface(PMIC_XO_EXTBUF1_MODE_ADDR, &pmic_cw00,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_XO_BUFLDOK_EN_ADDR, &pmic_cw02,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_XO_EXTBUF6_MODE_ADDR, &pmic_cw11,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_RG_XO_RESERVED4_ADDR, &pmic_cw13,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_XO_EXTBUF2_CLKSEL_MAN_ADDR, &pmic_cw14,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_RG_XO_EXTBUF1_HD_ADDR, &pmic_cw15,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_XO_EXTBUF1_ISET_M_ADDR, &pmic_cw16,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_RG_XO_RESRVED10_ADDR, &pmic_cw20,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &top_spi_con1,
-			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_pr_info("%s DCXO_CW00/02/11/13/14/15/16/20/top_spi_con1=0x%x %x %x %x %x %x %x %x %x\n",
-		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13,
-		     pmic_cw14, pmic_cw15, pmic_cw16, pmic_cw20,
-		     top_spi_con1);
-}
-
 static u32 dcxo_dbg_read_auxout(u16 sel)
 {
 	u32 rg_auxout = 0;
@@ -667,6 +620,71 @@ static void clk_buf_get_xo_en(void)
 		     xo_en_stat[XO_AUD],
 		     xo_en_stat[XO_PD],
 		     xo_en_stat[XO_EXT]);
+}
+
+void clk_buf_dump_dts_log(void)
+{
+	clk_buf_pr_info("%s: PMIC_CLK_BUF?_STATUS=%d %d %d %d %d %d %d\n", __func__,
+		     CLK_BUF1_STATUS_PMIC, CLK_BUF2_STATUS_PMIC,
+		     CLK_BUF3_STATUS_PMIC, CLK_BUF4_STATUS_PMIC,
+		     CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
+		     CLK_BUF7_STATUS_PMIC);
+	clk_buf_pr_info("%s: PMIC_CLK_BUF?_DRV_CURR=%d %d %d %d %d %d %d\n", __func__,
+		     PMIC_CLK_BUF1_DRIVING_CURR,
+		     PMIC_CLK_BUF2_DRIVING_CURR,
+		     PMIC_CLK_BUF3_DRIVING_CURR,
+		     PMIC_CLK_BUF4_DRIVING_CURR,
+		     PMIC_CLK_BUF5_DRIVING_CURR,
+		     PMIC_CLK_BUF6_DRIVING_CURR,
+		     PMIC_CLK_BUF7_DRIVING_CURR);
+}
+
+void clk_buf_dump_clkbuf_log(void)
+{
+	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0,
+	    pmic_cw13 = 0, pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0,
+	    pmic_cw20 = 0, top_spi_con1 = 0;
+
+	pmic_read_interface(PMIC_XO_EXTBUF1_MODE_ADDR, &pmic_cw00,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_XO_BUFLDOK_EN_ADDR, &pmic_cw02,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_XO_EXTBUF6_MODE_ADDR, &pmic_cw11,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_RESERVED4_ADDR, &pmic_cw13,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_XO_EXTBUF2_CLKSEL_MAN_ADDR, &pmic_cw14,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_EXTBUF1_HD_ADDR, &pmic_cw15,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_XO_EXTBUF1_ISET_M_ADDR, &pmic_cw16,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_RESRVED10_ADDR, &pmic_cw20,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &top_spi_con1,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_pr_info("%s DCXO_CW00/02/11/13/14/15/16/20/top_spi_con1=0x%x %x %x %x %x %x %x %x %x\n",
+		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13,
+		     pmic_cw14, pmic_cw15, pmic_cw16, pmic_cw20,
+		     top_spi_con1);
+
+	if (is_clkbuf_initiated) {
+		clk_buf_get_xo_en();
+		clk_buf_pr_info("%s XO_RS=%u %u %u %u %u %u %u\n", __func__,
+				xo_en_stat[XO_SOC], xo_en_stat[XO_WCN],
+				xo_en_stat[XO_NFC], xo_en_stat[XO_CEL],
+				xo_en_stat[XO_AUD], xo_en_stat[XO_PD],
+				xo_en_stat[XO_EXT]);
+		clk_buf_pr_info("%s bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
+				__func__, bblpm_switch, bblpm_cnt,
+				clk_buf_bblpm_enter_cond());
+		clk_buf_pr_info("%s MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
+				__func__,
+				clkbuf_readl(MD1_PWR_CON),
+				clkbuf_readl(PWR_STATUS),
+				clkbuf_readl(PCM_REG13_DATA),
+				clkbuf_readl(SPARE_ACK_MASK));
+	}
 }
 
 #ifdef CONFIG_PM
