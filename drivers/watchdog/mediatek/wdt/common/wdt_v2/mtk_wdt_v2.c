@@ -430,18 +430,21 @@ void wdt_arch_reset(char mode)
 
 	udelay(100);
 
-	pr_debug("%s: sw reset happen!\n", __func__);
-
 	__inner_flush_dcache_all();
 
-	/* dump RGU registers */
+	/* dump RGU registers (before SW reset) */
 	wdt_dump_reg();
+
+	pr_info("%s: sw reset happen!\n", __func__);
 
 	/* delay awhile to make above dump as complete as possible */
 	udelay(100);
 
 	/* trigger SW reset */
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
+
+	/* dump RGU registers (after SW reset) */
+	wdt_dump_reg();
 
 	spin_unlock(&rgu_reg_operation_spinlock);
 
