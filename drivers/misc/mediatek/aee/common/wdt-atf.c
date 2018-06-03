@@ -342,10 +342,17 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 			aee_wdt_percpu_printf(cpu, "i=%d, fp=%lx, bottom=%lx\n", i, fp, bottom);
 			break;
 		}
+#ifdef CONFIG_ARM64
+		if (unwind_frame(current, &cur_frame) < 0) {
+			aee_wdt_percpu_printf(cpu, "unwind_frame < 0\n");
+			break;
+		}
+#else
 		if (unwind_frame(&cur_frame) < 0) {
 			aee_wdt_percpu_printf(cpu, "unwind_frame < 0\n");
 			break;
 		}
+#endif
 		if (!mrdump_virt_addr_valid(cur_frame.pc)) {
 			aee_wdt_percpu_printf(cpu, "i=%d, mrdump_virt_addr_valid fail\n", i);
 			break;
@@ -354,7 +361,7 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 #ifdef CONFIG_ARM64
 			/* work around for unknown reason do_mem_abort stack abnormal */
 			excp_regs = (void *)(cur_frame.fp + 0x10 + 0xa0);
-			unwind_frame(&cur_frame);	/* skip do_mem_abort & el1_da */
+			unwind_frame(current, &cur_frame);	/* skip do_mem_abort & el1_da */
 #else
 			excp_regs = (void *)(cur_frame.fp + 4);
 #endif
