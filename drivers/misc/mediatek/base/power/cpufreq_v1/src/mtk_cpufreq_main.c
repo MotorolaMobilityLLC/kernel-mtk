@@ -1379,8 +1379,11 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		cpuhvfs_set_cluster_on_off(arch_get_cluster_id(p->cpu_id), 1);
 #else
 #ifdef CLUSTER_BUCK_OFF
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
-			regulator_enable(regulator_proc2);
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
+			ret = regulator_enable(regulator_proc2);
+			if (ret < 0)
+				cpufreq_err("regulator_proc2 enable fail\n");
+		}
 #endif
 #endif
 		cpufreq_unlock(flags);
@@ -1490,10 +1493,12 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	unsigned int lv = _mt_cpufreq_get_cpu_level();
 	struct mt_cpu_dvfs *p;
 	int j;
+#ifndef CONFIG_HYBRID_CPU_DVFS
 	/* For init voltage check */
 	struct buck_ctrl_t *vproc_p;
 	struct buck_ctrl_t *vsram_p;
 	unsigned int cur_vproc, cur_vsram;
+#endif
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
@@ -1510,6 +1515,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	for_each_cpu_dvfs(j, p) {
 		/* Prepare pll related address once */
 		prepare_pll_addr(p->Pll_id);
+#ifndef CONFIG_HYBRID_CPU_DVFS
 		/* Check all PMIC init voltage once */
 		vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 		vsram_p = id_to_buck_ctrl(p->Vsram_buck_id);
@@ -1525,7 +1531,14 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 				__func__, __LINE__, cpu_dvfs_get_name(vsram_p),
 				cur_vsram, cpu_dvfs_get_name(vproc_p), cur_vproc);
 		}
+#endif
 	}
+
+#ifndef CONFIG_HYBRID_CPU_DVFS
+#ifdef CLUSTER_BUCK_OFF
+	regulator_disable(regulator_proc2);
+#endif
+#endif
 
 #ifdef CONFIG_CPU_FREQ
 	cpufreq_register_driver(&_mt_cpufreq_driver);
