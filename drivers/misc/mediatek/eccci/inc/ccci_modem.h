@@ -350,7 +350,7 @@ typedef enum {
 } FLIGHT_STAGE;
 
 struct ccci_mem_layout *ccci_md_get_mem(int md_id);
-struct ccci_smem_region *ccci_md_get_smem_by_user_id(int md_id, SMEM_USER_ID user_id);
+struct ccci_smem_region *ccci_md_get_smem_by_user_id(int md_id, enum SMEM_USER_ID user_id);
 void ccci_md_clear_smem(int md_id, int first_boot);
 int ccci_md_start(unsigned char md_id);
 int ccci_md_soft_start(unsigned char md_id, unsigned int sim_mode);

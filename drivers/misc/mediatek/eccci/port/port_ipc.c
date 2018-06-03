@@ -351,7 +351,7 @@ int ccci_ipc_set_garbage_filter(int md_id, int reg)
 }
 #endif
 
-static int port_ipc_kernel_write(int md_id, ipc_ilm_t *in_ilm)
+static int port_ipc_kernel_write(int md_id, struct ipc_ilm *in_ilm)
 {
 	u32 task_id;
 	int count, actual_count, ret;
@@ -420,7 +420,7 @@ static int port_ipc_kernel_write(int md_id, ipc_ilm_t *in_ilm)
 	}
 }
 
-int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm)
+int ccci_ipc_send_ilm(int md_id, struct ipc_ilm *in_ilm)
 {
 	if (md_id < 0 || md_id >= MAX_MD_NUM)
 		return -EINVAL;
@@ -428,7 +428,7 @@ int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm)
 }
 
 #ifdef CONFIG_MTK_CONN_MD
-static int ccci_ipc_send_ilm_to_md1(ipc_ilm_t *in_ilm)
+static int ccci_ipc_send_ilm_to_md1(struct ipc_ilm *in_ilm)
 {
 	return port_ipc_kernel_write(0, in_ilm);
 }
@@ -441,7 +441,7 @@ static int port_ipc_kernel_thread(void *arg)
 	unsigned long flags;
 	int ret = 0;
 	struct ccci_ipc_ilm *ilm;
-	ipc_ilm_t out_ilm;
+	struct ipc_ilm out_ilm;
 	struct ipc_task_id_map *id_map;
 
 	CCCI_DEBUG_LOG(port->md_id, IPC, "port %s's thread running\n", port->name);
@@ -557,8 +557,8 @@ struct port_ops ipc_port_ops = {
 
 int send_new_time_to_md(int md_id, int tz)
 {
-	ipc_ilm_t in_ilm;
-	char local_param[sizeof(local_para_struct) + 16];
+	struct ipc_ilm in_ilm;
+	char local_param[sizeof(struct local_para) + 16];
 	unsigned int timeinfo[4];
 	struct timeval tv = { 0 };
 
@@ -573,7 +573,7 @@ int send_new_time_to_md(int md_id, int tz)
 	in_ilm.dest_mod_id = MD_MOD_CCCIIPC;
 	in_ilm.sap_id = 0;
 	in_ilm.msg_id = IPC_MSG_ID_CCCIIPC_CLIB_TIME_REQ;
-	in_ilm.local_para_ptr = (local_para_struct *)&local_param[0];
+	in_ilm.local_para_ptr = (struct local_para *)&local_param[0];
 	/* msg_len not only contain local_para_ptr->data, but also contain 4 Bytes header itself */
 	in_ilm.local_para_ptr->msg_len = 20;
 	memcpy(in_ilm.local_para_ptr->data, timeinfo, 16);

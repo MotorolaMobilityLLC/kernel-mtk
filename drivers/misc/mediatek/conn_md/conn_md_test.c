@@ -21,18 +21,18 @@
 
 struct conn_md_bridge_ops g_ops;
 
-static int conn_md_test_rx_cb(ipc_ilm_t *ilm);
+static int conn_md_test_rx_cb(struct ipc_ilm *ilm);
 
 int conn_md_test(void)
 {
 #define PACKAGE_SIZE 100
 
-	ipc_ilm_t ilm;
-	local_para_struct *p_buf_str;
+	struct ipc_ilm ilm;
+	struct local_para *p_buf_str;
 	int i = 0;
 	int msg_len = 0;
 
-	p_buf_str = kmalloc(sizeof(local_para_struct) + PACKAGE_SIZE, GFP_ATOMIC);
+	p_buf_str = kmalloc(sizeof(struct local_para) + PACKAGE_SIZE, GFP_ATOMIC);
 	if (p_buf_str == NULL) {
 		CONN_MD_ERR_FUNC("kmalloc for local para ptr structure failed.\n");
 		return -1;
@@ -134,7 +134,7 @@ int conn_md_test(void)
 	return 0;
 }
 
-static int conn_md_test_rx_cb(ipc_ilm_t *ilm)
+static int conn_md_test_rx_cb(struct ipc_ilm *ilm)
 {
 	int i = 0;
 

@@ -51,7 +51,7 @@ INT32 wmt_idc_deinit(VOID)
 	return 0;
 }
 
-INT32 wmt_idc_msg_from_lte_handing(ipc_ilm_t *ilm)
+INT32 wmt_idc_msg_from_lte_handing(struct ipc_ilm *ilm)
 {
 	MTK_WCN_BOOL bRet;
 
@@ -99,7 +99,7 @@ VOID wmt_idc_dump_debug_msg(PUINT8 str, PUINT8 p_buf, UINT32 buf_len)
 INT32 wmt_idc_msg_to_lte_handing(VOID)
 {
 	UINT32 readlen = 0;
-	local_para_struct *p_lps = NULL;
+	struct local_para *p_lps = NULL;
 	PUINT8 p_data = NULL;
 	UINT8 opcode = 0;
 	UINT16 msg_len = 0;
@@ -140,14 +140,14 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 				/*need to transfer to LTE */
 			{
 				p_lps =
-				    (local_para_struct *) osal_malloc(osal_sizeof(local_para_struct) +
+				    (struct local_para *) osal_malloc(osal_sizeof(struct local_para) +
 								      osal_sizeof(UINT8) * msg_len);
 				if (p_lps == NULL) {
-					WMT_ERR_FUNC("allocate local_para_struct memory fail\n");
+					WMT_ERR_FUNC("allocate struct local_para memory fail\n");
 					return -1;
 				}
 
-				p_lps->msg_len = msg_len + osal_sizeof(local_para_struct);
+				p_lps->msg_len = msg_len + osal_sizeof(struct local_para);
 
 				opcode = *p_data;
 				WMT_DBG_FUNC("current opcode(%d) to LTE\n", opcode);
@@ -217,7 +217,7 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 {
 	UINT32 readlen = len;
-	local_para_struct *p_lps = NULL;
+	struct local_para *p_lps = NULL;
 	PUINT8 p_data = NULL;
 	UINT8 opcode = 0;
 	UINT16 msg_len = 0;
@@ -249,14 +249,14 @@ UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 				wmt_idc_dump_debug_msg("WIFI DEBUG MONITOR", p_data, msg_len);
 			} else {
 				/*need to transfer to LTE */
-				p_lps = (local_para_struct *) osal_malloc(osal_sizeof(local_para_struct) +
+				p_lps = (struct local_para *) osal_malloc(osal_sizeof(struct local_para) +
 						osal_sizeof(UINT8) * msg_len);
 				if (p_lps == NULL) {
-					WMT_ERR_FUNC("allocate local_para_struct memory fail\n");
+					WMT_ERR_FUNC("allocate struct local_para memory fail\n");
 					return -1;
 				}
 
-				p_lps->msg_len = msg_len + osal_sizeof(local_para_struct);
+				p_lps->msg_len = msg_len + osal_sizeof(struct local_para);
 
 				opcode = *p_data;
 				WMT_DBG_FUNC("current opcode(%d) to LTE\n", opcode);

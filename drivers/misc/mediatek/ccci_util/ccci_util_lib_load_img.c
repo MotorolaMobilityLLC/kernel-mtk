@@ -925,7 +925,7 @@ int ccci_init_security(void)
 
 #define IMG_NAME_SIZE		32
 #define IMG_HDR_SIZE		512
-typedef union {
+union prt_img_hdr {
 	struct {
 		unsigned int magic;	/* always IMG_MAGIC */
 		unsigned int dsize;	/* image size, image header and padding are not included */
@@ -943,7 +943,7 @@ typedef union {
 		unsigned int maddr_extend; /* high word of image load address in RAM for 64 bit address support */
 	} info;
 	unsigned char data[IMG_HDR_SIZE];
-} prt_img_hdr_t;
+};
 
 int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[])
 {
@@ -1004,13 +1004,13 @@ int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[])
 
 int check_if_bypass_header(void *buf, int *img_size)
 {
-	prt_img_hdr_t *hdr_ptr;
+	union prt_img_hdr *hdr_ptr;
 
 	if (buf == NULL) {
 		CCCI_UTIL_ERR_MSG("buffer is NULL, no need bypass\n");
 		return 0;
 	}
-	hdr_ptr = (prt_img_hdr_t *)buf;
+	hdr_ptr = (union prt_img_hdr *)buf;
 	if ((hdr_ptr->info.magic == IMG_MAGIC) && (hdr_ptr->info.ext_magic == EXT_MAGIC)) {
 		CCCI_UTIL_ERR_MSG("This image has header, bypass %d bytes\n", (int)hdr_ptr->info.hdr_size);
 		if (img_size)

@@ -188,13 +188,13 @@ int _conn_md_del_msg_by_uid(uint32 u_id)
 	return 0;
 }
 
-int conn_md_send_msg(ipc_ilm_t *ilm)
+int conn_md_send_msg(struct ipc_ilm *ilm)
 {
 
 	struct conn_md_struct *p_conn_md = &g_conn_md;
 	struct conn_md_queue *p_msg_list = &p_conn_md->msg_queue;
 	uint32 msg_str_len = 0;
-	local_para_struct *p_local_para = NULL;
+	struct local_para *p_local_para = NULL;
 	struct conn_md_msg *p_new_msg = NULL;
 	uint32 msg_info_len = ilm->local_para_ptr->msg_len;
 
@@ -207,12 +207,12 @@ int conn_md_send_msg(ipc_ilm_t *ilm)
 	if (p_new_msg != NULL) {
 		CONN_MD_DBG_FUNC("p_new_msg:0x%08x\n", p_new_msg);
 		/*copy message from ilm */
-		memcpy(p_new_msg, ilm, sizeof(ipc_ilm_t));
+		memcpy(p_new_msg, ilm, sizeof(struct ipc_ilm));
 
 		p_local_para = &p_new_msg->local_para;
 		p_new_msg->ilm.local_para_ptr = p_local_para;
 		/*copy local_para_ptr structure */
-		memcpy(p_local_para, ilm->local_para_ptr, sizeof(local_para_struct));
+		memcpy(p_local_para, ilm->local_para_ptr, sizeof(struct local_para));
 		/*copy data from local_para_ptr structure */
 		memcpy(p_local_para->data, ilm->local_para_ptr->data, msg_info_len);
 
@@ -260,7 +260,7 @@ static int conn_md_thread(void *p_data)
 	struct conn_md_user *p_user = NULL;
 	struct list_head *p_user_pos = NULL;
 	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
-	ipc_ilm_t *p_cur_ilm = NULL;
+	struct ipc_ilm *p_cur_ilm = NULL;
 
 	while (1) {
 		wait_for_completion_interruptible(&p_conn_md->tx_comp);

@@ -78,14 +78,14 @@ typedef enum {
 #endif
 
 typedef struct _MTK_WCN_WMT_IDC_INFO_ {
-	ipc_ilm_t iit;
+	struct ipc_ilm iit;
 	struct conn_md_bridge_ops ops;
 	UINT8 buffer[LTE_IDC_BUFFER_MAX_SIZE];
 } MTK_WCN_WMT_IDC_INFO, *P_MTK_WCN_WMT_IDC_INFO;
 
 INT32 wmt_idc_init(VOID);
 INT32 wmt_idc_deinit(VOID);
-INT32 wmt_idc_msg_from_lte_handing(ipc_ilm_t *ilm);
+INT32 wmt_idc_msg_from_lte_handing(struct ipc_ilm *ilm);
 INT32 wmt_idc_msg_to_lte_handing(VOID);
 UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len);
 

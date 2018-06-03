@@ -66,13 +66,13 @@
 #define CCCI_LK_INFO_VER_V2	(2)
 #define MAX_MD_NUM_AT_LK	(4)
 
-typedef struct _ccci_lk_info {
+struct _ccci_lk_info {
 	unsigned long long lk_info_base_addr;
 	unsigned int       lk_info_size;
 	unsigned int       lk_info_tag_num;
-} ccci_lk_info_t;
+};
 
-typedef struct _ccci_lk_info_v2 {
+struct _ccci_lk_info_v2 {
 	unsigned long long lk_info_base_addr;
 	unsigned int       lk_info_size;
 	int                lk_info_err_no;
@@ -80,21 +80,21 @@ typedef struct _ccci_lk_info_v2 {
 	int                lk_info_tag_num;
 	unsigned int       lk_info_ld_flag;
 	int                lk_info_ld_md_errno[MAX_MD_NUM_AT_LK];
-} ccci_lk_info_t_v2;
+};
 
-typedef struct _ccci_tag {
+struct _ccci_tag {
 	char tag_name[CCCI_TAG_NAME_LEN];
 	unsigned int data_offset;
 	unsigned int data_size;
 	unsigned int next_tag_offset;
-} ccci_tag_t;
+};
 
-typedef struct _ccci_tag_v2 {
+struct _ccci_tag_v2 {
 	char tag_name[CCCI_TAG_NAME_LEN_V2];
 	unsigned int data_offset;
 	unsigned int data_size;
 	unsigned int next_tag_offset;
-} ccci_tag_v2_t;
+};
 
 
 /*====================================================== */
@@ -113,7 +113,7 @@ static int s_g_lk_ld_md_errno;
 static unsigned int s_g_tag_inf_size;
 
 /* ------ tag info for each modem ---------------------- */
-typedef struct _modem_info {
+struct _modem_info {
 	unsigned long long base_addr;
 	unsigned int size;
 	char md_id;
@@ -121,7 +121,7 @@ typedef struct _modem_info {
 	char md_type;
 	char ver;
 	unsigned int reserved[2];
-} modem_info_t;
+};
 
 static int lk_load_img_err_no[MAX_MD_NUM_AT_LK];
 
@@ -306,8 +306,8 @@ static int find_ccci_tag_inf(char *name, char *buf, unsigned int size)
 	int cpy_size;
 	char *curr;
 	union u_tag {
-		ccci_tag_t v1;
-		ccci_tag_v2_t v2;
+		struct _ccci_tag v1;
+		struct _ccci_tag_v2 v2;
 	} tag;
 
 	if (buf == NULL)
@@ -360,10 +360,10 @@ static int find_ccci_tag_inf(char *name, char *buf, unsigned int size)
 /* Feature option setting support section                */
 /*====================================================== */
 /* Feature Option Setting */
-typedef struct fos_item {
+struct fos_item {
 	char *name;
 	int value;
-} fos_item_t;
+};
 
 /* Default value from config file */
 /* MD1 */
@@ -423,7 +423,7 @@ typedef struct fos_item {
 #endif
 
 /* array for store default option setting, option value may be updated at init if needed */
-static fos_item_t ccci_fos_setting[] = {
+static struct fos_item ccci_fos_setting[] = {
 	{"opt_md1_support", MTK_MD1_SUPPORT},
 	{"opt_md2_support", MTK_MD2_SUPPORT},
 	{"opt_md3_support", MTK_MD3_SUPPORT},
@@ -637,7 +637,7 @@ static phys_addr_t md_resv_smem_addr[MAX_MD_NUM_AT_LK];
 static phys_addr_t resv_smem_addr;
 static phys_addr_t md1md3_resv_smem_addr;
 
-typedef struct _smem_layout {
+struct _smem_layout {
 	unsigned long long base_addr;
 	unsigned int ap_md1_smem_offset;
 	unsigned int ap_md1_smem_size;
@@ -646,22 +646,22 @@ typedef struct _smem_layout {
 	unsigned int md1_md3_smem_offset;
 	unsigned int md1_md3_smem_size;
 	unsigned int total_smem_size;
-} smem_layout_t;
+};
 
-typedef struct _ccb_layout {
+struct _ccb_layout {
 	unsigned long long ccb_data_buffer_addr;
 	unsigned int ccb_data_buffer_size;
-} ccb_layout_t;
-static ccb_layout_t ccb_info;
+};
+static struct _ccb_layout ccb_info;
 static unsigned int md1_phy_cap_size;
 static unsigned int md1_bank4_cache_offset;
 
 static void share_memory_info_parsing(void)
 {
-	smem_layout_t smem_layout;
+	struct _smem_layout smem_layout;
 	/* Get share memory layout */
-	if (find_ccci_tag_inf("smem_layout", (char *)&smem_layout, sizeof(smem_layout_t))
-			!= sizeof(smem_layout_t)) {
+	if (find_ccci_tag_inf("smem_layout", (char *)&smem_layout, sizeof(struct _smem_layout))
+			!= sizeof(struct _smem_layout)) {
 		CCCI_UTIL_ERR_MSG("load smem layout fail\n");
 		s_g_lk_load_img_status |= LK_LOAD_MD_ERR_LK_INFO_FAIL;
 		s_g_md_env_rdy_flag = 0; /* Reset to zero if get share memory info fail */
@@ -669,9 +669,9 @@ static void share_memory_info_parsing(void)
 	}
 
 	/* Get ccb memory layout */
-	memset(&ccb_info, 0, sizeof(ccb_layout_t));
-	if (find_ccci_tag_inf("ccb_info", (char *)&ccb_info, sizeof(ccb_layout_t))
-			!= sizeof(ccb_layout_t)) {
+	memset(&ccb_info, 0, sizeof(struct _ccb_layout));
+	if (find_ccci_tag_inf("ccb_info", (char *)&ccb_info, sizeof(struct _ccb_layout))
+			!= sizeof(struct _ccb_layout)) {
 		CCCI_UTIL_ERR_MSG("Invalid ccb info dt para\n");
 	}
 
@@ -742,8 +742,8 @@ static void share_memory_info_parsing(void)
 
 static void md_mem_info_parsing(void)
 {
-	modem_info_t md_inf[4];
-	modem_info_t *curr;
+	struct _modem_info md_inf[4];
+	struct _modem_info *curr;
 	int md_num;
 	int md_id;
 
@@ -760,7 +760,7 @@ static void md_mem_info_parsing(void)
 	/* MD ROM and RW part */
 	while (md_num--) {
 		#ifdef LK_LOAD_MD_INFO_DEBUG_EN
-		CCCI_UTIL_INF_MSG("===== Dump modem memory info (%d)=====\n", (int)sizeof(modem_info_t));
+		CCCI_UTIL_INF_MSG("===== Dump modem memory info (%d)=====\n", (int)sizeof(struct _modem_info));
 		CCCI_UTIL_INF_MSG("base address : 0x%llX\n", curr->base_addr);
 		CCCI_UTIL_INF_MSG("memory size  : 0x%08X\n", curr->size);
 		CCCI_UTIL_INF_MSG("md id        : %d\n", (int)curr->md_id);
@@ -866,9 +866,9 @@ _check_md3:
 
 static void lk_info_parsing_v1(unsigned int *raw_ptr)
 {
-	ccci_lk_info_t lk_inf;
+	struct _ccci_lk_info lk_inf;
 
-	memcpy((void *)&lk_inf, raw_ptr, sizeof(ccci_lk_info_t));
+	memcpy((void *)&lk_inf, raw_ptr, sizeof(struct _ccci_lk_info));
 
 	CCCI_UTIL_INF_MSG("lk info.lk_info_base_addr: 0x%llX\n", lk_inf.lk_info_base_addr);
 	CCCI_UTIL_INF_MSG("lk info.lk_info_size:      0x%x\n", lk_inf.lk_info_size);
@@ -899,10 +899,10 @@ static void lk_info_parsing_v1(unsigned int *raw_ptr)
 
 static int lk_info_parsing_v2(unsigned int *raw_ptr)
 {
-	ccci_lk_info_t_v2 lk_inf;
+	struct _ccci_lk_info_v2 lk_inf;
 	int i;
 
-	memcpy((void *)&lk_inf, raw_ptr, sizeof(ccci_lk_info_t_v2));
+	memcpy((void *)&lk_inf, raw_ptr, sizeof(struct _ccci_lk_info_v2));
 
 	CCCI_UTIL_INF_MSG("lk info.lk_info_base_addr: 0x%llX\n", lk_inf.lk_info_base_addr);
 	CCCI_UTIL_INF_MSG("lk info.lk_info_size:      0x%x\n", lk_inf.lk_info_size);
@@ -1256,6 +1256,7 @@ unsigned int get_modem_is_enabled(int md_id)
 int get_modem_support_cap(int md_id)
 {
 	int ret = -1;
+
 	if (md_id < MAX_MD_NUM_AT_LK) {
 		if ((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT)) {
 			/* using priority */

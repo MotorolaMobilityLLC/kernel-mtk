@@ -155,7 +155,7 @@ struct ccci_smem_region md3_6291_noncacheable_fat[] = {
 {SMEM_USER_MAX, },
 };
 
-static struct ccci_smem_region *get_smem_by_user_id(struct ccci_smem_region *regions, SMEM_USER_ID user_id)
+static struct ccci_smem_region *get_smem_by_user_id(struct ccci_smem_region *regions, enum SMEM_USER_ID user_id)
 {
 	int i;
 
@@ -448,7 +448,7 @@ struct ccci_mem_layout *ccci_md_get_mem(int md_id)
 		return NULL;
 	return &modem_sys[md_id]->mem_layout;
 }
-struct ccci_smem_region *ccci_md_get_smem_by_user_id(int md_id, SMEM_USER_ID user_id)
+struct ccci_smem_region *ccci_md_get_smem_by_user_id(int md_id, enum SMEM_USER_ID user_id)
 {
 	struct ccci_smem_region *curr = NULL;
 

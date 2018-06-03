@@ -153,7 +153,7 @@ int port_smem_rx_wakeup(struct port_t *port)
 	return 0;
 }
 
-void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o)
+void __iomem *get_smem_start_addr(int md_id, enum SMEM_USER_ID user_id, int *size_o)
 {
 	void __iomem *addr = NULL;
 	struct ccci_smem_region *smem_region = ccci_md_get_smem_by_user_id(md_id, user_id);

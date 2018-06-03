@@ -1071,7 +1071,7 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	return 0;
 }
 
-static void ccmni_queue_state_callback(int md_id, int ccmni_idx, HIF_STATE state, int is_ack)
+static void ccmni_queue_state_callback(int md_id, int ccmni_idx, enum HIF_STATE state, int is_ack)
 {
 	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 	struct ccmni_instance *ccmni = NULL;
@@ -1158,7 +1158,7 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, HIF_STATE state
 	}
 }
 
-static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state)
+static void ccmni_md_state_callback(int md_id, int ccmni_idx, enum MD_STATE state)
 {
 	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 	struct ccmni_instance *ccmni = NULL;
