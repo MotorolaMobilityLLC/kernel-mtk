@@ -16,6 +16,7 @@
 #include <linux/wakelock.h>
 #include <linux/delay.h>
 #include "mtk_charger_intf.h"
+#include <upmu_common.h>
 
 /* Unit of the following functions are uV, uA */
 static int pe_get_vbus(void)
@@ -27,11 +28,8 @@ static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
 
-	ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev, enable);
-	if (ret == -ENOTSUPP)
-		return 0;
-
-	if (ret < 0)
+	ret = pmic_set_register_value(PMIC_RG_VCDT_HV_EN, enable);
+	if (ret != 0)
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
 
 	return ret;
