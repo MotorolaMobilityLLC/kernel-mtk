@@ -72,6 +72,12 @@ int vproc_pmic_set_mode(unsigned char mode)
 	return (ret == mode) ? (0) : (-1);
 }
 /* [Export API] */
+void pmic_enable_smart_reset(unsigned char smart_en, unsigned char smart_sdn_en)
+{
+	pmic_set_register_value(PMIC_RG_SMART_RST_MODE, smart_en);
+	pmic_set_register_value(PMIC_RG_SMART_RST_SDN_EN, smart_sdn_en);
+	pr_info("[%s] smart_en:%d, smart_sdn_en:%d\n", __func__, smart_en, smart_sdn_en);
+}
 
 int pmic_tracking_init(void)
 {
