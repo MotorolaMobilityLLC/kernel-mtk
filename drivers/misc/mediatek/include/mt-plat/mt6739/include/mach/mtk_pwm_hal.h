@@ -26,7 +26,7 @@
 /******************* Register Manipulations*****************/
 #define INREG32(reg)          __raw_readl((void *)reg)
 #define OUTREG32(reg, val)      mt_reg_sync_writel(val, (void *)reg)
-#define OUTREG32_DMA(reg, val)   ((*(volatile long*)(reg)) = (long)(val))
+#define OUTREG32_DMA(reg, val)   ((*(long *)(reg)) = (long)(val))
 #define SETREG32(reg, val)      OUTREG32(reg, INREG32(reg)|(val))
 #define CLRREG32(reg, val)      OUTREG32(reg, INREG32(reg)&~(val))
 #define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
