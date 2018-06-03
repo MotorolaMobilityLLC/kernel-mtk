@@ -289,7 +289,6 @@ enum chip_ip_table {
 
 static enum chip_ip_table device_id;
 
-
 /***************************
  * GPU DVFS OPP Table
  ****************************/
