@@ -73,6 +73,7 @@ static int mtk_pcm_i2s0_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_pcm_i2s0_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform);
 
+int mtk_soc_always_hd;
 static int mi2s0_sidegen_control;
 static int mi2s0_hdoutput_control;
 static int mi2s0_extcodec_echoref_control;
@@ -142,7 +143,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 	if (mi2s0_sidegen_control) {
 		AudDrv_Clk_On();
-		EnableALLbySampleRate(samplerate);
+		if (!mtk_soc_always_hd)
+			EnableALLbySampleRate(samplerate);
 
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
@@ -243,10 +245,32 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			EnableAfe(false);
 		}
-		DisableALLbySampleRate(samplerate);
+		if (!mtk_soc_always_hd)
+			DisableALLbySampleRate(samplerate);
 		AudDrv_Clk_Off();
 	}
 	AudDrv_Clk_Off();
+	return 0;
+}
+
+static int audio_always_hd_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), mtk_soc_always_hd %d\n", __func__, mtk_soc_always_hd);
+	ucontrol->value.integer.value[0] = mtk_soc_always_hd;
+	return 0;
+}
+
+static int audio_always_hd_set(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), mtk_soc_always_hd %d\n", __func__, mtk_soc_always_hd);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_HD_output)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	mtk_soc_always_hd = ucontrol->value.integer.value[0];
 	return 0;
 }
 
@@ -311,6 +335,8 @@ static const struct snd_kcontrol_new Audio_snd_i2s0_controls[] = {
 		     Audio_i2s0_Enum[0], Audio_i2s0_SideGen_Get, Audio_i2s0_SideGen_Set),
 	SOC_ENUM_EXT("Audio_i2s0_hd_Switch",
 		     Audio_i2s0_Enum[1], Audio_i2s0_hdoutput_Get, Audio_i2s0_hdoutput_Set),
+	SOC_ENUM_EXT("Audio_always_hd_Switch",
+		     Audio_i2s0_Enum[1], audio_always_hd_get, audio_always_hd_set),
 	SOC_ENUM_EXT("Audio_ExtCodec_EchoRef_Switch",
 		     Audio_i2s0_Enum[2], Audio_i2s0_ExtCodec_EchoRef_Get,
 		     Audio_i2s0_ExtCodec_EchoRef_Set),

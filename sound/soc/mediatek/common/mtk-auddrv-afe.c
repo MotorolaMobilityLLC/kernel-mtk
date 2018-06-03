@@ -92,6 +92,7 @@ static const struct regmap_config mtk_afe_regmap_config = {
 void *AFE_BASE_ADDRESS;
 void *AFE_SRAM_ADDRESS;
 void *AFE_TOP_ADDRESS;
+void *APMIXEDSYS_ADDRESS;
 struct regmap *pregmap;
 
 int Auddrv_Reg_map(struct device *pdev)
@@ -138,6 +139,8 @@ int Auddrv_Reg_map(struct device *pdev)
 	/* temp for hardawre code  set 0x1000629c = 0xd */
 	AFE_TOP_ADDRESS = ioremap_nocache(AUDIO_POWER_TOP, 0x1000);
 
+	APMIXEDSYS_ADDRESS = ioremap_nocache(APMIXEDSYS_BASE, 0x1000);
+
 	return ret;
 }
 
@@ -171,6 +174,29 @@ void *Get_Afe_SramCaptureBase_Pointer()
 void *Get_Afe_Powertop_Pointer()
 {
 	return AFE_TOP_ADDRESS;
+}
+
+/* function to access apmixed sys */
+uint32 GetApmixedCfg(uint32 offset)
+{
+	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	volatile uint32 *value;
+
+	value = (volatile uint32 *)(address);
+	/* pr_debug("GetClkCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
+	return *value;
+}
+
+void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask)
+{
+	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	volatile uint32 *AFE_Register = (volatile uint32 *)address;
+	volatile uint32 val_tmp;
+	/* pr_debug("SetpllCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
+	val_tmp = GetApmixedCfg(offset);
+	val_tmp &= (~mask);
+	val_tmp |= (value & mask);
+	mt_reg_sync_writel(val_tmp, AFE_Register);
 }
 
 void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
