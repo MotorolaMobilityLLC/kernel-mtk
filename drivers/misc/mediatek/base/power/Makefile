@@ -22,7 +22,10 @@ obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
 #obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6799) += eem_v1/
 obj-$(CONFIG_MACH_MT6759) += eem_v2/
+ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6799) += upower_v1/
+obj-$(CONFIG_MACH_MT6759) += upower_v2/
+endif
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += pbm_v1/
 obj-$(CONFIG_MACH_MT6799) += pbm_v2/
