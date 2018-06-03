@@ -19,6 +19,7 @@
 #include <linux/of.h>
 #include <linux/smp.h>
 #include <linux/delay.h>
+#include <linux/mm.h>
 #include <linux/psci.h>
 #include <linux/slab.h>
 
