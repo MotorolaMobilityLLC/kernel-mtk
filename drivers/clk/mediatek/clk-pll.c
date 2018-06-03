@@ -294,6 +294,10 @@ static int mtk_pll_prepare(struct clk_hw *hw)
 		/*pr_err("[CCF] %s: %s is already power on\n", __func__, __clk_get_name(hw->clk));*/
 	} else {
 		/*pr_err("[CCF] %s: %s is power off\n", __func__, __clk_get_name(hw->clk));*/
+#if defined(CONFIG_MACH_MT6763)
+		if (!strcmp(__clk_get_name(hw->clk), "univpll"))
+			univpll_192m_en(1);
+#endif
 		r = readl(pll->pwr_addr) | CON0_PWR_ON;
 
 		writel(r, pll->pwr_addr);
@@ -378,6 +382,8 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
+			if (!strcmp(__clk_get_name(hw->clk), "univpll"))
+				univpll_192m_en(0);
 		}
 	}
 #endif
