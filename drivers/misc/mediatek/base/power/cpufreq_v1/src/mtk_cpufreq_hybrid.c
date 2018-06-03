@@ -380,8 +380,6 @@ static void __iomem *csram_base;
 #define OFFS_EEM_S		0x0300 /* 192 */
 #define OFFS_EEM_E		0x030c /* 195 */
 
-#define NR_FREQ       16
-
 static u32 dbg_repo_bak[DBG_REPO_NUM];
 static int _mt_dvfsp_pdrv_probe(struct platform_device *pdev)
 {
@@ -732,14 +730,7 @@ void cpuhvfs_pvt_tbl_create(void)
 	cpufreq_info("DVFS - @(Record)%s----->(%p)\n", __func__, recordRef);
 	memset_io((u8 *)recordRef, 0x00, PVT_TBL_SIZE);
 
-	if (lv == CPU_LEVEL_0)
-		recordTbl = &fyTbl[0][0];
-	else if (lv == CPU_LEVEL_1)
-		recordTbl = &sbTbl[0][0];
-	else if (lv == CPU_LEVEL_2)
-		recordTbl = &fyaTbl[0][0];
-	else if (lv == CPU_LEVEL_3)
-		recordTbl = &fybTbl[0][0];
+	recordTbl = xrecordTbl[lv];
 
 	for (i = 0; i < NR_FREQ; i++) {
 		/* Freq, Vproc, post_div, clk_div */
@@ -904,6 +895,7 @@ static int cpuhvfs_pre_module_init(void)
 	return 0;
 }
 fs_initcall(cpuhvfs_pre_module_init);
-#endif
+
+#endif	/* CONFIG_HYBRID_CPU_DVFS */
+
 MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");
-MODULE_LICENSE("GPL");
