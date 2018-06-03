@@ -299,6 +299,7 @@
 #define GPIO_MODE3_SET      0xe0
 #define GPIO_MODE3_CLR      0xe2
 
+#define DCXO_CW13           0x7aa
 #define DCXO_CW14           0x7ac
 
 #define AUXADC_CON10        0x11a0
