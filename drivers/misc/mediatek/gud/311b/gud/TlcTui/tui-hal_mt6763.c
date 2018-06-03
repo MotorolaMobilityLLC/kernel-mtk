@@ -232,7 +232,7 @@ uint32_t hal_tui_deactivate(void)
 	tpd_enter_tui();
 #endif
 #ifdef TUI_LOCK_I2C
-	i2c_tui_enable_clock(4);
+	i2c_tui_enable_clock(0);
 #endif
 
 #ifdef TUI_ENABLE_DISPLAY
@@ -278,7 +278,7 @@ uint32_t hal_tui_activate(void)
 #endif
 
 #ifdef TUI_LOCK_I2C
-	i2c_tui_disable_clock(4);
+	i2c_tui_disable_clock(0);
 #endif
 
 #ifdef TUI_ENABLE_DISPLAY
