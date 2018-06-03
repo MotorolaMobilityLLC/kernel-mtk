@@ -126,10 +126,10 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 
 static unsigned int fy3Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
-	{ 1885, 99, 1, 1 },	/* LL */
-	{ 1820, 95, 1, 1 },
-	{ 1755, 91, 1, 1 },
-	{ 1690, 87, 1, 1 },
+	{ 1794, 99, 1, 1 },	/* LL */
+	{ 1755, 95, 1, 1 },
+	{ 1703, 91, 1, 1 },
+	{ 1664, 87, 1, 1 },
 	{ 1612, 82, 1, 1 },
 	{ 1534, 77, 1, 1 },
 	{ 1456, 72, 2, 1 },
