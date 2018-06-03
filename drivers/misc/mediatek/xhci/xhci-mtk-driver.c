@@ -88,6 +88,7 @@ static void mtk_enable_otg_mode(void)
 	charger_dev_enable_otg(primary_charger, true);
 	charger_dev_set_boost_current_limit(primary_charger, 1500000);
 	charger_dev_kick_wdt(primary_charger);
+	enable_boost_polling(true);
 #else
 	set_chr_enable_otg(0x1);
 	set_chr_boost_current_limit(1500);
@@ -98,6 +99,7 @@ static void mtk_disable_otg_mode(void)
 {
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	charger_dev_enable_otg(primary_charger, false);
+	enable_boost_polling(false);
 #else
 	set_chr_enable_otg(0x0);
 #endif
@@ -116,6 +118,109 @@ static int mtk_xhci_hcd_init(void)
 
 	return 0;
 }
+
+#if CONFIG_MTK_GAUGE_VERSION == 30
+
+struct usbotg_boost_manager {
+	struct platform_device *pdev;
+	struct gtimer otg_kthread_gtimer;
+	struct workqueue_struct *otg_boost_workq;
+	struct work_struct kick_work;
+	struct charger_device *primary_charger;
+	unsigned int polling_interval;
+	bool polling_enabled;
+};
+static struct usbotg_boost_manager *g_info;
+
+
+void enable_boost_polling(bool poll_en)
+{
+	if (g_info) {
+		if (poll_en) {
+			gtimer_start(&g_info->otg_kthread_gtimer, g_info->polling_interval);
+			g_info->polling_enabled = true;
+		} else {
+			g_info->polling_enabled = false;
+			gtimer_stop(&g_info->otg_kthread_gtimer);
+		}
+	}
+}
+
+static void usbotg_boost_kick_work(struct work_struct *work)
+{
+
+	struct usbotg_boost_manager *usb_boost_manager =
+		container_of(work, struct usbotg_boost_manager, kick_work);
+
+	mtk_xhci_mtk_printk(K_ALET, "usbotg_boost_kick_work\n");
+
+	charger_dev_kick_wdt(usb_boost_manager->primary_charger);
+
+	if (usb_boost_manager->polling_enabled == true)
+		gtimer_start(&usb_boost_manager->otg_kthread_gtimer, usb_boost_manager->polling_interval);
+}
+
+static int usbotg_gtimer_func(struct gtimer *data)
+{
+	struct usbotg_boost_manager *usb_boost_manager =
+		container_of(data, struct usbotg_boost_manager, otg_kthread_gtimer);
+
+	queue_work(usb_boost_manager->otg_boost_workq, &usb_boost_manager->kick_work);
+	return 0;
+}
+
+static int usbotg_boost_manager_probe(struct platform_device *pdev)
+{
+	struct usbotg_boost_manager *info = NULL;
+	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
+
+	info = devm_kzalloc(&pdev->dev, sizeof(struct usbotg_boost_manager), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	platform_set_drvdata(pdev, info);
+	info->pdev = pdev;
+	info->primary_charger = get_charger_by_name("primary_chg");
+	if (!info->primary_charger) {
+		pr_info("%s: get primary charger device failed\n", __func__);
+		return -ENODEV;
+	}
+
+	gtimer_init(&info->otg_kthread_gtimer, &info->pdev->dev, "otg_boost");
+	info->otg_kthread_gtimer.callback = usbotg_gtimer_func;
+	if (of_property_read_u32(node, "boost_period", (u32 *) &info->polling_interval))
+		return -EINVAL;
+
+	info->polling_interval = 30;
+	info->otg_boost_workq = create_singlethread_workqueue("otg_boost_workq");
+	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
+	g_info = info;
+	return 0;
+}
+
+static int usbotg_boost_manager_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+static const struct of_device_id usbotg_boost_manager_of_match[] = {
+	{.compatible = "mediatek,usb_boost_manager"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, usbotg_boost_manager_of_match);
+static struct platform_driver boost_manager_driver = {
+	.remove = usbotg_boost_manager_remove,
+	.probe = usbotg_boost_manager_probe,
+	.driver = {
+		   .name = "usb_boost_manager",
+		   .of_match_table = usbotg_boost_manager_of_match,
+		   },
+};
+
+#endif
+
+
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 
@@ -363,6 +468,7 @@ static int __init xhci_hcd_init(void)
 		pr_err("%s: get primary charger device failed\n", __func__);
 		return -ENODEV;
 	}
+	platform_driver_register(&boost_manager_driver);
 #endif
 
 	return 0;
