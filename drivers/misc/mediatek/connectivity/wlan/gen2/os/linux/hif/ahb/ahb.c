@@ -433,7 +433,7 @@ VOID glGetChipInfo(GLUE_INFO_T *GlueInfo, UINT_8 *pucChipBuf)
 	case MTK_CHIP_ID_8127:
 	case MTK_CHIP_ID_6752:
 	case MTK_CHIP_ID_8163:
-	case MTK_CHIP_ID_8160:
+	case MTK_CHIP_ID_8167:
 	case MTK_CHIP_ID_6735:
 	case MTK_CHIP_ID_6580:
 	case MTK_CHIP_ID_6755:
