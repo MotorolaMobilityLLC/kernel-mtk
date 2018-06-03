@@ -62,7 +62,7 @@ enum upower_dtype {
 /***************************
  * Basic Data Declarations *
  **************************/
-/* 8bytes + 4bytes + 4bytes + 20bytes = 36 bytes*/
+/* 8bytes + 4bytes + 4bytes + 24bytes = 40 bytes*/
 /* but compiler will align to 40 bytes for computing more faster */
 /* if a table has 8 opps --> 40*8= 320 bytes*/
 struct upower_tbl_row {
