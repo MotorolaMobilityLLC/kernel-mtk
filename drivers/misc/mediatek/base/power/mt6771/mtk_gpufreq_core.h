@@ -187,8 +187,6 @@
 #define SEG3_PMIC_MAX_VPROC				(SEG3_GPU_DVFS_VOLT0)
 
 #define DELAY_FACTOR					(625)
-#define VGPU_ENABLE_TIME_US				(220)		/* spec is 220(us) */
-#define VSRAM_GPU_ENABLE_TIME_US		(110)		/* spec is 110(us) */
 #define PMIC_SRCLKEN_HIGH_TIME_US		(1000)		/* spec is 1(ms) */
 
 /**************************************************
