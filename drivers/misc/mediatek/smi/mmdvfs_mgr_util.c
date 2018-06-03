@@ -66,6 +66,7 @@ int register_mmdvfs_prepare_cb(int mmdvfs_client_id, mmdvfs_prepare_action_cb fu
 void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
 {
 		int i = 0;
+		mmdvfs_internal_notify_vcore_calibration(event);
 
 		MMDVFSMSG("mmdvfs_notify_prepare_action: %d\n", event->event_type);
 		for (i = 0; i < MMDVFS_SCEN_COUNT; i++) {
