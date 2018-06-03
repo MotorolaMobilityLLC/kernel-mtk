@@ -40,8 +40,6 @@
 #include <mach/mtk_pmic_wrap.h>
 #endif
 
-#define MTK_EMMC_CMD_DEBUG
-
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 unsigned int g_mtk_mmc_perf_dbg;
 unsigned int g_mtk_mmc_dbg_range;
@@ -204,10 +202,10 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
-#ifdef MTK_EMMC_CMD_DEBUG
 #define dbg_max_cnt (500)
-/* max dump size is 30KB whitch can be adjusted */
-#define MSDC_AEE_BUFFER_SIZE (30 * 1024)
+#define dbg_max_cnt_low_io (5000)
+#define criterion_low_io (10 * 1024) /* unit: KB/s */
+#define MSDC_AEE_BUFFER_SIZE (300 * 1024)
 struct dbg_run_host_log {
 	unsigned long long time_sec;
 	unsigned long long time_usec;
@@ -216,29 +214,83 @@ struct dbg_run_host_log {
 	int arg;
 	int skip;
 };
+struct dbg_run_host_log_low_io {
+	int cmd;
+	u32 address;
+	unsigned long long size;
+	unsigned long long time;
+	unsigned long long time_diff;
+	int continuous_count;
+};
+struct dbg_task_log {
+	u32 address;
+	unsigned long long size;
+};
+struct dbg_dma_cmd_log {
+	unsigned long long time;
+	int cmd;
+	int arg;
+};
+
 static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
+static struct dbg_run_host_log_low_io
+	dbg_run_host_log_dat_low_io[dbg_max_cnt_low_io];
+static struct dbg_dma_cmd_log dbg_dma_cmd_log_dat;
+static struct dbg_task_log dbg_task_log_dat[32];
 char msdc_aee_buffer[MSDC_AEE_BUFFER_SIZE];
 static int dbg_host_cnt;
+static int dbg_host_cnt_low_io;
 
 static unsigned int printk_cpu_test = UINT_MAX;
 
-/* type 0: cmd, type 1 rsp */
-void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
+/*
+ * type 0: cmd; type 1: rsp; type 3: dma end
+ * when type 3: arg 0: no data crc error; arg 1: data crc error
+ */
+inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
-	unsigned long long t;
+	unsigned long long t, tn;
 	unsigned long long nanosec_rem;
-	unsigned long flags;
 	static int last_cmd, last_arg, skip;
 	int l_skip = 0;
 	struct msdc_host *host = mmc_priv(mmc);
+	static int tag = -1;
+	static int continuous_count_low_io;
 
 	/* only log msdc0 */
 	if (!host || host->id != 0)
 		return;
 
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
-	if (type == 1) {
-		 /*skip log if last cmd rsp are the same*/
+	t = cpu_clock(printk_cpu_test);
+
+	switch (type) {
+	case 0:
+		tn = t;
+		nanosec_rem = do_div(t, 1000000000)/1000;
+		if (cmd == 44) {
+			tag = (arg >> 16) & 0x1f;
+			dbg_task_log_dat[tag].size = arg & 0xffff;
+		} else if (cmd == 45) {
+			dbg_task_log_dat[tag].address = arg;
+		} else if (cmd == 46 || cmd == 47) {
+			dbg_dma_cmd_log_dat.time = tn;
+			dbg_dma_cmd_log_dat.cmd = cmd;
+			dbg_dma_cmd_log_dat.arg = arg;
+		}
+
+		dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
+		dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
+		dbg_run_host_log_dat[dbg_host_cnt].type = type;
+		dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
+		dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
+		dbg_run_host_log_dat[dbg_host_cnt].skip = l_skip;
+		dbg_host_cnt++;
+		if (dbg_host_cnt >= dbg_max_cnt)
+			dbg_host_cnt = 0;
+		break;
+	case 1:
+		nanosec_rem = do_div(t, 1000000000)/1000;
+		/*skip log if last cmd rsp are the same*/
 		if (last_cmd == cmd &&
 			last_arg == arg && cmd == 13) {
 			skip++;
@@ -246,35 +298,110 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 				dbg_host_cnt = dbg_max_cnt;
 			/*remove type = 0, command*/
 			dbg_host_cnt--;
-			goto end;
+			break;
 		}
 		last_cmd = cmd;
 		last_arg = arg;
 		l_skip = skip;
 		skip = 0;
+
+		dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
+		dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
+		dbg_run_host_log_dat[dbg_host_cnt].type = type;
+		dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
+		dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
+		dbg_run_host_log_dat[dbg_host_cnt].skip = l_skip;
+		dbg_host_cnt++;
+		if (dbg_host_cnt >= dbg_max_cnt)
+			dbg_host_cnt = 0;
+		break;
+	case 3:
+		/*
+		 * try to reduce executing time in case 3 to keep performance
+		 * not to drop.
+		 */
+		if (dbg_dma_cmd_log_dat.cmd) {
+			dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].cmd
+				= dbg_dma_cmd_log_dat.cmd;
+			dbg_dma_cmd_log_dat.cmd = 0;
+		} else
+			break;
+
+		dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].time = t;
+		dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].time_diff
+			= t - dbg_dma_cmd_log_dat.time;
+
+		tag = (dbg_dma_cmd_log_dat.arg >> 16) & 0x1f;
+		dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].address
+			= dbg_task_log_dat[tag].address;
+		dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].size
+			= dbg_task_log_dat[tag].size;
+
+		/* if speed < criterion_low_io, record it  */
+		if ((dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].size
+		* 1000000000 >> 1) < (criterion_low_io
+		* dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io].time_diff)) {
+			dbg_run_host_log_dat_low_io[dbg_host_cnt_low_io]
+				.continuous_count = ++continuous_count_low_io;
+			dbg_host_cnt_low_io++;
+			if (dbg_host_cnt_low_io >= dbg_max_cnt_low_io)
+				dbg_host_cnt_low_io = 0;
+		} else
+			continuous_count_low_io = 0;
+		break;
+	default:
+		break;
 	}
-	t = cpu_clock(printk_cpu_test);
-	nanosec_rem = do_div(t, 1000000000)/1000;
-	dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
-	dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
-	dbg_run_host_log_dat[dbg_host_cnt].type = type;
-	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
-	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
-	dbg_run_host_log_dat[dbg_host_cnt].skip = l_skip;
-	dbg_host_cnt++;
-	if (dbg_host_cnt >= dbg_max_cnt)
-		dbg_host_cnt = 0;
-end:
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
 }
 
+void mmc_low_io_dump(char **buff, unsigned long *size, struct seq_file *m,
+	struct mmc_host *mmc)
+{
+	int i, j;
+	unsigned long long t, nanosec_rem, speed;
+	char dir;
+
+	if (!mmc || !mmc->card)
+		return;
+
+	SPREAD_PRINTF(buff, size, m, "\nLow IO (<%dKB/s):\n",
+		criterion_low_io);
+	SPREAD_PRINTF(buff, size, m,
+		"index time direction address size speed continuous_count\n");
+
+	i = dbg_host_cnt_low_io - 1;
+	if (i < 0)
+		i = dbg_max_cnt_low_io - 1;
+
+	for (j = 0; j < dbg_max_cnt_low_io; j++) {
+		t = dbg_run_host_log_dat_low_io[i].time;
+		nanosec_rem = do_div(t, 1000000000)/1000;
+		speed = dbg_run_host_log_dat_low_io[i].size * 1000000000;
+		do_div(speed, dbg_run_host_log_dat_low_io[i].time_diff);
+
+		if (dbg_run_host_log_dat_low_io[i].cmd == 46)
+			dir = 'R';
+		else if (dbg_run_host_log_dat_low_io[i].cmd == 47)
+			dir = 'W';
+		else
+			dir = 'N';
+
+		SPREAD_PRINTF(buff, size, m,
+			"%05d[%5llu.%06llu]%c,0x%08x,%4lluKB,%6lluKB/s,%d\n",
+			j, t, nanosec_rem, dir,
+			dbg_run_host_log_dat_low_io[i].address,
+			dbg_run_host_log_dat_low_io[i].size >> 1, speed >> 1,
+			dbg_run_host_log_dat_low_io[i].continuous_count);
+		if (--i < 0)
+			i = dbg_max_cnt_low_io - 1;
+	}
+}
 void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	struct mmc_host *mmc, u32 latest_cnt)
 {
 	int i, j;
 	int tag = -1;
 	int is_read, is_rel, is_fprg;
-	unsigned long flags;
 	unsigned long long time_sec, time_usec;
 	int type, cmd, arg, skip, cnt;
 	struct msdc_host *host;
@@ -287,7 +414,6 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	if (!host || host->id != 0)
 		return;
 
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
 	dump_cnt = min_t(u32, latest_cnt, dbg_max_cnt);
 
 	i = dbg_host_cnt - 1;
@@ -328,7 +454,6 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		if (i < 0)
 			i = dbg_max_cnt - 1;
 	}
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	SPREAD_PRINTF(buff, size, m,
 		"areq_cnt:%d, task_id_index %08lx, cq_wait_rdy:%d, cq_rdy_cnt:%d\n",
@@ -338,16 +463,6 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		atomic_read(&mmc->cq_rdy_cnt));
 #endif
 }
-#else
-void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
-{
-}
-
-void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
-	struct mmc_host *mmc, u32 latest_cnt)
-{
-}
-#endif
 
 void msdc_dump_host_state(char **buff, unsigned long *size,
 	struct seq_file *m, struct msdc_host *host)
@@ -384,6 +499,7 @@ static void msdc_proc_dump(struct seq_file *m, u32 id)
 
 	msdc_dump_host_state(NULL, NULL, m, host);
 	mmc_cmd_dump(NULL, NULL, m, host->mmc, 500);
+	mmc_low_io_dump(NULL, NULL, m, host->mmc);
 }
 
 void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
@@ -400,6 +516,7 @@ void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
 	buff = msdc_aee_buffer;
 	msdc_dump_host_state(&buff, &free_size, NULL, host);
 	mmc_cmd_dump(&buff, &free_size, NULL, host->mmc, 500);
+	mmc_low_io_dump(&buff, &free_size, NULL, host->mmc);
 
 	/* retrun start location */
 	*vaddr = (unsigned long)msdc_aee_buffer;

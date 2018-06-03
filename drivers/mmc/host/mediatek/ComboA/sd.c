@@ -4554,6 +4554,7 @@ static void msdc_check_data_timeout(struct work_struct *work)
 	}
 
 	if (msdc_use_async_dma(data->host_cookie)) {
+		dbg_add_host_log(host->mmc, 3, 0, 0);
 		msdc_dma_stop(host);
 		msdc_dma_clear(host);
 		msdc_reset_hw(host->id);
@@ -4653,6 +4654,7 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		msdc_dma_stop(host);
 		mrq = host->mrq;
 		if (error) {
+			dbg_add_host_log(host->mmc, 3, 0, 1);
 #if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 			if (MSDC_CHECK_FDE_ERR(host->mmc, mrq))
 				goto skip_non_FDE_ERROR_HANDLING;
@@ -4710,7 +4712,7 @@ skip:
 			mrq->cmd->error = (unsigned int)-EILSEQ;
 #endif
 		} else {
-
+			dbg_add_host_log(host->mmc, 3, 0, 0);
 			msdc_dma_clear(host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
@@ -5135,7 +5137,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->reg_lock);
 	spin_lock_init(&host->remove_bad_card);
-	spin_lock_init(&host->cmd_dump_lock);
 	spin_lock_init(&host->sdio_irq_lock);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
