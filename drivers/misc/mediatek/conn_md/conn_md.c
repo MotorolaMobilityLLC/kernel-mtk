@@ -17,24 +17,24 @@
 
 /*global data structure defination*/
 
-CONN_MD_STRUCT g_conn_md;
+struct conn_md_struct g_conn_md;
 
 static int _conn_md_del_msg_by_uid(uint32 u_id);
-static int conn_md_dmp_msg(P_CONN_MD_QUEUE p_msg_list, uint32 src_id, uint32 dst_id);
+static int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_id);
 
-int conn_md_add_user(uint32 u_id, CONN_MD_BRIDGE_OPS *p_ops)
+int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 {
-	P_CONN_MD_USER p_user = NULL;
+	struct conn_md_user *p_user = NULL;
 	struct list_head *pos = NULL;
-	P_CONN_MD_STRUCT p_conn_md = &g_conn_md;
-	P_CONN_MD_USER_LIST p_user_list = &p_conn_md->user_list;
+	struct conn_md_struct *p_conn_md = &g_conn_md;
+	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 
 	/*lock user_list_lock */
 	mutex_lock(&p_user_list->lock);
 
 	/*check if earlier uid reged or not */
 	list_for_each(pos, &p_user_list->list) {
-		p_user = container_of(pos, CONN_MD_USER, entry);
+		p_user = container_of(pos, struct conn_md_user, entry);
 		if (p_user->u_id == u_id) {
 			/*if yes */
 			/*print warning information */
@@ -46,7 +46,7 @@ int conn_md_add_user(uint32 u_id, CONN_MD_BRIDGE_OPS *p_ops)
 
 	if (p_user == NULL) {
 		/*memory allocation for user information */
-		p_user = kmalloc(sizeof(CONN_MD_USER), GFP_ATOMIC);
+		p_user = kmalloc(sizeof(struct conn_md_user), GFP_ATOMIC);
 		INIT_LIST_HEAD(&p_user->entry);
 		list_add_tail(&p_user->entry, &p_user_list->list);
 		p_user->u_id = u_id;
@@ -54,7 +54,7 @@ int conn_md_add_user(uint32 u_id, CONN_MD_BRIDGE_OPS *p_ops)
 	}
 
 	/*anyway, write user info to target uid */
-	memcpy(&p_user->ops, p_ops, sizeof(CONN_MD_BRIDGE_OPS));
+	memcpy(&p_user->ops, p_ops, sizeof(struct conn_md_bridge_ops));
 
 	p_user->state = USER_ENABLED;
 	/*unlock user_list lock */
@@ -68,17 +68,17 @@ int conn_md_add_user(uint32 u_id, CONN_MD_BRIDGE_OPS *p_ops)
 int conn_md_del_user(uint32 u_id)
 {
 	int i_ret = -1;
-	P_CONN_MD_USER p_user = NULL;
+	struct conn_md_user *p_user = NULL;
 	struct list_head *pos = NULL;
-	P_CONN_MD_STRUCT p_conn_md = &g_conn_md;
-	P_CONN_MD_USER_LIST p_user_list = &p_conn_md->user_list;
+	struct conn_md_struct *p_conn_md = &g_conn_md;
+	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 
 	/*lock user_list_lock */
 	mutex_lock(&p_user_list->lock);
 
 	/*check if earlier uid reged or not */
 	list_for_each(pos, &p_user_list->list) {
-		p_user = container_of(pos, CONN_MD_USER, entry);
+		p_user = container_of(pos, struct conn_md_user, entry);
 		if (p_user->u_id == u_id) {
 			/*if yes */
 			/*print information */
@@ -110,12 +110,12 @@ int conn_md_del_user(uint32 u_id)
 	return i_ret;
 }
 
-int conn_md_dmp_msg(P_CONN_MD_QUEUE p_msg_list, uint32 src_id, uint32 dst_id)
+int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_id)
 {
 #define MAX_LENGTH_PER_PACKAGE 8
 
 	struct list_head *pos = NULL;
-	P_CONN_MD_MSG p_msg = NULL;
+	struct conn_md_msg *p_msg = NULL;
 	int i = 0;
 	int counter = 0;
 
@@ -127,7 +127,7 @@ int conn_md_dmp_msg(P_CONN_MD_QUEUE p_msg_list, uint32 src_id, uint32 dst_id)
 	mutex_lock(&p_msg_list->lock);
 
 	list_for_each(pos, &p_msg_list->list) {
-		p_msg = container_of(pos, CONN_MD_MSG, entry);
+		p_msg = container_of(pos, struct conn_md_msg, entry);
 		if (((src_id == 0) || (src_id == p_msg->ilm.src_mod_id)) &&
 		    ((dst_id == 0) || (dst_id == p_msg->ilm.dest_mod_id))) {
 			counter++;
@@ -152,10 +152,10 @@ int conn_md_dmp_msg(P_CONN_MD_QUEUE p_msg_list, uint32 src_id, uint32 dst_id)
 int _conn_md_del_msg_by_uid(uint32 u_id)
 {
 	/*only delete messaged enqueued in queue list, do not care message in active queue list */
-	P_CONN_MD_STRUCT p_conn_md = &g_conn_md;
-	P_CONN_MD_QUEUE p_msg_list = &p_conn_md->msg_queue;
+	struct conn_md_struct *p_conn_md = &g_conn_md;
+	struct conn_md_queue *p_msg_list = &p_conn_md->msg_queue;
 	struct list_head *pos = NULL;
-	P_CONN_MD_MSG p_msg = NULL;
+	struct conn_md_msg *p_msg = NULL;
 	int flag = 1;
 
 	CONN_MD_TRC_FUNC();
@@ -165,7 +165,7 @@ int _conn_md_del_msg_by_uid(uint32 u_id)
 		flag = 0;
 
 		list_for_each(pos, &p_msg_list->list) {
-			p_msg = container_of(pos, CONN_MD_MSG, entry);
+			p_msg = container_of(pos, struct conn_md_msg, entry);
 			if ((p_msg->ilm.dest_mod_id == u_id) || (p_msg->ilm.src_mod_id == u_id)) {
 				flag = 1;
 				CONN_MD_DBG_FUNC
@@ -191,17 +191,17 @@ int _conn_md_del_msg_by_uid(uint32 u_id)
 int conn_md_send_msg(ipc_ilm_t *ilm)
 {
 
-	P_CONN_MD_STRUCT p_conn_md = &g_conn_md;
-	P_CONN_MD_QUEUE p_msg_list = &p_conn_md->msg_queue;
+	struct conn_md_struct *p_conn_md = &g_conn_md;
+	struct conn_md_queue *p_msg_list = &p_conn_md->msg_queue;
 	uint32 msg_str_len = 0;
 	local_para_struct *p_local_para = NULL;
-	P_CONN_MD_MSG p_new_msg = NULL;
+	struct conn_md_msg *p_new_msg = NULL;
 	uint32 msg_info_len = ilm->local_para_ptr->msg_len;
 
 	CONN_MD_DBG_FUNC("ilm:0x%08x, msg_len:%d\n", ilm, ilm->local_para_ptr->msg_len);
 
 	/*malloc message structure for this msg */
-	msg_str_len = sizeof(CONN_MD_MSG) + msg_info_len;
+	msg_str_len = sizeof(struct conn_md_msg) + msg_info_len;
 	p_new_msg = kmalloc(msg_str_len, GFP_ATOMIC);
 
 	if (p_new_msg != NULL) {
@@ -252,14 +252,14 @@ int conn_md_send_msg(ipc_ilm_t *ilm)
 
 static int conn_md_thread(void *p_data)
 {
-	P_CONN_MD_STRUCT p_conn_md = (P_CONN_MD_STRUCT) p_data;
-	P_CONN_MD_QUEUE p_act_queue = &p_conn_md->act_queue;
-	P_CONN_MD_QUEUE p_msg_queue = &p_conn_md->msg_queue;
+	struct conn_md_struct *p_conn_md = (struct conn_md_struct *) p_data;
+	struct conn_md_queue *p_act_queue = &p_conn_md->act_queue;
+	struct conn_md_queue *p_msg_queue = &p_conn_md->msg_queue;
 	struct list_head *pos = NULL;
-	P_CONN_MD_MSG p_msg = NULL;
-	P_CONN_MD_USER p_user = NULL;
+	struct conn_md_msg *p_msg = NULL;
+	struct conn_md_user *p_user = NULL;
 	struct list_head *p_user_pos = NULL;
-	P_CONN_MD_USER_LIST p_user_list = &p_conn_md->user_list;
+	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 	ipc_ilm_t *p_cur_ilm = NULL;
 
 	while (1) {
@@ -295,7 +295,7 @@ static int conn_md_thread(void *p_data)
 		mutex_lock(&p_act_queue->lock);
 		/*dequeue from p_act_queue */
 		list_for_each(pos, &p_act_queue->list) {
-			p_msg = container_of(pos, CONN_MD_MSG, entry);
+			p_msg = container_of(pos, struct conn_md_msg, entry);
 			p_cur_ilm = &p_msg->ilm;
 			if (p_cur_ilm == NULL) {
 #if (ACT_QUEUE_DBG == 1)
@@ -315,7 +315,7 @@ static int conn_md_thread(void *p_data)
 
 			/*check if src module is enabled or not */
 			list_for_each(p_user_pos, &p_user_list->list) {
-				p_user = container_of(p_user_pos, CONN_MD_USER, entry);
+				p_user = container_of(p_user_pos, struct conn_md_user, entry);
 				if (p_user->u_id == p_cur_ilm->src_mod_id && p_user->state == USER_ENABLED) {
 					/*src module id is enabled already */
 					CONN_MD_DBG_FUNC("source user id (0x%08x) found\n", p_cur_ilm->src_mod_id);
@@ -342,7 +342,7 @@ static int conn_md_thread(void *p_data)
 
 			/*check if destination module is enabled or not */
 			list_for_each(p_user_pos, &p_user_list->list) {
-				p_user = container_of(p_user_pos, CONN_MD_USER, entry);
+				p_user = container_of(p_user_pos, struct conn_md_user, entry);
 				if (p_user->u_id == p_cur_ilm->dest_mod_id && p_user->state == USER_ENABLED) {
 					CONN_MD_DBG_FUNC("target user id (0x%08x) found\n", p_cur_ilm->dest_mod_id);
 					/*src module id is enabled already */
@@ -388,7 +388,7 @@ static int conn_md_thread(void *p_data)
 
 		while (!list_empty(&p_act_queue->list)) {
 			list_for_each(pos, &p_act_queue->list) {
-				p_msg = container_of(pos, CONN_MD_MSG, entry);
+				p_msg = container_of(pos, struct conn_md_msg, entry);
 				/*free message structure */
 				list_del(pos);
 				kfree(p_msg);
@@ -427,8 +427,8 @@ int conn_md_dmp_msg_logged(uint32 src_id, uint32 dst_id)
 static int conn_md_init(void)
 {
 	int i_ret = -1;
-	P_CONN_MD_QUEUE p_queue = NULL;
-	P_CONN_MD_USER_LIST p_user_list = NULL;
+	struct conn_md_queue *p_queue = NULL;
+	struct conn_md_user_list *p_user_list = NULL;
 
 	CONN_MD_TRC_FUNC();
 
@@ -484,12 +484,12 @@ conn_md_err:
 static void conn_md_exit(void)
 {
 
-	P_CONN_MD_STRUCT p_conn_md = &g_conn_md;
-	P_CONN_MD_QUEUE p_queue = NULL;
-	P_CONN_MD_USER_LIST p_user_list = &p_conn_md->user_list;
+	struct conn_md_struct *p_conn_md = &g_conn_md;
+	struct conn_md_queue *p_queue = NULL;
+	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 	struct list_head *pos = NULL;
-	P_CONN_MD_USER p_user = NULL;
-	P_CONN_MD_MSG p_msg = NULL;
+	struct conn_md_user *p_user = NULL;
+	struct conn_md_msg *p_msg = NULL;
 
 	CONN_MD_TRC_FUNC();
 
@@ -502,7 +502,7 @@ static void conn_md_exit(void)
 	/*delete user_list structure if user list is not empty */
 	mutex_lock(&p_user_list->lock);
 	list_for_each(pos, &p_user_list->list) {
-		p_user = container_of(pos, CONN_MD_USER, entry);
+		p_user = container_of(pos, struct conn_md_user, entry);
 		list_del(pos);
 		kfree(p_user);
 	}
@@ -514,7 +514,7 @@ static void conn_md_exit(void)
 	p_queue = &p_conn_md->msg_queue;
 	mutex_lock(&p_queue->lock);
 	list_for_each(pos, &p_queue->list) {
-		p_msg = container_of(pos, CONN_MD_MSG, entry);
+		p_msg = container_of(pos, struct conn_md_msg, entry);
 		list_del(pos);
 		kfree(p_msg);
 	}
@@ -526,7 +526,7 @@ static void conn_md_exit(void)
 	p_queue = &p_conn_md->act_queue;
 	mutex_lock(&p_queue->lock);
 	list_for_each(pos, &p_queue->list) {
-		p_msg = container_of(pos, CONN_MD_MSG, entry);
+		p_msg = container_of(pos, struct conn_md_msg, entry);
 		list_del(pos);
 		kfree(p_msg);
 	}
