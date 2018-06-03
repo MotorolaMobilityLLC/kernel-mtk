@@ -7411,13 +7411,14 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 			schedstat_inc(p->se.statistics.nr_wakeups_cas_count);
 			schedstat_inc(this_rq()->eas_stats.cas_count);
 		}
-		new_cpu |= LB_SMP;
 	}
 	rcu_read_unlock();
 
 	if (should_hmp(cpu))
 		new_cpu = LB_HMP | hmp_select_task_rq_fair(sd_flag,
 				p, prev_cpu, new_cpu);
+	else
+		new_cpu |= LB_SMP;
 
 	return new_cpu;
 }
