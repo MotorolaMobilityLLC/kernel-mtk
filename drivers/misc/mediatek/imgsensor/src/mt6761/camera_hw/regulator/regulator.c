@@ -58,8 +58,10 @@ static void imgsensor_oc_handler1(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.ptask != NULL)
-		force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.pid != -1)
+		force_sig(SIGTERM,
+				pid_task(find_get_pid(reg_instance.pid),
+						PIDTYPE_PID));
 }
 static void imgsensor_oc_handler2(void)
 {
@@ -68,8 +70,10 @@ static void imgsensor_oc_handler2(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.ptask != NULL)
-		force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.pid != -1)
+		force_sig(SIGKILL,
+				pid_task(find_get_pid(reg_instance.pid),
+						PIDTYPE_PID));
 }
 static void imgsensor_oc_handler3(void)
 {
@@ -78,8 +82,10 @@ static void imgsensor_oc_handler3(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.ptask != NULL)
-		force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.pid != -1)
+		force_sig(SIGKILL,
+				pid_task(find_get_pid(reg_instance.pid),
+						PIDTYPE_PID));
 }
 
 
@@ -99,10 +105,10 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
 		pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
 
 		rcu_read_lock();
-		reg_instance.ptask = current;
+		reg_instance.pid = current->tgid;
 		rcu_read_unlock();
 	} else {
-		reg_instance.ptask = NULL;
+		reg_instance.pid = -1;
 
 		/* Disable interrupt before power off */
 		pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");
@@ -122,7 +128,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_init(void)
 
 	gimgsensor.status.oc  = 0;
 	gimgsensor.imgsensor_oc_irq_enable = imgsensor_oc_interrupt;
-	reg_instance.ptask = NULL;
+	reg_instance.pid = -1;
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }
