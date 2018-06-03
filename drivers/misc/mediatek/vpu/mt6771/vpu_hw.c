@@ -275,13 +275,14 @@ void MET_Events_Trace(bool enter, int core, int algo_id)
 	int dsp_freq = 0, ipu_if_freq = 0, dsp1_freq = 0, dsp2_freq = 0;
 
 	if (enter) {
-		mutex_lock(&opp_mutex);
+		/* only read for debug purpose*/
+		/*mutex_lock(&opp_mutex);*/
 		vcore_opp = opps.vcore.index;
 		dsp_freq = Map_DSP_Freq_Table(opps.dsp.index);
 		ipu_if_freq = Map_DSP_Freq_Table(opps.ipu_if.index);
 		dsp1_freq = Map_DSP_Freq_Table(opps.dspcore[0].index);
 		dsp2_freq = Map_DSP_Freq_Table(opps.dspcore[1].index);
-		mutex_unlock(&opp_mutex);
+		/*mutex_unlock(&opp_mutex);*/
 		vpu_met_event_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
 	} else {
 		vpu_met_event_leave(core, algo_id);
@@ -1535,22 +1536,27 @@ static int vpu_get_power(int core)
 	ret = vpu_boot_up(core);
 	mutex_unlock(&power_counter_mutex[core]);
 	LOG_DBG("[vpu_%d/%d] gp + 2\n", core, power_counter[core]);
-	mutex_lock(&opp_mutex);
 	if (ret == POWER_ON_MAGIC) {
+		mutex_lock(&opp_mutex);
 		if (force_change_vcore_opp[core]) {
 			mutex_unlock(&opp_mutex);
 			/* vcore change should wait */
 			LOG_DBG("vpu_%d force change vcore opp", core);
 			vpu_change_opp(core, OPPTYPE_VCORE);
+		} else {
+			mutex_unlock(&opp_mutex);
 		}
+
+		mutex_lock(&opp_mutex);
 		if (force_change_dsp_freq[core]) {
 			mutex_unlock(&opp_mutex);
 			/* force change freq while running */
 			LOG_DBG("vpu_%d force change dsp freq", core);
 			vpu_change_opp(core, OPPTYPE_DSPFREQ);
+		} else {
+			mutex_unlock(&opp_mutex);
 		}
 	}
-	mutex_unlock(&opp_mutex);
 	LOG_DBG("[vpu_%d/%d] gp -\n", core, power_counter[core]);
 
 	if (ret == POWER_ON_MAGIC)
