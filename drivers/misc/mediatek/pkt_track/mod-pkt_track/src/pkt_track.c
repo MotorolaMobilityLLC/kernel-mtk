@@ -926,7 +926,7 @@ static void pkt_track_nl_set_cmd(struct sk_buff *skb)
 			}
 
 			spin_lock_irqsave(&pkt_measure.lock, flags);
-			memcpy(pkt_measure.user_data, user_data, sizeof(struct mdt_data_limitation_t));
+			memcpy(pkt_measure.user_data, user_data, sizeof(struct mdt_data_measurement_t));
 			spin_unlock_irqrestore(&pkt_measure.lock, flags);
 
 			err = pkt_track_mdt_set_global_alert();
