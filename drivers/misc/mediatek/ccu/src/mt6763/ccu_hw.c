@@ -1032,9 +1032,9 @@ int ccu_run(void)
 	ccu_write_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE, 0);
 
 	timeout = 100;
-	while (ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2) {
-		udelay(100);
-		LOG_DBG("wait ccu log test\n");
+	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2) && (timeout >= 0)) {
+		udelay(10);
+		LOG_DBG("wait ccu 2nd initial done\n");
 		timeout = timeout - 1;
 	}
 
@@ -1191,7 +1191,7 @@ int ccu_read_info_reg(int regNo)
 	return *offset;
 }
 
-void ccu_set_sensor_info(int32_t sensorType, volatile struct ccu_sensor_info *info)
+void ccu_set_sensor_info(int32_t sensorType, struct ccu_sensor_info *info)
 {
 	if (sensorType == IMGSENSOR_SENSOR_IDX_NONE) {
 		/*Non-sensor*/

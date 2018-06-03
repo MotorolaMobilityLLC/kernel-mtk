@@ -24,7 +24,7 @@ int init_check_sw_ver(void)
 {
 	g_ccu_sw_version = mt_get_chip_sw_ver();
 
-	if ((g_ccu_sw_version != CHIP_SW_VER_02) && (g_ccu_sw_version == CHIP_SW_VER_01)) {
+	if ((g_ccu_sw_version != CHIP_SW_VER_02) && (g_ccu_sw_version != CHIP_SW_VER_01)) {
 		LOG_ERR("have a wrong software version:%x!\n", g_ccu_sw_version);
 		return -EINVAL;
 	}
