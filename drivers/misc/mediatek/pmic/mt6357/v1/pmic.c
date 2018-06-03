@@ -36,7 +36,8 @@
 #include "pwrap_hal.h"
 #endif
 
-static unsigned int vmodem_vosel = 0x2C;        /* VMODEM 0.775V: 0x2C */
+static unsigned int vmodem_vosel = 0x6F;        /* VMODEM 1.19375V: 0x6F */
+
 
 void vmd1_pmic_setting_on(void)
 {
