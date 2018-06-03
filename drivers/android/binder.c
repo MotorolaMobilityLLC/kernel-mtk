@@ -2928,7 +2928,7 @@ static void binder_transaction(struct binder_proc *proc,
 			if (tsk->state == TASK_UNINTERRUPTIBLE) {
 				pr_err("from %d:%d to %d:%d target thread state: %ld\n",
 				       proc->pid, thread->pid, tsk->tgid, tsk->pid, tsk->state);
-				show_stack(tsk, NULL);
+				/* show_stack(tsk, NULL); */
 			}
 #endif
 			if (!reply && (t->policy == SCHED_RR || t->policy == SCHED_FIFO)
