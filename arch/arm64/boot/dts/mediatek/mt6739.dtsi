@@ -10,6 +10,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6739-msdc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "MT6739";
@@ -1470,3 +1471,9 @@
 };
 
 #include "cust_mt6739_msdc.dtsi"
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
+#include "mt6357.dtsi"
+#else
+#include "mt6356.dtsi"
+#endif
