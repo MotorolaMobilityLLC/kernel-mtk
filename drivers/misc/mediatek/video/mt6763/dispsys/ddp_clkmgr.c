@@ -594,10 +594,8 @@ enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id)
 	unsigned int i = 0;
 
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		if (ddp_clks[i].module_id == module_id) {
-			pr_warn("%s's clk id = %d\n", ddp_get_module_name(module_id), i);
+		if (ddp_clks[i].module_id == module_id)
 			return i;
-		}
 	}
 
 	return MAX_DISP_CLK_CNT;

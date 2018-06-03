@@ -641,7 +641,7 @@ unsigned int ddp_get_module_irq(enum DISP_MODULE_ENUM module)
 	if (is_ddp_module_has_reg_info(module))
 		return ddp_modules[module].reg_info.reg_irq;
 
-	DDPDBG("ddp_get_module_irq: invalid module id=%d\n", module);
+	/*DDPDBG("ddp_get_module_irq: invalid module id=%d\n", module);*/
 	return 0;
 }
 
