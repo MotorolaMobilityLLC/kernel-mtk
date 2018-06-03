@@ -580,6 +580,9 @@ void dvfsrc_enable_dvfs_freq_hopping(int gps_on)
 	static struct pm_qos_request gps_vcore_req;
 	static struct pm_qos_request gps_ddr_req;
 
+	if (!is_dvfsrc_enabled())
+		return;
+
 	if (spm_get_spmfw_idx() == SPMFW_LP3_1CH_1866)
 		return;
 
