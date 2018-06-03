@@ -921,7 +921,7 @@ static int bmp_check_pt(struct bmp_i2c_data *obj)
 
 	/* check ut and t */
 	bmp_get_temperature(obj->client, t, BMP_BUFSIZE);
-	if (kstrtoint(t, 16, &temperature) != 1)
+	if (kstrtoint(t, 16, &temperature) != 0)
 		BAR_ERR("sscanf parsing fail\n");
 	if (temperature <= -40 * 100 || temperature >= 85 * 100) {
 		BAR_ERR("temperature value is out of range:%d*0.01degree\n", temperature);
@@ -930,7 +930,7 @@ static int bmp_check_pt(struct bmp_i2c_data *obj)
 
 	/* check up and p */
 	bmp_get_pressure(obj->client, p, BMP_BUFSIZE);
-	if (kstrtoint(p, 16, &pressure) != 1)
+	if (kstrtoint(p, 16, &pressure) != 0)
 		BAR_ERR("sscanf parsing fail\n");
 	if (pressure <= 800 * 100 || pressure >= 1100 * 100) {
 		BAR_ERR("pressure value is out of range:%d Pa\n", pressure);
@@ -1194,7 +1194,7 @@ int temperature_operate(void *self, uint32_t command, void *buff_in,
 				BAR_ERR("get compensated temperature value failed,err = %d\n", err);
 				return -1;
 			}
-			if (kstrtoint(buff, 16, &temperature_data->values[0]) != 1)
+			if (kstrtoint(buff, 16, &temperature_data->values[0]) != 0)
 				BAR_ERR("sscanf parsing fail\n");
 			temperature_data->values[1] = temperature_data->values[2] = 0;
 			temperature_data->status = SENSOR_STATUS_ACCURACY_HIGH;
@@ -1485,7 +1485,7 @@ static int bmp_get_data(int *value, int *status)
 		BAR_ERR("get compensated pressure value failed, err = %d\n", err);
 		return -1;
 	}
-	if (kstrtoint(buff, 16, value) != 1)
+	if (kstrtoint(buff, 16, value) != 0)
 		BAR_ERR("sscanf parsing fail\n");
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 
