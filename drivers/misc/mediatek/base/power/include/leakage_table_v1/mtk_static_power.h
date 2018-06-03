@@ -14,8 +14,9 @@
 #ifndef __MTK_STATIC_POWER_H__
 #define __MTK_STATIC_POWER_H__
 
+#include <linux/types.h>
 #if defined(CONFIG_MACH_MT6799)
-#include "mtk_static_power_mtk6799.h"
+#include "mtk_static_power_mt6799.h"
 #endif
 
 /* #define MTK_SPOWER_UT */
