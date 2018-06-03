@@ -354,7 +354,7 @@
 			no-map;
 			status = "disabled";
 			size = <0 0x80000>; /* 512K */
-			alignment = <0 0x400000>;
+			alignment = <0 0x10000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
 		consys-reserve-memory {
