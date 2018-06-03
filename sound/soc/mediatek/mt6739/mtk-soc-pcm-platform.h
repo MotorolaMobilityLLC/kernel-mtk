@@ -115,7 +115,7 @@
 #define Dl2_MAX_PERIOD_SIZE     Dl2_MAX_BUFFER_SIZE
 
 #define Dl3_MAX_BUFFER_SIZE     (32*1024)
-#define Dl3_MRIOD_SIZE       1
+#define Dl3_MIN_PERIOD_SIZE       1
 #define Dl3_MAX_PERIOD_SIZE     Dl3_MAX_BUFFER_SIZE
 
 #define MAX_BUFFER_SIZE     (32*1024)
