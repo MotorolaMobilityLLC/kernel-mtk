@@ -288,6 +288,35 @@ static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
 	mod_timer(&musb_idle_timer, timeout);
 }
 
+/* setup sram, only for mt6761 */
+static int usb_sram_init(void)
+{
+	struct device_node *node = NULL;
+	void __iomem *infra_mbist;
+
+	node = of_find_compatible_node(NULL, NULL,
+					"mediatek,infra_mbist");
+	if (!node) {
+		DBG(0, "infra_mbist map node failed\n");
+		return -1;
+	}
+
+	infra_mbist = of_iomap(node, 0);
+	if (!infra_mbist) {
+		DBG(0, "iomap infra_mbist failed\n");
+		return -1;
+	}
+
+	/* usb20_top_bist */
+	writel(0x093cc01b, infra_mbist + 0x2c);
+	/* wait stable */
+	mdelay(1);
+
+	iounmap(infra_mbist);
+
+	return 0;
+}
+
 static int real_enable = 0, real_disable;
 static int virt_enable = 0, virt_disable;
 static void mt_usb_enable(struct musb *musb)
@@ -317,6 +346,9 @@ static void mt_usb_enable(struct musb *musb)
 	#endif
 
 	flags = musb_readl(musb->mregs, USB_L1INTM);
+
+	/* only for mt6761 */
+	usb_sram_init();
 
 	usb_phy_recover();
 
