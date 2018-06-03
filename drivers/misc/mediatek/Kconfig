@@ -494,7 +494,7 @@ config MTK_AB_OTA_UPDATER
 
 config SYSTEM_AS_ROOT
 	bool "Support system-as-root, which merges ramdisk.img into system.img to make system-only OTA work in Treble"
-	default y
+	default n
 
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/atf_log/Kconfig"
