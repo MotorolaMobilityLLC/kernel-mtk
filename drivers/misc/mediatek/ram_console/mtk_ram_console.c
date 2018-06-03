@@ -66,6 +66,7 @@ struct last_reboot_reason {
 	uint8_t hotplug_cpu_event;
 	uint8_t hotplug_cb_index;
 	uint64_t hotplug_cb_fp;
+	uint64_t hotplug_cb_times;
 	uint32_t cpu_caller;
 	uint32_t cpu_callee;
 	uint64_t cpu_up_prepare_ktime;
@@ -793,6 +794,13 @@ void aee_rr_rec_hotplug_cb_fp(unsigned long val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(hotplug_cb_fp, val);
+}
+
+void aee_rr_rec_hotplug_cb_times(unsigned long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hotplug_cb_times, val);
 }
 
 void aee_rr_rec_cpu_caller(u32 val)
@@ -1944,10 +1952,11 @@ void aee_rr_show_hotplug_footprint(struct seq_file *m, int cpu)
 
 void aee_rr_show_hotplug_status(struct seq_file *m)
 {
-	seq_printf(m, "CPU notifier status: %d, %d, 0x%llx\n",
+	seq_printf(m, "CPU notifier status: %d, %d, 0x%llx, %llu\n",
 		   LAST_RRR_VAL(hotplug_cpu_event),
 		   LAST_RRR_VAL(hotplug_cb_index),
-		   LAST_RRR_VAL(hotplug_cb_fp));
+		   LAST_RRR_VAL(hotplug_cb_fp),
+		   LAST_RRR_VAL(hotplug_cb_times));
 }
 
 void aee_rr_show_hotplug_caller_callee_status(struct seq_file *m)
