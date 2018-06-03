@@ -497,6 +497,26 @@ void fpsgo_notify_cpufreq(int cid, unsigned long freq)
 	fpsgo_ctrl2fbt_cpufreq_cb(cid, freq);
 }
 
+void fpsgo_notify_display_update(unsigned long long ts)
+{
+	FPSGO_LOGI("[FPSGO_CTRL] display_update\n");
+
+	if (!fpsgo_is_enable())
+		return;
+
+	fpsgo_ctrl2fstb_display_time_update(ts);
+}
+
+void fpsgo_notify_gpu_display_update(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq)
+{
+	FPSGO_LOGI("[FPSGO_CTRL] gpu_display_update\n");
+
+	if (!fpsgo_is_enable())
+		return;
+
+	fpsgo_ctrl2fstb_gpu_time_update(t_gpu, cur_freq, cur_max_freq);
+}
+
 #ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 void dfrc_fps_limit_cb(int fps_limit)
 {
@@ -656,8 +676,8 @@ static int __init fpsgo_init(void)
 	fpsgo_switch_enable(1);
 
 	cpufreq_notifier_fp = fpsgo_notify_cpufreq;
-	/*display_time_fps_stablizer = fpsgo_notify_display_update;*/
-	/*ged_kpi_output_gfx_info_fp = fpsgo_notify_gpu_display_update;*/
+	display_time_fps_stablizer = fpsgo_notify_display_update;
+	ged_kpi_output_gfx_info_fp = fpsgo_notify_gpu_display_update;
 
 	ged_vsync_notifier_fp = fpsgo_notify_vsync;
 
