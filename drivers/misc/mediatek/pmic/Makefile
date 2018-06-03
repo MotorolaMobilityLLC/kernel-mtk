@@ -1,0 +1,1 @@
+obj-$(CONFIG_MFD_RT5081_PMU)	+= rt5081/
