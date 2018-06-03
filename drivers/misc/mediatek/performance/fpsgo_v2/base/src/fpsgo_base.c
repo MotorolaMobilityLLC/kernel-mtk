@@ -28,6 +28,7 @@
 #include "fpsgo_v2_common.h"
 #include "fpsgo_usedext.h"
 #include "fbt_cpu.h"
+
 #include <linux/preempt.h>
 #include <linux/trace_events.h>
 #include <linux/fs.h>
@@ -388,6 +389,9 @@ void fpsgo_check_thread_status(void)
 
 	if (check_max_blc)
 		fpsgo_base2fbt_check_max_blc();
+	if (RB_EMPTY_ROOT(&render_pid_tree))
+		fpsgo_base2fbt_no_one_render();
+
 	fpsgo_base2fbt_set_bypass(has_bypass);
 }
 
