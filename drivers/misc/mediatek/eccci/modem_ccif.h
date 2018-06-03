@@ -163,6 +163,7 @@ static inline int ccif_queue_broadcast_state(struct ccci_modem *md, MD_STATE sta
 extern void mt_irq_dump_status(int irq);
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
+extern u32 mt_irq_get_pending(unsigned int irq);
 /* used for throttling feature - start */
 extern unsigned long ccci_modem_boot_count[];
 /* used for throttling feature - end */
