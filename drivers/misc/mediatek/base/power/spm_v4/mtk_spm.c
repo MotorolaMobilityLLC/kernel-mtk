@@ -375,6 +375,11 @@ static void __spm_check_dram_type(void)
 };
 #endif /* CONFIG_MTK_DRAMC */
 
+int __spm_get_dram_type(void)
+{
+	return __spmfw_idx;
+}
+
 int __init spm_module_init(void)
 {
 	int r = 0;
@@ -701,7 +706,7 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 
 #define SPM_D_LEN		(8) /* # of cmd + arg0 + arg1 + ... */
-#define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
+/* #define SPM_VCOREFS_D_LEN	(4) *//* # of cmd + arg0 + arg1 + ... */
 
 #include <sspm_ipi.h>
 
@@ -783,6 +788,14 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		}
 		break;
 	case SPM_VCORE_PWARP_CMD:
+		spm_d->cmd = cmd;
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_LOCK_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		if (ret != 0) {
+			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+		} else if (ack_data < 0) {
+			ret = ack_data;
+			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+		}
 		break;
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:

@@ -113,4 +113,6 @@ extern bool is_sspm_ipi_lock_spm(void);
 extern void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+extern int __spm_get_dram_type(void);
+
 #endif

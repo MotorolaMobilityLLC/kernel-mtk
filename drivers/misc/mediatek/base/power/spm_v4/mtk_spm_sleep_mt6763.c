@@ -99,6 +99,8 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	struct spm_data spm_d;
 	unsigned int spm_opt = 0;
 
+	memset(&spm_d, 0, sizeof(struct spm_data));
+
 #ifdef SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
 	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
@@ -129,6 +131,8 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int ret;
 	struct spm_data spm_d;
+
+	memset(&spm_d, 0, sizeof(struct spm_data));
 
 #ifdef SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
