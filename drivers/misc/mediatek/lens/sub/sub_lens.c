@@ -292,8 +292,10 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	/* init work queue */
 	INIT_WORK(&ois_work, ois_pos_polling);
 
+#if 0
 	if (ois_workqueue == NULL)
 		ois_workqueue = create_singlethread_workqueue("ois_polling");
+#endif
 
 	/* init timer */
 	hrtimer_init(&ois_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
