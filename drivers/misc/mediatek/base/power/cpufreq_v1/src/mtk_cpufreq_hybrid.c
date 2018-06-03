@@ -749,7 +749,7 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	counter++;
 	if (counter > 255)
-		counter = 0;
+		counter = 1;
 
 	/* [3:0] freq_idx, [11:4] counter */
 	freq_idx = _search_available_freq_idx(p, freq, 0);
