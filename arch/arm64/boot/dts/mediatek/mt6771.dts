@@ -2299,10 +2299,15 @@
 		interrupts = <GIC_SPI 247 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	jpgenc@17030000 {
-		compatible = "mediatek,jpgenc";
-		reg = <0 0x17030000 0 0x1000>;
+	venc_jpg@17030000 {
+		compatible = "mediatek,venc_jpg";
+		reg =	<0 0x17030000 0 0x1000>;
 		interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+				<&venc_gcon VENC_GCON_JPGENC>;
+
+			clock-names =
+				"MT_CG_VENC_JPGENC";
 	};
 
 	mbist@17040000 {
