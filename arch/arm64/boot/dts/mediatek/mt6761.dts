@@ -206,6 +206,23 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
+
+		soter-shared-mem {
+			compatible = "microtrust,shared_mem";
+			no-map;
+			size = <0 0x500000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
+	};
+
+	/* Microtrust SW IRQ number 188(220) ~ 193(225) */
+	utos {
+		compatible = "microtrust,utos";
+		interrupts = <GIC_SPI 188 IRQ_TYPE_EDGE_RISING>,
+			<GIC_SPI 189 IRQ_TYPE_EDGE_RISING>;
+	};
+	utos_tester {
+		compatible = "microtrust,tester-v1";
 	};
 
 	gic: interrupt-controller@0c000000 {
