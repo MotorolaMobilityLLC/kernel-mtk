@@ -374,9 +374,9 @@
 		reg = <0 0x11f30000 0 0x1000>;
 	};
 
-	pio: pinctrl@10005000 {
+	pio: pinctrl@1000b000 {
 		compatible = "mediatek,pinctrl";
-		reg = <0 0x10005000 0 0x1000>;
+		reg = <0 0x1000b000 0 0x1000>;
 		mediatek,pctl-regmap = <&syscfg_pctl_a>,
 				       <&syscfg_pctl_0>,
 				       <&syscfg_pctl_1>,
@@ -389,6 +389,9 @@
 		pins-are-numbered;
 		gpio-controller;
 		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <4>;
+		interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	i2c0: i2c@11007000 {
