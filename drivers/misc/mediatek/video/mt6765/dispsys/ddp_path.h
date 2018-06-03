@@ -35,6 +35,12 @@ enum DDP_SCENARIO_ENUM {
 	DDP_SCENARIO_SUB_ALL,
 	DDP_SCENARIO_MAX
 };
+
+enum DDP_SPM_MODE {
+	DDP_CG_MODE = 0,
+	DDP_PD_MODE,
+};
+
 #define DDP_ENING_NUM (24)
 
 void ddp_connect_path(enum DDP_SCENARIO_ENUM scenario, void *handle);
@@ -68,8 +74,7 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 					int dst_w, int dst_h);
 int ddp_get_module_num_l(int *module_list);
 char *ddp_get_mode_name(enum DDP_MODE ddp_mode);
-void ddp_sodi_smi_request_src_select(int sel, void *handle);
-void ddp_sodi_power_down_mode(int power_down, void *handle);
+void ddp_set_spm_mode(enum DDP_SPM_MODE mode, void *handle);
 
 #include "ddp_mutex.h"
 

@@ -4552,6 +4552,10 @@ int primary_display_suspend(void)
 		primary_display_set_lcm_power_state_nolock(LCM_OFF);
 	}
 
+	/*enter PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		ddp_set_spm_mode(DDP_PD_MODE, NULL);
+
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
@@ -4692,6 +4696,11 @@ int primary_display_resume(void)
 
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+
+	/*Exit PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		ddp_set_spm_mode(DDP_CG_MODE, NULL);
+
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
 
@@ -8332,11 +8341,10 @@ int primary_display_switch_dst_mode(int mode)
 	}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	/* set power down mode forbidden */
-	/* TODO */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		ddp_sodi_power_down_mode(0, NULL);
+		ddp_set_spm_mode(DDP_CG_MODE, NULL);
 #endif
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 			 MMPROFILE_FLAG_PULSE, 4, 0);
 	_cmdq_reset_config_handle();
