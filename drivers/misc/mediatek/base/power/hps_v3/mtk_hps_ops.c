@@ -136,14 +136,14 @@ static int hps_algo_eas(void)
 		}
 	}
 
-
+#if 0
 	/*Check with big task criteriai*/
 	for (i = 1 ; i < hps_sys.cluster_num ; i++) {
 		if ((!hps_sys.cluster_info[i].bigTsk_value) &&
 		(!(hps_sys.cluster_info[i].loading / hps_sys.cluster_info[i].down_threshold)))
 			hps_sys.cluster_info[i].target_core_num = 0;
 	}
-
+#endif
 	return ret;
 }
 #if 0

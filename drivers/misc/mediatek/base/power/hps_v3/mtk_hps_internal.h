@@ -51,13 +51,18 @@
  * CONFIG - runtime
  */
 #define DEF_CPU_UP_THRESHOLD		(95)
-#define DEF_CPU_UP_TIMES		(1)
+#define DEF_CPU_UP_TIMES		(4)
+#define DEF_ROOT_CPU_DOWN_TIMES		(8)
 #define DEF_CPU_DOWN_THRESHOLD		(85)
 #define DEF_CPU_DOWN_TIMES		(1)
 #define DEF_TLP_TIMES			(1)
 
 #define DEF_EAS_UP_THRESHOLD_0            (40)
+#ifdef CONFIG_MACH_MT6763
+#define DEF_EAS_DOWN_THRESHOLD_0          (10)
+#else
 #define DEF_EAS_DOWN_THRESHOLD_0          (20)
+#endif
 #define DEF_EAS_UP_THRESHOLD_1            (70)
 #define DEF_EAS_DOWN_THRESHOLD_1          (60)
 #define DEF_EAS_UP_THRESHOLD_2            (80)
@@ -195,6 +200,8 @@ struct hps_cluster_info {
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 	unsigned int iccs_state;
 #endif
+	int down_times[8];
+	int down_time_val[8];
 };
 
 typedef struct hps_sys_struct {
