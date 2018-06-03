@@ -18,8 +18,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-//表示sensor的几种工作模式状态：init preview capture video hvideo svideo
-enum{
+enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
@@ -31,9 +30,8 @@ enum{
 	IMGSENSOR_MODE_CUSTOM3,
 	IMGSENSOR_MODE_CUSTOM4,
 	IMGSENSOR_MODE_CUSTOM5,
-} IMGSENSOR_MODE;
+};
 
-//表示几种（不同工作模式状态下）的sensor参数信息
 struct imgsensor_mode_struct {
 	kal_uint32 pclk; //record different mode's pclk
 	kal_uint32 linelength; //record different mode's linelength
@@ -50,9 +48,8 @@ struct imgsensor_mode_struct {
 	/*	 following for GetDefaultFramerateByScenario()	*/
 	kal_uint16 max_framerate;
 
-} imgsensor_mode_struct;
+};
 
-//表示（当前状态工作模式）下的sensor参数信息
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
 struct imgsensor_struct {
 	kal_uint8 mirror;				//mirrorflip information
@@ -78,7 +75,7 @@ struct imgsensor_struct {
 	kal_bool  ihdr_en;
 
 	kal_uint8 i2c_write_id;
-} imgsensor_struct;
+};
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 struct imgsensor_info_struct {
@@ -134,7 +131,7 @@ struct imgsensor_info_struct {
 //record sensor support all write id addr, only supprt 4must end with 0xff
 	kal_uint8  i2c_addr_table[5];
 	kal_uint32  i2c_speed;     //i2c speed
-} imgsensor_info_struct;
+};
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 	u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
