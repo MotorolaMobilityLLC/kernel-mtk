@@ -150,6 +150,8 @@ P_FWDL_DEBUG_T gprFWDLDebug;
 
 UINT_32 u4FWDL_packet_count;
 static SCAN_TARGET_BSS_LIST grScanTargetBssList;
+static UINT_16 gau2PktSeq[PKT_STATUS_BUF_MAX_NUM];
+UINT_32 u4PktSeqCount;
 
 
 
@@ -288,6 +290,14 @@ VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter)
 
 }
 
+VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq)
+{
+	if (u4PktSeqCount >= PKT_STATUS_BUF_MAX_NUM)
+		u4PktSeqCount = 0;
+	gau2PktSeq[u4PktSeqCount] = u2NoSeq;
+	u4PktSeqCount++;
+}
+
 VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt)
 {
 	if (eventType == PKT_TX)
@@ -407,9 +417,25 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 				}
 			}
 		}
+
+		/*dump rx sequence*/
+		kalMemZero(pucMsg, PKT_STATUS_MSG_LENGTH * sizeof(UINT_8));
+		offsetMsg = 0;
+		offsetMsg += kalSnprintf(pucMsg + offsetMsg, (PKT_STATUS_MSG_LENGTH - offsetMsg)
+			, "RX Seq count: %d [", u4PktSeqCount);
+
+		for (index = 0; index < u4PktSeqCount; index++)
+			offsetMsg += kalSnprintf(pucMsg + offsetMsg, (PKT_STATUS_MSG_LENGTH - offsetMsg)
+			, "%x,", gau2PktSeq[index]);
+
+		DBGLOG(RX, INFO, "%s]\n", pucMsg);
+
+		u4PktSeqCount = 0;
+		kalMemZero(gau2PktSeq, sizeof(UINT_16) * PKT_STATUS_BUF_MAX_NUM);
 	} while (FALSE);
 	u4PktCnt = grPktStaRec.u4TxIndex = 0;
 	u4PktCnt = grPktStaRec.u4RxIndex = 0;
+
 }
 #if CFG_SUPPORT_EMI_DEBUG
 static UINT32 gPrevIdxPagedtrace;
@@ -463,6 +489,11 @@ VOID wlanDebugInit(VOID)
 	kalMemZero(grPktStaRec.pRxPkt, PKT_STATUS_BUF_MAX_NUM * sizeof(PKT_STATUS_ENTRY));
 	grPktStaRec.u4RxIndex = 0;
 	/* debug for package info end */
+
+	/*debug for rx sequence tid begin*/
+	kalMemZero(gau2PktSeq, PKT_STATUS_BUF_MAX_NUM * sizeof(UINT_16));
+	u4PktSeqCount = 0;
+	/* debug for rx sequence tid end*/
 }
 
 VOID wlanDebugUninit(VOID)
@@ -503,6 +534,11 @@ VOID wlanDebugUninit(VOID)
 	kalMemFree(grPktStaRec.pRxPkt, VIR_MEM_TYPE, PKT_STATUS_BUF_MAX_NUM * sizeof(PKT_STATUS_ENTRY));
 	grPktStaRec.u4RxIndex = 0;
 	/* debug for package status info end */
+
+	/*debug for rx sequence tid begin*/
+	u4PktSeqCount = 0;
+	/* debug for rx sequence tid end*/
+
 }
 VOID wlanDebugScanTargetBSSRecord(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 {

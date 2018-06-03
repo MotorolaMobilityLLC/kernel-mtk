@@ -435,9 +435,13 @@ VOID wlanFWDLDebugUninit(VOID);
 VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter);
 
 VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter);
+
+
 VOID wlanPktStatusDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
 VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId
 	, PUINT_8 pucPkt);
+VOID wlanPktStatusDebugTraceInfoSeq(P_ADAPTER_T prAdapter, UINT_16 u2NoSeq);
+
 VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
 #if CFG_SUPPORT_EMI_DEBUG
