@@ -18,6 +18,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6771-msdc.h>
 #include <dt-bindings/pinctrl/mt6771-pinfunc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "mt6771";
