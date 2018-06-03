@@ -5235,6 +5235,8 @@ boosted_cpu_util(int cpu)
 	unsigned long util = cpu_util(cpu);
 	unsigned long margin = schedtune_cpu_margin(util, cpu);
 
+	trace_sched_boost_cpu(cpu, util, margin);
+
 	return util + margin;
 }
 
@@ -5243,6 +5245,8 @@ boosted_task_util(struct task_struct *task)
 {
 	unsigned long util = task_util(task);
 	unsigned long margin = schedtune_task_margin(task);
+
+	trace_sched_boost_task(task, util, margin);
 
 	return util + margin;
 }
@@ -5297,6 +5301,7 @@ static int energy_diff(struct energy_env *eenv)
 	struct sched_domain *sd;
 	struct sched_group *sg;
 	int sd_cpu = -1, energy_before = 0, energy_after = 0;
+	int result;
 	struct energy_env eenv_before = {
 		.util_delta	= 0,
 		.src_cpu	= eenv->src_cpu,
@@ -5352,7 +5357,13 @@ static int energy_diff(struct energy_env *eenv)
 	eenv->nrg.diff = eenv->nrg.after - eenv->nrg.before;
 	eenv->payoff = 0;
 
-	return energy_diff_evaluate(eenv);
+	result = energy_diff_evaluate(eenv);
+	trace_sched_energy_diff(eenv->task,
+				eenv->src_cpu, eenv->dst_cpu, eenv->util_delta,
+				eenv->nrg.before, eenv->nrg.after, eenv->nrg.diff,
+				eenv->cap.before, eenv->cap.after, eenv->cap.delta,
+				eenv->nrg.delta, eenv->payoff);
+	return result;
 }
 
 /*
