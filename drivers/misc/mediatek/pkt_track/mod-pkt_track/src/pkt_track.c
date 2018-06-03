@@ -726,23 +726,6 @@ bool pkt_track_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 	return true;
 }
 
-bool pkt_track_send_msg(bool is_add_rule, void *buf)
-{
-	struct pkt_track_msg_t *pkt_msg;
-
-	pkt_msg = kmalloc(sizeof(struct pkt_track_msg_t), GFP_KERNEL);
-	if (!pkt_msg) {
-
-		pkt_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
-		return false;
-	}
-
-	pkt_msg->is_add_rule = is_add_rule;
-	pkt_msg->data = buf;
-
-	return true;
-}
-
 #ifdef NETLINK_ENABLE
 /*
  * MD Direct Tethering Data Usage BEGIN

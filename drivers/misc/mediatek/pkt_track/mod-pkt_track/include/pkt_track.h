@@ -22,9 +22,6 @@ bool pkt_track_disable_md_fast_path(ufpm_md_fast_path_common_req_t *req);
 bool pkt_track_activate_md_fast_path(ufpm_activate_md_func_req_t *req);
 bool pkt_track_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req);
 
-/* AP to MD CCCI_IPC control msg API for MDT */
-bool pkt_track_send_msg(bool is_add_rule, void *buf);
-
 #endif /* CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT */
 
 #endif /* __PKT_TRACK_H__ */
