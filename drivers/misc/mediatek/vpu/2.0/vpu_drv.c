@@ -648,7 +648,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		/* free the request, error happened here*/
 		vpu_free_request(req);
 		if (g_vpu_log_level > 1)
-			LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST - ");
+			LOG_INF("[vpu] .VPU_IOCTL_ENQUE_REQUEST - ");
 		ret = -EFAULT;
 		break;
 	}

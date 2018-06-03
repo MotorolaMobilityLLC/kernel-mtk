@@ -1181,7 +1181,8 @@ static int vpu_service_routine(void *arg)
 		remove_wait_queue(&vpu_dev->req_wait, &wait);
 
 		/* this thread will be stopped if start direct link */
-		wait_event_interruptible(lock_wait, !is_locked);
+		/* todo, no need in this currently */
+		/*wait_event_interruptible(lock_wait, !is_locked);*/
 
 		/* consume the user's queue */
 		req = NULL;
@@ -1257,13 +1258,15 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d<-0x%x] run,algo_id(0x%lx_%d, %d->%d),opp(%d,%d/%d->%d, %d->%d),fk(0x%x)\n",
+			LOG_INF("[vpu_%d<-0x%x]run,algoid(0x%lx_%d,%d->%d),op(%d,%d/%d->%d,%d->%d),f(0x%x),%d/%d/%d\n",
 				service_core, req->requested_core,
 				(unsigned long)req->request_id, req->frame_magic,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
 				req->power_param.opp_step, req->power_param.freq_step,
 				vcore_opp_index, opps.vcore.index,
-				dsp_freq_index, opps.dspcore[service_core].index, g_func_mask);
+				dsp_freq_index, opps.dspcore[service_core].index, g_func_mask,
+				vpu_dev->servicepool_list_size[service_core],
+				vpu_dev->commonpool_list_size, is_locked);
 			#if 0
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			/*ret = wait_to_do_vpu_running(service_core);*/
@@ -1299,6 +1302,9 @@ static int vpu_service_routine(void *arg)
 		} else {
 			/* consider that only one req in common pool and all services get pass through */
 			/* do nothing if the service do not get the request */
+			LOG_WRN("[vpu_%d] get null request, %d/%d/%d\n", service_core,
+				vpu_dev->servicepool_list_size[service_core],
+				vpu_dev->commonpool_list_size, is_locked);
 			continue;
 		}
 out:
@@ -1634,6 +1640,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		mutex_init(&opp_mutex);
 		init_waitqueue_head(&waitq_change_vcore);
 		init_waitqueue_head(&waitq_do_core_executing);
+		is_locked = false;
 		max_vcore_opp = 0;
 		max_dsp_freq = 0;
 		vpu_dev = device;
