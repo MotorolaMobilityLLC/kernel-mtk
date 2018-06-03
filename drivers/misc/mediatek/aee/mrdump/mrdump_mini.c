@@ -91,6 +91,10 @@ __weak void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsig
 {
 }
 
+__weak void get_hang_detect_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
+
 __weak struct vm_struct *find_vm_area(const void *addr)
 {
 	return NULL;
