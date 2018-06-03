@@ -39,14 +39,14 @@ do {									\
 #define bm_err(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_ERROR_LEVEL) {			\
-		pr_err(fmt, ##args); \
+		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_warn(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_WARNING_LEVEL) {		\
-		pr_warn(fmt, ##args); \
+		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
