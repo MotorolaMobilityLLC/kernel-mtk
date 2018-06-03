@@ -159,6 +159,7 @@ struct mmdvfs_vpu_steps_setting {
 };
 
 struct mmdvfs_adaptor {
+	int vcore_kicker;
 	int enable_vcore;
 	int enable_clk_mux;
 	int enable_pll_hopping;
@@ -218,9 +219,30 @@ struct mmdvfs_vpu_dvfs_configurator {
 		(*get_vpu_setting)(struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
 };
 
+#define MMDVFS_PM_QOS_SUB_SYS_NUM 1
+#define MMDVFS_PM_QOS_SUB_SYS_CAMERA 0
+
+struct mmdvfs_threshold_setting {
+		int class_id;
+		int *thresholds;
+		int *opps;
+		int thresholds_num;
+		int mmdvfs_client_id;
+};
+
+struct mmdvfs_thresholds_dvfs_handler {
+		struct mmdvfs_threshold_setting *threshold_settings;
+		int mmdvfs_threshold_setting_num;
+		int (*get_step)(struct mmdvfs_thresholds_dvfs_handler *self, int class_id, int value);
+};
+
+
 extern struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor;
 extern struct mmdvfs_adaptor *g_mmdvfs_adaptor;
+extern struct mmdvfs_adaptor *g_mmdvfs_non_force_adaptor;
 extern struct mmdvfs_step_util *g_mmdvfs_step_util;
+extern struct mmdvfs_thresholds_dvfs_handler *g_mmdvfs_thresholds_dvfs_handler;
+
 void mmdvfs_config_util_init(void);
 
 #endif /* __MMDVFS_CONFIG_UTIL_H__ */

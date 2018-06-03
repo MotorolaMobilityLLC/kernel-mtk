@@ -14,6 +14,7 @@
 #ifndef __MMDVFS_MGR_H__
 #define __MMDVFS_MGR_H__
 
+#include <linux/plist.h>
 #include <aee.h>
 #include "mtk_smi.h"
 
@@ -50,7 +51,7 @@ extern unsigned int DISP_GetScreenHeight(void);
 enum {
 	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
 	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_VPU, MMDVFS_MGR,
-	MMDVFS_SCEN_VPU_KERNEL, MMDVFS_SCEN_COUNT
+	MMDVFS_SCEN_VPU_KERNEL, MMDVFS_PMQOS_ISP, MMDVFS_SCEN_COUNT
 };
 
 enum mmdvfs_vpu_clk {
@@ -76,6 +77,13 @@ struct mmdvfs_state_change_event {
 	int vpu_clk_step;
 	int vpu_if_clk_step;
 	int vimvo_vol_step;
+};
+
+
+struct mmdvfs_pm_qos_request {
+	struct plist_node node;   /* reserved for QoS function */
+	int pm_qos_class;
+	struct delayed_work work; /* reserved for timeout handling */
 };
 
 #define MMDVFS_EVENT_PREPARE_CALIBRATION_START 0
@@ -151,6 +159,10 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 #define MMDVFS_PROFILE_D2_P_PLUS (7)
 #define MMDVFS_PROFILE_D3 (8)
 #define MMDVFS_PROFILE_E1 (9)
+#define MMDVFS_PROFILE_WHY (10)
+#define MMDVFS_PROFILE_WHY2 (11)
+#define MMDVFS_PROFILE_ALA (12)
+
 
 /* Macro used to resovling step setting ioctl command */
 #define MMDVFS_IOCTL_CMD_STEP_FIELD_LEN (8)
@@ -195,6 +207,12 @@ extern void mmdvfs_default_start_delayed_setting(void);
 extern void mmdvfs_default_stop_delayed_setting(void);
 extern void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request);
 
+
+extern void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req,
+int mmdvfs_pm_qos_class, int new_value);
+extern void mmdvfs_pm_qos_remove_request(struct mmdvfs_pm_qos_request *req);
+extern void mmdvfs_pm_qos_add_request(struct mmdvfs_pm_qos_request *req,
+int mmdvfs_pm_qos_class, int value);
 #include "mmdvfs_config_util.h"
 
 #endif /* __MMDVFS_MGR_H__ */
