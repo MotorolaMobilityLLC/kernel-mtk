@@ -369,12 +369,14 @@ static struct workqueue_struct *host_plug_test_wq;
 static struct delayed_work host_plug_test_work;
 int host_plug_test_enable; /* default disable */
 module_param(host_plug_test_enable, int, 0644);
-int host_plug_in_test_period_ms = 7000;
+int host_plug_in_test_period_ms = 5000;
 module_param(host_plug_in_test_period_ms, int, 0644);
-int host_plug_out_test_period_ms = 13000;	/* give AEE 13 seconds */
+int host_plug_out_test_period_ms = 5000;	/* give AEE 13 seconds */
 module_param(host_plug_out_test_period_ms, int, 0644);
 int host_test_vbus_off_time_us = 3000;
 module_param(host_test_vbus_off_time_us, int, 0644);
+int host_test_vbus_only = 1;
+module_param(host_test_vbus_only, int, 0644);
 static int host_plug_test_triggered;
 void switch_int_to_device(struct musb *musb)
 {
@@ -412,56 +414,50 @@ static void do_host_plug_test_work(struct work_struct *data)
 {
 	static ktime_t ktime_begin, ktime_end;
 	static s64 diff_time;
+	static int host_on;
 
-	disable_irq(iddig_eint_num);
 	host_plug_test_triggered = 1;
 	mb();
 	DBG(0, "BEGIN");
 	ktime_begin = ktime_get();
 
+	host_on  = 1;
 	while (1) {
-		if (!musb_is_host())
+		if (!host_plug_test_enable && host_on) {
+			DBG(0, "EXIT");
 			break;
+		}
 
 		msleep(50);
-		DBG(1, "mtk_musb->is_host:%d\n", mtk_musb->is_host);
 
 		ktime_end = ktime_get();
 		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_begin));
-		if (mtk_musb->is_host && diff_time >= host_plug_in_test_period_ms) {
+		if (host_on && diff_time >= host_plug_in_test_period_ms) {
+			host_on = 0;
 			DBG(0, "OFF\n");
+
 			ktime_begin = ktime_get();
 
 			/* simulate plug out */
-			mt_usb_set_vbus(mtk_musb, 0);
+			_set_vbus(mtk_musb, 0);
 			udelay(host_test_vbus_off_time_us);
 
-			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
-		} else if (!mtk_musb->is_host && diff_time >= host_plug_out_test_period_ms) {
+			if (!host_test_vbus_only)
+				queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
+		} else if (!host_on && diff_time >= host_plug_out_test_period_ms) {
+			host_on = 1;
 			DBG(0, "ON\n");
+
+			_set_vbus(mtk_musb, 1);
+			msleep(100);
+
 			ktime_begin = ktime_get();
-			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
+			if (!host_test_vbus_only)
+				queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
 		}
 	}
 
-	mb();
-
-	/* make it to ON */
-	if (!mtk_musb->is_host) {
-		DBG(0, "rollback to ON\n");
-		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
-		DBG(0, "wait manual begin\n");
-		msleep(1000);	/* wait manual-trigger ip_pin_work done */
-		DBG(0, "wait manual end\n");
-	}
 	host_plug_test_triggered = 0;
-	mb();
-
-	DBG(0, "wait auto begin\n");
-	enable_irq(iddig_eint_num);
-	msleep(1000);	/* wait auto-trigger ip_pin_work done */
-	DBG(0, "wait auto end\n");
-
 	DBG(0, "END\n");
 }
 
@@ -599,6 +595,8 @@ static void musb_host_work(struct work_struct *data)
 		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
+		/* make musb_stop aware about host mode */
+		MUSB_HST_MODE(mtk_musb);
 		musb_stop(mtk_musb);
 		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
 		MUSB_DEV_MODE(mtk_musb);
@@ -863,6 +861,14 @@ static int set_option(const char *val, const struct kernel_param *kp)
 	case 9:
 		DBG(0, "case %d\n", local_option);
 		bypass_disc_circuit(REVERT);
+		break;
+	case 10:
+		DBG(0, "case %d\n", local_option);
+		_set_vbus(mtk_musb, 1);
+		break;
+	case 11:
+		DBG(0, "case %d\n", local_option);
+		_set_vbus(mtk_musb, 0);
 		break;
 	default:
 		break;
