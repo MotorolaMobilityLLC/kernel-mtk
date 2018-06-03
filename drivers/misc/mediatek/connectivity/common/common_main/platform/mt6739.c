@@ -1011,7 +1011,7 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
 			gConEmiPhyBase + SZ_1M - 1,
 			22,
-			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+			SET_ACCESS_PERMISSON(LOCK, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
 #endif
 	return 0;
