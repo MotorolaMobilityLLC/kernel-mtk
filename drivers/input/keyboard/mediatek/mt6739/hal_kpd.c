@@ -22,16 +22,6 @@
 #ifdef CONFIG_MT_SND_SOC_NEW_ARCH
 #include <mt_soc_afe_control.h>
 #endif
-#define KPD_DEBUG	KPD_YES
-
-#define KPD_SAY		"kpd: "
-#if KPD_DEBUG
-#define kpd_print(fmt, arg...)	pr_debug(KPD_SAY fmt, ##arg)
-#define kpd_info(fmt, arg...)	pr_info(KPD_SAY fmt, ##arg)
-#else
-#define kpd_print(fmt, arg...)	do {} while (0)
-#define kpd_info(fmt, arg...)	do {} while (0)
-#endif
 
 #ifdef CONFIG_KPD_PWRKEY_USE_EINT
 static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
