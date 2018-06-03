@@ -150,8 +150,8 @@ enum share_mem_mapping {	/* each of 4 byte */
  */
 /* Each section has only 5 bits. The range is from 0 to 31 */
 enum md1_section_level_tbl_2g {
-	VAL_MD1_2G_SECTION_1 = 32,
-	VAL_MD1_2G_SECTION_2 = 31,
+	VAL_MD1_2G_SECTION_1 = 31,
+	VAL_MD1_2G_SECTION_2 = 29,
 	VAL_MD1_2G_SECTION_3 = 27,
 	VAL_MD1_2G_SECTION_4 = 25,
 	VAL_MD1_2G_SECTION_5 = 21,
@@ -210,8 +210,8 @@ enum md1_scenario_pwr_tbl {
  */
 enum md1_pa_pwr_tbl_2g {
 	PW_MD1_PA_2G_SECTION_1 = 660,
-	PW_MD1_PA_2G_SECTION_2 = 526,
-	PW_MD1_PA_2G_SECTION_3 = 430,
+	PW_MD1_PA_2G_SECTION_2 = 430,
+	PW_MD1_PA_2G_SECTION_3 = 357,
 	PW_MD1_PA_2G_SECTION_4 = 335,
 	PW_MD1_PA_2G_SECTION_5 = 197,
 	PW_MD1_PA_2G_SECTION_6 = 130
@@ -249,7 +249,7 @@ enum md1_pa_pwr_tbl_c2k {
  */
 enum md1_rf_pwr_tbl_2g {
 	PW_MD1_RF_2G_SECTION_1 = 44,
-	PW_MD1_RF_2G_SECTION_2 = 43,
+	PW_MD1_RF_2G_SECTION_2 = 42,
 	PW_MD1_RF_2G_SECTION_3 = 42,
 	PW_MD1_RF_2G_SECTION_4 = 42,
 	PW_MD1_RF_2G_SECTION_5 = 42,
