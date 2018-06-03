@@ -56,7 +56,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static struct drm_driver pvr_drm_platform_driver;
 
-#if defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)
+#if 0 /*defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)*/
 /*
  * This is an arbitrary value. If it's changed then the 'num_devices' module
  * parameter description should also be updated to match.
@@ -100,7 +100,7 @@ MODULE_PARM_DESC(num_devices,
 
 static int pvr_devices_register(void)
 {
-#if defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)
+#if 0 /*defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)*/
 	struct platform_device_info pvr_dev_info = {
 		.name = SYS_RGX_DEV_NAME,
 		.id = -2,
@@ -131,12 +131,6 @@ static int pvr_devices_register(void)
 			pvr_devices[i] = NULL;
 			return -ENODEV;
 		}
-
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-		/* MTK DTS WA */
-		if (i == 0)
-			gpsPVRLDMDev = pvr_devices[i];
-#endif
 	}
 #endif /* defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED) */
 
@@ -145,7 +139,7 @@ static int pvr_devices_register(void)
 
 static void pvr_devices_unregister(void)
 {
-#if defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)
+#if 0 /*defined(MODULE) && !defined(PVR_LDM_PLATFORM_PRE_REGISTERED)*/
 	unsigned int i;
 
 	BUG_ON(!pvr_devices);
@@ -223,6 +217,16 @@ static int __init pvr_init(void)
 	int err;
 
 	DRM_DEBUG_DRIVER("\n");
+
+#if defined(MODULE)
+	err = mtk_mfg_async_init();
+	if (err)
+		return err;
+
+	err = mtk_mfg_2d_init();
+	if (err)
+		return err;
+#endif
 
 	pvr_drm_platform_driver = pvr_drm_generic_driver;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)) && \
