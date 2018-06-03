@@ -20,6 +20,8 @@ LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 obj-$(CONFIG_MTK_SCHED_RQAVG_US) += rq_stats.o
 # For kernel space operation
 obj-$(CONFIG_MTK_SCHED_RQAVG_KS) += sched_avg.o
+# For power calculation referring platform-character
+obj-$(CONFIG_MTK_SCHED_EAS_POWER_SUPPORT) += sched_power.o
 
 # For Enhance CPU affinity in hotplug
 obj-$(CONFIG_MTK_CPU_AFFINITY) += mtk_cpu_affinity/
