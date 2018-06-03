@@ -1,15 +1,15 @@
 /*
- * menu.c - the menu idle governor
+ * Copyright (C) 2017 MediaTek Inc.
  *
- * Copyright (C) 2006-2007 Adam Belay <abelay@novell.com>
- * Copyright (C) 2009 Intel Corporation
- * Author:
- *        Arjan van de Ven <arjan@linux.intel.com>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * This code is licenced under the GPL version 2 as described
- * in the COPYING file that acompanies the Linux Kernel.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
 #include <linux/kernel.h>
 #include <linux/cpuidle.h>
 #include <linux/pm_qos.h>
@@ -37,6 +37,9 @@
 #define DECAY 8
 #define MAX_INTERESTING 50000
 
+#define USE_CORRELATION_FACTOR
+#define USE_TYPICAL_INTERVAL
+#define USE_INTERACTIVITY_REQ
 
 /*
  * Concepts and ideas behind the menu governor
@@ -195,6 +198,7 @@ static DEFINE_PER_CPU(struct menu_device, menu_devices);
 
 static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev);
 
+#ifdef USE_TYPICAL_INTERVAL
 /*
  * Try detecting repeating patterns by keeping track of the last 8
  * intervals, and checking if the standard deviation of that set
@@ -217,6 +221,7 @@ again:
 	divisor = 0;
 	for (i = 0; i < INTERVALS; i++) {
 		unsigned int value = data->intervals[i];
+
 		if (value <= thresh) {
 			avg += value;
 			divisor++;
@@ -233,8 +238,10 @@ again:
 	stddev = 0;
 	for (i = 0; i < INTERVALS; i++) {
 		unsigned int value = data->intervals[i];
+
 		if (value <= thresh) {
 			int64_t diff = value - avg;
+
 			stddev += diff * diff;
 		}
 	}
@@ -280,6 +287,7 @@ again:
 	thresh = max - 1;
 	goto again;
 }
+#endif
 
 /**
  * menu_select - selects the next idle state to enter
@@ -291,7 +299,9 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	struct menu_device *data = this_cpu_ptr(&menu_devices);
 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
 	int i;
+#ifdef USE_INTERACTIVITY_REQ
 	unsigned int interactivity_req;
+#endif
 	unsigned long nr_iowaiters, cpu_load;
 
 	if (data->needs_update) {
@@ -311,6 +321,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	get_iowait_load(&nr_iowaiters, &cpu_load);
 	data->bucket = which_bucket(data->next_timer_us, nr_iowaiters);
 
+#ifdef USE_CORRELATION_FACTOR
 	/*
 	 * Force the result of multiplication to be 64 bits even if both
 	 * operands are 32 bits.
@@ -319,9 +330,15 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	data->predicted_us = DIV_ROUND_CLOSEST_ULL((uint64_t)data->next_timer_us *
 					 data->correction_factor[data->bucket],
 					 RESOLUTION * DECAY);
+#else
+	data->predicted_us = data->next_timer_us;
+#endif
 
+#ifdef USE_TYPICAL_INTERVAL
 	get_typical_interval(data);
+#endif
 
+#ifdef USE_INTERACTIVITY_REQ
 	/*
 	 * Performance multiplier defines a minimum predicted idle
 	 * duration / latency ratio. Adjust the latency limit if
@@ -330,6 +347,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters, cpu_load);
 	if (latency_req > interactivity_req)
 		latency_req = interactivity_req;
+#endif
 
 	/*
 	 * We want to default to C1 (hlt), not to busy polling
@@ -463,15 +481,26 @@ static int menu_enable_device(struct cpuidle_driver *drv,
 	 * if the correction factor is 0 (eg first time init or cpu hotplug
 	 * etc), we actually want to start out with a unity factor.
 	 */
-	for(i = 0; i < BUCKETS; i++)
+	for (i = 0; i < BUCKETS; i++)
 		data->correction_factor[i] = RESOLUTION * DECAY;
 
 	return 0;
 }
 
+unsigned int get_menu_predict_us(void)
+{
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
+
+	return data->predicted_us;
+}
+
 static struct cpuidle_governor menu_governor = {
-	.name =		"menu",
-	.rating =	20,
+	.name =		"mtk_menu",
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	.rating =	100,
+#else
+	.rating =	1,
+#endif
 	.enable =	menu_enable_device,
 	.select =	menu_select,
 	.reflect =	menu_reflect,

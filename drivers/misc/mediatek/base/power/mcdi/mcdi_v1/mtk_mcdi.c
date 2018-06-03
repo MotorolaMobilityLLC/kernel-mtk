@@ -631,7 +631,7 @@ int mcdi_enter(int cpu)
 	state = mcdi_governor_select(cpu, cluster_idx);
 
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF)
-		sched_idle_set_state(&(mcdi_state_tbl_get()->states[state]), state);
+		sched_idle_set_state(&(mcdi_state_tbl_get(cpu)->states[state]), state);
 
 	switch (state) {
 	case MCDI_STATE_WFI:
