@@ -221,6 +221,8 @@ static snd_pcm_uframes_t mtk_deep_buffer_dl_pointer(struct snd_pcm_substream
 			pr_warn("%s(), hw_ptr == 0\n", __func__);
 		else
 			ptr_bytes = hw_ptr - Afe_Get_Reg(base);
+
+		ptr_bytes = word_size_align(ptr_bytes);
 	}
 
 	return bytes_to_frames(substream->runtime, ptr_bytes);
