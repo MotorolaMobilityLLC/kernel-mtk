@@ -286,5 +286,9 @@ static inline void aee_dram_console_reserve_memory(void)
 }
 #endif
 
+#ifdef CONFIG_MACH_MT6763
+extern void msdc_hang_detect_dump(u32 id);
+#endif
+
 extern void *aee_excp_regs;	/* To store latest exception, in case of stack corruption */
 #endif				/* __AEE_H__ */
