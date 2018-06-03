@@ -425,6 +425,8 @@ void xgf_igather_timer(const void * const timer, int fire)
 			continue;
 		}
 
+		xgf_blacked_recycle(&iter->timer_rec);
+
 		switch (fire) {
 		case 1:
 			xgf_timer_fire(timer, iter, runtime);
