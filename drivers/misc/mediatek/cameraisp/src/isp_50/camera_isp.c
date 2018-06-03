@@ -1018,8 +1018,7 @@ static inline void Prepare_Enable_ccf_clock(void)
 	#ifndef EP_MARK_SMI /* enable through smi API */
 	LOG_INF("enable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_enable(SMI_LARB6, ISP_DEV_NAME);
-	smi_bus_enable(SMI_LARB2, ISP_DEV_NAME);
-	smi_bus_enable(SMI_LARB5, ISP_DEV_NAME);
+	smi_bus_enable(SMI_LARB3, ISP_DEV_NAME);
 	#endif
 
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_MM0);
@@ -1071,8 +1070,7 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	#ifndef EP_MARK_SMI
 	LOG_INF("disable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_disable(SMI_LARB6, ISP_DEV_NAME);
-	smi_bus_disable(SMI_LARB2, ISP_DEV_NAME);
-	smi_bus_disable(SMI_LARB5, ISP_DEV_NAME);
+	smi_bus_disable(SMI_LARB3, ISP_DEV_NAME);
 	#endif
 }
 
