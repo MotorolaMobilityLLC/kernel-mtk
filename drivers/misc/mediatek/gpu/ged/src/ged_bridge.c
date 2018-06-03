@@ -59,7 +59,9 @@ int ged_bridge_boost_gpu_freq(
 		GED_BRIDGE_OUT_BOOSTGPUFREQ *psBoostGpuFreqOUT)
 {
 #if 1
-	psBoostGpuFreqOUT->eError = mtk_boost_gpu_freq() ? GED_OK : GED_ERROR_FAIL;
+	psBoostGpuFreqOUT->eError = (mtk_set_bottom_gpu_freq(
+		psBoostGpuFreqIN->eGPUFreqLevel) == true) ?
+		GED_OK : GED_ERROR_FAIL;
 #else
 	unsigned int ui32Count;
 	if (mtk_custom_get_gpu_freq_level_count(&ui32Count))
