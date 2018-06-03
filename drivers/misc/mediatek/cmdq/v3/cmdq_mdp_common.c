@@ -208,21 +208,17 @@ static void cmdq_mdp_clock_enable(u64 engine_flag,
 	const u64 engine_enable)
 {
 	s32 index;
-#if 0
 	s32 smi_ref;
-#endif
 
 	CMDQ_MSG(
 		"-->CLOCK: Enable engine clock 0x%llx engine enable 0x%llx\n",
 		engine_flag, engine_enable);
 
-#if 0
 	smi_ref = atomic_inc_return(&mdp_ctx.mdp_smi_usage);
 	if (smi_ref == 1) {
 		CMDQ_MSG("[CLOCK]MDP SMI clock enable %d\n", smi_ref);
 		cmdq_mdp_get_func()->mdpEnableCommonClock(true);
 	}
-#endif
 
 	/* ISP special check: Always call ISP on/off if this task */
 	/* involves ISP. Ignore the ISP HW flags. */
@@ -253,9 +249,7 @@ static void cmdq_mdp_clock_disable(u64 engine_flag,
 	const u64 engine_not_use)
 {
 	s32 index;
-#if 0
 	s32 smi_ref;
-#endif
 
 	CMDQ_MSG(
 		"-->CLOCK: Disable engine clock 0x%llx engine not use 0x%llx\n",
@@ -289,13 +283,11 @@ static void cmdq_mdp_clock_disable(u64 engine_flag,
 		}
 	}
 
-#if 0
 	smi_ref = atomic_dec_return(&mdp_ctx.mdp_smi_usage);
 	if (smi_ref == 0) {
 		CMDQ_MSG("[CLOCK]MDP SMI clock disable %d\n", smi_ref);
 		cmdq_mdp_get_func()->mdpEnableCommonClock(false);
 	}
-#endif
 
 	CMDQ_MSG("<--CLOCK: Disable hardware clock 0x%llx end\n", engine_flag);
 }

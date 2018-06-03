@@ -59,7 +59,6 @@ static BLOCKING_NOTIFIER_HEAD(cmdq_status_dump_notifier);
 
 static struct cmdq_client *cmdq_clients[CMDQ_MAX_THREAD_COUNT];
 static atomic_t cmdq_thread_usage;
-static atomic_t cmdq_smi_usage;
 
 static wait_queue_head_t *cmdq_wait_queue; /* task done notify */
 static struct ContextStruct cmdq_ctx; /* cmdq driver context */
@@ -3596,8 +3595,7 @@ static void cmdq_core_clk_enable(enum CMDQ_SCENARIO_ENUM scenario)
 
 	clock_count = atomic_inc_return(&cmdq_thread_usage);
 
-	CMDQ_MSG("[CLOCK]enable usage:%d smi:%d\n",
-		clock_count, atomic_read(&cmdq_smi_usage));
+	CMDQ_MSG("[CLOCK]enable usage:%d\n", clock_count);
 
 	if (clock_count == 1) {
 		/* CMDQ init flow: */
@@ -3617,30 +3615,6 @@ static void cmdq_core_clk_enable(enum CMDQ_SCENARIO_ENUM scenario)
 		}
 		/* Restore event */
 		cmdq_get_func()->eventRestore();
-	} else if (clock_count == 0) {
-		CMDQ_ERR(
-			"enable clock %s error usage:%d smi use:%d\n",
-			__func__, clock_count,
-			(s32)atomic_read(&cmdq_smi_usage));
-	}
-
-	/* SMI related threads common clock enable,
-	 * excluding display scenario on his own
-	 */
-	if (!cmdq_get_func()->isDispScenario(scenario) &&
-		likely(scenario != CMDQ_SCENARIO_MOVE &&
-		scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
-		s32 smi_count = atomic_inc_return(&cmdq_smi_usage);
-
-		if (smi_count == 1) {
-			CMDQ_MSG("[CLOCK] SMI clock enable %d\n",
-				smi_count);
-			cmdq_mdp_get_func()->mdpEnableCommonClock(true);
-		} else if (smi_count == 0) {
-			CMDQ_ERR(
-				"enable smi common %s error usage:%d smi use:%d\n",
-				__func__, clock_count, smi_count);
-		}
 	}
 
 	mutex_unlock(&cmdq_clock_mutex);
@@ -3655,8 +3629,7 @@ static void cmdq_core_clk_disable(enum CMDQ_SCENARIO_ENUM scenario)
 
 	clock_count = atomic_dec_return(&cmdq_thread_usage);
 
-	CMDQ_MSG("[CLOCK]disable usage:%d smi:%d\n",
-		clock_count, atomic_read(&cmdq_smi_usage));
+	CMDQ_MSG("[CLOCK]disable usage:%d\n", clock_count);
 
 	if (clock_count == 0) {
 		/* Backup event */
@@ -3668,24 +3641,6 @@ static void cmdq_core_clk_disable(enum CMDQ_SCENARIO_ENUM scenario)
 			"enable clock %s error usage:%d smi use:%d\n",
 			__func__, clock_count,
 			(s32)atomic_read(&cmdq_thread_usage));
-	}
-
-	/* SMI related threads common clock enable,
-	 * excluding display scenario on his own
-	 */
-	if (!cmdq_get_func()->isDispScenario(scenario) &&
-		likely(scenario != CMDQ_SCENARIO_MOVE &&
-		scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
-		s32 smi_count = atomic_dec_return(&cmdq_smi_usage);
-
-		if (smi_count == 0) {
-			CMDQ_MSG("[CLOCK] SMI clock disable %d\n", smi_count);
-			cmdq_mdp_get_func()->mdpEnableCommonClock(false);
-		} else if (smi_count < 0) {
-			CMDQ_ERR(
-				"disable smi common %s error usage:%d smi use:%d\n",
-				__func__, clock_count, smi_count);
-		}
 	}
 
 	mutex_unlock(&cmdq_clock_mutex);
@@ -5152,7 +5107,6 @@ void cmdq_core_initialize(void)
 	cmdq_helper_mbox_register(cmdq_dev_get());
 
 	atomic_set(&cmdq_thread_usage, 0);
-	atomic_set(&cmdq_smi_usage, 0);
 
 	cmdq_wait_queue = kcalloc(max_thread_count, sizeof(*cmdq_wait_queue),
 		GFP_KERNEL);
