@@ -4165,6 +4165,11 @@ static long CAMERA_HW_Ioctl(
 		PK_DBG("f_fcamtg2_ck = %d\n", mt_get_ckgen_freq(41));
 		PK_DBG("hf_fcam_ck = %d\n", mt_get_ckgen_freq(5));
 		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(35));
+
+		PK_DBG("%s: AD_UNIV_192M_CK = %dHZ\r\n", __func__, mt_get_abist_freq(32));
+		PK_DBG("%s: f52m_mfg_ck = %dHZ\r\n", __func__, mt_get_ckgen_freq(11));
+		PK_DBG("%s: hd_faxi_ck = %dHZ\r\n", __func__, mt_get_ckgen_freq(1));
+		PK_DBG("%s: AD_UNIVPLL_CK = %dHZ\r\n", __func__, mt_get_abist_freq(24));
 	break;
 
     default:

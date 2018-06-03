@@ -130,6 +130,7 @@ extern void ISP_MCLK3_EN(BOOL En);
 extern void ISP_MCLK4_EN(BOOL En);
 extern unsigned int mt_get_ckgen_freq(int ID);
 extern void mipic_26m_en(int en);
+extern unsigned int mt_get_abist_freq(unsigned int ID);
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 int mtkcam_gpio_init(struct platform_device *pdev);
