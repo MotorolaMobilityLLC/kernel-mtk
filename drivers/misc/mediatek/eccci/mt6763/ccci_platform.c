@@ -546,13 +546,18 @@ int ccci_platform_init(struct ccci_modem *md)
 #define MD_EX_PAGE_SIZE (20*1024)
 #define MD_EX_PAGE_NUM  (6)
 
+
+/*
+ *  Note : Moidy this size will affect dhl frame size in this page
+ *  Minimum : 352B to reserve 256B for header frame
+ */
 #define MD_HW_PAGE_SIZE (512)
 
 /* replace with HW page */
 #define MD_BUF1_PAGE_SIZE (MD_HW_PAGE_SIZE)
 #define MD_BUF1_PAGE_NUM  (72)
 #define AP_BUF1_PAGE_SIZE (1024)
-#define AP_BUF1_PAGE_NUM  (16)
+#define AP_BUF1_PAGE_NUM  (32)
 
 #define MD_BUF2_0_PAGE_SIZE (MD_HW_PAGE_SIZE)
 #define MD_BUF2_1_PAGE_SIZE (MD_HW_PAGE_SIZE)
@@ -562,8 +567,8 @@ int ccci_platform_init(struct ccci_modem *md)
 #define MD_BUF2_1_PAGE_NUM (64)
 #define MD_BUF2_2_PAGE_NUM (256)
 
-#define MD_MDM_PAGE_SIZE (65*1024)
-#define MD_MDM_PAGE_NUM  (8)
+#define MD_MDM_PAGE_SIZE (MD_HW_PAGE_SIZE)
+#define MD_MDM_PAGE_NUM  (32)
 
 #define AP_MDM_PAGE_SIZE (1024)
 #define AP_MDM_PAGE_NUM  (16)
