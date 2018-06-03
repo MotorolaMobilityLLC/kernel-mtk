@@ -1274,6 +1274,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.nafg_time_setting = NAFG_TIME_SETTING;
 	fg_cust_data.nafg_ratio = NAFG_RATIO;
 	fg_cust_data.nafg_ratio_en = NAFG_RATIO_EN;
+	fg_cust_data.nafg_ratio_tmp_thr = NAFG_RATIO_TMP_THR;
 	fg_cust_data.nafg_resistance = NAFG_RESISTANCE;
 
 	/* ADC resistor  */
@@ -4812,8 +4813,105 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 759:
 		{
-			fg_cust_data.nafg_ratio = param;
-			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.nafg_ratio=%d\n", cmd, param);
+			fg_cust_data.nafg_ratio_en = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.nafg_ratio_en=%d\n", cmd, param);
+		}
+		break;
+	case 760:
+		{
+			fg_cust_data.nafg_ratio_tmp_thr = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.nafg_ratio_tmp_thr=%d\n", cmd, param);
+		}
+		break;
+	case 761:
+		{
+			fg_cycle_int_handler();
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, add 1 bat_cycle\n", cmd);
+		}
+		break;
+	case 762:
+		{
+			fg_cust_data.difference_fgc_fgv_th1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fgc_fgv_th1=%d\n", cmd, param);
+		}
+		break;
+	case 763:
+		{
+			fg_cust_data.difference_fgc_fgv_th2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fgc_fgv_th1=%d\n", cmd, param);
+		}
+		break;
+	case 764:
+		{
+			fg_cust_data.difference_fgc_fgv_th3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fgc_fgv_th3=%d\n", cmd, param);
+		}
+		break;
+	case 765:
+		{
+			fg_cust_data.difference_fullocv_ith = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fullocv_ith=%d\n", cmd, param);
+		}
+		break;
+	case 766:
+		{
+			fg_cust_data.difference_fgc_fgv_th_soc1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fgc_fgv_th_soc1=%d\n", cmd, param);
+		}
+		break;
+	case 767:
+		{
+			fg_cust_data.difference_fgc_fgv_th_soc2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.difference_fgc_fgv_th_soc2=%d\n", cmd, param);
+		}
+		break;
+	case 768:
+		{
+			fg_cust_data.embedded_sel = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.embedded_sel=%d\n", cmd, param);
+		}
+		break;
+	case 769:
+		{
+			fg_cust_data.car_tune_value = param * UNIT_TRANS_10;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.car_tune_value=%d\n",
+				cmd, param * UNIT_TRANS_10);
+		}
+		break;
+	case 770:
+		{
+			fg_cust_data.shutdown_1_time = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.shutdown_1_time=%d\n", cmd, param);
+		}
+		break;
+	case 771:
+		{
+			fg_cust_data.tnew_told_pon_diff = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.tnew_told_pon_diff=%d\n", cmd, param);
+		}
+		break;
+	case 772:
+		{
+			fg_cust_data.tnew_told_pon_diff2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.tnew_told_pon_diff2=%d\n", cmd, param);
+		}
+		break;
+	case 773:
+		{
+			fg_cust_data.swocv_oldocv_diff = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.swocv_oldocv_diff=%d\n", cmd, param);
+		}
+		break;
+	case 774:
+		{
+			fg_cust_data.hwocv_oldocv_diff = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.hwocv_oldocv_diff=%d\n", cmd, param);
+		}
+		break;
+	case 775:
+		{
+			fg_cust_data.hwocv_swocv_diff = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.hwocv_swocv_diff=%d\n", cmd, param);
 		}
 		break;
 	default:
