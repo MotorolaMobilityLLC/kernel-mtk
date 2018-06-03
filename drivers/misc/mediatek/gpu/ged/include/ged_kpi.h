@@ -54,6 +54,7 @@ bool ged_kpi_set_cpu_remained_time(long long t_cpu_remained, int QedBuffer_lengt
 bool ged_kpi_set_gpu_dvfs_hint(int t_gpu_target, int t_gpu_cur);
 void ged_kpi_set_game_hint(int mode);
 unsigned int ged_kpi_enabled(void);
+void ged_kpi_set_target_FPS(u64 ulID, int target_FPS);
 
 extern int linear_real_boost(int linear_boost);
 /* extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu); */

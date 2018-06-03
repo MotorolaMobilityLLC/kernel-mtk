@@ -301,7 +301,6 @@ void (*ged_kpi_cpu_boost_check_01)(
 	int enable_cpu_boost,
 	int ismainhead);
 EXPORT_SYMBOL(ged_kpi_cpu_boost_check_01);
-
 /* ----------------------------------------------------------------------------- */
 void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq, u64 ulID);
 EXPORT_SYMBOL(ged_kpi_output_gfx_info2_fp);
@@ -968,7 +967,6 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 			&& (psHead->frc_mode == GED_KPI_FRC_DEFAULT_MODE)
 			&& (gx_3D_benchmark_on == 0))
 			target_fps = target_fps_4_main_head;
-
 		psHead->target_fps = target_fps;
 		psHead->t_cpu_target = GED_KPI_SEC_DIVIDER/target_fps;
 		psHead->t_gpu_target = psHead->t_cpu_target;
@@ -1154,18 +1152,13 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			if (dfrc_get_frr_config(psKPI->pid, 0,
 				&d_target_fps, &mode, &client) == 0) {
 
-				if (d_target_fps == 0)
-					d_target_fps = GED_KPI_MAX_FPS;
-
-				ged_kpi_update_target_time_and_target_fps(psHead,
-						d_target_fps, mode, client);
+				if (d_target_fps != 0)
+					ged_kpi_update_target_time_and_target_fps(
+					psHead, d_target_fps, mode, client);
 #ifdef GED_KPI_DEBUG
 				GED_LOGE("[GED_KPI] psHead: %p, fps: %d, mode: %d, client: %d\n",
 						psHead, d_target_fps, mode, client);
 #endif
-			} else {
-				ged_kpi_update_target_time_and_target_fps(psHead,
-						GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 			}
 #endif /* GED_KPI_DFRC */
 
@@ -1371,6 +1364,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		ulID = psTimeStamp->ullWnd;
 		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 
+		if (gx_dfps <= GED_KPI_MAX_FPS && gx_dfps >= 10)
+			ged_kpi_set_target_FPS(ulID, gx_dfps);
+		else
+			gx_dfps = 0;
+
 
 		if (psHead) {
 			struct list_head *psListEntry, *psListEntryTemp;
@@ -1437,17 +1435,6 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		break;
 	case GED_TIMESTAMP_TYPE_H:
 		ged_hashtable_iterator(gs_hashtable, ged_kpi_h_iterator_func, (void *)psTimeStamp);
-
-#ifndef GED_KPI_DFRC
-		ged_kpi_update_target_time_and_target_fps(main_head, GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
-#endif
-		if (gx_dfps <= GED_KPI_MAX_FPS && gx_dfps >= 10)
-			ged_kpi_update_target_time_and_target_fps(main_head
-									, gx_dfps
-									, gx_frc_mode
-									, -1);
-		else
-			gx_dfps = 0;
 
 #ifdef GED_KPI_DEBUG
 		{
@@ -1962,3 +1949,19 @@ void ged_kpi_set_game_hint(int mode)
 	}
 #endif
 }
+/* ----------------------------------------------------------------------------- */
+void ged_kpi_set_target_FPS(u64 ulID, int target_FPS)
+{
+	GED_KPI_HEAD *psHead;
+
+	psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
+	if (psHead) {
+		ged_kpi_update_target_time_and_target_fps(psHead,
+			target_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
+	}
+#ifdef GED_KPI_DEBUG
+	else
+		GED_LOGE("%s: no such renderer for BQ_ID: %llu\n", __func__, ulID);
+#endif
+}
+EXPORT_SYMBOL(ged_kpi_set_target_FPS);
