@@ -807,6 +807,13 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 	}
 }
 
+void __weak md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int length)
+{
+	if (buff != NULL)
+		CCCI_MEM_LOG_TAG(md->index, TAG, "md_boot_stats0 / 1: weak function, maybe need add.\n");
+	md_cd_dump_md_bootup_status(md);
+}
+
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
@@ -953,7 +960,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	}
 
 	if (flag & DUMP_MD_BOOTUP_STATUS)
-		md_cd_dump_md_bootup_status(md);
+		md_cd_get_md_bootup_status(md, (unsigned int *)buff, length);
 
 	return length;
 }

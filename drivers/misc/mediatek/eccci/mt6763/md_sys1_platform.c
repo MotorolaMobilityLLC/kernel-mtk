@@ -341,6 +341,30 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
 }
 
+void md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int length)
+{
+	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
+	struct md_pll_reg *md_reg = md_info->md_pll_base;
+
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats len %d\n", length);
+
+	if (length < 2) {
+		md_cd_dump_md_bootup_status(md);
+		return;
+	}
+
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	buff[0] = cldma_read32(md_reg->md_boot_stats0, 0);
+
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	buff[1] = cldma_read32(md_reg->md_boot_stats1, 0);
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0 / 1:0x%X / 0x%X\n", buff[0], buff[1]);
+
+}
+
+
 static int dump_emi_last_bm(struct ccci_modem *md)
 {
 	u32 buf_len = 1024;
@@ -367,9 +391,20 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
 	struct md_pll_reg *md_reg = md_info->md_pll_base;
 	struct ccci_per_md *per_md_data = &md->per_md_data;
+	unsigned int reg_value[2] = { 0 };
+	unsigned int ccif_sram[CCCI_EE_SIZE_CCIF_SRAM/sizeof(unsigned int)] = { 0 };
 
 	/*dump_emi_latency();*/
 	dump_emi_last_bm(md);
+
+	md_cd_get_md_bootup_status(md, reg_value, 2);
+	md->ops->dump_info(md, DUMP_FLAG_CCIF, ccif_sram, 0);
+	/* copy from HS1 timeout */
+	if ((reg_value[0] == 0) && (ccif_sram[1] == 0))
+		return;
+	else if (!((reg_value[0] == 0x54430007) || (reg_value[0] == 0) ||
+		(reg_value[0] >= 0x53310000 && reg_value[0] <= 0x533100FF)))
+		return;
 
 	md_cd_lock_modem_clock_src(1);
 
