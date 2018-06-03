@@ -429,7 +429,7 @@ int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
@@ -440,4 +440,6 @@ void BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_
 	#endif
 
 	LOG_INF("SetI2Cclient\n");
+
+	return 1;
 }
