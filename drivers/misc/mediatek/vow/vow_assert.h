@@ -28,10 +28,10 @@
 		} \
 	} while (0)
 #else
-#define AUD_ASSERT(exp) \
+#define VOW_ASSERT(exp) \
 	do { \
 		if (!(exp)) { \
-			VOWDRV_PR_ERR("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
+			pr_notice("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
 		} \
 	} while (0)
 #endif
