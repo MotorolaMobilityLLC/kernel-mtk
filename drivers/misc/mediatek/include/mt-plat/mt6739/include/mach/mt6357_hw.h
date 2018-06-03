@@ -3473,9 +3473,12 @@
 #define PMIC_PWREN_ADDR                                    MT6357_RTC_BBPU
 #define PMIC_PWREN_MASK                                    0x1
 #define PMIC_PWREN_SHIFT                                   0
-#define PMIC_BBPU_ADDR                                     MT6357_RTC_BBPU
-#define PMIC_BBPU_MASK                                     0x1
-#define PMIC_BBPU_SHIFT                                    2
+#define PMIC_BBPU_CLR_ADDR                                 MT6357_RTC_BBPU
+#define PMIC_BBPU_CLR_MASK                                 0x1
+#define PMIC_BBPU_CLR_SHIFT                                1
+#define PMIC_BBPU_INIT_ADDR                                MT6357_RTC_BBPU
+#define PMIC_BBPU_INIT_MASK                                0x1
+#define PMIC_BBPU_INIT_SHIFT                               2
 #define PMIC_AUTO_ADDR                                     MT6357_RTC_BBPU
 #define PMIC_AUTO_MASK                                     0x1
 #define PMIC_AUTO_SHIFT                                    3
@@ -3659,9 +3662,9 @@
 #define PMIC_RTC_EMBCK_SEL_OPTION_ADDR                     MT6357_RTC_OSC32CON
 #define PMIC_RTC_EMBCK_SEL_OPTION_MASK                     0x1
 #define PMIC_RTC_EMBCK_SEL_OPTION_SHIFT                    9
-#define PMIC_RTC_EOSC32_OPT_ADDR                           MT6357_RTC_OSC32CON
-#define PMIC_RTC_EOSC32_OPT_MASK                           0x1
-#define PMIC_RTC_EOSC32_OPT_SHIFT                          10
+#define PMIC_RTC_GPS_CKOUT_EN_ADDR                         MT6357_RTC_OSC32CON
+#define PMIC_RTC_GPS_CKOUT_EN_MASK                         0x1
+#define PMIC_RTC_GPS_CKOUT_EN_SHIFT                        10
 #define PMIC_RTC_EOSC32_VCT_EN_ADDR                        MT6357_RTC_OSC32CON
 #define PMIC_RTC_EOSC32_VCT_EN_MASK                        0x1
 #define PMIC_RTC_EOSC32_VCT_EN_SHIFT                       11
@@ -15071,7 +15074,8 @@ typedef enum {
 	PMIC_RTC_DNS_ESP,
 	PMIC_RTC_DNS_FPI,
 	PMIC_PWREN,
-	PMIC_BBPU,
+	PMIC_BBPU_CLR,
+	PMIC_BBPU_INIT,
 	PMIC_AUTO,
 	PMIC_CLRPKY,
 	PMIC_RELOAD,
@@ -15133,7 +15137,7 @@ typedef enum {
 	PMIC_RTC_EMBCK_SEL_MODE,
 	PMIC_RTC_EMBCK_SRC_SEL,
 	PMIC_RTC_EMBCK_SEL_OPTION,
-	PMIC_RTC_EOSC32_OPT,
+	PMIC_RTC_GPS_CKOUT_EN,
 	PMIC_RTC_EOSC32_VCT_EN,
 	PMIC_RTC_EOSC32_CHOP_EN,
 	PMIC_RTC_GP_OSC32_CON,
@@ -18735,5 +18739,6 @@ typedef struct {
 	unsigned short mask;
 	unsigned char shift;
 } PMU_FLAG_TABLE_ENTRY;
+
 
 #endif				/* _MT_PMIC_UPMU_HW_MT6357_H_ */
