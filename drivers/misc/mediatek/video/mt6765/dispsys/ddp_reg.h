@@ -276,5 +276,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #include "ddp_reg_dma.h"
 #include "ddp_reg_dsi.h"
 #include "ddp_reg_mipi.h"
+#include "ddp_reg_rsz.h"
 
 #endif /* _DDP_REG_H_ */

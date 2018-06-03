@@ -312,11 +312,11 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 	 DISP_T_RSZ,
 	 "rsz0",
 	 1,
-	 NULL, /*SHANG  need rsz driver*/
+	 &ddp_driver_rsz,
 	 {"mediatek,disp_rsz0",
 	  0x14015000,
 	  276,
-	  5,
+	  0,
 	  0,
 	  0}
 	 },

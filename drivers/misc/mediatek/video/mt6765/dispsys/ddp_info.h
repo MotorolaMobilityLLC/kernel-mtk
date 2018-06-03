@@ -449,6 +449,8 @@ extern struct DDP_MODULE_DRIVER ddp_driver_dither;
 extern struct DDP_MODULE_DRIVER ddp_driver_ccorr;
 /* split */
 extern struct DDP_MODULE_DRIVER ddp_driver_split;
+/* rsz */
+extern struct DDP_MODULE_DRIVER ddp_driver_rsz;
 
 /* pwm */
 extern struct DDP_MODULE_DRIVER ddp_driver_pwm;

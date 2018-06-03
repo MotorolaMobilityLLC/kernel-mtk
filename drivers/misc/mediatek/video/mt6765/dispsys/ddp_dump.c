@@ -22,6 +22,7 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
+#include "ddp_rsz.h"
 
 static char *ddp_signal_0(int bit)
 {
@@ -1524,6 +1525,9 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 		dither_dump_reg(module);
 		break;
+	case DISP_MODULE_RSZ0:
+		rsz_dump_reg(module);
+		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n",
 			ddp_get_module_name(module), module);
@@ -1574,6 +1578,9 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_DITHER0:
 		dither_dump_analyze(module);
+		break;
+	case DISP_MODULE_RSZ0:
+		rsz_dump_analysis(module);
 		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n",
