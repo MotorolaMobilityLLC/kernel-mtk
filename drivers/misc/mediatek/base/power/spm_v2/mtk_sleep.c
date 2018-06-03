@@ -28,7 +28,7 @@
 #include "mtk_spm.h"
 #include "mtk_spm_sleep.h"
 #include "mtk_spm_idle.h"
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include <mach/mtk_clkmgr.h>
 #endif
 
@@ -102,14 +102,6 @@ static u32 slp_spm_flags = {
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
-	#if defined(CONFIG_ARCH_MT6797)
-	SPM_FLAG_DIS_VCORE_DVS |
-	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_SYSRAM_SLEEP |
-	#if !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
-	SPM_FLAG_EN_HPM_SODI |
-	#endif
-	#endif
 	SPM_FLAG_DIS_DPD
 #endif
 };
@@ -117,13 +109,7 @@ static u32 slp_spm_flags = {
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
-	#if defined(CONFIG_ARCH_MT6797)
-	SPM_FLAG_DIS_VCORE_DVS |
-	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_SYSRAM_SLEEP
-	#else
 	0
-	#endif
 };
 #endif
 /* static u32 slp_spm_data = 0; */
@@ -292,7 +278,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 
 #if SLP_SLEEP_DPIDLE_EN
-#if defined(CONFIG_MT_SND_SOC_6755) || defined(CONFIG_MT_SND_SOC_6797) || defined(CONFIG_MTK_SND_SOC_NEW_ARCH)
+#if defined(CONFIG_MT_SND_SOC_6755) || defined(CONFIG_MTK_SND_SOC_NEW_ARCH)
 	int fm_radio_is_playing = 0;
 
 	if (ConditionEnterSuspend() == true)
@@ -324,8 +310,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	if (slp_dump_regs)
 		slp_dump_pm_regs();
 #endif
-
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();
@@ -351,7 +336,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	}
 #endif
 #if SLP_SLEEP_DPIDLE_EN
-#if defined(CONFIG_MT_SND_SOC_6755) || defined(CONFIG_MT_SND_SOC_6797) || defined(CONFIG_MTK_SND_SOC_NEW_ARCH)
+#if defined(CONFIG_MT_SND_SOC_6755) || defined(CONFIG_MTK_SND_SOC_NEW_ARCH)
 	if (slp_ck26m_on | fm_radio_is_playing)
 #else
 	if (slp_ck26m_on)

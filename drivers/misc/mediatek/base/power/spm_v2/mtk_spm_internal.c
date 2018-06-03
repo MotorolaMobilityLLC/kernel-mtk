@@ -30,18 +30,8 @@
 #include <m4u.h>
 #include <mt-plat/mtk_chip.h>
 #endif
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 #include <camera_isp.h>
-#endif
-#if defined(CONFIG_ARCH_MT6797)
-#include <scp_helper.h>
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
-int __attribute__((weak)) check_scp_resource(void)
-{
-	return 0;
-}
 #endif
 
 /**************************************
@@ -62,27 +52,7 @@ int __attribute__((weak)) check_scp_resource(void)
 #define MP1_CPU1                (1U << 17)
 #define MP1_CPU2                (1U << 18)
 #define MP1_CPU3                (1U << 19)
-#elif defined(CONFIG_ARCH_MT6797)
-/* CPU_PWR_STATUS */
-/* CPU_PWR_STATUS_2ND */
-#define MP0_CPU0                (1U << 15)
-#define MP0_CPU1                (1U << 14)
-#define MP0_CPU2                (1U << 13)
-#define MP0_CPU3                (1U << 12)
-#define MP1_CPU0                (1U << 11)
-#define MP1_CPU1                (1U << 10)
-#define MP1_CPU2                (1U <<  9)
-#define MP1_CPU3                (1U <<  8)
-#define MP2_CPU0                (1U <<  7)
-#define MP2_CPU1                (1U <<  6)
-#define MP2_CPU2                (1U <<  5)
-#define MP2_CPU3                (1U <<  4)
-#define MP3_CPU0                (1U <<  3)
-#define MP3_CPU1                (1U <<  2)
-#define MP3_CPU2                (1U <<  1)
-#define MP3_CPU3                (1U <<  0)
 #endif
-
 /**************************************
  * Define and Declare
  **************************************/
@@ -187,40 +157,6 @@ unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
 									MP1_CPU0 |
 									MP1_CPU1 |
 									MP1_CPU2 | MP1_CPU3;
-#elif defined(CONFIG_ARCH_MT6797)
-#define SPM_CPU_PWR_STATUS		CPU_PWR_STATUS
-#define SPM_CPU_PWR_STATUS_2ND	CPU_PWR_STATUS_2ND
-
-/* FIXME: use `NR_CPUS` after CONFIG_NR_CPUS workaround fixed */
-unsigned int spm_cpu_bitmask[10] = {
-	MP0_CPU0,
-	MP0_CPU1,
-	MP0_CPU2,
-	MP0_CPU3,
-	MP1_CPU0,
-	MP1_CPU1,
-	MP1_CPU2,
-	MP1_CPU3,
-	MP2_CPU0,
-	MP2_CPU1
-};
-
-unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
-									MP0_CPU1 |
-									MP0_CPU2 |
-									MP0_CPU3 |
-									MP1_CPU0 |
-									MP1_CPU1 |
-									MP1_CPU2 |
-									MP1_CPU3 |
-									MP2_CPU0 | MP2_CPU1;
-
-static u32 scp_request_freq;
-
-u32 is_scp_request_freq(void)
-{
-	return scp_request_freq;
-}
 #endif
 
 /**************************************
@@ -315,102 +251,6 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
 #endif
 
-}
-
-#elif defined(CONFIG_ARCH_MT6797)
-void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
-{
-	u32 con1;
-	int retry = 0, timeout = 5000;
-	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta, dvfs_en;
-
-	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
-	if (spm_read(PCM_REG1_DATA) == 0x1) {
-		if (!vcorefs_sodi_rekick_lock()) {
-			dvfs_en = !is_vcorefs_dvfs_enable();
-			save_r1  = spm_read(PCM_REG1_DATA);
-			save_r15 = spm_read(PCM_REG15_DATA);
-			save_pcm_sta = spm_read(PCM_FSM_STA);
-			save_irq_sta = spm_read(SPM_IRQ_STA);
-			con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
-			spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
-
-			/* don't change vcore and dram when dvfs enable reture false */
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)) | (dvfs_en << 7));
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_OFFLOAD);
-			spm_write(SPM_CPU_WAKEUP_EVENT, 1);
-
-			if (is_vcorefs_feature_enable()) {
-				__spm_backup_vcore_dvfs_dram_shuffle();
-				while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
-					if (retry > timeout) {
-						pr_err("[VcoreFS] init state: r15=0x%x r1=0x%x pcmsta=0x%x irqsta=0x%x\n",
-							save_r15, save_r1, save_pcm_sta, save_irq_sta);
-						pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
-									spm_read(PCM_FSM_STA), timeout);
-						pr_err("[VcoreFS] curr state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
-							spm_read(PCM_REG15_DATA), spm_read(PCM_REG6_DATA),
-							spm_read(PCM_FSM_STA), spm_read(SPM_IRQ_STA));
-
-						spm_vcorefs_dump_dvfs_regs(NULL);
-						WARN_ON(1);
-					}
-					udelay(1);
-					retry++;
-				}
-			}
-
-#if SPM_AEE_RR_REC
-			aee_rr_rec_spm_common_scenario_val(0);
-#endif
-			spm_write(SPM_CPU_WAKEUP_EVENT, 0);
-			spm_write(SPM_WAKEUP_EVENT_MASK, con1);
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)));
-		}
-
-		/* backup mem control from r0 to POWER_ON_VAL0 */
-		if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
-			spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
-			spm_write(SPM_POWER_ON_VAL0, spm_read(PCM_REG0_DATA));
-		}
-
-		/* disable r0 and r7 to control power */
-		spm_write(PCM_PWR_IO_EN, 0);
-
-		/* [Vcorefs] disable pcm timer after leaving FW */
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-
-		/* backup vcore state from REG6[24:23] to RSV_5[24:23] */
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) |
-					(spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG));
-	}
-
-	/* reset PCM */
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
-	retry = 0;
-	while ((spm_read(PCM_FSM_STA) & 0x7fffff) != PCM_FSM_STA_DEF) {
-		if (retry > timeout) {
-			spm_crit2("reset pcm PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
-			WARN_ON(1); /* PCM reset failed */
-		}
-		udelay(1);
-		retry++;
-	}
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB);
-
-	/* init PCM_CON0 (disable event vector) */
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | EN_IM_SLEEP_DVS_LSB);
-
-	/* init PCM_CON1 (disable PCM timer but keep PCM WDT setting) */
-	con1 = spm_read(PCM_CON1) & (PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
-	spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | EVENT_LOCK_EN_LSB |
-		  SPM_SRAM_ISOINT_B_LSB | SPM_SRAM_SLEEP_B_LSB |
-		  (pcmdesc->replace ? 0 : IM_NONRP_EN_LSB) |
-		  MIF_APBEN_LSB | SCP_APB_INTERNAL_EN_LSB);
-
-	/* clear SPM_SW_INT after scenario change */
-	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
 }
 #endif
 
@@ -649,63 +489,16 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->md2_req_mask_b << 20) |
 			(!!pwrctrl->md1_req_mask_b << 19) |
 			(!!pwrctrl->md_ddr_dbc_en << 18) |
-#if defined(CONFIG_ARCH_MT6797)
-			(!!pwrctrl->mcusys_idle_mask << 6) |
-			(!!pwrctrl->mptop_idle_mask << 5) |
-			(!!pwrctrl->mp3top_idle_mask << 4) |
-			(!!pwrctrl->mp2top_idle_mask << 3) |
-#else
 			(!!pwrctrl->mcusys_idle_mask << 4) |
-#endif
 			(!!pwrctrl->mp1top_idle_mask << 2) |
 			(!!pwrctrl->mp0top_idle_mask << 1) |
 			(!!pwrctrl->wfi_op << 0));
-#if defined(CONFIG_ARCH_MT6797)
-#if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
-	spm_write(SPM_AP_STANDBY_CON, spm_read(SPM_AP_STANDBY_CON) & ~SCP_MASK_B_LSB);
-#endif
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
-	{
-		u8 spm_vrf18_req = pwrctrl->spm_vrf18_req;
-		u8 spm_infra_req = pwrctrl->spm_infra_req;
-		u8 spm_f26m_req = pwrctrl->spm_f26m_req;
-
-		if ((is_check_scp_freq_req() == 1) && check_scp_resource()) {
-			scp_request_freq = 1;
-
-			spm_vrf18_req = 1;
-			spm_infra_req = 1;
-			spm_f26m_req = 1;
-		} else {
-			scp_request_freq = 0;
-		}
-
-		spm_write(SPM_SRC_REQ, (!!pwrctrl->cpu_md_dvfs_sop_force_on << 16) |
-				(!!pwrctrl->spm_flag_run_common_scenario << 10) |
-				(!!pwrctrl->spm_flag_dis_vproc_vsram_dvs << 9) |
-				(!!pwrctrl->spm_flag_keep_csyspwrupack_high << 8) |
-				(!!pwrctrl->spm_ddren_req << 7) |
-				(!!pwrctrl->spm_dvfs_force_down << 6) |
-				(!!pwrctrl->spm_dvfs_req << 5) |
-				(!!spm_vrf18_req << 4) |
-				(!!spm_infra_req << 3) |
-				(!!pwrctrl->spm_lte_req << 2) |
-				(!!spm_f26m_req << 1) |
-				(!!pwrctrl->spm_apsrc_req << 0));
-	}
-#endif
 
 	spm_write(SPM_SRC_MASK,
 			(!!pwrctrl->conn_srcclkena_dvfs_req_mask_b << 31) |
 			(!!pwrctrl->md_srcclkena_1_dvfs_req_mask_b << 30) |
 			(!!pwrctrl->md_srcclkena_0_dvfs_req_mask_b << 29) |
 			(!!pwrctrl->emi_bw_dvfs_req_mask << 28) |
-#if defined(CONFIG_ARCH_MT6797)
-			(!!pwrctrl->cpu_dvfs_req_mask << 27) |
-			(!!pwrctrl->md1_dvfs_req_mask << 25) |
-#endif
 			(!!pwrctrl->md_vrf18_req_1_mask_b << 24) |
 			(!!pwrctrl->md_vrf18_req_0_mask_b << 23) |
 			(!!pwrctrl->md_ddr_en_1_mask_b << 22) |
@@ -728,9 +521,6 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->ccif0_to_md_mask_b << 1));
 
 	spm_write(SPM_SRC2_MASK,
-#if defined(CONFIG_ARCH_MT6797)
-			(!!pwrctrl->disp_od_req_mask_b << 27) |
-#endif
 			(!!pwrctrl->cpu_md_emi_dvfs_req_prot_dis << 26) |
 			(!!pwrctrl->emi_boost_dvfs_req_mask_b << 25) |
 			(!!pwrctrl->sdio_on_dvfs_req_mask_b << 24) |
@@ -754,10 +544,6 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(pwrctrl->srclkenai_mask ? CC_SRCLKENA_MASK_0 : 0));
 
 	/* set CPU WFI mask */
-#if defined(CONFIG_ARCH_MT6797)
-	spm_write(MP2_CPU0_WFI_EN, !!pwrctrl->mp2_cpu0_wfi_en);
-	spm_write(MP2_CPU1_WFI_EN, !!pwrctrl->mp2_cpu1_wfi_en);
-#endif
 	spm_write(MP1_CPU0_WFI_EN, !!pwrctrl->mp1_cpu0_wfi_en);
 	spm_write(MP1_CPU1_WFI_EN, !!pwrctrl->mp1_cpu1_wfi_en);
 	spm_write(MP1_CPU2_WFI_EN, !!pwrctrl->mp1_cpu2_wfi_en);
@@ -983,18 +769,10 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-#if defined(CONFIG_ARCH_MT6797)
-	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x, scp_request_freq = %u",
-			wakesta->raw_ext_sta,
-			wakesta->wake_misc,
-			spm_read(SPM_SW_FLAG),
-			scp_request_freq);
-#else
 	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x\n",
 			wakesta->raw_ext_sta,
 			wakesta->wake_misc,
 			spm_read(SPM_SW_FLAG));
-#endif
 
 	return wr;
 }
@@ -1118,9 +896,6 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 
 void __spm_backup_vcore_dvfs_dram_shuffle(void)
 {
-#ifdef SPM_VCORE_EN_MT6797
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | (0x2 << 23));
-#endif
 }
 
 #define MM_DVFS_DISP1_HALT_MASK 0x1
@@ -1132,7 +907,7 @@ int __check_dvfs_halt_source(int enable)
 {
 	u32 val, orig_val;
 	bool is_halt = 1;
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 	int i;
 #endif
 
@@ -1157,7 +932,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]isp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757)
 		/* Test bitmask halt_en */
 		for (i = 0; i < ISP_HALT_DMA_AMOUNT; i++) {
 			ISP_Halt_Mask(i);
@@ -1259,7 +1034,7 @@ void spm_set_dummy_read_addr(void)
 	spm_crit("dram_rank_num: %d\n", dram_rank_num);
 	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	MAPPING_DRAM_ACCESS_ADDR(rank0_addr);
 	MAPPING_DRAM_ACCESS_ADDR(rank1_addr);
 	spm_crit("dummy read addr(4GB: %d): rank0: 0x%x, rank1: 0x%x\n", enable_4G(), rank0_addr, rank1_addr);
@@ -1416,11 +1191,6 @@ void __spm_pmic_low_iq_mode(int en)
 					     MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT);
 	}
 #endif
-#elif defined(CONFIG_ARCH_MT6797)
-	if (en)
-		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 1, 0x1, 1);
-	else
-		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 0, 0x1, 1);
 #endif
 }
 

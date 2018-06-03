@@ -47,9 +47,6 @@
 #include <mtk_spm_internal.h>
 #include <mtk_cpufreq_hybrid.h>
 
-#if defined(CONFIG_ARCH_MT6797)
-#include <mtk_vcorefs_governor.h>
-#endif
 #if defined(CONFIG_MACH_MT6757)
 #include <mtk_dramc.h>
 #endif
@@ -519,7 +516,7 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_UPDATE,  1U << 18);
 }
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static bool mtk_idle_cpu_criteria(void)
 {
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
@@ -1228,15 +1225,6 @@ static bool dpidle_can_enter(int cpu)
 		goto out;
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
-	if (is_vcorefs_feature_enable()) {
-		if (vcorefs_screen_on_lock_dpidle()) {
-			reason = BY_VTG;
-			goto out;
-		}
-	}
-#endif
-
 	/* TODO: check if mtk_cpufreq_earlysuspend_status_get() should be used */
 #if 0
 	if (dpidle_by_pass_cg == 0) {
@@ -1612,9 +1600,6 @@ u32 slp_spm_deepidle_flags = {
 	#endif
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
-	#if defined(CONFIG_ARCH_MT6797)
-	SPM_FLAG_DIS_SYSRAM_SLEEP |
-	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN
 	#else
@@ -2717,13 +2702,6 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* TBD */
-#elif defined(CONFIG_ARCH_MT6797)
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "IMGPLL_CON0 = 0x%08x\n", idle_readl(IMGPLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MPLL_CON0 = 0x%08x\n", idle_readl(MPLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "CODECPLL_CON0 = 0x%08x\n", idle_readl(CODECPLL_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MDPLL1_CON0 = 0x%08x\n", idle_readl(MDPLL1_CON0));
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VDECPLL_CON0 = 0x%08x\n", idle_readl(VDECPLL_CON0));
 #endif
 
 	/* MTCMOS */
@@ -2865,9 +2843,6 @@ void mtk_cpuidle_framework_init(void)
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
 	mtk_idle_hotplug_cb_init();
-#if defined(CONFIG_ARCH_MT6797)
-	set_vcorefs_fw_mode();
-#endif
 	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
