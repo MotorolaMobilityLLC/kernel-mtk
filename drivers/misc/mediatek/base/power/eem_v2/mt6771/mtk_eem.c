@@ -107,6 +107,7 @@ DEFINE_MUTEX(record_mutex);
 static struct eem_devinfo eem_devinfo;
 static struct hrtimer eem_log_timer;
 static DEFINE_SPINLOCK(eem_spinlock);
+DEFINE_SPINLOCK(record_spinlock);
 
 /******************************************
 * common variables for legacy ptp
@@ -623,6 +624,8 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	/* eem_write(EEM_LIMITVALS, 0xFF0001FE); */
 	eem_write(EEM_VBOOT, (((det->VBOOT) & 0xff)));
 	eem_write(EEM_DETWINDOW, (((det->DETWINDOW) & 0xffff)));
+	/* for two line */
+	eem_write(EEM_CHKSHIFT, (0x77 & 0xff));
 	eem_write(EEMCONFIG, (((det->DETMAX) & 0xffff)));
 
 #if ENABLE_EEMCTL0
@@ -752,6 +755,18 @@ static void mt_ptp_unlock(unsigned long *flags)
 	spin_unlock_irqrestore(&eem_spinlock, *flags);
 }
 EXPORT_SYMBOL(mt_ptp_unlock);
+
+void mt_record_lock(unsigned long *flags)
+{
+	spin_lock_irqsave(&record_spinlock, *flags);
+}
+EXPORT_SYMBOL(mt_record_lock);
+
+void mt_record_unlock(unsigned long *flags)
+{
+	spin_unlock_irqrestore(&record_spinlock, *flags);
+}
+EXPORT_SYMBOL(mt_record_unlock);
 
 /*
  * timer for log
@@ -997,6 +1012,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	memset(det->volt_tbl, 0, sizeof(det->volt_tbl));
 	memset(det->volt_tbl_pmic, 0, sizeof(det->volt_tbl_pmic));
+	memset(det->volt_offset_drcc, 0, sizeof(det->volt_offset_drcc));
 	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
 	memset(record_tbl_locked, 0, sizeof(record_tbl_locked));
 
@@ -2601,12 +2617,19 @@ unsigned int get_efuse_status(void)
 static int __init eem_init(void)
 {
 	int err = 0;
+#ifdef DRCC_SUPPORT
+	spinlock_t record_lock;
+#endif
 
 #ifdef EEM_NOT_READY
 	return 0;
 #endif
 
 	eem_debug("[EEM] ctrl_EEM_Enable=%d\n", ctrl_EEM_Enable);
+
+#ifdef DRCC_SUPPORT
+	spin_lock_init(&record_lock);
+#endif
 
 	get_devinfo();
 	create_procfs();

@@ -749,7 +749,11 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 	unsigned int **volt_tbl;
 	struct buck_ctrl_t *vproc_p;
 
+#ifdef DRCC_SUPPORT
+	if (action != MT_CPU_DVFS_EEM_UPDATE)
+#endif
 	cpufreq_lock(flags);
+
 	/* action switch */
 	switch (action) {
 	case MT_CPU_DVFS_NORMAL:
@@ -812,6 +816,10 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 	default:
 		break;
 	};
+
+#ifdef DRCC_SUPPORT
+	if (action != MT_CPU_DVFS_EEM_UPDATE)
+#endif
 	cpufreq_unlock(flags);
 }
 
