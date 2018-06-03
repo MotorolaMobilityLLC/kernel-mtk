@@ -283,14 +283,13 @@ void spi_detach_irq_tee(u32 spinum)
 #endif
 void mt_spi_disable_master_clk(struct spi_device *spidev)
 {
-	int ret;
 	struct mtk_spi *ms;
 
 	ms = spi_master_get_devdata(spidev->master);
 	/*
-	 * prepare the clock source
+	 * unprepare the clock source
 	 */
-	ret = clk_prepare_enable(ms->spi_clk);
+	clk_disable_unprepare(ms->spi_clk);
 }
 EXPORT_SYMBOL(mt_spi_disable_master_clk);
 
