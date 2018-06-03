@@ -751,8 +751,15 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 	cq_dma@10212000 {
-		compatible = "mediatek,cq_dma";
-		reg = <0 0x10212000 0 0x1000>;
+		compatible = "mediatek,mt-cqdma-v1";
+		reg = <0 0x10212000 0 0x80>,
+			<0 0x10212080 0 0x80>;
+		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
+		nr_channel = <2>;
+		keep_clock_ao = "yes";
+		clocks = <&infracfg_ao CLK_IFR_CQ_DMA>;
+		clock-names = "cqdma";
 	};
 
 	mcupm_sram3@10213000 {
