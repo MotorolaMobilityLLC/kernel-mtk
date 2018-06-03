@@ -13,6 +13,7 @@
 
 obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_KIBOPLUS) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
@@ -39,7 +40,6 @@ obj-$(CONFIG_MACH_MT6799) += ppm_v2/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/
 obj-$(CONFIG_MACH_MT6799) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6799) += dcm_v1/
-obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8167) += hps_v1/
 
