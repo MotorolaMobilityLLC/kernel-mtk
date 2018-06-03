@@ -2425,6 +2425,22 @@ static long imgsensor_ioctl(
 	case KDIMGSENSORIOC_X_GET_CSI_CLK:
 		i4RetValue = imgsensor_clk_ioctrl_handler(pBuff);
 		break;
+
+	/*mmdvfs start*/
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+	case KDIMGSENSORIOC_DFS_UPDATE:
+		i4RetValue = imgsensor_dfs_ctrl(DFS_UPDATE, pBuff);
+		break;
+	case KDIMGSENSORIOC_GET_SUPPORTED_ISP_CLOCKS:
+		i4RetValue = imgsensor_dfs_ctrl(
+						DFS_SUPPORTED_ISP_CLOCKS,
+						pBuff);
+		break;
+	case KDIMGSENSORIOC_GET_CUR_ISP_CLOCK:
+		i4RetValue = imgsensor_dfs_ctrl(DFS_CUR_ISP_CLOCK, pBuff);
+		break;
+#endif
+	/*mmdvfs end*/
 	case KDIMGSENSORIOC_T_OPEN:
 	case KDIMGSENSORIOC_T_CLOSE:
 	case KDIMGSENSORIOC_T_CHECK_IS_ALIVE:
@@ -2461,8 +2477,12 @@ CAMERA_HW_Ioctl_EXIT:
 
 static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0)
+	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
 		imgsensor_clk_enable_all(&pgimgsensor->clk);
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+		imgsensor_dfs_ctrl(DFS_CTRL_ENABLE, NULL);
+#endif
+	}
 
 	atomic_inc(&pgimgsensor->imgsensor_open_cnt);
 	pr_info(
@@ -2477,9 +2497,14 @@ static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 	atomic_dec(&pgimgsensor->imgsensor_open_cnt);
 	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
 		imgsensor_clk_disable_all(&pgimgsensor->clk);
+
 		if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
 			pgimgsensor->imgsensor_oc_irq_enable(false);
+
 		imgsensor_hw_release_all(&pgimgsensor->hw);
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+		imgsensor_dfs_ctrl(DFS_CTRL_DISABLE, NULL);
+#endif
 	}
 	pr_info(
 	    "%s %d\n",
