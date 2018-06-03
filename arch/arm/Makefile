@@ -313,6 +313,13 @@ endif
 
 all:	$(KBUILD_IMAGE) $(KBUILD_DTBS)
 
+MTK_PLATFORM := $(CONFIG_MTK_PLATFORM:"%"=%)
+MTK_PROJECT := $(CONFIG_ARCH_MTK_PROJECT:"%"=%)
+export MTK_PLATFORM MTK_PROJECT MTK_TARGET_PROJECT
+-include $(srctree)/scripts/drvgen/drvgen.mk
+archprepare: $(DRVGEN_FILE_LIST)
+dtbs: $(DRVGEN_FILE_LIST)
+
 boot := arch/arm/boot
 
 archprepare:

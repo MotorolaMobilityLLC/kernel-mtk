@@ -240,7 +240,7 @@ static void dump_i2c_info(struct mt_i2c *i2c)
 {
 	int i;
 	int idx = i2c->rec_idx;
-	long long endtime;
+	unsigned long long endtime;
 	unsigned long ns;
 
 	if (i2c->buffermode) /* no i2c history @ buffermode */
