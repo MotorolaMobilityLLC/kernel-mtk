@@ -183,7 +183,7 @@ static unsigned int pmic_regulator_test_code(unsigned char type)
 	send.cmd[0] = MAIN_PMIC_REGULATOR;
 	send.cmd[1] = type;
 
-	ret = pmic_ipi_to_sspm(&send, &recv, lock);
+	ret = pmic_ipi_to_sspm(&send, &recv, 1);
 
 	return ret;
 }
