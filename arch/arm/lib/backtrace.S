@@ -74,10 +74,10 @@ for_each_frame:	tst	frame, mask		@ Check for address exceptions
 
 		ldr	r0, __stext
 		cmp	sv_pc, r0
-		blt	.badpc
+		blo	.badpc
 		ldr	r0, __etext
 		cmp	sv_pc, r0
-		bhi	.badpc
+		bhs	.badpc
 
 1003:		ldr	r2, [sv_pc, #-4]	@ if stmfd sp!, {args} exists,
 		ldr	r3, .Ldsi+4		@ adjust saved 'pc' back one
