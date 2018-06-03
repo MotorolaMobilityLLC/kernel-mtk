@@ -21,7 +21,9 @@
 
 /*
  * Class D: has HW Trim mode and SW Trim mode
- * Class AB: only has SW Trim mode
+ * Class AB: use the trim offset derived from Class D HW Trim
+ *
+ * The option used to choose the trim mode of Class D
  */
 #define USE_HW_TRIM_CLASS_D
 
@@ -204,8 +206,9 @@ static void mt6392_codec_get_spk_trim_offset(struct snd_soc_codec *codec)
 	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
 }
 
-static void mt6392_int_spk_on_with_hw_trim(struct snd_soc_codec *codec)
+static void mt6392_int_spk_on_with_trim(struct snd_soc_codec *codec)
 {
+#if defined(USE_HW_TRIM_CLASS_D)
 	/* turn on spk (class D) and hw trim */
 	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
 	snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
@@ -218,45 +221,31 @@ static void mt6392_int_spk_on_with_hw_trim(struct snd_soc_codec *codec)
 	/* turn off trim */
 	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3401);
 	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
-	usleep_range(2000, 3000);
-}
-
-static void mt6392_int_spk_on_with_sw_trim(struct snd_soc_codec *codec)
-{
+#else
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
 
-	/* turn on spk */
+	/* turn on spk (class D) */
 	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
 	snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
 	snd_soc_update_bits(codec, SPK_CON2, 0xFFFF, 0x0414);
-
-	switch (codec_data->speaker_mode) {
-	case MT6392_CLASS_D:
-		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3001);
-		break;
-	case MT6392_CLASS_AB:
-		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3005);
-		break;
-	default:
-		break;
-	}
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3001);
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
 
 	/* enable sw trim */
-	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0009);
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0001);
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0283);
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0281);
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x2A81);
-
+	snd_soc_update_bits(codec, SPK_CON1, 0xFFFF, 0x6000);
 	/* class D and class AB use the same trim offset value */
 	snd_soc_update_bits(codec, SPK_CON1,
 		GENMASK(12, 8), (codec_data->spk_trim_offset << 8));
-	snd_soc_update_bits(codec, SPK_CON1, 0xFFFF, 0x6000);
 
 	/* trim stop */
 	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0xAA81);
+#endif
 	usleep_range(2000, 3000);
 }
 
@@ -270,14 +259,19 @@ int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 
 	switch (codec_data->speaker_mode) {
 	case MT6392_CLASS_D:
-#if defined(USE_HW_TRIM_CLASS_D)
-		mt6392_int_spk_on_with_hw_trim(codec);
-#else
-		mt6392_int_spk_on_with_sw_trim(codec);
-#endif
+		mt6392_int_spk_on_with_trim(codec);
 		break;
 	case MT6392_CLASS_AB:
-		mt6392_int_spk_on_with_sw_trim(codec);
+		snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
+		snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
+		snd_soc_update_bits(codec, SPK_CON2, 0xFFFF, 0x0414);
+		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3005);
+		snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
+		snd_soc_update_bits(codec, SPK_CON1, 0xFFFF, 0x6000);
+		/* class D and class AB use the same trim offset value */
+		snd_soc_update_bits(codec, SPK_CON1,
+			GENMASK(12, 8), (codec_data->spk_trim_offset << 8));
+		usleep_range(2000, 3000);
 		break;
 	default:
 		ret = -EINVAL;
@@ -303,7 +297,6 @@ int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 		snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
 		break;
 	case MT6392_CLASS_AB:
-		snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0000);
 		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3404);
 		snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
 		break;
