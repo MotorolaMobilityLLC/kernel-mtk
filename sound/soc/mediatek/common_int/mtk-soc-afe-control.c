@@ -575,12 +575,23 @@ void DisableAPLLTunerbySampleRate(unsigned int SampleRate)
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter--;
-		if (APLL1TunerCounter == 0)
+
+		if (APLL1TunerCounter == 0) {
 			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x0, 0x1);
+		} else if (APLL1TunerCounter < 0) {
+			pr_debug("%s(), warning, APLL1TunerCounter<0", __func__);
+			APLL1TunerCounter = 0;
+		}
+
 	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		APLL2TunerCounter--;
-		if (APLL2TunerCounter == 0)
+
+		if (APLL2TunerCounter == 0) {
 			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x0, 0x1);
+		} else if (APLL2TunerCounter < 0) {
+			pr_debug("%s(), warning, APLL2TunerCounter<0", __func__);
+			APLL2TunerCounter = 0;
+		}
 	}
 
 }

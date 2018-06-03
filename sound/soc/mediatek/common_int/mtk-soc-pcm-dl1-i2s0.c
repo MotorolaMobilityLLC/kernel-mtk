@@ -175,8 +175,10 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		}
 
 		AudDrv_Clk_On();
-		if (!mtk_soc_always_hd)
+		if (!mtk_soc_always_hd) {
 			EnableALLbySampleRate(samplerate);
+			EnableAPLLTunerbySampleRate(samplerate);
+		}
 
 		if (extcodec_echoref_control > 0) {
 			/* I2S0 clock-gated */
@@ -255,10 +257,15 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			pr_debug("%s(), Turn off. AFE_I2S_CON=0x%x, AFE_I2S_CON3=0x%x\n", __func__,
 				 Afe_Get_Reg(AFE_I2S_CON), Afe_Get_Reg(AFE_I2S_CON3));
-			EnableAfe(false);
 		}
-		if (!mtk_soc_always_hd)
+
+		if (!mtk_soc_always_hd) {
+			DisableAPLLTunerbySampleRate(samplerate);
 			DisableALLbySampleRate(samplerate);
+		}
+
+		EnableAfe(false);
+
 		AudDrv_Clk_Off();
 	}
 
