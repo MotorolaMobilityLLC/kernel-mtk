@@ -50,8 +50,8 @@ enum {
 	IDX_ALL_DPIDLE_ENTER,            /* 5 */
 	IDX_ALL_RESERVE_6,               /* 6 */
 	IDX_ALL_VCORE_SUSPEND,           /* 7 */
-	IDX_ALL_VCORE_LEVEL0,            /* 8 */
-	IDX_ALL_VCORE_LEVEL1,            /* 9 */
+	IDX_ALL_VPROCL2_PWR_ON,        /* 8 */
+	IDX_ALL_VPROCL2_SHUTDOWN,      /* 9 */
 	IDX_ALL_VCORE_LEVEL2,            /* A */
 	IDX_ALL_VCORE_LEVEL3,            /* B */
 	IDX_ALL_VPROC_PWR_ON,          /* C */
