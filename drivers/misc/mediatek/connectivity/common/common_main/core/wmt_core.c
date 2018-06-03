@@ -133,6 +133,7 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp);
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp);
 static VOID wmt_core_dump_func_state(PINT8 pSource);
 static INT32 wmt_core_stp_init(VOID);
+static INT32 wmt_core_trigger_assert(VOID);
 static INT32 wmt_core_stp_deinit(VOID);
 static INT32 wmt_core_hw_check(VOID);
 #ifdef CONFIG_MTK_COMBO_ANT
@@ -598,6 +599,7 @@ INT32 wmt_core_reg_rw_raw(UINT32 isWrite, UINT32 offset, PUINT32 pVal, UINT32 ma
 	if ((iRet) || (u4Res != evtLen)) {
 		WMT_ERR_FUNC("Rx REG_EVT fail!(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
 		mtk_wcn_stp_dbg_dump_package();
+		wmt_core_trigger_assert();
 		return -3;
 	}
 
@@ -668,6 +670,32 @@ INT32 wmt_core_init_script(struct init_script *script, INT32 count)
 	}
 
 	return (i == count) ? 0 : -1;
+}
+
+static INT32 wmt_core_trigger_assert(VOID)
+{
+	INT32 ret = 0;
+	UINT32 u4Res;
+	UINT32 tstCmdSz = 0;
+	UINT32 tstEvtSz = 0;
+	UINT8 tstCmd[64];
+	UINT8 tstEvt[64];
+	UINT8 WMT_ASSERT_CMD[] = { 0x01, 0x02, 0x01, 0x00, 0x08 };
+	UINT8 WMT_ASSERT_EVT[] = { 0x02, 0x02, 0x00, 0x00, 0x00 };
+
+	WMT_INFO_FUNC("Send Assert command !\n");
+	tstCmdSz = osal_sizeof(WMT_ASSERT_CMD);
+	tstEvtSz = osal_sizeof(WMT_ASSERT_EVT);
+	osal_memcpy(tstCmd, WMT_ASSERT_CMD, tstCmdSz);
+	osal_memcpy(tstEvt, WMT_ASSERT_EVT, tstEvtSz);
+
+	ret = wmt_core_tx((PUINT8) tstCmd, tstCmdSz, &u4Res, MTK_WCN_BOOL_FALSE);
+	if (ret || (u4Res != tstCmdSz)) {
+		WMT_ERR_FUNC("WMT-CORE: wmt_cmd_test iRet(%d) cmd len err(%d, %d)\n", ret, u4Res,
+			     tstCmdSz);
+		ret = -1;
+	}
+	return ret;
 }
 
 static INT32 wmt_core_stp_init(VOID)
