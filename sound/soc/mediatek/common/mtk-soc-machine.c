@@ -111,7 +111,7 @@ static int mt_soc_ana_debug_open(struct inode *inode, struct file *file)
 static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 				     size_t count, loff_t *pos)
 {
-	const int size = 4096;
+	const int size = 8192;
 	/* char buffer[size]; */
 	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
@@ -149,7 +149,7 @@ static int mt_soc_debug_open(struct inode *inode, struct file *file)
 static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 				size_t count, loff_t *pos)
 {
-	const int size = 6144;
+	const int size = 12288;
 	/* char buffer[size]; */
 	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
@@ -217,6 +217,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	token5 = strsep(&temp, delim);
 	pr_debug("token5 = %s\n", token5);
 
+	AudDrv_Clk_On();
 	if (strcmp(token1, ParSetkeyAfe) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
 		ret = kstrtoul(token3, 16, &regaddr);
@@ -255,6 +256,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", PareGetkeyAna, (unsigned int)regaddr,
 			(unsigned int)regvalue);
 	}
+	AudDrv_Clk_Off();
 	return count;
 }
 
