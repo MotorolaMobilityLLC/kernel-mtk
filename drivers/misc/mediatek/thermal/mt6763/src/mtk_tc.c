@@ -86,6 +86,14 @@ int tscpu_ts_temp_r[TS_ENUM_MAX];
 * TO-DO: I assume AHB bus frequecy is 78MHz.
 * Please confirm it.
 */
+/*
+ * The tscpu_g_tc structure controls the polling rates and sensor mapping tables
+ * of all thermal controllers.
+ * If HW thermal controllers are more than you actually needed, you should pay
+ * attention to default setting of unneeded thermal controllers.
+ * Otherwise, these unneeded thermal controllers will be initialized and work
+ * unexpectedly.
+*/
 struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM] = {
 	[0] = {
 		.ts = {TS_MCU2, TS_MCU1, TS_MCU3},
@@ -823,6 +831,9 @@ irqreturn_t tscpu_thermal_all_tc_interrupt_handler(int irq, void *dev_id)
 	tscpu_dprintk("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret);
 
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		mask = 1 << i;
 		if ((ret & mask) == 0)
 			thermal_interrupt_handler(i);
@@ -1092,6 +1103,9 @@ void thermal_pause_all_periodoc_temp_sensing(void)
 
 	/*config bank0,1,2 */
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		offset = tscpu_g_tc[i].tc_offset;
 		temp = readl(offset + TEMPMSRCTL1);
 		/* set bit8=bit1=bit2=bit3=1 to pause sensing point 0,1,2,3 */
@@ -1109,6 +1123,9 @@ void thermal_release_all_periodoc_temp_sensing(void)
 
 	/*config bank0,1,2 */
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		offset = tscpu_g_tc[i].tc_offset;
 
 		temp = readl(offset + TEMPMSRCTL1);
@@ -1153,6 +1170,9 @@ void thermal_disable_all_periodoc_temp_sensing(void)
 
 	/* tscpu_printk("thermal_disable_all_periodoc_temp_sensing\n"); */
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		offset = tscpu_g_tc[i].tc_offset;
 		/* tscpu_printk("thermal_disable_all_periodoc_temp_sensing:Bank_%d\n",i); */
 		mt_reg_sync_writel(0x00000000, offset + TEMPMONCTL0);
@@ -1198,6 +1218,9 @@ void tscpu_thermal_initial_all_tc(void)
 	mt_reg_sync_writel(0x800, AUXADC_CON1_CLR_V);	/* disable auxadc channel 11 immediate mode */
 
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		offset = tscpu_g_tc[i].tc_offset;
 		thermal_reset_and_initial(i);
 
@@ -1211,8 +1234,12 @@ void tscpu_thermal_initial_all_tc(void)
 
 	mt_reg_sync_writel(0x800, AUXADC_CON1_SET_V);
 
-	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
+
 		tscpu_thermal_enable_all_periodoc_sensing_point(i);
+	}
 }
 
 void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
@@ -1251,8 +1278,11 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	       (end.tv_usec - begin.tv_usec));
 #endif
 
-	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		if (tscpu_g_tc[i].ts_number == 0)
+			continue;
 		set_tc_trigger_hw_protect(temperature, temperature2, i); /* Move thermal HW protection ahead... */
+	}
 
 	/*Thermal need to config to direct reset mode
 	*  this API provide by Weiqi Fu(RGU SW owner).
