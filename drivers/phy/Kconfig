@@ -397,4 +397,6 @@ config PHY_MTK_PCIE
 	  Say 'Y' here to add support for Mediatek PCIE PHY driver
 	  for mt6799 series SoC.
 
+source "drivers/phy/mediatek/Kconfig"
+
 endmenu
