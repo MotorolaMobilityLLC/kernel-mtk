@@ -209,7 +209,25 @@ void exception_header_init(void *oldbufp, scp_core_id id)
 	for (cpu = 0; cpu < 1; cpu++)
 		bufp = core_write_cpu_note(cpu, nhdr, bufp, id);
 }
+/*dump scp reg*/
+void scp_reg_copy(void *bufp)
+{
+	struct scp_reg_dump_list *scp_reg;
 
+	scp_reg = (struct scp_reg_dump_list *) bufp;
+
+	/*setup scp reg*/
+	scp_reg->scp_reg_magic = 0xDEADBEEF;
+	scp_reg->ap_resource = readl(SCP_AP_RESOURCE);
+	scp_reg->bus_resource = readl(SCP_BUS_RESOURCE);
+	scp_reg->slp_protect = readl(SCP_SLP_PROTECT_CFG);
+	scp_reg->cpu_sleep_status = readl(SCP_CPU_SLEEP_STATUS);
+	scp_reg->clk_sw_sel = readl(SCP_CLK_SW_SEL);
+	scp_reg->clk_enable = readl(SCP_CLK_ENABLE);
+	scp_reg->clk_high_core = readl(SCP_CLK_HIGH_CORE_CG);
+	scp_reg->scp_reg_magic_end = 0xDEADBEEF;
+
+}
 /*
  * return last lr for debugging
  */
@@ -292,7 +310,10 @@ static unsigned int scp_crash_dump(MemoryDump *pMemoryDump, scp_core_id id)
 	memcpy_from_scp((void *)&(pMemoryDump->memory),
 		(void *)(SCP_TCM + CRASH_MEMORY_OFFSET), (SCP_A_TCM_SIZE - CRASH_MEMORY_OFFSET));
 
-	scp_dump_size = CRASH_MEMORY_HEADER_SIZE + SCP_A_TCM_SIZE;
+	/*dump scp reg*/
+	scp_reg_copy(&(pMemoryDump->scp_reg_dump));
+
+	scp_dump_size = CRASH_MEMORY_HEADER_SIZE + SCP_A_TCM_SIZE + CRASH_REG_SIZE;
 
 	*reg = lock;
 	dsb(SY);
