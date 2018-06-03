@@ -582,8 +582,10 @@ static const char *index_to_subsys(unsigned int index)
 		return "VCODECSYS";
 	else if (index == 203 || (index >= 205 && index <= 236))
 		return "CAMSYS";
-	else
+	else if (index < ARRAY_SIZE(devapc_infra_devices))
 		return devapc_infra_devices[index].device;
+	else
+		return "OUT_OF_BOUND";
 }
 
 static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
