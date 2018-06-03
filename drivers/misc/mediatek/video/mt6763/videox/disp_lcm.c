@@ -1113,7 +1113,7 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm
 		DISPERR
 			("FATAL ERROR!!!EXT_LCM Driver can't find, The lk ext lcm name is(%s)\n",
 			plcm_name);
-		return NULL;
+		goto FAIL;
 	}
 	{
 		plcm->drv->get_params(plcm->params);
