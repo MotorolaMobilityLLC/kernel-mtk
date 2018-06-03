@@ -1310,13 +1310,6 @@ int rpmb_req_get_wc_emmc(struct mmc_card *card, u8 *key, u32 *wc)
 		 * Authenticate response write counter frame.
 		 */
 		if (key) {
-			if (strlen(key) != 32) {
-				MSG(ERR, "%s, error rpmb key len = 0x%x\n",
-					 __func__, (unsigned int)strlen(key));
-				ret = RPMB_WC_ERROR;
-				break;
-			}
-
 			hmac_sha256(key, 32, rpmb_frame->data, 284, hmac);
 			if (memcmp(hmac, rpmb_frame->mac, RPMB_SZ_MAC) != 0) {
 				MSG(ERR, "%s, hmac compare error!!!\n",
@@ -1362,7 +1355,6 @@ int rpmb_req_ioctl_write_data_emmc(struct mmc_card *card,
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
-	u8 user_param_data;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 	u8 write_blks_one_time = 0;
 	u32 size_for_hmac;
@@ -1370,12 +1362,6 @@ int rpmb_req_ioctl_write_data_emmc(struct mmc_card *card,
 #endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
-
-	if (get_user(user_param_data, param->data))
-		return -EFAULT;
-
-	if (get_user(user_param_data, param->key))
-		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
@@ -1637,18 +1623,11 @@ int rpmb_req_ioctl_read_data_emmc(struct mmc_card *card,
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
-	u8 user_param_data;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 	u32 size_for_hmac;
 	u8 *data_for_hmac;
 #endif
 	MSG(INFO, "%s start!!!\n", __func__);
-
-	if (get_user(user_param_data, param->data))
-		return -EFAULT;
-
-	if (get_user(user_param_data, param->key))
-		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
