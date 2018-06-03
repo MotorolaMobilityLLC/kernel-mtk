@@ -23,6 +23,7 @@
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 
+extern int mtk_is_mtcmos_enable(void);
 extern spinlock_t *get_mtk_clk_lock(void);
 
 #define mtk_clk_lock(flags)	spin_lock_irqsave(get_mtk_clk_lock(), flags)
