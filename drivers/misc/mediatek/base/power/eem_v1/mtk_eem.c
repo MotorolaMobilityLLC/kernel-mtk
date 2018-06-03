@@ -5695,6 +5695,7 @@ static void inherit_base_det(struct eem_det *det)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 /* done at arch_init */
+static int vcorefs_level3_volt;
 static int __init vcore_ptp_init(void)
 {
 	int i = 0;
@@ -5724,12 +5725,36 @@ static int __init vcore_ptp_init(void)
 	for (i = 0; i < VCORE_NR_FREQ; i++)
 		eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[i] = eem_vcore[i];
 
+	/* MT6799 workaround for display:
+	* If primary_display_get_dsc_1slice_info() return 1,
+	*  replace vcore opp3 to opp2
+	*/
+	vcorefs_level3_volt = get_vcore_ptp_volt(OPP_3);
+	if (primary_display_get_dsc_1slice_info() == 1)
+		mt_eem_vcorefs_update_volt(true);
+
 	eem_error("Got vcore volt(pmic): 0x%x 0x%x 0x%x 0x%x\n",
 				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[0],
 				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[1],
 				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[2],
 				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[3]);
 	return 0;
+}
+
+void mt_eem_vcorefs_update_volt(bool screen)
+{
+	int vcorefs_level2_volt;
+
+	if (screen) {
+		vcorefs_level2_volt = get_vcore_ptp_volt(OPP_2);
+		eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[OPP_3] = vcorefs_level2_volt;
+		spm_msdc_wqhd_workaround(1);
+	} else {
+		eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[OPP_3] = vcorefs_level3_volt;
+		spm_msdc_wqhd_workaround(0);
+	}
+
+	mt_eem_vcorefs_set_volt();
 }
 
 /* return ack from sspm spm_vcorefs_pwarp_cmd */
