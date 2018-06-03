@@ -1182,6 +1182,9 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module,
 	unsigned int height;
 	struct golden_setting_context *p_golden_setting;
 	enum UNIFIED_COLOR_FMT inFormat = r_config->inputFormat;
+	enum UNIFIED_COLOR_FMT bwFormat;
+	unsigned int bwBpp;
+	unsigned long long rdma_bw;
 
 	width = pConfig->dst_dirty ? pConfig->dst_w : r_config->width;
 	height = pConfig->dst_dirty ? pConfig->dst_h : r_config->height;
@@ -1228,6 +1231,21 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module,
 	    lcm_param->dsi.ufoe_enable,
 	    r_config->security, r_config->yuv_range, &(r_config->bg_ctrl),
 	    handle, p_golden_setting, pConfig->lcm_bpp);
+
+	/* calculate bandwidth */
+	bwFormat = (mode == RDMA_MODE_DIRECT_LINK) ? UFMT_RGB888 : inFormat;
+	bwBpp = ufmt_get_Bpp(bwFormat);
+	rdma_bw = (unsigned long long)width * height * bwBpp;
+	do_div(rdma_bw, 1000);
+	rdma_bw *= 1250;
+	do_div(rdma_bw, 1000);
+	DDPMSG("R:width=%u,height=%u,Bpp:%u,bw:%llu\n",
+		width, height, bwBpp, rdma_bw);
+
+	/* bandwidth report */
+	if (module == DISP_MODULE_RDMA0)
+		DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE,
+			DISP_SLOT_RDMA0_BW, (unsigned int)rdma_bw);
 
 	return 0;
 }

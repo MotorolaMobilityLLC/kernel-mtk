@@ -149,6 +149,7 @@ struct DDP_MMP_Events {
 	mmp_event dsi_lfr_switch;
 	mmp_event Dsi_Update;
 	mmp_event primary_set_cmd;
+	mmp_event primary_pm_qos;
 };
 
 struct DDP_MMP_Events *ddp_mmp_get_events(void);

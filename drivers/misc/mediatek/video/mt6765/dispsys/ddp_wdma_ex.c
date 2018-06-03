@@ -1207,6 +1207,8 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module,
 
 	struct WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
 	unsigned int is_primary_flag = 1; /*primary or external*/
+	unsigned int bwBpp;
+	unsigned long long wdma_bw;
 
 	if (!pConfig->wdma_dirty)
 		return 0;
@@ -1231,6 +1233,24 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module,
 		p_golden_setting = pConfig->p_golden_setting_context;
 		wdma_golden_setting(module, p_golden_setting,
 			is_primary_flag, handle);
+
+		/* calculate bandwidth */
+		bwBpp = ufmt_get_Bpp(config->outputFormat);
+		wdma_bw = (unsigned long long)config->clipWidth *
+				config->clipHeight * bwBpp;
+		do_div(wdma_bw, 1000);
+		wdma_bw *= 1250;
+		do_div(wdma_bw, 1000);
+		DDPMSG("W:width=%u,height=%u,Bpp:%u,bw:%llu\n",
+			config->clipWidth, config->clipHeight, bwBpp, wdma_bw);
+
+		/* bandwidth report */
+		if (module == DISP_MODULE_WDMA0) {
+			DDPDBG("%s,bw%llu\n",
+				ddp_get_module_name(module), wdma_bw);
+			DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE,
+				DISP_SLOT_WDMA0_BW, (unsigned int)wdma_bw);
+		}
 	}
 	return 0;
 }

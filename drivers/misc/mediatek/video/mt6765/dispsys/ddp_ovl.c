@@ -1249,6 +1249,10 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 	int layer_id;
 	int ovl_layer = 0;
 	int enabled_ext_layers = 0, ext_sel_layers = 0;
+	struct golden_setting_context *golden_setting =
+		pConfig->p_golden_setting_context;
+	unsigned int Bpp, fps;
+	unsigned long long tmp_bw, ovl_bw;
 
 	unsigned long layer_offset_rdma_ctrl;
 	unsigned long ovl_base = ovl_base_addr(module);
@@ -1297,6 +1301,14 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 
 	has_sec_layer = setup_ovl_sec(module, pConfig, handle);
 
+	if (golden_setting->fps)
+		fps = golden_setting->fps;
+	else {
+		DDPDBG("no fps information, set fps as default 60\n");
+		fps = 60;
+	}
+
+	ovl_bw = 0;
 	for (layer_id = 0; layer_id < TOTAL_REAL_OVL_LAYER_NUM; layer_id++) {
 		struct OVL_CONFIG_STRUCT *ovl_cfg =
 			&pConfig->ovl_config[layer_id];
@@ -1348,9 +1360,21 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		} else {
 			enabled_layers |= enable << ovl_cfg->phy_layer;
 		}
+
+		Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
+		tmp_bw = (unsigned long long)ovl_cfg->dst_h *
+			ovl_cfg->dst_w * fps * Bpp;
+		do_div(tmp_bw, 1000);
+		tmp_bw *= 1250;
+		do_div(tmp_bw, fps * 1000);
+		ovl_bw = ovl_bw + tmp_bw;
+		DDPMSG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n",
+			pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
-	DDPDBG("%s:en_layer=0x%01x,en_ext_layer=0x%01x,ext_sel_layer=0x%04x\n",
+	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
+	DDPDBG(
+		"%s:en_layer=0x%01x,en_ext_layer=0x%01x,ext_sel_layer=0x%04x\n",
 		ddp_get_module_name(module), enabled_layers, enabled_ext_layers,
 		ext_sel_layers >> 16);
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON,
@@ -1359,6 +1383,16 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(handle,
 		ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		enabled_ext_layers | ext_sel_layers);
+
+	/* bandwidth report */
+	if (module == DISP_MODULE_OVL0) {
+		DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE,
+			DISP_SLOT_IS_DC, golden_setting->is_dc);
+		DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE,
+			DISP_SLOT_OVL0_BW, (unsigned int)ovl_bw);
+	} else if (module == DISP_MODULE_OVL0_2L)
+		DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE,
+			DISP_SLOT_OVL0_2L_BW, (unsigned int)ovl_bw);
 
 	/* Check if there is YUV layer at last time.
 	 * If it's disabled in this time, set it into other format.
