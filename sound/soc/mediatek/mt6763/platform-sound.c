@@ -1907,6 +1907,25 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 		pr_aud("%s(), Aud_IRQ%d_Handler is Null", __func__, irqIndex);
 }
 
+enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block)
+{
+	switch (mem_block) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+	case Soc_Aud_Digital_Block_MEM_AWB:
+	case Soc_Aud_Digital_Block_MEM_DAI:
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE;
+	default:
+		pr_err("%s, can't request irq_num by this mem_block = %d", __func__, mem_block);
+		AUDIO_ASSERT(0);
+		return Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE;
+	}
+}
+
 bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 {
 	if (!usingdram)
