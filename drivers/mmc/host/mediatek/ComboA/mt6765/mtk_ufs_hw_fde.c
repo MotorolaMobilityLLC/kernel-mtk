@@ -87,7 +87,7 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 	}
 
 	/* 2. enable AES path */
-	MSDC_SET_BIT32(EMMC52_AES_EN, EMMC52_AES_ON);
+	MSDC_CLR_BIT32(EMMC52_AES_SWST, EMMC52_AES_BYPASS);
 
 	/* 3. AES switch start (flush the configure) */
 	if (dir == DMA_TO_DEVICE) {
@@ -233,8 +233,9 @@ check_hw_crypto:
 static void msdc_post_crypto(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
-	/* disable AES path */
-	MSDC_CLR_BIT32(EMMC52_AES_EN, EMMC52_AES_ON);
+
+	/* disable AES path by set bypass bit */
+	MSDC_SET_BIT32(EMMC52_AES_SWST, EMMC52_AES_BYPASS);
 }
 
 #ifdef CONFIG_HIE
