@@ -144,8 +144,8 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, MASK=0x%x, SHIFT=%d\n",
-			 __func__, RegNum, MASK, SHIFT);
+		pr_err("[%s] err ret=%d, Reg[0x%x] pmic_wrap read data fail, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
@@ -179,8 +179,8 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
-			 __func__, RegNum, val, MASK, SHIFT);
+		pr_err("[%s] err ret=%d, Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, val, MASK, SHIFT);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -191,8 +191,8 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 
 	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
-			 __func__, RegNum, pmic_reg, val, MASK, SHIFT);
+		pr_err("[%s] err ret=%d, Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, pmic_reg, val, MASK, SHIFT);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -206,9 +206,11 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pmic_ipi_config_interface(RegNum, val, MASK, SHIFT, 1);
 
 	if (return_value)
-		PMICLOG("IPIMB write data fail\n");
+		pr_err("[%s]IPIMB write data fail with ret = %d, (0x%x,0x%x,0x%x,%d)\n", __func__,
+			return_value, RegNum, val, MASK, SHIFT);
 	else
-		PMICLOG("IPIMB write data =(%x,%x,%x,%x)\n", RegNum, val, MASK, SHIFT);
+		PMICLOG("[%s]IPIMB write data =(0x%x,0x%x,0x%x,%d)\n", __func__,
+			RegNum, val, MASK, SHIFT);
 
 	mutex_unlock(&pmic_access_mutex);
 #endif /*---!IPIMB---*/
@@ -239,8 +241,8 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
-			 __func__, RegNum, val, MASK, SHIFT);
+		pr_err("[%s] err ret=%d, Reg[0x%x] pmic_wrap read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, val, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -250,8 +252,8 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 
 	return_value = pwrap_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		pr_err("[%s] Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
-			 __func__, RegNum, pmic_reg, val, MASK, SHIFT);
+		pr_err("[%s] err ret=%d, Reg[0x%x]=0x%x pmic_wrap write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, return_value, RegNum, pmic_reg, val, MASK, SHIFT);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -260,9 +262,11 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pmic_ipi_config_interface(RegNum, val, MASK, SHIFT, 0);
 
 	if (return_value)
-		PMICLOG("IPIMB write data nolock fail\n");
+		pr_err("[%s]IPIMB write data fail with ret = %d, (0x%x,0x%x,0x%x,%d)\n", __func__,
+			return_value, RegNum, val, MASK, SHIFT);
 	else
-		PMICLOG("IPIMB write data nolock = (%x,%x,%x,%x)\n", RegNum, val, MASK, SHIFT);
+		PMICLOG("[%s]IPIMB write data =(0x%x,0x%x,0x%x,%d)\n", __func__,
+			RegNum, val, MASK, SHIFT);
 
 #endif /*---IPIMB---*/
 

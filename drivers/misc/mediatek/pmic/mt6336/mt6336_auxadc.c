@@ -70,9 +70,8 @@ int mt6336_get_auxadc_out(MT6336_PMU_FLAGS_LIST_ENUM l_byte)
 	unsigned char l_data, h_data;
 
 	l_data = mt6336_get_flag_register_value(l_byte);
-	pr_info("%s l_data = 0x%02x\n", __func__, l_data);
 	h_data = mt6336_get_flag_register_value(1+l_byte); /* flag + 1 */
-	pr_info("%s h_data = 0x%02x\n", __func__, h_data);
+	MT6336LOG("[%s] h_data = 0x%02x, l_data = 0x%02x\n", __func__, h_data, l_data);
 
 	return l_data|(h_data << 8);
 }
@@ -125,7 +124,7 @@ int mt6336_get_auxadc_value_bysw(u8 channel)
 	}
 
 	reg_val = mt6336_get_auxadc_out(channel_out);
-	pr_info("%s auxadc out = %d\n", __func__, reg_val);
+	MT6336LOG("[%s] auxadc out = %d\n", __func__, reg_val);
 
 	mutex_unlock(&mt6336_adc_mutex);
 	wake_unlock(&mt6336_auxadc_wake_lock);
@@ -135,7 +134,7 @@ int mt6336_get_auxadc_value_bysw(u8 channel)
 	else if (resolution == 15)
 		adc_result = (reg_val*VOLTAGE_FULL_RANGE)*r_val/32768; /*15*/
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+	MT6336LOG("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
@@ -171,7 +170,7 @@ int mt6336_get_auxadc_value(u8 channel)
 	}
 
 	reg_val = mt6336_get_auxadc_out(auxadc_channel->channel_out);
-	pr_info("%s auxadc out = %d\n", __func__, reg_val);
+	MT6336LOG("[%s] auxadc out = %d\n", __func__, reg_val);
 
 	mt6336_auxadc_unlock();
 
@@ -182,7 +181,7 @@ int mt6336_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+	MT6336LOG("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
@@ -212,6 +211,6 @@ void mt6336_auxadc_init(void)
 	mutex_init(&mt6336_adc_mutex);
 	/*mt6336_set_flag_register_value(MT6336_AUXADC_CK_AON, 0);*/
 
-	pr_info("****[%s] DONE\n", __func__);
+	pr_err("****[%s] DONE\n", __func__);
 }
 EXPORT_SYMBOL(mt6336_auxadc_init);
