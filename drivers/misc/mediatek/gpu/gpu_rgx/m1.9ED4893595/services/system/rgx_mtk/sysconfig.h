@@ -39,44 +39,60 @@
 * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************/
+***************************************************************************/
 
-#if !defined(__SYSINFO_H__)
-#define __SYSINFO_H__
+#include "pvrsrv_device.h"
+#include "rgxdevice.h"
+
+#if !defined(__SYSCCONFIG_H__)
+#define __SYSCCONFIG_H__
 
 
+#define RGX_HW_SYSTEM_NAME "RGX HW"
 
-/*!< System specific poll/timeout details */
-#if defined(PVR_LINUX_USING_WORKQUEUES)
-#define MAX_HW_TIME_US				(1000000)
-#define DEVICES_WATCHDOG_POWER_ON_SLEEP_TIMEOUT  (10000)
-#define DEVICES_WATCHDOG_POWER_OFF_SLEEP_TIMEOUT (3600000)
-#define WAIT_TRY_COUNT				(20000)
+#if defined(CONFIG_MACH_MT8173)
+#define RGX_HW_CORE_CLOCK_SPEED			(455000000)
+#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (30)
+#elif defined(CONFIG_MACH_MT8167)
+#define RGX_HW_CORE_CLOCK_SPEED			(500000000)
+#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (50)
+#elif defined(CONFIG_MACH_MT6739)
+#define RGX_HW_CORE_CLOCK_SPEED			(481000000)
+#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
 #else
-#define MAX_HW_TIME_US				(5000000)
-#define DEVICES_WATCHDOG_POWER_ON_SLEEP_TIMEOUT  (10000)
-#define DEVICES_WATCHDOG_POWER_OFF_SLEEP_TIMEOUT (3600000)
-#define WAIT_TRY_COUNT				(100000)
 #endif
 
-#define SYS_DEVICE_COUNT 3 /* RGX, DISPLAY (external), BUFFER (external) */
+static IMG_UINT32 gauiBIFTilingHeapXStrides[RGXFWIF_NUM_BIF_TILING_CONFIGS] = {
+	0, /* BIF tiling heap 1 x-stride */
+	1, /* BIF tiling heap 2 x-stride */
+	2, /* BIF tiling heap 3 x-stride */
+	3  /* BIF tiling heap 4 x-stride */
+};
 
-#define SYS_PHYS_HEAP_COUNT		1
-
-#define SYS_RGX_OF_COMPATIBLE "mediatek,AUCKLAND"
-
-#if defined(__linux__)
-#define SYS_RGX_DEV_NAME    "pvrsrvkm"
-/* #if defined(SUPPORT_DRM) */
-/*
- * Use the static bus ID for the platform DRM device.
- */
-#if defined(PVR_DRM_DEV_BUS_ID)
-#define	SYS_RGX_DEV_DRM_BUS_ID	PVR_DRM_DEV_BUS_ID
+#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
+int MTKSysGetIRQ(void);
 #else
-#define SYS_RGX_DEV_DRM_BUS_ID	"platform:pvrsrvkm"
-#endif	/* defined(PVR_DRM_DEV_BUS_ID) */
-/* #endif */	/* defined(SUPPORT_DRM) */
+
+/* if *CONFIG_OF is not set, please makesure the following address and IRQ number are right */
+/* #error RGX_GPU_please_fill_the_following_defines */
+#define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
+#define SYS_MTK_RGX_REGS_SIZE               0x80000
+
+#if defined(CONFIG_MACH_MT8173)
+#define SYS_MTK_RGX_IRQ                     0
+#elif defined(CONFIG_MACH_MT8167)
+#define SYS_MTK_RGX_IRQ                     219
+#elif defined(CONFIG_MACH_MT6739)
+#define SYS_MTK_RGX_IRQ                     336
+#else
 #endif
 
-#endif	/* !defined(__SYSINFO_H__) */
+#endif
+
+
+
+/*****************************************************************************
+ * system specific data structures
+ *****************************************************************************/
+
+#endif	/* __SYSCCONFIG_H__ */

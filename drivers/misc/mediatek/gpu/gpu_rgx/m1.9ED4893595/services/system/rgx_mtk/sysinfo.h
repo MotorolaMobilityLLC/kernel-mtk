@@ -39,48 +39,46 @@
 * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-***************************************************************************/
+**************************************************************************/
 
-#include "pvrsrv_device.h"
-#include "rgxdevice.h"
+#if !defined(__SYSINFO_H__)
+#define __SYSINFO_H__
 
-#if !defined(__SYSCCONFIG_H__)
-#define __SYSCCONFIG_H__
-
-
-#define RGX_HW_CORE_CLOCK_SPEED 481000000
-#define RGX_HW_SYSTEM_NAME "RGX HW"
-
-#ifdef MTK_MARLOWE
-#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
+/*!< System specific poll/timeout details */
+#if defined(PVR_LINUX_USING_WORKQUEUES)
+#define MAX_HW_TIME_US								(1000000)
+#define DEVICES_WATCHDOG_POWER_ON_SLEEP_TIMEOUT		(10000)
+#define DEVICES_WATCHDOG_POWER_OFF_SLEEP_TIMEOUT	(3600000)
+#define WAIT_TRY_COUNT								(20000)
 #else
-#define SYS_RGX_ACTIVE_POWER_LATENCY_MS (3)
+#define MAX_HW_TIME_US								(5000000)
+#define DEVICES_WATCHDOG_POWER_ON_SLEEP_TIMEOUT		(10000)
+#define DEVICES_WATCHDOG_POWER_OFF_SLEEP_TIMEOUT	(3600000)
+#define WAIT_TRY_COUNT								(100000)
 #endif
 
+#define SYS_DEVICE_COUNT		3 /* RGX, DISPLAY (external), BUFFER (external) */
 
+#define SYS_PHYS_HEAP_COUNT		1
 
-static IMG_UINT32 gauiBIFTilingHeapXStrides[RGXFWIF_NUM_BIF_TILING_CONFIGS] = {
-	0, /* BIF tiling heap 1 x-stride */
-	1, /* BIF tiling heap 2 x-stride */
-	2, /* BIF tiling heap 3 x-stride */
-	3  /* BIF tiling heap 4 x-stride */
-};
-
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-int MTKSysGetIRQ(void);
+#if defined(CONFIG_MACH_MT8173)
+#define SYS_RGX_OF_COMPATIBLE	"mediatek,mt8173-han"
+#elif defined(CONFIG_MACH_MT8167)
+#define SYS_RGX_OF_COMPATIBLE	"mediatek,mt8167-clark"
+#elif defined(CONFIG_MACH_MT6739)
+#define SYS_RGX_OF_COMPATIBLE	"mediatek,AUCKLAND"
 #else
-/* if *CONFIG_OF is not set, please makesure the following address and IRQ number are right */
-/* #error RGX_GPU_please_fill_the_following_defines */
-#define SYS_MTK_RGX_REGS_SYS_PHYS_BASE      0x13000000
-#define SYS_MTK_RGX_REGS_SIZE               0x80000
-/* 6799 */
-#define SYS_MTK_RGX_IRQ                    336
 #endif
 
+#if defined(__linux__)
+/*
+ * Use the static bus ID for the platform DRM device.
+ */
+#if defined(PVR_DRM_DEV_BUS_ID)
+#define	SYS_RGX_DEV_DRM_BUS_ID	PVR_DRM_DEV_BUS_ID
+#else
+#define SYS_RGX_DEV_DRM_BUS_ID	"platform:pvrsrvkm"
+#endif	/* defined(PVR_DRM_DEV_BUS_ID) */
+#endif
 
-
-/*****************************************************************************
- * system specific data structures
- *****************************************************************************/
-
-#endif	/* __SYSCCONFIG_H__ */
+#endif	/* !defined(__SYSINFO_H__) */

@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/module.h>
 #include <linux/sched.h>
 #include "mtk_mfgsys.h"
@@ -215,9 +228,6 @@ void MTKDisablePowerDomain(void)
 {
 }
 
-void MTKSetICVerion(void)
-{
-}
 
 #ifdef MTK_MFGMTCMOS_AO
 static bool isPowerOn;
@@ -884,33 +894,6 @@ UNLOCK_RET:
 		OSLockRelease(ghDVFSLock);
 	}
 }
-
-void MTKMFGEnableDVFSTimer(bool bEnable)
-{
-	if (gpu_debug_enable)
-		PVR_DPF((PVR_DBG_ERROR, "MTKMFGEnableDVFSTimer: %s", bEnable ? "yes" : "no"));
-
-
-	if (g_hDVFSTimer == NULL) {
-		PVR_DPF((PVR_DBG_ERROR, "MTKMFGEnableDVFSTimer: g_hDVFSTimer is NULL"));
-		return;
-	}
-
-	OSLockAcquire(ghDVFSTimerLock);
-
-	if (bEnable) {
-		if (!g_bTimerEnable) {
-			if (OSEnableTimer(g_hDVFSTimer) == PVRSRV_OK)
-				g_bTimerEnable = IMG_TRUE;
-		}
-	} else {
-		if (g_bTimerEnable)
-			if (OSDisableTimer(g_hDVFSTimer) == PVRSRV_OK)
-				g_bTimerEnable = IMG_FALSE;
-	}
-
-	OSLockRelease(ghDVFSTimerLock);
-}
 #endif
 
 static bool MTKCheckDeviceInit(void)
@@ -1389,8 +1372,7 @@ void MTKMFGSystemDeInit(void)
 }
 
 
-
-void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
+int MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 {
 	struct device *pdev;
 
@@ -1454,6 +1436,13 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 #if MTK_PM_SUPPORT
 	MTKDisableMfgClock(IMG_TRUE);
 #endif
+
+	return 0;
+}
+
+int MTKRGXDeviceDeInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
+{
+	return 0;
 }
 
 void MTKSaveFrame(const char func_name[])

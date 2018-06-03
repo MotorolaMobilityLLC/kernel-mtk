@@ -1,3 +1,17 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+
 #if defined(MTK_DEBUG_PROC_PRINT)
 
 #include <linux/version.h>
@@ -24,16 +38,17 @@ static int g_init_done;
 
 #if defined(ENABLE_AEE_WHEN_LOCKUP)
 
-struct MTKPP_WORKQUEUE_t {
+struct MTKPP_WORKQUEUE {
 	int cycle;
 	struct workqueue_struct *psWorkQueue;
 };
-struct MTKPP_WORKQUEUE_t g_MTKPP_workqueue;
 
-struct MTKPP_WORKQUEUE_WORKER_t {
+struct MTKPP_WORKQUEUE_WORKER {
 	struct work_struct sWork;
 };
-struct MTKPP_WORKQUEUE_WORKER_t g_MTKPP_worker;
+
+struct MTKPP_WORKQUEUE g_MTKPP_workqueue;
+struct MTKPP_WORKQUEUE_WORKER g_MTKPP_worker;
 
 #endif
 
@@ -78,7 +93,7 @@ static void MTKPP_PrintQueueBuffer(MTK_PROC_PRINT_DATA *data, const char *fmt, .
 	MTKPP_Lock(data);
 
 	if ((data->current_line >= data->line_array_size)
-		|| (data->current_data >= (data->data_array_size - 128))) {
+	    || (data->current_data >= (data->data_array_size - 128))) {
 		MTKPP_UnLock(data);
 		return;
 	}
@@ -105,7 +120,7 @@ static void MTKPP_PrintQueueBuffer2(MTK_PROC_PRINT_DATA *data, const char *fmt, 
 	MTKPP_Lock(data);
 
 	if ((data->current_line >= data->line_array_size)
-		|| (data->current_data >= (data->data_array_size - 128))) {
+	    || (data->current_data >= (data->data_array_size - 128))) {
 		/* buffer full, ignore the coming input */
 		MTKPP_UnLock(data);
 		return;
@@ -138,7 +153,7 @@ static void MTKPP_PrintRingBuffer(MTK_PROC_PRINT_DATA *data, const char *fmt, ..
 	MTKPP_Lock(data);
 
 	if ((data->current_line >= data->line_array_size)
-		|| (data->current_data >= (data->data_array_size - 128))) {
+	    || (data->current_data >= (data->data_array_size - 128))) {
 		/* buffer full, move the pointer to the head */
 		data->current_line = 0;
 		data->current_data = 0;
@@ -162,8 +177,8 @@ static void MTKPP_PrintRingBuffer(MTK_PROC_PRINT_DATA *data, const char *fmt, ..
 	/* clear data which are overlaid by the new log */
 	buf += len; s = data->current_line;
 	while (s < data->line_array_size
-		&& data->line[s] != NULL
-		&& data->line[s] <= buf) {
+	       && data->line[s] != NULL
+	       && data->line[s] <= buf) {
 		data->line[s++] = NULL;
 	}
 
@@ -175,7 +190,6 @@ static MTK_PROC_PRINT_DATA *MTKPP_AllocStruct(int type)
 	MTK_PROC_PRINT_DATA *data;
 
 	data = vmalloc(sizeof(MTK_PROC_PRINT_DATA));
-
 	if (data == NULL) {
 		_MTKPP_DEBUG_LOG("%s: vmalloc fail", __func__);
 		goto err_out;
@@ -223,7 +237,6 @@ static void MTKPP_AllocData(MTK_PROC_PRINT_DATA *data, int data_size, int line_s
 	void *buf;
 
 	buf = vmalloc(sizeof(char) * data_size + sizeof(char *) * line_size);
-
 	if (buf == NULL)
 		return;
 
@@ -264,7 +277,6 @@ static void MTKPP_CleanData(MTK_PROC_PRINT_DATA *data)
 
 	if (data->line)
 		memset(data->line, 0, sizeof(char *) * data->line_array_size);
-
 	data->current_data = 0;
 	data->current_line = 0;
 
@@ -342,9 +354,9 @@ static int MTKPP_SeqShow(struct seq_file *sfile, void *v)
 
 static const struct seq_operations g_MTKPP_seq_ops = {
 	.start = MTKPP_SeqStart,
-	.next = MTKPP_SeqNext,
-	.stop = MTKPP_SeqStop,
-	.show = MTKPP_SeqShow
+	.next  = MTKPP_SeqNext,
+	.stop  = MTKPP_SeqStop,
+	.show  = MTKPP_SeqShow
 };
 
 static int MTKPP_ProcOpen(struct inode *inode, struct file *file)
@@ -353,9 +365,9 @@ static int MTKPP_ProcOpen(struct inode *inode, struct file *file)
 }
 
 static const struct file_operations g_MTKPP_proc_ops = {
-	.open = MTKPP_ProcOpen,
-	.read = seq_read,
-	.llseek = seq_lseek,
+	.open    = MTKPP_ProcOpen,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
 	.release = seq_release
 };
 
@@ -363,13 +375,13 @@ static const struct file_operations g_MTKPP_proc_ops = {
 
 static void MTKPP_WORKR_Handle(struct work_struct *_psWork)
 {
-	struct MTKPP_WORKQUEUE_WORKER_t *psWork =
-		container_of(_psWork, struct MTKPP_WORKQUEUE_WORKER_t, sWork);
+	struct MTKPP_WORKQUEUE_WORKER *psWork =
+		container_of(_psWork, struct MTKPP_WORKQUEUE_WORKER, sWork);
 
 	/* avoid the build warnning */
 	psWork = psWork;
 
-	/* aee_kernel_exception("gpulog", "aee dump gpulog");*/
+	aee_kernel_exception("gpulog", "aee dump gpulog");
 }
 
 #endif
