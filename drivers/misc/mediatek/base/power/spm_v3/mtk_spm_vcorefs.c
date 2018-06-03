@@ -906,9 +906,6 @@ static void spm_dvfsfw_init(void)
 
 	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
 
-	/* FIXME bypass MSDC ack  */
-	spm_write(SPM_SW_NONSERSV_3, 0xFFFFFFF0);
-
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 #else
