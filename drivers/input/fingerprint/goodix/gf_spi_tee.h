@@ -23,6 +23,9 @@
 #include <linux/cdev.h>
 #include <linux/input.h>
 #include "mtk_spi.h"
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+#include <mach/mtk_6306_gpio.h>
+#endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #else
@@ -242,6 +245,8 @@ struct gf_device {
 #endif
 
 #ifdef SUPPORT_REE_SPI
+
+#define SUPPORT_REE_MILAN_A_SERIALS
 
 #define HIGH_SPEED 6
 #define LOW_SPEED  1
