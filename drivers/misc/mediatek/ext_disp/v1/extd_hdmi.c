@@ -131,6 +131,7 @@ unsigned long hdmi_va, hdmi_mva_r;
 #endif
 
 struct HDMI_PARAMS _s_hdmi_params = { 0 };
+
 static int rdmafpscnt;
 
 struct HDMI_PARAMS *hdmi_params = &_s_hdmi_params;
@@ -141,6 +142,8 @@ wait_queue_head_t hdmi_fence_release_wq;
 atomic_t hdmi_fence_release_event = ATOMIC_INIT(0);
 
 struct task_struct *hdmi_wait_vsync_task;
+static struct switch_dev hdmi_cec_switch_data;
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the definition~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -196,7 +199,8 @@ void hdmi_force_resolution(int params)
 	else
 		hdmi_params->is_3d_support = 0;
 
-	HDMI_LOG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange, hdmi_params->is_3d_support);
+	HDMI_LOG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange,
+		 hdmi_params->is_3d_support);
 }
 
 #ifdef MM_MHL_DVFS
@@ -240,7 +244,8 @@ void hdmi_cable_fake_plug_out(void)
 		if (IS_HDMI_ON()) {
 			if (hdmi_drv->get_state() != HDMI_STATE_ACTIVE) {
 #ifdef MHL_DYNAMIC_VSYNC_OFFSET
-				ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, false);
+				ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT,
+								   false);
 #endif
 				hdmi_suspend();
 				hdmi_enable_dvfs(false);
@@ -309,7 +314,7 @@ int hdmi_free_hdmi_buffer(void)
 static int hdmi_wait_vsync_kthread(void *data)
 {
 	struct disp_session_vsync_config vsync_config;
-	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
+	struct sched_param param = {.sched_priority = 94 };	/*RTPM_PRIO_SCRN_UPDATE */
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -332,7 +337,8 @@ int hdmi_wait_vsync_debug(int enable)
 	wait_vsync_enable = enable;
 
 	if (enable != 0 && hdmi_wait_vsync_task == NULL) {
-		hdmi_wait_vsync_task = kthread_create(hdmi_wait_vsync_kthread, NULL, "hdmi_wait_vsync_kthread");
+		hdmi_wait_vsync_task =
+		    kthread_create(hdmi_wait_vsync_kthread, NULL, "hdmi_wait_vsync_kthread");
 		wake_up_process(hdmi_wait_vsync_task);
 	}
 
@@ -368,7 +374,8 @@ int hdmi_waitVsync(void)
 {
 
 	unsigned int session_id = ext_disp_get_sess_id();
-	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	struct disp_session_sync_info *session_info =
+	    disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
@@ -418,7 +425,7 @@ int hdmi_get_support_info(void)
 
 /* Configure video attribute */
 int hdmi_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin,
-enum HDMI_VIDEO_OUTPUT_FORMAT vout)
+		      enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 {
 	if (p->is_mhl_video_on == true && (p->vout == vout))
 		return 0;
@@ -456,7 +463,8 @@ int hdmi_audio_config(int format)
 	unsigned int sampleRate = (format & 0x70) >> 4;
 	unsigned int bitWidth = (format & 0x180) >> 7, sampleBit = 0;
 
-	HDMI_LOG("channel_count: %d, sampleRate: %d, bitWidth: %d\n", channel_count, sampleRate, bitWidth);
+	HDMI_LOG("channel_count: %d, sampleRate: %d, bitWidth: %d\n", channel_count, sampleRate,
+		 bitWidth);
 
 	if (bitWidth == HDMI_MAX_BITWIDTH_16) {
 		sampleBit = 16;
@@ -517,7 +525,7 @@ static void _hdmi_rdma_irq_handler(enum DISP_MODULE_ENUM module, unsigned int pa
 		}
 	}
 
-	/*frame done*/
+	/*frame done */
 	if (param & 0x4 && first_frame_done == 0)
 		first_frame_done = 1;
 }
@@ -531,11 +539,12 @@ static int hdmi_fence_release_kthread(void *data)
 	unsigned int layer_3d_format = 0;
 	bool ovl_reg_updated = false;
 	unsigned long input_curr_addr[EXTD_OVERLAY_CNT];
-	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
+	struct sched_param param = {.sched_priority = 94 };	/*RTPM_PRIO_SCRN_UPDATE */
 
 	sched_setscheduler(current, SCHED_RR, &param);
 	for (;;) {
-		wait_event_interruptible(hdmi_fence_release_wq, atomic_read(&hdmi_fence_release_event));
+		wait_event_interruptible(hdmi_fence_release_wq,
+					 atomic_read(&hdmi_fence_release_event));
 		atomic_set(&hdmi_fence_release_event, 0);
 
 		ovl_reg_updated = false;
@@ -543,7 +552,7 @@ static int hdmi_fence_release_kthread(void *data)
 		fence_idx = -1;
 		layer_3d_format = 0;
 
-		/*HDMI_LOG("hdmi_fence_release_kthread wake up\n");*/
+		/*HDMI_LOG("hdmi_fence_release_kthread wake up\n"); */
 		if (session_id == 0)
 			continue;
 
@@ -553,9 +562,14 @@ static int hdmi_fence_release_kthread(void *data)
 
 				if ((ovl_release == 1) && (EXTD_OVERLAY_CNT > 1)) {
 					for (layid = 1; layid < EXTD_OVERLAY_CNT; layid++) {
-						fence_idx = disp_sync_find_fence_idx_by_addr(session_id,
-										layid, ovl_config_address[layid]);
-						fence_idx = ((fence_idx >= 0) ? (fence_idx + 1) : fence_idx);
+						fence_idx =
+						    disp_sync_find_fence_idx_by_addr(session_id,
+										     layid,
+										     ovl_config_address
+										     [layid]);
+						fence_idx =
+						    ((fence_idx >=
+						      0) ? (fence_idx + 1) : fence_idx);
 						mtkfb_release_fence(session_id, layid, fence_idx);
 					}
 
@@ -564,10 +578,12 @@ static int hdmi_fence_release_kthread(void *data)
 			}
 
 			ext_disp_get_curr_addr(input_curr_addr, 0);
-			fence_idx = disp_sync_find_fence_idx_by_addr(session_id, 0, input_curr_addr[0]);
+			fence_idx =
+			    disp_sync_find_fence_idx_by_addr(session_id, 0, input_curr_addr[0]);
 			mtkfb_release_fence(session_id, 0, fence_idx);
 			if (hdmi_params->is_3d_support)
-				layer_3d_format |= mtkfb_query_buf_info(session_id, layid, input_curr_addr[0], 0);
+				layer_3d_format |=
+				    mtkfb_query_buf_info(session_id, layid, input_curr_addr[0], 0);
 
 		} else {
 			if (ext_disp_get_ovl_req_status(MHL_SESSION_ID) == EXTD_OVL_INSERTED)
@@ -582,25 +598,31 @@ static int hdmi_fence_release_kthread(void *data)
 				}
 
 				if (ext_disp_is_dim_layer(input_curr_addr[layid]) == 1)
-					fence_idx = disp_sync_find_fence_idx_by_addr(session_id, layid, 0);
+					fence_idx =
+					    disp_sync_find_fence_idx_by_addr(session_id, layid, 0);
 				else
 					fence_idx = disp_sync_find_fence_idx_by_addr(session_id,
-										layid, input_curr_addr[layid]);
+										     layid,
+										     input_curr_addr
+										     [layid]);
 
 				mtkfb_release_fence(session_id, layid, fence_idx);
 
 				if (hdmi_params->is_3d_support)
-					layer_3d_format |= mtkfb_query_buf_info(session_id
-								, layid, input_curr_addr[layid], 0);
+					layer_3d_format |=
+					    mtkfb_query_buf_info(session_id, layid,
+								 input_curr_addr[layid], 0);
 			}
 
 			if (ovl_reg_updated == false) {
 				mmprofile_log_ex(ddp_mmp_get_events()->Extd_trigger,
-						 MMPROFILE_FLAG_PULSE, input_curr_addr[0], input_curr_addr[1]);
+						 MMPROFILE_FLAG_PULSE, input_curr_addr[0],
+						 input_curr_addr[1]);
 			}
 
 			mmprofile_log_ex(ddp_mmp_get_events()->Extd_UsedBuff,
-					 MMPROFILE_FLAG_PULSE, input_curr_addr[0], input_curr_addr[1]);
+					 MMPROFILE_FLAG_PULSE, input_curr_addr[0],
+					 input_curr_addr[1]);
 		}
 
 		rdmafpscnt++;
@@ -616,7 +638,7 @@ static int hdmi_fence_release_kthread(void *data)
 			layer_3d_format = HDMI_VOUT_FORMAT_2D;
 
 		hdmi_video_config(p->output_video_resolution, HDMI_VIN_FORMAT_RGB888,
-						HDMI_VOUT_FORMAT_RGB888 | layer_3d_format);
+				  HDMI_VOUT_FORMAT_RGB888 | layer_3d_format);
 		if (kthread_should_stop())
 			break;
 	}
@@ -626,7 +648,7 @@ static int hdmi_fence_release_kthread(void *data)
 
 static int hdmi_3d_config_kthread(void *data)
 {
-	struct sched_param param = { .sched_priority = 94 };
+	struct sched_param param = {.sched_priority = 94 };
 	enum HDMI_VIDEO_RESOLUTION vformat = HDMI_VIDEO_RESOLUTION_NUM;
 
 	sched_setscheduler(current, SCHED_RR, &param);
@@ -635,7 +657,8 @@ static int hdmi_3d_config_kthread(void *data)
 		wait_event_interruptible(hdmi_3d_config_wq, atomic_read(&hdmi_3d_config_event));
 		atomic_set(&hdmi_3d_config_event, 0);
 
-		HDMI_LOG("video_on=%d fps %d, %d, %d\n", p->is_mhl_video_on, rdmafpscnt, p->vin, p->vout);
+		HDMI_LOG("video_on=%d fps %d, %d, %d\n", p->is_mhl_video_on, rdmafpscnt, p->vin,
+			 p->vout);
 
 		if (p->vout >= HDMI_VOUT_FORMAT_2D)
 			hdmi_drv->video_config(vformat, p->vin, p->vout);
@@ -669,12 +692,13 @@ static enum HDMI_STATUS hdmi_drv_init(void)
 		/* disp_register_module_irq_callback(DISP_MODULE_RDMA2, _hdmi_rdma_irq_handler); K2 no RDMA2 */
 		disp_register_module_irq_callback(DISP_MODULE_RDMA, _hdmi_rdma_irq_handler);
 		hdmi_fence_release_task = kthread_create(hdmi_fence_release_kthread,
-							NULL, "hdmi_fence_release_kthread");
+							 NULL, "hdmi_fence_release_kthread");
 		wake_up_process(hdmi_fence_release_task);
 	}
 
 	if (!hdmi_3d_config_task) {
-		hdmi_3d_config_task = kthread_create(hdmi_3d_config_kthread, NULL, "hdmi_3d_config_kthread");
+		hdmi_3d_config_task =
+		    kthread_create(hdmi_3d_config_kthread, NULL, "hdmi_3d_config_kthread");
 		wake_up_process(hdmi_3d_config_task);
 	}
 
@@ -831,13 +855,17 @@ static void hdmi_resolution_setting(int arg)
 		extd_dpi_params.dispif_config.dpi.hsync_pol = hdmi_params->hsync_pol;
 		extd_dpi_params.dispif_config.dpi.vsync_pol = hdmi_params->vsync_pol;
 
-		extd_dpi_params.dispif_config.dpi.hsync_pulse_width = hdmi_params->hsync_pulse_width;
+		extd_dpi_params.dispif_config.dpi.hsync_pulse_width =
+		    hdmi_params->hsync_pulse_width;
 		extd_dpi_params.dispif_config.dpi.hsync_back_porch = hdmi_params->hsync_back_porch;
-		extd_dpi_params.dispif_config.dpi.hsync_front_porch = hdmi_params->hsync_front_porch;
+		extd_dpi_params.dispif_config.dpi.hsync_front_porch =
+		    hdmi_params->hsync_front_porch;
 
-		extd_dpi_params.dispif_config.dpi.vsync_pulse_width = hdmi_params->vsync_pulse_width;
+		extd_dpi_params.dispif_config.dpi.vsync_pulse_width =
+		    hdmi_params->vsync_pulse_width;
 		extd_dpi_params.dispif_config.dpi.vsync_back_porch = hdmi_params->vsync_back_porch;
-		extd_dpi_params.dispif_config.dpi.vsync_front_porch = hdmi_params->vsync_front_porch;
+		extd_dpi_params.dispif_config.dpi.vsync_front_porch =
+		    hdmi_params->vsync_front_porch;
 
 		extd_dpi_params.dispif_config.dpi.dpi_clock = hdmi_params->input_clock;
 
@@ -851,13 +879,14 @@ static void hdmi_resolution_setting(int arg)
 		extd_dpi_params.dispif_config.dpi.width = p->hdmi_width;
 		extd_dpi_params.dispif_config.dpi.height = p->hdmi_height;
 		if ((arg == HDMI_VIDEO_2160p_DSC_24Hz) || (arg == HDMI_VIDEO_2160p_DSC_30Hz)) {
-			memset(&(extd_dpi_params.dispif_config.dpi.dsc_params), 0, sizeof(LCM_DSC_CONFIG_PARAMS));
+			memset(&(extd_dpi_params.dispif_config.dpi.dsc_params), 0,
+			       sizeof(LCM_DSC_CONFIG_PARAMS));
 			extd_dpi_params.dispif_config.dpi.dsc_enable = 1;
-			extd_dpi_params.dispif_config.dpi.width = p->hdmi_width/3;
-			/* width/(slice_mode's slice)*/
+			extd_dpi_params.dispif_config.dpi.width = p->hdmi_width / 3;
+			/* width/(slice_mode's slice) */
 			extd_dpi_params.dispif_config.dpi.dsc_params.slice_width = 1920;
 			extd_dpi_params.dispif_config.dpi.dsc_params.slice_hight = 8;	/*32  8 */
-			/* 128: 1/3 compress; 192: 1/2 compress*/
+			/* 128: 1/3 compress; 192: 1/2 compress */
 			extd_dpi_params.dispif_config.dpi.dsc_params.bit_per_pixel = 128;
 			/* 0: 1 slice; 1: 2 slice; 2: 3 slice */
 			extd_dpi_params.dispif_config.dpi.dsc_params.slice_mode = 1;
@@ -867,8 +896,8 @@ static void hdmi_resolution_setting(int arg)
 			extd_dpi_params.dispif_config.dpi.dsc_params.scale_value = 0x20;
 			extd_dpi_params.dispif_config.dpi.dsc_params.increment_interval = 0x11e;
 			extd_dpi_params.dispif_config.dpi.dsc_params.decrement_interval = 0x1a;
-			extd_dpi_params.dispif_config.dpi.dsc_params.nfl_bpg_offset = 0xdb7;	/*0x667*/
-			extd_dpi_params.dispif_config.dpi.dsc_params.slice_bpg_offset = 0x394;	/*0x1ca*/
+			extd_dpi_params.dispif_config.dpi.dsc_params.nfl_bpg_offset = 0xdb7;	/*0x667 */
+			extd_dpi_params.dispif_config.dpi.dsc_params.slice_bpg_offset = 0x394;	/*0x1ca */
 			extd_dpi_params.dispif_config.dpi.dsc_params.final_offset = 0x10f0;
 			extd_dpi_params.dispif_config.dpi.dsc_params.line_bpg_offset = 0xc;
 			extd_dpi_params.dispif_config.dpi.dsc_params.bp_enable = 0x0;
@@ -989,7 +1018,8 @@ void hdmi_state_callback(enum HDMI_STATE state)
 	case HDMI_STATE_ACTIVE:
 		{
 			if (IS_HDMI_ON()) {
-				HDMI_LOG("[hdmi]%s, already on(%d) !\n", __func__, atomic_read(&p->state));
+				HDMI_LOG("[hdmi]%s, already on(%d) !\n", __func__,
+					 atomic_read(&p->state));
 				break;
 			}
 
@@ -1018,6 +1048,30 @@ void hdmi_state_callback(enum HDMI_STATE state)
 		}
 	}
 }
+
+void hdmi_cec_state_callback(enum HDMI_CEC_STATE state)
+{
+	pr_info("[hdmi]%s, cec_state = %d\n", __func__, state);
+	switch_set_state(&hdmi_cec_switch_data, 0xff);
+	switch (state) {
+	case HDMI_CEC_STATE_PLUG_OUT:
+		switch_set_state(&hdmi_cec_switch_data, HDMI_CEC_STATE_PLUG_OUT);
+		break;
+	case HDMI_CEC_STATE_GET_PA:
+		switch_set_state(&hdmi_cec_switch_data, HDMI_CEC_STATE_GET_PA);
+		break;
+	case HDMI_CEC_STATE_TX_STS:
+		switch_set_state(&hdmi_cec_switch_data, HDMI_CEC_STATE_TX_STS);
+		break;
+	case HDMI_CEC_STATE_GET_CMD:
+		switch_set_state(&hdmi_cec_switch_data, HDMI_CEC_STATE_GET_CMD);
+		break;
+	default:
+		pr_err("[hdmi]%s, cec_state not support\n", __func__);
+		break;
+	}
+}
+
 
 void hdmi_set_layer_num(int layer_num)
 {
@@ -1174,7 +1228,7 @@ int hdmi_set_resolution(int res)
 	int session_id = 0;
 
 	HDMI_LOG("video resolution configuration, res:%d, old res:%ld, video_on:%d\n",
-		res, hdmi_reschange, p->is_mhl_video_on);
+		 res, hdmi_reschange, p->is_mhl_video_on);
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
@@ -1220,7 +1274,8 @@ int hdmi_set_resolution(int res)
 
 	switch_set_state(&hdmires_switch_data, hdmi_reschange + 1);
 	p->is_clock_on = true;
-	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, ResChange, hdmi_reschange + 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, ResChange,
+			 hdmi_reschange + 1);
 
 /*
 *
@@ -1247,7 +1302,8 @@ int hdmi_get_dev_info(int is_sf, void *info)
 				 p->is_enabled, p->is_clock_on);
 
 		if (copy_from_user(&displayid, info, sizeof(displayid))) {
-			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 0);
+			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE,
+					 Devinfo, 0);
 			HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
@@ -1274,7 +1330,8 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		hdmi_info.isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
 
-		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz) || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
+		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+		    || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
 			hdmi_info.vsyncFPS = 30;
 		else if (hdmi_reschange == HDMI_VIDEO_2160p_DSC_24Hz)
 			hdmi_info.vsyncFPS = 24;
@@ -1282,7 +1339,8 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			hdmi_info.vsyncFPS = 60;
 
 		if (copy_to_user(info, &hdmi_info, sizeof(hdmi_info))) {
-			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 1);
+			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE,
+					 Devinfo, 1);
 			HDMI_ERR("copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
@@ -1291,7 +1349,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 				 p->is_enabled, hdmi_info.displayType);
 		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
-		struct disp_session_info *dispif_info = (struct disp_session_info *) info;
+		struct disp_session_info *dispif_info = (struct disp_session_info *)info;
 
 		memset((void *)dispif_info, 0, sizeof(struct disp_session_info));
 
@@ -1309,13 +1367,14 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		} else if (hdmi_params->cabletype == MHL_CABLE)
 			dispif_info->displayType = DISP_IF_MHL;
 		else if (hdmi_params->cabletype == SLIMPORT_CABLE)
-			dispif_info->displayType = DISP_IF_SLIMPORT;   /*value == 11*/
+			dispif_info->displayType = DISP_IF_SLIMPORT;	/*value == 11 */
 		else
 			dispif_info->displayType = DISP_IF_HDMI;
 
 		dispif_info->isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
 
-		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz) || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
+		if ((hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+		    || (hdmi_reschange == HDMI_VIDEO_2160p_DSC_30Hz))
 			dispif_info->vsyncFPS = 30;
 		else if (hdmi_reschange == HDMI_VIDEO_2160p_DSC_24Hz)
 			dispif_info->vsyncFPS = 24;
@@ -1474,6 +1533,11 @@ int hdmi_init(void)
 	hdmires_switch_data.state = 0;
 	ret = switch_dev_register(&hdmires_switch_data);
 
+	hdmi_cec_switch_data.name = "cec_hdmi";
+	hdmi_cec_switch_data.index = 0;
+	hdmi_cec_switch_data.state = 0;
+	ret = switch_dev_register(&hdmi_cec_switch_data);
+
 	if (ret)
 		HDMI_ERR("[hdmi][HDMI]switch_dev_register failed, returned:%d!\n", ret);
 	HDMI_ERR(" done\n");
@@ -1489,9 +1553,10 @@ int hdmi_post_init(void)
 		.udelay = hdmi_udelay,
 		.mdelay = hdmi_mdelay,
 		.state_callback = hdmi_state_callback,
+		.cec_state_callback = hdmi_cec_state_callback,
 	};
 
-	hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
+	hdmi_drv = (struct HDMI_DRIVER *)HDMI_GetDriver();
 	if (hdmi_drv == NULL) {
 		HDMI_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
 		return -1;
@@ -1511,7 +1576,7 @@ int hdmi_post_init(void)
 				extd_factory_driver->init();
 		} else
 
-		hdmi_drv->register_callback(hdmi_state_callback);
+			hdmi_drv->register_callback(hdmi_state_callback);
 	}
 
 	memset((void *)&hdmi_context, 0, sizeof(struct _t_hdmi_context));
@@ -1535,21 +1600,21 @@ const struct EXTD_DRIVER *EXTD_HDMI_Driver(void)
 {
 	static const struct EXTD_DRIVER extd_driver_hdmi = {
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
-		.init =              hdmi_init,
-		.post_init =         hdmi_post_init,
-		.deinit =            NULL,
-		.enable =            hdmi_enable,
-		.power_enable =      hdmi_power_enable,
-		.set_audio_enable =  hdmi_set_audio_enable,
-		.set_audio_format =  hdmi_audio_config,
-		.set_resolution =    hdmi_set_resolution,
-		.get_dev_info =      hdmi_get_dev_info,
-		.get_capability =    hdmi_get_capability,
-		.get_edid =          hdmi_get_edid,
-		.wait_vsync =        hdmi_waitVsync,
-		.fake_connect =      hdmi_cable_fake_connect,
+		.init = hdmi_init,
+		.post_init = hdmi_post_init,
+		.deinit = NULL,
+		.enable = hdmi_enable,
+		.power_enable = hdmi_power_enable,
+		.set_audio_enable = hdmi_set_audio_enable,
+		.set_audio_format = hdmi_audio_config,
+		.set_resolution = hdmi_set_resolution,
+		.get_dev_info = hdmi_get_dev_info,
+		.get_capability = hdmi_get_capability,
+		.get_edid = hdmi_get_edid,
+		.wait_vsync = hdmi_waitVsync,
+		.fake_connect = hdmi_cable_fake_connect,
 		.factory_mode_test = NULL,
-		.ioctl =             hdmi_ioctl,
+		.ioctl = hdmi_ioctl,
 #else
 		.init = 0,
 #endif
