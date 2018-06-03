@@ -30,7 +30,7 @@ extern "C" {
 #define UPOWER_ENABLE (0)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define UPOWER_ENABLE_TINYSYS_SSPM (1)
+	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #else
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #endif
