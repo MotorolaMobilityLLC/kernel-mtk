@@ -121,6 +121,10 @@
 #define STP_SDIO_RETRY_LIMIT (10)
 #define STP_SDIO_MAX_RETRY_NUM (100)
 
+#define STP_SDIO_RETRY_NONE		(0)
+#define STP_SDIO_RETRY_CRC_ERROR	(1)
+#define STP_SDIO_RETRY_INT		(2)
+
 /* tx buffer size for a single entry */
 /* George: SHALL BE a multiple of the used BLK_SIZE!! */
 #if 1
