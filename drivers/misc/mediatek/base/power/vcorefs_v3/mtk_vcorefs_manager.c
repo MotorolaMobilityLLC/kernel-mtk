@@ -16,6 +16,7 @@
 #include <linux/mutex.h>
 #include <linux/sysfs.h>
 #include <mt-plat/mtk_meminfo.h>
+#include <mt-plat/mtk_gpu_utility.h>
 
 #include "mtk_vcorefs_manager.h"
 #include "mtk_spm_vcore_dvfs.h"
@@ -322,6 +323,16 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	return r;
 }
 
+static void gpu_power_change_notify_vcore_dvfs(int power_on)
+{
+	int r;
+
+	if (power_on)
+		r = vcorefs_request_dvfs_opp(KIR_GPU, OPP_2);
+	else
+		r = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
+}
+
 void vcorefs_drv_init(int plat_init_opp)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
@@ -343,6 +354,8 @@ void vcorefs_drv_init(int plat_init_opp)
 	vcorefs_crit("[%s] done\n", __func__);
 
 	governor_autok_manager();
+
+	mtk_register_gpu_power_change("vcore_dvfs", gpu_power_change_notify_vcore_dvfs);
 }
 
 static char *vcorefs_get_kicker_info(char *p)
