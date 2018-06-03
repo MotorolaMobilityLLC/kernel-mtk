@@ -959,6 +959,31 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
+static bool cmdq_thread_timeout_excceed(struct cmdq_thread *thread)
+{
+	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
+	struct cmdq_task *task;
+	u64 duration;
+
+	/* If first time exec time stamp smaller than timeout value,
+	 * it is last round timeout. Skip it.
+	 */
+	task = list_first_entry(&thread->task_busy_list,
+		typeof(*task), list_entry);
+	duration = div_s64(sched_clock() - task->exec_time, 1000000);
+	if (duration < task->pkt->timeout) {
+		mod_timer(&thread->timeout, jiffies +
+			msecs_to_jiffies(task->pkt->timeout - duration));
+		cmdq_msg(
+			"thread:%u usage:%d exec:%llu dur:%llu timeout not excceed\n",
+			thread->idx, atomic_read(&cmdq->usage),
+			task->exec_time, duration);
+		return false;
+	}
+
+	return true;
+}
+
 static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 {
 	struct cmdq_thread *thread = container_of(work_item,
@@ -968,10 +993,15 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	unsigned long flags;
 	bool first_task = true;
 	u32 pa_curr;
-	u64 duration;
 
 	spin_lock_irqsave(&thread->chan->lock, flags);
 	if (list_empty(&thread->task_busy_list)) {
+		spin_unlock_irqrestore(&thread->chan->lock, flags);
+		return;
+	}
+
+	/* Check before suspend thread to prevent hurt performance. */
+	if (!cmdq_thread_timeout_excceed(thread)) {
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
 		return;
 	}
@@ -993,26 +1023,15 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 		return;
 	}
 
-	/* If first time exec time stamp smaller than timeout value,
-	 * it is last round timeout. Skip it.
-	 */
-	task = list_first_entry(&thread->task_busy_list,
-		typeof(*task), list_entry);
-	duration = div_s64(sched_clock() - task->exec_time, 1000000);
-	if (duration < task->pkt->timeout) {
-		mod_timer(&thread->timeout, jiffies +
-			msecs_to_jiffies(task->pkt->timeout - duration));
+	/* After IRQ, first task may change. */
+	if (!cmdq_thread_timeout_excceed(thread)) {
+		cmdq_thread_resume(thread);
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
-		cmdq_err(
-			"thread:%u usage:%d exec:%llu dur:%llu timeout not excceed",
-			thread->idx, atomic_read(&cmdq->usage),
-			task->exec_time, duration);
 		return;
 	}
 
-	cmdq_err("timeout for thread:0x%p idx:%u usage:%d exec:%llu",
-		thread->base, thread->idx, atomic_read(&cmdq->usage),
-		task->exec_time);
+	cmdq_err("timeout for thread:0x%p idx:%u usage:%d",
+		thread->base, thread->idx, atomic_read(&cmdq->usage));
 
 	pa_curr = readl(thread->base + CMDQ_THR_CURR_ADDR);
 
