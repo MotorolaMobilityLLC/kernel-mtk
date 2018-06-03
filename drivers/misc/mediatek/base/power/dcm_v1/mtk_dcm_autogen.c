@@ -1325,9 +1325,7 @@ void dcm_lpdma_lpdma(int on)
 			(0x1 << 17) | \
 			(0x1 << 19))
 #define DDRPHY0AO_DDRPHY_REG1_MASK ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x1f << 21) | \
-			(0x1 << 26))
+			(0x1 << 7))
 #define DDRPHY0AO_DDRPHY_REG0_ON ((0x0 << 8) | \
 			(0x0 << 9) | \
 			(0x0 << 10) | \
@@ -1339,16 +1337,8 @@ void dcm_lpdma_lpdma(int on)
 			(0x0 << 16) | \
 			(0x0 << 17) | \
 			(0x0 << 19))
-#if 0
 #define DDRPHY0AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21) | \
-			(0x0 << 26))
-#else
-#define DDRPHY0AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21))
-#endif
+			(0x0 << 7))
 #define DDRPHY0AO_DDRPHY_REG0_OFF ((0x1 << 8) | \
 			(0x1 << 9) | \
 			(0x1 << 10) | \
@@ -1360,16 +1350,24 @@ void dcm_lpdma_lpdma(int on)
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 19))
+#define DDRPHY0AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
+			(0x1 << 7))
+#define DDRPHY0AO_DDRPHY_REG1_TOG_MASK ((0x1 << 0))
+#define DDRPHY0AO_DDRPHY_REG1_TOG1 ((0x0 << 0))
+#define DDRPHY0AO_DDRPHY_REG1_TOG0 ((0x1 << 0))
 #if 0
-#define DDRPHY0AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21) | \
-			(0x1 << 26))
-#else
-#define DDRPHY0AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21))
+static unsigned int ddrphy0ao_rg_mem_dcm_idle_fsel_get(void)
+{
+	return (reg_read(DDRPHY0AO_MISC_CG_CTRL2) >> 21) & 0x1f;
+}
 #endif
+static void ddrphy0ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
+{
+	reg_write(DDRPHY0AO_MISC_CG_CTRL2,
+		(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
+		~(0x1f << 21)) |
+		(val & 0x1f) << 21);
+}
 
 bool dcm_ddrphy0ao_ddrphy_is_on(int on)
 {
@@ -1389,6 +1387,11 @@ void dcm_ddrphy0ao_ddrphy(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'ddrphy0ao_ddrphy'" */
+		reg_write(DDRPHY0AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
+			~DDRPHY0AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY0AO_DDRPHY_REG1_TOG0);
+		ddrphy0ao_rg_mem_dcm_idle_fsel_set(0x1f);
 		reg_write(DDRPHY0AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY0AO_MISC_CG_CTRL0) &
 			~DDRPHY0AO_DDRPHY_REG0_MASK) |
@@ -1397,8 +1400,17 @@ void dcm_ddrphy0ao_ddrphy(int on)
 			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
 			~DDRPHY0AO_DDRPHY_REG1_MASK) |
 			DDRPHY0AO_DDRPHY_REG1_ON);
+		reg_write(DDRPHY0AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
+			~DDRPHY0AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY0AO_DDRPHY_REG1_TOG1);
 	} else {
 		/* TINFO = "Turn OFF DCM 'ddrphy0ao_ddrphy'" */
+		reg_write(DDRPHY0AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
+			~DDRPHY0AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY0AO_DDRPHY_REG1_TOG0);
+		ddrphy0ao_rg_mem_dcm_idle_fsel_set(0x0);
 		reg_write(DDRPHY0AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY0AO_MISC_CG_CTRL0) &
 			~DDRPHY0AO_DDRPHY_REG0_MASK) |
@@ -1407,6 +1419,10 @@ void dcm_ddrphy0ao_ddrphy(int on)
 			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
 			~DDRPHY0AO_DDRPHY_REG1_MASK) |
 			DDRPHY0AO_DDRPHY_REG1_OFF);
+		reg_write(DDRPHY0AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY0AO_MISC_CG_CTRL2) &
+			~DDRPHY0AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY0AO_DDRPHY_REG1_TOG1);
 	}
 }
 
@@ -1483,9 +1499,7 @@ void dcm_dramc0_ao_dramc_dcm(int on)
 			(0x1 << 17) | \
 			(0x1 << 19))
 #define DDRPHY1AO_DDRPHY_REG1_MASK ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x1f << 21) | \
-			(0x1 << 26))
+			(0x1 << 7))
 #define DDRPHY1AO_DDRPHY_REG0_ON ((0x0 << 8) | \
 			(0x0 << 9) | \
 			(0x0 << 10) | \
@@ -1497,16 +1511,8 @@ void dcm_dramc0_ao_dramc_dcm(int on)
 			(0x0 << 16) | \
 			(0x0 << 17) | \
 			(0x0 << 19))
-#if 0
 #define DDRPHY1AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21) | \
-			(0x0 << 26))
-#else
-#define DDRPHY1AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21))
-#endif
+			(0x0 << 7))
 #define DDRPHY1AO_DDRPHY_REG0_OFF ((0x1 << 8) | \
 			(0x1 << 9) | \
 			(0x1 << 10) | \
@@ -1518,16 +1524,24 @@ void dcm_dramc0_ao_dramc_dcm(int on)
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 19))
+#define DDRPHY1AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
+			(0x1 << 7))
+#define DDRPHY1AO_DDRPHY_REG1_TOG_MASK ((0x1 << 0))
+#define DDRPHY1AO_DDRPHY_REG1_TOG1 ((0x0 << 0))
+#define DDRPHY1AO_DDRPHY_REG1_TOG0 ((0x1 << 0))
 #if 0
-#define DDRPHY1AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21) | \
-			(0x1 << 26))
-#else
-#define DDRPHY1AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21))
+static unsigned int ddrphy1ao_rg_mem_dcm_idle_fsel_get(void)
+{
+	return (reg_read(DDRPHY1AO_MISC_CG_CTRL2) >> 21) & 0x1f;
+}
 #endif
+static void ddrphy1ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
+{
+	reg_write(DDRPHY1AO_MISC_CG_CTRL2,
+		(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
+		~(0x1f << 21)) |
+		(val & 0x1f) << 21);
+}
 
 bool dcm_ddrphy1ao_ddrphy_is_on(int on)
 {
@@ -1547,6 +1561,11 @@ void dcm_ddrphy1ao_ddrphy(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'ddrphy1ao_ddrphy'" */
+		reg_write(DDRPHY1AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
+			~DDRPHY1AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY1AO_DDRPHY_REG1_TOG0);
+		ddrphy1ao_rg_mem_dcm_idle_fsel_set(0x1f);
 		reg_write(DDRPHY1AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY1AO_MISC_CG_CTRL0) &
 			~DDRPHY1AO_DDRPHY_REG0_MASK) |
@@ -1555,8 +1574,17 @@ void dcm_ddrphy1ao_ddrphy(int on)
 			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
 			~DDRPHY1AO_DDRPHY_REG1_MASK) |
 			DDRPHY1AO_DDRPHY_REG1_ON);
+		reg_write(DDRPHY1AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
+			~DDRPHY1AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY1AO_DDRPHY_REG1_TOG1);
 	} else {
 		/* TINFO = "Turn OFF DCM 'ddrphy1ao_ddrphy'" */
+		reg_write(DDRPHY1AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
+			~DDRPHY1AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY1AO_DDRPHY_REG1_TOG0);
+		ddrphy1ao_rg_mem_dcm_idle_fsel_set(0x0);
 		reg_write(DDRPHY1AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY1AO_MISC_CG_CTRL0) &
 			~DDRPHY1AO_DDRPHY_REG0_MASK) |
@@ -1565,6 +1593,10 @@ void dcm_ddrphy1ao_ddrphy(int on)
 			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
 			~DDRPHY1AO_DDRPHY_REG1_MASK) |
 			DDRPHY1AO_DDRPHY_REG1_OFF);
+		reg_write(DDRPHY1AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY1AO_MISC_CG_CTRL2) &
+			~DDRPHY1AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY1AO_DDRPHY_REG1_TOG1);
 	}
 }
 
@@ -1641,9 +1673,7 @@ void dcm_dramc1_ao_dramc_dcm(int on)
 			(0x1 << 17) | \
 			(0x1 << 19))
 #define DDRPHY2AO_DDRPHY_REG1_MASK ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x1f << 21) | \
-			(0x1 << 26))
+			(0x1 << 7))
 #define DDRPHY2AO_DDRPHY_REG0_ON ((0x0 << 8) | \
 			(0x0 << 9) | \
 			(0x0 << 10) | \
@@ -1655,16 +1685,8 @@ void dcm_dramc1_ao_dramc_dcm(int on)
 			(0x0 << 16) | \
 			(0x0 << 17) | \
 			(0x0 << 19))
-#if 0
 #define DDRPHY2AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21) | \
-			(0x0 << 26))
-#else
-#define DDRPHY2AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21))
-#endif
+			(0x0 << 7))
 #define DDRPHY2AO_DDRPHY_REG0_OFF ((0x1 << 8) | \
 			(0x1 << 9) | \
 			(0x1 << 10) | \
@@ -1676,16 +1698,24 @@ void dcm_dramc1_ao_dramc_dcm(int on)
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 19))
+#define DDRPHY2AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
+			(0x1 << 7))
+#define DDRPHY2AO_DDRPHY_REG1_TOG_MASK ((0x1 << 0))
+#define DDRPHY2AO_DDRPHY_REG1_TOG1 ((0x0 << 0))
+#define DDRPHY2AO_DDRPHY_REG1_TOG0 ((0x1 << 0))
 #if 0
-#define DDRPHY2AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21) | \
-			(0x1 << 26))
-#else
-#define DDRPHY2AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21))
+static unsigned int ddrphy2ao_rg_mem_dcm_idle_fsel_get(void)
+{
+	return (reg_read(DDRPHY2AO_MISC_CG_CTRL2) >> 21) & 0x1f;
+}
 #endif
+static void ddrphy2ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
+{
+	reg_write(DDRPHY2AO_MISC_CG_CTRL2,
+		(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
+		~(0x1f << 21)) |
+		(val & 0x1f) << 21);
+}
 
 bool dcm_ddrphy2ao_ddrphy_is_on(int on)
 {
@@ -1705,6 +1735,11 @@ void dcm_ddrphy2ao_ddrphy(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'ddrphy2ao_ddrphy'" */
+		reg_write(DDRPHY2AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
+			~DDRPHY2AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY2AO_DDRPHY_REG1_TOG0);
+		ddrphy2ao_rg_mem_dcm_idle_fsel_set(0x1f);
 		reg_write(DDRPHY2AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY2AO_MISC_CG_CTRL0) &
 			~DDRPHY2AO_DDRPHY_REG0_MASK) |
@@ -1713,8 +1748,17 @@ void dcm_ddrphy2ao_ddrphy(int on)
 			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
 			~DDRPHY2AO_DDRPHY_REG1_MASK) |
 			DDRPHY2AO_DDRPHY_REG1_ON);
+		reg_write(DDRPHY2AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
+			~DDRPHY2AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY2AO_DDRPHY_REG1_TOG1);
 	} else {
 		/* TINFO = "Turn OFF DCM 'ddrphy2ao_ddrphy'" */
+		reg_write(DDRPHY2AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
+			~DDRPHY2AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY2AO_DDRPHY_REG1_TOG0);
+		ddrphy2ao_rg_mem_dcm_idle_fsel_set(0x0);
 		reg_write(DDRPHY2AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY2AO_MISC_CG_CTRL0) &
 			~DDRPHY2AO_DDRPHY_REG0_MASK) |
@@ -1723,6 +1767,10 @@ void dcm_ddrphy2ao_ddrphy(int on)
 			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
 			~DDRPHY2AO_DDRPHY_REG1_MASK) |
 			DDRPHY2AO_DDRPHY_REG1_OFF);
+		reg_write(DDRPHY2AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY2AO_MISC_CG_CTRL2) &
+			~DDRPHY2AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY2AO_DDRPHY_REG1_TOG1);
 	}
 }
 
@@ -1799,9 +1847,7 @@ void dcm_dramc2_ao_dramc_dcm(int on)
 			(0x1 << 17) | \
 			(0x1 << 19))
 #define DDRPHY3AO_DDRPHY_REG1_MASK ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x1f << 21) | \
-			(0x1 << 26))
+			(0x1 << 7))
 #define DDRPHY3AO_DDRPHY_REG0_ON ((0x0 << 8) | \
 			(0x0 << 9) | \
 			(0x0 << 10) | \
@@ -1813,16 +1859,8 @@ void dcm_dramc2_ao_dramc_dcm(int on)
 			(0x0 << 16) | \
 			(0x0 << 17) | \
 			(0x0 << 19))
-#if 0
 #define DDRPHY3AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21) | \
-			(0x0 << 26))
-#else
-#define DDRPHY3AO_DDRPHY_REG1_ON ((0x0 << 6) | \
-			(0x0 << 7) | \
-			(0x8 << 21))
-#endif
+			(0x0 << 7))
 #define DDRPHY3AO_DDRPHY_REG0_OFF ((0x1 << 8) | \
 			(0x1 << 9) | \
 			(0x1 << 10) | \
@@ -1834,16 +1872,24 @@ void dcm_dramc2_ao_dramc_dcm(int on)
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 19))
+#define DDRPHY3AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
+			(0x1 << 7))
+#define DDRPHY3AO_DDRPHY_REG1_TOG_MASK ((0x1 << 0))
+#define DDRPHY3AO_DDRPHY_REG1_TOG1 ((0x0 << 0))
+#define DDRPHY3AO_DDRPHY_REG1_TOG0 ((0x1 << 0))
 #if 0
-#define DDRPHY3AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21) | \
-			(0x1 << 26))
-#else
-#define DDRPHY3AO_DDRPHY_REG1_OFF ((0x1 << 6) | \
-			(0x1 << 7) | \
-			(0x0 << 21))
+static unsigned int ddrphy3ao_rg_mem_dcm_idle_fsel_get(void)
+{
+	return (reg_read(DDRPHY3AO_MISC_CG_CTRL2) >> 21) & 0x1f;
+}
 #endif
+static void ddrphy3ao_rg_mem_dcm_idle_fsel_set(unsigned int val)
+{
+	reg_write(DDRPHY3AO_MISC_CG_CTRL2,
+		(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
+		~(0x1f << 21)) |
+		(val & 0x1f) << 21);
+}
 
 bool dcm_ddrphy3ao_ddrphy_is_on(int on)
 {
@@ -1863,6 +1909,11 @@ void dcm_ddrphy3ao_ddrphy(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'ddrphy3ao_ddrphy'" */
+		reg_write(DDRPHY3AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
+			~DDRPHY3AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY3AO_DDRPHY_REG1_TOG0);
+		ddrphy3ao_rg_mem_dcm_idle_fsel_set(0x1f);
 		reg_write(DDRPHY3AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY3AO_MISC_CG_CTRL0) &
 			~DDRPHY3AO_DDRPHY_REG0_MASK) |
@@ -1871,8 +1922,17 @@ void dcm_ddrphy3ao_ddrphy(int on)
 			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
 			~DDRPHY3AO_DDRPHY_REG1_MASK) |
 			DDRPHY3AO_DDRPHY_REG1_ON);
+		reg_write(DDRPHY3AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
+			~DDRPHY3AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY3AO_DDRPHY_REG1_TOG1);
 	} else {
 		/* TINFO = "Turn OFF DCM 'ddrphy3ao_ddrphy'" */
+		reg_write(DDRPHY3AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
+			~DDRPHY3AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY3AO_DDRPHY_REG1_TOG0);
+		ddrphy3ao_rg_mem_dcm_idle_fsel_set(0x0);
 		reg_write(DDRPHY3AO_MISC_CG_CTRL0,
 			(reg_read(DDRPHY3AO_MISC_CG_CTRL0) &
 			~DDRPHY3AO_DDRPHY_REG0_MASK) |
@@ -1881,6 +1941,10 @@ void dcm_ddrphy3ao_ddrphy(int on)
 			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
 			~DDRPHY3AO_DDRPHY_REG1_MASK) |
 			DDRPHY3AO_DDRPHY_REG1_OFF);
+		reg_write(DDRPHY3AO_MISC_CG_CTRL2,
+			(reg_read(DDRPHY3AO_MISC_CG_CTRL2) &
+			~DDRPHY3AO_DDRPHY_REG1_TOG_MASK) |
+			DDRPHY3AO_DDRPHY_REG1_TOG1);
 	}
 }
 
