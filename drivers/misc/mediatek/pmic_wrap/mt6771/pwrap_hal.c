@@ -1355,6 +1355,9 @@ static inline void pwrap_dump_ap_register(void)
 #endif
 		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
 	}
+	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x0);
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
+	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 }
 
 static inline void pwrap_dump_pmic_register(void)
@@ -1377,6 +1380,11 @@ static inline void pwrap_dump_pmic_register(void)
 	}
 }
 
+void pwrap_dump_and_recovery(void)
+{
+	pwrap_dump_ap_register();
+	pwrap_dump_pmic_register();
+}
 void pwrap_dump_all_register(void)
 {
 	unsigned int tsx_0 = 0, tsx_1 = 0, dcxo_0 = 0, dcxo_1 = 0;
@@ -1390,12 +1398,6 @@ void pwrap_dump_all_register(void)
 	pr_notice("tsx dump reg_addr:0x1000d288 = 0x%x\n", dcxo_0);
 	dcxo_1 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_1_STA_1);
 	pr_notice("tsx dump reg_addr:0x1000d28c = 0x%x\n", dcxo_1);
-
-	pwrap_dump_ap_register();
-	pwrap_dump_pmic_register();
-	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x0);
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
-	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 }
 
 static int is_pwrap_init_done(void)
