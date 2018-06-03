@@ -323,6 +323,15 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	mt_cirq_enable();
 #endif
 
+
+	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
+
+	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
+
+	spm_sodi3_footprint(SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
+
+	spm_sodi3_notify_sspm_before_wfi_async_wait();
+
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -334,14 +343,6 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	}
 #endif
 
-	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
-
-	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
-
-	spm_sodi3_footprint(SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
-
-	spm_sodi3_notify_sspm_before_wfi_async_wait();
-
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 		(1 << SPM_SODI3_B4) | (1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
 
@@ -351,6 +352,12 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
+
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
+		request_uart_to_wakeup();
+RESTORE_IRQ:
+#endif
 
 	spm_sodi3_notify_sspm_after_wfi(operation_cond);
 
@@ -362,14 +369,13 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
-		request_uart_to_wakeup();
-RESTORE_IRQ:
-#endif
-	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
-	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi3_flags|SODI_FLAG_3P0, operation_cond);
+	if (wr == WR_UART_BUSY)
+		sodi3_pr_info("request uart sleep: fail\n");
+	else
+		wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi3_flags|SODI_FLAG_3P0, operation_cond);
+
+	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
