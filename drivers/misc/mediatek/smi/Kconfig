@@ -1,5 +1,7 @@
 config MTK_SMI_EXT
 	bool "MTK SMI Common Driver Code"
+	select MEMORY
+	select MTK_SMI
 	help
 	  This config enable/disable SMI Driver.
 	  SMI Driver is used to arbitrate memory bandwidth of multimedia.
