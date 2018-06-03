@@ -82,6 +82,9 @@
 /* SPM dummy read */
 #define MTK_SIP_KERNEL_SPM_DUMMY_READ		(0x82000225 | MTK_SIP_SMC_AARCH_BIT)
 
+/* SPM sleep deepidle related SMC call */
+#define MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS	(0x82000226 | MTK_SIP_SMC_AARCH_BIT)
+
 /* HW FDE related SMC call */
 #define MTK_SIP_KERNEL_HW_FDE_UFS_INIT      (0x82000230 | MTK_SIP_SMC_AARCH_BIT)
 
