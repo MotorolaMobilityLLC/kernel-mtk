@@ -65,6 +65,7 @@ void __iomem *pericfg_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
+#define CLK_CFG_9		(cksys_base + 0x0d0)
 #define CLK_MISC_CFG_0		(cksys_base + 0x104)
 #define CLK_DBG_CFG		(cksys_base + 0x10C)
 #define CLK26CALI_0		(cksys_base + 0x220)
@@ -97,6 +98,7 @@ void __iomem *venc_gcon_base;
 #define MAINPLL_CON0		(apmixed_base + 0x0220)
 #define MAINPLL_PWR_CON0	(apmixed_base + 0x022C)
 #define UNIVPLL_CON0		(apmixed_base + 0x0230)
+#define UNIVPLL_CON1		(apmixed_base + 0x0234)
 #define UNIVPLL_PWR_CON0	(apmixed_base + 0x023C)
 #define MFGPLL_CON0		(apmixed_base + 0x0240)
 #define MFGPLL_PWR_CON0		(apmixed_base + 0x024C)
@@ -1760,6 +1762,13 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,venc_gcon",
 		mtk_venc_global_con_init);
 
+void check_seninf_ck(void)
+{
+	/* confirm seninf clk */
+	pr_err("%s: CLK_CFG_9 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_9));
+	pr_err("%s: UNIVPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON0));
+	pr_err("%s: UNIVPLL_CON1 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON1));
+}
 
 unsigned int mt_get_ckgen_freq(unsigned int ID)
 {
@@ -1792,6 +1801,8 @@ unsigned int mt_get_ckgen_freq(unsigned int ID)
 	clk_writel(CLK_MISC_CFG_0, clk_misc_cfg_0);
 	/*clk_writel(CLK26CALI_0, clk26cali_0);*/
 	/*clk_writel(CLK26CALI_1, clk26cali_1);*/
+	if (ID == 35)
+		check_seninf_ck();
 
 	/*print("ckgen meter[%d] = %d Khz\n", ID, output);*/
 	if (i > 10)
