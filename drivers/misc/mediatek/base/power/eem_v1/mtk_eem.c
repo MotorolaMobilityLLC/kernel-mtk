@@ -470,7 +470,7 @@ unsigned char mt_eem_get_turbo(void)
 	#if !(EEM_ENABLE_TINYSYS_SSPM)
 	ret = eem_devinfo.BIG_TURBO;
 	#else
-	eem_error("big efuse: 0x%0x\n", eem_logs->hw_res[HW_RES_IDX_TURBO]);
+	/* eem_error("big efuse: 0x%0x\n", eem_logs->hw_res[HW_RES_IDX_TURBO]); */
 	ret = GET_BITS_VAL(4:4, eem_logs->hw_res[HW_RES_IDX_TURBO]);
 	#endif
 
@@ -3041,8 +3041,28 @@ static int eem_probe(struct platform_device *pdev)
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
 	/* unsigned int code = mt_get_chip_hw_code(); */
+	#ifdef CONFIG_OF
+	struct device_node *node = NULL;
+	#endif
 
 	FUNC_ENTER(FUNC_LV_MODULE);
+
+	#ifdef CONFIG_OF
+	node = pdev->dev.of_node;
+	if (!node) {
+		eem_error("get eem device node err\n");
+		return -ENODEV;
+	}
+	/* Setup IO addresses */
+	eem_base = of_iomap(node, 0);
+	eem_debug("[EEM] eem_base = 0x%p\n", eem_base);
+	eem_irq_number = irq_of_parse_and_map(node, 0);
+	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
+	if (!eem_irq_number) {
+		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
+		return 0;
+	}
+	#endif
 
 	/* thermal and gpu may enable their clock by themselves */
 	#ifdef __KERNEL__
@@ -4522,25 +4542,7 @@ int __init eem_init(void)
 {
 	int err = 0;
 
-	#ifdef __KERNEL__
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,eem_fsm");
-	if (node) {
-		/* Setup IO addresses */
-		eem_base = of_iomap(node, 0);
-		/* eem_debug("[EEM] eem_base = 0x%p\n", eem_base);*/
-	}
-
-	/*get eem irq num (215)*/
-	eem_irq_number = irq_of_parse_and_map(node, 0);
-	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
-	if (!eem_irq_number) {
-		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
-		return 0;
-	}
 	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
-	#endif
 
 	get_devinfo();
 
@@ -5792,9 +5794,29 @@ static int eem_probe(struct platform_device *pdev)
 	struct eem_ipi_data eem_data;
 	unsigned long flags;
 	struct eem_det *det;
+	#ifdef CONFIG_OF
+	struct device_node *node = NULL;
+	#endif
 	/* unsigned int code = mt_get_chip_hw_code(); */
 
 	FUNC_ENTER(FUNC_LV_MODULE);
+
+	#ifdef CONFIG_OF
+	node = pdev->dev.of_node;
+	if (!node) {
+		eem_error("get eem device node err\n");
+		return -ENODEV;
+	}
+	/* Setup IO addresses */
+	eem_base = of_iomap(node, 0);
+	eem_debug("[EEM] eem_base = 0x%p\n", eem_base);
+	eem_irq_number = irq_of_parse_and_map(node, 0);
+	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
+	if (!eem_irq_number) {
+		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
+		return 0;
+	}
+	#endif
 
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
@@ -5891,25 +5913,9 @@ static int __init eem_init(void)
 {
 	int err = 0;
 	struct eem_ipi_data eem_data;
-	struct device_node *node = NULL;
 	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	/* for testing */
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,eem_fsm");
-
-	if (node) {
-		/* Setup IO addresses */
-		eem_base = of_iomap(node, 0);
-		eem_debug("[EEM] eem_base = 0x%p\n", eem_base);
-	}
-	eem_irq_number = irq_of_parse_and_map(node, 0);
-	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
-	if (!eem_irq_number) {
-		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
-		return 0;
-	}
 
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 
