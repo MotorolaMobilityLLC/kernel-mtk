@@ -4341,6 +4341,7 @@ void exec_BAT_EC(int cmd, int param)
 			fg_custom_data_check();
 			bm_err("[FG_IT] exe_BAT_EC cmd %d", cmd);
 		}
+		break;
 
 	default:
 		bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, default\n", cmd, param);
