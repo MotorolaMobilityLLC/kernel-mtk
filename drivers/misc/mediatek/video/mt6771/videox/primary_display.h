@@ -463,5 +463,7 @@ int primary_display_set_scenario(int scenario);
 enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
 extern void check_mm0_clk_sts(void);
 int display_freeze_mode(int enable, int need_lock);
-
+int primary_display_rdma_recovery(void);
+int primary_display_wdma_recovery(void);
+void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module);
 #endif

@@ -74,6 +74,7 @@
 
 
 static struct task_struct *primary_display_check_task; /* For abnormal check */
+static struct task_struct *primary_recovery_thread;
 static wait_queue_head_t _check_task_wq; /* used for blocking check task  */
 static atomic_t _check_task_wakeup = ATOMIC_INIT(0); /* For  Check Task */
 
@@ -81,6 +82,9 @@ static wait_queue_head_t esd_ext_te_wq;	/* For EXT TE EINT Check */
 static atomic_t esd_ext_te_event = ATOMIC_INIT(0); /* For EXT TE EINT Check */
 static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
+
+atomic_t enable_wdma_recovery = ATOMIC_INIT(0);
+atomic_t enable_rdma_recovery = ATOMIC_INIT(0);
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 /***********external display dual LCM ESD check******************/
@@ -685,6 +689,179 @@ done:
 	return ret;
 }
 
+int primary_display_rdma_recovery(void)
+{
+	enum DISP_STATUS ret = DISP_STATUS_OK;
+	struct disp_ddp_path_config *pconfig;
+
+	DISPFUNC();
+	DISPCHECK("[disp path recovery]begin\n");
+
+	primary_display_manual_lock();
+
+	if (primary_get_state() == DISP_SLEPT) {
+		DISPCHECK("disp path recovery but primary display path is slept??\n");
+		goto done;
+	}
+
+	primary_display_idlemgr_kick((char *)__func__, 0);
+
+	DISPINFO("[disp path recovery]cmdq trigger loop stop[begin]\n");
+	_cmdq_stop_trigger_loop();
+	DISPINFO("[disp path recovery]cmdq trigger loop stop[end]\n");
+
+	DISPDBG("[disp path recovery]stop dpmgr path[begin]\n");
+	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPCHECK("[disp path recovery]stop dpmgr path[end]\n");
+
+	if (dpmgr_path_is_busy(primary_get_dpmgr_handle()))
+		DISPERR("[disp path recovery]display path is busy after stop\n");
+
+	DISPDBG("[disp path recovery]reset display path[begin]\n");
+	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	ddp_path_mmsys_sw_reset(DISP_MODULE_RDMA0);
+	DISPCHECK("[disp path recovery]reset display path[end]\n");
+	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
+
+	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	pconfig->rdma_dirty = 1;
+	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, NULL);
+
+	DISPDBG("[disp path recovery]start dpmgr path[begin]\n");
+	if (disp_partial_is_support()) {
+		struct disp_ddp_path_config *data_config =
+			dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+
+		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
+	}
+	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPCHECK("[disp path recovery]start dpmgr path[end]\n");
+
+	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
+		DISPERR("[ESD]Fatal error, we didn't trigger display path but it's already busy\n");
+		ret = -1;
+		/* goto done; */
+	}
+
+	DISPDBG("[disp path recovery]start cmdq trigger loop[begin]\n");
+	_cmdq_start_trigger_loop();
+	DISPCHECK("[disp path recovery]start cmdq trigger loop[end]\n");
+	if (primary_display_is_video_mode()) {
+		/*
+		 * for video mode, we need to force trigger here
+		 * for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW
+		 * when trigger loop start
+		 */
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
+
+	}
+
+	/*
+	 * (in suspend) when we stop trigger loop
+	 * if no other thread is running, cmdq may disable its clock
+	 * all cmdq event will be cleared after suspend
+	 */
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	/* set dirty to trigger one frame -- cmd mode */
+	if (!primary_display_is_video_mode()) {
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		mdelay(40);
+	}
+
+done:
+	primary_display_manual_unlock();
+	DISPCHECK("[disp path recovery] end\n");
+	return ret;
+}
+
+int primary_display_wdma_recovery(void)
+{
+	enum DISP_STATUS ret = DISP_STATUS_OK;
+	struct disp_ddp_path_config *pconfig;
+
+	DISPFUNC();
+	DISPCHECK("[disp wdma recovery]begin\n");
+
+	primary_display_manual_lock();
+
+	if (primary_get_state() == DISP_SLEPT) {
+		DISPCHECK("disp wdma recovery but primary display path is slept??\n");
+		goto done;
+	}
+
+	if (!primary_get_ovl2mem_handle()) {
+		DISPCHECK("ovl2mem_handle is NULL, cancel wdma recovery\n");
+		goto done;
+	}
+	primary_display_idlemgr_kick((char *)__func__, 0);
+
+	/* Since we expect the ovl->wdma is hang if run to this path,
+	 * so do the reset directly without wait idle.
+	 */
+	DISPDBG("[disp wdma recovery]reset display path[begin]\n");
+	dpmgr_path_reset(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
+	ddp_path_mmsys_sw_reset(DISP_MODULE_WDMA0);
+	DISPCHECK("[disp wdma recovery]reset display path[end]\n");
+
+	pconfig = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
+	pconfig->wdma_dirty = 1;
+	ret = dpmgr_path_config(primary_get_ovl2mem_handle(), pconfig, NULL);
+
+	DISPDBG("[disp wdma recovery]start dpmgr path[begin]\n");
+	dpmgr_path_start(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
+	DISPCHECK("[disp wdma recovery]start dpmgr path[end]\n");
+
+done:
+	primary_display_manual_unlock();
+	DISPCHECK("[disp wdma recovery] end\n");
+	return ret;
+}
+
+void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_WDMA0:
+		atomic_set(&enable_wdma_recovery, 1);
+		break;
+	case DISP_MODULE_RDMA0:
+		atomic_set(&enable_rdma_recovery, 1);
+		break;
+	default:
+		break;
+	}
+}
+
+static int primary_display_recovery_kthread(void *data)
+{
+	dpmgr_enable_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_DISP_RECOVERY);
+	while (1) {
+		dpmgr_wait_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_DISP_RECOVERY);
+		DISPMSG("receive RECOVERY event\n");
+
+		if (atomic_read(&enable_wdma_recovery)) {
+			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_WDMA0)) {
+				DISPERR("Detect wdma0 malfunction, do recovery.\n");
+				primary_display_wdma_recovery();
+				atomic_set(&enable_wdma_recovery, 0);
+			}
+		}
+
+		if (atomic_read(&enable_rdma_recovery)) {
+			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_RDMA0)) {
+				DISPERR("Detect rdma0 malfunction, do recovery.\n");
+				primary_display_rdma_recovery();
+				atomic_set(&enable_rdma_recovery, 0);
+			}
+		}
+
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
 void primary_display_check_recovery_init(void)
 {
 	/* primary display check thread init */
@@ -705,6 +882,13 @@ void primary_display_check_recovery_init(void)
 			wake_up_interruptible(&_check_task_wq);
 		}
 	}
+
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
+		primary_recovery_thread =
+			kthread_create(primary_display_recovery_kthread, NULL, "disp_path_recovery");
+		wake_up_process(primary_recovery_thread);
+	}
+
 }
 
 void primary_display_esd_check_enable(int enable)

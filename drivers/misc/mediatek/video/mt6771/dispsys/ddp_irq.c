@@ -33,6 +33,8 @@
 #include "ddp_dbi.h"
 #include "disp_drv_log.h"
 #include "smi_debug.h"
+#include "ddp_manager.h"
+#include "primary_display.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -307,6 +309,12 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 			disp_irq_log_module |= 1 << module;
 			set_display_ut_status(DISP_UT_ERROR_WDMA);
+			primary_display_set_recovery_module(DISP_MODULE_WDMA0);
+			/* The DISP_RECOVERY event waiting by recovery thread is bundled with
+			 * main display path. So we fill the main display path module:
+			 * MODULE_RDMA0 here to signal the awaking event in recovery thread.
+			 */
+			dpmgr_module_notify(DISP_MODULE_RDMA0, DISP_PATH_EVENT_DISP_RECOVERY);
 		}
 		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE));

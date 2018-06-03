@@ -1360,6 +1360,12 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		govldimcolor = dimcolor;
+	} else if (strncmp(opt, "disp_recovery", 13) == 0) {
+		DISPMSG("disp_recovery\n");
+		primary_display_rdma_recovery();
+	} else if (strncmp(opt, "disp_wdma_recovery", 18) == 0) {
+		DISPMSG("disp_wdma_recovery\n");
+		primary_display_wdma_recovery();
 	}
 }
 

@@ -194,6 +194,7 @@ unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
 unsigned int mipitx_impedance_backup[5];
 
 atomic_t PMaster_enable = ATOMIC_INIT(0);
+static ddp_module_notify g_dsi_ddp_notify;
 
 static void _init_condition_wq(struct t_condition_wq *waitq)
 {
@@ -398,6 +399,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 	static bool dsi_underflow;
 	static bool dsi_inp_relay_not_ready;
 	struct DSI_INT_STATUS_REG status;
+	static int recovery_retry_cnt;
 #if 0
 	struct DSI_TXRX_CTRL_REG txrx_ctrl;
 #endif
@@ -442,6 +444,15 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 				SMI_DBG_VENC | SMI_DBG_MJC, 1, 0, 1);
 			dsi_underflow = 1;
 			disp_aee_print("DSI buffer underrun\n");
+		}
+		recovery_retry_cnt--;
+		if (recovery_retry_cnt < 0) {
+			recovery_retry_cnt = 100;
+			if (g_dsi_ddp_notify != NULL) {
+				DDPERR("call dsi_ddp_notify\n");
+				primary_display_set_recovery_module(DISP_MODULE_RDMA0);
+				g_dsi_ddp_notify(DISP_MODULE_DSI0, DISP_PATH_EVENT_DISP_RECOVERY);
+			}
 		}
 	}
 
@@ -4780,6 +4791,12 @@ INT32 DSI_ssc_enable(UINT32 dsi_index, UINT32 en)
 	return 0;
 }
 
+static int dsi_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
+{
+	g_dsi_ddp_notify = notify;
+	return 0;
+}
+
 struct DDP_MODULE_DRIVER ddp_driver_dsi0 = {
 	.module = DISP_MODULE_DSI0,
 	.init = ddp_dsi_init,
@@ -4796,6 +4813,7 @@ struct DDP_MODULE_DRIVER ddp_driver_dsi0 = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
+	.set_listener = dsi_set_listener,
 	.ioctl = ddp_dsi_ioctl
 };
 
@@ -4815,6 +4833,7 @@ struct DDP_MODULE_DRIVER ddp_driver_dsi1 = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
+	.set_listener = dsi_set_listener,
 	.ioctl = ddp_dsi_ioctl
 };
 
@@ -4834,6 +4853,7 @@ struct DDP_MODULE_DRIVER ddp_driver_dsidual = {
 	.is_busy = ddp_dsi_is_busy,
 	.dump_info = ddp_dsi_dump,
 	.set_lcm_utils = ddp_dsi_set_lcm_utils,
+	.set_listener = dsi_set_listener,
 	.ioctl = ddp_dsi_ioctl
 };
 
