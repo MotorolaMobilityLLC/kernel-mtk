@@ -727,6 +727,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.pseudo1_en = PSEUDO1_EN;
 	fg_cust_data.pseudo100_en = PSEUDO100_EN;
 	fg_cust_data.pseudo100_en_dis = PSEUDO100_EN_DIS;
+	fg_cust_data.pseudo1_iq_offset = UNIT_TRANS_100 * g_FG_PSEUDO1_OFFSET[g_fg_battery_id];
 
 	/* iboot related */
 	fg_cust_data.qmax_sel = QMAX_SEL;
@@ -1041,6 +1042,31 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 				 bat_id, fg_cust_data.q_max_sys_voltage);
 	} else {
 		bm_err("Get Q_MAX_SYS_VOLTAGE BAT%d failed\n", bat_id);
+	}
+
+		switch (bat_id) {
+		case 0:
+			ret = !of_property_read_u32(np, "PSEUDO1_IQ_OFFSET_BAT0", &val);
+			break;
+		case 1:
+			ret = !of_property_read_u32(np, "PSEUDO1_IQ_OFFSET_BAT1", &val);
+			break;
+		case 2:
+			ret = !of_property_read_u32(np, "PSEUDO1_IQ_OFFSET_BAT2", &val);
+			break;
+		case 3:
+			ret = !of_property_read_u32(np, "PSEUDO1_IQ_OFFSET_BAT3", &val);
+			break;
+		default:
+			ret = 0;
+			break;
+		}
+	if (ret) {
+		fg_cust_data.pseudo1_iq_offset = (int)val * UNIT_TRANS_100;
+		bm_err("Get PSEUDO1_IQ_OFFSET BAT%d: %d\n",
+				 bat_id, fg_cust_data.pseudo1_iq_offset);
+	} else {
+		bm_err("Get PSEUDO1_IQ_OFFSET BAT%d failed\n", bat_id);
 	}
 
 	if (!of_property_read_u32(np, "SHUTDOWN_1_TIME", &val)) {
@@ -3592,7 +3618,7 @@ static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct dev
 {
 	int ret_value = 8888;
 
-	ret_value = battery_get_bat_avg_current() / 10;
+	ret_value = battery_get_bat_avg_current();
 	bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
 	return sprintf(buf, "%d\n", ret_value);
 }

@@ -500,6 +500,7 @@ struct fuel_gauge_custom_data {
 	int pseudo1_en;
 	int pseudo100_en;
 	int pseudo100_en_dis;
+	int pseudo1_iq_offset;
 
 	/* vboot related */
 	int qmax_sel;
