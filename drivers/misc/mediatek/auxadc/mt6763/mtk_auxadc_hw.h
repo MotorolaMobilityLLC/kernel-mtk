@@ -49,6 +49,7 @@ extern void __iomem *auxadc_efuse_base;
 #define MT_PDN_PERI_AUXADC MT_CG_PERI_AUXADC
 
 #define AUXADC_NODE "mediatek,auxadc"
+#define AUXADC_APMIX_NODE "mediatek,apmixed"
 
 #define AUXADC_CON0             (AUXADC_BASE + 0x000)
 #define AUXADC_CON1             (AUXADC_BASE + 0x004)
