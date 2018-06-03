@@ -1047,6 +1047,7 @@ static long compat_dfrc_ioctl(
 	unsigned long arg)
 {
 	long res = 0L;
+
 	switch (cmd) {
 	case DFRC_IOCTL_CMD_REG_POLICY:
 	case DFRC_IOCTL_CMD_SET_POLICY:
