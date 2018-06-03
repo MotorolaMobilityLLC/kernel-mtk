@@ -206,6 +206,7 @@ extern void *mt_dramc_base_get(void);
 extern void *mt_dramc_nao_base_get(void);
 extern void *mt_ddrphy_base_get(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
+unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
 void dram_HQA_adjust_voltage(void);
 int enter_pasr_dpd_config(unsigned char segment_rank0,
@@ -229,6 +230,17 @@ enum {
 	DRAM_OK = 0,
 	DRAM_FAIL
 }; /* DRAM status type */
+
+enum {
+	DRAMC_NAO_CHA = 0,
+	DRAMC_NAO_CHB,
+	DRAMC_AO_CHA,
+	DRAMC_AO_CHB,
+	PHY_NAO_CHA,
+	PHY_NAO_CHB,
+	PHY_AO_CHA,
+	PHY_AO_CHB
+}; /* RegBase */
 
 enum RANKNUM {
 	SINGLE_RANK = 1,
