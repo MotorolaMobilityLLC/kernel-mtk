@@ -77,6 +77,7 @@ TRACE_EVENT(sched_kthread_stop_ret,
 static inline long __trace_sched_switch_state(bool preempt, struct task_struct *p);
 #endif
 
+extern bool system_overutilized(int cpu);
 /*
  * Tracepoint for waking up a task:
  */
@@ -106,7 +107,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
 		__entry->target_cpu	= task_cpu(p);
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		__entry->state	= __trace_sched_switch_state(false, p);
-		__entry->overutil = task_rq(p)->rd->overutilized;
+		__entry->overutil = system_overutilized(task_rq(p)->cpu);
 #endif
 	),
 
