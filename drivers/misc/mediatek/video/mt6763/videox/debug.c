@@ -100,6 +100,9 @@ struct BMP_INFO_HEADER {
 	UINT32 biClrImportant;
 };
 
+/* show disp info struct*/
+struct dbg_disp_info dbg_disp;
+
 /*********************** layer information statistic *********************/
 #define STATISTIC_MAX_LAYERS 20
 struct layer_statistic {
@@ -110,6 +113,35 @@ struct layer_statistic {
 };
 static struct layer_statistic layer_stat;
 static int layer_statistic_enable = 1;
+
+int on_screen_en(void)
+{
+	if ((dbg_disp.show_hrt_en || dbg_disp.path_mode_en ||
+		dbg_disp.layer_num_en || dbg_disp.show_fps_en ||
+		dbg_disp.dsi_mode_en || dbg_disp.layer_size_en ||
+		dbg_disp.thermal_en) &&
+		(!is_DAL_Enabled()))
+		return 1;
+	else
+		return 0;
+}
+
+/* be used by other users*/
+void thermal_en(int value)
+{
+	static int pre_value;
+
+	dbg_disp.thermal_en = value;
+	dbg_disp.layer_off_dbg = 1;
+	dbg_disp.font_size = 4;
+	dbg_disp.fg_clo = 0x00FF00FF;
+	dbg_disp.bg_clo = 0xFF400000;
+
+	if (pre_value && !dbg_disp.thermal_en)
+		dbg_disp.dbg_cmd_update_flg = 1;
+	pre_value = value;
+}
+EXPORT_SYMBOL(thermal_en);
 
 static int _is_overlap(unsigned int x1, unsigned int y1, unsigned int w1, unsigned int h1,
 			unsigned int x2, unsigned int y2, unsigned int w2, unsigned int h2)
@@ -754,6 +786,61 @@ static void process_dbg_opt(const char *opt)
 
 		DISPMSG("will set option %s to %d\n", option, value);
 		disp_helper_set_option_by_name(option, value);
+	} else if ((strncmp(opt, "disp_info:", 10) == 0)) {
+		unsigned int disp_adb_cmd;
+		int i;
+
+		ret = sscanf(opt, "disp_info:%x\n", &disp_adb_cmd);
+		if (ret != 1) {
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+
+		/*initialize background parameters*/
+		dbg_disp.layer_off_dbg = 1;
+		dbg_disp.font_size = 4;
+		dbg_disp.fg_clo = 0x00FF00FF;
+		dbg_disp.bg_clo = 0xFF400000;
+
+		/* fps info bit0~bit8 */
+		for (i = 0; i < ARRAY_SIZE(dbg_disp.layer_show); i++)
+			dbg_disp.layer_show[i] = ((disp_adb_cmd >> i) & 0x01);
+
+		dbg_disp.show_fps_en = (disp_adb_cmd & 0x1ff) ? 1 : 0;
+
+		/* hrt bit9 */
+		dbg_disp.show_hrt_en = ((disp_adb_cmd >> 9) & 0x1) ? 1 : 0;
+
+		/* layer_en_num bit10 */
+		dbg_disp.layer_num_en = ((disp_adb_cmd >> 10) & 0x1) ? 1 : 0;
+
+		/* layer_size bit11 */
+		dbg_disp.layer_size_en = ((disp_adb_cmd >> 11) & 0x1) ? 1 : 0;
+
+		/* path_mode bit12*/
+		dbg_disp.path_mode_en = ((disp_adb_cmd >> 12) & 0x1) ? 1 : 0;
+
+		/* dsi_mode bit13*/
+		dbg_disp.dsi_mode_en = ((disp_adb_cmd >> 13) & 0x1) ? 1 : 0;
+
+		dbg_disp.dbg_cmd_update_flg = 1;
+
+	} else if (strncmp(opt, "bg_set:", 7) == 0) {
+		ret = sscanf(opt, "bg_set:%u,%d\n", &dbg_disp.font_size, &dbg_disp.layer_off_dbg);
+		if (ret > 2) {
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		dbg_disp.dbg_cmd_update_flg = 1;
+		if (dbg_disp.font_size > 8)
+			dbg_disp.font_size = 8;
+		else if (dbg_disp.font_size < 1)
+			dbg_disp.font_size = 1;
+
+		if (dbg_disp.layer_off_dbg > 500)
+			dbg_disp.layer_off_dbg = 500;
+		else if (dbg_disp.layer_off_dbg < 1)
+			dbg_disp.layer_off_dbg = 1;
 	} else if (strncmp(opt, "switch_mode:", 12) == 0) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;

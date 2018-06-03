@@ -252,17 +252,17 @@ static const char *session_mode_spy(unsigned int mode)
 {
 	switch (mode) {
 	case DISP_SESSION_DIRECT_LINK_MODE:
-		return "DIRECT_LINK";
+		return "DIRECT_LINK ";
 	case DISP_SESSION_DIRECT_LINK_MIRROR_MODE:
-		return "DIRECT_LINK_MIRROR";
+		return "DL_MIRROR   ";
 	case DISP_SESSION_DECOUPLE_MODE:
-		return "DECOUPLE";
+		return "DECOUPLE    ";
 	case DISP_SESSION_DECOUPLE_MIRROR_MODE:
-		return "DECOUPLE_MIRROR";
+		return "DC_MIRROR   ";
 	case DISP_SESSION_RDMA_MODE:
-		return "RDMA_MODE";
+		return "RDMA_MODE   ";
 	default:
-		return "UNKNOWN";
+		return "UNKNOWN     ";
 	}
 }
 
@@ -529,7 +529,8 @@ long primary_display_wait_not_state(enum DISP_POWER_STATE state, long timeout)
 	return ret;
 }
 
-int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes_per_pix)
+int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
+			int bytes_per_pix, unsigned int h_offset)
 {
 	int ret = 0;
 	unsigned int layer_size = pitch * h;
@@ -539,7 +540,8 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 
 	static MFC_HANDLE mfc_handle;
 
-	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
+	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO) ||
+			on_screen_en()) {
 #ifndef CONFIG_MTK_IOMMU
 		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 		if (ret < 0) {
@@ -557,21 +559,181 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 			goto err1;
 		}
 
-		ret = MFC_Open(&mfc_handle,
-			       (void *)kva,
-			       pitch,
-			       h,
-			       bytes_per_pix,
-			       DAL_COLOR_WHITE,
-			       DAL_COLOR_RED);
+		kva += h_offset * pitch;
+		mapped_size -= h_offset * pitch;
+		if (on_screen_en()) {
+			if (dbg_disp.dbg_cmd_update_flg) {
+				memset((void *)kva, 0, mapped_size);
+				dbg_disp.dbg_cmd_update_flg = 0;
+			}
+
+			ret = MFC_Open(&mfc_handle, (void *)kva, w,
+					h, bytes_per_pix, dbg_disp.fg_clo, dbg_disp.bg_clo);
+			MFC_SetScale(mfc_handle, dbg_disp.font_size);
+		} else {
+			ret = MFC_Open(&mfc_handle, (void *)kva, w,
+			       h, bytes_per_pix, DAL_COLOR_WHITE, DAL_COLOR_RED);
+		}
+
 		if (ret != MFC_STATUS_OK)
 			goto err1;
 		screen_logger_print(mfc_handle);
+		/*__dma_map_area((void *)kva, mapped_size, DMA_TO_DEVICE);*/
 		MFC_Close(mfc_handle);
 err1:
 		m4u_mva_unmap_kernel(real_mva, real_size, kva);
 	}
 	return 0;
+}
+static struct disp_internal_buffer_info *allocat_decouple_buffer(int size);
+
+/* prepare layers to show disp info for debug*/
+void add_show_fps_layers(struct disp_ddp_path_config *cfg, unsigned int w,
+	unsigned int h, unsigned int pitch, unsigned int dst_y, int ext_layer,
+	int ext_sel_layer, struct disp_internal_buffer_info *buffer_info)
+{
+	struct OVL_CONFIG_STRUCT *input_ext;
+
+	input_ext = &(cfg->ovl_config[TOTAL_OVL_LAYER_NUM - 1]);
+	input_ext->ovl_index = DISP_MODULE_OVL0_2L;
+	input_ext->layer = TOTAL_OVL_LAYER_NUM;
+	input_ext->isDirty = 1;
+	input_ext->buff_idx = -1;
+	input_ext->layer_en = 1;
+	input_ext->fmt = UFMT_RGBA8888;
+	input_ext->addr = (unsigned long)buffer_info->mva;
+	input_ext->const_bld = 0;
+	input_ext->src_x = 0;
+	input_ext->src_y = 0;
+	input_ext->src_w = w;
+	input_ext->src_h = h;
+	input_ext->src_pitch = pitch;
+	input_ext->dst_x = 0;
+	input_ext->dst_y = dst_y + dbg_disp.layer_off_dbg;
+	input_ext->dst_w = w;
+	input_ext->dst_h = h;
+	input_ext->aen = 1;
+	input_ext->sur_aen = 0;
+	input_ext->alpha = 255;
+	input_ext->keyEn = 0;
+	input_ext->key = 0;
+	input_ext->src_alpha = 0;
+	input_ext->dst_alpha = 0;
+	input_ext->source = OVL_LAYER_SOURCE_MEM;
+	input_ext->security = 0;
+	input_ext->yuv_range = 0;
+	input_ext->ext_layer = ext_layer;
+	input_ext->ext_sel_layer = ext_sel_layer;
+	input_ext->phy_layer = 1;
+}
+
+void add_fps_info(void)
+{
+	char disp_tmp[100];
+	int i, j = 0;
+	char *p = disp_tmp;
+
+	/* caculate_fps(); */
+	memset(disp_tmp, 0, sizeof(disp_tmp));
+	/*show total fps*/
+	if (dbg_disp.layer_show[SHOW_LAYER_FPS]) {
+		snprintf(p, sizeof(disp_tmp), "fps:%2lld.%01lld ",
+				dbg_disp.fps_info_dbg.total_fps_high,
+				dbg_disp.fps_info_dbg.total_fps_low);
+
+		j = strlen(p);
+		p = p + j;
+	}
+	/*show layer0~layer7 fps */
+	for (i = 0; i < SHOW_LAYER_FPS; i++) {
+		if (dbg_disp.layer_show[i]) {
+			snprintf(p, sizeof(disp_tmp), "L%d:%2lld.%01lld ", i,
+				dbg_disp.fps_info_dbg.layer_fps_high[i],
+				dbg_disp.fps_info_dbg.layer_fps_low[i]);
+
+			j = strlen(p);
+			p = p + j;
+		}
+	}
+	screen_logger_add_message("fps", MESSAGE_REPLACE, disp_tmp);
+
+}
+
+static void add_layer_info(void)
+{
+	char disp_tmp[100];
+	int j = 0;
+	char *p = disp_tmp;
+
+	memset(disp_tmp, 0, sizeof(disp_tmp));
+	/* show hrt */
+	if (dbg_disp.show_hrt_en) {
+		snprintf(p, sizeof(disp_tmp), "hrt:%01d.%01d ", dbg_disp.hrt_high, dbg_disp.hrt_low);
+		j = strlen(p);
+		p = p + j;
+	}
+	/* show enable layer num */
+	if (dbg_disp.layer_num_en) {
+		snprintf(p, sizeof(disp_tmp), "Lnum:%d ", dbg_disp.layer_en_num);
+		j = strlen(p);
+		p = p + j;
+		dbg_disp.layer_en_num = 0;
+	}
+	/* show layer size */
+	if (dbg_disp.layer_size_en) {
+		int full_layer_width = primary_display_get_width();
+		int full_layer_height = primary_display_get_height();
+		int full_layer_size = full_layer_width * full_layer_height * 4;
+
+		dbg_disp.layer_size_low = do_div(dbg_disp.layer_size_high, full_layer_size);
+		dbg_disp.layer_size_low *= 10;
+		do_div(dbg_disp.layer_size_low, full_layer_size);
+
+		snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", dbg_disp.layer_size_high,
+			dbg_disp.layer_size_low);
+		j = strlen(p);
+		p = p + j;
+		dbg_disp.layer_size_high = 0;
+	}
+	screen_logger_add_message("layer_info", MESSAGE_REPLACE, disp_tmp);
+}
+
+void primary_show_info_to_screen(struct disp_ddp_path_config *cfg)
+{
+	int buffer_size = 0;
+	unsigned int width = 1080;
+	unsigned int height = 1024;
+	unsigned int pitch = (width * 4);
+
+	if (dbg_disp.create_buf_flg == 0) {
+		buffer_size = pitch * height;
+		dbg_disp.disp_buf = allocat_decouple_buffer(buffer_size);
+		dbg_disp.create_buf_flg = 1;
+	}
+
+	#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (lcm_corner_en)
+		add_show_fps_layers(cfg, width, height, pitch,
+			primary_display_get_corner_pattern_height(), 1, 2,
+				dbg_disp.disp_buf);
+	else
+	#endif
+		add_show_fps_layers(cfg, width, height, pitch, 32, -1, -1,
+			dbg_disp.disp_buf);
+
+	add_fps_info();
+
+	add_layer_info();
+
+	if (dbg_disp.path_mode_en)
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE,
+			(char *)session_mode_spy(pgc->session_mode));
+	else
+		/*screen_logger_remove_message("sess_mode");*/
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE, 0);
+
+	dynamic_debug_msg_print(dbg_disp.disp_buf->mva, width,
+					height, pitch, 4, 0);
 }
 
 static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
@@ -608,7 +770,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
 				cfg->input_cfg[dst_layer_id].src_pitch,
-				4);
+				4, 0);
 	return 0;
 }
 
@@ -1989,9 +2151,14 @@ static int _DL_switch_to_DC_fast(int block)
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
 
-	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
-	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
-			UFMT_GET_Bpp(rdma_config.inputFormat));
+	/* show path mode for debug */
+	if (dbg_disp.path_mode_en) {
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE,
+			(char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
+		dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height,
+				rdma_config.pitch, UFMT_GET_Bpp(rdma_config.inputFormat), 32);
+		/* screen_logger_remove_message("sess_mode"); */
+	}
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
@@ -2623,6 +2790,11 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
 	dst->ext_sel_layer = src->ext_sel_layer;
+
+	/* caculate layer size to show for debug*/
+	if (dbg_disp.layer_size_en)
+		dbg_disp.layer_size_high += dst->dst_w * dst->dst_h * Bpp;
+
 	return ret;
 }
 
@@ -5331,6 +5503,12 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		layer = input_cfg->layer_id;
 		ovl_cfg = &(data_config->ovl_config[layer]);
+
+		/* record enable layer num to show for debug*/
+		if (dbg_disp.layer_num_en && ovl_cfg->layer_en &&
+			i < (TOTAL_OVL_LAYER_NUM - 1))
+			dbg_disp.layer_en_num++;
+
 		if (cfg->setter != SESSION_USER_AEE) {
 			if (is_DAL_Enabled() && layer == primary_display_get_option("ASSERT_LAYER")) {
 				DISPMSG("skip AEE layer %d\n", layer);
@@ -5449,10 +5627,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		/* no need ioctl because of rdma_dirty */
 		set_is_dc(1);
-
-		dynamic_debug_msg_print(data_config->rdma_config.address, data_config->rdma_config.width,
+		if (0)
+		dynamic_debug_msg_print(data_config->rdma_config.address,
+				data_config->rdma_config.width,
 				data_config->rdma_config.height, data_config->rdma_config.pitch,
-				UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
+				UFMT_GET_Bpp(data_config->rdma_config.inputFormat), 0);
 
 	}
 
@@ -5533,6 +5712,16 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0_2L, TOTAL_OVL_LAYER_NUM, 1, 0);
 	}
 #endif
+	/* config disp info layer to show screen for debug*/
+	if (on_screen_en()) {
+		primary_show_info_to_screen(data_config);
+		if (!dbg_disp.create_thread_flg && dbg_disp.show_fps_en) {
+			dbg_disp.create_thread_flg = 1;
+			dbg_disp.fps_monitor_task = kthread_create(_primary_monitor_fps_thread, NULL, "fps_monitor");
+			wake_up_process(dbg_disp.fps_monitor_task);
+		}
+	} else if (!dbg_disp.show_fps_en && dbg_disp.create_thread_flg)
+		dbg_disp.create_thread_flg = 0;
 
 	if (dump_output) {
 		kfree(draw_info);
@@ -5788,6 +5977,10 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 		_display_set_lcm_refresh_rate(pgc->request_fps);
 #endif
 
+	/* store last config info for debug */
+	if (on_screen_en())
+		memcpy(&dbg_disp.dbg_cfg, cfg, sizeof(struct disp_frame_cfg_t));
+
 	/* set input */
 	dprec_start(input_event, cfg->present_fence_idx, cfg->input_layer_num);
 	primary_frame_cfg_input(cfg);
@@ -5991,7 +6184,14 @@ done:
 	DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, pgc->session_mode, sess_mode);
 
-	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(sess_mode));
+	/* show path mode for debug */
+	if (dbg_disp.path_mode_en)
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE,
+					(char *)session_mode_spy(sess_mode));
+	else if (on_screen_en() && !dbg_disp.path_mode_en)
+		/*screen_logger_remove_message("sess_mode");*/
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE, 0);
+
 err:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_END, pgc->session_mode, sess_mode);
 	if (ret)
@@ -6358,9 +6558,24 @@ int primary_display_get_info(struct disp_session_info *info)
 			if (lcm_param->dsi.mode == CMD_MODE) {
 				dispif_info->displayMode = DISP_IF_MODE_COMMAND;
 				dispif_info->isHwVsyncAvailable = 1;
+
+				/* show dsi mode for debug */
+				if (dbg_disp.dsi_mode_en)
+					screen_logger_add_message("dsi_mode", MESSAGE_REPLACE,
+								"cmd_mode ");
+				else
+					screen_logger_add_message("dsi_mode", MESSAGE_REPLACE, 0);
+
 			} else {
 				dispif_info->displayMode = DISP_IF_MODE_VIDEO;
 				dispif_info->isHwVsyncAvailable = 1;
+
+				/* show dsi mode for debug */
+				if (dbg_disp.dsi_mode_en)
+					screen_logger_add_message("dsi_mode", MESSAGE_REPLACE,
+								"vdo_mode ");
+				else
+					screen_logger_add_message("dsi_mode", MESSAGE_REPLACE, 0);
 			}
 
 			break;

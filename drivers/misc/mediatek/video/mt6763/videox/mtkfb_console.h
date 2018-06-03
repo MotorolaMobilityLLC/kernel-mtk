@@ -109,6 +109,7 @@ do {                                \
 
 	void screen_logger_init(void);
 	void screen_logger_add_message(char *obj, enum message_mode mode, char *message);
+	void screen_add_message(char *obj, enum message_mode mode, char *message);
 	void screen_logger_remove_message(char *obj);
 	void screen_logger_print(MFC_HANDLE handle);
 	void screen_logger_empty(void);

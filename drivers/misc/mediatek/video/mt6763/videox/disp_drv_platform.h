@@ -71,6 +71,8 @@ enum DISP_SESSION_ENUM {
 
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
 
+#define ON_SCREEN_HRT
+
 /* Other platform-dependent features */
 #define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 /*#define DISP_PLATFORM_HAS_SHADOW_REG*/

@@ -57,6 +57,10 @@ unsigned long ovl_base_addr(enum DISP_MODULE_ENUM module);
 unsigned long ovl_to_index(enum DISP_MODULE_ENUM module);
 
 void ovl_get_info(enum DISP_MODULE_ENUM module, void *data);
+int _ovl_get_info(enum DISP_MODULE_ENUM module, void *data, int *layer_idx);
+void __ovl_get_info(enum DISP_MODULE_ENUM module, void *p, int ext_en, int ext_layer, int layer);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
+enum DISP_MODULE_ENUM _ovl_index_to_mod(int index);
+unsigned long _ovl_layer_num(enum DISP_MODULE_ENUM module);
 
 #endif

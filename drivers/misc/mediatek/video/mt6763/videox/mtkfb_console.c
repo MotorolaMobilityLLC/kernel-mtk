@@ -18,6 +18,7 @@
 
 #include "mtkfb_console.h"
 #include "ddp_hal.h"
+#include "debug.h"
 
 /* --------------------------------------------------------------------------- */
 
@@ -64,11 +65,11 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 
 	int font_draw_table16[4];
 
-	if (x > (MFC_WIDTH - MFC_FONT_WIDTH*ctxt->font_scale)) {
+	if (x > (MFC_WIDTH - MFC_FONT_WIDTH * ctxt->font_scale)) {
 		pr_err("draw width too large,x=%d\n", x);
 		return;
 	}
-	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT*ctxt->font_scale)) {
+	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT * ctxt->font_scale)) {
 		pr_err("draw hight too large,y=%d\n", y);
 		return;
 	}
@@ -96,7 +97,7 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		break;
 	case 3:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH*ctxt->font_scale) {
+		for (rows = MFC_FONT_HEIGHT; rows--;  dest += MFC_PITCH * ctxt->font_scale) {
 			BYTE bits = *cdat++;
 			BYTE *temp_row = dest;
 
@@ -119,7 +120,7 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		break;
 	case 4:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH*ctxt->font_scale) {
+		for (rows = MFC_FONT_HEIGHT; rows--; dest += (MFC_PITCH * ctxt->font_scale)) {
 			BYTE bits = *cdat++;
 			BYTE *temp_row = dest;
 
@@ -166,10 +167,11 @@ static void _MFC_Newline(struct MFC_CONTEXT *ctxt)
 		_MFC_DrawChar(ctxt,
 			      ctxt->cursor_col * MFC_FONT_WIDTH,
 			      ctxt->cursor_row * MFC_FONT_HEIGHT, ' ');
-
-		++ctxt->cursor_col;
+	 /*	++ctxt->cursor_col; */
+		ctxt->cursor_col += ctxt->font_scale;
 	}
-	++ctxt->cursor_row;
+	/*++ctxt->cursor_row;*/
+	ctxt->cursor_row += ctxt->font_scale;
 	ctxt->cursor_col = 0;
 
 	/* Check if we need to scroll the terminal */
@@ -184,7 +186,7 @@ static void _MFC_Newline(struct MFC_CONTEXT *ctxt)
 
 #define CHECK_NEWLINE()				\
 do {						\
-	if (ctxt->cursor_col >= ctxt->cols)	\
+	if ((ctxt->cursor_col + ctxt->font_scale) > ctxt->cols)	\
 		_MFC_Newline(ctxt);		\
 } while (0)
 
@@ -211,7 +213,7 @@ static void _MFC_Putc(struct MFC_CONTEXT *ctxt, const char c)
 		_MFC_DrawChar(ctxt,
 			      ctxt->cursor_col * MFC_FONT_WIDTH,
 			      ctxt->cursor_row * MFC_FONT_HEIGHT, c);
-		++ctxt->cursor_col;
+		ctxt->cursor_col += ctxt->font_scale;
 		CHECK_NEWLINE();
 	}
 }
@@ -529,6 +531,32 @@ void screen_logger_add_message(char *obj, enum message_mode mode, char *message)
 		list_add_tail(&logger->list, &logger_head.list);
 	}
 }
+
+void screen_add_message(char *obj, enum message_mode mode, char *message)
+{
+	#define STRING_LEN   16
+	char disp_tmp[STRING_LEN];
+	char *p = disp_tmp;
+	int i, mes_num = 0;
+
+	if (!message) {
+		screen_logger_add_message(obj, mode, message);
+		return;
+	}
+
+	mes_num = strlen(message);
+	memset(disp_tmp, 0, sizeof(disp_tmp));
+	strncpy(p, message, sizeof(disp_tmp) - 1);
+	p += mes_num;
+
+	for (i = 0; i < (STRING_LEN - mes_num - 1); i++) {
+		snprintf(p, sizeof(disp_tmp), "%c", ' ');
+		p++;
+	}
+
+	screen_logger_add_message(obj, mode, disp_tmp);
+}
+EXPORT_SYMBOL(screen_add_message);
 
 void screen_logger_remove_message(char *obj)
 {

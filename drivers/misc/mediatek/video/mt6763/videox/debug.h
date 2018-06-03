@@ -25,7 +25,61 @@ extern unsigned idle_check_interval;
 
 #include "disp_session.h"
 #include "ddp_info.h"
+#include "display_recorder.h"
 extern int disp_layer_info_statistic(struct disp_ddp_path_config *last_config, struct disp_frame_cfg_t *cfg);
+
+
+/* show fps */
+#define SHOW_LAYER_FPS (8)
+#define SHOW_TOTAL_FPS (1)
+
+struct dbg_disp_info {
+/* fps */
+int layer_show[SHOW_LAYER_FPS + SHOW_TOTAL_FPS];
+int show_fps_en;
+struct fps_debug fps_info_dbg;
+
+/* hrt */
+int hrt_high;
+int hrt_low;
+int show_hrt_en;
+
+/* layer_en */
+int layer_en_num;
+int layer_num_en;
+int layer_size_high;
+int layer_size_low;
+int layer_size_en;
+
+/* path mode */
+int path_mode_en;
+
+/* dsi mode */
+int dsi_mode_en;
+
+/* background set */
+int layer_off_dbg;
+unsigned int font_size;
+int fg_clo;
+int bg_clo;
+
+/* show layer buffer clean */
+int dbg_cmd_update_flg;
+struct disp_frame_cfg_t dbg_cfg;
+
+/* monitor thread */
+int create_thread_flg;
+
+/* others */
+int create_buf_flg;
+struct disp_internal_buffer_info *disp_buf;
+struct task_struct *fps_monitor_task;
+
+/* others module*/
+int thermal_en;
+};
+
+extern struct dbg_disp_info dbg_disp;
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
@@ -122,6 +176,10 @@ void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned 
 extern unsigned int mtkfb_fm_auto_test(void);
 extern int pan_display_test(int frame_num, int bpp);
 extern int mtkfb_get_debug_state(char *stringbuf, int buf_len);
+
+int on_screen_en(void);
+void thermal_en(int value);
+
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 extern void primary_display_od_bypass(int bypass);

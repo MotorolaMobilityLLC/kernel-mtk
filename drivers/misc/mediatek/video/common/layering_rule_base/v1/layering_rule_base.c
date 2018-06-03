@@ -30,6 +30,7 @@
 #include <mt-plat/mtk_meminfo.h>
 #endif
 #include "layering_rule.h"
+#include "debug.h"
 
 static struct disp_layer_info layering_info;
 static int debug_resolution_level;
@@ -1107,9 +1108,15 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
  * 3.Calculate the HRT bound if the total layer weight over the lower bound
  * or has secondary display.
  */
+#ifdef ON_SCREEN_HRT
+	if (sum_overlap_w > overlap_lower_bound ||
+		has_hrt_limit(disp_info, HRT_SECONDARY) ||
+		force_scan_y || dbg_disp.show_hrt_en) {
+#else
 	if (sum_overlap_w > overlap_lower_bound ||
 		has_hrt_limit(disp_info, HRT_SECONDARY) ||
 		force_scan_y) {
+#endif
 		sum_overlap_w = scan_y_overlap(disp_info, disp_index, overlap_lower_bound);
 		/* Add overlap weight of Gles layer and Assert layer. */
 		if (has_gles)
@@ -1150,6 +1157,18 @@ static int calc_larb_hrt_level(struct disp_layer_info *disp_info)
 }
 #endif
 
+#ifdef ON_SCREEN_HRT
+/* debug:caculate hrt for show screen */
+void overlap_statistic(int sum)
+{
+	dbg_disp.hrt_high = sum;
+	dbg_disp.hrt_low = do_div(dbg_disp.hrt_high, 400);
+	if (dbg_disp.hrt_low == 200)
+		dbg_disp.hrt_low = 5;
+	else
+		dbg_disp.hrt_low = 0;
+}
+#endif
 static int calc_hrt_num(struct disp_layer_info *disp_info)
 {
 	int emi_hrt_level;
@@ -1165,6 +1184,12 @@ static int calc_hrt_num(struct disp_layer_info *disp_info)
 
 
 	emi_hrt_level = get_hrt_level(sum_overlap_w, false);
+
+#ifdef ON_SCREEN_HRT
+	/* show hrt to screen for debug*/
+	if (dbg_disp.show_hrt_en)
+		overlap_statistic(sum_overlap_w);
+#endif
 /**
  * The larb bound always meet the limit for HRT_LEVEL2 in 8+4 ovl architecture.
  * So calculate larb bound only for HRT_LEVEL2.

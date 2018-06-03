@@ -149,6 +149,22 @@ static inline enum DISP_MODULE_ENUM ovl_index_to_module(int index)
 	return ovl_index_module[index];
 }
 
+enum DISP_MODULE_ENUM _ovl_index_to_mod(int index)
+{
+	int ovl_index;
+
+	ovl_index = ovl_index_to_module(index);
+	return ovl_index;
+}
+
+unsigned long _ovl_layer_num(enum DISP_MODULE_ENUM module)
+{
+	int layer_num;
+
+	layer_num = ovl_layer_num(module);
+	return layer_num;
+}
+
 int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
@@ -606,6 +622,119 @@ void ovl_get_info(enum DISP_MODULE_ENUM module, void *data)
 	}
 }
 
+int _ovl_get_info(enum DISP_MODULE_ENUM module, void *data, int *layer_idx)
+{
+	int i = 0, j = 0;
+	int layer_num = 0;
+	struct OVL_BASIC_STRUCT *pdata = data;
+	unsigned long ovl_base = ovl_base_addr(module);
+	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + ovl_base);
+	struct OVL_BASIC_STRUCT *p = NULL;
+	unsigned int src_ext_on = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + ovl_base);
+	int ext_en[3] = {0};
+	int ext_sel[3] = {-1, -1, -1};
+
+	/* get max layer, return */
+	if ((*layer_idx) >= SHOW_LAYER_FPS)
+		return 0;
+
+	for (i = 0; i < 3; i++)
+		ext_en[i] = (src_ext_on >> i) & 0x1;
+
+	ext_sel[0] = (src_ext_on >> 16) & 0x7;
+	ext_sel[1] = (src_ext_on >> 20) & 0x7;
+	ext_sel[2] = (src_ext_on >> 24) & 0x7;
+
+	for (i = 0; i < ovl_layer_num(module); i++) {
+		p = &pdata[layer_num];
+		p->layer = *layer_idx;
+		p->layer_en = src_on & (0x1 << i);
+		(*layer_idx)++;
+		layer_num++;
+		if (p->layer_en) {
+			/* get phy layer data */
+			__ovl_get_info(module, p, 0, 0, i);
+
+			if ((*layer_idx) >= SHOW_LAYER_FPS)
+				return layer_num;
+
+			/* check have ext layer or not  on this phy layer */
+			for (j = 0; j < 3; j++) {
+				if ((i == ext_sel[j]) && ext_en[j]) {
+					p = &pdata[layer_num];
+					p->layer = *layer_idx;
+					p->layer_en = 1;
+					(*layer_idx)++;
+					layer_num++;
+					/* get ext layer data */
+					__ovl_get_info(module, p, ext_en[j], j, 0);
+
+					if ((*layer_idx) >= SHOW_LAYER_FPS)
+						return layer_num;
+				}
+			}
+		}
+		if ((*layer_idx) >= SHOW_LAYER_FPS)
+			return layer_num;
+	}
+	return layer_num;
+}
+
+void __ovl_get_info(enum DISP_MODULE_ENUM module, void *p, int ext_en, int ext_layer, int layer)
+{
+	struct OVL_BASIC_STRUCT *data = p;
+	unsigned long ovl_base = ovl_base_addr(module);
+	unsigned long ext_layer_off_con = ext_en ? (DISP_REG_OVL_EL0_CON - DISP_REG_OVL_L0_CON) : 0;
+	unsigned long ext_layer_off_size = ext_en ? (DISP_REG_OVL_EL0_SRC_SIZE - DISP_REG_OVL_L0_SRC_SIZE) : 0;
+	unsigned long ext_layer_off_pitch = ext_en ? (DISP_REG_OVL_EL0_PITCH - DISP_REG_OVL_L0_PITCH) : 0;
+	unsigned long ext_layer_off_addr = ext_en ? (DISP_REG_OVL_EL0_ADDR - DISP_REG_OVL_L0_ADDR) : 0;
+	unsigned long ext_layer_off_path = ext_en ? (DISP_REG_OVL_DATAPATH_EXT_CON - DISP_REG_OVL_DATAPATH_CON) : 0;
+
+	unsigned long layer_off_con = ovl_base + ext_layer_off_con +
+					(ext_en ? ext_layer : layer) * OVL_LAYER_OFFSET;
+	unsigned long layer_off_size = ovl_base + ext_layer_off_size +
+					(ext_en ? ext_layer : layer) * OVL_LAYER_OFFSET;
+	unsigned long layer_off_pitch = ovl_base + ext_layer_off_pitch +
+					(ext_en ? ext_layer : layer) * OVL_LAYER_OFFSET;
+	unsigned long layer_off_addr = ovl_base + ext_layer_off_addr +
+					(ext_en ? ext_layer * 4 : layer * OVL_LAYER_OFFSET);
+	unsigned long layer_off_path = ovl_base + ext_layer_off_path;
+
+	data->fmt =
+		display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD(L_CON_FLD_CFMT,
+									   layer_off_con + DISP_REG_OVL_L0_CON),
+							DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
+									   layer_off_con + DISP_REG_OVL_L0_CON),
+							DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
+									   layer_off_con + DISP_REG_OVL_L0_CON));
+		data->addr = DISP_REG_GET(layer_off_addr + DISP_REG_OVL_L0_ADDR);
+
+		data->src_w =
+			DISP_REG_GET(layer_off_size + DISP_REG_OVL_L0_SRC_SIZE) & 0xfff;
+		data->src_h =
+		    (DISP_REG_GET(layer_off_size + DISP_REG_OVL_L0_SRC_SIZE) >> 16) & 0xfff;
+		data->src_pitch = DISP_REG_GET(layer_off_pitch +
+					DISP_REG_OVL_L0_PITCH) & 0xffff;
+		data->bpp = UFMT_GET_bpp(data->fmt) / 8;
+
+		if (ext_en) {
+			data->alpha = (DISP_REG_GET(layer_off_con + DISP_REG_OVL_L0_CON) & (0x1 << 8)) ? 1 : 0;
+			data->gpu_mode = (DISP_REG_GET(layer_off_path + DISP_REG_OVL_DATAPATH_CON) &
+				(0x1 << (8 + ext_layer))) ? 1 : 0;
+			data->adobe_mode = 0;
+			data->ovl_gamma_out = 0;
+		} else {
+			data->alpha = (DISP_REG_GET(layer_off_con + DISP_REG_OVL_L0_CON) & (0x1 << 8)) ? 1 : 0;
+			data->gpu_mode = (DISP_REG_GET(layer_off_path + DISP_REG_OVL_DATAPATH_CON) &
+				(0x1 << (8 + layer))) ? 1 : 0;
+			data->adobe_mode = (DISP_REG_GET(layer_off_path + DISP_REG_OVL_DATAPATH_CON) &
+				(0x1 << 12)) ? 1 : 0;
+			data->ovl_gamma_out = (DISP_REG_GET(layer_off_path + DISP_REG_OVL_DATAPATH_CON) &
+				(0x1 << 15)) ? 1 : 0;
+		}
+
+}
+
 extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
 				  unsigned int *real_mva,
 				  unsigned int *real_size);
@@ -843,6 +972,11 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	int local_layer, global_layer = 0;
 	int ovl_idx = module;
 	int phy_layer = -1, ext_layer = -1, ext_layer_idx = 0;
+	int total_layer_num_ovl = TOTAL_OVL_LAYER_NUM;
+
+	/* need leave the last layer to show for debug*/
+	if (on_screen_en())
+		total_layer_num_ovl--;
 
 	/* 1. check if it has been prepared, just only prepare once for each frame */
 #if 0
@@ -857,7 +991,7 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		return 0;
 #endif
 	/* 2. prepare layer layout */
-	for (local_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; local_layer++, global_layer++) {
+	for (local_layer = 0; global_layer < total_layer_num_ovl; local_layer++, global_layer++) {
 		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
 
 		ext_layer = -1;
@@ -881,7 +1015,6 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 			ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0_2L) - 1;
 			continue;
 		}
-
 		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
 			if (ovl_cfg->ext_sel_layer != -1) {
 				/* always layout from idx=0, so layer_idx here should be the same as ext_sel_layer
