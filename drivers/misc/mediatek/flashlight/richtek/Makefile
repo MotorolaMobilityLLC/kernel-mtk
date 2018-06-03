@@ -1,2 +1,2 @@
-obj-$(CONFIG_RT_FLASHLIGHT)		+= flashlight.o rtfled.o
+obj-$(CONFIG_RT_FLASHLIGHT)		+= rt-flashlight.o rtfled.o
 

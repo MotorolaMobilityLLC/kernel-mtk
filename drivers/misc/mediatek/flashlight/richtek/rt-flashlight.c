@@ -19,7 +19,7 @@
 #include <linux/ctype.h>
 #include <linux/err.h>
 #include <linux/slab.h>
-#include "flashlight.h"
+#include "rt-flashlight.h"
 
 static const char * const flashlight_type_string[] = {
 	[FLASHLIGHT_TYPE_XENON] = "Xenon",
@@ -514,6 +514,15 @@ int flashlight_strobe(struct flashlight_device *flashlight_dev)
 }
 EXPORT_SYMBOL(flashlight_strobe);
 
+int flashlight_is_ready(struct flashlight_device *flashlight_dev)
+{
+	if (flashlight_dev->ops == NULL ||
+			flashlight_dev->ops->is_ready == NULL)
+		return -EINVAL;
+	return flashlight_dev->ops->is_ready(flashlight_dev);
+}
+EXPORT_SYMBOL(flashlight_is_ready);
+
 static int flashlight_match_device_by_name(struct device *dev, const void *data)
 {
 	const char *name = data;
@@ -575,5 +584,5 @@ module_exit(flashlight_class_exit);
 
 MODULE_DESCRIPTION("Flashlight Class Device");
 MODULE_AUTHOR("Patrick Chang <patrick_chang@richtek.com>");
-MODULE_VERSION("1.0.1_G");
+MODULE_VERSION("1.0.2_G");
 MODULE_LICENSE("GPL");
