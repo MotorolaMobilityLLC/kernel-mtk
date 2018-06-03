@@ -396,7 +396,7 @@ static void __go_to_screenoff(void)
 	int enabled[NR_MLP_LEVEL] = { 0, };
 
 	/* Apply HW actions if needed */
-	if (!IS_ACTION_SCREENOFF(memory_lowpower_action))
+	if (MlpsEnable(&memory_lowpower_state))
 		return;
 
 	/* Config actions */
