@@ -3075,10 +3075,12 @@ static signed int DIP_open(
 	dip_p2_ion_client = NULL;
 	if ((dip_p2_ion_client == NULL) && (g_ion_device))
 		dip_p2_ion_client = ion_client_create(g_ion_device, "dip_p2");
-	if (dip_p2_ion_client == NULL)
+	if (dip_p2_ion_client == NULL) {
 		LOG_ERR("invalid dip_p2_ion_client client!\n");
-	if (dip_allocbuf(&g_dip_p2_imem_buf) >= 0)
+	} else {
+		if (dip_allocbuf(&g_dip_p2_imem_buf) >= 0)
 		g_bIonBufferAllocated = MTRUE;
+	}
 #endif
 	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 
