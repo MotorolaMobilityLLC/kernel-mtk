@@ -305,9 +305,6 @@ bool is_recovery_mode(void)
 		return true;
 	}
 
-	if (boot_mode != RECOVERY_BOOT)
-		return false;
-
 	return false;
 }
 
