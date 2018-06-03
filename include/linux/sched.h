@@ -4,6 +4,7 @@
 #include <uapi/linux/sched.h>
 
 #include <linux/sched/prio.h>
+#include <linux/sched/sched.h>
 
 
 struct sched_param {
