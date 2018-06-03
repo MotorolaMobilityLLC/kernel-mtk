@@ -373,6 +373,10 @@ struct _BSS_INFO_T {
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+	BOOLEAN fgP2PPendingDeauth;
+	UINT_32 u4P2PEapTxDoneTime;
+#endif
 };
 
 struct ESS_CHNL_INFO {
