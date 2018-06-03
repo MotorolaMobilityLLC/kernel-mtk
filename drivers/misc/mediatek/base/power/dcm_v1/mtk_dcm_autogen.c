@@ -239,8 +239,7 @@ void dcm_infracfg_ao_emi(int on)
 			INFRACFG_AO_EMI_REG1_OFF);
 	}
 
-	/* TODO: enable after stress test is passed */
-	/* dcm_infracfg_ao_emi_indiv(on); */
+	dcm_infracfg_ao_emi_indiv(on);
 }
 
 #define INFRACFG_AO_MD_QAXI_REG0_MASK ((0x1 << 0) | \
