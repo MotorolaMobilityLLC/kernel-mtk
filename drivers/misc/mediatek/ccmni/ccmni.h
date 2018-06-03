@@ -82,7 +82,7 @@ typedef struct ccmni_instance {
 	unsigned int       rx_seq_num;
 	unsigned int       tx_seq_num[2];
 	unsigned int       flags;
-	spinlock_t	       spinlock;
+	spinlock_t	   *spinlock;
 	ccmni_ctl_block_t  *ctlb;
 	unsigned long      tx_busy_cnt[2];
 	unsigned long      tx_full_tick;
