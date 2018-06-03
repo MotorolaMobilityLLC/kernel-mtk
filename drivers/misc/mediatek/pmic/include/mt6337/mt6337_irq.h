@@ -33,7 +33,7 @@
 		.interrupts = interrupt,	\
 	}
 
-typedef enum {
+enum MT6337_IRQ_ENUM {
 	INT_THR_H,
 	INT_THR_L,
 	INT_AUDIO,
@@ -46,12 +46,12 @@ typedef enum {
 	INT_LDO_VA18_OC,
 	INT_LDO_VA25_OC,
 	INT_LDO_VA18_PG
-} MT6337_IRQ_ENUM;
+};
 
 struct mt6337_interrupt_bit {
 	const char *name;
 	void (*callback)(void);
-	void (*oc_callback)(MT6337_IRQ_ENUM intNo, const char *);
+	void (*oc_callback)(enum MT6337_IRQ_ENUM intNo, const char *);
 	unsigned int times;
 };
 
@@ -76,9 +76,9 @@ extern struct mt6337_interrupts sub_interrupts[];
 /* pmic irq extern functions */
 extern void MT6337_EINT_SETTING(void);
 
-extern void mt6337_enable_interrupt(MT6337_IRQ_ENUM intNo, unsigned int en, char *str);
-extern void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str);
-extern void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str);
-extern void mt6337_register_interrupt_callback(MT6337_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void));
+extern void mt6337_enable_interrupt(enum MT6337_IRQ_ENUM intNo, unsigned int en, char *str);
+extern void mt6337_mask_interrupt(enum MT6337_IRQ_ENUM intNo, char *str);
+extern void mt6337_unmask_interrupt(enum MT6337_IRQ_ENUM intNo, char *str);
+extern void mt6337_register_interrupt_callback(enum MT6337_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void));
 
 #endif /*--MT6337_IRQ_H--*/

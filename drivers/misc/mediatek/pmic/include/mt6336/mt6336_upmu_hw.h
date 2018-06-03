@@ -14,6 +14,9 @@
 #ifndef _MT_PMIC_6336_UPMU_HW_H_
 #define _MT_PMIC_6336_UPMU_HW_H_
 
+#define MT6336_PMU_FLAG_TABLE_ENTRY struct mt6336_pmu_flag_table_entry_t
+#define MT6336_PMU_FLAGS_LIST_ENUM enum MT6336_PMU_FLAGS_LIST
+
 #define MT6336_PMIC_REG_BASE (0x0000)
 
 #define MT6336_PMIC_CID                                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x0000))
@@ -9260,7 +9263,7 @@
 #define MT6336_GPIO_RSV_MASK                                             0xFF
 #define MT6336_GPIO_RSV_SHIFT                                            0
 
-typedef enum {
+enum MT6336_PMU_FLAGS_LIST {
 	MT6336_CID,
 	MT6336_SWCID,
 	MT6336_HWCID,
@@ -11929,13 +11932,13 @@ typedef enum {
 	MT6336_GPIO_MODE6_CLR,
 	MT6336_GPIO_RSV,
 	MT6336_PMU_COMMAND_MAX
-} MT6336_PMU_FLAGS_LIST_ENUM;
+};
 
-typedef struct {
+struct mt6336_pmu_flag_table_entry_t {
 	MT6336_PMU_FLAGS_LIST_ENUM flagname;
 	unsigned short offset;
 	unsigned char mask;
 	unsigned char shift;
-} MT6336_PMU_FLAG_TABLE_ENTRY;
+};
 
 #endif	/* _MT_PMIC_6336_UPMU_HW_H_ */

@@ -230,7 +230,7 @@ irqreturn_t mt6336_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_enable_interrupt(enum MT6336_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -252,7 +252,7 @@ void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
-void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_disable_interrupt(enum MT6336_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -274,7 +274,7 @@ void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
-void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_mask_interrupt(enum MT6336_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -296,7 +296,7 @@ void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
-void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_unmask_interrupt(enum MT6336_IRQ_ENUM intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -318,7 +318,7 @@ void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
-void mt6336_register_interrupt_callback(MT6336_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
+void mt6336_register_interrupt_callback(enum MT6336_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int shift, no;
 
