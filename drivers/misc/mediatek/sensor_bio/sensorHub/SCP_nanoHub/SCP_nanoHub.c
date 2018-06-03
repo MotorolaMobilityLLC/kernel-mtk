@@ -320,8 +320,10 @@ int scp_sensorHub_data_registration(uint8_t sensor, SCP_sensorHub_handler handle
 {
 	struct SCP_sensorHub_data *obj = obj_data;
 
-	if (ID_SENSOR_MAX_HANDLE < sensor)
+	if (sensor > ID_SENSOR_MAX_HANDLE) {
 		SCP_ERR("SCP_sensorHub_rsp_registration invalid sensor %d\n", sensor);
+		return -1;
+	}
 
 	if (NULL == handler)
 		SCP_ERR("SCP_sensorHub_rsp_registration null handler\n");
