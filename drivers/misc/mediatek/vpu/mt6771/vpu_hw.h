@@ -240,6 +240,11 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp);
 int32_t vpu_thermal_dis_throttle_cb(void);
 
 /**
+ * vpu_dump_debug_stack - forvpu timeout debug.
+ */
+void vpu_dump_debug_stack(int core, int size);
+
+/**
  * Working buffer's offset
  *
  *  [offset]
@@ -263,6 +268,7 @@ int32_t vpu_thermal_dis_throttle_cb(void);
 #define VPU_OFFSET_COMMAND           (0x00000000)
 #define VPU_OFFSET_LOG               (0x00002000)
 #define VPU_SIZE_LOG_BUF             (0x00002000)
+#define VPU_SIZE_LOG_SHIFT           (0x00000300)
 #define VPU_SIZE_LOG_HEADER          (0x00000010)
 #define VPU_SIZE_WORK_BUF            (0x00004000)
 

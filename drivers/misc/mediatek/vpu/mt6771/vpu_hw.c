@@ -2032,6 +2032,7 @@ int vpu_hw_boot_sequence(int core)
 		LOG_ERR("[vpu_%d] boot-up timeout , status(%d/%d)\n", core,
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_aee("VPU Timeout", "timeout to external boot\n");
 		goto out;
 	}
@@ -2359,6 +2360,7 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2452,6 +2454,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 		vpu_dump_buffer_mva(request);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to do d2d, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2543,6 +2546,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 			vpu_dump_mesg(NULL);
 			vpu_dump_register(NULL);
+			vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 			vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
 				vpu_service_cores[core].current_algo);
 			goto out;
@@ -2621,6 +2625,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		vpu_dump_buffer_mva(request);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to do d2d, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2685,6 +2690,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 	if (ret) {
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to get algo, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2997,12 +3003,53 @@ int vpu_dump_image_file(struct seq_file *s)
 	return 0;
 }
 
+void vpu_dump_debug_stack(int core, int size)
+{
+	int i = 0;
+	unsigned int vpu_domain_addr = 0x0;
+
+	vpu_domain_addr = ((DEBUG_STACK_BASE_OFFSET & 0x000fffff) | 0x7FF00000);
+	LOG_ERR("==============vpu_dump_debug_stack, core_%d==============\n", core);
+	LOG_WRN("==============0x%x/0x%x/0x%x==============\n", vpu_domain_addr,
+		DEBUG_STACK_BASE_OFFSET, DEBUG_STACK_SIZE);
+	for (i = 0 ; i < (int)size / 4 ; i = i + 4) {
+		#if 1
+		LOG_WRN("%X %X %X %X %X\n", vpu_domain_addr,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 4)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 8)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 12)));
+		#else
+		LOG_WRN("%X %X %X %X %X , 0x%X/0x%X/0x%X/0x%X\n", vpu_domain_addr,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 4)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 8)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 12)),
+			DEBUG_STACK_BASE_OFFSET + (4 * i),
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 4),
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 8),
+			DEBUG_STACK_BASE_OFFSET + (4 * i + 12));
+		#endif
+		vpu_domain_addr += (4 * 4);
+	}
+}
+
 int vpu_dump_mesg(struct seq_file *s)
 {
 	char *ptr = NULL;
-	char *log_head;
+	char *log_head = NULL;
 	char *log_buf;
+	char *log_a_pos = NULL;
 	int core_index = 0;
+	bool jump_out = false;
 
 	for (core_index = 0 ; core_index < MTK_VPU_CORE; core_index++) {
 		log_buf = (char *) ((uintptr_t)vpu_service_cores[core_index].work_buf->va + VPU_OFFSET_LOG);
@@ -3028,8 +3075,10 @@ int vpu_dump_mesg(struct seq_file *s)
 	}
 
 	ptr = log_buf;
+	log_head = log_buf;
 
 	/* set the last byte to '\0' */
+	#if 0
 	*(ptr + VPU_SIZE_LOG_BUF - 1) = '\0';
 
 	/* skip the header part */
@@ -3038,6 +3087,30 @@ int vpu_dump_mesg(struct seq_file *s)
 
 		vpu_print_seq(s, "=== VPU_%d Log Buffer ===\n", core_index);
 	vpu_print_seq(s, "vpu: print dsp log\n%s%s", log_head, ptr);
+	#else
+	vpu_print_seq(s, "=== VPU_%d Log Buffer ===\n", core_index);
+	vpu_print_seq(s, "vpu: print dsp log (0x%x):\n", (unsigned int)(uintptr_t)log_buf);
+	jump_out = false;
+	*(log_head + VPU_SIZE_LOG_BUF - 1) = '\n';
+	do {
+		if ((ptr + VPU_SIZE_LOG_SHIFT) >= (log_head + VPU_SIZE_LOG_BUF)) {
+			*(log_head + VPU_SIZE_LOG_BUF - 1) = '\0'; /* last part of log buffer */
+			jump_out = true;
+		} else {
+			log_a_pos = strchr(ptr + VPU_SIZE_LOG_SHIFT, '\n');
+			if (log_a_pos == NULL)
+				break;
+			*log_a_pos = '\0';
+		}
+		vpu_print_seq(s, "%s\n", ptr);
+		ptr = log_a_pos + 1;
+
+		/* incase log_a_pos is at end of string */
+		if (ptr >= log_head + VPU_SIZE_LOG_BUF)
+			break;
+	} while (!jump_out);
+
+	#endif
 	}
 	return 0;
 }
