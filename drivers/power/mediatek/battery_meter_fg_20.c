@@ -430,6 +430,11 @@ static unsigned char gDisableFG;
 /* function prototype */
 /* ============================================================ // */
 
+int __attribute__((weak)) PMIC_IMM_GetCurrent(void)
+{
+	battery_log(BAT_LOG_FULL, "wait for auxadc porting\n");
+	return 0;
+}
 
 struct battery_meter_table_custom_data {
 
