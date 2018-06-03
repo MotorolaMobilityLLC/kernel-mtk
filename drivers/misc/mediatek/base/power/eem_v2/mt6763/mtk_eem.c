@@ -158,12 +158,14 @@
 
 	/* static unsigned int ateVer; */
 	/* for setting pmic pwm mode and auto mode */
+	struct regulator *eem_regulator_ext_vproc;
 	struct regulator *eem_regulator_vproc;
 	struct regulator *eem_regulator_vcore;
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	static unsigned int eem_vproc_is_enabled_by_eem;
 	static unsigned int eem_vcore_is_enabled_by_eem;
 #endif
+	static unsigned int eem_ext_vproc_is_enabled_by_eem;
 
 	#if 0 /* no record table */
 	u32 *recordRef;
@@ -2920,7 +2922,13 @@ static int eem_buck_get(struct platform_device *pdev)
 		return -EINVAL;
 	}
 #endif
-
+	if (is_ext_buck_exist()) {
+		eem_regulator_ext_vproc = regulator_get(&pdev->dev, "ext_buck_vproc");
+		if (!eem_regulator_ext_vproc) {
+			eem_error("regulotor_ext_vproc error\n");
+			return -EINVAL;
+		}
+	}
 	return ret;
 }
 /* Enable regulator if each regulator was disabled
@@ -2932,9 +2940,8 @@ static int eem_buck_get(struct platform_device *pdev)
  */
 static void eem_buck_enable(void)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	int ret = 0;
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	ret = regulator_is_enabled(eem_regulator_vproc);
 	if (ret == 0) {
 		ret = regulator_enable(eem_regulator_vproc);
@@ -2959,13 +2966,24 @@ static void eem_buck_enable(void)
 	}
 	/* if EEM_BANK_SOC */
 #endif
+	if (is_ext_buck_exist()) {
+		ret = regulator_is_enabled(eem_regulator_ext_vproc);
+		if (ret == 0) {
+			ret = regulator_enable(eem_regulator_ext_vproc);
+			if (ret != 0)
+				eem_error("enable ext vproc failed\n");
+			else {
+				eem_ext_vproc_is_enabled_by_eem = 1;
+				eem_debug("eem vproc1 enable success\n");
+			}
+		}
+	}
 }
 
 static void eem_buck_disable(void)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	int ret = 0;
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	if (eem_vproc_is_enabled_by_eem) {
 		ret = regulator_disable(eem_regulator_vproc);
 		if (ret != 0)
@@ -2983,23 +3001,27 @@ static void eem_buck_disable(void)
 	}
 	/* if EEM_BANK_SOC */
 #endif
+	if (is_ext_buck_exist()) {
+		if (eem_ext_vproc_is_enabled_by_eem) {
+			ret = regulator_disable(eem_regulator_ext_vproc);
+			if (ret != 0)
+				eem_error("ext vproc disable failed\n");
+			else
+				eem_debug("eem ext vproc disabled success\n");
+		}
+	}
 }
 
 static void eem_buck_set_mode(unsigned int mode)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-
 	/* set pwm mode for each buck */
 	eem_debug("pmic set mode (%d)\n", mode);
-	#if 0
-	ret = regulator_set_mode(eem_regulator_vproc, mode);
-	/* set pwm mode for soc & gpu to run ptp soc det */
-	ret = regulator_set_mode(eem_regulator_vcore, mode);
-	#endif
-	mt6311_vdvfs11_set_mode(mode);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	vproc_pmic_set_mode(mode);
 	vcore_pmic_set_mode(mode);
 #endif
+	if (is_ext_buck_exist())
+		mt6311_vdvfs11_set_mode(mode);
 }
 
 void eem_init01(void)
