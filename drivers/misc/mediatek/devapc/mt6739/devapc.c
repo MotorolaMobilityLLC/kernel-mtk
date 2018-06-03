@@ -163,7 +163,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 
 	/* 40 */
 	{"INFRASYS_DBG_TRACKER",                   true},
-	{"INFRASYS_CCIF0_AP",                      true},
+	{"INFRASYS_CCIF0_AP",                     false},
 	{"INFRASYS_CCIF0_MD",                      true},
 	{"INFRASYS_CCIF1_MD",                      true},
 	{"INFRASYS_CLDMA_MD",                      true},
