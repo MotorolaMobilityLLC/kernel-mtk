@@ -121,7 +121,7 @@ static inline void ccci_md_check_rx_seq_num(unsigned char md_id,
 			((seq_num - traffic_info->seq_nums[IN][channel]) & 0x7FFF) != 1) {
 		CCCI_ERROR_LOG(md_id, CORE, "channel %d seq number out-of-order %d->%d (data: %X, %X)\n",
 			channel, seq_num, traffic_info->seq_nums[IN][channel], ccci_h->data[0], ccci_h->data[1]);
-		ccci_md_dump_info(md_id, DUMP_FLAG_CLDMA, NULL, qno);
+		ccci_hif_dump_status(1 << CLDMA_HIF_ID, DUMP_FLAG_CLDMA, 1 << qno);
 		param[0] = channel;
 		param[1] = traffic_info->seq_nums[IN][channel];
 		param[2] = seq_num;

@@ -142,6 +142,9 @@ static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
 	cldma_stop(CLDMA_HIF_ID);
 	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: stop cldma done\n");
+	/*dump rxq after cldma stop to avoid race condition*/
+	ccci_hif_dump_status(1 << CLDMA_HIF_ID, DUMP_FLAG_QUEUE_0_1, 1 << IN);
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: dump queue0-1 done\n");
 	md_cldma_hw_reset(md->index);
 	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: hw reset done\n");
 	md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
@@ -859,8 +862,9 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dest_buff, length);
 	}
 
-	if (flag & DUMP_FLAG_CLDMA)
-		ccci_hif_dump_status(md->hif_flag, DUMP_FLAG_CLDMA, 0);
+	/*HIF related dump flag*/
+	if (flag & (DUMP_FLAG_QUEUE_0_1 | DUMP_FLAG_QUEUE_0 | DUMP_FLAG_IRQ_STATUS | DUMP_FLAG_CLDMA))
+		ccci_hif_dump_status(md->hif_flag, flag, length);
 
 	if (flag & DUMP_FLAG_REG)
 		md_cd_dump_debug_register(md);
@@ -960,11 +964,6 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		mt_irq_dump_status(md->md_wdt_irq_id);
 	}
 
-	if (flag & DUMP_FLAG_IRQ_STATUS) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump AP CCIF IRQ status\n");
-		mt_irq_dump_status(md_info->ap_ccif_irq_id);
-	}
-
 	if (flag & DUMP_MD_BOOTUP_STATUS)
 		md_cd_get_md_bootup_status(md, (unsigned int *)buff, length);
 
@@ -1027,9 +1026,9 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 
 	/* echo will bring "xxx\n" here, so we eliminate the "\n" during comparing */
 	if (strncmp(buf, "ccif", count - 1) == 0)
-		ccci_hif_dump_status(CCIF_HIF_ID, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
+		ccci_hif_dump_status(1 << CCIF_HIF_ID, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
 	if (strncmp(buf, "cldma", count - 1) == 0)
-		ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
+		ccci_hif_dump_status(1 << CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
 	if (strncmp(buf, "register", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	if (strncmp(buf, "smem_exp", count-1) == 0)
