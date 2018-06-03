@@ -1017,6 +1017,10 @@ struct notifier_block *self, unsigned long event, void *data)
 	struct fb_event *evdata = data;
 	int blank;
 
+	/* skip if it's not a blank event */
+	if ((event != FB_EVENT_BLANK) || (data == NULL))
+		return 0;
+
 	/* skip if policy is not enable */
 	if (!x_chrlmt_lcmoff_policy_enable)
 		return 0;
@@ -1025,9 +1029,6 @@ struct notifier_block *self, unsigned long event, void *data)
 	mtk_cooler_bcct_2nd_dprintk("%s: blank = %d, event = %lu\n",
 							__func__, blank, event);
 
-	/* skip if it's not a blank event */
-	if (event != FB_EVENT_BLANK)
-		return 0;
 
 	switch (blank) {
 	/* LCM ON */
