@@ -233,7 +233,7 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 				return -1;
 			}
 			if (retry % 100 == 0)
-				udelay(10);
+				usleep_range(1000, 2000);
 		}
 	} while (status == BUSY);
 
