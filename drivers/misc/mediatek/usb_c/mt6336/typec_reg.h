@@ -14,7 +14,7 @@
 #ifndef _TYPEC_REG_H
 #define _TYPEC_REG_H
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 /* CC_REG REGISTER DEFINITION */
 

@@ -353,6 +353,7 @@ struct typec_hba {
 	enum enum_typec_rp pd_rp_val;
 	enum enum_typec_dbg_lvl dbg_lvl;
 
+	uint8_t cc; /*0:no cc, 1;cc1 2;cc2*/
 	uint8_t vbus_en;
 	uint8_t vbus_det_en;
 	uint8_t vbus_present;
@@ -536,6 +537,8 @@ int typec_init(struct device *, struct typec_hba **, void __iomem *, unsigned in
 void typec_remove(struct typec_hba *);
 
 int typec_pltfrm_init(void);
+
+void trigger_driver(struct typec_hba *typec, int type, int stat, int dir);
 
 #if SUPPORT_PD
 /* PD function calls */

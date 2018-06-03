@@ -15,7 +15,7 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/slab.h>
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 static enum dual_role_property mt_dual_role_props[] = {

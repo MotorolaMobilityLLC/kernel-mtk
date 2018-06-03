@@ -11,10 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 #if SUPPORT_PD
 
+#include <typec.h>
 #include "usb_pd_func.h"
 
 #define PDO_FIXED_FLAGS (PDO_FIXED_DATA_SWAP | PDO_FIXED_EXTERNAL)
@@ -152,9 +153,26 @@ int pd_check_data_swap(struct typec_hba *hba)
 void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 {
 	/*
-	 *  TODO:
-	 *  Here is to do disable/enable device/host driver.
+	 * Under these 5 situations, the driver will call DR_SWAP.
+	 * 1. Hard Reset. Reset to the default state
+	 *       SNK + DFP --> SNK + UFP
+	 *       SRC + UFP --> SRC + DFP
+	 * 2. Receiving DR_SWAP & Resp ACCEPT
+	 *       DFP --> UFP & UFP --> DFP
+	 * 3. Sending DR_SWAP & Resp ACCEPT
+	 *       DFP --> UFP & UFP --> DFP
+	 * 4. Attached.SRC
+	 *       DFP
+	 * 5. Attached.SNK
+	 *       UFP
 	 */
+	if ((hba->data_role != PD_NO_ROLE) && (hba->data_role != data_role))
+		trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
+
+	if (data_role == PD_ROLE_DFP)
+		trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
+	else
+		trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
 }
 
 void pd_check_pr_role(struct typec_hba *hba, int pr_role, int flags)

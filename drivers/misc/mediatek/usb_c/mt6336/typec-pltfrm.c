@@ -15,7 +15,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 #ifdef CONFIG_PM
 /**
