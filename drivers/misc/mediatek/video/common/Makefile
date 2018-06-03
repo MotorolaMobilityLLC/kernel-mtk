@@ -65,9 +65,16 @@ ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys \
 				-I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox \
 				-I$(srctree)/drivers/misc/mediatek/sync/      \
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+ccflags-y += \
+				-I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
+				-I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+else
+ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
 				-I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
-
+endif
 
 ifneq ($(CONFIG_MTK_FB), y)
 obj-y += mtkfb_dummy.o
