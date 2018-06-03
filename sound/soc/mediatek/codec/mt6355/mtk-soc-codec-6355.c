@@ -4835,12 +4835,9 @@ static void VOW_MIC_DCC_Enable(int MicType, bool enable)
 
 		/* 0x0D08 Audio L PGA DCC precharge off */
 		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
-		/* Audio L PGA switch bulk tied to VCM */
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0800, 0x0800);
+
 	} else {
 
-		/* RG_BULKL_VCM_EN = 1'b0 */
-		Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x0800);
 		/* Audio L ADC input sel : off, Disable audio L ADC */
 		Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x7000);
 		/* Disable audio L PGA */
