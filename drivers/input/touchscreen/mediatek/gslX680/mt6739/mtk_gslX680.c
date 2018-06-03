@@ -1730,3 +1730,7 @@ static void __exit tpd_driver_exit(void)
 
 module_init(tpd_driver_init);
 module_exit(tpd_driver_exit);
+
+MODULE_AUTHOR("leweihua");
+MODULE_DESCRIPTION("GSLX680 TouchScreen  Driver");
+MODULE_LICENSE("GPL v2");
