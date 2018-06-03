@@ -26,6 +26,7 @@
 #include <linux/mfd/mt6392/registers.h>
 
 #define MT6397_RTC_BASE		0xe000
+#define MT6392_RTC_BASE		0x8000
 #define MT6397_RTC_SIZE		0x3e
 
 #define MT6323_CID_CODE		0x23
@@ -42,6 +43,19 @@ static const struct resource mt6397_rtc_resources[] = {
 	{
 		.start = MT6397_IRQ_RTC,
 		.end   = MT6397_IRQ_RTC,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static const struct resource mt6392_rtc_resources[] = {
+	{
+		.start = MT6392_RTC_BASE,
+		.end   = MT6392_RTC_BASE + MT6397_RTC_SIZE,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.start = MT6392_IRQ_STATUS_RTC,
+		.end   = MT6392_IRQ_STATUS_RTC,
 		.flags = IORESOURCE_IRQ,
 	},
 };
@@ -84,6 +98,14 @@ static const struct mfd_cell mt6392_devs[] = {
 	}, {
 		.name = "mt6392-pinctrl",
 		.of_compatible = "mediatek,mt6392-pinctrl",
+	}, {
+		.name = "mt6392-rtc",
+		.num_resources = ARRAY_SIZE(mt6392_rtc_resources),
+		.resources = mt6392_rtc_resources,
+		.of_compatible = "mediatek,mt6392-rtc",
+	}, {
+		.name = "mt6397-pmic",
+		.of_compatible = "mediatek,mt6397-pmic",
 	}
 };
 
