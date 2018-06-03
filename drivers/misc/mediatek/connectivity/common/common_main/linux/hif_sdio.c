@@ -2442,7 +2442,7 @@ static _osal_inline_ INT32 hif_sdio_wifi_on(VOID)
 	UINT16 func_num = 0;
 	const MTK_WCN_HIF_SDIO_FUNCINFO *func_info = NULL;
 
-	HIF_SDIO_INFO_FUNC("start!\n");
+	HIF_SDIO_DBG_FUNC("start!\n");
 
 	/* 4 <1> If wifi client drv has not been probed, return error code */
 	/* MT6620 */
@@ -2541,7 +2541,7 @@ wifi_on_exist:
 		}
 		g_hif_sdio_probed_func_list[probe_index].on_by_wmt = MTK_WCN_BOOL_TRUE;
 
-		HIF_SDIO_INFO_FUNC("ok!\n");
+		HIF_SDIO_DBG_FUNC("ok!\n");
 		return 0;
 #else
 		/* use worker thread to perform the client's .hif_clt_probe() */

@@ -972,7 +972,7 @@ static INT32 wmt_ctrl_gps_sync_set(P_WMT_CTRL_DATA pData)
 {
 	INT32 iret;
 
-	WMT_INFO_FUNC("ctrl GPS_SYNC(%d)\n",
+	WMT_DBG_FUNC("ctrl GPS_SYNC(%d)\n",
 		      (pData->au4CtrlData[0] == 0) ? PIN_STA_DEINIT : PIN_STA_MUX);
 	iret =
 	    wmt_plat_gpio_ctrl(PIN_GPS_SYNC,
@@ -990,7 +990,7 @@ static INT32 wmt_ctrl_gps_lna_set(P_WMT_CTRL_DATA pData)
 {
 	INT32 iret;
 
-	WMT_INFO_FUNC("ctrl GPS_LNA(%d)\n",
+	WMT_DBG_FUNC("ctrl GPS_LNA(%d)\n",
 		      (pData->au4CtrlData[0] == 0) ? PIN_STA_DEINIT : PIN_STA_OUT_H);
 	iret =
 	    wmt_plat_gpio_ctrl(PIN_GPS_LNA,

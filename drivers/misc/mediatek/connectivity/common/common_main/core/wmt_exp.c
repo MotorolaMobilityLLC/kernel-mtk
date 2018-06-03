@@ -212,7 +212,7 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 	}
 
 	/*check if chip support thermal control function or not */
-	bRet = wmt_lib_is_therm_ctrl_support();
+	bRet = wmt_lib_is_therm_ctrl_support(eType);
 	if (bRet == MTK_WCN_BOOL_FALSE) {
 		WMT_DBG_FUNC("thermal ctrl function not supported\n");
 		return MTK_WCN_BOOL_FALSE;
