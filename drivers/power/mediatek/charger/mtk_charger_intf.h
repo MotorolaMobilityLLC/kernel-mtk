@@ -183,5 +183,20 @@ extern int mtk_switch_charging_init(struct charger_manager *);
 extern void _wake_up_charger(struct charger_manager *);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 
+/* procfs */
+#define PROC_FOPS_RW(name)							\
+static int mtk_charger_##name##_open(struct inode *inode, struct file *file)	\
+{										\
+	return single_open(file, mtk_charger_##name##_show, PDE_DATA(inode));	\
+}										\
+static const struct file_operations mtk_charger_##name##_fops = {		\
+	.owner = THIS_MODULE,							\
+	.open = mtk_charger_##name##_open,					\
+	.read = seq_read,							\
+	.llseek = seq_lseek,							\
+	.release = single_release,						\
+	.write = mtk_charger_##name##_write,					\
+}
+
 #endif /* __MTK_CHARGER_INTF_H__ */
 

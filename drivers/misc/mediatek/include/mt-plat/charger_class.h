@@ -78,6 +78,7 @@ struct charger_ops {
 	/* enable/disable powerpath */
 	int (*enable_powerpath)(struct charger_device *);
 	int (*disable_powerpath)(struct charger_device *);
+	int (*is_powerpath_enabled)(struct charger_device *);
 
 	/* enable/disable vbus ovp */
 	int (*enable_vbus_ovp)(struct charger_device *);
@@ -86,6 +87,7 @@ struct charger_ops {
 	/* enable/disable charging safety timer */
 	int (*enable_safety_timer)(struct charger_device *);
 	int (*disable_safety_timer)(struct charger_device *);
+	int (*is_safety_timer_enabled)(struct charger_device *);
 
 	/* direct charging */
 	int (*enable_direct_charging)(struct charger_device *);
@@ -171,6 +173,10 @@ extern int charger_dev_notify(struct charger_device *charger_dev, int event);
 extern int charger_dev_get_charging_status(struct charger_device *charger_dev);
 extern int charger_dev_enable_powerpath(struct charger_device *charger_dev);
 extern int charger_dev_disable_powerpath(struct charger_device *charger_dev);
+extern int charger_dev_is_powerpath_enabled(struct charger_device *charger_dev);
+extern int charger_dev_enable_safety_timer(struct charger_device *charger_dev);
+extern int charger_dev_disable_safety_timer(struct charger_device *charger_dev);
+extern int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev);
 
 
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/
