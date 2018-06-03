@@ -669,7 +669,7 @@ static int __init disp_probe_1(void)
 #if 1
 		/* check all cg on when early porting and bring up */
 		ASSERT(DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0) == 0);
-		ASSERT(DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1) == 0);
+		ASSERT((DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1)&0xff) == 0);
 		DDPMSG("after power on MMSYS:0x%x,0x%x\n",
 			DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
 			DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));

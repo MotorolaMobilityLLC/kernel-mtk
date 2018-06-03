@@ -876,17 +876,13 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 		var->red.length = var->green.length = var->blue.length = 8;
 		var->transp.length = 0;
 
-		/* Check if format is RGB565 or BGR565 */
-
 		ASSERT(var->green.offset == 8);
 		ASSERT((var->red.offset + var->blue.offset) == 16);
 		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	} else if (bpp == 32) {
 		var->red.length = var->green.length = var->blue.length = var->transp.length = 8;
 
-		/* Check if format is ARGB565 or ABGR565 */
-
-		ASSERT((var->green.offset == 8 && var->transp.offset == 24));
+		/*ASSERT((var->green.offset == 8 && var->transp.offset == 24));*/
 		ASSERT(var->red.offset + var->blue.offset == 16);
 		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	}
@@ -2448,10 +2444,10 @@ static int mtkfb_probe(struct platform_device *pdev)
 		ret = DAL_Init(fbVA, fbPA);
 		DISPMSG("DAL_Init done\n");
 	}
-
+#if 0
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		_mtkfb_internal_test((unsigned long)(fbdev->fb_va_base), MTK_FB_XRES, MTK_FB_YRES);
-
+#endif
 	r = mtkfb_register_sysfs(fbdev);
 	if (r) {
 		DISPERR("mtkfb_register_sysfs fail, r = %d\n", r);

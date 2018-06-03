@@ -88,19 +88,19 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_warn("[DISP]"string, ##args);		\
+			pr_debug("[DISP]"string, ##args);		\
 	} while (0)
 
 #define DISPMSG(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		pr_warn("[DISP]"string, ##args);		\
+		pr_debug("[DISP]"string, ##args);		\
 	} while (0)
 
 #define DISPCHECK(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		pr_warn("[DISP]"string, ##args);		\
+		pr_debug("[DISP]"string, ##args);		\
 	} while (0)
 
 #define DISPWARN(string, args...)					\
@@ -123,7 +123,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_warn("fence/"string, ##args);		\
+			pr_debug("fence/"string, ##args);		\
 	} while (0)
 
 #define DISPDBG(string, args...)					\
@@ -137,7 +137,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s\n", __func__); \
 		if (g_mobilelog)					\
-			pr_warn("[DISP]func|%s\n", __func__);		\
+			pr_debug("[DISP]func|%s\n", __func__);		\
 	} while (0)
 
 #define DISPDBGFUNC() DISPFUNC()

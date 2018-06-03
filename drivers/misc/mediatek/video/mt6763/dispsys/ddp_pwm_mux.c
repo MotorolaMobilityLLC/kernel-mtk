@@ -23,6 +23,7 @@
 
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
+#define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
 
 #define BYPASS_CLK_SELECT
 
@@ -60,7 +61,7 @@ bool disp_pwm_mux_is_osc(void)
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x50)
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
 #endif
 #ifdef HARD_CODE_CONFIG
 #ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
@@ -76,6 +77,7 @@ static void __iomem *disp_pmw_mux_base;
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 
+static int g_pwm_mux_clock_source = -1;
 
 /*****************************************************************************
  *
@@ -88,25 +90,16 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = ULPOSC_D8; /* ULPOSC 29M */
+		clkid = TOP_OSC_D16;
 		break;
 	case 1:
-		clkid = ULPOSC_D2; /* ULPOSC 117M */
+		clkid = TOP_OSC_D4;
 		break;
 	case 2:
-		clkid = UNIVPLL2_D4; /* PLL 104M */
+		clkid = TOP_UNIVPLL2_D4;
 		break;
 	case 3:
-		clkid = ULPOSC_D3; /* ULPOSC 78M */
-		break;
-	case 4:
-		clkid = -1; /* Bypass config:default 26M */
-		break;
-	case 5:
-		clkid = ULPOSC_D10; /* ULPOSC 23M */
-		break;
-	case 6:
-		clkid = ULPOSC_D4; /* ULPOSC 58M */
+		clkid = TOP_26M;
 		break;
 	default:
 		clkid = -1;
@@ -165,24 +158,26 @@ static unsigned int disp_pwm_get_pwmmux(void)
 *****************************************************************************/
 int disp_pwm_set_pwmmux(unsigned int clk_req)
 {
-	unsigned int regsrc;
+	unsigned int reg_before, reg_after;
 	int ret = 0;
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
-	ret = disp_pwm_get_muxbase();
-	regsrc = disp_pwm_get_pwmmux();
 
-	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
+	ret = disp_pwm_get_muxbase();
+	reg_before = disp_pwm_get_pwmmux();
+
+	PWM_NOTICE("clk_req=%d clkid=%d", clk_req, clkid);
+
 	if (clkid != -1) {
-#if 0
-		ddp_clk_enable(MUX_PWM);
-		ddp_clk_set_parent(MUX_PWM, clkid);
-		ddp_clk_disable(MUX_PWM);
-#endif
+		ddp_clk_prepare_enable(TOP_MUX_DISP_PWM);
+		ddp_clk_set_parent(TOP_MUX_DISP_PWM, clkid);
+		ddp_clk_disable_unprepare(TOP_MUX_DISP_PWM);
 	}
 
-	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
+	reg_after = disp_pwm_get_pwmmux();
+	g_pwm_mux_clock_source = (reg_after) & 0x3;
+	PWM_NOTICE("PWM_MUX %x->%x", reg_before, reg_after);
 
 	return 0;
 }
@@ -342,10 +337,8 @@ int disp_pwm_clksource_enable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D4:
-	case ULPOSC_D8:
-	case ULPOSC_D10:
+	case TOP_OSC_D16:
+	case TOP_OSC_D4:
 		ulposc_enable(clkid);
 		break;
 	default:
@@ -363,10 +356,8 @@ int disp_pwm_clksource_disable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D4:
-	case ULPOSC_D8:
-	case ULPOSC_D10:
+	case TOP_OSC_D16:
+	case TOP_OSC_D4:
 		ulposc_disable(clkid);
 		break;
 	default:
@@ -376,4 +367,19 @@ int disp_pwm_clksource_disable(int clk_req)
 	return ret;
 }
 
+/*****************************************************************************
+ *
+ * disp pwm clock source query api
+ *
+*****************************************************************************/
+
+bool disp_pwm_mux_is_osc(void)
+{
+	bool is_osc = false;
+
+	if (g_pwm_mux_clock_source == 0 || g_pwm_mux_clock_source == 1)
+		is_osc = true;
+
+	return is_osc;
+}
 #endif		/* BYPASS_CLK_SELECT */

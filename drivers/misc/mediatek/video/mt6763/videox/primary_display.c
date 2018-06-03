@@ -694,11 +694,9 @@ static int _fps_ctx_reset(struct fps_ctx_t *fps_ctx, int reserve_num)
 	return 0;
 }
 
-#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix exception, please remove me. */
 static int _fps_ctx_update(struct fps_ctx_t *fps_ctx, unsigned int fps, unsigned long long time_ns)
 {
 	int i;
-
 	fps_ctx->total -= fps_ctx->array[fps_ctx->wnd_sz-1];
 
 	for (i = fps_ctx->wnd_sz - 1; i > 0; i--)
@@ -715,7 +713,6 @@ static int _fps_ctx_update(struct fps_ctx_t *fps_ctx, unsigned int fps, unsigned
 	return 0;
 }
 
-#endif
 static int fps_ctx_init(struct fps_ctx_t *fps_ctx, int wnd_sz)
 {
 	if (fps_ctx->is_inited)
@@ -792,11 +789,10 @@ static int _fps_ctx_check_drastic_change(struct fps_ctx_t *fps_ctx, unsigned int
 
 static int fps_ctx_update(struct fps_ctx_t *fps_ctx)
 {
-#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix exception, please remove me. */
 	unsigned int abs_fps, avg_fps;
 	unsigned long long ns = sched_clock();
-
 	mutex_lock(&fps_ctx->lock);
+
 	abs_fps = _fps_ctx_calc_cur_fps(fps_ctx, ns);
 
 	/* _fps_ctx_check_drastic_change(fps_ctx, abs_fps); */
@@ -810,12 +806,10 @@ static int fps_ctx_update(struct fps_ctx_t *fps_ctx)
 	if (abs_fps < avg_fps / 2 && avg_fps > 10)
 		_fps_ctx_reset(fps_ctx, 0);
 
-
 	_fps_ctx_update(fps_ctx, abs_fps, ns);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->fps_set, MMPROFILE_FLAG_PULSE, abs_fps, fps_ctx->cur_wnd_sz);
 	mutex_unlock(&fps_ctx->lock);
-#endif
 	return 0;
 }
 
@@ -1324,13 +1318,17 @@ static void _cmdq_build_trigger_loop(void)
 		/* waiting for frame done, because we can't use mutex stream eof here,*/
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
-		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
-				      CMDQ_WAIT_STREAM_EOF_EVENT, 0);
+		/*ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
+		*dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
+		*		CMDQ_WAIT_STREAM_EOF_EVENT, 0);
+		*/
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
+		DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
+						  0x80000000, 0x0);
 
 		/* dsi is not idle rightly after rdma frame done,*/
 		/* so we need to polling about 1us for dsi returns to idle */
-		/* do not polling dsi idle directly which will decrease CMDQ performance */
+		/* do not polling dsi idle directly which will decrease CMDQ performance*/
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_CHECK_IDLE_AFTER_STREAM_EOF, 0);
 
@@ -3227,14 +3225,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			ret = DISP_STATUS_ERROR;
 			goto done;
 		}
-		if (is_lcm_inited) {
-			/* if lcm is not inited (no LK),
-			 * the first config should not wait frame done
-			 * because there's no frame done for vdo mode
-			 */
-			_cmdq_reset_config_handle();
-			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-		}
 	} else {
 		pgc->cmdq_handle_config = NULL;
 		pgc->cmdq_handle_ovl1to2_config = NULL;
@@ -3258,6 +3248,14 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		DISPINFO("primary display is DIRECT LINK MODE\n");
 	} else {
 		DISPINFO("primary display mode is WRONG\n");
+	}
+	if (use_cmdq && is_lcm_inited) {
+		/* if lcm is not inited (no LK),
+		 * the first config should not wait frame done
+		 * because there's no frame done for vdo mode
+		 */
+		_cmdq_reset_config_handle();
+		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 	}
 
 	config_display_m4u_port();
@@ -3330,24 +3328,23 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	data_config->fps = lcm_fps;
 	data_config->dst_dirty = 1;
-
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, pgc->cmdq_handle_config);
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
-	if (is_lcm_inited) {
+	if (0 /*is_lcm_inited*/) {
 		/* ??? why need */
 		/* no need lcm power on,because lk power on lcm */
-		/* ret = disp_lcm_init(pgc->plcm, 0);	*/
+		/*ret = disp_lcm_init(pgc->plcm, 0);*/
 	} else {
 		/* lcm not inited : 1. fpga no lk(verify done); 2. evb no lk(need verify) */
-	if (use_cmdq) {
+		if (use_cmdq) {
 			/* make sure dsi configuration done before lcm init */
-		_cmdq_flush_config_handle(1, NULL, 0);
-		_cmdq_reset_config_handle();
-	}
+			_cmdq_flush_config_handle(1, NULL, 0);
+			_cmdq_reset_config_handle();
+		}
 
 		ret = disp_lcm_init(pgc->plcm, 1);
 	}
@@ -3981,14 +3978,16 @@ int primary_display_suspend(void)
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
 		DISPINFO("[POWER]lcm suspend[begin]\n");
-		disp_lcm_suspend(pgc->plcm);
+		/*FIXME: workaround for pmic error, will be removed soon */
+		/*disp_lcm_suspend(pgc->plcm);*/
 		DISPCHECK("[POWER]lcm suspend[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 6);
 		DISPDBG("[POWER]primary display path Release Fence[begin]\n");
 		primary_suspend_release_fence();
 		DISPINFO("[POWER]primary display path Release Fence[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 7);
-		primary_display_set_lcm_power_state_nolock(LCM_OFF);
+		/*FIXME: workaround for pmic error, will be removed soon */
+		/*primary_display_set_lcm_power_state_nolock(LCM_OFF);*/
 	}
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
@@ -4432,7 +4431,8 @@ void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gPresentFenceIndex = fence_idx;
 	atomic_set(&primary_display_present_fence_update_event, 1);
-	wake_up_interruptible(&primary_display_present_fence_wq);
+	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE))
+		wake_up_interruptible(&primary_display_present_fence_wq);
 }
 
 /* the function will trigger ovl->wdma */
@@ -5172,7 +5172,8 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		goto done;
 	}
 
-	fps_ctx_update(&primary_fps_ctx);
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
+		fps_ctx_update(&primary_fps_ctx);
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO))
 		primary_show_basic_debug_info(cfg);
 

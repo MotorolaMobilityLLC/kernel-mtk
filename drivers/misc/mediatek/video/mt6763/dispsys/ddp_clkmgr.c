@@ -39,45 +39,42 @@
  *	enum DISP_MODULE_ENUM module_id;
  */
 static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
-	{NULL, "DISP_MTCMOS_CLK", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "DISP0_SMI_COMMON", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "DISP0_SMI_LARB0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "DISP0_SMI_LARB1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_COMM0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_COMM1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_VENC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_VDEC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_IMG2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_CAM2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "CLK_MM_GALS_IPU2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "DISP0_DISP_OVL0", (1), DISP_MODULE_OVL0},
-	{NULL, "DISP0_DISP_OVL0_2L", (1), DISP_MODULE_OVL0_2L},
-	{NULL, "DISP0_DISP_OVL1_2L", (1<<1), DISP_MODULE_OVL1_2L},
-	{NULL, "DISP0_DISP_RDMA0", (1), DISP_MODULE_RDMA0},
-	{NULL, "DISP0_DISP_RDMA1", (1<<1), DISP_MODULE_RDMA1},
-	{NULL, "DISP0_DISP_WDMA0", (1|1<<1), DISP_MODULE_WDMA0},
-	{NULL, "DISP0_DISP_COLOR", (1), DISP_MODULE_COLOR0},
-	{NULL, "DISP0_DISP_CCORR", (1), DISP_MODULE_CCORR0},
-	{NULL, "DISP0_DISP_AAL", (1), DISP_MODULE_AAL0},
-	{NULL, "DISP0_DISP_GAMMA", (1), DISP_MODULE_GAMMA0},
-	{NULL, "DISP0_DISP_DITHER", (1), DISP_MODULE_DITHER0},
-	/*{NULL, "DISP0_DISP_SPLIT", (1), DISP_MODULE_SPLIT0},*/
-	{NULL, "DISP1_DSI0_MM_CLOCK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "DISP1_DSI0_INTERFACE_CLOCK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "DISP1_DSI1_MM_CLOCK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "DISP1_DSI1_INTERFACE_CLOCK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "DISP1_DISP_26M", (1), DISP_MODULE_UNKNOWN}, /* cg */
-	/*{NULL, "DISP1_DISP_RSZ", (1), DISP_MODULE_RSZ},*/
-	{NULL, "MDP_WROT0", (0), DISP_MODULE_UNKNOWN}, /* used when sharing */
-	{NULL, "MDP_WROT1", (0), DISP_MODULE_UNKNOWN}, /* used when sharing */
+	{NULL, "MMSYS_MTCMOS", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_COMMON", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_LARB0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_LARB1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_COMM0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_COMM1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_VENC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_VDEC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_IMG2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_CAM2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_IPU2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_DISP_OVL0", (1), DISP_MODULE_OVL0},
+	{NULL, "MMSYS_DISP_OVL0_2L", (1), DISP_MODULE_OVL0_2L},
+	{NULL, "MMSYS_DISP_OVL1_2L", (1<<1), DISP_MODULE_OVL1_2L},
+	{NULL, "MMSYS_DISP_RDMA0", (1), DISP_MODULE_RDMA0},
+	{NULL, "MMSYS_DISP_RDMA1", (1<<1), DISP_MODULE_RDMA1},
+	{NULL, "MMSYS_DISP_WDMA0", (1|1<<1), DISP_MODULE_WDMA0},
+	{NULL, "MMSYS_DISP_COLOR0", (1), DISP_MODULE_COLOR0},
+	{NULL, "MMSYS_DISP_CCORR0", (1), DISP_MODULE_CCORR0},
+	{NULL, "MMSYS_DISP_AAL0", (1), DISP_MODULE_AAL0},
+	{NULL, "MMSYS_DISP_GAMMA0", (1), DISP_MODULE_GAMMA0},
+	{NULL, "MMSYS_DISP_DITHER0", (1), DISP_MODULE_DITHER0},
+	{NULL, "MMSYS_DISP_SPLIT", (1), DISP_MODULE_SPLIT0},
+	{NULL, "MMSYS_DSI0_MM_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI0_IF_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI1_MM_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI1_IF_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_26M", (1), DISP_MODULE_UNKNOWN}, /* cg */
+	{NULL, "MMSYS_DISP_RSZ", (1), DISP_MODULE_RSZ0},
+	{NULL, "TOP_MUX_MM", (1), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_MUX_DISP_PWM", (0), DISP_MODULE_UNKNOWN},
 	{NULL, "DISP_PWM", (1), DISP_MODULE_PWM0},
-	{NULL, "MUX_PWM", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "UNIVPLL2_D4", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D2", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D3", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D8", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D10", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D4", (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_26M", (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_UNIVPLL2_D4", (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_OSC_D4", (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_OSC_D16", (0), DISP_MODULE_UNKNOWN},
 };
 
 static void __iomem *ddp_apmixed_base;
@@ -307,7 +304,7 @@ int ddp_parse_apmixed_base(void)
 	if (parsed_apmixed)
 		return ret;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6759-apmixedsys");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	if (!node) {
 		DDPERR("[DDP_APMIXED] DISP find apmixed node failed\n");
 		return -1;
@@ -521,8 +518,8 @@ void ddp_clk_force_on(unsigned int on)
 		ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
 		ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
 
-		ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 		ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
+		ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 		ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 	}

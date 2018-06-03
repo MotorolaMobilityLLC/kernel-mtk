@@ -208,9 +208,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		}
 
 		if (module == DISP_MODULE_DSI0)
-			reg_val = (DISP_REG_GET(DISPSYS_DSI0_BASE + 0xC) & 0xff);
+			reg_val = (DISP_REG_GET(DISPSYS_DSI0_BASE + 0xC) & 0xffff);
 		else
-			reg_val = (DISP_REG_GET(DISPSYS_DSI1_BASE + 0xC) & 0xff);
+			reg_val = (DISP_REG_GET(DISPSYS_DSI1_BASE + 0xC) & 0xffff);
 
 		DDPIRQ("%s irq_status = 0x%x\n", ddp_get_module_name(module), reg_val);
 

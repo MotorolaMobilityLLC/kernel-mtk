@@ -199,7 +199,7 @@ static void _init_condition_wq(struct t_condition_wq *waitq)
 static void _set_condition_and_wake_up(struct t_condition_wq *waitq)
 {
 	atomic_set(&(waitq->condition), 1);
-	wake_up_interruptible(&(waitq->wq));
+	wake_up(&(waitq->wq));
 }
 
 static const char *_dsi_cmd_mode_parse_state(unsigned int state)
@@ -680,7 +680,8 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 
 	if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
 		return;
-
+	/* FIXME: workaround for bringup issue */
+	mdelay(1);
 	ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
 					       !(DSI_REG[i]->DSI_INTSTA.BUSY), HZ/10);
 	if (ret == 0) {
@@ -1690,9 +1691,9 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 
 	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
 		       "[DISP] - kernel - DSI_PHY_TIMCONFIG, HS_TRAIL = %d, HS_ZERO = %d, HS_PRPR = %d, LPX = %d, TA_GET = %d, TA_SURE = %d, TA_GO = %d, CLK_TRAIL = %d, CLK_ZERO = %d, CLK_HS_PRPR = %d\n",
-		       timcon0.HS_TRAIL, timcon0.HS_ZERO, timcon0.HS_PRPR, timcon0.LPX,
-		       timcon1.TA_GET, timcon1.TA_SURE, timcon1.TA_GO, timcon2.CLK_TRAIL,
-		       timcon2.CLK_ZERO, timcon3.CLK_HS_PRPR);
+			timcon0.HS_TRAIL, timcon0.HS_ZERO, timcon0.HS_PRPR, timcon0.LPX,
+			timcon1.TA_GET, timcon1.TA_SURE, timcon1.TA_GO, timcon2.CLK_TRAIL,
+			timcon2.CLK_ZERO, timcon3.CLK_HS_PRPR);
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_PHY_TIMCON0_REG, DSI_REG[i]->DSI_PHY_TIMECON0, LPX,
@@ -2128,7 +2129,6 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 	} else {
 		/* cmd mode */
 		dsi_wait_not_busy(module, cmdq);
-
 		if (cmd < 0xB0) {
 			if (count > 1) {
 				t2.CONFG = 2;
@@ -2179,10 +2179,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 				t2.CONFG = 2;
 				t2.Data_ID = DSI_GERNERIC_LONG_PACKET_ID;
 				t2.WC16 = count + 1;
-
 				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
 					     AS_UINT32(&t2));
-
 				goto_addr =
 				    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte0);
 				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
@@ -2221,7 +2219,6 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 			}
 		}
 	}
-
 	if (DSI_REG[d]->DSI_MODE_CTRL.MODE) { /* not in cmd mode */
 		/* start DSI VM CMDQ */
 		if (force_update)
@@ -3181,6 +3178,9 @@ static int _ddp_dsi_stop_dual(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 
+	DSI_OUTREG32(cmdq_handle, &DSI_REG[0]->DSI_INTEN, 0);
+	DSI_OUTREG32(cmdq_handle, &DSI_REG[1]->DSI_INTEN, 0);
+
 	return ret;
 }
 
@@ -3237,6 +3237,8 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	}
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
+
+	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);
 
 	return 0;
 }
@@ -3767,7 +3769,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DISPFUNC();
 	/* mipi was alreay initialized: lk(mipi init)->kernel(power on) */
-	if (unlikely(MIPITX_IsEnabled(module, NULL))) {
+	if (MIPITX_IsEnabled(module, NULL) == 0x0) {
 		ASSERT(not_first_time == 0);
 		not_first_time = 1;
 		DISPCHECK("MIPITX was alreay initialized\n");

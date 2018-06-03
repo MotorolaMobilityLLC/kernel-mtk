@@ -56,7 +56,7 @@
 #include "ion.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog = 1;
+unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
 
