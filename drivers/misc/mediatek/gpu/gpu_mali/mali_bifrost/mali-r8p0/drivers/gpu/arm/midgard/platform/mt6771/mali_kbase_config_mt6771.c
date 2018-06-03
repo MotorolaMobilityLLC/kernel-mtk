@@ -43,29 +43,27 @@ int g_curFreqID;
 
 /**
  * For GPU idle check
- *
-static int mtk_check_MFG_idle(void)
+ */
+static void _mtk_check_MFG_idle(void)
 {
 	u32 val;
-	val = readl(g_MFG_base + 0xb0);
-	writel(val & ~(0x1), g_MFG_base + 0xb0);
-	MFG_DEBUG("[MALI] 0x130000b0 val = 0x%x\n", readl(g_MFG_base + 0xb0));
 
-	val = readl(g_MFG_base + 0x10);
-	writel(val | (0x1 << 17), g_MFG_base + 0x10);
-	MFG_DEBUG("[MALI] 0x13000010 val = 0x%x\n", readl(g_MFG_base + 0x10));
+	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x01 */
+	val = readl(g_MFG_base + 0xb4);
+	writel((val & ~(0x2)) | 0x1, g_MFG_base + 0xb4);
+	MFG_DEBUG("[MALI] 0x130000b4 val = 0x%x\n", readl(g_MFG_base + 0xb4));
 
+	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x3 */
 	val = readl(g_MFG_base + 0x180);
 	writel((val & ~(0xFF)) | 0x3, g_MFG_base + 0x180);
 	MFG_DEBUG("[MALI] 0x13000180 val = 0x%x\n", readl(g_MFG_base + 0x180));
 
+	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 => 1 for idle, 0 for non-idle */
 	do {
 		val = readl(g_MFG_base + 0x188);
-		// MFG_DEBUG("[MALI] 0x13000188 val = 0x%x\n", val);
+		MFG_DEBUG("[MALI] 0x13000188 val = 0x%x\n", val);
 	} while ((val & 0x4) != 0x4);
-
-	return 0;
-} */
+}
 
 /*
  * For GPU suspend/resume
@@ -75,13 +73,13 @@ static void _mtk_pm_callback_power_suspend(void)
 {
 	mutex_lock(&g_mfg_lock);
 
-	//g_curFreqID = mt_gpufreq_get_cur_freq_index();
-	//mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+	g_curFreqID = mt_gpufreq_get_cur_freq_index();
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
 	/* Now, turn off pmic power */
-	//mt_gpufreq_voltage_enable_set(0);
+	/* mt_gpufreq_voltage_enable_set(0); */
 
-	MFG_DEBUG("[MALI] power is suspended\n")
+	MFG_DEBUG("[MALI] power is suspended\n");
 
 	mutex_unlock(&g_mfg_lock);
 }
@@ -91,10 +89,10 @@ static int _mtk_pm_callback_power_resume(void)
 	mutex_lock(&g_mfg_lock);
 
 	/* First, turn on pmic power */
-	//mt_gpufreq_voltage_enable_set(1);
+	/* mt_gpufreq_voltage_enable_set(1); */
 
-	//mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
-	//mtk_set_mt_gpufreq_target(g_curFreqID);
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
+	mtk_set_mt_gpufreq_target(g_curFreqID);
 
 	MFG_DEBUG("[MALI] power is resumed\n");
 
@@ -113,20 +111,22 @@ static void _mtk_pm_callback_power_off(void)
 	MFG_DEBUG("[MALI] power off ....\n");
 
 #ifdef ENABLE_COMMON_DVFS
-	//ged_dvfs_gpu_clock_switch_notify(0);
+	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
 
-	//g_curFreqID = mt_gpufreq_get_cur_freq_index();
-	//mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+	g_curFreqID = mt_gpufreq_get_cur_freq_index();
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
-	/* Step 1 : turn off clocks by sequence */
-	//mtk_check_MFG_idle();
+	_mtk_check_MFG_idle();
 
-	//mt_gpufreq_disable_CG();
-	//mt_gpufreq_disable_MTCMOS();
+	/* Disable clock gating */
+	mt_gpufreq_disable_CG();
 
-	/* Step 2 : enter low power mode */
-	//mt_gpufreq_voltage_lpm_set(1);
+	/* Turn off GPU MTCMOS by sequence */
+	mt_gpufreq_disable_MTCMOS();
+
+	/* Turn off GPU PMIC Buck */
+	/* mt_gpufreq_voltage_enable_set(0); */
 
 	MFG_DEBUG("[MALI] power off successfully\n");
 
@@ -135,42 +135,33 @@ static void _mtk_pm_callback_power_off(void)
 
 static int _mtk_pm_callback_power_on(void)
 {
-	//u32 val;
+	u32 val;
 
 	mutex_lock(&g_mfg_lock);
 
 	MFG_DEBUG("[MALI] power on ....\n");
 
-	/* Step 1 : leave low power mode */
-	//mt_gpufreq_voltage_lpm_set(0);
+	/* Turn on GPU PMIC Buck */
+	mt_gpufreq_voltage_enable_set(1);
 
-	/* Step 2 : turn on clocks by sequence */
-	//mt_gpufreq_enable_MTCMOS();
+	/* Turn on GPU MTCMOS by sequence */
+	mt_gpufreq_enable_MTCMOS();
 
-	/* set Sync step before enable CG, bit[11:10]=01 */
-	//udelay(100);
-	//val = 0x400;
-	//writel(val, g_MFG_base + 0x20);
-	//udelay(100);
+	/* Enable clock gating */
+	mt_gpufreq_enable_CG();
 
-	//mt_gpufreq_enable_CG();
-
-	//mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
-
-	//val = readl(g_MFG_base + 0x8b0);
-	//writel(val & ~(0x1), g_MFG_base + 0x8b0);
-	MFG_DEBUG("[MALI] A: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
-	//val = readl(g_MFG_base + 0x130);
-	//writel(val | 0x1, g_MFG_base + 0x130);
+	val = readl(g_MFG_base + 0x130);
+	writel(val | 0x1, g_MFG_base + 0x130);
 
 	/* Resume frequency before power off */
-	//mtk_set_mt_gpufreq_target(g_curFreqID);
+	mtk_set_mt_gpufreq_target(g_curFreqID);
 
 #ifdef ENABLE_COMMON_DVFS
-	//ged_dvfs_gpu_clock_switch_notify(1);
+	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
 
 	MFG_DEBUG("[MALI] power on successfully\n");
@@ -247,8 +238,8 @@ static struct kbase_io_resources io_resources = {
 	.mmu_irq_number = 69,
 	.gpu_irq_number = 70,
 	.io_memory_region = {
-	.start = 0xFC010000,
-	.end = 0xFC010000 + (4096 * 4) - 1
+		.start = 0xFC010000,
+		.end = 0xFC010000 + (4096 * 4) - 1
 	}
 };
 #endif /* CONFIG_OF */
