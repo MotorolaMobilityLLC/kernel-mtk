@@ -69,7 +69,7 @@
 
 #define MTK_UART_SEND_SLEEP_REQ	0x1	/* Request uart to sleep */
 #define MTK_UART_SLEEP_ACK_IDLE	0x1	/* uart in idle state */
-#define MTK_UART_WAIT_ACK_TIMES	10
+#define MTK_UART_WAIT_ACK_TIMES	50
 
 #define MTK_UART_ESCAPE_CHAR	0x77	/* Escape char added under sw fc */
 
