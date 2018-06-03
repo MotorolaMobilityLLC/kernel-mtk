@@ -48,7 +48,7 @@
 /* 0 for early porting */
 #define DEVAPC_TURN_ON         1
 #define DEVAPC_USE_CCF         1
-#define DEVAPC_VIO_DEBUG       1
+#define DEVAPC_VIO_DEBUG       0
 
 /* Debug message event */
 #define DEVAPC_LOG_NONE        0x00000000
@@ -614,23 +614,21 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 
 	if (irq_number == devapc_infra_irq) {
 #if DEVAPC_VIO_DEBUG
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+		DEVAPC_VIO_MSG("[DEVAPC] %s 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
+			"INFRA VIO_MASK",
 			readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
 			readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
-			readl(DEVAPC_PD_INFRA_VIO_MASK(4)));
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_MASK 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
-			readl(DEVAPC_PD_INFRA_VIO_MASK(5)), readl(DEVAPC_PD_INFRA_VIO_MASK(6)),
-			readl(DEVAPC_PD_INFRA_VIO_MASK(7)), readl(DEVAPC_PD_INFRA_VIO_MASK(8)),
-			readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
+			readl(DEVAPC_PD_INFRA_VIO_MASK(4)), readl(DEVAPC_PD_INFRA_VIO_MASK(5)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(6)), readl(DEVAPC_PD_INFRA_VIO_MASK(7)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(8)), readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 #endif
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+		DEVAPC_VIO_MSG("[DEVAPC] %s 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
+			"INFRA VIO_STA",
 			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(4)));
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
-			readl(DEVAPC_PD_INFRA_VIO_STA(5)), readl(DEVAPC_PD_INFRA_VIO_STA(6)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(7)), readl(DEVAPC_PD_INFRA_VIO_STA(8)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(9)));
+			readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
 		DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
 
@@ -671,13 +669,13 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
 #endif
 				/* violation information improvement */
-				if (shift_done) {
-					DEVAPC_VIO_MSG("[DEVAPC] Violation(Infra,%s%s) - Process:%s, PID:%i\n",
-						read_violation == 1 ? "R" : " ", write_violation == 1 ? "W" : " ",
-						current->comm, current->pid);
-					DEVAPC_VIO_MSG("[DEVAPC] Vio Addr:0x%x (High:0x%x), Bus ID:0x%x, Dom ID:0x%x\n",
-						dbg1, vio_addr_high, master_id, domain_id);
-				}
+				if (shift_done)
+					DEVAPC_VIO_MSG("[DEVAPC] %s%s%s - %s%s, %s%i, %s%x (%s%x), %s%x, %s%x\n",
+						"Violation(Infra,",
+						read_violation == 1 ? "R" : " ", write_violation == 1 ? "W)" : " )",
+						"Process:", current->comm, "PID:", current->pid,
+						"Vio Addr:0x", dbg1, "High:0x", vio_addr_high,
+						"Bus ID:0x", master_id, "Dom ID:0x", domain_id);
 			}
 
 		device_count = ARRAY_SIZE(devapc_infra_devices);
@@ -692,14 +690,13 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 					devapc_infra_devices[i].device, i);
 			}
 #if DEVAPC_VIO_DEBUG
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+		DEVAPC_VIO_MSG("[DEVAPC] %s 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
+			"INFRA VIO_STA",
 			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(4)));
-		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
-			readl(DEVAPC_PD_INFRA_VIO_STA(5)), readl(DEVAPC_PD_INFRA_VIO_STA(6)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(7)), readl(DEVAPC_PD_INFRA_VIO_STA(8)),
-			readl(DEVAPC_PD_INFRA_VIO_STA(9)));
+			readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
 #endif
