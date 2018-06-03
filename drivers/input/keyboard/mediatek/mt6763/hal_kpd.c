@@ -297,15 +297,8 @@ void kpd_wakeup_src_setting(int enable)
 	else
 		is_fm_radio_playing = 1;
 
-	if (is_fm_radio_playing == 0) {
-		if (enable == 1) {
-			kpd_print("enable kpd work!\n");
-			enable_kpd(1);
-		} else {
-			kpd_print("disable kpd work!\n");
-			enable_kpd(0);
-		}
-	}
+	if (is_fm_radio_playing == 0)
+		enable_kpd(enable);
 }
 
 /********************************************************************/
