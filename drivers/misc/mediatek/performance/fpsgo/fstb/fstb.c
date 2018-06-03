@@ -77,6 +77,8 @@ static int min_fps_limit = CFG_MIN_FPS_LIMIT;
 static struct fps_level fps_levels[MAX_NR_FPS_LEVELS];
 static int nr_fps_levels = MAX_NR_FPS_LEVELS;
 #define DISPLAY_FPS_FILTER_NS 100000000ULL
+#define ASFC_THRESHOLD_NS 20000000ULL
+#define ASFC_THRESHOLD_PERCENTAGE 30
 #define MAX_FSTB_RENDER_TARGET 10
 static struct FSTB_RENDER_TARGET_FPS
 	render_target[MAX_FSTB_RENDER_TARGET];
@@ -302,36 +304,6 @@ int fpsgo_comp2fstb_bypass(int pid)
 		iter->frame_type = BY_PASS_TYPE;
 
 	mutex_unlock(&fstb_lock);
-	return 0;
-}
-
-int fpsgo_fbt2fstb_reset_asfc(int pid, int level)
-{
-	struct FSTB_FRAME_INFO *iter;
-
-	mutex_lock(&fstb_lock);
-
-	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
-		if (iter->pid == pid)
-			break;
-	}
-
-	if (iter == NULL) {
-		mutex_unlock(&fstb_lock);
-		return 0;
-	}
-
-	if (iter->asfc_flag) {
-		iter->asfc_flag = 0;
-		fpsgo_systrace_c_fstb(pid, iter->asfc_flag,
-				"asfc_flag");
-	} else {
-		mutex_unlock(&fstb_lock);
-		return 0;
-	}
-
-	mutex_unlock(&fstb_lock);
-
 	return 0;
 }
 
@@ -567,11 +539,6 @@ int fpsgo_fbt2fstb_update_cpu_frame_info(
 		sizeof(long long) *
 		(iter->weighted_cpu_time_end -
 		 iter->weighted_cpu_time_begin));
-		memmove(iter->q2q_time,
-		&(iter->q2q_time[iter->weighted_cpu_time_begin]),
-		sizeof(long long) *
-		(iter->weighted_cpu_time_end -
-		 iter->weighted_cpu_time_begin));
 		memmove(iter->cur_capacity,
 		&(iter->cur_capacity[iter->weighted_cpu_time_begin]),
 		sizeof(unsigned int) *
@@ -594,7 +561,6 @@ int fpsgo_fbt2fstb_update_cpu_frame_info(
 		iter->weighted_cpu_time[iter->weighted_cpu_time_end] =
 			frame_time_ns;
 
-	iter->q2q_time[iter->weighted_cpu_time_end] = Q2Q_time;
 	iter->weighted_cpu_time_ts[iter->weighted_cpu_time_end] =
 		cur_time_us;
 	iter->cur_capacity[iter->weighted_cpu_time_end] = max_current_cap;
@@ -724,6 +690,7 @@ void fpsgo_comp2fstb_queue_time_update(int pid,
 		new_frame_info->connected_api = api;
 		new_frame_info->bufid = bufferid;
 		new_frame_info->asfc_flag = 0;
+		new_frame_info->check_asfc = 0;
 		new_frame_info->queue_time_begin = 0;
 		new_frame_info->queue_time_end = 0;
 		new_frame_info->weighted_cpu_time_begin = 0;
@@ -787,6 +754,7 @@ static int fstb_get_queue_fps(struct FSTB_FRAME_INFO *iter,
 	int i = iter->queue_time_begin, j;
 	unsigned long long queue_fps;
 	unsigned long long frame_interval_count = 0;
+	unsigned long long above_asfc_ths_count = 0;
 	unsigned long long avg_frame_interval = 0;
 	unsigned long long retval = 0;
 
@@ -798,7 +766,7 @@ static int fstb_get_queue_fps(struct FSTB_FRAME_INFO *iter,
 			break;
 	}
 
-	/* filter */
+	/* filter and asfc evaluation*/
 	for (j = i + 1; j < iter->queue_time_end; j++) {
 		if ((iter->queue_time_ts[j] -
 					iter->queue_time_ts[j - 1]) <
@@ -808,6 +776,31 @@ static int fstb_get_queue_fps(struct FSTB_FRAME_INFO *iter,
 				 iter->queue_time_ts[j - 1]);
 			frame_interval_count++;
 		}
+
+		if (iter->asfc_flag &&
+			(iter->queue_time_ts[j] - iter->queue_time_ts[j - 1])
+			< ASFC_THRESHOLD_NS)
+			above_asfc_ths_count++;
+	}
+
+	if (iter->asfc_flag) {
+		unsigned long long result = above_asfc_ths_count * 100ULL;
+		int queue_cnt = iter->queue_time_end - i;
+
+		fpsgo_systrace_c_fstb(iter->pid,
+			(int)above_asfc_ths_count, "above_asfc_ths_count");
+		fpsgo_systrace_c_fstb(iter->pid,
+			queue_cnt, "queue_cnt");
+
+		if (queue_cnt > 0) {
+			do_div(result, queue_cnt);
+			iter->check_asfc =
+				result > ASFC_THRESHOLD_PERCENTAGE;
+		} else if (queue_cnt == 0)
+			iter->check_asfc = 0;
+
+		fpsgo_systrace_c_fstb(iter->pid,
+			(int)(iter->check_asfc), "check_asfc");
 	}
 
 	queue_fps = (long long)(iter->queue_time_end - i) * 1000000LL;
@@ -908,7 +901,6 @@ out:
 	return ret_fps;
 }
 
-
 static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 {
 	long long target_limit = 60;
@@ -925,6 +917,7 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		iter->new_info = 0;
 		target_limit = max_fps_limit;
 		iter->asfc_flag = 0;
+		iter->check_asfc = 0;
 		fpsgo_systrace_c_fstb(iter->pid, iter->asfc_flag, "asfc_flag");
 		second_chance_flag = 0;
 		fpsgo_systrace_c_fstb(iter->pid,
@@ -987,8 +980,10 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		} else
 			target_limit = iter->target_fps;
 
-		if (iter->asfc_flag == 1 && iter->queue_fps >= 36)
+		if (iter->asfc_flag == 1 &&
+			(iter->queue_fps >= 33 || iter->check_asfc))
 			iter->asfc_flag = 0;
+
 		/*stable state*/
 	} else {
 		second_chance_flag = 0;
