@@ -10,6 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
+static bool is_intra_domain(int prev, int target);
 static inline unsigned long task_util(struct task_struct *p);
 static int select_max_spare_capacity(struct task_struct *p, int target);
 static int __energy_diff(struct energy_env *eenv);
@@ -30,6 +32,17 @@ static int l_plus_cpu = -1;
 bool __weak sched_boost(void)
 {
 	return 0;
+}
+
+static bool is_intra_domain(int prev, int target)
+{
+#ifdef CONFIG_ARM64
+	return (cpu_topology[prev].cluster_id ==
+			cpu_topology[target].cluster_id);
+#else
+	return (cpu_topology[prev].socket_id ==
+			cpu_topology[target].socket_id);
+#endif
 }
 
 /* To find a CPU with max spare capacity in the same cluster with target */
