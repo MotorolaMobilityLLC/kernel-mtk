@@ -1070,6 +1070,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(ILI9881C_HDP_DSI_VDO_ILITEK_RT5081_EBBG)
 	&ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv_ebbg,
 #endif
+#if defined(HX8394F_HD720_DSI_VDO_TIANMA)
+	&hx8394f_hd720_dsi_vdo_tianma_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
