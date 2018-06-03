@@ -261,6 +261,7 @@ inline void aee_print_bt(struct pt_regs *regs)
 	cur_frame.pc = regs->reg_pc;
 	cur_frame.sp = regs->reg_sp;
 	aee_nested_printf("\n[<%p>] %pS\n", (void *)cur_frame.pc, (void *)cur_frame.pc);
+	aee_nested_printf("[<%p>] %pS\n", (void *)regs->reg_lr, (void *)regs->reg_lr);
 	for (i = 0; i < AEE_MAX_EXCP_FRAME; i++) {
 		fp = cur_frame.fp;
 		if ((fp < bottom) || (fp >= (high + THREAD_SIZE))) {
