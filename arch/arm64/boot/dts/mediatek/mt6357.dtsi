@@ -135,15 +135,15 @@ mt_pmic_regulator {
 		};
 		mt_pmic_vsram_others_ldo_reg: ldo_vsram_others {
 			regulator-name = "vsram_others";
-			regulator-min-microvolt = <500000>;
-			regulator-max-microvolt = <1293750>;
+			regulator-min-microvolt = <518750>;
+			regulator-max-microvolt = <1312500>;
 			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <110>;
 		};
 		mt_pmic_vsram_proc_ldo_reg: ldo_vsram_proc {
 			regulator-name = "vsram_proc";
-			regulator-min-microvolt = <500000>;
-			regulator-max-microvolt = <1293750>;
+			regulator-min-microvolt = <518750>;
+			regulator-max-microvolt = <1312500>;
 			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <110>;
 		};
