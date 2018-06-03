@@ -22,3 +22,4 @@ aee-$(CONFIG_MTK_AEE_FEATURE)	+= wdt-atf.o
 else
 aee-$(CONFIG_MTK_AEE_FEATURE)	+= wdt-handler.o
 endif
+KASAN_SANITIZE := n
