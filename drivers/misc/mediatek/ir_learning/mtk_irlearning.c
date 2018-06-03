@@ -37,8 +37,8 @@
 #include <linux/of_address.h>
 #endif
 
-#include <mt_spi.h>
-#include "mt_irlearning.h"
+#include <mtk_spi.h>
+#include "mtk_irlearning.h"
 
 static struct mt_irlearning mt_irlearning_dev;
 static struct mt_chip_conf irlearning_spi_conf;
