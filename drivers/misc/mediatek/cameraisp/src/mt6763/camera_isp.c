@@ -2826,11 +2826,11 @@ static MINT32 ISP_DumpDIPReg(void)
 	MUINT32 i, cmdqidx = 0;
 #ifdef AEE_DUMP_REDUCE_MEMORY
 	MUINT32 offset = 0;
-	long long OffsetAddr = 0;
+	uintptr_t OffsetAddr = 0;
 	MUINT32 ctrl_start;
 #else
 	MUINT32 offset = 0;
-	long long OffsetAddr = 0;
+	uintptr_t OffsetAddr = 0;
 	MUINT32 ctrl_start;
 #endif
 	/*  */
@@ -2902,44 +2902,44 @@ static MINT32 ISP_DumpDIPReg(void)
 			&& (g_pKWTpipeBuffer != NULL)) {
 			/* to get frame tdri baseaddress, otherwide  you possible get one of the tdr bade addr*/
 			offset = ((g_tdriaddr & (~(g_TpipeBaseAddrInfo.MemSizeDiff-1)))-g_TpipeBaseAddrInfo.MemPa);
-			OffsetAddr = ((long long)g_TpipeBaseAddrInfo.MemVa)+offset;
+			OffsetAddr = ((uintptr_t)g_TpipeBaseAddrInfo.MemVa)+offset;
 			if (copy_from_user(g_pKWTpipeBuffer, (void __user *)(OffsetAddr),
 				MAX_ISP_TILE_TDR_HEX_NO) != 0) {
-				LOG_ERR("cpy tpipe fail. tdriaddr:0x%x, MemVa:0x%llx,MemPa:0x%x, offset:0x%x\n",
-				g_tdriaddr, (long long)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa, offset);
+				LOG_ERR("cpy tpipe fail. tdriaddr:0x%x, MemVa:0x%lx,MemPa:0x%x, offset:0x%x\n",
+				g_tdriaddr, (uintptr_t)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa, offset);
 			}
 		}
-		LOG_INF("tdraddr:0x%x,MemVa:0x%llx,MemPa:0x%x,MemSizeDiff:0x%x,offset:0x%x,g_pKWTpipeBuffer:0x%pK\n",
-		g_tdriaddr, (long long)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa,
+		LOG_INF("tdraddr:0x%x,MemVa:0x%lx,MemPa:0x%x,MemSizeDiff:0x%x,offset:0x%x,g_pKWTpipeBuffer:0x%pK\n",
+		g_tdriaddr, (uintptr_t)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa,
 		g_TpipeBaseAddrInfo.MemSizeDiff, offset, g_pKWTpipeBuffer);
 		if ((g_CmdqBaseAddrInfo.MemPa != 0) && (g_CmdqBaseAddrInfo.MemVa != NULL)
 				&& (g_pKWCmdqBuffer != NULL) && (g_pKWVirISPBuffer != NULL)) {
 			offset = (g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
-			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+(g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
+			OffsetAddr = ((uintptr_t)g_CmdqBaseAddrInfo.MemVa)+(g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
 			if (copy_from_user(g_pKWCmdqBuffer, (void __user *)(OffsetAddr),
 				MAX_ISP_CMDQ_BUFFER_SIZE) != 0) {
-				LOG_ERR("cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, offset:0x%x\n",
-					g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa,
+				LOG_ERR("cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
+					g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 					g_CmdqBaseAddrInfo.MemPa, offset);
 			}
-			LOG_INF("cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, offset:0x%x\n",
-			cmdqidx, g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
+			LOG_INF("cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
+			cmdqidx, g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
 			offset = offset+g_CmdqBaseAddrInfo.MemSizeDiff;
-			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+offset;
+			OffsetAddr = ((uintptr_t)g_CmdqBaseAddrInfo.MemVa)+offset;
 			if (copy_from_user(g_pKWVirISPBuffer, (void __user *)(OffsetAddr),
 				ISP_DIP_REG_SIZE) != 0) {
-				LOG_ERR("cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x,offset:0x%x\n",
-				g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
+				LOG_ERR("cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,offset:0x%x\n",
+				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 				g_CmdqBaseAddrInfo.MemSizeDiff, offset);
 			}
-			LOG_INF("cmdqaddr:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x\n",
-			g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
+			LOG_INF("cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x\n",
+			g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 			g_CmdqBaseAddrInfo.MemSizeDiff);
 			LOG_INF("ofset:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
 			offset, g_pKWCmdqBuffer, g_pKWTpipeBuffer);
 		} else {
-			LOG_INF("cmdqadd:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
-			g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
+			LOG_INF("cmdqadd:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
+			g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 			g_CmdqBaseAddrInfo.MemSizeDiff, g_pKWCmdqBuffer, g_pKWTpipeBuffer);
 		}
 		g_bDumpPhyISPBuf = MTRUE;
@@ -2971,36 +2971,36 @@ static MINT32 ISP_DumpDIPReg(void)
 		if ((g_TpipeBaseAddrInfo.MemPa != 0) && (g_TpipeBaseAddrInfo.MemVa != NULL)) {
 			/* to get frame tdri baseaddress, otherwide  you possible get one of the tdr bade addr*/
 			offset = ((g_tdriaddr & (~(g_TpipeBaseAddrInfo.MemSizeDiff-1)))-g_TpipeBaseAddrInfo.MemPa);
-			OffsetAddr = ((long long)g_TpipeBaseAddrInfo.MemVa)+offset;
+			OffsetAddr = ((uintptr_t)g_TpipeBaseAddrInfo.MemVa)+offset;
 			if (copy_from_user(g_KWTpipeBuffer, (void __user *)(OffsetAddr),
 				MAX_ISP_TILE_TDR_HEX_NO) != 0) {
-				LOG_ERR("cpy tpipe fail.tdriaddr:0x%x,MVa:0x%llx,MPa:0x%x,ofset:0x%x\n",
-				g_tdriaddr, (long long)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa, offset);
+				LOG_ERR("cpy tpipe fail.tdriaddr:0x%x,MVa:0x%lx,MPa:0x%x,ofset:0x%x\n",
+				g_tdriaddr, (uintptr_t)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa, offset);
 			}
-			LOG_INF("tdriaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
-			g_tdriaddr, (long long)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa,
+			LOG_INF("tdriaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
+			g_tdriaddr, (uintptr_t)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa,
 			g_TpipeBaseAddrInfo.MemSizeDiff, offset);
 		}
 		if ((g_CmdqBaseAddrInfo.MemPa != 0) && (g_CmdqBaseAddrInfo.MemVa != NULL)) {
 			offset = (g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
-			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+(g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
+			OffsetAddr = ((uintptr_t)g_CmdqBaseAddrInfo.MemVa)+(g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
 			if (copy_from_user(g_KWCmdqBuffer, (void __user *)(OffsetAddr),
 				MAX_ISP_CMDQ_BUFFER_SIZE) != 0) {
-				LOG_ERR("cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, offset:0x%x\n",
-				g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
+				LOG_ERR("cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
+				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
 			}
-			LOG_INF("cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, offset:0x%x\n",
-			cmdqidx, g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
+			LOG_INF("cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
+			cmdqidx, g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
 			offset = offset+g_CmdqBaseAddrInfo.MemSizeDiff;
-			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+offset;
+			OffsetAddr = ((uintptr_t)g_CmdqBaseAddrInfo.MemVa)+offset;
 			if (copy_from_user(g_KWVirISPBuffer, (void __user *)(OffsetAddr),
 				ISP_DIP_REG_SIZE) != 0) {
-				LOG_ERR("cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x,ofset:0x%x\n",
-				g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
+				LOG_ERR("cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,ofset:0x%x\n",
+				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 				g_CmdqBaseAddrInfo.MemSizeDiff, offset);
 			}
-			LOG_INF("cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
-			g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
+			LOG_INF("cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
+			g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 			g_CmdqBaseAddrInfo.MemSizeDiff, offset);
 		}
 		g_bDumpPhyISPBuf = MTRUE;
@@ -3780,7 +3780,7 @@ static MINT32 isp_allocbuf(struct isp_imem_memory *pMemInfo)
 	}
 	pMemInfo->handle = (void *) handle;
 
-	pMemInfo->va = (uint64_t) ion_map_kernel(isp_p2_ion_client, handle);
+	pMemInfo->va = (uintptr_t) ion_map_kernel(isp_p2_ion_client, handle);
 	if (pMemInfo->va == 0) {
 		LOG_ERR("fail to map va of buffer!\n");
 		ret = -ENOMEM;
@@ -7324,15 +7324,15 @@ static MINT32 ISP_open(
 #endif
 
 	if (g_bIonBufferAllocated == MTRUE) {
-		g_pPhyISPBuffer = (unsigned int *)(g_isp_p2_imem_buf.va);
-		g_pTuningBuffer = (unsigned int *)(((uint64_t)g_pPhyISPBuffer) + ISP_DIP_REG_SIZE);
-		g_pTpipeBuffer = (unsigned int *)(((uint64_t)g_pTuningBuffer) + ISP_DIP_REG_SIZE);
-		g_pVirISPBuffer = (unsigned int *)(((uint64_t)g_pTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
-		g_pCmdqBuffer = (unsigned int *)(((uint64_t)g_pVirISPBuffer) + ISP_DIP_REG_SIZE);
+		g_pPhyISPBuffer = (unsigned int *)(uintptr_t)(g_isp_p2_imem_buf.va);
+		g_pTuningBuffer = (unsigned int *)(((uintptr_t)g_pPhyISPBuffer) + ISP_DIP_REG_SIZE);
+		g_pTpipeBuffer = (unsigned int *)(((uintptr_t)g_pTuningBuffer) + ISP_DIP_REG_SIZE);
+		g_pVirISPBuffer = (unsigned int *)(((uintptr_t)g_pTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
+		g_pCmdqBuffer = (unsigned int *)(((uintptr_t)g_pVirISPBuffer) + ISP_DIP_REG_SIZE);
 		/* Kernel Exception */
-		g_pKWTpipeBuffer = (unsigned int *)(((uint64_t)g_pCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
-		g_pKWCmdqBuffer = (unsigned int *)(((uint64_t)g_pKWTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
-		g_pKWVirISPBuffer = (unsigned int *)(((uint64_t)g_pKWCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
+		g_pKWTpipeBuffer = (unsigned int *)(((uintptr_t)g_pCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
+		g_pKWCmdqBuffer = (unsigned int *)(((uintptr_t)g_pKWTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
+		g_pKWVirISPBuffer = (unsigned int *)(((uintptr_t)g_pKWCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
 	} else {
 		/* Navtive Exception */
 		g_pPhyISPBuffer = NULL;
