@@ -75,7 +75,7 @@
 
 #define IDLE_GPT GPT4
 #define log2buf(p, s, fmt, args...) \
-	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
+	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
@@ -1763,6 +1763,7 @@ static ssize_t idle_state_read(struct file *filp,
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("********** idle state dump **********\n");
 
 	for (i = 0; i < nr_cpu_ids; i++) {
@@ -1870,6 +1871,7 @@ static ssize_t mcidle_state_read(struct file *filp, char __user *userbuf, size_t
 	int cpus, reason;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** deep idle state ************\n");
 	mt_idle_log("mcidle_time_criteria=%u\n", mcidle_time_criteria);
 
@@ -1947,6 +1949,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	int i, k, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** deep idle state ************\n");
 	mt_idle_log("dpidle_time_criteria=%u\n", dpidle_time_criteria);
 
@@ -2070,6 +2073,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** soidle3 state ************\n");
 	mt_idle_log("soidle3_time_criteria=%u\n", soidle3_time_criteria);
 
@@ -2195,6 +2199,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** soidle state ************\n");
 	mt_idle_log("soidle_time_criteria=%u\n", soidle_time_criteria);
 
@@ -2301,6 +2306,7 @@ static ssize_t mcsodi_state_read(struct file *filp, char __user *userbuf, size_t
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** mcsodi state ************\n");
 	mt_idle_log("mcsodi_time_criteria=%u\n", mcsodi_time_criteria);
 
@@ -2405,6 +2411,7 @@ static ssize_t slidle_state_read(struct file *filp, char __user *userbuf, size_t
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
 	mt_idle_log("*********** slow idle state ************\n");
 
 	for (i = 0; i < NR_REASONS; i++)
