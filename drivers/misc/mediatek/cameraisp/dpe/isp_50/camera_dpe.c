@@ -117,7 +117,7 @@ struct DPE_CLK_STRUCT dpe_clk;
 
 /* #define DPE_WAITIRQ_LOG  */
 #define DPE_USE_GCE
-#define DPE_DEBUG_USE
+/* #define DPE_DEBUG_USE */
 /* #define DPE_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[DPE]"
