@@ -561,12 +561,66 @@ static bool musb_hal_is_vbus_exist(void)
 
 }
 
+static int usb20_test_connect;
+static bool test_connected;
+static struct delayed_work usb20_test_connect_work;
+#define TEST_CONNECT_BASE_MS 3000
+#define TEST_CONNECT_BIAS_MS 5000
+static void do_usb20_test_connect_work(struct work_struct *work)
+{
+	static ktime_t ktime;
+	static unsigned long int ktime_us;
+	unsigned int delay_time_ms;
+
+	if (!usb20_test_connect) {
+		test_connected = false;
+		DBG(0, "%s, test done, trigger connect\n", __func__);
+		mt_usb_connect();
+		return;
+	}
+	mt_usb_connect();
+
+	ktime = ktime_get();
+	ktime_us = ktime_to_us(ktime);
+	delay_time_ms = TEST_CONNECT_BASE_MS + (ktime_us % TEST_CONNECT_BIAS_MS);
+	DBG(0, "%s, work after %d ms\n", __func__, delay_time_ms);
+	schedule_delayed_work(&usb20_test_connect_work, msecs_to_jiffies(delay_time_ms));
+
+	test_connected = !test_connected;
+}
+void mt_usb_connect_test(int start)
+{
+	static struct wake_lock device_test_wakelock;
+	static int wake_lock_inited;
+
+	if (!wake_lock_inited) {
+		DBG(0, "%s wake_lock_init\n", __func__);
+		wake_lock_init(&device_test_wakelock, WAKE_LOCK_SUSPEND, "device.test.lock");
+		wake_lock_inited = 1;
+	}
+
+	if (start) {
+		wake_lock(&device_test_wakelock);
+		usb20_test_connect = 1;
+		INIT_DELAYED_WORK(&usb20_test_connect_work, do_usb20_test_connect_work);
+		schedule_delayed_work(&usb20_test_connect_work, 0);
+	} else {
+		usb20_test_connect = 0;
+		wake_unlock(&device_test_wakelock);
+	}
+}
+
 DEFINE_MUTEX(cable_connected_lock);
 /* be aware this could not be used in non-sleep context */
 bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
+
+	if (usb20_test_connect) {
+		DBG(0, "%s, return test_connected<%d>\n", __func__, test_connected);
+		return test_connected;
+	}
 
 	mutex_lock(&cable_connected_lock);
 	/* FORCE USB ON case */
@@ -1621,4 +1675,42 @@ static void __exit usb20_exit(void)
 	platform_driver_unregister(&mt_usb_driver);
 	platform_driver_unregister(&mt_usb_dts_driver);
 }
-module_exit(usb20_exit)
+module_exit(usb20_exit);
+
+static int option;
+static int set_option(const char *val, const struct kernel_param *kp)
+{
+	int local_option;
+	int rv;
+
+	/* update module parameter */
+	rv = param_set_int(val, kp);
+	if (rv)
+		return rv;
+
+	/* update local_option */
+	rv = kstrtoint(val, 10, &local_option);
+	if (rv != 0)
+		return rv;
+
+	DBG(0, "option:%d, local_option:%d\n", option, local_option);
+
+	switch (local_option) {
+	case 0:
+		DBG(0, "case %d\n", local_option);
+		mt_usb_connect_test(1);
+		break;
+	case 1:
+		DBG(0, "case %d\n", local_option);
+		mt_usb_connect_test(0);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops option_param_ops = {
+	.set = set_option,
+	.get = param_get_int,
+};
+module_param_cb(option, &option_param_ops, &option, 0644);
