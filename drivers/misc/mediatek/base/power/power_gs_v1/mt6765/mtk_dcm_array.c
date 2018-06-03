@@ -52,7 +52,6 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x10232038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
 	0x1023203C, 0x80000000, 0x80000000,/* CLKAR */
 	0x10235008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
-	0x102380F0, 0x0000FFFF, 0x0000FFFF,/* GCE_CTL_INT0 */
 	0x11220000, 0x60000000, 0x60000000,/* AUDIO_TOP_CON0 */
 	0x11C50480, 0x00000007, 0x00000007,/* DCM_ON */
 	0x13FFE010, 0x80008000, 0x00000000,/* MFG_DCM_CON_0 */
@@ -69,7 +68,7 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle =
 		AP_DCM_Golden_Setting_tcl_gs_dpidle_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 135;
+unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 132;
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 /*      Address     Mask        Golden Setting Value */
@@ -106,7 +105,6 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x10232038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
 	0x1023203C, 0x80000000, 0x80000000,/* CLKAR */
 	0x10235008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
-	0x102380F0, 0x0000FFFF, 0x0000FFFF,/* GCE_CTL_INT0 */
 	0x11220000, 0x60000000, 0x60000000,/* AUDIO_TOP_CON0 */
 	0x11C50480, 0x00000007, 0x00000007,/* DCM_ON */
 	0x13FFE010, 0x80008000, 0x00000000,/* MFG_DCM_CON_0 */
@@ -125,7 +123,7 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_suspend =
 		AP_DCM_Golden_Setting_tcl_gs_suspend_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 141;
+unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 138;
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_data[] = {
 /*      Address     Mask        Golden Setting Value */
