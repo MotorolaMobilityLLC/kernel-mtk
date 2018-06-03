@@ -1,0 +1,7 @@
+config ANALOGIX_OHIO
+	tristate "Analogix Type-C interface support"
+	help
+		Analogix type-c interface is a  chip support USB PD protocol device.
+		ANX7625 is an ultra-low power 4K mobile HD transmitter designed
+		for portable devices. It converts MIPI/DPI to DisplayPort1.3 4K
+		including an intelligent crosspoint switch to support USB Type-C.

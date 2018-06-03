@@ -22,6 +22,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/staging/android \
              -I$(srctree)/drivers/misc/mediatek/dispsys/$(CONFIG_MTK_PLATFORM) \
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
              -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 
 
@@ -45,6 +46,10 @@ endif
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ANX7805")
 obj-y	+= ANX7805/
+endif
+
+ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ANX7625")
+obj-y	+= ANX7625/
 endif
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "MT8193")
