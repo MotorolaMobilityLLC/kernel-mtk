@@ -1161,6 +1161,21 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 		goto cmd_done;
 	}
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (card->ext_csd.cmdq_mode_en) {
+		mmc_wait_cmdq_empty(card->host);
+		mmc_claim_host(card->host);
+
+		err = mmc_blk_cmdq_switch(card, 0);
+		mmc_release_host(card->host);
+		if (err) {
+			pr_notice("FFU: %s: disable cmdq error %d\n",
+				mmc_hostname(card->host), err);
+			goto cmd_done;
+		}
+	}
+#endif
+
 	mmc_get_card(card);
 
 	for (i = 0; i < num_of_cmds && !ioc_err; i++)
@@ -1260,8 +1275,9 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 			return ret;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		/* enable cmdq at all partition */
-		if (!card->ext_csd.cmdq_mode_en) {
+		/* enable cmdq at boot1/boot2/user partition */
+		if ((!card->ext_csd.cmdq_mode_en)
+		 && (md->part_type <= 2)) {
 			mmc_claim_host(card->host);
 			mmc_blk_cmdq_switch(card, 1);
 			/* do not return error,
