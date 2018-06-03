@@ -156,15 +156,15 @@
 
 	static int isGPUDCBDETOverflow, is2LDCBDETOverflow;
 	static int isLDCBDETOverflow, isCCIDCBDETOverflow;
-	static unsigned int checkEfuse;
 	/* static unsigned int ateVer; */
 
-	/* Global variable for I DVFS use */
-	unsigned int infoIdvfs;
 	/* for setting pmic pwm mode and auto mode */
 	struct regulator *eem_regulator_proc1;
 	struct regulator *eem_regulator_proc2;
 	struct regulator *eem_regulator_gpu;
+	static unsigned int eem_vproc1_is_enabled_by_eem;
+	static unsigned int eem_vproc2_is_enabled_by_eem;
+	static unsigned int eem_vgpu_is_enabled_by_eem;
 	#if 0 /* no record table */
 	u32 *recordRef;
 	#endif
@@ -212,12 +212,16 @@
 	static struct hrtimer eem_log_timer;
 	#endif
 
+	/* Global variable for I DVFS use */
+	unsigned int infoIdvfs;
 #else /* if EEM_ENABLE_TINYSYS_SSPM */
 	/* #define EEM_LOG_TIMER*/
 	/* #define NR_FREQ 8 */ /* for sspm struct eem_det */
 	phys_addr_t eem_log_phy_addr, eem_log_virt_addr;
 	uint32_t eem_log_size;
 	static unsigned int eem_disable = 1;
+	/* static unsigned int checkEfuse; */
+	struct eem_log *eem_logs;
 
 #endif /* if EEM_ENABLE_TINYSYS_SSPM */
 
@@ -228,9 +232,9 @@
 static DEFINE_SPINLOCK(eem_spinlock);
 
 #if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !(EARLY_PORTING)
-	struct clk *clk_thermal;
-	struct clk *clk_mfg_main, *clk_mfg_async, *clk_mfg, *clk_mfg_core3, *clk_mfg_core2,
-				*clk_mfg_core1, *clk_mfg_core0;
+	/* struct clk *clk_thermal; */
+	/*struct clk *clk_mfg_main, *clk_mfg_async, *clk_mfg, *clk_mfg_core3; */
+	struct clk *clk_mfg_core2, *clk_mfg_core1, *clk_mfg_core0;
 #endif
 
 #if 1
@@ -290,15 +294,192 @@ static void mt_eem_enable_big_cluster(unsigned int enable)
 }
 
 /* enable mtcmos for GPU ptp detector */
+#if 0
 static void mt_eem_enable_mtcmos(int enable)
 {
+#if 1
 
+	eem_error("eem_enable_mtcmos_mfg 1%d\n", enable);
 	if ((enable == 1) || (enable == 0)) {
 		spm_mtcmos_ctrl_mfg1(enable);
 		spm_mtcmos_ctrl_mfg2(enable);
 		eem_error("eem_enable_mtcmos_mfg %d\n", enable);
 	}
+#endif
+}
+#endif
 
+static void mt_eem_get_clk(struct platform_device *pdev)
+{
+	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
+	clk_mfg_core2 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core2");
+	if (IS_ERR(clk_mfg_core2))
+		eem_error("cannot get mtcmos-mfg-core2\n");
+
+	clk_mfg_core1 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core1");
+	if (IS_ERR(clk_mfg_core1))
+		eem_error("cannot get mtcmos-mfg-core1\n");
+
+	clk_mfg_core0 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core0");
+	if (IS_ERR(clk_mfg_core0))
+		eem_error("cannot get mtcmos-mfg-core0\n");
+
+	eem_debug("clk_mfg_core2=%p, clk_mfg_core1=%p, clk_mfg_core0=%p",
+		clk_mfg_core2, clk_mfg_core1, clk_mfg_core0);
+	#endif
+}
+static void mt_eem_enable_mtcmos(void)
+{
+	int ret;
+
+	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
+	ret = clk_prepare_enable(clk_mfg_core0); /* gpu mtcmos enable*/
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling clk_mfg_core0\n");
+
+	ret = clk_prepare_enable(clk_mfg_core1); /* gpu mtcmos enable*/
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling clk_mfg_core1\n");
+
+	ret = clk_prepare_enable(clk_mfg_core2); /* gpu mtcmos enable*/
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling clk_mfg_core2\n");
+	#endif /* if !defined CONFIG_MTK_CLKMGR */
+}
+
+static void mt_eem_disable_mtcmos(void)
+{
+	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
+	clk_disable_unprepare(clk_mfg_core2);
+	clk_disable_unprepare(clk_mfg_core1);
+	clk_disable_unprepare(clk_mfg_core0);
+	#endif /* EARLY_PORTING */
+}
+
+/* ret 1: efuse fail, so disable eem
+ * ret 0: efuse ready, so enable eem
+ */
+static int get_devinfo(void)
+{
+	int ret = 0;
+	int *val;
+
+	#if !(EEM_ENABLE_TINYSYS_SSPM)
+	val = (int *)&eem_devinfo;
+	#else
+	val = (int *)eem_logs->hw_res;
+	#endif
+
+	#if !DVT
+		#if defined(__KERNEL__)
+		/* big */
+		val[0] = get_devinfo_with_index(50);
+		val[1] = get_devinfo_with_index(51);
+		/* cci */
+		val[2] = get_devinfo_with_index(52);
+		val[3] = get_devinfo_with_index(53);
+		/* gpu */
+		val[4] = get_devinfo_with_index(54);
+		val[5] = get_devinfo_with_index(55);
+		/* ll */
+		val[6] = get_devinfo_with_index(56);
+		val[7] = get_devinfo_with_index(57);
+		/* l */
+		val[8] = get_devinfo_with_index(58);
+		val[9] = get_devinfo_with_index(59);
+		/* soc */
+		val[10] = get_devinfo_with_index(62);
+		val[11] = get_devinfo_with_index(63);
+
+		/* for verification */
+		val[0] = DEVINFO_0;
+		val[1] = DEVINFO_1;
+		val[2] = DEVINFO_2;
+		val[3] = DEVINFO_3;
+		val[4] = DEVINFO_4;
+		val[5] = DEVINFO_5;
+		val[6] = DEVINFO_6;
+		val[7] = DEVINFO_7;
+		val[8] = DEVINFO_8;
+		val[9] = DEVINFO_9;
+		val[10] = DEVINFO_10;
+		val[11] = DEVINFO_11;
+
+		#if (EEM_ENABLE_TINYSYS_SSPM)
+			val[12] = 0;
+		#endif
+
+		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING) /* irene */
+			aee_rr_rec_ptp_e0((unsigned int)val[0]);
+			aee_rr_rec_ptp_e1((unsigned int)val[1]);
+			aee_rr_rec_ptp_e2((unsigned int)val[2]);
+			aee_rr_rec_ptp_e3((unsigned int)val[3]);
+			aee_rr_rec_ptp_e4((unsigned int)val[4]);
+			aee_rr_rec_ptp_e5((unsigned int)val[5]);
+			aee_rr_rec_ptp_e6((unsigned int)val[6]);
+			aee_rr_rec_ptp_e7((unsigned int)val[7]);
+			aee_rr_rec_ptp_e8((unsigned int)val[8]);
+			aee_rr_rec_ptp_e9((unsigned int)val[9]);
+			aee_rr_rec_ptp_e10((unsigned int)val[10]);
+			aee_rr_rec_ptp_e11((unsigned int)val[11]);
+		#endif
+		#else
+		val[0] = eem_read(0x102A0580); /* M_HW_RES0 */
+		val[1] = eem_read(0x102A0584); /* M_HW_RES1 */
+		val[2] = eem_read(0x102A0588); /* M_HW_RES2 */
+		val[3] = eem_read(0x102A058C); /* M_HW_RES3 */
+		val[4] = eem_read(0x102A0590); /* M_HW_RES4 */
+		val[5] = eem_read(0x102A0594); /* M_HW_RES5 */
+		val[6] = eem_read(0x102A0598); /* M_HW_RES6 */
+		val[7] = eem_read(0x102A059C); /* M_HW_RES7 */
+		val[8] = eem_read(0x102A05A0); /* M_HW_RES8 */
+		val[9] = eem_read(0x102A05A4); /* M_HW_RES9 */
+		val[10] = eem_read(0x102A05B0); /* M_HW_RES10 */
+		val[11] = eem_read(0x102A05B4); /* M_HW_RES11 */
+		#endif
+	#else
+	/* for DVT */
+	val[0] = 0x10BD3C1B;
+	val[1] = 0x005500C0;
+	val[2] = 0x10BD3C1B;
+	val[3] = 0x005500C0;
+	val[4] = 0x10BD3C1B;
+	val[5] = 0x005500C0;
+	val[6] = 0x10BD3C1B;
+	val[7] = 0x005500C0;
+	val[8] = 0x10BD3C1B;
+	val[9] = 0x005500C0;
+	val[10] = 0x10BD3C1B;
+	val[11] = 0x005500C0;
+	#endif
+	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
+	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
+	eem_debug("M_HW_RES2 = 0x%08X\n", val[2]);
+	eem_debug("M_HW_RES3 = 0x%08X\n", val[3]);
+	eem_debug("M_HW_RES4 = 0x%08X\n", val[4]);
+	eem_debug("M_HW_RES5 = 0x%08X\n", val[5]);
+	eem_debug("M_HW_RES6 = 0x%08X\n", val[6]);
+	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
+	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
+	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
+	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
+	eem_debug("M_HW_RES11 = 0x%08X\n", val[11]);
+	FUNC_ENTER(FUNC_LV_HELP);
+#if 0
+	/* NR_HW_RES_FOR_BANK =  12 for 6 banks efuse */
+	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
+		if (val[i] == 0) {
+			ret = 1;
+			infoIdvfs = 0x55;
+			checkEfuse = 0;
+			eem_error("No EEM EFUSE available, will turn off EEM (val[%d] !!\n", i);
+			break;
+		}
+	}
+#endif
+
+	FUNC_EXIT(FUNC_LV_HELP);
+	return ret;
 }
 /*============================================================
  * function declarations of EEM detectors
@@ -798,7 +979,8 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEMINTEN, 0x00005f01);
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) |
-			  (det->DCVOFFSETIN & 0xffff));
+			  ((((eem_read(EEM_BASEADDR+0x5E0)>>20) & 0xF) == 0) ?
+						0 : det->DCVOFFSETIN & 0xffff));
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000005);
 		break;
@@ -1313,6 +1495,9 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		eem_debug("[%s]: Unknown det_id %d\n", __func__, det_id);
 		break;
 	}
+
+	if ((det->EEMINITEN == 0) && (det->EEMMONEN == 0))
+		det->features	= 0;
 
 	memset(det->volt_tbl, 0, sizeof(det->volt_tbl));
 	memset(det->volt_tbl_pmic, 0, sizeof(det->volt_tbl_pmic));
@@ -2580,12 +2765,142 @@ void eem_init02(void)
 	FUNC_EXIT(FUNC_LV_LOCAL);
 }
 
+/* get regulator reference */
+static int eem_buck_get(struct platform_device *pdev)
+{
+	int ret = 0;
+	/* proc1: big, cci, ll */
+	eem_regulator_proc1 = regulator_get(&pdev->dev, "ext_buck_proc1");
+	if (eem_regulator_proc1 == NULL) {
+		eem_error("regulotor_proc1 error\n");
+		return -EINVAL;
+	}
+	/* proc2: l */
+	eem_regulator_proc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
+	if (eem_regulator_proc2 == NULL) {
+		eem_error("regulotor_proc2 error\n");
+		return -EINVAL;
+	}
+	eem_regulator_gpu = regulator_get(&pdev->dev, "ext_buck_gpu");
+	if (eem_regulator_gpu == NULL) {
+		eem_error("regulotor_gpu error\n");
+		return -EINVAL;
+	}
+
+	return ret;
+}
+/* Enable regulator if each regulator was disabled
+ * if enable regulator by eem, disable regulator will
+ * be needed at eem_init01,
+ * and we use eem_v**_is_enabled_by_eem to detect this
+ * behavior
+ * (driver will only enable vgpu now)
+ */
+static void eem_buck_enable(void)
+{
+	int ret = 0;
+
+	ret = regulator_is_enabled(eem_regulator_proc1);
+	if (ret == 0) {
+		ret = regulator_enable(eem_regulator_proc1);
+		if (ret != 0)
+			eem_error("enable vproc1 failed\n");
+		else {
+			eem_vproc1_is_enabled_by_eem = 1;
+			eem_debug("eem vproc1 enable success\n");
+		}
+	}
+	ret = regulator_is_enabled(eem_regulator_proc2);
+	if (ret == 0) {
+		ret = regulator_enable(eem_regulator_proc2);
+		if (ret != 0)
+			eem_error("enable vproc2 failed\n");
+		else {
+			eem_vproc2_is_enabled_by_eem = 1;
+			eem_debug("eem vproc2 enable success\n");
+		}
+	}
+	ret = regulator_is_enabled(eem_regulator_gpu);
+	if (ret == 0) {
+		ret = regulator_enable(eem_regulator_gpu);
+		if (ret != 0)
+			eem_error("enable vgpu failed\n");
+		else {
+			eem_vgpu_is_enabled_by_eem = 1;
+			eem_debug("eem vgpu enable success\n");
+		}
+	}
+	#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
+		ret = buck_enable(VCORE, 1);
+		if (ret != 1)
+			eem_error("enable vcore failed\n");
+		#endif
+	#endif /* if EEM_BANK_SOC */
+}
+
+static void eem_buck_disable(void)
+{
+	int ret = 0;
+
+	if (eem_vproc1_is_enabled_by_eem) {
+		ret = regulator_disable(eem_regulator_proc1);
+		if (ret != 0)
+			eem_error("vproc1 disable failed\n");
+		else
+			eem_debug("eem vproc1 disabled success\n");
+	}
+	if (eem_vproc2_is_enabled_by_eem) {
+		ret = regulator_disable(eem_regulator_proc2);
+		if (ret != 0)
+			eem_error("vproc2 disable failed\n");
+		else
+			eem_debug("eem vproc2 disabled success\n");
+	}
+	if (eem_vgpu_is_enabled_by_eem) {
+		ret = regulator_disable(eem_regulator_gpu);
+		if (ret != 0)
+			eem_error("vgpu disable failed\n");
+		else
+			eem_debug("eem vgpu disabled success\n");
+	}
+
+	#if EEM_BANK_SOC /* if DVT, set non pwm mode for soc*/
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
+		/* ret = buck_enable(VCORE, 0); */
+		/* eem_error("vcore buck disable ret=%d\n", ret); */
+		#endif
+	#endif /* if EEM_BANK_SOC */
+	eem_debug("eem buck disabled success\n");
+}
+
+static void eem_buck_set_mode(unsigned int mode)
+{
+	unsigned int final_mode;
+	int ret = 0;
+
+	final_mode = (mode == 1) ? REGULATOR_MODE_FAST : REGULATOR_MODE_NORMAL;
+	/* set pwm mode for each buck */
+	eem_debug("pmic set mode (%d)\n", mode);
+	regulator_set_mode(eem_regulator_proc1, final_mode);
+	regulator_set_mode(eem_regulator_proc2, final_mode);
+	regulator_set_mode(eem_regulator_gpu, final_mode);
+	#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
+		ret = buck_set_mode(VCORE, mode); /* 1: Force PWM mdoe */
+		if (mode == 1 && ret != 1)
+			eem_error("vcore buck set pwm mode failed\n");
+		if (mode == 0 && ret != 0)
+			eem_error("vcore buck set normal mode failed\n");
+		#endif
+	#endif /* if EEM_BANK_SOC */
+}
+
 void eem_init01(void)
 {
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
 	unsigned int out = 0, timeout = 0;
-	int ret;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
@@ -2646,60 +2961,28 @@ void eem_init01(void)
 		}
 	}
 
-	#if 0
-	#ifndef CONFIG_BIG_OFF
-		if (cpu_online(8))
-			cpu_down(8);
-	#endif
-	#endif
 	mt_eem_enable_big_cluster(0);
 
 	/* set non PWM mode*/
 	#if !EARLY_PORTING
-		regulator_set_mode(eem_regulator_proc1, REGULATOR_MODE_NORMAL);
-		regulator_set_mode(eem_regulator_proc2, REGULATOR_MODE_NORMAL);
-		regulator_set_mode(eem_regulator_gpu, REGULATOR_MODE_NORMAL);
-		eem_debug("pmic set non pwm mode\n");
-
-		#if EEM_BANK_SOC /* if DVT, set non pwm mode for soc*/
-			#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
-			ret = buck_set_mode(VCORE, 0);
-			if (ret != 0)
-				eem_error("set auto mode failed\n");
-			#endif
-		#endif /* if EEM_BANK_SOC */
+		eem_buck_set_mode(0);
+		eem_buck_disable();
 	#endif /* ifndef EARLY_PORTING */
 
 	#ifdef __KERNEL__
-		#if !EARLY_PORTING
-			#if 0
-			#if !defined(CONFIG_MTK_CLKMGR)
-				clk_disable_unprepare(clk_mfg_main); /* Disable MFGCFG_BG3D */
-				clk_disable_unprepare(clk_mfg_core0); /* Disable MFG_CORE0 */
-				clk_disable_unprepare(clk_mfg_core1); /* Disable MFG_CORE1 */
-				clk_disable_unprepare(clk_mfg_core2); /* Disable MFG_CORE2 */
-				clk_disable_unprepare(clk_mfg_core3); /* Disable MFG_CORE3 */
-				clk_disable_unprepare(clk_mfg); /* Disable MFG */
-				clk_disable_unprepare(clk_mfg_async); /* Disable MFG_ASYNC */
-				/*clk_disable_unprepare(clk_thermal);*/  /* bypass this due to crash*/
-				eem_debug("gpu clock disable success(thermal clock non disable)\n");
-			#endif
-			#endif
-			mt_eem_enable_mtcmos(0);
-
-			#ifndef EARLY_PORTING_GPU
-			mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
-			#endif
-
-			#ifndef EARLY_PORTING_PPM
-			mt_ppm_ptpod_policy_deactivate();
-			#endif
-
-			/* call hotplug api to disable L bulk */
-
-			/* enable frequency hopping (main PLL) */
-			/* mt_fh_popod_restore(); */
+	mt_eem_disable_mtcmos();
+		#ifndef EARLY_PORTING_GPU
+		mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
 		#endif
+
+		#ifndef EARLY_PORTING_PPM
+		mt_ppm_ptpod_policy_deactivate();
+		#endif
+
+	/* call hotplug api to disable L bulk */
+
+	/* enable frequency hopping (main PLL) */
+	/* mt_fh_popod_restore(); */
 	#endif
 
 	/* informGpuEEMisReady = 1;*/
@@ -2790,119 +3073,6 @@ unsigned int leakage_gpu;
 unsigned int leakage_sram2;
 unsigned int leakage_sram1;
 
-/* get efuse content for bit, cci, gpu , ll, l and fill in eem_devinfo*/
-void get_devinfo(struct eem_devinfo *p)
-{
-	int *val = (int *)p;
-	int i;
-
-	FUNC_ENTER(FUNC_LV_HELP);
-	checkEfuse = 1;
-
-/* if not for DVT & has efuse content, use get_devinfo_with_index get efuse content*/
-/* else use fake efuse */
-#if !DVT
-	#if defined(__KERNEL__)
-		/* big */
-		val[0] = get_devinfo_with_index(50);
-		val[1] = get_devinfo_with_index(51);
-		/* cci */
-		val[2] = get_devinfo_with_index(52);
-		val[3] = get_devinfo_with_index(53);
-		/* gpu */
-		val[4] = get_devinfo_with_index(54);
-		val[5] = get_devinfo_with_index(55);
-		/* ll */
-		val[6] = get_devinfo_with_index(56);
-		val[7] = get_devinfo_with_index(57);
-		/* l */
-		val[8] = get_devinfo_with_index(58);
-		val[9] = get_devinfo_with_index(59);
-		/* soc */
-		val[10] = get_devinfo_with_index(62);
-		val[11] = get_devinfo_with_index(63);
-		/* test pattern */
-		val[0] = 0x10BD3C1B;
-		val[1] = 0x005500C0;
-		val[2] = 0x10BD3C1B;
-		val[3] = 0x005500C0;
-		val[4] = 0x10BD3C1B;
-		val[5] = 0x005500C0;
-		val[6] = 0x10BD3C1B;
-		val[7] = 0x005500C0;
-		val[8] = 0x10BD3C1B;
-		val[9] = 0x005500C0;
-		val[10] = 0x10BD3C1B;
-		val[11] = 0x005500C0;
-		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING) /* irene */
-			aee_rr_rec_ptp_e0((unsigned int)val[0]);
-			aee_rr_rec_ptp_e1((unsigned int)val[1]);
-			aee_rr_rec_ptp_e2((unsigned int)val[2]);
-			aee_rr_rec_ptp_e3((unsigned int)val[3]);
-			aee_rr_rec_ptp_e4((unsigned int)val[4]);
-			aee_rr_rec_ptp_e5((unsigned int)val[5]);
-			aee_rr_rec_ptp_e6((unsigned int)val[6]);
-			aee_rr_rec_ptp_e7((unsigned int)val[7]);
-			aee_rr_rec_ptp_e8((unsigned int)val[8]);
-			aee_rr_rec_ptp_e9((unsigned int)val[9]);
-			aee_rr_rec_ptp_e10((unsigned int)val[10]);
-			aee_rr_rec_ptp_e11((unsigned int)val[11]);
-		#endif
-	#else
-		val[0] = eem_read(0x102A0580); /* M_HW_RES0 */
-		val[1] = eem_read(0x102A0584); /* M_HW_RES1 */
-		val[2] = eem_read(0x102A0588); /* M_HW_RES2 */
-		val[3] = eem_read(0x102A058C); /* M_HW_RES3 */
-		val[4] = eem_read(0x102A0590); /* M_HW_RES4 */
-		val[5] = eem_read(0x102A0594); /* M_HW_RES5 */
-		val[6] = eem_read(0x102A0598); /* M_HW_RES6 */
-		val[7] = eem_read(0x102A059C); /* M_HW_RES7 */
-		val[8] = eem_read(0x102A05A0); /* M_HW_RES8 */
-		val[9] = eem_read(0x102A05A4); /* M_HW_RES9 */
-		val[10] = eem_read(0x102A05B0); /* M_HW_RES10 */
-		val[11] = eem_read(0x102A05B4); /* M_HW_RES11 */
-	#endif
-#else
-	/* test pattern */
-	val[0] = 0x10BD3C1B;
-	val[1] = 0x005500C0;
-	val[2] = 0x10BD3C1B;
-	val[3] = 0x005500C0;
-	val[4] = 0x10BD3C1B;
-	val[5] = 0x005500C0;
-	val[6] = 0x10BD3C1B;
-	val[7] = 0x005500C0;
-	val[8] = 0x10BD3C1B;
-	val[9] = 0x005500C0;
-	val[10] = 0x10BD3C1B;
-	val[11] = 0x005500C0;
-#endif
-	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
-	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
-	eem_debug("M_HW_RES2 = 0x%08X\n", val[2]);
-	eem_debug("M_HW_RES3 = 0x%08X\n", val[3]);
-	eem_debug("M_HW_RES4 = 0x%08X\n", val[4]);
-	eem_debug("M_HW_RES5 = 0x%08X\n", val[5]);
-	eem_debug("M_HW_RES6 = 0x%08X\n", val[6]);
-	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
-	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
-	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
-	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
-	eem_debug("M_HW_RES11 = 0x%08X\n", val[11]);
-
-	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
-		if (val[i] == 0) {
-			ctrl_EEM_Enable = 0;
-			infoIdvfs = 0x55;
-			checkEfuse = 0;
-			eem_error("No EEM EFUSE available, will turn off EEM (val[%d] !!\n", i);
-			break;
-		}
-	}
-
-	FUNC_EXIT(FUNC_LV_HELP);
-}
-
 static int eem_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -2932,28 +3102,21 @@ static int eem_probe(struct platform_device *pdev)
 
 	eem_debug("eem init ctrl.\n");
 	#ifdef __KERNEL__
-		#if !EARLY_PORTING
-			/* disable frequency hopping (main PLL) */
-			/* mt_fh_popod_save(); */
+		/* disable frequency hopping (main PLL) */
+		/* mt_fh_popod_save(); */
 
-			/* call hotplug api to enable B cluster, no need CONFIG_BIG_OFF */
-			#if 0
-			set_cpu_present(8, true);
-			if (!cpu_online(8))
-				cpu_up(8);
+		/* call hotplug api to enable B cluster, no need CONFIG_BIG_OFF */
+		mt_eem_enable_big_cluster(1);
+		mt_eem_get_clk(pdev);
+		mt_eem_enable_mtcmos();
+		/* disable DVFS and set vproc = 1v */
+		#ifndef EARLY_PORTING_PPM
+		mt_ppm_ptpod_policy_activate();
+		#endif
 
-			eem_debug("cpu up 8\n");
-			#endif
-			mt_eem_enable_big_cluster(1);
-			/* disable DVFS and set vproc = 1v */
-			#ifndef EARLY_PORTING_PPM
-			mt_ppm_ptpod_policy_activate();
-			#endif
-
-			#ifndef EARLY_PORTING_GPU
-			mt_gpufreq_disable_by_ptpod();
-			#endif
-		#endif/* ifndef early porting*/
+		#ifndef EARLY_PORTING_GPU
+		mt_gpufreq_disable_by_ptpod();
+		#endif
 	#endif/*ifdef __KERNEL__*/
 
 	#if (defined(__KERNEL__) && !(EARLY_PORTING))
@@ -2964,49 +3127,15 @@ static int eem_probe(struct platform_device *pdev)
 		*/
 	#endif
 
-	mt_eem_enable_mtcmos(1);
-
 	/* set PWM mode*/
 	#if !EARLY_PORTING
 		/* get regulator reference */
-		/* proc1: big, cci, ll */
-		eem_regulator_proc1 = regulator_get(&pdev->dev, "ext_buck_proc1");
-		if (eem_regulator_proc1 == NULL) {
-			eem_error("regulotor_proc1 error\n");
-			return -EINVAL;
-		}
-		/* proc2: l */
-		eem_regulator_proc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
-		if (eem_regulator_proc2 == NULL) {
-			eem_error("regulotor_proc2 error\n");
-			return -EINVAL;
-		}
-		eem_regulator_gpu = regulator_get(&pdev->dev, "ext_buck_gpu");
-		if (eem_regulator_gpu == NULL) {
-			eem_error("regulotor_gpu error\n");
-			return -EINVAL;
-		}
+		ret = eem_buck_get(pdev);
+		if (ret != 0)
+			eem_error("eem_buck_get failed\n");
 
-		/* enable regulator */
-		ret = regulator_enable(eem_regulator_proc1);
-		ret = regulator_enable(eem_regulator_proc2);
-		ret = regulator_enable(eem_regulator_gpu);
-		/* set pwm mode for each buck */
-		eem_debug("pmic set pwm mode\n");
-		regulator_set_mode(eem_regulator_proc1, REGULATOR_MODE_FAST);
-		regulator_set_mode(eem_regulator_proc2, REGULATOR_MODE_FAST);
-		regulator_set_mode(eem_regulator_gpu, REGULATOR_MODE_FAST);
-
-		#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
-			#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
-			ret = buck_enable(VCORE, 1);
-			if (ret != 1)
-				eem_error("vcore buck disable\n");
-			ret = buck_set_mode(VCORE, 1); /* 1: Force PWM mdoe */
-			if (ret != 1)
-				eem_error("vcore buck set pwm mode failed\n");
-			#endif
-		#endif /* if EEM_BANK_SOC */
+		eem_buck_enable();
+		eem_buck_set_mode(1);
 	#endif /* ifndef EARLY_PORTING */
 
 	/* for slow idle */
@@ -4255,10 +4384,12 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 }
 #endif
 
+/*
 unsigned int get_efuse_status(void)
 {
 	return checkEfuse;
 }
+*/
 
 #if 0 /* gpu dvfs no need this anymore */
 unsigned int get_eem_status_for_gpu(void)
@@ -4448,7 +4579,7 @@ int __init eem_init(void)
 	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
 	#endif
 
-	get_devinfo(&eem_devinfo);
+	get_devinfo();
 
 	#if 0
 	#ifdef __KERNEL__
@@ -4520,7 +4651,7 @@ module_init(eem_init); /* late_initcall */
 #endif /* EN_EEM */
 
 #else /*if EEM_ENABLE_TINYSYS_SSPM */
-struct eem_log *eem_logs;
+
 #define EEM_IPI_SEND_DATA_LEN 4 /* size of cmd and args = 4 slot */
 /* ipi_send() return code
  * IPI_DONE 0
@@ -4729,7 +4860,7 @@ static int eem_debug_proc_show(struct seq_file *m, void *v)
 /*
  * set EEM status by procfs interface
  * 0 : enable det
- * 1 : disabled eem
+ * 1 : disabled det
  * 2 : disabled mon mode, restore to init2 volt
  */
 static ssize_t eem_debug_proc_write(struct file *file,
@@ -4785,6 +4916,7 @@ out:
  * show current voltage
  */
 #define PMIC_TO_VOLT(val) ((val * 625) + 45000)
+#ifdef EEM_CUR_VOLT_PROC_SHOW
 static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det = (struct eem_det *)m->private;
@@ -4818,12 +4950,12 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 
 		num_freq_tbl = eem_logs->det_log[det->ctrl_id].num_freq_tbl;
 		volt_tbl = kmalloc((sizeof(unsigned char) * num_freq_tbl), GFP_KERNEL);
-		volt_tbl_pmic = kmalloc((sizeof(unsigned char) * num_freq_tbl), GFP_KERNEL);
+		volt_tbl_pmic = kmalloc((sizeof(unsigned short) * num_freq_tbl), GFP_KERNEL);
 
 		if (det->ctrl_id != EEM_CTRL_SOC) {
 			for (i = 0; i < num_freq_tbl; i++) {
-				volt_tbl[i] = eem_logs->det_log[det->ctrl_id].volt_tbl[i];
-				volt_tbl_pmic[i] = eem_logs->det_log[det->ctrl_id].volt_tbl_pmic[i];
+				det->volt_tbl[i] = eem_logs->det_log[det->ctrl_id].volt_tbl[i];
+				det->volt_tbl_pmic[i] = eem_logs->det_log[det->ctrl_id].volt_tbl_pmic[i];
 			}
 		}
 
@@ -4843,8 +4975,8 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 	if (det->ctrl_id != EEM_CTRL_SOC) {
 		for (i = 0; i < num_freq_tbl; i++)
 			seq_printf(m, "det->volt_tbl[%d] =0x%X, det->volt_tbl_pmic[%d]=0x%X(%d)\n",
-			i, volt_tbl[i],
-			i, volt_tbl_pmic[i], PMIC_TO_VOLT(volt_tbl_pmic[i]));
+			i, det->volt_tbl[i],
+			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
 	}
 
 	kfree(volt_tbl);
@@ -4854,7 +4986,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 
 	return 0;
 }
-
+#endif
 /*
  * show current EEM data
  */
@@ -4888,23 +5020,15 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	*/
 
 	for (i = 0; i < NR_HW_RES_FOR_BANK; i++) {
-		if (eem_logs->hw_res[i]) {
 			seq_printf(m, "M_HW_RES%d\t=0x%08X\n", i, eem_logs->hw_res[i]);
 			eem_debug("M_HW_RES%d\t=0x%08X\n", i, eem_logs->hw_res[i]);
-		} else {
-			eem_debug("M_HW_RES error\n");
-		}
 	}
 
 	for_each_det(det) {
-		/* while (1) {*/
 		lock = eem_logs->det_log[det->ctrl_id].lock;
 		locklimit++;
 		eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);
 
-		/* if lock, go to while loop, read the lock again until unlock */
-		if (lock && (locklimit < 5))
-			continue;
 		det->num_freq_tbl = eem_logs->det_log[det->ctrl_id].num_freq_tbl;
 		#if !EEM_BANK_SOC
 		if (det->ctrl_id == EEM_CTRL_SOC)
@@ -4946,15 +5070,23 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 						seq_printf(m, "%d, ", /* %d */
 						/* det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k])); */
 						eem_logs->det_log[det->ctrl_id].volt_tbl_init2[k]);
+						eem_debug("[%d]%d, ", /* %d */
+						/* det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k])); */
+						k, eem_logs->det_log[det->ctrl_id].volt_tbl_init2[k]);
 					}
 					seq_printf(m, "%d) - (",
 						eem_logs->det_log[det->ctrl_id].volt_tbl_init2[k]);
+					eem_debug("[%d] %d) - (",
+						k, eem_logs->det_log[det->ctrl_id].volt_tbl_init2[k]);
 
 					for (k = 0; k < det->num_freq_tbl - 1; k++) {
 						seq_printf(m, "%d, ",
 							eem_logs->det_log[det->ctrl_id].freq_tbl[k]);
+						eem_debug("[%d]%d, ",
+							k, eem_logs->det_log[det->ctrl_id].freq_tbl[k]);
 					}
 					seq_printf(m, "%d)\n", eem_logs->det_log[det->ctrl_id].freq_tbl[k]);
+					eem_debug("[%d]%d)\n", k, eem_logs->det_log[det->ctrl_id].freq_tbl[k]);
 				}
 				#if 0
 				if (eem_logs->det_log[det->ctrl_id].eem_eemEn[i] == 0x2) {
@@ -4989,11 +5121,6 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 		} /* for init1 to mon*/
 		lock = eem_logs->det_log[det->ctrl_id].lock;
 		eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);
-		if (lock && (locklimit < 5))
-			continue; /* if lock, read dram again */
-		else
-			break; /* if unlock, break out while loop, read next det*/
-	/*};*/
 	} /* for_each_det */
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -5395,7 +5522,9 @@ out:
 PROC_FOPS_RW(eem_debug);
 PROC_FOPS_RW(eem_vcore_volt);
 /* PROC_FOPS_RO(eem_status); */
+#ifdef EEM_CUR_VOLT_PROC_SHOW
 PROC_FOPS_RO(eem_cur_volt);
+#endif
 /* PROC_FOPS_RW(eem_offset); */
 PROC_FOPS_RO(eem_dump);
 /* PROC_FOPS_RW(eem_log_en);*/
@@ -5420,7 +5549,9 @@ static int create_procfs(void)
 	struct pentry det_entries[] = {
 		PROC_ENTRY(eem_debug),
 		/* PROC_ENTRY(eem_status),*/
+		#ifdef EEM_CUR_VOLT_PROC_SHOW
 		PROC_ENTRY(eem_cur_volt),
+		#endif
 		/* PROC_ENTRY(eem_offset),*/
 	};
 
@@ -5668,119 +5799,18 @@ unsigned int get_eem_status_for_gpu(void)
 static void eem_init_postprocess(void)
 {
 	FUNC_ENTER(FUNC_LV_MODULE);
-
-#ifdef __KERNEL__
-	#if !EARLY_PORTING
-		#if 0
-		#if !defined(CONFIG_MTK_CLKMGR)
-			clk_disable_unprepare(clk_mfg_main); /* Disable GPU MTCMOSE */
-			clk_disable_unprepare(clk_mfg_core0); /* Disable GPU clock */
-			clk_disable_unprepare(clk_mfg_core1); /* Disable GPU clock */
-			clk_disable_unprepare(clk_mfg_core2); /* Disable GPU clock */
-			clk_disable_unprepare(clk_mfg_core3); /* Disable GPU clock */
-			clk_disable_unprepare(clk_mfg); /* Disable GPU clock */
-			clk_disable_unprepare(clk_mfg_async); /* Disable GPU MTCMOSE */
-			/*clk_disable_unprepare(clk_thermal);*/  /* bypass this due to crash*/
-		#endif
-		#endif
-		#if 0
-		#ifndef CONFIG_BIG_OFF
-		if (cpu_online(8))
-			cpu_down(8);
-		eem_error("cpu 8 down\n");
-		#endif
-		#endif
-		mt_eem_enable_big_cluster(0);
-			/* enable frequency hopping (main PLL) */
-			/* mt_fh_popod_restore(); */
-	#endif /* EARLY_PORTING */
-#endif /* ifdef __KERNEL__ */
+	#ifdef __KERNEL__
+	mt_eem_disable_mtcmos();
+	mt_eem_enable_big_cluster(0);
+	/* enable frequency hopping (main PLL) */
+	/* mt_fh_popod_restore(); */
+	#endif /* ifdef __KERNEL__ */
 	/* must be set after gpu dvfs is enabled */
 	/* informGpuEEMisReady = 1; */
 	ptp_data[0] = 0;
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
-}
-
-static void get_devinfo_to_log(void)
-{
-
-	FUNC_ENTER(FUNC_LV_HELP);
-	#if (!DVT)
-		#ifdef __KERNEL__
-		eem_logs->hw_res[0] = get_devinfo_with_index(50);
-		eem_logs->hw_res[1] = get_devinfo_with_index(51);
-		eem_logs->hw_res[2] = get_devinfo_with_index(52);
-		eem_logs->hw_res[3] = get_devinfo_with_index(53);
-		eem_logs->hw_res[4] = get_devinfo_with_index(54);
-		eem_logs->hw_res[5] = get_devinfo_with_index(55);
-		eem_logs->hw_res[6] = get_devinfo_with_index(56);
-		eem_logs->hw_res[7] = get_devinfo_with_index(57);
-		eem_logs->hw_res[8] = get_devinfo_with_index(58);
-		eem_logs->hw_res[9] = get_devinfo_with_index(59);
-		eem_logs->hw_res[10] = get_devinfo_with_index(62);
-		eem_logs->hw_res[11] = get_devinfo_with_index(63);
-		eem_logs->hw_res[12] = get_devinfo_with_index(30); /* binLevel */
-			#if defined(CONFIG_EEM_AEE_RR_REC) /* irene */
-			aee_rr_rec_ptp_e0((unsigned int)eem_logs->hw_res[0]);
-			aee_rr_rec_ptp_e1((unsigned int)eem_logs->hw_res[1]);
-			aee_rr_rec_ptp_e2((unsigned int)eem_logs->hw_res[2]);
-			aee_rr_rec_ptp_e3((unsigned int)eem_logs->hw_res[3]);
-			aee_rr_rec_ptp_e4((unsigned int)eem_logs->hw_res[4]);
-			aee_rr_rec_ptp_e5((unsigned int)eem_logs->hw_res[5]);
-			aee_rr_rec_ptp_e6((unsigned int)eem_logs->hw_res[6]);
-			aee_rr_rec_ptp_e7((unsigned int)eem_logs->hw_res[7]);
-			aee_rr_rec_ptp_e8((unsigned int)eem_logs->hw_res[8]);
-			aee_rr_rec_ptp_e9((unsigned int)eem_logs->hw_res[9]);
-			aee_rr_rec_ptp_e10((unsigned int)eem_logs->hw_res[10]);
-			aee_rr_rec_ptp_e11((unsigned int)eem_logs->hw_res[11]);
-			#endif
-		#else
-		eem_logs->hw_res[0] = eem_read(0x102A0580); /* M_HW_RES0 */
-		eem_logs->hw_res[1] = eem_read(0x102A0584); /* M_HW_RES1 */
-		eem_logs->hw_res[2] = eem_read(0x102A0588); /* M_HW_RES2 */
-		eem_logs->hw_res[3] = eem_read(0x102A058C); /* M_HW_RES3 */
-		eem_logs->hw_res[4] = eem_read(0x102A0590); /* M_HW_RES4 */
-		eem_logs->hw_res[5] = eem_read(0x102A0594); /* M_HW_RES5 */
-		eem_logs->hw_res[6] = eem_read(0x102A0598); /* M_HW_RES6 */
-		eem_logs->hw_res[7] = eem_read(0x102A059C); /* M_HW_RES7 */
-		eem_logs->hw_res[8] = eem_read(0x102A05A0); /* M_HW_RES8 */
-		eem_logs->hw_res[9] = eem_read(0x102A05A4); /* M_HW_RES9 */
-		eem_logs->hw_res[10] = eem_read(0x102A05B0); /* M_HW_RES9 */
-		eem_logs->hw_res[11] = eem_read(0x102A05B4); /* M_HW_RES9 */
-		#endif/* if __KERNEL__ */
-	#else /* if DVT */
-	eem_logs->hw_res[0] = 0x10BD3C1B;
-	eem_logs->hw_res[1] = 0x005500C0;
-	eem_logs->hw_res[2] = 0x10BD3C1B;
-	eem_logs->hw_res[3] = 0x005500C0;
-	eem_logs->hw_res[4] = 0x10BD3C1B;
-	eem_logs->hw_res[5] = 0x005500C0;
-	eem_logs->hw_res[6] = 0x10BD3C1B;
-	eem_logs->hw_res[7] = 0x005500C0;
-	eem_logs->hw_res[8] = 0x10BD3C1B;
-	eem_logs->hw_res[9] = 0x005500C0;
-	eem_logs->hw_res[10] = 0x10BD3C1B;
-	eem_logs->hw_res[11] = 0x005500C0;
-	eem_logs->hw_res[12] = 0x1;
-	#endif
-
-	#if 0
-	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
-	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
-	eem_debug("M_HW_RES2 = 0x%08X\n", val[2]);
-	eem_debug("M_HW_RES3 = 0x%08X\n", val[3]);
-	eem_debug("M_HW_RES6 = 0x%08X\n", val[4]);
-	eem_debug("M_HW_RES7 = 0x%08X\n", val[5]);
-	eem_debug("M_HW_RES8 = 0x%08X\n", val[6]);
-	eem_debug("M_HW_RES9 = 0x%08X\n", val[7]);
-	eem_debug("M_HW_RES10 = 0x%08X\n", val[8]);
-	eem_debug("M_HW_RES11 = 0x%08X\n", val[9]);
-	eem_debug("M_HW_RES15 = 0x%08X\n", val[10]);
-	#endif
-
-	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 static int eem_probe(struct platform_device *pdev)
@@ -5793,114 +5823,16 @@ static int eem_probe(struct platform_device *pdev)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	#ifdef __KERNEL__
-		#if 0
-		#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
-			/* enable thermal CG */
-			clk_thermal = devm_clk_get(&pdev->dev, "therm-eem");
-			if (IS_ERR(clk_thermal)) {
-				eem_error("cannot get thermal clock\n");
-				return PTR_ERR(clk_thermal);
-			}
 
-			/* get GPU mtcomose */
-			clk_mfg_async = devm_clk_get(&pdev->dev, "mtcmos-mfg-async");
-			if (IS_ERR(clk_mfg_async)) {
-				eem_error("cannot get mtcmos-mfg-async\n");
-				return PTR_ERR(clk_mfg_async);
-			}
-
-			clk_mfg = devm_clk_get(&pdev->dev, "mtcmos-mfg");
-			if (IS_ERR(clk_mfg)) {
-				eem_error("cannot get mtcmos-mfg\n");
-				return PTR_ERR(clk_mfg);
-			}
-
-			clk_mfg_core3 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core3");
-			if (IS_ERR(clk_mfg_core3)) {
-				eem_error("cannot get mtcmos-mfg_core3\n");
-				return PTR_ERR(clk_mfg_core3);
-			}
-
-			clk_mfg_core2 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core2");
-			if (IS_ERR(clk_mfg_core2)) {
-				eem_error("cannot get mtcmos-mfg-core2\n");
-				return PTR_ERR(clk_mfg_core2);
-			}
-
-			clk_mfg_core1 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core1");
-			if (IS_ERR(clk_mfg_core1)) {
-				eem_error("cannot get mtcmos-mfg-core1\n");
-				return PTR_ERR(clk_mfg_core1);
-			}
-
-			clk_mfg_core0 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core0");
-			if (IS_ERR(clk_mfg_core0)) {
-				eem_error("cannot get mtcmos-mfg-core0\n");
-				return PTR_ERR(clk_mfg_core0);
-			}
-
-			/* get GPU clock */
-			clk_mfg_main = devm_clk_get(&pdev->dev, "mfg-main");
-			if (IS_ERR(clk_mfg_main)) {
-				eem_error("cannot get mfg-main\n");
-				return PTR_ERR(clk_mfg_main);
-			}
-			/*
-			*eem_debug("thmal=%p, gpu_clk=%p, gpu_mtcmos=%p",
-			*	clk_thermal,
-			*	clk_mfg_main,
-			*	clk_mfg_async);
-			*/
-		#endif
-		#endif /* if 0 */
-	#endif
 
 	#ifdef __KERNEL__
-		#if !EARLY_PORTING
-			/* disable frequency hopping (main PLL) */
-			/* mt_fh_popod_save(); */
+	/* disable frequency hopping (main PLL) */
+	/* mt_fh_popod_save(); */
 
-			/* call hotplug api to enable L bulk */
-
-			#if 0
-			#if !defined(CONFIG_MTK_CLKMGR)
-				eem_debug("not defined CONFIG_MTK_CLKMGR, enable clk_thermal...!\n");
-				ret = clk_prepare_enable(clk_thermal); /* Thermal clock enable */
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling THERMAL\n");
-
-				ret = clk_prepare_enable(clk_mfg_async); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_async\n");
-
-				ret = clk_prepare_enable(clk_mfg); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg\n");
-
-				ret = clk_prepare_enable(clk_mfg_core3); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_core3\n");
-
-				ret = clk_prepare_enable(clk_mfg_core2); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_core2\n");
-
-				ret = clk_prepare_enable(clk_mfg_core1); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_core1\n");
-
-				ret = clk_prepare_enable(clk_mfg_core0); /* gpu mtcmos enable*/
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_core0\n");
-
-				ret = clk_prepare_enable(clk_mfg_main); /* GPU CLOCK */
-				if (ret)
-					eem_error("clk_prepare_enable failed when enabling clk_mfg_main\n");
-
-			#endif /* if !defined CONFIG_MTK_CLKMGR */
-			#endif /* if 0*/
-		#endif/* ifndef early porting*/
+	/* call hotplug api to enable L bulk */
+	mt_eem_enable_big_cluster(1);
+	mt_eem_get_clk(pdev);
+	mt_eem_enable_mtcmos();
 	#endif/*ifdef __KERNEL__*/
 
 	/* for slow idle */
@@ -5970,7 +5902,7 @@ static int __init eem_init(void)
 	int err = 0;
 	struct eem_ipi_data eem_data;
 	struct device_node *node = NULL;
-	/* unsigned long flags; */
+	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 	/* for testing */
@@ -5993,19 +5925,20 @@ static int __init eem_init(void)
 
 	eem_data.u.data.arg[0] = eem_log_phy_addr;
 	eem_data.u.data.arg[1] = eem_log_size;
-	eem_debug("eem_log_phy_addr=%p\n", eem_log_phy_addr);
-	/* read efuse data to dram log */
-	get_devinfo_to_log();
+	eem_debug("eem_log_phy_addr=0x%llx\n", (unsigned long long)eem_log_phy_addr);
 
 	/* ret 1: eem disabled at sspm
 	 * ret 0: eem enabled at sspm
 	 * eem_disable default is 1
 	 */
-	#if 0
-	spin_lock_irqsave(&eem_spinlock, flags);
-	eem_disable = eem_to_sspm(IPI_EEM_INIT, &eem_data);
-	spin_unlock_irqrestore(&eem_spinlock, flags);
-	#endif
+	/* read efuse data to dram log */
+	eem_disable = get_devinfo();
+
+	if (!eem_disable) {
+		spin_lock_irqsave(&eem_spinlock, flags);
+		eem_disable = eem_to_sspm(IPI_EEM_INIT, &eem_data);
+		spin_unlock_irqrestore(&eem_spinlock, flags);
+	}
 
 	#ifdef __KERNEL__
 	create_procfs();
