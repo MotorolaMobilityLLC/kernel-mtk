@@ -62,6 +62,10 @@ USB_ETHERNET_MODULE_PARAMETERS();
 #endif
 #endif
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mtk_usb2jtag.h>
+#endif
+
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
 MODULE_LICENSE("GPL");
@@ -2657,7 +2661,15 @@ static int android_create_device(struct android_dev *dev)
 			return err;
 		}
 	}
-	trigger_android_usb_state_monitor_work();
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+	if (usb2jtag_mode())
+		pr_err("[USB2JTAG] in usb2jtag mode, not to initialize usb driver\n");
+	else
+		trigger_android_usb_state_monitor_work();
+#else
+		trigger_android_usb_state_monitor_work();
+#endif
+
 	return 0;
 }
 
