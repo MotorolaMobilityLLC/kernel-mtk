@@ -33,6 +33,8 @@
 #include "primary_display.h"
 #include "disp_lowpower.h"
 
+#include "m4u.h"
+#include "m4u_port.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
@@ -357,7 +359,7 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_reset(pgcl->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgcl->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 #ifdef MTKFB_M4U_SUPPORT
-	sPort.ePortID = M4U_PORT_DISP_OVL1;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;

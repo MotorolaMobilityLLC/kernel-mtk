@@ -143,27 +143,6 @@ int ddp_mutex_remove_module(int mutex_id, enum DISP_MODULE_ENUM module, void *ha
 	return ret;
 }
 
-static void ddp_get_mutex(int mutex_id, void *handle)
-{
-	DDPDBG("mutex %d get mutex\n", mutex_id);
-	/* get mutex */
-	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id), 1);
-	/* polling mutex get done */
-	if (handle != NULL) {
-		DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id),
-								REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1),
-								REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));
-	}
-	DDPDBG("mutex %d get mutex polling done\n", mutex_id);
-}
-
-static void ddp_release_mutex(int mutex_id, void *handle)
-{
-	DDPDBG("mutex %d release mutex\n", mutex_id);
-	/* release mutex */
-	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id), 0);
-}
-
 /* id: mutex ID, 0~3 */
 static int ddp_mutex_set_l(int mutex_id, int *module_list, enum DDP_MODE ddp_mode, void *handle)
 {
@@ -188,12 +167,6 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, enum DDP_MODE ddp_mod
 	sof_val = REG_FLD_VAL(SOF_FLD_MUTEX0_SOF, sof_src);
 	sof_val |= REG_FLD_VAL(SOF_FLD_MUTEX0_EOF, eof_src);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), sof_val); /* use default timing */
-
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-		ddp_get_mutex(mutex_id, handle);
-		ddp_release_mutex(mutex_id, handle);
-	}
 
 	DDPDBG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
 	       value, ddp_get_mutex_sof_name(sof_src), ddp_get_mutex_sof_name(eof_src));
@@ -337,10 +310,8 @@ int ddp_mutex_enable(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MOD
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_CFG, 0);
 
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_EN(mutex_id), 1);
-	ddp_get_mutex(mutex_id, handle);
-	ddp_release_mutex(mutex_id, handle);
-	return 0;
 
+	return 0;
 }
 
 
