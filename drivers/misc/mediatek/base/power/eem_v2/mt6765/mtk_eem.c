@@ -82,6 +82,8 @@
 #include "mtk_upower.h"
 #endif
 
+#include "mtk_mcdi_api.h"
+
 /****************************************
  * define variables for legacy and eem
  ****************************************
@@ -965,6 +967,8 @@ static int eem_init1stress_thread_handler(void *data)
 		testCnt = 0;
 
 		/* CPU pre-process */
+		mcdi_pause(MCDI_PAUSE_BY_EEM, true);
+
 		mt_ppm_ptpod_policy_activate();
 
 		eem_buck_set_mode(1);
@@ -1028,6 +1032,8 @@ timeout, out, final_init01_flag);
 		eem_buck_set_mode(0);
 
 		mt_ppm_ptpod_policy_deactivate();
+
+		mcdi_pause(MCDI_PAUSE_BY_EEM, false);
 
 		eem_error("eem init1stress end, total test counter:%d\n",
 			testCnt);
@@ -2069,6 +2075,8 @@ __func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
 
 	mt_ppm_ptpod_policy_deactivate();
 
+	mcdi_pause(MCDI_PAUSE_BY_EEM, false);
+
 	/* This patch is waiting for whole bank finish the init01 then go
 	 * next. Due to LL/L use same bulk PMIC, LL voltage table change
 	 * will impact L to process init01 stage, because L require a
@@ -2147,6 +2155,8 @@ static int eem_probe(struct platform_device *pdev)
 		eem_init_ctrl(ctrl);
 
 	/* CPU pre-process */
+	mcdi_pause(MCDI_PAUSE_BY_EEM, true);
+
 	mt_ppm_ptpod_policy_activate();
 
 	ret = eem_buck_get(pdev);
