@@ -25,6 +25,9 @@
 #define RT5081_PMU_FLED_DRV_VERSION	"1.0.0_MTK"
 
 static u8 rt5081_fled_inited;
+static u8 rt5081_global_mode = FLASHLIGHT_MODE_OFF;
+
+static u8 rt5081_fled_on;
 
 enum {
 	RT5081_FLED1 = 0,
@@ -175,6 +178,7 @@ static inline int rt5081_fled_parse_dt(struct device *dev,
 		return -ENODEV;
 	}
 
+#if 0
 	ret = of_property_read_u32(np, "fled_enable", &val);
 	if (ret < 0) {
 		pr_err("%s default enable fled%d\n", __func__, fi->id+1);
@@ -189,6 +193,7 @@ static inline int rt5081_fled_parse_dt(struct device *dev,
 				RT5081_PMU_REG_FLEDEN, fi->fled_cs_mask);
 		}
 	}
+#endif
 
 	ret = of_property_read_u32(np, "torch_cur", &val);
 	if (ret < 0)
@@ -278,31 +283,48 @@ static int rt5081_fled_set_mode(struct rt_fled_dev *info,
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	if (fi->id == RT5081_FLED2) {
-		pr_err("%s FLED2 not support set mode\n", __func__);
-		return 0;
-	}
-
 	switch (mode) {
 	case FLASHLIGHT_MODE_TORCH:
+		if (rt5081_global_mode == FLASHLIGHT_MODE_FLASH)
+			break;
 		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+				RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
 				RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
 		dev_info(fi->dev, "set to torch mode\n");
+		rt5081_global_mode = mode;
+		if (fi->id == RT5081_FLED1)
+			rt5081_fled_on |= 1 << RT5081_FLED1;
+		if (fi->id == RT5081_FLED2)
+			rt5081_fled_on |= 1 << RT5081_FLED2;
 		break;
 	case FLASHLIGHT_MODE_FLASH:
 		ret = rt5081_pmu_reg_clr_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
-
 		dev_info(fi->dev, "set to flash mode\n");
+		rt5081_global_mode = mode;
+		if (fi->id == RT5081_FLED1)
+			rt5081_fled_on |= 1 << RT5081_FLED1;
+		if (fi->id == RT5081_FLED2)
+			rt5081_fled_on |= 1 << RT5081_FLED2;
 		break;
 	case FLASHLIGHT_MODE_OFF:
-		ret = rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLEDEN, 0x0c, 0);
+		ret = rt5081_pmu_reg_clr_bit(fi->chip,
+				RT5081_PMU_REG_FLEDEN,
+				fi->id == RT5081_FLED1 ? 0x02 : 0x01);
 		dev_info(fi->dev, "set to off mode\n");
+		if (fi->id == RT5081_FLED1)
+			rt5081_fled_on &= ~(1 << RT5081_FLED1);
+		if (fi->id == RT5081_FLED2)
+			rt5081_fled_on &= ~(1 << RT5081_FLED2);
+		if (rt5081_fled_on == 0)
+			rt5081_global_mode = mode;
 		break;
 	default:
 		return -EINVAL;
