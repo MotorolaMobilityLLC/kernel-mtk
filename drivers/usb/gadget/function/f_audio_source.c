@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  */
-#ifdef CONFIG_SOUND
+
 #include <linux/device.h>
 #include <linux/usb/audio.h>
 #include <linux/wait.h>
@@ -658,19 +658,18 @@ audio_bind(struct usb_configuration *c, struct usb_function *f)
 	int status;
 	struct usb_ep *ep;
 	struct usb_request *req;
+
+	struct audio_source_instance *fi_audio = to_fi_audio_source(f->fi);
+	struct audio_source_config *config = fi_audio->config;
 	int i;
 	int err;
 
-	if (IS_ENABLED(CONFIG_USB_CONFIGFS)) {
-		struct audio_source_instance *fi_audio =
-				to_fi_audio_source(f->fi);
-		struct audio_source_config *config =
-				fi_audio->config;
-
 		err = snd_card_setup(c, config);
-		if (err)
+	if (err) {
+		pr_err("snd_card_setup failed with %d\n", err);
 			return err;
 	}
+
 
 	audio_build_desc(audio);
 
@@ -727,6 +726,8 @@ audio_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct audio_dev *audio = func_to_audio(f);
 	struct usb_request *req;
+	struct audio_source_instance *fi_audio = to_fi_audio_source(f->fi);
+	struct audio_source_config *config = fi_audio->config;
 	unsigned long flags;
 
 	while ((req = audio_req_get(audio)))
@@ -739,17 +740,9 @@ audio_unbind(struct usb_configuration *c, struct usb_function *f)
 	audio->substream = NULL;
 	audio->in_ep = NULL;
 	spin_unlock_irqrestore(&audio->lock, flags);
-
-	if (IS_ENABLED(CONFIG_USB_CONFIGFS)) {
-		struct audio_source_instance *fi_audio =
-				to_fi_audio_source(f->fi);
-		struct audio_source_config *config =
-				fi_audio->config;
-
 		config->card = -1;
 		config->device = -1;
 	}
-}
 
 static void audio_pcm_playback_start(struct audio_dev *audio)
 {
@@ -1104,4 +1097,3 @@ static struct usb_function *audio_source_alloc(struct usb_function_instance *fi)
 DECLARE_USB_FUNCTION_INIT(audio_source, audio_source_alloc_inst,
 			audio_source_alloc);
 MODULE_LICENSE("GPL");
-#endif
