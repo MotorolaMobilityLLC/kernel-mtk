@@ -388,52 +388,16 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
 	int vol_val = 0;
 
-#if 1
 	/* use auxadc API */
 	vol_val = pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
-	vol_val -= g_accdet_auxadc_offset;
+	if (vol_val > g_accdet_auxadc_offset) {
+		vol_val -= g_accdet_auxadc_offset;
+	} else {/* adjust the voltage value for avoid nagative */
+		ACCDET_DEBUG("[accdet] adjust value(%d)\n", vol_val);
+		vol_val = 0;
+	}
 	ACCDET_DEBUG("[accdet] adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
 	return vol_val;
-
-#endif
-#if 0
-	unsigned int reg_val = 0;
-	unsigned int tmp_val = 0;
-	unsigned int timeout_flag = 10;/* read 10 times most */
-	unsigned int valid_data_flag = 1;/* read 2 times valid data */
-
-	/* reg_val = pmic_pwrap_read(AUXADC_ADC5); */
-	/* read ch5 data */
-	/* pmic_pwrap_write(AUXADC_RQST0_CH_SET, AUXADC_RQST_CH5_SET); *//* overwrite the HW pre-read value */
-	do {
-		mdelay(3);/* need delay over 1.3ms */
-		timeout_flag--;
-		tmp_val = pmic_pwrap_read(AUXADC_ADC5);
-		if ((tmp_val & AUXADC_DATA_RDY_CH5) == AUXADC_DATA_RDY_CH5) {/* valid data */
-			reg_val = tmp_val;
-			valid_data_flag--;
-			#if 0
-			reg_val += tmp_val;
-			if (!(--valid_data_flag))
-				reg_val = (reg_val>>1);/* average 2 */
-			#endif
-			ACCDET_INFO("[accdet] [%d]0x%x=0x%x\n", timeout_flag, AUXADC_ADC5, reg_val);
-		} else {
-			ACCDET_INFO("[accdet] [%d]0x%x=0x%x\n", timeout_flag, AUXADC_ADC5, tmp_val);
-		}
-	} while (valid_data_flag && timeout_flag);/* wait AUXADC data ready for 3*10 ms more */
-
-	if (!s_4_key_efuse_flag) {
-		/* transfor to voltage */
-		vol_val = (reg_val & AUXADC_DATA_MASK);
-		vol_val = (vol_val * 1800) / 4096;	/* mv */
-		vol_val -= g_accdet_auxadc_offset;
-		ACCDET_INFO("[accdet]----HW_read adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
-		return vol_val;
-	} else {
-		return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
-	}
-#endif
 }
 
 #ifdef CONFIG_FOUR_KEY_HEADSET
