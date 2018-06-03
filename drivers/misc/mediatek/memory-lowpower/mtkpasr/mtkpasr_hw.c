@@ -20,7 +20,11 @@
 #include <linux/memblock.h>
 #include <linux/printk.h>
 #include <linux/sched.h>
+#ifdef CONFIG_MTK_EMI
+#include <mt_emi_api.h>
+#else
 #include <mach/emi_mpu.h>
+#endif
 #include <mt-plat/mtk_lpae.h>
 #include "mtkpasr_drv.h"
 
@@ -103,8 +107,6 @@ static unsigned long __init rank_pfn_offset(void)
  * Check DRAM configuration - transform DRAM setting to temporary bank structure.
  * Return 0 on success, -1 on error.
  */
-/* Acquire DRAM configuration */
-extern void acquire_dram_setting(struct basic_dram_setting *pasrdpd)__attribute__((weak));
 static int __init check_dram_configuration(void)
 {
 	int chan, rank, check_segment_num;
@@ -113,32 +115,6 @@ static int __init check_dram_configuration(void)
 
 	/* Acquire basic DRAM setting */
 	acquire_dram_setting(&pasrdpd);
-
-#ifdef MTK_PASR_FIX_DRAM_CONFIGURATION
-	if (acquire_dram_setting == 0) {
-		/* Phone - dual channel */
-		pasrdpd.channel_nr = 2;
-
-		pasrdpd.channel[0].rank[0].valid_rank = true;
-		pasrdpd.channel[0].rank[0].rank_size = 8;
-		pasrdpd.channel[0].rank[0].segment_nr = 8;
-
-		pasrdpd.channel[0].rank[1].valid_rank = true;
-		pasrdpd.channel[0].rank[1].rank_size = 8;
-		pasrdpd.channel[0].rank[1].segment_nr = 8;
-
-		pasrdpd.channel[1].rank[0].valid_rank = true;
-		pasrdpd.channel[1].rank[0].rank_size = 8;
-		pasrdpd.channel[1].rank[0].segment_nr = 8;
-
-		pasrdpd.channel[1].rank[1].valid_rank = true;
-		pasrdpd.channel[1].rank[1].rank_size = 8;
-		pasrdpd.channel[1].rank[1].segment_nr = 8;
-
-		pasrdpd.channel[2].valid_ch = false;
-		pasrdpd.channel[3].valid_ch = false;
-	}
-#endif
 
 	/* Parse DRAM setting */
 	channel_count = pasrdpd.channel_nr;
