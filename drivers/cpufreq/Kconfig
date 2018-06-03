@@ -112,8 +112,6 @@ config CPU_FREQ_DEFAULT_GOV_INTERACTIVE
 	  loading your cpufreq low-level hardware driver, using the
 	  'interactive' governor for latency-sensitive workloads.
 
-endchoice
-
 config CPU_FREQ_DEFAULT_GOV_SCHED
 	bool "sched"
 	select CPU_FREQ_GOV_SCHED
@@ -122,6 +120,8 @@ config CPU_FREQ_DEFAULT_GOV_SCHED
 	  cpu frequency using CPU utilization estimates from the
 	  scheduler. This allows you to get a full dynamic cpu frequency
 	  capable system with scheduler's hints.
+
+endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
 	tristate "'performance' governor"
@@ -225,6 +225,19 @@ config CPU_FREQ_GOV_SCHED
 	  scheduler as a function of cpu capacity utilization. It does
 	  not evaluate utilization on a periodic basis (as ondemand
 	  does) but instead is event-driven by the scheduler.
+
+	  If in doubt, say N.
+
+config CPU_FREQ_SCHED_ASSIST
+	bool "'sched-assist sched' cpufreq"
+	select CPU_FREQ_GOV_SCHED
+	help
+	  'assist-sched' - is NOT a governor, which MUST be dependent on
+	  GOV_SCHED which scales cpu frequency from the scheduler as a function
+	  of cpu capacity utilization. It does not evaluate utilization on
+	  a periodic basis (as ondemand does) but instead is event-driven
+	  by the scheduler. Also provided hint of scheduler for other governors
+	  and workable with hotplug.
 
 	  If in doubt, say N.
 
