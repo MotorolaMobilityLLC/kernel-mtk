@@ -9,18 +9,22 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #ifndef _UAPI_LINUX_FPSGO_H
 #define _UAPI_LINUX_FPSGO_H
 
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
-#define	FPSGO_QUEUE						_IOW('g', 1, __u32)
-#define	FPSGO_DEQUEUE					_IOW('g', 3, __u32)
-#define	FPSGO_VSYNC						_IOW('g', 5, __u32)
-#define	FPSGO_QUEUE_LENGTH		_IOW('g', 6, __u32)
-#define	FPSGO_ACQUIRE_BUFFER	_IOW('g', 7, __u32)
+#define FPSGO_QUEUE		_IOW('g', 1, __u32)
+#define FPSGO_DEQUEUE		_IOW('g', 3, __u32)
+#define FPSGO_VSYNC		_IOW('g', 5, __u32)
+#define FPSGO_QUEUE_LENGTH	_IOW('g', 6, __u32)
+#define FPSGO_ACQUIRE_BUFFER	_IOW('g', 7, __u32)
 
 #define IOCTL_WRITE_AS _IOW('g', 8, int)
 #define IOCTL_WRITE_GM _IOW('g', 9, int)
