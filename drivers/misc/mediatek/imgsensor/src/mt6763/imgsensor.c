@@ -118,7 +118,7 @@ static void imgsensor_mutex_init(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 static void imgsensor_mutex_lock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 {
 #ifdef IMGSENSOR_LEGACY_COMPAT
-	if(psensor_inst->status.version) {
+	if (psensor_inst->status.arch) {
 		mutex_lock(&psensor_inst->sensor_mutex);
 	} else {
 		mutex_lock(&gimgsensor_mutex);
@@ -132,7 +132,7 @@ static void imgsensor_mutex_lock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 static void imgsensor_mutex_unlock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 {
 #ifdef IMGSENSOR_LEGACY_COMPAT
-	if(psensor_inst->status.version)
+	if (psensor_inst->status.arch)
 		mutex_unlock(&psensor_inst->sensor_mutex);
 	else
 		mutex_unlock(&gimgsensor_mutex);
@@ -429,7 +429,7 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 				/* get sensor name */
 				psensor_inst->psensor_name = (char *)pSensorList[drv_idx].name;
 #ifdef IMGSENSOR_LEGACY_COMPAT
-				psensor_inst->status.version = psensor->pfunc->version;
+				psensor_inst->status.arch = psensor->pfunc->arch;
 #endif
 				if(!imgsensor_check_is_alive(psensor)) {
 					PK_INFO("[imgsensor_set_driver] :[%d][%d][%s]\n",psensor->inst.sensor_idx, drv_idx, psensor_inst->psensor_name);
@@ -527,19 +527,18 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 
 MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *valid, MUINT32 *temp)
 {
-	MUINT32 ret = ERROR_NONE;
-
+	MUINT32 ret = IMGSENSOR_RETURN_SUCCESS;
 	MUINT32 FeatureParaLen = 0;
 	enum   IMGSENSOR_SENSOR_IDX   idx = IMGSENSOR_SENSOR_IDX_MAP(senDevId);
 	struct IMGSENSOR_SENSOR      *psensor;
 	struct IMGSENSOR_SENSOR_INST *psensor_inst;
 
-	if(idx != IMGSENSOR_SENSOR_IDX_NONE) {
-		psensor      = &pgimgsensor->sensor[idx];
-		psensor_inst = &psensor->inst;
-	} else {
-		return ERROR_NONE;
-	}
+	if (valid == NULL || temp == NULL || idx == IMGSENSOR_SENSOR_IDX_NONE)
+		return IMGSENSOR_RETURN_ERROR;
+
+	psensor      = &pgimgsensor->sensor[idx];
+	psensor_inst = &psensor->inst;
+
 	*temp = 0;
 	FeatureParaLen = sizeof(MUINT32);
 
@@ -547,7 +546,16 @@ MUINT32 Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *
 	if (psensor_inst->state != IMGSENSOR_STATE_CLOSE) {
 		ret = imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_GET_TEMPERATURE_VALUE, (MUINT8*)temp, (MUINT32*)&FeatureParaLen);
 		PK_DBG("senDevId(%d), temperature(%d)\n", senDevId, *temp);
+
+		*valid &= ~SENSOR_TEMPERATURE_NOT_POWER_ON;
+		*valid |=  SENSOR_TEMPERATURE_VALID;
+	} else {
+		*valid |=  SENSOR_TEMPERATURE_NOT_POWER_ON;
+		*valid &= ~SENSOR_TEMPERATURE_VALID;
 	}
+
+	if (ret == IMGSENSOR_RETURN_SUCCESS)
+		*valid &= ~SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL;
 
 	return ret;
 }

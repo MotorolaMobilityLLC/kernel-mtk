@@ -25,7 +25,7 @@ enum IMGSENSOR_STATE {
 
 struct IMGSENSOR_SENSOR_STATUS {
 	u32 reserved:28;
-	u32 version:4;
+	u32 arch:4;
 };
 
 struct IMGSENSOR_SENSOR_INST {

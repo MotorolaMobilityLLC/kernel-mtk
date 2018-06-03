@@ -202,7 +202,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 
 	mutex_lock(&pi2c_cfg->i2c_mutex);
 
-	while(pdata < pend) {
+	while (pdata < pend && i < IMGSENSOR_I2C_CMD_LENGTH_MAX) {
 		pmsg->addr = id >> 1;
 		pmsg->flags = 0;
 		pmsg->len = write_per_cycle;
