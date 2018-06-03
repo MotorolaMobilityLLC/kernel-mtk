@@ -39,7 +39,7 @@ static void enable_ui_update_timer(void)
 	ktime_t ktime;
 
 	ktime = ktime_set(0, (unsigned long)(NSEC_PER_MSEC * UI_UPDATE_DURATION_MS));
-	hrtimer_start(&hrt1, ktime, HRTIMER_MODE_REL);
+	hrtimer_start(&hrt, ktime, HRTIMER_MODE_REL);
 }
 
 static enum hrtimer_restart mt_ui_update_timeout(struct hrtimer *timer)
@@ -95,8 +95,8 @@ static void notify_touch(int action)
 static void notify_ui_update_timeout(void)
 {
 	mutex_lock(&notify_lock);
-
-	render_aware_valid = 0;
+	if (!is_touch_boost)
+		render_aware_valid = 0;
 	is_render_aware_boost = 0;
 	pr_debug(TAG"enable UI boost, frame noupdate, is_render_aware_boost:%d\n", is_render_aware_boost);
 	perfmgr_boost(is_render_aware_boost | is_touch_boost, tboost_core, tboost_freq);
