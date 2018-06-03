@@ -307,6 +307,9 @@ typedef	int64 kal_int64;
 /* AUXADC HP Impedance debug */
 #define AUXADC_IMPEDANCE       ((UINT32)(PMIC_REG_BASE + 0x3300))
 
+/* AUXADC use large scale for DC trim */
+#define AUXADC_CON2 ((UINT32)(PMIC_REG_BASE + 0x32B4))
+
 void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask);
 uint32 Ana_Get_Reg(uint32 offset);
 

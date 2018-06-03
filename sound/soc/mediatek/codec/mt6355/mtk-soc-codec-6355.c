@@ -888,7 +888,7 @@ void EnableTrimbuffer(bool benable)
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 1 << 6, 1 << 6);
 		/* Audio offset trimming buffer enable */
 	} else {
-		Ana_Set_Reg(AUDDEC_ANA_CON8, 0 << 6, 0 << 6);
+		Ana_Set_Reg(AUDDEC_ANA_CON8, 0 << 6, 1 << 6);
 		/* Audio offset trimming buffer disable */
 	}
 }
@@ -898,6 +898,9 @@ void OpenTrimBufferHardware(bool enable)
 	if (enable) {
 		pr_warn("%s Enable\n", __func__);
 		TurnOnDacPower();
+
+		/* auxadc ch9 large scale */
+		/* Ana_Set_Reg(AUXADC_CON2, 0x0200, 0x0200); */
 
 		/* reset all dc compensation */
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, 0x0000, 0xffff);
@@ -958,7 +961,7 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200); /* 0x8E00 */
 		/* Enable HP main CMFB loop */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0X8200 */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8200 */
 		/* Set HP status as power-up & enable HPL/R CMFB */
 		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001); */
 		/* Change compensation for HP main loop */
