@@ -1937,6 +1937,24 @@ void fpsgo_base2fbt_no_one_render(void)
 	mutex_unlock(&fbt_mlock);
 }
 
+void fpsgo_base2fbt_only_bypass(void)
+{
+	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return;
+	}
+
+	xgf_trace("fpsgo_base2fbt_only_bypass");
+
+	fbt_clear_boost_value();
+	fbt_free_bhr();
+	fbt_filter_ppm_log_locked(0);
+
+	mutex_unlock(&fbt_mlock);
+}
+
 static void fbt_update_pwd_tbl(void)
 {
 	int cluster, opp;
