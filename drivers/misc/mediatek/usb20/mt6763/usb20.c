@@ -150,8 +150,10 @@ static void musb_do_idle(unsigned long _musb)
 	struct musb *musb = (void *)_musb;
 	unsigned long flags;
 	u8 devctl;
+	enum usb_otg_state old_state;
 
 	spin_lock_irqsave(&musb->lock, flags);
+	old_state = musb->xceiv->otg->state;
 	if (musb->is_active) {
 		DBG(0, "%s active, igonre do_idle\n", otg_state_string(musb->xceiv->otg->state));
 		spin_unlock_irqrestore(&musb->lock, flags);
@@ -180,9 +182,12 @@ static void musb_do_idle(unsigned long _musb)
 	default:
 		break;
 	}
+	DBG(0, "otg_state %s to %s, is_active<%d>\n",
+			otg_state_string(old_state),
+			otg_state_string(musb->xceiv->otg->state),
+			musb->is_active);
 	spin_unlock_irqrestore(&musb->lock, flags);
 
-	DBG(0, "otg_state %s\n", otg_state_string(musb->xceiv->otg->state));
 }
 
 static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
@@ -196,7 +201,7 @@ static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
 	/* Never idle if active, or when VBUS timeout is not set as host */
 	if (musb->is_active || ((musb->a_wait_bcon == 0)
 				&& (musb->xceiv->otg->state == OTG_STATE_A_WAIT_BCON))) {
-		DBG(2, "%s active, deleting timer\n", otg_state_string(musb->xceiv->otg->state));
+		DBG(0, "%s active, deleting timer\n", otg_state_string(musb->xceiv->otg->state));
 		del_timer(&musb_idle_timer);
 		last_timer = jiffies;
 		return;
@@ -206,13 +211,13 @@ static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
 		if (!timer_pending(&musb_idle_timer))
 			last_timer = timeout;
 		else {
-			DBG(2, "Longer idle timer already pending, ignoring\n");
+			DBG(0, "Longer idle timer already pending, ignoring\n");
 			return;
 		}
 	}
 	last_timer = timeout;
 
-	DBG(2, "%s inactive, for idle timer for %lu ms\n",
+	DBG(0, "%s inactive, for idle timer for %lu ms\n",
 	    otg_state_string(musb->xceiv->otg->state),
 	    (unsigned long)jiffies_to_msecs(timeout - jiffies));
 	mod_timer(&musb_idle_timer, timeout);
