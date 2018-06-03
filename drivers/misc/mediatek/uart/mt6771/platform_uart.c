@@ -33,11 +33,8 @@ struct pinctrl *ppinctrl_uart[UART_NR];
 char *uart_gpio_cmds[UART_NR][4] = {
 	{"uart0_rx_set", "uart0_rx_clear", "uart0_tx_set", "uart0_tx_clear"},
 	{"uart1_rx_set", "uart1_rx_clear", "uart1_tx_set", "uart1_tx_clear"},
-#if 0
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	{"uart2_rx_set", "uart2_rx_clear", "uart2_tx_set", "uart2_tx_clear"},
-	{"uart3_rx_set", "uart3_rx_clear", "uart3_tx_set", "uart3_tx_clear"},
-#endif				/* !defined (CONFIG_FPGA_EARLY_PORTING) */
 #endif
 };
 
@@ -80,39 +77,28 @@ unsigned int uart_rx_history_cnt[RECORD_NUMBER];
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	{
-	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0, */
-	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
-	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0, */
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
+		/* .tx_mode = UART_NON_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0, */
+		.tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+		/* .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0, */
+		.tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
-	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
-	 },
+		/* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
+		.sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
+	},
 	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
+		.tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
+		.tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
-	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
-	 },
-#if 0
+		/* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
+		.sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
+	},
 	{
-	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
+		.tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
+		.tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
-	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-	 .set_bit = PDN_FOR_UART3, .clr_bit = PDN_FOR_UART3, .pll_id = PDN_FOR_UART3,
-	 .sysrq = FALSE, .hw_flow = FALSE, .vff = TRUE,	/* UART3 */
-	 },
-	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
-
-	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-	 .set_bit = PDN_FOR_UART4, .clr_bit = PDN_FOR_UART4, .pll_id = PDN_FOR_UART4,
-	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART4 */
-	 },
-#endif
+		/* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
+		.sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
+	}
 };
 
 /*---------------------------------------------------------------------------*/
