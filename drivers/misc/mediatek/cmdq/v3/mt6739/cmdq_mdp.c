@@ -185,8 +185,8 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0xF00, "MOUT_RST"}
 	};
 
-	for (i = 0; i < ARRAY_SIZE(configRegisters); ++i) {
-		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE + configRegisters[i].offset);
+	for (i = 0; i < ARRAY_SIZE(configRegisters); i++) {
+		value = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + configRegisters[i].offset);
 		CMDQ_ERR("%s: 0x%08x\n", configRegisters[i].name, value);
 	}
 }
