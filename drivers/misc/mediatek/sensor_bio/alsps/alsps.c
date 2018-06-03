@@ -251,6 +251,7 @@ static struct alsps_context *alsps_context_alloc_object(void)
 	return obj;
 }
 
+#ifndef CONFIG_NANOHUB
 static int als_enable_and_batch(void)
 {
 	struct alsps_context *cxt = alsps_context_obj;
@@ -338,6 +339,7 @@ static int als_enable_and_batch(void)
 
 	return 0;
 }
+#endif
 
 static ssize_t als_store_active(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
@@ -360,7 +362,27 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	if (cxt->als_enable) {
+		err = cxt->als_ctl.enable_nodata(cxt->als_enable);
+		if (err) {
+			ALSPS_ERR("als turn on als_power err = %d\n", err);
+			return -1;
+		}
+	} else {
+		if (aal_use == 0)
+			err = cxt->als_ctl.enable_nodata(cxt->als_enable);
+		else
+			err = cxt->als_ctl.batch(0, AAL_DELAY, 0);
+		if (err) {
+			ALSPS_ERR("als turn off als_power err = %d\n", err);
+			return -1;
+		}
+	}
+#else
 	err = als_enable_and_batch();
+#endif
+
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" als_store_active done\n");
@@ -395,7 +417,14 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 		cxt->als_delay_ns = cxt->als_delay_ns < AAL_DELAY ? cxt->als_delay_ns : AAL_DELAY;
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->als_ctl.is_support_batch)
+		err = cxt->als_ctl.batch(0, cxt->als_delay_ns, cxt->als_latency_ns);
+	else
+		err = cxt->als_ctl.batch(0, cxt->als_delay_ns, 0);
+#else
 	err = als_enable_and_batch();
+#endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" als_store_batch done: %d\n", cxt->is_als_batch_enable);
 	return err;
