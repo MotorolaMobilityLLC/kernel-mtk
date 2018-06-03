@@ -627,15 +627,16 @@ int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
 	int i;
 
 	/* TODO: check session_id */
+	int sess_max_layer_num = _get_max_layer(cfg->session_id);
 
-	if (cfg->input_layer_num > _get_max_layer(cfg->session_id)) {
+	if (sess_max_layer_num == 0 || (cfg->input_layer_num > sess_max_layer_num)) {
 		disp_aee_print("sess:0x%x layer_num %d>%d\n", cfg->session_id,
-			cfg->input_layer_num, _get_max_layer(cfg->session_id));
+			cfg->input_layer_num, sess_max_layer_num);
 		return -1;
 	}
 
 	for (i = 0; i < cfg->input_layer_num; i++)
-		if (disp_validate_input_params(&cfg->input_cfg[i], _get_max_layer(cfg->session_id)) != 0)
+		if (disp_validate_input_params(&cfg->input_cfg[i], sess_max_layer_num) != 0)
 			return -1;
 
 	if (cfg->output_en && disp_validate_output_params(&cfg->output_cfg) != 0)
