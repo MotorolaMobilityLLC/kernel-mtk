@@ -110,6 +110,16 @@ static int wmt_detect_chip_pwr_on(void)
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num);
 
 	}
+	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_PULL_DIS]) {
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+							 gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].
+							 gpio_state[GPIO_PULL_DIS]);
+	} else
+		pr_err("wmt_gpio:set GPIO_COMBO_URXD_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+	WMT_DETECT_DBG_FUNC("WMT-DETECT: GPIO_COMBO_URXD_PIN out 0\n");
+	_wmt_detect_output_low(GPIO_COMBO_URXD_PIN);
+
 	/*set LDO/PMU/RST to output 0, no pull*/
 	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num != INVALID_PIN_ID)
 		_wmt_detect_output_low(GPIO_COMBO_LDO_EN_PIN);

@@ -986,7 +986,8 @@ static INT32 stp_add_to_rx_queue(UINT8 *buffer, UINT32 length, UINT8 type)
 
 	if (roomLeft < length) {
 		osal_unlock_unsleepable_lock(&stp_core_ctx.ring[type].mtx);
-		STP_ERR_FUNC("Queue is full !!!, type = %d\n", type);
+		STP_ERR_FUNC("Queue full , type(%d), remain buffer len(%d), data len(%d), w_p(%d), r_p(%d)\n",
+			type, roomLeft, length, stp_core_ctx.ring[type].write_p, stp_core_ctx.ring[type].read_p);
 		osal_assert(0);
 		return -1;
 	}

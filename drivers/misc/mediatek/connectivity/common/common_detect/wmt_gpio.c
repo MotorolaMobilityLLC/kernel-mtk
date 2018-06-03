@@ -293,6 +293,21 @@ INT32 wmt_gpio_init(struct platform_device *pdev)
 		}
 
 		pr_err("wmt_gpio: gpio init start!\n");
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+								 gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].
+								 gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_COMBO_URXD_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_COMBO_URXD_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+								 gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].
+								 gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_COMBO_UTXD_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_COMBO_UTXD_PIN to GPIO_PULL_DIS fail, is NULL!\n");
 
 		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_state[GPIO_PULL_DIS]) {
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
