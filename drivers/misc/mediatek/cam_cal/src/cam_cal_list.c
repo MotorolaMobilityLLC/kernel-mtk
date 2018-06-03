@@ -36,11 +36,12 @@
 #endif
 
 
-#define MTK_MAX_CID_NUM 3
+#define MTK_MAX_CID_NUM 4
 unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
 	0x010b00ff,/*Single MTK Format*/
 	0x020b00ff,/*Double MTK Format in One OTP/EEPRom - Legacy*/
-	0x030b00ff /*Double MTK Format in One OTP/EEPRom*/
+	0x030b00ff,/*Double MTK Format in One OTP/EEPRom*/
+	0x040b00ff /*Double MTK Format in One OTP/EEPRom V1.4*/
 };
 
 stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
@@ -65,7 +66,9 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX258_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX258_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 
-	{S5K5E2YA_SENSOR_ID, 0x00, CMD_MAIN, cam_cal_check_double_eeprom},
+	{IMX386_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K2L7_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K3M3_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 
 	{IMX338_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{OV8858_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
