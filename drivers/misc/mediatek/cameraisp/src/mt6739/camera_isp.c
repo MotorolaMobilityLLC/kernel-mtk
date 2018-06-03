@@ -3097,6 +3097,10 @@ static signed int ISP_DumpReg(void)
 	ISP_WR32(ISP_IMGSYS_BASE + 0x4160, 0x3021);
 	LOG_PR_ERR("0x%08X	%08X (0x15004160=3021)", (unsigned int)(ISP_IMGSYS_BASE + 0x4164),
 		(unsigned int)ISP_RD32(ISP_IMGSYS_BASE + 0x4164));
+	/* ANR1_LceLink */
+	LOG_PR_ERR("ANR1_LceLink");
+	LOG_PR_ERR("0x%08X	%08X", (unsigned int)(ISP_ADDR + 0x3A00),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x3A00));
 
 	ISP_chkModuleSetting();
 
