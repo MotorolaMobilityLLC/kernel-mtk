@@ -332,8 +332,8 @@ const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_CM4 */
 };
 static const unsigned int afe_buffer_regs[Soc_Aud_AFE_IO_Block_NUM_OF_IO_BLOCK][aud_buffer_ctrl_num] = {
-	{AFE_DL1_BASE, AFE_DL1_END, AFE_DL1_CUR}, /* DL1 */
-	{AFE_DL2_BASE, AFE_DL2_END, AFE_DL2_CUR}, /* DL2 */
+	[Soc_Aud_AFE_IO_Block_MEM_DL1] = {AFE_DL1_BASE, AFE_DL1_END, AFE_DL1_CUR}, /* DL1 */
+	[Soc_Aud_AFE_IO_Block_MEM_DL2] = {AFE_DL2_BASE, AFE_DL2_END, AFE_DL2_CUR}, /* DL2 */
 };
 /*  Above structures may vary with chips!!!! */
 
@@ -2324,6 +2324,8 @@ int get_usage_digital_block(enum audio_usage_id id)
 		return Soc_Aud_Digital_Block_MEM_VUL;
 	case AUDIO_USAGE_SCP_SPK_IV_DATA:
 		return Soc_Aud_Digital_Block_MEM_AWB2;
+	case AUDIO_USAGE_DEEPBUFFER_PLAYBACK:
+		return Soc_Aud_Digital_Block_MEM_DL2;
 	default:
 		pr_debug("%s(), not defined id %d\n", __func__, id);
 		return -EINVAL;
@@ -2337,6 +2339,8 @@ int get_usage_digital_block_io(enum audio_usage_id id)
 		return Soc_Aud_AFE_IO_Block_MEM_VUL;
 	case AUDIO_USAGE_SCP_SPK_IV_DATA:
 		return Soc_Aud_AFE_IO_Block_MEM_AWB2;
+	case AUDIO_USAGE_DEEPBUFFER_PLAYBACK:
+		return Soc_Aud_AFE_IO_Block_MEM_DL2;
 	default:
 		pr_debug("%s(), not defined id %d\n", __func__, id);
 		return -EINVAL;
