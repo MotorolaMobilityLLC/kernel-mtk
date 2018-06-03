@@ -1057,6 +1057,9 @@ static int __init cmdq_init(void)
 			   cmdq_mdp_get_func()->mdpClockOn, cmdq_mdp_get_func()->mdpDumpInfo,
 			   cmdq_mdp_get_func()->mdpResetEng, cmdq_mdp_get_func()->mdpClockOff);
 
+	cmdqCoreRegisterErrorResetCB(CMDQ_GROUP_MDP,
+			   cmdq_mdp_get_func()->errorReset);
+
 	/* Register module dispatch callback */
 	cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_MDP,
 			   cmdq_mdp_get_func()->dispatchModule);
