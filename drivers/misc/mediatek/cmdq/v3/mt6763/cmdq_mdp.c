@@ -225,9 +225,10 @@ void cmdq_mdp_dump_mmsys_config(void)
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 {
 	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x140);
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	int mdpColorResetBit = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? -1 : CMDQ_ENG_MDP_COLOR0);
+	int mdpColorResetBit = -1;
+#ifdef CMDQ_MDP_COLOR
+	mdpColorResetBit = CMDQ_ENG_MDP_COLOR0;
+#endif
 	int i = 0;
 	uint32_t reset_bits = 0L;
 	int engineResetBit[32] = {
@@ -371,9 +372,10 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
 	unsigned long register_address;
 	uint32_t register_value;
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
+	bool mdpColor = false;
+#ifdef CMDQ_MDP_COLOR
+	mdpColor = true;
+#endif
 
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
@@ -435,9 +437,10 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 /* Common Clock Framework */
 void cmdq_mdp_init_module_clk(void)
 {
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
+	bool mdpColor = false;
+#ifdef CMDQ_MDP_COLOR
+	mdpColor = true;
+#endif
 
 	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP_TX",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP_TX);
@@ -525,9 +528,10 @@ void cmdq_mdp_dump_tdshp(const unsigned long base, const char *label)
 }
 int32_t cmdqMdpClockOn(uint64_t engineFlag)
 {
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
+	bool mdpColor = false;
+#ifdef CMDQ_MDP_COLOR
+	mdpColor = true;
+#endif
 
 	CMDQ_MSG("Enable MDP(0x%llx) clock begin\n", engineFlag);
 #ifdef CMDQ_PWR_AWARE
@@ -564,9 +568,10 @@ struct MODULE_BASE {
 
 int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 {
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
+	bool mdpColor = false;
+#ifdef CMDQ_MDP_COLOR
+	mdpColor = true;
+#endif
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0))
 		cmdq_mdp_dump_rdma(MDP_RDMA0_BASE, "RDMA0");
@@ -751,9 +756,10 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 int32_t cmdqMdpClockOff(uint64_t engineFlag)
 {
 #ifdef CMDQ_PWR_AWARE
-	long DISP_COLOR_OUT_SEL_IN = MMSYS_CONFIG_BASE + (0xF20);
-	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
-	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
+	bool mdpColor = false;
+#ifdef CMDQ_MDP_COLOR
+	mdpColor = true;
+#endif
 
 	CMDQ_MSG("Disable MDP(0x%llx) clock begin\n", engineFlag);
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WDMA)) {
