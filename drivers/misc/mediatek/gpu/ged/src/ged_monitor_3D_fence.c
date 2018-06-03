@@ -65,17 +65,6 @@ static void ged_sync_cb(struct fence *sFence, struct fence_cb *waiter)
 
 	ged_monitor_3D_fence_notify();
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT8167)\
-|| defined(CONFIG_MACH_MT8173)
-	/* FIX-ME: IMG's loading API requires mutext lock which
-	 * is not suitable here
-	 */
-#else
-#ifndef GED_ENABLE_FB_DVFS
-	ged_dvfs_cal_gpu_utilization_force();
-#endif
-#endif
-
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
 
 	ged_log_buf_print(ghLogBuf_DVFS, "[-] ged_monitor_3D_fence_done (ts=%llu) %p", t, psMonitor->psSyncFence);
@@ -91,9 +80,6 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 	ged_log_buf_print(ghLogBuf_GED, "ged_monitor_3D_fence_work_cb");
 #endif
 
-#ifndef GED_ENABLE_FB_DVFS
-	ged_dvfs_cal_gpu_utilization_force();
-#endif
 
 	if (atomic_sub_return(1, &g_i32Count) < 1) {
 		unsigned int uiFreqLevelID;
