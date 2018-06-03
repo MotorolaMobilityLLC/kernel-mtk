@@ -118,7 +118,7 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 {
 	struct sspm_mbox *desc;
 	unsigned int size;
-	void __iomem *in_irq;
+	void __iomem *in_irq, *out_irq;
 
 	if (mbox >= sspm_mbox_cnt)
 		return -1;
@@ -130,6 +130,12 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 
 	desc = &sspmmbox[mbox];
 	in_irq = desc->in_out + MBOX_IN_IRQ_OFS;
+	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
+
+	if (readl(out_irq) & (0x1 << irq)) {
+		pr_err("%s: MBOX%d[%d] out_irq is not clear!\n", __func__, mbox, irq);
+		return -1;
+	}
 
 	if (!desc->enable)
 		return -1;
