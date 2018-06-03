@@ -235,7 +235,7 @@ inline struct AE_Msg *msg_create(char **ppmsg, int extra_size)
 
 	*ppmsg = vzalloc(size);
 	if (*ppmsg == NULL) {
-		LOGE("%s : kzalloc() fail\n", __func__);
+		LOGD("%s : kzalloc() fail\n", __func__);
 		return NULL;
 	}
 
@@ -260,7 +260,7 @@ static ssize_t msg_copy_to_user(const char *prefix, char *msg, char __user *buf,
 	if (msg_tmp != NULL) {
 		memcpy(msg_tmp, msg, ((struct AE_Msg *)msg)->len + sizeof(struct AE_Msg));
 	} else {
-		LOGE("%s : kzalloc() fail!\n", __func__);
+		LOGD("%s : kzalloc() fail!\n", __func__);
 		msg_tmp = msg;
 	}
 
@@ -276,14 +276,14 @@ static ssize_t msg_copy_to_user(const char *prefix, char *msg, char __user *buf,
 	}
 	/* TODO: semaphore */
 	if ((*f_pos + count) > len) {
-		LOGE("read size overflow, count=%zx, *f_pos=%llx\n", count, *f_pos);
+		LOGD("read size overflow, count=%zx, *f_pos=%llx\n", count, *f_pos);
 		count = len - *f_pos;
 		ret = -EFAULT;
 		goto out;
 	}
 
 	if (copy_to_user(buf, msg_tmp + *f_pos, count)) {
-		LOGE("copy_to_user failed\n");
+		LOGD("copy_to_user failed\n");
 		ret = -EFAULT;
 		goto out;
 	}
@@ -524,7 +524,7 @@ static void ke_gen_user_reg_msg(void)
 	#if 0 /* for debug */
 	#ifdef __aarch64__ /* 64bit kernel+32 u */
 	if (is_compat_task()) {	/* K64_U32 */
-		LOGE(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+		LOGD(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
 				(long)(aed_dev.kerec.lastlog->userthread_reg.regs.user_regs.pc),
 				(long)(aed_dev.kerec.lastlog->userthread_reg.regs.regs[14]),
 				(long)(aed_dev.kerec.lastlog->userthread_reg.regs.regs[13]));
@@ -602,7 +602,7 @@ static int ke_gen_ind_msg(struct aee_oops *oops)
 		 * add a 60s timeout in case of debuggerd quit abnormally
 		 */
 		if (!wait_for_completion_timeout(&aed_ke_com, msecs_to_jiffies(5 * 60 * 1000)))
-			LOGE("%s: TIMEOUT, not receive close event, skip\n", __func__);
+			LOGD("%s: TIMEOUT, not receive close event, skip\n", __func__);
 	}
 	return 0;
 }
@@ -661,7 +661,7 @@ static void ke_worker(struct work_struct *work)
 
 	list_for_each_entry_safe(oops, n, &ke_queue.list, list) {
 		if (oops == NULL) {
-			LOGE("%s:Invalid aee_oops struct\n", __func__);
+			LOGD("%s:Invalid aee_oops struct\n", __func__);
 			return;
 		}
 
@@ -800,7 +800,7 @@ static void ee_gen_detail_msg(void)
 		/* n += snprintf(data + n, msgsize - n, "%s\n", (char *)eerec->ee_log); */
 		l = snprintf(data + n, msgsize - n, "== EXTERNAL EXCEPTION LOG ==\n%s\n", (char *)eerec->ee_log);
 		if (l >= msgsize - n)
-			LOGE("ee_log may overflow! %d >= %d\n", l, msgsize - n);
+			LOGD("ee_log may overflow! %d >= %d\n", l, msgsize - n);
 		n += min(l, msgsize - n);
 	} else {
 		if (strncmp(eerec->assert_type, "modem", 5) == 0) {
@@ -943,7 +943,7 @@ static void ee_gen_ind_msg(struct aed_eerec *eerec)
 	init_completion(&aed_ee_com);
 	wake_up(&aed_dev.eewait);
 	if (wait_for_completion_timeout(&aed_ee_com, msecs_to_jiffies(5 * 60 * 1000)))
-		LOGE("%s: TIMEOUT, not receive close event, skip\n", __func__);
+		LOGD("%s: TIMEOUT, not receive close event, skip\n", __func__);
 }
 
 static void ee_queue_request(struct aed_eerec *eerec)
@@ -965,7 +965,7 @@ static void ee_worker(struct work_struct *work)
 
 	list_for_each_entry_safe(eerec, tmp, &ee_queue.list, list) {
 		if (eerec == NULL) {
-			LOGE("%s:null eerec\n", __func__);
+			LOGD("%s:null eerec\n", __func__);
 			return;
 		}
 
@@ -1004,7 +1004,7 @@ static unsigned int aed_ee_poll(struct file *file, struct poll_table_struct *pta
 static ssize_t aed_ee_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	if (aed_dev.eerec == NULL) {
-		LOGE("aed_ee_read fail for invalid kerec\n");
+		LOGD("aed_ee_read fail for invalid kerec\n");
 		return 0;
 	}
 	return msg_copy_to_user(__func__, aed_dev.eerec->msg, buf, count, f_pos);
@@ -1035,7 +1035,7 @@ static ssize_t aed_ee_write(struct file *filp, const char __user *buf, size_t co
 
 	rsize = copy_from_user(&msg, buf, count);
 	if (rsize != 0) {
-		LOGE("%s: ERR, copy_from_user rsize=%d\n", __func__, rsize);
+		LOGD("%s: ERR, copy_from_user rsize=%d\n", __func__, rsize);
 		return -1;
 	}
 
@@ -1736,7 +1736,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			break;
 	}
 	if (userstack_end == 0) {
-		LOGE("Dump native stack failed:\n");
+		LOGD("Dump native stack failed:\n");
 		return 0;
 	}
 	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
@@ -1768,7 +1768,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			break;
 	}
 	if (userstack_end == 0) {
-		LOGE("Dump native stack failed:\n");
+		LOGD("Dump native stack failed:\n");
 		return 0;
 	}
 	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start, userstack_end);
@@ -1795,7 +1795,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 				break;
 		}
 		if (userstack_end == 0) {
-			LOGE("Dump native stack failed:\n");
+			LOGD("Dump native stack failed:\n");
 			return 0;
 		}
 
@@ -1843,13 +1843,13 @@ static void kernel_reportAPI(const AE_DEFECT_ATTR attr, const int db_opt, const 
 		if (db_opt & DB_OPT_NATIVE_BACKTRACE) {
 			oops->userthread_stack.Userthread_Stack = vzalloc(MaxStackSize);
 			if (oops->userthread_stack.Userthread_Stack == NULL) {
-				LOGE("%s: oops->userthread_stack.Userthread_Stack Vmalloc fail", __func__);
+				LOGD("%s: oops->userthread_stack.Userthread_Stack Vmalloc fail", __func__);
 				kfree(oops);
 				return;
 			}
 			oops->userthread_maps.Userthread_maps = vzalloc(MaxMapsSize);
 			if (oops->userthread_maps.Userthread_maps == NULL) {
-				LOGE("%s: oops->userthread_maps.Userthread_maps Vmalloc fail", __func__);
+				LOGD("%s: oops->userthread_maps.Userthread_maps Vmalloc fail", __func__);
 				kfree(oops);
 				return;
 			}
@@ -1888,7 +1888,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 		return;
 	eerec = kzalloc(sizeof(struct aed_eerec), GFP_ATOMIC);
 	if (eerec == NULL) {
-		LOGE("%s: kmalloc fail", __func__);
+		LOGD("%s: kmalloc fail", __func__);
 		return;
 	}
 
@@ -1906,7 +1906,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 	}
 
 	if (ee_log == NULL) {
-		LOGE("%s : memory alloc() fail\n", __func__);
+		LOGD("%s : memory alloc() fail\n", __func__);
 		kfree(eerec);
 		return;
 	}
@@ -2009,7 +2009,7 @@ static int aed_proc_init(void)
 {
 	aed_proc_dir = proc_mkdir("aed", NULL);
 	if (aed_proc_dir == NULL) {
-		LOGE("aed proc_mkdir failed\n");
+		LOGD("aed proc_mkdir failed\n");
 		return -ENOMEM;
 	}
 
@@ -2117,13 +2117,13 @@ static int __init aed_init(void)
 	spin_lock_init(&aed_device_lock);
 	err = misc_register(&aed_ee_dev);
 	if (unlikely(err)) {
-		LOGE("aee: failed to register aed0(ee) device!\n");
+		LOGD("aee: failed to register aed0(ee) device!\n");
 		return err;
 	}
 
 	err = misc_register(&aed_ke_dev);
 	if (unlikely(err)) {
-		LOGE("aee: failed to register aed1(ke) device!\n");
+		LOGD("aee: failed to register aed1(ke) device!\n");
 		return err;
 	}
 
