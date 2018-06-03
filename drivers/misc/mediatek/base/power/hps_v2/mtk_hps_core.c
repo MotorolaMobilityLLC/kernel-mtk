@@ -25,13 +25,6 @@
 #include <trace/events/sched.h>
 #include <mt-plat/aee.h>
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-
-
 /*
  * static
  */
@@ -43,49 +36,6 @@ static ktime_t ktime;
 static unsigned int hps_cpu_load_info[10];
 static int hps_load_cnt[10];
 static DEFINE_SPINLOCK(load_info_lock);
-static sampler_func g_pStallDCMSampler;
-
-#ifdef CONFIG_OF
-void __iomem *mcu_cfg_base;
-#define MP0_CGavg         (mcu_cfg_base + 0x1C6C)
-#define MP1_CGavg         (mcu_cfg_base + 0x3C6C)
-
-#define hps_cg_readl(addr)         readl(addr)
-
-static void iomap(void)
-{
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
-	if (!node)
-		pr_debug("[MCU_CFG] find node failed\n");
-	mcu_cfg_base = of_iomap(node, 0);
-	if (!mcu_cfg_base)
-		pr_debug("[MCU_CFG] base failed\n");
-}
-#endif
-unsigned int cgavg[2];
-void mt_cpu_stalldcm_registerCB(sampler_func pCB)
-{
-	g_pStallDCMSampler = pCB;
-}
-EXPORT_SYMBOL(mt_cpu_stalldcm_registerCB)
-
-void get_CGavg_data(unsigned int *cgavg)
-{
-	if (!g_pStallDCMSampler)
-		return;
-	cgavg[0] = hps_cg_readl(MP0_CGavg); /*0x1020_1C6C[15:0] */
-	cgavg[1] = hps_cg_readl(MP1_CGavg); /*0x1020_3C6C[15:0] */
-	if (g_pStallDCMSampler != NULL)
-		g_pStallDCMSampler(2, cgavg);
-}
-
-void get_CGavg_data_CB(unsigned int *cgavg)
-{
-	cgavg[0] = hps_cg_readl(MP0_CGavg); /*0x1020_1C6C[15:0] */
-	cgavg[1] = hps_cg_readl(MP1_CGavg); /*0x1020_3C6C[15:0] */
-}
 
 /*
  * hps timer callback
@@ -304,7 +254,6 @@ static int _hps_task_main(void *data)
 #endif
 
 		/* if (!hps_ctxt.is_interrupt) { */
-		get_CGavg_data(cgavg);/*For stallDCM use.*/
 
 		/*Get sys status */
 		hps_get_sysinfo();
@@ -462,9 +411,6 @@ int hps_core_init(void)
 {
 	int r = 0;
 
-#ifdef CONFIG_OF
-	iomap();
-#endif
 	hps_warn("hps_core_init\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*init timer */
