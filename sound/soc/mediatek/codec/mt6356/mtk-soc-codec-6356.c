@@ -934,14 +934,15 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 
 void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 {
-	hpdet_param->auxadc_upper_bound = 4050; /* should little lower than auxadc max resolution */
+	hpdet_param->auxadc_upper_bound = 32630; /* should little lower than auxadc max resolution */
 	hpdet_param->dc_Step = 100; /* Dc ramp up and ramp down step */
-	hpdet_param->dc_Phase0 = 200; /* Phase 0 : high impedance with worst resolution */
-	hpdet_param->dc_Phase1 = 2200; /* Phase 1 : median impedance with normal resolution */
-	hpdet_param->dc_Phase2 = 8800; /* Phase 2 : low impedance with better resolution */
-	hpdet_param->resistance_first_threshold = 150; /* Resistance Threshold of phase 2 and phase 1 */
-	hpdet_param->resistance_second_threshold = 650; /* Resistance Threshold of phase 1 and phase 0 */
+	hpdet_param->dc_Phase0 = 300; /* Phase 0 : high impedance with worst resolution */
+	hpdet_param->dc_Phase1 = 1500; /* Phase 1 : median impedance with normal resolution */
+	hpdet_param->dc_Phase2 = 6000; /* Phase 2 : low impedance with better resolution */
+	hpdet_param->resistance_first_threshold = 250; /* Resistance Threshold of phase 2 and phase 1 */
+	hpdet_param->resistance_second_threshold = 1000; /* Resistance Threshold of phase 1 and phase 0 */
 }
+
 int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 {
 	/* The formula is from DE programming guide */
@@ -949,7 +950,7 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	/* R = V /I */
 	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
 	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
-	return (28800000 / pcm_offset * aux_diff + 4051) / 8102;
+	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
 }
 
 void setHpGainZero(void)

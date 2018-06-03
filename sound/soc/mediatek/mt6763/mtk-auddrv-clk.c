@@ -58,7 +58,7 @@
 #include <linux/delay.h>
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_idle.h"
-#include "mtk_clk_id.h"
+#include "mtk_spm_resource_req.h"
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
@@ -258,6 +258,50 @@ void AudDrv_Clk_Deinit(void *dev)
 	}
 }
 
+static int audio_idle_notify_call(struct notifier_block *nfb,
+				  unsigned long id,
+				  void *arg)
+{
+	switch (id) {
+	case NOTIFY_DPIDLE_ENTER:
+	case NOTIFY_SOIDLE_ENTER:
+		/* intbus pll -> 26m */
+		pr_warn("%s(), enter sodi, to 26m\n", __func__);
+		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
+			return NOTIFY_OK;
+
+		AudDrv_AUDINTBUS_Sel(0);
+
+		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
+			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
+
+		break;
+	case NOTIFY_DPIDLE_LEAVE:
+	case NOTIFY_SOIDLE_LEAVE:
+		/* Audio Clock: 26m -> pll */
+		pr_warn("%s(), leave sodi, to pll\n", __func__);
+		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
+			return NOTIFY_OK;
+
+		AudDrv_AUDINTBUS_Sel(1);
+
+		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
+			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
+
+		break;
+	case NOTIFY_SOIDLE3_ENTER:
+	case NOTIFY_SOIDLE3_LEAVE:
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block audio_idle_nfb = {
+	.notifier_call = audio_idle_notify_call,
+};
+
 void AudDrv_Clk_Global_Variable_Init(void)
 {
 	APLL1Counter = 0;
@@ -266,6 +310,8 @@ void AudDrv_Clk_Global_Variable_Init(void)
 	Aud_APLL_DIV_APLL2_cntr = 0;
 	MCLKFS = 128;
 	MCLKFS_HDMI = 256;
+
+	mtk_idle_notifier_register(&audio_idle_nfb);
 }
 
 void AudDrv_Bus_Init(void)
@@ -1092,8 +1138,7 @@ void AudDrv_Emi_Clk_On(void)
 	if (Aud_EMI_cntr == 0) {
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
-		disable_dpidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
-		disable_soidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
+		spm_resource_req(SPM_RESOURCE_USER_AUDIO, SPM_RESOURCE_DRAM);
 #endif
 	}
 	Aud_EMI_cntr++;
@@ -1106,10 +1151,8 @@ void AudDrv_Emi_Clk_Off(void)
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
-
 		/* mutex is used in these api */
-		enable_dpidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
-		enable_soidle_by_bit(MTK_CG_AUDIO0_PDN_AFE);
+		spm_resource_req(SPM_RESOURCE_USER_AUDIO, SPM_RESOURCE_RELEASE);
 #endif
 	}
 
