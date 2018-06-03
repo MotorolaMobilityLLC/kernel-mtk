@@ -232,7 +232,7 @@ extern signed int pwrap_init(void);
 /**** timeout time, unit :us ***********/
 #define TIMEOUT_RESET           (0xFF)
 #define TIMEOUT_READ            (0xFF)
-#define TIMEOUT_WAIT_IDLE       (0xFF)
+#define TIMEOUT_WAIT_IDLE       (0x7D0) /* 2000us */
 
 /*-----macro for manual commnd ---------------------------------*/
 #define OP_WR    (0x1)
