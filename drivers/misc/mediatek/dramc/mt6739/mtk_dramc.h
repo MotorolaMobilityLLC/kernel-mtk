@@ -50,29 +50,25 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
-/* #define LAST_DRAMC */
-#ifdef LAST_DRAMC
 
-#define LAST_DRAMC_SRAM_MGR
+#define LAST_DRAMC
+#ifdef LAST_DRAMC
 #define LAST_DRAMC_IP_BASED
 
-#define LASTDRAMC_KEY 0xD8A3
-#define DBG_INFO_TYPE_MAX	3
-
-#define DRAMC_STORAGE_API_ERR_OFFSET	(28)
+#define LAST_DRAMC_SRAM_SIZE		(20)
+#define DRAMC_STORAGE_API_ERR_OFFSET	(8)
 
 #define STORAGE_READ_API_MASK		(0xf)
 #define ERR_PL_UPDATED			(0x4)
 
-extern void __iomem *mt_emi_base_get(void);
-extern void enable_drs(unsigned char enable);
-extern int disable_drs(unsigned char *backup);
+void *mt_emi_base_get(void);
 unsigned int mt_dramc_chn_get(unsigned int emi_cona);
 unsigned int mt_dramc_chp_get(unsigned int emi_cona);
 phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
 unsigned int mt_dramc_ta_support_ranks(void);
 phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank);
 #endif
+
 
 /* Sysfs config */
 /*We use GPT to measurement how many clk pass in 100us*/
@@ -106,6 +102,7 @@ unsigned char segment_rank1);
 int exit_pasr_dpd_config(void);
 void del_zqcs_timer(void);
 void add_zqcs_timer(void);
+void mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,
