@@ -99,10 +99,10 @@ static int Audio_I2S0dl1_hdoutput_Get(struct snd_kcontrol *kcontrol,
 static int Audio_I2S0dl1_hdoutput_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(I2S0dl1_HD_output)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s(), return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 
