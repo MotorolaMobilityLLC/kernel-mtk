@@ -47,43 +47,12 @@
 
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
-#ifdef CONFIG_MTK_MET
-/******************** MET BEGIN ********************/
-typedef void (*cm_mgr_value_handler_t) (unsigned int cnt, unsigned int *value);
-
-static struct cm_mgr_met_data met_data;
-static cm_mgr_value_handler_t cm_mgr_power_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_count_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_opp_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_loading_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_ratio_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_bw_dbg_handler;
-static cm_mgr_value_handler_t cm_mgr_valid_dbg_handler;
-
-#define cm_mgr_MET_REG_FN_VALUE(name)				\
-	void cm_mgr_register_##name(cm_mgr_value_handler_t handler)	\
-{								\
-	name##_dbg_handler = handler;				\
-}								\
-EXPORT_SYMBOL(cm_mgr_register_##name)
-
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_power);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_count);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_opp);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_loading);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_ratio);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_bw);
-cm_mgr_MET_REG_FN_VALUE(cm_mgr_valid);
-/********************* MET END *********************/
-#endif
-
-
 struct cm_mgr_met_data {
 	unsigned int cm_mgr_power[14];
 	unsigned int cm_mgr_count[4];
 	unsigned int cm_mgr_opp[6];
 	unsigned int cm_mgr_loading[2];
-	unsigned int cm_mgr_ratio[2];
+	unsigned int cm_mgr_ratio[10];
 	unsigned int cm_mgr_bw;
 	unsigned int cm_mgr_valid;
 };
@@ -147,6 +116,9 @@ static unsigned int vcore_power_gain_lp3[][VCORE_ARRAY_SIZE] = {
 
 #define VCORE_POWER_ARRAY_SIZE \
 	(sizeof(vcore_power_gain_lp4) / sizeof(unsigned int) / VCORE_ARRAY_SIZE)
+
+static unsigned int *vcore_power_gain = &vcore_power_gain_lp4[0][0];
+#define vcore_power_gain(p, i, j) (*(p + (i) * VCORE_ARRAY_SIZE + (j)))
 
 static unsigned int _v2f_all[][CM_MGR_CPU_CLUSTER] = {
 	/* SB */
@@ -354,9 +326,7 @@ static unsigned int cpu_power_gain_down_high_2[][CM_MGR_CPU_ARRAY_SIZE] = {
 
 static unsigned int *cpu_power_gain_up = &cpu_power_gain_up_high_1[0][0];
 static unsigned int *cpu_power_gain_down = &cpu_power_gain_down_high_1[0][0];
-static unsigned int *vcore_power_gain = &vcore_power_gain_lp4[0][0];
 #define cpu_power_gain(p, i, j) (*(p + (i) * CM_MGR_CPU_ARRAY_SIZE + (j)))
-#define vcore_power_gain(p, i, j) (*(p + (i) * VCORE_ARRAY_SIZE + (j)))
 
 static int cpu_power_gain_opp(int bw, int is_up, int opp, int ratio_idx, int idx)
 {
