@@ -37,6 +37,9 @@
 #include <mt-plat/dma.h>
 #include <linux/delay.h>
 #include "mt-plat/sync_write.h"
+#include <linux/wakelock.h>
+#include <linux/sched.h>
+#include <linux/suspend.h>
 
 #ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
@@ -136,6 +139,15 @@ static VAL_UINT32_T gu4LogCount;
 static VAL_UINT32_T gLockTimeOutCount;
 
 static VAL_UINT32_T gu4VdecLockThreadId;
+
+#define USE_WAKELOCK 0
+
+#if USE_WAKELOCK == 1
+static struct wake_lock vcodec_wake_lock;
+static struct wake_lock vcodec_wake_lock2;
+#elif USE_WAKELOCK == 0
+static unsigned int is_entering_suspend;
+#endif
 
 /* #define VCODEC_DEBUG */
 #ifdef VCODEC_DEBUG
@@ -681,6 +693,10 @@ static long vcodec_lockhw(unsigned long arg)
 	VAL_ULONG_T ulFlagsLockHW;
 	VAL_UINT32_T u4VcodecSel;
 	VAL_UINT32_T u4DeBlcoking = 1;
+#if USE_WAKELOCK == 0
+	unsigned int suspend_block_cnt = 0;
+#endif
+
 
 	MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW + tid = %d\n", current->pid);
 
@@ -752,6 +768,21 @@ static long vcodec_lockhw(unsigned long arg)
 
 			mutex_lock(&HWLock);
 			if (grVcodecHWLock.pvHandle == 0) { /* No one holds dec hw lock now */
+#if USE_WAKELOCK == 1
+				MODULE_MFV_PR_DEBUG("wake_lock(&vcodec_wake_lock) +");
+				wake_lock(&vcodec_wake_lock);
+				MODULE_MFV_PR_DEBUG("wake_lock(&vcodec_wake_lock) -");
+#elif USE_WAKELOCK == 0
+				while (is_entering_suspend == 1) {
+					suspend_block_cnt++;
+					if (suspend_block_cnt > 100000) {
+						/* Print log if trying to enter suspend for too long */
+						MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW blocked by suspend flow for long time");
+						suspend_block_cnt = 0;
+					}
+					msleep(1);
+				}
+#endif
 				gu4VdecLockThreadId = current->pid;
 				grVcodecHWLock.pvHandle =
 					(VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle);
@@ -874,6 +905,21 @@ static long vcodec_lockhw(unsigned long arg)
 				if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+#if USE_WAKELOCK == 1
+					MODULE_MFV_PR_DEBUG("wake_lock(&vcodec_wake_lock2) +");
+					wake_lock(&vcodec_wake_lock2);
+					MODULE_MFV_PR_DEBUG("wake_lock(&vcodec_wake_lock2) -");
+#elif USE_WAKELOCK == 0
+					while (is_entering_suspend == 1) {
+					suspend_block_cnt++;
+					if (suspend_block_cnt > 100000) {
+						/* Print log if trying to enter suspend for too long */
+						MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW blocked by suspend flow for long time");
+						suspend_block_cnt = 0;
+					}
+					msleep(1);
+					}
+#endif
 					grVcodecHWLock.pvHandle =
 						(VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle);
 					grVcodecHWLock.eDriverType = rHWLock.eDriverType;
@@ -1039,8 +1085,6 @@ static long vcodec_unlockhw(unsigned long arg)
 		mutex_lock(&HWLock);
 		/* Current owner give up hw lock */
 		if (grVcodecHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
-			grVcodecHWLock.pvHandle = 0;
-			grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 			if (rHWLock.bSecureInst == VAL_FALSE) {
 				/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 				disable_irq(VDEC_IRQ_ID);
@@ -1050,6 +1094,8 @@ static long vcodec_unlockhw(unsigned long arg)
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_off();
 #endif
+			grVcodecHWLock.pvHandle = 0;
+			grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 		} else { /* Not current owner */
 			MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_UNLOCKHW\n");
 			MODULE_MFV_PR_ERR("Not owner trying to unlock dec hardware 0x%lx\n",
@@ -1057,6 +1103,11 @@ static long vcodec_unlockhw(unsigned long arg)
 			mutex_unlock(&HWLock);
 			return -EFAULT;
 		}
+#if USE_WAKELOCK == 1
+		MODULE_MFV_PR_DEBUG("wake_unlock(&vcodec_wake_lock) +");
+		wake_unlock(&vcodec_wake_lock);
+		MODULE_MFV_PR_DEBUG("wake_unlock(&vcodec_wake_lock) -");
+#endif
 		mutex_unlock(&HWLock);
 		eValRet = eVideoSetEvent(&HWLockEvent, sizeof(VAL_EVENT_T));
 	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
@@ -1065,8 +1116,6 @@ static long vcodec_unlockhw(unsigned long arg)
 		mutex_lock(&HWLock);
 		/* Current owner give up hw lock */
 		if (grVcodecHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
-			grVcodecHWLock.pvHandle = 0;
-			grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
@@ -1077,6 +1126,8 @@ static long vcodec_unlockhw(unsigned long arg)
 				venc_power_off();
 #endif
 			}
+			grVcodecHWLock.pvHandle = 0;
+			grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 		} else { /* Not current owner */
 			/* [TODO] error handling */
 			MODULE_MFV_PR_DEBUG("[ERROR] VCODEC_UNLOCKHW\n");
@@ -1088,6 +1139,11 @@ static long vcodec_unlockhw(unsigned long arg)
 			mutex_unlock(&HWLock);
 			return -EFAULT;
 			}
+#if USE_WAKELOCK == 1
+		MODULE_MFV_PR_DEBUG("wake_unlock(&vcodec_wake_lock2) +");
+		wake_unlock(&vcodec_wake_lock2);
+		MODULE_MFV_PR_DEBUG("wake_unlock(&vcodec_wake_lock2) -");
+#endif
 		mutex_unlock(&HWLock);
 		eValRet = eVideoSetEvent(&HWLockEvent, sizeof(VAL_EVENT_T));
 	} else {
@@ -2203,6 +2259,66 @@ static const struct file_operations vcodec_fops = {
 
 };
 
+#if USE_WAKELOCK == 0
+/**
+ * Suspsend callbacks after user space processes are frozen
+ * Since user space processes are frozen, there is no need and cannot hold same
+ * mutex that protects lock owner while checking status.
+ * If video codec hardware is still active now, must not aenter suspend.
+ **/
+static int vcodec_suspend(struct platform_device *pDev, pm_message_t state)
+{
+	if (grVcodecHWLock.pvHandle != 0) {
+		MODULE_MFV_PR_DEBUG("vcodec_suspend fail due to videocodec active");
+		return -EBUSY;
+	}
+	MODULE_MFV_PR_DEBUG("vcodec_suspend ok");
+	return 0;
+}
+
+static int vcodec_resume(struct platform_device *pDev)
+{
+	MODULE_MFV_PR_DEBUG("vcodec_resume ok");
+	return 0;
+}
+
+/**
+ * Suspend notifiers before user space processes are frozen.
+ * User space driver can still complete decoding/encoding of current frame.
+ * Change state to is_entering_suspend to stop further tasks but allow current
+ * frame to complete (LOCKHW, WAITISR, UNLOCKHW).
+ * Since there is no critical section proection, it is possible for a new task
+ * to start after changing to is_entering_suspend state. This case will be
+ * handled by suspend callback vcodec_suspend.
+ **/
+static int vcodec_suspend_notifier(struct notifier_block *nb, unsigned long action, void *data)
+{
+	int wait_cnt = 0;
+
+	MODULE_MFV_PR_DEBUG("vcodec_suspend_notifier ok action = %ld", action);
+	switch (action) {
+	case PM_SUSPEND_PREPARE:
+		is_entering_suspend = 1;
+		while (grVcodecHWLock.pvHandle != 0) {
+			wait_cnt++;
+			if (wait_cnt > 100000) {
+				MODULE_MFV_PR_DEBUG("vcodec_pm_suspend waiting for vcodec inactive %p",
+						grVcodecHWLock.pvHandle);
+				wait_cnt = 0;
+			}
+			msleep(1);
+		}
+		return NOTIFY_OK;
+	case PM_POST_SUSPEND:
+		is_entering_suspend = 0;
+		return NOTIFY_OK;
+	default:
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_DONE;
+}
+#endif
+
 static int vcodec_probe(struct platform_device *dev)
 {
 	int ret;
@@ -2296,6 +2412,10 @@ static int vcodec_probe(struct platform_device *dev)
 #endif
 #endif
 
+#if USE_WAKELOCK == 0
+	pm_notifier(vcodec_suspend_notifier, 0);
+#endif
+
 	MODULE_MFV_PR_DEBUG("vcodec_probe Done\n");
 
 #ifdef KS_POWER_WORKAROUND
@@ -2338,10 +2458,10 @@ MODULE_DEVICE_TABLE(of, vcodec_of_match);
 static struct platform_driver vcodec_driver = {
 	.probe = vcodec_probe,
 	.remove = vcodec_remove,
-	/*
-	 *  .suspend = vcodec_suspend,
-	 *  .resume = vcodec_resume,
-	 */
+#if USE_WAKELOCK == 0
+	.suspend = vcodec_suspend,
+	.resume = vcodec_resume,
+#endif
 	.driver = {
 		.name  = VCODEC_DEVNAME,
 		.owner = THIS_MODULE,
@@ -2358,6 +2478,12 @@ static int __init vcodec_driver_init(void)
 
 	mutex_lock(&DriverOpenCountLock);
 	Driver_Open_Count = 0;
+#if USE_WAKELOCK == 1
+	wake_lock_init(&vcodec_wake_lock, WAKE_LOCK_SUSPEND, "vcodec_wake_lock");
+	MODULE_MFV_PR_DEBUG("wake_lock_init(&vcodec_wake_lock, WAKE_LOCK_SUSPEND, \"vcodec_wake_lock\")");
+	wake_lock_init(&vcodec_wake_lock2, WAKE_LOCK_SUSPEND, "vcodec_wake_lock2");
+	MODULE_MFV_PR_DEBUG("wake_lock_init(&vcodec_wake_lock2, WAKE_LOCK_SUSPEND, \"vcodec_wake_lock2\")");
+#endif
 	mutex_unlock(&DriverOpenCountLock);
 
 	mutex_lock(&LogCountLock);
@@ -2471,6 +2597,9 @@ static int __init vcodec_driver_init(void)
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 		MODULE_MFV_PR_ERR("[VCODEC][ERROR] create enc isr event error\n");
 	}
+#if USE_WAKELOCK == 0
+	is_entering_suspend = 0;
+#endif
 
 	MODULE_MFV_PR_DEBUG("vcodec_driver_init Done\n");
 
@@ -2486,6 +2615,15 @@ static void __exit vcodec_driver_exit(void)
 	VAL_RESULT_T  eValHWLockRet;
 
 	MODULE_MFV_PR_DEBUG("vcodec_driver_exit\n");
+#if USE_WAKELOCK == 1
+	mutex_lock(&DriverOpenCountLock);
+	wake_lock_destroy(&vcodec_wake_lock);
+	MODULE_MFV_PR_DEBUG("wake_lock_destroy(&vcodec_wake_lock)");
+	wake_lock_destroy(&vcodec_wake_lock2);
+	MODULE_MFV_PR_DEBUG("wake_lock_destroy(&vcodec_wake_lock2)");
+	mutex_unlock(&DriverOpenCountLock);
+#endif
+
 
 	mutex_lock(&IsOpenedLock);
 	if (bIsOpened == VAL_TRUE) {
