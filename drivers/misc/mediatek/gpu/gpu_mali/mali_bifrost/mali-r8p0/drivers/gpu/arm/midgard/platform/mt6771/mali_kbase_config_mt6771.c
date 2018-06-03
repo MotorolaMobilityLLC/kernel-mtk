@@ -27,7 +27,6 @@
 #include "ged_dvfs.h"
 #include "mtk_gpufreq.h"
 
-#define HARD_RESET_AT_POWER_OFF 0
 /* #define GPU_DVFS_DEBUG */
 
 #ifdef GPU_DVFS_DEBUG
@@ -66,39 +65,7 @@ static void _mtk_check_MFG_idle(void)
 	} while ((val & 0x4) != 0x4);
 }
 
-/**
- * For VGPU Low Power Mode On/Off
-*/
-static void _mtk_pm_callback_power_off(void)
-{
-	mutex_lock(&g_mfg_lock);
-
-	MFG_DEBUG("[MALI] power off ....\n");
-
-#ifdef ENABLE_COMMON_DVFS
-	ged_dvfs_gpu_clock_switch_notify(0);
-#endif
-
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
-	g_curFreqID = mtk_get_ged_dvfs_last_commit_idx();
-
-	_mtk_check_MFG_idle();
-
-	/* Disable clock gating */
-	mt_gpufreq_disable_CG();
-
-	/* Turn off GPU MTCMOS by sequence */
-	/* mt_gpufreq_disable_MTCMOS(); */
-
-	/* Turn off GPU PMIC Buck */
-	/* mt_gpufreq_voltage_enable_set(0); */
-
-	MFG_DEBUG("[MALI] power off successfully\n");
-
-	mutex_unlock(&g_mfg_lock);
-}
-
-static int _mtk_pm_callback_power_on(void)
+static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	mutex_lock(&g_mfg_lock);
 
@@ -132,34 +99,33 @@ static int _mtk_pm_callback_power_on(void)
 	return 1;
 }
 
-/**
- * MTK internal io map function
- *
- */
-static void *_mtk_of_ioremap(const char *node_name)
-{
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, node_name);
-
-	if (node)
-		return of_iomap(node, 0);
-
-	MFG_DEBUG("[MALI] cannot find [%s] of_node, please fix me\n", node_name);
-	return NULL;
-}
-
-
-static int pm_callback_power_on(struct kbase_device *kbdev)
-{
-	_mtk_pm_callback_power_on();
-	return 1;
-}
-
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {
-	if (!mtk_kbase_is_gpu_always_on())
-		_mtk_pm_callback_power_off();
+	mutex_lock(&g_mfg_lock);
+
+	MFG_DEBUG("[MALI] power off ....\n");
+
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(0);
+#endif
+
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+	g_curFreqID = mtk_get_ged_dvfs_last_commit_idx();
+
+	_mtk_check_MFG_idle();
+
+	/* Disable clock gating */
+	mt_gpufreq_disable_CG();
+
+	/* Turn off GPU MTCMOS by sequence */
+	/* mt_gpufreq_disable_MTCMOS(); */
+
+	/* Turn off GPU PMIC Buck */
+	/* mt_gpufreq_voltage_enable_set(0); */
+
+	MFG_DEBUG("[MALI] power off successfully\n");
+
+	mutex_unlock(&g_mfg_lock);
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -194,6 +160,22 @@ struct kbase_platform_config *kbase_get_platform_config(void)
 	return &versatile_platform_config;
 }
 
+/**
+ * MTK internal io map function
+ *
+ */
+static void *_mtk_of_ioremap(const char *node_name)
+{
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, node_name);
+
+	if (node)
+		return of_iomap(node, 0);
+
+	MFG_DEBUG("[MALI] cannot find [%s] of_node, please fix me\n", node_name);
+	return NULL;
+}
 
 int kbase_platform_early_init(void)
 {
