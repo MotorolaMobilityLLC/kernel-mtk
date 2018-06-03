@@ -1803,14 +1803,13 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 	/*serve interrupts according to power role*/
 	if (cc_is0 & (TYPE_C_CC_ENT_DISABLE_INTR | toggle)) {
-
-		hba->cc = DONT_CARE;
-
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if ((hba->mode == 1) && (hba->cc > DONT_CARE)) {
 			hba->data_role = PD_NO_ROLE;
 			schedule_work(&hba->usb_work);
 		}
+
+		hba->cc = DONT_CARE;
 
 		/*ignore SNK<->SRC & SNK<->ACC*/
 		typec_int_disable(hba, toggle, 0);
