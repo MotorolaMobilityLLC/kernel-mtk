@@ -2240,9 +2240,9 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 	/* TODO(Kevin): Support Min Channel Load */
 	/* UINT_8 aucChannelLoad[CHANNEL_NUM] = {0}; */
 
-	BOOLEAN fgIsFixedChannel;
-	ENUM_BAND_T eBand;
-	UINT_8 ucChannel;
+	BOOLEAN fgIsFixedChannel = (BOOLEAN) FALSE;
+	ENUM_BAND_T eBand = BAND_2G4;
+	UINT_8 ucChannel = 0;
 	UINT_32 u4ScnAdhocBssDescTimeout = 0;
 
 	ASSERT(prAdapter);
