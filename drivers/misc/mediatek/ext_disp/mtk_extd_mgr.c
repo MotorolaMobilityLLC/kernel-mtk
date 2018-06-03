@@ -246,7 +246,10 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 	case MTK_HDMI_IS_FORCE_AWAKE:
 		{
-			/* r = hdmi_is_force_awake(argp); */
+
+#ifdef CONFIG_MTK_INTERNAL_HDMI_SUPPORT
+			 r = hdmi_is_force_awake(argp);
+#endif
 			break;
 		}
 	case MTK_HDMI_GET_EDID:
