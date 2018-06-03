@@ -639,7 +639,8 @@ static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream)
 			pr_debug("%s mdl1spk_hdoutput_control == %d\n", __func__,
 				mdl1spk_hdoutput_control);
 			/* here to open APLL */
-			DisableALLbySampleRate(substream->runtime->rate);
+			if (!mtk_soc_always_hd)
+				DisableALLbySampleRate(substream->runtime->rate);
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, false);
 		}
@@ -700,7 +701,8 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 			pr_debug("%s mdl1spk_hdoutput_control == %d\n", __func__,
 					mdl1spk_hdoutput_control);
 			/* here to open APLL */
-			EnableALLbySampleRate(runtime->rate);
+			if (!mtk_soc_always_hd)
+				EnableALLbySampleRate(runtime->rate);
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
