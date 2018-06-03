@@ -42,4 +42,11 @@ config TOUCHSCREEN_MTK_GT911
 	  If unsure, say N.
 
 source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
+
+config TOUCHSCREEN_MTK_GSLX680
+	bool "gslX680 for Mediatek package"
+	help
+	  Say Y here if you have gslX680 touch panel.
+
+	  If unsure, say N.
 endif
