@@ -4800,6 +4800,24 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 			prAdapter->rWifiVar.u8SupportRxSgi40 = (UINT_8) u4Data;
 		} else if (u2SubId == 0x0102)
 			prAdapter->rWifiVar.u8SupportRxSTBC = (UINT_8) u4Data;
+		else if (u2SubId == 0x0103) { /* AP Mode WMMPS */
+			DBGLOG(OID, INFO, "ApUapsd 0x10010103 cmd received: %d\n", u4Data);
+			if ((BOOLEAN)u4Data) {
+				PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
+
+				prAdapter->rWifiVar.fgSupportUAPSD = TRUE;
+				rUapsdParams.fgEnAPSD = 1;
+				rUapsdParams.fgEnAPSD_AcBe = 1;
+				rUapsdParams.fgEnAPSD_AcBk = 1;
+				rUapsdParams.fgEnAPSD_AcVi = 1;
+				rUapsdParams.fgEnAPSD_AcVo = 1;
+				rUapsdParams.ucMaxSpLen = 0; /* default:0, Do not limit delivery pkt num */
+
+				nicSetUApsdParam(prAdapter, rUapsdParams, NETWORK_TYPE_P2P_INDEX);
+			} else {
+				prAdapter->rWifiVar.fgSupportUAPSD = FALSE;
+			}
+		}
 		break;
 
 #if CFG_SUPPORT_SWCR
@@ -9234,6 +9252,21 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 		if (p2pLaunch(prAdapter->prGlueInfo))
 			ASSERT(prAdapter->fgIsP2PRegistered);
+
+		if (prAdapter->rWifiVar.fgSupportUAPSD && prSetP2P->u4Mode == 1) {
+			PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
+
+			DBGLOG(OID, INFO, "wlanoidSetP2pMode Default enable ApUapsd\n");
+
+			rUapsdParams.fgEnAPSD = 1;
+			rUapsdParams.fgEnAPSD_AcBe = 1;
+			rUapsdParams.fgEnAPSD_AcBk = 1;
+			rUapsdParams.fgEnAPSD_AcVi = 1;
+			rUapsdParams.fgEnAPSD_AcVo = 1;
+			rUapsdParams.ucMaxSpLen = 0; /* default:0, Do not limit delivery pkt num */
+
+			nicSetUApsdParam(prAdapter, rUapsdParams, NETWORK_TYPE_P2P_INDEX);
+		}
 
 	} else {
 		DBGLOG(P2P, TRACE, "prAdapter->fgIsP2PRegistered = %d\n", prAdapter->fgIsP2PRegistered);
