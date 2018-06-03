@@ -128,7 +128,7 @@
 #define MD1_BUS_REG_BASE2		(0x0D0C9000)/* cm2_misc */
 #define MD1_BUS_REG_LEN2			0xAC
 #define MD1_BUS_REG_BASE3		(0x0D0E0000)/* modeml1_ao_config */
-#define MD1_BUS_REG_LEN3			0x68
+#define MD1_BUS_REG_LEN3			0x6C
 /* BUSREC */
 #define MD1_MCU_MO_BUSREC_STOP_VAL	0x0
 #define MD1_MCU_MO_BUSREC_BASE0		(0x0D0C6000)

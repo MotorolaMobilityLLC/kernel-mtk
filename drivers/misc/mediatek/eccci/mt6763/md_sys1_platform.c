@@ -448,12 +448,20 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus REC: [0]0x%X, [1]0x%X, [2]0x%X\n",
 			MD1_MCU_MO_BUSREC_BASE0, MD1_INFRA_BUSREC_BASE0, MD1_BUSREC_LAY_BASE0);
 		ccci_write32(md_reg->md_bus_rec_0, 0x10, MD1_MCU_MO_BUSREC_STOP_VAL);/* pre-action: stop busrec */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x18, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x700, 0x518);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x0, 0x104);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x200, 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x300, 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x400, 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x500, 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_0 + 0x700, 0x51C);
 		ccci_write32(md_reg->md_bus_rec_0, 0x10, MD1_MCU_MO_BUSREC_RESTART_VAL);/* restart busrec */
 		ccci_write32(md_reg->md_bus_rec_1, 0x10, MD1_INFRA_BUSREC_STOP_VAL);/* pre-action: stop busrec */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x18, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x700, 0x518);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x0, 0x104);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x200, 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x300, 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x400, 0x18);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x500, 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_1 + 0x700, 0x51C);
 		ccci_write32(md_reg->md_bus_rec_1, 0x10, MD1_INFRA_BUSREC_RESTART_VAL);/* post-action: restart busrec */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_bus_rec_2, MD1_BUSREC_LAY_LEN0);
 	}
