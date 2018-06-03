@@ -685,8 +685,8 @@ static void OpenTrimBufferHardware(bool enable, bool buffer_on)
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
 		udelay(250);
 
-		/* Enable cap-less LDOs (1.5V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1055, 0x1055);
+		/* Enable cap-less LDOs (1.5V), LCLDO local sense */
+		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1015, 0x1055);
 		/* Enable NV regulator (-1.2V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0001, 0xffff);
 		udelay(100);
