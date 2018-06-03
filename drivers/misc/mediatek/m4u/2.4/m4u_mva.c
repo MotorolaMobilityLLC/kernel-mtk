@@ -394,7 +394,7 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 	struct m4u_buf_info_t *pMvaInfo = (struct m4u_buf_info_t *)priv;
 	int is_in = 0, is_interseted = 0;
 	int is_vpu_port = 0;
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 	is_vpu_port = (pMvaInfo->port == M4U_PORT_VPU0) || (pMvaInfo->port == M4U_PORT_VPU1);
 #else
 	is_vpu_port = (pMvaInfo->port == M4U_PORT_VPU);

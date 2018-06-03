@@ -48,7 +48,7 @@
 #define MVA_GRAPH_NR_TO_SIZE(nr) (nr << MVA_BLOCK_SIZE_ORDER)
 
 /*reserved mva region for vpu exclusive use*/
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 #define VPU_RESET_VECTOR_FIX_MVA_START   0x7DA00000
 #define VPU_RESET_VECTOR_FIX_MVA_END     0x82600000
 #else
@@ -58,7 +58,7 @@
 #define VPU_RESET_VECTOR_FIX_SIZE        (VPU_RESET_VECTOR_FIX_MVA_END - VPU_RESET_VECTOR_FIX_MVA_START + 1)
 #define VPU_RESET_VECTOR_BLOCK_NR        MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_RESET_VECTOR_FIX_SIZE)
 
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 #define VPU_FIX_MVA_START                0x7DA00000
 #define VPU_FIX_MVA_END                  0x82600000
 #else
