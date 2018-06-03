@@ -46,8 +46,6 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "imgsensor_legacy.h"
-
 #include "imx338mipi_Sensor.h"
 
 /****************************Modify Following Strings for Debug****************************/
@@ -4126,8 +4124,6 @@ UINT32 IMX338_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
     /* To Do : Check Sensor status here */
     if (pfFunc!=NULL)
         *pfFunc=&sensor_func;
-
-	imgsensor_legacy_init(&sensor_func);
 
     return ERROR_NONE;
 }    /*    IMX230_MIPI_RAW_SensorInit    */
