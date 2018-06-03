@@ -4799,6 +4799,18 @@ void exec_BAT_EC(int cmd, int param)
 			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t4=%d\n", cmd, param);
 		}
 		break;
+	case 758:
+		{
+			fg_cust_data.nafg_ratio = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.nafg_ratio=%d\n", cmd, param);
+		}
+		break;
+	case 759:
+		{
+			fg_cust_data.nafg_ratio = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.nafg_ratio=%d\n", cmd, param);
+		}
+		break;
 	default:
 		bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, default\n", cmd, param);
 		break;
