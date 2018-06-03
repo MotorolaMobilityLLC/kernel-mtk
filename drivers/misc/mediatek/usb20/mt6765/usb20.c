@@ -716,6 +716,21 @@ void musb_platform_reset(struct musb *musb)
 {
 	u16 swrst = 0;
 	void __iomem *mbase = musb->mregs;
+	u8 bit;
+
+	/* clear all DMA enable bit */
+	for (bit = 0; bit < MUSB_HSDMA_CHANNELS; bit++)
+		musb_writew(mbase,
+			MUSB_HSDMA_CHANNEL_OFFSET(bit, MUSB_HSDMA_CONTROL), 0);
+
+	/* set DMA channel 0 burst mode to boost QMU speed */
+	musb_writel(musb->mregs, 0x204,
+			musb_readl(musb->mregs, 0x204) | 0x600);
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	/* eanble DMA channel 0 36-BIT support */
+	musb_writel(musb->mregs, 0x204,
+			musb_readl(musb->mregs, 0x204) | 0x4000);
+#endif
 
 	swrst = musb_readw(mbase, MUSB_SWRST);
 	swrst |= (MUSB_SWRST_DISUSBRESET | MUSB_SWRST_SWRST);

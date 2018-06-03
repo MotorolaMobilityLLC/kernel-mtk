@@ -791,8 +791,14 @@ void mt_usb_otg_init(struct musb *musb)
 			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
 #endif
 	   ) {
-		DBG(0, "in special mode %d\n", get_boot_mode());
+#ifdef CONFIG_MTK_USB_TYPEC
+		DBG(0, "with TYPEC in special mode %d, keep going\n",
+			get_boot_mode());
+#else
+		DBG(0, "w/o TYPEC in special mode %d, skip\n",
+			get_boot_mode());
 		return;
+#endif
 	}
 
 	/* test */
