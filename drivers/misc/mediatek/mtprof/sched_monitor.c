@@ -53,7 +53,7 @@ static unsigned int WARN_IRQ_DISABLE_DUR;
 static unsigned int AEE_WARN_DUR;
 
 static unsigned int irq_info_enable;
-
+static unsigned int sched_mon_door_key;
 
 #define MAX_STACK_TRACE_DEPTH   32
 
@@ -844,6 +844,9 @@ static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
 	unsigned long val;
 	int ret;
 
+	if (!sched_mon_door_key)
+		return cnt;
+
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
@@ -889,7 +892,10 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 	char buf[64];							\
 	unsigned long val;								\
 	int ret;								\
-											\
+									\
+	if (!sched_mon_door_key)			\
+		return cnt;						\
+									\
 	if (cnt >= sizeof(buf))					\
 		return -EINVAL;						\
 											\
@@ -942,6 +948,32 @@ DECLARE_MT_SCHED_MATCH(BURST_IRQ, WARN_BURST_IRQ_DETECT);
 DECLARE_MT_SCHED_MATCH(IRQ_DISABLE_DUR, WARN_IRQ_DISABLE_DUR);
 DECLARE_MT_SCHED_MATCH(IRQ_INFO_ENABLE, irq_info_enable);
 DECLARE_MT_SCHED_MATCH(AEE_WARNING_DUR, AEE_WARN_DUR);
+
+static ssize_t mt_sched_monitor_door_write(struct file *filp,
+	const char *ubuf, size_t cnt, loff_t *data)
+{
+	char buf[16];
+
+	if (cnt >= sizeof(buf) || cnt <= 1UL)
+		return cnt;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt-1UL] = 0;
+
+	if (strcmp("open", buf) == 0)
+		sched_mon_door_key = 1;
+	if (strcmp("close", buf) == 0)
+		sched_mon_door_key = 0;
+
+	return cnt;
+}
+
+static const struct file_operations mt_sched_monitor_door_fops = {
+	.open = simple_open,
+	.write = mt_sched_monitor_door_write,
+};
 
 static int __init init_mtsched_mon(void)
 {
@@ -1017,6 +1049,10 @@ static int __init init_mtsched_mon(void)
 		return -ENOMEM;
 	pe = proc_create("mtmon/irq_info_enable", 0664, NULL,
 			 &mt_sched_monitor_IRQ_INFO_ENABLE_fops);
+	if (!pe)
+		return -ENOMEM;
+	pe = proc_create("mtmon/sched_mon_door", 0220, NULL,
+			&mt_sched_monitor_door_fops);
 	if (!pe)
 		return -ENOMEM;
 	return 0;
