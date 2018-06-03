@@ -94,22 +94,22 @@ void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 	if (dither_bpp == 16) {	/* 565 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x50500001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x50504040, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp == 18) {	/* 666 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x40400001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x40404040, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp == 24) {	/* 888 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x20200001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x20202020, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp > 24) {
 		DITHER_DBG("High depth LCM (bpp = %d), no dither\n", dither_bpp);
 		enable = 1;
 	} else {
 		DITHER_DBG("Invalid dither bpp = %d\n", dither_bpp);
 		/* Bypass dither */
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0); */
 		enable = 0;
 	}
 
@@ -278,15 +278,15 @@ void disp_dither_select(enum DISP_MODULE_ENUM module, unsigned int dither_bpp, v
 	if (dither_bpp == 16) {	/* 565 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x50500001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x50504040, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp == 18) {	/* 666 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x40400001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x40404040, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp == 24) {	/* 888 */
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 15), 0x20200001, ~0);
 		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 16), 0x20202020, ~0);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000001, ~0); */
 	} else if (dither_bpp > 24) {
 		DITHER_DBG("High depth LCM (bpp = %d), no dither\n", dither_bpp);
 		enable = 1;
@@ -294,7 +294,7 @@ void disp_dither_select(enum DISP_MODULE_ENUM module, unsigned int dither_bpp, v
 		DITHER_DBG("Invalid dither bpp = %d\n", dither_bpp);
 		/* Bypass dither */
 		DISP_REG_MASK(cmdq, DISP_REG_DITHER_0 + offset, 1 << 4, 1 << 4);
-		DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0);
+		/* DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 0), 0x00000000, ~0); */
 		enable = 0;
 	}
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN + offset, enable, 0x1);
