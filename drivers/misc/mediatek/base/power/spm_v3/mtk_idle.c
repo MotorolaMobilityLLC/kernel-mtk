@@ -1769,8 +1769,8 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
-	mt_idle_log("force VCORE lp mode = %u\n", dpidle_force_vcore_lp_mode);
 	mt_idle_log("([0]: Reduced, [1]: Full, [2]: resource_usage\n");
+	mt_idle_log("force VCORE lp mode = %u\n", dpidle_force_vcore_lp_mode);
 
 	mt_idle_log("\n*********** dpidle command help  ************\n");
 	mt_idle_log("dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");

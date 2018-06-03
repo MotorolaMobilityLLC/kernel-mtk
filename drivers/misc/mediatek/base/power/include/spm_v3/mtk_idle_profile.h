@@ -15,7 +15,6 @@
 
 #include <linux/ktime.h>
 #include "mtk_spm_internal.h"
-#include "mtk_idle_internal.h"
 
 #define SPM_MET_TAGGING  0
 #define IDLE_LOG_BUF_LEN 512
@@ -33,6 +32,16 @@ typedef struct mtk_idle_twam {
 struct mtk_idle_buf {
 	char buf[IDLE_LOG_BUF_LEN];
 	char *p_idx;
+};
+
+struct mtk_idle_recent_ratio {
+	unsigned long long value;
+	unsigned long long value_dp;
+	unsigned long long value_so3;
+	unsigned long long value_so;
+	unsigned long long last_end_ts;
+	unsigned long long start_ts;
+	unsigned long long end_ts;
 };
 
 #define reset_idle_buf(idle) ((idle).p_idx = (idle).buf)
@@ -65,6 +74,7 @@ static inline long int idle_get_current_time_ms(void)
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
 
+void mtk_idle_recent_ratio_get(int *window_length_ms, struct mtk_idle_recent_ratio *ratio);
 
 #endif /* __MTK_IDLE_PROFILE_H__ */
 
