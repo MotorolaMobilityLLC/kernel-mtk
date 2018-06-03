@@ -205,6 +205,7 @@ static inline int _smc(union mc_fc_generic *mc_fc_generic)
 
 #ifdef TBASE_CORE_SWITCHER
 static int active_cpu;
+int curr_active_cpu(void) { return active_cpu; }
 
 #ifdef MC_FASTCALL_WORKER_THREAD
 static void mc_cpu_offline(int cpu)
@@ -219,7 +220,7 @@ static void mc_cpu_offline(int cpu)
 	/* Chose the first online CPU and switch! */
 	for_each_online_cpu(i) {
 		if (cpu != i) {
-			mc_dev_info("CPU %d is dying, switching to %d\n",
+			mc_dev_devel("CPU %d is dying, switching to %d\n",
 				     cpu, i);
 			mc_switch_core(i);
 			break;
