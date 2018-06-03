@@ -32,11 +32,8 @@
 #define AUDPLL_TUNER_EN		BIT(31)
 
 #define POSTDIV_MASK		0x7
-#if defined(CONFIG_MACH_MT6758)
-#define INTEGER_BITS		8
-#else
 #define INTEGER_BITS		7
-#endif
+
 /*
  * MediaTek PLLs are configured through their pcw value. The pcw value describes
  * a divider in the PLL feedback loop which consists of 7 bits for the integer
@@ -72,11 +69,13 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
 {
 	int pcwbits = pll->data->pcwbits;
 	int pcwfbits;
+	int ibits;
 	u64 vco;
 	u8 c = 0;
 
 	/* The fractional part of the PLL divider. */
-	pcwfbits = pcwbits > INTEGER_BITS ? pcwbits - INTEGER_BITS : 0;
+	ibits = pll->data->pcwibits ? pll->data->pcwibits : INTEGER_BITS;
+	pcwfbits = pcwbits > ibits ? pcwbits - ibits : 0;
 
 	vco = (u64)fin * pcw;
 
@@ -165,13 +164,10 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		u32 freq, u32 fin)
 {
-#if defined(CONFIG_MACH_MT6758)
-	unsigned long fmin = 2000 * MHZ;
-#else
-	unsigned long fmin = 1000 * MHZ;
-#endif
+	unsigned long fmin = pll->data->fmin;
 	const struct mtk_pll_div_table *div_table = pll->data->div_table;
 	u64 _pcw;
+	int ibits;
 	u32 val;
 
 	if (freq > pll->data->fmax)
@@ -195,11 +191,41 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 	}
 
 	/* _pcw = freq * postdiv / fin * 2^pcwfbits */
-	_pcw = ((u64)freq << val) << (pll->data->pcwbits - INTEGER_BITS);
+	ibits = pll->data->pcwibits ? pll->data->pcwibits : INTEGER_BITS;
+	_pcw = ((u64)freq << val) << (pll->data->pcwbits - ibits);
 	do_div(_pcw, fin);
 
 	*pcw = (u32)_pcw;
 }
+
+#ifdef MT_CCF_BRINGUP
+static int mtk_pll_is_prepared_dummy(struct clk_hw *hw)
+{
+	return 1;
+}
+static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long parent_rate)
+{
+	return 0;
+}
+static unsigned long mtk_pll_recalc_rate_dummy(struct clk_hw *hw,
+		unsigned long parent_rate)
+{
+	return 0;
+}
+static long mtk_pll_round_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long *prate)
+{
+	return 0;
+}
+static int mtk_pll_prepare_dummy(struct clk_hw *hw)
+{
+	return 0;
+}
+static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
+{
+}
+#endif
 
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
@@ -227,7 +253,7 @@ static unsigned long mtk_pll_recalc_rate(struct clk_hw *hw,
 	pcw = readl(pll->pcw_addr) >> pll->data->pcw_shift;
 	pcw &= GENMASK(pll->data->pcwbits - 1, 0);
 
-	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv);
+	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv) / 4;
 }
 
 static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
@@ -239,7 +265,7 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 
 	mtk_pll_calc_values(pll, &pcw, &postdiv, rate, *prate);
 
-	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv);
+	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv) / 4;
 }
 
 #if (defined(CONFIG_MACH_MT6758))
@@ -379,7 +405,18 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 }
 #endif
 
-#if (defined(CONFIG_MACH_MT6758))
+#if defined(MT_CCF_BRINGUP)
+static const struct clk_ops mtk_pll_ops_dummy = {
+	.is_enabled	= mtk_pll_is_prepared_dummy,
+	.enable		= mtk_pll_prepare_dummy,
+	.disable	= mtk_pll_unprepare_dummy,
+	.recalc_rate	= mtk_pll_recalc_rate_dummy,
+	.round_rate	= mtk_pll_round_rate_dummy,
+	.set_rate	= mtk_pll_set_rate_dummy,
+};
+#endif
+
+#if (defined(CONFIG_MACH_MT6758)) | (defined(CONFIG_MACH_MT6765))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
 	.enable		= mtk_pll_prepare,
@@ -424,7 +461,11 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 
 	init.name = data->name;
 	init.flags = (data->flags & PLL_AO) ? CLK_IS_CRITICAL : 0;
+	#if defined(MT_CCF_BRINGUP)
+	init.ops = &mtk_pll_ops_dummy;
+	#else
 	init.ops = &mtk_pll_ops;
+	#endif
 	init.parent_names = &parent_name;
 	init.num_parents = 1;
 
