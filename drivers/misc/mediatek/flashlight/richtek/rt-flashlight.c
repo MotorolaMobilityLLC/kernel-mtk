@@ -1,17 +1,14 @@
 /*
- * Flashlight Class Device Driver
+ *  Copyright (C) 2017 MediaTek Inc.
  *
- * Copyright (C) 2013 Richtek Technology Corp.
- * Author: Patrick Chang <patrick_chang@richtek.com>
- *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -235,24 +232,24 @@ static void flashlight_device_release(struct device *dev)
 }
 
 
-static DEVICE_ATTR(name, S_IRUGO, flashlight_show_name, NULL);
-static DEVICE_ATTR(type, S_IRUGO, flashlight_show_type, NULL);
-static DEVICE_ATTR(mode, S_IRUGO, flashlight_show_mode, NULL);
-static DEVICE_ATTR(torch_max_brightness, S_IRUGO,
+static DEVICE_ATTR(name, 0444, flashlight_show_name, NULL);
+static DEVICE_ATTR(type, 0444, flashlight_show_type, NULL);
+static DEVICE_ATTR(mode, 0444, flashlight_show_mode, NULL);
+static DEVICE_ATTR(torch_max_brightness, 0444,
 	flashlight_show_torch_max_brightness, NULL);
-static DEVICE_ATTR(strobe_max_brightness, S_IRUGO,
+static DEVICE_ATTR(strobe_max_brightness, 0444,
 	flashlight_show_strobe_max_brightness, NULL);
-static DEVICE_ATTR(color_temperature, S_IRUGO,
+static DEVICE_ATTR(color_temperature, 0444,
 	flashlight_show_color_temperature, NULL);
-static DEVICE_ATTR(strobe_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR(strobe_delay, 0664,
 	flashlight_show_strobe_delay, NULL);
-static DEVICE_ATTR(strobe_timeout, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR(strobe_timeout, 0664,
 	flashlight_show_strobe_timeout,
 	flashlight_store_strobe_timeout);
-static DEVICE_ATTR(torch_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR(torch_brightness, 0664,
 	flashlight_show_torch_brightness,
 	flashlight_store_torch_brightness);
-static DEVICE_ATTR(strobe_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
+static DEVICE_ATTR(strobe_brightness, 0664,
 	flashlight_show_strobe_brightness,
 	flashlight_store_strobe_brightness);
 
