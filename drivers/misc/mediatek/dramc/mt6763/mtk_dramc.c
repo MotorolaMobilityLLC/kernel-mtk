@@ -65,17 +65,15 @@ void __iomem *DRAMC_AO_CHA_BASE_ADDR;
 void __iomem *DRAMC_AO_CHB_BASE_ADDR;
 void __iomem *DRAMC_NAO_CHA_BASE_ADDR;
 void __iomem *DRAMC_NAO_CHB_BASE_ADDR;
-void __iomem *DDRPHY_CHA_BASE_ADDR;
-void __iomem *DDRPHY_CHB_BASE_ADDR;
+void __iomem *DDRPHY_AO_CHA_BASE_ADDR;
+void __iomem *DDRPHY_AO_CHB_BASE_ADDR;
+void __iomem *DDRPHY_NAO_CHA_BASE_ADDR;
+void __iomem *DDRPHY_NAO_CHB_BASE_ADDR;
 #define DRAM_RSV_SIZE 0x1000
 
 #ifdef SW_TX_TRACKING
 static unsigned int mr18_cur;
 static unsigned int mr19_cur;
-#endif
-
-#ifdef LAST_DRAMC
-static void *(*get_emi_base)(void);
 #endif
 
 #define DRAMC_GET_EMI_WORKAROUND /* FIXME, waiting for mt_emi_base_get() porting done */
@@ -210,42 +208,6 @@ const char *uname, int depth, void *data)
 
 	return node;
 }
-
-void *mt_dramc_cha_base_get(void)
-{
-	return DRAMC_AO_CHA_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_dramc_cha_base_get);
-
-void *mt_dramc_chb_base_get(void)
-{
-	return DRAMC_AO_CHB_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_dramc_chb_base_get);
-
-void *mt_dramc_nao_cha_base_get(void)
-{
-	return DRAMC_NAO_CHA_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_dramc_nao_cha_base_get);
-
-void *mt_dramc_nao_chb_base_get(void)
-{
-	return DRAMC_NAO_CHB_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_dramc_nao_chb_base_get);
-
-void *mt_ddrphy_cha_base_get(void)
-{
-	return DDRPHY_CHA_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_ddrphy_cha_base_get);
-
-void *mt_ddrphy_chb_base_get(void)
-{
-	return DDRPHY_CHB_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_ddrphy_chb_base_get);
 
 #ifdef SW_TX_TRACKING
 static tx_result read_dram_mode_reg(
@@ -428,11 +390,11 @@ static tx_result dramc_tx_tracking(int channel)
 	if (channel == 0) {
 		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
 		dramc_nao_chx_base = DRAMC_NAO_CHA_BASE_ADDR;
-		ddrphy_chx_base = DDRPHY_CHA_BASE_ADDR;
+		ddrphy_chx_base = DDRPHY_AO_CHA_BASE_ADDR;
 	} else {
 		dramc_ao_chx_base = DRAMC_AO_CHB_BASE_ADDR;
 		dramc_nao_chx_base = DRAMC_NAO_CHB_BASE_ADDR;
-		ddrphy_chx_base = DDRPHY_CHB_BASE_ADDR;
+		ddrphy_chx_base = DDRPHY_AO_CHB_BASE_ADDR;
 	}
 
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
@@ -598,101 +560,6 @@ void dump_tx_log(tx_result res)
 		break;
 	}
 }
-#endif
-
-#ifdef LAST_DRAMC
-static int __init set_single_channel_test_angent(int channel)
-{
-	void __iomem *dramc_ao_base;
-	void __iomem *emi_base;
-	unsigned int bit_scramble, bit_xor, bit_shift;
-	unsigned int emi_cona, emi_conf;
-	unsigned int channel_position;
-	unsigned int temp;
-	phys_addr_t test_agent_base = dram_rank0_addr;
-
-	emi_base = get_emi_base();
-	if (emi_base == NULL) {
-		pr_err("[LastDRAMC] can't find EMI base\n");
-		return -1;
-	}
-	emi_cona = readl(IOMEM(emi_base+0x000));
-	emi_conf = readl(IOMEM(emi_base+0x028))>>8;
-
-	channel_position = (emi_cona>>2)&0x3;
-	if (channel_position == 0x3)
-		channel_position = 12;
-	else
-		channel_position += 7;
-
-	if (channel == 0)
-		dramc_ao_base = DRAMC_AO_CHA_BASE_ADDR;
-	else
-		dramc_ao_base = DRAMC_AO_CHB_BASE_ADDR;
-
-	/* calculate DRAM base address (test_agent_base) */
-	/* pr_err("[LastDRAMC] reserved address before emi: %llx\n", test_agent_base); */
-	for (bit_scramble = 11; bit_scramble < 17; bit_scramble++) {
-		bit_xor = (emi_conf >> (4*(bit_scramble-11))) & 0xf;
-		bit_xor &= test_agent_base >> 16;
-		for (bit_shift = 0; bit_shift < 4; bit_shift++)
-			test_agent_base ^= ((bit_xor>>bit_shift)&0x1) << bit_scramble;
-	}
-	test_agent_base -= 0x40000000;
-	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
-	if ((emi_cona&0x300) != 0) {
-		/* pr_err("[LastDRAMC] two channels\n"); */
-		temp = (test_agent_base & (0x1ffffffff << (channel_position+1))) >> 1;
-		test_agent_base = temp | (test_agent_base & (0x1ffffffff >> (33-channel_position)));
-	}
-	/* pr_err("[LastDRAMC] reserved address after emi: %llx\n", test_agent_base); */
-
-	/* set base address for test agent */
-	temp = Reg_Readl(dramc_ao_base+0x94) & 0xF;
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-		temp |= (test_agent_base>>1) & 0xFFFFFFF0;
-	else if (DRAM_TYPE == TYPE_LPDDR3)
-		temp |= (test_agent_base) & 0xFFFFFFF0;
-	else {
-		pr_err("[LastDRAMC] undefined DRAM type\n");
-		return -1;
-	}
-	Reg_Sync_Writel(dramc_ao_base+0x94, temp);
-
-	/* write test pattern */
-
-	return 0;
-}
-
-static int __init last_dramc_test_agent_init(void)
-{
-	void __iomem *emi_base;
-	unsigned int emi_cona;
-
-	get_emi_base = (void *)symbol_get(mt_emi_base_get);
-	if (get_emi_base == NULL) {
-		pr_err("[LastDRAMC] mt_emi_base_get is NULL\n");
-		return 0;
-	}
-
-	emi_base = get_emi_base();
-	if (emi_base == NULL) {
-		pr_err("[LastDRAMC] can't find EMI base\n");
-		return 0;
-	}
-	emi_cona = readl(IOMEM(emi_base+0x000));
-
-	set_single_channel_test_angent(0);
-	if ((emi_cona&0x300) != 0)
-		set_single_channel_test_angent(1);
-
-	symbol_put(mt_emi_base_get);
-	get_emi_base = NULL;
-
-	return 0;
-}
-
-late_initcall(last_dramc_test_agent_init);
 #endif
 
 #ifdef CONFIG_MTK_DRAMC_PASR
@@ -1226,10 +1093,14 @@ unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset)
 		return readl(IOMEM(DRAMC_AO_CHA_BASE_ADDR + Offset));
 	else if ((Reg_base == DRAMC_AO_CHB) && (Offset < 0x1000))
 		return readl(IOMEM(DRAMC_AO_CHB_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_NAO_CHA) && (Offset < 0x1000))
+		return readl(IOMEM(DDRPHY_NAO_CHA_BASE_ADDR + Offset));
+	else if ((Reg_base == PHY_NAO_CHB) && (Offset < 0x1000))
+		return readl(IOMEM(DDRPHY_NAO_CHB_BASE_ADDR + Offset));
 	else if ((Reg_base == PHY_AO_CHA) && (Offset < 0x1000))
-		return readl(IOMEM(DDRPHY_CHA_BASE_ADDR + Offset));
+		return readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + Offset));
 	else if ((Reg_base == PHY_AO_CHB) && (Offset < 0x1000))
-		return readl(IOMEM(DDRPHY_CHB_BASE_ADDR + Offset));
+		return readl(IOMEM(DDRPHY_AO_CHB_BASE_ADDR + Offset));
 	else
 		return 0;
 }
@@ -1245,10 +1116,10 @@ unsigned int get_dram_data_rate(void)
 	channels = get_emi_ch_num();
 	u4ShuLevel = get_shuffle_status();
 
-	u4SDM_PCW = readl(IOMEM(DDRPHY_CHA_BASE_ADDR + 0xd94 + 0x500 * u4ShuLevel)) >> 16;
-	u4PREDIV = (readl(IOMEM(DDRPHY_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) & 0x000c0000) >> 18;
-	u4POSDIV = readl(IOMEM(DDRPHY_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) & 0x00000007;
-	u4CKDIV4 = (readl(IOMEM(DDRPHY_CHA_BASE_ADDR + 0xd18 + 0x500 * u4ShuLevel)) & 0x08000000) >> 27;
+	u4SDM_PCW = readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xd94 + 0x500 * u4ShuLevel)) >> 16;
+	u4PREDIV = (readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) & 0x000c0000) >> 18;
+	u4POSDIV = readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) & 0x00000007;
+	u4CKDIV4 = (readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xd18 + 0x500 * u4ShuLevel)) & 0x08000000) >> 27;
 
 	u4VCOFreq = ((52>>u4PREDIV)*(u4SDM_PCW>>8))>>u4POSDIV;
 
@@ -1264,13 +1135,19 @@ unsigned int get_dram_data_rate(void)
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 		if (channels == 1) {
-			if (u4DataRate == 3198)
+			if (u4DataRate == 3718)
+				u4DataRate = 3733;
+			else if (u4DataRate == 3198)
 				u4DataRate = 3200;
+			else if (u4DataRate == 2392)
+				u4DataRate = 2400;
 			else
 				u4DataRate = 0;
 		} else {
 			if (u4DataRate == 3198)
 				u4DataRate = 3200;
+			else if (u4DataRate == 2392)
+				u4DataRate = 2400;
 			else if (u4DataRate == 1599)
 				u4DataRate = 1600;
 			else
@@ -1407,15 +1284,10 @@ int dram_steps_freq(unsigned int step)
 
 int dram_can_support_fh(void)
 {
-/* FIXME: open it when multi-freq ready */
-#if 0
 	if (No_DummyRead)
 		return 0;
 	else
 		return 1;
-#else
-	return 0;
-#endif
 }
 
 #ifdef CONFIG_OF_RESERVED_MEM
@@ -1523,17 +1395,23 @@ static int dram_probe(struct platform_device *pdev)
 	DRAMC_NAO_CHA_BASE_ADDR = base_temp[2];
 	DRAMC_NAO_CHB_BASE_ADDR = base_temp[3];
 
-	DDRPHY_CHA_BASE_ADDR = base_temp[4];
-	DDRPHY_CHB_BASE_ADDR = base_temp[5];
+	DDRPHY_AO_CHA_BASE_ADDR = base_temp[4];
+	DDRPHY_AO_CHB_BASE_ADDR = base_temp[5];
+
+	DDRPHY_NAO_CHA_BASE_ADDR = base_temp[6];
+	DDRPHY_NAO_CHB_BASE_ADDR = base_temp[7];
 
 	pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n", DRAMC_AO_CHA_BASE_ADDR);
 	pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n", DRAMC_AO_CHB_BASE_ADDR);
 
-	pr_warn("[DRAMC]get DDRPHY_CHA_BASE_ADDR @ %p\n", DDRPHY_CHA_BASE_ADDR);
-	pr_warn("[DRAMC]get DDRPHY_CHB_BASE_ADDR @ %p\n", DDRPHY_CHB_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_AO_CHA_BASE_ADDR @ %p\n", DDRPHY_AO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_AO_CHB_BASE_ADDR @ %p\n", DDRPHY_AO_CHB_BASE_ADDR);
 
 	pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n", DRAMC_NAO_CHA_BASE_ADDR);
 	pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n", DRAMC_NAO_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DDRPHY_NAO_CHA_BASE_ADDR @ %p\n", DDRPHY_NAO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_NAO_CHB_BASE_ADDR @ %p\n", DDRPHY_NAO_CHB_BASE_ADDR);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (node) {
@@ -1938,6 +1816,138 @@ static void __exit dram_test_exit(void)
 
 postcore_initcall(dram_test_init);
 module_exit(dram_test_exit);
+
+void *mt_dramc_chn_base_get(int channel)
+{
+	int channels = get_emi_ch_num();
+
+	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
+		if (channel == 0)
+			return DRAMC_AO_CHB_BASE_ADDR;
+		return NULL;
+	}
+
+	switch (channel) {
+	case 0:
+		return DRAMC_AO_CHA_BASE_ADDR;
+	case 1:
+		return DRAMC_AO_CHB_BASE_ADDR;
+	default:
+		return NULL;
+	}
+}
+EXPORT_SYMBOL(mt_dramc_chn_base_get);
+
+void *mt_dramc_nao_chn_base_get(int channel)
+{
+	int channels = get_emi_ch_num();
+
+	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
+		if (channel == 0)
+			return DRAMC_NAO_CHB_BASE_ADDR;
+		return NULL;
+	}
+
+	switch (channel) {
+	case 0:
+		return DRAMC_NAO_CHA_BASE_ADDR;
+	case 1:
+		return DRAMC_NAO_CHB_BASE_ADDR;
+	default:
+		return NULL;
+	}
+}
+EXPORT_SYMBOL(mt_dramc_nao_chn_base_get);
+
+void *mt_ddrphy_chn_base_get(int channel)
+{
+	int channels = get_emi_ch_num();
+
+	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
+		if (channel == 0)
+			return DDRPHY_AO_CHB_BASE_ADDR;
+		return NULL;
+	}
+
+	switch (channel) {
+	case 0:
+		return DDRPHY_AO_CHA_BASE_ADDR;
+	case 1:
+		return DDRPHY_AO_CHB_BASE_ADDR;
+	default:
+		return NULL;
+	}
+}
+EXPORT_SYMBOL(mt_ddrphy_chn_base_get);
+
+void *mt_ddrphy_nao_chn_base_get(int channel)
+{
+	int channels = get_emi_ch_num();
+
+	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
+		if (channel == 0)
+			return DDRPHY_NAO_CHB_BASE_ADDR;
+		return NULL;
+	}
+	switch (channel) {
+	case 0:
+		return DDRPHY_NAO_CHA_BASE_ADDR;
+	case 1:
+		return DDRPHY_NAO_CHB_BASE_ADDR;
+	default:
+		return NULL;
+	}
+}
+EXPORT_SYMBOL(mt_ddrphy_nao_chn_base_get);
+
+#ifdef LAST_DRAMC_IP_BASED
+unsigned int mt_dramc_chn_get(unsigned int emi_cona)
+{
+	switch ((emi_cona >> 8) & 0x3) {
+	case 0:
+		return 1;
+	case 1:
+		return 2;
+	default:
+		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+	}
+	return 0;
+}
+
+unsigned int mt_dramc_chp_get(unsigned int emi_cona)
+{
+	unsigned int chp;
+
+	chp = (emi_cona >> 2) & 0x3;
+
+	return chp + 7;
+}
+
+phys_addr_t mt_dramc_rankbase_get(unsigned int rank)
+{
+	if (rank >= get_dram_info->rank_num)
+		return 0;
+
+	return get_dram_info->rank_info[rank].start;
+}
+
+unsigned int mt_dramc_ta_support_ranks(void)
+{
+	return dram_rank_num;
+}
+
+phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
+{
+	switch (rank) {
+	case 0:
+		return dram_rank0_addr;
+	case 1:
+		return dram_rank1_addr;
+	default:
+		return 0;
+	}
+}
+#endif
 
 #ifdef DRAMC_GET_EMI_WORKAROUND
 static int __init dram_emi_init(void)

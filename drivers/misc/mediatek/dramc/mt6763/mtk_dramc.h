@@ -84,7 +84,20 @@ typedef enum {
 
 #define LAST_DRAMC
 #ifdef LAST_DRAMC
-extern void *mt_emi_base_get(void);
+#define LAST_DRAMC_IP_BASED
+
+#define LAST_DRAMC_SRAM_SIZE		(20)
+#define DRAMC_STORAGE_API_ERR_OFFSET	(8)
+
+#define STORAGE_READ_API_MASK		(0xf)
+#define ERR_PL_UPDATED			(0x4)
+
+void *mt_emi_base_get(void);
+unsigned int mt_dramc_chn_get(unsigned int emi_cona);
+unsigned int mt_dramc_chp_get(unsigned int emi_cona);
+phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
+unsigned int mt_dramc_ta_support_ranks(void);
+phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank);
 #endif
 
 /* Sysfs config */
@@ -192,6 +205,12 @@ static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { retur
 /* DRAMC API config */
 extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
+
+void *mt_dramc_chn_base_get(int channel);
+void *mt_dramc_nao_chn_base_get(int channel);
+void *mt_ddrphy_chn_base_get(int channel);
+void *mt_ddrphy_nao_chn_base_get(int channel);
+
 /*void get_mempll_table_info(u32 *high_addr, u32 *low_addr, u32 *num);*/
 unsigned int get_dram_data_rate(void);
 unsigned int read_dram_temperature(unsigned char channel);
