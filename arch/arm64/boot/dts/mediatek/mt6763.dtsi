@@ -1227,7 +1227,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x1100a000 0 0x1000>;
 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI0_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
@@ -1240,7 +1240,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x11010000 0 0x1000>;
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI1_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
@@ -1253,7 +1253,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x11012000 0 0x1000>;
 		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI2_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
@@ -1266,7 +1266,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x11013000 0 0x1000>;
 		interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI3_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
@@ -1279,7 +1279,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x11018000 0 0x1000>;
 		interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI4_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
@@ -1292,7 +1292,7 @@
 		dma_addrmask = <36>;
 		reg = <0 0x11019000 0 0x1000>;
 		interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_SPI0>;*/
+		clocks = <&infracfg_ao INFRACFG_AO_SPI5_CG>;
 		clock-names = "main";
 		clock-frequency = <109000000>;
 		clock-div = <1>;
