@@ -101,15 +101,13 @@ void switch_irtx_gpio(int mode)
 	}
 
 	if (mode == IRTX_GPIO_MODE_LED_SET) {
-
-		ret = mtk_regulator_enable(&mt_irtx_dev.buck, true);
+		ret = regulator_enable(mt_irtx_dev.buck);
 		if (ret < 0) {
 			pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
 			return;
 		}
 	} else {
-
-		ret = mtk_regulator_enable(&mt_irtx_dev.buck, false);
+		ret = regulator_disable(mt_irtx_dev.buck);
 		if (ret < 0) {
 			pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
 			return;
@@ -290,13 +288,13 @@ static int irtx_probe(struct platform_device *plat_dev)
 	}
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
-	ret = mtk_regulator_get(NULL, "rt5081_ldo", &mt_irtx_dev.buck);
-	if (ret < 0) {
+	mt_irtx_dev.buck = regulator_get(NULL, "rt5081_ldo");
+	if (mt_irtx_dev.buck == NULL) {
 		pr_err("[IRTX] mtk_regulator_get fail!!\n");
 		return -1;
 	}
 
-	ret = mtk_regulator_set_voltage(&mt_irtx_dev.buck, 2800000, 2800000);
+	ret = regulator_set_voltage(mt_irtx_dev.buck, 2800000, 2800000);
 	if (ret < 0) {
 		pr_err("[IRTX] mtk_regulator_set_voltage fail!!\n");
 		return -1;
