@@ -69,7 +69,7 @@ extern "C" {
 #define UPOWER_C1_VOLT		50000	/* 0.5v */
 #define UPOWER_C1_IDX		1	/* idx of c1 in idle_states[][idx] */
 
-#define NR_UPOWER_TBL_LIST	2	/* num of all tables */
+#define NR_UPOWER_TBL_LIST	3	/* num of all tables */
 
 /* upower banks */
 enum upower_bank {
@@ -88,6 +88,8 @@ enum upower_dtype {
 
 	NR_UPOWER_DTYPE,
 };
+
+extern unsigned int _mt_cpufreq_get_cpu_level(void);
 
 #ifdef __cplusplus
 }

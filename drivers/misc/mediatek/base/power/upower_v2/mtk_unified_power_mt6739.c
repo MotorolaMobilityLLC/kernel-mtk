@@ -77,9 +77,13 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL,		upower_tbl_ll_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL,	upower_tbl_cluster_ll_FY),
 	},
-	[1] = {	/* MT6739 SB */
+	[1] = {	/* MT6739 SB (turbo) */
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL,		upower_tbl_ll_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL,	upower_tbl_cluster_ll_SB),
+	},
+	[2] = {	/* MT6739 (WM) */
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL,		upower_tbl_ll_WM),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL,	upower_tbl_cluster_ll_WM),
 	},
 };
 
@@ -138,7 +142,7 @@ static void upower_scale_l_cap(void)
  * power tbl.                                       *
  ***************************************************/
 
-/* code snip from MT6739 DVFS */
+#if 0  /* use the CPUDVFS API instead */
 #define SEG_EFUSE		30
 #define TURBO_EFUSE		29		/* 590 */
 static unsigned short get_cpu_level(void)
@@ -156,13 +160,16 @@ static unsigned short get_cpu_level(void)
 		return 1;
 	return 0;
 }
+#endif
 
 void get_original_table(void)
 {
 	unsigned int i, j;
-	unsigned short idx = 0; /* default use MT6739_FY */
+	unsigned int idx = 0; /* default use MT6739_FY */
 
-	idx = get_cpu_level();
+	idx = _mt_cpufreq_get_cpu_level();
+	if (idx >= NR_UPOWER_TBL_LIST)
+		idx = 0;
 
 	/* get location of reference table */
 	upower_tbl_infos = &upower_tbl_infos_list[idx][0];
