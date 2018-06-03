@@ -724,22 +724,6 @@ static void path_rec_completion(int status,
 	spin_lock_irqsave(&priv->lock, flags);
 
 	if (!IS_ERR_OR_NULL(ah)) {
-		/*
-		 * pathrec.dgid is used as the database key from the LLADDR,
-		 * it must remain unchanged even if the SA returns a different
-		 * GID to use in the AH.
-		 */
-		if (memcmp(pathrec->dgid.raw, path->pathrec.dgid.raw,
-			   sizeof(union ib_gid))) {
-			ipoib_dbg(
-				priv,
-				"%s got PathRec for gid %pI6 while asked for %pI6\n",
-				dev->name, pathrec->dgid.raw,
-				path->pathrec.dgid.raw);
-			memcpy(pathrec->dgid.raw, path->pathrec.dgid.raw,
-			       sizeof(union ib_gid));
-		}
-
 		path->pathrec = *pathrec;
 
 		old_ah   = path->ah;
@@ -860,8 +844,8 @@ static int path_rec_start(struct net_device *dev,
 	return 0;
 }
 
-static struct ipoib_neigh *neigh_add_path(struct sk_buff *skb, u8 *daddr,
-					  struct net_device *dev)
+static void neigh_add_path(struct sk_buff *skb, u8 *daddr,
+			   struct net_device *dev)
 {
 	struct ipoib_dev_priv *priv = netdev_priv(dev);
 	struct ipoib_path *path;
@@ -874,15 +858,7 @@ static struct ipoib_neigh *neigh_add_path(struct sk_buff *skb, u8 *daddr,
 		spin_unlock_irqrestore(&priv->lock, flags);
 		++dev->stats.tx_dropped;
 		dev_kfree_skb_any(skb);
-		return NULL;
-	}
-
-	/* To avoid race condition, make sure that the
-	 * neigh will be added only once.
-	 */
-	if (unlikely(!list_empty(&neigh->list))) {
-		spin_unlock_irqrestore(&priv->lock, flags);
-		return neigh;
+		return;
 	}
 
 	path = __path_find(dev, daddr + 4);
@@ -920,7 +896,7 @@ static struct ipoib_neigh *neigh_add_path(struct sk_buff *skb, u8 *daddr,
 			spin_unlock_irqrestore(&priv->lock, flags);
 			ipoib_send(dev, skb, path->ah, IPOIB_QPN(daddr));
 			ipoib_neigh_put(neigh);
-			return NULL;
+			return;
 		}
 	} else {
 		neigh->ah  = NULL;
@@ -937,7 +913,7 @@ static struct ipoib_neigh *neigh_add_path(struct sk_buff *skb, u8 *daddr,
 
 	spin_unlock_irqrestore(&priv->lock, flags);
 	ipoib_neigh_put(neigh);
-	return NULL;
+	return;
 
 err_path:
 	ipoib_neigh_free(neigh);
@@ -947,8 +923,6 @@ err_drop:
 
 	spin_unlock_irqrestore(&priv->lock, flags);
 	ipoib_neigh_put(neigh);
-
-	return NULL;
 }
 
 static void unicast_arp_send(struct sk_buff *skb, struct net_device *dev,
@@ -1054,9 +1028,8 @@ static int ipoib_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	case htons(ETH_P_TIPC):
 		neigh = ipoib_neigh_get(dev, phdr->hwaddr);
 		if (unlikely(!neigh)) {
-			neigh = neigh_add_path(skb, phdr->hwaddr, dev);
-			if (likely(!neigh))
-				return NETDEV_TX_OK;
+			neigh_add_path(skb, phdr->hwaddr, dev);
+			return NETDEV_TX_OK;
 		}
 		break;
 	case htons(ETH_P_ARP):

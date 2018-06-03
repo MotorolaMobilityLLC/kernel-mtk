@@ -1837,10 +1837,8 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
 
 	spin_lock_irq (&dev->lock);
 	value = -EINVAL;
-	if (dev->buf) {
-		kfree(kbuf);
+	if (dev->buf)
 		goto fail;
-	}
 	dev->buf = kbuf;
 
 	/* full or low speed config */

@@ -909,7 +909,6 @@ add:
 			fn->fn_flags |= RTN_RTINFO;
 		}
 		nsiblings = iter->rt6i_nsiblings;
-		iter->rt6i_node = NULL;
 		fib6_purge_rt(iter, fn, info->nl_net);
 		if (fn->rr_ptr == iter)
 			fn->rr_ptr = NULL;
@@ -924,7 +923,6 @@ add:
 					break;
 				if (rt6_qualify_for_ecmp(iter)) {
 					*ins = iter->dst.rt6_next;
-					iter->rt6i_node = NULL;
 					fib6_purge_rt(iter, fn, info->nl_net);
 					if (fn->rr_ptr == iter)
 						fn->rr_ptr = NULL;

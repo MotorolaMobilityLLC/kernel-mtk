@@ -350,8 +350,8 @@ static void async_completion(struct nvme_queue *nvmeq, void *ctx,
 	struct async_cmd_info *cmdinfo = ctx;
 	cmdinfo->result = le32_to_cpup(&cqe->result);
 	cmdinfo->status = le16_to_cpup(&cqe->status) >> 1;
-	blk_mq_free_request(cmdinfo->req);
 	queue_kthread_work(cmdinfo->worker, &cmdinfo->work);
+	blk_mq_free_request(cmdinfo->req);
 }
 
 static inline struct nvme_cmd_info *get_cmd_from_tag(struct nvme_queue *nvmeq,
@@ -2976,16 +2976,10 @@ static void nvme_dev_shutdown(struct nvme_dev *dev)
 	mutex_unlock(&dev->shutdown_lock);
 }
 
-static void nvme_remove_namespaces(struct nvme_dev *dev)
+static void nvme_dev_remove(struct nvme_dev *dev)
 {
 	struct nvme_ns *ns, *next;
 
-	list_for_each_entry_safe(ns, next, &dev->namespaces, list)
-		nvme_ns_remove(ns);
-}
-
-static void nvme_dev_remove(struct nvme_dev *dev)
-{
 	if (nvme_io_incapable(dev)) {
 		/*
 		 * If the device is not capable of IO (surprise hot-removal,
@@ -2995,7 +2989,8 @@ static void nvme_dev_remove(struct nvme_dev *dev)
 		 */
 		nvme_dev_shutdown(dev);
 	}
-	nvme_remove_namespaces(dev);
+	list_for_each_entry_safe(ns, next, &dev->namespaces, list)
+		nvme_ns_remove(ns);
 }
 
 static int nvme_setup_prp_pools(struct nvme_dev *dev)
@@ -3179,7 +3174,7 @@ static void nvme_probe_work(struct work_struct *work)
 	 */
 	if (dev->online_queues < 2) {
 		dev_warn(dev->dev, "IO queues not created\n");
-		nvme_remove_namespaces(dev);
+		nvme_dev_remove(dev);
 	} else {
 		nvme_unfreeze_queues(dev);
 		nvme_dev_add(dev);

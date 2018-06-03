@@ -27,6 +27,7 @@
 
 #include "vmwgfx_kms.h"
 
+
 /* Might need a hrtimer here? */
 #define VMWGFX_PRESENT_RATE ((HZ / 60 > 0) ? HZ / 60 : 1)
 
@@ -1909,12 +1910,9 @@ void vmw_kms_helper_buffer_finish(struct vmw_private *dev_priv,
  * Helper to be used if an error forces the caller to undo the actions of
  * vmw_kms_helper_resource_prepare.
  */
-void vmw_kms_helper_resource_revert(struct vmw_validation_ctx *ctx)
+void vmw_kms_helper_resource_revert(struct vmw_resource *res)
 {
-	struct vmw_resource *res = ctx->res;
-
-	vmw_kms_helper_buffer_revert(ctx->buf);
-	vmw_dmabuf_unreference(&ctx->buf);
+	vmw_kms_helper_buffer_revert(res->backup);
 	vmw_resource_unreserve(res, false, NULL, 0);
 	mutex_unlock(&res->dev_priv->cmdbuf_mutex);
 }
@@ -1931,13 +1929,9 @@ void vmw_kms_helper_resource_revert(struct vmw_validation_ctx *ctx)
  * interrupted by a signal.
  */
 int vmw_kms_helper_resource_prepare(struct vmw_resource *res,
-				    bool interruptible,
-				    struct vmw_validation_ctx *ctx)
+				    bool interruptible)
 {
 	int ret = 0;
-
-	ctx->buf = NULL;
-	ctx->res = res;
 
 	if (interruptible)
 		ret = mutex_lock_interruptible(&res->dev_priv->cmdbuf_mutex);
@@ -1957,8 +1951,6 @@ int vmw_kms_helper_resource_prepare(struct vmw_resource *res,
 						    res->dev_priv->has_mob);
 		if (ret)
 			goto out_unreserve;
-
-		ctx->buf = vmw_dmabuf_reference(res->backup);
 	}
 	ret = vmw_resource_validate(res);
 	if (ret)
@@ -1966,7 +1958,7 @@ int vmw_kms_helper_resource_prepare(struct vmw_resource *res,
 	return 0;
 
 out_revert:
-	vmw_kms_helper_buffer_revert(ctx->buf);
+	vmw_kms_helper_buffer_revert(res->backup);
 out_unreserve:
 	vmw_resource_unreserve(res, false, NULL, 0);
 out_unlock:
@@ -1982,13 +1974,11 @@ out_unlock:
  * @out_fence: Optional pointer to a fence pointer. If non-NULL, a
  * ref-counted fence pointer is returned here.
  */
-void vmw_kms_helper_resource_finish(struct vmw_validation_ctx *ctx,
-				    struct vmw_fence_obj **out_fence)
+void vmw_kms_helper_resource_finish(struct vmw_resource *res,
+			     struct vmw_fence_obj **out_fence)
 {
-	struct vmw_resource *res = ctx->res;
-
-	if (ctx->buf || out_fence)
-		vmw_kms_helper_buffer_finish(res->dev_priv, NULL, ctx->buf,
+	if (res->backup || out_fence)
+		vmw_kms_helper_buffer_finish(res->dev_priv, NULL, res->backup,
 					     out_fence, NULL);
 
 	vmw_resource_unreserve(res, false, NULL, 0);

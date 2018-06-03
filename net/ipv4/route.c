@@ -126,13 +126,10 @@ static int ip_rt_redirect_silence __read_mostly	= ((HZ / 50) << (9 + 1));
 static int ip_rt_error_cost __read_mostly	= HZ;
 static int ip_rt_error_burst __read_mostly	= 5 * HZ;
 static int ip_rt_mtu_expires __read_mostly	= 10 * 60 * HZ;
-static u32 ip_rt_min_pmtu __read_mostly		= 512 + 20 + 20;
+static int ip_rt_min_pmtu __read_mostly		= 512 + 20 + 20;
 static int ip_rt_min_advmss __read_mostly	= 256;
 
 static int ip_rt_gc_timeout __read_mostly	= RT_GC_TIMEOUT;
-
-static int ip_min_valid_pmtu __read_mostly	= IPV4_MIN_MTU;
-
 /*
  *	Interface to generic destination cache.
  */
@@ -630,12 +627,9 @@ static void update_or_create_fnhe(struct fib_nh *nh, __be32 daddr, __be32 gw,
 	struct fnhe_hash_bucket *hash;
 	struct fib_nh_exception *fnhe;
 	struct rtable *rt;
-	u32 genid, hval;
 	unsigned int i;
 	int depth;
-
-	genid = fnhe_genid(dev_net(nh->nh_dev));
-	hval = fnhe_hashfun(daddr);
+	u32 hval = fnhe_hashfun(daddr);
 
 	spin_lock_bh(&fnhe_lock);
 
@@ -658,13 +652,12 @@ static void update_or_create_fnhe(struct fib_nh *nh, __be32 daddr, __be32 gw,
 	}
 
 	if (fnhe) {
-		if (fnhe->fnhe_genid != genid)
-			fnhe->fnhe_genid = genid;
 		if (gw)
 			fnhe->fnhe_gw = gw;
-		if (pmtu)
+		if (pmtu) {
 			fnhe->fnhe_pmtu = pmtu;
-		fnhe->fnhe_expires = max(1UL, expires);
+			fnhe->fnhe_expires = max(1UL, expires);
+		}
 		/* Update all cached dsts too */
 		rt = rcu_dereference(fnhe->fnhe_rth_input);
 		if (rt)
@@ -683,7 +676,7 @@ static void update_or_create_fnhe(struct fib_nh *nh, __be32 daddr, __be32 gw,
 			fnhe->fnhe_next = hash->chain;
 			rcu_assign_pointer(hash->chain, fnhe);
 		}
-		fnhe->fnhe_genid = genid;
+		fnhe->fnhe_genid = fnhe_genid(dev_net(nh->nh_dev));
 		fnhe->fnhe_daddr = daddr;
 		fnhe->fnhe_gw = gw;
 		fnhe->fnhe_pmtu = pmtu;
@@ -2785,8 +2778,7 @@ static struct ctl_table ipv4_route_table[] = {
 		.data		= &ip_rt_min_pmtu,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &ip_min_valid_pmtu,
+		.proc_handler	= proc_dointvec,
 	},
 	{
 		.procname	= "min_adv_mss",

@@ -29,7 +29,6 @@
 #include <linux/net_tstamp.h>
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
-#include <linux/phy.h>
 #include <net/arp.h>
 
 #include "vlan.h"
@@ -560,7 +559,8 @@ static int vlan_dev_init(struct net_device *dev)
 			   NETIF_F_HIGHDMA | NETIF_F_SCTP_CSUM |
 			   NETIF_F_ALL_FCOE;
 
-	dev->features |= dev->hw_features | NETIF_F_LLTX;
+	dev->features |= real_dev->vlan_features | NETIF_F_LLTX |
+			 NETIF_F_GSO_SOFTWARE;
 	dev->gso_max_size = real_dev->gso_max_size;
 	if (dev->features & NETIF_F_VLAN_FEATURES)
 		netdev_warn(real_dev, "VLAN features are set incorrectly.  Q-in-Q configurations may not work correctly.\n");
@@ -655,11 +655,8 @@ static int vlan_ethtool_get_ts_info(struct net_device *dev,
 {
 	const struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
 	const struct ethtool_ops *ops = vlan->real_dev->ethtool_ops;
-	struct phy_device *phydev = vlan->real_dev->phydev;
 
-	if (phydev && phydev->drv && phydev->drv->ts_info) {
-		 return phydev->drv->ts_info(phydev, info);
-	} else if (ops->get_ts_info) {
+	if (ops->get_ts_info) {
 		return ops->get_ts_info(vlan->real_dev, info);
 	} else {
 		info->so_timestamping = SOF_TIMESTAMPING_RX_SOFTWARE |

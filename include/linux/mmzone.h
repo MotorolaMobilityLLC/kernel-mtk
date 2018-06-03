@@ -133,9 +133,8 @@ enum zone_stat_item {
 	NR_SLAB_RECLAIMABLE,
 	NR_SLAB_UNRECLAIMABLE,
 	NR_PAGETABLE,		/* used for pagetables */
-	/* Second 128 byte cacheline */
 	NR_KERNEL_STACK,
-	NR_KAISERTABLE,
+	/* Second 128 byte cacheline */
 	NR_UNSTABLE_NFS,	/* NFS unstable pages */
 	NR_BOUNCE,
 	NR_VMSCAN_WRITE,
@@ -694,8 +693,7 @@ typedef struct pglist_data {
 	 * is the first PFN that needs to be initialised.
 	 */
 	unsigned long first_deferred_pfn;
-	/* Number of non-deferred pages */
-	unsigned long static_init_pgcnt;
+	unsigned long static_init_size;
 #endif /* CONFIG_DEFERRED_STRUCT_PAGE_INIT */
 } pg_data_t;
 

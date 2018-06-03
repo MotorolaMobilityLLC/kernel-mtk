@@ -719,7 +719,6 @@ static inline void
 __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
 {
 	unsigned long flags;
-	WAKE_Q(wake_q);
 
 	/*
 	 * As a performance measurement, release the lock before doing other
@@ -747,11 +746,11 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
 					   struct mutex_waiter, list);
 
 		debug_mutex_wake_waiter(lock, waiter);
-		wake_q_add(&wake_q, waiter->task);
+
+		wake_up_process(waiter->task);
 	}
 
 	spin_unlock_mutex(&lock->wait_lock, flags);
-	wake_up_q(&wake_q);
 }
 
 /*

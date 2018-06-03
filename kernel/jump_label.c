@@ -553,7 +553,7 @@ static __init int jump_label_test(void)
 
 	return 0;
 }
-early_initcall(jump_label_test);
+late_initcall(jump_label_test);
 #endif /* STATIC_KEYS_SELFTEST */
 
 #endif /* HAVE_JUMP_LABEL */

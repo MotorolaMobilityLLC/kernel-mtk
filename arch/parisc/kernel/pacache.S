@@ -36,7 +36,6 @@
 #include <asm/assembly.h>
 #include <asm/pgtable.h>
 #include <asm/cache.h>
-#include <asm/ldcw.h>
 #include <linux/linkage.h>
 
 	.text
@@ -334,12 +333,8 @@ ENDPROC(flush_data_cache_local)
 
 	.macro	tlb_lock	la,flags,tmp
 #ifdef CONFIG_SMP
-#if __PA_LDCW_ALIGNMENT > 4
-	load32		pa_tlb_lock + __PA_LDCW_ALIGNMENT-1, \la
-	depi		0,31,__PA_LDCW_ALIGN_ORDER, \la
-#else
-	load32		pa_tlb_lock, \la
-#endif
+	ldil		L%pa_tlb_lock,%r1
+	ldo		R%pa_tlb_lock(%r1),\la
 	rsm		PSW_SM_I,\flags
 1:	LDCW		0(\la),\tmp
 	cmpib,<>,n	0,\tmp,3f

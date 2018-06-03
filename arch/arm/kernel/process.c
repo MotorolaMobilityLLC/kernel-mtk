@@ -268,9 +268,9 @@ EXPORT_SYMBOL_GPL(thread_notify_head);
 /*
  * Free current thread data structures etc..
  */
-void exit_thread(struct task_struct *tsk)
+void exit_thread(void)
 {
-	thread_notify(THREAD_NOTIFY_EXIT, task_thread_info(tsk));
+	thread_notify(THREAD_NOTIFY_EXIT, current_thread_info());
 }
 
 void flush_thread(void)

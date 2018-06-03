@@ -386,7 +386,7 @@ int handle_userfault(struct vm_area_struct *vma, unsigned long address,
 			 * in such case.
 			 */
 			down_read(&mm->mmap_sem);
-			ret = VM_FAULT_NOPAGE;
+			ret = 0;
 		}
 	}
 

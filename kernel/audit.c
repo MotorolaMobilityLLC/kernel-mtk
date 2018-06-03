@@ -64,6 +64,7 @@
 #include <linux/security.h>
 #endif
 #include <linux/freezer.h>
+#include <linux/tty.h>
 #include <linux/pid_namespace.h>
 #include <net/netns/generic.h>
 
@@ -79,13 +80,13 @@ static int	audit_initialized;
 #define AUDIT_OFF	0
 #define AUDIT_ON	1
 #define AUDIT_LOCKED	2
-u32		audit_enabled = AUDIT_OFF;
-u32		audit_ever_enabled = !!AUDIT_OFF;
+u32		audit_enabled;
+u32		audit_ever_enabled;
 
 EXPORT_SYMBOL_GPL(audit_enabled);
 
 /* Default state when kernel boots without any parameters. */
-static u32	audit_default = AUDIT_OFF;
+static u32	audit_default;
 
 /* If auditing cannot proceed, audit_failure selects what happens. */
 static u32	audit_failure = AUDIT_FAIL_PRINTK;
@@ -1198,6 +1199,8 @@ static int __init audit_init(void)
 	skb_queue_head_init(&audit_skb_queue);
 	skb_queue_head_init(&audit_skb_hold_queue);
 	audit_initialized = AUDIT_INITIALIZED;
+	audit_enabled = audit_default;
+	audit_ever_enabled |= !!audit_default;
 
 	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
 
@@ -1214,8 +1217,6 @@ static int __init audit_enable(char *str)
 	audit_default = !!simple_strtol(str, NULL, 0);
 	if (!audit_default)
 		audit_initialized = AUDIT_DISABLED;
-	audit_enabled = audit_default;
-	audit_ever_enabled = !!audit_enabled;
 
 	pr_info("%s\n", audit_default ?
 		"enabled (after initialization)" : "disabled (until reboot)");
@@ -1895,14 +1896,21 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
 {
 	const struct cred *cred;
 	char comm[sizeof(tsk->comm)];
-	struct tty_struct *tty;
+	char *tty;
 
 	if (!ab)
 		return;
 
 	/* tsk == current */
 	cred = current_cred();
-	tty = audit_get_tty(tsk);
+
+	spin_lock_irq(&tsk->sighand->siglock);
+	if (tsk->signal && tsk->signal->tty && tsk->signal->tty->name)
+		tty = tsk->signal->tty->name;
+	else
+		tty = "(none)";
+	spin_unlock_irq(&tsk->sighand->siglock);
+
 	audit_log_format(ab,
 			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
 			 " euid=%u suid=%u fsuid=%u"
@@ -1918,11 +1926,11 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
 			 from_kgid(&init_user_ns, cred->egid),
 			 from_kgid(&init_user_ns, cred->sgid),
 			 from_kgid(&init_user_ns, cred->fsgid),
-			 tty ? tty_name(tty) : "(none)",
-			 audit_get_sessionid(tsk));
-	audit_put_tty(tty);
+			 tty, audit_get_sessionid(tsk));
+
 	audit_log_format(ab, " comm=");
 	audit_log_untrustedstring(ab, get_task_comm(comm, tsk));
+
 	audit_log_d_path_exe(ab, tsk->mm);
 	audit_log_task_context(ab);
 }

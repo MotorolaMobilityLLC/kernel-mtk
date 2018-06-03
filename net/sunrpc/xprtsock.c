@@ -2360,15 +2360,9 @@ static void xs_tcp_setup_socket(struct work_struct *work)
 	case -ECONNREFUSED:
 	case -ECONNRESET:
 	case -ENETUNREACH:
-	case -EHOSTUNREACH:
 	case -EADDRINUSE:
 	case -ENOBUFS:
-		/*
-		 * xs_tcp_force_close() wakes tasks with -EIO.
-		 * We need to wake them first to ensure the
-		 * correct error code.
-		 */
-		xprt_wake_pending_tasks(xprt, status);
+		/* retry with existing socket, after a delay */
 		xs_tcp_force_close(xprt);
 		goto out;
 	}

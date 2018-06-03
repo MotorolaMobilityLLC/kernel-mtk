@@ -742,10 +742,7 @@ static inline int convert_mode(long *msgtyp, int msgflg)
 	if (*msgtyp == 0)
 		return SEARCH_ANY;
 	if (*msgtyp < 0) {
-		if (*msgtyp == LONG_MIN) /* -LONG_MIN is undefined */
-			*msgtyp = LONG_MAX;
-		else
-			*msgtyp = -*msgtyp;
+		*msgtyp = -*msgtyp;
 		return SEARCH_LESSEQUAL;
 	}
 	if (msgflg & MSG_EXCEPT)

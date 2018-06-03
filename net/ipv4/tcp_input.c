@@ -118,7 +118,6 @@ int sysctl_tcp_default_init_rwnd __read_mostly = TCP_INIT_CWND * 2;
 #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
 #define FLAG_SACK_RENEGING	0x2000 /* snd_una advanced to a sacked seq */
 #define FLAG_UPDATE_TS_RECENT	0x4000 /* tcp_replace_ts_recent() */
-#define FLAG_NO_CHALLENGE_ACK	0x8000 /* do not call tcp_send_challenge_ack()	*/
 
 #define FLAG_ACKED		(FLAG_DATA_ACKED|FLAG_SYN_ACKED)
 #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
@@ -3546,8 +3545,7 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	if (before(ack, prior_snd_una)) {
 		/* RFC 5961 5.2 [Blind Data Injection Attack].[Mitigation] */
 		if (before(ack, prior_snd_una - tp->max_window)) {
-			if (!(flag & FLAG_NO_CHALLENGE_ACK))
-				tcp_send_challenge_ack(sk, skb);
+			tcp_send_challenge_ack(sk, skb);
 			return -1;
 		}
 		goto old_ack;
@@ -4946,7 +4944,7 @@ static void tcp_check_space(struct sock *sk)
 	if (sock_flag(sk, SOCK_QUEUE_SHRUNK)) {
 		sock_reset_flag(sk, SOCK_QUEUE_SHRUNK);
 		/* pairs with tcp_poll() */
-		smp_mb();
+		smp_mb__after_atomic();
 		if (sk->sk_socket &&
 		    test_bit(SOCK_NOSPACE, &sk->sk_socket->flags))
 			tcp_new_space(sk);
@@ -5477,6 +5475,10 @@ void tcp_finish_connect(struct sock *sk, struct sk_buff *skb)
 	else
 		tp->pred_flags = 0;
 
+	if (!sock_flag(sk, SOCK_DEAD)) {
+		sk->sk_state_change(sk);
+		sk_wake_async(sk, SOCK_WAKE_IO, POLL_OUT);
+	}
 }
 
 static bool tcp_rcv_fastopen_synack(struct sock *sk, struct sk_buff *synack,
@@ -5540,7 +5542,6 @@ static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct tcp_fastopen_cookie foc = { .len = -1 };
 	int saved_clamp = tp->rx_opt.mss_clamp;
-	bool fastopen_fail;
 
 	tcp_parse_options(skb, &tp->rx_opt, 0, &foc);
 	if (tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr)
@@ -5643,15 +5644,10 @@ static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,
 
 		tcp_finish_connect(sk, skb);
 
-		fastopen_fail = (tp->syn_fastopen || tp->syn_data) &&
-				tcp_rcv_fastopen_synack(sk, skb, &foc);
-
-		if (!sock_flag(sk, SOCK_DEAD)) {
-			sk->sk_state_change(sk);
-			sk_wake_async(sk, SOCK_WAKE_IO, POLL_OUT);
-		}
-		if (fastopen_fail)
+		if ((tp->syn_fastopen || tp->syn_data) &&
+		    tcp_rcv_fastopen_synack(sk, skb, &foc))
 			return -1;
+
 		if (sk->sk_write_pending ||
 		    icsk->icsk_accept_queue.rskq_defer_accept ||
 		    icsk->icsk_ack.pingpong) {
@@ -5845,17 +5841,13 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
 
 	/* step 5: check the ACK field */
 	acceptable = tcp_ack(sk, skb, FLAG_SLOWPATH |
-				      FLAG_UPDATE_TS_RECENT |
-				      FLAG_NO_CHALLENGE_ACK) > 0;
+				      FLAG_UPDATE_TS_RECENT) > 0;
 
-	if (!acceptable) {
-		if (sk->sk_state == TCP_SYN_RECV)
-			return 1;	/* send one RST */
-		tcp_send_challenge_ack(sk, skb);
-		goto discard;
-	}
 	switch (sk->sk_state) {
 	case TCP_SYN_RECV:
+		if (!acceptable)
+			return 1;
+
 		if (!tp->srtt_us)
 			tcp_synack_rtt_meas(sk, req);
 
@@ -5924,6 +5916,14 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
 		 * our SYNACK so stop the SYNACK timer.
 		 */
 		if (req) {
+			/* Return RST if ack_seq is invalid.
+			 * Note that RFC793 only says to generate a
+			 * DUPACK for it but for TCP Fast Open it seems
+			 * better to treat this case like TCP_SYN_RECV
+			 * above.
+			 */
+			if (!acceptable)
+				return 1;
 			/* We no longer need the request sock. */
 			reqsk_fastopen_remove(sk, req, false);
 			tcp_rearm_rto(sk);
@@ -6116,7 +6116,7 @@ struct request_sock *inet_reqsk_alloc(const struct request_sock_ops *ops,
 		struct inet_request_sock *ireq = inet_rsk(req);
 
 		kmemcheck_annotate_bitfield(ireq, flags);
-		ireq->ireq_opt = NULL;
+		ireq->opt = NULL;
 		atomic64_set(&ireq->ir_cookie, 0);
 		ireq->ireq_state = TCP_NEW_SYN_RECV;
 		write_pnet(&ireq->ireq_net, sock_net(sk_listener));

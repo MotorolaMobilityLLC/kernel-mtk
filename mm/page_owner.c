@@ -271,8 +271,6 @@ void __reset_page_owner(struct page *page, unsigned int order)
 #endif
 	for (i = 0; i < (1 << order); i++) {
 		page_ext = lookup_page_ext(page + i);
-		if (unlikely(!page_ext))
-			continue;
 		__clear_bit(PAGE_EXT_OWNER, &page_ext->flags);
 	}
 }
@@ -298,9 +296,6 @@ void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
 	};
 #endif
 
-	if (unlikely(!page_ext))
-		return;
-
 	save_stack_trace(&trace);
 
 #ifdef CONFIG_PAGE_OWNER_SLIM
@@ -318,12 +313,6 @@ void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
 gfp_t __get_page_owner_gfp(struct page *page)
 {
 	struct page_ext *page_ext = lookup_page_ext(page);
-	if (unlikely(!page_ext))
-		/*
-		 * The caller just returns 0 if no valid gfp
-		 * So return 0 here too.
-		 */
-		return 0;
 
 	return page_ext->gfp_mask;
 }
@@ -447,8 +436,6 @@ read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 		}
 
 		page_ext = lookup_page_ext(page);
-		if (unlikely(!page_ext))
-			continue;
 
 		/*
 		 * Some pages could be missed by concurrent allocation or free,
@@ -512,8 +499,6 @@ static void init_pages_in_zone(pg_data_t *pgdat, struct zone *zone)
 				continue;
 
 			page_ext = lookup_page_ext(page);
-			if (unlikely(!page_ext))
-				continue;
 
 			/* Maybe overraping zone */
 			if (test_bit(PAGE_EXT_OWNER, &page_ext->flags))

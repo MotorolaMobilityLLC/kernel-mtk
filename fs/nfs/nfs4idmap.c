@@ -567,13 +567,9 @@ static int nfs_idmap_legacy_upcall(struct key_construction *cons,
 	struct idmap_msg *im;
 	struct idmap *idmap = (struct idmap *)aux;
 	struct key *key = cons->key;
-	int ret = -ENOKEY;
-
-	if (!aux)
-		goto out1;
+	int ret = -ENOMEM;
 
 	/* msg and im are freed in idmap_pipe_destroy_msg */
-	ret = -ENOMEM;
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (!data)
 		goto out1;

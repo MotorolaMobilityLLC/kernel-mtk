@@ -2997,7 +2997,6 @@ void usb_remove_hcd(struct usb_hcd *hcd)
 	}
 
 	usb_put_invalidate_rhdev(hcd);
-	hcd->flags = 0;
 }
 EXPORT_SYMBOL_GPL(usb_remove_hcd);
 

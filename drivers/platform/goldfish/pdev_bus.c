@@ -21,7 +21,6 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/io.h>
-#include <linux/goldfish.h>
 
 #define PDEV_BUS_OP_DONE        (0x00)
 #define PDEV_BUS_OP_REMOVE_DEV  (0x04)
@@ -131,9 +130,10 @@ static int goldfish_new_pdev(void)
 	dev->pdev.dev.dma_mask = (void *)(dev->pdev.name + name_len + 1);
 	*dev->pdev.dev.dma_mask = ~0;
 
-	gf_write_ptr(name, pdev_bus_base + PDEV_BUS_GET_NAME,
-		pdev_bus_base + PDEV_BUS_GET_NAME_HIGH);
-
+#ifdef CONFIG_64BIT
+	writel((u32)((u64)name>>32), pdev_bus_base + PDEV_BUS_GET_NAME_HIGH);
+#endif
+	writel((u32)(unsigned long)name, pdev_bus_base + PDEV_BUS_GET_NAME);
 	name[name_len] = '\0';
 	dev->pdev.id = readl(pdev_bus_base + PDEV_BUS_ID);
 	dev->pdev.resource[0].start = base;

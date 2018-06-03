@@ -96,7 +96,6 @@ union ieee754dp ieee754dp_fmin(union ieee754dp x, union ieee754dp y)
 
 	case CLPAIR(IEEE754_CLASS_DNORM, IEEE754_CLASS_DNORM):
 		DPDNORMX;
-		/* fall through */
 
 	case CLPAIR(IEEE754_CLASS_NORM, IEEE754_CLASS_DNORM):
 		DPDNORMY;
@@ -225,7 +224,6 @@ union ieee754dp ieee754dp_fmina(union ieee754dp x, union ieee754dp y)
 
 	case CLPAIR(IEEE754_CLASS_DNORM, IEEE754_CLASS_DNORM):
 		DPDNORMX;
-		/* fall through */
 
 	case CLPAIR(IEEE754_CLASS_NORM, IEEE754_CLASS_DNORM):
 		DPDNORMY;

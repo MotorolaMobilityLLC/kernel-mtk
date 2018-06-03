@@ -303,15 +303,24 @@ static int do_maps_open(struct inode *inode, struct file *file,
  * /proc/PID/maps that is the stack of the main task.
  */
 static int is_stack(struct proc_maps_private *priv,
-		    struct vm_area_struct *vma)
+		    struct vm_area_struct *vma, int is_pid)
 {
-	/*
-	 * We make no effort to guess what a given thread considers to be
-	 * its "stack".  It's not even well-defined for programs written
-	 * languages like Go.
-	 */
-	return vma->vm_start <= vma->vm_mm->start_stack &&
-		vma->vm_end >= vma->vm_mm->start_stack;
+	int stack = 0;
+
+	if (is_pid) {
+		stack = vma->vm_start <= vma->vm_mm->start_stack &&
+			vma->vm_end >= vma->vm_mm->start_stack;
+	} else {
+		struct inode *inode = priv->inode;
+		struct task_struct *task;
+
+		rcu_read_lock();
+		task = pid_task(proc_pid(inode), PIDTYPE_PID);
+		if (task)
+			stack = vma_is_stack_for_task(vma, task);
+		rcu_read_unlock();
+	}
+	return stack;
 }
 
 static void
@@ -378,7 +387,7 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 			goto done;
 		}
 
-		if (is_stack(priv, vma)) {
+		if (is_stack(priv, vma, is_pid)) {
 			name = "[stack]";
 			goto done;
 		}
@@ -1637,7 +1646,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
 		seq_file_path(m, file, "\n\t= ");
 	} else if (vma->vm_start <= mm->brk && vma->vm_end >= mm->start_brk) {
 		seq_puts(m, " heap");
-	} else if (is_stack(proc_priv, vma)) {
+	} else if (is_stack(proc_priv, vma, is_pid)) {
 		seq_puts(m, " stack");
 	}
 

@@ -256,15 +256,10 @@ static int udl_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 	unsigned long start = vma->vm_start;
 	unsigned long size = vma->vm_end - vma->vm_start;
-	unsigned long offset;
+	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long page, pos;
 
-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
-		return -EINVAL;
-
-	offset = vma->vm_pgoff << PAGE_SHIFT;
-
-	if (offset > info->fix.smem_len || size > info->fix.smem_len - offset)
+	if (offset + size > info->fix.smem_len)
 		return -EINVAL;
 
 	pos = (unsigned long)info->fix.smem_start + offset;

@@ -82,8 +82,7 @@ ENTRY(sha1_ce_transform)
 	ldr		dgb, [x0, #16]
 
 	/* load sha1_ce_state::finalize */
-	ldr_l		w4, sha1_ce_offsetof_finalize, x4
-	ldr		w4, [x0, x4]
+	ldr		w4, [x0, #:lo12:sha1_ce_offsetof_finalize]
 
 	/* load input */
 0:	ld1		{v8.4s-v11.4s}, [x1], #64
@@ -133,8 +132,7 @@ CPU_LE(	rev32		v11.16b, v11.16b	)
 	 * the padding is handled by the C code in that case.
 	 */
 	cbz		x4, 3f
-	ldr_l		w4, sha1_ce_offsetof_count, x4
-	ldr		x4, [x0, x4]
+	ldr		x4, [x0, #:lo12:sha1_ce_offsetof_count]
 	movi		v9.2d, #0
 	mov		x8, #0x80000000
 	movi		v10.2d, #0

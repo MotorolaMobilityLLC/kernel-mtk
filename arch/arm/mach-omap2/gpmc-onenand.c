@@ -367,7 +367,7 @@ static int gpmc_onenand_setup(void __iomem *onenand_base, int *freq_ptr)
 	return ret;
 }
 
-int gpmc_onenand_init(struct omap_onenand_platform_data *_onenand_data)
+void gpmc_onenand_init(struct omap_onenand_platform_data *_onenand_data)
 {
 	int err;
 	struct device *dev = &gpmc_onenand_device.dev;
@@ -393,17 +393,15 @@ int gpmc_onenand_init(struct omap_onenand_platform_data *_onenand_data)
 	if (err < 0) {
 		dev_err(dev, "Cannot request GPMC CS %d, error %d\n",
 			gpmc_onenand_data->cs, err);
-		return err;
+		return;
 	}
 
 	gpmc_onenand_resource.end = gpmc_onenand_resource.start +
 							ONENAND_IO_SIZE - 1;
 
-	err = platform_device_register(&gpmc_onenand_device);
-	if (err) {
+	if (platform_device_register(&gpmc_onenand_device) < 0) {
 		dev_err(dev, "Unable to register OneNAND device\n");
 		gpmc_cs_free(gpmc_onenand_data->cs);
+		return;
 	}
-
-	return err;
 }

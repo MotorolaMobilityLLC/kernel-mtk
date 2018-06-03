@@ -832,6 +832,8 @@ ext4_xattr_block_set(handle_t *handle, struct inode *inode,
 				if (!IS_LAST_ENTRY(s->first))
 					ext4_xattr_rehash(header(s->base),
 							  s->here);
+				ext4_xattr_cache_insert(ext4_mb_cache,
+					bs->bh);
 			}
 			unlock_buffer(bs->bh);
 			if (error == -EFSCORRUPTED)
@@ -942,7 +944,6 @@ inserted:
 		} else if (bs->bh && s->base == bs->bh->b_data) {
 			/* We were modifying this block in-place. */
 			ea_bdebug(bs->bh, "keeping this block");
-			ext4_xattr_cache_insert(ext4_mb_cache, bs->bh);
 			new_bh = bs->bh;
 			get_bh(new_bh);
 		} else {
@@ -1143,14 +1144,16 @@ ext4_xattr_set_handle(handle_t *handle, struct inode *inode, int name_index,
 	struct ext4_xattr_block_find bs = {
 		.s = { .not_found = -ENODATA, },
 	};
-	int no_expand;
+	unsigned long no_expand;
 	int error;
 
 	if (!name)
 		return -EINVAL;
 	if (strlen(name) > 255)
 		return -ERANGE;
-	ext4_write_lock_xattr(inode, &no_expand);
+	down_write(&EXT4_I(inode)->xattr_sem);
+	no_expand = ext4_test_inode_state(inode, EXT4_STATE_NO_EXPAND);
+	ext4_set_inode_state(inode, EXT4_STATE_NO_EXPAND);
 
 	error = ext4_reserve_inode_write(handle, inode, &is.iloc);
 	if (error)
@@ -1211,7 +1214,7 @@ ext4_xattr_set_handle(handle_t *handle, struct inode *inode, int name_index,
 		ext4_xattr_update_super_block(handle, inode->i_sb);
 		inode->i_ctime = ext4_current_time(inode);
 		if (!value)
-			no_expand = 0;
+			ext4_clear_inode_state(inode, EXT4_STATE_NO_EXPAND);
 		error = ext4_mark_iloc_dirty(handle, inode, &is.iloc);
 		/*
 		 * The bh is consumed by ext4_mark_iloc_dirty, even with
@@ -1225,7 +1228,9 @@ ext4_xattr_set_handle(handle_t *handle, struct inode *inode, int name_index,
 cleanup:
 	brelse(is.iloc.bh);
 	brelse(bs.bh);
-	ext4_write_unlock_xattr(inode, &no_expand);
+	if (no_expand == 0)
+		ext4_clear_inode_state(inode, EXT4_STATE_NO_EXPAND);
+	up_write(&EXT4_I(inode)->xattr_sem);
 	return error;
 }
 
@@ -1309,11 +1314,12 @@ int ext4_expand_extra_isize_ea(struct inode *inode, int new_extra_isize,
 	int error = 0, tried_min_extra_isize = 0;
 	int s_min_extra_isize = le16_to_cpu(EXT4_SB(inode->i_sb)->s_es->s_min_extra_isize);
 	int isize_diff;	/* How much do we need to grow i_extra_isize */
-	int no_expand;
 
-	if (ext4_write_trylock_xattr(inode, &no_expand) == 0)
-		return 0;
-
+	down_write(&EXT4_I(inode)->xattr_sem);
+	/*
+	 * Set EXT4_STATE_NO_EXPAND to avoid recursion when marking inode dirty
+	 */
+	ext4_set_inode_state(inode, EXT4_STATE_NO_EXPAND);
 retry:
 	isize_diff = new_extra_isize - EXT4_I(inode)->i_extra_isize;
 	if (EXT4_I(inode)->i_extra_isize >= new_extra_isize)
@@ -1507,7 +1513,8 @@ retry:
 	}
 	brelse(bh);
 out:
-	ext4_write_unlock_xattr(inode, &no_expand);
+	ext4_clear_inode_state(inode, EXT4_STATE_NO_EXPAND);
+	up_write(&EXT4_I(inode)->xattr_sem);
 	return 0;
 
 cleanup:
@@ -1519,10 +1526,10 @@ cleanup:
 	kfree(bs);
 	brelse(bh);
 	/*
-	 * Inode size expansion failed; don't try again
+	 * We deliberately leave EXT4_STATE_NO_EXPAND set here since inode
+	 * size expansion failed.
 	 */
-	no_expand = 1;
-	ext4_write_unlock_xattr(inode, &no_expand);
+	up_write(&EXT4_I(inode)->xattr_sem);
 	return error;
 }
 

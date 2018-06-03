@@ -1305,7 +1305,7 @@ static umode_t namespace_visible(struct kobject *kobj,
 	if (a == &dev_attr_resource.attr) {
 		if (is_namespace_blk(dev))
 			return 0;
-		return 0400;
+		return a->mode;
 	}
 
 	if (is_namespace_pmem(dev) || is_namespace_blk(dev)) {

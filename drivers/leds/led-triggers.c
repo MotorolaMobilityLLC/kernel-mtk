@@ -88,23 +88,21 @@ ssize_t led_trigger_show(struct device *dev, struct device_attribute *attr,
 	down_read(&led_cdev->trigger_lock);
 
 	if (!led_cdev->trigger)
-		len += scnprintf(buf+len, PAGE_SIZE - len, "[none] ");
+		len += sprintf(buf+len, "[none] ");
 	else
-		len += scnprintf(buf+len, PAGE_SIZE - len, "none ");
+		len += sprintf(buf+len, "none ");
 
 	list_for_each_entry(trig, &trigger_list, next_trig) {
 		if (led_cdev->trigger && !strcmp(led_cdev->trigger->name,
 							trig->name))
-			len += scnprintf(buf+len, PAGE_SIZE - len, "[%s] ",
-					 trig->name);
+			len += sprintf(buf+len, "[%s] ", trig->name);
 		else
-			len += scnprintf(buf+len, PAGE_SIZE - len, "%s ",
-					 trig->name);
+			len += sprintf(buf+len, "%s ", trig->name);
 	}
 	up_read(&led_cdev->trigger_lock);
 	up_read(&triggers_list_lock);
 
-	len += scnprintf(len+buf, PAGE_SIZE - len, "\n");
+	len += sprintf(len+buf, "\n");
 	return len;
 }
 EXPORT_SYMBOL_GPL(led_trigger_show);

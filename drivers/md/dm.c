@@ -974,8 +974,7 @@ static void dec_pending(struct dm_io *io, int error)
 		} else {
 			/* done with normal IO or empty flush */
 			trace_block_bio_complete(md->queue, bio, io_error);
-			if (io_error)
-				bio->bi_error = io_error;
+			bio->bi_error = io_error;
 			bio_endio(bio);
 		}
 	}
@@ -3508,15 +3507,11 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj)
 
 	md = container_of(kobj, struct mapped_device, kobj_holder.kobj);
 
-	spin_lock(&_minor_lock);
-	if (test_bit(DMF_FREEING, &md->flags) || dm_deleting_md(md)) {
-		md = NULL;
-		goto out;
-	}
-	dm_get(md);
-out:
-	spin_unlock(&_minor_lock);
+	if (test_bit(DMF_FREEING, &md->flags) ||
+	    dm_deleting_md(md))
+		return NULL;
 
+	dm_get(md);
 	return md;
 }
 

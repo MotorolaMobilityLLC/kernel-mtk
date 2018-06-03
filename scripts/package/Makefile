@@ -39,9 +39,10 @@ if test "$(objtree)" != "$(srctree)"; then \
 	false; \
 fi ; \
 $(srctree)/scripts/setlocalversion --save-scmversion; \
+ln -sf $(srctree) $(2); \
 tar -cz $(RCS_TAR_IGNORE) -f $(2).tar.gz \
-	--transform 's:^:$(2)/:S' $(TAR_CONTENT) $(3); \
-rm -f $(objtree)/.scmversion
+	$(addprefix $(2)/,$(TAR_CONTENT) $(3)); \
+rm -f $(2) $(objtree)/.scmversion
 
 # rpm-pkg
 # ---------------------------------------------------------------------------

@@ -420,7 +420,7 @@ void sctp_icmp_redirect(struct sock *sk, struct sctp_transport *t,
 {
 	struct dst_entry *dst;
 
-	if (sock_owned_by_user(sk) || !t)
+	if (!t)
 		return;
 	dst = sctp_transport_dst_check(t);
 	if (dst)

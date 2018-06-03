@@ -1635,25 +1635,13 @@ ims_pcu_get_cdc_union_desc(struct usb_interface *intf)
 		return NULL;
 	}
 
-	while (buflen >= sizeof(*union_desc)) {
+	while (buflen > 0) {
 		union_desc = (struct usb_cdc_union_desc *)buf;
-
-		if (union_desc->bLength > buflen) {
-			dev_err(&intf->dev, "Too large descriptor\n");
-			return NULL;
-		}
 
 		if (union_desc->bDescriptorType == USB_DT_CS_INTERFACE &&
 		    union_desc->bDescriptorSubType == USB_CDC_UNION_TYPE) {
 			dev_dbg(&intf->dev, "Found union header\n");
-
-			if (union_desc->bLength >= sizeof(*union_desc))
-				return union_desc;
-
-			dev_err(&intf->dev,
-				"Union descriptor to short (%d vs %zd\n)",
-				union_desc->bLength, sizeof(*union_desc));
-			return NULL;
+			return union_desc;
 		}
 
 		buflen -= union_desc->bLength;

@@ -163,17 +163,18 @@ static const struct plat_sci_reg sci_regmap[SCIx_NR_REGTYPES][SCIx_NR_REGS] = {
 	},
 
 	/*
-	 * Common definitions for legacy IrDA ports.
+	 * Common definitions for legacy IrDA ports, dependent on
+	 * regshift value.
 	 */
 	[SCIx_IRDA_REGTYPE] = {
 		[SCSMR]		= { 0x00,  8 },
-		[SCBRR]		= { 0x02,  8 },
-		[SCSCR]		= { 0x04,  8 },
-		[SCxTDR]	= { 0x06,  8 },
-		[SCxSR]		= { 0x08, 16 },
-		[SCxRDR]	= { 0x0a,  8 },
-		[SCFCR]		= { 0x0c,  8 },
-		[SCFDR]		= { 0x0e, 16 },
+		[SCBRR]		= { 0x01,  8 },
+		[SCSCR]		= { 0x02,  8 },
+		[SCxTDR]	= { 0x03,  8 },
+		[SCxSR]		= { 0x04,  8 },
+		[SCxRDR]	= { 0x05,  8 },
+		[SCFCR]		= { 0x06,  8 },
+		[SCFDR]		= { 0x07, 16 },
 		[SCTFDR]	= sci_reg_invalid,
 		[SCRFDR]	= sci_reg_invalid,
 		[SCSPTR]	= sci_reg_invalid,
@@ -847,8 +848,6 @@ static void sci_receive_chars(struct uart_port *port)
 		/* Tell the rest of the system the news. New characters! */
 		tty_flip_buffer_push(tport);
 	} else {
-		/* TTY buffers full; read from RX reg to prevent lockup */
-		serial_port_in(port, SCxRDR);
 		serial_port_in(port, SCxSR); /* dummy read */
 		sci_clear_SCxSR(port, SCxSR_RDxF_CLEAR(port));
 	}
@@ -1457,16 +1456,7 @@ static void sci_free_dma(struct uart_port *port)
 	if (s->chan_rx)
 		sci_rx_dma_release(s, false);
 }
-
-static void sci_flush_buffer(struct uart_port *port)
-{
-	/*
-	 * In uart_flush_buffer(), the xmit circular buffer has just been
-	 * cleared, so we have to reset tx_dma_len accordingly.
-	 */
-	to_sci_port(port)->tx_dma_len = 0;
-}
-#else /* !CONFIG_SERIAL_SH_SCI_DMA */
+#else
 static inline void sci_request_dma(struct uart_port *port)
 {
 }
@@ -1474,9 +1464,7 @@ static inline void sci_request_dma(struct uart_port *port)
 static inline void sci_free_dma(struct uart_port *port)
 {
 }
-
-#define sci_flush_buffer	NULL
-#endif /* !CONFIG_SERIAL_SH_SCI_DMA */
+#endif
 
 static irqreturn_t sci_rx_interrupt(int irq, void *ptr)
 {
@@ -2216,7 +2204,6 @@ static struct uart_ops sci_uart_ops = {
 	.break_ctl	= sci_break_ctl,
 	.startup	= sci_startup,
 	.shutdown	= sci_shutdown,
-	.flush_buffer	= sci_flush_buffer,
 	.set_termios	= sci_set_termios,
 	.pm		= sci_pm,
 	.type		= sci_type,

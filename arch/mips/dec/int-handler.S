@@ -5,7 +5,7 @@
  * Written by Ralf Baechle and Andreas Busse, modified for DECstation
  * support by Paul Antoine and Harald Koerfgen.
  *
- * completely rewritten:
+ * completly rewritten:
  * Copyright (C) 1998 Harald Koerfgen
  *
  * Rewritten extensively for controller-driven IRQ support

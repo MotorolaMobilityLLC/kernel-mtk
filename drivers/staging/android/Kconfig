@@ -120,15 +120,6 @@ config MTK_ENABLE_AGO
 	Do not use this options in Kernel directly
 	this is a group kernel setting of AGO
 
-config ANDROID_VSOC
-	tristate "Android Virtual SoC support"
-	default n
-	depends on PCI_MSI
-	---help---
-	  This option adds support for the Virtual SoC driver needed to boot
-	  a 'cuttlefish' Android image inside QEmu. The driver interacts with
-	  a QEmu ivshmem device. If built as a module, it will be called vsoc.
-
 source "drivers/staging/android/ion/Kconfig"
 
 source "drivers/staging/android/fiq_debugger/Kconfig"

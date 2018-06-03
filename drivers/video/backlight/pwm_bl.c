@@ -79,17 +79,14 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 static int compute_duty_cycle(struct pwm_bl_data *pb, int brightness)
 {
 	unsigned int lth = pb->lth_brightness;
-	u64 duty_cycle;
+	int duty_cycle;
 
 	if (pb->levels)
 		duty_cycle = pb->levels[brightness];
 	else
 		duty_cycle = brightness;
 
-	duty_cycle *= pb->period - lth;
-	do_div(duty_cycle, pb->scale);
-
-	return duty_cycle + lth;
+	return (duty_cycle * (pb->period - lth) / pb->scale) + lth;
 }
 
 static int pwm_backlight_update_status(struct backlight_device *bl)

@@ -64,4 +64,3 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 
 obj-$(CONFIG_MTK_EIC)			+= irq-mtk-eic.o
 obj-$(CONFIG_MTK_INTPOL)		+= irq-mtk-intpol.o
-obj-$(CONFIG_GOLDFISH_PIC) 		+= irq-goldfish-pic.o

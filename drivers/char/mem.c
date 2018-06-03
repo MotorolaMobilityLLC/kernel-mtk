@@ -70,8 +70,12 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
 	u64 cursor = from;
 
 	while (cursor < to) {
-		if (!devmem_is_allowed(pfn))
+		if (!devmem_is_allowed(pfn)) {
+			printk(KERN_INFO
+		"Program %s tried to access /dev/mem between %Lx->%Lx.\n",
+				current->comm, from, to);
 			return 0;
+		}
 		cursor += PAGE_SIZE;
 		pfn++;
 	}

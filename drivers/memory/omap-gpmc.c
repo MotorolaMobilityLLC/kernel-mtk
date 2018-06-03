@@ -1890,7 +1890,9 @@ static int gpmc_probe_onenand_child(struct platform_device *pdev,
 	if (!of_property_read_u32(child, "dma-channel", &val))
 		gpmc_onenand_data->dma_channel = val;
 
-	return gpmc_onenand_init(gpmc_onenand_data);
+	gpmc_onenand_init(gpmc_onenand_data);
+
+	return 0;
 }
 #else
 static int gpmc_probe_onenand_child(struct platform_device *pdev,

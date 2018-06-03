@@ -663,7 +663,7 @@ static bool i40e_clean_tx_irq(struct i40e_ring *tx_ring, int budget)
 			break;
 
 		/* prevent any other reads prior to eop_desc */
-		smp_rmb();
+		read_barrier_depends();
 
 		/* we have caught up to head, no work left to do */
 		if (tx_head == tx_desc)

@@ -306,8 +306,9 @@ int calc_lanman_hash(const char *password, const char *cryptkey, bool encrypt,
 {
 	int i;
 	int rc;
-	char password_with_pad[CIFS_ENCPWD_SIZE] = {0};
+	char password_with_pad[CIFS_ENCPWD_SIZE];
 
+	memset(password_with_pad, 0, CIFS_ENCPWD_SIZE);
 	if (password)
 		strncpy(password_with_pad, password, CIFS_ENCPWD_SIZE);
 

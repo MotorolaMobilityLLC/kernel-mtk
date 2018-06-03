@@ -187,7 +187,7 @@ static void mark_screen_rdonly(struct mm_struct *mm)
 	pte_unmap_unlock(pte, ptl);
 out:
 	up_write(&mm->mmap_sem);
-	flush_tlb_mm_range(mm, 0xA0000, 0xA0000 + 32*PAGE_SIZE, 0UL);
+	flush_tlb();
 }
 
 
@@ -715,8 +715,7 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
 	return;
 
 check_vip:
-	if ((VEFLAGS & (X86_EFLAGS_VIP | X86_EFLAGS_VIF)) ==
-	    (X86_EFLAGS_VIP | X86_EFLAGS_VIF)) {
+	if (VEFLAGS & X86_EFLAGS_VIP) {
 		save_v86_state(regs, VM86_STI);
 		return;
 	}

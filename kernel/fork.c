@@ -58,7 +58,6 @@
 #include <linux/tsacct_kern.h>
 #include <linux/cn_proc.h>
 #include <linux/freezer.h>
-#include <linux/kaiser.h>
 #include <linux/delayacct.h>
 #include <linux/taskstats_kern.h>
 #include <linux/random.h>
@@ -175,19 +174,18 @@ static inline void free_thread_stack(unsigned long *stack)
 {
 	struct page *page = virt_to_page(stack);
 
-	kaiser_unmap_thread_stack(stack);
 	__free_kmem_pages(page, THREAD_SIZE_ORDER);
 }
 # else
 static struct kmem_cache *thread_stack_cache;
 
-static unsigned long *alloc_thread_stack_node(struct task_struct *tsk,
+static struct thread_info *alloc_thread_stack_node(struct task_struct *tsk,
 						  int node)
 {
 	return kmem_cache_alloc_node(thread_stack_cache, THREADINFO_GFP, node);
 }
 
-static void free_thread_stack(unsigned long *stack)
+static void free_stack(unsigned long *stack)
 {
 	kmem_cache_free(thread_stack_cache, stack);
 }
@@ -367,9 +365,6 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 
 	tsk->stack = stack;
 
-	err = kaiser_map_thread_stack(tsk->stack);
-	if (err)
-		goto free_stack;
 #ifdef CONFIG_SECCOMP
 	/*
 	 * We must handle setting up seccomp filters once we're under
@@ -713,26 +708,6 @@ void __mmdrop(struct mm_struct *mm)
 }
 EXPORT_SYMBOL_GPL(__mmdrop);
 
-static inline void __mmput(struct mm_struct *mm)
-{
-	VM_BUG_ON(atomic_read(&mm->mm_users));
-
-	uprobe_clear_state(mm);
-	exit_aio(mm);
-	ksm_exit(mm);
-	khugepaged_exit(mm); /* must run before exit_mmap */
-	exit_mmap(mm);
-	set_mm_exe_file(mm, NULL);
-	if (!list_empty(&mm->mmlist)) {
-		spin_lock(&mmlist_lock);
-		list_del(&mm->mmlist);
-		spin_unlock(&mmlist_lock);
-	}
-	if (mm->binfmt)
-		module_put(mm->binfmt->module);
-	mmdrop(mm);
-}
-
 /*
  * Decrement the use count and release all resources for an mm.
  */
@@ -740,24 +715,24 @@ void mmput(struct mm_struct *mm)
 {
 	might_sleep();
 
-	if (atomic_dec_and_test(&mm->mm_users))
-		__mmput(mm);
-}
-EXPORT_SYMBOL_GPL(mmput);
-
-static void mmput_async_fn(struct work_struct *work)
-{
-	struct mm_struct *mm = container_of(work, struct mm_struct, async_put_work);
-	__mmput(mm);
-}
-
-void mmput_async(struct mm_struct *mm)
-{
 	if (atomic_dec_and_test(&mm->mm_users)) {
-		INIT_WORK(&mm->async_put_work, mmput_async_fn);
-		schedule_work(&mm->async_put_work);
+		uprobe_clear_state(mm);
+		exit_aio(mm);
+		ksm_exit(mm);
+		khugepaged_exit(mm); /* must run before exit_mmap */
+		exit_mmap(mm);
+		set_mm_exe_file(mm, NULL);
+		if (!list_empty(&mm->mmlist)) {
+			spin_lock(&mmlist_lock);
+			list_del(&mm->mmlist);
+			spin_unlock(&mmlist_lock);
+		}
+		if (mm->binfmt)
+			module_put(mm->binfmt->module);
+		mmdrop(mm);
 	}
 }
+EXPORT_SYMBOL_GPL(mmput);
 
 /**
  * set_mm_exe_file - change a reference to the mm's executable file

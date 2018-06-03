@@ -320,13 +320,11 @@ static struct ip6_tnl *ip6gre_tunnel_locate(struct net *net,
 	if (t || !create)
 		return t;
 
-	if (parms->name[0]) {
-		if (!dev_valid_name(parms->name))
-			return NULL;
+	if (parms->name[0])
 		strlcpy(name, parms->name, IFNAMSIZ);
-	} else {
+	else
 		strcpy(name, "ip6gre%d");
-	}
+
 	dev = alloc_netdev(sizeof(*t), name, NET_NAME_UNKNOWN,
 			   ip6gre_tunnel_setup);
 	if (!dev)
@@ -364,7 +362,7 @@ static void ip6gre_tunnel_uninit(struct net_device *dev)
 	struct ip6gre_net *ign = net_generic(t->net, ip6gre_net_id);
 
 	ip6gre_tunnel_unlink(ign, t);
-	dst_cache_reset(&t->dst_cache);
+	ip6_tnl_dst_reset(t);
 	dev_put(dev);
 }
 
@@ -411,16 +409,13 @@ static void ip6gre_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 	case ICMPV6_DEST_UNREACH:
 		net_dbg_ratelimited("%s: Path to destination invalid or inactive!\n",
 				    t->parms.name);
-		if (code != ICMPV6_PORT_UNREACH)
-			break;
-		return;
+		break;
 	case ICMPV6_TIME_EXCEED:
 		if (code == ICMPV6_EXC_HOPLIMIT) {
 			net_dbg_ratelimited("%s: Too small hop limit or routing loop in tunnel!\n",
 					    t->parms.name);
-			break;
 		}
-		return;
+		break;
 	case ICMPV6_PARAMPROB:
 		teli = 0;
 		if (code == ICMPV6_HDR_FIELD)
@@ -436,13 +431,13 @@ static void ip6gre_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 			net_dbg_ratelimited("%s: Recipient unable to parse tunneled packet!\n",
 					    t->parms.name);
 		}
-		return;
+		break;
 	case ICMPV6_PKT_TOOBIG:
 		mtu = be32_to_cpu(info) - offset;
 		if (mtu < IPV6_MIN_MTU)
 			mtu = IPV6_MIN_MTU;
 		t->dev->mtu = mtu;
-		return;
+		break;
 	}
 
 	if (time_before(jiffies, t->err_time + IP6TUNNEL_ERR_TIMEO))
@@ -642,7 +637,7 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
 	}
 
 	if (!fl6->flowi6_mark)
-		dst = dst_cache_get(&tunnel->dst_cache);
+		dst = ip6_tnl_dst_get(tunnel);
 
 	if (!dst) {
 		dst = ip6_route_output(net, NULL, fl6);
@@ -711,7 +706,7 @@ static netdev_tx_t ip6gre_xmit2(struct sk_buff *skb,
 	}
 
 	if (!fl6->flowi6_mark && ndst)
-		dst_cache_set_ip6(&tunnel->dst_cache, ndst, &fl6->saddr);
+		ip6_tnl_dst_set(tunnel, ndst);
 	skb_dst_set(skb, dst);
 
 	proto = NEXTHDR_GRE;
@@ -1023,7 +1018,7 @@ static int ip6gre_tnl_change(struct ip6_tnl *t,
 	t->parms.o_key = p->o_key;
 	t->parms.i_flags = p->i_flags;
 	t->parms.o_flags = p->o_flags;
-	dst_cache_reset(&t->dst_cache);
+	ip6_tnl_dst_reset(t);
 	ip6gre_tnl_link_config(t, set_mtu);
 	return 0;
 }
@@ -1234,7 +1229,7 @@ static void ip6gre_dev_free(struct net_device *dev)
 {
 	struct ip6_tnl *t = netdev_priv(dev);
 
-	dst_cache_destroy(&t->dst_cache);
+	ip6_tnl_dst_destroy(t);
 	free_percpu(dev->tstats);
 	free_netdev(dev);
 }
@@ -1272,7 +1267,7 @@ static int ip6gre_tunnel_init_common(struct net_device *dev)
 	if (!dev->tstats)
 		return -ENOMEM;
 
-	ret = dst_cache_init(&tunnel->dst_cache, GFP_KERNEL);
+	ret = ip6_tnl_dst_init(tunnel);
 	if (ret) {
 		free_percpu(dev->tstats);
 		dev->tstats = NULL;

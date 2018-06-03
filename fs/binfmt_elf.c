@@ -495,7 +495,6 @@ static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
  * arch_check_elf() - check an ELF executable
  * @ehdr:	The main ELF header
  * @has_interp:	True if the ELF has an interpreter, else false.
- * @interp_ehdr: The interpreter's ELF header
  * @state:	Architecture-specific state preserved throughout the process
  *		of loading the ELF.
  *
@@ -507,7 +506,6 @@ static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
  *         with that return code.
  */
 static inline int arch_check_elf(struct elfhdr *ehdr, bool has_interp,
-				 struct elfhdr *interp_ehdr,
 				 struct arch_elf_state *state)
 {
 	/* Dummy implementation, always proceed */
@@ -835,9 +833,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
 	 * still possible to return an error to the code that invoked
 	 * the exec syscall.
 	 */
-	retval = arch_check_elf(&loc->elf_ex,
-				!!interpreter, &loc->interp_elf_ex,
-				&arch_state);
+	retval = arch_check_elf(&loc->elf_ex, !!interpreter, &arch_state);
 	if (retval)
 		goto out_free_dentry;
 

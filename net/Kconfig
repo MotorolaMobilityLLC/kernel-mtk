@@ -389,10 +389,6 @@ config LWTUNNEL
 	  weight tunnel endpoint. Tunnel encapsulation parameters are stored
 	  with light weight tunnel state associated with fib routes.
 
-config DST_CACHE
-	bool
-	default n
-
 endif   # if NET
 
 # Used by archs to tell that they support BPF_JIT
@@ -409,6 +405,3 @@ config MTK_NET_RFC7217
 	default n
 	---help---
 	  This config helps to enable/disable stable privacy IPv6 address
-
-config HAVE_EBPF_JIT
-	bool

@@ -126,6 +126,21 @@ struct fscrypt_ctx *fscrypt_get_ctx(const struct inode *inode, gfp_t gfp_flags)
 }
 EXPORT_SYMBOL(fscrypt_get_ctx);
 
+/**
+ * page_crypt_complete() - completion callback for page crypto
+ * @req: The asynchronous cipher request context
+ * @res: The result of the cipher operation
+ */
+static void page_crypt_complete(struct crypto_async_request *req, int res)
+{
+	struct fscrypt_completion_result *ecr = req->data;
+
+	if (res == -EINPROGRESS)
+		return;
+	ecr->res = res;
+	complete(&ecr->completion);
+}
+
 int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 			   u64 lblk_num, struct page *src_page,
 			   struct page *dest_page, unsigned int len,
@@ -136,7 +151,7 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 		u8 padding[FS_IV_SIZE - sizeof(__le64)];
 	} iv;
 	struct skcipher_request *req = NULL;
-	DECLARE_CRYPTO_WAIT(wait);
+	DECLARE_FS_COMPLETION_RESULT(ecr);
 	struct scatterlist dst, src;
 	struct fscrypt_info *ci = inode->i_crypt_info;
 	struct crypto_skcipher *tfm = ci->ci_ctfm;
@@ -164,7 +179,7 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 
 	skcipher_request_set_callback(
 		req, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
-		crypto_req_done, &wait);
+		page_crypt_complete, &ecr);
 
 	sg_init_table(&dst, 1);
 	sg_set_page(&dst, dest_page, len, offs);
@@ -172,9 +187,14 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 	sg_set_page(&src, src_page, len, offs);
 	skcipher_request_set_crypt(req, &src, &dst, len, &iv);
 	if (rw == FS_DECRYPT)
-		res = crypto_wait_req(crypto_skcipher_decrypt(req), &wait);
+		res = crypto_skcipher_decrypt(req);
 	else
-		res = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+		res = crypto_skcipher_encrypt(req);
+	if (res == -EINPROGRESS || res == -EBUSY) {
+		BUG_ON(req->base.data != &ecr);
+		wait_for_completion(&ecr.completion);
+		res = ecr.res;
+	}
 	skcipher_request_free(req);
 	if (res) {
 		printk_ratelimited(KERN_ERR
@@ -320,7 +340,7 @@ static int fscrypt_d_revalidate(struct dentry *dentry, unsigned int flags)
 		return -ECHILD;
 
 	dir = dget_parent(dentry);
-	if (!IS_ENCRYPTED(d_inode(dir))) {
+	if (!d_inode(dir)->i_sb->s_cop->is_encrypted(d_inode(dir))) {
 		dput(dir);
 		return 0;
 	}
@@ -390,8 +410,11 @@ int fscrypt_initialize(unsigned int cop_flags)
 {
 	int i, res = -ENOMEM;
 
-	/* No need to allocate a bounce page pool if this FS won't use it. */
-	if (cop_flags & FS_CFLG_OWN_PAGES)
+	/*
+	 * No need to allocate a bounce page pool if there already is one or
+	 * this FS won't use it.
+	 */
+	if (cop_flags & FS_CFLG_OWN_PAGES || fscrypt_bounce_page_pool)
 		return 0;
 
 	mutex_lock(&fscrypt_init_mutex);

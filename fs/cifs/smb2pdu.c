@@ -580,7 +580,8 @@ int smb3_validate_negotiate(const unsigned int xid, struct cifs_tcon *tcon)
 	}
 
 	/* check validate negotiate info response matches what we got earlier */
-	if (pneg_rsp->Dialect != cpu_to_le16(tcon->ses->server->dialect))
+	if (pneg_rsp->Dialect !=
+			cpu_to_le16(tcon->ses->server->vals->protocol_id))
 		goto vneg_out;
 
 	if (pneg_rsp->SecurityMode != cpu_to_le16(tcon->ses->server->sec_mode))
@@ -832,8 +833,10 @@ ssetup_exit:
 
 	if (!rc) {
 		mutex_lock(&server->srv_mutex);
-		if (server->ops->generate_signingkey) {
+		if (server->sign && server->ops->generate_signingkey) {
 			rc = server->ops->generate_signingkey(ses);
+			kfree(ses->auth_key.response);
+			ses->auth_key.response = NULL;
 			if (rc) {
 				cifs_dbg(FYI,
 					"SMB3 session key generation failed\n");
@@ -855,6 +858,10 @@ ssetup_exit:
 	}
 
 keygen_exit:
+	if (!server->sign) {
+		kfree(ses->auth_key.response);
+		ses->auth_key.response = NULL;
+	}
 	if (spnego_key) {
 		key_invalidate(spnego_key);
 		key_put(spnego_key);
@@ -999,19 +1006,15 @@ SMB2_tcon(const unsigned int xid, struct cifs_ses *ses, const char *tree,
 		goto tcon_exit;
 	}
 
-	switch (rsp->ShareType) {
-	case SMB2_SHARE_TYPE_DISK:
+	if (rsp->ShareType & SMB2_SHARE_TYPE_DISK)
 		cifs_dbg(FYI, "connection to disk share\n");
-		break;
-	case SMB2_SHARE_TYPE_PIPE:
+	else if (rsp->ShareType & SMB2_SHARE_TYPE_PIPE) {
 		tcon->ipc = true;
 		cifs_dbg(FYI, "connection to pipe share\n");
-		break;
-	case SMB2_SHARE_TYPE_PRINT:
-		tcon->ipc = true;
+	} else if (rsp->ShareType & SMB2_SHARE_TYPE_PRINT) {
+		tcon->print = true;
 		cifs_dbg(FYI, "connection to printer\n");
-		break;
-	default:
+	} else {
 		cifs_dbg(VFS, "unknown share type %d\n", rsp->ShareType);
 		rc = -EOPNOTSUPP;
 		goto tcon_error_exit;
@@ -1556,9 +1559,6 @@ SMB2_ioctl(const unsigned int xid, struct cifs_tcon *tcon, u64 persistent_fid,
 	} else
 		iov[0].iov_len = get_rfc1002_length(req) + 4;
 
-	/* validate negotiate request must be signed - see MS-SMB2 3.2.5.5 */
-	if (opcode == FSCTL_VALIDATE_NEGOTIATE_INFO)
-		req->hdr.Flags |= SMB2_FLAGS_SIGNED;
 
 	rc = SendReceive2(xid, ses, iov, num_iovecs, &resp_buftype, 0);
 	rsp = (struct smb2_ioctl_rsp *)iov[0].iov_base;
