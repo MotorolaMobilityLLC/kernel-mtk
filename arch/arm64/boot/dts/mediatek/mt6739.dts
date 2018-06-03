@@ -1407,6 +1407,15 @@
 		*/
 	};
 
+	btcvsd@10001000 {
+		compatible = "mediatek,audio_bt_cvsd";
+		offset =<0xf00 0x800 0xfd0 0xfd4 0xfd8>;
+		/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/
+		reg=<0 0x10001000 0 0x1000>, /*AUDIO_INFRA_BASE_PHYSICAL*/
+		<0 0x18000000 0 0x10000>, /*PKV_PHYSICAL_BASE*/
+		<0 0x18080000 0 0x8000>; /*SRAM_BANK2*/
+		interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+	};
 
 	audio: audio@11220000 {
 		compatible = "mediatek,audio", "syscon";
