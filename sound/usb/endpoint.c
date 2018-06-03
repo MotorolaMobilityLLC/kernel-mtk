@@ -167,7 +167,7 @@ int snd_usb_endpoint_next_packet_size(struct snd_usb_endpoint *ep)
 static void retire_outbound_urb(struct snd_usb_endpoint *ep,
 				struct snd_urb_ctx *urb_ctx)
 {
-	if (ep->retire_data_urb)
+	if (ep->retire_data_urb && ep->data_subs)
 		ep->retire_data_urb(ep->data_subs, urb_ctx->urb);
 }
 
