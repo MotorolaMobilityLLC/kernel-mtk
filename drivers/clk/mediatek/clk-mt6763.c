@@ -1306,8 +1306,8 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	/* MM1 */
 	GATE_MM1(MMSYS_DSI0_MM_CK, "mm_dsi0_mmck", "mm_sel", 0),
 	GATE_MM1(MMSYS_DSI0_IF_CK, "mm_dsi0_ifck", "mm_sel", 1),/* should mipipll1 */
-	GATE_MM1(MMSYS_DSI1_MM_CK, "mm_dsi1_mmck", "mm_sel", 2),
-	GATE_MM1(MMSYS_DSI1_IF_CK, "mm_dsi1_ifck", "mm_sel", 3),/* should mipipll2 */
+	GATE_MM1(MMSYS_DPI_MM_CK, "mm_dpi_mmck", "mm_sel", 2),
+	GATE_MM1(MMSYS_DPI_IF_CK, "mm_dpi_ifck", "mm_sel", 3),/* should mipipll2 */
 	GATE_MM1(MMSYS_FAKE_ENG2, "mm_fake_eng2", "mm_sel", 4),
 	GATE_MM1(MMSYS_MDP_DL_RX_CK, "mm_mdp_dl_rxck", "mm_sel", 5),
 	GATE_MM1(MMSYS_IPU_DL_RX_CK, "mm_ipu_dl_rxck", "mm_sel", 6),
