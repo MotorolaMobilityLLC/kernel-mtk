@@ -1207,8 +1207,6 @@ unsigned int get_dram_data_rate(void)
 			u4DataRate = 3200;
 		else if (u4DataRate == 2392)
 			u4DataRate = 2400;
-		else if (u4DataRate == 2002)
-			u4DataRate = 2000;
 		else if (u4DataRate == 1599)
 			u4DataRate = 1600;
 		else
