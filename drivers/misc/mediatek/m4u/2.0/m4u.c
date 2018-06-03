@@ -1484,7 +1484,7 @@ const char *M4U_tl_name = "98fb95bcb4bf42d26473eae48690d7ea";
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 static const struct TEEC_UUID m4u_tl_uuid = M4U_TL_UUID;
 #else
-static const TEEC_UUID m4u_tl_uuid = (TEEC_UUID)M4U_TL_UUID;
+static const struct TEEC_UUID m4u_tl_uuid = M4U_TL_UUID;
 #endif
 
 static struct TEEC_Context m4u_tci_context;
@@ -1500,7 +1500,7 @@ static int m4u_open_trustlet(uint32_t deviceId)
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	struct TEEC_UUID destination = m4u_tl_uuid;
 #else
-	TEEC_UUID destination = m4u_tl_uuid;
+	struct TEEC_UUID destination = m4u_tl_uuid;
 #endif
 
 	/* Initialize context handle data */
@@ -1630,8 +1630,8 @@ static int m4u_exec_cmd(struct mc_session_handle *m4u_session, m4u_msg_t *m4u_ms
 exit:
 	return ret;
 }
-
-static int __m4u_sec_init(void)
+#if defined(CONFIG_MTK_TEE_GP_SUPPORT)
+static int __m4u_sec_init(int reinit)
 {
 	int ret;
 	void *pgd_va;
@@ -1651,6 +1651,7 @@ static int __m4u_sec_init(void)
 	m4u_tci_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
 	m4u_tci_msg->init_param.l2_en = gM4U_L2_enable;
 	m4u_tci_msg->init_param.sec_pt_pa = 0;	/* m4u_alloc_sec_pt_for_debug(); */
+	m4u_tci_msg->init_param.reinit = reinit;
 	M4UMSG("%s call m4u_exec_cmd CMD_M4UTL_INIT, nonsec_pt_pa: 0x%lx (0x%llx)\n", __func__,
 		   pt_pa_nonsec, m4u_tci_msg->init_param.nonsec_pt_pa);
 	ret = m4u_exec_tci(&m4u_tci_session, m4u_tci_msg);
@@ -1665,7 +1666,7 @@ out:
 	mutex_unlock(&m4u_tci_mutex);
 	return ret;
 }
-
+#endif
 
 #endif
 #define TPLAY_DEV_NAME		"tz_m4u"
@@ -1892,6 +1893,7 @@ out:
 int m4u_sec_init(void)
 {
 		uint32_t deviceId = 0;
+	int reinit = 0;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	enum mc_result mcRet;
 
@@ -1900,6 +1902,7 @@ int m4u_sec_init(void)
 
 	if (m4u_tee_en) {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
+		reinit = 1;
 		goto m4u_sec_reinit;
 	}
 
@@ -1948,7 +1951,12 @@ int m4u_sec_init(void)
 m4u_sec_reinit:
 
 	m4u_open_trustlet(deviceId);
+#if defined(CONFIG_MTK_TEE_GP_SUPPORT)
+	__m4u_sec_init(reinit);
+#else
 	__m4u_sec_init();
+#endif
+
 #ifdef __M4U_SECURE_SYSTRACE_ENABLE__
 	{
 		union callback_func callback;
@@ -2287,9 +2295,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 {
 	int ret = 0;
 	M4U_MOUDLE_STRUCT m4u_module;
-#ifdef M4U_FPGAPORTING
 	M4U_PORT_STRUCT m4u_port;
-#endif
 	M4U_PORT_ID ModuleID;
 	M4U_CACHE_STRUCT m4u_cache_data;
 	M4U_DMA_STRUCT m4u_dma_data;
@@ -2408,7 +2414,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				m4u_dma_data.size, m4u_dma_data.mva,
 				m4u_dma_data.eDMAType, m4u_dma_data.eDMADir);
 		break;
-#ifdef M4U_FPGAPORTING
+
 	case MTK_M4U_T_CONFIG_PORT:
 		ret = copy_from_user(&m4u_port, (void *)arg, sizeof(M4U_PORT_STRUCT));
 		if (ret) {
@@ -2427,7 +2433,6 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		mutex_unlock(&gM4u_sec_init);
 #endif
 		break;
-#endif
 	case MTK_M4U_T_CACHE_FLUSH_ALL:
 		m4u_dma_cache_flush_all();
 		break;
