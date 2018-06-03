@@ -821,6 +821,16 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_ENC_IOCTL_WARM_RESET:
+		if (*pStatus != JPEG_ENC_PROCESS) {
+			JPEG_WRN("Permission Denied!");
+			return -EFAULT;
+		}
+		if (enc_status == 0) {
+			JPEG_WRN("Encoder status is available");
+			*pStatus = 0;
+			return -EFAULT;
+		}
+
 		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Warm Reset\n");
 		enc_result_code = jpeg_drv_enc_warm_reset();
 		if (enc_result_code == 0)
