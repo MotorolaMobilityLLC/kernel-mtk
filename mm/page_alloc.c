@@ -6173,6 +6173,12 @@ static void __setup_per_zone_wmarks(void)
 
 	/* Calculate total number of !ZONE_HIGHMEM pages */
 	for_each_zone(zone) {
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA)) {
+			int zone_off = (char *)zone - (char *)zone->zone_pgdat->node_zones;
+
+			if (zone_off == ZONE_MOVABLE * sizeof(*zone))
+				continue;
+		}
 		if (!is_highmem(zone))
 			lowmem_pages += zone->managed_pages;
 	}
@@ -6184,7 +6190,10 @@ static void __setup_per_zone_wmarks(void)
 		min = (u64)pages_min * zone->managed_pages;
 		do_div(min, lowmem_pages);
 		low = (u64)pages_low * zone->managed_pages;
-		do_div(low, vm_total_pages);
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
+			do_div(low, lowmem_pages);
+		else
+			do_div(low, vm_total_pages);
 
 		if (is_highmem(zone)) {
 			/*
