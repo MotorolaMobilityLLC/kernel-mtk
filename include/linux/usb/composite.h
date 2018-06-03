@@ -223,12 +223,6 @@ struct usb_function {
 	int			(*get_status)(struct usb_function *);
 	int			(*func_suspend)(struct usb_function *,
 						u8 suspend_opt);
-
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
-	int			(*md_msg_hdlr)(struct usb_function *f, int msg_id, void *data);
-	bool			(*md_status_qry)(struct usb_function *f);
-#endif
-
 	/* private: */
 	/* internals */
 	struct list_head		list;

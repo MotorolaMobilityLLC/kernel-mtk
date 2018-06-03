@@ -79,7 +79,7 @@ int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info);
 
 /* external API */
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
-extern int musb_md_msg_hdlr(ipc_ilm_t *ilm);
+extern int rndis_md_msg_hdlr(ipc_ilm_t *ilm);
 #endif
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 extern int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm);

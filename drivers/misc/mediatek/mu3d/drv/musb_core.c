@@ -120,10 +120,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
-#include "mtk_gadget.h"
-#endif
-
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)
 
 
