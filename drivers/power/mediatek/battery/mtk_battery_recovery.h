@@ -39,6 +39,8 @@ int get_charger_exist(void);
 int get_charger_status(void);
 int get_imix_r(void);
 int get_con0_soc(void);
+int get_d0_c_soc_cust(void);
+int get_uisoc_cust(void);
 
 /* set data to kernel*/
 int fg_adc_reset(void);

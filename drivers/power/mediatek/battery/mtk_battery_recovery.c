@@ -237,16 +237,12 @@ void fg_update_fg_bat_int1_threshold(void)
 /* update uisoc ht/lt gap */
 void fg_update_fg_bat_int2_threshold(void)
 {
-	int C_Remain = 0;
 	int D_Remain = 0;
 
 	car = get_fg_hw_car();
 	fg_update_quse(1);
 
 	/* calculate ui ht gap */
-	C_Remain = (10000 - soc) * quse_tb1 / 10000;
-	ht_gap = C_Remain * pdata->diff_soc_setting / (10000 - ui_soc);
-
 	ht_gap = quse_tb1 / 100;
 
 	if (ht_gap < (quse_tb1 / 1000))
@@ -271,8 +267,8 @@ void fg_update_fg_bat_int2_threshold(void)
 	if (lt_gap < CAR_MIN_GAP)
 		lt_gap = CAR_MIN_GAP;
 
-	bm_err("[fg_update_fg_bat_int2_threshold]car:%d quse_tb1[%d %d] gap[%d %d][%d %d]\n",
-		car, quse_tb1, soc, ht_gap, lt_gap, C_Remain, D_Remain);
+	bm_err("[fg_update_fg_bat_int2_threshold]car:%d quse_tb1[%d %d] gap[%d %d][%d]\n",
+		car, quse_tb1, soc, ht_gap, lt_gap, D_Remain);
 }
 
 
@@ -1234,6 +1230,26 @@ void set_fg_vbat2_l_th(int thr)
 	bm_err("send_to_kernel=FG_DAEMON_CMD_SET_FG_VBAT_L_TH %d %d\n", sends, receive);
 }
 
+int get_d0_c_soc_cust(void)
+{
+	int sends = 0;
+	int receive = 0;
+
+	fgr_SEND_to_kernel(FG_DAEMON_CMD_GET_D0_C_SOC_CUST, &sends, &receive);
+	bm_err("send_to_kernel=FG_DAEMON_CMD_GET_D0_C_SOC_CUST:%d %d\n", sends, receive);
+	return receive;
+}
+
+int get_uisoc_cust(void)
+{
+	int sends = 0;
+	int receive = 0;
+
+	fgr_SEND_to_kernel(FG_DAEMON_CMD_GET_UISOC_CUST, &sends, &receive);
+	bm_err("send_to_kernel=FG_DAEMON_CMD_GET_UISOC_CUST:%d %d\n", sends, receive);
+	return receive;
+}
+
 int get_fg_hw_car(void)
 {
 	int sends = 0;
@@ -1466,9 +1482,6 @@ static int fg_compensate_battery_voltage_from_low(int oriv, int curr, int tablei
 					hit_h_percent, hit_l_percent, high, fg_volt_withIR, oriv);
 				break;
 			}
-		} else if (high == 0) {
-			fg_volt = profile_p[0].voltage;
-			bm_err("[FG_ERR][fg_compensate_battery_voltage_from_low] fg_volt=%d should not =0\n", fg_volt);
 		} else {
 			bm_err("[FG_ERR][fg_compensate_battery_voltage_from_low] can't find available voltage!!!\n");
 			fg_volt = profile_p[0].voltage;
@@ -1748,10 +1761,13 @@ void fgr_dod_init(void)
 
 	fg_adc_reset();
 
-	if (pdata->d0_sel == 0) {
+	if (pdata->d0_sel == 1) {
 		/* reserve for custom c_d0 / custom ui_soc */
-		fg_c_d0_soc = fg_c_d0_soc;
-		ui_soc = ui_soc;
+		fg_c_d0_soc = get_d0_c_soc_cust();
+		ui_d0_soc = get_uisoc_cust();
+
+		fg_c_d0_ocv = SOC_to_OCV_c(fg_c_d0_soc);
+		Set_fg_c_d0_by_ocv(fg_c_d0_ocv);
 	}
 
 	fg_update_c_dod();
@@ -1759,8 +1775,9 @@ void fgr_dod_init(void)
 	ui_soc = ui_d0_soc;
 	soc = fg_c_soc;
 
-	bm_err("[dod_init]fg_c_d0[%d %d %d] c_soc[%d %d] ui[%d %d] soc[%d]\n",
-		fg_c_d0_soc, fg_c_d0_ocv, fg_c_d0_dod, fg_c_dod, fg_c_soc, rtc_ui_soc, ui_d0_soc, soc);
+	bm_err("[dod_init]fg_c_d0[%d %d %d] d0_sel[%d] c_soc[%d %d] ui[%d %d] soc[%d]\n",
+		fg_c_d0_soc, fg_c_d0_ocv, fg_c_d0_dod, pdata->d0_sel,
+		fg_c_dod, fg_c_soc, rtc_ui_soc, ui_d0_soc, soc);
 }
 
 
