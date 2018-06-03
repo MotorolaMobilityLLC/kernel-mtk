@@ -327,6 +327,15 @@ void fg_set_int1(void)
 	ret = set_kernel_uisoc(ui_soc);
 	ret = set_kernel_init_vbat(get_ptim_vbat());
 
+	set_rtc_ui_soc((ui_soc+50) / 100);
+
+	if (soc <= 100)
+		set_con0_soc(100);
+	else if (soc >= 12000)
+		set_con0_soc(10000);
+	else
+		set_con0_soc(soc);
+
 	bm_err("[FGADC_intr_end][INTR_Initialize]fg_set_int1 done\n");
 
 	/* fg_dump_int_threshold(); */
