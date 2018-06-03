@@ -41,7 +41,11 @@ atomic_t ged_log_inited = ATOMIC_INIT(0);
 
 void disp_init_ged_log_handle(void)
 {
-	ged_log_buf_get_early("FENCE", &ghlog);
+	int ret;
+
+	ret = ged_log_buf_get_early("FENCE", &ghlog);
+	if (ret != 0)
+		DISPERR("ged_log_buf_get_early Failed!\n");
 }
 
 static int disp_dump_fence_info(struct sync_fence *fence, int is_err)

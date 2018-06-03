@@ -981,13 +981,14 @@ static int fps_ext_ctx_get_fps(struct fps_ext_ctx_t *fps_ctx, unsigned int *fps,
 
 static int fps_ext_ctx_set_interval(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
 {
-	if (!fps_ctx->is_inited)
-		return fps_ext_ctx_init(fps_ctx, ms);
-
 	if (fps_ctx == NULL) {
 		DISPERR("%s:%d, fps_cxt is null\n", __func__, __LINE__);
 		return -1;
 	}
+
+	if (!fps_ctx->is_inited)
+		return fps_ext_ctx_init(fps_ctx, ms);
+
 	if (ms > INTERVAL_MS) {
 		DISPERR("%s:%d, interval is too big:%d ms, max:%d ms\n", __func__, __LINE__, ms, INTERVAL_MS);
 		return -1;

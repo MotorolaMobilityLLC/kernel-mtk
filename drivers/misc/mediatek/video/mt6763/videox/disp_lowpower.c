@@ -1188,7 +1188,7 @@ unsigned int time_to_line(unsigned int ms, unsigned int width)
 	unsigned int line = 0;
 
 	tline_us = get_us_perline(width);
-	time_us = ms * 1000 * LINE_ACCURACY;
+	time_us = (unsigned long long)ms * 1000 * LINE_ACCURACY;
 #if defined(__LP64__) || defined(_LP64)
 	line = time_us / tline_us;
 #else

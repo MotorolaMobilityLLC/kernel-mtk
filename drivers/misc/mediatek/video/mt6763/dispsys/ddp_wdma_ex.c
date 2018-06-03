@@ -440,7 +440,7 @@ static int wdma_dump(enum DISP_MODULE_ENUM module, int level)
 }
 
 static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
-	struct golden_setting_context *p_golden_setting, void *cmdq)
+	struct golden_setting_context *p_golden_setting, unsigned int is_primary_flag, void *cmdq)
 {
 	unsigned int regval;
 	unsigned int idx = wdma_index(module);
@@ -452,7 +452,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	unsigned int fifo_pseudo_size = 244;
 	unsigned int frame_rate = 60;
 	unsigned int bytes_per_sec = 3;
-	unsigned int is_primary_flag = 1;  /*primary or external*/
+	/*unsigned int is_primary_flag = 1;*/  /*primary or external*/
 	long long temp;
 
 	unsigned int fifo_off_drs_enter = 4;
@@ -934,6 +934,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 {
 
 	struct WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
+	unsigned int is_primary_flag = 1;  /*primary or external*/
 
 	if (!pConfig->wdma_dirty)
 		return 0;
@@ -1016,7 +1017,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 			    config->useSpecifiedAlpha, config->alpha, config->security, handle);
 
 		p_golden_setting = pConfig->p_golden_setting_context;
-		wdma_golden_setting(module, p_golden_setting, handle);
+		wdma_golden_setting(module, p_golden_setting, is_primary_flag, handle);
 	}
 	return 0;
 }
