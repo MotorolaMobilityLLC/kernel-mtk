@@ -33,18 +33,16 @@
 	#define DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG	0
 #endif
 
-#define DAPC_INPUT_TYPE_DEBUG_ON	200
-#define DAPC_INPUT_TYPE_DEBUG_OFF	100
 #define MTK_SIP_LK_DAPC			0x82000101
 
 #define DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX    0
 
 /* Uncomment to enable AEE  */
 #define DEVAPC_ENABLE_AEE			1
+#define DEVAPC_TOTAL_SLAVES			214
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
 /* This is necessary for AEE */
-#define DEVAPC_TOTAL_SLAVES					214
 #endif
 
 /* For Infra VIO_DBG */
@@ -98,5 +96,36 @@ struct DEVICE_INFO {
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 #endif
+
+enum DEVAPC_SLAVE_TYPE {
+	E_DAPC_INFRA_PERI_SLAVE = 0,
+	E_DAPC_MM_SLAVE,
+	E_DAPC_MD_SLAVE,
+	E_DAPC_PERI_SLAVE,
+	E_DAPC_MM2ND_SLAVE,
+	E_DAPC_OTHERS_SLAVE,
+	E_DAPC_SLAVE_TYPE_RESERVRD = 0x7FFFFFFF  /* force enum to use 32 bits */
+};
+
+enum E_MASK_DOM {
+	E_DOMAIN_0 = 0,
+	E_DOMAIN_1,
+	E_DOMAIN_2,
+	E_DOMAIN_3,
+	E_DOMAIN_4,
+	E_DOMAIN_5,
+	E_DOMAIN_6,
+	E_DOMAIN_7,
+	E_DOMAIN_8,
+	E_DOMAIN_9,
+	E_DOMAIN_10,
+	E_DOMAIN_11,
+	E_DOMAIN_12,
+	E_DOMAIN_13,
+	E_DOMAIN_14,
+	E_DOMAIN_15,
+	E_DOMAIN_OTHERS,
+	E_MASK_DOM_RESERVRD = 0x7FFFFFFF  /* force enum to use 32 bits */
+};
 
 #endif /* __DAPC_H__ */
