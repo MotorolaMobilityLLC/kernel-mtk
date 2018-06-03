@@ -311,6 +311,10 @@
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x44400000 0 0x10000>;
 		};
+		minirdump-reserved-memory@444f0000{
+			compatible = "mediatek,minirdump";
+			reg = <0 0x444f0000 0 0x10000>;
+		};
 		spm-reserve-memory@44600000 {
 			compatible = "mediatek,spm-reserve-memory";
 			no-map;
