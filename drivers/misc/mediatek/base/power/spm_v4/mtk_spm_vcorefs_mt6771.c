@@ -25,6 +25,9 @@
 #include <linux/of_address.h>
 #endif
 
+#include <linux/fb.h>
+#include <linux/notifier.h>
+
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
 #endif
@@ -512,31 +515,39 @@ int spm_dvfs_flag_init(void)
 	return flag;
 }
 
+
+
 void dvfsrc_md_scenario_update(bool suspend)
 {
-	if (__spm_get_dram_type() == SPMFW_LP3_1CH_1866) {
-		/* LP3 1CH */
-		if (suspend) {
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x000000C0);
-			spm_write(DVFSRC_EMI_MD2SPM1, 0x80008000);
-			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
-		} else {
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
-			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
-			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
-		}
+	int spmfw_dram_type = __spm_get_dram_type();
+
+	if (spmfw_dram_type == SPMFW_LP3_1CH_1866) {
+		if (suspend)
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x0);
+		else
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
+	} else if (spmfw_dram_type == SPMFW_LP4X_2CH_3200) {
+		if (suspend)
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x0);
+		else
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
+	} else if (spmfw_dram_type == SPMFW_LP4X_2CH_3733) {
+		if (suspend)
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x0);
+		else
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
 	} else {
-		/* LP4 2CH */
-		if (suspend) {
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x00000000);
-			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
-			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
-		} else {
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
-			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
-			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
-		}
+		spm_vcorefs_warn("un-support spmfw_dram_type: %d\n", spmfw_dram_type);
 	}
+}
+
+static bool is_screen_off;
+void dvfsrc_md_scenario_update_to_fb(bool suspend)
+{
+	if (!suspend && is_screen_off)
+		return; /* scrren off stay suspend setting */
+
+	dvfsrc_md_scenario_update(suspend);
 }
 
 void dvfsrc_set_vcore_request(unsigned int mask, unsigned int shift, unsigned int level)
@@ -626,8 +637,8 @@ static void dvfsrc_init(void)
 
 		spm_write(DVFSRC_EMI_QOS0, 0x32);
 		spm_write(DVFSRC_EMI_QOS1, 0x4C);
-		spm_write(DVFSRC_EMI_MD2SPM0, 0xF8);
-		spm_write(DVFSRC_EMI_MD2SPM1, 0x8000);
+		spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
+		spm_write(DVFSRC_EMI_MD2SPM1, 0x80C0);
 		spm_write(DVFSRC_VCORE_MD2SPM0, 0x80C0);
 	} else if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3733) {
 		/* LP4 2CH 3600 */
@@ -824,10 +835,43 @@ static int vcorefs_is_lp_flavor(void)
 	return r;
 }
 
+static int spm_vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		is_screen_off = false;
+		dvfsrc_md_scenario_update(false);
+		spm_vcorefs_warn("SCREEN ON (emi_md2spm0: 0x%x)\n", spm_read(DVFSRC_EMI_MD2SPM0));
+		break;
+	case FB_BLANK_POWERDOWN:
+		is_screen_off = true;
+		dvfsrc_md_scenario_update(true);
+		spm_vcorefs_warn("SCREEN OFF (emi_md2spm0: 0x%x)\n", spm_read(DVFSRC_EMI_MD2SPM0));
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block spm_vcorefs_fb_notif = {
+		.notifier_call = spm_vcorefs_fb_notifier_callback,
+};
+
 
 void spm_vcorefs_init(void)
 {
 	int flag;
+	int r;
 
 	if (vcorefs_is_lp_flavor()) {
 		vcorefs_set_vcore_dvs_en(true);
@@ -842,6 +886,11 @@ void spm_vcorefs_init(void)
 	plat_info_init();
 	vcore_opp_init();
 	vcorefs_init_opp_table();
+
+	r = fb_register_client(&spm_vcorefs_fb_notif);
+	if (r) {
+		vcorefs_err("FAILED TO REGISTER FB CLIENT (%d)\n", r);
+	}
 
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();

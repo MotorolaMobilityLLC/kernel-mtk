@@ -45,22 +45,22 @@ void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 
 void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	/* dvfsrc_md_scenario_update(1); */
+	dvfsrc_md_scenario_update_to_fb(1);
 }
 
 void spm_sodi_post_process(void)
 {
-	/* dvfsrc_md_scenario_update(0); */
+	dvfsrc_md_scenario_update_to_fb(0);
 }
 
 void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	/* dvfsrc_md_scenario_update(1); */
+	dvfsrc_md_scenario_update_to_fb(1);
 }
 
 void spm_sodi3_post_process(void)
 {
-	/* dvfsrc_md_scenario_update(0); */
+	dvfsrc_md_scenario_update_to_fb(0);
 }
 
 void spm_sodi_pcm_setup_before_wfi(
