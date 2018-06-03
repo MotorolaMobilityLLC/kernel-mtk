@@ -289,8 +289,8 @@ static int floor_counter_get_data(uint32_t *counter, int *status)
 	time_stamp = data.time_stamp;
 	time_stamp_gpt = data.time_stamp_gpt;
 	*counter = data.floor_counter_t.accumulated_floor_count;
-	pr_debug("recv ipi: timestamp: %lld gpt: %lld, probability: %d!\n",
-		time_stamp, time_stamp_gpt, *probability);
+	pr_debug("recv ipi: timestamp: %lld, gpt: %lld, counter: %d!\n",
+		time_stamp, time_stamp_gpt, *counter);
 
 	return 0;
 }
