@@ -262,6 +262,11 @@ void die(const char *str, struct pt_regs *regs, int err)
 	struct thread_info *thread = current_thread_info();
 	int ret;
 
+#ifdef CONFIG_MTK_AEE_IPANIC
+	__show_regs(regs);
+	dump_stack();
+#endif
+
 	oops_enter();
 
 	raw_spin_lock_irq(&die_lock);
