@@ -33,6 +33,12 @@
 #include <linux/platform_device.h>
 #include <eas_controller.h>
 
+#include <mt-plat/mtk_sched.h>
+
+#ifdef CONFIG_TRACING
+#include <linux/kallsyms.h>
+#include <linux/trace_events.h>
+#endif
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -44,11 +50,78 @@ static int boost_value[NR_CGROUP][EAS_MAX_KIR];
 static int debug_boost_value[NR_CGROUP];
 static int debug;
 
+/************************/
+#ifdef CONFIG_TRACING
+static unsigned long __read_mostly tracing_mark_write_addr;
+static inline void __mt_update_tracing_mark_write_addr(void)
+{
+	if (unlikely(tracing_mark_write_addr == 0))
+		tracing_mark_write_addr =
+				kallsyms_lookup_name("tracing_mark_write");
+}
+
+static inline void eas_ctrl_extend_kernel_trace_begin(char *name,
+					int id, int walt, int fpsgo)
+{
+	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
+	event_trace_printk(tracing_mark_write_addr, "B|%d|%s|%d|%d|%d\n",
+				current->tgid, name, id, walt, fpsgo);
+	preempt_enable();
+}
+
+static inline void eas_ctrl_extend_kernel_trace_end(void)
+{
+	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
+	event_trace_printk(tracing_mark_write_addr, "E\n");
+	preempt_enable();
+}
+#endif
+
+static void walt_mode(int enable)
+{
+#ifdef CONFIG_SCHED_WALT
+	sched_walt_enable(LT_WALT_POWERHAL, enable);
+#else
+	pr_debug("walt not be configured\n");
+#endif
+}
+
+void ext_launch_start(void)
+{
+	pr_debug("ext_launch_start\n");
+	/*--feature start from here--*/
+#ifdef CONFIG_TRACING
+	eas_ctrl_extend_kernel_trace_begin("ext_launch_start", 0, 1, 0);
+#endif
+
+	walt_mode(1);
+
+#ifdef CONFIG_TRACING
+	eas_ctrl_extend_kernel_trace_end();
+#endif
+}
+
+void ext_launch_end(void)
+{
+	pr_debug("ext_launch_end\n");
+	/*--feature end from here--*/
+#ifdef CONFIG_TRACING
+	eas_ctrl_extend_kernel_trace_begin("ext_launch_end", 0, 0, 1);
+#endif
+	walt_mode(0);
+
+#ifdef CONFIG_TRACING
+	eas_ctrl_extend_kernel_trace_end();
+#endif
+}
+/************************/
+
 static int check_boost_value(int boost_value)
 {
 	return clamp(boost_value, -100, 5000);
 }
-
 
 /************************/
 #ifdef CONFIG_SCHED_TUNE
@@ -540,6 +613,58 @@ static const struct file_operations perfmgr_debug_ta_boost_fops = {
 	.release = single_release,
 };
 
+/********************************************************************/
+static int ext_launch_state;
+static ssize_t perfmgr_perfserv_ext_launch_mon_write(struct file *filp,
+		const char *ubuf, size_t cnt, loff_t *pos)
+{
+	int data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (kstrtoint(buf, 10, &data))
+		return -1;
+
+	if (data) {
+		ext_launch_start();
+		ext_launch_state = 1;
+	} else {
+		ext_launch_end();
+		ext_launch_state = 0;
+	}
+
+	pr_debug("perfmgr_perfserv_ext_launch_mon");
+	return cnt;
+}
+
+static int perfmgr_perfserv_ext_launch_mon_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ext_launch_state);
+
+	return 0;
+}
+
+static int perfmgr_perfserv_ext_launch_mon_open(struct inode *inode,
+							struct file *file)
+{
+	return single_open(file, perfmgr_perfserv_ext_launch_mon_show,
+							inode->i_private);
+}
+
+static const struct file_operations perfmgr_perfserv_ext_launch_mon_fops = {
+	.open = perfmgr_perfserv_ext_launch_mon_open,
+	.write = perfmgr_perfserv_ext_launch_mon_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 /*******************************************/
 void perfmgr_eas_boost_init(void)
 {
@@ -571,6 +696,9 @@ void perfmgr_eas_boost_init(void)
 					 &perfmgr_debug_ta_boost_fops);
 	proc_create("boot_boost", 0644, boost_dir,
 					&perfmgr_boot_boost_fops);
+	/*--ext_launch--*/
+	proc_create("perfserv_ext_launch_mon", 0644, boost_dir,
+					&perfmgr_perfserv_ext_launch_mon_fops);
 
 	for (i = 0; i < NR_CGROUP; i++)
 		for (j = 0; j < EAS_MAX_KIR; j++)
