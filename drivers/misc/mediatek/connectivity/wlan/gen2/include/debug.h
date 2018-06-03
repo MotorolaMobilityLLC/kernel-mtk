@@ -101,6 +101,12 @@ enum PKT_TYPE {
 	PKT_TX_DONE
 };
 
+typedef enum _ENUM_DBG_SCAN_T {
+	DBG_SCAN_WRITE_BEFORE,		/*Start send ScanRequest*/
+	DBG_SCAN_WRITE_DONE,		/*hal write success and ScanRequest done*/
+} ENUM_DBG_SCAN_T;
+
+
 /* Define debug TRAFFIC_CLASS index */
 
 typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
@@ -382,6 +388,9 @@ VOID wlanPktDebugTraceInfo(UINT_8 status, UINT_8 eventType
 	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode);
 VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type
 	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex);
+VOID wlanDebugScanRecord(P_ADAPTER_T prAdapter, ENUM_DBG_SCAN_T recordType);
+VOID wlanDebugScanDump(P_ADAPTER_T prAdapter);
+
 
 
 /*******************************************************************************
