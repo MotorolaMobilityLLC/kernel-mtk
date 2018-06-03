@@ -3500,7 +3500,7 @@ int RSC_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	LOG_DBG("calling %s()\n", __func__);
 
 	return RSC_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3511,7 +3511,7 @@ int RSC_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	LOG_DBG("calling %s()\n", __func__);
 
 	return RSC_resume(pdev);
 }
