@@ -58,6 +58,15 @@ config MTK_ENG_BUILD
 	  user load for this build.
 	  If you are not sure about this, set n
 
+config MTK_DTBO_FEATURE
+	bool "Support Device Tree Overlay"
+	default n
+	help
+	  This allows a central DTB and overlays it dynamically.
+	  An overlay can add nodes to the tree and make changes to properties
+	  in the existing tree.
+	  If you are not sure about this, set y
+
 config MTK_LDVT
 	bool "LDVT"
 	help
