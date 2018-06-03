@@ -1469,7 +1469,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 #ifdef MTK_UFS_HQA
 	if (!err && (cmd->request->cmd_flags & REQ_POWER_LOSS)) {
 		random_delay(hba);
-		wdt_pmic_full_reset();
+		wdt_pmic_full_reset(hba);
 	}
 #endif
 

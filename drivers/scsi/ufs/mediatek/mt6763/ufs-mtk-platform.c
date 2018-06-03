@@ -57,13 +57,19 @@ void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_lay
 void random_delay(struct ufs_hba *hba)
 {
 	u32 time = (sched_clock()%UFS_SPOH_USDELAY_BEFORE_RESET);
-
-	dev_err(hba->dev, "%s: mvg_spoh reset delay time 0x%x\n", __func__, time);
 	udelay(time);
 }
-void wdt_pmic_full_reset(void)
+void wdt_pmic_full_reset(struct ufs_hba *hba)
 {
-	/* Need porting for SPOH test */
+	/*
+	  *   Cmd issue to PMIC on MT6763 will take around 20us ~ 30us, in order to speed up VEMC disable time,
+	  * we disable VEMC first coz PMIC cold reset may take longer to disable VEMC in it's reset flow.
+	  * Can not use regulator_disable() here because it can not use in  preemption disabled context.
+	  * Use pmic raw API without nlock instead.
+	  */
+	pmic_set_register_value_nolock(PMIC_RG_LDO_VEMC_EN, 0);
+	/* PMIC cold reset */
+	pmic_set_register_value_nolock(PMIC_RG_CRST, 1);
 }
 #endif
 

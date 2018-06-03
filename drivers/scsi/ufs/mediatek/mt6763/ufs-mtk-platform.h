@@ -71,8 +71,10 @@ int  ufs_mtk_pltfrm_suspend(struct ufs_hba *hba);
 void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba);
 
 #ifdef MTK_UFS_HQA
+#include <upmu_common.h>
 void random_delay(struct ufs_hba *hba);
-void wdt_pmic_full_reset(void);
+void wdt_pmic_full_reset(struct ufs_hba *hba);
+extern unsigned short pmic_set_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname, unsigned int val);
 #endif
 
 #endif /* _UFS_MTK_PLATFORM_H */
