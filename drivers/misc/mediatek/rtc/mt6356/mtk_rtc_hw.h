@@ -17,8 +17,9 @@
 #include <mach/upmu_hw.h>
 extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 	unsigned int val, unsigned int MASK, unsigned int SHIFT);
-extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
-	unsigned int val, unsigned int MASK, unsigned int SHIFT);
+
+#undef RTC_BASE
+#define RTC_BASE		(0x0980)
 
 /* RTC registers */
 #define MT_PMIC_REG_BASE (0x0000)
@@ -103,7 +104,7 @@ extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
  * RTC_NEW_SPARE0: RTC_AL_HOU bit0~4
  * bit 8 ~ 15 : For design used, can't be overwrited.
  */
-#define RTC_AL_HOU            (RTC_BASE + 0x00A4)
+#define RTC_AL_HOU			(RTC_BASE + 0x00A4)
 #define RTC_NEW_SPARE0            0xff00
 #define RTC_AL_HOU_MASK         0x001f
 #define RTC_AL_HOU_FG_SHIFT		8
@@ -287,10 +288,6 @@ extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
 #define RTC_CON_GE8            (1U << 13)
 #define RTC_CON_GPI            (1U << 14)
 #define RTC_CON_LPSTA_RAW        (1U << 15)    /* 32K was stopped */
-
-#define RTC_INT_CNT            (RTC_BASE + 0x0202)
-#define RTC_INT_CNT_MASK        0x7FF
-#define RTC_INT_CNT_SHIFT       0
 
 /* power on alarm time setting */
 

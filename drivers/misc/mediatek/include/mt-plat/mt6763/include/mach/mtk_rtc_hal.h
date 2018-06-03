@@ -23,7 +23,7 @@
 
 #define PMIC_REGISTER_INTERRUPT_ENABLE        /*register rtc interrupt*/
 #ifdef PMIC_REGISTER_INTERRUPT_ENABLE
-#define RTC_INTERRUPT_NUM		9
+#define RTC_INTERRUPT_NUM		INT_RTC
 #endif
 
 #ifdef VRTC_PWM_ENABLE
@@ -33,7 +33,7 @@
 #define RTC_GPIO_USER_MASK	(((1U << 13) - 1) & 0xff00)
 
 /* RTC registers */
-#define	RTC_BASE					(0x4000)
+#define	RTC_BASE					(0x0980)
 
 extern u16 hal_rtc_get_gpio_32k_status(void);
 extern void hal_rtc_set_gpio_32k_status(u16 user, bool enable);
