@@ -801,10 +801,11 @@ void ion_mm_heap_memory_detail(void)
 	bool has_orphaned = false;
 	struct ion_mm_buffer_info *bug_info;
 	struct ion_mm_buf_debug_info *pdbg;
+	char seq_log[384];
+	char seq_fmt[] = "|0x%p %10zu %5d(%5d) %16s %2d %5u-%-6u %48s |";
+	int seq_log_count = 0;
 
-	/* ion_mm_heap_for_each_pool(write_mm_page_pool); */
-
-	ION_PRINT_LOG_OR_SEQ(NULL, "%16.s(%16.s) %16.s %16.s %s\n",
+	ION_PRINT_LOG_OR_SEQ(NULL, "%16s(%16s) %6s %12s %s\n",
 			     "client", "dbg_name", "pid", "size", "address");
 	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 
@@ -817,6 +818,7 @@ void ion_mm_heap_memory_detail(void)
 			need_dev_lock = false;
 	}
 
+	memset(seq_log, 0, 384);
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client
 		*client = rb_entry(n, struct ion_client, node);
@@ -829,17 +831,29 @@ void ion_mm_heap_memory_detail(void)
 				continue;
 		}
 
+		seq_log_count++;
 		if (client->task) {
 			char task_comm[TASK_COMM_LEN];
 
 			get_task_comm(task_comm, client->task);
-			ION_PRINT_LOG_OR_SEQ(NULL, "%16.s(%16.s) %16u %16zu 0x%p\n",
-					     task_comm, client->dbg_name, client->pid, size, client);
+			sprintf(seq_log + strlen(seq_log),
+				"|%16s(%16s) %6u %12zu 0x%p |",
+				task_comm, client->dbg_name,
+				client->pid, size, client);
 		} else {
-			ION_PRINT_LOG_OR_SEQ(NULL, "%16.s(%16.s) %16u %16zu 0x%p\n",
-					     client->name, "from_kernel", client->pid, size, client);
+			sprintf(seq_log + strlen(seq_log),
+				"|%16s(%16s) %6u %12zu 0x%p |",
+				client->name, "from_kernel",
+				client->pid, size, client);
+		}
+
+		if ((seq_log_count % 3) == 0) {
+			ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
+			memset(seq_log, 0, 384);
 		}
 	}
+
+	ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
 
 	if (need_dev_lock)
 		up_read(&dev->lock);
@@ -849,14 +863,12 @@ void ion_mm_heap_memory_detail(void)
 skip_client_entry:
 
 	ION_PRINT_LOG_OR_SEQ(NULL,
-			     "%s %8s %s %16s %6s %10s %10s %10s %10s %32s\n",
-			     "buffer    ", "size",
-			     "pid(alloc_pid)", "comm(client)", "heapid", "v1", "v2", "v3", "v4", "dbg_name");
+			     "%s %8s %s %16s %6s %10s %32s\n",
+			     "buffer	", "size",
+			     "pid(alloc_pid)", "comm(client)", "heapid", "v1-v2", "dbg_name");
 
 	if (mutex_trylock(&dev->buffer_lock)) {
-		char seq_log[384];
-		int seq_log_count = 0;
-		char seq_fmt[] = "0x%p %10zu %5d(%5d) %16s %6d %10u %10u %10u %10u %48s  ";
+		seq_log_count = 0;
 
 		memset(seq_log, 0, 384);
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
@@ -886,11 +898,12 @@ skip_client_entry:
 				seq_log_count++;
 				sprintf(seq_log + strlen(seq_log), seq_fmt,
 					buffer, buffer->size,
-					buffer->pid, bug_info->pid, buffer->task_comm, buffer->heap->id,
-					pdbg->value1, pdbg->value2, pdbg->value3, pdbg->value4,
+					buffer->pid, bug_info->pid,
+					buffer->task_comm, buffer->heap->id,
+					pdbg->value1, pdbg->value2,
 					pdbg->dbg_name);
 
-				if ((seq_log_count % 2) == 0) {
+				if ((seq_log_count % 3) == 0) {
 					ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
 					memset(seq_log, 0, 384);
 				}
