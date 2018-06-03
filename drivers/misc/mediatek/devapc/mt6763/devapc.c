@@ -46,8 +46,9 @@
 
 
 /* 0 for early porting */
-#define DEVAPC_TURN_ON         0
+#define DEVAPC_TURN_ON         1
 #define DEVAPC_USE_CCF         1
+#define DEVAPC_VIO_DEBUG       1
 
 /* Debug message event */
 #define DEVAPC_LOG_NONE        0x00000000
@@ -612,6 +613,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 	struct pt_regs *regs;
 
 	if (irq_number == devapc_infra_irq) {
+#if DEVAPC_VIO_DEBUG
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
 			readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
 			readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
@@ -620,7 +622,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 			readl(DEVAPC_PD_INFRA_VIO_MASK(5)), readl(DEVAPC_PD_INFRA_VIO_MASK(6)),
 			readl(DEVAPC_PD_INFRA_VIO_MASK(7)), readl(DEVAPC_PD_INFRA_VIO_MASK(8)),
 			readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
-
+#endif
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
 			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
@@ -632,17 +634,17 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 
 		DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
 
-		DEVAPC_VIO_MSG("[DEVAPC] Dump INFRA DBG0 & DBG1...\n");
 		for (i = 0; i <= PD_INFRA_VIO_SHIFT_MAX_BIT; ++i)
 			if (readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA) & (0x1 << i)) {
 				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
 				mt_reg_sync_writel(0x1, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
-				for (shift_done = 0; (shift_done < 0x100)
+				for (shift_done = 0; (shift_done < 100)
 					&& ((readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3) != 0x3); ++shift_done)
 					DEVAPC_VIO_MSG("[DEVAPC] Syncing INFRA DBG0 & DBG1 (%d, %d)\n", i, shift_done);
-
+#if DEVAPC_VIO_DEBUG
 				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL), readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
+#endif
 				if ((readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3) == 0x3) {
 					DEVAPC_VIO_MSG("[DEVAPC] Sync INFRA DBG0 & DBG1 (%d) SUCCESS\n", i);
 					shift_done = 1;
@@ -663,10 +665,11 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 				}
 				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
 				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
+#if DEVAPC_VIO_DEBUG
 				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA=0x%X, VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA), readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL),
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
-
+#endif
 				/* violation information improvement */
 				if (shift_done) {
 					DEVAPC_VIO_MSG("[DEVAPC] Violation(Infra,%s%s) - Process:%s, PID:%i\n",
@@ -688,7 +691,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 				DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: %s (infra index=%d)\n",
 					devapc_infra_devices[i].device, i);
 			}
-
+#if DEVAPC_VIO_DEBUG
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
 			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
@@ -699,7 +702,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 			readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
-
+#endif
 	} else {
 		DEVAPC_VIO_MSG("[DEVAPC] (ERROR) irq_number %d is not registered!\n", irq_number);
 	}
