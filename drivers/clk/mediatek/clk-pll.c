@@ -228,8 +228,10 @@ static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 pcw = 0;
 	u32 postdiv;
+	unsigned long rate_div = 0;
 
-	mtk_pll_calc_values(pll, &pcw, &postdiv, rate, parent_rate);
+	rate_div = rate * (pll->data->analog_div);
+	mtk_pll_calc_values(pll, &pcw, &postdiv, rate_div, parent_rate);
 	mtk_pll_set_rate_regs(pll, pcw, postdiv);
 
 	return 0;
@@ -239,16 +241,18 @@ static unsigned long mtk_pll_recalc_rate(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
-	u32 postdiv;
+	u32 postdiv, anadiv;
 	u32 pcw;
 
 	postdiv = (readl(pll->pd_addr) >> pll->data->pd_shift) & POSTDIV_MASK;
 	postdiv = 1 << postdiv;
 
+	anadiv = pll->data->analog_div;
+
 	pcw = readl(pll->pcw_addr) >> pll->data->pcw_shift;
 	pcw &= GENMASK(pll->data->pcwbits - 1, 0);
 
-	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv);
+	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv) / anadiv;
 }
 
 static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
@@ -256,11 +260,13 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 {
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 pcw = 0;
-	int postdiv;
+	int postdiv, anadiv;
 
 	mtk_pll_calc_values(pll, &pcw, &postdiv, rate, *prate);
 
-	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv);
+	anadiv = pll->data->analog_div;
+
+	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv) / anadiv;
 }
 
 #if (defined(CONFIG_MACH_MT6758))
