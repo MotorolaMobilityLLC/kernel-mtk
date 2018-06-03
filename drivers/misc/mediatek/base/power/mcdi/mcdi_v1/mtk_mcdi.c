@@ -646,9 +646,6 @@ int mcdi_enter(int cpu)
 	int cluster_idx = cluster_idx_get(cpu);
 	int state = -1;
 
-	mtk_idle_dump_cnt_in_interval();
-	mcdi_heart_beat_log_dump();
-
 	state = mcdi_governor_select(cpu, cluster_idx);
 
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF)

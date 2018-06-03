@@ -67,6 +67,17 @@ static unsigned int cpu_cluster_pwr_stat_table[NF_CPU] = {
 	0x1007F      /* Only CPU 7 */
 };
 
+static unsigned int other_cluster_cpu_pwr_stat_table[NF_CPU] = {
+	0x000F0,
+	0x000F0,
+	0x000F0,
+	0x000F0,
+	0x1000F,
+	0x1000F,
+	0x1000F,
+	0x1000F
+};
+
 static unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 static DEFINE_SPINLOCK(any_core_cpu_cond_spin_lock);
 
@@ -289,6 +300,28 @@ void dump_multi_core_state_ftrace(int cpu)
 
 #define CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US        2000
 
+/*
+ * if ALL CPUs in other cluster is power OFF, but the other cluster is power ON,
+ * means other cluster can NOT powered OFF due to residency condition failed
+ * Therefore we can skip checking any core dpidle/SODI conditions
+ */
+bool other_cpu_off_but_cluster_on(int cpu)
+{
+	unsigned int on_off_stat = 0;
+
+	unsigned int other_cluster_check_mask =
+					cpu_cluster_pwr_stat_table[cpu] & (mcdi_gov_data.avail_cluster_mask << 16);
+	unsigned int cpu_check_mask =
+					other_cluster_cpu_pwr_stat_table[cpu] & mcdi_gov_data.avail_cpu_mask;
+
+	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+
+	if (((on_off_stat & cpu_check_mask) == cpu_check_mask) && (on_off_stat & other_cluster_check_mask) == 0)
+		return true;
+
+	return false;
+}
+
 bool is_match_cpu_cluster_criteria(int cpu)
 {
 	bool match = true;
@@ -337,6 +370,11 @@ bool mcdi_controller_token_get_no_pause(int cpu)
 			break;
 		}
 
+		if (other_cpu_off_but_cluster_on(cpu)) {
+			token_get = false;
+			break;
+		}
+
 		if (is_match_cpu_cluster_criteria(cpu)) {
 			token_get = true;
 			break;
@@ -359,6 +397,9 @@ bool mcdi_controller_token_get(int cpu)
 		token_get = false;
 
 	if (!is_last_core_in_mcusys())
+		token_get = false;
+
+	if (other_cpu_off_but_cluster_on(cpu))
 		token_get = false;
 
 	if (is_match_cpu_cluster_criteria(cpu))
