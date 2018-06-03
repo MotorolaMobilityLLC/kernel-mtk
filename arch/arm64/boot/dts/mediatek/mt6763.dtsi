@@ -3129,10 +3129,6 @@
 		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
 	};
 
-	mt_soc_machine {
-		compatible = "mediatek,audio";
-	};
-
 	irtx_pwm:irtx_pwm {
 		compatible = "mediatek,irtx-pwm";
 		pwm_ch = <2>;
