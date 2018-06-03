@@ -394,6 +394,8 @@ void _dump_dsi_params(LCM_DSI_PARAMS *dsi_config)
 static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i = 0;
+	static bool dsi_underflow;
+	static bool dsi_inp_relay_not_ready;
 	struct DSI_INT_STATUS_REG status;
 #if 0
 	struct DSI_TXRX_CTRL_REG txrx_ctrl;
@@ -433,11 +435,21 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
 		DDPPR_ERR("%s:buffer underrun\n", ddp_get_module_name(module));
-		primary_display_diagnose();
+		if (dsi_underflow == 0) {
+			primary_display_diagnose();
+			dsi_underflow = 1;
+			disp_aee_print("DSI buffer underrun\n");
+		}
 	}
 
-	if (status.INP_UNFINISH_INT_EN)
+	if (status.INP_UNFINISH_INT_EN) {
 		DDPPR_ERR("%s:input relay unfinish\n", ddp_get_module_name(module));
+		if (dsi_inp_relay_not_ready == 0) {
+			dsi_inp_relay_not_ready = 1;
+			primary_display_diagnose();
+			disp_aee_print("DSI input relay unfinish\n");
+		}
+	}
 
 	if (status.FRAME_DONE_INT_EN)
 		mmprofile_log_ex(ddp_mmp_get_events()->DSI_IRQ[0], MMPROFILE_FLAG_PULSE, 0, 0);
