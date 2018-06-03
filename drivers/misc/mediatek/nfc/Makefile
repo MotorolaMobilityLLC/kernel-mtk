@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
-
+ifeq ($(CONFIG_NFC_MT6605),y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+endif
+ifneq ($(CONFIG_NFC_CHIP_SUPPORT),)
+obj-y += st21nfc/
+endif

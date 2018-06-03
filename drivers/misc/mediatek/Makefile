@@ -33,6 +33,9 @@ obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
 obj-$(CONFIG_MTK_ICE_DEBUG) += ice_debug/
 obj-$(CONFIG_MTK_NFC_SUPPORT) += nfc/
+ifneq ($(CONFIG_NFC_CHIP_SUPPORT),)
+obj-y   += nfc/
+endif
 
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/

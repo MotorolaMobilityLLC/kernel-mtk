@@ -1754,7 +1754,9 @@
 	nfc:nfc {
 		compatible = "mediatek,nfc-gpio-v2";
 		gpio-rst = <25>;
+		gpio-rst-std = <&pio 25 0x0>;
 		gpio-irq = <26>;
+		gpio-irq-std = <&pio 26 0x0>;
 	};
 
 	gps {
