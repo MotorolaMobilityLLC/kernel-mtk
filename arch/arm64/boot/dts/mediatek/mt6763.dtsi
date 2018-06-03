@@ -646,7 +646,7 @@
 		reg = <0 0x1000f000 0 0x1000>;
 	};
 
-	kp@10010000 {
+	keypad: kp@10010000 {
 		compatible = "mediatek,kp";
 		reg = <0 0x10010000 0 0x1000>;
 		interrupts = <GIC_SPI 176 IRQ_TYPE_EDGE_FALLING>;
@@ -1219,7 +1219,7 @@
 		clock-names = "uart1-main";
 		};
 
-	auxadc@11001000 {
+	auxadc: auxadc@11001000 {
 		compatible = "mediatek,auxadc";
 		reg = <0 0x11001000 0 0x1000>;
 		interrupts = <GIC_SPI 74 IRQ_TYPE_NONE>;
@@ -3498,6 +3498,15 @@
 		bif_cv_under_threshold2 = <4450000>;
 	};
 
+	sim2_hot_plug: sim2_hot_plug {
+
+	};
+
+	sim1_hot_plug: sim1_hot_plug {
+
+	};
+
+
 	otg_iddig: otg_iddig{
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
@@ -3508,9 +3517,30 @@
 	rt5081_pd: rt5081_pd_eint {
 	};
 
+	mrdump_ext_rst: mrdump_ext_rst {
+
+	};
+
 	rt-pd-manager {
 		compatible = "mediatek,rt-pd-manager";
 	};
+
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+
+	};
+
+	smart_pa: smart_pa {
+
+	};
+
+	mt6311_pmic: mt6311_pmic {
+
+	};
+
+	kd_camera_hw1:kd_camera_hw1@1a040000 {
+
+	};
+
 };
 
 &ufshci {
