@@ -771,6 +771,15 @@ static void mmsys_config_dump_analysis(void)
 
 	DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x, greq=0%x\n",
 		valid0, valid1, ready0, ready1, greq);
+	for (i = 0; i < 5; i++) {
+		DDPDUMP("valid0=0x%x, valid1=0x%x, ready0=0x%x, ready1=0x%x, greq=0%x\n",
+			DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0),
+			DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1),
+			DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0),
+			DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1),
+			DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB0_GREQ));
+	}
+
 	for (i = 0; i < 32; i++) {
 		name = ddp_signal_0(i);
 		if (!name)
