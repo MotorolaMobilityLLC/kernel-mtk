@@ -31,7 +31,8 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <mt-plat/mtk_boot_common.h>
+#include <linux/pm_runtime.h>
+
 #include "virt-dma.h"
 
 #define MTK_SDMA_REQUESTS	127
@@ -181,8 +182,6 @@ static int mtk_dma_clk_enable(struct mtk_dmadev *mtkd)
 {
 	int rc;
 
-	if (get_boot_mode() == NORMAL_BOOT)
-		return 0;
 	rc = clk_prepare_enable(mtkd->clk);
 	if (rc) {
 		pr_err("Couldn't enable the clock\n");
@@ -194,8 +193,6 @@ static int mtk_dma_clk_enable(struct mtk_dmadev *mtkd)
 
 static void mtk_dma_clk_disable(struct mtk_dmadev *mtkd)
 {
-	if (get_boot_mode() == NORMAL_BOOT)
-		return;
 	clk_disable_unprepare(mtkd->clk);
 }
 
@@ -474,6 +471,7 @@ static int mtk_dma_alloc_chan_resources(struct dma_chan *chan)
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	int ret;
 
+	pm_runtime_get_sync(mtkd->ddev.dev);
 	ret = -EBUSY;
 
 	if (mtkd->lch_map[c->dma_ch] == NULL) {
@@ -505,6 +503,7 @@ static void mtk_dma_free_chan_resources(struct dma_chan *chan)
 	c->dma_sig = 0;
 
 	tasklet_kill(&mtkd->task);
+	pm_runtime_put_sync(mtkd->ddev.dev);
 }
 
 static enum dma_status mtk_dma_tx_status(struct dma_chan *chan,
@@ -892,7 +891,8 @@ static int mtk_dma_probe(struct platform_device *pdev)
 		}
 	}
 
-	mtk_dma_clk_enable(mtkd);
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_set_active(&pdev->dev);
 
 	rc = dma_async_device_register(&mtkd->ddev);
 	if (rc) {
@@ -931,7 +931,8 @@ static int mtk_dma_remove(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		of_dma_controller_free(pdev->dev.of_node);
 
-	mtk_dma_clk_disable(mtkd);
+	pm_runtime_disable(&pdev->dev);
+	pm_runtime_put_noidle(&pdev->dev);
 
 	dma_async_device_unregister(&mtkd->ddev);
 
@@ -945,23 +946,57 @@ static int mtk_dma_suspend(struct device *dev)
 {
 	struct mtk_dmadev *mtkd = dev_get_drvdata(dev);
 
-	mtk_dma_clk_disable(mtkd);
+	if (!pm_runtime_suspended(dev))
+		mtk_dma_clk_disable(mtkd);
 
 	return 0;
 }
 
 static int mtk_dma_resume(struct device *dev)
 {
+	int ret;
 	struct mtk_dmadev *mtkd = dev_get_drvdata(dev);
 
-	mtk_dma_clk_enable(mtkd);
+	if (!pm_runtime_suspended(dev)) {
+		ret = mtk_dma_clk_enable(mtkd);
+		if (ret) {
+			pr_info("fail to enable clk: %d\n", ret);
+			return ret;
+		}
+	}
 
 	return 0;
 }
+
+static int mtk_dma_runtime_suspend(struct device *dev)
+{
+	struct mtk_dmadev *mtkd = dev_get_drvdata(dev);
+
+	mtk_dma_clk_disable(mtkd);
+
+	return 0;
+}
+
+static int mtk_dma_runtime_resume(struct device *dev)
+{
+	int ret;
+	struct mtk_dmadev *mtkd = dev_get_drvdata(dev);
+
+	ret = mtk_dma_clk_enable(mtkd);
+	if (ret) {
+		pr_info("fail to enable clk: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 #endif /* CONFIG_PM_SLEEP */
 
 static const struct dev_pm_ops mtk_dma_pm = {
 	SET_SYSTEM_SLEEP_PM_OPS(mtk_dma_suspend, mtk_dma_resume)
+	SET_RUNTIME_PM_OPS(mtk_dma_runtime_suspend,
+			   mtk_dma_runtime_resume, NULL)
 };
 
 static struct platform_driver mtk_dma_driver = {
