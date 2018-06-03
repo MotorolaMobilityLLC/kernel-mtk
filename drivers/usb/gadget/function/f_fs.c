@@ -693,6 +693,42 @@ static void ffs_epfile_async_io_complete(struct usb_ep *_ep,
 	schedule_work(&io_data->work);
 }
 
+/* Trigger re-start adbd ****************************************************/
+static pid_t tid;
+static struct delayed_work abortion_work;
+#define ABORTION_WORK_DELAY 300
+static int cnxn_cnt;
+
+void abortion(struct work_struct *data)
+{
+	/* send SIGKILL to adbd */
+	struct task_struct *t;
+	struct siginfo info;
+
+	memset(&info, 0, sizeof(struct siginfo));
+	info.si_signo = SIGPOLL;
+	info.si_code = POLL_ERR;
+
+	t = find_task_by_vpid(tid);
+	if (t != NULL) {
+		pr_info("%s, tid<%d>, comm<%s>\n", __func__, tid, t->comm);
+		send_sig_info(SIGKILL, &info, t);
+	}
+}
+
+static void abortion_user(void)
+{
+	static bool inited;
+
+	if (!inited) {
+		INIT_DELAYED_WORK(&abortion_work, abortion);
+		inited = true;
+	}
+
+	tid = current->pid;
+	schedule_delayed_work(&abortion_work, msecs_to_jiffies(ABORTION_WORK_DELAY));
+}
+
 static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 {
 	struct ffs_epfile *epfile = file->private_data;
@@ -700,6 +736,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	char *data = NULL;
 	ssize_t ret, data_len = -EINVAL, original_len = -EINVAL;
 	int halt;
+	char *cnxn_data = NULL;
 
 	pr_debug("%s: len %lld, read %d\n", __func__, (u64)io_data->len, io_data->read);
 
@@ -878,6 +915,9 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 
 			ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
 
+			if (!io_data->read)
+				cnxn_cnt = 0;
+
 			spin_unlock_irq(&epfile->ffs->eps_lock);
 
 			if (unlikely(ret < 0)) {
@@ -913,6 +953,23 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 				else
 					ret = -ENODEV;
 				spin_unlock_irq(&epfile->ffs->eps_lock);
+
+				cnxn_data = req->buf;
+				if (io_data->read && ret > 0 && req->actual == 24) {
+					if (cnxn_data[0] == 0x43 && cnxn_data[1] == 0x4e
+						&& cnxn_data[2] == 0x58 && cnxn_data[3] == 0x4e) {
+						cnxn_cnt++;
+						pr_info("%s: cnxn_cnt=%d\n", __func__, cnxn_cnt);
+					} else {
+						cnxn_cnt = 0;
+					}
+
+					if (cnxn_cnt == 3) {
+						cnxn_cnt = 0;
+						pr_info("%s trigger abort\n", __func__);
+						abortion_user();
+					}
+				}
 
 				if (io_data->read && ret > 0) {
 					if (unlikely(ret > original_len))
