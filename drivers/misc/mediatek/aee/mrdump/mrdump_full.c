@@ -114,10 +114,8 @@ static void save_current_task(void)
 	int i;
 	struct stack_trace trace;
 	unsigned long stack_entries[16];
-	struct task_struct *tsk;
+	struct task_struct *tsk = current;
 	struct mrdump_crash_record *crash_record = &mrdump_cblock.crash_record;
-
-	tsk = current_thread_info()->task;
 
 	/* Grab kernel task stack trace */
 	trace.nr_entries = 0;

@@ -36,27 +36,39 @@
 
 struct task_struct;
 
+#include <asm/stack_pointer.h>
 #include <asm/types.h>
 
 typedef unsigned long mm_segment_t;
 
 /*
  * low level task data that entry.S needs immediate access to.
- * __switch_to() assumes cpu_context follows immediately after cpu_domain.
  */
 struct thread_info {
 	unsigned long		flags;		/* low level flags */
 	mm_segment_t		addr_limit;	/* address limit */
+#ifndef CONFIG_THREAD_INFO_IN_TASK
 	struct task_struct	*task;		/* main task structure */
+#endif
 #ifdef CONFIG_ARM64_SW_TTBR0_PAN
 	u64			ttbr0;		/* saved TTBR0_EL1 */
 #endif
 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
+#ifndef CONFIG_THREAD_INFO_IN_TASK
 	int			cpu;		/* cpu */
+#endif
 	void			*regs_on_excp;	/* aee */
 	int			cpu_excp;	/* aee */
 };
 
+#ifdef CONFIG_THREAD_INFO_IN_TASK
+#define INIT_THREAD_INFO(tsk)						\
+{									\
+	.preempt_count	= INIT_PREEMPT_COUNT,				\
+	.addr_limit	= KERNEL_DS,					\
+	.cpu_excp	= 0,			/* aee */		\
+}
+#else
 #define INIT_THREAD_INFO(tsk)						\
 {									\
 	.task		= &tsk,						\
@@ -65,14 +77,6 @@ struct thread_info {
 	.addr_limit	= KERNEL_DS,					\
 	.cpu_excp	= 0,			/* aee */		\
 }
-
-#define init_thread_info	(init_thread_union.thread_info)
-#define init_stack		(init_thread_union.stack)
-
-/*
- * how to get the current stack pointer from C
- */
-register unsigned long current_stack_pointer asm ("sp");
 
 /*
  * how to get the thread information struct from C
@@ -91,11 +95,10 @@ static inline struct thread_info *current_thread_info(void)
 	return (struct thread_info *)sp_el0;
 }
 
-/* Access struct thread_info of another thread */
-static inline struct thread_info *get_thread_info(unsigned long thread_stack)
-{
-	return (struct thread_info *)(thread_stack & ~(THREAD_SIZE - 1));
-}
+#define init_thread_info	(init_thread_union.thread_info)
+#endif
+
+#define init_stack		(init_thread_union.stack)
 
 #define thread_saved_pc(tsk)	\
 	((unsigned long)(tsk->thread.cpu_context.pc))

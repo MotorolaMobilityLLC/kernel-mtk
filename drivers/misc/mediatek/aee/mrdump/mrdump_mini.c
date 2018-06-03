@@ -532,7 +532,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 		LOGE("current thread info invalid\n");
 		return;
 	}
-	cur = current_thread_info()->task;
+	cur = current;
 	tsk = cur;
 	if (!mrdump_virt_addr_valid(tsk)) {
 		LOGE("tsk invalid\n");
