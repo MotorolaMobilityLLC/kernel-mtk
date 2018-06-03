@@ -33,7 +33,7 @@
 #include <linux/math64.h>
 
 #include <mtk_gauge_class.h>
-
+#include <mtk_charger.h>
 #include <mtk_battery_internal.h>
 
 
@@ -561,25 +561,32 @@ static int read_hw_ocv_6357_plug_in(void)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH)
-	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_SWCHR);
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_SWCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6357_plug_in (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
-		 adc_result_reg, adc_result,
-		 pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL),
-		 adc_rdy);
-#else
-	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_PCHR);
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_PCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6357_plug_in (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
-		 adc_result_reg, adc_result,
-		 pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL),
-		 adc_rdy);
-#endif
+
+	if (is_power_path_supported()) {
+		adc_rdy = pmic_get_register_value(
+				PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_SWCHR);
+		adc_result_reg =
+			pmic_get_register_value(
+				PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_SWCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] read_hw_ocv_6357_plug_in (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+			adc_result_reg, adc_result,
+			pmic_get_register_value(
+			PMIC_RG_STRUP_AUXADC_START_SEL),
+			adc_rdy);
+	} else {
+		adc_rdy = pmic_get_register_value(
+			PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_PCHR);
+		adc_result_reg =
+			pmic_get_register_value(
+				PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_PCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] read_hw_ocv_6357_plug_in (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+			 adc_result_reg, adc_result,
+			 pmic_get_register_value(
+				PMIC_RG_STRUP_AUXADC_START_SEL),
+				adc_rdy);
+	}
 
 	if (adc_rdy == 1) {
 		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_CLR, 1);
@@ -598,39 +605,48 @@ static int read_hw_ocv_6357_power_on(void)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH)
-	adc_result_rdy =
-		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_SWCHR);
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_SWCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6357_power_on (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
-		 adc_result_reg, adc_result,
-		 pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL),
-		 adc_result_rdy);
+	if (is_power_path_supported()) {
 
-	if (adc_result_rdy == 1) {
-		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
-		mdelay(1);
-		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
-	}
-#else
-	adc_result_rdy =
-		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_PCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6357_power_on (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
-		 adc_result_reg, adc_result,
-		 pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL),
-		 adc_result_rdy);
+		adc_result_rdy =
+			pmic_get_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_SWCHR);
+		adc_result_reg =
+			pmic_get_register_value(
+				PMIC_AUXADC_ADC_OUT_PWRON_SWCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] read_hw_ocv_6357_power_on (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+			 adc_result_reg, adc_result,
+			 pmic_get_register_value(
+				PMIC_RG_STRUP_AUXADC_START_SEL),
+				adc_result_rdy);
 
-	if (adc_result_rdy == 1) {
-		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
-		mdelay(1);
-		pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		if (adc_result_rdy == 1) {
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		}
+	} else {
+		adc_result_rdy =
+			pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
+		adc_result_reg =
+			pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_PCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] read_hw_ocv_6357_power_on (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+			 adc_result_reg, adc_result,
+			 pmic_get_register_value(
+			 PMIC_RG_STRUP_AUXADC_START_SEL),
+			 adc_result_rdy);
+
+		if (adc_result_rdy == 1) {
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		}
 	}
-#endif
 	adc_result += g_hw_ocv_tune_value;
 	return adc_result;
 }
@@ -1234,19 +1250,20 @@ static int fgauge_get_zcv(struct gauge_device *gauge_dev, int *zcv)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH)
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_FGADC_SWCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] fgauge_get_zcv ISENSE (swchr) : adc_result_reg=%d, adc_result=%d\n",
-		 adc_result_reg, adc_result);
-#else
-	adc_result_reg =
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_FGADC_PCHR);
-	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] fgauge_get_zcv BATSNS  (pchr) : adc_result_reg=%d, adc_result=%d\n",
-		 adc_result_reg, adc_result);
-#endif
+	if (is_power_path_supported()) {
+		adc_result_reg =
+			pmic_get_register_value(
+				PMIC_AUXADC_ADC_OUT_FGADC_SWCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] fgauge_get_zcv ISENSE (swchr) : adc_result_reg=%d, adc_result=%d\n",
+			 adc_result_reg, adc_result);
+	} else {
+		adc_result_reg =
+			pmic_get_register_value(PMIC_AUXADC_ADC_OUT_FGADC_PCHR);
+		adc_result = REG_to_MV_value(adc_result_reg);
+		bm_debug("[oam] fgauge_get_zcv BATSNS  (pchr) : adc_result_reg=%d, adc_result=%d\n",
+			 adc_result_reg, adc_result);
+	}
 	adc_result += g_hw_ocv_tune_value;
 	*zcv = adc_result;
 	return 0;
@@ -1289,11 +1306,13 @@ static void fgauge_set_nafg_intr_internal(int _prd, int _zcv_mv, int _thr_mv)
 		NAG_C_DLTV_Threashold_15_0);
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, _prd);
-#if defined(SWCHR_POWER_PATH)
-	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 1);	/* use Isense */
-#else
-	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 0);	/* use Batsns */
-#endif
+	if (is_power_path_supported()) {
+		pmic_set_register_value(
+			PMIC_AUXADC_NAG_VBAT1_SEL, 1);	/* use Isense */
+	} else {
+		pmic_set_register_value(
+			PMIC_AUXADC_NAG_VBAT1_SEL, 0);	/* use Batsns */
+	}
 
 	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x] %d\n",
 		_prd, _zcv_mv,
