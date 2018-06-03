@@ -197,17 +197,6 @@ extern signed int pwrap_init(void);
 #define DISABLE         (0)
 #define DISABLE_ALL     (0)
 
-/* HIPRIS_ARB */
-/*
-#define MDINF		(1 << 0)
-#define WACS0		(1 << 1)
-#define WACS1		(1 << 2)
-#define WACS2		(1 << 4)
-#define DVFSINF		(1 << 3)
-#define STAUPD		(1 << 5)
-#define GPSINF		(1 << 6)
-*/
-
 /* MUX SEL */
 #define WRAPPER_MODE    (0)
 #define MANUAL_MODE     (1)
