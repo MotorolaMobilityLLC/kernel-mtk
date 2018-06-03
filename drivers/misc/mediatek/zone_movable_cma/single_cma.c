@@ -291,7 +291,6 @@ bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
 	return cma_release(cma, pages, count);
 }
 
-#ifdef CONFIG_MTK_MEMORY_LOWPOWER
 static int __init fix_up_normal_zone(void)
 {
 	struct pglist_data *pgdat;
@@ -303,7 +302,7 @@ static int __init fix_up_normal_zone(void)
 		unsigned long pfn;
 		struct page *page;
 
-		z = pgdat->node_zones + ZONE_NORMAL;
+		z = pgdat->node_zones + OPT_ZONE_MOVABLE_CMA;
 		zone_start_pfn = z->zone_start_pfn;
 		zone_end_pfn = zone_start_pfn + z->present_pages;
 		for (pfn = zone_start_pfn;
@@ -320,4 +319,3 @@ static int __init fix_up_normal_zone(void)
 	return 0;
 }
 core_initcall(fix_up_normal_zone);
-#endif
