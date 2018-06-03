@@ -149,19 +149,19 @@ struct MFB_CLK_STRUCT mfb_clk;
 #define MyTag "[MFB]"
 #define IRQTag "KEEPER"
 
-#define LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
+#define log_vrb(format,	args...)    pr_debug(MyTag format, ##args)
 
 #ifdef MFB_DEBUG_USE
-#define LOG_DBG(format, args...)    pr_info(MyTag format, ##args)
+#define log_dbg(format, args...)    pr_info(MyTag format, ##args)
 #else
-#define LOG_DBG(format, args...)    pr_info(MyTag format, ##args)
+#define log_dbg(format, args...)    pr_info(MyTag format, ##args)
 #endif
 
-#define LOG_INF(format, args...)    pr_info(MyTag format,  ##args)
-#define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
-#define LOG_WRN(format, args...)    pr_debug(MyTag format,  ##args)
-#define LOG_ERR(format, args...)    pr_debug(MyTag format,  ##args)
-#define LOG_AST(format, args...)    pr_debug(MyTag format, ##args)
+#define log_inf(format, args...)    pr_info(MyTag format,  ##args)
+#define log_notice(format, args...) pr_notice(MyTag format,  ##args)
+#define log_wrn(format, args...)    pr_debug(MyTag format,  ##args)
+#define log_err(format, args...)    pr_debug(MyTag format,  ##args)
+#define log_ast(format, args...)    pr_debug(MyTag format, ##args)
 
 
 /*******************************************************************************
@@ -429,7 +429,7 @@ static struct SV_LOG_STR gSvLog[MFB_IRQ_TYPE_AMOUNT];
 	ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
 	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
 	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
-		LOG_ERR("log str over flow(%d)", irq);\
+		log_err("log str over flow(%d)", irq);\
 	} \
 	while (*ptr++ != '\0') {        \
 		(*ptr2)++;\
@@ -463,9 +463,9 @@ static struct SV_LOG_STR gSvLog[MFB_IRQ_TYPE_AMOUNT];
 			for (i = 0; i < DBG_PAGE; i++) {\
 				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
 					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
-					LOG_DBG("%s", &ptr[NORMAL_STR_LEN*i]);\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
 				} else{\
-					LOG_DBG("%s", &ptr[NORMAL_STR_LEN*i]);\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
 					break;\
 				} \
 			} \
@@ -474,9 +474,9 @@ static struct SV_LOG_STR gSvLog[MFB_IRQ_TYPE_AMOUNT];
 		for (i = 0; i < INF_PAGE; i++) {\
 			if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
 				ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
-				LOG_INF("%s", &ptr[NORMAL_STR_LEN*i]);\
+				log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
 			} else{\
-				LOG_INF("%s", &ptr[NORMAL_STR_LEN*i]);\
+				log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
 				break;\
 			} \
 		} \
@@ -485,15 +485,15 @@ static struct SV_LOG_STR gSvLog[MFB_IRQ_TYPE_AMOUNT];
 		for (i = 0; i < ERR_PAGE; i++) {\
 			if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
 				ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
-				LOG_ERR("%s", &ptr[NORMAL_STR_LEN*i]);\
+				log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
 			} else{\
-				LOG_ERR("%s", &ptr[NORMAL_STR_LEN*i]);\
+				log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
 				break;\
 			} \
 		} \
 	} \
 	else {\
-		LOG_ERR("N.S.%d", logT);\
+		log_err("N.S.%d", logT);\
 	} \
 		ptr[0] = '\0';\
 		pSrc->_cnt[ppb][logT] = 0;\
@@ -873,7 +873,7 @@ static inline unsigned int MFB_GetIRQState(unsigned int type, unsigned int userN
 		ret = ((MFBInfo.IrqInfo.MfbIrqCnt > 0)
 		       && (MFBInfo.ProcessID[MFBInfo.ReadReqIdx] == ProcessID));
 	} else {
-		LOG_ERR
+		log_err
 		    (" WaitIRQ StatusErr, type:%d, userNum:%d, status:%d, whichReq:%d,ProcessID:0x%x, ReadReqIdx:%d\n",
 		     type, userNumber, stus, whichReq, ProcessID, MFBInfo.ReadReqIdx);
 	}
@@ -883,7 +883,7 @@ static inline unsigned int MFB_GetIRQState(unsigned int type, unsigned int userN
 		ret = ((MFBInfo.IrqInfo.MfbIrqCnt > 0)
 		       && (MFBInfo.IrqInfo.ProcessID[whichReq] == ProcessID));
 	} else {
-		LOG_ERR
+		log_err
 		    ("WaitIRQ Status Error, type:%d, userNumber:%d, status:%d, whichReq:%d, ProcessID:0x%x\n",
 		     type, userNumber, stus, whichReq, ProcessID);
 	}
@@ -910,7 +910,7 @@ static inline unsigned int MFB_JiffiesToMs(unsigned int Jiffies)
 #define RegDump(start, end) {\
 	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
-		LOG_DBG("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
+		log_dbg("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
 	    (unsigned int)(ISP_MFB_BASE + i), (unsigned int)MFB_RD32(ISP_MFB_BASE + i),\
 	    (unsigned int)(ISP_MFB_BASE + i+0x4), (unsigned int)MFB_RD32(ISP_MFB_BASE + i+0x4),\
 	    (unsigned int)(ISP_MFB_BASE + i+0x8), (unsigned int)MFB_RD32(ISP_MFB_BASE + i+0x8),\
@@ -945,7 +945,7 @@ static bool ConfigMFBRequest(signed int ReqIdx)
 			}
 		}
 	} else {
-		LOG_ERR("ConfigMFBRequest state machine error!!, ReqIdx:%d, State:%d\n",
+		log_err("ConfigMFBRequest state machine error!!, ReqIdx:%d, State:%d\n",
 			ReqIdx, g_MFB_ReqRing.MFBReq_Struct[ReqIdx].State);
 	}
 	spin_unlock_irqrestore(&(MFBInfo.SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]), flags);
@@ -953,7 +953,7 @@ static bool ConfigMFBRequest(signed int ReqIdx)
 
 	return MTRUE;
 #else
-	LOG_ERR("ConfigMFBRequest don't support this mode.!!\n");
+	log_err("ConfigMFBRequest don't support this mode.!!\n");
 	return MFALSE;
 #endif
 }
@@ -991,9 +991,9 @@ static bool ConfigMFB(void)
 							  flags);
 				}
 			}
-			/* LOG_DBG("ConfigMFB idx j:%d\n",j); */
+			/* log_dbg("ConfigMFB idx j:%d\n",j); */
 			if (j != _SUPPORT_MAX_MFB_FRAME_REQUEST_) {
-				LOG_ERR
+				log_err
 				    ("MFB Config State is wrong!  idx j(%d), HWProcessIdx(%d), State(%d)\n",
 				     j, g_MFB_ReqRing.HWProcessIdx,
 				     g_MFB_ReqRing.MFBReq_Struct[i].State);
@@ -1006,7 +1006,7 @@ static bool ConfigMFB(void)
 			}
 			/*else {
 			*	g_MFB_ReqRing.MFBReq_Struct[i].State = MFB_REQUEST_STATE_RUNNING;
-			*	LOG_ERR("MFB Config State is wrong! HWProcessIdx(%d), State(%d)\n",
+			*	log_err("MFB Config State is wrong! HWProcessIdx(%d), State(%d)\n",
 			*	g_MFB_ReqRing.HWProcessIdx, g_MFB_ReqRing.MFBReq_Struct[i].State);
 			*	g_MFB_ReqRing.HWProcessIdx = (g_MFB_ReqRing.HWProcessIdx+1)
 			*	%_SUPPORT_MAX_MFB_REQUEST_RING_SIZE_;
@@ -1016,7 +1016,7 @@ static bool ConfigMFB(void)
 	}
 	spin_unlock_irqrestore(&(MFBInfo.SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]), flags);
 	if (k == _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_)
-		LOG_DBG("No any MFB Request in Ring!!\n");
+		log_dbg("No any MFB Request in Ring!!\n");
 
 	return MTRUE;
 
@@ -1035,7 +1035,7 @@ static bool ConfigMFB(void)
 					break;
 				}
 			}
-			LOG_DBG("ConfigMFB idx j:%d\n", j);
+			log_dbg("ConfigMFB idx j:%d\n", j);
 			if (j != _SUPPORT_MAX_MFB_FRAME_REQUEST_) {
 				g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j] =
 				    MFB_FRAME_STATUS_RUNNING;
@@ -1044,7 +1044,7 @@ static bool ConfigMFB(void)
 				return MTRUE;
 			}
 			/*else {*/
-			LOG_ERR
+			log_err
 			    ("MFB Config State is wrong! HWProcessIdx(%d), State(%d)\n",
 			     g_MFB_ReqRing.HWProcessIdx,
 			     g_MFB_ReqRing.MFBReq_Struct[i].State);
@@ -1055,7 +1055,7 @@ static bool ConfigMFB(void)
 		}
 	}
 	if (k == _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_)
-		LOG_DBG("No any MFB Request in Ring!!\n");
+		log_dbg("No any MFB Request in Ring!!\n");
 
 	return MFALSE;
 
@@ -1203,19 +1203,27 @@ static signed int ConfigMFBHW(MFB_Config *pMfbConfig)
 
 	if (MFB_DBG_DBGLOG == (MFB_DBG_DBGLOG & MFBInfo.DebugMask)) {
 
-		LOG_DBG("ConfigMFBHW Start!\n");
-		LOG_DBG("MFB_TOP_CFG0:0x%lx!\n", (unsigned long)pMfbConfig->MFB_TOP_CFG0);
-		LOG_DBG("MFB_TOP_CFG2:0x%lx!\n", (unsigned long)pMfbConfig->MFB_TOP_CFG2);
-		LOG_DBG("MFB_MFBI_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFBI_ADDR);
-		LOG_DBG("MFB_MFBI_B_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFBI_B_ADDR);
-		LOG_DBG("MFB_MFB2I_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFB2I_ADDR);
-		LOG_DBG("MFB_MFB2I_B_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFB2I_B_ADDR);
-		LOG_DBG("MFB_MFB3I_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFB3I_ADDR);
-		LOG_DBG("MFB_MFB4I_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFB4I_ADDR);
-		LOG_DBG("MFB_MFBO_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFBO_ADDR);
-		LOG_DBG("MFB_MFBO_B_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFBO_B_ADDR);
-		LOG_DBG("MFB_MFB2O_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_MFB2O_ADDR);
-		LOG_DBG("MFB_TDRI_ADDR:0x%lx!\n", (unsigned long)pMfbConfig->MFB_TDRI_ADDR);
+		log_dbg("ConfigMFBHW Start!\n");
+		log_dbg("MFB_TOP_CFG0:0x%x!\n", (unsigned int)pMfbConfig->MFB_TOP_CFG0);
+		log_dbg("MFB_TOP_CFG2:0x%x!\n", (unsigned int)pMfbConfig->MFB_TOP_CFG2);
+		log_dbg("MFB_MFBI_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBI_ADDR);
+		log_dbg("MFB_MFBI_B_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBI_B_ADDR);
+		log_dbg("MFB_MFB2I_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB2I_ADDR);
+		log_dbg("MFB_MFB2I_B_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB2I_B_ADDR);
+		log_dbg("MFB_MFB3I_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB3I_ADDR);
+		log_dbg("MFB_MFB4I_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB4I_ADDR);
+		log_dbg("MFB_MFBO_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBO_ADDR);
+		log_dbg("MFB_MFBO_B_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBO_B_ADDR);
+		log_dbg("MFB_MFB2O_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB2O_ADDR);
+		log_dbg("MFB_TDRI_ADDR:0x%x!\n", (unsigned int)pMfbConfig->MFB_TDRI_ADDR);
+
+		log_dbg("MFB_TOP_CFG0:0x%x!\n", (unsigned int)pMfbConfig->MFB_TOP_CFG0);
+		log_dbg("MFB_TOP_CFG2:0x%x!\n", (unsigned int)pMfbConfig->MFB_TOP_CFG2);
+		log_dbg("MFB_MFBI_STRIDE:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBI_STRIDE);
+		log_dbg("MFB_MFB2I_STRIDE:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFB2I_STRIDE);
+		log_dbg("MFB_MFBO_STRIDE:0x%x!\n", (unsigned int)pMfbConfig->MFB_MFBO_STRIDE);
+		log_dbg("MFB_CON:0x%x!\n", (unsigned int)pMfbConfig->MFB_CON);
+
 	}
 
 #ifdef MFB_USE_GCE
@@ -1411,75 +1419,82 @@ static bool Check_MFB_Is_Busy(void)
  *
  */
 static signed int MFB_DumpReg(void)
-#if BYPASS_REG
 {
-	return 0;
-}
-#else
-{
-#if 0
+#if 1
 	signed int Ret = 0;
 	unsigned int i, j;
 
-	LOG_INF("- E.");
+	log_inf("- E.");
 
-	LOG_INF("MFB Config Info\n");
+	log_inf("MFB Config Info\n");
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_CON_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_CON_HW),
 		(unsigned int)MFB_RD32(MFB_CON_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_TOP_CFG0_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_TOP_CFG0_HW),
 		(unsigned int)MFB_RD32(MFB_TOP_CFG0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_TOP_CFG2_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_TOP_CFG1_HW),
+		(unsigned int)MFB_RD32(MFB_TOP_CFG1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_TOP_CFG2_HW),
 		(unsigned int)MFB_RD32(MFB_TOP_CFG2_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_INT_CTL_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_INT_CTL_HW),
 		(unsigned int)MFB_RD32(MFB_INT_CTL_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_INT_STATUS_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_INT_STATUS_HW),
 		(unsigned int)MFB_RD32(MFB_INT_STATUS_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_SW_RST_HW),
+		(unsigned int)MFB_RD32(MFB_SW_RST_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_MAIN_DCM_ST_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MAIN_DCM_ST_HW),
 		(unsigned int)MFB_RD32(MFB_MAIN_DCM_ST_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_MAIN_DCM_DIS_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MAIN_DCM_DIS_HW),
 		(unsigned int)MFB_RD32(MFB_MAIN_DCM_DIS_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_DCM_ST_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_DCM_ST_HW),
 		(unsigned int)MFB_RD32(MFB_DMA_DCM_ST_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_DCM_DIS_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_DCM_DIS_HW),
 		(unsigned int)MFB_RD32(MFB_DMA_DCM_DIS_REG));
 
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_CTL0_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_CTL0_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_CTL0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT0_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT0_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT0_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT0_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT0_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT1_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT1_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT1_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT2_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT2_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT2_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT3_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT3_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT3_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT4_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DBG_OUT4_HW),
 		(unsigned int)MFB_RD32(MFB_DBG_OUT4_REG));
-	LOG_INF("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_ERR_CTRL_HW),
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DMA_ERR_CTRL_HW),
 		(unsigned int)MFB_RD32(MFB_DMA_ERR_CTRL_REG));
 
-	LOG_INF("MFB:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_MFB_ReqRing.HWProcessIdx,
-		g_MFB_ReqRing.WriteIdx, g_MFB_ReqRing.ReadIdx);
+	log_inf("MFB:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n",
+		g_MFB_ReqRing.HWProcessIdx,
+		g_MFB_ReqRing.WriteIdx,
+		g_MFB_ReqRing.ReadIdx);
 
 	for (i = 0; i < _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_; i++) {
-		LOG_INF
-		  ("MFB Req:State:%d, procID:0x%08X, callerID:0x%08X, enqueReqNum:%d, FrameWRIdx:%d, RrameRDIdx:%d\n",
-		     g_MFB_ReqRing.MFBReq_Struct[i].State, g_MFB_ReqRing.MFBReq_Struct[i].processID,
-		     g_MFB_ReqRing.MFBReq_Struct[i].callerID, g_MFB_ReqRing.MFBReq_Struct[i].enqueReqNum,
-		     g_MFB_ReqRing.MFBReq_Struct[i].FrameWRIdx, g_MFB_ReqRing.MFBReq_Struct[i].RrameRDIdx);
+	log_inf
+	("MFB Req:State:%d, procID:0x%08X, callerID:0x%08X, enqueReqNum:%d, FrameWRIdx:%d, RrameRDIdx:%d\n",
+	     g_MFB_ReqRing.MFBReq_Struct[i].State,
+	     g_MFB_ReqRing.MFBReq_Struct[i].processID,
+	     g_MFB_ReqRing.MFBReq_Struct[i].callerID,
+	     g_MFB_ReqRing.MFBReq_Struct[i].enqueReqNum,
+	     g_MFB_ReqRing.MFBReq_Struct[i].FrameWRIdx,
+	     g_MFB_ReqRing.MFBReq_Struct[i].RrameRDIdx);
 
 		for (j = 0; j < _SUPPORT_MAX_MFB_FRAME_REQUEST_;) {
-			LOG_INF
-			    ("MFB:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
-			     j, g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j]
-			     , j + 1, g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 1],
-			     j + 2, g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 2]
-			     , j + 3, g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 3]);
+			log_inf("MFB:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+				j,
+				g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j],
+				j + 1,
+				g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 1],
+				j + 2,
+				g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 2],
+				j + 3,
+				g_MFB_ReqRing.MFBReq_Struct[i].MfbFrameStatus[j + 3]);
 			j = j + 4;
 		}
 
@@ -1487,13 +1502,13 @@ static signed int MFB_DumpReg(void)
 
 
 
-	LOG_INF("- X.");
+	log_inf("- X.");
 	/*  */
 	return Ret;
 #endif
 return 0;
 }
-#endif
+
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 static inline void MFB_Prepare_Enable_ccf_clock(void)
 {
@@ -1502,58 +1517,58 @@ static inline void MFB_Prepare_Enable_ccf_clock(void)
 #ifndef SMI_CLK
 	ret = clk_prepare_enable(mfb_clk.CG_SCP_SYS_MM0);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
+		log_err("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_2X);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_UPSZ0);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_UPSZ1);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_FIFO0);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_FIFO1);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
+		log_err("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_MM_LARB5);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_MM_LARB5 clock\n");
+		log_err("cannot prepare and enable CG_MM_LARB5 clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_SCP_SYS_ISP);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
+		log_err("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
 
 	ret = clk_prepare_enable(mfb_clk.CG_IMGSYS_LARB);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMGSYS_LARB clock\n");
+		log_err("cannot prepare and enable CG_IMGSYS_LARB clock\n");
 #else
 	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_mfb");
 #endif
 
 	ret = clk_prepare_enable(mfb_clk.CG_IMGSYS_MFB);
 	if (ret)
-		LOG_ERR("cannot prepare and enable CG_IMGSYS_MFB clock\n");
+		log_err("cannot prepare and enable CG_IMGSYS_MFB clock\n");
 
 }
 
@@ -1590,7 +1605,7 @@ static void MFB_EnableClock(bool En)
 #endif
 
 	if (En) {		/* Enable clock. */
-		/* LOG_DBG("Dpe clock enbled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
+		/* log_dbg("Dpe clock enbled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
 		switch (g_u4EnableClockCount) {
 		case 0:
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
@@ -1623,7 +1638,7 @@ static void MFB_EnableClock(bool En)
 		spin_unlock(&(MFBInfo.SpinLockMFB));
 	} else {		/* Disable clock. */
 
-		/* LOG_DBG("Dpe clock disabled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
+		/* log_dbg("Dpe clock disabled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
 		spin_lock(&(MFBInfo.SpinLockMFB));
 		g_u4EnableClockCount--;
 		spin_unlock(&(MFBInfo.SpinLockMFB));
@@ -1663,25 +1678,25 @@ static void MFB_EnableClock(bool En)
 ********************************************************************************/
 static inline void MFB_Reset(void)
 {
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 
-	LOG_DBG(" MFB Reset start!\n");
+	log_dbg(" MFB Reset start!\n");
 	spin_lock(&(MFBInfo.SpinLockMFBRef));
 
 	if (MFBInfo.UserCount > 1) {
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
-		LOG_DBG("Curr UserCount(%d) users exist", MFBInfo.UserCount);
+		log_dbg("Curr UserCount(%d) users exist", MFBInfo.UserCount);
 	} else {
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
 
 		/* Reset MFB flow */
 		MFB_WR32(MFB_SW_RST_REG, 0x001);
 		while ((MFB_RD32(MFB_SW_RST_REG) && 0x00000002 != 0x00000002))
-			LOG_DBG("MFB resetting...\n");
+			log_dbg("MFB resetting...\n");
 		MFB_WR32(MFB_SW_RST_REG, 0x101);
 		MFB_WR32(MFB_SW_RST_REG, 0x100);
 		MFB_WR32(MFB_SW_RST_REG, 0x0);
-		LOG_DBG(" MFB Reset end!\n");
+		log_dbg(" MFB Reset end!\n");
 	}
 
 }
@@ -1700,7 +1715,7 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
-			LOG_ERR("get_user failed");
+			log_err("get_user failed");
 			Ret = -EFAULT;
 			goto EXIT;
 		}
@@ -1710,14 +1725,14 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 		    && (ISP_MFB_BASE + reg.Addr < (ISP_MFB_BASE + MFB_REG_RANGE))) {
 			reg.Val = MFB_RD32(ISP_MFB_BASE + reg.Addr);
 		} else {
-			LOG_ERR("Wrong address(0x%p)", (ISP_MFB_BASE + reg.Addr));
+			log_err("Wrong address(0x%p)", (ISP_MFB_BASE + reg.Addr));
 			reg.Val = 0;
 		}
 		/*  */
 		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",MFB_ADDR_CAMINF + reg.Addr,reg.Val); */
 
 		if (put_user(reg.Val, (unsigned int *) &(pData->Val)) != 0) {
-			LOG_ERR("put_user failed");
+			log_err("put_user failed");
 			Ret = -EFAULT;
 			goto EXIT;
 		}
@@ -1747,12 +1762,12 @@ static signed int MFB_WriteRegToHw(MFB_REG_STRUCT *pReg, unsigned int Count)
 
 	/*  */
 	if (dbgWriteReg)
-		LOG_DBG("- E.\n");
+		log_dbg("- E.\n");
 
 	/*  */
 	for (i = 0; i < Count; i++) {
 		if (dbgWriteReg) {
-			LOG_DBG("Addr(0x%lx), Val(0x%x)\n",
+			log_dbg("Addr(0x%lx), Val(0x%x)\n",
 				(unsigned long)(ISP_MFB_BASE + pReg[i].Addr),
 				(unsigned int) (pReg[i].Val));
 		}
@@ -1760,7 +1775,7 @@ static signed int MFB_WriteRegToHw(MFB_REG_STRUCT *pReg, unsigned int Count)
 		if (((ISP_MFB_BASE + pReg[i].Addr) < (ISP_MFB_BASE + MFB_REG_RANGE))) {
 			MFB_WR32(ISP_MFB_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
-			LOG_ERR("wrong address(0x%lx)\n",
+			log_err("wrong address(0x%lx)\n",
 				(unsigned long)(ISP_MFB_BASE + pReg[i].Addr));
 		}
 	}
@@ -1786,24 +1801,26 @@ static signed int MFB_WriteReg(MFB_REG_IO_STRUCT *pRegIo)
 	MFB_REG_STRUCT *pData = NULL;
 	/*  */
 	if (MFBInfo.DebugMask & MFB_DBG_WRITE_REG)
-		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
+		log_dbg("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
 	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(MFB_REG_STRUCT), GFP_ATOMIC); */
 	pData = kmalloc((pRegIo->Count) * sizeof(MFB_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
-		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
-			current->pid, current->tgid);
+		log_dbg("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
+			current->comm,
+			current->pid,
+			current->tgid);
 		Ret = -ENOMEM;
 	}
 	/*  */
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
-		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		log_err("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
 	}
 	if (copy_from_user
 	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(MFB_REG_STRUCT)) != 0) {
-		LOG_ERR("copy_from_user failed\n");
+		log_err("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
 	}
@@ -1849,7 +1866,7 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 	if (MFBInfo.DebugMask & MFB_DBG_INT) {
 		if (WaitIrq->Status & MFBInfo.IrqInfo.Mask[WaitIrq->Type]) {
 			if (WaitIrq->UserKey > 0) {
-				LOG_DBG("+WaitIrq clr(%d), Type(%d), Stat(0x%08X), Timeout(%d),usr(%d), ProcID(%d)\n",
+				log_dbg("+WaitIrq clr(%d), Type(%d), Stat(0x%08X), Timeout(%d),usr(%d), ProcID(%d)\n",
 				WaitIrq->Clear, WaitIrq->Type, WaitIrq->Status,
 				WaitIrq->Timeout, WaitIrq->UserKey, WaitIrq->ProcessID);
 			}
@@ -1860,7 +1877,7 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 	/* 1. wait type update */
 	if (WaitIrq->Clear == MFB_IRQ_CLEAR_STATUS) {
 		spin_lock_irqsave(&(MFBInfo.SpinLockIrq[WaitIrq->Type]), flags);
-		/* LOG_DBG("WARNING: Clear(%d), Type(%d): IrqStatus(0x%08X) has been cleared"
+		/* log_dbg("WARNING: Clear(%d), Type(%d): IrqStatus(0x%08X) has been cleared"
 		*  ,WaitIrq->EventInfo.Clear,WaitIrq->Type,MFBInfo.IrqInfo.Status[WaitIrq->Type]);
 		*   MFBInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.UserKey] &=
 		*  (~WaitIrq->EventInfo.Status);
@@ -1893,15 +1910,15 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 	if (WaitIrq->Status & MFB_INT_ST) {
 		whichReq = MFB_PROCESS_ID_MFB;
 	} else {
-		LOG_ERR("No Such Stats can be waited!! irq Type/User/Sts/Pid(0x%x/%d/0x%x/%d)\n",
+		log_err("No Such Stats can be waited!! irq Type/User/Sts/Pid(0x%x/%d/0x%x/%d)\n",
 			WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, WaitIrq->ProcessID);
 	}
 
 
 #ifdef MFB_WAITIRQ_LOG
-	LOG_INF("before wait_event:Tout(%d), Clear(%d), Type(%d), IrqStat(0x%08X), WaitStat(0x%08X), usrKey(%d)\n",
+	log_inf("before wait_event:Tout(%d), Clear(%d), Type(%d), IrqStat(0x%08X), WaitStat(0x%08X), usrKey(%d)\n",
 		WaitIrq->Timeout, WaitIrq->Clear, WaitIrq->Type, irqStatus, WaitIrq->Status, WaitIrq->UserKey);
-	LOG_INF("before wait_event:ProcID(%d), MfbIrq(0x%08X), WriteReq(0x%08X), ReadReq(0x%08X), whichReq(%d)\n",
+	log_inf("before wait_event:ProcID(%d), MfbIrq(0x%08X), WriteReq(0x%08X), ReadReq(0x%08X), whichReq(%d)\n",
 		WaitIrq->ProcessID, MFBInfo.IrqInfo.MfbIrqCnt, MFBInfo.WriteReqIdx, MFBInfo.ReadReqIdx, whichReq);
 #endif
 
@@ -1915,7 +1932,7 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 	/* check if user is interrupted by system signal */
 	if ((Timeout != 0) &&
 		(!MFB_GetIRQState(WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq, WaitIrq->ProcessID))) {
-		LOG_DBG("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
+		log_dbg("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
 		Timeout, WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq, WaitIrq->ProcessID);
 		Ret = -ERESTARTSYS;	/* actually it should be -ERESTARTSYS */
 		goto EXIT;
@@ -1927,9 +1944,9 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 		irqStatus = MFBInfo.IrqInfo.Status[WaitIrq->Type];
 		spin_unlock_irqrestore(&(MFBInfo.SpinLockIrq[WaitIrq->Type]), flags);
 
-		LOG_ERR("WaitIrq Timeout:Tout(%d) clr(%d) Type(%d) IrqStat(0x%08X) WaitStat(0x%08X) usrKey(%d)\n",
+		log_err("WaitIrq Timeout:Tout(%d) clr(%d) Type(%d) IrqStat(0x%08X) WaitStat(0x%08X) usrKey(%d)\n",
 		     WaitIrq->Timeout, WaitIrq->Clear, WaitIrq->Type, irqStatus, WaitIrq->Status, WaitIrq->UserKey);
-		LOG_ERR("WaitIrq Timeout:whichReq(%d),ProcID(%d) MfbIrqCnt(0x%08X) WriteReq(0x%08X) ReadReq(0x%08X)\n",
+		log_err("WaitIrq Timeout:whichReq(%d),ProcID(%d) MfbIrqCnt(0x%08X) WriteReq(0x%08X) ReadReq(0x%08X)\n",
 		     whichReq, WaitIrq->ProcessID, MFBInfo.IrqInfo.MfbIrqCnt, MFBInfo.WriteReqIdx, MFBInfo.ReadReqIdx);
 
 		if (WaitIrq->bDumpReg)
@@ -1962,7 +1979,7 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 				if (MFBInfo.IrqInfo.MfbIrqCnt == 0)
 					MFBInfo.IrqInfo.Status[WaitIrq->Type] &= (~WaitIrq->Status);
 			} else {
-				LOG_ERR("MFB_IRQ_WAIT_CLEAR Error, Type(%d), WaitStatus(0x%08X)",
+				log_err("MFB_IRQ_WAIT_CLEAR Error, Type(%d), WaitStatus(0x%08X)",
 					WaitIrq->Type, WaitIrq->Status);
 			}
 #else
@@ -1973,9 +1990,9 @@ static signed int MFB_WaitIrq(MFB_WAIT_IRQ_STRUCT *WaitIrq)
 		}
 
 #ifdef MFB_WAITIRQ_LOG
-		LOG_INF("no Timeout:Tout(%d), clr(%d), Type(%d), IrqStat(0x%08X), WaitStat(0x%08X), usrKey(%d)\n",
+		log_inf("no Timeout:Tout(%d), clr(%d), Type(%d), IrqStat(0x%08X), WaitStat(0x%08X), usrKey(%d)\n",
 		WaitIrq->Timeout, WaitIrq->Clear, WaitIrq->Type, irqStatus, WaitIrq->Status, WaitIrq->UserKey);
-		LOG_INF("no Timeout:ProcID(%d),MfbIrq(0x%08X), WriteReq(0x%08X), ReadReq(0x%08X),whichReq(%d)\n",
+		log_inf("no Timeout:ProcID(%d),MfbIrq(0x%08X), WriteReq(0x%08X), ReadReq(0x%08X),whichReq(%d)\n",
 		WaitIrq->ProcessID, MFBInfo.IrqInfo.MfbIrqCnt, MFBInfo.WriteReqIdx, MFBInfo.ReadReqIdx, whichReq);
 #endif
 
@@ -2017,7 +2034,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 	/*  */
 	if (pFile->private_data == NULL) {
-		LOG_WRN("private_data is NULL,(process, pid, tgid)=(%s, %d, %d)", current->comm,
+		log_wrn("private_data is NULL,(process, pid, tgid)=(%s, %d, %d)", current->comm,
 			current->pid, current->tgid);
 		return -EFAULT;
 	}
@@ -2058,7 +2075,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* 2nd layer behavoir of copy from user is implemented in MFB_ReadReg(...) */
 				Ret = MFB_ReadReg(&RegIo);
 			} else {
-				LOG_ERR("MFB_READ_REGISTER copy_from_user failed");
+				log_err("MFB_READ_REGISTER copy_from_user failed");
 				Ret = -EFAULT;
 			}
 			break;
@@ -2069,7 +2086,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* 2nd layer behavoir of copy from user is implemented in MFB_WriteReg(...) */
 				Ret = MFB_WriteReg(&RegIo);
 			} else {
-				LOG_ERR("MFB_WRITE_REGISTER copy_from_user failed");
+				log_err("MFB_WRITE_REGISTER copy_from_user failed");
 				Ret = -EFAULT;
 			}
 			break;
@@ -2081,17 +2098,17 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/*  */
 				if ((IrqInfo.Type >= MFB_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
 					Ret = -EFAULT;
-					LOG_ERR("invalid type(%d)", IrqInfo.Type);
+					log_err("invalid type(%d)", IrqInfo.Type);
 					goto EXIT;
 				}
 
 				if ((IrqInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.UserKey < 0)) {
-					LOG_ERR("invalid userKey(%d), max(%d), force userkey = 0\n",
+					log_err("invalid userKey(%d), max(%d), force userkey = 0\n",
 						IrqInfo.UserKey, IRQ_USER_NUM_MAX);
 					IrqInfo.UserKey = 0;
 				}
 
-				LOG_INF
+				log_inf
 				    ("IRQ clear(%d), type(%d), userKey(%d), timeout(%d), status(%d)\n",
 				     IrqInfo.Clear, IrqInfo.Type, IrqInfo.UserKey, IrqInfo.Timeout,
 				     IrqInfo.Status);
@@ -2100,11 +2117,11 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				if (copy_to_user
 				    ((void *)Param, &IrqInfo, sizeof(MFB_WAIT_IRQ_STRUCT)) != 0) {
-					LOG_ERR("copy_to_user failed\n");
+					log_err("copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
 			} else {
-				LOG_ERR("MFB_WAIT_IRQ copy_from_user failed");
+				log_err("MFB_WAIT_IRQ copy_from_user failed");
 				Ret = -EFAULT;
 			}
 			break;
@@ -2113,23 +2130,23 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		{
 			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(MFB_CLEAR_IRQ_STRUCT))
 			    == 0) {
-				LOG_DBG("MFB_CLEAR_IRQ Type(%d)", ClearIrq.Type);
+				log_dbg("MFB_CLEAR_IRQ Type(%d)", ClearIrq.Type);
 
 				if ((ClearIrq.Type >= MFB_IRQ_TYPE_AMOUNT) || (ClearIrq.Type < 0)) {
 					Ret = -EFAULT;
-					LOG_ERR("invalid type(%d)", ClearIrq.Type);
+					log_err("invalid type(%d)", ClearIrq.Type);
 					goto EXIT;
 				}
 
 				/*  */
 				if ((ClearIrq.UserKey >= IRQ_USER_NUM_MAX)
 				    || (ClearIrq.UserKey < 0)) {
-					LOG_ERR("errUserEnum(%d)", ClearIrq.UserKey);
+					log_err("errUserEnum(%d)", ClearIrq.UserKey);
 					Ret = -EFAULT;
 					goto EXIT;
 				}
 
-				LOG_DBG("MFB_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)\n",
+				log_dbg("MFB_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)\n",
 					ClearIrq.Type, ClearIrq.Status,
 					MFBInfo.IrqInfo.Status[ClearIrq.Type]);
 				spin_lock_irqsave(&(MFBInfo.SpinLockIrq[ClearIrq.Type]), flags);
@@ -2137,7 +2154,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				spin_unlock_irqrestore(&(MFBInfo.SpinLockIrq[ClearIrq.Type]),
 						       flags);
 			} else {
-				LOG_ERR("MFB_CLEAR_IRQ copy_from_user failed\n");
+				log_err("MFB_CLEAR_IRQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 			break;
@@ -2164,13 +2181,13 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 								SpinLockIrq
 								[MFB_IRQ_TYPE_INT_MFB_ST]), flags);
 					if (enqueNum > _SUPPORT_MAX_MFB_FRAME_REQUEST_) {
-						LOG_ERR
+						log_err
 						    ("MFB Enque Num is bigger than enqueNum:%d\n",
 						     enqueNum);
 					}
-					LOG_DBG("MFB_ENQNUE_NUM:%d\n", enqueNum);
+					log_dbg("MFB_ENQNUE_NUM:%d\n", enqueNum);
 				} else {
-					LOG_ERR
+					log_err
 					    ("WFME Enque request state is not empty:%d, writeIdx:%d, readIdx:%d\n",
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.
 									       WriteIdx].
@@ -2178,7 +2195,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					     g_MFB_ReqRing.ReadIdx);
 				}
 			} else {
-				LOG_ERR("MFB_EQNUE_NUM copy_from_user failed\n");
+				log_err("MFB_EQNUE_NUM copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -2189,7 +2206,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		{
 			if (copy_from_user(&mfb_MfbConfig, (void *)Param, sizeof(MFB_Config))
 			    == 0) {
-				/* LOG_DBG("MFB_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)",
+				/* log_dbg("MFB_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)",
 				 * ClearIrq.Type, ClearIrq.Status, MFBInfo.IrqInfo.Status[ClearIrq.Type]);
 				 */
 				spin_lock_irqsave(&(MFBInfo.SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]),
@@ -2226,12 +2243,12 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						g_MFB_ReqRing.WriteIdx =
 						    (g_MFB_ReqRing.WriteIdx +
 						     1) % _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_;
-						LOG_DBG("MFB enque done!!\n");
+						log_dbg("MFB enque done!!\n");
 					} else {
-						LOG_DBG("MFB enque frame!!\n");
+						log_dbg("MFB enque frame!!\n");
 					}
 				} else {
-					LOG_ERR("No Buffer! WriteIdx(%d), Stat(%d), FrameWRIdx(%d), enqueReqNum(%d)\n",
+					log_err("No Buffer! WriteIdx(%d), Stat(%d), FrameWRIdx(%d), enqueReqNum(%d)\n",
 					     g_MFB_ReqRing.WriteIdx,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.WriteIdx].State,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.WriteIdx].FrameWRIdx,
@@ -2243,16 +2260,16 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       (MFBInfo.
 							SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]),
 						       flags);
-				LOG_DBG("ConfigMFB!!\n");
+				log_dbg("ConfigMFB!!\n");
 				ConfigMFB();
 #else
 				/* check the hw is running or not ? */
 				if (Check_MFB_Is_Busy() == MFALSE) {
 					/* config the mfb hw and run */
-					LOG_DBG("ConfigMFB\n");
+					log_dbg("ConfigMFB\n");
 					ConfigMFB();
 				} else {
-					LOG_INF("MFB HW is busy!!\n");
+					log_inf("MFB HW is busy!!\n");
 				}
 				spin_unlock_irqrestore(&
 						       (MFBInfo.
@@ -2262,7 +2279,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 
 			} else {
-				LOG_ERR("MFB_ENQUE copy_from_user failed\n");
+				log_err("MFB_ENQUE copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -2272,10 +2289,10 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		{
 			if (copy_from_user(&mfb_MfbReq, (void *)Param, sizeof(MFB_Request)) ==
 			    0) {
-				LOG_DBG("MFB_ENQNUE_NUM:%d, pid:%d\n", mfb_MfbReq.m_ReqNum,
+				log_dbg("MFB_ENQNUE_NUM:%d, pid:%d\n", mfb_MfbReq.m_ReqNum,
 					pUserInfo->Pid);
 				if (mfb_MfbReq.m_ReqNum > _SUPPORT_MAX_MFB_FRAME_REQUEST_) {
-					LOG_ERR("MFB Enque Num is bigger than enqueNum:%d\n",
+					log_err("MFB Enque Num is bigger than enqueNum:%d\n",
 						mfb_MfbReq.m_ReqNum);
 					Ret = -EFAULT;
 					goto EXIT;
@@ -2284,7 +2301,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				    (g_MfbEnqueReq_Struct.MfbFrameConfig,
 				     (void *)mfb_MfbReq.m_pMfbConfig,
 				     mfb_MfbReq.m_ReqNum * sizeof(MFB_Config)) != 0) {
-					LOG_ERR("copy MFBConfig from request is fail!!\n");
+					log_err("copy MFBConfig from request is fail!!\n");
 					Ret = -EFAULT;
 					goto EXIT;
 				}
@@ -2327,9 +2344,9 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_MFB_ReqRing.WriteIdx =
 					    (g_MFB_ReqRing.WriteIdx +
 					     1) % _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_;
-					LOG_DBG("MFB request enque done!!\n");
+					log_dbg("MFB request enque done!!\n");
 				} else {
-					LOG_ERR("Enque req NG: WriteIdx(%d) Stat(%d) FrameWRIdx(%d) enqueReqNum(%d)\n",
+					log_err("Enque req NG: WriteIdx(%d) Stat(%d) FrameWRIdx(%d) enqueReqNum(%d)\n",
 					     g_MFB_ReqRing.WriteIdx,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.WriteIdx].State,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.WriteIdx].FrameWRIdx,
@@ -2339,12 +2356,12 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       (MFBInfo.
 							SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]),
 						       flags);
-				LOG_DBG("ConfigMFB Request!!\n");
+				log_dbg("ConfigMFB Request!!\n");
 				ConfigMFBRequest(MfbWriteIdx);
 
 				mutex_unlock(&gMfbMutex);
 			} else {
-				LOG_ERR("MFB_ENQUE_REQ copy_from_user failed\n");
+				log_err("MFB_ENQUE_REQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -2358,17 +2375,17 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				dequeNum =
 				    g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].
 				    enqueReqNum;
-				LOG_DBG("MFB_DEQUE_NUM(%d)\n", dequeNum);
+				log_dbg("MFB_DEQUE_NUM(%d)\n", dequeNum);
 			} else {
 				dequeNum = 0;
-				LOG_ERR("DEQUE_NUM:No Buffer: ReadIdx(%d) State(%d) RrameRDIdx(%d) enqueReqNum(%d)\n",
+				log_err("DEQUE_NUM:No Buffer: ReadIdx(%d) State(%d) RrameRDIdx(%d) enqueReqNum(%d)\n",
 				     g_MFB_ReqRing.ReadIdx,
 				     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].State,
 				     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].RrameRDIdx,
 				     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].enqueReqNum);
 			}
 			if (copy_to_user((void *)Param, &dequeNum, sizeof(unsigned int)) != 0) {
-				LOG_ERR("MFB_DEQUE_NUM copy_to_user failed\n");
+				log_err("MFB_DEQUE_NUM copy_to_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -2422,7 +2439,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_MFB_ReqRing.ReadIdx =
 					    (g_MFB_ReqRing.ReadIdx +
 					     1) % _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_;
-					LOG_DBG("MFB ReadIdx(%d)\n", g_MFB_ReqRing.ReadIdx);
+					log_dbg("MFB ReadIdx(%d)\n", g_MFB_ReqRing.ReadIdx);
 				}
 				spin_unlock_irqrestore(&
 						       (MFBInfo.
@@ -2434,7 +2451,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				     MfbFrameConfig[g_MFB_ReqRing.
 						     MFBReq_Struct[g_MFB_ReqRing.ReadIdx].
 						     RrameRDIdx], sizeof(MFB_Config)) != 0) {
-					LOG_ERR("MFB_DEQUE copy_to_user failed\n");
+					log_err("MFB_DEQUE copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
 
@@ -2443,7 +2460,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       (MFBInfo.
 							SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]),
 						       flags);
-				LOG_ERR("MFB_DEQUE No Buffer: ReadIdx(%d) State(%d) RrameRDIdx(%d), enqueReqNum(%d)\n",
+				log_err("MFB_DEQUE No Buffer: ReadIdx(%d) State(%d) RrameRDIdx(%d), enqueReqNum(%d)\n",
 				     g_MFB_ReqRing.ReadIdx,
 				     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].State,
 				     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].RrameRDIdx,
@@ -2466,10 +2483,10 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					dequeNum =
 					    g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.
 									      ReadIdx].enqueReqNum;
-					LOG_DBG("MFB_DEQUE_REQ(%d)\n", dequeNum);
+					log_dbg("MFB_DEQUE_REQ(%d)\n", dequeNum);
 				} else {
 					dequeNum = 0;
-					LOG_ERR("DEQUE_REQ no buf:RIdx(%d) Stat(%d) RrameRDIdx(%d) enqueReqNum(%d)\n",
+					log_err("DEQUE_REQ no buf:RIdx(%d) Stat(%d) RrameRDIdx(%d) enqueReqNum(%d)\n",
 					     g_MFB_ReqRing.ReadIdx,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].State,
 					     g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].RrameRDIdx,
@@ -2499,7 +2516,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 								    RrameRDIdx++] =
 						    MFB_FRAME_STATUS_EMPTY;
 					} else {
-						LOG_ERR("deq err idx(%d) dequNum(%d) Rd(%d) RrameRD(%d) FrmStat(%d)\n",
+						log_err("deq err idx(%d) dequNum(%d) Rd(%d) RrameRD(%d) FrmStat(%d)\n",
 						idx, dequeNum, g_MFB_ReqRing.ReadIdx,
 						g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].RrameRDIdx,
 						g_MFB_ReqRing.MFBReq_Struct[g_MFB_ReqRing.ReadIdx].MfbFrameStatus
@@ -2517,7 +2534,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_MFB_ReqRing.ReadIdx =
 				    (g_MFB_ReqRing.ReadIdx +
 				     1) % _SUPPORT_MAX_MFB_REQUEST_RING_SIZE_;
-				LOG_DBG("MFB Request ReadIdx(%d)\n", g_MFB_ReqRing.ReadIdx);
+				log_dbg("MFB Request ReadIdx(%d)\n", g_MFB_ReqRing.ReadIdx);
 
 				spin_unlock_irqrestore(&
 						       (MFBInfo.
@@ -2526,7 +2543,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				mutex_unlock(&gMfbDequeMutex);
 				if (mfb_MfbReq.m_pMfbConfig == NULL) {
-					LOG_ERR("NULL pointer:mfb_MfbReq.m_pMfbConfig");
+					log_err("NULL pointer:mfb_MfbReq.m_pMfbConfig");
 					Ret = -EFAULT;
 					goto EXIT;
 				}
@@ -2534,17 +2551,17 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				    ((void *)mfb_MfbReq.m_pMfbConfig,
 				     &g_MfbDequeReq_Struct.MfbFrameConfig[0],
 				     dequeNum * sizeof(MFB_Config)) != 0) {
-					LOG_ERR
+					log_err
 					    ("MFB_DEQUE_REQ copy_to_user frameconfig failed\n");
 					Ret = -EFAULT;
 				}
 				if (copy_to_user
 				    ((void *)Param, &mfb_MfbReq, sizeof(MFB_Request)) != 0) {
-					LOG_ERR("MFB_DEQUE_REQ copy_to_user failed\n");
+					log_err("MFB_DEQUE_REQ copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
 			} else {
-				LOG_ERR("MFB_CMD_MFB_DEQUE_REQ copy_from_user failed\n");
+				log_err("MFB_CMD_MFB_DEQUE_REQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -2552,8 +2569,8 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	default:
 		{
-			LOG_ERR("Unknown Cmd(%d)", Cmd);
-			LOG_ERR("Fail, Cmd(%d), Dir(%d), Type(%d), Nr(%d),Size(%d)\n", Cmd, _IOC_DIR(Cmd),
+			log_err("Unknown Cmd(%d)", Cmd);
+			log_err("Fail, Cmd(%d), Dir(%d), Type(%d), Nr(%d),Size(%d)\n", Cmd, _IOC_DIR(Cmd),
 				_IOC_TYPE(Cmd), _IOC_NR(Cmd), _IOC_SIZE(Cmd));
 			Ret = -EPERM;
 			break;
@@ -2562,7 +2579,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 EXIT:
 	if (Ret != 0) {
-		LOG_ERR("Fail, Cmd(%d), Pid(%d), (process, pid, tgid)=(%s, %d, %d)", Cmd,
+		log_err("Fail, Cmd(%d), Pid(%d), (process, pid, tgid)=(%s, %d, %d)", Cmd,
 			pUserInfo->Pid, current->comm, current->pid, current->tgid);
 	}
 	/*  */
@@ -2667,7 +2684,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		LOG_ERR("no f_op !!!\n");
+		log_err("no f_op !!!\n");
 		return -ENOTTY;
 	}
 	switch (cmd) {
@@ -2684,7 +2701,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 			err = compat_get_MFB_read_register_data(data32, data);
 			if (err) {
-				LOG_INF("compat_get_MFB_read_register_data error!!!\n");
+				log_inf("compat_get_MFB_read_register_data error!!!\n");
 				return err;
 			}
 			ret =
@@ -2692,7 +2709,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						       (unsigned long)data);
 			err = compat_put_MFB_read_register_data(data32, data);
 			if (err) {
-				LOG_INF("compat_put_MFB_read_register_data error!!!\n");
+				log_inf("compat_put_MFB_read_register_data error!!!\n");
 				return err;
 			}
 			return ret;
@@ -2710,7 +2727,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 			err = compat_get_MFB_read_register_data(data32, data);
 			if (err) {
-				LOG_INF("COMPAT_MFB_WRITE_REGISTER error!!!\n");
+				log_inf("COMPAT_MFB_WRITE_REGISTER error!!!\n");
 				return err;
 			}
 			ret =
@@ -2731,7 +2748,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 			err = compat_get_MFB_enque_req_data(data32, data);
 			if (err) {
-				LOG_INF("COMPAT_MFB_ENQUE_REQ error!!!\n");
+				log_inf("COMPAT_MFB_ENQUE_REQ error!!!\n");
 				return err;
 			}
 			ret =
@@ -2739,7 +2756,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						       (unsigned long)data);
 			err = compat_put_MFB_enque_req_data(data32, data);
 			if (err) {
-				LOG_INF("COMPAT_MFB_ENQUE_REQ error!!!\n");
+				log_inf("COMPAT_MFB_ENQUE_REQ error!!!\n");
 				return err;
 			}
 			return ret;
@@ -2757,7 +2774,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 			err = compat_get_MFB_deque_req_data(data32, data);
 			if (err) {
-				LOG_INF("COMPAT_MFB_DEQUE_REQ error!!!\n");
+				log_inf("COMPAT_MFB_DEQUE_REQ error!!!\n");
 				return err;
 			}
 			ret =
@@ -2765,7 +2782,7 @@ static long MFB_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						       (unsigned long)data);
 			err = compat_put_MFB_deque_req_data(data32, data);
 			if (err) {
-				LOG_INF("COMPAT_MFB_DEQUE_REQ error!!!\n");
+				log_inf("COMPAT_MFB_DEQUE_REQ error!!!\n");
 				return err;
 			}
 			return ret;
@@ -2799,7 +2816,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	/*int q = 0, p = 0;*/
 	struct MFB_USER_INFO_STRUCT *pUserInfo;
 
-	LOG_DBG("- E. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- E. UserCount: %d.", MFBInfo.UserCount);
 
 
 	/*  */
@@ -2808,8 +2825,10 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	pFile->private_data = NULL;
 	pFile->private_data = kmalloc(sizeof(struct MFB_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
-		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)", current->comm,
-			current->pid, current->tgid);
+		log_dbg("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)",
+			current->comm,
+			current->pid,
+			current->tgid);
 		Ret = -ENOMEM;
 	} else {
 		pUserInfo = (struct MFB_USER_INFO_STRUCT *) pFile->private_data;
@@ -2820,13 +2839,13 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	if (MFBInfo.UserCount > 0) {
 		MFBInfo.UserCount++;
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
-		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
+		log_dbg("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			MFBInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else {
 		MFBInfo.UserCount++;
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
-		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
+		log_dbg("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user",
 			MFBInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
 
@@ -2853,7 +2872,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 
 	/* Enable clock */
 	MFB_EnableClock(MTRUE);
-	LOG_DBG("MFB open g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	log_dbg("MFB open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
 	for (i = 0; i < MFB_IRQ_TYPE_AMOUNT; i++)
@@ -2877,7 +2896,7 @@ EXIT:
 
 
 
-	LOG_DBG("- X. Ret: %d. UserCount: %d.", Ret, MFBInfo.UserCount);
+	log_dbg("- X. Ret: %d. UserCount: %d.", Ret, MFBInfo.UserCount);
 	return Ret;
 
 }
@@ -2890,7 +2909,7 @@ static signed int MFB_release(struct inode *pInode, struct file *pFile)
 	struct MFB_USER_INFO_STRUCT *pUserInfo;
 	/*unsigned int Reg;*/
 
-	LOG_DBG("- E. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- E. UserCount: %d.", MFBInfo.UserCount);
 
 	/*  */
 	if (pFile->private_data != NULL) {
@@ -2904,25 +2923,25 @@ static signed int MFB_release(struct inode *pInode, struct file *pFile)
 
 	if (MFBInfo.UserCount > 0) {
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
-		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
+		log_dbg("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), users exist",
 			MFBInfo.UserCount, current->comm, current->pid, current->tgid);
 		goto EXIT;
 	} else
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
 	/*  */
-	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), last user",
+	log_dbg("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), last user",
 		MFBInfo.UserCount, current->comm, current->pid, current->tgid);
 
 
 	/* Disable clock. */
 	MFB_EnableClock(MFALSE);
-	LOG_DBG("MFB release g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	log_dbg("MFB release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
 
 
-	LOG_DBG("- X. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- X. UserCount: %d.", MFBInfo.UserCount);
 	return 0;
 }
 
@@ -2940,19 +2959,19 @@ static signed int MFB_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	pVma->vm_page_prot = pgprot_noncached(pVma->vm_page_prot);
 	pfn = pVma->vm_pgoff << PAGE_SHIFT;
 
-	LOG_INF("MFB_mmap:vm_pgoff(0x%lx) pfn(0x%x) phy(0x%lx) vm_start(0x%lx) vm_end(0x%lx) length(0x%lx)",
+	log_inf("MFB_mmap:vm_pgoff(0x%lx) pfn(0x%x) phy(0x%lx) vm_start(0x%lx) vm_end(0x%lx) length(0x%lx)",
 	     pVma->vm_pgoff, pfn, pVma->vm_pgoff << PAGE_SHIFT, pVma->vm_start, pVma->vm_end, length);
 
 	switch (pfn) {
 	case MFB_BASE_HW:
 		if (length > MFB_REG_RANGE) {
-			LOG_ERR("mmap range error :module:0x%x length(0x%lx),MFB_REG_RANGE(0x%x)!",
+			log_err("mmap range error :module:0x%x length(0x%lx),MFB_REG_RANGE(0x%x)!",
 				pfn, length, MFB_REG_RANGE);
 			return -EAGAIN;
 		}
 		break;
 	default:
-		LOG_ERR("Illegal starting HW addr for mmap!");
+		log_err("Illegal starting HW addr for mmap!");
 		return -EAGAIN;
 	}
 	if (remap_pfn_range
@@ -2989,7 +3008,7 @@ static const struct file_operations MFBFileOper = {
 ********************************************************************************/
 static inline void MFB_UnregCharDev(void)
 {
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 	/*  */
 	/* Release char driver */
 	if (pMFBCharDrv != NULL) {
@@ -3007,17 +3026,17 @@ static inline signed int MFB_RegCharDev(void)
 {
 	signed int Ret = 0;
 	/*  */
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 	/*  */
 	Ret = alloc_chrdev_region(&MFBDevNo, 0, 1, MFB_DEV_NAME);
 	if (Ret < 0) {
-		LOG_ERR("alloc_chrdev_region failed, %d", Ret);
+		log_err("alloc_chrdev_region failed, %d", Ret);
 		return Ret;
 	}
 	/* Allocate driver */
 	pMFBCharDrv = cdev_alloc();
 	if (pMFBCharDrv == NULL) {
-		LOG_ERR("cdev_alloc failed");
+		log_err("cdev_alloc failed");
 		Ret = -ENOMEM;
 		goto EXIT;
 	}
@@ -3028,7 +3047,7 @@ static inline signed int MFB_RegCharDev(void)
 	/* Add to system */
 	Ret = cdev_add(pMFBCharDrv, MFBDevNo, 1);
 	if (Ret < 0) {
-		LOG_ERR("Attatch file operation failed, %d", Ret);
+		log_err("Attatch file operation failed, %d", Ret);
 		goto EXIT;
 	}
 	/*  */
@@ -3038,7 +3057,7 @@ EXIT:
 
 	/*  */
 
-	LOG_DBG("- X.");
+	log_dbg("- X.");
 	return Ret;
 }
 
@@ -3060,7 +3079,7 @@ static signed int MFB_probe(struct platform_device *pDev)
 	struct MFB_device *MFB_dev;
 #endif
 
-	LOG_INF("- E. MFB driver probe.\n");
+	log_inf("- E. MFB driver probe.\n");
 
 	/* Check platform_device parameters */
 #ifdef CONFIG_OF
@@ -3092,7 +3111,7 @@ static signed int MFB_probe(struct platform_device *pDev)
 		return -ENOMEM;
 	}
 
-	LOG_INF("nr_MFB_devs=%d, devnode(%s), map_addr=0x%lx\n", nr_MFB_devs,
+	log_inf("nr_MFB_devs=%d, devnode(%s), map_addr=0x%lx\n", nr_MFB_devs,
 		pDev->dev.of_node->name, (unsigned long)MFB_dev->regs);
 
 	/* get IRQ ID and request IRQ */
@@ -3121,7 +3140,7 @@ static signed int MFB_probe(struct platform_device *pDev)
 					return Ret;
 				}
 
-				LOG_INF("nr_MFB_devs=%d, devnode(%s), irq=%d, ISR: %s\n",
+				log_inf("nr_MFB_devs=%d, devnode(%s), irq=%d, ISR: %s\n",
 					nr_MFB_devs, pDev->dev.of_node->name, MFB_dev->irq,
 					MFB_IRQ_CB_TBL[i].device_name);
 				break;
@@ -3129,13 +3148,13 @@ static signed int MFB_probe(struct platform_device *pDev)
 		}
 
 		if (i >= MFB_IRQ_TYPE_AMOUNT) {
-			LOG_INF("No corresponding ISR!!: nr_MFB_devs=%d, devnode(%s), irq=%d\n",
+			log_inf("No corresponding ISR!!: nr_MFB_devs=%d, devnode(%s), irq=%d\n",
 				nr_MFB_devs, pDev->dev.of_node->name, MFB_dev->irq);
 		}
 
 
 	} else {
-		LOG_INF("No IRQ!!: nr_MFB_devs=%d, devnode(%s), irq=%d\n", nr_MFB_devs,
+		log_inf("No IRQ!!: nr_MFB_devs=%d, devnode(%s), irq=%d\n", nr_MFB_devs,
 			pDev->dev.of_node->name, MFB_dev->irq);
 	}
 
@@ -3172,56 +3191,56 @@ static signed int MFB_probe(struct platform_device *pDev)
 
 #ifndef SMI_CLK
 		if (IS_ERR(mfb_clk.CG_SCP_SYS_MM0)) {
-			LOG_ERR("cannot get CG_SCP_SYS_MM0 clock\n");
+			log_err("cannot get CG_SCP_SYS_MM0 clock\n");
 			return PTR_ERR(mfb_clk.CG_SCP_SYS_MM0);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_2X clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_2X clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_2X);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_GALS_M0_2X clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_GALS_M1_2X clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ0)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ0);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ1)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ1);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO0)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO0);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO1)) {
-			LOG_ERR("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
+			log_err("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO1);
 		}
 		if (IS_ERR(mfb_clk.CG_MM_LARB5)) {
-			LOG_ERR("cannot get CG_MM_LARB5 clock\n");
+			log_err("cannot get CG_MM_LARB5 clock\n");
 			return PTR_ERR(mfb_clk.CG_MM_LARB5);
 		}
 		if (IS_ERR(mfb_clk.CG_SCP_SYS_ISP)) {
-			LOG_ERR("cannot get CG_SCP_SYS_ISP clock\n");
+			log_err("cannot get CG_SCP_SYS_ISP clock\n");
 			return PTR_ERR(mfb_clk.CG_SCP_SYS_ISP);
 		}
 		if (IS_ERR(mfb_clk.CG_IMGSYS_LARB)) {
-			LOG_ERR("cannot get CG_IMGSYS_LARB clock\n");
+			log_err("cannot get CG_IMGSYS_LARB clock\n");
 			return PTR_ERR(mfb_clk.CG_IMGSYS_LARB);
 		}
 #endif
 		if (IS_ERR(mfb_clk.CG_IMGSYS_MFB)) {
-			LOG_ERR("cannot get CG_IMGSYS_MFB clock\n");
+			log_err("cannot get CG_IMGSYS_MFB clock\n");
 			return PTR_ERR(mfb_clk.CG_IMGSYS_MFB);
 		}
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
@@ -3231,7 +3250,7 @@ static signed int MFB_probe(struct platform_device *pDev)
 		pMFBClass = class_create(THIS_MODULE, "MFBdrv");
 		if (IS_ERR(pMFBClass)) {
 			Ret = PTR_ERR(pMFBClass);
-			LOG_ERR("Unable to create class, err = %d", Ret);
+			log_err("Unable to create class, err = %d", Ret);
 			goto EXIT;
 		}
 
@@ -3275,7 +3294,7 @@ EXIT:
 		MFB_UnregCharDev();
 
 
-	LOG_INF("- X. MFB driver probe.");
+	log_inf("- X. MFB driver probe.");
 
 	return Ret;
 }
@@ -3289,7 +3308,7 @@ static signed int MFB_remove(struct platform_device *pDev)
 	signed int IrqNum;
 	int i;
 	/*  */
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 	/* unregister char driver. */
 	MFB_UnregCharDev();
 
@@ -3318,13 +3337,13 @@ static signed int MFB_remove(struct platform_device *pDev)
 			typeof(((REG_IRQ_NODE *) 0)->list) * __mptr = (father);
 			accessNode =
 			    ((REG_IRQ_NODE *) ((char *)__mptr - offsetof(REG_IRQ_NODE, list)));
-			LOG_INF("free father,reg_T(%d)\n", accessNode->reg_T);
+			log_inf("free father,reg_T(%d)\n", accessNode->reg_T);
 			if (father->nextirq != father) {
 				head->nextirq = father->nextirq;
 				father->nextirq = father;
 			} else {	/* last father node */
 				head->nextirq = head;
-				LOG_INF("break\n");
+				log_inf("break\n");
 				break;
 			}
 			kfree(accessNode);
@@ -3349,7 +3368,7 @@ static signed int MFB_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
 	/*signed int ret = 0;*/
 
-	LOG_DBG("bPass1_On_In_Resume_TG1(%d)\n", bPass1_On_In_Resume_TG1);
+	log_dbg("bPass1_On_In_Resume_TG1(%d)\n", bPass1_On_In_Resume_TG1);
 
 	bPass1_On_In_Resume_TG1 = 0;
 
@@ -3362,7 +3381,7 @@ static signed int MFB_suspend(struct platform_device *pDev, pm_message_t Mesg)
 ********************************************************************************/
 static signed int MFB_resume(struct platform_device *pDev)
 {
-	LOG_DBG("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
+	log_dbg("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
 	return 0;
 }
@@ -3581,13 +3600,13 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
 			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
-				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+				log_err("scan decimal addr is wrong !!:%s", addrSzBuf);
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
-					LOG_ERR("scan hexadecimal addr is wrong !!:%s", addrSzBuf);
+					log_err("scan hexadecimal addr is wrong !!:%s", addrSzBuf);
 			} else {
-				LOG_INF("MFB Write Addr Error!!:%s", addrSzBuf);
+				log_inf("MFB Write Addr Error!!:%s", addrSzBuf);
 			}
 		}
 
@@ -3595,21 +3614,21 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(valSzBuf, "%d", &val))*/
 			if (kstrtoint(valSzBuf, 0, &val) != 0)
-				LOG_ERR("scan decimal value is wrong !!:%s", valSzBuf);
+				log_err("scan decimal value is wrong !!:%s", valSzBuf);
 		} else {
 			if (strlen(valSzBuf) > 2) {
 				if (sscanf(valSzBuf + 2, "%x", &val) != 1)
-					LOG_ERR("scan hexadecimal value is wrong !!:%s", valSzBuf);
+					log_err("scan hexadecimal value is wrong !!:%s", valSzBuf);
 			} else {
-				LOG_INF("MFB Write Value Error!!:%s\n", valSzBuf);
+				log_inf("MFB Write Value Error!!:%s\n", valSzBuf);
 			}
 		}
 
 		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)) {
-			LOG_INF("Write Request - addr:0x%x, value:0x%x\n", addr, val);
+			log_inf("Write Request - addr:0x%x, value:0x%x\n", addr, val);
 			MFB_WR32((ISP_MFB_BASE + (addr - MFB_BASE_HW)), val);
 		} else {
-			LOG_INF
+			log_inf
 			    ("Write-Address Range exceeds the size of hw mfb!! addr:0x%x, value:0x%x\n",
 			     addr, val);
 		}
@@ -3619,21 +3638,21 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
 			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
-				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+				log_err("scan decimal addr is wrong !!:%s", addrSzBuf);
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
-					LOG_ERR("scan hexadecimal addr is wrong !!:%s", addrSzBuf);
+					log_err("scan hexadecimal addr is wrong !!:%s", addrSzBuf);
 			} else {
-				LOG_INF("MFB Read Addr Error!!:%s", addrSzBuf);
+				log_inf("MFB Read Addr Error!!:%s", addrSzBuf);
 			}
 		}
 
 		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)) {
 			val = MFB_RD32((ISP_MFB_BASE + (addr - MFB_BASE_HW)));
-			LOG_INF("Read Request - addr:0x%x,value:0x%x\n", addr, val);
+			log_inf("Read Request - addr:0x%x,value:0x%x\n", addr, val);
 		} else {
-			LOG_INF
+			log_inf
 			    ("Read-Address Range exceeds the size of hw mfb!! addr:0x%x, value:0x%x\n",
 			     addr, val);
 		}
@@ -3663,8 +3682,8 @@ static const struct file_operations mfb_reg_proc_fops = {
 
 int32_t MFB_ClockOnCallback(uint64_t engineFlag)
 {
-	/* LOG_DBG("MFB_ClockOnCallback"); */
-	/* LOG_DBG("+CmdqEn:%d", g_u4EnableClockCount); */
+	/* log_dbg("MFB_ClockOnCallback"); */
+	/* log_dbg("+CmdqEn:%d", g_u4EnableClockCount); */
 	/* MFB_EnableClock(MTRUE); */
 
 	return 0;
@@ -3672,7 +3691,7 @@ int32_t MFB_ClockOnCallback(uint64_t engineFlag)
 
 int32_t MFB_DumpCallback(uint64_t engineFlag, int level)
 {
-	LOG_DBG("MFB_DumpCallback");
+	log_dbg("MFB_DumpCallback");
 
 	MFB_DumpReg();
 
@@ -3681,7 +3700,7 @@ int32_t MFB_DumpCallback(uint64_t engineFlag, int level)
 
 int32_t MFB_ResetCallback(uint64_t engineFlag)
 {
-	LOG_DBG("MFB_ResetCallback");
+	log_dbg("MFB_ResetCallback");
 	MFB_Reset();
 
 	return 0;
@@ -3689,9 +3708,9 @@ int32_t MFB_ResetCallback(uint64_t engineFlag)
 
 int32_t MFB_ClockOffCallback(uint64_t engineFlag)
 {
-	/* LOG_DBG("MFB_ClockOffCallback"); */
+	/* log_dbg("MFB_ClockOffCallback"); */
 	/* MFB_EnableClock(MFALSE); */
-	/* LOG_DBG("-CmdqEn:%d", g_u4EnableClockCount); */
+	/* log_dbg("-CmdqEn:%d", g_u4EnableClockCount); */
 	return 0;
 }
 
@@ -3708,11 +3727,11 @@ static signed int __init MFB_Init(void)
 
 	int i;
 	/*  */
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 	/*  */
 	Ret = platform_driver_register(&MFBDriver);
 	if (Ret < 0) {
-		LOG_ERR("platform_driver_register fail");
+		log_err("platform_driver_register fail");
 		return Ret;
 	}
 
@@ -3721,20 +3740,20 @@ static signed int __init MFB_Init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,MFB");
 	if (!node) {
-		LOG_ERR("find mediatek,MFB node failed!!!\n");
+		log_err("find mediatek,MFB node failed!!!\n");
 		return -ENODEV;
 	}
 	ISP_MFB_BASE = of_iomap(node, 0);
 	if (!ISP_MFB_BASE) {
-		LOG_ERR("unable to map ISP_MFB_BASE registers!!!\n");
+		log_err("unable to map ISP_MFB_BASE registers!!!\n");
 		return -ENODEV;
 	}
-	LOG_DBG("ISP_MFB_BASE: %lx\n", ISP_MFB_BASE);
+	log_dbg("ISP_MFB_BASE: %lx\n", ISP_MFB_BASE);
 #endif
 
 	isp_mfb_dir = proc_mkdir("mfb", NULL);
 	if (!isp_mfb_dir) {
-		LOG_ERR("[%s]: fail to mkdir /proc/mfb\n", __func__);
+		log_err("[%s]: fail to mkdir /proc/mfb\n", __func__);
 		return 0;
 	}
 
@@ -3760,7 +3779,8 @@ static signed int __init MFB_Init(void)
 	}
 	pLog_kmalloc = kmalloc(i, GFP_KERNEL);
 	if (pLog_kmalloc == NULL) {
-		LOG_ERR("log mem not enough\n");
+		log_err
+			("log mem not enough\n");
 		return -ENOMEM;
 	}
 	memset(pLog_kmalloc, 0x00, i);
@@ -3785,13 +3805,13 @@ static signed int __init MFB_Init(void)
 #if 1
 	/* Cmdq */
 	/* Register MFB callback */
-	LOG_DBG("register mfb callback for CMDQ");
+	log_dbg("register mfb callback for CMDQ");
 	cmdqCoreRegisterCB(CMDQ_GROUP_MFB,
 			   MFB_ClockOnCallback,
 			   MFB_DumpCallback, MFB_ResetCallback, MFB_ClockOffCallback);
 #endif
 
-	LOG_DBG("- X. Ret: %d.", Ret);
+	log_dbg("- X. Ret: %d.", Ret);
 	return Ret;
 }
 
@@ -3802,7 +3822,7 @@ static void __exit MFB_Exit(void)
 {
 	/*int i;*/
 
-	LOG_DBG("- E.");
+	log_dbg("- E.");
 	/*  */
 	platform_driver_unregister(&MFBDriver);
 	/*  */
@@ -3824,7 +3844,7 @@ static void __exit MFB_Exit(void)
 void MFB_ScheduleWork(struct work_struct *data)
 {
 	if (MFB_DBG_DBGLOG & MFBInfo.DebugMask)
-		LOG_DBG("- E.");
+		log_dbg("- E.");
 
 #ifdef MFB_USE_GCE
 #else
