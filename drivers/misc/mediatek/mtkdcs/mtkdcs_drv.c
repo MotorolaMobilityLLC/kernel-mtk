@@ -80,6 +80,8 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_FREERUN_ASYNC_EXIT_NORMAL,
 	DCS_SYSFS_WFD_KICKER,
 	DCS_SYSFS_EXIT_WFD_KICKER,
+	DCS_SYSFS_VENC_KICKER,
+	DCS_SYSFS_EXIT_VENC_KICKER,
 	DCS_SYSFS_NR_MODE,
 };
 
@@ -95,6 +97,8 @@ static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"freerun async exit normal",
 	"wfd", /* DCS_SYSFS_WFD_KICKER */
 	"exit wfd", /* DCS_SYSFS_EXIT_WFD_KICKER */
+	"venc", /* DCS_SYSFS_VENC_KICKER */
+	"exit venc", /* DCS_SYSFS_EXIT_VENC_KICKER */
 };
 
 /*
@@ -488,6 +492,14 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	case DCS_SYSFS_EXIT_WFD_KICKER:
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
 		ret = __dcs_exit_perf(DCS_KICKER_WFD);
+		break;
+	case DCS_SYSFS_VENC_KICKER:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = __dcs_enter_perf(DCS_KICKER_VENC);
+		break;
+	case DCS_SYSFS_EXIT_VENC_KICKER:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = __dcs_exit_perf(DCS_KICKER_VENC);
 		break;
 	default:
 		pr_alert("unknown sysfs mode: %d\n", mode);
