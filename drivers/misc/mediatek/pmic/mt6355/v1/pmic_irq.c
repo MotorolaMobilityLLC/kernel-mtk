@@ -518,6 +518,13 @@ void register_all_oc_interrupts(void)
 		/* ignore VPA oc */
 		if (oc_interrupt == INT_VPA_OC)
 			continue;
+		/* ignore VXO18 oc */
+		if (oc_interrupt == INT_VXO18_OC)
+			continue;
+		/* ignore VRF18 oc */
+		if (oc_interrupt == INT_VRF18_1_OC ||
+		    oc_interrupt == INT_VRF18_2_OC)
+			continue;
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 			if (oc_interrupt == INT_VCAMA1_OC || oc_interrupt == INT_VCAMA2_OC
 				|| oc_interrupt == INT_VCAMD1_OC || oc_interrupt == INT_VCAMD2_OC)
