@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/types.h>
 #include <linux/platform_device.h>
+#include <linux/delay.h>
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
 #include <mt-plat/upmu_common.h>
 #endif
@@ -28,18 +29,28 @@
 #define T    "vibrator"
 struct vibrator_hw *pvib_cust;
 
+#define OC_INTR_INIT_DELAY      (3)
+
 void vibr_Enable_HW(void)
 {
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 1);
 #endif
+	mdelay(OC_INTR_INIT_DELAY);
+	pmic_enable_interrupt(INT_VIBR_OC, 1, "vibr");
 }
 
 void vibr_Disable_HW(void)
 {
+	pmic_enable_interrupt(INT_VIBR_OC, 0, "vibr");
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 	pmic_set_register_value(PMIC_RG_LDO_VIBR_EN, 0);
 #endif
+}
+
+void init_vibr_oc_handler(void (*vibr_oc_func)(void))
+{
+	pmic_register_interrupt_callback(INT_VIBR_OC, vibr_oc_func);
 }
 
 /******************************************

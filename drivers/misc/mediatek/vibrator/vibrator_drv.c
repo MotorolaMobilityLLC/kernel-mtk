@@ -27,6 +27,7 @@
 
 #include <vibrator.h>
 #include <vibrator_hal.h>
+#include <mt-plat/upmu_common.h>
 
 #define VIB_DEVICE				"mtk_vibrator"
 #define VIB_TAG                                 "[vibrator]"
@@ -99,6 +100,12 @@ static void vibrator_enable(unsigned int value)
 	}
 	spin_unlock_irqrestore(&g_mt_vib->vibr_lock, flags);
 	queue_work(g_mt_vib->vibr_queue, &g_mt_vib->vibr_work);
+}
+
+static void vibrator_oc_handler(void)
+{
+	pr_debug(VIB_TAG "vibrator_oc_handler: disable vibr due to oc intr happened\n");
+	vibrator_enable(0);
 }
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
@@ -226,6 +233,8 @@ static int vib_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct mt_vibr *vibr;
+
+	init_vibr_oc_handler(vibrator_oc_handler);
 
 	vibr = devm_kzalloc(&pdev->dev, sizeof(*vibr), GFP_KERNEL);
 	if (!vibr)
