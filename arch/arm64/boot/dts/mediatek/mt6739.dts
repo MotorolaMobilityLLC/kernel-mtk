@@ -1842,6 +1842,17 @@
 		#clock-cells = <1>;
 	};
 
+	venc_jpg@17030000 {
+		compatible = "mediatek,venc_jpg";
+		reg =	<0 0x17030000 0 0x1000>;
+		interrupts =	<GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+				<&venc_global_con CLK_VENC_SET2_JPGENC>;
+
+			clock-names =
+				"MT_CG_VENC_JPGENC";
+	};
+
 	smi_larb1: smi_larb1@17010000 {
 		compatible = "mediatek,smi_larb1";
 		reg = <0 0x17010000 0 0x1000>;
