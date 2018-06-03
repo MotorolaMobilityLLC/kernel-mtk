@@ -122,6 +122,7 @@ static signed int ptim_lk_i;
 static int pl_bat_vol;
 static int pl_shutdown_time;
 static u32 pl_two_sec_reboot;
+static int g_plug_miss_count;
 
 
 static struct gtimer tracking_timer;
@@ -3856,6 +3857,7 @@ void fg_cycle_int_handler(void)
 {
 	if (fg_interrupt_check() == false)
 		return;
+	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
 	fg_bat_temp_int_sw_check();
 }
@@ -3957,22 +3959,48 @@ void fg_zcv_int_handler(void)
 void fg_bat_plugout_int_handler(void)
 {
 	int is_bat_exist;
+	int i;
+	int vbif28;
 
 	if (fg_interrupt_check() == false)
 		return;
 
-	bm_err("[fg_bat_plugout_int_handler]\n");
-	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
-	wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
-	battery_update(&battery_main);
-
-	fg_bat_temp_int_sw_check();
-
 	is_bat_exist = pmic_is_battery_exist();
-	bm_err("[fg_bat_plugout_int_handler] is_bat_exist %d\n", is_bat_exist);
+	vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
 
-	if (is_bat_exist == 0)
+	bm_err("[fg_bat_plugout_int_handler]is_bat %d vfif28:%d miss:%d\n",
+		is_bat_exist, vbif28, g_plug_miss_count);
+
+	gauge_dev_dump(gauge_dev, NULL);
+
+	/* avoid battery plug status mismatch case*/
+	if (is_bat_exist == 1) {
+		fg_bat_temp_int_sw_check();
+		g_plug_miss_count++;
+
+		vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
+		bm_err("[fg_bat_plugout_int_handler]is_bat %d vfif28:%d miss:%d\n",
+			is_bat_exist, vbif28, g_plug_miss_count);
+
+		for (i = 0 ; i < 20 ; i++)
+			gauge_dev_dump(gauge_dev, NULL);
+
+		/* TODO debug purpose, remove it!!!!!! */
+		aee_kernel_warning("GAUGE", "BAT_PLUGOUT error!\n");
+
+		if (g_plug_miss_count >= 3) {
+			pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
+			bm_err("[fg_bat_plugout_int_handler]disable FG_BAT_PLUGOUT\n");
+		}
+	}
+
+	if (is_bat_exist == 0) {
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
+		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
+		battery_update(&battery_main);
+		fg_bat_temp_int_sw_check();
 		kernel_power_off();
+	}
 }
 
 static CHARGER_TYPE chr_type;
