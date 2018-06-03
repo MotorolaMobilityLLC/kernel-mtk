@@ -103,4 +103,21 @@ config MTD_UBI_BLOCK
 
 	   If in doubt, say "N".
 
+config MTD_UBI_LOWPAGE_BACKUP
+	bool "lowpage backup for MLC nand device"
+	help
+	   This option enables low page backup of shared pair page of MLC device.
+	   The low page will be corrupted when power cut on writing high page.
+	   UBI will backup low page before writing high page to avoid power cut issue.
+
+	   If in doubt, say "N".
+
+config MTK_SLC_BUFFER_SUPPORT
+	bool "Write MLC/TLC block by SLC BUFFER"
+	help
+	   This option enables SLC buffer - All data is written into SLC mode
+	   block first then copy to TLC/MLC mode block if SLC mode block is
+	   full. This method can avoid open block issue. The open block has
+	   bad data retention in TLC/MLC mode.
+
 endif # MTD_UBI
