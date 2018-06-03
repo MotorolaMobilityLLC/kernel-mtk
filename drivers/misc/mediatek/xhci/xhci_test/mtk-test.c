@@ -772,6 +772,8 @@ static int t_slot_evaluate_context(int argc, char **argv)
 	maxp0 = 64;
 	preping_mode = 0;
 	preping = 0;
+	besld = 0;
+	besl = 0;
 
 	if (my_hcd == NULL) {
 		mtk_test_dbg("[ERROR]host controller driver not initiated\n");
@@ -3245,6 +3247,8 @@ static int t_u3auto_hw_lpm1(int argc, char **argv)
 	}
 	pr_err("    maxp = %d\n", maxp);
 
+	usb_phy_swpllmode_lpm();
+
 for (hirdm = 1; hirdm < 2; hirdm++) {
 	for (rwe = 0; rwe < 2; rwe++) {
 		for (besl = 0; besl < 8; besl++) {
@@ -3576,6 +3580,8 @@ static int t_u3auto_hw_lpm(int argc, char **argv)
 			maxp = 1024;
 	}
 	pr_err("    maxp = %d\n", maxp);
+
+	usb_phy_swpllmode_lpm();
 
 for (hirdm = 0; hirdm < 2; hirdm++) {
 	for (rwe = 0; rwe < 2; rwe++) {
@@ -4244,6 +4250,7 @@ static int t_u3auto_stress(int argc, char **argv)
 	int dev_slot;
 	struct usb_device *udev;
 	int cur_index;
+	int stop_sec;
 
 	isCompare = true;
 	isEP0 = false;
@@ -4251,6 +4258,7 @@ static int t_u3auto_stress(int argc, char **argv)
 	dev_slot = 3;
 	ret = 0;
 	speed = 0;
+	stop_sec = 0;
 
 	if (argc > 1) {
 		if (!strcmp(argv[1], "ss")) {
@@ -4263,8 +4271,18 @@ static int t_u3auto_stress(int argc, char **argv)
 			mtk_test_dbg("Test full speed\n");
 			speed = DEV_SPEED_FULL;
 		} else if (!strcmp(argv[1], "stop")) {
+			if (argc > 2) {
+				if (kstrtoint(argv[2], 0, &stop_sec))
+					return RET_FAIL;
+			}
+			while (stop_sec) {
+				msleep(1000);
+				stop_sec--;
+			}
 			mtk_test_dbg("STOP!!\n");
-			g_correct = false;
+			g_stress_start = false;
+			g_test_random_stop_ep = false;
+			msleep(20000);
 			return RET_SUCCESS;
 		}
 	}
@@ -4459,7 +4477,7 @@ static int t_u3auto_stress(int argc, char **argv)
 		}
 	}
 
-
+	g_stress_start = true;
 	g_correct = true;
 	ret = dev_stress(0, GPD_LENGTH_RDN, GPD_LENGTH_RDN, 0, num_ep, udev);
 	msleep(2000);
@@ -5536,6 +5554,8 @@ static int t_power_u2_lpm(int argc, char **argv)
 			return RET_FAIL;
 	}
 
+	usb_phy_swpllmode_lpm();
+
 	/*program hle, rwe*/
 	f_power_config_lpm(g_slot_id, hirdm, L1_timeout, rwe, besl, besld, hle, int_nak_active, bulk_nyet_active);
 
@@ -5576,6 +5596,9 @@ static int t_power_u2_swlpm(int argc, char **argv)
 		mtk_test_dbg("L1 exit counter = %d\n", f_power_get_L1_counter(2));
 		return RET_SUCCESS;
 	}
+
+	usb_phy_swpllmode_lpm();
+
 	g_port_plc = 0;
 	xhci = hcd_to_xhci(my_hcd);
 
@@ -10812,6 +10835,14 @@ static int dbg_dump_regs(int argc, char **argv)
 	return 0;
 }
 
+
+void __weak usb_phy_swpllmode_lpm(void)
+{
+#if 0
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDCR1, E60802_RG_USB20_SW_PLLMODE_OFST,
+		E60802_RG_USB20_SW_PLLMODE, 0x1);
+#endif
+}
 
 static const struct file_operations xhci_mtk_test_fops_host = {
 	.owner = THIS_MODULE,
