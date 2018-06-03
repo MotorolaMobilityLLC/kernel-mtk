@@ -2300,6 +2300,9 @@ VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prM
 				   (UINT_32) prWfdCfgSettings->u4WfdFlag,
 				   (UINT_32) prWfdCfgSettings->u4WfdAdvancedFlag);
 
+		if (prWfdCfgSettings->ucWfdEnable == 0)
+			prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen = 0;
+
 		rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
 					      CMD_ID_SET_WFD_CTRL,	/* ucCID */
 					      TRUE,	/* fgSetQuery */
