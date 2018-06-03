@@ -2009,7 +2009,28 @@
 
 	smi_common@14019000 {
 		compatible = "mediatek,smi_common";
-		reg = <0 0x14019000 0 0x1000>;
+		reg = <0 0x14019000 0 0x1000>,
+					<0 0x14017000 0 0x1000>,
+					<0 0x15021000 0 0x1000>,
+					<0 0x1a001000 0 0x1000>,
+					<0 0x17010000 0 0x1000>;
+
+			clocks = <&mmsys_config MMSYS_GALS_COMM0>,
+			<&mmsys_config MMSYS_GALS_COMM1>,
+			<&mmsys_config MMSYS_SMI_COMMON>,
+			<&mmsys_config MMSYS_SMI_LARB0>,
+			<&imgsys IMG_LARB5>,
+			<&camsys CAMSYS_LARB2_CGPDN>,
+			<&mmsys_config MMSYS_GALS_CAM2MM>,
+			<&venc_gcon VENC_GCON_LARB>,
+			<&venc_gcon VENC_GCON_VENC>,
+			<&scpsys SCP_SYS_DIS>,
+			<&scpsys SCP_SYS_CAM>,
+			<&scpsys SCP_SYS_ISP>,
+			<&scpsys SCP_SYS_VEN>;
+			clock-names = "smi-common-gals0", "smi-common-gals1", "smi-common",
+			"mm-larb0", "img-larb1", "cam-larb2", "gals-cam2mm", "venc-larb", "venc-venc",
+			"mtcmos-mm", "mtcmos-cam", "mtcmos-isp", "mtcmos-ven";
 	};
 
 	disp_rsz@1401a000 {
