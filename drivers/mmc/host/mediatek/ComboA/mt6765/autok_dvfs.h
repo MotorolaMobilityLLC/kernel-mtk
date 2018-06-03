@@ -16,7 +16,9 @@
 #include "msdc_cust.h"
 #include "autok.h"
 
-#if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS) && !defined(FPGA_PLATFORM)
+/* #define VCOREFS_READY */
+
+#if defined(VCOREFS_READY)
 #include <mtk_vcorefs_manager.h>
 #include <mtk_spm_vcore_dvfs.h>
 
@@ -26,14 +28,6 @@ enum AUTOK_VCORE {
 	AUTOK_VCORE_MERGE,
 	AUTOK_VCORE_NUM = AUTOK_VCORE_MERGE
 };
-
-/* for dvfs api may not ready */
-int __weak is_vcorefs_can_work(void) {return -1; };
-int __weak vcorefs_request_dvfs_opp(enum dvfs_kicker a,
-	enum dvfs_opp b) {return 0; };
-int __weak vcorefs_get_hw_opp(void) {return 0; };
-int __weak spm_msdc_dvfs_setting(int msdc, bool enable) {return 0; };
-
 #else
 enum dvfs_opp {
 	OPP_UNREQ = -1,

@@ -22,7 +22,7 @@
 
 #include <dt-bindings/mmc/mt6765-msdc.h>
 
-#define CONFIG_MTK_MSDC_BRING_UP_BYPASS
+/* #define CONFIG_MTK_MSDC_BRING_UP_BYPASS */
 
 #if !defined(FPGA_PLATFORM)
 #include <dt-bindings/clock/mt6765-clk.h>
