@@ -2682,8 +2682,6 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 			goto out;
 		}
 
-		drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-
 		/*
 		 * Check whether the primary plane supports the fb pixel format.
 		 * Drivers not implementing the universal planes API use a
@@ -5232,6 +5230,9 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
 	struct drm_pending_vblank_event *e = NULL;
 	unsigned long flags;
 	int ret = -EINVAL;
+
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EINVAL;
 
 	if (page_flip->flags & ~DRM_MODE_PAGE_FLIP_FLAGS ||
 	    page_flip->reserved != 0)
