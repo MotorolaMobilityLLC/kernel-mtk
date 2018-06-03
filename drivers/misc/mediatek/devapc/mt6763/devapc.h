@@ -56,17 +56,17 @@
 #define PD_INFRA_VIO_MASK_MAX_INDEX     307
 #define PD_INFRA_VIO_STA_MAX_INDEX      307
 
-#define DEVAPC_PD_INFRA_VIO_MASK(index)    ((volatile unsigned int *)(devapc_pd_infra_base + 0x4 * index))
-#define DEVAPC_PD_INFRA_VIO_STA(index)     ((volatile unsigned int *)(devapc_pd_infra_base + 0x400 + 0x4 * index))
+#define DEVAPC_PD_INFRA_VIO_MASK(index)    ((unsigned int *)(devapc_pd_infra_base + 0x4 * index))
+#define DEVAPC_PD_INFRA_VIO_STA(index)     ((unsigned int *)(devapc_pd_infra_base + 0x400 + 0x4 * index))
 
-#define DEVAPC_PD_INFRA_VIO_DBG0           ((volatile unsigned int *)(devapc_pd_infra_base+0x900))
-#define DEVAPC_PD_INFRA_VIO_DBG1           ((volatile unsigned int *)(devapc_pd_infra_base+0x904))
+#define DEVAPC_PD_INFRA_VIO_DBG0           ((unsigned int *)(devapc_pd_infra_base+0x900))
+#define DEVAPC_PD_INFRA_VIO_DBG1           ((unsigned int *)(devapc_pd_infra_base+0x904))
 
-#define DEVAPC_PD_INFRA_APC_CON            ((volatile unsigned int *)(devapc_pd_infra_base+0xF00))
+#define DEVAPC_PD_INFRA_APC_CON            ((unsigned int *)(devapc_pd_infra_base+0xF00))
 
-#define DEVAPC_PD_INFRA_VIO_SHIFT_STA      ((volatile unsigned int *)(devapc_pd_infra_base+0xF10))
-#define DEVAPC_PD_INFRA_VIO_SHIFT_SEL      ((volatile unsigned int *)(devapc_pd_infra_base+0xF14))
-#define DEVAPC_PD_INFRA_VIO_SHIFT_CON      ((volatile unsigned int *)(devapc_pd_infra_base+0xF20))
+#define DEVAPC_PD_INFRA_VIO_SHIFT_STA      ((unsigned int *)(devapc_pd_infra_base+0xF10))
+#define DEVAPC_PD_INFRA_VIO_SHIFT_SEL      ((unsigned int *)(devapc_pd_infra_base+0xF14))
+#define DEVAPC_PD_INFRA_VIO_SHIFT_CON      ((unsigned int *)(devapc_pd_infra_base+0xF20))
 
 
 struct DEVICE_INFO {
