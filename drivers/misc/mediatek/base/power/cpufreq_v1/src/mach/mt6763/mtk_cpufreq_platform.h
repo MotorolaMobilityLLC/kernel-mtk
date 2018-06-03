@@ -29,7 +29,7 @@
 /* buck ctrl configs */
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		30000
-#define MIN_VSRAM_VOLT			80000
+#define MIN_VSRAM_VOLT			85000
 #define MAX_VSRAM_VOLT			112000
 #define MIN_VPROC_VOLT			60000
 #define MAX_VPROC_VOLT			111875
