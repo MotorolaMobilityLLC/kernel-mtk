@@ -409,62 +409,6 @@ static inline int set_pmd_mapping(unsigned long start, phys_addr_t size, int map
 }
 #endif
 
-void ssvp_debug_free_region(void)
-{
-	struct page *page;
-	phys_addr_t page_phys;
-	int i;
-
-	for (i = 0; i < dummy_alloc.nr_keeper; i++) {
-		page = dummy_alloc.chunk_keeper[i];
-		page_phys = page_to_phys(page);
-
-		zmc_cma_release(cma, page, dummy_alloc.chunk_size);
-
-		pr_info("%s[%d]: free chunk_keeper[%d]: (%pa), size: %d\n", __func__, __LINE__,
-				i, &page_phys, dummy_alloc.chunk_size);
-	}
-	dummy_alloc.nr_keeper = 0;
-	dummy_alloc.is_debug = false;
-}
-
-void ssvp_debug_occupy_region(void)
-{
-	struct page *page;
-	phys_addr_t page_phys;
-
-	while (dummy_alloc.nr_keeper < ARRAY_SIZE(dummy_alloc.chunk_keeper)) {
-		page = zmc_cma_alloc(cma, dummy_alloc.chunk_size,
-				SSVP_CMA_ALIGN_PAGE_ORDER, &saved_memory_ssvp_registration);
-
-		if (page) {
-			page_phys = page_to_phys(page);
-
-			if (page_phys >= UPPER_LIMIT32) {
-				zmc_cma_release(cma, page, dummy_alloc.chunk_size);
-				break;
-			}
-
-			pr_info("%s[%d]: occupy chunk_keeper[%d]: (%pa), size: %d\n", __func__, __LINE__,
-					dummy_alloc.nr_keeper, &page_phys, dummy_alloc.chunk_size);
-
-
-			dummy_alloc.chunk_keeper[dummy_alloc.nr_keeper] = page;
-			++dummy_alloc.nr_keeper;
-		} else
-			break;
-	}
-	if (dummy_alloc.nr_keeper >= ARRAY_SIZE(dummy_alloc.chunk_keeper)) {
-		pr_info("%s[%d]: [error] nr_keeper over length of chunk_keeper, dump and free all.\n",
-				__func__, __LINE__);
-		ssvp_debug_free_region();
-		return;
-	}
-
-	pr_info("%s[%d]: occupy done, cost %d cma_blocks\n", __func__, __LINE__, dummy_alloc.nr_keeper);
-	dummy_alloc.is_debug = true;
-}
-
 static int memory_region_offline(struct SSVP_Region *region,
 		phys_addr_t *pa, unsigned long *size, u64 upper_limit)
 {
@@ -868,11 +812,6 @@ static ssize_t memory_ssvp_write(struct file *file, const char __user *user_buf,
 		ssvp_upper_limit = 0x100000000ULL;
 	else if (strncmp(buf, "64mode", 6) == 0)
 		ssvp_upper_limit = UPPER_LIMIT64;
-	else if (strncmp(buf, "debug_64only=on", 15) == 0) {
-		ssvp_upper_limit = UPPER_LIMIT64;
-		ssvp_debug_occupy_region();
-	} else if (strncmp(buf, "debug_64only=off", 16) == 0)
-		ssvp_debug_free_region();
 	else
 		return -EINVAL;
 
