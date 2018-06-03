@@ -4547,6 +4547,11 @@ static int battery_probe(struct platform_device *dev)
 	disable_fg();
 #endif
 
+/*** temperarily disable temperature interrupt ***/
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_H, 0, "GM30");
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_L, 0, "GM30");
+/*******/
+
 	return 0;
 }
 
