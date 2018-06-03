@@ -509,14 +509,14 @@ int mtk_bif_get_vbat(int *vbat)
 	int ret = 0;
 	u16 _vbat = 0;
 
-	/* Prevent ADC & BIF read at the same time */
-	/*lockadcch3();*/
-
 	if (!IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
 		ret = -ENOTSUPP;
 		*vbat = 0;
 		return ret;
 	}
+
+	/* Prevent ADC & BIF read at the same time */
+	lockadcch3();
 
 	if (bif_checked && !bif_exist) {
 		ret = -ENOTSUPP;
@@ -537,13 +537,13 @@ int mtk_bif_get_vbat(int *vbat)
 
 	*vbat = _vbat;
 	pr_debug("%s: OK, vbat = %dmV\n", __func__, _vbat);
-	/*unlockadcch3();*/
+	unlockadcch3();
 	return ret;
 
 _err:
 	*vbat = 0;
 	pr_err("%s: failed, ret = %d\n", __func__, ret);
-	/*unlockadcch3();*/
+	unlockadcch3();
 	return ret;
 }
 
@@ -552,8 +552,6 @@ int mtk_bif_get_tbat(int *tbat)
 	int ret = 0;
 	s8 _tbat = 0;
 
-	/* Prevent ADC & BIF read at the same time */
-	/*lockadcch3();*/
 	if (!IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
 		ret = -ENOTSUPP;
 		*tbat = 0;
@@ -561,6 +559,9 @@ int mtk_bif_get_tbat(int *tbat)
 	}
 
 	pr_debug("%s: starts\n", __func__);
+
+	/* Prevent ADC & BIF read at the same time */
+	lockadcch3();
 
 	if (!bif_exist) {
 		ret = -ENOTSUPP;
@@ -579,13 +580,13 @@ int mtk_bif_get_tbat(int *tbat)
 
 	*tbat = _tbat;
 	pr_debug("%s: OK, tbat = %d(degree)\n", __func__, _tbat);
-	/*unlockadcch3();*/
+	unlockadcch3();
 	return ret;
 
 _err:
 	*tbat = 0;
 	pr_err("%s: failed, ret = %d\n", __func__, ret);
-	/*unlockadcch3();*/
+	unlockadcch3();
 	return ret;
 }
 
