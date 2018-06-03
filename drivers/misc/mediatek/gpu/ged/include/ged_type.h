@@ -92,4 +92,8 @@ typedef enum GED_DVFS_VSYNC_OFFSET_SWITCH_CMD_TAG
 	GED_DVFS_BOOST_HOST_EVENT,
 } GED_DVFS_VSYNC_OFFSET_SWITCH_CMD;
 
+typedef struct {
+	void (*free_func)(void *);
+} GED_FILE_PRIVATE_BASE;
+
 #endif
