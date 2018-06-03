@@ -3006,7 +3006,7 @@ VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 	u2MsgSize = prEventDebugMsg->u2MsgSize;
 	pucMsg = prEventDebugMsg->aucMsg;
 
-	wlanPrintFwLog(pucMsg, u2MsgSize, ucMsgType);
+	wlanPrintFwLog(pucMsg, u2MsgSize, ucMsgType, NULL);
 }
 
 VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)

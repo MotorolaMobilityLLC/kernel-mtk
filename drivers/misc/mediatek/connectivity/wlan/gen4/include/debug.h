@@ -227,6 +227,14 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 		LOG_FUNC("[%u]%s:(" #_Module " " #_Class ") " _Fmt, KAL_GET_CURRENT_THREAD_ID(), \
 			 __func__, ##__VA_ARGS__); \
 	} while (0)
+#define DBGFWLOG(_Module, _Class, _Fmt, ...) \
+	do { \
+		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
+			break; \
+		wlanPrintFwLog(NULL, 0, DEBUG_MSG_TYPE_DRIVER, \
+			"[%u]%s:(" #_Module " " #_Class ") " _Fmt, KAL_GET_CURRENT_THREAD_ID(), \
+			 __func__, ##__VA_ARGS__); \
+	} while (0)
 #define DBGLOG_LIMITED(_Module, _Class, _Fmt, ...) \
 	do { \
 		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
@@ -353,7 +361,8 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 */
 VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length);
 VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);
-VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType);
+VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType,
+	const PUCHAR pucFmt, ...);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
