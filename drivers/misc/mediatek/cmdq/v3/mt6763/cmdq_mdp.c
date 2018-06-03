@@ -244,7 +244,7 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 		CMDQ_ENG_MDP_RSZ1,	/* bit  8 : MDP_RSZ1 */
 		CMDQ_ENG_MDP_TDSHP0,	/* bit  9 : MDP_TDSHP0 */
 		CMDQ_ENG_MDP_WROT0,	/* bit  10 : MDP_WROT0 */
-		-1,	    /* bit  11 : MDP_WROT1 */
+		CMDQ_ENG_MDP_WDMA,	/* bit  11 : MDP_WDMA */
 		-1,
 		-1,
 		-1,
