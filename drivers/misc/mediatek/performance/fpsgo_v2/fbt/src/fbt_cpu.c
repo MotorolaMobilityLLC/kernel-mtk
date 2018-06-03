@@ -853,6 +853,7 @@ static void fbt_do_boost(int *clus_opp, unsigned int *clus_floor_freq, int pid)
 	int mbhr_opp;
 	unsigned int final_blc;
 	int cluster, i = 0;
+	int min_ceiling = 0;
 
 	if (!clus_opp || !clus_floor_freq) {
 		FPSGO_LOGE("ERROR %d\n", __LINE__);
@@ -890,6 +891,12 @@ static void fbt_do_boost(int *clus_opp, unsigned int *clus_floor_freq, int pid)
 				min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
 		} else
 			pld[cluster].max = -1;
+
+		if (cluster == fbt_get_L_cluster_num()) {
+			min_ceiling = fbt_get_L_min_ceiling();
+			if (min_ceiling && pld[cluster].max < min_ceiling)
+				pld[cluster].max = min_ceiling;
+		}
 
 		tgt_freq = clus_floor_freq[cluster];
 		base_freq[cluster] = tgt_freq;
