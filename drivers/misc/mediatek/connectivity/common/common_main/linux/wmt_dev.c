@@ -404,7 +404,7 @@ INT32 wmt_dev_rx_timeout(P_OSAL_EVENT pEvent)
 }
 
 /* TODO: [ChangeFeature][George] refine this function name for general filesystem read operation, not patch only. */
-INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch, INT32 padSzBuf)
+INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch)
 {
 	INT32 iRet = -1;
 	osal_firmware *fw = NULL;
@@ -422,7 +422,6 @@ INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch, INT32 padSzB
 	WMT_INFO_FUNC("loader firmware %s  ok!!\n", pPatchName);
 	iRet = 0;
 	*ppPatch = fw;
-	gDevWmt.pPatch = fw;
 
 	return iRet;
 }

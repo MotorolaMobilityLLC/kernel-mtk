@@ -1538,7 +1538,7 @@ static INT32 mt6630_patch_info_prepare(VOID)
 static INT32 mt6630_patch_dwn(UINT32 index)
 {
 	INT32 iRet = -1;
-	P_WMT_PATCH patchHdr;
+	P_WMT_PATCH patchHdr = NULL;
 	PUINT8 pBuf = NULL;
 	PUINT8 pPatchBuf = NULL;
 	UINT32 patchSize;
@@ -1775,8 +1775,8 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 		iRet -= 1;
 
 done:
-	if (pPatchBuf != NULL) {
-		osal_free(pPatchBuf);
+	if (patchHdr != NULL) {
+		osal_free(patchHdr);
 		pPatchBuf = NULL;
 		patchHdr = NULL;
 	}
