@@ -54,9 +54,7 @@ imgsensor_sensor_feature_control(
 MUINT32
 imgsensor_sensor_control(
 	struct IMGSENSOR_SENSOR *psensor,
-	MSDK_SCENARIO_ID_ENUM ScenarioId,
-	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow,
-	MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
+	MSDK_SCENARIO_ID_ENUM ScenarioId);
 
 #endif
 
