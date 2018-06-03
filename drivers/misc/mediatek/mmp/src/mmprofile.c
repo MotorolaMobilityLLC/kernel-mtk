@@ -89,7 +89,7 @@ typedef struct {
 	struct list_head list;
 	unsigned int block_size;
 	unsigned int cookie;
-	MMP_MetaDataType data_type;
+	mmp_metadata_type data_type;
 	unsigned int data_size;
 	unsigned char meta_data[1];
 } MMProfile_MetaDataBlock_t;
@@ -111,7 +111,7 @@ __aligned(PAGE_SIZE) = {
 	.meta_buffer_size = MMProfileDefaultMetaBufferSize,
 	.new_meta_buffer_size = MMProfileDefaultMetaBufferSize,
 	.selected_buffer = MMProfilePrimaryBuffer,
-	.reg_event_index = sizeof(MMProfileStaticEvents) / sizeof(MMP_StaticEvent_t),
+	.reg_event_index = sizeof(mmprofile_static_events) / sizeof(mmp_static_event_t),
 	.max_event_count = MMProfileMaxEventCount,
 };
 
@@ -202,7 +202,7 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 	    (region_base +
 	     sizeof(MMProfile_EventInfo_t) * (MMProfileGlobals.reg_event_index + 1))) {
 		/* Register table */
-		MMP_Event index;
+		mmp_event index;
 		MMProfile_RegTable_t *pRegTable;
 		MMProfile_EventInfo_t EventInfoDummy = { 0, "" };
 		unsigned int SrcPos;
@@ -441,15 +441,15 @@ static void MMProfileRemoteStart(int start)
 	MMP_LOG(ANDROID_LOG_DEBUG, "remote -start=%d", MMProfileGlobals.start);
 }
 
-static MMP_Event MMProfileFindEventInt(MMP_Event parent, const char *name)
+static mmp_event MMProfileFindEventInt(mmp_event parent, const char *name)
 {
-	MMP_Event index;
+	mmp_event index;
 	MMProfile_RegTable_t *pRegTable;
 
 	index = MMP_RootEvent;
 	list_for_each_entry(pRegTable, &(MMProfile_RegTable.list), list) {
 		if ((parent == 0) || (pRegTable->event_info.parentId == parent)) {
-			if (strncmp(pRegTable->event_info.name, name, MMProfileEventNameMaxLen) ==
+			if (strncmp(pRegTable->event_info.name, name, MMPROFILE_EVENT_NAME_MAX_LEN) ==
 			    0) {
 				return index;
 			}
@@ -459,9 +459,9 @@ static MMP_Event MMProfileFindEventInt(MMP_Event parent, const char *name)
 	return 0;
 }
 
-static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
+static int MMProfileGetEventName(mmp_event event, char *name, size_t *size)
 {
-	MMP_Event curr_event = event;	/* current event for seraching */
+	mmp_event curr_event = event;	/* current event for seraching */
 	MMProfile_EventInfo_t *eventInfo[32];	/* event info for all level of the event */
 	int infoCnt = 0;
 	int found = 0;
@@ -475,7 +475,7 @@ static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
 	while (1) {
 		MMProfile_RegTable_t *pRegTable;
 		int curr_found = 0;
-		MMP_Event index = MMP_RootEvent;
+		mmp_event index = MMP_RootEvent;
 
 		/* check the event */
 		if ((MMP_InvalidEvent == curr_event)
@@ -537,7 +537,7 @@ static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
 		}
 
 		for (i = infoCntUsed - 1; i >= 0; i--) {
-			strcpy(&name[actualLen], eventInfo[i]->name);
+			strncpy(&name[actualLen], eventInfo[i]->name, strlen(eventInfo[i]->name) + 1);
 			actualLen += strlen(eventInfo[i]->name);
 			if (i > 0) {
 				/* not the last name */
@@ -553,9 +553,9 @@ static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
 	return ret;
 }
 
-static int MMProfileConfigEvent(MMP_Event event, char *name, MMP_Event parent, int sync)
+static int MMProfileConfigEvent(mmp_event event, char *name, mmp_event parent, int sync)
 {
-	MMP_Event index;
+	mmp_event index;
 	MMProfile_RegTable_t *pRegTable;
 
 	if (in_interrupt())
@@ -580,8 +580,8 @@ static int MMProfileConfigEvent(MMP_Event event, char *name, MMP_Event parent, i
 		mutex_unlock(&MMProfile_RegTableMutex);
 		return 0;
 	}
-	strncpy(pRegTable->event_info.name, name, MMProfileEventNameMaxLen);
-	pRegTable->event_info.name[MMProfileEventNameMaxLen] = 0;
+	strncpy(pRegTable->event_info.name, name, MMPROFILE_EVENT_NAME_MAX_LEN);
+	pRegTable->event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 	pRegTable->event_info.parentId = parent;
 	list_add_tail(&(pRegTable->list), &(MMProfile_RegTable.list));
 
@@ -600,12 +600,12 @@ static int MMProfileRegisterStaticEvents(int sync)
 		return 0;
 	if (bStaticEventRegistered)
 		return 1;
-	static_event_count = sizeof(MMProfileStaticEvents) / sizeof(MMP_StaticEvent_t);
+	static_event_count = sizeof(mmprofile_static_events) / sizeof(mmp_static_event_t);
 	for (i = 0; i < static_event_count; i++) {
 		ret = ret
-		    && MMProfileConfigEvent(MMProfileStaticEvents[i].event,
-					    MMProfileStaticEvents[i].name,
-					    MMProfileStaticEvents[i].parent, sync);
+		    && MMProfileConfigEvent(mmprofile_static_events[i].event,
+					    mmprofile_static_events[i].name,
+					    mmprofile_static_events[i].parent, sync);
 	}
 	bStaticEventRegistered = 1;
 	return ret;
@@ -669,7 +669,7 @@ static void system_time(unsigned int *low, unsigned int *high)
 	/* MMP_LOG(ANDROID_LOG_VERBOSE,"system_time,0x%08x,0x%08x", *high, *low); */
 }
 
-static void MMProfileLog_Int(MMP_Event event, MMP_LogType type, unsigned long data1,
+static void MMProfileLog_Int(mmp_event event, mmp_log_type type, unsigned long data1,
 			     unsigned long data2, unsigned int meta_data_cookie)
 {
 	char name[256];
@@ -750,7 +750,7 @@ static void MMProfileLog_Int(MMP_Event event, MMP_LogType type, unsigned long da
 	}
 }
 
-static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData,
+static long MMProfileLogMetaInt(mmp_event event, mmp_log_type type, mmp_metadata_t *pMetaData,
 				long bFromUser)
 {
 	unsigned long retn;
@@ -863,9 +863,9 @@ static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_
 /* Internal functions end */
 
 /* Exposed APIs begin */
-MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
+mmp_event mmprofile_register_event(mmp_event parent, const char *name)
 {
-	MMP_Event index;
+	mmp_event index;
 	MMProfile_RegTable_t *pRegTable;
 
 	if (!MMProfileGlobals.enable)
@@ -896,22 +896,22 @@ MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
 		return 0;
 	}
 	index = ++(MMProfileGlobals.reg_event_index);
-	if (strlen(name) > MMProfileEventNameMaxLen) {
-		memcpy(pRegTable->event_info.name, name, MMProfileEventNameMaxLen);
-		pRegTable->event_info.name[MMProfileEventNameMaxLen] = 0;
+	if (strlen(name) > MMPROFILE_EVENT_NAME_MAX_LEN) {
+		memcpy(pRegTable->event_info.name, name, MMPROFILE_EVENT_NAME_MAX_LEN);
+		pRegTable->event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 	} else
-		strcpy(pRegTable->event_info.name, name);
+		strncpy(pRegTable->event_info.name, name, strlen(name) + 1);
 	pRegTable->event_info.parentId = parent;
 	list_add_tail(&(pRegTable->list), &(MMProfile_RegTable.list));
 	MMProfileGlobals.event_state[index] = 0;
 	mutex_unlock(&MMProfile_RegTableMutex);
 	return index;
 }
-EXPORT_SYMBOL(MMProfileRegisterEvent);
+EXPORT_SYMBOL(mmprofile_register_event);
 
-MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name)
+mmp_event mmprofile_find_event(mmp_event parent, const char *name)
 {
-	MMP_Event event;
+	mmp_event event;
 
 	if (!MMProfileGlobals.enable)
 		return 0;
@@ -922,9 +922,9 @@ MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name)
 	mutex_unlock(&MMProfile_RegTableMutex);
 	return event;
 }
-EXPORT_SYMBOL(MMProfileFindEvent);
+EXPORT_SYMBOL(mmprofile_find_event);
 
-void MMProfileEnableFTraceEvent(MMP_Event event, long enable, long ftrace)
+void mmprofile_enable_ftrace_event(mmp_event event, long enable, long ftrace)
 {
 	unsigned int state;
 
@@ -937,47 +937,47 @@ void MMProfileEnableFTraceEvent(MMP_Event event, long enable, long ftrace)
 		state |= MMP_EVENT_STATE_FTRACE;
 	MMProfileGlobals.event_state[event] = state;
 }
-EXPORT_SYMBOL(MMProfileEnableFTraceEvent);
+EXPORT_SYMBOL(mmprofile_enable_ftrace_event);
 
-void MMProfileEnableEvent(MMP_Event event, long enable)
+void mmprofile_enable_event(mmp_event event, long enable)
 {
-	MMProfileEnableFTraceEvent(event, enable, 0);
+	mmprofile_enable_ftrace_event(event, enable, 0);
 }
-EXPORT_SYMBOL(MMProfileEnableEvent);
+EXPORT_SYMBOL(mmprofile_enable_event);
 
-void MMProfileEnableFTraceEventRecursive(MMP_Event event, long enable, long ftrace)
+void mmprofile_enable_ftrace_event_recursive(mmp_event event, long enable, long ftrace)
 {
-	MMP_Event index;
+	mmp_event index;
 	MMProfile_RegTable_t *pRegTable;
 
 	index = MMP_RootEvent;
-	MMProfileEnableFTraceEvent(event, enable, ftrace);
+	mmprofile_enable_ftrace_event(event, enable, ftrace);
 	list_for_each_entry(pRegTable, &(MMProfile_RegTable.list), list) {
 		if (pRegTable->event_info.parentId == event)
-			MMProfileEnableFTraceEventRecursive(index, enable, ftrace);
+			mmprofile_enable_ftrace_event_recursive(index, enable, ftrace);
 
 		index++;
 	}
 }
-EXPORT_SYMBOL(MMProfileEnableFTraceEventRecursive);
+EXPORT_SYMBOL(mmprofile_enable_ftrace_event_recursive);
 
-void MMProfileEnableEventRecursive(MMP_Event event, long enable)
+void mmprofile_enable_event_recursive(mmp_event event, long enable)
 {
-	MMP_Event index;
+	mmp_event index;
 	MMProfile_RegTable_t *pRegTable;
 
 	index = MMP_RootEvent;
-	MMProfileEnableEvent(event, enable);
+	mmprofile_enable_event(event, enable);
 	list_for_each_entry(pRegTable, &(MMProfile_RegTable.list), list) {
 		if (pRegTable->event_info.parentId == event)
-			MMProfileEnableEventRecursive(index, enable);
+			mmprofile_enable_event_recursive(index, enable);
 
 		index++;
 	}
 }
-EXPORT_SYMBOL(MMProfileEnableEventRecursive);
+EXPORT_SYMBOL(mmprofile_enable_event_recursive);
 
-long MMProfileQueryEnable(MMP_Event event)
+long mmprofile_query_enable(mmp_event event)
 {
 	if (!MMProfileGlobals.enable)
 		return 0;
@@ -987,21 +987,21 @@ long MMProfileQueryEnable(MMP_Event event)
 		return MMProfileGlobals.enable;
 	return !!(MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED);
 }
-EXPORT_SYMBOL(MMProfileQueryEnable);
+EXPORT_SYMBOL(mmprofile_query_enable);
 
-void MMProfileLogEx(MMP_Event event, MMP_LogType type, unsigned long data1, unsigned long data2)
+void MMProfileLogEx(mmp_event event, mmp_log_type type, unsigned long data1, unsigned long data2)
 {
 	MMProfileLog_Int(event, type, data1, data2, 0);
 }
-EXPORT_SYMBOL(MMProfileLogEx);
+EXPORT_SYMBOL(mmprofile_log_ex);
 
-void MMProfileLog(MMP_Event event, MMP_LogType type)
+void mmprofile_log(mmp_event event, mmp_log_type type)
 {
-	MMProfileLogEx(event, type, 0, 0);
+	mmprofile_log_ex(event, type, 0, 0);
 }
-EXPORT_SYMBOL(MMProfileLog);
+EXPORT_SYMBOL(mmprofile_log);
 
-long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData)
+long mmprofile_log_meta(mmp_event event, mmp_log_type type, mmp_metadata_t *pMetaData)
 {
 	if (!MMProfileGlobals.enable)
 		return 0;
@@ -1009,10 +1009,10 @@ long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaDa
 		return 0;
 	return MMProfileLogMetaInt(event, type, pMetaData, 0);
 }
-EXPORT_SYMBOL(MMProfileLogMeta);
+EXPORT_SYMBOL(mmprofile_log_meta);
 
-long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
-			       MMP_MetaDataStructure_t *pMetaData)
+long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type,
+			       mmp_metadata_structure_t *pMetaData)
 {
 	int ret = 0;
 
@@ -1024,7 +1024,7 @@ long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
-		MMP_MetaData_t MetaData;
+		mmp_metadata_t MetaData;
 
 		MetaData.data1 = pMetaData->data1;
 		MetaData.data2 = pMetaData->data2;
@@ -1036,14 +1036,14 @@ long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
 		memcpy(MetaData.pData, pMetaData->struct_name, 32);
 		memcpy((void *)((unsigned long)(MetaData.pData) + 32), pMetaData->pData,
 		       pMetaData->struct_size);
-		ret = MMProfileLogMeta(event, type, &MetaData);
+		ret = mmprofile_log_meta(event, type, &MetaData);
 		vfree(MetaData.pData);
 	}
 	return ret;
 }
-EXPORT_SYMBOL(MMProfileLogMetaStructure);
+EXPORT_SYMBOL(mmprofile_log_meta_structure);
 
-long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long data1,
+long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type, unsigned long data1,
 			      unsigned long data2, const char *str)
 {
 	long ret = 0;
@@ -1056,7 +1056,7 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long d
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
-		MMP_MetaData_t MetaData;
+		mmp_metadata_t MetaData;
 
 		MetaData.data1 = data1;
 		MetaData.data2 = data2;
@@ -1065,21 +1065,21 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long d
 		MetaData.pData = vmalloc(MetaData.size);
 		if (!MetaData.pData)
 			return -1;
-		strcpy((char *)MetaData.pData, str);
-		ret = MMProfileLogMeta(event, type, &MetaData);
+		strncpy((char *)MetaData.pData, str, strlen(str) + 1);
+		ret = mmprofile_log_meta(event, type, &MetaData);
 		vfree(MetaData.pData);
 	}
 	return ret;
 }
-EXPORT_SYMBOL(MMProfileLogMetaStringEx);
+EXPORT_SYMBOL(mmprofile_log_meta_string_ex);
 
-long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, const char *str)
+long mmprofile_log_meta_string(mmp_event event, mmp_log_type type, const char *str)
 {
-	return MMProfileLogMetaStringEx(event, type, 0, 0, str);
+	return mmprofile_log_meta_string_ex(event, type, 0, 0, str);
 }
-EXPORT_SYMBOL(MMProfileLogMetaString);
+EXPORT_SYMBOL(mmprofile_log_meta_string);
 
-long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData)
+long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *pMetaData)
 {
 	int ret = 0;
 
@@ -1091,23 +1091,23 @@ long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitma
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
-		MMP_MetaData_t MetaData;
+		mmp_metadata_t MetaData;
 		char *pSrc, *pDst;
 		long pitch;
 
 		MetaData.data1 = pMetaData->data1;
 		MetaData.data2 = pMetaData->data2;
 		MetaData.data_type = MMProfileMetaBitmap;
-		MetaData.size = sizeof(MMP_MetaDataBitmap_t) + pMetaData->data_size;
+		MetaData.size = sizeof(mmp_metadata_bitmap_t) + pMetaData->data_size;
 		MetaData.pData = vmalloc(MetaData.size);
 		if (!MetaData.pData)
 			return -1;
 		pSrc = (char *)pMetaData->pData + pMetaData->start_pos;
-		pDst = (char *)((unsigned long)(MetaData.pData) + sizeof(MMP_MetaDataBitmap_t));
+		pDst = (char *)((unsigned long)(MetaData.pData) + sizeof(mmp_metadata_bitmap_t));
 		pitch = pMetaData->pitch;
-		memcpy(MetaData.pData, pMetaData, sizeof(MMP_MetaDataBitmap_t));
+		memcpy(MetaData.pData, pMetaData, sizeof(mmp_metadata_bitmap_t));
 		if (pitch < 0)
-			((MMP_MetaDataBitmap_t *) (MetaData.pData))->pitch = -pitch;
+			((mmp_metadata_bitmap_t *) (MetaData.pData))->pitch = -pitch;
 		if ((pitch > 0) && (pMetaData->down_sample_x == 1)
 		    && (pMetaData->down_sample_y == 1))
 			memcpy(pDst, pSrc, pMetaData->data_size);
@@ -1134,14 +1134,14 @@ long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitma
 					}
 				}
 			}
-			MetaData.size = sizeof(MMP_MetaDataBitmap_t) + new_width * Bpp * new_height;
+			MetaData.size = sizeof(mmp_metadata_bitmap_t) + new_width * Bpp * new_height;
 		}
-		ret = MMProfileLogMeta(event, type, &MetaData);
+		ret = mmprofile_log_meta(event, type, &MetaData);
 		vfree(MetaData.pData);
 	}
 	return ret;
 }
-EXPORT_SYMBOL(MMProfileLogMetaBitmap);
+EXPORT_SYMBOL(mmprofile_log_meta_bitmap);
 
 /* Exposed APIs end */
 
@@ -1407,9 +1407,9 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 			retn =
 			    copy_from_user(&event_info, pEventInfoUser, sizeof(MMProfile_EventInfo_t));
-			event_info.name[MMProfileEventNameMaxLen] = 0;
+			event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 			event_info.parentId =
-			    MMProfileRegisterEvent(event_info.parentId, event_info.name);
+			    mmprofile_register_event(event_info.parentId, event_info.name);
 			retn =
 			    copy_to_user(pEventInfoUser, &event_info, sizeof(MMProfile_EventInfo_t));
 		}
@@ -1421,7 +1421,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 			retn =
 			    copy_from_user(&event_info, pEventInfoUser, sizeof(MMProfile_EventInfo_t));
-			event_info.name[MMProfileEventNameMaxLen] = 0;
+			event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 			mutex_lock(&MMProfile_RegTableMutex);
 			event_info.parentId =
 			    MMProfileFindEventInt(event_info.parentId, event_info.name);
@@ -1432,7 +1432,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		break;
 	case MMP_IOC_ENABLEEVENT:
 		{
-			MMP_Event event;
+			mmp_event event;
 			unsigned int enable;
 			unsigned int recursive;
 			unsigned int ftrace;
@@ -1445,16 +1445,16 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			get_user(ftrace, &pEventSettingUser->ftrace);
 			if (recursive) {
 				mutex_lock(&MMProfile_RegTableMutex);
-				MMProfileEnableFTraceEventRecursive(event, enable, ftrace);
+				mmprofile_enable_ftrace_event_recursive(event, enable, ftrace);
 				mutex_unlock(&MMProfile_RegTableMutex);
 			} else
-				MMProfileEnableFTraceEvent(event, enable, ftrace);
+				mmprofile_enable_ftrace_event(event, enable, ftrace);
 		}
 		break;
 	case MMP_IOC_LOG:
 		{
-			MMP_Event event;
-			MMP_LogType type;
+			mmp_event event;
+			mmp_log_type type;
 			unsigned int data1;
 			unsigned int data2;
 			struct MMProfile_EventLog_t __user *pEventLogUser =
@@ -1464,12 +1464,12 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			get_user(type, &pEventLogUser->type);
 			get_user(data1, &pEventLogUser->data1);
 			get_user(data2, &pEventLogUser->data2);
-			MMProfileLogEx(event, type, data1, data2);
+			mmprofile_log_ex(event, type, data1, data2);
 		}
 		break;
 	case MMP_IOC_DUMPEVENTINFO:
 		{
-			MMP_Event index;
+			mmp_event index;
 			MMProfile_RegTable_t *pRegTable;
 			MMProfile_EventInfo_t __user *pEventInfoUser = (MMProfile_EventInfo_t __user *)arg;
 			MMProfile_EventInfo_t EventInfoDummy = { 0, "" };
@@ -1498,12 +1498,12 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		{
 			MMProfile_MetaLog_t MetaLog;
 			MMProfile_MetaLog_t __user *pMetaLogUser = (MMProfile_MetaLog_t __user *)arg;
-			MMP_MetaData_t MetaData;
-			MMP_MetaData_t __user *pMetaDataUser;
+			mmp_metadata_t MetaData;
+			mmp_metadata_t __user *pMetaDataUser;
 
 			retn = copy_from_user(&MetaLog, pMetaLogUser, sizeof(MMProfile_MetaLog_t));
-			pMetaDataUser = (MMP_MetaData_t __user *)&(pMetaLogUser->meta_data);
-			retn = copy_from_user(&MetaData, pMetaDataUser, sizeof(MMP_MetaData_t));
+			pMetaDataUser = (mmp_metadata_t __user *)&(pMetaLogUser->meta_data);
+			retn = copy_from_user(&MetaData, pMetaDataUser, sizeof(mmp_metadata_t));
 			MMProfileLogMetaInt(MetaLog.id, MetaLog.type, &MetaData, 1);
 		}
 		break;
@@ -1585,10 +1585,10 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		{
 			unsigned int isEnable;
 			unsigned int __user *pUser = (unsigned int __user *)arg;
-			MMP_Event event;
+			mmp_event event;
 
 			get_user(event, pUser);
-			isEnable = (unsigned int)MMProfileQueryEnable(event);
+			isEnable = (unsigned int)mmprofile_query_enable(event);
 			put_user(isEnable, pUser);
 		}
 		break;
@@ -1644,9 +1644,9 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 
 			retn =
 			    copy_from_user(&event_info, pEventInfoUser, sizeof(MMProfile_EventInfo_t));
-			event_info.name[MMProfileEventNameMaxLen] = 0;
+			event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 			event_info.parentId =
-			    MMProfileRegisterEvent(event_info.parentId, event_info.name);
+			    mmprofile_register_event(event_info.parentId, event_info.name);
 			retn =
 			    copy_to_user(pEventInfoUser, &event_info, sizeof(MMProfile_EventInfo_t));
 		}
@@ -1660,7 +1660,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 
 			retn =
 			    copy_from_user(&event_info, pEventInfoUser, sizeof(MMProfile_EventInfo_t));
-			event_info.name[MMProfileEventNameMaxLen] = 0;
+			event_info.name[MMPROFILE_EVENT_NAME_MAX_LEN] = 0;
 			mutex_lock(&MMProfile_RegTableMutex);
 			event_info.parentId =
 			    MMProfileFindEventInt(event_info.parentId, event_info.name);
@@ -1671,7 +1671,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 		break;
 	case MMP_IOC_ENABLEEVENT:
 		{
-			MMP_Event event;
+			mmp_event event;
 			unsigned int enable;
 			unsigned int recursive;
 			unsigned int ftrace;
@@ -1685,16 +1685,16 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 			get_user(ftrace, &pEventSettingUser->ftrace);
 			if (recursive) {
 				mutex_lock(&MMProfile_RegTableMutex);
-				MMProfileEnableFTraceEventRecursive(event, enable, ftrace);
+				mmprofile_enable_ftrace_event_recursive(event, enable, ftrace);
 				mutex_unlock(&MMProfile_RegTableMutex);
 			} else
-				MMProfileEnableFTraceEvent(event, enable, ftrace);
+				mmprofile_enable_ftrace_event(event, enable, ftrace);
 		}
 		break;
 	case MMP_IOC_LOG:
 		{
-			MMP_Event event;
-			MMP_LogType type;
+			mmp_event event;
+			mmp_log_type type;
 			unsigned int data1;
 			unsigned int data2;
 			struct MMProfile_EventLog_t __user *pEventLogUser;
@@ -1705,12 +1705,12 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 			get_user(type, &pEventLogUser->type);
 			get_user(data1, &pEventLogUser->data1);
 			get_user(data2, &pEventLogUser->data2);
-			MMProfileLogEx(event, type, data1, data2);
+			mmprofile_log_ex(event, type, data1, data2);
 		}
 		break;
 	case MMP_IOC_DUMPEVENTINFO:
 		{
-			MMP_Event index;
+			mmp_event index;
 			MMProfile_RegTable_t *pRegTable;
 			MMProfile_EventInfo_t __user *pEventInfoUser;
 			MMProfile_EventInfo_t EventInfoDummy = { 0, "" };
@@ -1846,12 +1846,12 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 		{
 			unsigned int isEnable;
 			unsigned int __user *pUser;
-			MMP_Event event;
+			mmp_event event;
 
 			pUser = compat_ptr(arg);
 
 			get_user(event, pUser);
-			isEnable = (unsigned int)MMProfileQueryEnable(event);
+			isEnable = (unsigned int)mmprofile_query_enable(event);
 			put_user(isEnable, pUser);
 		}
 		break;

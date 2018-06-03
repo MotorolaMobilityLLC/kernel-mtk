@@ -38,75 +38,75 @@ void MMProfileEnable(int enable)
 }
 
 /* Exposed APIs begin */
-MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
+mmp_event mmprofile_register_event(mmp_event parent, const char *name)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileRegisterEvent);
+EXPORT_SYMBOL(mmprofile_register_event);
 
-MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name)
+mmp_event mmprofile_find_event(mmp_event parent, const char *name)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileFindEvent);
+EXPORT_SYMBOL(mmprofile_find_event);
 
-void MMProfileEnableEvent(MMP_Event event, long enable)
+void mmprofile_enable_event(mmp_event event, long enable)
 {
 }
-EXPORT_SYMBOL(MMProfileEnableEvent);
+EXPORT_SYMBOL(mmprofile_enable_event);
 
-void MMProfileEnableEventRecursive(MMP_Event event, long enable)
+void mmprofile_enable_event_recursive(mmp_event event, long enable)
 {
 }
-EXPORT_SYMBOL(MMProfileEnableEventRecursive);
+EXPORT_SYMBOL(mmprofile_enable_event_recursive);
 
-long MMProfileQueryEnable(MMP_Event event)
-{
-	return 0;
-}
-EXPORT_SYMBOL(MMProfileQueryEnable);
-
-void MMProfileLogEx(MMP_Event event, MMP_LogType type, unsigned long data1, unsigned long data2)
-{
-}
-EXPORT_SYMBOL(MMProfileLogEx);
-
-void MMProfileLog(MMP_Event event, MMP_LogType type)
-{
-}
-EXPORT_SYMBOL(MMProfileLog);
-
-long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData)
+long mmprofile_query_enable(mmp_event event)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileLogMeta);
+EXPORT_SYMBOL(mmprofile_query_enable);
 
-long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
-			       MMP_MetaDataStructure_t *pMetaData)
+void mmprofile_log_ex(mmp_event event, mmp_log_type type, unsigned long data1, unsigned long data2)
+{
+}
+EXPORT_SYMBOL(mmprofile_log_ex);
+
+void mmprofile_log(mmp_event event, mmp_log_type type)
+{
+}
+EXPORT_SYMBOL(mmprofile_log);
+
+long mmprofile_log_meta(mmp_event event, mmp_log_type type, mmp_metadata_t *pMetaData)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileLogMetaStructure);
+EXPORT_SYMBOL(mmprofile_log_meta);
 
-long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long data1,
+long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type,
+			       mmp_metadata_structure_t *pMetaData)
+{
+	return 0;
+}
+EXPORT_SYMBOL(mmprofile_log_meta_structure);
+
+long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type, unsigned long data1,
 			      unsigned long data2, const char *str)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileLogMetaStringEx);
+EXPORT_SYMBOL(mmprofile_log_meta_string_ex);
 
-long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, const char *str)
+long mmprofile_log_meta_string(mmp_event event, mmp_log_type type, const char *str)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileLogMetaString);
+EXPORT_SYMBOL(mmprofile_log_meta_string);
 
-long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData)
+long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *pMetaData)
 {
 	return 0;
 }
-EXPORT_SYMBOL(MMProfileLogMetaBitmap);
+EXPORT_SYMBOL(mmprofile_log_meta_bitmap);
 
 /* Exposed APIs end */
 
