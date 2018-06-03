@@ -108,7 +108,7 @@ static struct
 	unsigned long        voicedata_user_addr;
 	unsigned long        voicedata_user_size;
 	short                *voicedata_kernel_ptr;
-	void                 *voicddata_scp_ptr;
+	char                 *voicddata_scp_ptr;
 	dma_addr_t           voicedata_scp_addr;
 	short                voicedata_idx;
 	bool                 scp_command_flag;
@@ -278,7 +278,7 @@ static void vow_service_Init(void)
 	int I;
 	bool ret;
 
-	VOWDRV_DEBUG("vow_service_Init:%x\n", init_flag);
+	VOWDRV_DEBUG("%s():%x\n", __func__, init_flag);
 	audio_load_task(TASK_SCENE_VOW);
 	if (init_flag != 1) {
 
@@ -309,11 +309,11 @@ static void vow_service_Init(void)
 			vowserv.vow_speaker_model[I].id        = -1;
 			vowserv.vow_speaker_model[I].enabled   = 0;
 		}
-
 		vowserv.voicddata_scp_ptr =
-		   scp_get_reserve_mem_virt(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
+		    (char *)(scp_get_reserve_mem_virt(VOW_MEM_ID))
+		    + VOW_VOICEDATA_OFFSET;
 		vowserv.voicedata_scp_addr =
-		   scp_get_reserve_mem_phys(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
+		    scp_get_reserve_mem_phys(VOW_MEM_ID) + VOW_VOICEDATA_OFFSET;
 		/* VOWDRV_DEBUG("Set Debug1 Buffer Address:%x\n", */
 		/* vowserv.voicedata_scp_addr); */
 
@@ -323,10 +323,10 @@ static void vow_service_Init(void)
 				      IPIMSG_VOW_APREGDATA_ADDR,
 				      sizeof(unsigned int) * 1, 0,
 				      (char *)&vowserv.vow_info_dsp[0]);
-		if (ret == 0)
-			VOWDRV_DEBUG("IPIMSG_VOW_APREGDATA_ADDR
-				     ipi send error\n\r");
-
+		if (ret == 0) {
+			VOWDRV_DEBUG(
+			    "IPIMSG_VOW_APREGDATA_ADDR ipi send error\n");
+		}
 		vowserv.voicedata_kernel_ptr = NULL;
 		vowserv.voicedata_idx = 0;
 		msleep(VOW_WAITCHECK_INTERVAL_MS);
@@ -342,17 +342,16 @@ static void vow_service_Init(void)
 				      IPIMSG_VOW_APREGDATA_ADDR,
 				      sizeof(unsigned int) * 1, 0,
 				      (char *)&vowserv.vow_info_dsp[0]);
-		if (ret == 0)
-			VOWDRV_DEBUG("IPIMSG_VOW_APREGDATA_ADDR
-				     ipi send error\n\r");
-
+		if (ret == 0) {
+			VOWDRV_DEBUG(
+			    "IPIMSG_VOW_APREGDATA_ADDR ipi send error\n");
+		}
 #if VOW_PRE_LEARN_MODE
 		VowDrv_SetFlag(VOW_FLAG_PRE_LEARN, true);
 #endif
 	}
 #else
-	VOWDRV_DEBUG("vow_service_Init:%x\n", init_flag);
-	VOWDRV_DEBUG("vow:SCP no support\n\r");
+	VOWDRV_DEBUG("%s():%x, SCP no support\n", __func__, init_flag);
 #endif
 }
 
@@ -472,8 +471,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 		return false;
 
 	ptr8 = (char *)vowserv.vow_speaker_model[I].model_ptr;
-	VOWDRV_DEBUG("SetSPKModel:get_reserve_mem_virt(VOW_MEM_ID):
-		      %x, ID: %x, enabled: %x\n",
+	VOWDRV_DEBUG("SetSPKModel:virt(VOW_MEM_ID):%x, ID: %x, enabled: %x\n",
 		      (unsigned int)scp_get_reserve_mem_virt(VOW_MEM_ID),
 		      vowserv.vow_speaker_model[I].id,
 		      vowserv.vow_speaker_model[I].enabled);
@@ -530,7 +528,7 @@ static bool vow_service_Enable(void)
 {
 	bool ret = false;
 
-	VOWDRV_DEBUG("+vow_service_Enable\n");
+	VOWDRV_DEBUG("+%s()\n", __func__);
 	if ((vowserv.recording_flag) && (vowserv.suspend_lock == 0)) {
 		vowserv.suspend_lock = 1;
 		__pm_stay_awake(&VOW_suspend_lock);
@@ -545,7 +543,7 @@ static bool vow_service_Enable(void)
 #else
 	VOWDRV_DEBUG("vow:SCP no support\n\r");
 #endif
-	VOWDRV_DEBUG("-vow_service_Enable: %d\n", ret);
+	VOWDRV_DEBUG("-%s():%d\n", __func__, ret);
 	return ret;
 }
 
@@ -553,7 +551,7 @@ static bool vow_service_Disable(void)
 {
 	bool ret = false;
 
-	VOWDRV_DEBUG("+vow_service_Disable\n");
+	VOWDRV_DEBUG("+%s()\n", __func__);
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	ret = vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
 			      AUDIO_IPI_MSG_BYPASS_ACK,
@@ -563,7 +561,7 @@ static bool vow_service_Disable(void)
 #else
 	VOWDRV_DEBUG("vow:SCP no support\n\r");
 #endif
-	VOWDRV_DEBUG("-vow_service_Disable: %d\n", ret);
+	VOWDRV_DEBUG("-%s():%d\n", __func__, ret);
 	if ((VowDrv_GetHWStatus() == VOW_PWR_ON)
 	 && (vowserv.recording_flag == true))
 		vow_service_getVoiceData();
@@ -663,10 +661,10 @@ static void vow_service_ReadVoiceData(void)
 			 || (vowserv.recording_flag == false)) {
 				vowserv.voicedata_idx = 0;
 				stop_condition = 1;
-				VOWDRV_DEBUG("stop read vow voice data:
-					     %d, %d\n",
-					     VowDrv_GetHWStatus(),
-					     vowserv.recording_flag);
+				VOWDRV_DEBUG(
+				    "stop read vow voice data: %d, %d\n",
+				    VowDrv_GetHWStatus(),
+				    vowserv.recording_flag);
 			} else {
 				/* To Read Voice Data from Kernel to User */
 				stop_condition =
@@ -687,14 +685,14 @@ static int VowDrv_SetHWStatus(int status)
 {
 	int ret = 0;
 
-	VOWDRV_DEBUG("SetHWStatus:set:%x, cur:%x\n",
-		     status, vowserv.pwr_status);
+	VOWDRV_DEBUG("%s():set:%x, cur:%x\n",
+		     __func__, status, vowserv.pwr_status);
 	if ((status < NUM_OF_VOW_PWR_STATUS) && (status >= VOW_PWR_OFF)) {
 		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status = status;
 		spin_unlock(&vowdrv_lock);
 	} else {
-		VOWDRV_DEBUG("VowDrv_SetHWStatus error input:%d\n", status);
+		VOWDRV_DEBUG("error input:%d\n", status);
 		ret = -1;
 	}
 	return ret;
@@ -723,7 +721,7 @@ int VowDrv_EnableHW(int status)
 	}
 
 	if (status < 0) {
-		VOWDRV_DEBUG("VowDrv_EnableHW error input:%x\n", status);
+		VOWDRV_DEBUG("%s() error input:%x\n", __func__, status);
 		ret = -1;
 	} else {
 		pwr_status = (status == 0)?VOW_PWR_OFF : VOW_PWR_ON;
@@ -765,13 +763,19 @@ void VowDrv_SetSmartDevice(bool enable)
 		return;
 	}
 
-	VOWDRV_DEBUG("VowDrv_SetSmartDevice:%x\n", enable);
+	VOWDRV_DEBUG("%s():%x\n", __func__, enable);
 	if (vowserv.node) {
 		/* query eint number from device tree */
-		of_property_read_u32_array(vowserv.node,
+		ret = of_property_read_u32_array(vowserv.node,
 					   "debounce",
 					   ints,
 					   ARRAY_SIZE(ints));
+		if (ret != 0) {
+			VOWDRV_DEBUG("%s(), no debounce node, ret=%d\n",
+				     __func__, ret);
+			return;
+		}
+
 		eint_num = ints[0];
 
 		if (enable == false)
@@ -784,9 +788,10 @@ void VowDrv_SetSmartDevice(bool enable)
 				      IPIMSG_VOW_SET_SMART_DEVICE,
 				      sizeof(unsigned int) * 2, 0,
 				      (char *)&vowserv.vow_info_dsp[0]);
-		if (ret == 0)
-			VOWDRV_DEBUG("IPIMSG_VOW_SET_SMART_DEVICE
-				     ipi send error\n\r");
+		if (ret == 0) {
+			VOWDRV_DEBUG(
+			    "IPIMSG_VOW_SET_SMART_DEVICE ipi send error\n\r");
+		}
 #else
 	VOWDRV_DEBUG("vow:SCP no support\n\r");
 #endif
@@ -807,8 +812,8 @@ void VowDrv_SetSmartDevice_GPIO(bool enable)
 						   vowserv.pins_eint_off);
 			if (ret) {
 				/* pinctrl setting error */
-				VOWDRV_DEBUG("error, can not set gpio
-					     vow pins_eint_off\n");
+				VOWDRV_DEBUG(
+				"error, can not set gpio vow pins_eint_off\n");
 			}
 		} else {
 			VOWDRV_DEBUG("VowDrv_SetSmartDev_gpio:ON\n");
@@ -816,8 +821,8 @@ void VowDrv_SetSmartDevice_GPIO(bool enable)
 						   vowserv.pins_eint_on);
 			if (ret) {
 				/* pinctrl setting error */
-				VOWDRV_DEBUG("error, can not set gpio
-					     vow pins_eint_on\n");
+				VOWDRV_DEBUG(
+				"error, can not set gpio vow pins_eint_on\n");
 			}
 		}
 	} else {
@@ -830,7 +835,7 @@ static bool VowDrv_SetFlag(int type, unsigned int set)
 {
 	bool ret = false;
 
-	VOWDRV_DEBUG("VowDrv_SetFlag:type%x, set:%x\n", type, set);
+	VOWDRV_DEBUG("%s(), type:%x, set:%x\n", __func__, type, set);
 	vowserv.vow_info_dsp[0] = type;
 	vowserv.vow_info_dsp[1] = set;
 
@@ -1083,8 +1088,8 @@ static int VowDrv_SetVowEINTStatus(int status)
 		vowserv.eint_status = status;
 		spin_unlock(&vowdrv_lock);
 	} else {
-		VOWDRV_DEBUG("VowDrv_SetVowEINTStatus error input:%x\n",
-			     status);
+		VOWDRV_DEBUG("%s() error input:%x\n",
+			     __func__, status);
 		ret = -1;
 	}
 	return ret;
@@ -1097,19 +1102,20 @@ static int VowDrv_QueryVowEINTStatus(void)
 	spin_lock(&vowdrv_lock);
 	ret = vowserv.eint_status;
 	spin_unlock(&vowdrv_lock);
-	VOWDRV_DEBUG("VowDrv_QueryVowEINTStatus :%d\n", ret);
+	VOWDRV_DEBUG("%s():%d\n", __func__, ret);
 	return ret;
 }
 
 static int VowDrv_open(struct inode *inode, struct file *fp)
 {
-	VOWDRV_DEBUG("VowDrv_open do nothing inode:%p, file:%p\n", inode, fp);
+	VOWDRV_DEBUG("%s() do nothing inode:%p, file:%p\n",
+		    __func__, inode, fp);
 	return 0;
 }
 
 static int VowDrv_release(struct inode *inode, struct file *fp)
 {
-	VOWDRV_DEBUG("VowDrv_release inode:%p, file:%p\n", inode, fp);
+	VOWDRV_DEBUG("%s() inode:%p, file:%p\n", __func__, inode, fp);
 
 	if (!(fp->f_mode & FMODE_WRITE || fp->f_mode & FMODE_READ))
 		return -ENODEV;
@@ -1194,8 +1200,8 @@ static long VowDrv_compat_ioctl(struct file *fp,
 {
 	long ret = 0;
 
-	/* VOWDRV_DEBUG("++VowDrv_compat_ioctl cmd = %u */
-	/*		 arg = %lu\n", cmd, arg); */
+	/* VOWDRV_DEBUG("++VowDrv_compat_ioctl cmd = %u, arg = %lu\n" */
+	/*		, cmd, arg); */
 	if (!fp->f_op || !fp->f_op->unlocked_ioctl) {
 		(void)ret;
 		return -ENOTTY;
@@ -1258,7 +1264,7 @@ static ssize_t VowDrv_read(struct file *fp,
 	unsigned int read_count = 0;
 	int ret = 0;
 
-	VOWDRV_DEBUG("+VowDrv_read+\n");
+	VOWDRV_DEBUG("+%s()+\n", __func__);
 	VowDrv_SetVowEINTStatus(VOW_EINT_RETRY);
 
 	if (VowDrv_Wait_Queue_flag == 0)
@@ -1293,27 +1299,26 @@ static ssize_t VowDrv_read(struct file *fp,
 	read_count = copy_to_user((void __user *)data,
 				  &vowserv.vow_eint_data_struct,
 				  sizeof(struct vow_eint_data_struct_t));
-	VOWDRV_DEBUG("+VowDrv_read-\n");
+	VOWDRV_DEBUG("+%s()-\n", __func__);
 	return read_count;
 }
 
 static int VowDrv_flush(struct file *flip, fl_owner_t id)
 {
-	VOWDRV_DEBUG("+VowDrv_flush\n");
-	VOWDRV_DEBUG("-VowDrv_flush\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	return 0;
 }
 
 static int VowDrv_fasync(int fd, struct file *flip, int mode)
 {
-	VOWDRV_DEBUG("VowDrv_fasync\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	/*return fasync_helper(fd, flip, mode, &VowDrv_fasync);*/
 	return 0;
 }
 
 static int VowDrv_remap_mmap(struct file *flip, struct vm_area_struct *vma)
 {
-	VOWDRV_DEBUG("VowDrv_remap_mmap\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	return -1;
 }
 
@@ -1347,14 +1352,20 @@ int VowDrv_setup_smartdev_eint(struct platform_device *pdev)
 	/* eint setting */
 	vowserv.node = pdev->dev.of_node;
 	if (vowserv.node) {
-		of_property_read_u32_array(vowserv.node,
+		ret = of_property_read_u32_array(vowserv.node,
 					   "debounce",
 					   ints,
 					   ARRAY_SIZE(ints));
-		VOWDRV_DEBUG("EINT ID: %x, %x\n", ints[0], ints[1]);
+		if (ret != 0) {
+			VOWDRV_DEBUG("%s(), no debounce node, ret=%d\n",
+				      __func__, ret);
+			return ret;
+		}
+
+		VOWDRV_DEBUG("VOW EINT ID: %x, %x\n", ints[0], ints[1]);
 	} else {
 		/* no node here */
-		VOWDRV_DEBUG("there is no this node\n");
+		VOWDRV_DEBUG("%s(), there is no this node\n", __func__);
 	}
 	return 0;
 }
@@ -1364,35 +1375,33 @@ int VowDrv_setup_smartdev_eint(struct platform_device *pdev)
  *****************************************************************************/
 static int VowDrv_probe(struct platform_device *dev)
 {
-	VOWDRV_DEBUG("+VowDrv_probe\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	VowDrv_setup_smartdev_eint(dev);
 	return 0;
 }
 
 static int VowDrv_remove(struct platform_device *dev)
 {
-	VOWDRV_DEBUG("+VowDrv_remove\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	/*[Todo]Add opearations*/
-	VOWDRV_DEBUG("-VowDrv_remove\n");
 	return 0;
 }
 
 static void VowDrv_shutdown(struct platform_device *dev)
 {
-	VOWDRV_DEBUG("+VowDrv_shutdown\n");
-	VOWDRV_DEBUG("-VowDrv_shutdown\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 }
 
 static int VowDrv_suspend(struct platform_device *dev, pm_message_t state)
 {
 	/* only one suspend mode */
-	VOWDRV_DEBUG("VowDrv_suspend\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	return 0;
 }
 
 static int VowDrv_resume(struct platform_device *dev) /* wake up */
 {
-	VOWDRV_DEBUG("VowDrv_resume\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 	return 0;
 }
 
@@ -1455,7 +1464,7 @@ static int VowDrv_mod_init(void)
 {
 	int ret = 0;
 
-	VOWDRV_DEBUG("+VowDrv_mod_init\n");
+	VOWDRV_DEBUG("+%s()\n", __func__);
 
 	/* Register platform DRIVER */
 	ret = platform_driver_register(&VowDrv_driver);
@@ -1496,15 +1505,14 @@ static int VowDrv_mod_init(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-	VOWDRV_DEBUG("VowDrv_mod_init: Init Audio WakeLock\n");
+	VOWDRV_DEBUG("-%s(): Init Audio WakeLock\n", __func__);
 
 	return 0;
 }
 
 static void  VowDrv_mod_exit(void)
 {
-	VOWDRV_DEBUG("+VowDrv_mod_exit\n");
-	VOWDRV_DEBUG("-VowDrv_mod_exit\n");
+	VOWDRV_DEBUG("%s()\n", __func__);
 }
 module_init(VowDrv_mod_init);
 module_exit(VowDrv_mod_exit);
