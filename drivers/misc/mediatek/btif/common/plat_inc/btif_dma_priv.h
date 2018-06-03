@@ -31,7 +31,7 @@ extern struct clk *clk_btif_apdma; /*btif apdma clock*/
 #define RX_DMA_VFF_SIZE (1024 * 8)	/*Rx vFIFO Len must be 8 Byte allignment */
 
 #define DMA_TX_THRE(n) (n - 7)	/*Tx Trigger Level */
-#define DMA_RX_THRE(n) ((n) * 3 / 4)	/*Rx Trigger Level */
+#define DMA_RX_THRE(n) (1)	/*Rx Trigger Level */
 
 /**********************************Hardware related defination**************************/
 #ifndef CONFIG_OF
