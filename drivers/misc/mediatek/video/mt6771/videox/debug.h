@@ -23,6 +23,10 @@ extern int lcm_mode_status;
 extern int layer_layout_allow_non_continuous;
 extern unsigned idle_check_interval;
 
+/* extern OVL color variable */
+extern unsigned int gOVLBackground;
+extern unsigned int govldimcolor;
+
 #include "disp_session.h"
 #include "ddp_info.h"
 extern int disp_layer_info_statistic(struct disp_ddp_path_config *last_config, struct disp_frame_cfg_t *cfg);
