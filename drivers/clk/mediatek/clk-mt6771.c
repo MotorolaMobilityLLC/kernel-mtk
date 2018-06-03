@@ -747,7 +747,7 @@ static const char * const aud_2_parents[] __initconst = {
 #define INVALID_MUX_GATE -1
 
 static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
-#if MT_CCF_BRINGUP
+#if 0/*MT_CCF_BRINGUP*/
 	/* CLK_CFG_0 */
 	MUX_CLR_SET_UPD(TOP_MUX_AXI, "axi_sel", axi_parents, CK_CFG_0,
 		CK_CFG_0_SET, CK_CFG_0_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
@@ -1964,10 +1964,10 @@ static const struct mtk_pll_data plls[] = {
 
 	PLL(APMIXED_TVDPLL, "tvdpll", 0x0260, 0x026C, 0x00000001, 0, 0,
 		22, 0x0264, 24, 0x0, 0x0264, 0),
-
+#if 0
 	PLL(APMIXED_MMPLL, "mmpll", 0x0270, 0x027C, 0x00000001, BIT(23), HAVE_RST_BAR,
 		22, 0x0274, 24, 0x0, 0x0274, 0),
-
+#endif
 	PLL(APMIXED_APLL1, "apll1", 0x02A0, 0x02B0, 0x00000001, 0, 0,
 		32, 0x02A0, 1, 0x0, 0x02A4, 0),
 

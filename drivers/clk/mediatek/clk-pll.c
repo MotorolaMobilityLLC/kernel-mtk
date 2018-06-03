@@ -52,7 +52,7 @@
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			2
 #elif defined(CONFIG_MACH_MT6771)
-#define MT_CCF_BRINGUP
+/*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			2
 #elif defined(CONFIG_MACH_MT6775)
