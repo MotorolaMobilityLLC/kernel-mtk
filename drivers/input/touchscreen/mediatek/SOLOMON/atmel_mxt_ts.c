@@ -3098,7 +3098,7 @@ static int mxt_initialize_t100_input_device(struct mxt_data *data)
 		input_dev->name = data->pdata->input_name;
     }
 	else{
-		input_dev->name = "atmel_mxt_ts T100 touchscreen";
+		input_dev->name = "mtk-tpd";
     }
 
 	mutex_init(&input_dev->mutex);
