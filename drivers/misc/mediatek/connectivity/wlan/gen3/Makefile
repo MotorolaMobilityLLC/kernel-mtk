@@ -1,7 +1,7 @@
 # ---------------------------------------------------
 # Compile Options
 # ---------------------------------------------------
-ifneq ($(filter "CONSYS_6797" "CONSYS_6759", "CONSYS_6758" $(CONFIG_MTK_COMBO_CHIP)),)
+ifneq ($(filter "CONSYS_6797" "CONSYS_6759" "CONSYS_6758", $(CONFIG_MTK_COMBO_CHIP)),)
 WLAN_CHIP_ID=MT6631
 else
 WLAN_CHIP_ID=MT6630
