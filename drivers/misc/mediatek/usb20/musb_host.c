@@ -1702,6 +1702,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		{
 			struct timeval tv_before, tv_after;
 			int timeout = 0;
+			u64 diff_ns;
 
 			do_gettimeofday(&tv_before);
 			while (1) {
@@ -1711,7 +1712,10 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 					break;
 
 				do_gettimeofday(&tv_after);
-				if ((tv_after.tv_sec - tv_before.tv_sec) >= 1) {
+
+				diff_ns = timeval_to_ns(&tv_after) - timeval_to_ns(&tv_before);
+				/* 1 sec for timeout */
+				if (diff_ns >= 1000000000) {
 					timeout = 1;
 					break;
 				}
