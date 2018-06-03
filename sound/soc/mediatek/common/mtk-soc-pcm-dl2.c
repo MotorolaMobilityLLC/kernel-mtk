@@ -124,7 +124,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL2));
 
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
@@ -278,6 +278,7 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 
 	if (mPrepareDone == true) {
 		/* stop DAC output */
+		set_memif_pbuf_size(Soc_Aud_Digital_Block_MEM_DL2, MEMIF_PBUF_SIZE_256_BYTES);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		if (GetI2SDacEnable() == false)
 			SetI2SDacEnable(false);
@@ -313,6 +314,7 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 		    ("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
 		     __func__, runtime->format, SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE);
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
+		set_memif_pbuf_size(Soc_Aud_Digital_Block_MEM_DL2, MEMIF_PBUF_SIZE_32_BYTES);
 
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		    runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -393,7 +395,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_DL2),
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
 

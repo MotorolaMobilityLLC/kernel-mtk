@@ -98,7 +98,7 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
 	/* here to set interrupt */
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_AWB));
 
 	/* here to turn off digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
@@ -113,7 +113,7 @@ static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_AWB),
 		     substream->runtime->rate,
 		     substream->runtime->period_size >> 1);
 

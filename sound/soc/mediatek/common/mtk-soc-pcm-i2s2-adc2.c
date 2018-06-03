@@ -96,7 +96,7 @@ static void StopAudioI2S2adc2Hardware(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_VUL_DATA2));
 }
 
 static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
@@ -120,7 +120,7 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_VUL_DATA2),
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
 }
