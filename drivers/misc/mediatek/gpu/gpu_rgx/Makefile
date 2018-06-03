@@ -16,6 +16,8 @@ $(info *MTK_GPU_VERSION = $(MTK_GPU_VERSION))
 
 ifeq ($(word 2,$(MTK_GPU_VERSION)),clark)
 	obj-y += m1.9ED4893595/
-else
+endif
+
+ifeq ($(word 2,$(MTK_GPU_VERSION)),auckland)
 	obj-y += m1.9ED4893595/
 endif
