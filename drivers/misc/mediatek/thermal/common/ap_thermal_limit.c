@@ -226,7 +226,7 @@ void apthermolmt_set_vpu_power_limit(struct apthermolmt_user *handle, unsigned i
 		int opp = 0;
 
 		if (final_limit != 0x7FFFFFFF) {
-			for (opp = 0; opp < VPU_OPP_NUM; opp++) {
+			for (opp = 0; opp < VPU_OPP_NUM - 1; opp++) {
 				if (final_limit >= vpu_power_table[opp].power)
 					break;
 			}
@@ -307,4 +307,12 @@ unsigned int apthermolmt_get_gpu_power_limit(void)
 	return apthermolmt_curr_gpu_pwr_lim;
 }
 EXPORT_SYMBOL(apthermolmt_get_gpu_power_limit);
+
+#if defined(THERMAL_VPU_SUPPORT)
+unsigned int apthermolmt_get_vpu_power_limit(void)
+{
+	return apthermolmt_curr_vpu_pwr_lim;
+}
+EXPORT_SYMBOL(apthermolmt_get_vpu_power_limit);
+#endif
 

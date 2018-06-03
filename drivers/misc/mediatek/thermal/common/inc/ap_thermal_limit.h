@@ -78,4 +78,7 @@ unsigned int apthermolmt_get_cpu_power_limit(void);
 extern
 unsigned int apthermolmt_get_gpu_power_limit(void);
 
+extern
+unsigned int apthermolmt_get_vpu_power_limit(void);
+
 #endif	/* __AP_THERMAL_LIMIT_H__ */
