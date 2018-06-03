@@ -56,6 +56,7 @@ extern "C" {
 #include <linux/of_address.h>
 #endif
 
+#include <linux/regulator/consumer.h>
 #include "mach/mtk_cpufreq_api.h"
 #include "mtk_cpufreq_config.h"
 #include "mtk_cpufreq_struct.h"
@@ -305,6 +306,7 @@ extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 extern struct mt_cpu_dvfs *id_to_cpu_dvfs(enum mt_cpu_dvfs_id id);
 extern struct buck_ctrl_t *id_to_buck_ctrl(enum mt_cpu_dvfs_buck_id id);
 extern struct pll_ctrl_t *id_to_pll_ctrl(enum mt_cpu_dvfs_pll_id id);
+extern struct regulator *regulator_proc2;
 
 extern unsigned int _mt_cpufreq_get_cpu_level(void);
 extern u32 get_devinfo_with_index(u32 index);
