@@ -1861,47 +1861,52 @@ static int sensorHub_power_up_work(void *data)
 		wait_event(power_reset_wait, READ_ONCE(power_reset_wait_condition));
 		WRITE_ONCE(power_reset_wait_condition, false);
 
-	/* firstly we should update dram information */
-	/* 1. reset wp queue head and tail */
-	obj->wp_queue.head = 0;
-	obj->wp_queue.tail = 0;
-	/* 2. init dram information */
-	obj->SCP_sensorFIFO = (struct sensorFIFO *)scp_get_reserve_mem_virt(SENS_MEM_ID);
-	WARN_ON(obj->SCP_sensorFIFO == NULL);
-	obj->SCP_sensorFIFO->wp = 0;
-	obj->SCP_sensorFIFO->rp = 0;
-	obj->SCP_sensorFIFO->FIFOSize =
-			(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) /
-			SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
-	SCP_LOG("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
-		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
+		/* firstly we should update dram information */
+		/* 1. reset wp queue head and tail */
+		obj->wp_queue.head = 0;
+		obj->wp_queue.tail = 0;
+		/* 2. init dram information */
+		obj->SCP_sensorFIFO = (struct sensorFIFO *)scp_get_reserve_mem_virt(SENS_MEM_ID);
+		WARN_ON(obj->SCP_sensorFIFO == NULL);
+		obj->SCP_sensorFIFO->wp = 0;
+		obj->SCP_sensorFIFO->rp = 0;
+		obj->SCP_sensorFIFO->FIFOSize =
+				(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) /
+				SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
+		SCP_LOG("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
+			obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
 #ifndef CHRE_POWER_RESET_NOTIFY
-	/* 3. wait for chre init done when don't support power reset feature */
-	msleep(2000);
+		/* 3. wait for chre init done when don't support power reset feature */
+		msleep(2000);
 #endif
-	/* 4. send dram information to scp */
-	sensor_send_dram_info_to_hub();
-	/* secondly we enable sensor which sensor is enable by framework */
-	mutex_lock(&mSensorState_mtx);
-	for (handle = 0; handle < ID_SENSOR_MAX_HANDLE + 1; handle++) {
-		if ((mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
-				mSensorState[handle].sensorType == ID_ACCELEROMETER)) && mSensorState[handle].enable) {
-			init_sensor_config_cmd(&cmd, handle);
-			SCP_LOG("restoring: handle=%d, enable=%d, rate=%d, latency=%lld\n", handle,
-				mSensorState[handle].enable, mSensorState[handle].rate, mSensorState[handle].latency);
-			ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-			if (ret < 0)
-				SCP_PR_ERR("failed registerlistener handle:%d, cmd:%d\n", handle, cmd.cmd);
-
-			cmd.cmd = CONFIG_CMD_FLUSH;
-			for (flush_cnt = 0; flush_cnt < atomic_read(&mSensorState[handle].flushCnt); flush_cnt++) {
+		/* 4. send dram information to scp */
+		sensor_send_dram_info_to_hub();
+		/* secondly we enable sensor which sensor is enable by framework */
+		mutex_lock(&mSensorState_mtx);
+		for (handle = 0; handle < ID_SENSOR_MAX_HANDLE + 1; handle++) {
+			if ((mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
+					mSensorState[handle].sensorType == ID_ACCELEROMETER)) &&
+					mSensorState[handle].enable) {
+				init_sensor_config_cmd(&cmd, handle);
+				SCP_LOG("restoring: handle=%d, enable=%d, rate=%d, latency=%lld\n", handle,
+					mSensorState[handle].enable, mSensorState[handle].rate,
+					mSensorState[handle].latency);
 				ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
 				if (ret < 0)
-					SCP_PR_ERR("failed flush handle:%d\n", handle);
+					pr_notice("failed registerlistener handle:%d, cmd:%d\n", handle, cmd.cmd);
+
+				cmd.cmd = CONFIG_CMD_FLUSH;
+				for (flush_cnt = 0; flush_cnt < atomic_read(&mSensorState[handle].flushCnt);
+					flush_cnt++) {
+					ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
+					if (ret < 0)
+						pr_notice("failed flush handle:%d\n", handle);
+				}
 			}
 		}
+		mutex_unlock(&mSensorState_mtx);
 	}
-	mutex_unlock(&mSensorState_mtx);
+	return 0;
 }
 static int sensorHub_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
 {
