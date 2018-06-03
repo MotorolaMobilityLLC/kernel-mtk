@@ -735,7 +735,7 @@ void walt_update_task_ravg(struct task_struct *p, struct rq *rq,
 	if (walt_disabled || !rq->window_start)
 		return;
 
-	lockdep_assert_held(&rq->lock);
+	/* lockdep_assert_held(&rq->lock); */
 
 	update_window_start(rq, wallclock);
 
