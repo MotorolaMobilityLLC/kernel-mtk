@@ -681,6 +681,7 @@ int32_t cmdq_core_stop_secure_path_notify_thread(void)
 #if defined(CMDQ_SECURE_PATH_SUPPORT) && !defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
 	int status = 0;
 	unsigned long flags;
+	struct cmdqRecStruct *notify_loop_handle = NULL;
 
 	mutex_lock(&gCmdqNotifyLoopMutex);
 	do {
@@ -696,11 +697,15 @@ int32_t cmdq_core_stop_secure_path_notify_thread(void)
 			break;
 		}
 
-		/* destroy handle */
+		/*
+		 * Clear loop handle to in protect to avoid other thread try to start notify.
+		 * Destroy task later since vfree inside destroy cannot call during spinlock.
+		 */
 		spin_lock_irqsave(&gCmdqExecLock, flags);
-		cmdq_task_destroy(gCmdqContext.hNotifyLoop);
+		notify_loop_handle = (struct cmdqRecStruct *)gCmdqContext.hNotifyLoop;
 		gCmdqContext.hNotifyLoop = NULL;
 		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+		cmdq_task_destroy(notify_loop_handle);
 
 		/* CPU clear event */
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_SECURE_THR_EOF);
