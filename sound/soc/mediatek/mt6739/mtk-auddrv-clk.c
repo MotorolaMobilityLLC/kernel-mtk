@@ -176,6 +176,8 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_APMIXED_APLL1] = {"apmixed_apll1", false, false, NULL},
 	[CLOCK_CLK26M] = {"top_clk26m_clk", false, false, NULL}
 };
+static int apll1_mux_setting(bool enable);
+static int apll2_mux_setting(bool enable);
 
 static int aud_clk_enable(const struct audio_clock_attr *clk)
 {
@@ -429,7 +431,76 @@ EXIT:
 
 static int apll2_mux_setting(bool enable)
 {
-	/* MT6739 no apll2*/
+
+	int ret = 0;
+
+	if (!aud_clks[CLOCK_TOP_MUX_AUD_1].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL1_CK].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clk_prepare ||
+	    !aud_clks[CLOCK_TOP_APLL1_D8].clk_prepare ||
+	    !aud_clks[CLOCK_CLK26M].clk_prepare) {
+		pr_debug("%s(), clk_prepare = false\n", __func__);
+		return -EINVAL;
+	}
+
+	/* pr_debug("+%s(), enable %d\n", __func__, enable); */
+	if (enable) {
+		/* CLOCK_TOP_MUX_AUD_1 */
+		if (aud_clk_enable(&aud_clks[CLOCK_TOP_MUX_AUD_1]))
+			goto EXIT;
+
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_AUD_1].clock,
+				     aud_clks[CLOCK_TOP_APLL1_CK].clock);
+		if (ret) {
+			pr_debug("%s clk_set_parent %s-%s fail %d\n",
+				 __func__, aud_clks[CLOCK_TOP_MUX_AUD_1].name,
+				 aud_clks[CLOCK_TOP_APLL1_CK].name, ret);
+			goto EXIT;
+		}
+
+		/* CLOCK_TOP_MUX_AUD_ENG1 */
+		if (aud_clk_enable(&aud_clks[CLOCK_TOP_MUX_AUD_ENG1]))
+			goto EXIT;
+
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clock,
+				     aud_clks[CLOCK_TOP_APLL1_D8].clock);
+		if (ret) {
+			pr_debug("%s clk_set_parent %s-%s fail %d\n",
+				 __func__,
+				 aud_clks[CLOCK_TOP_MUX_AUD_ENG1].name,
+				 aud_clks[CLOCK_TOP_APLL1_D8].name, ret);
+			goto EXIT;
+		}
+
+	} else {
+		/* CLOCK_TOP_MUX_AUD_ENG1 */
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clock,
+				     aud_clks[CLOCK_CLK26M].clock);
+		if (ret) {
+			pr_debug("%s clk_set_parent %s-%s fail %d\n",
+				 __func__,
+				 aud_clks[CLOCK_TOP_MUX_AUD_ENG1].name,
+				 aud_clks[CLOCK_CLK26M].name, ret);
+			goto EXIT;
+		}
+		if (aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clk_prepare)
+			clk_disable(aud_clks[CLOCK_TOP_MUX_AUD_ENG1].clock);
+
+		/* CLOCK_TOP_MUX_AUD_1 */
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_AUD_1].clock,
+				     aud_clks[CLOCK_CLK26M].clock);
+		if (ret) {
+			pr_debug("%s clk_set_parent %s-%s fail %d\n",
+				 __func__, aud_clks[CLOCK_TOP_MUX_AUD_1].name,
+				 aud_clks[CLOCK_CLK26M].name, ret);
+			goto EXIT;
+		}
+
+		if (aud_clks[CLOCK_TOP_MUX_AUD_1].clk_prepare)
+			clk_disable(aud_clks[CLOCK_TOP_MUX_AUD_1].clock);
+	}
+
+EXIT:
 	return 0;
 }
 
@@ -494,10 +565,6 @@ void AudDrv_Clk_On(void)
 		/* enable audio sys DCM for power saving */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 29, 0x1 << 29);
 
-		/* setting for APLL*/
-		apll1_mux_setting(true);
-		apll2_mux_setting(true);
-		/* TODO: apmixed apll rate is set in preloader, consider set it using CCF */
 	}
 EXIT:
 	mutex_unlock(&auddrv_clk_mutex);
@@ -513,10 +580,6 @@ void AudDrv_Clk_Off(void)
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
 		/* Disable AFE clock */
-
-		/* setting for APLL*/
-		apll1_mux_setting(false);
-		apll2_mux_setting(false);
 
 		if (aud_clks[CLOCK_MTKAIF_26M_CLK].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MTKAIF_26M_CLK].clock);
@@ -793,7 +856,7 @@ void AudDrv_APLL24M_Clk_On(void)
 {
 	int ret = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	/* pr_debug("%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr); */
 
 	mutex_lock(&auddrv_clk_mutex);
 
@@ -842,9 +905,6 @@ void AudDrv_APLL24M_Clk_Off(void)
 			pr_err("%s [CCF]clk_prepare error %s fail",
 			       __func__, aud_clks[CLOCK_APLL22M].name);
 			goto EXIT;
-		}
-		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			clk_disable(aud_clks[CLOCK_APMIXED_APLL1].clock);
 		}
 	}
 EXIT:
@@ -1251,14 +1311,15 @@ void EnableApll1(bool enable)
 			/* 180.6336 / 8 = 22.5792MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 			AudDrv_APLL22M_Clk_On();
+			apll1_mux_setting(true);
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 0, 0x1 << 0);
 		}
-
 		Aud_APLL_DIV_APLL1_cntr++;
 	} else {
 		Aud_APLL_DIV_APLL1_cntr--;
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 0, 0x1 << 0);
+			apll1_mux_setting(false);
 			AudDrv_APLL22M_Clk_Off();
 		}
 	}
@@ -1273,6 +1334,7 @@ void EnableApll2(bool enable)
 			/* 196.608 / 8 = 24.576MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 			AudDrv_APLL24M_Clk_On();
+			apll2_mux_setting(true);
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 1, 0x1 << 1);
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
@@ -1280,6 +1342,7 @@ void EnableApll2(bool enable)
 		Aud_APLL_DIV_APLL2_cntr--;
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 1, 0x1 << 1);
+			apll2_mux_setting(false);
 			AudDrv_APLL24M_Clk_Off();
 		}
 	}

@@ -2712,7 +2712,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
 
 	if (enable) {
-		mic_vinp_mv = get_accdet_auxadc();
+		/* mic_vinp_mv setting in hp_plugged_in_set */
 #ifdef ANALOG_HPTRIM
 		if (mic_vinp_mv > MIC_VINP_4POLE_THRES_MV &&
 		   ((codec_debug_enable & DBG_DCTRIM_BYPASS_4POLE) == 0)) {
@@ -3446,7 +3446,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 	if (enable) {
 #ifdef ANALOG_HPTRIM
 		if (apply_n12db_gain) {
-			mic_vinp_mv = get_accdet_auxadc();
+			/* mic_vinp_mv setting in hp_plugged_in_set */
 			if (mic_vinp_mv > MIC_VINP_4POLE_THRES_MV &&
 			   ((codec_debug_enable & DBG_DCTRIM_BYPASS_4POLE)
 				== 0)) {
