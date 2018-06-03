@@ -48,11 +48,17 @@
 #include <linux/stacktrace.h>
 #include "ccmni.h"
 #include "ccci_debug.h"
+#include <mt-plat/met_drv.h>
 
-#define IS_CCMNI_LAN(dev)    (strncmp(dev->name, "ccmni-lan", 9) == 0)
 
-ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
-unsigned int ccmni_debug_level;
+struct ccmni_ctl_block *ccmni_ctl_blk[MAX_MD_NUM];
+
+/* Time in nano seconds. This number must be less than a second. */
+#ifdef ENABLE_WQ_GRO
+long int gro_flush_timer __read_mostly = 1000000L;
+#else
+long int gro_flush_timer;
+#endif
 
 /********************internal function*********************/
 static void ccmni_make_etherframe(int md_id, struct net_device *dev,
@@ -73,8 +79,8 @@ static void ccmni_make_etherframe(int md_id, struct net_device *dev,
 			memcpy(eth_hdr->h_dest, br_dev->dev_addr,
 				sizeof(eth_hdr->h_dest));
 		} else {
-			CCMNI_ERR_MSG(md_id, "%s can't find mdbr0\n",
-				dev->name);
+			CCMNI_DBG_MSG(md_id,
+				"%s can't find mdbr0\n", dev->name);
 			memcpy(eth_hdr->h_dest, dest_mac,
 				sizeof(eth_hdr->h_dest));
 		}
@@ -94,10 +100,10 @@ static inline int is_ack_skb(int md_id, struct sk_buff *skb)
 	u32 packet_type;
 	struct tcphdr *tcph;
 	int ret = 0;
-	md_tag_packet_t *tag = NULL;
+	struct md_tag_packet *tag = NULL;
 	unsigned int count = 0;
 
-	tag = (md_tag_packet_t *)skb->head;
+	tag = (struct md_tag_packet *)skb->head;
 	if (tag->guard_pattern == MDT_TAG_PATTERN)
 		count = sizeof(tag->info);
 
@@ -126,20 +132,6 @@ static inline int is_ack_skb(int md_id, struct sk_buff *skb)
 			    !tcph->rst &&
 				((total_len - l4_off) == (tcph->doff << 2)))
 				ret = 1;
-
-			if (unlikely(ccmni_debug_level &
-					CCMNI_DBG_LEVEL_ACK_SKB)) {
-				CCMNI_INF_MSG(md_id,
-					      "[SKB] ack=%d: proto=%d syn=%d fin=%d rst=%d ack=%d tot_len=%d l4_off=%d doff=%d\n",
-					      ret, nexthdr, tcph->syn, tcph->fin, tcph->rst,
-					      tcph->ack, total_len, l4_off, tcph->doff);
-			}
-		} else {
-			if (unlikely(ccmni_debug_level &
-					CCMNI_DBG_LEVEL_ACK_SKB))
-				CCMNI_INF_MSG(md_id,
-					"[SKB] ack=%d: tot_len=%d\n",
-					ret, total_len);
 		}
 	} else if (packet_type == IPV4_VERSION) {
 		struct iphdr *iph = (struct iphdr *)skb->data;
@@ -153,20 +145,6 @@ static inline int is_ack_skb(int md_id, struct sk_buff *skb)
 				(ntohs(iph->tot_len) == (iph->ihl << 2) +
 				(tcph->doff << 2)))
 				ret = 1;
-
-			if (unlikely(ccmni_debug_level &
-				CCMNI_DBG_LEVEL_ACK_SKB)) {
-				CCMNI_INF_MSG(md_id,
-					      "[SKB] ack=%d: proto=%d syn=%d fin=%d rst=%d ack=%d tot_len=%d ihl=%d doff=%d\n",
-					      ret, iph->protocol, tcph->syn, tcph->fin, tcph->rst,
-					      tcph->ack, ntohs(iph->tot_len), iph->ihl, tcph->doff);
-			}
-		} else {
-			if (unlikely(ccmni_debug_level &
-				CCMNI_DBG_LEVEL_ACK_SKB))
-				CCMNI_INF_MSG(md_id,
-					"[SKB] ack=%d: tot_len=%d\n",
-					ret, ntohs(iph->tot_len));
 		}
 	}
 
@@ -188,16 +166,18 @@ static inline int arp_reply(int md_id, struct net_device *dev,
 		request->ar_hln != ETH_ALEN || request->ar_pln != 4 ||
 		htons(request->ar_op) != ARPOP_REQUEST) {
 		CCMNI_DBG_MSG(md_id,
-			      "arp_reply: %s not_arp_req, ar_hrd=0x%x, ar_pro=0x%x, ar_hln=%d, ar_pln=%d=, ar_op=0x%x\n",
-			      dev->name, htons(request->ar_hrd), htons(request->ar_pro), request->ar_hln,
-			      request->ar_pln, htons(request->ar_op));
+			"arp_reply: %s not_arp_req, ar_hrd=0x%x, ar_pro=0x%x, ar_hln=%d, ar_pln=%d=, ar_op=0x%x\n",
+			dev->name, htons(request->ar_hrd),
+			htons(request->ar_pro), request->ar_hln,
+			request->ar_pln, htons(request->ar_op));
 		goto not_arp_req;
 	}
 
 	new_skb = netdev_alloc_skb_ip_align(dev, arp_hdr_len(dev));
 	if (!new_skb) {
-		CCMNI_ERR_MSG(md_id,
-			"arp_reply: %s can't alloc new skb\n", dev->name);
+		CCMNI_DBG_MSG(md_id,
+			"arp_reply: %s can't alloc new skb\n",
+			dev->name);
 		goto alloc_skb_fail;
 	}
 
@@ -229,10 +209,6 @@ static inline int arp_reply(int md_id, struct net_device *dev,
 	else
 		netif_rx(new_skb);
 
-	CCMNI_DBG_MSG(md_id,
-		"%s send arp_reply_skb(0x%p) and free arp_request_skb(0x%p)\n",
-		dev->name, new_skb, skb);
-
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += skb->len;
 	dev_kfree_skb(skb);
@@ -247,222 +223,51 @@ static inline int arp_reply(int md_id, struct net_device *dev,
 	return 1;
 }
 
-/********************internal debug function*********************/
-static void ccmni_dbg_eth_header(int md_id, bool tx, struct ethhdr *ethh)
+#ifdef ENABLE_WQ_GRO
+static int is_skb_gro(struct sk_buff *skb)
 {
-	if (ethh != NULL) {
-		CCMNI_INF_MSG(md_id,
-			      "[SKB][%s] ethhdr: proto=0x%04x dest_mac=%02x:%02x:%02x:%02x:%02x:%02x src_mac=%02x:%02x:%02x:%02x:%02x:%02x\n",
-			      tx ? "TX" : "RX", ethh->h_proto, ethh->h_dest[0], ethh->h_dest[1], ethh->h_dest[2],
-			      ethh->h_dest[3], ethh->h_dest[4], ethh->h_dest[5], ethh->h_source[0], ethh->h_source[1],
-			      ethh->h_source[2], ethh->h_source[3], ethh->h_source[4], ethh->h_source[5]);
-	}
+	u32 packet_type;
+
+	packet_type = skb->data[0] & 0xF0;
+	if (packet_type == IPV4_VERSION &&
+		ip_hdr(skb)->protocol == IPPROTO_TCP)
+		return 1;
+	else if (packet_type == IPV6_VERSION &&
+		ipv6_hdr(skb)->nexthdr == IPPROTO_TCP)
+		return 1;
+	else
+		return 0;
 }
 
-static void ccmni_dbg_ip_header(int md_id, bool tx, struct iphdr *iph)
+static void ccmni_gro_flush(struct ccmni_instance *ccmni)
 {
-	if (iph != NULL) {
-		CCMNI_INF_MSG(md_id,
-			      "[SKB][%s] iphdr: ihl=0x%02x ver=0x%02x tos=0x%02x tot_len=0x%04x id=0x%04x frag_off=0x%04x ttl=0x%02x proto=0x%02x check=0x%04x saddr=0x%08x daddr=0x%08x\n",
-			      tx ? "TX" : "RX", iph->ihl, iph->version, iph->tos, iph->tot_len, iph->id,
-			      iph->frag_off, iph->ttl, iph->protocol, iph->check, iph->saddr, iph->daddr);
-	}
-}
+	struct timespec curr_time, diff;
 
-static void ccmni_dbg_tcp_header(int md_id, bool tx, struct tcphdr *tcph)
-{
-	if (tcph != NULL) {
-		CCMNI_INF_MSG(md_id,
-			      "[SKB][%s] tcp_hdr: src=0x%04x dest=0x%04x seq=0x%08x ack_seq=0x%08x urg=%d ack=%d psh=%d rst=%d syn=%d fin=%d\n",
-			      tx ? "TX" : "RX", ntohl(tcph->source), ntohl(tcph->dest), tcph->seq, tcph->ack_seq,
-			      tcph->urg, tcph->ack, tcph->psh, tcph->rst, tcph->syn, tcph->fin);
-	}
-}
+	if (!gro_flush_timer)
+		return;
 
-static void ccmni_dbg_skb_header(int md_id, bool tx, struct sk_buff *skb)
-{
-	struct ethhdr *ethh = NULL;
-	struct iphdr *iph = NULL;
-	struct ipv6hdr *ipv6h = NULL;
-	struct tcphdr *tcph = NULL;
-	u8 nexthdr;
-	__be16 frag_off;
-	u32 l4_off;
-
-	if (!tx) {
-		ethh = (struct ethhdr *)(skb->data - ETH_HLEN);
-		ccmni_dbg_eth_header(md_id, tx, ethh);
-	}
-
-	if (skb->protocol == htons(ETH_P_IP)) {
-		iph = (struct iphdr *)skb->data;
-		ccmni_dbg_ip_header(md_id, tx, iph);
-
-		if (iph->protocol == IPPROTO_TCP) {
-			tcph = (struct tcphdr *)(skb->data + (iph->ihl << 2));
-			ccmni_dbg_tcp_header(md_id, tx, tcph);
-		}
-	} else if (skb->protocol == htons(ETH_P_IPV6)) {
-		ipv6h = (struct ipv6hdr *)skb->data;
-
-		nexthdr = ipv6h->nexthdr;
-		if (nexthdr == IPPROTO_TCP) {
-			l4_off = ipv6_skip_exthdr(skb,
-						sizeof(struct ipv6hdr),
-						&nexthdr,
-						&frag_off);
-			tcph = (struct tcphdr *)(skb->data + l4_off);
-			ccmni_dbg_tcp_header(md_id, tx, tcph);
+	if (unlikely(ccmni->flush_time.tv_sec == 0)) {
+		getnstimeofday(&ccmni->flush_time);
+	} else {
+		getnstimeofday(&(curr_time));
+		diff = timespec_sub(curr_time, ccmni->flush_time);
+		if ((diff.tv_sec > 0) || (diff.tv_nsec > gro_flush_timer)) {
+			napi_gro_flush(ccmni->napi, false);
+			getnstimeofday(&ccmni->flush_time);
 		}
 	}
 }
+#endif
 
-/* ccmni debug sys file create */
-int ccmni_debug_file_init(int md_id)
+static inline int ccmni_forward_rx(struct ccmni_instance *ccmni,
+	struct sk_buff *skb)
 {
-	int result = -1;
-	char fname[16];
-	struct dentry *dentry1, *dentry2, *dentry3;
-
-	CCMNI_INF_MSG(md_id, "ccmni_debug_file_init\n");
-
-	snprintf(fname, 16, "ccmni%d", (md_id + 1));
-
-	dentry1 = debugfs_create_dir(fname, NULL);
-	if (!dentry1) {
-		CCMNI_ERR_MSG(md_id, "create /sys/kernel/debug/ccmni%d fail\n",
-			(md_id + 1));
-		return -ENOENT;
-	}
-
-	snprintf(fname, 16, "md%d", (md_id + 1));
-
-	dentry2 = debugfs_create_dir(fname, dentry1);
-	if (!dentry2) {
-		CCMNI_ERR_MSG(md_id,
-			"create /sys/kernel/debug/ccmni/md%d fail\n",
-			(md_id + 1));
-		return -ENOENT;
-	}
-
-	dentry3 = debugfs_create_u32("debug_level", 0600, dentry2,
-		&ccmni_debug_level);
-	result = PTR_ERR(dentry3);
-	if (IS_ERR(dentry3) && result != -ENODEV) {
-		CCMNI_ERR_MSG(md_id,
-		"create /sys/kernel/debug/ccmni/md%d/debug_level fail: %d\n",
-		md_id, result);
-		return -ENOENT;
-	}
-
-	return 0;
-}
-
-/********************netdev register function********************/
-static u16 ccmni_select_queue(struct net_device *dev, struct sk_buff *skb,
-	void *accel_priv, select_queue_fallback_t fallback)
-{
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[ccmni->md_id];
-
-	if (ctlb->ccci_ops->md_ability & MODEM_CAP_DATA_ACK_DVD) {
-		if (ccmni->ch.multiq && is_ack_skb(ccmni->md_id, skb))
-			return CCMNI_TXQ_FAST;
-		else
-			return CCMNI_TXQ_NORMAL;
-	} else
-		return CCMNI_TXQ_NORMAL;
-}
-
-static int ccmni_open(struct net_device *dev)
-{
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
-	ccmni_ctl_block_t *ccmni_ctl = ccmni_ctl_blk[ccmni->md_id];
-	ccmni_instance_t *ccmni_tmp = NULL;
-	int usage_cnt = 0;
-
-	if (unlikely(ccmni_ctl == NULL)) {
-		CCMNI_ERR_MSG(ccmni->md_id,
-			"%s_Open: MD%d ctlb is NULL\n",
-			dev->name, ccmni->md_id);
-		return -1;
-	}
-
-	netif_carrier_on(dev);
-
-	netif_tx_start_all_queues(dev);
-
-	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
-		napi_enable(ccmni->napi);
-		napi_schedule(ccmni->napi);
-	}
-
-	atomic_inc(&ccmni->usage);
-	ccmni_tmp = ccmni_ctl->ccmni_inst[ccmni->index];
-	if (ccmni != ccmni_tmp) {
-		usage_cnt = atomic_read(&ccmni->usage);
-		atomic_set(&ccmni_tmp->usage, usage_cnt);
-	}
-
-	CCMNI_INF_MSG(ccmni->md_id, "%s_Open: cnt=(%d,%d), md_ab=0x%X\n",
-			dev->name, atomic_read(&ccmni->usage),
-			atomic_read(&ccmni_tmp->usage),
-			ccmni_ctl->ccci_ops->md_ability);
-	return 0;
-}
-
-static int ccmni_close(struct net_device *dev)
-{
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
-	ccmni_ctl_block_t *ccmni_ctl = ccmni_ctl_blk[ccmni->md_id];
-	ccmni_instance_t *ccmni_tmp = NULL;
-	int usage_cnt = 0;
-
-	if (unlikely(ccmni_ctl == NULL)) {
-		CCMNI_ERR_MSG(ccmni->md_id,
-			"%s_Close: MD%d ctlb is NULL\n",
-			dev->name, ccmni->md_id);
-		return -1;
-	}
-
-	atomic_dec(&ccmni->usage);
-	ccmni_tmp = ccmni_ctl->ccmni_inst[ccmni->index];
-	if (ccmni != ccmni_tmp) {
-		usage_cnt = atomic_read(&ccmni->usage);
-		atomic_set(&ccmni_tmp->usage, usage_cnt);
-	}
-
-	netif_tx_disable(dev);
-
-	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI))
-		napi_disable(ccmni->napi);
-
-	CCMNI_INF_MSG(ccmni->md_id, "%s_Close: cnt=(%d, %d)\n",
-		dev->name,
-		atomic_read(&ccmni->usage),
-		atomic_read(&ccmni_tmp->usage));
-
-	return 0;
-}
-
-static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
-{
-	int ret;
-	int skb_len = skb->len;
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[ccmni->md_id];
-	unsigned int is_ack = 0;
-	int mac_len = 0;
-	md_tag_packet_t *tag = NULL;
-	unsigned int count = 0;
-	struct ethhdr *eth;
-	__be16 type;
 	bool flt_ok = false;
 	bool flt_flag = true;
 	unsigned int pkt_type;
 	struct iphdr *iph;
 	struct ipv6hdr *iph6;
-	ccmni_fwd_filter_t flt_tmp;
+	struct ccmni_fwd_filter flt_tmp;
 	unsigned int i, j;
 	u16 mask;
 	u32 *addr1, *addr2;
@@ -557,17 +362,130 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		}
 	}
 
-	/*if data_len=1500 with mac_header for ccmni-lan,
-	 *skb->len>MTU,so it must before MTU judgement
+	return -1;
+}
+
+
+/********************netdev register function********************/
+static u16 ccmni_select_queue(struct net_device *dev, struct sk_buff *skb,
+	void *accel_priv, select_queue_fallback_t fallback)
+{
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[ccmni->md_id];
+
+	if (ctlb->ccci_ops->md_ability & MODEM_CAP_DATA_ACK_DVD) {
+		if (ccmni->ch.multiq && is_ack_skb(ccmni->md_id, skb))
+			return CCMNI_TXQ_FAST;
+		else
+			return CCMNI_TXQ_NORMAL;
+	} else
+		return CCMNI_TXQ_NORMAL;
+}
+
+static int ccmni_open(struct net_device *dev)
+{
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
+	struct ccmni_ctl_block *ccmni_ctl = ccmni_ctl_blk[ccmni->md_id];
+	struct ccmni_instance *ccmni_tmp = NULL;
+	int usage_cnt = 0;
+
+	if (unlikely(ccmni_ctl == NULL)) {
+		CCMNI_PR_DBG(ccmni->md_id,
+			"%s_Open: MD%d ctlb is NULL\n",
+			dev->name, ccmni->md_id);
+		return -1;
+	}
+
+	netif_carrier_on(dev);
+
+	netif_tx_start_all_queues(dev);
+
+	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
+		napi_enable(ccmni->napi);
+		napi_schedule(ccmni->napi);
+	}
+
+	atomic_inc(&ccmni->usage);
+	ccmni_tmp = ccmni_ctl->ccmni_inst[ccmni->index];
+	if (ccmni != ccmni_tmp) {
+		usage_cnt = atomic_read(&ccmni->usage);
+		atomic_set(&ccmni_tmp->usage, usage_cnt);
+	}
+
+	CCMNI_INF_MSG(ccmni->md_id,
+		"%s_Open:cnt=(%d,%d), md_ab=0x%X, gro=(%llx, %ld), flt_cnt=%d\n",
+		dev->name, atomic_read(&ccmni->usage),
+		atomic_read(&ccmni_tmp->usage),
+		ccmni_ctl->ccci_ops->md_ability,
+		dev->features, gro_flush_timer, ccmni->flt_cnt);
+	return 0;
+}
+
+static int ccmni_close(struct net_device *dev)
+{
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
+	struct ccmni_ctl_block *ccmni_ctl = ccmni_ctl_blk[ccmni->md_id];
+	struct ccmni_instance *ccmni_tmp = NULL;
+	int usage_cnt = 0;
+
+	if (unlikely(ccmni_ctl == NULL)) {
+		CCMNI_PR_DBG(ccmni->md_id, "%s_Close: MD%d ctlb is NULL\n",
+			dev->name, ccmni->md_id);
+		return -1;
+	}
+
+	atomic_dec(&ccmni->usage);
+	ccmni_tmp = ccmni_ctl->ccmni_inst[ccmni->index];
+	if (ccmni != ccmni_tmp) {
+		usage_cnt = atomic_read(&ccmni->usage);
+		atomic_set(&ccmni_tmp->usage, usage_cnt);
+	}
+
+	netif_tx_disable(dev);
+
+	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI))
+		napi_disable(ccmni->napi);
+
+	CCMNI_INF_MSG(ccmni->md_id, "%s_Close:cnt=(%d, %d)\n",
+		dev->name, atomic_read(&ccmni->usage),
+		atomic_read(&ccmni_tmp->usage));
+
+	return 0;
+}
+
+static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
+{
+	int ret;
+	int skb_len = skb->len;
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[ccmni->md_id];
+	unsigned int is_ack = 0;
+	int mac_len = 0;
+	struct md_tag_packet *tag = NULL;
+	unsigned int count = 0;
+	struct ethhdr *eth;
+	__be16 type;
+	struct iphdr *iph;
+
+#if defined(CCMNI_MET_DEBUG)
+	char tag_name[32] = { '\0' };
+	unsigned int tag_id = 0;
+#endif
+
+	if (ccmni_forward_rx(ccmni, skb) == NETDEV_TX_OK)
+		return NETDEV_TX_OK;
+
+	/* if data_len=1500 with mac_header for ccmni-lan,
+	 * skb->len>MTU,so it must before MTU judgement
 	 */
 	if (IS_CCMNI_LAN(dev)) {
 		if (skb_network_offset(skb) > 0) {
 			eth = (struct ethhdr *)skb_mac_header(skb);
 			type = eth->h_proto;
-			CCMNI_DBG_MSG(ccmni->md_id,
-				      "[skb]data=%p, ip_h=%x, mac_h=%x, mac_len=%d, head_room=%d, len=%d, type=%x, iph_off=%d\n",
-				      skb->data, skb->network_header, skb->mac_header,
-				      skb->mac_len, skb_headroom(skb), skb->len, type, skb_network_offset(skb));
 
 			if (htons(ETH_P_ARP) == type)
 				if (!arp_reply(ccmni->md_id, dev, eth, skb))
@@ -578,9 +496,9 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			skb_pop_mac_header(skb);
 		} else {
 			iph = (struct iphdr *)skb_network_header(skb);
-			CCMNI_ERR_MSG(ccmni->md_id,
-					"ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X\n",
-					iph->id);
+			CCMNI_DBG_MSG(ccmni->md_id,
+			"ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X\n",
+			iph->id);
 			dump_stack();
 			dev_kfree_skb(skb);
 			dev->stats.tx_dropped++;
@@ -590,7 +508,7 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	/* dev->mtu is changed  if dev->mtu is changed by upper layer */
 	if (unlikely(skb->len > dev->mtu)) {
-		CCMNI_ERR_MSG(ccmni->md_id,
+		CCMNI_PR_DBG(ccmni->md_id,
 					"CCMNI%d write fail: len(0x%x)>MTU(0x%x, 0x%x)\n",
 					ccmni->index, skb->len,
 					CCMNI_MTU, dev->mtu);
@@ -600,51 +518,40 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 
 	if (unlikely(skb_headroom(skb) < sizeof(struct ccci_header))) {
-		CCMNI_ERR_MSG(ccmni->md_id,
-					"CCMNI%d write fail: header room(%d) < ccci_header(%d)\n",
-					ccmni->index, skb_headroom(skb), dev->hard_header_len);
+		CCMNI_PR_DBG(ccmni->md_id,
+			"CCMNI%d write fail: header room(%d) < ccci_header(%d)\n",
+			ccmni->index, skb_headroom(skb),
+			dev->hard_header_len);
 		dev_kfree_skb(skb);
 		dev->stats.tx_dropped++;
 		return NETDEV_TX_OK;
 	}
 
-	tag = (md_tag_packet_t *)skb->head;
+	tag = (struct md_tag_packet *)skb->head;
 	if (tag->guard_pattern == MDT_TAG_PATTERN) {
 		if (ccmni->md_id == MD_SYS1) {
 			count = sizeof(tag->info);
 			memcpy(skb_tail_pointer(skb), &(tag->info), count);
 			skb->len += count;
 		} else {
-			CCMNI_ERR_MSG(ccmni->md_id,
-					"%s: MD%d not support MDT tag\n",
-					dev->name, (ccmni->md_id + 1));
+			CCMNI_DBG_MSG(ccmni->md_id,
+				"%s: MD%d not support MDT tag\n",
+				dev->name, (ccmni->md_id + 1));
 		}
 	}
 
 	if (ctlb->ccci_ops->md_ability & MODEM_CAP_DATA_ACK_DVD)
 		is_ack = is_ack_skb(ccmni->md_id, skb);
 
-	if (unlikely(ccmni_debug_level & CCMNI_DBG_LEVEL_TX)) {
-		CCMNI_INF_MSG(ccmni->md_id,
-					"[TX]CCMNI%d head_len=%d len=%d ack=%d tx_pkt=%ld\n",
-					ccmni->index, skb_headroom(skb),
-					skb->len, is_ack,
-					(dev->stats.tx_packets + 1));
-	}
-
-	if (unlikely(ccmni_debug_level & CCMNI_DBG_LEVEL_TX_SKB))
-		ccmni_dbg_skb_header(ccmni->md_id, true, skb);
-
 	ret = ctlb->ccci_ops->send_pkt(ccmni->md_id, ccmni->index, skb, is_ack);
 	if (ret == CCMNI_ERR_MD_NO_READY || ret == CCMNI_ERR_TX_INVAL) {
 		dev_kfree_skb(skb);
 		dev->stats.tx_dropped++;
 		ccmni->tx_busy_cnt[is_ack] = 0;
-		CCMNI_ERR_MSG(ccmni->md_id,
-					"[TX]CCMNI%d send tx_pkt=%ld(ack=%d) fail: %d\n",
-					ccmni->index,
-					(dev->stats.tx_packets + 1),
-					is_ack, ret);
+		CCMNI_DBG_MSG(ccmni->md_id,
+			"[TX]CCMNI%d send tx_pkt=%ld(ack=%d) fail: %d\n",
+			ccmni->index, (dev->stats.tx_packets + 1),
+			is_ack, ret);
 		return NETDEV_TX_OK;
 	} else if (ret == CCMNI_ERR_TX_BUSY) {
 		goto tx_busy;
@@ -652,19 +559,34 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += skb_len;
 	if (ccmni->tx_busy_cnt[is_ack] > 10) {
-		CCMNI_ERR_MSG(ccmni->md_id,
+		CCMNI_DBG_MSG(ccmni->md_id,
 			"[TX]CCMNI%d TX busy: tx_pkt=%ld(ack=%d) retry %ld times done\n",
 			ccmni->index, dev->stats.tx_packets,
 			is_ack, ccmni->tx_busy_cnt[is_ack]);
 	}
 	ccmni->tx_busy_cnt[is_ack] = 0;
 
+#if defined(CCMNI_MET_DEBUG)
+	if (ccmni->tx_met_time == 0) {
+		ccmni->tx_met_time = jiffies;
+		ccmni->tx_met_bytes = dev->stats.tx_bytes;
+	} else if (time_after_eq(jiffies,
+		ccmni->tx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
+		snprintf(tag_name, 32, "%s_tx_bytes", dev->name);
+		tag_id = CCMNI_TX_MET_ID + ccmni->index;
+		met_tag_oneshot(tag_id, tag_name,
+		(dev->stats.tx_bytes - ccmni->tx_met_bytes));
+		ccmni->tx_met_bytes = dev->stats.tx_bytes;
+		ccmni->tx_met_time = jiffies;
+	}
+#endif
+
 	return NETDEV_TX_OK;
 
 tx_busy:
 	if (unlikely(!(ctlb->ccci_ops->md_ability & MODEM_CAP_TXBUSY_STOP))) {
 		if ((ccmni->tx_busy_cnt[is_ack]++) % 100 == 0)
-			CCMNI_ERR_MSG(ccmni->md_id,
+			CCMNI_DBG_MSG(ccmni->md_id,
 				"[TX]CCMNI%d TX busy: tx_pkt=%ld(ack=%d) retry_times=%ld\n",
 				ccmni->index, dev->stats.tx_packets,
 				is_ack, ccmni->tx_busy_cnt[is_ack]);
@@ -683,25 +605,27 @@ tx_busy:
 
 static int ccmni_change_mtu(struct net_device *dev, int new_mtu)
 {
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
 
 	if (new_mtu > CCMNI_MTU)
 		return -EINVAL;
 
 	dev->mtu = new_mtu;
-	CCMNI_INF_MSG(ccmni->md_id,
-			"CCMNI%d change mtu_siz=%d\n", ccmni->index, new_mtu);
+	CCMNI_DBG_MSG(ccmni->md_id,
+		"CCMNI%d change mtu_siz=%d\n", ccmni->index, new_mtu);
 	return 0;
 }
 
 static void ccmni_tx_timeout(struct net_device *dev)
 {
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
 
-	CCMNI_INF_MSG(ccmni->md_id,
-			"ccmni%d_tx_timeout: usage_cnt=%d, timeout=%ds\n",
-			ccmni->index, atomic_read(&ccmni->usage),
-			(ccmni->dev->watchdog_timeo/HZ));
+	CCMNI_DBG_MSG(ccmni->md_id,
+		"ccmni%d_tx_timeout: usage_cnt=%d, timeout=%ds\n",
+		ccmni->index,
+		atomic_read(&ccmni->usage), (ccmni->dev->watchdog_timeo/HZ));
 
 	dev->stats.tx_errors++;
 	if (atomic_read(&ccmni->usage) > 0)
@@ -711,14 +635,15 @@ static void ccmni_tx_timeout(struct net_device *dev)
 static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
 	int md_id, md_id_irat, usage_cnt;
-	ccmni_instance_t *ccmni_irat;
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
-	ccmni_instance_t *ccmni_tmp = NULL;
-	ccmni_ctl_block_t *ctlb = NULL;
-	ccmni_ctl_block_t *ctlb_irat = NULL;
+	struct ccmni_instance *ccmni_irat;
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(dev);
+	struct ccmni_instance *ccmni_tmp = NULL;
+	struct ccmni_ctl_block *ctlb = NULL;
+	struct ccmni_ctl_block *ctlb_irat = NULL;
 	unsigned int timeout = 0;
-	ccmni_fwd_filter_t flt_tmp;
-	ccmni_flt_act_t flt_act;
+	struct ccmni_fwd_filter flt_tmp;
+	struct ccmni_flt_act flt_act;
 	unsigned int i;
 	unsigned int cmp_len;
 
@@ -770,37 +695,34 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			}
 		}
 		if (likely(ccmni_tmp != NULL)) {
-			CCMNI_INF_MSG(ccmni->md_id,
-					"SIOCSTXQSTATE: %s_state=0x%x, cnt=(%d, %d)\n",
-					dev->name, ifr->ifr_ifru.ifru_ivalue,
-					atomic_read(&ccmni->usage),
-					atomic_read(&ccmni_tmp->usage));
+			CCMNI_DBG_MSG(ccmni->md_id,
+				"SIOCSTXQSTATE: %s_state=0x%x, cnt=(%d, %d)\n",
+				dev->name, ifr->ifr_ifru.ifru_ivalue,
+				atomic_read(&ccmni->usage),
+				atomic_read(&ccmni_tmp->usage));
 		} else {
-			CCMNI_INF_MSG(ccmni->md_id,
-					"SIOCSTXQSTATE: %s_state=0x%x, cnt=%d\n",
-					dev->name,
-					ifr->ifr_ifru.ifru_ivalue,
-					atomic_read(&ccmni->usage));
+			CCMNI_DBG_MSG(ccmni->md_id,
+				"SIOCSTXQSTATE: %s_state=0x%x, cnt=%d\n",
+				dev->name, ifr->ifr_ifru.ifru_ivalue,
+				atomic_read(&ccmni->usage));
 		}
 		break;
 
 	case SIOCCCMNICFG:
 		md_id_irat = ifr->ifr_ifru.ifru_ivalue;
 		md_id = ccmni->md_id;
-		if (md_id_irat < 0 && md_id_irat >= MAX_MD_NUM) {
-			CCMNI_ERR_MSG(md_id,
-					"SIOCSCCMNICFG: %s invalid md_id(%d)\n",
-					dev->name,
-					(ifr->ifr_ifru.ifru_ivalue + 1));
+		if (md_id_irat < 0 || md_id_irat >= MAX_MD_NUM) {
+			CCMNI_DBG_MSG(md_id,
+				"SIOCSCCMNICFG: %s invalid md_id(%d)\n",
+				dev->name, (ifr->ifr_ifru.ifru_ivalue + 1));
 			return -EINVAL;
 		}
 
 		if (dev != ccmni->dev) {
-			CCMNI_INF_MSG(md_id,
-					"SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
-					dev->name,
-					(ifr->ifr_ifru.ifru_ivalue + 1),
-					ccmni->dev->name, dev->name);
+			CCMNI_DBG_MSG(md_id,
+				"SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
+				dev->name, (ifr->ifr_ifru.ifru_ivalue + 1),
+				ccmni->dev->name, dev->name);
 			ccmni->dev = dev;
 			atomic_set(&ccmni->usage, 0);
 			ccmni->tx_busy_cnt[0] = 0;
@@ -810,7 +732,7 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 
 		ctlb_irat = ccmni_ctl_blk[md_id_irat];
 		if (ccmni->index >= ctlb_irat->ccci_ops->ccmni_num) {
-			CCMNI_ERR_MSG(md_id,
+			CCMNI_PR_DBG(md_id,
 			"SIOCSCCMNICFG: %s iRAT(MD%d->MD%d) fail,index(%d)>max_num(%d)\n",
 			dev->name, md_id, md_id_irat, ccmni->index,
 			ctlb_irat->ccci_ops->ccmni_num);
@@ -820,18 +742,20 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 
 		if (md_id_irat == ccmni->md_id) {
 			if (ccmni_irat->dev != dev) {
-				CCMNI_INF_MSG(md_id,
-				"SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
-				dev->name, (ifr->ifr_ifru.ifru_ivalue + 1),
-				ccmni_irat->dev->name, dev->name);
+				CCMNI_DBG_MSG(md_id,
+					"SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
+					dev->name,
+					(ifr->ifr_ifru.ifru_ivalue + 1),
+					ccmni_irat->dev->name, dev->name);
 				ccmni_irat->dev = dev;
 				usage_cnt = atomic_read(&ccmni->usage);
 				atomic_set(&ccmni_irat->usage, usage_cnt);
 			} else
-				CCMNI_INF_MSG(md_id,
-				"SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
-				dev->name, (ifr->ifr_ifru.ifru_ivalue + 1),
-				atomic_read(&ccmni->usage));
+				CCMNI_DBG_MSG(md_id,
+					"SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
+					dev->name,
+					(ifr->ifr_ifru.ifru_ivalue + 1),
+					atomic_read(&ccmni->usage));
 			break;
 		}
 
@@ -848,21 +772,22 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		 */
 		ccmni_irat->dev = dev;
 		atomic_set(&ccmni_irat->usage, usage_cnt);
-		memcpy(netdev_priv(dev), ccmni_irat, sizeof(ccmni_instance_t));
+		memcpy(netdev_priv(dev), ccmni_irat,
+			sizeof(struct ccmni_instance));
 
-		CCMNI_INF_MSG(md_id,
-				"SIOCCCMNICFG: %s iRAT MD%d->MD%d, dev_cnt=%d, md_cnt=%d, md_irat_cnt=%d, irat_dev=%s\n",
-				dev->name, (md_id + 1),
-				(ifr->ifr_ifru.ifru_ivalue + 1),
-				atomic_read(&ccmni->usage),
-				atomic_read(&ccmni_tmp->usage),
-				atomic_read(&ccmni_irat->usage),
-				ccmni_irat->dev->name);
+		CCMNI_DBG_MSG(md_id,
+			"SIOCCCMNICFG: %s iRAT MD%d->MD%d, dev_cnt=%d, md_cnt=%d, md_irat_cnt=%d, irat_dev=%s\n",
+			dev->name, (md_id + 1),
+			(ifr->ifr_ifru.ifru_ivalue + 1),
+			atomic_read(&ccmni->usage),
+			atomic_read(&ccmni_tmp->usage),
+			atomic_read(&ccmni_irat->usage),
+			ccmni_irat->dev->name);
 		break;
 
 	case SIOCFWDFILTER:
 		if (copy_from_user(&flt_act, ifr->ifr_ifru.ifru_data,
-				sizeof(ccmni_flt_act_t))) {
+				sizeof(struct ccmni_flt_act))) {
 			CCMNI_INF_MSG(ccmni->md_id,
 				"SIOCFWDFILTER: %s copy data from user fail\n",
 				dev->name);
@@ -950,9 +875,8 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		break;
 
 	default:
-		CCMNI_ERR_MSG(ccmni->md_id,
-			"%s: unknown ioctl cmd=%x\n",
-			dev->name, cmd);
+		CCMNI_DBG_MSG(ccmni->md_id,
+			"%s: unknown ioctl cmd=%x\n", dev->name, cmd);
 		break;
 	}
 
@@ -974,9 +898,10 @@ static int ccmni_napi_poll(struct napi_struct *napi, int budget)
 #ifdef ENABLE_WQ_GRO
 	return 0;
 #else
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(napi->dev);
+	struct ccmni_instance *ccmni =
+		(struct ccmni_instance *)netdev_priv(napi->dev);
 	int md_id = ccmni->md_id;
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 
 	del_timer(ccmni->timer);
 
@@ -990,24 +915,23 @@ static int ccmni_napi_poll(struct napi_struct *napi, int budget)
 
 static void ccmni_napi_poll_timeout(unsigned long data)
 {
-	ccmni_instance_t *ccmni = (ccmni_instance_t *)data;
+	struct ccmni_instance *ccmni = (struct ccmni_instance *)data;
 
-	CCMNI_ERR_MSG(ccmni->md_id,
-		"CCMNI%d lost NAPI polling\n",
-		ccmni->index);
+	CCMNI_DBG_MSG(ccmni->md_id,
+		"CCMNI%d lost NAPI polling\n", ccmni->index);
 }
 
 
 /********************ccmni driver register  ccci function********************/
-static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni,
+static inline int ccmni_inst_init(int md_id, struct ccmni_instance *ccmni,
 	struct net_device *dev)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 	int ret = 0;
 
 	ret = ctlb->ccci_ops->get_ccmni_ch(md_id, ccmni->index, &ccmni->ch);
 	if (ret) {
-		CCMNI_ERR_MSG(md_id,
+		CCMNI_PR_DBG(md_id,
 			"get ccmni%d channel fail\n",
 			ccmni->index);
 		return ret;
@@ -1042,16 +966,17 @@ static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni,
 
 static inline void ccmni_dev_init(int md_id, struct net_device *dev)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 
 	dev->header_ops = NULL;
 	dev->mtu = CCMNI_MTU;
 	dev->tx_queue_len = CCMNI_TX_QUEUE;
 	dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
 	/* ccmni is a pure IP device */
-	dev->flags = (IFF_NOARP | IFF_BROADCAST) &
-			(~IFF_MULTICAST);	/* ccmni is P2P */
-	dev->features = NETIF_F_VLAN_CHALLENGED; /* not support VLAN */
+	dev->flags = IFF_NOARP &
+			(~IFF_BROADCAST & ~IFF_MULTICAST);
+	/* not support VLAN */
+	dev->features = NETIF_F_VLAN_CHALLENGED;
 	if (ctlb->ccci_ops->md_ability & MODEM_CAP_SGIO) {
 		dev->features |= NETIF_F_SG;
 		dev->hw_features |= NETIF_F_SG;
@@ -1083,46 +1008,42 @@ static inline void ccmni_dev_init(int md_id, struct net_device *dev)
 	random_ether_addr((u8 *) dev->dev_addr);
 }
 
-static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
+static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 {
 	int i = 0, j = 0, ret = 0;
-	ccmni_ctl_block_t *ctlb = NULL;
-	ccmni_ctl_block_t *ctlb_irat_src = NULL;
-	ccmni_instance_t *ccmni = NULL;
-	ccmni_instance_t *ccmni_irat_src = NULL;
+	struct ccmni_ctl_block *ctlb = NULL;
+	struct ccmni_ctl_block *ctlb_irat_src = NULL;
+	struct ccmni_instance *ccmni = NULL;
+	struct ccmni_instance *ccmni_irat_src = NULL;
 	struct net_device *dev = NULL;
 
 	if (unlikely(ccci_info->md_ability & MODEM_CAP_CCMNI_DISABLE)) {
-		CCMNI_ERR_MSG(md_id, "no need init ccmni: md_ability=0x%08X\n",
+		CCMNI_PR_DBG(md_id, "no need init ccmni: md_ability=0x%08X\n",
 			ccci_info->md_ability);
 		return 0;
 	}
 
-	ctlb = kzalloc(sizeof(ccmni_ctl_block_t), GFP_KERNEL);
+	ctlb = kzalloc(sizeof(struct ccmni_ctl_block), GFP_KERNEL);
 	if (unlikely(ctlb == NULL)) {
-		CCMNI_ERR_MSG(md_id, "alloc ccmni ctl struct fail\n");
+		CCMNI_PR_DBG(md_id, "alloc ccmni ctl struct fail\n");
 		return -ENOMEM;
 	}
 
-	ctlb->ccci_ops = kzalloc(sizeof(ccmni_ccci_ops_t), GFP_KERNEL);
+	ctlb->ccci_ops = kzalloc(sizeof(struct ccmni_ccci_ops), GFP_KERNEL);
 	if (unlikely(ctlb->ccci_ops == NULL)) {
-		CCMNI_ERR_MSG(md_id, "alloc ccmni_ccci_ops struct fail\n");
+		CCMNI_PR_DBG(md_id, "alloc ccmni_ccci_ops struct fail\n");
 		ret = -ENOMEM;
 		goto alloc_mem_fail;
 	}
 
+#if defined(CCMNI_MET_DEBUG)
+	if (met_tag_init() != 0)
+		CCMNI_INF_MSG(md_id, "ccmni_init:met tag init fail\n");
+#endif
+
 	ccmni_ctl_blk[md_id] = ctlb;
 
-	memcpy(ctlb->ccci_ops, ccci_info, sizeof(ccmni_ccci_ops_t));
-
-	CCMNI_INF_MSG(md_id,
-		      "ccmni_init: ccmni_num=%d, md_ability=0x%08x, irat_en=%08x, irat_md_id=%d, send_pkt=%p, get_ccmni_ch=%p, name=%s\n",
-		      ctlb->ccci_ops->ccmni_num, ctlb->ccci_ops->md_ability,
-		      (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_IRAT),
-		      ctlb->ccci_ops->irat_md_id, ctlb->ccci_ops->send_pkt,
-		      ctlb->ccci_ops->get_ccmni_ch, ctlb->ccci_ops->name);
-
-	ccmni_debug_file_init(md_id);
+	memcpy(ctlb->ccci_ops, ccci_info, sizeof(struct ccmni_ccci_ops));
 
 		for (i = 0; i < ctlb->ccci_ops->ccmni_num; i++) {
 			/* allocate netdev */
@@ -1130,19 +1051,21 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 				/* alloc multiple tx queue, 2 txq and 1 rxq */
 				dev =
 				alloc_etherdev_mqs(
-						sizeof(ccmni_instance_t),
+						sizeof(struct ccmni_instance),
 						2,
 						1);
 			else
-				dev = alloc_etherdev(sizeof(ccmni_instance_t));
+				dev =
+				alloc_etherdev(sizeof(struct ccmni_instance));
 			if (unlikely(dev == NULL)) {
-				CCMNI_ERR_MSG(md_id, "alloc netdev fail\n");
+			CCMNI_PR_DBG(md_id, "alloc netdev fail\n");
 				ret = -ENOMEM;
 				goto alloc_netdev_fail;
 			}
 
 			/* init net device */
 			ccmni_dev_init(md_id, dev);
+			dev->type = ARPHRD_PPP;
 
 			sprintf(dev->name, "%s%d", ctlb->ccci_ops->name, i);
 			CCMNI_INF_MSG(md_id,
@@ -1153,7 +1076,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			ccmni->index = i;
 			ret = ccmni_inst_init(md_id, ccmni, dev);
 			if (ret) {
-				CCMNI_ERR_MSG(md_id,
+				CCMNI_PR_DBG(md_id,
 					"initial ccmni instance fail\n");
 				goto alloc_netdev_fail;
 			}
@@ -1162,7 +1085,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			/* register net device */
 			ret = register_netdev(dev);
 			if (ret) {
-				CCMNI_ERR_MSG(md_id,
+				CCMNI_PR_DBG(md_id,
 					"CCMNI%d register netdev fail: %d\n",
 					i, ret);
 				goto alloc_netdev_fail;
@@ -1177,7 +1100,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 	if ((ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_IRAT) != 0) {
 		if (ctlb->ccci_ops->irat_md_id < 0 ||
 				ctlb->ccci_ops->irat_md_id >= MAX_MD_NUM) {
-			CCMNI_ERR_MSG(md_id,
+			CCMNI_PR_DBG(md_id,
 				"md%d IRAT fail because invalid irat md(%d)\n",
 				md_id, ctlb->ccci_ops->irat_md_id);
 			ret = -EINVAL;
@@ -1186,7 +1109,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 
 		ctlb_irat_src = ccmni_ctl_blk[ctlb->ccci_ops->irat_md_id];
 		if (!ctlb_irat_src) {
-			CCMNI_ERR_MSG(md_id,
+			CCMNI_PR_DBG(md_id,
 					"md%d IRAT fail because irat md%d ctlb is NULL\n",
 					md_id, ctlb->ccci_ops->irat_md_id);
 			ret = -EINVAL;
@@ -1195,7 +1118,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 
 		if (unlikely(ctlb->ccci_ops->ccmni_num >
 				ctlb_irat_src->ccci_ops->ccmni_num)) {
-			CCMNI_ERR_MSG(md_id,
+			CCMNI_PR_DBG(md_id,
 			"IRAT fail because number of src(%d) and dest(%d) ccmni isn't equal\n",
 			ctlb_irat_src->ccci_ops->ccmni_num,
 			ctlb->ccci_ops->ccmni_num);
@@ -1205,10 +1128,10 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 
 		for (i = 0; i < ctlb->ccci_ops->ccmni_num; i++) {
 			ccmni = ctlb->ccmni_inst[i];
-			ccmni_irat_src = kzalloc(sizeof(ccmni_instance_t),
+			ccmni_irat_src = kzalloc(sizeof(struct ccmni_instance),
 								GFP_KERNEL);
 			if (unlikely(ccmni_irat_src == NULL)) {
-				CCMNI_ERR_MSG(md_id,
+				CCMNI_PR_DBG(md_id,
 					"alloc ccmni_irat instance fail\n");
 				kfree(ccmni);
 				ret = -ENOMEM;
@@ -1219,7 +1142,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			dev = ctlb_irat_src->ccmni_inst[i]->dev;
 			/* initial irat source ccmni instance */
 			memcpy(ccmni_irat_src, ctlb_irat_src->ccmni_inst[i],
-			sizeof(ccmni_instance_t));
+			sizeof(struct ccmni_instance));
 			ctlb_irat_src->ccmni_inst[i] = ccmni_irat_src;
 			CCMNI_DBG_MSG(md_id,
 				"[IRAT]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
@@ -1233,13 +1156,13 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 		if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)
 			/*alloc multiple tx queue, 2 txq and 1 rxq */
 			dev = alloc_etherdev_mqs(
-					sizeof(ccmni_instance_t),
+					sizeof(struct ccmni_instance),
 					2,
 					1);
 		else
-			dev = alloc_etherdev(sizeof(ccmni_instance_t));
+			dev = alloc_etherdev(sizeof(struct ccmni_instance));
 		if (unlikely(dev == NULL)) {
-			CCMNI_ERR_MSG(md_id, "alloc netdev fail\n");
+			CCMNI_PR_DBG(md_id, "alloc netdev fail\n");
 			ret = -ENOMEM;
 			goto alloc_netdev_fail;
 		}
@@ -1250,14 +1173,13 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 		/*ccmni-lan need handle ARP packet */
 		dev->flags = IFF_BROADCAST | IFF_MULTICAST;
 		sprintf(dev->name, "ccmni-lan");
-		CCMNI_INF_MSG(md_id, "register netdev name: %s\n", dev->name);
 
 		/*init private structure of netdev */
 		ccmni = netdev_priv(dev);
 		ccmni->index = i;
 		ret = ccmni_inst_init(md_id, ccmni, dev);
 		if (ret) {
-			CCMNI_ERR_MSG(md_id, "initial ccmni instance fail\n");
+			CCMNI_PR_DBG(md_id, "initial ccmni instance fail\n");
 			goto alloc_netdev_fail;
 		}
 		ctlb->ccmni_inst[i] = ccmni;
@@ -1265,7 +1187,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 		/*register net device */
 		ret = register_netdev(dev);
 		if (ret) {
-			CCMNI_ERR_MSG(md_id,
+			CCMNI_PR_DBG(md_id,
 				"CCMNI%d register netdev fail: %d\n",
 				i,
 				ret);
@@ -1307,10 +1229,10 @@ alloc_mem_fail:
 static void ccmni_exit(int md_id)
 {
 	int i = 0;
-	ccmni_ctl_block_t *ctlb = NULL;
-	ccmni_instance_t *ccmni = NULL;
+	struct ccmni_ctl_block *ctlb = NULL;
+	struct ccmni_instance *ccmni = NULL;
 
-	CCMNI_INF_MSG(md_id, "ccmni_exit\n");
+	CCMNI_DBG_MSG(md_id, "ccmni_exit\n");
 
 	ctlb = ccmni_ctl_blk[md_id];
 	if (ctlb) {
@@ -1320,7 +1242,7 @@ static void ccmni_exit(int md_id)
 		for (i = 0; i < ctlb->ccci_ops->ccmni_num; i++) {
 			ccmni = ctlb->ccmni_inst[i];
 			if (ccmni) {
-				CCMNI_INF_MSG(md_id,
+				CCMNI_DBG_MSG(md_id,
 					"ccmni_exit: unregister ccmni%d dev\n",
 					i);
 				unregister_netdev(ccmni->dev);
@@ -1340,17 +1262,21 @@ ccmni_exit_ret:
 static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 		void *priv_data)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 	/* struct ccci_header *ccci_h = (struct ccci_header*)skb->data; */
-	ccmni_instance_t *ccmni = NULL;
+	struct ccmni_instance *ccmni = NULL;
 	struct net_device *dev = NULL;
 	int pkt_type, skb_len;
 #if defined(CCCI_SKB_TRACE)
 	struct iphdr *iph;
 #endif
+#if defined(CCMNI_MET_DEBUG)
+	char tag_name[32] = { '\0' };
+	unsigned int tag_id = 0;
+#endif
 
 	if (unlikely(ctlb == NULL || ctlb->ccci_ops == NULL)) {
-		CCMNI_ERR_MSG(md_id,
+		CCMNI_PR_DBG(md_id,
 			"invalid CCMNI%d ctrl/ops struct\n",
 			ccmni_idx);
 		dev_kfree_skb(skb);
@@ -1360,7 +1286,6 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 	ccmni = ctlb->ccmni_inst[ccmni_idx];
 	dev = ccmni->dev;
 
-	/* skb_pull(skb, sizeof(struct ccci_header)); */
 	pkt_type = skb->data[0] & 0xF0;
 	ccmni_make_etherframe(md_id, dev, skb->data - ETH_HLEN, dev->dev_addr,
 		pkt_type);
@@ -1374,13 +1299,6 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 
 	skb->ip_summed = CHECKSUM_NONE;
 	skb_len = skb->len;
-
-	if (unlikely(ccmni_debug_level & CCMNI_DBG_LEVEL_RX))
-		CCMNI_INF_MSG(md_id, "[RX]CCMNI%d recv data_len=%d\n",
-			ccmni_idx, skb->len);
-
-	if (unlikely(ccmni_debug_level & CCMNI_DBG_LEVEL_RX_SKB))
-		ccmni_dbg_skb_header(ccmni->md_id, false, skb);
 
 #if defined(NETDEV_TRACE) && defined(NETDEV_DL_TRACE)
 	skb->dbg_flag = 0x1;
@@ -1401,9 +1319,16 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 #endif
 	} else {
 #ifdef ENABLE_WQ_GRO
-		spin_lock_bh(ccmni->spinlock);
-		napi_gro_receive(ccmni->napi, skb);
-		spin_unlock_bh(ccmni->spinlock);
+		if (is_skb_gro(skb)) {
+			preempt_disable();
+			spin_lock_bh(ccmni->spinlock);
+			napi_gro_receive(ccmni->napi, skb);
+			ccmni_gro_flush(ccmni);
+			spin_unlock_bh(ccmni->spinlock);
+			preempt_enable();
+		} else {
+			netif_rx_ni(skb);
+		}
 #else
 		if (!in_interrupt())
 			netif_rx_ni(skb);
@@ -1414,6 +1339,21 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 	dev->stats.rx_packets++;
 	dev->stats.rx_bytes += skb_len;
 
+#if defined(CCMNI_MET_DEBUG)
+	if (ccmni->rx_met_time == 0) {
+		ccmni->rx_met_time = jiffies;
+		ccmni->rx_met_bytes = dev->stats.rx_bytes;
+	} else if (time_after_eq(jiffies,
+		ccmni->rx_met_time + msecs_to_jiffies(MET_LOG_TIMER))) {
+		snprintf(tag_name, 32, "%s_rx_bytes", dev->name);
+		tag_id = CCMNI_RX_MET_ID + ccmni_idx;
+		met_tag_oneshot(tag_id, tag_name,
+			(dev->stats.rx_bytes - ccmni->rx_met_bytes));
+		ccmni->rx_met_bytes = dev->stats.rx_bytes;
+		ccmni->rx_met_time = jiffies;
+	}
+#endif
+
 	__pm_wakeup_event(&ctlb->ccmni_wakelock, jiffies_to_msecs(HZ));
 
 	return 0;
@@ -1422,35 +1362,38 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 static void ccmni_queue_state_callback(int md_id, int ccmni_idx,
 	enum HIF_STATE state, int is_ack)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
-	ccmni_instance_t *ccmni = NULL;
-	ccmni_instance_t *ccmni_tmp = NULL;
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_instance *ccmni = NULL;
+	struct ccmni_instance *ccmni_tmp = NULL;
 	struct net_device *dev = NULL;
 	struct netdev_queue *net_queue = NULL;
 
 	if (unlikely(ctlb == NULL)) {
-		CCMNI_ERR_MSG(md_id,
-		"invalid ccmni ctrl struct when ccmni_idx=%d hif_sta=%d\n",
-		ccmni_idx, state);
+		CCMNI_DBG_MSG(md_id,
+			"invalid ccmni ctrl when ccmni%d_hif_sta=%d\n",
+			ccmni_idx, state);
 		return;
 	}
 
 	ccmni_tmp = ctlb->ccmni_inst[ccmni_idx];
 	dev = ccmni_tmp->dev;
-	ccmni = (ccmni_instance_t *)netdev_priv(dev);
+	ccmni = (struct ccmni_instance *)netdev_priv(dev);
 
 	switch (state) {
-	case RX_IRQ:
-		mod_timer(ccmni->timer, jiffies+HZ);
-		napi_schedule(ccmni->napi);
-		__pm_wakeup_event(&ctlb->ccmni_wakelock, jiffies_to_msecs(HZ));
-		break;
 #ifdef ENABLE_WQ_GRO
 	case RX_FLUSH:
+		preempt_disable();
 		spin_lock_bh(ccmni->spinlock);
 		ccmni->rx_gro_cnt++;
 		napi_gro_flush(ccmni->napi, false);
 		spin_unlock_bh(ccmni->spinlock);
+		preempt_enable();
+		break;
+#else
+	case RX_IRQ:
+		mod_timer(ccmni->timer, jiffies + HZ);
+		napi_schedule(ccmni->napi);
+		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 		break;
 #endif
 
@@ -1475,18 +1418,18 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx,
 					netif_wake_queue(ccmni->dev);
 			}
 			ccmni->tx_irq_cnt[is_ack]++;
-			if (ccmni->flags[is_ack] & CCMNI_TX_PRINT_F ||
+			if ((ccmni->flags[is_ack] & CCMNI_TX_PRINT_F) ||
 				time_after(jiffies,
-					ccmni->tx_full_tick[is_ack] + 1)) {
+					ccmni->tx_irq_tick[is_ack] + 2)) {
 				ccmni->flags[is_ack] &= ~CCMNI_TX_PRINT_F;
 				CCMNI_INF_MSG(md_id,
-					"%s(%d), idx=%d, md_sta=TX_IRQ, ack=%d, cnt(%u, %u)\n",
+					"%s(%d), idx=%d, md_sta=TX_IRQ, ack=%d, cnt(%u, %u), time=%lu\n",
 					ccmni->dev->name,
 					atomic_read(&ccmni->usage),
 					ccmni->index,
-					is_ack,
-					ccmni->tx_full_cnt[is_ack],
-					ccmni->tx_irq_cnt[is_ack]);
+					is_ack, ccmni->tx_full_cnt[is_ack],
+					ccmni->tx_irq_cnt[is_ack],
+					(jiffies - ccmni->tx_irq_tick[is_ack]));
 			}
 		}
 		break;
@@ -1508,12 +1451,13 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx,
 				netif_stop_queue(ccmni->dev);
 			}
 			ccmni->tx_full_cnt[is_ack]++;
+			ccmni->tx_irq_tick[is_ack] = jiffies;
 			if (time_after(jiffies,
-					ccmni->tx_full_tick[is_ack] + 1)) {
+					ccmni->tx_full_tick[is_ack] + 4)) {
 				ccmni->tx_full_tick[is_ack] = jiffies;
 				ccmni->flags[is_ack] |= CCMNI_TX_PRINT_F;
-				CCMNI_INF_MSG(md_id,
-					"%s(%d), idx=%d, md_sta=TX_FULL, ack=%d, cnt(%u, %u)\n",
+				CCMNI_DBG_MSG(md_id,
+					"%s(%d), idx=%d, hif_sta=TX_FULL, ack=%d, cnt(%u, %u)\n",
 					ccmni->dev->name,
 					atomic_read(&ccmni->usage),
 					ccmni->index,
@@ -1527,16 +1471,17 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx,
 	}
 }
 
-static void ccmni_md_state_callback(int md_id, int ccmni_idx, enum MD_STATE state)
+static void ccmni_md_state_callback(int md_id, int ccmni_idx,
+	enum MD_STATE state)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
-	ccmni_instance_t *ccmni = NULL;
-	ccmni_instance_t *ccmni_tmp = NULL;
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_instance *ccmni = NULL;
+	struct ccmni_instance *ccmni_tmp = NULL;
 	struct net_device *dev = NULL;
 	int i = 0;
 
 	if (unlikely(ctlb == NULL)) {
-		CCMNI_ERR_MSG(md_id,
+		CCMNI_PR_DBG(md_id,
 			"invalid ccmni ctrl struct when ccmni_idx=%d md_sta=%d\n",
 			ccmni_idx, state);
 		return;
@@ -1544,10 +1489,10 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, enum MD_STATE stat
 
 	ccmni_tmp = ctlb->ccmni_inst[ccmni_idx];
 	dev = ccmni_tmp->dev;
-	ccmni = (ccmni_instance_t *)netdev_priv(dev);
+	ccmni = (struct ccmni_instance *)netdev_priv(dev);
 
 	if (atomic_read(&ccmni->usage) > 0)
-		CCMNI_INF_MSG(md_id,
+		CCMNI_DBG_MSG(md_id,
 			"md_state_cb: CCMNI%d, md_sta=%d, usage=%d\n",
 			ccmni_idx, state, atomic_read(&ccmni->usage));
 
@@ -1584,9 +1529,9 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, enum MD_STATE stat
 
 static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
-	ccmni_instance_t *ccmni = NULL;
-	ccmni_instance_t *ccmni_tmp = NULL;
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_instance *ccmni = NULL;
+	struct ccmni_instance *ccmni_tmp = NULL;
 	struct net_device *dev = NULL;
 	struct netdev_queue *dev_queue = NULL;
 	struct netdev_queue *ack_queue = NULL;
@@ -1606,7 +1551,7 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 
 	dev = ccmni_tmp->dev;
 	/* ccmni diff from ccmni_tmp for MD IRAT */
-	ccmni = (ccmni_instance_t *)netdev_priv(dev);
+	ccmni = (struct ccmni_instance *)netdev_priv(dev);
 	dev_queue = netdev_get_tx_queue(dev, 0);
 	if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ) {
 		ack_queue = netdev_get_tx_queue(dev, CCMNI_TXQ_FAST);
@@ -1657,7 +1602,7 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 
 static void ccmni_dump_rx_status(int md_id, unsigned long long *status)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 
 	status[0] = ctlb->net_rx_delay[0];
 	status[1] = ctlb->net_rx_delay[1];
@@ -1666,7 +1611,7 @@ static void ccmni_dump_rx_status(int md_id, unsigned long long *status)
 
 static struct ccmni_ch *ccmni_get_ch(int md_id, int ccmni_idx)
 {
-	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	struct ccmni_ctl_block *ctlb = ccmni_ctl_blk[md_id];
 
 	return &ctlb->ccmni_inst[ccmni_idx]->ch;
 }

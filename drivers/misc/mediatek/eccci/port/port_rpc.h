@@ -52,6 +52,10 @@ typedef enum {
 	IPC_RPC_GET_GPIO_ADC_OP = 0x4009,
 	IPC_RPC_USIM2NFC_OP = 0x400A,
 	IPC_RPC_DSP_EMI_MPU_SETTING = 0x400B,
+	/*0x400C is reserved*/
+	IPC_RPC_CCCI_LHIF_MAPPING = 0x400D,
+	IPC_RPC_DTSI_QUERY_OP = 0x400E,
+	IPC_RPC_QUERY_AP_SYS_PROPERTY = 0x400F,
 
 	IPC_RPC_IT_OP = 0x4321,
 } RPC_OP_ID;
@@ -86,6 +90,21 @@ struct ccci_rpc_clkbuf_input {
 	u16 CLKBuf_Num;
 	u32 AfcCwData;
 } __packed;
+
+enum {
+	LHIF_HWQ_SW_DL = 0,
+	LHIF_HWQ_SW_UL,
+	LHIF_HWQ_AP_UL_Q0,
+	LHIF_HWQ_AP_UL_Q1,
+	LHIF_HWQ_DIRECT_DL,
+	LHIF_HWQ_MAX_NUM,
+	LHIF_HWQ_NO_USE = LHIF_HWQ_MAX_NUM,
+};
+
+struct ccci_rpc_queue_mapping {
+	u32 net_if;		/*ccmni index*/
+	u32 lhif_q;	/*lhif queue id*/
+};
 
 #ifdef CONFIG_MTK_TC1_FEATURE
 /* hardcode, becarefull with data size, should not exceed tmp_data[]
@@ -155,6 +174,21 @@ struct ccci_rpc_dsp_emi_mpu_input {
 struct ccci_rpc_usim2nfs {
 	u8 lock_vsim1;
 } __packed;
+
+struct ccci_rpc_md_dtsi_input {
+	u8 req;
+	u8 index;
+	char strName[64];
+} __packed;
+
+struct ccci_rpc_md_dtsi_output {
+	u32 retValue;
+	char retString[64];
+} __packed;
+
+enum {
+	RPC_REQ_PROP_VALUE = 1,
+};
 
 #define RPC_REQ_BUFFER_NUM       2	/* support 2 concurrently request */
 #define RPC_MAX_ARG_NUM          6	/* parameter number */

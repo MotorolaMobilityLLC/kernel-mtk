@@ -155,19 +155,19 @@ static int tx_queue_buffer_size[QUEUE_NUM] = { 10 * 1024, 100 * 1024,
 	50 * 1024, 50 * 1024, 50 * 1024, 10 * 1024, 10 * 1024, 10 * 1024,
 };
 #else
-static int rx_queue_buffer_size[QUEUE_NUM] = { 80 * 1024, 93 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 64 * 1024, 0 * 1024,
+static int rx_queue_buffer_size[QUEUE_NUM] = { 80 * 1024, 80 * 1024,
+	40 * 1024, 80 * 1024, 20 * 1024, 20 * 1024, 64 * 1024, 0 * 1024,
 };
 
-static int tx_queue_buffer_size[QUEUE_NUM] = { 128 * 1024, 140 * 1024,
-	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 64 * 1024, 0 * 1024,
+static int tx_queue_buffer_size[QUEUE_NUM] = { 128 * 1024, 40 * 1024,
+	8 * 1024, 40 * 1024, 20 * 1024, 20 * 1024, 64 * 1024, 0 * 1024,
 };
-static int rx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 40 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 40 * 1024, 0 * 1024,
+static int rx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 32 * 1024,
+	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 8 * 1024, 0 * 1024,
 };
 
-static int tx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 40 * 1024,
-	40 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 40 * 1024, 0 * 1024,
+static int tx_exp_buffer_size[QUEUE_NUM] = { 12 * 1024, 32 * 1024,
+	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 8 * 1024, 0 * 1024,
 };
 #endif
 static void md_ccif_dump(unsigned char *title, unsigned char hif_id)
@@ -628,7 +628,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			ccci_md_add_log_history(&md_ctrl->traffic_info, IN,
 				(int)queue->index, &ccci_hdr,
 				(ret >= 0 ? 0 : 1));
-			ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_cnt, &ccci_hdr);
+			ccci_channel_update_packet_counter(
+				md_ctrl->traffic_info.logic_ch_pkt_cnt,
+				&ccci_hdr);
 
 			if (queue->debug_id) {
 				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
@@ -1086,7 +1088,8 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 		ccci_md_inc_tx_seq_num(md_ctrl->md_id,
 			&md_ctrl->traffic_info, ccci_h);
 
-		ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_cnt,
+		ccci_channel_update_packet_counter(
+			md_ctrl->traffic_info.logic_ch_pkt_cnt,
 			ccci_h);
 
 		if (md_ctrl->md_id == MD_SYS3) {
@@ -1172,7 +1175,8 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
 					"flow ctrl: Q%d is blocking, skb->len = %d\n",
 					queue->index, skb->len);
-				ret = wait_event_interruptible_exclusive(queue->req_wq,
+				ret = wait_event_interruptible_exclusive(
+					queue->req_wq,
 					(queue->wakeup != 0));
 				queue->wakeup = 0;
 				if (ret == -ERESTARTSYS)
@@ -1419,7 +1423,7 @@ static void ccif_hif_hw_init(struct md_ccif_ctrl *md_ctrl)
 {
 	struct md_hw_info *hw_info =
 		(struct md_hw_info *)ccci_md_get_hw_info(md_ctrl->md_id);
-	int idx, ret;
+	int ret;
 	unsigned long ccif_irq_flags;
 
 	/*Copy HW info */
@@ -1451,13 +1455,6 @@ static void ccif_hif_hw_init(struct md_ccif_ctrl *md_ctrl)
 		return;
 	}
 
-	/*init CCIF */
-	/*arbitration */
-	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_CON, 0x01);
-	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, 0xFFFF);
-	for (idx = 0; idx < md_ctrl->sram_size / sizeof(u32); idx++)
-		ccif_write32(md_ctrl->ccif_ap_base,
-			APCCIF_CHDATA + idx * sizeof(u32), 0);
 }
 
 int ccci_ccif_hif_init(unsigned char hif_id, unsigned char md_id)

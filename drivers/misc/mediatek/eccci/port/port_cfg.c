@@ -25,7 +25,11 @@
 #define DATA1_TX_Q		3
 #define DATA1_RX_Q		4
 #define DATA2_Q			5
+#define DATA2_RX_Q		5
 #define DATA_MDT_Q		7
+#define DATA_C2K_PPP_Q	1
+#define DATA_FSD_Q		1
+#define DATA_AT_CMD_Q	1
 #else
 #define	MD1_NET_HIF		CLDMA_HIF_ID
 #define MD1_NORMAL_HIF		CCIF_HIF_ID
@@ -36,7 +40,11 @@
 #define DATA1_TX_Q		0
 #define DATA1_RX_Q		0
 #define DATA2_Q			2
+#define DATA2_RX_Q		0
 #define DATA_MDT_Q		0
+#define DATA_C2K_PPP_Q	3
+#define DATA_FSD_Q		4
+#define DATA_AT_CMD_Q	5
 #endif
 
 #define SMEM_Q			AP_MD_CCB_WAKEUP
@@ -175,7 +183,6 @@ static struct port_t md1_ccci_ports[] = {
 		&rpc_port_ops, 20, "ccci_rpc",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, MD1_NORMAL_HIF, 0,
 		&rpc_port_ops, 0xFF, "ccci_rpc_k",},
-#if (MD_GENERATION > 6292)
 	{CCCI_IMSEM_UL, CCCI_IMSEM_DL, 6, 6, 0xFF, 0xFF,
 		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 21, "ccci_imsem",},
@@ -191,7 +198,13 @@ static struct port_t md1_ccci_ports[] = {
 	{CCCI_C2K_AGPS_TX, CCCI_C2K_AGPS_RX, 1, 1, 0xFF, 0xFF,
 		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 25, "ccci_c2k_agps",},
-#endif
+	{CCCI_XCAP_TX, CCCI_XCAP_RX, 1, 1, 0xFF, 0xFF,
+		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+		&char_port_ops, 26, "ccci_ss_xcap",},
+	{CCCI_BIP_TX, CCCI_BIP_RX, 1, 1, 0xFF, 0xFF,
+		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+		&char_port_ops, 27, "ccci_bip",},
+
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF,
 		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
@@ -234,9 +247,11 @@ static struct port_t md1_ccci_ports[] = {
 	{CCCI_CCB_CTRL, CCCI_CCB_CTRL, 0xFF, 0xFF, 0xFF, 0xFF,
 		CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE, &smem_port_ops,
 		SMEM_USER_RAW_CCB_CTRL, "ccci_ccb_ctrl",},
+#if (MD_GENERATION >= 6292)
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, SMEM_Q, SMEM_Q, SMEM_Q, SMEM_Q,
 		CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_CCB_DHL, "ccci_ccb_dhl",},
+#endif
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF,
 		CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE, &smem_port_ops,
 		SMEM_USER_RAW_DHL, "ccci_raw_dhl",},

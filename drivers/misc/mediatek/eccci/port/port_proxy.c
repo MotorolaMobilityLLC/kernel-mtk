@@ -118,7 +118,8 @@ int port_dev_close(struct inode *inode, struct file *file)
 		port->name, port->rx_skb_list.qlen,
 		skb_queue_empty(&port->rx_skb_list),
 		clear_cnt, port->rx_drop_cnt);
-	ccci_event_log("md%d: port %s close rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n",
+	ccci_event_log(
+		"md%d: port %s close rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n",
 		md_id, port->name,
 		port->rx_skb_list.qlen,
 		skb_queue_empty(&port->rx_skb_list),
@@ -610,7 +611,7 @@ int port_recv_skb(struct port_t *port, struct sk_buff *skb)
 			__skb_queue_tail(&port->rx_skb_list, skb);
 		port->rx_pkg_cnt++;
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
-		__pm_wakeup_event(&port->rx_wakelock, jiffies_to_msecs(HZ));
+		__pm_wakeup_event(&port->rx_wakelock, jiffies_to_msecs(HZ/2));
 		spin_lock_irqsave(&port->rx_wq.lock, flags);
 		wake_up_all_locked(&port->rx_wq);
 		spin_unlock_irqrestore(&port->rx_wq.lock, flags);
@@ -1079,6 +1080,7 @@ static inline void proxy_dispatch_queue_status(struct port_proxy *proxy_p,
 {
 	struct port_t *port;
 	int match = 0;
+	int i, matched = 0;
 
 	/*EE then notify EE port*/
 	if (unlikely(ccci_fsm_get_md_state(proxy_p->md_id)
@@ -1106,10 +1108,31 @@ static inline void proxy_dispatch_queue_status(struct port_proxy *proxy_p,
 				|| qno == (port->txq_exp_index & 0x0F);
 		else
 			match = qno == port->rxq_index;
-		if (match && port->ops->queue_state_notify)
+		if (match && port->ops->queue_state_notify) {
 			port->ops->queue_state_notify(port, dir, qno, state);
+			matched = 1;
+		}
+	}
+	/*handle ccmni tx queue or tx ack queue state change*/
+	if (!matched && hif == CLDMA_HIF_ID) {
+		for (i = 0; i < proxy_p->port_number; i++) {
+			port = proxy_p->ports + i;
+			if (port->hif_id == CLDMA_HIF_ID) {
+				/* consider network data/ack queue design */
+				if (dir == OUT)
+					match = qno == port->txq_index
+					|| qno == (port->txq_exp_index & 0x0F);
+				else
+					match = qno == port->rxq_index;
+				if (match && port->ops->queue_state_notify)
+					port->ops->queue_state_notify(port, dir,
+						qno, state);
+			} else
+				break;
+		}
 	}
 }
+
 static inline void proxy_dispatch_md_status(struct port_proxy *proxy_p,
 	unsigned int state)
 {

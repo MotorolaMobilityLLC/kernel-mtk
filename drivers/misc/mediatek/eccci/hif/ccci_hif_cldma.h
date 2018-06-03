@@ -258,6 +258,8 @@ struct md_cd_ctrl {
 	struct timer_list traffic_monitor;
 	unsigned long traffic_stamp;
 #endif
+	unsigned int tx_busy_warn_cnt;
+
 	/* here we assume T/R GPD/BD/SPD have the same size  */
 	struct dma_pool *gpd_dmapool;
 	struct cldma_ring net_tx_ring[NET_TXQ_NUM];
@@ -345,6 +347,7 @@ struct cldma_rbd {
 typedef enum {
 	ONCE_MORE,
 	ALL_CLEAR,
+	LOW_MEMORY,
 } RX_COLLECT_RESULT;
 
 enum {

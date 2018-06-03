@@ -166,6 +166,13 @@ int fsm_monitor_init(struct ccci_fsm_monitor *monitor_ctl)
 	atomic_set(&monitor_ctl->usage_cnt, 0);
 
 	monitor_ctl->char_dev = kmalloc(sizeof(struct cdev), GFP_KERNEL);
+
+	if (unlikely(!monitor_ctl->char_dev)) {
+		CCCI_ERROR_LOG(monitor_ctl->md_id, FSM,
+			"alloc fsm monitor char dev fail!!\n");
+		return -1;
+	}
+
 	cdev_init(monitor_ctl->char_dev, &char_dev_fops);
 	monitor_ctl->char_dev->owner = THIS_MODULE;
 	ret = alloc_chrdev_region(&monitor_ctl->dev_n,

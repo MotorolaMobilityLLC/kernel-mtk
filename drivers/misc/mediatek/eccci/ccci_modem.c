@@ -28,6 +28,7 @@
 #include "modem_sys.h"
 #include "ccci_hif.h"
 
+#include <mt-plat/mtk_meminfo.h>
 #include <mt-plat/mtk_ccci_common.h>
 #include <mt-plat/mtk_boot_common.h>
 #if defined(ENABLE_32K_CLK_LESS)
@@ -60,8 +61,12 @@ struct ccci_smem_region md1_6293_noncacheable_fat[] = {
 {SMEM_USER_RAW_USB,		104*1024,	4*1024,		0, },
 {SMEM_USER_RAW_AUDIO,		108*1024,	52*1024,
 	SMF_NCLR_FIRST, },
-{SMEM_USER_CCISM_MCU,		160*1024,	(617+1)*1024,	0, },
-{SMEM_USER_CCISM_MCU_EXP,	778*1024,	(264+1)*1024,	0, },
+{SMEM_USER_CCISM_MCU,		160*1024,	(704+1)*1024,	0, },
+{SMEM_USER_CCISM_MCU_EXP,	865*1024,	(120+1)*1024,	0, },
+/* for SIB */
+{SMEM_USER_RAW_LWA,		1*1024*1024,	0*1024*1024,	0, },
+{SMEM_USER_RAW_MD_CONSYS,	1*1024*1024,	0*1024*1024,	0, },
+{SMEM_USER_RAW_PHY_CAP,	1*1024*1024, 0*1024*1024, SMF_NCLR_FIRST, },
 {SMEM_USER_MAX, }, /* tail guard */
 };
 
@@ -72,15 +77,11 @@ struct ccci_smem_region md1_6293_cacheable[] = {
  * will be re-calculated during port initialization. and please be
  * aware of that CCB user's size will be aligned to 4KB.
  */
-{SMEM_USER_CCB_DHL,		0*1024*1024,	4*1024*1024,	0, },
-{SMEM_USER_CCB_MD_MONITOR,	0*1024*1024,	4*1024*1024,	0, },
-{SMEM_USER_CCB_META,		0*1024*1024,	4*1024*1024,	0, },
-{SMEM_USER_RAW_DHL,		4*1024*1024,	28*1024*1024,	0, },
-{SMEM_USER_RAW_MDM,		4*1024*1024,	28*1024*1024,	0, },
-{SMEM_USER_RAW_LWA,		32*1024*1024,	0*1024*1024,	0, },
-{SMEM_USER_RAW_MD_CONSYS,	32*1024*1024,	0*1024*1024,	0, },
-{SMEM_USER_RAW_PHY_CAP,		32*1024*1024,	0*1024*1024,
-	SMF_NCLR_FIRST, },
+{SMEM_USER_CCB_DHL,		0*1024*1024,	2*1024*1024,	0, },
+{SMEM_USER_CCB_MD_MONITOR,	0*1024*1024,	2*1024*1024,	0, },
+{SMEM_USER_CCB_META,		0*1024*1024,	2*1024*1024,	0, },
+{SMEM_USER_RAW_DHL,		2*1024*1024,	20*1024*1024,	0, },
+{SMEM_USER_RAW_MDM,		2*1024*1024,	20*1024*1024,	0, },
 {SMEM_USER_MAX, },
 };
 
@@ -370,16 +371,21 @@ void ccci_md_config(struct ccci_modem *md)
 			"get ccb info base:%lx size:%x\n",
 			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.size);
-
+#if (MD_GENERATION >= 6293)
 	if (md->index == MD_SYS1) {
-		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy
-		= 0x40000000
-		+ get_md_smem_cachable_offset(MD_SYS1)
-		+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
-		round_down(
-		md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
-		0x00100000);
+		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy = 0x40000000
+			+ (224 * 1024 * 1024)
+			+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
+			round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x00100000);
 	}
+#else
+	if (md->index == MD_SYS1) {
+		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy = 0x40000000
+			+ get_md_smem_cachable_offset(MD_SYS1)
+			+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
+			round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x00100000);
+	}
+#endif
 #endif
 	CCCI_BOOTUP_LOG(md->index, TAG,
 		"smem info: (%lx %lx %p %d) (%lx %lx %p %d)\n",

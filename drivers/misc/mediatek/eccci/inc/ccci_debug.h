@@ -143,7 +143,7 @@ do { \
  ** CCCI dump log define end ****************
  ****************************************************************************/
 
-#define CLDMA_TRACE
+/* #define CLDMA_TRACE */
 /* #define PORT_NET_TRACE */
 #define CCCI_SKB_TRACE
 /* #define CCCI_BM_TRACE */
