@@ -2191,13 +2191,9 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		m4u_enable_intr(m4u_id);
 
 		/* set translation fault proctection buffer address */
-		if (!gM4U_4G_DRAM_Mode) {
-			M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_IVRP_PADDR,
-				       (unsigned int)F_MMU_IVRP_PA_SET(ProtectPA));
-		} else {
-			M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_IVRP_PADDR,
-				       (unsigned int)F_MMU_IVRP_4G_DRAM_PA_SET(ProtectPA));
-		}
+
+		M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_IVRP_PADDR,
+			       (unsigned int)F_MMU_IVRP_PA_SET(ProtectPA));
 
 		/* enable DCM */
 		M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_DCM_DIS, 0);

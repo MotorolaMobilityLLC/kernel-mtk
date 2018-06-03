@@ -190,8 +190,8 @@
 #define F_MMU_CTRL_PFH_DIS(dis)	 F_BIT_VAL(dis, 0)
 
 #define REG_MMU_IVRP_PADDR       0x114
-#define F_MMU_IVRP_PA_SET(PA)       (PA>>1)
-#define F_MMU_IVRP_4G_DRAM_PA_SET(PA)    ((PA>>1)|(1<<31))
+#define F_MMU_IVRP_PA_SET(PA)  \
+	((((unsigned long long)PA) & F_MSK(31, 7)) | ((((unsigned long long)PA) >> 32) & F_MSK(1, 0)))
 
 #define REG_MMU_INT_L2_CONTROL      0x120
 #define F_INT_L2_CLR_BIT (1<<12)
