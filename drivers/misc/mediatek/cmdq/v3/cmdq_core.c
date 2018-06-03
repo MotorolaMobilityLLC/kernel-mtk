@@ -2725,7 +2725,7 @@ static void cmdq_core_enable_resource_clk_unlock(
 				ref = atomic_inc_return(&pResource->ref);
 			else
 				ref = atomic_dec_return(&pResource->ref);
-			CMDQ_LOG("[Res] resource clock engine:0x%016llx enable:%s ref:%d\n",
+			CMDQ_MSG("[Res] resource clock engine:0x%016llx enable:%s ref:%d\n",
 				engine_flag, enable ? "true" : "false", ref);
 			cmdq_mdp_get_func()->enableMdpClock(enable, pResource->engine_id);
 			break;
