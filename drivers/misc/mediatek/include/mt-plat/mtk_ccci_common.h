@@ -668,5 +668,6 @@ unsigned int get_wm_bitmap_for_ubin(void); /* Universal bin */
 void update_rat_bit_map_to_drv(int md_id, unsigned int val);
 int get_md_img_type(int md_id);
 int get_legacy_md_type(int md_id);
+int check_md_type(int data);
 
 #endif
