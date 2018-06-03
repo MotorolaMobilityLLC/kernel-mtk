@@ -90,6 +90,7 @@ struct governor_profile {
 	bool vcore_dvs;
 	bool ddr_dfs;
 	bool sdio_dvfs;
+	int  screen_off_ulpm;
 
 	int late_init_opp;
 	bool plat_init_done;
@@ -117,6 +118,7 @@ static struct governor_profile governor_ctrl = {
 	.plat_feature_en = 1, /* vcore dvfs enable */
 	.vcore_dvs = 1,
 	.ddr_dfs = 1,
+	.screen_off_ulpm = 1,
 
 	.late_init_opp = OPPI_LOW_PWR,
 	.plat_init_done = 0,
@@ -170,6 +172,7 @@ static char *kicker_name[] = {
 	"KIR_GPU",
 	"KIR_CPU",
 	"KIR_THERMAL",
+	"KIR_FB",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -376,6 +379,7 @@ int vcorefs_get_dvfs_kicker_group(int kicker)
 	case KIR_GPU:
 	case KIR_CPU:
 	case KIR_THERMAL:
+	case KIR_FB:
 	default:
 		group = KIR_GROUP_HPM;
 	break;
@@ -577,6 +581,8 @@ int governor_debug_store(const char *buf)
 			vcorefs_enable_ddr(val);
 		else if (!strcmp(cmd, "reset_emi_time"))
 			spm_write(VCOREFS_SRAM_EMI_BLOCK_TIME, 0);
+		else if (!strcmp(cmd, "screen_off_ulpm"))
+			gvrctrl->screen_off_ulpm = !!val;
 		else
 			r = -EPERM;
 	} else {
@@ -600,6 +606,7 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
 	p += sprintf(p, "[cpu_dvfs_req ]: 0x%x\n", gvrctrl->cpu_dvfs_req);
 	p += sprintf(p, "[ddr_type ]: 0x%x\n", gvrctrl->ddr_type);
+	p += sprintf(p, "[screen_off_ulpm]: %d\n", gvrctrl->screen_off_ulpm);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
@@ -786,10 +793,23 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 	case FB_BLANK_UNBLANK:
 		vcorefs_crit("SCREEN ON\n");
 		spm_vcorefs_set_cpu_dvfs_req(0xFFFF, gvrctrl->cpu_dvfs_req);
+		if (gvrctrl->ddr_type != TYPE_LPDDR3 && kicker_table[KIR_SYSFSX] == OPPI_UNREQ) {
+			spm_vcoefs_MD_LPM_req(true);
+			vcorefs_request_dvfs_opp(KIR_FB, OPPI_UNREQ);
+		}
 		break;
 	case FB_BLANK_POWERDOWN:
 		vcorefs_crit("SCREEN OFF\n");
 		spm_vcorefs_set_cpu_dvfs_req(0, gvrctrl->cpu_dvfs_req);
+		if (gvrctrl->ddr_type != TYPE_LPDDR3 && kicker_table[KIR_SYSFSX] == OPPI_UNREQ) {
+			if (gvrctrl->screen_off_ulpm) {
+				spm_vcoefs_MD_LPM_req(false);
+				vcorefs_request_dvfs_opp(KIR_FB, OPPI_ULTRA_LOW_PWR);
+			} else {
+				spm_vcoefs_MD_LPM_req(true);
+				vcorefs_request_dvfs_opp(KIR_FB, OPPI_UNREQ);
+			}
+		}
 		break;
 	default:
 		break;
@@ -880,7 +900,6 @@ int vcorefs_late_init_dvfs(void)
 	if (!can_spm_pmic_set_vcore_voltage())
 		gvrctrl->vcore_dvs = 0;
 
-	gvrctrl->ddr_type = get_ddr_type();
 	if (gvrctrl->ddr_type == TYPE_LPDDR3)
 		gvrctrl->cpu_dvfs_req = (1 << MD_CA_DATALINK | 1 << MD_POSITION);
 	spm_vcorefs_set_cpu_dvfs_req(0xffff, gvrctrl->cpu_dvfs_req);
@@ -975,10 +994,12 @@ static int __init vcorefs_module_init(void)
 	int r;
 	struct device_node *node;
 	int i;
+	struct governor_profile *gvrctrl = &governor_ctrl;
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #endif
+	gvrctrl->ddr_type = get_ddr_type();
 
 	r = init_vcorefs_cmd_table();
 	if (r) {
@@ -1011,6 +1032,9 @@ static int __init vcorefs_module_init(void)
 
 	for (i = 0; i < NUM_KICKER; i++)
 		kicker_table[i] = -1;
+
+	kicker_table[KIR_SYSFSX] = -1;
+
 	return r;
 }
 
