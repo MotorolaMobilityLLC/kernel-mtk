@@ -461,6 +461,10 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 		vma = find_vma(current->mm, va);
 		if (vma == NULL || vma->vm_start > va) {
 			M4UMSG("cannot find vma: va=0x%lx, vma=0x%p\n", va, vma);
+			if (vma != NULL) {
+				M4UMSG("vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
+				vma->vm_start, vma->vm_end, vma->vm_flags);
+			}
 			m4u_dump_mmaps(va);
 			ret = -1;
 			goto out;
@@ -485,7 +489,7 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 				struct vm_area_struct *vma_temp;
 
 				vma_temp = find_vma(current->mm, va_align);
-				M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, vm_end=%lx, vm_flag= %lx\n",
+				M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
 				vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
 			}
 		}
