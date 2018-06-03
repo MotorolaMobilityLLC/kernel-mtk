@@ -26,7 +26,11 @@
 /*
  * CONFIG - compile time
  */
+#ifdef CONFIG_MACH_MT6799
 #define CPU_BUCK_CTRL   (1)
+#else
+#define CPU_BUCK_CTRL   (0)
+#endif
 
 #define HPS_TASK_RT_PRIORITY		(MAX_RT_PRIO - 3)
 #define HPS_TASK_NORMAL_PRIORITY	(MIN_NICE)
