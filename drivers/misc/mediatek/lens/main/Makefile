@@ -60,6 +60,7 @@ obj-y  += common/dw9718af/
 obj-y  += common/dw9718saf/
 obj-y  += common/lc898212af/
 obj-y  += common/lc898212xdaf/
+obj-y  += common/lc898212xdaf_tvc700/
 obj-y  += common/lc898214af/
 obj-y  += common/lc898122af/
 obj-y  += common/ad5820af/
