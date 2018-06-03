@@ -160,8 +160,6 @@ unsigned long ged_query_info( GED_INFO eType)
 	unsigned int gpu_block;
 	unsigned int gpu_idle;
 
-	GED_DEBUG_IOCTL_LOCK_LOG("query info: %u", (unsigned int)eType);
-
 	switch(eType)
 	{
 		case GED_LOADING:

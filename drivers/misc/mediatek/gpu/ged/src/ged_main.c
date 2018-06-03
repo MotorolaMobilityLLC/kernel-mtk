@@ -46,9 +46,6 @@
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
-/* 12 KB */
-#define GED_IOCTL_PARAM_BUF_SIZE 0x3000
-
 #ifdef GED_DEBUG
 #define GED_LOG_BUF_COMMON_GLES "GLES"
 static GED_LOG_BUF_HANDLE ghLogBuf_GLES = 0;
@@ -67,12 +64,6 @@ static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
 
 GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
-
-#ifdef GED_DEBUG_IOCTL_LOCK
-GED_LOG_BUF_HANDLE ghLogBuf_ged_ioctl_log;
-#endif
-
-static void* gvIOCTLParamBuf = NULL;
 
 /******************************************************************************
  * GED File operations
@@ -113,7 +104,7 @@ static ssize_t ged_write(struct file *filp, const char __user *buf, size_t count
 static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackageKM)
 {
 	int ret = -EFAULT;
-	void *pvInt, *pvOut;
+	void *pvIn = NULL, *pvOut = NULL;
 	typedef int (ged_bridge_func_type)(void *, void *);
 	ged_bridge_func_type* pFunc = NULL;
 
@@ -122,23 +113,30 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 	 * if and only if they are both zero in a 2's complement numeral system.
 	 * That is: if overflow happen, the sum will be a negative number.
 	 */
-	if (psBridgePackageKM->i32InBufferSize >= 0 && psBridgePackageKM->i32OutBufferSize >= 0
-			&& psBridgePackageKM->i32InBufferSize + psBridgePackageKM->i32OutBufferSize >= 0
-			&& psBridgePackageKM->i32InBufferSize + psBridgePackageKM->i32OutBufferSize
-			< GED_IOCTL_PARAM_BUF_SIZE)
-	{
-		pvInt = gvIOCTLParamBuf;
-		pvOut = (void *)((char *)pvInt + (uintptr_t)psBridgePackageKM->i32InBufferSize);
-		if (psBridgePackageKM->i32InBufferSize > 0)
-		{
-			if (0 != ged_copy_from_user(pvInt, psBridgePackageKM->pvParamIn, psBridgePackageKM->i32InBufferSize))
-			{
+	if (psBridgePackageKM->i32InBufferSize >= 0 && psBridgePackageKM->i32OutBufferSize >= 0) {
+
+		if (psBridgePackageKM->i32InBufferSize > 0) {
+			pvIn = kmalloc(psBridgePackageKM->i32InBufferSize, GFP_KERNEL);
+
+			if (pvIn == NULL)
+				goto dispatch_exit;
+
+			if (ged_copy_from_user(pvIn,
+						psBridgePackageKM->pvParamIn,
+						psBridgePackageKM->i32InBufferSize) != 0) {
 				GED_LOGE("ged_copy_from_user fail\n");
-				return ret;
+				goto dispatch_exit;
 			}
 		}
 
-		// we will change the below switch into a function pointer mapping table in the future
+		if (psBridgePackageKM->i32OutBufferSize > 0) {
+			pvOut = kmalloc(psBridgePackageKM->i32OutBufferSize, GFP_KERNEL);
+
+			if (pvOut == NULL)
+				goto dispatch_exit;
+		}
+
+		/* we will change the below switch into a function pointer mapping table in the future */
 		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID))
 		{
 			case GED_BRIDGE_COMMAND_LOG_BUF_GET:
@@ -205,7 +203,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 
 		if (pFunc)
 		{
-			ret = pFunc(pvInt, pvOut);
+			ret = pFunc(pvIn, pvOut);
 		}
 
 		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID)) {
@@ -221,7 +219,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		case GED_BRIDGE_COMMAND_GE_RETAIN:
 			{
-				GED_BRIDGE_IN_GE_RETAIN *in = (GED_BRIDGE_IN_GE_RETAIN *)pvInt;
+				GED_BRIDGE_IN_GE_RETAIN *in = (GED_BRIDGE_IN_GE_RETAIN *)pvIn;
 				GED_BRIDGE_OUT_GE_RETAIN *out = (GED_BRIDGE_OUT_GE_RETAIN *)pvOut;
 
 				if (out->eError == GED_OK) {
@@ -232,7 +230,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		case GED_BRIDGE_COMMAND_GE_RELEASE:
 			{
-				GED_BRIDGE_IN_GE_RELEASE *in = (GED_BRIDGE_IN_GE_RELEASE *)pvInt;
+				GED_BRIDGE_IN_GE_RELEASE *in = (GED_BRIDGE_IN_GE_RELEASE *)pvIn;
 				GED_BRIDGE_OUT_GE_RELEASE *out = (GED_BRIDGE_OUT_GE_RELEASE *)pvOut;
 
 				if (out->eError == GED_OK)
@@ -246,31 +244,23 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		{
 			if (0 != ged_copy_to_user(psBridgePackageKM->pvParamOut, pvOut, psBridgePackageKM->i32OutBufferSize))
 			{
-				return ret;
+				goto dispatch_exit;
 			}
 		}
 	}
 
+dispatch_exit:
+	kfree(pvIn);
+	kfree(pvOut);
+
 	return ret;
 }
-
-DEFINE_MUTEX(ged_ioctl_lock);
 
 static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long arg)
 {
 	int ret = -EFAULT;
 	GED_BRIDGE_PACKAGE *psBridgePackageKM, *psBridgePackageUM = (GED_BRIDGE_PACKAGE*)arg;
 	GED_BRIDGE_PACKAGE sBridgePackageKM;
-
-#ifdef GED_DEBUG_IOCTL_LOCK
-	unsigned int function_id;
-
-	get_user(function_id, &psBridgePackageUM->ui32FunctionID);
-#endif
-
-	GED_DEBUG_IOCTL_LOCK_LOG("try lock: %u", GED_GET_BRIDGE_ID(function_id));
-	mutex_lock(&ged_ioctl_lock);
-	GED_DEBUG_IOCTL_LOCK_LOG("get lock: %u", GED_GET_BRIDGE_ID(function_id));
 
 	psBridgePackageKM = &sBridgePackageKM;
 	if (0 != ged_copy_from_user(psBridgePackageKM, psBridgePackageUM, sizeof(GED_BRIDGE_PACKAGE)))
@@ -282,8 +272,6 @@ static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long a
 	ret = ged_dispatch(pFile, psBridgePackageKM);
 
 unlock_and_return:
-	GED_DEBUG_IOCTL_LOCK_LOG("release lock: %u", GED_GET_BRIDGE_ID(function_id));
-	mutex_unlock(&ged_ioctl_lock);
 
 	return ret;
 }
@@ -307,16 +295,6 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	GED_BRIDGE_PACKAGE_32 *psBridgePackageKM32 = &sBridgePackageKM32;
 	GED_BRIDGE_PACKAGE_32 *psBridgePackageUM32 = (GED_BRIDGE_PACKAGE_32*)arg;
 
-#ifdef GED_DEBUG_IOCTL_LOCK
-	unsigned int function_id;
-
-	get_user(function_id, &psBridgePackageUM32->ui32FunctionID);
-#endif
-
-	GED_DEBUG_IOCTL_LOCK_LOG("try lock: %u", GED_GET_BRIDGE_ID(function_id));
-	mutex_lock(&ged_ioctl_lock);
-	GED_DEBUG_IOCTL_LOCK_LOG("get lock: %u", GED_GET_BRIDGE_ID(function_id));
-
 	if (0 != ged_copy_from_user(psBridgePackageKM32, psBridgePackageUM32, sizeof(GED_BRIDGE_PACKAGE_32)))
 	{
 		GED_LOGE("Fail to ged_copy_from_user\n");
@@ -333,8 +311,6 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	ret = ged_dispatch(pFile, &sBridgePackageKM64);
 
 unlock_and_return:
-	GED_DEBUG_IOCTL_LOCK_LOG("release lock: %u", GED_GET_BRIDGE_ID(function_id));
-	mutex_unlock(&ged_ioctl_lock);
 
 	return ret;
 }
@@ -406,23 +382,11 @@ static void ged_exit(void)
 
 	remove_proc_entry(GED_DRIVER_DEVICE_NAME, NULL);
 
-	if (gvIOCTLParamBuf)
-	{
-		vfree(gvIOCTLParamBuf);
-		gvIOCTLParamBuf = NULL;
-	}
 }
 
 static int ged_init(void)
 {
 	GED_ERROR err = GED_ERROR_FAIL;
-
-	gvIOCTLParamBuf = vmalloc(GED_IOCTL_PARAM_BUF_SIZE);
-	if (NULL == gvIOCTLParamBuf)
-	{
-		err = GED_ERROR_OOM;
-		goto ERROR;
-	}
 
 	if (NULL == proc_create(GED_DRIVER_DEVICE_NAME, 0644, NULL, &ged_fops))
 	{
@@ -514,11 +478,6 @@ static int ged_init(void)
 	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
 #endif
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
-#endif
-
-#ifdef GED_DEBUG_IOCTL_LOCK
-	ghLogBuf_ged_ioctl_log =  ged_log_buf_alloc(2048, 2048*18, GED_LOG_BUF_TYPE_RINGBUFFER,
-			"ged_ioctl_log", "ged_ioctl_log");
 #endif
 
 	return 0;
