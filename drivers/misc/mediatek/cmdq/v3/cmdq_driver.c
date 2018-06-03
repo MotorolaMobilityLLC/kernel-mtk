@@ -396,8 +396,10 @@ static long cmdq_driver_process_command_request(
 
 	/* allocate secure medatata */
 	status = cmdq_driver_create_secure_medadata(pCommand);
-	if (status != 0)
+	if (status != 0) {
+		CMDQ_ERR("create secure metadata failed:%d\n", status);
 		return status;
+	}
 
 	/* backup since we are going to replace these */
 	userRegValue = CMDQ_U32_PTR(pCommand->regValue.regValues);
@@ -408,6 +410,7 @@ static long cmdq_driver_process_command_request(
 	if (status != 0) {
 		/* free secure path metadata */
 		cmdq_driver_destroy_secure_medadata(pCommand);
+		CMDQ_ERR("create reg addr buffer failed:%d\n", status);
 		return status;
 	}
 
@@ -417,6 +420,7 @@ static long cmdq_driver_process_command_request(
 	pCommand->regValue.count = pCommand->regRequest.count;
 	if (CMDQ_U32_PTR(pCommand->regValue.regValues) == NULL) {
 		kfree(CMDQ_U32_PTR(pCommand->regRequest.regAddresses));
+		CMDQ_ERR("create reg values buffer failed\n");
 		return -ENOMEM;
 	}
 
@@ -544,20 +548,28 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 	switch (code) {
 	case CMDQ_IOCTL_EXEC_COMMAND:
-		if (copy_from_user(&command, (void *)param, sizeof(struct cmdqCommandStruct)))
+		if (copy_from_user(&command, (void *)param, sizeof(struct cmdqCommandStruct))) {
+			CMDQ_ERR("copy from user failed.\n");
 			return -EFAULT;
+		}
 
 		if (command.regRequest.count > CMDQ_MAX_DUMP_REG_COUNT ||
 			!command.blockSize ||
 			command.blockSize > CMDQ_MAX_COMMAND_SIZE ||
-			command.prop_size > CMDQ_MAX_USER_PROP_SIZE)
+			command.prop_size > CMDQ_MAX_USER_PROP_SIZE) {
+			CMDQ_ERR("invalid input reg count:%u block size:%u prop size:%u\n",
+				command.regRequest.count,
+				command.blockSize, command.prop_size);
 			return -EINVAL;
+		}
 
 		/* copy from user again if property is given */
 		status = cmdq_driver_copy_task_prop_from_user((void *)CMDQ_U32_PTR(command.prop_addr),
 			command.prop_size, (void *)CMDQ_U32_PTR(&command.prop_addr));
-		if (status < 0)
+		if (status < 0) {
+			CMDQ_ERR("copy prop failed:%d\n", status);
 			return status;
+		}
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 		/* assign controller for secure case */
@@ -576,8 +588,10 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		cmdq_release_task_property((void *)CMDQ_U32_PTR(&command.prop_addr), &command.prop_size);
 
-		if (status < 0)
+		if (status < 0) {
+			CMDQ_ERR("process command request failed:%d\n", status);
 			return -EFAULT;
+		}
 		break;
 	case CMDQ_IOCTL_QUERY_USAGE:
 		if (cmdqCoreQueryUsage(count))
@@ -589,18 +603,25 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		}
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_EXEC:
-		if (copy_from_user(&job, (void *)param, sizeof(struct cmdqJobStruct)))
+		if (copy_from_user(&job, (void *)param, sizeof(struct cmdqJobStruct))) {
+			CMDQ_ERR("copy from user fail.\n");
 			return -EFAULT;
+		}
 
 		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE ||
-			job.command.prop_size > CMDQ_MAX_USER_PROP_SIZE)
+			job.command.prop_size > CMDQ_MAX_USER_PROP_SIZE) {
+			CMDQ_ERR("block size:%u prop size:%u\n",
+				job.command.blockSize, job.command.prop_size);
 			return -EINVAL;
+		}
 
 		/* copy from user again if property is given */
 		status = cmdq_driver_copy_task_prop_from_user((void *)CMDQ_U32_PTR(job.command.prop_addr),
 			job.command.prop_size, (void *)CMDQ_U32_PTR(&job.command.prop_addr));
-		if (status < 0)
+		if (status < 0) {
+			CMDQ_ERR("copy prop fail status:%d\n", status);
 			return status;
+		}
 
 		/* backup */
 		userRegCount = job.command.regRequest.count;
@@ -614,6 +635,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (status != 0) {
 			cmdq_release_task_property((void *)CMDQ_U32_PTR(&job.command.prop_addr),
 				&job.command.prop_size);
+			CMDQ_ERR("create reg addr buf fail:%d cout:%u\n",
+				status, job.command.regRequest.count);
 			return status;
 		}
 
@@ -638,6 +661,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (status != 0) {
 			cmdq_release_task_property((void *)CMDQ_U32_PTR(&job.command.prop_addr),
 				&job.command.prop_size);
+			CMDQ_ERR("create secure meta fail\n");
 			return status;
 		}
 
@@ -667,6 +691,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			}
 		} else {
 			job.hJob = (unsigned long)NULL;
+			CMDQ_ERR("submit fail status:%d\n", status);
 			return -EFAULT;
 		}
 		break;
