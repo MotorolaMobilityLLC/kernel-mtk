@@ -47,7 +47,9 @@ void init_perfmgr_boost(void)
 void perfmgr_boost(int enable, int core, int freq)
 {
 	struct ppm_limit_data freq_to_set[2];
+
 	nr_ppm_clusters = arch_get_nr_clusters();
+
 	if (enable) {
 		freq_to_set[0].min = freq;
 		freq_to_set[0].max = -1;
