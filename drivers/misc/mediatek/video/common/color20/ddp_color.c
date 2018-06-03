@@ -2140,7 +2140,14 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
 #else
+#if defined(CONFIG_MACH_MT6799)
+	if (module == DISP_MODULE_COLOR0)
+		ddp_clk_enable(DISP0_DISP_COLOR0);
+	else if (module == DISP_MODULE_COLOR1)
+		ddp_clk_enable(DISP0_DISP_COLOR1);
+#else
 	ddp_clk_enable(DISP0_DISP_COLOR);
+#endif
 	COLOR_DBG("color[0]_clock_on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
 #endif
@@ -2169,7 +2176,15 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 #endif
 #else
-	ddp_clk_disable(DISP0_DISP_COLOR);
+#if defined(CONFIG_MACH_MT6799)
+	if (module == DISP_MODULE_COLOR0)
+		ddp_clk_disable(DISP0_DISP_COLOR0);
+	else if (module == DISP_MODULE_COLOR1)
+		ddp_clk_disable(DISP0_DISP_COLOR1);
+#else
+		ddp_clk_disable(DISP0_DISP_COLOR);
+#endif
+
 #endif
 #endif
 	return 0;
