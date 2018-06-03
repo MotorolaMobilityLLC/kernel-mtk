@@ -84,8 +84,16 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
 	},
-	/* MT6771_SB */
+	/* MT6771_FY2 */
 	[1] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+	},
+	/* MT6771_SB */
+	[2] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
