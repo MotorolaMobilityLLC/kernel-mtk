@@ -220,6 +220,7 @@ static inline void cpuhvfs_dump_dvfsp_info(void)	{}
 extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
 
 extern void cpuhvfs_set_power_mode(enum power_mode mode);
+extern void cpuhvfs_hint_mmc_event(unsigned int start);
 
 extern int cpuhvfs_enable_hw_governor(struct init_sta *sta);
 extern int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta);
@@ -227,6 +228,7 @@ extern int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta);
 static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
 
 static inline void cpuhvfs_set_power_mode(enum power_mode mode)		{}
+static inline void cpuhvfs_hint_mmc_event(unsigned int start)		{}
 
 static inline int cpuhvfs_enable_hw_governor(struct init_sta *sta)	{ return -EPERM; }
 static inline int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)	{ return 0; }
