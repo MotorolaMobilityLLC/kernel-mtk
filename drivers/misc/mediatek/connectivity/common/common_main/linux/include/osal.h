@@ -39,7 +39,7 @@
 #define MAX_WAKE_LOCK_NAME_LEN 16
 #define OSAL_OP_BUF_SIZE    64
 
-#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MT_ENG_BUILD))
+#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_ENG_BUILD))
 #define OSAL_OP_DATA_SIZE   8
 #else
 #define OSAL_OP_DATA_SIZE   32
