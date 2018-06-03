@@ -29,9 +29,8 @@ extern "C" {
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 
-/* TODO: check hps API */
-#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(0)
-#define PPM_BIG_TASK_INDICATE_SUPPORT	(0)
+#define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
+#define PPM_BIG_TASK_INDICATE_SUPPORT	(1)
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
