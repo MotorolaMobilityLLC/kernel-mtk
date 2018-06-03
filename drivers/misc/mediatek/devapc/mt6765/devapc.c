@@ -778,8 +778,8 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 				DEVAPC_VIO_MSG("%s %s %s (%s=%d)\n",
 					"[DEVAPC]",
 					"Access Violation Slave:",
-					"infra index",
 					devapc_infra_devices[i].device,
+					"infra index",
 					i);
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
