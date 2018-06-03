@@ -25,9 +25,9 @@
 #include "include/pmic_debugfs.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
-/*#ifdef CONFIG_MTK_AUXADC_INTF*/
+#ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
-/*#endif*/ /* CONFIG_MTK_AUXADC_INTF */
+#endif /* CONFIG_MTK_AUXADC_INTF */
 
 /*-------pmic_dbg_level global variable-------*/
 unsigned int gPMICDbgLvl;
@@ -161,6 +161,7 @@ static DEVICE_ATTR(pmic_dvt, 0664, show_pmic_dvt, store_pmic_dvt);
 /*
  * auxadc
  */
+#ifdef CONFIG_MTK_AUXADC_INTF
 unsigned char g_auxadc_pmic;
 
 static ssize_t show_pmic_auxadc(struct device *dev, struct device_attribute *attr, char *buf)
@@ -194,6 +195,7 @@ static ssize_t store_pmic_auxadc(struct device *dev, struct device_attribute *at
 }
 
 static DEVICE_ATTR(pmic_auxadc_ut, 0664, show_pmic_auxadc, store_pmic_auxadc);
+#endif /*--CONFIG_MTK_AUXADC_INTF--*/
 
 /*
  * PMIC dump exception
@@ -327,7 +329,9 @@ int pmic_debug_init(struct platform_device *dev)
 	/*--/sys/devices/platform/mt-pmic/ --*/
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_dvt);
+#ifdef CONFIG_MTK_AUXADC_INTF
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_auxadc_ut);
+#endif /*CONFIG_MTK_AUXADC_INTF*/
 	PMICLOG("pmic_debug_init dev attr done\n");
 
 	return 0;
