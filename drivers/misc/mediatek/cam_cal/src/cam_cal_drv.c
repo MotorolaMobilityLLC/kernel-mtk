@@ -32,15 +32,17 @@
 #endif
 
 /*#define CAM_CALGETDLT_DEBUG*/
-#define CAM_CAL_DEBUG
+/*#define CAM_CAL_DEBUG*/
+#define PFX "CAM_CAL_DRV"
 #ifdef CAM_CAL_DEBUG
 /*#include <linux/log.h>*/
-#define PFX "CAM_CAL_DRV"
 #define CAM_CALINF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define CAM_CALDB(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
 #define CAM_CALERR(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #else
-#define CAM_CALDB(x, ...)
+#define CAM_CALINF(format, args...)
+#define CAM_CALDB(format, args...)
+#define CAM_CALERR(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #endif
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
