@@ -2525,6 +2525,16 @@ sub process {
 				"please use MACH_MTXXXX instead of ARCH_MTXXXXX\n" . $herecurr);
 		}
 
+# Check all Makefiles, remove unnecessary build message
+		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/)) {
+			if ($rawline =~ /^\+\t*\s*(\@*echo).*/ || $rawline =~ /^\+\t*\s*(\$\(info).*/ ||
+			    $rawline =~ /^\+\t*\s*(\$\(warning).*/) {
+				my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+				WARN("CHECK_BUILD_MESSAGE",
+				     "please review your build message if it is necessary.\n" . $herevet);
+			}
+		}
+
 # ignore non-hunk lines and lines being removed
 		next if (!$hunk_line || $line =~ /^-/);
 
