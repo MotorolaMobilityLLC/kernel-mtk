@@ -477,6 +477,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&hx8392a_dsi_cmd_fwvga_lcm_drv,
 #endif
 
+#if defined(HX8392A_DSI_CMD_FWVGA_PLUS)
+	&hx8392a_dsi_cmd_fwvga_plus_lcm_drv,
+#endif
 #if defined(HX8392A_DSI_CMD_QHD)
 	&hx8392a_dsi_cmd_qhd_lcm_drv,
 #endif
