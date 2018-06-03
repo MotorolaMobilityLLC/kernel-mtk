@@ -1038,10 +1038,10 @@ void flush_ep_csr(struct musb *musb, u8 ep_num, u8 isRx)
 		musb_writew(epio, MUSB_RXCSR, csr | MUSB_RXCSR_CLRDATATOG);
 	} else {
 		csr = musb_readw(epio, MUSB_TXCSR);
-		if (csr & MUSB_TXCSR_TXPKTRDY) {
-			wCsr = csr | MUSB_TXCSR_FLUSHFIFO | MUSB_TXCSR_TXPKTRDY;
-			musb_writew(epio, MUSB_TXCSR, wCsr);
-		}
+
+		/* force flush without checking MUSB_TXCSR_TXPKTRDY */
+		wCsr = csr | MUSB_TXCSR_FLUSHFIFO | MUSB_TXCSR_TXPKTRDY;
+		musb_writew(epio, MUSB_TXCSR, wCsr);
 
 		csr |= MUSB_TXCSR_FLUSHFIFO & ~MUSB_TXCSR_TXPKTRDY;
 		musb_writew(epio, MUSB_TXCSR, csr);
