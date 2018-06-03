@@ -256,7 +256,7 @@ int ext4_get_encryption_info(struct inode *inode)
 	} else if (res != sizeof(ctx)) {
 #ifdef CONFIG_HIE_DEBUG
 		if (dbg)
-			pr_info("HIE: %s: res %d != sizeof(ctx) %ld: ino=%ld, %d\n",
+			pr_info("HIE: %s: res %d != sizeof(ctx) %u: ino=%lu, %d\n",
 				__func__, res, sizeof(ctx), inode->i_ino, -EINVAL);
 #endif
 		return -EINVAL;
@@ -339,7 +339,7 @@ int ext4_get_encryption_info(struct inode *inode)
 	if (ukp->datalen != sizeof(struct ext4_encryption_key)) {
 #ifdef CONFIG_HIE_DEBUG
 		if (dbg)
-			pr_info("HIE: %s: [%s] ukp->datalen %d != sizeof(ext4_encryption_key) %ld: ino=%ld, %d\n",
+			pr_info("HIE: %s: [%s] ukp->datalen %d != sizeof(ext4_encryption_key) %u: ino=%lu, %d\n",
 				__func__, full_key_descriptor,
 				ukp->datalen, sizeof(struct ext4_encryption_key),
 				inode->i_ino, -EINVAL);
