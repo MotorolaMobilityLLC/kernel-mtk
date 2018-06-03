@@ -46,17 +46,6 @@ jiffies = jiffies_64;
 	*(.idmap.text)					\
 	VMLINUX_SYMBOL(__idmap_text_end) = .;
 
-#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
-#define TRAMP_TEXT					\
-	. = ALIGN(PAGE_SIZE);				\
-	VMLINUX_SYMBOL(__entry_tramp_text_start) = .;	\
-	*(.entry.tramp.text)				\
-	. = ALIGN(PAGE_SIZE);				\
-	VMLINUX_SYMBOL(__entry_tramp_text_end) = .;
-#else
-#define TRAMP_TEXT
-#endif
-
 /*
  * The size of the PE/COFF section that covers the kernel image, which
  * runs from stext to _edata, must be a round multiple of the PE/COFF
@@ -119,7 +108,6 @@ SECTIONS
 			LOCK_TEXT
 			HYPERVISOR_TEXT
 			IDMAP_TEXT
-			TRAMP_TEXT
 			*(.fixup)
 			*(.gnu.warning)
 		. = ALIGN(16);
@@ -202,11 +190,6 @@ SECTIONS
 	. += RESERVED_TTBR0_SIZE;
 #endif
 
-#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
-	tramp_pg_dir = .;
-	. += PAGE_SIZE;
-#endif
-
 	_end = .;
 
 	STABS_DEBUG
@@ -223,10 +206,6 @@ ASSERT(__hyp_idmap_text_end - (__hyp_idmap_text_start & ~(SZ_4K - 1)) <= SZ_4K,
 ASSERT(__idmap_text_end - (__idmap_text_start & ~(SZ_4K - 1)) <= SZ_4K,
 	"ID map text too big or misaligned")
 
-#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
-ASSERT((__entry_tramp_text_end - __entry_tramp_text_start) == PAGE_SIZE,
-	"Entry trampoline text too big")
-#endif
 /*
  * If padding is applied before .head.text, virt<->phys conversions will fail.
  */
