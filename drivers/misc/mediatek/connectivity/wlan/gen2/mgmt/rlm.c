@@ -2568,3 +2568,46 @@ VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter)
 	mboxSendMsg(prAdapter, MBOX_ID_0, prMsg, MSG_SEND_METHOD_BUF);
 }
 
+#if CFG_SUPPORT_RLM_ACT_NETWORK
+VOID rlmActivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
+			ENUM_NET_ACTIVE_SRC_T eNetActiveSrcIdx)
+{
+	ASSERT(prAdapter);
+	ASSERT(eNetworkTypeIdx < NETWORK_TYPE_INDEX_NUM);
+
+	prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc |= eNetActiveSrcIdx;
+
+	if (!IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx)) {
+		SET_NET_ACTIVE(prAdapter, eNetworkTypeIdx);
+		/* sync with firmware */
+		DBGLOG(RLM, INFO, "nicActivateNetwork\n");
+		nicActivateNetwork(prAdapter, eNetworkTypeIdx);
+	}
+	DBGLOG(RLM, INFO, "rlmActivateNetwork, Type= %d, Src= %d, SrcVal= %d\n",
+		eNetworkTypeIdx, eNetActiveSrcIdx,
+		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc);
+}
+
+VOID rlmDeactivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
+			ENUM_NET_ACTIVE_SRC_T eNetActiveSrcIdx)
+{
+	ASSERT(prAdapter);
+	ASSERT(eNetworkTypeIdx < NETWORK_TYPE_INDEX_NUM);
+
+	prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc &= ~eNetActiveSrcIdx;
+
+	if ((IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx)) &&
+		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc == 0) {
+		UNSET_NET_ACTIVE(prAdapter, eNetworkTypeIdx);
+		/* sync with firmware */
+		DBGLOG(RLM, INFO, "rlmDeactivateNetwork\n");
+		nicDeactivateNetwork(prAdapter, eNetworkTypeIdx);
+	}
+	DBGLOG(RLM, INFO, "rlmDeactivateNetwork, Type= %d, Src= %d, SrcVal= %d\n",
+		eNetworkTypeIdx, eNetActiveSrcIdx,
+		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc);
+}
+
+#endif
+
+

@@ -1056,23 +1056,31 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 
 					prAisFsmInfo->fgTryScan = TRUE;
 
-					SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 					SET_NET_PWR_STATE_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
 					/* sync with firmware */
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
+					SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 					nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
-
+#else
+					rlmActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_CONNECT);
+#endif
 					/* reset trial count */
 					prAisFsmInfo->ucConnTrialCount = 0;
 
 					eNextState = AIS_STATE_COLLECT_ESS_INFO;
 					fgIsTransition = TRUE;
 				} else {
-					UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 					SET_NET_PWR_STATE_IDLE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
 					/* sync with firmware */
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
+					UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 					nicDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
+#else
+					rlmDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX,
+						NET_ACTIVE_SRC_CONNECT | NET_ACTIVE_SRC_SCAN);
+#endif
 
 					/* check for other pending request */
 
@@ -1439,13 +1447,16 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 		case AIS_STATE_ONLINE_SCAN:
 		case AIS_STATE_LOOKING_FOR:
 
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
 			if (!IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 				SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
 				/* sync with firmware */
 				nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 			}
-
+#else
+			rlmActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCAN);
+#endif
 			/* IE length decision */
 			if (prAisFsmInfo->u4ScanIELength > 0) {
 				u2ScanIELen = (UINT_16) prAisFsmInfo->u4ScanIELength;
@@ -1873,9 +1884,13 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			break;
 
 		case AIS_STATE_REMAIN_ON_CHANNEL:
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
 			SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 			/* sync with firmware */
 			nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
+#else
+			rlmActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_CONNECT);
+#endif
 			break;
 
 		case AIS_STATE_COLLECT_ESS_INFO:

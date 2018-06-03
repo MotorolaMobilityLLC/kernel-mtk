@@ -1305,6 +1305,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter)
 		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
 	}
 #if !CFG_SUPPORT_SCN_PSCN
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
 	if (!IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 		SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
@@ -1312,6 +1313,9 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter)
 		/* sync with firmware */
 		nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 	}
+#else
+	rlmActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCHED_SCAN);
+#endif
 #endif
 	prNloParam->u2FastScanPeriod = SCAN_NLO_MIN_INTERVAL; /* use second instead of millisecond for UINT_16*/
 	prNloParam->u2SlowScanPeriod = SCAN_NLO_MAX_INTERVAL;
@@ -1542,11 +1546,15 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	prScanParam = &prNloParam->rScanParam;
 
 #if !CFG_SUPPORT_SCN_PSCN
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
 		if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 			UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
 			DBGLOG(SCN, TRACE, "DEACTIVATE AIS to disable PNO\n");
 		}
+#else
+		rlmDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCHED_SCAN);
+#endif
 #endif
 
 	/*check if normal scanning is true, driver start to postpone sched scan stop request*/
@@ -2026,12 +2034,18 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 		switch (prScanInfo->eCurrentPSCNState) {
 		case PSCN_IDLE:
 			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
+#if CFG_SUPPORT_RLM_ACT_NETWORK
+			rlmDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCHED_SCAN);
+#endif
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			eNextPSCNState = PSCN_IDLE;
 			break;
 
 		case PSCN_RESET:
 			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
+#if CFG_SUPPORT_RLM_ACT_NETWORK
+			rlmDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCHED_SCAN);
+#endif
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
@@ -2052,12 +2066,17 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			DBGLOG(SCN, TRACE, "PSCN_SCANNING.... PSCAN_ACT_ENABLE\n");
 			if (prScanInfo->fgPscnOngoing)
 				break;
+#if !CFG_SUPPORT_RLM_ACT_NETWORK
 			if (!IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 				SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
 				DBGLOG(SCN, TRACE, "ACTIVATE AIS to enable PSCN\n");
 				/* sync with firmware */
 				nicActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 			}
+#else
+			rlmActivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX, NET_ACTIVE_SRC_SCHED_SCAN);
+#endif
+
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
 			prScanInfo->fgPscnOngoing = TRUE;
 			eNextPSCNState = PSCN_SCANNING;
