@@ -2090,9 +2090,10 @@ static int _DC_switch_to_DL_fast(int block)
 
 	/* copy ovl config from DC handle to DL handle */;
 	memcpy(data_config_dl->ovl_config, data_config_dc->ovl_config, sizeof(data_config_dl->ovl_config));
-
+	/*before power off, we should wait wdma0_eof first!!!*/
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	/* wait and get_mutex in the last frame configs */
-
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	/* clear sof token for next dl to dc */
