@@ -16,12 +16,26 @@
 
 #include "helio-dvfsrc-opp.h"
 
-int get_soc_efuse(void)
+static int get_ct_volt(int vcore_opp)
 {
-	return get_devinfo_with_index(60);
+	int ret = 0;
+
+	switch (vcore_opp) {
+	case VCORE_OPP_0:
+		ret = (get_devinfo_with_index(60) >> 2) & 0x3;
+		break;
+	case VCORE_OPP_1:
+		ret = get_devinfo_with_index(60) & 0x3;
+		break;
+	case VCORE_OPP_2:
+		ret = (get_devinfo_with_index(60) >> 10) & 0x3;
+		break;
+	default:
+		break;
+	}
+	return ret * 25000;
 }
 
-/* ToDo: Use efuse to adjust Vcore Voltage */
 void dvfsrc_opp_level_mapping(void)
 {
 	set_pwrap_cmd(VCORE_OPP_0, 0);
@@ -31,9 +45,12 @@ void dvfsrc_opp_level_mapping(void)
 
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
-		set_vcore_uv_table(VCORE_OPP_0, 800000);
-		set_vcore_uv_table(VCORE_OPP_1, 700000);
-		set_vcore_uv_table(VCORE_OPP_2, 700000);
+		set_vcore_uv_table(VCORE_OPP_0,
+				800000 - get_ct_volt(VCORE_OPP_0));
+		set_vcore_uv_table(VCORE_OPP_1,
+				700000 - get_ct_volt(VCORE_OPP_1));
+		set_vcore_uv_table(VCORE_OPP_2,
+				700000 - get_ct_volt(VCORE_OPP_2));
 		set_vcore_uv_table(VCORE_OPP_3, 650000);
 
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_0);
@@ -71,9 +88,12 @@ void dvfsrc_opp_level_mapping(void)
 		set_ddr_opp(VCORE_DVFS_OPP_15, DDR_OPP_2);
 		break;
 	case SPMFW_LP3_1CH_1866:
-		set_vcore_uv_table(VCORE_OPP_0, 800000);
-		set_vcore_uv_table(VCORE_OPP_1, 700000);
-		set_vcore_uv_table(VCORE_OPP_2, 700000);
+		set_vcore_uv_table(VCORE_OPP_0,
+				800000 - get_ct_volt(VCORE_OPP_0));
+		set_vcore_uv_table(VCORE_OPP_1,
+				700000 - get_ct_volt(VCORE_OPP_1));
+		set_vcore_uv_table(VCORE_OPP_2,
+				700000 - get_ct_volt(VCORE_OPP_2));
 		set_vcore_uv_table(VCORE_OPP_3, 650000);
 
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_UNREQ);

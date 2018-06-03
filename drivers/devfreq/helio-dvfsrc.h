@@ -46,6 +46,9 @@ struct helio_dvfsrc {
 	struct notifier_block	pm_qos_other_memory_bw_nb;
 	struct notifier_block	pm_qos_ddr_opp_nb;
 	struct notifier_block	pm_qos_vcore_opp_nb;
+	struct notifier_block	pm_qos_scp_vcore_request_nb;
+	struct notifier_block	pm_qos_power_model_ddr_request_nb;
+	struct notifier_block	pm_qos_power_model_vcore_request_nb;
 	struct notifier_block	pm_qos_vcore_dvfs_force_opp_nb;
 
 	struct reg_config	*init_config;
@@ -73,7 +76,7 @@ struct helio_dvfsrc {
 #define wait_for_completion(condition, timeout)			\
 ({								\
 	int ret = 0;						\
-	while (!(condition)) {					\
+	while (!(condition) && ret >= 0) {			\
 		if (ret++ >= timeout)				\
 			ret = -EBUSY;				\
 		udelay(1);					\
@@ -97,9 +100,8 @@ extern void mtk_spmfw_init(void);
 extern struct reg_config *dvfsrc_get_init_conf(void);
 extern void helio_dvfsrc_enable(int dvfsrc_en);
 extern char *dvfsrc_dump_reg(char *ptr);
-extern void dvfsrc_write(u32 offset, u32 val);
 extern u32 dvfsrc_read(u32 offset);
-extern void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift);
+extern void dvfsrc_opp_table_init(void);
 
 extern int helio_dvfsrc_add_interface(struct device *dev);
 extern void helio_dvfsrc_remove_interface(struct device *dev);
