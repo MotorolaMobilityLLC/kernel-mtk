@@ -126,6 +126,9 @@ struct last_reboot_reason {
 	uint32_t drcc_1;
 	uint32_t drcc_2;
 	uint32_t drcc_3;
+	uint32_t drcc_dbg_ret;
+	uint32_t drcc_dbg_off;
+	uint64_t drcc_dbg_ts;
 	uint32_t ptp_devinfo_0;
 	uint32_t ptp_devinfo_1;
 	uint32_t ptp_devinfo_2;
@@ -2178,6 +2181,16 @@ unsigned long *aee_rr_rec_gz_irq_pa(void)
 		return NULL;
 }
 
+void aee_rr_rec_drcc_dbg_info(uint32_t ret, uint32_t off, uint64_t ts)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_dbg_ret, ret);
+	LAST_RR_SET(drcc_dbg_off, off);
+	LAST_RR_SET(drcc_dbg_ts, ts);
+}
+
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2966,6 +2979,13 @@ void aee_rr_show_gz_irq(struct seq_file *m)
 	seq_printf(m, "GZ IRQ: 0x%x\n", LAST_RRR_VAL(gz_irq));
 }
 
+void aee_rr_show_drcc_dbg_info(struct seq_file *m)
+{
+	seq_printf(m, "DRCC dbg info result: 0x%x\n", LAST_RRR_VAL(drcc_dbg_ret));
+	seq_printf(m, "DRCC dbg info offset: 0x%x\n", LAST_RRR_VAL(drcc_dbg_off));
+	seq_printf(m, "DRCC dbg info timestamp: 0x%llx\n", LAST_RRR_VAL(drcc_dbg_ts));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -3110,6 +3130,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_drcc_1,
 	aee_rr_show_drcc_2,
 	aee_rr_show_drcc_3,
+	aee_rr_show_drcc_dbg_info,
 	aee_rr_show_ptp_devinfo_0,
 	aee_rr_show_ptp_devinfo_1,
 	aee_rr_show_ptp_devinfo_2,
