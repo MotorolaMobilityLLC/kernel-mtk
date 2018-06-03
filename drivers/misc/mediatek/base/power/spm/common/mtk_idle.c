@@ -27,16 +27,15 @@
 #include <mtk_spm_resource_req_internal.h>
 #include "mtk_idle_sysfs.h"
 
+/* Change sodi3 */
+bool mtk_idle_screen_off_sodi3 = MTK_IDLE_ADJUST_CHECK_ORDER ? 1 : 0;
+
 /* [ByChip] Internal weak functions: implemented in mtk_idle_cond_check.c */
 void __attribute__((weak)) mtk_idle_cg_monitor(int sel) {}
 
 /* External weak functions: implemented in mcdi driver */
 void __attribute__((weak)) idle_refcnt_inc(void) {}
 void __attribute__((weak)) idle_refcnt_dec(void) {}
-
-/* Local variables */
-/* External variables */
-static unsigned long slp_dp_cnt[NR_CPUS];	/* FIXM: To be removed */
 
 
 static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
@@ -55,8 +54,8 @@ static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 
 	log("*************** idle state ***********************\n");
 	for (i = 0; i < nr_cpu_ids; i++) {
-		log("cpu%d: slp_dp=%lu, dp=%lu, so3=%lu, so=%lu\n"
-			, i, slp_dp_cnt[i], dp_cnt[i], so3_cnt[i], so_cnt[i]);
+		log("cpu%d: dp=%lu, so3=%lu, so=%lu\n"
+			, i, dp_cnt[i], so3_cnt[i], so_cnt[i]);
 	}
 	log("\n");
 
@@ -72,6 +71,10 @@ static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 	log("twam_handler:%s (clk:%s)\n",
 		(mtk_idle_get_twam()->running) ? "on" : "off",
 		(mtk_idle_get_twam()->speed_mode) ? "speed" : "normal");
+	log("screen_off_sodi3=%d (%s)\n",
+		mtk_idle_screen_off_sodi3 ? 1 : 0,
+		mtk_idle_screen_off_sodi3 ? "so3->dp->so" : "dp->so3->so");
+
 	log("\n");
 
 	#define MTK_DEBUGFS_IDLE	"/d/cpuidle/idle_state"
@@ -120,6 +123,8 @@ static ssize_t idle_state_write(char *FromUserBuf, size_t sz, void *priv)
 			mtk_idle_cg_monitor(parm == 1 ? IDLE_TYPE_DP :
 				parm == 2 ? IDLE_TYPE_SO3 :
 				parm == 3 ? IDLE_TYPE_SO : -1);
+		} else if (!strcmp(cmd, "screen_off_sodi3")) {
+			mtk_idle_screen_off_sodi3 = parm ? true : false;
 		}
 		return sz;
 	} else if ((!kstrtoint(FromUserBuf, 10, &parm)) == 1) {

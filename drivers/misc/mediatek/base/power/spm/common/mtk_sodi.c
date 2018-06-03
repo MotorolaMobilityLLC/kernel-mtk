@@ -23,7 +23,7 @@
 static bool sodi_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI;
 static bool sodi_bypass_idle_cond;
 static bool sodi_bypass_dis_check;
-static bool sodi_disp_is_ready;
+static bool mtk_disp_is_ready;
 static unsigned int sodi_flag = MTK_IDLE_LOG_REDUCE;
 
 unsigned long so_cnt[NR_CPUS] = {0};
@@ -34,7 +34,6 @@ static bool sodi3_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI3;
 static bool sodi3_bypass_idle_cond;
 static bool sodi3_bypass_dis_check;
 static bool sodi3_bypass_pwm_check;
-static bool sodi3_disp_is_ready;
 static bool sodi3_force_vcore_lp_mode;
 static unsigned int sodi3_flag = MTK_IDLE_LOG_REDUCE;
 
@@ -48,19 +47,14 @@ void __attribute__((weak)) mtk_idle_cond_update_mask(
 int __attribute__((weak)) mtk_idle_cond_append_info(
 	bool short_log, int idle_type, char *logptr, unsigned int logsize);
 
-void mtk_sodi_disable(void)
-{
-	sodi_feature_enable = 0;
-}
-
-void mtk_sodi3_disable(void)
-{
-	sodi3_feature_enable = 0;
-}
-
 bool mtk_sodi_enabled(void)
 {
 	return sodi_feature_enable;
+}
+
+void mtk_sodi_disable(void)
+{
+	sodi_feature_enable = 0;
 }
 
 static unsigned long get_uptime(void)
@@ -72,14 +66,9 @@ static unsigned long get_uptime(void)
 }
 
 /* for display use, abandoned 'spm_enable_sodi' */
-void mtk_sodi_disp_ready(bool enable)
+void mtk_idle_disp_is_ready(bool enable)
 {
-	sodi_disp_is_ready = enable;
-}
-
-bool mtk_sodi_disp_is_ready(void)
-{
-	return sodi_disp_is_ready;
+	mtk_disp_is_ready = enable;
 }
 
 static int sodi_uptime_block_count;
@@ -92,11 +81,11 @@ bool mtk_sodi3_enabled(void)
 	return sodi3_feature_enable;
 }
 
-/* for display use, abandoned 'spm_enable_sodi3' */
-void mtk_sodi3_disp_ready(bool enable)
+void mtk_sodi3_disable(void)
 {
-	sodi3_disp_is_ready = enable;
+	sodi3_feature_enable = 0;
 }
+
 static int sodi3_uptime_block_count;
 bool sodi_can_enter(int reason)
 {
@@ -114,7 +103,7 @@ bool sodi_can_enter(int reason)
 	}
 
 	/* display driver is ready ? */
-	if (!sodi_bypass_dis_check && !sodi_disp_is_ready) {
+	if (!sodi_bypass_dis_check && !mtk_disp_is_ready) {
 		reason = BY_DIS;
 		goto out;
 	}
@@ -252,8 +241,7 @@ bool sodi3_can_enter(int reason)
 	}
 
 	/* display driver is ready ? */
-	if (!sodi3_bypass_dis_check &&
-		!(sodi3_disp_is_ready && mtk_sodi_disp_is_ready())) {
+	if (!sodi3_bypass_dis_check && !mtk_disp_is_ready) {
 		reason = BY_DIS;
 		goto out;
 	}
@@ -399,7 +387,7 @@ void mtk_sodi_init(void)
 	sodi_uptime_block_count = 0;
 	sodi_bypass_idle_cond = false;
 	sodi_bypass_dis_check = false;
-	sodi_disp_is_ready = false;
+	mtk_disp_is_ready = false;
 
 	mtk_idle_sysfs_entry_node_add("soidle_state"
 			, 0644, &sodi_state_fops, NULL);
@@ -413,7 +401,6 @@ void mtk_sodi3_init(void)
 	sodi3_bypass_idle_cond = false;
 	sodi3_bypass_dis_check = false;
 	sodi3_bypass_pwm_check = false;
-	sodi3_disp_is_ready = false;
 	sodi3_force_vcore_lp_mode = false;
 
 	mtk_idle_sysfs_entry_node_add("soidle3_state"

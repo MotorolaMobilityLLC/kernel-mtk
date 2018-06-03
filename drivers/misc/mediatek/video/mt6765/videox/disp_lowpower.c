@@ -1140,12 +1140,10 @@ void primary_display_sodi_rule_init(void)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	if (primary_display_is_video_mode()) {
 		ddp_set_spm_mode(DDP_CG_MODE, NULL);
-		mtk_sodi3_disp_ready(0);
-		mtk_sodi_disp_ready(1);
+		mtk_idle_disp_is_ready(true);
 	} else {
 		ddp_set_spm_mode(DDP_CG_MODE, NULL);
-		mtk_sodi3_disp_ready(1);
-		mtk_sodi_disp_ready(1);
+		mtk_idle_disp_is_ready(true);
 	}
 #endif
 #endif

@@ -103,10 +103,10 @@ int mtk_idle_enter_dvt(int cpu)
 	case IDLE_TYPE_DP:
 		dpidle_enter(cpu);
 		break;
-	case IDLE_TYPE_SO:
+	case IDLE_TYPE_SO3:
 		soidle3_enter(cpu);
 		break;
-	case IDLE_TYPE_SO3:
+	case IDLE_TYPE_SO:
 		soidle_enter(cpu);
 		break;
 	default:
@@ -134,21 +134,22 @@ void idle_lock_by_ufs(unsigned int lock)
 
 static int check_each_idle_type(int reason)
 {
-	#if MTK_IDLE_ADJUST_CHECK_ORDER
-	if (sodi3_can_enter(reason))
-		return IDLE_TYPE_SO3;
-	else if (dpidle_can_enter(reason))
-		return IDLE_TYPE_DP;
-	else if (sodi_can_enter(reason))
-		return IDLE_TYPE_SO;
-	#else
-	if (dpidle_can_enter(reason))
-		return IDLE_TYPE_DP;
-	else if (sodi3_can_enter(reason))
-		return IDLE_TYPE_SO3;
-	else if (sodi_can_enter(reason))
-		return IDLE_TYPE_SO;
-	#endif
+
+	if (mtk_idle_screen_off_sodi3) {
+		if (sodi3_can_enter(reason))
+			return IDLE_TYPE_SO3;
+		else if (dpidle_can_enter(reason))
+			return IDLE_TYPE_DP;
+		else if (sodi_can_enter(reason))
+			return IDLE_TYPE_SO;
+	} else {
+		if (dpidle_can_enter(reason))
+			return IDLE_TYPE_DP;
+		else if (sodi3_can_enter(reason))
+			return IDLE_TYPE_SO3;
+		else if (sodi_can_enter(reason))
+			return IDLE_TYPE_SO;
+	}
 
 	/* always can enter rgidle */
 	return IDLE_TYPE_RG;

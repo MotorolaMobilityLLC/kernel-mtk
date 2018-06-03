@@ -14,13 +14,6 @@
 #ifndef __MTK_IDLE_INTERNAL_H__
 #define __MTK_IDLE_INTERNAL_H__
 
-/********************************************************************
- * dpidle/sodi3/sodi default feature enable/disable
- *******************************************************************/
-#define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (1)
-#define MTK_IDLE_FEATURE_ENABLE_SODI    (1)
-#define MTK_IDLE_FEATURE_ENABLE_SODI3   (1)
-
 
 /********************************************************************
  * Change idle condition check order (1:SO3,DP,SO, 0:DP,SO3,SO)
@@ -85,6 +78,11 @@ const char*
 
 #include <linux/debugfs.h>	/* struct dentry */
 
+extern unsigned long dp_cnt[NR_CPUS];
+extern unsigned long so_cnt[NR_CPUS];
+extern unsigned long so3_cnt[NR_CPUS];
+extern bool mtk_idle_screen_off_sodi3;
+
 void mtk_dpidle_init(void);
 void mtk_dpidle_disable(void);
 bool mtk_dpidle_enabled(void);
@@ -97,7 +95,6 @@ bool sodi3_can_enter(int reason);
 
 void mtk_sodi_init(void);
 void mtk_sodi_disable(void);
-bool mtk_sodi_disp_is_ready(void);
 bool mtk_sodi_enabled(void);
 bool sodi_can_enter(int reason);
 

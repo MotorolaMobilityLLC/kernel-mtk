@@ -82,11 +82,8 @@ extern int mtk_idle_enter_dvt(int cpu);
 #define dpidle_active_status() mtk_dpidle_is_active()
 extern bool mtk_dpidle_is_active(void);
 
-/* FIXME: SODI/SODI3 - Replace api for display */
-#define spm_enable_sodi(enable) mtk_sodi_disp_ready(enable)
-#define spm_enable_sodi3(enable) mtk_sodi3_disp_ready(enable)
-extern void mtk_sodi_disp_ready(bool enable);
-extern void mtk_sodi3_disp_ready(bool enable);
+/* Call as disp driver is ready */
+extern void mtk_idle_disp_is_ready(bool enable);
 
 
 /* --------------------------------------------------------
@@ -111,13 +108,5 @@ void mtk_idle_recent_ratio_get(int *window_length_ms,
 /* FIXME: To be removed. Externally used by hps, only for mt6799 project */
 unsigned long long idle_get_current_time_ms(void);
 
-
-/**************************************
- * extern global value in
- * mtk_sodi3.c / mtk_sodi.c / mtk_dpidle.c
- **************************************/
-extern unsigned long dp_cnt[NR_CPUS];
-extern unsigned long so_cnt[NR_CPUS];
-extern unsigned long so3_cnt[NR_CPUS];
 
 #endif /* __MTK_IDLE_H__ */
