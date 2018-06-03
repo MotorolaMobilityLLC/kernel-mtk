@@ -301,6 +301,9 @@ void get_opp_info(char *p)
 	p += sprintf(p, "%-24s: %-8u uv  (PMIC: 0x%x)\n",
 			"Vcore", vcore_uv, vcore_uv_to_pmic(vcore_uv));
 	p += sprintf(p, "%-24s: %-8u khz\n", "DDR", ddr_khz);
+	p += sprintf(p, "%-24s: %-8u\n", "DDR_TYPE", get_ddr_type());
+	p += sprintf(p, "%-24s: %-8u\n", "GPS_HOPPING",
+			dvfsrc_get_dvfs_freq_hopping_status());
 
 }
 
@@ -576,23 +579,12 @@ void dvfsrc_enable_dvfs_freq_hopping(int gps_on)
 	pm_qos_update_request(&gps_vcore_req, VCORE_OPP_0);
 	pm_qos_update_request(&gps_ddr_req, DDR_OPP_0);
 
-	pr_info("[before]gps_on: %d, vcore: %d ddr: %d dvfsrc_level: 0x%x\n",
-		gps_on,
-		vcore_pmic_to_uv(pmic_get_register_value(PMIC_VCORE_ADDR)),
-		get_dram_data_rate(),
-		dvfsrc_read(DVFSRC_LEVEL));
-
 	spm_freq_hopping_cmd(!!gps_on);
 
 	pm_qos_update_request(&gps_ddr_req, DDR_OPP_UNREQ);
 	pm_qos_update_request(&gps_vcore_req, VCORE_OPP_UNREQ);
 
 	is_freq_hopping = !!gps_on;
-	pr_info("[after]gps_on: %d, vcore: %d ddr: %d dvfsrc_level: 0x%x\n",
-		gps_on,
-		vcore_pmic_to_uv(pmic_get_register_value(PMIC_VCORE_ADDR)),
-		get_dram_data_rate(),
-		dvfsrc_read(DVFSRC_LEVEL));
 }
 EXPORT_SYMBOL(dvfsrc_enable_dvfs_freq_hopping);
 
