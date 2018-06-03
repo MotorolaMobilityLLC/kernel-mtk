@@ -385,29 +385,26 @@ static void ufozip_platform_init(struct hwzram_impl *hwz,
 }
 
 /* bus clock */
+static int enable_ufozip_clock(void);
+static void disable_ufozip_clock(void);
 static void ufozip_hclkctrl(enum platform_ops ops)
 {
 	static DEFINE_SPINLOCK(lock);
 	static int hclk_count;
 	unsigned long flags;
-	int err = 0;
 
 	spin_lock_irqsave(&lock, flags);
 	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
 		if (hclk_count++ == 0) {
 #ifdef MTK_UFOZIP_USING_CCF
-			err |= clk_prepare_enable(g_ufoclk_clk);
-			err |= clk_prepare_enable(g_ufoclk_enc_sel);
-			err |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+			if (enable_ufozip_clock())
+				pr_err("%s: ops(%d)\n", __func__, ops);
 #endif
-			if (err)
-				pr_err("%s: ops(%d) err(%d)\n", __func__, ops, err);
 		}
 	} else {
 		if (--hclk_count == 0) {
 #ifdef MTK_UFOZIP_USING_CCF
-			clk_disable_unprepare(g_ufoclk_enc_sel);
-			clk_disable_unprepare(g_ufoclk_clk);
+			disable_ufozip_clock();
 #endif
 		}
 	}
@@ -418,23 +415,30 @@ static void ufozip_hclkctrl(enum platform_ops ops)
 static void ufozip_vcorectrl(enum platform_ops ops)
 {
 #ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
-	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE)
+	int err = 0;
+
+	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
 		vcorefs_request_dvfs_opp(KIR_UFO, OPP_1);
-	else
+		err = clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+	} else {
 		vcorefs_request_dvfs_opp(KIR_UFO, OPP_UNREQ);
+		err = clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);
+	}
+
+	if (err)
+		pr_warn("%s(%d)\n", __func__, ops);
 #endif
 }
 
 static void ufozip_clock_control(enum platform_ops ops)
 {
-	ufozip_vcorectrl(ops);
+	ufozip_vcorectrl(ops);	/* May sleep - TBC */
 	ufozip_hclkctrl(ops);
 }
 
 #ifdef CONFIG_OF
 
-static int enable_ufozip_clock(void);
-static int disable_ufozip_clock(void);
+static int prepare_ufozip_clock(void);
 static int ufozip_of_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -473,15 +477,21 @@ static int ufozip_of_probe(struct platform_device *pdev)
 	WARN_ON(IS_ERR(g_ufoclk_clk));
 #endif
 
-	if (enable_ufozip_clock())
+	if (prepare_ufozip_clock()) {
+		pr_warn("%s: failed to prepare clock\n", __func__);
+		return -EINVAL;
+	}
+
+	if (enable_ufozip_clock()) {
 		pr_warn("%s: failed to enable clock\n", __func__);
+		return -EINVAL;
+	}
 
 	/* Initialization of hwzram_impl */
 	hwz = hwzram_impl_init(&pdev->dev, ufozip_default_fifo_size,
 			mem->start, irq, ufozip_platform_init, ufozip_clock_control);
 
-	if (disable_ufozip_clock())
-		pr_warn("%s: failed to disable clock\n", __func__);
+	disable_ufozip_clock();
 
 	platform_set_drvdata(pdev, hwz);
 
@@ -508,13 +518,13 @@ static const struct of_device_id ufozip_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, ufozip_of_match);
 
-static int enable_ufozip_clock(void)
+static int prepare_ufozip_clock(void)
 {
 #ifdef MTK_UFOZIP_USING_CCF
 	int err;
 
-	err = clk_prepare_enable(g_ufoclk_clk);
-	err |= clk_prepare_enable(g_ufoclk_enc_sel);
+	err = clk_prepare(g_ufoclk_clk);
+	err |= clk_prepare(g_ufoclk_enc_sel);
 	err |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);
 
 	return err;
@@ -523,13 +533,35 @@ static int enable_ufozip_clock(void)
 #endif
 }
 
-static int disable_ufozip_clock(void)
+static void unprepare_ufozip_clock(void)
 {
 #ifdef MTK_UFOZIP_USING_CCF
-	clk_disable_unprepare(g_ufoclk_enc_sel);
-	clk_disable_unprepare(g_ufoclk_clk);
+	clk_unprepare(g_ufoclk_enc_sel);
+	clk_unprepare(g_ufoclk_clk);
 #endif
+}
+
+static int enable_ufozip_clock(void)
+{
+#ifdef MTK_UFOZIP_USING_CCF
+	int err;
+
+	err = clk_enable(g_ufoclk_clk);
+	err |= clk_enable(g_ufoclk_enc_sel);
+
+	return err;
+#else
 	return 0;
+#endif
+}
+
+/* might sleep */
+static void disable_ufozip_clock(void)
+{
+#ifdef MTK_UFOZIP_USING_CCF
+	clk_disable(g_ufoclk_enc_sel);
+	clk_disable(g_ufoclk_clk);
+#endif
 }
 
 static int mt_ufozip_suspend(struct device *dev)
@@ -543,8 +575,9 @@ static int mt_ufozip_suspend(struct device *dev)
 
 	hwzram_impl_suspend(hwz);
 
-	if (disable_ufozip_clock())
-		pr_warn("%s: failed to disable clock\n", __func__);
+	disable_ufozip_clock();
+
+	unprepare_ufozip_clock();
 
 	return 0;
 }
@@ -555,14 +588,16 @@ static int mt_ufozip_resume(struct device *dev)
 
 	pr_info("%s\n", __func__);
 
+	if (prepare_ufozip_clock())
+		pr_warn("%s: failed to prepare clock\n", __func__);
+
 	if (enable_ufozip_clock())
 		pr_warn("%s: failed to enable clock\n", __func__);
 
 	UFOZIP_HwInit(hwz); /* SPM ON @ INIT*/
 	hwzram_impl_resume(hwz);
 
-	if (disable_ufozip_clock())
-		pr_warn("%s: failed to disable clock\n", __func__);
+	disable_ufozip_clock();
 
 	return 0;
 }
