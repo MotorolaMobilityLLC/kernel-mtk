@@ -34,7 +34,7 @@
 #include <mtk_gpu_utility.h>
 #include <mt-plat/mtk_thermal_platform.h>
 #include <mtk_gpufreq.h>
-
+#include <tscpu_settings.h>
 /* ************************************ */
 /* Definition */
 /* ************************************ */
@@ -117,7 +117,7 @@ struct gpu_index_st {
 	int freq;
 };
 
-#define NO_CPU_CORES (8)
+#define NO_CPU_CORES (TZCPU_NO_CPU_CORES)
 static struct cpu_index_st cpu_index_list[NO_CPU_CORES];	/* /< 4-Core is maximum */
 static int cpufreqs[NO_CPU_CORES];
 static int cpuloadings[NO_CPU_CORES];
@@ -208,7 +208,13 @@ static int get_sys_cpu_usage_info_ex(void)
 		cpuloadings[i] = 0;
 
 	for_each_online_cpu(nCoreIndex) {
-
+		if (nCoreIndex >= NO_CPU_CORES) {
+			#ifdef CONFIG_MTK_AEE_FEATURE
+			aee_kernel_warning("thermal", "nCoreIndex %d over NO_CPU_CORES %d\n",
+				nCoreIndex, NO_CPU_CORES);
+			#endif
+			return 0;
+		}
 		/* Get CPU Info */
 		cpu_index_list[nCoreIndex].u[CPU_USAGE_CURRENT_FIELD] =
 		    kcpustat_cpu(nCoreIndex).cpustat[CPUTIME_USER];
@@ -467,7 +473,7 @@ EXPORT_SYMBOL(mtk_thermal_get_gpu_info);
 /* ********************************************* */
 /* Get Extra Info */
 /* ********************************************* */
-#define MIN(_a_, _b_) ((_a_) < (_b_) ? (_a_) : (_b_))
+
 
 enum {
 /*	TXPWR_MD1 = 0,
