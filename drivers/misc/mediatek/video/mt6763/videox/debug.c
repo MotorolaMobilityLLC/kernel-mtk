@@ -21,6 +21,7 @@
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <linux/sched.h>
 #include "m4u.h"
 #include "ddp_m4u.h"
 #include "disp_drv_log.h"
@@ -59,6 +60,9 @@ static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
+int layer_layout_allow_non_continuous;
+
+static int basic_test_cancel;
 
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -201,109 +205,136 @@ static int release_test_buf(struct test_buf_info *buf_info)
 
 }
 
-static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FORMAT fmt, int frame_num,
-				      int vsync_num, int offset_x, int offset_y,
-				      unsigned int r, unsigned int g, unsigned int b, unsigned int a)
+static int test_alloc_buffer(size_t size, struct test_buf_info *buf_info)
 {
-	struct disp_session_input_config *input_config;
-	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
-	unsigned int Bpp;
-	int frame, i, ret;
-	enum UNIFIED_COLOR_FMT ufmt;
+	int ret;
 
-	/* allocate buffer */
-	unsigned long size;
-	unsigned char *buf_va;
-	dma_addr_t buf_pa;
-	unsigned int buf_mva;
-	struct test_buf_info buf_info;
+	if (disp_helper_get_option(DISP_OPT_USE_M4U))
+		ret = alloc_buffer_from_ion(size, buf_info);
+	else
+		ret = alloc_buffer_from_dma(size, buf_info);
+
+	if (ret)
+		DISPERR("error to alloc buffer size = %lu\n", size);
+	return ret;
+}
+
+static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
+					int w, int h, enum DISP_FORMAT fmt, int frame_num,
+					int vsync_num, int offset_x, int offset_y,
+					unsigned int r, unsigned int g, unsigned int b, unsigned int a,
+					int mode)
+{
+	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
+	unsigned int Bpp, frame, i;
+	enum UNIFIED_COLOR_FMT ufmt;
+	struct disp_frame_cfg_t *cfg;
+	int lcm_width = primary_display_get_width();
+	int lcm_height = primary_display_get_height();
+	enum DISP_FORMAT out_fmt = DISP_FORMAT_RGB888;
+	size_t size;
+	struct test_buf_info buf_info[PRIMARY_SESSION_INPUT_LAYER_COUNT];
+	struct test_buf_info output_buf_info;
 
 	ufmt = disp_fmt_to_unified_fmt(fmt);
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
 
-	DISPMSG("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
-		__func__, layer_num, w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, size);
+	DISPMSG("%s: layer_num=%u,en=0x%x,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
+		__func__, layer_num, layer_en_mask,
+		w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, size);
 
-	input_config = kmalloc(sizeof(*input_config), GFP_KERNEL);
-	if (!input_config)
+	if (layer_num > PRIMARY_SESSION_INPUT_LAYER_COUNT)
+		return -EINVAL;
+
+	cfg = kmalloc(sizeof(*cfg), GFP_KERNEL);
+	if (!cfg)
 		return -ENOMEM;
 
-	memset(&buf_info, 0, sizeof(buf_info));
-	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-		ret = alloc_buffer_from_ion(size, &buf_info);
-	} else {
-		ret = alloc_buffer_from_dma(size, &buf_info);
+	/* ======prepare buffer========= */
+	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {
+		memset(&buf_info[i], 0, sizeof(buf_info[i]));
+		test_alloc_buffer(size, &buf_info[i]);
+		draw_buffer(buf_info[i].buf_va, w, h, ufmt, r, g, b, a);
+	}
+	memset(&output_buf_info, 0, sizeof(output_buf_info));
+	test_alloc_buffer(lcm_width * lcm_height * UFMT_GET_Bpp(disp_fmt_to_unified_fmt(out_fmt)), &output_buf_info);
+
+	/* ======prepare config info========= */
+	memset(cfg, 0, sizeof(*cfg));
+	cfg->session_id = session_id;
+	cfg->setter = SESSION_USER_HWC;
+	cfg->input_layer_num = layer_num;
+	cfg->overlap_layer_num = 4;
+	for (i = 0; i < layer_num; i++) {
+		cfg->input_cfg[i].layer_id = i;
+		cfg->input_cfg[i].layer_enable = !!(layer_en_mask & (1 << i));
+		cfg->input_cfg[i].src_base_addr = 0;
+		if (disp_helper_get_option(DISP_OPT_USE_M4U))
+			cfg->input_cfg[i].src_phy_addr = (void *)((unsigned long)buf_info[i].buf_mva);
+		else
+			cfg->input_cfg[i].src_phy_addr = (void *)((unsigned long)buf_info[i].buf_pa);
+		cfg->input_cfg[i].next_buff_idx = -1;
+		cfg->input_cfg[i].src_fmt = fmt;
+		cfg->input_cfg[i].src_pitch = w;
+		cfg->input_cfg[i].src_offset_x = 0;
+		cfg->input_cfg[i].src_offset_y = 0;
+		cfg->input_cfg[i].src_width = w;
+		cfg->input_cfg[i].src_height = h;
+
+		cfg->input_cfg[i].tgt_offset_x = i * offset_x;
+		cfg->input_cfg[i].tgt_offset_y = i * offset_y;
+		cfg->input_cfg[i].tgt_width = w;
+		cfg->input_cfg[i].tgt_height = h;
+		cfg->input_cfg[i].alpha_enable = 1;
+		cfg->input_cfg[i].alpha = 0xff;
+		cfg->input_cfg[i].security = DISP_NORMAL_BUFFER;
+		cfg->input_cfg[i].ext_sel_layer = -1;
+	}
+	if ((mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE || mode == DISP_SESSION_DECOUPLE_MIRROR_MODE)) {
+		cfg->output_en = 1;
+		if (disp_helper_get_option(DISP_OPT_USE_M4U))
+			cfg->output_cfg.pa = (void *)((unsigned long)output_buf_info.buf_mva);
+		else
+			cfg->output_cfg.pa = (void *)((unsigned long)output_buf_info.buf_pa);
+		cfg->output_cfg.fmt = out_fmt;
+		cfg->output_cfg.width = lcm_width;
+		cfg->output_cfg.height = lcm_height;
+		cfg->output_cfg.pitch =	lcm_width * UFMT_GET_Bpp(disp_fmt_to_unified_fmt(out_fmt));
+		cfg->output_cfg.security = DISP_NORMAL_BUFFER;
+		cfg->output_cfg.buff_idx = -1;
+		cfg->output_cfg.interface_idx = -1;
 	}
 
-	if (ret)
-		DISPERR("error to alloc buffer size = %lu\n", size);
-
-	buf_va = buf_info.buf_va;
-	buf_pa = buf_info.buf_pa;
-	buf_mva = (unsigned int)buf_info.buf_mva;
-
-	draw_buffer(buf_va, w, h, ufmt, r, g, b, a);
-
+	/*========start to trigger path =============*/
 	for (frame = 0; frame < frame_num; frame++) {
-
-		memset(input_config, 0, sizeof(*input_config));
-		input_config->config_layer_num = layer_num;
-		input_config->session_id = session_id;
-
-		for (i = 0; i < layer_num; i++) {
-			int enable;
-
-			if (i == frame % (layer_num + 1) - 1)
-				enable = 1;
-			else
-				enable = 1;
-
-			input_config->config[i].layer_id = i;
-			input_config->config[i].layer_enable = enable;
-			input_config->config[i].src_base_addr = 0;
-			if (disp_helper_get_option(DISP_OPT_USE_M4U))
-				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_mva);
-			else
-				input_config->config[i].src_phy_addr = (void *)((unsigned long)buf_pa);
-			input_config->config[i].next_buff_idx = -1;
-			input_config->config[i].src_fmt = fmt;
-			input_config->config[i].src_pitch = w;
-			input_config->config[i].src_offset_x = 0;
-			input_config->config[i].src_offset_y = 0;
-			input_config->config[i].src_width = w;
-			input_config->config[i].src_height = h;
-
-			input_config->config[i].tgt_offset_x = i * offset_x;
-			input_config->config[i].tgt_offset_y = i * offset_y;
-			input_config->config[i].tgt_width = w;
-			input_config->config[i].tgt_height = h;
-			input_config->config[i].alpha_enable = 1;
-			input_config->config[i].alpha = 0xff;
-			input_config->config[i].security = DISP_NORMAL_BUFFER;
-			input_config->config[i].ext_sel_layer = -1;
-		}
-		primary_display_config_input_multiple(input_config);
-		primary_display_trigger(0, NULL, 0);
-
+		primary_display_switch_mode(mode, session_id, 1);
+		primary_display_frame_cfg(cfg);
 		for (i = 0; i < vsync_num; i++)  {
 			struct disp_session_vsync_config vsync_config;
 
 			vsync_config.session_id = session_id;
 			primary_display_wait_for_vsync(&vsync_config);
 		}
+
+		if (unlikely(basic_test_cancel)) {
+			pr_err("%s stop because fatal signal\n", __func__);
+			break;
+		}
 	}
 
 	/* disable all layers */
-	memset(input_config, 0, sizeof(*input_config));
-	input_config->config_layer_num = layer_num;
-	for (i = 0; i < layer_num; i++)
-		input_config->config[i].layer_id = i;
+	for (i = 0; i < layer_num; i++) {
+		cfg->input_cfg[i].layer_id = i;
+		cfg->input_cfg[i].layer_enable = 0;
+	}
+	primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, session_id, 1);
+	primary_display_frame_cfg(cfg);
 
-	primary_display_config_input_multiple(input_config);
-	primary_display_trigger(1, NULL, 0);
-	release_test_buf(&buf_info);
-	kfree(input_config);
+	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++)
+		release_test_buf(&buf_info[i]);
+	release_test_buf(&output_buf_info);
+	kfree(cfg);
 	return 0;
 }
 
@@ -737,14 +768,24 @@ static void process_dbg_opt(const char *opt)
 
 	if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num, vsync_num, x, y, r, g, b, a;
+		unsigned int layer_en_mask;
+		int mode;
 
-		ret = sscanf(opt, "primary_basic_test:%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-			     &layer_num, &w, &h, &fmt, &frame_num, &vsync_num,
-			     &x, &y, &r, &g, &b, &a);
-		if (ret != 12) {
+		ret = sscanf(opt, "primary_basic_test:%d,0x%x,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			     &layer_num, &layer_en_mask, &w, &h, &fmt, &frame_num, &vsync_num,
+			     &x, &y, &r, &g, &b, &a, &mode);
+		if (ret != 14 && ret != 1) {
 			pr_err("error to parse cmd %s, ret=%d\n", opt, ret);
 			return;
 		}
+		if (ret == 1 && layer_num == 0) {
+			basic_test_cancel = 1;
+			return;
+		}
+		basic_test_cancel = 0;
+
+		if (mode == DISP_INVALID_SESSION_MODE || mode >= DISP_SESSION_MODE_NUM)
+			mode = DISP_SESSION_DIRECT_LINK_MODE;
 
 		if (fmt == 0)
 			fmt = DISP_FORMAT_RGBA8888;
@@ -753,8 +794,8 @@ static void process_dbg_opt(const char *opt)
 		else if (fmt == 2)
 			fmt = DISP_FORMAT_RGB565;
 
-		primary_display_basic_test(layer_num, w, h, fmt, frame_num,
-			vsync_num, x, y, r, g, b, a);
+		primary_display_basic_test(layer_num, layer_en_mask, w, h, fmt, frame_num,
+			vsync_num, x, y, r, g, b, a, mode);
 	}
 
 	if (strncmp(opt, "pan_disp_test:", 13) == 0) {
@@ -799,6 +840,13 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		primary_display_set_scenario(scen);
+	}
+	if (strncmp(opt, "layout_noncontinous:", 20) == 0) {
+		ret = sscanf(opt, "layout_noncontinuous:%d\n", &layer_layout_allow_non_continuous);
+		if (ret != 1) {
+			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
 	}
 
 }

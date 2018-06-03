@@ -24,6 +24,7 @@
 #include "disp_rect.h"
 #include "disp_assert_layer.h"
 #include "ddp_mmp.h"
+#include "debug.h"
 
 #define OVL_REG_BACK_MAX          (40)
 #define OVL_LAYER_OFFSET        (0x20)
@@ -857,7 +858,8 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		 * all layers layout continuously by HRT Calc, so this is not necessary
 		 */
 		if (ovl_cfg->layer_en == 0) {
-			local_layer--;
+			if (!layer_layout_allow_non_continuous)
+				local_layer--;
 			continue;
 		}
 
@@ -898,7 +900,7 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 			if (ovl_idx == DISP_MODULE_OVL0)
 				ovl_idx = DISP_MODULE_OVL0_2L;
 			else
-				DDPERR("unknown module: %d\n", ovl_idx);
+				DDPERR("unknown module: %d,phy=%d,global=%d\n", ovl_idx, phy_layer, global_layer);
 		}
 		ovl_cfg->ovl_index = ovl_idx;
 		ovl_cfg->phy_layer = phy_layer;

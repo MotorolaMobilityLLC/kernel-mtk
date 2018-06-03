@@ -20,6 +20,7 @@ void DBG_Deinit(void);
 #include "mmprofile.h"
 extern int bypass_blank;
 extern int lcm_mode_status;
+extern int layer_layout_allow_non_continuous;
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
