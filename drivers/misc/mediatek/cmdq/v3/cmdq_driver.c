@@ -504,7 +504,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* insert private_data for resource reclaim */
 		desc_private.node_private_data = pFile->private_data;
-		command.privateData = (cmdqU32Ptr_t)&desc_private;
+		command.privateData = (cmdqU32Ptr_t)(unsigned long)&desc_private;
 
 		if (cmdq_driver_process_command_request(&command))
 			return -EFAULT;
@@ -527,7 +527,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* insert private_data for resource reclaim */
 		desc_private.node_private_data = pFile->private_data;
-		job.command.privateData = (cmdqU32Ptr_t)&desc_private;
+		job.command.privateData = (cmdqU32Ptr_t)(unsigned long)&desc_private;
 
 		/* create kernel-space address buffer */
 		status = cmdq_driver_create_reg_address_buffer(&job.command);

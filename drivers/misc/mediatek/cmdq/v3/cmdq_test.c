@@ -129,7 +129,7 @@ static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct 
 		.engineFlag = handle->engineFlag,
 		.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer,
 		.blockSize = handle->blockSize,
-		.privateData = (cmdqU32Ptr_t)&private,
+		.privateData = (cmdqU32Ptr_t)(unsigned long)&private,
 	};
 
 	/* secure path */
@@ -170,7 +170,7 @@ static s32 _test_submit_sync(struct cmdqRecStruct *handle, bool ignore_timeout)
 	desc.engineFlag = handle->engineFlag;
 	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
 	desc.blockSize = handle->blockSize;
-	desc.privateData = (cmdqU32Ptr_t)&private;
+	desc.privateData = (cmdqU32Ptr_t)(unsigned long)&private;
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* replace instuction position */
@@ -5316,8 +5316,8 @@ struct random_data {
 	u32 mask;
 	u32 inst_count;
 	u32 wait_count;
-	u64 dummy_reg_pa;
-	u64 dummy_reg_va;
+	unsigned long dummy_reg_pa;
+	unsigned long dummy_reg_va;
 	u32 expect_result;
 	CMDQ_VARIABLE var_result;
 	bool may_wait;
@@ -5414,7 +5414,7 @@ static bool _append_op_wait(struct cmdqRecStruct *handle, struct random_data *da
 static bool _append_op_poll(struct cmdqRecStruct *handle, struct random_data *data,
 	u32 limit_size)
 {
-	const u64 dummy_poll_pa = CMDQ_GPR_R32_PA(CMDQ_GET_GPR_PX2RX_LOW(
+	const unsigned long dummy_poll_pa = CMDQ_GPR_R32_PA(CMDQ_GET_GPR_PX2RX_LOW(
 		CMDQ_DATA_REG_2D_SHARPNESS_0_DST));
 	const u32 max_poll_count = 2;
 	const u32 min_poll_instruction = 18;
@@ -5905,8 +5905,8 @@ void _testcase_on_exec_suspend(struct TaskStruct *task, s32 thread)
 static int _testcase_gen_task_thread(void *data)
 {
 #define MAX_RELEASE_QUEUE 4
-	const u64 dummy_reg_va = CMDQ_TEST_GCE_DUMMY_VA;
-	const u64 dummy_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	const unsigned long dummy_reg_va = CMDQ_TEST_GCE_DUMMY_VA;
+	const unsigned long dummy_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
 	const u32 inst_count_pattern[] = {
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
 		126, 127, 128, 129, 130,
@@ -6200,9 +6200,10 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 	u32 timeout_counter = 0;
 	s32 wait_status = 0;
 
-	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d loop: %d\n",
+	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d loop: %d timeout: %s\n",
 		__func__, multi_task ? "True" : "False", policy.engines_policy,
-		policy.wait_policy, policy.condition_policy, policy.loop_policy);
+		policy.wait_policy, policy.condition_policy, policy.loop_policy,
+		_stress_is_ignore_timeout(&policy) ? "ignore" : "aee");
 
 	random_thread.multi_task = multi_task;
 	random_thread.policy = policy;

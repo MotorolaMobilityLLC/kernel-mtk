@@ -3184,7 +3184,7 @@ bool cmdq_core_verfiy_command_desc_end(struct cmdqCommandStruct *pCommandDesc)
 	uint32_t *pCMDEnd = NULL;
 	bool valid = true;
 	bool internal_desc = pCommandDesc->privateData &&
-		((struct TaskPrivateStruct *)pCommandDesc->privateData)->internal;
+		((struct TaskPrivateStruct *)(CMDQ_U32_PTR(pCommandDesc->privateData)))->internal;
 
 	/* make sure we have sufficient command to parse */
 	if (!CMDQ_U32_PTR(pCommandDesc->pVABase) || pCommandDesc->blockSize < (2 * CMDQ_INST_SIZE))
@@ -3577,7 +3577,7 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 #endif
 
 		/* reset private data from desc */
-		desc_private = (struct TaskPrivateStruct *)pCommandDesc->privateData;
+		desc_private = (struct TaskPrivateStruct *)CMDQ_U32_PTR(pCommandDesc->privateData);
 		if (desc_private) {
 			private = kzalloc(sizeof(*private), GFP_KERNEL);
 			pTask->privateData = private;
@@ -4832,19 +4832,22 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 	}
 }
 
-static void cmdq_core_dump_task_with_engine_flag(u64 engineFlag, s32 current_thead)
+static void cmdq_core_dump_task_with_engine_flag(u64 engineFlag, s32 current_thread)
 {
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
 	s32 thread_idx = 0;
 
-	CMDQ_ERR
-	    ("=============== [CMDQ] All task in thread sharing same engine flag 0x%016llx===============\n",
-	     engineFlag);
+	if (current_thread == CMDQ_INVALID_THREAD)
+		return;
+
+	CMDQ_ERR(
+		"=============== [CMDQ] All task in thread sharing same engine flag 0x%016llx===============\n",
+		engineFlag);
 
 	for (thread_idx = 0; thread_idx < max_thread_count; thread_idx++) {
 		struct ThreadStruct *thread = &gCmdqContext.thread[thread_idx];
 
-		if (thread_idx == current_thead || thread->taskCount <= 0 ||
+		if (thread_idx == current_thread || thread->taskCount <= 0 ||
 			!(thread->engineFlag & engineFlag))
 			continue;
 		cmdq_core_dump_task_in_thread(thread_idx, false, false, false);
@@ -7320,7 +7323,6 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 				/* task may already released, or starved to death */
 				CMDQ_ERR("task 0x%p timeout with invalid thread\n", pTask);
 				cmdq_core_dump_task(pTask);
-				cmdq_core_dump_task_with_engine_flag(pTask->engineFlag, CMDQ_INVALID_THREAD);
 				/* remove from waiting list, */
 				/* so that it won't be consumed in the future */
 				list_del_init(&(pTask->listEntry));
@@ -9369,6 +9371,7 @@ void cmdq_core_reset_first_dump(void)
 #ifdef CMDQ_DUMP_FIRSTERROR
 	memset(&gCmdqFirstError, 0, sizeof(gCmdqFirstError));
 	gCmdqFirstError.cmdqMaxSize = CMDQ_MAX_FIRSTERROR;
+	gCmdqContext.errNum = 0;
 #endif
 }
 
