@@ -2274,51 +2274,62 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 static int config_display_m4u_port(void)
 {
 	int ret = 0;
-	M4U_PORT_STRUCT sPort;
-	char *m4u_usage = disp_helper_get_option(DISP_OPT_USE_M4U) ? "virtual" : "physical";
+	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
+		M4U_PORT_STRUCT sPort;
+		char *m4u_usage = disp_helper_get_option(DISP_OPT_USE_M4U) ? "virtual" : "physical";
 
-	sPort.ePortID = M4U_PORT_DISP_OVL0;
-	sPort.Virtuality = disp_helper_get_option(DISP_OPT_USE_M4U);
-	sPort.Security = 0;
-	sPort.Distance = 1;
-	sPort.Direction = 0;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL0), m4u_usage, ret);
-		return -1;
-	}
+		sPort.ePortID = M4U_PORT_DISP_OVL0;
+		sPort.Virtuality = disp_helper_get_option(DISP_OPT_USE_M4U);
+		sPort.Security = 0;
+		sPort.Distance = 1;
+		sPort.Direction = 0;
+		ret = m4u_config_port(&sPort);
+		if (ret) {
+			DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+				  ddp_get_module_name(DISP_MODULE_OVL0), m4u_usage, ret);
+			return -1;
+		}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB0;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL0_2L), m4u_usage, ret);
-		return -1;
-	}
+		sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB0;
+		ret = m4u_config_port(&sPort);
+		if (ret) {
+			DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+				  ddp_get_module_name(DISP_MODULE_OVL0_2L), m4u_usage, ret);
+			return -1;
+		}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL1_2L), m4u_usage, ret);
-		return -1;
-	}
+		sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
+		ret = m4u_config_port(&sPort);
+		if (ret) {
+			DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+				  ddp_get_module_name(DISP_MODULE_OVL1_2L), m4u_usage, ret);
+			return -1;
+		}
 
-	sPort.ePortID = M4U_PORT_DISP_RDMA0;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_RDMA0), m4u_usage, ret);
-		return -1;
-	}
+		sPort.ePortID = M4U_PORT_DISP_RDMA0;
+		ret = m4u_config_port(&sPort);
+		if (ret) {
+			DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+				  ddp_get_module_name(DISP_MODULE_RDMA0), m4u_usage, ret);
+			return -1;
+		}
 
-	sPort.ePortID = M4U_PORT_DISP_WDMA0;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_WDMA0), m4u_usage, ret);
-		return -1;
+		sPort.ePortID = M4U_PORT_DISP_WDMA0;
+		ret = m4u_config_port(&sPort);
+		if (ret) {
+			DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+				  ddp_get_module_name(DISP_MODULE_WDMA0), m4u_usage, ret);
+			return -1;
+		}
+	} else {
+#ifdef CONFIG_FPGA_EARLY_PORTING
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x380, 0);
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x384, 0);
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x388, 0);
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x38C, 0);
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x390, 0);
+		DISP_REG_SET(NULL, DISPSYS_SMI_LARB0_BASE + 0x394, 0);
+#endif
 	}
 	return ret;
 }
@@ -5358,7 +5369,8 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	if (gTriggerDispMode > 0)
 		return 0;
 
-	primary_display_idlemgr_kick(__func__, 0);
+	if (disp_helper_get_option(DISP_OPT_IDLE_MGR))
+		primary_display_idlemgr_kick(__func__, 0);
 
 	if (primary_display_is_decouple_mode()) {
 		disp_handle = pgc->ovl2mem_path_handle;

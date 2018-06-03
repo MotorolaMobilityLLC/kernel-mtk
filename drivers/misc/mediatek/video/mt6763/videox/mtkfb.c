@@ -2091,6 +2091,8 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 	unsigned int color = 0;
 	int _internal_test_block_size = 120;
 
+	DISPFUNC();
+
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
 		color = (i & 0x1) * 0xff;
 		color += 0xff000000U;

@@ -1252,6 +1252,9 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 			dpmgr_path_mutex_get(dp_handle, trigger_loop_handle);
 			dpmgr_path_mutex_release(dp_handle, trigger_loop_handle);
 		}
+	} else {
+		/*do not support shadow register*/
+		dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
 	}
 
 	for (i = 0; i < module_num; i++) {
