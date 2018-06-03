@@ -100,6 +100,9 @@ typedef struct GED_KPI_HEAD_TAG {
 	GED_KPI_FRC_MODE_TYPE frc_mode;
 	int frc_client;
 	unsigned long long last_QedBufferDelay;
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+	int is_pre_frame_speed_down_ignored;
+#endif
 } GED_KPI_HEAD;
 
 typedef struct GED_KPI_TAG {
@@ -134,6 +137,10 @@ typedef struct GED_KPI_TAG {
 	unsigned long cpu_cur_freq_LL;
 	unsigned long cpu_cur_freq_L;
 	unsigned long cpu_cur_freq_B;
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+	int is_CP_check_pass;
+	int is_speed_down_ignored;
+#endif
 } GED_KPI;
 
 typedef struct GED_TIMESTAMP_TAG {
@@ -179,12 +186,17 @@ static unsigned int gx_frc_mode; /* variable to fix FRC mode*/
 static unsigned int enable_cpu_boost = 1;
 static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+static unsigned int enable_check_boost_CP;
+#endif
 module_param(gx_dfps, uint, S_IRUGO|S_IWUSR);
 module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 module_param(enable_cpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(enable_gpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(is_GED_KPI_enabled, uint, S_IRUGO|S_IWUSR);
-
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+module_param(enable_check_boost_CP, uint, S_IRUGO|S_IWUSR);
+#endif
 /* for calculating remained time budgets of CPU and GPU:
  *		time budget: the buffering time that prevents fram drop
  */
@@ -437,16 +449,29 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		);
 }
 /* ----------------------------------------------------------------------------- */
+#define GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW 5
 static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
-	if (psHead == main_head) {
-		long long cpu_target_loss, cpu_target_loss_4_rt;
-		int boost_linear_cpu, boost_real_cpu;
-		long long t_cpu_cur, t_gpu_cur, t_cpu_target;
-		long long t_cpu_rem_cur = 0;
-		int is_gpu_bound;
-		int temp_boost_accum_cpu;
+	long long cpu_target_loss, cpu_target_loss_4_rt;
+	int boost_real_cpu, boost_linear_cpu;
+	long long t_cpu_cur, t_gpu_cur, t_cpu_target;
+	long long t_cpu_rem_cur = 0;
+	int is_gpu_bound;
+	int temp_boost_accum_cpu;
+	/* for checking boost value CP */
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+	static int boost_value_CP_list[GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW];
+	static int boost_value_CP_pass_cnt, boost_value_CP_entry_cnt, cur_frame;
+	static int *boost_value_CP_list_head;
+	int boost_linear_cpu_ori;
+	int is_CP_check_pass;
+	int is_speed_down_ignored = 0;
+#endif
+	static int reset_RT_slope_monitor = 1;
+	static long long RT_start, RT_cur;
+	static int RT_slope_monitor_frame_cnt;
 
+	if (psHead == main_head) {
 		boost_linear_cpu = 0;
 		boost_real_cpu = 0;
 
@@ -467,15 +492,32 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		cpu_target_loss_4_rt = cpu_target_loss;
 			/* ARR mode and default mode with GED_KPI_MAX_FPS FPS */
 		if (psHead->target_fps == GED_KPI_MAX_FPS) {
+			int RT_slope_check_pass;
+
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
+			RT_cur = t_cpu_rem_cur;
 
-			if (t_cpu_rem_cur < target_t_cpu_remained) {
-				if ((cpu_target_loss_4_rt < 0) && (psKPI->QedBufferDelay == 0))
+			if (reset_RT_slope_monitor == 1) {
+				reset_RT_slope_monitor = 0;
+				RT_slope_monitor_frame_cnt = 0;
+				RT_start = t_cpu_rem_cur;
+			}
+			RT_slope_monitor_frame_cnt++;
+
+			if ((t_cpu_rem_cur < 0) || (RT_cur > RT_start))
+				reset_RT_slope_monitor = 1;
+
+			RT_slope_check_pass =
+				((RT_start - RT_cur) * 60 / RT_slope_monitor_frame_cnt > target_t_cpu_remained) ? 0 : 1;
+
+			if (RT_slope_check_pass == 0 || reset_RT_slope_monitor == 1) {
+				if (cpu_target_loss_4_rt < 0) {
 					cpu_target_loss_4_rt = 0;
-			} else {
-				if (cpu_target_loss_4_rt > 0)
-					cpu_target_loss_4_rt = 0;
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+					is_speed_down_ignored = 1;
+#endif
+				}
 			}
 		} else {  /* FRR mode or (default mode && FPS != GED_KPI_MAX_FPS) */
 			t_cpu_rem_cur = psHead->t_cpu_target;
@@ -483,10 +525,55 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		}
 		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
 
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+		boost_linear_cpu_ori = (int)(cpu_target_loss * 100 / t_cpu_target);
+#endif
 		if (!is_gpu_bound)
 			cpu_target_loss = cpu_target_loss_4_rt;
 
 		boost_linear_cpu = (int)(cpu_target_loss * 100 / t_cpu_target);
+
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+		/* Checking CP value */
+		if (enable_check_boost_CP) {
+			if (boost_value_CP_entry_cnt < GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW)
+				boost_value_CP_entry_cnt++;
+			else
+				boost_value_CP_list_head = &boost_value_CP_list[cur_frame];
+
+			if (psHead->is_pre_frame_speed_down_ignored == 1) {
+				if (boost_linear_cpu_ori <= 0)
+					is_CP_check_pass = 1;
+				else
+					is_CP_check_pass = 0;
+			} else {
+				is_CP_check_pass = 1;
+			}
+
+			if ((boost_value_CP_list_head != NULL) && (*boost_value_CP_list_head == 1))
+				boost_value_CP_pass_cnt--;
+
+			if (is_CP_check_pass == 1)
+				boost_value_CP_pass_cnt++;
+
+			psKPI->is_CP_check_pass = is_CP_check_pass;
+			boost_value_CP_list[cur_frame] = is_CP_check_pass;
+
+			cur_frame++;
+			cur_frame %= GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW;
+
+			/* if boost_value CP pass rate is lower than 90% fallback to frame-time-based policy */
+			if (is_speed_down_ignored == 1) {
+				if ((boost_value_CP_entry_cnt == GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW)
+				&& ((boost_value_CP_pass_cnt * 100 / GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW) < 100)) {
+					boost_linear_cpu = boost_linear_cpu_ori;
+					is_speed_down_ignored = 0;
+				}
+			}
+			psHead->is_pre_frame_speed_down_ignored = is_speed_down_ignored;
+		}
+		/* end of checking CP value*/
+#endif
 
 		if (boost_linear_cpu < 0)
 			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
@@ -524,6 +611,9 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->boost_linear_cpu = boost_linear_cpu;
 		psKPI->boost_real_cpu = boost_real_cpu;
 		psKPI->boost_accum_cpu = boost_accum_cpu;
+#ifdef GED_KPI_FUTURE_USED_FEATURE
+		psKPI->is_speed_down_ignored = is_speed_down_ignored;
+#endif
 		boost_accum_cpu = temp_boost_accum_cpu;
 		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
 		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
@@ -819,6 +909,8 @@ static GED_BOOL ged_kpi_find_and_delete_miss_tag(unsigned long ulID, int i32Fram
 				&& psMiss_tag->i32FrameID == i32FrameID
 				&& psMiss_tag->eTimeStampType == eTimeStampType) {
 				list_del(&psMiss_tag->sList);
+				if (psMiss_tag != miss_tag_head)
+					ged_free(psMiss_tag, sizeof(GED_KPI_MISS_TAG));
 				ret = GED_TRUE;
 				break;
 			}
