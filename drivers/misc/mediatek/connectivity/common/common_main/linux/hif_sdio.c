@@ -440,7 +440,7 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 	INT32 usec = 0;
 	INT32 polling_counter = 0;
 
-	/*1.pull GPIO_CHIP_WAKE_UP_PIN GPIO14 out 0*/
+	/*1.pull GPIO_CHIP_WAKE_UP_PIN  out 0*/
 	HIF_SDIO_DBG_FUNC("wakeup  chip from deep sleep!\n");
 	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num != DEFAULT_PIN_ID) {
 		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num, 0);
@@ -450,7 +450,7 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 		HIF_SDIO_ERR_FUNC("wmt_gpio:get GPIO_CHIP_WAKE_UP_PIN number error!\n");
 		return -2;
 	}
-	/*2.waiting for DEEP_SLEEP_PIN  GPIO13 become high*/
+	/*2.waiting for DEEP_SLEEP_PIN   become high*/
 	osal_gettimeofday(&sec_old, &usec_old);
 	HIF_SDIO_DBG_FUNC("wakeup flow, prepare polling DEEP_SLEEP_PIN high state, timing: %d us\n", usec_old);
 	while (1) {
