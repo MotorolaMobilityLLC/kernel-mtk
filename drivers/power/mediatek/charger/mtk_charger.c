@@ -68,6 +68,7 @@
 #include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
+#include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
 
 static struct charger_manager *pinfo;
