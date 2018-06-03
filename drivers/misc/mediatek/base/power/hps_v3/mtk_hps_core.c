@@ -267,6 +267,7 @@ static void hps_get_sysinfo(void)
 	win_tlp = (hps_ctxt.cur_tlp + prev_tlp)/2;
 
 	/* LL: relative threshold */
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	if ((int)sched_util < sodi_limit && win_tlp < TLP_THRESHOLD) {
 		/*
 		 *  If CPU util && TLP in system is small or
@@ -275,6 +276,7 @@ static void hps_get_sysinfo(void)
 		hps_sys.cluster_info[0].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[0].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	} else {
+#endif /* CONFIG_MTK_SCHED_EAS_POWER_SUPPORT */
 		/* for more cores + low frequency policy */
 		hps_sys.cluster_info[0].up_threshold = DEF_EAS_UP_THRESHOLD_0;
 		hps_sys.cluster_info[0].down_threshold = DEF_EAS_DOWN_THRESHOLD_0;
@@ -291,7 +293,9 @@ static void hps_get_sysinfo(void)
 			hps_sys.cluster_info[2].up_threshold = DEF_CPU_UP_THRESHOLD;
 			hps_sys.cluster_info[2].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 		}
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	}
+#endif /* CONFIG_MTK_SCHED_EAS_POWER_SUPPORT */
 
 	if (!hps_ctxt.eas_enabled) {
 		for (idx = 0; idx < hps_sys.cluster_num; idx++) {
