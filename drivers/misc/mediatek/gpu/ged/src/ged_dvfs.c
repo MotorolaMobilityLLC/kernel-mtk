@@ -105,6 +105,10 @@ static unsigned long gL_ulCalResetTS_us = 0; // calculate loading reset time sta
 static unsigned long gL_ulPreCalResetTS_us = 0; // previous calculate loading reset time stamp
 static unsigned long gL_ulWorkingPeriod_us = 0; // last frame half, t0
 
+static unsigned int g_loading2_count;
+static unsigned int g_loading2_sum;
+static DEFINE_SPINLOCK(load_info_lock);
+
 static unsigned long g_policy_tar_freq;
 static int g_mode;
 
@@ -132,6 +136,7 @@ extern void (*mtk_custom_upbound_gpu_freq_fp)(unsigned int ui32FreqLevel);
 extern unsigned int (*mtk_get_custom_boost_gpu_freq_fp)(void);
 extern unsigned int (*mtk_get_custom_upbound_gpu_freq_fp)(void);
 extern unsigned int (*mtk_get_gpu_loading_fp)(void);
+extern unsigned int (*mtk_get_gpu_loading2_fp)(int);
 extern unsigned int (*mtk_get_gpu_block_fp)(void);
 extern unsigned int (*mtk_get_gpu_idle_fp)(void);
 extern void (*mtk_do_gpu_dvfs_fp)(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
@@ -172,7 +177,7 @@ unsigned long ged_query_info( GED_INFO eType)
 	switch(eType)
 	{
 		case GED_LOADING:
-			mtk_get_gpu_loading(&gpu_loading);
+			mtk_get_gpu_loading2(&gpu_loading, 1);
 			return gpu_loading;
 		case GED_IDLE:
 			mtk_get_gpu_idle(&gpu_idle);
@@ -500,6 +505,11 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
 	gpu_pre_loading = gpu_av_loading;
 	gpu_av_loading = gpu_loading;
+
+	spin_lock(&load_info_lock);
+	g_loading2_sum += gpu_loading;
+	g_loading2_count += 1;
+	spin_unlock(&load_info_lock);
 #ifdef GED_SSPM
 	mt_gpufreq_set_loading(gpu_av_loading);
 #endif
@@ -605,6 +615,12 @@ static bool ged_dvfs_policy(
 		gpu_pre_loading = gpu_av_loading;
 		ui32GPULoading = gpu_loading;
 		gpu_av_loading = gpu_loading;
+
+		spin_lock(&load_info_lock);
+		g_loading2_sum += gpu_loading;
+		g_loading2_count += 1;
+		spin_unlock(&load_info_lock);
+
 #ifdef GED_SSPM
 		mt_gpufreq_set_loading(gpu_av_loading);
 #endif
@@ -1079,6 +1095,22 @@ unsigned int ged_dvfs_get_gpu_loading(void)
 	return gpu_av_loading;
 }
 
+unsigned int ged_dvfs_get_gpu_loading2(int reset)
+{
+	int loading = 0;
+
+	spin_lock(&load_info_lock);
+	if (g_loading2_count > 0)
+		loading = g_loading2_sum / g_loading2_count;
+	if (reset) {
+		g_loading2_sum = 0;
+		g_loading2_count = 0;
+	}
+	spin_unlock(&load_info_lock);
+
+	return loading;
+}
+
 unsigned int ged_dvfs_get_gpu_blocking(void)
 {
 	return gpu_block;
@@ -1255,6 +1287,7 @@ GED_ERROR ged_dvfs_system_init()
 	mtk_get_custom_boost_gpu_freq_fp = ged_dvfs_get_custom_boost_gpu_freq;
 	mtk_get_custom_upbound_gpu_freq_fp = ged_dvfs_get_custom_ceiling_gpu_freq;
 	mtk_get_gpu_loading_fp = ged_dvfs_get_gpu_loading;
+	mtk_get_gpu_loading2_fp = ged_dvfs_get_gpu_loading2;
 	mtk_get_gpu_block_fp = ged_dvfs_get_gpu_blocking;
 	mtk_get_gpu_idle_fp = ged_dvfs_get_gpu_idle;
 	mtk_do_gpu_dvfs_fp = ged_dvfs_run;

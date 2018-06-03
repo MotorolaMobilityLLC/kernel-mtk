@@ -70,6 +70,21 @@ bool mtk_get_gpu_loading(unsigned int* pLoading)
 }
 EXPORT_SYMBOL(mtk_get_gpu_loading);
 
+unsigned int (*mtk_get_gpu_loading2_fp)(int) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_loading2_fp);
+
+bool mtk_get_gpu_loading2(unsigned int *pLoading, int reset)
+{
+	if (mtk_get_gpu_loading2_fp != NULL) {
+		if (pLoading) {
+			*pLoading = mtk_get_gpu_loading2_fp(reset);
+			return true;
+		}
+	}
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_loading2);
+
 unsigned int (*mtk_get_gpu_block_fp)(void) = NULL;
 EXPORT_SYMBOL(mtk_get_gpu_block_fp);
 
