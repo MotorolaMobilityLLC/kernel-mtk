@@ -60,6 +60,8 @@ struct typec_switch_data {
 	int on;
 	int (*enable)(void *);
 	int (*disable)(void *);
+	int (*vbus_enable)(void *);
+	int (*vbus_disable)(void *);
 	void *priv_data;
 };
 

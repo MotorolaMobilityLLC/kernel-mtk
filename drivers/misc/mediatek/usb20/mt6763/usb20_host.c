@@ -315,11 +315,27 @@ static int typec_otg_disable(void *data)
 	return 0;
 }
 
+static int typec_vbus_enable(void *data)
+{
+	pr_info("typec_vbus_enable\n");
+	_set_vbus(mtk_musb, 1);
+	return 0;
+}
+
+static int typec_vbus_disable(void *data)
+{
+	pr_info("typec_vbus_disable\n");
+	_set_vbus(mtk_musb, 0);
+	return 0;
+}
+
 static struct typec_switch_data typec_host_driver = {
 	.name = "usb20_host",
 	.type = HOST_TYPE,
 	.enable = typec_otg_enable,
 	.disable = typec_otg_disable,
+	.vbus_enable = typec_vbus_enable,
+	.vbus_disable = typec_vbus_disable,
 };
 #endif
 #endif

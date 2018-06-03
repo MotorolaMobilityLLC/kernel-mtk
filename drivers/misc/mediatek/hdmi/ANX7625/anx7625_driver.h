@@ -76,7 +76,6 @@ Revision History:
 /*Platform definition.*/
 #define ANX7625_MTK_PLATFORM
 
-
 /*Loading OCM re-trying times*/
 #define OCM_LOADING_TIME 10
 
