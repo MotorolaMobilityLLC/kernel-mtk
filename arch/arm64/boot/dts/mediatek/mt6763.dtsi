@@ -2245,18 +2245,8 @@
 
 	dip1@15022000 {
 		compatible = "mediatek,dip1";
-		reg = <0 0x15022000 0 0x1000>;
+		reg = <0 0x15022000 0 0x3000>;
 		interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	dip2@15023000 {
-		compatible = "mediatek,dip2";
-		reg = <0 0x15023000 0 0x1000>;
-	};
-
-	dip3@15024000 {
-		compatible = "mediatek,dip3";
-		reg = <0 0x15024000 0 0x1000>;
 	};
 
 	dpe@15028000 {

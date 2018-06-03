@@ -56,7 +56,7 @@
 #include <m4u.h>
 /*#include <m4u_priv.h>*/
 
-#define EP_CODE_MARK_CMDQ
+/*#define EP_CODE_MARK_CMDQ*/
 #ifndef EP_CODE_MARK_CMDQ
 #include <cmdq_core.h>
 #endif
