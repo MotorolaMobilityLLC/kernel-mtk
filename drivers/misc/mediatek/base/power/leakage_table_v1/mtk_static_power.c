@@ -566,7 +566,7 @@ int mt_spower_init(void)
 	return 0;
 }
 
-late_initcall(mt_spower_init);
+module_init(mt_spower_init);
 
 /* return 0, means sptab is not yet ready. */
 /* vol unit should be mv */
