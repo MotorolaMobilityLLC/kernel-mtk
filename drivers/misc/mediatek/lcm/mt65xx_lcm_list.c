@@ -983,6 +983,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_VDO_AUO_NT50358_LANESWAP_MT6799)
 	&nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_mt6799_lcm_drv,
 #endif
+
+#if defined(CLAA101FP01_DSI_VDO)
+	&claa101fp01_dsi_vdo_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
