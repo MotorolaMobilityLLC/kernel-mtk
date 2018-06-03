@@ -94,5 +94,8 @@ obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
 obj-$(CONFIG_SERIAL_SPRD) += sprd_serial.o
 obj-$(CONFIG_SERIAL_STM32)	+= stm32-usart.o
 
+#add mtk earlycon config
+obj-$(CONFIG_SERIAL_MTK_EARLY_CONSOLE) += mtk_earlycon.o
+
 # GPIOLIB helpers for modem control lines
 obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
