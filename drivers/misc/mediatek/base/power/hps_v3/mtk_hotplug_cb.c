@@ -220,6 +220,7 @@ static __init int hotplug_cb_init(void)
 	int ret;
 	int i;
 
+	mp_enter_suspend(0, 1);/*Switch LL cluster to HW mode*/
 	cpumask_clear(mtk_cpu_cluster0_mask);
 	cpumask_clear(mtk_cpu_cluster1_mask);
 	cpumask_clear(mtk_cpu_cluster2_mask);
