@@ -1003,11 +1003,14 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 	/*set MPU for EMI share Memory */
 	WMT_PLAT_INFO_FUNC("setting MPU for EMI share memory\n");
 
+	/* 5 = Forbidden, 0 = No_protect */
 	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
 			gConEmiPhyBase + SZ_1M - 1,
-			13,
-			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
+			24,
+			SET_ACCESS_PERMISSON(LOCK, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
 #endif
 	return 0;
 }
