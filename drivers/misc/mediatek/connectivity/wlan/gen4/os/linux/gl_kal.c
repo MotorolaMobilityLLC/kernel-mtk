@@ -5092,6 +5092,9 @@ VOID kalFreeTxMsduWorker(struct work_struct *work)
 	while (QUEUE_IS_NOT_EMPTY(prTmpQue)) {
 		QUEUE_REMOVE_HEAD(prTmpQue, prMsduInfo, P_MSDU_INFO_T);
 
+		wlanTxLifetimeTagPacketQue(prAdapter, prMsduInfo,
+			TX_PROF_TAG_DRV_TX_DONE);
+
 		nicTxFreePacket(prAdapter, prMsduInfo, FALSE);
 		nicTxReturnMsduInfo(prAdapter, prMsduInfo);
 	}
