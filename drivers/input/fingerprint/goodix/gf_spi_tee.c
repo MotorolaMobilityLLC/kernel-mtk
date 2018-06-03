@@ -259,7 +259,9 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 	}
 #endif
 
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	if (gf_rst_mt6306_support != 1) {
+#endif
 		gf_dev->pins_reset_high = pinctrl_lookup_state(gf_dev->pinctrl_gpios, "reset_high");
 		if (IS_ERR(gf_dev->pins_reset_high)) {
 			ret = PTR_ERR(gf_dev->pins_reset_high);
@@ -272,7 +274,9 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 			gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl reset_low\n", __func__);
 			return ret;
 		}
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	}
+#endif
 
 	gf_debug(DEBUG_LOG, "%s, get pinctrl success!\n", __func__);
 
@@ -1184,7 +1188,6 @@ static ssize_t gf_debug_store(struct device *dev,
 	/* make fingerprint to lower power mode for nonTEE project */
 	#ifdef SUPPORT_REE_SPI
 	#ifdef SUPPORT_REE_MILAN_A
-	#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 		u8 id_buf[2] = {0};
 		u16 chip_id;
 
@@ -1197,9 +1200,10 @@ static ssize_t gf_debug_store(struct device *dev,
 		if (0x12A4 == chip_id || 0x12A1 == chip_id) {
 			gf_debug(INFO_LOG, "[%s], line:%d, no TEE support so make the sensor sleep.\n",
 				__func__, __LINE__);
+#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 			gf_milan_a_series_init_process(gf_dev);
+#endif
 		}
-	#endif
 	#endif
 	#endif
 	} else {
