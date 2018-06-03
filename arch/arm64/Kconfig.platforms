@@ -184,6 +184,7 @@ config MACH_MT6761
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
+	select MTK_EMI
 	select MTK_TIMER
 	select MTK_DRAMC
 	select PM_DEVFREQ
