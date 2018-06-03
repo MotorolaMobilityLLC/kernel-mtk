@@ -51,7 +51,7 @@ struct DPI_DVT_CONTEXT {
 	int     scaling_factor;
 };
 
-#define DPI_DVT_LOG_W(fmt, args...)   pr_err("[DPI_DVT/]"fmt, ##args)
+#define DPI_DVT_LOG_W(fmt, args...)   pr_info("[DPI_DVT/]"fmt, ##args)
 
 int dvt_init_RDMA_param(unsigned int mode, unsigned int resolution);
 void dpi_dvt_parameters(unsigned char arg);
