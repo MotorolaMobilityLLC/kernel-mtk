@@ -26,6 +26,8 @@
 #include <mtk_spm_internal.h>
 #include <spm/mtk_vcore_dvfs.h>
 #include <mtk_gpufreq.h>
+#include <mt-plat/mtk_devinfo.h>
+
 #ifdef CONFIG_MTK_SMI_EXT
 #include <mmdvfs_mgr.h>
 #endif
@@ -304,7 +306,12 @@ void get_opp_info(char *p)
 	p += sprintf(p, "%-24s: %-8u\n", "DDR_TYPE", get_ddr_type());
 	p += sprintf(p, "%-24s: %-8u\n", "GPS_HOPPING",
 			dvfsrc_get_dvfs_freq_hopping_status());
-
+	p += sprintf(p, "%-24s: %-8u\n", "PTPOD10",
+			get_devinfo_with_index(56));
+	p += sprintf(p, "%-24s: %-8u\n", "INFO3",
+			get_devinfo_with_index(133));
+	p += sprintf(p, "%-24s: %-8u\n", "GPS_HOPPING",
+			dvfsrc_get_dvfs_freq_hopping_status());
 }
 
 void get_dvfsrc_reg(char *p)
