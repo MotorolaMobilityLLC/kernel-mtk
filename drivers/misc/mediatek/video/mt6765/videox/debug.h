@@ -23,6 +23,8 @@ extern int lcm_mode_status;
 extern int layer_layout_allow_non_continuous;
 extern unsigned long long idle_check_interval;
 extern unsigned long fb_pa;
+extern int dbg_ultlow, dbg_ulthigh, dbg_prehigh, dbg_urg_low, dbg_urg_high;
+
 
 #include "disp_session.h"
 #include "ddp_info.h"

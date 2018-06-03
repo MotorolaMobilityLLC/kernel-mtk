@@ -26,6 +26,7 @@
 #include "ddp_m4u.h"
 #include "disp_lowpower.h"
 #include "ddp_mmp.h"
+#include "debug.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -531,10 +532,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	unsigned int is_rsz_sram = 0;
 	unsigned int fifo_mode = 1;
 
-	unsigned int ultra_low_us = 4;
-	unsigned int ultra_high_us = 6;
+	unsigned int ultra_low_us = 10;
+	unsigned int ultra_high_us = 11;
 	unsigned int preultra_low_us = ultra_high_us;
-	unsigned int preultra_high_us = 7;
+	unsigned int preultra_high_us = 12;
 	unsigned int urgent_low_us = 40;  /* 10 times */
 	unsigned int urgent_high_us = 45;  /* 10 times */
 
@@ -575,6 +576,20 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	unsigned int Bytes_per_sec;
 	unsigned long long temp;
 	unsigned long long temp_for_div;
+
+	/* setup threshold for debug */
+	if (dbg_ultlow)
+		ultra_low_us = dbg_ultlow;
+	if (dbg_ulthigh) {
+		ultra_high_us = dbg_ulthigh;
+		preultra_low_us = ultra_high_us;
+	}
+	if (dbg_prehigh)
+		preultra_high_us = dbg_prehigh;
+	if (dbg_urg_low)
+		urgent_low_us = dbg_urg_low;
+	if (dbg_urg_high)
+		urgent_high_us = dbg_urg_high;
 
 	if (!p_golden_setting) {
 		DDPERR("golden setting is null, %s,%d\n", __FILE__, __LINE__);
