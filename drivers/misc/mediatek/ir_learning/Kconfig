@@ -2,4 +2,7 @@ config MTK_IR_LEARNING_SUPPORT
 	bool "MediaTek consumer IR learning solution"
 	default n
 	---help---
-	  IR-learning driver support for MediaTek solution
+	  This selects MediaTek(R) internal IR-learning driver.
+          IR-learning is used to learn the key of IR remote controller, like TV controller.
+	  If you want to use MediaTek(R) internal IR-learning driver, say
+	  Y or M here. If unsure, say N.
