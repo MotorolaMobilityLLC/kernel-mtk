@@ -561,9 +561,9 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 		buf_ptr += sprintf(buf_ptr,
 			"MSDC1 CLK_MUX[0x%p][26:24]= 0x%x, CLK_CG[0x%p][1] = %d\n",
 			topckgen_base + 0x70,
-			(MSDC_READ32(topckgen_base + 0x60) >> 24) & 7,
+			(MSDC_READ32(topckgen_base + 0x70) >> 24) & 7,
 			infracfg_ao_base + 0xC8,
-			(MSDC_READ32(infracfg_ao_base + 0xC8) >> 1) & 0x1);
+			(MSDC_READ32(infracfg_ao_base + 0xC8) >> 10) & 0x1);
 		*buf_ptr = '\0';
 		if (!m)
 			pr_info("%s", buffer);
