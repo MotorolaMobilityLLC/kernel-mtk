@@ -160,7 +160,7 @@ void AFRegulatorCtrl(int Stage)
 					LOG_INF("regulator_enable fail\n");
 
 				g_regVCAMAFEn = 1;
-				msleep(100);
+				usleep_range(5000, 5500);
 			} else {
 				LOG_INF("AF Power on\n");
 			}
