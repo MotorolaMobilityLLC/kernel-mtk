@@ -2225,7 +2225,10 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			M4UMSG("MTK_M4U_T_MONITOR_START, port%d is invalid\n", PortID);
 			return -EFAULT;
 		}
-
+		if (m4u_port_2_m4u_id(PortID) < 0) {
+			M4UMSG("MTK_M4U_T_MONITOR_START, portID is invalid\n");
+			return -EFAULT;
+		}
 		ret = m4u_monitor_start(m4u_port_2_m4u_id(PortID));
 
 		break;
@@ -2237,6 +2240,10 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		}
 		if (PortID < 0 || PortID >= M4U_PORT_UNKNOWN) {
 			M4UMSG("MTK_M4U_T_MONITOR_STOP, port%d is invalid\n", PortID);
+			return -EFAULT;
+		}
+		if (m4u_port_2_m4u_id(PortID) < 0) {
+			M4UMSG("MTK_M4U_T_MONITOR_STOP, portID is invalid\n");
 			return -EFAULT;
 		}
 
