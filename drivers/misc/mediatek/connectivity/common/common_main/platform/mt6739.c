@@ -1009,12 +1009,10 @@ static INT32 consys_emi_mpu_set_region_protection(VOID)
 
 	/* 5 = Forbidden, 0 = No_protect */
 	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
-			gConEmiPhyBase + gConEmiSize - 1,
-			24,
-			SET_ACCESS_PERMISSON(LOCK, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
+			gConEmiPhyBase + SZ_1M - 1,
+			22,
+			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
 #endif
 	return 0;
 }
