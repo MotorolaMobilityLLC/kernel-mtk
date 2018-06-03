@@ -6378,7 +6378,7 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	cmdq_core_dump_status("ERR");
 
 #ifndef CONFIG_MTK_FPGA
-	if (!CMDQ_TASK_PRIVATE(pTask)->internal) {
+	if (!pTask || !CMDQ_TASK_PRIVATE(pTask)->internal) {
 		CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
 		cmdq_get_func()->dumpSMI(1);
 	}
