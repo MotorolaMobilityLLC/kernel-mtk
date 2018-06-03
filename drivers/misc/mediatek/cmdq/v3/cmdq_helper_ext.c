@@ -4726,24 +4726,27 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 
 	cmdq_core_track_handle_record(handle, handle->thread);
 
-	/* PMQoS Implement */
-	mutex_lock(&cmdq_thread_mutex);
-	ctx = cmdq_core_get_context();
-	handle_count = --ctx->thread[handle->thread].handle_count;
+	if (handle->thread != CMDQ_INVALID_THREAD) {
+		/* PMQoS Implement */
+		mutex_lock(&cmdq_thread_mutex);
+		ctx = cmdq_core_get_context();
+		handle_count = --ctx->thread[handle->thread].handle_count;
 
-	if (handle_count) {
-		pmqos_handle_list = kcalloc(handle_count + 1,
-		sizeof(*pmqos_handle_list), GFP_KERNEL);
+		if (handle_count) {
+			pmqos_handle_list = kcalloc(handle_count + 1,
+				sizeof(*pmqos_handle_list), GFP_KERNEL);
 
-		if (pmqos_handle_list)
-			cmdq_core_get_pmqos_handle_list(handle,
-				pmqos_handle_list, handle_count);
+			if (pmqos_handle_list)
+				cmdq_core_get_pmqos_handle_list(handle,
+					pmqos_handle_list, handle_count);
+		}
+
+		cmdq_core_group_end_task(handle, pmqos_handle_list,
+			handle_count);
+
+		kfree(pmqos_handle_list);
+		mutex_unlock(&cmdq_thread_mutex);
 	}
-
-	cmdq_core_group_end_task(handle, pmqos_handle_list, handle_count);
-
-	kfree(pmqos_handle_list);
-	mutex_unlock(&cmdq_thread_mutex);
 
 	/* Stop delay thread after last task is done */
 	cmdq_delay_thread_stop();
