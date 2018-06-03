@@ -17,6 +17,7 @@
 #include <platform/mtk_mfg_counter.h>
 #include <mali_kbase_gator_api.h>
 #include <string.h>
+#include <linux/math64.h>
 
 
 #define MALI_HWC_TYPES					4
@@ -538,7 +539,7 @@ static int _mtk_mfg_update_counter(void)
 				if (strstr(mali_pmus[cnt].name, "GPU_ACTIVE")) {
 					if ((mali_pmus[cnt].value != 0)
 					&& ((timd_diff_us > 0) && (gpu_freq > 0)))
-						active_cycle = gpu_freq * (timd_diff_us / 1000);
+						active_cycle = (u32)(gpu_freq * div_u64((u64)timd_diff_us, 1000));
 					else {
 						ret = PMU_RESET_VALUE;
 						goto FINISH;
