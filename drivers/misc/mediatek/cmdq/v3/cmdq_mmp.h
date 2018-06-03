@@ -17,25 +17,25 @@
 #include "mmprofile.h"
 #include "cmdq_core.h"
 
-struct CMDQ_MMP_Events_t {
-	MMP_Event CMDQ;
-	MMP_Event CMDQ_IRQ;
-	MMP_Event thread_en;
-	MMP_Event warning;
-	MMP_Event loopBeat;
-	MMP_Event autoRelease_add;
-	MMP_Event autoRelease_done;
-	MMP_Event consume_add;
-	MMP_Event consume_done;
-	MMP_Event alloc_task;
-	MMP_Event wait_task;
-	MMP_Event wait_thread;
-	MMP_Event MDP_reset;
-	MMP_Event thread_suspend;
-	MMP_Event thread_resume;
+struct CMDQ_MMP_events_t {
+	mmp_event CMDQ;
+	mmp_event CMDQ_IRQ;
+	mmp_event thread_en;
+	mmp_event warning;
+	mmp_event loopBeat;
+	mmp_event autoRelease_add;
+	mmp_event autoRelease_done;
+	mmp_event consume_add;
+	mmp_event consume_done;
+	mmp_event alloc_task;
+	mmp_event wait_task;
+	mmp_event wait_thread;
+	mmp_event MDP_reset;
+	mmp_event thread_suspend;
+	mmp_event thread_resume;
 };
 
 void cmdq_mmp_init(void);
-struct CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
+struct CMDQ_MMP_events_t *cmdq_mmp_get_event(void);
 
 #endif				/* __CMDQ_MMP_H__ */
