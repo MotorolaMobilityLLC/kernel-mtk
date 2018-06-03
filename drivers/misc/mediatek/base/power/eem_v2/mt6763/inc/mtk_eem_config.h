@@ -17,12 +17,12 @@
 /* CONFIG (SW related) */
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(1)
-	#define DVT			(1) /* only use at DVT, disable it at MP */
-	#define EEM_BANK_SOC		(1) /* use voltage bin, so disable it */
+#define DVT			(1) /* only use at DVT, disable it at MP */
+#define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
 	#define EEM_ENABLE		(0) /* enable; after pass HPT mini-SQC */
-	#define EEM_FAKE_EFUSE		(0)
+	#define EEM_FAKE_EFUSE		(1)
 #define UPDATE_TO_UPOWER	(0)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(0)
@@ -42,7 +42,7 @@
 #endif
 */
 
-#define EARLY_PORTING_CPU
+/* #define EARLY_PORTING_CPU */
 /* #define EARLY_PORTING_PPM */
 /* #define EARLY_PORTING_VCORE */
 /* because thermal still have bug */
@@ -55,7 +55,7 @@
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
 #define SET_PMIC_VOLT (1)
-#define SET_PMIC_VOLT_TO_DVFS (0)
+#define SET_PMIC_VOLT_TO_DVFS (1)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define ITurbo (0)
 
@@ -76,29 +76,29 @@
 #define DEVINFO_IDX_0 50
 
 /* LL */
-#define DEVINFO_1 0x10E097C0
-#define DEVINFO_2 0x004E0063
+#define DEVINFO_1 0x0BCD7D19
+#define DEVINFO_2 0x003F00C7
 #define DEVINFO_DVT_1 0x10BD3C1B
 #define DEVINFO_DVT_2 0x0055C000
 #define DEVINFO_IDX_1 51
 #define DEVINFO_IDX_2 52
 /* L */
-#define DEVINFO_3 0x10E081E2
-#define DEVINFO_4 0x004E0063
+#define DEVINFO_3 0x0BCC8013
+#define DEVINFO_4 0x003F00C7
 #define DEVINFO_DVT_3 0x10BD3C1B
 #define DEVINFO_DVT_4 0x0055C000
 #define DEVINFO_IDX_3 53
 #define DEVINFO_IDX_4 54
 /* cci */
-#define DEVINFO_5 0x10E077F1
-#define DEVINFO_6 0x004E0063
+#define DEVINFO_5 0x0BCB7B1C
+#define DEVINFO_6 0x003F00C7
 #define DEVINFO_DVT_5 0x10BD3C1B
 #define DEVINFO_DVT_6 0x0055C000
 #define DEVINFO_IDX_5 55
 #define DEVINFO_IDX_6 56
 /* gpu */
-#define DEVINFO_7 0x10E84E1D
-#define DEVINFO_8 0x00440003
+#define DEVINFO_7 0x0DB7B67D
+#define DEVINFO_8 0x002400C7
 #define DEVINFO_DVT_7 0x10BD3C1B
 #define DEVINFO_DVT_8 0x0055C000
 #define DEVINFO_IDX_7 57
@@ -187,7 +187,7 @@
 
 /* common part: for big, cci, LL, L, GPU, SOC*/
 #define VBOOT_VAL		(0x40) /* volt domain: 0.8v */
-#define VMAX_VAL		(0x74) /* volt domain: 1.12v*/
+#define VMAX_VAL		(0x73) /* volt domain: 1.12v*/
 #define VMIN_VAL		(0x20) /* volt domain: 0.6v*/
 #define VCO_VAL			(0x20)
 #define DVTFIXED_VAL		(0x9)

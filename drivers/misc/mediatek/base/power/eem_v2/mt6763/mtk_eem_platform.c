@@ -333,7 +333,7 @@ void get_freq_table_gpu(struct eem_det *det)
 		#ifndef EARLY_PORTING_GPU
 		for (i = 0; i < NR_FREQ_GPU; i++) {
 			det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz);
-			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);*/
+			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
 		}
 		#endif
 	#endif /* if DVT */
@@ -521,14 +521,14 @@ int base_ops_volt_2_pmic(struct eem_det *det, int volt)
 
 int base_ops_volt_2_eem(struct eem_det *det, int volt)
 {
-	/*
-	*eem_debug("[%s][%s] volt = %d, eem = %x\n",
-	*	__func__,
-	*	((char *)(det->name) + 8),
-	*	volt,
-	*	(((volt) - det->eem_v_base + det->eem_step - 1) / det->eem_step)
-	*	);
-	*/
+	#if 0
+	eem_debug("[%s][%s] volt = %d, eem = %x\n",
+		__func__,
+		((char *)(det->name) + 8),
+		volt,
+		(((volt) - det->eem_v_base + det->eem_step - 1) / det->eem_step)
+		);
+	#endif
 	return (((volt) - det->eem_v_base + det->eem_step - 1) / det->eem_step);
 
 }

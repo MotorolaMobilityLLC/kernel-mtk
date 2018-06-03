@@ -68,6 +68,7 @@ struct eem_det {
 	unsigned int DCBDET;
 	unsigned int AGEDELTA;
 	unsigned int MTDES;
+	unsigned int SPEC;
 
 	/* constant */
 	unsigned int DETWINDOW;

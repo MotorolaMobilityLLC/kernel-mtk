@@ -119,11 +119,9 @@
 	#include "ptp.h"
 	#include "upmu_common.h"
 	/* #include "mt6311.h" */
-	#ifndef EARLY_PORTING
-		#include "gpu_dvfs.h"
-		#include "thermal.h"
-		/* #include "gpio_const.h" */
-	#endif
+	#include "gpu_dvfs.h"
+	#include "thermal.h"
+	/* #include "gpio_const.h" */
 #endif
 
 #if EEM_ENABLE_TINYSYS_SSPM
@@ -974,7 +972,6 @@ int base_ops_mon_mode(struct eem_det *det)
 		det->MTS =  MTS_VAL; /* orig: 0x2cf, (2048 * TS_SLOPE) + 2048; */
 		det->BTS =  BTS_VAL; /* orig: 0x80E, 4 * TS_INTERCEPT; */
 	#endif
-
 	eem_error("[base_ops_mon_mode] Bk = %d, MTS = 0x%08X, BTS = 0x%08X\n",
 				det->ctrl_id, det->MTS, det->BTS);
 	#if 0
@@ -1123,6 +1120,10 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		  ((det->freq_tbl[6 * (NR_FREQ / 8)] << 16) & 0xff0000)	|
 		  ((det->freq_tbl[5 * (NR_FREQ / 8)] << 8) & 0xff00)	|
 		  ((det->freq_tbl[4 * (NR_FREQ / 8)]) & 0xff));
+	eem_error("---------------%s set F30 = %x, F74=%x\n",
+		((char *)(det->name) + 8),
+		eem_read(EEM_FREQPCT30),
+		eem_read(EEM_FREQPCT74));
 
 	eem_write(EEM_LIMITVALS,
 		  ((det->VMAX << 24) & 0xff000000)	|
@@ -1558,6 +1559,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
 		det->AGEDELTA	= devinfo->CPU_2L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_2L_MTDES;
+		det->SPEC	= devinfo->CPU_2L_SPEC;
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
@@ -1583,6 +1585,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->AGEDELTA	= devinfo->CPU_L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_L_MTDES;
+		det->SPEC	= devinfo->CPU_L_SPEC;
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
@@ -1608,6 +1611,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->AGEDELTA	= devinfo->CCI_AGEDELTA;
 		det->MTDES	= devinfo->CCI_MTDES;
+		det->SPEC       = devinfo->CCI_SPEC;
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
@@ -1633,6 +1637,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->GPU_MONEN;
 		det->AGEDELTA	= devinfo->GPU_AGEDELTA;
 		det->MTDES	= devinfo->GPU_MTDES;
+		det->SPEC       = devinfo->GPU_SPEC;
 		break;
 
 	 /* for DVT SOC input values are the same as CCI*/
@@ -1662,9 +1667,9 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->ops->get_freq_table(det);
 
 	#if DVT
-		det->VBOOT = 0x30;
+		det->VBOOT = 0x40;
 		det->VMAX = 0xFF;
-		det->VMIN = 0x00;
+		det->VMIN = 0x20;
 	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -1994,7 +1999,7 @@ static inline void handle_init01_isr(struct eem_det *det)
 	det->DCVOFFSETIN = ~(eem_read(EEM_DCVALUES) & 0xffff) + 1; /* hw bug, workaround */
 	/* check if DCVALUES is minus and set DCVOFFSETIN to zero */
 
-	if (det->DCVOFFSETIN & 0x8000)
+	if ((det->SPEC == 0x7) || (det->DCVOFFSETIN & 0x8000))
 		det->DCVOFFSETIN = 0;
 
 	det->AGEVOFFSETIN = eem_read(EEM_AGEVALUES) & 0xffff;

@@ -221,7 +221,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_SOC,
 		#if DVT
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.features	= 0, /* FEA_INIT01 | FEA_INIT02 | FEA_MON, */
 		#else
 		.features	= 0,
 		#endif
