@@ -2108,6 +2108,8 @@ int composite_dev_prepare(struct usb_composite_driver *composite,
 	if (!cdev->req->buf)
 		goto fail;
 
+	pr_info("%s %p\n", __func__, cdev->req);
+
 	ret = device_create_file(&gadget->dev, &dev_attr_suspended);
 	if (ret)
 		goto fail_dev;
@@ -2151,6 +2153,8 @@ int composite_os_desc_req_prepare(struct usb_composite_dev *cdev,
 		goto end;
 	}
 
+	pr_info("%s %p\n", __func__, cdev->os_desc_req);
+
 	/* OS feature descriptor length <= 4kB */
 #if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
 	cdev->os_desc_req->buf = kmalloc(4096, GFP_KERNEL | GFP_DMA);
@@ -2176,6 +2180,11 @@ void composite_dev_cleanup(struct usb_composite_dev *cdev)
 		list_del(&uc->list);
 		kfree(uc);
 	}
+
+	pr_info("%s os_desc_req[%d]=%p cdev->req[%d]=%p\n", __func__,
+		cdev->os_desc_pending, cdev->os_desc_req,
+		cdev->setup_pending, cdev->req);
+
 	if (cdev->os_desc_req) {
 		if (cdev->os_desc_pending)
 			usb_ep_dequeue(cdev->gadget->ep0, cdev->os_desc_req);

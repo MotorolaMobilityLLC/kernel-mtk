@@ -1664,6 +1664,40 @@ static const struct usb_gadget_driver configfs_driver_template = {
 
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 
+#define USB_STATE_MONITOR_DELAY 5000
+static struct delayed_work usb_state_monitor_dw;
+static void do_usb_state_monitor_work(struct work_struct *work)
+{
+	struct gadget_info *gi = dev_get_drvdata(android_device);
+	struct usb_composite_dev *cdev = &gi->cdev;
+	char *usb_state = "NO-DEV";
+	unsigned long flags;
+
+	spin_lock_irqsave(&cdev->lock, flags);
+	if (cdev->config)
+		usb_state = "CONFIGURED";
+	else if (gi->connected)
+		usb_state = "CONNECTED";
+	else
+		usb_state = "DISCONNECTED";
+	spin_unlock_irqrestore(&cdev->lock, flags);
+
+	pr_info("usb_state<%s>\n", usb_state);
+	schedule_delayed_work(&usb_state_monitor_dw, msecs_to_jiffies(USB_STATE_MONITOR_DELAY));
+}
+
+void usb_state_monitor_work(void)
+{
+	static int inited;
+
+	if (!inited) {
+		/* TIMER_DEFERRABLE for not interfering with deep idle */
+		INIT_DEFERRABLE_WORK(&usb_state_monitor_dw, do_usb_state_monitor_work);
+		inited = 1;
+	}
+	schedule_delayed_work(&usb_state_monitor_dw, msecs_to_jiffies(USB_STATE_MONITOR_DELAY));
+}
+
 #define DESCRIPTOR_STRING_ATTR(field, buffer)				\
 static ssize_t								\
 field ## _show(struct device *dev, struct device_attribute *attr,	\
@@ -1749,6 +1783,16 @@ static int android_device_create(struct gadget_info *gi)
 		}
 	}
 
+#if defined(CONFIG_MTK_USB2JTAG_SUPPORT)
+	if (usb2jtag_mode())
+		pr_info("[USB2JTAG] in usb2jtag mode, not to initialize usb driver\n");
+	else
+		usb_state_monitor_work();
+#elif defined(CONFIG_FPGA_EARLY_PORTING)
+	pr_info("SKIP usb_state_monitor_work\n");
+#else
+	usb_state_monitor_work();
+#endif
 	return 0;
 }
 

@@ -2865,6 +2865,7 @@ void musb_g_reset(struct musb *musb) __releases(musb->lock) __acquires(musb->loc
 	void __iomem *mbase = musb->mregs;
 	u8 devctl = musb_readb(mbase, MUSB_DEVCTL);
 	u8 power;
+	struct musb_ep		*ep;
 
 	DBG(2, "<== %s driver '%s'\n", (devctl & MUSB_DEVCTL_BDEVICE)
 	    ? "B-Device" : "A-Device",
@@ -2918,6 +2919,12 @@ void musb_g_reset(struct musb *musb) __releases(musb->lock) __acquires(musb->loc
 	musb->g.b_hnp_enable = 0;
 	musb->g.a_alt_hnp_support = 0;
 	musb->g.a_hnp_support = 0;
+
+	ep = &musb->endpoints[0].ep_in;
+	if (!list_empty(&ep->req_list)) {
+		DBG(0, "%s reinit EP[0] req_list\n", __func__);
+		INIT_LIST_HEAD(&ep->req_list);
+	}
 
 	/* Normal reset, as B-Device;
 	 * or else after HNP, as A-Device
