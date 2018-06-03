@@ -127,28 +127,28 @@ int pmic_get_charging_current(void)
 bool __attribute__ ((weak))
 	mtk_bif_is_hw_exist(void)
 {
-	pr_err("do not have bif driver");
+	pr_info("do not have bif driver");
 	return false;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_vbat(int *vbat)
 {
-	pr_err("do not have bif driver");
+	pr_info("do not have bif driver");
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_tbat(int *tmp)
 {
-	pr_err("do not have bif driver");
+	pr_info("do not have bif driver");
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_init(void)
 {
-	pr_err("do not have bif driver");
+	pr_info("do not have bif driver");
 	return -ENOTSUPP;
 }
 
