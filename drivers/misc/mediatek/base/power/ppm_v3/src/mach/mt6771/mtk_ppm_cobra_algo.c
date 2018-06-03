@@ -442,7 +442,7 @@ void ppm_cobra_init(void)
 		return;
 	}
 
-	ppm_info("addr of cobra_tbl = 0x%p, size = %lu\n", cobra_tbl, PPM_COBRA_TBL_SRAM_SIZE);
+	/* ppm_info("addr of cobra_tbl = 0x%p, size = %lu\n", cobra_tbl, PPM_COBRA_TBL_SRAM_SIZE); */
 	memset_io((u8 *)cobra_tbl, 0x00, PPM_COBRA_TBL_SRAM_SIZE);
 
 #ifdef CONFIG_MTK_UNIFY_POWER
