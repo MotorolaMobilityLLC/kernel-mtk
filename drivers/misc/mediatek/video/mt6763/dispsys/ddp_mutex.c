@@ -297,6 +297,8 @@ void ddp_mutex_reset(int mutex_id, void *handle)
 	DDPDBG("mutex %d reset\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_RST(mutex_id), 1);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_RST(mutex_id), 0);
+	/* DCM will be enabled after reset, so disable it */
+	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_CFG, 0);
 }
 
 int ddp_is_moudule_in_mutex(int mutex_id, enum DISP_MODULE_ENUM module)

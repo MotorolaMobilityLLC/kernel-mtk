@@ -750,13 +750,13 @@ void _vdo_mode_enter_idle(void)
 
 	}
 
+#if 0
 	/* DC homeidle share wrot sram */
-
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)
 		&& (primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE
 		|| primary_get_sess_mode() == DISP_SESSION_RDMA_MODE))
 		enter_share_sram();
-
+#endif
 	/* set golden setting  , merge fps/dc */
 	set_is_display_idle(1);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
@@ -767,17 +767,18 @@ void _vdo_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
-	/* DC homeidle share wrot sram */
-
-	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)
-		&& (primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE
-		|| primary_get_sess_mode() == DISP_SESSION_RDMA_MODE))
-		leave_share_sram();
-
 	/* set golden setting */
 	set_is_display_idle(0);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
+
+#if 0
+	/* DC homeidle share wrot sram */
+	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM)
+		&& (primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE
+		|| primary_get_sess_mode() == DISP_SESSION_RDMA_MODE))
+		leave_share_sram();
+#endif
 
 	/* Enable irq & restore vfp */
 	if (!primary_is_sec()) {
