@@ -25,7 +25,6 @@
 #include <linux/irqnr.h>
 #include <linux/interrupt.h>
 #include <linux/stacktrace.h>
-#include <linux/stacktrace.h>
 #include <mt-plat/aee.h>
 #include "mtk_sched_mon.h"
 #include "internal.h"
@@ -67,11 +66,9 @@ static const char * const softirq_name[] = {
 
 #define TIME_1MS	1000000
 #define TIME_3MS	3000000
-#define TIME_5MS	5000000
 #define TIME_10MS	10000000
 #define TIME_50MS	50000000
 #define TIME_100MS	100000000
-#define TIME_150MS	150000000
 #define TIME_200MS	200000000
 #define TIME_500MS	500000000
 
@@ -112,6 +109,7 @@ DEFINE_PER_CPU(struct sched_block_event, irq_work_mon);
 DEFINE_PER_CPU(struct sched_stop_event, IRQ_disable_mon);
 DEFINE_PER_CPU(struct sched_stop_event, Preempt_disable_mon);
 DEFINE_PER_CPU(struct sched_lock_event, rq_lock_mon);
+DEFINE_PER_CPU(struct lock_block_event, spinlock_mon);
 DEFINE_PER_CPU(int, mt_timer_irq);
 DEFINE_PER_CPU(int, mtsched_mon_enabled);
 /* [IRQ-disable] White List */
@@ -676,13 +674,7 @@ void mt_trace_rqlock_start(raw_spinlock_t *lock)
 void mt_trace_rqlock_end(raw_spinlock_t *lock)
 {
 	struct sched_lock_event *lock_e;
-#ifdef CONFIG_DEBUG_SPINLOCK
-	struct task_struct *owner = NULL;
 
-
-	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-		owner = lock->owner;
-#endif
 	lock_e = &__raw_get_cpu_var(rq_lock_mon);
 
 	lock_e->lock_te = sched_clock();
@@ -767,6 +759,27 @@ void mt_trace_RCU_SoftIRQ_end(void)
 	b->cur_event = 0;
 	b->cur_ts = 0;
 	softirq_event_duration_check(b);
+}
+
+void mt_trace_lock_spinning_start(raw_spinlock_t *lock)
+{
+	struct lock_block_event *b;
+
+	b = &__raw_get_cpu_var(spinlock_mon);
+	b->try_lock_s = sched_clock();
+}
+
+void mt_trace_lock_spinning_end(raw_spinlock_t *lock)
+{
+	struct lock_block_event *b;
+
+	b = &__raw_get_cpu_var(spinlock_mon);
+	b->try_lock_e = sched_clock();
+	if ((b->try_lock_e - b->try_lock_s > TIME_100MS)
+		&& (b->try_lock_e > b->try_lock_s)) {
+		b->last_spinning_s = b->try_lock_s;
+		b->last_spinning_e = b->try_lock_e;
+	}
 }
 
 /*IRQ Counts monitor & IRQ Burst monitor*/
@@ -980,6 +993,7 @@ void mt_dump_irq_off_traces(int mode)
 void MT_trace_hardirqs_on(void)
 {
 	unsigned long long t_on, t_off, t_dur;
+	int output = TO_BOTH_SAVE;
 
 	if (sched_mon_enable && (sched_mon_func & evt_HARDIRQ)) {
 #ifdef CONFIG_TRACE_IRQFLAGS
@@ -992,10 +1006,8 @@ void MT_trace_hardirqs_on(void)
 			__raw_get_cpu_var(MT_tracing_cpu) = 0;
 			return;
 		}
-		if (__raw_get_cpu_var(MT_trace_in_sched)) {
-			__raw_get_cpu_var(MT_tracing_cpu) = 0;
-			return;
-		}
+		if (__raw_get_cpu_var(MT_trace_in_sched))
+			output = TO_FTRACE;
 
 		if (__raw_get_cpu_var(MT_tracing_cpu) == 1) {
 			MT_trace_irq_on();
@@ -1005,36 +1017,51 @@ void MT_trace_hardirqs_on(void)
 
 			__raw_get_cpu_var(t_irq_on) = t_on;
 			if (t_dur > WARN_IRQ_DISABLE_DUR) {
-				char buf[144];
+				char buf[144], buf2[64];
+				struct lock_block_event *b;
 
 				snprintf(buf, sizeof(buf),
 					"-----[IRQ disable monitor]----");
-				sched_mon_msg(buf, TO_BOTH_SAVE);
+				sched_mon_msg(buf, output);
 				snprintf(buf, sizeof(buf),
 					"IRQ disable too long [%llu ms]",
 					msec_high(t_dur));
-				sched_mon_msg(buf, TO_BOTH_SAVE);
+				sched_mon_msg(buf, output);
 				snprintf(buf, sizeof(buf),
 					"off: [%lld.%06lu], on: [%lld.%06lu]",
 					sec_high(t_off), sec_low(t_off),
 					sec_high(t_on), sec_low(t_on));
-				sched_mon_msg(buf, TO_BOTH_SAVE);
-				snprintf(buf, sizeof(buf),
-					"hardirqs last disabled at (%u): [<%p>] %pS",
-					current->hardirq_disable_event,
+				sched_mon_msg(buf, output);
+#ifdef CONFIG_TRACE_IRQFLAGS
+				snprintf(buf2, sizeof(buf2),
+					"[<%p>] %pS",
 					(void *)current->hardirq_disable_ip,
 					(void *)current->hardirq_disable_ip);
-				sched_mon_msg(buf, TO_BOTH_SAVE);
-				mt_dump_irq_off_traces(TO_BOTH_SAVE);
+				snprintf(buf, sizeof(buf),
+					"hardirqs last disabled at (%u): %s",
+					current->hardirq_disable_event, buf2);
+				sched_mon_msg(buf, output);
+#else
+				snprintf(buf2, sizeof(buf2), "<no info>");
+#endif
+				b = &__raw_get_cpu_var(spinlock_mon);
+				if (b->last_spinning_s > t_off) {
+					snprintf(buf, sizeof(buf),
+						"wait spinlock from [%lld.%06lu] to [%lld.%06lu]",
+						sec_high(b->last_spinning_s),
+						sec_low(b->last_spinning_s),
+						sec_high(b->last_spinning_e),
+						sec_low(b->last_spinning_e));
+					sched_mon_msg(buf, output);
+				}
+				mt_dump_irq_off_traces(output);
 
 				if (t_dur > AEE_IRQ_DISABLE_DUR) {
 					snprintf(buf, sizeof(buf),
-					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at [<%p>] %pS",
+					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at %s",
 					msec_high(t_dur),
 					sec_high(t_off), sec_low(t_off),
-					sec_high(t_on), sec_low(t_on),
-					(void *)current->hardirq_disable_ip,
-					(void *)current->hardirq_disable_ip);
+					sec_high(t_on), sec_low(t_on), buf2);
 					sched_monitor_aee(evt_HARDIRQ,
 						buf, NULL);
 				}
@@ -1054,8 +1081,6 @@ void MT_trace_hardirqs_off(void)
 			return;
 #endif
 		if (current->pid == 0)	/* Ignore swap thread */
-			return;
-		if (__raw_get_cpu_var(MT_trace_in_sched))
 			return;
 		if (__raw_get_cpu_var(MT_tracing_cpu) == 0) {
 			MT_trace_irq_off();
@@ -1092,6 +1117,7 @@ static int mt_sched_monitor_show(struct seq_file *m, void *v)
 
 void mt_sched_monitor_switch(int on)
 {
+#if 0
 	int cpu;
 
 	preempt_disable_notrace();
@@ -1104,6 +1130,7 @@ void mt_sched_monitor_switch(int on)
 	}
 	mutex_unlock(&mt_sched_mon_lock);
 	preempt_enable_notrace();
+#endif
 }
 
 static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
@@ -1112,6 +1139,9 @@ static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
 	char buf[64];
 	unsigned long val;
 	int ret;
+
+	if (!sched_mon_door_key)
+		return cnt;
 
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
