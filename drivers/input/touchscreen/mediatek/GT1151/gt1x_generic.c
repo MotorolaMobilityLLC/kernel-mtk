@@ -104,47 +104,59 @@ void gt1x_deinit_debug_node(void)
 
 static ssize_t gt1x_debug_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
 {
-	char *ptr = page;
+	char *ptr = NULL;
 	char temp_data[GTP_CONFIG_MAX_LENGTH] = { 0 };
 	int i;
-	ssize_t ret;
+	ssize_t ret = 0;
 
 	if (*ppos)
 		return 0;
 
-	ptr += sprintf(ptr, "==== GT1X default config setting in driver====\n");
+	ptr = kzalloc((size + 10), GFP_KERNEL);
+	if (ptr == NULL)
+		return -EMSGSIZE;
+
+	ret += snprintf(ptr + ret, size - ret, "==== GT1X default config setting in driver====\n");
 
 	for (i = 0; i < GTP_CONFIG_MAX_LENGTH; i++) {
-		ptr += sprintf(ptr, "0x%02X,", gt1x_config[i]);
+		ret += snprintf(ptr + ret, size - ret, "0x%02X,", gt1x_config[i]);
 		if (i % 10 == 9)
-			ptr += sprintf(ptr, "\n");
+			ret += snprintf(ptr + ret, size - ret, "\n");
 	}
 
-	ptr += sprintf(ptr, "\n");
+	ret += snprintf(ptr + ret, size - ret, "\n");
 
-	ptr += sprintf(ptr, "==== GT1X config read from chip====\n");
+	ret += snprintf(ptr + ret, size - ret, "==== GT1X config read from chip====\n");
 	i = gt1x_i2c_read(GTP_REG_CONFIG_DATA, temp_data, GTP_CONFIG_MAX_LENGTH);
 	GTP_INFO("I2C TRANSFER: %d", i);
 	for (i = 0; i < GTP_CONFIG_MAX_LENGTH; i++) {
-		ptr += sprintf(ptr, "0x%02X,", temp_data[i]);
+		ret += snprintf(ptr + ret, size - ret, "0x%02X,", temp_data[i]);
 
 		if (i % 10 == 9)
-			ptr += sprintf(ptr, "\n");
+			ret += snprintf(ptr + ret, size - ret, "\n");
 	}
 
 	/* Touch PID & VID */
-	ptr += sprintf(ptr, "\n");
-	ptr += sprintf(ptr, "==== GT1X Version Info ====\n");
+	ret += snprintf(ptr + ret, size - ret, "\n");
+	ret += snprintf(ptr + ret, size - ret, "==== GT1X Version Info ====\n");
 
 	gt1x_i2c_read(GTP_REG_VERSION, temp_data, 12);
-	ptr += sprintf(ptr, "ProductID: GT%c%c%c%c\n", temp_data[0], temp_data[1], temp_data[2], temp_data[3]);
-	ptr += sprintf(ptr, "PatchID: %02X%02X\n", temp_data[4], temp_data[5]);
-	ptr += sprintf(ptr, "MaskID: %02X%02X\n", temp_data[7], temp_data[8]);
-	ptr += sprintf(ptr, "SensorID: %02X\n", temp_data[10] & 0x0F);
-	ptr += sprintf(ptr, "Driver Num: %02d. Sensor Num: %02d\n", gt1x_driver_num, gt1x_sensor_num);
+	ret += snprintf(ptr + ret, size - ret, "ProductID: GT%c%c%c%c\n",
+			temp_data[0], temp_data[1], temp_data[2], temp_data[3]);
+	ret += snprintf(ptr + ret, size - ret, "PatchID: %02X%02X\n", temp_data[4], temp_data[5]);
+	ret += snprintf(ptr + ret, size - ret, "MaskID: %02X%02X\n", temp_data[7], temp_data[8]);
+	ret += snprintf(ptr + ret, size - ret, "SensorID: %02X\n", temp_data[10] & 0x0F);
+	ret += snprintf(ptr + ret, size - ret, "Driver Num: %02d. Sensor Num: %02d\n",
+			gt1x_driver_num, gt1x_sensor_num);
 
-	*ppos += ptr - page;
-	ret = ptr - page;
+	*ppos += ret;
+
+	if (copy_to_user(page, ptr, size)) {
+		GTP_INFO("Failed to copy from kernel to user\n");
+		ret = -EFAULT;
+	}
+	kfree(ptr);
+
 	return ret;
 }
 
