@@ -30,6 +30,7 @@
 #include <linux/fs.h>
 #include <linux/sched.h>
 #include <linux/hrtimer.h>
+#include <linux/workqueue.h>
 /*#define MET_USER_EVENT_SUPPORT*/
 #if TRACE
 #include <mt-plat/met_drv.h>
