@@ -90,6 +90,7 @@ VOID roamingFsmInit(IN P_ADAPTER_T prAdapter)
 	prRoamingFsmInfo->fgIsEnableRoaming = prConnSettings->fgIsEnableRoaming;
 	prRoamingFsmInfo->eCurrentState = ROAMING_STATE_IDLE;
 	prRoamingFsmInfo->rRoamingDiscoveryUpdateTime = 0;
+	prRoamingFsmInfo->DrvRoamingAllow = 1;
 
 }				/* end of roamingFsmInit() */
 

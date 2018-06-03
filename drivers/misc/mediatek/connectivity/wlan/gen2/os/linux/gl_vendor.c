@@ -1585,3 +1585,41 @@ nla_put_failure:
 
 }
 
+int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	struct nlattr *attr;
+	UINT_32 setRoaming = 0;
+	UINT_32 u4BufLen = 0;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+
+	DBGLOG(REQ, INFO, "%s()\n", __func__);
+
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d, data=0x%x 0x%x\r\n",
+		data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1));
+
+	attr = (struct nlattr *)data;
+	setRoaming = nla_get_u32(attr);
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	DBGLOG(REQ, INFO, "Vendor roaming policy=%d\r\n", setRoaming);
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetDrvRoamingPolicy,
+			   &setRoaming, sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
+	return 0;
+
+nla_put_failure:
+	return -1;
+
+}
+

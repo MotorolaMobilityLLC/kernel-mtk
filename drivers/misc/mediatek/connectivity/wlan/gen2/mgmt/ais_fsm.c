@@ -2268,7 +2268,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 #endif
 #if CFG_SUPPORT_ROAMING
 				/* if bssid is given, it means we no need fw roaming */
-				if (prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+				if ((prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
+					&& (prAdapter->rWifiVar.rRoamingInfo.DrvRoamingAllow == 1))
 					roamingFsmRunEventStart(prAdapter);
 #endif /* CFG_SUPPORT_ROAMING */
 

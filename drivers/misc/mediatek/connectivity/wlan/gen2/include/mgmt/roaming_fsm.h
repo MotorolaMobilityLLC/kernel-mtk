@@ -77,6 +77,7 @@ typedef struct _ROAMING_INFO_T {
 #define ROAMING_ENTRY_TIMEOUT_SKIP_COUNT_MAX		2
 	UINT_32 RoamingEntryTimeoutSkipCount;
 
+	UINT_32 DrvRoamingAllow;
 } ROAMING_INFO_T, *P_ROAMING_INFO_T;
 
 /*******************************************************************************
