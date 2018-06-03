@@ -101,14 +101,15 @@ static const struct dev_pm_ops vpu_pm_ops = {
 /* VPU Driver: Prototype                                                     */
 /*---------------------------------------------------------------------------*/
 
-
 static const struct of_device_id vpu_of_ids[] = {
-	{.compatible = "mediatek,ipu_sys_cfg",},
-	{.compatible = "mediatek,ipu_adl_ctrl",},
-	{.compatible = "mediatek,ipu_vcore_cfg",},
-	{.compatible = "mediatek,ipu1",},
-	{.compatible = "mediatek,ipu2",},
-	{.compatible = "mediatek,ipu3",},
+#ifdef MTK_VPU_FPGA_PORTING
+	{.compatible = "mediatek,ipu_conn",},
+	{.compatible = "mediatek,ipu_adl",},
+	{.compatible = "mediatek,ipu_vcore",},
+#endif
+	{.compatible = "mediatek,vpu_core0",},
+	{.compatible = "mediatek,vpu_core1",},
+	{.compatible = "mediatek,vpu_core2",},
 	{}
 };
 
@@ -934,31 +935,31 @@ out:
 static int vpu_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int core = vpu_num_devs - 3;
+	int core = 0;
 	struct device *dev;
 	struct device_node *node;
 	unsigned int irq_info[3];	/* Record interrupts info from device tree */
 
-	LOG_INF("[vpu] core : %d\n", MTK_VPU_CORE);
-
 #ifdef MTK_VPU_FPGA_PORTING
+	core = vpu_num_devs - 3;
+#else
+	core = vpu_num_devs;
+#endif
 	if (core == (MTK_VPU_CORE)) {
 		LOG_INF("vpu_num_devs(%d), core(%d) = core(%d)+2 in FPGA, return\n", vpu_num_devs, core, MTK_VPU_CORE);
 		return ret;
 	}
-#else
-#endif
-
 	node = pdev->dev.of_node;
 	vpu_device->dev[vpu_num_devs] = &pdev->dev;
-	LOG_DBG("probe 0, pdev id = %d name = %s, name = %s\n", pdev->id, pdev->name, pdev->dev.of_node->name);
+	LOG_INF("probe 0, pdev id = %d name = %s, name = %s\n", pdev->id, pdev->name, pdev->dev.of_node->name);
 
 #ifdef MTK_VPU_EMULATOR
 	/* emulator will fill vpu_base and bin_base */
 	vpu_init_emulator(vpu_device);
 #else
-
+	LOG_INF("[vpu] core/total : %d/%d\n", core, MTK_VPU_CORE);
 	switch (vpu_num_devs) {
+#ifdef MTK_VPU_FPGA_PORTING
 	/* get register address */
 	case 0:
 		vpu_device->vpu_syscfg_base = (unsigned long) of_iomap(node, 0);
@@ -969,10 +970,15 @@ static int vpu_probe(struct platform_device *pdev)
 	case 2:
 		vpu_device->vpu_vcorecfg_base = (unsigned long) of_iomap(node, 0);
 		break;
+#endif
 	default:
 		vpu_device->vpu_base[core] = (unsigned long) of_iomap(node, 0);
 		/* get physical address of binary data loaded by LK */
+#ifdef MTK_VPU_FPGA_PORTING
 		if (vpu_num_devs == 3) {
+#else
+		if (vpu_num_devs == 0) {
+#endif
 			uint32_t phy_addr;
 			uint32_t phy_size;
 
@@ -982,7 +988,7 @@ static int vpu_probe(struct platform_device *pdev)
 				return -ENODEV;
 			}
 
-			LOG_DBG("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
+			LOG_INF("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
 				core, phy_addr, phy_size);
 			vpu_device->bin_base = (uint64_t)ioremap_wc(phy_addr, phy_size);
 			vpu_device->bin_pa = phy_addr;
@@ -992,8 +998,9 @@ static int vpu_probe(struct platform_device *pdev)
 	}
 #endif
 
-
+#ifdef MTK_VPU_FPGA_PORTING
 	if (vpu_num_devs > 2) {
+#endif
 		vpu_device->irq_num[core] = irq_of_parse_and_map(node, 0);
 		LOG_DBG("probe 2, [%d/%d] vpu_base: 0x%lx, bin_base: 0x%lx, irq_num: %d, pdev: %p\n",
 			 vpu_num_devs, core, vpu_device->vpu_base[core],  vpu_device->bin_base,
@@ -1006,7 +1013,7 @@ static int vpu_probe(struct platform_device *pdev)
 				return -ENODEV;
 			}
 			vpu_device->irq_trig_level = irq_info[2];
-			LOG_INF("vpu_device->irq_trig_level (0x%x), IRQF_TRIGGER_NONE(0x%x)\n",
+			LOG_DBG("vpu_device->irq_trig_level (0x%x), IRQF_TRIGGER_NONE(0x%x)\n",
 				vpu_device->irq_trig_level, IRQF_TRIGGER_NONE);
 		}
 
@@ -1016,9 +1023,11 @@ static int vpu_probe(struct platform_device *pdev)
 		LOG_DBG("[probe] [%d] init_hw done\n", core);
 		vpu_init_reg(core, vpu_device);
 		LOG_DBG("[probe] [%d] init_reg done\n", core);
+#ifdef MTK_VPU_FPGA_PORTING
 	}
 	LOG_DBG("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
 			 vpu_device->vpu_syscfg_base,  vpu_device->vpu_adlctrl_base,  vpu_device->vpu_vcorecfg_base);
+#endif
 
 
 	/* Only register char driver in the 1st time */

@@ -11,9 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#define CHRIS_WORK_AROUND
-
-
 #include "vpu_reg.h"
 #include "vpu_cmn.h"
 
@@ -266,7 +263,7 @@ int vpu_init_reg(int core, struct vpu_device *device)
 	vpu_base[core] = device->vpu_base[core];
 	LOG_DBG("vpu_init_reg core(%d) - flag\n", core);
 
-#ifdef CHRIS_WORK_AROUND /*MTK_VPU_FPGA_PORTING*/
+#ifdef MTK_VPU_FPGA_PORTING
 	/* enable clock */
 	LOG_DBG("vpu_init_reg vpu_conn_base value(0x%x)\n",
 		vpu_read_reg32(device->vpu_syscfg_base, 0x0));
