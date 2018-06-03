@@ -1708,11 +1708,12 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UINT_8 ucTC)
 {
 	P_WIFI_CMD_T prWifiCmd;
+	P_MSDU_INFO_T prMsduInfo;
+	P_NATIVE_PACKET prNativePacket;
+	P_WLAN_MAC_HEADER_T prMgmtHeader;
 	UINT_16 u2OverallBufferLength;
 	UINT_8 ucTxDescLength;
 	PUINT_8 pucOutputBuf = (PUINT_8) NULL;	/* Pointer to Transmit Data Structure Frame */
-	P_NATIVE_PACKET prNativePacket;
-	P_MSDU_INFO_T prMsduInfo;
 	P_TX_CTRL_T prTxCtrl;
 
 	KAL_SPIN_LOCK_DECLARATION();
@@ -1743,12 +1744,12 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket, pucOutputBuf + ucTxDescLength);
 
 		DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u]\n",
-				    prCmdInfo->ucBssIndex,
-				    HAL_MAC_TX_DESC_GET_WLAN_INDEX((P_HW_MAC_TX_DESC_T) &pucOutputBuf[0]),
-				    prMsduInfo->ucPID, prCmdInfo->ucStaRecIndex,
-				    ucTxDescLength + prCmdInfo->u2InfoBufLen,
-				    HAL_MAC_TX_DESC_IS_PROTECTION((P_HW_MAC_TX_DESC_T) &pucOutputBuf[0]),
-				    prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+		       prCmdInfo->ucBssIndex,
+		       HAL_MAC_TX_DESC_GET_WLAN_INDEX((P_HW_MAC_TX_DESC_T)&pucOutputBuf[0]),
+		       prMsduInfo->ucPID, prCmdInfo->ucStaRecIndex,
+		       ucTxDescLength + prCmdInfo->u2InfoBufLen,
+		       HAL_MAC_TX_DESC_IS_PROTECTION((P_HW_MAC_TX_DESC_T)&pucOutputBuf[0]),
+		       prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
 
 		prMsduInfo->prPacket = NULL;
 
@@ -1768,6 +1769,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		ASSERT(prMsduInfo->fgIs802_11 == TRUE);
 		ASSERT(prMsduInfo->eSrc == TX_PACKET_MGMT);
+		prMgmtHeader = (P_WLAN_MAC_HEADER_T) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
 
 #if CFG_SUPPORT_MULTITHREAD
 		nicTxCopyDesc(prAdapter, &pucOutputBuf[0], prMsduInfo->aucTxDescBuffer, &ucTxDescLength);
@@ -1785,10 +1787,11 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 
 		DBGLOG(TX, INFO,
-		       "TX MGMT Frame: BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] LEN[%u] RSP[%u]\n",
-			prCmdInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
-			prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, u2OverallBufferLength,
-			prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+		       "TX MGMT Frame: SUBTYPE[%x] BSS[%u] WIDX:PID[%u:%u] SEQ[%u] STA[%u] LEN[%u] RSP[%u]\n",
+		       (prMgmtHeader->u2FrameCtrl & MASK_FC_SUBTYPE) >> OFFSET_OF_FC_SUBTYPE,
+		       prCmdInfo->ucBssIndex, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID,
+		       prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex, u2OverallBufferLength,
+		       prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
 
 		if (prMsduInfo->pfTxDoneHandler) {
 			/* DBGLOG(INIT, TRACE,("Wait Cmd TxSeqNum:%d\n", prMsduInfo->ucTxSeqNum)); */

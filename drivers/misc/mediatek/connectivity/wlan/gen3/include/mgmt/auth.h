@@ -98,7 +98,7 @@ authProcessRxAuth1Frame(IN P_ADAPTER_T prAdapter,
 			IN P_SW_RFB_T prSwRfb,
 			IN UINT_8 aucExpectedBSSID[],
 			IN UINT_16 u2ExpectedAuthAlgNum,
-			IN UINT_16 u2ExpectedTransSeqNum, OUT PUINT_16 pu2ReturnStatusCode);
+			IN UINT_16 u2ExpectedTransSeqNum, OUT PUINT_16 pu2StatusCode);
 
 /*******************************************************************************
 *                              F U N C T I O N S
