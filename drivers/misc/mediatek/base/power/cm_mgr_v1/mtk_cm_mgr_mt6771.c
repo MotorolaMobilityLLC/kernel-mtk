@@ -382,7 +382,7 @@ static inline void cm_mgr_sched_pm_init(void) { }
 static int cm_mgr_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
 {
-	unsigned int cur_cpu = smp_processor_id();
+	unsigned int cur_cpu = (long)hcpu;
 
 	spin_lock(&sw_zq_tx_lock);
 
