@@ -135,6 +135,7 @@ static ssize_t rawfs_file_read(struct file *filp, struct iovec *iv, loff_t *ppos
 						start_in_buf, copy_len,
 						*(unsigned int *)(&page_buf->i_data[0] + start_in_buf));
 
+					curr_file_pos   += copy_len;
 					curr_buf_pos	+= copy_len;
 					remain_buf_size -= copy_len;
 				}
