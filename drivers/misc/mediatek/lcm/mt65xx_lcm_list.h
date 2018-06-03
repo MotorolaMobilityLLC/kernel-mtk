@@ -40,6 +40,7 @@ extern LCM_DRIVER hx8369_dsi_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_hvga_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_qvga_lcm_drv;
+extern LCM_DRIVER ili9881c_hd_dsi_vdo_ilitek_nt50358_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8369b_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8369b_wvga_dsi_vdo_drv;
@@ -281,11 +282,15 @@ extern LCM_DRIVER nt36380_wqhd_vdo_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_hdp_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv;
 extern LCM_DRIVER ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv;
 extern LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv;
 extern LCM_DRIVER otm1287_wxga_dsi_vdo_auo_guoxian_lcm_drv;
 extern LCM_DRIVER jd9365_wxga_dsi_vdo_hsd_pingbo_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_lcm_drv;
+extern LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_vdo_nt50358_lcm_drv;
+extern LCM_DRIVER nt36672_fhdp_dsi_vdo_tianma_nt50358_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
