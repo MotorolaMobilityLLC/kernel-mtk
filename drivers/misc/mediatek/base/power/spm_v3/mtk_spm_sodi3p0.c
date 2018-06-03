@@ -308,10 +308,12 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
+#ifdef SUPPORT_SW_SET_SPM_MEMEPLL_MODE
 	if (spm_get_sodi_mempll() == 1)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE; /* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
+#endif
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 #if defined(CONFIG_MACH_MT6775)
@@ -488,10 +490,11 @@ void spm_sodi3_init(void)
 {
 	sodi3_pr_debug("spm_sodi3_init\n");
 	spm_sodi3_aee_init();
-
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6799)
 	sodi3_ctrl.wake_src = WAKE_SRC_FOR_SODI;
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 		SPM_PWR_CTRL_SODI, PWR_WAKE_SRC, sodi3_ctrl.wake_src);
+#endif
 }
 
 MODULE_DESCRIPTION("SPM-SODI3 Driver v0.1");
