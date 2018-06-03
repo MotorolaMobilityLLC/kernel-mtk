@@ -196,6 +196,9 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0xFC0, "MDP_DL_READY_0"},
 		{0xFC4, "MDP_DL_READY_1"},
 		{0xFC8, "MDP_DL_READY_2"},
+		{0x938, "MDP_DL_CFG_RD"},
+		{0x940, "MDP_DL_ASYNC_CFG_RD0"},
+		{0x94C, "MDP_DL_ASYNC_CFG_RD1"},
 		/*{0xF24, "COLOR0_SEL_IN"},*/
 		/*{0xF18, "MDP_TDSHP_MOUT_EN"},*/
 		/*{0xF0C, "DISP_OVL0_MOUT_EN"},*/
@@ -1107,11 +1110,6 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 		/* Use SMI clock API */
 		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "MDP", true);
 
-		/* reset ovl engine to avoid
-		 * ovl eof event always set and block bus
-		 */
-		cmdq_mdp_enable_clock_DISP_OVL0(true);
-		cmdq_mdp_enable_clock_DISP_OVL0(false);
 	} else {
 		/* disable, reverse the sequence */
 		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "MDP", true);
