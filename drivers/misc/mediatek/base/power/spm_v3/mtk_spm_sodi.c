@@ -305,6 +305,7 @@ static void spm_sodi_pcm_setup_before_wfi(
 	spm_d.u.sodi.cpu = cpu;
 	spm_d.u.sodi.pcm_flags = pwrctrl->pcm_flags;
 	spm_d.u.sodi.univpll_status = univpll_is_used();
+	spm_d.u.sodi.gps_status = spm_for_gps_flag;
 	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
@@ -532,6 +533,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	/* need be called after set_pwrctrl_pcm_flags1() */
+	spm_set_dummy_read_addr(false);
 
 	soidle_before_wfi(cpu);
 
@@ -545,6 +548,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 #ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
+	unmask_edge_trig_irqs_for_cirq();
 #endif
 
 #ifdef CONFIG_MTK_SYS_CIRQ

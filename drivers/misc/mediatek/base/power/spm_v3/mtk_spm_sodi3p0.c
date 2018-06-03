@@ -447,6 +447,8 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	/* need be called after set_pwrctrl_pcm_flags1() */
+	spm_set_dummy_read_addr(false);
 
 	/* for gps only case */
 	if (spm_for_gps_flag) {
@@ -475,7 +477,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 #ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
-	mt_irq_unmask_for_sleep_ex(223); /* for kp only */
+	unmask_edge_trig_irqs_for_cirq();
 #endif
 
 #ifdef CONFIG_MTK_SYS_CIRQ

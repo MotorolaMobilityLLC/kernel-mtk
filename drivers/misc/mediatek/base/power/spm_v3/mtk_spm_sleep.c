@@ -476,6 +476,7 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 #endif
 
 	spm_d.u.suspend.univpll_status = univpll_is_used();
+	spm_d.u.suspend.gps_status = spm_for_gps_flag;
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
@@ -704,6 +705,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+	/* need be called after set_pwrctrl_pcm_flags1() */
+	spm_set_dummy_read_addr(false);
 
 	/* for gps only case */
 	if (spm_for_gps_flag) {
@@ -733,6 +736,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
+	unmask_edge_trig_irqs_for_cirq();
 #endif
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
