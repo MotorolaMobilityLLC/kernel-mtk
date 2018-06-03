@@ -14,6 +14,10 @@
 #include "regulator.h"
 #include "upmu_common.h"
 
+#include <mt-plat/aee.h>
+#include <asm/siginfo.h>
+#include <linux/rcupdate.h>
+#include <linux/sched.h>
 
 static const int regulator_voltage[] = {
 	REGULATOR_VOLTAGE_0,
@@ -53,6 +57,8 @@ static void imgsensor_oc_handler1(void)
 		__func__,
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
+	aee_kernel_warning("Imgsensor OC", "Over current");
+	force_sig(SIGKILL, reg_instance.ptask);
 }
 static void imgsensor_oc_handler2(void)
 {
@@ -60,7 +66,8 @@ static void imgsensor_oc_handler2(void)
 		__func__,
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
-
+	aee_kernel_warning("Imgsensor OC", "Over current");
+	force_sig(SIGKILL, reg_instance.ptask);
 }
 static void imgsensor_oc_handler3(void)
 {
@@ -68,6 +75,8 @@ static void imgsensor_oc_handler3(void)
 		__func__,
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
+	aee_kernel_warning("Imgsensor OC", "Over current");
+	force_sig(SIGKILL, reg_instance.ptask);
 }
 
 
@@ -85,6 +94,11 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
 		pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
 		pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
 		pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+
+		rcu_read_lock();
+		reg_instance.ptask = current;
+		rcu_read_unlock();
+
 	} else {
 		/* Disable interrupt before power off */
 		pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");

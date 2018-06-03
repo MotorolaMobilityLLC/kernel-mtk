@@ -64,6 +64,7 @@ struct REGULATOR_CTRL {
 struct REGULATOR {
 	struct regulator *pregulator[REGULATOR_TYPE_MAX_NUM];
 	atomic_t    enable_cnt[REGULATOR_TYPE_MAX_NUM];
+	struct task_struct *ptask;
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_regulator_open(
