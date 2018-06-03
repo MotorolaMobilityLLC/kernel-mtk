@@ -1299,20 +1299,24 @@ bool set_chip_adc_in(unsigned int rate)
 	uint32 dVoiceModeSelect = 0;
 	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
 
-	dVoiceModeSelect =
-	    SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
-
-	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1); /* Using Internal ADC */
-
-	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
-
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, dVoiceModeSelect << 17, 0x7 << 17);
-
 	/* enable aud_pad_top fifo, need set after GPIO enable, pmic miso clk on */
 	Afe_Set_Reg(AFE_AUD_PAD_TOP_CFG, 0x31, MASK_ALL);
 
 	/* reset MTKAIF_CFG0, no lpbk, protocol 1 */
 	Afe_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0, MASK_ALL);
+
+	/* Using Internal ADC */
+	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1);
+
+	dVoiceModeSelect =
+	    SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
+
+	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
+
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
+
+	/* mtkaif_rxif_data_mode = 0, amic */
+	Afe_Set_Reg(AFE_ADDA_MTKAIF_RX_CFG0, 0x0, 0x1);
 
 	return true;
 }
@@ -2398,10 +2402,36 @@ static int set_rch_dc_compensation(int value)
 	return 0;
 }
 
+static int set_ap_dmic(bool enable)
+{
+	if (enable) {
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL)) {
+			set_adc_enable(false);
+
+			/* mtkaif_rxif_data_mode = 1, dmic */
+			Afe_Set_Reg(AFE_ADDA_MTKAIF_RX_CFG0, 0x1, 0x1);
+
+			/* dmic mode, 3.25M*/
+			Afe_Set_Reg(AFE_ADDA_MTKAIF_RX_CFG0, 0x0, 0xf << 20);
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x1 << 5);
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x3 << 14);
+
+			/* turn on dmic, ch1, ch2 */
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1 << 1, 0x1 << 1);
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x3 << 21, 0x3 << 21);
+
+			set_adc_enable(true);
+		}
+	}
+
+	return 0;
+}
+
 static struct mtk_codec_ops mtk_codec_platform_ops = {
 	.enable_dc_compensation = enable_dc_compensation,
 	.set_lch_dc_compensation = set_lch_dc_compensation,
 	.set_rch_dc_compensation = set_rch_dc_compensation,
+	.set_ap_dmic = set_ap_dmic,
 };
 
 static struct mtk_afe_platform_ops afe_platform_ops = {
