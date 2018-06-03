@@ -321,9 +321,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 10005000 0 0x1000>;
 	};
 
-	pio: pinctrl@10005000 {
+	pio: pinctrl@1000b000 {
 		compatible = "mediatek,mt6765-pinctrl";
-		reg = <0 0x10005000 0 0x1000>;
+		reg = <0 0x1000b000 0 0x1000>;
 		mediatek,pctl-regmap = <&syscfg_pctl_0>,
 				     <&syscfg_pctl_1>,
 				     <&syscfg_pctl_2>,
@@ -335,6 +335,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		pins-are-numbered;
 		gpio-controller;
 		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <4>;
+		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	sleep@10006000 {
@@ -384,12 +387,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,sej";
 		reg = <0 0x1000a000 0 0x0>;
 		interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	apirq@1000b000 {
-		compatible = "mediatek,apirq";
-		reg = <0 0x1000b000 0 0x0>;
-		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	apmixed: apmixed@1000c000 {
