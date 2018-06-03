@@ -27,6 +27,13 @@
 #define spm_idle_info(fmt, args...)		pr_debug(TAG fmt, ##args)
 #define spm_idle_ver(fmt, args...)		pr_debug(TAG fmt, ##args)	/* pr_debug show nothing */
 
+#ifdef SPM_SODI_PROFILE_TIME
+#define SPM_SODI_PROFILE_APXGPT     GPT2
+#endif
+#ifdef SPM_SODI3_PROFILE_TIME
+#define SPM_SODI3_PROFILE_APXGPT    GPT2
+#endif
+
 /*
  * for SPM common part
  */
