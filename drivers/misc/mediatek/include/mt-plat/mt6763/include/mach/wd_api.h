@@ -88,25 +88,6 @@ struct wd_api {
 unsigned int get_check_bit(void);
 unsigned int get_kick_bit(void);
 int get_wd_api(struct wd_api **obj);
-
-/*
- * Query if SYSRST has happened.
- *
- * Return:
- * 1: Happened.
- * 0: Not happened.
- */
-int  mtk_rgu_status_is_sysrst(void);
-
-/*
- * Query if EINTRST has happened.
- *
- * Return:
- * 1: Happened.
- * 0: Not happened.
- */
-int  mtk_rgu_status_is_eintrst(void);
-
 int wd_api_init(void);
 void wk_cpu_update_bit_flag(int cpu, int plug_status);
 

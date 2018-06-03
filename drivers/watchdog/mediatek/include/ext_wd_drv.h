@@ -28,6 +28,25 @@ int  mtk_rgu_cfg_emi_dcs(int enable);
 int  mtk_rgu_dram_reserved(int enable);
 int  mtk_rgu_mcu_cache_preserve(int enable);
 
+/*
+ * Query if SYSRST has happened.
+ *
+ * Return:
+ * 1: Happened.
+ * 0: Not happened.
+ */
+int  mtk_rgu_status_is_sysrst(void);
+
+/*
+ * Query if EINTRST has happened.
+ *
+ * Return:
+ * 1: Happened.
+ * 0: Not happened.
+ */
+int  mtk_rgu_status_is_eintrst(void);
+
+
 void mtk_wd_resume(void);
 void mtk_wd_suspend(void);
 
