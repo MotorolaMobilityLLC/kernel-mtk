@@ -2311,6 +2311,7 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 #define CMD_SET_WOW_PAR			"SET_WOW_PAR"
 #endif
 
+#define CMD_GET_CNM				"GET_CNM"
 #define CMD_SET_DBDC			"SET_DBDC"
 
 #if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
@@ -6007,6 +6008,83 @@ static int priv_driver_get_version(IN struct net_device *prNetDev, IN char *pcCo
 	return i4BytesWritten;
 }
 
+static int priv_driver_get_cnm(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_32 u4BufLen = 0;
+	INT_32 i4BytesWritten = 0;
+	P_PARAM_GET_CNM_T prCnmInfo = NULL;
+
+	ENUM_DBDC_BN_T	eDbdcIdx, eDbdcIdxMax;
+	UINT_8			ucBssIdx;
+
+	ASSERT(prNetDev);
+	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
+		return -1;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
+
+	prCnmInfo = (P_PARAM_GET_CNM_T)kalMemAlloc(sizeof(PARAM_GET_CNM_T), VIR_MEM_TYPE);
+	if (prCnmInfo == NULL)
+		return -1;
+
+	kalMemZero(prCnmInfo, sizeof(PARAM_GET_CNM_T));
+
+	rStatus = kalIoctl(prGlueInfo,
+					wlanoidQueryCnm,
+					prCnmInfo,
+					sizeof(PARAM_GET_CNM_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+
+	DBGLOG(REQ, INFO, "%s: command result is %s\n", __func__, pcCommand);
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		return -1;
+
+	i4BytesWritten += snprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+								"\n[CNM Info]\n");
+	i4BytesWritten += snprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+								"DBDC Mode : %s\n\n",
+								(prCnmInfo->fgIsDbdcEnable)?"Enable":"Disable");
+
+	eDbdcIdxMax = (prCnmInfo->fgIsDbdcEnable)?ENUM_BAND_NUM:ENUM_BAND_1;
+	for (eDbdcIdx = ENUM_BAND_0; eDbdcIdx < eDbdcIdxMax; eDbdcIdx++) {
+		i4BytesWritten += snprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+								"Band %u OPCH %d [%u, %u, %u]\n",
+								eDbdcIdx,
+								prCnmInfo->ucOpChNum[eDbdcIdx],
+								prCnmInfo->ucChList[eDbdcIdx][0],
+								prCnmInfo->ucChList[eDbdcIdx][1],
+								prCnmInfo->ucChList[eDbdcIdx][2]);
+	}
+	i4BytesWritten += snprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+								"\n");
+
+	for (ucBssIdx = BSSID_0; ucBssIdx < (BSSID_NUM+1); ucBssIdx++) {
+
+		i4BytesWritten += snprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+								"BSS%u Inuse%u Act%u ConnStat%u [CH %3u][DBDC b%u][WMM%u b%u][OMAC%u b%u]\n",
+								ucBssIdx,
+								prCnmInfo->ucInuse[ucBssIdx],
+								prCnmInfo->ucActive[ucBssIdx],
+								prCnmInfo->ucConnectState[ucBssIdx],
+								prCnmInfo->ucBssCh[ucBssIdx],
+								prCnmInfo->ucBssDBDCBand[ucBssIdx],
+								prCnmInfo->ucBssWmmSet[ucBssIdx],
+								prCnmInfo->ucBssWmmDBDCBand[ucBssIdx],
+								prCnmInfo->ucBssOMACSet[ucBssIdx],
+								prCnmInfo->ucBssOMACDBDCBand[ucBssIdx]
+								);
+	}
+
+	kalMemFree(prCnmInfo, VIR_MEM_TYPE, sizeof(PARAM_GET_CNM_T));
+	return i4BytesWritten;
+}
+
 #if CFG_SUPPORT_DBDC
 int priv_driver_set_dbdc(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
 {
@@ -6270,6 +6348,8 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			i4BytesWritten = priv_driver_get_chip_config(prNetDev, pcCommand, i4TotalLen);
 		} else if (strnicmp(pcCommand, CMD_GET_VERSION, strlen(CMD_GET_VERSION)) == 0) {
 			i4BytesWritten = priv_driver_get_version(prNetDev, pcCommand, i4TotalLen);
+		} else if (strnicmp(pcCommand, CMD_GET_CNM, strlen(CMD_GET_VERSION)) == 0) {
+			i4BytesWritten = priv_driver_get_cnm(prNetDev, pcCommand, i4TotalLen);
 #if CFG_SUPPORT_DBDC
 
 		} else if (strnicmp(pcCommand, CMD_SET_DBDC, strlen(CMD_SET_DBDC)) == 0) {

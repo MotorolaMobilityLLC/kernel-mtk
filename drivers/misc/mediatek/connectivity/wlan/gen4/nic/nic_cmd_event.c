@@ -3169,3 +3169,42 @@ VOID nicCmdEventQueryCfgRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 	}
 }
 #endif
+
+VOID nicCmdEventQueryCnmInfo(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+{
+	P_PARAM_GET_CNM_T prCnmInfoQuery = NULL;
+	P_PARAM_GET_CNM_T prCnmInfoEvent = NULL;
+	P_GLUE_INFO_T prGlueInfo;
+	UINT_32 u4QueryInfoLen;
+
+	ASSERT(prAdapter);
+	ASSERT(prCmdInfo);
+	ASSERT(pucEventBuf);
+
+	if (prCmdInfo->fgIsOid) {
+		prCnmInfoQuery = (P_PARAM_GET_CNM_T)prCmdInfo->pvInformationBuffer;
+		prCnmInfoEvent = (P_PARAM_GET_CNM_T)pucEventBuf;
+		kalMemCopy(prCnmInfoQuery, prCnmInfoEvent, sizeof(PARAM_GET_CNM_T));
+
+		prGlueInfo = prAdapter->prGlueInfo;
+		u4QueryInfoLen = sizeof(P_PARAM_GET_CNM_T);
+		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	}
+}
+
+VOID nicEventCnmInfo(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	P_CMD_INFO_T prCmdInfo;
+
+	/* command response handling */
+	prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
+
+	if (prCmdInfo != NULL) {
+		if (prCmdInfo->pfCmdDoneHandler)
+			prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
+		else if (prCmdInfo->fgIsOid)
+			kalOidComplete(prAdapter->prGlueInfo, prCmdInfo->fgSetQuery, 0, WLAN_STATUS_SUCCESS);
+		/* return prCmdInfo */
+		cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
+	}
+}

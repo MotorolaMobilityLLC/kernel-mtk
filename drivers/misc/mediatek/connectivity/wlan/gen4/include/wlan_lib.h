@@ -810,6 +810,28 @@ typedef enum _ENUM_TX_PROFILING_TAG_T {
 	TX_PROF_TAG_MAC_TX_DONE
 } ENUM_TX_PROFILING_TAG_T, *P_ENUM_TX_PROFILING_TAG_T;
 
+typedef struct _PARAM_GET_CNM_T {
+	UINT_8	fgIsDbdcEnable;
+
+	UINT_8	ucOpChNum[ENUM_BAND_NUM];
+	UINT_8	ucChList[ENUM_BAND_NUM][BSSID_NUM];
+
+	UINT_8	ucInuse[BSSID_NUM+1];
+	UINT_8	ucActive[BSSID_NUM+1];
+	UINT_8	ucConnectState[BSSID_NUM+1];
+
+	UINT_8	ucBssCh[BSSID_NUM+1];
+	UINT_8	ucBssDBDCBand[BSSID_NUM+1];
+	UINT_8	ucBssWmmSet[BSSID_NUM+1];
+	UINT_8	ucBssWmmDBDCBand[BSSID_NUM+1];
+	UINT_8	ucBssOMACSet[BSSID_NUM+1];
+	UINT_8	ucBssOMACDBDCBand[BSSID_NUM+1];
+
+	/* Reserved fields */
+	UINT_8	au4Reserved[12];
+} PARAM_GET_CNM_T, *P_PARAM_GET_CNM_T;
+
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
