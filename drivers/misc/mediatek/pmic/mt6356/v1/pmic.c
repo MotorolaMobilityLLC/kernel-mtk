@@ -41,26 +41,10 @@
 
 static unsigned int vmodem_vosel = 0x2C;        /* VMODEM 0.775V: 0x2C */
 
-#define VMD1_WK	0 /* TBD */
-
 void vmd1_pmic_setting_on(void)
 {
 	/* 1.Call PMIC driver API configure VMODEM voltage */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
-#if VMD1_WK
-	/* Enable FPFM before enable BUCK, SW workaround to avoid VMODEM overshoot */
-	pmic_config_interface(0xD2E, 0x1, 0x1, 5);	/* RG_VMODEM_TRAN_BST[5] = 1 */
-	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
-		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
-#endif
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
-	udelay(220);
-#if VMD1_WK
-	/* Disable FPFM after enable BUCK, SW workaround to avoid VMODME overshoot */
-	pmic_config_interface(0xD2E, 0x0, 0x1, 5);	/* RG_VMODEM_TRAN_BST[5] = 1 */
-	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
-		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
-#endif
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != vmodem_vosel)
 		pr_err("vmd1_pmic_setting_on vmodem vosel = 0x%x, da_vosel = 0x%x",
 			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
@@ -69,9 +53,7 @@ void vmd1_pmic_setting_on(void)
 
 void vmd1_pmic_setting_off(void)
 {
-	/* 1.Call PMIC driver API configure VMODEM off */
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
-	PMICLOG("vmd1_pmic_setting_off vmodem en %d\n",	pmic_get_register_value(PMIC_DA_VMODEM_EN));
+	PMICLOG("vmd1_pmic_setting_off do nothing in MT6763\n");
 }
 
 int vcore_pmic_set_mode(unsigned char mode)
