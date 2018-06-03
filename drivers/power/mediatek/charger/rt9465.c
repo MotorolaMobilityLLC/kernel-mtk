@@ -1211,6 +1211,7 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 static int __rt9465_enable_chip(struct rt9465_info *info, bool en)
 {
 	bool is_chip_en = false;
+
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
 
 	mutex_lock(&info->gpio_access_lock);
