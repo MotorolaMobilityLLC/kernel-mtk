@@ -2182,7 +2182,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 276 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	mtkfb {
+	mtkfb: mtkfb@0 {
 		compatible = "mediatek,mtkfb";
 	};
 
