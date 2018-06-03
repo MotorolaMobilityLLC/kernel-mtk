@@ -333,6 +333,11 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
 			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC) {
 			mutex_lock(&tcpc_usb_connect_lock);
+#if CONFIG_MTK_GAUGE_VERSION == 30
+		charger_dev_enable_chg_type_det(primary_charger, true);
+#else
+		mtk_chr_enable_chr_type_det(true);
+#endif
 			tcpc_usb_connected = true;
 			mutex_unlock(&tcpc_usb_connect_lock);
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
@@ -446,11 +451,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
 	case TCP_NOTIFY_ATTACHWAIT_SNK:
 		pr_info("%s attach wait sink\n", __func__);
-#if CONFIG_MTK_GAUGE_VERSION == 30
-		charger_dev_enable_chg_type_det(primary_charger, true);
-#else
-		mtk_chr_enable_chr_type_det(true);
-#endif
 		break;
 #endif /* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK */
 	case TCP_NOTIFY_EXT_DISCHARGE:
