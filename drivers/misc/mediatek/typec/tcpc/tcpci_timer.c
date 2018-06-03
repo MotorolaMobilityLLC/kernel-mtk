@@ -223,6 +223,9 @@ static const char *const tcpc_timer_name[] = {
 	"TYPEC_TIMER_SRCDISCONNECT",
 	"TYPEC_TIMER_ERROR_RECOVERY",
 	"TYPEC_TIMER_DRP_SRC_TOGGLE",
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+	"TYPEC_TIMER_NORP_SRC",
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 };
 /* CONFIG_USB_PD_SAFE0V_DELAY */
 #ifdef CONFIG_TCPC_VSAFE0V_DETECT
@@ -355,6 +358,9 @@ DECL_TCPC_TIMEOUT_RANGE(TYPEC_TIMER_TRYCCDEBOUNCE, 10, 10),
 DECL_TCPC_TIMEOUT(TYPEC_TIMER_SRCDISCONNECT, 5),
 DECL_TCPC_TIMEOUT_RANGE(TYPEC_TIMER_ERROR_RECOVERY, 25, 25),
 DECL_TCPC_TIMEOUT(TYPEC_TIMER_DRP_SRC_TOGGLE, 60),
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+DECL_TCPC_TIMEOUT(TYPEC_TIMER_NORP_SRC, 300),
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 };
 
 typedef enum hrtimer_restart (*tcpc_hrtimer_call)(struct hrtimer *timer);
@@ -1045,7 +1051,6 @@ static enum alarmtimer_restart
 	struct tcpc_device *tcpc_dev =
 		container_of(alarm, struct tcpc_device, wake_up_timer);
 
-	TCPC_INFO("%s\n", __func__);
 	__pm_wakeup_event(&tcpc_dev->wakeup_wake_lock, 1*HZ);
 	schedule_delayed_work(&tcpc_dev->wake_up_work, 0);
 	return ALARMTIMER_NORESTART;
@@ -1060,6 +1065,18 @@ static enum hrtimer_restart tcpc_timer_drp_src_toggle(struct hrtimer *timer)
 	TCPC_TIMER_TRIGGER();
 	return HRTIMER_NORESTART;
 }
+
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+static enum hrtimer_restart tcpc_timer_norp_src(struct hrtimer *timer)
+{
+	int index = TYPEC_TIMER_NORP_SRC;
+	struct tcpc_device *tcpc_dev =
+		container_of(timer, struct tcpc_device, tcpc_timer[index]);
+
+	TCPC_TIMER_TRIGGER();
+	return HRTIMER_NORESTART;
+}
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 
 static tcpc_hrtimer_call tcpc_timer_call[PD_TIMER_NR] = {
 #ifdef CONFIG_USB_POWER_DELIVERY
@@ -1145,6 +1162,9 @@ static tcpc_hrtimer_call tcpc_timer_call[PD_TIMER_NR] = {
 	tcpc_timer_srcdisconnect,
 	tcpc_timer_error_recovery,
 	tcpc_timer_drp_src_toggle,
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+	tcpc_timer_norp_src,
+#endif
 };
 
 /*

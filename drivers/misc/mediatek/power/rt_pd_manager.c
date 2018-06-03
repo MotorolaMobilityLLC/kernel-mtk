@@ -247,7 +247,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) {
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			charger_dev_enable_chg_type_det(primary_charger, true);
 #else
@@ -265,8 +266,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug in");
 #endif
 #endif
-		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
-			noti->typec_state.new_state == TYPEC_UNATTACHED) {
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			if (tcpc_kpoc) {
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",

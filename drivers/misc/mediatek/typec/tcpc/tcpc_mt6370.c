@@ -817,6 +817,29 @@ int mt6370_fault_status_clear(struct tcpc_device *tcpc, uint8_t status)
 	return 0;
 }
 
+int mt6370_get_alert_mask(struct tcpc_device *tcpc, uint32_t *mask)
+{
+	int ret;
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	uint8_t v2;
+#endif
+
+	ret = mt6370_i2c_read16(tcpc, TCPC_V10_REG_ALERT_MASK);
+	if (ret < 0)
+		return ret;
+	*mask = (uint16_t) ret;
+
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	ret = mt6370_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+	if (ret < 0)
+		return ret;
+
+	v2 = (uint8_t) ret;
+	*mask |= v2 << 16;
+#endif
+	return 0;
+}
+
 int mt6370_get_alert_status(struct tcpc_device *tcpc, uint32_t *alert)
 {
 	int ret;
@@ -930,6 +953,23 @@ static int mt6370_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 	return 0;
 }
 
+static int mt6370_enable_vsafe0v_detect(
+	struct tcpc_device *tcpc, bool enable)
+{
+	int ret = mt6370_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+
+	if (ret < 0)
+		return ret;
+
+	if (enable)
+		ret |= MT6370_REG_M_VBUS_80;
+	else
+		ret &= ~MT6370_REG_M_VBUS_80;
+
+	mt6370_i2c_write8(tcpc, MT6370_REG_MT_MASK, (uint8_t) ret);
+	return ret;
+}
+
 static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 {
 	int ret;
@@ -945,8 +985,10 @@ static int mt6370_set_cc(struct tcpc_device *tcpc, int pull)
 		ret = mt6370_i2c_write8(
 			tcpc, TCPC_V10_REG_ROLE_CTRL, data);
 
-		if (ret == 0)
+		if (ret == 0) {
+			mt6370_enable_vsafe0v_detect(tcpc, false);
 			ret = mt6370_command(tcpc, TCPM_CMD_LOOK_CONNECTION);
+		}
 	} else {
 #ifdef CONFIG_USB_POWER_DELIVERY
 		if (pull == TYPEC_CC_RD && tcpc->pd_wait_pr_swap_complete)
@@ -1034,9 +1076,16 @@ static int mt6370_set_low_power_mode(
 
 		if (pull & TYPEC_CC_RP)
 			data |= MT6370_REG_BMCIO_LPRPRD;
-	} else
+
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+		data |= MT6370_REG_VBUS_DET_EN;
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
+	} else {
 		data = MT6370_REG_BMCIO_BG_EN |
 			MT6370_REG_VBUS_DET_EN | MT6370_REG_BMCIO_OSC_EN;
+
+		mt6370_enable_vsafe0v_detect(tcpc_dev, true);
+	}
 
 	rv = mt6370_i2c_write8(tcpc_dev, MT6370_REG_BMC_CTRL, data);
 	return rv;
@@ -1219,6 +1268,7 @@ static struct tcpc_ops mt6370_tcpc_ops = {
 	.init = mt6370_tcpc_init,
 	.alert_status_clear = mt6370_alert_status_clear,
 	.fault_status_clear = mt6370_fault_status_clear,
+	.get_alert_mask = mt6370_get_alert_mask,
 	.get_alert_status = mt6370_get_alert_status,
 	.get_power_status = mt6370_get_power_status,
 	.get_fault_status = mt6370_get_fault_status,
