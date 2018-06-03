@@ -1415,6 +1415,10 @@ extern int inc_nr_heavy_running(int invoker, struct task_struct *p, int inc, boo
 extern void cal_cpu_load(int cpu);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+extern void sched_max_util_task_tracking(void);
+#endif
+
 #endif
 
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
