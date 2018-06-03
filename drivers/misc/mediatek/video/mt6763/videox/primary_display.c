@@ -183,6 +183,13 @@ static int dvfs_last_ovl_req = HRT_LEVEL_LPM;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
+
+static unsigned long long mutex_time_start;
+static unsigned long long mutex_time_end;
+static unsigned long long mutex_time_end1;
+static long long mutex_time_period;
+static long long mutex_time_period1;
+
 unsigned int round_corner_offset_enable;
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 unsigned int lcm_corner_en;
@@ -211,13 +218,32 @@ void _primary_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgc->lock));
+	mutex_time_start = sched_clock();
 	pgc->mutex_locker = (char *)caller;
 }
 
 void _primary_path_unlock(const char *caller)
 {
 	pgc->mutex_locker = NULL;
+
+	mutex_time_end = sched_clock();
+	mutex_time_period = mutex_time_end - mutex_time_start;
+	if (mutex_time_period > 100000000) {
+		DISPCHECK("mutex_release_timeout1 <%lld ns>\n", mutex_time_period);
+		dump_stack();
+	}
+
 	disp_sw_mutex_unlock(&(pgc->lock));
+
+	mutex_time_end1 = sched_clock();
+	mutex_time_period1 = mutex_time_end1 - mutex_time_start;
+	if ((mutex_time_period < 100000000 && mutex_time_period1 > 100000000) ||
+	   (mutex_time_period < 100000000 && mutex_time_period1 < 0)) {
+		DISPCHECK("mutex_release_timeout2 <%lld ns>,<%lld ns>\n",
+			mutex_time_period1, mutex_time_period);
+		dump_stack();
+	}
+
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
