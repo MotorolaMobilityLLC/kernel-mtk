@@ -72,6 +72,7 @@ u8 gt1x_rawdiff_mode = 0;
 u8 gt1x_init_failed = 0;
 
 u8 is_resetting = 0;
+static int addr_selected;
 
 static ssize_t gt1x_debug_read_proc(struct file *, char __user *, size_t, loff_t *);
 static ssize_t gt1x_debug_write_proc(struct file *, const char __user *, size_t, loff_t *);
@@ -622,9 +623,13 @@ s32 gt1x_reset_guitar(void)
 
 	GTP_INFO("GTP RESET!\n");
 
-	/* select i2c address */
-	gt1x_select_addr();
-	msleep(20);		/*must >= 6ms*/
+	if (addr_selected == 1) {
+		addr_selected = 0;
+	} else {
+		/* select i2c address */
+		gt1x_select_addr();
+		msleep(20);		/*must >= 6ms*/
+	}
 
 	/* int synchronization */
 	if (CHIP_TYPE_GT2X == gt1x_chip_type) {
@@ -1577,6 +1582,7 @@ s32 gt1x_init(void)
 	/* select i2c address */
 	gt1x_select_addr();
 	msleep(20);
+	addr_selected = 1;
 
 	while (retry++ < 5) {
 		gt1x_init_failed = 0;
