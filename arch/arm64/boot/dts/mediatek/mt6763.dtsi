@@ -193,6 +193,11 @@
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x44400000 0 0x10000>;
 		};
+		spm-reserve-memory@44600000 {
+			compatible = "mediatek,spm-reserve-memory";
+			no-map;
+			reg = <0 0x44600000 0 0x10000>;
+		};
 		/* atf-reserved-memory for ATF image, xlat tab, bss, or ATF DRAM extension */
 		/* reserve 128kb for ATF usage */
 		atf-reserved-memory@44610000 {
