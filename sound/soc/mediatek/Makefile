@@ -45,7 +45,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)/
 
 # Common include path
-subdir-ccflags-y += -Werror -I$(src)/common
+subdir-ccflags-y += -Werror -I$(src)/common_int
 
 # PMIC include path
 subdir-ccflags-y += -Werror -I$(src)/codec/$(MTK_CODEC)
@@ -54,14 +54,14 @@ subdir-ccflags-y += -Werror -I$(src)/codec/$(MTK_CODEC)
 subdir-ccflags-y += -Werror -I$(src)/$(MTK_PLATFORM)
 
 # Update pmic built flow to avoid codec init later than codec probe
-obj-y += common/
+obj-y += common_int/
 obj-y += codec/$(MTK_CODEC)/
 obj-y += $(MTK_PLATFORM)/
 
 # Old architecture
 else
 
-obj-y += common/
+obj-y += common_int/
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_audio_6797/
 obj-$(CONFIG_MT_SND_SOC_6755) += mt_soc_audio_6755/
 obj-$(CONFIG_SND_SOC_MT8173) += mt_soc_audio_8173/
@@ -76,5 +76,5 @@ endif
 endif
 
 ifeq ($(CONFIG_MTK_BTCVSD_ALSA),y)
-obj-y += common/
+obj-y += common_int/
 endif
