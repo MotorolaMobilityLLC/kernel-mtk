@@ -17,8 +17,9 @@
 /* submoduce control */
 #define ENABLE_BWL	1
 #define ENABLE_MPU	1
-#define ENABLE_ELM	1
+#define ENABLE_ELM	0
 #define ENABLE_MBW	0
+#define DECS_ON_SSPM
 
 /* IRQ from device tree */
 #define MPU_IRQ_INDEX	0

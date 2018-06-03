@@ -18,6 +18,7 @@
 #define LAST_DRAMC
 #define SW_ZQCS
 #define SW_TX_TRACKING
+#define PLAT_DBG_INFO_MANAGE
 
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
