@@ -913,6 +913,8 @@ u32 met_vcorefs_src[SRC_MAX];
 
 char *met_info_name[INFO_MAX] = {
 	"OPP",
+	"FREQ",
+	"VCORE",
 	"SW_RSV5",
 };
 
@@ -947,7 +949,11 @@ EXPORT_SYMBOL(vcorefs_get_src_req_name);
 
 unsigned int *vcorefs_get_opp_info(void)
 {
-	met_vcorefs_info[INFO_OPP_IDX] = spm_vcorefs_get_dvfs_opp();
+	int opp = spm_vcorefs_get_dvfs_opp();
+
+	met_vcorefs_info[INFO_OPP_IDX] = opp;
+	met_vcorefs_info[INFO_FREQ_IDX] = vcorefs_get_ddr_by_steps(opp);
+	met_vcorefs_info[INFO_VCORE_IDX] = get_vcore_opp_volt(opp);
 	met_vcorefs_info[INFO_SW_RSV5_IDX] = spm_read(SPM_SW_RSV_5);
 
 	return met_vcorefs_info;

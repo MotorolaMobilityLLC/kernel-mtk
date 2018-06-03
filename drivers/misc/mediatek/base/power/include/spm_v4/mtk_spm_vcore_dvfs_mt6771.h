@@ -58,6 +58,8 @@ enum {
 /* met profile table index */
 enum met_info_index {
 	INFO_OPP_IDX = 0,
+	INFO_FREQ_IDX,
+	INFO_VCORE_IDX,
 	INFO_SW_RSV5_IDX,
 	INFO_MAX,
 };
