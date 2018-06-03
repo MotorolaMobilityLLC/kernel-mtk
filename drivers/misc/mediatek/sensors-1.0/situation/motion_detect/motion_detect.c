@@ -36,7 +36,7 @@
 
 
 #define MOTIONHUB_TAG                  "[motion_detect] "
-#define MOTIONHUB_FUN(f)               pr_deubg(MOTIONHUB_TAG"%s\n", __func__)
+#define MOTIONHUB_FUN(f)               pr_debug(MOTIONHUB_TAG"%s\n", __func__)
 #define MOTIONHUB_PR_ERR(fmt, args...)    pr_err(MOTIONHUB_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MOTIONHUB_LOG(fmt, args...)    pr_debug(MOTIONHUB_TAG fmt, ##args)
 
