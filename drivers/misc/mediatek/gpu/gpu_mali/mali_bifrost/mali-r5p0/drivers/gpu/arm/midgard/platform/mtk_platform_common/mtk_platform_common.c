@@ -35,18 +35,6 @@ DEFINE_MUTEX(g_flag_lock);
 int g_mtk_gpu_efuse_set_already;
 
 #ifdef ENABLE_MTK_MEMINFO
-/*
-* Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to
-* provide the gpu total memory usage to mlogger module
-*/
-extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
-
-/*
-* Add by mediatek, Hook the memory dump function pointer to (*ged_mem_dump_gpu_memory_usag_fp) in order to
-* provide the gpu detail memory usage by PID to mlogger module
-*/
-/*extern bool (*mtk_dump_gpu_memory_usage_fp)(void);*/
-
 int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
@@ -54,13 +42,13 @@ static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
 
 void mtk_kbase_gpu_memory_debug_init(void)
 {
-	/*mtk_dump_gpu_memory_usage_fp = mtk_kbase_dump_gpu_memory_usage;*/
+	mtk_dump_gpu_memory_usage_fp = mtk_kbase_dump_gpu_memory_usage;
 	mtk_get_gpu_memory_usage_fp = mtk_kbase_report_gpu_memory_usage;
 }
 
 void mtk_kbase_gpu_memory_debug_remove(void)
 {
-	/*mtk_dump_gpu_memory_usage_fp = NULL;*/
+	mtk_dump_gpu_memory_usage_fp = NULL;
 	mtk_get_gpu_memory_usage_fp = NULL;
 }
 
