@@ -1032,6 +1032,7 @@ CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O
 CONFIG_DEBUG_OBJECTS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,O,X
 CONFIG_DEBUG_OBJECTS_TIMERS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,O,X
+CONFIG_MTK_TIMER_TIMESYNC,PROJECT,stanley.chu,new config in this commit a22e77f4e87b5d30ef566bfca45d40ab51b8fecc,X,X,X,O,X
 CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y
