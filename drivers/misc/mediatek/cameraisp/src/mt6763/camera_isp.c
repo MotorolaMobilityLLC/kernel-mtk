@@ -5498,9 +5498,9 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* check if user is interrupted by system signal */
 	if ((Timeout != 0) && (!ISP_GetIRQState(WaitIrq->Type, WaitIrq->EventInfo.St_type, WaitIrq->EventInfo.UserKey,
 		WaitIrq->EventInfo.Status))) {
-		LOG_DBG("interrupted by system signal,return value(%d),irq Type/User/Sts(0x%x/%d/0x%x)\n",
+		LOG_INF("interrupted by system signal,return value(%d),irq Type/User/Sts(0x%x/%d/0x%x)\n",
 			Timeout, WaitIrq->Type, WaitIrq->EventInfo.UserKey, WaitIrq->EventInfo.Status);
-		Ret = -ERESTARTSYS;  /* actually it should be -ERESTARTSYS */
+		Ret = -SIG_ERESTARTSYS;  /* actually it should be -ERESTARTSYS */
 		goto EXIT;
 	}
 	/* timeout */
