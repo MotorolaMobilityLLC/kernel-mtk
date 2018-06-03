@@ -2871,7 +2871,7 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 
 	if (on_rq_task) {
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-		inc_nr_heavy_running("__update_load_avg-", task_of(se), -1, false);
+		inc_nr_heavy_running(0, task_of(se), -1, false);
 #endif
 		prev_load = se_load(se);
 	}
@@ -2885,7 +2885,7 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 	if (entity_is_task(se) && se->on_rq)
-		inc_nr_heavy_running("__update_load_avg+", task_of(se), 1, false);
+		inc_nr_heavy_running(1, task_of(se), 1, false);
 #endif
 
 	if (update_cfs_rq_load_avg(now, cfs_rq) && update_tg)
@@ -4441,7 +4441,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
 #endif
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-		inc_nr_heavy_running(__func__, p, 1, false);
+		inc_nr_heavy_running(2, p, 1, false);
 #endif
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 		if (is_vip_task(p))
@@ -4538,7 +4538,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
 #endif
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-		inc_nr_heavy_running(__func__, p, -1, false);
+		inc_nr_heavy_running(3, p, -1, false);
 #endif
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 		if (p == rq->vip_cache)
