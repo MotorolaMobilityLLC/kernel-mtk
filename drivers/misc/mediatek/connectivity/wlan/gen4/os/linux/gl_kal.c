@@ -122,7 +122,7 @@ static UINT_32 pvIoBufferUsage;
 */
 #if CFG_ENABLE_FW_DOWNLOAD
 
-#if (defined(CONFIG_UIDGID_STRICT_TYPE_CHECKS) || (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)))
+#if defined(CONFIG_UIDGID_STRICT_TYPE_CHECKS)
 #define  KUIDT_VALUE(v) v.val
 #define  KGIDT_VALUE(v) v.val
 #else
@@ -140,7 +140,6 @@ static PUINT_8 apucFwName[] = {
 };
 
 static PUINT_8 apucCr4FwName[] = {
-	(PUINT_8) CFG_CR4_FW_FILENAME "_" HIF_NAME "_MT",
 	(PUINT_8) CFG_CR4_FW_FILENAME "_MT",
 	NULL
 };
@@ -198,7 +197,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo, IN PPUINT_8 apucNameTab
 		ret = request_firmware(&fw_entry, apucNameTable[ucNameIdx], prGlueInfo->prDev);
 
 		if (ret) {
-			DBGLOG(INIT, TRACE, "Request FW image: %s failed, errno[%d]\n",
+			DBGLOG(INIT, ERROR, "Request FW image: %s failed, errno[%d]\n",
 			       apucNameTable[ucNameIdx], fgResult);
 			continue;
 		} else {
@@ -305,26 +304,26 @@ PPUINT_8 apucName, PUINT_8 pucNameIdx, UINT_8 ucMaxNameIdx)
 
 	for (sub_idx = 0; apucNameTable[sub_idx]; sub_idx++) {
 		if ((*pucNameIdx + 3) < ucMaxNameIdx) {
-			/* Type 1. WIFI_RAM_CODE_MTxxxx_Ex */
+			/* Type 1. WIFI_RAM_CODE_MTxxxx */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
+					apucNameTable[sub_idx], chip_id);
+			(*pucNameIdx) += 1;
+
+			/* Type 2. WIFI_RAM_CODE_MTxxxx.bin */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
+					apucNameTable[sub_idx], chip_id);
+			(*pucNameIdx) += 1;
+
+			/* Type 3. WIFI_RAM_CODE_MTxxxx_Ex */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
 			(*pucNameIdx) += 1;
 
-			/* Type 2. WIFI_RAM_CODE_MTxxxx_Ex.bin */
+			/* Type 4. WIFI_RAM_CODE_MTxxxx_Ex.bin */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u.bin",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
-			(*pucNameIdx) += 1;
-
-			/* Type 3. WIFI_RAM_CODE_MTxxxx */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
-					apucNameTable[sub_idx], chip_id);
-			(*pucNameIdx) += 1;
-
-			/* Type 4. WIFI_RAM_CODE_MTxxxx.bin */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
-					apucNameTable[sub_idx], chip_id);
 			(*pucNameIdx) += 1;
 		} else {
 			/* the table is not large enough */
@@ -1021,7 +1020,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 					     (&(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo)))->prTargetBssDesc;
 
 				if (prBssDesc != NULL) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo),
 								prChannel,
 								CFG80211_BSS_FTYPE_PRESP,
@@ -1033,16 +1031,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 								prBssDesc->u2IELength,	/* IE Length */
 								RCPI_TO_dBm(prBssDesc->ucRCPI) * 100,	/* MBM */
 								GFP_KERNEL);
-#else
-					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo), prChannel,
-								  arBssid, 0,	/* TSF */
-								  WLAN_CAPABILITY_ESS,
-								  prBssDesc->u2BeaconInterval,	/* beacon interval */
-								  prBssDesc->aucIEBuf,	/* IE */
-								  prBssDesc->u2IELength,	/* IE Length */
-								  RCPI_TO_dBm(prBssDesc->ucRCPI) * 100,	/* MBM */
-								  GFP_KERNEL);
-#endif
 				}
 			}
 			/* CFG80211 Indication */
@@ -1099,7 +1087,6 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			P_BSS_INFO_T prBssInfo = prGlueInfo->prAdapter->prAisBssInfo;
 			UINT_16 u2DeauthReason = 0;
 #if CFG_WPS_DISCONNECT
-
 			if (prBssInfo)
 				u2DeauthReason = prBssInfo->u2DeauthReason;
 			/* CFG80211 Indication */
@@ -1108,30 +1095,16 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
 						eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY,
 						GFP_KERNEL);
-
 #else
-
-#ifdef CONFIG_ANDROID
-#if LINUX_VERSION_CODE == KERNEL_VERSION(3, 10, 0)
-			/* Don't indicate disconnection to upper layer for ANDROID kernel 3.10 */
-			/* since cfg80211 will indicate disconnection to wpa_supplicant for this kernel */
-			if (eStatus == WLAN_STATUS_MEDIA_DISCONNECT)
-#endif
-#endif
 			{
-
-
 				if (prBssInfo)
 					u2DeauthReason = prBssInfo->u2DeauthReason;
 				/* CFG80211 Indication */
 				cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
 							GFP_KERNEL);
 			}
-
-
 #endif
 		}
-
 
 		prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 
@@ -4194,27 +4167,11 @@ VOID kalIndicateRxMgmtFrame(IN P_GLUE_INFO_T prGlueInfo, IN P_SW_RFB_T prSwRfb)
 
 		i4Freq = nicChannelNum2Freq(ucChnlNum) / 1000;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr,
 				i4Freq,	/* in MHz */
 				RCPI_TO_dBm((UINT_8) nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
 				prSwRfb->pvHeader, prSwRfb->u2PacketLen,
 				NL80211_RXMGMT_FLAG_ANSWERED);
-
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0))
-		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr, i4Freq,	/* in MHz */
-						RCPI_TO_dBm((UINT_8)
-						nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
-						prSwRfb->pvHeader, prSwRfb->u2PacketLen,
-						NL80211_RXMGMT_FLAG_ANSWERED,
-						GFP_ATOMIC);
-#else
-		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr, i4Freq,	/* in MHz */
-						RCPI_TO_dBm((UINT_8)
-						nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
-						prSwRfb->pvHeader, prSwRfb->u2PacketLen,
-						GFP_ATOMIC);
-#endif
 
 	} while (FALSE);
 

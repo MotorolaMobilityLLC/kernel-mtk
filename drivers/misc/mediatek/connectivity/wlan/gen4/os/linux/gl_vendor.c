@@ -117,7 +117,6 @@ UINT_8 g_GetResultsCmdCnt;
 *                              F U N C T I O N S
 ********************************************************************************
 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 
 int mtk_cfg80211_NLA_PUT(struct sk_buff *skb, int attrtype, int attrlen, const void *data)
 {
@@ -1059,5 +1058,3 @@ int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wirele
 }
 
 #endif
-#endif
-
