@@ -17,7 +17,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include <linux/sched.h>
 #if defined(CONFIG_MACH_MT6759)
 #include "mtk_unified_power_mt6759.h"
 #endif
