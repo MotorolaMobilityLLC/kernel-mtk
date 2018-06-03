@@ -22,7 +22,6 @@
 #include "musb_core.h"
 #include <linux/platform_device.h>
 #include "musbhsdma.h"
-#include <linux/switch.h>
 #include "usb20.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -75,11 +74,12 @@ void do_register_otg_work(struct work_struct *data)
 }
 #endif
 #endif
+#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mt-plat/charger_class.h>
 static struct charger_device *primary_charger;
 #endif
-
+#endif
 #include <mt-plat/mtk_boot_common.h>
 
 struct device_node		*usb_node;
@@ -131,12 +131,14 @@ module_param(iddig_cnt, int, 0644);
 void vbus_init(void)
 {
 	pr_debug("+++\n");
+#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	primary_charger = get_charger_by_name("primary_chg");
 	if (!primary_charger) {
 		pr_err("%s: get primary charger device failed\n", __func__);
 		return;
 	}
+#endif
 #endif
 	pr_debug("---\n");
 
@@ -166,7 +168,7 @@ void _set_vbus(struct musb *musb, int is_on)
 		 * host mode correct used by PMIC
 		 */
 		vbus_on = true;
-
+#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger, 1500000);
@@ -174,11 +176,14 @@ void _set_vbus(struct musb *musb, int is_on)
 		set_chr_enable_otg(0x1);
 		set_chr_boost_current_limit(1500);
 #endif
+#endif
 	} else if (!is_on && vbus_on) {
+#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, false);
 #else
 		set_chr_enable_otg(0x0);
+#endif
 #endif
 
 		/* disable VBUS 1st then update flag
@@ -229,7 +234,6 @@ u32 sw_deboun_time = 1;
 u32 sw_deboun_time = 400;
 #endif
 module_param(sw_deboun_time, int, 0644);
-struct switch_dev otg_state;
 
 u32 typec_control;
 module_param(typec_control, int, 0644);
@@ -429,8 +433,8 @@ void switch_int_to_host(struct musb *musb)
 void musb_disable_host(struct musb *musb)
 {
 	if (musb && musb->is_host) {	/* shut down USB host for IPO */
-		if (wake_lock_active(&musb->usb_lock))
-			wake_unlock(&musb->usb_lock);
+		if (musb->usb_lock.active)
+			__pm_relax(&musb->usb_lock);
 		mt_usb_set_vbus(mtk_musb, 0);
 		/* add sleep time to ensure vbus off
 		 * and disconnect irq processed.
@@ -494,20 +498,20 @@ static void do_host_plug_test_work(struct work_struct *data)
 	static ktime_t ktime_begin, ktime_end;
 	static s64 diff_time;
 	static int host_on;
-	static struct wake_lock host_test_wakelock;
+	static struct wakeup_source host_test_wakelock;
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
 		pr_debug("%s wake_lock_init\n", __func__);
-		wake_lock_init(&host_test_wakelock,
-				WAKE_LOCK_SUSPEND, "host.test.lock");
+		wakeup_source_init(&host_test_wakelock,
+					"host.test.lock");
 		wake_lock_inited = 1;
 	}
 
 	host_plug_test_triggered = 1;
 	/* sync global status */
 	mb();
-	wake_lock(&host_test_wakelock);
+	__pm_stay_awake(&host_test_wakelock);
 	pr_debug("BEGIN");
 	ktime_begin = ktime_get();
 
@@ -551,7 +555,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	/* wait host_work done */
 	msleep(1000);
 	host_plug_test_triggered = 0;
-	wake_unlock(&host_test_wakelock);
+	__pm_relax(&host_test_wakelock);
 	pr_debug("END\n");
 }
 
@@ -564,6 +568,7 @@ static void musb_host_work(struct work_struct *data)
 	static int inited, timeout; /* default to 0 */
 	static s64 diff_time;
 	int host_mode;
+	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 3);
 
 	/* kernel_init_done should be set in
 	 * early-init stage through init.$platform.usb.rc
@@ -571,8 +576,6 @@ static void musb_host_work(struct work_struct *data)
 	if (!inited && !kernel_init_done && !mtk_musb->is_ready && !timeout) {
 		ktime_end = ktime_get();
 		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_start));
-
-		static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 3);
 
 		if (__ratelimit(&ratelimit))
 			pr_debug("<ratelimit> init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld\n",
@@ -617,7 +620,6 @@ static void musb_host_work(struct work_struct *data)
 
 
 	pr_debug("musb is as %s\n", host_mode?"host":"device");
-	switch_set_state((struct switch_dev *)&otg_state, host_mode);
 
 	if (host_mode) {
 		/* switch to HOST state before turn on VBUS */
@@ -637,7 +639,7 @@ static void musb_host_work(struct work_struct *data)
 #endif
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
-		wake_lock(&mtk_musb->usb_lock);
+		__pm_stay_awake(&mtk_musb->usb_lock);
 		mt_usb_set_vbus(mtk_musb, 1);
 
 		/* this make PHY operation workable */
@@ -681,8 +683,8 @@ static void musb_host_work(struct work_struct *data)
 		pr_debug("devctl is %x\n",
 				musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
-		if (wake_lock_active(&mtk_musb->usb_lock))
-			wake_unlock(&mtk_musb->usb_lock);
+		if (mtk_musb->usb_lock.active)
+			__pm_relax(&mtk_musb->usb_lock);
 		mt_usb_set_vbus(mtk_musb, 0);
 
 		/* for no VBUS sensing IP */
@@ -828,14 +830,6 @@ void mt_usb_otg_init(struct musb *musb)
 	musb->fifo_cfg_host = fifo_cfg_host;
 	musb->fifo_cfg_host_size = ARRAY_SIZE(fifo_cfg_host);
 
-	otg_state.name = "otg_state";
-	otg_state.index = 0;
-	otg_state.state = 0;
-
-	if (switch_dev_register(&otg_state))
-		pr_notice("switch_dev_register fail\n");
-	else
-		pr_debug("switch_dev register success\n");
 }
 void mt_usb_otg_exit(struct musb *musb)
 {
