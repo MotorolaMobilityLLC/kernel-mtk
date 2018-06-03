@@ -107,7 +107,7 @@ s32 check_cg_sta(struct mt_i2c *i2c)
 	id = i2c->id;
 	cg_bit = i2c->dev_comp->cg_bit[id];
 	cg_reg = readl(cg_base + i2c->dev_comp->clk_sta_offset);
-	if ((cg_cnt <= 0) || (i2c->cg_cnt == 0) || (cg_reg & (0x1 << cg_bit))) {
+	if ((cg_cnt <= 0) || (cg_reg & (0x1 << cg_bit))) {
 		dev_err(i2c->dev, "addr: %x, err irq w/o clk ccf %d(local %d)\n",
 			i2c->addr, cg_cnt, i2c->cg_cnt);
 		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d, cg_reg = 0x%x\n", i2c->addr,
@@ -220,7 +220,9 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 		if (ret)
 			goto err_pmic;
 	}
+	spin_lock(&i2c->cg_lock);
 	i2c->cg_cnt++;
+	spin_unlock(&i2c->cg_lock);
 	return 0;
 
 err_pmic:
@@ -244,7 +246,9 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 		clk_disable_unprepare(i2c->clk_arb);
 
 	clk_disable_unprepare(i2c->clk_dma);
+	spin_lock(&i2c->cg_lock);
 	i2c->cg_cnt--;
+	spin_unlock(&i2c->cg_lock);
 #endif
 }
 
@@ -1293,6 +1297,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->adap.timeout = 2 * HZ;
 	i2c->adap.retries = 1;
 	i2c->adap.nr = i2c->id;
+	spin_lock_init(&i2c->cg_lock);
 
 	if (i2c->dev_comp->dma_support == 2) {
 		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(33))) {
