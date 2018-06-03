@@ -162,6 +162,7 @@ bool usb_prepare_clock(bool enable)
 			IS_ERR_OR_NULL(musb_clk_top_sel) ||
 			IS_ERR_OR_NULL(musb_clk_univpll3_d4)) {
 		DBG(0, "clk not ready\n");
+		mutex_unlock(&prepare_lock);
 		return 0;
 	}
 
@@ -179,10 +180,10 @@ bool usb_prepare_clock(bool enable)
 		atomic_inc(&clk_prepare_cnt);
 	} else {
 
+		atomic_dec(&clk_prepare_cnt);
+
 		clk_unprepare(musb_clk_top_sel);
 		clk_unprepare(musb_clk);
-
-		atomic_dec(&clk_prepare_cnt);
 	}
 
 	mutex_unlock(&prepare_lock);
@@ -208,38 +209,46 @@ bool usb_enable_clock(bool enable)
 	DBG(1, "enable(%d),count(%d),<%d,%d,%d,%d>\n",
 	    enable, count, virt_enable, virt_disable, real_enable, real_disable);
 
-	if (unlikely(atomic_read(&clk_prepare_cnt) <= 0)) {
-		DBG_LIMIT(1, "clock not prepare");
-		return 0;
-	}
-
 	spin_lock_irqsave(&musb_reg_clock_lock, flags);
 
+	if (unlikely(atomic_read(&clk_prepare_cnt) <= 0)) {
+		DBG_LIMIT(1, "clock not prepare");
+		goto exit;
+	}
+
 	if (enable && count == 0) {
+		if (clk_enable(musb_clk_top_sel)) {
+			DBG(0, "musb_clk_top_sel enable fail\n");
+			goto exit;
+		}
+
+		if (clk_enable(musb_clk)) {
+			DBG(0, "musb_clk enable fail\n");
+			clk_disable(musb_clk_top_sel);
+			goto exit;
+		}
+
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		real_enable++;
 
-		if (clk_enable(musb_clk_top_sel))
-			DBG(0, "musb_clk_top_sel enable fail\n");
-		if (clk_enable(musb_clk))
-			DBG(0, "musb_clk enable fail\n");
-
 	} else if (!enable && count == 1) {
-		real_disable++;
-
 		clk_disable(musb_clk);
 		clk_disable(musb_clk_top_sel);
 
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
+		real_disable++;
 	}
 
-	if (enable) {
-		virt_enable++;
+	if (enable)
 		count++;
-	} else {
-		virt_disable++;
+	else
 		count = (count == 0) ? 0 : (count - 1);
-	}
+
+exit:
+	if (enable)
+		virt_enable++;
+	else
+		virt_disable++;
 
 	spin_unlock_irqrestore(&musb_reg_clock_lock, flags);
 
