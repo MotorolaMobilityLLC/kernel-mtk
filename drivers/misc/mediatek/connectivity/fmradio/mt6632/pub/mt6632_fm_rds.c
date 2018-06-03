@@ -21,7 +21,7 @@
 #include "fm_cmd.h"
 
 static fm_bool bRDS_FirstIn = fm_false;
-static fm_u32 gBLER_CHK_INTERVAL = 5000;
+static fm_u32 gBLER_CHK_INTERVAL = 500;
 static fm_u16 GOOD_BLK_CNT = 0, BAD_BLK_CNT;
 static fm_u8 BAD_BLK_RATIO;
 
