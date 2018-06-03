@@ -500,7 +500,7 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_prepare_enable(CLK_DISP_DITHER0);
 		break;
 	case DISP_MODULE_RSZ0:
-		ddp_clk_disable_unprepare(CLK_DISP_RSZ0);
+		ddp_clk_prepare_enable(CLK_DISP_RSZ0);
 		break;
 	default:
 		DDPERR("invalid module id=%d\n", module);
