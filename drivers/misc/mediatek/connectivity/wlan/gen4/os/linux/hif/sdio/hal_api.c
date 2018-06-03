@@ -1257,6 +1257,7 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	UINT_16 u2RxPktNum;
 	P_GL_HIF_INFO_T prHifInfo;
 	P_SDIO_RX_COALESCING_BUF_T prRxBuf;
+	BOOLEAN fgNoFreeBuf = FALSE;
 
 	SDIO_TIME_INTERVAL_DEC();
 
@@ -1289,9 +1290,28 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 		prRxCtrl->u4TotalRxPacketNum += u2RxPktNum;
 #endif
 
-		if (QUEUE_IS_EMPTY(&prHifInfo->rRxFreeBufQueue)) {
+		mutex_lock(&prHifInfo->rRxFreeBufQueMutex);
+		fgNoFreeBuf = QUEUE_IS_EMPTY(&prHifInfo->rRxFreeBufQueue);
+		mutex_unlock(&prHifInfo->rRxFreeBufQueMutex);
+
+		if (fgNoFreeBuf) {
 			DBGLOG(RX, LOUD, "[%s] No free Rx buffer\n", __func__);
 			prHifInfo->rStatCounter.u4RxBufUnderFlowCnt++;
+
+			if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
+				QUE_T rTempQue;
+				P_QUE_T prTempQue = &rTempQue;
+
+				/* During halt state, move all pending Rx buffer to free queue */
+				mutex_lock(&prHifInfo->rRxDeAggQueMutex);
+				QUEUE_MOVE_ALL(prTempQue, &prHifInfo->rRxDeAggQueue);
+				mutex_unlock(&prHifInfo->rRxDeAggQueMutex);
+
+				mutex_lock(&prHifInfo->rRxFreeBufQueMutex);
+				QUEUE_CONCATENATE_QUEUES(&prHifInfo->rRxFreeBufQueue, prTempQue);
+				mutex_unlock(&prHifInfo->rRxFreeBufQueMutex);
+			}
+
 			continue;
 		}
 
@@ -1944,8 +1964,13 @@ VOID halDeAggRxPkt(P_ADAPTER_T prAdapter, P_SDIO_RX_COALESCING_BUF_T prRxBuf)
 	prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
 	/* Avoid to schedule DeAggWorker during uninit flow */
-	if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT)
+	if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
+		mutex_lock(&prHifInfo->rRxFreeBufQueMutex);
+		QUEUE_INSERT_TAIL(&prHifInfo->rRxFreeBufQueue, (P_QUE_ENTRY_T)prRxBuf);
+		mutex_unlock(&prHifInfo->rRxFreeBufQueMutex);
+
 		return;
+	}
 
 	mutex_lock(&prHifInfo->rRxDeAggQueMutex);
 	QUEUE_INSERT_TAIL(&prHifInfo->rRxDeAggQueue, (P_QUE_ENTRY_T)prRxBuf);
