@@ -127,6 +127,7 @@ obj-$(CONFIG_MACH_MT6758) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6759) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6763) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6799) += clkbuf_v1/
+obj-$(CONFIG_MACH_MT6775) += clkbuf_v1/
 endif
 obj-$(CONFIG_MACH_MT6739) += dcm_v1/
 obj-$(CONFIG_MACH_MT6758) += dcm_v1/
