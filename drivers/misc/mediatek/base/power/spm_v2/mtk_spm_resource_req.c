@@ -145,7 +145,7 @@ unsigned int spm_get_resource_usage(void)
 {
 	return resource_usage;
 }
-EXPORT_SYMBOL(spm_resource_req);
+EXPORT_SYMBOL(spm_get_resource_usage);
 
 /*
  * debugfs
