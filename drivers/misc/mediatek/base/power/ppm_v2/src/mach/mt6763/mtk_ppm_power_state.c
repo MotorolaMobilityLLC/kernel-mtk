@@ -291,7 +291,7 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 		if (big_task_L) {
 			settings->bigtsk_hold_cnt++;
 			if (settings->bigtsk_hold_cnt >= settings->bigtsk_hold_time) {
-				ppm_dbg(HICA, "Go to ALL due to L big task = %d/%d\n", big_task_L);
+				ppm_dbg(HICA, "Go to ALL due to L big task = %d\n", big_task_L);
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
