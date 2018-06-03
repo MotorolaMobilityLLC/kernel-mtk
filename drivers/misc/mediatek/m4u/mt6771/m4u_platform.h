@@ -131,6 +131,8 @@ struct m4u_port_t gM4uPort[] = {
 
 	M4U0_PORT_INIT("VPU0", 0, 7, 8, 0),
 	M4U0_PORT_INIT("VPU1", 0, 7, 8, 1),
+	M4U0_PORT_INIT("CCU0", 0, 6, 4, 0),
+	M4U0_PORT_INIT("CCU1", 0, 6, 4, 1),
 
 	M4U0_PORT_INIT("UNKNOWN", 0, 0, 0, 0)
 };
