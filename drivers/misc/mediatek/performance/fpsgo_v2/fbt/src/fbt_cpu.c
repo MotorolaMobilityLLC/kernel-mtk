@@ -1144,10 +1144,6 @@ static int fbt_get_t2wnt(long long t_cpu_target,
 	ret = 1;
 
 	*first_t2wnt = temp - g_rescue_first_distance;
-	if (*first_t2wnt > TIME_100MS) {
-		FPSGO_LOGI("ERROR %d\n", __LINE__);
-		*first_t2wnt = 0ULL;
-	}
 
 	if (temp < g_rescue_distance) {
 		FPSGO_LOGI("ERROR %d\n", __LINE__);
@@ -1155,10 +1151,6 @@ static int fbt_get_t2wnt(long long t_cpu_target,
 	}
 
 	*t2wnt = temp - g_rescue_distance;
-	if (*t2wnt > TIME_100MS) {
-		FPSGO_LOGI("ERROR %d\n", __LINE__);
-		*t2wnt = 0ULL;
-	}
 
 exit:
 	mutex_unlock(&fbt_mlock);
