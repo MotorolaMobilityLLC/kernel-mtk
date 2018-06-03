@@ -411,7 +411,7 @@ static inline bool pd_process_timer_msg(
 		if (PE_MAKE_STATE_TRANSIT_SINGLE(
 			PE_SNK_CHUNK_RECEIVED, PE_SNK_SEND_NOT_SUPPORTED))
 			return true;
-
+		/* fall through */
 #ifdef CONFIG_USB_PD_REV30_SNK_FLOW_DELAY_STARTUP
 	case PD_TIMER_SNK_FLOW_DELAY:
 		if (pd_port->pe_data.pd_traffic_control == PD_SINK_TX_START) {

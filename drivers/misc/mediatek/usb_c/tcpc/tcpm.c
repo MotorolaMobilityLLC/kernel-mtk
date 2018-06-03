@@ -462,7 +462,7 @@ int tcpm_inquire_pd_partner_modes(
 	struct tcpc_device *tcpc, uint16_t svid, struct tcpm_mode_list *list)
 {
 #ifdef CONFIG_USB_PD_ALT_MODE
-	int ret;
+	int ret = TCPM_SUCCESS;
 	struct svdm_svid_data *svid_data;
 	struct pd_port *pd_port = &tcpc->pd_port;
 
@@ -1878,7 +1878,7 @@ static void mtk_handle_tcp_event_result(
 	if (ret == TCPM_SUCCESS)
 		return;
 
-	if (event->event_id == TCP_DPM_EVT_GET_PPS_STATUS
+	if (event->event_id == TCP_DPM_EVT_GET_STATUS
 		|| event->event_id == TCP_DPM_EVT_GET_PPS_STATUS) {
 		tcpm_put_tcp_dpm_event(tcpc, &evt_hreset);
 	}

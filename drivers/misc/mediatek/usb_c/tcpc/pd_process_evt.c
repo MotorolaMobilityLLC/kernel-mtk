@@ -342,9 +342,17 @@ bool pd_process_protocol_error(
 
 	switch (pd_port->pe_state_curr) {
 	case PE_SNK_TRANSITION_SINK:
+		/* fall through */
 	case PE_SRC_TRANSITION_SUPPLY:	/* never recv ping for Source =.=*/
+		/* fall through */
 	case PE_SRC_TRANSITION_SUPPLY2:
 		power_change = true;
+		if (pd_event_msg_match(pd_event,
+				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
+			PE_DBG("Ignore Ping\r\n");
+			return false;
+		}
+		break;
 
 #ifdef CONFIG_USB_PD_PR_SWAP
 	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
@@ -779,7 +787,7 @@ bool pd_process_event(
 
 	if ((pd_event->event_type == PD_EVT_CTRL_MSG) &&
 		(pd_event->msg != PD_CTRL_GOOD_CRC) &&
-		(pd_msg->frame_type != TCPC_TX_SOP))
+		(pd_msg != NULL) && (pd_msg->frame_type != TCPC_TX_SOP))
 		return pd_process_event_cable(pd_port, pd_event);
 
 	if (pd_process_event_com(pd_port, pd_event))
