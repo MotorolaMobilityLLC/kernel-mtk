@@ -93,8 +93,17 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 
 /*  #include "smi_common.h" */
 
+#ifdef CONFIG_PM_WAKELOCKS
+#include <linux/pm_wakeup.h>
+#else
 #include <linux/wakelock.h>
+#endif
 
+#ifdef CONFIG_PM_WAKELOCKS
+struct wakeup_source tsf_wake_lock;
+#else
+struct wake_lock tsf_wake_lock;
+#endif
 /*  */
 
 /* TSF Command Queue */
@@ -220,8 +229,6 @@ static void ISP_TaskletFunc_TSF(unsigned long data);
 static struct Tasklet_table TSF_tasklet[TSF_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_TSF, &TSFtkt[TSF_IRQ_TYPE_INT_TSF_ST]},
 };
-
-struct wake_lock TSF_wake_lock;
 
 static DEFINE_MUTEX(gTSFDveMutex);
 static DEFINE_MUTEX(gTSFDveDequeMutex);
@@ -1500,8 +1507,18 @@ static signed int TSF_open(struct inode *pInode, struct file *pFile)
 
 	/* do wait queue head init when re-enter in camera */
 	/* Enable clock */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&tsf_wake_lock);
+#else
+	wake_lock(&tsf_wake_lock);
+#endif
 	TSF_EnableClock(MTRUE);
 	g_u4TsfCnt = 0;
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&tsf_wake_lock);
+#else
+	wake_unlock(&tsf_wake_lock);
+#endif
 	LOG_INF("TSF open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
@@ -1559,7 +1576,17 @@ static signed int TSF_release(struct inode *pInode, struct file *pFile)
 
 
 	/* Disable clock. */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&tsf_wake_lock);
+#else
+	wake_lock(&tsf_wake_lock);
+#endif
 	TSF_EnableClock(MFALSE);
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&tsf_wake_lock);
+#else
+	wake_unlock(&tsf_wake_lock);
+#endif
 	LOG_INF("TSF release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
@@ -1832,11 +1859,14 @@ static signed int TSF_probe(struct platform_device *pDev)
 		for (n = 0; n < TSF_IRQ_TYPE_AMOUNT; n++)
 			spin_lock_init(&(TSFInfo.SpinLockIrq[n]));
 
+#ifdef CONFIG_PM_WAKELOCKS
+		wakeup_source_init(&tsf_wake_lock, "tsf_lock_wakelock");
+#else
+		wake_lock_init(&tsf_wake_lock, WAKE_LOCK_SUSPEND, "tsf_lock_wakelock");
+#endif
 		/*  */
 		init_waitqueue_head(&TSFInfo.WaitQueueHead);
 		INIT_WORK(&TSFInfo.ScheduleTsfWork, TSF_ScheduleWork);
-
-		wake_lock_init(&TSF_wake_lock, WAKE_LOCK_SUSPEND, "TSF_lock_wakelock");
 
 		for (i = 0; i < TSF_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(TSF_tasklet[i].pTSF_tkt, TSF_tasklet[i].tkt_cb, 0);
