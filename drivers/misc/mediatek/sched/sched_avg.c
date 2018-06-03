@@ -21,10 +21,7 @@
 #include <trace/events/sched.h>
 #include "rq_stats.h"
 
-
-#if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
-#endif
 
 typedef enum {
 	NO_OVERUTIL = 0,
@@ -75,19 +72,118 @@ static inline unsigned long task_utilization(struct task_struct *p)
 	return p->se.avg.util_avg;
 }
 
+/*
+ * Big Task Tracking:
+ * help hotplug to enable high-capacity CPU by big task.
+ */
+#define MAX_CLUSTER_NR 3
+#define MAX_CPU_CLUSTER 4
+#define BIG_TASK_BOOSTED_THRESHOLD 150
+#define BIG_TASK_GAME_THRESHOLD 80
+#define BIG_TASK_AVG_THRESHOLD 25
+
+static int btask_list_l[MAX_CLUSTER_NR][MAX_CPU_CLUSTER];
+static int btask_list_h[MAX_CLUSTER_NR][MAX_CPU_CLUSTER];
+
+static inline
+void tracking_btask_nr(int pid, int cid, bool high)
+{
+	int i;
+	int *btask_list = (high) ? btask_list_h[cid] : btask_list_l[cid];
+
+	for (i = 0; i < MAX_CPU_CLUSTER; i++) {
+		if (btask_list[i] == pid)
+			break;
+
+		if (!btask_list[i]) {
+			btask_list[i] = pid;
+			break;
+		}
+	}
+}
+
+static inline
+int get_btask_nr(int cid, bool high)
+{
+	int *btask_list = (high) ? btask_list_h[cid] : btask_list_l[cid];
+	int i;
+	int nr = 0;
+
+	for (i = 0; i < MAX_CPU_CLUSTER; i++) {
+		if (btask_list[i])
+			nr++;
+	}
+
+	return nr;
+}
+
+static inline
+void reset_btask_nr(void)
+{
+	int i;
+
+	for (i = 0; i < MAX_CLUSTER_NR; i++) {
+		memset(btask_list_l[i], 0, sizeof(btask_list_l[i]));
+		memset(btask_list_h[i], 0, sizeof(btask_list_l[i]));
+	}
+}
+
+int show_btask(char *buf, int buf_size)
+{
+	int *btask_list;
+	int i, j;
+	int len = 0;
+	struct task_struct *p;
+
+	for (i = 0; i < MAX_CLUSTER_NR; i++) {
+		btask_list = btask_list_h[i];
+
+		for (j = 0; j < MAX_CPU_CLUSTER; j++) {
+			p = find_task_by_vpid(btask_list[j]);
+
+			len += snprintf(buf+len, buf_size-len, "H.[%d][%d]=%d %s(%lu)\n", i, j, btask_list[j],
+					(btask_list[j] && p) ? p->comm : "NULL",
+					(btask_list[j] && p) ? p->se.avg.util_avg : 0UL);
+		}
+	}
+
+	for (i = 0; i < MAX_CLUSTER_NR; i++) {
+		btask_list = btask_list_l[i];
+
+		for (j = 0; j < MAX_CPU_CLUSTER; j++) {
+			p = find_task_by_vpid(btask_list[j]);
+
+			len += snprintf(buf+len, buf_size-len, "L.[%d][%d]=%d %s(%lu)\n", i, j, btask_list[j],
+					(btask_list[j] && p) ? p->comm : "NULL",
+					(btask_list[j] && p) ? p->se.avg.util_avg : 0UL);
+		}
+	}
+
+	return len;
+}
+
 overutil_type_t is_task_overutil(struct task_struct *p)
 {
 	overutil_stats_t *cpu_overutil;
 	/* int cid; */
 	/* int cluster_nr = arch_get_nr_clusters(); */
 	u64 task_util;
+	int cpu, cid;
 
 	if (!p)
 		return NO_OVERUTIL;
 
+	cpu = cpu_of(task_rq(p));
+
+#ifdef CONFIG_ARM64
+	cid = cpu_topology[cpu].cluster_id;
+#else
+	cid = cpu_topology[cpu].socket_id;
+#endif
+
 	task_util = task_utilization(p);
 
-	cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu_of(task_rq(p)));
+	cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu);
 
 	/* track task with max utilization */
 	if (task_util > cpu_overutil->max_task_util) {
@@ -97,11 +193,13 @@ overutil_type_t is_task_overutil(struct task_struct *p)
 	}
 
 	/* check if task is overutilized */
-	if (task_utilization(p) >= cpu_overutil->overutil_thresh_h)
+	if (task_utilization(p) >= cpu_overutil->overutil_thresh_h) {
+		tracking_btask_nr(p->pid, cid, true); /* big task */
 		return H_OVERUTIL;
-	else if (task_utilization(p) >= cpu_overutil->overutil_thresh_l)
+	} else if (task_utilization(p) >= cpu_overutil->overutil_thresh_l) {
+		tracking_btask_nr(p->pid, cid, false); /* big task */
 		return L_OVERUTIL;
-	else
+	} else
 		return NO_OVERUTIL;
 }
 
@@ -139,8 +237,8 @@ void sched_max_util_task_tracking(void)
 	gb_task_pid = max_task_pid;
 	gb_task_cpu = max_cpu;
 
-#if MET_SCHED_DEBUG
 	met_tag_oneshot(0, "sched_max_task_util", max_util);
+#if MET_SCHED_DEBUG
 	met_tag_oneshot(0, "sched_boost_task_util", boost_util);
 #endif
 }
@@ -602,37 +700,108 @@ int sched_get_nr_overutil_avg(int cluster_id, int *l_avg, int *h_avg)
 EXPORT_SYMBOL(sched_get_nr_overutil_avg);
 
 /*
- * sched_big_task_nr
- * @B_nr: big task nr.
- * @L_nr: task suggested in L.
+ * sched_big_task_nr:
+ * B_nr: big task nr.
+ * L_nr: task suggested in L.
  */
 #define MAX_CLUSTER_NR 3
 #define BIG_TASK_BOOSTED_THRESHOLD 150
 #define BIG_TASK_GAME_THRESHOLD 80
 
+#if MET_SCHED_DEBUG
+static char met_log_info[10][32] = {
+	"sched_bt_overavg_0L",
+	"sched_bt_overavg_0H",
+	"sched_bt_overavg_1L",
+	"sched_bt_overavg_1H",
+	"sched_bt_overavg_2L",
+	"sched_bt_overavg_2H",
+};
+
+static char met_log_info2[10][32] = {
+	"sched_bt_nr_0L",
+	"sched_bt_nr_0H",
+	"sched_bt_nr_1L",
+	"sched_bt_nr_1H",
+	"sched_bt_nr_2L",
+	"sched_bt_nr_2H",
+};
+#endif
+
 void sched_big_task_nr(int *L_nr, int *B_nr)
 {
+	int l_avg, b_avg;
 	int l_nr, b_nr;
 	int i;
-	int l_avg[MAX_CLUSTER_NR] = {0};
-	int h_avg[MAX_CLUSTER_NR] = {0};
+	int l_avg_time[MAX_CLUSTER_NR] = {0};
+	int h_avg_time[MAX_CLUSTER_NR] = {0};
+	int _l_nr[MAX_CLUSTER_NR] = {0};
+	int _h_nr[MAX_CLUSTER_NR] = {0};
 	int cluster_nr = arch_get_nr_clusters();
 
-	for (i = 0; i < cluster_nr; i++)
-		sched_get_nr_overutil_avg(i, &l_avg[i], &h_avg[i]);
+	*B_nr = *L_nr = 0;
 
-	l_nr = h_avg[0] + (l_avg[1] - h_avg[1]);
-	b_nr = h_avg[1] + l_avg[2];
+	/* to get big task nr per cluster */
+	for (i = 0; i < cluster_nr; i++) {
+		sched_get_nr_overutil_avg(i, &l_avg_time[i], &h_avg_time[i]);
+		_l_nr[i] = get_btask_nr(i, false);
+		_h_nr[i] = get_btask_nr(i, true);
+#if MET_SCHED_DEBUG
+		met_tag_oneshot(0, met_log_info[i*2],   l_avg_time[i]);
+		met_tag_oneshot(0, met_log_info[i*2+1], h_avg_time[i]);
 
-	*L_nr = (l_nr%100 > 25)?(l_nr/100+1):(l_nr/100);
-	*B_nr = (b_nr%100 > 25)?(b_nr/100+1):(b_nr/100);
+		met_tag_oneshot(0, met_log_info2[i*2],   _l_nr[i]);
+		met_tag_oneshot(0, met_log_info2[i*2+1], _h_nr[i]);
+#endif
+	}
 
+	/*
+	 * basic algorithm of big task:
+	 *
+	 * A heavy task (bigger than threshold) running 25% average time,
+	 * that we call big task.
+	 *
+	 */
+	l_avg = h_avg_time[0] + (l_avg_time[1] - h_avg_time[1]);
+	b_avg = h_avg_time[1] + l_avg_time[2];
+
+	l_nr = _h_nr[0] + _h_nr[1];
+	b_nr = _h_nr[1] + _l_nr[2];
+
+	/* big core nr */
+	if ((l_avg_time[2]/_l_nr[2]) > BIG_TASK_AVG_THRESHOLD)
+		*B_nr += _l_nr[2];
+	else
+		*B_nr += ((l_avg_time[2]/BIG_TASK_AVG_THRESHOLD) >= _l_nr[2]) ?
+				_l_nr[2] : (l_avg_time[2]/BIG_TASK_AVG_THRESHOLD);
+
+	if ((h_avg_time[1]/_h_nr[1]) > BIG_TASK_AVG_THRESHOLD)
+		*B_nr += _h_nr[1];
+	else
+		*B_nr += ((h_avg_time[1]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[1]) ?
+				_h_nr[1] : (h_avg_time[1]/BIG_TASK_AVG_THRESHOLD);
+
+	/* L core nr */
+	if (((l_avg_time[1] - h_avg_time[1])/_l_nr[1]) > BIG_TASK_AVG_THRESHOLD)
+		*L_nr += _l_nr[1];
+	else
+		*L_nr += (((l_avg_time[1] - h_avg_time[1])/BIG_TASK_AVG_THRESHOLD) >= _l_nr[1]) ?
+				_l_nr[1] : ((l_avg_time[1] - h_avg_time[1])/BIG_TASK_AVG_THRESHOLD);
+
+	if ((h_avg_time[0]/_h_nr[0]) > BIG_TASK_AVG_THRESHOLD)
+		*L_nr += _h_nr[0];
+	else
+		*L_nr += ((h_avg_time[0]/BIG_TASK_AVG_THRESHOLD) >= _h_nr[0]) ?
+					_h_nr[0] : (h_avg_time[0]/BIG_TASK_AVG_THRESHOLD);
+
+	/* if big core needed for performance */
 	if (!(*B_nr)) {
 		/* To consider boosted util of stune */
 		int boosted;
 		int util;
 
 		sched_max_util_task(NULL, NULL, &util, &boosted);
+
 		/* how to quantify it???? */
 		if (boosted > BIG_TASK_BOOSTED_THRESHOLD)
 			*B_nr = 1;
@@ -643,9 +812,14 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 #endif
 	}
 
+	/* reset big task tracking */
+	reset_btask_nr();
+
+	met_tag_oneshot(0, "sched_bt_b_avg", b_avg);
+	met_tag_oneshot(0, "sched_bt_l_avg", l_avg);
 #if MET_SCHED_DEBUG
-	met_tag_oneshot(0, "sched_task_b_nr", b_nr);
-	met_tag_oneshot(0, "sched_task_l_nr", l_nr);
+	met_tag_oneshot(0, "sched_bt_b_nr", *B_nr);
+	met_tag_oneshot(0, "sched_bt_l_nr", *L_nr);
 #endif
 }
 EXPORT_SYMBOL(sched_big_task_nr);

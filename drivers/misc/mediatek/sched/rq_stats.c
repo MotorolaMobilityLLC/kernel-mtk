@@ -944,6 +944,19 @@ static struct kobj_attribute avg_htasks_thresh_attr =
 __ATTR(avg_htasks_thresh, S_IWUSR | S_IRUSR, show_avg_heavy_task_thresh,
 		store_avg_heavy_task_thresh);
 
+/* big task */
+static ssize_t show_big_task(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int max_len = 4096;
+
+	return show_btask(buf, max_len);
+}
+
+static struct kobj_attribute big_task_attr =
+__ATTR(big_task, S_IRUSR, show_big_task,
+		NULL);
+
 static struct attribute *rq_attrs[] = {
 	&cpu_normalized_load_attr.attr,
 	&def_timer_ms_attr.attr,
@@ -956,6 +969,7 @@ static struct attribute *rq_attrs[] = {
 	&avg_htasks_thresh_attr.attr,
 	&avg_htasks_ac_attr.attr,
 	&over_util_attr.attr,
+	&big_task_attr.attr,
 	NULL,
 };
 
