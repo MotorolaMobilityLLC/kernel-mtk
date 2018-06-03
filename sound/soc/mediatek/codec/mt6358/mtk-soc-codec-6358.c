@@ -73,6 +73,10 @@
 #include <mach/vow_api.h>
 #endif
 
+#include <linux/of_gpio.h>
+#include <linux/gpio.h>
+
+
 /* HP IMPEDANCE Current Calibration from EFUSE */
 /* #define EFUSE_HP_IMPEDANCE */
 
@@ -3348,6 +3352,129 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 	return 0;
 }
 
+/*
+* Temp solution, query gpio of PCB_ID of board
+*/
+#define MT6771_QUERY_PCB_ID
+#ifdef MT6771_QUERY_PCB_ID
+
+enum AUDIO_MIC_MODE {
+	AUDIO_MIC_MODE_ACC = 1,
+	AUDIO_MIC_MODE_DCC,
+	AUDIO_MIC_MODE_DMIC,
+	AUDIO_MIC_MODE_DMIC_LP,
+	AUDIO_MIC_MODE_DCCECMDIFF,
+	AUDIO_MIC_MODE_DCCECMSINGLE,
+};
+
+enum pcb_id_index {
+	PCD_ID_1 = 0, /* GPIO175 */
+	PCD_ID_2 = 1, /* GPIO111 */
+	PCD_ID_NUM = 2,
+};
+
+static int get_pcb_id_state(int pcd_id)
+{
+	struct device_node *node = NULL;
+	int gpionum;
+	int ret = -1;
+
+	pr_debug("%s\n", __func__);
+
+	node = of_find_compatible_node(NULL, NULL,
+				       "mediatek,mt_soc_codec_63xx");
+
+	if (!node) {
+		pr_debug("%s(), cannot find dts node!\n", __func__);
+		return ret;
+	}
+
+	gpionum = of_get_named_gpio(node, "pcbinfo", pcd_id);
+	if (gpionum < 0) {
+		pr_debug("%s(), cannot find pcbinfo node!\n", __func__);
+		return ret;
+	}
+
+	ret = gpio_request(gpionum, "info");
+	if (ret) {
+		pr_debug("%s(), request pcbinfo failed!\n", __func__);
+		return ret;
+	}
+
+	ret = gpio_get_value(gpionum);
+	pr_debug("%s(), gpio(%d) value = %d\n", __func__, gpionum, ret);
+
+	gpio_free(gpionum);
+
+	return ret;
+}
+
+static int get_mic_mode(void)
+{
+	int gpioval_1 = 0, gpioval_2 = 0;
+	int ret = -1;
+
+	pr_debug("%s\n", __func__);
+
+	gpioval_1 = get_pcb_id_state(PCD_ID_1);
+	if (gpioval_1 < 0) {
+		pr_debug("%s(), gpioval_1(%d) invalid\n", __func__, gpioval_1);
+		return ret;
+	}
+
+	gpioval_2 = get_pcb_id_state(PCD_ID_2);
+	if (gpioval_2 < 0) {
+		pr_debug("%s(), gpioval_2(%d) invalid\n", __func__, gpioval_2);
+		return ret;
+	}
+	/*
+	 *   Mapping rule:
+	 *
+	 *   PCB_ID2 PCB_ID1  Mic_Mode
+	 *       0     0      EVB_DCC
+	 *       0     1      Phone_DCC
+	 *       1     0      Phone_ACC
+	 *       1     1      Reserved
+	 *
+	 */
+	if ((gpioval_2 == 0) && (gpioval_1 == 0))
+		ret = AUDIO_MIC_MODE_DCC;
+	else if ((gpioval_2 == 0) && (gpioval_1 == 1))
+		ret = AUDIO_MIC_MODE_DCC;
+	else if ((gpioval_2 == 1) && (gpioval_1 == 0))
+		ret = AUDIO_MIC_MODE_ACC;
+	else
+		ret = AUDIO_MIC_MODE_ACC;
+
+	pr_debug("%s(), return  mic_mode = %d\n", __func__, ret);
+
+	return ret;
+}
+
+static int Audio_MIC_Mode_Get(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
+{
+	int mic_mode = AUDIO_MIC_MODE_ACC;
+
+	pr_debug("%s()\n", __func__);
+	mic_mode = get_mic_mode();
+
+	if (mic_mode != -1)
+		ucontrol->value.integer.value[0] = mic_mode;
+	else
+		ucontrol->value.integer.value[0] = AUDIO_MIC_MODE_ACC;
+	pr_debug("%s(), return MIC_MODE: %ld\n",
+		 __func__, ucontrol->value.integer.value[0]);
+	return 0;
+}
+
+static int Audio_MIC_Mode_Set(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), not support\n", __func__);
+	return 0;
+}
+#endif
 static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
@@ -3477,6 +3604,10 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 		       hp_impedance_get, hp_impedance_set),
 	SOC_ENUM_EXT("Headphone Plugged In", Audio_DL_Enum[0],
 		     hp_plugged_in_get, hp_plugged_in_set),
+#ifdef MT6771_QUERY_PCB_ID
+	SOC_SINGLE_EXT("Audio_MIC_Mode", SND_SOC_NOPM, 0, 6, 0,
+		       Audio_MIC_Mode_Get, Audio_MIC_Mode_Set),
+#endif
 };
 
 void SetMicPGAGain(void)

@@ -3743,6 +3743,8 @@
 		compatible = "mediatek,mt_soc_codec_63xx";
 		use_hp_depop_flow = <0>; /* select 1: use, 0: not use */
 		use_ul_260k = <0>; /* select 1: use, 0: not use */
+		pcbinfo = <&pio 175 0>,
+			  <&pio 111 0>;
 	};
 
 	mt_soc_dummy_pcm {
