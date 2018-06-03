@@ -251,16 +251,6 @@ int disp_destroy_session(struct disp_session_config *config)
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
 		if (session_config[i] == session) {
 			session_config[i] = 0;
-#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
-			if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
-				/*it need lock, if set_idlemgr.*/
-				if (idle_flag)
-					set_idlemgr(idle_flag, 1);
-				if (smartovl_flag)
-					disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
-				has_memory_session = 0;
-			}
-#endif
 			ret = 0;
 			break;
 		}
@@ -275,9 +265,19 @@ int disp_destroy_session(struct disp_session_config *config)
 		release_session_buffer(config->session_id);
 
 	/* 2. Destroy this session */
-	if (ret == 0)
+	if (ret == 0) {
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
+			/*it need lock, if set_idlemgr.*/
+			if (idle_flag)
+				set_idlemgr(idle_flag, 1);
+			if (smartovl_flag)
+				disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
+			has_memory_session = 0;
+		}
+#endif
 		DISPMSG("Destroy session(0x%x)\n", session);
-	else
+	} else
 		DISPERR("session(0x%x) does not exists\n", session);
 
 
