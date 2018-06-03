@@ -75,6 +75,7 @@ static void __iomem *pwrap_base;
 #define RG_XO7_MODE				0x0
 #define PMIC_CW00_INIT_VAL			0x4E1D
 #define PMIC_CW11_INIT_VAL			0x8000
+#define PMIC_CW15_INIT_VAL			0xA2AA
 
 /* TODO: marked this after driver is ready */
 /* #define CLKBUF_BRINGUP */
@@ -503,8 +504,9 @@ void clk_buf_dump_dts_log(void)
 
 void clk_buf_dump_clkbuf_log(void)
 {
-	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
-	    pmic_cw16 = 0, top_spi_con1 = 0;
+	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0,
+	    pmic_cw13 = 0, pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0,
+	    pmic_cw20 = 0, top_spi_con1 = 0;
 
 	pmic_read_interface(PMIC_XO_EXTBUF1_MODE_ADDR, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
@@ -512,15 +514,22 @@ void clk_buf_dump_clkbuf_log(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(PMIC_XO_EXTBUF6_MODE_ADDR, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_RESERVED4_ADDR, &pmic_cw13,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(PMIC_XO_EXTBUF2_CLKSEL_MAN_ADDR, &pmic_cw14,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_EXTBUF1_HD_ADDR, &pmic_cw15,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(PMIC_XO_EXTBUF1_ISET_M_ADDR, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_RESRVED10_ADDR, &pmic_cw20,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &top_spi_con1,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_pr_info("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x, top_spi_con1=0x%x\n",
-		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14,
-		     pmic_cw16, top_spi_con1);
+	clk_buf_pr_info("%s DCXO_CW00/02/11/13/14/15/16/20/top_spi_con1=0x%x %x %x %x %x %x %x %x %x\n",
+		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13,
+		     pmic_cw14, pmic_cw15, pmic_cw16, pmic_cw20,
+		     top_spi_con1);
 }
 
 static u32 dcxo_dbg_read_auxout(u16 sel)
@@ -736,8 +745,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 				 char *buf)
 {
 	int len = 0;
-	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
-	    pmic_cw16 = 0;
+	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw13 = 0,
+	    pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0;
 
 	clk_buf_get_drv_curr();
 	clk_buf_get_xo_en();
@@ -797,12 +806,17 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(PMIC_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_RESERVED4_ADDR, &pmic_cw13,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(PMIC_DCXO_CW14, &pmic_cw14,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(PMIC_RG_XO_EXTBUF1_HD_ADDR, &pmic_cw15,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/CW02/CW11/CW14/CW16=0x%x 0x%x 0x%x 0x%x 0x%x\n",
-			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/02/11/13/14/15/16=0x%x %x %x %x %x %x %x\n",
+			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13, pmic_cw14,
+			pmic_cw15, pmic_cw16);
 	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	len += snprintf(buf+len, PAGE_SIZE-len, "SRCLKEN_IN3_EN(srclken_conn)=0x%x\n", pmic_cw00);
@@ -994,9 +1008,17 @@ void clk_buf_init_pmic_clkbuf(void)
 
 #ifndef __KERNEL__
 	/* Setup initial PMIC clock buffer setting */
+	/* de-sense setting */
+	pmic_config_interface(PMIC_RG_XO_EXTBUF1_HD_ADDR, PMIC_CW15_INIT_VAL,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_config_interface(PMIC_RG_XO_RESERVED4_ADDR, 0x3,
+			    PMIC_RG_XO_RESERVED4_MASK, PMIC_RG_XO_RESERVED4_SHIFT);
+
 	/* auto mode of driving current */
+
 	clk_buf_set_auto_calc(1);
 
+	/* clock buffer setting */
 	pmic_config_interface(PMIC_XO_EXTBUF1_MODE_ADDR, PMIC_CW00_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_config_interface(PMIC_XO_EXTBUF6_MODE_ADDR, PMIC_CW11_INIT_VAL,
