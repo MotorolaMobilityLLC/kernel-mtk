@@ -425,6 +425,7 @@ struct mag_dev_info_t {
 
 struct sensorInfo_t {
 	union {
+		char name[16];
 		struct mag_dev_info_t mag_dev_info;
 	};
 };

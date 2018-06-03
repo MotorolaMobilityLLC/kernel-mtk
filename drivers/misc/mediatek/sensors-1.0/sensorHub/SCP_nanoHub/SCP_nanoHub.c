@@ -1972,27 +1972,25 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.getInfo);
 			err = scp_sensorHub_req_send(&req, &len, 1);
-
-			if (err == 0) {
-				if (sensorType != req.set_cust_rsp.sensorType ||
-					req.set_cust_rsp.action !=
-						SENSOR_HUB_SET_CUST ||
-					req.set_cust_rsp.errCode != 0) {
-					pr_err("scp_sensorHub_req_send failed 1!\n");
-					return -1;
-				}
-				if (req.set_cust_rsp.getInfo.action !=
-					CUST_ACTION_GET_SENSOR_INFO) {
-					pr_err("scp_sensorHub_req_send failed 2!\n");
-					return -1;
-				}
-				memcpy((struct sensorInfo_t *)data,
-					&req.set_cust_rsp.getInfo.sensorInfo,
-					sizeof(struct sensorInfo_t));
-			} else {
+			if (err < 0) {
+				pr_err("scp_sensorHub_req_send failed!\n");
+				return -1;
+			}
+			if (sensorType != req.set_cust_rsp.sensorType ||
+				req.set_cust_rsp.action !=
+					SENSOR_HUB_SET_CUST ||
+				req.set_cust_rsp.errCode != 0) {
+				pr_err("scp_sensorHub_req_send failed 2!\n");
+				return -1;
+			}
+			if (req.set_cust_rsp.getInfo.action !=
+				CUST_ACTION_GET_SENSOR_INFO) {
 				pr_err("scp_sensorHub_req_send failed 3!\n");
 				return -1;
 			}
+			memcpy((struct sensorInfo_t *)data,
+				&req.set_cust_rsp.getInfo.sensorInfo,
+				sizeof(struct sensorInfo_t));
 			return 0;
 		default:
 			return -1;

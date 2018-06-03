@@ -730,7 +730,8 @@ static int scp_ready_event(uint8_t event, void *ptr)
 }
 
 static struct scp_power_monitor scp_ready_notifier = {
-	.name = "accel", .notifier_call = scp_ready_event,
+	.name = "accel",
+	.notifier_call = scp_ready_event,
 };
 
 static int accelhub_probe(struct platform_device *pdev)
