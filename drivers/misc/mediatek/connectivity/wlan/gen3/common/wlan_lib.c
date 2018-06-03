@@ -683,6 +683,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
 			wlanPollingCpupcr(4, 5);
+			g_IsNeedDoChipReset = 1;
 			break;
 		case RAM_CODE_DOWNLOAD_FAIL:
 			nicRxUninitialize(prAdapter);
@@ -690,7 +691,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			/* System Service Uninitialization */
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
-			wlanPollingCpupcr(20, 1);
+			wlanPollingCpupcr(4, 5);
+			g_IsNeedDoChipReset = 1;
 			break;
 		case INIT_ADAPTER_FAIL:
 			nicReleaseAdapterMemory(prAdapter);
@@ -2740,7 +2742,12 @@ WLAN_STATUS wlanImageQueryStatus(IN P_ADAPTER_T prAdapter)
 					     aucBuffer,
 					     sizeof(INIT_HIF_RX_HEADER_T) +
 					     sizeof(INIT_EVENT_PENDING_ERROR), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "Wait Response event failed!\n");
+			UINT_32 u4MailBox0;
+			UINT_32 u4MailBox1;
+
+			nicGetMailbox(prAdapter, 0, &u4MailBox0);
+			nicGetMailbox(prAdapter, 1, &u4MailBox1);
+			DBGLOG(INIT, WARN, "Device to Host Mailbox 0x%08x, 0x%08x\n", u4MailBox0, u4MailBox1);
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
@@ -2804,7 +2811,12 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					     aucBuffer,
 					     sizeof(INIT_HIF_RX_HEADER_T) +
 					     sizeof(INIT_EVENT_CMD_RESULT), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "Wait Response event failed!\n");
+			UINT_32 u4MailBox0;
+			UINT_32 u4MailBox1;
+
+			nicGetMailbox(prAdapter, 0, &u4MailBox0);
+			nicGetMailbox(prAdapter, 1, &u4MailBox1);
+			DBGLOG(INIT, WARN, "Device to Host Mailbox 0x%08x, 0x%08x\n", u4MailBox0, u4MailBox1);
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
@@ -3802,22 +3814,28 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 			      &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
 		return WLAN_STATUS_FAILURE;
 	}
-	/* header checking .. */
+
+	/* Header checking .. */
 	prRxStatus = (P_HW_MAC_RX_DESC_T) aucBuffer;
-	if (prRxStatus->u2PktTYpe != RXM_RXD_PKT_TYPE_SW_EVENT)
+	if (prRxStatus->u2PktTYpe != RXM_RXD_PKT_TYPE_SW_EVENT) {
+		DBGLOG(INIT, ERROR, "Unexpected packet type %d! not SW_EVENT\n", prRxStatus->u2PktTYpe);
 		return WLAN_STATUS_FAILURE;
+	}
 
 	prEvent = (P_WIFI_EVENT_T) aucBuffer;
-	if (prEvent->ucEID != EVENT_ID_NIC_CAPABILITY)
+	if (prEvent->ucEID != EVENT_ID_NIC_CAPABILITY) {
+		DBGLOG(INIT, ERROR, "Unexpected Event ID %d! expect %d\n",
+		       prEvent->ucEID, EVENT_ID_NIC_CAPABILITY);
 		return WLAN_STATUS_FAILURE;
+	}
 
 	prEventNicCapability = (P_EVENT_NIC_CAPABILITY_T) (prEvent->aucBuffer);
 
 	prAdapter->rVerInfo.u2FwProductID = prEventNicCapability->u2ProductID;
 	prAdapter->rVerInfo.u2FwOwnVersion = prEventNicCapability->u2FwVersion;
 	prAdapter->rVerInfo.u2FwPeerVersion = prEventNicCapability->u2DriverVersion;
-	/*support FW version extend*/
 
+	/* Support FW version extend */
 	prAdapter->rVerInfo.u2FwOwnVersionExtend =
 		(prEventNicCapability->aucReserved0[0] << 24)
 		| (prEventNicCapability->aucReserved0[1] << 16)
@@ -3841,16 +3859,16 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 #if CFG_ENABLE_CAL_LOG
 	DBGLOG(NIC, LOUD, " RF CAL FAIL  = (%d),BB CAL FAIL  = (%d)\n",
-			    prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
+	       prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
 #endif
 
 	DBGLOG(NIC, INFO, "FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			    (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			    (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+	       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+	       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -3929,18 +3947,24 @@ WLAN_STATUS wlanQueryPdMcr(IN P_ADAPTER_T prAdapter, P_PARAM_MCR_RW_STRUCT_T prM
 	if (nicRxWaitResponse(prAdapter,
 			      1,
 			      aucBuffer,
-			      sizeof(WIFI_EVENT_T) + sizeof(CMD_ACCESS_REG), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
+			      sizeof(WIFI_EVENT_T) + sizeof(CMD_ACCESS_REG),
+			      &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
 		return WLAN_STATUS_FAILURE;
 	}
-	/* header checking .. */
+
+	/* Header checking .. */
 	prRxStatus = (P_HW_MAC_RX_DESC_T) aucBuffer;
-	if (prRxStatus->u2PktTYpe != RXM_RXD_PKT_TYPE_SW_EVENT)
+	if (prRxStatus->u2PktTYpe != RXM_RXD_PKT_TYPE_SW_EVENT) {
+		DBGLOG(INIT, ERROR, "Unexpected packet type %d! not SW_EVENT\n", prRxStatus->u2PktTYpe);
 		return WLAN_STATUS_FAILURE;
+	}
 
 	prEvent = (P_WIFI_EVENT_T) aucBuffer;
-
-	if (prEvent->ucEID != EVENT_ID_ACCESS_REG)
+	if (prEvent->ucEID != EVENT_ID_ACCESS_REG) {
+		DBGLOG(INIT, ERROR, "Unexpected Event ID %d! expect %d\n",
+		       prEvent->ucEID, EVENT_ID_ACCESS_REG);
 		return WLAN_STATUS_FAILURE;
+	}
 
 	prCmdMcrQuery = (P_CMD_ACCESS_REG) (prEvent->aucBuffer);
 	prMcrRdInfo->u4McrOffset = prCmdMcrQuery->u4Address;

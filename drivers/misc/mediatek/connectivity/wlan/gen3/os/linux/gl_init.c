@@ -2238,9 +2238,8 @@ bailout:
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
-		DBGLOG(INIT, LOUD, "wlanProbe: probe success\n");
+		DBGLOG(INIT, TRACE, "wlanProbe success\n");
 	} else {
-		DBGLOG(INIT, ERROR, "wlanProbe: probe failed\n");
 		switch (eFailReason) {
 		case FAIL_MET_INIT_PROCFS:
 			kalMetRemoveProcfs();
@@ -2270,6 +2269,13 @@ bailout:
 		default:
 			break;
 		}
+		/* Set the power off flag to FALSE in WMT to prevent chip power off after
+		 * wlanProbe return failure, because we need to do core dump afterward.
+		 */
+		if (g_IsNeedDoChipReset)
+			mtk_wcn_set_connsys_power_off_flag(FALSE);
+
+		DBGLOG(INIT, ERROR, "wlanProbe failed\n");
 	}
 	return i4Status;
 }				/* end of wlanProbe() */
