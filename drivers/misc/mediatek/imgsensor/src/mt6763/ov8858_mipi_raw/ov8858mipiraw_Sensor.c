@@ -25,13 +25,6 @@
  * ------------
  *	 Source code of Sensor driver
  *	PengtaoFan
- *  0528:ä¿®æ”¹get_info,??mipi ??? *  0604:å¢?init preview å»¶æ—¶??0ms
- *  0604:??­init settingä¸?stream on,?otp??è®?
- *  0608:??°ov???setting
- *  0703:for  ä¿®æ”¹?non continue mode 4800
- *  0703:for  crc test 0x5002=00
- *  ---RD ??????? *  0714 ??¥capture setting full size@30fps 24fps 15fps
- *  15072115172729: ??¥nick??full size 30fps settingï¼Œfor ???size ä¸???®é??
  *------------------------------------------------------------------------------
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
@@ -66,7 +59,7 @@
 typedef enum {
 	OV8858R2A,
 	OV8858R1A
-}OV8858_VERSION;
+} OV8858_VERSION;
 
 OV8858_VERSION ov8858version = OV8858R2A;
 enum boot_mode_t bm;
@@ -75,150 +68,175 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = OV8858_SENSOR_ID,		//record sensor id defined in Kd_imgsensor.h
+	.sensor_id = OV8858_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0xc2ded17b,		//checksum value for Camera Auto Test
+	.checksum_value = 0xc2ded17b,	/* checksum value for Camera Auto Test */
 
 	.pre = {
-		.pclk = 144000000,				//record different mode's pclk
-		.linelength  = 1928,				//record different mode's linelength
-		.framelength = 2488,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 1632,		//record different mode's width of grabwindow
-		.grabwindow_height = 1224,		//record different mode's height of grabwindow
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
+		.pclk = 144000000,	/* record different mode's pclk */
+		.linelength = 1928,	/* record different mode's linelength */
+		.framelength = 2488,	/* record different mode's framelength */
+		.startx = 0,	/* record different mode's startx of grabwindow */
+		.starty = 0,	/* record different mode's starty of grabwindow */
+		.grabwindow_width = 1632,	/* record different mode's width of grabwindow */
+		.grabwindow_height = 1224,	/* record different mode's height of grabwindow */
+		/*       following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario   */
 		.mipi_data_lp2hs_settle_dc = 30,
-		/*	 following for GetDefaultFramerateByScenario()	*/
+		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
 	.cap = {
 		.pclk = 144000000,
-		.linelength  = 1956,
+		.linelength = 1956,
 		.framelength = 2530,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width  = 3264,
+		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 300,
 	},
-	.cap1 = {							//capture for PIP 15fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
+	.cap1 = {
+		/*
+		 * capture for PIP 15fps relative information, capture1 mode must use same framelength,
+		 * linelength with Capture mode for shutter calculate
+		 */
 		.pclk = 72000000,
-		.linelength  = 1940,
+		.linelength = 1940,
 		.framelength = 2474,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width  = 3264,
+		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 150,
 	},
-	.cap2 = {							//capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
+	.cap2 = {
+		/*
+		 * capture for PIP 24fps relative information, capture1 mode must use same framelength,
+		 * linelength with Capture mode for shutter calculate
+		 */
 		.pclk = 144000000,
-		.linelength  = 2344,
+		.linelength = 2344,
 		.framelength = 2556,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width  = 3264,
+		.grabwindow_width = 3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 240,
 	},
 	.normal_video = {
-		.pclk = 144000000,				//record different mode's pclk
-		.linelength  = 1928,				//record different mode's linelength
-		.framelength = 2488,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 1632,		//record different mode's width of grabwindow
-		.grabwindow_height = 1224,		//record different mode's height of grabwindow
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
+		.pclk = 144000000,	/* record different mode's pclk */
+		.linelength = 1928,	/* record different mode's linelength */
+		.framelength = 2488,	/* record different mode's framelength */
+		.startx = 0,	/* record different mode's startx of grabwindow */
+		.starty = 0,	/* record different mode's starty of grabwindow */
+		.grabwindow_width = 1632,	/* record different mode's width of grabwindow */
+		.grabwindow_height = 1224,	/* record different mode's height of grabwindow */
+		/*       following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario   */
 		.mipi_data_lp2hs_settle_dc = 30,
-		/*	 following for GetDefaultFramerateByScenario()	*/
+		/*       following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
 	.hs_video = {
-		.pclk = 144000000,				//record different mode's pclk,Pengtao Modify
-		.linelength  = 2306,				//record different mode's linelength
-		.framelength = 520,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 640,		//record different mode's width of grabwindow
-		.grabwindow_height = 480,		//record different mode's height of grabwindow
-		/*	 following for  MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
+		.pclk = 144000000,	/* record different mode's pclk */
+		.linelength = 1928, /* record different mode's linelength */
+		.framelength = 2488,	/* record different mode's framelength */
+		.startx = 0,	/* record different mode's startx of grabwindow */
+		.starty = 0,	/* record different mode's starty of grabwindow */
+		.grabwindow_width = 1632,	/* record different mode's width of grabwindow */
+		.grabwindow_height = 1224,	/* record different mode's height of grabwindow */
+		/*		 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 30,
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 1200,
-	},
-	.slim_video = {
-		.pclk = 144000000,				//record different mode's pclk
-		.linelength  = 1928,				//record different mode's linelength
-		.framelength = 2488,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 1632,		//record different mode's width of grabwindow
-		.grabwindow_height = 1224,		//record different mode's height of grabwindow
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 30,
-		/*	 following for GetDefaultFramerateByScenario()	*/
+		/*		 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
-	.margin = 4,			//sensor framelength & shutter margin
-	.min_shutter = 4,		//min shutter
-	.max_frame_length = 0x90f7,//max framelength by sensor register's limitation
-	.ae_shut_delay_frame = 0,	//shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
-	.ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
-	.ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
-	.ihdr_support = 0,	  //1, support; 0,not support
-	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
+	.slim_video = {
+		.pclk = 144000000,	/* record different mode's pclk */
+		.linelength = 1928,	/* record different mode's linelength */
+		.framelength = 2488,	/* record different mode's framelength */
+		.startx = 0,	/* record different mode's startx of grabwindow */
+		.starty = 0,	/* record different mode's starty of grabwindow */
+		.grabwindow_width = 1632,	/* record different mode's width of grabwindow */
+		.grabwindow_height = 1224,	/* record different mode's height of grabwindow */
+		/*       following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario   */
+		.mipi_data_lp2hs_settle_dc = 30,
+		/*       following for GetDefaultFramerateByScenario()  */
+		.max_framerate = 300,
+	},
+	.margin = 4,		/* sensor framelength & shutter margin */
+	.min_shutter = 4,	/* min shutter */
+	.max_frame_length = 0x90f7,	/* max framelength by sensor register's limitation */
+	.ae_shut_delay_frame = 0,	/* shutter delay frame for AE cycle,
+					 * 2 frame with ispGain_delay-shut_delay=2-0=2
+					 */
+	.ae_sensor_gain_delay_frame = 0,	/* sensor gain delay frame for AE cycle,
+						 * 2 frame with ispGain_delay-sensor_gain_delay=2-0=2
+						 */
+	.ae_ispGain_delay_frame = 2,	/* isp gain delay frame for AE cycle */
+	.ihdr_support = 0,	/* 1, support; 0,not support */
+	.ihdr_le_firstline = 0,	/* 1,le first ; 0, se first */
+	.sensor_mode_num = 5,	/* support sensor mode num ,don't support Slow motion */
 
-	.cap_delay_frame = 1,		//enter capture delay frame num
-	.pre_delay_frame = 1, 		//enter preview delay frame num
-	.video_delay_frame = 1,		//enter video delay frame num
-	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
-	.slim_video_delay_frame = 3,//enter slim video delay frame num
+	.cap_delay_frame = 1,	/* enter capture delay frame num */
+	.pre_delay_frame = 1,	/* enter preview delay frame num */
+	.video_delay_frame = 1,	/* enter video delay frame num */
+	.hs_video_delay_frame = 1,	/* enter high speed video  delay frame num */
+	.slim_video_delay_frame = 3,	/* enter slim video delay frame num */
 
-	.isp_driving_current = ISP_DRIVING_4MA, //mclk driving current
-	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
-    .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
-    .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW8_B,//sensor output first pixel color
-	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
-	.mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
-	.i2c_addr_table = {0x42, 0x6c, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
-	.i2c_speed = 400, // i2c read/write speed
+	.isp_driving_current = ISP_DRIVING_4MA,	/* mclk driving current */
+	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,	/* sensor_interface_type */
+	.mipi_sensor_type = MIPI_OPHY_NCSI2,	/* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
+	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,	/* 0,MIPI_SETTLEDELAY_AUTO;
+								 * 1,MIPI_SETTLEDELAY_MANNUAL
+								 */
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW8_B,	/* sensor output first pixel color */
+	.mclk = 24,		/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
+	.mipi_lane_num = SENSOR_MIPI_2_LANE,	/* mipi lane num */
+	.i2c_addr_table = {0x42, 0x6c, 0xff},	/* record sensor support all write id addr,
+						 * only supprt 4must end with 0xff
+						 */
+	.i2c_speed = 400,	/* i2c read/write speed */
 };
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
-	.sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
-	.shutter = 0x4C00,					//current shutter
-	.gain = 0x200,						//current gain
-	.dummy_pixel = 0,					//current dummypixel
-	.dummy_line = 0,					//current dummyline
-	.current_fps = 0,  //full size current fps : 24fps for PIP, 30fps for Normal or ZSD
-	.autoflicker_en = KAL_FALSE,  //auto flicker enable: KAL_FALSE for disable auto flicker, KAL_TRUE for enable auto flicker
-	.test_pattern = KAL_FALSE,		//test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
-	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
-	.ihdr_en = 0, //sensor need support LE, SE with HDR feature
-	.i2c_write_id = 0,//record current sensor's i2c write id
+	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
+	.sensor_mode = IMGSENSOR_MODE_INIT,	/* IMGSENSOR_MODE enum value,
+						 * record current sensor mode,such as:
+						 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
+						 */
+	.shutter = 0x4C00,	/* current shutter */
+	.gain = 0x200,		/* current gain */
+	.dummy_pixel = 0,	/* current dummypixel */
+	.dummy_line = 0,	/* current dummyline */
+	.current_fps = 0,	/* full size current fps : 24fps for PIP, 30fps for Normal or ZSD */
+	.autoflicker_en = KAL_FALSE,	/* auto flicker enable:
+					 * KAL_FALSE for disable auto flicker, KAL_TRUE for enable auto flicker
+					 */
+	.test_pattern = KAL_FALSE,	/* test pattern mode or not.
+					 * KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
+					 */
+	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,	/* current scenario id */
+	.ihdr_en = 0,		/* sensor need support LE, SE with HDR feature */
+	.i2c_write_id = 0,	/* record current sensor's i2c write id */
 };
 
 
 /* Sensor output window information*/
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
-{{ 3264, 2448,	  0,	0, 3264, 2448, 1632, 1224,   0,	0, 1632, 1224,	 0, 0, 1632, 1224}, // Preview
- { 3264, 2448,	  0,	0, 3264, 2448, 3264, 2448,   0,	0, 3264, 2448,	 0, 0, 3264, 2448}, // capture
- { 3264, 2448,	  0,	0, 3264, 2448, 3264, 2448,   0,	0, 3264, 2448,	 0, 0, 1632, 1224}, // video
- { 3264, 2448,	  0,	0, 3264, 2448,  816,  612,  88,66,  640,  480,	 0, 0,  640,  480}, //hight speed video
- { 3264, 2448,	  0,	0, 3264, 2448, 3264, 2448,   0,	0, 1632, 1224,	 0, 0, 1632, 1224}};// slim video
+static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
+	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* Preview */
+	{3264, 2448, 0, 0, 3264, 2448, 3264, 2448,  0,  0, 3264, 2448, 0, 0, 3264, 2448},	/* capture */
+	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* video */
+	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* hight speed video */
+	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224}	/* slim video */
+};
 
-
-SENSOR_DPCM_TYPE_ENUM imgsensor_dpcm_info_ov8858[10] =
-{COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE};
+SENSOR_DPCM_TYPE_ENUM imgsensor_dpcm_info_ov8858[10] = {
+	COMP8_NONE, COMP8_NONE, COMP8_NONE, COMP8_NONE, COMP8_NONE, COMP8_NONE, COMP8_NONE,
+	COMP8_NONE, COMP8_NONE, COMP8_NONE
+};
 
 
 #define MULTI_WRITE 1
@@ -1847,6 +1865,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	LOG_INF("E! video just has 30fps preview size setting ,NOT HAS 24FPS SETTING!\n");
   preview_setting();
 }
+
+#if 0
 static void hs_video_setting(void)
 {
 	LOG_INF("E\n");
@@ -1953,6 +1973,7 @@ static void hs_video_setting(void)
     write_cmos_sensor(0x5901, 0x04);
     write_cmos_sensor(0x382d, 0x7f);
 }
+#endif
 
 static void slim_video_setting(void)
 {
@@ -2441,7 +2462,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	//imgsensor.current_fps = 300;
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	hs_video_setting();
+	preview_setting();
 	mdelay(10);
 
 	return ERROR_NONE;
