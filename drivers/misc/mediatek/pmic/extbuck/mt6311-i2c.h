@@ -22,7 +22,7 @@
 
 #if MT6311_DEBUG
 #define MT6311TAG		"[MT6311] "
-#define MT6311LOG(fmt, arg...)   pr_err(MT6311TAG fmt, ##arg)
+#define MT6311LOG(fmt, arg...)   pr_notice(MT6311TAG fmt, ##arg)
 #else
 #define MT6311LOG(...) do { } while (0)
 #endif /* MT6311_DEBUG */

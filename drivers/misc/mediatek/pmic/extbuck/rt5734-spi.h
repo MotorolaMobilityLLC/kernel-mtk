@@ -72,6 +72,6 @@ extern int rt5734_regulator_deinit(struct rt5734_chip *chip);
 	rt5734_assign_bit(spi, reg, mask, 0x00)
 
 #define RT5734_INFO(format, args...) pr_info(format, ##args)
-#define RT5734_ERR(format, args...)	pr_err(format, ##args)
+#define RT5734_PR_ERR(format, args...)	pr_err(format, ##args)
 
 #endif /* __LINUX_RT5734_SPI_H */

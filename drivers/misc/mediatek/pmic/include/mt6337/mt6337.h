@@ -28,7 +28,7 @@
 
 #define MT6337LOG(fmt, arg...) do { \
 	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
-		pr_err(MT6337TAG "%s: " fmt, __func__, ##arg); \
+		pr_notice(MT6337TAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
 extern const MT6337_PMU_FLAG_TABLE_ENTRY mt6337_pmu_flags_table[];
