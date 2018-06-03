@@ -317,7 +317,7 @@ static void get_kernel_bt(struct task_struct *tsk)
 	/*save backtraces */
 	trace.nr_entries = 0;
 	trace.max_entries = 32;
-	trace.skip = 2;
+	trace.skip = 0;
 	save_stack_trace_tsk(tsk, &trace);
 	for (i = 0; i < trace.nr_entries; i++)
 		Log2HangInfo("[<%lx>] %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
@@ -726,9 +726,6 @@ static void ShowStatus(void)
 	for_each_process(task) {
 		if (dump_count >= DUMP_PROCESS_NUM)
 			break;
-
-		if (!task)
-			continue;
 
 		if ((strcmp(task->comm, "surfaceflinger") == 0) || (strcmp(task->comm, "init") == 0) ||
 			(strcmp(task->comm, "system_server") == 0) || (strcmp(task->comm, "mmcqd/0") == 0) ||
