@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -31,7 +31,7 @@ enum typec_attach_type {
 	TYPEC_ATTACHED_SNK,
 	TYPEC_ATTACHED_SRC,
 	TYPEC_ATTACHED_AUDIO,
-	TYPEC_ATTACHED_DEBUG,
+	TYPEC_ATTACHED_DEBUG,		/* Rd, Rd */
 
 #ifdef CONFIG_TYPEC_CAP_DBGACC_SNK
 	TYPEC_ATTACHED_DBGACC_SNK,		/* Rp, Rp */
@@ -106,6 +106,8 @@ enum {
 	TCP_NOTIFY_PR_SWAP,
 	TCP_NOTIFY_DR_SWAP,
 	TCP_NOTIFY_VCONN_SWAP,
+	TCP_NOTIFY_ENTER_MODE,
+	TCP_NOTIFY_EXIT_MODE,
 	TCP_NOTIFY_AMA_DP_STATE,
 	TCP_NOTIFY_AMA_DP_ATTENTION,
 	TCP_NOTIFY_AMA_DP_HPD_STATE,
@@ -116,6 +118,11 @@ enum {
 #ifdef CONFIG_USB_PD_UVDM
 	TCP_NOTIFY_UVDM,
 #endif /* CONFIG_USB_PD_UVDM */
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+	TCP_NOTIFY_DC_EN_UNLOCK,
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
 };
 
 struct tcp_ny_pd_state {
@@ -164,6 +171,12 @@ struct tcp_ny_vbus_state {
 	uint8_t type;
 };
 
+struct tcp_ny_mode_ctrl {
+	uint16_t svid;
+	uint8_t ops;
+	uint32_t mode;
+};
+
 enum {
 	SW_USB = 0,
 	SW_DFP_D,
@@ -210,6 +223,7 @@ struct tcp_notify {
 		struct tcp_ny_typec_state typec_state;
 		struct tcp_ny_swap_state swap_state;
 		struct tcp_ny_pd_state pd_state;
+		struct tcp_ny_mode_ctrl mode_ctrl;
 		struct tcp_ny_ama_dp_state ama_dp_state;
 		struct tcp_ny_ama_dp_attention ama_dp_attention;
 		struct tcp_ny_ama_dp_hpd_state ama_dp_hpd_state;
@@ -242,7 +256,8 @@ enum tcpm_error_list {
 struct tcpm_remote_power_cap {
 	uint8_t selected_cap_idx;
 	uint8_t nr;
-	int mv[TCPM_PDO_MAX_SIZE];
+	int max_mv[TCPM_PDO_MAX_SIZE];
+	int min_mv[TCPM_PDO_MAX_SIZE];
 	int ma[TCPM_PDO_MAX_SIZE];
 };
 
@@ -333,6 +348,7 @@ extern int tcpm_get_source_cap(
 	struct tcpc_device *tcpc_dev, struct tcpm_power_cap *cap);
 extern int tcpm_get_sink_cap(
 	struct tcpc_device *tcpc_dev, struct tcpm_power_cap *cap);
+extern int tcpm_bist_cm2(struct tcpc_device *tcpc_dev);
 extern int tcpm_request(
 	struct tcpc_device *tcpc_dev, int mv, int ma);
 extern int tcpm_error_recovery(struct tcpc_device *tcpc_dev);
@@ -365,6 +381,10 @@ extern int tcpm_dp_configuration(
 
 extern int tcpm_notify_vbus_stable(struct tcpc_device *tcpc_dev);
 
+extern bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc);
+extern void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en);
+extern bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc);
+
 #ifdef CONFIG_USB_PD_UVDM
 
 #define PD_UVDM_HDR(vid, custom)	\
@@ -373,11 +393,35 @@ extern int tcpm_notify_vbus_stable(struct tcpc_device *tcpc_dev);
 #define PD_UVDM_HDR_CMD(hdr)	\
 	(hdr & 0x7FFF)
 
+extern void tcpm_set_uvdm_handle_flag(
+	struct tcpc_device *tcpc_dev, unsigned char en);
+extern bool tcpm_get_uvdm_handle_flag(struct tcpc_device *tcpc_dev);
 extern int tcpm_send_uvdm(struct tcpc_device *tcpc_dev,
 	uint8_t cnt, uint32_t *data, bool wait_resp);
 
+/* capability
+ * CABLE_CURR_UNKNOWN = 0
+ * CABLE_CURR_1_5A = 1
+ * CABLE_CURR_3A = 2
+ * CABLE_CURR_5A = 3
+ */
+extern int tcpm_get_cable_capability(struct tcpc_device *tcpc_dev,
+						unsigned char *capability);
 #ifdef CONFIG_RT7207_ADAPTER
 extern int tcpm_set_direct_charge_en(struct tcpc_device *tcpc_dev, bool en);
+
+enum {
+	PE30_TA_UNKNOWN,
+	PE30_TA_NOT_SUPPORT,
+	PE30_TA_SUPPORT,
+};
+extern int tcpm_get_pe30_ta_sup(struct tcpc_device *tcpc);
+extern void tcpm_reset_pe30_ta(struct tcpc_device *tcpc);
+#else
+static inline int tcpm_set_direct_charge_en(void *tcpc, bool en)
+{
+	return -1;
+}
 #endif /* CONFIG_RT7207_ADAPTER */
 
 #endif	/* CONFIG_USB_PD_UVDM */

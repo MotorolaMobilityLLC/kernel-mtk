@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Policy Engine for SNK
+ * Power Delivery Policy Engine for SNK
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -60,6 +60,7 @@ void pe_snk_discovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 #ifdef CONFIG_USB_PD_FAST_RESP_TYPEC_SRC
 		pd_disable_timer(pd_port, PD_TIMER_SRC_RECOVER);
 #endif	/* CONFIG_USB_PD_FAST_RESP_TYPEC_SRC */
+
 	pd_enable_vbus_valid_detection(pd_port, true);
 }
 
@@ -92,6 +93,7 @@ void pe_snk_evaluate_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 #ifdef CONFIG_USB_PD_RECV_HRESET_COUNTER
 	pd_port->recv_hard_reset_count = 0;
 #endif	/* CONFIG_USB_PD_RECV_HRESET_COUNTER */
+
 	pd_dpm_snk_evaluate_caps(pd_port, pd_event);
 	pd_free_pd_event(pd_port, pd_event);
 }
@@ -103,7 +105,7 @@ void pe_snk_select_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 			pd_event->msg_sec, pd_port->last_rdo);
 	} else {
 		/* new request, for debug only */
-		pd_dpm_sink_vbus(pd_port, false);
+		/* pd_dpm_sink_vbus(pd_port, false); */
 		PE_DBG("NewReq, rdo:0x%08x\r\n", pd_port->last_rdo);
 	}
 
@@ -116,6 +118,10 @@ void pe_snk_select_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 void pe_snk_select_capability_exit(pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
+
+	if (pd_event_msg_match(pd_event,
+		PD_EVT_CTRL_MSG, PD_CTRL_ACCEPT))
+		pd_port->remote_selected_cap = RDO_POS(pd_port->last_rdo);
 
 	/* Waiting for Hard-Reset Done */
 	if (!pd_event_msg_match(pd_event,
@@ -163,8 +169,9 @@ void pe_snk_hard_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 void pe_snk_transition_to_default_entry(
 				pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	pd_reset_local_hw(pd_port);
+	pd_notify_pe_transit_to_default(pd_port);
 	pd_dpm_snk_hard_reset(pd_port, pd_event);
+	pd_reset_local_hw(pd_port);
 }
 
 void pe_snk_transition_to_default_exit(

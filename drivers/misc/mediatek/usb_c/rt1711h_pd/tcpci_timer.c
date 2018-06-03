@@ -1,13 +1,17 @@
 /*
- * TCPC Interface for timer function
+ * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Copyright (C) 2015 Richtek Technology Corp.
- * Author: TH <tsunghan_tasi@richtek.com>
+ * TCPC Interface for timer handler
  *
- * This program is free software; you can redistribute it and/or modify
+ * Author: TH <tsunghan_tsai@richtek.com>
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/kernel.h>
@@ -114,10 +118,13 @@ const char *tcpc_timer_name[] = {
 	"PD_TIMER_VDM_RESPONSE",
 	"PD_TIMER_SOURCE_TRANSITION",
 	"PD_TIMER_SRC_RECOVER",
-	"PD_TIMER_VSAFE0V",
+	"PD_TIMER_VSAFE0V_DELAY",
+	"PD_TIMER_VSAFE0V_TOUT",
 	"PD_TIMER_DISCARD",
 	"PD_TIMER_VBUS_STABLE",
 	"PD_TIMER_VBUS_PRESENT",
+	"PD_TIMER_UVDM_RESPONSE",
+	"PD_TIMER_DFP_FLOW_DELAY",
 	"PD_PE_VDM_POSTPONE",
 
 	"TYPEC_RT_TIMER_PE_IDLE",
@@ -148,9 +155,9 @@ const char *tcpc_timer_name[] = {
 
 
 #ifdef CONFIG_USB_PD_SAFE0V_DELAY
-#define PD_TIMER_VSAFE0V_TOUT		TIMEOUT_VAL(50)
+#define PD_TIMER_VSAFE0V_DLY_TOUT		TIMEOUT_VAL(50)
 #else
-#define PD_TIMER_VSAFE0V_TOUT		TIMEOUT_VAL(400)
+#define PD_TIMER_VSAFE0V_DLY_TOUT		TIMEOUT_VAL(400)
 #endif	/* CONFIG_USB_PD_SAFE0V_DELAY */
 
 #ifdef CONFIG_TCPC_VSAFE0V_DETECT
@@ -165,7 +172,7 @@ static const uint32_t tcpc_timer_timeout[PD_TIMER_NR] = {
 	TIMEOUT_RANGE(40, 50),		/* PD_TIMER_DISCOVER_ID */
 	TIMEOUT_RANGE(4, 5),	/* PD_TIMER_HARD_RESET_COMPLETE	(no used) */
 	TIMEOUT_RANGE(4500, 5500),	/* PD_TIMER_NO_RESPONSE */
-	TIMEOUT_RANGE(25, 35),		/* PD_TIMER_PS_HARD_RESET */
+	TIMEOUT_RANGE(25, 25),		/* PD_TIMER_PS_HARD_RESET */
 	TIMEOUT_RANGE(750, 920),	/* PD_TIMER_PS_SOURCE_OFF */
 	TIMEOUT_RANGE(390, 480),	/* PD_TIMER_PS_SOURCE_ON, */
 	TIMEOUT_RANGE(450, 550),	/* PD_TIMER_PS_TRANSITION */
@@ -177,25 +184,29 @@ static const uint32_t tcpc_timer_timeout[PD_TIMER_NR] = {
 	TIMEOUT_RANGE(100, 200),	/* PD_TIMER_SOURCE_CAPABILITY */
 	TIMEOUT_VAL(20),		/* PD_TIMER_SOURCE_START */
 	TIMEOUT_VAL(100),		/* PD_TIMER_VCONN_ON */
-	TIMEOUT_RANGE(40, 50),		/* PD_TIMER_VDM_MODE_ENTRY */
+	TIMEOUT_VAL(500),		/* PD_TIMER_VDM_MODE_ENTRY */
 	TIMEOUT_RANGE(40, 50),		/* PD_TIMER_VDM_MODE_EXIT */
-	TIMEOUT_RANGE(24, 30),		/* PD_TIMER_VDM_RESPONSE */
+	TIMEOUT_VAL(500),		/* PD_TIMER_VDM_RESPONSE */
 	TIMEOUT_RANGE(25, 35),		/* PD_TIMER_SOURCE_TRANSITION */
 	TIMEOUT_RANGE(660, 1000),	/* PD_TIMER_SRC_RECOVER */
 
 	/* PD_TIMER (out of spec) */
-	PD_TIMER_VSAFE0V_TOUT,		/* PD_TIMER_VSAFE0V */
+	PD_TIMER_VSAFE0V_DLY_TOUT,		/* PD_TIMER_VSAFE0V_DELAY */
+	TIMEOUT_VAL(650),		/* PD_TIMER_VSAFE0V_TOUT */
 	TIMEOUT_VAL(3),			/* PD_TIMER_DISCARD */
 	/* PD_TIMER_VBUS_STABLE */
 	TIMEOUT_VAL(CONFIG_USB_PD_VBUS_STABLE_TOUT),
 	/* PD_TIMER_VBUS_PRESENT */
 	TIMEOUT_VAL(CONFIG_USB_PD_VBUS_PRESENT_TOUT),
-	TIMEOUT_VAL_US(1500),       /* PD_PE_VDM_POSTPONE */
+	/* PD_TIMER_UVDM_RESPONSE */
+	TIMEOUT_VAL(CONFIG_USB_PD_UVDM_TOUT),
+	TIMEOUT_VAL(30),	/* PD_TIMER_DFP_FLOW_DELAY */
+	TIMEOUT_VAL_US(3000),   /* PD_PE_VDM_POSTPONE */
 
 	/* TYPEC-RT-TIMER */
-	TIMEOUT_VAL(1),					/* TYPEC_RT_TIMER_PE_IDLE */
-	TYPEC_RT_TIMER_SAFE0V_DLY_TOUT,		/* TYPEC_RT_TIMER_SAFE0V_DELAY */
-	TIMEOUT_VAL(650),				/* TYPEC_RT_TIMER_SAFE0V_TOUT */
+	TIMEOUT_VAL(1),				/* TYPEC_RT_TIMER_PE_IDLE */
+	TYPEC_RT_TIMER_SAFE0V_DLY_TOUT,	/* TYPEC_RT_TIMER_SAFE0V_DELAY */
+	TIMEOUT_VAL(650),		/* TYPEC_RT_TIMER_SAFE0V_TOUT */
 
 	/* TYPEC-TRY-TIMER */
 	TIMEOUT_RANGE(75, 150),		/* TYPEC_TRY_TIMER_DRP_TRY */
@@ -210,8 +221,8 @@ static const uint32_t tcpc_timer_timeout[PD_TIMER_NR] = {
 	TIMEOUT_VAL(60),		/* TYPEC_TIMER_DRP_SRC_TOGGLE */
 #else
 	/* TYPEC-RT-TIMER */
-	TYPEC_RT_TIMER_SAFE0V_DLY_TOUT,		/* TYPEC_RT_TIMER_SAFE0V_DELAY */
-	TIMEOUT_VAL(650),				/* TYPEC_RT_TIMER_SAFE0V_TOUT */
+	TYPEC_RT_TIMER_SAFE0V_DLY_TOUT,	/* TYPEC_RT_TIMER_SAFE0V_DELAY */
+	TIMEOUT_VAL(650),			/* TYPEC_RT_TIMER_SAFE0V_TOUT */
 
 	/* TYPEC-TRY-TIMER */
 	TIMEOUT_RANGE(75, 150),		/* TYPEC_TRY_TIMER_DRP_TRY */
@@ -242,12 +253,29 @@ static inline void on_pe_timer_timeout(
 	case PD_TIMER_VDM_MODE_ENTRY:
 	case PD_TIMER_VDM_MODE_EXIT:
 	case PD_TIMER_VDM_RESPONSE:
+	case PD_TIMER_UVDM_RESPONSE:
 		pd_put_vdm_event(tcpc_dev, &pd_event, false);
 		break;
 
-	case PD_TIMER_VSAFE0V:
+	case PD_TIMER_VSAFE0V_DELAY:
 		pd_put_vbus_safe0v_event(tcpc_dev);
 		break;
+
+#ifdef CONFIG_USB_PD_SAFE0V_TIMEOUT
+	case PD_TIMER_VSAFE0V_TOUT:
+		{
+			uint16_t power_status;
+			int vbus_level = tcpc_dev->vbus_level;
+
+			tcpci_get_power_status(tcpc_dev, &power_status);
+			tcpci_vbus_level_init(tcpc_dev, power_status);
+
+			TCPC_INFO("VSafe0V TOUT: now:%d, org:%d\r\n",
+				tcpc_dev->vbus_level, vbus_level);
+		}
+		pd_put_vbus_safe0v_event(tcpc_dev);
+		break;
+#endif	/* CONFIG_USB_PD_SAFE0V_TIMEOUT */
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 	case PD_TIMER_DISCARD:
@@ -285,9 +313,9 @@ static inline void on_pe_timer_timeout(
 
 #define TCPC_TIMER_TRIGGER()	do \
 {				\
-	down(&tcpc_dev->timer_tick_lock);			\
+	spin_lock(&tcpc_dev->timer_tick_lock);			\
 	rt_set_bit(index, (uint64_t *)&tcpc_dev->timer_tick);	\
-	up(&tcpc_dev->timer_tick_lock);				\
+	spin_unlock(&tcpc_dev->timer_tick_lock);		\
 	wake_up_interruptible(&tcpc_dev->timer_wait_que);	\
 } while (0)
 
@@ -503,9 +531,19 @@ static enum hrtimer_restart tcpc_timer_src_recover(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-static enum hrtimer_restart tcpc_timer_vsafe0v(struct hrtimer *timer)
+static enum hrtimer_restart tcpc_timer_vsafe0v_delay(struct hrtimer *timer)
 {
-	int index = PD_TIMER_VSAFE0V;
+	int index = PD_TIMER_VSAFE0V_DELAY;
+	struct tcpc_device *tcpc_dev =
+		container_of(timer, struct tcpc_device, tcpc_timer[index]);
+
+	TCPC_TIMER_TRIGGER();
+	return HRTIMER_NORESTART;
+}
+
+static enum hrtimer_restart tcpc_timer_vsafe0v_tout(struct hrtimer *timer)
+{
+	int index = PD_TIMER_VSAFE0V_TOUT;
 	struct tcpc_device *tcpc_dev =
 		container_of(timer, struct tcpc_device, tcpc_timer[index]);
 
@@ -544,6 +582,24 @@ static enum hrtimer_restart tcpc_timer_vbus_stable(struct hrtimer *timer)
 static enum hrtimer_restart tcpc_timer_vbus_present(struct hrtimer *timer)
 {
 	int index = PD_TIMER_VBUS_PRESENT;
+	struct tcpc_device *tcpc_dev =
+		container_of(timer, struct tcpc_device, tcpc_timer[index]);
+	TCPC_TIMER_TRIGGER();
+	return HRTIMER_NORESTART;
+}
+
+static enum hrtimer_restart tcpc_timer_uvdm_response(struct hrtimer *timer)
+{
+	int index = PD_TIMER_UVDM_RESPONSE;
+	struct tcpc_device *tcpc_dev =
+		container_of(timer, struct tcpc_device, tcpc_timer[index]);
+	TCPC_TIMER_TRIGGER();
+	return HRTIMER_NORESTART;
+}
+
+static enum hrtimer_restart tcpc_timer_dfp_flow_delay(struct hrtimer *timer)
+{
+	int index = PD_TIMER_DFP_FLOW_DELAY;
 	struct tcpc_device *tcpc_dev =
 		container_of(timer, struct tcpc_device, tcpc_timer[index]);
 	TCPC_TIMER_TRIGGER();
@@ -674,10 +730,13 @@ static tcpc_hrtimer_call tcpc_timer_call[PD_TIMER_NR] = {
 	[PD_TIMER_VDM_RESPONSE] = tcpc_timer_vdm_response,
 	[PD_TIMER_SOURCE_TRANSITION] = tcpc_timer_source_transition,
 	[PD_TIMER_SRC_RECOVER] = tcpc_timer_src_recover,
-	[PD_TIMER_VSAFE0V] = tcpc_timer_vsafe0v,
+	[PD_TIMER_VSAFE0V_DELAY] = tcpc_timer_vsafe0v_delay,
+	[PD_TIMER_VSAFE0V_TOUT] = tcpc_timer_vsafe0v_tout,
 	[PD_TIMER_DISCARD] = tcpc_timer_pd_discard,
 	[PD_TIMER_VBUS_STABLE] = tcpc_timer_vbus_stable,
 	[PD_TIMER_VBUS_PRESENT] = tcpc_timer_vbus_present,
+	[PD_TIMER_UVDM_RESPONSE] = tcpc_timer_uvdm_response,
+	[PD_TIMER_DFP_FLOW_DELAY] = tcpc_timer_dfp_flow_delay,
 	[PD_PE_VDM_POSTPONE] = pd_pe_vdm_postpone_timeout,
 
 	[TYPEC_RT_TIMER_PE_IDLE] = tcpc_timer_rt_pe_idle,
@@ -824,18 +883,18 @@ static void tcpc_handle_timer_triggered(struct tcpc_device *tcpc_dev)
 	uint64_t triggered_timer;
 	int i = 0;
 
-	down(&tcpc_dev->timer_tick_lock);
+	spin_lock(&tcpc_dev->timer_tick_lock);
 	triggered_timer = rt_get_value((uint64_t *)&tcpc_dev->timer_tick);
-	up(&tcpc_dev->timer_tick_lock);
+	spin_unlock(&tcpc_dev->timer_tick_lock);
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 	for (i = 0; i < PD_PE_TIMER_END_ID; i++) {
 		if (triggered_timer & RT_MASK64(i)) {
 			TCPC_TIMER_DBG(tcpc_dev, i);
 			on_pe_timer_timeout(tcpc_dev, i);
-			down(&tcpc_dev->timer_tick_lock);
+			spin_lock(&tcpc_dev->timer_tick_lock);
 			rt_clear_bit(i, (uint64_t *)&tcpc_dev->timer_tick);
-			up(&tcpc_dev->timer_tick_lock);
+			spin_unlock(&tcpc_dev->timer_tick_lock);
 		}
 	}
 #endif /* CONFIG_USB_POWER_DELIVERY */
@@ -845,9 +904,9 @@ static void tcpc_handle_timer_triggered(struct tcpc_device *tcpc_dev)
 		if (triggered_timer & RT_MASK64(i)) {
 			TCPC_TIMER_DBG(tcpc_dev, i);
 			tcpc_typec_handle_timeout(tcpc_dev, i);
-			down(&tcpc_dev->timer_tick_lock);
+			spin_lock(&tcpc_dev->timer_tick_lock);
 			rt_clear_bit(i, (uint64_t *)&tcpc_dev->timer_tick);
-			up(&tcpc_dev->timer_tick_lock);
+			spin_unlock(&tcpc_dev->timer_tick_lock);
 		}
 	}
 	mutex_unlock(&tcpc_dev->typec_lock);
@@ -862,9 +921,9 @@ static int tcpc_timer_thread(void *param)
 	struct sched_param sch_param = {.sched_priority = MAX_RT_PRIO - 1};
 
 
-	down(&tcpc_dev->timer_tick_lock);
+	spin_lock(&tcpc_dev->timer_tick_lock);
 	timer_tick = &tcpc_dev->timer_tick;
-	up(&tcpc_dev->timer_tick_lock);
+	spin_unlock(&tcpc_dev->timer_tick_lock);
 
 	sched_setscheduler(current, SCHED_FIFO, &sch_param);
 	while (true) {
@@ -888,9 +947,9 @@ int tcpci_timer_init(struct tcpc_device *tcpc_dev)
 	tcpc_dev->timer_task = kthread_create(tcpc_timer_thread, tcpc_dev,
 			"tcpc_timer_%s.%p", dev_name(&tcpc_dev->dev), tcpc_dev);
 	init_waitqueue_head(&tcpc_dev->timer_wait_que);
-	down(&tcpc_dev->timer_tick_lock);
+	spin_lock(&tcpc_dev->timer_tick_lock);
 	tcpc_dev->timer_tick = 0;
-	up(&tcpc_dev->timer_tick_lock);
+	spin_unlock(&tcpc_dev->timer_tick_lock);
 	rt_set_value((uint64_t *)&tcpc_dev->timer_enable_mask, 0);
 	wake_up_process(tcpc_dev->timer_task);
 	for (i = 0; i < PD_TIMER_NR; i++) {

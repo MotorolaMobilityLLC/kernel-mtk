@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Policy Engine for SRC
+ * Power Delivery Policy Engine for SRC
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -162,8 +162,9 @@ void pe_src_hard_reset_received_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 void pe_src_transition_to_default_entry(
 				pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	pd_reset_local_hw(pd_port);
+	pd_notify_pe_transit_to_default(pd_port);
 	pd_dpm_src_hard_reset(pd_port);
+	pd_reset_local_hw(pd_port);
 }
 
 void pe_src_transition_to_default_exit(pd_port_t *pd_port, pd_event_t *pd_event)
@@ -233,6 +234,8 @@ void pe_src_vdm_identity_request_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 
 void pe_src_vdm_identity_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 {
+	pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_CABLE_ID;
+
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_src_inform_cable_vdo(pd_port, pd_event);
 

@@ -3,7 +3,7 @@
  *
  * Richtek TypeC Port Control Interface Core Driver
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -30,7 +30,7 @@
 #include "pd_dpm_prv.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"1.0.9_G"
+#define TCPC_CORE_VERSION		"1.1.1_G"
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -317,6 +317,7 @@ static void tcpc_device_release(struct device *dev)
 }
 
 static void tcpc_init_work(struct work_struct *work);
+static void tcpc_event_init_work(struct work_struct *work);
 
 struct tcpc_device *tcpc_device_register(struct device *parent,
 	struct tcpc_desc *tcpc_desc, struct tcpc_ops *ops, void *drv_data)
@@ -350,12 +351,13 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 
 	srcu_init_notifier_head(&tcpc->evt_nh);
 	INIT_DELAYED_WORK(&tcpc->init_work, tcpc_init_work);
+	INIT_DELAYED_WORK(&tcpc->event_init_work, tcpc_event_init_work);
 
 	mutex_init(&tcpc->access_lock);
 	mutex_init(&tcpc->typec_lock);
 	mutex_init(&tcpc->timer_lock);
 	sema_init(&tcpc->timer_enable_mask_lock, 1);
-	sema_init(&tcpc->timer_tick_lock, 1);
+	spin_lock_init(&tcpc->timer_tick_lock);
 
 	/* If system support "WAKE_LOCK_IDLE",
 	 * please use it instead of "WAKE_LOCK_SUSPEND" */
@@ -366,7 +368,6 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 
 	tcpci_timer_init(tcpc);
 #ifdef CONFIG_USB_POWER_DELIVERY
-	tcpci_event_init(tcpc);
 	pd_core_init(tcpc);
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
@@ -383,6 +384,9 @@ EXPORT_SYMBOL(tcpc_device_register);
 static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 {
 	int ret;
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+	uint16_t data;
+#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 
 	if (!tcpc->ops->init) {
 		pr_err("%s Please implment tcpc ops init function\n",
@@ -405,8 +409,33 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		return ret;
 	}
 
+	schedule_delayed_work(
+		&tcpc->event_init_work, msecs_to_jiffies(10*1000));
+
 	pr_info("%s : tcpc irq enable OK!\n", __func__);
+
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+	tcpci_get_power_status(tcpc, &data);
+	if (!(data & TCPC_REG_POWER_STATUS_VBUS_PRES)) {
+		pr_info("%s boot check flag = true\n", __func__);
+		tcpm_set_boot_check_flag(tcpc, 1);
+	}
+#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 	return 0;
+}
+
+static void tcpc_event_init_work(struct work_struct *work)
+{
+	struct tcpc_device *tcpc = container_of(
+			work, struct tcpc_device, event_init_work.work);
+
+	tcpci_lock_typec(tcpc);
+	tcpci_event_init(tcpc);
+	tcpc->pd_dly_flag = 1;
+	pr_info("%s typec attache new = %d\n", __func__, tcpc->typec_attach_new);
+	if (tcpc->typec_attach_new)
+		pd_put_cc_attached_event(tcpc, tcpc->typec_attach_new);
+	tcpci_unlock_typec(tcpc);
 }
 
 static void tcpc_init_work(struct work_struct *work)
@@ -427,6 +456,8 @@ int tcpc_schedule_init_work(struct tcpc_device *tcpc)
 {
 	if (tcpc->desc.notifier_supply_num == 0)
 		return tcpc_device_irq_enable(tcpc);
+
+	pr_info("%s wait %d num\n", __func__, tcpc->desc.notifier_supply_num);
 
 	schedule_delayed_work(
 		&tcpc->init_work, msecs_to_jiffies(30*1000));
