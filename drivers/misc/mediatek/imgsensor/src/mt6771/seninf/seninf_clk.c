@@ -11,30 +11,24 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef SENINF_USE_CCF
-#include <linux/of_platform.h>
-#include <linux/of_address.h>
-#include <mt-plat/sync_write.h>
-#endif
-
 #include <linux/clk.h>
 
 #include "seninf_clk.h"
 
 static struct SENINF_CLK_CTRL gseninf_mclk_name[SENINF_CLK_IDX_MAX_NUM] = {
-	{"SCP_SYS_MM0"},
+	{"SCP_SYS_DIS"},
 	{"SCP_SYS_CAM"},
-	{"CLK_CAM_SENINF"},
-	{"CLK_TOP_CAMTG_SEL"},
-	{"CLK_TOP_CAMTG2_SEL"},
-	{"CLK_TOP_CAMTG3_SEL"},
-	{"CLK_TOP_CAMTG4_SEL"},
-	{"CLK_TOP_UNIVPLL_D416"},
-	{"CLK_TOP_UNIVPLL_D208"},
-	{"CLK_TOP_UNIVPLL_D104"},
-	{"CLK_TOP_CLK26M"},
-	{"CLK_TOP_UNIVPLL_D52"},
-	{"CLK_TOP_UNIVPLL2_D16"},
+	{"CAMSYS_SENINF_CGPDN"},
+	{"TOP_MUX_CAMTG"},
+	{"TOP_MUX_CAMTG2"},
+	{"TOP_MUX_CAMTG3"},
+	{"TOP_MUX_CAMTG4"},
+	{"TOP_UNIVP_192M_D32"},
+	{"TOP_UNIVP_192M_D16"},
+	{"TOP_UNIVP_192M_D8"},
+	{"TOP_CLK26M"},
+	{"TOP_UNIVP_192M_D4"},
+	{"TOP_UNIVPLL_D3_D8"}
 };
 
 static enum SENINF_CLK_MCLK_FREQ gseninf_clk_freq[SENINF_CLK_IDX_FREQ_IDX_NUM] = {
@@ -60,21 +54,6 @@ static inline void seninf_clk_check(struct SENINF_CLK *pclk)
 enum SENINF_RETURN seninf_clk_init(struct SENINF_CLK *pclk)
 {
 	int i;
-
-#ifndef SENINF_USE_CCF
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys");
-	if (!node) {
-	PK_PR_ERR("find mediatek,camsys node failed!!!\n");
-		return -ENODEV;
-	}
-	pclk->pcamsys_base = of_iomap(node, 0);
-	if (!pclk->pcamsys_base) {
-		PK_PR_ERR("unable to map CAMSYS_BASE registers!!!\n");
-		return -ENODEV;
-	}
-#endif
 
 	if (pclk->pplatform_device == NULL) {
 		PK_PR_ERR("[%s] pdev is null\n", __func__);
@@ -116,11 +95,11 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 
 	if (pmclk->on) {
 		/* Workaround for timestamp: TG1 always ON */
-		if (clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_CAMTG_SEL]))
+		if (clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]))
 			PK_PR_ERR("[CAMERA SENSOR] failed tg=%d\n",
-				  SENINF_CLK_IDX_TG_TOP_CAMTG_SEL);
+				  SENINF_CLK_IDX_TG_TOP_MUX_CAMTG);
 		else
-			atomic_inc(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_CAMTG_SEL]);
+			atomic_inc(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
 
 		if (clk_prepare_enable(pclk->mclk_sel[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]))
 			PK_PR_ERR("[CAMERA SENSOR] failed tg=%d\n", pmclk->TG);
@@ -136,8 +115,8 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 				     pclk->mclk_sel[i + SENINF_CLK_IDX_FREQ_MIN_NUM]);
 	} else {
 		/* Workaround for timestamp: TG1 always ON */
-		clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_CAMTG_SEL]);
-		atomic_dec(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_CAMTG_SEL]);
+		clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
+		atomic_dec(&pclk->enable_cnt[SENINF_CLK_IDX_TG_TOP_MUX_CAMTG]);
 
 		clk_disable_unprepare(pclk->mclk_sel[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
 		atomic_dec(&pclk->enable_cnt[pmclk->TG + SENINF_CLK_IDX_TG_MIN_NUM]);
@@ -150,7 +129,6 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 
 void seninf_clk_open(struct SENINF_CLK *pclk)
 {
-#ifdef SENINF_USE_CCF
 #if 0
 	MINT32 i;
 
@@ -161,12 +139,9 @@ void seninf_clk_open(struct SENINF_CLK *pclk)
 			atomic_inc(&pclk->enable_cnt[i]);
 	}
 #else
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_MM0]);
+	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
 	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CLK_CAM_SENINF]);
-#endif
-#else
-	mt_reg_sync_writel(0xFFFFFFFF, pclk->pcamsys_base + 0x8);
+	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
 #endif
 }
 
@@ -180,8 +155,8 @@ void seninf_clk_release(struct SENINF_CLK *pclk)
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
 
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CLK_CAM_SENINF]);
+	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
 	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_MM0]);
+	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
 }
 

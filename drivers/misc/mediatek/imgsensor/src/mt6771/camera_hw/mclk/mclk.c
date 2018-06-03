@@ -26,7 +26,6 @@ static enum IMGSENSOR_RETURN mclk_init(
 	void *pinstance,
 	struct IMGSENSOR_HW_DEVICE_COMMON *pcommon)
 {
-#if 0
 	struct mclk            *pinst         = (struct mclk *)pinstance;
 	enum   IMGSENSOR_RETURN ret           = IMGSENSOR_RETURN_SUCCESS;
 	int i;
@@ -69,13 +68,10 @@ static enum IMGSENSOR_RETURN mclk_init(
 	}
 
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 static enum IMGSENSOR_RETURN mclk_release(void *pinstance)
 {
-#if 0
 	int i;
 	struct mclk *pinst = (struct mclk *)pinstance;
 
@@ -85,8 +81,6 @@ static enum IMGSENSOR_RETURN mclk_release(void *pinstance)
 			pinctrl_select_state(pinst->ppinctrl, pinst->ppinctrl_state[i][MCLK_STATE_DISABLE]);
 	}
 	return IMGSENSOR_RETURN_SUCCESS;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 static enum IMGSENSOR_RETURN mclk_set(
@@ -95,7 +89,6 @@ static enum IMGSENSOR_RETURN mclk_set(
 	enum IMGSENSOR_HW_PIN       pin,
 	enum IMGSENSOR_HW_PIN_STATE pin_state)
 {
-#if 0
 	struct mclk *pinst = (struct mclk *)pinstance;
 	struct pinctrl_state *ppinctrl_state;
 	enum   IMGSENSOR_RETURN ret = IMGSENSOR_RETURN_SUCCESS;
@@ -118,8 +111,6 @@ static enum IMGSENSOR_RETURN mclk_set(
 			__func__, sensor_idx, pin, pin_state);
 	}
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 static struct IMGSENSOR_HW_DEVICE device = {

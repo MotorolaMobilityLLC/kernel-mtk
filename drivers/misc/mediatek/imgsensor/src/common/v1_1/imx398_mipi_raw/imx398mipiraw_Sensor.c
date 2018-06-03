@@ -65,7 +65,7 @@ static BYTE imx398_SPC_data[252] = { 0 };
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX398_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0x11dcf259,	/* checksum value for Camera Auto Test */
+	.checksum_value = 0x1c0140cc,	/* checksum value for Camera Auto Test */
 	.pre = {
 		.pclk = 319200000,	/* record different mode's pclk */
 		.linelength = 5536,	/* record different mode's linelength */

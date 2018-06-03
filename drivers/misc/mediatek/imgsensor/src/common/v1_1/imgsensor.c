@@ -395,6 +395,7 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 
 	IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
 	imgsensor_hw_power(&pimgsensor->hw, psensor, IMGSENSOR_HW_POWER_STATUS_ON);
+
 	imgsensor_sensor_feature_control(psensor,
 					 SENSOR_FEATURE_CHECK_SENSOR_ID,
 					 (MUINT8 *) &sensorID, &retLen);

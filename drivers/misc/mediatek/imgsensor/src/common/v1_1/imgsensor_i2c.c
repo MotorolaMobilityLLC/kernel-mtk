@@ -140,7 +140,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_init(
 
 enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable)
 {
-#if 0
 	struct IMGSENSOR_I2C_INST *pinst = &gi2c.inst[IMGSENSOR_I2C_BUFF_MODE_DEV];
 	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 
@@ -151,8 +150,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable)
 		hw_trig_i2c_disable(pinst->pi2c_client->adapter);
 
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 enum IMGSENSOR_RETURN imgsensor_i2c_read(
@@ -164,7 +161,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 		u16 id,
 		int speed)
 {
-#if 0
 	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
 	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 
@@ -197,8 +193,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	mutex_unlock(&pi2c_cfg->i2c_mutex);
 
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 enum IMGSENSOR_RETURN imgsensor_i2c_write(
@@ -209,7 +203,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 		u16 id,
 		int speed)
 {
-#if 0
 	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
 	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 	struct i2c_msg     *pmsg  = pinst->msg;
@@ -247,8 +240,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	mutex_unlock(&pi2c_cfg->i2c_mutex);
 
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 void imgsensor_i2c_filter_msg(struct IMGSENSOR_I2C_CFG *pi2c_cfg, bool en)

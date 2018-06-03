@@ -221,7 +221,6 @@ initcall_debug=1";
 };
 /* CONSYS end */
 
-#if 0
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst_0: cam0@0 {
@@ -425,7 +424,7 @@ initcall_debug=1";
 
 	status = "okay";
 };
-#endif
+
 
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <10>; /* direct defined GPIO num */
