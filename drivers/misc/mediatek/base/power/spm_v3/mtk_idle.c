@@ -172,7 +172,7 @@ int __attribute__((weak)) hps_restart_timer(void)
 
 void __attribute__((weak)) msdc_clk_status(int *status)
 {
-	*status = 0x1;
+	*status = 0x0;
 }
 
 unsigned int __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 operation_cond)
