@@ -1,7 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v3/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
@@ -44,6 +43,7 @@ endif
 ifeq ($(CONFIG_MACH_MT6799), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
 
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6799.o
@@ -76,6 +76,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/devfreq/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v3/
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6775.o
 obj-y += mtk_idle_profile.o
@@ -102,6 +103,7 @@ ifeq ($(CONFIG_MACH_MT6759), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6759.o
 obj-y += mtk_idle_profile.o
@@ -130,6 +132,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6758.o
 obj-y += mtk_idle_profile.o

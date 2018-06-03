@@ -227,7 +227,6 @@ int __spm_check_opp_level(int ch)
 
 unsigned int __attribute__ ((weak)) get_vcore_ptp_volt(unsigned int seg)
 {
-	spm_crit2("NO %s !!!\n", __func__);
 	return 0;
 }
 
