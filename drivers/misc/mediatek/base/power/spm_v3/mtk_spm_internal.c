@@ -616,7 +616,7 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	}
 
 	spm_write(SPM_SW_RSV_5,
-			(spm_read(SPM_SW_RSV_5) & ~(0xf << 8 | 0x3 << 1)) |
+			(spm_read(SPM_SW_RSV_5) & ~(0xff << 8 | 0x3 << 1)) |
 			(1 << (pwrctrl->opp_level + 8)));
 }
 
