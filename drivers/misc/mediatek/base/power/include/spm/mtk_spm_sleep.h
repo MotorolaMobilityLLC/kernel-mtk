@@ -29,6 +29,8 @@ extern ssize_t get_spm_sleep_count(char *ToUserBuf
 			, size_t sz, void *priv);
 extern ssize_t get_spm_last_wakeup_src(char *ToUserBuf
 			, size_t sz, void *priv);
+extern ssize_t get_spm_last_debug_flag(char *ToUserBuf
+			, size_t sz, void *priv);
 
 /* record last wakesta */
 extern u32 spm_get_last_wakeup_src(void);

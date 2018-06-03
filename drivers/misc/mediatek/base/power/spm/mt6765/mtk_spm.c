@@ -244,6 +244,11 @@ static const struct mtk_idle_sysfs_op spm_last_wakeup_src_fops = {
 static const struct mtk_idle_sysfs_op spm_sleep_count_fops = {
 	.fs_read = get_spm_sleep_count,
 };
+
+static const struct mtk_idle_sysfs_op spm_last_debug_flag_fops = {
+	.fs_read = get_spm_last_debug_flag,
+};
+
 static int spm_module_init(void)
 {
 	unsigned int spm_irq_0 = 0;
@@ -287,6 +292,8 @@ static int spm_module_init(void)
 			, &spm_sleep_count_fops, &pParent2ND, NULL);
 		mtk_idle_sysfs_entry_func_node_add("spm_last_wakeup_src", 0444
 			, &spm_last_wakeup_src_fops, &pParent2ND, NULL);
+		mtk_idle_sysfs_entry_func_node_add("spm_last_debug_flag", 0444
+			, &spm_last_debug_flag_fops, &pParent2ND, NULL);
 	}
 
 

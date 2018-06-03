@@ -137,6 +137,15 @@ ssize_t get_spm_last_wakeup_src(char *ToUserBuf
 }
 EXPORT_SYMBOL(get_spm_last_wakeup_src);
 
+ssize_t get_spm_last_debug_flag(char *ToUserBuf
+		, size_t sz, void *priv)
+{
+	int bLen = snprintf(ToUserBuf, sz
+				, "0x%x\n", spm_wakesta.debug_flag);
+	return (bLen > sz) ? sz : bLen;
+}
+EXPORT_SYMBOL(get_spm_last_debug_flag);
+
 void spm_output_sleep_option(void)
 {
 	pr_info("[SPM] PWAKE_EN:%d, PCMWDT_EN:%d, BYPASS_SYSPWREQ:%d\n",
