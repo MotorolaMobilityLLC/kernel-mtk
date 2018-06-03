@@ -1597,7 +1597,7 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
 #endif
 }
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_SMP
 static void sched_rt_update_capacity_req(struct rq *rq)
 {
 	u64 total, used, age_stamp, avg;

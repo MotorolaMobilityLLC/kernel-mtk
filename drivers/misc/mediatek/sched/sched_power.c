@@ -179,7 +179,7 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 	} else
 		return -1;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
@@ -477,7 +477,7 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int len = 0;
 
 	for_each_possible_cpu(cpu) {
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 		struct sched_capacity_reqs *scr;
 
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
@@ -503,7 +503,7 @@ int show_cpu_capacity(char *buf, int buf_size)
 
 				/* cpu utilization */
 				cpu_online(cpu)?cpu_util(cpu):0,
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 				scr->cfs,
 				scr->rt,
 #else
@@ -674,7 +674,7 @@ __ATTR(info, S_IRUSR, show_eas_info_attr, NULL);
 static ssize_t store_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 	int val = 0;
 
 	if (sscanf(buf, "%iu", &val) != 0)
@@ -688,7 +688,7 @@ static ssize_t show_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
 	unsigned int len = 0;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 	unsigned int max_len = 4096;
 
 	len += snprintf(buf, max_len, "capacity_margin_dvfs=%d\n", capacity_margin_dvfs);
@@ -846,7 +846,7 @@ static int __init eas_stats_init(void)
 
 	snprintf(module_name, sizeof(module_name), "%s %s%d %s",
 		"arctic",
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#if (defined CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 		"sched-dvfs:", sched_dvfs_type,
 #else
 		"unknown:", 0,

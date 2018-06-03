@@ -5145,7 +5145,7 @@ static int find_new_capacity(struct energy_env *eenv,
 	unsigned long util = group_max_util(eenv);
 	unsigned long new_capacity = util;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
