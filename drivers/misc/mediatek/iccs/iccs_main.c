@@ -104,8 +104,8 @@ int iccs_get_target_state(unsigned char *target_power_state_bitmask,
 		 * when the target state is POWER_ON_CACHE_SHARED_ENABLED
 		 */
 		if (cluster_info[i].state == POWER_ON_CACHE_SHARED_ENABLED) {
-			*target_power_state_bitmask |= 1 << i;
-			*target_cache_shared_state_bitmask |= 1 << i;
+			*target_power_state_bitmask |= (1 << i);
+			*target_cache_shared_state_bitmask |= (1 << i);
 		}
 	}
 
