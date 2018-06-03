@@ -941,6 +941,9 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 	struct ConfigCmd cmd;
 	int ret = 0;
 
+	if (enabledisable == 1)
+		scp_register_feature(SENS_FEATURE_ID);
+
 	if (ID_SENSOR_MAX_HANDLE < sensorType) {
 		SCP_ERR("invalid sensor %d\n", sensorType);
 		ret = -1;
