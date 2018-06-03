@@ -359,6 +359,7 @@ typedef UINT_32 KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
 
 #define kalMdelay(u4MSec)                           mdelay(u4MSec)
 #define kalMsleep(u4MSec)                           msleep(u4MSec)
+#define kalUsleepRange(u4StarUSec, u4EndUSec)        usleep_range(u4StarUSec, u4EndUSec)
 
 /* Copy memory from user space to kernel space */
 #define kalMemCopyFromUser(_pvTo, _pvFrom, _u4N)    copy_from_user(_pvTo, _pvFrom, _u4N)

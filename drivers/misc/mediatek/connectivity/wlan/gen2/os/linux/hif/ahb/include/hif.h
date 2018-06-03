@@ -137,6 +137,7 @@ typedef struct _GL_HIF_INFO_T {
 	BOOLEAN fgIntReadClear;
 	BOOLEAN fgMbxReadClear;
 	BOOLEAN fgDmaEnable;	/* TRUE: DMA mode is used (default) */
+	BOOLEAN fgDmaUsleepEnable;	/* TRUE: While DMA pooling, usleep is used (default) */
 
 	/* HIF related */
 	UINT_8 *HifRegBaseAddr;	/* HIF register base */

@@ -403,6 +403,9 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->HifDmaWaitFlg = 0;
 #endif /* CONF_HIF_DMA_INT */
 
+    /* Default set DMA usleep enable for CPU optimization*/
+	HifInfo->fgDmaUsleepEnable = TRUE;
+
 } /* end of glSetHifInfo() */
 
 /*----------------------------------------------------------------------------*/
@@ -769,6 +772,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 u4HSTCRValue = 0;
 	UINT_32 RegWHLPCR = 0;
+	UINT_32 u4PortReadCntStart = 0;
+	UINT_32 u4PortReadCntEnd = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -864,18 +869,38 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #else
 		PollTimeout = jiffies + HZ * 5;
 
-		do {
-			if (time_before(jiffies, PollTimeout))
-				continue;
-			DBGLOG(RX, INFO, "RX DMA Timeout, HSTCR: 0x%08x, and dump WHISR EnhanceMode data\n",
-					u4HSTCRValue);
-			HifDumpEnhanceModeData(GlueInfo->prAdapter);
-			if (prDmaOps->DmaRegDump != NULL)
-				prDmaOps->DmaRegDump(HifInfo);
-			WlanDmaFatalErr = 1;
-			/* we still need complete dma progress even dma timeout */
-			break;
-		} while (!prDmaOps->DmaPollIntr(HifInfo));
+		if (HifInfo->fgDmaUsleepEnable == TRUE) {
+			/* usleep while polling to reduce CPUusage */
+			do {
+				if (time_before(jiffies, PollTimeout)) {
+					u4PortReadCntStart++;
+					kalUsleepRange(1, 1);
+					continue;
+				}
+				DBGLOG(RX, INFO, "RX DMA Timeout, HSTCR: 0x%08x, and dump WHISR EnhanceMode data\n",
+						u4HSTCRValue);
+				HifDumpEnhanceModeData(GlueInfo->prAdapter);
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
+				WlanDmaFatalErr = 1;
+				/* we still need complete dma progress even dma timeout */
+				break;
+			} while (!prDmaOps->DmaPollIntr(HifInfo));
+		} else {
+			do {
+				if (time_before(jiffies, PollTimeout))
+					continue;
+				DBGLOG(RX, INFO, "RX DMA Timeout, HSTCR: 0x%08x, and dump WHISR EnhanceMode data\n",
+						u4HSTCRValue);
+				HifDumpEnhanceModeData(GlueInfo->prAdapter);
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
+				WlanDmaFatalErr = 1;
+				/* we still need complete dma progress even dma timeout */
+				break;
+			} while (!prDmaOps->DmaPollIntr(HifInfo));
+		}
+
 #endif /* CONF_HIF_DMA_INT */
 		/*
 		 * we should disable dma interrupt then clear dma interrupt, otherwise,
@@ -885,13 +910,26 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		prDmaOps->DmaAckIntr(HifInfo);
 
 		LoopCnt = 0;
-		do {
-			if (LoopCnt++ > 100000) {
-				/* TODO: impossible! reset DMA */
-				DBGLOG(RX, ERROR, "fatal error2! reset DMA!\n");
-				break;
-			}
-		} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		if (HifInfo->fgDmaUsleepEnable == TRUE) {
+			/* usleep while polling to reduce CPU usage */
+			do {
+				if (LoopCnt++ > 100000) {
+					/* TODO: impossible! reset DMA */
+					DBGLOG(RX, ERROR, "fatal error2! reset DMA!\n");
+					break;
+				}
+				u4PortReadCntEnd++;
+				kalUsleepRange(1, 1);
+			} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		} else {
+			do {
+				if (LoopCnt++ > 100000) {
+					/* TODO: impossible! reset DMA */
+					DBGLOG(RX, ERROR, "fatal error2! reset DMA!\n");
+					break;
+				}
+			} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		}
 
 		prDmaOps->DmaClockCtrl(FALSE);
 
@@ -913,6 +951,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			return FALSE;
 		}
 		HIF_DBG(("[WiFi/HIF] DMA RX OK!\n"));
+		DBGLOG(TX, LOUD, "u4PortReadCntStart,%d,u4PortReadCntEnd,%d\n",
+				u4PortReadCntStart, u4PortReadCntEnd);
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
@@ -959,6 +999,8 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 u4HSTCRValue = 0;
 	UINT_32 RegWHLPCR = 0;
+	UINT_32 u4PortWriteCntStart = 0;
+	UINT_32 u4PortWriteCntEnd = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -1050,16 +1092,34 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		LoopCnt = 0;
 		PollTimeout = jiffies + HZ * 5;
 
-		do {
-			if (time_before(jiffies, PollTimeout))
-				continue;
-			DBGLOG(TX, INFO, "TX DMA Timeout, HSTCR: 0x%08x\n", u4HSTCRValue);
-			if (prDmaOps->DmaRegDump != NULL)
-				prDmaOps->DmaRegDump(HifInfo);
-			WlanDmaFatalErr = 1;
-			/* we still need complete dma progress even dma timeout */
-			break;
-		} while (!prDmaOps->DmaPollIntr(HifInfo));
+		if (HifInfo->fgDmaUsleepEnable == TRUE) {
+			/* usleep while polling to reduce CPU usage */
+			do {
+				if (time_before(jiffies, PollTimeout)) {
+					u4PortWriteCntStart++;
+					kalUsleepRange(1, 1);
+					continue;
+				}
+				DBGLOG(TX, INFO, "TX DMA Timeout, HSTCR: 0x%08x\n", u4HSTCRValue);
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
+				WlanDmaFatalErr = 1;
+				/* we still need complete dma progress even dma timeout */
+				break;
+			} while (!prDmaOps->DmaPollIntr(HifInfo));
+		} else {
+			do {
+				if (time_before(jiffies, PollTimeout))
+					continue;
+				DBGLOG(TX, INFO, "TX DMA Timeout, HSTCR: 0x%08x\n", u4HSTCRValue);
+				if (prDmaOps->DmaRegDump != NULL)
+					prDmaOps->DmaRegDump(HifInfo);
+				WlanDmaFatalErr = 1;
+				/* we still need complete dma progress even dma timeout */
+				break;
+			} while (!prDmaOps->DmaPollIntr(HifInfo));
+		}
+
 #endif /* CONF_HIF_DMA_INT */
 		/*
 		 * we should disable dma interrupt then clear dma interrupt, otherwise,
@@ -1069,12 +1129,24 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		prDmaOps->DmaAckIntr(HifInfo);
 
 		LoopCnt = 0;
-		do {
-			if (LoopCnt++ > 100000) {
-				DBGLOG(TX, ERROR, "fatal error2! reset DMA!\n");
-				break;
-			}
-		} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		if (HifInfo->fgDmaUsleepEnable == TRUE) {
+			/* usleep while polling to reduce CPU usage */
+			do {
+				if (LoopCnt++ > 100000) {
+					DBGLOG(TX, ERROR, "fatal error2! reset DMA!\n");
+					break;
+				}
+				u4PortWriteCntEnd++;
+				kalUsleepRange(1, 1);
+			} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		} else {
+			do {
+				if (LoopCnt++ > 100000) {
+					DBGLOG(TX, ERROR, "fatal error2! reset DMA!\n");
+					break;
+				}
+			} while (prDmaOps->DmaPollStart(HifInfo) != 0);
+		}
 
 		prDmaOps->DmaClockCtrl(FALSE);
 
@@ -1093,6 +1165,8 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			return FALSE;
 		}
 		HIF_DBG_TX(("[WiFi/HIF] DMA TX OK!\n"));
+		DBGLOG(TX, LOUD, "u4PortWriteCntStart,%d,u4PortWriteCntEnd,%d\n",
+				u4PortWriteCntStart, u4PortWriteCntEnd);
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
