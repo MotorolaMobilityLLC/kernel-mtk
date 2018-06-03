@@ -538,12 +538,16 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 		}
 #if MULTI_WRITE
 
-	if (tosend >= I2C_BUFFER_LEN || IDX == len || addr != addr_last) {
-		iBurstWriteReg_multi(puSendCmd, tosend,
-			imgsensor.i2c_write_id, 4, imgsensor_info.i2c_speed);
-
+		if ((I2C_BUFFER_LEN - tosend) < 4 ||
+			len == IDX ||
+			addr != addr_last) {
+			iBurstWriteReg_multi(puSendCmd,
+					tosend,
+					imgsensor.i2c_write_id,
+					4,
+					imgsensor_info.i2c_speed);
 			tosend = 0;
-	}
+		}
 #else
 		iWriteRegI2CTiming(puSendCmd, 4,
 			imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
