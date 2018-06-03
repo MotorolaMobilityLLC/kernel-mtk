@@ -24,7 +24,7 @@
 #include <mtk_mcdi_mbox.h>
 #include <sspm_mbox.h>
 
-#define PERMIT_BUCK_CTRL_MASK (2)	/* bit0: L, bit1: B */
+#define PERMIT_BUCK_CTRL_MASK (0)	/* bit0: L, bit1: B */
 
 static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_DPIDLE,	/* IDLE_TYPE_DP */
