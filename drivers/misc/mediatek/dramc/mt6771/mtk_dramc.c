@@ -33,6 +33,7 @@
 #include <mt-plat/sync_write.h>
 #include "mtk_dramc.h"
 #include "dramc.h"
+#include "mtk_devinfo.h"
 #ifdef DVFS_READY
 #include <mtk_spm_vcore_dvfs.h>
 #endif
@@ -1297,7 +1298,7 @@ EXPORT_SYMBOL(dram_steps_freq);
 
 int dram_can_support_fh(void)
 {
-	if (No_DummyRead)
+	if ((No_DummyRead) || ((get_dram_data_rate() == 3600) && (get_devinfo_with_index(30) & 0x20)))
 		return 0;
 	else
 		return 1;
@@ -1803,7 +1804,7 @@ static int dram_probe(struct platform_device *pdev)
 		break;
 	}
 
-	if (get_dram_data_rate() == 3600)
+	if ((get_dram_data_rate() == 3600) && (!(get_devinfo_with_index(30) & 0x20)))
 		lp4_highfreq_3600 = 1;
 
 	pr_info("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
