@@ -363,7 +363,7 @@ EXPORT_SYMBOL(msdc_sd_power_off);
 
 void msdc_pmic_force_vcore_pwm(bool enable)
 {
-#if !defined(FPGA_PLATFORM) && # !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS)
+#if !defined(FPGA_PLATFORM) && !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS)
 	if (vcore_pmic_set_mode(enable))
 		pr_notice("[msdc]error: vcore_pmic_set_mode fail\n");
 #endif
