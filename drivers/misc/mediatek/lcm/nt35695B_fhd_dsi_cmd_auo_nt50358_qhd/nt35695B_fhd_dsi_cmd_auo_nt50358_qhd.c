@@ -795,7 +795,7 @@ static struct LCM_setting_table init_setting_cmd[] = {
 
 	/*{REGFLAG_DELAY, 200, {} },*/
 	{0x11, 0, {} },
-	{REGFLAG_DELAY, 200, {} },
+	{REGFLAG_DELAY, 120, {} },
 	{0x29, 0, {} },
 	/*{REGFLAG_DELAY, 200, {} },*/
 	/* ///////////////////CABC SETTING///////// */
