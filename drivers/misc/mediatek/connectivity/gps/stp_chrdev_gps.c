@@ -51,6 +51,7 @@ MODULE_LICENSE("GPL");
 #define COMBO_IOC_RTC_FLAG	     10
 #define COMBO_IOC_CO_CLOCK_FLAG	     11
 #define COMBO_IOC_TRIGGER_WMT_ASSERT 12
+#define COMBO_IOC_WMT_STATUS         13
 
 static UINT32 gDbgLevel = GPS_LOG_DBG;
 
@@ -371,7 +372,20 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			retval = (-EBUSY);
 		}
 		break;
-
+	case COMBO_IOC_WMT_STATUS:
+		if (rstflag == 1) {
+			/* chip resetting */
+			retval = -5;
+		} else if (rstflag == 2) {
+			/* chip reset end */
+			retval = -6;
+			rstflag = 0;
+		} else {
+			/* normal */
+			retval = 0;
+		}
+		GPS_DBG_FUNC("rstflag(%d), retval(%d)\n", rstflag, retval);
+		break;
 	default:
 		retval = -EFAULT;
 		GPS_DBG_FUNC("GPS_ioctl(): unknown cmd (%d)\n", cmd);
