@@ -944,11 +944,6 @@ static void _mt_cpufreq_dvfs_hps_request_wrapper(struct mt_cpu_dvfs *p, int new_
 			aee_record_cpu_dvfs_cb(4);
 			cpuhvfs_set_cluster_on_off(arch_get_cluster_id(p->cpu_id), 0);
 			aee_record_cpu_dvfs_cb(9);
-#else
-#ifdef CLUSTER_BUCK_OFF
-			if (cpu_dvfs_is(act_p, MT_CPU_DVFS_L))
-				regulator_disable(regulator_proc2);
-#endif
 #endif
 			act_p->mt_policy = NULL;
 			aee_record_cpu_dvfs_cb(10);
@@ -1404,14 +1399,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		}
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		cpuhvfs_set_cluster_on_off(arch_get_cluster_id(p->cpu_id), 1);
-#else
-#ifdef CLUSTER_BUCK_OFF
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
-			ret = regulator_enable(regulator_proc2);
-			if (ret < 0)
-				cpufreq_err("regulator_proc2 enable fail\n");
-		}
-#endif
 #endif
 		cpufreq_unlock(flags);
 	}
