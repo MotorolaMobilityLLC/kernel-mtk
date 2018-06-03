@@ -534,6 +534,14 @@ config REGULATOR_MT6397
 	  This driver supports the control of different power rails of device
 	  through regulator interface.
 
+config REGULATOR_MTK
+	bool "MTK regulator subsystem"
+	help
+	  Say Y here to select this option to enable
+	  mtk_regulator framework.
+	  This framework is for linux and non-linux regulator driver
+	  more easy to use for regulator users.
+
 config REGULATOR_PALMAS
 	tristate "TI Palmas PMIC Regulators"
 	depends on MFD_PALMAS
