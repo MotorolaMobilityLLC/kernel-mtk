@@ -52,6 +52,32 @@ unsigned int pmic_get_vbif28_volt(void)
 {
 	return g_pmic_pad_vbif28_vol;
 }
+
+/*****************************************************************************
+ * PMIC BUCK/LDO info for EM
+ ******************************************************************************/
+static ssize_t show_buck_ldo_info(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	unsigned short i;
+	unsigned int len = 0;
+
+	pr_info("[%s]\n", __func__);
+	for (i = 0; i < mt_bucks_size; i++)
+		len += snprintf(buf + len, PAGE_SIZE, "%s,0/1=off/on\n", mt_bucks[i].en_att.attr.name);
+	len += snprintf(buf + len, PAGE_SIZE, "SEP\n");
+	for (i = 0; i < mt_ldos_size; i++)
+		len += snprintf(buf + len, PAGE_SIZE, "%s,0/1=off/on\n", mt_ldos[i].en_att.attr.name);
+	len += snprintf(buf + len, PAGE_SIZE, "SEP\n");
+	for (i = 0; i < mt_bucks_size; i++)
+		len += snprintf(buf + len, PAGE_SIZE, "%s,mv\n", mt_bucks[i].voltage_att.attr.name);
+	len += snprintf(buf + len, PAGE_SIZE, "SEP\n");
+	for (i = 0; i < mt_ldos_size; i++)
+		len += snprintf(buf + len, PAGE_SIZE, "%s,mv\n", mt_ldos[i].voltage_att.attr.name);
+	return len;
+}
+
+static DEVICE_ATTR(buck_ldo_info, 0664, show_buck_ldo_info, NULL);     /*664*/
+
 /*****************************************************************************
  * PMIC6355 linux reguplator driver
  ******************************************************************************/
@@ -124,13 +150,6 @@ static const struct platform_device_id pmic_regulator_id[] = {
 	{"pmic_regulator", 0},
 	{},
 };
-
-static const struct of_device_id pmic_cust_of_ids[] = {
-	{.compatible = "mediatek,mt6355",},
-	{},
-};
-
-MODULE_DEVICE_TABLE(of, pmic_cust_of_ids);
 
 static int pmic_regulator_cust_dts_parser(struct platform_device *pdev, struct device_node *regulators)
 {
@@ -672,7 +691,6 @@ void pmic_regulator_debug_init(struct platform_device *dev, struct dentry *debug
 	/*EM BUCK voltage & Status*/
 	for (i = 0; i < mt_bucks_size; i++) {
 		/*PMICLOG("[PMIC] register buck id=%d\n",i);*/
-		pr_err("[PMIC] register buck id=%d\n", i);
 		if (*(int *)(&mt_bucks[i].en_att)) {
 			PMICLOG("[PMIC] register ldo en_att\n");
 			ret_device_file = device_create_file(&(dev->dev), &(mt_bucks[i].en_att));
@@ -697,6 +715,7 @@ void pmic_regulator_debug_init(struct platform_device *dev, struct dentry *debug
 			ret_device_file = device_create_file(&(dev->dev), &mt_ldos[i].voltage_att);
 		}
 	}
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_buck_ldo_info);
 
 	debugfs_create_file("dump_ldo_status", S_IRUGO | S_IWUSR, mt_pmic_dir, NULL, &pmic_debug_proc_fops);
 	PMICLOG("proc_create pmic_debug_proc_fops\n");
