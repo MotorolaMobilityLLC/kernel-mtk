@@ -16,7 +16,6 @@
 
 enum {
 	SSPM_MEM_ID = 0,
-	GPU_DVFS_MEM_ID,
 	NUMS_MEM_ID,
 };
 
@@ -26,10 +25,6 @@ static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 	{
 		.num = SSPM_MEM_ID,
 		.size = 0x100400,
-	},
-	{
-		.num = GPU_DVFS_MEM_ID,
-		.size = 0xA000,
 	},
 };
 #endif
