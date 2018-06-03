@@ -359,6 +359,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 	mmp_metadata_bitmap_t Bitmap;
 	mmp_metadata_t meta;
 	int raw = 0;
+	int yuv = 0;
 	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
 
 	if (session == 1) {
@@ -404,6 +405,31 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			Bitmap.format = MMPROFILE_BITMAP_RGBA8888;
 			Bitmap.bpp = 32;
 			break;
+		case UFMT_UYVY:
+			Bitmap.format = MMPROFILE_BITMAP_RGB888;
+			Bitmap.bpp = 16;
+			Bitmap.data2 = MMPROFILE_BITMAP_UYVY;
+			yuv = 1;
+			break;
+		case UFMT_VYUY:
+			Bitmap.format = MMPROFILE_BITMAP_RGB888;
+			Bitmap.bpp = 16;
+			Bitmap.data2 = MMPROFILE_BITMAP_VYUY;
+			yuv = 1;
+			break;
+		case UFMT_YUYV:
+			Bitmap.format = MMPROFILE_BITMAP_RGB888;
+			Bitmap.bpp = 16;
+			Bitmap.data2 = MMPROFILE_BITMAP_YUYV;
+			yuv = 1;
+			break;
+		case UFMT_YVYU:
+			Bitmap.format = MMPROFILE_BITMAP_RGB888;
+			Bitmap.bpp = 16;
+			Bitmap.data2 = MMPROFILE_BITMAP_YVYU;
+			yuv = 1;
+			break;
+
 		default:
 			DDPERR("ddp_mmp_ovl_layer(), unknown fmt=0x%x,dump raw\n", pLayer->fmt);
 			raw = 1;
@@ -414,21 +440,40 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			Bitmap.data_size = Bitmap.pitch * Bitmap.height;
 			Bitmap.down_sample_x = down_sample_x;
 			Bitmap.down_sample_y = down_sample_y;
-			if (disp_mva_map_kernel
-			    (module, pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
-			     &Bitmap.data_size) == 0) {
-				if (session == 1)
-					mmprofile_log_meta_bitmap(DDP_MMP_Events.
-								  layer_dump[pLayer->layer],
-								  MMPROFILE_FLAG_PULSE, &Bitmap);
-				else if ((session == 2) || (session == 3))
-					mmprofile_log_meta_bitmap(DDP_MMP_Events.
-								  ovl1layer_dump[pLayer->layer],
-								  MMPROFILE_FLAG_PULSE, &Bitmap);
-				disp_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
-						     (unsigned long)Bitmap.p_data);
+			if (yuv == 0) {
+				if (disp_mva_map_kernel
+				    (module, pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
+				     &Bitmap.data_size) == 0) {
+					if (session == 1)
+						mmprofile_log_meta_bitmap(DDP_MMP_Events.
+									  layer_dump[pLayer->layer],
+									  MMPROFILE_FLAG_PULSE, &Bitmap);
+					else if ((session == 2) || (session == 3))
+						mmprofile_log_meta_bitmap(DDP_MMP_Events.
+									  ovl1layer_dump[pLayer->layer],
+									  MMPROFILE_FLAG_PULSE, &Bitmap);
+					disp_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
+							     (unsigned long)Bitmap.p_data);
+				} else {
+					DDPERR("ddp_mmp_ovl_layer(),fail to dump rgb(0x%x)\n", pLayer->fmt);
+				}
 			} else {
-				DDPERR("ddp_mmp_ovl_layer(),fail to dump rgb(0x%x)\n", pLayer->fmt);
+				if (m4u_mva_map_kernel
+					(pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
+					 &Bitmap.data_size) == 0) {
+					if (session == 1)
+						mmprofile_log_meta_yuv_bitmap(DDP_MMP_Events.
+									   layer_dump[pLayer->layer],
+									   MMPROFILE_FLAG_PULSE, &Bitmap);
+					else if (session == 2 || session == 3)
+						mmprofile_log_meta_yuv_bitmap(DDP_MMP_Events.
+									   ovl1layer_dump[pLayer->layer],
+									   MMPROFILE_FLAG_PULSE, &Bitmap);
+					m4u_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
+								 (unsigned long)Bitmap.p_data);
+				} else {
+					DDPERR("ddp_mmp_ovl_layer(),fail to dump yuv(0x%x)\n", pLayer->fmt);
+				}
 			}
 		} else {
 			meta.data_type = MMPROFILE_META_RAW;

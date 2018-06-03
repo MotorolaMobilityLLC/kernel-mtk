@@ -3023,7 +3023,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release, MMPROFILE_FLAG_START, 1, userdata);
 
 	/* check overlap layer */
-	cmdqBackupReadSlot(pgc->subtractor_when_free, i, &real_hrt_level);
+	cmdqBackupReadSlot(pgc->subtractor_when_free, 0, &real_hrt_level);
 	real_hrt_level >>= 16;
 
 	_primary_path_lock(__func__);
@@ -3046,6 +3046,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		if (dvfs_last_ovl_req == HRT_LEVEL_ULPM)
 			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_ULPM);
 	}
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, real_hrt_level, dvfs_last_ovl_req);
 #endif
 	_primary_path_unlock(__func__);
 
@@ -5189,10 +5190,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		dvfs_last_ovl_req = HRT_LEVEL_HPM;
 	} else if (hrt_level > HRT_LEVEL_ULPM) {
 		dvfs_last_ovl_req = HRT_LEVEL_LPM;
-	} else{
-		dvfs_last_ovl_req = HRT_LEVEL_ULPM;
+	} else {
+		if (hrt_level != 0)
+			dvfs_last_ovl_req = HRT_LEVEL_ULPM;
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, hrt_level, dvfs_last_ovl_req);
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, hrt_level, dvfs_last_ovl_req);
 #endif
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {

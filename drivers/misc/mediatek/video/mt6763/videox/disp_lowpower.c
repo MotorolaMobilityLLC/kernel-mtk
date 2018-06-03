@@ -862,8 +862,9 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 			break;
 		}
 		mmdvfs_set_fine_step(scenario, step);
-		atomic_set(&dvfs_ovl_req_status, req);
-		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, scenario, step);
+		if (req != HRT_LEVEL_DEFAULT)
+			atomic_set(&dvfs_ovl_req_status, req);
+		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, scenario, req);
 	}
 #endif
 	return 0;
@@ -908,13 +909,14 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		/* enter idle state */
 		primary_display_idlemgr_enter_idle_nolock();
 		primary_display_set_idle_stat(1);
-
+#if 0 /* FIXME: removed for bootup dsi underrun issue; enable if needed */
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		if (get_ddr_type() == TYPE_LPDDR3)
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LPM);
 		else
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_ULPM);
+#endif
 #endif
 		primary_display_manual_unlock();
 
