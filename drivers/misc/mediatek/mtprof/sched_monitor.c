@@ -76,6 +76,7 @@ static unsigned int AEE_WARN_DUR = TIME_500MS;
 static unsigned int irq_info_enable;
 static unsigned int sched_mon_enable;
 static unsigned int sched_mon_warn_enable;
+static unsigned int skip_aee_once;
 
 /* //////////////////////////////////////////////////////// */
 DEFINE_PER_CPU(struct sched_block_event, ISR_mon);
@@ -125,7 +126,6 @@ static const char *task_name(void *task)
 
 static void sched_monitor_aee(struct sched_block_event *b)
 {
-#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
 	char aee_str[60];
 	unsigned long long t_dur;
 
@@ -147,9 +147,6 @@ static void sched_monitor_aee(struct sched_block_event *b)
 			(int)b->last_event, t_dur);
 		break;
 	}
-#else
-	return;
-#endif
 }
 
 /* Real work */
@@ -174,8 +171,11 @@ static void event_duration_check(struct sched_block_event *b)
 					b->last_ts,
 					b->last_te);
 			}
-			if (t_dur > AEE_WARN_DUR)
-				sched_monitor_aee(b);
+			if (t_dur > AEE_WARN_DUR) {
+				if (!skip_aee_once)
+					sched_monitor_aee(b);
+				skip_aee_once = 0;
+			}
 		}
 		if (b->preempt_count != preempt_count()) {
 			pr_info("[ISR WARN]IRQ[%d:%s] Unbalanced Preempt Count:0x%x! Should be 0x%x\n",
@@ -257,6 +257,17 @@ static void event_duration_check(struct sched_block_event *b)
 		if ((sched_mon_warn_enable && t_dur > WARN_HRTIMER_DUR)
 			|| (t_dur > AEE_WARN_DUR)) {
 			struct sched_lock_event *lock_e;
+			static char htimer_name[128];
+
+			/* tick_sched_timer
+			 *  -> irq_work_tick -> call_console_drivers
+			 * Too much log to console triggers duration warning on
+			 * tick_sched_timer. This is a false alarm.
+			 */
+			snprintf(htimer_name, sizeof(htimer_name), "%ps",
+			(void *)b->last_event);
+			if (strcmp(htimer_name, "tick_sched_timer") == 0)
+				skip_aee_once = 1;
 
 			lock_e = &__raw_get_cpu_var(rq_lock_mon);
 			pr_info("[HRTIMER DURATION WARN] HRTIMER:%pS dur:%llu ms > %d ms (s:%llu,e:%llu)\n",
