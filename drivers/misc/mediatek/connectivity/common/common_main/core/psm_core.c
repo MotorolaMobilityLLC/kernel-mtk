@@ -710,7 +710,7 @@ INT32 _stp_psm_release_data(MTKSTP_PSM_T *stp_psm)
 	INT32 winspace_flag = 0;
 
 	/* STP_PSM_ERR_FUNC("++++++++++release data++len=%d\n", osal_fifo_len(&stp_psm->hold_fifo)); */
-	while (osal_fifo_len(&stp_psm->hold_fifo) && i > 0) {
+	while ((osal_fifo_len(&stp_psm->hold_fifo) && i > 0) || winspace_flag > 0) {
 		/* acquire spinlock */
 		/* psm_fifo_lock(stp_psm); */
 		osal_lock_sleepable_lock(&stp_psm->hold_fifo_spinlock_global);
