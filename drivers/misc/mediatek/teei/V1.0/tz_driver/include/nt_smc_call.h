@@ -205,16 +205,17 @@
 #ifdef CONFIG_ARM64
 /*  ==================  NT FAST CALL ================   */
 static inline void n_init_t_boot_stage1(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t *p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t *p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
-/*
-	temp[2] = p2;
-*/
+
+/*	temp[2] = p2;*/
+
 	__asm__ volatile(
 	    /* ".arch_extension sec\n" */
 	    "mov x0, %[fun_id]\n\t"
@@ -265,10 +266,10 @@ static inline void nt_dump_state(void)
 }
 
 static inline void n_get_param_in(
-    uint64_t *rtc0,
-    uint64_t *rtc1,
-    uint64_t *rtc2,
-    uint64_t *rtc3)
+	uint64_t *rtc0,
+	uint64_t *rtc1,
+	uint64_t *rtc2,
+	uint64_t *rtc3)
 {
 	uint64_t temp[4];
 
@@ -305,8 +306,8 @@ static inline void get_t_device_id(uint64_t *rtc0)
 			"mov x1, #0\n\t"
 			"mov x2, #0\n\t"
 			"mov x3, #0\n\t"
-			"smc 0     \n\t"
-			"nop     \n\t"
+			"smc 0\n\t"
+			"nop\n\t"
 			"str x1, [%[temp], #0]\n\t"
 			: :
 			[fun_id] "r" (N_GET_T_FP_DEVICE_ID), [temp] "r" (temp)
@@ -317,11 +318,12 @@ static inline void get_t_device_id(uint64_t *rtc0)
 }
 
 static inline void n_init_t_fc_buf(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t *p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t *p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = *p2;
@@ -341,11 +343,12 @@ static inline void n_init_t_fc_buf(
 	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -386,11 +389,12 @@ static inline void nt_sched_t(uint64_t *p)
 }
 
 static inline void n_invoke_t_sys_ctl(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -409,11 +413,12 @@ static inline void n_invoke_t_sys_ctl(
 }
 
 static inline void n_invoke_t_nq(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -434,11 +439,12 @@ static inline void n_invoke_t_nq(
 }
 
 static inline void n_invoke_t_drv(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -459,11 +465,12 @@ static inline void n_invoke_t_drv(
 }
 
 static inline void n_raise_t_event(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -482,11 +489,12 @@ static inline void n_raise_t_event(
 }
 
 static inline void n_ack_t_invoke_drv(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -507,11 +515,12 @@ static inline void n_ack_t_invoke_drv(
 }
 
 static inline void n_invoke_t_load_tee(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -532,11 +541,12 @@ static inline void n_invoke_t_load_tee(
 }
 
 static inline void n_ack_t_load_img(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -557,11 +567,12 @@ static inline void n_ack_t_load_img(
 }
 
 static inline void nt_sched_t_fiq(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -581,11 +592,12 @@ static inline void nt_sched_t_fiq(
 
 
 static inline void nt_sched_core(
-    uint64_t p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -603,9 +615,10 @@ static inline void nt_sched_core(
 	    : "x0", "x1", "x2", "x3", "memory");
 }
 
-static inline void nt_get_non_irq_num (uint64_t *p0)
+static inline void nt_get_non_irq_num(uint64_t *p0)
 {
 	uint64_t temp[3];
+
 	__asm__ volatile(
 	    /* ".arch_extension sec\n" */
 	    "mov x0, %[fun_id]\n\t"
@@ -617,9 +630,10 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 	    : "x0", "x1", "memory");
 	*p0 = temp[0];
 }
-static inline void nt_get_secure_os_state (uint64_t *p0)
+static inline void nt_get_secure_os_state(uint64_t *p0)
 {
 	uint64_t temp[3];
+
 	__asm__ volatile(
 	    /* ".arch_extension sec\n" */
 	    "mov x0, %[fun_id]\n\t"
@@ -649,11 +663,12 @@ static inline void nt_dump_t(void)
 
 #ifdef TUI_SUPPORT
 static inline void nt_cancel_t_tui(
-    uint64_t *p0,
-    uint64_t p1,
-    uint64_t p2)
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -679,6 +694,7 @@ static inline void nt_i2c_ree(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -704,6 +720,7 @@ static inline void nt_i2c_tee(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -729,9 +746,9 @@ static inline void nt_i2c_tee(
 #else
 
 static inline void smc_out(uint32_t id,
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t p2)
+	uint32_t p0,
+	uint32_t p1,
+	uint32_t p2)
 {
 	uint32_t fun_id = (uint32_t)id;
 	uint32_t temp[3];
@@ -797,6 +814,7 @@ static inline void smc_in(
 {
 	uint32_t fun_id = (uint32_t)id;
 	uint32_t temp[4];
+
 	*rtc0 =  0;
 	*rtc1 =  0;
 	*rtc2 =  0;
@@ -823,8 +841,6 @@ static inline void smc_in(
 	*rtc1 =  temp[1];
 	*rtc2 =  temp[2];
 	*rtc3 =  temp[3];
-
-
 }
 
 
@@ -836,6 +852,7 @@ static inline void n_init_t_boot_stage1(
 		uint64_t *p2)
 {
 	uint32_t temp = (uint32_t)(*p2);
+
 	smc_inout(N_INIT_T_BOOT_STAGE1_32, p0, p1, 0, &temp);
 	*p2 = temp;
 }
@@ -843,13 +860,13 @@ static inline void n_init_t_boot_stage1(
 static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0, &temp);
 	*p0 = temp;
 }
 
 static inline void nt_dump_state(void)
 {
-
 	smc_out(NT_DUMP_STATE_32, 0, 0, 0);
 }
 
@@ -870,8 +887,9 @@ static inline void get_t_device_id(uint64_t *p0)
 	uint32_t rtc2;
 	uint32_t rtc3;
 	uint32_t temp;
+
 	temp = (uint32_t)(*p0);
-    smc_in(N_GET_T_FP_DEVICE_ID_32, &rtc1, &temp,  &rtc2, &rtc3);
+	smc_in(N_GET_T_FP_DEVICE_ID_32, &rtc1, &temp,  &rtc2, &rtc3);
 	*p0 = temp;
 }
 #endif
@@ -883,6 +901,7 @@ static inline void n_init_t_fc_buf(
 		uint64_t *p2)
 {
 	uint32_t temp = (uint32_t)(*p2);
+
 	smc_inout(N_INIT_T_FC_BUF_32, p0, p1, 0, &temp);
 	*p2 = temp;
 
@@ -893,6 +912,7 @@ static inline void n_invoke_t_fast_call(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_INVOKE_T_FAST_CALL_32, temp, p1, p2, &temp);
 	*p0 = temp;
 }
@@ -915,7 +935,6 @@ static inline void n_invoke_t_sys_ctl(
 		uint32_t p2)
 {
 	smc_out(N_INVOKE_T_SYS_CTL_32, p0, p1, p2);
-
 }
 
 static inline void n_invoke_t_nq(
@@ -924,6 +943,7 @@ static inline void n_invoke_t_nq(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_INVOKE_T_NQ_32, temp, p1, p2, &temp);
 	*p0 = temp;
 
@@ -935,6 +955,7 @@ static inline void n_invoke_t_drv(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_INVOKE_T_DRV_32, temp, p1, p2, &temp);
 	*p0 = temp;
 
@@ -955,6 +976,7 @@ static inline void n_ack_t_invoke_drv(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_ACK_T_INVOKE_DRV_32, temp, p1, p2, &temp);
 	*p0 = temp;
 
@@ -966,6 +988,7 @@ static inline void n_invoke_t_load_tee(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_INVOKE_T_LOAD_TEE_32, temp, p1, p2, &temp);
 	*p0 = temp;
 
@@ -977,6 +1000,7 @@ static inline void n_ack_t_load_img(
 		uint32_t p2)
 {
 	uint32_t temp = (uint32_t)(*p0);
+
 	smc_inout(N_ACK_T_LOAD_IMG_32, temp, p1, p2, &temp);
 	*p0 = temp;
 
@@ -1006,18 +1030,21 @@ static inline void nt_get_non_irq_num(uint64_t *p0)
 	uint32_t rtc1;
 	uint32_t rtc2;
 	uint32_t rtc3;
-uint32_t temp = (uint32_t)(*p0);
+
+	uint32_t temp = (uint32_t)(*p0);
 	/*smc_in(N_GET_SE_OS_STATE_32, &rtc1, p0, &rtc2, &rtc3);*/
-smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, &temp, &rtc2, &rtc3);
-*p0 = temp;
+	smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, &temp, &rtc2, &rtc3);
+	*p0 = temp;
 }
-static inline void nt_get_secure_os_state (uint64_t *p0)
+static inline void nt_get_secure_os_state(uint64_t *p0)
 {
 	uint32_t rtc1;
 	uint32_t rtc2;
 	uint32_t rtc3;
+
 	uint32_t temp = (uint32_t)(*p0);
-    smc_in(N_GET_SE_OS_STATE_32, &rtc1, &temp, &rtc2, &rtc3);
+
+	smc_in(N_GET_SE_OS_STATE_32, &rtc1, &temp, &rtc2, &rtc3);
 	*p0 = temp;
 }
 static inline void nt_dump_t(void)

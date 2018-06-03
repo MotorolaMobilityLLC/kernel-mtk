@@ -25,9 +25,10 @@
 
 static inline unsigned long now_ms(void)
 {
-    struct timeval now_time;
-    do_gettimeofday(&now_time);
-    return ((now_time.tv_sec * 1000000) + now_time.tv_usec)/1000;
+	struct timeval now_time;
+
+	do_gettimeofday(&now_time);
+	return ((now_time.tv_sec * 1000000) + now_time.tv_usec)/1000;
 }
 
 #define IMSG_PRINTK(fmt, ...)           pr_info(fmt, ##__VA_ARGS__)
@@ -43,14 +44,14 @@ static inline unsigned long now_ms(void)
 #define IMSG_PRINT(LEVEL, fmt, ...)     IMSG_PRINT_##LEVEL("%s[%s]: " fmt, IMSG_TAG, #LEVEL, ##__VA_ARGS__)
 
 #define IMSG_PRINT_TIME_S(fmt, ...) \
-    unsigned long start_ms; \
-    do { \
+	unsigned long start_ms; \
+	do { \
 		start_ms = now_ms(); \
 		IMSG_PRINT(PROFILE, fmt " (start:%lu)\n", ##__VA_ARGS__, start_ms); \
 	} while (0)
 
 #define IMSG_PRINT_TIME_E(fmt, ...) \
-    do { \
+	do { \
 		unsigned long end_ms, delta_ms; \
 		end_ms = now_ms(); \
 		delta_ms = end_ms - start_ms; \
@@ -67,8 +68,8 @@ static inline unsigned long now_ms(void)
 #define IMSG_INFO(fmt, ...)         IMSG_PRINT(INFO, fmt, ##__VA_ARGS__)
 #define IMSG_DEBUG(fmt, ...)        IMSG_PRINT(DEBUG, fmt, ##__VA_ARGS__)
 #define IMSG_TRACE(fmt, ...)        IMSG_PRINT(TRACE, fmt, ##__VA_ARGS__)
-#define IMSG_ENTER()                IMSG_PRINT(ENTER, "%s\n", __FUNCTION__)
-#define IMSG_LEAVE()                IMSG_PRINT(LEAVE, "%s\n", __FUNCTION__)
+#define IMSG_ENTER()                IMSG_PRINT(ENTER, "%s\n", __func__)
+#define IMSG_LEAVE()                IMSG_PRINT(LEAVE, "%s\n", __func__)
 #define IMSG_PROFILE_S(fmt, ...)    IMSG_PRINT_TIME_S(fmt, ##__VA_ARGS__)
 #define IMSG_PROFILE_E(fmt, ...)    IMSG_PRINT_TIME_E(fmt, ##__VA_ARGS__)
 #else

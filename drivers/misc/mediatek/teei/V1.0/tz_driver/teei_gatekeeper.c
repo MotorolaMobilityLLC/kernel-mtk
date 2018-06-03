@@ -88,7 +88,8 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)),
+		(void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -98,15 +99,16 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
-	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)),
+		sizeof(struct ack_fast_call_struct));
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
 		retVal = msg_ack.retVal;
 
-		if (retVal == 0) {
+		if (retVal == 0)
 			return temp_addr;
-		}
+
 	} else {
 		retVal = (unsigned long)NULL;
 	}
@@ -150,9 +152,9 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 
 	IMSG_DEBUG("send_gatekeeper_command start\n");
 
-	if (teei_config_flag == 1) {
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
-	}
+
 
 	down(&smc_lock);
 	fdrv_ent.fdrv_call_type = GK_SYS_NO;
@@ -171,9 +173,11 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 
 	down(&fdrv_sema);
 	IMSG_DEBUG("send_gatekeeper_command end\n");
-    rmb();
+	/*with a rmb*/
+	rmb();
 
-	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
+	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr,
+							(unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);

@@ -40,6 +40,7 @@ unsigned long cancel_message_buff;
 void set_cancel_command(unsigned long memory_size)
 {
 	struct fdrv_message_head fdrv_msg_head;
+
 	memset((void *)(&fdrv_msg_head), 0, sizeof(struct fdrv_message_head));
 
 	fdrv_msg_head.driver_type = CANCEL_SYS_NO;
@@ -51,8 +52,10 @@ void set_cancel_command(unsigned long memory_size)
 int __send_cancel_command(unsigned long share_memory_size)
 {
 	uint64_t smc_type = 2;
+
 	set_cancel_command(share_memory_size);
-    Flush_Dcache_By_Area((unsigned long)cancel_message_buff, (unsigned long)cancel_message_buff + CANCEL_MESSAGE_SIZE);
+	Flush_Dcache_By_Area((unsigned long)cancel_message_buff,
+		(unsigned long)cancel_message_buff + CANCEL_MESSAGE_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
 	n_invoke_t_drv(&smc_type, 0, 0);
@@ -68,22 +71,24 @@ int __send_cancel_command(unsigned long share_memory_size)
 int send_cancel_command(unsigned long share_memory_size)
 {
 	struct fdrv_call_struct fdrv_ent;
+
 	int retVal = 0;
+
 	down(&fdrv_lock);
 	ut_pm_mutex_lock(&pm_mutex);
 	down(&smc_lock);
 	IMSG_DEBUG("send_cancel_command start\n");
 
-	if (teei_config_flag == 1) {
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
-	}
 
 	fdrv_ent.fdrv_call_type = CANCEL_SYS_NO;
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;
 	/* with a wmb() */
 	wmb();
-	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
-    retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
+	Flush_Dcache_By_Area((unsigned long)&fdrv_ent,
+		(unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
+	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
 
 	if (retVal != 0) {
 		ut_pm_mutex_unlock(&pm_mutex);
@@ -94,7 +99,9 @@ int send_cancel_command(unsigned long share_memory_size)
 	down(&fdrv_sema);
 	IMSG_DEBUG("send_cancel_command end\n");
 
-	Invalidate_Dcache_By_Area((unsigned long)cancel_message_buff, (unsigned long)cancel_message_buff + CANCEL_MESSAGE_SIZE);
+	Invalidate_Dcache_By_Area((unsigned long)cancel_message_buff,
+		(unsigned long)cancel_message_buff + CANCEL_MESSAGE_SIZE);
+	/* with a rmb() */
 	rmb();
 
 	ut_pm_mutex_unlock(&pm_mutex);
@@ -130,9 +137,9 @@ unsigned long create_cancel_fdrv(int buff_size)
 		return (unsigned long)NULL;
 	}
 
-    memset((void *)(&msg_head), 0, sizeof(struct message_head));
-    memset((void *)(&msg_body), 0, sizeof(struct create_fdrv_struct));
-    memset((void *)(&msg_ack), 0, sizeof(struct ack_fast_call_struct));
+	memset((void *)(&msg_head), 0, sizeof(struct message_head));
+	memset((void *)(&msg_body), 0, sizeof(struct create_fdrv_struct));
+	memset((void *)(&msg_ack), 0, sizeof(struct ack_fast_call_struct));
 
 	msg_head.invalid_flag = VALID_TYPE;
 	msg_head.message_type = FAST_CALL_TYPE;
@@ -145,7 +152,8 @@ unsigned long create_cancel_fdrv(int buff_size)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)),
+			(void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -156,15 +164,16 @@ unsigned long create_cancel_fdrv(int buff_size)
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
-	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)),
+			sizeof(struct ack_fast_call_struct));
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
 		retVal = msg_ack.retVal;
 
-		if (retVal == 0) {
+		if (retVal == 0)
 			return temp_addr;
-		}
+
 	} else {
 		retVal = 0;
 	}

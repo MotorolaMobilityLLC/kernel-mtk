@@ -85,12 +85,12 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 
 	switch (cmd) {
 	case CMD_MEM_CLEAR:
-		IMSG_DEBUG("microtrust keymaster mem clear. \n");
+		IMSG_DEBUG("microtrust keymaster mem clear.\n");
 		break;
 
 	case CMD_MEM_SEND:
 		if (!keymaster_buff_addr) {
-			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!. \n");
+			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
@@ -98,18 +98,19 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		memset((void *)keymaster_buff_addr, 0, KEYMASTER_SIZE);
 
 		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, KEYMASTER_SIZE)) {
-			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed. \n");
+			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
 
-		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_SIZE);
+		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr,
+				(unsigned long)keymaster_buff_addr + KEYMASTER_SIZE);
 
 		/*this para 'KEYMASTER_DRIVER_ID' is not used*/
 		send_keymaster_command(KEYMASTER_DRIVER_ID);
 
 		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr, KEYMASTER_SIZE)) {
-			IMSG_ERROR("microtrust keymaster copy from user failed. \n");
+			IMSG_ERROR("microtrust keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
@@ -124,7 +125,7 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 	case CMD_FIRST_TIME_BOOT:
 
 		if (!keymaster_buff_addr) {
-			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!. \n");
+			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
@@ -132,7 +133,7 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		memset((void *)keymaster_buff_addr, 0, 8);
 
 		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, 8)) {
-			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed. \n");
+			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
@@ -143,7 +144,7 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		send_keymaster_command(KEYMASTER_DRIVER_ID);
 
 		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr, 8)) {
-			IMSG_ERROR("microtrust keymaster copy from user failed. \n");
+			IMSG_ERROR("microtrust keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
@@ -197,9 +198,8 @@ static void keymaster_setup_cdev(struct keymaster_dev *dev, int index)
 	dev->cdev.owner = keymaster_fops.owner;
 	err = cdev_add(&dev->cdev, devno, 1);
 
-	if (err) {
+	if (err)
 		IMSG_ERROR("Error %d adding keymaster %d.\n", err, index);
-	}
 }
 
 int keymaster_init(void)
@@ -212,9 +212,9 @@ int keymaster_init(void)
 	keymaster_major = MAJOR(devno);
 	sema_init(&(keymaster_api_lock), 0);
 
-	if (result < 0) {
+	if (result < 0)
 		return result;
-	}
+
 
 	driver_class = NULL;
 	driver_class = class_create(THIS_MODULE, DEV_NAME);

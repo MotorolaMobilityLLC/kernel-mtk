@@ -20,4 +20,9 @@
 #define GLSCH_NEG				(0x03)
 #define GLSCH_FOR_SOTER			(0x04)
 
+extern struct mutex pm_mutex;
+extern unsigned long ut_pm_count;
+extern unsigned int need_mig_flag;
+extern unsigned int nt_core;
+
 #endif /* end of SCHED_STATUS_H */

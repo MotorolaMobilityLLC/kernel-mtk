@@ -100,12 +100,14 @@ struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,
 			page = list_entry(free_list_ent, struct page, lru);
 
 			if ((unsigned long)(page_to_phys(page)) >= UT_MAX_MEM) {
-				IMSG_DEBUG("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n",
+				__func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 0;
 				free_list_ent = free_list_ent->next;
 
 			} else {
-				IMSG_DEBUG("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n",
+				__func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 1;
 				break;
 			}
@@ -497,9 +499,8 @@ retry_cpuset:
 	if (high_zoneidx >= ZONE_HIGHMEM) {
 #endif
 
-		if (migratetype == MIGRATE_MOVABLE) {
+		if (migratetype == MIGRATE_MOVABLE)
 			migratetype = preferred_mt;
-		}
 
 #ifdef CONFIG_HIGHMEM
 	}
@@ -557,7 +558,7 @@ ut_alloc_pages(gfp_t gfp_mask, unsigned int order,
 }
 
 static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask,
-													unsigned int order)
+											unsigned int order)
 {
 	/* Unknown node is current node */
 	if (nid < 0)

@@ -8,25 +8,25 @@
  * @brief
  */
 struct list {
-    struct list *next, *prev;
+	struct list *next, *prev;
 };
 
 #define INIT_HEAD(__lname)  { &(__lname), &(__lname) }
 #define LIST_HEAD(_lname)   struct list _lname = INIT_HEAD(_lname)
 #define INIT_LIST_HEAD(ptr)  do { \
-        (ptr)->next = ptr; (ptr)->prev = ptr;   \
-    }while (0);
+		(ptr)->next = ptr; (ptr)->prev = ptr;   \
+	} while (0)
 
 #define list_entry(ptr, type, member) \
-    ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+	((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
 
 #define list_for_each(curr, head) \
-    for (curr = (head)->next; curr != head; curr = (curr)->next)
+	for (curr = (head)->next; curr != head; curr = (curr)->next)
 
-#define list_for_each_entry(ptr, head ,member) \
-    for(ptr = list_entry((head)->next, typeof(*ptr), member); \
-            &ptr->member != (head); \
-            ptr = list_entry(ptr->member.next , typeof(*ptr), member))\
+#define list_for_each_entry(ptr, head, member) \
+	for (ptr = list_entry((head)->next, typeof(*ptr), member); \
+		&ptr->member != (head); \
+		ptr = list_entry(ptr->member.next, typeof(*ptr), member))\
 
 
 /**
@@ -38,10 +38,10 @@ struct list {
  * @param member: the name of the list_struct within the struct.
  */
 #define list_for_each_entry_safe(pos, n, head, member)          \
-    for (pos = list_entry((head)->next, typeof(*pos), member),  \
-        n = list_entry(pos->member.next, typeof(*pos), member); \
-         &pos->member != (head);                    \
-         pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	for (pos = list_entry((head)->next, typeof(*pos), member),  \
+		n = list_entry(pos->member.next, typeof(*pos), member); \
+		&pos->member != (head);                    \
+		pos = n, n = list_entry(n->member.next, typeof(*n), member))
 
 /**
  * @brief
@@ -51,12 +51,12 @@ struct list {
  * @param new
  */
 static inline void __list_add(struct list *prev,
-                  struct list *next, struct list *new0)
+								struct list *next, struct list *new0)
 {
-    new0->prev = prev;
-    new0->next = next;
-    prev->next = new0;
-    next->prev = new0;
+	new0->prev = prev;
+	new0->next = next;
+	prev->next = new0;
+	next->prev = new0;
 }
 
 /**
@@ -68,7 +68,7 @@ static inline void __list_add(struct list *prev,
  */
 static inline void list_add(struct list *head, struct list *new0)
 {
-    __list_add(head, head->next, new0);
+	__list_add(head, head->next, new0);
 }
 
 /**
@@ -79,7 +79,7 @@ static inline void list_add(struct list *head, struct list *new0)
  */
 static inline void list_add_tail(struct list *tnode, struct list *new0)
 {
-    __list_add(tnode->prev, tnode, new0);
+	__list_add(tnode->prev, tnode, new0);
 }
 
 /**
@@ -90,15 +90,16 @@ static inline void list_add_tail(struct list *tnode, struct list *new0)
  * @param next
  */
 static inline void __list_del(struct list *node,
-                  struct list *prev, struct list *next)
+								struct list *prev, struct list *next)
 {
-    prev->next = node->next;
-    next->prev = node->prev;
-//    node->next = (void *)LIST_POISON_NEXT;
-//    node->prev = (void *)LIST_POISON_PREV;
-    node->next = (struct list *)LIST_POISON_NEXT;
-    node->prev = (struct list *)LIST_POISON_PREV;
-
+	prev->next = node->next;
+	next->prev = node->prev;
+/*
+*	node->next = (void *)LIST_POISON_NEXT;
+*	node->prev = (void *)LIST_POISON_PREV;
+*/
+	node->next = (struct list *)LIST_POISON_NEXT;
+	node->prev = (struct list *)LIST_POISON_PREV;
 }
 
 /**
@@ -110,7 +111,7 @@ static inline void __list_del(struct list *node,
  */
 static inline void list_del(struct list *node)
 {
-    __list_del(node, node->prev, node->next);
+	__list_del(node, node->prev, node->next);
 }
 
 /**
@@ -122,9 +123,10 @@ static inline void list_del(struct list *node)
  */
 static inline struct list *list_pop_tail(struct list *head)
 {
-    struct list *dnode = head->prev;
-    list_del(head->prev);
-    return dnode;
+	struct list *dnode = head->prev;
+
+	list_del(head->prev);
+	return dnode;
 }
 
 /**
@@ -136,9 +138,10 @@ static inline struct list *list_pop_tail(struct list *head)
  */
 static inline struct list *list_pop(struct list *head)
 {
-    struct list *dnode = head->next;
-    list_del(head->next);
-    return dnode;
+	struct list *dnode = head->next;
+
+	list_del(head->next);
+	return dnode;
 }
 
 /**
@@ -150,7 +153,7 @@ static inline struct list *list_pop(struct list *head)
  */
 static inline int list_empty(struct list *head)
 {
-    return (head->next == head);
+	return (head->next == head);
 }
 
 #endif /* __LIB_LIST_H__ */

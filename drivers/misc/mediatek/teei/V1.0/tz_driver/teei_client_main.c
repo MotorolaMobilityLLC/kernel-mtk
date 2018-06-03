@@ -145,7 +145,8 @@ unsigned long boot_soter_flag;
 struct semaphore ut_pm_count_sema;
 unsigned long ut_pm_count;
 unsigned long device_file_cnt;
-static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
+static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101,
+							0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
 unsigned int teei_flags;
 static dev_t teei_config_device_no;
 static struct cdev teei_config_cdev;
@@ -301,7 +302,6 @@ void set_sch_load_img_cmd(void)
 	memcpy((void *)message_buff, &msg_head, sizeof(struct message_head));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
-	return;
 }
 
 int t_os_load_image(void)
@@ -338,13 +338,14 @@ void secondary_boot_stage1(void *info)
 static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 {
 	int retVal = 0;
+
 	boot_stage1_entry.vfs_phy_addr = vfs_addr;
 	boot_stage1_entry.tlog_phy_addr = tlog_addr;
 
 	/* with a wmb() */
 	wmb();
 
-    retVal = add_work_entry(BOOT_STAGE1, (unsigned char *)(&boot_stage1_entry));
+	retVal = add_work_entry(BOOT_STAGE1, (unsigned char *)(&boot_stage1_entry));
 
 	/* with a rmb() */
 	rmb();
@@ -352,18 +353,17 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 
 int handle_switch_core(int cpu)
 {
-    int i = 0;
-    int little_core_num = -1;
-    int big_core_num = -1;
-    int switch_to_cpu_id = 0;
-    struct cpumask mtee_mask = { CPU_BITS_NONE };
+	int i = 0;
+	int little_core_num = -1;
+	int big_core_num = -1;
+	int switch_to_cpu_id = 0;
+	struct cpumask mtee_mask = { CPU_BITS_NONE };
 
-    for_each_online_cpu(i) {
+	for_each_online_cpu(i) {
 		IMSG_DEBUG("current on line cpu [%d]\n", i);
 
-		if (i == cpu) {
+		if (i == cpu)
 			continue;
-		}
 
 		if ((i < MIN_BC_NUM) && (little_core_num == -1)) {
 			little_core_num = i;
@@ -376,21 +376,21 @@ int handle_switch_core(int cpu)
 		}
 	}
 
-    if (big_core_num != -1) {
+	if (big_core_num != -1)
 		switch_to_cpu_id = big_core_num;
-	} else if (little_core_num != -1) {
+	else if (little_core_num != -1)
 		switch_to_cpu_id = little_core_num;
-	}
 
-    IMSG_DEBUG("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
 
-    cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
-    set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
-    nt_sched_core(teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
-    current_cpu_id = switch_to_cpu_id;
-    IMSG_DEBUG("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
+	IMSG_DEBUG("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
 
-    return 0;
+	cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
+	nt_sched_core(teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
+	current_cpu_id = switch_to_cpu_id;
+	IMSG_DEBUG("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
+
+	return 0;
 }
 
 static int tz_driver_cpu_callback(struct notifier_block *self, unsigned long action, void *hcpu)
@@ -429,7 +429,8 @@ void secondary_init_cmdbuf(void *info)
 	/* with a rmb() */
 	rmb();
 
-    IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n", __func__, __LINE__,
+	IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n",
+			__func__, __LINE__,
 	       (unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
 	       (unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
@@ -458,7 +459,8 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
-	Flush_Dcache_By_Area((unsigned long)&init_cmdbuf_entry, (unsigned long)&init_cmdbuf_entry + sizeof(struct init_cmdbuf_struct));
+	Flush_Dcache_By_Area((unsigned long)&init_cmdbuf_entry,
+		(unsigned long)&init_cmdbuf_entry + sizeof(struct init_cmdbuf_struct));
 	add_work_entry(INIT_CMD_CALL, (unsigned char *)(&init_cmdbuf_entry));
 
 	/* with a rmb() */
@@ -470,9 +472,11 @@ long create_cmd_buff(void)
 	long retVal = 0;
 
 #ifdef UT_DMA_ZONE
-	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
+					get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #else
-	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL,
+					get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 
 	if ((void *)message_buff == NULL) {
@@ -481,9 +485,11 @@ long create_cmd_buff(void)
 	}
 
 #ifdef UT_DMA_ZONE
-	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
+						get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #else
-	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL,
+						get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 
 	if ((void *)fdrv_message_buff == NULL) {
@@ -493,9 +499,11 @@ long create_cmd_buff(void)
 	}
 
 #ifdef UT_DMA_ZONE
-	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
+				get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #else
-	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL,
+				get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 
 	if ((void *)bdrv_message_buff == NULL) {
@@ -506,9 +514,11 @@ long create_cmd_buff(void)
 	}
 
 #ifdef UT_DMA_ZONE
-	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
+						get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
 #else
-	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL,
+						get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
 #endif
 
 	if ((void *)tlog_message_buff == NULL) {
@@ -530,14 +540,17 @@ long create_cmd_buff(void)
 		return retVal;
 	}
 
-    IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
-       (unsigned long)virt_to_phys((void *)message_buff),
-       (unsigned long)virt_to_phys((void *)fdrv_message_buff),
-       (unsigned long)virt_to_phys((void *)bdrv_message_buff),
-       (unsigned long)virt_to_phys((void *)tlog_message_buff));
+	IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n",
+				__func__, __LINE__,
+		(unsigned long)virt_to_phys((void *)message_buff),
+		(unsigned long)virt_to_phys((void *)fdrv_message_buff),
+		(unsigned long)virt_to_phys((void *)bdrv_message_buff),
+		(unsigned long)virt_to_phys((void *)tlog_message_buff));
 
-	init_cmdbuf((unsigned long)virt_to_phys((void *)message_buff), (unsigned long)virt_to_phys((void *)fdrv_message_buff),
-				(unsigned long)virt_to_phys((void *)bdrv_message_buff), (unsigned long)virt_to_phys((void *)tlog_message_buff));
+	init_cmdbuf((unsigned long)virt_to_phys((void *)message_buff),
+		(unsigned long)virt_to_phys((void *)fdrv_message_buff),
+		(unsigned long)virt_to_phys((void *)bdrv_message_buff),
+		(unsigned long)virt_to_phys((void *)tlog_message_buff));
 
 	return 0;
 }
@@ -714,9 +727,8 @@ static int init_teei_framework(void)
 
 	boot_soter_flag = END_STATUS;
 
-	if (soter_error_flag == 1) {
+	if (soter_error_flag == 1)
 		return TEEI_BOOT_ERROR_LOAD_SOTER_FAILED;
-	}
 
 	down(&smc_lock);
 	retVal = create_cmd_buff();
@@ -731,15 +743,13 @@ static int init_teei_framework(void)
 
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT Stage2 Completed");
 
-	if (soter_error_flag == 1) {
+	if (soter_error_flag == 1)
 		return TEEI_BOOT_ERROR_INIT_UTGATE_FAILED;
-	}
 
 	retVal = teei_service_init_first();
 
-	if (retVal == -1) {
+	if (retVal == -1)
 		return TEEI_BOOT_ERROR_INIT_SERVICE1_FAILED;
-	}
 
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT Service1 Inited");
 
@@ -754,15 +764,13 @@ static int init_teei_framework(void)
 
 	retVal = teei_service_init_second();
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT Service2 Inited");
-	if (retVal == -1) {
+	if (retVal == -1)
 		return TEEI_BOOT_ERROR_INIT_SERVICE2_FAILED;
-	}
 
 	t_os_load_image();
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT Load TEES Completed");
-	if (soter_error_flag == 1) {
+	if (soter_error_flag == 1)
 		return TEEI_BOOT_ERROR_LOAD_TA_FAILED;
-	}
 
 	teei_config_flag = 1;
 	complete(&global_down_lock);
@@ -895,7 +903,7 @@ static int teei_config_init(void)
 
 	class_dev = device_create(config_driver_class, NULL, teei_config_device_no, NULL, TEEI_CONFIG_DEV);
 
-	if (NULL == class_dev) {
+	if (class_dev == NULL) {
 		IMSG_ERROR("class_device_create failed %x\n", retVal);
 		retVal = -ENOMEM;
 		goto class_destroy;
@@ -975,9 +983,8 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_context_init(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
-		}
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
@@ -1006,9 +1013,8 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_session_init(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
-		}
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
@@ -1022,9 +1028,8 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_session_open(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
-		}
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
@@ -1039,9 +1044,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_session_close(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
 #endif
@@ -1054,9 +1059,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_operation_release(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
 #endif
@@ -1069,9 +1074,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_send_cmd(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
 #endif
@@ -1084,9 +1089,8 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_get_decode_type(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
-		}
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
@@ -1100,9 +1104,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_encode_uint32(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
@@ -1116,9 +1120,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_decode_uint32(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
 #endif
@@ -1131,9 +1135,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_encode_array(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
@@ -1147,9 +1151,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_decode_array_space(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
@@ -1163,9 +1167,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_encode_mem_ref(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end .....\n", __func__, __LINE__);
@@ -1179,9 +1183,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_encode_mem_ref(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 #endif
@@ -1194,9 +1198,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_shared_mem_alloc(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
-		}
+
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
 #endif
@@ -1209,9 +1213,9 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 #endif
 		retVal = teei_client_shared_mem_free(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 #ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
@@ -1283,9 +1287,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	#endif
 		retVal = teei_client_context_init(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
@@ -1299,9 +1303,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_context_close(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed close context: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT end .....\n", __func__, __LINE__);
@@ -1315,9 +1319,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_session_init(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
@@ -1331,9 +1335,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_session_open(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
@@ -1348,9 +1352,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_session_close(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
@@ -1364,9 +1368,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_operation_release(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
@@ -1380,9 +1384,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_send_cmd(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d]TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
@@ -1396,9 +1400,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_get_decode_type(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
@@ -1412,9 +1416,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_encode_uint32_64bit(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
@@ -1428,9 +1432,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_decode_uint32(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
 		#endif
@@ -1443,9 +1447,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_encode_array_64bit(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
@@ -1459,9 +1463,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_decode_array_space(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 		#endif
@@ -1474,9 +1478,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_encode_mem_ref_64bit(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end  .....\n", __func__, __LINE__);
@@ -1490,9 +1494,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_encode_mem_ref_64bit(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
@@ -1506,9 +1510,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_shared_mem_alloc(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
@@ -1522,9 +1526,9 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		#endif
 		retVal = teei_client_shared_mem_free(file->private_data, argp);
 
-		if (retVal != 0) {
+		if (retVal != 0)
 			IMSG_ERROR("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
-		}
+
 
 		#ifdef UT_DEBUG
 		IMSG_DEBUG("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
@@ -1597,6 +1601,7 @@ static int teei_client_open(struct inode *inode, struct file *file)
 void show_utdriver_lock_status(void)
 {
 	int retVal = 0;
+
 	IMSG_PRINTK("[%s][%d] how_utdriver_lock_status begin.....\n", __func__, __LINE__);
 
 	retVal = down_trylock(&api_lock);
@@ -1889,7 +1894,7 @@ static int teei_client_init(void)
 
 	class_dev = device_create(driver_class, NULL, teei_client_device_no, NULL, TEEI_CLIENT_DEV);
 
-	if (NULL == class_dev) {
+	if (class_dev == NULL) {
 		IMSG_ERROR("class_device_create failed %x\n", ret_code);
 		ret_code = -ENOMEM;
 		goto class_destroy;

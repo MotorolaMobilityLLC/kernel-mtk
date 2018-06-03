@@ -75,7 +75,8 @@ unsigned long create_keymaster_fdrv(int buff_size)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)),
+			(void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -88,7 +89,8 @@ unsigned long create_keymaster_fdrv(int buff_size)
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
-	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)),
+			sizeof(struct ack_fast_call_struct));
 
 	/*local_irq_restore(irq_flag);*/
 
@@ -128,8 +130,10 @@ void set_keymaster_command(unsigned long memory_size)
 int __send_keymaster_command(unsigned long share_memory_size)
 {
 	uint64_t smc_type = 2;
+
 	set_keymaster_command(share_memory_size);
-	Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
+	Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr,
+						(unsigned long)keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
 	n_invoke_t_drv(&smc_type, 0, 0);
@@ -155,9 +159,8 @@ int send_keymaster_command(unsigned long share_memory_size)
 
 	IMSG_DEBUG("send_keymaster_command start\n");
 
-	if (teei_config_flag == 1) {
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
-	}
 
 	fdrv_ent.fdrv_call_type = KEYMASTER_SYS_NO;
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;
