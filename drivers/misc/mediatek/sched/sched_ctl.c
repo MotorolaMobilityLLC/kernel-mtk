@@ -304,9 +304,10 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	/* aggrevie load balancing */
 	sysctl_sched_migration_cost = en ? 33000UL : backup_mc; /*500000UL;*/
 
+#if defined(CONFIG_MACH_MT6771)
 	/* display idle timeout */
 	display_set_wait_idle_time(en ? 200 : 50);
-
+#endif
 	is_dirty = en;
 
 	return count;
