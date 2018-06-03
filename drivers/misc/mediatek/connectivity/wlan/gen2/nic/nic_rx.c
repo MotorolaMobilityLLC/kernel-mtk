@@ -1629,11 +1629,26 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			struct EVENT_ADD_KEY_DONE_INFO *prKeyDone =
 				(struct EVENT_ADD_KEY_DONE_INFO *)prEvent->aucBuffer;
 			P_STA_RECORD_T prStaRec = NULL;
+			UINT_8 ucKeyId;
+
 			prStaRec = cnmGetStaRecByAddress(prAdapter, prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
 			if (!prStaRec) {
-				DBGLOG(RX, INFO, "AddPKeyDone, Net %d, Addr %pM, StaRec is NULL\n",
-					prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
-				break;
+				ucKeyId = prAdapter->rWifiVar.rAisSpecificBssInfo.ucKeyAlgorithmId;
+				if ((ucKeyId == CIPHER_SUITE_WEP40) || (ucKeyId == CIPHER_SUITE_WEP104)) {
+					DBGLOG(RX, INFO, "WEP, ucKeyAlgorithmId= %d\n", ucKeyId);
+					prStaRec = cnmGetStaRecByAddress(prAdapter, prKeyDone->ucNetworkType,
+						prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].aucBSSID);
+					if (!prStaRec) {
+						DBGLOG(RX, INFO, "WEP, AddPKeyDone, Net %d, Addr %pM, StaRec is NULL\n",
+							prKeyDone->ucNetworkType,
+							prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].aucBSSID);
+						break;
+					}
+				} else {
+					DBGLOG(RX, INFO, "AddPKeyDone, Net %d, Addr %pM, StaRec is NULL\n",
+						prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
+					break;
+				}
 			}
 			prStaRec->fgIsTxKeyReady = TRUE;
 			if (prStaRec->fgIsValid)

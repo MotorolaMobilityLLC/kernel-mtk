@@ -435,6 +435,7 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	UINT_8 ucCurEssChnlInfoNum;
 	LINK_T rCurEssLink;
 	struct BSS_TRANSITION_MGT_PARAM_T rBTMParam;
+	UINT_8 ucKeyAlgorithmId;
 };
 
 struct _BOW_SPECIFIC_BSS_INFO_T {

@@ -2381,6 +2381,8 @@ _wlanoidSetAddKey(IN P_ADAPTER_T prAdapter,
 			prCmdKey->ucAlgorithmId = CIPHER_SUITE_TKIP;
 	}
 
+	prAdapter->rWifiVar.rAisSpecificBssInfo.ucKeyAlgorithmId = prCmdKey->ucAlgorithmId;
+
 	DBGLOG(RSN, TRACE, "prCmdKey->ucAlgorithmId=%d, key len=%d\n",
 			    prCmdKey->ucAlgorithmId, (UINT32) prNewKey->u4KeyLength);
 
