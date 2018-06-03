@@ -183,6 +183,37 @@ static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 	dev_info(hba->dev, "hci quirks: %#x\n", hba->quirks);
 }
 
+#ifdef CONFIG_MTK_HW_FDE
+/**
+ * ufs_mtk_hwfde_key_config - configure key for hw fde
+ * @hba: host controller instance
+ * @cmd: scsi command instance
+ *
+ * HW FDE key may be changed by updating master key by end-user's behavior.
+ * Update new key to crypto IP if necessary.
+ *
+ * Host lock must be held during this configuration.
+ */
+void ufs_mtk_hwfde_key_config(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+	/* for r/w request only */
+	if (cmd->request->bio) {
+
+		/* in case hw fde is enabled and key index is updated by dm-crypt */
+		if (cmd->request->bio->bi_hw_fde &&
+			cmd->request->bio->bi_key_idx != hba->hwfde_key_idx) {
+
+			/* do key change */
+			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 3), 0, 0);
+
+			hba->hwfde_key_idx = cmd->request->bio->bi_key_idx;
+		}
+	}
+}
+#else
+void ufs_mtk_hwfde_key_config(struct ufs_hba *hba, struct scsi_cmnd *cmd) {};
+#endif
+
 int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 {
 	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC))
@@ -283,6 +314,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_aborted_cmd_idx = 0;
 	ufs_mtk_aborted_cmd_cnt = 0;
 	ufs_mtk_hba = hba;
+	hba->hwfde_key_idx = -1;
 
 	ufs_mtk_pltfrm_init();
 

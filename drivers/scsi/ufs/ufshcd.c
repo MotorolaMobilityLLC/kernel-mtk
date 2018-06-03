@@ -1375,6 +1375,9 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 		goto out_unlock;
 	}
 
+	/* MTK Patch: Check if HW FDE key change is required */
+	ufs_mtk_hwfde_key_config(hba, cmd);
+
 	/* MTK Patch: Check if performance heuristic is applied */
 	err = ufs_mtk_perf_heurisic_if_allow_cmd(hba, cmd);
 
