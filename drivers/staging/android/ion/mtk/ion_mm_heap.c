@@ -67,7 +67,7 @@ struct ion_mm_buffer_info {
 
 #ifdef CONFIG_DMAUSER_PAGES
 static unsigned int order_gfp_flags[] = {
-	__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
+	(__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
 	(__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
 	(__GFP_ZERO | __GFP_NOWARN)
 };
