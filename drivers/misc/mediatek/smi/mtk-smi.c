@@ -78,8 +78,11 @@
 /* debug level */
 static unsigned int smi_debug_level;
 static unsigned int mmdvfs_debug_level;
+static unsigned int mmdvfs_rt_debug_disable_mask;
+
 /* Record MMDVFS debug level */
 unsigned int *g_mmvfs_debug_level = &mmdvfs_debug_level;
+unsigned int *g_mmdvfs_rt_debug_disable_mask = &mmdvfs_rt_debug_disable_mask;
 
 #define SMIDBG(level, x...)            \
 		do {                        \
@@ -2277,6 +2280,7 @@ static void smi_apply_mmu_setting(void)
 	SMIDBG(1, "apply mmu setting done.\n");
 }
 
+module_param_named(mmdvfs_rt_debug_disable_mask, mmdvfs_rt_debug_disable_mask, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_mmdvfs, disable_mmdvfs, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_hopping, disable_freq_hopping, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_mux, disable_freq_mux, uint, S_IRUGO | S_IWUSR);

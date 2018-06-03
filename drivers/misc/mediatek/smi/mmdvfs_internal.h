@@ -39,5 +39,6 @@
 extern void mmdvfs_internal_handle_state_change(struct mmdvfs_state_change_event *event);
 extern void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event);
 extern unsigned int *g_mmvfs_debug_level;
-
+extern unsigned int *g_mmdvfs_rt_debug_disable_mask;
+extern int mmdvfs_internal_set_vpu_step(int current_step, int update_step);
 #endif				/* __MMDVFS_INTERNAL_H__ */

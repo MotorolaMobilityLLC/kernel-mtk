@@ -261,11 +261,26 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 
 	legacy_clk = mmdvfs_get_stable_isp_clk();
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CAMCLK:%d\n",
+	if (g_mmdvfs_rt_debug_disable_mask && ((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
+		MMDVFSDEBUG(3,
+		"Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
 		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0], g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2], g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
-		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
+		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
+		g_mmdvfs_cmd.camera_mode,
+		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1], legacy_clk);
+	else
+		MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
+		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2],
+		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
+		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
+		g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1], legacy_clk);
 	return 0;
 }
