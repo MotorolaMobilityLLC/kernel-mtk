@@ -18,7 +18,7 @@
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
 #define SHUTDOWN_1_TIME	60
-#define KEEP_100_PERCENT 2
+#define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
@@ -117,7 +117,7 @@
 #define DIFFERENCE_FGC_FGV_TH_SOC1 7000
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
-#define NAFG_RATIO 80
+#define NAFG_RATIO 100
 #define NAFG_RATIO_EN 0
 #define NAFG_RESISTANCE 1500
 
@@ -178,7 +178,7 @@
 
 #define OVER_DISCHARGE_LEVEL -1500
 
-#define UISOC_UPDATE_TYPE 2
+#define UISOC_UPDATE_TYPE 0
 /*
 *	uisoc_update_type:
 *	0: only ui_soc interrupt update ui_soc
@@ -188,19 +188,18 @@
 
 /* using current to limit uisoc in 100% case*/
 /* UI_FULL_LIMIT_ITH0 3000 means 300ma */
-#define UI_FULL_LIMIT_EN 0
+#define UI_FULL_LIMIT_EN 1
+#define UI_FULL_LIMIT_SOC0 9900
+#define UI_FULL_LIMIT_ITH0 2200
 
-#define UI_FULL_LIMIT_SOC0 9100
-#define UI_FULL_LIMIT_ITH0 7500
+#define UI_FULL_LIMIT_SOC1 9900
+#define UI_FULL_LIMIT_ITH1 2200
 
-#define UI_FULL_LIMIT_SOC1 9300
-#define UI_FULL_LIMIT_ITH1 5500
+#define UI_FULL_LIMIT_SOC2 9900
+#define UI_FULL_LIMIT_ITH2 2200
 
-#define UI_FULL_LIMIT_SOC2 9500
-#define UI_FULL_LIMIT_ITH2 3500
-
-#define UI_FULL_LIMIT_SOC3 9700
-#define UI_FULL_LIMIT_ITH3 3000
+#define UI_FULL_LIMIT_SOC3 9900
+#define UI_FULL_LIMIT_ITH3 2200
 
 #define UI_FULL_LIMIT_SOC4 9900
 #define UI_FULL_LIMIT_ITH4 2200
