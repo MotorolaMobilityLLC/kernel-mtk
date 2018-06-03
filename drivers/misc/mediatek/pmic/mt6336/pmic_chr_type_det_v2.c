@@ -54,6 +54,10 @@ static struct mt_charger *g_mt_charger;
 static struct work_struct chr_work;
 #endif
 
+#if !defined(CONFIG_MTK_FPGA)
+static struct mt6336_ctrl *core_ctrl;
+#endif
+
 
 #if  defined(CONFIG_MTK_FPGA)
 /*****************************************************************************
@@ -520,6 +524,9 @@ struct mt_charger {
  ******************************************************************************/
 void do_charger_detect(void)
 {
+	/* enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(core_ctrl);
+
 	if (upmu_get_rgs_chrdet() == true) {
 		pr_err("charger IN\n");
 		g_chr_type = hw_charging_get_charger_type();
@@ -541,6 +548,9 @@ void do_charger_detect(void)
 		power_supply_changed(g_mt_charger->charger_psy);
 		power_supply_changed(g_mt_charger->usb_psy);
 	}
+
+	/* enter low power mode*/
+	mt6336_ctrl_disable(core_ctrl);
 }
 
 
@@ -587,6 +597,10 @@ int typec_chrdet_int_handler(int enable)
 		}
 	}
 #endif
+
+	/* enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(core_ctrl);
+
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 
 	if (enable) {
@@ -603,6 +617,10 @@ int typec_chrdet_int_handler(int enable)
 		power_supply_changed(g_mt_charger->charger_psy);
 		power_supply_changed(g_mt_charger->usb_psy);
 	}
+
+	/* enter low power mode*/
+	mt6336_ctrl_disable(core_ctrl);
+
 	return 0;
 }
 #endif
@@ -729,6 +747,8 @@ static int mt_charger_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mt_charger);
 	device_init_wakeup(&pdev->dev, 1);
+
+	core_ctrl = mt6336_ctrl_get("mt6336_chrdet");
 
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 	/* do charger detect here to prevent HW miss interrupt*/
