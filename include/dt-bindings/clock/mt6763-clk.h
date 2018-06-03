@@ -327,7 +327,7 @@
 #define	AUDIO_I2S3_BCLK_SW	12
 #define	AUDIO_I2S2_BCLK_SW	13
 #define	AUDIO_I2S1_BCLK_SW	14
-#define AUDIO_NR_CLK 11
+#define AUDIO_NR_CLK 15
 
 /* SCP_SYS */
 #define SCP_SYS_MD1  1
