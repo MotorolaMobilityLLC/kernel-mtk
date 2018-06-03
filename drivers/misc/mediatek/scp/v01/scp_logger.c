@@ -456,7 +456,7 @@ static ssize_t scp_A_last_log_show(struct device *kobj
 			, scp_A_log_buf_maxlen_last, scp_A_last_log);
 }
 
-DEVICE_ATTR(scp_A_get_last_log, 0644, scp_A_last_log_show, NULL);
+DEVICE_ATTR(scp_A_get_last_log, 0444, scp_A_last_log_show, NULL);
 
 /*
  * logger UT test
