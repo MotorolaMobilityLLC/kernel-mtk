@@ -27,7 +27,7 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
 
 # flags for not ready feature, uncomment after ready
-subdir-ccflags-y += -D_GIT318_READY
+#ubdir-ccflags-y += -D_GIT318_READY
 subdir-ccflags-y += -D_GIT318_PMIC_READY
 subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
 subdir-ccflags-y += -D_MT_IDLE_HEADER

@@ -380,7 +380,7 @@ void audckbufEnable(bool enable)
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_PMIC_READY)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_READY)
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x8000, 0x8000);
 				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW01 = 0x%x\n",
@@ -395,7 +395,7 @@ void audckbufEnable(bool enable)
 	} else {
 		audck_buf_Count--;
 		if (audck_buf_Count == 0) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_PMIC_READY)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_READY)
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x0000, 0x8000);
 				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW01 = 0x%x\n",
@@ -5594,7 +5594,7 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	 *   false: RF clock buffer
 	 *   true : PMIC clock buffer
 	 */
-#ifdef _GIT318_PMIC_READY
+#ifdef _GIT318_READY
 	mClkBufferfromPMIC = is_clk_buf_from_pmic();
 #else
 	mClkBufferfromPMIC = true;
