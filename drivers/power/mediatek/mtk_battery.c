@@ -111,7 +111,6 @@ int bat_cycle_thr;
 
 signed int ptim_lk_v;
 signed int ptim_lk_i;
-signed int ptim_lk_i_sign;
 
 struct timespec fg_time;
 struct timespec now_time;
@@ -1575,7 +1574,7 @@ void update_fg_dbg_tool_value(void)
 void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 {
 	struct fgd_nl_msg_t *msg;
-	static int ptim_vbat, ptim_i, ptim_i_sign;
+	static int ptim_vbat, ptim_i;
 
 	msg = nl_data;
 	ret_msg->fgd_cmd = msg->fgd_cmd;
@@ -1777,26 +1776,22 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 			unsigned int ptim_bat_vol = 0;
 			signed int ptim_R_curr = 0;
-			signed int ptim_R_curr_sign = 0;
 			int ptim_lock = false;
 
 			if (init_flag == 1) {
 				battery_meter_ctrl(BATTERY_METER_CMD_DO_PTIM, &ptim_lock);
 				battery_meter_ctrl(BATTERY_METER_CMD_GET_PTIM_BAT_VOL, &ptim_bat_vol);
 				battery_meter_ctrl(BATTERY_METER_CMD_GET_PTIM_R_CURR, &ptim_R_curr);
-				ptim_R_curr_sign = battery_get_bat_current_sign();
-				bm_warn("[fg_res] PTIM V %d I %d sign %d\n",
-					ptim_bat_vol, ptim_R_curr, ptim_R_curr_sign);
+				bm_warn("[fg_res] PTIM V %d I %d\n",
+					ptim_bat_vol, ptim_R_curr);
 			} else {
 				ptim_bat_vol = ptim_lk_v;
 				ptim_R_curr = ptim_lk_i;
-				ptim_R_curr_sign = ptim_lk_i_sign;
-				bm_warn("[fg_res] PTIM_LK V %d I %d sign %d\n",
-					ptim_bat_vol, ptim_R_curr, ptim_R_curr_sign);
+				bm_warn("[fg_res] PTIM_LK V %d I %d\n",
+					ptim_bat_vol, ptim_R_curr);
 			}
 			ptim_vbat = ptim_bat_vol;
 			ptim_i = ptim_R_curr;
-			ptim_i_sign = ptim_R_curr_sign;
 			ret_msg->fgd_data_len += sizeof(ptim_vbat);
 			memcpy(ret_msg->fgd_data, &ptim_vbat, sizeof(ptim_vbat));
 		}
@@ -1807,14 +1802,6 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			ret_msg->fgd_data_len += sizeof(ptim_i);
 			memcpy(ret_msg->fgd_data, &ptim_i, sizeof(ptim_i));
 			bm_debug("[fg_res] FG_DAEMON_CMD_GET_PTIM_I = %d\n", ptim_i);
-		}
-		break;
-
-	case FG_DAEMON_CMD_GET_PTIM_I_SIGN:
-		{
-			ret_msg->fgd_data_len += sizeof(ptim_i_sign);
-			memcpy(ret_msg->fgd_data, &ptim_i_sign, sizeof(ptim_i_sign));
-			bm_debug("[fg_res] FG_DAEMON_CMD_GET_PTIM_I_SIGN = %d\n", ptim_i_sign);
 		}
 		break;
 
@@ -2932,6 +2919,7 @@ void fg_bat_plugout_int_handler(void)
 		kernel_power_off();
 }
 
+#if 0
 void fg_charger_in_handler(void)
 {
 	bm_err("[fg_charger_in_handler]\n");
@@ -2939,6 +2927,7 @@ void fg_charger_in_handler(void)
 
 	fg_bat_temp_int_sw_check();
 }
+#endif
 
 void fg_vbat2_l_int_handler(void)
 {
@@ -3881,10 +3870,6 @@ static int battery_probe(struct platform_device *dev)
 	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_H, fg_vbat2_h_int_handler);
 	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
 
-	/* Charger in */
-	pmic_register_interrupt_callback(FG_BAT_CHARGER_IN_NO, fg_charger_in_handler);
-
-
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
@@ -3922,12 +3907,9 @@ static int battery_probe(struct platform_device *dev)
 	} else {
 		snprintf(fg_swocv_i_tmp, (fg_swocv_i_len + 1), "%s", fg_swocv_i);
 		ret = kstrtoint(fg_swocv_i_tmp, 10, &ptim_lk_i);
-		if (ptim_lk_i < 0) {
-			ptim_lk_i_sign = 1;
-			ptim_lk_i = 0 - ptim_lk_i;
-		}
-		bm_err(" fg_swocv_i = %s len %d fg_swocv_i_tmp %s ptim_lk_i[%d] sign[%d]\n",
-			fg_swocv_i, fg_swocv_i_len, fg_swocv_i_tmp, ptim_lk_i, ptim_lk_i_sign);
+
+		bm_err(" fg_swocv_i = %s len %d fg_swocv_i_tmp %s ptim_lk_i[%d]\n",
+			fg_swocv_i, fg_swocv_i_len, fg_swocv_i_tmp, ptim_lk_i);
 	}
 
 #endif
