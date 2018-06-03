@@ -121,7 +121,6 @@ struct mm_freq_config *all_freqs[] = {
 
 static void mm_apply_vcore(s32 vopp)
 {
-	pr_notice("set vcore step: %d\n", vopp);
 	pm_qos_update_request(&vcore_request, vopp);
 }
 
