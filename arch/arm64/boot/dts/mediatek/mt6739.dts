@@ -369,9 +369,9 @@
 		reg = <0 0x10005000 0 0x1000>;
 	};
 
-	pio: pinctrl@10005000 {
+	pio: pinctrl@1000b000 {
 		compatible = "mediatek,pinctrl";
-		reg = <0 0x10005000 0 0x1000>;
+		reg = <0 0x1000b000 0 0x1000>;
 		mediatek,pctl-regmap = <&syscfg_pctl_a>,
 				       <&syscfg_pctl_lt>,
 				       <&syscfg_pctl_lm>,
@@ -383,6 +383,9 @@
 		pins-are-numbered;
 		gpio-controller;
 		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <4>;
+		interrupts = <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	sleep@10006000 {
@@ -408,33 +411,6 @@
 		compatible = "mediatek,hacc";
 		reg = <0 0x1000a000 0 0x1000>;
 		interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-
-
-	eintc: eintc@1000b000 {
-		compatible = "mediatek,mt-eic";
-		reg = <0 0x1000b000 0 0x1000>;
-		interrupts = <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>;
-		mediatek,max_hw_deb_cnt = <16>;	/* FIXME */
-		/* mediatek,builtin_eint_hw_deb = <145 8 0x90>; */
-		/* mediatek,max_deint_cnt = <4>; */
-		/* mediatek,deint_possible_irq = <191 192 193 194>; */
-		#interrupt-cells = <2>;
-		interrupt-controller;
-		mediatek,max_eint_num = <159>;	/* FIXME */
-		mediatek,mapping_table_entry = <0>;
-		mediatek,debtime_setting_entry = <10>;
-		mediatek,debtime_setting_array	= <0 128>,
-						<1 256>,
-						<2 512>,
-						<3 1024>,
-						<4 16384>,
-						<5 32768>,
-						<6 65536>,
-						<7 131072>,
-						<8 262144>,
-						<9 524288>;
 	};
 
 	apmixed: apmixed@1000c000 {
