@@ -1214,6 +1214,12 @@ static unsigned int topckgen_emi_dcm_full_fsel_get(void)
 	return (reg_read(TOPCKGEN_DCM_CFG) >> 16) & 0x1f;
 }
 #endif
+
+unsigned int topckgen_emi_dcm_full_fsel_get(void)
+{
+	return ((reg_read(TOPCKGEN_DCM_CFG) & (0x1f << 16)) >> 16);
+}
+
 void topckgen_emi_dcm_full_fsel_set(unsigned int val)
 {
 	reg_write(TOPCKGEN_DCM_CFG,

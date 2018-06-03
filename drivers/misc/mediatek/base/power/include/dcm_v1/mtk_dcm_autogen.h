@@ -167,6 +167,7 @@ void dcm_mcucfg_sync_dcm_cfg(int on);
 bool dcm_mcucfg_mcu_misc_dcm_is_on(int on);
 void dcm_mcucfg_mcu_misc_dcm(int on);
 /* TOPCKGEN */
+unsigned int topckgen_emi_dcm_full_fsel_get(void);
 void topckgen_emi_dcm_full_fsel_set(unsigned int val);
 void topckgen_emi_dcm_dbc_cnt_set(unsigned int val);
 bool dcm_topckgen_cksys_dcm_emi_is_on(int on);
