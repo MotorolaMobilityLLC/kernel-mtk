@@ -21,7 +21,8 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6357)	+= pmic.o pmic_common.o \
 		pmic_auxadc.o \
 		pmic_throttling_dlpt.o \
 		regulator_codegen.o \
-		pmic_lp_api.o\
+		pmic_lp_api.o \
+		pmic_efuse.o \
 #		pmic_bif.o \
 
 

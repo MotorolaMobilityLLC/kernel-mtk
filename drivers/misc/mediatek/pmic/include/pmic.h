@@ -57,10 +57,6 @@ extern unsigned int g_pmic_chip_version;
 /*
  * PMIC EXTERN FUNCTIONS
  */
-/*----- LOW_BATTERY_PROTECT -----*/
-extern void lbat_min_en_setting(int en_val);
-extern void lbat_max_en_setting(int en_val);
-extern void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level);
 /*----- BATTERY_OC_PROTECT -----*/
 extern void exec_battery_oc_callback(BATTERY_OC_LEVEL battery_oc_level);
 extern void bat_oc_h_en_setting(int en_val);
