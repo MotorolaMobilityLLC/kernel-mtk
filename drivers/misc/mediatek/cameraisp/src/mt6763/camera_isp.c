@@ -8829,101 +8829,14 @@ static struct platform_driver IspDriver = {
 /*
 * ssize_t (*read) (struct file *, char __user *, size_t, loff_t *)
 */
-#define USE_OLD_STYPE_11897 0
-#if USE_OLD_STYPE_11897
-static int ISP_DumpRegToProc(
-	char *pPage,
-	char **ppStart,
-	off_t off,
-	int Count,
-	int *pEof,
-	void *pData)
-#else /* new file_operations style */
 static ssize_t ISP_DumpRegToProc(
 	struct file *pFile,
 	char *pStart,
 	size_t off,
 	loff_t *Count)
-#endif
 {
-#if USE_OLD_STYPE_11897
-	char *p = pPage;
-	int Length = 0;
-	unsigned int i = 0;
-	int ret = 0;
-	/*  */
-	LOG_DBG("- E. pPage: %p. off: %d. Count: %d.", pPage, (unsigned int)off, Count);
-	/*  */
-	p += sprintf(p, " MT6593 ISP Register\n");
-	p += sprintf(p, "====== top ====\n");
-	for (i = 0x0; i <= 0x1AC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	p += sprintf(p, "====== dma ====\n");
-	for (i = 0x200; i <= 0x3D8; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n\r", (unsigned int)(ISP_ADDR + i),
-			(unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	p += sprintf(p, "====== tg ====\n");
-	for (i = 0x400; i <= 0x4EC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	p += sprintf(p, "====== cdp (including EIS) ====\n");
-	for (i = 0xB00; i <= 0xDE0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	p += sprintf(p, "====== seninf ====\n");
-	for (i = 0x4000; i <= 0x40C0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4100; i <= 0x41BC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4200; i <= 0x4208; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4300; i <= 0x4310; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x43A0; i <= 0x43B0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4400; i <= 0x4424; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4500; i <= 0x4520; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4600; i <= 0x4608; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	for (i = 0x4A00; i <= 0x4A08; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	p += sprintf(p, "====== 3DNR ====\n");
-	for (i = 0x4F00; i <= 0x4F38; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i));
-
-	/*  */
-	*ppStart = pPage + off;
-	/*  */
-	Length = p - pPage;
-	if (Length > off)
-		Length -= off;
-	else
-		Length = 0;
-
-	/*  */
-
-	ret = Length < Count ? Length : Count;
-
-	LOG_DBG("- X. ret: %d.", ret);
-
-	return ret;
-#else /* new file_operations style */
 	LOG_ERR("ISP_DumpRegToProc: Not implement");
 	return 0;
-#endif
 }
 
 /*******************************************************************************
@@ -8932,20 +8845,11 @@ static ssize_t ISP_DumpRegToProc(
 /*
 * ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *)
 */
-#define USE_OLD_STYPE_12011 0
-#if USE_OLD_STYPE_12011
-static int  ISP_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	unsigned long   Count,
-	void *pData)
-#else /* new file_operations style */
 static ssize_t ISP_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	size_t Count,
 	loff_t *pData)
-#endif
 {
 	LOG_ERR("ISP_RegDebug: Not implement");
 	return 0;
@@ -8954,23 +8858,11 @@ static ssize_t ISP_RegDebug(
 /*
 * ssize_t (*read) (struct file *, char __user *, size_t, loff_t *)
 */
-#define USE_OLD_STYPE_12061 0
-#if USE_OLD_STYPE_12061
-static unsigned int proc_regOfst;
-static int CAMIO_DumpRegToProc(
-	char *pPage,
-	char **ppStart,
-	off_t   off,
-	int  Count,
-	int *pEof,
-	void *pData)
-#else /* new file_operations style */
 static ssize_t CAMIO_DumpRegToProc(
 	struct file *pFile,
 	char *pStart,
 	size_t off,
 	loff_t *Count)
-#endif
 {
 	LOG_ERR("CAMIO_DumpRegToProc: Not implement");
 	return 0;
@@ -8983,20 +8875,11 @@ static ssize_t CAMIO_DumpRegToProc(
 /*
 * ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *)
 */
-#define USE_OLD_STYPE_12112 0
-#if USE_OLD_STYPE_12112
-static int  CAMIO_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	unsigned long   Count,
-	void *pData)
-#else /* new file_operations style */
 static ssize_t CAMIO_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	size_t Count,
 	loff_t *pData)
-#endif
 {
 	LOG_ERR("CAMIO_RegDebug: Not implement");
 	return 0;
