@@ -2669,58 +2669,71 @@ static signed int fg_get_is_fg_initialized(void *data)
 static void fgauge_read_RTC_boot_status(void)
 {
 	int hw_id = upmu_get_reg_value(0x0200);
-	int plugout_reg, plugout_reg_b13;
-	int valid_reg;
+	int spare0_reg, spare0_reg_b13;
+	int spare3_reg;
 
-	plugout_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
-	valid_reg = get_rtc_spare_fg_value();
+	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
+	spare3_reg = get_rtc_spare_fg_value();
 
-	rtc_invalid = valid_reg >> 7;
+	if (spare3_reg == 0)
+		rtc_invalid = 1;
+	else
+		rtc_invalid = 0;
 
 	if (rtc_invalid == 0) {
-		plugout_reg_b13 = (plugout_reg & 0x20) >> 5;
+		spare0_reg_b13 = (spare0_reg & 0x20) >> 5;
 		if ((hw_id & 0xff00) == 0x3500)
-			is_bat_plugout = plugout_reg_b13;
+			is_bat_plugout = spare0_reg_b13;
 		else
-			is_bat_plugout = ~plugout_reg_b13;
+			is_bat_plugout = ~spare0_reg_b13;
 
-		bat_plug_out_time = plugout_reg & 0x1f;
+		bat_plug_out_time = spare0_reg & 0x1f;	/*[12:8], 5 bits*/
 	} else {
 		is_bat_plugout = 1;
 		bat_plug_out_time = 31;	/*[12:8], 5 bits*/
 	}
 
-	bm_err("[fgauge_read_RTC_boot_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d valid 0x%x plugout 0x%x\n",
+	bm_err("[fgauge_read_RTC_boot_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d spare3 0x%x spare0 0x%x\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time,
-			valid_reg, plugout_reg);
-
-
+			spare3_reg, spare0_reg);
 }
 
 static signed int fg_set_fg_reset_rtc_status(void *data)
 {
-	int temp_value, after_reset_val;
-	int plugout_reg;
+	int temp_value;
+	int spare0_reg, after_rst_spare0_reg;
+	int spare3_reg, after_rst_spare3_reg;
 
 	fgauge_read_RTC_boot_status();
 
-	plugout_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
+	/* read spare0 */
+	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 
-	temp_value = plugout_reg | (1<<7);
-
-	set_rtc_spare_fg_value(0);
-
+	/* raise 15b to reset, then recover */
+	temp_value = spare0_reg | (1<<7);
 	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
 	mdelay(1);
-
 	temp_value &= 0x7f;
 	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
 
-	after_reset_val = hal_rtc_get_spare_register(RTC_FG_INIT);
-	pr_err("[fgauge_read_RTC_boot_status]reset RTC_FG_INIT 0x%x 0x%x 0x%x\n",
-		plugout_reg, temp_value, after_reset_val);
+	/* read spare0 again */
+	after_rst_spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
+
+
+	/* read spare3 */
+	spare3_reg = get_rtc_spare_fg_value();
+
+	/* set spare3 0x7f */
+	set_rtc_spare_fg_value(0x7f);
+
+	/* read spare3 again */
+	after_rst_spare3_reg = get_rtc_spare_fg_value();
+
+	pr_err("[fgauge_read_RTC_boot_status] spare0 0x%x 0x%x, spare3 0x%x 0x%x\n",
+		spare0_reg, after_rst_spare0_reg, spare3_reg, after_rst_spare3_reg);
 
 	return STATUS_OK;
+
 }
 
 static signed int read_boot_battery_plug_out_status(void *data)
