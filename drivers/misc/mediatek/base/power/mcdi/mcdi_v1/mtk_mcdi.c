@@ -909,14 +909,23 @@ static int mcdi_cpu_callback(struct notifier_block *nfb,
 	case CPU_DOWN_PREPARE_FROZEN:
 		mcdi_pause(true);
 		break;
+	}
 
+	return NOTIFY_OK;
+}
+
+static int mcdi_cpu_callback_leave_hotplug(struct notifier_block *nfb,
+				   unsigned long action, void *hcpu)
+{
+	switch (action) {
 	case CPU_ONLINE:
 	case CPU_ONLINE_FROZEN:
 	case CPU_UP_CANCELED:
 	case CPU_UP_CANCELED_FROZEN:
 	case CPU_DOWN_FAILED:
 	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_POST_DEAD:
+	case CPU_DEAD:
+	case CPU_DEAD_FROZEN:
 		mcdi_avail_cpu_cluster_update();
 
 		mcdi_pause(false);
@@ -932,9 +941,15 @@ static struct notifier_block mcdi_cpu_notifier = {
 	.priority   = INT_MAX,
 };
 
+static struct notifier_block mcdi_cpu_notifier_leave_hotplug = {
+	.notifier_call = mcdi_cpu_callback_leave_hotplug,
+	.priority   = INT_MIN,
+};
+
 static int mcdi_hotplug_cb_init(void)
 {
 	register_cpu_notifier(&mcdi_cpu_notifier);
+	register_cpu_notifier(&mcdi_cpu_notifier_leave_hotplug);
 
 	return 0;
 }
