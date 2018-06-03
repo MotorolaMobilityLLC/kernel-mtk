@@ -28,7 +28,7 @@
 
 #define HEX_FMT "0x%08x"
 #define SIZEOF_SNAPSHOT(g) (sizeof(struct snapshot) + sizeof(unsigned int) * (g->nr_golden_setting - 1))
-#define DEBUG_BUF_SIZE 200
+#define DEBUG_BUF_SIZE 2000
 static char buf[DEBUG_BUF_SIZE] = { 0 };
 static struct base_remap _base_remap;
 static struct pmic_manual_dump _pmic_manual_dump;
@@ -729,32 +729,49 @@ unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
 	return 0;
 }
 
+#define PER_LINE_TO_PRINT 8
+
 void mt_power_gs_pmic_manual_dump(void)
 {
-	unsigned int i;
+	unsigned int i, dump_cnt = 0;
 	char *p;
 
 	if (_pmic_manual_dump.addr_array && _pmic_manual_dump.array_pos) {
-		pr_warn("Scenario - PMIC - Addr       - Value\n");
+		p = buf;
+		p += snprintf(p, sizeof(buf), "\n");
+		p += snprintf(p, sizeof(buf) - (p - buf),
+		"Scenario - PMIC - Addr       - Value\n");
+
 		for (i = 0; i < _pmic_manual_dump.array_pos; i++) {
-			p = buf;
-			p += snprintf(p, sizeof(buf), "Manual   - PMIC - 0x%08x - 0x%08x",
+			dump_cnt++;
+			p += snprintf(p, sizeof(buf) - (p - buf),
+				"Manual   - PMIC - 0x%08x - 0x%08x\n",
 				_pmic_manual_dump.addr_array[i],
 				_golden_read_reg(_pmic_manual_dump.addr_array[i]));
-			pr_warn("%s\n", buf);
+
+			if (dump_cnt && ((dump_cnt % PER_LINE_TO_PRINT) == 0)) {
+				pr_warn("%s", buf);
+				p = buf;
+				p += snprintf(p, sizeof(buf), "\n");
+			}
 		}
+		if (dump_cnt % PER_LINE_TO_PRINT)
+			pr_warn("%s", buf);
 	}
 }
 
 void mt_power_gs_compare(char *scenario, char *pmic_name,
 			 const unsigned int *pmic_gs, unsigned int pmic_gs_len)
 {
-	unsigned int i, k, val0, val1, val2, diff;
+	unsigned int i, k, val0, val1, val2, diff, dump_cnt = 0;
 	char *p;
 
 	/* dump diff mode */
 	if (slp_chk_golden_diff_mode) {
-		pr_warn("Scenario - PMIC - Addr       - Value      - Mask       - Golden     - Wrong Bit\n");
+		p = buf;
+		p += snprintf(p, sizeof(buf), "\n");
+		p += snprintf(p, sizeof(buf) - (p - buf),
+		"Scenario - PMIC - Addr       - Value      - Mask       - Golden     - Wrong Bit\n");
 
 		for (i = 0; i < pmic_gs_len; i += 3) {
 			val0 = _golden_read_reg(pmic_gs[i]);
@@ -762,30 +779,52 @@ void mt_power_gs_compare(char *scenario, char *pmic_name,
 			val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
 			if (val1 != val2) {
-				p = buf;
-				p += snprintf(p, sizeof(buf), "%s - %s - 0x%08x - 0x%08x - 0x%08x - 0x%08x -",
-					      scenario, pmic_name, pmic_gs[i], val0, pmic_gs[i + 1], pmic_gs[i + 2]);
+				dump_cnt++;
+				p += snprintf(p, sizeof(buf) - (p - buf),
+					"%s - %s - 0x%08x - 0x%08x - 0x%08x - 0x%08x -",
+					scenario, pmic_name, pmic_gs[i], val0, pmic_gs[i + 1], pmic_gs[i + 2]);
 
 				for (k = 0, diff = val1 ^ val2; diff != 0; k++, diff >>= 1) {
 					if ((diff % 2) != 0)
 						p += snprintf(p, sizeof(buf) - (p - buf), " %d", k);
 				}
-				pr_warn("%s\n", buf);
+
+				p += snprintf(p, sizeof(buf) - (p - buf), "\n");
+
+				if (dump_cnt && ((dump_cnt % PER_LINE_TO_PRINT) == 0)) {
+					pr_warn("%s", buf);
+					p = buf;
+					p += snprintf(p, sizeof(buf), "\n");
+				}
 			}
+
 		}
+		if (dump_cnt % PER_LINE_TO_PRINT)
+			pr_warn("%s", buf);
 
 	/* dump raw data mode */
 	} else {
-		pr_warn("Scenario - PMIC - Addr       - Value\n");
+		p = buf;
+		p += snprintf(p, sizeof(buf), "\n");
+		p += snprintf(p, sizeof(buf) - (p - buf),
+		"Scenario - PMIC - Addr       - Value\n");
 
 		for (i = 0; i < pmic_gs_len; i += 3) {
 			val0 = _golden_read_reg(pmic_gs[i]);
 
-			p = buf;
-			p += snprintf(p, sizeof(buf), "%s - %s - 0x%08x - 0x%08x",
-					scenario, pmic_name, pmic_gs[i], val0);
-			pr_warn("%s\n", buf);
+			dump_cnt++;
+			p += snprintf(p, sizeof(buf) - (p - buf),
+				"%s - %s - 0x%08x - 0x%08x\n",
+				scenario, pmic_name, pmic_gs[i], val0);
+
+			if (dump_cnt && ((dump_cnt % PER_LINE_TO_PRINT) == 0)) {
+				pr_warn("%s", buf);
+				p = buf;
+				p += snprintf(p, sizeof(buf), "\n");
+			}
 		}
+		if (dump_cnt % PER_LINE_TO_PRINT)
+			pr_warn("%s", buf);
 	}
 	pr_warn("Done...\n");
 }
