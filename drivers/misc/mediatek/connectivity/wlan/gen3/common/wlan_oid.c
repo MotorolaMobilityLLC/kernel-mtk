@@ -6761,9 +6761,16 @@ wlanoidSetMulticastList(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
+	kalMemZero(&rCmdMacMcastAddr, sizeof(rCmdMacMcastAddr));
 	rCmdMacMcastAddr.u4NumOfGroupAddr = u4SetBufferLen / MAC_ADDR_LEN;
 	rCmdMacMcastAddr.ucBssIndex = prAdapter->prAisBssInfo->ucBssIndex;
 	kalMemCopy(rCmdMacMcastAddr.arAddress, pvSetBuffer, u4SetBufferLen);
+	DBGLOG(OID, INFO,
+		"MCAST white list: total=%d MAC0="MACSTR" MAC1="MACSTR" MAC2="MACSTR" MAC3="MACSTR" MAC4="MACSTR"\n",
+		rCmdMacMcastAddr.u4NumOfGroupAddr,
+		MAC2STR(rCmdMacMcastAddr.arAddress[0]), MAC2STR(rCmdMacMcastAddr.arAddress[1]),
+		MAC2STR(rCmdMacMcastAddr.arAddress[2]), MAC2STR(rCmdMacMcastAddr.arAddress[3]),
+		MAC2STR(rCmdMacMcastAddr.arAddress[4]));
 
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_MAC_MCAST_ADDR,
@@ -6863,24 +6870,28 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 
 	if (rStatus == WLAN_STATUS_SUCCESS) {
 		/* Store the packet filter */
-
 		prAdapter->u4OsPacketFilter &= PARAM_PACKET_FILTER_P2P_MASK;
 		prAdapter->u4OsPacketFilter |= u4NewPacketFilter;
 		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
 					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
-	DBGLOG(OID, TRACE, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
+	DBGLOG(OID, TRACE, "[MC debug] u4OsPacketFilter=0x%x\n", prAdapter->u4OsPacketFilter);
 	return rStatus;
 }				/* wlanoidSetCurrentPacketFilter */
 
 WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
 				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen)
 {
-#if CFG_SUPPORT_DROP_MC_PACKET
+#if CFG_SUPPORT_DROP_ALL_MC_PACKET
 	if (prAdapter->prGlueInfo->fgIsInSuspendMode)
 		u4PacketFilter &= ~(PARAM_PACKET_FILTER_MULTICAST | PARAM_PACKET_FILTER_ALL_MULTICAST);
+#else
+	if (prAdapter->prGlueInfo->fgIsInSuspendMode) {
+		u4PacketFilter &= ~(PARAM_PACKET_FILTER_ALL_MULTICAST);
+		u4PacketFilter |= (PARAM_PACKET_FILTER_MULTICAST);
+	}
 #endif
-	DBGLOG(OID, INFO, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter,
+	DBGLOG(OID, INFO, "[MC debug] u4PacketFilter=0x%x, IsSuspend=%d\n", u4PacketFilter,
 				prAdapter->prGlueInfo->fgIsInSuspendMode);
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_SET_RX_FILTER,
