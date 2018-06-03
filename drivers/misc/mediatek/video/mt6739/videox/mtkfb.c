@@ -2338,7 +2338,12 @@ int pan_display_test(int frame_num, int bpp)
 	int w, h, fb_h;
 	int yoffset_max;
 	int yoffset;
-
+	/* MAX_INT == 0x7fffffff */
+	if (frame_num < -1 || frame_num > 0x7fffffff) {
+		DISPERR("%s: frame_num out of bounds:frame_num = %d",
+			__func__, frame_num);
+		return -1;
+	}
 	mtkfb_fbi->var.yoffset = 0;
 	disp_get_fb_address((unsigned long *)&fb_va, &fb_pa);
 	fb_size = mtkfb_fbi->fix.smem_len;
