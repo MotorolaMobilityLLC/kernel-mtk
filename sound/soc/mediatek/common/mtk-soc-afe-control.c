@@ -129,6 +129,7 @@ static AudioSramManager mAudioSramManager;
 
 const size_t AudioInterruptLimiter = 100;
 static int irqcount;
+static unsigned int irq_mcu_mask;
 static int APLL1TunerCounter;
 static int APLL2TunerCounter;
 
@@ -527,6 +528,24 @@ bool Register_Aud_Irq(void *dev, uint32 afe_irq_number)
 	return ret;
 }
 
+static unsigned int get_mcu_irq_mask(void)
+{
+	int index = 0;
+	const struct Aud_RegBitsInfo *irq_status;
+	enum Soc_Aud_IRQ_PURPOSE purpose;
+
+	if (irq_mcu_mask == 0) {
+		for (index = 0; index < Soc_Aud_IRQ_MCU_MODE_NUM; index++) {
+			irq_status = &GetIRQCtrlReg(index)->status;
+			purpose = GetIRQCtrlReg(index)->irqPurpose;
+			if (irq_status->reg == AFE_REG_UNDEFINED)
+				continue;
+
+			irq_mcu_mask |= (purpose == Soc_Aud_IRQ_MCU) << irq_status->sbit;
+		}
+	}
+	return irq_mcu_mask;
+}
 
 /*****************************************************************************
  * FUNCTION
@@ -543,10 +562,10 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	kal_uint32 volatile u4RegValue;
 	kal_uint32 volatile irq_mcu_en;
 	uint32 irqIndex = 0;
+	unsigned int mcu_mask = get_mcu_irq_mask();
 	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg;
 
-	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
-	u4RegValue &= AFE_IRQ_MASK;
+	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS) & mcu_mask;
 
 	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
 	if (u4RegValue == 0) {
@@ -583,7 +602,7 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	}
 
 	/* clear irq */
-	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, AFE_IRQ_MASK);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, mcu_mask);
 
 	/*call each IRQ handler function*/
 	for (irqIndex = 0; irqIndex < Soc_Aud_IRQ_MCU_MODE_NUM; irqIndex++) {
