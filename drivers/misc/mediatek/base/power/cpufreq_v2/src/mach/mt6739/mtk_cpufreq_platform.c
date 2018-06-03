@@ -490,7 +490,8 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	turbo_code = get_devinfo_with_index(TURBO_EFUSE);
 	turbo_code = _GET_BITS_VAL_(21:20, turbo_code);
 
-	if ((seg_code == 0x80 || seg_code == 0x88) && turbo_code == 0x3)
+	if ((seg_code == 0x80 || seg_code == 0x88 || seg_code == 0x0
+		|| seg_code == 0x08 || seg_code == 0x90) && turbo_code == 0x3)
 		lv = CPU_LEVEL_1;
 	else
 		lv = CPU_LEVEL_0;
