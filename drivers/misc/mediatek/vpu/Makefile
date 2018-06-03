@@ -30,6 +30,7 @@ MTK_VPU_CORE := 3
 endif
 else ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6771))
 MTK_VPU_CORE := 2
+subdir-ccflags-y += -DMTK_VPU_SMI_DEBUG_ON
 else ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6758 mt6799))
 MTK_VPU_CORE := 1
 else

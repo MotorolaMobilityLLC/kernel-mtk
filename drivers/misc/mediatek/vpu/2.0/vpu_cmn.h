@@ -25,12 +25,13 @@
 /* Common Structure */
 struct vpu_device {
 	struct proc_dir_entry *proc_dir;
-	struct device *dev[MTK_VPU_CORE+2];
+	struct device *dev[MTK_VPU_CORE+3];
 	struct dentry *debug_root;
 	unsigned long vpu_syscfg_base;
 	unsigned long vpu_adlctrl_base;
 	unsigned long vpu_vcorecfg_base;
 	unsigned long vpu_base[MTK_VPU_CORE];
+	unsigned long smi_common_base;
 	unsigned long bin_base;
 	unsigned long bin_pa;
 	unsigned int bin_size;
@@ -500,6 +501,11 @@ void vpu_met_event_leave(int core, int algo_id);
 		aee_kernel_exception("VPU", "\nCRDISPATCH_KEY:" key "\n" format, ##args); \
 	} while (0)
 
+#define vpu_aee_warn(key, format, args...) \
+	do { \
+		LOG_ERR(format, ##args); \
+		aee_kernel_warning("VPU", "\nCRDISPATCH_KEY:" key "\n" format, ##args); \
+	} while (0)
 
 /* Performance Measure */
 #ifdef VPU_TRACE_ENABLED
