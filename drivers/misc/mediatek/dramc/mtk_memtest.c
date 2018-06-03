@@ -314,7 +314,11 @@ static int dramc_format_dram_addr(phys_addr_t addr, char *buf, unsigned int len)
 	if (dramc_dram_address_get(addr, &rank, &row, &bank, &col, &ch))
 		return 0;
 
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
 	sz = snprintf(buf, len, "addr: 0x%llx ", addr);
+#else
+	sz = snprintf(buf, len, "addr: 0x%x ", addr);
+#endif
 
 	sz += snprintf(buf + sz, len - sz,
 		"(rank=0x%x, row=0x%x, bank=0x%x, col=0x%x, ch=0x%x)\n",
