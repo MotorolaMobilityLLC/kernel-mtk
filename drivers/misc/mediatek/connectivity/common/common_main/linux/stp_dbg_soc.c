@@ -21,6 +21,7 @@
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
 #define SUB_PKT_SIZE 1024
 #define SUB_PKT_HEADER 5
+#define EMI_SYNC_TIMEOUT 100 /* FW guarantee that MCU copy data time is ~20ms. We set 100ms for safety */
 
 ENUM_STP_FW_ISSUE_TYPE issue_type;
 UINT8 g_paged_trace_buffer[STP_DBG_PAGED_TRACE_SIZE] = { 0 };
@@ -119,6 +120,20 @@ static _osal_inline_ INT32 stp_dbg_soc_put_emi_dump_to_nl(PUINT8 data_buf, INT32
 	return ret;
 }
 
+static _osal_inline_ INT32 stp_dbg_soc_core_dump_check_end(PUINT8 buf, INT32 len)
+{
+	return strnstr(buf, "coredump end", len) != NULL;
+}
+
+static _osal_inline_ UINT64 stp_dbg_soc_elapsed_time(UINT64 ts, ULONG nsec)
+{
+	UINT64 current_ts = 0;
+	ULONG current_nsec = 0;
+
+	osal_get_local_time(&current_ts, &current_nsec);
+	return (current_ts*1000 + current_nsec/1000) - (ts*1000 + nsec/1000);
+}
+
 static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 {
 	INT32 ret = 0;
@@ -126,15 +141,15 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	UINT32 dump_num = 0;
 	UINT32 packet_num = STP_PAGED_DUMP_TIME_LIMIT/100;
 	UINT32 page_counter = 0;
-	UINT32 loop_cnt1 = 0;
-	UINT32 loop_cnt2 = 0;
 	ENUM_HOST_DUMP_STATE host_state;
 	ENUM_CHIP_DUMP_STATE chip_state;
 	UINT32 dump_phy_addr = 0;
 	PUINT8 dump_vir_addr = NULL;
-	INT32 dump_len = 0;
-	UINT32 isEnd = 0;
+	UINT32 dump_len = 0;
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
+	UINT64 start_ts = 0;
+	ULONG start_nsec = 0;
+
 
 	p_ecsi = wmt_plat_get_emi_phy_add();
 	osal_assert(p_ecsi);
@@ -159,22 +174,19 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 	page_counter = 0;
 	do {
-		loop_cnt1 = 0;
-		loop_cnt2 = 0;
 		dump_phy_addr = 0;
 		dump_vir_addr = NULL;
 		dump_len = 0;
-		isEnd = 0;
 
 		host_state = (ENUM_HOST_DUMP_STATE)wmt_plat_get_dump_info(
 				p_ecsi->p_ecso->emi_apmem_ctrl_host_sync_state);
 		if (host_state == STP_HOST_DUMP_NOT_START) {
 			counter++;
 			STP_DBG_INFO_FUNC("counter(%d)\n", counter);
-			osal_sleep_ms(100);
 		} else {
 			counter = 0;
 		}
+		osal_get_local_time(&start_ts, &start_nsec);
 		while (1) {
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
@@ -184,20 +196,19 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			}
 			STP_DBG_DBG_FUNC("waiting chip put done\n");
 			STP_DBG_INFO_FUNC("chip_state: %d\n", chip_state);
-			loop_cnt1++;
-			osal_sleep_ms(5);
 
-			if (loop_cnt1 > 10) {
-				STP_DBG_INFO_FUNC("host sync num(%d),chip sync num(%d)\n",
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_host_sync_num),
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_chip_sync_num));
-				STP_DBG_INFO_FUNC("ctrl state(%d)\n",
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_state));
+			if (stp_dbg_soc_elapsed_time(start_ts, start_nsec) > EMI_SYNC_TIMEOUT) {
+#ifndef CONFIG_MT_ENG_BUILD
+				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n",
+					stp_dbg_soc_elapsed_time(start_ts, start_nsec), EMI_SYNC_TIMEOUT);
+				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
+				/* For UX, if get coredump timeout, skip it and do chip reset ASAP. */
+				if (dump_sink == 2)
+					counter = packet_num + 1;
+#endif
 				goto paged_dump_end;
 			}
+			osal_sleep_ms(1);
 		}
 
 		wmt_plat_set_host_dump_state(STP_HOST_DUMP_GET);
@@ -270,7 +281,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_num));
 		page_counter++;
 		STP_DBG_INFO_FUNC("\n\n++ paged dump counter(%d) ++\n\n", page_counter);
-
+		osal_get_local_time(&start_ts, &start_nsec);
 		while (1) {
 			chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_sync_state);
@@ -280,20 +291,18 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 				break;
 			}
 			STP_DBG_INFO_FUNC("waiting chip put end, chip_state: %d\n", chip_state);
-			loop_cnt2++;
-			osal_sleep_ms(10);
-
-			if (loop_cnt2 > 10) {
-				STP_DBG_INFO_FUNC("host sync num(%d),chip sync num(%d)\n",
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_host_sync_num),
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_chip_sync_num));
-				STP_DBG_INFO_FUNC("ctrl state(%d)\n",
-						wmt_plat_get_dump_info(p_ecsi->p_ecso->
-							emi_apmem_ctrl_state));
+			if (stp_dbg_soc_elapsed_time(start_ts, start_nsec) > EMI_SYNC_TIMEOUT) {
+#ifndef CONFIG_MT_ENG_BUILD
+				STP_DBG_ERR_FUNC("Wait Timeout: %llu > %d\n",
+					stp_dbg_soc_elapsed_time(start_ts, start_nsec), EMI_SYNC_TIMEOUT);
+				/* Since customer's user/userdebug load get coredump via netlink(dump_sink==2). */
+				/* For UX, if wait sync state timeout, skip it and do chip reset ASAP. */
+				if (dump_sink == 2)
+					counter = packet_num + 1;
+#endif
 				goto paged_dump_end;
 			}
+			osal_sleep_ms(1);
 		}
 
 paged_dump_end:
@@ -303,28 +312,28 @@ paged_dump_end:
 		if (2 == dump_sink && 1 == ret)
 			break;
 
-		if (counter > packet_num) {
-			isEnd = wmt_plat_get_dump_info(
-					p_ecsi->p_ecso->emi_apmem_ctrl_chip_paded_dump_end);
+		STP_DBG_INFO_FUNC("\n\n++ counter(%d) packet_num(%d) page_counter(%d) ++\n\n",
+			counter, packet_num, page_counter);
+		/* According to FW, Packet_num is not precise. */
+		/* "coredump end" may in packet_num+1, packet_num, packet_num-1 */
+		if (stp_dbg_soc_core_dump_check_end(&g_paged_dump_buffer[0], dump_len)) {
+			STP_DBG_INFO_FUNC("paged dump end\n");
 
-			if (isEnd) {
-				STP_DBG_INFO_FUNC("paged dump end\n");
-
-				STP_DBG_INFO_FUNC("\n\n paged dump print  ++\n\n");
-				stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], g_paged_dump_len);
-				STP_DBG_INFO_FUNC("\n\n paged dump print  --\n\n");
-				STP_DBG_INFO_FUNC("\n\n paged dump size = %d, paged dump page number = %d\n\n",
-						g_paged_dump_len, page_counter);
-				counter = 0;
-				ret = 0;
-			} else {
-				STP_DBG_ERR_FUNC("paged dump fail\n");
-				wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
-				stp_dbg_poll_cpupcr(5, 5, 0);
-				stp_dbg_poll_dmaregs(5, 1);
-				counter = 0;
-				ret = -1;
-			}
+			STP_DBG_INFO_FUNC("\n\n paged dump print  ++\n\n");
+			stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], g_paged_dump_len);
+			STP_DBG_INFO_FUNC("\n\n paged dump print  --\n\n");
+			STP_DBG_INFO_FUNC("\n\n paged dump size = %d, paged dump page number = %d\n\n",
+					g_paged_dump_len, page_counter);
+			counter = 0;
+			ret = 0;
+			break;
+		} else if (counter > packet_num) {
+			STP_DBG_ERR_FUNC("paged dump fail\n");
+			wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
+			stp_dbg_poll_cpupcr(5, 5, 0);
+			stp_dbg_poll_dmaregs(5, 1);
+			counter = 0;
+			ret = -1;
 			break;
 		}
 	} while (1);
