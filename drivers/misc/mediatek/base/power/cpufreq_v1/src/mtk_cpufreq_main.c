@@ -316,18 +316,10 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	pll_p->pll_ops->set_armpll_dds(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds,
 		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #else
-#if 0
-	if (pll_p->hopping_id != -1) {
-		/* actual FHCTL */
-		aee_record_cpu_dvfs_step(7);
-		pll_p->pll_ops->set_freq_hopping(pll_p,
-			_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
-	} else {/* No hopping for B */
-#endif
-		aee_record_cpu_dvfs_step(8);
-		pll_p->pll_ops->set_armpll_dds(pll_p, _search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot),
-		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
-	/* } */
+	aee_record_cpu_dvfs_step(7);
+	pll_p->pll_ops->set_freq_hopping(pll_p,
+		_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
+	aee_record_cpu_dvfs_step(8);
 #endif
 
 	aee_record_cpu_dvfs_step(9);
