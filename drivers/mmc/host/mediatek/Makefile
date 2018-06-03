@@ -40,6 +40,12 @@ ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/drivers
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6739")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/mt6739
+obj-$(CONFIG_MMC_MTK_PRO) += mt6799/
+endif
+
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/mt6757
