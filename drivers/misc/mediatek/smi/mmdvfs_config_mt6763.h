@@ -96,7 +96,7 @@ struct mmdvfs_clk_hw_map mt6763_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 #define MT6763_MMDVFS_SENSOR_MIN (19000000)
 /* A.1 [LP4 2-ch] Scenarios of each MM DVFS Step (force kicker) */
 /* OPP 0 scenarios */
-#define MT6763_MMDVFS_OPP0_NUM 17
+#define MT6763_MMDVFS_OPP0_NUM 18
 struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles[MT6763_MMDVFS_OPP0_NUM] = {
 	{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
 	{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
@@ -118,6 +118,7 @@ struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles[MT6763_MMDVFS_OPP0_NUM] = {
 		{MT6763_MMDVFS_SENSOR_MIN, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
 	{"4K VR/ VSS (VENC)", SMI_BWC_SCEN_VENC, {0, 0, 0}, {4096, 1716, 0} },
 	{"High resolution video playback", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, {0, 0, 0}, {0, 0, 0 } },
+	{"WFD with Video Playback", MMDVFS_SCEN_VP_WFD, {0, 0, 0}, {0, 0, 0 } },
 };
 
 /* OPP 1 scenarios */
