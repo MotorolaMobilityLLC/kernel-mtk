@@ -212,6 +212,10 @@ static u64 scale_exec_time(u64 delta, struct rq *rq)
 	if (unlikely(cur_freq > rq->max_possible_freq))
 		cur_freq = rq->max_possible_freq;
 
+	/* platform driver may be not ready */
+	if (!rq->max_possible_freq)
+		return 0;
+
 	/* round up div64 */
 	delta = div64_u64(delta * cur_freq + rq->max_possible_freq - 1,
 			  rq->max_possible_freq);
@@ -923,7 +927,10 @@ static unsigned long load_scale_cpu_efficiency(int cpu)
  */
 static unsigned long load_scale_cpu_freq(int cpu)
 {
-	return DIV_ROUND_UP(1024 * max_possible_freq, cpu_rq(cpu)->max_freq);
+	if (cpu_rq(cpu)->max_freq)
+		return DIV_ROUND_UP(1024 * max_possible_freq, cpu_rq(cpu)->max_freq);
+	else
+		return 1024;
 }
 
 static int compute_capacity(int cpu)
@@ -1038,6 +1045,10 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 
 		if (update_max) {
 			u64 mpc, mplsf;
+
+			/* paltform driver may be delayed */
+			if (!rq->max_freq)
+				return 0;
 
 			mpc = div_u64(((u64) rq->capacity) *
 				rq->max_possible_freq, rq->max_freq);
