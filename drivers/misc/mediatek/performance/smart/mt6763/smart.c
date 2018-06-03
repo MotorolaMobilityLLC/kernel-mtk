@@ -811,11 +811,13 @@ static void smart_get_sysinfo(unsigned int *loads, unsigned int *tlp, unsigned i
 
 	/* loading */
 	for_each_online_cpu(cpu) {
-		sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
+		if (cpu < 8) {
+			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
 			if (cpu < 4)
 				total_load += rel_load;
 			else
 				total_load += abs_load;
+		}
 	}
 	*loads = total_load;
 
