@@ -1051,7 +1051,6 @@ static enum alarmtimer_restart
 	struct tcpc_device *tcpc_dev =
 		container_of(alarm, struct tcpc_device, wake_up_timer);
 
-	TCPC_INFO("%s\n", __func__);
 	wake_lock_timeout(&tcpc_dev->wakeup_wake_lock, 1*HZ);
 	schedule_delayed_work(&tcpc_dev->wake_up_work, 0);
 	return ALARMTIMER_NORESTART;
