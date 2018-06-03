@@ -124,11 +124,11 @@
 
 /* chip dependent */
 /* TODO: change to new reg addr. */
-#define ADDRESS_INDEX_0  101 /*0x11F10184*/
-#define ADDRESS_INDEX_1	 100 /*0x11F10180*/
-#define ADDRESS_INDEX_2	 102 /*0x11F10188*/
-#define ADDRESS_INDEX_3	 111 /*0x104501AC*/
-#define ADDRESS_INDEX_4	 112 /*0x104501B0*/
+#define ADDRESS_INDEX_0  101
+#define ADDRESS_INDEX_1	 100
+#define ADDRESS_INDEX_2	 102
+#define ADDRESS_INDEX_3	 111
+#define ADDRESS_INDEX_4	 112
 
 #define CLEAR_TEMP 26111
 

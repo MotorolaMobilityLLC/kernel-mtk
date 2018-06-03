@@ -421,12 +421,7 @@ void tscpu_thermal_cal_prepare(void)
 	__u32 lvtsdevinfo1, lvtsdevinfo2, lvtsdevinfo3;
 #endif
 
-	/*
-	*ADDRESS_INDEX_0	  0x11F10184
-	*ADDRESS_INDEX_1	  0x11F10180
-	*ADDRESS_INDEX_2	  0x11F10188
-	* defined in tscpu_settings.h
-	*/
+
 
 	temp0 = get_devinfo_with_index(ADDRESS_INDEX_0);
 	temp1 = get_devinfo_with_index(ADDRESS_INDEX_1);
@@ -436,19 +431,19 @@ void tscpu_thermal_cal_prepare(void)
 
 	/*
 	*   chip dependent
-	*   ADC_GE_T    [9:0] *(0x11F10184)[31:22]
-	*   ADC_OE_T    [9:0] *(0x11F10184)[21:12]
+	*   ADC_GE_T
+	*   ADC_OE_T
 	*/
 	g_adc_ge_t = ((temp0 & _BITMASK_(31:22)) >> 22);
 	g_adc_oe_t = ((temp0 & _BITMASK_(21:12)) >> 12);
 
 	/*
-	*   O_VTSMCU1    (9b) *(0x11F10180)[25:17]
-	*   O_VTSMCU2    (9b) *(0x11F10180)[16:8]
-	*   O_VTSMCU3    (9b) *(0x11F10184)[8:0]
-	*   O_VTSMCU4    (9b) *(0x11F10188)[31:23]
-	*   O_VTSMCU5    (9b) *(0x11F10188)[13:5]
-	*   O_VTSABB     (9b) *(0x11F10188)[22:14]
+	*   O_VTSMCU1
+	*   O_VTSMCU2
+	*   O_VTSMCU3
+	*   O_VTSMCU4
+	*   O_VTSMCU5
+	*   O_VTSABB
 	*/
 	g_o_vtsmcu1 = ((temp1 & _BITMASK_(25:17)) >> 17);
 	g_o_vtsmcu2 = ((temp1 & _BITMASK_(16:8)) >> 8);
@@ -458,23 +453,23 @@ void tscpu_thermal_cal_prepare(void)
 	g_o_vtsabb = ((temp2 & _BITMASK_(22:14)) >> 14);
 
 	/*
-	*   DEGC_cali    (6b) *(0x11F10180)[6:1]
-	*   ADC_CALI_EN_T(1b) *(0x11F10180)[0]
+	*   DEGC_cali    (6b)
+	*   ADC_CALI_EN_T(1b)
 	*/
 	g_degc_cali = ((temp1 & _BITMASK_(6:1)) >> 1);
 	g_adc_cali_en_t = (temp1 & _BIT_(0));
 
 	/*
-	*   O_SLOPE_SIGN (1b) *(0x11F10180)[7]
-	*   O_SLOPE      (6b) *(0x11F10180)[31:26]
+	*   O_SLOPE_SIGN (1b)
+	*   O_SLOPE      (6b)
 	*/
 	g_o_slope_sign = ((temp1 & _BIT_(7)) >> 7);
 	g_o_slope = ((temp1 & _BITMASK_(31:26)) >> 26);
 
-	/*ID           (1b) *(0x11F10184)[9] */
+	/*ID*/
 	g_id = ((temp0 & _BIT_(9)) >> 9);
 
-	/*TS_OFFSET    (1b) *(0x11F10188)[4] */
+	/*TS_OFFSET*/
 	g_ts_offset = ((temp2 & _BIT_(4)) >> 4);
 
 	/*
@@ -504,12 +499,7 @@ void tscpu_thermal_cal_prepare(void)
 	}
 
 #if CFG_THERM_LVTS
-	/*
-	 * LVTS devinfo:
-	 * 0x0x11F1_01C8 --> 118
-	 * 0x0x11F1_01CC --> 119
-	 * 0x0x11F1_07C4 --> 139
-	 */
+
 	lvtsdevinfo1 = get_devinfo_with_index(118);
 	lvtsdevinfo2 = get_devinfo_with_index(119);
 	lvtsdevinfo3 = get_devinfo_with_index(139);
