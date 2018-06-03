@@ -18,3 +18,6 @@ mali_kbase-y += \
 	$(MALI_PLATFORM_DIR)/mali_kbase_config_mt6771.o \
 	$(MALI_PLATFORM_DIR)/mali_kbase_cpu_mt6771.o \
 #	mali_kbase_platform_fake.o
+
+ccflags-y += \
+	-I$(srctree)/drivers/misc/mediatek/base/power/include

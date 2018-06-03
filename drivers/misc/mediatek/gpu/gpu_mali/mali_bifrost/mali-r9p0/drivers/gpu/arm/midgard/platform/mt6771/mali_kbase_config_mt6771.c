@@ -18,6 +18,7 @@
 #include <linux/of_address.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/spinlock.h>
 #include <mali_kbase.h>
 #include <mali_kbase_defs.h>
 #include <mali_kbase_config.h>
@@ -27,6 +28,7 @@
 #include "ged_dvfs.h"
 #include "mtk_gpufreq.h"
 #include <mtk_gpu_log.h>
+#include "mtk_idle.h"
 
 #define MALI_TAG						"[GPU/MALI]"
 #define mali_pr_info(fmt, args...)		pr_info(MALI_TAG"[INFO]"fmt, ##args)
@@ -34,16 +36,28 @@
 
 DEFINE_MUTEX(g_mfg_lock);
 
+enum g_bucks_state_enum {
+	BUCKS_OFF = 0,
+	BUCKS_ON,
+};
+
 static void *g_MFG_base;
 static void *g_DBGAPB_base;
 static void *g_INFRA_AO_base;
 static void *g_TOPCKGEN_base;
 static int g_curFreqID;
+static enum g_bucks_state_enum g_bucks_state;
+static bool g_queue_work_state;
+static unsigned long g_idle_notifier_state;
+static struct notifier_block gpu_idle_notifier;
+static struct work_struct g_disable_bucks_work;
+static struct workqueue_struct *g_bucks_workqueue;
+static spinlock_t g_mfg_spinlock;
 
 /**
  * For GPU idle check
  */
-static void _mtk_check_MFG_idle(void)
+static void __mtk_check_MFG_idle(void)
 {
 	u32 val;
 
@@ -103,16 +117,38 @@ static void _mtk_check_MFG_idle(void)
 	} while ((val & 0x4) != 0x4);
 }
 
+/**
+ * check LCD state
+ */
+static unsigned int __mtk_check_LCD_state(void)
+{
+	unsigned long state = ged_query_info(GED_EVENT_STATUS);
+
+	return (state & GED_EVENT_LCD) ? 1 : 0;
+}
+
 static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 {
+	unsigned long flags;
+
 	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_ON)
 		return 0;
 
-	mali_pr_debug("@%s: power on ...\n", __func__);
+	mali_pr_debug("@%s: power on ..., g_bucks_state = %d\n", __func__, g_bucks_state);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x1 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
+
+	if (g_bucks_state == BUCKS_OFF) {
+		/* Turn on VGPU / VSRAM_GPU Buck */
+		mt_gpufreq_voltage_enable_set(1);
+		g_bucks_state = BUCKS_ON;
+		spin_lock_irqsave(&g_mfg_spinlock, flags);
+		g_queue_work_state = false;
+		spin_unlock_irqrestore(&g_mfg_spinlock, flags);
+		mali_pr_debug("@%s: enable VGPU / VSRAM_GPU bucks, g_bucks_state = %d\n", __func__, g_bucks_state);
+	}
 
 	/* Turn on GPU MTCMOS */
 	mt_gpufreq_enable_MTCMOS();
@@ -139,7 +175,7 @@ static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 	writel(0x0, g_MFG_base + 0x8b0);
 	/* merge_r off */
 	writel(0x0, g_MFG_base + 0x8a0);
-	/* axi1to2 off */
+	/* axi1to2 to m6 */
 	writel(0x0, g_MFG_base + 0x8f4);
 
 	GPULOG("merge_w: 0x%08x merge_r: 0x%08x axi1to2: 0x%08x",
@@ -171,7 +207,7 @@ static void pm_callback_power_off_nolock(struct kbase_device *kbdev)
 	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF)
 		return;
 
-	mali_pr_debug("@%s: power off ...\n", __func__);
+	mali_pr_debug("@%s: power off ..., g_bucks_state = %d\n", __func__, g_bucks_state);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x6 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
@@ -192,7 +228,7 @@ static void pm_callback_power_off_nolock(struct kbase_device *kbdev)
 	aee_rr_rec_gpu_dvfs_status(0x8 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
-	_mtk_check_MFG_idle();
+	__mtk_check_MFG_idle();
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x9 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
@@ -231,7 +267,7 @@ void pm_callback_power_suspend(struct kbase_device *kbdev)
 {
 	mutex_lock(&g_mfg_lock);
 
-	mali_pr_debug("@%s: power suspend ...\n", __func__);
+	mali_pr_debug("@%s: power suspend ..., g_bucks_state = %d\n", __func__, g_bucks_state);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xB | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
@@ -239,28 +275,67 @@ void pm_callback_power_suspend(struct kbase_device *kbdev)
 
 	pm_callback_power_off_nolock(kbdev);
 
-	/* Turn off GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(0);
+	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF
+			&& __mtk_check_LCD_state() == 0
+			&& g_bucks_state == BUCKS_ON) {
+		/* Turn off VGPU / VSRAM_GPU Buck */
+		mt_gpufreq_voltage_enable_set(0);
+		g_bucks_state = BUCKS_OFF;
+		mali_pr_debug("@%s: disable VGPU / VSRAM_GPU bucks, g_bucks_state = %d\n", __func__, g_bucks_state);
+	}
 
 	mutex_unlock(&g_mfg_lock);
 }
 
 void pm_callback_power_resume(struct kbase_device *kbdev)
 {
-	mutex_lock(&g_mfg_lock);
+	/* do-nothing */
+}
 
-	mali_pr_debug("@%s: power resume ...\n", __func__);
+static int gpu_idle_notifier_callback(struct notifier_block *nfb, unsigned long id, void *arg)
+{
+	unsigned long flags;
 
-#ifdef MT_GPUFREQ_SRAM_DEBUG
-	aee_rr_rec_gpu_dvfs_status(0xC | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
-#endif
+	switch (id) {
+	case NOTIFY_DPIDLE_ENTER:
+	case NOTIFY_SOIDLE_ENTER:
+		spin_lock_irqsave(&g_mfg_spinlock, flags);
+		if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF
+				&& __mtk_check_LCD_state() == 0
+				&& g_bucks_state == BUCKS_ON
+				&& g_queue_work_state == false) {
+			queue_work(g_bucks_workqueue, &g_disable_bucks_work);
+			g_queue_work_state = true;
+			g_idle_notifier_state = id;
+			mali_pr_debug("@%s: queue_work [DPIDLE | SOIDLE], g_idle_notifier_state = %lu, g_bucks_state = %d\n",
+					__func__, g_idle_notifier_state, g_bucks_state);
+		}
+		spin_unlock_irqrestore(&g_mfg_spinlock, flags);
+		break;
+	case NOTIFY_SOIDLE3_ENTER:
+		/* don't care about LCD on / off status */
+		spin_lock_irqsave(&g_mfg_spinlock, flags);
+		if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF
+				&& g_bucks_state == BUCKS_ON
+				&& g_queue_work_state == false) {
+			queue_work(g_bucks_workqueue, &g_disable_bucks_work);
+			g_queue_work_state = true;
+			g_idle_notifier_state = id;
+			mali_pr_debug("@%s: queue_work [SOIDLE3], g_idle_notifier_state = %lu, g_bucks_state = %d\n",
+					__func__, g_idle_notifier_state, g_bucks_state);
+		}
+		spin_unlock_irqrestore(&g_mfg_spinlock, flags);
+		break;
+	case NOTIFY_DPIDLE_LEAVE:
+	case NOTIFY_SOIDLE_LEAVE:
+	case NOTIFY_SOIDLE3_LEAVE:
+		/* do-nothing */
+	default:
+		/* do-nothing */
+		break;
+	}
 
-	/* Turn on GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(1);
-
-	pm_callback_power_on_nolock(kbdev);
-
-	mutex_unlock(&g_mfg_lock);
+	return NOTIFY_OK;
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -319,6 +394,33 @@ int kbase_platform_early_init(void)
 	return 0;
 }
 
+static void __disable_bucks_work_cb(struct work_struct *work)
+{
+	unsigned long flags;
+
+	mutex_lock(&g_mfg_lock);
+
+	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF
+			&& g_bucks_state == BUCKS_ON) {
+		if ((g_idle_notifier_state != NOTIFY_SOIDLE3_ENTER && __mtk_check_LCD_state() == 0)
+				|| g_idle_notifier_state == NOTIFY_SOIDLE3_ENTER) {
+			/* Turn off VGPU / VSRAM_GPU Buck */
+			mt_gpufreq_voltage_enable_set(0);
+			g_bucks_state = BUCKS_OFF;
+			mali_pr_debug("@%s: disable VGPU / VSRAM_GPU bucks, g_idle_notifier_state = %lu, g_bucks_state = %d\n",
+					__func__, g_idle_notifier_state, g_bucks_state);
+		}
+	} else {
+		/* skip this work, so give chance to the next queue_work */
+		spin_lock_irqsave(&g_mfg_spinlock, flags);
+		g_queue_work_state = false;
+		spin_unlock_irqrestore(&g_mfg_spinlock, flags);
+		mali_pr_debug("@%s: skip this work, g_bucks_state = %d\n", __func__, g_bucks_state);
+	}
+
+	mutex_unlock(&g_mfg_lock);
+}
+
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
 
@@ -326,6 +428,20 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		mali_pr_info("@%s: input parameter is NULL\n", __func__);
 		return -1;
 	}
+
+	g_bucks_state = BUCKS_ON;
+	g_queue_work_state = false;
+
+	g_bucks_workqueue = create_workqueue("gpu_bucks");
+	if (!g_bucks_workqueue)
+		mali_pr_info("@%s: Failed to create g_bucks_workqueue\n", __func__);
+
+	INIT_WORK(&g_disable_bucks_work, __disable_bucks_work_cb);
+
+	spin_lock_init(&g_mfg_spinlock);
+
+	gpu_idle_notifier.notifier_call = gpu_idle_notifier_callback;
+	mtk_idle_notifier_register(&gpu_idle_notifier);
 
 	g_MFG_base = _mtk_of_ioremap("mediatek,mfgcfg", 0);
 	if (g_MFG_base == NULL) {

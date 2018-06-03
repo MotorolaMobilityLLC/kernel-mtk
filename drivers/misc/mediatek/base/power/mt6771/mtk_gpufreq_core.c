@@ -525,14 +525,8 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
 		GPULOG("@%s: VGPU/VSRAM_GPU is on\n", __func__);
 	} else if (enable == 0)  {
-		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
-		/* ensure time interval of buck_on -> buck_off is at least 1ms */
-		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		/* Turn off GPU Bucks */
 		__mt_gpufreq_bucks_disable();
-		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
-		/* ensure time interval of buck_off -> buck_on is at least 1ms */
-		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		g_volt_enable_state = false;
 		__mt_gpufreq_kick_pbm(0);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
