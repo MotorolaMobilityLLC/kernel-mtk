@@ -4888,7 +4888,7 @@ static inline unsigned long task_util(struct task_struct *p)
 	return p->se.avg.util_avg;
 }
 
-unsigned int capacity_margin = 1590; /* ~50% margin */
+unsigned int capacity_margin = 1280; /* ~20% margin */
 
 static inline unsigned long boosted_task_util(struct task_struct *task);
 
@@ -5030,7 +5030,7 @@ static int find_new_capacity(struct energy_env *eenv,
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	/* OPP idx to refer capacity margin */
-	new_capacity = util * capacity_margin >> SCHED_CAPACITY_SHIFT;
+	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
 
 	for (idx = 0; idx < sge->nr_cap_states; idx++) {
