@@ -46,7 +46,6 @@ static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 5000;			/* 5 sec */
 
 static struct mtk_idle_buf idle_log;
-static struct mtk_idle_buf idle_state_log;
 
 #define reset_log()              reset_idle_buf(idle_log)
 #define get_log()                get_idle_buf(idle_log)
@@ -385,6 +384,7 @@ static DEFINE_SPINLOCK(idle_blocking_spin_lock);
 
 bool mtk_idle_state_pick(int type, int cpu, int reason)
 {
+	struct mtk_idle_buf idle_state_log;
 	struct mtk_idle_block *p_idle;
 	u64 curr_time;
 	int i;
@@ -432,7 +432,7 @@ bool mtk_idle_state_pick(int type, int cpu, int reason)
 		idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
 		/* block category */
-		idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
+		reset_idle_buf(idle_state_log);
 
 		idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
 		for (i = 0; i < NR_REASONS; i++)
