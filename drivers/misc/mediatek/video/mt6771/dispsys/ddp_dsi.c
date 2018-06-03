@@ -4116,6 +4116,8 @@ int ddp_dsi_is_busy(enum DISP_MODULE_ENUM module)
 	struct DSI_INT_STATUS_REG status;
 
 	/* DISPFUNC(); */
+	if (!_is_power_on_status(module))
+		return 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		status = DSI_REG[i]->DSI_INTSTA;
