@@ -82,8 +82,8 @@ static struct pmic_wrap_setting pw = {
 	.set[PMIC_WRAP_PHASE_ALLINONE] = {
 		._[IDX_ALL_1_VSRAM_PWR_ON]      = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 1),},
 		._[IDX_ALL_1_VSRAM_SHUTDOWN]    = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 0),},
-		._[IDX_ALL_1_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(1:1, 1),},
-		._[IDX_ALL_1_VSRAM_SLEEP]       = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(1:0, 3),},
+		._[IDX_ALL_1_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS1_CON1, VOLT_TO_PMIC_VAL(80000),},
+		._[IDX_ALL_1_VSRAM_SLEEP]       = {MT6335_LDO_VSRAM_DVFS1_CON1, VOLT_TO_PMIC_VAL(65000),},
 		._[IDX_ALL_DPIDLE_LEAVE]        = {MT6335_TOP_SPI_CON0, _BITS_(0:0, 1),},
 		._[IDX_ALL_DPIDLE_ENTER]        = {MT6335_TOP_SPI_CON0, _BITS_(0:0, 0),},
 		._[IDX_ALL_RESERVE_6]           = {0, 0,},
@@ -94,8 +94,8 @@ static struct pmic_wrap_setting pw = {
 		._[IDX_ALL_VCORE_LEVEL3]        = {MT6335_BUCK_VCORE_CON1, VOLT_TO_PMIC_VAL(80000),},
 		._[IDX_ALL_2_VSRAM_PWR_ON]      = {MT6335_LDO_VSRAM_DVFS2_CON0, _BITS_(0:0, 1),},
 		._[IDX_ALL_2_VSRAM_SHUTDOWN]    = {MT6335_LDO_VSRAM_DVFS2_CON0, _BITS_(0:0, 0),},
-		._[IDX_ALL_2_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS2_CON0, _BITS_(1:1, 1),},
-		._[IDX_ALL_2_VSRAM_SLEEP]       = {MT6335_LDO_VSRAM_DVFS2_CON0, _BITS_(1:0, 3),},
+		._[IDX_ALL_2_VSRAM_NORMAL]      = {MT6335_LDO_VSRAM_DVFS2_CON1, VOLT_TO_PMIC_VAL(80000),},
+		._[IDX_ALL_2_VSRAM_SLEEP]       = {MT6335_LDO_VSRAM_DVFS2_CON1, VOLT_TO_PMIC_VAL(65000),},
 		.nr_idx = NR_IDX_ALL,
 	},
 };
@@ -179,7 +179,7 @@ void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned i
 }
 EXPORT_SYMBOL(mt_spm_pmic_wrap_set_cmd);
 
-#if 0
+#if 1
 void mt_spm_pmic_wrap_set_cmd_full(enum pmic_wrap_phase_id phase, int idx, unsigned int cmd_addr,
 				   unsigned int cmd_wdata)
 {
