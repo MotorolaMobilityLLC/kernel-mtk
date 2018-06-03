@@ -28,7 +28,7 @@
 #define SSPM_LOGGER_SUPPORT         (1)
 #define SSPM_LASTK_SUPPORT          (0)
 #define SSPM_COREDUMP_SUPPORT       (0)
-#define SSPM_EMI_PROTECTION_SUPPORT (1)
+#define SSPM_EMI_PROTECTION_SUPPORT (0)
 
 /*
  * TimeSync v2
