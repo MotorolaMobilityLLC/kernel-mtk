@@ -143,7 +143,7 @@ static irqreturn_t nt_error_irq_handler(void)
 	unsigned long error_num = 0;
 
 	nt_get_secure_os_state((uint64_t *)(&error_num));
-	IMSG_ERROR("secure system ERROR ! error_num = %ld\n", (error_num - 4294967296));
+	IMSG_ERROR("secure system ERROR ! error_num = %ld\n", (unsigned long)(error_num - 4294967296));
 	soter_error_flag = 1;
 	up(&(boot_sema));
 	up(&smc_lock);
