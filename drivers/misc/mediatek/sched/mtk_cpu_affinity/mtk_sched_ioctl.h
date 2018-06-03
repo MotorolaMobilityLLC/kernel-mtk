@@ -27,4 +27,11 @@ struct ioctl_arg {
 #define IOCTL_EXITAFFINITY	_IOW(IOC_MAGIC, 1, pid_t)
 #define IOCTL_GETAFFINITY	_IOR(IOC_MAGIC, 2, struct ioctl_arg)
 
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+#define IOCTL_SETVIP		_IOW(IOC_MAGIC, 3, pid_t)
+#define IOCTL_UNSETVIP		_IOW(IOC_MAGIC, 4, pid_t)
+extern int vip_task_set(int pid, bool set_vip);
+#endif
+
 #endif
