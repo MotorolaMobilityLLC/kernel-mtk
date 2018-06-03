@@ -22,6 +22,7 @@
 #include <linux/time.h>
 #include <linux/delay.h>
 #include "m4u.h"
+#include "ddp_m4u.h"
 #include "disp_drv_log.h"
 #include "mtkfb.h"
 #include "debug.h"
@@ -36,9 +37,6 @@
 #include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
-#endif
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
 #endif
 #include "mtkfb_fence.h"
 #include "disp_helper.h"
@@ -172,7 +170,7 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 		if (IS_ERR_OR_NULL(buf_info->m4u_client))
 			DISPERR("create client fail!\n");
 
-		ret = m4u_alloc_mva(buf_info->m4u_client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
+		ret = m4u_alloc_mva(buf_info->m4u_client, DISP_M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
 				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &mva);
 		if (ret)
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
@@ -630,9 +628,9 @@ static void process_dbg_opt(const char *opt)
 #endif
 #endif
 	} else if (strncmp(opt, "lcm0_reset0", 11) == 0) {
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 0);
+		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 0);
 	} else if (strncmp(opt, "lcm0_reset1", 11) == 0) {
-		DISP_CPU_REG_SET(DDP_REG_BASE_MMSYS_CONFIG + 0x150, 1);
+		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
 	} else if (strncmp(opt, "dump_layer:", 11) == 0) {
 		if (strncmp(opt + 11, "on", 2) == 0) {
 			ret = sscanf(opt, "dump_layer:on,%d,%d,%d\n",
@@ -770,6 +768,26 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		pan_display_test(frame_num, bpp);
+	}
+
+	if (strncmp(opt, "dsi_ut:restart_vdo_mode", 23) == 0) {
+		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		primary_display_diagnose();
+		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
+	}
+
+	if (strncmp(opt, "dsi_ut:restart_cmd_mode", 23) == 0) {
+		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		primary_display_diagnose();
+
+		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
+		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		primary_display_diagnose();
+
+		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL, CMDQ_DISABLE);
 	}
 
 	if (strncmp(opt, "scenario:", 8) == 0) {

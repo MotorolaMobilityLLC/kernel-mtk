@@ -13,12 +13,8 @@
 
 #define LOG_TAG "OVL"
 #include "ddp_log.h"
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#else
 #include "ddp_clkmgr.h"
-#endif
-#include "m4u_port.h"
+#include "ddp_m4u.h"
 #include <linux/delay.h>
 #include "ddp_info.h"
 #include "ddp_hal.h"
@@ -44,17 +40,14 @@ struct OVL_REG {
 };
 
 static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
-	DISP_MODULE_OVL0, DISP_MODULE_OVL1, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L
+	DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L
 };
 
-static unsigned int reg_back_cnt[OVL_NUM];
-static struct OVL_REG reg_back[OVL_NUM][OVL_REG_BACK_MAX];
 static unsigned int gOVLBackground = 0xFF000000;
 
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_OVL0 ||
-	    module == DISP_MODULE_OVL1 ||
 	    module == DISP_MODULE_OVL0_2L || module == DISP_MODULE_OVL1_2L)
 		return 1;
 	else
@@ -65,17 +58,14 @@ unsigned long ovl_base_addr(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_OVL0:
-		return DDP_REG_BASE_DISP_OVL0;
-	case DISP_MODULE_OVL1:
-		return DDP_REG_BASE_DISP_OVL1;
+		return DISPSYS_OVL0_BASE;
 	case DISP_MODULE_OVL0_2L:
-		return DDP_REG_BASE_DISP_OVL0_2L;
+		return DISPSYS_OVL0_2L_BASE;
 	case DISP_MODULE_OVL1_2L:
-		return DDP_REG_BASE_DISP_OVL1_2L;
+		return DISPSYS_OVL1_2L_BASE;
 	default:
-		DDPERR("invalid ovl module=%d, get ovl base fail\n", module);
-		ASSERT(0);
-		return DISP_MODULE_UNKNOWN;
+		DDPERR("invalid ovl module=%d\n", module);
+		/* BUG(); */
 	}
 	return 0;
 }
@@ -85,35 +75,13 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 	switch (module) {
 	case DISP_MODULE_OVL0:
 		return 4;
-	case DISP_MODULE_OVL1:
-		return 0; /* Olympus only */
 	case DISP_MODULE_OVL0_2L:
 		return 2;
 	case DISP_MODULE_OVL1_2L:
 		return 2;
 	default:
-		DDPERR("invalid ovl module=%d, get ovl layer number fail\n", module);
-		ASSERT(0);
-		return DISP_MODULE_UNKNOWN;
-	}
-	return 0;
-}
-
-static inline unsigned long ovl_to_m4u_port(enum DISP_MODULE_ENUM module)
-{
-	switch (module) {
-	case DISP_MODULE_OVL0:
-		return M4U_PORT_DISP_OVL0;
-	case DISP_MODULE_OVL1:
-		return DISP_MODULE_UNKNOWN;
-	case DISP_MODULE_OVL0_2L:
-		return M4U_PORT_DISP_2L_OVL0_LARB0;
-	case DISP_MODULE_OVL1_2L:
-		return M4U_PORT_DISP_2L_OVL1_LARB0;
-	default:
-		DDPERR("invalid ovl module=%d, get m4u port fail\n", module);
-		ASSERT(0);
-		return DISP_MODULE_UNKNOWN;
+		DDPERR("invalid ovl module=%d\n", module);
+		/* BUG(); */
 	}
 	return 0;
 }
@@ -123,8 +91,6 @@ enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
 	switch (module) {
 	case DISP_MODULE_OVL0:
 		return CMDQ_SYNC_DISP_OVL0_2NONSEC_END;
-	case DISP_MODULE_OVL1:
-		return CMDQ_SYNC_DISP_OVL1_2NONSEC_END;
 	case DISP_MODULE_OVL0_2L:
 		return CMDQ_SYNC_DISP_2LOVL0_2NONSEC_END;
 	case DISP_MODULE_OVL1_2L:
@@ -143,8 +109,6 @@ static inline unsigned long ovl_to_cmdq_engine(enum DISP_MODULE_ENUM module)
 	switch (module) {
 	case DISP_MODULE_OVL0:
 		return CMDQ_ENG_DISP_OVL0;
-	case DISP_MODULE_OVL1:
-		return CMDQ_ENG_DISP_OVL1;
 	case DISP_MODULE_OVL0_2L:
 		return CMDQ_ENG_DISP_2L_OVL0;
 	case DISP_MODULE_OVL1_2L:
@@ -188,9 +152,11 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 			   ovl_base + DISP_REG_OVL_EN, 0x1);
 
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN,
-		     0x1E | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1));
+		     0x1E | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1) | REG_FLD_VAL(INTEN_FLD_START_INTEN, 1));
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_LAYER_SMI_ID_EN,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0x1);
+	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_NO_RND,
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0x0);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_GCLAST_EN,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
 	return 0;
@@ -258,6 +224,7 @@ int ovl_roi(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_BGCLR, bg_color);
 
+	DDPMSG("%s:(%ux%u)\n", __func__, bg_w, bg_h);
 	return 0;
 }
 int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
@@ -334,6 +301,9 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
 	unsigned int dst_h = cfg->dst_h;
+#if 0
+	struct OVL_CONFIG_LIST config_info;
+#endif
 
 	if (ovl_partial_roi != NULL) {
 		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
@@ -360,8 +330,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	if (module != DISP_MODULE_OVL1)
-		rotate = 1;
+	rotate = 1;
 #endif
 
 	/* check dim layer fmt */
@@ -412,7 +381,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_RDMA0_CTRL + layer_offset_rdma_ctrl, 0x1);
 
-	value = (REG_FLD_VAL((L_CON_FLD_LARC), (cfg->source)) |
+	value = (REG_FLD_VAL((L_CON_FLD_LSRC), (cfg->source)) |
 		 REG_FLD_VAL((L_CON_FLD_CFMT), (input_fmt)) |
 		 REG_FLD_VAL((L_CON_FLD_AEN), (cfg->aen)) |
 		 REG_FLD_VAL((L_CON_FLD_APHA), (cfg->alpha)) |
@@ -463,7 +432,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 		int m4u_port;
 
 		size = (dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
-		m4u_port = ovl_to_m4u_port(module);
+		m4u_port = module_to_m4u_port(module);
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/* ovl is sec but this layer is non-sec */
 			/* we need to tell cmdq to help map non-sec mva to sec mva */
@@ -482,172 +451,62 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
 
-	value = (((cfg->sur_aen & 0x1) << 15) |
-		 ((cfg->dst_alpha & 0x3) << 6) | ((cfg->dst_alpha & 0x3) << 4) |
-		 ((cfg->src_alpha & 0x3) << 2) | (cfg->src_alpha & 0x3));
-
-	value = (REG_FLD_VAL((L_PITCH_FLD_SUR_ALFA), (value)) |
-		 REG_FLD_VAL((L_PITCH_FLD_LSP), (cfg->src_pitch)));
+	value = REG_FLD_VAL(L_PITCH_FLD_SA_SEL, cfg->src_alpha & 0x3) |
+			REG_FLD_VAL(L_PITCH_FLD_SRGB_SEL, cfg->src_alpha & 0x3) |
+			REG_FLD_VAL(L_PITCH_FLD_DA_SEL, cfg->dst_alpha & 0x3) |
+			REG_FLD_VAL(L_PITCH_FLD_DRGB_SEL, cfg->dst_alpha & 0x3) |
+			REG_FLD_VAL(L_PITCH_FLD_SURFL_EN, cfg->src_alpha & 0x1) |
+			REG_FLD_VAL(L_PITCH_FLD_SRC_PITCH, cfg->src_pitch);
 
 	if (cfg->const_bld)
-		value = value | REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
+		value |= REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_PITCH + layer_offset, value);
 
+#if 0
+	/* IP ACTIVE SUPPORT */
+	config_info.p_config_info = cfg;
+	config_info.dst_offset_x = dst_x;
+	config_info.dst_offset_y = dst_y;
+	config_info.dst_width = dst_w;
+	config_info.dst_height = dst_h;
+	config_info.weight = Bpp;
+	add_ovl_config_entry(&config_info);
+#endif
 	return 0;
-}
-
-static void ovl_store_regs(enum DISP_MODULE_ENUM module)
-{
-	int i = 0;
-	unsigned long ovl_base = ovl_base_addr(module);
-	int idx = ovl_to_index(module);
-	static unsigned long regs[3];
-
-	regs[0] = DISP_REG_OVL_ROI_SIZE + ovl_base;
-	regs[1] = DISP_REG_OVL_ROI_BGCLR + ovl_base;
-	regs[2] = DISP_REG_OVL_DATAPATH_CON + ovl_base;
-
-	reg_back_cnt[idx] = sizeof(regs) / sizeof(unsigned long);
-	ASSERT(reg_back_cnt[idx] <= OVL_REG_BACK_MAX);
-
-	for (i = 0; i < reg_back_cnt[idx]; i++) {
-		reg_back[idx][i].address = regs[i];
-		reg_back[idx][i].value = DISP_REG_GET(regs[i]);
-	}
-	DDPMSG("store %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
-
-}
-
-static void ovl_restore_regs(enum DISP_MODULE_ENUM module, void *handle)
-{
-	int idx = ovl_to_index(module);
-	int i = reg_back_cnt[idx];
-
-	while (i > 0) {
-		i--;
-		DISP_REG_SET(handle, reg_back[idx][i].address, reg_back[idx][i].value);
-	}
-	DDPMSG("restore %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
-	reg_back_cnt[idx] = 0;
 }
 
 int ovl_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 	DDPDBG("%s clock_on\n", ddp_get_module_name(module));
-#ifdef ENABLE_CLK_MGR
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 
-	switch (module) {
-	case DISP_MODULE_OVL0:
-#ifdef CONFIG_MTK_CLKMGR
-		enable_clock(MT_CG_DISP0_DISP_OVL0, ddp_get_module_name(module));
-#else
-		ddp_clk_enable(DISP0_DISP_OVL0);
-#endif
-		break;
-	case DISP_MODULE_OVL1:
-/*
-#ifdef CONFIG_MTK_CLKMGR
-		enable_clock(MT_CG_DISP0_DISP_OVL1, ddp_get_module_name(module));
-#else
-		ddp_clk_enable(DISP0_DISP_OVL1);
-#endif
-*/
-		break;
-	case DISP_MODULE_OVL0_2L:
-#ifdef CONFIG_MTK_CLKMGR
-		enable_clock(MT_CG_DISP0_DISP_OVL0_2L, ddp_get_module_name(module));
-#else
-		ddp_clk_enable(DISP0_DISP_OVL0_2L);
-#endif
-		break;
-	case DISP_MODULE_OVL1_2L:
-#ifdef CONFIG_MTK_CLKMGR
-		enable_clock(MT_CG_DISP0_DISP_OVL1_2L, ddp_get_module_name(module));
-#else
-		ddp_clk_enable(DISP0_DISP_OVL1_2L);
-#endif
-		break;
-	default:
-		DDPERR("invalid ovl module=%d, ovl clock on fail\n", module);
-		ASSERT(0);
-	}
 
-#endif
 	return 0;
 }
 
 int ovl_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 	DDPDBG("%s clock_off\n", ddp_get_module_name(module));
-#ifdef ENABLE_CLK_MGR
-	switch (module) {
-	case DISP_MODULE_OVL0:
-#ifdef CONFIG_MTK_CLKMGR
-		disable_clock(MT_CG_DISP0_DISP_OVL0, ddp_get_module_name(module));
-#else
-		ddp_clk_disable(DISP0_DISP_OVL0);
-#endif
-		break;
-	case DISP_MODULE_OVL1:
-/*
-#ifdef CONFIG_MTK_CLKMGR
-		disable_clock(MT_CG_DISP0_DISP_OVL1, ddp_get_module_name(module));
-#else
-		ddp_clk_disable(DISP0_DISP_OVL1);
-#endif
-*/
-		break;
-	case DISP_MODULE_OVL0_2L:
-#ifdef CONFIG_MTK_CLKMGR
-		disable_clock(MT_CG_DISP0_DISP_OVL0_2L, ddp_get_module_name(module));
-#else
-		ddp_clk_disable(DISP0_DISP_OVL0_2L);
-#endif
-		break;
-	case DISP_MODULE_OVL1_2L:
-#ifdef CONFIG_MTK_CLKMGR
-		disable_clock(MT_CG_DISP0_DISP_OVL1_2L, ddp_get_module_name(module));
-#else
-		ddp_clk_disable(DISP0_DISP_OVL1_2L);
-#endif
-		break;
-	default:
-		DDPERR("invalid ovl module=%d, ovl clock off fail\n", module);
-		ASSERT(0);
-	}
-#endif
-	return 0;
-}
+	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 
-int ovl_resume(enum DISP_MODULE_ENUM module, void *handle)
-{
-	ovl_clock_on(module, handle);
-	ovl_restore_regs(module, handle);
-	return 0;
-}
-
-int ovl_suspend(enum DISP_MODULE_ENUM module, void *handle)
-{
-	DDPMSG("%s suspend\n", ddp_get_module_name(module));
-	ovl_store_regs(module);
-	ovl_clock_off(module, handle);
 	return 0;
 }
 
 int ovl_init(enum DISP_MODULE_ENUM module, void *handle)
 {
-	return ovl_clock_on(module, handle);
+	return 0;
 }
 
 int ovl_deinit(enum DISP_MODULE_ENUM module, void *handle)
 {
-	return ovl_clock_off(module, handle);
+	return 0;
 }
 
 int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 		enum DISP_MODULE_ENUM next, int connect, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
+	u32 val = 0;
 
 	if (connect && is_module_ovl(prev))
 		DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_BGCLR_IN_SEL,
@@ -655,6 +514,10 @@ int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 	else
 		DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_BGCLR_IN_SEL,
 				   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
+	/* OVL clamp_out */
+	/*val = is_module_rsz(next);*/
+	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, val);
 	return 0;
 }
 
@@ -879,7 +742,7 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		cmdqRecReset(nonsec_switch_handle);
 		/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
 
-		if (module != DISP_MODULE_OVL1) {
+		if (module != DISP_MODULE_OVL1_2L) {
 			/*Primary Mode*/
 			if (primary_display_is_decouple_mode())
 				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
@@ -1032,8 +895,6 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 
 			if (ovl_idx == DISP_MODULE_OVL0)
 				ovl_idx = DISP_MODULE_OVL0_2L;
-			else if (ovl_idx == DISP_MODULE_OVL1)
-				ovl_idx = DISP_MODULE_OVL1_2L;
 			else
 				DDPERR("unknown module: %d\n", ovl_idx);
 		}
@@ -1053,6 +914,10 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	int has_sec_layer = 0;
 	int layer_id;
 	int enabled_ext_layers = 0, ext_sel_layers = 0;
+#if 0
+	unsigned int tb = 0;
+	unsigned int bb = 0;
+#endif
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
@@ -1126,6 +991,43 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		enabled_ext_layers | ext_sel_layers);
 
+#if 0
+	/* IP ACTIVE ALGORITHM */
+	if (pConfig->ovl_partial_dirty)
+		ip_active_algorithm(pConfig->ovl_partial_roi->width, pConfig->ovl_partial_roi->height);
+	else
+		ip_active_algorithm(pConfig->dst_w, pConfig->dst_h);
+
+
+	for (layer_id = 0; layer_id < TOTAL_OVL_LAYER_NUM; layer_id++) {
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[layer_id];
+		int enable = ovl_cfg->layer_en;
+
+		if (enable == 0)
+			continue;
+		if (ovl_check_input_param(ovl_cfg)) {
+			DDPAEE("invalid layer parameters!\n");
+			continue;
+		}
+		if (ovl_cfg->ovl_index != module)
+			continue;
+
+		if (ovl_cfg->ext_layer == -1) {
+			get_ip_active_layer_roi(ovl_cfg->phy_layer, 0, &tb, &bb);
+
+			DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_DVFS_L0_ROI + ovl_cfg->phy_layer*4,
+			bb << 16 | tb);
+
+		} else {
+			get_ip_active_layer_roi(ovl_cfg->ext_layer, 1, &tb, &bb);
+
+			DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_DVFS_EL0_ROI + ovl_cfg->ext_layer*4,
+			bb << 16 | tb);
+		}
+	}
+#endif
 	return 0;
 }
 
@@ -1577,7 +1479,7 @@ static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_OFFSET) >> 16) & 0xfff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_PITCH) & 0xffff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_ADDR), unified_color_fmt_name(fmt),
-	     (DISP_REG_GET_FIELD(L_CON_FLD_LARC, DISP_REG_OVL_L0_CON + layer_offset) ==
+	     (DISP_REG_GET_FIELD(L_CON_FLD_LSRC, DISP_REG_OVL_L0_CON + layer_offset) ==
 	      0) ? "memory" : "constant_color", DISP_REG_GET_FIELD(L_CON_FLD_AEN,
 								   DISP_REG_OVL_L0_CON +
 								   layer_offset),
@@ -1605,7 +1507,7 @@ static void ovl_dump_ext_layer_info(int layer, unsigned long layer_offset)
 	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_OFFSET) >> 16) & 0xfff,
 	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_PITCH) & 0xffff,
 	     DISP_REG_GET(layer_addr_offset + DISP_REG_OVL_EL0_ADDR), unified_color_fmt_name(fmt),
-	     (DISP_REG_GET_FIELD(L_CON_FLD_LARC, DISP_REG_OVL_EL0_CON + layer_offset) ==
+	     (DISP_REG_GET_FIELD(L_CON_FLD_LSRC, DISP_REG_OVL_EL0_CON + layer_offset) ==
 	      0) ? "memory" : "constant_color", DISP_REG_GET_FIELD(L_CON_FLD_AEN,
 								   DISP_REG_OVL_EL0_CON +
 								   layer_offset),
@@ -1700,9 +1602,9 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	}
 
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_SETTING */
-	regval = REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_ULTRA_THRESHOLD, 0xff);
+	regval = REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_ULTRA_THRESHOLD, 0x3ff);
 	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0xff);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0x3ff);
 	else
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0xe0);
 
@@ -1713,7 +1615,7 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	}
 
 	/* DISP_REG_OVL_RDMA0_FIFO_CTRL */
-	regval = REG_FLD_VAL(FLD_OVL_RDMA_FIFO_SIZE, 288);
+	regval = REG_FLD_VAL(FLD_OVL_RDMA_FIFO_SIZE, 192);
 	for (i = 0; i < layer_num; i++) {
 		unsigned long layer_offset = i * OVL_LAYER_OFFSET + ovl_base;
 
@@ -1723,14 +1625,14 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_S2 */
 	regval = 0;
 	if (dst_mod_type == DST_MOD_REAL_TIME) {
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 191);
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 95);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 127);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 63);
 	} else {
 		/* decouple */
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 31);
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 15);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 63);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 63);
 	}
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_REQ_THRES_PREULTRA, 1);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_REQ_THRES_PREULTRA, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_REQ_THRES_ULTRA, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_FORCE_REQ_THRES, 0);
 
@@ -1738,11 +1640,8 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA0_MEM_GMC_S2 + i * 4, regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_NUM */
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		layer_greq_num = 11;
-	else
-		layer_greq_num = 1;
 
+	layer_greq_num = 7;
 
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER0_GREQ_NUM, layer_greq_num);
 	if (layer_num > 1)
@@ -1758,7 +1657,7 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_END_STOP, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_BRK_STOP, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_PREULTRA, 1);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_ULTRA, 0);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_ULTRA, 1);
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_GREQ_NUM, regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_URG_NUM */
@@ -1794,10 +1693,20 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	if (dst_mod_type == DST_MOD_REAL_TIME)
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0);
 	else
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0x48);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0x18);
 
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_LOW(i), regval);
+
+	/* DISP_REG_OVL_RDMAn_BUF_HIGH */
+	regval = REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_DIS, 1);
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0);
+	else
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0x90);
+
+	for (i = 0; i < layer_num; i++)
+		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_HIGH(i), regval);
 
 	/* DISP_REG_OVL_FUNC_DCM0 */
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_FUNC_DCM0, 0x0);
@@ -1855,8 +1764,6 @@ struct DDP_MODULE_DRIVER ddp_driver_ovl = {
 	.reset = ovl_reset,
 	.power_on = ovl_clock_on,
 	.power_off = ovl_clock_off,
-	.suspend = ovl_suspend,
-	.resume = ovl_resume,
 	.is_idle = NULL,
 	.is_busy = NULL,
 	.dump_info = ovl_dump,

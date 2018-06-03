@@ -52,7 +52,8 @@ struct DDP_IRQ_EVENT_MAPPING {
 struct ddp_path_handle {
 	struct cmdqRecStruct *cmdqhandle;
 	int hwmutexid;
-	int power_state;
+	/* no need power_state now*/
+	/* int power_state; */
 	enum DDP_MODE mode;
 	struct mutex mutex_lock;
 	struct DDP_IRQ_EVENT_MAPPING irq_event_map[DISP_PATH_EVENT_NUM];
@@ -83,28 +84,28 @@ static struct DDP_IRQ_EVENT_MAPPING ddp_irq_event_list[DEFAULT_IRQ_EVENT_SCENARI
 	 {DDP_IRQ_RDMA0_TARGET_LINE},	/*FRAME_STOP */
 	 {DDP_IRQ_RDMA0_REG_UPDATE},	/*IF_CMD_DONE */
 	 {DDP_IRQ_DSI0_EXT_TE},	/*IF_VSYNC */
-	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
+	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL0_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
 	 },
 	{			/* ovl1 path */
 	 {DDP_IRQ_RDMA1_DONE},	/*FRAME_DONE */
 	 {DDP_IRQ_RDMA1_START},	/*FRAME_START */
 	 {DDP_IRQ_RDMA1_REG_UPDATE},	/*FRAME_REG_UPDATE */
 	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*FRAME_TARGET_LINE */
-	 {DDP_IRQ_WDMA1_FRAME_COMPLETE},	/*FRAME_COMPLETE */
+	 {DDP_IRQ_WDMA0_FRAME_COMPLETE},	/*FRAME_COMPLETE */
 	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*FRAME_STOP */
 	 {DDP_IRQ_RDMA1_REG_UPDATE},	/*IF_CMD_DONE */
 	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*IF_VSYNC */
-	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_UNKNOWN},	/*AAL_OUT_END_EVENT */
-	},
+	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL0_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
+	 },
 	{			/* rdma path */
-	 {DDP_IRQ_RDMA2_DONE},	/*FRAME_DONE */
-	 {DDP_IRQ_RDMA2_START},	/*FRAME_START */
-	 {DDP_IRQ_RDMA2_REG_UPDATE},	/*FRAME_REG_UPDATE */
-	 {DDP_IRQ_RDMA2_TARGET_LINE},	/*FRAME_TARGET_LINE */
+	 {DDP_IRQ_RDMA1_DONE},	/*FRAME_DONE */
+	 {DDP_IRQ_RDMA1_START},	/*FRAME_START */
+	 {DDP_IRQ_RDMA1_REG_UPDATE},	/*FRAME_REG_UPDATE */
+	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*FRAME_TARGET_LINE */
 	 {DDP_IRQ_UNKNOWN},	/*FRAME_COMPLETE */
-	 {DDP_IRQ_RDMA2_TARGET_LINE},	/*FRAME_STOP */
-	 {DDP_IRQ_RDMA2_REG_UPDATE},	/*IF_CMD_DONE */
-	 {DDP_IRQ_RDMA2_TARGET_LINE},	/*IF_VSYNC */
+	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*FRAME_STOP */
+	 {DDP_IRQ_RDMA1_REG_UPDATE},	/*IF_CMD_DONE */
+	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*IF_VSYNC */
 	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_UNKNOWN},	/*AAL_OUT_END_EVENT */
 	 },
 	{			/* ovl0 path */
@@ -116,7 +117,7 @@ static struct DDP_IRQ_EVENT_MAPPING ddp_irq_event_list[DEFAULT_IRQ_EVENT_SCENARI
 	 {DDP_IRQ_RDMA0_TARGET_LINE},	/*FRAME_STOP */
 	 {DDP_IRQ_RDMA0_REG_UPDATE},	/*IF_CMD_DONE */
 	 {DDP_IRQ_DSI0_EXT_TE},	/*IF_VSYNC */
-	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
+	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL0_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
 	 }
 };
 
@@ -163,6 +164,18 @@ static struct DDP_MANAGER_CONTEXT *_get_context(void)
 	return &context;
 }
 
+void dpmgr_set_power_state(unsigned int state)
+{
+	ASSERT(_get_context()->power_state != state);
+	_get_context()->power_state = state;
+}
+
+unsigned int dpmgr_get_power_state(void)
+{
+	return _get_context()->power_state;
+}
+
+#if 0
 static int path_top_clock_off(void)
 {
 	int i = 0;
@@ -181,6 +194,7 @@ static int path_top_clock_off(void)
 	return 0;
 }
 
+
 static int path_top_clock_on(void)
 {
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
@@ -192,14 +206,16 @@ static int path_top_clock_on(void)
 	return 0;
 }
 
+
 static int module_power_off(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_DSI0)
 		return 0;
 
-	if (ddp_modules_driver[module] != 0) {
-		if (ddp_modules_driver[module]->power_off != 0)
-			ddp_modules_driver[module]->power_off(module, NULL);	/* now just 0; */
+	if (ddp_get_module_driver(module) != 0) {
+		if (ddp_get_module_driver(module)->power_off != 0)
+			ddp_get_module_driver(module)->power_off(module, NULL);	/* now just 0; */
+
 	}
 	return 0;
 }
@@ -209,12 +225,14 @@ static int module_power_on(enum DISP_MODULE_ENUM module)
 	if (module == DISP_MODULE_DSI0)
 		return 0;
 
-	if (ddp_modules_driver[module] != 0) {
-		if (ddp_modules_driver[module]->power_on != 0)
-			ddp_modules_driver[module]->power_on(module, NULL);	/* now just 0; */
+	if (ddp_get_module_driver(module) != 0) {
+		if (ddp_get_module_driver(module)->power_on != 0)
+			ddp_get_module_driver(module)->power_on(module, NULL);	/* now just 0; */
+
 	}
 	return 0;
 }
+#endif
 
 static struct ddp_path_handle *find_handle_by_module(enum DISP_MODULE_ENUM module)
 {
@@ -241,17 +259,11 @@ int dpmgr_module_notify(enum DISP_MODULE_ENUM module, enum DISP_PATH_EVENT event
 static int assign_default_irqs_table(enum DDP_SCENARIO_ENUM scenario, struct DDP_IRQ_EVENT_MAPPING *irq_events)
 {
 	int idx = 0;
-
 	switch (scenario) {
 	case DDP_SCENARIO_PRIMARY_DISP:
 	case DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP:
 	case DDP_SCENARIO_PRIMARY_RDMA0_DISP:
-	case DDP_SCENARIO_PRIMARY_BYPASS_RDMA:
-	case DDP_SCENARIO_PRIMARY_DITHER_MEMOUT:
-	case DDP_SCENARIO_PRIMARY_UFOE_MEMOUT:
 	case DDP_SCENARIO_PRIMARY_ALL:
-	case DDP_SCENARIO_DITHER_1TO2:
-	case DDP_SCENARIO_UFOE_1TO2:
 		idx = 0;
 		break;
 	case DDP_SCENARIO_SUB_DISP:
@@ -349,11 +361,10 @@ disp_path_handle dpmgr_create_path(enum DDP_SCENARIO_ENUM scenario, struct cmdqR
 		assign_default_irqs_table(scenario, path_handle->irq_event_map);
 		DDPDBG("create handle %p on scenario %s\n", path_handle,
 			   ddp_get_scenario_name(scenario));
+		DDPDBG(" scenario %s include module: ", ddp_get_scenario_name(scenario));
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
-			DDPDBG(" scenario %s include module %s\n",
-				   ddp_get_scenario_name(scenario),
-				   ddp_get_module_name(module_name));
+			DDPDBG("%s\n", ddp_get_module_name(module_name));
 			content->module_usage_table[module_name]++;
 			content->module_path_table[module_name] = path_handle;
 		}
@@ -383,11 +394,11 @@ static int _dpmgr_path_connect(enum DDP_SCENARIO_ENUM scenario, void *handle)
 
 	for (i = 0; i < module_num; i++) {
 		module = modules[i];
-		if (ddp_modules_driver[module] && ddp_modules_driver[module]->connect) {
+		if (ddp_get_module_driver(module) && ddp_get_module_driver(module)->connect) {
 			int prev = i == 0 ? DISP_MODULE_UNKNOWN : modules[i - 1];
 			int next = i == module_num - 1 ? DISP_MODULE_UNKNOWN : modules[i + 1];
 
-			ddp_modules_driver[module]->connect(module, prev, next, 1, handle);
+			ddp_get_module_driver(module)->connect(module, prev, next, 1, handle);
 		}
 	}
 
@@ -404,18 +415,18 @@ static int _dpmgr_path_disconnect(enum DDP_SCENARIO_ENUM scenario, void *handle)
 
 	for (i = 0; i < module_num; i++) {
 		module = modules[i];
-		if (ddp_modules_driver[module] && ddp_modules_driver[module]->connect) {
+		if (ddp_get_module_driver(module) && ddp_get_module_driver(module)->connect) {
 			int prev = i == 0 ? DISP_MODULE_UNKNOWN : modules[i - 1];
 			int next = i == module_num - 1 ? DISP_MODULE_UNKNOWN : modules[i + 1];
 
-			ddp_modules_driver[module]->connect(module, prev, next, 0, handle);
+			ddp_get_module_driver(module)->connect(module, prev, next, 1, handle);
 		}
 	}
 
 	return 0;
 }
 
-
+#if 0
 int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 					   enum DDP_SCENARIO_ENUM new_scenario, int sw_only)
 {
@@ -438,7 +449,7 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 	}
 	return 0;
 }
-
+#endif
 /**
  * NOTES: modify path should call API like this :
  *   old_scenario = dpmgr_get_scenario(handle);
@@ -466,7 +477,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_sce
 		/* mutex set will clear old settings */
 		ddp_mutex_set(handle->hwmutexid, new_scenario, mode, cmdq_handle);
 
-		ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdq_handle);
+		ddp_mutex_interrupt_enable(handle->hwmutexid, cmdq_handle);
 		/* disconnect old path first */
 		_dpmgr_path_disconnect(old_scenario, cmdq_handle);
 
@@ -476,7 +487,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_sce
 	}
 	return 0;
 }
-
+#if 0
 int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 					    enum DDP_SCENARIO_ENUM new_scenario, int sw_only)
 {
@@ -500,7 +511,7 @@ int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 
 	return 0;
 }
-
+#endif
 
 int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 {
@@ -589,7 +600,7 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP
 	       || handle->scenario == DDP_SCENARIO_SUB_DISP
 	       || handle->scenario == DDP_SCENARIO_PRIMARY_OVL_MEMOUT);
-	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
+	wdma = DISP_MODULE_WDMA0;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
 		DDPERR("dpmgr_path_add_memout error, wdma is already in scenario=%s\n",
@@ -602,12 +613,6 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	context->module_path_table[wdma] = handle;
 	if (engine == DISP_MODULE_OVL0) {
 		handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
-	} else if (engine == DISP_MODULE_OVL1) {
-		handle->scenario = DDP_SCENARIO_SUB_ALL;
-	} else if (engine == DISP_MODULE_DITHER0) {
-		handle->scenario = DDP_SCENARIO_DITHER_1TO2;
-	} else if (engine == DISP_MODULE_UFOE) {
-		handle->scenario = DDP_SCENARIO_UFOE_1TO2;
 	} else {
 		pr_err("%s error: engine=%d\n", __func__, engine);
 		ASSERT(0);
@@ -618,12 +623,12 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, enum DISP_MODULE_ENUM engi
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
 
 	/* wdma just need start. */
-	if (ddp_modules_driver[wdma] != 0) {
-		if (ddp_modules_driver[wdma]->init != 0)
-			ddp_modules_driver[wdma]->init(wdma, cmdq_handle);
+	if (ddp_get_module_driver(wdma) != 0) {
+		if (ddp_get_module_driver(wdma)->init != 0)
+			ddp_get_module_driver(wdma)->init(wdma, cmdq_handle);
 
-		if (ddp_modules_driver[wdma]->start != 0)
-			ddp_modules_driver[wdma]->start(wdma, cmdq_handle);
+		if (ddp_get_module_driver(wdma)->start != 0)
+			ddp_get_module_driver(wdma)->start(wdma, cmdq_handle);
 
 	}
 	return 0;
@@ -642,11 +647,9 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP
 	       || handle->scenario == DDP_SCENARIO_PRIMARY_ALL
-	       || handle->scenario == DDP_SCENARIO_DITHER_1TO2
-	       || handle->scenario == DDP_SCENARIO_UFOE_1TO2
 	       || handle->scenario == DDP_SCENARIO_SUB_DISP
 	       || handle->scenario == DDP_SCENARIO_SUB_ALL);
-	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
+	wdma = DISP_MODULE_WDMA0;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 0) {
 		DDPERR("dpmgr_path_remove_memout error, wdma is not in scenario=%s\n",
@@ -658,24 +661,17 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	context->module_usage_table[wdma]--;
 	context->module_path_table[wdma] = 0;
 	/* wdma just need stop */
-	if (ddp_modules_driver[wdma] != 0) {
-		if (ddp_modules_driver[wdma]->stop != 0)
-			ddp_modules_driver[wdma]->stop(wdma, cmdq_handle);
+	if (ddp_get_module_driver(wdma) != 0) {
+		if (ddp_get_module_driver(wdma)->stop != 0)
+			ddp_get_module_driver(wdma)->stop(wdma, cmdq_handle);
 
-		if (ddp_modules_driver[wdma]->deinit != 0)
-			ddp_modules_driver[wdma]->deinit(wdma, cmdq_handle);
+		if (ddp_get_module_driver(wdma)->deinit != 0)
+			ddp_get_module_driver(wdma)->deinit(wdma, cmdq_handle);
 
 	}
 	if (handle->scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		dis_scn = DDP_SCENARIO_PRIMARY_OVL_MEMOUT;
 		new_scn = DDP_SCENARIO_PRIMARY_DISP;
-	} else if (handle->scenario == DDP_SCENARIO_DITHER_1TO2) {
-		dis_scn = DDP_SCENARIO_PRIMARY_DITHER_MEMOUT;
-		new_scn = DDP_SCENARIO_PRIMARY_DISP;
-	} else if (handle->scenario == DDP_SCENARIO_UFOE_1TO2) {
-		dis_scn = DDP_SCENARIO_PRIMARY_UFOE_MEMOUT;
-		new_scn = DDP_SCENARIO_PRIMARY_DISP;
-
 	} else if (handle->scenario == DDP_SCENARIO_SUB_ALL) {
 		dis_scn = DDP_SCENARIO_SUB_OVL_MEMOUT;
 		new_scn = DDP_SCENARIO_SUB_DISP;
@@ -693,90 +689,6 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	return 0;
 }
 
-int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
-{
-	int ret = 0;
-	struct ddp_path_handle *handle = (struct ddp_path_handle *)dp_handle;
-	struct DDP_MANAGER_CONTEXT *context;
-
-	ASSERT(dp_handle != NULL);
-
-	if ((handle->scenario != DDP_SCENARIO_SUB_RDMA1_DISP) && (handle->scenario != DDP_SCENARIO_SUB_DISP)) {
-		DDPERR("dpmgr_insert_ovl1_sub error, handle->scenario=%s\n",
-			ddp_get_scenario_name(handle->scenario));
-		return -1;
-	}
-
-	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 1) {
-		DISP_LOG_I("dpmgr_insert_ovl1_sub, OVL1 already in the path\n");
-		return -1;
-	}
-
-	DDPDBG("dpmgr_insert_ovl1_sub\n");
-	/* update contxt*/
-	context = _get_context();
-	context->module_usage_table[DISP_MODULE_OVL1]++;
-	context->module_path_table[DISP_MODULE_OVL1] = handle;
-
-	/* update connected*/
-	ddp_connect_path(DDP_SCENARIO_SUB_DISP, cmdq_handle);
-	ret = ddp_mutex_set(handle->hwmutexid, DDP_SCENARIO_SUB_DISP, handle->mode, cmdq_handle);
-
-	handle->scenario = DDP_SCENARIO_SUB_DISP;
-
-	/*ovl1 just need start.*/
-	if (ddp_modules_driver[DISP_MODULE_OVL1] != 0) {
-		if (ddp_modules_driver[DISP_MODULE_OVL1]->init != 0)
-			ddp_modules_driver[DISP_MODULE_OVL1]->init(DISP_MODULE_OVL1, cmdq_handle);
-
-		if (ddp_modules_driver[DISP_MODULE_OVL1]->start != 0)
-			ddp_modules_driver[DISP_MODULE_OVL1]->start(DISP_MODULE_OVL1, cmdq_handle);
-	}
-
-	return ret;
-}
-
-int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
-{
-	int ret = 0;
-	struct ddp_path_handle *handle;
-	struct DDP_MANAGER_CONTEXT *context;
-
-	ASSERT(dp_handle != NULL);
-	handle = (struct ddp_path_handle *)dp_handle;
-	if ((handle->scenario != DDP_SCENARIO_SUB_RDMA1_DISP) && (handle->scenario != DDP_SCENARIO_SUB_DISP)) {
-		DDPERR("dpmgr_remove_ovl1_sub error, handle->scenario=%s\n", ddp_get_scenario_name(handle->scenario));
-		return -1;
-	}
-
-	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 0) {
-		DISP_LOG_I("dpmgr_remove_ovl1_sub, OVL1 already not in the path\n");
-		return -1;
-	}
-
-	DDPDBG("dpmgr_remove_ovl1_sub\n");
-	/* update contxt */
-	context = _get_context();
-	context->module_usage_table[DISP_MODULE_OVL1]--;
-	context->module_path_table[DISP_MODULE_OVL1] = 0;
-
-	ddp_disconnect_path(handle->scenario, cmdq_handle);
-	ddp_connect_path(DDP_SCENARIO_SUB_RDMA1_DISP, cmdq_handle);
-	ret = ddp_mutex_set(handle->hwmutexid, DDP_SCENARIO_SUB_RDMA1_DISP, handle->mode, cmdq_handle);
-
-	handle->scenario = DDP_SCENARIO_SUB_RDMA1_DISP;
-
-	/*ovl1 just need stop */
-	if (ddp_modules_driver[DISP_MODULE_OVL1] != 0) {
-		if (ddp_modules_driver[DISP_MODULE_OVL1]->stop != 0)
-			ddp_modules_driver[DISP_MODULE_OVL1]->stop(DISP_MODULE_OVL1, cmdq_handle);
-
-		if (ddp_modules_driver[DISP_MODULE_OVL1]->deinit != 0)
-			ddp_modules_driver[DISP_MODULE_OVL1]->deinit(DISP_MODULE_OVL1, cmdq_handle);
-	}
-
-	return ret;
-}
 
 int dpmgr_path_set_dst_module(disp_path_handle dp_handle, enum DISP_MODULE_ENUM dst_module)
 {
@@ -818,7 +730,7 @@ enum dst_module_type dpmgr_path_get_dst_module_type(disp_path_handle dp_handle)
 {
 	enum DISP_MODULE_ENUM dst_module = dpmgr_path_get_dst_module(dp_handle);
 
-	if (dst_module == DISP_MODULE_WDMA0 || dst_module == DISP_MODULE_WDMA1)
+	if (dst_module == DISP_MODULE_WDMA0)
 		return DST_MOD_WDMA;
 	else
 		return DST_MOD_REAL_TIME;
@@ -837,7 +749,7 @@ int dpmgr_path_connect(disp_path_handle dp_handle, int encmdq)
 	_dpmgr_path_connect(handle->scenario, cmdqHandle);
 
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
-	ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdqHandle);
 	return 0;
 }
 
@@ -853,7 +765,7 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	DDPDBG("dpmgr_path_disconnect on scenario %s\n",
 		   ddp_get_scenario_name(handle->scenario));
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
-	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_interrupt_disable(handle->hwmutexid, cmdqHandle);
 	_dpmgr_path_disconnect(handle->scenario, cmdqHandle);
 	return 0;
 }
@@ -875,27 +787,27 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 
 	DDPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* open top clock */
-	path_top_clock_on();
+	/* path_top_clock_on(); */
 	/* seting mutex */
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
-	ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdqHandle);
 	/* connect path; */
 	_dpmgr_path_connect(handle->scenario, cmdqHandle);
 
 	/* each module init */
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->init != 0)
-				ddp_modules_driver[module_name]->init(module_name, cmdqHandle);
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->init != 0)
+				ddp_get_module_driver(module_name)->init(module_name, cmdqHandle);
 
-			if (ddp_modules_driver[module_name]->set_listener != 0)
-				ddp_modules_driver[module_name]->set_listener(module_name,
+			if (ddp_get_module_driver(module_name)->set_listener != 0)
+				ddp_get_module_driver(module_name)->set_listener(module_name,
 									      dpmgr_module_notify);
 		}
 	}
 	/* after init this path will power on; */
-	handle->power_state = 1;
+	/* handle->power_state = 1; */
 	return 0;
 }
 
@@ -915,23 +827,23 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DDPDBG("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_interrupt_disable(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	_dpmgr_path_disconnect(handle->scenario, cmdqHandle);
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->deinit != 0)
-				ddp_modules_driver[module_name]->deinit(module_name, cmdqHandle);
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->deinit != 0)
+				ddp_get_module_driver(module_name)->deinit(module_name, cmdqHandle);
 
-			if (ddp_modules_driver[module_name]->set_listener != 0)
-				ddp_modules_driver[module_name]->set_listener(module_name, NULL);
+			if (ddp_get_module_driver(module_name)->set_listener != 0)
+				ddp_get_module_driver(module_name)->set_listener(module_name, NULL);
 
 		}
 	}
-	handle->power_state = 0;
+	/* handle->power_state = 0; */
 	/* close top clock when last path init */
-	path_top_clock_off();
+	/* path_top_clock_off(); */
 	return 0;
 }
 
@@ -953,11 +865,13 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	DISP_LOG_I("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->start != 0)
-				ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->start != 0)
+				ddp_get_module_driver(module_name)->start(module_name, cmdqHandle);
+
 		}
 	}
+
 	return 0;
 }
 
@@ -980,9 +894,10 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 	DISP_LOG_I("path stop on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->stop != 0)
-				ddp_modules_driver[module_name]->stop(module_name, cmdqHandle);
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->stop != 0)
+				ddp_get_module_driver(module_name)->stop(module_name, cmdqHandle);
+
 		}
 	}
 	return 0;
@@ -1003,12 +918,14 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, enum DDP_IOC
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DDPDBG("path IOCTL on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DDPDBG("path IOCTL(%s) on scenario %s\n",
+			ddp_get_ioctl_name(ioctl_cmd),
+			ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->ioctl != 0) {
-				ret += ddp_modules_driver[module_name]->ioctl(module_name, cmdq_handle,
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->ioctl != 0) {
+				ret += ddp_get_module_driver(module_name)->ioctl(module_name, cmdq_handle,
 									      ioctl_cmd, params);
 			}
 		}
@@ -1034,19 +951,19 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, enum DD
 		   ddp_get_scenario_name(handle->scenario), irq_level);
 
 	if (irq_level != DDP_IRQ_LEVEL_ALL)
-		ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdq_handle);
+		ddp_mutex_interrupt_disable(handle->hwmutexid, cmdq_handle);
 	else
-		ddp_mutex_Interrupt_enable(handle->hwmutexid, cmdq_handle);
+		ddp_mutex_interrupt_enable(handle->hwmutexid, cmdq_handle);
 
 
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->enable_irq) {
+		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->enable_irq) {
 			DDPDBG("scenario %s, module %s enable irq level %d\n",
 			       ddp_get_scenario_name(handle->scenario),
 			       ddp_get_module_name(module_name), irq_level);
 			ret +=
-			    ddp_modules_driver[module_name]->enable_irq(module_name, cmdq_handle,
+			    ddp_get_module_driver(module_name)->enable_irq(module_name, cmdq_handle,
 									irq_level);
 		}
 	}
@@ -1076,10 +993,10 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->reset != 0) {
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->reset != 0) {
 				ret =
-				    ddp_modules_driver[module_name]->reset(module_name, cmdqHandle);
+				    ddp_get_module_driver(module_name)->reset(module_name, cmdqHandle);
 				if (ret != 0)
 					error++;
 
@@ -1099,7 +1016,6 @@ static unsigned int dpmgr_is_PQ(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_AAL0:
 	case DISP_MODULE_GAMMA0:
 	case DISP_MODULE_DITHER0:
-		/* case DISP_MODULE_PWM0  : */
 		isPQ = 1;
 		break;
 	default:
@@ -1136,16 +1052,16 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 	memcpy(&handle->last_config, config, sizeof(*config));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->config != 0) {
-				ddp_modules_driver[module_name]->config(module_name, config,
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->config != 0) {
+				ddp_get_module_driver(module_name)->config(module_name, config,
 									cmdq_handle);
 			}
 
 			if (disp_helper_get_option(DISP_OPT_BYPASS_PQ)
 			    && dpmgr_is_PQ(module_name) == 1) {
-				if (ddp_modules_driver[module_name]->bypass != NULL)
-					ddp_modules_driver[module_name]->bypass(module_name, 1);
+				if (ddp_get_module_driver(module_name)->bypass != NULL)
+					ddp_get_module_driver(module_name)->bypass(module_name, 1);
 			}
 
 		}
@@ -1181,12 +1097,10 @@ void dpmgr_get_input_address(disp_path_handle dp_handle, unsigned long *addr)
 	struct ddp_path_handle *handle = (struct ddp_path_handle *)dp_handle;
 	int *modules = ddp_get_scenario_list(handle->scenario);
 
-	if (modules[0] == DISP_MODULE_OVL0 || modules[0] == DISP_MODULE_OVL1)
+	if (modules[0] == DISP_MODULE_OVL0 || modules[0] == DISP_MODULE_OVL1_2L)
 		ovl_get_address(modules[0], addr);
-	else if (modules[0] == DISP_MODULE_RDMA0 || modules[0] == DISP_MODULE_RDMA1
-		 || modules[0] == DISP_MODULE_RDMA2)
+	else if (modules[0] == DISP_MODULE_RDMA0 || modules[0] == DISP_MODULE_RDMA1)
 		rdma_get_address(modules[0], addr);
-
 }
 
 int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle, enum CMDQ_STATE state,
@@ -1207,9 +1121,9 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle,
 	if (reverse) {
 		for (i = module_num - 1; i >= 0; i--) {
 			module_name = modules[i];
-			if (ddp_modules_driver[module_name]
-			    && ddp_modules_driver[module_name]->build_cmdq) {
-				ret = ddp_modules_driver[module_name]->build_cmdq(module_name,
+			if (ddp_get_module_driver(module_name)
+			    && ddp_get_module_driver(module_name)->build_cmdq) {
+				ret = ddp_get_module_driver(module_name)->build_cmdq(module_name,
 										  trigger_loop_handle,
 										  state);
 			}
@@ -1217,9 +1131,9 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle,
 	} else {
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
-			if (ddp_modules_driver[module_name]
-			    && ddp_modules_driver[module_name]->build_cmdq) {
-				ret = ddp_modules_driver[module_name]->build_cmdq(module_name,
+			if (ddp_get_module_driver(module_name)
+			    && ddp_get_module_driver(module_name)->build_cmdq) {
+				ret = ddp_get_module_driver(module_name)->build_cmdq(module_name,
 										  trigger_loop_handle,
 										  state);
 			}
@@ -1238,17 +1152,16 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
-	DISP_LOG_V("dpmgr_path_trigger on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISP_LOG_I("dpmgr_path_trigger on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
-
+	ddp_mutex_enable(handle->hwmutexid, handle->scenario, handle->mode, trigger_loop_handle);
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->trigger != 0) {
-				ddp_modules_driver[module_name]->trigger(module_name,
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->trigger != 0) {
+				ddp_get_module_driver(module_name)->trigger(module_name,
 									 trigger_loop_handle);
 			}
 		}
@@ -1265,7 +1178,7 @@ int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq)
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 	DDPDBG("path flush on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	return ddp_mutex_enable(handle->hwmutexid, handle->scenario, cmdqHandle);
+	return ddp_mutex_enable(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
 }
 
 int dpmgr_path_power_off(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
@@ -1284,14 +1197,14 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 	DISP_LOG_I("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
-			ddp_modules_driver[module_name]->power_off(module_name,
+		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_off) {
+			ddp_get_module_driver(module_name)->power_off(module_name,
 								   encmdq ? handle->cmdqhandle :
 								   NULL);
 		}
 	}
-	handle->power_state = 0;
-	path_top_clock_off();
+	/* handle->power_state = 0; */
+	/* path_top_clock_off(); */
 	return 0;
 }
 
@@ -1309,17 +1222,17 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	path_top_clock_on();
+	/* path_top_clock_on(); */
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_on) {
-			ddp_modules_driver[module_name]->power_on(module_name,
+		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_on) {
+			ddp_get_module_driver(module_name)->power_on(module_name,
 								  encmdq ? handle->cmdqhandle :
 								  NULL);
 		}
 	}
 	/* modules on this path will resume power on; */
-	handle->power_state = 1;
+	/* handle->power_state = 1; */
 	return 0;
 }
 
@@ -1339,18 +1252,18 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH
 	DISP_LOG_I("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
+		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_off) {
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power off -- bypass\n", ddp_get_module_name(module_name));
 			} else {
-				ddp_modules_driver[module_name]->power_off(module_name,
+				ddp_get_module_driver(module_name)->power_off(module_name,
 									   encmdq ? handle->cmdqhandle :
 									   NULL);
 			}
 		}
 	}
-	handle->power_state = 0;
-	path_top_clock_off();
+	/* handle->power_state = 0; */
+	/* path_top_clock_off(); */
 	return 0;
 }
 
@@ -1368,21 +1281,21 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	path_top_clock_on();
+	/* path_top_clock_on(); */
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_on) {
+		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_on) {
 			if (module_name == DISP_MODULE_PWM0) {
 				DDPMSG(" %s power on -- bypass\n", ddp_get_module_name(module_name));
 			} else {
-				ddp_modules_driver[module_name]->power_on(module_name,
+				ddp_get_module_driver(module_name)->power_on(module_name,
 									  encmdq ? handle->cmdqhandle :
 									  NULL);
 			}
 		}
 	}
 	/* modules on this path will resume power on; */
-	handle->power_state = 1;
+	/* handle->power_state = 1; */
 	return 0;
 }
 
@@ -1414,26 +1327,24 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 		/* TODO: just for verify rootcause, will be removed soon */
 #ifndef CONFIG_FOR_SOURCE_PQ
 		if (is_module_in_path(DISP_MODULE_AAL0, handle)) {
-			if (ddp_modules_driver[DISP_MODULE_AAL0]->cmd != NULL)
+			if (ddp_get_module_driver(DISP_MODULE_AAL0)->cmd != NULL)
 				ret =
-				    ddp_modules_driver[DISP_MODULE_AAL0]->cmd(DISP_MODULE_AAL0, msg,
+				    ddp_get_module_driver(DISP_MODULE_AAL0)->cmd(DISP_MODULE_AAL0, msg,
 									     arg, cmdqhandle);
 
 		}
 #endif
 		break;
 	case DISP_IOCTL_SET_GAMMALUT:
-		if (ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd != NULL)
+		if (ddp_get_module_driver(DISP_MODULE_GAMMA0)->cmd != NULL)
 			ret =
-			    ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd(DISP_MODULE_GAMMA0, msg, arg,
+			    ddp_get_module_driver(DISP_MODULE_GAMMA0)->cmd(DISP_MODULE_GAMMA0, msg, arg,
 								       cmdqhandle);
 		break;
 	case DISP_IOCTL_SET_CCORR:
-	case DISP_IOCTL_CCORR_EVENTCTL:
-	case DISP_IOCTL_CCORR_GET_IRQ:
-		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL)
+		if (ddp_get_module_driver(DISP_MODULE_DITHER0)->cmd != NULL)
 			ret =
-			    ddp_modules_driver[DISP_MODULE_CCORR0]->cmd(DISP_MODULE_CCORR0, msg, arg,
+			    ddp_get_module_driver(DISP_MODULE_DITHER0)->cmd(DISP_MODULE_DITHER0, msg, arg,
 								       cmdqhandle);
 		break;
 
@@ -1464,15 +1375,13 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_READ_SW_REG:
 		if (is_module_in_path(DISP_MODULE_COLOR0, handle))
 			dst = DISP_MODULE_COLOR0;
-		else if (is_module_in_path(DISP_MODULE_COLOR1, handle))
-			dst = DISP_MODULE_COLOR1;
 		else
 			DISP_LOG_W("dpmgr_path_user_cmd color is not on this path\n");
 
 		if (dst != DISP_MODULE_UNKNOWN) {
 
-			if (ddp_modules_driver[dst]->cmd != NULL)
-				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
+			if (ddp_get_module_driver(dst)->cmd != NULL)
+				ret = ddp_get_module_driver(dst)->cmd(dst, msg, arg, cmdqhandle);
 
 		}
 		break;
@@ -1515,9 +1424,9 @@ int dpmgr_path_is_busy(disp_path_handle dp_handle)
 	DISP_LOG_V("path check busy on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->is_busy != 0) {
-				if (ddp_modules_driver[module_name]->is_busy(module_name)) {
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->is_busy != 0) {
+				if (ddp_get_module_driver(module_name)->is_busy(module_name)) {
 					DISP_LOG_V("%s is busy\n",
 						   ddp_get_module_name(module_name));
 					return 1;
@@ -1544,10 +1453,10 @@ int dpmgr_set_lcm_utils(disp_path_handle dp_handle, void *lcm_drv)
 	DISP_LOG_V("path set lcm drv handle %p\n", handle);
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if ((ddp_modules_driver[module_name]->set_lcm_utils != 0) && lcm_drv) {
+		if (ddp_get_module_driver(module_name) != 0) {
+			if ((ddp_get_module_driver(module_name)->set_lcm_utils != 0) && lcm_drv) {
 				DDPDBG("%s set lcm utils\n", ddp_get_module_name(module_name));
-				ddp_modules_driver[module_name]->set_lcm_utils(module_name,
+				ddp_get_module_driver(module_name)->set_lcm_utils(module_name,
 									       lcm_drv);
 			}
 		}
@@ -1714,7 +1623,7 @@ void dpmgr_debug_path_status(int mutex_id)
 
 		}
 	}
-
+	return;
 }
 
 
@@ -1831,28 +1740,16 @@ static void dpmgr_irq_handler(enum DISP_MODULE_ENUM module, unsigned int regvalu
 			for (j = 0; j < DISP_PATH_EVENT_NUM; j++) {
 				if (handle->wq_list[j].init
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
-
-#ifdef __GED_NOTIFICATION_SUPPORT__
-					if (j == DISP_PATH_EVENT_IF_VSYNC) {
-						/* notifi GED of vsync evnet,
-						 * for GPU DVFS KPI debugging and feedback
-						 */
-						ged_notification(GED_NOTIFICATION_TYPE_HW_VSYNC_PRIMARY_DISPLAY);
-					}
-#endif
 					dprec_stub_event(j);
-					handle->wq_list[j].data = ktime_to_ns(ktime_get());
-
 					DDPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,
 					       ddp_get_scenario_name(handle->scenario));
-
-					wake_up_interruptible(&(handle->wq_list[j].wq));
+					dpmgr_signal_event(handle, j);
 				}
 			}
 		}
 	}
-
+	return;
 }
 
 int dpmgr_init(void)
@@ -1867,13 +1764,19 @@ int dpmgr_init(void)
 	return 0;
 }
 
+/* dpmgr_factory_mode_test
+*  dpmgr_factory_mode_reset
+*  to be implemented in dsi driver
+*  these two functions are used for external display factory mode
+*/
 int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 {
-	if (ddp_modules_driver[module_name] != 0) {
-		if (ddp_modules_driver[module_name]->ioctl != 0) {
-			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
-			ddp_modules_driver[DISP_MODULE_DPI]->ioctl(module_name, cmdqhandle,
-								   DDP_DPI_FACTORY_TEST, config);
+	if (ddp_get_module_driver(module_name) != 0) {
+		if (ddp_get_module_driver(module_name)->ioctl != 0) {
+			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DSI1));
+			/* ddp_get_module_driver(DISP_MODULE_DSI1)->ioctl(module_name, cmdqhandle,
+			*					   DDP_DSI_FACTORY_TEST, config);
+			*/
 		}
 	}
 
@@ -1882,11 +1785,12 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 
 int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config)
 {
-	if (ddp_modules_driver[module_name] != 0) {
-		if (ddp_modules_driver[module_name]->ioctl != 0) {
-			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
-			ddp_modules_driver[DISP_MODULE_DPI]->ioctl(module_name, cmdqhandle,
-								   DDP_DPI_FACTORY_RESET, config);
+	if (ddp_get_module_driver(module_name) != 0) {
+		if (ddp_get_module_driver(module_name)->ioctl != 0) {
+			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DSI1));
+			/* ddp_get_module_driver(DISP_MODULE_DSI1)->ioctl(module_name, cmdqhandle,
+			*					   DDP_DSI_FACTORY_RESET, config);
+			*/
 		}
 	}
 
@@ -1898,36 +1802,6 @@ int dpmgr_wait_ovl_available(int ovl_num)
 	int ret = 1;
 
 	return ret;
-}
-
-int dpmgr_path_mutex_get(disp_path_handle dp_handle, void *cmdqhandle)
-{
-	struct ddp_path_handle *handle = NULL;
-
-	ASSERT(dp_handle != NULL);
-	handle = (struct ddp_path_handle *)dp_handle;
-
-	return ddp_mutex_get(handle->hwmutexid, cmdqhandle);
-}
-
-int dpmgr_path_mutex_release(disp_path_handle dp_handle, void *cmdqhandle)
-{
-	struct ddp_path_handle *handle = NULL;
-
-	ASSERT(dp_handle != NULL);
-	handle = (struct ddp_path_handle *)dp_handle;
-
-	return ddp_mutex_release(handle->hwmutexid, cmdqhandle);
-}
-
-int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle)
-{
-	struct ddp_path_handle *handle = NULL;
-
-	ASSERT(dp_handle != NULL);
-	handle = (struct ddp_path_handle *)dp_handle;
-
-	return ddp_mutex_enable(handle->hwmutexid, 0, cmdqhandle);
 }
 
 int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller)
@@ -1948,11 +1822,10 @@ int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const 
 
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
-		if (ddp_modules_driver[module_name] != 0) {
-			if (ddp_modules_driver[module_name]->switch_to_nonsec != 0)
-				ddp_modules_driver[module_name]->switch_to_nonsec(module_name, cmdqhandle);
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
+				ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
 		}
 	}
 	return 0;
 }
-

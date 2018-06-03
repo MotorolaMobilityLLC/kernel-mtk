@@ -40,7 +40,6 @@
 #include "ddp_drv.h"
 
 #include "m4u.h"
-#include "m4u_port.h"
 
 #include "primary_display.h"
 #include "cmdq_def.h"

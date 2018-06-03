@@ -16,8 +16,8 @@
 #include "ddp_info.h"
 
 #define RDMA_INSTANCES  2
-#define RDMA_MAX_WIDTH  4095
-#define RDMA_MAX_HEIGHT 4095
+#define RDMA_MAX_WIDTH	4095
+#define RDMA_MAX_HEIGHT	4095
 
 enum RDMA_OUTPUT_FORMAT {
 	RDMA_OUTPUT_FORMAT_ARGB = 0,

@@ -20,9 +20,9 @@
 #define OVL_MAX_WIDTH  (4095)
 #define OVL_MAX_HEIGHT (4095)
 
-#define TOTAL_OVL_LAYER_NUM	(6+3+3) /* Prim total support layer num */
-#define OVL_NUM			(4)
-#define PRIMARY_OVL0_OVL0_2L_CASCADE
+#define TOTAL_OVL_LAYER_NUM	(4+3+2+3)
+#define OVL_NUM			(3)
+#define PRIMARY_THREE_OVL_CASCADE
 
 /* start overlay module */
 int ovl_start(enum DISP_MODULE_ENUM module, void *handle);

@@ -32,11 +32,7 @@
 /*#include <mach/sync_write.h>*/
 #include <mt-plat/sync_write.h>
 
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_clkmgr.h>
-#else
 #include "ddp_clkmgr.h"
-#endif
 /* #include <mach/irqs.h> */
 
 #include <linux/sched.h>
@@ -202,92 +198,59 @@ static void _RestoreDPIRegisters(void)
 enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_req, enum DPI_POLARITY polarity)
 {
 	unsigned clksrc = 0;
-	unsigned prediv = 0x8016D89D;
-	unsigned con0 = 0xC0000121;
+	unsigned con1 = 0x9016D89D;
 	struct DPI_REG_OUTPUT_SETTING ctrl = DPI_REG->OUTPUT_SETTING;
 	struct device_node *node;
-	/*unsigned permission = INREG32(DISPSYS_EFUSE_PERMISSION);*/
 
 	switch (clk_req) {
 	case DPI_CLK_480p:
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 4;
-#else
-			clksrc = TVDPLL_D4;
-#endif
-			prediv = 0x8010A1CA;	/*54.054M*/
-			con0 = 0xC0000131;
+			clksrc = TVDPLL_D8;
+			con1 = 0xB0214395;	/*54.054M*/
 			break;
 		}
 	case DPI_CLK_480p_3D:
 		{
 			pr_warn("DISP/DPI DPI_CLK_480p_3D\n");
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 4;
-#else
-			/*clksrc = DPI_CK;*/
-#endif
-			prediv = 0x83109D89;	/*54M*/
+			clksrc = TVDPLL_D8;
+			con1 = 0xB0213B13;	/*54M*/
 			break;
 		}
-	case DPI_CLK_720p:
+	case DPI_CLK_720p:	/*148.5M*/
 /*	case DPI_CLK_1080p_30:	*/
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 2;	        /*148.5M*/
-#else
-			clksrc = TVDPLL_D4;
-#endif
+			clksrc = TVDPLL_D8;
+			con1 = 0x9016D89D;
 			break;
 		}
 	case DPI_CLK_1080p_60:		/*297M*/
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;
-#else
 			clksrc = TVDPLL_D4;
-			prediv = 0x8016D89D;
-			con0 =  0xC0000111;
-#endif
+			con1 = 0x9016D89D;
 			break;
 		}
 	case DPI_CLK_2160pDSC_24:		/*178.2M*/
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;
-#else
-			clksrc = TVDPLL_D4;
-			prediv = 0x801B6A56;
-			con0 =  0xC0000121;
-#endif
+			clksrc = TVDPLL_D8;
+			con1 = 0x901B6A56;
 			break;
 		}
 	case DPI_CLK_2160pDSC_30:		/*199M*/
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;
-#else
-			clksrc = TVDPLL_D4;
-			prediv = 0x800F4EC4;
-			con0 =  0xC0000111;
-#endif
+			clksrc = TVDPLL_D8;
+			con1 = 0x901E9D89;
 			break;
 		}
 	}
 
 	pr_warn("DISP/DPI,TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
 
-#if defined(CONFIG_MTK_LEGACY)
-	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
-#else
 	ddp_clk_enable(MUX_DPI0);
 	ddp_clk_set_parent(MUX_DPI0, clksrc);
 	ddp_clk_disable(MUX_DPI0);
-#endif
 
 	/* apmixed */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6759-apmixedsys");
 	if (!node)
 		pr_debug("[CLK_APMIXED] find node failed\n");
 
@@ -295,8 +258,8 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	if (!clk_apmixed_base)
 		pr_debug("[CLK_APMIXED] base failed\n");
 	else {
-		DPI_OUTREG32(NULL, clk_apmixed_base + 0x270, con0);	/* TVDPLL enable */
-		DPI_OUTREG32(NULL, clk_apmixed_base + 0x274, prediv);	/* set TVDPLL output clock frequency */
+		DPI_OUTREG32(NULL, TVDPLL_CON0, (INREG32(TVDPLL_CON0) | 0x01)); /*enable TVDPLL */
+		DPI_OUTREG32(NULL, TVDPLL_CON1, con1);	/* set TVDPLL output clock frequency */
 	}
 
 	/*DPI output clock polarity */

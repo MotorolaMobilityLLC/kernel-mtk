@@ -678,6 +678,11 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	vaStart = info->screen_base + offset;
 	vaEnd = vaStart + info->var.yres * info->fix.line_length;
 
+	DISPCHECK("fb dump: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+				*(unsigned int *)vaStart,
+				*(unsigned int *)(vaStart+4),
+				*(unsigned int *)(vaStart+8),
+				*(unsigned int *)(vaStart+0xC));
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
 	if (!session_input) {
 		DISPERR("session input allocat fail\n");
@@ -2094,7 +2099,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 	DISPFUNC();
 
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
-		color = (i & 0x1) * 0xff;
+		color = (i & 0x1) * 0xffff;
 		color += 0xff000000U;
 		_mtkfb_draw_block(va,
 				  i % (w / _internal_test_block_size) * _internal_test_block_size,

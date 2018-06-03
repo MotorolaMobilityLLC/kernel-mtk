@@ -16,7 +16,6 @@
 
 #include <linux/sched.h>
 #include "ddp_info.h"
-#include "disp_event.h"
 #include "ddp_path.h"
 
 #include "cmdq_record.h"
@@ -28,7 +27,7 @@
 /* IRQ and module are combined to consist DDP IRQ */
 enum DDP_IRQ_BIT {
 	DDP_IRQ_OVL0_FRAME_COMPLETE = MAKE_DDP_IRQ_BIT(DISP_MODULE_OVL0, 1),
-	DDP_IRQ_AAL_OUT_END_FRAME = MAKE_DDP_IRQ_BIT(DISP_MODULE_AAL0, 1),
+	DDP_IRQ_AAL0_OUT_END_FRAME = MAKE_DDP_IRQ_BIT(DISP_MODULE_AAL0, 1),
 
 	DDP_IRQ_RDMA0_REG_UPDATE = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA0, 0),
 	DDP_IRQ_RDMA0_START = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA0, 1),
@@ -44,34 +43,31 @@ enum DDP_IRQ_BIT {
 	DDP_IRQ_RDMA1_UNDERFLOW = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA1, 4),
 	DDP_IRQ_RDMA1_TARGET_LINE = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA1, 5),
 
-	DDP_IRQ_RDMA2_REG_UPDATE = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 0),
-	DDP_IRQ_RDMA2_START = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 1),
-	DDP_IRQ_RDMA2_DONE = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 2),
-	DDP_IRQ_RDMA2_ABNORMAL = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 3),
-	DDP_IRQ_RDMA2_UNDERFLOW = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 4),
-	DDP_IRQ_RDMA2_TARGET_LINE = MAKE_DDP_IRQ_BIT(DISP_MODULE_RDMA2, 5),
-
 	DDP_IRQ_WDMA0_FRAME_COMPLETE = MAKE_DDP_IRQ_BIT(DISP_MODULE_WDMA0, 0),
-
-	DDP_IRQ_WDMA1_FRAME_COMPLETE = MAKE_DDP_IRQ_BIT(DISP_MODULE_WDMA1, 0),
 
 	DDP_IRQ_DSI0_CMD_DONE = MAKE_DDP_IRQ_BIT(DISP_MODULE_DSI0, 1),
 	DDP_IRQ_DSI0_EXT_TE = MAKE_DDP_IRQ_BIT(DISP_MODULE_DSI0, 2),
 	DDP_IRQ_DSI0_FRAME_DONE = MAKE_DDP_IRQ_BIT(DISP_MODULE_DSI0, 4),
 
+	DDP_IRQ_DPI_VSYNC = MAKE_DDP_IRQ_BIT(DISP_MODULE_DPI, 0),
+
 	DDP_IRQ_MUTEX0_SOF = MAKE_DDP_IRQ_BIT(DISP_MODULE_MUTEX, 0),
 	DDP_IRQ_MUTEX1_SOF = MAKE_DDP_IRQ_BIT(DISP_MODULE_MUTEX, 1),
-
-	DDP_IRQ_DPI_VSYNC = MAKE_DDP_IRQ_BIT(DISP_MODULE_DPI, 0),
-	DDP_IRQ_DPI_VDE   = MAKE_DDP_IRQ_BIT(DISP_MODULE_DPI, 1),
 
 	DDP_IRQ_UNKNOWN = MAKE_DDP_IRQ_BIT(DISP_MODULE_UNKNOWN, 0),
 
 };
 
 /* path handle */
-
 typedef void *disp_path_handle;
+
+/* dpmgr_set_power_state
+ * primary display init: set power state = 1
+ * primary display suspend: set power state = 0
+ * primary display resume: set power state = 1
+ * lowpower...
+ */
+void dpmgr_set_power_state(unsigned int state);
 
 /* Init ddp manager, now only register irq handler to ddp_irq.c
   * return 0 if ok or -1 if fail.
@@ -97,12 +93,8 @@ int dpmgr_get_scenario(disp_path_handle dp_handle);
 	/*dpmgr_modify_path();*/
   /*after cmdq handle exec done:*/
 	/*dpmgr_modify_path_power_off_old_modules();*/
-int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
-					   enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_scenario,
 		      struct cmdqRecStruct *cmdq_handle, enum DDP_MODE isvdomode, int sw_only);
-int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
-					    enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 
 /* destroy path, it will release mutex to pool, and disconnect path,
   * clear  mapping between handle and modules.
@@ -260,8 +252,6 @@ int dpmgr_check_status_by_scenario(enum DDP_SCENARIO_ENUM scenario);
 */
 void dpmgr_debug_path_status(int mutex_id);
 
-void dpmgr_get_input_address(disp_path_handle dp_handle, unsigned long *addr);
-
 
 /* this will deal with cmdq message:
  * return 0.
@@ -417,29 +407,21 @@ struct disp_ddp_path_config *dpmgr_path_get_last_config_notclear(disp_path_handl
 void dpmgr_get_input_buffer(disp_path_handle dp_handle, unsigned long *addr);
 int dpmgr_module_notify(enum DISP_MODULE_ENUM module, enum DISP_PATH_EVENT event);
 
-int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
-int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
 
-/* factory mode test
- * return  0
- * module_name: module name.
- * encmdq: 1 use command queue, 0 not.
- * config:
+
+int dpmgr_wait_ovl_available(int ovl_num);
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller);
+
+/* dpmgr_get_input_address for extenal display
+*  get physical address from register
+*  return address in addr[]
+*/
+void dpmgr_get_input_address(disp_path_handle dp_handle, unsigned long *addr);
+
+/* dpmgr_factory_mode_test for extenal display
+*  to kick dsi1 to show a pattern
 */
 int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config);
 int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config);
-
-int dpmgr_wait_ovl_available(int ovl_num);
-
-/**
- * operations for shadow registers
- * @{
- */
-int dpmgr_path_mutex_get(disp_path_handle dp_handle, void *cmdqhandle);
-int dpmgr_path_mutex_release(disp_path_handle dp_handle, void *cmdqhandle);
-int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle);
-/* @} */
-
-int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller);
 
 #endif

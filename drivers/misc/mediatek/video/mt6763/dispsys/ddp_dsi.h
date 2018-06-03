@@ -156,7 +156,6 @@ struct DSI_PLL_CONFIG {
 enum DSI_INTERFACE_ID {
 	DSI_INTERFACE_0 = 0,
 	DSI_INTERFACE_1,
-	DSI_INTERFACE_DUAL,
 	DSI_INTERFACE_NUM,
 };
 
@@ -204,6 +203,7 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 		     unsigned char *para_list, unsigned char force_update);
 
 int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable);
+int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
 
 #ifdef __cplusplus
 }

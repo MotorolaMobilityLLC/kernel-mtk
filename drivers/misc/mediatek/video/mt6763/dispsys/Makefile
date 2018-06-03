@@ -17,7 +17,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
-             -I$(srctree)/drivers/misc/mediatek/video/common/color20/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/include/ \
              -I$(srctree)/drivers/misc/mediatek/smi/ \
@@ -47,15 +46,15 @@ endif
 obj-y += ddp_ovl.o
 obj-y += ddp_rdma_ex.o
 obj-y += ddp_wdma_ex.o
+#obj-y += ddp_rsz.o
 obj-y += ddp_dsi.o
-obj-y += ddp_dpi.o
 #obj-y += ddp_split.o
-#obj-y += ddp_ufoe.o
-#obj-y += ddp_dsc.o
 obj-y += ddp_clkmgr.o
 #common
 obj-y += ddp_drv.o
 obj-y += ddp_path.o
+obj-y += ddp_mutex.o
+obj-y += ddp_m4u.o
 obj-y += ddp_debug.o
 obj-y += ddp_dump.o
 

@@ -16,9 +16,9 @@
 #define __DDP_DRV_H__
 #include <linux/ioctl.h>
 #include "ddp_hal.h"
+#include "ddp_info.h"
 #include "ddp_aal.h"
 #include "ddp_gamma.h"
-#include "disp_event.h"
 
 struct DISP_WRITE_REG {
 	unsigned int reg;
@@ -70,7 +70,6 @@ struct DISP_EXEC_COMMAND {
 #define CCORR_COEF_CNT 4 /* ccorr feature */
 #define S_GAIN_BY_Y_CONTROL_CNT 5
 #define S_GAIN_BY_Y_HUE_PHASE_CNT 20
-#define LSP_CONTROL_CNT 8
 
 struct DISP_PQ_PARAM {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
@@ -127,11 +126,10 @@ struct DISPLAY_PQ_T {
 	unsigned int SKIN_TONE_H[COLOR_TUNING_INDEX][SKIN_TONE_SIZE];
 	unsigned int GRASS_TONE_H[COLOR_TUNING_INDEX][GRASS_TONE_SIZE];
 	unsigned int SKY_TONE_H[COLOR_TUNING_INDEX][SKY_TONE_SIZE];
-	unsigned int CCORR_COEF[CCORR_COEF_CNT][3][3];
+	unsigned int  CCORR_COEF[CCORR_COEF_CNT][3][3];
 	unsigned int S_GAIN_BY_Y[S_GAIN_BY_Y_CONTROL_CNT][S_GAIN_BY_Y_HUE_PHASE_CNT];
 	unsigned int S_GAIN_BY_Y_EN;
 	unsigned int LSP_EN;
-	unsigned int LSP[LSP_CONTROL_CNT];
 };
 
 struct DISPLAY_COLOR_REG {
@@ -259,8 +257,6 @@ enum DISP_INTERLACE_FORMAT {
 };
 
 
-extern unsigned int dispsys_irq[DISP_REG_NUM];
-extern unsigned long dispsys_reg[DISP_REG_NUM];
 struct device *disp_get_device(void);
 
 
@@ -306,11 +302,6 @@ struct device *disp_get_device(void);
 #define DISP_IOCTL_SET_GAMMALUT    _IOW(DISP_IOCTL_MAGIC, 23, DISP_GAMMA_LUT_T)
 #define DISP_IOCTL_SET_CCORR       _IOW(DISP_IOCTL_MAGIC, 24, DISP_CCORR_COEF_T)
 
-/* Add for PQ transition control */
-/* 0 : disable CCORR event, 1 : enable CCORR event */
-#define DISP_IOCTL_CCORR_EVENTCTL    _IOW(DISP_IOCTL_MAGIC, 110, int)
-/* Get CCORR interrupt */
-#define DISP_IOCTL_CCORR_GET_IRQ    _IOR(DISP_IOCTL_MAGIC, 111, int)
 
 /* Add for AAL control - E */
 /*-----------------------------------------------------------------------------*/

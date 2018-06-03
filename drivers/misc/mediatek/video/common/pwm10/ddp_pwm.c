@@ -574,7 +574,7 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	/* pwm ccf api */
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
@@ -624,7 +624,7 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 	disp_pwm_backlight_status(id, false);
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 	/* pwm ccf api */
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else

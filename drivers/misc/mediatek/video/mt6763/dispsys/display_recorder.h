@@ -16,7 +16,6 @@
 
 #include <linux/types.h>
 #include "mmprofile.h"
-#include "disp_event.h"
 #include "ddp_info.h"
 
 enum DPREC_EVENT {

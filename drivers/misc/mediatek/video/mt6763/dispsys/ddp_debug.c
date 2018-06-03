@@ -25,7 +25,6 @@
 #include <linux/time.h>
 
 #include "m4u.h"
-#include "m4u_port.h"
 
 #include "disp_drv_ddp.h"
 
@@ -38,7 +37,6 @@
 #include "ddp_path.h"
 #include "ddp_aal.h"
 #include "ddp_pwm.h"
-#include "ddp_color.h"
 #include <ddp_od.h>
 #include "ddp_dither.h"
 #include "ddp_info.h"
@@ -67,7 +65,7 @@ unsigned char pq_debug_flag;
 unsigned char aal_debug_flag;
 
 static unsigned int dbg_log_level = 1;
-static unsigned int irq_log_level;
+static unsigned int irq_log_level = 1;
 static unsigned int dump_to_buffer;
 
 static int dbg_force_roi;
@@ -115,30 +113,6 @@ unsigned int get_backup_vfp(void)
 }
 
 static char dbg_buf[2048];
-
-static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
-{
-	unsigned int i = 0;
-
-	for (i = 0; i < DISP_REG_NUM; i++) {
-		if ((isVa == 1) && (addr > dispsys_reg[i]) && (addr < dispsys_reg[i] + 0x1000))
-			break;
-		if ((isVa == 0) && (addr > ddp_reg_pa_base[i])
-		    && (addr < ddp_reg_pa_base[i] + 0x1000))
-			break;
-	}
-
-	if (i < DISP_REG_NUM) {
-		DDPMSG("addr valid, isVa=0x%x, addr=0x%lx, module=%s!\n", isVa, addr,
-		       ddp_get_reg_module_name(i));
-		return 1;
-	}
-
-	DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
-	return 0;
-
-}
-
 
 static void process_dbg_opt(const char *opt)
 {
@@ -192,7 +166,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		if (is_reg_addr_valid(1, addr) == 1) {
+		if (is_reg_addr_valid(1, addr)) {
 			unsigned int regVal = DISP_REG_GET(addr);
 
 			DDPMSG("regr: 0x%lx = 0x%08X\n", addr, regVal);
@@ -213,7 +187,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		if (is_reg_addr_valid(1, addr) == 1) {
+		if (is_reg_addr_valid(1, addr)) {
 			unsigned int regVal;
 
 			DISP_CPU_REG_SET(addr, val);
@@ -367,6 +341,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
+#if 0 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "color_dbg:", 10) == 0) {
 		char *p = (char *)opt + 10;
 		unsigned int debug_level;
@@ -380,7 +355,6 @@ static void process_dbg_opt(const char *opt)
 		disp_color_dbg_log_level(debug_level);
 
 		sprintf(buf, "color_dbg_en = 0x%x\n", debug_level);
-#if 0 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "corr_dbg:", 9) == 0) {
 		char *p = (char *)opt + 9;
 
@@ -438,14 +412,16 @@ static void process_dbg_opt(const char *opt)
 		unsigned int i = 0;
 		char *buf_temp = buf;
 
-		for (i = 0; i < DISP_REG_NUM; i++) {
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (!is_ddp_module_has_reg_info(i))
+				continue;
 			DDPDUMP("i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d)\n",
-				i, ddp_get_reg_module_name(i), dispsys_reg[i],
-				ddp_reg_pa_base[i], dispsys_irq[i]);
+				i, ddp_get_module_name(i), ddp_get_module_va(i),
+				ddp_get_module_pa(i), ddp_get_module_irq(i));
 			sprintf(buf_temp,
 				"i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d)\n", i,
-				ddp_get_reg_module_name(i), dispsys_reg[i],
-				ddp_reg_pa_base[i], dispsys_irq[i]);
+				ddp_get_module_name(i), ddp_get_module_va(i),
+				ddp_get_module_pa(i), ddp_get_module_irq(i));
 			buf_temp += strlen(buf_temp);
 		}
 
@@ -476,7 +452,11 @@ static void process_dbg_opt(const char *opt)
 			sprintf(buf, "gUltraEnable: %d\n", gUltraEnable);
 		}
 	} else if (strncmp(opt, "mmp", 3) == 0) {
+#ifdef SUPPORT_MMPROFILE	 /* FIXME: remove when MMP ready */
 		init_ddp_mmp_events();
+#else
+		;
+#endif
 	} else if (strncmp(opt, "low_power_mode:", 15) == 0) {
 		char *p = (char *)opt + 15;
 		unsigned int mode;

@@ -12,341 +12,745 @@
  */
 
 #define LOG_TAG "INFO"
-#include"ddp_info.h"
-#include"ddp_debug.h"
+#include "ddp_info.h"
+#include "ddp_debug.h"
 #include "ddp_log.h"
 
-char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
-{
-	switch (module) {
-	case DISP_MODULE_OVL0:
-		return "ovl0 ";
-	case DISP_MODULE_OVL1:
-		return "ovl1 ";
-	case DISP_MODULE_OVL0_2L:
-		return "ovl0_2l ";
-	case DISP_MODULE_OVL1_2L:
-		return "ovl1_2l ";
-	case DISP_MODULE_WDMA0_VIRTUAL:
-		return "wdma0_virt ";
-	case DISP_MODULE_RDMA0:
-		return "rdma0 ";
-	case DISP_MODULE_RDMA1:
-		return "rdma1 ";
-	case DISP_MODULE_RDMA2:
-		return "rdma2 ";
-	case DISP_MODULE_WDMA0:
-		return "wdma0 ";
-	case DISP_MODULE_WDMA1:
-		return "wdma1 ";
-	case DISP_MODULE_COLOR0:
-		return "color0 ";
-	case DISP_MODULE_COLOR1:
-		return "color1 ";
-	case DISP_MODULE_CCORR0:
-		return "ccorr0 ";
-	case DISP_MODULE_CCORR1:
-		return "ccorr1 ";
-	case DISP_MODULE_AAL0:
-		return "aal0 ";
-	case DISP_MODULE_AAL1:
-		return "aal1 ";
-	case DISP_MODULE_GAMMA0:
-		return "gamma0 ";
-	case DISP_MODULE_GAMMA1:
-		return "gamma1 ";
-	case DISP_MODULE_OD:
-		return "od ";
-	case DISP_MODULE_DITHER0:
-		return "dither0 ";
-	case DISP_MODULE_DITHER1:
-		return "dither1 ";
-	case DISP_PATH0:
-		return "path0 ";
-	case DISP_PATH1:
-		return "path1 ";
-	case DISP_MODULE_UFOE:
-		return "ufoe ";
-	case DISP_MODULE_DSC:
-		return "dsc ";
-	case DISP_MODULE_SPLIT0:
-		return "split0 ";
-	case DISP_MODULE_DPI:
-		return "dpi ";
-	case DISP_MODULE_DSI0:
-		return "dsi0 ";
-	case DISP_MODULE_DSI1:
-		return "dsi1 ";
-	case DISP_MODULE_DSIDUAL:
-		return "dsidual ";
-	case DISP_MODULE_PWM0:
-		return "pwm0 ";
-	case DISP_MODULE_CONFIG:
-		return "config ";
-	case DISP_MODULE_MUTEX:
-		return "mutex ";
-	case DISP_MODULE_SMI_COMMON:
-		return "smi_common";
-	case DISP_MODULE_SMI_LARB0:
-		return "smi_larb0";
-	case DISP_MODULE_SMI_LARB4:
-		return "smi_larb4";
-	case DISP_MODULE_MIPI0:
-		return "mipi0";
-	case DISP_MODULE_MIPI1:
-		return "mipi1";
-	default:
-		DDPMSG("invalid module id=%d", module);
-		return "unknown";
-	}
-}
+static const char reg_magic[] = "no_regs_info";
 
-enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
-{
-	switch (reg_module) {
-	case DISP_REG_CONFIG:
-		return DISP_MODULE_CONFIG;
-	case DISP_REG_OVL0:
-		return DISP_MODULE_OVL0;
-/*	case DISP_REG_OVL1:
-		return DISP_MODULE_OVL1;
-*/
-	case DISP_REG_OVL0_2L:
-		return DISP_MODULE_OVL0_2L;
-	case DISP_REG_OVL1_2L:
-		return DISP_MODULE_OVL1_2L;
-	case DISP_REG_RDMA0:
-		return DISP_MODULE_RDMA0;
-	case DISP_REG_RDMA1:
-		return DISP_MODULE_RDMA1;
-/*	case DISP_REG_RDMA2:
-		return DISP_MODULE_RDMA2;
-*/
-	case DISP_REG_WDMA0:
-		return DISP_MODULE_WDMA0;
-/*	case DISP_REG_WDMA1:
-		return DISP_MODULE_WDMA1;
-*/
-	case DISP_REG_COLOR0:
-		return DISP_MODULE_COLOR0;
-/*	case DISP_REG_COLOR1:
-		return DISP_MODULE_COLOR1;
-*/
-	case DISP_REG_CCORR0:
-		return DISP_MODULE_CCORR0;
-/*	case DISP_REG_CCORR1:
-		return DISP_MODULE_CCORR1;
-*/
-	case DISP_REG_AAL0:
-		return DISP_MODULE_AAL0;
-/*	case DISP_REG_AAL1:
-		return DISP_MODULE_AAL1;
-*/
-	case DISP_REG_GAMMA0:
-		return DISP_MODULE_GAMMA0;
-/*	case DISP_REG_GAMMA1:
-		return DISP_MODULE_GAMMA1;
-	case DISP_REG_OD:
-		return DISP_MODULE_OD;
-*/
-	case DISP_REG_DITHER0:
-		return DISP_MODULE_DITHER0;
-/*	case DISP_REG_DITHER1:
-		return DISP_MODULE_DITHER1;
-	case DISP_REG_UFOE:
-		return DISP_MODULE_UFOE;
-	case DISP_REG_DSC:
-		return DISP_MODULE_DSC;
-	case DISP_REG_SPLIT0:
-		return DISP_MODULE_SPLIT0;
-*/
-	case DISP_REG_DSI0:
-		return DISP_MODULE_DSI0;
-/*	case DISP_REG_DSI1:
-		return DISP_MODULE_DSI1;
-*/
-	case DISP_REG_DPI0:
-		return DISP_MODULE_DPI;
-	case DISP_REG_PWM:
-		return DISP_MODULE_PWM0;
-	case DISP_REG_MUTEX:
-		return DISP_MODULE_MUTEX;
-	case DISP_REG_SMI_LARB0:
-		return DISP_MODULE_SMI_LARB0;
-/*	case DISP_REG_SMI_LARB4:
-		return DISP_MODULE_SMI_LARB4;
-*/
-	case DISP_REG_SMI_COMMON:
-		return DISP_MODULE_SMI_COMMON;
-	case DISP_REG_MIPI0:
-		return DISP_MODULE_MIPI0;
-/*	case DISP_REG_MIPI1:
-		return DISP_MODULE_MIPI1;
-*/
-	default:
-		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
-		return DISP_MODULE_UNKNOWN;
-	}
+static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
+/*
+ * {module_id,
+ *  module_type,
+ *  module_name,
+ *  can_connect,
+ *  module_driver,
+ *
+ *  {reg_dt_name,
+ *  reg_pa_check,
+ *  reg_irq_check,
+ *  irq_max_bit,
+ *  reg_va,
+ *  reg_irq}
+ * },
+ */
+	{DISP_MODULE_OVL0,
+	 DISP_T_OVL,
+	 "ovl0",
+	 1,
+	 &ddp_driver_ovl,
+	 {"mediatek,disp_ovl0",
+	  0x14008000,
+	  246,
+	  14,
+	  0,
+	  0}
+	},
 
-}
+	{DISP_MODULE_OVL1,
+	 DISP_T_OVL,
+	 "ovl1",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
 
-char *ddp_get_reg_module_name(enum DISP_REG_ENUM reg_module)
-{
-	return ddp_get_module_name(ddp_get_reg_module(reg_module));
-}
+	{DISP_MODULE_OVL0_2L,
+	 DISP_T_OVL,
+	 "ovl0_2l",
+	 1,
+	 &ddp_driver_ovl,
+	 {"mediatek,disp_ovl0_2l",
+	  0x14009000,
+	  247,
+	  14,
+	  0,
+	  0}
+	},
 
-int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module)
+	{DISP_MODULE_OVL1_2L,
+	 DISP_T_OVL,
+	 "ovl1_2l",
+	 1,
+	 &ddp_driver_ovl,
+	 {"mediatek,disp_ovl1_2l",
+	  0x1400a000,
+	  248,
+	  14,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_OVL0_VIRTUAL,
+	 DISP_T_UNKNOWN,
+	 "ovl0_virtual",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
+
+	{DISP_MODULE_OVL0_2L_VIRTUAL,
+	 DISP_T_UNKNOWN,
+	 "ovl0_2l_virtual",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
+
+	{DISP_MODULE_OVL1_2L_VIRTUAL,
+	 DISP_T_UNKNOWN,
+	 "ovl1_2l_virtual",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
+
+	{DISP_MODULE_RDMA0,
+	 DISP_T_RDMA,
+	 "rdma0",
+	 1,
+	 &ddp_driver_rdma,
+	 {"mediatek,disp_rdma0",
+	  0x1400b000,
+	  249,
+	  7,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_RDMA1,
+	 DISP_T_RDMA,
+	 "rdma1",
+	 1,
+	 &ddp_driver_rdma,
+	 {"mediatek,disp_rdma1",
+	  0x1400c000,
+	  250,
+	  7,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_RDMA2,
+	 DISP_T_RDMA,
+	 "rdma2",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
+
+	{DISP_MODULE_WDMA0,
+	 DISP_T_WDMA,
+	 "wdma0",
+	 1,
+	 &ddp_driver_wdma,
+	 {"mediatek,disp_wdma0",
+	  0x1400d000,
+	  251,
+	  2,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_WDMA1,
+	 DISP_T_WDMA,
+	 "wdma1",
+	 0,
+	 NULL,
+	 {reg_magic,},
+	},
+
+	{DISP_MODULE_WDMA_VIRTUAL0,
+	 DISP_T_UNKNOWN,
+	 "wdma_virtual0",
+	 1,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_WDMA_VIRTUAL1,
+	 DISP_T_UNKNOWN,
+	 "wdma_virtual1",
+	 1,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_COLOR0,
+	 DISP_T_COLOR,
+	 "color0",
+	 1,
+	 &ddp_driver_color,
+	 {"mediatek,disp_color0",
+	  0x1400e000,
+	  252,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_COLOR1,
+	 DISP_T_COLOR,
+	 "color1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_CCORR0,
+	 DISP_T_CCORR,
+	 "ccorr0",
+	 1,
+	 &ddp_driver_ccorr,
+	 {"mediatek,disp_ccorr0",
+	  0x1400f000,
+	  253,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_CCORR1,
+	 DISP_T_CCORR,
+	 "ccorr1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+
+	{DISP_MODULE_AAL0,
+	 DISP_T_AAL,
+	 "aal0",
+	 1,
+	 &ddp_driver_aal,
+	 {"mediatek,disp_aal0",
+	  0x14010000,
+	  254,
+	  1,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_AAL1,
+	 DISP_T_AAL,
+	 "aal1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_GAMMA0,
+	 DISP_T_GAMMA,
+	 "gamma0",
+	 1,
+	 &ddp_driver_gamma,
+	 {"mediatek,disp_gamma0",
+	  0x14011000,
+	  255,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_GAMMA1,
+	 DISP_T_GAMMA,
+	 "gamma1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_OD,
+	 DISP_T_OD,
+	 "od",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_DITHER0,
+	 DISP_T_DITHER,
+	 "dither0",
+	 1,
+	 &ddp_driver_dither,
+	 {"mediatek,disp_dither0",
+	  0x14012000,
+	  256,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_DITHER1,
+	 DISP_T_DITHER,
+	 "dither1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_PATH0,
+	 DISP_T_UNKNOWN,
+	 "path0",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_PATH1,
+	 DISP_T_UNKNOWN,
+	 "path1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_UFOE,
+	 DISP_T_UFOE,
+	 "ufoe",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_DSC,
+	 DISP_T_DSC,
+	 "dsc",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_DSC_2ND,
+	 DISP_T_DSC,
+	 "dsc2",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_SPLIT0,
+	 DISP_T_UNKNOWN,
+	 "split0",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_DPI,
+	 DISP_T_DSI,
+	 "dpi0",
+	 1,
+	 NULL,	/*TODO: will be filled later */
+	 {"mediatek,dpi0",
+	  0x14015000,
+	  258,
+	  15,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_DSI0,
+	 DISP_T_DSI,
+	 "dsi0",
+	 1,
+	 &ddp_driver_dsi0,
+	 {"mediatek,dsi0",
+	  0x14014000,
+	  257,
+	  15,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_DSI1,
+	 DISP_T_DSI,
+	 "dsi1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_DSIDUAL,
+	 DISP_T_DSI,
+	 "dsidual",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_PWM0,
+	 DISP_T_PWM,
+	 "pwm0",
+	 0,
+	 &ddp_driver_pwm,
+	 {"mediatek,disp_pwm0",
+	  0x1100e000,
+	  158,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_PWM1,
+	 DISP_T_PWM,
+	 "pwm1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_CONFIG,
+	 DISP_T_UNKNOWN,
+	 "config",
+	 0,
+	 NULL,
+	 {"mediatek,mmsys_config",
+	  0x14000000,
+	  0,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_MUTEX,
+	 DISP_T_UNKNOWN,
+	 "mutex",
+	 0,
+	 NULL,
+	 {"mediatek,disp_mutex",
+	  0x14016000,
+	  238,
+	  21,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_SMI_COMMON,
+	 DISP_T_UNKNOWN,
+	 "sim_common",
+	 0,
+	 NULL,
+	 {"mediatek,smi_common",
+	  0x14019000,
+	  0,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_SMI_LARB0,
+	 DISP_T_UNKNOWN,
+	 "smi_larb0",
+	 0,
+	 NULL,
+	 {"mediatek,smi_larb0",
+	  0x14017000,
+	  261,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_SMI_LARB1,
+	 DISP_T_UNKNOWN,
+	 "smi_larb1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_MIPI0,
+	 DISP_T_UNKNOWN,
+	 "mipi0",
+	 0,
+	 NULL,
+	 {"mediatek,mipi_tx0",
+	  0x11e50000,
+	  179,
+	  0,
+	  0,
+	  0}
+	},
+
+	{DISP_MODULE_MIPI1,
+	 DISP_T_UNKNOWN,
+	 "mipi1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_RSZ0,
+	 DISP_T_RSZ,
+	 "rsz0",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_RSZ1,
+	 DISP_T_RSZ,
+	 "rsz1",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+
+	{DISP_MODULE_UNKNOWN,
+	 DISP_T_UNKNOWN,
+	 "unknown",
+	 0,
+	 NULL,
+	 {reg_magic,}
+	},
+};
+
+unsigned int is_ddp_module(enum DISP_MODULE_ENUM module)
 {
-	switch (module) {
-	case DISP_MODULE_OVL0:
-		return 14;
-	case DISP_MODULE_OVL1:
-		return 14;
-	case DISP_MODULE_OVL0_2L:
-		return 14;
-	case DISP_MODULE_OVL1_2L:
-		return 14;
-	case DISP_MODULE_RDMA0:
-		return 7;
-	case DISP_MODULE_RDMA1:
-		return 7;
-	case DISP_MODULE_RDMA2:
-		return 7;
-	case DISP_MODULE_WDMA0:
+	if (module >= 0 && module < DISP_MODULE_NUM)
 		return 1;
-	case DISP_MODULE_WDMA1:
-		return 1;
-	case DISP_MODULE_COLOR0:
-		return 2; /* PQ ??? */
-	case DISP_MODULE_COLOR1:
-		return 2; /* PQ ??? */
-	case DISP_MODULE_CCORR0:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_CCORR1:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_AAL0:
-		return 1; /* PQ ??? */
-	case DISP_MODULE_AAL1:
-		return 1; /* PQ ??? */
-	case DISP_MODULE_GAMMA0:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_GAMMA1:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_OD:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_DITHER0:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_DITHER1:
-		return 0; /* PQ ??? */
-	case DISP_MODULE_DPI:
-		return 2; /* DPI ??? */
-	case DISP_MODULE_DSI0:
-		return 12;
-	case DISP_MODULE_DSI1:
-		return 12;
-	case DISP_MODULE_DSIDUAL:
-		return 12;
-	case DISP_MODULE_PWM0:
-		return 0;
-	case DISP_MODULE_MUTEX:
-		return 14;
-	default:
-		DDPMSG("invalid module id=%d", module);
-	}
+
 	return 0;
 }
 
-unsigned int ddp_module_to_idx(int module)
+unsigned int is_ddp_module_has_reg_info(enum DISP_MODULE_ENUM module)
 {
-	unsigned int id = 0;
+	if (!is_ddp_module(module))
+		return 0;
 
-	switch (module) {
-	case DISP_MODULE_AAL0:
-	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_RDMA0:
-	case DISP_MODULE_WDMA0:
-	case DISP_MODULE_OVL0:
-	case DISP_MODULE_GAMMA0:
-	case DISP_MODULE_PWM0:
-	case DISP_MODULE_OD:
-	case DISP_MODULE_SPLIT0:
-	case DISP_MODULE_DSI0:
-	case DISP_MODULE_DPI:
-	case DISP_MODULE_DITHER0:
-	case DISP_MODULE_CCORR0:
-		id = 0;
-		break;
+	if (strcmp(ddp_modules[module].reg_info.reg_dt_name, reg_magic))
+		return 1;
 
-	case DISP_MODULE_COLOR1:
-	case DISP_MODULE_RDMA1:
-	case DISP_MODULE_DSI1:
-	case DISP_MODULE_OVL1:
-	case DISP_MODULE_WDMA1:
-		id = 1;
-		break;
-	case DISP_MODULE_RDMA2:
-	case DISP_MODULE_DSIDUAL:
-		id = 2;
-		break;
-	default:
-		DDPERR("ddp_module_to_idx, module=0x%x\n", module);
+	return 0;
+}
+
+const char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module(module))
+		return ddp_modules[module].module_name;
+
+	DDPERR("ddp_get_module_name: invalid module id=%d\n", module);
+	return "unknown";
+}
+
+unsigned int _can_connect(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module(module))
+		return ddp_modules[module].can_connect;
+
+	DDPDBG("_can_connect: invalid module id=%d\n", module);
+	return 0;
+}
+
+struct DDP_MODULE_DRIVER  *ddp_get_module_driver(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module(module))
+		return ddp_modules[module].module_driver;
+
+	DDPDBG("ddp_get_module_driver: invalid module id=%d\n", module);
+	return 0;
+}
+
+const char *ddp_get_module_dtname(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module(module))
+		return ddp_modules[module].reg_info.reg_dt_name;
+
+	DDPDBG("ddp_get_module_dtname: invalid module id=%d\n", module);
+	return "unknown";
+}
+
+unsigned int ddp_get_module_checkirq(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module))
+		return ddp_modules[module].reg_info.reg_irq_check;
+
+	DDPDBG("ddp_get_module_checkirq: invalid module id=%d\n", module);
+	return 0;
+}
+
+unsigned long ddp_get_module_pa(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module))
+		return ddp_modules[module].reg_info.reg_pa_check;
+
+	DDPDBG("ddp_get_module_pa: invalid module id=%d\n", module);
+	return 0;
+}
+
+unsigned int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module))
+		return ddp_modules[module].reg_info.irq_max_bit;
+
+	DDPDBG("ddp_get_module_max_irq_bit: invalid module id=%d\n", module);
+	return 0;
+}
+
+unsigned int ddp_is_irq_enable(enum DISP_MODULE_ENUM module)
+{
+	if (ddp_get_module_max_irq_bit(module))
+		return 1;
+
+	return 0;
+}
+
+void ddp_module_irq_disable(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module)) {
+		ddp_modules[module].reg_info.irq_max_bit = 0;
+		return;
 	}
 
-	return id;
+	DDPDBG("ddp_set_irq_enable: invalid module id=%d\n", module);
 }
 
 
-/*#define DISP_NO_DPI*/ /* FIXME: tmp define */
-struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
-	&ddp_driver_ovl,		/* DISP_MODULE_OVL0 = 0, */
-	NULL,		/* DISP_MODULE_OVL1  , */
-	&ddp_driver_ovl,		/* DISP_MODULE_OVL0_2L  , */
-	&ddp_driver_ovl,		/* DISP_MODULE_OVL1_2L  , */
-	NULL,					/* DISP_MODULE_WDMA0_VIRTUAL */
+void ddp_set_module_va(enum DISP_MODULE_ENUM module, unsigned long va)
+{
+	if (is_ddp_module_has_reg_info(module)) {
+		DDPDBG("ddp_set_module_va: %d -> 0x%lx\n", module, va);
+		ddp_modules[module].reg_info.reg_va = va;
+		return;
+	}
 
-	&ddp_driver_rdma,	/* DISP_MODULE_RDMA0 , */
-	&ddp_driver_rdma,	/* DISP_MODULE_RDMA1 , */
-	NULL,	/* DISP_MODULE_RDMA2 , */
-	&ddp_driver_wdma,	/* DISP_MODULE_WDMA0 , */
-	NULL,	/* DISP_MODULE_WDMA1 , */
+	DDPDBG("ddp_set_module_va: invalid module id=%d\n", module);
+}
 
-	&ddp_driver_color,	/* DISP_MODULE_COLOR0, */
-	NULL,	/* DISP_MODULE_COLOR1, */
-	&ddp_driver_ccorr,	/* DISP_MODULE_CCORR0 , */
-	NULL,	/* DISP_MODULE_CCORR1 , */
-	&ddp_driver_aal,		/* DISP_MODULE_AAL   , */
+void ddp_set_module_irq(enum DISP_MODULE_ENUM module, unsigned int irq)
+{
+	if (is_ddp_module_has_reg_info(module)) {
+		ddp_modules[module].reg_info.reg_irq = irq;
+		return;
+	}
 
-	NULL,		/* DISP_MODULE_AAL   , */
-	&ddp_driver_gamma,	/* DISP_MODULE_GAMMA0 , */
-	NULL,	/* DISP_MODULE_GAMMA1 , */
-	NULL,		/* DISP_MODULE_OD , */
-	&ddp_driver_dither,	/* DISP_MODULE_DITHER0, */
+	DDPDBG("ddp_set_module_irq: invalid module id=%d\n", module);
+}
 
-	NULL,	/* DISP_MODULE_DITHER1, */
-	0,					/* DISP_PATH0 */
-	0,					/* DISP_PATH1 */
-	0,	/* DISP_MODULE_UFOE  */
-	0,					/* DISP_MODULE_DSC */
+unsigned long ddp_get_module_va(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module))
+		return ddp_modules[module].reg_info.reg_va;
 
-	NULL,	/* DISP_MODULE_SPLIT0, */
-#ifndef DISP_NO_DPI
-	&ddp_driver_dpi,		/* DISP_MODULE_DPI   , */
-#else
-	0,
-#endif
-	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
-	NULL,	/* DISP_MODULE_DSI1  , */
-	NULL,	/* DISP_MODULE_DSIDUAL, */
+	return 0;
+}
 
-	&ddp_driver_pwm,		/* DISP_MODULE_PWM0   , */
-	0,					/* DISP_MODULE_CONFIG, */
-	0,					/* DISP_MODULE_MUTEX, */
-	0,					/* DISP_MODULE_SMI_COMMON, */
-	0,					/* DISP_MODULE_SMI_LARB0 , */
+unsigned int ddp_get_module_irq(enum DISP_MODULE_ENUM module)
+{
+	if (is_ddp_module_has_reg_info(module))
+		return ddp_modules[module].reg_info.reg_irq;
 
-	0,					/* DISP_MODULE_SMI_LARB4 , */
-	0,					/* DISP_MODULE_MIPI0 */
-	0,					/* DISP_MODULE_MIPI1 */
-	0,					/* DISP_MODULE_UNKNOWN, */
-	0,                                /* DISP_MODULE_WDMA_VIRTUAL0 */
-};
+	DDPDBG("ddp_get_module_irq: invalid module id=%d\n", module);
+	return 0;
+}
+
+unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if ((isVa == 1) && (addr > ddp_get_module_va(i)) && (addr < ddp_get_module_va(i) + 0x1000))
+			break;
+		if ((isVa == 0) && (addr > ddp_get_module_pa(i)) && (addr < ddp_get_module_pa(i) + 0x1000))
+			break;
+	}
+
+	if (i < DISP_MODULE_NUM) {
+		DDPMSG("addr valid, isVa=0x%x, addr=0x%lx, module=%s!\n", isVa, addr,
+		       ddp_get_module_name(i));
+		return i;
+	}
+
+	DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
+	return 0;
+
+}
+
+unsigned int ddp_get_module_num_by_t(enum DISP_MODULE_TYPE_ENUM module_t)
+{
+	int i;
+	int cnt = 0;
+
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if (ddp_modules[i].module_type == module_t)
+			cnt++;
+	}
+
+	return cnt;
+}
+
+enum DISP_MODULE_ENUM ddp_get_module_id_by_idx(enum DISP_MODULE_TYPE_ENUM module_t, unsigned int idx)
+{
+	int i;
+	int index = 0;
+
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if (ddp_modules[i].module_type == module_t)
+			index++;
+		if (index == (idx + 1))
+			return i;
+	}
+
+	return DISP_MODULE_UNKNOWN;
+}
+
+enum DISP_MODULE_ENUM disp_irq_to_module(unsigned int irq)
+{
+	int i;
+
+	if (irq == 0)
+		return DISP_MODULE_UNKNOWN;
+
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if (irq == ddp_get_module_irq(i))
+			return i;
+	}
+
+	DDPERR("cannot find module for irq %d\n", irq);
+	WARN_ON(1);
+	return DISP_MODULE_UNKNOWN;
+}
+
+const char *ddp_get_ioctl_name(enum DDP_IOCTL_NAME ioctl)
+{
+	switch (ioctl) {
+	case DDP_SWITCH_DSI_MODE:
+		return "DDP_SWITCH_DSI_MODE";
+	case DDP_STOP_VIDEO_MODE:
+		return "DDP_STOP_VIDEO_MODE";
+	case DDP_BACK_LIGHT:
+		return "DDP_BACK_LIGHT";
+	case DDP_SWITCH_LCM_MODE:
+		return "DDP_SWITCH_LCM_MODE";
+	case DDP_DPI_FACTORY_TEST:
+		return "DDP_DPI_FACTORY_TEST";
+	case DDP_DSI_IDLE_CLK_CLOSED:
+		return "DDP_DSI_IDLE_CLK_CLOSED";
+	case DDP_DSI_IDLE_CLK_OPEN:
+		return "DDP_DSI_IDLE_CLK_OPEN";
+	case DDP_DSI_PORCH_CHANGE:
+		return "DDP_DSI_PORCH_CHANGE";
+	case DDP_PHY_CLK_CHANGE:
+		return "DDP_PHY_CLK_CHANGE";
+	case DDP_ENTER_ULPS:
+		return "DDP_ENTER_ULPS";
+	case DDP_EXIT_ULPS:
+		return "DDP_EXIT_ULPS";
+	case DDP_RDMA_GOLDEN_SETTING:
+		return "DDP_RDMA_GOLDEN_SETTING";
+	case DDP_OVL_GOLDEN_SETTING:
+		return "DDP_OVL_GOLDEN_SETTING";
+	case DDP_PARTIAL_UPDATE:
+		return "DDP_PARTIAL_UPDATE";
+	case DDP_UPDATE_PLL_CLK_ONLY:
+		return "DDP_UPDATE_PLL_CLK_ONLY";
+	case DDP_DSI_SW_INIT:
+		return "DDP_DSI_SW_INIT";
+	case DDP_DSI_MIPI_POWER_ON:
+		return "DDP_DSI_MIPI_POWER_ON";
+	default:
+		return "unknown";
+	}
+}

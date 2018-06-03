@@ -374,5 +374,6 @@ int display_exit_tui(void);
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
+enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
 
 #endif

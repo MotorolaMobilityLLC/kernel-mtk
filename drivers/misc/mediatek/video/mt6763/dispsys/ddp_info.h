@@ -15,11 +15,12 @@
 #define _H_DDP_INFO
 #include <linux/types.h>
 #include <linux/wait.h>
+#include <disp_session.h>
+
 #include "ddp_hal.h"
 #include "lcm_drv.h"
-#include "disp_event.h"
 #include "ddp_ovl.h"
-#include <disp_session.h>
+#include "disp_event.h"
 
 #define _UFMT_ID_SHIFT			0
 #define _UFMT_ID_WIDTH			8
@@ -194,6 +195,32 @@ struct OVL_BASIC_STRUCT {
 	unsigned int alpha;
 };
 
+enum RSZ_COLOR_FORMAT {
+	ARGB8101010,
+	RGB999,
+	RGB888,
+	UNKNOWN_RSZ_CFMT,
+};
+
+struct rsz_tile_params {
+	u32 step;
+	u32 int_offset;
+	u32 sub_offset;
+	u32 in_len;
+	u32 out_len;
+};
+
+struct RSZ_CONFIG_STRUCT {
+	struct rsz_tile_params tw[2];
+	struct rsz_tile_params th;
+	enum RSZ_COLOR_FORMAT fmt;
+	u32 frm_in_w;
+	u32 frm_in_h;
+	u32 frm_out_w;
+	u32 frm_out_h;
+	u32 ratio;
+};
+
 struct RDMA_BASIC_STRUCT {
 	unsigned long addr;
 	unsigned int src_w;
@@ -281,6 +308,7 @@ struct disp_ddp_path_config {
 	int overlap_layer_num;
 	struct OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
 	struct disp_rect ovl_partial_roi;
+	struct RSZ_CONFIG_STRUCT rsz_config;
 	struct RDMA_CONFIG_STRUCT rdma_config;
 	struct WDMA_CONFIG_STRUCT wdma_config;
 	LCM_PARAMS dispif_config;
@@ -290,6 +318,9 @@ struct disp_ddp_path_config {
 	unsigned int fps;
 	struct golden_setting_context *p_golden_setting_context;
 	void *path_handle;
+	bool rsz_enable;
+	int hrt_path;
+	int hrt_scale;
 };
 
 /* dpmgr_ioctl cmd definition */
@@ -312,6 +343,8 @@ enum DDP_IOCTL_NAME {
 	DDP_UPDATE_PLL_CLK_ONLY,
 	DDP_DPI_FACTORY_RESET,
 	DDP_DSI_PORCH_ADDR,
+	DDP_DSI_SW_INIT,
+	DDP_DSI_MIPI_POWER_ON,
 };
 
 struct ddp_io_golden_setting_arg {
@@ -352,18 +385,11 @@ struct DDP_MODULE_DRIVER {
 	int (*switch_to_nonsec)(enum DISP_MODULE_ENUM module, void *handle);
 };
 
-char *ddp_get_module_name(enum DISP_MODULE_ENUM module);
-char *ddp_get_reg_module_name(enum DISP_REG_ENUM reg_module);
-int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module);
-enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module);
-
 
 /* dsi */
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi0;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
-/* dpi */
-extern struct DDP_MODULE_DRIVER ddp_driver_dpi;
 
 /* ovl */
 extern struct DDP_MODULE_DRIVER ddp_driver_ovl;
@@ -375,8 +401,6 @@ extern struct DDP_MODULE_DRIVER ddp_driver_wdma;
 extern struct DDP_MODULE_DRIVER ddp_driver_color;
 /* aal */
 extern struct DDP_MODULE_DRIVER ddp_driver_aal;
-/* od */
-extern  struct DDP_MODULE_DRIVER ddp_driver_od;
 /* gamma */
 extern struct DDP_MODULE_DRIVER ddp_driver_gamma;
 /* dither */
@@ -388,11 +412,49 @@ extern struct DDP_MODULE_DRIVER ddp_driver_split;
 
 /* pwm */
 extern struct DDP_MODULE_DRIVER ddp_driver_pwm;
-/* ufoe */
-extern struct DDP_MODULE_DRIVER ddp_driver_ufoe;
-/* dsc */
-extern struct DDP_MODULE_DRIVER ddp_driver_dsc;
 
-extern struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
+typedef struct {
+	const char *reg_dt_name;
+	unsigned long reg_pa_check;
+	unsigned int reg_irq_check;
+	unsigned int irq_max_bit;
+
+	/* get info from DT */
+	volatile unsigned long reg_va;
+	volatile unsigned int reg_irq;
+} ddp_reg;
+
+typedef struct {
+	/* sw info */
+	enum DISP_MODULE_ENUM module_id;
+	enum DISP_MODULE_TYPE_ENUM module_type;
+	const char *module_name;
+	unsigned int can_connect; /* module can be connect if 1 */
+	struct DDP_MODULE_DRIVER *module_driver;
+
+	/* hw info */
+	ddp_reg reg_info;
+} ddp_module;
+
+unsigned int is_ddp_module(enum DISP_MODULE_ENUM module);
+unsigned int is_ddp_module_has_reg_info(enum DISP_MODULE_ENUM module);
+const char *ddp_get_module_name(enum DISP_MODULE_ENUM module);
+unsigned int _can_connect(enum DISP_MODULE_ENUM module);
+struct DDP_MODULE_DRIVER  *ddp_get_module_driver(enum DISP_MODULE_ENUM module);
+const char *ddp_get_module_dtname(enum DISP_MODULE_ENUM module);
+unsigned int ddp_get_module_checkirq(enum DISP_MODULE_ENUM module);
+unsigned long ddp_get_module_pa(enum DISP_MODULE_ENUM module);
+unsigned int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module);
+unsigned int ddp_is_irq_enable(enum DISP_MODULE_ENUM module);
+void ddp_module_irq_disable(enum DISP_MODULE_ENUM module);
+void ddp_set_module_va(enum DISP_MODULE_ENUM module, unsigned long va);
+void ddp_set_module_irq(enum DISP_MODULE_ENUM module, unsigned int irq);
+unsigned long ddp_get_module_va(enum DISP_MODULE_ENUM module);
+unsigned int ddp_get_module_irq(enum DISP_MODULE_ENUM module);
+unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr);
+unsigned int ddp_get_module_num_by_t(enum DISP_MODULE_TYPE_ENUM module_t);
+enum DISP_MODULE_ENUM ddp_get_module_id_by_idx(enum DISP_MODULE_TYPE_ENUM module_t, unsigned int idx);
+enum DISP_MODULE_ENUM disp_irq_to_module(unsigned int irq);
+const char *ddp_get_ioctl_name(enum DDP_IOCTL_NAME ioctl);
 
 #endif

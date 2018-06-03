@@ -304,7 +304,7 @@ static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
 		break;
 
 	case DISP_MODULE_OVL0:
-	case DISP_MODULE_OVL1:
+	/*case DISP_MODULE_OVL1:*/
 		index = module - DISP_MODULE_OVL0;
 		if (reg_val & (1 << 1)) {/*EOF*/
 			ddp_inout_info_tag(index);

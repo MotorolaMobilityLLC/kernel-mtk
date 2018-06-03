@@ -16,62 +16,82 @@
 
 #include "ddp_hal.h"
 
-#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
-#endif
 
 
+/* display clk id
+ * -- by chip
+ */
 enum DDP_CLK_ID {
-	DISP0_SMI_COMMON = 0,
+	/* top clk */
+	DISP_MTCMOS_CLK = 0,
+	DISP0_SMI_COMMON,
 	DISP0_SMI_LARB0,
+	DISP0_SMI_LARB1,
+	CLK_MM_GALS_COMM0,
+	CLK_MM_GALS_COMM1,
+	CLK_MM_GALS_VENC2MM,
+	CLK_MM_GALS_VDEC2MM,
+	CLK_MM_GALS_IMG2MM,
+	CLK_MM_GALS_CAM2MM,
+	CLK_MM_GALS_IPU2MM,
+	/* module clk */
 	DISP0_DISP_OVL0,
 	DISP0_DISP_OVL0_2L,
 	DISP0_DISP_OVL1_2L,
 	DISP0_DISP_RDMA0,
 	DISP0_DISP_RDMA1,
 	DISP0_DISP_WDMA0,
-	DISP0_DISP_COLOR,
-	DISP0_DISP_CCORR,
-	DISP0_DISP_AAL,/*10*/
-	DISP0_DISP_GAMMA,
-	DISP0_DISP_DITHER,
+	DISP0_DISP_COLOR0,
+	DISP0_DISP_CCORR0,
+	DISP0_DISP_AAL0,
+	DISP0_DISP_GAMMA0,
+	DISP0_DISP_DITHER0,
 	DISP1_DSI0_MM_CLOCK,
 	DISP1_DSI0_INTERFACE_CLOCK,
-	DISP1_DPI_MM_CLOCK,
-	DISP1_DPI_INTERFACE_CLOCK,
-	DISP1_DISP_OVL0_MOUT,
+	DISP1_DSI1_MM_CLOCK,
+	DISP1_DSI1_INTERFACE_CLOCK,
+	DISP0_DISP_26M,
+	/* mdp clk */
+	DISP0_MDP_WROT0,
+	DISP0_MDP_WROT1,
+	/* pwm (not in mmsys)*/
 	DISP_PWM,
-	DISP_MTCMOS_CLK,
-	MUX_DPI0,/*20*/
-	TVDPLL_D2,
-	TVDPLL_D4,
-	TVDPLL_D8,
-	TVDPLL_D16,
-	DPI_CK,
 	MUX_PWM,
-	CLK26M,
 	UNIVPLL2_D4,
+	ULPOSC_D2,
+	ULPOSC_D3,
+	ULPOSC_D8,
+	ULPOSC_D10,
 	ULPOSC_D4,
-	ULPOSC_D8,/*30*/
-	MUX_MM,
-	MM_VENCPLL,
-	SYSPLL2_D2,
 	MAX_DISP_CLK_CNT
 };
 
-#ifndef CONFIG_MTK_CLKMGR
+typedef struct {
+	struct clk *pclk;
+	const char *clk_name;
+	unsigned int belong_to; /* bit 0: main display , bit 1: second display */
+	enum DISP_MODULE_ENUM module_id;
+} ddp_clk;
 
+const char *ddp_get_clk_name(unsigned int n);
+int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
+#if 0
 int ddp_clk_prepare(enum DDP_CLK_ID id);
 int ddp_clk_unprepare(enum DDP_CLK_ID id);
 int ddp_clk_enable(enum DDP_CLK_ID id);
 int ddp_clk_disable(enum DDP_CLK_ID id);
+#endif
 int ddp_clk_prepare_enable(enum DDP_CLK_ID id);
 int ddp_clk_disable_unprepare(enum DDP_CLK_ID id);
 int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent);
-int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
-int ddp_parse_apmixed_base(void);
 int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);
-
-#endif				/* CONFIG_MTK_CLKMGR */
+int ddp_parse_apmixed_base(void);
+int ddp_main_modules_clk_on(void);
+int ddp_main_modules_clk_off(void);
+int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t);
+int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
+enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);
+void ddp_clk_force_on(unsigned int on);
 
 #endif

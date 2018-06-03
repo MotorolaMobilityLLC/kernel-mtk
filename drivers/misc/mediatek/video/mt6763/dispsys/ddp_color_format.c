@@ -12,7 +12,6 @@
  */
 
 #include <linux/kernel.h>
-/* #include <asm-generic/bug.h> */
 #include "ddp_info.h"
 #include "ddp_log.h"
 

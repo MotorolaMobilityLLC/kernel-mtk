@@ -32,7 +32,6 @@
 /* #include "mtk_spm_idle.h" */
 #include "mtk_smi.h"
 #include "m4u.h"
-#include "m4u_port.h"
 
 #include "disp_drv_platform.h"
 #include "debug.h"

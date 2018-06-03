@@ -29,10 +29,9 @@
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-#include "mtk_spm_idle.h"
+/* #include "mtk_spm_idle.h" */
 #include "mt-plat/mtk_smi.h"
 #include "m4u.h"
-#include "m4u_port.h"
 
 #include "disp_drv_platform.h"
 #include "debug.h"
@@ -427,6 +426,7 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 
 int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 {
+#if 0
 	/* disable vencpll */
 	if (need_disable_pll == MM_VENCPLL) {
 		ddp_clk_set_parent(MUX_MM, SYSPLL2_D2);
@@ -438,6 +438,7 @@ int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 		ddp_clk_disable_unprepare(SYSPLL2_D2);
 	}
 
+#endif
 	return 0;
 }
 
@@ -914,18 +915,20 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		primary_display_idlemgr_enter_idle_nolock();
 		primary_display_set_idle_stat(1);
 
+#ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		if (get_ddr_type() == TYPE_LPDDR3)
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
 		else
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
-
+#endif
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
+#ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when leave screen idle: reset to default */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
-
+#endif
 		if (kthread_should_stop())
 			break;
 	}
@@ -1191,4 +1194,40 @@ unsigned int set_idlemgr(unsigned int flag, int need_lock)
 		primary_display_idlemgr_kick((char *)__func__, need_lock);
 	}
 	return old_flag;
+}
+
+unsigned int get_us_perline(unsigned int width)
+{
+	unsigned int PLLCLK = 0;
+	unsigned int datarate = 0;
+	unsigned int pixclk = 0;
+	unsigned int tline = 0;
+	unsigned int overhead = 12; /* 1.2 */
+
+	PLLCLK = primary_get_lcm()->params->dsi.PLL_CLOCK;
+	PLLCLK = PLLCLK * LINE_ACCURACY;
+	PLLCLK = PLLCLK * 10 / overhead;
+
+	datarate = PLLCLK * 2;
+
+	pixclk = datarate * primary_get_lcm()->params->dsi.LANE_NUM;
+	pixclk = pixclk / 24; /* dsi out put RGB888 */
+
+	tline = width * LINE_ACCURACY * LINE_ACCURACY / pixclk;
+
+	return tline;
+}
+
+unsigned int time_to_line(unsigned int ms, unsigned int width)
+{
+	unsigned int tline_us = 0;
+	unsigned long long time_us = 0;
+	unsigned int line = 0;
+
+	tline_us = get_us_perline(width);
+	time_us = ms * 1000 * LINE_ACCURACY;
+
+	line = time_us / tline_us;
+
+	return line;
 }

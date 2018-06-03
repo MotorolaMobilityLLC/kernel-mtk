@@ -14,6 +14,7 @@
 #ifndef _DISP_LOWPOWER_H_
 #define _DISP_LOWPOWER_H_
 
+#define LINE_ACCURACY 1000
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module);
 void primary_display_idlemgr_enter_idle_nolock(void);
 
@@ -45,6 +46,8 @@ int _blocking_flush(void);
 unsigned int get_idlemgr_flag(void);
 unsigned int set_idlemgr(unsigned int flag, int need_lock);
 void primary_display_sodi_enable(int flag);
+unsigned int get_us_perline(unsigned int width);
+unsigned int time_to_line(unsigned int ms, unsigned int width);
 /**************************************** for met******************************************* */
 /*return 0: not enter ultra lowpower state which means mipi pll enable*/
 /*return 1: enter ultra lowpower state whicn means mipi pll disable*/
