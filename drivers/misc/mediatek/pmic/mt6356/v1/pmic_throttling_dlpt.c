@@ -784,7 +784,7 @@ int g_low_per_timer;
 int g_low_per_timeout_val = 60;
 
 
-int g_lbatInt1 = POWER_INT2_VOLT * 10;
+int g_lbatInt1 = DLPT_VOLT_MIN * 10;
 
 struct dlpt_callback_table {
 	void *dlpt_cb;
@@ -1151,7 +1151,7 @@ int get_dlpt_imix_charging(void)
 {
 
 	int zcv_val = 0;
-	int vsys_min_1_val = POWER_INT2_VOLT;
+	int vsys_min_1_val = DLPT_VOLT_MIN;
 	int imix_val = 0;
 #if 0
 	#if defined(SWCHR_POWER_PATH)
