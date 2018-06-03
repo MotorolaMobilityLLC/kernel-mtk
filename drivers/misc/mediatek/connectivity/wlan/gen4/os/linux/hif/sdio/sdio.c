@@ -214,6 +214,7 @@ static INT_32 mtk_sdio_interrupt(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 		/* printk(KERN_INFO DRV_NAME"No glue info in mtk_sdio_interrupt()\n"); */
 		return -HIF_SDIO_ERR_FAIL;
 	}
+	prGlueInfo->IsrCnt++;
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		/* printk(KERN_INFO DRV_NAME"GLUE_FLAG_HALT skip INT\n"); */
@@ -226,6 +227,7 @@ static INT_32 mtk_sdio_interrupt(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 	prGlueInfo->rHifInfo.fgIsPendingInt = FALSE;
 
 	kalSetIntEvent(prGlueInfo);
+	prGlueInfo->IsrPassCnt++;
 
 	return ret;
 }
