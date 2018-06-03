@@ -1665,7 +1665,7 @@ static void __mt_gpufreq_bucks_enable(void)
 	}
 	gpufreq_pr_debug("@%s: bucks is enabled\n", __func__);
 #else
-	__mt_gpufreq_vcore_volt_switch(g_cur_vcore_opp);
+	__mt_gpufreq_vcore_volt_switch(g_cur_opp_volt);
 #endif
 }
 
