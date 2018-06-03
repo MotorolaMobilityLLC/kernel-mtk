@@ -38,7 +38,7 @@
 #include "inc/mt6370_pmu_charger.h"
 #include "inc/mt6370_pmu.h"
 
-#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.23_MTK"
+#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.24_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
@@ -513,6 +513,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 	s64 adc_result = 0;
 	const int max_wait_times = 6;
 
+	if (adc_sel == MT6370_ADC_TEMP_JC)
+		dev_info(chg_data->dev, "%s: Select ADC channel to TEMP_JC\n", __func__);
+
 	mutex_lock(&chg_data->adc_access_lock);
 	mt6370_enable_hidden_mode(chg_data, true);
 
@@ -548,6 +551,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 			goto out_unlock_all;
 		}
 	}
+
+	if (adc_sel == MT6370_ADC_TEMP_JC)
+		dev_info(chg_data->dev, "%s: Start ADC conversion\n", __func__);
 
 	/* Start ADC conversation */
 	ret = mt6370_pmu_reg_set_bit(chg_data->chip, MT6370_PMU_REG_CHGADC,
@@ -608,6 +614,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 				__func__, ret);
 
 	}
+
+	if (adc_sel == MT6370_ADC_TEMP_JC)
+		dev_info(chg_data->dev, "%s: wait_times = %d\n", __func__, i);
 
 	mdelay(1);
 
@@ -3980,6 +3989,9 @@ MODULE_VERSION(MT6370_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.24_MTK
+ * (1) Add debug information for TEMP_JC
+ *
  * 1.1.23_MTK
  * (1) Use bc12_access_lock instead of chgdet_lock
  * (2) Add junction ADC workaround
