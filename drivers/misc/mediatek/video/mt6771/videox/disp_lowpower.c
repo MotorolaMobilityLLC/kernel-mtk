@@ -803,6 +803,11 @@ void _cmd_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
+#ifdef MTK_FB_SPM_SUPPORT
+	/*enter PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		cmdq_core_set_spm_mode(CMDQ_PD_MODE);
+#endif
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
 		/* switch to vencpll before disable mmsys clk */
@@ -812,25 +817,20 @@ void _cmd_mode_enter_idle(void)
 		_primary_display_disable_mmsys_clk();
 	}
 
-#ifdef MTK_FB_SPM_SUPPORT
-	/*enter PD mode*/
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(0);
-#endif
 }
 
 void _cmd_mode_leave_idle(void)
 {
 	DISPDBG("[disp_lowpower]%s\n", __func__);
-#ifdef MTK_FB_SPM_SUPPORT
-	/*Exit PD mode*/
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(1);
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
 
+#ifdef MTK_FB_SPM_SUPPORT
+	/*Exit PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		cmdq_core_set_spm_mode(CMDQ_CG_MODE);
+#endif
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 }
@@ -1016,15 +1016,14 @@ void primary_display_sodi_rule_init(void)
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	if (primary_display_is_video_mode()) {
-		spm_sodi_set_vdo_mode(1);
-		spm_sodi_mempll_pwr_mode(1);
+		cmdq_core_set_spm_mode(CMDQ_CG_MODE);
 		spm_enable_sodi3(0);
 		spm_enable_sodi(1);
 	} else {
+		cmdq_core_set_spm_mode(CMDQ_CG_MODE);
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
 		/*enable CG mode*/
-		spm_sodi_mempll_pwr_mode(1);
 	}
 #endif
 #endif

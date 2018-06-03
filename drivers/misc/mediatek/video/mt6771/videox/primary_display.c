@@ -4269,6 +4269,12 @@ int primary_display_suspend(void)
 		}
 	}
 
+#ifdef MTK_FB_SPM_SUPPORT
+	/*enter SODI PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		cmdq_core_set_spm_mode(CMDQ_PD_MODE);
+#endif
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 2);
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
@@ -4633,6 +4639,11 @@ int primary_display_resume(void)
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 9);
 
+#ifdef MTK_FB_SPM_SUPPORT
+		/*Exit PD mode*/
+		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+			cmdq_core_set_spm_mode(CMDQ_CG_MODE);
+#endif
 	/* primary_display_diagnose(); */
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_PULSE, 0, 10);
 
@@ -7620,6 +7631,14 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
+#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
+	/* set power down mode forbidden */
+	/* TODO */
+#ifdef MTK_FB_SPM_SUPPORT
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		cmdq_core_set_spm_mode(CMDQ_CG_MODE);
+#endif
+#endif
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 			 MMPROFILE_FLAG_PULSE, 4, 0);
 	_cmdq_reset_config_handle();
