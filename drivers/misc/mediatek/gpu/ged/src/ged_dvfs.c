@@ -402,7 +402,11 @@ unsigned int ged_dvfs_vcore(unsigned int prev_freq_khz, unsigned int cur_freq_kh
 	 * g_ui32CurAvBW = g_ui32CurAvBW * 1000 >> 17;
 	 * idle exclusion
 	 */
-	g_ui32CurAvBW = 100 * g_ui32CurAvBW / gpu_av_loading;
+	if (gpu_av_loading)
+		g_ui32CurAvBW = 100 * g_ui32CurAvBW / gpu_av_loading;
+
+	if (prev_freq_mhz == 0)
+		prev_freq_mhz = cur_freq_mhz;
 
 	g_ui32NextMaxBW = g_ui32CurMaxBW * cur_freq_mhz / (prev_freq_mhz);
 	g_ui32NextAvBW = g_ui32CurAvBW * cur_freq_mhz / prev_freq_mhz;
