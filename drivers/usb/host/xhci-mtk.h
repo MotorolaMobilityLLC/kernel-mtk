@@ -176,8 +176,9 @@ enum xhci_mtk_sram_id {
 };
 enum xhci_mtk_sram_state {
 	STATE_UNINIT = 0,
-	STATE_ALLOCATE_FAIL,
-	STATE_ALLOCATE_SUCCESS,
+	STATE_INIT,
+	STATE_USE,
+	STATE_NOMEM,
 };
 
 struct xhci_mtk_sram_block {
