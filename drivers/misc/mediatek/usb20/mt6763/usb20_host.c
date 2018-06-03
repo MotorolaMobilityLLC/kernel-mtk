@@ -732,6 +732,11 @@ void mt_usb_otg_init(struct musb *musb)
 	else
 		pr_debug("switch_dev register success\n");
 }
+void mt_usb_otg_exit(struct musb *musb)
+{
+	DBG(0, "OTG disable vbus\n");
+	mt_usb_set_vbus(mtk_musb, 0);
+}
 static int option;
 static int set_option(const char *val, const struct kernel_param *kp)
 {
@@ -785,6 +790,7 @@ module_param_cb(option, &option_param_ops, &option, 0644);
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */
 void mt_usb_otg_init(struct musb *musb) {}
+void mt_usb_otg_exit(struct musb *musb) {}
 void mt_usb_set_vbus(struct musb *musb, int is_on) {}
 int mt_usb_get_vbus_status(struct musb *musb) {return 1; }
 void switch_int_to_device(struct musb *musb) {}

@@ -1320,6 +1320,9 @@ static int mt_usb_exit(struct musb *musb)
 	if (reg_va12)
 		regulator_put(reg_va12);
 #endif
+#ifdef CONFIG_USB_MTK_OTG
+	mt_usb_otg_exit(musb);
+#endif
 	return 0;
 }
 
