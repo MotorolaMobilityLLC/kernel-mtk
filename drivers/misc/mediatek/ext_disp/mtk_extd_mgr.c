@@ -545,7 +545,7 @@ static void __exit mtk_extd_mgr_exit(void)
 	unregister_chrdev_region(extd_devno, 1);
 }
 
-module_init(mtk_extd_mgr_init);
+late_initcall(mtk_extd_mgr_init);
 module_exit(mtk_extd_mgr_exit);
 MODULE_AUTHOR("www.mediatek.com>");
 MODULE_DESCRIPTION("External Display Driver");

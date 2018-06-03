@@ -30,7 +30,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #define SII_ASSERT(cond, ...)	\
 do {							\
 	if (!(cond)) {				\
-		printk(__VA_ARGS__);	\
+		pr_info("%s\n", __VA_ARGS__);	\
 		BUG();					\
 	}							\
 } while(0)
