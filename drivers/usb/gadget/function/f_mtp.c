@@ -1214,6 +1214,7 @@ static int mtp_ctrlrequest(struct usb_composite_dev *cdev,
 		} else if (ctrl->bRequest == MTP_REQ_GET_DEVICE_STATUS
 				&& w_index == 0 && w_value == 0) {
 			struct mtp_device_status *status = cdev->req->buf;
+
 			status->wLength =
 				__constant_cpu_to_le16(sizeof(*status));
 
@@ -1635,8 +1636,9 @@ struct usb_function *function_alloc_mtp_ptp(struct usb_function_instance *fi,
 		pr_err("Error: Create MTP function before linking PTP function with a gadget configuration\n");
 		pr_err("\t1: Delete existing PTP function if any\n");
 		pr_err("\t2: Create MTP function\n");
-		pr_err("\t3: Create and symlink PTP function with a gadget configuration\n");
-		return NULL;
+		pr_err("\t3: Create and symlink PTP function"
+				" with a gadget configuration\n");
+		return ERR_PTR(-EINVAL); /* Invalid Configuration */
 	}
 
 	dev = fi_mtp->dev;
