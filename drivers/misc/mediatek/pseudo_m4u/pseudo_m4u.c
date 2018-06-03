@@ -1880,6 +1880,12 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			M4UMSG("m4u_cache_sync,copy_from_user failed:%d\n", ret);
 			return -EFAULT;
 		}
+
+		if (m4u_cache_data.port < 0 || m4u_cache_data.port > M4U_PORT_HW_VDEC_PPWRAP_EXT) {
+			M4UMSG("MTK_M4U_T_CACHE_SYNC,port is invalid:%d\n", m4u_cache_data.port);
+			return -EFAULT;
+		}
+
 		M4UDBG("MTK_M4U_T_CACHE_INVALID_AFTER_HW_WRITE_MEM(),");
 		M4UDBG("moduleID = %d, eCacheSync = %d, buf_addr = 0x%lx, buf_length = 0x%x\n",
 			m4u_cache_data.port, m4u_cache_data.eCacheSync, m4u_cache_data.va,
@@ -1932,6 +1938,11 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		ret = copy_from_user(&m4u_port, (void *)arg, sizeof(struct M4U_PORT_STRUCT));
 		if (ret) {
 			M4UMSG("MTK_M4U_T_CONFIG_PORT,copy_from_user failed:%d\n", ret);
+			return -EFAULT;
+		}
+
+		if (m4u_port.ePortID < 0 || m4u_port.ePortID  > M4U_PORT_HW_VDEC_PPWRAP_EXT) {
+			M4UMSG("MTK_M4U_T_CONFIG_PORT,port is invalid:%d\n", m4u_port.ePortID);
 			return -EFAULT;
 		}
 
