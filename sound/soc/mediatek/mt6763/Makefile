@@ -11,10 +11,7 @@
 # GNU General Public License for more details.
 #
 
-# MTK Platform Support
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-
 # AP object
 obj-y += mtk-auddrv-clk.o
 obj-y += mtk-soc-afe-connection.o
-obj-y += platform-sound.o
+obj-y += mt6763-sound.o

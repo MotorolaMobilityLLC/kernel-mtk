@@ -266,7 +266,6 @@ static int audio_idle_notify_call(struct notifier_block *nfb,
 	case NOTIFY_DPIDLE_ENTER:
 	case NOTIFY_SOIDLE_ENTER:
 		/* intbus pll -> 26m */
-		pr_warn("%s(), enter sodi, to 26m\n", __func__);
 		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
 			return NOTIFY_OK;
 
@@ -279,7 +278,6 @@ static int audio_idle_notify_call(struct notifier_block *nfb,
 	case NOTIFY_DPIDLE_LEAVE:
 	case NOTIFY_SOIDLE_LEAVE:
 		/* Audio Clock: 26m -> pll */
-		pr_warn("%s(), leave sodi, to pll\n", __func__);
 		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
 			return NOTIFY_OK;
 
