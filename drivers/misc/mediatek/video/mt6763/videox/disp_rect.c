@@ -57,8 +57,8 @@ int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
 	int fBottom = dst->y + dst->height - 1;
 
 	if (left < right && top < bottom && !rect_isEmpty(dst) &&
-			fLeft < right && left < fRight &&
-			fTop < bottom && top < fBottom) {
+			fLeft <= right && left <= fRight &&
+			fTop <= bottom && top <= fBottom) {
 		if (fLeft < left)
 			fLeft = left;
 		if (fTop < top)
