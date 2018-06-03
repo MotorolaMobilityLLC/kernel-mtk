@@ -1777,7 +1777,7 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time, unsigned l
 
 	if (fpsgo_fbt2fstb_cpu_capability_fp)
 		fpsgo_fbt2fstb_cpu_capability_fp(pid, type, blc_wt,
-							limited_cap, boost->last_target_fps,
+							limited_cap, targetfps,
 							q2q_time, runtime);
 
 }
