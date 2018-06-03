@@ -375,11 +375,14 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 	struct pt_regs *old_regs = set_irq_regs(regs);
 	unsigned int irq = hwirq;
 	int ret = 0;
+	int prev_count;
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	struct irq_desc *desc;
 #endif
 
 	irq_enter();
+
+	prev_count = preempt_count();
 
 #ifdef CONFIG_IRQ_DOMAIN
 	if (lookup)
@@ -412,6 +415,16 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 #ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_trace_ISR_end(irq);
 #endif
+
+	if (unlikely(prev_count != preempt_count())) {
+		pr_debug("huh, entered irq %u %s with preempt_count %08x, exited with %08x?\n",
+				irq, (desc && desc->action && desc->action->name) ?
+				desc->action->name : "-",
+				prev_count, preempt_count());
+		BUG_ON(1);
+		preempt_count_set(prev_count);
+	}
+
 	irq_exit();
 	set_irq_regs(old_regs);
 	return ret;
