@@ -104,30 +104,36 @@ static int topology_add_dev(unsigned int cpu)
 
 	return sysfs_create_group(&dev->kobj, &topology_attr_group);
 }
-
+#if 0
 static void topology_remove_dev(unsigned int cpu)
 {
 	struct device *dev = get_cpu_device(cpu);
 
 	sysfs_remove_group(&dev->kobj, &topology_attr_group);
 }
-
+#endif
 static int topology_cpu_callback(struct notifier_block *nfb,
 				 unsigned long action, void *hcpu)
 {
+#if 0
 	unsigned int cpu = (unsigned long)hcpu;
+#endif
 	int rc = 0;
 
 	switch (action) {
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:
+#if 0
 		rc = topology_add_dev(cpu);
+#endif
 		break;
 	case CPU_UP_CANCELED:
 	case CPU_UP_CANCELED_FROZEN:
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
+#if 0
 		topology_remove_dev(cpu);
+#endif
 		break;
 	}
 	return notifier_from_errno(rc);
