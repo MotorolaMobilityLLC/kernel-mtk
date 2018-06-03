@@ -3192,7 +3192,7 @@ static inline void Prepare_Enable_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP/CAM -> ISP clk */
 
 	/* enable through smi API */
-	LOG_INF("enable CG/MTCMOS through SMI CLK API\n");
+	LOG_DBG("enable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_enable(SMI_LARB1, ISP_DEV_NAME);
 	smi_bus_enable(SMI_LARB2, ISP_DEV_NAME);
 
@@ -3252,7 +3252,7 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_ISP);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_DIS);
 
-	LOG_INF("disable CG/MTCMOS through SMI CLK API\n");
+	LOG_DBG("disable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_disable(SMI_LARB2, ISP_DEV_NAME);
 	smi_bus_disable(SMI_LARB1, ISP_DEV_NAME);
 }
@@ -3384,9 +3384,7 @@ static void ISP_EnableClock(MBOOL En)
 		Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
 	/* Disable CAMSYS_HALT1_EN: LSCI & BPCI, To avoid ISP halt keep arise */
-		#if 1/* ALSK TBD */
-		LOG_INF("###### NEED UPDATE CAMSYS_HALT1_EN: LSCI & BPCI SETTING #######");
-		#else
+		#if 0/* TBD */
 	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, 0xFFFFFF4F);
 		#endif
 	} else {                /* Disable clock. */
