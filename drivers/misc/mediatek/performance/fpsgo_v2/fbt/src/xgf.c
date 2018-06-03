@@ -613,6 +613,13 @@ void xgf_igather_timer(const void * const timer, int fire)
 	xgf_unlock(__func__);
 }
 
+void xgf_epoll_igather_timer(const void * const timer,
+		ktime_t *expires, int fire)
+{
+	if (expires && expires->tv64)
+		xgf_igather_timer(timer, fire);
+}
+
 /**
  * xgf_reset_render - called while rendering switch
  * reset render timers

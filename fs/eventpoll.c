@@ -1598,7 +1598,7 @@ static inline struct timespec ep_set_mstimeout(long ms)
 static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
 		   int maxevents, long timeout)
 {
-	int res = 0, eavail, timed_out = 0;
+	int res = 0, eavail, timed_out = 0, rc;
 	unsigned long flags;
 	u64 slack = 0;
 	wait_queue_t wait;
@@ -1647,13 +1647,15 @@ fetch_events:
 			}
 
 			spin_unlock_irqrestore(&ep->lock, flags);
-			if (to && to->tv64)
-				xgf_igather_timer(current, 1);
-			if (!freezable_schedule_hrtimeout_range(to, slack,
-								HRTIMER_MODE_ABS))
+
+			xgf_epoll_igather_timer(current, to, 1);
+
+			rc = freezable_schedule_hrtimeout_range(to, slack,
+								HRTIMER_MODE_ABS);
+			if (!rc)
 				timed_out = 1;
-			if (to && to->tv64)
-				xgf_igather_timer(current, 0);
+
+			xgf_epoll_igather_timer(current, to, rc ? -1 : 0);
 
 			spin_lock_irqsave(&ep->lock, flags);
 		}
