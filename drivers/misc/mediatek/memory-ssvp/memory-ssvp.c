@@ -584,7 +584,8 @@ static int memory_region_online(struct SSVP_Region *region)
 	return 0;
 }
 
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if defined(CONFIG_TRUSTONIC_TRUSTED_UI) ||\
+	defined(CONFIG_BLOWFISH_TUI_SUPPORT)
 static int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
 		u64 upper_limit)
 {

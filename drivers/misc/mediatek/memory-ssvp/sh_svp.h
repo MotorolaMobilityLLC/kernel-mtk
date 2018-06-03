@@ -14,6 +14,7 @@
 #define __SH_SVP_H__
 
 #if defined(CONFIG_TRUSTONIC_TRUSTED_UI) ||\
+	defined(CONFIG_BLOWFISH_TUI_SUPPORT) ||\
 	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define SSVP_TUI_REGION_ENABLE
 #else
@@ -138,7 +139,8 @@ static struct SSMR_Feature _ssmr_feats[__MAX_NR_SSMR_FEATURES] = {
 		.region = SSVP_SVP
 	},
 #endif
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if defined(CONFIG_TRUSTONIC_TRUSTED_UI) ||\
+	defined(CONFIG_BLOWFISH_TUI_SUPPORT)
 	[SSMR_FEAT_TUI] = {
 		.dt_prop_name = "tui-size",
 		.feat_name = "tui",
