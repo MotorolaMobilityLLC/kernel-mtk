@@ -43,7 +43,7 @@
 
 #undef DEBUG_AUDDRV
 #ifdef DEBUG_AUDDRV
-#define LOGBT(format, args...) pr_warn(format, ##args)
+#define LOGBT(format, args...) pr_debug(format, ##args)
 #else
 #define LOGBT(format, args...)
 #endif
@@ -292,6 +292,9 @@ void Set_BTCVSD_State(unsigned long arg);
 bool btcvsd_rx_irq_received(void);
 bool btcvsd_rx_timeout(void);
 void btcvsd_rx_reset_timeout(void);
+
+bool btcvsd_tx_timeout(void);
+void btcvsd_tx_reset_timeout(void);
 
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
 				    unsigned long count);
