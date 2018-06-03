@@ -235,7 +235,6 @@ void jpeg_drv_dec_set_brz_factor(unsigned char yHScale, unsigned char yVScale,
 void jpeg_drv_dec_set_dst_bank0(unsigned int addr_Y, unsigned int addr_U, unsigned int addr_V)
 {
 
-
 	IMG_REG_WRITE(addr_Y, REG_ADDR_JPGDEC_DEST_ADDR0_Y);
 	IMG_REG_WRITE(addr_U, REG_ADDR_JPGDEC_DEST_ADDR0_U);
 	IMG_REG_WRITE(addr_V, REG_ADDR_JPGDEC_DEST_ADDR0_V);
@@ -245,7 +244,6 @@ void jpeg_drv_dec_set_dst_bank0(unsigned int addr_Y, unsigned int addr_U, unsign
 
 void jpeg_drv_dec_set_dst_bank1(unsigned int addr_Y, unsigned int addr_U, unsigned int addr_V)
 {
-/* unsigned int u4Value; */
 
 	IMG_REG_WRITE(addr_Y, REG_ADDR_JPGDEC_DEST_ADDR1_Y);
 	IMG_REG_WRITE(addr_U, REG_ADDR_JPGDEC_DEST_ADDR1_U);
@@ -257,8 +255,8 @@ void jpeg_drv_dec_set_dst_bank1(unsigned int addr_Y, unsigned int addr_U, unsign
 int jpeg_drv_dec_set_memStride(unsigned int CompMemStride_Y, unsigned int CompMemStride_UV)
 {
 
-	IMG_REG_WRITE((CompMemStride_Y & 0xFFFF), REG_ADDR_JPGDEC_STRIDE_Y);
-	IMG_REG_WRITE((CompMemStride_UV & 0xFFFF), REG_ADDR_JPGDEC_STRIDE_UV);
+	IMG_REG_WRITE((CompMemStride_Y & 0x1FFFF), REG_ADDR_JPGDEC_STRIDE_Y);
+	IMG_REG_WRITE((CompMemStride_UV & 0x1FFFF), REG_ADDR_JPGDEC_STRIDE_UV);
 
 	return (int)E_HWJPG_OK;
 }
@@ -266,10 +264,9 @@ int jpeg_drv_dec_set_memStride(unsigned int CompMemStride_Y, unsigned int CompMe
 
 int jpeg_drv_dec_set_imgStride(unsigned int CompStride_Y, unsigned int CompStride_UV)
 {
-/* unsigned int u4Reg; */
 
-	IMG_REG_WRITE((CompStride_Y & 0xFFFF), REG_ADDR_JPGDEC_IMG_STRIDE_Y);
-	IMG_REG_WRITE((CompStride_UV & 0xFFFF), REG_ADDR_JPGDEC_IMG_STRIDE_UV);
+	IMG_REG_WRITE((CompStride_Y & 0x1FFFF), REG_ADDR_JPGDEC_IMG_STRIDE_Y);
+	IMG_REG_WRITE((CompStride_UV & 0x1FFFF), REG_ADDR_JPGDEC_IMG_STRIDE_UV);
 
 	return (int)E_HWJPG_OK;
 }
@@ -439,7 +436,7 @@ void jpeg_drv_dec_set_dma_group(unsigned int McuInGroup, unsigned int GroupNum,
 	unsigned int LastMcuNum_1 = LastMcuNum - 1;
 	unsigned int u4Value;
 
-	u4Value =
+	u4Value = (((GroupNum_1 & 0x0100) >> 8) << 24) |
 	    ((McuInGroup_1 & 0x00FF) << 16) | ((GroupNum_1 & 0x007F) << 8) | (LastMcuNum_1 &
 									      0x00FF);
 
