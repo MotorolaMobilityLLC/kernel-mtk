@@ -53,6 +53,7 @@
 #define EMI_BMID10	(CEN_EMI_BASE + 0x4D8)
 #define EMI_BMEN1	(CEN_EMI_BASE + 0x4E0)
 #define EMI_BMEN2	(CEN_EMI_BASE + 0x4E8)
+#define EMI_BMRW0	(CEN_EMI_BASE + 0x4F8)
 #define EMI_TTYPE1	(CEN_EMI_BASE + 0x500)
 #define EMI_TTYPE2	(CEN_EMI_BASE + 0x508)
 #define EMI_TTYPE3	(CEN_EMI_BASE + 0x510)
@@ -178,6 +179,12 @@ extern unsigned int BM_GetBW3(void);
 extern unsigned int BM_GetBW4(void);
 
 extern int mbw_init(void);
+extern void enable_dump_latency(void);
+extern void disable_dump_latency(void);
+extern bool is_dump_latency(void);
+extern void dump_emi_latency(void);
+extern void dump_emi_outstanding(void);
+extern void dump_emi_outstanding_for_md(void);
 
 typedef unsigned long long (*getmembw_func)(void);
 extern void mt_getmembw_registerCB(getmembw_func pCB);

@@ -20,6 +20,9 @@
 #include <asm/div64.h>
 
 #include "emi_mbw.h"
+#include "emi_bwl.h"
+
+static bool dump_latency_status;
 
 unsigned long long last_time_ns;
 long long LastWordAllCount;
@@ -194,6 +197,23 @@ int mbw_init(void)
 		platform_device_unregister(&mt_mem_bw_pdev);
 	}
 
+	enable_dump_latency();
+
 out:
 	return ret;
+}
+
+void enable_dump_latency(void)
+{
+	dump_latency_status = true;
+}
+
+void disable_dump_latency(void)
+{
+	dump_latency_status = false;
+}
+
+bool is_dump_latency(void)
+{
+	return dump_latency_status;
 }

@@ -330,6 +330,38 @@ const char *buf, size_t count)
 
 DRIVER_ATTR(concurrency_scenario, 0644, con_sce_show, con_sce_store);
 
+static ssize_t dump_latency_ctrl_show(struct device_driver *driver, char *buf)
+{
+	char *ptr;
+
+	ptr = (char *)buf;
+	ptr += sprintf(ptr, "dump_latency_ctrl_show: is_dump_latency: %d\n", is_dump_latency());
+
+#if 0
+	/* test for dump_emi_latency */
+	dump_emi_latency();
+#endif
+
+	return strlen(buf);
+}
+
+static ssize_t dump_latency_ctrl_store(struct device_driver *driver,
+	const char *buf, size_t count)
+{
+	if (!strncmp(buf, "ON", strlen("ON")))
+		enable_dump_latency();
+	else if (!strncmp(buf, "OFF", strlen("OFF")))
+		disable_dump_latency();
+	else
+		pr_err("Unknown dump latency command.\n");
+
+	pr_err("dump_latency_ctrl_store: is_dump_latency: %d\n", is_dump_latency());
+
+	return count;
+}
+
+DRIVER_ATTR(dump_latency_ctrl, 0644, dump_latency_ctrl_show, dump_latency_ctrl_store);
+
 /*
  * emi_ctrl_init: module init function.
  */
@@ -345,6 +377,10 @@ static int __init emi_ctrl_init(void)
 	ret = driver_create_file(&emi_ctrl.driver, &driver_attr_concurrency_scenario);
 	if (ret)
 		pr_err("[EMI/BWL] fail to create emi_bwl sysfs file\n");
+
+	ret = driver_create_file(&emi_ctrl.driver, &driver_attr_dump_latency_ctrl);
+	if (ret)
+		pr_err("[EMI/MBW] fail to create dump_latency_ctrl file\n");
 
 	return 0;
 }
