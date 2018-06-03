@@ -1301,6 +1301,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->MTDES	= devinfo->CPU_2L_LO_MTDES;
 		det->SPEC	= devinfo->CPU_2L_LO_SPEC;
 		det->DVTFIXED = DVTFIXED_M_VAL;
+		if (eem_devinfo.HT_FT) {
+			det->features = FEA_INIT01 | FEA_INIT02;
+			det->DVTFIXED = 0;
+		}
 		break;
 #else
 #if 0

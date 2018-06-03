@@ -140,8 +140,8 @@ struct eem_devinfo {
 	unsigned int EPS:1;
 	unsigned int ANALOG:1;
 	unsigned int FT_PGM:4;
-	unsigned int RSV1:2;
-	unsigned int REV:2;
+	unsigned int HT_FT:1;
+	unsigned int REV:3;
 	unsigned int PACKAGE:2;
 	unsigned int FABCODE:2;
 	unsigned int RSV6:16;
