@@ -75,4 +75,6 @@ PVRSRV_ERROR LinuxBridgeUnblockClientsAccess(void);
 void LinuxBridgeNumActiveKernelThreadsIncrement(void);
 void LinuxBridgeNumActiveKernelThreadsDecrement(void);
 
+IMG_BOOL LinuxDriverIsSuspended(void);
+
 #endif /* _PVR_BRIDGE_K_H_ */
