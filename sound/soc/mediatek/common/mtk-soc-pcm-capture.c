@@ -374,6 +374,7 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 	irq_user_id = substream;
 	/* set memory */
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
+	SetChannels(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
 
 	EnableAfe(true);
