@@ -80,6 +80,23 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 	return 0;
 }
 
+/* User limit policy */
+unsigned int mt_ppm_userlimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data)
+{
+	return 0;
+}
+
+unsigned int mt_ppm_userlimit_cpu_freq(unsigned int cluster_num, struct ppm_limit_data *data)
+{
+	return 0;
+}
+
+/* Force limit policy */
+unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data)
+{
+	return 0;
+}
+
 /* PTPOD policy */
 void mt_ppm_ptpod_policy_activate(void)
 {
