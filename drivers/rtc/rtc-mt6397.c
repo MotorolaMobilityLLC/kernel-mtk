@@ -43,6 +43,9 @@
 #define RTC_AL_MASK_DOW		BIT(4)
 
 #define RTC_TC_SEC		0x000a
+#define RTC_SPAR1		0x0032
+#define RTC_AL_SEC		0x0018
+
 /* Min, Hour, Dom... register offset to RTC_TC_SEC */
 #define RTC_OFFSET_SEC		0
 #define RTC_OFFSET_MIN		1
@@ -56,7 +59,34 @@
 #define RTC_AL_SEC		0x0018
 
 #define RTC_PDN2		0x002e
+#define RTC_PDN1		0x002c
+#define RTC_SPAR0		0x0030
 #define RTC_PDN2_PWRON_ALARM	BIT(4)
+#define RTC_PDN1_PWRON_TIME      BIT(7)
+#define RTC_PDN2_PWRON_LOGO     BIT(15)
+#define RTC_PWRON_YEA        RTC_PDN2
+#define RTC_PWRON_YEA_MASK     0x7f00
+#define RTC_PWRON_YEA_SHIFT     8
+
+#define RTC_PWRON_MTH        RTC_PDN2
+#define RTC_PWRON_MTH_MASK     0x000f
+#define RTC_PWRON_MTH_SHIFT     0
+
+#define RTC_PWRON_SEC        RTC_SPAR0
+#define RTC_PWRON_SEC_MASK     0x003f
+#define RTC_PWRON_SEC_SHIFT     0
+
+#define RTC_PWRON_MIN        RTC_SPAR1
+#define RTC_PWRON_MIN_MASK     0x003f
+#define RTC_PWRON_MIN_SHIFT     0
+
+#define RTC_PWRON_HOU        RTC_SPAR1
+#define RTC_PWRON_HOU_MASK     0x07c0
+#define RTC_PWRON_HOU_SHIFT     6
+
+#define RTC_PWRON_DOM        RTC_SPAR1
+#define RTC_PWRON_DOM_MASK     0xf800
+#define RTC_PWRON_DOM_SHIFT     11
 
 #define RTC_MIN_YEAR		1968
 #define RTC_BASE_YEAR		1900
@@ -71,6 +101,8 @@ struct mt6397_rtc {
 	int			irq;
 	u32			addr_base;
 };
+
+static struct mt6397_rtc *mt_rtc;
 
 static int mtk_rtc_write_trigger(struct mt6397_rtc *rtc)
 {
@@ -144,6 +176,178 @@ static int __mtk_rtc_read_time(struct mt6397_rtc *rtc,
 exit:
 	mutex_unlock(&rtc->lock);
 	return ret;
+}
+
+void rtc_read_pwron_alarm(struct rtc_wkalrm *alm)
+{
+	struct rtc_time *tm;
+	u32 pdn1, pdn2;
+	int ret;
+	u16 data[RTC_OFFSET_COUNT];
+
+	if (alm == NULL)
+		return;
+
+	dev_err(mt_rtc->dev, "rtc_read_pwron_alarm!!!\n");
+	tm = &alm->time;
+	mutex_lock(&mt_rtc->lock);
+	ret = regmap_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN1, &pdn1);
+	if (ret < 0)
+		goto exit;
+
+	ret = regmap_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN2, &pdn2);
+	if (ret < 0)
+		goto exit;
+
+	ret = regmap_bulk_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_AL_SEC,
+			       data, RTC_OFFSET_COUNT);
+	if (ret < 0)
+		goto exit;
+	alm->enabled = (pdn1 & RTC_PDN1_PWRON_TIME ? (pdn2 & RTC_PDN2_PWRON_LOGO ? 3 : 2) : 0);
+	/* return Power-On Alarm bit */
+	alm->pending = !!(pdn2 & RTC_PDN2_PWRON_ALARM);
+
+	tm->tm_sec = data[RTC_OFFSET_SEC];
+	tm->tm_min = data[RTC_OFFSET_MIN];
+	tm->tm_hour = data[RTC_OFFSET_HOUR];
+	tm->tm_mday = data[RTC_OFFSET_DOM];
+	tm->tm_mon = data[RTC_OFFSET_MTH];
+	tm->tm_year = data[RTC_OFFSET_YEAR];
+	mutex_unlock(&mt_rtc->lock);
+	tm->tm_year += RTC_MIN_YEAR_OFFSET;
+	tm->tm_mon--;
+	dev_err(mt_rtc->dev, "power-on = %04d/%02d/%02d %02d:%02d:%02d (%d)(%d)\n",
+			  tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+			  tm->tm_hour, tm->tm_min, tm->tm_sec, alm->enabled, alm->pending);
+	return;
+
+exit:
+	mutex_unlock(&mt_rtc->lock);
+	dev_err(mt_rtc->dev, "regmap write/read error!!!\n");
+}
+
+static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
+{
+	u32 spar1, pdn2, spar0;
+	int ret;
+	u32 tm_year, tm_mon, tm_mday, tm_hour, tm_min, tm_sec;
+
+	dev_err(mt_rtc->dev, "rtc_save_pwron_time!!!\n");
+	/*RTC_PWRON_YEAR == RTC_PWRON_MTH==PDN2 */
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PWRON_YEA, &pdn2);
+	if (ret < 0)
+		goto exit;
+
+	/*RTC_PWRON_DOM == RTC_PWRON_HOU */
+	/*== RTC_PWRON_MIN == RTC_SPAR1*/
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, &spar1);
+	if (ret < 0)
+		goto exit;
+
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PWRON_SEC, &spar0);
+	if (ret < 0)
+		goto exit;
+
+	tm_year = (tm->tm_year << RTC_PWRON_YEA_SHIFT) & RTC_PWRON_YEA_MASK;
+	tm_mon = (tm->tm_mon << RTC_PWRON_MTH_SHIFT) & RTC_PWRON_MTH_MASK;
+	tm_mday = (tm->tm_mday << RTC_PWRON_DOM_SHIFT) & RTC_PWRON_DOM_MASK;
+	tm_hour = (tm->tm_hour << RTC_PWRON_HOU_SHIFT) & RTC_PWRON_HOU_MASK;
+	tm_min = (tm->tm_min << RTC_PWRON_MIN_SHIFT) & RTC_PWRON_MIN_MASK;
+	tm_sec = (tm->tm_sec << RTC_PWRON_SEC_SHIFT) & RTC_PWRON_SEC_MASK;
+
+	tm_year |= pdn2 & ~(RTC_PWRON_YEA_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PWRON_YEA, tm_year);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	tm_mon |= pdn2 & ~(RTC_PWRON_MTH_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PWRON_YEA, tm_mon);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	tm_mday |= spar1 & ~(RTC_PWRON_DOM_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, tm_mday);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	tm_hour |= spar1 & ~(RTC_PWRON_HOU_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, tm_hour);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	tm_min |= spar1 & ~(RTC_PWRON_MIN_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, tm_min);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+
+	tm_sec |= spar0 & ~(RTC_PWRON_SEC_MASK);
+	ret = regmap_write(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PWRON_SEC, tm_sec);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	return;
+
+exit:
+	mutex_unlock(&mt_rtc->lock);
+	dev_err(mt_rtc->dev, "regmap write/read error!!!\n");
+
+}
+
+void mtk_rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo)
+{
+	u32 pdn1, pdn2;
+	int ret;
+
+	dev_err(mt_rtc->dev, "rtc_save_pwron_time!!!\n");
+	_rtc_set_pwron_alarm_time(tm);
+
+	ret = regmap_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN2, &pdn2);
+	if (ret < 0)
+		goto exit;
+	ret = regmap_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN1, &pdn1);
+	if (ret < 0)
+		goto exit;
+
+	if (logo)
+		pdn2 |= RTC_PDN2_PWRON_LOGO;
+	else
+		pdn2 &= ~RTC_PDN2_PWRON_LOGO;
+
+	ret = regmap_write(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN2, pdn2);
+	if (ret < 0)
+		goto exit;
+
+	if (enable)
+		pdn1 |= RTC_PDN1_PWRON_TIME;
+	else
+		pdn1 &= ~RTC_PDN1_PWRON_TIME;
+	ret = regmap_write(mt_rtc->regmap, mt_rtc->addr_base + RTC_PDN1, pdn1);
+	if (ret < 0)
+		goto exit;
+	mtk_rtc_write_trigger(mt_rtc);
+
+	return;
+
+exit:
+	mutex_unlock(&mt_rtc->lock);
+	dev_err(mt_rtc->dev, "regmap write/read error!!!\n");
+
 }
 
 static int mtk_rtc_read_time(struct device *dev, struct rtc_time *tm)
@@ -266,7 +470,27 @@ static int mtk_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	data[RTC_OFFSET_MTH] = tm->tm_mon;
 	data[RTC_OFFSET_YEAR] = tm->tm_year;
 
+	dev_err(rtc->dev, "set al time = %04d/%02d/%02d %02d:%02d:%02d (%d)\n",
+		  tm->tm_year + RTC_MIN_YEAR, tm->tm_mon, tm->tm_mday,
+		  tm->tm_hour, tm->tm_min, tm->tm_sec, alm->enabled);
+
 	mutex_lock(&rtc->lock);
+	switch (alm->enabled) {
+	case 2:
+		/* enable power-on alarm */
+		mtk_rtc_save_pwron_time(true, tm, false);
+		break;
+	case 3:
+		/* enable power-on alarm with logo */
+		mtk_rtc_save_pwron_time(true, tm, true);
+		break;
+	case 4:
+		/* disable power-on alarm */
+		mtk_rtc_save_pwron_time(false, tm, false);
+		break;
+	default:
+		break;
+	}
 	if (alm->enabled) {
 		ret = regmap_bulk_write(rtc->regmap,
 					rtc->addr_base + RTC_AL_SEC,
@@ -331,6 +555,7 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 	rtc->dev = &pdev->dev;
 	mutex_init(&rtc->lock);
 
+	mt_rtc = rtc;
 	platform_set_drvdata(pdev, rtc);
 
 	ret = request_threaded_irq(rtc->irq, NULL,
