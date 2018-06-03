@@ -794,7 +794,7 @@ void mt_power_gs_compare(char *scenario, char *pmic_name,
 		p = buf;
 		p += snprintf(p, sizeof(buf), "\n");
 		p += snprintf(p, sizeof(buf) - (p - buf),
-		"Scenario - PMIC - Addr       - Value      - Mask       - Golden     - Wrong Bit\n");
+		"Scenario - %s - Addr       - Value      - Mask       - Golden     - Wrong Bit\n", pmic_name);
 
 		for (i = 0; i < pmic_gs_len; i += 3) {
 			val0 = _golden_read_reg(pmic_gs[i]);
