@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 /* unmark after met ready */
-/* #define CMDQ_MDP_MET_STATUS */
-/* #define CMDQ_MET_READY */
+#define CMDQ_MDP_MET_STATUS
+#define CMDQ_MET_READY
 
 
 #include "cmdq_core.h"
@@ -40,7 +40,7 @@
 #include <linux/memory.h>
 #include <linux/ftrace.h>
 #ifdef CMDQ_MET_READY
-#include <linux/met_drv.h>
+#include <mt-plat/met_drv.h>
 #endif
 #include <linux/seq_file.h>
 #include <linux/kthread.h>
@@ -4990,6 +4990,7 @@ void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData)
 static uint32_t cmdq_core_interpret_wpr_value_data_register(const uint32_t op, uint32_t arg_value)
 {
 	uint32_t reg_id = arg_value;
+
 	if (op == CMDQ_CODE_WRITE_S || op == CMDQ_CODE_WRITE_S_W_MASK)
 		reg_id = ((arg_value >> 16) & 0xFFFF);
 	else if (op == CMDQ_CODE_READ_S)
@@ -5002,6 +5003,7 @@ static uint32_t cmdq_core_interpret_wpr_value_data_register(const uint32_t op, u
 static uint32_t cmdq_core_interpret_wpr_address_data_register(const uint32_t op, uint32_t arg_addr)
 {
 	uint32_t reg_id = (arg_addr >> 16) & 0x1F;
+
 	if (op == CMDQ_CODE_WRITE_S || op == CMDQ_CODE_WRITE_S_W_MASK
 		|| op == CMDQ_CODE_READ_S)
 		reg_id = (arg_addr & 0xFFFF);
@@ -5143,8 +5145,8 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 		} else {
 			if (cmdq_core_support_sync_non_suspendable()) {
 				reqLen = snprintf(textBuf, bufLen,
-						  "MARKER: sync_no_suspnd=%d",
-						  (arg_a & (1 << 20)) > 0);
+						"MARKER: sync_no_suspnd=%d",
+						(arg_a & (1 << 20)) > 0);
 			} else {
 				reqLen = snprintf(textBuf, bufLen, "MARKER:");
 			}
@@ -5156,16 +5158,16 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 				reqLen = snprintf(textBuf, bufLen, " Enable");
 			} else {
 				reqLen = snprintf(textBuf, bufLen,
-						  "no_suspnd=%d, no_inc=%d, m=%d, m_en=%d, prefetch=%d, irq=%d\n",
-						  (arg_a & (1 << 21)) > 0,
-						  (arg_a & (1 << 16)) > 0,
-						  (arg_b & (1 << 20)) > 0,
-						  (arg_b & (1 << 17)) > 0,
-						  (arg_b & (1 << 16)) > 0, (arg_b & (1 << 0)) > 0);
+						"no_suspnd=%d, no_inc=%d, m=%d, m_en=%d, prefetch=%d, irq=%d\n",
+						(arg_a & (1 << 21)) > 0,
+						(arg_a & (1 << 16)) > 0,
+						(arg_b & (1 << 20)) > 0,
+						(arg_b & (1 << 17)) > 0,
+						(arg_b & (1 << 16)) > 0, (arg_b & (1 << 0)) > 0);
 			}
 		}
 		break;
-		case CMDQ_CODE_LOGIC:
+	case CMDQ_CODE_LOGIC:
 		{
 			const uint32_t subsys_bit = cmdq_get_func()->getSubsysLSBArgA();
 			const uint32_t s_op = (arg_a & CMDQ_ARG_A_SUBSYS_MASK) >> subsys_bit;
@@ -5226,8 +5228,8 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 			}
 		}
 		break;
-		case CMDQ_CODE_JUMP_C_RELATIVE:
-		case CMDQ_CODE_JUMP_C_ABSOLUTE:
+	case CMDQ_CODE_JUMP_C_RELATIVE:
+	case CMDQ_CODE_JUMP_C_ABSOLUTE:
 		{
 			const uint32_t subsys_bit = cmdq_get_func()->getSubsysLSBArgA();
 			const uint32_t s_op = (arg_a & CMDQ_ARG_A_SUBSYS_MASK) >> subsys_bit;
@@ -9803,4 +9805,3 @@ bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return cmdq_core_get_feature(featureOption) == CMDQ_FEATURE_OFF_VALUE;
 }
-
