@@ -2130,22 +2130,24 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	if (prRmReq->rBcnRmParam.eState == RM_ON_GOING) {
 		struct RM_BEACON_REPORT_PARAMS rRepParams;
 		P_WLAN_BEACON_FRAME_T prWlanBeacon = (P_WLAN_BEACON_FRAME_T)prSwRfb->pvHeader;
+		P_WLAN_BEACON_FRAME_BODY_T prRepBeaconBody = (P_WLAN_BEACON_FRAME_BODY_T)&rRepParams.aucBcnFixedField;
 		UINT_16 u2IELen = prSwRfb->u2PacketLen - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem);
-		UINT_32 u4TimeLen = sizeof(prWlanBeacon->au4Timestamp);
 
 		kalMemZero(&rRepParams, sizeof(rRepParams));
 		if (u2IELen > CFG_IE_BUFFER_SIZE)
 			u2IELen = CFG_IE_BUFFER_SIZE;
 
-		if (u4TimeLen > sizeof(rRepParams.aucBcnFixedField))
-			u4TimeLen = sizeof(rRepParams.aucBcnFixedField);
 		/* if this is a one antenna only device, the antenna id is always 1. 7.3.2.40 */
 		rRepParams.ucAntennaID = 1;
 		rRepParams.ucChannel = scanGetChannel(prSwRfb->prHifRxHdr, prWlanBeacon->aucInfoElem, u2IELen);
 		rRepParams.ucRCPI = prSwRfb->prHifRxHdr->ucRcpi;
 		rRepParams.ucRSNI = 255; /* 255 means RSNI not available. see 7.3.2.41 */
 		rRepParams.ucFrameInfo = 0;
-		kalMemCopy(&rRepParams.aucBcnFixedField, prWlanBeacon->au4Timestamp, u4TimeLen);
+		kalMemCopy(prRepBeaconBody->au4Timestamp, prWlanBeacon->au4Timestamp,
+			   sizeof(prWlanBeacon->au4Timestamp));
+		prRepBeaconBody->u2BeaconInterval = prWlanBeacon->u2BeaconInterval;
+		prRepBeaconBody->u2CapInfo = prWlanBeacon->u2CapInfo;
+
 		scanCollectBeaconReport(prAdapter, prWlanBeacon->aucInfoElem, u2IELen,
 			prWlanBeacon->aucBSSID, &rRepParams);
 		return WLAN_STATUS_SUCCESS;
