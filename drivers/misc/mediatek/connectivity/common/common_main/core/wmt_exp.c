@@ -144,19 +144,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 
 INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
 {
-#if CFG_WMT_PS_SUPPORT
-	if (flag == MTK_WCN_BOOL_FALSE) {
-		wmt_lib_ps_ctrl(0);
-		WMT_INFO_FUNC("disable PSM\n");
-	} else {
-		wmt_lib_ps_ctrl(1);
-		WMT_INFO_FUNC("enable PSM\n");
-	}
-#else
-	WMT_INFO_FUNC("WMT PS not supported\n");
-#endif
-
-	return 0;
+	return -EFAULT;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_psm_ctrl);
 
@@ -165,7 +153,6 @@ MTK_WCN_BOOL mtk_wcn_wmt_func_off(ENUM_WMTDRV_TYPE_T type)
 	MTK_WCN_BOOL ret;
 
 	if (type == WMTDRV_TYPE_BT) {
-		mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL_TRUE);
 		osal_printtimeofday("############ BT OFF ====>");
 	}
 
