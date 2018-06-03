@@ -17,6 +17,7 @@
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/miscdevice.h>   /* needed by miscdevice* */
 #include <linux/sysfs.h>
+#include <linux/platform_device.h>
 #include <linux/device.h>       /* needed by device_* */
 #include <linux/vmalloc.h>      /* needed by vmalloc */
 #include <linux/uaccess.h>      /* needed by copy_to_user */
@@ -63,7 +64,6 @@
 #define SEMAPHORE_3WAY_TIMEOUT 5000
 /* scp ready timout definition*/
 #define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
-
 
 /* scp ready status for notify*/
 unsigned int scp_ready[SCP_CORE_TOTAL];
@@ -801,112 +801,7 @@ int reset_scp(int reset)
 #endif
 	return 0;
 }
-/*
- * parse device tree and mapping iomem
- * @return: 0 if success
- */
-static int scp_dt_init(void)
-{
-	int ret = 0;
-	const char *status = NULL;
-	const char *core_1_status = NULL;
-	const char *core_2_status = NULL;
-	struct device_node *node = NULL;
-	struct resource res;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,scp");
-	if (!node) {
-		pr_err("[SCP] Can't find node: mediatek,scp\n");
-		return -1;
-	}
-
-	status = of_get_property(node, "status", NULL);
-	if (status == NULL || strcmp(status, "okay") != 0) {
-		if (strcmp(status, "fail") == 0) {
-			pr_err("[SCP] of_get_property status fail\n");
-			scp_aed(EXCEP_LOAD_FIRMWARE, SCP_CORE_TOTAL);
-		}
-		return -1;
-	}
-
-	scpreg.sram = of_iomap(node, 0);
-	pr_debug("[SCP] sram base=0x%p\n", scpreg.sram);
-
-	if (!scpreg.sram) {
-		pr_err("[SCP] Unable to ioremap sram reg.\n");
-		return -1;
-	}
-
-	scpreg.cfg = of_iomap(node, 1);
-	pr_debug("[SCP] cfgreg=0x%p\n", scpreg.cfg);
-	if (!scpreg.cfg) {
-		pr_err("[SCP] Unable to ioremap cfg reg.\n");
-		return -1;
-	}
-
-	scpreg.clkctrl = of_iomap(node, 2);
-	if (!scpreg.clkctrl) {
-		pr_err("[SCP] Unable to ioremap clkctrl reg.\n");
-		return -1;
-	}
-
-	scpreg.clkctrldual = of_iomap(node, 3);
-	if (!scpreg.clkctrl) {
-		pr_err("[SCP] Unable to ioremap clkctrldual reg.\n");
-		return -1;
-	}
-
-	scpreg.irq = irq_of_parse_and_map(node, 0);
-	scpreg.irq_dual = irq_of_parse_and_map(node, 1);
-	pr_debug("[SCP] irq=%d, irq_daul=%d\n", scpreg.irq, scpreg.irq_dual);
-
-	if (of_address_to_resource(node, 0, &res)) {
-		pr_err("[SCP] Unable to get dts total_tcmsize\n");
-		return -1;
-	}
-	scpreg.total_tcmsize = (unsigned int)resource_size(&res);
-	pr_debug("[SCP] scpreg.total_tcmsize =%d\n", scpreg.total_tcmsize);
-
-	if (of_address_to_resource(node, 1, &res)) {
-		pr_err("[SCP] Unable to get dts cfgregsize\n");
-		return -1;
-	}
-	scpreg.cfgregsize = (unsigned int)resource_size(&res);
-	pr_debug("[SCP] scpreg.cfgregsize =%d\n", scpreg.cfgregsize);
-
-	/*scp core 1*/
-	node = of_find_compatible_node(NULL, NULL, "mediatek,scp_sram");
-	if (!node) {
-		pr_err("[SCP] Can't find node: mediatek,scp_sram\n");
-		return -1;
-	}
-
-	core_1_status = of_get_property(node, "core_1", NULL);
-	if (strcmp(core_1_status, "enable") != 0)
-		pr_err("[SCP] core_1 not enable\n");
-	else {
-		pr_debug("[SCP] core_1 enable\n");
-		scp_enable[SCP_A_ID] = 1;
-	}
-
-	/*scp core 2*/
-	core_2_status = of_get_property(node, "core_2", NULL);
-	if (strcmp(core_2_status, "enable") != 0)
-		pr_err("[SCP] core_2 not enable\n");
-	else {
-		pr_debug("[SCP] core_2 enable\n");
-		scp_enable[SCP_B_ID] = 1;
-	}
-
-	/*get scp A tcm size*/
-	if (of_property_read_u32(node, "scp_sramSize", &scpreg.scp_tcmsize)) {
-		pr_err("[SCP] Unable to get dts scp_sramSize\n");
-		return -1;
-	}
-	pr_debug("[SCP] scpreg.scp_tcmsize =%d\n", scpreg.scp_tcmsize);
-
-	return ret;
-}
 
 /*
  * TODO: what should we do when hibernation ?
@@ -1603,6 +1498,103 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
+static int scp_device_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+	struct resource *res;
+	const char *core_status = NULL;
+	struct device *dev = &pdev->dev;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	scpreg.sram = devm_ioremap_resource(dev, res);
+	if (IS_ERR((void const *) scpreg.sram)) {
+		pr_err("[SCP] scpreg.sram error\n");
+		return -1;
+	}
+	scpreg.total_tcmsize = (unsigned int)resource_size(res);
+	pr_debug("[SCP] sram base=0x%p %x\n", scpreg.sram, scpreg.total_tcmsize);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	scpreg.cfg = devm_ioremap_resource(dev, res);
+	if (IS_ERR((void const *) scpreg.cfg)) {
+		pr_err("[SCP] scpreg.cfg error\n");
+		return -1;
+	}
+	pr_debug("[SCP] cfg base=0x%p\n", scpreg.cfg);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
+	scpreg.clkctrl = devm_ioremap_resource(dev, res);
+	if (IS_ERR((void const *) scpreg.clkctrl)) {
+		pr_err("[SCP] scpreg.clkctrl error\n");
+		return -1;
+	}
+	pr_debug("[SCP] clkctrl base=0x%p\n", scpreg.clkctrl);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+	scpreg.clkctrldual = devm_ioremap_resource(dev, res);
+	if (IS_ERR((void const *) scpreg.clkctrldual)) {
+		pr_err("[SCP] scpreg.clkctrldual error\n");
+		return -1;
+	}
+	pr_debug("[SCP] clkctrldual base=0x%p\n", scpreg.clkctrldual);
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	scpreg.irq = res->start;
+	pr_debug("[SCP] scpreg.irq=%d\n", scpreg.irq);
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	scpreg.irq_dual = res->start;
+	pr_debug("[SCP] scpreg.irq_dual=%d\n", scpreg.irq_dual);
+
+	of_property_read_u32(pdev->dev.of_node, "scp_sramSize", &scpreg.scp_tcmsize);
+	if (!scpreg.scp_tcmsize) {
+		pr_err("[SCP] total_tcmsize not found\n");
+		return -ENODEV;
+	}
+	pr_debug("[SCP] scpreg.scp_tcmsize =%d\n", scpreg.scp_tcmsize);
+
+	/*scp core 1*/
+	of_property_read_string(pdev->dev.of_node, "core_1", &core_status);
+	if (strcmp(core_status, "enable") != 0)
+		pr_err("[SCP] core_1 not enable\n");
+	else {
+		pr_debug("[SCP] core_1 enable\n");
+		scp_enable[SCP_A_ID] = 1;
+	}
+
+	/*scp core 2*/
+	of_property_read_string(pdev->dev.of_node, "core_2", &core_status);
+	if (strcmp(core_status, "enable") != 0)
+		pr_err("[SCP] core_2 not enable\n");
+	else {
+		pr_debug("[SCP] core_2 enable\n");
+		scp_enable[SCP_B_ID] = 1;
+	}
+	return ret;
+}
+
+static int scp_device_remove(struct platform_device *dev)
+{
+	return 0;
+}
+
+static const struct of_device_id scp_of_ids[] = {
+	{ .compatible = "mediatek,scp", },
+	{}
+};
+
+static struct platform_driver mtk_scp_device = {
+	.probe = scp_device_probe,
+	.remove = scp_device_remove,
+	.driver = {
+		.name = "scp",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = scp_of_ids,
+#endif
+	},
+};
+
 /*
  * driver initialization entry point
  */
@@ -1631,12 +1623,8 @@ static int __init scp_init(void)
 		pr_err("[SCP]Excep Init Fail\n");
 		return -1;
 	}
-	ret = scp_dt_init();
-	if (ret) {
-		pr_err("[SCP]Device Init Fail\n");
-		return -1;
-	}
-
+	if (platform_driver_register(&mtk_scp_device))
+		pr_err("[SCP] device probe fail\n");
 	/* scp ipi initialise */
 	pr_debug("[SCP] ipi irq init\n");
 	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
