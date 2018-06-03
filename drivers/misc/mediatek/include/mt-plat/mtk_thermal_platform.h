@@ -51,8 +51,36 @@ extern kal_bool gFG_Is_Charging;
 #endif
 
 extern int force_get_tbat(void);
-#endif				/* _MTK_THERMAL_PLATFORM_H */
 
+/* --- SPA parameters --- */
+struct spa_Tpolicy_info {
+	int min_cpu_power[3];
+	int min_gpu_power[3];
+	int steady_target_tj;
+	int steady_exit_tj;
+};
+
+struct spa_system_info {
+	int cpu_Tj;
+	int Tpcb;
+	int OPP_power;
+	unsigned int fg_app_pid;
+	unsigned int avg_fps;
+	int WIFI_UL_Tput;
+	int MD_UL_Tput;
+	int chg_current_limit;
+	int input_current_limit;
+	int camera_on;
+	int game_mode;
+};
+
+struct SPA_T {
+	struct spa_Tpolicy_info t_spa_Tpolicy_info;
+	struct spa_system_info t_spa_system_info;
+};
+
+extern struct SPA_T thermal_spa_t;
+/* --- SPA parameters --- */
 
 typedef enum {
 	TA_DAEMON_CMD_GET_INIT_FLAG = 0,
@@ -61,6 +89,7 @@ typedef enum {
 	TA_DAEMON_CMD_NOTIFY_DAEMON_CATMINIT,
 	TA_DAEMON_CMD_SET_TTJ,
 	TA_DAEMON_CMD_GET_TPCB,
+	TA_DAEMON_CMD_GET_TI,
 
 	TA_DAEMON_CMD_TO_KERNEL_NUMBER
 } TA_DAEMON_CTRL_CMD_TO_KERNEL; /*must sync userspace/kernel: TA_DAEMON_CTRL_CMD_FROM_USER*/
@@ -111,4 +140,4 @@ int ta_get_ttj(void);
 extern int mtk_thermal_get_tpcb_target(void);
 extern int tsatm_thermal_get_catm_type(void);
 
-
+#endif				/* _MTK_THERMAL_PLATFORM_H */

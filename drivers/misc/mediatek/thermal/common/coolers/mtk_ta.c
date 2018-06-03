@@ -20,6 +20,14 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mtk_thermal.h"
 #include "mt-plat/mtk_thermal_platform.h"
+#include "mtk_ts_imgsensor.h"
+#include "mtk_ts_pa.h"
+#include "mtk_ts_wmt.h"
+#include "mtk_cooler_atm.h"
+#include "mtk_cooler_fps.h"
+#include "mtk_cooler_bcct.h"
+#include "mtk_cooler_bcct_v1.h"
+#include <mtk_cooler_setting.h>
 #include <linux/slab.h>
 #include <linux/seq_file.h>
 #include <tscpu_settings.h>
@@ -32,7 +40,12 @@
 #include <linux/skbuff.h>
 #include <linux/reboot.h>
 #include <linux/vmalloc.h>
+#include <linux/uidgid.h>
+#define MAX_LEN	128
 
+static kuid_t uid = KUIDT_INIT(0);
+static kgid_t gid = KGIDT_INIT(1000);
+static unsigned int fg_app_pid;
 static int mtkts_ta_debug_log;
 
 #define tsta_dprintk(fmt, args...)   \
@@ -44,6 +57,15 @@ static int mtkts_ta_debug_log;
 
 #define tsta_warn(fmt, args...)  pr_warn("[Thermal/TC/TA]" fmt, ##args)
 
+/* ************************************ */
+/* Weak functions */
+/* ************************************ */
+int __attribute__ ((weak))
+get_image_sensor_state(void)
+{
+	return -1;
+}
+
 /*=============================================================
  *Local variable definition
  *=============================================================
@@ -54,7 +76,7 @@ static void ta_nl_send_to_user(int pid, int seq, struct tad_nl_msg_t *reply_msg)
 static int g_tad_pid;
 static bool init_flag;
 static int g_tad_ttj;
-
+struct SPA_T thermal_spa_t;
 
 /*=============================================================
  *Local function prototype
@@ -122,6 +144,41 @@ void atm_ctrl_cmd_from_user(void *nl_data, struct tad_nl_msg_t *ret_msg)
 		{
 			memcpy(&g_tad_ttj, &msg->tad_data[0], sizeof(g_tad_ttj));
 			tsta_dprintk("[atm_ctrl_cmd_from_user] g_tad_ttj = %d\n", g_tad_ttj);
+		}
+		break;
+	case TA_DAEMON_CMD_GET_TI:
+		{
+			/* --- SPA parameters --- */
+#if FEATURE_SPA
+			thermal_spa_t.t_spa_system_info.cpu_Tj = mtk_thermal_get_temp(MTK_THERMAL_SENSOR_CPU);
+			thermal_spa_t.t_spa_system_info.Tpcb = mtk_thermal_get_temp(MTK_THERMAL_SENSOR_AP);
+			thermal_spa_t.t_spa_system_info.OPP_power = clatm_get_curr_opp_power();
+			thermal_spa_t.t_spa_system_info.fg_app_pid = fg_app_pid;
+			thermal_spa_t.t_spa_system_info.avg_fps = clfps_get_disp_fps();
+			thermal_spa_t.t_spa_system_info.WIFI_UL_Tput = tswmt_get_WiFi_tx_tput();
+			thermal_spa_t.t_spa_system_info.MD_UL_Tput = tspa_get_MD_tx_tput();
+			thermal_spa_t.t_spa_system_info.chg_current_limit = clbcct_get_chr_curr_limit();
+			thermal_spa_t.t_spa_system_info.input_current_limit = clbcct_get_input_curr_limit();
+			thermal_spa_t.t_spa_system_info.camera_on = get_image_sensor_state();
+			thermal_spa_t.t_spa_system_info.game_mode = clfps_get_game_mode();
+#else
+			thermal_spa_t.t_spa_system_info.cpu_Tj = 0;
+			thermal_spa_t.t_spa_system_info.Tpcb = 0;
+			thermal_spa_t.t_spa_system_info.OPP_power = 0;
+			thermal_spa_t.t_spa_system_info.fg_app_pid = 0;
+			thermal_spa_t.t_spa_system_info.avg_fps = 0;
+			thermal_spa_t.t_spa_system_info.WIFI_UL_Tput = 0;
+			thermal_spa_t.t_spa_system_info.MD_UL_Tput = 0;
+			thermal_spa_t.t_spa_system_info.chg_current_limit = 0;
+			thermal_spa_t.t_spa_system_info.input_current_limit = 0;
+			thermal_spa_t.t_spa_system_info.camera_on = 0;
+			thermal_spa_t.t_spa_system_info.game_mode = 0;
+#endif
+
+			memcpy(ret_msg->tad_data, &thermal_spa_t, sizeof(thermal_spa_t));
+			ret_msg->tad_data_len += sizeof(thermal_spa_t);
+
+			tsta_dprintk("[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n", ret_msg->tad_data_len);
 		}
 		break;
 
@@ -279,6 +336,49 @@ static const struct file_operations mtktsta_log_fops = {
 	.release = single_release,
 };
 
+static ssize_t clmutt_fg_pid_write(struct file *filp, const char __user *buf, size_t count, loff_t *data)
+{
+	int ret = 0;
+	char tmp[MAX_LEN] = {0};
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
+	/* write data to the buffer */
+	if (copy_from_user(tmp, buf, len))
+		return -EFAULT;
+
+	ret = kstrtouint(tmp, 10, &fg_app_pid);
+	if (ret)
+		WARN_ON(1);
+
+	tsta_dprintk("[%s] %s = %d\n", __func__, tmp, fg_app_pid);
+
+	return len;
+}
+
+static int clmutt_fg_pid_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", fg_app_pid);
+
+	tsta_dprintk("[%s] %d\n", __func__, fg_app_pid);
+
+	return 0;
+}
+
+static int clmutt_fg_pid_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, clmutt_fg_pid_read, PDE_DATA(inode));
+}
+
+static const struct file_operations clmutt_fg_pid_fops = {
+	.owner = THIS_MODULE,
+	.open = clmutt_fg_pid_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = clmutt_fg_pid_write,
+	.release = single_release,
+};
+
 static void tsta_create_fs(void)
 {
 
@@ -294,6 +394,11 @@ static void tsta_create_fs(void)
 
 		entry =
 		    proc_create("ta_log", S_IRUGO | S_IWUSR, mtktsta_dir, &mtktsta_log_fops);
+
+		entry = proc_create("ta_fg_pid", S_IRUGO | S_IWUSR | S_IWGRP,
+							mtktsta_dir, &clmutt_fg_pid_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
 	}
 }
 
