@@ -4753,6 +4753,10 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 		hba->sdev_ufs_device = NULL;
 		goto out;
 	}
+
+	/* MTK Patch: Init runtime PM of this SCSI device */
+	ufs_mtk_runtime_pm_init(hba->sdev_ufs_device);
+
 	scsi_device_put(hba->sdev_ufs_device);
 
 	sdev_boot = __scsi_add_device(hba->host, 0, 0,
@@ -4761,6 +4765,10 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 		ret = PTR_ERR(sdev_boot);
 		goto remove_sdev_ufs_device;
 	}
+
+	/* MTK Patch: Init runtime PM of this SCSI device */
+	ufs_mtk_runtime_pm_init(sdev_boot);
+
 	scsi_device_put(sdev_boot);
 
 	sdev_rpmb = __scsi_add_device(hba->host, 0, 0,
@@ -4769,6 +4777,9 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 		ret = PTR_ERR(sdev_rpmb);
 		goto remove_sdev_boot;
 	}
+
+	/* MTK Patch: Init runtime PM of this SCSI device */
+	ufs_mtk_runtime_pm_init(sdev_rpmb);
 
 	/* MTK Patch: Register RPMB char device if required */
 	hba->sdev_ufs_rpmb = sdev_rpmb;
