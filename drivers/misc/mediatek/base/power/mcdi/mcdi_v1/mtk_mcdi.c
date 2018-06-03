@@ -455,6 +455,7 @@ static int mcdi_debugfs_init(void)
 static void __go_to_wfi(void)
 {
 	isb();
+	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
 }
