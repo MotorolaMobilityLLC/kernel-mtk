@@ -607,7 +607,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 	snprintf(disp_tmp, sizeof(disp_tmp), primary_display_is_video_mode() ? "vdo," : "cmd,");
 	screen_logger_add_message("mode", MESSAGE_REPLACE, disp_tmp);
 
-	for (i = 0; i < cfg->input_layer_num; i++) {
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
 		if (cfg->input_cfg[i].tgt_offset_y == 0 &&
 		    cfg->input_cfg[i].layer_enable) {
 			dst_layer_id = dst_layer_id > cfg->input_cfg[i].layer_id ?
@@ -615,14 +615,12 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 		}
 	}
 
-/* Temporary remove function call due to improper parameter type */
-#if 0
-	dynamic_debug_msg_print((phys_addr_t)cfg->input_cfg[dst_layer_id].src_phy_addr,
+	dynamic_debug_msg_print((unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
 				cfg->input_cfg[dst_layer_id].src_pitch,
-				4);
-#endif
+				cfg->input_cfg[dst_layer_id].src_fmt & 0x7);
+
 	return 0;
 }
 
@@ -6372,9 +6370,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		/* no need ioctl because of rdma_dirty */
 		set_is_dc(1);
 
-		dynamic_debug_msg_print(data_config->rdma_config.address, data_config->rdma_config.width,
-				data_config->rdma_config.height, data_config->rdma_config.pitch,
-				UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
+		dynamic_debug_msg_print(data_config->rdma_config.address,
+			data_config->rdma_config.width, data_config->rdma_config.height,
+			data_config->rdma_config.pitch / UFMT_GET_Bpp(data_config->rdma_config.inputFormat),
+			UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
+
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 		draw_round_corner(cfg, bypass_layer_id);
 #endif
