@@ -223,7 +223,7 @@ mt_pmic_regulator {
 		};
 		mt_pmic_vmc_ldo_reg: ldo_vmc {
 			regulator-name = "vmc";
-			regulator-min-microvolt = <2800000>;
+			regulator-min-microvolt = <1860000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <36>;
 		};
@@ -248,7 +248,7 @@ mt_pmic_regulator {
 		};
 		mt_pmic_vsim2_ldo_reg: ldo_vsim2 {
 			regulator-name = "vsim2";
-			regulator-min-microvolt = <2800000>;
+			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <3100000>;
 			regulator-enable-ramp-delay = <264>;
 		};

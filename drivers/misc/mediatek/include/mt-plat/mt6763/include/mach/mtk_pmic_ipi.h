@@ -58,5 +58,7 @@ unsigned int pmic_regulator_profiling(unsigned char type);
 
 unsigned int sub_pmic_ipi_interface(unsigned int type, unsigned int ctrl);
 
+unsigned int mt6311_ipi_set_mode(unsigned char mode);
+
 #endif /* _MT_PMIC_IPI_H_*/
 

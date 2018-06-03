@@ -192,6 +192,20 @@ static struct regulator_init_data mt6311_buck_init_data[] = {
 	},
 };
 
+int mt6311_vdvfs11_set_mode(unsigned char mode)
+{
+	int ret = 0;
+
+#ifdef IPIMB_MT6311
+	ret = mt6311_ipi_set_mode(mode);
+#else
+	ret = mt6311_config_interface(MT6311_PMIC_RG_VDVFS11_MODESET_ADDR, mode,
+		MT6311_PMIC_RG_VDVFS11_MODESET_MASK, MT6311_PMIC_RG_VDVFS11_MODESET_SHIFT);
+#endif
+
+	return ret;
+}
+
 int mt6311_regulator_init(struct device *dev)
 {
 	int ret = 0, i = 0;

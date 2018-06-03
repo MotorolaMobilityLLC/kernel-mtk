@@ -41,6 +41,7 @@ extern int mt6311_regulator_deinit(void);
 
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
+extern int mt6311_vdvfs11_set_mode(unsigned char mode);
 
 /*---------------------- AUTO GEN ---------------------------*/
 #define PMIC_REG_BASE (0x00000000)
