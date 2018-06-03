@@ -81,7 +81,7 @@ static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 #ifdef MTK_FB_MMDVFS_SUPPORT
 /* dvfs */
-static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
+static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LPM);
 #endif
 
 
@@ -840,24 +840,30 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
 #ifdef MTK_FB_MMDVFS_SUPPORT
+	int step = MMDVFS_FINE_STEP_UNREQUEST;
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
-		case HRT_LEVEL_HIGH:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_HIGH);
+		case HRT_LEVEL_UHPM:
+			step = MMDVFS_FINE_STEP_OPP0;
 			break;
-		case HRT_LEVEL_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW);
+		case HRT_LEVEL_HPM:
+			step = MMDVFS_FINE_STEP_OPP1;
 			break;
-		case HRT_LEVEL_EXTREME_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW_LOW);
+		case HRT_LEVEL_LPM:
+			step = MMDVFS_FINE_STEP_OPP2;
+			break;
+		case HRT_LEVEL_ULPM:
+			step = MMDVFS_FINE_STEP_OPP3;
 			break;
 		case HRT_LEVEL_DEFAULT:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_DEFAULT_STEP);
+			step = MMDVFS_FINE_STEP_UNREQUEST;
 			break;
 		default:
 			break;
 		}
+		mmdvfs_set_fine_step(scenario, step);
 		atomic_set(&dvfs_ovl_req_status, req);
+		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, scenario, step);
 	}
 #endif
 	return 0;
@@ -906,9 +912,9 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		if (get_ddr_type() == TYPE_LPDDR3)
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LPM);
 		else
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_ULPM);
 #endif
 		primary_display_manual_unlock();
 

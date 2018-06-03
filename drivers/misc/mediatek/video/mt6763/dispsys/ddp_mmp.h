@@ -81,6 +81,7 @@ struct DDP_MMP_Events {
 	mmp_event ovl_trigger;
 	mmp_event interface_trigger;
 	mmp_event hrt;
+	mmp_event dvfs;
 	mmp_event Extd_Parent;
 	mmp_event Extd_layerParent;
 	mmp_event Extd_layer[4];

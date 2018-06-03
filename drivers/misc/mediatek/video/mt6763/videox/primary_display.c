@@ -1451,18 +1451,13 @@ static void _cmdq_build_trigger_loop(void)
 		/* waiting for frame done, because we can't use mutex stream eof here,*/
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
-#if 0
-		/* wait rdma frame done */
+		/*ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
+		*dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
+		*		CMDQ_WAIT_STREAM_EOF_EVENT, 0);
+		*/
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		/* polling dsi not busy */
 		DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
 						  0x80000000, 0x0);
-#else
-		/* wait dsi frame done */
-		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
-		/* wait dsi not busy */
-		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DSI0_DONE_EVENT);
-#endif
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 
@@ -3028,7 +3023,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	if (real_hrt_level > HRT_LEVEL_HPM &&
 		primary_display_is_directlink_mode()) {
-		DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");
+		/*DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");*/
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
 	} else if (real_hrt_level > HRT_LEVEL_LPM &&
 		primary_display_is_directlink_mode()) {
@@ -5179,7 +5174,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	if (hrt_level > HRT_LEVEL_HPM &&
 		primary_display_is_directlink_mode()) {
-		DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");
+		/*DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");*/
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
 		dvfs_last_ovl_req = HRT_LEVEL_UHPM;
 	} else if (hrt_level > HRT_LEVEL_LPM &&

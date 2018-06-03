@@ -30,6 +30,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "primary_disp");
 		DDP_MMP_Events.hrt =
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "hrt");
+		DDP_MMP_Events.dvfs =
+		    mmprofile_register_event(DDP_MMP_Events.DDP, "dvfs");
 		DDP_MMP_Events.primary_trigger =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "trigger");
 		DDP_MMP_Events.primary_config =
