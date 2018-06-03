@@ -521,6 +521,12 @@ static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		goto out;
 
+	/* Disable ZCV */
+	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_OSCCTRL,
+		0x04);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable ZCV failed\n", __func__);
+
 	/* Disable TS auto sensing */
 	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
 		RT5081_PMU_REG_CHGHIDDENCTRL15, 0x01);
@@ -619,7 +625,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		if (!adc_start && ret >= 0)
 			break;
 		dev_err(chg_data->dev, "%s: ADC_START is still 1\n", __func__);
-		mdelay(10);
+		msleep(20);
 	}
 	if (i == max_retry_cnt) {
 		dev_err(chg_data->dev,
@@ -3383,6 +3389,8 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
  * 1.1.5_MTK
  * (1) Modify probe sequence
  * (2) Change ADC log from ratelimited to normal one for debug
+ * (3) Polling ADC_START after receiving ADC_DONE irq
+ * (4) Disable ZCV in probe function
  *
  * 1.1.4_MTK
  * (1) Add IEOC workaround
