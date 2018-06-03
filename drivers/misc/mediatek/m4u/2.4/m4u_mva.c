@@ -301,7 +301,6 @@ void m4u_mvaGraph_dump(void)
 	int i, max_bit, is_busy, is_reserve, integrity = 0;
 	short frag[12] = { 0 };
 	unsigned short nr_free = 0, nr_alloc = 0;
-	unsigned long irq_flags;
 
 	M4ULOG_HIGH("[M4U_2.4] mva allocation info dump:====================>\n");
 	M4ULOG_HIGH("start       end        size     blocknum    busy    reserve    integrity\n");
