@@ -5022,7 +5022,7 @@ static bool cpu_overutilized(int cpu)
 	return (capacity_of(cpu) * 1024) < (cpu_util(cpu) * capacity_margin);
 }
 
-static inline bool energy_aware(void)
+inline bool energy_aware(void)
 {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	return is_eas_enabled() && sched_feat(ENERGY_AWARE);
@@ -8680,7 +8680,7 @@ static int idle_balance(struct rq *this_rq)
 #endif
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-		if ((!energy_aware() || system_overutilized(this_cpu)) && !pulled_task)
+		if (!pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
 #endif
 	}

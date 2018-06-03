@@ -2092,6 +2092,8 @@ static inline void account_reset_rq(struct rq *rq)
 extern bool is_rt_throttle(int cpu);
 #endif
 
+extern inline bool energy_aware(void);
+
 #ifdef CONFIG_MACH_MT6771
 #define jump_step(idx, nr, st) { *st = 1; }
 #else
