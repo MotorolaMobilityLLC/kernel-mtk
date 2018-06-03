@@ -378,6 +378,9 @@ static void __iomem *csram_base;
 #define DBG_REPO_SCHED_S	(DBG_REPO_S + OFFS_SCHED_S)
 #define DBG_REPO_SCHED_E	(DBG_REPO_S + OFFS_SCHED_E)
 
+#define OFFS_WFI_S		0x037c
+#define OFFS_WFI_E		0x03a0
+
 #define NR_FREQ       16
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
@@ -460,6 +463,16 @@ int cpuhvfs_set_mix_max(int cluster_id, int base, int limit)
 
 int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
 {
+#if 1
+	struct mt_cpu_dvfs *p;
+	unsigned int freq_idx = 0;
+
+	p = id_to_cpu_dvfs(cluster_id);
+
+	/* [3:0] freq_idx */
+	freq_idx = _search_available_freq_idx(p, freq, 0);
+	csram_write((OFFS_WFI_S + (cluster_id * 4)), freq_idx);
+#else
 	struct cdvfs_data cdvfs_d;
 
 	/* Cluster, Freq */
@@ -467,7 +480,7 @@ int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
 	cdvfs_d.u.set_fv.arg[1] = freq;
 
 	dvfs_to_spm2_command(IPI_SET_DVFS, &cdvfs_d);
-
+#endif
 	return 0;
 }
 
