@@ -68,7 +68,7 @@ int ddp_get_module_num_l(int *module_list);
 char *ddp_get_mode_name(enum DDP_MODE ddp_mode);
 bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module);
 int ddp_path_mmsys_sw_reset(enum DISP_MODULE_ENUM module);
-void ddp_check_smi_status(void);
+int ddp_check_smi_status(void);
 
 #include "ddp_mutex.h"
 
