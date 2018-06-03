@@ -5735,11 +5735,11 @@ int priv_driver_set_suspend_mode(IN struct net_device *prNetDev, IN char *pcComm
 			fgEnable = FALSE;
 
 		if (prGlueInfo->fgIsInSuspendMode == fgEnable) {
-			DBGLOG(REQ, INFO, "%s: Already in suspend mode [%u], SKIP!\n", __func__, fgEnable);
+			DBGLOG(REQ, TRACE, "%s: Already in suspend mode [%u], SKIP!\n", __func__, fgEnable);
 			return 0;
 		}
 
-		DBGLOG(REQ, INFO, "%s: Set suspend mode [%u]\n", __func__, fgEnable);
+		DBGLOG(REQ, TRACE, "Set suspend mode [%u]\n", fgEnable);
 
 		prGlueInfo->fgIsInSuspendMode = fgEnable;
 
@@ -6413,7 +6413,7 @@ int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq 
 
 	pcCommand = priv_cmd->buf;
 
-	DBGLOG(REQ, INFO, "%s: driver cmd \"%s\" on %s\n", __func__, pcCommand, prReq->ifr_name);
+	DBGLOG(REQ, INFO, "driver cmd \"%s\" on %s\n", pcCommand, prReq->ifr_name);
 
 	i4BytesWritten = priv_driver_cmds(prNetDev, pcCommand, i4TotalLen);
 

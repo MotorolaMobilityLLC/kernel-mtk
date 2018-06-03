@@ -2291,17 +2291,17 @@ VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 
 	for (u4Loop = 0; u4Loop < u4LoopCount; u4Loop++) {
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
+		DBGFWLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
 	}
 
 	for (; i < sizeof(au4Value)/sizeof(UINT_32); i++)
 		HAL_MCR_RD(prAdapter, au4Value[i], &au4Value[i]);
-	DBGLOG(REQ, WARN, "WASR:0x%x, WCIR:0x%x, WHLPCR:0x%x, WHIER:0x%x, D2HRM0R:0x%x, D2HRM1R:0x%x\n",
+	DBGFWLOG(REQ, WARN, "WASR:0x%x, WCIR:0x%x, WHLPCR:0x%x, WHIER:0x%x, D2HRM0R:0x%x, D2HRM1R:0x%x\n",
 		au4Value[0], au4Value[1], au4Value[2], au4Value[3], au4Value[4], au4Value[5]);
 
 	for (i = 0; i < 8; i++)
 		mtk_wcn_hif_sdio_f0_readb(cltCtx, 0xf8 + i, &pucCCR[i]);
-	DBGLOG(REQ, WARN, "CCCR %02x %02x %02x %02x %02x %02x %02x %02x\n",
+	DBGFWLOG(REQ, WARN, "CCCR %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		pucCCR[0], pucCCR[1], pucCCR[2], pucCCR[3], pucCCR[4], pucCCR[5], pucCCR[6], pucCCR[7]);
 }
 
