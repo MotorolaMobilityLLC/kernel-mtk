@@ -393,7 +393,7 @@ struct clk * __init mtk_clk_register_mux_clr_set_upd(
 		return ERR_PTR(-ENOMEM);
 
 	init.name = mu->name;
-	init.flags = CLK_SET_RATE_PARENT;
+	init.flags = (mu->flags) | CLK_SET_RATE_PARENT;
 #if WORKAROUND_318_WARNING
 	init.parent_names = (const char **)mu->parent_names;
 #else

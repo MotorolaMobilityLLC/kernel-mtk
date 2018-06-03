@@ -30,12 +30,6 @@ int __attribute__ ((weak))
 	return 0;
 }
 
-int __attribute__ ((weak))
-	mtk_is_clk_bring_up(void)
-{
-	return 0;
-}
-
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);

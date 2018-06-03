@@ -28,5 +28,5 @@ obj-y += clk-bringup.o
 ifeq ($(CONFIG_DEBUG_FS), y)
 obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clkdbg.o
 obj-$(CONFIG_COMMON_CLK_MT2712) += clkdbg-mt2712.o
-obj-$(CONFIG_COMMON_CLK_MT6765) += clkdbg_mt6765.o
+obj-$(CONFIG_COMMON_CLK_MT6765) += clkdbg_mt6765.o clkchk-mt6765.o
 endif
