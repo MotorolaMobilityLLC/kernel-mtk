@@ -107,6 +107,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	struct charger_data *pdata;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg1_min = 0, aicr1_min = 0;
+	int ret;
 
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);

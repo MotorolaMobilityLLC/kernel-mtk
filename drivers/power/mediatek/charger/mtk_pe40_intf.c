@@ -205,7 +205,7 @@ int mtk_pe40_get_setting_by_watt(struct charger_manager *pinfo, int *voltage, in
 	pe40 = &pinfo->pe4;
 
 	pe40_cap = &pinfo->pe4.cap;
-	for (i = 0;  < pe40_cap->nr; i++) {
+	for (i = 0; i < pe40_cap->nr; i++) {
 		int max_ibus = 0;
 		int max_vbus = 0;
 
