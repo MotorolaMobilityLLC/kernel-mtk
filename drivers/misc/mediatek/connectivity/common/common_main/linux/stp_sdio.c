@@ -1009,11 +1009,9 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 		if (while_loop_counter > 1000) {
 			while_loop_counter = 0;
 			pInfo->dump_flag = 1;
-
-			STPSDIO_ERR_FUNC("stp_is_ready(%d) irq_pending(%d) tx_packet_num(%d) rx_pkt_len(%d)\n",
-					mtk_wcn_stp_is_ready(), pInfo->irq_pending,
-					pInfo->firmware_info.tx_packet_num, pInfo->rx_pkt_len);
-			osal_ftrace_print("stp(%d)irq(%d)tx_pkt_num(%d)rx_pkt_len(%d)\n",
+			STPSDIO_ERR_FUNC("stp_sdio_tx_rx thread while_loop_counter over1000\n");
+			stp_sdio_dump_info(pInfo);
+			osal_ftrace_print("stp(%d)irq(%d)tx_pkt_num(%d)rx_pkt_len(%d)",
 					mtk_wcn_stp_is_ready(), pInfo->irq_pending,
 					pInfo->firmware_info.tx_packet_num, pInfo->rx_pkt_len);
 			/*make fake irq flag to dump CHISR information */
@@ -1115,6 +1113,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		pkt_bufp = &pb->tx_buf[idx][STP_SDIO_HDR_SIZE];
 #endif
 		memcpy(pkt_bufp, data, size);
+		gp_info->txwkr_flag = 1;
 		atomic_inc(&pb->wr_cnt);
 
 		if (written_size)
@@ -1168,6 +1167,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			pkt_bufp = &pb->tx_buf[idx][STP_SDIO_HDR_SIZE];
 #endif
 			memcpy(pkt_bufp, data, size);
+			gp_info->txwkr_flag = 1;
 			atomic_inc(&pb->wr_cnt);
 
 			STPSDIO_DBG_FUNC("(Not empty-no aggre) Enqueue done\n");
@@ -1246,6 +1246,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #endif
 			/* Copy data to ring buffer */
 			memcpy(pkt_bufp, data, size);
+			gp_info->txwkr_flag = 1;
 			atomic_inc(&pb->wr_cnt);
 
 			if (written_size)
@@ -1258,7 +1259,6 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_schedule(&gp_info->tx_rx_job); */
 	STPSDIO_DBG_FUNC("osal_trigger_event gp_info->tx_rx_event\n");
-	gp_info->txwkr_flag = 1;
 	osal_trigger_event(&gp_info->tx_rx_event);
 #else
 	schedule_work(&gp_info->tx_work);
@@ -1315,7 +1315,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #endif
 		memcpy(pkt_bufp, data, size);
 		*written_size = size;
-
+		gp_info->txwkr_flag = 1;
 		atomic_set(&gp_info->pkt_buf.wr_idx,
 				(atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 	}
@@ -1416,7 +1416,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			STPSDIO_DBG_FUNC("(Not empty-no aggre) Enqueue done\n");
 
 			*written_size = size;
-
+			gp_info->txwkr_flag = 1;
 			atomic_set(&gp_info->pkt_buf.wr_idx,
 					(atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 		}
@@ -1526,6 +1526,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			/* Copy data to ring buffer */
 			memcpy(pkt_bufp, data, size);
 			*written_size = size;
+			gp_info->txwkr_flag = 1;
 			atomic_set(&gp_info->pkt_buf.wr_idx,
 			    (atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 		}
@@ -1535,7 +1536,6 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_schedule(&gp_info->tx_rx_job); */
 	STPSDIO_DBG_FUNC("osal_trigger_event gp_info->tx_rx_event\n");
-	gp_info->txwkr_flag = 1;
 	osal_trigger_event(&gp_info->tx_rx_event);
 #else
 	schedule_work(&gp_info->tx_work);
@@ -3052,6 +3052,18 @@ static VOID stp_sdio_txperf_dump(VOID)
 		wkr, pkt_num, lmt_cnt);
 
 #endif
+}
+
+VOID stp_sdio_dump_info(MTK_WCN_STP_SDIO_HIF_INFO *p_info)
+{
+	STPSDIO_ERR_FUNC("stp_is_ready(%d) irq_pending(%d) tx_packet_num(%d) rx_pkt_len(%d)\n",
+			mtk_wcn_stp_is_ready(), p_info->irq_pending,
+			p_info->firmware_info.tx_packet_num, p_info->rx_pkt_len);
+	STPSDIO_ERR_FUNC("sleep_flag(%d) wakeup_flag(%d) awake_flag(%d) txwkr_flag(%d)\n",
+			p_info->sleep_flag, p_info->wakeup_flag, p_info->awake_flag, p_info->txwkr_flag);
+	STPSDIO_ERR_FUNC("wr_idx(%d), rd_idx(%d), full_flag(%d), tx_fifo_size(%d)\n",
+			atomic_read(&p_info->pkt_buf.wr_idx), atomic_read(&p_info->pkt_buf.rd_idx),
+			p_info->pkt_buf.full_flag, p_info->firmware_info.tx_fifo_size);
 }
 
 VOID stp_sdio_txdbg_dump(VOID)
