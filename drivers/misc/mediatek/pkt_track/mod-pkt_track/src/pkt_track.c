@@ -594,7 +594,7 @@ static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
 		struct pkt_track_ilm_del_rule_ind_t *des = (struct pkt_track_ilm_del_rule_ind_t *) ilm->local_para_ptr;
 
 		for (i = 0; i < des->ipv4_rule_cnt; i++) {
-			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv4_id[%d].\n",
+			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv4 md_id[%d].\n",
 						__func__, des->ipv4_rule_id[i]);
 
 			p = get_tuple_by_md_rule_id(des->ipv4_rule_id[i]);
@@ -610,7 +610,7 @@ static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
 		}
 
 		for (i = 0; i < des->ipv6_rule_cnt; i++) {
-			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv6_id[%d].\n",
+			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv6 md_id[%d].\n",
 						__func__, des->ipv6_rule_id[i]);
 
 			p = get_tuple_by_md_rule_id(des->ipv6_rule_id[i]);
