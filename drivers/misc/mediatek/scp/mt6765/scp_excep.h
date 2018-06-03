@@ -42,6 +42,7 @@ extern void aed_scp_exception_api(const int *log, int log_size,
 		const int db_opt);
 extern void scp_excep_cleanup(void);
 enum { r0, r1, r2, r3, r12, lr, pc, psr};
+extern int scp_ee_enable;
 
 struct TaskContextType {
 	unsigned int r0;
@@ -155,6 +156,17 @@ struct scp_reg_dump_list {
 	uint32_t clk_sw_sel;
 	uint32_t clk_enable;
 	uint32_t clk_high_core;
+	uint32_t debug_wdt_sp;
+	uint32_t debug_wdt_lr;
+	uint32_t debug_wdt_psp;
+	uint32_t debug_wdt_pc;
+	uint32_t debug_addr_s2r;
+	uint32_t debug_addr_dma;
+	uint32_t debug_addr_spi0;
+	uint32_t debug_addr_spi1;
+	uint32_t debug_addr_spi2;
+	uint32_t debug_bus_status;
+	uint32_t debug_infra_mon;
 	uint32_t scp_reg_magic_end;
 };
 

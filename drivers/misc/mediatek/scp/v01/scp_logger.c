@@ -107,6 +107,7 @@ static void scp_logger_wakeup_handler(int id, void *data, unsigned int len)
 static size_t scp_A_get_last_log(size_t b_len)
 {
 	size_t ret = 0;
+	int scp_awake_flag;
 	unsigned int log_start_idx;
 	unsigned int log_end_idx;
 	unsigned int update_start_idx;
@@ -122,9 +123,10 @@ static size_t scp_A_get_last_log(size_t b_len)
 	}
 
 	/*SCP keep awake */
+	scp_awake_flag = 0;
 	if (scp_awake_lock(SCP_A_ID) == -1) {
+		scp_awake_flag = -1;
 		pr_debug("scp_A_get_last_log: awake scp fail\n");
-		return 0;
 	}
 
 
@@ -170,9 +172,10 @@ static size_t scp_A_get_last_log(size_t b_len)
 
 
 	/*SCP release awake */
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("scp_A_get_last_log: awake unlock fail\n");
-
+	if (scp_awake_flag == 0) {
+		if (scp_awake_unlock(SCP_A_ID) == -1)
+			pr_debug("scp_A_get_last_log: awake unlock fail\n");
+	}
 
 	vfree(pre_scp_last_log_buf);
 	return ret;
@@ -562,12 +565,13 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	/* scp side get wakelock, AP to write info to scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID)
 					, (SCP_TCM + scp_A_log_dram_addr_last));
-
+	/* set init flag here*/
+	scp_A_logger_inited = 1;
 	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
 
 	/*set a wq to enable scp logger*/
 	scp_logger_notify_work[SCP_A_ID].id = SCP_A_ID;
-	scp_schedule_work(&scp_logger_notify_work[SCP_A_ID]);
+	scp_schedule_logger_work(&scp_logger_notify_work[SCP_A_ID]);
 }
 
 /*
@@ -599,7 +603,9 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 	do {
 		ret = scp_ipi_send(scp_ipi_id, &magic, sizeof(magic)
 							, 0, scp_core_id);
-		pr_debug("[SCP]scp_logger_notify_ws ipi ret=%u\n", ret);
+		if ((retrytimes % 500) == 0)
+			pr_debug("[SCP]scp_logger_notify_ws ipi ret=%d\n", ret);
+
 		if (ret == SCP_IPI_DONE)
 			break;
 		retrytimes--;
@@ -838,4 +844,17 @@ char *scp_get_last_log(enum scp_core_id id)
 	last_log = scp_A_last_log;
 
 	return last_log;
+}
+
+/*
+ * set scp_A_logger_inited
+ */
+void scp_logger_init_set(unsigned int value)
+{
+	/*scp_A_logger_inited
+	 *  0: logger not init
+	 *  1: logger inited
+	 */
+	scp_A_logger_inited = value;
+
 }
