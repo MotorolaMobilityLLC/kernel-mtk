@@ -2019,8 +2019,97 @@ void Auddrv_Dl3_Spinlock_unlock(void)
 
 void Auddrv_HDMI_Interrupt_Handler(void)
 {
-	/* irq5 ISR handler */
-	/* Wait for HDMI refactor */
+#ifdef CONFIG_MTK_HDMI_TDM
+
+	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI];
+	kal_int32 Afe_consumed_bytes = 0;
+	kal_int32 HW_memory_index = 0;
+	kal_int32 HW_Cur_ReadIdx = 0;
+	unsigned long flags;
+	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->rBlock);
+
+	if (Mem_Block == NULL) {
+		pr_warn("-%s()Mem_Block == NULL\n", __func__);
+		return;
+	}
+
+	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == false) {
+		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		return;
+	}
+
+	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_HDMI_CUR);
+	if (HW_Cur_ReadIdx == 0) {
+		PRINTK_AUDDRV("[Auddrv_HDMI_Interrupt] HW_Cur_ReadIdx ==0\n");
+		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
+	}
+	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
+
+	PRINTK_AUD_HDMI
+	    ("[Auddrv_HDMI_Interrupt]0 HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
+	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+
+	/* get hw consume bytes */
+	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
+		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
+	} else {
+		Afe_consumed_bytes =
+		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
+	}
+
+	if ((Afe_consumed_bytes & 0x1f) != 0)
+		pr_warn("[Auddrv_HDMI_Interrupt] DMA address is not aligned 32 bytes\n");
+
+	PRINTK_AUD_HDMI
+	    ("+[HDMI_Interrupt]1 ReadIdx:%x WriteIdx:%x, DataRemained:%x, Afe_consumed_bytes:%x index = %x\n",
+	     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
+	     Afe_consumed_bytes, HW_memory_index);
+
+	if (Afe_Block->u4DataRemained < Afe_consumed_bytes || Afe_Block->u4DataRemained <= 0
+	    || Afe_Block->u4DataRemained > Afe_Block->u4BufferSize) {
+		/* buffer underflow --> clear  whole buffer */
+		/* memset(Afe_Block->pucVirtBufAddr, 0, Afe_Block->u4BufferSize); */
+
+		PRINTK_AUD_HDMI
+		    ("+[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, Remained:%x,bytes:%x index = 0x%x\n",
+		     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
+		     Afe_consumed_bytes, HW_memory_index);
+		Afe_Block->u4DMAReadIdx = HW_memory_index;
+		Afe_Block->u4WriteIdx = Afe_Block->u4DMAReadIdx;
+		Afe_Block->u4DataRemained = Afe_Block->u4BufferSize;
+
+		PRINTK_AUD_HDMI
+		    ("-[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, DataRemained:%x, bytes %x\n",
+		     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
+		     Afe_consumed_bytes);
+	} else {
+
+		PRINTK_AUD_HDMI
+		    ("+[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
+		     Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
+		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
+
+		PRINTK_AUD_HDMI
+		    ("-[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
+		     Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+	}
+	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->interruptTrigger = 1;
+
+	if (Mem_Block->substreamL != NULL) {
+		if (Mem_Block->substreamL->substream != NULL) {
+			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+		}
+	}
+	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+
+	PRINTK_AUD_HDMI("-[Auddrv_HDMI_Interrupt]4 ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
+			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+#endif
 }
 
 void Auddrv_AWB_Interrupt_Handler(void)
