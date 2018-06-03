@@ -31,10 +31,6 @@
 #include "ccci_hif.h"
 #include "ccci_port.h"
 
-#define BOOT_TIMER_HS1 10
-#define BOOT_TIMER_HS2 10
-#define ENABLE_HS1_POLLING_TIMER
-
 struct ccci_modem;
 
 typedef enum {
@@ -117,10 +113,6 @@ struct md_sys1_info {
 		unsigned int ap_ccif_irq_id;
 		unsigned long ap_ccif_irq_flags;
 
-#ifdef ENABLE_HS1_POLLING_TIMER
-		struct timer_list hs1_polling_timer;
-#endif
-
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 		struct work_struct scp_md_state_sync_work;
 #endif
@@ -156,7 +148,6 @@ struct ccci_modem {
 	unsigned char index;
 	unsigned char *private_data;
 
-	volatile MD_STATE md_state;	/* check comments below, put it here for cache benefit */
 	struct ccci_modem_ops *ops;
 	/* refer to port_proxy obj, no need used in sub class,
 	* if realy want to use, please define delegant api in ccci_modem class
@@ -245,7 +236,6 @@ static inline int ccci_md_recv_skb(unsigned char md_id, unsigned char hif_id, st
 /****************************************************************************************************************/
 struct ccci_modem *ccci_md_get_another(int md_id);
 void ccci_md_set_reload_type(struct ccci_modem *md, int type);
-MD_STATE_FOR_USER get_md_state_for_user(struct ccci_modem *md);
 
 int ccci_md_check_ee_done(struct ccci_modem *md, int timeout);
 int ccci_md_store_load_type(struct ccci_modem *md, int type);

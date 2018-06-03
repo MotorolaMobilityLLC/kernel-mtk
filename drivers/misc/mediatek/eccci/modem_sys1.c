@@ -124,18 +124,6 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-#ifdef ENABLE_HS1_POLLING_TIMER
-void md_cd_hs1_polling_timer_func(unsigned long data)
-{
-	struct ccci_modem *md = (struct ccci_modem *)data;
-	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-
-	md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
-	if (md->md_state == BOOT_WAITING_FOR_HS1 || md->md_state == BOOT_WAITING_FOR_HS2)
-		mod_timer(&md_info->hs1_polling_timer, jiffies + HZ / 2);
-}
-#endif
-
 static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 {
 	int busy = 0;
@@ -302,8 +290,7 @@ static inline int md_sys1_sw_init(struct ccci_modem *md)
 static int md_cd_init(struct ccci_modem *md)
 {
 	CCCI_INIT_LOG(md->index, TAG, "CLDMA modem is initializing\n");
-	/* update state */
-	md->md_state = GATED;
+
 	return 0;
 }
 
@@ -406,9 +393,7 @@ static int md_cd_start(struct ccci_modem *md)
 
 	md->per_md_data.is_in_ee_dump = 0;
 	md->is_force_asserted = 0;
-#ifdef ENABLE_HS1_POLLING_TIMER
-	mod_timer(&md_info->hs1_polling_timer, jiffies+0);
-#endif
+
 	cldma_start(CLDMA_HIF_ID);
 
  out:
@@ -518,7 +503,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 	}
 
 	CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD state: %d\n",
-			md->md_state);
+			ccci_fsm_get_md_state(md->index));
 	return 0;
 }
 
@@ -1259,11 +1244,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	snprintf(md_info->peer_wakelock_name, sizeof(md_info->peer_wakelock_name), "md%d_cldma_peer", md_id + 1);
 	wake_lock_init(&md_info->peer_wake_lock, WAKE_LOCK_SUSPEND, md_info->peer_wakelock_name);
 
-#ifdef ENABLE_HS1_POLLING_TIMER
-	init_timer(&md_info->hs1_polling_timer);
-	md_info->hs1_polling_timer.function = md_cd_hs1_polling_timer_func;
-	md_info->hs1_polling_timer.data = (unsigned long)md;
-#endif
 	/* Copy HW info */
 	md_info->ap_ccif_base = (void __iomem *)md_hw->ap_ccif_base;
 	md_info->md_ccif_base = (void __iomem *)md_hw->md_ccif_base;
