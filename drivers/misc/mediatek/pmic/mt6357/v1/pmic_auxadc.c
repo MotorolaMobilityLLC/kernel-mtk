@@ -443,7 +443,13 @@ int pmic_get_auxadc_value(int list)
 			bat_cur = 0 - bat_cur;
 		pr_notice("[CH3_DBG] bat_cur = %d\n", bat_cur);
 	}
-	ret = iio_read_channel_processed(legacy_auxadc[list].chan, &value);
+	if (list == AUXADC_LIST_HPOFS_CAL) {
+		ret = iio_read_channel_raw(
+			legacy_auxadc[list].chan, &value);
+	} else {
+		ret = iio_read_channel_processed(
+			legacy_auxadc[list].chan, &value);
+	}
 	if (ret < 0)
 		return ret;
 	return value;
