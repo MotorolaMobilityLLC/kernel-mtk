@@ -1739,23 +1739,18 @@ static int rt5509_aif_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 static int rt5509_aif_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *hw_params, struct snd_soc_dai *dai)
 {
-	return 0;
-}
-
-static int rt5509_aif_prepare(struct snd_pcm_substream *substream,
-	struct snd_soc_dai *dai)
-{
 	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(dai->codec);
-	const struct snd_pcm_runtime *runtime = substream->runtime;
+	unsigned int rate = params_rate(hw_params);
+	snd_pcm_format_t format = params_format(hw_params);
 	/* 0 for sr and bckfs, 1 for audbits */
 	u8 regval[2] = {0};
 	u32 pll_divider = 0;
 	u8 word_len = 0;
 	int ret = 0;
 
-	dev_dbg(dai->dev, "%s\n", __func__);
-	dev_dbg(dai->dev, "format %d\n", runtime->format);
-	switch (runtime->format) {
+	dev_info(dai->dev, "%s(), format %d, rate %u\n",
+		 __func__, format, rate);
+	switch (format) {
 	case SNDRV_PCM_FORMAT_S16:
 	case SNDRV_PCM_FORMAT_U16:
 		regval[0] |= (RT5509_BCKMODE_32FS << RT5509_BCKMODE_SHFT);
@@ -1799,10 +1794,10 @@ static int rt5509_aif_prepare(struct snd_pcm_substream *substream,
 		break;
 	default:
 		ret = -EINVAL;
-		goto out_prepare;
+		goto out_hw_params;
 	}
-	dev_dbg(dai->dev, "rate %d\n", runtime->rate);
-	switch (runtime->rate) {
+
+	switch (rate) {
 	case 8000:
 		regval[0] |= (RT5509_SRMODE_8K << RT5509_SRMODE_SHFT);
 		pll_divider *= 6;
@@ -1841,7 +1836,7 @@ static int rt5509_aif_prepare(struct snd_pcm_substream *substream,
 		break;
 	default:
 		ret = -EINVAL;
-		goto out_prepare;
+		goto out_hw_params;
 	}
 	if (chip->tdm_mode)
 		pll_divider >>= 1;
@@ -1849,24 +1844,30 @@ static int rt5509_aif_prepare(struct snd_pcm_substream *substream,
 			RT5509_BCKMODE_MASK | RT5509_SRMODE_MASK, regval[0]);
 	if (ret < 0) {
 		dev_err(dai->dev, "configure bck and sr fail\n");
-		goto out_prepare;
+		goto out_hw_params;
 	}
 	ret = snd_soc_update_bits(dai->codec, RT5509_REG_AUDFMT,
 			RT5509_AUDBIT_MASK, regval[1]);
 	if (ret < 0) {
 		dev_err(dai->dev, "configure audbit fail\n");
-		goto out_prepare;
+		goto out_hw_params;
 	}
 	ret = snd_soc_write(dai->codec, RT5509_REG_PLLDIVISOR, pll_divider);
 	if (ret < 0) {
 		dev_err(dai->dev, "configure pll divider fail\n");
-		goto out_prepare;
+		goto out_hw_params;
 	}
 	ret = snd_soc_write(dai->codec, RT5509_REG_DMGFLAG, word_len);
 	if (ret < 0)
 		dev_err(dai->dev, "configure word len fail\n");
-out_prepare:
+out_hw_params:
 	return ret;
+}
+
+static int rt5509_aif_prepare(struct snd_pcm_substream *substream,
+	struct snd_soc_dai *dai)
+{
+	return 0;
 }
 
 static int rt5509_aif_startup(struct snd_pcm_substream *substream,
