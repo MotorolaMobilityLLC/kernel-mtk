@@ -1500,11 +1500,18 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_4CELL_DATA:
 	{
 #define PDAF_DATA_SIZE 4096
-
 		char *pPdaf_data = NULL;
-
-		unsigned long long *pFeaturePara_64=(unsigned long long *) pFeaturePara;
+		unsigned long long *pFeaturePara_64 = (unsigned long long *) pFeaturePara;
 		void *usr_ptr = (void *)(uintptr_t)(*(pFeaturePara_64 + 1));
+		kal_uint32 buf_sz = (kal_uint32) (*(pFeaturePara_64 + 2));
+
+		/* buffer size exam */
+		if (buf_sz > PDAF_DATA_SIZE) {
+			kfree(pFeaturePara);
+			PK_PR_ERR(" buffer size (%u) can't larger than %d bytes\n",
+				  buf_sz, PDAF_DATA_SIZE);
+			return -EINVAL;
+		}
 
 		pPdaf_data = kmalloc(sizeof(char) * PDAF_DATA_SIZE, GFP_KERNEL);
 		if (pPdaf_data == NULL) {
@@ -1514,24 +1521,22 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 		memset(pPdaf_data, 0xff, sizeof(char) * PDAF_DATA_SIZE);
 
-		if (pFeaturePara_64 != NULL) {
-			*(pFeaturePara_64 + 1) = (uintptr_t)pPdaf_data;//*(pFeaturePara_64 + 1) = (uintptr_t)pPdaf_data;
-		}
+		if (pFeaturePara_64 != NULL)
+			*(pFeaturePara_64 + 1) = (uintptr_t)pPdaf_data;
+
 
 		ret = imgsensor_sensor_feature_control(psensor,
-							pFeatureCtrl->FeatureId,
-							(unsigned char *)
-							pFeaturePara,
-							(unsigned int *)
-							&FeatureParaLen);
+								pFeatureCtrl->FeatureId,
+								(unsigned char *)pFeaturePara,
+								(unsigned int *)&FeatureParaLen);
 
-		if (copy_to_user
-		    ((void __user *)usr_ptr, (void *)pPdaf_data,
-		     (kal_uint32) (*(pFeaturePara_64 + 2)))) {
-			PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail \n");
+		if (copy_to_user((void __user *)usr_ptr,
+							(void *)pPdaf_data,
+							buf_sz)) {
+			PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail\n");
 		}
 		kfree(pPdaf_data);
-		*(pFeaturePara_64 + 1) =(uintptr_t) usr_ptr;
+		*(pFeaturePara_64 + 1) = (uintptr_t) usr_ptr;
 	}
 	break;
 
