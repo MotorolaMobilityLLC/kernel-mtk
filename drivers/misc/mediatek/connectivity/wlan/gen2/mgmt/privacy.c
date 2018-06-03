@@ -704,6 +704,26 @@ BOOLEAN secEnabledInAis(IN P_ADAPTER_T prAdapter)
 	return FALSE;
 }				/* secEnabled */
 
+BOOLEAN secWpaEnabledInAis(IN P_ADAPTER_T prAdapter)
+{
+	DEBUGFUNC("secEnabled");
+
+	ASSERT(prAdapter->rWifiVar.rConnSettings.eEncStatus < ENUM_ENCRYPTION3_KEY_ABSENT);
+
+	switch (prAdapter->rWifiVar.rConnSettings.eEncStatus) {
+	case ENUM_ENCRYPTION_DISABLED:
+	case ENUM_ENCRYPTION1_ENABLED:
+		return FALSE;
+	case ENUM_ENCRYPTION2_ENABLED:
+	case ENUM_ENCRYPTION3_ENABLED:
+		return TRUE;
+	default:
+		DBGLOG(RSN, TRACE, "Unknown encryption setting %d\n", prAdapter->rWifiVar.rConnSettings.eEncStatus);
+		break;
+	}
+	return FALSE;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set the privacy bit at mac header for TxM
