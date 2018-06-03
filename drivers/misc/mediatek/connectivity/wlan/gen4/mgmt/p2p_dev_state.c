@@ -107,6 +107,9 @@ p2pDevStateInit_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 	BOOLEAN fgIsTransition = FALSE;
 	P_MSG_P2P_CHNL_REQUEST_T prP2pMsgChnlReq = (P_MSG_P2P_CHNL_REQUEST_T) NULL;
 	P_BSS_INFO_T prBssInfo = (P_BSS_INFO_T) NULL;
+#if CFG_SUPPORT_DBDC
+	CNM_DBDC_CAP_T rDbdcCap;
+#endif /*CFG_SUPPORT_DBDC*/
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prChnlReqInfo != NULL) && (peNextState != NULL));
@@ -125,6 +128,18 @@ p2pDevStateInit_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 
 		ASSERT(prP2pMsgChnlReq);
 
+#if CFG_SUPPORT_DBDC
+		cnmGetDbdcCapability(prAdapter,
+			prBssInfo->ucBssIndex,
+			prP2pMsgChnlReq->rChannelInfo.eBand,
+			prP2pMsgChnlReq->rChannelInfo.ucChannelNum,
+			wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex),
+			&rDbdcCap);
+
+		prBssInfo->eDBDCBand = rDbdcCap.ucDbdcBandIndex;
+		prBssInfo->ucNss = rDbdcCap.ucNss;
+		prBssInfo->ucWmmQueSet = rDbdcCap.ucWmmSetIndex;
+#endif /*CFG_SUPPORT_DBDC*/
 		prChnlReqInfo->u4MaxInterval = prP2pMsgChnlReq->u4Duration;
 		prChnlReqInfo->ucReqChnlNum = prP2pMsgChnlReq->rChannelInfo.ucChannelNum;
 		prChnlReqInfo->eChnlSco = prP2pMsgChnlReq->eChnlSco;

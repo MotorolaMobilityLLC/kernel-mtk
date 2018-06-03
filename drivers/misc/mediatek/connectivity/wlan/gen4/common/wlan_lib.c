@@ -6878,6 +6878,20 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->fgDisRoaming = (UINT_32) wlanCfgGetUint32(prAdapter, "DisRoaming", 0);
 	prWifiVar->fgEnArpFilter = (UINT_32) wlanCfgGetUint32(prAdapter, "EnArpFilter", FEATURE_ENABLED);
 #endif
+
+	/* Driver Flow Control Dequeue Quota. Now is only used by DBDC */
+	prWifiVar->uDeQuePercentEnable =
+		(UINT_8) wlanCfgGetUint32(prAdapter, "DeQuePercentEnable", 1);
+	prWifiVar->u4DeQuePercentVHT80Nss1 =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentVHT80NSS1", QM_DEQUE_PERCENT_VHT80_NSS1);
+	prWifiVar->u4DeQuePercentVHT40Nss1 =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentVHT40NSS1", QM_DEQUE_PERCENT_VHT40_NSS1);
+	prWifiVar->u4DeQuePercentVHT20Nss1 =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentVHT20NSS1", QM_DEQUE_PERCENT_VHT20_NSS1);
+	prWifiVar->u4DeQuePercentHT40Nss1 =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentHT40NSS1", QM_DEQUE_PERCENT_HT40_NSS1);
+	prWifiVar->u4DeQuePercentHT20Nss1 =
+		(UINT_32) wlanCfgGetUint32(prAdapter, "DeQuePercentHT20NSS1", QM_DEQUE_PERCENT_HT20_NSS1);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
