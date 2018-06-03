@@ -36,7 +36,15 @@ enum {
 };
 
 #define C0_OFFSET (0)
+#if defined(CONFIG_MACH_MT6799)
 #define C1_OFFSET (DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE)
+#define color_get_offset(module) ((module == DISP_MODULE_COLOR0) ? C0_OFFSET : C1_OFFSET)
+#define is_color1_module(module) ((module == DISP_MODULE_COLOR1) ? 1 : 0)
+#else
+#define C1_OFFSET (0)
+#define color_get_offset(module) (0)
+#define is_color1_module(module) (0)
+#endif
 
 /* --------------------------------------------------------------------------- */
 #define GAMMA_SIZE 1024

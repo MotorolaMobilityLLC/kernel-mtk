@@ -24,7 +24,7 @@
 #else
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -573,6 +573,9 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
+#if defined(CONFIG_MACH_MT6759)
+	/* pwm ccf api */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 #ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
@@ -598,6 +601,7 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 #endif	/* ENABLE_CLK_MGR */
+#endif
 
 	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
 	if (!ret)
@@ -618,6 +622,9 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 	disp_pwm_backlight_status(id, false);
 
+#if defined(CONFIG_MACH_MT6759)
+	/* pwm ccf api */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 		atomic_set(&g_pwm_backlight[0], 0);
@@ -644,6 +651,7 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 #endif	/* ENABLE_CLK_MGR */
+#endif
 
 	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
 	if (!ret)
@@ -654,8 +662,9 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
+#if defined(CONFIG_MACH_MT6759)
 	ddp_pwm_power_on(module, cmq_handle);
-
+#endif
 	return 0;
 }
 
