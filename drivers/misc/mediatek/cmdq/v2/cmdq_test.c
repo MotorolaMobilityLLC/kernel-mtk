@@ -3662,8 +3662,8 @@ int32_t _testcase_secure_handle(uint32_t secHandle, enum CMDQ_SCENARIO_ENUM scen
 	cmdq_op_write_reg(hReqMDP, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN_MDP, ~0);
 	cmdq_op_write_reg_secure(hReqMDP, CMDQ_TEST_MMSYS_DUMMY_PA, CMDQ_SAM_H_2_MVA,
 		secHandle, 0xf000, 0x100, 0);
-	cmdq_append_command(hReqMDP, CMDQ_CODE_EOC, 0, 1);
-	cmdq_append_command(hReqMDP, CMDQ_CODE_JUMP, 0, 8);
+	cmdq_append_command(hReqMDP, CMDQ_CODE_EOC, 0, 1, 0, 0);
+	cmdq_append_command(hReqMDP, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 	status = cmdq_task_flush(hReqMDP);
 	cmdq_task_destroy(hReqMDP);
