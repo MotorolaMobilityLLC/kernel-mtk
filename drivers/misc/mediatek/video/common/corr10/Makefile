@@ -31,3 +31,7 @@ ccflags-y += \
                                 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
                                 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799"))
+ccflags-y += -DCCORR_TRANSITION
+endif
