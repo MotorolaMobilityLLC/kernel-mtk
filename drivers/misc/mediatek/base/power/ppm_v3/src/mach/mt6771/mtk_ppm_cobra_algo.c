@@ -309,7 +309,7 @@ void ppm_cobra_update_limit(void *user_req)
 			/* give budget to L */
 			while (CORE_LIMIT(L) < get_cluster_max_cpu_core(PPM_CLUSTER_L)) {
 				target_delta_pwr = get_delta_pwr(PPM_CLUSTER_L,
-					ACT_CORE(L)+1, COBRA_OPP_NUM-1);
+					CORE_LIMIT(L)+1, COBRA_OPP_NUM-1);
 				if (delta_power < target_delta_pwr)
 					break;
 
