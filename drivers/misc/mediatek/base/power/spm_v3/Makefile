@@ -27,6 +27,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 endif
 
 ifeq ($(CONFIG_MACH_MT6799), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 #ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 
 #obj-y += mtk_idle.o
@@ -38,7 +39,9 @@ obj-y += mtk_spm.o
 #obj-y += mtk_spm_dpidle_mt6799.o
 obj-y += mtk_spm_fs.o
 obj-y += mtk_spm_internal.o
-#obj-y += mtk_spm_pmic_wrap.o
+ifneq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+obj-y += mtk_spm_pmic_wrap.o
+endif
 obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
 #obj-y += mtk_spm_sodi.o

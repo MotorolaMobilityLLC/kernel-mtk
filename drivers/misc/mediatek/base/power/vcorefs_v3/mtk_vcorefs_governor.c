@@ -27,7 +27,7 @@
 
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_dramc.h>
-/* #include <mtk_ptp.h> */ /* FIXME */
+#include <mtk_eem.h>
 
 __weak int emmc_autok(void)
 {
@@ -192,7 +192,7 @@ int vcorefs_get_curr_ddr(void)
 
 int vcorefs_get_vcore_by_steps(u32 opp)
 {
-#if 0 /* FIXME */
+#if 1
 	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
 #else
 	return 0;
@@ -389,7 +389,7 @@ void vcorefs_init_opp_table(void)
 								opp_ctrl_table[opp].ddr_khz);
 	}
 
-	/* mt_eem_vcorefs_set_volt(); */ /* FIXME */
+	mt_eem_vcorefs_set_volt();
 	mutex_unlock(&governor_mutex);
 }
 
