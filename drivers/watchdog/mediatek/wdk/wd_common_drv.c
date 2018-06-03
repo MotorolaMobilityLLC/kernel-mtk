@@ -709,13 +709,17 @@ static int wk_cpu_callback(struct notifier_block *nfb, unsigned long action, voi
 	switch (action) {
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:
-		/* watchdog_prepare_cpu(hotcpu); */
+		/* Update CPU mask in WDT driver */
 		wk_cpu_update_bit_flag(hotcpu, 1);
-		/* wk_cpu_update_bit_flag(hotcpu, 1); */
-		if (g_kicker_init == 1)
-			kicker_cpu_bind(hotcpu);
 
-		mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
+		/*
+		 * Kick WDT here because this CPU may be blocked awhile between
+		 * PREPARE and ONLINE states. If HWT happens during this period,
+		 * we may be confused by WDT CPU kicking status: it will indicate
+		 * "2 CPUs did not kick WDT". This makes us hard to debug.
+		 */
+		mtk_wdt_restart(WD_TYPE_NORMAL);
+
 #ifdef CONFIG_LOCAL_WDT
 		pr_debug("[WDK]cpu %d plug on kick local wdt\n", hotcpu);
 		/* kick local wdt */
@@ -725,6 +729,21 @@ static int wk_cpu_callback(struct notifier_block *nfb, unsigned long action, voi
 		break;
 	case CPU_ONLINE:
 	case CPU_ONLINE_FROZEN:
+		/*
+		 * Bind WDK thread to this CPU.
+		 * NOTE: Thread binding must be executed after CPU is ready (online).
+		 */
+		if (g_kicker_init == 1)
+			kicker_cpu_bind(hotcpu);
+
+		/*
+		 * DO NOT kick WDT here because we do not expect long execution time
+		 * between PREPARE and ONLINE.
+		 *
+		 * Long execution time between PREPARE and ONLINE may cause HWT after
+		 * CPU is ONLINE, i.e., after thread binding. In this case, HWT is
+		 * required to report this unexpected issue.
+		 */
 		break;
 #ifdef CONFIG_HOTPLUG_CPU
 #ifdef CONFIG_LOCAL_WDT
