@@ -373,10 +373,6 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
 	unsigned long register_address;
 	uint32_t register_value;
-	bool mdpColor = false;
-#ifdef CMDQ_MDP_COLOR
-	mdpColor = true;
-#endif
 
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
@@ -426,8 +422,9 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
 		break;
 	case CMDQ_ENG_MDP_COLOR0:
-		if (true == mdpColor)
-			cmdq_mdp_enable_clock_MDP_COLOR0(enable);
+#ifdef CMDQ_MDP_COLOR
+		cmdq_mdp_enable_clock_MDP_COLOR0(enable);
+#endif
 		break;
 	default:
 		CMDQ_ERR("try to enable unknown mdp clock");
@@ -438,11 +435,6 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 /* Common Clock Framework */
 void cmdq_mdp_init_module_clk(void)
 {
-	bool mdpColor = false;
-#ifdef CMDQ_MDP_COLOR
-	mdpColor = true;
-#endif
-
 	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP_TX",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP_TX);
 	cmdq_dev_get_module_clock_by_name("mmsys_config", "CAM_MDP_RX",
@@ -459,10 +451,11 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_WROT0);
 	cmdq_dev_get_module_clock_by_name("mdp_tdshp0", "MDP_TDSHP",
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
-	if (true == mdpColor) {
-		cmdq_dev_get_module_clock_by_name("mdp_color", "MDP_COLOR",
-						&gCmdqMdpModuleClock.clk_MDP_COLOR);
-	}
+#ifdef CMDQ_MDP_COLOR
+	cmdq_dev_get_module_clock_by_name("disp_color0", "MDP_COLOR",
+					  &gCmdqMdpModuleClock.clk_MDP_COLOR);
+#endif
+
 }
 /* MDP engine dump */
 void cmdq_mdp_dump_rsz(const unsigned long base, const char *label)
@@ -529,11 +522,6 @@ void cmdq_mdp_dump_tdshp(const unsigned long base, const char *label)
 }
 int32_t cmdqMdpClockOn(uint64_t engineFlag)
 {
-	bool mdpColor = false;
-#ifdef CMDQ_MDP_COLOR
-	mdpColor = true;
-#endif
-
 	CMDQ_MSG("Enable MDP(0x%llx) clock begin\n", engineFlag);
 #ifdef CMDQ_PWR_AWARE
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_CAMIN);
@@ -541,8 +529,9 @@ int32_t cmdqMdpClockOn(uint64_t engineFlag)
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_RSZ0);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_RSZ1);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_TDSHP0);
-	if (true == mdpColor)
-		cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_COLOR0);
+#ifdef CMDQ_MDP_COLOR
+	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_COLOR0);
+#endif
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_WROT0);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_WDMA);
 #else
@@ -569,11 +558,6 @@ struct MODULE_BASE {
 
 int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 {
-	bool mdpColor = false;
-#ifdef CMDQ_MDP_COLOR
-	mdpColor = true;
-#endif
-
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0))
 		cmdq_mdp_dump_rdma(MDP_RDMA0_BASE, "RDMA0");
 
@@ -585,11 +569,18 @@ int32_t cmdqMdpDumpInfo(uint64_t engineFlag, int logLevel)
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_TDSHP0))
 		cmdq_mdp_get_func()->mdpDumpTdshp(MDP_TDSHP_BASE, "TDSHP");
-
+#ifdef CMDQ_MDP_COLOR
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
-		CMDQ_ERR("COLOR : %s", (mdpColor ? "MDP" : "DISP"));
+		CMDQ_ERR("COLOR : %s", "MDP");
 		cmdq_mdp_dump_color(MDP_COLOR_BASE, "COLOR0");
 	}
+#else
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
+		CMDQ_ERR("COLOR : %s", "DISP");
+		cmdq_mdp_dump_color(MDP_COLOR_BASE, "COLOR0");
+	}
+#endif
+
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WROT0))
 		cmdq_mdp_dump_rot(MDP_WROT0_BASE, "WROT0");
 
@@ -757,11 +748,6 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 int32_t cmdqMdpClockOff(uint64_t engineFlag)
 {
 #ifdef CMDQ_PWR_AWARE
-	bool mdpColor = false;
-#ifdef CMDQ_MDP_COLOR
-	mdpColor = true;
-#endif
-
 	CMDQ_MSG("Disable MDP(0x%llx) clock begin\n", engineFlag);
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WDMA)) {
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_WDMA,
@@ -820,14 +806,14 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_CAMIN);
 		}
 	}
-
-	if ((engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) && (true == mdpColor)) {
+#ifdef CMDQ_MDP_COLOR
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_COLOR0)) {
 		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_COLOR0)) {
 			CMDQ_MSG("Disable MDP_COLOR0 clock\n");
 			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_COLOR0);
 		}
 	}
-
+#endif
 	CMDQ_MSG("Disable MDP(0x%llx) clock end\n", engineFlag);
 #endif				/* #ifdef CMDQ_PWR_AWARE */
 
