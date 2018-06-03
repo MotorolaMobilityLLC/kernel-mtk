@@ -17,6 +17,6 @@
 #define IOCTL_WRITE_FC _IOW('g', 11, int)
 #define IOCTL_WRITE_IV _IOW('g', 12, int)
 #define IOCTL_WRITE_NR _IOW('g', 13, int)
-#define IOCTL_WRITE_QB _IOW('g', 14, int)
+#define IOCTL_WRITE_SB _IOW('g', 14, int)
 
 #endif

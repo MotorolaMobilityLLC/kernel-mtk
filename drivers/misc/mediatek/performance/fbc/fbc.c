@@ -29,7 +29,7 @@ static int fbc_game, fbc_trace, has_frame;
 static long frame_budget, twanted, twanted_ms, avg_frame_time, queue_time;
 static int ema, boost_method, super_boost, boost_flag;
 static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost1, chase_boost2;
-static int first_frame, first_vsync, frame_done, chase, act_switched;
+static int first_frame, swap_buffers_begin, first_vsync, frame_done, chase, act_switched;
 static long frame_info[MAX_THREAD][2]; /*0:current id, 1: frametime, if no render -1*/
 static int his_bv[2];
 static int vip_group[10];
@@ -251,28 +251,20 @@ static void notify_game(int game)
 
 static void notify_twanted_timeout_eas(void)
 {
-	int boost_real;
-
 	mutex_lock(&notify_lock);
 
-	if (!is_ux_fbc_active() || frame_done) {
+	if (!is_ux_fbc_active() || frame_done || swap_buffers_begin) {
 		mutex_unlock(&notify_lock);
 		return;
 	}
 
-	boost_real = linear_real_boost(super_boost);
-	if (boost_real != 0)
-		chase_boost1 = (100 + boost_real) * (100 + boost_value) / 100 - 100;
-
-	if (chase_boost1 > 100)
-		chase_boost1 = 100;
+	chase_boost1 = super_boost;
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, chase_boost1 + 2000);
 	fbc_tracer(-3, "boost_value", chase_boost1);
 
 	boost_flag = 1;
 	chase = 1;
 	fbc_tracer(-3, "chase", chase);
-	fbc_tracer(-3, "boost_linear", super_boost);
 
 	mutex_unlock(&notify_lock);
 }
@@ -552,13 +544,15 @@ void notify_frame_complete_eas(long frame_time)
 
 void notify_intended_vsync_eas(void)
 {
-	int i, boost_real;
+	int i;
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	has_frame++;
+	swap_buffers_begin = 0;
 	fbc_tracer(-3, "has_frame", has_frame);
+	fbc_tracer(-3, "swap_buffers_begin", swap_buffers_begin);
 
 	for (i = 0; i < 10 && vip_group[i] != -1 && vip_group[i] != current->pid; i++)
 		;
@@ -618,13 +612,8 @@ void notify_intended_vsync_eas(void)
 	} else {
 		chase = 2;
 		fbc_tracer(-3, "chase", chase);
-		boost_real = linear_real_boost(super_boost);
-		fbc_tracer(-3, "boost_linear", super_boost);
-		if (boost_real != 0)
-			chase_boost2 = (100 + boost_real) * (100 + chase_boost1) / 100 - 100;
 
-		if (chase_boost2 > 100)
-			chase_boost2 = 100;
+		chase_boost2 = chase_boost1;
 		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, chase_boost2 + 2000);
 		fbc_tracer(-3, "boost_value", chase_boost2);
 	}
@@ -804,10 +793,10 @@ long device_ioctl(struct file *filp,
 		break;
 
 	/*receive queue_time signal*/
-	case IOCTL_WRITE_QB:
+	case IOCTL_WRITE_SB:
 	if (!is_ux_fbc_active())
 		goto ret_ioctl;
-		queue_time = arg;
+		swap_buffers_begin = 1;
 		break;
 
 	default:
