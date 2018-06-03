@@ -246,6 +246,33 @@ u32 spm_get_sleep_wakesrc(void)
 			SPM_PWR_CTRL_SUSPEND, PW_WAKE_SRC, 0);
 }
 
+static int spm_is_lp_flavor(void)
+{
+	int r = 0;
+
+#if defined(CONFIG_ARM64)
+	int len;
+
+	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 4,
+		"_lp", 3) == 0)
+		r = 1;
+
+	pr_info("flavor check: %s, is_lp: %d\n",
+		CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
+#endif
+	return r;
+}
+
+bool spm_is_enable_sleep(void)
+{
+	if (spm_is_lp_flavor())
+		return true;
+	else
+		return false;
+}
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 /* #include <cust_pmic.h> */
