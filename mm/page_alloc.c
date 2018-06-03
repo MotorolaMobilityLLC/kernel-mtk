@@ -70,6 +70,10 @@
 #include <asm/div64.h>
 #include "internal.h"
 
+#if defined(CONFIG_DMAUSER_PAGES)
+#include <mt-plat/aee.h>
+#endif
+
 #ifdef CONFIG_MTK_MEMCFG
 #include <mt-plat/mtk_memcfg_reserve_info.h>
 #endif
@@ -3801,6 +3805,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 {
 	struct page *page;
 	unsigned int alloc_flags = ALLOC_WMARK_LOW;
+#ifdef CONFIG_DMAUSER_PAGES
+	static DEFINE_RATELIMIT_STATE(dmawarn, (180 * HZ), 1);
+#endif
 	gfp_t alloc_mask = gfp_mask; /* The gfp_t that was actually used for allocation */
 	struct alloc_context ac = {
 		.high_zoneidx = gfp_zone(gfp_mask),
@@ -3809,7 +3816,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 		.migratetype = gfpflags_to_migratetype(gfp_mask),
 	};
 
-#ifdef CONFIG_ZONE_MOVABLE_CMAi
+#ifdef CONFIG_ZONE_MOVABLE_CMA
 	/* No fast allocation gets into ZONE_MOVABLE */
 	if (ac.high_zoneidx == ZONE_MOVABLE)
 		ac.high_zoneidx -= 1;
@@ -3901,6 +3908,17 @@ out:
 
 	trace_mm_page_alloc(page, order, alloc_mask, ac.migratetype);
 
+#if defined(CONFIG_DMAUSER_PAGES)
+	/*
+	 * make sure DMA pages cannot be allocated to non-GFP_DMA users
+	 */
+	if (page && !(gfp_mask & GFP_DMA) &&
+		(page_zonenum(page) == OPT_ZONE_DMA)) {
+		if (__ratelimit(&dmawarn))
+			aee_kernel_warning("large memory",
+					"out of high-end memory");
+	}
+#endif
 	return page;
 }
 EXPORT_SYMBOL(__alloc_pages_nodemask);

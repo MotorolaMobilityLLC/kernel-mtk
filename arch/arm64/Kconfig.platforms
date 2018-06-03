@@ -145,6 +145,8 @@ config MACH_MT6765
 	select MTK_TIMER_V1
 	select MTK_TIMER_TIMESYNC
 	select MTK_SYSTRACKER_V2
+	select MTK_BOUNCING_CHECK
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
