@@ -438,7 +438,9 @@ inline void set_state_timeout(struct typec_hba *hba,
 /* Return flag for pd state is connected */
 int pd_is_connected(struct typec_hba *hba)
 {
-	if (hba->task_state == PD_STATE_DISABLED)
+	if ((hba->task_state == PD_STATE_DISABLED) ||
+		(hba->task_state == PD_STATE_SNK_UNATTACH) ||
+		(hba->task_state == PD_STATE_SRC_UNATTACH))
 		return 0;
 
 	return DUAL_ROLE_IF_ELSE(hba,
@@ -464,7 +466,6 @@ void set_state(struct typec_hba *hba, enum pd_states next_state)
 int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 		       uint16_t header, const uint32_t *data)
 {
-	int i;
 	int ret = -1;
 	uint8_t cnt;
 	uint16_t pd_is0, pd_is1;
@@ -490,8 +491,14 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	typec_writew(hba, header, PD_TX_HEADER);
 
 	/*prepare data*/
-	for (i = 0; i < cnt; i++)
-		typec_writedw(hba, data[i], (PD_TX_DATA_OBJECT0_0+i*4));
+	if (cnt == 1)
+		typec_writedw(hba, *data, PD_TX_DATA_OBJECT0_0);
+	else {
+		int i;
+
+		for (i = 0; i < cnt; i++)
+			typec_writedw(hba, data[i], (PD_TX_DATA_OBJECT0_0+i*4));
+	}
 
 	hba->tx_event = false;
 
@@ -760,8 +767,11 @@ void handle_cbl_info(struct typec_hba *hba, int cnt, uint32_t *payload)
 		cbl_inf = &hba->sop_p;
 	}
 
-	if ((PD_VDO_SVDM(payload[0]) == 1) && (PD_VDO_VID(payload[0]) == USB_SID_PD) && cnt == 5) {
+	if ((cbl_inf != NULL) && (PD_VDO_SVDM(payload[0]) == 1) &&
+			(PD_VDO_VID(payload[0]) == USB_SID_PD) && cnt == 5) {
+
 		memcpy(cbl_inf, &payload[1], sizeof(struct cable_info));
+
 		dev_err(hba->dev, "0x%08x 0x%08x 0x%08x 0x%08x\n", cbl_inf->id_header, cbl_inf->cer_stat_vdo,
 			cbl_inf->product_vdo, cbl_inf->cable_vdo);
 	} else {
@@ -1579,7 +1589,7 @@ static void pd_vdm_send_state_machine(struct typec_hba *hba)
 	case VDM_STATE_READY:
 		/* Only transmit VDM if connected. */
 		if (!pd_is_connected(hba)) {
-			hba->vdm_state = VDM_STATE_ERR_BUSY;
+			hba->vdm_state = VDM_STATE_DONE;
 			break;
 		}
 

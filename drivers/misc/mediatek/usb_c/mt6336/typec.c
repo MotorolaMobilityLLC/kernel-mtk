@@ -2294,11 +2294,12 @@ EXPORT_SYMBOL_GPL(typec_init);
  */
 void typec_remove(struct typec_hba *hba)
 {
-	typec_cdev_remove(hba);
-	kfree(hba);
-
 	/* disable interrupts */
 	typec_int_disable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+
+	typec_cdev_remove(hba);
+
+	kfree(hba);
 }
 EXPORT_SYMBOL_GPL(typec_remove);
 
