@@ -140,9 +140,6 @@ void connectivity_export_mt6306_set_gpio_dir(unsigned long pin, unsigned long di
 #define KERNEL_spm_resource_req
 #endif
 
-#define KERNEL_set_logtoomuch_enable  connectivity_export_set_logtoomuch_enable
-#define KERNEL_get_logtoomuch_enable  connectivity_export_get_logtoomuch_enable
-
 extern void tracing_record_cmdline(struct task_struct *tsk);
 extern void show_stack(struct task_struct *tsk, unsigned long *sp);
 #ifdef CPU_BOOST
@@ -166,9 +163,6 @@ void connectivity_export_mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user u
 							int min_freq, int max_freq);
 bool connectivity_export_spm_resource_req(unsigned int user, unsigned int req_mask);
 #endif
-
-void connectivity_export_set_logtoomuch_enable(int value);
-int connectivity_export_get_logtoomuch_enable(void);
 
 /*********************************************
  * copy from
