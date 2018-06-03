@@ -57,10 +57,10 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x08040A02,	/* INFRA0 */
+		0x08040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000C5,	/* INFRA2 */
-		0xFFFFFFFF,	/* MMSYS0 */
+		0xFFFFFFFB,	/* MMSYS0 */
 		0x000003FF,	/* MMSYS1 */
 		0x00000312,	/* IMAGE,  use SPM MTCMOS off as condition */
 		0x00000312,	/* MFG,    use SPM MTCMOS off as condition */
@@ -68,10 +68,10 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x0A040A02,	/* INFRA0 */
+		0x0A040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000D1,	/* INFRA2 */
-		0xFFFFFFFF,	/* MMSYS0 */
+		0xFFFFFFFB,	/* MMSYS0 */
 		0x000003FF,	/* MMSYS1 */
 		0x00000312,	/* IMAGE,  use SPM MTCMOS off as condition */
 		0x00000312,	/* MFG,    use SPM MTCMOS off as condition */
@@ -79,7 +79,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
-		0x08040A02,	/* INFRA0 */
+		0x08040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000C1,	/* INFRA2 */
 		0x000FFFE0,	/* MMSYS0 */
