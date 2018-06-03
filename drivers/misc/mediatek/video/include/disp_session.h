@@ -397,6 +397,7 @@ struct disp_caps_info {
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;
+	int lcm_degree;
 	/* resizer input resolution list
 	 * format:
 	 *   sequence from big resolution to small

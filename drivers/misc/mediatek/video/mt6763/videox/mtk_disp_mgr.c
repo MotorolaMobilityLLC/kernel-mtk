@@ -972,7 +972,7 @@ int _ioctl_get_display_caps(unsigned long arg)
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&caps_info, argp, sizeof(caps_info))) {
-		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
 	memset(&caps_info, 0, sizeof(caps_info));
@@ -997,6 +997,7 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	caps_info.is_output_rotated = 1;
+	caps_info.lcm_degree = 180;
 #endif
 
 	if (disp_partial_is_support())
