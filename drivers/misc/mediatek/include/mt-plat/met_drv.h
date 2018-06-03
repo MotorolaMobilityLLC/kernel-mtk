@@ -156,7 +156,7 @@ struct metdevice {
 	void (*suspend)(void);
 	void (*resume)(void);
 
-	volatile unsigned long long prev_stamp;
+	unsigned long long prev_stamp;
 	spinlock_t my_lock;
 	void *reversed1;
 };
