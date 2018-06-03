@@ -20,6 +20,7 @@
 
 #include <mtk_sleep_internal.h>
 #include <mtk_spm_suspend_internal.h>
+#include <mtk_idle_sysfs.h>
 #include <mtk_power_gs_api.h>
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -33,6 +34,7 @@ static DEFINE_SPINLOCK(slp_lock);
 
 static unsigned int slp_wake_reason = WR_NONE;
 
+static bool slp_suspend_ops_valid_on;
 static bool slp_ck26m_on;
 
 bool slp_dump_gpio;
@@ -74,11 +76,10 @@ static u32 slp_spm_flags1;
 static u32 slp_spm_deepidle_flags1;
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-#if defined(CONFIG_MACH_MT6765)
-	return state == false;
-#else
-	return state == PM_SUSPEND_MEM;
-#endif
+	if (slp_suspend_ops_valid_on)
+		return state == PM_SUSPEND_MEM;
+	else
+		return 0;
 }
 
 static int slp_suspend_ops_begin(suspend_state_t state)
@@ -347,8 +348,74 @@ void slp_set_infra_on(bool infra_on)
 		infra_on, slp_spm_flags, slp_spm_deepidle_flags);
 }
 
+/*
+ * debugfs
+ */
+static ssize_t suspend_state_read(char *ToUserBuf, size_t sz, void *priv)
+{
+	char *p = ToUserBuf;
+
+	if (!ToUserBuf)
+		return -EINVAL;
+	#undef log
+	#define log(fmt, args...) ({\
+		p += scnprintf(p, sz - strlen(ToUserBuf), fmt, ##args); p; })
+
+	log("*********** suspend state ************\n");
+	log("suspend valid status = %d\n",
+		       slp_suspend_ops_valid_on);
+	log("*********** suspend command ************\n");
+	log("echo suspend 1/0 > /sys/kernel/debug/cpuidle/slp/suspend_state\n");
+
+	return p - ToUserBuf;
+}
+
+static ssize_t suspend_state_write(char *FromUserBuf, size_t sz, void *priv)
+{
+	char cmd[128];
+	int param;
+
+	if (!FromUserBuf)
+		return -EINVAL;
+
+	if (sscanf(FromUserBuf, "%127s %d", cmd, &param) == 2) {
+		if (!strcmp(cmd, "suspend")) {
+			/* update suspend valid status */
+			slp_suspend_ops_valid_on = param;
+
+			/* suspend reinit ops */
+			suspend_set_ops(&slp_suspend_ops);
+		}
+		return sz;
+	}
+
+	return -EINVAL;
+}
+
+static const struct mtk_idle_sysfs_op suspend_state_fops = {
+	.fs_read = suspend_state_read,
+	.fs_write = suspend_state_write,
+};
+
 void slp_module_init(void)
 {
+	struct mtk_idle_sysfs_handle pParent2ND;
+	struct mtk_idle_sysfs_handle *pParent = NULL;
+
+#if defined(CONFIG_MACH_MT6765)
+	slp_suspend_ops_valid_on = false;
+#else
+	slp_suspend_ops_valid_on = true;
+#endif
+
+	mtk_idle_sysfs_entry_create();
+	if (mtk_idle_sysfs_entry_root_get(&pParent) == 0) {
+		mtk_idle_sysfs_entry_func_create("slp", 0444
+			, pParent, &pParent2ND);
+		mtk_idle_sysfs_entry_func_node_add("suspend_state", 0444
+			, &suspend_state_fops, &pParent2ND, NULL);
+	}
+
 	spm_output_sleep_option();
 	pr_info("[SLP] SLEEP_DPIDLE_EN:%d, REPLACE_DEF_WAKESRC:%d",
 		SLP_SLEEP_DPIDLE_EN, SLP_REPLACE_DEF_WAKESRC);
