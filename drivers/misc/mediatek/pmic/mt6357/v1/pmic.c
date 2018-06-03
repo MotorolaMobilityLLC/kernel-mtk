@@ -77,6 +77,16 @@ void vmd1_pmic_setting_on(void)
 			/* VCORE 1.13125V: 0x62 */
 			vcore_vosel = 0x62;
 		}
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		    "mediatek/k39v1_bsp_ctighten", 27) == 0) {
+		if ((vcore_segment & 0x3) == 0x1 ||
+		    (vcore_segment & 0x3) == 0x2) {
+			/* VCORE 1.0875V: 0x5B */
+			vcore_vosel = 0x5B;
+		} else {
+			/* VCORE 1.13125V: 0x62 */
+			vcore_vosel = 0x62;
+		}
 	}
 #endif
 
