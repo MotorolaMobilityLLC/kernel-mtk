@@ -1402,6 +1402,23 @@ unsigned int dprec_error_log_len;
 unsigned int dprec_error_log_buflen = DPREC_ERROR_LOG_BUFFER_LENGTH;
 unsigned int dprec_error_log_id;
 
+#ifdef CONFIG_TRACING
+unsigned long disp_get_tracing_mark(void)
+{
+	static unsigned long __read_mostly tracing_mark_write_addr;
+
+	if (unlikely(tracing_mark_write_addr == 0))
+		tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+
+	return tracing_mark_write_addr;
+
+}
+#else
+unsigned long disp_get_tracing_mark(void)
+{
+	return 0UL;
+}
+#endif
 
 int dprec_init(void)
 {
