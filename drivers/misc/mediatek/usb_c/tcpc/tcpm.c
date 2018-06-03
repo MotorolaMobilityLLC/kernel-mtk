@@ -1926,10 +1926,8 @@ static int __tcpm_put_tcp_dpm_event_bk(
 #endif	/* CONFIG_USB_PD_TCPM_CB_2ND */
 
 	ret = tcpm_put_tcp_dpm_event(tcpc, event);
-	if (ret != TCPM_SUCCESS) {
-		mutex_unlock(&pd_port->tcpm_bk_lock);
+	if (ret != TCPM_SUCCESS)
 		return ret;
-	}
 
 	return tcpm_dpm_wait_bk_event(pd_port, tout_ms);
 }
