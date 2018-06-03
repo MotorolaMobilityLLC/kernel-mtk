@@ -38,7 +38,7 @@ static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 	},
 	{
 		.num = PMIC_MEM_ID,
-		.size = 0xC000, /* 3K */
+		.size = 0xC00,  /* 3K */
 	},
 	{
 		.num = UPD_MEM_ID,
@@ -48,7 +48,7 @@ static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 		.num = QOS_MEM_ID,
 		.size = 0x1000, /* 4K */
 	},
-    /* TO align 64K, total is 1M+64K. The remaining size = 0x1100,   */
+    /* TO align 64K, total is 1M+64K. The remaining size = 0xC500,   */
 };
 #endif
 #endif
