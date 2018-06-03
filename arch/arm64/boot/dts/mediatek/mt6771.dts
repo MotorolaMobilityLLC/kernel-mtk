@@ -1,7 +1,7 @@
 /*
  * Mediatek's mt6771 SoC device tree source
  *
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
+/dts-v1/;
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6771-msdc.h>
@@ -25,7 +25,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
 	};
 
@@ -198,15 +198,7 @@
 		reg = <0 0x0c530a80 0 0x50>;
 	};
 
-	chipid@08000000 {
-		compatible = "mediatek,chipid";
-		reg = <0 0x08000000 0 0x0004>,
-		      <0 0x08000004 0 0x0004>,
-		      <0 0x08000008 0 0x0004>,
-		      <0 0x0800000c 0 0x0004>;
-	};
-
-	timer {
+	timer: timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
 		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
@@ -588,7 +580,7 @@
 	scp_mad@105c1000 {
 		compatible = "mediatek,scp_mad";
 		reg = <0 0x105c1000 0 0x1000>;
-	}
+	};
 
 	scp_intc@105c2000 {
 		compatible = "mediatek,scp_intc";
