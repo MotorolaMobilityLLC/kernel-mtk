@@ -581,9 +581,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		if (res < 0)
 			STEP_C_PR_ERR("step detector enable batch err %d\n", res);
 	} else if (handle == ID_SIGNIFICANT_MOTION) {
-		if (cxt->step_c_ctl.is_smd_support_batch == true)
-			maxBatchReportLatencyNs = 0;
-		else
+		if (!cxt->step_c_ctl.is_smd_support_batch)
 			maxBatchReportLatencyNs = 0;
 		if (cxt->step_c_ctl.smd_batch != NULL)
 			res = cxt->step_c_ctl.smd_batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
