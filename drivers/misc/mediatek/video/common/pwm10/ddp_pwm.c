@@ -528,8 +528,11 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		if (old_pwm == 0 || level_1024 == 0 || abs_diff > 64) {
 			/* To be printed in UART log */
 			disp_pwm_log(level_1024, MSG_LOG);
-			PWM_NOTICE("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d", id, level_1024,
-				   old_pwm);
+			if (old_pwm != level_1024) {
+				/* Print information if backlight is changed */
+				PWM_NOTICE("disp_pwm_set_backlight_cmdq(id = 0x%x, level_1024 = %d), old = %d",
+					id, level_1024, old_pwm);
+			}
 		} else {
 			disp_pwm_log(level_1024, MSG_LOG);
 		}
