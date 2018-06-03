@@ -54,6 +54,7 @@ typedef enum {
 	CMD_M4U_UNMAP_NONSEC_BUFFER,
 
 	CMD_M4U_GET_RESERVED_MEMORY,
+	CMD_M4U_NUM,
 } m4u_cmd_t;
 
 
@@ -89,15 +90,16 @@ typedef struct {
 	int port;
 	unsigned int mva;
 	unsigned int size;
-	unsigned int pa;
+	unsigned long long pa;
 } m4u_buf_param_t;
 
 typedef struct {
 	unsigned long long nonsec_pt_pa;
 	int l2_en;
 	unsigned int sec_pt_pa;
-	unsigned int sec_pa_start;
+	unsigned long long sec_pa_start;
 	unsigned int sec_pa_size;
+	int reinit;
 } m4u_init_param_t;
 
 typedef struct {
