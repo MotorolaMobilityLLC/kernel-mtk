@@ -2876,10 +2876,10 @@ static void md_cd_smem_sub_region_init(struct ccci_modem *md)
 	addr[0] = 0x44444444; /* Guard pattern 1 header */
 	addr[1] = 0x44444444; /* Guard pattern 2 header */
 #ifdef DISABLE_PBM_FEATURE
-	for (i = 2; i < (10+2); i++)
+	for (i = 2; i < (CCCI_SMEM_DBM_SIZE/4+2); i++)
 		addr[i] = 0xFFFFFFFF;
 #else
-	for (i = 2; i < (10+2); i++)
+	for (i = 2; i < (CCCI_SMEM_DBM_SIZE/4+2); i++)
 		addr[i] = 0x00000000;
 #endif
 	addr[i++] = 0x44444444; /* Guard pattern 1 tail */
