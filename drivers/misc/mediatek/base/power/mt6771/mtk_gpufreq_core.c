@@ -694,6 +694,7 @@ unsigned int mt_gpufreq_get_thermal_limit_freq(void)
 			__func__, g_opp_table[g_max_limited_idx].gpufreq_khz / 1000);
 	return g_opp_table[g_max_limited_idx].gpufreq_khz;
 }
+EXPORT_SYMBOL(mt_gpufreq_get_thermal_limit_freq);
 
 /*
  * API : get current OPP table conditional index
@@ -712,6 +713,7 @@ unsigned int mt_gpufreq_get_cur_freq(void)
 	gpufreq_pr_debug("@%s: current frequency is %d MHz\n", __func__, g_cur_opp_freq / 1000);
 	return g_cur_opp_freq;
 }
+EXPORT_SYMBOL(mt_gpufreq_get_cur_freq);
 
 /*
  * API : get current voltage
@@ -720,6 +722,7 @@ unsigned int mt_gpufreq_get_cur_volt(void)
 {
 	return __mt_gpufreq_get_cur_volt();
 }
+EXPORT_SYMBOL(mt_gpufreq_get_cur_volt);
 
 /* API : get Thermal/Power/PBM limited OPP table index */
 int mt_gpufreq_get_cur_ceiling_idx(void)
