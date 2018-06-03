@@ -465,27 +465,27 @@ TRACE_EVENT(sched_process_fork,
  */
 TRACE_EVENT(sched_hmp_migrate,
 
-	TP_PROTO(struct task_struct *tsk, int dest, int force),
+	TP_PROTO(struct task_struct *tsk, int dest, int type),
 
-	TP_ARGS(tsk, dest, force),
+	TP_ARGS(tsk, dest, type),
 
 	TP_STRUCT__entry(
 		__array(char, comm, TASK_COMM_LEN)
 		__field(pid_t, pid)
 		__field(int,  dest)
-		__field(int,  force)
+		__field(int,  type)
 		),
 
 	TP_fast_assign(
 		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
 		__entry->pid   = tsk->pid;
 		__entry->dest  = dest;
-		__entry->force = force;
+		__entry->type = type;
 		),
 
-	TP_printk("comm=%s pid=%d dest=%d force=%d",
+	TP_printk("comm=%s pid=%d dest=%d type=%d",
 		__entry->comm, __entry->pid,
-		__entry->dest, __entry->force)
+		__entry->dest, __entry->type)
 );
 /*
  * Tracepoint for showing the result of task runqueue selection

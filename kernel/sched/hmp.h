@@ -73,6 +73,8 @@ hmp_update_load_avg(unsigned int decayed, unsigned long weight,
 		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
 		u32 contrib, u64 scaled_delta, struct cfs_rq *cfs_rq);
 
+static inline void hmp_next_up_delay(struct sched_entity *se, int cpu);
+
 #else
 #define se_load(se) 0
 
