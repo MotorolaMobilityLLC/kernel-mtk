@@ -1275,7 +1275,7 @@ static int __init mtk_pcie_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	pcie->dev = &pdev->dev;
-#if 0
+
 	pcie->clk = devm_clk_get(&pdev->dev, "pcie-mac");
 	if (IS_ERR(pcie->clk)) {
 		dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
@@ -1285,7 +1285,7 @@ static int __init mtk_pcie_probe(struct platform_device *pdev)
 	err = clk_prepare_enable(pcie->clk);
 	if (err)
 		return err;
-#endif
+
 	err = mtk_pcie_phy_init(pcie);
 	if (err)
 		return err;
