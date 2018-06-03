@@ -115,12 +115,6 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 		CCCI_ERROR_LOG(md_id, SYS, "exec_sys_cb fail: func id(0x%x) not register!\n", cb_id);
 }
 
-unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
-{
-	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
-	return 0;
-}
-
 static int sys_msg_send_battery(struct port_t *port)
 {
 	unsigned int data;

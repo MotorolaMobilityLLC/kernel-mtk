@@ -70,11 +70,18 @@ static int get_md_gpio_val(unsigned int num)
 
 static int get_md_adc_val(unsigned int num)
 {
+#ifdef CONFIG_MTK_AUXADC
 	int data[4] = { 0, 0, 0, 0 };
+#endif
 	int val = 0;
 	int ret = 0;
 
+#ifdef CONFIG_MTK_AUXADC
 	ret = IMM_GetOneChannelValue(num, data, &val);
+#else
+	CCCI_ERROR_LOG(0, RPC, "CONFIG_MTK_AUXADC not ready\n");
+	ret = -1;
+#endif
 	if (ret == 0)
 		return val;
 	else
@@ -88,7 +95,12 @@ static int get_td_eint_info(char *eint_name, unsigned int len)
 
 static int get_md_adc_info(char *adc_name, unsigned int len)
 {
+#ifdef CONFIG_MTK_AUXADC
 	return IMM_get_adc_channel_num(adc_name, len);
+#else
+	CCCI_ERROR_LOG(0, RPC, "CONFIG_MTK_AUXADC not ready\n");
+	return -1;
+#endif
 }
 
 static int get_md_gpio_info(char *gpio_name, unsigned int len)
