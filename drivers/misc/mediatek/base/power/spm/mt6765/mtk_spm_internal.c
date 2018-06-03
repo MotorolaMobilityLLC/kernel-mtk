@@ -162,7 +162,7 @@ unsigned int __spm_output_wake_reason(
 {
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
-	char log_buf[1024] = { 0 };
+	char log_buf[768] = { 0 };
 	char *local_ptr;
 	int log_size = 0;
 	unsigned int wr = WR_UNKNOWN;
@@ -236,7 +236,7 @@ unsigned int __spm_output_wake_reason(
 		spm_read(SPM_SW_RSV_2),
 		spm_read(SPM_SRC_REQ));
 
-	WARN_ON(log_size >= 1024);
+	WARN_ON(log_size >= 768);
 
 	if (!suspend)
 		pr_info("[SPM] %s", log_buf);
