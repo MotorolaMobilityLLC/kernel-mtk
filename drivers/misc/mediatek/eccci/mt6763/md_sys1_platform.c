@@ -876,6 +876,7 @@ int md_cd_let_md_go(struct ccci_modem *md)
 int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
+	unsigned int reg_value;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
@@ -887,6 +888,11 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	case MD_SYS1:
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
+		reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
+		reg_value &= ~(0xFF);
+		ccci_write32(infra_ao_base, INFRA_AO_MD_SRCCLKENA, reg_value);
+		CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_off: set md1_srcclkena=0x%x\n",
+			     ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
