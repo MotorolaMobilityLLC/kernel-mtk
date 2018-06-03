@@ -886,7 +886,7 @@ int m4u_map_sgtable(m4u_domain_t *m4u_domain, unsigned int domain_idx, unsigned 
 		if (len == SZ_4K) {	/* for most cases */
 			unsigned long mva = (unsigned long)map_mva + ((unsigned long)domain_idx << 32);
 
-			M4UMSG("[debug] mva: 0x%lx, domain_idx: %d", mva, domain_idx);
+			/* M4UMSG("[debug] mva: 0x%lx, domain_idx: %d", mva, domain_idx); */
 
 			ret = m4u_map_4K(m4u_domain, mva, pa, prot);
 		} else {
