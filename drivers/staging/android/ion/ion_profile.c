@@ -40,8 +40,8 @@ void ion_profile_init(void)
 	/* enable events by default */
 
 	mmprofile_enable_event(ion_mmp_events[PROFILE_ALLOC], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 0);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 0);
 	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_CLEAN_RANGE], 1);*/
 	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], 1);*/
 	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_INVALID_RANGE], 1);*/

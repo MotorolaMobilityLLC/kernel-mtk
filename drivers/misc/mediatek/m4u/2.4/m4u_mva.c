@@ -598,6 +598,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	 * each graph from start to end. if there is one index whose graph's value is bigger
 	 * than the number we need, that means we found the requeired region.
 	 */
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2fb], 1);
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	for (s = 1; (s < ccu_fix_index_start) && (mvaGraph[s] < nr);
 		s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
@@ -658,12 +659,14 @@ stage3:
 	region_status = m4u_check_mva_region(s, nr, priv) || __check_ccu_mva_region(s, nr, priv);
 	if (region_status) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf1);
 		M4UMSG("mva_alloc error: fault cursor(0x%x) access VPU/CCU region\n", s);
 		return 0;
 	}
 
 	if (s > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf2);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
 #ifdef M4U_PROFILE
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE, size, s);
@@ -693,6 +696,7 @@ stage3:
 	}
 
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 1);
 
 	mvaRegionStart = (unsigned int)s;
 
@@ -752,6 +756,7 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 	else if (vpu_region_status == 1)
 		is_in_vpu_region = 1;
 
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2fb], 2);
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 
 	region_start = startIdx;
@@ -869,6 +874,7 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 
 out:
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 2);
 
 	return mva;
 }
@@ -937,6 +943,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 
 	M4ULOG_LOW("%s: iova_start_idx:0x%x, startIdx=0x%x, endIdx = 0x%x, nr= 0x%x\n",
 		__func__, MVAGRAPH_INDEX(mva), startIdx, endIdx, nr);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2fb], 3);
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 
 	/* use cursor region_start to find the region after the region including the "startIdx"th block.
@@ -951,6 +958,8 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		/*error check*/
 		if ((mvaGraph[region_start] & MVA_BLOCK_NR_MASK) == 0) {
 			spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+			mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG],
+					 MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf3);
 			m4u_mvaGraph_dump();
 			m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[region_start]);
 			return 0;
@@ -963,6 +972,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	if (region_start > MVA_MAX_BLOCK_NR) {
 		M4UMSG("%s:alloc mva fail,no available MVA for %d blocks\n", __func__, nr);
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf3);
 		return 0;
 	}
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
@@ -1015,6 +1025,8 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 			/*error check*/
 			if ((mvaGraph[s] & MVA_BLOCK_NR_MASK) == 0) {
 				spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+				mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG],
+						 MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf4);
 				m4u_mvaGraph_dump();
 				m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[s]);
 				return 0;
@@ -1040,6 +1052,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 
 	if (s > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf4);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
 #ifdef M4U_PROFILE
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE, size, s);
@@ -1173,7 +1186,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	}
 
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
-
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 3);
 #if defined(CONFIG_MACH_MT6771)
 	if (((pMvaInfo->port == M4U_PORT_CCU0) || (pMvaInfo->port == M4U_PORT_CCU1) ||
 	     (pMvaInfo->port == M4U_PORT_CAM_CCUI) || (pMvaInfo->port == M4U_PORT_CAM_CCUG) ||
@@ -1231,6 +1244,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	else if (vpu_region_status == 1)
 		is_in_vpu_region_flag = 1;
 
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2fb], 4);
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	/* -------------------------------- */
 	/* check the input arguments */
@@ -1244,6 +1258,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 		&& MVA_IS_BUSY(startIdx)
 		&& (nr == nrRequire))) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 0xf5);
 		M4UMSG("error to free mva========================>\n");
 		M4UMSG("BufSize=%d(unit:0x%xBytes) (expect %d) [%s]\n",
 		       nrRequire, MVA_BLOCK_SIZE, nr, RightWrong(nrRequire == nr));
@@ -1365,6 +1380,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	}
 
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2fb], 4);
 
 	/*for debug*/
 	ret = check_reserved_region_integrity(MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START),
