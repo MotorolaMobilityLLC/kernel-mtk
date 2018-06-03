@@ -931,9 +931,9 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 		accumlate_memory_size += scp_reserve_mblock[id].size;
 
 	if (accumlate_memory_size > rmem->size) {
-		pr_err("[SCP] accumlated memory size = %llu / %llu\n"
-			, (unsigned long long)accumlate_memory_size
-			, (unsigned long long)rmem->size);
+		pr_err("[SCP] Error: (memory) Used / Total = %llu / %llu\n",
+			(unsigned long long)accumlate_memory_size,
+			(unsigned long long)rmem->size);
 
 		return -1;
 	}
