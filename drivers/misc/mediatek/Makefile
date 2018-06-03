@@ -19,6 +19,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+obj-$(CONFIG_MTK_EMI) += emi/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 
@@ -125,5 +126,4 @@ obj-$(CONFIG_MTK_SYSTRACKER)   += systracker/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += cmo/
 obj-y += timer/
 obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
-
 obj-$(CONFIG_MTK_DRAMC) += dramc/
