@@ -4928,7 +4928,9 @@ static ssize_t show_regulator_voltage(struct device *dev, struct device_attribut
 		if (mreg->pvoltages != NULL) {
 			pVoltage = (const int *)mreg->pvoltages;
 			ret_value = pVoltage[0];
-		} else
+		} else if (mreg->desc.fixed_uV)
+			ret_value = mreg->desc.fixed_uV;
+		else
 			pr_err("[EM] %s_VOLTAGE have no pVolatges\n", mreg->desc.name);
 	}
 
