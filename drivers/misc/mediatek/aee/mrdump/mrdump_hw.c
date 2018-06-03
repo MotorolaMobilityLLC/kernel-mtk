@@ -11,7 +11,6 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifdef CONFIG_MTK_LASTPC_V2
 #include <linux/kconfig.h>
 #include <linux/module.h>
 #include <linux/string.h>
@@ -20,6 +19,7 @@
 #ifdef CONFIG_MTK_WATCHDOG
 #include <mach/wd_api.h>
 
+#ifdef CONFIG_MTK_LASTPC_V2
 static void mrdump_set_sram_lastpc_flag(void)
 {
 	if (set_sram_flag_lastpc_valid() == 0)
@@ -44,6 +44,7 @@ static void mrdump_wd_mcu_cache_preserve(bool enabled)
 		}
 	}
 }
+#endif /* CONFIG_MTK_LASTPC_V2 */
 
 static char mrdump_lk_ddr_reserve_ready[4];
 
@@ -99,6 +100,10 @@ static int __init mrdump_hw_init(void)
 	bool ddr_rsv_mode_ok = cache_preserve_ok;
 	int condition = 0;
 
+#ifdef CONFIG_MTK_LASTPC_V2
+	condition++;
+#endif
+
 #ifdef CONFIG_MTK_AEE_DRAM_CONSOLE
 	condition++;
 #endif
@@ -117,18 +122,17 @@ static int __init mrdump_hw_init(void)
 	}
 
 	mrdump_wd_dram_reserved_mode(ddr_rsv_mode_ok);
-
+#ifdef CONFIG_MTK_LASTPC_V2
 	mrdump_wd_mcu_cache_preserve(cache_preserve_ok);
 	mrdump_set_sram_lastpc_flag();
+#endif /* CONFIG_MTK_LASTPC_V2 */
 
 	pr_info("%s: init_done.\n", __func__);
 	return 0;
 }
 
 arch_initcall(mrdump_hw_init);
-
 #endif /* CONFIG_MTK_WATCHDOG */
-#endif /* CONFIG_MTK_LASTPC_V2 */
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek AEE module");
