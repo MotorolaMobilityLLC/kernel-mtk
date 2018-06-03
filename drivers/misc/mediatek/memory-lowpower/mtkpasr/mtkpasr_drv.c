@@ -350,17 +350,21 @@ static struct memory_lowpower_operation mtkpasr_handler = {
 /* ++ SYSFS Interface ++ */
 int mtkpasr_show_banks(char *buf)
 {
+#define MTKPASR_SHOW_BANKS_LIMIT	(128)
 	int i, len = 0, tmp;
 
 	/* Show banks */
 	for (i = 0; i < num_banks; i++) {
-		tmp = sprintf(buf, "Bank[%2d] - start_pfn[%6lx] end_pfn[%6lx] segment[%2d] rank[%d] %s\n",
+		tmp = snprintf(buf, MTKPASR_SHOW_BANKS_LIMIT,
+				"Bank[%2d] - start_pfn[%6lx] end_pfn[%6lx] segment[%2d] rank[%d] %s\n",
 				i, mtkpasr_banks[i].start_pfn, mtkpasr_banks[i].end_pfn - 1,
 				mtkpasr_banks[i].segment, mtkpasr_banks[i].rank,
 				((mtkpasr_on >> mtkpasr_banks[i].segment) & 0x1) ? "[ON]" : "");
 		buf += tmp;
 		len += tmp;
 	}
+
+#undef MTKPASR_SHOW_BANKS_LIMIT
 
 	return len;
 }
