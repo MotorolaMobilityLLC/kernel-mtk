@@ -35,9 +35,9 @@
 #endif
 #if !defined(MT_CCF_DEBUG) \
 		|| !defined(CLK_DEBUG) || !defined(DUMMY_REG_TEST)
-#define MT_CCF_DEBUG	1
-#define CONTROL_LIMIT	1
-#define CLK_DEBUG	1
+#define MT_CCF_DEBUG	0
+#define CONTROL_LIMIT	0
+#define CLK_DEBUG	0
 #define DUMMY_REG_TEST	0
 #endif
 
@@ -438,28 +438,30 @@ static struct subsys *id_to_sys(unsigned int id)
 	return id < NR_SYSS ? &syss[id] : NULL;
 }
 
-#define DBG_ID_MD1_BUS 1
-#define DBG_ID_CONN_BUS 2
-#define DBG_ID_DPY_BUS 3
-#define DBG_ID_DIS_BUS 4
-#define DBG_ID_MFG_BUS 5
-#define DBG_ID_IFR_BUS 6
-#define DBG_ID_MFG_CORE0_BUS 7
-#define DBG_ID_MFG_ASYNC_BUS 8
-#define DBG_ID_CAM_BUS 9
-#define DBG_ID_VCODEC_BUS 10
+enum dbg_id {
+	DBG_ID_MD1_BUS = 0,
+	DBG_ID_CONN_BUS,
+	DBG_ID_DPY_BUS,
+	DBG_ID_DIS_BUS,
+	DBG_ID_MFG_BUS,
+	DBG_ID_IFR_BUS,
+	DBG_ID_MFG_CORE0_BUS,
+	DBG_ID_MFG_ASYNC_BUS,
+	DBG_ID_CAM_BUS,
+	DBG_ID_VCODEC_BUS = 9,
 
-#define DBG_ID_MD1_PWR 11
-#define DBG_ID_CONN_PWR 12
-#define DBG_ID_DPY_PWR 13
-#define DBG_ID_DIS_PWR 14
-#define DBG_ID_MFG_PWR 15
-#define DBG_ID_IFR_PWR 16
-#define DBG_ID_MFG_CORE0_PWR 17
-#define DBG_ID_MFG_ASYNC_PWR 18
-#define DBG_ID_CAM_PWR 19
-#define DBG_ID_VCODEC_PWR 20
-
+	DBG_ID_MD1_PWR = 10,
+	DBG_ID_CONN_PWR,
+	DBG_ID_DPY_PWR,
+	DBG_ID_DIS_PWR,
+	DBG_ID_MFG_PWR,
+	DBG_ID_IFR_PWR,
+	DBG_ID_MFG_CORE0_PWR,
+	DBG_ID_MFG_ASYNC_PWR,
+	DBG_ID_CAM_PWR,
+	DBG_ID_VCODEC_PWR,
+	DBG_ID_NUM = 20,
+};
 
 #define ID_MADK   0xFF000000
 #define STA_MASK  0x00F00000
@@ -517,6 +519,18 @@ static void ram_console_update(void)
 			}
 		}
 		print_enabled_clks_once();
+		if (DBG_ID >= (DBG_ID_NUM / 2))
+			pr_notice("%s %s MTCMOS PWR hang at %s flow step %d\n",
+				"[clkmgr]",
+				syss[(DBG_ID - (DBG_ID_NUM / 2))].name,
+				DBG_STA ? "pwron":"pdn",
+				DBG_STEP);
+		else
+			pr_notice("%s %s MTCMOS BUS hang at %s flow step %d\n",
+				"[clkmgr]",
+				syss[DBG_ID].name,
+				DBG_STA ? "pwron":"pdn",
+				DBG_STEP);
 	}
 
 	for (j = 0; j <= i; j++)
