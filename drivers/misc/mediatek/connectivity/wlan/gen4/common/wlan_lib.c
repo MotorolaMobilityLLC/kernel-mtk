@@ -665,6 +665,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		nicEnableInterrupt(prAdapter);
 
 	} else {
+		halPrintHifDbgInfo(prAdapter);
 		DBGLOG(INIT, WARN, "Fail reason: %d\n", eFailReason);
 		/* release allocated memory */
 		switch (eFailReason) {
