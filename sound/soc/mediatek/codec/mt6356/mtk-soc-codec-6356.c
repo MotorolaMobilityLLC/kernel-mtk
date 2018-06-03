@@ -817,7 +817,7 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable linout short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 		/* Reduce ESD resistance of AU_REFN */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 
 		/* Turn on DA_600K_NCP_VA18 */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
@@ -843,11 +843,9 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
 		/* Disable HPR/L STB enhance circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 		/* Enable HP main CMFB Switch */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
-		/* No Pull-down HPL/R to AVSS28_AUD */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
@@ -1629,10 +1627,6 @@ static void TurnOnDacPower(int device)
 
 
 	NvregEnable(true);	/* Enable AUDGLB */
-
-	/* Pull-down HPL/R to AVSS28_AUD */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
-
 	ClsqEnable(true);	/* Turn on 26MHz source clock */
 	Topck_Enable(true);	/* Turn on AUDNCP_CLKDIV engine clock */
 	/* Turn on AUD 26M */
@@ -1730,6 +1724,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
 			/* switch to ground to de pop-noise */
 			/*HP_Switch_to_Ground();*/
+
+			/* Pull-down HPL/R to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
 
 			/* Disable headphone short-circuit protection */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
@@ -2588,6 +2585,9 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L);
 
 		pr_warn("%s(), enable %d\n", __func__, enable);
+
+		/* Pull-down HPL/R to AVSS28_AUD */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
 
 		/* Disable headphone short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
