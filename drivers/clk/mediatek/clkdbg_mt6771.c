@@ -15,7 +15,7 @@
 #include <linux/io.h>
 
 #include "clkdbg.h"
-#include "mt6763_clkmgr.h"
+#include "mt6771_clkmgr.h"
 
 #define ALL_CLK_ON		0
 #define DUMP_INIT_STATE		0
@@ -719,7 +719,7 @@ static int clkdbg_chip_ver(struct seq_file *s, void *v)
  * init functions
  */
 
-static struct clkdbg_ops clkdbg_mt6763_ops = {
+static struct clkdbg_ops clkdbg_mt6771_ops = {
 	.get_all_fmeter_clks = get_all_fmeter_clks,
 	.prepare_fmeter = NULL,
 	.unprepare_fmeter = NULL,
@@ -741,15 +741,15 @@ static void __init init_custom_cmds(void)
 	set_custom_cmds(cmds);
 }
 
-static int __init clkdbg_mt6763_init(void)
+static int __init clkdbg_mt6771_init(void)
 {
-	if (!of_machine_is_compatible("mediatek,mt6763"))
+	if (!of_machine_is_compatible("mediatek,mt6771"))
 		return -ENODEV;
 
 	init_regbase();
 
 	init_custom_cmds();
-	set_clkdbg_ops(&clkdbg_mt6763_ops);
+	set_clkdbg_ops(&clkdbg_mt6771_ops);
 
 #if ALL_CLK_ON
 	prepare_enable_provider("topckgen");
@@ -764,4 +764,4 @@ static int __init clkdbg_mt6763_init(void)
 
 	return 0;
 }
-device_initcall(clkdbg_mt6763_init);
+device_initcall(clkdbg_mt6771_init);
