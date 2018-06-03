@@ -18,6 +18,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/string.h>
+#include <linux/mutex.h>
 #ifdef PLL_HOPPING_READY
 #include <mt_freqhopping_drv.h>
 #endif
@@ -92,6 +93,7 @@ static s32 current_max_step = STEP_UNREQUEST;
 static s32 force_step = STEP_UNREQUEST;
 static bool mmdvfs_enable;
 static struct pm_qos_request vcore_request;
+static DEFINE_MUTEX(step_mutex);
 
 static int mm_freq_notify(struct notifier_block *nb,
 		unsigned long freq_value, void *v);
@@ -282,6 +284,7 @@ static void update_step(void)
 		return;
 	}
 
+	mutex_lock(&step_mutex);
 	old_max_step = current_max_step;
 	current_max_step = step_size;
 	if (force_step != STEP_UNREQUEST) {
@@ -296,8 +299,10 @@ static void update_step(void)
 			current_max_step = STEP_UNREQUEST;
 	}
 
-	if (current_max_step == old_max_step)
+	if (current_max_step == old_max_step) {
+		mutex_unlock(&step_mutex);
 		return;
+	}
 
 	if (current_max_step != STEP_UNREQUEST
 			&& current_max_step < old_max_step) {
@@ -313,9 +318,10 @@ static void update_step(void)
 			vopp_step = vopp_steps[current_max_step];
 			freq_step = current_max_step;
 		}
-		mm_apply_vcore(vopp_step);
 		mm_apply_clk_for_all(freq_step, old_max_step);
+		mm_apply_vcore(vopp_step);
 	}
+	mutex_unlock(&step_mutex);
 }
 
 static int mm_freq_notify(struct notifier_block *nb,
