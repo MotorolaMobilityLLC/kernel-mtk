@@ -202,8 +202,6 @@ struct proc_dir_entry;
 int aed_proc_debug_init(struct proc_dir_entry *aed_proc_dir);
 int aed_proc_debug_done(struct proc_dir_entry *aed_proc_dir);
 
-int aed_get_process_bt(struct aee_process_bt *bt);
-
 void aee_rr_proc_init(struct proc_dir_entry *aed_proc_dir);
 void aee_rr_proc_done(struct proc_dir_entry *aed_proc_dir);
 
