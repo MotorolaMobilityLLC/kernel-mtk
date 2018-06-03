@@ -104,9 +104,17 @@ extern struct keypad_dts_data kpd_dts_data;
 #define SET_KPD_KCOL		_IO('k', 29)
 
 #define KPD_SAY		"kpd: "
+extern int kpd_klog_en;
+
 #if KPD_DEBUG
-#define kpd_print(fmt, arg...)	pr_err(KPD_SAY fmt, ##arg)
-#define kpd_info(fmt, arg...)	pr_warn(KPD_SAY fmt, ##arg)
+#define kpd_print(fmt, arg...)	do { \
+	if (kpd_klog_en) \
+		pr_err(KPD_SAY fmt, ##arg); \
+	} while (0)
+#define kpd_info(fmt, arg...)	do { \
+	if (kpd_klog_en) \
+		pr_warn(KPD_SAY fmt, ##arg); \
+	} while (0)
 #else
 #define kpd_print(fmt, arg...)	do {} while (0)
 #define kpd_info(fmt, arg...)	do {} while (0)
