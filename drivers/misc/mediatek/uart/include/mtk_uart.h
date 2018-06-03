@@ -247,6 +247,7 @@ unsigned int mtk_uart_pdn_enable(char *port, int enable);
 extern void update_history_byte(char is_tx, int nport, unsigned char byte);
 extern void update_history_time(char is_tx, int nport);
 extern void update_history_bulk(char is_tx, int nport, unsigned char *chars, int count);
+extern struct mtk_uart mtk_uarts[UART_NR];
 
 #ifdef CONFIG_FIQ_DEBUGGER
 extern struct resource fiq_resource[];
