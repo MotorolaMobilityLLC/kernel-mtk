@@ -1430,6 +1430,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 
 int mt_i2c_parse_comp_data(void)
 {
+	int ret = -1;
 	struct device_node *comp_node;
 
 	comp_node = of_find_compatible_node(NULL, NULL, "mediatek,i2c_common");
@@ -1451,9 +1452,12 @@ int mt_i2c_parse_comp_data(void)
 		(u8 *)&i2c_common_compat.set_aed);
 	of_property_read_u16(comp_node, "ext_time_config",
 		(u16 *)&i2c_common_compat.ext_time_config);
-	of_property_read_u8_array(comp_node, "clk_compatible",
-		(u8 *)i2c_common_compat.clk_compatible,
-		of_property_count_u8_elems(comp_node, "clk_compatible"));
+	ret = of_property_count_u8_elems(comp_node, "clk_compatible");
+	if (ret > 0)
+		of_property_read_u8_array(comp_node, "clk_compatible",
+			(u8 *)i2c_common_compat.clk_compatible, ret);
+	else
+		pr_info("[I2C] clk_compatible get failed(%d)\n", ret);
 	of_property_read_u32(comp_node, "clk_sel_offset",
 		(u32 *)&i2c_common_compat.clk_sel_offset);
 	of_property_read_u32(comp_node, "arbit_offset",
