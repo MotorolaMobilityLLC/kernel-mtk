@@ -15,6 +15,7 @@ config TRUSTONIC_TEE_VERSION
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302d" if (MACH_MT6757)
 	default "400b" if (MACH_MT6771) && (MTK_IRIS_SUPPORT)
+	default "400b" if (MACH_MT6775)
 	default "311c"
 
 #config MT_TRUSTONIC_TEE_DEBUGFS
