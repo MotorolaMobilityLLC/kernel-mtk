@@ -26,7 +26,7 @@ static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_2", "/data/sdio_autok_3",
 };
 
-#define SDIO_AUTOK_DIFF_MARGIN  3
+#define SDIO_AUTOK_DIFF_MARGIN  6
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -85,6 +85,7 @@ static int msdc_file_write(struct file *file, unsigned long long offset, unsigne
 
 int sdio_autok_res_exist(struct msdc_host *host)
 {
+#ifdef SDIO_HQA
 	struct file *filp = NULL;
 	int i;
 
@@ -97,7 +98,11 @@ int sdio_autok_res_exist(struct msdc_host *host)
 		filp_close(filp, NULL);
 	}
 
+	pr_err("autok result found\n");
 	return 1;
+#else
+	return 0;
+#endif
 }
 
 int sdio_autok_res_apply(struct msdc_host *host, int vcore)
@@ -164,22 +169,46 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 int autok_res_check(u8 *res_h, u8 *res_l)
 {
 	int ret = 0;
-	int i;
+	int i, dly_h, dly_l;
 
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
-		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1)) {
+		/* pr_err("[AUTOK] res_h: %hhx, res_l %hhx\n", res_h[i], res_l[i]); */
+		if (i == CMD_RD_D_DLY1) {
+			dly_h = res_h[CMD_RD_D_DLY1] * res_h[CMD_RD_D_DLY1_SEL] +
+				res_h[CMD_RD_D_DLY2] * res_h[CMD_RD_D_DLY2_SEL];
+			dly_l = res_l[CMD_RD_D_DLY1] * res_l[CMD_RD_D_DLY1_SEL] +
+				res_l[CMD_RD_D_DLY2] * res_l[CMD_RD_D_DLY2_SEL];
+			if ((dly_h > dly_l) && (dly_h - dly_l > SDIO_AUTOK_DIFF_MARGIN))
+				ret = -1;
+			else if ((dly_l > dly_h) && (dly_l - dly_h > SDIO_AUTOK_DIFF_MARGIN))
+				ret = -1;
+		} else if (i == DAT_RD_D_DLY1) {
+			dly_h = res_h[DAT_RD_D_DLY1] * res_h[DAT_RD_D_DLY1_SEL] +
+				res_h[DAT_RD_D_DLY2] * res_h[DAT_RD_D_DLY2_SEL];
+			dly_l = res_l[DAT_RD_D_DLY1] * res_l[DAT_RD_D_DLY1_SEL] +
+				res_l[DAT_RD_D_DLY2] * res_l[DAT_RD_D_DLY2_SEL];
+			if ((dly_h > dly_l) && (dly_h - dly_l > SDIO_AUTOK_DIFF_MARGIN))
+				ret = -1;
+			else if ((dly_l > dly_h) && (dly_l - dly_h > SDIO_AUTOK_DIFF_MARGIN))
+				ret = -1;
+		} else if ((i == CMD_RD_D_DLY2) || (i == DAT_RD_D_DLY2)
+			|| (i == CMD_RD_D_DLY2_SEL) || (i == DAT_RD_D_DLY2_SEL)
+			|| (i == CMD_RD_D_DLY1_SEL) || (i == DAT_RD_D_DLY1_SEL)) {
+			/* this is cover by previous 2 cases,
+			 * just bypass it
+			 */
+		} else if ((i >= EMMC50_DATA0_TX_DLY) && (i <= EMMC50_DATA7_TX_DLY)) {
 			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > SDIO_AUTOK_DIFF_MARGIN))
 				ret = -1;
-			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > SDIO_AUTOK_DIFF_MARGIN))
+			else if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > SDIO_AUTOK_DIFF_MARGIN))
 				ret = -1;
-		} else if ((i == CMD_RD_D_DLY1_SEL) || (i == DAT_RD_D_DLY1_SEL)) {
-			/* this is cover by previous check,
-			 * just by pass if 0 and 1 in cmd/dat delay
-			 */
 		} else {
 			if (res_h[i] != res_l[i])
 				ret = -1;
 		}
+
+		if (ret == -1)
+			break;
 	}
 
 #ifndef SDIO_HW_DVFS_CONDITIONAL
@@ -321,7 +350,7 @@ static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 	void __iomem *addr, *addr_src;
 	int i;
 
-	vcore = 3 - vcore;
+	vcore = AUTOK_VCORE_NUM - vcore;
 
 	addr = host->base + MSDC_DVFS_SET_SIZE * vcore;
 	for (i = 0; i < host->dvfs_reg_backup_cnt; i++) {
@@ -363,7 +392,7 @@ void sdio_autok_wait_dvfs_ready(void)
 		pr_err("DVFS feature not enable\n");
 
 	if (dvfs == 1)
-		pr_err("DVFS ready\n");
+		pr_debug("DVFS ready\n");
 }
 
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
@@ -442,8 +471,12 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	}
 
 	res = host->autok_res[vcore];
-	pr_err("emmc_execute_dvfs_autok %d\n", vcore);
+	pr_err("[AUTOK]emmc_execute_dvfs_autok %d\n", vcore);
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
+		#ifdef MSDC_HQA
+		msdc_HQA_set_voltage(host);
+		#endif
+
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
 			ret = hs200_execute_tuning_cmd(host, res);
@@ -457,6 +490,10 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			complete(&host->autok_done);
 		}
 	} else if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400) {
+		#ifdef MSDC_HQA
+		msdc_HQA_set_voltage(host);
+		#endif
+
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
 			ret = hs400_execute_tuning_cmd(host, res);
@@ -469,7 +506,8 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	}
 
 	/* Enable this line if eMMC use HW DVFS */
-	/* msdc_set_hw_dvfs(vcore, host); */
+	if (host->use_hw_dvfs == 1)
+		msdc_set_hw_dvfs(vcore, host);
 	/* msdc_dump_register_core(host, NULL); */
 
 	return ret;
@@ -498,14 +536,27 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_init(host);
 
 		/* Check which vcore setting to apply */
-		vcore = vcorefs_get_hw_opp();
-		pr_err("[AUTOK]Apply first tune para vcore = %d\n", vcore);
+		if (((host->use_hw_dvfs == (u8)0xFF) && (host->lock_vcore == 0))
+		 || (host->use_hw_dvfs == 0)) {
+			vcore = AUTOK_VCORE_NUM - 1;
+		} else if ((host->use_hw_dvfs == (u8)0xFF)
+		 && (host->lock_vcore == 1)) {
+			/* FIXME */
+			vcore = AUTOK_VCORE_LEVEL0;
+		} else {
+			/* Force use_hw_dvfs as 1 to shut-up annoying
+			 * "maybe-uninitialized" error
+			 */
+			host->use_hw_dvfs = 1;
+			vcore = vcorefs_get_hw_opp();
+		}
+
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		if (host->use_hw_dvfs == 0) {
-			pr_err("[AUTOK]No need change para when dvfs\n");
-		} else {
-			pr_err("[AUTOK]Need change para when dvfs\n");
+			pr_err("[AUTOK]Apply first tune para (vcore = %d) without HW DVFS\n", vcore);
+		} else if (host->use_hw_dvfs == 1) {
+			pr_err("[AUTOK]Apply first tune para (vcore = %d) with HW DVFS\n", vcore);
 
 			/* Use HW DVFS */
 			msdc_dvfs_reg_restore(host);
@@ -525,29 +576,37 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	sdio_autok_wait_dvfs_ready();
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		pr_err("[AUTOK]sdio_execute_dvfs_autok_mode %d\n", i);
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
+
+		#ifdef SDIO_HQA
+		msdc_HQA_set_voltage(host);
+		#endif
 
 		if (sdio_res_exist)
 			sdio_autok_res_apply(host, i);
 		else
 			autok_execute(host, host->autok_res[i]);
 
+		/* FIX ME, check if it is necessary for Bianco */
 		msdc_set_hw_dvfs(i, host);
 	}
 
-	/* Backup the register, restore when resume */
-	msdc_dvfs_reg_backup(host);
-
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
+	if (autok_res_check(host->autok_res[AUTOK_VCORE_NUM - 1],
 			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
+		if (host->use_hw_dvfs == 1)
+			host->use_hw_dvfs = 0;
+		/* host->use_hw_dvfs will be 0 or 0xFF now */
+
 		pr_err("[AUTOK]No need change para when dvfs\n");
-	} else {
+	} else if (host->use_hw_dvfs != 0xFF) {
 		pr_err("[AUTOK]Need change para when dvfs\n");
+
+		msdc_dvfs_reg_backup(host);
 
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
-		host->dvfs_id = KIR_AUTOK_SDIO;
 
 		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
@@ -555,6 +614,10 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		 */
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
+	} else {
+		/* host->use_hw_dvfs is 0xFF now */
+		/* Don't use HW DVFS since window cannot overlap */
+		host->lock_vcore = 1;
 	}
 
 	/* Un-request, return 0 pass */
@@ -562,6 +625,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	/* Tell DVFS can start now because AUTOK done */
+	host->dvfs_id = KIR_AUTOK_SDIO;
 	spm_msdc_dvfs_setting(host->dvfs_id, 1);
 
 	host->is_autok_done = 1;
@@ -766,7 +830,8 @@ end:
 void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
 	/* Set device timming for latch data */
-	sdio_plus_set_device_rx(host);
+	if (host->hw->flags & MSDC_SDIO_DDR208)
+		sdio_plus_set_device_rx(host);
 
 	/* Not support DDR208 and only Autok SDR104 */
 	if (!(host->hw->flags & MSDC_SDIO_DDR208)) {
@@ -819,7 +884,7 @@ int emmc_autok(void)
 		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
 	}
 
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
+	if (autok_res_check(host->autok_res[AUTOK_VCORE_NUM - 1],
 			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
 		pr_err("[AUTOK] No need change para when dvfs\n");
 	} else {
@@ -869,7 +934,7 @@ EXPORT_SYMBOL(sd_autok);
 
 int sdio_autok(void)
 {
-#ifdef CONFIG_MTK_COMBO_COMM
+#if defined(CONFIG_MTK_COMBO_COMM) && !defined(MSDC_HQA)
 	struct msdc_host *host = mtk_msdc_host[2];
 	int timeout = 0;
 
@@ -896,38 +961,34 @@ int sdio_autok(void)
 
 	pr_err("sdio autok\n");
 
-	/* Device never ready in moudle_init.
-	 * Call spm_msdc_dvfs_setting if device autok done.
-	 */
-#if 0
-	if (!wait_for_completion_timeout(&host->autok_done, 30 * HZ)) {
-		pr_err("SDIO wait device autok ready timeout");
-		return -1;
-	}
-
-	pr_err("sdio autok done!");
-#endif
-
 #else
 	spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
+
 #endif
 
 	return 0;
 }
 EXPORT_SYMBOL(sdio_autok);
 
-void msdc_dump_autok(struct msdc_host *host)
+void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 {
 #ifdef MSDC_BRING_UP
 	int i, j;
 	int bit_pos, byte_pos, start;
 	char buf[65];
 
-	pr_err("[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
-		host->autok_res[0][AUTOK_VER3],
-		host->autok_res[0][AUTOK_VER2],
-		host->autok_res[0][AUTOK_VER1],
-		host->autok_res[0][AUTOK_VER0]);
+	if (!m)
+		pr_err("[AUTOK]VER : 0x%02x%02x%02x%02x\n",
+			host->autok_res[0][AUTOK_VER3],
+			host->autok_res[0][AUTOK_VER2],
+			host->autok_res[0][AUTOK_VER1],
+			host->autok_res[0][AUTOK_VER0]);
+	else
+		seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\n",
+			host->autok_res[0][AUTOK_VER3],
+			host->autok_res[0][AUTOK_VER2],
+			host->autok_res[0][AUTOK_VER1],
+			host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		start = CMD_SCAN_R0;
@@ -940,7 +1001,10 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]CMD Rising \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]CMD Rising \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]CMD Rising \t: %s\n", buf);
 
 		start = CMD_SCAN_F0;
 		for (j = 0; j < 64; j++) {
@@ -952,7 +1016,10 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]CMD Falling \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]CMD Falling \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]CMD Falling \t: %s\n", buf);
 
 		start = DAT_SCAN_R0;
 		for (j = 0; j < 64; j++) {
@@ -964,7 +1031,10 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]DAT Rising \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]DAT Rising \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]DAT Rising \t: %s\n", buf);
 
 		start = DAT_SCAN_F0;
 		for (j = 0; j < 64; j++) {
@@ -976,9 +1046,12 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]DAT Falling \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]DAT Falling \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]DAT Falling \t: %s\n", buf);
 
-		start = DS_SCAN_0;
+		start = DS_CMD_SCAN_0;
 		for (j = 0; j < 64; j++) {
 			bit_pos = j % 8;
 			byte_pos = j / 8 + start;
@@ -988,7 +1061,25 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]DS Window \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]DS CMD Window \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]DS CMD Window \t: %s\n", buf);
+
+		start = DS_DAT_SCAN_0;
+		for (j = 0; j < 64; j++) {
+			bit_pos = j % 8;
+			byte_pos = j / 8 + start;
+			if (host->autok_res[i][byte_pos] & (1 << bit_pos))
+				buf[j] = 'X';
+			else
+				buf[j] = 'O';
+		}
+		buf[j] = '\0';
+		if (!m)
+			pr_err("[AUTOK]DS DAT Window \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]DS DAT Window \t: %s\n", buf);
 
 		start = D_DATA_SCAN_0;
 		for (j = 0; j < 32; j++) {
@@ -1000,7 +1091,10 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]Device Data RX \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]Device Data RX \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]Device Data RX \t: %s\n", buf);
 
 		start = H_DATA_SCAN_0;
 		for (j = 0; j < 32; j++) {
@@ -1012,17 +1106,37 @@ void msdc_dump_autok(struct msdc_host *host)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		pr_err("[AUTOK]Host   Data TX \t: %s\r\n", buf);
+		if (!m)
+			pr_err("[AUTOK]Host   Data TX \t: %s\n", buf);
+		else
+			seq_printf(m, "[AUTOK]Host   Data TX \t: %s\n", buf);
 
-		pr_err("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
-		pr_err("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
-			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
-		pr_err("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
-		pr_err("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
-		pr_err("[AUTOK]DAT [TX SEL:%d]\r\n", host->autok_res[i][20]);
+		if (!m) {
+			pr_err("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\n"
+				"[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\n"
+				"[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\n"
+				"[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\n"
+				"[AUTOK]DAT [TX SEL:%d]\n",
+				host->autok_res[i][0], host->autok_res[i][1],
+					host->autok_res[i][5], host->autok_res[i][7],
+				host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4],
+				host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11],
+				host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18],
+				host->autok_res[i][20]);
+		} else {
+			seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\n"
+				"[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\n"
+				"[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\n"
+				"[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\n"
+				"[AUTOK]DAT [TX SEL:%d]\n",
+				host->autok_res[i][0], host->autok_res[i][1],
+					host->autok_res[i][5], host->autok_res[i][7],
+				host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4],
+				host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11],
+				host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18],
+				host->autok_res[i][20]);
+		}
 	}
 #endif
 }
+

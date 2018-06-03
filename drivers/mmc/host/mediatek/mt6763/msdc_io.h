@@ -34,22 +34,26 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
 void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_pmic_force_vcore_pwm(bool enable);
-void msdc_sd_power_off(void);
 void msdc_clk_pre_enable(struct msdc_host *host);
 void msdc_clk_post_disble(struct msdc_host *host);
+
 #if !defined(FPGA_PLATFORM)
 int msdc_oc_check(struct msdc_host *host, u32 en);
+int msdc_io_check(struct msdc_host *host);
+void msdc_sd_power_off(void);
 void msdc_dump_ldo_sts(struct msdc_host *host);
-void msdc_HQA_set_vcore(struct msdc_host *host);
+void msdc_HQA_set_voltage(struct msdc_host *host);
 
 #else
 #define msdc_power_calibration_init(host)
 void msdc_fpga_pwr_init(void);
-#define msdc_oc_check(msdc_host, en)	(0)
+#define msdc_oc_check(msdc_host, en)    (0)
+#define msdc_io_check(msdc_host)        (1)
 extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
+#define msdc_sd_power_off()
 #define msdc_dump_ldo_sts(host)
 
 #endif
@@ -75,7 +79,7 @@ extern u32 *hclks_msdc_all[];
 extern void msdc_dump_dvfs_reg(struct msdc_host *host);
 void msdc_dump_clock_sts(struct msdc_host *host);
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
-#define msdc_get_hclk(id, src)		hclks_msdc_all[id][src]
+#define msdc_get_hclk(id, src)          hclks_msdc_all[id][src]
 
 #ifdef CONFIG_MTK_HW_FDE_AES
 #define msdc_clk_enable(host) \

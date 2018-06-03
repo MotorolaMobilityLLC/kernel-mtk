@@ -401,6 +401,7 @@
 #define	MSDC_CFG_CKMOD_HS400		(0x1  << 22)	/* RW */
 #define	MSDC_CFG_START_BIT		(0x3  << 23)	/* RW */
 #define	MSDC_CFG_SCLK_STOP_DDR		(0x1  << 25)	/* RW */
+#define	MSDC_CFG_DVFS_IDLE		(0x1  << 27)	/* RW */
 #define MSDC_CFG_DVFS_HW                (0x1  << 28)    /* RW */
 #define MSDC_CFG_BW_SEL			(0x1  << 29)    /* RW */
 #define MSDC_CFG_DVFS_EN                (0x1  << 30)    /* RW */
@@ -538,12 +539,15 @@
 #define	SDC_DCRC_STS_NEG		(0xff << 8)	/* RO */
 
 /* SDC_ADV_CFG0 mask */
-#define SDC_ADV_CFG0_RESP_CRC		(0x7f  << 0) /* R */
-#define SDC_ADV_CFG0_RESP_INDEX		(0x3f  << 7) /* R */
-#define SDC_ADV_CFG0_RESP_ENDBIT		(0x1  << 13) /* R */
+#define SDC_ADV_CFG0_RESP_CRC		(0x7f  << 0) /* RU */
+#define SDC_ADV_CFG0_RESP_INDEX		(0x3f  << 7) /* RU */
+#define SDC_ADV_CFG0_RESP_ENDBIT	(0x1  << 13) /* RU */
 #define SDC_ADV_CFG0_ENDBIT_CHECK	(0x1  << 14) /* RW */
-#define SDC_ADV_CFG0_INDEX_CHECK		(0x1  << 15) /* RW */
-#define SDC_ADV_CFG0_RX_ENHANCE_EN	(0x1  << 20) /* RW */
+#define SDC_ADV_CFG0_INDEX_CHECK	(0x1  << 15) /* RW */
+#define SDC_ADV_CFG0_DAT_BUF_CLK_DIV	(0x3  << 16) /* RW */
+#define SDC_ADV_CFG0_DAT_BUF_FREQ_CTL_EN (0x1  << 18) /* RW */
+#define SDC_ADV_CFG0_SDIO_IRQ_ENHANCE_EN (0x1  << 19) /* RW */
+#define SDC_ADV_CFG0_SDC_RX_ENH_EN	(0x1  << 20) /* RW */
 
 /* EMMC_CFG0 mask */
 #define	EMMC_CFG0_BOOTSTART		(0x1  << 0)	/* W  */

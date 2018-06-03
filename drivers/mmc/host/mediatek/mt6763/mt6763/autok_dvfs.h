@@ -15,10 +15,6 @@
 #define _AUTOK_DVFS_H_
 
 #define VOREFS_READY
-#ifdef CONFIG_MTK_COMBO_COMM /* Temp for 6630 bring-up */
-#undef VOREFS_READY
-#endif
-/* #define SDIO_HQA */
 
 #include "autok.h"
 
@@ -29,8 +25,6 @@
 enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL0 = 0,
 	AUTOK_VCORE_LEVEL1,
-	AUTOK_VCORE_LEVEL2,
-	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_NUM
 };
 
@@ -60,7 +54,7 @@ enum dvfs_opp {
 #define AUTOK_VCORE_NUM		1
 #endif
 
-#define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
+#define MSDC_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
 
 #define BACKUP_REG_COUNT_SDIO           14
 #define BACKUP_REG_COUNT_EMMC_INTERNAL  5
@@ -70,8 +64,7 @@ enum dvfs_opp {
 #define MSDC_DVFS_SET_SIZE      0x48
 #define MSDC_TOP_SET_SIZE       0x30
 
-/* Enable later@Peter */
-/* #define SDIO_HW_DVFS_CONDITIONAL */
+#define SDIO_HW_DVFS_CONDITIONAL
 
 /**********************************************************
 * Function Declaration                                    *
@@ -87,7 +80,7 @@ extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void msdc_dvfs_reg_backup_init(struct msdc_host *host);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
-extern void msdc_dump_autok(struct msdc_host *host);
+extern void msdc_dump_autok(struct msdc_host *host, struct seq_file *m);
 
 #endif /* _AUTOK_DVFS_H_ */
 

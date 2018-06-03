@@ -242,6 +242,7 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 		pr_err("MSDC%d top register\n", id);
 	else
 		seq_printf(m, "MSDC%d top register\n", id);
+
 	for (i = 0;  msdc_offsets_top[i] != (u16)0xFFFF; i++) {
 		offset = msdc_offsets_top[i];
 		val = MSDC_READ32(host->base_top + offset);
@@ -256,6 +257,7 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 		pr_err("MSDC%d top DVFS register\n", id);
 	else
 		seq_printf(m, "MSDC%d top DVFS register\n", id);
+
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		for (j = 0; j < host->dvfs_reg_backup_cnt_top; j++) {
 			offset = host->dvfs_reg_offsets_top[j] + MSDC_TOP_SET_SIZE * i;
@@ -363,7 +365,9 @@ void msdc_dump_info(u32 id)
 
 	msdc_dump_padctl(host);
 
-	msdc_dump_autok(host);
+	/* prevent bad sdcard, print too much log */
+	if (host->id != 1)
+		msdc_dump_autok(host, NULL);
 
 	mdelay(10);
 
@@ -589,6 +593,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 	u32 val;
 
 	if ((on) && (host->core_clkon == 0)) {
+
 		msdc_clk_enable(host);
 
 		host->core_clkon = 1;
@@ -652,47 +657,6 @@ void msdc_ungate_clock(struct msdc_host *host)
 		msdc_clksrc_onoff(host, 1);
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
-
-#ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
-/*
- * Power off card on the 2 bad card conditions:
- * 1. if dat pins keep high when pulled low or
- * 2. dat pins alway keeps high
- */
-static int msdc_io_check(struct msdc_host *host)
-{
-	int result = 1;
-	void __iomem *base = host->base;
-	unsigned long polling_tmo = 0;
-
-	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0xF0000) != 0xF0000) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, some of device's dat pin(s) stuck in low!\n", host->id);
-			pr_err("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
-			goto POWER_OFF;
-		}
-	}
-
-	msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
-	mdelay(10);
-	polling_tmo = jiffies + POLLING_PINS;
-	while ((MSDC_READ32(MSDC_PS) & 0x70000) != 0) {
-		if (time_after(jiffies, polling_tmo)) {
-			pr_err("msdc%d, some of device's dat(0~2) pin(s) stuck in high\n", host->id);
-			pr_err("ps = 0x%x\n", MSDC_READ32(MSDC_PS));
-			msdc_pin_config(host, MSDC_PIN_PULL_UP);
-			goto POWER_OFF;
-		}
-	}
-	msdc_pin_config(host, MSDC_PIN_PULL_UP);
-	return result;
-POWER_OFF:
-	host->block_bad_card = 1;
-	host->power_control(host, 0);
-	return 0;
-}
-#endif
 
 static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 {
@@ -814,15 +778,7 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	/* need because clk changed.*/
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
 
-#if defined(FPGA_PLATFORM)
-	/*FPGA temp workaround begin*/
-	{
-		host->hw->rdata_edge = 1;
-		host->hw->cmd_edge = 1;
-	}
-	/*FPGA temp workaround end*/
 	msdc_set_smpl_all(host, mode);
-#endif
 
 	pr_err("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
@@ -917,7 +873,6 @@ static void msdc_set_buswidth(struct msdc_host *host, u32 width)
 
 static void msdc_init_hw(struct msdc_host *host)
 {
-	int ret;
 	void __iomem *base = host->base;
 
 	/* Power on */
@@ -929,11 +884,11 @@ static void msdc_init_hw(struct msdc_host *host)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
 	/* Disable HW DVFS */
-	if (host->hw->host_function == MSDC_SDIO) {
-		ret = vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+	if ((host->hw->host_function == MSDC_SDIO) && (host->use_hw_dvfs == 1)) {
+		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) & ~(MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
-		ret = vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 	}
 
 	/* Reset */
@@ -1044,15 +999,8 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 		if (msdc_oc_check(host, 1))
 			return;
 		if (host->id == 1) {
-#ifdef MSDC1_BLOCK_DATPIN_BROKEN_CARD
-			/*
-			 * Check the dat pin is high when we pull dat low
-			 * and dat pin is high at normal status
-			 * If the card is bad, we don't power up
-			 */
 			if (!msdc_io_check(host))
 				return;
-#endif
 
 			msdc_set_check_endbit(host, 1);
 		}
@@ -1713,7 +1661,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			/* Set clock to 50Hz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 
@@ -1730,7 +1678,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			/* Set clock to 50Hz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz SDC_CFG:0x%x\n", __func__, MSDC_READ32(SDC_CFG));
+				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
@@ -2376,7 +2324,7 @@ static void msdc_dma_start(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR;
+		| MSDC_INTEN_DATCRCERR | MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->mmc->is_data_dma = 1;
@@ -4106,6 +4054,22 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return 0;
 }
 
+static void msdc_unreq_vcore(struct work_struct *work)
+{
+	vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+}
+
+static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
+{
+	if (enable) {
+		/* true if dwork was pending, false otherwise */
+		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
+			vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+	} else {
+		schedule_delayed_work(&(host->set_vcore_workq), MSDC_DVFS_TIMEOUT);
+	}
+}
+
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	int host_cookie = 0;
@@ -4114,6 +4078,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if ((host->hw->host_function == MSDC_SDIO) &&
 	    !(host->trans_lock.active))
 		__pm_stay_awake(&host->trans_lock);
+
+	/* SDIO need lock dvfs */
+	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
+		msdc_set_vcore_performance(host, 1);
 
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
@@ -4156,6 +4124,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		msdc_do_request_async(mmc, mrq);
 	else
 		msdc_ops_request_legacy(mmc, mrq);
+
+	/* SDIO need lock dvfs */
+	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
+		msdc_set_vcore_performance(host, 0);
 
 	if ((host->hw->host_function == MSDC_SDIO) &&
 	    (host->trans_lock.active))
@@ -4431,8 +4403,10 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	status = MSDC_READ32(MSDC_PS);
 	msdc_gate_clock(host, 1);
 
-	if (((status >> 16) & 0x1) != 0x1)
+	if (((status >> 16) & 0x1) != 0x1) {
+		pr_err("msdc%d: card is busy!\n", host->id);
 		return 1;
+	}
 
 	return 0;
 }
@@ -4637,6 +4611,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	u32 acmdsts = MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY |
 		     MSDC_INT_ACMD19_DONE;
 	u32 datsts = MSDC_INT_DATCRCERR | MSDC_INT_DATTMO;
+	u32 gpdsts = MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
 	u32 intsts, inten;
 	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY;
 
@@ -4671,6 +4646,15 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 		if (intsts & MSDC_INT_SDIOIRQ)
 			mmc_signal_sdio_irq(host->mmc);
+	}
+
+	if (intsts & gpdsts) {
+		/* GPD or BD checksum verification error occurs.
+		 * There shall be HW issue, so BUG_ON here
+		 */
+		msdc_dump_gpd_bd(host->id);
+		msdc_dump_dbg_register(host);
+		BUG_ON(1);
 	}
 
 	if (data == NULL)
@@ -4952,7 +4936,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->max_blk_count = MAX_REQ_SZ / 512; /* mmc->max_req_size; */
 
 	host->hclk              = msdc_get_hclk(pdev->id, hw->clk_src);
-					/* clocksource to msdc */
 	host->pm_state          = PMSG_RESUME;
 	host->power_mode        = MMC_POWER_OFF;
 	host->power_control     = NULL;
@@ -5007,6 +4990,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	/* for re-autok */
 	host->tuning_in_progress = false;
+	INIT_DELAYED_WORK(&(host->set_vcore_workq), msdc_unreq_vcore);
 	init_completion(&host->autok_done);
 	host->need_tune	= TUNE_NONE;
 	host->err_cmd = -1;

@@ -132,8 +132,6 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 		} else if (*status == voltage_uv) {
 			pr_err("msdc power on <%d> again!\n", voltage_uv);
 		} else {
-			pr_warn("msdc change<%d> to <%d>\n",
-				*status, voltage_uv);
 			regulator_disable(reg);
 			(void)msdc_regulator_set_and_enable(reg, voltage_uv);
 			*status = voltage_uv;
@@ -358,11 +356,6 @@ void msdc_clk_pre_enable(struct msdc_host *host)
 void msdc_clk_post_disble(struct msdc_host *host)
 {
 }
-
-void msdc_sd_power_off(void)
-{
-}
-EXPORT_SYMBOL(msdc_sd_power_off);
 #endif /*endif !defined(FPGA_PLATFORM)*/
 
 void msdc_pmic_force_vcore_pwm(bool enable)
@@ -404,6 +397,60 @@ void msdc_set_host_power_control(struct msdc_host *host)
 	}
 }
 
+#if defined(MSDC_HQA) && defined(SDIO_HQA)
+#error shall not define both MSDC_HQA and SDIO_HQA
+#endif
+#if defined(MSDC_HQA) || defined(SDIO_HQA)
+/* #define MSDC_HQA_HV */
+/* #define MSDC_HQA_NV */
+#define MSDC_HQA_LV
+
+void msdc_HQA_set_voltage(struct msdc_host *host)
+{
+#if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
+	static int vcore_orig = -1, vio_orig = -1;
+	u32 vcore, vio, vio_cal = 0, val_delta;
+#endif
+
+	if (host->is_autok_done == 1)
+		return;
+
+	if (vcore_orig < 0)
+		pmic_read_interface(0xBE8, &vcore_orig, 0x3F, 0);
+	if (vio_orig < 0)
+		pmic_read_interface(0x1296, &vio_orig, 0xF, 8);
+	pmic_read_interface(0x1296, &vio_cal, 0xF, 0);
+	pr_err("[MSDC%d HQA] orig Vcore 0x%x, Vio 0x%x, Vio_cal 0x%x\n",
+		host->id, vcore_orig, vio_orig, vio_cal);
+
+#if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
+	val_delta = (500000 + vcore_orig * 6250) / 20 / 6250;
+
+	#ifdef MSDC_HQA_HV
+	vcore = vcore_orig + val_delta;
+	vio_cal = 0xa;
+	#endif
+
+	#ifdef MSDC_HQA_LV
+	vcore = vcore_orig - val_delta;
+	vio_cal = 0;
+	vio = vio_orig - 1;
+	#endif
+
+	pmic_config_interface(0xBE8, vcore, 0x7F, 0);
+
+	if (vio_cal)
+		pmic_config_interface(0x1296, vio_cal, 0xF, 0);
+	else
+		pmic_config_interface(0x1296, vio, 0xF, 8);
+
+	pr_err("[MSDC%d HQA] adj Vcore 0x%x, Vio 0x%x, Vio_cal 0x%x\n",
+		host->id, vcore, vio, vio_cal);
+#endif
+
+}
+#endif
+
 
 /**************************************************************/
 /* Section 3: Clock                                           */
@@ -444,27 +491,34 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		MSDC0_HCLK_NAME, MSDC1_HCLK_NAME, MSDC2_HCLK_NAME
 	};
 
-	host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
-	if  (hclk_names[pdev->id])
+	if  (clk_names[pdev->id]) {
+		host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
+		if (IS_ERR(host->clk_ctl)) {
+			pr_err("[msdc%d] cannot get clk ctrl\n", pdev->id);
+			return 1;
+		}
+		if (clk_prepare(host->clk_ctl)) {
+			pr_err("[msdc%d] cannot prepare clk ctrl\n", pdev->id);
+			return 1;
+		}
+	}
+
+	if  (hclk_names[pdev->id]) {
 		host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[pdev->id]);
+		if (IS_ERR(host->hclk_ctl)) {
+			pr_err("[msdc%d] cannot get hclk ctrl\n", pdev->id);
+			return 1;
+		}
+		if (clk_prepare(host->hclk_ctl)) {
+			pr_err("[msdc%d] cannot prepare hclk ctrl\n", pdev->id);
+			return 1;
+		}
+	}
 
-	if (IS_ERR(host->clk_ctl)) {
-		pr_err("[msdc%d] can not get clock control\n", pdev->id);
-		return 1;
-	}
-	if (clk_prepare(host->clk_ctl)) {
-		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
-		return 1;
-	}
+	host->hclk = clk_get_rate(host->clk_ctl);
 
-	if (hclk_names[pdev->id] && IS_ERR(host->hclk_ctl)) {
-		pr_err("[msdc%d] can not get clock control\n", pdev->id);
-		return 1;
-	}
-	if (hclk_names[pdev->id] && clk_prepare(host->hclk_ctl)) {
-		pr_err("[msdc%d] can not prepare hclock control\n", pdev->id);
-		return 1;
-	}
+	pr_err("[msdc%d] hclk:%d, clk_ctl:%p, hclk_ctl:%p\n",
+		pdev->id, host->hclk, host->clk_ctl, host->hclk_ctl);
 
 	return 0;
 }
@@ -604,6 +658,43 @@ void msdc_clk_status(int *status)
 void msdc_dump_vcore(void)
 {
 	pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
+}
+
+/*
+ * Power off card on the 2 bad card conditions:
+ * 1. if dat pins keep high when pulled low or
+ * 2. dat pins alway keeps high
+ */
+int msdc_io_check(struct msdc_host *host)
+{
+	int result = 1, i;
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+	u32 pupd_patterns[3] = {0x226226, 0x622226, 0x262226};
+	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
+
+	if (host->id != 1)
+		return 1;
+
+	for (i = 0; i < 3; i++) {
+		MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, pupd_patterns[i]);
+		polling_tmo = jiffies + POLLING_PINS;
+		while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
+			if (time_after(jiffies, polling_tmo)) {
+				pr_err("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
+					host->id, i, MSDC_READ32(MSDC_PS));
+				goto POWER_OFF;
+			}
+		}
+	}
+
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x222226);
+	return result;
+
+POWER_OFF:
+	host->block_bad_card = 1;
+	host->power_control(host, 0);
+	return 0;
 }
 
 void msdc_dump_padctl_by_id(u32 id)
@@ -892,14 +983,6 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 
 void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
-	pr_err("msdc%d set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-		id,
-		driving->clk_drv,
-		driving->cmd_drv,
-		driving->dat_drv,
-		driving->rst_drv,
-		driving->ds_drv);
-
 	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV0_ADDR, MSDC0_DRV0_DSL_MASK,
 			driving->ds_drv);

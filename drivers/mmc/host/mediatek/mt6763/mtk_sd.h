@@ -46,13 +46,6 @@
 #define TUNE_AUTOK_PASS          (0x1 << 6) /* autok pass flag */
 
 #define MSDC_DMA_ADDR_DEBUG
-/* #define MSDC_HQA */
-
-/*
- * For DAT pin broken (dat pin always low
- * or dat0~2 aways high), we don't power up
- */
-#define MSDC1_BLOCK_DATPIN_BROKEN_CARD
 
 #define MTK_MSDC_USE_CMD23
 #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
@@ -336,6 +329,7 @@ struct msdc_host {
 
 	int                     irq;            /* host interrupt */
 
+	struct delayed_work     set_vcore_workq;
 	struct completion       autok_done;
 
 	struct completion       cmd_done;	/* FIX ME, try to removed it */
@@ -364,6 +358,7 @@ struct msdc_host {
 	int                     power_cycle_cnt;
 	bool                    is_autok_done;
 	u8                      use_hw_dvfs;
+	u8                      lock_vcore;
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];
 	u16                     dvfs_reg_backup_cnt;
 	u16                     dvfs_reg_backup_cnt_top;

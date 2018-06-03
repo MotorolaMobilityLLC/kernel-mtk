@@ -417,6 +417,9 @@
 #endif
 #define HOST_MIN_MCLK           (260000)
 
+/* #define MSDC_HQA */
+/* #define SDIO_HQA */
+
 /**************************************************************/
 /* Section 6: BBChip-depenent Tunnig Parameter                */
 /**************************************************************/

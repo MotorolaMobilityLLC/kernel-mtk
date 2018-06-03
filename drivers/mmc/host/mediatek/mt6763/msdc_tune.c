@@ -33,8 +33,8 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host)
 	if (host->saved_para.hz) {
 		if ((host->saved_para.suspend_flag)
 		 || ((host->saved_para.msdc_cfg != 0) &&
-		    ((host->saved_para.msdc_cfg&0xFFFFFF9F) !=
-				(MSDC_READ32(MSDC_CFG)&0xFFFFFF9F)))) {
+		    ((host->saved_para.msdc_cfg&0x0FFFFF9F) !=
+				(MSDC_READ32(MSDC_CFG)&0x0FFFFF9F)))) {
 			ERR_MSG("sdio resume[ns] cur_cfg=%x, save_cfg=%x\n",
 				MSDC_READ32(MSDC_CFG),
 				host->saved_para.msdc_cfg);
@@ -44,7 +44,7 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host)
 			host->saved_para.suspend_flag = 0;
 			#ifdef SDIO_EARLY_SETTING_RESTORE
 			msdc_reset_hw(host->id);
-			host->saved_para.msdc_cfg &= 0xFFFFFFDF;
+			host->saved_para.msdc_cfg &= 0x0FFFFFDF;
 			MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
 			#endif
 			msdc_restore_timing_setting(host);
@@ -71,7 +71,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.hz = host->mclk;
 		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
 		host->saved_para.timing = host->timing;
-		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
+		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG) & 0x0FFFFFFF;
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
 	}
@@ -300,7 +300,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	if (sdio) {
 		msdc_reset_hw(host->id); /* force bit5(BV18SDT) to 0 */
 		host->saved_para.msdc_cfg =
-			host->saved_para.msdc_cfg & 0xFFFFFFDF;
+			host->saved_para.msdc_cfg & 0x0FFFFFDF;
 		MSDC_WRITE32(MSDC_CFG, host->saved_para.msdc_cfg);
 	}
 	#endif
@@ -314,8 +314,8 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 				host->saved_para.hz);
 		}
 
-		if ((MSDC_READ32(MSDC_CFG) & 0xFFFFFF9F) ==
-		    (host->saved_para.msdc_cfg & 0xFFFFFF9F))
+		if ((MSDC_READ32(MSDC_CFG) & 0x0FFFFF9F) ==
+		    (host->saved_para.msdc_cfg & 0x0FFFFF9F))
 			break;
 		ERR_MSG("msdc set_mclk is unstable (cur_cfg=%x, save_cfg=%x, cur_hz=%d, save_hz=%d)",
 			MSDC_READ32(MSDC_CFG),
@@ -485,6 +485,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 			(PAD_DS_DLY3 | PAD_DS_DLY2 | PAD_DS_DLY1), 0);
 	}
 
+	/* Reserve MSDC_IOCON_DDR50CKD bit, clear all other bits */
 	val = MSDC_READ32(MSDC_IOCON) & MSDC_IOCON_DDR50CKD;
 	MSDC_WRITE32(MSDC_IOCON, val);
 
