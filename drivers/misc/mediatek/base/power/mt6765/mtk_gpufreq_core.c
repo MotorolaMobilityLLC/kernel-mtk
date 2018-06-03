@@ -2334,7 +2334,8 @@ static void __mt_gpufreq_set_initial(void)
 	mutex_lock(&mt_gpufreq_lock);
 
 	/* default OPP index */
-	g_cur_opp_cond_idx = mt_gpufreq_get_dvfs_table_num() - 1;
+	g_cur_opp_cond_idx = 0;
+	g_thermal_protect_limited_ignore_state = 1;
 
 	/* set POST_DIVIDER initial value */
 	g_cur_post_divider_power = POST_DIV4;
