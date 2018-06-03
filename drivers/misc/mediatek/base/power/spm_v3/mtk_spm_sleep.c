@@ -228,7 +228,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
-	.reg_scp_infra_req_mask_b = 0,
+	.reg_scp_infra_req_mask_b = 1,
 	.reg_srcclkeni0_infra_mask_b = 0,
 	.reg_srcclkeni1_infra_mask_b = 0,
 	.reg_srcclkeni2_infra_mask_b = 0,
@@ -434,14 +434,6 @@ static void spm_set_sysclk_settle(void)
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if 0
-	if (spm_for_gps_flag == 0)
-		ulposcpll_force_off();
-	/* clock_force_off(); */
-	mtcmos_force_off();
-	pll_force_off();
-#endif
-
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
 #if 0
 	unsigned int temp;
@@ -469,14 +461,6 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
-
-#if 0
-	pll_force_on();
-	mtcmos_force_on();
-	clock_force_on();
-	if (spm_for_gps_flag == 0)
-		ulposcpll_force_on();
-#endif
 }
 
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
