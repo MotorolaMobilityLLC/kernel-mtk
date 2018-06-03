@@ -112,6 +112,15 @@ config DMA_BCM2835
 	select DMA_ENGINE
 	select DMA_VIRTUAL_CHANNELS
 
+config DMA_MTK_UART
+	tristate "MediaTek SoCs APDMA support for UART"
+	depends on OF
+	select DMA_ENGINE
+	select DMA_VIRTUAL_CHANNELS
+	help
+	  Support for the DMA engine found on MediaTek MTK SoCs.
+	  This DMA engine just only if used when 8250 mtk uart is enabled.
+
 config DMA_JZ4740
 	tristate "JZ4740 DMA support"
 	depends on MACH_JZ4740
