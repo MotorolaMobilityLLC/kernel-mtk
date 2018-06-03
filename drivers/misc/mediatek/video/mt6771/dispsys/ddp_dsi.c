@@ -172,6 +172,7 @@ unsigned long DSI_PHY_REG[DSI_INTERFACE_NUM];
 struct DSI_CMDQ_REGS *DSI_CMDQ_REG[DSI_INTERFACE_NUM];
 struct DSI_VM_CMDQ_REGS *DSI_VM_CMD_REG[DSI_INTERFACE_NUM];
 
+static int def_data_rate;
 static int dsi_currect_mode;
 static int dsi_force_config;
 static int dsi0_te_enable = 1;
@@ -1166,22 +1167,22 @@ int MIPITX_IsEnabled(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if 0
 	int i = 0;
-	int j = 0;
-	unsigned int pcw = (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2.RG_DSI_MPPLL_SDM_PCW >> 24) & 0x7f;
-	unsigned int prediv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_PREDIV));
-	unsigned int posdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_POSDIV));
-	unsigned int S2Qdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP.RG_MPPLL_S2QDIV));
+	unsigned int pcw;
+	unsigned int prediv;
+	unsigned int posdiv;
 
-	DDPPR_ERR("%s, pcw: %d, prediv: %d, posdiv: %d, S2Qdiv: %d\n", __func__, pcw,
-		prediv, posdiv, S2Qdiv);
-	j = prediv * posdiv * S2Qdiv;
-	if (j > 0)
-		return 26 * pcw / j;
-#else
-	return 0;
-#endif
+	pcw = MIPITX_INREGBIT(MIPI_BASE_ADDR(module) + MIPITX_PLL_CON0, FLD_RG_DSI_PLL_SDM_PCW);
+	pcw = (pcw >> 24) & 0xff;
+	prediv = 1;
+	posdiv = MIPITX_INREGBIT(MIPI_BASE_ADDR(module) + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_POSDIV);
+	posdiv = (1 << posdiv);
+
+	DISPINFO("%s, pcw: %d, prediv: %d, posdiv: %d", __func__, pcw,
+			prediv, posdiv);
+	i = prediv * posdiv;
+	if (i > 0)
+		return 26 * pcw / i;
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 	return 0;
 }
@@ -1202,6 +1203,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 					PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
 	DISPFUNC();
+	data_Rate = def_data_rate ? def_data_rate : data_Rate;
 
 	/* DPHY SETTING */
 
@@ -1697,6 +1699,88 @@ static void _dsi_phy_clk_setting_gce(enum DISP_MODULE_ENUM module,
 		else
 		mdelay(1);
 	}
+}
+
+
+/* DSI_MIPI_clk_change
+ */
+void DSI_MIPI_clk_change(enum DISP_MODULE_ENUM module, int clk)
+{
+	unsigned int chg_status = 0;
+	unsigned int pcw_ratio = 0;
+	unsigned int pcw = 0;
+	unsigned int posdiv    = 0;
+	unsigned int prediv    = 0;
+	unsigned int i = DSI_MODULE_to_ID(module);
+
+	DISPMSG("%s,clk=%d\n", __func__, clk);
+
+	if (_is_power_on_status(module)) {
+		if (clk != 0) {
+			unsigned int tmp = 0;
+
+			if (clk > 2500) {
+				DISPERR("mipitx Data Rate exceed limitation(%d)\n", clk);
+				ASSERT(0);
+			} else if (clk >= 2000) { /* 2G ~ 2.5G */
+				pcw_ratio = 1;
+				posdiv    = 0;
+				prediv    = 0;
+			} else if (clk >= 1000) { /* 1G ~ 2G */
+				pcw_ratio = 2;
+				posdiv    = 1;
+				prediv    = 0;
+			} else if (clk >= 500) { /* 500M ~ 1G */
+				pcw_ratio = 4;
+				posdiv    = 2;
+				prediv    = 0;
+			} else if (clk > 250) { /* 250M ~ 500M */
+				pcw_ratio = 8;
+				posdiv    = 3;
+				prediv    = 0;
+			} else if (clk >= 125) { /* 125M ~ 250M */
+				pcw_ratio = 16;
+				posdiv    = 4;
+				prediv    = 0;
+			} else {
+				DISPERR("dataRate is too low(%d)\n", clk);
+				ASSERT(0);
+			}
+
+			pcw = clk * pcw_ratio / 26;
+			tmp = ((pcw & 0xFF) << 24) | (((256 * (clk * pcw_ratio % 26) / 26) & 0xFF) << 16) |
+				(((256 * (256 * (clk * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
+				((256 * (256 * (256 * (clk * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
+			MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_PLL_CON0, tmp);
+
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_POSDIV, posdiv);
+
+			chg_status = MIPITX_INREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_SDM_PCW_CHG);
+
+			if (chg_status)
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_SDM_PCW_CHG, 0);
+			else
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_SDM_PCW_CHG, 1);
+		}
+	}
+}
+
+int mipi_clk_change(int msg, int en)
+{
+	DISPMSG("%s,msg=%d,en=%d\n", __func__, msg, en);
+
+	if (en) {
+		def_data_rate = 1030;
+		DSI_MIPI_clk_change(DISP_MODULE_DSI0, 1030);
+	} else {
+		LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
+		unsigned int data_rate = dsi_params->data_rate != 0 ?
+					 dsi_params->data_rate : dsi_params->PLL_CLOCK * 2;
+		def_data_rate = data_rate;
+
+		DSI_MIPI_clk_change(DISP_MODULE_DSI0, data_rate);
+	}
+	return 0;
 }
 
 
