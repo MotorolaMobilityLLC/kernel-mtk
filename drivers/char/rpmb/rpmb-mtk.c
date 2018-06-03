@@ -240,7 +240,7 @@ struct emmc_rpmb_blk_data {
 	unsigned int usage;
 	unsigned int read_only;
 	unsigned int part_type;
-	unsigned int name_idx;
+	/* unsigned int name_idx; */
 	unsigned int reset_done;
 
 	/*
