@@ -2269,7 +2269,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	/* setup OPP table by device ID */
 	gpufreq_pr_debug("@%s: setup OPP table\n", __func__);
-	__mt_gpufreq_setup_opp_table(g_opp_table_segment2, ARRAY_SIZE(g_opp_table_segment2));
+	__mt_gpufreq_setup_opp_table(g_opp_table_segment1, ARRAY_SIZE(g_opp_table_segment1));
 
 	/* setup PMIC init value */
 	g_vgpu_sfchg_rrate = __calculate_vgpu_sfchg_rate(true);
