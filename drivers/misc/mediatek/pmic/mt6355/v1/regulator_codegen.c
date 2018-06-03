@@ -4193,7 +4193,6 @@ static int pmic_ldo_vcama2_get_voltage_sel(struct regulator_dev *rdev)
 			if (vcama2_idx[i] == selector) {
 				ret = i;
 				break;
-				ret = -1;
 			}
 		}
 	}
