@@ -1602,21 +1602,6 @@
 		reg = <0 0x11221000 0 0x9000>;
 	};
 
-	usb3@11270000 {
-		compatible = "mediatek,usb3";
-		reg = <0 0x11270000 0 0x1000>;
-	};
-
-	usb3_sif@11280000 {
-		compatible = "mediatek,usb3_sif";
-		reg = <0 0x11280000 0 0x1000>;
-	};
-
-	usb3_sif2@11290000 {
-		compatible = "mediatek,usb3_sif2";
-		reg = <0 0x11290000 0 0x1000>;
-	};
-
 	ufshci:ufshci@11270000 {
 		compatible = "mediatek,ufshci";
 		reg = <0 0x11270000 0 0x2300>;
