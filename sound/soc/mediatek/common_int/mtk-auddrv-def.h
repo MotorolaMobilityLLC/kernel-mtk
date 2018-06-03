@@ -153,8 +153,6 @@
 #define PRINTK_AUD_MODDAI(format, args...)
 #endif
 
-#define PRINTK_AUD_ERROR(format, args...)  pr_err(format, ##args)
-
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) WARN_ON(value)
 

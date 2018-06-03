@@ -616,8 +616,8 @@ void AudDrv_Clk_Off(void)
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
 			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
 	} else if (Aud_AFE_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr<0 (%d)\n",
-				 Aud_AFE_Clk_cntr);
+		pr_warn("!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr<0 (%d)\n",
+			Aud_AFE_Clk_cntr);
 		Aud_AFE_Clk_cntr = 0;
 	}
 	mutex_unlock(&auddrv_clk_mutex);
@@ -832,8 +832,8 @@ void AudDrv_APLL22M_Clk_Off(void)
 
 EXIT:
 	if (Aud_APLL22M_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("err, %s <0 (%d)\n", __func__,
-				 Aud_APLL22M_Clk_cntr);
+		pr_warn("err, %s <0 (%d)\n", __func__,
+			Aud_APLL22M_Clk_cntr);
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
@@ -900,8 +900,8 @@ void AudDrv_APLL24M_Clk_Off(void)
 	}
 EXIT:
 	if (Aud_APLL24M_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("%s <0 (%d)\n", __func__,
-				 Aud_APLL24M_Clk_cntr);
+		pr_warn("%s <0 (%d)\n", __func__,
+			Aud_APLL24M_Clk_cntr);
 		Aud_APLL24M_Clk_cntr = 0;
 	}
 
@@ -948,8 +948,8 @@ void AudDrv_I2S_Clk_Off(void)
 	if (Aud_I2S_Clk_cntr == 0) {
 		aud_top_con_pdn_i2s(true);
 	} else if (Aud_I2S_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("!! AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
-				 Aud_I2S_Clk_cntr);
+		pr_warn("!! AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
+			Aud_I2S_Clk_cntr);
 		Aud_I2S_Clk_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -991,8 +991,8 @@ void AudDrv_TDM_Clk_Off(void)
 	if (Aud_TDM_Clk_cntr == 0) {
 		aud_top_con_pdn_tdm_ck(true); /* disable HDMI CK */
 	} else if (Aud_TDM_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("!! %s(), Aud_TDM_Clk_cntr<0 (%d)\n",
-				 __func__, Aud_TDM_Clk_cntr);
+		pr_warn("!! %s(), Aud_TDM_Clk_cntr<0 (%d)\n",
+			__func__, Aud_TDM_Clk_cntr);
 		Aud_TDM_Clk_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1039,8 +1039,8 @@ void AudDrv_APLL1Tuner_Clk_Off(void)
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);
 	} else if (Aud_APLL1_Tuner_cntr < 0) {
-		PRINTK_AUD_ERROR("!! %s, Aud_APLL1_Tuner_cntr<0 (%d)\n",
-				 __func__, Aud_APLL1_Tuner_cntr);
+		pr_warn("!! %s, Aud_APLL1_Tuner_cntr<0 (%d)\n",
+			__func__, Aud_APLL1_Tuner_cntr);
 		Aud_APLL1_Tuner_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1088,8 +1088,8 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL2_TUNER].clock);
 	} else if (Aud_APLL2_Tuner_cntr < 0) {
-		PRINTK_AUD_ERROR("!! %s, Aud_APLL1_Tuner_cntr<0 (%d)\n",
-				 __func__, Aud_APLL2_Tuner_cntr);
+		pr_warn("!! %s, Aud_APLL1_Tuner_cntr<0 (%d)\n",
+			__func__, Aud_APLL2_Tuner_cntr);
 		Aud_APLL2_Tuner_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1123,8 +1123,8 @@ void AudDrv_HDMI_Clk_Off(void)
 		AudDrv_ANA_Clk_Off();
 		AudDrv_Clk_Off();
 	} else if (Aud_HDMI_Clk_cntr < 0) {
-		PRINTK_AUD_ERROR("!! AudDrv_Linein_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
-				 Aud_HDMI_Clk_cntr);
+		pr_warn("!! AudDrv_Linein_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
+		Aud_HDMI_Clk_cntr);
 		Aud_HDMI_Clk_cntr = 0;
 	}
 	PRINTK_AUD_CLK("-AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr:%d\n", Aud_HDMI_Clk_cntr);
@@ -1156,7 +1156,7 @@ void AudDrv_Emi_Clk_Off(void)
 
 	if (Aud_EMI_cntr < 0) {
 		Aud_EMI_cntr = 0;
-		PRINTK_AUD_ERROR("Aud_EMI_cntr = %d\n", Aud_EMI_cntr);
+		pr_warn("Aud_EMI_cntr = %d\n", Aud_EMI_cntr);
 	}
 	mutex_unlock(&auddrv_pmic_mutex);
 }
