@@ -1681,7 +1681,12 @@ static void testcase_poll_run(u32 poll_value, u32 poll_mask, bool use_mmsys_dumm
 	CMDQ_LOG("%s\n", __func__);
 	CMDQ_LOG("poll value is 0x%08x\n", poll_value);
 	CMDQ_LOG("poll mask is 0x%08x\n", poll_mask);
-	CMDQ_LOG("use_mmsys_dummy is %u\n", use_mmsys_dummy);
+	CMDQ_LOG("use_mmsys_dummy is %u 0x%lx\n", use_mmsys_dummy, dummy_va);
+
+	if (!dummy_va) {
+		CMDQ_TEST_FAIL("dummy va not available\n");
+		return;
+	}
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);

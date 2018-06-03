@@ -366,6 +366,9 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_SOF, disp_dbi0_sof)
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_EOF, disp_dbi0_frame_done)
 
+	/* 6771 New Event */
+	DECLAR_EVENT(CMDQ_EVENT_SPE_B_FRAME_DONE, spe_b_frame_done)
+
 	/* Keep this at the end of HW events */
 	DECLAR_EVENT(CMDQ_MAX_HW_EVENT_COUNT, hw_event_conunt)
 
