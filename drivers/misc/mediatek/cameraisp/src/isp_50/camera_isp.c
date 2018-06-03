@@ -3262,13 +3262,6 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		ret = filp->f_op->unlocked_ioctl(filp, ISP_DEBUG_FLAG, (unsigned long)compat_ptr(arg));
 		return ret;
 	}
-	case COMPAT_ISP_GET_INT_ERR: {
-		/* compat_ptr(arg) will convert the arg */
-		ret =
-			filp->f_op->unlocked_ioctl(filp, ISP_GET_INT_ERR,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
 	case COMPAT_ISP_GET_DMA_ERR: {
 		/* compat_ptr(arg) will convert the arg */
 		ret =
@@ -3328,6 +3321,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_DFS_UPDATE:
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 	case ISP_GET_CUR_ISP_CLOCK:
+	case ISP_GET_INT_ERR:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
