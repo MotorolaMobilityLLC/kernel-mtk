@@ -7087,3 +7087,58 @@ bool is_free_buddy_page(struct page *page)
 	return order < MAX_ORDER;
 }
 #endif
+
+static void __free_reserved_pages(struct page *page,
+					unsigned long pfn, unsigned int order) {
+	unsigned int nr_pages = 1 << order;
+	struct page *p = page;
+	unsigned int loop;
+
+	prefetchw(p);
+	for (loop = 0; loop < (nr_pages - 1); loop++, p++) {
+		prefetchw(p + 1);
+		__ClearPageReserved(p);
+		set_page_count(p, 0);
+	}
+	__ClearPageReserved(p);
+	set_page_count(p, 0);
+
+	page_zone(page)->managed_pages += nr_pages;
+	set_page_refcounted(page);
+	__free_pages(page, order);
+}
+
+int free_reserved_memory(phys_addr_t start_phys,
+				phys_addr_t end_phys) {
+
+	int order;
+	unsigned long  start_pfn, end_pfn;
+
+	if (end_phys <= start_phys) {
+
+		pr_alert("%s end_phys is smaller than start_phys start_phys:0x%pa end_phys:0x%pa\n"
+			, __func__, &start_phys, &end_phys);
+		 return -1;
+	}
+
+	if (!memblock_is_region_reserved(start_phys, end_phys - start_phys)) {
+
+		pr_alert("%s:not reserved memory phys_start:0x%pa phys_end:0x%pa\n"
+			, __func__, &start_phys, &end_phys);
+		return -1;
+	}
+
+	start_pfn = __phys_to_pfn(start_phys);
+	end_pfn = __phys_to_pfn(end_phys);
+
+	while (start_pfn < end_pfn) {
+
+		order = min(MAX_ORDER - 1UL, __ffs(start_pfn));
+		while (start_pfn + (1UL << order) > end_pfn)
+			order--;
+		__free_reserved_pages(pfn_to_page(start_pfn), start_pfn, order);
+		adjust_managed_page_count(pfn_to_page(start_pfn), 1<<order);
+		start_pfn += (1UL << order);
+	}
+	return 0;
+}
