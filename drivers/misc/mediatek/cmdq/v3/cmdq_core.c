@@ -571,6 +571,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			break;
 		}
 
+		/* adjust instruction index due to we insert jumps between buffers */
 		inst_idx = p_instr_position[i] +
 			p_instr_position[i] / ((CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE) - 1);
 		if (inst_idx == boundary_idx) {
@@ -596,8 +597,13 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 
 				/* adjust offset due to we insert jumps between buffers */
 				offset += (offset / (CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE)) * CMDQ_INST_SIZE;
+				if (offset == pTask->bufferSize) {
+					/* offset to last instruction may not adjust, return back 1 instruction */
+					offset = pTask->bufferSize - CMDQ_INST_SIZE;
+				}
 
 				/* change to absolute to avoid jump cross buffer */
+				CMDQ_MSG("Replace jump from: 0x%08x to offset: %u\n", p_cmd_va[0], offset);
 				p_cmd_va[1] = p_cmd_va[1] | 0x1;
 				p_cmd_va[0] = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_pa_by_offset(pTask, offset));
 			}
@@ -625,17 +631,24 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 
 			p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
 
-			if (arg_op_code == CMDQ_CODE_WRITE_S && p_instr_position[i] > 0 &&
+			if (arg_op_code == CMDQ_CODE_WRITE_S && inst_idx > 0 &&
 				arg_a_type != 0 && arg_a_i == CMDQ_SPR_FOR_TEMP)
-				cmdq_core_replace_overwrite_instr(pTask, p_instr_position[i]);
-
+				cmdq_core_replace_overwrite_instr(pTask, inst_idx);
 		}
 
 		if (arg_op_code == CMDQ_CODE_JUMP_C_RELATIVE) {
 			u32 *p_cmd_logic = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
-				(p_instr_position[i] - 1) * CMDQ_INST_SIZE);
+				(inst_idx - 1) * CMDQ_INST_SIZE);
 
-			if ((p_cmd_logic[1] >> 24) == CMDQ_CODE_LOGIC) {
+			/* logic and jump relative maybe separate by jump cross buffer */
+			if (p_cmd_logic[1] == ((CMDQ_CODE_JUMP << 24) | 1)) {
+				CMDQ_MSG("Re-adjust new logic instruction due to jump cross buffer: %u\n", inst_idx);
+				p_cmd_logic = (u32 *)cmdq_core_task_get_va_by_offset(pTask,
+					(inst_idx - 2) * CMDQ_INST_SIZE);
+			}
+
+			if ((p_cmd_logic[1] >> 24) == CMDQ_CODE_LOGIC &&
+				((p_cmd_logic[1] >> 16) & 0x1F) == CMDQ_LOGIC_ASSIGN) {
 				u32 jump_op = CMDQ_CODE_JUMP_C_ABSOLUTE << 24;
 				u32 jump_op_header = p_cmd_va[1] & 0xFFFFFF;
 				u32 offset_target = p_instr_position[i] * CMDQ_INST_SIZE + p_cmd_logic[0];
@@ -646,20 +659,29 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 				dest_addr_pa = cmdq_core_task_get_pa_by_offset(pTask, offset_target);
 
 				if (dest_addr_pa == 0) {
+					cmdq_core_dump_buffer(pTask);
 					CMDQ_AEE("CMDQ",
-						"Wrong PA offset, task: 0x%p, instr_pos: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
-						pTask, p_instr_position[i], p_cmd_logic[1], p_cmd_logic[0],
+						"Wrong PA offset, task: 0x%p, inst idx: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
+						pTask, inst_idx, p_cmd_logic[1], p_cmd_logic[0],
 						p_cmd_logic);
 					continue;
 				}
 
 				p_cmd_logic[0] = CMDQ_PHYS_TO_AREG(dest_addr_pa);
 				p_cmd_va[1] = jump_op | jump_op_header;
+
+				CMDQ_MSG(
+					"Replace jump_c inst idx: 0x%08x(0x%08x) cmd:0x%p 0x%08x:%08x logic:0x%p 0x%08x:0x%08x",
+					inst_idx, p_instr_position[i],
+					p_cmd_va, p_cmd_va[1], p_cmd_va[0],
+					p_cmd_logic, p_cmd_logic[1], p_cmd_logic[0]);
 			} else {
 				/* unable to jump correctly since relative offset may cross page */
 				CMDQ_ERR(
-					"No logic before jump, task: 0x%p, instr_pos: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
-					pTask, p_instr_position[i], p_cmd_va[1], p_cmd_va[0], p_cmd_va);
+					"No logic before jump, task: 0x%p, inst idx: 0x%08x cmd:0x%p 0x%08x:%08x logic:0x%p 0x%08x:0x%08x\n",
+					pTask, inst_idx,
+					p_cmd_va, p_cmd_va[1], p_cmd_va[0],
+					p_cmd_logic, p_cmd_logic[1], p_cmd_logic[0]);
 			}
 		}
 	}
