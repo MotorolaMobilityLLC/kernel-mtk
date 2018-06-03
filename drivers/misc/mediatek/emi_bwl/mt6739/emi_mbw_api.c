@@ -28,7 +28,6 @@
 
 static void __iomem *CEN_EMI_BASE; /* not initialise statics to 0 or NULL */
 static void __iomem *CHA_EMI_BASE;
-static void __iomem *CHB_EMI_BASE;
 static void __iomem *INFRACFG_BASE;
 static void __iomem *INFRA_AO_BASE;
 
@@ -483,6 +482,7 @@ static inline void aee_simple_print(const char *msg, unsigned int val)
 
 void dump_emi_outstanding(void)
 {
+#if 0
 	/* CEN_EMI_BASE: 0x10219000 */
 	if (!CEN_EMI_BASE)
 		return;
@@ -724,6 +724,7 @@ void dump_emi_outstanding(void)
 		(CHB_EMI_BASE + 0xa84));
 	EMI_DBG_SIMPLE_R("[EMI] 0x10235a84 = 0x%x\n",
 		(CHB_EMI_BASE + 0xa84));
+#endif
 }
 
 #define EMI_DBG_SIMPLE_RWR_MD(msg, addr, wval)	do {\
@@ -737,6 +738,7 @@ void dump_emi_outstanding(void)
 
 void dump_emi_outstanding_for_md(void)
 {
+#if 0
 	/* CEN_EMI_BASE: 0x10219000 */
 	if (!CEN_EMI_BASE)
 		return;
@@ -952,6 +954,7 @@ void dump_emi_outstanding_for_md(void)
 		(CHB_EMI_BASE + 0xa84));
 	EMI_DBG_SIMPLE_R_MD("[EMI] 0x10235a84 = 0x%x\n",
 		(CHB_EMI_BASE + 0xa84));
+#endif
 }
 
 void dump_emi_latency(void)
