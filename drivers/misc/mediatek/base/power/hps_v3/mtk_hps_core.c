@@ -564,7 +564,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
 
-	return;
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 #if 1
 	mutex_lock(&hps_ctxt.para_lock);
