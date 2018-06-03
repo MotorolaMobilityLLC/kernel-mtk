@@ -106,6 +106,14 @@ extern int sysctl_udp_wmem_min;
 
 struct sk_buff;
 
+#define UDP_SKT_WIFI
+#ifdef UDP_SKT_WIFI
+extern int sysctl_met_is_enable;
+extern int sysctl_udp_met_port;
+extern void udp_event_trace_printk(const char *fmt, int pid, __u16 port);
+#define MET_SOCKET_LATENCY_NAME "SKT-WIFI"
+#endif
+
 /*
  *	Generic checksumming routines for UDP(-Lite) v4 and v6
  */
