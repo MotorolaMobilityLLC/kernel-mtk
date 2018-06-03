@@ -414,6 +414,9 @@ extern int ppm_profile_init(void);
 extern void ppm_profile_exit(void);
 extern void ppm_profile_state_change_notify(enum ppm_power_state old_state, enum ppm_power_state new_state);
 extern void ppm_profile_update_client_exec_time(enum ppm_client client, unsigned long long time);
+#ifdef PPM_SSPM_SUPPORT
+extern void ppm_profile_update_ipi_exec_time(int id, unsigned long long time);
+#endif
 
 /* SRAM debugging */
 #ifdef CONFIG_MTK_RAM_CONSOLE

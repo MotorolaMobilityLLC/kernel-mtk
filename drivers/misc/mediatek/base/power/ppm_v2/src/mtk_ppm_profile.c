@@ -36,6 +36,11 @@ struct ppm_profile {
 	/* client execution time profiling */
 	unsigned long long max_client_exec_time_us[NR_PPM_CLIENTS];
 	unsigned long long avg_client_exec_time_us[NR_PPM_CLIENTS];
+#ifdef PPM_SSPM_SUPPORT
+	/* ipi execution time profiling */
+	unsigned long long max_ipi_exec_time_us[NR_PPM_IPI];
+	unsigned long long avg_ipi_exec_time_us[NR_PPM_IPI];
+#endif
 } ppm_profile_data;
 
 
@@ -112,11 +117,32 @@ static void ppm_profile_dump_client_exec_time(struct seq_file *m)
 	}
 }
 
+#ifdef PPM_SSPM_SUPPORT
+static void ppm_profile_dump_ipi_exec_time(struct seq_file *m)
+{
+	int i;
+
+	seq_puts(m, "\n==========================================\n");
+	seq_puts(m, "PPM IPI Execution Time (us)");
+	seq_puts(m, "\n==========================================\n");
+
+	seq_printf(m, "%-10s%-10s%-10s\n", "IPI type", "Avg Time", "Max Time");
+	for (i = 0; i < NR_PPM_IPI; i++) {
+		seq_printf(m, "%-10d%-10lld%-10lld\n", i,
+			ppm_profile_data.avg_ipi_exec_time_us[i],
+			ppm_profile_data.max_ipi_exec_time_us[i]);
+	}
+}
+#endif
+
 void ppm_profile_update_client_exec_time(enum ppm_client client, unsigned long long time)
 {
 	ppm_lock(&ppm_profile_data.lock);
 
 	if (!ppm_profile_data.is_profiling)
+		goto end;
+
+	if (client >= NR_PPM_CLIENTS)
 		goto end;
 
 	if (time > ppm_profile_data.max_client_exec_time_us[client])
@@ -130,6 +156,30 @@ void ppm_profile_update_client_exec_time(enum ppm_client client, unsigned long l
 end:
 	ppm_unlock(&ppm_profile_data.lock);
 }
+
+#ifdef PPM_SSPM_SUPPORT
+void ppm_profile_update_ipi_exec_time(int id, unsigned long long time)
+{
+	ppm_lock(&ppm_profile_data.lock);
+
+	if (!ppm_profile_data.is_profiling)
+		goto end;
+
+	if (id >= NR_PPM_IPI)
+		goto end;
+
+	if (time > ppm_profile_data.max_ipi_exec_time_us[id])
+		ppm_profile_data.max_ipi_exec_time_us[id] = time;
+	ppm_profile_data.avg_ipi_exec_time_us[id] =
+		(ppm_profile_data.avg_ipi_exec_time_us[id] + time) / 2;
+
+	ppm_dbg(TIME_PROFILE, "@%s: IPI id = %d, time = %lld\n",
+		__func__, id, time);
+
+end:
+	ppm_unlock(&ppm_profile_data.lock);
+}
+#endif
 
 void ppm_profile_state_change_notify(enum ppm_power_state old_state, enum ppm_power_state new_state)
 {
@@ -153,6 +203,9 @@ static int ppm_dump_info_proc_show(struct seq_file *m, void *v)
 	ppm_profile_dump_time_in_state(m);
 	ppm_profile_dump_trans_tbl(m);
 	ppm_profile_dump_client_exec_time(m);
+#ifdef PPM_SSPM_SUPPORT
+	ppm_profile_dump_ipi_exec_time(m);
+#endif
 	ppm_unlock(&ppm_profile_data.lock);
 
 	return 0;
@@ -184,6 +237,17 @@ static int ppm_client_exec_time_proc_show(struct seq_file *m, void *v)
 
 	return 0;
 }
+
+#ifdef PPM_SSPM_SUPPORT
+static int ppm_ipi_exec_time_proc_show(struct seq_file *m, void *v)
+{
+	ppm_lock(&ppm_profile_data.lock);
+	ppm_profile_dump_ipi_exec_time(m);
+	ppm_unlock(&ppm_profile_data.lock);
+
+	return 0;
+}
+#endif
 
 static int ppm_profile_on_proc_show(struct seq_file *m, void *v)
 {
@@ -235,6 +299,13 @@ static ssize_t ppm_profile_on_proc_write(struct file *file, const char __user *b
 				ppm_profile_data.avg_client_exec_time_us[i] = 0;
 			}
 
+#ifdef PPM_SSPM_SUPPORT
+			for_each_ppm_clients(i) {
+				ppm_profile_data.max_ipi_exec_time_us[i] = 0;
+				ppm_profile_data.avg_ipi_exec_time_us[i] = 0;
+			}
+#endif
+
 			/* record current time and start profiling */
 			ppm_profile_data.last_time = ktime_get();
 			ppm_profile_data.is_profiling = true;
@@ -253,6 +324,9 @@ PROC_FOPS_RO(dump_info);
 PROC_FOPS_RO(time_in_state);
 PROC_FOPS_RO(trans_tbl);
 PROC_FOPS_RO(client_exec_time);
+#ifdef PPM_SSPM_SUPPORT
+PROC_FOPS_RO(ipi_exec_time);
+#endif
 PROC_FOPS_RW(profile_on);
 
 int ppm_profile_init(void)
@@ -270,6 +344,9 @@ int ppm_profile_init(void)
 		PROC_ENTRY(time_in_state),
 		PROC_ENTRY(trans_tbl),
 		PROC_ENTRY(client_exec_time),
+#ifdef PPM_SSPM_SUPPORT
+		PROC_ENTRY(ipi_exec_time),
+#endif
 		PROC_ENTRY(profile_on),
 	};
 
