@@ -1219,7 +1219,7 @@ signed int CmdqRSCHW(struct frame *frame)
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
 #endif
-	if (frame == NULL && frame->data == NULL)
+	if (frame == NULL || frame->data == NULL)
 		return -1;
 
 	LOG_DBG("%s request sent to CMDQ driver", __func__);
