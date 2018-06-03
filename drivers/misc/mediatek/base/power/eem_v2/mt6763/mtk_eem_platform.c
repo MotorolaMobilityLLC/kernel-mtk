@@ -406,8 +406,8 @@ int get_volt_vcore(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 
-	#if EARLY_PORTING
-	return 0;
+	#if DVT
+	return 0x30;
 	#else
 	/* eem_debug("get_volt_vcore=%d\n", buck_get_voltage(VCORE)/10); */
 	return buck_get_voltage(VCORE)/10; /* unit = 10 uv */

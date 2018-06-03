@@ -17,12 +17,12 @@
 /* CONFIG (SW related) */
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(1)
-#define DVT			(1) /* only use at DVT, disable it at MP */
-#define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
+	#define DVT			(1) /* only use at DVT, disable it at MP */
+	#define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
-#define EEM_ENABLE		(0) /* enable; after pass HPT mini-SQC */
-#define EEM_FAKE_EFUSE		(0)
+	#define EEM_ENABLE		(0) /* enable; after pass HPT mini-SQC */
+	#define EEM_FAKE_EFUSE		(0)
 #define UPDATE_TO_UPOWER	(0)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(0)
@@ -44,7 +44,6 @@
 
 #define EARLY_PORTING_CPU
 /* #define EARLY_PORTING_PPM */
-/* #define EARLY_PORTING_PMIC */
 /* #define EARLY_PORTING_VCORE */
 /* because thermal still have bug */
 /* #define EARLY_PORTING_THERMAL */
@@ -72,7 +71,9 @@
 #endif
 
 /* atever */
-#define DEVINFO_DVT_0 50
+#define DEVINFO_0 0xFF00
+#define DEVINFO_DVT_0 0xFF00
+#define DEVINFO_IDX_0 50
 
 /* LL */
 #define DEVINFO_1 0x10E097C0
@@ -122,7 +123,11 @@
 #define VCORE_NR_FREQ_EFUSE     (16)
 #define VCORE_NR_FREQ		(4)
 #define HW_RES_IDX_TURBO	(11) /* for providing turbo value to cpu dvfs */
-#define EEM_INIT01_FLAG		(0x0F) /* should be 0x5F if vcore eem enable */
+#if EEM_BANK_SOC
+	#define EEM_INIT01_FLAG		(0x1F) /* should be 0x1F if vcore eem enable */
+#else
+	#define EEM_INIT01_FLAG		(0x0F) /* should be 0x0F */
+#endif
 
 #if DVT
 	#define NR_FREQ 8

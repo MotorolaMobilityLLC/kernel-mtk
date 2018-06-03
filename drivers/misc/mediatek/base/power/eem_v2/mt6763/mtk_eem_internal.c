@@ -106,7 +106,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
+		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
@@ -136,7 +136,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
+		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
@@ -166,7 +166,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
+		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
@@ -221,16 +221,16 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_SOC,
 		#if DVT
-		.features	= 0,
+		.features	= FEA_INIT01 | FEA_INIT02,
 		#else
 		.features	= 0,
 		#endif
-		.max_freq_khz	= 100,/* 800 MHz */
+		.max_freq_khz	= 800,/* 800 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL_SOC,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
+		.eem_step	= EEM_STEP,
 		.pmic_base	= VCORE_PMIC_BASE,
 		.pmic_step	= VCORE_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
