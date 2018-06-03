@@ -330,6 +330,19 @@ fence_is_signaled(struct fence *fence)
 }
 
 /**
+ * __fence_is_later - return if f1 is chronologically later than f2
+ * @f1:	[in]	the first fence's seqno
+ * @f2:	[in]	the second fence's seqno from the same context
+ *
+ * Returns true if f1 is chronologically later than f2. Both fences must be
+ * from the same context, since a seqno is not common across contexts.
+ */
+static inline bool __fence_is_later(u32 f1, u32 f2)
+{
+	return (int)(f1 - f2) > 0;
+}
+
+/**
  * fence_is_later - return if f1 is chronologically later than f2
  * @f1:	[in]	the first fence from the same context
  * @f2:	[in]	the second fence from the same context
@@ -342,7 +355,7 @@ static inline bool fence_is_later(struct fence *f1, struct fence *f2)
 	if (WARN_ON(f1->context != f2->context))
 		return false;
 
-	return (int)(f1->seqno - f2->seqno) > 0;
+	return __fence_is_later(f1->seqno, f2->seqno);
 }
 
 /**
@@ -369,6 +382,30 @@ static inline struct fence *fence_later(struct fence *f1, struct fence *f2)
 	else
 		return fence_is_signaled(f2) ? NULL : f2;
 }
+
+/**
+ * fence_get_status_locked - returns the status upon completion
+ * @fence: [in]	the fence to query
+ *
+ * Drivers can supply an optional error status condition before they signal
+ * the fence (to indicate whether the fence was completed due to an error
+ * rather than success). The value of the status condition is only valid
+ * if the fence has been signaled, fence_get_status_locked() first checks
+ * the signal state before reporting the error status.
+ *
+ * Returns 0 if the fence has not yet been signaled, 1 if the fence has
+ * been signaled without an error condition, or a negative error code
+ * if the fence has been completed in err.
+ */
+static inline int fence_get_status_locked(struct fence *fence)
+{
+	if (fence_is_signaled_locked(fence))
+		return fence->status < 0 ? fence->status : 1;
+	else
+		return 0;
+}
+
+int fence_get_status(struct fence *fence);
 
 signed long fence_wait_timeout(struct fence *, bool intr, signed long timeout);
 signed long fence_wait_any_timeout(struct fence **fences, uint32_t count,
