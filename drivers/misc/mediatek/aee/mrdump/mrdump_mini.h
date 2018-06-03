@@ -17,10 +17,8 @@ struct mrdump_mini_extra_misc {
 	const char *dump_name;
 	unsigned long max_size;
 };
-#ifdef CONFIG_MODULES
-static char modules_info_buf[MODULES_INFO_BUF_SIZE];
-extern int save_modules(char *mbuf, int mbufsize);
-#endif
+void mrdump_mini_add_extra_misc(void);
+void mrdump_mini_add_hang_raw(unsigned long vaddr, unsigned long size);
 int mrdump_mini_init(void);
 extern raw_spinlock_t logbuf_lock;
 extern unsigned long *stack_trace;
