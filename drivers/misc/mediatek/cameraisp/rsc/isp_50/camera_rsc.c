@@ -1591,6 +1591,15 @@ static signed int RSC_DumpReg(void)
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DMA_RDY_STATUS_HW),
 		(unsigned int)RSC_RD32(RSC_DMA_RDY_STATUS_REG));
 
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DMA_DMA_ERR_CTRL_HW),
+		(unsigned int)RSC_RD32(RSC_DMA_DMA_ERR_CTRL_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DMA_RSCI_ERR_STAT_HW),
+		(unsigned int)RSC_RD32(RSC_DMA_RSCI_ERR_STAT_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DMA_RSCO_ERR_STAT_HW),
+		(unsigned int)RSC_RD32(RSC_DMA_RSCO_ERR_STAT_REG));
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DCM_STAUS_HW),
+		(unsigned int)RSC_RD32(RSC_DCM_STAUS_REG));
+
 #ifndef ENGINE
 	LOG_INF("RSC:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_RSC_ReqRing.HWProcessIdx,
 		g_RSC_ReqRing.WriteIdx, g_RSC_ReqRing.ReadIdx);
