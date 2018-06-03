@@ -147,7 +147,7 @@ static inline int rt_parse_dt(struct device *dev,
 	return 0;
 }
 
-static int dsv_apply_dts(struct rt5081_pmu_chip *chip,
+static int ldo_apply_dts(struct rt5081_pmu_chip *chip,
 	struct rt5081_pmu_ldo_platform_data *pdata,
 	struct rt5081_pmu_ldo_platform_data *mask)
 {
@@ -206,7 +206,7 @@ static int rt5081_pmu_ldo_probe(struct platform_device *pdev)
 	ldo_data->mreg_desc = *mreg_desc_table;
 	ldo_data->mreg_desc.client = ldo_data->chip;
 
-	ret = dsv_apply_dts(ldo_data->chip, &pdata, &mask);
+	ret = ldo_apply_dts(ldo_data->chip, &pdata, &mask);
 	if (ret < 0)
 		goto probe_err;
 	/*Check chip revision here */
