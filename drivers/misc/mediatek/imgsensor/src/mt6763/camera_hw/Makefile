@@ -26,4 +26,4 @@ obj-y		+= imgsensor_cfg_table.o
 
 obj-y		+= regulator/
 obj-y		+= gpio/
-
+obj-y		+= mclk/

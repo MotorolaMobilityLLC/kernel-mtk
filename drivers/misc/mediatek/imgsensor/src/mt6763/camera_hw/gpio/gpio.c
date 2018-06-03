@@ -75,7 +75,7 @@ static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 		if (pgpio_pinctrl->ppinctrl_lookup_state &&
 			IS_ERR(pgpio->ppinctrl_state[i] =
 			pinctrl_lookup_state(pgpio->ppinctrl, pgpio_pinctrl->ppinctrl_lookup_state))) {
-			PK_ERR("%s : pinctrl err, %s\n", __func__, pgpio_pinctrl->ppinctrl_lookup_state);
+			PK_PR_ERR("%s : pinctrl err, %s\n", __func__, pgpio_pinctrl->ppinctrl_lookup_state);
 			ret = IMGSENSOR_RETURN_ERROR;
 		}
 	}
@@ -124,7 +124,7 @@ static enum IMGSENSOR_RETURN gpio_set(
 	if (!IS_ERR(ppinctrl_state))
 		pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state);
 	else
-		PK_ERR("%s : pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
+		PK_PR_ERR("%s : pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

@@ -97,15 +97,11 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		if(pwr_status == IMGSENSOR_HW_POWER_STATUS_ON &&
 		   ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 
-		if ((ppwr_info->pin == IMGSENSOR_HW_PIN_MIPI_SWITCH_EN)
-				 || (ppwr_info->pin == IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL))
-			psensor_pwr->id[ppwr_info->pin] = 1;
-
 			pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
 			mdelay(ppwr_info->pin_on_delay);
 
-		PK_DBG("sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d(0:PMIC, 1:GPIO)\n",
-			sensor_idx, ppwr_info->pin, ppwr_info->pin_state_on, psensor_pwr->id[ppwr_info->pin]);
+			PK_DBG("sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d(0:PMIC, 1:GPIO, 2:exGPIO)\n",
+				sensor_idx, ppwr_info->pin, ppwr_info->pin_state_on, psensor_pwr->id[ppwr_info->pin]);
 
 			if(pdev->set != NULL)
 				pdev->set(pdev->pinstance,

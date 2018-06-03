@@ -521,7 +521,7 @@ static void night_mode(kal_bool enable)
 
 /*************************************************************************
  * FUNCTION
- *	check_stremoff
+ *	check_streamoff
  *
  * DESCRIPTION
  *	waiting function until sensor streaming finish.
@@ -535,20 +535,22 @@ static void night_mode(kal_bool enable)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static void check_stremoff(kal_uint16 fps)
-{
-	unsigned int i = 0, framecnt = 0;
-	int timeout = (10000/fps)+1;
 
+static void check_streamoff(void)
+{
+	unsigned int i = 0;
+	int timeout = (10000 / imgsensor.current_fps) + 1;
+
+	mdelay(3);
 	for (i = 0; i < timeout; i++) {
-		framecnt = read_cmos_sensor_8(0x0005);
-		if (framecnt == 0xFF)
-			return;
-		else
+		if (read_cmos_sensor_8(0x0005) != 0xFF)
 			mdelay(1);
+		else
+			break;
 	}
-	LOG_INF(" Stream Off Fail1!\n");
+	LOG_INF(" check_streamoff exit!\n");
 }
+
 
 #define USE_TNP_BURST	0
 #if USE_TNP_BURST
@@ -793,9 +795,6 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	LOG_INF("preview_setting() E\n");
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff(imgsensor_info.pre.max_framerate);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -827,18 +826,13 @@ static void preview_setting(void)
 	write_cmos_sensor(0x6F12, 0x8011);
 	write_cmos_sensor(0x317A, 0x0007);
 	write_cmos_sensor(0x31A4, 0x0102);
-
-	/* stream on */
-	write_cmos_sensor_8(0x0100, 0x01);
 }				/*      preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting() E! currefps:%d\n", currefps);
 
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff(currefps);
+
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -871,17 +865,12 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
-	/* stream on */
-	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("normal_video_setting() E! currefps:%d\n", currefps);
 
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff(imgsensor_info.normal_video.max_framerate);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -914,16 +903,12 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
-	/* stream on */
-	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void hs_video_setting(void)
 {
 	LOG_INF("hs_video_setting() E\n");
 	/* 720p 120fps */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff(imgsensor_info.hs_video.max_framerate);
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -1004,7 +989,6 @@ static void hs_video_setting(void)
 		write_cmos_sensor(0x6F12, 0x00AF);
 
 		write_cmos_sensor(0x31A4, 0x0102);
-		write_cmos_sensor_8(0x0100, 0x01);
 	}
 }
 
@@ -1012,8 +996,6 @@ static void slim_video_setting(void)
 {
 	LOG_INF("slim_video_setting() E\n");
 	/* 1080p 60fps */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff(imgsensor_info.slim_video.max_framerate);
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -1094,7 +1076,6 @@ static void slim_video_setting(void)
 		write_cmos_sensor(0x6F12, 0x002F);
 
 		write_cmos_sensor(0x31A4, 0x0102);
-		write_cmos_sensor_8(0x0100, 0x01);
 	}
 
 
@@ -1549,6 +1530,18 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }				/*      get_info  */
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+
+	if (enable) {
+		write_cmos_sensor_8(0x0100, 0X01);
+	} else {
+		write_cmos_sensor_8(0x0100, 0x00);
+		check_streamoff();
+	}
+	return ERROR_NONE;
+}
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
 			  MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -1841,9 +1834,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("ihdr enable :%d\n", (BOOL) * feature_data_32);
+		LOG_INF("ihdr enable :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_mode = *feature_data_32;
+		imgsensor.ihdr_mode = (UINT8)*feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
@@ -1915,6 +1908,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		}
 		break;
 	}
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 	default:
 		break;
 	}

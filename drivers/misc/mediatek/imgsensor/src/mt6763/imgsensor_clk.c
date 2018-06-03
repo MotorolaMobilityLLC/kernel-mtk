@@ -49,7 +49,7 @@ enum IMGSENSOR_RETURN imgsensor_clk_init(struct IMGSENSOR_CLK *pclk)
 	struct platform_device *pplatform_dev = gpimgsensor_hw_platform_device;
 
 	if (pplatform_dev == NULL) {
-		PK_ERR("[%s] pdev is null\n", __func__);
+		PK_PR_ERR("[%s] pdev is null\n", __func__);
 		return IMGSENSOR_RETURN_ERROR;
 	}
 	/* get all possible using clocks */
@@ -67,7 +67,7 @@ int imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk
 		pmclk->TG < IMGSENSOR_MCLK_TG_MIN_NUM ||
 		pmclk->freq >= IMGSENSOR_MCLK_FREQ_MAX_NUM ||
 		pmclk->freq < IMGSENSOR_MCLK_FREQ_MIN_NUM) {
-		PK_ERR("[CAMERA SENSOR]kdSetSensorMclk out of range, tg=%d, freq= %d\n",
+		PK_PR_ERR("[CAMERA SENSOR]kdSetSensorMclk out of range, tg=%d, freq= %d\n",
 			pmclk->TG, pmclk->freq);
 		return -EFAULT;
 	}
@@ -81,17 +81,17 @@ int imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk
 
 		/* Workaround for timestamp: TG1 always ON */
 		if (clk_prepare_enable(pclk->mclk_sel[IMGSENSOR_MCLK_TOP_CAMTG_SEL]))
-			PK_ERR("[CAMERA SENSOR] failed tg=%d\n", IMGSENSOR_MCLK_TOP_CAMTG_SEL);
+			PK_PR_ERR("[CAMERA SENSOR] failed tg=%d\n", IMGSENSOR_MCLK_TOP_CAMTG_SEL);
 		else
 			atomic_inc(&pclk->enable_cnt[IMGSENSOR_MCLK_TOP_CAMTG_SEL]);
 
 		if (clk_prepare_enable(pclk->mclk_sel[pmclk->TG]))
-			PK_ERR("[CAMERA SENSOR] failed tg=%d\n", pmclk->TG);
+			PK_PR_ERR("[CAMERA SENSOR] failed tg=%d\n", pmclk->TG);
 		else
 			atomic_inc(&pclk->enable_cnt[pmclk->TG]);
 
 		if (clk_prepare_enable(pclk->mclk_sel[pmclk->freq]))
-			PK_ERR("[CAMERA SENSOR] failed freq= %d\n", pmclk->freq);
+			PK_PR_ERR("[CAMERA SENSOR] failed freq= %d\n", pmclk->freq);
 		else
 			atomic_inc(&pclk->enable_cnt[pmclk->freq]);
 

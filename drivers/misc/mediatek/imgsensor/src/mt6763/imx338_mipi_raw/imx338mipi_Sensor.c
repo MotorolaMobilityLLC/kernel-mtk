@@ -3985,9 +3985,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             break;
 		/*HDR CMD*/
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("hdr enable :%d\n", (BOOL)*feature_data_32);
+		LOG_INF("hdr enable :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.hdr_mode = *feature_data_32;
+		imgsensor.hdr_mode = (UINT8)*feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
             break;
 		case SENSOR_FEATURE_SET_HDR_SHUTTER:

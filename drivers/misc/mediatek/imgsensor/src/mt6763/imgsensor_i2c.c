@@ -142,7 +142,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable)
 	struct IMGSENSOR_I2C_INST *pinst = &gi2c.inst[IMGSENSOR_I2C_BUFF_MODE_DEV];
 	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 
-	PK_ERR("i2c_buf_mode_en %d\n", enable);
+	PK_DBG("i2c_buf_mode_en %d\n", enable);
 
 	ret = (enable) ?
 		hw_trig_i2c_enable(pinst->pi2c_client->adapter) :
@@ -176,13 +176,13 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	pinst->msg[1].buf   = pread_data;
 
 	if (mtk_i2c_transfer(
-	    pinst->pi2c_client->adapter,
-	    pinst->msg,
-	    IMGSENSOR_I2C_MSG_SIZE_READ,
-	    (pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
-	    ((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
-	    != IMGSENSOR_I2C_MSG_SIZE_READ) {
-		PK_ERR("I2C read failed (0x%x)! speed(0=%d) \n", ret, speed);
+			pinst->pi2c_client->adapter,
+			pinst->msg,
+			IMGSENSOR_I2C_MSG_SIZE_READ,
+			(pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
+			((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
+			!= IMGSENSOR_I2C_MSG_SIZE_READ) {
+		PK_PR_ERR("I2C read failed (0x%x)! speed(0=%d)\n", ret, speed);
 		ret = IMGSENSOR_RETURN_ERROR;
 	}
 
@@ -220,12 +220,13 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	}
 
 	if (mtk_i2c_transfer(
-	    pinst->pi2c_client->adapter,
-	    pinst->msg,
-	    i,
-	    (pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
-	    ((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000) != i) {
-		PK_ERR("I2C write failed (0x%x)! speed(0=%d) \n", ret, speed);
+			pinst->pi2c_client->adapter,
+			pinst->msg,
+			i,
+			(pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
+			((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
+			!= i) {
+		PK_PR_ERR("I2C write failed (0x%x)! speed(0=%d)\n", ret, speed);
 		ret = IMGSENSOR_RETURN_ERROR;
 	}
 

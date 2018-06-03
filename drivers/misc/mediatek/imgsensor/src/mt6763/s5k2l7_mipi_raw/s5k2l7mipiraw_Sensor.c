@@ -1818,9 +1818,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		LOG_INF("current fps :%d\n", imgsensor.current_fps);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("hdr mode :%d\n", (BOOL) (*feature_data_32));
+		LOG_INF("hdr mode :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.hdr_mode = (BOOL) (*feature_data_32);
+		imgsensor.hdr_mode = (UINT8) (*feature_data_32);
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:	/*0x3080 */

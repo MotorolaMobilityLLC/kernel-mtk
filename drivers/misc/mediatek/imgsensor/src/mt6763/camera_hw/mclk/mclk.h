@@ -14,33 +14,34 @@
 #ifndef __IMGSENSOR_HW_MCLK_h__
 #define __IMGSENSOR_HW_MCLK_h__
 
+#include <linux/of.h>
+#include <linux/of_fdt.h>
+
+#include <linux/platform_device.h>
+#include <linux/pinctrl/pinctrl.h>
+
 #include "kd_camera_typedef.h"
 #include "imgsensor_hw.h"
 #include "imgsensor_common.h"
 
-enum MCLK_STATE{
-	MCLK_STATE_DISABLE,
-	MCLK_STATE_ENABLE
+enum MCLK_STATE {
+	MCLK_STATE_DISABLE = 0,
+	MCLK_STATE_ENABLE,
+	MCLK_STATE_MAX_NUM,
 };
 
-enum MCLK_MODULE{
-	MCLK_MODULE_1,
-	MCLK_MODULE_2,
-	MCLK_MODULE_3,
-	MCLK_MODULE_4,
-	MCLK_MODULE_MAX_NUM,
+struct MCLK_PINCTRL_NAMES {
+	char *ppinctrl_names;
 };
 
-extern void ISP_MCLK1_EN(BOOL En);
-extern void ISP_MCLK2_EN(BOOL En);
-extern void ISP_MCLK3_EN(BOOL En);
-extern void ISP_MCLK4_EN(BOOL En);
-
-struct mclk{
-	void (*pmclk_func[MCLK_MODULE_MAX_NUM])(BOOL);
+struct mclk {
+	struct pinctrl       *ppinctrl;
+	struct pinctrl_state *ppinctrl_state[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_STATE_MAX_NUM];
 };
+extern
 
 enum IMGSENSOR_RETURN imgsensor_hw_mclk_open(struct IMGSENSOR_HW_DEVICE **pdevice);
+extern struct platform_device *gpimgsensor_hw_platform_device;
 
 
 #endif

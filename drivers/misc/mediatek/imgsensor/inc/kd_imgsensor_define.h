@@ -248,11 +248,11 @@ typedef enum {
 } SENSOR_STATE_ENUM;
 
 typedef enum {
-	SENSOR_TEMPERATURE_UNKNOWN_STATUS           = (1 << 0), /* Init status, not finish search sensor flow */
-	SENSOR_TEMPERATURE_VALID                    = (1 << 1), /* Temperature is valid or not */
-	SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR     = (1 << 2), /* Cannot search sensor, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
-	SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL      = (1 << 3), /* Not support thermal, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
-	SENSOR_TEMPERATURE_NOT_POWER_ON             = (1 << 4), /* Not power on, only meaningful when SENSOR_TEMPERATURE_UNKNOWN_STATUS = 0*/
+	SENSOR_TEMPERATURE_UNKNOWN_STATUS           = (1 << 0),
+	SENSOR_TEMPERATURE_VALID                    = (1 << 1),
+	SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR     = (1 << 2),
+	SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL      = (1 << 3),
+	SENSOR_TEMPERATURE_NOT_POWER_ON             = (1 << 4),
 	SENSOR_TEMPERATURE_MAX
 } SENSOR_TEMPERATURE_STATE_ENUM;
 
@@ -596,7 +596,6 @@ typedef struct {
 	MUINT16 SensorHorFOV;
 	MUINT16 SensorVerFOV;
 	MUINT16 SensorOrientation;
-
 } ACDK_SENSOR_INFO2_STRUCT, *PACDK_SENSOR_INFO2_STRUCT;
 
 
@@ -780,7 +779,7 @@ typedef struct {
 	MUINT16 VC_PixelNum;
 	MUINT16 ModeSelect;   /* 0: auto mode, 1:direct mode  */
 	MUINT16 EXPO_Ratio;   /* 1/1, 1/2, 1/4, 1/8 */
-	MUINT16 ODValue;      /* OD Vaule */
+	MUINT16 ODValue;      /* OD Value */
 	MUINT16 RG_STATSMODE; /* STATS divistion mdoe 0: 16x16, 1:8x8, 2:4x4, 3:1x1*/
 	MUINT16 VC0_ID;
 	MUINT16 VC0_DataType;
@@ -899,14 +898,14 @@ typedef struct {
 typedef struct {
 	MUINT32 SensorId;
 	MSDK_SCENARIO_ID_ENUM ScenarioId;
-	ACDK_SENSOR_INFO_STRUCT * pInfo;
-	ACDK_SENSOR_CONFIG_STRUCT * pConfig;
+	ACDK_SENSOR_INFO_STRUCT *pInfo;
+	ACDK_SENSOR_CONFIG_STRUCT *pConfig;
 } IMGSENSOR_GET_CONFIG_INFO_STRUCT;
 
 typedef struct {
 	MSDK_SCENARIO_ID_ENUM ScenarioId[KDIMGSENSOR_MAX_INVOKE_DRIVERS];
-	ACDK_SENSOR_INFO_STRUCT * pInfo[KDIMGSENSOR_MAX_INVOKE_DRIVERS];
-	ACDK_SENSOR_CONFIG_STRUCT * pConfig[KDIMGSENSOR_MAX_INVOKE_DRIVERS];
+	ACDK_SENSOR_INFO_STRUCT *pInfo[KDIMGSENSOR_MAX_INVOKE_DRIVERS];
+	ACDK_SENSOR_CONFIG_STRUCT *pConfig[KDIMGSENSOR_MAX_INVOKE_DRIVERS];
 } ACDK_SENSOR_GETINFO_STRUCT, *PACDK_SENSOR_GETINFO_STRUCT;
 
 typedef struct {

@@ -169,9 +169,9 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
 /* Camera information */
 static int subsys_camera_info_read(struct seq_file *m, void *v)
 {
-   PK_ERR("subsys_camera_info_read %s\n",mtk_ccm_name);
-   seq_printf(m, "%s\n",mtk_ccm_name);
-   return 0;
+	PK_DBG("subsys_camera_info_read %s\n", mtk_ccm_name);
+	seq_printf(m, "%s\n", mtk_ccm_name);
+	return 0;
 };
 
 static int proc_camera_info_open(struct inode *inode, struct file *file)
@@ -218,4 +218,3 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }
-

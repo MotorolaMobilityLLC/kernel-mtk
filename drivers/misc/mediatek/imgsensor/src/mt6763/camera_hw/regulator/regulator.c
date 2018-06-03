@@ -58,7 +58,7 @@ static enum IMGSENSOR_RETURN regulator_init(void *pinstance)
 
 	if ((pdevice->of_node = of_find_compatible_node(
 	    NULL, NULL, "mediatek,camera_hw")) == NULL) {
-		PK_ERR("regulator get cust camera node failed!\n");
+		PK_PR_ERR("regulator get cust camera node failed!\n");
 		pdevice->of_node = pof_node;
 		return IMGSENSOR_RETURN_ERROR;
 	}
@@ -97,11 +97,17 @@ static enum IMGSENSOR_RETURN regulator_set(
 	pregulator = preg->pregulator[reg_type_offset + pin - IMGSENSOR_HW_PIN_AVDD];
 
 	if(pin_state != IMGSENSOR_HW_PIN_STATE_LEVEL_0) {
-		if (regulator_set_voltage(pregulator, regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0], regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0])) {
-			PK_ERR("[regulator]fail to regulator_set_voltage, powertype:%d powerId:%d\n", pin, regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0]);
+		if (regulator_set_voltage(pregulator,
+					regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0],
+					regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0])) {
+			PK_PR_ERR("[regulator]fail to regulator_set_voltage, powertype:%d powerId:%d\n",
+						pin,
+						regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0]);
 		}
 		if (regulator_enable(pregulator)) {
-			PK_DBG("[regulator]fail to regulator_enable, powertype:%d powerId:%d\n", pin, regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0]);
+			PK_PR_ERR("[regulator]fail to regulator_enable, powertype:%d powerId:%d\n",
+					pin,
+					regulator_voltage[pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0]);
 			return IMGSENSOR_RETURN_ERROR;
 		}
  	} else {
