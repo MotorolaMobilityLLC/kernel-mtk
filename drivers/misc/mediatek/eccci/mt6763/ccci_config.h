@@ -18,7 +18,7 @@
 /*================================================*/
 /*#define CCCI_STATISTIC*/
 #define FEATURE_GET_MD_GPIO_NUM
-#define FEATURE_GET_MD_GPIO_VAL
+
 #define FEATURE_GET_MD_ADC_NUM
 #define FEATURE_GET_MD_ADC_VAL
 #define FEATURE_GET_MD_EINT_ATTR
@@ -65,7 +65,7 @@
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
 #define FEATURE_DBM_SUPPORT
-
+#define FEATURE_GET_MD_GPIO_VAL
 #define ENABLE_EMI_PROTECTION
 #ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
