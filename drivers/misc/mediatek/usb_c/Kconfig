@@ -148,15 +148,6 @@ config USB_PD_VBUS_STABLE_TOUT
 	  VBUS change
 	  stable
 
-config RT7207_ADAPTER
-	bool "Richtek RT7207 PD Adapter"
-	default n
-	help
-	  Say Y to enable
-	  Richtek RT7207
-	  PD Adapter
-	  Function.
-
 config USB_C_SWITCH_U3_MUX
 	bool "USB TYPE-C USB 3.0 Mux"
 	default n

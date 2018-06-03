@@ -161,10 +161,13 @@ enum tcpm_v10_command {
 
 /*
  * TCPC_V10_REG_MSG_HDR_INFO		(0x2e)
+ * According to PD30_Rev11 ECR,
+ * The sender of a GoodCRC Message should set :
+ * the Specification Revsiion field to 10b.
  */
 
-#define TCPC_V10_REG_MSG_HDR_INFO_SET(drole, prole, pd_rev) \
-		((drole) << 3 | (pd_rev << 1) | (prole))
+#define TCPC_V10_REG_MSG_HDR_INFO_SET(drole, prole) \
+		((drole) << 3 | ((PD_REV20) << 1) | (prole))
 #define TCPC_V10_REG_MSG_HDR_INFO_DROLE(reg) (((reg) & 0x8) >> 3)
 #define TCPC_V10_REG_MSG_HDR_INFO_PROLE(reg) ((reg) & 0x1)
 
@@ -173,7 +176,12 @@ enum tcpm_v10_command {
  * TCPC_V10_REG_TRANSMIT				(0x50)
  */
 
-#define TCPC_V10_REG_TRANSMIT_SET(type) \
+#ifdef CONFIG_USB_PD_REV30
+#define TCPC_V10_REG_TRANSMIT_SET(retry, type) \
+		((retry) << 4 | (type))
+#else
+#define TCPC_V10_REG_TRANSMIT_SET(retry, type) \
 		(PD_RETRY_COUNT << 4 | (type))
+#endif /* CONFIG_USB_PD_REV30 */
 
 #endif /* STD_TCPCI_V10_H_ */

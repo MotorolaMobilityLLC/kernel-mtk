@@ -17,6 +17,7 @@
 #include "tcpci_timer.h"
 #include "tcpm.h"
 
+
 #define PD_MSG_BUF_SIZE		(4*2)
 #define PD_EVENT_BUF_SIZE	(8*2)
 #define TCP_EVENT_BUF_SIZE	(2*2)
@@ -60,6 +61,7 @@ extern int tcpci_event_init(struct tcpc_device *tcpc_dev);
 extern int tcpci_event_deinit(struct tcpc_device *tcpc_dev);
 extern void pd_event_buf_reset(struct tcpc_device *tcpc_dev);
 
+bool pd_put_cc_attached_event(struct tcpc_device *tcpc_dev, uint8_t type);
 void pd_put_cc_detached_event(struct tcpc_device *tcpc_dev);
 void pd_put_recv_hard_reset_event(struct tcpc_device *tcpc_dev);
 void pd_put_sent_hard_reset_event(struct tcpc_device *tcpc_dev);
@@ -78,7 +80,10 @@ enum pd_event_type {
 #ifdef CONFIG_USB_PD_REV30
 	PD_EVT_EXT_MSG,
 #endif	/* CONFIG_USB_PD_REV30 */
-	PD_EVT_DPM_MSG,
+
+	PD_EVT_PD_MSG_END,
+
+	PD_EVT_DPM_MSG = PD_EVT_PD_MSG_END,
 	PD_EVT_HW_MSG,
 	PD_EVT_PE_MSG,
 	PD_EVT_TIMER_MSG,
@@ -104,13 +109,18 @@ enum pd_ctrl_msg_type {
 	PD_CTRL_SOFT_RESET = 13,
 	/* 14-15 Reserved */
 
+	PD_CTRL_PD30_START = 0x10 + 0,
+
 #ifdef CONFIG_USB_PD_REV30
 	PD_CTRL_NOT_SUPPORTED = 0x10 + 0,
 	PD_CTRL_GET_SOURCE_CAP_EXT = 0x10 + 1,
 	PD_CTRL_GET_STATUS = 0x10 + 2,
 	PD_CTRL_FR_SWAP = 0x10 + 3,
 	PD_CTRL_GET_PPS_STATUS = 0x10 + 4,
+	PD_CTRL_GET_COUNTRY_CODE = 0x10 + 5,
 #endif	/* CONFIG_USB_PD_REV30 */
+
+	/* 22-31 Reserved */
 
 	PD_CTRL_MSG_NR,
 };
@@ -123,9 +133,12 @@ enum pd_data_msg_type {
 	PD_DATA_BIST = 3,
 	PD_DATA_SINK_CAP = 4,
 
+	PD_DATA_PD30_START = 5,
+
 #ifdef CONFIG_USB_PD_REV30
 	PD_DATA_BAT_STATUS = 5,
 	PD_DATA_ALERT = 6,
+	PD_DATA_GET_COUNTRY_INFO = 7,
 #endif	/* CONFIG_USB_PD_REV30 */
 
 	/* 7-14 Reserved */
@@ -137,12 +150,12 @@ enum pd_data_msg_type {
 #ifdef CONFIG_USB_PD_REV30
 enum pd_ext_msg_type {
 	/* 0 Reserved */
-	PD_EXT_SOURCE_CAP_EX = 1,
+	PD_EXT_SOURCE_CAP_EXT = 1,
 	PD_EXT_STATUS = 2,
 
-	PD_EXT_GET_BAT_CAPS = 3,
+	PD_EXT_GET_BAT_CAP = 3,
 	PD_EXT_GET_BAT_STATUS = 4,
-	PD_EXT_BAT_CAPS = 5,
+	PD_EXT_BAT_CAP = 5,
 
 	PD_EXT_GET_MFR_INFO = 6,
 	PD_EXT_MFR_INFO = 7,
@@ -155,7 +168,10 @@ enum pd_ext_msg_type {
 
 	PD_EXT_PPS_STATUS = 12,
 
-	/* 13-15 Reserved */
+	PD_EXT_COUNTRY_INFO = 13,
+	PD_EXT_COUNTRY_CODES = 14,
+
+	/* 15 Reserved */
 	PD_EXT_MSG_NR,
 };
 #endif	/* CONFIG_USB_PD_REV30 */
@@ -170,7 +186,13 @@ enum pd_hw_msg_type {
 	PD_HW_VBUS_SAFE0V,
 	PD_HW_VBUS_STABLE,
 	PD_HW_TX_FAILED,	/* no good crc or discard */
-	PD_HW_RETRY_VDM,	/* discard vdm msg */
+	PD_HW_TX_DISCARD,	/* discard vdm msg */
+	PD_HW_RETRY_VDM,	/* discard vdm msg (retry) */
+
+#ifdef CONFIG_USB_PD_REV30_COLLISION_AVOID
+	PD_HW_SINK_TX_CHANGE,
+#endif	/* CONFIG_USB_PD_REV30_COLLISION_AVOID */
+
 	PD_HW_MSG_NR,
 };
 
@@ -181,6 +203,7 @@ enum pd_pe_msg_type {
 	PD_PE_HARD_RESET_COMPLETED,
 	PD_PE_IDLE,
 	PD_PE_VDM_RESET,
+	PD_PE_VDM_NOT_SUPPORT,
 	PD_PE_MSG_NR,
 };
 
@@ -191,6 +214,7 @@ enum pd_dpm_msg_type {
 	PD_DPM_ACK = PD_DPM_NOTIFIED,
 	PD_DPM_NAK,
 	PD_DPM_CAP_CHANGED,
+	PD_DPM_NOT_SUPPORT,
 	PD_DPM_MSG_NR,
 };
 
@@ -202,7 +226,6 @@ enum pd_dpm_notify_type {
 enum pd_dpm_nak_type {
 	PD_DPM_NAK_REJECT = 0,
 	PD_DPM_NAK_WAIT = 1,
-	PD_DPM_NAK_REJECT_INVALID = 2,
 };
 
 enum pd_tcp_sec_msg_type {
@@ -232,10 +255,38 @@ static inline bool pd_event_msg_match(struct pd_event *pd_event,
 	return pd_event->msg == msg;
 }
 
+static inline bool pd_event_ctrl_msg_match(
+		struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_CTRL_MSG, msg);
+}
+
+static inline bool pd_event_data_msg_match(
+		struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_DATA_MSG, msg);
+}
+
+static inline bool pd_event_hw_msg_match(struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_HW_MSG, msg);
+}
+
+static inline bool pd_event_pe_msg_match(struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_PE_MSG, msg);
+}
+
+static inline bool pd_event_timer_msg_match(
+			struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_TIMER_MSG, msg);
+}
+
 #ifdef CONFIG_USB_PD_REV30
 
 static inline bool pd_event_ext_msg_match(
-			struct pd_event *pd_event, uint8_t msg)
+	struct pd_event *pd_event, uint8_t msg)
 {
 	return pd_event_msg_match(pd_event, PD_EVT_EXT_MSG, msg);
 }

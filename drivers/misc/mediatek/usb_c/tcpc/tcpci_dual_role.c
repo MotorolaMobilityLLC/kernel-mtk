@@ -187,28 +187,16 @@ static int tcpc_dual_role_set_prop_mode(
 	struct tcpc_device *tcpc, unsigned int val)
 {
 	int ret;
-	uint8_t role;
 
-	switch (val) {
-	case DUAL_ROLE_PROP_MODE_DFP:
-		role = PD_ROLE_SOURCE;
-		break;
-	case DUAL_ROLE_PROP_MODE_UFP:
-		role = PD_ROLE_SINK;
-		break;
-	default:
-		return 0;
-	}
-
-	if (val == tcpc->dual_role_pr) {
+	if (val == tcpc->dual_role_mode) {
 		pr_info("%s wrong role (%d->%d)\n",
-			__func__, tcpc->dual_role_pr, val);
+			__func__, tcpc->dual_role_mode, val);
 		return 0;
 	}
 
 	ret = tcpm_typec_role_swap(tcpc);
 	pr_info("%s typec role swap (%d->%d): %d\n",
-		__func__, tcpc->dual_role_pr, val, ret);
+		__func__, tcpc->dual_role_mode, val, ret);
 
 	return ret;
 }
@@ -267,12 +255,6 @@ int tcpc_dual_role_phy_init(
 	struct dual_role_phy_desc *dual_desc;
 	int len;
 	char *str_name;
-	struct device_node *np = of_find_node_by_name(NULL, tcpc->desc.name);
-
-	if (!np) {
-		pr_err("%s not device node %s\n", __func__, tcpc->desc.name);
-		return -EINVAL;
-	}
 
 	tcpc->dr_usb = devm_kzalloc(&tcpc->dev,
 				sizeof(*tcpc->dr_usb), GFP_KERNEL);

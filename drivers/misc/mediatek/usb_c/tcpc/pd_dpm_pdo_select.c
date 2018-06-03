@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
- *
+ * drives/usb/pd/pd_dpm_cor.c
  * Power Delivery Core Driver
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+* Copyright (C) 2015 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
 
 #include "inc/pd_dpm_pdo_select.h"
 
@@ -25,7 +26,7 @@ struct dpm_select_info_t {
 };
 
 static inline void dpm_extract_apdo_info(
-		uint32_t pdo, struct dpm_pdo_info_t *info)
+	uint32_t pdo, struct dpm_pdo_info_t *info)
 {
 #ifdef CONFIG_USB_PD_REV30_PPS_SINK
 	switch (APDO_TYPE(pdo)) {
@@ -208,9 +209,14 @@ static bool dpm_select_pdo_from_max_power(
 
 #ifdef CONFIG_USB_PD_ALT_MODE_RTDC
 	/* Variable for direct charge only */
-	if (sink->type == DPM_PDO_TYPE_VAR)
+	if ((sink->type == DPM_PDO_TYPE_VAR) && (sink->vmin < 5000))
 		return false;
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
+#ifdef CONFIG_USB_PD_REV30
+	if (sink->type == DPM_PDO_TYPE_APDO)
+		return false;
+#endif	/* CONFIG_USB_PD_REV30 */
 
 	if (!dpm_is_valid_pdo_pair(sink, source, select_info->policy))
 		return false;
@@ -246,6 +252,10 @@ static bool dpm_select_pdo_from_pps(
 		struct dpm_select_info_t *select_info,
 		struct dpm_pdo_info_t *sink, struct dpm_pdo_info_t *source)
 {
+	bool overload;
+	int uw, diff_mv;
+	const int tolerance = 300;	/* 5900 * 5% */
+
 	if (sink->type != DPM_PDO_TYPE_FIXED ||
 			source->type != DPM_PDO_TYPE_APDO)
 		return false;
@@ -259,9 +269,32 @@ static bool dpm_select_pdo_from_pps(
 	if (sink->vmin < source->vmin)
 		return false;
 
-	select_info->max_uw = sink->uw;
-	select_info->cur_mv = sink->vmax;
-	return true;
+	if (select_info->policy & DPM_CHARGING_POLICY_IGNORE_MISMATCH_CURR) {
+		if (source->ma < sink->ma)
+			return false;
+	}
+
+	uw = sink->vmax * source->ma;
+	diff_mv = source->vmax - sink->vmax;
+
+	if (uw > select_info->max_uw)
+		overload = true;
+	else if (uw < select_info->max_uw)
+		overload = false;
+	else if ((select_info->cur_mv < tolerance) && (diff_mv > tolerance))
+		overload = true;
+	else if (diff_mv < select_info->cur_mv)
+		overload = true;
+	else
+		overload = false;
+
+	if (overload) {
+		select_info->max_uw = uw;
+		select_info->cur_mv = diff_mv;
+		return true;
+	}
+
+	return false;
 }
 #endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 
@@ -316,16 +349,10 @@ bool dpm_find_match_req_info(struct dpm_rdo_info_t *req_info,
 	}
 
 	for (i = 0; i < cnt; i++) {
-		if (policy == DPM_CHARGING_POLICY_PPS)
-			i = req_info->pos - 1;
-
 		dpm_extract_pdo_info(src_pdos[i], &source);
 
 		if (select_pdo_fun(&select, &sink, &source))
 			select.pos = i+1;
-
-		if (policy == DPM_CHARGING_POLICY_PPS)
-			break;
 	}
 
 	if (select.pos > 0) {

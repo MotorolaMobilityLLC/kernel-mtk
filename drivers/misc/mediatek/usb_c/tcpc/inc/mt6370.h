@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,6 +26,8 @@
 #define MT6370_REG_PHY_CTRL3				(0x82)
 #define MT6370_REG_CLK_CTRL2				(0x87)
 #define MT6370_REG_CLK_CTRL3				(0x88)
+
+#define MT6370_REG_PRL_FSM_RESET			(0x8D)
 
 #define MT6370_REG_BMC_CTRL				(0x90)
 #define MT6370_REG_BMCIO_RXDZSEL			(0x93)
@@ -133,11 +135,18 @@
 
 #define MT6370_REG_CK_300K_SEL				(1<<7)
 #define MT6370_REG_SHIPPING_OFF			(1<<5)
+#define MT6370_REG_ENEXTMSG			(1<<4)
 #define MT6370_REG_AUTOIDLE_EN				(1<<3)
 
 /* timeout = (tout*2+1) * 6.4ms */
+#ifdef CONFIG_USB_PD_REV30
+#define MT6370_REG_IDLE_SET(ck300, ship_dis, auto_idle, tout) \
+	((ck300 << 7) | (ship_dis << 5) |\
+	 (auto_idle << 3) | (tout & 0x07) | MT6370_REG_ENEXTMSG)
+#else
 #define MT6370_REG_IDLE_SET(ck300, ship_dis, auto_idle, tout) \
 	((ck300 << 7) | (ship_dis << 5) | (auto_idle << 3) | (tout & 0x07))
+#endif
 
 /*
  * MT6370_REG_INTRST_CTRL			(0x9C)

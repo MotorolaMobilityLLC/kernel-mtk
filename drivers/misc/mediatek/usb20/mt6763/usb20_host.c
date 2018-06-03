@@ -63,7 +63,8 @@ void do_register_otg_work(struct work_struct *data)
 	}
 
 	otg_nb.notifier_call = otg_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb,
+		TCP_NOTIFY_TYPE_VBUS|TCP_NOTIFY_TYPE_USB);
 	if (ret < 0) {
 		DBG(0, "register OTG <%p> fail\n", otg_tcpc_dev);
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,

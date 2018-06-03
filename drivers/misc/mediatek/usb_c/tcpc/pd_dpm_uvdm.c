@@ -28,18 +28,19 @@ bool richtek_dfp_notify_pe_startup(
 	return true;
 }
 
-int richtek_dfp_notify_pe_ready(struct pd_port *pd_port,
-		struct svdm_svid_data *svid_data, struct pd_event *pd_event)
+int richtek_dfp_notify_pe_ready(
+	struct pd_port *pd_port, struct svdm_svid_data *svid_data)
 {
-	PD_BUG_ON(pd_port->data_role != PD_ROLE_DFP);
+	if (pd_port->data_role != PD_ROLE_DFP)
+		return 0;
 
 	if (pd_port->richtek_init_done)
 		return 0;
 
+	pd_port->richtek_init_done = true;
 	UVDM_INFO("richtek_dfp_notify_pe_ready\r\n");
 
-	pd_port->richtek_init_done = true;
-
+#if 0
 	pd_port->uvdm_cnt = 3;
 	pd_port->uvdm_wait_resp = true;
 
@@ -48,6 +49,8 @@ int richtek_dfp_notify_pe_ready(struct pd_port *pd_port,
 	pd_port->uvdm_data[2] = 0x44332211;
 
 	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_UVDM);
+#endif
+
 	return 1;
 }
 
@@ -70,14 +73,26 @@ bool richtek_dfp_notify_uvdm(struct pd_port *pd_port,
 bool richtek_ufp_notify_uvdm(struct pd_port *pd_port,
 				struct svdm_svid_data *svid_data)
 {
-	uint32_t hdr = PD_UVDM_HDR(0x29cf, 0x1234);
-	uint32_t cmd = PD_UVDM_HDR_CMD(pd_port->uvdm_data[0]);
+	uint8_t i;
+	uint32_t reply_cmd[VDO_MAX_NR];
+	uint16_t cmd = (uint16_t) PD_UVDM_HDR_CMD(pd_port->uvdm_data[0]);
 
-	UVDM_INFO("ufp_notify: %d, resp: 0x%08x\r\n", cmd, hdr);
+	UVDM_INFO("ufp_notify: 0x%x\r\n", cmd);
 
-	if (cmd == 0)
-		pd_reply_uvdm(pd_port, TCPC_TX_SOP, 1, &hdr);
+	if (cmd >= 0x1000) {
+		UVDM_INFO("uvdm_no_reply\r\n");
+		VDM_STATE_DPM_INFORMED(pd_port);
+		return true;
+	}
 
+	reply_cmd[0] = PD_UVDM_HDR(USB_SID_RICHTEK, cmd+1);
+
+	for (i = 1; i < pd_port->uvdm_cnt; i++)
+		reply_cmd[i] = ~pd_port->uvdm_data[i];
+
+	pd_reply_custom_vdm(pd_port, TCPC_TX_SOP,
+		pd_port->uvdm_cnt, reply_cmd);
+	VDM_STATE_NORESP_CMD(pd_port);
 	return true;
 }
 
