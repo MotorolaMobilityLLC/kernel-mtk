@@ -1167,7 +1167,7 @@ VOID p2pFuncReleaseCh(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIdx, IN P_P2P_CHN
 		prMsgChRelease->ucBssIndex = ucBssIdx;
 		prMsgChRelease->ucTokenID = prChnlReqInfo->ucSeqNumOfChReq++;
 #if CFG_SUPPORT_DBDC
-		prMsgChRelease->eDBDCBand = (prAdapter->aprBssInfo[ucBssIdx])->eDBDCBand;
+		prMsgChRelease->eDBDCBand = ENUM_BAND_AUTO;
 
 		DBGLOG(P2P, INFO,
 			"p2pFuncReleaseCh: P2P abort channel on band %u.\n",
@@ -1216,7 +1216,7 @@ VOID p2pFuncAcquireCh(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIdx, IN P_P2P_CHN
 		prMsgChReq->ucRfCenterFreqSeg1 = prChnlReqInfo->ucCenterFreqS1;
 		prMsgChReq->ucRfCenterFreqSeg2 = prChnlReqInfo->ucCenterFreqS2;
 #if CFG_SUPPORT_DBDC
-		prMsgChReq->eDBDCBand = (prAdapter->aprBssInfo[ucBssIdx])->eDBDCBand;
+		prMsgChReq->eDBDCBand = ENUM_BAND_AUTO;
 
 		DBGLOG(P2P, INFO,
 		   "p2pFuncAcquireCh: P2P Request channel on band %u, tokenID: %d, cookie: 0x%llx.\n",
