@@ -45,7 +45,7 @@ extern unsigned int gPMICDbgLvl;
 } while (0)
 
 /* MT6335 Export API */
-extern unsigned short pmic_scp_set_vcore(unsigned int);
-extern unsigned short pmic_scp_set_vsram_vcore(unsigned int);
+extern unsigned int pmic_scp_set_vcore(unsigned int);
+extern unsigned int pmic_scp_set_vsram_vcore(unsigned int);
 
 #endif				/* _MT_PMIC_INFO_H_ */
