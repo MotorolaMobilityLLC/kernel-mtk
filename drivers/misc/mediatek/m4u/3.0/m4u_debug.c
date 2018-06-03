@@ -1608,6 +1608,7 @@ const struct file_operations m4u_debug_buf_fops = {
 int m4u_debug_monitor_show(struct seq_file *s, void *unused)
 {
 	m4u_print_perf_counter(0, 0, "monitor");
+	m4u_print_perf_counter(0, 1, "monitor");
 	return 0;
 }
 
