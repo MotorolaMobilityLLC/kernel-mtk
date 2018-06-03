@@ -17,24 +17,6 @@
 #include <mt-plat/met_drv.h>
 #endif
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
-static char met_dvfs_info2[5][32] = {
-	"sched_dvfs_boostmin_cid0",
-	"sched_dvfs_boostmin_cid1",
-	"sched_dvfs_boostmin_cid2",
-	"NULL",
-	"NULL"
-};
-
-static char met_dvfs_info3[5][32] = {
-	"sched_dvfs_capmin_cid0",
-	"sched_dvfs_capmin_cid1",
-	"sched_dvfs_capmin_cid2",
-	"NULL",
-	"NULL"
-};
-#endif
-
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 bool schedtune_initialized = false;
 #endif
@@ -43,6 +25,9 @@ unsigned int sysctl_sched_cfs_boost __read_mostly;
 
 static int default_stune_threshold;
 bool global_negative_flag;
+
+static struct target_cap schedtune_target_cap[16];
+static int cpu_cluster_nr;
 
 extern struct reciprocal_value schedtune_spc_rdiv;
 extern struct target_nrg schedtune_target_nrg;
@@ -743,13 +728,12 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	struct schedtune *st = css_st(css);
 	unsigned threshold_idx;
 	int boost_pct;
+	bool dvfs_on_demand = false;
 	int ctl_no = div64_s64(boost, 1000);
 	int cluster;
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
-	bool dvfs_on_demand = false;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int floor = 0;
-	int i;
-	int c0, c1;
+	int c0, c1, i;
 #endif
 	int cap_min = 0;
 
@@ -768,7 +752,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		}
 		cap_min = div64_s64(boost * 1024, 100);
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		set_cap_min_freq(cap_min);
 #endif
 		rcu_read_lock();
@@ -795,7 +779,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		boost -= ctl_no * 1000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -820,9 +804,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		/* dvfs short cut */
 		boost -= 2000;
 		stune_task_threshold = default_stune_threshold;
-#if 0 /* #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		dvfs_on_demand = true;
-#endif
 		break;
 	case 1:
 		/* boost all tasks */
@@ -843,7 +825,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		return -EINVAL;
 	}
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	for (i = 0; i < cpu_cluster_nr; i++) {
 		if (!floor)
 			min_boost_freq[i] = 0;
@@ -854,6 +836,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
 #endif
 	}
+#endif /* CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 
 	if (!cap_min) {
 		rcu_read_lock();
@@ -871,7 +854,6 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 					st->capacity_min);
 #endif
 	}
-#endif
 
 	global_negative_flag = false;
 
@@ -900,7 +882,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif
@@ -1395,6 +1377,7 @@ schedtune_init(void)
 	struct sched_domain *sd;
 	struct sched_group *sg;
 #endif
+	int i;
 
 	pr_info("schedtune: init normalization constants...\n");
 	ste->max_power = 0;
@@ -1454,6 +1437,25 @@ schedtune_init(void)
 
 	pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
 		"SYSTEM", ste->min_power, ste->max_power);
+
+	/* Get capacity & freq information */
+	cpu_cluster_nr = arch_get_nr_clusters();
+
+	for (i = 0; i < cpu_cluster_nr ; i++) {
+		struct cpumask cluster_cpus;
+		int first_cpu;
+		const struct sched_group_energy *pwr_tlb;
+
+		arch_get_cluster_cpus(&cluster_cpus, i);
+		first_cpu = cpumask_first(&cluster_cpus);
+		pwr_tlb = cpu_core_energy(first_cpu);
+
+		schedtune_target_cap[i].cap =
+			pwr_tlb->cap_states[pwr_tlb->nr_cap_states - 1].cap;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		schedtune_target_cap[i].freq = mt_cpufreq_get_freq_by_idx(i, 0);
+#endif
+	}
 
 	/* Compute normalization constants */
 	delta_pwr = ste->max_power - ste->min_power;

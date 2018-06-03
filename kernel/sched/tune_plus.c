@@ -11,7 +11,135 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+static char met_dvfs_info2[5][32] = {
+	"sched_dvfs_boostmin_id0",
+	"sched_dvfs_boostmin_id1",
+	"sched_dvfs_boostmin_id2",
+	"NULL",
+	"NULL"
+};
+
+static char met_dvfs_info3[5][32] = {
+	"sched_dvfs_capmin_id0",
+	"sched_dvfs_capmin_id1",
+	"sched_dvfs_capmin_id2",
+	"NULL",
+	"NULL"
+};
+#endif
+
 int sys_boosted;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+void update_freq_fastpath(void)
+{
+	int cid;
+
+	if (!sched_freq())
+		return;
+
+#if MET_STUNE_DEBUG
+	met_tag_oneshot(0, "sched_dvfsfast_path", 1);
+#endif
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	/* force migrating vip task to higher idle cpu */
+	vip_task_force_migrate();
+#endif
+
+	/* for each cluster*/
+	for (cid = 0; cid < arch_get_nr_clusters(); cid++) {
+		unsigned long capacity = 0;
+		int cpu;
+		struct cpumask cls_cpus;
+		int first_cpu = -1;
+		unsigned int freq_new = 0;
+		unsigned long req_cap = 0;
+
+		arch_get_cluster_cpus(&cls_cpus, cid);
+
+		for_each_cpu(cpu, &cls_cpus) {
+			struct sched_capacity_reqs *scr;
+
+			if (!cpu_online(cpu) || cpu_isolated(cpu))
+				continue;
+
+			if (first_cpu < 0)
+				first_cpu = cpu;
+
+			scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
+
+			/* find boosted util per cpu.  */
+			req_cap = boosted_cpu_util(cpu);
+
+			/* Convert scale-invariant capacity to cpu. */
+			req_cap = req_cap * SCHED_CAPACITY_SCALE /
+						capacity_orig_of(cpu);
+
+			req_cap += scr->rt;
+
+			/* Add DVFS margin. */
+			req_cap = req_cap * capacity_margin_dvfs /
+						SCHED_CAPACITY_SCALE;
+
+			req_cap += scr->dl;
+
+			/* find max boosted util */
+			capacity = max(capacity, req_cap);
+
+			trace_sched_cpufreq_fastpath_request(cpu,
+					req_cap, cpu_util(cpu),
+					boosted_cpu_util(cpu),
+					(int)scr->rt);
+		} /* visit cpu over cluster */
+
+		if (capacity > 0) { /* update freq in fast path */
+			freq_new = capacity * arch_scale_get_max_freq(first_cpu)
+					>> SCHED_CAPACITY_SHIFT;
+
+			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
+
+			update_cpu_freq_quick(first_cpu, freq_new);
+		}
+	} /* visit each cluster */
+#if MET_STUNE_DEBUG
+	met_tag_oneshot(0, "sched_dvfsfast_path", 0);
+#endif
+}
+
+void set_min_boost_freq(int boost_value, int cpu_clus)
+{
+	int max_clus_nr = arch_get_nr_clusters();
+	int max_freq, max_cap, floor_cap, floor_freq;
+
+	if (cpu_clus >= max_clus_nr || cpu_clus < 0)
+		return;
+
+	max_freq = schedtune_target_cap[cpu_clus].freq;
+	max_cap = schedtune_target_cap[cpu_clus].cap;
+
+	floor_cap = (max_cap * (int)(boost_value+1) / 100);
+	floor_freq = (floor_cap * max_freq / max_cap);
+	min_boost_freq[cpu_clus] =
+		mt_cpufreq_find_close_freq(cpu_clus, floor_freq);
+}
+
+void set_cap_min_freq(int cap_min)
+{
+	int max_clus_nr = arch_get_nr_clusters();
+	int max_freq, max_cap, min_freq;
+	int i;
+
+	for (i = 0; i < max_clus_nr; i++) {
+		max_freq = schedtune_target_cap[i].freq;
+		max_cap = schedtune_target_cap[i].cap;
+
+		min_freq = (cap_min * max_freq / max_cap);
+		cap_min_freq[i] = mt_cpufreq_find_close_freq(i, min_freq);
+	}
+}
+#endif
 
 int stune_task_threshold_for_perf_idx(bool filter)
 {
@@ -44,7 +172,7 @@ int capacity_min_write_for_perf_idx(int idx, int capacity_min)
 			capacity_min = 0;
 	}
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	set_cap_min_freq(capacity_min);
 #endif
 	rcu_read_lock();
@@ -69,16 +197,14 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	struct schedtune *ct;
 	unsigned int threshold_idx;
 	int boost_pct;
+	bool dvfs_on_demand = false;
 	int idx = 0;
 	int ctl_no = div64_s64(boost_value, 1000);
 	int cluster;
 	int cap_min = 0;
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
-	bool dvfs_on_demand = false;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int floor = 0;
-	int i;
-	int c0, c1;
-	int dvfs_floor;
+	int c0, c1, i;
 #endif
 
 	switch (ctl_no) {
@@ -98,7 +224,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		if (ct) {
 			cap_min = div64_s64(boost_value * 1024, 100);
 
-#if 0 /*#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 			set_cap_min_freq(cap_min);
 #endif
 			rcu_read_lock();
@@ -128,7 +254,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -153,9 +279,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		/* dvfs short cut */
 		boost_value -= 2000;
 		stune_task_threshold = default_stune_threshold;
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		dvfs_on_demand = true;
-#endif
 		break;
 	case 1:
 		/* boost all tasks */
@@ -179,7 +303,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	else if (boost_value <= -100)
 		boost_value = -100;
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	for (i = 0; i < cpu_cluster_nr; i++) {
 		if (!floor)
 			min_boost_freq[i] = 0;
@@ -191,6 +315,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
 #endif
 	}
+#endif /* CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 
 	if (!cap_min) {
 		ct = allocated_group[group_idx];
@@ -211,7 +336,6 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 #endif
 		}
 	}
-#endif
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
@@ -275,7 +399,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		}
 	}
 
-#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif

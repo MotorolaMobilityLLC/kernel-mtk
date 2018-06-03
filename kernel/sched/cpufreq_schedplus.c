@@ -142,7 +142,8 @@ static char met_dvfs_info[5][16] = {
 	"NULL"
 };
 
-unsigned long int min_boost_freq[3] = {0};
+unsigned long int min_boost_freq[3] = {0}; /* boost3xxx */
+unsigned long int cap_min_freq[3] = {0};   /* boost4xxx */
 
 void (*cpufreq_notifier_fp)(int cluster_id, unsigned long freq);
 EXPORT_SYMBOL(cpufreq_notifier_fp);
@@ -247,7 +248,6 @@ static void cpufreq_sched_try_driver_target(
 {
 	struct gov_data *gd;
 	int cid;
-	unsigned int boost_min;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int cpu;
 	struct cpumask cls_cpus;
@@ -273,10 +273,8 @@ static void cpufreq_sched_try_driver_target(
 	if (!freq)
 		return;
 
-	boost_min = min_boost_freq[cid];
-
-	/* if freq changed, give fps tracker notification. */
-	if (boost_min)
+	/* if freq min of stune changed, notify fps tracker */
+	if (min_boost_freq[cid] || cap_min_freq[cid])
 		if (cpufreq_notifier_fp)
 			cpufreq_notifier_fp(cid, freq);
 
@@ -488,7 +486,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	struct cpufreq_policy *policy = NULL;
 	ktime_t throttle, now;
 	unsigned int cur_freq;
-	unsigned int max, min, boost_min;
+	unsigned int max, min;
+	int cap_min = 0;
 
 	/*
 	 * Avoid grabbing the policy if possible. A test is still
@@ -577,6 +576,12 @@ static void update_fdomain_capacity_request(int cpu, int type)
 			capacity = max(capacity, boosted_util);
 		else
 			capacity = max(capacity, scr->total);
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+		/* see if capacity_min exist */
+		if (!cap_min)
+			cap_min = schedtune_cpu_capacity_min(cpu_tmp);
+#endif
 	}
 
 	/* get real world frequency */
@@ -587,8 +592,14 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	min = arch_scale_get_min_freq(cpu);
 
 	/* boost3xxx: clamp frequency by boost limit */
-	boost_min = min_boost_freq[cid];
-	freq_new = clamp(freq_new, boost_min, max);
+	if (min_boost_freq[cid])
+		freq_new = (freq_new > min_boost_freq[cid]) ?
+				freq_new : min_boost_freq[cid];
+
+	/* boost4xxx: clamp frequency if cap_min exist */
+	if (cap_min && cap_min_freq[cid])
+		freq_new = (freq_new > cap_min_freq[cid]) ?
+				freq_new : cap_min_freq[cid];
 
 	/* governor limit: clamp frequency with min/max */
 	freq_new = clamp(freq_new, min, max);

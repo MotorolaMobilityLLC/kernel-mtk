@@ -18,6 +18,30 @@ struct target_nrg {
 #endif
 };
 
+struct target_cap {
+	int cap;
+	int freq;
+};
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+extern unsigned long int min_boost_freq[3];
+extern unsigned long int cap_min_freq[3];
+extern void update_cpu_freq_quick(int cpu, int freq);
+#ifdef CONFIG_MTK_BASE_POWER
+extern unsigned int
+mt_cpufreq_get_freq_by_idx(int id, int idx);
+extern unsigned int
+mt_cpufreq_find_close_freq(unsigned int id, unsigned int freq);
+#else
+static inline unsigned int
+mt_cpufreq_get_freq_by_idx(int id, int idx) { return 0; }
+static inline unsigned int
+mt_cpufreq_find_close_freq(unsigned int id, unsigned int freq) { return 0; }
+#endif
+#endif
+
+extern unsigned long boosted_cpu_util(int cpu);
+
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
 int schedtune_cpu_boost(int cpu);
