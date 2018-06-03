@@ -1965,7 +1965,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			WMT_ERR_FUNC("wmt-lib: get EMI virtual base address fail\n");
 		} else {
 			WMT_INFO_FUNC("vir addr(0x%p)\n", pAddr);
-			osal_memcpy(&buf[0], pAddr, len);
+			osal_memcpy_fromio(&buf[0], pAddr, len);
 		}
 	} else {
 		if (offset >= 0x7fff)
@@ -1978,7 +1978,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			} else {
 				WMT_INFO_FUNC("part1 vir addr(0x%p)\n", pAddr);
 				sublen1 = 0x7fff - offset;
-				osal_memcpy(&buf[0], pAddr, sublen1);
+				osal_memcpy_fromio(&buf[0], pAddr, sublen1);
 			}
 			pAddr = wmt_plat_get_emi_virt_add(p_consys_info->paged_trace_off);
 			if (!pAddr) {
@@ -1986,7 +1986,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			} else {
 				WMT_INFO_FUNC("part2 vir addr(0x%p)\n", pAddr);
 				sublen2 = len - sublen1;
-				osal_memcpy(&buf[sublen1], pAddr, sublen2);
+				osal_memcpy_fromio(&buf[sublen1], pAddr, sublen2);
 			}
 		} else {
 			pAddr = wmt_plat_get_emi_virt_add(offset + p_consys_info->paged_trace_off);
@@ -1994,7 +1994,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 				WMT_ERR_FUNC("wmt-lib: get EMI virtual base address fail\n");
 			} else {
 				WMT_INFO_FUNC("vir addr(0x%p)\n", pAddr);
-				osal_memcpy(&buf[0], pAddr, len);
+				osal_memcpy_fromio(&buf[0], pAddr, len);
 			}
 		}
 	}
