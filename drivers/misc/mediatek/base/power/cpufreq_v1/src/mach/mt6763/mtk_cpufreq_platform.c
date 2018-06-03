@@ -85,11 +85,24 @@ static int set_cur_volt_proc1_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
 	return regulator_set_voltage(regulator_proc1, volt * 10, max_volt * 10);
 }
 
-static unsigned int get_cur_volt_proc1_cpu(struct buck_ctrl_t *buck_p)
+static unsigned int get_cur_volt_proc1_cpu_6356(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata;
 
 	rdata = regulator_get_voltage(regulator_proc1) / 10;
+
+	return rdata;
+}
+
+static unsigned int get_cur_volt_proc1_cpu_6311(struct buck_ctrl_t *buck_p)
+{
+	unsigned int rdata;
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	rdata = cpuhvfs_get_volt((int)buck_p->buck_id);
+#else
+	rdata = regulator_get_voltage(regulator_proc1) / 10;
+#endif
 
 	return rdata;
 }
@@ -170,7 +183,7 @@ static unsigned int mt6356_vsram1_settletime(unsigned int old_volt, unsigned int
 
 /* upper layer CANNOT use 'set' function in secure path */
 static struct buck_ctrl_ops buck_ops_mt6356_vproc1 = {
-	.get_cur_volt		= get_cur_volt_proc1_cpu,
+	.get_cur_volt		= get_cur_volt_proc1_cpu_6356,
 	.set_cur_volt		= set_cur_volt_proc1_cpu,
 	.transfer2pmicval	= mt6356_vproc1_transfer2pmicval,
 	.transfer2volt		= mt6356_vproc1_transfer2volt,
@@ -178,7 +191,7 @@ static struct buck_ctrl_ops buck_ops_mt6356_vproc1 = {
 };
 
 static struct buck_ctrl_ops buck_ops_mt6311_vproc1 = {
-	.get_cur_volt		= get_cur_volt_proc1_cpu,
+	.get_cur_volt		= get_cur_volt_proc1_cpu_6311,
 	.set_cur_volt		= set_cur_volt_proc1_cpu,
 	.transfer2pmicval	= mt6311_vproc1_transfer2pmicval,
 	.transfer2volt		= mt6311_vproc1_transfer2volt,
