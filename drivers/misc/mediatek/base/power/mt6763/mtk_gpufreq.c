@@ -754,7 +754,7 @@ static void mt_gpufreq_set_initial(void)
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_DOING_DVFS));
 #endif
-	gpufreq_dbg("[Figo] Into mt_gpufreq_set_initial");
+	gpufreq_dbg("[MTK_GPUFREQ] Into mt_gpufreq_set_initial");
 	cur_volt = _mt_gpufreq_get_cur_volt();
 	cur_freq = _mt_gpufreq_get_cur_freq();
 
@@ -829,7 +829,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 
 	mutex_lock(&mt_gpufreq_lock);
 
-	gpufreq_dbg("[Figo][+]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][+]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
 		__func__, enable, mt_gpufreq_volt_enable_state);
 
 
@@ -975,7 +975,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 #ifndef MTK_SSPM
 	mt_gpufreq_volt_enable_state = enable;
 SET_EXIT:
-	gpufreq_dbg("[Figo][-]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][-]@%s: enable = %d, mt_gpufreq_volt_enable_state = %d\n",
 		__func__, enable, mt_gpufreq_volt_enable_state);
 	mutex_unlock(&mt_gpufreq_lock);
 #endif
@@ -1023,7 +1023,7 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 
 	mutex_lock(&mt_gpufreq_lock);
 
-	gpufreq_dbg("[Figo][+]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][+]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
 		__func__, enable_lpm, mt_gpufreq_volt_enable_state);
 
 	if (mt_gpufreq_ready == false) {
@@ -1068,7 +1068,7 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 		mt_gpufreq_volt_enable_state = 1;
 	}
 SET_LPM_EXIT:
-	gpufreq_dbg("[Figo][-]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][-]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
 		__func__, enable_lpm, mt_gpufreq_volt_enable_state);
 	mutex_unlock(&mt_gpufreq_lock);
 #endif
@@ -1084,7 +1084,7 @@ EXPORT_SYMBOL(mt_gpufreq_voltage_lpm_set);
 void mt_gpufreq_enable_by_ptpod(void)
 {
 #ifdef VOLT_SET_READY
-	gpufreq_dbg("[Figo] Power off by mt_gpufreq_enable_by_ptpod\n");
+	gpufreq_dbg("[MTK_GPUFREQ] Power off by mt_gpufreq_enable_by_ptpod\n");
 	mt_gpufreq_voltage_enable_set(0);
 #endif
 
@@ -1118,7 +1118,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 	mt_gpufreq_ptpod_disable_idx = target_idx;
 
 #ifdef VOLT_SET_READY
-	gpufreq_dbg("[Figo] Power on by mt_gpufreq_disable_by_ptpod\n");
+	gpufreq_dbg("[MTK_GPUFREQ] Power on by mt_gpufreq_disable_by_ptpod\n");
 	mt_gpufreq_voltage_enable_set(1);
 #endif
 	mt_gpufreq_target(target_idx);
@@ -1832,7 +1832,7 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			   unsigned int volt_old, unsigned int volt_new)
 {
 
-	gpufreq_dbg("[Figo][+]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][+]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
 		__func__, freq_old, freq_new, volt_old, volt_new);
 	if (freq_new > freq_old) {
 		if (ext_buck_exist)
@@ -1847,9 +1847,9 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
 	}
-	gpufreq_dbg("[Figo][-]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][-]@%s: Freq: %d ---> %d, Volt: %d ---> %d\n",
 		__func__, freq_old, freq_new, volt_old, volt_new);
-	gpufreq_dbg("[Figo][Status]@%s: freq:%d, volt:%d\n",
+	gpufreq_dbg("[MTK_GPUFREQ][Status]@%s: freq:%d, volt:%d\n",
 		__func__, mt_get_ckgen_freq(7), _mt_gpufreq_get_cur_volt());
 
 	g_cur_gpu_freq = freq_new;
@@ -2931,7 +2931,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_2,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e1_2));
-	gpufreq_dbg("[Figo] OPP Table Set Up Done (%d)", mt_gpufreq_dvfs_table_type);
+	gpufreq_dbg("[MTK_GPUFREQ] OPP Table Set Up Done (%d)", mt_gpufreq_dvfs_table_type);
 
 	/**********************
 	 * setup PMIC init value
@@ -2991,9 +2991,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			regulator_get_voltage(mt_gpufreq_pmic->reg_vproc)/1000);
 	}
 #endif
-	gpufreq_dbg("[Figo] Skip regulator init");
+	gpufreq_dbg("[MTK_GPUFREQ] Skip regulator init");
 	mt_gpufreq_volt_enable_state = 1;
-	gpufreq_dbg("[Figo] power init done");
+	gpufreq_dbg("[MTK_GPUFREQ] power init done");
 
 	/* init PLL
 	 *	to get PLL register
@@ -3016,7 +3016,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/**********************
 	 * setup initial frequency
 	 ***********************/
-	gpufreq_dbg("[Figo] setup initial frequency");
+	gpufreq_dbg("[MTK_GPUFREQ] setup initial frequency");
 #ifndef MTK_SSPM
 	mt_gpufreq_set_initial();
 #endif
@@ -3652,7 +3652,7 @@ static ssize_t mt_gpufreq_state_proc_write(struct file *file,
 			/* Keep MAX frequency when GPU DVFS disabled. */
 			mt_gpufreq_keep_max_frequency_state = true;
 #ifdef VOLT_SET_READY
-			gpufreq_dbg("[Figo] Power on by mt_gpufreq_state_proc_write\n");
+			gpufreq_dbg("[MTK_GPUFREQ] Power on by mt_gpufreq_state_proc_write\n");
 			mt_gpufreq_voltage_enable_set(1);
 #endif
 			mt_gpufreq_target(g_gpufreq_max_id);
@@ -3802,7 +3802,7 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file, const char __us
 				mt_gpufreq_keep_opp_frequency = fixed_freq;
 
 #ifdef VOLT_SET_READY
-			gpufreq_dbg("[Figo] Power on by mt_gpufreq_opp_freq_proc_write\n");
+			gpufreq_dbg("[MTK_GPUFREQ] Power on by mt_gpufreq_opp_freq_proc_write\n");
 			mt_gpufreq_voltage_enable_set(1);
 #endif
 			mt_gpufreq_target(mt_gpufreq_keep_opp_index);
@@ -3881,7 +3881,7 @@ static ssize_t mt_gpufreq_opp_max_freq_proc_write(struct file *file, const char 
 				mt_gpufreq_opp_max_frequency =
 					mt_gpufreqs[mt_gpufreq_opp_max_index].gpufreq_khz;
 #ifdef VOLT_SET_READY
-				gpufreq_dbg("[Figo] Power on by mt_gpufreq_opp_max_freq_proc_write\n");
+				gpufreq_dbg("[MTK_GPUFREQ] Power on by mt_gpufreq_opp_max_freq_proc_write\n");
 				mt_gpufreq_voltage_enable_set(1);
 #endif
 				mt_gpufreq_target(mt_gpufreq_opp_max_index);
@@ -4018,13 +4018,13 @@ static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file, const char _
 	if (kstrtoint(desc, 0, &enable) == 0) {
 		if (enable == 0) {
 #ifdef VOLT_SET_READY
-			gpufreq_dbg("[Figo] Power off by mt_gpufreq_state_proc_write\n");
+			gpufreq_dbg("[MTK_GPUFREQ] Power off by mt_gpufreq_state_proc_write\n");
 			mt_gpufreq_voltage_enable_set(0);
 #endif
 			mt_gpufreq_volt_enable = false;
 		} else if (enable == 1) {
 #ifdef VOLT_SET_READY
-			gpufreq_dbg("[Figo] Power on by mt_gpufreq_state_proc_write\n");
+			gpufreq_dbg("[MTK_GPUFREQ] Power on by mt_gpufreq_state_proc_write\n");
 			mt_gpufreq_voltage_enable_set(1);
 #endif
 			mt_gpufreq_volt_enable = true;
@@ -4073,7 +4073,7 @@ static void _mt_gpufreq_fixed_freq(int fixed_freq)
 		mt_gpufreq_fixed_frequency = fixed_freq;
 		mt_gpufreq_fixed_voltage = g_cur_gpu_volt;
 #ifdef VOLT_SET_READY
-		gpufreq_dbg("[Figo] Power on by _mt_gpufreq_fixed_freq\n");
+		gpufreq_dbg("[MTK_GPUFREQ] Power on by _mt_gpufreq_fixed_freq\n");
 		mt_gpufreq_voltage_enable_set(1);
 #endif
 		gpufreq_dbg("@ %s, mt_gpufreq_clock_switch2 fix frq = %d, fix volt = %d, volt = %d\n",
@@ -4111,7 +4111,7 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 		mt_gpufreq_fixed_frequency = g_cur_gpu_freq;
 		mt_gpufreq_fixed_voltage = fixed_volt * 100;
 #ifdef VOLT_SET_READY
-		gpufreq_dbg("[Figo] Power on by _mt_gpufreq_fixed_volt\n");
+		gpufreq_dbg("[MTK_GPUFREQ] Power on by _mt_gpufreq_fixed_volt\n");
 		mt_gpufreq_voltage_enable_set(1);
 #endif
 		gpufreq_dbg("@ %s, mt_gpufreq_volt_switch2 fix frq = %d, fix volt = %d, volt = %d\n",
