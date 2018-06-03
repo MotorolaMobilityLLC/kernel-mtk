@@ -605,25 +605,36 @@ INT32 wmt_dbg_stp_trigger_assert(INT32 par1, INT32 par2, INT32 par3)
 
 static INT32 wmt_dbg_ap_reg_read(INT32 par1, INT32 par2, INT32 par3)
 {
-	ULONG value = 0x0;
+	INT32 value = 0x0;
+	PUINT8 ap_reg_base = NULL;
 
 	WMT_INFO_FUNC("AP register read, reg address:0x%x\n", par2);
-	value = *((volatile unsigned long *)(unsigned long)par2);
-	WMT_INFO_FUNC("AP register read, reg address:0x%x, value:0x%lx\n", par2, value);
+	ap_reg_base = ioremap_nocache(par2, 0x4);
+	if (ap_reg_base) {
+		value = readl(ap_reg_base);
+		WMT_INFO_FUNC("AP register read, reg address:0x%x, value:0x%x\n", par2, value);
+		iounmap(ap_reg_base);
+	} else
+		WMT_ERR_FUNC("AP register ioremap fail!\n");
 
 	return 0;
 }
 
 static INT32 wmt_dbg_ap_reg_write(INT32 par1, INT32 par2, INT32 par3)
 {
-	ULONG value = 0x0;
+	INT32 value = 0x0;
+	PUINT8 ap_reg_base = NULL;
 
 	WMT_INFO_FUNC("AP register write, reg address:0x%x, value:0x%x\n", par2, par3);
 
-	*((volatile unsigned long *)(unsigned long)par2) = (UINT32) par3;
-	mb();
-	value = *((volatile unsigned long *)(unsigned long)par2);
-	WMT_INFO_FUNC("AP register write done, value after write:0x%lx\n", value);
+	ap_reg_base = ioremap_nocache(par2, 0x4);
+	if (ap_reg_base) {
+		writel(par3, ap_reg_base);
+		value = readl(ap_reg_base);
+		WMT_INFO_FUNC("AP register write done, value after write:0x%x\n", value);
+		iounmap(ap_reg_base);
+	} else
+		WMT_ERR_FUNC("AP register ioremap fail!\n");
 
 	return 0;
 }
