@@ -545,7 +545,7 @@ static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int
 static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s(), btcvsd tx timeout %d\n",
+	LOGBT("%s(), btcvsd tx timeout %d\n",
 		 __func__, btcvsd_tx_timeout() ? 1 : 0);
 	ucontrol->value.integer.value[0] = btcvsd_tx_timeout() ? 1 : 0;
 	/*btcvsd_tx_reset_timeout();*/
