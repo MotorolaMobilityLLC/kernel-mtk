@@ -1708,8 +1708,18 @@
 		clock-names = "CAM_MDP_TX", "CAM_MDP_RX";
 	};
 
+	nfc:nfc {
+		compatible = "mediatek,nfc-gpio-v2";
+		gpio-rst = <25>;
+		gpio-irq = <26>;
+	};
+
 	gps {
 		compatible = "mediatek,gps";
+	};
+
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
 	};
 
 	mtkfb: mtkfb@0 {
