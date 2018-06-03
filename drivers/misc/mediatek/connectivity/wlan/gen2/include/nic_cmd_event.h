@@ -1421,7 +1421,7 @@ typedef struct _CMD_NLO_REQ {
 	UINT_16 u2IELen;
 	NLO_NETWORK arNetworkList[16];
 	UINT_8 aucIE[0];
-	/* UINT_8 ucScanType; */
+	UINT_8 ucScanType;
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
 typedef struct _CMD_NLO_CANCEL_T {
