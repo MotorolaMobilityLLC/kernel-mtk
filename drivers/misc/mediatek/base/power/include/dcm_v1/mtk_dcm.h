@@ -1,0 +1,270 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+#ifndef __MTK_DCM_H__
+#define __MTK_DCM_H__
+
+/* #define DCM_DEFAULT_ALL_OFF */
+/* #define DCM_BRINGUP */
+
+#define DCM_OFF (0)
+#define DCM_ON (1)
+
+#define DCM_DEBUG
+
+/* Note: ENABLE_DCM_IN_LK is used in kernel if DCM is enabled in LK */
+#define ENABLE_DCM_IN_LK
+#ifdef ENABLE_DCM_IN_LK
+#define INIT_DCM_TYPE_BY_K	0
+#endif
+
+/* #define CTRL_BIGCORE_DCM_IN_DORMANT */
+
+typedef enum {
+	ARMCORE_DCM_OFF = DCM_OFF,
+	ARMCORE_DCM_MODE1 = DCM_ON,
+	ARMCORE_DCM_MODE2 = DCM_ON+1,
+} ENUM_ARMCORE_DCM;
+
+typedef enum {
+	INFRA_DCM_OFF = DCM_OFF,
+	INFRA_DCM_ON = DCM_ON,
+} ENUM_INFRA_DCM;
+
+typedef enum {
+	PERI_DCM_OFF = DCM_OFF,
+	PERI_DCM_ON = DCM_ON,
+} ENUM_PERI_DCM;
+
+typedef enum {
+	MCUSYS_DCM_OFF = DCM_OFF,
+	MCUSYS_DCM_ON = DCM_ON,
+} ENUM_MCUSYS_DCM;
+
+typedef enum {
+	DRAMC_AO_DCM_OFF = DCM_OFF,
+	DRAMC_AO_DCM_ON = DCM_ON,
+} ENUM_DRAMC_AO_DCM;
+
+typedef enum {
+	DDRPHY_DCM_OFF = DCM_OFF,
+	DDRPHY_DCM_ON = DCM_ON,
+} ENUM_DDRPHY_DCM;
+
+typedef enum {
+	EMI_DCM_OFF = DCM_OFF,
+	EMI_DCM_ON = DCM_ON,
+} ENUM_EMI_DCM;
+
+typedef enum {
+	STALL_DCM_OFF = DCM_OFF,
+	STALL_DCM_ON = DCM_ON,
+} ENUM_STALL_DCM;
+
+#ifdef CONFIG_MACH_MT6799
+typedef enum {
+	TOPCKG_DCM_OFF = DCM_OFF,
+	TOPCKG_DCM_ON = DCM_ON,
+} ENUM_TOPCKG_DCM;
+
+typedef enum {
+	LPDMA_DCM_OFF = DCM_OFF,
+	LPDMA_DCM_ON = DCM_ON,
+} ENUM_LPDMA_DCM;
+#endif
+
+enum {
+	ARMCORE_DCM = 0,
+	MCUSYS_DCM,
+	INFRA_DCM,
+	PERI_DCM,
+	EMI_DCM,
+	DRAMC_DCM,
+	DDRPHY_DCM,
+	STALL_DCM,
+#ifdef CONFIG_MACH_MT6799
+	TOPCKG_DCM,
+	LPDMA_DCM,
+#elif defined(CONFIG_MACH_ELBRUS)
+#else
+#error NO corresponding project can be found!!!
+#endif
+	NR_DCM,
+};
+
+enum {
+	ARMCORE_DCM_TYPE	= (1U << ARMCORE_DCM),
+	MCUSYS_DCM_TYPE		= (1U << MCUSYS_DCM),
+	INFRA_DCM_TYPE		= (1U << INFRA_DCM),
+	PERI_DCM_TYPE		= (1U << PERI_DCM),
+	EMI_DCM_TYPE		= (1U << EMI_DCM),
+	DRAMC_DCM_TYPE		= (1U << DRAMC_DCM),
+	DDRPHY_DCM_TYPE		= (1U << DDRPHY_DCM),
+	STALL_DCM_TYPE		= (1U << STALL_DCM),
+#ifdef CONFIG_MACH_MT6799
+	TOPCKG_DCM_TYPE		= (1U << TOPCKG_DCM),
+	LPDMA_DCM_TYPE		= (1U << LPDMA_DCM),
+#elif defined(CONFIG_MACH_ELBRUS)
+#else
+#error NO corresponding project can be found!!!
+#endif
+	NR_DCM_TYPE = NR_DCM,
+};
+
+#ifdef CONFIG_MACH_MT6799
+#define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
+		       | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE \
+		       | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE \
+		       | LPDMA_DCM_TYPE \
+		       )
+
+#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
+			| INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE \
+		       )
+#elif defined(CONFIG_MACH_ELBRUS)
+#define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
+		       | INFRA_DCM_TYPE | PERI_DCM_TYPE \
+		       | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE \
+		       )
+
+#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
+			| INFRA_DCM_TYPE | PERI_DCM_TYPE \
+		       )
+#else
+#error NO corresponding project can be found!!!
+#endif
+
+#ifdef CONFIG_MACH_MT6799
+#define SYNC_DCM_CLK_MIN_FREQ	52
+#define SYNC_DCM_MAX_DIV_VAL	127
+#elif defined(CONFIG_MACH_ELBRUS)
+#define SYNC_DCM_CLK_MIN_FREQ	65
+#define SYNC_DCM_MAX_DIV_VAL	31
+#endif
+
+#ifdef CONFIG_MACH_MT6799
+#define MCUCFG_SYNC_DCM_MP0_REG		MP0_SCAL_SYNC_DCM_CONFIG
+#define MCUCFG_SYNC_DCM_MP1_REG		SYNC_DCM_CONFIG
+#define MCUCFG_SYNC_DCM_MP2_REG		MCUCFG_SYNC_DCM
+#define MCUCFG_SYNC_DCM_CCI_REG		SYNC_DCM_CONFIG
+
+#define MCUCFG_SYNC_DCM_CCI		(1)
+#define MCUCFG_SYNC_DCM_MP0		(1)
+#define MCUCFG_SYNC_DCM_MP1		(17)
+#define MCUCFG_SYNC_DCM_MP2		(1)
+#define MCUCFG_SYNC_DCM_CCI_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_CCI)
+#define MCUCFG_SYNC_DCM_MP0_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP0)
+#define MCUCFG_SYNC_DCM_MP1_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP1)
+#define MCUCFG_SYNC_DCM_MP2_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP2)
+#define MCUCFG_SYNC_DCM_TOGMASK		(MCUCFG_SYNC_DCM_CCI_TOGMASK | \
+					 MCUCFG_SYNC_DCM_MP0_TOGMASK | \
+					 MCUCFG_SYNC_DCM_MP1_TOGMASK)
+#define MCUCFG_SYNC_DCM_TOG1		MCUCFG_SYNC_DCM_TOGMASK
+#define MCUCFG_SYNC_DCM_CCI_TOG1	MCUCFG_SYNC_DCM_CCI_TOGMASK
+#define MCUCFG_SYNC_DCM_MP0_TOG1	MCUCFG_SYNC_DCM_MP0_TOGMASK
+#define MCUCFG_SYNC_DCM_MP1_TOG1	MCUCFG_SYNC_DCM_MP1_TOGMASK
+#define MCUCFG_SYNC_DCM_MP2_TOG1	MCUCFG_SYNC_DCM_MP2_TOGMASK
+#define MCUCFG_SYNC_DCM_CCI_TOG0	(0x0 << MCUCFG_SYNC_DCM_CCI)
+#define MCUCFG_SYNC_DCM_MP0_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP0)
+#define MCUCFG_SYNC_DCM_MP1_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP1)
+#define MCUCFG_SYNC_DCM_MP2_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP2)
+#define MCUCFG_SYNC_DCM_TOG0		(MCUCFG_SYNC_DCM_CCI_TOG0 | \
+					 MCUCFG_SYNC_DCM_MP0_TOG0 | \
+					 MCUCFG_SYNC_DCM_MP1_TOG0)
+
+#define MCUCFG_SYNC_DCM_SEL_CCI		(2)
+#define MCUCFG_SYNC_DCM_SEL_MP0		(2)
+#define MCUCFG_SYNC_DCM_SEL_MP1		(18)
+#define MCUCFG_SYNC_DCM_SEL_MP2		(2)
+#define MCUCFG_SYNC_DCM_SEL_CCI_MASK	(0x7F << MCUCFG_SYNC_DCM_SEL_CCI)
+#define MCUCFG_SYNC_DCM_SEL_MP0_MASK	(0x7F << MCUCFG_SYNC_DCM_SEL_MP0)
+#define MCUCFG_SYNC_DCM_SEL_MP1_MASK	(0x7F << MCUCFG_SYNC_DCM_SEL_MP1)
+#define MCUCFG_SYNC_DCM_SEL_MP2_MASK	(0x7F << MCUCFG_SYNC_DCM_SEL_MP2)
+#define MCUCFG_SYNC_DCM_SEL_MASK	(MCUCFG_SYNC_DCM_SEL_CCI_MASK | \
+					 MCUCFG_SYNC_DCM_SEL_MP0_MASK | \
+					 MCUCFG_SYNC_DCM_SEL_MP1_MASK)
+#elif defined(CONFIG_MACH_ELBRUS)
+#define MCUCFG_SYNC_DCM_MP0_REG		SYNC_DCM_CONFIG
+#define MCUCFG_SYNC_DCM_MP1_REG		SYNC_DCM_CONFIG
+#define MCUCFG_SYNC_DCM_MP2_REG		MCUCFG_SYNC_DCM
+#define MCUCFG_SYNC_DCM_CCI_REG		SYNC_DCM_CONFIG
+
+#define MCUCFG_SYNC_DCM_CCI		(6)
+#define MCUCFG_SYNC_DCM_MP0		(14)
+#define MCUCFG_SYNC_DCM_MP1		(22)
+#define MCUCFG_SYNC_DCM_MP2		(1)
+#define MCUCFG_SYNC_DCM_CCI_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_CCI)
+#define MCUCFG_SYNC_DCM_MP0_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP0)
+#define MCUCFG_SYNC_DCM_MP1_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP1)
+#define MCUCFG_SYNC_DCM_MP2_TOGMASK	(0x1 << MCUCFG_SYNC_DCM_MP2)
+#define MCUCFG_SYNC_DCM_TOGMASK		(MCUCFG_SYNC_DCM_CCI_TOGMASK | \
+					 MCUCFG_SYNC_DCM_MP0_TOGMASK | \
+					 MCUCFG_SYNC_DCM_MP1_TOGMASK)
+#define MCUCFG_SYNC_DCM_TOG1		MCUCFG_SYNC_DCM_TOGMASK
+#define MCUCFG_SYNC_DCM_CCI_TOG1	MCUCFG_SYNC_DCM_CCI_TOGMASK
+#define MCUCFG_SYNC_DCM_MP0_TOG1	MCUCFG_SYNC_DCM_MP0_TOGMASK
+#define MCUCFG_SYNC_DCM_MP1_TOG1	MCUCFG_SYNC_DCM_MP1_TOGMASK
+#define MCUCFG_SYNC_DCM_MP2_TOG1	MCUCFG_SYNC_DCM_MP2_TOGMASK
+#define MCUCFG_SYNC_DCM_CCI_TOG0	(0x0 << MCUCFG_SYNC_DCM_CCI)
+#define MCUCFG_SYNC_DCM_MP0_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP0)
+#define MCUCFG_SYNC_DCM_MP1_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP1)
+#define MCUCFG_SYNC_DCM_MP2_TOG0	(0x0 << MCUCFG_SYNC_DCM_MP2)
+#define MCUCFG_SYNC_DCM_TOG0		(MCUCFG_SYNC_DCM_CCI_TOG0 | \
+					 MCUCFG_SYNC_DCM_MP0_TOG0 | \
+					 MCUCFG_SYNC_DCM_MP1_TOG0)
+
+#define MCUCFG_SYNC_DCM_SEL_CCI		(1)
+#define MCUCFG_SYNC_DCM_SEL_MP0		(9)
+#define MCUCFG_SYNC_DCM_SEL_MP1		(17)
+#define MCUCFG_SYNC_DCM_SEL_MP2		(2)
+#define MCUCFG_SYNC_DCM_SEL_CCI_MASK	(0x1F << MCUCFG_SYNC_DCM_SEL_CCI)
+#define MCUCFG_SYNC_DCM_SEL_MP0_MASK	(0x1F << MCUCFG_SYNC_DCM_SEL_MP0)
+#define MCUCFG_SYNC_DCM_SEL_MP1_MASK	(0x1F << MCUCFG_SYNC_DCM_SEL_MP1)
+#define MCUCFG_SYNC_DCM_SEL_MP2_MASK	(0x1F << MCUCFG_SYNC_DCM_SEL_MP2)
+#define MCUCFG_SYNC_DCM_SEL_MASK	(MCUCFG_SYNC_DCM_SEL_CCI_MASK | \
+					 MCUCFG_SYNC_DCM_SEL_MP0_MASK | \
+					 MCUCFG_SYNC_DCM_SEL_MP1_MASK)
+#endif
+
+#ifdef CONFIG_PM
+#define MCUSYS_STALL_DCM_MP0_WR_DEL_SEL_MASK (0x1F << 0)
+#define MCUSYS_STALL_DCM_MP1_WR_DEL_SEL_MASK (0x1F << 8)
+#endif
+
+int dcm_armcore(ENUM_ARMCORE_DCM mode);
+int dcm_infra(ENUM_INFRA_DCM on);
+int dcm_peri(ENUM_PERI_DCM on);
+int dcm_mcusys(ENUM_MCUSYS_DCM on);
+int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
+int dcm_emi(ENUM_EMI_DCM on);
+int dcm_ddrphy(ENUM_DDRPHY_DCM on);
+int dcm_stall(ENUM_STALL_DCM on);
+#ifdef CONFIG_MACH_MT6799
+int dcm_topckg(ENUM_TOPCKG_DCM on);
+int dcm_lpdma(ENUM_LPDMA_DCM on);
+#endif
+
+int mt_dcm_init(void);
+void mt_dcm_disable(void);
+void mt_dcm_restore(void);
+
+/* unit of frequency is MHz */
+int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
+int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
+extern int sync_dcm_set_cci_freq(unsigned int cci);
+extern int sync_dcm_set_mp0_freq(unsigned int mp0);
+extern int sync_dcm_set_mp1_freq(unsigned int mp1);
+extern int sync_dcm_set_mp2_freq(unsigned int mp2);
+
+#endif /* #ifndef __MTK_DCM_H__ */
+
