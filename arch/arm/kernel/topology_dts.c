@@ -40,7 +40,7 @@ static void update_cpu_capacity(unsigned int cpu);
 static unsigned long *__cpu_capacity;
 #define cpu_capacity(cpu)	__cpu_capacity[cpu]
 
-static unsigned long max_cpu_perf, min_cpu_perf;
+static u64 max_cpu_perf, min_cpu_perf;
 
 static int __init get_cpu_for_node(struct device_node *node)
 {
@@ -236,7 +236,7 @@ static void __init parse_dt_cpu_capacity(void)
 	for_each_possible_cpu(cpu) {
 		const u32 *rate;
 		int len;
-		unsigned long cpu_perf;
+		u64 cpu_perf;
 
 		/* too early to use cpu->of_node */
 		cn = of_get_cpu_node(cpu, NULL);
@@ -536,4 +536,18 @@ void __init arch_init_hmp_domains(void)
 
 }
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+/* To add this function for sched_avg.c */
+unsigned long get_cpu_orig_capacity(unsigned int cpu)
+{
+	u64 capacity = cpu_capacity(cpu);
 
+	if (!capacity || !max_cpu_perf)
+		return 1024;
+
+	capacity *= SCHED_CAPACITY_SCALE;
+	capacity = div64_u64(capacity, max_cpu_perf);
+
+	return capacity;
+}
+#endif
