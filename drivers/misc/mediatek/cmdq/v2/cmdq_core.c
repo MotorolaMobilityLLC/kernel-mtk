@@ -720,7 +720,7 @@ int32_t cmdq_core_start_secure_path_notify_thread(void)
 {
 #if defined(CMDQ_SECURE_PATH_SUPPORT) && !defined(CMDQ_SECURE_PATH_NORMAL_IRQ)
 	int status = 0;
-	cmdqRecHandle handle;
+	struct cmdqRecStruct *handle;
 	unsigned long flags;
 
 	mutex_lock(&gCmdqNotifyLoopMutex);
@@ -749,7 +749,7 @@ int32_t cmdq_core_start_secure_path_notify_thread(void)
 
 		/* update notify handle */
 		spin_lock_irqsave(&gCmdqExecLock, flags);
-		gCmdqContext.hNotifyLoop = (CmdqRecLoopHandle *) handle;
+		gCmdqContext.hNotifyLoop = (void *) handle;
 		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 	} while (0);
 	mutex_unlock(&gCmdqNotifyLoopMutex);
@@ -8239,7 +8239,7 @@ int32_t cmdqCoreLateInitialize(void)
 #ifndef CONFIG_MTK_CMDQ_TAB
 	kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
 #else
-	    kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+	kthread_run(cmdq_sec_init_secure_path, NULL, "cmdq_WSM_init");
 #endif
 	if (IS_ERR(open_th)) {
 		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
