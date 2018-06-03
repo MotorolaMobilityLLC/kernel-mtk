@@ -570,11 +570,6 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	int bat_flag = 0;
 	int is_charger_exist;
 
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
-#else
-	pmic_set_register_value(PMIC_FG_SON_SLP_EN, 0);
-#endif
-
 	/* TODO need to check here */
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	fgauge_get_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, &bat_flag);
