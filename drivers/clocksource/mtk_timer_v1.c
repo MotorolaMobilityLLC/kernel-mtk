@@ -748,6 +748,11 @@ static void __init mt_gpt_init(struct device_node *node)
 	/* Setup IO addresses */
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
+	/* setup gpt itself */
+	gpt_devs_init();
+	for (i = 0; i < NR_GPTS; i++)
+		__gpt_reset(&gpt_devs[i]);
+
 	/* inquiry clk_src, idx = 0, freq is SYS_CLK_RATE */
 
 	clk_src = of_clk_get(node, 0);
@@ -788,10 +793,6 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	pr_info("[mtk_gpt] tmr_regs=0x%lx, tmr_irq=%d, freq[0]=%d, freq[1]=%d\n",
 		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq, freq[0], freq[1]);
-
-	gpt_devs_init();
-	for (i = 0; i < NR_GPTS; i++)
-		__gpt_reset(&gpt_devs[i]);
 
 	setup_clksrc(freq[0]);
 
