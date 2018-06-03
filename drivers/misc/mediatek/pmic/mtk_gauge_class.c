@@ -680,7 +680,6 @@ int gauge_dev_get_rtc_ui_soc(struct gauge_device *gauge_dev, int *ui_soc)
 	return ret;
 }
 
-
 int gauge_dev_is_rtc_invalid(struct gauge_device *gauge_dev, int *invalid)
 {
 	int ret = -ENOTSUPP;
