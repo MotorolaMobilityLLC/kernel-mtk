@@ -1776,7 +1776,7 @@ void SetSinWavePara(unsigned char UcTableVal, unsigned char UcMethodVal)
 		}
 
 		RegWriteA_LC898122AF(WC_SINFRQ0, (unsigned char)UsFreqDat);
-		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqDat >> 8));	/* 0x0182               Freq H */
+		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqDat >> 8));
 		RegWriteA_LC898122AF(WC_MESSINMODE, 0x00);	/* 0x0191       Sine 0 cross  */
 
 		RegWriteA_LC898122AF(WH_EQSWX, UcEqSwX);	/* 0x0170       */

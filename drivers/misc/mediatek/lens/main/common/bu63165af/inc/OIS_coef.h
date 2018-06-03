@@ -499,5 +499,5 @@ const	OIS_UBYTE	DOWNLOAD_COEF[] = {
 };
 
 
-const	OIS_UWORD	DOWNLOAD_COEF_LEN = sizeof(DOWNLOAD_COEF);
+const	unsigned short int	DOWNLOAD_COEF_LEN = sizeof(DOWNLOAD_COEF);
 #endif

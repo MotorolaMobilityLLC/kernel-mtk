@@ -616,25 +616,25 @@
 
 /* Factory Adjustment data */
 struct _FACT_ADJ {
-	OIS_UWORD gl_CURDAT;
-	OIS_UWORD gl_HALOFS_X;
-	OIS_UWORD gl_HALOFS_Y;
-	OIS_UWORD gl_HX_OFS;
-	OIS_UWORD gl_HY_OFS;
-	OIS_UWORD gl_PSTXOF;	/* RHM_HT 2013.03.21    Change order to adjust EEP ROM map */
-	OIS_UWORD gl_PSTYOF;	/* RHM_HT 2013.03.21    Change order to adjust EEP ROM map */
-	OIS_UWORD gl_GX_OFS;
-	OIS_UWORD gl_GY_OFS;
-	OIS_UWORD gl_KgxHG;
-	OIS_UWORD gl_KgyHG;
-	OIS_UWORD gl_KGXG;
-	OIS_UWORD gl_KGYG;
-	OIS_UWORD gl_SFTHAL_X;	/* RHM_HT 2013/11/25    Added */
-	OIS_UWORD gl_SFTHAL_Y;	/* RHM_HT 2013/11/25    Added */
-	OIS_UWORD gl_TMP_X_;	/* RHM_HT 2013/11/25    Added */
-	OIS_UWORD gl_TMP_Y_;	/* RHM_HT 2013/11/25    Added */
-	OIS_UWORD gl_KgxH0;	/* RHM_HT 2013/11/25    Added */
-	OIS_UWORD gl_KgyH0;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_CURDAT;
+	unsigned short int gl_HALOFS_X;
+	unsigned short int gl_HALOFS_Y;
+	unsigned short int gl_HX_OFS;
+	unsigned short int gl_HY_OFS;
+	unsigned short int gl_PSTXOF;	/* RHM_HT 2013.03.21    Change order to adjust EEP ROM map */
+	unsigned short int gl_PSTYOF;	/* RHM_HT 2013.03.21    Change order to adjust EEP ROM map */
+	unsigned short int gl_GX_OFS;
+	unsigned short int gl_GY_OFS;
+	unsigned short int gl_KgxHG;
+	unsigned short int gl_KgyHG;
+	unsigned short int gl_KGXG;
+	unsigned short int gl_KGYG;
+	unsigned short int gl_SFTHAL_X;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_SFTHAL_Y;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_TMP_X_;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_TMP_Y_;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_KgxH0;	/* RHM_HT 2013/11/25    Added */
+	unsigned short int gl_KgyH0;	/* RHM_HT 2013/11/25    Added */
 };
 
 /* Default Parameter of FACTORY Adjust data */
@@ -704,12 +704,13 @@ EXT struct _FACT_ADJ FADJ_MEM
 /* --------------------------------------------- */
 EXT double p_x, q_x;
 EXT double p_y, q_y;
-EXT OIS_WORD zero_X;
-EXT OIS_WORD zero_Y;
-EXT OIS_WORD PREOUT_X_P, PREOUT_X_N;
-EXT OIS_WORD PREOUT_Y_P, PREOUT_Y_N;
+EXT short int zero_X;
+EXT short int zero_Y;
+EXT short int PREOUT_X_P, PREOUT_X_N;
+EXT short int PREOUT_Y_P, PREOUT_Y_N;
 EXT double alfa_X, beta_X;
 EXT double alfa_Y, beta_Y;
 
 #undef	EXT
+
 #endif				/* OIS_DEFINITION_H */

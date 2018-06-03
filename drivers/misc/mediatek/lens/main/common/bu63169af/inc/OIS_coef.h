@@ -14,7 +14,7 @@
 #ifndef OIS_COEF_H
 #define OIS_COEF_H
 
-const	OIS_UBYTE	DOWNLOAD_COEF[] = { /* DOWNLOAD_169_SEMCO_ICM20690_003_SEMCO_Xiaomi_C1.mem */
+const	unsigned char	DOWNLOAD_COEF[] = {
 	0xef,
 	0x00,
 	0x00,
@@ -499,5 +499,5 @@ const	OIS_UBYTE	DOWNLOAD_COEF[] = { /* DOWNLOAD_169_SEMCO_ICM20690_003_SEMCO_Xia
 };
 
 
-const	OIS_UWORD	DOWNLOAD_COEF_LEN = sizeof(DOWNLOAD_COEF);
+const	unsigned short int	DOWNLOAD_COEF_LEN = sizeof(DOWNLOAD_COEF);
 #endif /* OIS_COEF_H */

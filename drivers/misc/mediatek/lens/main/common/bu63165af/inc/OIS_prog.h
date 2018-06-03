@@ -14,7 +14,7 @@
 #ifndef OIS_PROG_H
 #define OIS_PROG_H
 
-const	OIS_UBYTE	DOWNLOAD_BIN[] = {
+const	unsigned char	DOWNLOAD_BIN[] = {
 	0x00,
 	0x41,
 	0x54,
@@ -3096,5 +3096,5 @@ const	OIS_UBYTE	DOWNLOAD_BIN[] = {
 	0x00,
 };
 
-const	OIS_UWORD	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
+const	unsigned short int	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
 #endif

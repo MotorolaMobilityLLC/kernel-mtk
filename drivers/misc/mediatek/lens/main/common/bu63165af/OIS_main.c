@@ -32,7 +32,7 @@
 
 /* GLOBAL variable ( Upper Level Host Set this Global variables ) */
 /* ////////////////////////////////////////////////////////////////////////////// */
-OIS_UWORD BOOT_MODE = _FACTORY_;
+unsigned short int BOOT_MODE = _FACTORY_;
 
 #define	AF_REQ			0x8000
 #define	SCENE_REQ_ON	0x4000
@@ -40,13 +40,13 @@ OIS_UWORD BOOT_MODE = _FACTORY_;
 #define	POWERDOWN		0x1000
 #define	INITIAL_VAL		0x0000
 
-OIS_UWORD OIS_SCENE = _SCENE_D_A_Y_1;
-OIS_UWORD OIS_REQUEST = INITIAL_VAL;	/* OIS control register. */
+unsigned short int OIS_SCENE = _SCENE_D_A_Y_1;
+unsigned short int OIS_REQUEST = INITIAL_VAL;	/* OIS control register. */
 
-/* ==> RHM_HT 2013.03.04        Change type (OIS_UWORD -> double) */
+/* ==> RHM_HT 2013.03.04        Change type (unsigned short int -> double) */
 double OIS_PIXEL[2];		/* Just Only use for factory adjustment. */
 /* <== RHM_HT 2013.03.04 */
-ADJ_STS OIS_MAIN_STS = ADJ_ERR;
+short int OIS_MAIN_STS = ADJ_ERR;
 
 static struct _FACT_ADJ fadj;
 
