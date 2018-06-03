@@ -215,6 +215,7 @@ static unsigned int g_vsram_sfchg_rrate;
 static unsigned int g_vsram_sfchg_frate;
 static unsigned int g_DVFS_off_by_ptpod_idx;
 static unsigned int g_opp_springboard_idx;
+static unsigned int g_mmu_as_active_state;
 #ifdef MT_GPUFREQ_BATT_OC_PROTECT
 static bool g_batt_oc_limited_ignore_state;
 static unsigned int g_batt_oc_level;
@@ -247,6 +248,8 @@ static void *g_MFG_base;
 static void *g_INFRA_AO_base;
 static void *g_SPM_base;
 static void *g_INFRA_base;
+static void *g_DBGAPB_base;
+static void *g_TOPCKGEN_base;
 phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
 
 /**
@@ -361,6 +364,26 @@ void mt_gpufreq_dump_status(void)
 {
 	gpufreq_pr_info("@%s: freq: %d, volt: %d, vsram_volt: %d\n", __func__,
 			mt_get_ckgen_freq(9), __mt_gpufreq_get_cur_volt(), __mt_gpufreq_get_cur_vsram_volt());
+}
+
+/*
+ * dump freq and volt information for debugging
+ */
+void mt_gpufreq_set_MMU_AS_ACTIVE(int enable)
+{
+	mutex_lock(&mt_gpufreq_lock);
+
+	g_mmu_as_active_state = enable;
+
+	mutex_unlock(&mt_gpufreq_lock);
+}
+
+/*
+ * dump freq and volt information for debugging
+ */
+unsigned int mt_gpufreq_get_MMU_AS_ACTIVE(void)
+{
+	return g_mmu_as_active_state;
 }
 
 /*
@@ -913,7 +936,10 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 
 void mt_gpufreq_dump_reg(void)
 {
-	if (g_MFG_base == NULL || g_INFRA_AO_base == NULL || g_SPM_base == NULL || g_INFRA_base == NULL) {
+	u32 val;
+
+	if (g_MFG_base == NULL || g_INFRA_AO_base == NULL || g_SPM_base == NULL ||
+			g_INFRA_base == NULL || g_DBGAPB_base == NULL || g_TOPCKGEN_base == NULL) {
 		gpufreq_pr_info("@%s: fail to I/O remap n", __func__);
 		return;
 	}
@@ -959,10 +985,9 @@ void mt_gpufreq_dump_reg(void)
 	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
 
 	/* memif0_freq_bridge <-> memif0 gals tx */
-	pr_info("[GPU/MALI] memif0_freq_bridge <-> memif0 gals tx\n");
 	gpufreq_pr_info("@%s: memif0_freq_bridge <-> memif0 gals tx ...\n", __func__);
 	writel(0x100000, g_MFG_base + 0x180); /* write 0x13000180 = 0x100000, [23:20]=0x1, [19:16]=0x0 */
-	writel(0xff00, g_MFG_base + 0x184); /* write 0x13000184 = 0xff00 */
+	writel(0xffff0000, g_MFG_base + 0x184); /* write 0x13000184 = 0xffff0000 */
 	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
 	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
 	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
@@ -972,7 +997,7 @@ void mt_gpufreq_dump_reg(void)
 	/* memif1_freq_bridge <-> memif1 gals tx */
 	gpufreq_pr_info("@%s: memif1_freq_bridge <-> memif1 gals tx ...\n", __func__);
 	writel(0x110000, g_MFG_base + 0x180); /* write 0x13000180 = 0x110000, [23:20]=0x1, [19:16]=0x1 */
-	writel(0xff00, g_MFG_base + 0x184); /* write 0x13000184 = 0xff00 */
+	writel(0xffff0000, g_MFG_base + 0x184); /* write 0x13000184 = 0xffff0000 */
 	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
 	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
 	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
@@ -1032,6 +1057,39 @@ void mt_gpufreq_dump_reg(void)
 	/* Infra bus timeout */
 	gpufreq_pr_info("@%s: Infra bus timeout ...\n", __func__);
 	gpufreq_pr_info("@%s: 0x10001d04 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0xd04));
+
+	/* Step 1: enable monitor, write address 0d0a_0044 bit[0] = 1 */
+	val = readl(g_DBGAPB_base + 0xa0044);
+	writel((val & ~(0x1)) | 0x1, g_DBGAPB_base + 0xa0044);
+	/* Step 2: check address 1000_0188 bit[24] should be “0”  ;  if not 0, please set this bit to 0 */
+	val = readl(g_TOPCKGEN_base + 0x188);
+	writel(val & ~(0x1000000), g_TOPCKGEN_base + 0x188);
+
+	/* for mfg2infra gals */
+	gpufreq_pr_info("@%s: mfg2infra gals ...\n", __func__);
+	/* Step 2: write address 0d0a_0044 bit[8:0] = 9’b000110101 ; // (7'd26) <<1 */
+	val = readl(g_DBGAPB_base + 0xa0044);
+	writel((val & ~(0x1ff)) | 0x35, g_DBGAPB_base + 0xa0044);
+	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
+	/* Step 3: write address 0d0a_0044 bit[8:0] = 9’b000110111 ; // (7'd27) <<1 */
+	val = readl(g_DBGAPB_base + 0xa0044);
+	writel((val & ~(0x1ff)) | 0x37, g_DBGAPB_base + 0xa0044);
+	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
+	/* Step 4: write address 0d0a_0044 bit[8:0] = 9’b000111001 ; // (7'd28) <<1 */
+	val = readl(g_DBGAPB_base + 0xa0044);
+	writel((val & ~(0x1ff)) | 0x39, g_DBGAPB_base + 0xa0044);
+	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
+
+	/* for gpu2infra idle */
+	gpufreq_pr_info("@%s: gpu2infra idle ...\n", __func__);
+	/* Step 5: write address 0d0a_0044 bit[8:0] = 9’b000101001 ; // (7'd20) <<1 */
+	val = readl(g_DBGAPB_base + 0xa0044);
+	writel((val & ~(0x1ff)) | 0x29, g_DBGAPB_base + 0xa0044);
+	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
 
 	mt_gpufreq_dump_status();
 }
@@ -2352,6 +2410,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	g_opp_stress_test_state = false;
 	g_DVFS_off_by_ptpod_idx = 0;
+	g_mmu_as_active_state = 0;
 
 	/* Pause GPU DVFS for debug */
 	/* g_keep_opp_freq_state = true; */
@@ -2601,6 +2660,18 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	if (!g_INFRA_base) {
 		gpufreq_pr_info("@%s: INFRA iomap failed", __func__);
 		return -ENOENT;
+	}
+
+	g_DBGAPB_base = __mt_gpufreq_of_ioremap("mediatek,mfgcfg", 4);
+	if (g_DBGAPB_base == NULL) {
+		gpufreq_pr_info("@%s: fail to remap DBGAPB register\n", __func__);
+		return -1;
+	}
+
+	g_TOPCKGEN_base = __mt_gpufreq_of_ioremap("mediatek,topckgen", 0);
+	if (g_TOPCKGEN_base == NULL) {
+		gpufreq_pr_info("@%s: fail to remap TOPCKGEN register\n", __func__);
+		return -1;
 	}
 
 	return 0;

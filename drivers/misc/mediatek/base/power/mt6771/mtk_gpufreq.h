@@ -62,6 +62,8 @@ extern void mt_gpufreq_enable_MTCMOS(void);
 extern void mt_gpufreq_disable_MTCMOS(void);
 extern void mt_gpufreq_dump_reg(void);
 extern void mt_gpufreq_dump_status(void);
+extern void mt_gpufreq_set_MMU_AS_ACTIVE(int enable);
+extern unsigned int mt_gpufreq_get_MMU_AS_ACTIVE(void);
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);

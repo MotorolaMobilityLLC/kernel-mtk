@@ -33,8 +33,11 @@
 
 DEFINE_MUTEX(g_mfg_lock);
 
-volatile void *g_MFG_base;
-int g_curFreqID;
+static void *g_MFG_base;
+static void *g_DBGAPB_base;
+static void *g_INFRA_AO_base;
+static void *g_TOPCKGEN_base;
+static int g_curFreqID;
 
 /**
  * For GPU idle check
@@ -46,6 +49,44 @@ static void _mtk_check_MFG_idle(void)
 	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x1 */
 	writel(0x00000001, g_MFG_base + 0xb4);
 	/* mali_pr_debug("@%s: 0x130000b4 val = 0x%x\n", __func__, readl(g_MFG_base + 0xb4)); */
+
+	if (mt_gpufreq_get_MMU_AS_ACTIVE() == 1) {
+		/* Step 1: enable monitor, write address 0d0a_0044 bit[0] = 1 */
+		val = readl(g_DBGAPB_base + 0xa0044);
+		writel((val & ~(0x1)) | 0x1, g_DBGAPB_base + 0xa0044);
+		/* Step 2: check address 1000_0188 bit[24] should be “0”  ;  if not 0, please set this bit to 0 */
+		val = readl(g_TOPCKGEN_base + 0x188);
+		writel(val & ~(0x1000000), g_TOPCKGEN_base + 0x188);
+
+		/* for infra2mfg gals */
+		mali_pr_info("@%s: infra2mfg gals ...\n", __func__);
+		/* Step 6: write address 0d0a_0044 bit[8:0] = 9’b000111101 ; // (7'd30) <<1 ; */
+		val = readl(g_DBGAPB_base + 0xa0044);
+		writel((val & ~(0x1ff)) | 0x3d, g_DBGAPB_base + 0xa0044);
+		mali_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+		mali_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
+		/* Step 7: write address 0d0a_0044 bit[8:0] = 9’b000111111 ;  // (7'd31) <<1 ; */
+		val = readl(g_DBGAPB_base + 0xa0044);
+		writel((val & ~(0x1ff)) | 0x3f, g_DBGAPB_base + 0xa0044);
+		mali_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
+		mali_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
+
+		/* bus protect related */
+		mali_pr_info("@%s: bus protect related ...\n", __func__);
+		/* INFRA_TOPAXI_PROTECTEN */
+		mali_pr_info("@%s: 0x10001220 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x220));
+		/* INFRA_TOPAXI_PROTECTEN_STA1 */
+		mali_pr_info("@%s: 0x10001228 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x228));
+		/* INFRA_TOPAXI_PROTECTEN_1 */
+		mali_pr_info("@%s: 0x10001250 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x250));
+		/* INFRA_TOPAXI_PROTECTEN_STA1_1 */
+		mali_pr_info("@%s: 0x10001258 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x258));
+		/* INFRA_TOPAXI_PROTECTSTA0_1 */
+		mali_pr_info("@%s: 0x10001254 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x254));
+
+		mt_gpufreq_set_MMU_AS_ACTIVE(0);
+	}
+
 
 	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x03 */
 	writel(0x00000003, g_MFG_base + 0x180);
@@ -222,16 +263,17 @@ struct kbase_platform_config *kbase_get_platform_config(void)
  * MTK internal io map function
  *
  */
-static void *_mtk_of_ioremap(const char *node_name)
+static void *_mtk_of_ioremap(const char *node_name, int idx)
 {
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, node_name);
 
 	if (node)
-		return of_iomap(node, 0);
+		return of_iomap(node, idx);
 
 	mali_pr_info("@%s: cannot find [%s] of_node\n", __func__, node_name);
+
 	return NULL;
 }
 
@@ -249,9 +291,27 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		return -1;
 	}
 
-	g_MFG_base = _mtk_of_ioremap("mediatek,mfgcfg");
+	g_MFG_base = _mtk_of_ioremap("mediatek,mfgcfg", 0);
 	if (g_MFG_base == NULL) {
 		mali_pr_info("@%s: fail to remap MGFCFG register\n", __func__);
+		return -1;
+	}
+
+	g_INFRA_AO_base = _mtk_of_ioremap("mediatek,mfgcfg", 1);
+	if (g_INFRA_AO_base == NULL) {
+		mali_pr_info("@%s: fail to remap INFRA_AO register\n", __func__);
+		return -1;
+	}
+
+	g_DBGAPB_base = _mtk_of_ioremap("mediatek,mfgcfg", 4);
+	if (g_DBGAPB_base == NULL) {
+		mali_pr_info("@%s: fail to remap DBGAPB register\n", __func__);
+		return -1;
+	}
+
+	g_TOPCKGEN_base = _mtk_of_ioremap("mediatek,topckgen", 0);
+	if (g_TOPCKGEN_base == NULL) {
+		mali_pr_info("@%s: fail to remap TOPCKGEN register\n", __func__);
 		return -1;
 	}
 
