@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -261,7 +261,7 @@ static struct cwsm *cwsm_create(struct tee_client *client,
 		goto err_cwsm;
 	}
 
-	/* Intialise maps */
+	/* Initialise maps */
 	memset(&map, 0, sizeof(map));
 	tee_mmu_buffer(cwsm->mmu, &map);
 	/* FIXME Flags must be stored in MMU (needs recent trunk change) */
@@ -343,9 +343,9 @@ static inline struct cwsm *cwsm_find(struct tee_client *client,
 		mc_dev_devel("candidate buf %llx size %llu flags %x",
 			     candidate->memref.buffer, candidate->memref.size,
 			     candidate->memref.flags);
-		if ((candidate->memref.buffer == memref->buffer) &&
-		    (candidate->memref.size == memref->size) &&
-		    (candidate->memref.flags == memref->flags)) {
+		if (candidate->memref.buffer == memref->buffer &&
+		    candidate->memref.size == memref->size &&
+		    candidate->memref.flags == memref->flags) {
 			cwsm = candidate;
 			cwsm_get(cwsm);
 			mc_dev_devel("match");
@@ -1193,7 +1193,7 @@ int client_cbuf_create(struct tee_client *client, u32 len, uintptr_t *addr,
 	if (!client)
 		return -EINVAL;
 
-	if (!len || (len > BUFFER_LENGTH_MAX))
+	if (!len || len > BUFFER_LENGTH_MAX)
 		return -EINVAL;
 
 	order = get_order(len);
@@ -1281,7 +1281,7 @@ static struct cbuf *cbuf_get_by_addr(struct tee_client *client, uintptr_t addr)
 		if (!start)
 			break;
 
-		if ((addr >= start) && (addr < end)) {
+		if (addr >= start && addr < end) {
 			cbuf = candidate;
 			break;
 		}
@@ -1323,7 +1323,7 @@ bool client_gp_operation_add(struct tee_client *client,
 
 	mutex_lock(&client->quick_lock);
 	list_for_each_entry(op, &client->operations, list)
-		if ((op->started == operation->started) && op->cancelled) {
+		if (op->started == operation->started && op->cancelled) {
 			found = true;
 			break;
 		}
@@ -1416,16 +1416,19 @@ void client_init(void)
 static inline int cbuf_debug_structs(struct kasnprintf_buf *buf,
 				     struct cbuf *cbuf)
 {
-	return kasnprintf(buf, "\tcbuf %p [%d]: addr %lx uaddr %lx len %u\n",
-			  cbuf, kref_read(&cbuf->kref), cbuf->addr,
-			  cbuf->uaddr, cbuf->len);
+	return kasnprintf(buf,
+			  "\tcbuf %pK [%d]: addr %pK uaddr %pK len %u\n",
+			  cbuf, kref_read(&cbuf->kref), (void *)cbuf->addr,
+			  (void *)cbuf->uaddr, cbuf->len);
 }
 
 static inline int cwsm_debug_structs(struct kasnprintf_buf *buf,
 				     struct cwsm *cwsm)
 {
-	return kasnprintf(buf, "\tcwsm %p [%d]: buf %llx len %llu flags 0x%x\n",
-			  cwsm, kref_read(&cwsm->kref), cwsm->memref.buffer,
+	return kasnprintf(buf,
+			  "\tcwsm %pK [%d]: buf %pK len %llu flags 0x%x\n",
+			  cwsm, kref_read(&cwsm->kref),
+			  (void *)(uintptr_t)cwsm->memref.buffer,
 			  cwsm->memref.size, cwsm->memref.flags);
 }
 
@@ -1438,12 +1441,12 @@ static int client_debug_structs(struct kasnprintf_buf *buf,
 	int ret;
 
 	if (client->pid)
-		ret = kasnprintf(buf, "client %p [%d]: %s (%d)%s\n",
+		ret = kasnprintf(buf, "client %pK [%d]: %s (%d)%s\n",
 				 client, kref_read(&client->kref),
 				 client->comm, client->pid,
 				 is_closing ? " <closing>" : "");
 	else
-		ret = kasnprintf(buf, "client %p [%d]: [kernel]%s\n",
+		ret = kasnprintf(buf, "client %pK [%d]: [kernel]%s\n",
 				 client, kref_read(&client->kref),
 				 is_closing ? " <closing>" : "");
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +34,7 @@ static DECLARE_COMPLETION(io_comp);
 /* Static */
 static const u32 DEVICE_ID = MC_DEVICE_ID_DEFAULT;
 static struct task_struct *thread_id;
+static DEFINE_MUTEX(thread_mutex);
 static struct tlc_tui_command_t g_user_cmd = {.id = TLC_TUI_CMD_NONE};
 static struct mc_session_handle dr_session_handle = {0, 0};
 struct tlc_tui_response_t g_user_rsp = {.id = TLC_TUI_CMD_NONE,
@@ -272,7 +273,6 @@ static void tlc_process_cmd(void)
 		ret = hal_tui_deactivate();
 
 		if (ret != TUI_DCI_OK) {
-			pr_debug("hal_tui_deactivate fail\n");
 			hal_tui_free();
 			send_cmd_to_user(TLC_TUI_CMD_STOP_ACTIVITY, 0, 0);
 			break;
@@ -391,8 +391,8 @@ bool tlc_notify_event(u32 event_type)
 	enum mc_result result;
 
 	if (!dci) {
-		pr_debug("WARNING %s:%d tlc_notify_event: DCI has not been set up properly - exiting\n",
-			 __func__, __LINE__);
+		pr_notice("%s: DCI has not been set up properly - exiting\n",
+			__func__);
 		return false;
 	}
 
@@ -404,8 +404,7 @@ bool tlc_notify_event(u32 event_type)
 	pr_debug("DCI EVENT NOTIFY CORE\n");
 	result = mc_notify(&dr_session_handle);
 	if (result != MC_DRV_OK) {
-		pr_debug("ERROR %s:%d tlc_notify_event: mc_notify failed: %d\n",
-			 __func__, __LINE__, result);
+		pr_notice("%s: mc_notify failed: %d\n", __func__, result);
 		ret = false;
 	} else {
 		ret = true;
@@ -423,8 +422,7 @@ static int main_thread(void *uarg)
 
 	/* Open session on the driver */
 	if (!tlc_open()) {
-		pr_debug("ERROR %s:%d main_thread: open driver failed!\n",
-			 __func__, __LINE__);
+		pr_notice("%s: open driver failed!\n", __func__);
 		return 1;
 	}
 
@@ -447,17 +445,26 @@ static int main_thread(void *uarg)
 
 static int start_thread_if_needed(void)
 {
+	int rc = 0;
+
 	/*
 	 * Create the TlcTui Main thread and start secure driver (only 1st time)
 	 */
-	if (!dr_session_handle.session_id) {
-		thread_id = kthread_run(main_thread, NULL, "tee_tui");
-		if (!thread_id) {
-			pr_debug("Unable to start Trusted UI main thread\n");
-			return -EFAULT;
-		}
+	mutex_lock(&thread_mutex);
+	if (thread_id)
+		/* Already started */
+		goto end;
+
+	thread_id = kthread_run(main_thread, NULL, "tee_tui");
+	if (IS_ERR_OR_NULL(thread_id)) {
+		rc = PTR_ERR(thread_id);
+		pr_notice("Unable to start Trusted UI main thread: %d\n", rc);
+		thread_id = NULL;
 	}
-	return 0;
+
+end:
+	mutex_unlock(&thread_mutex);
+	return rc;
 }
 
 int tlc_wait_cmd(struct tlc_tui_command_t *cmd_id)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -40,6 +40,8 @@
 #endif /* !DEBUG */
 
 #define TEEC_TT_LOGIN_KERNEL	0x80000000
+
+#define TEE_START_NOT_TRIGGERED 1
 
 /* MobiCore Driver Kernel Module context data. */
 struct mc_device_ctx {
@@ -88,6 +90,9 @@ struct kasnprintf_buf {
 	int size;
 	int off;
 };
+
+/* Wait for TEE to start and get status */
+int mc_wait_tee_start(void);
 
 extern __printf(2, 3)
 int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...);

@@ -16,6 +16,7 @@
 #include <linux/module.h>
 #include <linux/cdev.h>
 #include <linux/debugfs.h>
+#include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/suspend.h>
 #include <linux/cpufreq.h>
@@ -54,7 +55,11 @@ struct mc_device_ctx g_ctx = {
 	.mcd = &device
 };
 
-static struct main_ctx {
+static struct {
+	/* TEE start return code */
+	struct mutex start_mutex;
+	/* TEE start return code */
+	int start_ret;
 #ifdef MC_PM_RUNTIME
 	/* Whether hibernation succeeded */
 	bool did_hibernate;
@@ -297,6 +302,7 @@ static int suspend_notifier(struct notifier_block *nb, unsigned long event,
 		if (main_ctx.did_hibernate) {
 			/* Really did hibernate */
 			clients_kill_sessions();
+			main_ctx.start_ret = TEE_START_NOT_TRIGGERED;
 			return mobicore_start();
 		}
 
@@ -317,6 +323,10 @@ static int mobicore_start(void)
 	bool dynamic_lpae = false;
 #endif
 	int ret;
+
+	mutex_lock(&main_ctx.start_mutex);
+	if (main_ctx.start_ret != TEE_START_NOT_TRIGGERED)
+		goto got_ret;
 
 	ret = mc_logging_start();
 	if (ret) {
@@ -476,7 +486,8 @@ static int mobicore_start(void)
 	}
 #endif
 
-	return 0;
+	main_ctx.start_ret = 0;
+	goto got_ret;
 
 err_create_dev_user:
 #ifdef MC_PM_RUNTIME
@@ -498,7 +509,10 @@ err_mcp:
 err_nq:
 	mc_logging_stop();
 err_log:
-	return ret;
+	main_ctx.start_ret = ret;
+got_ret:
+	mutex_unlock(&main_ctx.start_mutex);
+	return main_ctx.start_ret;
 }
 
 static void mobicore_stop(void)
@@ -514,6 +528,22 @@ static void mobicore_stop(void)
 	iwp_stop();
 	mcp_stop();
 	nq_stop();
+}
+
+int mc_wait_tee_start(void)
+{
+	int ret;
+
+	mutex_lock(&main_ctx.start_mutex);
+	while (main_ctx.start_ret == TEE_START_NOT_TRIGGERED) {
+		mutex_unlock(&main_ctx.start_mutex);
+		ssleep(1);
+		mutex_lock(&main_ctx.start_mutex);
+	}
+
+	ret = main_ctx.start_ret;
+	mutex_unlock(&main_ctx.start_mutex);
+	return ret;
 }
 
 static ssize_t debug_sessions_read(struct file *file, char __user *user_buf,
@@ -649,6 +679,8 @@ static int mobicore_probe(struct platform_device *pdev)
 	atomic_set(&g_ctx.c_mmus, 0);
 	atomic_set(&g_ctx.c_maps, 0);
 	atomic_set(&g_ctx.c_slots, 0);
+	main_ctx.start_ret = TEE_START_NOT_TRIGGERED;
+	mutex_init(&main_ctx.start_mutex);
 	mutex_init(&main_ctx.struct_counters_buf_mutex);
 	/* Create debugfs info entry */
 	debugfs_create_file("structs_counters", 0400, g_ctx.debug_dir, NULL,
@@ -702,8 +734,16 @@ static int mobicore_probe(struct platform_device *pdev)
 	if (err)
 		goto err_admin;
 
+#ifndef MC_DELAYED_TEE_START
+	err = mobicore_start();
+#endif
+	if (err)
+		goto err_start;
+
 	return 0;
 
+err_start:
+	device_admin_exit();
 err_admin:
 	mc_scheduler_exit();
 err_sched:

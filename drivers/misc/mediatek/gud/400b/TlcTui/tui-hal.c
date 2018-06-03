@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2014-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -260,5 +260,5 @@ u32 hal_tui_notif(void)
 /* Do nothing it's only use for QC */
 void hal_tui_post_start(struct tlc_tui_response_t *rsp)
 {
-	pr_info("hal_tui_post_start\n");
+	pr_info("%s\n", __func__);
 }
