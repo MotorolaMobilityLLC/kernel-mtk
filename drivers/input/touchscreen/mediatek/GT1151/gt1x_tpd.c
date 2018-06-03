@@ -967,7 +967,16 @@ static int tpd_local_init(void)
 	int ret;
 
 	GTP_INFO("Device Tree get regulator!");
+#ifdef CONFIG_MACH_MT6759
+	tpd->reg = regulator_get(tpd->tpd_dev, "vldo28");
+#else
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+#endif
+	if (IS_ERR(tpd->reg)) {
+		GTP_ERROR("regulator_get() failed!\n");
+		return PTR_ERR(tpd->reg);
+	}
+
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
 	if (ret) {
 		GTP_ERROR("regulator_set_voltage(%d) failed!\n", ret);
