@@ -457,6 +457,22 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	mt6357_gauge {
+		compatible = "mediatek,mt6357_gauge";
+		gauge_name = "gauge";
+		alias_name = "mt6357";
+	};
+
+	gauge_timer {
+		compatible = "mediatek,gauge_timer_service";
+	};
+
+#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
+	#include "bat_setting/mt6765_battery_prop_ext.dtsi"
+#else
+	#include "bat_setting/mt6765_battery_prop.dtsi"
+#endif
+
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
 		reg = <0 0x10011000 0 0x0>;
