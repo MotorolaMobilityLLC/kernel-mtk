@@ -64,6 +64,9 @@ static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 	{NULL, "TOP_MUX_DISP_PWM", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "DISP_PWM", 0, (1), DISP_MODULE_PWM0},
 	{NULL, "TOP_26M", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_UNIVPLL2_D4", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_ULPOSC1_D2", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_ULPOSC1_D8", 0, (0), DISP_MODULE_UNKNOWN},
 };
 
 static void __iomem *ddp_apmixed_base;
