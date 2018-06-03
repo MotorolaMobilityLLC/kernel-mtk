@@ -247,7 +247,7 @@ static int mtk_memcfg_reserve_memory_show(struct seq_file *m, void *v)
 		tmp = &reserved_mem[i];
 		if (tmp->size != 0) {
 			non_kernel_reserve += tmp->size;
-			if (tmp->nomap)
+			if (tmp->nomap || strstr(tmp->name, "ccci"))
 				seq_puts(m, "*");
 			seq_printf(m, "%s: %llu\n", tmp->name, tmp->size);
 		}
