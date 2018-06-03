@@ -137,6 +137,15 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	unsigned long long t1, t2, t3;
 	struct task_struct *owner = NULL;
 
+	if (is_logbuf_lock(lock)) { /* ignore to debug logbuf_lock */
+		for (i = 0; i < loops; i++) {
+			if (arch_spin_trylock(&lock->raw_lock))
+				return;
+			__delay(1);
+		}
+		return;
+	}
+
 #ifdef CONFIG_PREEMPT_MONITOR
 	MT_trace_spin_lock_start(lock);
 #endif
@@ -166,10 +175,6 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 			/* in exception follow, printk maybe spinlock error */
 			continue;
 
-	#if 0 // ladios wait printk is_logbuf_lock
-		if (is_logbuf_lock(lock))	/*block by logbuf lock */
-			continue;
-  #endif
 		/* lockup suspected: */
 		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
 			owner = lock->owner;
