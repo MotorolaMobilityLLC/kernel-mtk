@@ -151,13 +151,13 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 	current_sign = battery_meter_get_battery_current_sign();
 
 	/* Check SOC & Ichg */
-	if ((get_soc() / 100) > pinfo->data.ta_stop_battery_soc &&
+	if (battery_get_bat_soc() > pinfo->data.ta_stop_battery_soc &&
 	    current_sign && ichg < pinfo->data.pe20_ichg_level_threshold) {
 		ret = pe20_leave(pinfo);
 		if (ret < 0 || pe20->is_connect)
 			goto _err;
 		pr_err("%s: OK, SOC = (%d,%d), stop PE+20\n", __func__,
-			get_soc() / 100, pinfo->data.ta_stop_battery_soc);
+			battery_get_bat_soc(), pinfo->data.ta_stop_battery_soc);
 	}
 
 	return ret;
@@ -470,8 +470,8 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	 */
 	if (!pe20->to_check_chr_type ||
 	    mt_get_charger_type() != STANDARD_CHARGER ||
-	    (get_soc() / 100) < pinfo->data.ta_start_battery_soc ||
-	    (get_soc() / 100) >= pinfo->data.ta_stop_battery_soc)
+	    battery_get_bat_soc() < pinfo->data.ta_start_battery_soc ||
+	    battery_get_bat_soc() >= pinfo->data.ta_stop_battery_soc)
 		goto _out;
 
 	ret = pe20_init_ta(pinfo);
@@ -499,7 +499,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 _out:
 
 	pr_err("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
-		__func__, get_soc() / 100, pinfo->data.ta_start_battery_soc,
+		__func__, battery_get_bat_soc(), pinfo->data.ta_start_battery_soc,
 		pinfo->data.ta_stop_battery_soc, pe20->to_check_chr_type,
 		mt_get_charger_type(), ret);
 
@@ -599,7 +599,7 @@ _out:
 
 	pr_err(
 		"%s: SOC = %d, is_connect = %d, tune = %d, pes = %d, vbat = %d, ret = %d\n",
-		__func__, get_soc() / 100, pe20->is_connect, tune, pes, vbat, ret);
+		__func__, battery_get_bat_soc(), pe20->is_connect, tune, pes, vbat, ret);
 	wake_unlock(&pe20->suspend_lock);
 	mutex_unlock(&pe20->access_lock);
 
