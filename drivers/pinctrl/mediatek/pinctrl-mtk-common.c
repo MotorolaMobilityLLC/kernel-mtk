@@ -1161,7 +1161,7 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
-	return !!(read_val & bit);
+	return !(read_val & bit);
 }
 
 static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
@@ -1707,7 +1707,7 @@ static ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *att
 			len += snprintf(buf+len, bufLen-len, "%4d: %x%d%d%d%d%d%d%d%x",
 				i,
 				mtk_pinmux_get(chip, i),
-				mtk_gpio_get_direction(chip, i),
+				!mtk_gpio_get_direction(chip, i),
 				mtk_gpio_get_out(chip, i),
 				mtk_gpio_get_in(chip, i),
 				mtk_pullen_get(chip, i),
