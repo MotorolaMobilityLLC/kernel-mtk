@@ -2601,7 +2601,11 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 	eem_error("====================================================\n");
 
 #ifdef __KERNEL__
-	aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X\n", __func__, __LINE__, det->name, det->VBOOT);
+	aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X, EEMEN(%p) = 0x%08X, EEMINTSTS(%p) = 0x%08X\n",
+		__func__, __LINE__,
+		det->name, det->VBOOT,
+		EEMEN, eem_read(EEMEN),
+		EEMINTSTS, eem_read(EEMINTSTS));
 #endif
 	det->ops->disable_locked(det, BY_MON_ERROR);
 
