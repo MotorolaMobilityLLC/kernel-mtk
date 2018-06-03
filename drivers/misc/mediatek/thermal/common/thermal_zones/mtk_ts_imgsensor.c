@@ -38,7 +38,7 @@
  *=============================================================
  */
 MUINT32 __attribute__ ((weak))
-Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *invalid, INT32 *temp)
+Get_Camera_Temperature(CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId, MUINT8 *valid, MUINT32 *temp)
 {
 	pr_err("[Thermal/TZ/IMGS] E_WF: %s doesn't exist\n", __func__);
 	return 0;
