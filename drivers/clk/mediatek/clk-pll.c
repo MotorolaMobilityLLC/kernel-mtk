@@ -55,6 +55,10 @@
 #define MT_CCF_BRINGUP
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			2
+#elif defined(CONFIG_MACH_MT6775)
+#define MT_CCF_BRINGUP
+#define INTEGER_BITS		8
+#define UNIVPLL_DIV			1
 #else
 #define INTEGER_BITS		7
 #define UNIVPLL_DIV			1
@@ -234,7 +238,8 @@ static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
 	|| (defined(CONFIG_MACH_MT6763))	\
 	|| (defined(CONFIG_MACH_MT6758))	\
 	|| (defined(CONFIG_MACH_MT6771))	\
-	|| (defined(CONFIG_MACH_MT6739)))
+	|| (defined(CONFIG_MACH_MT6739))	\
+	|| (defined(CONFIG_MACH_MT6775)))
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
@@ -533,7 +538,8 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	|| (defined(CONFIG_MACH_MT6759))	\
 	|| (defined(CONFIG_MACH_MT6758))	\
 	|| (defined(CONFIG_MACH_MT6771))	\
-	|| (defined(CONFIG_MACH_MT6739)))
+	|| (defined(CONFIG_MACH_MT6739))	\
+	|| (defined(CONFIG_MACH_MT6775)))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
 	.enable		= mtk_pll_prepare,
