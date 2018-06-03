@@ -312,8 +312,8 @@ static int ufs_mtk_pre_pwr_change(struct ufs_hba *hba,
 #if 0 /* standard way: use the maximum speed supported by device */
 	memcpy(final, desired, sizeof(struct ufs_pa_layer_attr));
 #else /* for compatibility, use assigned speed temporarily */
-	final->gear_rx = 3;
-	final->gear_tx = 3;
+	final->gear_rx = 1; /* Use HS-G1B in pre-silicon and bring-up stage */
+	final->gear_tx = 1; /* Use HS-G1B in pre-silicon and bring-up stage */
 	final->lane_rx = 1;
 	final->lane_tx = 1;
 	final->hs_rate = PA_HS_MODE_B;
@@ -656,19 +656,19 @@ void ufs_mtk_parse_pm_levels(struct ufs_hba *hba)
 
 	if (np) {
 		/* system PM */
-		if (of_property_read_u32(np, "spm-level", &hba->spm_lvl))
+		if (of_property_read_u32(np, "mediatek,spm-level", &hba->spm_lvl))
 			hba->spm_lvl = -1;
 
 		/* runtime PM */
-		if (of_property_read_u32(np, "rpm-level", &hba->rpm_lvl))
+		if (of_property_read_u32(np, "mediatek,rpm-level", &hba->rpm_lvl))
 			hba->rpm_lvl = -1;
 
-		if (!of_property_read_u32(np, "rpm-enable", &val)) {
+		if (!of_property_read_u32(np, "mediatek,rpm-enable", &val)) {
 			if (val)
 				ufs_mtk_rpm_enabled = true;
 		}
 
-		if (of_property_read_u32(np, "rpm-autosuspend-delay", &ufs_mtk_rpm_autosuspend_delay))
+		if (of_property_read_u32(np, "mediatek,rpm-autosuspend-delay", &ufs_mtk_rpm_autosuspend_delay))
 			ufs_mtk_rpm_autosuspend_delay = -1;
 	}
 }
@@ -679,7 +679,7 @@ void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba)
 	struct device_node *np = dev->of_node;
 
 	if (np) {
-		if (of_property_read_u32(np, "auto-hibern8-timer", &ufs_mtk_auto_hibern8_timer_ms))
+		if (of_property_read_u32(np, "mediatek,auto-hibern8-timer", &ufs_mtk_auto_hibern8_timer_ms))
 			ufs_mtk_auto_hibern8_timer_ms = 0;
 	}
 

@@ -1163,8 +1163,24 @@
 
 	ufshci@11270000 {
 		compatible = "mediatek,ufshci";
-		reg = <0 0x11270000 0 0x1000>;
+		reg = <0 0x11270000 0 0x2300>;
 		interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_LOW>;
+
+		/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
+		mediatek,auto-hibern8-timer = <0>;
+
+		/* System Suspend Level */
+		mediatek,spm-level = <3>;
+
+		/* Runtime Suspend Configuration */
+		/* 1. Runtime PM on/off (on: 1, off: 0) */
+		mediatek,rpm-enable = <0>;
+
+		/* 2. Auto Suspend Delay. Unit: ms */
+		mediatek,rpm-autosuspend-delay = <2000>;
+
+		/* 3. Runtime Suspend Level */
+		mediatek,rpm-level = <3>;
 	};
 
 	ca9peri@10e00000 {
