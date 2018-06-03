@@ -547,7 +547,7 @@ CONFIG_MTK_HWMON,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_ICCS_SUPPORT,PROJECT,chia-hao.hsu,new config in this commit f35226c838dfbc958d01418431cef04bb6ecd7de,x,x,y,,,,,,,
 CONFIG_MTK_ICM20645G,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
 CONFIG_MTK_ICM20645GY,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
-CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT,yt.chang,,,,,,,,,y,,
+CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT,yt.chang,,,,,,,,y,y,,
 CONFIG_MTK_IMGSENSOR,COMMON,Josepchi.Tsai,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_INPKHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,,,,,,
 CONFIG_MTK_INTERNAL,PROJECT,junzhi.zhao,,,,,y,y,,,y,,y
