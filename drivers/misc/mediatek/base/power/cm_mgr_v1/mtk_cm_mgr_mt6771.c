@@ -289,12 +289,8 @@ static void init_cpu_stall_counter(int cluster)
 		cm_mgr_write(MP0_CPU_STALL_INFO, val);
 
 		val = RG_FMETER_EN;
-		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_MP0_AVG_STALL_PERIOD_1MS;
-		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_CPU0_AVG_STALL_RATIO_EN |
+		val |= RG_MP0_AVG_STALL_PERIOD_1MS;
+		val |= RG_CPU0_AVG_STALL_RATIO_EN |
 			RG_CPU0_STALL_COUNTER_EN |
 			RG_CPU0_NON_WFX_COUNTER_EN;
 		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
@@ -318,12 +314,8 @@ static void init_cpu_stall_counter(int cluster)
 		cm_mgr_write(CPUTOP_NON_WFX_COUNTER_CTRL, val);
 
 		val = RG_FMETER_EN;
-		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_MP0_AVG_STALL_PERIOD_1MS;
-		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_CPU0_AVG_STALL_RATIO_EN |
+		val |= RG_MP0_AVG_STALL_PERIOD_1MS;
+		val |= RG_CPU0_AVG_STALL_RATIO_EN |
 			RG_CPU0_STALL_COUNTER_EN |
 			RG_CPU0_NON_WFX_COUNTER_EN;
 		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
