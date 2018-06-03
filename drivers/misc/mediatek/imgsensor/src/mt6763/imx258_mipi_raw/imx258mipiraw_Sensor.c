@@ -452,6 +452,16 @@ static kal_uint8 IMX258MIPI_SPC_Data[126];
 static kal_uint8 SPC_data_done = false;
 static void load_imx258_SPC_Data(void)
 {
+	if (SPC_data_done == false) {
+		if (!read_imx258_eeprom_SPC(0x0F73, IMX258MIPI_SPC_Data, 126)) {
+			LOG_INF("imx258 load spc fail\n");
+			return;
+		}
+		SPC_data_done = true;
+	}
+}
+static void write_imx258_SPC_Data(void)
+{
 	kal_uint16 i;
 	if ( SPC_data_done == false ) {
 		if (!read_imx258_eeprom_SPC(0x0F73,IMX258MIPI_SPC_Data,126)) {
@@ -1179,7 +1189,7 @@ static void sensor_init(void)
 	/*Need Mirror/Flip*/
 	set_mirror_flip(0);
 
-	load_imx258_SPC_Data();
+	write_imx258_SPC_Data();
 	write_cmos_sensor(0x7BC8,0x01);
 	write_cmos_sensor(0x7BC9,0x01);
 	write_cmos_sensor(0x0B05,0x01);//BPC
@@ -2334,6 +2344,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		s_DEVINFO_ccm->device_used = DEVINFO_USED;
 		devinfo_check_add_device(s_DEVINFO_ccm);
 	#endif
+				load_imx258_SPC_Data();
 				return ERROR_NONE;
 			}
             LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
