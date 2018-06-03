@@ -1338,7 +1338,12 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting_11_new();
 
-	/* set_mirror_flip(IMAGE_NORMAL); */
+#ifdef HV_MIRROR_FLIP
+		set_mirror_flip(IMAGE_HV_MIRROR);
+#else
+		set_mirror_flip(IMAGE_NORMAL);
+#endif
+
 
 #ifdef USE_OIS
 	/* OIS_on(RUMBA_OIS_PRE_SETTING);    //pangfei OIS */
@@ -1403,7 +1408,13 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		capture_setting();
 
 
-	/* set_mirror_flip(IMAGE_NORMAL); */
+#ifdef HV_MIRROR_FLIP
+	set_mirror_flip(IMAGE_HV_MIRROR);
+#else
+	set_mirror_flip(IMAGE_NORMAL);
+#endif
+
+
 #ifdef	USE_OIS
 	/* OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS */
 	LOG_INF("pangfei capture OIS setting\n");
@@ -1431,7 +1442,12 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 	capture_setting();
 
-	/* set_mirror_flip(IMAGE_NORMAL); */
+#ifdef HV_MIRROR_FLIP
+	set_mirror_flip(IMAGE_HV_MIRROR);
+#else
+	set_mirror_flip(IMAGE_NORMAL);
+#endif
+
 	return ERROR_NONE;
 }				/*    normal_video   */
 
