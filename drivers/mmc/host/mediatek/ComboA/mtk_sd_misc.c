@@ -57,7 +57,7 @@
 #define FORCE_NOTHING           (0x0)
 
 static u32 *sg_msdc_multi_buffer;
-#define SG_MSDC_MULTI_BUFFER_SIZE (64 * 2014)
+#define SG_MSDC_MULTI_BUFFER_SIZE (64 * 1024)
 
 static int simple_sd_open(struct inode *inode, struct file *file)
 {
