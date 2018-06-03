@@ -116,8 +116,9 @@ static struct mm_freq_config img_freq = {
 	.current_step = STEP_UNREQUEST,
 };
 
+/* order should be same as pm_qos_class order */
 struct mm_freq_config *all_freqs[] = {
-	&disp_freq, &mdp_freq, &vdec_freq, &venc_freq, &cam_freq, &img_freq};
+	&disp_freq, &mdp_freq, &vdec_freq, &venc_freq, &img_freq, &cam_freq};
 
 static void mm_apply_vcore(s32 vopp)
 {
@@ -438,6 +439,19 @@ static void __exit mmdvfs_pmqos_exit(void)
 	platform_driver_unregister(&mmdvfs_pmqos_driver);
 }
 
+u64 mmdvfs_qos_get_freq(u32 pm_qos_class)
+{
+	u64 current_freq = 0;
+	u32 index = pm_qos_class - PM_QOS_DISP_FREQ;
+
+	if (index >= 0 && index < ARRAY_SIZE(all_freqs) &&
+	current_max_step >= 0 && current_max_step < step_size)
+		current_freq = all_freqs[index]->freq_steps[current_max_step];
+
+	return current_freq;
+}
+EXPORT_SYMBOL_GPL(mmdvfs_qos_get_freq);
+
 int dump_setting(char *buf, const struct kernel_param *kp)
 {
 	u32 i, j, clk_param1, clk_param2;
@@ -447,8 +461,8 @@ int dump_setting(char *buf, const struct kernel_param *kp)
 	for (i = 0; i < ARRAY_SIZE(all_freqs); i++) {
 		mm_freq = all_freqs[i];
 		length += snprintf(buf + length, PAGE_SIZE - length,
-			"[%s] step_size: %u, current_step:%d\n", mm_freq->prop_name,
-			step_size, mm_freq->current_step);
+			"[%s] step_size: %u, current_step:%d (%lluMhz)\n", mm_freq->prop_name,
+			step_size, mm_freq->current_step, mmdvfs_qos_get_freq(mm_freq->pm_qos_class));
 		for (j = 0; j < step_size; j++) {
 			if (mm_freq->step_config[j].clk_type == CLK_TYPE_MUX) {
 				clk_param1 = mm_freq->step_config[j].clk_mux_id;
