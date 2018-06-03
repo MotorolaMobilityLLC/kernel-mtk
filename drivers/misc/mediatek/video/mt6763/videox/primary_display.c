@@ -3080,6 +3080,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		DISPMSG("ovl config time_event %d time_event1 %d time_event2 %d time1_diff  %d  time2_diff %d\n",
 			time_event, time_event1, time_event2, time_event1 - time_event, time_event2 - time_event1);
 #endif
+#if 0
 		if ((status & 0x1) != 0) {
 			/* ovl is not idle !! */
 			DISPERR("disp ovl status error!! stat=0x%x\n", status);
@@ -3088,6 +3089,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			primary_display_diagnose();
 			ret = -1;
 		}
+#endif
 	}
 
 	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {

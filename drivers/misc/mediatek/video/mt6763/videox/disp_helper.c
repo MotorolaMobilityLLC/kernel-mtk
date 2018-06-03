@@ -114,6 +114,8 @@ static struct {
 	{DISP_OPT_ARR_PHASE_1, 0, "DISP_OPT_ARR_PHASE_1"},
 	{DISP_OPT_RSZ, 0, "DISP_OPT_RSZ"},
 	{DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE"},
+	{DISP_OPT_SHARE_WDMA0, 0, "DISP_OPT_SHARE_WDMA0"},
+
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -378,6 +380,7 @@ void disp_helper_option_init(void)
 	/* HW does not support this */
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
+	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

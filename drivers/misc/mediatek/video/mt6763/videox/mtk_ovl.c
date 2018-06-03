@@ -28,7 +28,7 @@
 #include "ddp_path.h"
 #include "ddp_drv.h"
 #include "ddp_clkmgr.h"
-
+#include "disp_helper.h"
 #include "disp_session.h"
 #include "primary_display.h"
 #include "disp_lowpower.h"
@@ -55,8 +55,10 @@
 
 static int is_context_inited;
 static int ovl2mem_layer_num;
-int ovl2mem_use_m4u = 1;
-int ovl2mem_use_cmdq = CMDQ_ENABLE;
+static int ovl2mem_use_m4u = 1;
+static int ovl2mem_use_cmdq = CMDQ_ENABLE;
+static int idle_switch_enable;
+static int smart_ovl_enable;
 
 struct ovl2mem_path_context {
 	int state;
@@ -315,6 +317,27 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_init();
 	mutex_init(&(pgc->lock));
 
+	if (disp_helper_get_option(DISP_OPT_SHARE_WDMA0)) {
+		/* decouple mode by screen idle dynamic switch */
+		if (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE)) {
+			idle_switch_enable = 1;
+			primary_display_idlemgr_kick(__func__, 0);
+			disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0);
+		}
+		/* decouple mode by smart OVL dynamic switch */
+		if (disp_helper_get_option(DISP_OPT_SMART_OVL)) {
+			smart_ovl_enable = 1;
+			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+					primary_get_sess_id(), 0, NULL, 1);
+			disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
+		}
+		/* decouple mode by others: SF/HWC, et.al. */
+		if (primary_display_is_decouple_mode()) {
+			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+					primary_get_sess_id(), 0, NULL, 1);
+		}
+	}
+
 	_ovl2mem_path_lock(__func__);
 
 	if (pgc->state > 0) {
@@ -331,10 +354,10 @@ int ovl2mem_init(unsigned int session)
 	}
 	/* Set fake cmdq engineflag for judge path scenario */
 	cmdqRecSetEngine(pgc->cmdq_handle_config,
-						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+						((1LL << CMDQ_ENG_DISP_2L_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA0)));
 
 	cmdqRecReset(pgc->cmdq_handle_config);
-	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
 
@@ -413,7 +436,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	if (pgc->need_trigger_path == 0) {
 		DISPINFO("ovl2mem_trigger do not trigger\n");
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
-			DISPMSG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
+			DISPDBG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
 			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
 				fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid,
 					atomic_read(&g_trigger_ticket));
@@ -429,7 +452,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config, ovl2mem_cmdq_enabled());
 
-	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
+	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 	cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
@@ -694,6 +717,16 @@ Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);
 
+	if (disp_helper_get_option(DISP_OPT_SHARE_WDMA0)) {
+		if (idle_switch_enable) {
+			idle_switch_enable = 0;
+			disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 1);
+		}
+		if (smart_ovl_enable) {
+			smart_ovl_enable = 0;
+			disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
+		}
+	}
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;
 }

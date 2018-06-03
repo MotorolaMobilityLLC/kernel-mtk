@@ -70,6 +70,9 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_ARR_PHASE_1,
 	DISP_OPT_RSZ,
 	DISP_OPT_DUAL_PIPE,
+	/* DISP_WDMA0 sharing internally for primary and external display */
+	DISP_OPT_SHARE_WDMA0,
+
 	DISP_OPT_NUM
 };
 
