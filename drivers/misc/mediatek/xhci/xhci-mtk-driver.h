@@ -30,6 +30,9 @@ extern int xhci_debug_level;
 
 extern struct xhci_hcd *mtk_xhci;
 
+#ifdef CONFIG_USB_VBUS_GPIO
+extern struct platform_device *g_pdev;
+#endif
 #define mtk_xhci_mtk_printk(level, fmt, args...) do { \
 		if (xhci_debug_level & level) { \
 			pr_debug("[XHCI]" fmt, ## args); \

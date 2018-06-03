@@ -34,10 +34,12 @@
 #include <mtk-phy-asic.h>
 #endif
 
+#ifndef CONFIG_USB_VBUS_GPIO
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mt-plat/mtk_battery.h>
 #else
 #include <mt-plat/battery_meter.h>
+#endif
 #endif
 
 #include <mt-plat/charger_class.h>
@@ -48,9 +50,10 @@
 #define RET_SUCCESS 0
 #define RET_FAIL 1
 
-
+#ifndef CONFIG_USB_VBUS_GPIO
 #if CONFIG_MTK_GAUGE_VERSION == 30
 static struct charger_device *primary_charger;
+#endif
 #endif
 
 static struct wake_lock mtk_xhci_wakelock;
@@ -69,7 +72,7 @@ module_param(xhci_debug_level, int, 0400);
 
 bool mtk_is_charger_4_vol(void)
 {
-#if defined(CONFIG_USBIF_COMPLIANCE) || defined(CONFIG_POWER_EXT)
+#if defined(CONFIG_USBIF_COMPLIANCE) || defined(CONFIG_POWER_EXT) || defined(CONFIG_USB_VBUS_GPIO)
 	return false;
 #else
 	int vol =  battery_meter_get_charger_voltage();
@@ -82,6 +85,27 @@ bool mtk_is_charger_4_vol(void)
 
 static void mtk_enable_otg_mode(void)
 {
+#ifdef CONFIG_USB_VBUS_GPIO
+	struct pinctrl *pinctrl_drvvbus;
+	struct pinctrl_state *pinctrl_drvvbus_high;
+
+	boost_on = true;
+	if (g_pdev == NULL) {
+		pr_notice("g_pdev is not ready\n");
+		return;
+	}
+	pinctrl_drvvbus = devm_pinctrl_get(&g_pdev->dev);
+	if (IS_ERR(pinctrl_drvvbus)) {
+		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+	pinctrl_drvvbus_high = pinctrl_lookup_state(pinctrl_drvvbus, "drvvbus_high");
+	if (IS_ERR(pinctrl_drvvbus_high)) {
+		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl drvvbus_high\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_high);
+#else
 	boost_on = true;
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	charger_dev_enable_otg(primary_charger, true);
@@ -92,15 +116,37 @@ static void mtk_enable_otg_mode(void)
 	set_chr_enable_otg(0x1);
 	set_chr_boost_current_limit(1500);
 #endif
+#endif
 }
 
 static void mtk_disable_otg_mode(void)
 {
+#ifdef CONFIG_USB_VBUS_GPIO
+	struct pinctrl *pinctrl_drvvbus;
+	struct pinctrl_state *pinctrl_drvvbus_low;
+
+	if (g_pdev == NULL) {
+		pr_notice("g_pdev is not ready\n");
+		return;
+	}
+	pinctrl_drvvbus = devm_pinctrl_get(&g_pdev->dev);
+	if (IS_ERR(pinctrl_drvvbus)) {
+		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl!\n");
+		return;
+	}
+	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl_drvvbus, "drvvbus_low");
+	if (IS_ERR(pinctrl_drvvbus_low)) {
+		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl drvvbus_low\n");
+		return;
+	}
+	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_low);
+#else
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	charger_dev_enable_otg(primary_charger, false);
 	enable_boost_polling(false);
 #else
 	set_chr_enable_otg(0x0);
+#endif
 #endif
 	boost_on = false;
 }
@@ -117,6 +163,7 @@ static int mtk_xhci_hcd_init(void)
 
 	return 0;
 }
+#ifndef CONFIG_USB_VBUS_GPIO
 
 #if CONFIG_MTK_GAUGE_VERSION == 30
 
@@ -220,7 +267,7 @@ static struct platform_driver boost_manager_driver = {
 
 #endif
 
-
+#endif
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 
@@ -462,6 +509,7 @@ static int __init xhci_hcd_init(void)
 	mtk_xhci_wakelock_init();
 	mtk_xhci_switch_init();
 
+#ifndef CONFIG_USB_VBUS_GPIO
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	primary_charger = get_charger_by_name("primary_chg");
 	if (!primary_charger) {
@@ -469,6 +517,7 @@ static int __init xhci_hcd_init(void)
 		return -ENODEV;
 	}
 	platform_driver_register(&boost_manager_driver);
+#endif
 #endif
 
 	return 0;

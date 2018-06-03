@@ -51,3 +51,11 @@ config USB_XHCI_MTK_SUSPEND_SUPPORT
 	  The default OTG DUALROLE function is disabled.
 	  User can switch to enable or disable by command.
 	  Say Y here if your want to use mechanism.
+config USB_VBUS_GPIO
+	tristate "MediaTek OTG VBUS GPIO control support"
+	default n
+	depends on USB_MTK_IDDIG
+	---help---
+	  Enable Mediatek USB OTG VBUS GPIO control mechanism.
+	  Say Y here if your want to use mechanism.
+	  If unsure, say N.
