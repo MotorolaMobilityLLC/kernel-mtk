@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __DRV_CLK_MT6763_PG_H
-#define __DRV_CLK_MT6763_PG_H
+#ifndef __DRV_CLK_MT6771_PG_H
+#define __DRV_CLK_MT6771_PG_H
 
 enum subsys_id {
 	SYS_MD1 = 0,
@@ -26,7 +26,16 @@ enum subsys_id {
 	SYS_CAM = 8,
 	SYS_MFG_CORE1 = 9,
 	SYS_MFG_CORE0 = 10,
-	NR_SYSS = 11,
+	SYS_VDE = 11,
+	SYS_VPU_TOP = 12,
+	SYS_VPU_CORE0_DORMANT = 13,
+	SYS_VPU_CORE0_SHUTDOWN = 14,
+	SYS_VPU_CORE1_DORMANT = 15,
+	SYS_VPU_CORE1_SHUTDOWN = 16,
+	SYS_VPU_CORE2_DORMANT = 17,
+	SYS_VPU_CORE2_SHUTDOWN = 18,
+	SYS_MFG_2D = 19,
+	NR_SYSS = 20,
 };
 
 struct pg_callbacks {
@@ -56,4 +65,4 @@ extern void aee_rr_rec_clk(int id, u32 val);
 #endif
 /*extern void dump_emi_MM(void);*/
 /*extern void dump_emi_latency(void);*/
-#endif				/* __DRV_CLK_MT6755_PG_H */
+#endif				/* __DRV_CLK_MT6771_PG_H */
