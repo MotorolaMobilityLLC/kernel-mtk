@@ -682,7 +682,8 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	pSensorInfo = kmalloc(sizeof(ACDK_SENSOR_INFO2_STRUCT), GFP_KERNEL);
 
-	if (pConfig == NULL ||
+	if (pInfo    == NULL ||
+	    pConfig  == NULL ||
 	    pConfig1 == NULL ||
 	    pConfig2 == NULL ||
 	    pConfig3 == NULL ||
