@@ -889,7 +889,8 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
 				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
-				BUG_ON(1);
+				/*BUG_ON(1);*/
+				break;
 			}
 		}
 #endif
@@ -914,7 +915,8 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
 				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
-				BUG_ON(1);
+				/*BUG_ON(1);*/
+				break;
 			}
 		}
 #endif
@@ -939,6 +941,7 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
 				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				break;
 			}
 		}
 #endif
@@ -1735,7 +1738,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				BUG_ON(1);
+				/*BUG_ON(1);*/
+				break;
 			}
 		}
 #endif
@@ -1759,7 +1763,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				BUG_ON(1);
+				/*BUG_ON(1);*/
+				break;
 			}
 		}
 #endif
@@ -1783,7 +1788,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				BUG_ON(1);
+				/*BUG_ON(1);*/
+				break;
 			}
 		}
 #endif
@@ -1809,6 +1815,7 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
 				pr_notice("SMI_COMMON_SMI_CLAMP = %08x\n",
 					spm_read(SMI_COMMON_SMI_CLAMP));
+				break;
 			}
 		}
 #endif
