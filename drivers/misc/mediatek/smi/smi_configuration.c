@@ -2147,7 +2147,7 @@ struct SMI_SETTING_VALUE smi_profile_setting_larb2_vss[SMI_LARB2_PORT_NUM] = {
 };
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb3_vss[SMI_LARB3_PORT_NUM] = {
-	{0x200, 2}, {0x204, 2}, {0x208, 1}, {0x20c, 1}, {0x210, 1}, {0x214, 1}, {0x218, 1}, {0x21c,
+	{0x200, 2}, {0x204, 2}, {0x208, 1}, {0x20c, 1}, {0x210, 1}, {0x214, 4}, {0x218, 1}, {0x21c,
 											     1},
 	{0x220, 1}, {0x224, 4}, {0x228, 2}, {0x22c, 1}, {0x230, 8}
 };
