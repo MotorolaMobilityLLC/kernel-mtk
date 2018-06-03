@@ -126,6 +126,24 @@ static int eem_log_en;
 static unsigned int eem_checkEfuse = 1;
 static unsigned int informEEMisReady;
 
+/* The EMM controller list managed by Picachu. */
+static unsigned int pi_eem_ctrl_id[] = {EEM_CTRL_2L};
+
+#define PI_MDES_BDES_MASK      (0xFFFF)
+#define PI_MTDES_MASK          (0xFF)
+
+struct pi_efuse_index {
+	unsigned int mdes_bdes_index : 8;
+	unsigned int mdes_bdes_shift : 8;
+
+	unsigned int mtdes_index : 8;
+	unsigned int mtdes_shift : 8;
+};
+
+static struct pi_efuse_index pi_efuse_idx[] = {
+	{4, 0, 5, 16},         /* EEM_CTRL_2L */
+};
+
 /* Global variable for slow idle*/
 unsigned int ptp_data[3] = {0, 0, 0};
 #ifdef CONFIG_OF
@@ -166,6 +184,44 @@ static struct eem_det *id_to_eem_det(enum eem_det_id id)
 		return NULL;
 }
 
+static void update_picachu_efuse(int *val)
+{
+	struct pi_efuse_index *p;
+	unsigned int i, n, tmp;
+	struct eem_det *det;
+
+	if (!eem_checkEfuse)
+		return;
+
+	n = sizeof(pi_eem_ctrl_id) / sizeof(unsigned int);
+
+	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+	for (i = 0; i < n; i++) {
+		det = id_to_eem_det(pi_eem_ctrl_id[i]);
+
+		if (!det->pi_efuse)
+			continue;
+
+		p = &pi_efuse_idx[i];
+
+		/* Get mdes/bdes efuse data from Picachu */
+		tmp = (det->pi_efuse >> 8) & PI_MDES_BDES_MASK;
+
+		/* Update mdes/bdes */
+		val[p->mdes_bdes_index] &=
+				~(PI_MDES_BDES_MASK << p->mdes_bdes_shift);
+
+		val[p->mdes_bdes_index] |= (tmp << p->mdes_bdes_shift);
+
+		/* Get mtdes efuse data from Picachu */
+		tmp = det->pi_efuse & PI_MTDES_MASK;
+
+		/* Update mtdes */
+		val[p->mtdes_index] &= ~(PI_MTDES_MASK << p->mtdes_shift);
+		val[p->mtdes_index] |= (tmp << p->mtdes_shift);
+	}
+}
+
 static int get_devinfo(void)
 {
 	int ret = 0;
@@ -198,6 +254,9 @@ static int get_devinfo(void)
 			break;
 		}
 	}
+
+	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+	update_picachu_efuse(val);
 
 	if (eem_checkEfuse == 0) {
 		/* for verification */
@@ -3271,6 +3330,13 @@ det->name, det_entries[i].name);
 	return 0;
 }
 #endif /* CONFIG_PROC_FS */
+
+void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	det->pi_efuse = pi_efuse;
+}
 
 unsigned int get_efuse_status(void)
 {
