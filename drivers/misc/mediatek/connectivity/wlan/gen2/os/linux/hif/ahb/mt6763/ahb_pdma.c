@@ -90,7 +90,7 @@
 #endif /* PDMA_DEBUG_SUP */
 
 /* set DMA mask bits */
-#define DMA_MASK_BITS     33
+#define DMA_MASK_BITS     34
 
 static UINT32 gDmaReg[AP_DMA_HIF_0_LENGTH / 4 + 1];
 #if !defined(CONFIG_MTK_CLKMGR)
