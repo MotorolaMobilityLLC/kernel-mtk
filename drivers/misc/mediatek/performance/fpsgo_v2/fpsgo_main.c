@@ -158,6 +158,9 @@ static void fpsgo_notifier_wq_cb_enable_keep(int enable)
 	fpsgo_ctrl2fstb_switch_fstb(enable);
 	fpsgo_ctrl2xgf_switch_xgf(enable);
 
+	if (enable == 1 && fpsgo_enable == 2)
+		fpsgo_ctrl2comp_resent_by_pass_info();
+
 	if (enable == 0)
 		fpsgo_enable = 2;
 	else

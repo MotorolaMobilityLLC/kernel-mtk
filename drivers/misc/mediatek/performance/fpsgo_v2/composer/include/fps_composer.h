@@ -58,6 +58,7 @@ void fpsgo_ctrl2comp_enqueue_start(int pid, unsigned long long enqueue_start_tim
 void fpsgo_fbt2comp_destroy_frame_info(int pid);
 void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long bufferID, int api);
 void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int api);
+void fpsgo_ctrl2comp_resent_by_pass_info(void);
 
 #endif
 
