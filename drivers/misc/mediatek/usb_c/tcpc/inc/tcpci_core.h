@@ -362,15 +362,15 @@ struct tcpc_device {
 	bool pd_pending_vdm_good_crc;
 	bool pd_postpone_vdm_timeout;
 
-	pd_msg_t pd_last_vdm_msg;
-	pd_event_t pd_vdm_event;
+	struct __pd_msg pd_last_vdm_msg;
+	struct __pd_event pd_vdm_event;
 
-	pd_msg_t pd_msg_buffer[PD_MSG_BUF_SIZE];
-	pd_event_t pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
+	struct __pd_msg pd_msg_buffer[PD_MSG_BUF_SIZE];
+	struct __pd_event pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
 
 	uint8_t tcp_event_count;
 	uint8_t tcp_event_head_index;
-	tcp_dpm_event_t tcp_event_ring_buffer[TCP_EVENT_BUF_SIZE];
+	struct tcp_dpm_event tcp_event_ring_buffer[TCP_EVENT_BUF_SIZE];
 
 	bool pd_pe_running;
 	bool pd_wait_pe_idle;
@@ -397,7 +397,7 @@ struct tcpc_device {
 #endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
 #endif	/* CONFIG_TYPEC_CAP_FORCE_DISCHARGE */
 
-	pd_port_t pd_port;
+	struct __pd_port pd_port;
 	u8 uvdm_handle_flag:1;
 #endif /* CONFIG_USB_POWER_DELIVERY */
 	u8 vbus_level:2;

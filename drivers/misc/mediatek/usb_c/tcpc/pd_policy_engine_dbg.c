@@ -21,7 +21,7 @@
 
 #ifdef CONFIG_USB_PD_CUSTOM_DBGACC
 
-void pe_dbg_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dbg_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	uint8_t state;
 

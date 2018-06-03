@@ -149,7 +149,7 @@ DECL_PE_STATE_REACTION(PD_TIMER_SINK_REQUEST);
  */
 
 static inline bool pd_process_ctrl_msg_good_crc(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	switch (pd_port->pe_state_curr) {
 	case PE_SNK_SELECT_CAPABILITY:
@@ -164,7 +164,7 @@ static inline bool pd_process_ctrl_msg_good_crc(
 }
 
 static inline bool pd_process_ctrl_msg_get_source_cap(
-		pd_port_t *pd_port, pd_event_t *pd_event)
+		struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_port->pe_state_curr != PE_SNK_READY)
 		return false;
@@ -179,7 +179,7 @@ static inline bool pd_process_ctrl_msg_get_source_cap(
 }
 
 static inline bool pd_process_ctrl_msg(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -278,7 +278,7 @@ static inline bool pd_process_ctrl_msg(
  */
 
 static inline bool pd_process_data_msg(
-		pd_port_t *pd_port, pd_event_t *pd_event)
+		struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -311,7 +311,7 @@ static inline bool pd_process_data_msg(
  */
 
 static inline bool pd_process_dpm_msg(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -332,7 +332,7 @@ static inline bool pd_process_dpm_msg(
  */
 
 static inline bool pd_process_hw_msg_tx_failed(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_port->pe_state_curr == PE_SNK_READY ||
 	pd_port->tcpc_dev->pd_wait_hard_reset_complete) {
@@ -346,7 +346,7 @@ static inline bool pd_process_hw_msg_tx_failed(
 
 
 static inline bool pd_process_hw_msg(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -385,7 +385,7 @@ static inline bool pd_process_hw_msg(
  */
 
 static inline bool pd_process_pe_msg(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -414,7 +414,7 @@ static inline bool pd_process_pe_msg(
  * [BLOCK] Porcess Timer MSG
  */
 
-static inline void pd_report_typec_only_charger(pd_port_t *pd_port)
+static inline void pd_report_typec_only_charger(struct __pd_port *pd_port)
 {
 	/* TODO: pd_set_rx_enable(pd_port, PD_RX_CAP_PE_DISABLE);*/
 	PE_INFO("TYPE-C Only Charger!\r\n");
@@ -424,7 +424,7 @@ static inline void pd_report_typec_only_charger(pd_port_t *pd_port)
 }
 
 static inline bool pd_process_timer_msg(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -494,7 +494,7 @@ static inline bool pd_process_timer_msg(
  * [BLOCK] Process Policy Engine's SNK Message
  */
 
-bool pd_process_event_snk(pd_port_t *pd_port, pd_event_t *pd_event)
+bool pd_process_event_snk(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	switch (pd_event->event_type) {
 	case PD_EVT_CTRL_MSG:

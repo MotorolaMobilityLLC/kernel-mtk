@@ -112,7 +112,7 @@ static int tcpci_alert_tx_success(struct tcpc_device *tcpc_dev)
 {
 	uint8_t tx_state;
 
-	pd_event_t evt = {
+	struct __pd_event evt = {
 		.event_type = PD_EVT_CTRL_MSG,
 		.msg = PD_CTRL_GOOD_CRC,
 		.pd_msg = NULL,
@@ -184,7 +184,7 @@ static int tcpci_alert_tx_discard(struct tcpc_device *tcpc_dev)
 static int tcpci_alert_recv_msg(struct tcpc_device *tcpc_dev)
 {
 	int retval;
-	pd_msg_t *pd_msg;
+	struct __pd_msg *pd_msg;
 	enum tcpm_transmit_type type;
 
 	const uint32_t alert_rx =
@@ -274,17 +274,17 @@ static int tcpci_alert_ra_detach(struct tcpc_device *tcpc_dev)
 }
 #endif /* CONFIG_TYPEC_CAP_RA_DETACH */
 
-typedef struct __tcpci_alert_handler {
+struct __tcpci_alert_handler {
 	uint32_t bit_mask;
 	int (*handler)(struct tcpc_device *tcpc_dev);
-} tcpci_alert_handler_t;
+};
 
 #define DECL_TCPCI_ALERT_HANDLER(xbit, xhandler) {\
 		.bit_mask = 1 << xbit,\
 		.handler = xhandler, \
 	}
 
-const tcpci_alert_handler_t tcpci_alert_handlers[] = {
+const struct __tcpci_alert_handler tcpci_alert_handlers[] = {
 #ifdef CONFIG_USB_POWER_DELIVERY
 	DECL_TCPCI_ALERT_HANDLER(4, tcpci_alert_tx_failed),
 	DECL_TCPCI_ALERT_HANDLER(5, tcpci_alert_tx_discard),

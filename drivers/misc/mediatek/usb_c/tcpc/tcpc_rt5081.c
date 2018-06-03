@@ -1612,6 +1612,7 @@ static struct i2c_driver rt5081_driver = {
 static int __init rt5081_init(void)
 {
 	struct device_node *np;
+
 	pr_info("rt5081_init() : initializing...\n");
 	np = of_find_node_by_name(NULL, "usb_type_c");
 	if (np != NULL)
