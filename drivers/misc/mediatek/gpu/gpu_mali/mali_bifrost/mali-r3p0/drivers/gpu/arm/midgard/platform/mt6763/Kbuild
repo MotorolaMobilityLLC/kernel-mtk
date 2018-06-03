@@ -1,4 +1,0 @@
-include $(src)/../../Kbuild-mtk-custom-env
-
-obj-y += mali_kbase_config_mt6763.o
-obj-y += mali_kbase_cpu_mt6763.o
