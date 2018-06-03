@@ -19,6 +19,7 @@
 #include <mt-plat/upmu_common.h>
 #include <ext_wd_drv.h>
 #include <mt_emi_api.h>
+#include <mt-plat/mtk_devinfo.h>
 
 #include <helio-dvfsrc.h>
 #include <helio-dvfsrc-opp.h>
@@ -184,9 +185,59 @@ static struct notifier_block dvfsrc_fb_notifier = {
 	.notifier_call = dvfsrc_fb_notifier_call,
 };
 
+static int is_efuse_bypass_flavor(void)
+{
+	int r = 0;
+#if defined(CONFIG_ARM64)
+	int len;
+
+	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
+
+	if (strncmp(
+	    CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 4,
+	    "_lp", 3) == 0)
+		r = 1;
+
+	pr_info("flavor check: %s, is_bypass: %d\n",
+		CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
+#endif
+	return r;
+}
+
+static int can_dvfsrc_enable(void)
+{
+	int enable = 0;
+	int ptpod0 = get_devinfo_with_index(50);
+
+	pr_info("%s: PTPOD0: 0x%x\n", __func__, ptpod0);
+
+	if (spm_get_spmfw_idx() == SPMFW_LP4X_2CH_3200) {
+		pr_info("VCORE DVFS disable for LP4[TEMP]\n");
+	} else if (is_efuse_bypass_flavor()) {
+		enable = 1;
+		pr_info("VCORE DVFS enable for special flavor\n");
+	} else if (ptpod0 == 0x0000FF00 || ptpod0 == 0x0) {
+		enable = 0;
+		pr_info("VCORE DVFS disable for efuse\n");
+	} else {
+		pr_info("VCORE DVFS disable default\n");
+#if 0
+		pr_info("VCORE DVFS enable default\n");
+		enable = 1;
+#endif
+	}
+
+	return enable;
+}
+
 int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc)
 {
 	mtk_rgu_cfg_dvfsrc(1);
+
+	if (can_dvfsrc_enable())
+		helio_dvfsrc_enable(1);
+	else
+		helio_dvfsrc_enable(0);
 
 	dvfsrc->init_config = dvfsrc_get_init_conf();
 	helio_dvfsrc_reg_config(dvfsrc->init_config);
