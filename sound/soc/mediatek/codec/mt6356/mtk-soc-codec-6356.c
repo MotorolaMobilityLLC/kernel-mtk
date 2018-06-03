@@ -912,7 +912,7 @@ struct mtk_hpdet_param {
 
 static int hp_impedance;
 static const int auxcable_impedance = 5000;
-static int efuse_current_calibration;
+static int efuse_current_calibrate;
 
 static void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
 {
@@ -932,7 +932,7 @@ static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	/* R = V /I */
 	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
 	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
-	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
+	return DIV_ROUND_CLOSEST(3600000 / pcm_offset * aux_diff, 7832);
 }
 
 static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
@@ -950,13 +950,14 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
 
 	dc_value = dc_input - dc_init;
 	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
-	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
+	r_tmp = DIV_ROUND_CLOSEST(r_tmp, detect_times);
 
 	/* Efuse calibration */
-	if ((efuse_current_calibration != 0) && (r_tmp != 0)) {
+	if ((efuse_current_calibrate != 0) && (r_tmp != 0)) {
 		pr_aud("%s(), Before Calibration from EFUSE: %d, R: %d\n",
-		       __func__, efuse_current_calibration, r_tmp);
-		r_tmp = (r_tmp * (128 + efuse_current_calibration) + 64) / 128;
+		       __func__, efuse_current_calibrate, r_tmp);
+		r_tmp = DIV_ROUND_CLOSEST(r_tmp * 128 + efuse_current_calibrate,
+					  128);
 	}
 
 	pr_aud("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
@@ -1113,7 +1114,7 @@ static int calOffsetToDcComp(int TrimOffset)
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
 	/* 32768/2 is rounded value */
-	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
+	return DIV_ROUND_CLOSEST(TrimOffset * 2804225, 32768);
 }
 
 static int get_dc_ramp_step(int gain)
@@ -1280,7 +1281,7 @@ static int get_hp_trim_offset(int channel)
 			 on_value[i] - off_value[i], on_value[i], off_value[i]);
 	}
 
-	offset = (offset + (TRIM_USEFUL_NUM / 2)) / TRIM_USEFUL_NUM;
+	offset = DIV_ROUND_CLOSEST(offset, TRIM_USEFUL_NUM);
 
 	pr_warn("%s(), channel = %d, offset = %d\n", __func__, channel, offset);
 
@@ -3128,7 +3129,7 @@ static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 
 	ucontrol->value.integer.value[0] = hp_impedance;
 	pr_debug("%s(), hp_impedance = %d, efuse = %d\n",
-		 __func__, hp_impedance, efuse_current_calibration);
+		 __func__, hp_impedance, efuse_current_calibrate);
 	return 0;
 }
 
@@ -4706,7 +4707,7 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	memset((void *)mCodec_data, 0, sizeof(mt6356_Codec_Data_Priv));
 	mt6356_codec_init_reg(codec);
 	InitCodecDefault();
-	efuse_current_calibration = read_efuse_hp_impedance_current_calibration();
+	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
 	mInitCodec = true;
 
 	return 0;
