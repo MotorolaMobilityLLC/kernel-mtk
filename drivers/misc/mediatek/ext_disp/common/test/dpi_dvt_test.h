@@ -14,57 +14,54 @@
 #ifndef _DPI_DVT_TEST_H_
 #define _DPI_DVT_TEST_H_
 
-/* #define RDMA_DPI_PATH_SUPPORT *//* when open this option, RDMA-DPI Path can be used*/
-/* #define DPI_DVT_TEST_SUPPORT	*//* when open this option, DPI DVT test case can be used*/
+/*#define RDMA_DPI_PATH_SUPPORT*/ /* when open this option, RDMA-DPI Path can be used*/
+/*#define DPI_DVT_TEST_SUPPORT*/	/* when open this option, DPI DVT test case can be used*/
 
 #if defined(RDMA_DPI_PATH_SUPPORT) || defined(DPI_DVT_TEST_SUPPORT)
+#include "ddp_dpi.h"
 #include "hdmi_drv.h"
-#include "ddp_dpi_ext.h"
+/*#include "ddp_dpi_ext.h"*/
 /*#include "ddp_rdma.h"*/
-
-#ifndef DPI_I32
-typedef char	      DPI_I8;
-typedef unsigned char     DPI_U8;
-typedef int               DPI_I32;
-typedef short int         DPI_I16;
-typedef unsigned int      DPI_U32;
-typedef long int          DPI_I64;   /*64bit system*/
-typedef unsigned long int DPI_U64;   /*64bit system*/
-typedef bool              DPI_BOOL;
-typedef void *pDPI;
-#endif
 
 #define COLOR_BAR_PATTERN 0x41
 
-typedef enum {
+enum HW_MODULE_Type {
 	M4U_FOR_RDMA0,
 	M4U_FOR_RDMA1,
+	M4U_FOR_RDMA2,
 	M4U_FOR_OVL0,
 	M4U_FOR_OVL1,
+	M4U_FOR_OVL0_2L,
+	M4U_FOR_OVL1_2L,
+	M4U_FOR_WDMA1,
 	MAX_NUM_HW
-} HW_MODULE_Type;
+};
 
-typedef enum {
+enum DPI_COLOR_ORDER {
 	DPI_COLOR_ORDER_RGB = 0,
 	DPI_COLOR_ORDER_BGR = 1
-} DPI_COLOR_ORDER;
+};
 
-typedef struct {
-	DPI_I32     hdmi_width;
-	DPI_I32     hdmi_height;
-	DPI_I32     bg_width;
-	DPI_I32     bg_height;
+struct DPI_DVT_CONTEXT {
+	int     hdmi_width;
+	int     hdmi_height;
+	int     bg_width;
+	int     bg_height;
 	enum HDMI_VIDEO_RESOLUTION       output_video_resolution;
-	DPI_I32     scaling_factor;
-} DPI_DVT_CONTEXT;
+	int     scaling_factor;
+};
 
 #define DPI_DVT_LOG_W(fmt, args...)   pr_err("[DPI_DVT/]"fmt, ##args)
 
-DPI_I32 dvt_init_RDMA_param(DPI_U32 mode, DPI_U32 resolution);
-void dpi_dvt_parameters(DPI_U8 arg);
+int dvt_init_RDMA_param(unsigned int mode, unsigned int resolution);
+void dpi_dvt_parameters(unsigned char arg);
 void dvt_dump_ext_dpi_parameters(void);
-DPI_I32 dvt_copy_file_data(void *ptr, DPI_U32 resolution);
-DPI_I32 dvt_allocate_buffer(DPI_U32 resolution, HW_MODULE_Type hw_type);
+int dvt_copy_file_data(void *ptr, unsigned int resolution);
+int dvt_allocate_buffer(unsigned int resolution, enum HW_MODULE_Type hw_type);
+int ldvt_allocate_buffer(unsigned int resolution, enum HW_MODULE_Type hw_type);
+unsigned int dpi_ldvt_testcase(void);
+
+
 
 #endif
 

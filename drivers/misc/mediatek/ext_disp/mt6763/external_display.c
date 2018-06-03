@@ -803,15 +803,6 @@ void ext_disp_probe(void)
 	ext_disp_mode = EXTD_DIRECT_LINK_MODE;
 }
 
-void ext_disp_power_control(unsigned int enable)
-{
-	/* clk op */
-	if (enable)
-		ddp_ext_modules_clk_on();
-	else
-		ddp_ext_modules_clk_off();
-}
-
 int ext_disp_init(char *lcm_name, unsigned int session)
 {
 	struct disp_ddp_path_config *data_config = NULL;
@@ -873,7 +864,6 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ext_disp_is_video_mode());
 
-	ext_disp_power_control(1);
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -941,8 +931,6 @@ int ext_disp_deinit(unsigned int session)
 		dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
-
-	ext_disp_power_control(0);
 
 	dpmgr_destroy_path_handle(pgc->dpmgr_handle);
 
@@ -1019,8 +1007,6 @@ int ext_disp_suspend(unsigned int session)
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 
-	ext_disp_power_control(0);
-
 	pgc->state = EXTD_SUSPEND;
 
  done:
@@ -1047,8 +1033,6 @@ int ext_disp_resume(unsigned int session)
 
 	if (_should_reset_cmdq_config_handle() && DISP_SESSION_DEV(session) != DEV_EINK + 1)
 		_cmdq_reset_config_handle();
-
-	ext_disp_power_control(1);
 
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 

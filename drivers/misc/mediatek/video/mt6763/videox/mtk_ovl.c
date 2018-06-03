@@ -303,17 +303,6 @@ int get_ovl2mem_ticket(void)
 
 }
 
-void ovl2mem_power_control(unsigned int enable)
-{
-	/* clk op */
-	if (enable)
-		ddp_ovl2mem_modules_clk_on();
-	else
-		ddp_ovl2mem_modules_clk_off();
-
-	ddp_clk_check();
-}
-
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
@@ -340,6 +329,12 @@ int ovl2mem_init(unsigned int session)
 	} else {
 		DISPDBG("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
 	}
+	/* Set fake cmdq engineflag for judge path scenario */
+	cmdqRecSetEngine(pgc->cmdq_handle_config,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+	cmdqRecReset(pgc->cmdq_handle_config);
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
 
@@ -352,7 +347,6 @@ int ovl2mem_init(unsigned int session)
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, false);
 
-	ovl2mem_power_control(1);
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
@@ -696,7 +690,6 @@ int ovl2mem_deinit(void)
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
 
-	ovl2mem_power_control(0);
 Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);

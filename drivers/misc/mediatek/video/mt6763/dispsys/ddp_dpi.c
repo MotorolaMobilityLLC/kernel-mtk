@@ -429,7 +429,7 @@ int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	pr_warn("DISP/DPI,ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (!s_isDpiPowerOn) {
-		ddp_ext_modules_clk_on();
+		ddp_path_top_clock_on();
 
 		ret += ddp_clk_prepare_enable(DISP1_DPI_MM_CLOCK);
 
@@ -443,6 +443,8 @@ int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		s_isDpiPowerOn = TRUE;
 
 		ddp_clk_check();
+
+		ddp_clk_prepare_enable(MUX_DPI0);
 
 		/* apmixed */
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
@@ -488,7 +490,7 @@ int ddp_dpi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			DPI_OUTREG32(NULL, TVDPLL_CON0, (INREG32(TVDPLL_CON0) | 0x00)); /*disable TVDPLL */
 		pr_warn("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
 
-		ddp_ext_modules_clk_off();
+		ddp_path_top_clock_off();
 		s_isDpiPowerOn = FALSE;
 	}
 	return 0;

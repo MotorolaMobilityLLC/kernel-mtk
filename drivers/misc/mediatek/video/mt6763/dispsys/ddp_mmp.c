@@ -361,7 +361,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 		mmprofile_log_ex(DDP_MMP_Events.layer_dump_parent, MMPROFILE_FLAG_START, pLayer->layer,
 			       pLayer->layer_en);
 		module = DISP_MODULE_OVL0;
-	} else if (session == 2) {
+	} else if ((session == 2) || (session == 3)) {
 		mmprofile_log_ex(DDP_MMP_Events.Extd_layer_dump_parent, MMPROFILE_FLAG_START,
 			       pLayer->layer, pLayer->layer_en);
 	       module = DISP_MODULE_OVL1;
@@ -417,7 +417,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 					mmprofile_log_meta_bitmap(DDP_MMP_Events.
 								  layer_dump[pLayer->layer],
 								  MMPROFILE_FLAG_PULSE, &Bitmap);
-				else if (session == 2)
+				else if ((session == 2) || (session == 3))
 					mmprofile_log_meta_bitmap(DDP_MMP_Events.
 								  ovl1layer_dump[pLayer->layer],
 								  MMPROFILE_FLAG_PULSE, &Bitmap);
@@ -435,7 +435,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 				if (session == 1)
 					mmprofile_log_meta(DDP_MMP_Events.layer_dump[pLayer->layer],
 							   MMPROFILE_FLAG_PULSE, &meta);
-				else if (session == 2)
+				else if ((session == 2) || (session == 3))
 					mmprofile_log_meta(DDP_MMP_Events.
 							   ovl1layer_dump[pLayer->layer],
 							   MMPROFILE_FLAG_PULSE, &meta);
@@ -450,7 +450,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 	if (session == 1)
 		mmprofile_log_ex(DDP_MMP_Events.layer_dump_parent, MMPROFILE_FLAG_END, pLayer->fmt,
 			       pLayer->addr);
-	else if (session == 2)
+	else if ((session == 2) || (session == 3))
 		mmprofile_log_ex(DDP_MMP_Events.Extd_layer_dump_parent, MMPROFILE_FLAG_END, pLayer->fmt,
 			       pLayer->addr);
 

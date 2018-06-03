@@ -792,7 +792,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 		}
 	}
 	/* after init this path will power on; */
-	/* handle->power_state = 1; */
+	handle->power_state = 1;
 	return 0;
 }
 
