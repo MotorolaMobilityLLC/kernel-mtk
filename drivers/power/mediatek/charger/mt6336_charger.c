@@ -71,7 +71,7 @@
 #include <mt6336.h>
 
 
-struct mt6336_charger_info {
+struct mt6336_charger {
 	int i2c_log_level;
 	struct power_supply_desc psd;
 	struct power_supply *psy;
@@ -195,7 +195,7 @@ static const unsigned int BOOST_CURRENT_LIMIT[] = {
 	1500000, 2000000,
 };
 
-struct mt6336_charger_info *info;
+struct mt6336_charger *info;
 
 static unsigned int charging_value_to_parameter(const unsigned int *parameter,
 						const unsigned int array_size,
@@ -214,8 +214,6 @@ static unsigned int charging_parameter_to_value(const unsigned int *parameter,
 						const unsigned int val)
 {
 	unsigned int i;
-
-	pr_debug("array_size = %d\n", array_size);
 
 	for (i = 0; i < array_size; i++) {
 		if (val == *(parameter + i))
@@ -240,7 +238,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 
 	if (max_value_in_last_element == true) {
 		/* max value in the last element */
-		for (i = (number - 1); i != 0; i--) {
+		for (i = (number - 1); i >= 0; i--) {
 			if (pList[i] <= level) {
 				pr_debug("zzf_%d<=%d i=%d\n", pList[i], level, i);
 				return pList[i];
@@ -261,7 +259,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 	return pList[number - 1];
 }
 
-static int mt6336_parse_dt(struct mt6336_charger_info *info, struct device *dev)
+static int mt6336_parse_dt(struct mt6336_charger *info, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 
@@ -294,7 +292,7 @@ static enum power_supply_property mt6336_charger_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 };
 
-static char *mt6336_charger_supply_list[] = {
+char *mt6336_charger_supply_list[] = {
 	"none",
 };
 
@@ -302,7 +300,7 @@ static int mt6336_charger_get_property(struct power_supply *psy,
 				enum power_supply_property psp,
 				union power_supply_propval *val)
 {
-	/*struct mt6336_charger_info *info = dev_get_drvdata(psy->dev->parent);*/
+	/*struct mt6336_charger *info = dev_get_drvdata(psy->dev->parent);*/
 	int ret = 0;
 
 	switch (psp) {
@@ -321,7 +319,7 @@ static int mt6336_charger_set_property(struct power_supply *psy,
 				enum power_supply_property psp,
 				const union power_supply_propval *val)
 {
-	/*struct mt6336_charger_info *info = dev_get_drvdata(psy->dev->parent);*/
+	/*struct mt6336_charger *info = dev_get_drvdata(psy->dev->parent);*/
 	int ret = 0;
 
 	switch (psp) {
@@ -495,6 +493,15 @@ static int mt6336_set_aicr(struct charger_device *chg_dev, int aicr)
 	return status;
 }
 
+static int mt6336_get_eoc(struct charger_device *chr_dev)
+{
+	unsigned short val;
+
+	val = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
+	pr_err("mt6336_get_eoc: %d\n", val);
+	return 0;
+}
+
 static int mt6336_dump_register(struct charger_device *chg_dev)
 {
 	int status = 0;
@@ -553,7 +560,7 @@ void mt6336_rechg_callback(void)
 	pr_err("mt6336_rechg_callback\n");
 	if (info != NULL) {
 		pr_err("call chain\n");
-		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_RECHG);
 	} else {
 		pr_err("do not call chain\n");
 	}
@@ -564,7 +571,7 @@ void mt6336_safety_timeout_callback(void)
 	pr_err("mt6336_safety_timeout_callback\n");
 	if (info != NULL) {
 		pr_err("call chain\n");
-		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
 	} else {
 		pr_err("do not call chain\n");
 	}
@@ -587,6 +594,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.get_input_current = mt6336_get_aicr,
 	.set_input_current = mt6336_set_aicr,
 	.dump_registers = mt6336_dump_register,
+	.get_charging_status = mt6336_get_eoc,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
@@ -595,7 +603,7 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 
 	pr_err("%s: starts\n", __func__);
 
-	info = devm_kzalloc(&pdev->dev, sizeof(struct mt6336_charger_info), GFP_KERNEL);
+	info = devm_kzalloc(&pdev->dev, sizeof(struct mt6336_charger), GFP_KERNEL);
 	if (!info)
 		return -ENOMEM;
 
@@ -618,7 +626,7 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	info->psd.get_property = mt6336_charger_get_property;
 	info->psd.set_property = mt6336_charger_set_property;
 
-	info->psy->supplied_to = mt6336_charger_supply_list;
+	/*info->psy->supplied_to = mt6336_charger_supply_list;*/
 #endif
 
 	/*ret = power_supply_register(&pdev->dev, &info->psy);*/
@@ -656,7 +664,7 @@ err_register_psy:
 
 static int mt6336_charger_remove(struct platform_device *pdev)
 {
-	struct mt6336_charger_info *mt = platform_get_drvdata(pdev);
+	struct mt6336_charger *mt = platform_get_drvdata(pdev);
 
 	if (mt) {
 		power_supply_unregister(mt->psy);
