@@ -170,6 +170,7 @@ struct imgsensor_info_struct {
 	/* record sensor support all write id addr,
 	 * only supprt 4must end with 0xff
 	 */
+	kal_uint32 i2c_speed;
 	kal_uint8 i2c_addr_table[5];
 
 };
@@ -189,7 +190,23 @@ extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iReadReg(u16 a_u2Addr, u8 *a_puBuff, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
-//extern bool s5k2t7_read_otp_pdaf_data(
-//kal_uint16 addr, BYTE *data, kal_uint32 size);
 
+
+
+
+extern int iReadRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,
+				    u8 *a_pRecvData, u16 a_sizeRecvData,
+				    u16 i2cId, u16 timing);
+
+
+extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData,
+				     u16 i2cId, u16 timing);
+
+extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
+					u16 transfer_length, u16 timing);
+
+
+
+/*extern bool s5k2t7_read_otp_pdaf_data(*/
+/*kal_uint16 addr, BYTE *data, kal_uint32 size);*/
 #endif				/* _S5K3P38SRMIPI_SENSOR_H */
