@@ -358,6 +358,57 @@ statsParsePktInfo(P_ADAPTER_T prAdapter, PUINT_8 pucPkt, struct sk_buff *skb, UI
 		}
 		break;
 	}
+	case ETH_P_IPV6:
+	{
+		UINT_8 ucIpv6Proto = pucEthBody[IPV6_HDR_LEN]; /* IPv6 header without options */
+		UINT_8 ucIpVersion = (pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
+
+		if (ucIpVersion != IP_VERSION_6)
+			break;
+		switch (ucIpv6Proto) {
+		case ICMPV6_TYPE_ROUTER_SOLICITATION:
+			switch (eventType) {
+			case EVENT_RX:
+				DBGLOG(RX, INFO, "<RX><IPv6> Router Solicitation\n");
+				break;
+			case EVENT_TX:
+				DBGLOG(TX, INFO, "<TX><IPv6> Router Solicitation\n");
+				break;
+			}
+			break;
+		case ICMPV6_TYPE_ROUTER_ADVERTISEMENT:
+			switch (eventType) {
+			case EVENT_RX:
+				DBGLOG(RX, INFO, "<RX><IPv6> Router Advertisement\n");
+				break;
+			case EVENT_TX:
+				DBGLOG(TX, INFO, "<TX><IPv6> Router Advertisement\n");
+				break;
+			}
+			break;
+		case ICMPV6_TYPE_NEIGHBOR_SOLICITATION:
+			switch (eventType) {
+			case EVENT_RX:
+				DBGLOG_LIMITED(RX, INFO, "<RX><IPv6> Neighbor Solicitation\n");
+				break;
+			case EVENT_TX:
+				DBGLOG_LIMITED(TX, INFO, "<TX><IPv6> Neighbor Solicitation\n");
+				break;
+			}
+			break;
+		case ICMPV6_TYPE_NEIGHBOR_ADVERTISEMENT:
+			switch (eventType) {
+			case EVENT_RX:
+				DBGLOG_LIMITED(RX, INFO, "<RX><IPv6> Neighbor Advertisement\n");
+				break;
+			case EVENT_TX:
+				DBGLOG_LIMITED(TX, INFO, "<TX><IPv6> Neighbor Advertisement\n");
+				break;
+			}
+			break;
+		}
+		break;
+	}
 	case ETH_P_1X:
 	{
 		PUINT_8 pucEapol = pucEthBody;
