@@ -146,7 +146,12 @@ int ged_bridge_gpu_timestamp(
 	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT)
 {
 	if (ged_kpi_enabled() == 1) {
-		if (psGpuBeginINT->QedBuffer_length != -1)
+		if (psGpuBeginINT->QedBuffer_length == -2)
+			ged_kpi_dequeue_buffer_ts(psGpuBeginINT->pid,
+									psGpuBeginINT->ullWnd,
+									psGpuBeginINT->i32FrameID,
+									psGpuBeginINT->fence_fd);
+		else if (psGpuBeginINT->QedBuffer_length != -1)
 			psGpuBeginOUT->eError =
 				ged_kpi_queue_buffer_ts(psGpuBeginINT->pid,
 										psGpuBeginINT->ullWnd,

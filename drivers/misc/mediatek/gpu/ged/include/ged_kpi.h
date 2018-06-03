@@ -19,6 +19,10 @@
 #include <linux/sched.h>
 #include <linux/topology.h>
 
+GED_ERROR ged_kpi_dequeue_buffer_ts(int pid,
+								unsigned long long ullWdnd,
+								int i32FrameID,
+								int fence_fd);
 GED_ERROR ged_kpi_queue_buffer_ts(int pid,
 								unsigned long long ullWdnd,
 								int i32FrameID,

@@ -66,7 +66,8 @@ typedef enum {
 	GED_TIMESTAMP_TYPE_1		= 0x1,
 	GED_TIMESTAMP_TYPE_2		= 0x2,
 	GED_TIMESTAMP_TYPE_S		= 0x4,
-	GED_TIMESTAMP_TYPE_H		= 0x8,
+	GED_TIMESTAMP_TYPE_P		= 0x8,
+	GED_TIMESTAMP_TYPE_H		= 0x10,
 } GED_TIMESTAMP_TYPE;
 
 #ifdef GED_KPI_DFRC
@@ -121,6 +122,7 @@ typedef struct GED_KPI_TAG {
 	unsigned long frame_attr;
 	unsigned long long ullTimeStamp1;
 	unsigned long long ullTimeStamp2;
+	unsigned long long ullTimeStampP;
 	unsigned long long ullTimeStampS;
 	unsigned long long ullTimeStampH;
 	unsigned int gpu_freq; /* in MHz*/
@@ -144,7 +146,8 @@ typedef struct GED_KPI_TAG {
 	unsigned long cpu_cur_freq_LL;
 	unsigned long cpu_cur_freq_L;
 	unsigned long cpu_cur_freq_B;
-	long long t_cpu_latest;
+	long long t_cpu;
+	long long t_gpu;
 	int t_cpu_target;
 	int t_gpu_target;
 	int if_fallback_to_ft;
@@ -488,9 +491,9 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 		g_response_time_accum += psKPI->ullTimeStampH - g_pre_TimeStamp1;
 
 		if (psKPI->ullTimeStamp1 > g_pre_TimeStamp2)
-			g_gpu_time_accum += psKPI->ullTimeStamp2 - psKPI->ullTimeStamp1;
+			g_gpu_time_accum += psKPI->t_gpu;
 		else
-			g_gpu_time_accum += psKPI->ullTimeStamp2 - g_pre_TimeStamp2;
+			g_gpu_time_accum += psKPI->t_gpu;
 
 		g_gpu_remained_time_accum += psKPI->ullTimeStampH - psKPI->ullTimeStamp2;
 		g_cpu_remained_time_accum += psKPI->ullTimeStampS - psKPI->ullTimeStamp1;
@@ -573,7 +576,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
 		psHead->ullWnd,
 		psKPI->i32QueueID,
@@ -581,6 +584,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->frame_attr,
 		psKPI->ullTimeStamp1,
 		psKPI->ullTimeStamp2,
+		psKPI->ullTimeStampP,
 		psKPI->ullTimeStampS,
 		psKPI->ullTimeStampH,
 		gpu_info,
@@ -703,7 +707,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
 #endif
 
-		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu_latest);
+		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu);
 
 		if (t_cpu_cur < (int)psHead->t_cpu_target + 2000000 && boost_accum_cpu > 30)
 			num_over_boost++;
@@ -1138,7 +1142,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			/* recording cpu time per frame and boost CPU if needed */
 			psHead->t_cpu_latest =
 				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
-			psKPI->t_cpu_latest = psHead->t_cpu_latest;
+			psKPI->t_cpu = psHead->t_cpu_latest;
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
 			psHead->last_QedBufferDelay = 0;
 #ifdef GED_KPI_CPU_BOOST
@@ -1208,11 +1212,17 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					psKPI->ulMask |= GED_TIMESTAMP_TYPE_2;
 					psKPI->ullTimeStamp2 = psTimeStamp->ullTimeStamp;
 					/* calculate gpu time */
-					if (psKPI->ullTimeStamp1 > psHead->last_TimeStamp2)
+					if (psKPI->ullTimeStamp1 > psHead->last_TimeStamp2
+						&& psKPI->ullTimeStamp1 > psKPI->ullTimeStampP)
 						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psKPI->ullTimeStamp1;
-					else
+					else if (psKPI->ullTimeStamp1 > psHead->last_TimeStamp2)
+						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psKPI->ullTimeStampP;
+					else if (psHead->last_TimeStamp2 > psKPI->ullTimeStampP)
 						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psHead->last_TimeStamp2;
+					else
+						psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psKPI->ullTimeStampP;
 
+					psKPI->t_gpu = psHead->t_gpu_latest;
 					psKPI->gpu_freq = mt_gpufreq_get_cur_freq() / 1000;
 
 					psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
@@ -1250,6 +1260,37 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 						"[GED_KPI][Exception] TYPE_2: frame(%lu) fail to be taged to ulID: %lu\n",
 						psTimeStamp->i32FrameID,
 						ulID);
+				}
+#endif
+			}
+		}
+#ifdef GED_KPI_DEBUG
+		else
+			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#endif
+		break;
+	case GED_TIMESTAMP_TYPE_P:
+		ulID = (unsigned long) psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+
+
+		if (psHead) {
+			struct list_head *psListEntry, *psListEntryTemp;
+			struct list_head *psList = &psHead->sList;
+
+			list_for_each_prev_safe(psListEntry, psListEntryTemp, psList) {
+				psKPI = list_entry(psListEntry, GED_KPI, sList);
+				if (psKPI && ((psKPI->ulMask & GED_TIMESTAMP_TYPE_P) == 0)
+						&& (psKPI->i32QueueID == psTimeStamp->i32FrameID)) {
+					psKPI->ulMask |= GED_TIMESTAMP_TYPE_P;
+					psKPI->ullTimeStampP = psTimeStamp->ullTimeStamp;
+				}
+#ifdef GED_KPI_DEBUG
+				else if (psKPI && ((psKPI->ulMask & GED_TIMESTAMP_TYPE_P) == 0)) {
+					GED_LOGE(
+						"[GED_KPI][Exception] TYPE_P: frame(%d) fail to be taged to ulID: %lu, QedID: %lu\n",
+						psTimeStamp->i32FrameID,
+						ulID, psKPI->i32QueueID);
 				}
 #endif
 			}
@@ -1362,6 +1403,8 @@ static GED_ERROR ged_kpi_push_timestamp(
 			event_3d_fence_cnt--;
 			ged_log_trace_counter("GED_KPI_3D_fence_CNT", event_3d_fence_cnt);
 			break;
+		case GED_TIMESTAMP_TYPE_P:
+			break;
 		case GED_TIMESTAMP_TYPE_S:
 			event_QedBuffer_cnt--;
 			ged_log_trace_counter("GED_KPI_QedBuffer_CNT", event_QedBuffer_cnt);
@@ -1395,10 +1438,28 @@ static GED_ERROR ged_kpi_time2(int pid, unsigned long long ullWdnd, int i32Frame
 								ullWdnd, i32FrameID, -1, -1, NULL);
 }
 /* ----------------------------------------------------------------------------- */
+static GED_ERROR ged_kpi_timeP(int pid, unsigned long long ullWdnd, int i32FrameID)
+{
+	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_P, ged_get_time(), pid,
+								ullWdnd, i32FrameID, -1, -1, NULL);
+}
+/* ----------------------------------------------------------------------------- */
 static GED_ERROR ged_kpi_timeS(int pid, unsigned long long ullWdnd, int i32FrameID)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_S, ged_get_time(), pid,
 								ullWdnd, i32FrameID, -1, -1, NULL);
+}
+/* ----------------------------------------------------------------------------- */
+static void ged_kpi_pre_fence_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *waiter)
+{
+	GED_KPI_GPU_TS *psMonitor;
+
+	psMonitor = GED_CONTAINER_OF(waiter, GED_KPI_GPU_TS, sSyncWaiter);
+
+	ged_kpi_timeP(psMonitor->pid, psMonitor->ullWdnd, psMonitor->i32FrameID);
+
+	sync_fence_put(psMonitor->psSyncFence);
+	ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 }
 /* ----------------------------------------------------------------------------- */
 static void ged_kpi_gpu_3d_fence_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *waiter)
@@ -1440,6 +1501,44 @@ unsigned int ged_kpi_enabled(void)
 	return is_GED_KPI_enabled;
 #else
 	return 0;
+#endif
+}
+/* ----------------------------------------------------------------------------- */
+GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, unsigned long long ullWdnd, int i32FrameID, int fence_fd)
+{
+#ifdef MTK_GED_KPI
+	GED_ERROR ret;
+	GED_KPI_GPU_TS *psMonitor;
+	struct sync_fence *psSyncFence;
+
+	psSyncFence = sync_fence_fdget(fence_fd);
+
+	psMonitor = (GED_KPI_GPU_TS *)ged_alloc(sizeof(GED_KPI_GPU_TS));
+
+	if (!psMonitor)
+		return GED_ERROR_OOM;
+
+	sync_fence_waiter_init(&psMonitor->sSyncWaiter, ged_kpi_pre_fence_sync_cb);
+	psMonitor->psSyncFence = psSyncFence;
+	psMonitor->pid = pid;
+	psMonitor->ullWdnd = ullWdnd;
+	psMonitor->i32FrameID = i32FrameID;
+
+	if (psMonitor->psSyncFence == NULL) {
+		ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
+		return GED_ERROR_INVALID_PARAMS;
+	}
+
+	ret = sync_fence_wait_async(psMonitor->psSyncFence, &psMonitor->sSyncWaiter);
+
+	if ((ret == 1) || (ret < 0)) {
+		sync_fence_put(psMonitor->psSyncFence);
+		ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
+		ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
+	}
+	return ret;
+#else
+	return GED_OK;
 #endif
 }
 /* ----------------------------------------------------------------------------- */
