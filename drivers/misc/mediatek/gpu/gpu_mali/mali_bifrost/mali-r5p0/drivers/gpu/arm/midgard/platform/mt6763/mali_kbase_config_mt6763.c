@@ -243,7 +243,8 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {
-	_mtk_pm_callback_power_off();
+	if (!mtk_kbase_is_gpu_always_on())
+		_mtk_pm_callback_power_off();
 }
 
 void pm_callback_power_suspend(struct kbase_device *kbdev)
@@ -259,7 +260,8 @@ void pm_callback_power_suspend(struct kbase_device *kbdev)
 		KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 		kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
 #endif
-	_mtk_pm_callback_power_suspend();
+	if (!mtk_kbase_is_gpu_always_on())
+		_mtk_pm_callback_power_suspend();
 }
 
 void pm_callback_power_resume(struct kbase_device *kbdev)
