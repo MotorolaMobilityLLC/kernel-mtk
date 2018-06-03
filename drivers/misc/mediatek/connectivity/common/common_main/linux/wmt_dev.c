@@ -154,6 +154,10 @@ UINT32 g_es_lr_flag_for_lpbk_onoff;	/* for ctrl lpbk on off */
 OSAL_SLEEPABLE_LOCK g_es_lr_lock;
 
 
+/* Prevent race condition when wmt_dev_tm_temp_query is called concurrently */
+static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
+
+
 #ifdef CONFIG_EARLYSUSPEND
 static VOID wmt_dev_early_suspend(struct early_suspend *h)
 {
@@ -568,17 +572,30 @@ static UINT32 wmt_dev_tra_poll(VOID)
 
 LONG wmt_dev_tm_temp_query(VOID)
 {
-#define HISTORY_NUM       5
+#define HISTORY_NUM       3
 #define TEMP_THRESHOLD   60
 #define REFRESH_TIME    300	/* sec */
 
-	static INT32 temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
-	static INT32 idx_temp_table;
-	static struct timeval query_time, now_time;
-	INT8 query_cond = 0;
+	static INT32 s_temp_table[HISTORY_NUM] = { 99 };	/* not query yet. */
+	static INT32 s_idx_temp_table;
+	static struct timeval s_query_time;
+
+	INT32 temp_table[HISTORY_NUM];
+	INT32 idx_temp_table;
+	struct timeval query_time;
+
+	struct timeval now_time;
 	INT32 current_temp = 0;
 	INT32 index = 0;
 	LONG return_temp = 0;
+	INT8 query_cond = 0;
+
+	/* Let us work on the copied version of function static variables */
+	osal_lock_unsleepable_lock(&g_temp_query_spinlock);
+	osal_memcpy(temp_table, s_temp_table, sizeof(s_temp_table));
+	osal_memcpy(&query_time, &s_query_time, sizeof(struct timeval));
+	idx_temp_table = s_idx_temp_table;
+	osal_unlock_unsleepable_lock(&g_temp_query_spinlock);
 
 	/* Query condition 1: */
 	/* If we have the high temperature records on the past, we continue to query/monitor */
@@ -604,6 +621,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 			query_cond = 1;
 		} else
 			WMT_DBG_FUNC("idle traffic ....\n");
+
 		/* only WIFI tx power might make temperature varies largely */
 #if 0
 		if (!query_cond) {
@@ -625,12 +643,12 @@ LONG wmt_dev_tm_temp_query(VOID)
 		/* time overflow, we refresh temp table again for simplicity! */
 		if ((now_time.tv_sec < query_time.tv_sec) ||
 		    ((now_time.tv_sec > query_time.tv_sec) &&
-			 (now_time.tv_sec - query_time.tv_sec) > REFRESH_TIME)) {
+			(now_time.tv_sec - query_time.tv_sec) > REFRESH_TIME)) {
 			query_cond = 1;
 
 			WMT_INFO_FUNC
-				("It is long time (> %d sec) not to query, we must query temp temperature..\n",
-				 REFRESH_TIME);
+				("It is long time (prev(%ld), now(%ld), > %d sec) not to query, query temp again..\n",
+				 query_time.tv_sec, now_time.tv_sec, REFRESH_TIME);
 			for (index = 0; index < HISTORY_NUM; index++)
 				temp_table[index] = 99;
 
@@ -642,26 +660,60 @@ LONG wmt_dev_tm_temp_query(VOID)
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_ENABLE);
 		current_temp = mtk_wcn_wmt_therm_ctrl(WMTTHERM_READ);
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_DISABLE);
-		idx_temp_table = (idx_temp_table + 1) % HISTORY_NUM;
-		temp_table[idx_temp_table] = current_temp;
-		do_gettimeofday(&query_time);
 
-		WMT_INFO_FUNC("[Thermal] current_temp = 0x%x\n", (current_temp & 0xFF));
+		/* Only update temperature if our index hasn't been modified by the concurrent thread */
+		osal_lock_unsleepable_lock(&g_temp_query_spinlock);
+		if (idx_temp_table == s_idx_temp_table) {
+			osal_memcpy(s_temp_table, temp_table, sizeof(s_temp_table));
+			s_idx_temp_table = (s_idx_temp_table + 1) % HISTORY_NUM;
+			s_temp_table[s_idx_temp_table] = current_temp;
+			do_gettimeofday(&s_query_time);
+			index = -1;
+		} else {
+			index = s_idx_temp_table;
+		}
+		osal_unlock_unsleepable_lock(&g_temp_query_spinlock);
+
+		if (index == -1) {
+			WMT_INFO_FUNC("[Thermal] current_temp = 0x%x\n", (current_temp & 0xFF));
+		} else {
+			WMT_ERR_FUNC("Temperature(0x%x) update failed due to modified idx_temp_table(%d, %d)",
+				(current_temp & 0xFF), idx_temp_table, index);
+		}
 	} else {
-		current_temp = temp_table[idx_temp_table];
-		idx_temp_table = (idx_temp_table + 1) % HISTORY_NUM;
-		temp_table[idx_temp_table] = current_temp;
+		/* Only update temperature if our index hasn't been modified by the concurrent thread */
+		osal_lock_unsleepable_lock(&g_temp_query_spinlock);
+		if (idx_temp_table == s_idx_temp_table) {
+			current_temp = s_temp_table[s_idx_temp_table];
+			s_idx_temp_table = (s_idx_temp_table + 1) % HISTORY_NUM;
+			s_temp_table[s_idx_temp_table] = current_temp;
+			index = -1;
+		} else {
+			/* Return the last valid temperature which has just been modified by the concurrent thread */
+			current_temp = s_temp_table[s_idx_temp_table];
+			index = s_idx_temp_table;
+		}
+		osal_unlock_unsleepable_lock(&g_temp_query_spinlock);
+		if (index != -1) {
+			WMT_DBG_FUNC("Use last valid temperature (0x%x) due to modified idx_temp_table(%d, %d)",
+				(current_temp & 0xFF), idx_temp_table, index);
+		}
 	}
 
 	/*  */
 	/* Dump information */
 	/*  */
-	WMT_DBG_FUNC("[Thermal] idx_temp_table = %d\n", idx_temp_table);
-	WMT_DBG_FUNC("[Thermal] now.time = %d, query.time = %d, REFRESH_TIME = %d\n", now_time.tv_sec,
-		     query_time.tv_sec, REFRESH_TIME);
+	if (gWmtDbgLvl >= WMT_LOG_DBG) {
+		osal_lock_unsleepable_lock(&g_temp_query_spinlock);
+		WMT_DBG_FUNC("[Thermal] s_idx_temp_table = %d, idx_temp_table = %d\n",
+			s_idx_temp_table, idx_temp_table);
+		WMT_DBG_FUNC("[Thermal] now.time = %d, s_query.time = %d, query.time = %d, REFRESH_TIME = %d\n",
+			now_time.tv_sec, s_query_time.tv_sec, query_time.tv_sec, REFRESH_TIME);
 
-	WMT_DBG_FUNC("[0] = %d, [1] = %d, [2] = %d, [3] = %d, [4] = %d\n----\n",
-		     temp_table[0], temp_table[1], temp_table[2], temp_table[3], temp_table[4]);
+		WMT_DBG_FUNC("[0] = %d, [1] = %d, [2] = %d\n----\n",
+			s_temp_table[0], s_temp_table[1], s_temp_table[2]);
+		osal_unlock_unsleepable_lock(&g_temp_query_spinlock);
+	}
 
 	return_temp = ((current_temp & 0x80) == 0x0) ? current_temp : (-1) * (current_temp & 0x7f);
 
@@ -1354,6 +1406,7 @@ static INT32 WMT_init(VOID)
 		mtk_wcn_hif_sdio_update_cb_reg(wmt_dev_tra_sdio_update);
 
 	WMT_DBG_FUNC("wmt_dev register thermal cb\n");
+	osal_unsleepable_lock_init(&g_temp_query_spinlock);
 	wmt_lib_register_thermal_ctrl_cb(wmt_dev_tm_temp_query);
 
 	if (chip_type == WMT_CHIP_TYPE_SOC)
@@ -1411,6 +1464,7 @@ static VOID WMT_exit(VOID)
 	dev_t dev = MKDEV(gWmtMajor, 0);
 
 	osal_sleepable_lock_deinit(&g_es_lr_lock);
+	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
