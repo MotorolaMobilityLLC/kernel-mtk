@@ -44,6 +44,7 @@ extern struct hp_action_tbl cpu_dvfs_hp_action[];
 extern unsigned int nr_hp_action;
 
 extern void prepare_pll_addr(enum mt_cpu_dvfs_pll_id pll_id);
+extern void prepare_pmic_config(struct mt_cpu_dvfs *p);
 extern unsigned int _cpu_dds_calc(unsigned int khz);
 extern unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p);
 

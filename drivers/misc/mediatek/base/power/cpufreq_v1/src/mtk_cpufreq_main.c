@@ -1414,6 +1414,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	for_each_cpu_dvfs(j, p) {
 		/* Prepare pll related address once */
 		prepare_pll_addr(p->Pll_id);
+		/* Prepare pmic related config once */
+		prepare_pmic_config(p);
 #ifndef CONFIG_HYBRID_CPU_DVFS
 		/* Check all PMIC init voltage once */
 		vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);

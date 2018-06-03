@@ -117,6 +117,25 @@ static unsigned int mt6356_vproc1_settletime(unsigned int old_volt, unsigned int
 		return (old_volt - new_volt) * 2 / 625 + PMIC_CMD_DELAY_TIME;
 }
 
+/* MT6311 */
+static unsigned int mt6311_vproc1_transfer2pmicval(unsigned int volt)
+{
+	return ((volt - 60000) + 625 - 1) / 625;
+}
+
+static unsigned int mt6311_vproc1_transfer2volt(unsigned int val)
+{
+	return val * 625 + 60000;
+}
+
+static unsigned int mt6311_vproc1_settletime(unsigned int old_volt, unsigned int new_volt)
+{
+	if (new_volt > old_volt)
+		return ((new_volt - old_volt) + 1250 - 1) / 1250 + PMIC_CMD_DELAY_TIME;
+	else
+		return (old_volt - new_volt) * 2 / 625 + PMIC_CMD_DELAY_TIME;
+}
+
 static int set_cur_volt_sram1_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
 	unsigned int max_volt = MAX_VSRAM_VOLT + 625;
@@ -160,6 +179,14 @@ static struct buck_ctrl_ops buck_ops_mt6356_vproc1 = {
 	.settletime		= mt6356_vproc1_settletime,
 };
 
+static struct buck_ctrl_ops buck_ops_mt6311_vproc1 = {
+	.get_cur_volt		= get_cur_volt_proc1_cpu,
+	.set_cur_volt		= set_cur_volt_proc1_cpu,
+	.transfer2pmicval	= mt6311_vproc1_transfer2pmicval,
+	.transfer2volt		= mt6311_vproc1_transfer2volt,
+	.settletime		= mt6311_vproc1_settletime,
+};
+
 static struct buck_ctrl_ops buck_ops_mt6356_vsram1 = {
 	.get_cur_volt		= get_cur_volt_sram1_cpu,
 	.set_cur_volt		= set_cur_volt_sram1_cpu,
@@ -181,6 +208,16 @@ struct buck_ctrl_t buck_ctrl[NR_MT_BUCK] = {
 		.buck_ops	= &buck_ops_mt6356_vsram1,
 	},
 };
+
+/* PMIC Part */
+void prepare_pmic_config(struct mt_cpu_dvfs *p)
+{
+	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
+
+	vproc_p->name = __stringify(BUCK_MT6311_VPROC);
+
+	vproc_p->buck_ops = &buck_ops_mt6311_vproc1;
+}
 
 int __attribute__((weak)) sync_dcm_set_mp0_freq(unsigned int mhz)
 {
