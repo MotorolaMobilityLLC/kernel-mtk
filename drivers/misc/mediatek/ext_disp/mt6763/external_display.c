@@ -878,6 +878,11 @@ static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 	return 0;
 }
 
+static void deinit_cmdq_slots(cmdqBackupSlotHandle hSlot)
+{
+	cmdqBackupFreeSlot(hSlot);
+}
+
 static int ext_disp_init_hdmi(unsigned int session)
 {
 	struct disp_ddp_path_config *data_config = NULL;
@@ -1251,12 +1256,14 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	dpmgr_init();
 
-	init_cmdq_slots(&(pgc->ext_cur_config_fence), EXTD_OVERLAY_CNT, 0);
-	init_cmdq_slots(&(pgc->ext_subtractor_when_free), EXTD_OVERLAY_CNT, 0);
-	init_cmdq_slots(&(pgc->ext_input_config_info), 1, 0);
+	if (pgc->state == EXTD_DEINIT) {
+		init_cmdq_slots(&(pgc->ext_cur_config_fence), EXTD_OVERLAY_CNT, 0);
+		init_cmdq_slots(&(pgc->ext_subtractor_when_free), EXTD_OVERLAY_CNT, 0);
+		init_cmdq_slots(&(pgc->ext_input_config_info), 1, 0);
 #ifdef EXTD_DEBUG_SUPPORT
-	init_cmdq_slots(&(pgc->ext_ovl_rdma_status_info), 1, 0);
+		init_cmdq_slots(&(pgc->ext_ovl_rdma_status_info), 1, 0);
 #endif
+	}
 
 	_ext_disp_path_lock();
 
@@ -1312,6 +1319,15 @@ int ext_disp_deinit(unsigned int session)
 	cmdqRecDestroy(pgc->cmdq_handle_trigger);
 	pgc->cmdq_handle_config = NULL;
 	pgc->cmdq_handle_trigger = NULL;
+
+	if (pgc->state != EXTD_DEINIT) {
+		deinit_cmdq_slots(pgc->ext_cur_config_fence);
+		deinit_cmdq_slots(pgc->ext_subtractor_when_free);
+		deinit_cmdq_slots(pgc->ext_input_config_info);
+#ifdef EXTD_DEBUG_SUPPORT
+		deinit_cmdq_slots(pgc->ext_ovl_rdma_status_info);
+#endif
+	}
 
 	pgc->state = EXTD_DEINIT;
 

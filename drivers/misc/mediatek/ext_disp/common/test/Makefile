@@ -51,7 +51,6 @@ else
   ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/v2/
 endif
 
-$(warning "lwlwlw")
 obj-y +=  \
     dpi_dvt_test.o \
     dpi_dvt_platform.o \

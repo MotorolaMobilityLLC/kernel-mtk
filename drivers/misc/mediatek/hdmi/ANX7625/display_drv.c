@@ -441,6 +441,30 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 			params->init_config.vformat =
 				HDMI_VIDEO_2160p_DSC_24Hz;
 			break;
+#if 0 /* VR demo resolution */
+		case HDMI_VIDEO_2K_DSC_70Hz:
+			params->clk_pol   = HDMI_POLARITY_RISING;
+			params->de_pol	  = HDMI_POLARITY_RISING;
+			params->hsync_pol = HDMI_POLARITY_FALLING;
+			params->vsync_pol = HDMI_POLARITY_FALLING;
+
+			/*params->hsync_pulse_width = 8;*/
+			params->hsync_pulse_width = 10;
+			params->hsync_back_porch  = 12;
+			params->hsync_front_porch = 24;
+
+			params->vsync_pulse_width = 8;
+			params->vsync_back_porch  = 1;
+			params->vsync_front_porch = 7;
+
+			params->width		= 1440;
+			params->height		= 2560;
+			params->input_clock = 94414;
+
+			params->init_config.vformat =
+				HDMI_VIDEO_2K_DSC_70Hz;
+			break;
+#endif
 		default:
 			SLIMPORT_LOG("Unknown support resolution\n");
 			break;
@@ -665,6 +689,15 @@ static int slimport_drv_video_config(
 			command_DSI_DSC_Configuration(RESOLUTION_DSI_4K24);
 		else
 			command_DPI_DSC_Configuration(RESOLUTION_DPI_4K24);
+#if 0 /* VR demo resolution */
+	} else if (vformat == HDMI_VIDEO_2K_DSC_70Hz) {
+		SLIMPORT_LOG("[slimport_drv]2K_DSC_70\n");
+
+		if (dst_is_dsi)
+			command_DSI_DSC_Configuration(RESOLUTION_DSI_4K24);
+		else
+			command_DPI_DSC_Configuration(RESOLUTION_DPI_DSC_2K70);
+#endif
 	} else
 		SLIMPORT_LOG("%s, video format not support now\n", __func__);
 
@@ -746,12 +779,14 @@ void slimport_drv_power_off(void)
 static unsigned int pal_resulution;
 #define HDMI_4k30_DSC		95 /*MHL doesn't supported*/
 #define HDMI_4k24_DSC		93 /*MHL doesn't supported*/
+#define HDMI_SPECAIL_RES	190 /*the value is Forbidden resolution*/
+#define HDMI_2k70_DSC		191 /*the value is Forbidden resolution*/
 
 void update_av_info_edid(
 	bool audio_video, unsigned int param1, unsigned int param2)
 {
-	if (audio_video) { /*/video infor*/
-		/*	SLIMPORT_LOG("update_av_info_edid: %d\n", param1);*/
+	if (audio_video) { /*video infor*/
+		/*SLIMPORT_LOG("update_av_info_edid: %d\n", param1);*/
 
 		switch (param1) {
 		case 0x22:
@@ -775,7 +810,15 @@ void update_av_info_edid(
 		case HDMI_4k24_DSC:
 			pal_resulution |= SINK_2160p24;
 			break;
+#if 0 /* VR demo resolution */
+		case HDMI_2k70_DSC:
+			pal_resulution |= SINK_2K70;
+			break;
 
+		case HDMI_SPECAIL_RES:
+			pal_resulution |= SINK_SPECIAL_RESOLUTION;
+			break;
+#endif
 		default:
 			SLIMPORT_LOG("param1: %d\n", param1);
 		}
@@ -836,12 +879,7 @@ void slimport_GetEdidInfo(void *pv_get_info)
 	}
 }
 
-#ifdef ANX7625_MTK_PLATFORM
-#else
-uint8_t  Cap_MAX_channel;
-uint16_t Cap_SampleRate;
-uint8_t  Cap_Samplebit;
-#endif
+
 
 enum {
 	HDMI_CHANNEL_2 = 0x2,
