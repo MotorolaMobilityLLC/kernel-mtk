@@ -439,7 +439,8 @@ static void mdee_info_prepare_v3(struct md_ee *mdee)
 	if (dumper->more_info == MD_EE_CASE_NO_RESPONSE || dumper->more_info == MD_EE_CASE_WDT)
 		return;
 	ex_overview = md_ee_get_buf_ptr(mdee, &debug_info->par_data_source);/* mem of parsing */
-	if (ex_overview->overview_verno != 0xAB000000 || ex_overview->core_num > MD_CORE_TOTAL_NUM) {
+	/* version: 0xABxxyyyy: xx rule version for AP parsing, yyyy for md parsing */
+	if ((ex_overview->overview_verno&0xFFFF0000) != 0xAB000000 || ex_overview->core_num > MD_CORE_TOTAL_NUM) {
 		debug_info->type = MD_EX_CLASS_INVALID;
 		snprintf(debug_info->core_name, sizeof(debug_info->core_name), "%s", "MCU_core0,vpe0,tc0(VPE0)");
 		debug_info->name = "INVALID_EXCEPTION_TYPE";
