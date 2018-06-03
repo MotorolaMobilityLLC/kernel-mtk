@@ -379,7 +379,7 @@ static int BMI160_ACC_ReadData(struct i2c_client *client, s16 data[BMI160_ACC_AX
 
 static int BMI160_ACC_ReadOffset(struct i2c_client *client, s8 ofs[BMI160_ACC_AXES_NUM])
 {
-	int err=0;
+	int err = 0;
 
 #ifdef SW_CALIBRATION
 	ofs[0] = ofs[1] = ofs[2] = 0x0;
@@ -914,9 +914,9 @@ static int BMI160_ACC_ReadRawData(struct i2c_client *client, char *buf)
 	s16 databuf[BMI160_ACC_AXES_NUM] = { 0 };
 
 	err = BMI160_ACC_ReadData(client, databuf);
-	if(err) {
+	if (err) {
 		GSE_ERR("read acc raw data failed.\n");
-		return EIO;
+		return -EIO;
 	}
 
 	sprintf(buf, "BMI160_ACC_ReadRawData %04x %04x %04x",
@@ -1985,7 +1985,7 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 	struct SENSOR_DATA sensor_data;
 	int err = 0;
 	int cali[3] = {0};
-	struct i2c_client *client = (struct i2c_client*)file->private_data;
+	struct i2c_client *client = (struct i2c_client *)file->private_data;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
 
 	if (_IOC_DIR(cmd) & _IOC_READ)

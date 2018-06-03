@@ -1560,7 +1560,7 @@ static int cm36652_init_client(struct i2c_client *client)
 
 	/* APS_LOG("cm36652 ps CM36652_REG_PS_CANC command!\n"); */
 
-	if (0 == obj->hw->polling_mode_als) {
+	if (obj->hw->polling_mode_als == 0) {
 		databuf[0] = CM36652_REG_ALS_THDH;
 		databuf[1] = 0x00;
 		databuf[2] = atomic_read(&obj->als_thd_val_high);
