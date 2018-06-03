@@ -39,9 +39,7 @@ enum dvfs_kicker {
 	KIR_MM = 0,
 	KIR_DCS,
 	KIR_UFO,
-	KIR_UFS,
 	KIR_PERF,
-	KIR_ANC_MD32,
 	KIR_EFUSE,
 	KIR_PASR,
 	KIR_SDIO,
@@ -56,7 +54,6 @@ enum dvfs_kicker {
 	KIR_AUTOK_EMMC,
 	KIR_AUTOK_SDIO,
 	KIR_AUTOK_SD,
-	KIR_DDR800,
 	LAST_KICKER,
 };
 

@@ -1000,7 +1000,6 @@ int spm_vcorefs_get_opp(void)
 	return level;
 }
 
-int ddr800_en;
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	u32 mask;
@@ -1009,17 +1008,6 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	u32 dvfs_mask_fix[NUM_OPP] = { 0x7, 0xb, 0xd, 0xd};
 	u32 dvfs_mask[NUM_OPP] = { 0x7, 0x3, 0x1, 0x1};
 	u32 dvfs_level[NUM_OPP] = { 0x10, 0x4, 0x2, 0x2};
-
-	if (kicker == KIR_DDR800) {
-		ddr800_en = 1;
-		return 0;
-	}
-
-	if (ddr800_en == 1) {
-		dvfs_mask_fix[3] = 0xe;
-		dvfs_mask[3] = 0x0;
-		dvfs_level[3] = 0x1;
-	}
 
 	if (fix)
 		mask = dvfs_mask_fix[opp];
