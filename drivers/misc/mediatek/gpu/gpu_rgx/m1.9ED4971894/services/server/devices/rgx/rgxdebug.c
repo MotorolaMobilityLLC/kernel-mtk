@@ -2753,8 +2753,10 @@ static inline void _RGXMipsDumpTLBEntry(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrint
                                         IMG_UINT32 ui32Index)
 {
 	IMG_BOOL bDumpRemapEntries = (psRemapEntry0 != NULL && psRemapEntry1 != NULL) ? IMG_TRUE : IMG_FALSE;
-	IMG_UINT32 ui32TLBEntryPA0 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo0),
-		   ui32TLBEntryPA1 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo1);
+	IMG_UINT64 ui64PA0 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo0);
+	IMG_UINT64 ui64PA1 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo1);
+	IMG_UINT64 ui64Remap0AddrOut, ui64Remap1AddrOut;
+	IMG_UINT32 ui32Remap0AddrIn, ui32Remap1AddrIn;
 
 	static const IMG_CHAR * const apszPermissionInhibit[4] =
 	{
@@ -2790,44 +2792,53 @@ static inline void _RGXMipsDumpTLBEntry(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrint
 
 	if(bDumpRemapEntries)
 	{
+		/* RemapAddrIn is always 4k aligned and on 32 bit */
+		ui32Remap0AddrIn = psRemapEntry0->ui32RemapAddrIn << 12;
+		ui32Remap1AddrIn = psRemapEntry1->ui32RemapAddrIn << 12;
+
+		/* RemapAddrOut is always 4k aligned and on 32 or 36 bit */
+		ui64Remap0AddrOut = (IMG_UINT64)psRemapEntry0->ui32RemapAddrOut << 12;
+		ui64Remap1AddrOut = (IMG_UINT64)psRemapEntry1->ui32RemapAddrOut << 12;
+
 		/* If TLB and remap entries match, then merge them
 		*  else, print them separately
 		*/
-		if(ui32TLBEntryPA0 == psRemapEntry0->ui32RemapAddrIn
-		&& ui32TLBEntryPA1 == psRemapEntry1->ui32RemapAddrIn)
+		if ((IMG_UINT32)ui64PA0 == ui32Remap0AddrIn &&
+		    (IMG_UINT32)ui64PA1 == ui32Remap1AddrIn)
 		{
-			ui32TLBEntryPA0 = psRemapEntry0->ui32RemapAddrOut;
-			ui32TLBEntryPA1 = psRemapEntry1->ui32RemapAddrOut;
+			ui64PA0 = ui64Remap0AddrOut;
+			ui64PA1 = ui64Remap1AddrOut;
 			bDumpRemapEntries = IMG_FALSE;
 		}
 	}
 
-	PVR_DUMPDEBUG_LOG("%2u) VA 0x%08X (%3uk) -> PA0 0x%08X %s%s%s, PA1 0x%08X %s%s%s",
+	PVR_DUMPDEBUG_LOG("%2u) VA 0x%08X (%3uk) -> PA0 0x%08" IMG_UINT64_FMTSPECX " %s%s%s, "
+	                                           "PA1 0x%08" IMG_UINT64_FMTSPECX " %s%s%s",
 	                  ui32Index,
 			  psTLBEntry->ui32TLBHi,
 			  RGXMIPSFW_TLB_GET_PAGE_SIZE(psTLBEntry->ui32TLBPageMask),
-			  ui32TLBEntryPA0,
+			  ui64PA0,
 			  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psTLBEntry->ui32TLBLo0)],
 			  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psTLBEntry->ui32TLBLo0)],
 			  apszCoherencyTLB[RGXMIPSFW_TLB_GET_COHERENCY(psTLBEntry->ui32TLBLo0)],
-			  ui32TLBEntryPA1,
+			  ui64PA1,
 			  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psTLBEntry->ui32TLBLo1)],
 			  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psTLBEntry->ui32TLBLo1)],
 			  apszCoherencyTLB[RGXMIPSFW_TLB_GET_COHERENCY(psTLBEntry->ui32TLBLo1)]);
 
 	if(bDumpRemapEntries)
 	{
-		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08X",
+		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08" IMG_UINT64_FMTSPECX,
 				  ui32Index,
-				  psRemapEntry0->ui32RemapAddrIn,
+				  ui32Remap0AddrIn,
 				  RGXMIPSFW_REMAP_GET_REGION_SIZE(psRemapEntry0->ui32RemapRegionSize),
-				  psRemapEntry0->ui32RemapAddrOut );
+				  ui64Remap0AddrOut );
 
-		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08X",
+		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08" IMG_UINT64_FMTSPECX,
 				  (ui32Index+16),
-				  psRemapEntry1->ui32RemapAddrIn,
+				  ui32Remap1AddrIn,
 				  RGXMIPSFW_REMAP_GET_REGION_SIZE(psRemapEntry1->ui32RemapRegionSize),
-				  psRemapEntry1->ui32RemapAddrOut );
+				  ui64Remap1AddrOut );
 	}
 }
 

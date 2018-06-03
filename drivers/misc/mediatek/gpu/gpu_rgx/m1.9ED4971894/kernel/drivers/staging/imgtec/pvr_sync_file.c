@@ -372,7 +372,7 @@ enum PVRSRV_ERROR pvr_sync_resolve_fence(
 		if (!array) {
 			pr_debug(FILE_NAME ": %s: Failed to resolve fence array %d\n",
 			       __func__, fence_to_resolve);
-			err = PVRSRV_ERROR_HANDLE_NOT_FOUND;
+			err = PVRSRV_ERROR_HANDLE_NOT_FOUND2;
 			goto err_put_fence;
 		}
 		fences = array->fences;
