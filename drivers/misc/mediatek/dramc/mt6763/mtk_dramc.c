@@ -78,10 +78,16 @@ static unsigned int mr19_cur;
 static void *(*get_emi_base)(void);
 #endif
 
+#define DRAMC_GET_EMI_WORKAROUND /* FIXME, waiting for mt_emi_base_get() porting done */
+
+#ifdef DRAMC_GET_EMI_WORKAROUND
+static void __iomem *EMI_BASE_ADDR; /* not initialise statics to 0 or NULL */
+#endif
+
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
-unsigned int CH_NUM = 2; /* FIXME, waiting for mt_emi_base_get() porting done */
+unsigned int CH_NUM;
 unsigned int CBT_MODE;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
@@ -1234,7 +1240,9 @@ unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset)
 unsigned int get_dram_data_rate(void)
 {
 	unsigned int u4ShuLevel, u4SDM_PCW, u4PREDIV, u4POSDIV, u4CKDIV4, u4VCOFreq, u4DataRate = 0;
+	int channels;
 
+	channels = get_emi_ch_num();
 	u4ShuLevel = get_shuffle_status();
 
 	u4SDM_PCW = readl(IOMEM(DDRPHY_CHA_BASE_ADDR + 0xd94 + 0x500 * u4ShuLevel)) >> 16;
@@ -1255,7 +1263,7 @@ unsigned int get_dram_data_rate(void)
 		else
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		if (CH_NUM == 1) {
+		if (channels == 1) {
 			if (u4DataRate == 3198)
 				u4DataRate = 3200;
 			else
@@ -1310,6 +1318,9 @@ int get_emi_ch_num(void)
 	if (CH_NUM)
 		return CH_NUM;
 
+#ifdef DRAMC_GET_EMI_WORKAROUND
+	emi_base = EMI_BASE_ADDR;
+#else
 	get_emi_base = (void *)symbol_get(mt_emi_base_get);
 	if (get_emi_base == NULL) {
 		pr_err("[get_emi_ch_num] mt_emi_base_get is NULL\n");
@@ -1317,10 +1328,11 @@ int get_emi_ch_num(void)
 	}
 
 	emi_base = get_emi_base();
-	emi_cona = readl(IOMEM(emi_base+0x000));
-
 	symbol_put(mt_emi_base_get);
 	get_emi_base = NULL;
+#endif
+
+	emi_cona = readl(IOMEM(emi_base+0x000));
 
 	switch ((emi_cona >> 8) & 0x3) {
 	case 0:
@@ -1341,6 +1353,9 @@ int get_emi_ch_num(void)
 int dram_steps_freq(unsigned int step)
 {
 	int freq = -1;
+	int channels;
+
+	channels = get_emi_ch_num();
 
 	switch (step) {
 	case 0:
@@ -1348,7 +1363,7 @@ int dram_steps_freq(unsigned int step)
 			/*freq = get_dram_data_rate();*/	/* DDR1800 or DDR1866 */
 			freq = 1866;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (CH_NUM == 1)
+			if (channels == 1)
 				freq = 3733;
 			else
 				freq = 3200;
@@ -1358,7 +1373,7 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1600;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (CH_NUM == 1)
+			if (channels == 1)
 				freq = 3200;
 			else
 				freq = 3200;
@@ -1368,7 +1383,7 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1600;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (CH_NUM == 1)
+			if (channels == 1)
 				freq = 3200;
 			else
 				freq = 2400;
@@ -1378,7 +1393,7 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1200;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (CH_NUM == 1)
+			if (channels == 1)
 				freq = 2400;
 			else
 				freq = 1600;
@@ -1923,5 +1938,26 @@ static void __exit dram_test_exit(void)
 
 postcore_initcall(dram_test_init);
 module_exit(dram_test_exit);
+
+#ifdef DRAMC_GET_EMI_WORKAROUND
+static int __init dram_emi_init(void)
+{
+	struct device_node *node;
+
+	/* DTS version */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,EMI");
+	if (node) {
+		EMI_BASE_ADDR = of_iomap(node, 0);
+		pr_err("dramc get EMI_BASE_ADDR @ %p\n", EMI_BASE_ADDR);
+	} else {
+		pr_err("can't find compatible node\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+postcore_initcall(dram_emi_init);
+#endif
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");
