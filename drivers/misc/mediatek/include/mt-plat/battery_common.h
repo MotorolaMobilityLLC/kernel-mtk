@@ -404,6 +404,7 @@ extern void mt_charger_enable_DP_voltage(int ison);
 
 /* usb header */
 extern bool mt_usb_is_device(void);
+extern bool is_usb_rdy(void);
 #if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
