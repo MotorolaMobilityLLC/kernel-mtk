@@ -1105,3 +1105,4 @@ CONFIG_USB_CONFIGFS_F_HID,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_MASS_STORAGE,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_RNDIS,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_SERIAL,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y
+CONFIG_MTK_CM_MGR,PLATFORM,morven-cf.yeh,,,,,,,,y
