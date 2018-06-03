@@ -2019,7 +2019,7 @@
 		clock-names = "MDP_TDSHP";
 	};
 
-	mtkfb {
+	mtkfb: mtkfb@0 {
 		compatible = "mediatek,mtkfb";
 	};
 
