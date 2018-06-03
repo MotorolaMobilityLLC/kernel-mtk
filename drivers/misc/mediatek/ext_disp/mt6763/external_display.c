@@ -1381,10 +1381,10 @@ int ext_disp_suspend(unsigned int session)
 
 	EXT_DISP_FUNC();
 
-	_ext_disp_path_lock();
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	ext_disp_esd_check_lock();
 #endif
+	_ext_disp_path_lock();
 
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || session != pgc->session) {
 		EXT_DISP_ERR("status is not EXTD_RESUME or session is not match\n");
@@ -1425,10 +1425,10 @@ int ext_disp_suspend(unsigned int session)
 	ext_disp_set_state(EXTD_SUSPEND);
 #endif
  done:
- #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
-	ext_disp_esd_check_unlock();
- #endif
 	_ext_disp_path_unlock();
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	ext_disp_esd_check_unlock();
+#endif
 
 	EXT_DISP_LOG("ext_disp_suspend done\n");
 	return ret;
@@ -1721,10 +1721,9 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		_ext_disp_path_unlock();
 		return -2;
 	}
-	_ext_disp_path_unlock();
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
-	external_display_idlemgr_kick((char *)__func__, 1);
+	external_display_idlemgr_kick((char *)__func__, 0);
 #endif
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
@@ -1775,8 +1774,6 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			pgc->ovl_req_state = EXTD_OVL_INSERTING;
 		}
 	}
-
-	_ext_disp_path_lock();
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	external_display_idlemgr_kick((char *)__func__, 0);
@@ -2048,9 +2045,9 @@ enum EXTD_OVL_REQ_STATUS ext_disp_get_ovl_req_status(unsigned int session)
 {
 	enum EXTD_OVL_REQ_STATUS ret = EXTD_OVL_NO_REQ;
 
-	_ext_disp_path_lock();
+/*	_ext_disp_path_lock();*/
 	ret = pgc->ovl_req_state;
-	_ext_disp_path_unlock();
+/*	_ext_disp_path_unlock();*/
 
 	return ret;
 }
@@ -2060,7 +2057,7 @@ int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 /*	EXT_DISP_FUNC();*/
 
 	if (EXTD_OVERLAY_CNT > 0) {
-		_ext_disp_path_lock();
+/*		_ext_disp_path_lock();*/
 		switch (action) {
 		case EXTD_OVL_NO_REQ:
 /*			if (pgc->ovl_req_state == EXTD_OVL_REMOVED)
@@ -2113,7 +2110,7 @@ int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 			break;
 		}
 
-		_ext_disp_path_unlock();
+/*		_ext_disp_path_unlock();*/
 	}
 
 	return 0;
@@ -2272,9 +2269,9 @@ int external_display_setbacklight(unsigned int level)
 	if (last_level == level)
 		return 0;
 
-#ifndef CONFIG_MTK_AAL_SUPPORT
+	ext_disp_esd_check_lock();
 	_ext_disp_path_lock();
-#endif
+
 	if (pgc->state == EXTD_SUSPEND) {
 		DISPERR("external sleep state set backlight invald\n");
 	} else {
@@ -2289,9 +2286,9 @@ int external_display_setbacklight(unsigned int level)
 		}
 		last_level = level;
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
-	_ext_disp_path_lock();
-#endif
+
+	_ext_disp_path_unlock();
+	ext_disp_esd_check_unlock();
 
 /*	DISPDBG("external_display_setbacklight done\n"); */
 	return ret;
