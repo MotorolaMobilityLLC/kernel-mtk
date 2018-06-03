@@ -67,7 +67,7 @@ int hps_set_PPM_request(unsigned int little_min, unsigned int little_max,
 /*
  * hps cpu num base
  */
-int hps_set_cpu_num_base(hps_base_type_e type, unsigned int little_cpu,
+int hps_set_cpu_num_base(enum hps_base_type_e type, unsigned int little_cpu,
 	unsigned int big_cpu)
 {
 	unsigned int num_online;
@@ -147,7 +147,8 @@ int hps_set_cpu_num_base(hps_base_type_e type, unsigned int little_cpu,
 	return 0;
 }
 
-int hps_get_cpu_num_base(hps_base_type_e type, unsigned int *little_cpu_ptr,
+int hps_get_cpu_num_base(enum hps_base_type_e type,
+			 unsigned int *little_cpu_ptr,
 			 unsigned int *big_cpu_ptr)
 {
 	if (hps_ctxt.init_state != INIT_STATE_DONE)
@@ -178,7 +179,7 @@ int hps_get_cpu_num_base(hps_base_type_e type, unsigned int *little_cpu_ptr,
 /*
  * hps cpu num limit
  */
-int hps_set_cpu_num_limit(hps_limit_type_e type, unsigned int little_cpu,
+int hps_set_cpu_num_limit(enum hps_limit_type_e type, unsigned int little_cpu,
 	unsigned int big_cpu)
 {
 	if (hps_ctxt.init_state != INIT_STATE_DONE)
@@ -246,7 +247,8 @@ int hps_set_cpu_num_limit(hps_limit_type_e type, unsigned int little_cpu,
 	return 0;
 }
 
-int hps_get_cpu_num_limit(hps_limit_type_e type, unsigned int *little_cpu_ptr,
+int hps_get_cpu_num_limit(enum hps_limit_type_e type,
+			  unsigned int *little_cpu_ptr,
 			  unsigned int *big_cpu_ptr)
 {
 	if (hps_ctxt.init_state != INIT_STATE_DONE)
