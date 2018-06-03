@@ -43,6 +43,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/spkprotect
 endif
 # Common object
+obj-y += mtk-soc-speaker-amp.o
 obj-y += mtk-auddrv-afe.o mtk-auddrv-gpio.o
 obj-y += mtk-soc-afe-control.o mtk-soc-pcm-common.o
 obj-$(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) += mtk-soc-offload-common.o
