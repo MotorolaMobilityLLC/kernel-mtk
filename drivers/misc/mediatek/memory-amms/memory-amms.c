@@ -39,6 +39,12 @@
 #include <linux/slab.h>
 #include <mt-plat/mtk_secure_api.h>
 
+#include <linux/kernel.h>
+#ifndef CONFIG_ARM64
+#include <asm/opcodes-sec.h>
+#include <asm/opcodes-virt.h>
+#endif
+#include <mt-plat/mtk_secure_api.h>
 
 struct work_struct *amms_work;
 bool amms_static_free;
