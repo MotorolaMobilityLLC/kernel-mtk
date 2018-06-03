@@ -1276,7 +1276,7 @@ bool SetI2SDacOut(unsigned int SampleRate, bool lowjitter, bool I2SWLen)
 	SetDLSrc2(SampleRate);
 
 	Audio_I2S_Dac |= (Soc_Aud_LR_SWAP_NO_SWAP << 31);
-	Audio_I2S_Dac |= (1 << 16);				/* select source from o3o4 */
+	Audio_I2S_Dac |= (0 << 16);				/* select source from o28o29 */
 	Audio_I2S_Dac |= (lowjitter << 12);			/* low gitter mode */
 	Audio_I2S_Dac |= (SampleRateTransform(SampleRate, Soc_Aud_Digital_Block_I2S_OUT_DAC) << 8);
 	Audio_I2S_Dac |= (Soc_Aud_INV_LRCK_NO_INVERSE << 5);
