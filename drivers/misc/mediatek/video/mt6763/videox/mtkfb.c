@@ -67,6 +67,10 @@
 #include "ddp_clkmgr.h"
 #include "ddp_log.h"
 #include "ddp_m4u.h"
+#include "extd_multi_control.h"
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+#include "external_display.h"
+#endif
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -167,7 +171,13 @@ unsigned int need_esd_check;
 unsigned int lcd_fps = 6000;
 wait_queue_head_t screen_update_wq;
 char mtkfb_lcm_name[256] = { 0 };
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+struct fb_info *ext_mtkfb_fb;
+unsigned long ext_fb_pa;
 
+unsigned int ext_lcd_fps = 6000;
+char ext_mtkfb_lcm_name[256] = { 0 };
+#endif
 
 DEFINE_SEMAPHORE(sem_flipping);
 DEFINE_SEMAPHORE(sem_early_suspend);
@@ -271,6 +281,31 @@ exit:
 }
 
 #if defined(CONFIG_PM_AUTOSLEEP)
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static int mtkfb1_blank(int blank_mode, struct fb_info *info)
+{
+	pr_debug("mtkfb1_blank blank mode :%d\n", blank_mode);
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		/*parameter 0 is to all external display should be resumed, 0x20003 is dual lcm session*/
+		external_display_resume(0x20003);
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		/*parameter 0 is to all external display should be suspend, 0x20003 is dual lcm session*/
+		external_display_suspend(0x20003);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#endif
+
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
 	enum mtkfb_power_mode prev_pm = primary_display_get_power_mode();
@@ -327,6 +362,18 @@ int mtkfb_set_backlight_level(unsigned int level)
 	return 0;
 }
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int mtkfb1_set_backlight_level(unsigned int level)
+{
+	MTKFB_FUNC();
+/*	DISPDBG("mtkfb1_set_backlight_level:%d Start\n", level); */
+	external_display_setbacklight(level);
+/*	DISPDBG("mtkfb1_set_backlight_level End\n"); */
+	return 0;
+}
+EXPORT_SYMBOL(mtkfb1_set_backlight_level);
+#endif
 
 int mtkfb_set_backlight_mode(unsigned int mode)
 {
@@ -1860,6 +1907,29 @@ static struct fb_ops mtkfb_ops = {
 #endif
 };
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+/* external_display fb */
+static struct fb_ops mtkfb1_ops = {
+	.owner = THIS_MODULE,
+	.fb_open = NULL,
+	.fb_release = NULL,
+	.fb_setcolreg = NULL,
+	.fb_pan_display = NULL,
+	.fb_fillrect = NULL,
+	.fb_copyarea = NULL,
+	.fb_imageblit = NULL,
+	.fb_cursor = NULL,
+	.fb_check_var = NULL,
+	.fb_set_par = NULL,
+	.fb_ioctl = NULL,
+#ifdef CONFIG_COMPAT
+	.fb_compat_ioctl = NULL,
+#endif
+#if defined(CONFIG_PM_AUTOSLEEP)
+	.fb_blank = mtkfb1_blank,
+#endif
+};
+#endif
 /*
  * ---------------------------------------------------------------------------
  * Sysfs interface
@@ -2082,6 +2152,17 @@ char *mtkfb_find_lcm_driver(void)
 	return mtkfb_lcm_name;
 }
 
+/*
+*
+	#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	static char *ext_mtkfb_find_lcm_driver(void)
+	{
+		_parse_tag_videolfb();
+		DISPDBG("%s, %s\n", __func__, ext_mtkfb_lcm_name);
+		return ext_mtkfb_lcm_name;
+	}
+	#endif
+*/
 int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 {
 	/* this is for debug, used in bring up day */
@@ -2113,11 +2194,27 @@ struct tag_videolfb {
 	u32 vram;
 	char lcmname[1];	/* this is the minimum size */
 };
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+struct tag_ext_videolfb {
+	u64 ext_fb_base;
+	u32 ext_islcmfound;
+	u32 ext_fps;
+	u32 ext_vram;
+	char ext_lcmname[1];	/* this is the minimum size */
+};
+#endif
 unsigned int islcmconnected;
 unsigned int is_lcm_inited;
 unsigned int vramsize;
 phys_addr_t fb_base;
 static int is_videofb_parse_done;
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+unsigned int ext_islcmconnected;
+unsigned int ext_is_lcm_inited;
+unsigned int ext_vramsize;
+phys_addr_t ext_fb_base;
+#endif
 
 static int __parse_tag_videolfb_extra(struct device_node *node)
 {
@@ -2198,6 +2295,7 @@ static int __parse_tag_videolfb(struct device_node *node)
 		vramsize = videolfb_tag->vram;
 		fb_base = videolfb_tag->fb_base;
 		is_lcm_inited = 1;
+
 		return 0;
 	}
 
@@ -2205,6 +2303,34 @@ static int __parse_tag_videolfb(struct device_node *node)
 	return -1;
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int __init __parse_tag_ext_videolfb(unsigned long node)
+{
+	struct tag_ext_videolfb *tag_ext_videolfb = NULL;
+	unsigned long size = 0;
+
+	tag_ext_videolfb = (struct tag_ext_videolfb *)of_get_flat_dt_prop(node, "atag,ext_videolfb", (int *)&size);
+	if (tag_ext_videolfb) {
+		memset((void *)ext_mtkfb_lcm_name, 0, sizeof(ext_mtkfb_lcm_name));
+		strcpy((char *)ext_mtkfb_lcm_name, tag_ext_videolfb->ext_lcmname);
+		ext_mtkfb_lcm_name[strlen(tag_ext_videolfb->ext_lcmname)] = '\0';
+
+		ext_lcd_fps = tag_ext_videolfb->ext_fps;
+		if (ext_lcd_fps == 0)
+			ext_lcd_fps = 6000;
+
+		ext_islcmconnected = tag_ext_videolfb->ext_islcmfound;
+		ext_vramsize = tag_ext_videolfb->ext_vram;
+		ext_fb_base = tag_ext_videolfb->ext_fb_base;
+		ext_is_lcm_inited = 1;
+
+		return 0;
+	}
+
+	DISPCHECK("[DT][ext_videolfb] tag_ext_videolfb not found\n");
+	return -1;
+}
+#endif
 
 static int _parse_tag_videolfb(void)
 {
@@ -2222,6 +2348,9 @@ static int _parse_tag_videolfb(void)
 
 	if (chosen_node) {
 		ret = __parse_tag_videolfb(chosen_node);
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+		ret = __parse_tag_ext_videolfb(chosen_node);
+#endif
 		if (!ret)
 			goto found;
 		ret = __parse_tag_videolfb_extra(chosen_node);
@@ -2240,6 +2369,15 @@ found:
 	DISPCHECK("[DT][videolfb] fb_base    = 0x%lx\n", (unsigned long)fb_base);
 	DISPCHECK("[DT][videolfb] vram       = 0x%x (%d)\n", vramsize, vramsize);
 	DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	DISPCHECK("[DT][videolfb] ext_islcmfound = %d\n", ext_islcmconnected);
+	DISPCHECK("[DT][videolfb] ext_is_lcm_inited = %d\n", ext_is_lcm_inited);
+	DISPCHECK("[DT][videolfb] ext_fps		 = %d\n", ext_lcd_fps);
+	DISPCHECK("[DT][videolfb] ext_fb_base	 = 0x%lx\n", (unsigned long)ext_fb_base);
+	DISPCHECK("[DT][videolfb] ext_vram		 = 0x%x (%d)\n", ext_vramsize, ext_vramsize);
+	DISPCHECK("[DT][videolfb] ext_lcmname	 = %s\n", ext_mtkfb_lcm_name);
+#endif
 	return 0;
 }
 
@@ -2347,11 +2485,38 @@ static int update_test_kthread(void *data)
 }
 #endif
 
-/* static int mtkfb_probe(struct device *dev) */
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static struct fb_info *allocate_fb_by_index(struct device *dev)
+{
+	struct mtkfb_device *fbdev = NULL;
+	struct fb_info *fb_dev = NULL;
+
+	fb_dev = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
+	if (!fb_dev) {
+		DISPERR("unable to allocate memory for device info\n");
+		return NULL;
+	}
+
+	fbdev = (struct mtkfb_device *)fb_dev->par;
+	fbdev->fb_info = fb_dev;
+	fbdev->dev = dev;
+	/*dev_set_drvdata(dev, fbdev);*/
+
+	fb_dev->fbops = &mtkfb1_ops;
+	fb_dev->flags = FBINFO_FLAG_DEFAULT;
+
+	return fb_dev;
+}
+#endif
+
 static int mtkfb_probe(struct platform_device *pdev)
 {
 	struct mtkfb_device *fbdev = NULL;
 	struct fb_info *fbi;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	/* external display fb */
+	struct fb_info *fb1;
+#endif
 	int init_state;
 	int r = 0;
 
@@ -2481,6 +2646,15 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 	DISPMSG("register_framebuffer done\n");
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	DISPDBG("mtkfb_probe register fb1\n");
+	/* register external display fb */
+	fb1 = allocate_fb_by_index(&pdev->dev);
+	register_framebuffer(fb1);
+	DISPMSG("register_ext_framebuffer done\n");
+#endif
+
 #ifdef FPGA_DEBUG_PAN
 	test_task = kthread_create(update_test_kthread, NULL, "update_test_kthread");
 	wake_up_process(test_task);

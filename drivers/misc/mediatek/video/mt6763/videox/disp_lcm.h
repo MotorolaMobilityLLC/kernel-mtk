@@ -39,6 +39,7 @@ extern unsigned int lcm_count;
 
 
 struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited);
+struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited);
 int disp_lcm_init(struct disp_lcm_handle *plcm, int force);
 LCM_PARAMS *disp_lcm_get_params(struct disp_lcm_handle *plcm);
 LCM_INTERFACE_ID disp_lcm_get_interface_id(struct disp_lcm_handle *plcm);

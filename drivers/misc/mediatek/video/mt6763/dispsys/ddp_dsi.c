@@ -2497,6 +2497,19 @@ static void lcm_set_reset_pin(UINT32 value)
 #endif
 }
 
+static void lcm1_set_reset_pin(UINT32 value)
+{
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT1);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT0);
+}
+
+static void lcm1_set_te_pin(void)
+{
+	disp_dts_gpio_select_state(DTS_GPIO_STATE_TE1_MODE_TE);
+}
+
 static void lcm_udelay(UINT32 us)
 {
 	udelay(us);
@@ -2637,6 +2650,7 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_reset_pin = lcm_set_reset_pin;
 	utils->udelay = lcm_udelay;
 	utils->mdelay = lcm_mdelay;
+	utils->set_te_pin = NULL;
 	if (module == DISP_MODULE_DSI0) {
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
@@ -2646,6 +2660,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_set_cmdq_V11 = DSI_set_cmdq_V11_wrapper_DSI0;
 		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
+		utils->set_reset_pin = lcm1_set_reset_pin;
+		utils->set_te_pin = lcm1_set_te_pin;
 		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI1;
 		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI1;
 		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSI1;
@@ -2782,6 +2798,17 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		}
 		/*__close_dsi_default_clock(module); */
 	}
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	if (module == DISP_MODULE_DSI1) {
+		/*set DSI1 TE source*/
+		DSI_MASKREG32(NULL, DISP_REG_CONFIG_MMSYS_MISC, 0x2, 0x2);
+		DISPCHECK("set DISP_REG_CONFIG_MMSYS_MISC DSI1_TE, value:0x%08x\n",
+			INREG32(DISP_REG_CONFIG_MMSYS_MISC));
+		/*set GPIO DSI1_TE mode*/
+		lcm1_set_te_pin();
+	}
+#endif
 
 	return DSI_STATUS_OK;
 }

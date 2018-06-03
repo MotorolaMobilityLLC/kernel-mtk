@@ -345,12 +345,14 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-	ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
-	if (ret) {
-		DISPERR("cmdqRecCreate FAIL, ret=%d\n", ret);
-		goto Exit;
-	} else {
-		DISPDBG("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
+	if (pgc->cmdq_handle_config == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
+		if (ret) {
+			DISPERR("cmdqRecCreate FAIL, ret=%d\n", ret);
+			goto Exit;
+		} else {
+			DISPDBG("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
+		}
 	}
 	/* Set fake cmdq engineflag for judge path scenario */
 	cmdqRecSetEngine(pgc->cmdq_handle_config,

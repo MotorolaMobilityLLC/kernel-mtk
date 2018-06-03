@@ -26,6 +26,10 @@ extern unsigned int islcmconnected;
 void primary_display_check_recovery_init(void);
 void primary_display_esd_check_enable(int enable);
 unsigned int need_wait_esd_eof(void);
+
+void external_display_check_recovery_init(void);
+void external_display_esd_check_enable(int enable);
+
 void set_esd_check_mode(unsigned int mode);
 
 #endif

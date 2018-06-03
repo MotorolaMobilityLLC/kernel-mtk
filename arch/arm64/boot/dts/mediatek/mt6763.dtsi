@@ -1968,6 +1968,11 @@
 		status = "disabled";
 	};
 
+	dsi_te_1: dsi_te_1 {
+		compatible = "mediatek, dsi_te_1-eint";
+		status = "disabled";
+	};
+
 	mhl:mhl@0 {
 		compatible = "mediatek,extd_dev";
 	};

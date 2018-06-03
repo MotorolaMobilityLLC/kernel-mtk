@@ -295,6 +295,12 @@ struct disp_idlemgr_context {
 	int session_mode_before_enter_idle;
 	int is_primary_idle;
 	int cur_lp_cust_mode;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	struct task_struct  *external_display_idlemgr_task;
+	wait_queue_head_t  ext_idlemgr_wait_queue;
+	unsigned long long ext_idlemgr_last_kick_time;
+	int is_external_idle;
+#endif
 };
 
 struct disp_ddp_path_config {

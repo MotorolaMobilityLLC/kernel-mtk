@@ -98,6 +98,8 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module, enum DDP_MODE dd
 
 	if (dest_module == DISP_MODULE_DSI0 || dest_module == DISP_MODULE_DSIDUAL) {
 		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DSI0;
+	} else if (dest_module == DISP_MODULE_DSI1) {
+		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DSI1;
 	} else if (dest_module == DISP_MODULE_DPI) {
 		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DPI;
 	} else {

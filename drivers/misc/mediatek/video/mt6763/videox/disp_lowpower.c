@@ -43,6 +43,9 @@
 #include "disp_utils.h"
 #include "disp_session.h"
 #include "primary_display.h"
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+#include "external_display.h"
+#endif
 #include "disp_helper.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
@@ -79,6 +82,9 @@
 static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
+#endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LPM);
@@ -88,6 +94,9 @@ static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LPM);
 /* Local API */
 /*********************************************************************************************************************/
 static int _primary_path_idlemgr_monitor_thread(void *data);
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+static int _external_path_idlemgr_monitor_thread(void *data);
+#endif
 
 static struct disp_idlemgr_context *_get_idlemgr_context(void)
 {
@@ -103,7 +112,13 @@ static struct disp_idlemgr_context *_get_idlemgr_context(void)
 		g_idlemgr_context.cur_lp_cust_mode = 0;
 		g_idlemgr_context.primary_display_idlemgr_task
 			= kthread_create(_primary_path_idlemgr_monitor_thread, NULL, "disp_idlemgr");
-
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+		init_waitqueue_head(&(g_idlemgr_context.ext_idlemgr_wait_queue));
+		g_idlemgr_context.is_external_idle = 0;
+		g_idlemgr_context.ext_idlemgr_last_kick_time = ~(0ULL);
+		g_idlemgr_context.external_display_idlemgr_task
+			= kthread_create(_external_path_idlemgr_monitor_thread, NULL, "ext_disp_idlemgr");
+#endif
 		/* wakeup process when idlemgr init */
 		/* wake_up_process(g_idlemgr_context.primary_display_idlemgr_task); */
 
@@ -532,9 +547,14 @@ void _primary_display_disable_mmsys_clk(void)
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					primary_get_sess_id(), 0, NULL, 1);
 	}
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE &&
+		primary_get_sess_mode() != DISP_SESSION_DECOUPLE_MIRROR_MODE)
+		return;
+#else
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
-
+#endif
 	/* blocking flush before stop trigger loop */
 	_blocking_flush();
 	/* no  need lock now */
@@ -577,8 +597,14 @@ void _primary_display_enable_mmsys_clk(void)
 	struct disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE &&
+		primary_get_sess_mode() != DISP_SESSION_DECOUPLE_MIRROR_MODE)
+		return;
+#else
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
+#endif
 
 	/* do something */
 	DISPINFO("[LP]1.dpmanager path power on[begin]\n");
@@ -1199,3 +1225,259 @@ unsigned int time_to_line(unsigned int ms, unsigned int width)
 
 	return line;
 }
+
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int external_display_idlemgr_init(void)
+{
+	wake_up_process(idlemgr_pgc->external_display_idlemgr_task);
+	return 0;
+}
+
+static int external_display_set_idle_stat(int is_idle)
+{
+	int old_stat = idlemgr_pgc->is_external_idle;
+
+	idlemgr_pgc->is_external_idle = is_idle;
+	return old_stat;
+}
+
+/* Need blocking for stop trigger loop  */
+int _ext_blocking_flush(void)
+{
+	int ret = 0;
+	struct cmdqRecStruct *handle = NULL;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_MHL_DISP, &handle);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		return -1;
+	}
+	/* Set fake cmdq engineflag for judge path scenario */
+	cmdqRecSetEngine(handle,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+	cmdqRecReset(handle);
+
+	_ext_cmdq_insert_wait_frame_done_token_no_clear(handle);
+
+	cmdqRecFlush(handle);
+	cmdqRecDestroy(handle);
+	handle = NULL;
+
+	return ret;
+}
+
+void _external_display_disable_mmsys_clk(void)
+{
+	/* blocking flush before stop trigger loop */
+	_ext_blocking_flush();
+	/* no  need lock now */
+	if (ext_disp_cmdq_enabled()) {
+		DISPINFO("[LP]1.external display cmdq trigger loop stop[begin]\n");
+		_cmdq_stop_extd_trigger_loop();
+		DISPINFO("[LP]1.external display cmdq trigger loop stop[end]\n");
+	}
+
+	dpmgr_path_stop(ext_disp_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPINFO("[LP]2.external display path stop[end]\n");
+
+	dpmgr_path_reset(ext_disp_get_dpmgr_handle(), CMDQ_DISABLE);
+
+	/* can not release fence here */
+	dpmgr_path_power_off_bypass_pwm(ext_disp_get_dpmgr_handle(), CMDQ_DISABLE);
+
+	DISPINFO("[LP]3.external dpmanager path power off[end]\n");
+
+}
+
+void _external_display_enable_mmsys_clk(void)
+{
+	struct disp_ddp_path_config *data_config;
+	struct ddp_io_golden_setting_arg gset_arg;
+
+	/* do something */
+	DISPINFO("[LP]1.external dpmanager path power on[begin]\n");
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(ext_disp_get_dpmgr_handle());
+
+	dpmgr_path_init(ext_disp_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPINFO("[LP]1.external dpmanager path power on[end]\n");
+
+	data_config = dpmgr_path_get_last_config(ext_disp_get_dpmgr_handle());
+
+	data_config->dst_dirty = 1;
+	data_config->ovl_dirty = 1;
+	data_config->rdma_dirty = 1;
+	dpmgr_path_config(ext_disp_get_dpmgr_handle(), data_config, NULL);
+
+	dpmgr_path_ioctl(ext_disp_get_dpmgr_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	DISPINFO("[LP]2.external dpmanager path config[end]\n");
+
+	dpmgr_path_start(ext_disp_get_dpmgr_handle(), CMDQ_DISABLE);
+
+	DISPINFO("[LP]3.external dpmgr path start[end]\n");
+
+	if (dpmgr_path_is_busy(ext_disp_get_dpmgr_handle()))
+		DISPERR("[LP]3.Fatal error, we didn't trigger ext path but it's already busy\n");
+
+	if (ext_disp_cmdq_enabled()) {
+		DISPINFO("[LP]4.start external cmdq[begin]\n");
+		_cmdq_start_extd_trigger_loop();
+		DISPINFO("[LP]4.start external cmdq[end]\n");
+	}
+}
+
+void _ext_cmd_mode_enter_idle(void)
+{
+	DISPMSG("[disp_lowpower]%s\n", __func__);
+
+	/* please keep last */
+	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
+		/* need delay to make sure done??? */
+		_external_display_disable_mmsys_clk();
+	}
+}
+
+void _ext_cmd_mode_leave_idle(void)
+{
+	DISPMSG("[disp_lowpower]%s\n", __func__);
+
+	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+		_external_display_enable_mmsys_clk();
+}
+
+int external_display_idlemgr_enter_idle_nolock(void)
+{
+	int ret = 0;
+
+	_ext_cmd_mode_enter_idle();
+	return ret;
+}
+
+void external_display_idlemgr_leave_idle_nolock(void)
+{
+	_ext_cmd_mode_leave_idle();
+}
+
+static int _external_path_idlemgr_monitor_thread(void *data)
+{
+	int ret = 0;
+
+	msleep(16000);
+	while (1) {
+		msleep_interruptible(100); /* 100ms */
+		ret = wait_event_interruptible(idlemgr_pgc->ext_idlemgr_wait_queue,
+					atomic_read(&ext_idlemgr_task_wakeup));
+
+		ext_disp_manual_lock();
+
+		if (ext_disp_get_state() != EXTD_RESUME) {
+			ext_disp_manual_unlock();
+			ext_disp_wait_state(EXTD_RESUME, MAX_SCHEDULE_TIMEOUT);
+			continue;
+		}
+
+		if (external_display_is_idle()) {
+			ext_disp_manual_unlock();
+			continue;
+		}
+
+		if (((local_clock() - idlemgr_pgc->ext_idlemgr_last_kick_time) / 1000) < 100 * 1000) {
+			/* kicked in 100ms, it's not idle */
+			ext_disp_manual_unlock();
+			continue;
+		}
+		/* mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_START, 0, 0); */
+		DISPINFO("[disp_lowpower]external enter idle state\n");
+
+		/* enter idle state */
+		if (external_display_idlemgr_enter_idle_nolock() < 0) {
+			ext_disp_manual_unlock();
+			continue;
+		}
+		external_display_set_idle_stat(1);
+
+		ext_disp_manual_unlock();
+
+		wait_event_interruptible(idlemgr_pgc->ext_idlemgr_wait_queue, !external_display_is_idle());
+
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
+void external_display_sodi_rule_init(void)
+{
+	/* enable sodi when display driver is ready */
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifndef NO_SPM
+	spm_enable_sodi3(1);
+	spm_enable_sodi(1);
+#endif
+#endif
+}
+
+int external_display_lowpower_init(void)
+{
+	/*	set_fps(60); */
+	/* backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power); */
+
+	/* init idlemgr */
+	if (disp_helper_get_option(DISP_OPT_IDLE_MGR) && get_boot_mode() == NORMAL_BOOT)
+		external_display_idlemgr_init();
+
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		external_display_sodi_rule_init();
+
+	return 0;
+}
+
+int external_display_is_idle(void)
+{
+	return idlemgr_pgc->is_external_idle;
+}
+
+void enable_ext_idlemgr(unsigned int flag)
+{
+	if (flag) {
+		DISPCHECK("[disp_lowpower]enable ext_idlemgr\n");
+		atomic_set(&ext_idlemgr_task_wakeup, 1);
+		wake_up_interruptible(&(idlemgr_pgc->ext_idlemgr_wait_queue));
+	} else {
+		DISPCHECK("[disp_lowpower]disable ext_idlemgr\n");
+		atomic_set(&ext_idlemgr_task_wakeup, 0);
+		external_display_idlemgr_kick((char *)__func__, 1);
+	}
+}
+
+void external_display_idlemgr_kick(const char *source, int need_lock)
+{
+	char log[128] = "";
+
+	/* DISP_SYSTRACE_BEGIN("%s\n", __func__); */
+	/* mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_PULSE, 1, 0); */
+	snprintf(log, sizeof(log), "[kick]%s kick at %lld\n", source, sched_clock());
+	kick_logger_dump(log);
+	/* get primary lock to protect idlemgr_last_kick_time and primary_display_is_idle() */
+	if (need_lock)
+		ext_disp_manual_lock();
+	/* update kick timestamp */
+	idlemgr_pgc->ext_idlemgr_last_kick_time = sched_clock();
+	if (external_display_is_idle()) {
+		external_display_idlemgr_leave_idle_nolock();
+		external_display_set_idle_stat(0);
+
+		/* mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_END, 0, 0); */
+		/* wake up idlemgr process to monitor next idle stat */
+		wake_up_interruptible(&(idlemgr_pgc->ext_idlemgr_wait_queue));
+	}
+	if (need_lock)
+		ext_disp_manual_unlock();
+	/* DISP_SYSTRACE_END(); */
+}
+
+#endif
+
