@@ -554,6 +554,7 @@ static void aee_clk_data_rest(void)
 int cam_mtcmos_patch(int on)
 {
 	int larb2_cg = 0;
+
 	if (on) {
 		/* do something */
 		/* do something */
@@ -2332,6 +2333,7 @@ void subsys_if_on(void)
 		pr_debug("suspend warning: SYS_CONN is on!!!\n");
 	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
 		pr_debug("suspend warning: SYS_DIS is on!!!\n");
+		check_mm0_clk_sts();
 		ret++;
 	}
 	if ((sta & (1U << 4)) && (sta_s & (1U << 4))) {
@@ -2340,10 +2342,12 @@ void subsys_if_on(void)
 	}
 	if ((sta & (1U << 5)) && (sta_s & (1U << 5))) {
 		pr_debug("suspend warning: SYS_ISP is on!!!\n");
+		check_img_clk_sts();
 		ret++;
 	}
 	if ((sta & (1U << 21)) && (sta_s & (1U << 21))) {
 		pr_debug("suspend warning: SYS_VEN is on!!!\n");
+		check_ven_clk_sts();
 		ret++;
 	}
 	if ((sta & (1U << 23)) && (sta_s & (1U << 23))) {
@@ -2354,6 +2358,7 @@ void subsys_if_on(void)
 		pr_debug("suspend warning: SYS_AUDIO is on!!!\n");
 	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
 		pr_debug("suspend warning: SYS_CAM is on!!!\n");
+		check_cam_clk_sts();
 		ret++;
 	}
 	if ((sta & (1U << 30)) && (sta_s & (1U << 30))) {

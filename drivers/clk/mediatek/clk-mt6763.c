@@ -2034,11 +2034,27 @@ void armpll_control(int id, int on)
 void check_mm0_clk_sts(void)
 {
 	/* confirm mm0 clk */
-	pr_debug("%s: MM_CG = 0x%08x, 0x%08x\n", __func__, clk_readl(MM_CG_CON0), clk_readl(MM_CG_CON1));
-	pr_debug("%s: CLK_CFG_0 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_0));
-	pr_debug("%s: MMPLL_CON0 = 0x%08x, 0x%08x\r\n", __func__, clk_readl(MMPLL_CON0), clk_readl(MMPLL_CON1));
-	pr_debug("%s: mmck = %dkhz\r\n", __func__, mt_get_ckgen_freq(3));
-	pr_debug("%s: mmpll = %dkhz\r\n", __func__, mt_get_abist_freq(27));
+	pr_debug("MM_CG = 0x%08x, 0x%08x\n", clk_readl(MM_CG_CON0), clk_readl(MM_CG_CON1));
+	pr_debug("CLK_CFG_0 = 0x%08x\r\n", clk_readl(CLK_CFG_0));
+	pr_debug("MMPLL_CON0 = 0x%08x, 0x%08x\r\n", clk_readl(MMPLL_CON0), clk_readl(MMPLL_CON1));
+}
+
+void check_img_clk_sts(void)
+{
+	/* confirm mm0 clk */
+	pr_debug("IMG_CG_CON = 0x%08x\n", clk_readl(IMG_CG_CON));
+}
+
+void check_ven_clk_sts(void)
+{
+	/* confirm mm0 clk */
+	pr_debug("VENC_CG_CON = 0x%08x\n", clk_readl(VENC_CG_CON));
+}
+
+void check_cam_clk_sts(void)
+{
+	/* confirm mm0 clk */
+	pr_debug("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
 }
 
 static int __init clk_mt6763_init(void)
