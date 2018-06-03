@@ -83,6 +83,11 @@ enum {
 	CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT,
 };
 
+/* Data of notifier from charger device */
+struct chgdev_notify {
+	bool vbusov_stat;
+};
+
 /*
 *Software Jeita
 *T0:-10
@@ -274,6 +279,7 @@ struct charger_manager {
 
 	bool cmd_discharging;
 	bool safety_timeout;
+	bool vbusov_stat;
 
 	/* battery warning */
 	unsigned int notify_code;
@@ -311,6 +317,7 @@ struct charger_manager {
 	bool charger_thread_timeout;
 	wait_queue_head_t  wait_que;
 	bool charger_thread_polling;
+	bool enable_polling;
 };
 
 /* charger related module interface */
