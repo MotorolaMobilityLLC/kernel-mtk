@@ -106,6 +106,8 @@ unsigned int spm_sodi_output_log(
 
 extern void spm_sodi_post_process(void);
 extern void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond);
+extern void spm_sodi_pcm_setup_before_wfi(
+		u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond);
 
 #endif /* __MTK_SPM_SODI_H__ */
 

@@ -403,3 +403,7 @@ bool mtk_idle_disp_is_pwm_rosc(void)
 	return disp_pwm_is_osc();
 }
 
+u32 get_spm_idle_flags1(void)
+{
+	return 0;
+}

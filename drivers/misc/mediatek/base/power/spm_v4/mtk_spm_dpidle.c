@@ -47,6 +47,7 @@
 #include <mt-plat/mtk_rtc.h>
 #endif
 
+#include <mtk_idle_internal.h>
 #include <mtk_idle_profile.h>
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_internal.h>
@@ -587,7 +588,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 		spm_crit2("ret %d", ret);
 }
 
-static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
+static void spm_dpidle_notify_sspm_before_wfi_async_wait(void)
 {
 	int ret = 0;
 
@@ -643,7 +644,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 #endif
 }
 
-static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
+static void spm_dpidle_notify_sspm_before_wfi_async_wait(void)
 {
 }
 
@@ -677,22 +678,6 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 
 	if (spm_dormant_sta < 0)
 		pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
-}
-
-static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
-		struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	unsigned int resource_usage = 0;
-
-	spm_dpidle_pre_process(operation_cond, pwrctrl);
-
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
-
-	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, resource_usage, 0);
-
-	if (sleep_dpidle)
-		mt_secure_call(MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS, pwrctrl->timer_val, pwrctrl->wake_src, 0);
 }
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
@@ -827,6 +812,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
+	u32 spm_flags1 = get_spm_idle_flags1();
 
 	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
@@ -835,7 +821,8 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -865,7 +852,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_START);
 
-	spm_dpidle_notify_spm_before_wfi_async_wait();
+	spm_dpidle_notify_sspm_before_wfi_async_wait();
 
 	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_END);
 
@@ -997,11 +984,9 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(true);
 #endif
-#endif /* CONFIG_MACH_MT6763 */
 
 	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
@@ -1057,7 +1042,7 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
-	spm_dpidle_notify_spm_before_wfi_async_wait();
+	spm_dpidle_notify_sspm_before_wfi_async_wait();
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
@@ -1125,11 +1110,9 @@ RESTORE_IRQ:
 
 	spm_dpidle_reset_footprint();
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(false);
 #endif
-#endif /* CONFIG_MACH_MT6763 */
 
 #if 1
 	if (last_wr == WR_PCM_ASSERT)

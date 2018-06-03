@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <mt-plat/mtk_secure_api.h>
+
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
 #endif
@@ -22,6 +24,7 @@
 #include <mtk_pmic_api_buck.h>
 #include <mtk_spm_sodi_cmdq.h>
 #include <mtk_spm_vcore_dvfs.h>
+#include <mtk_spm_resource_req_internal.h>
 
 
 /*
@@ -84,3 +87,36 @@ void spm_sodi3_post_process(void)
 #endif
 }
 
+void spm_sodi_pcm_setup_before_wfi(
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
+{
+	unsigned int resource_usage;
+
+	spm_sodi_pre_process(pwrctrl, operation_cond);
+
+	__spm_sync_pcm_flags(pwrctrl);
+
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
+		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+}
+
+void spm_sodi3_pcm_setup_before_wfi(
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
+{
+	unsigned int resource_usage;
+
+	spm_sodi3_pre_process(pwrctrl, operation_cond);
+
+	__spm_sync_pcm_flags(pwrctrl);
+
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
+		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI3, PWR_WDT_DISABLE, pwrctrl->wdt_disable);
+}

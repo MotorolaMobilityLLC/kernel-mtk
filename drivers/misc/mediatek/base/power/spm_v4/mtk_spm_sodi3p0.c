@@ -171,24 +171,6 @@ static void spm_sodi3_notify_sspm_after_wfi_async_wait(void)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-static void spm_sodi3_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	unsigned int resource_usage;
-
-	spm_sodi3_pre_process(pwrctrl, operation_cond);
-
-	__spm_sync_pcm_flags(pwrctrl);
-
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	resource_usage = spm_get_resource_usage();
-
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
-		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
-	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-		SPM_PWR_CTRL_SODI3, PWR_WDT_DISABLE, pwrctrl->wdt_disable);
-}
-
 static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	spm_sodi3_post_process();
@@ -253,6 +235,7 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	u32 cpu = spm_data;
+	u32 spm_flags1 = get_spm_idle_flags1();
 	unsigned int operation_cond = 0;
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
@@ -267,7 +250,8 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
 
 	pwrctrl->timer_val = PCM_SEC_TO_TICK(2);
 
