@@ -21,7 +21,7 @@
 #include "fm_cmd.h"
 
 static fm_bool bRDS_FirstIn = fm_false;
-static fm_u32 gBLER_CHK_INTERVAL = 5000;
+static fm_u32 gBLER_CHK_INTERVAL = 500;
 static fm_u16 GOOD_BLK_CNT = 0, BAD_BLK_CNT;
 static fm_u8 BAD_BLK_RATIO;
 
@@ -252,14 +252,14 @@ fm_bool mt6627_RDS_OnOff(rds_t *dst, fm_bool bFlag)
 		mt6627_RDS_Init_Data(dst);
 		ret = mt6627_RDS_enable();
 		if (ret) {
-			WCN_DBG(FM_NTC | RDSC, "mt6630_RDS_OnOff enable failed\n");
+			WCN_DBG(FM_NTC | RDSC, "mt6627_RDS_OnOff enable failed\n");
 			return fm_false;
 		}
 	} else {
 		mt6627_RDS_Init_Data(dst);
 		ret = mt6627_RDS_disable();
 		if (ret) {
-			WCN_DBG(FM_NTC | RDSC, "mt6630_RDS_OnOff disable failed\n");
+			WCN_DBG(FM_NTC | RDSC, "mt6627_RDS_OnOff disable failed\n");
 			return fm_false;
 		}
 	}

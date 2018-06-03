@@ -1532,6 +1532,8 @@ fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
 fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 {
 	fm_s32 ret = 0;
+	fm_s32 len;
+	struct rds_raw_t rds_log;
 
 	if (fm_low_ops.bi.mute == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1551,6 +1553,20 @@ fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 
 	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
 
+	/* clean RDS first in case RDS event report before tune success */
+	/* clean RDS data */
+	fm_memset(fm->pstRDSData, 0, sizeof(rds_t));
+
+	/* clean RDS log buffer */
+	do {
+		ret = fm_rds_log_get(fm, (struct rds_rx_t *)&(rds_log.data), &len);
+		rds_log.dirty = TRUE;
+		rds_log.len = (len < sizeof(rds_log.data)) ? len : sizeof(rds_log.data);
+		WCN_DBG(FM_ALT | MAIN, "clean rds log, rds_log.len =%d\n", rds_log.len);
+		if (ret < 0)
+			break;
+	} while (rds_log.len > 0);
+
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON) {
 		parm->err = FM_BADSTATUS;
 		ret = -EPERM;
@@ -1562,9 +1578,6 @@ fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 		WCN_DBG(FM_ALT | MAIN, "FM ramp down failed\n");
 		goto out;
 	}
-
-	if (fm_cur_freq_get() != parm->freq)
-		fm_memset(fm->pstRDSData, 0, sizeof(rds_t));
 
 	fm_op_state_set(fm, FM_STA_TUNE);
 	WCN_DBG(FM_ALT | MAIN, "tuning to %d\n", parm->freq);
@@ -2115,7 +2128,7 @@ static fm_s32 fm_rds_parser(struct rds_rx_t *rds_raw, fm_s32 rds_size)
 	FM_UNLOCK(fm_read_lock);
 
 	if ((pstRDSData->event_status != 0x0000) && (pstRDSData->event_status != RDS_EVENT_AF_LIST)) {
-		WCN_DBG(FM_NTC | MAIN, "Notify user to read, [event:%04x]\n", pstRDSData->event_status);
+		WCN_DBG(FM_NTC | MAIN, "Notify user to read, [event:0x%04x]\n", pstRDSData->event_status);
 		FM_EVENT_SEND(fm->rds_event, FM_RDS_DATA_READY);
 	}
 

@@ -124,7 +124,7 @@ typedef struct rds_rt_t {
 typedef struct rds_raw_t {
 	fm_s32 dirty;		/* indicate if the data changed or not */
 	fm_s32 len;		/* the data len form chip */
-	fm_u8 data[146];
+	fm_u8 data[148];
 } rds_raw_t;
 
 typedef struct rds_group_cnt_t {
@@ -197,7 +197,7 @@ typedef enum rds_event_status_t {
 	RDS_EVENT_RDS_TIMER = 0x8000	/* Timer for RDS Bler Check. ---- BLER  block error rate */
 } rds_event_status_t;
 
-#define RDS_LOG_SIZE 2
+#define RDS_LOG_SIZE 1
 struct rds_log_t {
 	struct rds_rx_t rds_log[RDS_LOG_SIZE];
 	fm_s32 log_len[RDS_LOG_SIZE];
