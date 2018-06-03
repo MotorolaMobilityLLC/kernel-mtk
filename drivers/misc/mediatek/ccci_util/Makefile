@@ -21,9 +21,13 @@ ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
 ENABLE_CCCI_UTIL=y
 endif
 
+ifeq ($(TARGET_BUILD_VARIANT),user)
+	ccflags-y += -DCCCI_LOG_DISABLE
+else
 ifneq ($(TARGET_BUILD_VARIANT),eng)
-ifeq ($(CONFIG_EXTREME_LOW_RAM), y)
-ccflags-y += -DCCCI_LOG_DISABLE
+	ifeq ($(CONFIG_EXTREME_LOW_RAM), y)
+		ccflags-y += -DCCCI_LOG_DISABLE
+	endif
 endif
 endif
 
