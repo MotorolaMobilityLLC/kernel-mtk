@@ -21,6 +21,8 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc	\
 	-I$(srctree)/include/linux/	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/ppm_v2/src/mach/$(MTK_PLATFORM)/	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/ppm_v2/inc/	\
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
