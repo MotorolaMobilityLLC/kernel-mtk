@@ -919,7 +919,11 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	P_CONNECTION_SETTINGS_T prConnSettings;
 	P_BSS_DESC_T prBssDesc;
 	P_MSG_CH_REQ_T prMsgChReq;
+#if CFG_MULTI_SSID_SCAN
+	P_MSG_SCN_SCAN_REQ_V2 prScanReqMsg;
+#else
 	P_MSG_SCN_SCAN_REQ prScanReqMsg;
+#endif
 	P_AIS_REQ_HDR_T prAisReq;
 	ENUM_BAND_T eBand;
 	UINT_8 ucChannel;
@@ -1328,6 +1332,20 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 #endif
 			}
 
+#if CFG_MULTI_SSID_SCAN
+			prScanReqMsg = (P_MSG_SCN_SCAN_REQ_V2) cnmMemAlloc(prAdapter,
+									RAM_TYPE_MSG,
+									OFFSET_OF(MSG_SCN_SCAN_REQ_V2,
+										  aucIE) + u2ScanIELen);
+			if (!prScanReqMsg) {
+				ASSERT(0);	/* Can't trigger SCAN FSM */
+				return;
+			}
+
+			prScanReqMsg->rMsgHdr.eMsgId = MID_AIS_SCN_SCAN_REQ_V2;
+			prScanReqMsg->ucSeqNum = ++prAisFsmInfo->ucSeqNumOfScanReq;
+			prScanReqMsg->ucNetTypeIndex = (UINT_8) NETWORK_TYPE_AIS_INDEX;
+#else
 			prScanReqMsg = (P_MSG_SCN_SCAN_REQ) cnmMemAlloc(prAdapter,
 									RAM_TYPE_MSG,
 									OFFSET_OF(MSG_SCN_SCAN_REQ,
@@ -1340,6 +1358,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			prScanReqMsg->rMsgHdr.eMsgId = MID_AIS_SCN_SCAN_REQ;
 			prScanReqMsg->ucSeqNum = ++prAisFsmInfo->ucSeqNumOfScanReq;
 			prScanReqMsg->ucNetTypeIndex = (UINT_8) NETWORK_TYPE_AIS_INDEX;
+#endif
 
 #if CFG_SUPPORT_RDD_TEST_MODE
 			prScanReqMsg->eScanType = SCAN_TYPE_PASSIVE_SCAN;
@@ -1356,6 +1375,44 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			}
 #endif /* CFG_SUPPORT_ROAMING_ENC */
 
+#if CFG_MULTI_SSID_SCAN
+			if (prAisFsmInfo->eCurrentState == AIS_STATE_SCAN
+				|| prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN) {
+				if (prAisFsmInfo->ucScanSSIDNum == 0) {
+					/* Scan for all available SSID */
+					/* prScanReqMsg->eScanType = SCAN_TYPE_ACTIVE_SCAN; */
+					prScanReqMsg->ucSSIDType = SCAN_REQ_SSID_WILDCARD;
+					prScanReqMsg->ucSSIDNum = 0;
+				} else if (prAisFsmInfo->ucScanSSIDNum == 1 &&
+						prAisFsmInfo->arScanSSID[0].u4SsidLen == 0) {
+					/* prScanReqMsg->eScanType = SCAN_TYPE_ACTIVE_SCAN; */
+					prScanReqMsg->ucSSIDType = SCAN_REQ_SSID_WILDCARD;
+					prScanReqMsg->ucSSIDNum = 0;
+				} else {
+					/* prScanReqMsg->eScanType = SCAN_TYPE_ACTIVE_SCAN; */
+					prScanReqMsg->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
+					prScanReqMsg->ucSSIDNum = prAisFsmInfo->ucScanSSIDNum;
+					prScanReqMsg->prSsid = prAisFsmInfo->arScanSSID;
+				}
+			} else {
+				/* prScanReqMsg->eScanType = SCAN_TYPE_ACTIVE_SCAN; */
+
+				COPY_SSID(prAisFsmInfo->rRoamingSSID.aucSsid,
+							prAisFsmInfo->rRoamingSSID.u4SsidLen,
+							prConnSettings->aucSSID,
+							prConnSettings->ucSSIDLen);
+
+				/* Scan for determined SSID */
+				prScanReqMsg->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
+				prScanReqMsg->ucSSIDNum = 1;
+				prScanReqMsg->prSsid = &(prAisFsmInfo->rRoamingSSID);
+			}
+
+			/* using default channel dwell time/timeout value */
+			prScanReqMsg->u2ProbeDelay = 0;
+			prScanReqMsg->u2ChannelDwellTime = 0;
+			prScanReqMsg->u2TimeoutValue = 0;
+#else
 			if (prAisFsmInfo->eCurrentState == AIS_STATE_SCAN
 			    || prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN) {
 				if (prAisFsmInfo->ucScanSSIDLen == 0) {
@@ -1374,7 +1431,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					  prScanReqMsg->ucSSIDLength,
 					  prConnSettings->aucSSID, prConnSettings->ucSSIDLen);
 			}
-
+#endif
 			/* check if tethering is running and need to fix on specific channel */
 			if (cnmAisInfraChannelFixed(prAdapter, &eBand, &ucChannel) == TRUE) {
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
@@ -1407,7 +1464,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				u4size = sizeof(channel_t->arChnlInfoList);
 
 				DBGLOG(AIS, TRACE,
-					"SCAN: channel num = %d, total size=%d\n",
+					"Partial Scan: ucChannelListNum=%d, total size=%d\n",
 					prScanReqMsg->ucChannelListNum, u4size);
 
 				kalMemCopy(&(prScanReqMsg->arChnlInfoList), &(channel_t->arChnlInfoList),
@@ -1442,19 +1499,19 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
 				ASSERT(0);
 			}
+
+			DBGLOG(AIS, TRACE, "Full2Partial eScanChannel = %d, ucSSIDNum=%d\n",
+				prScanReqMsg->eScanChannel, prScanReqMsg->ucChannelListNum);
 			/*Full2Partial at here, chech sould update full scan to partial scan or not*/
-			if ((prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN) &&
-				(prScanReqMsg->eScanChannel == SCAN_CHANNEL_FULL) &&
-				(prScanReqMsg->ucSSIDType == SCAN_REQ_SSID_WILDCARD) &&
-				(prScanReqMsg->ucChannelListNum == 0)) {
+			if ((prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN)
+				&& (prScanReqMsg->eScanChannel == SCAN_CHANNEL_FULL
+				|| prScanReqMsg->ucChannelListNum == 0)) {
 				/*this is a full scan*/
 				OS_SYSTIME rCurrentTime;
 				P_PARTIAL_SCAN_INFO channel_t;
 				P_GLUE_INFO_T pGlinfo;
 				UINT_32 u4size;
 
-				DBGLOG(AIS, INFO, "Full2Partial eScanChannel = %d, ucSSIDNum=%d\n",
-					prScanReqMsg->eScanChannel, prScanReqMsg->ucChannelListNum);
 				pGlinfo = prAdapter->prGlueInfo;
 				GET_CURRENT_SYSTIME(&rCurrentTime);
 				DBGLOG(AIS, TRACE, "Full2Partial LastFullST= %d,CurrentT=%d\n",
@@ -3696,6 +3753,91 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 	}
 
 }				/* end of aisFsmScanRequest() */
+
+#if CFG_MULTI_SSID_SCAN
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief    This function is used to handle OID_802_11_BSSID_LIST_SCAN
+*
+* \param[in] prAdapter  Pointer of ADAPTER_T
+* \param[in] ucSsidNum  Number of SSID
+* \param[in] prSsid     Pointer to the array of SSID_T if specified
+* \param[in] pucIe      Pointer to buffer of extra information elements to be attached
+* \param[in] u4IeLength Length of information elements
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid,
+				   IN PUINT_8 pucIe, IN UINT_32 u4IeLength)
+{
+	UINT_32 i;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_BSS_INFO_T prAisBssInfo;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+
+	DEBUGFUNC("aisFsmScanRequestAdv()");
+
+	ASSERT(prAdapter);
+	ASSERT(ucSsidNum <= SCN_SSID_MAX_NUM);
+	ASSERT(u4IeLength <= MAX_IE_LENGTH);
+
+	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+
+	DBGLOG(AIS, TRACE, "eCurrentState=%d, fgIsScanReqIssued = %d\n",
+			prAisFsmInfo->eCurrentState, prConnSettings->fgIsScanReqIssued);
+
+	if (!prConnSettings->fgIsScanReqIssued) {
+		prConnSettings->fgIsScanReqIssued = TRUE;
+
+		if (ucSsidNum == 0)
+			prAisFsmInfo->ucScanSSIDNum = 0;
+		else {
+			prAisFsmInfo->ucScanSSIDNum = ucSsidNum;
+
+			for (i = 0 ; i < ucSsidNum ; i++) {
+				COPY_SSID(prAisFsmInfo->arScanSSID[i].aucSsid,
+						prAisFsmInfo->arScanSSID[i].u4SsidLen,
+						prSsid[i].aucSsid,
+						prSsid[i].u4SsidLen);
+			}
+		}
+
+		if (u4IeLength > 0 && u4IeLength <= MAX_IE_LENGTH) {
+			prAisFsmInfo->u4ScanIELength = u4IeLength;
+			kalMemCopy(prAisFsmInfo->aucScanIEBuf, pucIe, u4IeLength);
+		} else
+			prAisFsmInfo->u4ScanIELength = 0;
+
+		if (prAisFsmInfo->eCurrentState == AIS_STATE_NORMAL_TR) {
+			if (prAisBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE
+			    && prAisFsmInfo->fgIsInfraChannelFinished == FALSE) {
+				/* 802.1x might not finished yet, pend it for later handling .. */
+				aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
+			} else {
+				if (prAisFsmInfo->fgIsChannelGranted == TRUE) {
+					DBGLOG(AIS, WARN,
+					       "Scan Request with channel granted for join operation: %d, %d",
+						prAisFsmInfo->fgIsChannelGranted, prAisFsmInfo->fgIsChannelRequested);
+				}
+
+				/* start online scan */
+				wlanClearScanningResult(prAdapter);
+				aisFsmSteps(prAdapter, AIS_STATE_ONLINE_SCAN);
+			}
+		} else if (prAisFsmInfo->eCurrentState == AIS_STATE_IDLE) {
+			wlanClearScanningResult(prAdapter);
+			aisFsmSteps(prAdapter, AIS_STATE_SCAN);
+		} else {
+			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
+		}
+	} else {
+		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
+	}
+} /* end of aisFsmScanRequestAdv() */
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
