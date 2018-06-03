@@ -74,7 +74,11 @@ static void __iomem *csram_base;
 #define OFFS_LOG_S		0x03d0
 #define OFFS_LOG_E		(OFFS_LOG_S + DVFS_LOG_NUM * ENTRY_EACH_LOG * 4)
 
+#ifdef REPORT_IDLE_FREQ
+#define MAX_LOG_FETCH 80
+#else
 #define MAX_LOG_FETCH 40
+#endif
 /* log_box_parsed[MAX_LOG_FETCH] is also used to save last log entry */
 static struct cpu_dvfs_log_box log_box_parsed[1 + MAX_LOG_FETCH];
 
@@ -145,7 +149,11 @@ int Ripi_cpu_dvfs_thread(void *data)
 
 		bk_log_offs = pwdata[0];
 		num_log = 0;
+#ifdef REPORT_IDLE_FREQ
+		while ((bk_log_offs != pwdata[1]) && (num_log < MAX_LOG_FETCH)) {
+#else
 		while (bk_log_offs != pwdata[1]) {
+#endif
 			buf[0] = csram_read(bk_log_offs);
 			bk_log_offs += 4;
 			if (bk_log_offs >= OFFS_LOG_E)
