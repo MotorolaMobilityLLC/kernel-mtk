@@ -43,14 +43,6 @@ config MTK_COMBO_CHIP_MT6632
 	  If unsure, say N.
 	  Mediatek MT6632 module includes BT, FM, GPS, WIFI.
 
-config MTK_COMBO_CHIP_MT7668
-        bool "MT7668"
-        help
-          this config is used to decided combo chip version
-          in current platform
-          is
-          MT7668
-
 config MTK_COMBO_CHIP_CONSYS_6739
 	bool "MTK MT6739 combo chip support"
 	help
@@ -123,7 +115,6 @@ config MTK_COMBO_CHIP
 	default "MT6628" if MTK_COMBO_CHIP_MT6628
 	default "MT6630" if MTK_COMBO_CHIP_MT6630
 	default "MT6632" if MTK_COMBO_CHIP_MT6632
-	default "MT7668" if MTK_COMBO_CHIP_MT7668
 	default "CONSYS_6739" if MTK_COMBO_CHIP_CONSYS_6739
 	default "CONSYS_6757" if MTK_COMBO_CHIP_CONSYS_6757
 	default "CONSYS_6763" if MTK_COMBO_CHIP_CONSYS_6763
