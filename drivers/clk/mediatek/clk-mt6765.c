@@ -421,7 +421,7 @@ void __iomem *venc_gcon_base;
 /* AO */
 #define AUDIO_DISABLE_CG0	0x0f080104
 #define AUDIO_DISABLE_CG1	0x000000f0
-#define CAMSYS_DISABLE_CG	0x1FC7
+#define CAMSYS_DISABLE_CG	0x1FC3
 #define IMG_DISABLE_CG		0x3D
 #define GCE_DISABLE_CG		0x00010000
 #define MFG_DISABLE_CG		0x0000000f /* need to confirm */
@@ -1371,9 +1371,8 @@ static const struct mtk_gate_regs cam_cg_regs = {
 	}
 
 static const struct mtk_gate cam_clks[] __initconst = {
-	GATE_CAM(CLK_CAM_LARB6, "cam_larb6", "mm_ck", 0),/*use dummy*/
+	GATE_CAM(CLK_CAM_LARB3, "cam_larb3", "mm_ck", 0),/*use dummy*/
 	GATE_CAM(CLK_CAM_DFP_VAD, "cam_dfp_vad", "mm_ck", 1),
-	GATE_CAM(CLK_CAM_LARB3, "cam_larb3", "mm_ck", 2),/*use dummy*/
 	GATE_CAM(CLK_CAM, "cam", "mm_ck", 6),
 	GATE_CAM(CLK_CAMTG, "camtg", "mm_ck", 7),
 	GATE_CAM(CLK_CAM_SENINF, "cam_seninf", "mm_ck", 8),
@@ -1674,7 +1673,52 @@ static const struct mtk_gate gce_clks[] = {
 	GATE_GCE(CLK_GCE, "gce", "axi_ck", 16),
 };
 
-/* FIXME: modify FMAX */
+
+/* additional CCF control for mipi26M race condition(disp/camera) */
+static const struct mtk_gate_regs apmixed_cg_regs = {
+	.set_ofs = 0x14,
+	.clr_ofs = 0x14,
+	.sta_ofs = 0x14,
+};
+
+#define GATE_APMIXED(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &apmixed_cg_regs,		\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_inv,		\
+	}
+
+static const struct mtk_gate apmixed_clks[] __initconst = {
+	/* AUDIO0 */
+	GATE_APMIXED(CLK_APMIXED_SSUSB26M, "apmixed_ssusb26m", "f_f26m_ck",
+		4),
+	GATE_APMIXED(CLK_APMIXED_APPLL26M, "apmixed_appll26m", "f_f26m_ck",
+		5),
+	GATE_APMIXED(CLK_APMIXED_MIPIC0_26M, "apmixed_mipic026m", "f_f26m_ck",
+		6),
+	GATE_APMIXED(CLK_APMIXED_MDPLLGP26M, "apmixed_mdpll26m", "f_f26m_ck",
+		7),
+	GATE_APMIXED(CLK_APMIXED_MMSYS_F26M, "apmixed_mmsys26m", "f_f26m_ck",
+		8),
+	GATE_APMIXED(CLK_APMIXED_UFS26M, "apmixed_ufs26m", "f_f26m_ck",
+		9),
+	GATE_APMIXED(CLK_APMIXED_MIPIC1_26M, "apmixed_mipic126m", "f_f26m_ck",
+		11),
+	GATE_APMIXED(CLK_APMIXED_MEMPLL26M, "apmixed_mempll26m", "f_f26m_ck",
+		13),
+	GATE_APMIXED(CLK_APMIXED_CLKSQ_LVPLL_26M, "apmixed_lvpll26m",
+		"f_f26m_ck", 14),
+	GATE_APMIXED(CLK_APMIXED_MIPID0_26M, "apmixed_mipid026m", "f_f26m_ck",
+		16),
+	/* bit17 no use */
+	/* GATE_APMIXED(CLK_APMIXED_MIPID1_26M, "apmixed_mipid126m",
+	 *	"f_f26m_ck", 17),
+	 */
+};
+
+/* FIXME: modify FMAX/FMIN/RSTBAR */
 #define MT6765_PLL_FMAX		(3800UL * MHZ)
 #define MT6765_PLL_FMIN		(1500UL * MHZ)
 
@@ -1765,6 +1809,8 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 
 	/* FIXME: add code for APMIXEDSYS */
 	mtk_clk_register_plls(node, plls, ARRAY_SIZE(plls), clk_data);
+	mtk_clk_register_gates(node, apmixed_clks,
+		ARRAY_SIZE(apmixed_clks), clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)
