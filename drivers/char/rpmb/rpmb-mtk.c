@@ -812,10 +812,18 @@ int rpmb_req_ioctl_write_data(struct rpmb_ioc_param *param)
 	u16 iCnt, total_blkcnt, tran_blkcnt, left_blkcnt;
 	u16 blkaddr;
 	u8 hmac[RPMB_SZ_MAC];
-	u8 *dataBuf, *dataBuf_start;
+	u8 *dataBuf, *dataBuf_start, *data_for_hmac;
+	u32 size_for_hmac;
 	int i, ret = 0;
+	u8 user_param_data;
 
 	MSG(DBG_INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	rawdev_ufs_rpmb = ufs_mtk_rpmb_get_raw_dev();
 
@@ -898,6 +906,9 @@ int rpmb_req_ioctl_write_data(struct rpmb_ioc_param *param)
 
 		data.icmd.nframes = tran_blkcnt;
 
+		/* size for hmac calculation: 512 - 228 = 284 */
+		size_for_hmac = sizeof(struct rpmb_frame) - offsetof(struct rpmb_frame, data);
+
 		for (iCnt = 0; iCnt < tran_blkcnt; iCnt++) {
 
 			/*
@@ -918,8 +929,15 @@ int rpmb_req_ioctl_write_data(struct rpmb_ioc_param *param)
 				 tran_size);
 			left_size -= tran_size;
 
-			memcpy(dataBuf, data.icmd.frames[iCnt].data, 284);
-			dataBuf += 284;
+			data_for_hmac = data.icmd.frames[iCnt].data;
+
+			/* copy data part */
+			memcpy(dataBuf, data_for_hmac, RPMB_SZ_DATA);
+
+			/* copy left part */
+			memcpy(dataBuf + RPMB_SZ_DATA, data_for_hmac + RPMB_SZ_DATA, size_for_hmac - RPMB_SZ_DATA);
+
+			dataBuf = dataBuf + size_for_hmac;
 
 		}
 
@@ -1002,8 +1020,15 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 	u8 *dataBuf, *dataBuf_start, *data_for_hmac;
 	u32 size_for_hmac;
 	int i, ret = 0;
+	u8 user_param_data;
 
 	MSG(DBG_INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	rawdev_ufs_rpmb = ufs_mtk_rpmb_get_raw_dev();
 
@@ -1256,11 +1281,19 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card, struct rpmb_ioc_param *para
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
-#ifdef RPMB_MULTI_BLOCK_ACCESS
 	u8 user_param_data;
+#ifdef RPMB_MULTI_BLOCK_ACCESS
+	u32 size_for_hmac;
+	u8 *data_for_hmac;
 #endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
@@ -1284,9 +1317,6 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card, struct rpmb_ioc_param *para
 	 */
 
 	blkaddr = param->addr;
-
-	if (get_user(user_param_data, param->data))
-		return -EFAULT;
 
 	while (left_blkcnt) {
 
@@ -1322,6 +1352,10 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card, struct rpmb_ioc_param *para
 		/*
 		 * STEP 3(data), prepare every data frame one by one and hook HMAC to the last.
 		 */
+
+		/* size for hmac calculation: 512 - 228 = 284 */
+		size_for_hmac = sizeof(struct rpmb_frame) - offsetof(struct rpmb_frame, data);
+
 		for (iCnt = 0; iCnt < tran_blkcnt; iCnt++) {
 
 			/*
@@ -1343,9 +1377,15 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card, struct rpmb_ioc_param *para
 				 tran_size);
 			left_size -= tran_size;
 
+			data_for_hmac = rpmb_frame[iCnt].data;
 
-			memcpy(dataBuf, rpmb_frame[iCnt].data, 284);
-			dataBuf += 284;
+			/* copy data part */
+			memcpy(dataBuf, data_for_hmac, RPMB_SZ_DATA);
+
+			/* copy left part */
+			memcpy(dataBuf + RPMB_SZ_DATA, data_for_hmac + RPMB_SZ_DATA, size_for_hmac - RPMB_SZ_DATA);
+
+			dataBuf = dataBuf + size_for_hmac;
 
 		}
 
@@ -1504,11 +1544,18 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card, struct rpmb_ioc_param *param
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
-#ifdef RPMB_MULTI_BLOCK_ACCESS
 	u8 user_param_data;
+#ifdef RPMB_MULTI_BLOCK_ACCESS
+	u32 size_for_hmac;
+	u8 *data_for_hmac;
 #endif
-
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
@@ -1522,9 +1569,6 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card, struct rpmb_ioc_param *param
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 
 	blkaddr = param->addr;
-
-	if (get_user(user_param_data, param->data))
-		return -EFAULT;
 
 	while (left_blkcnt) {
 
@@ -1570,6 +1614,10 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card, struct rpmb_ioc_param *param
 		/*
 		 * STEP 3, retrieve every data frame one by one.
 		 */
+
+		/* size for hmac calculation: 512 - 228 = 284 */
+		size_for_hmac = sizeof(struct rpmb_frame) - offsetof(struct rpmb_frame, data);
+
 		for (iCnt = 0; iCnt < tran_blkcnt; iCnt++) {
 
 			if (left_size >= RPMB_SZ_DATA)
@@ -1581,8 +1629,15 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card, struct rpmb_ioc_param *param
 			 * dataBuf used for hmac calculation. we need to aggregate each block's data till to type field.
 			 * each block has 284 bytes need to aggregate.
 			*/
-			memcpy(dataBuf, rpmb_frame[iCnt].data, 284);
-			dataBuf = dataBuf + 284;
+			data_for_hmac = rpmb_frame[iCnt].data;
+
+			/* copy data part */
+			memcpy(dataBuf, data_for_hmac, RPMB_SZ_DATA);
+
+			/* copy left part */
+			memcpy(dataBuf + RPMB_SZ_DATA, data_for_hmac + RPMB_SZ_DATA, size_for_hmac - RPMB_SZ_DATA);
+
+			dataBuf = dataBuf + size_for_hmac;
 
 			/*
 			 * sorry, I shouldn't copy read data to user's buffer now, it should be later
