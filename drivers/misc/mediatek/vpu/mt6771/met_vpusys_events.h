@@ -46,7 +46,7 @@ TRACE_EVENT(VPU__D2D_enter,
 		__entry->dsp1_freq = dsp1_freq;
 		__entry->dsp2_freq = dsp2_freq;
 	),
-	TP_printk("core=%d, algo_id=%d, vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
+	TP_printk("_id=c%da%d, vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
 					__entry->core,
 					__entry->algo_id,
 					__entry->vcore_opp,
@@ -69,7 +69,7 @@ TRACE_EVENT(VPU__D2D_leave,
 		__entry->algo_id = algo_id;
 		__entry->dummy = dummy;
 	),
-	TP_printk("core=%d, algo_id=%d", __entry->core, __entry->algo_id)
+	TP_printk("_id=c%da%d", __entry->core, __entry->algo_id)
 );
 
 
