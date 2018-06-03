@@ -164,7 +164,7 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 #elif defined(CONFIG_MACH_MT6775)
 	[PWR_REG_GCE_BUSCLK_REQ_MASK_B] = "reg_gce_busclk_req_mask_b",
 #endif
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	[PWR_REG_UFS_SRCCLKENA_MASK_B] = "reg_ufs_srcclkena_mask_b",
 	[PWR_REG_UFS_VRF18_REQ_MASK_B] = "reg_ufs_vrf18_req_mask_b",
 #endif
@@ -200,7 +200,8 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_REG_CONN_MASK_B] = "reg_conn_mask_b",
 	[PWR_REG_CONN_APSRC_SEL] = "reg_conn_apsrc_sel",
 	[PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B] = "reg_md_srcclkena_0_vrf18_mask_b",
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6775)
 	[PWR_REG_CCIF4_MD_EVENT_MASK_B] = "reg_ccif4_md_event_mask_b",
 	[PWR_REG_CCIF4_AP_EVENT_MASK_B] = "reg_ccif4_ap_event_mask_b",
 	[PWR_REG_CCIF5_MD_EVENT_MASK_B] = "reg_ccif5_md_event_mask_b",
@@ -289,7 +290,8 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
 }
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 
 #ifdef SUP_MCSODI_FS
 static ssize_t mcsodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -303,7 +305,12 @@ static ssize_t mcsodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *att
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
 	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
+#else
+	return 0;
+#endif
 }
 #endif
 
@@ -755,7 +762,7 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 				id, PWR_REG_DQSSOC_REQ_MASK_B, val);
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_GCE_VRF18_REQ2_MASK_B])) {
-		pwrctrl->reg_gce_vrf18_req_mask_b = val;
+		pwrctrl->reg_gce_vrf18_req2_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_GCE_VRF18_REQ2_MASK_B, val);
 #elif defined(CONFIG_MACH_MT6775)
@@ -1050,7 +1057,8 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 {
 	return store_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf, count);
 }
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 
 #ifdef SUP_MCSODI_FS
 static ssize_t mcsodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
@@ -1092,7 +1100,8 @@ DEFINE_ATTR_RW(suspend_ctrl);
 DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 #ifdef SUP_MCSODI_FS
 DEFINE_ATTR_RW(mcsodi_ctrl);
 #endif
@@ -1108,7 +1117,8 @@ static struct attribute *spm_attrs[] = {
 	__ATTR_OF(dpidle_ctrl),
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 #ifdef SUP_MCSODI_FS
 	__ATTR_OF(mcsodi_ctrl),
 #endif

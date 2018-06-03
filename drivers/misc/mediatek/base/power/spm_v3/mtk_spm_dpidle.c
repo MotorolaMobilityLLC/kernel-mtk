@@ -829,7 +829,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -840,15 +840,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_dpidle_rcuidle(cpu, 1);
-#endif
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_dpidle_rcuidle(cpu, 0);
-#endif
 
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
@@ -856,7 +852,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN))
 		request_uart_to_wakeup();
 
@@ -1005,7 +1001,7 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -1014,19 +1010,15 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_dpidle_rcuidle(cpu, 1);
-#endif
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_dpidle_rcuidle(cpu, 0);
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	request_uart_to_wakeup();
 RESTORE_IRQ:
 #endif

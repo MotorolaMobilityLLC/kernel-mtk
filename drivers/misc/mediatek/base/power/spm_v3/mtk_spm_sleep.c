@@ -434,7 +434,7 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 
 	if (spm_dormant_sta < 0)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (is_infra_pdn(pwrctrl->pcm_flags))
 		mtk_uart_restore();
 #endif
@@ -788,7 +788,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
@@ -803,7 +803,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_LEAVE_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 RESTORE_IRQ:

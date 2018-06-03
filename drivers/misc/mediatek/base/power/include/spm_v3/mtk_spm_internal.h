@@ -24,7 +24,8 @@
 #include <mtk_lpae.h>
 #include <mtk_gpio.h>
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6775)
 #define SUP_MCSODI_FS
 #endif
 
