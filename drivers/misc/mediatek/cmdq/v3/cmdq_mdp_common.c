@@ -503,6 +503,7 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 		pmqos_curr_record->submit_tm.tv_usec, pmqos_curr_record->end_tm.tv_usec);
 
 	if (size > 1) {/*task_list includes the current task*/
+		CMDQ_MSG("size %d thread_id = %d\n", size, thread_id);
 		for (i = 0; i < size; i++) {
 			struct TaskStruct *curTask = task_list[i];
 
@@ -552,6 +553,14 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 				if (pmqos_list_record->mdp_throughput > max_throughput)
 					max_throughput = pmqos_list_record->mdp_throughput;
 			}
+			CMDQ_MSG(
+				"[MDP]list mdp %d pixel, mdp %d byte, isp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
+				mdp_curr_pixel_size,
+				mdp_data_size,
+				isp_curr_pixel_size, isp_data_size,
+				pmqos_list_record->submit_tm.tv_usec,
+				pmqos_list_record->end_tm.tv_usec);
+
 		}
 
 		if (max_throughput > g_freq_steps[0]) {
@@ -616,7 +625,8 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 		isp_curr_bandwidth,
 		max_throughput);
 
-	if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN)) {
+	if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+		cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2)) {
 		/*update bandwidth*/
 		pm_qos_update_request(&isp_bw_qos_request[thread_id], isp_curr_bandwidth);
 		/*update clock*/
@@ -703,7 +713,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 		if (!pmqos_list_record)
 			continue;
 
-		if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN))
+		if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+			cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 			update_isp_throughput = true;
 
 		if (first_task) {
@@ -711,7 +722,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 			isp_curr_pixel_size = mdp_list_pmqos->isp_total_pixel;
 			mdp_data_size   = mdp_list_pmqos->mdp_bandwidth;
 			isp_data_size   = mdp_list_pmqos->isp_bandwidth;
-			if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN))
+			if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+				cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 				update_isp_bandwidth = true;
 
 			first_task = false;
@@ -748,10 +760,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 							pmqos_curr_record->submit_tm,
 							pmqos_list_record->end_tm,
 							overdue);
-				if (overdue > 0) {
-					trigger = false;
-					CMDQ_MSG("[MDP]trigger %d\n", trigger);
-				} else {
+				if (overdue == 1) {
 					trigger = true;
 					break;
 				}
@@ -759,6 +768,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 			continue;
 		}
 		trigger = true;
+		break;
 	}
 	first_task = true;
 	if (size > 0 && trigger) {/*task_list excludes the current task*/
@@ -772,7 +782,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 			pmqos_list_record = (struct mdp_pmqos_record *)curTask->user_private;
 			if (!pmqos_list_record)
 				continue;
-			if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN))
+			if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+				curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 				update_isp_throughput = true; /*if there is any DL task in list*/
 
 			if (first_task) {
@@ -787,7 +798,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 				mdp_curr_pixel_size = mdp_list_pmqos->mdp_total_pixel;
 				isp_curr_pixel_size = mdp_list_pmqos->isp_total_pixel;
 
-				if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN))
+				if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+					curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 					update_isp_bandwidth = true; /*next task is diect link*/
 
 				first_task = false;
