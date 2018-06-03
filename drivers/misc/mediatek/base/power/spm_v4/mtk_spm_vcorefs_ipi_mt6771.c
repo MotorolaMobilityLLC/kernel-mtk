@@ -15,11 +15,10 @@
 
 #include "mtk_spm_vcore_dvfs_ipi.h"
 #include "sspm_ipi.h"
+#include <mtk_vcorefs_governor.h>
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #include <helio-dvfsrc.h>
-#else
-#include <mtk_vcorefs_governor.h>
 #endif
 
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)

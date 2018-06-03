@@ -125,11 +125,6 @@ int dvfsrc_get_bw(int type)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-int qos_ipi_to_sspm_command(void *buffer, int slot)
-{
-	return sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, buffer, slot);
-}
-
 void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
 {
 	struct qos_data qos_d;
