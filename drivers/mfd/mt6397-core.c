@@ -60,6 +60,15 @@ static const struct resource mt6392_rtc_resources[] = {
 	},
 };
 
+
+static const struct resource mt6392_keys_resources[] = {
+	{
+		.start = MT6392_IRQ_STATUS_PWRKEY,
+		.end   = MT6392_IRQ_STATUS_FCHRKEY,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 static const struct mfd_cell mt6323_devs[] = {
 	{
 		.name = "mt6323-regulator",
@@ -111,6 +120,11 @@ static const struct mfd_cell mt6392_devs[] = {
 	}, {
 		.name = "mt6392-adc",
 		.of_compatible = "mediatek,mt6392-adc"
+	}, {
+		.name = "mtk-pmic-keys",
+		.num_resources = ARRAY_SIZE(mt6392_keys_resources),
+		.resources = mt6392_keys_resources,
+		.of_compatible = "mediatek,mt6392-keys"
 	}
 };
 
