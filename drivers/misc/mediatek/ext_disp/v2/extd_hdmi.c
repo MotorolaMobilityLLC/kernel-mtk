@@ -1466,17 +1466,15 @@ int hdmi_get_edid(void *edid_info)
 #endif
 
 #ifdef MHL_RESOLUTION_LIMIT_1080P_30
-		if (pv_get_info.ui4_pal_resolution & SINK_1080P60) {
+		if (pv_get_info.ui4_pal_resolution & SINK_1080P60)
 			pv_get_info.ui4_pal_resolution &= (~SINK_1080P60);
-		}
 
 		pv_get_info.ui4_pal_resolution &= (~SINK_2160p30);
 		pv_get_info.ui4_pal_resolution &= (~SINK_2160p24);
 #endif
 
-		if (pv_get_info.ui4_pal_resolution & SINK_1080P60) {
+		if (pv_get_info.ui4_pal_resolution & SINK_1080P60)
 			pv_get_info.ui4_pal_resolution &= (~SINK_1080P30);
-		}
 	}
 
 	if (copy_to_user(edid_info, &pv_get_info, sizeof(pv_get_info))) {
