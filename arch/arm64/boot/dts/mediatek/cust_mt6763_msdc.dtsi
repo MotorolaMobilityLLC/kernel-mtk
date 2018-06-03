@@ -60,9 +60,9 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
-	sd-uhs-sdr50;
-	sd-uhs-sdr104;
-	sd-uhs-ddr50;
+	/*sd-uhs-sdr50;*/
+	/*sd-uhs-sdr104;*/
+	/*sd-uhs-ddr50;*/
 	keep-power-in-suspend;
 	non-removable;
 	pinctl = <&msdc2_pins_default>;
@@ -71,7 +71,7 @@
 	status = "disable";
 	clocks = <&infracfg_ao INFRACFG_AO_MSDC2_SCK_CG>, <&infracfg_ao INFRACFG_AO_MSDC2_CG>;
 	clock-names = "msdc2-clock", "msdc2-hclock";
-	hw_dvfs = /bits/ 8 <1>;
+	hw_dvfs = /bits/ 8 <0>;
 };
 
 &pio {
