@@ -121,7 +121,7 @@ static int uncali_gyrohub_local_init(void)
 	}
 
 	data.get_data = uncali_gyro_get_data;
-	data.vender_div = 7506;
+	data.vender_div = 7505747;
 	err = fusion_register_data_path(&data, ID_GYROSCOPE_UNCALIBRATED);
 	if (err) {
 		pr_err("register uncali_gyro data path err\n");

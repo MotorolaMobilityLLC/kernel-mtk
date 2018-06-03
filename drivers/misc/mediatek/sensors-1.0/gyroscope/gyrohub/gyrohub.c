@@ -576,7 +576,14 @@ static int gyrohub_factory_enable_sensor(bool enabledisable,
 }
 static int gyrohub_factory_get_data(int32_t data[3], int *status)
 {
-	return gyrohub_get_data(&data[0], &data[1], &data[2], status);
+	int ret = 0;
+
+	ret = gyrohub_get_data(&data[0], &data[1], &data[2], status);
+	data[0] = data[0] / 1000;
+	data[1] = data[1] / 1000;
+	data[2] = data[2] / 1000;
+
+	return ret;
 }
 static int gyrohub_factory_get_raw_data(int32_t data[3])
 {

@@ -98,50 +98,23 @@ struct SCP_sensorData {
 };
 typedef struct {
 	union {
-		int32_t v[3];
 		struct {
 			int32_t x;
 			int32_t y;
 			int32_t z;
+			int32_t x_bias;
+			int32_t y_bias;
+			int32_t z_bias;
 		};
 		struct {
 			int32_t azimuth;
 			int32_t pitch;
 			int32_t roll;
+			int32_t scalar;
 		};
 	};
-	union {
-		int32_t scalar;
-		union {
-			int16_t bias[3];
-			struct {
-				int16_t x_bias;
-				int16_t y_bias;
-				int16_t z_bias;
-			};
-		};
-	};
-	uint16_t status;
+	uint32_t status;
 } sensor_vec_t;
-
-typedef struct {
-	union {
-		int32_t uncali[3];
-		struct {
-			int32_t x_uncali;
-			int32_t y_uncali;
-			int32_t z_uncali;
-		};
-	};
-	union {
-		int32_t bias[3];
-		struct {
-			int32_t x_bias;
-			int32_t y_bias;
-			int32_t z_bias;
-		};
-	};
-} uncalibrated_event_t;
 
 typedef struct {
 	int32_t bpm;
