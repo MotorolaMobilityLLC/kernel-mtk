@@ -1247,7 +1247,10 @@ static int smi_scen_config_get(struct mtk_smi_dev *smi)
 
 static int smi_basic_config_get(struct mtk_smi_dev *smi)
 {
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		SMIDBG("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		SMIDBG("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
