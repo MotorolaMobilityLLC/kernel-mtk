@@ -290,6 +290,7 @@ extern u32 sysctl_tcp_rto_max;
 extern atomic_long_t tcp_memory_allocated;
 extern struct percpu_counter tcp_sockets_allocated;
 extern int tcp_memory_pressure;
+extern int sysctl_tcp_ack_number;
 
 /* optimized version of sk_under_memory_pressure() for TCP sockets */
 static inline bool tcp_under_memory_pressure(const struct sock *sk)
