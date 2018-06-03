@@ -290,10 +290,9 @@ void mtk_idle_cond_update_mask(
 /***********************************************************
  * mtk_spm_vcorefs.c
  ***********************************************************/
-int spm_dvfs_flag_init(void);
+int spm_dvfs_flag_init(int dvfsrc_en);
 void spm_go_to_vcorefs(int spm_flags);
 void spm_vcorefs_init(void);
-int spm_dvfs_flag_init(void);
 
 /***********************************************************
  * mtk_spm_fs.c

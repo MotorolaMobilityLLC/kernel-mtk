@@ -99,7 +99,7 @@ enum {
 extern int is_dvfsrc_enabled(void);
 extern int dvfsrc_get_emi_bw(int type);
 extern int get_vcore_dvfs_level(void);
-extern void mtk_spmfw_init(void);
+extern void mtk_spmfw_init(int dvfsrc_en, int skip_check);
 extern struct reg_config *dvfsrc_get_init_conf(void);
 extern void helio_dvfsrc_enable(int dvfsrc_en);
 extern char *dvfsrc_dump_reg(char *ptr);

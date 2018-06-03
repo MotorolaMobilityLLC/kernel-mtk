@@ -14,9 +14,7 @@
 #ifndef __MTK_VCORE_DVFS_H
 #define __MTK_VCORE_DVFS_H
 
-extern void mtk_spmfw_init(void);
-
-extern int spm_dvfs_flag_init(void);
+extern int spm_dvfs_flag_init(int dvfsrc_en);
 extern u32 spm_vcorefs_get_MD_status(void);
 extern u32 spm_vcorefs_get_md_srcclkena(void);
 
