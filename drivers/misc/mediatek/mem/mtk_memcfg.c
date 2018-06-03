@@ -314,6 +314,7 @@ static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 
 /* end of kenerl memory information */
 
+#ifdef CONFIG_MTK_ENG_BUILD
 /* memblock reserve information */
 static int mtk_memcfg_memblock_reserved_show(struct seq_file *m, void *v)
 {
@@ -550,6 +551,7 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 }
 
 /* end of kenerl out-of-memory(oom) trigger */
+#endif /* end of CONFIG_MTK_ENG_BUILD */
 
 static int __init mtk_memcfg_init(void)
 {
@@ -567,6 +569,7 @@ static const struct file_operations mtk_memcfg_memory_layout_operations = {
 	.release = single_release,
 };
 
+#ifdef CONFIG_MTK_ENG_BUILD
 static const struct file_operations mtk_memcfg_memblock_reserved_operations = {
 	.open = mtk_memcfg_memblock_reserved_open,
 	.read = seq_read,
@@ -598,6 +601,7 @@ static const struct file_operations proc_slabtrace_operations = {
 	.release = single_release,
 };
 #endif
+#endif /* end of CONFIG_MTK_ENG_BUILD */
 
 static int __init mtk_memcfg_late_init(void)
 {
@@ -617,6 +621,7 @@ static int __init mtk_memcfg_late_init(void)
 		if (!entry)
 			pr_err("create memory_layout proc entry failed\n");
 
+#ifdef CONFIG_MTK_ENG_BUILD
 		/* memblock reserved */
 		entry = proc_create("memblock_reserved", S_IRUGO | S_IWUSR,
 				mtk_memcfg_dir,
@@ -657,8 +662,8 @@ static int __init mtk_memcfg_late_init(void)
 		if (!entry)
 			pr_err("create slabtrace proc entry failed\n");
 #endif
+#endif /* end of CONFIG_MTK_ENG_BUILD */
 	}
-
 	mtk_memcfg_reserve_info_init(mtk_memcfg_dir);
 
 	return 0;
