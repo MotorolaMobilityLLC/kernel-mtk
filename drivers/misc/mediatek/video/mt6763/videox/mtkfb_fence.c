@@ -988,8 +988,6 @@ int disp_sync_get_present_timeline_id(unsigned int session_id)
 		return DISP_SESSION_PRIMARY_PRESENT_TIMELINE_ID;
 	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL)
 		return DISP_SESSION_EXTERNAL_PRESENT_TIMELINE_ID;
-	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY)
-		return DISP_SESSION_MEMORY_PRESENT_TIMELINE_ID;
 
 	DISPERR("session id is wrong, session=0x%x!!\n", session_id);
 	return -1;
