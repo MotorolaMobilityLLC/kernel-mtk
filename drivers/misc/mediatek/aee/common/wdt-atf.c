@@ -543,8 +543,8 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	/* add info for minidump */
-	if (aee_rr_curr_exp_type() == 1 ||
-		aee_rr_curr_exp_type() == 4)
+	if (aee_rr_curr_exp_type() == AEE_EXP_TYPE_HWT ||
+		aee_rr_curr_exp_type() == AEE_EXP_TYPE_SMART_RESET)
 		mrdump_mini_ke_cpu_regs(regs);
 #endif
 
@@ -598,11 +598,11 @@ void notrace aee_wdt_atf_entry(void)
 			aee_sram_fiq_log("SMART RESET: FALSE\n");
 		}
 #endif
-		aee_rr_rec_exp_type(4);
+		aee_rr_rec_exp_type(AEE_EXP_TYPE_SMART_RESET);
 	} else
-		aee_rr_rec_exp_type(1);
+		aee_rr_rec_exp_type(AEE_EXP_TYPE_HWT);
 #else
-	aee_rr_rec_exp_type(1);
+	aee_rr_rec_exp_type(AEE_EXP_TYPE_HWT);
 #endif
 #endif
 

@@ -551,7 +551,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_START);
-	aee_rr_rec_exp_type(2);
+	aee_rr_rec_exp_type(AEE_EXP_TYPE_KE);
 #endif
 	bust_spinlocks(1);
 	mrdump_mini_save_regs(&saved_regs);
@@ -627,7 +627,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	struct pt_regs saved_regs;
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_exp_type(3);
+	aee_rr_rec_exp_type(AEE_EXP_TYPE_NESTED_PANIC);
 #endif
 	aee_nested_printf("minidump\n");
 	bust_spinlocks(1);
@@ -761,7 +761,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	print_modules();
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_kaslr_offset(kaslr_offset);
-	aee_rr_rec_exp_type(2);
+	aee_rr_rec_exp_type(AEE_EXP_TYPE_KE);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 #endif
 	aee_disable_api();
