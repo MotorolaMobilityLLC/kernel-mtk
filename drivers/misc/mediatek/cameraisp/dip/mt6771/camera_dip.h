@@ -171,6 +171,7 @@ struct compat_DIP_MEM_INFO_STRUCT {
 
 /* for keep ion handle */
 enum DIP_WRDMA_ENUM {
+#if 0
 	_dma_cq0i_ = 0,/* 0168 */
 	_dma_cq0i_vir, /* 0168 */
 	_dma_cq1i_,    /* 0174 */
@@ -211,6 +212,8 @@ enum DIP_WRDMA_ENUM {
 	_dma_rsso_fh_, /* 03CC */
 	_dma_pso_fh_,  /* 0E20 */
 	_dma_max_wr_
+#endif
+	_dip_dma_max_wr_
 };
 
 struct DIP_DEV_ION_NODE_STRUCT {
