@@ -883,7 +883,7 @@ FB_RET:
 
 static int _loading_avg(int ui32loading)
 {
-	static int data[8];
+	static int data[4];
 	static int idx;
 	static int sum;
 
@@ -902,6 +902,7 @@ static bool ged_dvfs_policy(
 	int i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
 	unsigned int ui32GPUFreq = mt_gpufreq_get_cur_freq_index();
 	unsigned int sentinalLoading = 0;
+	unsigned int ui32GPULoading_avg;
 
 	int i32NewFreqID = (int)ui32GPUFreq;
 
@@ -996,11 +997,13 @@ static bool ged_dvfs_policy(
 			_init_loading_ud_table();
 		}
 
-		ui32GPULoading = _loading_avg(ui32GPULoading);
-
-		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
+		ui32GPULoading_avg = _loading_avg(ui32GPULoading);
+		if (ui32GPULoading >= 110 - gx_tb_dvfs_margin_cur)
+			i32NewFreqID = 0;
+		else if (ui32GPULoading_avg >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
-		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
+		else if (ui32GPULoading_avg <=
+			loading_ud_table[ui32GPUFreq].down)
 			i32NewFreqID += 1;
 
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
@@ -1086,6 +1089,8 @@ void ged_dvfs_boost_gpu_freq(void)
 static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 {
 	unsigned int ui32MaxLevel;
+	static unsigned int gs_last_commit_freq_id;
+	static unsigned int s_bottom_freq_id;
 
 	if (gpu_debug_enable)
 		GED_LOGE("%s: freq = %d", __func__,ui32FreqLevel);
@@ -1098,11 +1103,22 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 
 	/* 0 => The highest frequency */
 	/* table_num - 1 => The lowest frequency */
-	g_bottom_freq_id = ui32MaxLevel - ui32FreqLevel;
+	s_bottom_freq_id = ui32MaxLevel - ui32FreqLevel;
+	if (g_bottom_freq_id < s_bottom_freq_id) {
+		g_bottom_freq_id = s_bottom_freq_id;
+		if (s_bottom_freq_id < gs_last_commit_freq_id)
+			ged_dvfs_gpu_freq_commit(gs_last_commit_freq_id,
+				gpu_bottom_freq, GED_DVFS_SET_BOTTOM_COMMIT);
+		else
+			ged_dvfs_gpu_freq_commit(s_bottom_freq_id,
+				gpu_bottom_freq, GED_DVFS_SET_BOTTOM_COMMIT);
+	}
+	g_bottom_freq_id = s_bottom_freq_id;
 	gpu_bottom_freq = mt_gpufreq_get_freq_by_idx(g_bottom_freq_id);
 
 	/* if current id is larger, ie lower freq, we need to reflect immedately */
-	if (g_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
+	gs_last_commit_freq_id = mt_gpufreq_get_cur_freq_index();
+	if (g_bottom_freq_id < gs_last_commit_freq_id)
 		ged_dvfs_gpu_freq_commit(g_bottom_freq_id, gpu_bottom_freq, GED_DVFS_SET_BOTTOM_COMMIT);
 
 	mutex_unlock(&gsDVFSLock);
