@@ -72,10 +72,10 @@ TRACE_EVENT(ISP__Pass1_CAM_enter,
 		__entry->ctl_dma_en = ctl_dma_en;
 		__entry->ctl_en2 = ctl_en2;
 	),
-	TP_printk("_id=%d, imgo_en=%d, rrzo_en=%d, imgo_bpp=%d, rrzo_bpp=%d,imgo_xsize=%d,
-		imgo_ysize=%d, rrzo_xsize=%d, rrzo_ysize=%d, rrz_src_w=%d, rrz_src_h=%d,
-		rrz_dst_w=%d, rrz_dst_h=%d, rrz_hori_step=%d, rrz_vert_step=%d, CAM_A__CTL_EN=%d,
-		CAM_A__CTL_DMA_EN=%d, CAM_A__CTL_EN2=%d\n",
+	TP_printk("_id=%d, imgo_en=%d, rrzo_en=%d, imgo_bpp=%d, rrzo_bpp=%d,imgo_xsize=%d,"
+		"imgo_ysize=%d, rrzo_xsize=%d, rrzo_ysize=%d, rrz_src_w=%d, rrz_src_h=%d,"
+		"rrz_dst_w=%d, rrz_dst_h=%d, rrz_hori_step=%d, rrz_vert_step=%d, CAM_A__CTL_EN=%d,"
+		"CAM_A__CTL_DMA_EN=%d, CAM_A__CTL_EN2=%d\n",
 		__entry->hw_module,
 		__entry->imgo_en,
 		__entry->rrzo_en,

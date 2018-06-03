@@ -795,7 +795,7 @@ int MET_Event_Get_BPP(enum _isp_dma_enum_ dmao, unsigned int reg_module)
 	int ret = 0;
 
 	if (dmao == _imgo_) {
-		switch (fmt_sel & 0x1F0) {
+		switch ((fmt_sel >> 4) & 0x1F) {
 		case 0:
 		case 12:
 		case 13:
@@ -817,11 +817,11 @@ int MET_Event_Get_BPP(enum _isp_dma_enum_ dmao, unsigned int reg_module)
 			ret = 14;
 			break;
 		default:
-			LOG_NOTICE("get imgo bpp error\n");
+			LOG_NOTICE("get imgo bpp error fmt_sel:0x%x value=%x\n", fmt_sel, (fmt_sel >> 4) & 0x1F);
 			break;
 		}
 	} else if (dmao == _rrzo_) {
-		switch (fmt_sel & 0x0C) {
+		switch ((fmt_sel >> 2) & 0x3) {
 		case 0:
 			ret = 8;
 			break;
@@ -832,7 +832,7 @@ int MET_Event_Get_BPP(enum _isp_dma_enum_ dmao, unsigned int reg_module)
 			ret = 12;
 			break;
 		default:
-			LOG_NOTICE("get rrzo bpp error\n");
+			LOG_NOTICE("get rrzo bpp error fmt_sel:0x%x value=%x\n", fmt_sel, (fmt_sel >> 2) & 0x3);
 			break;
 		}
 	}
