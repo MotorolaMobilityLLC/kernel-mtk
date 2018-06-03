@@ -238,5 +238,10 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 		};
+
+		typec: typec {
+			compatible = "mediatek,mt6392-typec";
+			status = "disabled";
+		};
 	};
 };

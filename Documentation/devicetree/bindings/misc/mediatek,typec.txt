@@ -1,0 +1,11 @@
+MediaTek PMIC Typec only
+
+Required properties:
+- compatible: Should be "mediatek,mt6392-typec"
+- reg: Based on mt6932 PMIC
+
+Examples:
+
+	typec: typec {
+		compatible = "mediatek,mt6392-typec";
+	};
