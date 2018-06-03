@@ -30,6 +30,7 @@ extern void __iomem *auxadc_efuse_base;
 
 /* For calibration */
 #define EFUSE_CALI
+#define AUXADC_INDEX 106
 #define ADC_GE_A_MASK 0x000ffc00
 #define ADC_GE_A_SHIFT 10
 #define ADC_OE_A_MASK 0x000003ff
