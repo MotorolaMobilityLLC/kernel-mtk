@@ -206,15 +206,15 @@ static void _smp_inner_dcache_flush_all(void)
 	preempt_enable();
 }
 
-typedef enum {
-	FAILED,
+enum {
+	FAILED = 0,
 	STARTING,
 	FLUSHING,
 	WAITING_FOR_OTHERS,
-} flush_state;
+};
 
 static struct scatterlist *sg_sync;
-static flush_state f_state;
+static int f_state;
 
 spinlock_t sg_flush_lock;
 spinlock_t smp_cache_flush_lock;

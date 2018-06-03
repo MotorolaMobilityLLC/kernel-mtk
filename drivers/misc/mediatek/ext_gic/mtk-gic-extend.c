@@ -105,6 +105,8 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x18));
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x1C));
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x20));
+
+		/* add memory barrier */
 		mb();
 
 		/*
@@ -155,6 +157,8 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 	writel(mask->mask6, (dist_base + GIC_DIST_ENABLE_SET + 0x18));
 	writel(mask->mask7, (dist_base + GIC_DIST_ENABLE_SET + 0x1C));
 	writel(mask->mask8, (dist_base + GIC_DIST_ENABLE_SET + 0x20));
+
+	/* add memory barrier */
 	mb();
 
 
@@ -186,6 +190,8 @@ void mt_irq_set_pending_for_sleep(unsigned int irq)
 	writel(mask, dist_base + GIC_DIST_PENDING_SET + irq / 32 * 4);
 	pr_debug("irq:%d, 0x%p=0x%x\n", irq,
 		  dist_base + GIC_DIST_PENDING_SET + irq / 32 * 4, mask);
+
+	/* add memory barrier */
 	mb();
 }
 
@@ -275,6 +281,8 @@ void mt_irq_unmask_for_sleep(unsigned int virq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_SET + irq / 32 * 4);
+
+	/* add memory barrier */
 	mb();
 }
 
@@ -301,6 +309,8 @@ void mt_irq_mask_for_sleep(unsigned int virq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_CLEAR + irq / 32 * 4);
+
+	/* add memory barrier */
 	mb();
 }
 #if defined(CONFIG_FIQ_GLUE)
@@ -828,6 +838,8 @@ int request_fiq(int irq, fiq_isr_handler handler, unsigned long irq_flags, void 
 			spin_unlock_irqrestore(&irq_lock, flags);
 			if (mt_irq_set_fiq(irq, irq_flags))
 				break;
+
+			/* add memory barrier */
 			mb();
 			__mt_enable_fiq(irq);
 			return 0;
