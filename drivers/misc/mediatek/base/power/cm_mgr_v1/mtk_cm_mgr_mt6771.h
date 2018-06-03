@@ -20,6 +20,7 @@
 #define PER_CPU_STALL_RATIO
 #define LIGHT_LOAD
 /* #define USE_AVG_PMU */
+/* #define DEBUG_CM_MGR */
 
 #define CM_MGR_EMI_OPP	2
 #define CM_MGR_LOWER_OPP 10

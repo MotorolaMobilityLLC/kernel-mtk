@@ -203,7 +203,6 @@ static void update_v2f(int update, int debug)
 	}
 }
 
-/* #define DEBUG_CM_MGR */
 void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 {
 	unsigned long long result = 0;
