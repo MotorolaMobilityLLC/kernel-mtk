@@ -197,9 +197,6 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 				lock->owner_cpu);
 			pr_info("========== The call trace of spinning task ==========\n");
 			dump_stack();
-#ifdef CONFIG_SMP
-			trigger_all_cpu_backtrace();
-#endif
 			if (owner) {
 				pr_info("spinlock debug show lock owenr [%s/%d] info\n",
 				owner->comm, owner->pid);
