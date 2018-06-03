@@ -70,7 +70,7 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_MASK				0xFFFF
 #define PMIC_REG_SHIFT				0
 
-#define PMIC_CW00_INIT_VAL			0x4ED5
+#define PMIC_CW00_INIT_VAL			0x4E1D
 #define PMIC_CW11_INIT_VAL			0xA000
 
 /* TODO: marked this after driver is ready */
@@ -1073,6 +1073,10 @@ void clk_buf_post_init(void)
 #ifndef CONFIG_MTK_UFS_BOOTING
 	/* no need to use XO_EXT if storage is emmc */
 	clk_buf_ctrl_internal(CLK_BUF_UFS, false);
+#endif
+#ifndef CONFIG_NFC_CHIP_SUPPORT
+	/* no need to use XO_NFC if no NFC */
+	clk_buf_ctrl_internal(CLK_BUF_NFC, false);
 #endif
 }
 
