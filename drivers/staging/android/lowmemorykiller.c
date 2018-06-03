@@ -43,6 +43,12 @@
 #include <linux/profile.h>
 #include <linux/notifier.h>
 #include <linux/freezer.h>
+#include <linux/ratelimit.h>
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
+#include <mt-plat/aee.h>
+#include <disp_assert_layer.h>
+#endif
 
 #include "internal.h"
 
@@ -50,6 +56,7 @@
 #include "trace/lowmemorykiller.h"
 
 static DEFINE_SPINLOCK(lowmem_shrink_lock);
+static short lowmem_warn_adj, lowmem_no_warn_adj = 200;
 static u32 lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
 	0,
@@ -199,6 +206,67 @@ static short lowmem_amr_check(int *to_be_aggressive)
 #endif
 }
 
+static void __lowmem_trigger_warning(struct task_struct *selected)
+{
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
+#define MSG_SIZE_TO_AEE 70
+	char msg_to_aee[MSG_SIZE_TO_AEE];
+
+	lowmem_print(1, "low memory trigger kernel warning\n");
+	snprintf(msg_to_aee, MSG_SIZE_TO_AEE,
+		 "please contact AP/AF memory module owner[pid:%d]\n",
+		 selected->pid);
+
+	aee_kernel_warning_api("LMK", 0, DB_OPT_DEFAULT |
+			       DB_OPT_DUMPSYS_ACTIVITY |
+			       DB_OPT_LOW_MEMORY_KILLER |
+			       DB_OPT_PID_MEMORY_INFO | /* smaps and hprof*/
+			       DB_OPT_PROCESS_COREDUMP |
+			       DB_OPT_DUMPSYS_SURFACEFLINGER |
+			       DB_OPT_DUMPSYS_GFXINFO |
+			       DB_OPT_DUMPSYS_PROCSTATS,
+			       "Framework low memory\nCRDISPATCH_KEY:FLM_APAF",
+			       msg_to_aee);
+#undef MSG_SIZE_TO_AEE
+#else
+	pr_info("(%s) no warning triggered for selected(%s)(%d)\n",
+		__func__, selected->comm, selected->pid);
+#endif
+}
+
+/* try to trigger warning to get more information */
+static void lowmem_trigger_warning(struct task_struct *selected,
+				   short selected_oom_score_adj)
+{
+	static DEFINE_RATELIMIT_STATE(ratelimit, 60 * HZ, 1);
+
+	if (selected_oom_score_adj > lowmem_warn_adj)
+		return;
+
+	if (!__ratelimit(&ratelimit))
+		return;
+
+	__lowmem_trigger_warning(selected);
+}
+
+/* try to dump more memory status */
+static void dump_memory_status(short selected_oom_score_adj)
+{
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 1);
+	static DEFINE_RATELIMIT_STATE(ratelimit_urgent, 2 * HZ, 1);
+
+	if (selected_oom_score_adj > lowmem_warn_adj &&
+	    !__ratelimit(&ratelimit))
+		return;
+
+	if (!__ratelimit(&ratelimit_urgent))
+		return;
+
+	show_task_mem();
+	show_free_areas(0);
+	oom_dump_extra_info();
+}
+
 static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
@@ -342,8 +410,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(1, "Killing '%s' (%d) (tgid %d), adj %hd,\n"
 				 "   to free %ldkB on behalf of '%s' (%d) because\n"
 				 "   cache %ldkB is below limit %ldkB for oom_score_adj %hd (%hd)\n"
-				 "   Free memory is %ldkB above reserved\n"
-				 "   (decrease %d level)\n",
+				 "   Free memory is %ldkB above reserved(decrease %d level)\n",
 			     selected->comm, selected->pid, selected->tgid,
 			     selected_oom_score_adj,
 			     selected_tasksize * (long)(PAGE_SIZE / 1024),
@@ -352,6 +419,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			     min_score_adj, other_min_score_adj,
 			     free, to_be_aggressive);
 		lowmem_deathpending_timeout = jiffies + HZ;
+		lowmem_trigger_warning(selected, selected_oom_score_adj);
+
 		rem += selected_tasksize;
 	} else {
 		if (d_state_is_found == 1)
@@ -364,6 +433,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
 	spin_unlock(&lowmem_shrink_lock);
+
+	/* dump more memory info outside the lock */
+	if (selected && selected_oom_score_adj <= lowmem_no_warn_adj &&
+	    min_score_adj <= lowmem_warn_adj)
+		dump_memory_status(selected_oom_score_adj);
+
 	return rem;
 }
 
@@ -375,6 +450,10 @@ static struct shrinker lowmem_shrinker = {
 
 static int __init lowmem_init(void)
 {
+	if (IS_ENABLED(CONFIG_ZRAM) &&
+	    IS_ENABLED(CONFIG_MTK_GMO_RAM_OPTIMIZE))
+		vm_swappiness = 150;
+
 	register_shrinker(&lowmem_shrinker);
 	return 0;
 }
@@ -473,4 +552,6 @@ module_param_array_named(adj, lowmem_adj, short, &lowmem_adj_size, 0644);
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 0644);
 module_param_named(debug_level, lowmem_debug_level, uint, 0644);
+module_param_named(debug_adj, lowmem_warn_adj, short, 0644);
+module_param_named(no_debug_adj, lowmem_no_warn_adj, short, 0644);
 
