@@ -876,7 +876,7 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 
 	if (thread->dirty) {
 		cmdq_log("task in error dump thread:%u pkt:0x%p",
-			thread->idx, task->pkt);
+			thread->idx, task ? task->pkt : NULL);
 		return;
 	}
 
