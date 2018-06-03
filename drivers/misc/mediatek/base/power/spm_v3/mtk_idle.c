@@ -1346,6 +1346,11 @@ int soidle3_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
+	/* switch audio clock to allow vcore lp mode */
+#ifdef FEATURE_ENABLE_SODI2P5
+	faudintbus_pll2sq();
+#endif
+
 	/* clkmux for sodi3 */
 	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_SO3] = mtk_idle_check_clkmux(IDLE_TYPE_SO3, clkmux_block_mask);
@@ -1371,6 +1376,10 @@ int soidle3_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
+
+#ifdef FEATURE_ENABLE_SODI2P5
+	faudintbus_sq2pll();
+#endif
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
