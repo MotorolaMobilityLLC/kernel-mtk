@@ -184,7 +184,7 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 
 	/* Check SOC & Ichg */
 	if (battery_get_soc() > pinfo->data.ta_stop_battery_soc &&
-	    ichg > 0 && ichg < pinfo->data.pe20_ichg_level_threshold * 1000) {
+	    ichg > 0 && ichg < pinfo->data.pe20_ichg_level_threshold) {
 		ret = pe20_leave(pinfo);
 		if (ret < 0 || pe20->is_connect)
 			goto _err;
@@ -295,10 +295,10 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	chr_debug("%s: starts\n", __func__);
 
-	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold * 1000) {
+	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold) {
 		chr_err("VBAT > %dmV, directly set aicr to %dmA\n",
-			pinfo->data.vbat_cable_imp_threshold,
-			pinfo->data.ac_charger_input_current);
+			pinfo->data.vbat_cable_imp_threshold / 1000,
+			pinfo->data.ac_charger_input_current / 1000);
 		pe20->aicr_cable_imp = pinfo->data.ac_charger_input_current;
 		goto end;
 	}
@@ -353,10 +353,10 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	msleep(250);
 
 	if (cable_imp < pinfo->data.cable_imp_threshold) {
-		pe20->aicr_cable_imp = 3200000;
+		pe20->aicr_cable_imp = pinfo->data.ac_charger_input_current;
 		chr_info("Normal cable\n");
 	} else {
-		pe20->aicr_cable_imp = 1000000;
+		pe20->aicr_cable_imp = 1000000; /* uA */
 		chr_info("Bad cable\n");
 	}
 
@@ -437,7 +437,6 @@ int mtk_pe20_set_charging_current(struct charger_manager *pinfo,
 		return -ENOTSUPP;
 
 	chr_debug("%s: starts\n", __func__);
-	/* *aicr = 3200000; */
 	*aicr = pe20->aicr_cable_imp;
 	*ichg = pinfo->data.ta_ac_charger_current;
 	chr_info("%s: OK, ichg = %dmA, AICR = %dmA\n",

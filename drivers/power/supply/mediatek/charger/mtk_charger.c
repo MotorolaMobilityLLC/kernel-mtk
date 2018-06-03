@@ -81,6 +81,17 @@ static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
 
+bool is_power_path_supported(void)
+{
+	if (pinfo == NULL)
+		return false;
+
+	if (pinfo->data.power_path_support == true)
+		return true;
+
+	return false;
+}
+
 bool is_disable_charger(void)
 {
 	if (pinfo == NULL)
@@ -1461,6 +1472,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 	info->disable_charger = of_property_read_bool(np, "disable_charger");
 	info->enable_sw_safety_timer =
 			of_property_read_bool(np, "enable_sw_safety_timer");
+	info->sw_safety_timer_setting = info->enable_sw_safety_timer;
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
@@ -1768,6 +1780,9 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 	}
 
 	/* PE */
+	info->data.ta_12v_support = of_property_read_bool(np, "ta_12v_support");
+	info->data.ta_9v_support = of_property_read_bool(np, "ta_9v_support");
+
 	if (of_property_read_u32(np, "pe_ichg_level_threshold", &val) >= 0)
 		info->data.pe_ichg_level_threshold = val;
 	else {
@@ -1775,22 +1790,30 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 			PE_ICHG_LEAVE_THRESHOLD);
 		info->data.pe_ichg_level_threshold = PE_ICHG_LEAVE_THRESHOLD;
 	}
-	info->data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
-	info->data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
-	info->data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
 
-/* TODO */
-#ifdef TA_12V_SUPPORT
-	info->data.ta_12v_support = true;
-#else
-	info->data.ta_12v_support = false;
-#endif
+	if (of_property_read_u32(np, "ta_ac_12v_input_current", &val) >= 0)
+		info->data.ta_ac_12v_input_current = val;
+	else {
+		chr_err("use default TA_AC_12V_INPUT_CURRENT:%d\n",
+			TA_AC_12V_INPUT_CURRENT);
+		info->data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
+	}
 
-#ifdef TA_9V_SUPPORT
-	info->data.ta_9v_support = true;
-#else
-	info->data.ta_9v_support = false;
-#endif
+	if (of_property_read_u32(np, "ta_ac_9v_input_current", &val) >= 0)
+		info->data.ta_ac_9v_input_current = val;
+	else {
+		chr_err("use default TA_AC_9V_INPUT_CURRENT:%d\n",
+			TA_AC_9V_INPUT_CURRENT);
+		info->data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "ta_ac_7v_input_current", &val) >= 0)
+		info->data.ta_ac_7v_input_current = val;
+	else {
+		chr_err("use default TA_AC_7V_INPUT_CURRENT:%d\n",
+			TA_AC_7V_INPUT_CURRENT);
+		info->data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
+	}
 
 	/* PE 2.0 */
 	if (of_property_read_u32(np, "pe20_ichg_level_threshold", &val) >= 0)
@@ -2113,10 +2136,12 @@ static ssize_t mtk_chg_en_safety_timer_write(struct file *file,
 		pr_debug("%s: enable safety timer = %d\n", __func__, enable);
 
 		/* SW safety timer */
-		if (enable)
-			info->enable_sw_safety_timer = true;
-		else
-			info->enable_sw_safety_timer = false;
+		if (info->sw_safety_timer_setting == true) {
+			if (enable)
+				info->enable_sw_safety_timer = true;
+			else
+				info->enable_sw_safety_timer = false;
+		}
 
 		return count;
 	}

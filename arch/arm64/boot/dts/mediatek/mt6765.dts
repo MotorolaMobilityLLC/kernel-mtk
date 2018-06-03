@@ -2645,6 +2645,28 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,mt-charger";
 	};
 
+	lk_charger: lk_charger {
+		compatible = "mediatek,lk_charger";
+		enable_pe_plus;
+		power_path_support;
+		max_charger_voltage = <6500000>;
+		fast_charge_voltage = <3000000>;
+
+		/* charging current */
+		usb_charger_current = <500000>;
+		ac_charger_current = <2050000>;
+		ac_charger_input_current = <3200000>;
+		non_std_ac_charger_current = <500000>;
+		charging_host_charger_current = <500000>;
+		ta_ac_charger_current = <3000000>;
+		pd_charger_current = <500000>;
+
+		/* battery temperature protection */
+		temp_t4_threshold = <50>;
+		temp_t3_threshold = <45>;
+		temp_t1_threshold = <0>;
+	};
+
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
@@ -2653,11 +2675,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
+		enable_type_c;
 		power_path_support;
 
 		/* common */
 		battery_cv = <4350000>;
 		max_charger_voltage = <6500000>;
+		min_charger_voltage = <4600000>;
 
 		/* charging current */
 		usb_charger_current_suspend = <0>;
@@ -2698,8 +2722,16 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		max_charge_temp = <50>;
 		max_charge_temp_minus_x_degree = <47>;
 
+		/* PE */
+		ta_12v_support;
+		ta_9v_support;
+		pe_ichg_level_threshold = <1000000>; /* uA */
+		ta_ac_12v_input_current = <3200000>;
+		ta_ac_9v_input_current = <3200000>;
+		ta_ac_7v_input_current = <3200000>;
+
 		/* PE 2.0 */
-		pe20_ichg_level_threshold = <1000>;
+		pe20_ichg_level_threshold = <1000000>; /* uA */
 		ta_start_battery_soc = <0>;
 		ta_stop_battery_soc = <85>;
 
@@ -2711,6 +2743,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		pe40_dual_charger_input_current = <3000000>;
 		pe40_dual_charger_chg1_current = <2000000>;
 		pe40_dual_charger_chg2_current = <2000000>;
+		pe40_stop_battery_soc = <80>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;
@@ -2718,7 +2751,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 		/* cable measurement impedance */
 		cable_imp_threshold = <699>;
-		vbat_cable_imp_threshold = <3900>;
+		vbat_cable_imp_threshold = <3900000>; /* uV */
 
 		/* bif */
 		bif_threshold1 = <4250000>;

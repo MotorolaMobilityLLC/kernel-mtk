@@ -150,7 +150,7 @@ static int pe_check_leave_status(struct charger_manager *pinfo)
 
 	/* Check SOC & Ichg */
 	if (pinfo->data.ta_stop_battery_soc < battery_get_soc() &&
-	    ichg > 0 && ichg < pinfo->data.pe_ichg_level_threshold * 1000) {
+	    ichg > 0 && ichg < pinfo->data.pe_ichg_level_threshold) {
 		ret = pe_leave(pinfo, true);
 		if (ret < 0 || pe->is_connect)
 			goto _err;
