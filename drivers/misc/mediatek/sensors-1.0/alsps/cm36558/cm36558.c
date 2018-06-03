@@ -22,6 +22,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/gpio.h>
+#include <linux/of_gpio.h>
 #include "cust_alsps.h"
 #include "cm36558.h"
 #include "alsps.h"
@@ -1017,17 +1018,31 @@ int CM36558_setup_eint(struct i2c_client *client)
 	pinctrl_select_state(pinctrl, pins_cfg);
 	/* eint request */
 	if (CM36558_obj->irq_node) {
+#ifndef CONFIG_MTK_EIC
+		/*upstream code*/
+		ints[0] = of_get_named_gpio(CM36558_obj->irq_node,
+				"deb-gpios", 0);
+		if (ints[0] < 0) {
+			pr_err("debounce gpio not found\n");
+		} else{
+			ret = of_property_read_u32(CM36558_obj->irq_node,
+						"debounce", &ints[1]);
+			if (ret < 0)
+				pr_err("debounce time not found\n");
+			else
+				gpio_set_debounce(ints[0], ints[1]);
+			pr_debug("in[0]:%d, in[1]:%d!!\n", ints[0], ints[1]);
+		}
+#else
 		ret = of_property_read_u32_array(CM36558_obj->irq_node,
-						 "debounce", ints,
-						 ARRAY_SIZE(ints));
+				"debounce", ints, ARRAY_SIZE(ints));
 		if (ret) {
-			pr_err(
-				"of_property_read_u32_array fail, ret = %d\n",
-				ret);
+			pr_err("of_property_read_u32_array fail: %d\n", ret);
 			return ret;
 		}
 		gpio_set_debounce(ints[0], ints[1]);
-		pr_debug("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
+		pr_debug("in[0] = %d, in[1] = %d!!\n", ints[0], ints[1]);
+#endif
 
 		CM36558_obj->irq =
 			irq_of_parse_and_map(CM36558_obj->irq_node, 0);
