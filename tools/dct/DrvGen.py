@@ -20,6 +20,8 @@ from obj.ChipObj import Rushmore
 from obj.ChipObj import Whitney
 from obj.ChipObj import MT6759
 from obj.ChipObj import MT6763
+from obj.ChipObj import MT6750S
+from obj.ChipObj import MT6758
 
 from utility.util import LogLevel
 from utility.util import log
@@ -140,6 +142,8 @@ if __name__ == '__main__':
         chipObj = MT6759(dws_path, gen_path)
     elif cmp(chipId, 'MT6750S') == 0:
         chipObj = MT6750S(dws_path, gen_path)
+    elif cmp(chipId, 'MT6758') == 0:
+        chipObj = MT6758(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 
