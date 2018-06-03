@@ -4135,4 +4135,4 @@ UINT32 IMX338_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
         *pfFunc=&sensor_func;
 
     return ERROR_NONE;
-}    /*    IMX230_MIPI_RAW_SensorInit    */
+}    /*    IMX338_MIPI_RAW_SensorInit    */
