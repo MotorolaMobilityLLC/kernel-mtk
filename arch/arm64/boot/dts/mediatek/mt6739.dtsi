@@ -704,7 +704,7 @@
 		mdp_wdma0 = <&mdp_wdma0>;
 		mdp_wrot0 = <&mdp_wrot0>;
 		mdp_tdshp0 = <&mdp_tdshp0>;
-		mm_mutex = <&mm_mutex>;
+		mm_mutex = <&disp_mutex>;
 	};
 
 	dramc_ch0_top0@10228000 {
@@ -1182,7 +1182,7 @@
 	mtkfb: mtkfb {
 		compatible = "mediatek,mtkfb";
 	};
-	disp_mutex@14001000 {
+	disp_mutex: disp_mutex@14001000 {
 		compatible = "mediatek,disp_mutex";
 		reg = <0 0x14001000 0 0x1000>;
 		interrupts = <GIC_SPI 194 IRQ_TYPE_LEVEL_LOW>;
