@@ -3799,6 +3799,9 @@
 
 	};
 
+	goodix_fp: fingerprint {
+		compatible = "mediatek,goodix-fp";
+	};
 
 	otg_iddig: otg_iddig{
 		compatible = "mediatek,usb_iddig_bi_eint";
