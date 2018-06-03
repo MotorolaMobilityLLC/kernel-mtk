@@ -210,7 +210,7 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[5])
 			spm_err("get mdcldma failed\n");
 	}
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 
 	/* lowbattery_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
@@ -230,7 +230,7 @@ static void spm_register_init(void)
 		 edge_trig_irqs[4],
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	spm_set_dummy_read_addr(true);
 #endif
 }
@@ -381,7 +381,7 @@ int __init spm_module_init(void)
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
@@ -527,7 +527,7 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
 /**************************************
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_DRAMC
 struct ddrphy_golden_cfg {
 	u32 base;

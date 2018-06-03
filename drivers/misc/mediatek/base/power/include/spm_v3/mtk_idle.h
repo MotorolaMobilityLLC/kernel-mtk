@@ -34,7 +34,7 @@ extern void disable_soidle_by_bit(int id);
 extern void enable_mcsodi_by_bit(int id);
 extern void disable_mcsodi_by_bit(int id);
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 /* return 0: non-active, 1:active */
 int dpidle_active_status(void);
 #endif

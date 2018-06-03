@@ -213,7 +213,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (is_sspm_ipi_lock_spm()) {
 		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");

@@ -20,10 +20,7 @@
 #include <mt-plat/mtk_secure_api.h>
 
 /* #include <mach/irqs.h> */
-/* 20170407 Owen Fix build Error*/
-#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
-#endif
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
@@ -53,7 +50,7 @@
  * only for internal debug
  **************************************/
 #define PCM_SEC_TO_TICK(sec)	(sec * 32768)
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define SPM_PCMWDT_EN		(0)
 #else
 #define SPM_PCMWDT_EN		(1)
@@ -258,7 +255,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 
 	/* Auto-gen End */
 
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	/* Auto-gen Start */
 
 	/* SPM_CLK_CON */
