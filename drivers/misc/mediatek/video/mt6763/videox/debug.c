@@ -55,6 +55,7 @@
 #include "mtk_ion.h"
 #include "ion_drv.h"
 #include "ion.h"
+#include "layering_rule.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
@@ -426,7 +427,9 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		primary_display_switch_mode(sess_mode, session_id, 1);
-
+	} else if (strncmp(opt, "hrt_debug", 9) == 0) {
+		gen_hrt_pattern();
+		DISPMSG("hrt_debug\n");
 	} else if (strncmp(opt, "dsi_mode:cmd", 12) == 0) {
 		lcm_mode_status = 1;
 		DISPMSG("switch cmd\n");

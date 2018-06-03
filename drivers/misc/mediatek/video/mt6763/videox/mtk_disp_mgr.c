@@ -73,7 +73,7 @@
 #include "mtkfb_fence.h"
 #include "extd_multi_control.h"
 #include "m4u.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "compat_mtk_disp_mgr.h"
 #include "external_display.h"
 #include "extd_platform.h"
@@ -1073,7 +1073,7 @@ int _ioctl_query_valid_layer(unsigned long arg)
 		ret = -EFAULT;
 	}
 
-	ret = dispsys_hrt_calc(&disp_info_user, 0);
+	ret = layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);

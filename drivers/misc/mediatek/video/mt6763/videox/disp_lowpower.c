@@ -55,7 +55,7 @@
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
 #include "disp_rect.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "ddp_reg.h"
 #include "mtk_dramc.h"
 #include "disp_partial.h"

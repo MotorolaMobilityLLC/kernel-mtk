@@ -90,7 +90,7 @@
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
 #include "ddp_od.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "disp_rect.h"
 #include "disp_partial.h"
 #include "ddp_aal.h"
@@ -3711,6 +3711,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 done:
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
+	layering_rule_init();
 
 	_primary_path_unlock(__func__);
 	return ret;
