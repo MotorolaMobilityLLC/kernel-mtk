@@ -91,6 +91,14 @@ typedef struct {
 bool mtk_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size);
 bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size);
 
+typedef void (*gpu_power_change_notify_fp)(int power_on);
+
+bool mtk_register_gpu_power_change(const char *name, gpu_power_change_notify_fp callback);
+bool mtk_unregister_gpu_power_change(const char *name);
+
+/* GPU POWER NOTIFY should be called by GPU only */
+void mtk_notify_gpu_power_change(int power_on);
+
 #ifdef __cplusplus
 }
 #endif

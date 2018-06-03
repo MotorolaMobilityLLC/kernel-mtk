@@ -13,6 +13,9 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/mutex.h>
+
 #include <mt-plat/mtk_gpu_utility.h>
 #include "ged_monitor_3D_fence.h"
 
@@ -688,3 +691,85 @@ bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size)
 	return false;
 }
 EXPORT_SYMBOL(mtk_get_gpu_pmu_swapnreset);
+
+/* ----------------------------------------------------------------------------- */
+
+typedef struct {
+	 gpu_power_change_notify_fp callback;
+	 char name[128];
+	 struct list_head sList;
+} gpu_power_change_entry_t;
+
+static struct {
+	struct mutex lock;
+	struct list_head listen;
+} g_power_change = {
+	.lock     = __MUTEX_INITIALIZER(g_power_change.lock),
+	.listen   = LIST_HEAD_INIT(g_power_change.listen),
+};
+
+bool mtk_register_gpu_power_change(const char *name, gpu_power_change_notify_fp callback)
+{
+	gpu_power_change_entry_t *entry = NULL;
+
+	entry = kmalloc(sizeof(gpu_power_change_entry_t), GFP_KERNEL);
+	if (entry == NULL)
+		return false;
+
+	entry->callback = callback;
+	strncpy(entry->name, name, sizeof(entry->name) - 1);
+	entry->name[sizeof(entry->name) - 1] = 0;
+	INIT_LIST_HEAD(&entry->sList);
+
+	mutex_lock(&g_power_change.lock);
+
+	list_add(&entry->sList, &g_power_change.listen);
+
+	mutex_unlock(&g_power_change.lock);
+
+	return true;
+}
+EXPORT_SYMBOL(mtk_register_gpu_power_change);
+
+bool mtk_unregister_gpu_power_change(const char *name)
+{
+	struct list_head *pos, *head;
+	gpu_power_change_entry_t *entry = NULL;
+
+	mutex_lock(&g_power_change.lock);
+
+	head = &g_power_change.listen;
+	list_for_each(pos, head) {
+		entry = list_entry(pos, gpu_power_change_entry_t, sList);
+		if (strncmp(entry->name, name, sizeof(entry->name) - 1) == 0)
+			break;
+		entry = NULL;
+	}
+
+	if (entry) {
+		list_del(&entry->sList);
+		kfree(entry);
+	}
+
+	mutex_unlock(&g_power_change.lock);
+
+	return true;
+}
+EXPORT_SYMBOL(mtk_unregister_gpu_power_change);
+
+void mtk_notify_gpu_power_change(int power_on)
+{
+	struct list_head *pos, *head;
+	gpu_power_change_entry_t *entry = NULL;
+
+	mutex_lock(&g_power_change.lock);
+
+	head = &g_power_change.listen;
+	list_for_each(pos, head) {
+		entry = list_entry(pos, gpu_power_change_entry_t, sList);
+		entry->callback(power_on);
+	}
+
+	mutex_unlock(&g_power_change.lock);
+}
+EXPORT_SYMBOL(mtk_notify_gpu_power_change);
