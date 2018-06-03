@@ -22,7 +22,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_DCS) += mtkdcs/
-
+obj-$(CONFIG_MTK_DRS)	+= mtkdrs/
 
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
