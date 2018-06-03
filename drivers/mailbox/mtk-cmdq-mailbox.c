@@ -203,7 +203,7 @@ static void cmdq_thread_err_reset(struct cmdq *cmdq, struct cmdq_thread *thread,
 	cookie = readl(thread->base + CMDQ_THR_CNT);
 
 	cmdq_msg(
-		"reset backup pc:0x%08x end:0x%08x cookie:0x%08x spr:0x%x 0x%x 0x%x 0x%x\n",
+		"reset backup pc:0x%08x end:0x%08x cookie:0x%08x spr:0x%x 0x%x 0x%x 0x%x",
 		pc, end, cookie, spr[0], spr[1], spr[2], spr[3]);
 	WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 

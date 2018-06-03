@@ -946,6 +946,8 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	struct task_private *private;
 	s32 err;
 
+	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
+
 	cmdq_task_create(desc->scenario, &handle);
 
 	/* TODO: set secure data */
@@ -981,6 +983,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 				copy_size, user_space);
 			if (err < 0) {
 				cmdq_task_destroy(handle);
+				CMDQ_SYSTRACE_END();
 				return err;
 			}
 		}
@@ -990,6 +993,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 			(u32 *)(unsigned long)desc->regRequest.regAddresses);
 		if (err < 0) {
 			cmdq_task_destroy(handle);
+			CMDQ_SYSTRACE_END();
 			return err;
 		}
 
@@ -998,6 +1002,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 			2 * CMDQ_INST_SIZE, user_space);
 		if (err < 0) {
 			cmdq_task_destroy(handle);
+			CMDQ_SYSTRACE_END();
 			return err;
 		}
 	} else {
@@ -1007,6 +1012,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 			desc->blockSize, user_space);
 		if (err < 0) {
 			cmdq_task_destroy(handle);
+			CMDQ_SYSTRACE_END();
 			return err;
 		}
 	}
@@ -1022,6 +1028,8 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	 * holds same engines.
 	 */
 	cmdq_mdp_flush_async_impl(handle);
+
+	CMDQ_SYSTRACE_END();
 
 	return 0;
 }
@@ -1087,6 +1095,8 @@ s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
 	s32 status, waitq;
 	u32 i;
 
+	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
+
 	/* we have to wait handle has valid thread first */
 	if (handle->thread == CMDQ_INVALID_THREAD) {
 		CMDQ_LOG("pid:%d handle:0x%p wait for valid thread first\n",
@@ -1113,6 +1123,7 @@ s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
 				 */
 				list_del_init(&handle->list_entry);
 				mutex_unlock(&mdp_task_mutex);
+				CMDQ_SYSTRACE_END();
 				return -ETIMEDOUT;
 			}
 			/* valid thread, so we keep going */
@@ -1141,6 +1152,8 @@ s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
 
 	/* consume again since maybe more conflict task in waiting */
 	cmdq_mdp_add_consume_item();
+
+	CMDQ_SYSTRACE_END();
 
 	return status;
 }
