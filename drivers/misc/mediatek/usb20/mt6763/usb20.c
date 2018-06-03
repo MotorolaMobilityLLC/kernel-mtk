@@ -372,6 +372,49 @@ bool mt_usb_is_device(void)
 #endif
 	return !mtk_musb->is_host;
 }
+static struct delayed_work disconnect_check_work;
+static bool musb_hal_is_vbus_exist(void);
+void do_disconnect_check_work(struct work_struct *data)
+{
+	bool vbus_exist = false;
+	unsigned long flags = 0;
+	struct musb *musb = mtk_musb;
+
+	msleep(200);
+
+	vbus_exist = musb_hal_is_vbus_exist();
+	DBG(1, "vbus_exist:<%d>\n", vbus_exist);
+	if (vbus_exist)
+		return;
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
+	DBG(1, "speed <%d>\n", musb->g.speed);
+	/* notify gadget driver, g.speed judge is very important */
+	if (!musb->is_host && musb->g.speed != USB_SPEED_UNKNOWN) {
+		DBG(0, "musb->gadget_driver:%p\n", musb->gadget_driver);
+		if (musb->gadget_driver && musb->gadget_driver->disconnect) {
+			DBG(0, "musb->gadget_driver->disconnect:%p\n", musb->gadget_driver->disconnect);
+			/* align musb_g_disconnect */
+			spin_unlock(&musb->lock);
+			musb->gadget_driver->disconnect(&musb->g);
+			spin_lock(&musb->lock);
+
+		}
+		musb->g.speed = USB_SPEED_UNKNOWN;
+	}
+	DBG(1, "speed <%d>\n", musb->g.speed);
+	spin_unlock_irqrestore(&mtk_musb->lock, flags);
+}
+void trigger_disconnect_check_work(void)
+{
+	static int inited;
+
+	if (!inited) {
+		INIT_DELAYED_WORK(&disconnect_check_work, do_disconnect_check_work);
+		inited = 1;
+	}
+	queue_delayed_work(mtk_musb->st_wq, &disconnect_check_work, 0);
+}
 
 #define CONN_WORK_DELAY 50
 static struct delayed_work connection_work;
@@ -1458,6 +1501,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 #endif
 
 	register_usb_hal_dpidle_request(usb_6763_dpidle_request);
+	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
 
 	/* enable uart log */
 	musb_uart_debug = 1;
