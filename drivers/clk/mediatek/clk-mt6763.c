@@ -1770,6 +1770,17 @@ void check_seninf_ck(void)
 	pr_err("%s: UNIVPLL_CON1 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON1));
 }
 
+void mipic_26m_en(int en)
+{
+	/* [6] MIPIC0 26M */
+	/* [11] MIPIC1 26M */
+	if (en) {
+		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) | 0x00000840);
+	} else {
+		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff7bf);
+	}
+}
+
 unsigned int mt_get_ckgen_freq(unsigned int ID)
 {
 	int output = 0, i = 0;
