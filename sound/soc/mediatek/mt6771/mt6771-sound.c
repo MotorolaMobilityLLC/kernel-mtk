@@ -1413,10 +1413,19 @@ bool SetDLSrc2(unsigned int rate)
 	return true;
 }
 
+enum {
+	UL_IIR_SW = 0,
+	UL_IIR_5HZ,
+	UL_IIR_10HZ,
+	UL_IIR_25HZ,
+	UL_IIR_50HZ,
+	UL_IIR_75HZ,
+};
+
 bool set_chip_adc_in(unsigned int rate)
 {
-	unsigned int dVoiceModeSelect = 0;
-	unsigned int afeAddaUlSrcCon0 = 0;	/* default value */
+	unsigned int voice_mode;
+	unsigned int ul_src_con0 = 0;	/* default value */
 
 	/* enable aud_pad_top fifo, need set after GPIO enable, pmic miso clk on */
 	Afe_Set_Reg(AFE_AUD_PAD_TOP_CFG, 0x31, MASK_ALL);
@@ -1427,12 +1436,12 @@ bool set_chip_adc_in(unsigned int rate)
 	/* Using Internal ADC */
 	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1);
 
-	dVoiceModeSelect =
-	    SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
+	voice_mode = SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
 
-	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
+	ul_src_con0 |= (voice_mode << 17) & (0x7 << 17);
+	ul_src_con0 |= UL_IIR_75HZ << 7;
 
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, ul_src_con0, MASK_ALL);
 
 	/* mtkaif_rxif_data_mode = 0, amic */
 	Afe_Set_Reg(AFE_ADDA_MTKAIF_RX_CFG0, 0x0, 0x1);
@@ -1603,6 +1612,10 @@ bool SetMemIfFormatReg(unsigned int InterfaceType, unsigned int eFetchFormat)
 	case Soc_Aud_Digital_Block_MEM_AWB2:
 			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 14, 1 << 14);
 			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 28, 3 << 28);
+			break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 6, 1 << 6);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 12, 3 << 12);
 			break;
 	case Soc_Aud_Digital_Block_MEM_VUL2:
 			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 7, 1 << 7);
@@ -2521,6 +2534,7 @@ static void Aud_IRQ1_Handler(void)
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2))
 		Auddrv_DL2_Interrupt_Handler();
 }
+
 static void Aud_IRQ2_Handler(void)
 {
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL))
@@ -2533,24 +2547,32 @@ static void Aud_IRQ2_Handler(void)
 		Auddrv_UL2_Interrupt_Handler();
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI))
 		Auddrv_MOD_DAI_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL2))
+		Auddrv_VUL2_Interrupt_Handler();
+}
+
+static void Aud_IRQ6_Handler(void)
+{
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3))
+		Auddrv_DL1_Data2_Interrupt_Handler(Soc_Aud_Digital_Block_MEM_DL3);
 }
 
 static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
-	NULL,
-	Aud_IRQ1_Handler,
-	Aud_IRQ2_Handler,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL, /* Reserved */
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ0_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE] = Aud_IRQ1_Handler,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE] = Aud_IRQ2_Handler,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE] = Aud_IRQ6_Handler,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE] = NULL, /* Reserved */
+	[Soc_Aud_IRQ_MCU_MODE_IRQ8_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ9_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ10_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ11_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ12_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ_ACC1_MCU_MODE] = NULL,
+	[Soc_Aud_IRQ_MCU_MODE_IRQ_ACC2_MCU_MODE] = NULL,
 };
 
 void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
@@ -2567,13 +2589,16 @@ enum Soc_Aud_IRQ_MCU_MODE irq_request_number(enum soc_aud_digital_block mem_bloc
 	case Soc_Aud_Digital_Block_MEM_DL1:
 	case Soc_Aud_Digital_Block_MEM_DL2:
 		return Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE;
+	case Soc_Aud_Digital_Block_MEM_DL3:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE;
 	case Soc_Aud_Digital_Block_MEM_VUL:
+	case Soc_Aud_Digital_Block_MEM_VUL2:
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-	case Soc_Aud_Digital_Block_MEM_VUL2:
 	case Soc_Aud_Digital_Block_MEM_AWB2:
+	case Soc_Aud_Digital_Block_MEM_DAI2:
 		return Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE;
 	default:
 		pr_err("%s, can't request irq_num by this mem_block = %d", __func__, mem_block);
@@ -2589,7 +2614,6 @@ bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 
 bool SetHighAddr(enum soc_aud_digital_block MemBlock, bool usingdram, dma_addr_t addr)
 {
-	/* TODO: need check how m17 support 34 bit */
 	return true;
 }
 
@@ -2597,9 +2621,13 @@ int get_usage_digital_block(enum audio_usage_id id)
 {
 	switch (id) {
 	case AUDIO_USAGE_PCM_CAPTURE:
-		return Soc_Aud_Digital_Block_MEM_VUL;
+		return Soc_Aud_Digital_Block_MEM_VUL_DATA2;
 	case AUDIO_USAGE_SCP_SPK_IV_DATA:
 		return Soc_Aud_Digital_Block_MEM_AWB2;
+	case AUDIO_USAGE_DEEPBUFFER_PLAYBACK:
+		return Soc_Aud_Digital_Block_MEM_DL3;
+	case AUDIO_USAGE_FM_CAPTURE:
+		return Soc_Aud_Digital_Block_MEM_VUL2;
 	default:
 		pr_debug("%s(), not defined id %d\n", __func__, id);
 		return -EINVAL;
@@ -2610,9 +2638,13 @@ int get_usage_digital_block_io(enum audio_usage_id id)
 {
 	switch (id) {
 	case AUDIO_USAGE_PCM_CAPTURE:
-		return Soc_Aud_AFE_IO_Block_MEM_VUL;
+		return Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2;
 	case AUDIO_USAGE_SCP_SPK_IV_DATA:
 		return Soc_Aud_AFE_IO_Block_MEM_AWB2;
+	case AUDIO_USAGE_DEEPBUFFER_PLAYBACK:
+		return Soc_Aud_AFE_IO_Block_MEM_DL3;
+	case AUDIO_USAGE_FM_CAPTURE:
+		return Soc_Aud_AFE_IO_Block_MEM_VUL2;
 	default:
 		pr_debug("%s(), not defined id %d\n", __func__, id);
 		return -EINVAL;
@@ -2633,12 +2665,12 @@ int set_sram_mode(enum audio_sram_mode sram_mode)
 {
 	if (sram_mode == audio_sram_compact_mode) {
 		/* all memif use compact mode */
-		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x0 << 16, 0x7fff << 16);
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x0 << 16, 0x4fff << 16);
 		/* cpu use compact mode when access sram data */
 		Afe_Set_Reg(AFE_MEMIF_MSB, 1 << 29, 1 << 29);
 	} else {
 		/* all memif use normal mode */
-		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7fff << 16, 0x7fff << 16);
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x4fff << 16, 0x4fff << 16);
 		/* cpu use normal mode when access sram data */
 		Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 1 << 29);
 	}

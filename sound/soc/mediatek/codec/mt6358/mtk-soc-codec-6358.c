@@ -129,6 +129,7 @@ enum {
 	DL_GAIN_N_10DB = 18,
 	DL_GAIN_N_40DB = 0x1f,
 };
+#define DL_GAIN_N_10DB_REG (DL_GAIN_N_10DB << 7 | DL_GAIN_N_10DB)
 #define DL_GAIN_N_40DB_REG (DL_GAIN_N_40DB << 7 | DL_GAIN_N_40DB)
 #define DL_GAIN_REG_MASK 0x0f9f
 
@@ -321,10 +322,8 @@ static void ClsqEnable(bool enable)
 	mutex_lock(&AudAna_lock);
 	if (enable) {
 		if (ClsqCount == 0) {
-			Ana_Set_Reg(TOP_CLKSQ, 0x0001, 0x0001);
-			/* Enable CLKSQ 26MHz */
-			Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0x0001);
-			/* Turn on 26MHz source clock */
+			/* Enable CLKSQ, Audio CLK source: internal CLK DCXO */
+			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0001, 0x0003);
 		}
 		ClsqCount++;
 	} else {
@@ -334,10 +333,8 @@ static void ClsqEnable(bool enable)
 			ClsqCount = 0;
 		}
 		if (ClsqCount == 0) {
-			Ana_Set_Reg(TOP_CLKSQ_CLR, 0x0001, 0x0001);
-			/* Turn off 26MHz source clock */
-			Ana_Set_Reg(TOP_CLKSQ, 0x0000, 0x0001);
-			/* Disable CLKSQ 26MHz */
+			/* disable CLKSQ */
+			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x0003);
 		}
 	}
 	mutex_unlock(&AudAna_lock);
@@ -584,7 +581,7 @@ static void hp_main_output_ramp(bool up)
 		stage = up ? i : target - i;
 		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 8, 0x7 << 8);
 		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 11, 0x7 << 11);
-		usleep_range(100, 150);
+		udelay(600);
 	}
 }
 
@@ -596,7 +593,19 @@ static void hp_aux_feedback_loop_gain_ramp(bool up)
 	for (i = 0; i <= 0xf; i++) {
 		stage = up ? i : 0xf - i;
 		Ana_Set_Reg(AUDDEC_ANA_CON9, stage << 12, 0xf << 12);
-		usleep_range(100, 150);
+		udelay(600);
+	}
+}
+
+static void hp_pull_down(bool enable)
+{
+	unsigned int from = enable ? 0x0 : 0x6;
+	unsigned int to = enable ? 0x6 : 0x0;
+	unsigned int i;
+
+	for (i = from; i <= to; i = enable ? (i + 1) : (i - 1)) {
+		Ana_Set_Reg(AUDDEC_ANA_CON4, i, 0x7);
+		udelay(600);
 	}
 }
 
@@ -1740,72 +1749,40 @@ static struct snd_soc_dai_driver mtk_6356_dai_codecs[] = {
 static void TurnOnDacPower(int device)
 {
 	pr_debug("TurnOnDacPower\n");
-	audckbufEnable(true);
 
 	/* gpio mosi mode */
 	set_playback_gpio(true);
 
-	/* Enable HP main CMFB Switch */
-	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
-	/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
-	Ana_Set_Reg(AUDDEC_ANA_CON10, 0x00a8, 0xffff);
-
-	switch (device) {
-	case AUDIO_ANALOG_DEVICE_OUT_EARPIECEL:
-	case AUDIO_ANALOG_DEVICE_OUT_EARPIECER:
-		/* Release HS CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0088, 0xffff);
-		break;
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERL:
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKERR:
-		/* Release LO CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0028, 0xffff);
-		break;
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L:
-	case AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R:
-		/* Dsiable HP main CMFB Switch */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
-		/* Release HP CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x00A0, 0xffff);
-		/* Release LO CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0020, 0xffff);
-		break;
-	case AUDIO_ANALOG_DEVICE_OUT_HEADSETL:
-	case AUDIO_ANALOG_DEVICE_OUT_HEADSETR:
-	default:
-		/* Dsiable HP main CMFB Switch */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
-		/* Release HP CMFB pull down */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x00a0, 0xffff);
-		break;
-	};
-
-
 	NvregEnable(true);	/* Enable AUDGLB */
+
+	/* Pull-down HPL/R to AVSS28_AUD */
+	hp_pull_down(true);
+	/* release  HP CMFB gate rstb */
+	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x1 << 6, 0x1 << 6);
+
+	audckbufEnable(true);
 	ClsqEnable(true);	/* Turn on 26MHz source clock */
 	Topck_Enable(true);	/* Turn on AUDNCP_CLKDIV engine clock */
+
 	/* Turn on AUD 26M */
-	udelay(250);
-
-	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00c4); /* power on clock */
-
-	udelay(250);
-
-	/* enable aud_pad RX fifos */
-	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0031, 0x00ff);
+	usleep_range(250, 270);
 
 	/* Audio system digital clock power down release */
-	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
-	/* sdm audio fifo clock power on */
-	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
-	/* scrambler clock on enable */
-	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
-	/* sdm power on */
-	Ana_Set_Reg(AFUNC_AUD_CON2, 0x000B, 0xffff);
-	/* sdm fifo enable */
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00c5);
 
-	/* afe enable */
-	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
+	usleep_range(250, 270);
+
+	/* sdm audio fifo clock power on */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
+	/* scrambler clock on enable */
+	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
+	/* sdm power on */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
+	/* sdm fifo enable */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x000B, 0xffff);
+
+	/* afe enable, dl_lr_swap = 0 */
+	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x4001);
 
 	setDlMtkifSrc(true);
 }
@@ -1828,15 +1805,18 @@ static void TurnOffDacPower(void)
 		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0040, 0x0040);
 	}
 
-	/* disable aud_pad RX fifos */
-	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0000, 0x00ff);
-
-	udelay(250);
+	usleep_range(250, 270);
 
 	set_playback_gpio(false);
 
 	Topck_Enable(false);
 	ClsqEnable(false);
+
+	/* Set HP CMFB gate rstb */
+	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0, 0x1 << 6);
+	/* disable Pull-down HPL/R to AVSS28_AUD */
+	hp_pull_down(false);
+
 	NvregEnable(false);
 	audckbufEnable(false);
 }
@@ -1874,22 +1854,11 @@ static void Audio_Amp_Change(int channels, bool enable)
 		/* here pmic analog control */
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
-			/* switch to ground to de pop-noise */
-			/*HP_Switch_to_Ground();*/
 
-			/* Pull-down HPL/R to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
-
-			/* Disable headphone short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
-			/* Disable handset short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
-			/* Disable linout short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 			/* Reduce ESD resistance of AU_REFN */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 			/* Set HPR/HPL gain as minimum (~ -40dB) */
-			Ana_Set_Reg(ZCD_CON2, DL_GAIN_N_40DB_REG, 0xffff);
+			Ana_Set_Reg(ZCD_CON2, DL_GAIN_N_10DB_REG, 0xffff);
 
 			/* Turn on DA_600K_NCP_VA18 */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
@@ -1901,26 +1870,29 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
 			/* Enable NCP */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
-			udelay(250);
+			usleep_range(250, 270);
 
 			/* Enable cap-less LDOs (1.5V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1055, 0x1055);
 			/* Enable NV regulator (-1.2V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0001, 0xffff);
-			udelay(100);
+			usleep_range(100, 120);
 
 			/* Disable AUD_ZCD */
 			Hp_Zcd_Enable(false);
 
+			/* Disable headphone short-circuit protection */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 			/* Enable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
+
 			/* Set HP DR bias current optimization, 010: 6uA */
 			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x4900, 0xffff);
 			/* Set HP & ZCD bias current optimization */
 			/* 01: ZCD: 4uA, HP/HS/LO: 5uA */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
 			/* Set HPP/N STB enhance circuits */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
 
 			/* Enable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000c, 0xffff);
@@ -1939,6 +1911,11 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0e00, 0xffff);
 			/* Disable HP aux CMFB loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+
+			/* Select CMFB resistor bulk to AC mode */
+			/* Selec HS/LO cap size (6.5pF default) */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0xffff);
+
 			/* Enable HP main output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x00ff, 0xffff);
 			/* Enable HPR/L main output stage step by step */
@@ -1950,14 +1927,14 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3fcf, 0xffff);
 
 			/* apply volume setting */
-			headset_volume_ramp(DL_GAIN_N_40DB,
+			headset_volume_ramp(DL_GAIN_N_10DB,
 					    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 
 			/* Disable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3fc3, 0xffff);
 			/* Unshort HP main output to HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3f03, 0xffff);
-			udelay(100);
+			usleep_range(100, 120);
 
 			/* Enable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
@@ -1965,7 +1942,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30ff, 0xffff);
 			/* Enable low-noise mode of DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf201, 0xffff);
-			udelay(100);
+			usleep_range(100, 120);
 
 			/* Switch HPL MUX to audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x32ff, 0xffff);
@@ -1975,15 +1952,15 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Apply digital DC compensation value to DAC */
 			SetDcCompenSation(true);
 
-			/* No Pull-down HPL/R to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
+			/* Disable Pull-down HPL/R to AVSS28_AUD */
+			hp_pull_down(false);
 		}
 
 	} else {
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
 			/* Pull-down HPL/R to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
+			hp_pull_down(true);
 
 			SetDcCompenSation(false);
 
@@ -2035,8 +2012,8 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable HP driver bias circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0, 0x3 << 6);
 
-			/* Disable HP aux CMFB loop, Enable HP main CMFB for HP off state */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+			/* Disable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
 
 			/* Disable HP aux feedback loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3 << 4);
@@ -2044,14 +2021,8 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3 << 2);
 
-			/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0xa8, 0xff);
-
 			/* Disable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
-
-			/* Disable AUD_ZCD */
-			Hp_Zcd_Enable(false);
 
 			/* Disable NV regulator (-1.2V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0, 0x1);
@@ -2060,8 +2031,8 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable NCP */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
 
-			/* Disable Pull-down HPL/R to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
+			/* Increase ESD resistance of AU_REFN */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0, 0x1 << 14);
 
 			if (GetDLStatus() == false)
 				TurnOffDacPower();
@@ -2155,16 +2126,10 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0xffff);
 	/* Pull-down HPL/R to AVSS28_AUD */
 	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
-	/* Turn on 26MHz source clock */
-	Ana_Set_Reg(TOP_CLKSQ, 0x0001, 0x0001);
-	Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0x0001);
+	/* Enable CLKSQ, Audio CLK source: internal CLK DCXO */
+	Ana_Set_Reg(AUDENC_ANA_CON6, 0x0001, 0x0003);
 	/* Turn on AUDNCP_CLKDIV engine clock */
 	Ana_Set_Reg(AUD_TOP_CKPDN_CON0, 0x0, 0x66);
-
-	udelay(250);
-
-	/* power on clock */
-	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xBfff);
 
 	udelay(250);
 
@@ -2249,7 +2214,7 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	set_capture_gpio(true);
 
 	/* gpio miso driving set to default 6mA, 0xcccc */
-	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
+	Ana_Set_Reg(DRV_CON3, 0x8888, 0xffff);
 
 	/* Enable audio ADC CLKGEN  */
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 5, 0x1 << 5);
@@ -2259,9 +2224,6 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0100, 0x2500);
 	/* LCLDO_ENC remote sense */
 	Ana_Set_Reg(AUDDEC_ANA_CON14, 0x2500, 0x2500);
-
-	/* DCC 50k CLK (from 26M) */
-	Ana_Set_Reg(TOP_CLKSQ_SET, 0x3, 0x3);
 
 	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2062, 0xffff);
 	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2062, 0xffff);
@@ -2354,16 +2316,8 @@ static void Voice_Amp_Change(bool enable)
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_EARPIECEL);
 			pr_debug("%s(), amp on\n", __func__);
 
-			/* Disable headphone short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
-			/* Disable handset short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
-			/* Disable linout short-circuit protection */
-			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 			/* Reduce ESD resistance of AU_REFN */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
-			/* Set HS gain as minimum (~ -40dB) */
-			Ana_Set_Reg(ZCD_CON3, DL_GAIN_N_40DB, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 
 			/* Turn on DA_600K_NCP_VA18 */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
@@ -2375,17 +2329,19 @@ static void Voice_Amp_Change(bool enable)
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
 			/* Enable NCP */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
-			udelay(250);
+			usleep_range(250, 270);
 
 			/* Enable cap-less LDOs (1.5V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1055, 0x1055);
 			/* Enable NV regulator (-1.2V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0001, 0xffff);
-			udelay(100);
+			usleep_range(100, 120);
 
 			/* Disable AUD_ZCD */
 			Hp_Zcd_Enable(false);
 
+			/* Disable handset short-circuit protection */
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
 			/* Enable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
 			/* Set HP DR bias current optimization, 010: 6uA */
@@ -2393,23 +2349,31 @@ static void Voice_Amp_Change(bool enable)
 			/* Set HP & ZCD bias current optimization */
 			/* 01: ZCD: 4uA, HP/HS/LO: 5uA */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
-
 			/* Set HS STB enhance circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
+
+			/* Disable HP main CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
+			/* Select CMFB resistor bulk to AC mode */
+			/* Selec HS/LO cap size (6.5pF default) */
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0xffff);
+
 			/* Enable HS driver bias circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0092, 0xffff);
 			/* Enable HS driver core circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0093, 0xffff);
+
 			/* Set HS gain to normal gain step by step */
 			Ana_Set_Reg(ZCD_CON3,
 				    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL],
 				    0xffff);
+
 			/* Enable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
 			/* Enable Audio DAC  */
-			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0xffff);
 			/* Enable low-noise mode of DAC */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0201, 0xffff);
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0001, 0xffff);
 			/* Switch HS MUX to audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x009b, 0xffff);
 		}
@@ -2439,9 +2403,6 @@ static void Voice_Amp_Change(bool enable)
 
 			/* Enable HP main CMFB Switch */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x2 << 8, 0xff << 8);
-
-			/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0xa8, 0xff);
 
 			/* Disable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
@@ -2503,16 +2464,8 @@ static void Speaker_Amp_Change(bool enable)
 
 		pr_debug("%s(), enable %d\n", __func__, enable);
 
-		/* Disable headphone short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
-		/* Disable handset short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
-		/* Disable linout short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 		/* Reduce ESD resistance of AU_REFN */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
-		/* Set HS gain as minimum (~ -40dB) */
-		Ana_Set_Reg(ZCD_CON1, DL_GAIN_N_40DB_REG, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 
 		/* Turn on DA_600K_NCP_VA18 */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
@@ -2524,16 +2477,19 @@ static void Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
 		/* Enable NCP */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
-		udelay(250);
+		usleep_range(250, 270);
 
 		/* Enable cap-less LDOs (1.5V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1055, 0x1055);
 		/* Enable NV regulator (-1.2V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0001, 0xffff);
-		udelay(100);
+		usleep_range(100, 120);
 
 		/* Disable AUD_ZCD */
 		Hp_Zcd_Enable(false);
+
+		/* Disable linout short-circuit protection */
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
@@ -2545,6 +2501,13 @@ static void Speaker_Amp_Change(bool enable)
 
 		/* Set LO STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0xffff);
+
+		/* Disable HP main CMFB loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
+		/* Select CMFB resistor bulk to AC mode */
+		/* Selec HS/LO cap size (6.5pF default) */
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0xffff);
+
 		/* Enable LO driver bias circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0112, 0xffff);
 		/* Enable LO driver core circuits */
@@ -2556,9 +2519,9 @@ static void Speaker_Amp_Change(bool enable)
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
 		/* Enable Audio DAC  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0xffff);
 		/* Enable low-noise mode of DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0201, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0001, 0xffff);
 		/* Switch LOL MUX to audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x011b, 0xffff);
 	} else {
@@ -2585,12 +2548,6 @@ static void Speaker_Amp_Change(bool enable)
 
 			/* Disable HP aux CMFB loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0, 0xff << 8);
-
-			/* Enable HP main CMFB Switch */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x2 << 8, 0xff << 8);
-
-			/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0xa8, 0xff);
 
 			/* Disable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
@@ -3429,11 +3386,10 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 
 		if (GetAdcStatus() == false) {
 			/* here to set digital part */
-			/* AdcClockEnable(true); */
 			Topck_Enable(true);
 
 			/* power on clock */
-			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00bf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -3495,8 +3451,8 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
-				/* Disable MICBIAS1, MISBIAS1 = 1P7V */
-				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0xffff);
+				/* Disable MICBIAS1 */
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x0001);
 			}
 
 			/* LCLDO_ENC remote sense off */
@@ -3559,7 +3515,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Topck_Enable(true);
 
 			/* power on clock */
-			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00bf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -3654,8 +3610,6 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* LCLDO_ENC remote sense */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x2500, 0x2500);
 
-			/* DCC 50k CLK (from 26M) */
-			Ana_Set_Reg(TOP_CLKSQ_SET, 0x3, 0x3);
 			/* AdcClockEnable(true); */
 			Topck_Enable(true);
 			Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2062, 0xffff);
@@ -3729,7 +3683,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 			/* here to set digital part */
 			/* power on clock */
-			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00bf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -3803,11 +3757,8 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
-				/* Disable MICBIAS1, MISBIAS1 = 1P7V */
-				if (ECMmode == 2)
-					Ana_Set_Reg(AUDENC_ANA_CON10, 0x0100, 0xffff);
-				else
-					Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0xffff);
+				/* Disable MICBIAS1 */
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x0001);
 			}
 
 			/* dcclk_gen_on=1'b0 */
@@ -4468,6 +4419,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		/* disable aud_pad RX & TX fifos */
 		Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0, 0x101);
 
+		set_capture_gpio(false);
 		TurnOffDacPower();
 	} else if (ucontrol->value.integer.value[0] > 0) { /* enable pmic lpbk */
 		pr_debug("set PMIC LPBK3, DLSR=%d, ULSR=%d\n",
@@ -4476,6 +4428,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 		/* set dl part */
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
+		set_capture_gpio(true);
 
 		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xffff);	/* power on clock */
 
@@ -4745,23 +4698,22 @@ static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 	pr_debug("%s\n", __func__);
 
 	audckbufEnable(true);
-	/* Disable CLKSQ 26MHz */
-	Ana_Set_Reg(TOP_CLKSQ_CLR, 0x1, 0x0001);
-	Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
+	/* disable CLKSQ */
+	Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x0003);
 	/* disable AUDGLB */
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 4, 0x1 << 4);
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUD_TOP_CKPDN_CON0, 0x66, 0x66);
 	/* set pdn for golden setting */
-	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x20ff, 0x20ff);
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
 	/* Disable HeadphoneL/HeadphoneR short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3 << 12, 0x3 << 12);
 	/* Disable voice short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x1 << 4, 0x1 << 4);
 	/* disable LO buffer left short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x1 << 4, 0x1 << 4);
-	/* gpio miso driving set to default 6mA, 0xcccc */
-	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
+	/* gpio miso driving set to default 4mA */
+	Ana_Set_Reg(DRV_CON3, 0x8888, 0xffff);
 	/* set gpio */
 	set_playback_gpio(false);
 	set_capture_gpio(false);
