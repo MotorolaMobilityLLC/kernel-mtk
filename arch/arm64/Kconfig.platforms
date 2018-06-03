@@ -153,6 +153,7 @@ config MACH_MT6765
 	select MTK_SYS_CIRQ
 	select MTK_GIC_TARGET_ALL
 	select FAST_CIRQ_CLONE_FLUSH
+	select MTK_FIQ_CACHE
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,

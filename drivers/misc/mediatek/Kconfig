@@ -335,4 +335,5 @@ source "drivers/misc/mediatek/mtprof/Kconfig"
 source "drivers/misc/mediatek/vow/Kconfig"
 source "drivers/misc/mediatek/timer/Kconfig"
 source "drivers/misc/mediatek/mlog/Kconfig"
+source "drivers/misc/mediatek/fiq_cache/Kconfig"
 endmenu    # Misc
