@@ -157,7 +157,8 @@ bool setChipDmicPath(bool _enable, unsigned int sample_rate);
 void set_stf_gain(int gain);
 void set_stf_positive_gain_db(int gain_db);
 
-bool set_general_asrc(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+bool set_general_asrc_enable(enum audio_general_asrc_id id, bool enable);
+bool set_general_asrc_parameter(enum audio_general_asrc_id id, unsigned int sample_rate_in,
 			  unsigned int sample_rate_out);
 
 /* Sample Rate Transform */
@@ -335,7 +336,8 @@ struct mtk_afe_platform_ops {
 	bool (*set_smartpa_echo_ref)(int sample_rate, int extcodec_echoref_control, int enable);
 	bool (*set_dpd_module)(bool enable);
 	bool (*handle_suspend)(bool suspend);
-	bool (*set_general_asrc)(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+	bool (*set_general_asrc_enable)(enum audio_general_asrc_id id, bool enable);
+	bool (*set_general_asrc_parameter)(enum audio_general_asrc_id id, unsigned int sample_rate_in,
 				 unsigned int sample_rate_out);
 };
 
