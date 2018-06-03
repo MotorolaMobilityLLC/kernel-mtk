@@ -1636,7 +1636,7 @@ s32 _cmdq_task_start_loop_callback(struct cmdqRecStruct *handle,
 	if (strlen(SRAM_owner_name) > 0) {
 		CMDQ_MSG("Submit task loop in SRAM: %s\n", SRAM_owner_name);
 		desc.use_sram_buffer = true;
-		strncpy(desc.sram_owner_name, SRAM_owner_name, sizeof(desc.sram_owner_name));
+		strncpy(desc.sram_owner_name, SRAM_owner_name, sizeof(desc.sram_owner_name) - 1);
 	}
 	/* secure path */
 	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
