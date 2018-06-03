@@ -5537,7 +5537,7 @@ unsigned long capacity_curr_of(int cpu)
 	       >> SCHED_CAPACITY_SHIFT;
 }
 
-static inline bool energy_aware(void)
+inline bool energy_aware(void)
 {
 	return sched_feat(ENERGY_AWARE);
 }
@@ -9972,7 +9972,7 @@ static int idle_balance(struct rq *this_rq)
 	rcu_read_unlock();
 
 	if (this_rq->online) {
-		if (should_hmp(this_cpu) && !pulled_task)
+		if (!pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
 	}
 

@@ -896,6 +896,33 @@ out:
 	return check->result;
 }
 
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+int __weak schedtune_task_capacity_min(struct task_struct *tsk)
+{
+	return 0;
+}
+
+bool idle_lb_enhance(struct task_struct *p, int cpu)
+{
+	int target_capacity;
+
+	target_capacity = capacity_orig_of(cpu);
+
+	if (schedtune_task_capacity_min(p) >= target_capacity)
+		return 1;
+
+	if (schedtune_prefer_idle(p))
+		return 1;
+
+	return 0;
+}
+#else
+bool idle_lb_enhance(struct task_struct *p, int cpu)
+{
+	return 0;
+}
+#endif
+
 static inline void
 hmp_update_load_avg(unsigned int decayed, unsigned long weight,
 		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
@@ -962,6 +989,9 @@ static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
 		schedstat_inc(p->se.statistics.nr_failed_migrations_running);
 		return 0;
 	}
+
+	if (idle_lb_enhance(p, env->src_cpu))
+		return 1;
 
 	/*
 	 * Aggressive migration if:
@@ -1403,6 +1433,357 @@ static void hmp_force_up_migration(int this_cpu)
 
 }
 
+#ifdef CONFIG_SCHED_HMP_PLUS
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+/* must hold runqueue lock for queue se is currently on */
+static const int hmp_idle_prefer_max_tasks = 5;
+static struct sched_entity
+*hmp_get_idle_prefer_task(int cpu, int target_cpu, int check_min_cap,
+		struct task_struct **backup_task, int *backup_cpu)
+{
+	int num_tasks = hmp_idle_prefer_max_tasks;
+	const struct cpumask *hmp_target_mask = NULL;
+	int target_capacity;
+	struct cfs_rq *cfs_rq;
+	struct sched_entity *se;
+
+	if (target_cpu >= 0)
+		hmp_target_mask = cpumask_of(target_cpu);
+	else
+		return NULL;
+
+	/* The currently running task is not on the runqueue
+	 *	a. idle prefer
+	 *	b. task_capacity > belonged CPU
+	 */
+	target_capacity = capacity_orig_of(cpu);
+	cfs_rq = &cpu_rq(cpu)->cfs;
+	se = __pick_first_entity(cfs_rq);
+	while (num_tasks && se) {
+		if (entity_is_task(se) &&
+		    cpumask_intersects(hmp_target_mask,
+				       tsk_cpus_allowed(task_of(se)))) {
+			struct task_struct *p;
+
+			p = task_of(se);
+			if (check_min_cap &&
+			    (schedtune_task_capacity_min(p) >= target_capacity))
+				return se;
+
+			if (schedtune_prefer_idle(task_of(se))) {
+				if (!check_min_cap)
+					return se;
+				if (!backup_task) {
+					*backup_cpu = cpu;
+					/* get task and selection inside
+					 * rq lock
+					 */
+					*backup_task = task_of(se);
+					get_task_struct(*backup_task);
+				}
+			}
+		}
+		se = __pick_next_entity(se);
+		num_tasks--;
+	}
+
+	return NULL;
+}
+
+static void
+hmp_slowest_idle_prefer_pull(int this_cpu, struct task_struct **p,
+			     struct rq **target)
+{
+	int cpu, backup_cpu;
+	struct sched_entity *se = NULL;
+	struct task_struct  *backup_task = NULL;
+	struct hmp_domain *domain;
+	struct list_head *pos;
+	int selected = 0;
+	struct rq *rq;
+	unsigned long flags;
+	int check_min_cap;
+
+	/* 1. select a runnable task
+	 *     idle prefer
+	 *
+	 *     order: fast to slow hmp domain
+	 */
+	check_min_cap = 0;
+	list_for_each(pos, &hmp_domains) {
+		domain = list_entry(pos, struct hmp_domain, hmp_domains);
+
+		for_each_cpu(cpu, &domain->cpus) {
+			if (cpu == this_cpu)
+				continue;
+
+			rq = cpu_rq(cpu);
+			raw_spin_lock_irqsave(&rq->lock, flags);
+
+			se = hmp_get_idle_prefer_task(cpu, this_cpu,
+				check_min_cap, &backup_task, &backup_cpu);
+			if (se && entity_is_task(se) &&
+			    cpumask_test_cpu(this_cpu,
+					     tsk_cpus_allowed(task_of(se)))) {
+				selected = 1;
+				/* get task and selection inside rq lock  */
+				*p = task_of(se);
+				get_task_struct(*p);
+
+				*target = rq;
+			}
+
+			raw_spin_unlock_irqrestore(&rq->lock, flags);
+
+			if (selected) {
+				/* To put task out of rq lock */
+				if (backup_task)
+					put_task_struct(backup_task);
+				return;
+			}
+		}
+	}
+
+	if (backup_task) {
+		*target = cpu_rq(backup_cpu);
+		return;
+	}
+
+}
+
+static void
+hmp_fastest_idle_prefer_pull(int this_cpu, struct task_struct **p,
+						struct rq **target)
+{
+	int cpu, backup_cpu;
+	struct sched_entity *se = NULL;
+	struct task_struct  *backup_task = NULL;
+	struct hmp_domain *hmp_domain = NULL, *domain;
+	struct list_head *pos;
+	int selected = 0;
+	struct rq *rq;
+	unsigned long flags;
+	int target_capacity;
+	int check_min_cap;
+
+	hmp_domain = hmp_cpu_domain(this_cpu);
+
+	/* 1. select a runnable task
+	 *
+	 * first candidate:
+	 *     capacity_min in slow domain
+	 *
+	 *     order: target->next to slow hmp domain
+	 */
+	check_min_cap = 1;
+	list_for_each(pos, &hmp_domain->hmp_domains) {
+		domain = list_entry(pos, struct hmp_domain, hmp_domains);
+
+		for_each_cpu(cpu, &domain->cpus) {
+			if (cpu == this_cpu)
+				continue;
+
+			rq = cpu_rq(cpu);
+			raw_spin_lock_irqsave(&rq->lock, flags);
+
+			se = hmp_get_idle_prefer_task(cpu, this_cpu,
+				check_min_cap, &backup_task, &backup_cpu);
+			if (se && entity_is_task(se) &&
+			    cpumask_test_cpu(this_cpu,
+					     tsk_cpus_allowed(task_of(se)))) {
+				selected = 1;
+				/* get task and selection inside rq lock  */
+				*p = task_of(se);
+				get_task_struct(*p);
+
+				*target = rq;
+			}
+
+			raw_spin_unlock_irqrestore(&rq->lock, flags);
+
+			if (selected) {
+				/* To put task out of rq lock */
+				if (backup_task)
+					put_task_struct(backup_task);
+				return;
+			}
+		}
+
+		if (list_is_last(pos, &hmp_domains))
+			break;
+	}
+
+	/* backup candidate:
+	 *     idle prefer
+	 *
+	 *     order: fastest to target hmp domain
+	 */
+	check_min_cap = 0;
+	list_for_each(pos, &hmp_domains) {
+		domain = list_entry(pos, struct hmp_domain, hmp_domains);
+
+		for_each_cpu(cpu, &domain->cpus) {
+			if (cpu == this_cpu)
+				continue;
+
+			rq = cpu_rq(cpu);
+			raw_spin_lock_irqsave(&rq->lock, flags);
+
+			se = hmp_get_idle_prefer_task(cpu, this_cpu,
+				check_min_cap, &backup_task, &backup_cpu);
+
+			if (se && entity_is_task(se) &&
+			    cpumask_test_cpu(this_cpu,
+					     tsk_cpus_allowed(task_of(se)))) {
+				selected = 1;
+				/* get task and selection inside rq lock  */
+				*p = task_of(se);
+				get_task_struct(*p);
+
+				*target = rq;
+			}
+
+			raw_spin_unlock_irqrestore(&rq->lock, flags);
+
+			if (selected) {
+				/* To put task out of rq lock */
+				if (backup_task)
+					put_task_struct(backup_task);
+				return;
+			}
+		}
+
+		if (cpumask_test_cpu(this_cpu, &domain->cpus))
+			break;
+	}
+
+	if (backup_task) {
+		*p = backup_task;
+		*target = cpu_rq(backup_cpu);
+		return;
+	}
+
+	/* 2. select a running task
+	 *     order: target->next to slow hmp domain
+	 */
+	list_for_each(pos, &hmp_domain->hmp_domains) {
+		domain = list_entry(pos, struct hmp_domain, hmp_domains);
+
+		for_each_cpu(cpu, &domain->cpus) {
+			if (cpu == this_cpu)
+				continue;
+
+			rq = cpu_rq(cpu);
+			raw_spin_lock_irqsave(&rq->lock, flags);
+
+			se = rq->cfs.curr;
+			if (!se) {
+				raw_spin_unlock_irqrestore(&rq->lock, flags);
+				continue;
+			}
+			if (!entity_is_task(se)) {
+				struct cfs_rq *cfs_rq;
+
+				cfs_rq = group_cfs_rq(se);
+				while (cfs_rq) {
+					se = cfs_rq->curr;
+					if (!entity_is_task(se))
+						cfs_rq = group_cfs_rq(se);
+					else
+						cfs_rq = NULL;
+				}
+			}
+
+			target_capacity = capacity_orig_of(cpu);
+			if ((se && entity_is_task(se) &&
+			     schedtune_task_capacity_min(task_of(se)) >=
+							 target_capacity) &&
+			     cpumask_test_cpu(this_cpu,
+					      tsk_cpus_allowed(task_of(se)))) {
+				selected = 1;
+				/* get task and selection inside rq lock  */
+				*p = task_of(se);
+				get_task_struct(*p);
+
+				*target = rq;
+			}
+
+			raw_spin_unlock_irqrestore(&rq->lock, flags);
+
+			if (selected)
+				return;
+		}
+
+		if (list_is_last(pos, &hmp_domains))
+			break;
+	}
+
+}
+
+static int
+move_runnable_task(struct task_struct *p, int target_cpu, struct rq *busiest_rq)
+{
+	int busiest_cpu = cpu_of(busiest_rq);
+	struct rq *target_rq = cpu_rq(target_cpu);
+	struct sched_domain *sd;
+	int moved = 0;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&busiest_rq->lock, flags);
+	/* Is there any task to move? */
+	if (busiest_rq->nr_running <= 1)
+		goto out_unlock;
+	/* Are both target and busiest cpu online */
+	if (!cpu_online(busiest_cpu) || !cpu_online(target_cpu) ||
+		cpu_isolated(busiest_cpu) || cpu_isolated(target_cpu))
+		goto out_unlock;
+	/* Task has migrated meanwhile, abort forced migration */
+	if ((!p) || (task_rq(p) != busiest_rq))
+		goto out_unlock;
+	/*
+	 * This condition is "impossible", if it occurs
+	 * we need to fix it. Originally reported by
+	 * Bjorn Helgaas on a 128-cpu setup.
+	 */
+	WARN_ON(busiest_rq == target_rq);
+
+	if (task_running(busiest_rq, p))
+		goto out_unlock;
+
+	/* move a task from busiest_rq to target_rq */
+	double_lock_balance(busiest_rq, target_rq);
+
+	/* Search for an sd spanning us and the target CPU. */
+	rcu_read_lock();
+	for_each_domain(target_cpu, sd) {
+		if (cpumask_test_cpu(busiest_cpu, sched_domain_span(sd)))
+			break;
+	}
+
+	if (likely(sd)) {
+		struct lb_env env = {
+			.sd             = sd,
+			.dst_cpu        = target_cpu,
+			.dst_rq         = target_rq,
+			.src_cpu        = busiest_rq->cpu,
+			.src_rq         = busiest_rq,
+			.idle           = CPU_IDLE,
+		};
+
+		schedstat_inc(sd->alb_count);
+
+		moved = move_specific_task(&env, p);
+	}
+	rcu_read_unlock();
+	double_unlock_balance(busiest_rq, target_rq);
+out_unlock:
+	raw_spin_unlock_irqrestore(&busiest_rq->lock, flags);
+
+	return moved;
+}
+#endif
+#endif
+
 static inline void
 hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
@@ -1460,14 +1841,42 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	struct clb_env clbenv;
 	struct task_struct *prev_selected = NULL;
 	int selected = 0;
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+	int moved = 0;
+#endif
+
+	if (!spin_trylock(&hmp_force_migration))
+		return 0;
+
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+	/*
+	 * aggressive idle balance for min_cap/idle_prefer
+	 */
+	if (hmp_cpu_is_slowest(this_cpu))
+		hmp_slowest_idle_prefer_pull(this_cpu, &p, &target);
+	else
+		hmp_fastest_idle_prefer_pull(this_cpu, &p, &target);
+
+	if (p) {
+		moved = move_runnable_task(p, this_cpu, target);
+
+		if (moved)
+			goto done;
+
+		goto find_running_pull_task;
+	}
+#endif
+
+	/*
+	 *  HMP pull heaviest task
+	 */
+	if (!should_hmp(this_cpu))
+		goto done;
 
 	if (!hmp_cpu_is_slowest(this_cpu))
 		hmp_domain = hmp_slower_domain(this_cpu);
 	if (!hmp_domain)
-		return 0;
-
-	if (!spin_trylock(&hmp_force_migration))
-		return 0;
+		goto done;
 
 	memset(&clbenv, 0, sizeof(clbenv));
 	clbenv.flags |= HMP_GB;
@@ -1511,8 +1920,8 @@ static unsigned int hmp_idle_pull(int this_cpu)
 				cpumask_test_cpu(this_cpu,
 					tsk_cpus_allowed(task_of(curr)))) {
 			selected = 1;
-			p = task_of(curr);
 			/* get task and selection inside rq lock  */
+			p = task_of(curr);
 			get_task_struct(p);
 
 			target = rq;
@@ -1531,6 +1940,9 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	if (!p)
 		goto done;
 
+#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+find_running_pull_task:
+#endif
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance &&
