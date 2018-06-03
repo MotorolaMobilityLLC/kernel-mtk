@@ -101,6 +101,7 @@ enum VpuCoreState {
 	VCT_BOOTUP		= 2,
 	VCT_EXECUTING	= 3,
 	VCT_IDLE		= 4,
+	VCT_VCORE_CHG	= 5,
 	VCT_NONE		= -1,
 };
 
