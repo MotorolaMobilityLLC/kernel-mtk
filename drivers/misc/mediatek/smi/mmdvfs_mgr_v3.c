@@ -676,6 +676,8 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_ALA)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_BIA)
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 
 }
 
@@ -861,8 +863,7 @@ void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request)
 		struct mmdvfs_clk_hw_map *clk_hw_map_ptr =
 			&(g_mmdvfs_adaptor->mmdvfs_clk_hw_maps[clk_idx]);
 
-		if (clk_hw_map_ptr->config_method
-			== MMDVFS_CLK_CONFIG_BY_MUX) {
+		if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_BY_MUX) {
 			if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL) {
 				MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
 				continue;
@@ -997,6 +998,8 @@ int mmdvfs_get_mmdvfs_profile(void)
 		mmdvfs_profile_id = MMDVFS_PROFILE_WHY;
 #elif defined(SMI_ALA)
 	mmdvfs_profile_id = MMDVFS_PROFILE_ALA;
+#elif defined(SMI_BIA)
+	mmdvfs_profile_id = MMDVFS_PROFILE_BIA;
 #endif
 
 	MMDVFSDEBUG(4, "Segment_code=%d,mmdvfs_profile_id=%d\n", segment_code,

@@ -2132,10 +2132,16 @@
 			<&scpsys SCP_SYS_DIS>,
 			<&scpsys SCP_SYS_CAM>,
 			<&scpsys SCP_SYS_ISP>,
-			<&scpsys SCP_SYS_VEN>;
+			<&scpsys SCP_SYS_VEN>,
+			<&topckgen TOP_MMPLL_CK>,
+			<&topckgen TOP_MUX_CAM>,
+			<&topckgen TOP_MMPLL_CK>,
+			<&topckgen TOP_TVDPLL_CK>;
 			clock-names = "smi-common-gals0", "smi-common-gals1", "smi-common",
 			"mm-larb0", "img-larb1", "cam-larb2", "gals-cam2mm", "venc-larb", "venc-venc",
-			"mtcmos-mm", "mtcmos-cam", "mtcmos-isp", "mtcmos-ven";
+			"mtcmos-mm", "mtcmos-cam", "mtcmos-isp", "mtcmos-ven",
+			"MMDVFS_CLK_TOP_MMPLL_CK", "MMDVFS_CLK_MUX_TOP_CAM_SEL",
+			"mmdvfs_clk_top_mmpll_ck", "mmdvfs_clk_top_tvdpll_ck";
 	};
 
 	disp_rsz@1401a000 {
