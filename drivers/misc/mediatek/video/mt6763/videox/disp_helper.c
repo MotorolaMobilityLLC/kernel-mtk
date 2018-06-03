@@ -336,7 +336,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
 
-	disp_helper_set_option(DISP_OPT_MET_LOG, 0);
+	disp_helper_set_option(DISP_OPT_MET_LOG, 1);
 	/* ===================End: lowpower option setting==================== */
 
 	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);

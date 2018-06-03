@@ -361,6 +361,10 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		DISPERR("ULPS mode, cannot acquire sram");
 		return;
 	}
+	if (!primary_display_is_video_mode() && primary_display_is_idle()) {
+		DISPDBG("cmd in idle, no need acquire sram");
+		return;
+	}
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
