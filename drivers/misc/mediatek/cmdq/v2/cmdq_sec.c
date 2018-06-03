@@ -858,14 +858,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		cmdq_sec_track_task_record(iwcCommand, pTask, &tEntrySec, &tExitSec);
 
 		/* check status and attach secure error before session teardown */
-		if (handle) {
-			/* try to print out secure status if handle exist. */
-			cmdq_sec_handle_attach_status(pTask, iwcCommand, handle->iwcMessage, status, &dispatch_mod);
-		} else if (status < 0) {
-			/* handle does not exist, output message */
-			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
-				pTask, status);
-		}
+		cmdq_sec_handle_attach_status(pTask, iwcCommand, handle->iwcMessage, status, &dispatch_mod);
 
 		/* release resource */
 #if !(CMDQ_OPEN_SESSION_ONCE)
