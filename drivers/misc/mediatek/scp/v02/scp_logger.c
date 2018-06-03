@@ -20,8 +20,8 @@
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/slab.h>         /* needed by kmalloc */
 #include <linux/poll.h>         /* needed by poll */
+#include <linux/vmalloc.h>      /* needed by vmalloc */
 #include <linux/mutex.h>
-#include <linux/kfifo.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 
@@ -52,6 +52,15 @@ struct buffer_info_s {
 	unsigned int w_pos;
 };
 
+typedef struct {
+	unsigned int scp_log_dram_addr;
+	unsigned int scp_log_buf_addr;
+	unsigned int scp_log_start_addr;
+	unsigned int scp_log_end_addr;
+	unsigned int scp_log_buf_maxlen;
+} SCP_LOG_INFO;
+
+
 static unsigned int scp_A_logger_inited;
 static unsigned int scp_B_logger_inited;
 static unsigned int scp_A_logger_wakeup_ap;
@@ -66,8 +75,92 @@ static DEFINE_MUTEX(scp_B_log_mutex);
 static DEFINE_SPINLOCK(scp_A_log_buf_spinlock);
 static DEFINE_SPINLOCK(scp_B_log_buf_spinlock);
 
+/*scp last log info*/
+static unsigned int scp_A_log_dram_addr_last;
+static unsigned int scp_A_log_buf_addr_last;
+static unsigned int scp_A_log_start_addr_last;
+static unsigned int scp_A_log_end_addr_last;
+static unsigned int scp_A_log_buf_maxlen_last;
+static char *scp_A_last_log;
+static unsigned int scp_B_log_dram_addr_last;
+static unsigned int scp_B_log_buf_addr_last;
+static unsigned int scp_B_log_start_addr_last;
+static unsigned int scp_B_log_end_addr_last;
+static unsigned int scp_B_log_buf_maxlen_last;
+static char *scp_B_last_log;
 static wait_queue_head_t scp_A_logwait;
 static wait_queue_head_t scp_B_logwait;
+
+/*
+ * get log from scp when received a buf full notify
+ * @param id:   IPI id
+ * @param data: IPI data
+ * @param len:  IPI data length
+ */
+static void scp_logger_wakeup_handler(int id, void *data, unsigned int len)
+{
+	pr_debug("[SCP]wakeup by SCP logger\n");
+}
+
+/*
+ * get log from scp to last_log_buf
+ * @param len:  data length
+ * @return:     length of log
+ */
+static size_t scp_A_get_last_log(size_t b_len)
+{
+	size_t ret = 0;
+	unsigned int log_start_idx;
+	unsigned int log_end_idx;
+	unsigned int update_start_idx;
+	char *pre_scp_last_log_buf;
+	unsigned char *scp_last_log_buf = (unsigned char *)(SCP_TCM + scp_A_log_buf_addr_last);
+
+	/*pr_debug("[SCP] %s\n", __func__);*/
+
+	if (!scp_A_logger_inited) {
+		pr_err("[SCP] %s(): logger has not been init\n", __func__);
+		return 0;
+	}
+
+	/*TODO: SCP keep awake */
+
+	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_start_addr_last));
+	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_end_addr_last));
+
+	if (b_len > scp_A_log_buf_maxlen_last) {
+		pr_debug("[SCP] b_len %zu > scp_log_buf_maxlen %d\n", b_len, scp_A_log_buf_maxlen_last);
+		b_len = scp_A_log_buf_maxlen_last;
+	}
+
+	if (log_end_idx >= b_len)
+		update_start_idx = log_end_idx - b_len;
+	else
+		update_start_idx = scp_A_log_buf_maxlen_last - (b_len - log_end_idx) + 1;
+
+	pre_scp_last_log_buf = scp_A_last_log;
+	scp_A_last_log = vmalloc(scp_A_log_buf_maxlen_last + 1);
+
+	/* read log from scp buffer */
+	ret = 0;
+	if (scp_A_last_log) {
+		while ((update_start_idx != log_end_idx) && ret < b_len) {
+			scp_A_last_log[ret] = scp_last_log_buf[update_start_idx];
+			update_start_idx++;
+			ret++;
+			if (update_start_idx >= scp_A_log_buf_maxlen_last)
+				update_start_idx = update_start_idx - scp_A_log_buf_maxlen_last;
+		}
+	} else {
+		/* no buffer, just skip logs*/
+		update_start_idx = log_end_idx;
+	}
+	scp_A_last_log[ret] = '\0';
+
+	/*TODO: SCP release awake */
+	vfree(pre_scp_last_log_buf);
+	return ret;
+}
 
 ssize_t scp_A_log_read(char __user *data, size_t len)
 {
@@ -203,7 +296,6 @@ error:
 	return 0;
 }
 
-
 /*
  *ipi send enable scp logger wake up flag
  */
@@ -302,7 +394,21 @@ static ssize_t scp_A_wakeup_store(struct device *kobj, struct device_attribute *
 
 DEVICE_ATTR(scp_A_logger_wakeup_AP, S_IWUSR | S_IRUGO, scp_A_wakeup_show, scp_A_wakeup_store);
 
+/*
+ * create device sysfs, scp last log show
+ */
+static ssize_t scp_A_last_log_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	scp_A_get_last_log(scp_A_log_buf_maxlen_last);
+	return sprintf(buf, "scp_A_log_buf_maxlen=%u, log=%s\n", scp_A_log_buf_maxlen_last, scp_A_last_log);
+}
+static ssize_t scp_A_last_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	scp_A_get_last_log(scp_A_log_buf_maxlen_last);
+	return n;
+}
 
+DEVICE_ATTR(scp_A_get_last_log, S_IWUSR | S_IRUGO, scp_A_last_log_show, scp_A_last_log_store);
 
 /*
  * logger UT test
@@ -381,19 +487,24 @@ DEVICE_ATTR(scp_A_mobile_log_UT, S_IWUSR | S_IRUGO, scp_A_mobile_log_UT_show, sc
 static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 {
 	unsigned long flags;
-	unsigned int addr;
 	unsigned int retrytimes;
 	unsigned int magic = 0x5A5A5A5A;
+	SCP_LOG_INFO *log_info = (SCP_LOG_INFO *)data;
 	ipi_status ret;
 
-	addr = *(unsigned int *)data;
+
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
 	spin_lock_irqsave(&scp_A_log_buf_spinlock, flags);
+	/* sync scp last log information*/
+	scp_A_log_dram_addr_last = log_info->scp_log_dram_addr;
+	scp_A_log_buf_addr_last = log_info->scp_log_buf_addr;
+	scp_A_log_start_addr_last = log_info->scp_log_start_addr;
+	scp_A_log_end_addr_last = log_info->scp_log_end_addr;
+	scp_A_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
 
 	/* setting dram ctrl config to scp*/
 	/*TODO : get scp waklock to write scp sram*/
-	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + addr));
-
+	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + scp_A_log_dram_addr_last));
 	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
 	/*
 	 *send ipi to invoke scp logger
@@ -417,6 +528,67 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
  *  SCP B
  *
  */
+
+
+/*
+ * get log from scp to last_log_buf
+ * @param len:  data length
+ * @return:     length of log
+ */
+static size_t scp_B_get_last_log(size_t b_len)
+{
+	size_t ret = 0;
+	unsigned int log_start_idx;
+	unsigned int log_end_idx;
+	unsigned int update_start_idx;
+	char *pre_scp_last_log_buf;
+	unsigned char *scp_last_log_buf = (unsigned char *)(SCP_TCM + scp_B_log_buf_addr_last);
+
+	/*pr_debug("[SCP] %s\n", __func__);*/
+
+	if (!scp_B_logger_inited) {
+		pr_err("[SCP] %s(): logger has not been init\n", __func__);
+		return 0;
+	}
+
+	/*TODO: SCP keep awake */
+
+	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_B_log_start_addr_last));
+	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_B_log_end_addr_last));
+
+	if (b_len > scp_B_log_buf_maxlen_last) {
+		pr_debug("[SCP] b_len %zu > scp_log_buf_maxlen %d\n", b_len, scp_B_log_buf_maxlen_last);
+		b_len = scp_B_log_buf_maxlen_last;
+	}
+
+	if (log_end_idx >= b_len)
+		update_start_idx = log_end_idx - b_len;
+	else
+		update_start_idx = scp_B_log_buf_maxlen_last - (b_len - log_end_idx) + 1;
+
+	pre_scp_last_log_buf = scp_B_last_log;
+	scp_B_last_log = vmalloc(scp_B_log_buf_maxlen_last + 1);
+
+	/* read log from scp buffer */
+	ret = 0;
+	if (scp_B_last_log) {
+		while ((update_start_idx != log_end_idx) && ret < b_len) {
+			scp_B_last_log[ret] = scp_last_log_buf[update_start_idx];
+			update_start_idx++;
+			ret++;
+			if (update_start_idx >= scp_B_log_buf_maxlen_last)
+				update_start_idx = update_start_idx - scp_B_log_buf_maxlen_last;
+		}
+	} else {
+		/* no buffer, just skip logs*/
+		update_start_idx = log_end_idx;
+	}
+	scp_B_last_log[ret] = '\0';
+
+	/*TODO: SCP release awake */
+	vfree(pre_scp_last_log_buf);
+	return ret;
+}
 
 ssize_t scp_B_log_read(char __user *data, size_t len)
 {
@@ -651,6 +823,21 @@ static ssize_t scp_B_wakeup_store(struct device *kobj, struct device_attribute *
 
 DEVICE_ATTR(scp_B_logger_wakeup_AP, S_IWUSR | S_IRUGO, scp_B_wakeup_show, scp_B_wakeup_store);
 
+/*
+ * create device sysfs, scp last log show
+ */
+static ssize_t scp_B_last_log_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	scp_B_get_last_log(scp_B_log_buf_maxlen_last);
+	return sprintf(buf, "scp_B_log_buf_maxlen=%u, log=%s\n", scp_B_log_buf_maxlen_last, scp_B_last_log);
+}
+static ssize_t scp_B_last_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	scp_B_get_last_log(scp_B_log_buf_maxlen_last);
+	return n;
+}
+
+DEVICE_ATTR(scp_B_get_last_log, S_IWUSR | S_IRUGO, scp_B_last_log_show, scp_B_last_log_store);
 
 #if SCP_LOGGER_UT
 static ssize_t scp_B_mobile_log_UT_show(struct device *kobj, struct device_attribute *attr, char *buf)
@@ -725,20 +912,24 @@ DEVICE_ATTR(scp_B_mobile_log_UT, S_IWUSR | S_IRUGO, scp_B_mobile_log_UT_show, sc
 static void scp_B_logger_init_handler(int id, void *data, unsigned int len)
 {
 	unsigned long flags;
-	unsigned int addr;
 	unsigned int retrytimes;
 	unsigned int magic = 0x5A5A5A5A;
+	SCP_LOG_INFO *log_info = (SCP_LOG_INFO *)data;
 	ipi_status ret;
-
-	addr = *(unsigned int *)data;
 
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n", scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID));
 	spin_lock_irqsave(&scp_B_log_buf_spinlock, flags);
 
+	/* sync scp last log information*/
+	scp_B_log_dram_addr_last = log_info->scp_log_dram_addr;
+	scp_B_log_buf_addr_last = log_info->scp_log_buf_addr;
+	scp_B_log_start_addr_last = log_info->scp_log_start_addr;
+	scp_B_log_end_addr_last = log_info->scp_log_end_addr;
+	scp_B_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
+
 	/* setting dram ctrl config to scp*/
-
-	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID), (SCP_TCM + addr));
-
+	/*TODO : get scp waklock to write scp sram*/
+	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID), (SCP_TCM + scp_B_log_dram_addr_last));
 	spin_unlock_irqrestore(&scp_B_log_buf_spinlock, flags);
 	/*
 	 *send ipi to invoke scp logger
@@ -795,11 +986,12 @@ int scp_B_logger_init(phys_addr_t start, phys_addr_t limit)
 		goto error;
 	}
 
-
+	/* init last log buffer*/
+	scp_B_last_log = NULL;
 	/* register logger ini IPI */
 	scp_ipi_registration(IPI_LOGGER_INIT_B, scp_B_logger_init_handler, "loggerB");
 	/* register log wakeup IPI */
-	/*scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");*/
+	scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");
 
 	scp_B_logger_inited = 1;
 	return last_ofs;
@@ -852,11 +1044,12 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 		goto error;
 	}
 
-
+	/* init last log buffer*/
+	scp_A_last_log = NULL;
 	/* register logger ini IPI */
 	scp_ipi_registration(IPI_LOGGER_INIT_A, scp_A_logger_init_handler, "loggerA");
 	/* register log wakeup IPI */
-	/*scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");*/
+	scp_ipi_registration(IPI_LOGGER_WAKEUP, scp_logger_wakeup_handler, "log wakeup");
 
 	scp_A_logger_inited = 1;
 	return last_ofs;
@@ -882,3 +1075,19 @@ const struct file_operations scp_B_log_file_ops = {
 	.open = scp_B_log_if_open,
 	.poll = scp_B_log_if_poll,
 };
+
+
+/*
+ * return scp last log
+ */
+char *scp_get_last_log(scp_core_id id)
+{
+	char *last_log;
+
+	if (id == SCP_A_ID)
+		last_log = scp_A_last_log;
+	else
+		last_log = scp_B_last_log;
+
+	return last_log;
+}
