@@ -385,21 +385,25 @@ int m4u_dump_reg(int m4u_index, unsigned int start)
 	int i;
 
 	M4UINFO("Register Start =======\n");
-	for (i = 0; i < 368 / 8; i += 4) {
-		M4UINFO("+0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", start + 8 * i,
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 0),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 1),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 2),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 3),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 4),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 5),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 6),
-			M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 8 * i + 4 * 7));
+	for (i = 0; i < 400 / 4; i += 4) {
+		M4UINFO("0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x\n",
+			(start + 4 * i + 4 * 0), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 0),
+			(start + 4 * i + 4 * 1), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 1),
+			(start + 4 * i + 4 * 2), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 2),
+			(start + 4 * i + 4 * 3), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 3));
 	}
+	M4UINFO("0xc00=0x%x, 0c04=0x%x, 0xc08=0x%x, 0xc0c=0x%x\n",
+		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc04),
+		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc0c));
+	M4UINFO("0xb00=0x%x, 0xb04=0x%x, 0xb08=0x%x, 0xb0c=0x%x\n",
+		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb04),
+		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb0c));
+
 	M4UINFO("Register End ==========\n");
 
 	return 0;
 }
+
 
 unsigned int m4u_get_main_descriptor(int m4u_id, int m4u_slave_id, int idx)
 {
@@ -890,7 +894,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret = smi_bus_enable((enum SMI_MASTER_ID)larb, smi_clk_name[larb]);
 	if (ret != 0)
 		M4UMSG("larb_clock_on error: larb %d\n", larb);
@@ -905,7 +909,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret = smi_bus_disable((enum SMI_MASTER_ID)larb, smi_clk_name[larb]);
 	if (ret != 0)
 		M4UMSG("larb_clock_on error: larb %d\n", larb);
@@ -1592,7 +1596,7 @@ int m4u_reg_restore(void)
 			__M4U_RESTORE(m4u_base, REG_MMU_MAU_VA(m4u_slave), *(pReg++));
 		}
 
-		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 1);
+		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 0);
 	}
 
 	/* check register size (to prevent overflow) */
@@ -2214,7 +2218,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		M4U_WriteReg32(m4u_base, REG_MMU_STANDARD_AXI_MODE, 0);
 		/* 4 write command throttling mode */
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU_WR_LEN, F_MMU_WR_THROT_DIS(3), F_MMU_WR_THROT_DIS(0));
-		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 1);
+		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 0);
 	}
 
 	return 0;
@@ -2340,7 +2344,7 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		return 0;
 	}
 	M4UMSG("0x44 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x44));
-
+	m4u_dump_reg(0, 0);
 	m4u_print_perf_counter(0, 0, "m4u");
 	m4u_dump_rs_info(0, 0);
 
