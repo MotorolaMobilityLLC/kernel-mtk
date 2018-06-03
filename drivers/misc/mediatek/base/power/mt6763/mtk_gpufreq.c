@@ -335,13 +335,13 @@ static gpufreq_input_boost_notify g_pGpufreq_input_boost_notify;
 static gpufreq_ptpod_update_notify g_pGpufreq_ptpod_update_notify;
 
 /* Efuse Device ID */
-typedef enum {
+enum {
 	C_MT6763TT = 0,
 	C_MT6763T,
 	C_MT6763,
-} chip_ip_table;
+};
 
-static chip_ip_table device_id;
+static unsigned int device_id;
 static unsigned int ext_buck_exist;
 
 
@@ -758,31 +758,6 @@ static void mt_gpufreq_set_initial(void)
 	cur_volt = _mt_gpufreq_get_cur_volt();
 	cur_freq = _mt_gpufreq_get_cur_freq();
 
-	/*
-	for (i = 0; i < mt_gpufreqs_num; i++) {
-		if (cur_volt >= mt_gpufreqs[i].gpufreq_volt) {
-			mt_gpufreq_set(cur_freq, mt_gpufreqs[i].gpufreq_khz,
-				   cur_volt, mt_gpufreqs[i].gpufreq_volt);
-			g_cur_gpu_OPPidx = i;
-			gpufreq_dbg("init_idx = %d\n", g_cur_gpu_OPPidx);
-			_mt_gpufreq_kick_pbm(1);
-			break;
-		}
-	}
-	*/
-
-	/* Not found, set to LPM */
-	/*
-	if (i == mt_gpufreqs_num) {
-		gpufreq_err
-			("Set to LPM since GPU idx not found according to current Vcore = %d mV\n",
-			 cur_volt / 100);
-		g_cur_gpu_OPPidx = mt_gpufreqs_num - 1;
-		mt_gpufreq_set(cur_freq, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_khz,
-				   cur_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
-	}
-	*/
-
 	g_cur_gpu_OPPidx = 0;
 	mt_gpufreq_set(cur_freq, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_khz,
 				   cur_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
@@ -1062,11 +1037,10 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 	}
 
 #ifndef MTK_SSPM
-	if (enable_lpm) {
+	if (enable_lpm)
 		mt_gpufreq_volt_enable_state = 0;
-	} else {
+	else
 		mt_gpufreq_volt_enable_state = 1;
-	}
 SET_LPM_EXIT:
 	gpufreq_dbg("[MTK_GPUFREQ][-]@%s: enable_lpm = %d, mt_gpufreq_volt_enable_state = %d\n",
 		__func__, enable_lpm, mt_gpufreq_volt_enable_state);
@@ -1697,11 +1671,10 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 
 static void mt_gpufreq_volt_switch_vcore(unsigned int volt_old, unsigned int volt_new)
 {
-	if (volt_new > volt_old) {
+	if (volt_new > volt_old)
 		vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
-	} else if (volt_new < volt_old) {
+	else if (volt_new < volt_old)
 		vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
-	}
 }
 
 static unsigned int _mt_gpufreq_get_cur_freq(void)
@@ -3084,13 +3057,12 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 
 #ifdef MT_GPUFREQ_OC_PROTECT
-	if (device_id == C_MT6763TT) {
+	if (device_id == C_MT6763TT)
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1;
-	} else if (device_id == C_MT6763T) {
+	else if (device_id == C_MT6763T)
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T;
-	} else {
+	else
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763;
-	}
 
 	for (i = 0; i < mt_gpufreqs_num; i++) {
 		if (mt_gpufreqs[i].gpufreq_khz == mt_gpufreq_oc_limit_freq_1) {
@@ -4381,11 +4353,6 @@ static int __init mt_gpufreq_init(void)
 	/* Skip driver init in bring up stage */
 	return 0;
 #endif
-
-/*
-	if (!is_ext_buck_exist())
-		return 0;
-*/
 
 	gpufreq_info("@%s\n", __func__);
 
