@@ -30,7 +30,7 @@ static struct notifier_block dcm_hotplug_nb;
 unsigned int all_dcm_type =
 		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | RGU_DCM_TYPE
 		| GIC_SYNC_DCM_TYPE | INFRA_DCM_TYPE
-		| DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE
+		| DDRPHY_DCM_TYPE /*| EMI_DCM_TYPE*/ | DRAMC_DCM_TYPE
 		);
 unsigned int init_dcm_type =
 		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | RGU_DCM_TYPE
@@ -129,6 +129,7 @@ int mt_dcm_dts_map(void)
 		return -1;
 	}
 
+#if 0
 	dcm_chn0_emi_base = (unsigned long)mt_chn_emi_base_get(0);
 	if (!dcm_chn0_emi_base) {
 		dcm_pr_info("error: cannot iomap %s\n", "chn0_emi");
@@ -147,6 +148,7 @@ int mt_dcm_dts_map(void)
 		dcm_pr_info("error: cannot iomap %s\n", "emi");
 		return -1;
 	}
+#endif
 
 	return 0;
 }
@@ -469,16 +471,16 @@ struct DCM dcm_array[NR_DCM_TYPE] = {
 		.name = "STALL_DCM",
 		.func = (DCM_FUNC) dcm_stall,
 		/*.preset_func = (DCM_PRESET_FUNC) dcm_stall_preset,*/
-		.current_state = STALL_DCM_ON,
-		.default_state = STALL_DCM_ON,
+		.current_state = STALL_DCM_OFF,
+		.default_state = STALL_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 	{
 		.typeid = BIG_CORE_DCM_TYPE,
 		.name = "BIG_CORE_DCM",
 		.func = (DCM_FUNC) dcm_big_core,
-		.current_state = BIG_CORE_DCM_ON,
-		.default_state = BIG_CORE_DCM_ON,
+		.current_state = BIG_CORE_DCM_OFF,
+		.default_state = BIG_CORE_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 	{
@@ -493,8 +495,8 @@ struct DCM dcm_array[NR_DCM_TYPE] = {
 		.typeid = LAST_CORE_DCM_TYPE,
 		.name = "LAST_CORE_DCM",
 		.func = (DCM_FUNC) dcm_last_core,
-		.current_state = LAST_CORE_DCM_ON,
-		.default_state = LAST_CORE_DCM_ON,
+		.current_state = LAST_CORE_DCM_OFF,
+		.default_state = LAST_CORE_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 	{
@@ -509,16 +511,16 @@ struct DCM dcm_array[NR_DCM_TYPE] = {
 		.typeid = TOPCKG_DCM_TYPE,
 		.name = "TOPCKG_DCM",
 		.func = (DCM_FUNC) dcm_topckg,
-		.current_state = TOPCKG_DCM_ON,
-		.default_state = TOPCKG_DCM_ON,
+		.current_state = TOPCKG_DCM_OFF,
+		.default_state = TOPCKG_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 	{
 		.typeid = LPDMA_DCM_TYPE,
 		.name = "LPDMA_DCM",
 		.func = (DCM_FUNC) dcm_lpdma,
-		.current_state = LPDMA_DCM_ON,
-		.default_state = LPDMA_DCM_ON,
+		.current_state = LPDMA_DCM_OFF,
+		.default_state = LPDMA_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 	{
@@ -526,8 +528,8 @@ struct DCM dcm_array[NR_DCM_TYPE] = {
 		.name = "MCSI_DCM",
 		.func = (DCM_FUNC) dcm_mcsi,
 		/*.preset_func = (DCM_PRESET_FUNC) dcm_mcsi_preset,*/
-		.current_state = MCSI_DCM_ON,
-		.default_state = MCSI_DCM_ON,
+		.current_state = MCSI_DCM_OFF,
+		.default_state = MCSI_DCM_OFF,
 		.disable_refcnt = 0,
 	},
 };
@@ -564,13 +566,13 @@ void dcm_dump_regs(void)
 	REG_DUMP(DRAMC_CH0_TOP0_MISC_CTRL3);
 	REG_DUMP(DRAMC_CH0_TOP1_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC_CH0_TOP1_CLKAR);
-	REG_DUMP(CHN0_EMI_CHN_EMI_CONB);
+	/*REG_DUMP(CHN0_EMI_CHN_EMI_CONB);*/
 	REG_DUMP(DRAMC_CH1_TOP0_MISC_CG_CTRL0);
 	REG_DUMP(DRAMC_CH1_TOP0_MISC_CG_CTRL2);
 	REG_DUMP(DRAMC_CH1_TOP0_MISC_CTRL3);
 	REG_DUMP(DRAMC_CH1_TOP1_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC_CH1_TOP1_CLKAR);
-	REG_DUMP(CHN1_EMI_CHN_EMI_CONB);
+	/*REG_DUMP(CHN1_EMI_CHN_EMI_CONB);*/
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
