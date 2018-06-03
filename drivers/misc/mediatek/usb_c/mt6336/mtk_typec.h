@@ -552,6 +552,7 @@ extern struct typec_hba *get_hba(void);
 extern int pd_task(void *data);
 extern void pd_set_data_role(struct typec_hba *hba, int role);
 extern void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload);
+extern int pd_is_power_swapping(struct typec_hba *hba);
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 extern int mt_dual_role_phy_init(struct typec_hba *hba);

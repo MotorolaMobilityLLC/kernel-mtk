@@ -272,10 +272,8 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 	int i = 0;
 	int val[sizeof(dump) / sizeof(struct reg_mapping)] = {0};
 
-	for (i = 0; i < sizeof(dump) / sizeof(struct reg_mapping); i++) {
+	for (i = 0; i < sizeof(dump) / sizeof(struct reg_mapping); i++)
 		val[i] = ((typec_readw(hba, dump[i].addr) & dump[i].mask) >> dump[i].ofst);
-		dev_err(pdev, "%s: 0x%x\n", dump[i].name, val[i]);
-	}
 
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s=%s,", dump[0].name, string_typec_state[val[0]]);
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s=%s,", dump[1].name, string_cc_routed[val[1]]);
@@ -302,21 +300,24 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 	if (hba->power_role == PD_ROLE_SINK)
 		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Rp=%s\n", SRC_CUR(hba->src_rp));
 
-	if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
-		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "e-mark cable\n");
+	if (hba->mode == 2) {
+		if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
+			snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "e-mark cable\n");
 
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "flags=0x%x\n", hba->flags);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "flags=0x%x\n", hba->flags);
 
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "task_state=%d\n", hba->task_state);
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "last_state=%d\n", hba->last_state);
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_state=%d\n", hba->timeout_state);
-	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_ms=%lu\n", hba->timeout_ms);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "task_state=%d\n", hba->task_state);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "last_state=%d\n", hba->last_state);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_state=%d\n", hba->timeout_state);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_ms=%lu\n", hba->timeout_ms);
 
-	if (hba->power_role == PD_ROLE_SOURCE)
-		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "request pdo=%d\n", hba->requested_idx);
+		if (hba->power_role == PD_ROLE_SOURCE)
+			snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "request pdo=%d\n", hba->requested_idx);
 
-	if (hba->data_role == PD_ROLE_DFP)
-		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
+		if (hba->data_role == PD_ROLE_DFP)
+			snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)),
+						"alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
+	}
 #if !COMPLIANCE
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "LowQ=%d\n", (int)atomic_read(&hba->lowq_cnt));
 #endif
