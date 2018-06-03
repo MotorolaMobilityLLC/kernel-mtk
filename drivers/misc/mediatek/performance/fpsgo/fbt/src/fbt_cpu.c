@@ -49,7 +49,7 @@
 
 #include <trace/events/fpsgo.h>
 
-#include "eas_controller.h"
+#include "eas_ctrl.h"
 #include "cpu_ctrl.h"
 
 #include "fpsgo_base.h"
