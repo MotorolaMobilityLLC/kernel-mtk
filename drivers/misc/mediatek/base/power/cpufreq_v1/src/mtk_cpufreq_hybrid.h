@@ -96,5 +96,6 @@ int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, 
 #else
 int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 #endif
+int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 int dvfs_to_sspm_command(u32 cmd, struct cdvfs_data *cdvfs_d);
 #endif
