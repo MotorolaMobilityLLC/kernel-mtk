@@ -3023,7 +3023,7 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
 		index = DL_GAIN_N_40DB;
 
-	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f10);
+	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f80);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR] = index;
 	return 0;
 }
