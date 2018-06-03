@@ -397,17 +397,104 @@ static int ccmni_close(struct net_device *dev)
 
 static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
+	int ret;
 	int skb_len = skb->len;
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[ccmni->md_id];
-	struct iphdr *iph = (struct iphdr *)skb_network_header(skb);
 	unsigned int is_ack = 0;
 	int mac_len = 0;
 	md_tag_packet_t *tag = NULL;
 	unsigned int count = 0;
 	struct ethhdr *eth;
 	__be16 type;
-	int ret;
+	bool flt_ok = false;
+	bool flt_flag = true;
+	unsigned int pkt_type;
+	struct iphdr *iph;
+	struct ipv6hdr *iph6;
+	ccmni_fwd_filter_t flt_tmp;
+	unsigned int i, j;
+	u16 mask;
+	u32 *addr1, *addr2;
+
+	if (ccmni->flt_cnt) {
+		for (i = 0; i < CCMNI_FLT_NUM; i++) {
+			flt_tmp = ccmni->flt_tbl[i];
+			pkt_type = skb->data[0] & 0xF0;
+			if (!flt_tmp.ver || (flt_tmp.ver != pkt_type))
+				continue;
+
+			if (pkt_type == IPV4_VERSION) {
+				iph = (struct iphdr *)skb->data;
+				mask = flt_tmp.s_pref;
+				addr1 = &iph->saddr;
+				addr2 = &flt_tmp.ipv4.saddr;
+				flt_flag = true;
+				for (j = 0; flt_flag && j < 2; j++) {
+					if (mask && (addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					mask = flt_tmp.d_pref;
+					addr1 = &iph->daddr;
+					addr2 = &flt_tmp.ipv4.daddr;
+				}
+			} else if (pkt_type == IPV6_VERSION) {
+				iph6 = (struct ipv6hdr *)skb->data;
+				mask = flt_tmp.s_pref;
+				addr1 = iph6->saddr.s6_addr32;
+				addr2 = flt_tmp.ipv6.saddr;
+				flt_flag = true;
+				for (j = 0; flt_flag && j < 2; j++) {
+					if (mask == 0) {
+						mask = flt_tmp.d_pref;
+						addr1 = iph6->daddr.s6_addr32;
+						addr2 = flt_tmp.ipv6.daddr;
+						continue;
+					}
+					if (mask <= 32 &&
+					(addr1[0] >> (32 - mask) != addr2[0] >> (32 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 64 && (addr1[0] != addr2[0] ||
+					addr1[1] >> (64 - mask) != addr2[1] >> (64 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 96 && (addr1[0] != addr2[0] || addr1[1] != addr2[1] ||
+					addr1[2] >> (96 - mask) != addr2[2] >> (96 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					if (mask <= 128 && (addr1[0] != addr2[0] ||
+					addr1[1] != addr2[1] || addr1[2] != addr2[2] ||
+					addr1[3] >> (128 - mask) != addr2[3] >> (128 - mask))) {
+						flt_flag = false;
+						break;
+					}
+					mask = flt_tmp.d_pref;
+					addr1 = iph6->daddr.s6_addr32;
+					addr2 = flt_tmp.ipv6.daddr;
+				}
+			}
+			if (flt_flag) {
+				flt_ok = true;
+				break;
+			}
+		}
+
+		if (flt_ok) {
+			skb->ip_summed = CHECKSUM_NONE;
+			skb_set_mac_header(skb, -ETH_HLEN);
+
+			if (!in_interrupt())
+				netif_rx_ni(skb);
+			else
+				netif_rx(skb);
+			return NETDEV_TX_OK;
+		}
+	}
 
 	/*if data_len=1500 with mac_header for ccmni-lan, skb->len>MTU,so it must before MTU judgement */
 	if (IS_CCMNI_LAN(dev)) {
@@ -427,6 +514,7 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			skb_pull(skb, skb_network_offset(skb));
 			skb_pop_mac_header(skb);
 		} else {
+			iph = (struct iphdr *)skb_network_header(skb);
 			CCMNI_ERR_MSG(ccmni->md_id,
 				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X, data=%p, head=%p, ip_h=%x, mac_len=%d, len=%d, iph_off=%d\n",
 				      iph->id, skb->data, skb->head, skb->network_header,
@@ -461,15 +549,9 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			count = sizeof(tag->info);
 			memcpy(skb_tail_pointer(skb), &(tag->info), count);
 			skb->len += count;
-			CCMNI_DBG_MSG(ccmni->md_id,
-				      "[MDT]%s: skb=%p, id=%04X, tag=%04x, skb_len(%d->%d), truesize=%d, tail(%02x %02x %02x %02x)\n",
-				      dev->name, skb, iph->id, tag->guard_pattern, skb_len, skb->len,
-				      skb->truesize, *skb_tail_pointer(skb), *(skb_tail_pointer(skb)+1),
-				      *(skb_tail_pointer(skb)+2), *(skb_tail_pointer(skb)+3));
 		} else {
-			CCMNI_ERR_MSG(ccmni->md_id, "%s: MD%d not support MDT tag(%04X, %04x, %02x %02x %02x %02x)!\n",
-				      dev->name, (ccmni->md_id + 1), iph->id, tag->guard_pattern,
-				      *(skb->head+4), *(skb->head+5), *(skb->head+6), *(skb->head+7));
+			CCMNI_ERR_MSG(ccmni->md_id, "%s: MD%d not support MDT tag\n",
+				      dev->name, (ccmni->md_id + 1));
 		}
 	}
 
@@ -554,6 +636,10 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	ccmni_ctl_block_t *ctlb = NULL;
 	ccmni_ctl_block_t *ctlb_irat = NULL;
 	unsigned int timeout = 0;
+	ccmni_fwd_filter_t flt_tmp;
+	ccmni_flt_act_t flt_act;
+	unsigned int i;
+	unsigned int cmp_len;
 
 	switch (cmd) {
 	case SIOCSTXQSTATE:
@@ -662,6 +748,66 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			      "SIOCCCMNICFG: %s iRAT MD%d->MD%d, dev_cnt=%d, md_cnt=%d, md_irat_cnt=%d, irat_dev=%s\n",
 			      dev->name, (md_id + 1), (ifr->ifr_ifru.ifru_ivalue + 1), atomic_read(&ccmni->usage),
 			      atomic_read(&ccmni_tmp->usage), atomic_read(&ccmni_irat->usage), ccmni_irat->dev->name);
+		break;
+
+	case SIOCFWDFILTER:
+		if (copy_from_user(&flt_act, ifr->ifr_ifru.ifru_data, sizeof(ccmni_flt_act_t))) {
+			CCMNI_INF_MSG(ccmni->md_id, "SIOCFWDFILTER: %s copy data from user fail\n", dev->name);
+			return -EFAULT;
+		}
+
+		flt_tmp = flt_act.flt;
+		if (flt_tmp.ver != 0x40 && flt_tmp.ver != 0x60) {
+			CCMNI_INF_MSG(ccmni->md_id, "SIOCFWDFILTER[%d]: %s invalid flt(%x, %x, %x, %x, %x)(%d)\n",
+				flt_act.action, dev->name, flt_tmp.ver, flt_tmp.s_pref, flt_tmp.d_pref,
+				flt_tmp.ipv4.saddr, flt_tmp.ipv4.daddr, ccmni->flt_cnt);
+			return -EINVAL;
+		}
+
+		if (flt_act.action == CCMNI_FLT_ADD) { /* add new filter */
+			if (ccmni->flt_cnt >= CCMNI_FLT_NUM) {
+				CCMNI_INF_MSG(ccmni->md_id, "SIOCFWDFILTER[ADD]: %s flt table full\n", dev->name);
+				return -ENOMEM;
+			}
+			for (i = 0; i < CCMNI_FLT_NUM; i++) {
+				if (ccmni->flt_tbl[i].ver == 0)
+					break;
+			}
+			memcpy(&ccmni->flt_tbl[i], &flt_tmp, sizeof(struct ccmni_fwd_filter));
+			ccmni->flt_cnt++;
+			CCMNI_INF_MSG(ccmni->md_id, "SIOCFWDFILTER[ADD]: %s add flt%d(%x, %x, %x, %x, %x)(%d)\n",
+				dev->name, i, flt_tmp.ver, flt_tmp.s_pref, flt_tmp.d_pref,
+				flt_tmp.ipv4.saddr, flt_tmp.ipv4.daddr, ccmni->flt_cnt);
+		} else if (flt_act.action == CCMNI_FLT_DEL) {
+			if (flt_tmp.ver == IPV4_VERSION)
+				cmp_len = offsetof(struct ccmni_fwd_filter, ipv4.daddr) + 4;
+			else
+				cmp_len = sizeof(struct ccmni_fwd_filter);
+			for (i = 0; i < CCMNI_FLT_NUM; i++) {
+				if (ccmni->flt_tbl[i].ver == 0)
+					continue;
+				if (!memcmp(&ccmni->flt_tbl[i], &flt_tmp, cmp_len)) {
+					CCMNI_INF_MSG(ccmni->md_id,
+						"SIOCFWDFILTER[DEL]: %s del flt%d(%x, %x, %x, %x, %x)(%d)\n",
+						dev->name, i, flt_tmp.ver, flt_tmp.s_pref, flt_tmp.d_pref,
+						flt_tmp.ipv4.saddr, flt_tmp.ipv4.daddr, ccmni->flt_cnt);
+					memset(&ccmni->flt_tbl[i], 0, sizeof(struct ccmni_fwd_filter));
+					ccmni->flt_cnt--;
+					break;
+				}
+			}
+			if (i >= CCMNI_FLT_NUM) {
+				CCMNI_INF_MSG(ccmni->md_id,
+					"SIOCFWDFILTER[DEL]: %s no match flt(%x, %x, %x, %x, %x)(%d)\n",
+					dev->name, flt_tmp.ver, flt_tmp.s_pref, flt_tmp.d_pref,
+					flt_tmp.ipv4.saddr, flt_tmp.ipv4.daddr, ccmni->flt_cnt);
+				return -ENXIO;
+			}
+		} else if (flt_act.action == CCMNI_FLT_FLUSH) {
+			ccmni->flt_cnt = 0;
+			memset(ccmni->flt_tbl, 0, CCMNI_FLT_NUM*sizeof(struct ccmni_fwd_filter));
+			CCMNI_INF_MSG(ccmni->md_id, "SIOCFWDFILTER[FLUSH]: %s flush filter\n", dev->name);
+		}
 		break;
 
 	default:
