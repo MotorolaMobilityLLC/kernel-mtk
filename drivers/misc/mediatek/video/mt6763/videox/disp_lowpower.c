@@ -662,7 +662,7 @@ void _primary_display_enable_mmsys_clk(void)
 	/* (in suspend) when we stop trigger loop*/
 	/* if no other thread is running, cmdq may disable its clock*/
 	/* all cmdq event will be cleared after suspend */
-	cmdqCoreSetEvent(CMDQ_EVENT_DISP_OVL0_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 }
 
 /* Share wrot sram end */
