@@ -44,6 +44,7 @@
 
 static int usb20_phy_rev6;
 static struct clk *ssusb_clk;
+static struct clk *sys_ck;
 static DEFINE_SPINLOCK(mu3phy_clock_lock);
 bool sib_mode;
 static struct regulator *reg_vusb;
@@ -189,6 +190,11 @@ static bool usb_enable_clock(bool enable)
 		return -1;
 	}
 
+	if (!sys_ck || IS_ERR(sys_ck)) {
+		pr_notice("clock not ready, sys_ck:%p", sys_ck);
+		return -1;
+	}
+
 	spin_lock_irqsave(&mu3phy_clock_lock, flags);
 	os_printk(K_INFO, "CG, enable<%d>, count<%d>\n", enable, count);
 
@@ -196,8 +202,11 @@ static bool usb_enable_clock(bool enable)
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		if (clk_enable(ssusb_clk) != 0)
 			pr_notice("ssusb_ref_clk enable fail\n");
+		if (clk_enable(sys_ck) != 0)
+			pr_notice("sys_ck enable fail\n");
 	} else if (!enable && count == 1) {
 		clk_disable(ssusb_clk);
+		clk_disable(sys_ck);
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
 	}
 
@@ -1293,6 +1302,17 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 			pr_notice("ssusb_clk prepare fail\n");
 	}
 
+	sys_ck = devm_clk_get(&pdev->dev, "sys_ck");
+	if (IS_ERR(sys_ck)) {
+		pr_notice("sys_ck get sys_ck fail\n");
+	} else {
+		retval = clk_prepare(sys_ck);
+		if (retval == 0)
+			pr_debug("sys_ck<%p> prepare done\n", sys_ck);
+		else
+			pr_notice("sys_ck prepare fail\n");
+	}
+
 	usb20_phy_rev6 = 1;
 	pr_notice("%s, usb20_phy_rev6 to %d\n", __func__, usb20_phy_rev6);
 
@@ -1303,6 +1323,9 @@ static int mt_usb_dts_remove(struct platform_device *pdev)
 {
 	if (!IS_ERR(ssusb_clk))
 		clk_unprepare(ssusb_clk);
+
+	if (!IS_ERR(sys_ck))
+		clk_unprepare(sys_ck);
 
 	/* POWER */
 	if (reg_vusb)
