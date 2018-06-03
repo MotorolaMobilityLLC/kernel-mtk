@@ -164,10 +164,8 @@ static const struct snd_kcontrol_new Audio_snd_I2S0dl1_controls[] = {
 };
 
 static struct snd_pcm_hardware mtk_I2S0dl1_hardware = {
-	.info = (SNDRV_PCM_INFO_MMAP |
-	SNDRV_PCM_INFO_INTERLEAVED |
-	SNDRV_PCM_INFO_RESUME |
-	SNDRV_PCM_INFO_MMAP_VALID),
+	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_NO_PERIOD_WAKEUP |
+		 SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =   SND_SOC_ADV_MT_FMTS,
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
@@ -189,7 +187,7 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	irq_user_id = NULL;
-	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));
+	irq_remove_substream_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
@@ -438,10 +436,10 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	/* here to set interrupt */
-	irq_add_user(substream,
-		     irq_request_number(Soc_Aud_Digital_Block_MEM_DL1),
-		     substream->runtime->rate,
-		     irq1_cnt ? irq1_cnt : substream->runtime->period_size);
+	irq_add_substream_user(substream,
+			       irq_request_number(Soc_Aud_Digital_Block_MEM_DL1),
+			       substream->runtime->rate,
+			       irq1_cnt ? irq1_cnt : substream->runtime->period_size);
 	irq_user_id = substream;
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);
@@ -505,6 +503,7 @@ static struct snd_pcm_ops mtk_I2S0dl1_ops = {
 	.copy =     mtk_pcm_I2S0dl1_copy,
 	.silence =  mtk_pcm_I2S0dl1_silence,
 	.page =     mtk_I2S0dl1_pcm_page,
+	.mmap =     mtk_pcm_mmap,
 };
 
 static struct snd_soc_platform_driver mtk_I2S0dl1_soc_platform = {

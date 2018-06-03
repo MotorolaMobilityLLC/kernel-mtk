@@ -112,7 +112,7 @@ static bool mPrepareDone;
 #define USE_PERIODS_MAX     8192
 
 static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
-	.info = (SNDRV_PCM_INFO_MMAP |
+	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_NO_PERIOD_WAKEUP |
 		 SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID),
 	.formats = SND_SOC_ADV_MT_FMTS,
 	.rates = SOC_HIGH_USE_RATE,
@@ -144,7 +144,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
-	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL2));
+	irq_remove_substream_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL2));
 
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
@@ -427,9 +427,9 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 #endif
 
 	/* here to set interrupt */
-	irq_add_user(substream,
-		     irq_request_number(Soc_Aud_Digital_Block_MEM_DL2),
-		     runtime->rate, runtime->period_size);
+	irq_add_substream_user(substream,
+			       irq_request_number(Soc_Aud_Digital_Block_MEM_DL2),
+			       runtime->rate, runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL2, runtime->rate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL2, runtime->channels);
@@ -806,6 +806,7 @@ static struct snd_pcm_ops mtk_dl2_ops = {
 	.copy = mtk_pcm_dl2_copy,
 	.silence = mtk_pcm_dl2_silence,
 	.page = mtk_pcm_dl2_page,
+	.mmap = mtk_pcm_mmap,
 };
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
