@@ -1334,6 +1334,9 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter)
 		prNloParam->ucMatchSSIDNum = prSchedScanRequest->u4SsidNum;
 #endif
 
+	kalMemZero(prNloParam->aucSSID, sizeof(prNloParam->aucSSID));
+	kalMemZero(prNloParam->aucMatchSSID, sizeof(prNloParam->aucMatchSSID));
+
 #if CFG_SUPPORT_SCHED_SCN_SSID_SETS
 	if (prNloParam->ucSSIDNum > CFG_SCAN_HIDDEN_SSID_MAX_NUM)
 		prNloParam->ucSSIDNum = CFG_SCAN_HIDDEN_SSID_MAX_NUM;
