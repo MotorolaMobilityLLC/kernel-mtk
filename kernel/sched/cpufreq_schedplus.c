@@ -62,9 +62,9 @@ static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
 struct static_key __read_mostly __sched_freq = STATIC_KEY_INIT_TRUE;
 #else /* GOV_SCHED */
 struct static_key __read_mostly __sched_freq = STATIC_KEY_INIT_FALSE;
+#endif
 /* To confirm kthread if created */
 static bool g_inited[MAX_CLUSTER_NR] = {false};
-#endif
 
 static bool __read_mostly cpufreq_driver_slow;
 
@@ -365,8 +365,6 @@ static bool finish_last_request(struct gov_data *gd)
 }
 #endif
 
-
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 /*
  * we pass in struct cpufreq_policy. This is safe because changing out the
  * policy requires a call to __cpufreq_governor(policy, CPUFREQ_GOV_STOP),
@@ -426,7 +424,6 @@ static void cpufreq_sched_irq_work(struct irq_work *irq_work)
 
 	wake_up_process(gd->task);
 }
-#endif
 
 static void update_fdomain_capacity_request(int cpu, int type)
 {
@@ -654,17 +651,25 @@ static struct attribute_group *get_sysfs_attr(void)
 	return &sched_attr_group_gov_pol;
 }
 
-static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
+static inline bool is_sched_assist(void)
 {
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	get_sysfs_attr();
-
-	return 0;
+	return true;
 #else
+	return false;
+#endif
+}
+
+static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
+{
 	struct gov_data *gd_ptr;
 	int cpu;
 	int rc;
 	int cid = arch_get_cluster_id(policy->cpu);
+
+	/* sched-assist is not a governor, return. */
+	if (is_sched_assist())
+		return 0;
 
 	/* if kthread is created, return */
 	if (g_inited[cid]) {
@@ -758,7 +763,6 @@ err:
 	WARN_ON(1);
 
 	return -ENOMEM;
-#endif
 }
 
 static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
