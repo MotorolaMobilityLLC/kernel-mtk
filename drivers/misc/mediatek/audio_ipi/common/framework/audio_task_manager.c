@@ -40,6 +40,13 @@
 
 #ifdef CONFIG_MTK_DO /* with DO */
 static DEFINE_MUTEX(audio_load_task_mutex);
+
+#define DO_FEATURE_NAME_CALL "FEATURE_MTK_AURISYS_PHONE_CALL"
+#define DO_FEATURE_NAME_MP3  "FEATURE_MTK_AUDIO_PLAYBACK_MP3"
+#define DO_FEATURE_NAME_VOW  "FEATURE_MTK_VOW"
+
+#define DO_SET_NAME_CALL     "AUDIO_CALL"
+#define DO_SET_NAME_MP3_VOW  "AUDIO_MP3_VOW"
 #endif
 
 
@@ -68,22 +75,18 @@ static char *get_feature_name(const task_scene_t task_scene)
 	 *     repo: alps/vendor/mediatek/proprietary/tinysys/freertos/source
 	 *     file: project/CM4_A/mt6797/platform/platform.mk
 	 */
-	char g_feature_name_call[]  = "FEATURE_MTK_AURISYS_PHONE_CALL";
-	char g_feature_name_mp3[]   = "FEATURE_MTK_AUDIO_PLAYBACK_MP3";
-	char g_feature_name_vow[]   = "FEATURE_MTK_VOW";
-
 	char *feature_name = NULL;
 
 
 	switch (task_scene) {
 	case TASK_SCENE_PHONE_CALL:
-		feature_name = g_feature_name_call;
+		feature_name = DO_FEATURE_NAME_CALL;
 		break;
 	case TASK_SCENE_PLAYBACK_MP3:
-		feature_name = g_feature_name_mp3;
+		feature_name = DO_FEATURE_NAME_MP3;
 		break;
 	case TASK_SCENE_VOW:
-		feature_name = g_feature_name_vow;
+		feature_name = DO_FEATURE_NAME_VOW;
 		break;
 	case TASK_SCENE_VOICE_ULTRASOUND:
 	case TASK_SCENE_RECORD:
@@ -106,19 +109,16 @@ static char *get_do_name(const task_scene_t task_scene)
 	 *     repo: alps/vendor/mediatek/proprietary/tinysys/freertos/source
 	 *     file: project/CM4_A/mt6797/platform/dos.mk
 	 */
-	char g_do_name_call[]    = "AUDIO_CALL";
-	char g_do_name_mp3_vow[] = "AUDIO_MP3_VOW";
-
 	char *do_name = NULL;
 
 
 	switch (task_scene) {
 	case TASK_SCENE_PHONE_CALL:
-		do_name = g_do_name_call;
+		do_name = DO_SET_NAME_CALL;
 		break;
 	case TASK_SCENE_PLAYBACK_MP3:
 	case TASK_SCENE_VOW:
-		do_name = g_do_name_mp3_vow;
+		do_name = DO_SET_NAME_MP3_VOW;
 		break;
 	case TASK_SCENE_VOICE_ULTRASOUND:
 	case TASK_SCENE_RECORD:
