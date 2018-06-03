@@ -213,7 +213,7 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 {
 #if defined(MTK_FB_ION_SUPPORT)
 	struct ion_mm_data mm_data;
-	unsigned int mva_size;
+	size_t mva_size;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	mm_data.config_buffer_param.module_id = port;
@@ -228,8 +228,8 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 		return -1;
 	}
 
-	ion_phys(client, handle, (unsigned long int *)mva,
-		(size_t *)&mva_size);
+	ion_phys(client, handle,
+		(ion_phys_addr_t *)mva, &mva_size);
 
 	if (*mva == 0)
 		DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08lx\n",
