@@ -356,6 +356,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 
 	mutex_lock(&hps_ctxt.para_lock);
 	hps_sys.ppm_root_cluster = p->root_cluster;
+	/*hps_sys.ppm_smart_dect = p->smart_dect;*/	/* TODO */
 
 	for (i = 0; i < p->cluster_num; i++) {
 		/*

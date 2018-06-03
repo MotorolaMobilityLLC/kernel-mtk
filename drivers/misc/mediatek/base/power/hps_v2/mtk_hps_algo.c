@@ -204,6 +204,11 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 	cpu_id_max = hps_sys.cluster_info[cluster_id].cpu_id_max;
 
 	if (target_cores > online_cores) {	/*Power up cpus */
+#if TURBO_CORE_SUPPORT
+		/* cpu7->4->5->6 */
+		if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint && cluster_id == 1)
+			cpu_id_min = cpu_id_max;
+#endif
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (hps_get_break_en() != 0) {
 				hps_warn("[CPUHP] up CPU%d: hps_get_break_en\n", cpu);
@@ -220,9 +225,24 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 			}
 			if (target_cores == online_cores)
 				break;
+#if TURBO_CORE_SUPPORT
+			if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint && cluster_id == 1 &&
+			    cpu == hps_sys.cluster_info[1].cpu_id_max) {
+				cpu = hps_sys.cluster_info[1].cpu_id_min - 1;
+				if (cpu_id_max > 0)
+					cpu_id_max--;
+			}
+#endif
 		}
 
 	} else {		/*Power down cpus */
+#if TURBO_CORE_SUPPORT
+		/* cpu6->5->4->7 */
+		if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint && cluster_id == 1) {
+			if (cpu_id_max > 0)
+				cpu_id_max--;
+		}
+#endif
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
 			if (hps_get_break_en() != 0) {
 				hps_warn("[CPUHP] down CPU%d: hps_get_break_en\n", cpu);
@@ -239,6 +259,13 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 			}
 			if (target_cores == online_cores)
 				break;
+#if TURBO_CORE_SUPPORT
+			if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint && cluster_id == 1 &&
+			    cpu == hps_sys.cluster_info[1].cpu_id_min) {
+				cpu = hps_sys.cluster_info[1].cpu_id_max + 1;
+				cpu_id_min = hps_sys.cluster_info[1].cpu_id_max;
+			}
+#endif
 		}
 	}
 	return 0;
@@ -307,7 +334,7 @@ out:				/* Add base value of per-cluster by default */
 		hps_sys->cluster_info[i].target_core_num += hps_sys->cluster_info[i].base_value;
 
 #if TURBO_CORE_SUPPORT
-	if (hps_sys->turbo_core_supp && root_cluster == 1 &&
+	if (hps_sys->turbo_core_supp && !hps_sys->smart_dect_hint && root_cluster == 1 &&
 	    hps_sys->cluster_info[1].target_core_num > hps_sys->cluster_info[1].base_value &&
 	    hps_sys->cluster_info[1].target_core_num == hps_sys->cluster_info[1].core_num &&
 	    hps_sys->cluster_info[0].target_core_num < hps_sys->cluster_info[0].limit_value) {
@@ -358,6 +385,10 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_EFUSE);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_EFUSE);
+	if (!hps_sys.smart_dect_hint)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_SMART);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_SMART);
 }
 
 void hps_algo_main(void)
@@ -411,6 +442,8 @@ void hps_algo_main(void)
 	hps_define_root_cluster(&hps_sys);
 	if (origin_root != hps_sys.root_cluster_id)
 		hps_sys.action_id = HPS_SYS_CHANGE_ROOT;
+
+	hps_sys.smart_dect_hint = hps_sys.ppm_smart_dect;
 	mutex_unlock(&hps_ctxt.para_lock);
 
 	/*
@@ -432,6 +465,7 @@ void hps_algo_main(void)
 	}
 	if (hps_ctxt.stats_dump_enabled)
 		hps_ctxt_print_algo_stats_tlp(0);
+
 	for (i = 0; i < hps_sys.func_num; i++) {
 		if (hps_sys.hps_sys_ops[i].enabled == 1) {
 			if (hps_sys.hps_sys_ops[i].hps_sys_func_ptr()) {
