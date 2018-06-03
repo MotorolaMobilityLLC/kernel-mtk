@@ -421,6 +421,8 @@ static int fusion_data_report(int x, int y, int z,
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	event.handle = handle;
 	event.flush_action = DATA_ACTION;
 	event.time_stamp = nt;
@@ -441,6 +443,7 @@ static int fusion_flush_report(int handle)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
 	pr_debug("flush\n");
 	event.handle = handle;
 	event.flush_action = FLUSH_ACTION;
@@ -454,6 +457,8 @@ static int uncali_sensor_data_report(int *data,
 {
 	struct sensor_event event;
 	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.handle = handle;
 	event.flush_action = DATA_ACTION;
@@ -476,6 +481,7 @@ static int uncali_sensor_flush_report(int handle)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
 	pr_debug("flush handle:%d\n", handle);
 	event.handle = handle;
 	event.flush_action = FLUSH_ACTION;

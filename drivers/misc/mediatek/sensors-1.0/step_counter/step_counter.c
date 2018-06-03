@@ -39,12 +39,15 @@ static void step_c_work_func(struct work_struct *work)
 		pr_debug("floor_c driver not register data path\n");
 
 
+	status = 0;
+	counter = 0;
 	time.tv_sec = time.tv_nsec = 0;
 	time = get_monotonic_coarse();
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
 	/* add wake lock to make sure data can be read before system suspend */
-	if (cxt->is_active_data == true)
+	if ((cxt->is_active_data == true) &&
+		(cxt->step_c_data.get_data != NULL))
 		err = cxt->step_c_data.get_data(&counter, &status);
 
 	if (err) {
@@ -57,9 +60,12 @@ static void step_c_work_func(struct work_struct *work)
 		}
 	}
 
-	if (cxt->is_floor_c_active_data == true)
+	status = 0;
+	counter_floor_c = 0;
+	if ((cxt->is_floor_c_active_data == true) &&
+		(cxt->step_c_data.get_data_floor_c != NULL))
 		err = cxt->step_c_data.get_data_floor_c(&counter_floor_c,
-			&status);
+							&status);
 
 	if (err) {
 		pr_err("get floor_c data fails!!\n");
@@ -144,6 +150,8 @@ int step_notify(STEP_NOTIFY_TYPE type)
 	int err = 0;
 	struct step_c_context *cxt = NULL;
 	struct sensor_event event;
+
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	cxt = step_c_context_obj;
 
@@ -601,10 +609,9 @@ static ssize_t step_c_store_batch(struct device *dev,
 			pr_err("step detector enable batch err %d\n",
 				res);
 	} else if (handle == ID_SIGNIFICANT_MOTION) {
-		if (cxt->step_c_ctl.is_smd_support_batch == true)
+		if (!cxt->step_c_ctl.is_smd_support_batch)
 			maxBatchReportLatencyNs = 0;
-		else
-			maxBatchReportLatencyNs = 0;
+
 		if (cxt->step_c_ctl.smd_batch != NULL)
 			res = cxt->step_c_ctl.smd_batch(flag,
 			samplingPeriodNs, maxBatchReportLatencyNs);
@@ -613,10 +620,9 @@ static ssize_t step_c_store_batch(struct device *dev,
 		if (res < 0)
 			pr_err("step smd enable batch err %d\n", res);
 	} else if (handle == ID_FLOOR_COUNTER) {
-		if (cxt->step_c_ctl.is_floor_c_support_batch == true)
+		if (!cxt->step_c_ctl.is_floor_c_support_batch)
 			maxBatchReportLatencyNs = 0;
-		else
-			maxBatchReportLatencyNs = 0;
+
 		if (cxt->step_c_ctl.floor_c_batch != NULL)
 			res = cxt->step_c_ctl.floor_c_batch(flag,
 				samplingPeriodNs, maxBatchReportLatencyNs);
@@ -938,6 +944,8 @@ int step_c_data_report(uint32_t new_counter, int status)
 	struct sensor_event event;
 	static uint32_t last_step_counter;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	if (last_step_counter != new_counter) {
 		event.flush_action = DATA_ACTION;
 		event.handle = ID_STEP_COUNTER;
@@ -957,6 +965,8 @@ int floor_c_data_report(uint32_t new_counter, int status)
 	struct sensor_event event;
 	static uint32_t last_floor_counter;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	if (last_floor_counter != new_counter) {
 		event.flush_action = DATA_ACTION;
 		event.handle = ID_FLOOR_COUNTER;
@@ -975,6 +985,8 @@ int step_c_flush_report(void)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	event.handle = ID_STEP_COUNTER;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
@@ -989,6 +1001,8 @@ int step_d_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.handle = ID_STEP_DETECTOR;
 	event.flush_action = FLUSH_ACTION;
@@ -1009,6 +1023,8 @@ int floor_c_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.handle = ID_FLOOR_COUNTER;
 	event.flush_action = FLUSH_ACTION;
