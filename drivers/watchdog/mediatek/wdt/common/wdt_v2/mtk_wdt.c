@@ -51,7 +51,6 @@
 void __iomem *toprgu_base;
 int	wdt_irq_id;
 int wdt_sspm_irq_id;
-int ext_debugkey_io = -1;
 int ext_debugkey_io_eint = -1;
 
 static const struct of_device_id rgu_of_match[] = {
@@ -636,8 +635,7 @@ int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en)
 			tmp &=  ~(MTK_WDT_REQ_MODE_SPM_THERMAL);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_EINT) {
 		if (en == WD_REQ_EN) {
-			if (ext_debugkey_io != -1) {
-				ext_debugkey_io_eint = mt_gpio_to_eint(ext_debugkey_io);
+			if (ext_debugkey_io_eint != -1) {
 				pr_info("RGU ext_debugkey_io_eint is %d\n", ext_debugkey_io_eint);
 				ext_req_con = (ext_debugkey_io_eint << 4) | 0x01;
 				mt_reg_sync_writel(ext_req_con, MTK_WDT_EXT_REQ_CON);
@@ -983,13 +981,11 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		toprgu_base, wdt_irq_id, wdt_sspm_irq_id);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
-
-	if (node && of_device_is_available(node)) {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		ext_debugkey_io = ints[0];
+	if (node) {
+		of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints));
+		ext_debugkey_io_eint = ints[0];
 	}
-
-	pr_info("[RGU]: ext_debugkey_io: %d\n", ext_debugkey_io);
+	pr_info("[RGU] ext_debugkey_eint=%d\n", ext_debugkey_io_eint);
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 
