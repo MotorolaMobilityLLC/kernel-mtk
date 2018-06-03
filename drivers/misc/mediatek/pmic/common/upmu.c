@@ -28,6 +28,7 @@
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_debugfs.h"
 #include "include/pmic_api_buck.h"
+#include "include/pmic_bif.h"
 #include "pwrap_hal.h"
 
 #ifdef CONFIG_MTK_AUXADC_INTF
@@ -514,6 +515,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC] pmic_debug_init : done.\n");
 
 	pmic_ftm_init();
+
+	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT))
+		pmic_bif_init();
 
 	pmic_tracking_init();
 
