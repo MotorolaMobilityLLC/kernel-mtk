@@ -206,6 +206,13 @@ static inline void mmprofile_start(int start)
 static inline void mmprofile_enable(int enable)
 {
 }
+static inline unsigned int mmprofile_get_dump_size(void)
+{
+	return 0;
+}
+static inline void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr, unsigned int *p_size)
+{
+}
 #endif
 
 #ifdef __cplusplus

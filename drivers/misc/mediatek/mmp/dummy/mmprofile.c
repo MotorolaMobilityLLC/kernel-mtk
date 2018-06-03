@@ -113,7 +113,15 @@ long mmprofile_log_meta_yuv_bitmap(mmp_event event, mmp_log_type type, mmp_metad
 	return 0;
 }
 EXPORT_SYMBOL(mmprofile_log_meta_yuv_bitmap);
-
+unsigned int mmprofile_get_dump_size(void)
+{
+	return 0;
+}
+EXPORT_SYMBOL(mmprofile_get_dump_size);
+void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr, unsigned int *p_size)
+{
+}
+EXPORT_SYMBOL(mmprofile_get_dump_buffer);
 /* Exposed APIs end */
 
 /* Driver specific begin */
