@@ -383,7 +383,7 @@ void ppm_cobra_init(void)
 		unsigned int core, dyn, lkg, dyn_c, lkg_c, cap;
 
 		/* generate basic power table */
-		ppm_info("basic power table:\n");
+		ppm_ver("basic power table:\n");
 		for (i = 0; i < TOTAL_CORE_NUM; i++) {
 			for (j = 0; j < DVFS_OPP_NUM; j++) {
 				core = (i % 4) + 1;
@@ -397,7 +397,7 @@ void ppm_cobra_init(void)
 					((dyn + lkg) * core + (dyn_c + lkg_c)) / 1000;
 				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = cap * core;
 
-				ppm_info("[%d][%d] = (%d, %d)\n", i, j,
+				ppm_ver("[%d][%d] = (%d, %d)\n", i, j,
 					cobra_tbl.basic_pwr_tbl[i][j].power_idx,
 					cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
 			}
@@ -427,13 +427,13 @@ void ppm_cobra_init(void)
 			state_info[i].max_perf_idx += (max_core)
 				? cobra_tbl.basic_pwr_tbl[idx+max_core-1][0].perf_idx : 0;
 		}
-		ppm_info("%s: min_pwr_idx = %d, max_perf_idx = %d\n", state_info[i].name,
+		ppm_ver("%s: min_pwr_idx = %d, max_perf_idx = %d\n", state_info[i].name,
 			state_info[i].min_pwr_idx, state_info[i].max_perf_idx);
 	}
 
 #if !PPM_COBRA_RUNTIME_CALC_DELTA
 	/* generate delta power and delta perf table for LxLL */
-	ppm_info("LxLL delta table:\n");
+	ppm_ver("LxLL delta table:\n");
 	for (i = 0; i <= get_cluster_max_cpu_core(PPM_CLUSTER_L); i++) {
 		for (j = 0; j <= get_cluster_max_cpu_core(PPM_CLUSTER_LL); j++) {
 			for (k = 0; k < COBRA_OPP_NUM; k++) {
@@ -445,7 +445,7 @@ void ppm_cobra_init(void)
 				if (i == 0 && j == 0) {
 					cobra_tbl.delta_tbl_LxLL[i][j][k].delta_pwr = 0;
 
-					ppm_info("[%d][%d][%d] = (0)\n", i, j, k);
+					ppm_ver("[%d][%d][%d] = (0)\n", i, j, k);
 					continue;
 				}
 
@@ -468,7 +468,7 @@ void ppm_cobra_init(void)
 					cobra_tbl.delta_tbl_LxLL[i][j][k].delta_pwr = cur_pwr - prev_pwr;
 				}
 
-				ppm_info("[%d][%d][%d] = (%d)\n", i, j, k,
+				ppm_ver("[%d][%d][%d] = (%d)\n", i, j, k,
 					cobra_tbl.delta_tbl_LxLL[i][j][k].delta_pwr);
 			}
 		}
