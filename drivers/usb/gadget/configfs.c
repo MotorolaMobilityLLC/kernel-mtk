@@ -29,6 +29,9 @@ static struct class *android_class;
 static struct device *android_device;
 static int index;
 
+char *serial_string;
+int serial_idx;
+
 struct device *create_function_device(char *name)
 {
 	if (android_device && !IS_ERR(android_device))
@@ -1382,6 +1385,10 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 		gi->cdev.desc.iManufacturer = s[USB_GADGET_MANUFACTURER_IDX].id;
 		gi->cdev.desc.iProduct = s[USB_GADGET_PRODUCT_IDX].id;
 		gi->cdev.desc.iSerialNumber = s[USB_GADGET_SERIAL_IDX].id;
+
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+		serial_idx = gi->cdev.desc.iSerialNumber;
+#endif
 	}
 
 	if (gi->use_os_desc) {
@@ -1656,6 +1663,26 @@ static const struct usb_gadget_driver configfs_driver_template = {
 };
 
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
+
+#define DESCRIPTOR_STRING_ATTR(field, buffer)				\
+static ssize_t								\
+field ## _show(struct device *dev, struct device_attribute *attr,	\
+		char *buf)						\
+{									\
+	return sprintf(buf, "%s", buffer);				\
+}									\
+static ssize_t								\
+field ## _store(struct device *dev, struct device_attribute *attr,	\
+		const char *buf, size_t size)				\
+{									\
+	if (size >= sizeof(buffer))					\
+		return -EINVAL;						\
+	return strlcpy(buffer, buf, sizeof(buffer));			\
+}									\
+static DEVICE_ATTR(field, S_IRUGO | S_IWUSR, field ## _show, field ## _store)
+
+DESCRIPTOR_STRING_ATTR(iSerial, serial_string);
+
 static ssize_t state_show(struct device *pdev, struct device_attribute *attr,
 			char *buf)
 {
@@ -1688,6 +1715,7 @@ static DEVICE_ATTR(state, S_IRUGO, state_show, NULL);
 
 static struct device_attribute *android_usb_attributes[] = {
 	&dev_attr_state,
+	&dev_attr_iSerial,
 	NULL
 };
 
@@ -1701,6 +1729,10 @@ static int android_device_create(struct gadget_info *gi)
 				MKDEV(0, 0), NULL, "android0");
 	if (IS_ERR(android_device))
 		return PTR_ERR(android_device);
+
+	serial_string = kmalloc(MAX_USB_STRING_WITH_NULL_LEN, GFP_KERNEL);
+
+	serial_string[0] = '\0';
 
 	dev_set_drvdata(android_device, gi);
 
@@ -1728,6 +1760,8 @@ static void android_device_destroy(void)
 	while ((attr = *attrs++))
 		device_remove_file(android_device, attr);
 	device_destroy(android_device->class, android_device->devt);
+
+	kfree(serial_string);
 }
 #else
 static inline int android_device_create(struct gadget_info *gi)
