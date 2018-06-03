@@ -88,10 +88,9 @@ void pd_wake_unlock(void)
 
 void pd_chrdet_int_handler(void)
 {
-	pr_notice("[pd_chrdet_int_handler]CHRDET status = %d....\n",
+	pr_notice("[%s] CHRDET status = %d....\n", __func__,
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (!upmu_get_rgs_chrdet()) {
 		int boot_mode = 0;
 
@@ -99,11 +98,10 @@ void pd_chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 			|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			pr_notice("[pd_chrdet_int_handler] Unplug Charger/USB\n");
+			pr_notice("[%s] Unplug Charger/USB\n", __func__);
 			kernel_power_off();
 		}
 	}
-#endif
 
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 	do_chrdet_int_task();
@@ -116,7 +114,7 @@ int chrdet_thread_kthread(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	pr_notice("[chrdet_thread_kthread] enter\n");
+	pr_notice("[%s] enter\n", __func__);
 	pmic_enable_interrupt(CHRDET_INT_NO, 0, "pd_manager");
 
 	/* Run on a process content */
@@ -138,7 +136,7 @@ int chrdet_thread_kthread(void *x)
 
 void wake_up_pd_chrdet(void)
 {
-	pr_notice("[wake_up_pd_chrdet]\r\n");
+	pr_notice("[%s]\n", __func__);
 	pd_wake_lock();
 	if (pd_thread_handle != NULL)
 		wake_up_process(pd_thread_handle);
