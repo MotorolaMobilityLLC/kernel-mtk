@@ -26,7 +26,8 @@ static int get_vb_volt(int vcore_opp)
 	pr_info("%s: PTPOD10: 0x%x\n", __func__, ptpod10);
 	switch (vcore_opp) {
 	case VCORE_OPP_0:
-		ret = (ptpod10 >> 2) & (ptpod10 >> 6) & (ptpod10 >> 12) & 0x3;
+		ret = min(((ptpod10 >> 2) & 0x3), ((ptpod10 >> 6) & 0x3));
+		ret = min(ret, ((ptpod10 >> 12) & 0x3));
 
 		/* GPU 730 Mhz 0.8V VB */
 		ptpod10 = (ptpod10 >> 8) & 0x3;
@@ -39,7 +40,7 @@ static int get_vb_volt(int vcore_opp)
 		}
 		break;
 	case VCORE_OPP_1:
-		ret = (ptpod10 >> 0) & (ptpod10 >> 4) & 0x3;
+		ret = min(((ptpod10 >> 0) & 0x3), ((ptpod10 >> 4) & 0x3));
 		if (ret > 1) {
 			pr_err("failed PTPOD10: 0x%x\n", ptpod10);
 			ret = 0;
@@ -56,45 +57,79 @@ static int get_vb_volt(int vcore_opp)
 
 void dvfsrc_opp_level_mapping(void)
 {
-	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv;
-	int is_flavor = 0;
+	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv, vcore_opp_3_uv;
+	int is_vcore_ct = 0, is_mini_sqc = 0;
 
-#if defined(CONFIG_ARM64)
-	if (strcmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES,
-				"mediatek/k65v1_64_bsp_ctig") == 0)
-		is_flavor = 1;
+	if (!strncmp(CONFIG_ARCH_MTK_PROJECT,
+				"k65v1_64_bsp_ctig", 17) ||
+			!strncmp(CONFIG_ARCH_MTK_PROJECT,
+				"k65v1_64_bsp_ctqc", 17) ||
+			!strncmp(CONFIG_ARCH_MTK_PROJECT,
+				"k62v1_64_bsp_ctgc", 17))
+		is_vcore_ct = is_mini_sqc = 1;
 
-	pr_info("flavor check: %s, is_flavor: %d\n",
-			CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES,
-			is_flavor);
-#endif
+	pr_info("flavor check: %s, is_vcore_ct: %d, is_mini_sqc: %d\n",
+			CONFIG_ARCH_MTK_PROJECT,
+			is_vcore_ct, is_mini_sqc);
 
 	set_pwrap_cmd(VCORE_OPP_0, 0);
 	set_pwrap_cmd(VCORE_OPP_1, 2);
 	set_pwrap_cmd(VCORE_OPP_2, 3);
 	set_pwrap_cmd(VCORE_OPP_3, 4);
 
-	if (is_flavor) {
+	if (is_vcore_ct) {
 		vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
 		vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
 		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
-		pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d\n", __func__,
-				vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
+		vcore_opp_3_uv = 650000;
+		pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d, %d\n", __func__,
+				vcore_opp_0_uv,
+				vcore_opp_1_uv,
+				vcore_opp_2_uv,
+				vcore_opp_3_uv);
 
+		if (is_mini_sqc) {
+			vcore_opp_0_uv -= 31250;
+			vcore_opp_1_uv -= 31250;
+			vcore_opp_2_uv -= 31250;
+			vcore_opp_3_uv = min(vcore_opp_2_uv, vcore_opp_3_uv);
+			pr_info("%s: MINI SQC vcore_opp_uv: %d, %d, %d, %d\n",
+					__func__,
+					vcore_opp_0_uv,
+					vcore_opp_1_uv,
+					vcore_opp_2_uv,
+					vcore_opp_3_uv);
+		}
+
+		vcore_opp_2_uv = max(vcore_opp_2_uv, vcore_opp_3_uv);
 		vcore_opp_1_uv = max(vcore_opp_0_uv - 100000, vcore_opp_1_uv);
 		vcore_opp_1_uv = max(vcore_opp_1_uv, vcore_opp_2_uv);
-		pr_info("%s: DRAM vcore_opp_uv: %d, %d, %d\n", __func__,
-				vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
+		pr_info("%s: DRAM vcore_opp_uv: %d, %d, %d, %d\n", __func__,
+				vcore_opp_0_uv,
+				vcore_opp_1_uv,
+				vcore_opp_2_uv,
+				vcore_opp_3_uv);
 	} else {
 		vcore_opp_0_uv = 800000;
 		vcore_opp_1_uv = 700000;
 		vcore_opp_2_uv = 700000;
+		vcore_opp_3_uv = 650000;
 	}
+
+	pr_info("flavor check: %s, is_vcore_ct: %d, is_mini_sqc: %d\n",
+			CONFIG_ARCH_MTK_PROJECT,
+			is_vcore_ct, is_mini_sqc);
+	pr_info("%s: FINAL vcore_opp_uv: %d, %d, %d, %d\n",
+			__func__,
+			vcore_opp_0_uv,
+			vcore_opp_1_uv,
+			vcore_opp_2_uv,
+			vcore_opp_3_uv);
 
 	set_vcore_uv_table(VCORE_OPP_0, vcore_opp_0_uv);
 	set_vcore_uv_table(VCORE_OPP_1, vcore_opp_1_uv);
 	set_vcore_uv_table(VCORE_OPP_2, vcore_opp_2_uv);
-	set_vcore_uv_table(VCORE_OPP_3, 650000);
+	set_vcore_uv_table(VCORE_OPP_3, vcore_opp_3_uv);
 
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
