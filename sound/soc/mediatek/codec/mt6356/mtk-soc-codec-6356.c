@@ -966,13 +966,14 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
 	return r_tmp;
 }
 
+#define PARALLEL_OHM 470
 static int detect_impedance(void)
 {
 	const unsigned int kDetectTimes = 8;
 	unsigned int counter;
 	int dcSum = 0, detectSum = 0;
 	int detectsOffset[kDetectTimes];
-	int pick_impedance = 0, detect_impedance = 0, phase_flag = 0;
+	int pick_impedance = 0, impedance = 0, phase_flag = 0;
 	int dcValue = 0;
 	struct mtk_hpdet_param hpdet_param;
 
@@ -1035,10 +1036,10 @@ static int detect_impedance(void)
 			}
 			/* if detect auxadc value over 32630 , the hpImpedance is over 5k ohm */
 			if ((detectSum / kDetectTimes) > hpdet_param.auxadc_upper_bound)
-				detect_impedance = auxcable_impedance;
+				impedance = auxcable_impedance;
 			else
-				detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
-									      dcValue, kDetectTimes);
+				impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+								       dcValue, kDetectTimes);
 			break;
 		}
 
@@ -1050,7 +1051,7 @@ static int detect_impedance(void)
 				detectsOffset[counter] = audio_get_auxadc_value();
 				detectSum = detectSum + detectsOffset[counter];
 			}
-			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+			impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
 								      dcValue, kDetectTimes);
 			break;
 		}
@@ -1063,16 +1064,26 @@ static int detect_impedance(void)
 				detectsOffset[counter] = audio_get_auxadc_value();
 				detectSum = detectSum + detectsOffset[counter];
 			}
-			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
-								      dcValue, kDetectTimes);
+			impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+							       dcValue, kDetectTimes);
 			break;
 		}
 		usleep_range(1*200, 1*200);
 	}
 
+	if (PARALLEL_OHM != 0) {
+		if (impedance < PARALLEL_OHM) {
+			impedance = DIV_ROUND_CLOSEST(impedance * PARALLEL_OHM,
+						      PARALLEL_OHM - impedance);
+		} else {
+			pr_warn("%s(), PARALLEL_OHM %d <= impedance %d\n",
+				 __func__, PARALLEL_OHM, impedance);
+		}
+	}
+
 	pr_debug("%s(), phase %d [dc,detect]Sum %d times [%d,%d], hp_impedance %d, pick_impedance %d, AUXADC_CON10 0x%x\n",
 		 __func__, phase_flag, kDetectTimes, dcSum, detectSum,
-		 detect_impedance, pick_impedance,
+		 impedance, pick_impedance,
 		 Ana_Get_Reg(AUXADC_CON10));
 
 	/* Ramp-Down */
@@ -1090,7 +1101,7 @@ static int detect_impedance(void)
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 	EnableTrimbuffer(false);
 
-	return detect_impedance;
+	return impedance;
 }
 
 static int hpl_dc_offset, hpr_dc_offset;
