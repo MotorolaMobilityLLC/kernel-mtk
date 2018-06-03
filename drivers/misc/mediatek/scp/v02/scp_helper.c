@@ -1586,6 +1586,7 @@ int scp_check_resource(void)
 	 * 0: main_pll may disable, 26M may disable, infra may disable
 	 */
 	int scp_resource_status = 0;
+#ifdef CONFIG_MACH_MT6799
 	unsigned long spin_flags;
 
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
@@ -1597,6 +1598,7 @@ int scp_check_resource(void)
 		scp_resource_status = 1;
 	else
 		scp_resource_status = 0;
+#endif
 
 	return scp_resource_status;
 }
