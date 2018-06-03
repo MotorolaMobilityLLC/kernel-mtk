@@ -77,34 +77,40 @@ struct mmdvfs_profile_mask qos_apply_profiles[] = {
 #define MT6761_MMDVFS_SENSOR_MID (16000000)
 /* A.1 [LP4 2-ch] Scenarios of each MM DVFS Step (force kicker) */
 /* OPP 0 scenarios */
-#define MT6761_MMDVFS_OPP0_NUM 4
+#define MT6761_MMDVFS_OPP0_NUM 1
 struct mmdvfs_profile mt6761_mmdvfs_opp0_profiles[MT6761_MMDVFS_OPP0_NUM] = {
 	{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
+/*
 	{"Camera Preview", SMI_BWC_SCEN_CAM_PV,
 		{MT6761_MMDVFS_SENSOR_MID, 0, 0}, {0, 0, 0 } },
 	{"Camera Capture", SMI_BWC_SCEN_CAM_CP,
 		{MT6761_MMDVFS_SENSOR_MID, 0, 0}, {0, 0, 0 } },
 	{"Video Recording", SMI_BWC_SCEN_VR,
 		{MT6761_MMDVFS_SENSOR_MID, 0, 0}, {0, 0, 0 } },
+*/
 };
 
 /* OPP 1 scenarios */
-#define MT6761_MMDVFS_OPP1_NUM 3
+#define MT6761_MMDVFS_OPP1_NUM 0
 struct mmdvfs_profile mt6761_mmdvfs_opp1_profiles[MT6761_MMDVFS_OPP1_NUM] = {
+/*
 	{"Camera Preview", SMI_BWC_SCEN_CAM_PV,
 		{MT6761_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"Camera Capture", SMI_BWC_SCEN_CAM_CP,
 		{MT6761_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"Video Recording", SMI_BWC_SCEN_VR,
 		{MT6761_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+*/
 };
 
 /* OPP 2 scenarios */
-#define MT6761_MMDVFS_OPP2_NUM 3
+#define MT6761_MMDVFS_OPP2_NUM 0
 struct mmdvfs_profile mt6761_mmdvfs_opp2_profiles[MT6761_MMDVFS_OPP2_NUM] = {
+/*
 	{"Camera Preview", SMI_BWC_SCEN_CAM_PV, {0, 0, 0}, {0, 0, 0 } },
 	{"Camera Capture", SMI_BWC_SCEN_CAM_CP, {0, 0, 0}, {0, 0, 0 } },
 	{"Video Recording", SMI_BWC_SCEN_VR, {0, 0, 0}, {0, 0, 0 } },
+*/
 };
 
 struct mmdvfs_step_to_qos_step legacy_to_qos_step[MT6761_MMDVFS_OPP_MAX] = {
