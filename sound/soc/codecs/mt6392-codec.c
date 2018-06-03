@@ -17,7 +17,27 @@
 #include <sound/tlv.h>
 #include <linux/debugfs.h>
 #include <linux/delay.h>
+#include <linux/module.h>
+#include <linux/of_platform.h>
 #include "mt6392-codec.h"
+
+#define MT6392_CODEC_NAME "mt6392-codec"
+
+enum mt6392_speaker_mode {
+	MT6392_CLASS_D = 0,
+	MT6392_CLASS_AB,
+};
+
+struct mt6392_codec_priv {
+	struct snd_soc_codec *codec;
+	struct regmap *regmap;
+	uint32_t speaker_mode;
+	uint32_t spk_amp_gain;
+	uint16_t spk_trim_offset;
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *debugfs;
+#endif
+};
 
 /*
  * Class D: has HW Trim mode and SW Trim mode
@@ -176,26 +196,6 @@ static int mt6392_speaker_oc_flag_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static const struct snd_kcontrol_new mt6392_codec_controls[] = {
-	/* Internal speaker PGA gain control */
-	SOC_SINGLE_EXT_TLV("Int Spk Amp Playback Volume",
-		SPK_CON9, 8, 15, 0,
-		snd_soc_get_volsw,
-		int_spk_amp_gain_put_volsw,
-		int_spk_amp_gain_tlv),
-	/* Audio_Speaker_PGA_gain */
-	SOC_ENUM_EXT("Audio_Speaker_PGA_gain",
-		int_spk_amp_gain_enum,
-		int_spk_amp_gain_get,
-		int_spk_amp_gain_put),
-	/* Internal speaker mode (AB/D) */
-	SOC_ENUM_EXT("Int Spk Amp Mode", mt6392_speaker_mode_enum,
-		mt6392_spk_mode_get, mt6392_spk_mode_put),
-	/* Check OC Flag */
-	SOC_ENUM_EXT("Speaker_OC_Flag", mt6392_speaker_oc_flag_enum,
-		mt6392_speaker_oc_flag_get, NULL),
-};
-
 static void mt6392_codec_get_spk_trim_offset(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
@@ -268,7 +268,7 @@ static void mt6392_int_spk_on_with_trim(struct snd_soc_codec *codec)
 	usleep_range(2000, 3000);
 }
 
-int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
+static int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
@@ -299,9 +299,8 @@ int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 
 	return ret;
 }
-EXPORT_SYMBOL_GPL(mt6392_int_spk_turn_on);
 
-int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
+static int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
@@ -326,7 +325,6 @@ int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 
 	return ret;
 }
-EXPORT_SYMBOL_GPL(mt6392_int_spk_turn_off);
 
 static int mt6392_int_spk_amp_wevent(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
@@ -349,8 +347,156 @@ static int mt6392_int_spk_amp_wevent(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+/* Int Spk Amp Switch */
+static int mt6392_codec_int_spk_amp_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt6392_codec_priv *codec_data =
+			snd_soc_component_get_drvdata(component);
+	struct snd_soc_codec *codec = codec_data->codec;
+	long int_spk_amp_en = snd_soc_read(codec, SPK_CON0) & BIT(0);
+
+	ucontrol->value.integer.value[0] = int_spk_amp_en;
+
+	return 0;
+}
+
+static int mt6392_codec_int_spk_amp_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt6392_codec_priv *codec_data =
+			snd_soc_component_get_drvdata(component);
+	struct snd_soc_codec *codec = codec_data->codec;
+	long int_spk_amp_en = ucontrol->value.integer.value[0];
+
+	if (int_spk_amp_en)
+		mt6392_int_spk_turn_on(codec);
+	else
+		mt6392_int_spk_turn_off(codec);
+
+	return 0;
+}
+
+static const struct snd_kcontrol_new mt6392_codec_controls[] = {
+	/* Internal speaker PGA gain control */
+	SOC_SINGLE_EXT_TLV("Int Spk Amp Playback Volume",
+		SPK_CON9, 8, 15, 0,
+		snd_soc_get_volsw,
+		int_spk_amp_gain_put_volsw,
+		int_spk_amp_gain_tlv),
+	/* Audio_Speaker_PGA_gain */
+	SOC_ENUM_EXT("Audio_Speaker_PGA_gain",
+		int_spk_amp_gain_enum,
+		int_spk_amp_gain_get,
+		int_spk_amp_gain_put),
+	/* Internal speaker mode (AB/D) */
+	SOC_ENUM_EXT("Int Spk Amp Mode", mt6392_speaker_mode_enum,
+		mt6392_spk_mode_get, mt6392_spk_mode_put),
+	/* Check OC Flag */
+	SOC_ENUM_EXT("Speaker_OC_Flag", mt6392_speaker_oc_flag_enum,
+		mt6392_speaker_oc_flag_get, NULL),
+	/* Int Spk Amp Switch */
+	SOC_SINGLE_BOOL_EXT("Int Spk Amp Switch",
+		0,
+		mt6392_codec_int_spk_amp_get,
+		mt6392_codec_int_spk_amp_put),
+};
+
 static const struct snd_soc_dapm_widget mt6392_codec_dapm_widgets[] = {
+	SND_SOC_DAPM_AIF_IN("MT6392 AIF RX", "MT6392 Playback", 0,
+				SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_SPK("Int Spk Amp", mt6392_int_spk_amp_wevent),
+};
+
+static const struct snd_soc_dapm_route mt6392_codec_dapm_routes[] = {
+	{"Int Spk Amp", NULL, "MT6392 AIF RX"},
+};
+
+static int module_reg_read(void *context, unsigned int reg, unsigned int *val,
+	unsigned int offset)
+{
+	struct mt6392_codec_priv *codec_data =
+			(struct mt6392_codec_priv *) context;
+	int ret = 0;
+
+	if (!(codec_data && codec_data->regmap))
+		return -1;
+
+	ret = regmap_read(codec_data->regmap,
+			(reg & (~offset)), val);
+
+	return ret;
+}
+
+static int module_reg_write(void *context, unsigned int reg, unsigned int val,
+	unsigned int offset)
+{
+	struct mt6392_codec_priv *codec_data =
+			(struct mt6392_codec_priv *) context;
+	int ret = 0;
+
+	if (!(codec_data && codec_data->regmap))
+		return -1;
+
+	ret = regmap_write(codec_data->regmap,
+			(reg & (~offset)), val);
+
+	return ret;
+}
+
+static bool reg_is_in_pmic(unsigned int reg)
+{
+	if (reg & PMIC_OFFSET)
+		return true;
+	else
+		return false;
+}
+
+/* regmap functions */
+static int codec_reg_read(void *context,
+		unsigned int reg, unsigned int *val)
+{
+	unsigned int offset;
+
+	if (reg_is_in_pmic(reg))
+		offset = PMIC_OFFSET;
+	else
+		return -1;
+
+	return module_reg_read(context, reg, val, offset);
+}
+
+static int codec_reg_write(void *context,
+			unsigned int reg, unsigned int val)
+{
+	unsigned int offset;
+
+	if (reg_is_in_pmic(reg))
+		offset = PMIC_OFFSET;
+	else
+		return -1;
+
+	return module_reg_write(context, reg, val, offset);
+}
+
+static void codec_regmap_lock(void *lock_arg)
+{
+}
+
+static void codec_regmap_unlock(void *lock_arg)
+{
+}
+
+static struct regmap_config mt6392_codec_regmap_config = {
+	.reg_bits = 16,
+	.val_bits = 16,
+	.reg_read = codec_reg_read,
+	.reg_write = codec_reg_write,
+	.lock = codec_regmap_lock,
+	.unlock = codec_regmap_unlock,
+	.cache_type = REGCACHE_NONE,
 };
 
 #ifdef CONFIG_DEBUG_FS
@@ -426,12 +572,66 @@ static void mt6392_codec_init_regs(struct mt6392_codec_priv *codec_data)
 		GENMASK(11, 8), (codec_data->spk_amp_gain) << 8);
 }
 
+static struct regmap *mt6392_codec_get_regmap_from_dt(const char *phandle_name,
+		struct mt6392_codec_priv *codec_data)
+{
+	struct device_node *self_node = NULL, *node = NULL;
+	struct platform_device *platdev = NULL;
+	struct device *dev = codec_data->codec->dev;
+	struct regmap *regmap = NULL;
+
+	self_node = of_find_compatible_node(NULL, NULL,
+		"mediatek," MT6392_CODEC_NAME);
+	if (!self_node) {
+		dev_err(dev, "%s failed to find %s node\n",
+			__func__, MT6392_CODEC_NAME);
+		return NULL;
+	}
+	dev_dbg(dev, "%s found %s node\n", __func__, MT6392_CODEC_NAME);
+
+	node = of_parse_phandle(self_node, phandle_name, 0);
+	if (!node) {
+		dev_err(dev, "%s failed to find %s node\n",
+			__func__, phandle_name);
+		return NULL;
+	}
+	dev_dbg(dev, "%s found %s\n", __func__, phandle_name);
+
+	platdev = of_find_device_by_node(node);
+	if (!platdev) {
+		dev_err(dev, "%s failed to get platform device of %s\n",
+			__func__, phandle_name);
+		return NULL;
+	}
+	dev_dbg(dev, "%s found platform device of %s\n",
+		__func__, phandle_name);
+
+	regmap = dev_get_regmap(&platdev->dev, NULL);
+	if (regmap) {
+		dev_dbg(dev, "%s found regmap of %s\n", __func__, phandle_name);
+		return regmap;
+	}
+
+	return NULL;
+}
+
 static int mt6392_codec_parse_dt(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
 	struct device *dev = codec->dev;
 	int ret = 0;
+
+	codec_data->regmap = mt6392_codec_get_regmap_from_dt(
+			"mediatek,pwrap-regmap",
+			codec_data);
+	if (!codec_data->regmap) {
+		dev_err(dev, "%s failed to get %s\n",
+			__func__, "mediatek,pwrap-regmap");
+		devm_kfree(dev, codec_data);
+		ret = -EPROBE_DEFER;
+		return ret;
+	}
 
 	ret = of_property_read_u32(dev->of_node, "mediatek,speaker-mode",
 				&codec_data->speaker_mode);
@@ -447,28 +647,24 @@ static int mt6392_codec_parse_dt(struct snd_soc_codec *codec)
 	return ret;
 }
 
-/* FIXME:
- * attached to the mt8167 codec for now
- * there is no dev for mt6392, thus use the dev from mt8167 codec
- * need to parse the dt from mt6392 itself
- * and detach it into a standalone codec driver
- */
-int mt6392_codec_probe(struct snd_soc_codec *codec)
+#define MT6392_CODEC_DL_RATES SNDRV_PCM_RATE_8000_48000
+
+static struct snd_soc_dai_driver mt6392_codec_dai = {
+	.name = "mt6392-codec-dai",
+	.playback = {
+		.stream_name = "MT6392 Playback",
+		.channels_min = 1,
+		.channels_max = 2,
+		.rates = MT6392_CODEC_DL_RATES,
+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	},
+};
+
+static int mt6392_codec_probe(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
-	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
 	int ret = 0;
-
-	ret = snd_soc_add_codec_controls(codec, mt6392_codec_controls,
-		ARRAY_SIZE(mt6392_codec_controls));
-	if (ret < 0)
-		goto error_probe;
-
-	ret = snd_soc_dapm_new_controls(dapm, mt6392_codec_dapm_widgets,
-		ARRAY_SIZE(mt6392_codec_dapm_widgets));
-	if (ret < 0)
-		goto error_probe;
 
 	codec_data->codec = codec;
 
@@ -483,12 +679,10 @@ int mt6392_codec_probe(struct snd_soc_codec *codec)
 			S_IFREG | S_IRUGO,
 			NULL, codec_data, &mt6392_codec_debug_ops);
 #endif
-error_probe:
 	return ret;
 }
-EXPORT_SYMBOL_GPL(mt6392_codec_probe);
 
-int mt6392_codec_remove(struct snd_soc_codec *codec)
+static int mt6392_codec_remove(struct snd_soc_codec *codec)
 {
 #ifdef CONFIG_DEBUG_FS
 	struct mt6392_codec_priv *codec_data =
@@ -498,4 +692,76 @@ int mt6392_codec_remove(struct snd_soc_codec *codec)
 	dev_dbg(codec->dev, "%s\n", __func__);
 	return 0;
 }
-EXPORT_SYMBOL_GPL(mt6392_codec_remove);
+
+static struct snd_soc_codec_driver mt6392_codec_driver = {
+	.probe = mt6392_codec_probe,
+	.remove = mt6392_codec_remove,
+	.controls = mt6392_codec_controls,
+	.num_controls = ARRAY_SIZE(mt6392_codec_controls),
+	.dapm_widgets = mt6392_codec_dapm_widgets,
+	.num_dapm_widgets = ARRAY_SIZE(mt6392_codec_dapm_widgets),
+	.dapm_routes = mt6392_codec_dapm_routes,
+	.num_dapm_routes = ARRAY_SIZE(mt6392_codec_dapm_routes),
+};
+
+static int mt6392_codec_dev_probe(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+	struct mt6392_codec_priv *codec_data = NULL;
+
+	dev_dbg(dev, "%s dev name %s\n", __func__, dev_name(dev));
+
+	if (dev->of_node) {
+		dev_set_name(dev, "%s", MT6392_CODEC_NAME);
+		dev_dbg(dev, "%s set dev name %s\n", __func__, dev_name(dev));
+	}
+
+	codec_data = devm_kzalloc(dev,
+			sizeof(struct mt6392_codec_priv), GFP_KERNEL);
+	if (!codec_data)
+		return -ENOMEM;
+
+	dev_set_drvdata(dev, codec_data);
+
+	/* get regmap of codec */
+	codec_data->regmap = devm_regmap_init(dev, NULL, codec_data,
+		&mt6392_codec_regmap_config);
+	if (IS_ERR(codec_data->regmap)) {
+		dev_err(dev, "%s failed to get regmap of codec\n", __func__);
+		devm_kfree(dev, codec_data);
+		codec_data->regmap = NULL;
+		return -EINVAL;
+	}
+
+	return snd_soc_register_codec(dev,
+			&mt6392_codec_driver, &mt6392_codec_dai, 1);
+}
+
+static int mt6392_codec_dev_remove(struct platform_device *pdev)
+{
+	snd_soc_unregister_codec(&pdev->dev);
+	return 0;
+}
+
+static const struct of_device_id mt6392_codec_dt_match[] = {
+	{.compatible = "mediatek," MT6392_CODEC_NAME,},
+	{}
+};
+
+MODULE_DEVICE_TABLE(of, mt6392_codec_dt_match);
+
+static struct platform_driver mt6392_codec_device_driver = {
+	.driver = {
+		   .name = MT6392_CODEC_NAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = mt6392_codec_dt_match,
+		   },
+	.probe = mt6392_codec_dev_probe,
+	.remove = mt6392_codec_dev_remove,
+};
+
+module_platform_driver(mt6392_codec_device_driver);
+
+/* Module information */
+MODULE_DESCRIPTION("ASoC MT6392 driver");
+MODULE_LICENSE("GPL v2");
