@@ -43,6 +43,7 @@
 	max-frequency = <200000000>;
 	msdc-sys-suspend;
 	cap-sd-highspeed;
+	sd-vmch-fastoff;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
@@ -91,49 +92,49 @@
 
 	msdc1_pins_default: msdc1@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 	};
 
 	msdc1_pins_sdr104: msdc1@sdr104 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 	};
 
 	msdc1_pins_sdr50: msdc1@sdr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 	};
 
 	msdc1_pins_ddr50: msdc1@ddr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <3>;
 		};
 	};
 
