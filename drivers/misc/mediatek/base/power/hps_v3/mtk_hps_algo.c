@@ -406,12 +406,31 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
+#if 1
+	/*hps_sys->root_cluster_id = hps_sys->ppm_root_cluster;*/
+#else
 	for (i = 0; i < hps_sys->cluster_num; i++) {
 		if (hps_sys->cluster_info[i].pwr_seq == 0) {
 			hps_sys->root_cluster_id = i;
 			break;
 		}
 	}
+#endif
+
+	/*Determine root cluster. */
+	if (hps_sys->cluster_info[hps_sys->root_cluster_id].limit_value > 0) {
+		mutex_unlock(&hps_ctxt.para_lock);
+		return;
+	}
+	for (i = 0; i < hps_sys->cluster_num; i++) {
+		if (hps_sys->cluster_info[i].limit_value > 0) {
+			hps_sys->root_cluster_id = i;
+			break;
+		}
+	}
+
+
+
 	mutex_unlock(&hps_ctxt.para_lock);
 }
 
@@ -512,6 +531,23 @@ void hps_algo_main(void)
 	if (origin_root != hps_sys.root_cluster_id)
 		hps_sys.action_id = HPS_SYS_CHANGE_ROOT;
 
+	switch (hps_sys.root_cluster_id) {
+	case 0:
+			hps_sys.cluster_info[0].pwr_seq = 0;
+			hps_sys.cluster_info[1].pwr_seq = 1;
+			hps_sys.cluster_info[2].pwr_seq = 2;
+		break;
+	case 1:
+			hps_sys.cluster_info[1].pwr_seq = 0;
+			hps_sys.cluster_info[0].pwr_seq = 1;
+			hps_sys.cluster_info[2].pwr_seq = 2;
+		break;
+	case 2:
+			hps_sys.cluster_info[2].pwr_seq = 0;
+			hps_sys.cluster_info[1].pwr_seq = 1;
+			hps_sys.cluster_info[0].pwr_seq = 2;
+		break;
+	}
 	/*
 	 * update history - tlp
 	 */
