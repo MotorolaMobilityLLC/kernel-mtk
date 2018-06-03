@@ -97,7 +97,7 @@ int situation_data_report(int handle, uint32_t one_sample_data)
 	event.word[0] = one_sample_data;
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (err < 0)
-		SITUATION_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
 		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
 		wake_lock_timeout(&cxt->wake_lock[index], msecs_to_jiffies(250));
@@ -118,7 +118,7 @@ int situation_flush_report(int handle)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (err < 0)
-		SITUATION_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 

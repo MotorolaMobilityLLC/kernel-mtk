@@ -36,7 +36,7 @@ int als_data_report(int value, int status)
 		event.word[0] = value + 1;
 		err = sensor_input_event(cxt->als_mdev.minor, &event);
 		if (err < 0)
-			ALSPS_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 		cxt->is_get_valid_als_data_after_enable = true;
 	}
 	if (value != last_als_report_data) {
@@ -45,7 +45,7 @@ int als_data_report(int value, int status)
 		event.status = status;
 		err = sensor_input_event(cxt->als_mdev.minor, &event);
 		if (err < 0)
-			ALSPS_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 		last_als_report_data = value;
 	}
 	return err;
@@ -59,7 +59,7 @@ int als_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(alsps_context_obj->als_mdev.minor, &event);
 	if (err < 0)
-		ALSPS_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		ALSPS_LOG("flush\n");
 	return err;
@@ -76,7 +76,7 @@ int ps_data_report(int value, int status)
 	event.status = status;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
-		ALSPS_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	return err;
 }
 int ps_flush_report(void)
@@ -87,7 +87,7 @@ int ps_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
-		ALSPS_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		ALSPS_LOG("flush\n");
 	return err;

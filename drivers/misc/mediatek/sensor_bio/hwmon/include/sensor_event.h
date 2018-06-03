@@ -14,6 +14,7 @@
 #ifndef _SENSOR_EVENT_H
 #define _SENSOR_EVENT_H
 #include <linux/poll.h>
+#include <linux/ratelimit.h>
 
 #define CONTINUE_SENSOR_BUF_SIZE	2048
 #define BIO_SENSOR_BUF_SIZE	0x20000 /* ((512 + 1024 + 1024) * 60) */

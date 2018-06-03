@@ -702,7 +702,7 @@ int gyro_bias_report(struct gyro_data *data)
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
+		pr_err_ratelimited("gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -750,7 +750,7 @@ int gyro_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_PR_ERR("gyro_flush_report failed due to event buffer full\n");
+		pr_err_ratelimited("gyro_flush_report failed due to event buffer full\n");
 	return err;
 }
 

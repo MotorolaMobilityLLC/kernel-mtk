@@ -552,7 +552,7 @@ int ekg_data_report(struct bio_data *data)
 		/* BIO_LOG("%s ====> length:%d ekg_data:%d, count = %d\n", __func__, length, ekg_data[i], count); */
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_PR_ERR("failed due to event buffer full\n");
+			pr_err_ratelimited("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -588,7 +588,7 @@ int ppg1_data_report(struct bio_data *data)
 		/* BIO_LOG("%s ====> length:%d, %d\n", __func__, length, ppg1_data[i]); */
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_PR_ERR("failed due to event buffer full\n");
+			pr_err_ratelimited("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -624,7 +624,7 @@ int ppg2_data_report(struct bio_data *data)
 
 		err = sensor_input_event(bio_context_obj->mdev.minor, &event);
 		if (err < 0)
-			BIO_PR_ERR("failed due to event buffer full\n");
+			pr_err_ratelimited("failed due to event buffer full\n");
 	}
 	return err;
 }
