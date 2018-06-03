@@ -121,6 +121,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_2L,
 		#endif
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
 
 	[EEM_DET_L] = {
@@ -151,6 +152,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_L,
 		#endif
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
 
 	[EEM_DET_CCI] = {
@@ -181,6 +183,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_CCI,
 		#endif
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
 
 	[EEM_DET_GPU] = {
@@ -190,7 +193,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.features	= 0, /* FEA_INIT01 | FEA_INIT02 | FEA_MON, */
 		.max_freq_khz	= 950000,/* 950 MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
@@ -211,6 +214,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_GPU,
 		#endif
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
 
 	[EEM_DET_SOC] = {
@@ -245,6 +249,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if ENABLE_EEMCTL0
 		.EEMCTL0	= EEM_CTL0_SOC,
 		#endif
+		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	}
 };
 

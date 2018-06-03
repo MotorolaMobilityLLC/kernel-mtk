@@ -17,13 +17,13 @@
 /* CONFIG (SW related) */
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(1)
-#define DVT			(1) /* only use at DVT, disable it at MP */
+#define DVT			(0) /* only use at DVT, disable it at MP */
 #define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
-	#define EEM_ENABLE		(0) /* enable; after pass HPT mini-SQC */
+	#define EEM_ENABLE		(1) /* enable; after pass HPT mini-SQC */
 	#define EEM_FAKE_EFUSE		(1)
-#define UPDATE_TO_UPOWER	(0)
+#define UPDATE_TO_UPOWER	(1)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(0)
 
@@ -97,7 +97,7 @@
 #define DEVINFO_IDX_5 55
 #define DEVINFO_IDX_6 56
 /* gpu */
-#define DEVINFO_7 0x0DB7B67D
+#define DEVINFO_7 0x0DB76201
 #define DEVINFO_8 0x002400C7
 #define DEVINFO_DVT_7 0x10BD3C1B
 #define DEVINFO_DVT_8 0x0055C000
@@ -213,7 +213,16 @@
 
 #define CORESEL_VAL (0x800f0000)
 #define CORESEL_INIT2_VAL (0x000f0000)
-#define INVERT_TEMP_VAL (33000)
+
+#define INVERT_TEMP_VAL (25000)
+#define OVER_INV_TEM_VAL (27000)
+
+#define LOW_TEMP_OFF_DEFAULT (0)
+#define LOW_TEMP_OFF_2L (0x04)
+#define LOW_TEMP_OFF_L (0x05)
+#define LOW_TEMP_OFF_CCI (0x04)
+#define LOW_TEMP_OFF_GPU (0x03)
+#define LOW_TEMP_OFF_BIG (0x04)
 
 #if ENABLE_EEMCTL0
 /* for EEMCTL0's setting */

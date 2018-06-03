@@ -62,7 +62,7 @@ struct eem_det_ops gpu_det_ops = {
 	.set_volt		= set_volt_gpu,
 	.restore_default_volt	= restore_default_volt_gpu,
 	.get_freq_table		= get_freq_table_gpu,
-	.get_orig_volt_table = NULL,
+	.get_orig_volt_table	= get_orig_volt_table_gpu,
 };
 
 struct eem_det_ops soc_det_ops = {
@@ -144,7 +144,6 @@ int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
 
-	eem_debug("set_volt_to_cpu!\n");
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* eem_debug("init02_vop_30 = 0x%x\n", det->vop30[EEM_PHASE_INIT02]); */
@@ -239,8 +238,9 @@ void get_freq_table_cpu(struct eem_det *det)
 
 	det->num_freq_tbl = i;
 
-	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
-	/*for (i = 0; i < NR_FREQ; i++)
+	/*
+	*eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
+	*for (i = 0; i < NR_FREQ; i++)
 	*	eem_debug("%d\n", det->freq_tbl[i]);
 	*/
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -252,17 +252,25 @@ void get_freq_table_cpu(struct eem_det *det)
 void get_orig_volt_table_cpu(struct eem_det *det)
 {
 #if SET_PMIC_VOLT_TO_DVFS
-	int i = 0;
+	int i = 0, volt = 0;
 	unsigned int det_id = det_to_id(det);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	for (i = 0; i < det->num_freq_tbl; i++) {
-		det->volt_tbl_orig[i] =
-			((det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
+		volt = ((det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
 			(det_id == EEM_DET_L) ?  mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_L, i) :
 			mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_CCI, i));
-		/* eem_debug("volt_tbl_orig[%d] = %d\n", i, det->volt_tbl_orig[i]); */
+
+		det->volt_tbl_orig[i] = det->ops->volt_2_pmic(det, volt);
+
+		#if 0
+		eem_debug("[%s]volt_tbl_orig[%d] = %d(0x%x)\n",
+			det->name+8,
+			i,
+			volt,
+			det->volt_tbl_orig[i]);
+		#endif
 	}
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
@@ -333,7 +341,14 @@ void get_freq_table_gpu(struct eem_det *det)
 		#ifndef EARLY_PORTING_GPU
 		for (i = 0; i < NR_FREQ_GPU; i++) {
 			det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz);
-			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
+			/* eem_debug("freq_tbl_gpu[%d]=%d 0x%0x, (%d)\n",
+			*	i,
+			*	det->freq_tbl[i],
+			*	det->freq_tbl[i],
+			*	mt_gpufreq_get_freq_by_idx(i));
+			*/
+			if (det->freq_tbl[i] == 0)
+				break;
 		}
 		#endif
 	#endif /* if DVT */
@@ -341,12 +356,30 @@ void get_freq_table_gpu(struct eem_det *det)
 	det->num_freq_tbl = i;
 	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
 
-	/* eem_debug("[%s] freq num:%d\n", det->name+8, det->num_freq_tbl); */
-	/*
-	*for (i = 0; i < NR_FREQ; i++)
-	*	eem_debug("%d\n", det->freq_tbl[i]);
-	*/
 	FUNC_EXIT(FUNC_LV_HELP);
+}
+
+void get_orig_volt_table_gpu(struct eem_det *det)
+{
+#if SET_PMIC_VOLT_TO_DVFS
+	int i = 0, volt = 0;
+
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	for (i = 0; i < det->num_freq_tbl; i++) {
+		volt = mt_gpufreq_get_volt_by_idx(i);
+		det->volt_tbl_orig[i] = det->ops->volt_2_pmic(det, volt);
+
+		#if 0
+		eem_debug("[%s]volt_tbl_orig[%d] = %d(0x%x)\n",
+			det->name+8,
+			i,
+			volt,
+			det->volt_tbl_orig[i]);
+		#endif
+	}
+	FUNC_EXIT(FUNC_LV_HELP);
+#endif
 }
 
 /* for DVT */

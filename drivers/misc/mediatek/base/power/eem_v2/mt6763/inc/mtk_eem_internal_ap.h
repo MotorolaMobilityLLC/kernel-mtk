@@ -126,6 +126,8 @@ struct eem_det {
 	unsigned int volt_tbl_init2[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_bin[NR_FREQ]; /* pmic value */
+	unsigned char isTempInv;
+	unsigned char low_temp_off;
 	int volt_offset;
 	int pi_offset;
 
@@ -274,6 +276,7 @@ extern int get_volt_gpu(struct eem_det *det);
 extern int set_volt_gpu(struct eem_det *det);
 extern void restore_default_volt_gpu(struct eem_det *det);
 extern void get_freq_table_gpu(struct eem_det *det);
+extern void get_orig_volt_table_gpu(struct eem_det *det);
 
 #if EEM_BANK_SOC
 extern void get_freq_table_vcore(struct eem_det *det);
