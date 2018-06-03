@@ -47,13 +47,14 @@ bool usb20_host_tcpc_boost_on;
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data);
 static struct delayed_work register_otg_work;
+#define TCPC_OTG_DEV_NAME "type_c_port0"
 void do_register_otg_work(struct work_struct *data)
 {
 #define REGISTER_OTG_WORK_DELAY 1000
 	static int ret;
 
 	if (!otg_tcpc_dev)
-		otg_tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+		otg_tcpc_dev = tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME);
 
 	if (!otg_tcpc_dev) {
 		DBG(0, "get type_c_port0 fail\n");
@@ -65,13 +66,13 @@ void do_register_otg_work(struct work_struct *data)
 	otg_nb.notifier_call = otg_tcp_notifier_call;
 	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
 	if (ret < 0) {
-		DBG(0, "register OTG fail\n");
+		DBG(0, "register OTG <%p> fail\n", otg_tcpc_dev);
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
 				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
 		return;
 	}
 
-	DBG(0, "register OTG ok\n");
+	DBG(0, "register OTG <%p> ok\n", otg_tcpc_dev);
 }
 #endif
 #endif
@@ -402,8 +403,12 @@ void musb_disable_host(struct musb *musb)
 	}
 
 #ifdef CONFIG_TCPC_CLASS
+	DBG(0, "OTG <%p, %p>\n",
+			otg_tcpc_dev,
+			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
 	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
 #else
+	DBG(0, "disable iddig<%d>\n", iddig_eint_num);
 	/* MASK IDDIG EVENT */
 	disable_irq(iddig_eint_num);
 #endif
@@ -413,8 +418,12 @@ void musb_disable_host(struct musb *musb)
 void musb_enable_host(struct musb *musb)
 {
 #ifdef CONFIG_TCPC_CLASS
+	DBG(0, "OTG <%p, %p>\n",
+			otg_tcpc_dev,
+			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
 	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_DRP);
 #else
+	DBG(0, "iddig_req_host to 0\n");
 	iddig_req_host = 0;
 	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
 #endif
