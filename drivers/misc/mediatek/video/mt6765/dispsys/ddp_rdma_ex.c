@@ -536,8 +536,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	unsigned int ultra_high_us = 6;
 	unsigned int preultra_low_us = ultra_high_us;
 	unsigned int preultra_high_us = 7;
-	unsigned int urgent_low_us = 40;  /* 10 times */
-	unsigned int urgent_high_us = 45;  /* 10 times */
+	unsigned int urgent_low_us = 30;  /* 10 times */
+	unsigned int urgent_high_us = 35;  /* 10 times */
 
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
@@ -704,15 +704,20 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 				? (fifo_valid_size - preultra_low) : 255;
 
 
-
 	/* output valid should < total rdma data size, or hang will happen */
 	temp = rdma_golden_setting->rdma_width;
 	temp = temp * rdma_golden_setting->rdma_height * Bytes_per_sec;
 	do_div(temp, 16);
 	temp -= 1;
+#if 0
 	output_valid_fifo_threshold =
 		(preultra_low_us * consume_rate_div) < temp
 				? (preultra_low_us * consume_rate_div) : temp;
+#else
+	output_valid_fifo_threshold =
+				preultra_low < temp
+						? preultra_low : temp;
+#endif
 
 	/* SODI threshold */
 	sodi_threshold_low = (ultra_low_us * 10 + fifo_off_spm)
