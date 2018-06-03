@@ -181,6 +181,7 @@ struct last_reboot_reason {
 	uint32_t scp_lr;
 	unsigned long last_init_func;
 	uint8_t pmic_ext_buck;
+	uint32_t hang_detect_timeout_count;
 
 	void *kparams;
 };
@@ -2000,6 +2001,13 @@ void aee_rr_rec_set_bit_pmic_ext_buck(int bit, int loc)
 	LAST_RR_SET(pmic_ext_buck, rr_pmic_ext_buck);
 }
 
+void aee_rr_rec_hang_detect_timeout_count(unsigned int val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hang_detect_timeout_count, val);
+}
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2709,6 +2717,11 @@ void aee_rr_show_pmic_ext_buck(struct seq_file *m)
 	seq_printf(m, "pmic & external buck: 0x%x\n", LAST_RRR_VAL(pmic_ext_buck));
 }
 
+void aee_rr_show_hang_detect_timeout_count(struct seq_file *m)
+{
+	seq_printf(m, "hang detect time out: 0x%x\n", LAST_RRR_VAL(hang_detect_timeout_count));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -2900,6 +2913,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ocp_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
+	aee_rr_show_hang_detect_timeout_count,
 	aee_rr_show_last_init_func,
 	aee_rr_show_pmic_ext_buck,
 	aee_rr_show_hotplug_status,
