@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include <linux/cpufreq.h>
+#include <linux/cpumask.h>
 
 
 /*==============================================================*/
@@ -55,7 +56,6 @@ enum ppm_sysboost_user {
 enum ppm_cluster_lkg {
 	CLUSTER_LL_LKG = 0,
 	CLUSTER_L_LKG,
-	CLUSTER_B_LKG,
 	TOTAL_CLUSTER_LKG,
 };
 
@@ -71,6 +71,7 @@ struct ppm_client_req {
 	unsigned int cluster_num;
 	unsigned int root_cluster;
 	bool is_ptp_policy_activate;
+	cpumask_var_t online_core;
 	struct ppm_client_limit {
 		unsigned int cluster_id;
 		unsigned int cpu_id;
