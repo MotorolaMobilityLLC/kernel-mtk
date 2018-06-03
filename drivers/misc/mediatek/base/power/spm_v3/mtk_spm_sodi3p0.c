@@ -303,7 +303,7 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
-	u32 cpu = spm_data;
+	u32 cpu = smp_processor_id();
 	int ch;
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);

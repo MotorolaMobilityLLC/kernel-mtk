@@ -458,7 +458,7 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 ope
 	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
-	u32 cpu = spm_data;
+	u32 cpu = smp_processor_id();
 	int ch;
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
