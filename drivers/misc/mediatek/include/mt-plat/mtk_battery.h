@@ -34,7 +34,7 @@ struct FUELGAUGE_TEMPERATURE {
 };
 
 struct FUELGAUGE_PROFILE_STRUCT {
-	unsigned short mah;
+	unsigned int mah;
 	unsigned short voltage;
 	unsigned short resistance; /* Ohm*/
 	unsigned short percentage;
