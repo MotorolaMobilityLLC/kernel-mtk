@@ -71,6 +71,16 @@ static unsigned short bc12_get_register_value(MT6336_PMU_FLAGS_LIST_ENUM flagnam
 	return mt6336_get_flag_register_value(flagname);
 }
 
+static bool check_rdm_dwm_requirement(void)
+{
+	unsigned short var1 = bc12_get_register_value(MT6336_PMIC_CID);
+	unsigned short var2 = bc12_get_register_value(MT6336_PMIC_HWCID);
+
+	if ((var1 == 0x36) && (var2 == 0x20))
+		return true;
+
+	return false;
+}
 
 
 static void hw_bc12_init(void)
@@ -119,9 +129,9 @@ static unsigned int hw_bc12_step_1(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-#if defined(TURN_ON_RDM_DWM)
-	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
-#endif
+	/**/
+	if (check_rdm_dwm_requirement())
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -131,9 +141,10 @@ static unsigned int hw_bc12_step_1(void)
 	 * 1: Jump to 2-b
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-#if defined(TURN_ON_RDM_DWM)
-	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
-#endif
+	/**/
+	if (check_rdm_dwm_requirement())
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -155,11 +166,11 @@ static unsigned int hw_bc12_step_2a(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-#if defined(TURN_ON_RDM_DWM)
-	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
-#endif
+	/**/
+	if (check_rdm_dwm_requirement())
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
 	/* Delay 40ms */
-	usleep_range(40000, 41000);
+	msleep(40);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -167,11 +178,12 @@ static unsigned int hw_bc12_step_2a(void)
 	 * 1: Jump to 3-a
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-#if defined(TURN_ON_RDM_DWM)
-	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
-#endif
+	/**/
+	if (check_rdm_dwm_requirement())
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+
 	/* Delay 20ms */
-	usleep_range(20000, 21000);
+	msleep(20);
 
 	return wChargerAvail;
 }
@@ -180,17 +192,17 @@ static unsigned int hw_bc12_step_2b1(void)
 {
 	unsigned int wChargerAvail = 0;
 	/* RG_A_BC12_VSRC_EN[1:0] = 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 2);
+	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 0);
 	/* RG_A_BC12_VREF_VTH_EN[1:0] = 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 2);
+	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 0);
 	/* RG_A_BC12_CMP_EN[1:0] = 10 */
 	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 2);
 	/* RG_A_BC12_IPU_EN[1:0] = 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 2);
+	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 0);
 	/* RG_A_BC12_IPD_EN[1:0]= 10 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 2);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
-	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 2);
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -236,9 +248,9 @@ static unsigned int hw_bc12_step_2b3(void)
 {
 	unsigned int wChargerAvail = 0;
 	/* Check OUT1 and OUT2
-	 * 1. (OUT1, OUT2) = 00: Step 3-b
-	 * 2. (OUT1, OUT2) = 01: Iphone 5V/1A
-	 * 3. (OUT1, OUT2) = 1X: IPAD 5V/2A, IPAD4 5V/24A, SS Tablet 5V/2A
+	 * 1. (OUT1, OUT2) = 00: Jump to 3b
+	 * 2. (OUT1, OUT2) = 01: IPhone 5V-1A, Jump to END
+	 * 3. (OUT1, OUT2) = others: IPad2 5V-2A or IPad4 5V-2.4A, Jump to END"
 	 */
 
 	return wChargerAvail;
@@ -249,20 +261,20 @@ static unsigned int hw_bc12_step_3a(void)
 {
 	unsigned int wChargerAvail = 0;
 
-	/* RG_A_BC12_VSRC_EN[1:0] = 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 0);
-	/* RG_A_BC12_VREF_VTH_EN[1:0] = 01 */
-	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 1);
-	/* RG_A_BC12_CMP_EN[1:0] = 01 */
-	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 1);
-	/* RG_A_BC12_IPU_EN[1:0] = 10 */
-	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 2);
-	/* RG_A_BC12_IPD_EN[1:0]= 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
+	/* RG_A_BC12_VSRC_EN[1:0] = 01 */
+	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 1);
+	/* RG_A_BC12_VREF_VTH_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 0);
+	/* RG_A_BC12_CMP_EN[1:0] = 10 */
+	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 2);
+	/* RG_A_BC12_IPU_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 0);
+	/* RG_A_BC12_IPD_EN[1:0]= 10 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 2);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/* Delay 40ms */
-	usleep_range(40000, 41000);
+	msleep(40);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -271,7 +283,7 @@ static unsigned int hw_bc12_step_3a(void)
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 	/* Delay 20ms */
-	usleep_range(20000, 21000);
+	msleep(20);
 
 	return wChargerAvail;
 }
@@ -313,14 +325,14 @@ static unsigned int hw_bc12_step_4(void)
 
 	/* RG_A_BC12_VSRC_EN[1:0] = 00 */
 	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 0);
-	/* RG_A_BC12_VREF_VTH_EN[1:0] = 01 */
+	/* RG_A_BC12_VREF_VTH_EN[1:0] = 00 */
 	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 0);
-	/* RG_A_BC12_CMP_EN[1:0] = 10 */
-	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 0);
-	/* RG_A_BC12_IPU_EN[1:0] = 10 */
+	/* RG_A_BC12_CMP_EN[1:0] = 01 */
+	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 1);
+	/* RG_A_BC12_IPU_EN[1:0] = 00 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 0);
-	/* RG_A_BC12_IPD_EN[1:0]= 00 */
-	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
+	/* RG_A_BC12_IPD_EN[1:0]= 10 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 2);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/* Delay 10ms */
@@ -340,6 +352,24 @@ static void hw_bc12_done(void)
 #if defined(CONFIG_PROJECT_PHY)
 	Charger_Detect_Release();
 #endif
+	/* RG_BC12_BB_CTRL = 0 */
+	bc12_set_register_value(MT6336_RG_A_BC12_BB_CTRL, 0);
+	/* RG_BC12_RST = 1 */
+	bc12_set_register_value(MT6336_RG_BC12_RST, 1);
+	/* RG_A_BC12_IBIAS_EN = 0 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IBIAS_EN, 0);
+	/* RG_A_BC12_VSRC_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 0);
+	/* RG_A_BC12_VREF_VTH_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_VREF_VTH_EN, 0);
+	/* RG_A_BC12_CMP_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_CMP_EN, 0);
+	/* RG_A_BC12_IPU_EN[1:0] = 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPU_EN, 0);
+	/* RG_A_BC12_IPD_EN[1:0]= 00 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
+	/* RG_A_BC12_IPD_HALF_EN = 0 */
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 }
 
 static void dump_charger_name(CHARGER_TYPE type)
@@ -389,15 +419,17 @@ int hw_charging_get_charger_type(void)
 		if (hw_bc12_step_2b2())
 			out |= 0x01;
 		switch (out) {
+		/* Check OUT1 and OUT2
+		 * 1. (OUT1, OUT2) = 00: Jump to 3b
+		 * 2. (OUT1, OUT2) = 01: IPhone 5V-1A, Jump to END
+		 * 3. (OUT1, OUT2) = others: IPad2 5V-2A or IPad4 5V-2.4A, Jump to END"
+		 */
 		case 0:
-			if (hw_bc12_step_3b())
+			if (hw_bc12_step_3b()) {
 				CHR_Type_num = NONSTANDARD_CHARGER;
-			else if (hw_bc12_step_4()) {
-				CHR_Type_num = NONSTANDARD_CHARGER;
-				pr_err("charger type: DP/DM are floating. Force to Non-STD!\n");
 			} else {
+				pr_err("charger type: DP/DM are floating! force to Non-STD\n");
 				CHR_Type_num = NONSTANDARD_CHARGER;
-				pr_err("charger type: SS 5V/2A. Force to Non-STD!\n");
 			}
 			break;
 		case 1:
@@ -411,7 +443,11 @@ int hw_charging_get_charger_type(void)
 	} else {
 		if (hw_bc12_step_2a()) {
 			if (hw_bc12_step_3a())
-				CHR_Type_num = STANDARD_CHARGER;
+				if (hw_bc12_step_4()) {
+					pr_err("charger type: SS 5V/2A. force to DCP\n");
+					CHR_Type_num = STANDARD_CHARGER;
+				} else
+					CHR_Type_num = STANDARD_CHARGER;
 			else
 				CHR_Type_num = CHARGING_HOST;
 		} else
