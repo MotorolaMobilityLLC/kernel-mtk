@@ -1491,29 +1491,40 @@ void fg_bat_temp_int_sw_check(void)
 void fg_update_sw_low_battery_check(unsigned int thd)
 {
 	int vbat;
+	int thd1, thd2, thd3;
+
+	thd1 = fg_cust_data.vbat2_det_voltage1 / 10;
+	thd2 = fg_cust_data.vbat2_det_voltage2 / 10;
+	thd3 = fg_cust_data.vbat2_det_voltage3 / 10;
+
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
 		return;
 
 	vbat = pmic_get_battery_voltage() * 10;
-	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
-		vbat, gm.sw_low_battery_ht_en, gm.sw_low_battery_ht_threshold,
-		gm.sw_low_battery_lt_en, gm.sw_low_battery_lt_threshold);
-	mutex_lock(&gm.sw_low_battery_mutex);
-	if (gm.sw_low_battery_ht_en == 1 &&
-		vbat >= gm.sw_low_battery_ht_threshold) {
+	bm_err("[fg_update_sw_low_battery_check]vbat:%d %d ht:%d %d lt:%d %d\n",
+		thd, vbat,
+		gm.sw_low_battery_ht_en,
+		gm.sw_low_battery_ht_threshold,
+		gm.sw_low_battery_lt_en,
+		gm.sw_low_battery_lt_threshold);
+
+	if (gm.sw_low_battery_ht_en == 1 && thd == thd3) {
+		mutex_lock(&gm.sw_low_battery_mutex);
 		gm.sw_low_battery_ht_en = 0;
 		gm.sw_low_battery_lt_en = 0;
+		mutex_unlock(&gm.sw_low_battery_mutex);
 		disable_shutdown_cond(LOW_BAT_VOLT);
 		wakeup_fg_algo(FG_INTR_VBAT2_H);
 	}
-	if (gm.sw_low_battery_lt_en == 1 &&
-		vbat <= gm.sw_low_battery_lt_threshold) {
+	if (gm.sw_low_battery_lt_en == 1 && (thd == thd1 || thd == thd2)) {
+		mutex_lock(&gm.sw_low_battery_mutex);
 		gm.sw_low_battery_ht_en = 0;
 		gm.sw_low_battery_lt_en = 0;
+		mutex_unlock(&gm.sw_low_battery_mutex);
 		wakeup_fg_algo(FG_INTR_VBAT2_L);
 	}
-	mutex_unlock(&gm.sw_low_battery_mutex);
+
 }
 
 /* ============================================================ */
@@ -1958,6 +1969,13 @@ void fg_drv_update_hw_status(void)
 	bat_vol = pmic_get_battery_voltage();
 	chr_vol = pmic_get_vbus();
 	tmp = force_get_tbat(true);
+
+	bm_err("lbat %d %d %d %d\n",
+		gm.sw_low_battery_ht_en,
+		gm.sw_low_battery_ht_threshold,
+		gm.sw_low_battery_lt_en,
+		gm.sw_low_battery_lt_threshold);
+
 
 	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d %d\n",
 		fg_coulomb, gm.coulomb_plus.end,

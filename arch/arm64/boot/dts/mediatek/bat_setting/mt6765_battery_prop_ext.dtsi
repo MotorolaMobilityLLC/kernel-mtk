@@ -37,11 +37,11 @@ bat_gm30: battery{
 	TEMPERATURE_T2 = <(10)>;	/*	Battery temperature T2*/
 	TEMPERATURE_T3 = <(0)>;	/*	Battery temperature T3*/
 	TEMPERATURE_T4 = <(-10)>;	/*	Battery temperature T4*/
-	g_FG_PSEUDO100_T0 = <(100)>;	/*	Pseudo 100% percentage at T0.*/
-	g_FG_PSEUDO100_T1 = <(100)>;	/*	Pseudo 100% percentage at T1.*/
-	g_FG_PSEUDO100_T2 = <(100)>;	/*	Pseudo 100% percentage at T2.*/
-	g_FG_PSEUDO100_T3 = <(100)>;	/*	Pseudo 100% percentage at T3.*/
-	g_FG_PSEUDO100_T4 = <(100)>;	/*	Pseudo 100% percentage at T4.*/
+	g_FG_PSEUDO100_T0 = <(98)>;	/*	Pseudo 100% percentage at T0.*/
+	g_FG_PSEUDO100_T1 = <(98)>;	/*	Pseudo 100% percentage at T1.*/
+	g_FG_PSEUDO100_T2 = <(95)>;	/*	Pseudo 100% percentage at T2.*/
+	g_FG_PSEUDO100_T3 = <(90)>;	/*	Pseudo 100% percentage at T3.*/
+	g_FG_PSEUDO100_T4 = <(80)>;	/*	Pseudo 100% percentage at T4.*/
 	/*	System shut down voltage.*/
 	Q_MAX_SYS_VOLTAGE_BAT0 = <(3350)>;
 	/*	System shut down voltage.*/
