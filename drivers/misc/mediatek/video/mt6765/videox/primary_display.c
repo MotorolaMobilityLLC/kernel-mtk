@@ -1059,12 +1059,6 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 		"|--------------------------------------------------------------------------------------|\n");
 	len += scnprintf(stringbuf + len, buf_len - len,
 		"|********Primary Display Path General Information********\n");
-	if (pgc->state == DISP_ALIVE)
-		len += scnprintf(stringbuf + len, buf_len - len,
-			"|Primary Display is %s\n",
-			dpmgr_path_is_idle(pgc->dpmgr_handle) ?
-			"idle" : "busy");
-
 	if (mutex_trylock(&(pgc->lock))) {
 		mutex_unlock(&(pgc->lock));
 		len += scnprintf(stringbuf + len, buf_len - len,
