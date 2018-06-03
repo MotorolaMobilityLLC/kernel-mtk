@@ -2395,7 +2395,7 @@ static void msdc_dma_start(struct msdc_host *host)
 	host->dma_cnt++;
 	host->start_dma_time = sched_clock();
 	host->stop_dma_time = 0;
-	mb();
+	mb(); /* make sure write committed */
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2429,7 +2429,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
 
 	host->stop_dma_time = sched_clock();
-	mb();
+	mb(); /* make sure write committed */
 
 	N_MSG(DMA, "DMA stop, latest_INT_status<0x%.8x>", latest_int_status[host->id]);
 }
@@ -3459,9 +3459,9 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait transfer state timeout\n");
 				else {
-					if (host->cq_error_need_stop) {
+					if (atomic_read(&host->cq_error_need_stop)) {
 						(void)msdc_stop_and_wait_busy(host);
-						host->cq_error_need_stop = 0;
+						atomic_set(&host->cq_error_need_stop, 0);
 					}
 					err = 1;
 					continue;
@@ -4157,7 +4157,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	host->cq_error_need_stop = 0;
+	atomic_set(&host->cq_error_need_stop, 0);
 #endif
 
 	/* Async only support DMA and asyc CMD flow */
@@ -4589,7 +4589,7 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 			/* CQ mode: just set data->error and let mmc layer tune */
 			if (host->mmc->card->ext_csd.cmdq_mode_en) {
 				if (mrq->data->flags & MMC_DATA_WRITE)
-					host->cq_error_need_stop = 1;
+					atomic_set(&host->cq_error_need_stop, 1);
 				goto skip;
 			}
 #endif
@@ -4625,7 +4625,7 @@ skip:
 			msdc_dma_clear(host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			host->cq_error_need_stop = 0;
+			atomic_set(&host->cq_error_need_stop, 0);
 			host->mmc->is_data_dma = 0;
 #endif
 
@@ -5056,6 +5056,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* host->timer.expires = jiffies + HZ; */
 	host->timer.function = msdc_timer_pm;
 	host->timer.data = (unsigned long)host;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	atomic_set(&host->cq_error_need_stop, 0);
+#endif
 
 	msdc_dvfs_reg_backup_init(host);
 

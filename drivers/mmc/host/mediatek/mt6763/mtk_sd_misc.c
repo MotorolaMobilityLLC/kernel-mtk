@@ -692,7 +692,7 @@ struct mbr_part_info {
 #define __MMC_DISCARD_ARG       0x00000003
 
 /* FIX ME: invoked by dumchar, check if any kernel 4.4 need dumchar */
-int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
+int msdc_get_info(enum STORAGE_TPYE storage_type, enum GET_STORAGE_INFO info_type,
 	struct storage_info *info)
 {
 	struct msdc_host *host = NULL;
