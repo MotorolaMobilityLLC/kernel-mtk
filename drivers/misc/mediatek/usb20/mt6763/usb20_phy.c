@@ -629,6 +629,9 @@ void usb_phy_recover(void)
 
 	hs_slew_rate_cal();
 
+	/* disc threshold to max, RG_USB20_DISCTH[7:4], dft:1000, MAX:1111 */
+	USBPHY_SET32(0x18, (0xf0<<0));
+
 	DBG(0, "usb recovery success\n");
 }
 
