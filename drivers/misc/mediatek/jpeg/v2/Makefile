@@ -42,6 +42,7 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6799),y)
   ccflags-y += -DJPEG_DRV_MT6799
+  ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 endif
 
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o
