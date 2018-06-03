@@ -24,6 +24,8 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 	ktime_t now;
 	unsigned long long delta;
 
+	BUILD_BUG_ON(sizeof(struct ppm_ipi_data) != PPM_D_LEN * sizeof(int));
+
 	ppm_dbg(IPI, "@%s: cmd=0x%x\n", __func__, cmd);
 
 	now = ktime_get();
