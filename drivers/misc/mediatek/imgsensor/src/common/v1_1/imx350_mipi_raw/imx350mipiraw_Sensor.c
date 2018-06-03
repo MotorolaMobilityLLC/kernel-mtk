@@ -55,7 +55,7 @@
 #define LOG_2 LOG_INF("preview 2592*1936@30fps; video 5344*4016@30fps; capture 21M@24fps\n")
 /****************************   Modify end    *******************************************/
 
-#undef IMX350_24_FPS
+#define IMX350_24_FPS
 
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -132,7 +132,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 #ifdef IMX350_24_FPS
 	.cap = {		/*data rate 1499.20 Mbps/lane */
-		.pclk = 600000000,
+		.pclk = 840000000,
 		.linelength = 8704,
 		.framelength = 3948,
 		.startx = 0,
