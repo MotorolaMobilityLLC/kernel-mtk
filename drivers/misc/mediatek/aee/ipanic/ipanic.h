@@ -15,6 +15,7 @@
 #define __AEE_IPANIC_H__
 
 #include <generated/autoconf.h>
+#include <linux/console.h>
 #include <linux/kallsyms.h>
 #include <linux/kmsg_dump.h>
 /* #include "staging/android/logger.h" */
