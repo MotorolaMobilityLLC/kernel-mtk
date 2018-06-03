@@ -3592,8 +3592,25 @@ static void mmc_blk_shutdown(struct mmc_card *card)
 static int mmc_blk_suspend(struct device *dev)
 {
 	struct mmc_card *card = mmc_dev_to_card(dev);
+	struct mmc_blk_data *md = dev_get_drvdata(dev);
+	int ret;
 
-	return _mmc_blk_suspend(card);
+	ret = _mmc_blk_suspend(card);
+	if (ret)
+		goto out;
+
+	/*
+	 * Make sure partition is the main one when
+	 * suspend.
+	 */
+	if (md) {
+		ret = mmc_blk_part_switch(card, md);
+		if (ret)
+			pr_info("%s: error %d during suspend\n",
+				md->disk->disk_name, ret);
+	}
+out:
+	return ret;
 }
 
 static int mmc_blk_resume(struct device *dev)
