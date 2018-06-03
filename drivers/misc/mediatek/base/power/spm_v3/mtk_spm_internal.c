@@ -182,6 +182,19 @@ int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
 	return val;
 }
 
+void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl)
+{
+	/* set PCM flags and data */
+	if (pwrctrl->pcm_flags_cust_clr != 0)
+		pwrctrl->pcm_flags &= ~pwrctrl->pcm_flags_cust_clr;
+	if (pwrctrl->pcm_flags_cust_set != 0)
+		pwrctrl->pcm_flags |= pwrctrl->pcm_flags_cust_set;
+	if (pwrctrl->pcm_flags1_cust_clr != 0)
+		pwrctrl->pcm_flags1 &= ~pwrctrl->pcm_flags1_cust_clr;
+	if (pwrctrl->pcm_flags1_cust_set != 0)
+		pwrctrl->pcm_flags1 |= pwrctrl->pcm_flags1_cust_set;
+}
+
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
 void __spm_set_cpu_status(int cpu)
 {
@@ -653,15 +666,6 @@ void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 	spm_write(SPM_MAS_PAUSE2_MASK_B, 0xffffffff);
 	spm_write(PCM_REG_DATA_INI, 0);
 
-	/* set PCM flags and data */
-	if (pwrctrl->pcm_flags_cust_clr != 0)
-		pwrctrl->pcm_flags &= ~pwrctrl->pcm_flags_cust_clr;
-	if (pwrctrl->pcm_flags_cust_set != 0)
-		pwrctrl->pcm_flags |= pwrctrl->pcm_flags_cust_set;
-	if (pwrctrl->pcm_flags1_cust_clr != 0)
-		pwrctrl->pcm_flags1 &= ~pwrctrl->pcm_flags1_cust_clr;
-	if (pwrctrl->pcm_flags1_cust_set != 0)
-		pwrctrl->pcm_flags1 |= pwrctrl->pcm_flags1_cust_set;
 	spm_write(SPM_SW_FLAG, pwrctrl->pcm_flags);
 	/* cannot modify pcm_flags1[15:12] which is from bootup setting */
 	spm_write(SPM_RSV_CON2, (spm_read(SPM_RSV_CON2) & 0xf000) | (pwrctrl->pcm_flags1 & 0xfff));

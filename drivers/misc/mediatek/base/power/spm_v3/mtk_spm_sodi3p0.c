@@ -315,6 +315,8 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	wk_mt6337_set_lp_setting();
 #endif
+
+	__spm_sync_pcm_flags(pwrctrl);
 }
 
 static void spm_sodi3_post_process(void)

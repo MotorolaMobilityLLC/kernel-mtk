@@ -490,6 +490,7 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	spm_suspend_pre_process(pwrctrl);
 
 	spm_set_sysclk_settle();
+	__spm_sync_pcm_flags(pwrctrl);
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
