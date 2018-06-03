@@ -213,7 +213,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		pr_warn("%s(), copy_from_user fail, mt_soc_debug_write count = %zu, temp = %s\n",
 			__func__, count, InputString);
 
-	temp = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT, GFP_KERNEL);
+	temp = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT - 1, GFP_KERNEL);
 	if (!temp) {
 		pr_warn("%s(), kstrdup fail\n", __func__);
 		goto exit;
