@@ -203,14 +203,14 @@
 ********************************************************************************
 */
 
-#ifdef CONSYS_BT_WIFI_SHARE_V33
-struct _BT_WIFI_V33_STATUS_ {
+#if CONSYS_BT_WIFI_SHARE_V33
+struct BT_WIFI_V33_STATUS {
 	UINT32 counter;
 	UINT32 flags;
 	spinlock_t lock;
-} BT_WIFI_V33_STATUS;
+};
 
-extern BT_WIFI_V33_STATUS gBtWifiV33;
+extern struct BT_WIFI_V33_STATUS gBtWifiV33;
 #endif
 
 /*******************************************************************************

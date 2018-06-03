@@ -110,7 +110,7 @@ static P_CONSYS_EMI_ADDR_INFO consys_soc_get_emi_phy_add(VOID);
 ********************************************************************************
 */
 #if CONSYS_BT_WIFI_SHARE_V33
-BT_WIFI_V33_STATUS gBtWifiV33;
+struct BT_WIFI_V33_STATUS gBtWifiV33;
 #endif
 
 /* CCF part */
