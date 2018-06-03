@@ -24,6 +24,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/mtk_pmic.h>
 #include "include/pmic.h"
+#include "include/pmic_api_buck.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_debugfs.h"
@@ -77,7 +78,8 @@ void vmd1_pmic_trim_setting(bool enable)
 
 void vmd1_pmic_setting_on(void)
 {
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759)
+	unsigned int ret = 0;
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.75V (0.4+0.00625*step)*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x38); /* set to 0.75V */
 	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.88125V (0.51875+0.00625*step)*/
@@ -104,7 +106,7 @@ void vmd1_pmic_setting_on(void)
 	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
 		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
 
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759)
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != 0x38)
 #else
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != 0x40)
@@ -113,7 +115,7 @@ void vmd1_pmic_setting_on(void)
 			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
 			pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
 
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759)
 	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x3A)
 #else
 	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x42)
@@ -122,6 +124,12 @@ void vmd1_pmic_setting_on(void)
 			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL),
 			pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL));
 
+#if defined(CONFIG_MACH_MT6759)
+	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsram_md_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vsram_md_lp(SRCLKEN2, 1, HW_LP);
+#endif
 }
 
 void vmd1_pmic_setting_off(void)
