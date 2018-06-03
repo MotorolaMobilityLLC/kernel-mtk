@@ -719,9 +719,27 @@ void disp_od_set_smi_clock(int enabled)
 
 	if (enabled) {
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+#if defined(CONFIG_MACH_MT6799)
+		ddp_clk_prepare_enable(DISP0_SMI_COMMON_2X);
+		ddp_clk_prepare_enable(GALS_M0_2X);
+		ddp_clk_prepare_enable(GALS_M1_2X);
+		ddp_clk_prepare_enable(UPSZ0);
+		ddp_clk_prepare_enable(UPSZ1);
+		ddp_clk_prepare_enable(FIFO0);
+		ddp_clk_prepare_enable(FIFO1);
+#endif
 		ddp_clk_prepare_enable(larb_clk);
 	} else {
 		ddp_clk_disable_unprepare(larb_clk);
+#if defined(CONFIG_MACH_MT6799)
+		ddp_clk_disable_unprepare(FIFO1);
+		ddp_clk_disable_unprepare(FIFO0);
+		ddp_clk_disable_unprepare(UPSZ1);
+		ddp_clk_disable_unprepare(UPSZ0);
+		ddp_clk_disable_unprepare(GALS_M1_2X);
+		ddp_clk_disable_unprepare(GALS_M0_2X);
+		ddp_clk_disable_unprepare(DISP0_SMI_COMMON_2X);
+#endif
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	}
 #else
