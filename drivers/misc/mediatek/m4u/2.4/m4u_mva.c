@@ -596,7 +596,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	 * than the number we need, that means we found the requeired region.
 	 */
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
-	for (s = 1; (s < fix_index0) && (mvaGraph[s] < nr);
+	for (s = 1; (s < ccu_fix_index_start) && (mvaGraph[s] < nr);
 		s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
 		;
 	/*if we didn't find the proper graph on stage 1, we will come to stage 2.
@@ -655,7 +655,7 @@ stage3:
 	region_status = m4u_check_mva_region(s, nr, priv) || __check_ccu_mva_region(s, nr, priv);
 	if (region_status) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
-		M4UMSG("mva_alloc error: fault cursor(%d) access vpu region\n", s);
+		M4UMSG("mva_alloc error: fault cursor(0x%x) access VPU/CCU region\n", s);
 		return 0;
 	}
 

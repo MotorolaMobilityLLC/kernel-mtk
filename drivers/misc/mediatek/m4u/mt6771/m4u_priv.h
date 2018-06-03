@@ -304,7 +304,7 @@ extern int gM4U_log_to_uart;
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			pr_debug(fmt, ##args);\
+			pr_info(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */
