@@ -227,6 +227,11 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_adjust_power,
 };
 
+bool is_battery_init_done(void)
+{
+	return is_init_done;
+}
+
 /* ============================================================ */
 /* gauge hal interface */
 /* ============================================================ */
@@ -240,6 +245,11 @@ bool gauge_get_current(int *bat_current)
 #else
 	if (Bat_EC_ctrl.debug_fg_curr_en == 1) {
 		*bat_current = Bat_EC_ctrl.debug_fg_curr_value;
+		return false;
+	}
+
+	if (is_battery_init_done() == false) {
+		*bat_current = 0;
 		return false;
 	}
 
@@ -629,11 +639,6 @@ int bat_get_debug_level(void)
 	return Enable_BATDRV_LOG;
 }
 
-bool is_battery_init_done(void)
-{
-	return is_init_done;
-}
-
 /* ============================================================ */
 /* function prototype */
 /* ============================================================ */
@@ -807,7 +812,6 @@ static ssize_t show_Battery_Temperature(struct device *dev, struct device_attrib
 					       char *buf)
 {
 	bm_err("show_Battery_Temperature: %d %d\n", battery_main.BAT_batt_temp, fixed_bat_tmp);
-	gauge_reset_hw();/* wy test */
 	return sprintf(buf, "%d\n", fixed_bat_tmp);
 }
 
@@ -3443,6 +3447,7 @@ void fg_vbat2_h_int_handler(void)
 	bm_err("[fg_vbat2_h_int_handler]\n");
 	gauge_dev_enable_vbat_high_interrupt(gauge_dev, lt_ht_en);
 	gauge_dev_enable_vbat_low_interrupt(gauge_dev, lt_ht_en);
+	disable_shutdown_cond(LOW_BAT_VOLT);
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
 
 	fg_bat_temp_int_sw_check();
