@@ -1063,8 +1063,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			ssid.aucSsid[(ssid.u4SsidLen >= PARAM_MAX_LEN_SSID) ?
 				     (PARAM_MAX_LEN_SSID - 1) : ssid.u4SsidLen] = '\0';
-			DBGLOG(AIS, INFO, " %s netif_carrier_on [ssid:%s %pM ]\n",
-					    prGlueInfo->prDevHandler->name, ssid.aucSsid, arBssid);
+			DBGLOG(AIS, INFO, " %s netif_carrier_on [ssid:%s %pM ], status=%u\n",
+					prGlueInfo->prDevHandler->name, ssid.aucSsid, arBssid, eStatus);
 		} while (0);
 
 		if (prGlueInfo->fgIsRegistered == TRUE) {
@@ -1091,7 +1091,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			/* ensure BSS exists */
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
 				ssid.aucSsid, ssid.u4SsidLen, IEEE80211_BSS_TYPE_ESS, IEEE80211_PRIVACY_ANY);
-
+			if (!bss)
+				DBGLOG(SCN, INFO, "cfg80211_get_bss failed: channel(%d)\n", ucChannelNum);
 
 			prBssDesc =
 			    wlanGetTargetBssDescByNetwork(prGlueInfo->prAdapter, NETWORK_TYPE_AIS_INDEX);
@@ -1110,7 +1111,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				/* create BSS on-the-fly */
 				if ((prBssDesc != NULL) && (prChannel != NULL)) {
 					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo), prChannel,
-								CFG80211_BSS_FTYPE_PRESP,
+								CFG80211_BSS_FTYPE_UNKNOWN,
 								arBssid, 0,	/* TSF */
 								WLAN_CAPABILITY_ESS,
 								prBssDesc->u2BeaconInterval,	/* beacon interval */
@@ -1118,6 +1119,26 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 								prBssDesc->u2IELength,	/* IE Length */
 								RCPI_TO_dBm(prBssDesc->ucRCPI) * 100,	/* MBM */
 								GFP_KERNEL);
+					if (!bss) {
+						DBGLOG(SCN, WARN,
+							"inform_bss failed, BSSID[%pM/%pM] SSID[%s] Chnl[%d/%d] RCPI[%d] IELng[%d] Bcn[%d]\n",
+							prBssDesc->aucBSSID, arBssid, prBssDesc->aucSSID,
+							prBssDesc->ucChannelNum, ucChannelNum,
+							RCPI_TO_dBm(prBssDesc->ucRCPI),
+							prBssDesc->u2IELength, prBssDesc->u2BeaconInterval);
+						DBGLOG_MEM8_IE_ONE_LINE(SCN, WARN, "kalIndicateStatusAndComplete:inform_bss",
+							prBssDesc->aucIEBuf, prBssDesc->u2IELength);
+					} else {
+						DBGLOG(SCN, INFO,
+							"inform_bss, BSSID[%pM/%pM] SSID[%s] Chnl[%d/%d] RCPI[%d] IELng[%d] Bcn[%d]\n",
+							prBssDesc->aucBSSID, arBssid, prBssDesc->aucSSID,
+							prBssDesc->ucChannelNum, ucChannelNum,
+							RCPI_TO_dBm(prBssDesc->ucRCPI),
+							prBssDesc->u2IELength, prBssDesc->u2BeaconInterval);
+					}
+				} else {
+					DBGLOG(SCN, WARN, "prBssDesc(%d) prChannel(%d)",
+					(prBssDesc) ? 1 : 0, (prChannel) ? 1 : 0);
 				}
 			}
 			/*
