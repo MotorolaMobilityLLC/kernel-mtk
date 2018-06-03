@@ -179,7 +179,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		goto debug_info;
 	}
 
-	reserved_count = mtk_memcfg_pares_reserved_memory(reserved_mem, reserved_count);
+	reserved_count = mtk_memcfg_parse_reserved_memory(reserved_mem, reserved_count);
 	if (reserved_count <= 0 || reserved_count > MAX_RESERVED_REGIONS) {
 		seq_printf(m, "reserved_count(%d) over limit after parsing!\n",
 				reserved_count);

@@ -72,6 +72,8 @@
 #include <mt-plat/aee.h>
 #endif
 
+#include <mt-plat/mtk_memcfg.h>
+
 /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
 static DEFINE_MUTEX(pcp_batch_high_lock);
 #define MIN_PERCPU_PAGELIST_FRACTION	(8)
@@ -7148,5 +7150,8 @@ int free_reserved_memory(phys_addr_t start_phys,
 		adjust_managed_page_count(pfn_to_page(start_pfn), 1<<order);
 		start_pfn += (1UL << order);
 	}
+
+	mtk_memcfg_record_freed_reserved(start_phys, end_phys);
+
 	return 0;
 }
