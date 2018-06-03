@@ -259,10 +259,22 @@ unsigned long disp_get_tracing_mark(void);
 	preempt_enable();\
 } while (0)
 
+#define _DISP_TRACE_CNT(tgid, cnt, fmt, args...) do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|"fmt"|%d\n",\
+			   in_interrupt() ? 0 : tgid, ##args, cnt);\
+	preempt_enable();\
+} while (0)
+
+#define DISP_TRACE_CNT(cnt, fmt, args...) \
+	_DISP_TRACE_CNT(current->tgid, cnt, fmt, args...)
+
 #else
 
 #define DISP_SYSTRACE_BEGIN(fmt, args...)
 #define DISP_SYSTRACE_END()
+#define _DISP_TRACE_CNT(tgid, cnt, fmt, args...)
+#define DISP_TRACE_CNT(cnt, fmt, args...)
 #endif
 
 #endif

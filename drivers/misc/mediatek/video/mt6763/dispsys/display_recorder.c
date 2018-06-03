@@ -58,7 +58,14 @@
 #include "ion_drv.h"
 #include "ddp_log.h"
 
-#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+
+enum DPREC_DEBUG_BIT_ENUM {
+	DPREC_DEBUG_BIT_OVERALL_SWITCH = 0,
+	DPREC_DEBUG_BIT_CMM_DUMP_SWITCH,
+	DPREC_DEBUG_BIT_CMM_DUMP_VA,
+	DPREC_DEBUG_BIT_SYSTRACE,
+};
+static struct dprec_debug_control _control = { 0 };
 unsigned int gCapturePriLayerEnable;
 unsigned int gCaptureWdmaLayerEnable;
 unsigned int gCaptureRdmaLayerEnable;
@@ -66,9 +73,8 @@ unsigned int gCapturePriLayerDownX = 20;
 unsigned int gCapturePriLayerDownY = 20;
 unsigned int gCapturePriLayerNum = 4;
 
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 static DEFINE_SPINLOCK(gdprec_logger_spinlock);
-
-static struct dprec_debug_control _control = { 0 };
 
 static struct reg_base_map reg_map[] = {
 	{"MMSYS", (0xf4000000)},
@@ -221,9 +227,7 @@ int dprec_init(void)
 	memset((void *)dprec_error_log_buffer, 0, DPREC_ERROR_LOG_BUFFER_LENGTH);
 	ddp_mmp_init();
 
-	dprec_logger_event_init(&dprec_vsync_irq_event, "VSYNC_IRQ", DPREC_LOGGER_LEVEL_SYSTRACE,
-				NULL);
-
+	dprec_logger_event_init(&dprec_vsync_irq_event, "VSYNC_IRQ", 0,	NULL);
 	return 0;
 }
 
@@ -1144,7 +1148,7 @@ struct dprec_record {
 static int rdma0_done_cnt;
 #endif
 
-void dprec_stub_irq(unsigned int irq_bit)
+static void _dprec_stub_irq(unsigned int irq_bit)
 {
 	/* DISP_REG_SET(NULL,DISP_REG_CONFIG_MUTEX_INTEN,0xffffffff); */
 	if (irq_bit == DDP_IRQ_DSI0_EXT_TE) {
@@ -1281,32 +1285,6 @@ unsigned int dprec_logger_get_dump_len(void)
 	pr_debug("dump_len %d\n", analysize_length);
 
 	return analysize_length;
-}
-
-enum DPREC_DEBUG_BIT_ENUM {
-	DPREC_DEBUG_BIT_OVERALL_SWITCH = 0,
-	DPREC_DEBUG_BIT_CMM_DUMP_SWITCH,
-	DPREC_DEBUG_BIT_CMM_DUMP_VA,
-	DPREC_DEBUG_BIT_SYSTRACE,
-};
-
-int dprec_handle_option(unsigned int option)
-{
-	_control.overall_switch = (option & (1 << DPREC_DEBUG_BIT_OVERALL_SWITCH));
-	_control.cmm_dump = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_SWITCH));
-	_control.cmm_dump_use_va = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_VA));
-	_control.systrace = (option & (1 << DPREC_DEBUG_BIT_SYSTRACE));
-	DISPMSG("dprec control=%p\n", &_control);
-
-	return 0;
-}
-
-/* return true if overall_switch is set. this will dump all register setting by default. */
-/* other functions outside of this display_recorder.c*/
-/* could use this api to determine whether to enable debug funciton */
-int dprec_option_enabled(void)
-{
-	return _control.overall_switch;
 }
 
 #if 0 /* defined but not used */
@@ -1579,13 +1557,6 @@ int dprec_logger_get_buf(enum DPREC_LOGGER_PR_TYPE type, char *stringbuf, int le
 
 #else
 
-unsigned int gCapturePriLayerEnable;
-unsigned int gCaptureWdmaLayerEnable;
-unsigned int gCapturePriLayerDownX = 20;
-unsigned int gCapturePriLayerDownY = 20;
-unsigned int gCapturePriLayerNum = 4;
-
-
 struct dprec_logger logger[DPREC_LOGGER_NUM] = { { 0 } };
 
 unsigned int dprec_error_log_len;
@@ -1688,7 +1659,7 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 	return 0;
 }
 
-void dprec_stub_irq(unsigned int irq_bit)
+static void _dprec_stub_irq(unsigned int irq_bit)
 {
 }
 
@@ -1723,16 +1694,6 @@ char *dprec_logger_get_dump_addr()
 }
 
 unsigned int dprec_logger_get_dump_len(void)
-{
-	return 0;
-}
-
-int dprec_handle_option(unsigned int option)
-{
-	return 0;
-}
-
-int dprec_option_enabled(void)
 {
 	return 0;
 }
@@ -1779,3 +1740,50 @@ void init_log_buffer(void)
 
 }
 #endif
+
+
+void disp_irq_trace(unsigned int irq_bit)
+{
+#ifndef CONFIG_TRACING
+	return;
+#endif
+	if (!_control.systrace)
+		return;
+
+	if (irq_bit == DDP_IRQ_RDMA0_START) {
+		static int cnt;
+
+		cnt ^= 1;
+		_DISP_TRACE_CNT(0, cnt, "rdma0-start");
+	} else if (irq_bit == DDP_IRQ_WDMA0_FRAME_COMPLETE) {
+		static int cnt;
+
+		cnt ^= 1;
+		_DISP_TRACE_CNT(0, cnt, "wdma0-done");
+	}
+}
+
+void dprec_stub_irq(unsigned int irq_bit)
+{
+	disp_irq_trace(irq_bit);
+	_dprec_stub_irq(irq_bit);
+}
+
+int dprec_handle_option(unsigned int option)
+{
+	_control.overall_switch = (option & (1 << DPREC_DEBUG_BIT_OVERALL_SWITCH));
+	_control.cmm_dump = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_SWITCH));
+	_control.cmm_dump_use_va = (option & (1 << DPREC_DEBUG_BIT_CMM_DUMP_VA));
+	_control.systrace = (option & (1 << DPREC_DEBUG_BIT_SYSTRACE));
+
+	return 0;
+}
+
+/* return true if overall_switch is set. this will dump all register setting by default. */
+/* other functions outside of this display_recorder.c*/
+/* could use this api to determine whether to enable debug funciton */
+int dprec_option_enabled(void)
+{
+	return _control.overall_switch;
+}
+
