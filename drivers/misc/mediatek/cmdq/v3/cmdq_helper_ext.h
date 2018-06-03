@@ -326,6 +326,7 @@ enum CMDQ_LOG_LEVEL_ENUM {
 	CMDQ_LOG_LEVEL_MSG = 1,
 	CMDQ_LOG_LEVEL_FULL_ERROR = 2,
 	CMDQ_LOG_LEVEL_EXTENSION = 3,
+	CMDQ_LOG_LEVEL_PMQOS = 4,
 
 	CMDQ_LOG_LEVEL_MAX	/* ALWAYS keep at the end */
 };
@@ -783,6 +784,7 @@ s32 cmdq_core_parse_instruction(const u32 *pCmd, char *textBuf, int bufLen);
 
 bool cmdq_core_should_print_msg(void);
 bool cmdq_core_should_full_error(void);
+bool cmdq_core_should_pmqos_log(void);
 bool cmdq_core_aee_enable(void);
 void cmdq_core_set_aee(bool enable);
 
