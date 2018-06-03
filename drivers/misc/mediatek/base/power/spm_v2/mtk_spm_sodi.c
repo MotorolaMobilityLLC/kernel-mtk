@@ -506,14 +506,25 @@ static inline bool spm_sodi_last_logout(long int curr_time)
 	return (curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA;
 }
 
+void spm_sodi_get_vcore_opp(u32 *flags)
+{
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	*flags |= (vcorefs_get_hw_opp() << VCORE_OPP_SHIFT);
+#endif
+}
+
 void spm_sodi_dvfs_status(u32 sodi_flags)
 {
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	u32 HPM2LPM = spm_read(SPM_SW_RSV_10);
 	u32 LPM2HPM = spm_read(SPM_SW_RSV_9);
+	u32 hw_opp = (sodi_flags & VCORE_OPP_MASK) >> VCORE_OPP_SHIFT;
 
 	if (HPM2LPM || LPM2HPM)
 		so_debug(sodi_flags, "vcore dvfs: H->L %d, L->H %d\n", HPM2LPM, LPM2HPM);
+
+	if (hw_opp != OPPI_LOW_PWR)
+		so_err(sodi_flags, "vcore: opp=%d, RSV_5=0x%x\n", hw_opp, spm_read(SPM_SW_RSV_5));
 #endif
 }
 
@@ -523,6 +534,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	wake_reason_t wr = WR_NONE;
 	long int sodi_logout_curr_time = 0;
 	int need_log_out = SODI_LOGOUT_NONE;
+
 
 	if (sodi_flags&SODI_FLAG_NO_LOG) {
 		if (spm_sodi_assert(wakesta)) {
@@ -660,7 +672,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-	vcore_status = vcorefs_get_curr_ddr();
 	sodi_idx = spm_sodi_get_pcm_idx(cpu);
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
@@ -723,10 +734,12 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_set_wakeup_event(pwrctrl);
 
+	vcore_status = vcorefs_get_curr_ddr();
+	spm_sodi_get_vcore_opp(&sodi_flags);
+
 	spm_sodi_pre_process();
 
 	__spm_kick_pcm_to_run(pwrctrl);
-
 
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 				(1 << SPM_SODI_B3) | (1 << SPM_SODI_B4) |

@@ -91,6 +91,7 @@ enum mtk_sodi_flag {
 	SODI_FLAG_REDUCE_LOG  = (1 << 2),
 	SODI_FLAG_NO_LOG      = (1 << 3),
 	SODI_FLAG_DUMP_REG    = (1 << 4),
+	SODI_FLAG_VCORE_OPP   = (1 << 16),
 };
 
 /*

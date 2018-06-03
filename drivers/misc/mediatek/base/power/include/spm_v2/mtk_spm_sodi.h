@@ -127,6 +127,8 @@
 #elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #define SODI_VSRAM_VPROC_SHUTDOWN
+#define VCORE_OPP_MASK (0x00ff0000)
+#define VCORE_OPP_SHIFT (16)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SODI \
@@ -295,7 +297,7 @@ void spm_enable_mmu_smi_async(void);
 void spm_disable_mmu_smi_async(void);
 wake_reason_t
 spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags);
-
+void spm_sodi_get_vcore_opp(u32 *flags);
 
 #endif /* __MTK_SPM_SODI_H_ */
 
