@@ -131,7 +131,7 @@ if __name__ == '__main__':
         chipObj = MT6757_P25(dws_path, gen_path)
     elif cmp(chipId, 'MT6570') == 0:
         chipObj = Rushmore(dws_path, gen_path)
-    elif cmp(chipId, 'MT6799') == 0:
+    elif cmp(chipId, 'MT6799') == 0 or cmp(chipId, 'MT6763') == 0:
         chipObj = Whitney(dws_path, gen_path)
     elif cmp(chipId, 'MT6759') == 0:
         chipObj = MT6759(dws_path, gen_path)
