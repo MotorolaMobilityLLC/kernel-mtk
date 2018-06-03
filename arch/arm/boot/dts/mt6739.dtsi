@@ -2194,7 +2194,7 @@
 		bif_cv_under_threshold2 = <4450000>;
 
 		/* SW safety timer */
-		/* enable_sw_safety_timer; */
+		enable_sw_safety_timer;
 		max_charging_time = <43200>; /* 12 hours */
 
 		/* linear charger */
