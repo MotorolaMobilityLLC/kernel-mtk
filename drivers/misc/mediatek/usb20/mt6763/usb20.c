@@ -1202,7 +1202,7 @@ static int add_usb_i2c_driver(void)
 }
 #endif				/* End of FPGA_PLATFORM */
 
-static int mt_usb_init(struct musb *musb)
+static int __init mt_usb_init(struct musb *musb)
 {
 #ifndef FPGA_PLATFORM
 	int ret;
