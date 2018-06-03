@@ -2119,7 +2119,8 @@ struct task_struct {
 #define TASK_ADDRS_COUNT 5
 	spinlock_t stack_trace_lock;
 	struct stack_trace stack_trace;
-	unsigned long addrs[TASK_ADDRS_COUNT];
+	int selected_trace;
+	unsigned long addrs[2][TASK_ADDRS_COUNT];
 #endif
 #endif
 
@@ -2366,12 +2367,14 @@ static inline void put_task_struct(struct task_struct *t)
 	unsigned long flags;
 
 	spin_lock_irqsave(&t->stack_trace_lock, flags);
+
 	t->stack_trace.nr_entries = 0;
 	t->stack_trace.max_entries = TASK_ADDRS_COUNT;
-	t->stack_trace.entries = t->addrs;
+	t->stack_trace.entries = t->addrs[t->selected_trace];
 	t->stack_trace.skip = 2;
 
 	save_stack_trace(&t->stack_trace);
+	t->selected_trace = (t->selected_trace ^ 0x1) & 0x1;
 	spin_unlock_irqrestore(&t->stack_trace_lock, flags);
 #endif
 #endif
