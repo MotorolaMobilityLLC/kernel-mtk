@@ -390,10 +390,10 @@ static void get_vcore_opp(void)
 	*/
 
 	int ddr_type = get_ddr_type();
-	#if 0
+	#if 1
 		int emi_ch_num = get_emi_ch_num();
 	#else
-		int emi_ch_num = 2;
+		int emi_ch_num = 1;
 	#endif
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
@@ -402,6 +402,12 @@ static void get_vcore_opp(void)
 		vcore_opp = &vcore_opp_L4_1CH[0];
 	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
 		vcore_opp = &vcore_opp_L3_1CH[0];
+	else {
+		aee_kernel_warning("mt_eem",
+			"@%s():%d, ddr_type = %d, emi_ch_num = %d\n",
+			__func__, __LINE__, ddr_type, emi_ch_num);
+		WARN_ON(emi_ch_num);
+	}
 #endif
 }
 
@@ -803,6 +809,7 @@ void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 	unsigned int coresel;
 
 	FUNC_ENTER(FUNC_LV_HELP);
+
 	coresel = (eem_read(EEMCORESEL) & ~BITMASK(2:0)) | BITS(2:0, det->ctrl_id);
 
 	/* 803f0000 + det->ctrl_id = enable ctrl's swcg clock */
@@ -816,6 +823,7 @@ void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 	}
 
 	eem_write(EEMCORESEL, coresel);
+	eem_debug("[%s] 0x1100bf00=0x%x\n", ((char *)(det->name) + 8), eem_read(EEMCORESEL));
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -1677,8 +1685,8 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	#if DVT
 		det->VBOOT = 0x30;
-		det->VMAX = 0xFE;
-		det->VMIN = 0x20;
+		det->VMAX = 0xFF;
+		det->VMIN = 0x00;
 	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);

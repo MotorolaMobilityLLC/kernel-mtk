@@ -176,8 +176,8 @@
 #endif
 
 /* CPU */
-#define CPU_PMIC_BASE_6356	(50000)
-#define CPU_PMIC_BASE_6311	(60000)
+#define CPU_PMIC_BASE_6356	(50000) /* (50000) */
+#define CPU_PMIC_BASE_6311	(60000) /* (60000) */
 #define CPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
 #define MAX_ITURBO_OFFSET	(2000)
 

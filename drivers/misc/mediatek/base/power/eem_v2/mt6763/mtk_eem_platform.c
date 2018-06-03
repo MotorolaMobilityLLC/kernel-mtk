@@ -506,7 +506,6 @@ static int set_volt_vcore(struct eem_det *det)
 * common det operations for legacy and sspm ptp
 ************************************************
 */
-/* for ISL191302 */
 int base_ops_volt_2_pmic(struct eem_det *det, int volt)
 {
 #if 0
@@ -534,7 +533,6 @@ int base_ops_volt_2_eem(struct eem_det *det, int volt)
 
 }
 
-/* for ISL191302 */
 int base_ops_pmic_2_volt(struct eem_det *det, int pmic_val)
 {
 #if 0
