@@ -31,6 +31,7 @@
 
 #include "disp_session.h"
 #include "primary_display.h"
+#include "disp_lowpower.h"
 
 #include "m4u.h"
 #include "m4u_port.h"
@@ -269,20 +270,23 @@ static int ovl2mem_callback(unsigned int userdata)
 	layid = disp_sync_get_output_timeline_id();
 	fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
 	if (fence_idx >= 0) {
-		struct disp_ddp_path_config *data_config =
-			dpmgr_path_get_last_config(pgc->dpmgr_handle);
-		if (data_config) {
-			struct WDMA_CONFIG_STRUCT wdma_layer;
+		if (pgc->dpmgr_handle != NULL) {
+			struct disp_ddp_path_config *data_config =
+				dpmgr_path_get_last_config(pgc->dpmgr_handle);
+			if (data_config) {
+				struct WDMA_CONFIG_STRUCT wdma_layer;
 
-			wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
-			wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
-			wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
-			wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
-			wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
+				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
+				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
+				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
+				wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
+				wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
 
-			dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
-		}
-		mtkfb_release_fence(pgc->session, layid, fence_idx);
+				dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
+			}
+			mtkfb_release_fence(pgc->session, layid, fence_idx);
+		} else
+			mtkfb_release_fence(pgc->session, layid, fence_idx);
 	}
 
 	atomic_set(&g_release_ticket, userdata);
@@ -305,6 +309,8 @@ void ovl2mem_power_control(unsigned int enable)
 		ddp_ext_modules_clk_on();
 	else
 		ddp_ext_modules_clk_off();
+
+	ddp_clk_check();
 }
 
 int ovl2mem_init(unsigned int session)
@@ -465,6 +471,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	data_config->dst_dirty = 0;
 	data_config->ovl_dirty = 0;
 	data_config->rdma_dirty = 0;
+	data_config->p_golden_setting_context = get_golden_setting_pgc();
 
 	/* hope we can use only 1 input struct for input config, just set layer number */
 	for (i = 0; i < cfg->input_layer_num; i++) {
@@ -539,6 +546,7 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	data_config->wdma_config.useSpecifiedAlpha = 1;
 	data_config->wdma_config.alpha = 0xFF;
 	data_config->wdma_config.security = cfg->output_cfg.security;
+	data_config->p_golden_setting_context = get_golden_setting_pgc();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
 		dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ / 5);
@@ -554,6 +562,8 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 {
 	int ret = 0;
 	unsigned int session_id = 0;
+	int i = 0;
+	int layer_id = 0;
 	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 	struct dprec_logger_event *input_event, *output_event, *trigger_event;
 
@@ -568,6 +578,17 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	}
 
 	_ovl2mem_path_lock(__func__);
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		layer_id = cfg->input_cfg[i].layer_id;
+#ifdef MTK_FB_ION_SUPPORT
+		mtkfb_update_buf_ticket(session_id, layer_id, cfg->input_cfg[i].next_buff_idx,
+					get_ovl2mem_ticket());
+#endif
+	}
+
+	mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
+					cfg->output_cfg.buff_idx, get_ovl2mem_ticket());
 
 	if (pgc->state == 0) {
 		DISPERR("ovl2mem is already slept\n");
@@ -592,7 +613,7 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
 		dprec_start(trigger_event, proc_name, 0);
 	}
-	DISPPR_FENCE("T+/M%d\n", DISP_SESSION_DEV(session_id));
+	DISPPR_FENCE("T+/M%d /t%d\n", DISP_SESSION_DEV(session_id), get_ovl2mem_ticket());
 	ovl2mem_trigger(1, NULL, 0);
 
 	dprec_done(trigger_event, 0, 0);
