@@ -122,6 +122,7 @@ int mc_fastcall_init(struct mc_context *context)
 		return ret;
 	}
 
+	set_user_nice(fastcall_thread, -20);
 	wake_up_process(fastcall_thread);
 
 	/* this thread MUST run on CPU 0 at startup */
