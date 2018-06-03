@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _MTK_BATTERY_PROPERTY_H
 #define _MTK_BATTERY_PROPERTY_H
@@ -149,21 +149,22 @@
 #define UI_FAST_TRACKING_GAP 300
 #define KEEP_100_PERCENT_MINSOC 9000
 
-/* mt6355 381.470 uA */
-#define UNIT_FGCURRENT     (381470)
-/* CHARGE_LSB 190735 * 2^11 / 3600 */
-#define UNIT_FGCAR         (108507)
+/* mt6357 305.176 uA */
+#define UNIT_FGCURRENT     (305176)
+/* charge_lsb 157166 * 2^11 / 3600 */
+#define UNIT_FGCAR         (10850)
 /* MT6335 use 3, old chip use 4 */
-#define R_VAL_TEMP_2         (2)
+#define R_VAL_TEMP_2         (1)
 /* MT6335 use 3, old chip use 4 */
 #define R_VAL_TEMP_3         (3)
 #define UNIT_TIME          (50)
-/* CHARGE_LSB 190.735 uAs ,unit 2^0 LSB */
-#define UNIT_FGCAR_ZCV     (190735)
-/* IAVG LSB: 190.735 uA */
-#define UNIT_FG_IAVG		(190735)
-/* 3600 * 1000 * 1000 / CHARGE_LSB */
-#define CAR_TO_REG_FACTOR  (0x49BA)
+/* unit 2^0 LSB */
+#define UNIT_FGCAR_ZCV     (157166)
+#define UNIT_FG_IAVG		(157166)
+/* 3600 * 1000 * 1000 / 157166 , for coulomb interrupt */
+#define CAR_TO_REG_FACTOR  (0x5c2a)
+/*coulomb interrupt lsb might be different with coulomb lsb */
+#define CAR_TO_REG_SHIFT (3)
 
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
@@ -172,13 +173,18 @@
 #define BATTERY_TMP_TO_ENABLE_NAFG -20
 /* #define GM30_DISABLE_NAFG */
 
+
+#define MULTI_TEMP_GAUGE0 0	/* different temp using different gauge 0% */
+
+#define OVER_DISCHARGE_LEVEL -1500
+
 #define UISOC_UPDATE_TYPE 2
 /*
- *	uisoc_update_type:
- *	0: only ui_soc interrupt update ui_soc
- *	1: coulomb/nafg will update ui_soc if delta car > ht/lt_gap /2
- *	2: coulomb/nafg will update ui_soc
- */
+*	uisoc_update_type:
+*	0: only ui_soc interrupt update ui_soc
+*	1: coulomb/nafg will update ui_soc if delta car > ht/lt_gap /2
+*	2: coulomb/nafg will update ui_soc
+*/
 
 /* using current to limit uisoc in 100% case*/
 /* UI_FULL_LIMIT_ITH0 3000 means 300ma */

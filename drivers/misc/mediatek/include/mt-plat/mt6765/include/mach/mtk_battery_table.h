@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _MTK_BATTERY_TABLE_H
 #define _MTK_BATTERY_TABLE_H
+
+#include "mtk_battery.h"
 
 /* ============================================================
  * define
@@ -72,18 +74,39 @@ int g_SHUTDOWN_HL_ZCV_T4[TOTAL_BATTERY_NUMBER] = {3600, 3610, 3620, 3630};
 /* g_FG_PSEUDO1_OFFSET */
 int g_FG_PSEUDO1_OFFSET[TOTAL_BATTERY_NUMBER] = {0, 0, 0, 0};
 
+/* pmic_min_vol by temp ,control by MULTI_TEMP_GAUGE0=1, 34000=3.4v */
+int g_PMIC_MIN_VOL_T0[TOTAL_BATTERY_NUMBER] = {34000, 34010, 34020, 34030};
+int g_PMIC_MIN_VOL_T1[TOTAL_BATTERY_NUMBER] = {34500, 34510, 34520, 34530};
+int g_PMIC_MIN_VOL_T2[TOTAL_BATTERY_NUMBER] = {35000, 35010, 35020, 35030};
+int g_PMIC_MIN_VOL_T3[TOTAL_BATTERY_NUMBER] = {35500, 35510, 35520, 35530};
+int g_PMIC_MIN_VOL_T4[TOTAL_BATTERY_NUMBER] = {36000, 36010, 36020, 36030};
+
+/* POWERON_SYSTEM_IBOOT by temp ,control by MULTI_TEMP_GAUGE0=1 ,5000 = 500ma*/
+int g_PON_SYS_IBOOT_T0[TOTAL_BATTERY_NUMBER] = {4000, 4100, 4200, 4300};
+int g_PON_SYS_IBOOT_T1[TOTAL_BATTERY_NUMBER] = {5000, 5100, 5200, 5300};
+int g_PON_SYS_IBOOT_T2[TOTAL_BATTERY_NUMBER] = {6000, 6100, 6200, 6300};
+int g_PON_SYS_IBOOT_T3[TOTAL_BATTERY_NUMBER] = {7000, 7100, 7200, 7300};
+int g_PON_SYS_IBOOT_T4[TOTAL_BATTERY_NUMBER] = {8000, 8100, 8200, 8300};
+
+/* Q_MAX_SYS_VOLTAGE by temp ,control by MULTI_TEMP_GAUGE0=1, */
+int g_QMAX_SYS_VOL_T0[TOTAL_BATTERY_NUMBER] = {34000, 34010, 34020, 34030};
+int g_QMAX_SYS_VOL_T1[TOTAL_BATTERY_NUMBER] = {34500, 34510, 34520, 34530};
+int g_QMAX_SYS_VOL_T2[TOTAL_BATTERY_NUMBER] = {35000, 35010, 35020, 35030};
+int g_QMAX_SYS_VOL_T3[TOTAL_BATTERY_NUMBER] = {35500, 35510, 35520, 35530};
+int g_QMAX_SYS_VOL_T4[TOTAL_BATTERY_NUMBER] = {36000, 36010, 36020, 36030};
+
 #define BAT_NTC_10 1
 #define BAT_NTC_47 0
 
 #if (BAT_NTC_10 == 1)
-#define RBAT_PULL_UP_R             24000
+#define RBAT_PULL_UP_R             16900
 #endif
 
 #if (BAT_NTC_47 == 1)
 #define RBAT_PULL_UP_R             61900
 #endif
 
-#define RBAT_PULL_UP_VOLT          2800
+#define RBAT_PULL_UP_VOLT          1800
 
 #define BIF_NTC_R 16000
 
