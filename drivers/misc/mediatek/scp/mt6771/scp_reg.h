@@ -58,8 +58,21 @@
 
 
 #define SCP_SEMAPHORE	         (scpreg.cfg  + 0x90)
+#define SCP_SCP2SPM_VOL_LV		 (scpreg.cfg + 0x0094)
 
 #define SCP_SLP_PROTECT_CFG			(scpreg.cfg + 0x00C8)
+
+
+#define SCP_WDT_SP					(scpreg.cfg + 0x00B8)
+#define SCP_WDT_LR					(scpreg.cfg + 0x00BC)
+#define SCP_WDT_PSP					(scpreg.cfg + 0x00C0)
+#define SCP_WDT_PC					(scpreg.cfg + 0x00C4)
+#define SCP_DEBUG_ADDR_S2R			(scpreg.cfg + 0x00F4)
+#define SCP_DEBUG_ADDR_DMA			(scpreg.cfg + 0x00F8)
+#define SCP_DEBUG_ADDR_SPI0			(scpreg.cfg + 0x00FC)
+#define SCP_DEBUG_ADDR_SPI1			(scpreg.cfg + 0x0100)
+#define SCP_DEBUG_ADDR_SPI2			(scpreg.cfg + 0x0104)
+#define SCP_DEBUG_BUS_STATUS		(scpreg.cfg + 0x0110)
 
 #define SCP_CPU_SLEEP_STATUS			(scpreg.cfg + 0x0114)
 	#define SCP_A_DEEP_SLEEP_BIT	(1)
@@ -95,7 +108,6 @@
 	#define CONNSYS_AWAKE_LOCK	(2)
 	#define CONNSYS_AWAKE_UNLOCK	(3)
 #define INFRA_IRQ_CLEAR			(scpreg.scpsys + 0x0B18)
-
-#define SCP_SCP2SPM_VOL_LV		(scpreg.cfg + 0x0094)
+#define SCP_SYS_INFRA_MON       (scpreg.scpsys + 0x0D50)
 
 #endif

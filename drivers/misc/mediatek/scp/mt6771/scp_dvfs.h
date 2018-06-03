@@ -47,10 +47,10 @@ enum {
 /*#ifdef CONFIG_PINCTRL_MT6797*/
 
 enum clk_opp_enum {
+	CLK_26M	 = 26,
 	CLK_OPP0 = 125,
 	CLK_OPP1 = 330,
 	CLK_OPP2 = 416,
-	CLK_INVALID_OPP,
 };
 
 enum clk_div_enum {

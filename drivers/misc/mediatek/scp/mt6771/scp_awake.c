@@ -192,8 +192,10 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	/* scp unlock awake success*/
 	if (ret != -1) {
 		*scp_awake_count = *scp_awake_count - 1;
-		if (*scp_awake_count < 0)
+		if (*scp_awake_count < 0) {
 			pr_notice("scp_awake_unlock:%s scp_awake_count=%d NOT SYNC!\n", core_id, *scp_awake_count);
+			*scp_awake_count = 0;
+		}
 	}
 
 	/* spinlock context safe */
@@ -238,10 +240,6 @@ void scp_enable_sram(void)
 int scp_sys_full_reset(void)
 {
 	pr_debug("[SCP]reset\n");
-
-	/*enable scp sram*/
-	pr_debug("[SCP]enable sram\n");
-	scp_enable_sram();
 
 	/*copy loader to scp sram*/
 	pr_debug("[SCP]copy to sram\n");
