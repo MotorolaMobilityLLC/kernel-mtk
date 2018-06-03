@@ -16,7 +16,6 @@
 #include <linux/module.h>
 #include <linux/cdev.h>
 #include <linux/debugfs.h>
-#include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/suspend.h>
 #include <linux/cpufreq.h>
@@ -36,8 +35,6 @@
 #include "admin.h"
 #include "user.h"
 #include "mcp.h"
-#include "iwp.h"
-#include "nq.h"
 #include "client.h"
 
 #include "build_tag.h"
@@ -55,11 +52,7 @@ struct mc_device_ctx g_ctx = {
 	.mcd = &device
 };
 
-static struct {
-	/* TEE start return code */
-	struct mutex start_mutex;
-	/* TEE start return code */
-	int start_ret;
+static struct main_ctx {
 #ifdef MC_PM_RUNTIME
 	/* Whether hibernation succeeded */
 	bool did_hibernate;
@@ -114,51 +107,38 @@ int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...)
 	return i;
 }
 
-static inline void kasnprintf_buf_reset(struct kasnprintf_buf *buf)
-{
-	kfree(buf->buf);
-	buf->buf = NULL;
-	buf->size = 0;
-	buf->off = 0;
-}
-
 ssize_t debug_generic_read(struct file *file, char __user *user_buf,
 			   size_t count, loff_t *ppos,
 			   int (*function)(struct kasnprintf_buf *buf))
 {
-	struct kasnprintf_buf *buf = file->private_data;
-	int ret = 0;
-
-	mutex_lock(&buf->mutex);
 	/* Add/update buffer */
-	if (!*ppos) {
-		kasnprintf_buf_reset(buf);
+	if (!file->private_data || !*ppos) {
+		struct kasnprintf_buf *buf, *old_buf;
+		int ret;
+
+		buf = kzalloc(sizeof(*buf), GFP_KERNEL);
+		if (!buf)
+			return -ENOMEM;
+
+		buf->gfp = GFP_KERNEL;
 		ret = function(buf);
 		if (ret < 0) {
-			kasnprintf_buf_reset(buf);
-			goto end;
+			kfree(buf);
+			return ret;
 		}
+
+		old_buf = file->private_data;
+		file->private_data = buf;
+		kfree(old_buf);
 	}
 
-	ret = simple_read_from_buffer(user_buf, count, ppos, buf->buf,
-				      buf->off);
+	if (file->private_data) {
+		struct kasnprintf_buf *buf = file->private_data;
 
-end:
-	mutex_unlock(&buf->mutex);
-	return ret;
-}
+		return simple_read_from_buffer(user_buf, count, ppos, buf->buf,
+					       buf->off);
+	}
 
-int debug_generic_open(struct inode *inode, struct file *file)
-{
-	struct kasnprintf_buf *buf;
-
-	file->private_data = kzalloc(sizeof(*buf), GFP_KERNEL);
-	if (!file->private_data)
-		return -ENOMEM;
-
-	buf = file->private_data;
-	mutex_init(&buf->mutex);
-	buf->gfp = GFP_KERNEL;
 	return 0;
 }
 
@@ -169,7 +149,7 @@ int debug_generic_release(struct inode *inode, struct file *file)
 	if (!buf)
 		return 0;
 
-	kasnprintf_buf_reset(buf);
+	kfree(buf->buf);
 	kfree(buf);
 	return 0;
 }
@@ -184,7 +164,6 @@ static ssize_t debug_structs_read(struct file *file, char __user *user_buf,
 static const struct file_operations mc_debug_structs_ops = {
 	.read = debug_structs_read,
 	.llseek = default_llseek,
-	.open = debug_generic_open,
 	.release = debug_generic_release,
 };
 
@@ -200,20 +179,16 @@ static ssize_t debug_struct_counters_read(struct file *file,
 			       sizeof(main_ctx.struct_counters_buf),
 			       "clients:  %d\n"
 			       "cbufs:    %d\n"
-			       "cwsms:    %d\n"
 			       "sessions: %d\n"
-			       "swsms:    %d\n"
+			       "wsms:     %d\n"
 			       "mmus:     %d\n"
-			       "maps:     %d\n"
-			       "slots:    %d\n",
+			       "maps:     %d\n",
 			       atomic_read(&g_ctx.c_clients),
 			       atomic_read(&g_ctx.c_cbufs),
-			       atomic_read(&g_ctx.c_cwsms),
 			       atomic_read(&g_ctx.c_sessions),
 			       atomic_read(&g_ctx.c_wsms),
 			       atomic_read(&g_ctx.c_mmus),
-			       atomic_read(&g_ctx.c_maps),
-			       atomic_read(&g_ctx.c_slots));
+			       atomic_read(&g_ctx.c_maps));
 		mutex_unlock(&main_ctx.struct_counters_buf_mutex);
 		if (ret > 0)
 			main_ctx.struct_counters_buf_len = ret;
@@ -239,7 +214,7 @@ static inline int device_user_init(void)
 	mc_user_init(&main_ctx.user_cdev);
 	ret = cdev_add(&main_ctx.user_cdev, main_ctx.user_dev, 1);
 	if (ret) {
-		mc_dev_notice("user cdev_add failed");
+		mc_dev_notice("user cdev_add failed\n");
 		return ret;
 	}
 
@@ -248,7 +223,7 @@ static inline int device_user_init(void)
 			    MC_USER_DEVNODE);
 	if (IS_ERR(dev)) {
 		cdev_del(&main_ctx.user_cdev);
-		mc_dev_notice("user device_create failed");
+		mc_dev_notice("user device_create failed\n");
 		return PTR_ERR(dev);
 	}
 
@@ -302,7 +277,6 @@ static int suspend_notifier(struct notifier_block *nb, unsigned long event,
 		if (main_ctx.did_hibernate) {
 			/* Really did hibernate */
 			clients_kill_sessions();
-			main_ctx.start_ret = TEE_START_NOT_TRIGGERED;
 			return mobicore_start();
 		}
 
@@ -324,43 +298,27 @@ static int mobicore_start(void)
 #endif
 	int ret;
 
-	mutex_lock(&main_ctx.start_mutex);
-	if (main_ctx.start_ret != TEE_START_NOT_TRIGGERED)
-		goto got_ret;
-
 	ret = mc_logging_start();
 	if (ret) {
-		mc_dev_notice("Log start failed");
+		mc_dev_notice("Log start failed\n");
 		goto err_log;
-	}
-
-	ret = nq_start();
-	if (ret) {
-		mc_dev_notice("NQ start failed");
-		goto err_nq;
 	}
 
 	ret = mcp_start();
 	if (ret) {
-		mc_dev_notice("MCP start failed");
+		mc_dev_notice("TEE start failed\n");
 		goto err_mcp;
-	}
-
-	ret = iwp_start();
-	if (ret) {
-		mc_dev_notice("IWP start failed");
-		goto err_iwp;
 	}
 
 	ret = mc_scheduler_start();
 	if (ret) {
-		mc_dev_notice("Scheduler start failed");
+		mc_dev_notice("Scheduler start failed\n");
 		goto err_sched;
 	}
 
 	ret = mc_pm_start();
 	if (ret) {
-		mc_dev_notice("Power Management start failed");
+		mc_dev_notice("Power Management start failed\n");
 		goto err_pm;
 	}
 
@@ -405,12 +363,6 @@ static int mobicore_start(void)
 
 	/* Determine which features are supported */
 	switch (version_info.version_mci) {
-	case MC_VERSION(1, 6):	/* 400 */
-		g_ctx.f_monotonic_time = true;
-		/* Fall through */
-	case MC_VERSION(1, 5):	/* 400 */
-		g_ctx.f_iwp = true;
-		/* Fall through */
 	case MC_VERSION(1, 4):	/* 310 */
 #ifdef CONFIG_TRUSTONIC_TEE_LPAE
 		dynamic_lpae = true;
@@ -440,14 +392,14 @@ static int mobicore_start(void)
 	if (!dynamic_lpae)
 		g_ctx.f_lpae = true;
 #endif
-	mc_dev_info("SWd uses %sLPAE MMU table format",
+	mc_dev_info("SWd uses %sLPAE MMU table format\n",
 		    g_ctx.f_lpae ? "" : "non-");
 
 #ifdef MC_PM_RUNTIME
 	main_ctx.reboot_notifier.notifier_call = reboot_notifier;
 	ret = register_reboot_notifier(&main_ctx.reboot_notifier);
 	if (ret) {
-		mc_dev_notice("reboot notifier register failed");
+		mc_dev_notice("reboot notifier register failed\n");
 		goto err_pm_notif;
 	}
 
@@ -455,7 +407,7 @@ static int mobicore_start(void)
 	ret = register_pm_notifier(&main_ctx.pm_notifier);
 	if (ret) {
 		unregister_reboot_notifier(&main_ctx.reboot_notifier);
-		mc_dev_notice("PM notifier register failed");
+		mc_dev_notice("PM notifier register failed\n");
 		goto err_pm_notif;
 	}
 #endif
@@ -486,8 +438,7 @@ static int mobicore_start(void)
 	}
 #endif
 
-	main_ctx.start_ret = 0;
-	goto got_ret;
+	return 0;
 
 err_create_dev_user:
 #ifdef MC_PM_RUNTIME
@@ -501,18 +452,11 @@ err_mcp_cmd:
 err_pm:
 	mc_scheduler_stop();
 err_sched:
-	iwp_stop();
-err_iwp:
 	mcp_stop();
 err_mcp:
-	nq_stop();
-err_nq:
 	mc_logging_stop();
 err_log:
-	main_ctx.start_ret = ret;
-got_ret:
-	mutex_unlock(&main_ctx.start_mutex);
-	return main_ctx.start_ret;
+	return ret;
 }
 
 static void mobicore_stop(void)
@@ -525,25 +469,7 @@ static void mobicore_stop(void)
 	mc_pm_stop();
 	mc_scheduler_stop();
 	mc_logging_stop();
-	iwp_stop();
 	mcp_stop();
-	nq_stop();
-}
-
-int mc_wait_tee_start(void)
-{
-	int ret;
-
-	mutex_lock(&main_ctx.start_mutex);
-	while (main_ctx.start_ret == TEE_START_NOT_TRIGGERED) {
-		mutex_unlock(&main_ctx.start_mutex);
-		ssleep(1);
-		mutex_lock(&main_ctx.start_mutex);
-	}
-
-	ret = main_ctx.start_ret;
-	mutex_unlock(&main_ctx.start_mutex);
-	return ret;
 }
 
 static ssize_t debug_sessions_read(struct file *file, char __user *user_buf,
@@ -556,7 +482,6 @@ static ssize_t debug_sessions_read(struct file *file, char __user *user_buf,
 static const struct file_operations mc_debug_sessions_ops = {
 	.read = debug_sessions_read,
 	.llseek = default_llseek,
-	.open = debug_generic_open,
 	.release = debug_generic_release,
 };
 
@@ -570,7 +495,6 @@ static ssize_t debug_mcpcmds_read(struct file *file, char __user *user_buf,
 static const struct file_operations mc_debug_mcpcmds_ops = {
 	.read = debug_mcpcmds_read,
 	.llseek = default_llseek,
-	.open = debug_generic_open,
 	.release = debug_generic_release,
 };
 
@@ -581,13 +505,13 @@ static inline int device_admin_init(void)
 
 	ret = alloc_chrdev_region(&main_ctx.device, 0, 2, "trustonic_tee");
 	if (ret) {
-		mc_dev_notice("alloc_chrdev_region failed");
+		mc_dev_notice("alloc_chrdev_region failed\n");
 		return ret;
 	}
 
 	main_ctx.class = class_create(THIS_MODULE, "trustonic_tee");
 	if (IS_ERR(main_ctx.class)) {
-		mc_dev_notice("class_create failed");
+		mc_dev_notice("class_create failed\n");
 		ret = PTR_ERR(main_ctx.class);
 		goto err_class;
 	}
@@ -600,7 +524,7 @@ static inline int device_admin_init(void)
 
 	ret = cdev_add(&main_ctx.admin_cdev, main_ctx.device, 1);
 	if (ret) {
-		mc_dev_notice("admin cdev_add failed");
+		mc_dev_notice("admin cdev_add failed\n");
 		goto err_cdev;
 	}
 
@@ -608,7 +532,7 @@ static inline int device_admin_init(void)
 	dev = device_create(main_ctx.class, NULL, main_ctx.device, NULL,
 			    MC_ADMIN_DEVNODE);
 	if (IS_ERR(dev)) {
-		mc_dev_notice("admin device_create failed");
+		mc_dev_notice("admin device_create failed\n");
 		ret = PTR_ERR(dev);
 		goto err_device;
 	}
@@ -653,17 +577,17 @@ static int mobicore_probe(struct platform_device *pdev)
 		g_ctx.mcd->of_node = pdev->dev.of_node;
 
 #ifdef MOBICORE_COMPONENT_BUILD_TAG
-	mc_dev_info("MobiCore %s", MOBICORE_COMPONENT_BUILD_TAG);
+	mc_dev_info("MobiCore %s\n", MOBICORE_COMPONENT_BUILD_TAG);
 #endif
 	/* Hardware does not support ARM TrustZone -> Cannot continue! */
 	if (!has_security_extensions()) {
-		mc_dev_notice("Hardware doesn't support ARM TrustZone!");
+		mc_dev_notice("Hardware doesn't support ARM TrustZone!\n");
 		return -ENODEV;
 	}
 
 	/* Running in secure mode -> Cannot load the driver! */
 	if (is_secure_mode()) {
-		mc_dev_notice("Running in secure MODE!");
+		mc_dev_notice("Running in secure MODE!\n");
 		return -ENODEV;
 	}
 
@@ -673,14 +597,10 @@ static int mobicore_probe(struct platform_device *pdev)
 	/* Initialize debug counters */
 	atomic_set(&g_ctx.c_clients, 0);
 	atomic_set(&g_ctx.c_cbufs, 0);
-	atomic_set(&g_ctx.c_cwsms, 0);
 	atomic_set(&g_ctx.c_sessions, 0);
 	atomic_set(&g_ctx.c_wsms, 0);
 	atomic_set(&g_ctx.c_mmus, 0);
 	atomic_set(&g_ctx.c_maps, 0);
-	atomic_set(&g_ctx.c_slots, 0);
-	main_ctx.start_ret = TEE_START_NOT_TRIGGERED;
-	mutex_init(&main_ctx.start_mutex);
 	mutex_init(&main_ctx.struct_counters_buf_mutex);
 	/* Create debugfs info entry */
 	debugfs_create_file("structs_counters", 0400, g_ctx.debug_dir, NULL,
@@ -692,38 +612,26 @@ static int mobicore_probe(struct platform_device *pdev)
 	/* Initialize plenty of nice features */
 	err = mc_fastcall_init();
 	if (err) {
-		mc_dev_notice("Fastcall support init failed!");
-		goto err_fastcall;
-	}
-
-	err = nq_init();
-	if (err) {
-		mc_dev_notice("NQ init failed!");
-		goto fail_nq_init;
+		mc_dev_notice("Fastcall support init failed!\n");
+		goto fail_fastcall_init;
 	}
 
 	err = mcp_init();
 	if (err) {
-		mc_dev_notice("MCP init failed!");
-		goto err_mcp;
-	}
-
-	err = iwp_init();
-	if (err) {
-		mc_dev_notice("IWP init failed!");
-		goto err_iwp;
+		mc_dev_notice("MCP init failed!\n");
+		goto fail_mcp_init;
 	}
 
 	err = mc_logging_init();
 	if (err) {
-		mc_dev_notice("Log init failed!");
-		goto err_log;
+		mc_dev_notice("Log init failed!\n");
+		goto fail_log_init;
 	}
 
 	err = mc_scheduler_init();
 	if (err) {
-		mc_dev_notice("Scheduler init failed!");
-		goto err_sched;
+		mc_dev_notice("Scheduler init failed!\n");
+		goto fail_mc_device_sched_init;
 	}
 
 	/*
@@ -732,31 +640,19 @@ static int mobicore_probe(struct platform_device *pdev)
 	 */
 	err = device_admin_init();
 	if (err)
-		goto err_admin;
-
-#ifndef MC_DELAYED_TEE_START
-	err = mobicore_start();
-#endif
-	if (err)
-		goto err_start;
+		goto fail_creat_dev_admin;
 
 	return 0;
 
-err_start:
-	device_admin_exit();
-err_admin:
+fail_creat_dev_admin:
 	mc_scheduler_exit();
-err_sched:
+fail_mc_device_sched_init:
 	mc_logging_exit();
-err_log:
-	iwp_exit();
-err_iwp:
+fail_log_init:
 	mcp_exit();
-err_mcp:
-	nq_exit();
-fail_nq_init:
+fail_mcp_init:
 	mc_fastcall_exit();
-err_fastcall:
+fail_fastcall_init:
 	debugfs_remove_recursive(g_ctx.debug_dir);
 	return err;
 }
@@ -786,9 +682,8 @@ static int __init mobicore_init(void)
 	 * Do not remove or change the following trace.
 	 * The string "MobiCore" is used to detect if the TEE is in of the image
 	 */
-	mc_dev_info("MobiCore mcDrvModuleApi version is %d.%d",
-		    MCDRVMODULEAPI_VERSION_MAJOR,
-		    MCDRVMODULEAPI_VERSION_MINOR);
+	mc_dev_info("MobiCore mcDrvModuleApi version is %d.%d\n",
+		    MCDRVMODULEAPI_VERSION_MAJOR, MCDRVMODULEAPI_VERSION_MINOR);
 #ifdef MC_DEVICE_PROPNAME
 	return platform_driver_register(&mc_plat_driver);
 #else
@@ -804,9 +699,7 @@ static void __exit mobicore_exit(void)
 	device_admin_exit();
 	mc_scheduler_exit();
 	mc_logging_exit();
-	iwp_exit();
 	mcp_exit();
-	nq_exit();
 	mc_fastcall_exit();
 	debugfs_remove_recursive(g_ctx.debug_dir);
 }

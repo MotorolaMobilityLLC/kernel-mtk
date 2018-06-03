@@ -1,7 +1,7 @@
-#ccflags-y += -Werror
+#
+# Makefile for the <t-base core and trusted UI drivers
+#
 
-ifeq ($(CONFIG_ARM64), y)
-obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
-else
-obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
-endif
+export GUD_ROOT_FOLDER := $(dir $(lastword $(MAKEFILE_LIST)))
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) := MobiCoreDriver/
+obj-$(CONFIG_TRUSTONIC_TRUSTED_UI) += TlcTui/

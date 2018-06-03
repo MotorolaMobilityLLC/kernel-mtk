@@ -420,7 +420,8 @@ void nq_dump_status(void)
 		u32 info;
 
 		if (!mc_fc_info(status_map[i].index, NULL, &info)) {
-			mc_dev_notice("  %-20s= 0x%08x", status_map[i].msg, info);
+			mc_dev_notice("  %-20s= 0x%08x",
+				status_map[i].msg, info);
 			if (ret >= 0)
 				ret = kasnprintf(&l_ctx.dump, "%-20s= 0x%08x\n",
 						 status_map[i].msg, info);
@@ -587,9 +588,12 @@ int nq_start(void)
 	if (irq_d) {
 #ifdef CONFIG_MTK_SYSIRQ
 		if (irq_d->parent_data) {
-			l_ctx.mcp_buffer->message.init_values.flags |= MC_IV_FLAG_IRQ;
-			l_ctx.mcp_buffer->message.init_values.irq = irq_d->parent_data->hwirq;
-			mc_dev_info("irq_d->parent_data->hwirq is 0x%lx\n", irq_d->parent_data->hwirq);
+			l_ctx.mcp_buffer->message.init_values.flags |=
+				MC_IV_FLAG_IRQ;
+			l_ctx.mcp_buffer->message.init_values.irq =
+				irq_d->parent_data->hwirq;
+			mc_dev_info("irq_d->parent_data->hwirq is 0x%lx\n",
+				irq_d->parent_data->hwirq);
 		}
 #else
 		l_ctx.mcp_buffer->message.init_values.flags |= MC_IV_FLAG_IRQ;
