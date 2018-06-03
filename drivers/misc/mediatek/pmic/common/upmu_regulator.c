@@ -575,11 +575,6 @@ void dump_ldo_status_read_debug(void)
 		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			mt_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
-
-	PMICLOG("Power Good Status 0=0x%x. 1=0x%x\n", upmu_get_reg_value(MT6355_PGSTATUS0),
-			upmu_get_reg_value(MT6355_PGSTATUS1));
-	PMICLOG("Power Source OC Status =0x%x.\n", upmu_get_reg_value(MT6355_PSOCSTATUS));
-	PMICLOG("Thermal Status=0x%x.\n", upmu_get_reg_value(MT6355_THERMALSTATUS));
 }
 
 static int proc_utilization_show(struct seq_file *m, void *v)
@@ -641,12 +636,6 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 		seq_printf(m, "%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			   mt_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
-
-	seq_printf(m, "Power Good Status 0=0x%x. 1=0x%x\n", upmu_get_reg_value(MT6355_PGSTATUS0),
-			upmu_get_reg_value(MT6355_PGSTATUS1));
-	seq_printf(m, "Power Source OC Status=0x%x.\n", upmu_get_reg_value(MT6355_PSOCSTATUS));
-	seq_printf(m, "Thermal Status=0x%x.\n", upmu_get_reg_value(MT6355_THERMALSTATUS));
-
 	return 0;
 }
 

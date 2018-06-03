@@ -51,28 +51,6 @@
 
 #define BATTERY_MODULE_INIT
 
-/* ADC Channel Number */
-typedef enum {
-	AUX_BATSNS_AP =	0x000,
-	AUX_ISENSE_AP,
-	AUX_VCDT_AP,
-	AUX_BATON_AP,
-	AUX_TSENSE_AP,
-	AUX_TSENSE_MD =	0x005,
-	AUX_VACCDET_AP = 0x007,
-	AUX_VISMPS_AP =	0x00B,
-	AUX_ICLASSAB_AP =	0x016,
-	AUX_HP_AP =	0x017,
-	AUX_CH10_AP =	0x018,
-	AUX_VBIF_AP =	0x019,
-	AUX_CH0_6311 = 0x020,
-	AUX_CH1_6311 = 0x021,
-	AUX_ADCVIN0_MD = 0x10F,
-	AUX_ADCVIN0_GPS = 0x20C,
-	AUX_CH12 = 0x1011,
-	AUX_CH13 = 0x2011,
-	AUX_CH14 = 0x3011,
-	AUX_CH15 = 0x4011,
-} upmu_adc_chl_list_enum;
+/* ADC Channel Number, not uesed and removed */
 
 #endif /* _CUST_PMIC_H_ */

@@ -75,6 +75,21 @@ enum {
 	AUXADC_LIST_HPOFS_CAL,
 	AUXADC_LIST_MT6355_END = AUXADC_LIST_HPOFS_CAL,
 #endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+	/* mt6356 */
+	AUXADC_LIST_BATADC,
+	AUXADC_LIST_MT6356_START = AUXADC_LIST_BATADC,
+	AUXADC_LIST_VCDT,
+	AUXADC_LIST_BATTEMP,
+	AUXADC_LIST_BATID,
+	AUXADC_LIST_VBIF,
+	AUXADC_LIST_MT6356_CHIP_TEMP,
+	AUXADC_LIST_DCXO,
+	AUXADC_LIST_ACCDET,
+	AUXADC_LIST_TSX,
+	AUXADC_LIST_HPOFS_CAL,
+	AUXADC_LIST_MT6356_END = AUXADC_LIST_HPOFS_CAL,
+#endif
 	AUXADC_LIST_MAX,
 };
 
@@ -142,7 +157,15 @@ extern void mt6355_auxadc_dump_regs(char *buf);
 extern int mt6355_get_auxadc_value(u8 channel);
 extern void mt6355_auxadc_lock(void);
 extern void mt6355_auxadc_unlock(void);
-#endif /* CONFIG_MTK_PMIC_CHIP_MT6335 */
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+extern void mt6356_auxadc_init(void);
+extern void mt6356_auxadc_dump_regs(char *buf);
+extern int mt6356_get_auxadc_value(u8 channel);
+extern void pmic_auxadc_lock(void);
+extern void pmic_auxadc_unlock(void);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6356 */
 
 /* ============ kernel Layer =================== */
 extern void mtk_auxadc_init(void);

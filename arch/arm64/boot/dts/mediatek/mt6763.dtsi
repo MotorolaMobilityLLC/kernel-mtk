@@ -265,6 +265,10 @@
 		compatible = "mediatek,pwrap";
 		reg = <0 0x1000d000 0 0x1000>;
 		interrupts = <GIC_SPI 175 IRQ_TYPE_LEVEL_HIGH>;
+		main_pmic: pmic_irq {
+			compatible = "mediatek,pmic-eint";
+			interrupt-controller;
+		};
 	};
 
 	pwrap_mpu@1000d000 {
@@ -2723,5 +2727,7 @@
 	};
 
 };
+
+#include "mt6356.dtsi"
 
 #include "cust_mt6763_msdc.dtsi"

@@ -308,8 +308,9 @@ int pmic_debug_init(struct platform_device *dev)
 				mtk_pmic_dir, NULL, &pmic_dump_exception_operations);
 	debugfs_create_file("pmic_dbg_level", (S_IFREG | S_IRUGO),
 				mtk_pmic_dir, NULL, &pmic_dbg_level_operations);
-
+#ifdef REGULATOR_READY
 	pmic_regulator_debug_init(dev, mtk_pmic_dir);
+#endif
 	pmic_throttling_dlpt_debug_init(dev, mtk_pmic_dir);
 	PMICLOG("pmic_debug_init debugfs done\n");
 

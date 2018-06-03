@@ -907,9 +907,9 @@
 #define MT6356_BUCK_TOP_RST_CON0                ((unsigned int)(MT6356_PMIC_REG_BASE+0xb18))
 #define MT6356_BUCK_TOP_RST_CON0_SET            ((unsigned int)(MT6356_PMIC_REG_BASE+0xb1a))
 #define MT6356_BUCK_TOP_RST_CON0_CLR            ((unsigned int)(MT6356_PMIC_REG_BASE+0xb1c))
-#define MT6356_BUCK_TOP_INT_EN_CON0             ((unsigned int)(MT6356_PMIC_REG_BASE+0xb1e))
-#define MT6356_BUCK_TOP_INT_EN_CON0_SET         ((unsigned int)(MT6356_PMIC_REG_BASE+0xb20))
-#define MT6356_BUCK_TOP_INT_EN_CON0_CLR         ((unsigned int)(MT6356_PMIC_REG_BASE+0xb22))
+#define MT6356_BUCK_TOP_INT_CON0                ((unsigned int)(MT6356_PMIC_REG_BASE+0xb1e))
+#define MT6356_BUCK_TOP_INT_CON0_SET            ((unsigned int)(MT6356_PMIC_REG_BASE+0xb20))
+#define MT6356_BUCK_TOP_INT_CON0_CLR            ((unsigned int)(MT6356_PMIC_REG_BASE+0xb22))
 #define MT6356_BUCK_TOP_INT_MASK_CON0           ((unsigned int)(MT6356_PMIC_REG_BASE+0xb24))
 #define MT6356_BUCK_TOP_INT_MASK_CON0_SET       ((unsigned int)(MT6356_PMIC_REG_BASE+0xb26))
 #define MT6356_BUCK_TOP_INT_MASK_CON0_CLR       ((unsigned int)(MT6356_PMIC_REG_BASE+0xb28))
@@ -3473,9 +3473,18 @@
 #define PMIC_RG_SLP_RW_EN_ADDR                                      MT6356_RG_SPI_CON0
 #define PMIC_RG_SLP_RW_EN_MASK                                      0x1
 #define PMIC_RG_SLP_RW_EN_SHIFT                                     0
+#define PMIC_RG_EN_RECORD_ADDR                                      MT6356_RG_SPI_CON0
+#define PMIC_RG_EN_RECORD_MASK                                      0x1
+#define PMIC_RG_EN_RECORD_SHIFT                                     1
+#define PMIC_RG_MDB_BRIDGE_SWRST_ADDR                               MT6356_RG_SPI_CON0
+#define PMIC_RG_MDB_BRIDGE_SWRST_MASK                               0x1
+#define PMIC_RG_MDB_BRIDGE_SWRST_SHIFT                              2
+#define PMIC_RG_MDB_BRIDGE_BYPASS_MODE_ADDR                         MT6356_RG_SPI_CON0
+#define PMIC_RG_MDB_BRIDGE_BYPASS_MODE_MASK                         0x1
+#define PMIC_RG_MDB_BRIDGE_BYPASS_MODE_SHIFT                        3
 #define PMIC_RG_SPI_RSV_ADDR                                        MT6356_RG_SPI_CON0
-#define PMIC_RG_SPI_RSV_MASK                                        0x7FFF
-#define PMIC_RG_SPI_RSV_SHIFT                                       1
+#define PMIC_RG_SPI_RSV_MASK                                        0xFFF
+#define PMIC_RG_SPI_RSV_SHIFT                                       4
 #define PMIC_DEW_DIO_EN_ADDR                                        MT6356_DEW_DIO_EN
 #define PMIC_DEW_DIO_EN_MASK                                        0x1
 #define PMIC_DEW_DIO_EN_SHIFT                                       0
@@ -9635,33 +9644,33 @@
 #define PMIC_RG_BUCK_TOP_RST_CON0_CLR_ADDR                          MT6356_BUCK_TOP_RST_CON0_CLR
 #define PMIC_RG_BUCK_TOP_RST_CON0_CLR_MASK                          0xFFFF
 #define PMIC_RG_BUCK_TOP_RST_CON0_CLR_SHIFT                         0
-#define PMIC_RG_INT_EN_VPROC_OC_ADDR                                MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VPROC_OC_ADDR                                MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VPROC_OC_MASK                                0x1
 #define PMIC_RG_INT_EN_VPROC_OC_SHIFT                               0
-#define PMIC_RG_INT_EN_VCORE_OC_ADDR                                MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VCORE_OC_ADDR                                MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VCORE_OC_MASK                                0x1
 #define PMIC_RG_INT_EN_VCORE_OC_SHIFT                               1
-#define PMIC_RG_INT_EN_VMODEM_OC_ADDR                               MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VMODEM_OC_ADDR                               MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VMODEM_OC_MASK                               0x1
 #define PMIC_RG_INT_EN_VMODEM_OC_SHIFT                              2
-#define PMIC_RG_INT_EN_VS1_OC_ADDR                                  MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VS1_OC_ADDR                                  MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VS1_OC_MASK                                  0x1
 #define PMIC_RG_INT_EN_VS1_OC_SHIFT                                 3
-#define PMIC_RG_INT_EN_VS2_OC_ADDR                                  MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VS2_OC_ADDR                                  MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VS2_OC_MASK                                  0x1
 #define PMIC_RG_INT_EN_VS2_OC_SHIFT                                 4
-#define PMIC_RG_INT_EN_VPA_OC_ADDR                                  MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VPA_OC_ADDR                                  MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VPA_OC_MASK                                  0x1
 #define PMIC_RG_INT_EN_VPA_OC_SHIFT                                 5
-#define PMIC_RG_INT_EN_VCORE_PREOC_ADDR                             MT6356_BUCK_TOP_INT_EN_CON0
+#define PMIC_RG_INT_EN_VCORE_PREOC_ADDR                             MT6356_BUCK_TOP_INT_CON0
 #define PMIC_RG_INT_EN_VCORE_PREOC_MASK                             0x1
 #define PMIC_RG_INT_EN_VCORE_PREOC_SHIFT                            6
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_SET_ADDR                       MT6356_BUCK_TOP_INT_EN_CON0_SET
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_SET_MASK                       0xFFFF
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_SET_SHIFT                      0
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_CLR_ADDR                       MT6356_BUCK_TOP_INT_EN_CON0_CLR
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_CLR_MASK                       0xFFFF
-#define PMIC_RG_BUCK_TOP_INT_EN_CON0_CLR_SHIFT                      0
+#define PMIC_RG_BUCK_TOP_INT_CON0_SET_ADDR                          MT6356_BUCK_TOP_INT_CON0_SET
+#define PMIC_RG_BUCK_TOP_INT_CON0_SET_MASK                          0xFFFF
+#define PMIC_RG_BUCK_TOP_INT_CON0_SET_SHIFT                         0
+#define PMIC_RG_BUCK_TOP_INT_CON0_CLR_ADDR                          MT6356_BUCK_TOP_INT_CON0_CLR
+#define PMIC_RG_BUCK_TOP_INT_CON0_CLR_MASK                          0xFFFF
+#define PMIC_RG_BUCK_TOP_INT_CON0_CLR_SHIFT                         0
 #define PMIC_RG_INT_MASK_VPROC_OC_ADDR                              MT6356_BUCK_TOP_INT_MASK_CON0
 #define PMIC_RG_INT_MASK_VPROC_OC_MASK                              0x1
 #define PMIC_RG_INT_MASK_VPROC_OC_SHIFT                             0
@@ -19223,6 +19232,9 @@ typedef enum {
 	PMIC_SPISLV_SW_MAJOR_REV,
 	PMIC_SPISLV_ESP,
 	PMIC_RG_SLP_RW_EN,
+	PMIC_RG_EN_RECORD,
+	PMIC_RG_MDB_BRIDGE_SWRST,
+	PMIC_RG_MDB_BRIDGE_BYPASS_MODE,
 	PMIC_RG_SPI_RSV,
 	PMIC_DEW_DIO_EN,
 	PMIC_DEW_READ_TEST,
@@ -21284,8 +21296,8 @@ typedef enum {
 	PMIC_RG_INT_EN_VS2_OC,
 	PMIC_RG_INT_EN_VPA_OC,
 	PMIC_RG_INT_EN_VCORE_PREOC,
-	PMIC_RG_BUCK_TOP_INT_EN_CON0_SET,
-	PMIC_RG_BUCK_TOP_INT_EN_CON0_CLR,
+	PMIC_RG_BUCK_TOP_INT_CON0_SET,
+	PMIC_RG_BUCK_TOP_INT_CON0_CLR,
 	PMIC_RG_INT_MASK_VPROC_OC,
 	PMIC_RG_INT_MASK_VCORE_OC,
 	PMIC_RG_INT_MASK_VMODEM_OC,
@@ -24310,5 +24322,4 @@ typedef struct {
 	unsigned char shift;
 } PMU_FLAG_TABLE_ENTRY;
 
-#endif /* _MT_PMIC_UPMU_HW_H_ */
-
+#endif				/* _MT_PMIC_UPMU_HW_H_ */
