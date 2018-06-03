@@ -561,6 +561,98 @@ struct ddrphy_golden_cfg {
 	u32 value;
 };
 
+#if defined(CONFIG_MACH_MT6775)
+static struct ddrphy_golden_cfg ddrphy_setting[] = {
+	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
+	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
+	{PHY_AO_CHA, 0x284, 0x001bff00, 0x00000100},
+	{PHY_AO_CHB, 0x284, 0x001bff00, 0x00000100},
+	{PHY_AO_CHA, 0x28c, 0xffffffff, 0x836003be},
+	{PHY_AO_CHB, 0x28c, 0xffffffff, 0x836003be},
+	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
+	{PHY_AO_CHA, 0xc20, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0xc20, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x1120, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x1120, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x1620, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x1620, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x1b20, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x1b20, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0xca0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0xca0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x11a0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x11a0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x16a0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x16a0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0x1ba0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHB, 0x1ba0, 0xfff80000, 0x00200000},
+	{PHY_AO_CHA, 0xd20, 0xfff80000, 0x00000000},
+	{PHY_AO_CHB, 0xd20, 0xfff80000, 0x00000000},
+	{PHY_AO_CHA, 0x1220, 0xfff80000, 0x00000000},
+	{PHY_AO_CHB, 0x1220, 0xfff80000, 0x00000000},
+	{PHY_AO_CHA, 0x1720, 0xfff80000, 0x00000000},
+	{PHY_AO_CHB, 0x1720, 0xfff80000, 0x00000000},
+	{PHY_AO_CHA, 0x1c20, 0xfff80000, 0x00000000},
+	{PHY_AO_CHB, 0x1c20, 0xfff80000, 0x00000000},
+	{PHY_AO_CHA, 0x298, 0x00770000, 0x00770000},
+	{PHY_AO_CHB, 0x298, 0x00770000, 0x00770000},
+	{PHY_AO_CHA, 0x084, 0x00100000, 0x00000000},
+	{PHY_AO_CHB, 0x084, 0x00100000, 0x00000000},
+	{PHY_AO_CHA, 0x104, 0x00100000, 0x00000000},
+	{PHY_AO_CHB, 0x104, 0x00100000, 0x00000000},
+	{PHY_AO_CHA, 0x184, 0x00100000, 0x00000000},
+	{PHY_AO_CHB, 0x184, 0x00100000, 0x00000000},
+	{PHY_AO_CHA, 0xc34, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0xc34, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0xcb4, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0xcb4, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0xd34, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0xd34, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1134, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1134, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x11b4, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x11b4, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1234, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1234, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1634, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1634, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x16b4, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x16b4, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1734, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1734, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1b34, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1b34, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1bb4, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1bb4, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0x1c34, 0x00000001, 0x00000001},
+	{PHY_AO_CHB, 0x1c34, 0x00000001, 0x00000001},
+	{PHY_AO_CHA, 0xc1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0xc1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0xc9c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0xc9c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x111c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x111c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x119c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x119c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x161c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x161c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x169c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x169c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x1b1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x1b1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x1b9c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x1b9c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0xd1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0xd1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x121c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x121c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x171c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x171c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHA, 0x1c1c, 0x000e0000, 0x000e0000},
+	{PHY_AO_CHB, 0x1c1c, 0x000e0000, 0x000e0000},
+};
+#else
 static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
 	{PHY_CHA, 0x284, 0x000bff00, 0x00000100},
@@ -574,6 +666,7 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{PHY_CHA, 0x274, 0xffffffff, 0xfffffe7f},
 	{PHY_CHA, 0x27c, 0xffffffff, 0xffffffff},
 };
+#endif
 
 int spm_golden_setting_cmp(bool en)
 {
@@ -735,7 +828,7 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
-
+#if !defined(CONFIG_MACH_MT6775)
 
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
@@ -753,13 +846,14 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-
+#endif
 	return ret;
 }
 
 int spm_to_sspm_command_async_wait(u32 cmd)
 {
 	unsigned int ret = 0;
+#if !defined(CONFIG_MACH_MT6775)
 
 	int ack_data;
 
@@ -783,7 +877,7 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-
+#endif
 	return ret;
 }
 
@@ -791,6 +885,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
+#if !defined(CONFIG_MACH_MT6775)
 
 	int ack_data;
 
@@ -872,6 +967,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
+#endif
 	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
