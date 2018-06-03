@@ -6,6 +6,14 @@ config MTK_CPU_AFFINITY
 	  The CPU affinity library for Hotplug enhancement is to achieve set CPU
 	  affinity without take care kernel behavior and to avoid affect the original
 	  Linux design.
+
+config MTK_USER_SPACE_GLOBAL_CPUSET
+	bool "Enable user space global cpuset"
+	depends on CPUSETS
+	default n
+	help
+		Interface for set user space global cpuset
+
 endmenu
 
 menu "MTK load balance and schedule enhancement"
