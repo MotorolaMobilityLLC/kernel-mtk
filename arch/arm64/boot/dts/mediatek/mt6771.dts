@@ -515,8 +515,10 @@
 
 	apxgpt@10008000 {
 		compatible = "mediatek,apxgpt";
-		reg = <0 0x10008000 0 0x1000>;
+		reg = <0 0x10008000 0 0x100>;
 		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&clk32k>;
 	};
 
 	rsvd@10009000 {

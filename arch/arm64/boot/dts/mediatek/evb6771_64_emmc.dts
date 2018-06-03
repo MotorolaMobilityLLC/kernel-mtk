@@ -22,11 +22,6 @@ initcall_debug=1";
 
 };
 
-&timer {
-	/*clock-frequency = <166000000>;*/
-	clock-frequency = <150000000>;
-};
-
 /* accdet start */
 &accdet {
 	/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */

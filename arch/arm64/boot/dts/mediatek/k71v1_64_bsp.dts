@@ -22,11 +22,6 @@ initcall_debug=1";
 
 };
 
-&timer {
-	/*clock-frequency = <166000000>;*/
-	clock-frequency = <150000000>;
-};
-
 &scp {
 	core_1 = "enable";
 	scp_sramSize = <0x00080000>;     /* scp_A_sram_size */
