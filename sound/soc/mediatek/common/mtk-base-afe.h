@@ -22,11 +22,19 @@ struct mtk_base_memif_data {
 	const char *name;
 	int reg_ofs_base;
 	int reg_ofs_cur;
+	int reg_ofs_end;
+	int reg_ofs_base_msb;
+	int reg_ofs_cur_msb;
+	int reg_ofs_end_msb;
 	int fs_reg;
 	int fs_shift;
 	int fs_maskbit;
 	int mono_reg;
 	int mono_shift;
+	int mono_invert;
+	int quad_ch_reg;
+	int quad_ch_mask_shift;
+	int quad_ch_shift;
 	int enable_reg;
 	int enable_shift;
 	int hd_reg;
@@ -37,6 +45,13 @@ struct mtk_base_memif_data {
 	int msb2_shift;
 	int agent_disable_reg;
 	int agent_disable_shift;
+	/* playback memif only */
+	int pbuf_reg;
+	int pbuf_mask_shift;
+	int pbuf_shift;
+	int minlen_reg;
+	int minlen_mask_shift;
+	int minlen_shift;
 };
 
 struct mtk_base_irq_data {
@@ -53,12 +68,15 @@ struct mtk_base_irq_data {
 	int irq_clr_shift;
 };
 
+struct dentry;
 struct device;
 struct mtk_base_afe_memif;
 struct mtk_base_afe_irq;
+struct mtk_base_afe_dai;
 struct regmap;
 struct snd_pcm_substream;
 struct snd_soc_dai;
+struct snd_soc_dai_driver;
 
 struct mtk_base_afe {
 	void __iomem *base_addr;
@@ -79,27 +97,64 @@ struct mtk_base_afe {
 	struct mtk_base_afe_irq *irqs;
 	int irqs_size;
 
+	struct mtk_base_afe_dai *sub_dais;
+	int num_sub_dais;
+
+	struct snd_soc_dai_driver *dai_drivers;
+	unsigned int num_dai_drivers;
+
 	const struct snd_pcm_hardware *mtk_afe_hardware;
 	int (*memif_fs)(struct snd_pcm_substream *substream,
 			unsigned int rate);
 	int (*irq_fs)(struct snd_pcm_substream *substream,
 		      unsigned int rate);
+	int (*get_dai_fs)(struct mtk_base_afe *afe,
+			  int dai_id, unsigned int rate);
+	int (*get_memif_pbuf_size)(struct snd_pcm_substream *substream);
+
+	void *sram;
+	int (*request_dram_resource)(struct device *dev);
+	int (*release_dram_resource)(struct device *dev);
+
+	struct dentry *debugfs;
+	const struct mtk_afe_debug_cmd *debug_cmds;
 
 	void *platform_priv;
 };
 
 struct mtk_base_afe_memif {
-	unsigned int phys_buf_addr;
-	int buffer_size;
+	unsigned char *dma_area;
+	dma_addr_t dma_addr;
+	size_t dma_bytes;
+
 	struct snd_pcm_substream *substream;
 	const struct mtk_base_memif_data *data;
 	int irq_usage;
 	int const_irq;
+
+	int using_sram;
+	int use_dram_only;
+	int use_adsp_share_mem;
+
+	bool ack_enable;
+	int (*ack)(struct snd_pcm_substream *substream);
 };
 
 struct mtk_base_afe_irq {
 	const struct mtk_base_irq_data *irq_data;
 	int irq_occupyed;
+};
+
+struct mtk_base_afe_dai {
+	struct snd_soc_dai_driver *dai_drivers;
+	unsigned int num_dai_drivers;
+
+	const struct snd_kcontrol_new *controls;
+	unsigned int num_controls;
+	const struct snd_soc_dapm_widget *dapm_widgets;
+	unsigned int num_dapm_widgets;
+	const struct snd_soc_dapm_route *dapm_routes;
+	unsigned int num_dapm_routes;
 };
 
 #endif
