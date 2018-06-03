@@ -1059,17 +1059,42 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
 
 
+static void set_mirror_flip(kal_uint8 image_mirror)
+{
+	switch (image_mirror) {
+	case IMAGE_NORMAL:
+		write_cmos_sensor(0x0101, image_mirror);
+		break;
+
+	case IMAGE_V_MIRROR:
+		write_cmos_sensor(0x0101, image_mirror);
+		break;
+
+	case IMAGE_H_MIRROR:
+		write_cmos_sensor(0x0101, image_mirror);
+		break;
+
+	case IMAGE_HV_MIRROR:
+		write_cmos_sensor(0x0101, image_mirror);
+		break;
+	}
+}
+
+
+
+
+
 static void set_PD_pdc(kal_uint8 enable)
 {/*enable mean PD point->Pure RAW*/
 	pr_debug("set_PD_pdc = %d\n", enable);
+
+	set_mirror_flip(0);
 	if (enable) {
-		write_cmos_sensor(0x0101, 0x00);
 		write_cmos_sensor(0x0B00, 0x00);
 		write_cmos_sensor(0x3606, 0x01);
 		write_cmos_sensor(0x3E3A, 0x01);
 		write_cmos_sensor(0x3E39, 0x01);
 	} else {
-		write_cmos_sensor(0x0101, 0x00);
 		write_cmos_sensor(0x0B00, 0x00);
 		write_cmos_sensor(0x3606, 0x00);
 		write_cmos_sensor(0x3E3A, 0x00);
@@ -1077,12 +1102,7 @@ static void set_PD_pdc(kal_uint8 enable)
 	}
 	imx499_apply_LRC();
 
-#ifdef HV_MIRROR_FLIP
-	write_cmos_sensor(0x0101, IMAGE_HV_MIRROR);
-#else
-	write_cmos_sensor(0x0101, IMAGE_NORMAL);
-#endif
-
+	set_mirror_flip(imgsensor.mirror);
 }
 
 /************************************************************************
@@ -1930,10 +1950,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	KD_SENSOR_PROFILE("pre_lock");
-
 	preview_setting();
-
-
 	KD_SENSOR_PROFILE("pre_setting");
 	return ERROR_NONE;
 } /*    preview   */
@@ -1979,9 +1996,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	KD_SENSOR_PROFILE("cap_lock");
-
 	capture_setting(imgsensor.current_fps);	/*Full mode */
-
 	KD_SENSOR_PROFILE("cap_setting");
 
 	return ERROR_NONE;
@@ -2005,9 +2020,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	KD_SENSOR_PROFILE("nv_lock");
-
 	normal_video_setting(imgsensor.current_fps);
-
 	KD_SENSOR_PROFILE("nv_setting");
 
 	return ERROR_NONE;
@@ -2032,11 +2045,10 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	KD_SENSOR_PROFILE("hv_lock");
-
 	hs_video_setting();
-
 	KD_SENSOR_PROFILE("hv_setting");
-	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
+
+	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }				/*    hs_video   */
 
@@ -2058,11 +2070,10 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	KD_SENSOR_PROFILE("sv_lock");
-
 	slim_video_setting();
-
 	KD_SENSOR_PROFILE("sv_setting");
-	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
+	set_mirror_flip(imgsensor.mirror);
+
 
 	return ERROR_NONE;
 } /*    slim_video     */
