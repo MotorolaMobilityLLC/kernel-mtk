@@ -1959,11 +1959,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	sscanf_num = sscanf(cmd_buf, "%x %x %x %x %x %x %x %x %x", &cmd,
 		&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
 
-	if (cmd == -1) {
-		seq_puts(m, "Please run: echo cmd [p1] [p2] [p3] [p4] [p5] [p6] [p7] [p8]> /proc/msdc_debug\n");
-		seq_puts(m, "For help run: cat /proc/msdc_help\n");
-		return 0;
-	}
+	/* clear buffer */
+	g_count = 0;
+	cmd_buf[g_count] = '\0';
 
 	if (cmd == SD_TOOL_ZONE) {
 		id = p1;
@@ -2427,12 +2425,10 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		msdc_cmdq_func(host, p2, m);
-	} else if (cmd == MMC_HANG_DETECT_DUMP) {
-		seq_puts(m, "==== hang detect dump ====\n");
-		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
-			goto invalid_host_id;
-		msdc_proc_dump(m, id);
+	} else {
+		/* default dump info for aee */
+		seq_puts(m, "==== msdc debug info for aee ====\n");
+		msdc_proc_dump(m, 0);
 	}
 
 out:
