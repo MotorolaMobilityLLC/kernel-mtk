@@ -43,6 +43,7 @@ static int count_time_out = 100;
 
 static struct wake_lock  mt6355_auxadc_wake_lock;
 static struct mutex mt6355_adc_mutex;
+static DEFINE_MUTEX(auxadc_ch3_mutex);
 
 unsigned int wk_auxadc_vsen_tdet_ctrl(unsigned char en_check)
 {
@@ -101,6 +102,17 @@ void mt6355_auxadc_lock(void)
 	mutex_lock(&mt6355_adc_mutex);
 }
 
+void lockadcch3(void)
+{
+	mutex_lock(&auxadc_ch3_mutex);
+}
+
+void unlockadcch3(void)
+{
+	mutex_unlock(&auxadc_ch3_mutex);
+}
+
+
 void mt6355_auxadc_unlock(void)
 {
 	mutex_unlock(&mt6355_adc_mutex);
@@ -126,7 +138,7 @@ struct pmic_auxadc_channel mt6355_auxadc_channel[] = {
 		PMIC_AUXADC_ADC_RDY_CH5, PMIC_AUXADC_ADC_OUT_CH5},
 	{15, 1, PMIC_AUXADC_RQST_CH7, /* TSX */
 		PMIC_AUXADC_ADC_RDY_CH7_BY_AP, PMIC_AUXADC_ADC_OUT_CH7_BY_AP},
-	{12, 1, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
+	{15, 1, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
 		PMIC_AUXADC_ADC_RDY_CH9, PMIC_AUXADC_ADC_OUT_CH9},
 };
 #define MT6355_AUXADC_CHANNEL_MAX	ARRAY_SIZE(mt6355_auxadc_channel)
@@ -156,6 +168,8 @@ int mt6355_get_auxadc_value(u8 channel)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 1);
 	if (channel == AUXADC_LIST_MT6355_CHIP_TEMP)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
+	if (channel == AUXADC_LIST_BATTEMP)
+		mutex_lock(&auxadc_ch3_mutex);
 
 	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
 	udelay(10);
@@ -168,6 +182,9 @@ int mt6355_get_auxadc_value(u8 channel)
 		}
 	}
 	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+
+	if (channel == AUXADC_LIST_BATTEMP)
+		mutex_unlock(&auxadc_ch3_mutex);
 
 	mt6355_auxadc_unlock();
 
@@ -183,7 +200,12 @@ int mt6355_get_auxadc_value(u8 channel)
 
 	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
-	return adc_result;
+
+	/* Audio request HPOPS to return raw data */
+	if (channel == AUXADC_LIST_HPOFS_CAL)
+		return reg_val * auxadc_channel->r_val;
+	else
+		return adc_result;
 }
 
 void mt6355_auxadc_init(void)
