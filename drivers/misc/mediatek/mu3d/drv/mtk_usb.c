@@ -26,6 +26,11 @@
 #include "mtk-phy-asic.h"
 /*#include <mach/mt_typedefs.h>*/
 #endif
+#include <linux/phy/mediatek/mtk_usb_phy.h>
+
+#ifdef CONFIG_PHY_MTK_SSUSB
+#include "mtk-ssusb-hal.h"
+#endif
 
 unsigned int cable_mode = CABLE_MODE_NORMAL;
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -145,7 +150,12 @@ void connection_work(struct work_struct *data)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
+#ifdef CONFIG_PHY_MTK_SSUSB
+			if (musb->is_clk_on)
+				phy_power_off(musb->mtk_phy);
+#else
 			usb_fake_powerdown(musb->is_clk_on);
+#endif
 			musb->is_clk_on = 0;
 			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
 			return;
@@ -642,6 +652,10 @@ ssize_t musb_portmode_store(struct device *dev, struct device_attribute *attr,
 
 ssize_t musb_tx_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
+#ifdef CONFIG_PHY_MTK_SSUSB
+	struct musb *musb;
+	u32 value;
+#endif
 	u8 var;
 	u8 var2;
 
@@ -650,7 +664,13 @@ ssize_t musb_tx_show(struct device *dev, struct device_attribute *attr, char *bu
 		return 0;
 	}
 
+#ifdef CONFIG_PHY_MTK_SSUSB
+	musb = dev_to_musb(dev);
+	value = usb_mtkphy_io_read(musb->mtk_phy, 1, 0x6C);
+	var = value >> 16;
+#else
 	var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDTM1 + 0x2));
+#endif
 	var2 = (var >> 3) & ~0xFE;
 	pr_debug("[MUSB]addr: 0x6E (TX), value: %x - %x\n", var, var2);
 
@@ -663,6 +683,10 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 		      const char *buf, size_t count)
 {
 	unsigned int val;
+#ifdef CONFIG_PHY_MTK_SSUSB
+	struct musb *musb;
+	u32 value;
+#endif
 	u8 var;
 	u8 var2;
 
@@ -675,7 +699,13 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		var = USB_PHY_Read_Register8(U3D_U2PHYDTM1 + 0x2);
 #else
+#ifdef CONFIG_PHY_MTK_SSUSB
+		musb = dev_to_musb(dev);
+		value = usb_mtkphy_io_read(musb->mtk_phy, 1, 0x6C);
+		var = value >> 16;
+#else
 		var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDTM1 + 0x2));
+#endif
 #endif
 
 		if (val == 0)
@@ -691,9 +721,14 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 		 * E60802_RG_USB20_BC11_SW_EN_OFST, E60802_RG_USB20_BC11_SW_EN, 0);
 		 */
 		/* Jeremy TODO 0320 */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		musb = dev_to_musb(dev);
+		value = usb_mtkphy_io_read(musb->mtk_phy, 1, 0x6C);
+		var = value >> 16;
+#else
 		var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDTM1 + 0x2));
 #endif
-
+#endif
 		var2 = (var >> 3) & ~0xFE;
 
 		pr_debug
@@ -706,6 +741,10 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 
 ssize_t musb_rx_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
+#ifdef CONFIG_PHY_MTK_SSUSB
+	struct musb *musb;
+	u32 value;
+#endif
 	u8 var;
 	u8 var2;
 
@@ -716,7 +755,13 @@ ssize_t musb_rx_show(struct device *dev, struct device_attribute *attr, char *bu
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	var = USB_PHY_Read_Register8(U3D_U2PHYDMON1 + 0x3);
 #else
+#ifdef CONFIG_PHY_MTK_SSUSB
+	musb = dev_to_musb(dev);
+	value = usb_mtkphy_io_read(musb->mtk_phy, 1, 0x74);
+	var = value >> 24;
+#else
 	var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDMON1 + 0x3));
+#endif
 #endif
 	var2 = (var >> 7) & ~0xFE;
 	pr_debug("[MUSB]addr: U3D_U2PHYDMON1 (0x77) (RX), value: %x - %x\n", var, var2);
@@ -726,15 +771,19 @@ ssize_t musb_rx_show(struct device *dev, struct device_attribute *attr, char *bu
 }
 ssize_t musb_uart_path_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	u8 var = 0;
+	u32 var = 0;
 
 	if (!dev) {
 		pr_debug("dev is null!!\n");
 		return 0;
 	}
 
+#ifdef CONFIG_PHY_MTK_SSUSB
+	var = usb_phy_get_uart_path();
+#else
 	var = DRV_Reg32(ap_uart0_base + 0x600);
-	pr_debug("[MUSB]addr: (GPIO Misc) 0x600, value: %x\n\n", DRV_Reg32(ap_uart0_base + 0x600));
+#endif
+	pr_debug("[MUSB]addr: (GPIO Misc) 0x600, value: %x\n\n", var);
 	sw_uart_path = var;
 
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var);

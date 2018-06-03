@@ -916,7 +916,7 @@ static int rt9467_set_usbsw_state(struct rt9467_info *info, int state)
 
 	if (info->usb_switch)
 		switch_set_state(info->usb_switch, state);
-#ifdef CONFIG_PROJECT_PHY
+#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_PHY_MTK_SSUSB)
 	else {
 		if (state == RT9467_USBSW_CHG)
 			Charger_Detect_Init();

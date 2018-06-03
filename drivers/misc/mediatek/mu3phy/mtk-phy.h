@@ -241,12 +241,16 @@ EXTERN PHY_UINT32 pwErrCnt1[CYCLE_COUNT_MAX][ERRCNT_MAX][ERRCNT_MAX];
 extern void phy_hsrx_set(void);
 
 /***********************************/
+#ifndef CONFIG_PHY_MTK_SSUSB
 extern void __iomem *ap_uart0_base;
 extern void __iomem *ap_pll_con0;
+#endif
+
 #ifdef CONFIG_FPGA_EARLY_PORTING
 extern void __iomem *i2c1_base;
 #endif
 
+#ifndef CONFIG_PHY_MTK_SSUSB
 enum {
 	USB_DPIDLE_ALLOWED = 0,
 	USB_DPIDLE_FORBIDDEN,
@@ -261,6 +265,7 @@ extern void usb_hal_dpidle_request(int mode);
 static inline void usb_hal_dpidle_request(int mode) {};
 static inline void enable_ipsleep_wakeup(void) { };
 static inline void disable_ipsleep_wakeup(void) { };
+#endif
 #endif
 /***********************************/
 #endif

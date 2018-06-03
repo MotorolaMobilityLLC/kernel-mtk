@@ -66,11 +66,11 @@ static inline int usb_mtkphy_host_mode(struct phy *phy, bool on)
 {
 	return -ENODEV;
 }
-static int usb_mtkphy_io_read(struct phy *phy, u32 reg)
+static inline int usb_mtkphy_io_read(struct phy *phy, int mode, u32 reg)
 {
 	return -ENODEV;
 }
-static int usb_mtkphy_io_write(struct phy *phy, u32 val, u32 reg)
+static inline int usb_mtkphy_io_write(struct phy *phy, int mode, u32 val, u32 reg)
 {
 	return -ENODEV;
 }
