@@ -204,7 +204,7 @@ int switch_dfps_ceiling(int fps)
 
 	if (fps <= CFG_MAX_FPS_LIMIT && fps >= CFG_MIN_FPS_LIMIT) {
 		ret = dfrc_set_kernel_policy(DFRC_DRV_API_LOADING,
-				((fps != 60 && fstb_enable) ? fps : -1),
+				((fps != 60) ? fps : -1),
 				DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
 
 		dfps_ceiling = fps;
