@@ -112,6 +112,7 @@ const struct of_device_id accdet_of_match[] = {
 	{ .compatible = "mediatek,mt6797-accdet", },
 	{ .compatible = "mediatek,elbrus-accdet", },
 	{ .compatible = "mediatek,pmic-accdet", },
+	{ .compatible = "mediatek,mt8167-accdet", },
 	{},
 };
 
