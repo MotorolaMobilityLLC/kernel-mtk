@@ -584,7 +584,7 @@ static void hp_main_output_ramp(bool up)
 		stage = up ? i : target - i;
 		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 8, 0x7 << 8);
 		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 11, 0x7 << 11);
-		usleep_range(100, 150);
+		udelay(600);
 	}
 }
 
@@ -596,7 +596,7 @@ static void hp_aux_feedback_loop_gain_ramp(bool up)
 	for (i = 0; i <= 0xf; i++) {
 		stage = up ? i : 0xf - i;
 		Ana_Set_Reg(AUDDEC_ANA_CON9, stage << 12, 0xf << 12);
-		usleep_range(100, 150);
+		udelay(600);
 	}
 }
 
@@ -1222,8 +1222,8 @@ static int get_dc_ramp_step(int gain)
 {
 	/* each step should be smaller than 100uV */
 	/* 1 pcm of dc compensation = 0.0808uV HP buffer voltage @ 0dB*/
-	/* 90uV / 0.0808uV(0dB) = 1113.73 */
-	int step_0db = 1114;
+	/* 80uV / 0.0808uV(0dB) = 990.099 */
+	int step_0db = 990;
 
 	/* scale for specific gain */
 	return step_0db * dBFactor_Nom[gain] / dBFactor_Den;
@@ -1281,7 +1281,7 @@ static int SetDcCompenSation(bool enable)
 				ramp_r = last_rch_comp_value + sign_rch * tmp_ramp;
 				set_rch_dc_compensation(ramp_r << 8);
 			}
-			udelay(100);
+			udelay(600);
 		}
 		set_lch_dc_compensation(lch_value << 8);
 		set_rch_dc_compensation(rch_value << 8);
@@ -1295,7 +1295,7 @@ static int SetDcCompenSation(bool enable)
 
 			if (tmp_ramp < abs_rch)
 				set_rch_dc_compensation(sign_rch * tmp_ramp << 8);
-			udelay(100);
+			udelay(600);
 		}
 		set_lch_dc_compensation(0);
 		set_rch_dc_compensation(0);
