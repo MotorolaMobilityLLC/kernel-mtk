@@ -1064,12 +1064,6 @@ static struct list_node *complete_erase_count(
 		return NULL;
 	}
 
-	if (info->types == NAND_FLASH_SLC ||
-			is_in_slc_block_range(info, cur)) {
-		*count = 1;
-		return cur;
-	}
-
 	work = get_list_work(cur);
 	total = get_list_item_index(head, cur) + 1;
 	/*process plane_num one time*/
