@@ -1334,7 +1334,10 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
-
+			if (larb >= SMI_LARB_NR) {
+				M4UMSG("larb %d is overflow\n", larb);
+				return -1;
+			}
 			orig_value =
 				m4uHw_get_field_by_mask(gLarbBaseAddr[larb], SMI_LARB_NON_SEC_CONx(larb_port),
 							F_SMI_NON_SEC_MMU_EN(1));
