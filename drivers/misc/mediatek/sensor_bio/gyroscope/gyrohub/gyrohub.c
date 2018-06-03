@@ -605,26 +605,26 @@ static int gpio_config(void)
 	struct pinctrl_state *pins_cfg;
 
 	if (gyroPltFmDev == NULL) {
-		GYRO_ERR("Cannot find gyro device!\n");
+		GYRO_PR_ERR("Cannot find gyro device!\n");
 		return 0;
 	}
 
 	pinctrl = devm_pinctrl_get(&gyroPltFmDev->dev);
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
-		GYRO_ERR("Cannot find gyro pinctrl!\n");
+		GYRO_PR_ERR("Cannot find gyro pinctrl!\n");
 		return ret;
 	}
 	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		GYRO_ERR("Cannot find gyro pinctrl default!\n");
+		GYRO_PR_ERR("Cannot find gyro pinctrl default!\n");
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
 	if (IS_ERR(pins_cfg)) {
 		ret = PTR_ERR(pins_cfg);
-		GYRO_ERR("Cannot find gyro pinctrl pin_cfg!\n");
+		GYRO_PR_ERR("Cannot find gyro pinctrl pin_cfg!\n");
 		return ret;
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);

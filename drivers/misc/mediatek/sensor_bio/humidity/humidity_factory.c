@@ -18,7 +18,7 @@ static int hmdy_factory_open(struct inode *inode, struct file *file)
 	file->private_data = hmdy_context_obj;
 
 	if (file->private_data == NULL) {
-		HMDY_ERR("null pointer!!\n");
+		HMDY_PR_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
 	return nonseekable_open(inode, file);
@@ -44,7 +44,7 @@ static long hmdy_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 
 	if (err) {
-		HMDY_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
+		HMDY_PR_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
 		return -EFAULT;
 	}
 
@@ -54,7 +54,7 @@ static long hmdy_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (cxt->hmdy_ctl.enable_nodata != NULL) {
 			err = cxt->hmdy_ctl.enable_nodata(1);
 			if (err < 0) {
-				HMDY_ERR("HUMIDITY_IOCTL_INIT fail!\n");
+				HMDY_PR_ERR("HUMIDITY_IOCTL_INIT fail!\n");
 				break;
 			}
 		}
@@ -63,7 +63,7 @@ static long hmdy_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (cxt->hmdy_data.get_raw_data != NULL) {
 			err = cxt->hmdy_data.get_raw_data(TYPE_PRESS, &dat);
 			if (err < 0) {
-				HMDY_ERR("HUMIDITY_GET_PRESS_DATA fail!\n");
+				HMDY_PR_ERR("HUMIDITY_GET_PRESS_DATA fail!\n");
 				break;
 			}
 		}
@@ -77,7 +77,7 @@ static long hmdy_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (cxt->hmdy_data.get_raw_data != NULL) {
 			err = cxt->hmdy_data.get_raw_data(TYPE_TEMP, &dat);
 			if (err < 0) {
-				HMDY_ERR("HUMIDITY_GET_PRESS_DATA fail!\n");
+				HMDY_PR_ERR("HUMIDITY_GET_PRESS_DATA fail!\n");
 				break;
 			}
 		}
@@ -89,7 +89,7 @@ static long hmdy_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		break;
 
 	default:
-		HMDY_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		HMDY_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		err = -ENOIOCTLCMD;
 		break;
 
@@ -120,7 +120,7 @@ int hmdy_factory_device_init(void)
 	}
 	error = misc_register(&hmdy_factory_device);
 	if (error) {
-		HMDY_ERR("hmdy_factory_device register failed\n");
+		HMDY_PR_ERR("hmdy_factory_device register failed\n");
 		error = -1;
 	}
 	return error;

@@ -46,9 +46,9 @@
 
 #define GEOFENCE_TAG          "<GEOFENCE> "
 #define GEOFENCE_FUN(f)       pr_debug(GEOFENCE_TAG"%s\n", __func__)
-#define GEOFENCE_ERR(fmt, args...)  pr_err(GEOFENCE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GEOFENCE_LOG(fmt, args...)  pr_err(GEOFENCE_TAG fmt, ##args)
-#define GEOFENCE_VER(fmt, args...)  pr_err(GEOFENCE_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
+#define GEOFENCE_PR_ERR(fmt, args...)  pr_err(GEOFENCE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define GEOFENCE_LOG(fmt, args...)  pr_debug(GEOFENCE_TAG fmt, ##args)
+#define GEOFENCE_VER(fmt, args...)  pr_debug(GEOFENCE_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
 
 struct geofence_database {
 	int source;

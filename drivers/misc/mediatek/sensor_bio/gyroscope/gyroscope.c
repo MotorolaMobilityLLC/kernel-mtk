@@ -44,7 +44,7 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	static int count;
 
 	if (obj == NULL) {
-		GYRO_ERR("NULL pointer\n");
+		GYRO_PR_ERR("NULL pointer\n");
 		return;
 	}
 
@@ -87,7 +87,7 @@ static void gyro_work_func(struct work_struct *work)
 	delay_ms = atomic_read(&cxt->delay);
 
 	if (cxt->gyro_data.get_data == NULL)
-		GYRO_ERR("gyro driver not register data path\n");
+		GYRO_PR_ERR("gyro driver not register data path\n");
 
 
 	cur_ns = getCurNS();
@@ -96,7 +96,7 @@ static void gyro_work_func(struct work_struct *work)
 	cxt->gyro_data.get_data(&x, &y, &z, &status);
 
 	if (err) {
-		GYRO_ERR("get gyro data fails!!\n");
+		GYRO_PR_ERR("get gyro data fails!!\n");
 		goto gyro_loop;
 	} else {
 		cxt->drv_data.x = x;
@@ -154,7 +154,7 @@ static struct gyro_context *gyro_context_alloc_object(void)
 
 	GYRO_LOG("gyro_context_alloc_object++++\n");
 	if (!obj) {
-		GYRO_ERR("Alloc gyro object error!\n");
+		GYRO_PR_ERR("Alloc gyro object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200); /*5Hz,  set work queue delay time 200ms */
@@ -210,7 +210,7 @@ static int gyro_enable_and_batch(void)
 		if (cxt->is_active_data == false && cxt->is_active_nodata == false) {
 			err = cxt->gyro_ctl.enable_nodata(0);
 			if (err) {
-				GYRO_ERR("gyro turn off power err = %d\n", err);
+				GYRO_PR_ERR("gyro turn off power err = %d\n", err);
 				return -1;
 			}
 			GYRO_LOG("gyro turn off power done\n");
@@ -227,7 +227,7 @@ static int gyro_enable_and_batch(void)
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->gyro_ctl.enable_nodata(1);
 			if (err) {
-				GYRO_ERR("gyro turn on power err = %d\n", err);
+				GYRO_PR_ERR("gyro turn on power err = %d\n", err);
 				return -1;
 			}
 			GYRO_LOG("gyro turn on power done\n");
@@ -244,7 +244,7 @@ static int gyro_enable_and_batch(void)
 		else
 			err = cxt->gyro_ctl.batch(0, cxt->delay_ns, 0);
 		if (err) {
-			GYRO_ERR("gyro set batch(ODR) err %d\n", err);
+			GYRO_PR_ERR("gyro set batch(ODR) err %d\n", err);
 			return -1;
 		}
 		GYRO_LOG("gyro set ODR, fifo latency done\n");
@@ -267,7 +267,7 @@ static int gyro_enable_and_batch(void)
 	}
 	/* just for debug, remove it when everything is ok */
 	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		GYRO_ERR("batch will call firstly in API1.3, do nothing\n");
+		GYRO_INFO("batch will call firstly in API1.3, do nothing\n");
 
 	return 0;
 }
@@ -296,7 +296,7 @@ static ssize_t gyro_store_enable_nodata(struct device *dev, struct device_attrib
 		cxt->enable = 0;
 		cxt->is_active_nodata = false;
 	} else {
-		GYRO_ERR(" gyro_store enable nodata cmd error !!\n");
+		GYRO_INFO(" gyro_store enable nodata cmd error !!\n");
 		err = -1;
 		goto err_out;
 	}
@@ -321,7 +321,7 @@ static ssize_t gyro_store_active(struct device *dev, struct device_attribute *at
 		cxt->enable = 0;
 		cxt->is_active_data = false;
 	} else {
-		GYRO_ERR(" gyro_store_active error !!\n");
+		GYRO_PR_ERR(" gyro_store_active error !!\n");
 		err = -1;
 		goto err_out;
 	}
@@ -357,7 +357,7 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4) {
-		GYRO_ERR("gyro_store_batch param error: err = %d\n", err);
+		GYRO_INFO("gyro_store_batch param error: err = %d\n", err);
 		return -1;
 	}
 
@@ -381,18 +381,18 @@ static ssize_t gyro_store_flush(struct device *dev, struct device_attribute *att
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		GYRO_ERR("gyro_store_flush param error: err = %d\n", err);
+		GYRO_INFO("gyro_store_flush param error: err = %d\n", err);
 
-	GYRO_ERR("gyro_store_flush param: handle %d\n", handle);
+	GYRO_LOG("gyro_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
 	if (cxt->gyro_ctl.flush != NULL)
 		err = cxt->gyro_ctl.flush();
 	else
-		GYRO_ERR("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
+		GYRO_INFO("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
 	if (err < 0)
-		GYRO_ERR("gyro enable flush err %d\n", err);
+		GYRO_INFO("gyro enable flush err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return count;
 }
@@ -417,7 +417,7 @@ static ssize_t gyro_store_cali(struct device *dev, struct device_attribute *attr
 
 	cali_buf = vzalloc(count);
 	if (cali_buf == NULL) {
-		GYRO_ERR("kzalloc fail\n");
+		GYRO_INFO("kzalloc fail\n");
 		return -EFAULT;
 	}
 	memcpy(cali_buf, buf, count);
@@ -427,9 +427,9 @@ static ssize_t gyro_store_cali(struct device *dev, struct device_attribute *attr
 	if (cxt->gyro_ctl.set_cali != NULL)
 		err = cxt->gyro_ctl.set_cali(cali_buf, count);
 	else
-		GYRO_ERR("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
+		GYRO_INFO("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
 	if (err < 0)
-		GYRO_ERR("gyro set cali err %d\n", err);
+		GYRO_INFO("gyro set cali err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	vfree(cali_buf);
 	return count;
@@ -503,7 +503,7 @@ int gyro_driver_add(struct gyro_init_info *obj)
 	int i = 0;
 
 	if (!obj) {
-		GYRO_ERR("gyro driver add fail, gyro_init_info is NULL\n");
+		GYRO_PR_ERR("gyro driver add fail, gyro_init_info is NULL\n");
 		return -1;
 	}
 
@@ -511,7 +511,7 @@ int gyro_driver_add(struct gyro_init_info *obj)
 		if ((i == 0) && (gyroscope_init_list[0] == NULL)) {
 			GYRO_LOG("register gyro driver for the first time\n");
 			if (platform_driver_register(&gyroscope_driver))
-				GYRO_ERR("failed to register gyro driver already exist\n");
+				GYRO_PR_ERR("failed to register gyro driver already exist\n");
 		}
 
 		if (gyroscope_init_list[i] == NULL) {
@@ -522,7 +522,7 @@ int gyro_driver_add(struct gyro_init_info *obj)
 	}
 
 	if (i >= MAX_CHOOSE_GYRO_NUM) {
-		GYRO_ERR("gyro driver add err\n");
+		GYRO_PR_ERR("gyro driver add err\n");
 		err =  -1;
 	}
 
@@ -566,7 +566,7 @@ static int gyro_misc_init(struct gyro_context *cxt)
 	cxt->mdev.fops = &gyroscope_fops;
 	err = sensor_attr_register(&cxt->mdev);
 	if (err)
-		GYRO_ERR("unable to register gyro misc device!!\n");
+		GYRO_PR_ERR("unable to register gyro misc device!!\n");
 
 	return err;
 }
@@ -631,13 +631,13 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 	/* add misc dev for sensor hal control cmd */
 	err = gyro_misc_init(gyro_context_obj);
 	if (err) {
-		GYRO_ERR("unable to register gyro misc device!!\n");
+		GYRO_INFO("unable to register gyro misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&gyro_context_obj->mdev.this_device->kobj,
 			&gyro_attribute_group);
 	if (err < 0) {
-		GYRO_ERR("unable to create gyro attribute file\n");
+		GYRO_INFO("unable to create gyro attribute file\n");
 		return -3;
 	}
 
@@ -661,7 +661,7 @@ static int check_repeat_data(int x, int y, int z)
 	x_t = x; y_t = y; z_t = z;
 
 	if (pc > 100) {
-		GYRO_ERR("Gyro sensor output repeat data\n");
+		GYRO_INFO("Gyro sensor output repeat data\n");
 		pc = 0;
 	}
 
@@ -686,7 +686,7 @@ int gyro_data_report(struct gyro_data *data)
 		mark_timestamp(ID_GYROSCOPE, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_ERR("failed due to event buffer full\n");
+		GYRO_PR_ERR("gyro_data_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -702,7 +702,7 @@ int gyro_bias_report(struct gyro_data *data)
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_ERR("failed due to event buffer full\n");
+		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -715,7 +715,7 @@ int gyro_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_ERR("failed due to event buffer full\n");
+		GYRO_PR_ERR("gyro_flush_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -729,14 +729,14 @@ static int gyro_probe(void)
 	gyro_context_obj = gyro_context_alloc_object();
 	if (!gyro_context_obj) {
 		err = -ENOMEM;
-		GYRO_ERR("unable to allocate devobj!\n");
+		GYRO_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 
 	/* init real gyroeleration driver */
 	err = gyro_real_driver_init(pltfm_dev);
 	if (err) {
-		GYRO_ERR("gyro real driver init fail\n");
+		GYRO_PR_ERR("gyro real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 	GYRO_LOG("----gyro_probe OK !!\n");
@@ -746,7 +746,7 @@ real_driver_init_fail:
 	kfree(gyro_context_obj);
 
 exit_alloc_data_failed:
-	GYRO_ERR("----gyro_probe fail !!!\n");
+	GYRO_PR_ERR("----gyro_probe fail !!!\n");
 	return err;
 }
 
@@ -758,7 +758,7 @@ static int gyro_remove(void)
 				&gyro_attribute_group);
 	err = sensor_attr_deregister(&gyro_context_obj->mdev);
 	if (err)
-		GYRO_ERR("misc_deregister fail: %d\n", err);
+		GYRO_PR_ERR("misc_deregister fail: %d\n", err);
 
 	kfree(gyro_context_obj);
 
@@ -770,7 +770,7 @@ static int __init gyro_init(void)
 	GYRO_LOG("gyro_init\n");
 
 	if (gyro_probe()) {
-		GYRO_ERR("failed to register gyro driver\n");
+		GYRO_PR_ERR("failed to register gyro driver\n");
 		return -ENODEV;
 	}
 

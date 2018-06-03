@@ -135,7 +135,7 @@ static int bmg_read_raw_data(struct bmg_gyro_data *obj, s16 data[BMG_AXES_NUM])
 	if (priv->power_mode == BMG_SUSPEND_MODE) {
 		err = bmg_set_powermode(NULL, (enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
 		if (err < 0) {
-			GYRO_ERR("set power mode failed, err = %d\n", err);
+			GYRO_PR_ERR("set power mode failed, err = %d\n", err);
 			return err;
 		}
 	}
@@ -144,7 +144,7 @@ static int bmg_read_raw_data(struct bmg_gyro_data *obj, s16 data[BMG_AXES_NUM])
 
 		err = BMP160_spi_read_bytes(NULL, BMI160_USER_DATA_8_GYR_X_LSB__REG, buf_tmp, 6);
 		if (err) {
-			GYRO_ERR("read gyro raw data failed.\n");
+			GYRO_PR_ERR("read gyro raw data failed.\n");
 			return err;
 		}
 		/* Data X */
@@ -266,7 +266,7 @@ static int bmg_reset_calibration(struct bmg_gyro_data *obj)
 #else
 	err = bmg_set_hw_offset(NULL, obj->offset);
 	if (err) {
-		GYRO_ERR("read hw offset failed, %d\n", err);
+		GYRO_PR_ERR("read hw offset failed, %d\n", err);
 		return err;
 	}
 #endif
@@ -293,7 +293,7 @@ static int bmg_read_calibration(struct bmg_gyro_data *obj,
 #else
 	err = bmg_get_hw_offset(NULL, obj->offset);
 	if (err) {
-		GYRO_ERR("read hw offset failed, %d\n", err);
+		GYRO_PR_ERR("read hw offset failed, %d\n", err);
 		return err;
 	}
 	mul = 1;		/* mul = sensor sensitivity / offset sensitivity */
@@ -320,7 +320,7 @@ static int bmg_write_calibration(struct bmg_gyro_data *obj, int dat[BMG_AXES_NUM
 	/*offset will be updated in obj->offset */
 	err = bmg_read_calibration(NULL, cali, raw);
 	if (err) {
-		GYRO_ERR("read offset fail, %d\n", err);
+		GYRO_PR_ERR("read offset fail, %d\n", err);
 		return err;
 	}
 	/* calculate the real offset expected by caller */
@@ -356,7 +356,7 @@ static int bmg_write_calibration(struct bmg_gyro_data *obj, int dat[BMG_AXES_NUM
 	/* HW calibration is under construction */
 	err = bmg_set_hw_offset(NULL, obj->offset);
 	if (err) {
-		GYRO_ERR("read hw offset failed.\n");
+		GYRO_PR_ERR("read hw offset failed.\n");
 		return err;
 	}
 #endif
@@ -374,7 +374,7 @@ static int bmg_get_chip_type(struct bmg_gyro_data *obj)
 	err = BMP160_spi_read_bytes(NULL, BMI160_USER_CHIP_ID__REG, &chip_id, 1);
 	err = BMP160_spi_read_bytes(NULL, BMI160_USER_CHIP_ID__REG, &chip_id, 1);
 	if (err != 0) {
-		GYRO_ERR("read chip id failed.\n");
+		GYRO_PR_ERR("read chip id failed.\n");
 		return err;
 	}
 	switch (chip_id) {
@@ -390,7 +390,7 @@ static int bmg_get_chip_type(struct bmg_gyro_data *obj)
 		break;
 	}
 	if (obj->sensor_type == INVALID_TYPE) {
-		GYRO_ERR("unknown gyroscope.\n");
+		GYRO_PR_ERR("unknown gyroscope.\n");
 		return -1;
 	}
 	return err;
@@ -414,7 +414,7 @@ static int bmg_set_powermode(struct bmg_gyro_data *obj, enum BMG_POWERMODE_ENUM 
 			actual_power_mode = CMD_PMU_GYRO_NORMAL;
 		} else {
 			err = -EINVAL;
-			GYRO_ERR("invalid power mode = %d\n", power_mode);
+			GYRO_PR_ERR("invalid power mode = %d\n", power_mode);
 			mutex_unlock(&obj->lock);
 			return err;
 		}
@@ -423,7 +423,7 @@ static int bmg_set_powermode(struct bmg_gyro_data *obj, enum BMG_POWERMODE_ENUM 
 		mdelay(55);
 	}
 	if (err < 0) {
-		GYRO_ERR("set power mode failed, err = %d, sensor name = %s\n",
+		GYRO_PR_ERR("set power mode failed, err = %d, sensor name = %s\n",
 			 err, obj->sensor_name);
 	} else {
 		obj->power_mode = power_mode;
@@ -457,7 +457,7 @@ static int bmg_set_range(struct bmg_gyro_data *obj, enum BMG_RANGE_ENUM range)
 			actual_range = BMI160_RANGE_125;
 		else {
 			err = -EINVAL;
-			GYRO_ERR("invalid range = %d\n", range);
+			GYRO_PR_ERR("invalid range = %d\n", range);
 			mutex_unlock(&obj->lock);
 			return err;
 		}
@@ -466,7 +466,7 @@ static int bmg_set_range(struct bmg_gyro_data *obj, enum BMG_RANGE_ENUM range)
 		err += BMP160_spi_write_bytes(NULL, BMI160_USER_GYR_RANGE__REG, &data, 1);
 		mdelay(1);
 		if (err < 0) {
-			GYRO_ERR("set range failed.\n");
+			GYRO_PR_ERR("set range failed.\n");
 		} else {
 			obj->range = range;
 			/* bitnum: 16bit */
@@ -514,7 +514,7 @@ static int bmg_set_datarate(struct bmg_gyro_data *obj, int datarate)
 		err += BMP160_spi_write_bytes(NULL, BMI160_USER_GYR_CONF_ODR__REG, &data, 1);
 	}
 	if (err < 0)
-		GYRO_ERR("set data rate failed.\n");
+		GYRO_PR_ERR("set data rate failed.\n");
 	else
 		obj->datarate = datarate;
 
@@ -550,7 +550,7 @@ static int bmg_init_client(struct bmg_gyro_data *obj, int reset_cali)
 		/*reset calibration only in power on */
 		err = bmg_reset_calibration(obj);
 		if (err < 0) {
-			GYRO_ERR("reset calibration failed.\n");
+			GYRO_PR_ERR("reset calibration failed.\n");
 			return err;
 		}
 	}
@@ -572,7 +572,7 @@ static int bmg_read_sensor_data(struct bmg_gyro_data *obj, char *buf, int bufsiz
 	obj = obj_data;
 	err = bmg_read_raw_data(NULL, databuf);
 	if (err) {
-		GYRO_ERR("bmg read raw data failed.\n");
+		GYRO_PR_ERR("bmg read raw data failed.\n");
 		return err;
 	}
 	/* compensate data */
@@ -675,14 +675,14 @@ static ssize_t store_cali_value(struct device_driver *ddri, const char *buf, siz
 	if (!strncmp(buf, "rst", 3)) {
 		err = bmg_reset_calibration(obj);
 		if (err)
-			GYRO_ERR("reset offset err = %d\n", err);
+			GYRO_PR_ERR("reset offset err = %d\n", err);
 	} else if (sscanf(buf, "0x%02X 0x%02X 0x%02X",
 					  &dat[BMG_AXIS_X], &dat[BMG_AXIS_Y], &dat[BMG_AXIS_Z]) == BMG_AXES_NUM) {
 		err = bmg_write_calibration(NULL, dat);
 		if (err)
-			GYRO_ERR("bmg write calibration failed, err = %d\n", err);
+			GYRO_PR_ERR("bmg write calibration failed, err = %d\n", err);
 	} else {
-		GYRO_ERR("invalid format\n");
+		GYRO_INFO("invalid format\n");
 	}
 	return count;
 }
@@ -723,9 +723,9 @@ static ssize_t store_firlen_value(struct device_driver *ddri, const char *buf, s
 	int firlen;
 
 	if (kstrtos32(buf, 10, &firlen) != 0) {
-		GYRO_ERR("invallid format\n");
+		GYRO_INFO("invallid format\n");
 	} else if (firlen > C_MAX_FIR_LENGTH) {
-		GYRO_ERR("exceeds maximum filter length\n");
+		GYRO_INFO("exceeds maximum filter length\n");
 	} else {
 		atomic_set(&obj->firlen, firlen);
 		if (firlen == NULL) {
@@ -757,7 +757,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	if (kstrtos32(buf, 10, &trace) == 0)
 		atomic_set(&obj->trace, trace);
 	else
-		GYRO_ERR("invalid content: '%s'\n", buf);
+		GYRO_INFO("invalid content: '%s'\n", buf);
 	return count;
 }
 
@@ -802,7 +802,7 @@ static ssize_t store_power_mode_value(struct device_driver *ddri, const char *bu
 		err = bmg_set_powermode(NULL, BMG_SUSPEND_MODE);
 
 	if (err < 0)
-		GYRO_ERR("set power mode failed.\n");
+		GYRO_PR_ERR("set power mode failed.\n");
 
 	return err;
 }
@@ -830,7 +830,7 @@ static ssize_t store_range_value(struct device_driver *ddri, const char *buf, si
 		    || (range == BMG_RANGE_125)) {
 			err = bmg_set_range(NULL, range);
 			if (err) {
-				GYRO_ERR("set range value failed.\n");
+				GYRO_PR_ERR("set range value failed.\n");
 				return err;
 			}
 		}
@@ -858,7 +858,7 @@ static ssize_t store_datarate_value(struct device_driver *ddri, const char *buf,
 
 	err = bmg_set_datarate(NULL, datarate);
 	if (err < 0) {
-		GYRO_ERR("set data rate failed.\n");
+		GYRO_PR_ERR("set data rate failed.\n");
 		return err;
 	}
 	return count;
@@ -910,7 +910,7 @@ static int bmg_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, bmg_attr_list[idx]);
 		if (err) {
-			GYRO_ERR("driver_create_file (%s) = %d\n",
+			GYRO_PR_ERR("driver_create_file (%s) = %d\n",
 				 bmg_attr_list[idx]->attr.name, err);
 			break;
 		}
@@ -941,7 +941,7 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			GYRO_ERR("set delay parameter error\n");
+			GYRO_PR_ERR("set delay parameter error\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -956,7 +956,7 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 			err = bmg_set_datarate(NULL, sample_delay);
 			if (err < 0)
-				GYRO_ERR("set delay parameter error\n");
+				GYRO_INFO("set delay parameter error\n");
 
 			if (value >= 40)
 				atomic_set(&priv->filter, 0);
@@ -974,7 +974,7 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 		break;
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			GYRO_ERR("enable sensor parameter error\n");
+			GYRO_PR_ERR("enable sensor parameter error\n");
 			err = -EINVAL;
 		} else {
 			/* value:[0--->suspend, 1--->normal] */
@@ -984,12 +984,12 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 			err = bmg_set_powermode(NULL, (enum BMG_POWERMODE_ENUM)(!!value));
 			if (err)
-				GYRO_ERR("set power mode failed, err = %d\n", err);
+				GYRO_PR_ERR("set power mode failed, err = %d\n", err);
 		}
 		break;
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			GYRO_ERR("get sensor data parameter error\n");
+			GYRO_PR_ERR("get sensor data parameter error\n");
 			err = -EINVAL;
 		} else {
 			gyroscope_data = (struct hwm_sensor_data *)buff_out;
@@ -997,13 +997,13 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
 			err = sscanf(buff, "%x %x %x", &gyroscope_data->values[0],
 			       &gyroscope_data->values[1], &gyroscope_data->values[2]);
 			if (err)
-				GYRO_ERR("get data failed, err = %d\n", err);
+				GYRO_INFO("get data failed, err = %d\n", err);
 			gyroscope_data->status = SENSOR_STATUS_ACCURACY_MEDIUM;
 			gyroscope_data->value_divide = DEGREE_TO_RAD;
 		}
 		break;
 	default:
-		GYRO_ERR("gyroscope operate function no this parameter %d\n", command);
+		GYRO_INFO("gyroscope operate function no this parameter %d\n", command);
 		err = -1;
 		break;
 	}
@@ -1016,7 +1016,7 @@ static int bmg_open(struct inode *inode, struct file *file)
 {
 	file->private_data = obj_data;
 	if (file->private_data == NULL) {
-		GYRO_ERR("file->private_data is null pointer.\n");
+		GYRO_INFO("file->private_data is null pointer.\n");
 		return -EINVAL;
 	}
 	return nonseekable_open(inode, file);
@@ -1045,7 +1045,7 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 	if (err) {
-		GYRO_ERR("access error: %08x, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
+		GYRO_PR_ERR("access error: %08x, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
 		return -EFAULT;
 	}
 	switch (cmd) {
@@ -1082,7 +1082,7 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			break;
 		}
 		if (atomic_read(&obj->suspend)) {
-			GYRO_ERR("perform calibration in suspend mode\n");
+			GYRO_INFO("perform calibration in suspend mode\n");
 			err = -EINVAL;
 		} else {
 			/* convert: degree/second -> LSB */
@@ -1114,7 +1114,7 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 		break;
 	default:
-		GYRO_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		GYRO_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		err = -ENOIOCTLCMD;
 		break;
 	}
@@ -1127,7 +1127,7 @@ static long compat_bmg_unlocked_ioctl(struct file *filp, unsigned int cmd, unsig
 	GYRO_FUN();
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		GYRO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		GYRO_PR_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
 		return -ENOTTY;
 	}
 
@@ -1142,7 +1142,7 @@ static long compat_bmg_unlocked_ioctl(struct file *filp, unsigned int cmd, unsig
 							  (unsigned long)compat_ptr(arg));
 		}
 	default:{
-			GYRO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+			GYRO_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 			return -ENOIOCTLCMD;
 		}
 	}
@@ -1173,13 +1173,13 @@ static int bmg_suspend(void)
 	int err = 0;
 
 	if (obj == NULL) {
-		GYRO_ERR("null pointer\n");
+		GYRO_INFO("null pointer\n");
 		return -EINVAL;
 	}
 	atomic_set(&obj->suspend, 1);
 	err = bmg_set_powermode(NULL, BMG_SUSPEND_MODE);
 	if (err)
-		GYRO_ERR("bmg set suspend mode failed.\n");
+		GYRO_PR_ERR("bmg set suspend mode failed.\n");
 
 	return err;
 }
@@ -1191,7 +1191,7 @@ static int bmg_resume(void)
 
 	err = bmg_init_client(obj, 0);
 	if (err) {
-		GYRO_ERR("initialize client failed, err = %d\n", err);
+		GYRO_PR_ERR("initialize client failed, err = %d\n", err);
 		return err;
 	}
 	atomic_set(&obj->suspend, 0);
@@ -1257,7 +1257,7 @@ static int bmi160_gyro_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatc
 
 	err = bmg_set_datarate(NULL, sample_delay);
 	if (err < 0)
-		GYRO_ERR("set data rate failed.\n");
+		GYRO_PR_ERR("set data rate failed.\n");
 	if (value >= 40)
 		atomic_set(&priv->filter, 0);
 	else {
@@ -1311,7 +1311,7 @@ static int bmi160_gyro_set_delay(u64 ns)
 
 	err = bmg_set_datarate(NULL, sample_delay);
 	if (err < 0)
-		GYRO_ERR("set data rate failed.\n");
+		GYRO_INFO("set data rate failed.\n");
 	if (value >= 40)
 		atomic_set(&priv->filter, 0);
 	else {
@@ -1334,7 +1334,7 @@ static int bmi160_gyro_get_data(int *x, int *y, int *z, int *status)
 
 	bmg_read_sensor_data(NULL, buff, BMG_BUFSIZE);
 	if (sscanf(buff, "%x %x %x", x, y, z) != 3)
-		GYRO_ERR("bmi160_gyro_get_data failed");
+		GYRO_PR_ERR("bmi160_gyro_get_data failed");
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	return 0;
 }
@@ -1346,12 +1346,12 @@ static int bmg_factory_enable_sensor(bool enabledisable, int64_t sample_periods_
 
 	err = bmi160_gyro_enable_nodata(enabledisable == true ? 1 : 0);
 	if (err) {
-		GYRO_ERR("%s enable failed!\n", __func__);
+		GYRO_PR_ERR("%s enable failed!\n", __func__);
 		return -1;
 	}
 	err = bmi160_gyro_batch(0, sample_periods_ms * 1000000, 0);
 	if (err) {
-		GYRO_ERR("%s set batch failed!\n", __func__);
+		GYRO_PR_ERR("%s set batch failed!\n", __func__);
 		return -1;
 	}
 	return 0;
@@ -1362,7 +1362,7 @@ static int bmg_factory_get_data(int32_t data[3], int *status)
 }
 static int bmg_factory_get_raw_data(int32_t data[3])
 {
-	GYRO_ERR("don't support bmg_factory_get_raw_data!\n");
+	GYRO_INFO("don't support bmg_factory_get_raw_data!\n");
 	return 0;
 }
 static int bmg_factory_enable_calibration(void)
@@ -1375,7 +1375,7 @@ static int bmg_factory_clear_cali(void)
 
 	err = bmg_reset_calibration(obj_data);
 	if (err) {
-		GYRO_ERR("bmg_ResetCalibration failed!\n");
+		GYRO_INFO("bmg_ResetCalibration failed!\n");
 		return -1;
 	}
 	return 0;
@@ -1390,7 +1390,7 @@ static int bmg_factory_set_cali(int32_t data[3])
 	cali[BMG_AXIS_Z] = data[2] * obj_data->sensitivity / BMI160_FS_250_LSB;
 	err = bmg_write_calibration(obj_data, cali);
 	if (err) {
-		GYRO_ERR("bmg_WriteCalibration failed!\n");
+		GYRO_INFO("bmg_WriteCalibration failed!\n");
 		return -1;
 	}
 	return 0;
@@ -1403,7 +1403,7 @@ static int bmg_factory_get_cali(int32_t data[3])
 
 	err = bmg_read_calibration(NULL, cali, raw_offset);
 	if (err) {
-		GYRO_ERR("bmg_ReadCalibration failed!\n");
+		GYRO_INFO("bmg_ReadCalibration failed!\n");
 		return -1;
 	}
 	data[0] = cali[BMG_AXIS_X] * BMI160_FS_250_LSB / obj_data->sensitivity;
@@ -1444,7 +1444,7 @@ static int bmg_spi_probe(struct spi_device *spi)
 
 	hw = get_gyro_dts_func(spi->dev.of_node, hw);
 	if (!hw)
-		GYRO_ERR("Gyro device tree configuration error.\n");
+		GYRO_PR_ERR("Gyro device tree configuration error.\n");
 
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
@@ -1454,7 +1454,7 @@ static int bmg_spi_probe(struct spi_device *spi)
 	obj->hw = hw;
 	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
 	if (err) {
-		GYRO_ERR("invalid direction: %d\n", obj->hw->direction);
+		GYRO_PR_ERR("invalid direction: %d\n", obj->hw->direction);
 		goto exit_hwmsen_get_convert_failed;
 	}
 	obj_data = obj;
@@ -1480,12 +1480,12 @@ static int bmg_spi_probe(struct spi_device *spi)
 	/* err = misc_register(&bmg_device); */
 	err = gyro_factory_device_register(&bmg_factory_device);
 	if (err) {
-		GYRO_ERR("misc device register failed, err = %d\n", err);
+		GYRO_PR_ERR("misc device register failed, err = %d\n", err);
 		goto exit_misc_device_register_failed;
 	}
 	err = bmg_create_attr(&bmi160_gyro_init_info.platform_diver_addr->driver);
 	if (err) {
-		GYRO_ERR("create attribute failed, err = %d\n", err);
+		GYRO_PR_ERR("create attribute failed, err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 	ctl.open_report_data = bmi160_gyro_open_report_data;
@@ -1496,7 +1496,7 @@ static int bmg_spi_probe(struct spi_device *spi)
 	ctl.is_support_batch = obj->hw->is_batch_supported;
 	err = gyro_register_control_path(&ctl);
 	if (err) {
-		GYRO_ERR("register gyro control path err\n");
+		GYRO_PR_ERR("register gyro control path err\n");
 		goto exit_create_attr_failed;
 	}
 
@@ -1504,13 +1504,13 @@ static int bmg_spi_probe(struct spi_device *spi)
 	data.vender_div = DEGREE_TO_RAD;
 	err = gyro_register_data_path(&data);
 	if (err) {
-		GYRO_ERR("gyro_register_data_path fail = %d\n", err);
+		GYRO_PR_ERR("gyro_register_data_path fail = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 #ifdef CONFIG_PM
 	err = register_pm_notifier(&pm_notifier_func);
 	if (err) {
-		GYRO_ERR("Failed to register PM notifier.\n");
+		GYRO_PR_ERR("Failed to register PM notifier.\n");
 		goto exit_create_attr_failed;
 	}
 #endif				/* CONFIG_PM */
@@ -1527,7 +1527,7 @@ exit_hwmsen_get_convert_failed:
 	kfree(obj);
 exit:
 	bmi160_gyro_init_flag = -1;
-	GYRO_ERR("err = %d\n", err);
+	GYRO_PR_ERR("err = %d\n", err);
 	return err;
 }
 
@@ -1537,7 +1537,7 @@ static int bmg_spi_remove(struct spi_device *spi)
 
 	err = bmg_delete_attr(&bmi160_gyro_init_info.platform_diver_addr->driver);
 	if (err)
-		GYRO_ERR("bmg_delete_attr failed, err = %d\n", err);
+		GYRO_PR_ERR("bmg_delete_attr failed, err = %d\n", err);
 
 	/* misc_deregister(&bmg_device); */
 	gyro_factory_device_deregister(&bmg_factory_device);
@@ -1575,7 +1575,7 @@ static int bmi160_gyro_remove(void)
 static int bmi160_gyro_local_init(struct platform_device *pdev)
 {
 	if (spi_register_driver(&bmg_spi_driver)) {
-		GYRO_ERR("add gyro driver error.\n");
+		GYRO_PR_ERR("add gyro driver error.\n");
 		return -1;
 	}
 	if (-1 == bmi160_gyro_init_flag)

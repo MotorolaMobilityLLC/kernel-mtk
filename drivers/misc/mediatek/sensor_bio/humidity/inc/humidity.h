@@ -38,8 +38,9 @@
 #include "sensor_attr.h"
 #include "sensor_event.h"
 #define HMDY_TAG					"<HUMIDITY> "
-#define HMDY_ERR(fmt, args...)	pr_err(HMDY_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define HMDY_PR_ERR(fmt, args...)	pr_err(HMDY_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define HMDY_VER(fmt, args...)	pr_debug(HMDY_TAG"%s: "fmt, __func__, ##args)
+#define HMDY_INFO(fmt, args...)	pr_info(HMDY_TAG"%s: "fmt, __func__, ##args)
 
 #define HMDY_LOGLEVEL 0
 

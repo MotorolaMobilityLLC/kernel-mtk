@@ -40,9 +40,9 @@
 
 #define FUSION_TAG					"<FUSION> "
 #define FUSION_FUN(f)				pr_debug(FUSION_TAG"%s\n", __func__)
-#define FUSION_ERR(fmt, args...)	pr_err(FUSION_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define FUSION_PR_ERR(fmt, args...)	pr_err(FUSION_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define FUSION_LOG(fmt, args...)	pr_debug(FUSION_TAG fmt, ##args)
-#define FUSION_VER(fmt, args...)	pr_err(FUSION_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define FUSION_VER(fmt, args...)	pr_debug(FUSION_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
 
 #define OP_FUSION_DELAY	0X01
 #define	OP_FUSION_ENABLE	0X02

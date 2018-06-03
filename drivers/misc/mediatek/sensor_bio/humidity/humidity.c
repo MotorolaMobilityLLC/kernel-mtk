@@ -38,7 +38,7 @@ static void hmdy_work_func(struct work_struct *work)
 	err = cxt->hmdy_data.get_data(&value, &status);
 
 	if (err) {
-		HMDY_ERR("get hmdy data fails!!\n");
+		HMDY_PR_ERR("get hmdy data fails!!\n");
 		goto hmdy_loop;
 	} else {
 		{
@@ -82,7 +82,7 @@ static struct hmdy_context *hmdy_context_alloc_object(void)
 
 	HMDY_LOG("hmdy_context_alloc_object++++\n");
 	if (!obj) {
-		HMDY_ERR("Alloc hmdy object error!\n");
+		HMDY_PR_ERR("Alloc hmdy object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);
@@ -116,7 +116,7 @@ static int hmdy_real_enable(int enable)
 				if (err) {
 					err = cxt->hmdy_ctl.enable_nodata(1);
 					if (err)
-						HMDY_ERR("hmdy enable(%d) err 3 timers = %d\n", enable, err);
+						HMDY_PR_ERR("hmdy enable(%d) err 3 timers = %d\n", enable, err);
 				}
 			}
 			HMDY_LOG("hmdy real enable\n");
@@ -127,7 +127,7 @@ static int hmdy_real_enable(int enable)
 		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
 			err = cxt->hmdy_ctl.enable_nodata(0);
 			if (err)
-				HMDY_ERR("hmdy enable(%d) err = %d\n", enable, err);
+				HMDY_PR_ERR("hmdy enable(%d) err = %d\n", enable, err);
 			HMDY_LOG("hmdy real disable\n");
 		}
 
@@ -142,7 +142,7 @@ static int hmdy_enable_data(int enable)
 
 	cxt = hmdy_context_obj;
 	if (cxt->hmdy_ctl.open_report_data == NULL) {
-		HMDY_ERR("no hmdy control path\n");
+		HMDY_PR_ERR("no hmdy control path\n");
 		return -1;
 	}
 
@@ -182,7 +182,7 @@ int hmdy_enable_nodata(int enable)
 
 	cxt = hmdy_context_obj;
 	if (cxt->hmdy_ctl.enable_nodata == NULL) {
-		HMDY_ERR("hmdy_enable_nodata:hmdy ctl path is NULL\n");
+		HMDY_PR_ERR("hmdy_enable_nodata:hmdy ctl path is NULL\n");
 		return -1;
 	}
 
@@ -222,7 +222,7 @@ static ssize_t hmdy_store_enable_nodata(struct device *dev, struct device_attrib
 	else if (!strncmp(buf, "0", 1))
 		hmdy_enable_nodata(0);
 	else
-		HMDY_ERR(" hmdy_store enable nodata cmd error !!\n");
+		HMDY_INFO(" hmdy_store enable nodata cmd error !!\n");
 	mutex_unlock(&hmdy_context_obj->hmdy_op_mutex);
 
 	return count;
@@ -246,7 +246,7 @@ static ssize_t hmdy_store_active(struct device *dev, struct device_attribute *at
 	else if (!strncmp(buf, "0", 1))
 		hmdy_enable_data(0);
 	else
-		HMDY_ERR(" hmdy_store_active error !!\n");
+		HMDY_INFO(" hmdy_store_active error !!\n");
 	mutex_unlock(&hmdy_context_obj->hmdy_op_mutex);
 	HMDY_LOG(" hmdy_store_active done\n");
 	return count;
@@ -282,7 +282,7 @@ static ssize_t hmdy_store_delay(struct device *dev, struct device_attribute *att
 	}
 	err = kstrtoint(buf, 10, &delay);
 	if (err != 0) {
-		HMDY_ERR("invalid format!!\n");
+		HMDY_PR_ERR("invalid format!!\n");
 		mutex_unlock(&hmdy_context_obj->hmdy_op_mutex);
 		return count;
 	}
@@ -333,7 +333,7 @@ static ssize_t hmdy_store_batch(struct device *dev, struct device_attribute *att
 				cxt->is_polling_run = true;
 		}
 	} else {
-		HMDY_ERR(" hmdy_store_batch error !!\n");
+		HMDY_INFO(" hmdy_store_batch error !!\n");
 	}
 	mutex_unlock(&hmdy_context_obj->hmdy_op_mutex);
 	HMDY_LOG(" hmdy_store_batch done: %d\n", cxt->is_batch_enable);
@@ -425,7 +425,7 @@ int hmdy_driver_add(struct hmdy_init_info *obj)
 
 	HMDY_FUN();
 	if (!obj) {
-		HMDY_ERR("HMDY driver add fail, hmdy_init_info is NULL\n");
+		HMDY_PR_ERR("HMDY driver add fail, hmdy_init_info is NULL\n");
 		return -1;
 	}
 
@@ -433,7 +433,7 @@ int hmdy_driver_add(struct hmdy_init_info *obj)
 		if (i == 0) {
 			HMDY_LOG("register humidity driver for the first time\n");
 			if (platform_driver_register(&humidity_driver))
-				HMDY_ERR("failed to register gensor driver already exist\n");
+				HMDY_PR_ERR("failed to register gensor driver already exist\n");
 		}
 
 		if (humidity_init_list[i] == NULL) {
@@ -443,7 +443,7 @@ int hmdy_driver_add(struct hmdy_init_info *obj)
 		}
 	}
 	if (i >= MAX_CHOOSE_HMDY_NUM) {
-		HMDY_ERR("HMDY driver add err\n");
+		HMDY_PR_ERR("HMDY driver add err\n");
 		err = -1;
 	}
 
@@ -488,7 +488,7 @@ static int hmdy_misc_init(struct hmdy_context *cxt)
 	cxt->mdev.fops = &humidity_fops;
 	err = sensor_attr_register(&cxt->mdev);
 	if (err)
-		HMDY_ERR("unable to register hmdy misc device!!\n");
+		HMDY_PR_ERR("unable to register hmdy misc device!!\n");
 	return err;
 }
 
@@ -551,12 +551,12 @@ int hmdy_register_control_path(struct hmdy_control_path *ctl)
 
 	err = hmdy_misc_init(hmdy_context_obj);
 	if (err) {
-		HMDY_ERR("unable to register hmdy misc device!!\n");
+		HMDY_PR_ERR("unable to register hmdy misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&hmdy_context_obj->mdev.this_device->kobj, &hmdy_attribute_group);
 	if (err < 0) {
-		HMDY_ERR("unable to create hmdy attribute file\n");
+		HMDY_PR_ERR("unable to create hmdy attribute file\n");
 		return -3;
 	}
 
@@ -584,17 +584,17 @@ static int hmdy_probe(struct platform_device *pdev)
 	hmdy_context_obj = hmdy_context_alloc_object();
 	if (!hmdy_context_obj) {
 		err = -ENOMEM;
-		HMDY_ERR("unable to allocate devobj!\n");
+		HMDY_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 	err = hmdy_real_driver_init();
 	if (err) {
-		HMDY_ERR("hmdy real driver init fail\n");
+		HMDY_PR_ERR("hmdy real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 	err = hmdy_factory_device_init();
 	if (err)
-		HMDY_ERR("hmdy factory device already registed\n");
+		HMDY_PR_ERR("hmdy factory device already registed\n");
 
 	HMDY_LOG("----hmdy_probe OK !!\n");
 	return 0;
@@ -617,7 +617,7 @@ static int hmdy_remove(struct platform_device *pdev)
 	sysfs_remove_group(&hmdy_context_obj->mdev.this_device->kobj, &hmdy_attribute_group);
 	err = sensor_attr_deregister(&hmdy_context_obj->mdev);
 	if (err)
-		HMDY_ERR("misc_deregister fail: %d\n", err);
+		HMDY_PR_ERR("misc_deregister fail: %d\n", err);
 	kfree(hmdy_context_obj);
 
 	return 0;
@@ -659,7 +659,7 @@ static int __init hmdy_init(void)
 	HMDY_FUN();
 
 	if (platform_driver_register(&hmdy_driver)) {
-		HMDY_ERR("failed to register hmdy driver\n");
+		HMDY_PR_ERR("failed to register hmdy driver\n");
 		return -ENODEV;
 	}
 

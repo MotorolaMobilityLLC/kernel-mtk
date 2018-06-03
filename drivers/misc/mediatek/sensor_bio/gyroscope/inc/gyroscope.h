@@ -47,9 +47,10 @@
 
 #define GYRO_TAG					"<GYROSCOPE> "
 #define GYRO_FUN(f)				pr_debug(GYRO_TAG"%s\n", __func__)
-#define GYRO_ERR(fmt, args...)	pr_err(GYRO_TAG fmt, ##args)
+#define GYRO_PR_ERR(fmt, args...)	pr_err(GYRO_TAG fmt, ##args)
 #define GYRO_LOG(fmt, args...)	pr_debug(GYRO_TAG fmt, ##args)
 #define GYRO_VER(fmt, args...)  pr_debug(GYRO_TAG fmt, ##args)
+#define GYRO_INFO(fmt, args...)  pr_info(GYRO_TAG fmt, ##args)
 
 #define OP_GYRO_DELAY	0X01
 #define	OP_GYRO_ENABLE	0X02
