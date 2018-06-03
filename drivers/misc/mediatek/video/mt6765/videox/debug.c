@@ -1200,6 +1200,12 @@ static void process_dbg_opt(const char *opt)
 	}
 	if (strncmp(opt, "check_clk", 9) == 0)
 		ddp_clk_check();
+	if (strncmp(opt, "round_corner_offset_debug:", 26) == 0) {
+		if (strncmp(opt + 26, "on", 2) == 0)
+			round_corner_offset_enable = 1;
+		else if (strncmp(opt + 26, "off", 3) == 0)
+			round_corner_offset_enable = 0;
+	}
 }
 
 static void process_dbg_cmd(char *cmd)

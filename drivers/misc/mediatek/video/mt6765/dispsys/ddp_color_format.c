@@ -322,6 +322,9 @@ unsigned int ufmt_is_old_fmt(unsigned int fmt)
 	case UFMT_PBGRA8888:
 		old_fmt = 1;
 		break;
+	case UFMT_RGBA4444:
+		old_fmt = 1;
+		break;
 	default:
 		old_fmt = 0;
 		break;

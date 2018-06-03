@@ -49,6 +49,7 @@ extern unsigned int FB_LAYER;	/* default LCD layer */
 extern unsigned int ap_fps_changed;
 extern unsigned int arr_fps_backup;
 extern unsigned int arr_fps_enable;
+extern unsigned int round_corner_offset_enable;
 
 struct DISP_LAYER_INFO {
 	unsigned int id;
@@ -312,6 +313,15 @@ int primary_display_get_height(void);
 int primary_display_get_virtual_width(void);
 int primary_display_get_virtual_height(void);
 int primary_display_get_bpp(void);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_corner_full_content(void);
+int primary_display_get_corner_pattern_height_bot(void);
+int primary_display_get_lcm_corner_en(void);
+int primary_display_get_corner_pattern_width(void);
+int primary_display_get_corner_pattern_height(void);
+void *primary_display_get_corner_pattern_top_va(void);
+void *primary_display_get_corner_pattern_bottom_va(void);
+#endif
 int primary_display_get_pages(void);
 int primary_display_set_overlay_layer(struct primary_disp_input_config *input);
 int primary_display_is_alive(void);

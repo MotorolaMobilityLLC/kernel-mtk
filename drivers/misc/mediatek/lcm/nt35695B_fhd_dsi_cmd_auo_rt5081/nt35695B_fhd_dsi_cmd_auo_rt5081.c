@@ -1357,6 +1357,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] =
 		MIPITX_PHY_LANE_1;
 #endif
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	params->round_corner_en = 1;
+	params->full_content = 0;
+	params->corner_pattern_width = 1080;
+	params->corner_pattern_height = 32;
+	params->corner_pattern_height_bot = 32;
+#endif
 }
 static void lcm_init_power(void)
 {
