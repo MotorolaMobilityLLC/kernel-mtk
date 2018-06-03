@@ -893,12 +893,6 @@ static void wdk_work_callback(struct work_struct *work)
 
 	cpu_hotplug_disable();
 
-#ifdef __ENABLE_WDT_AT_INIT__
-
-	start_kicker_thread_with_default_setting();
-
-#endif
-
 	wk_proc_init();
 	register_cpu_notifier(&cpu_nfb);
 
@@ -913,6 +907,11 @@ static void wdk_work_callback(struct work_struct *work)
 	}
 	mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
 	cpu_hotplug_enable();
+
+#ifdef __ENABLE_WDT_AT_INIT__
+	start_kicker_thread_with_default_setting();
+#endif
+
 	pr_info("[wdk]init_wk done late_initcall cpus_kick_bit=0x%x -----\n",
 		cpus_kick_bit);
 
