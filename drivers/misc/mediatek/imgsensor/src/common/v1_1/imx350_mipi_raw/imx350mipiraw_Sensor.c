@@ -982,12 +982,11 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 iI;
 
-	LOG_INF("[imx350MIPI]enter imx350MIPIGain2Reg function\n");
 	for (iI = 0; iI < IMX350MIPI_MaxGainIndex; iI++) {
 		if (gain <= imx350MIPI_sensorGainMapping[iI][0])
 			return imx350MIPI_sensorGainMapping[iI][1];
 	}
-	LOG_INF("exit imx350MIPIGain2Reg function\n");
+
 	return imx350MIPI_sensorGainMapping[iI - 1][1];
 }
 
