@@ -55,7 +55,7 @@ static int mtk_simple_regulator_set_voltage_sel(struct regulator_dev *rdev,
 	ret = mreg_desc->mreg_ctrl_ops->register_update_bits(mreg_desc->client,
 		mreg_desc->vol_reg, mreg_desc->vol_mask, data);
 
-	pr_debug("%s: (%s), ret = %d", __func__, rdev->desc->name, ret);
+	pr_debug("%s: (%s), ret = %d\n", __func__, rdev->desc->name, ret);
 	return ret;
 }
 
@@ -105,7 +105,7 @@ static int mtk_simple_regulator_is_enabled(struct regulator_dev *rdev)
 		return ret;
 
 	ret = (data & (mreg_desc->enable_bit)) ? 1 : 0;
-	pr_debug_ratelimited("%s: (%s), enabled = %d", __func__,
+	pr_debug_ratelimited("%s: (%s), enabled = %d\n", __func__,
 		rdev->desc->name, ret);
 	return ret;
 }
