@@ -672,6 +672,25 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 }
 #endif
 
+#ifndef CONFIG_ARM64
+static noinline int mt_mpu_secure_call(u32 function_id,
+	u32 arg0, u32 arg1, u32 arg2, u32 arg3)
+{
+	register u32 reg0 __asm__("r0") = function_id;
+	register u32 reg1 __asm__("r1") = arg0;
+	register u32 reg2 __asm__("r2") = arg1;
+	register u32 reg3 __asm__("r3") = arg2;
+	register u32 reg4 __asm__("r4") = arg3;
+	int ret = 0;
+
+	asm volatile (__SMC(0) : "+r"(reg0),
+		"+r"(reg1), "+r"(reg2), "+r"(reg3), "+r"(reg4));
+
+	ret = reg0;
+	return ret;
+}
+#endif
+
 /*
  * emi_mpu_set_region_protection: protect a region.
  * @start: start address of the region
@@ -685,12 +704,29 @@ unsigned long long end, int region, unsigned long long access_permission)
 {
 	int ret = 0;
 	unsigned long flags;
+#ifndef CONFIG_ARM64
+	unsigned int start_a32;
+	unsigned int end_a32;
+	unsigned int apc8, apc0;
 
+	start_a32 = start & 0xFFFFFFFF;
+	end_a32 = end & 0xFFFFFFFF;
+	apc8 = ((start >> 4) & 0xF0000000) |
+		((end >> 8) & 0x0F000000) |
+		((access_permission >> 32) & 0x00FFFFFF);
+	apc0 = (access_permission & 0x04FFFFFF) |
+		(((unsigned int) region & 0x1F) << 27);
+	emi_mpu_smc_read(EMI_MPU_DBG); /* dummy read for SMC call workaround */
+	spin_lock_irqsave(&emi_mpu_lock, flags);
+	emi_mpu_smc_set(start_a32, end_a32, apc8, apc0);
+	spin_unlock_irqrestore(&emi_mpu_lock, flags);
+#else
 	access_permission = access_permission & 0x00FFFFFF04FFFFFF;
-	access_permission = access_permission | (((unsigned long long)region & 0x1F)<<27);
+	access_permission = access_permission | (((unsigned long long)region & 0x1F) << 27);
 	spin_lock_irqsave(&emi_mpu_lock, flags);
 	emi_mpu_smc_set(start, end, access_permission);
 	spin_unlock_irqrestore(&emi_mpu_lock, flags);
+#endif
 
 	return ret;
 }
@@ -747,13 +783,13 @@ static ssize_t emi_mpu_store(struct device_driver *driver,
 const char *buf, size_t count)
 {
 	int i;
-	unsigned int start_addr;
-	unsigned int end_addr;
-	unsigned int region;
+	unsigned long long start_addr;
+	unsigned long long end_addr;
+	unsigned long region;
 	unsigned long long access_permission;
 	char *command;
 	char *ptr;
-	char *token[5];
+	char *token[6];
 	ssize_t ret;
 
 	if ((strlen(buf) + 1) > MAX_EMI_MPU_STORE_CMD_LEN) {
@@ -786,20 +822,20 @@ const char *buf, size_t count)
 		 * region = simple_strtoul(token[3], &token[3], 16);
 		 * access_permission = simple_strtoul(token[4], &token[4], 16);
 		 */
-		ret = kstrtoul(token[1], 16, (unsigned long *)&start_addr);
+		ret = kstrtoull(token[1], 16, &start_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse start_addr");
-		ret = kstrtoul(token[2], 16, (unsigned long *)&end_addr);
+		ret = kstrtoull(token[2], 16, &end_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse end_addr");
 		ret = kstrtoul(token[3], 10, (unsigned long *)&region);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse region");
-		ret = kstrtoull(token[4], 16, (unsigned long long *)&access_permission);
+		ret = kstrtoull(token[4], 16, &access_permission);
 		if (ret != 0)
 			pr_err("kstrtoull fails to parse access_permission");
 		emi_mpu_set_region_protection(start_addr, end_addr, region, access_permission);
-		pr_err("Set EMI_MPU: start: 0x%x, end: 0x%x, region: %d, permission: 0x%llx.\n",
+		pr_err("Set EMI_MPU: start: 0x%llx, end: 0x%llx, region: %lx, permission: 0x%llx.\n",
 		       start_addr, end_addr, region, access_permission);
 	} else if (!strncmp(buf, DIS_MPU_STR, strlen(DIS_MPU_STR))) {
 		i = 0;
@@ -814,10 +850,10 @@ const char *buf, size_t count)
 		 * end_addr = simple_strtoul(token[2], &token[2], 16);
 		 * region = simple_strtoul(token[3], &token[3], 16);
 		 */
-		ret = kstrtoul(token[1], 16, (unsigned long *)&start_addr);
+		ret = kstrtoull(token[1], 16, &start_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse start_addr");
-		ret = kstrtoul(token[2], 16, (unsigned long *)&end_addr);
+		ret = kstrtoull(token[2], 16, &end_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse end_addr");
 		ret = kstrtoul(token[3], 10, (unsigned long *)&region);
@@ -831,7 +867,7 @@ const char *buf, size_t count)
 			NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION,
 			NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION));
 
-		pr_err("set EMI MPU: start: 0x%x, end: 0x%x, region: %d, permission: 0x%llx\n",
+		pr_err("set EMI MPU: start: 0x%x, end: 0x%x, region: %lx, permission: 0x%llx\n",
 		0, 0, region,
 		SET_ACCESS_PERMISSON(UNLOCK,
 			NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION,
