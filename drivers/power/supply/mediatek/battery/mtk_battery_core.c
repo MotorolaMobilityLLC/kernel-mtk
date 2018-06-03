@@ -416,6 +416,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.nafg_time_setting = NAFG_TIME_SETTING;
 	fg_cust_data.nafg_ratio = NAFG_RATIO;
 	fg_cust_data.nafg_ratio_en = NAFG_RATIO_EN;
+	fg_cust_data.nafg_ratio_tmp_thr = NAFG_RATIO_TMP_THR;
 	fg_cust_data.nafg_resistance = NAFG_RESISTANCE;
 
 	/* ADC resistor  */
