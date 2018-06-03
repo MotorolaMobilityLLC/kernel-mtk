@@ -1662,6 +1662,8 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 		else
 			DISPWARN("RSZ feature on, but no resizing rule be implement.\n");
 	} else {
+		rollback_all_resize_layer_to_GPU(&layering_info, HRT_PRIMARY);
+		rollback_all_resize_layer_to_GPU(&layering_info, HRT_SECONDARY);
 		l_rule_info->scale_rate = HRT_SCALE_NONE;
 	}
 
