@@ -132,6 +132,7 @@ struct RSC_Config {
 	unsigned int RSC_RAND_PNLTY_GAIN_CTRL0;
 	unsigned int RSC_RAND_PNLTY_GAIN_CTRL1;
 #endif
+	unsigned int RSC_STA_0;
 };
 
 /*

@@ -63,6 +63,7 @@ struct engine_ops {
 	int (*req_enque_cb)(struct frame *frames, void *req);
 	int (*req_deque_cb)(struct frame *frames, void *req);
 	int (*frame_handler)(struct frame *frame);
+	int (*req_feedback_cb)(struct frame *frame);
 };
 
 struct engine_requests {
