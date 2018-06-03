@@ -23,8 +23,8 @@
 
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_internal.h"
-#include "mtk_static_power.h"
-#include "mtk_unified_power.h"
+#include "mtk_common_static_power.h"
+#include "mtk_upower.h"
 #ifdef CONFIG_THERMAL
 #include "mach/mtk_thermal.h"
 #endif

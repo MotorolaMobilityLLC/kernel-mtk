@@ -14,9 +14,7 @@
 ccflags-y +=	\
 	-I$(PPM_ROOT_DIR)/inc \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v2/inc	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/include	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v1
+	-I$(srctree)/drivers/misc/mediatek/base/power/include
 
 # platform dependent functions
 obj-y += mtk_ppm_platform.o
