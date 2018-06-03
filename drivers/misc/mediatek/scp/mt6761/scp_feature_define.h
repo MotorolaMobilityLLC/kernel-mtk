@@ -33,7 +33,7 @@
 
 /* emi mpu define*/
 #define ENABLE_SCP_EMI_PROTECTION       (0)
-#define MPU_REGION_ID_SCP_SMEM          (27)
+#define MPU_REGION_ID_SCP_SMEM          (6)
 
 /* scp feature ID list */
 enum feature_id {
