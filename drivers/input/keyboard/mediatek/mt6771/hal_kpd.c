@@ -424,8 +424,10 @@ void mt_eint_register(void)
 	if (!node)
 		kpd_print("can't find compatible node\n");
 	else {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		gpio_set_debounce(ints[0], ints[1]);
+		if (of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints)) == 0) {
+			gpio_set_debounce(ints[0], ints[1]);
+			kpd_print("debounce: %d-%d\n", ints[0], ints[1]);
+		}
 
 		mrdump_ext_rst_irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(mrdump_ext_rst_irq, mrdump_rst_eint_handler,
