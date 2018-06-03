@@ -224,6 +224,7 @@ static void android_work(struct work_struct *data)
 		return;
 	}
 
+	/* be aware this could not be used in non-sleep context */
 	if (usb_cable_connected())
 		is_hwconnected = true;
 	else
