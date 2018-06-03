@@ -806,25 +806,6 @@ void cmdq_virtual_print_status_seq_clock(struct seq_file *m)
 #endif
 }
 
-void cmdq_virtual_enable_common_clock_locked(bool enable)
-{
-#ifdef CMDQ_PWR_AWARE
-	if (enable) {
-		CMDQ_VERBOSE("[CLOCK] Enable SMI & LARB0 Clock\n");
-		/* Use SMI clock API */
-#ifdef CMDQ_CONFIG_SMI
-		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "CMDQ", true);
-#endif
-	} else {
-		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
-		/* disable, reverse the sequence */
-#ifdef CMDQ_CONFIG_SMI
-		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "CMDQ", true);
-#endif
-	}
-#endif				/* CMDQ_PWR_AWARE */
-}
-
 void cmdq_virtual_enable_gce_clock_locked(bool enable)
 {
 #ifdef CMDQ_PWR_AWARE
@@ -1094,8 +1075,6 @@ void cmdq_virtual_function_setting(void)
 	pFunc->moduleEntrySuspend = cmdq_virtual_can_module_entry_suspend;
 	pFunc->printStatusClock = cmdq_virtual_print_status_clock;
 	pFunc->printStatusSeqClock = cmdq_virtual_print_status_seq_clock;
-	pFunc->enableCommonClockLocked =
-		cmdq_virtual_enable_common_clock_locked;
 	pFunc->enableGCEClockLocked = cmdq_virtual_enable_gce_clock_locked;
 	pFunc->parseErrorModule =
 		cmdq_virtual_parse_error_module_by_hwflag_impl;
