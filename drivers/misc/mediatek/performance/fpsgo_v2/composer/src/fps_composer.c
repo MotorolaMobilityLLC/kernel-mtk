@@ -625,6 +625,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 	f_render->render_method = render_method;
 	if (render) {
 		f_render->self_time = frame_time;
+		f_render->Q2Q_time = frame_time;
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
 			f_render->render_method, t_frame_done);
 	}
