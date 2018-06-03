@@ -24,7 +24,7 @@ enum fbt_cpu_freq_bound_type {
 	FBT_CPU_RESCUE_BOUND,
 };
 
-void fbt_set_boost_value(int cluster, unsigned int base_blc);
+void fbt_set_boost_value(unsigned int base_blc);
 void fbt_init_cpuset_freq_bound_table(void);
 int fbt_is_mips_different(void);
 int fbt_get_L_min_ceiling(void);
