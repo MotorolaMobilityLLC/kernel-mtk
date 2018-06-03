@@ -321,12 +321,12 @@ static int _hps_task_main(void *data)
 	int idx;
 	unsigned int total_big_task = 0;
 	unsigned int total_hvy_task = 0;
-	unsigned int cpu_onoff = 0;
 #endif
 	void (*algo_func_ptr)(void);
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	unsigned int cpu, first_cpu, i;
+	unsigned int cpu_onoff = 0;
 	ktime_t enter_ktime;
 
 	enter_ktime = ktime_get();
