@@ -15,9 +15,7 @@
 #include "disp_helper.h"
 #include <linux/kernel.h> /* printk */
 
-#if 0
 static struct pinctrl *this_pctrl; /* static pinctrl instance */
-#endif
 
 /* DTS state mapping name */
 static const char *this_state_name[DTS_GPIO_STATE_MAX] = {
@@ -36,7 +34,7 @@ static const char *this_state_name[DTS_GPIO_STATE_MAX] = {
 static long _set_state(const char *name)
 {
 	long ret = 0;
-#if 0
+
 	struct pinctrl_state *pState = 0;
 
 	if (!this_pctrl) {
@@ -54,14 +52,12 @@ static long _set_state(const char *name)
 	/* select state! */
 	pinctrl_select_state(this_pctrl, pState);
 exit:
-#endif
 	return ret; /* Good! */
 }
 
 long disp_dts_gpio_init(struct platform_device *pdev)
 {
 	long ret = 0;
-#if 0
 	struct pinctrl *pctrl;
 
 	/* retrieve */
@@ -74,7 +70,6 @@ long disp_dts_gpio_init(struct platform_device *pdev)
 
 	this_pctrl = pctrl;
 exit:
-#endif
 	return ret;
 }
 
