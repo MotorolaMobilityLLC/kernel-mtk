@@ -23,6 +23,7 @@
 #include <mtk_musb.h>
 #include <musb_core.h>
 #include "usb20.h"
+#include "mtk_devinfo.h"
 
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
@@ -69,97 +70,15 @@ void usb_phy_context_restore(void)
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool usb_phy_check_in_uart_mode(void)
 {
-	UINT8 usb_port_mode;
-
-	usb_enable_clock(true);
-	udelay(50);
-
-	usb_port_mode = USB_PHY_Read_Register8(0x6B);
-	usb_enable_clock(false);
-
-	if ((usb_port_mode == 0x5C) || (usb_port_mode == 0x5E))
-		return true;
-	else
-		return false;
+	return false;
 }
 
 void usb_phy_switch_to_uart(void)
 {
-	int var;
-#if 0
-	/* SW disconnect */
-	var = USB_PHY_Read_Register8(0x68);
-	DBG(0, "[MUSB]addr: 0x68, value: %x\n", var);
-	USB_PHY_Write_Register8(0x15, 0x68);
-	DBG(0, "[MUSB]addr: 0x68, value after: %x\n", USB_PHY_Read_Register8(0x68));
-
-	var = USB_PHY_Read_Register8(0x6A);
-	DBG(0, "[MUSB]addr: 0x6A, value: %x\n", var);
-	USB_PHY_Write_Register8(0x0, 0x6A);
-	DBG(0, "[MUSB]addr: 0x6A, value after: %x\n", USB_PHY_Read_Register8(0x6A));
-	/* SW disconnect */
-#endif
-	/* Set ru_uart_mode to 2'b01 */
-	var = USB_PHY_Read_Register8(0x6B);
-	DBG(0, "[MUSB]addr: 0x6B, value: %x\n", var);
-	USB_PHY_Write_Register8(var | 0x7C, 0x6B);
-	DBG(0, "[MUSB]addr: 0x6B, value after: %x\n", USB_PHY_Read_Register8(0x6B));
-
-	/* Set RG_UART_EN to 1 */
-	var = USB_PHY_Read_Register8(0x6E);
-	DBG(0, "[MUSB]addr: 0x6E, value: %x\n", var);
-	USB_PHY_Write_Register8(var | 0x07, 0x6E);
-	DBG(0, "[MUSB]addr: 0x6E, value after: %x\n", USB_PHY_Read_Register8(0x6E));
-
-	/* Set RG_USB20_DM_100K_EN to 1 */
-	var = USB_PHY_Read_Register8(0x22);
-	DBG(0, "[MUSB]addr: 0x22, value: %x\n", var);
-	USB_PHY_Write_Register8(var | 0x02, 0x22);
-	DBG(0, "[MUSB]addr: 0x22, value after: %x\n", USB_PHY_Read_Register8(0x22));
-
-	var = DRV_Reg8(UART1_BASE + 0x90);
-	DBG(0, "[MUSB]addr: 0x11002090 (UART1), value: %x\n", var);
-	DRV_WriteReg8(UART1_BASE + 0x90, var | 0x01);
-	DBG(0, "[MUSB]addr: 0x11002090 (UART1), value after: %x\n\n", DRV_Reg8(UART1_BASE + 0x90));
-
-	/* SW disconnect */
-	mt_usb_disconnect();
 }
 
 void usb_phy_switch_to_usb(void)
 {
-	int var;
-	/* Set RG_UART_EN to 0 */
-	var = USB_PHY_Read_Register8(0x6E);
-	DBG(0, "[MUSB]addr: 0x6E, value: %x\n", var);
-	USB_PHY_Write_Register8(var & ~0x01, 0x6E);
-	DBG(0, "[MUSB]addr: 0x6E, value after: %x\n", USB_PHY_Read_Register8(0x6E));
-
-	/* Set RG_USB20_DM_100K_EN to 0 */
-	var = USB_PHY_Read_Register8(0x22);
-	DBG(0, "[MUSB]addr: 0x22, value: %x\n", var);
-	USB_PHY_Write_Register8(var & ~0x02, 0x22);
-	DBG(0, "[MUSB]addr: 0x22, value after: %x\n", USB_PHY_Read_Register8(0x22));
-
-	var = DRV_Reg8(UART1_BASE + 0x90);
-	DBG(0, "[MUSB]addr: 0x11002090 (UART1), value: %x\n", var);
-	DRV_WriteReg8(UART1_BASE + 0x90, var & ~0x01);
-	DBG(0, "[MUSB]addr: 0x11002090 (UART1), value after: %x\n\n", DRV_Reg8(UART1_BASE + 0x90));
-#if 0
-	/* SW connect */
-	var = USB_PHY_Read_Register8(0x68);
-	DBG(0, "[MUSB]addr: 0x68, value: %x\n", var);
-	USB_PHY_Write_Register8(0x0, 0x68);
-	DBG(0, "[MUSB]addr: 0x68, value after: %x\n", USB_PHY_Read_Register8(0x68));
-
-	var = USB_PHY_Read_Register8(0x6A);
-	DBG(0, "[MUSB]addr: 0x6A, value: %x\n", var);
-	USB_PHY_Write_Register8(0x0, 0x6A);
-	DBG(0, "[MUSB]addr: 0x6A, value after: %x\n", USB_PHY_Read_Register8(0x6A));
-	/* SW connect */
-#endif
-	/* SW connect */
-	mt_usb_connect();
 }
 #endif
 
@@ -590,6 +509,8 @@ void usb_phy_savecurrent(void)
 /* M17_USB_PWR Sequence 20160603.xls */
 void usb_phy_recover(void)
 {
+	unsigned int efuse_val = 0;
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
 		DBG(0, "At UART mode. No usb_phy_recover\n");
@@ -674,6 +595,14 @@ void usb_phy_recover(void)
 	USBPHY_SET32(0x6C, (0x3F<<8));
 
 	hs_slew_rate_cal();
+
+	/* M_ANALOG8[4:0] => RG_USB20_INTR_CAL[4:0] */
+	efuse_val = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
+	if (efuse_val) {
+		DBG(0, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n", efuse_val);
+		USBPHY_CLR32(0x04, (0x1F<<19));
+		USBPHY_SET32(0x04, (efuse_val<<19));
+	}
 
 	/* disc threshold to max, RG_USB20_DISCTH[7:4], dft:1000, MAX:1111 */
 	USBPHY_SET32(0x18, (0xf0<<0));
