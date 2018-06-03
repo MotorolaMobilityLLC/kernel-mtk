@@ -52,10 +52,8 @@
 
 /* Debug message event */
 #define DEVAPC_LOG_NONE        0x00000000
-#define DEVAPC_LOG_ERR         0x00000001
-#define DEVAPC_LOG_WARN        0x00000002
-#define DEVAPC_LOG_INFO        0x00000004
-#define DEVAPC_LOG_DBG         0x00000008
+#define DEVAPC_LOG_INFO        0x00000001
+#define DEVAPC_LOG_DBG         0x00000002
 
 #define DEVAPC_LOG_LEVEL      (DEVAPC_LOG_DBG)
 
@@ -65,26 +63,18 @@
 			pr_debug(fmt, ##args); \
 		} else if (DEVAPC_LOG_LEVEL & DEVAPC_LOG_INFO) { \
 			pr_info(fmt, ##args); \
-		} else if (DEVAPC_LOG_LEVEL & DEVAPC_LOG_WARN) { \
-			pr_warn(fmt, ##args); \
-		} else if (DEVAPC_LOG_LEVEL & DEVAPC_LOG_ERR) { \
-			pr_err(fmt, ##args); \
 		} \
 	} while (0)
 
 
-#define DEVAPC_VIO_LEVEL      (DEVAPC_LOG_ERR)
+#define DEVAPC_VIO_LEVEL      (DEVAPC_LOG_INFO)
 
 #define DEVAPC_VIO_MSG(fmt, args...) \
 	do {    \
 		if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_DBG) { \
-			pr_debug(fmt, ##args); \
+			pr_debug_ratelimited(fmt, ##args); \
 		} else if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_INFO) { \
-			pr_info(fmt, ##args); \
-		} else if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_WARN) { \
-			pr_warn(fmt, ##args); \
-		} else if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_ERR) { \
-			pr_err(fmt, ##args); \
+			pr_info_ratelimited(fmt, ##args); \
 		} \
 	} while (0)
 
@@ -560,21 +550,21 @@ static void start_devapc(void)
 
 	/* SMC call is called to set Device APC in LK instead */
 
-	pr_err("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+	DEVAPC_MSG("[DEVAPC] INFRA VIO_MASK 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
 		readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(4)), readl(DEVAPC_PD_INFRA_VIO_MASK(5)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(6)), readl(DEVAPC_PD_INFRA_VIO_MASK(7)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(8)), readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 
-	pr_err("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+	DEVAPC_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
 		readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
-	pr_err("[DEVAPC] Clear INFRA VIO_STA and unmask INFRA VIO_MASK...\n");
+	DEVAPC_MSG("[DEVAPC] Clear INFRA VIO_STA and unmask INFRA VIO_MASK...\n");
 
 	for (i = 0; i < ARRAY_SIZE(devapc_infra_devices); i++)
 		if (true == devapc_infra_devices[i].enable_vio_irq) {
@@ -582,14 +572,14 @@ static void start_devapc(void)
 			unmask_infra_module_irq(i);
 		}
 
-	pr_err("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+	DEVAPC_MSG("[DEVAPC] INFRA VIO_MASK 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
 		readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(4)), readl(DEVAPC_PD_INFRA_VIO_MASK(5)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(6)), readl(DEVAPC_PD_INFRA_VIO_MASK(7)),
 		readl(DEVAPC_PD_INFRA_VIO_MASK(8)), readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 
-	pr_err("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+	DEVAPC_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x 1:0x%x 2:0x%x 3:0x%x 4:0x%x 5:0x%x 6:0x%x 7:0x%x 8:0x%x 9:0x%x\n",
 		readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
 		readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
@@ -816,10 +806,10 @@ static ssize_t devapc_dbg_write(struct file *file, const char __user *buffer, si
 
 	if (input_type == DAPC_INPUT_TYPE_DEBUG_ON) {
 		enable_dynamic_one_core_violation_debug = 1;
-		pr_err("[DEVAPC] One-Core Debugging: Enabled\n");
+		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Enabled\n");
 	} else if (input_type == DAPC_INPUT_TYPE_DEBUG_OFF) {
 		enable_dynamic_one_core_violation_debug = 0;
-		pr_err("[DEVAPC] One-Core Debugging: Disabled\n");
+		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Disabled\n");
 	}
 
 	return count;
