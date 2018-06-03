@@ -47,13 +47,14 @@ enum {
 	PWM_DATA_WIDTH,
 	PWM_THRESH,
 	PWM_SEND_WAVENUM,
-	PWM_VALID
+	PWM_VALID,
+	PWM_BUF_BASE_ADDR2
 } PWM_REG_OFF;
 
 
 #ifdef CONFIG_OF
 unsigned long PWM_register[PWM_MAX] = {};
-void __iomem *pwm_pericfg_base;
+void __iomem *pwm_infracfg_base;
 #endif
 
 /**************************************************************/
@@ -85,6 +86,7 @@ struct clk *pwm_clk[PWM_CLK_NUM];
 void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 {
 	int clk_en_ret = 0;
+	int hclk_en = 0;
 
 	/* Set pwm_main , pwm_hclk_main(for memory and random mode) */
 	if (0 == (*power_flag)) {
@@ -93,7 +95,14 @@ void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 		if (clk_en_ret) {
 			pr_debug("pwm get clk err ret:%d, clk_pwm_main:%p\n",
 				clk_en_ret, pwm_clk[PWM_CLK]);
-		} else
+		}
+		hclk_en = clk_prepare_enable(pwm_clk[PWM_HCLK]);
+		if (hclk_en) {
+			pr_debug("pwm get hclk err ret:%d, clk_pwm_main:%p\n",
+				hclk_en, pwm_clk[PWM_HCLK]);
+		}
+
+		if (!clk_en_ret && !hclk_en)
 			set_bit(PWM_CLK, power_flag);
 	}
 	/* Set pwm_no clk */
@@ -121,6 +130,7 @@ void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 	pr_debug("[PWM][CCF]disable clk_pwm :%p\n", pwm_clk[PWM_CLK]);
 	if (test_bit(PWM_CLK, power_flag)) {
 		clk_disable_unprepare(pwm_clk[PWM_CLK]);
+		clk_disable_unprepare(pwm_clk[PWM_HCLK]);
 		clear_bit(PWM_CLK, power_flag);
 	}
 }
@@ -406,34 +416,19 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr = 0;
-	int addr_shift_ctrl = 0;
-	/*
-	 * 0: Register access for 0~4G
-	 * 1: DDR 1~2 Gbytes access (We don't use)
-	 * 2: DDR 2~3 Gbytes access (as above)
-	 * 3: DDR 3~4 Gbytes access (as above)
-	 * ----------------------------------
-	 * 4: DDR 4~5 Gbytes access (We use it)
-	 * ..
-	 * 8: DDR 8~9 Gbytes access (as above)
-	 */
+	unsigned long reg_buff_addr2 = 0;
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+	reg_buff_addr2 = PWM_register[pwm_no] + 4 * PWM_BUF_BASE_ADDR2;
+
 	if (addr > 0xFFFFFFFF) {
-		/* PERI_8GB_DDR_EN should always be enable so that
-		 * PERI_SHIFT can work
-		 */
-		SETREG32(PERI_8GB_DDR_EN, 1);
-		/*
-		 * addr[33:30] : addr_shift_ctrl
-		 * addr[29:0] : reg_buff0_addr
-		 */
-		addr_shift_ctrl = (addr >> 30) & 0x3F;
-		CLRREG32(PWM_PERI_SHIFT, 0x3F);
-		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
-		OUTREG32_DMA(reg_buff0_addr, (addr & 0x3FFFFFFF));
+		/* addr bit[36:32] */
+		CLRREG32(reg_buff_addr2, 0x1F);
+		SETREG32(reg_buff_addr2, (addr >> 32) & 0x1F);
+		/* addr bit[31:0] */
+		OUTREG32_DMA(reg_buff0_addr, (addr & 0xFFFFFFFF));
 	} else {
-		CLRREG32(PWM_PERI_SHIFT, 0x3F);
+		CLRREG32(reg_buff_addr2, 0x1F);
 		OUTREG32_DMA(reg_buff0_addr, addr);
 	}
 
@@ -485,6 +480,8 @@ void mt_pwm_dump_regs_hal(void)
 		pr_debug("[PWM%d_THRESH]: 0x%lx\n", i + 1, reg_val);
 		reg_val = INREG32(PWM_register[i] + 4 * PWM_SEND_WAVENUM);
 		pr_debug("[PWM%d_SEND_WAVENUM]: 0x%lx\n\r", i + 1, reg_val);
+		reg_val = INREG32(PWM_register[i] + 4 * PWM_BUF_BASE_ADDR2);
+		pr_debug("[PWM%d_BUF_BASE_ADDR2]: 0x%lx\n\r", i + 1, reg_val);
 	}
 
 	reg_val = INREG32(PWM_ENABLE);
@@ -555,16 +552,45 @@ void mt_pwm_26M_clk_enable_hal(u32 enable)
 
 }
 
+void mt_pwm_clk_sel_hal(u32 pwm_no, u32 clk_src)
+{
+	if (pwm_no > PWM_MAX)
+		pr_info("PWM: invalid pwm_no\n");
+	switch (clk_src) {
+	/* 32K */
+	case 0x00:
+		CLRREG32(PWM_CLK_SRC_CTRL, 0x3 << (pwm_no * 2));
+		break;
+	/* 26M */
+	case 0x01:
+		CLRREG32(PWM_CLK_SRC_CTRL, 0x3 << (pwm_no * 2));
+		SETREG32(PWM_CLK_SRC_CTRL, 0x01 << (pwm_no * 2));
+		break;
+	/* 78M not recommend */
+	case 0x10:
+		CLRREG32(PWM_CLK_SRC_CTRL, 0x3 << (pwm_no * 2));
+		SETREG32(PWM_CLK_SRC_CTRL, 0x10 << (pwm_no * 2));
+		break;
+	/* 66M, topckgen default */
+	case 0x11:
+		CLRREG32(PWM_CLK_SRC_CTRL, 0x3 << (pwm_no * 2));
+		SETREG32(PWM_CLK_SRC_CTRL, 0x11 << (pwm_no * 2));
+		break;
+	default:
+		pr_info("PWM: invalid clk_src\n");
+	}
+}
+
 void mt_pwm_platform_init(void)
 {
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	if (node) {
-		pwm_pericfg_base = of_iomap(node, 0);
-		pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
-		if (!pwm_pericfg_base)
-			pr_debug("PWM pwm_pericfg_base error!!\n");
+		pwm_infracfg_base = of_iomap(node, 0);
+		pr_debug("PWM pwm_infracfg_base=0x%p\n", pwm_infracfg_base);
+		if (!pwm_infracfg_base)
+			pr_debug("PWM pwm_infracfg_base error!!\n");
 	}
 }
 

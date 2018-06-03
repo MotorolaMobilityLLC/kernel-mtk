@@ -85,4 +85,5 @@ void mt_set_pwm_buf0_addr_hal(uint32_t pwm_no, dma_addr_t addr);
 void mt_set_pwm_buf0_size_hal(uint32_t pwm_no, uint16_t size);
 
 int mt_get_pwm_clk_src(struct platform_device *pdev);
+void  mt_pwm_clk_sel_hal(u32 pwm, u32 clk_src);
 #endif
