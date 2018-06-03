@@ -22,9 +22,6 @@
 #include <linux/printk.h>
 #include <stdarg.h>
 #include <linux/slab.h>
-#if defined(CONFIG_MTK_MET)
-#include "mt-plat/met_drv.h"
-#endif
 #include "ddp_mmp.h"
 #include "debug.h"
 
@@ -212,14 +209,7 @@ static unsigned int analysize_length;
 
 char dprec_error_log_buffer[DPREC_ERROR_LOG_BUFFER_LENGTH];
 static struct dprec_logger_event dprec_vsync_irq_event;
-#if defined(CONFIG_MTK_MET)
-static struct met_log_map dprec_met_info[DISP_SESSION_MEMORY + 2] = {
-	{"UNKWON", 0, 0},
-	{"OVL0-DSI", 0, 0},
-	{"OVL1-MHL", 0, 0},
-	{"OVL1-SMS", 0, 0},
-};
-#endif
+
 int dprec_init(void)
 {
 	memset((void *)&_control, 0, sizeof(_control));
@@ -560,18 +550,6 @@ void dprec_logger_frame_seq_begin(unsigned int session_id,
 			session_id, frm_sequence);
 		return;
 	}
-
-#if defined(CONFIG_MTK_MET)
-	if (dprec_met_info[device_type].begin_frm_seq != frm_sequence) {
-		preempt_disable();
-		event_trace_printk(disp_get_tracing_mark(),
-			"S|%d|%s|%d\n", current->tgid,
-			dprec_met_info[device_type].log_name, frm_sequence);
-
-		preempt_enable();
-		dprec_met_info[device_type].begin_frm_seq = frm_sequence;
-	}
-#endif
 }
 
 void dprec_logger_frame_seq_end(unsigned int session_id,
@@ -586,17 +564,6 @@ void dprec_logger_frame_seq_end(unsigned int session_id,
 			session_id, frm_sequence);
 		return;
 	}
-#if defined(CONFIG_MTK_MET)
-	if (dprec_met_info[device_type].end_frm_seq != frm_sequence) {
-
-		preempt_disable();
-		event_trace_printk(disp_get_tracing_mark(),
-			"F|%d|%s|%d\n", current->tgid,
-			dprec_met_info[device_type].log_name, frm_sequence);
-		preempt_enable();
-		dprec_met_info[device_type].end_frm_seq = frm_sequence;
-	}
-#endif
 }
 
 #else
