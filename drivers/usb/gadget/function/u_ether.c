@@ -944,7 +944,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		/* TX OUT OF ORDER FIX */
 		if (unlikely(sending_aggregation)) {
 			struct timeval tv_before, tv_after;
-			u64 diff_ns;
+			u64 diff_ns = 0;
 
 			do_gettimeofday(&tv_before);
 			sending_aggregation_cnt++;
