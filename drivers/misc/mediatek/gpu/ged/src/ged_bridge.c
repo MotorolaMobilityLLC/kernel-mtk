@@ -24,7 +24,7 @@
 #include <linux/module.h>
 #include "ged_kpi.h"
 #include "ged.h"
-#include "ged_vsync.h"
+#include "ged_frr.h"
 
 static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
@@ -94,6 +94,7 @@ int ged_bridge_monitor_3D_fence(
 		GED_BRIDGE_IN_MONITOR3DFENCE *psMonitor3DFenceINT,
 		GED_BRIDGE_OUT_MONITOR3DFENCE *psMonitor3DFenceOUT)
 {
+	psMonitor3DFenceOUT->fps = ged_frr_table_get_fps(psMonitor3DFenceINT->pid, psMonitor3DFenceINT->cid);
 	psMonitor3DFenceOUT->eError = ged_monitor_3D_fence_add(psMonitor3DFenceINT->fd);
 	return 0;
 }
@@ -185,7 +186,7 @@ int ged_bridge_target_fps(
 /* ----------------------------------------------------------------------------- */
 int ged_bridge_wait_hw_vsync(void)
 {
-	ged_wait_hw_vsync();
+	ged_frr_wait_hw_vsync();
 	return 0;
 }
 /* ----------------------------------------------------------------------------- */
