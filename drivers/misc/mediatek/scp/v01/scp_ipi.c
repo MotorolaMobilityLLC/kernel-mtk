@@ -244,7 +244,9 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			scp_A_dump_regs();
 
 		}
-		scp_awake_unlock(scp_id);
+		if (scp_awake_unlock(scp_id) == -1)
+			pr_debug("scp_ipi_send: host to scp busy awake unlock fail\n");
+
 		scp_ipi_desc[id].busy_count++;
 		mutex_unlock(&scp_ipi_mutex[scp_id]);
 		return BUSY;
@@ -276,7 +278,9 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		while ((GIPC_TO_SCP_REG & (1<<scp_id)) > 0)
 			;
 	/*send host to scp ipi cpmplete, unlock mutex*/
-	scp_awake_unlock(scp_id);
+	if (scp_awake_unlock(scp_id) == -1)
+		pr_debug("scp_ipi_send: awake unlock fail\n");
+
 	mutex_unlock(&scp_ipi_mutex[scp_id]);
 
 	return DONE;

@@ -161,7 +161,12 @@ int get_scp_semaphore(int flag)
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
-	scp_awake_lock(SCP_A_ID);
+
+	if (scp_awake_lock(SCP_A_ID) == -1) {
+		pr_debug("get_scp_semaphore: awake scp fail\n");
+		return ret;
+	}
+
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 
@@ -191,7 +196,11 @@ int get_scp_semaphore(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-	scp_awake_unlock(SCP_A_ID);
+
+	if (scp_awake_unlock(SCP_A_ID) == -1)
+		pr_debug("get_scp_semaphore: scp_awake_unlock fail\n");
+
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_scp_semaphore);
@@ -211,7 +220,11 @@ int release_scp_semaphore(int flag)
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
-	scp_awake_lock(SCP_A_ID);
+
+	if (scp_awake_lock(SCP_A_ID) == -1) {
+		pr_debug("release_scp_semaphore: awake scp fail\n");
+		return ret;
+	}
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
@@ -231,7 +244,11 @@ int release_scp_semaphore(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-	scp_awake_unlock(SCP_A_ID);
+
+	if (scp_awake_unlock(SCP_A_ID) == -1)
+		pr_debug("release_scp_semaphore: scp_awake_unlock fail\n");
+
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(release_scp_semaphore);
@@ -957,7 +974,9 @@ void scp_register_feature(enum feature_id id)
 	scp_expected_freq = scp_get_freq();
 #endif
 	/*SCP keep awake */
-	scp_awake_lock(SCP_A_ID);
+	if (scp_awake_lock(SCP_A_ID) == -1)
+		pr_debug("scp_register_feature: awake scp fail\n");
+
 
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
@@ -980,7 +999,8 @@ void scp_register_feature(enum feature_id id)
 	}
 
 	/*SCP release awake */
-	scp_awake_unlock(SCP_A_ID);
+	if (scp_awake_unlock(SCP_A_ID) == -1)
+		pr_debug("scp_register_feature: awake unlock fail\n");
 
 	mutex_unlock(&scp_feature_mutex);
 }
@@ -1005,7 +1025,8 @@ void scp_deregister_feature(enum feature_id id)
 	scp_expected_freq = scp_get_freq();
 #endif
 	/*SCP keep awake */
-	scp_awake_lock(SCP_A_ID);
+	if (scp_awake_lock(SCP_A_ID) == -1)
+		pr_debug("scp_deregister_feature: awake scp fail\n");
 
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
@@ -1028,7 +1049,8 @@ void scp_deregister_feature(enum feature_id id)
 	}
 
 	/*SCP release awake */
-	scp_awake_unlock(SCP_A_ID);
+	if (scp_awake_unlock(SCP_A_ID) == -1)
+		pr_debug("scp_deregister_feature: awake unlock fail\n");
 
 	mutex_unlock(&scp_feature_mutex);
 }
