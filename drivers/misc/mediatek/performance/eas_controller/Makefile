@@ -39,10 +39,19 @@ ifeq ($(CONFIG_MTK_FPSGO), y)
                         obj-y += src/platform/mt6771/eas_ctrl.o
                         ccflags-y += -DCPI_THRES=250
                 endif
+
+                ifeq ($(CONFIG_MACH_MT6775), y)
+                        obj-y += src/platform/mt6775/eas_ctrl.o
+                        ccflags-y += -DCPI_THRES=250
+                endif
         endif
 endif
 
 ifeq ($(CONFIG_MACH_MT6771), y)
+      obj-y += src/platform/mt6771/eas_ctrl_extend.o
+endif
+
+ifeq ($(CONFIG_MACH_MT6775), y)
       obj-y += src/platform/mt6771/eas_ctrl_extend.o
 endif
 
