@@ -359,8 +359,6 @@ static int acquire_mutex(enum DDP_SCENARIO_ENUM scenario)
 	struct DDP_MANAGER_CONTEXT *ctx = _get_context();
 
 	ASSERT(scenario >= 0 && scenario < DDP_SCENARIO_MAX);
-
-	mutex_lock(&ctx->mutex_lock);
 	mutex_idx_free = ctx->mutex_idx;
 	while (mutex_idx_free) {
 		if (mutex_idx_free & 0x1) {
@@ -371,8 +369,6 @@ static int acquire_mutex(enum DDP_SCENARIO_ENUM scenario)
 		mutex_idx_free >>= 1;
 		++mutex_id;
 	}
-	mutex_unlock(&ctx->mutex_lock);
-
 	ASSERT(mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 	DDPDBG("scenario %s acquire mutex %d, left mutex 0x%x!\n",
 		ddp_get_scenario_name(scenario), mutex_id,
@@ -386,9 +382,7 @@ static int release_mutex(int mutex_idx)
 
 	ASSERT(mutex_idx < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 
-	mutex_lock(&ctx->mutex_lock);
 	ctx->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
-	mutex_unlock(&ctx->mutex_lock);
 
 	DDPDBG("release mutex %d, left mutex 0x%x!\n",
 		mutex_idx, ctx->mutex_idx);
@@ -418,6 +412,7 @@ disp_path_handle dpmgr_create_path(enum DDP_SCENARIO_ENUM scenario,
 	int module_num = ddp_get_module_num(scenario);
 	struct DDP_MANAGER_CONTEXT *content = _get_context();
 
+	mutex_lock(&content->mutex_lock);
 	path_handle = kzalloc(sizeof(*path_handle), GFP_KERNEL);
 	if (path_handle != NULL) {
 		path_handle->cmdqhandle = cmdq_handle;
@@ -442,6 +437,7 @@ disp_path_handle dpmgr_create_path(enum DDP_SCENARIO_ENUM scenario,
 		DISP_LOG_E("Fail to create handle on scenario %s\n",
 			ddp_get_scenario_name(scenario));
 	}
+	mutex_unlock(&content->mutex_lock);
 	return path_handle;
 }
 
@@ -609,6 +605,7 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 
 	DDPDBG("destroy path handle %p on scenario %s\n", handle,
 		   ddp_get_scenario_name(handle->scenario));
+	mutex_lock(&content->mutex_lock);
 	if (handle != NULL) {
 		release_mutex(handle->hwmutexid);
 		for (i = 0; i < module_num; i++) {
@@ -621,6 +618,7 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 		content->handle_pool[handle->hwmutexid] = NULL;
 		kfree(handle);
 	}
+	mutex_unlock(&content->mutex_lock);
 	return 0;
 }
 
@@ -1714,6 +1712,7 @@ void dpmgr_debug_path_status(int mutex_id)
 	struct DDP_MANAGER_CONTEXT *content = _get_context();
 	disp_path_handle handle = NULL;
 
+	mutex_lock(&content->mutex_lock);
 	if (mutex_id >= DISP_MUTEX_DDP_FIRST &&
 	    mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT)) {
 
@@ -1730,6 +1729,7 @@ void dpmgr_debug_path_status(int mutex_id)
 				dpmgr_check_status(handle);
 		}
 	}
+	mutex_unlock(&content->mutex_lock);
 }
 
 int dpmgr_wait_event_timeout(disp_path_handle dp_handle,
