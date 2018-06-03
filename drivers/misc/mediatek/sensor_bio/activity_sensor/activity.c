@@ -366,6 +366,7 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 	struct act_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -375,41 +376,11 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&act_context_obj->act_op_mutex);
 	cxt = act_context_obj;
-	if (cxt->act_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_batch_enable = true;
-			if (true == cxt->is_polling_run) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				del_timer_sync(&cxt->timer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.probability[0] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[1] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[2] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[3] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[4] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[5] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[6] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[7] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[8] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[9] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[10] = ACT_INVALID_VALUE;
-				cxt->drv_data.probability[11] = ACT_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_batch_enable = false;
-			if (false == cxt->is_polling_run) {
-				if (false == cxt->act_ctl.is_report_input_direct && true == cxt->is_active_data) {
-					mod_timer(&cxt->timer,
-						  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-					cxt->is_polling_run = true;
-				}
-			}
-		} else {
-			ACT_ERR(" act_store_batch error !!\n");
-		}
-	} else {
+	if (false == cxt->act_ctl.is_report_input_direct) {
+		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
+		atomic_set(&act_context_obj->delay, mdelay);
+	}
+	if (!cxt->act_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		ACT_LOG(" act_store_batch not support\n");
 	}

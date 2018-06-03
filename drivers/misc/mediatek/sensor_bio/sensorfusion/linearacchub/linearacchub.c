@@ -83,6 +83,9 @@ static int linearacc_set_delay(u64 delay)
 }
 static int linearacc_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	linearacc_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_LINEAR_ACCELERATION, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

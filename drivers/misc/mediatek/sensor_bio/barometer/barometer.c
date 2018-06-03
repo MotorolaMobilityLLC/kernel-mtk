@@ -386,7 +386,7 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 {
 	struct baro_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -397,31 +397,12 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 
 	cxt = baro_context_obj;
-	if (cxt->baro_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_batch_enable = true;
-			if (true == cxt->is_polling_run) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
-				cxt->drv_data.baro_data.values[1] = BARO_INVALID_VALUE;
-				cxt->drv_data.baro_data.values[2] = BARO_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_batch_enable = false;
-			if (false == cxt->is_polling_run) {
-				if (false == cxt->baro_ctl.is_report_input_direct && true == cxt->is_active_data) {
-					startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
-					cxt->is_polling_run = true;
-				}
-			}
-		} else {
-			BARO_ERR(" baro_store_batch error !!\n");
-		}
-	} else {
+	if (false == cxt->baro_ctl.is_report_input_direct) {
+		mdelay = samplingPeriodNs;
+		do_div(mdelay, 1000000);
+		atomic_set(&baro_context_obj->delay, mdelay);
+	}
+	if (!cxt->baro_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		BARO_LOG("baro_store_batch not supported\n");
 	}

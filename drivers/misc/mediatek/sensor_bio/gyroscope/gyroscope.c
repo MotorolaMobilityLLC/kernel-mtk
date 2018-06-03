@@ -401,7 +401,7 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 {
 	struct gyro_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -412,31 +412,12 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 	/* GYRO_LOG("gyro_store_batch buf=%s\n", buf); */
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
-	if (cxt->gyro_ctl.is_support_batch) {
-		GYRO_LOG("gyro_store_batch buf=%s\n", buf);
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_batch_enable = true;
-			if (true == cxt->is_polling_run) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.gyro_data.values[0] = GYRO_INVALID_VALUE;
-				cxt->drv_data.gyro_data.values[1] = GYRO_INVALID_VALUE;
-				cxt->drv_data.gyro_data.values[2] = GYRO_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_batch_enable = false;
-			if (false == cxt->is_polling_run) {
-				if (false == cxt->gyro_ctl.is_report_input_direct) {
-					startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
-					cxt->is_polling_run = true;
-				}
-			}
-		} else
-			GYRO_ERR("gyro_store_batch error !!\n");
-	} else {
+	if (false == cxt->gyro_ctl.is_report_input_direct) {
+		mdelay = samplingPeriodNs;
+		do_div(mdelay, 1000000);
+		atomic_set(&gyro_context_obj->delay, mdelay);
+	}
+	if (!cxt->gyro_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		GYRO_LOG("gyro_store_batch not support\n");
 	}

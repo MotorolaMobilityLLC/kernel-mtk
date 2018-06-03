@@ -286,19 +286,7 @@ static ssize_t fusion_store_batch(struct device *dev, struct device_attribute *a
 		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
 		return  -1;
 	}
-	if (cxt->fusion_context[index].fusion_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->fusion_context[index].is_batch_enable = true;
-			if (cxt->fusion_context[index].is_active_data && cxt->fusion_context[index].is_polling_run)
-				cxt->fusion_context[index].is_polling_run = false;
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->fusion_context[index].is_batch_enable = false;
-			if (cxt->fusion_context[index].is_active_data)
-				fusion_enable_data(true, handle);
-		} else {
-			FUSION_ERR("fusion_store_batch error!!\n");
-		}
-	} else {
+	if (!cxt->fusion_context[index].fusion_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		FUSION_LOG("fusion_store_batch not supported\n");
 	}

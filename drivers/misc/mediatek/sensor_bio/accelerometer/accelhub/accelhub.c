@@ -731,6 +731,9 @@ static int gsensor_set_delay(u64 ns)
 
 static int gsensor_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	gsensor_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_ACCELEROMETER, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 
