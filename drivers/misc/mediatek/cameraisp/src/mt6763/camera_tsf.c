@@ -1986,26 +1986,26 @@ static int TSF_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "\n============ TSF dump register============\n");
 	seq_puts(m, "TSF Config Info\n");
 
-	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x4),
-		   (unsigned int)TSF_RD32(ISP_TSF_BASE + 0x4));
+	if (TSFInfo.UserCount > 0) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + 0x4),
+			   (unsigned int)TSF_RD32(ISP_TSF_BASE + 0x4));
 
 
-	for (i = 0x80C; i < 0x82C; i = i + 4) {
-		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
+		for (i = 0x80C; i < 0x82C; i = i + 4) {
+			seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
+		}
+		seq_puts(m, "TSF DMA Debug Info\n");
+		for (i = 0x60; i < 0x88; i = i + 4) {
+			seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
+		}
+
+		for (i = 0xC0; i < 0xE4; i = i + 4) {
+			seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
+		}
 	}
-	seq_puts(m, "TSF DMA Debug Info\n");
-	for (i = 0x60; i < 0x88; i = i + 4) {
-		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
-	}
-
-	for (i = 0xC0; i < 0xE4; i = i + 4) {
-		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(ISP_TSF_BASE + i));
-	}
-
-
 	seq_puts(m, "\n============ TSF dump debug ============\n");
 
 	return 0;
@@ -2030,24 +2030,26 @@ static int TSF_reg_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "======== read TSF register ========\n");
 
-	seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + 0x4),
+	if (TSFInfo.UserCount > 0) {
+
+		seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + 0x4),
 		   (unsigned int)TSF_RD32(TSF_INT_EN_REG));
 
-	for (i = 0x80C; i <= 0x82C; i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(TSF_START_REG + i));
-	}
+		for (i = 0x80C; i <= 0x82C; i = i + 4) {
+			seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(TSF_START_REG + i));
+		}
 
-	for (i = 0x60; i <= 0x88; i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(TSF_START_REG + i));
-	}
+		for (i = 0x60; i <= 0x88; i = i + 4) {
+			seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(TSF_START_REG + i));
+		}
 
-	for (i = 0xC0; i <= 0xE4; i = i + 4) {
-		seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
-			   (unsigned int)TSF_RD32(TSF_START_REG + i));
+		for (i = 0xC0; i <= 0xE4; i = i + 4) {
+			seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
+				   (unsigned int)TSF_RD32(TSF_START_REG + i));
+		}
 	}
-
 
 	return 0;
 }
@@ -2067,6 +2069,9 @@ static ssize_t TSF_reg_write(struct file *file, const char __user *buffer, size_
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	if (TSFInfo.UserCount <= 0)
 		return 0;
 
 	desc[len] = '\0';
