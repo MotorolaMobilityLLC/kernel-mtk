@@ -3685,7 +3685,10 @@
 	};
 
 	mrdump_ext_rst: mrdump_ext_rst {
-
+		compatible = "mediatek, mrdump_ext_rst-eint";
+		source = "SYSRST";
+		mode = "IRQ";
+		status = "okay";
 	};
 
 	rt-pd-manager {
