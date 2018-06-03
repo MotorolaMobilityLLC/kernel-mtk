@@ -114,7 +114,8 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
-		if (qh->type == USB_ENDPOINT_XFER_BULK) {
+		/* double buffer support, disabled */
+		if (0) {
 			request_fifo_sz = 1024;
 			fifo_unit_nr = 2;
 			c_size = 6 | MUSB_FIFOSZ_DPB;
@@ -203,7 +204,8 @@ void musb_host_free_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
-		if (qh->type == USB_ENDPOINT_XFER_BULK) {
+		/* double buffer support, disabled */
+		if (0) {
 			request_fifo_sz = 1024;
 			fifo_unit_nr = 2;
 		} else {
