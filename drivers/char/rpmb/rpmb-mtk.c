@@ -569,11 +569,6 @@ int rpmb_req_get_wc(u8 *key, u32 *wc, u8 *frame)
 
 	rawdev_ufs_rpmb = ufs_mtk_rpmb_get_raw_dev();
 
-	if (strlen(key) != 32) {
-		MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
-		return RPMB_WC_ERROR;
-	}
-
 	do {
 		/*
 		 * Initial frame buffers
@@ -635,6 +630,12 @@ int rpmb_req_get_wc(u8 *key, u32 *wc, u8 *frame)
 		/* Verify HMAC only if key is available */
 
 		if (key) {
+			if (strlen(key) != 32) {
+				MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
+				ret = RPMB_WC_ERROR;
+				break;
+			}
+
 			/*
 			 * Authenticate response write counter frame.
 			 */
