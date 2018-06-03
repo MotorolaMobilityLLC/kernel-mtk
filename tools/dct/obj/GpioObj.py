@@ -732,3 +732,25 @@ class GpioObj_MT6771(GpioObj_MT6739):
         gen_str += ';'
         gen_str += '''\n};\n'''
         return gen_str
+
+class GpioObj_MT6763(GpioObj_MT6759):
+    def fill_init_default_dtsiFile(self):
+        gen_str = '''\n&gpio{\n'''
+        gen_str += '''\tgpio_init_default = '''
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+
+            num = string.atoi(key[4:])
+            defMode = value.get_defMode()
+            dout = 1 if value.get_outHigh() else 0
+            pullEn = 1 if value.get_inPullEn() else 0
+            pullSel = 1 if value.get_inPullSelHigh() else 0
+            smtEn = 1 if value.get_smtEn() else 0
+
+            gen_str += '''<%d %d %d %d %d %d %d>,\n\t\t''' % (num, defMode, value.ge_defDirInt(), dout, pullEn, pullSel, smtEn)
+
+        gen_str = gen_str[0: len(gen_str) - 4]
+        gen_str += ';'
+        gen_str += '''\n};\n'''
+        return gen_str
