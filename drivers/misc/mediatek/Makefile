@@ -107,6 +107,7 @@ obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MD32_SUPPORT)     += md32/
+obj-$(CONFIG_USB)	+= usb_boost/
 obj-$(CONFIG_USB_MU3D_DRV)	+= mu3d/
 obj-$(CONFIG_MTK_SMARTPA_SOUND)	+= smartpa/
 obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/

@@ -23,7 +23,9 @@
 #include <linux/if_vlan.h>
 
 #include "u_ether.h"
-//#include "usb_boost.h"
+#ifdef CONFIG_MEDIATEK_SOLUTION
+#include "usb_boost.h"
+#endif
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 #include "mtk_gadget.h"
@@ -738,6 +740,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	bool			multi_pkt_xfer = false;
 	uint32_t		max_size = 0;
 	static unsigned int okCnt, busyCnt;
+	static DEFINE_RATELIMIT_STATE(ratelimit1, 1 * HZ, 2);
 	static DEFINE_RATELIMIT_STATE(ratelimit2, 1 * HZ, 2);
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
@@ -819,6 +822,21 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 			spin_unlock_irqrestore(&dev->req_lock, flags);
 			return -ENOMEM;
 		}
+	}
+	if (__ratelimit(&ratelimit1)) {
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		usb_boost();
+#endif
+		U_ETHER_DBG("COM[%d,%d,%x,%x,%lu]\n",
+			dev->gadget->speed, max_size, rndis_test_last_msg_id,
+			rndis_test_last_resp_id, rndis_test_reset_msg_cnt);
+
+		U_ETHER_DBG("RX[%lu,%lu,%lu,%lu] TX[%lu,%lu,%lu,%lu,%lu]\n",
+			rndis_test_rx_usb_in, rndis_test_rx_net_out,
+			rndis_test_rx_nomem, rndis_test_rx_error,
+			rndis_test_tx_net_in, rndis_test_tx_usb_out,
+			rndis_test_tx_busy, rndis_test_tx_stop,
+			rndis_test_tx_complete);
 	}
 	rndis_test_tx_net_in++;
 	/*

@@ -40,8 +40,8 @@
 #include <linux/usb/composite.h>
 
 #include "configfs.h"
-//#include "usb_boost.h"
 #ifdef CONFIG_MEDIATEK_SOLUTION
+#include "usb_boost.h"
 //#include "aee.h"
 #endif
 
@@ -911,9 +911,9 @@ static void send_file_work(struct work_struct *data)
 			header->transaction_id =
 					__cpu_to_le32(dev->xfer_transaction_id);
 		}
-
-		//usb_boost();
-
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		usb_boost();
+#endif
 		if (mtp_skip_vfs_read) {
 			ret = (xfer - hdr_size);
 			offset += ret;
@@ -1008,8 +1008,9 @@ static void receive_file_work(struct work_struct *data)
 		}
 
 		if (write_req) {
-			//usb_boost();
-
+#ifdef CONFIG_MEDIATEK_SOLUTION
+			usb_boost();
+#endif
 			DBG(cdev, "rx %p %d\n", write_req, write_req->actual);
 			if (mtp_skip_vfs_write) {
 				ret = write_req->actual;
