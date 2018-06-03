@@ -11,6 +11,26 @@ config LOAD_SWITCH_RT9750
 	  This driver supports
 	  load switch for direct charge.
 
+config CHARGER_RT9466
+	bool "Charger Driver for Richtek RT9466 Charger IC"
+	default n
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Say Y to enable
+	  Richtek RT9466 driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config CHARGER_RT9467
+	bool "Charger Driver for Richtek RT9467 Charger IC"
+	default n
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Say Y to enable
+	  Richtek RT9467 driver.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
 config CHARGER_RT9465
 	bool "Charger Driver for Richtek RT9465 Charger IC"
 	default n
