@@ -3523,6 +3523,13 @@ static inline int kdSetSensorMclk(int *pBuf)
 			else
 				atomic_inc(&g_seninf_tg_mux_enable_cnt[pSensorCtrl->TG]);
 
+			if (pSensorCtrl->TG != 0) {
+				if (clk_prepare_enable(g_seninf_tg_mux[0]))
+					PK_ERR("[CAMERA SENSOR] failed tg=0, freq= %d\n",
+					pSensorCtrl->freq);
+				else
+					atomic_inc(&g_seninf_tg_mux_enable_cnt[0]);
+			}
 			if (clk_prepare_enable(g_seninf_tg_mclk_src[pSensorCtrl->freq]))
 				PK_ERR("[CAMERA SENSOR] CCF kdSetSensorMclk tg=%d, freq= %d\n",
 				pSensorCtrl->TG, pSensorCtrl->freq);
@@ -3536,6 +3543,10 @@ static inline int kdSetSensorMclk(int *pBuf)
 		if ((pSensorCtrl->TG < _MAX_MCLK_) && (pSensorCtrl->freq < _MAX_TG_SRC_)) {
 			clk_disable_unprepare(g_seninf_tg_mux[pSensorCtrl->TG]);
 			atomic_dec(&g_seninf_tg_mux_enable_cnt[pSensorCtrl->TG]);
+			if (pSensorCtrl->TG != 0) {
+				clk_disable_unprepare(g_seninf_tg_mux[0]);
+				atomic_dec(&g_seninf_tg_mux_enable_cnt[0]);
+			}
 			clk_disable_unprepare(g_seninf_tg_mclk_src[pSensorCtrl->freq]);
 			atomic_dec(&g_seninf_tg_mclk_src_enable_cnt[pSensorCtrl->freq]);
 		}
