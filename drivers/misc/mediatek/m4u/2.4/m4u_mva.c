@@ -474,11 +474,14 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	/*if we didn't find the proper graph on stage 1, we will come to stage 2.
 	* in the case, all graph in [0x1-0x4FF ] is busy.
 	*/
-	if (s == fix_index0) {
+	if (gap_nr > 0 && s == fix_index0) {
 		/* stage 2: jump vpu reserved region and find it in graph range [0x501-0x5FF ]
 		 * MUST check if block number of gap region is enough to alloc.
 		 * if not, we need to alloc from common region
+		 * only vinson have stage2,for vpu reserved region num is 2.
+		 * so for cannon and sylvia we skip stage2.
 		 */
+#if defined(CONFIG_MACH_MT6758)
 		if (nr <= gap_nr) {
 			M4UINFO("stage 2: stopped cursor(%d) on stage 1\n", s);
 			s = gap_start_idx;
@@ -487,6 +490,9 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 				;
 		} else
 			goto stage3;
+#else
+		goto stage3;
+#endif
 	}
 	/*if we didn't find the proper graph on stage 2, we will come to stage 3.
 	* in the case, the requeired nr may be more than gap nr.

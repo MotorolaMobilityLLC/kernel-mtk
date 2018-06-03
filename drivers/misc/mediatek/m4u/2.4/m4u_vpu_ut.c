@@ -538,6 +538,7 @@ void test_m4u_do_mva_alloc_stage3(void)
 	if (pinfo == NULL) {
 		M4UMSG("pinfo == NULL\n");
 		vfree(pinfo);
+		return;
 	}
 	pinfo->port = 0;
 	last_free_index_in_stage1 = get_last_free_graph_idx_in_stage1_region();
@@ -582,6 +583,11 @@ void test_m4u_do_mva_alloc_start_from_V2p4(void)
 
 	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2_4\n");
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
+	if (pinfo == NULL) {
+		M4UMSG("pinfo == NULL\n");
+		vfree(pinfo);
+		return;
+	}
 	pinfo->port = 0;
 	last_free_index_in_stage1 = get_last_free_graph_idx_in_stage1_region();
 
@@ -628,6 +634,11 @@ void test_m4u_do_mva_alloc_start_from_V2p4_case1(void)
 
 	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2p4_case1\n");
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
+	if (pinfo == NULL) {
+		M4UMSG("pinfo == NULL\n");
+		vfree(pinfo);
+		return;
+	}
 	pinfo->port = 0;
 	first_free_idx = get_first_free_idx();
 	M4UMSG("get 1st free index = 0x%x\n", first_free_idx);
