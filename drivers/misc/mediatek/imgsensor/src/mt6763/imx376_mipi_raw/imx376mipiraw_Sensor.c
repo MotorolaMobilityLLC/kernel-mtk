@@ -481,10 +481,9 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
-
 	kal_uint8 itemp;
 
-LOG_INF("image_mirror = %d\n", image_mirror);
+	LOG_INF("image_mirror = %d\n", image_mirror);
 	itemp = read_cmos_sensor_8(0x0101);
 	itemp &= ~0x03;
 
@@ -808,6 +807,8 @@ static void sensor_init(void)
 	write_cmos_sensor_8(0xAAEF, 0x03);
 	write_cmos_sensor_8(0xAAF1, 0x02);
 	write_cmos_sensor_8(0xB6D9, 0x00);
+
+	set_mirror_flip(imgsensor.mirror);
 }	/*	sensor_init  */
 
 
@@ -937,9 +938,7 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0x3901, 0x00);
 	write_cmos_sensor_8(0x3237, 0x00);
 	write_cmos_sensor_8(0x30AC, 0x00);
-	write_cmos_sensor_8(0x0100, 0x01);
 
-	mdelay(10);
 }	/*	preview_setting  */
 /* ==================================================== */
 /* 3P3SP EVT0 */
@@ -1090,10 +1089,6 @@ static void capture_setting(kal_uint16 currefps, kal_bool stream_on)
 	write_cmos_sensor_8(0x3901, 0x00);
 	write_cmos_sensor_8(0x3237, 0x00);
 	write_cmos_sensor_8(0x30AC, 0x00);
-	write_cmos_sensor_8(0x0101, 0x03);
-	if (stream_on)
-	write_cmos_sensor_8(0x0100, 0x01);
-	mdelay(10);
 #else
 	write_cmos_sensor_8(0x0100, 0x00);
 	mdelay(100);
@@ -1219,11 +1214,6 @@ static void capture_setting(kal_uint16 currefps, kal_bool stream_on)
 	write_cmos_sensor_8(0x3901, 0x00);
 	write_cmos_sensor_8(0x3237, 0x00);
 	write_cmos_sensor_8(0x30AC, 0x00);
-	write_cmos_sensor_8(0x0101, 0x03);
-	/*if(stream_on)*/
-	write_cmos_sensor_8(0x0100, 0x01);
-	mdelay(10);
-
 #endif
 
 }
@@ -1480,7 +1470,6 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_PREVIEW;
 #endif
 	preview_setting();
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	preview   */
@@ -1542,11 +1531,8 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 	if (hw_sensor_mode != IMGSENSOR_MODE_CAPTURE)
 		capture_setting(imgsensor.current_fps, 1);
-	else
-		write_cmos_sensor_8(0x0100, 0x01);
 
 #endif
-	set_mirror_flip(IMAGE_HV_MIRROR);
 
 	return ERROR_NONE;
 }	/* capture() */
@@ -1572,7 +1558,6 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 #endif
 	normal_video_setting(imgsensor.current_fps);
 	/* preview_setting(); */
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	normal_video   */
@@ -1601,7 +1586,6 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
 #endif
 	hs_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	hs_video   */
@@ -1627,7 +1611,6 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
 #endif
 	slim_video_setting();
-	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	slim_video	 */
@@ -1983,6 +1966,19 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor_8(0x0100, 0x01);
+	else
+		write_cmos_sensor_8(0x0100, 0x00);
+
+	mdelay(10);
+	return ERROR_NONE;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 							 UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -2159,6 +2155,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		    LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",
 				(UINT16)*feature_data, (UINT16)*(feature_data+1));
 		    /* ihdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1)); */
+		    break;
+		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		    LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		    streaming_control(KAL_FALSE);
+		    break;
+		case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		    LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		    if (*feature_data != 0)
+			set_shutter(*feature_data);
+		    streaming_control(KAL_TRUE);
 		    break;
 #ifndef VENDOR_EDIT
 		/*Feng.Hu@Camera.Driver 20170808 add for imx371/imx376 crosstalk*/
