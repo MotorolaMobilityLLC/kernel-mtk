@@ -346,11 +346,6 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct ccci_per_md *per_md_data = &md->per_md_data;
 
 	/*dump_emi_latency();*/
-	if (ccci_fsm_get_md_state(md->index) == BOOT_WAITING_FOR_HS1)
-		return;
-	/*CCCI_MEM_LOG(md->index, TAG, "Dump subsys_if_on\n");
-	*subsys_if_on(); TODO: ask source clock for API ready, or close it
-	*/
 
 	md_cd_lock_modem_clock_src(1);
 
