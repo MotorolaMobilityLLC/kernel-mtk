@@ -2167,7 +2167,7 @@ enum {
 #ifdef MT_GPUFREQ_OC_PROTECT
 static unsigned int mt_gpufreq_oc_level;
 
-#define MT_GPUFREQ_OC_LIMIT_FREQ_1	 GPU_DVFS_FREQ4	/* no need to throttle when OC */
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1	 GPU_DVFS_FREQ14	/* 485 MHz */
 static unsigned int mt_gpufreq_oc_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_oc_limited_index_1;
 static unsigned int mt_gpufreq_oc_limited_index;	/* Limited frequency index for oc */
@@ -2186,7 +2186,7 @@ static unsigned int mt_gpufreq_low_batt_volume_limited_index;	/* Limited frequen
 static unsigned int mt_gpufreq_low_battery_level;
 
 #define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_1	 GPU_DVFS_FREQ0	/* no need to throttle when LV1 */
-#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2	 GPU_DVFS_FREQ4
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2	 GPU_DVFS_FREQ14	/* 485 MHz */
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_1;
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_2;
