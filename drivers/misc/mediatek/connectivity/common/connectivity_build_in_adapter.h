@@ -213,4 +213,14 @@ do {                                                              \
 	} else                                                    \
 		__trace_printk(ip, fmt, ##args);                  \
 } while (0)
+
+/******************************************************************************
+ * GPIO dump information
+ ******************************************************************************/
+#ifndef CONFIG_MTK_GPIO
+#define KERNEL_gpio_dump_regs_range connectivity_export_dump_gpio_info
+extern void gpio_dump_regs_range(int start, int end);
+void connectivity_export_dump_gpio_info(int start, int end);
+#endif
+
 #endif /* CONNECTIVITY_BUILD_IN_ADAPTER_H */
