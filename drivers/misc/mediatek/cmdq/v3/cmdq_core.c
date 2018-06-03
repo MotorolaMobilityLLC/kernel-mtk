@@ -217,6 +217,7 @@ static struct cmdq_cmd_struct g_delay_thread_cmd;
 static bool g_delay_thread_started;
 static bool g_delay_thread_inited;
 static DEFINE_SPINLOCK(g_delay_thread_lock);
+static DEFINE_SPINLOCK(g_cmdq_event_lock);
 
 static bool g_cmdq_consume_again;
 
@@ -1465,25 +1466,34 @@ const char *cmdq_core_get_event_name(enum CMDQ_EVENT_ENUM event)
 void cmdqCoreClearEvent(enum CMDQ_EVENT_ENUM event)
 {
 	int32_t eventValue = cmdq_core_get_event_value(event);
+	unsigned long flags;
 
 	CMDQ_MSG("clear event %d\n", eventValue);
+	spin_lock_irqsave(&g_cmdq_event_lock, flags);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, eventValue);
+	spin_unlock_irqrestore(&g_cmdq_event_lock, flags);
 }
 
 void cmdqCoreSetEvent(enum CMDQ_EVENT_ENUM event)
 {
 	int32_t eventValue = cmdq_core_get_event_value(event);
+	unsigned long flags;
 
+	spin_lock_irqsave(&g_cmdq_event_lock, flags);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | eventValue);
+	spin_unlock_irqrestore(&g_cmdq_event_lock, flags);
 }
 
 uint32_t cmdqCoreGetEvent(enum CMDQ_EVENT_ENUM event)
 {
 	uint32_t regValue = 0;
 	int32_t eventValue = cmdq_core_get_event_value(event);
+	unsigned long flags;
 
+	spin_lock_irqsave(&g_cmdq_event_lock, flags);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF & eventValue));
 	regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
+	spin_unlock_irqrestore(&g_cmdq_event_lock, flags);
 	return regValue;
 }
 
