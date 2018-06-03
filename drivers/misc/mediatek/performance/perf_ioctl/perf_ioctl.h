@@ -10,6 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef PERF_IOCTL_H
+#define PERF_IOCTL_H
 #include <linux/jiffies.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -35,16 +37,33 @@
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
 
-#define FPSGO_QUEUE          _IOW('g', 1, __u32)
-#define FPSGO_DEQUEUE        _IOW('g', 3, __u32)
-#define FPSGO_VSYNC          _IOW('g', 5, __u32)
-#define FPSGO_QUEUE_LENGTH   _IOW('g', 6, __u32)
-#define FPSGO_ACQUIRE_BUFFER _IOW('g', 7, __u32)
+enum {
+	SWUI = 0,
+	HWUI,
+	GLSURFACE
+};
 
-#define IOCTL_WRITE_AS _IOW('g', 8, int)
-#define IOCTL_WRITE_GM _IOW('g', 9, int)
-#define IOCTL_WRITE_TH _IOW('g', 10, int)
-#define IOCTL_WRITE_FC _IOW('g', 11, int)
-#define IOCTL_WRITE_IV _IOW('g', 12, int)
-#define IOCTL_WRITE_NR _IOW('g', 13, int)
-#define IOCTL_WRITE_SB _IOW('g', 14, int)
+typedef struct _FPSGO_PACKAGE {
+	__u32 tid;
+	__u32 value;
+	__u32 render_method;
+} FPSGO_PACKAGE;
+
+#define FPSGO_QUEUE                  _IOW('g', 1, FPSGO_PACKAGE)
+#define FPSGO_BYPASS_EXCLUDE         _IOW('g', 2, FPSGO_PACKAGE)
+#define FPSGO_DEQUEUE                _IOW('g', 3, FPSGO_PACKAGE)
+#define FPSGO_BYPASS                 _IOW('g', 4, FPSGO_PACKAGE)
+#define FPSGO_VSYNC                  _IOW('g', 5, FPSGO_PACKAGE)
+#define FPSGO_QUEUE_LENGTH           _IOW('g', 6, FPSGO_PACKAGE)
+#define FPSGO_ACQUIRE_BUFFER         _IOW('g', 7, FPSGO_PACKAGE)
+#define FPSGO_ACT_SWITCH             _IOW('g', 8, FPSGO_PACKAGE)
+#define FPSGO_GAME                   _IOW('g', 9, FPSGO_PACKAGE)
+#define FPSGO_TOUCH                  _IOW('g', 10, FPSGO_PACKAGE)
+#define FPSGO_FRAME_COMPLETE         _IOW('g', 11, FPSGO_PACKAGE)
+#define FPSGO_INTENDED_VSYNC         _IOW('g', 12, FPSGO_PACKAGE)
+#define FPSGO_NO_RENDER              _IOW('g', 13, FPSGO_PACKAGE)
+#define FPSGO_SWAP_BUFFER            _IOW('g', 14, FPSGO_PACKAGE)
+#define FPSGO_SURFACE_VIEW_CREATE    _IOW('g', 15, FPSGO_PACKAGE)
+#define FPSGO_SURFACE_VIEW_DESTROY   _IOW('g', 16, FPSGO_PACKAGE)
+
+#endif

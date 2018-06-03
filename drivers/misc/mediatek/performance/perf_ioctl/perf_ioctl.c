@@ -19,7 +19,13 @@
 
 #define TAG "PERF_IOCTL"
 
-static struct mutex notify_lock;
+unsigned long perfctl_copy_from_user(void *pvTo, const void __user *pvFrom, unsigned long ulBytes)
+{
+	if (access_ok(VERIFY_READ, pvFrom, ulBytes))
+		return __copy_from_user(pvTo, pvFrom, ulBytes);
+
+	return ulBytes;
+}
 
 /*--------------------DEV OP------------------------*/
 static ssize_t device_write(struct file *filp, const char *ubuf,
@@ -57,41 +63,61 @@ static long device_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
 	ssize_t ret = 0;
+	FPSGO_PACKAGE *msgKM = NULL, *msgUM = (FPSGO_PACKAGE *)arg;
+	FPSGO_PACKAGE smsgKM;
 
-	mutex_lock(&notify_lock);
+	msgKM = &smsgKM;
+
+	if (perfctl_copy_from_user(msgKM, msgUM, sizeof(FPSGO_PACKAGE))) {
+		ret = -EFAULT;
+		goto ret_ioctl;
+	}
 
 	switch (cmd) {
 #ifdef CONFIG_MTK_FPSGO_FBT_GAME
 	case FPSGO_QUEUE:
+		/* FALLTHROUGH */
 	case FPSGO_DEQUEUE:
-		xgf_qudeq_notify(cmd, arg);
+		xgf_qudeq_notify(cmd, msgKM->value);
 		break;
 #else
 	case FPSGO_QUEUE:
+		/* FALLTHROUGH */
 	case FPSGO_DEQUEUE:
 		break;
 #endif
 
 #ifdef CONFIG_MTK_FPSGO_FBT_UX
-	case IOCTL_WRITE_TH:
-	case IOCTL_WRITE_FC:
-	case IOCTL_WRITE_AS:
-	case IOCTL_WRITE_GM:
-	case IOCTL_WRITE_IV:
-	case IOCTL_WRITE_NR:
-	case IOCTL_WRITE_SB:
-		fbc_ioctl(cmd, arg);
+	case FPSGO_TOUCH:
+		/* FALLTHROUGH */
+	case FPSGO_FRAME_COMPLETE:
+		/* FALLTHROUGH */
+	case FPSGO_ACT_SWITCH:
+		/* FALLTHROUGH */
+	case FPSGO_GAME:
+		/* FALLTHROUGH */
+	case FPSGO_INTENDED_VSYNC:
+		/* FALLTHROUGH */
+	case FPSGO_NO_RENDER:
+		/* FALLTHROUGH */
+	case FPSGO_SWAP_BUFFER:
+		fbc_ioctl(cmd, msgKM->value);
 		break;
 #else
-	case IOCTL_WRITE_TH:
-	case IOCTL_WRITE_FC:
-		touch_boost_ioctl(cmd, arg);
+	case FPSGO_TOUCH:
+		/* FALLTHROUGH */
+	case FPSGO_FRAME_COMPLETE:
+		touch_boost_ioctl(cmd, msgKM->value);
 		break;
-	case IOCTL_WRITE_AS:
-	case IOCTL_WRITE_GM:
-	case IOCTL_WRITE_IV:
-	case IOCTL_WRITE_NR:
-	case IOCTL_WRITE_SB:
+	case FPSGO_ACT_SWITCH:
+		/* FALLTHROUGH */
+	case FPSGO_GAME:
+		/* FALLTHROUGH */
+	case FPSGO_INTENDED_VSYNC:
+		/* FALLTHROUGH */
+	case FPSGO_NO_RENDER:
+		/* FALLTHROUGH */
+	case FPSGO_SWAP_BUFFER:
 		break;
 #endif
 
@@ -102,7 +128,6 @@ static long device_ioctl(struct file *filp,
 	}
 
 ret_ioctl:
-	mutex_unlock(&notify_lock);
 	return ret;
 }
 
@@ -130,8 +155,6 @@ static int __init init_perfctl(void)
 	init_touch_boost();
 #endif
 
-	mutex_init(&notify_lock);
-
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
 		pr_debug(TAG"%s failed with %d\n",
@@ -149,7 +172,7 @@ static int __init init_perfctl(void)
 		goto out_chrdev;
 	}
 
-	pr_debug(TAG"init FBC driver done\n");
+	pr_debug(TAG"init perf_ioctl driver done\n");
 
 	return 0;
 
