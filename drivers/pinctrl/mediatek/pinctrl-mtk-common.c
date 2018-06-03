@@ -1275,32 +1275,6 @@ static void __iomem *mtk_eint_get_offset(struct mtk_pinctrl *pctl,
 }
 
 /*
- * mtk_can_en_debounce: Check the EINT number is able to enable debounce or not
- * @eint_num: the EINT number to setmtk_pinctrl
- */
-static unsigned int mtk_eint_can_en_debounce(struct mtk_pinctrl *pctl,
-	unsigned int eint_num)
-{
-	unsigned int sens;
-	unsigned int bit = BIT(eint_num % 32);
-	const struct mtk_eint_offsets *eint_offsets =
-		&pctl->devdata->eint_offsets;
-
-	void __iomem *reg = mtk_eint_get_offset(pctl, eint_num,
-			eint_offsets->sens);
-
-	if (readl(reg) & bit)
-		sens = MT_LEVEL_SENSITIVE;
-	else
-		sens = MT_EDGE_SENSITIVE;
-
-	if ((eint_num < pctl->devdata->db_cnt) && (sens != MT_EDGE_SENSITIVE))
-		return 1;
-	else
-		return 0;
-}
-
-/*
  * mtk_eint_get_mask: To get the eint mask
  * @eint_num: the EINT number to get
  */
@@ -1397,8 +1371,6 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 
 	set_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_set;
 	clr_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_clr;
-	if (!mtk_eint_can_en_debounce(pctl, eint_num))
-		return -ENOTSUPP;
 
 	dbnc = ARRAY_SIZE(debounce_time);
 	for (i = 0; i < ARRAY_SIZE(debounce_time); i++) {
