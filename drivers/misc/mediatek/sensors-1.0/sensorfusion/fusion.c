@@ -82,7 +82,6 @@ static int handle_to_index(int handle)
 			handle, index);
 		return index;
 	}
-	pr_debug("handle_to_index handle:%d, index:%d\n", handle, index);
 	return index;
 }
 
@@ -101,7 +100,6 @@ static int fusion_enable_and_batch(int index)
 			pr_err("fusion turn off power err = %d\n", err);
 			return -1;
 		}
-		pr_debug("fusion turn off power done\n");
 
 		cxt->fusion_context[index].power = 0;
 		cxt->fusion_context[index].delay_ns = -1;
@@ -116,7 +114,6 @@ static int fusion_enable_and_batch(int index)
 			pr_err("fusion turn on power err = %d\n", err);
 			return -1;
 		}
-		pr_debug("fusion turn on power done\n");
 
 		cxt->fusion_context[index].power = 1;
 	}
@@ -136,7 +133,6 @@ static int fusion_enable_and_batch(int index)
 			pr_err("fusion set batch(ODR) err %d\n", err);
 			return -1;
 		}
-		pr_debug("fusion set ODR, fifo latency done, batch done\n");
 	}
 	return 0;
 }
