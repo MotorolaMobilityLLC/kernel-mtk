@@ -630,6 +630,37 @@ void ppm_cobra_init(void)
 
 void ppm_cobra_dump_tbl(struct seq_file *m)
 {
+#if 1
+	struct ppm_cluster_status cluster_status[NR_PPM_CLUSTERS];
+	int i;
+	int power;
+
+	seq_puts(m, "\n========================================================\n");
+	seq_puts(m, "(LL_core, LL_opp, L_core, L_opp) = power");
+	seq_puts(m, "\n========================================================\n");
+
+	/* only list power for all core online case */
+	for_each_ppm_clusters(i)
+		cluster_status[i].core_num = get_cluster_max_cpu_core(i);
+
+	for (i = 0; i < DVFS_OPP_NUM; i++) {
+		/* same index due to share buck */
+		cluster_status[PPM_CLUSTER_LL].freq_idx = i;
+		cluster_status[PPM_CLUSTER_L].freq_idx = i;
+
+		power = ppm_find_pwr_idx(cluster_status);
+
+		if (power) {
+			seq_printf(m, "(%d, %2d, %d, %2d) = %4d\n",
+				cluster_status[PPM_CLUSTER_LL].core_num,
+				cluster_status[PPM_CLUSTER_LL].freq_idx,
+				cluster_status[PPM_CLUSTER_L].core_num,
+				cluster_status[PPM_CLUSTER_L].freq_idx,
+				power
+			);
+		}
+	}
+#else
 	int i, j, k;
 
 	seq_puts(m, "\n==========================================\n");
@@ -659,6 +690,7 @@ void ppm_cobra_dump_tbl(struct seq_file *m)
 			}
 		}
 	}
+#endif
 }
 
 static unsigned int get_limit_opp_and_budget(void)
