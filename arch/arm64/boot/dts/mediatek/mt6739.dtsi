@@ -1692,7 +1692,7 @@
 			<0 0x10000000 0 0x2000>,  /*TOPCKGEN_BASE */
 			<0 0x10006000 0 0x1000>;  /*SPM_BASE */
 		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_LOW>, /*BGF_EINT */
-			<GIC_SPI 271 IRQ_TYPE_EDGE_FALLING>; /*WDT_EINT */
+			<GIC_SPI 235 IRQ_TYPE_EDGE_FALLING>; /*WDT_EINT */
 		clocks = <&scpsys SCP_SYS_CONN>;
 		clock-names = "conn";
 	};
