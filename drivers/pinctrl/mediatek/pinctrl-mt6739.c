@@ -181,7 +181,7 @@ static int mtk_pinctrl_get_gpio_pullsel(struct mtk_pinctrl *pctl, int pin)
 	pull_val = mtk_pinctrl_get_gpio_pupd_r1r0(pctl, pin);
 	if (pull_val == -EPERM) {
 		pull_val = mtk_pinctrl_get_gpio_pu_pd(pctl, pin);
-		/*pull_sel = [pu,pd], 10 is pull up, 01 is pull down*/
+		/*pull_val = [pu,pd], 10 is pull up, 01 is pull down*/
 		if (pull_val == MTK_PUPD_BIT_PU)
 			pull_val = GPIO_PULL_UP;
 		else if (pull_val == MTK_PUPD_BIT_PD)

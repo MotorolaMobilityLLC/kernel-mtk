@@ -1377,7 +1377,7 @@ struct mtk_pin_info mtk_pin_info_drv[] = {
 	MTK_PIN_INFO(151, 0x0A0, 8, 3, 4),
 };
 
-static const struct mtk_desc_pin mtk_pins_mt6763[] = {
+static struct mtk_desc_pin mtk_pins_mt6763[] = {
 	MTK_PIN(
 		PINCTRL_PIN(0, "GPIO0"),
 		NULL, "mt6763",

@@ -1147,10 +1147,15 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 	unsigned int read_val = 0;
 	int dir = 0;
 
+	/* Linux gpio framework return 0 for output, 1 for input.
+	 * But HW use 0 stands for input, and 1 stands for output.
+	 * So use negative to correct it.
+	 */
+
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
 	if (pctl->devdata->pin_dir_grps)
-		return mtk_pinctrl_get_gpio_direction(pctl, offset);
+		return !mtk_pinctrl_get_gpio_direction(pctl, offset);
 
 	if (pctl->devdata->mt_get_gpio_dir) {
 		/* Used by smartphone projects */
@@ -1161,6 +1166,7 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
+
 	return !(read_val & bit);
 }
 
@@ -1178,7 +1184,7 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 	if (pctl->devdata->mt_get_gpio_out != NULL
 	 && pctl->devdata->mt_get_gpio_in != NULL) {
 		/* Used by smartphone projects */
-		if (mtk_gpio_get_direction(chip, offset))
+		if (!mtk_gpio_get_direction(chip, offset))
 			value = pctl->devdata->mt_get_gpio_out(offset | 0x80000000);
 		else
 			value = pctl->devdata->mt_get_gpio_in(offset | 0x80000000);
@@ -1698,7 +1704,7 @@ static ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *att
 }
 
 #ifndef CONFIG_MTK_GPIO
-void gpio_dump_regs(void)
+void gpio_dump_regs_range(int start, int end)
 {
 	struct gpio_chip *chip;
 	unsigned i;
@@ -1713,25 +1719,38 @@ void gpio_dump_regs(void)
 
 	pr_err("PIN: [MODE] [DIR] [DOUT] [DIN] [PULL_EN] [PULL_SEL] [IES] [SMT] [DRIVE] ( [R1] [R0] )\n");
 
-	for (i = 0; i < chip->ngpio; i++) {
+	if (start < 0) {
+		start = 0;
+		end = chip->ngpio-1;
+	}
+
+	if (end > chip->ngpio - 1)
+		end = chip->ngpio - 1;
+
+	for (i = start; i <= end; i++) {
 		pull_val = mtk_pullsel_get(chip, i);
 
 		pr_err("%4d: %d%d%d%d%d%d%d%d%d",
-				i,
-				mtk_pinmux_get(chip, i),
-				mtk_gpio_get_direction(chip, i),
-				mtk_gpio_get_out(chip, i),
-				mtk_gpio_get_in(chip, i),
-				mtk_pullen_get(chip, i),
-				(pull_val >= 0) ? (pull_val&1) : -1,
-				mtk_ies_get(chip, i),
-				mtk_smt_get(chip, i),
-				mtk_driving_get(chip, i));
+			i,
+			mtk_pinmux_get(chip, i),
+			!mtk_gpio_get_direction(chip, i),
+			mtk_gpio_get_out(chip, i),
+			mtk_gpio_get_in(chip, i),
+			mtk_pullen_get(chip, i),
+			(pull_val >= 0) ? (pull_val&1) : -1,
+			mtk_ies_get(chip, i),
+			mtk_smt_get(chip, i),
+			mtk_driving_get(chip, i));
 		if ((pull_val & MTK_PUPD_R1R0_BIT_SUPPORT) && (pull_val >= 0))
 			pr_err(" %d %d\n", !!(pull_val&4), !!(pull_val&2));
 		else
 			pr_err("\n");
 	}
+}
+
+void gpio_dump_regs(void)
+{
+	gpio_dump_regs_range(-1, -1);
 }
 #endif
 

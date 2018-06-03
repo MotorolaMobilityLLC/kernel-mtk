@@ -91,12 +91,12 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 	bit_pupd = mtk_pinctrl_get_gpio_value(pctl, pin,
 		pctl->devdata->n_pin_pupd, pctl->devdata->pin_pupd_grps);
 	if (bit_pupd != -EPERM) {
-		/* bit_upd: set for PU, clr for PD, ie, revert HW value */
 		bit_r1 = mtk_pinctrl_get_gpio_value(pctl, pin,
 			pctl->devdata->n_pin_r1, pctl->devdata->pin_r1_grps) ? MTK_PUPD_R1R0_BIT_R1 : 0;
 		bit_r0 = mtk_pinctrl_get_gpio_value(pctl, pin,
 			pctl->devdata->n_pin_r0, pctl->devdata->pin_r0_grps) ? MTK_PUPD_R1R0_BIT_R0 : 0;
-		return MTK_PUPD_R1R0_BIT_SUPPORT | bit_r1 | bit_r0 | bit_pupd;
+		/* bit_upd: set for PU, clr for PD, ie, revert HW value */
+		return MTK_PUPD_R1R0_BIT_SUPPORT | bit_r1 | bit_r0 | !bit_pupd;
 	}
 	return -EPERM;
 }
@@ -165,7 +165,7 @@ static int mtk_pinctrl_get_gpio_pullen(struct mtk_pinctrl *pctl, int pin)
 	if (pull_val == -EPERM) {
 		pull_en = mtk_pinctrl_get_gpio_pullsel_pullen(pctl, pin);
 		/*pull_en = [pu,pd], 10,01 pull enabel, others pull disable*/
-		if ((pull_en == MTK_PUPD_BIT_PD) || (pull_en == MTK_PUPD_BIT_PU))
+		if (pull_en & (MTK_PUPD_BIT_PU | MTK_PUPD_BIT_PD))
 			pull_en = GPIO_PULL_ENABLE;
 		else if (pull_en == 0)
 			pull_en = GPIO_PULL_DISABLE;
@@ -193,14 +193,14 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 #ifdef GPIO_DEBUG
 	int pull_val;
 
-	pr_warn("mtk_pinctrl_set_gpio_pull, pin = %d, enab = %d, sel = %d, arg = %u\n",
+	pr_info("mtk_pinctrl_set_gpio_pull, pin = %d, enab = %d, sel = %d, arg = %u\n",
 		pin, enable, isup, arg);
 #endif
 	ret = mtk_pinctrl_set_gpio_pupd_r1r0(pctl, pin, enable, isup, arg);
 	if (ret == 0) {
 #ifdef GPIO_DEBUG
 		pull_val = mtk_pinctrl_get_gpio_pullsel(pctl, pin);
-		pr_warn("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
+		pr_info("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
 			pin,
 			((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PULLEN(pull_val) : -1),
 			((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PUPD(pull_val) : -1));
@@ -232,7 +232,7 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 			enab = -1;
 			sel = -1;
 		}
-		pr_warn("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
+		pr_info("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
 			pin, enab, sel);
 	}
 #endif
@@ -248,7 +248,7 @@ int mtk_pinctrl_get_gpio_mode_for_eint(int pin)
 		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
 }
 
-static const struct mtk_pinctrl_devdata mt6763_pinctrl_data = {
+static const struct mtk_pinctrl_devdata mtk_pinctrl_data = {
 	.pins = mtk_pins_mt6763,
 	.npins = ARRAY_SIZE(mtk_pins_mt6763),
 	.pin_mode_grps = mtk_pin_info_mode,
@@ -282,26 +282,26 @@ static const struct mtk_pinctrl_devdata mt6763_pinctrl_data = {
 	.port_align = 4,
 };
 
-static int mt6763_pinctrl_probe(struct platform_device *pdev)
+static int mtk_pinctrl_probe(struct platform_device *pdev)
 {
 	pr_warn("mt6763 pinctrl probe\n");
-	return mtk_pctrl_init(pdev, &mt6763_pinctrl_data, NULL);
+	return mtk_pctrl_init(pdev, &mtk_pinctrl_data, NULL);
 }
 
-static const struct of_device_id mt6763_pctrl_match[] = {
+static const struct of_device_id mtk_pctrl_match[] = {
 	{
-		.compatible = "mediatek,mt6763-pinctrl",
+		.compatible = "mediatek,mtk-pinctrl",
 	}, {
 	}
 };
-MODULE_DEVICE_TABLE(of, mt6763_pctrl_match);
+MODULE_DEVICE_TABLE(of, mtk_pctrl_match);
 
 static struct platform_driver mtk_pinctrl_driver = {
-	.probe = mt6763_pinctrl_probe,
+	.probe = mtk_pinctrl_probe,
 	.driver = {
-		.name = "mediatek-mt6763-pinctrl",
+		.name = "mediatek-pinctrl",
 		.owner = THIS_MODULE,
-		.of_match_table = mt6763_pctrl_match,
+		.of_match_table = mtk_pctrl_match,
 	},
 };
 
@@ -315,4 +315,4 @@ static int __init mtk_pinctrl_init(void)
 postcore_initcall(mtk_pinctrl_init);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek Pinctrl Driver");
-MODULE_AUTHOR("Hongzhou Yang <hongzhou.yang@mediatek.com>");
+MODULE_AUTHOR("Light Hsieh <light.hsieh@mediatek.com>");
