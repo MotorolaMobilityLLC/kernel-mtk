@@ -4218,6 +4218,7 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 {
     /* reset once in multi-open */
     if (atomic_read(&g_CamDrvOpenCnt) == 0) {
+	mipic_26m_en(1);
     /* default OFF state */
     /* MUST have */
     /* kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",true,CAMERA_HW_DRVNAME1); */
@@ -4256,10 +4257,12 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
     atomic_dec(&g_CamDrvOpenCnt);
+	if (atomic_read(&g_CamDrvOpenCnt) == 0) {
 #ifdef CONFIG_MTK_SMI_EXT
-	if (atomic_read(&g_CamDrvOpenCnt) == 0)
 		current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
+		mipic_26m_en(0);
+	}
 	clk_disable_unprepare(g_camclk_camtg_sel);
 	clk_disable_unprepare(g_camclk_camtg2_sel);
 	clk_disable_unprepare(g_camclk_univpll_d208);
