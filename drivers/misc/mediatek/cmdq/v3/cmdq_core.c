@@ -8631,13 +8631,13 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	CMDQ_MSG("-->SUBMIT_ASYNC: cmd 0x%p begin\n", CMDQ_U32_PTR(pCommandDesc->pVABase));
 	CMDQ_PROF_START(current->pid, __func__);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_START, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_START, current->pid, pCommandDesc->scenario);
 
 	/* Allocate Task. This creates a new task */
 	/* and put into tail of waiting list */
 	pTask = cmdq_core_acquire_task(pCommandDesc, loopCB, loopData);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END, current->pid, pCommandDesc->blockSize/8);
 
 	if (pTask == NULL) {
 		CMDQ_PROF_END(current->pid, __func__);
