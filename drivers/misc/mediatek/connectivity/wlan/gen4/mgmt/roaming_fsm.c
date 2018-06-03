@@ -228,10 +228,10 @@ VOID roamingFsmScanResultsUpdate(IN P_ADAPTER_T prAdapter)
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
 /*----------------------------------------------------------------------------*/
 /*
-* @brief
+* @brief Check if need to do scan for roaming
 *
-* @param
-*
+* @param [out] fgIsNeedScan Set to TRUE if need to scan since
+*	there is roaming candidate in current scan result or skip roaming times > limit times
 * @return
 */
 /*----------------------------------------------------------------------------*/
@@ -247,14 +247,14 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 	BOOLEAN fgIsNeedScan, fgIsRoamingSSID;
 
 	fgIsNeedScan = FALSE;
-	fgIsRoamingSSID = FALSE;
+	fgIsRoamingSSID = FALSE; /*Whether there's roaming candidate in RoamBssDescList*/
 
 	kalMemZero(&rCmdRoamingSkipOneAP, sizeof(CMD_ROAMING_SKIP_ONE_AP_T));
 
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
-	/* Count same BSS Desc from current SCAN result list. */
+	/* <1> Count same BSS Desc from current SCAN result list. */
 	LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
 		if (EQUAL_SSID(prRoamBssDesc->aucSSID,
 				       prRoamBssDesc->ucSSIDLen,
@@ -266,31 +266,25 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 		}
 	}
 
+	/* <2> Start skip roaming scan mechanism if there is no candidate in current SCAN result list */
 	if (!fgIsRoamingSSID) {
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);  /* Get current BssDesc */
 		if (prBssDesc) {
 
 			/*rCmdSwCtrl.u4Id = 0xa0280000;*/
 			/*rCmdSwCtrl.u4Data = 0x1;*/
 			rCmdRoamingSkipOneAP.fgIsRoamingSkipOneAP = 1;
 
-			wlanSendSetQueryCmd(prAdapter,
-					    CMD_ID_SET_ROAMING_SKIP,
-					    TRUE,
-					    FALSE,
-					    FALSE, NULL, NULL, sizeof(CMD_ROAMING_SKIP_ONE_AP_T),
-					    (PUINT_8)&rCmdRoamingSkipOneAP, NULL, 0);
-
 			DBGLOG(ROAMING, INFO, "roamingFsmSteps: RCPI:%d RoamSkipTimes:%d\n",
 								prBssDesc->ucRCPI, prAisBssInfo->ucRoamSkipTimes);
-			if (prBssDesc->ucRCPI > 90) {
+			if (prBssDesc->ucRCPI > 90) {	/* Set parameters related to Good Area */
 				prAisBssInfo->ucRoamSkipTimes = 3;
 				prAisBssInfo->fgGoodRcpiArea = TRUE;
 				prAisBssInfo->fgPoorRcpiArea = FALSE;
 			} else {
 				if (prAisBssInfo->fgGoodRcpiArea) {
 					prAisBssInfo->ucRoamSkipTimes--;
-				} else if (prBssDesc->ucRCPI > 67) {
+				} else if (prBssDesc->ucRCPI > 67) {	/* Set parameters related to Poor Area */
 					if (!prAisBssInfo->fgPoorRcpiArea) {
 						prAisBssInfo->ucRoamSkipTimes = 2;
 						prAisBssInfo->fgPoorRcpiArea = TRUE;
@@ -299,11 +293,9 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 						prAisBssInfo->ucRoamSkipTimes--;
 					}
 				} else {
-					if (prAisBssInfo->fgPoorRcpiArea) {
-						prAisBssInfo->fgPoorRcpiArea = FALSE;
-						prAisBssInfo->fgGoodRcpiArea = FALSE;
-						prAisBssInfo->ucRoamSkipTimes--;
-					}
+					prAisBssInfo->fgPoorRcpiArea = FALSE;
+					prAisBssInfo->fgGoodRcpiArea = FALSE;
+					prAisBssInfo->ucRoamSkipTimes--;
 				}
 			}
 
@@ -313,8 +305,15 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 				prAisBssInfo->fgGoodRcpiArea = FALSE;
 				DBGLOG(ROAMING, INFO, "roamingFsmSteps: Need Scan\n");
 				fgIsNeedScan = TRUE;
-			}
-		}
+			} else
+				wlanSendSetQueryCmd(prAdapter,
+					    CMD_ID_SET_ROAMING_SKIP,
+					    TRUE,
+					    FALSE,
+					    FALSE, NULL, NULL, sizeof(CMD_ROAMING_SKIP_ONE_AP_T),
+					    (PUINT_8)&rCmdRoamingSkipOneAP, NULL, 0);
+		} else
+			DBGLOG(ROAMING, WARN, "Can't find the current associated AP in BssDescList\n");
 	}
 
 	return fgIsNeedScan;
@@ -336,6 +335,7 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 	P_ROAMING_INFO_T prRoamingFsmInfo;
 	ENUM_ROAMING_STATE_T ePreviousState;
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
+	BOOLEAN fgIsNeedScan = FALSE;
 
 	prRoamingFsmInfo = (P_ROAMING_INFO_T) &(prAdapter->rWifiVar.rRoamingInfo);
 
@@ -365,24 +365,18 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 			{
 				OS_SYSTIME rCurrentTime;
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
-				BOOLEAN fgIsNeedScan = FALSE;
-
 				fgIsNeedScan = roamingFsmIsNeedScan(prAdapter);
+#else
+				fgIsNeedScan = TRUE;
 #endif
-
 				GET_CURRENT_SYSTIME(&rCurrentTime);
 				if (CHECK_FOR_TIMEOUT(rCurrentTime,
 					prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
-					SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC))) {
-#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
-					if (fgIsNeedScan)
-#endif
-					{
-						DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
-						aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
-					}
+				    SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) && fgIsNeedScan) {
+					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout\n");
+					aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
 				} else {
-					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Updated");
+					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Updated\n");
 					aisFsmRunEventRoamingDiscovery(prAdapter, FALSE);
 				}
 			}
