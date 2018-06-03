@@ -1485,6 +1485,11 @@ extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 extern int
 inc_nr_heavy_running(int invoker, struct task_struct *p, int inc, bool ack_cap);
+
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+extern void cal_cpu_load(int cpu);
+#endif
+
 #endif
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
@@ -1709,6 +1714,10 @@ enum cpu_dvfs_sched_type {
 
 extern unsigned int capacity_margin;
 extern unsigned int capacity_margin_dvfs;
+
+extern void update_sched_hint(int sys_util, int sys_cap);
+extern void sched_hint_check(u64 wallclock);
+extern u64 sched_ktime_clock(void);
 
 #if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 #define capacity_max SCHED_CAPACITY_SCALE
