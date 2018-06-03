@@ -1257,7 +1257,7 @@ void mtk_p2p_wext_set_Multicastlist(P_GLUE_INFO_T prGlueInfo)
 		UINT_32 i = 0;
 
 		netdev_for_each_mc_addr(ha, prDev) {
-			if (i < MAX_NUM_GROUP_ADDR) {
+			if ((i < MAX_NUM_GROUP_ADDR) && (ha != NULL)) {
 				COPY_MAC_ADDR(&(prGlueInfo->prP2PInfo->aucMCAddrList[i]), ha->addr);
 				i++;
 			}
