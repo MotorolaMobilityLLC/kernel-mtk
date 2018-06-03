@@ -723,7 +723,6 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		tgpd->non_used = 2;
 		/* update counter */
 		queue->budget++;
-		dma_unmap_single(&md->plat_dev->dev, req->data_buffer_ptr_saved, tgpd->data_buff_len, DMA_TO_DEVICE);
 		/* update BD */
 		list_for_each_entry(req_bd, &req->bd, entry) {
 			tbd = req_bd->gpd;
