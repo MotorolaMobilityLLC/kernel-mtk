@@ -1307,7 +1307,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_DEFAULT_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] get default update speed\n");
 		/* DISP_Get_Default_UpdateSpeed(&speed); */
@@ -1318,7 +1318,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_CURR_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] get current update speed\n");
 		/* DISP_Get_Current_UpdateSpeed(&speed); */
@@ -1329,7 +1329,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_CHANGE_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] change update speed\n");
 
