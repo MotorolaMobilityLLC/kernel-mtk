@@ -617,7 +617,7 @@ int primary_display_esd_recovery(void)
 
 	mmprofile_log_ex(mmp_r, MMPROFILE_FLAG_PULSE, 0, 7);
 
-	DISPDBG("[ESD]dsi power reset[begine]\n");
+	DISPDBG("[ESD]dsi power reset[begin]\n");
 	dpmgr_path_dsi_power_off(primary_get_dpmgr_handle(), NULL);
 	dpmgr_path_dsi_power_on(primary_get_dpmgr_handle(), NULL);
 	if (!primary_display_is_video_mode())

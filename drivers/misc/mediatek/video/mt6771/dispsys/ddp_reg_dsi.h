@@ -19,6 +19,8 @@
 /* ------------------------------------------------------------- */
 /* DSI */
 
+#define DISP_REG_DSI_MMCLK_STALL_DBG1 (0x1C0UL)
+
 struct DSI_START_REG {
 	unsigned DSI_START:1;
 	unsigned rsv_1:1;

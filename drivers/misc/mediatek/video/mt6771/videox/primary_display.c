@@ -4164,7 +4164,7 @@ int primary_suspend_release_fence(void)
 }
 
 /* Need full roi when suspend */
-int suspend_to_full_roi(void)
+int force_back_to_full_roi(void)
 {
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
@@ -4240,7 +4240,7 @@ int primary_display_suspend(void)
 	_display_set_lcm_refresh_rate(60);
 
 	/* restore to full roi */
-	suspend_to_full_roi();
+	force_back_to_full_roi();
 
 	/* need to leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
@@ -7569,16 +7569,13 @@ int primary_display_switch_dst_mode(int mode)
 	void *lcm_cmd = NULL;
 	int temp_mode = 0;
 
-	if (!disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
-		return 0;
-
 	DISPFUNC();
 	_primary_path_switch_dst_lock();
 	disp_sw_mutex_lock(&(pgc->capture_lock));
 	_primary_path_lock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 			 MMPROFILE_FLAG_START, primary_display_cur_dst_mode, mode);
-	DISPMSG("C2V]cur_mode:%d, dst_mode:%d\n", primary_display_cur_dst_mode, mode);
+	DISPMSG("[C2V]cur_mode:%d, dst_mode:%d\n", primary_display_cur_dst_mode, mode);
 
 	if (pgc->plcm->params->type != LCM_TYPE_DSI) {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
@@ -7593,12 +7590,6 @@ int primary_display_switch_dst_mode(int mode)
 		goto done;
 	}
 
-	if (pgc->lcm_refresh_rate != 120) {
-		DISPCHECK("Only support 120HZ CV switch. But lcm_refresh_rate is:%d\n",
-			  pgc->lcm_refresh_rate);
-		goto done;
-	}
-
 	if (mode == primary_display_cur_dst_mode) {
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 				 MMPROFILE_FLAG_PULSE, 7, mode);
@@ -7606,6 +7597,9 @@ int primary_display_switch_dst_mode(int mode)
 			  primary_display_cur_dst_mode, mode);
 		goto done;
 	}
+
+	primary_display_idlemgr_kick(__func__, 0);
+	force_back_to_full_roi();
 
 	/* get c2v switch lcm cmd */
 	lcm_cmd = disp_lcm_switch_mode(pgc->plcm, mode);
@@ -7626,14 +7620,6 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
-#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
-	/* set power down mode forbidden */
-	/* TODO */
-#ifdef MTK_FB_SPM_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(1);
-#endif
-#endif
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 			 MMPROFILE_FLAG_PULSE, 4, 0);
 	_cmdq_reset_config_handle();
@@ -7645,16 +7631,25 @@ int primary_display_switch_dst_mode(int mode)
 	pgc->plcm->params->dsi.mode = pgc->plcm->params->dsi.switch_mode;
 	pgc->plcm->params->dsi.switch_mode = temp_mode;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
+#ifdef MTK_FB_SPM_SUPPORT
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		primary_display_sodi_rule_init();
+#endif
 
 	/* 2.Change PLL CLOCK parameter and build fps lcm command */
-	disp_lcm_adjust_fps(pgc->cmdq_handle_config, pgc->plcm, pgc->lcm_refresh_rate);
 	disp_handle = pgc->dpmgr_handle;
 	pconfig = dpmgr_path_get_last_config(disp_handle);
 	pconfig->dispif_config.dsi.PLL_CLOCK = pgc->plcm->params->dsi.PLL_CLOCK;
+	pconfig->dispif_config.dsi.mode = pgc->plcm->params->dsi.mode;
 
 	/* 3.Change PLL LCM clock parameter */
-	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
-			 DDP_UPDATE_PLL_CLK_ONLY, &pgc->plcm->params->dsi.PLL_CLOCK);
+	if (mode == 0)
+		dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+				 DDP_UPDATE_PLL_CLK_ONLY, &pgc->plcm->params->dsi.PLL_CK_CMD);
+	else
+		dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+				 DDP_UPDATE_PLL_CLK_ONLY, &pgc->plcm->params->dsi.PLL_CK_VDO);
+
 
 	/* 4.Switch mode and change DSI clock */
 	if (dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_SWITCH_DSI_MODE, lcm_cmd) != 0) {

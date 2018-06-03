@@ -465,6 +465,50 @@ static enum DSI_STATUS DSI_SetMode(enum DISP_MODULE_ENUM module, struct cmdqRecS
 	return DSI_STATUS_OK;
 }
 
+static enum DSI_STATUS DSI_SetVdoFrmMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
+{
+	int i = 0;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+		DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, FRM_MODE, mode);
+
+	return DSI_STATUS_OK;
+}
+
+static enum DSI_STATUS DSI_SetSwitchMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
+{
+	int i = 0;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (mode == 0) {
+			/* V2C */
+			DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL,
+				V2C_SWITCH_ON, 1);
+		} else {
+			/* C2V */
+			DSI_OUTREGBIT(cmdq, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL,
+				C2V_SWITCH_ON, 1);
+		}
+	}
+
+	return DSI_STATUS_OK;
+}
+
+static enum DSI_STATUS DSI_SetBypassRack(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
+	unsigned int bypass)
+{
+	int i = 0;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (bypass == 0)
+			DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[i]->DSI_RACK, DSI_RACK_BYPASS, 0);
+		else
+			DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[i]->DSI_RACK, DSI_RACK_BYPASS, 1);
+	}
+
+	return DSI_STATUS_OK;
+}
+
 void DSI_clk_HS_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool enter)
 {
 	int i = 0;
@@ -1140,148 +1184,6 @@ unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-void DSI_PHY_clk_change(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
-{
-#if 0
-	int i = 0;
-	unsigned int j = 0;
-	unsigned int data_Rate = dsi_params->PLL_CLOCK*2;
-
-	unsigned int pcw_ratio = 0;
-	unsigned int S2Qdiv    = 0;
-	unsigned int posdiv    = 0;
-	unsigned int prediv    = 0;
-
-	unsigned int pcw = 0;
-	unsigned int delta1 = 2;
-	/*Delta1 is SSC range, default is 0%~-5%*/
-	unsigned int pdelta1 = 0;
-
-	DISPFUNC();
-	DISPCHECK("New mipitx Data Rate=%d\n", data_Rate);
-
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (data_Rate != 0) {
-			unsigned int tmp = 0;
-
-			if (data_Rate > 1500) {
-				DDPPR_ERR("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
-				ASSERT(0);
-			} else if (data_Rate >= 850) {
-				pcw_ratio = 1;
-				S2Qdiv    = 2;
-				posdiv    = 0;
-				prediv    = 0;
-			} else if (data_Rate >= 425) {
-				pcw_ratio = 2;
-				S2Qdiv    = 2;
-				posdiv    = 1;
-				prediv    = 0;
-			} else if (data_Rate >= 212) {
-				pcw_ratio = 4;
-				S2Qdiv    = 2;
-				posdiv    = 2;
-				prediv    = 0;
-			} else if (data_Rate > 106) {
-				pcw_ratio = 8;
-				S2Qdiv    = 2;
-				posdiv    = 3;
-				prediv    = 0;
-			} else if (data_Rate >= 47) {
-				pcw_ratio = 16;
-				S2Qdiv    = 2;
-				posdiv    = 4;
-				prediv    = 0;
-			} else {
-				DDPPR_ERR("dataRate is too low(%d)\n", data_Rate);
-				ASSERT(0);
-			}
-
-			/* step 8 */
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
-						RG_MPPLL_S2QDIV, S2Qdiv);
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-						RG_DSI0_MPPLL_POSDIV, posdiv);
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-						RG_DSI0_MPPLL_PREDIV, prediv);
-			/* 2. PLL PCW Config */
-
-			/*PCW bit 24~30 = floor(pcw)*/
-			/*PCW bit 16~23 = (pcw - floor(pcw))*256*/
-			/*PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256*/
-			/*PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256*/
-
-			/* pcw = (data_rate/2) * 2^(preDIV+postDIV+S2Q) / (26*2*(2^24))*/
-			/* pcw_ration = 2^(preDIV+postDIV+S2Q-2) */
-			pcw = data_Rate * pcw_ratio / 26;
-
-			tmp = ((pcw & 0x7F) << 24) |
-				(((256 * (data_Rate * pcw_ratio % 26) / 26) & 0xFF) << 16) |
-				(((256 * (256 * (data_Rate * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
-				((256 * (256 * (256 * (data_Rate * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
-
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
-					 RG_DSI_MPPLL_SDM_PCW, tmp);
-
-			/*3. SSC Config*/
-			if (dsi_params->ssc_disable != 1) {
-				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-					      RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
-				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-					      RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);/*//PRD=ROUND(pmod) = 433;*/
-
-				if (dsi_params->ssc_range != 0)
-					delta1 = dsi_params->ssc_range;
-
-				ASSERT(delta1 <= 8);
-				pdelta1 = (delta1 * data_Rate * pcw_ratio * 262144 + 281664) / 563329;
-				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
-					      RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
-				DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
-					      RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
-				DISPINFO("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
-					data_Rate, pcw_ratio, DSI_INREG32(struct MIPITX_DSI_PLL_CON2_REG *,
-					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2), delta1, pdelta1);
-			}
-		} else { /* not use */
-			unsigned int tmp = 0;
-
-			/* 1. PLL TXDIV Config */
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_TOP_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_TOP,
-				      RG_MPPLL_S2QDIV, dsi_params->pll_s2qdiv);
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-				      RG_DSI0_MPPLL_POSDIV, dsi_params->pll_posdiv);
-			DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-				      RG_DSI0_MPPLL_PREDIV, dsi_params->pll_prediv);
-			/* 2. PLL PCW Config */
-			tmp = ((dsi_params->fbk_div) << 2) << 24;
-
-			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
-					 RG_DSI_MPPLL_SDM_PCW, tmp);
-
-			/* 3. SSC Config */
-			/* why no ssc config */
-		}
-
-		DSI_OUTREGBIT(cmdq, struct MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-				RG_DSI0_MPPLL_SDM_FRA_EN, 1);
-		/* 4. delay >30ns, need check, cmdq writewithmask 80ns *  9*/
-#if 0
-		for (j = 0; j < 10; j++)
-			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[127], 1);
-#endif
-		/* 5. DSI_PLL_CHG = 0 */
-		DSI_OUTREG32(cmdq, &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG, 0);
-		/* 6. delay > 20us, need check*/
-		for (j = 0; j < 250; j++)
-			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[126], 1);
-
-		/* 7. DSI_PLL_CHG = 1 */
-		DSI_OUTREG32(cmdq, &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG, 1);
-	}
-#endif
-}
-
 static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
@@ -1522,6 +1424,280 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	}
 }
 
+void dsi_phy_cmdq_dummy_delay(struct cmdqRecStruct *cmdq)
+{
+	int i;
+
+	if (!cmdq)
+		return;
+
+	for (i = 0; i < 20; i++)
+		DISP_REG_SET(cmdq, &DSI_REG[0]->DSI_START + DISP_REG_DSI_MMCLK_STALL_DBG1, 0);
+}
+
+static void _dsi_phy_clk_setting_gce(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+{
+	int i = 0;
+	unsigned int j = 0;
+	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
+	unsigned int pcw_ratio = 0;
+	unsigned int pcw = 0;
+	unsigned int posdiv = 0;
+	unsigned int prediv = 0;
+	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int pdelta1 = 0;
+	unsigned long addr = 0;
+	unsigned int pad_mapping[MIPITX_PHY_LANE_NUM] = {PAD_D0P_V, PAD_D1P_V,
+					PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
+
+	DISPFUNC();
+	/* DPHY SETTING */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* step 0 MIPITX lane swap setting */
+		if (unlikely(dsi_params->lane_swap_en)) {
+			DISPINFO("MIPITX Lane Swap Enabled for DSI Port %d\n", i);
+			DISPINFO("MIPITX Lane Swap mapping: %d|%d|%d|%d|%d|%d\n",
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_0],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_1],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_2],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_3],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
+
+			/* CKMODE_EN */
+			for (j = MIPITX_PHY_LANE_0; j < MIPITX_PHY_LANE_CK; j++) {
+				if (dsi_params->lane_swap[i][j] == MIPITX_PHY_LANE_CK)
+					break;
+			}
+			switch (j) {
+			case MIPITX_PHY_LANE_0:
+				DISP_REG_SET_FIELD(cmdq, FLD_DSI_D0_CKMODE_EN,
+					DSI_PHY_REG[i] + MIPITX_D0_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_1:
+				DISP_REG_SET_FIELD(cmdq, FLD_DSI_D1_CKMODE_EN,
+					DSI_PHY_REG[i] + MIPITX_D1_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_2:
+				DISP_REG_SET_FIELD(cmdq, FLD_DSI_D2_CKMODE_EN,
+					DSI_PHY_REG[i] + MIPITX_D2_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_3:
+				DISP_REG_SET_FIELD(cmdq, FLD_DSI_D3_CKMODE_EN,
+					DSI_PHY_REG[i] + MIPITX_D3_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_CK:
+				DISP_REG_SET_FIELD(cmdq, FLD_DSI_CK_CKMODE_EN,
+					DSI_PHY_REG[i] + MIPITX_CK_CKMODE_EN, 1);
+				break;
+			default:
+				break;
+			}
+
+			/* LANE_0 */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY0_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY1AB_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]] + 1);
+
+			/* LANE_1 */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY1_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY2BC_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL1,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]] + 1);
+
+			/* LANE_2 */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY2_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_CPHY0BC_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]] + 1);
+
+			/* LANE_3 */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY3_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL1,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_CPHYXXX_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL1,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]] + 1);
+
+			/* CK LANE */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHYC_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_CPHY1CA_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL0,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]] + 1);
+
+			/* LPRX SETTING */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_LPRX0AB_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL1,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_LPRX0BC_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL1,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]] + 1);
+
+			/* HS_DATA SETTING */
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY2_HSDATA_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL2,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY0_HSDATA_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL2,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_DSI_CK_CKMODE_EN,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL2,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY1_HSDATA_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL2,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]]);
+			DISP_REG_SET_FIELD(cmdq, FLD_MIPI_TX_PHY3_HSDATA_SEL,
+				DSI_PHY_REG[i] + MIPITX_PHY_SEL2,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]]);
+		} else {
+			DISP_REG_SET_FIELD(cmdq, FLD_DSI_CK_CKMODE_EN,
+				DSI_PHY_REG[i] + MIPITX_CK_CKMODE_EN, 1);
+		}
+	}
+
+	/* re-fill mipitx impendance */
+	addr = DSI_PHY_REG[0]+0x100;
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < 10; j++) {
+			DISP_REG_SET(cmdq, addr, ((mipitx_impedance_backup[i])>>j)&0x1);
+			addr += 0x4;
+		}
+		/* 0xD8 = 0x300 - 0x228*/
+		addr += 0xD8;
+	}
+
+	/* MIPI INIT */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+
+		/* step 0: RG_DSI0_PLL_IBIAS = 0*/
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_PLL_CON4, 0x00FF12E0);
+		/* BG_LPF_EN / BG_CORE_EN */
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_LANE_CON, 0x3FFF0080);
+
+		if (cmdq)
+			dsi_phy_cmdq_dummy_delay(cmdq);
+		else
+			mdelay(1);
+
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_LANE_CON, 0x3FFF00C0);
+
+		/* step 1: SDM_RWR_ON / SDM_ISO_EN */
+		DISP_REG_SET_FIELD(cmdq, FLD_AD_DSI_PLL_SDM_PWR_ON,
+			DSI_PHY_REG[i] + MIPITX_PLL_PWR, 1);
+		if (cmdq)
+			dsi_phy_cmdq_dummy_delay(cmdq);
+		else
+			mdelay(1); /* 1us */
+		DISP_REG_SET_FIELD(cmdq, FLD_AD_DSI_PLL_SDM_ISO_EN,
+			DSI_PHY_REG[i] + MIPITX_PLL_PWR, 0);
+
+		if (data_Rate != 0) {
+			unsigned int tmp = 0;
+
+			if (data_Rate > 2500) {
+				DISPERR("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
+				ASSERT(0);
+			} else if (data_Rate >= 2000) { /* 2G ~ 2.5G */
+				pcw_ratio = 1;
+				posdiv    = 0;
+				prediv    = 0;
+			} else if (data_Rate >= 1000) { /* 1G ~ 2G */
+				pcw_ratio = 2;
+				posdiv    = 1;
+				prediv    = 0;
+			} else if (data_Rate >= 500) { /* 500M ~ 1G */
+				pcw_ratio = 4;
+				posdiv    = 2;
+				prediv    = 0;
+			} else if (data_Rate > 250) { /* 250M ~ 500M */
+				pcw_ratio = 8;
+				posdiv    = 3;
+				prediv    = 0;
+			} else if (data_Rate >= 125) { /* 125M ~ 250M */
+				pcw_ratio = 16;
+				posdiv    = 4;
+				prediv    = 0;
+			} else {
+				DISPERR("dataRate is too low(%d)\n", data_Rate);
+				ASSERT(0);
+			}
+
+			/* step 3 */
+			/* PLL PCW config */
+			/**
+			 * PCW bit 24~30 = floor(pcw)
+			 * PCW bit 16~23 = (pcw - floor(pcw))*256
+			 * PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
+			 * PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
+			 */
+			/* pcw = data_Rate*4*txdiv/(26*2);//Post DIV =4, so need data_Rate*4 */
+
+			pcw = data_Rate * pcw_ratio / 26;
+			tmp = ((pcw & 0xFF) << 24) | (((256 * (data_Rate * pcw_ratio % 26) / 26) & 0xFF) << 16) |
+				(((256 * (256 * (data_Rate * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
+				((256 * (256 * (256 * (data_Rate * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
+			DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_PLL_CON0, tmp);
+
+			DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_POSDIV,
+				DSI_PHY_REG[i] + MIPITX_PLL_CON1, posdiv);
+
+			/* SSC config */
+			if (dsi_params->ssc_disable != 1) {
+				DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_PH_INIT,
+					DSI_PHY_REG[i] + MIPITX_PLL_CON2, 1);
+				DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_PRD,
+					DSI_PHY_REG[i] + MIPITX_PLL_CON2, 0x1B1);
+
+				delta1 = (dsi_params->ssc_range == 0) ? delta1 : dsi_params->ssc_range;
+				ASSERT(delta1 <= 8);
+				pdelta1 = (delta1 * (data_Rate / 2) * pcw_ratio * 262144 + 281664) / 563329;
+
+				DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_DELTA,
+					DSI_PHY_REG[i] + MIPITX_PLL_CON3, pdelta1);
+				DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_DELTA1,
+					DSI_PHY_REG[i] + MIPITX_PLL_CON3, pdelta1);
+				DDPMSG("PLL config:data_rate=%d,pcw_ratio=%d,delta1=%d,pdelta1=0x%x\n",
+					data_Rate, pcw_ratio, delta1, pdelta1);
+			}
+		}
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if ((data_Rate != 0) && (dsi_params->ssc_disable != 1))
+			DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_EN,
+				DSI_PHY_REG[i] + MIPITX_PLL_CON2, 1);
+		else
+			DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_SDM_SSC_EN,
+				DSI_PHY_REG[i] + MIPITX_PLL_CON2, 0);
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* PLL EN */
+		if (cmdq)
+			dsi_phy_cmdq_dummy_delay(cmdq);
+		else
+			mdelay(1);
+
+		DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_EN,
+			DSI_PHY_REG[i] + MIPITX_PLL_CON1, 1);
+		if (cmdq)
+			dsi_phy_cmdq_dummy_delay(cmdq);
+		else
+		mdelay(1);
+	}
+}
+
+
 /**
  * DSI_PHY_clk_switch
  *
@@ -1554,6 +1730,50 @@ void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 
 		/* mdelay(1); */
 	}
+}
+
+void dsi_phy_clk_switch_gce(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int on)
+{
+	int i = 0;
+
+	if (on) {
+		_dsi_phy_clk_setting_gce(module, cmdq, &(_dsi_context[i].dsi_params));
+		return;
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* disable mipi clock */
+		/* step 0: PLL DISABLE */
+		DISP_REG_SET_FIELD(cmdq, FLD_RG_DSI_PLL_EN, DSI_PHY_REG[i] + MIPITX_PLL_CON1, 0);
+
+		/* step 1: SDM_RWR_ON / SDM_ISO_EN */
+		DISP_REG_SET_FIELD(cmdq, FLD_AD_DSI_PLL_SDM_ISO_EN, DSI_PHY_REG[i] + MIPITX_PLL_PWR, 1);
+		DISP_REG_SET_FIELD(cmdq, FLD_AD_DSI_PLL_SDM_PWR_ON, DSI_PHY_REG[i] + MIPITX_PLL_PWR, 0);
+
+		/* step 2 */
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_LANE_CON, 0x3FFF0080);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i] + MIPITX_LANE_CON, 0x3FFF0000);
+	}
+}
+
+void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params);
+
+void dsi_cmd_mode_clk_change(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+{
+	if (dsi_params && dsi_params->PLL_CK_CMD == dsi_params->PLL_CK_VDO)
+		return;
+
+	DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x80000000, 0x0);
+
+	/* Adjust PLL clk */
+	/* DSI_clk_HS_mode(module, cmdq, FALSE); */
+	dsi_phy_clk_switch_gce(module, cmdq, false);
+	dsi_phy_clk_switch_gce(module, cmdq, true);
+	DSI_PHY_TIMCONFIG(module, cmdq, dsi_params);
+	DSI_Reset(module, cmdq);
+	/* DSI_clk_HS_mode(module, cmdq, TRUE); */
 }
 
 void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
@@ -3297,32 +3517,98 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 	LCM_DSI_MODE_SWITCH_CMD lcm_cmd = *((LCM_DSI_MODE_SWITCH_CMD *) (params));
 	LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
 	int mode = (int)(lcm_cmd.mode);
-	int wait_count = 100;
+	int ret;
 
 	if (dsi_currect_mode == mode) {
 		DDPMSG("[%s] not need switch mode, current mode = %d, switch to %d\n",
-		       __func__, dsi_currect_mode, mode);
+		   __func__, dsi_currect_mode, mode);
 		return 0;
 	}
 
-	if (lcm_cmd.cmd_if == (unsigned int)LCM_INTERFACE_DSI0) {
-		i = 0;
-	} else if (lcm_cmd.cmd_if == (unsigned int)LCM_INTERFACE_DSI1) {
-		i = 1;
-	} else {
-		DDPMSG("dsi switch not support this cmd IF:%d\n", lcm_cmd.cmd_if);
-		/* return -1; */
+	if (module == DISP_MODULE_DSIDUAL) {
+		if (lcm_cmd.cmd_if == (unsigned int)LCM_INTERFACE_DSI0) {
+			i = 0;
+		} else if (lcm_cmd.cmd_if == (unsigned int)LCM_INTERFACE_DSI1) {
+			i = 1;
+		} else {
+			DDPMSG("dsi switch not support this cmd IF:%d\n", lcm_cmd.cmd_if);
+			return -EINVAL;
+		}
 	}
 
 	if (mode == 0) { /* V2C */
+
 		DISPMSG("[C2V]v2c switch begin\n");
+#if 1
+		cmdqRecWait(cmdq_handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		/* 1. enable dsi auto rack */
+		DSI_SetBypassRack(module, cmdq_handle, 1);
+
+		/* 2. DDIC GRAM ON */
+		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_VM_CMD_CON,
+				0x00001521|(lcm_cmd.addr << 16)|(lcm_cmd.val[0] << 24)); /* RM = 1 */
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 1);
+		/* may clear by cpu */
+		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x00000020, 0x20);
+
+		/* 3. enable dsi frame mode */
+		DSI_SetVdoFrmMode(module, cmdq_handle, 1);
+		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
+
+		/* 4. flush another frame to DDIC, useless? */
+		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_CMDQ_SIZE, 0);
+		DSI_Start(module, cmdq_handle);
+		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x00000008, 0x8);
+
+		/* 5. v2c switch on */
+		DSI_SetSwitchMode(module, cmdq_handle, 0);
+
+		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_VM_CMD_CON,
+						0x00001539|(lcm_cmd.addr << 16)|(lcm_cmd.val[1] << 24)); /* DM = 0 */
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 1);
+		DSI_Start(module, cmdq_handle);
+
+		/* 6. polling dsi idle -- vdo mode over */
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+			DSI_START, 0);
+		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
+		cmdqRecWait(cmdq_handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		DSI_SetMode(module, cmdq_handle, 0);
+
+		/* 7. cmd mode setting */
+		DSI_SetVdoFrmMode(module, cmdq_handle, 0);
+		DSI_OUTREG32(cmdq_handle, &DSI_CMDQ_REG[i]->data[0], 0x002c3909);
+		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_CMDQ_SIZE, 1);
+
+		/* te_rdy irq enable in dsi config */
+		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 1);
+
+		/* 8. blocking flush */
+		cmdqRecFlush(cmdq_handle);
+		cmdqRecReset(cmdq_handle);
+
+		/* 9. adjust pll clk */
+		dsi_cmd_mode_clk_change(module, NULL, dsi_params);
+		/* 10. mutex setting -- cmd mode */
+		DSI_MASKREG32(NULL, DISP_REG_CONFIG_MUTEX0_RST, 0x1, 0x1); /* reset mutex for V2C */
+		DSI_MASKREG32(NULL, DISP_REG_CONFIG_MUTEX0_RST, 0x1, 0x0);
+		DSI_MASKREG32(NULL, DISP_REG_CONFIG_MUTEX0_SOF, 0x7, 0x0); /* mutex to cmd	mode */
+		if (disp_helper_get_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE))
+			DSI_MASKREG32(NULL, DISP_REG_CONFIG_MUTEX0_SOF, 0x1c0, 0x40); /* eof */
+
+		/* 10. disable dsi auto rack*/
+		DSI_SetBypassRack(module, NULL, 0);
+#else
+
 		/* 1.polling dsi idle -- vdo mode over */
 		DSI_SetMode(module, cmdq_handle, 0);
 		DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
 
 		DISP_REG_SET_FIELD(cmdq_handle, FLD_RG_DSI_PLL_SDM_SSC_EN, DSI_PHY_REG[i] + MIPITX_PLL_CON2, 1);
-
-		dsi_params->ssc_disable = 0;
 
 		/* 2.mutex setting -- cmd mode */
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_RST, 0x1, 0x1); /* reset mutex for V2C */
@@ -3350,7 +3636,7 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		}
 
 		/* 5.Adjust PLL clk */
-		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
+		dsi_cmd_mode_clk_change(module, cmdq_handle, dsi_params);
 		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
 
 		/* 6.update one frame */
@@ -3364,40 +3650,35 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		/* 7.blocking flush */
 		cmdqRecFlush(cmdq_handle);
 		cmdqRecReset(cmdq_handle);
-
-		dsi_analysis(module);
-		DSI_DumpRegisters(module, 2);
+#endif
+		/* dsi_analysis(module); */
+		/* DSI_DumpRegisters(module, 2); */
 
 		DISPMSG("[C2V]v2c switch finished\n");
 	} else { /* C2V */
 		DISPMSG("[C2V]c2v switch begin\n");
-		/* 1. Adjust PLL clk */
 		cmdqRecWaitNoClear(cmdq_handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
-		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
-		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
+
+		/* 1. adjust pll clk */
+		dsi_cmd_mode_clk_change(module, cmdq_handle, dsi_params);
 
 		/* 2. wait TE */
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DSI_TE);
 		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
 
-		/* 3. disable DSI EXT TE, only BTA te could work, reason unknown */
-		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
-		DISP_REG_SET_FIELD(cmdq_handle, FLD_RG_DSI_PLL_SDM_SSC_EN, DSI_PHY_REG[i]+MIPITX_PLL_CON2, 0);
-		dsi_params->ssc_disable = 1;
-
-		/* 4. change to vdo mode */
+		/* 3. change to vdo mode */
 		DSI_SetMode(module, cmdq_handle, mode);
-		/* DSI_SetSwitchMode(module, cmdq_handle, 1); */
-		/* DSI_SetBypassRack(module, cmdq_handle, 1); */
+
+
+		DSI_SetSwitchMode(module, cmdq_handle, 1);
+		DSI_SetBypassRack(module, cmdq_handle, 1);
 
 		/* 4. c2v switch on*/
-#if 0
 		DSI_OUTREG32(cmdq_handle, &DSI_CMDQ_REG[i]->data[0], 0x00000020);
 		DSI_OUTREG32(cmdq_handle, &DSI_CMDQ_REG[i]->data[1],
-			     0x00001500 | (lcm_cmd.addr << 16) | (lcm_cmd.val[0] << 24));
+				 0x00001500 | (lcm_cmd.addr << 16) | (lcm_cmd.val[0] << 24));
 		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_CMDQ_SIZE, 2);
 		DSI_Start(module, cmdq_handle);
-#endif
 
 		/* 5. mutex setting */
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x7, 0x1); /* sof */
@@ -3419,43 +3700,38 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 0x1, 0x1); /* release mutex for video mode */
 		DSI_Start(module, cmdq_handle);
 
-		/* 8. blocking flush */
-		cmdqRecFlush(cmdq_handle);
+		/* 8. disable DSI EXT TE to make sure the next frame would be updated in VDO mode instead of CMD mode */
+		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
+		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
+
+		/* 9. blocking flush */
+		ret = cmdqRecFlush(cmdq_handle);
 		cmdqRecReset(cmdq_handle);
 
 		DISPINFO("[C2V]after c2v switch, cmdq flushed\n");
 
-		/* THIS IS NOT A GOOD DESIGN!!!!! */
-		/* TEMP WORKAROUND FOR ESD/CV SWITCH */
-		/**************************************************************/
-		while (wait_count) {
-			DISPDBG("[C2V]wait loop %d\n", wait_count);
-			if (DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE == 0x1) {
-				DISPDBG("[C2V]after c2v switch, dsi fsm is idle\n");
-				break;
-			}
-			lcm_mdelay(1);
-			wait_count--;
+		/* Force the DSI switch to VDO mode */
+		if (ret < 0) {
+			DISPERR("switch to vdo fail\n");
+			DSI_SetMode(module, cmdq_handle, mode);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_MODE_CTRL_REG,
+					  DSI_REG[0]->DSI_MODE_CTRL, C2V_SWITCH_ON, 0);
+			DSI_SetBypassRack(module, cmdq_handle, 0);
+			DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x7, 0x1); /* sof */
+			DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x1c0, 0x40); /* eof */
+			/* release mutex for video mode */
+			DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 0x1, 0x1);
+			DSI_Start(module, cmdq_handle);
+			DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
+			ret = cmdqRecFlush(cmdq_handle);
+			cmdqRecReset(cmdq_handle);
 		}
 
-		if (wait_count == 0) {
-			DDPPR_ERR("[C2V]after c2v switch, dsi state is not idle[0x%08x]\n",
-				DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE);
-			dsi_analysis(module);
-			DSI_DumpRegisters(module, 2);
-			DSI_Reset(module, NULL);
-			DSI_OUTREGBIT(NULL, struct DSI_MODE_CTRL_REG,
-				      DSI_REG[i]->DSI_MODE_CTRL, C2V_SWITCH_ON, 0);
-			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_CMDQ_SIZE, 0);
-			DSI_Start(module, NULL);
-		}
-		/**************************************************************/
+		/* dsi_analysis(module); */
+		/* DSI_DumpRegisters(module, 2); */
 
-		dsi_analysis(module);
-		DSI_DumpRegisters(module, 2);
-
-		/* 8. disable dsi auto rack */
-		/* DSI_SetBypassRack(module, NULL, 0); */
+		/* 10. disable dsi auto rack */
+		DSI_SetBypassRack(module, NULL, 0);
 
 		DISPMSG("[C2V]c2v switch finished\n");
 	}
@@ -3466,6 +3742,13 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		_dsi_context[i].dsi_params.mode = mode;
 
 	return 0;
+}
+
+void adjust_dsi_clk(int clk)
+{
+	LCM_DSI_PARAMS *dsi_params = &_dsi_context[0].dsi_params;
+
+	dsi_params->PLL_CLOCK = clk;
 }
 
 int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle,
@@ -3544,7 +3827,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle,
 
 		dsi_params->PLL_CLOCK = *p;
 		/* DSI_WaitForNotBusy(module, cmdq_handle); */
-		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
+		_DSI_PHY_clk_setting(module, cmdq_handle, dsi_params);
 		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
 		break;
 	}
