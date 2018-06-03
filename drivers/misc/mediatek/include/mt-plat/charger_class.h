@@ -162,6 +162,7 @@ extern int charger_dev_get_input_current(struct charger_device *charger_dev, u32
 extern int charger_dev_get_min_input_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_eoc_current(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_eoc_current(struct charger_device *charger_dev, u32 *uA);
+extern int charger_dev_kick_wdt(struct charger_device *charger_dev);
 extern int charger_dev_set_constant_voltage(struct charger_device *charger_dev, u32 uV);
 extern int charger_dev_get_constant_voltage(struct charger_device *charger_dev, u32 *uV);
 extern int charger_dev_dump_registers(struct charger_device *charger_dev);

@@ -224,6 +224,15 @@ int charger_dev_get_eoc_current(struct charger_device *charger_dev, u32 *uA)
 }
 EXPORT_SYMBOL(charger_dev_get_eoc_current);
 
+int charger_dev_kick_wdt(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->kick_wdt)
+		return charger_dev->ops->kick_wdt(charger_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_kick_wdt);
+
 int charger_dev_set_constant_voltage(struct charger_device *charger_dev, u32 uV)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_constant_voltage)
