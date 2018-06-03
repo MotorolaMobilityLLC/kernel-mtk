@@ -1906,6 +1906,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
 	struct rq *lowest_rq = NULL;
 	int tries;
 	int cpu;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(task);
 
 	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
 		cpu = find_lowest_rq(task);
@@ -1935,7 +1936,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
 			 */
 			if (unlikely(task_rq(task) != rq ||
 				     !cpumask_test_cpu(lowest_rq->cpu,
-						       tsk_cpus_allowed(task)) ||
+						       tsk_cpus_allow) ||
 				     task_running(rq, task) ||
 				     !task_on_rq_queued(task))) {
 

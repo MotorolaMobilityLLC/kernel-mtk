@@ -5735,6 +5735,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 	unsigned long fit_capacity = ULONG_MAX;
 	int load_idx = sd->forkexec_idx;
 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		load_idx = sd->wake_idx;
@@ -5746,7 +5747,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 
 		/* Skip over this group if it has no CPUs allowed */
 		if (!cpumask_intersects(sched_group_cpus(group),
-					tsk_cpus_allowed(p)))
+					tsk_cpus_allow))
 			continue;
 
 		local_group = cpumask_test_cpu(this_cpu,
@@ -5808,9 +5809,10 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 	int least_loaded_cpu = this_cpu;
 	int shallowest_idle_cpu = -1;
 	int i;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* Traverse only the allowed CPUs */
-	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allow) {
 		if (task_fits_spare(p, i)) {
 			struct rq *rq = cpu_rq(i);
 			struct cpuidle_state *idle = idle_get_state(rq);
@@ -5864,6 +5866,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
 	struct sched_domain *sd;
 	struct sched_group *sg;
 	int i = task_cpu(p);
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	if (idle_cpu(target))
 		return target;
@@ -5882,7 +5885,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
 		sg = sd->groups;
 		do {
 			if (!cpumask_intersects(sched_group_cpus(sg),
-						tsk_cpus_allowed(p)))
+						tsk_cpus_allow))
 				goto next;
 
 			for_each_cpu(i, sched_group_cpus(sg)) {
@@ -5891,7 +5894,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
 			}
 
 			target = cpumask_first_and(sched_group_cpus(sg),
-					tsk_cpus_allowed(p));
+					tsk_cpus_allow);
 			goto done;
 next:
 			sg = sg->next;
@@ -5925,6 +5928,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 	struct cpumask cluster_cpus;
 	int max_cap_cpu = 0;
 	int best_cpu = 0;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/*
 	 * Find group with sufficient capacity. We only get here if no cpu is
@@ -5962,7 +5966,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 	if (!is_tiny)
 		target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 	else
-		for_each_cpu_and(i, tsk_cpus_allowed(p), &cluster_cpus) {
+		for_each_cpu_and(i, tsk_cpus_allow, &cluster_cpus) {
 
 			if (!cpu_online(i))
 				continue;
@@ -6055,7 +6059,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
 	int policy = 0;
-
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 	/* mtk: If task is VIP task, prefer most efficiency idle cpu */
 	if (is_vip_task(p)) {
@@ -6096,7 +6100,7 @@ CONSIDER_EAS:
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = (!wake_wide(p) && task_fits_max(p, cpu) &&
-			      cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) ||
+			      cpumask_test_cpu(cpu, tsk_cpus_allow)) ||
 			      energy_aware();
 
 	rcu_read_lock();
@@ -9807,13 +9811,14 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 {
 	int iter_cpu;
 	int best_idle_cpu = -1;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
 		/* foreground task prefer idle to find bigger idle cpu */
 		int i = (prefer_idle && (task_util(p) > stune_task_threshold)) ?
 				nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allowed(p)))
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow))
 			continue;
 
 
@@ -9841,6 +9846,7 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	struct cpumask cls_cpus;
 	int cid = arch_get_cluster_id(target); /* cid of target CPU */
 	int cpu = task_cpu(p);
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* If the prevous cpu is cache affine and idle, choose it first. */
 	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
@@ -9849,7 +9855,7 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	/* Otherwise, find a CPU with max spare-capacity in cluster */
-	for_each_cpu_and(cpu, tsk_cpus_allowed(p), &cls_cpus) {
+	for_each_cpu_and(cpu, tsk_cpus_allow, &cls_cpus) {
 		unsigned long int new_usage;
 		unsigned long int spare_cap;
 
