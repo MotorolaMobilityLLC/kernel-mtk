@@ -34,6 +34,7 @@
 #include <linux/io.h>
 #include <mt-plat/aee.h>
 #include "ram_console.h"
+#include <mach/memory_layout.h>
 
 #define RAM_CONSOLE_HEADER_STR_LEN 1024
 
@@ -45,6 +46,7 @@ static int mtk_cpu_num;
 static int ram_console_init_done;
 static unsigned int old_wdt_status;
 static int ram_console_clear;
+static bool reserve_mem_fail;
 
 /*
  *  This group of API call by sub-driver module to report reboot reasons
@@ -737,6 +739,10 @@ static int __init ram_console_late_init(void)
 {
 	struct proc_dir_entry *entry;
 
+	if (reserve_mem_fail) {
+		pr_info("ram_console/pstore wrong reserved memory\n");
+		BUG();
+	}
 	entry = proc_create("last_kmsg", 0444, NULL, &ram_console_file_ops);
 	if (!entry) {
 		pr_err("ram_console: failed to create proc entry\n");
@@ -752,8 +758,14 @@ late_initcall(ram_console_late_init);
 
 int ram_console_pstore_reserve_memory(struct reserved_mem *rmem)
 {
-	pr_notice("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n",
-		"pstore-reserve-memory",
+#ifndef DUMMY_MEMORY_LAYOUT
+	if (rmem->base != KERN_PSTORE_BASE ||
+		rmem->size > KERN_PSTORE_MAX_SIZE) {
+		reserve_mem_fail = true;
+		pr_info("pstore: Check the reserved address and size\n");
+	}
+#endif
+	pr_info("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n", "mediatek,pstore",
 		 (unsigned long long)rmem->base,
 		 (unsigned long long)rmem->base +
 		 (unsigned long long)rmem->size,
@@ -763,8 +775,15 @@ int ram_console_pstore_reserve_memory(struct reserved_mem *rmem)
 
 int ram_console_binary_reserve_memory(struct reserved_mem *rmem)
 {
-	pr_notice("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n",
-		"ram_console-reserve-memory",
+#ifndef DUMMY_MEMORY_LAYOUT
+	if (rmem->base != KERN_RAMCONSOLE_BASE ||
+		rmem->size > KERN_RAMCONSOLE_MAX_SIZE) {
+		reserve_mem_fail = true;
+		pr_info("ram_console: Check the reserved address and size\n");
+	}
+#endif
+	pr_info("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n",
+		"mediatek,ram_console",
 		 (unsigned long long)rmem->base,
 		 (unsigned long long)rmem->base +
 		 (unsigned long long)rmem->size,
@@ -772,7 +791,7 @@ int ram_console_binary_reserve_memory(struct reserved_mem *rmem)
 	return 0;
 }
 
-RESERVEDMEM_OF_DECLARE(reserve_memory_pstore, "pstore-reserve-memory",
+RESERVEDMEM_OF_DECLARE(reserve_memory_pstore, "mediatek,pstore",
 		       ram_console_pstore_reserve_memory);
 RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 		       ram_console_binary_reserve_memory);
