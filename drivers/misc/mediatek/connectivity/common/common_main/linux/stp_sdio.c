@@ -748,7 +748,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 		return;
 	}
 	clt_ctx = pInfo->sdio_cltctx;
-	STPSDIO_INFO_FUNC("stp_tx_rx_thread runns\n");
+	STPSDIO_DBG_FUNC("stp_tx_rx_thread runns\n");
 	while (!osal_thread_should_stop(&pInfo->tx_rx_thread)) {
 		while_loop_counter++;
 		osal_ftrace_print("loop_count:%d\n", while_loop_counter);
@@ -3378,9 +3378,9 @@ static INT32 stp_sdio_init(VOID)
 	g_stp_sdio_cltinfo.hif_clt_remove = stp_sdio_remove;
 #endif
 
-	STPSDIO_INFO_FUNC("cltinfo func table size:%d\n", g_stp_sdio_cltinfo.func_tbl_size);
+	STPSDIO_DBG_FUNC("cltinfo func table size:%d\n", g_stp_sdio_cltinfo.func_tbl_size);
 	for (i = 0; i < g_stp_sdio_cltinfo.func_tbl_size; i++) {
-		STPSDIO_INFO_FUNC("manf_id:0x%x, card_id:0x%x, func_num:%d, blk_size:%d\n",
+		STPSDIO_DBG_FUNC("manf_id:0x%x, card_id:0x%x, func_num:%d, blk_size:%d\n",
 				  mtk_stp_sdio_id_tbl[i].manf_id, mtk_stp_sdio_id_tbl[i].card_id,
 				  mtk_stp_sdio_id_tbl[i].func_num, mtk_stp_sdio_id_tbl[i].blk_sz);
 	}
@@ -3413,7 +3413,7 @@ static INT32 stp_sdio_init(VOID)
 	stp_sdio_owndbg_setup();
 #endif
 
-	STPSDIO_INFO_FUNC
+	STPSDIO_DBG_FUNC
 	    ("blk_size(%ld), tx_buf_cnt(%ld), fifo tx(%ld) rx(%ld), buf tx(%ld) rx(%ld)\n",
 	     STP_SDIO_BLK_SIZE, STP_SDIO_TX_BUF_CNT, STP_SDIO_TX_FIFO_SIZE, STP_SDIO_RX_FIFO_SIZE,
 	     STP_SDIO_TX_ENTRY_SIZE, STP_SDIO_TX_ENTRY_SIZE);

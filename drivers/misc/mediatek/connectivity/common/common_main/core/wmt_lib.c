@@ -486,7 +486,7 @@ INT32 wmt_lib_set_hif(ULONG hifconf)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("new hifType:%d, fcCtrl:%d, baud:%d, fm:%d\n",
+	WMT_DBG_FUNC("new hifType:%d, fcCtrl:%d, baud:%d, fm:%d\n",
 		      pHif->hifType, pHif->uartFcCtrl, pHif->au4HifConf[0], pHif->au4StrapConf[0]);
 	return 0;
 }

@@ -1791,7 +1791,7 @@ static INT32 hif_sdio_probe(struct sdio_func *func, const struct sdio_device_id 
 	HIF_SDIO_INFO_FUNC("vendor(0x%x) device(0x%x) num(0x%x)\n", func->vendor, func->device,
 			   func->num);
 	for (i = 0; i < func->card->num_info; i++)
-		HIF_SDIO_INFO_FUNC("card->info[%d]: %s\n", i, func->card->info[i]);
+		HIF_SDIO_DBG_FUNC("card->info[%d]: %s\n", i, func->card->info[i]);
 
 	/* 4 <1> Check if this  is supported by us (mtk_sdio_id_tbl) */
 	ret = hif_sdio_check_supported_sdio_id(func->vendor, func->device);
@@ -1886,7 +1886,7 @@ static INT32 hif_sdio_probe(struct sdio_func *func, const struct sdio_device_id 
 		goto out;
 	}
 
-	HIF_SDIO_INFO_FUNC("cur_blksize(%d) max(%d), host max blk_size(%d) blk_count(%d)\n",
+	HIF_SDIO_DBG_FUNC("cur_blksize(%d) max(%d), host max blk_size(%d) blk_count(%d)\n",
 			   func->cur_blksize, func->max_blksize,
 			   func->card->host->max_blk_size, func->card->host->max_blk_count);
 
