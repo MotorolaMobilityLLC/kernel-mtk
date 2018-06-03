@@ -18,9 +18,16 @@
 #include <mt-plat/met_drv.h>
 #endif
 
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+bool schedtune_initialized = false;
+#endif
+
 unsigned int sysctl_sched_cfs_boost __read_mostly;
 
 static int default_stune_threshold;
+
+extern struct reciprocal_value schedtune_spc_rdiv;
+extern struct target_nrg schedtune_target_nrg;
 
 /* Performance Boost region (B) threshold params */
 static int perf_boost_idx;
@@ -233,7 +240,7 @@ schedtune_accept_deltas(int nrg_delta, int cap_delta,
  *    implementation especially for the computation of the per-CPU boost
  *    value
  */
-#define BOOSTGROUPS_COUNT 4
+#define BOOSTGROUPS_COUNT 5
 
 /* Array of configured boostgroups */
 static struct schedtune *allocated_group[BOOSTGROUPS_COUNT] = {
@@ -428,6 +435,9 @@ int schedtune_task_boost(struct task_struct *p)
 {
 	struct schedtune *st;
 	int task_boost;
+
+	if (!unlikely(schedtune_initialized))
+		return 0;
 
 	/* Get task boost value */
 	rcu_read_lock();
@@ -761,6 +771,9 @@ int schedtune_prefer_idle(struct task_struct *p)
 	struct schedtune *st;
 	int prefer_idle;
 
+	if (!unlikely(schedtune_initialized))
+		return 0;
+
 	/* Get prefer_idle value */
 	rcu_read_lock();
 	st = task_schedtune(p);
@@ -951,6 +964,7 @@ schedtune_boostgroup_init(struct schedtune *st)
 		bg = &per_cpu(cpu_boost_groups, cpu);
 		bg->group[st->idx].boost = 0;
 		bg->group[st->idx].tasks = 0;
+		raw_spin_lock_init(&bg->lock);
 	}
 
 	return 0;
@@ -1410,10 +1424,12 @@ schedtune_init(void)
 	pr_info("schedtune: configured to support global boosting only\n");
 #endif
 
+	schedtune_spc_rdiv = reciprocal_value(100);
+
 	return 0;
 
 nodata:
-	pr_warn("schedtune: disabled!\n");
+	pr_warning("schedtune: disabled!\n");
 	rcu_read_unlock();
 	return -EINVAL;
 }
