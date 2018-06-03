@@ -1838,6 +1838,8 @@ static int __init dram_test_init(void)
 
 	DRAM_TYPE = 0;
 
+	return ret;
+
 	ret = dram_dt_init();
 	if (ret) {
 		pr_warn("[DRAMC] Device Tree Init Fail\n");
