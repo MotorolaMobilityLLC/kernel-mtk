@@ -238,17 +238,17 @@ struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3;
 
 /* SOC v1 Voltage (10uv)*/
 static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{80000, 77500, 75000, 72500},
-	{72500, 70000, 67500, 65000},
-	{72500, 70000, 67500, 65000},
-	{72500, 70000, 67500, 65000}
+	{79375, 76875, 74375, 71875},
+	{71875, 69375, 66875, 64375},
+	{71875, 69375, 66875, 64375},
+	{71875, 69375, 66875, 64375}
 };
 
 static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{80000, 77500, 75000, 72500},
-	{80000, 77500, 75000, 72500},
-	{72500, 70000, 67500, 65000},
-	{72500, 70000, 67500, 65000}
+	{79375, 76875, 74375, 71875},
+	{79375, 76875, 74375, 71875},
+	{71875, 69375, 66875, 64375},
+	{71875, 69375, 66875, 64375}
 };
 
 #if 0
@@ -357,7 +357,7 @@ static void get_vcore_opp(void)
 #if !EEM_BANK_SOC
 static void get_soc_efuse(void)
 {
-	unsigned int soc_efuse = 0, mask = 0x2, ft_pgm_ver = 0;
+	unsigned int soc_efuse = 0, mask = 0x3, ft_pgm_ver = 0;
 	#if 1
 		int ddr_type = get_ddr_type();
 		int emi_ch_num = get_emi_ch_num();
