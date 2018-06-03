@@ -523,7 +523,7 @@ config ZONE_MOVABLE_CMA
 	select CMA
 	select CMA_DEBUG
 	depends on HAVE_MEMBLOCK && MMU && MTK_MEM
-	default n
+	default y
 	help
 	  This enable the support of ZONE MOVALBE Contiguous Memory Allocator.
 	  Traditional CMA is based on a "fallback logic". The system takes
