@@ -1158,6 +1158,8 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, HIF_STATE state
 			}
 		}
 		break;
+	default:
+		break;
 	}
 }
 
