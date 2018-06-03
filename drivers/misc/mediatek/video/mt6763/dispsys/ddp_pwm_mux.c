@@ -254,8 +254,6 @@ static int ulposc_on(void)
 	if (get_ulposc_base() == -1)
 		return -1;
 
-	clk_writel(OSC_LOCK_ADDR, 0x0b160001);
-
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* PWM_MSG("ULPOSC config : 0x%08x", regosc); */
 
@@ -281,8 +279,6 @@ static int ulposc_off(void)
 
 	if (get_ulposc_base() == -1)
 		return -1;
-
-	clk_writel(OSC_LOCK_ADDR, 0x0b160001);
 
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 
