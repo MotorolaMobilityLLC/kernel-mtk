@@ -194,7 +194,7 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 		if (on)
 			pmic_set_register_value(PMIC_RG_VMC_VOCAL, 0x6);
 
-		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1860,
+		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1800,
 			&host->power_io);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
 		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
@@ -305,6 +305,11 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
+
+		/* soft start 120 us, when power on */
+		if (card_on)
+			pmic_set_register_value(PMIC_RG_LDO_VMCH_STBTD, 0x1);
+
 		/* VMCH VOLSEL */
 		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
 			&host->power_flash);
@@ -470,7 +475,6 @@ u32 *hclks_msdc;
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
-#ifdef CLOCK_READY
 	u32 clk_freq;
 	static char const * const clk_names[] = {
 		MSDC0_CLK_NAME, MSDC1_CLK_NAME
@@ -511,7 +515,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 	pr_info("[msdc%d] hclk:%d, clk_ctl:%p, hclk_ctl:%p\n",
 		pdev->id, host->hclk, host->clk_ctl, host->hclk_ctl);
-#endif
+
 	return 0;
 }
 
