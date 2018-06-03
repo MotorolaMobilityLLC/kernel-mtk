@@ -89,7 +89,7 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 #define index_of_gamma(module) (0)
 #endif
 
-static unsigned int g_gamma_relay_value;
+static unsigned int g_gamma_relay_value[GAMMA_TOTAL_MODULE_NUM];
 
 static DISP_GAMMA_LUT_T *g_disp_gamma_lut[DISP_GAMMA_TOTAL] = { NULL };
 
@@ -176,7 +176,7 @@ static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE
 	}
 
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_EN + offset, 0x1, 0x1);
-	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x2|g_gamma_relay_value, 0x3);
+	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x2|g_gamma_relay_value[index_of_gamma(module)], 0x3);
 	lut_base = DISP_REG_GAMMA_LUT + offset;
 
 	for (i = 0; i < DISP_GAMMA_LUT_SIZE; i++) {
@@ -304,9 +304,9 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 	if (bypass) {
 		relay = 1;
-		g_gamma_relay_value = 0x1;
+		g_gamma_relay_value[index_of_gamma(module)] = 0x1;
 	} else {
-		g_gamma_relay_value = 0x0;
+		g_gamma_relay_value[index_of_gamma(module)] = 0x0;
 	}
 
 	DISP_REG_MASK(NULL, DISP_REG_GAMMA_CFG + gamma_get_offset(module), relay, 0x1);
@@ -432,7 +432,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 #define index_of_ccorr(module) (0)
 #endif
 
-static unsigned int g_ccorr_relay_value;
+static unsigned int g_ccorr_relay_value[CCORR_TOTAL_MODULE_NUM];
 
 static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 
@@ -516,7 +516,7 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODUL
 
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_EN + base_offset, 1);
 
-	cfg_val = 0x2 | g_ccorr_relay_value;
+	cfg_val = 0x2 | g_ccorr_relay_value[index_of_ccorr(module)];
 	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG + base_offset, cfg_val, 0x3);
 
 	DISP_REG_SET(cmdq, CCORR_REG(ccorr_base, 0),
@@ -798,9 +798,9 @@ static int disp_ccorr_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 	if (bypass) {
 		relay = 1;
-		g_ccorr_relay_value = 0x1;
+		g_ccorr_relay_value[index_of_ccorr(module)] = 0x1;
 	} else {
-		g_ccorr_relay_value = 0x0;
+		g_ccorr_relay_value[index_of_ccorr(module)] = 0x0;
 	}
 
 	DISP_REG_MASK(NULL, DISP_REG_CCORR_CFG + base_offset, 1, 1);

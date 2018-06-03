@@ -1058,11 +1058,6 @@ static unsigned int g_color_pos_x;
 
 static struct MDP_COLOR_CAP mdp_color_cap;
 
-#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
-static int g_color_bypass = 1;
-#else
-static int g_color_bypass;
-#endif
 static int g_tdshp_flag;	/* 0: normal, 1: tuning mode */
 int ncs_tuning_mode;
 int tdshp_index_init;
@@ -1132,9 +1127,23 @@ static bool g_config_color30;
 #if defined(CONFIG_MACH_MT6799)
 #define COLOR_TOTAL_MODULE_NUM (2)
 #define index_of_color(module) ((module == DISP_MODULE_COLOR0) ? 0 : 1)
+
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
+static int g_color_bypass[COLOR_TOTAL_MODULE_NUM] = {1, 1};
+#else
+static int g_color_bypass[COLOR_TOTAL_MODULE_NUM];
+#endif
+
 #else
 #define COLOR_TOTAL_MODULE_NUM (1)
 #define index_of_color(module) (0)
+
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(DISP_COLOR_OFF)
+static int g_color_bypass[COLOR_TOTAL_MODULE_NUM] = {1};
+#else
+static int g_color_bypass[COLOR_TOTAL_MODULE_NUM];
+#endif
+
 #endif
 
 static volatile bool g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM];
@@ -1289,7 +1298,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	}
 	/* COLOR_ERR("DpEngine_COLORonConfig(%d)", module); */
 
-	if (g_color_bypass == 0) {
+	if (g_color_bypass[index_of_color(module)] == 0) {
 #if defined(COLOR_2_1)
 		if (g_config_color21 == true) {
 			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
@@ -1633,7 +1642,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	offset = color_get_offset(module);
 
 
-	if (g_color_bypass == 0) {
+	if (g_color_bypass[index_of_color(module)] == 0) {
 #if defined(COLOR_2_1)
 		if (g_config_color21 == true) {
 			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
@@ -1933,7 +1942,7 @@ static void ddp_color_bypass_color(enum DISP_MODULE_ENUM module, int bypass, voi
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
 
-	g_color_bypass = bypass;
+	g_color_bypass[index_of_color(module)] = bypass;
 
 	offset = color_get_offset(module);
 
@@ -3286,7 +3295,7 @@ void set_color_bypass(enum DISP_MODULE_ENUM module, int bypass, void *cmdq_handl
 	return;
 #endif
 
-	g_color_bypass = bypass;
+	g_color_bypass[index_of_color(module)] = bypass;
 
 	offset = color_get_offset(module);
 
@@ -3329,7 +3338,7 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 	return -1;
 #endif
 
-	g_color_bypass = bypass;
+	g_color_bypass[index_of_color(module)] = bypass;
 
 	offset = color_get_offset(module);
 
