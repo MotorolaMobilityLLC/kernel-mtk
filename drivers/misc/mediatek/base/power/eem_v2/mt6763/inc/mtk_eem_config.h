@@ -120,7 +120,7 @@
 */
 #define NR_HW_RES		(11) /* reserve for eem log */
 #define NR_HW_RES_FOR_BANK	(11) /* real eem banks for efuse */
-#define VCORE_NR_FREQ_EFUSE     (16)
+#define VCORE_NR_FREQ_EFUSE     (4)
 #define VCORE_NR_FREQ		(4)
 #define HW_RES_IDX_TURBO	(11) /* for providing turbo value to cpu dvfs */
 #if EEM_BANK_SOC

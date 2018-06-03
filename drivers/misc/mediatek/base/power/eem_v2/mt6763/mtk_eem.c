@@ -238,47 +238,17 @@ struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3;
 
 /* SOC v1 Voltage (10uv)*/
 static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{79375, 78750, 78125, 77500,
-	 76875, 76250, 75625, 75000,
-	 74375, 73750, 73125, 72500,
-	 71875, 71250, 70625, 70000},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
+	{80000, 77500, 75000, 72500},
+	{72500, 70000, 67500, 65000},
+	{72500, 70000, 67500, 65000},
+	{72500, 70000, 67500, 65000}
 };
 
 static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{79375, 78750, 78125, 77500,
-	 76875, 76250, 75625, 75000,
-	 74375, 73750, 73125, 72500,
-	 71875, 71250, 70625, 70000},
-
-	{79375, 78750, 78125, 77500,
-	 76875, 76250, 75625, 75000,
-	 74375, 73750, 73125, 72500,
-	 71875, 71250, 70625, 70000},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
-
-	{71875, 71250, 70625, 70000,
-	 69375, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875,
-	 71875, 71875, 71875, 71875},
+	{80000, 77500, 75000, 72500},
+	{80000, 77500, 75000, 72500},
+	{72500, 70000, 67500, 65000},
+	{72500, 70000, 67500, 65000}
 };
 
 #if 0
@@ -387,7 +357,7 @@ static void get_vcore_opp(void)
 #if !EEM_BANK_SOC
 static void get_soc_efuse(void)
 {
-	unsigned int soc_efuse = 0, mask_f = 0xF, mask_7 = 0x7;
+	unsigned int soc_efuse = 0, mask = 0x2, ft_pgm_ver = 0;
 	#if 1
 		int ddr_type = get_ddr_type();
 		int emi_ch_num = get_emi_ch_num();
@@ -396,20 +366,21 @@ static void get_soc_efuse(void)
 		int emi_ch_num = 1;
 	#endif
 
-	soc_efuse = get_devinfo_with_index(DEVINFO_IDX_10);
+	ft_pgm_ver = GET_BITS_VAL(7:4, get_devinfo_with_index(DEVINFO_IDX_0));
 
-	soc_efuse = 0; /* Off voltage bin request by wen-wen 2017/4/5 */
+	if (ft_pgm_ver >= 3)
+		soc_efuse = 0; /* get_devinfo_with_index(DEVINFO_IDX_10); */
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2) {
-		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
-		eem_vcore_index[1] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
-		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
-		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
+		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask;
+		eem_vcore_index[1] = GET_BITS_VAL(7:4, soc_efuse) & mask;
+		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask;
+		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask;
 	} else {
-		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
-		eem_vcore_index[1] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
-		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
-		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
+		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask;
+		eem_vcore_index[1] = GET_BITS_VAL(3:0, soc_efuse) & mask;
+		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask;
+		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask;
 	}
 	eem_error("eem_vcore_index:%d, %d, %d, %d\n", eem_vcore_index[0], eem_vcore_index[1],
 				eem_vcore_index[2], eem_vcore_index[3]);
@@ -1672,6 +1643,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->features = FEA_INIT01 | FEA_INIT02 | FEA_MON;
 		else
 			det->features = FEA_INIT01 | FEA_INIT02;
+
+		if (devinfo->FT_PGM >= 3)
+			det->max_freq_khz = 770000;/* MHz */
+
 		break;
 
 	 /* for DVT SOC input values are the same as CCI*/
