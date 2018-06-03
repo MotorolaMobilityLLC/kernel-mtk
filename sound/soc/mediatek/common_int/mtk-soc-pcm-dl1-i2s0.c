@@ -79,7 +79,7 @@ const char *const i2s0_SIDEGEN[] = {"Off",     "On8000",  "On16000",
 				    "On32000", "On44100", "On48000",
 				    "On96000", "On192000"};
 const char *const i2s0_HD_output[] = {"Off", "On"};
-const char *const ExtCodec_EchoRef_Routing[] = {"Off", "MD1", "MD3"};
+const char *const ExtCodec_EchoRef_Routing[] = {"Off", "MD1", "MD3", "SCP"};
 
 static const struct soc_enum Audio_i2s0_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_SIDEGEN), i2s0_SIDEGEN),

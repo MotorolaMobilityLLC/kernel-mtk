@@ -630,6 +630,98 @@ bool SetDl2ToI2s3(unsigned int ConnectionState)
 	return true;
 }
 
+bool SetDl3ToI2s1Dac(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O03);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I24,
+			   Soc_Aud_InterConnectionOutput_O04);
+	return true;
+}
+
+bool SetDl3Ch1ToI2s1Dac(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O03);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O04);
+	return true;
+}
+
+bool SetDl3ToI2s3(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O00);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I24,
+			   Soc_Aud_InterConnectionOutput_O01);
+	return true;
+}
+
+bool SetDl3ToI2s1Dac2(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O28);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I24,
+			   Soc_Aud_InterConnectionOutput_O29);
+	return true;
+}
+
+bool SetDl3ToAwb(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I23,
+			   Soc_Aud_InterConnectionOutput_O05);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I24,
+			   Soc_Aud_InterConnectionOutput_O06);
+	return true;
+}
+
+bool SetI2s2ToVulData2(unsigned int ConnectionState)
+{
+
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I25,
+			  Soc_Aud_InterConnectionOutput_O21);
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I26,
+			  Soc_Aud_InterConnectionOutput_O22);
+
+	return true;
+}
+
+bool SetI2s2ToModem2OutCh4(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState,
+		     Soc_Aud_InterConnectionInput_I26,
+			Soc_Aud_InterConnectionOutput_O24);
+	return true;
+}
+
+bool SetI2s0ToawbData2(unsigned int ConnectionState)
+{
+
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I00,
+			  Soc_Aud_InterConnectionOutput_O38);
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I01,
+			  Soc_Aud_InterConnectionOutput_O39);
+
+	return true;
+}
+
+bool SetI2s2ToawbData2(unsigned int ConnectionState)
+{
+
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I25,
+			  Soc_Aud_InterConnectionOutput_O38);
+	SetConnectionState(ConnectionState,
+			  Soc_Aud_InterConnectionInput_I26,
+			  Soc_Aud_InterConnectionOutput_O39);
+
+	return true;
+}
+
 struct connection_link_t {
 	unsigned int input;
 	unsigned int output;
@@ -754,7 +846,16 @@ static const struct connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_MEM_DL1,
 	 Soc_Aud_AFE_IO_Block_MRG_I2S_OUT, SetDl1ToMrgI2sOut},
 	{Soc_Aud_AFE_IO_Block_MEM_DL2,
-	 Soc_Aud_AFE_IO_Block_I2S3, SetDl2ToI2s3}
+	 Soc_Aud_AFE_IO_Block_I2S3, SetDl2ToI2s3},
+	{Soc_Aud_AFE_IO_Block_I2S2,
+	 Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2, SetI2s2ToVulData2},
+	{Soc_Aud_AFE_IO_Block_I2S2,
+	 Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4, SetI2s2ToModem2OutCh4},
+	{Soc_Aud_AFE_IO_Block_I2S0,
+	Soc_Aud_AFE_IO_Block_MEM_AWB2,
+	 SetI2s0ToawbData2},
+	{Soc_Aud_AFE_IO_Block_I2S2,
+	 Soc_Aud_AFE_IO_Block_MEM_AWB2, SetI2s2ToawbData2}
 };
 
 static const int CONNECTION_LINK_NUM = ARRAY_SIZE(mConnectionLink);
@@ -884,7 +985,8 @@ bool SetIntfConnectionState(unsigned int ConnectionState,
 		GetConnectionFunction(Aud_block_In, Aud_block_Out);
 
 	if (connectionFunction == 0) {
-		pr_debug("no this connection function\n");
+		pr_debug("no this connection function, %d, %d\n",
+			 Aud_block_In, Aud_block_Out);
 		return ret;
 	}
 	return connectionFunction(ConnectionState);
@@ -952,6 +1054,13 @@ bool SetIntfConnectionFormat(unsigned int ConnectionFormat,
 					  Soc_Aud_InterConnectionOutput_O00);
 		SetoutputConnectionFormat(ConnectionFormat,
 					  Soc_Aud_InterConnectionOutput_O01);
+		break;
+	}
+	case Soc_Aud_AFE_IO_Block_MEM_AWB2: {
+		SetoutputConnectionFormat(ConnectionFormat,
+					  Soc_Aud_InterConnectionOutput_O38);
+		SetoutputConnectionFormat(ConnectionFormat,
+					  Soc_Aud_InterConnectionOutput_O39);
 		break;
 	}
 	default:

@@ -214,6 +214,7 @@ enum audio_sdm_level {
 #define AFE_VUL2_CUR (AFE_BASE + 0x02fc)
 #define AFE_IRQ_MCU_CNT0 (AFE_BASE + 0x0300)
 #define AFE_IRQ_MCU_CNT6 (AFE_BASE + 0x0304)
+#define AFE_IRQ_MCU_EN1 (AFE_BASE + 0x030c)
 #define AFE_IRQ0_MCU_CNT_MON (AFE_BASE + 0x0310)
 #define AFE_IRQ6_MCU_CNT_MON (AFE_BASE + 0x0314)
 #define AFE_MOD_DAI_BASE (AFE_BASE + 0x0330)
