@@ -804,6 +804,7 @@ extern void set_hw_ocv_unreliable(bool _flag_unreliable);
 
 /* mtk_battery_core.c */
 extern void mtk_battery_init(struct platform_device *dev);
+extern void mtk_battery_last_init(struct platform_device *dev);
 extern void fg_bat_temp_int_internal(void);
 extern void fgauge_get_profile_id(void);
 extern void battery_update(struct battery_data *bat_data);
