@@ -360,7 +360,24 @@ void ufs_mtk_biolog_check(unsigned long req_mask)
 	mtk_btag_klog(ufs_mtk_btag, tr);
 }
 
-static size_t ufs_mtk_bio_seq_debug_show_info(struct seq_file *seq)
+#define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
+do { \
+	if (buff && size && *(size)) { \
+		unsigned long var = snprintf(*(buff), *(size), fmt, ##args); \
+		if (var > 0) { \
+			*(size) -= var; \
+			*(buff) += var; \
+		} \
+	} \
+	if (evt) \
+		seq_printf(evt, fmt, ##args); \
+	if (!buff && !evt) { \
+		pr_info(fmt, ##args); \
+	} \
+} while (0)
+
+static size_t ufs_mtk_bio_seq_debug_show_info(char **buff, unsigned long *size,
+	struct seq_file *seq)
 {
 	int i;
 	struct ufs_mtk_bio_context *ctx = BTAG_CTX(ufs_mtk_btag);
@@ -371,7 +388,7 @@ static size_t ufs_mtk_bio_seq_debug_show_info(struct seq_file *seq)
 	for (i = 0; i < UFS_BIOLOG_CONTEXTS; i++)	{
 		if (ctx[i].pid == 0)
 			continue;
-		seq_printf(seq, "ctx[%d]=ctx_map[%d],pid:%4d,q:%d\n",
+		SPREAD_PRINTF(buff, size, seq, "ctx[%d]=ctx_map[%d],pid:%4d,q:%d\n",
 			i,
 			ctx[i].id,
 			ctx[i].pid,

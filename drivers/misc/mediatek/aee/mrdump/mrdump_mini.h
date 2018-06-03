@@ -12,6 +12,11 @@
  */
 
 #if !defined(__MRDUMP_MINI_H__)
+struct mrdump_mini_extra_misc {
+	void (*dump_func)(unsigned long *, unsigned long *);
+	const char *dump_name;
+	unsigned long max_size;
+};
 #ifdef CONFIG_MODULES
 static char modules_info_buf[MODULES_INFO_BUF_SIZE];
 extern int save_modules(char *mbuf, int mbufsize);
