@@ -428,10 +428,10 @@ int bat_percent_notify_handler(void *unused)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 		bat_per_val = bat_get_ui_percentage();
 #endif
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if ((upmu_get_rgs_chrdet() == 0) && (g_battery_percent_level == 0)
-		    && (bat_per_val <= BAT_PERCENT_LINIT)) {
-#else
+			&& (bat_per_val <= BAT_PERCENT_LINIT)) {
+#elif !defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if ((g_battery_percent_level == 0) && (bat_per_val <= BAT_PERCENT_LINIT)) {
 #endif
 			g_battery_percent_level = 1;
@@ -439,7 +439,6 @@ int bat_percent_notify_handler(void *unused)
 		} else if ((g_battery_percent_level == 1) && (bat_per_val > BAT_PERCENT_LINIT)) {
 			g_battery_percent_level = 0;
 			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_0);
-		} else {
 		}
 		bat_percent_notify_flag = false;
 
@@ -1086,8 +1085,6 @@ void dlpt_notify_task(unsigned long data)
 	dlpt_notify_flag = true;
 	wake_up_interruptible(&dlpt_notify_waiter);
 	PMICLOG("dlpt_notify_task is called\n");
-
-	return;
 }
 
 void dlpt_notify_init(void)
