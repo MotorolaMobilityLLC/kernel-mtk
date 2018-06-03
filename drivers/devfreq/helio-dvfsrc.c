@@ -82,7 +82,7 @@ static void dvfsrc_set_force_start(int data)
 
 static void dvfsrc_set_force_end(void)
 {
-	dvfsrc_write(DVFSRC_FORCE, 0);
+	/* dvfsrc_write(DVFSRC_FORCE, 0); */
 }
 
 static void dvfsrc_release_force(void)
