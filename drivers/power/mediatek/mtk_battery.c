@@ -1481,9 +1481,9 @@ int force_get_tbat(bool update)
 			get_monotonic_boottime(&ctime);
 			dtime = timespec_sub(ctime, pre_time);
 
-			if ((dtime.tv_sec <= 20) &&
-				(abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5) &&
-				(bat_temperature_val >= 58)) {
+			if (((dtime.tv_sec <= 20) &&
+				(abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5)) ||
+				(bat_temperature_val >= 58) || (bat_temperature_val <= 0)) {
 				pr_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 					fg_current_temp, fg_r_value, bat_temperature_val,
