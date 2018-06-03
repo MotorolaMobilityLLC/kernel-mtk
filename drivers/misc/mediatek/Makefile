@@ -54,6 +54,7 @@ obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
 obj-y += power/
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
+obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
