@@ -5438,6 +5438,22 @@ void testcase_verify_timer(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+void testcase_resource_dump(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_op_clear_event(handle, CMDQ_SYNC_RESOURCE_WROT0);
+	cmdq_op_wait(handle, CMDQ_SYNC_RESOURCE_WROT0);
+	cmdq_task_flush(handle);
+	cmdq_task_destroy(handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 enum ENGINE_POLICY_ENUM {
 	CMDQ_TESTCASE_ENGINE_NOT_SET,
 	CMDQ_TESTCASE_ENGINE_SAME,
@@ -6611,6 +6627,9 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 157:
+		testcase_resource_dump();
 		break;
 	case 156:
 		testcase_verify_timer();

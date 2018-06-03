@@ -6290,6 +6290,13 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 		return;
 	}
 
+	if (((nginfo->inst[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
+		const u32 event = nginfo->inst[1] & ~0xFF000000;
+
+		if (event >= CMDQ_SYNC_RESOURCE_WROT0)
+			cmdq_core_dump_resource_status(event);
+	}
+
 	detail_log = error_num <= 2 || error_num % 16 == 0 || cmdq_core_should_full_error();
 	cmdq_core_attach_engine_error(task, thread, nginfo, !detail_log);
 	if (detail_log)
