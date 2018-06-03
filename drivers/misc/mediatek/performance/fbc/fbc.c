@@ -13,15 +13,17 @@
 #include "fbc.h"
 
 static void notify_twanted_timeout_legacy(void);
+static void notify_touch_up_timeout(void);
 static DECLARE_WORK(mt_tt_legacy_work, (void *) notify_twanted_timeout_legacy);
 static DEFINE_SPINLOCK(tlock);
+static DEFINE_SPINLOCK(tlock1);
 static struct workqueue_struct *wq;
 static struct mutex notify_lock;
-static struct hrtimer hrt;
+static struct hrtimer hrt, hrt1;
 static struct ppm_limit_data freq_limit[NR_PPM_CLUSTERS], core_limit[NR_PPM_CLUSTERS];
 static unsigned long __read_mostly mark_addr;
 
-static int fbc_debug, fbc_touch, fbc_touch_pre, fbc_game, fbc_trace;
+static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_game, fbc_trace;
 static long long frame_budget, twanted, twanted_ms, avg_frame_time;
 static int touch_boost_value, ema, boost_method, super_boost, boost_flag, big_enable;
 static int boost_value, current_max_bv;
@@ -32,10 +34,12 @@ static int his_bv[2];
 static int power_ll[16][2], power_l[16][2], power_b[16][2];
 
 struct fbc_operation_locked {
-	void (*touch)(int);
+	void (*ux_enable)(int);
 	void (*frame_cmplt)(unsigned long);
 	void (*intended_vsync)(void);
 	void (*no_render)(void);
+	void (*game)(int);
+	void (*act_switch)(int);
 };
 
 static struct fbc_operation_locked *fbc_op;
@@ -45,7 +49,7 @@ static inline bool is_ux_fbc_active(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	return !(fbc_debug || !fbc_touch);
+	return !(fbc_debug || !fbc_ux_state);
 }
 
 inline void fbc_tracer(int pid, char *name, int count)
@@ -224,7 +228,34 @@ void release_eas(void)
 
 	perfmgr_kick_fg_boost(KIR_FBC, -1);
 }
-/*--------------------FRAME BUDGET TIMER------------------------*/
+/*--------------------TIMER------------------------*/
+static void enable_touch_up_timer(void)
+{
+	unsigned long flags;
+	ktime_t ktime;
+
+	spin_lock_irqsave(&tlock1, flags);
+	ktime = ktime_set(0, NSEC_PER_SEC * TOUCH_TIMEOUT_SEC);
+	hrtimer_start(&hrt1, ktime, HRTIMER_MODE_REL);
+	spin_unlock_irqrestore(&tlock1, flags);
+}
+
+static void disable_touch_up_timer(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&tlock1, flags);
+	hrtimer_cancel(&hrt1);
+	spin_unlock_irqrestore(&tlock1, flags);
+}
+
+static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
+{
+	notify_touch_up_timeout();
+
+	return HRTIMER_NORESTART;
+}
+
 static void enable_frame_twanted_timer(void)
 {
 	unsigned long flags;
@@ -255,6 +286,41 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 }
 
 /*--------------------FRAME HINT OP------------------------*/
+static void notify_touch(int action)
+{
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	fbc_ux_state_pre = fbc_ux_state;
+
+	/*action 1: touch down 2: touch up*/
+	if (action == 1) {
+		fbc_ux_state = 1;
+		disable_touch_up_timer();
+	} else if (action == 0) {
+		fbc_ux_state = 2;
+		enable_touch_up_timer();
+	}
+
+	if (fbc_ux_state && !fbc_ux_state_pre)
+		fbc_op->ux_enable(1);
+
+	fbc_tracer(-3, "ux_state", fbc_ux_state);
+}
+
+static void notify_touch_up_timeout(void)
+{
+	mutex_lock(&notify_lock);
+
+	fbc_ux_state_pre = fbc_ux_state;
+	fbc_ux_state = 0;
+	fbc_op->ux_enable(0);
+
+	fbc_tracer(-3, "ux_state", fbc_ux_state);
+	mutex_unlock(&notify_lock);
+
+}
+
 static void notify_act_switch(int begin)
 {
 	/* lock is mandatory*/
@@ -262,6 +328,14 @@ static void notify_act_switch(int begin)
 
 	if (!begin)
 		act_switched = 1;
+}
+
+static void notify_game(int game)
+{
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	fbc_game = game;
 }
 
 static void notify_no_render_legacy(void)
@@ -295,16 +369,13 @@ static void notify_twanted_timeout_legacy(void)
 	mutex_unlock(&notify_lock);
 }
 
-void notify_touch_legacy(int touch)
+void notify_fbc_enable_legacy(int enable)
 {
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	fbc_touch_pre = fbc_touch;
-	fbc_touch = touch;
-	fbc_tracer(-3, "touch", fbc_touch);
 
-	if (fbc_touch && fbc_touch_pre == 0) {
+	if (enable) {
 		chase = 0;
 		first_frame = 1;
 		last_frame_done_in_budget = 0;
@@ -326,7 +397,7 @@ void notify_touch_legacy(int touch)
 
 		sched_scheduler_switch(SCHED_HMP_LB);
 		boost_flag = 0;
-	} else if (fbc_touch == 0 && fbc_touch_pre) {
+	} else if (!enable) {
 		release_core();
 		sched_scheduler_switch(SCHED_HYBRID_LB);
 		if (boost_flag) {
@@ -439,17 +510,13 @@ void notify_intended_vsync_legacy(void)
 
 }
 
-void notify_touch_eas(int touch)
+void notify_fbc_enable_eas(int enable)
 {
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	fbc_touch_pre = fbc_touch;
-	fbc_touch = touch;
-	fbc_tracer(-3, "touch", fbc_touch);
-
-	if (fbc_touch && fbc_touch_pre == 0) {
+	if (enable) {
 		chase = 0;
 		first_frame = 1;
 		last_frame_done_in_budget = 0;
@@ -464,7 +531,7 @@ void notify_touch_eas(int touch)
 		boost_touch_core_eas();
 
 		boost_flag = 0;
-	} else if (fbc_touch == 0 && fbc_touch_pre) {
+	} else if (!enable) {
 		release_core();
 		if (boost_flag) {
 			release_eas();
@@ -572,17 +639,21 @@ void notify_intended_vsync_eas(void)
 }
 
 struct fbc_operation_locked fbc_legacy = {
-	.touch		= notify_touch_legacy,
+	.ux_enable		= notify_fbc_enable_legacy,
 	.frame_cmplt	= notify_frame_complete_legacy,
 	.intended_vsync	= notify_intended_vsync_legacy,
-	.no_render	= notify_no_render_legacy
+	.no_render	= notify_no_render_legacy,
+	.game	= notify_game,
+	.act_switch	= notify_act_switch
 };
 
 struct fbc_operation_locked fbc_eas = {
-	.touch		= notify_touch_eas,
+	.ux_enable		= notify_fbc_enable_eas,
 	.frame_cmplt	= notify_frame_complete_eas,
 	.intended_vsync	= notify_intended_vsync_eas,
-	.no_render	= notify_no_render_eas
+	.no_render	= notify_no_render_eas,
+	.game	= notify_game,
+	.act_switch	= notify_act_switch
 };
 
 
@@ -610,22 +681,6 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		fbc_debug = arg;
 		release_core();
 		release_freq_and_eas();
-		mutex_unlock(&notify_lock);
-	} else if (strncmp(cmd, "touch", 5) == 0) {
-		mutex_lock(&notify_lock);
-		if (fbc_debug) {
-			mutex_unlock(&notify_lock);
-			return cnt;
-		}
-		fbc_op->touch(arg);
-		mutex_unlock(&notify_lock);
-	} else if (strncmp(cmd, "act_switch", 5) == 0) {
-		mutex_lock(&notify_lock);
-		if (fbc_debug) {
-			mutex_unlock(&notify_lock);
-			return cnt;
-		}
-		notify_act_switch(arg);
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "init", 4) == 0) {
 		if (boost_method == EAS)
@@ -656,10 +711,6 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "super_boost", 11) == 0) {
 		super_boost = arg;
-	} else if (strncmp(cmd, "game", 4) == 0) {
-		mutex_lock(&notify_lock);
-		fbc_game = arg;
-		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "dump_tbl", 8) == 0) {
 		for (i = 0; i < 16; i++) {
 			pr_crit(TAG"ll freq:%d, cap:%d", power_ll[i][0], power_ll[i][1]);
@@ -676,19 +727,19 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 static int device_show(struct seq_file *m, void *v)
 {
 	SEQ_printf(m, "-----------------------------------------------------\n");
-	SEQ_printf(m, "touch: %d\n", fbc_touch);
+	SEQ_printf(m, "trace:\t%d\n", fbc_trace);
+	SEQ_printf(m, "debug:\t%d\n", fbc_debug);
+	SEQ_printf(m, "method:\t%d\n", boost_method);
+	SEQ_printf(m, "ux state:\t%d\n", fbc_ux_state);
+	SEQ_printf(m, "ema:\t%d\n", ema);
 	if (boost_method == LEGACY)
-		SEQ_printf(m, "init: %lld\n", touch_capacity);
+		SEQ_printf(m, "init:\t%lld\n", touch_capacity);
 	else
-		SEQ_printf(m, "init: %d\n", touch_boost_value);
-	SEQ_printf(m, "debug: %d\n", fbc_debug);
-	SEQ_printf(m, "twanted: %lld\n", twanted);
-	SEQ_printf(m, "first frame: %d\n", first_frame);
-	SEQ_printf(m, "method: %d\n", boost_method);
-	SEQ_printf(m, "super_boost: %d\n", super_boost);
-	SEQ_printf(m, "ema: %d\n", ema);
-	SEQ_printf(m, "game mode: %d\n", fbc_game);
-	SEQ_printf(m, "trace: %d\n", fbc_trace);
+		SEQ_printf(m, "init:\t%d\n", touch_boost_value);
+	SEQ_printf(m, "twanted:\t%lld\n", twanted);
+	SEQ_printf(m, "first frame:\t%d\n", first_frame);
+	SEQ_printf(m, "super_boost:\t%d\n", super_boost);
+	SEQ_printf(m, "game mode:\t%d\n", fbc_game);
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	return 0;
 }
@@ -705,9 +756,6 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 	/* TODO: need to check touch? */
 
 	switch (cmd) {
-	case IOCTL_WRITE3:
-		break;
-
 	default:
 		return 0;
 	}
@@ -718,7 +766,6 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 ssize_t device_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
-	unsigned long frame_time;
 	ssize_t ret = 0;
 
 	mutex_lock(&notify_lock);
@@ -730,24 +777,42 @@ ssize_t device_ioctl(struct file *filp,
 		goto ret_ioctl;
 	}
 
-	if (!is_ux_fbc_active())
-		goto ret_ioctl;
-
 
 	/* start of ux fbc */
 	switch (cmd) {
-	/*receive frame_time info*/
-	case IOCTL_WRITE_FC:
-		frame_time = arg;
-		fbc_op->frame_cmplt(frame_time);
+	/*receive game info*/
+	case IOCTL_WRITE_GM:
+		fbc_op->game(arg);
 		break;
 
-		/*receive Intended-Vsync signal*/
+	/*receive act switch info*/
+	case IOCTL_WRITE_AS:
+		fbc_op->act_switch(arg);
+		break;
+
+	/*receive touch info*/
+	case IOCTL_WRITE_TH:
+		notify_touch(arg);
+		break;
+
+	/*receive frame_time info*/
+	case IOCTL_WRITE_FC:
+		if (!is_ux_fbc_active())
+			goto ret_ioctl;
+		fbc_op->frame_cmplt(arg);
+		break;
+
+	/*receive Intended-Vsync signal*/
 	case IOCTL_WRITE_IV:
+		if (!is_ux_fbc_active())
+			goto ret_ioctl;
 		fbc_op->intended_vsync();
 		break;
 
+	/*receive no-render signal*/
 	case IOCTL_WRITE_NR:
+	if (!is_ux_fbc_active())
+		goto ret_ioctl;
 		fbc_op->no_render();
 		break;
 
@@ -791,7 +856,7 @@ static int __init init_fbc(void)
 	frame_budget = 16000000;
 	twanted = 12000000;
 	twanted_ms = twanted / 1000000;
-	boost_method = 2;
+	boost_method = LEGACY;
 	ema = 5;
 	super_boost = 30;
 	touch_boost_value = 50;
@@ -809,6 +874,8 @@ static int __init init_fbc(void)
 
 	hrtimer_init(&hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrt.function = &mt_twanted_timeout;
+	hrtimer_init(&hrt1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrt1.function = &mt_touch_timeout;
 
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
