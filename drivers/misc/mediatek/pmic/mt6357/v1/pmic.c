@@ -46,10 +46,31 @@ void vmd1_pmic_setting_on(void)
 	unsigned char vcore_segment = (unsigned char)((segment & 0x000C0000) >> 18);
 	unsigned char vmodem_segment = (unsigned char)((segment & 0x00002000) >> 13);
 
-	if (!vcore_segment)
-		vcore_vosel = 0x6D;/* VCORE 1.20V: 0x6D */
-	else if (vcore_segment & (1 << 0))
-		vcore_vosel = 0x65;/* VCORE 1.15V: 0x65 */
+	if ((vcore_segment & 0x3) == 0x1 ||
+	    (vcore_segment & 0x3) == 0x2) {
+		/* VCORE 1.15V: 0x65 */
+		vcore_vosel = 0x65;
+	} else {
+		/* VCORE 1.20V: 0x6D */
+		vcore_vosel = 0x6D;
+	}
+
+#if defined(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES)
+	/* PMIC special flavor project */
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		    "mediatek/k39tv1_ctightening", 27) == 0 ||
+	    strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		    "mediatek/k39v1_ctightening", 26) == 0) {
+		if ((vcore_segment & 0x3) == 0x1 ||
+		    (vcore_segment & 0x3) == 0x2) {
+			/* VCORE 1.0875V: 0x5B */
+			vcore_vosel = 0x5B;
+		} else {
+			/* VCORE 1.13125V: 0x62 */
+			vcore_vosel = 0x62;
+		}
+	}
+#endif
 
 	if (!vmodem_segment)
 		vmodem_vosel = 0x6F;/* VMODEM 1.19375V: 0x6F */
