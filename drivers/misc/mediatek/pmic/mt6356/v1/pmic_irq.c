@@ -690,9 +690,15 @@ int pmic_thread_kthread(void *x)
 #else
 	unsigned int pwrap_eint_status = 0;
 #endif
+
+#if 0
 	struct sched_param param = {.sched_priority = 98 };
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
+#else
+	/* try to modify pmic irq priority to NICE = -19 */
+	set_user_nice(current, (MIN_NICE + 1));
+#endif
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	PMICLOG("[PMIC_INT] enter\n");
