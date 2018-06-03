@@ -1,8 +1,6 @@
 /*
  * Copyright (C) 2016 MediaTek Inc.
  *
- * Power Delivery Process Event For VDM
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -12,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 
 #ifndef __LINUX_RT5081_H
 #define __LINUX_RT5081_H
@@ -29,6 +26,8 @@
 #define RT5081_REG_PHY_CTRL3				(0x82)
 #define RT5081_REG_CLK_CTRL2				(0x87)
 #define RT5081_REG_CLK_CTRL3				(0x88)
+
+#define RT5081_REG_PRL_FSM_RESET			(0x8D)
 
 #define RT5081_REG_BMC_CTRL				(0x90)
 #define RT5081_REG_BMCIO_RXDZSEL			(0x93)
@@ -136,11 +135,18 @@
 
 #define RT5081_REG_CK_300K_SEL				(1<<7)
 #define RT5081_REG_SHIPPING_OFF			(1<<5)
+#define RT5081_REG_ENEXTMSG			(1<<4)
 #define RT5081_REG_AUTOIDLE_EN				(1<<3)
 
 /* timeout = (tout*2+1) * 6.4ms */
+#ifdef CONFIG_USB_PD_REV30
+#define RT5081_REG_IDLE_SET(ck300, ship_dis, auto_idle, tout) \
+	((ck300 << 7) | (ship_dis << 5) |\
+	 (auto_idle << 3) | (tout & 0x07) | RT5081_REG_ENEXTMSG)
+#else
 #define RT5081_REG_IDLE_SET(ck300, ship_dis, auto_idle, tout) \
 	((ck300 << 7) | (ship_dis << 5) | (auto_idle << 3) | (tout & 0x07))
+#endif
 
 /*
  * RT5081_REG_INTRST_CTRL			(0x9C)

@@ -19,25 +19,23 @@
 
 /* PD Control MSG reactions */
 
+DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_GOOD_CRC) = {
+	{ PE_DRS_DFP_UFP_ACCEPT_DR_SWAP, PE_DRS_DFP_UFP_CHANGE_TO_UFP },
+	{ PE_DRS_UFP_DFP_ACCEPT_DR_SWAP, PE_DRS_UFP_DFP_CHANGE_TO_DFP },
+};
+DECL_PE_STATE_REACTION(PD_CTRL_MSG_GOOD_CRC);
+
 DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_ACCEPT) = {
 	{ PE_DRS_DFP_UFP_SEND_DR_SWAP, PE_DRS_DFP_UFP_CHANGE_TO_UFP },
 	{ PE_DRS_UFP_DFP_SEND_DR_SWAP, PE_DRS_UFP_DFP_CHANGE_TO_DFP },
 };
 DECL_PE_STATE_REACTION(PD_CTRL_MSG_ACCEPT);
 
-DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_REJECT_WAIT) = {
-	{ PE_DRS_DFP_UFP_SEND_DR_SWAP, PE_VIRT_READY },
-	{ PE_DRS_UFP_DFP_SEND_DR_SWAP, PE_VIRT_READY },
-};
-DECL_PE_STATE_REACTION(PD_CTRL_MSG_REJECT_WAIT);
-
 /* DPM Event reactions */
 
 DECL_PE_STATE_TRANSITION(PD_DPM_MSG_ACK) = {
 	{ PE_DRS_DFP_UFP_EVALUATE_DR_SWAP, PE_DRS_DFP_UFP_ACCEPT_DR_SWAP },
 	{ PE_DRS_UFP_DFP_EVALUATE_DR_SWAP, PE_DRS_UFP_DFP_ACCEPT_DR_SWAP },
-	{ PE_DRS_DFP_UFP_CHANGE_TO_UFP, PE_VIRT_READY },
-	{ PE_DRS_UFP_DFP_CHANGE_TO_DFP, PE_VIRT_READY },
 };
 DECL_PE_STATE_REACTION(PD_DPM_MSG_ACK);
 
@@ -47,54 +45,20 @@ DECL_PE_STATE_TRANSITION(PD_DPM_MSG_NAK) = {
 };
 DECL_PE_STATE_REACTION(PD_DPM_MSG_NAK);
 
-/* Timer Event reactions */
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_SENDER_RESPONSE) = {
-	{ PE_DRS_DFP_UFP_SEND_DR_SWAP, PE_VIRT_READY },
-	{ PE_DRS_UFP_DFP_SEND_DR_SWAP, PE_VIRT_READY },
-};
-DECL_PE_STATE_REACTION(PD_TIMER_SENDER_RESPONSE);
 
 /*
  * [BLOCK] Porcess PD Ctrl MSG
  */
-
-static inline bool pd_process_ctrl_msg_good_crc(
-		struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	switch (pd_port->pe_state_curr) {
-	case PE_DRS_DFP_UFP_REJECT_DR_SWAP:
-	case PE_DRS_UFP_DFP_REJECT_DR_SWAP:
-		PE_TRANSIT_READY_STATE(pd_port);
-		return true;
-
-	case PE_DRS_DFP_UFP_ACCEPT_DR_SWAP:
-		PE_TRANSIT_STATE(pd_port, PE_DRS_DFP_UFP_CHANGE_TO_UFP);
-		return true;
-
-	case PE_DRS_UFP_DFP_ACCEPT_DR_SWAP:
-		PE_TRANSIT_STATE(pd_port, PE_DRS_UFP_DFP_CHANGE_TO_DFP);
-		return true;
-
-	default:
-		return false;
-	}
-}
 
 static inline bool pd_process_ctrl_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
 	case PD_CTRL_GOOD_CRC:
-		return pd_process_ctrl_msg_good_crc(pd_port, pd_event);
+		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_GOOD_CRC);
 
 	case PD_CTRL_ACCEPT:
 		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_ACCEPT);
-
-	case PD_CTRL_WAIT:
-	case PD_CTRL_REJECT:
-		pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_DR_ROLE;
-		return PE_MAKE_STATE_TRANSIT_VIRT(PD_CTRL_MSG_REJECT_WAIT);
 
 	default:
 		return false;
@@ -108,36 +72,15 @@ static inline bool pd_process_ctrl_msg(
 static inline bool pd_process_dpm_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
-
 	switch (pd_event->msg) {
 	case PD_DPM_ACK:
-		ret = PE_MAKE_STATE_TRANSIT_VIRT(PD_DPM_MSG_ACK);
-		break;
+		return PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_ACK);
+
 	case PD_DPM_NAK:
-		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
-		break;
+		return PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
 	}
 
-	return ret;
-}
-
-/*
- * [BLOCK] Porcess Timer MSG
- */
-
-static inline bool pd_process_timer_msg(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	bool ret = false;
-
-	switch (pd_event->msg) {
-	case PD_TIMER_SENDER_RESPONSE:
-		ret = PE_MAKE_STATE_TRANSIT_VIRT(PD_TIMER_SENDER_RESPONSE);
-		break;
-	}
-
-	return ret;
+	return false;
 }
 
 /*
@@ -152,9 +95,6 @@ bool pd_process_event_drs(struct pd_port *pd_port, struct pd_event *pd_event)
 
 	case PD_EVT_DPM_MSG:
 		return pd_process_dpm_msg(pd_port, pd_event);
-
-	case PD_EVT_TIMER_MSG:
-		return pd_process_timer_msg(pd_port, pd_event);
 
 	default:
 		return false;

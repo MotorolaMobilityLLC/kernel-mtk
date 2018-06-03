@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-
 #ifndef PD_DBG_INFO_H_INCLUDED
 #define PD_DBG_INFO_H_INCLUDED
 

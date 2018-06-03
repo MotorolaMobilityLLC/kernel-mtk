@@ -160,8 +160,8 @@ int mtk_pdc_setup(struct charger_manager *info, int idx)
 		return -1;
 
 	if (pd_idx != idx)
-	ret = tcpm_set_remote_power_cap(pd->tcpc, pd->cap.max_mv[idx],
-					pd->cap.ma[idx]);
+	ret = tcpm_dpm_pd_request(pd->tcpc, pd->cap.max_mv[idx],
+					pd->cap.ma[idx], NULL);
 
 	chr_err("[%s]idx:%d:%d vbus:%d cur:%d ret:%d\n", __func__,
 		pd_idx, idx, pd->cap.max_mv[idx], pd->cap.ma[idx], ret);

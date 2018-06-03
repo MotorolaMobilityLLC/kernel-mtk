@@ -22,11 +22,11 @@
 struct pdc_power_cap {
 	uint8_t selected_cap_idx;
 	uint8_t nr;
-	int max_mv[TCPM_PDO_MAX_SIZE];
-	int min_mv[TCPM_PDO_MAX_SIZE];
-	int ma[TCPM_PDO_MAX_SIZE];
-	int maxwatt[TCPM_PDO_MAX_SIZE];
-	int minwatt[TCPM_PDO_MAX_SIZE];
+	int max_mv[PDO_MAX_NR];
+	int min_mv[PDO_MAX_NR];
+	int ma[PDO_MAX_NR];
+	int maxwatt[PDO_MAX_NR];
+	int minwatt[PDO_MAX_NR];
 };
 
 struct mtk_pdc {

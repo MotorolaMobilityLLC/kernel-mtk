@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 MediaTek Inc.
  *
- * Mediatek TypeC Port Control Interface Core Driver
+ * Richtek TypeC Port Control Interface Core Driver
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,18 +19,18 @@
 #include <linux/version.h>
 #include <linux/slab.h>
 #include <linux/list.h>
+#include <linux/power_supply.h>
+#include <linux/workqueue.h>
 
-#ifdef CONFIG_RT7207_ADAPTER
-#include "inc/pd_policy_engine.h"
-#endif /* CONFIG_RT7207_ADAPTER */
 #include "inc/tcpci.h"
+#include "inc/tcpci_typec.h"
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 #include "pd_dpm_prv.h"
 #include "inc/tcpm.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"1.1.8_G"
+#define TCPC_CORE_VERSION		"2.0.2_MTK"
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -93,50 +93,54 @@ static ssize_t tcpc_show_property(struct device *dev,
 	const ptrdiff_t offset = attr - tcpc_device_attributes;
 	int i = 0;
 #ifdef CONFIG_USB_POWER_DELIVERY
+	struct pe_data *pe_data;
+	struct pd_port *pd_port;
 	struct tcpm_power_cap_val cap;
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	switch (offset) {
 #ifdef CONFIG_USB_POWER_DELIVERY
 	case TCPC_DESC_CAP_INFO:
+		pd_port = &tcpc->pd_port;
+		pe_data = &pd_port->pe_data;
 		snprintf(buf+strlen(buf), 256, "%s = %d\n%s = %d\n",
 			"local_selected_cap",
-			tcpc->pd_port.local_selected_cap,
+			pe_data->local_selected_cap,
 			"remote_selected_cap",
-			tcpc->pd_port.remote_selected_cap);
+			pe_data->remote_selected_cap);
 
 		snprintf(buf+strlen(buf), 256, "%s\n",
 				"local_src_cap(type, vmin, vmax, oper)");
-		for (i = 0; i < tcpc->pd_port.local_src_cap.nr; i++) {
+		for (i = 0; i < pd_port->local_src_cap.nr; i++) {
 			tcpm_extract_power_cap_val(
-				tcpc->pd_port.local_src_cap.pdos[i],
+				pd_port->local_src_cap.pdos[i],
 				&cap);
 			snprintf(buf+strlen(buf), 256, "%d %d %d %d\n",
 				cap.type, cap.min_mv, cap.max_mv, cap.ma);
 		}
 		snprintf(buf+strlen(buf), 256, "%s\n",
 				"local_snk_cap(type, vmin, vmax, ioper)");
-		for (i = 0; i < tcpc->pd_port.local_snk_cap.nr; i++) {
+		for (i = 0; i < pd_port->local_snk_cap.nr; i++) {
 			tcpm_extract_power_cap_val(
-				tcpc->pd_port.local_snk_cap.pdos[i],
+				pd_port->local_snk_cap.pdos[i],
 				&cap);
 			snprintf(buf+strlen(buf), 256, "%d %d %d %d\n",
 				cap.type, cap.min_mv, cap.max_mv, cap.ma);
 		}
 		snprintf(buf+strlen(buf), 256, "%s\n",
 				"remote_src_cap(type, vmin, vmax, ioper)");
-		for (i = 0; i < tcpc->pd_port.remote_src_cap.nr; i++) {
+		for (i = 0; i < pe_data->remote_src_cap.nr; i++) {
 			tcpm_extract_power_cap_val(
-				tcpc->pd_port.remote_src_cap.pdos[i],
+				pe_data->remote_src_cap.pdos[i],
 				&cap);
 			snprintf(buf+strlen(buf), 256, "%d %d %d %d\n",
 				cap.type, cap.min_mv, cap.max_mv, cap.ma);
 		}
 		snprintf(buf+strlen(buf), 256, "%s\n",
 				"remote_snk_cap(type, vmin, vmax, ioper)");
-		for (i = 0; i < tcpc->pd_port.remote_snk_cap.nr; i++) {
+		for (i = 0; i < pe_data->remote_snk_cap.nr; i++) {
 			tcpm_extract_power_cap_val(
-				tcpc->pd_port.remote_snk_cap.pdos[i],
+				pe_data->remote_snk_cap.pdos[i],
 				&cap);
 			snprintf(buf+strlen(buf), 256, "%d %d %d %d\n",
 				cap.type, cap.min_mv, cap.max_mv, cap.ma);
@@ -279,7 +283,7 @@ static ssize_t tcpc_store_property(struct device *dev,
 			tcpm_dpm_pd_soft_reset(tcpc, NULL);
 			break;
 		case 5: /* Hardware Reset */
-			tcpm_dpm_pd_hard_reset(tcpc);
+			tcpm_dpm_pd_hard_reset(tcpc, NULL);
 			break;
 		case 6:
 			tcpm_dpm_pd_get_source_cap(tcpc, NULL);
@@ -304,11 +308,7 @@ static ssize_t tcpc_store_property(struct device *dev,
 	return count;
 }
 
-#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)) */
 static int tcpc_match_device_by_name(struct device *dev, const void *data)
-#else
-static int tcpc_match_device_by_name(struct device *dev, void *data)
-#endif
 {
 	const char *name = data;
 	struct tcpc_device *tcpc = dev_get_drvdata(dev);
@@ -318,13 +318,8 @@ static int tcpc_match_device_by_name(struct device *dev, void *data)
 
 struct tcpc_device *tcpc_dev_get_by_name(const char *name)
 {
-#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)) */
 	struct device *dev = class_find_device(tcpc_class,
 			NULL, (const void *)name, tcpc_match_device_by_name);
-#else
-	struct device *dev = class_find_device(tcpc_class,
-			NULL, (void *)name, tcpc_match_device_by_name);
-#endif
 	return dev ? dev_get_drvdata(dev) : NULL;
 }
 
@@ -352,7 +347,7 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 	struct tcpc_desc *tcpc_desc, struct tcpc_ops *ops, void *drv_data)
 {
 	struct tcpc_device *tcpc;
-	int ret = 0;
+	int ret = 0, i = 0;
 
 	pr_info("%s register tcpc device (%s)\n", __func__, tcpc_desc->name);
 	tcpc = devm_kzalloc(parent, sizeof(*tcpc), GFP_KERNEL);
@@ -382,13 +377,15 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 		return ERR_PTR(ret);
 	}
 
-	srcu_init_notifier_head(&tcpc->evt_nh);
+	for (i = 0; i < TCP_NOTIFY_IDX_NR; i++)
+		srcu_init_notifier_head(&tcpc->evt_nh[i]);
 	INIT_DELAYED_WORK(&tcpc->init_work, tcpc_init_work);
 	INIT_DELAYED_WORK(&tcpc->event_init_work, tcpc_event_init_work);
 
 	mutex_init(&tcpc->access_lock);
 	mutex_init(&tcpc->typec_lock);
 	mutex_init(&tcpc->timer_lock);
+	mutex_init(&tcpc->mr_lock);
 	sema_init(&tcpc->timer_enable_mask_lock, 1);
 	spin_lock_init(&tcpc->timer_tick_lock);
 
@@ -418,9 +415,6 @@ EXPORT_SYMBOL(tcpc_device_register);
 static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 {
 	int ret;
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-	uint16_t data;
-#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 
 	if (!tcpc->ops->init) {
 		pr_err("%s Please implment tcpc ops init function\n",
@@ -447,32 +441,99 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		&tcpc->event_init_work, msecs_to_jiffies(10*1000));
 
 	pr_info("%s : tcpc irq enable OK!\n", __func__);
-
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-	tcpci_get_power_status(tcpc, &data);
-	if (!(data & TCPC_REG_POWER_STATUS_VBUS_PRES)) {
-		pr_info("%s boot check flag = true\n", __func__);
-		tcpm_set_boot_check_flag(tcpc, 1);
-	}
-#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 	return 0;
 }
+
+#ifdef CONFIG_USB_PD_REV30
+static void bat_update_work_func(struct work_struct *work)
+{
+	struct tcpc_device *tcpc = container_of(work,
+		struct tcpc_device, bat_update_work.work);
+	union power_supply_propval value;
+	int ret;
+
+	ret = power_supply_get_property(
+			tcpc->bat_psy, POWER_SUPPLY_PROP_CAPACITY, &value);
+	if (ret == 0) {
+		TCPC_INFO("%s battery update soc = %d\n",
+					__func__, value.intval);
+		tcpc->bat_soc = value.intval;
+	} else
+		TCPC_ERR("%s get battery capacity fail\n", __func__);
+
+	ret = power_supply_get_property(tcpc->bat_psy,
+		POWER_SUPPLY_PROP_STATUS, &value);
+	if (ret == 0) {
+		if (value.intval == POWER_SUPPLY_STATUS_CHARGING) {
+			TCPC_INFO("%s Battery Charging\n", __func__);
+			tcpc->charging_status = BSDO_BAT_INFO_CHARGING;
+		} else if (value.intval == POWER_SUPPLY_STATUS_DISCHARGING) {
+			TCPC_INFO("%s Battery Discharging\n", __func__);
+			tcpc->charging_status = BSDO_BAT_INFO_DISCHARGING;
+		} else {
+			TCPC_INFO("%s Battery Idle\n", __func__);
+			tcpc->charging_status = BSDO_BAT_INFO_IDLE;
+		}
+	}
+	if (ret < 0)
+		TCPC_ERR("%s get battery charger now fail\n", __func__);
+
+	tcpm_update_bat_status_soc(
+		tcpc, tcpc->charging_status, tcpc->bat_soc * 10);
+}
+
+static int bat_nb_call_func(
+	struct notifier_block *nb, unsigned long val, void *v)
+{
+	struct tcpc_device *tcpc = container_of(nb, struct tcpc_device, bat_nb);
+	struct power_supply *psy = (struct power_supply *)v;
+
+	if (!tcpc) {
+		TCPC_ERR("%s tcpc is null\n", __func__);
+		return NOTIFY_OK;
+	}
+
+	if (val == PSY_EVENT_PROP_CHANGED &&
+		strcmp(psy->desc->name, "battery") == 0)
+		schedule_delayed_work(&tcpc->bat_update_work, 0);
+	return NOTIFY_OK;
+}
+#endif /* CONFIG_USB_PD_REV30 */
 
 static void tcpc_event_init_work(struct work_struct *work)
 {
 #ifdef CONFIG_USB_POWER_DELIVERY
 	struct tcpc_device *tcpc = container_of(
 			work, struct tcpc_device, event_init_work.work);
+#ifdef CONFIG_USB_PD_REV30
+	int retval;
+#endif /* CONFIG_USB_PD_REV30 */
 
 	tcpci_lock_typec(tcpc);
 	tcpci_event_init(tcpc);
-	tcpc->pd_dly_flag = 1;
-	pr_info("%s typec attache new = %d\n", __func__,
-		tcpc->typec_attach_new);
-
+	tcpc->pd_inited_flag = 1; /* MTK Only */
+	pr_info("%s typec attache new = %d\n",
+			__func__, tcpc->typec_attach_new);
 	if (tcpc->typec_attach_new)
 		pd_put_cc_attached_event(tcpc, tcpc->typec_attach_new);
 	tcpci_unlock_typec(tcpc);
+
+#ifdef CONFIG_USB_PD_REV30
+	INIT_DELAYED_WORK(&tcpc->bat_update_work, bat_update_work_func);
+	tcpc->bat_psy = power_supply_get_by_name("battery");
+	if (!tcpc->bat_psy) {
+		TCPC_ERR("%s get battery psy fail\n", __func__);
+		return;
+	}
+	tcpc->charging_status = BSDO_BAT_INFO_IDLE;
+	tcpc->bat_soc = 0;
+	tcpc->bat_nb.notifier_call = bat_nb_call_func;
+	tcpc->bat_nb.priority = 0;
+	retval = power_supply_reg_notifier(&tcpc->bat_nb);
+	if (retval < 0)
+		pr_err("%s register power supply notifier fail\n", __func__);
+#endif /* CONFIG_USB_PD_REV30 */
+
 #endif /* CONFIG_USB_POWER_DELIVERY */
 }
 
@@ -502,14 +563,114 @@ int tcpc_schedule_init_work(struct tcpc_device *tcpc)
 	return 0;
 }
 
-int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
-			      struct notifier_block *nb)
-{
-	int ret;
+struct tcp_notifier_block_wrapper {
+	struct notifier_block stub_nb;
+	struct notifier_block *action_nb;
+};
 
-	ret = srcu_notifier_chain_register(&tcp_dev->evt_nh, nb);
-	if (ret != 0)
-		return ret;
+static int tcp_notifier_func_stub(struct notifier_block *nb,
+	unsigned long action, void *data)
+{
+	struct tcp_notifier_block_wrapper *nb_wrapper =
+		container_of(nb, struct tcp_notifier_block_wrapper, stub_nb);
+	struct notifier_block *action_nb = nb_wrapper->action_nb;
+
+	return nb_wrapper->action_nb->notifier_call(action_nb, action, data);
+}
+
+struct tcpc_managed_res {
+	void *res;
+	void *key;
+	int prv_id;
+	struct tcpc_managed_res *next;
+};
+
+
+static int __add_wrapper_to_managed_res_list(struct tcpc_device *tcp_dev,
+	void *res, void *key, int prv_id)
+{
+	struct tcpc_managed_res *tail;
+	struct tcpc_managed_res *mres;
+
+	mres = devm_kzalloc(&tcp_dev->dev, sizeof(*mres), GFP_KERNEL);
+	if (!mres)
+		return -ENOMEM;
+	mres->res = res;
+	mres->key = key;
+	mres->prv_id = prv_id;
+	mutex_lock(&tcp_dev->mr_lock);
+	tail = tcp_dev->mr_head;
+	if (tail) {
+		while (tail->next)
+			tail = tail->next;
+		tail->next = mres;
+	} else
+		tcp_dev->mr_head = mres;
+	mutex_unlock(&tcp_dev->mr_lock);
+
+	return 0;
+}
+
+static int __register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
+	struct notifier_block *nb, uint8_t idx)
+{
+	struct tcp_notifier_block_wrapper *nb_wrapper;
+	int retval;
+
+	nb_wrapper = devm_kzalloc(
+		&tcp_dev->dev, sizeof(*nb_wrapper), GFP_KERNEL);
+	if (!nb_wrapper)
+		return -ENOMEM;
+	nb_wrapper->action_nb = nb;
+	nb_wrapper->stub_nb.notifier_call = tcp_notifier_func_stub;
+	retval = srcu_notifier_chain_register(
+		tcp_dev->evt_nh + idx, &nb_wrapper->stub_nb);
+	if (retval < 0) {
+		devm_kfree(&tcp_dev->dev, nb_wrapper);
+		return retval;
+	}
+	retval = __add_wrapper_to_managed_res_list(
+				tcp_dev, nb_wrapper, nb, idx);
+	if (retval < 0)
+		dev_warn(&tcp_dev->dev,
+			"Failed to add resource to manager(%d)\n", retval);
+
+	return 0;
+}
+
+static bool __is_mulit_bits_set(uint32_t flags)
+{
+	if (flags) {
+		flags &= (flags - 1);
+		return flags ? true : false;
+	}
+
+	return false;
+}
+
+int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
+			struct notifier_block *nb, uint8_t flags)
+{
+	int ret = 0, i = 0;
+
+	if (__is_mulit_bits_set(flags)) {
+		for (i = 0; i < TCP_NOTIFY_IDX_NR; i++) {
+			if (flags & (1 << i)) {
+				ret = __register_tcp_dev_notifier(
+							tcp_dev, nb, i);
+				if (ret < 0)
+					return ret;
+			}
+		}
+	} else { /* single bit */
+		for (i = 0; i < TCP_NOTIFY_IDX_NR; i++) {
+			if (flags & (1 << i)) {
+				ret = srcu_notifier_chain_register(
+				&tcp_dev->evt_nh[i], nb);
+				break;
+			}
+		}
+	}
 
 	if (tcp_dev->desc.notifier_supply_num == 0) {
 		pr_info("%s already started\n", __func__);
@@ -529,10 +690,68 @@ int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
 }
 EXPORT_SYMBOL(register_tcp_dev_notifier);
 
-int unregister_tcp_dev_notifier(struct tcpc_device *tcp_dev,
-				struct notifier_block *nb)
+
+static void *__remove_wrapper_from_managed_res_list(
+	struct tcpc_device *tcp_dev, void *key, int prv_id)
 {
-	return srcu_notifier_chain_unregister(&tcp_dev->evt_nh, nb);
+	void *retval = NULL;
+	struct tcpc_managed_res *mres = tcp_dev->mr_head;
+	struct tcpc_managed_res *prev = NULL;
+
+	mutex_lock(&tcp_dev->mr_lock);
+	if (mres) {
+		while (mres) {
+			if (mres->key == key && mres->prv_id == prv_id) {
+				retval = mres->res;
+				if (prev)
+					prev->next = mres->next;
+				else
+					tcp_dev->mr_head = NULL;
+				devm_kfree(&tcp_dev->dev, mres);
+				break;
+			}
+			prev = mres;
+			mres = mres->next;
+		}
+	}
+	mutex_unlock(&tcp_dev->mr_lock);
+
+	return retval;
+}
+
+static int __unregister_tcp_dev_notifier(struct tcpc_device *tcp_dev,
+	struct notifier_block *nb, uint8_t idx)
+{
+	struct tcp_notifier_block_wrapper *nb_wrapper;
+	int retval;
+
+	nb_wrapper = __remove_wrapper_from_managed_res_list(tcp_dev, nb, idx);
+	if (nb_wrapper) {
+		retval = srcu_notifier_chain_unregister(
+			tcp_dev->evt_nh + idx, &nb_wrapper->stub_nb);
+		devm_kfree(&tcp_dev->dev, nb_wrapper);
+		return retval;
+	}
+
+	return -ENOENT;
+}
+
+int unregister_tcp_dev_notifier(struct tcpc_device *tcp_dev,
+				struct notifier_block *nb, uint8_t flags)
+{
+	int i = 0, ret = 0;
+
+	for (i = 0; i < TCP_NOTIFY_IDX_NR; i++) {
+		if (flags & (1 << i)) {
+			ret = __unregister_tcp_dev_notifier(tcp_dev, nb, i);
+			if (ret == -ENOENT)
+				ret = srcu_notifier_chain_unregister(
+					tcp_dev->evt_nh + i, nb);
+			if (ret < 0)
+				return ret;
+		}
+	}
+	return ret;
 }
 EXPORT_SYMBOL(unregister_tcp_dev_notifier);
 
@@ -612,6 +831,16 @@ static void __exit tcpc_class_exit(void)
 subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
-MODULE_DESCRIPTION("Mediatek TypeC Port Control Core");
+MODULE_DESCRIPTION("Richtek TypeC Port Control Core");
+MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
 MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
+
+/* Release Version
+ * 2.0.2_MTK
+ * (1) Fix Coverity and check patch issue
+ * (2) Fix 32-bit project build error
+ *
+ * 2.0.1_MTK
+ *	First released PD3.0 Driver for MTK Platform
+ */
