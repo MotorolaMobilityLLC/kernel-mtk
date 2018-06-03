@@ -512,12 +512,13 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 {
 	pr_debug("[SCP]scp_aed_reset_inplace\n");
+
 	if (scp_ee_enable)
 		scp_aed(type, id);
 	else
 		pr_debug("[SCP]ee disable value=%d\n", scp_ee_enable);
 
-#ifndef CFG_RECOVERY_SUPPORT
+#if (SCP_RECOVERY_SUPPORT == 0)
 	/* workaround for QA, not reset SCP in WDT */
 	if (type == EXCEP_RUNTIME) {
 		return;
@@ -528,8 +529,14 @@ void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 		msleep(20000);
 		BUG_ON(1);
 	}
-	pr_debug("[SCP] SCP_A_REBOOT\n");
-	reset_scp(SCP_A_REBOOT);
+
+#if SCP_RECOVERY_SUPPORT
+	if (scp_reset_status == RESET_STATUS_START) {
+		/*complete scp ee, if scp reset by wdt or awake fail*/
+		pr_debug("[SCP]aed finished, complete it\n");
+		complete(&scp_sys_reset_cp);
+	}
+#endif
 
 }
 

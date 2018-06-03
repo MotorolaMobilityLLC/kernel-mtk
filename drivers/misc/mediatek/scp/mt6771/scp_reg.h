@@ -41,18 +41,22 @@
 #define SCP_A_GENERAL_REG0       (scpreg.cfg + 0x0050)
 #define SCP_A_GENERAL_REG1       (scpreg.cfg + 0x0054)
 #define SCP_A_GENERAL_REG2       (scpreg.cfg + 0x0058)
+/*EXPECTED_FREQ_REG*/
 #define SCP_A_GENERAL_REG3       (scpreg.cfg + 0x005C)
 #define EXPECTED_FREQ_REG        (scpreg.cfg  + 0x5C)
+/*CURRENT_FREQ_REG*/
 #define SCP_A_GENERAL_REG4       (scpreg.cfg + 0x0060)
 #define CURRENT_FREQ_REG         (scpreg.cfg  + 0x60)
+/*SCP_GPR_CM4_A_REBOOT*/
 #define SCP_A_GENERAL_REG5       (scpreg.cfg + 0x0064)
+#define SCP_A_GENERAL_REG6       (scpreg.cfg + 0x0068)
+#define SCP_A_GENERAL_REG7       (scpreg.cfg + 0x006C)
+
 #define SCP_GPR_CM4_A_REBOOT     (scpreg.cfg + 0x64)
 	#define CM4_A_READY_TO_REBOOT  0x34
 	#define CM4_A_REBOOT_OK        0x1
-/* #define SCP_A_GENERAL_REG6       (*(volatile unsigned int *)(scpreg.cfg + 0x0068)) */
-#define SCP_GPR_CM4_B_REBOOT     (scpreg.cfg + 0x68)
-	#define CM4_B_READY_TO_REBOOT  0x35
-/* #define SCP_A_GENERAL_REG7       (*(volatile unsigned int *)(scpreg.cfg + 0x006C)) */
+
+
 #define SCP_SEMAPHORE	         (scpreg.cfg  + 0x90)
 
 #define SCP_SLP_PROTECT_CFG			(scpreg.cfg + 0x00C8)
@@ -68,17 +72,21 @@
 	#define SCP_B_IS_DEEPSLEEP      (1<<3)
 
 /* clk reg*/
-#define SCP_CLK_CTRL_BASE				(scpreg.clkctrl)
+#define SCP_CLK_CTRL_BASE			(scpreg.clkctrl)
 #define SCP_CLK_SW_SEL				(scpreg.clkctrl)
 #define SCP_CLK_ENABLE				(scpreg.clkctrl + 0x0004)
-#define SCP_A_SLEEP_DEBUG_REG			(scpreg.clkctrl + 0x0028)
+#define SCP_A_SLEEP_DEBUG_REG		(scpreg.clkctrl + 0x0028)
+#define SCP_SRAM_PDN				(scpreg.clkctrl + 0x002C)
 #define SCP_CLK_HIGH_CORE_CG		(scpreg.clkctrl + 0x005C)
+#define SCP_CLK_CTRL_L1_SRAM_PD		(scpreg.clkctrl + 0x0080)
+#define SCP_CLK_CTRL_TCM_TAIL_SRAM_PD	(scpreg.clkctrl + 0x0094)
 
 /* SCP System Reset */
-#define MODULE_RESET_SET         (scpreg.scpsys + + 0x0140)
-#define MODULE_RESET_CLR         (scpreg.scpsys + + 0x0144)
-    #define SCP_RESET           (1 << 3)
-    #define SCP_SEC_RESET       (1 << 10)
+#define MODULE_RESET_SET         (scpreg.scpsys + 0x0140)
+#define MODULE_RESET_CLR         (scpreg.scpsys + 0x0144)
+#define MODULE_RESET_STATUS      (scpreg.scpsys + 0x0148)
+    #define SCP_RESET_BIT           (1 << 3)
+    #define SCP_SEC_RESET_BIT       (1 << 10)
 
 /* INFRA_IRQ (always on register) */
 #define INFRA_IRQ_SET			(scpreg.scpsys + 0x0B14)

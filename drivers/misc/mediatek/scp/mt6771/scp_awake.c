@@ -116,6 +116,13 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	if (ret == -1) {
 		pr_notice("scp_awake_lock: awake %s fail..\n", core_id);
 		WARN_ON(1);
+#if SCP_RECOVERY_SUPPORT
+		if (scp_set_reset_status() == RESET_STATUS_STOP) {
+			pr_notice("scp_awake_lock: start to reset scp...\n");
+			scp_send_reset_wq(RESET_TYPE_AWAKE);
+		} else
+			pr_notice("scp_awake_lock: scp resetting\n");
+#endif
 	}
 
 	/* scp awake */
@@ -211,4 +218,38 @@ void scp_awake_init(void)
 	}
 }
 
+void scp_enable_sram(void)
+{
+	uint32_t reg_temp;
 
+	/*enable sram, enable 1 block per time*/
+	for (reg_temp = 0xffffffff; reg_temp != 0;) {
+		reg_temp = reg_temp >> 1;
+		writel(reg_temp, SCP_SRAM_PDN);
+	}
+	/*enable scp all TCM*/
+	writel(0, SCP_CLK_CTRL_L1_SRAM_PD);
+	writel(0, SCP_CLK_CTRL_TCM_TAIL_SRAM_PD);
+}
+
+/*
+ * scp_sys_reset, reset scp
+ */
+int scp_sys_full_reset(void)
+{
+	pr_debug("[SCP]reset\n");
+
+	/*enable scp sram*/
+	pr_debug("[SCP]enable sram\n");
+	scp_enable_sram();
+
+	/*copy loader to scp sram*/
+	pr_debug("[SCP]copy to sram\n");
+	memcpy_to_scp(SCP_TCM, (const void *)scp_loader_base_virt, scp_loader_size);
+	/*set info to sram*/
+	pr_debug("[SCP]set firmware info to sram\n");
+	writel(scp_fw_base_phys, SCP_TCM + 0x408);
+	writel(scp_fw_size, SCP_TCM + 0x40C);
+
+	return 0;
+}
