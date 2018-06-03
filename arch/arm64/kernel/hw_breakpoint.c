@@ -928,7 +928,7 @@ void hw_breakpoint_thread_switch(struct task_struct *next)
  */
 static void hw_breakpoint_reset(void *unused)
 {
-#ifdef CONFIG_MEDIATEK_SOLUTION
+#ifdef CONFIG_MTK_WATCHPOINT
 	/* mediatek will use our own operations for hw breakpoint/watchpoint */
 	return;
 #else
