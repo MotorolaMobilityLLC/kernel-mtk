@@ -9719,10 +9719,11 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 					CMDQ_LOG("[Res]: release CB func is NULL, event:%d\n",
 						pResource->lockEvent);
 				} else {
+					CmdqResourceReleaseCB cb_func = pResource->releaseCB;
+
 					/* release mutex before callback */
 					mutex_unlock(&gCmdqResourceMutex);
-					status =
-						pResource->releaseCB(pResource->lockEvent);
+					status = cb_func(pResource->lockEvent);
 					mutex_lock(&gCmdqResourceMutex);
 
 					if (status < 0) {
