@@ -25,7 +25,7 @@
 #include <linux/slab.h>
 #include <linux/kthread.h>
 #include <linux/input.h>
-
+#include <linux/topology.h>
 #include <linux/platform_device.h>
 #include "perfmgr.h"
 
@@ -35,7 +35,7 @@
 
 #define MAX_CORE (8)
 #define MAX_FREQ (20000000)
-
+static int nr_ppm_clusters;
 struct touch_boost {
 	spinlock_t touch_lock;
 	wait_queue_head_t wq;
@@ -51,7 +51,7 @@ static struct touch_boost tboost;
 static int perf_mgr_touch_enable = 1;
 static int perf_mgr_touch_core = 1;
 static int perf_mgr_touch_freq = 1;
-
+static int perf_mgr_touch_clstr = 1;
 /*--------------------FUNCTION----------------*/
 
 static int tboost_thread(void *ptr)
@@ -222,7 +222,24 @@ static const struct file_operations perfmgr_tb_freq_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+static int perfmgr_tb_clstr_show(struct seq_file *m, void *v)
+{
+	if (m)
+		seq_printf(m, "%d\n", perf_mgr_touch_clstr);
+	return 0;
+}
 
+static int perfmgr_tb_clstr_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_tb_clstr_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_tb_clstr_fops = {
+	.open = perfmgr_tb_clstr_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
 			    unsigned int code, int value)
 {
@@ -302,14 +319,15 @@ static struct input_handler dbs_input_handler = {
 int init_perfmgr_touch(void)
 {
 	struct proc_dir_entry *touch_dir = NULL;
-	struct proc_dir_entry *tbe_dir, *tbc_dir, *tbf_dir;
+	struct proc_dir_entry *tbe_dir, *tbc_dir, *tbf_dir, *tbclstr_dir;
 	int handle;
 
 	pr_debug("init_perfmgr_touch\n");
 
+	nr_ppm_clusters = arch_get_nr_clusters();
 	perf_mgr_touch_core = perfmgr_get_target_core();
 	perf_mgr_touch_freq = perfmgr_get_target_freq();
-
+	perf_mgr_touch_clstr = nr_ppm_clusters;
 	touch_dir = proc_mkdir("perfmgr/touch", NULL);
 
 	if (!touch_dir)
@@ -328,6 +346,10 @@ int init_perfmgr_touch(void)
 		 &perfmgr_tb_freq_fops);
 	if (!tbf_dir)
 		pr_debug("tbf_dir not create\n");
+	tbclstr_dir = proc_create("tb_clstr", 0644, touch_dir,
+		 &perfmgr_tb_clstr_fops);
+	if (!tbclstr_dir)
+		pr_debug("tbclstr_dir not create\n");
 
 	spin_lock_init(&tboost.touch_lock);
 	init_waitqueue_head(&tboost.wq);

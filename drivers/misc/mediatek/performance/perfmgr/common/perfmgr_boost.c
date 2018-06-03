@@ -18,15 +18,15 @@
 #include <linux/printk.h>
 #include <linux/string.h>
 #include <linux/notifier.h>
-
 #include <linux/platform_device.h>
-#include "legacy_controller.h"
+#include <linux/topology.h>
+#include "cpu_ctrl.h"
 
 /*--------------DEFAULT SETTING-------------------*/
 
-#define TARGET_CORE (3)
+#define TARGET_CORE (-1)
 #define TARGET_FREQ (1183000)
-#define CLUSTER_NUM (2)
+static int nr_ppm_clusters;
 
 /*-----------------------------------------------*/
 
@@ -39,7 +39,6 @@ int perfmgr_get_target_freq(void)
 {
 	return TARGET_FREQ;
 }
-
 void init_perfmgr_boost(void)
 {
 	/* do nothing */
@@ -48,7 +47,7 @@ void init_perfmgr_boost(void)
 void perfmgr_boost(int enable, int core, int freq)
 {
 	struct ppm_limit_data freq_to_set[2];
-
+	nr_ppm_clusters = arch_get_nr_clusters();
 	if (enable) {
 		freq_to_set[0].min = freq;
 		freq_to_set[0].max = -1;
@@ -60,7 +59,8 @@ void perfmgr_boost(int enable, int core, int freq)
 		freq_to_set[1].min = -1;
 		freq_to_set[1].max = -1;
 	}
-	/*update_userlimit_cpu_freq(PPM_KIR_FBC, CLUSTER_NUM, freq_to_set);*/
+	update_userlimit_cpu_freq(PPM_KIR_PERFTOUCH,
+	 nr_ppm_clusters, freq_to_set);
 }
 
 /* redundant API */

@@ -14,7 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define pr_fmt(fmt) "[boost_controller]"fmt
+#define pr_fmt(fmt) "[cpu_ctrl]"fmt
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/kallsyms.h>
@@ -28,7 +28,7 @@
 #include <linux/slab.h>
 
 #include <linux/platform_device.h>
-#include "legacy_controller.h"
+#include "cpu_ctrl.h"
 
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
@@ -409,7 +409,7 @@ static int __init perfmgr_legacy_boost_init(void)
 
 	mutex_init(&boost_freq);
 
-	boost_dir = proc_mkdir("perfmgr/legacy", NULL);
+	boost_dir = proc_mkdir("perfmgr/boost_ctrl/cpu_ctrl", NULL);
 
 	if (!boost_dir)
 		pr_debug("boost_dir null\n ");

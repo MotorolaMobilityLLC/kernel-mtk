@@ -1,4 +1,5 @@
-# Copyright (C) 2017 MediaTek Inc.
+#
+# Copyright (C) 2018 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -10,10 +11,15 @@
 # GNU General Public License for more details.
 #
 
-obj-y += perfmgr/
-ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
-	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
-endif
+#DRAM_CONTROLLER
+obj-y += dram_ctrl.o
 
-obj-y += perf_ioctl/
-obj-$(CONFIG_MTK_FPSGO) += fpsgo/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+
+#if PM_DEVFREQ
+ccflags-y += -I$(srctree)/drivers/devfreq/
+#endif # PM_DEVFREQ
+
+

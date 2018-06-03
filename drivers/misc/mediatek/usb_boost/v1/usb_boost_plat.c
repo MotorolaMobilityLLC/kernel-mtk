@@ -13,7 +13,7 @@
 #include <linux/module.h>
 #include <linux/pm_qos.h>
 #include "mtk_ppm_api.h"
-#include "legacy_controller.h"
+#include "cpu_ctrl.h"
 #include "usb_boost.h"
 #include <mtk_vcorefs_manager.h>
 #include <helio-dvfsrc-opp.h>

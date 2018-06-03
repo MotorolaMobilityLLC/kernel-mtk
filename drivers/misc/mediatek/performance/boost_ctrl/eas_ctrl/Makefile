@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 MediaTek Inc.
+# Copyright (C) 2018 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -10,6 +10,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-obj-y += legacy_controller.o
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+#EAS_CONTROLLER
+MTK_TOP = $(srctree)/drivers/misc/mediatek/
+ccflags-y += \
+	-I$(MTK_TOP)/base/power/include/ \
+	-I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/ \
+	-I$(MTK_TOP)/dramc/$(MTK_PLATFORM)/ \
+	-I$(srctree)/drivers/misc/mediatek/performance/eas_controller/include/ \
+
+obj-y += src/eas_ctrl.o
+
