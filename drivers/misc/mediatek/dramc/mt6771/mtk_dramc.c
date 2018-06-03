@@ -181,10 +181,10 @@ const char *uname, int depth, void *data)
 	return node;
 }
 
-#if defined(INTERFACE_READ_MR4) || defined(SW_TX_TRACKING)
+#if defined(SW_TX_TRACKING) || defined(DRAMC_MEMTEST_DEBUG_SUPPORT)
 static unsigned int read_dram_mode_reg(
-unsigned int mr_index, unsigned int *mr_value,
-void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
+		unsigned int mr_index, unsigned int *mr_value,
+		void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int response;
 	unsigned int time_cnt;
@@ -236,6 +236,58 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 
 	return TX_DONE;
 }
+
+#if defined(DRAMC_MEMTEST_DEBUG_SUPPORT)
+unsigned int read_dram_mode_reg_by_rank(
+		unsigned int mr_index, unsigned int *mr_value,
+		unsigned int rank, unsigned int channel)
+{
+	unsigned int temp;
+	void __iomem *dramc_ao_chx_base;
+	void __iomem *dramc_nao_chx_base;
+	void __iomem *ddrphy_chx_base;
+	ssize_t ret;
+	unsigned long save_flags;
+	unsigned int res;
+
+	ret = 0;
+
+	if (channel == 0) {
+		dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
+		dramc_nao_chx_base = DRAMC_NAO_CHA_BASE_ADDR;
+		ddrphy_chx_base = DDRPHY_AO_CHA_BASE_ADDR;
+	} else {
+		dramc_ao_chx_base = DRAMC_AO_CHB_BASE_ADDR;
+		dramc_nao_chx_base = DRAMC_NAO_CHB_BASE_ADDR;
+		ddrphy_chx_base = DDRPHY_AO_CHB_BASE_ADDR;
+	}
+
+	local_irq_save(save_flags);
+
+	if (acquire_dram_ctrl() != 0) {
+		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
+		return -1;
+	}
+
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<26));
+
+	res = read_dram_mode_reg(mr_index, mr_value, dramc_ao_chx_base, dramc_nao_chx_base);
+	if (res != TX_DONE)
+		ret = -1;
+
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp);
+
+	if (release_dram_ctrl() != 0)
+		pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+
+	local_irq_restore(save_flags);
+
+	return ret;
+}
+#endif
 #endif
 
 #ifdef SW_TX_TRACKING
@@ -1891,7 +1943,6 @@ void *mt_ddrphy_nao_chn_base_get(int channel)
 }
 EXPORT_SYMBOL(mt_ddrphy_nao_chn_base_get);
 
-#ifdef LAST_DRAMC_IP_BASED
 unsigned int mt_dramc_chn_get(unsigned int emi_cona)
 {
 	switch ((emi_cona >> 8) & 0x3) {
@@ -1927,6 +1978,7 @@ unsigned int mt_dramc_ta_support_ranks(void)
 	return dram_rank_num;
 }
 
+#ifdef LAST_DRAMC_IP_BASED
 phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
 {
 	switch (rank) {
