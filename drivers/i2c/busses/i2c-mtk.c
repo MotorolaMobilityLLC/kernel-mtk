@@ -1160,8 +1160,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 		if ((i2c->irq_stat & I2C_TRANSAC_COMP) && i2c->ch_offset &&
 		    (!(i2c->irq_stat & I2C_MAS_ERR))) {
-			dev_info(i2c->dev, "addr: %x, trans done with err %x",
-				 i2c->addr, i2c->irq_stat);
+			pr_info_ratelimited("addr: %x, trans done with err %x",
+					    i2c->addr, i2c->irq_stat);
 			return -EREMOTEIO;
 		}
 
