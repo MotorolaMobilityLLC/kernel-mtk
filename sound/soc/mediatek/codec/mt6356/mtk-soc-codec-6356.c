@@ -1884,9 +1884,6 @@ static void Audio_Amp_Change(int channels, bool enable)
 		/* here pmic analog control */
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
-
-			mic_vinp_mv = get_accdet_auxadc();
-
 			/* switch to ground to de pop-noise */
 			/*HP_Switch_to_Ground();*/
 
@@ -3282,6 +3279,33 @@ static int hp_impedance_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int hp_plugged;
+static int hp_plugged_in_get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), hp_plugged = %d\n", __func__, hp_plugged);
+	ucontrol->value.integer.value[0] = hp_plugged;
+	return 0;
+}
+
+static int hp_plugged_in_set(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(amp_function)) {
+		pr_warn("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (ucontrol->value.integer.value[0] == 1) {
+		mic_vinp_mv = get_accdet_auxadc();
+		pr_info("%s(), mic_vinp_mv = %d\n", __func__, mic_vinp_mv);
+	}
+
+	hp_plugged = ucontrol->value.integer.value[0];
+
+	return 0;
+}
+
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
@@ -3350,6 +3374,8 @@ static const struct snd_kcontrol_new mt6356_snd_controls[] = {
 	SOC_SINGLE_EXT("Audio HP ImpeDance Setting",
 		       SND_SOC_NOPM, 0, 0x10000, 0,
 		       hp_impedance_get, hp_impedance_set),
+	SOC_ENUM_EXT("Headphone Plugged In", Audio_DL_Enum[0],
+		     hp_plugged_in_get, hp_plugged_in_set),
 };
 
 void SetMicPGAGain(void)

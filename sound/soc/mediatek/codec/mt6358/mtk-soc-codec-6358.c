@@ -1453,10 +1453,10 @@ static int SetDcCompenSation(bool enable)
 	abs_lch = sign_lch * diff_lch;
 	abs_rch = sign_rch * diff_rch;
 	times = abs_lch > abs_rch ? (abs_lch / ramp_step) : (abs_rch / ramp_step);
-	pr_debug("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d, ramp_step %d\n",
+	pr_debug("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d, ramp_step %d, mic_vinp_mv %d\n",
 	       __func__, enable, index_lgain, times,
 	       last_lch_comp_value, lch_value,
-	       last_rch_comp_value, rch_value, ramp_step);
+	       last_rch_comp_value, rch_value, ramp_step, mic_vinp_mv);
 
 	if (enable) {
 		enable_dc_compensation(true);
@@ -3370,10 +3370,8 @@ static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 
 	ucontrol->value.integer.value[0] = hp_impedance;
 
-	mic_vinp_mv = get_accdet_auxadc();
-
-	pr_debug("%s(), hp_impedance = %d, efuse = %d, mic_vinp_mv = %d\n",
-		 __func__, hp_impedance, efuse_current_calibrate, mic_vinp_mv);
+	pr_debug("%s(), hp_impedance = %d, efuse = %d\n",
+		 __func__, hp_impedance, efuse_current_calibrate);
 	return 0;
 }
 
@@ -3382,6 +3380,33 @@ static int hp_impedance_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s(), hp_impedance = %ld\n",
 		 __func__, ucontrol->value.integer.value[0]);
+	return 0;
+}
+
+static int hp_plugged;
+static int hp_plugged_in_get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), hp_plugged = %d\n", __func__, hp_plugged);
+	ucontrol->value.integer.value[0] = hp_plugged;
+	return 0;
+}
+
+static int hp_plugged_in_set(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(amp_function)) {
+		pr_warn("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (ucontrol->value.integer.value[0] == 1) {
+		mic_vinp_mv = get_accdet_auxadc();
+		pr_info("%s(), mic_vinp_mv = %d\n", __func__, mic_vinp_mv);
+	}
+
+	hp_plugged = ucontrol->value.integer.value[0];
+
 	return 0;
 }
 
@@ -3453,6 +3478,8 @@ static const struct snd_kcontrol_new mt6356_snd_controls[] = {
 	SOC_SINGLE_EXT("Audio HP ImpeDance Setting",
 		       SND_SOC_NOPM, 0, 0x10000, 0,
 		       hp_impedance_get, hp_impedance_set),
+	SOC_ENUM_EXT("Headphone Plugged In", Audio_DL_Enum[0],
+		     hp_plugged_in_get, hp_plugged_in_set),
 };
 
 void SetMicPGAGain(void)
