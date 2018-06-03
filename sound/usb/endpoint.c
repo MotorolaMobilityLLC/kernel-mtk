@@ -609,11 +609,25 @@ static void release_urbs(struct snd_usb_endpoint *ep, int force)
 	for (i = 0; i < ep->nurbs; i++)
 		release_urb_ctx(&ep->urb[i]);
 
-	if (ep->syncbuf)
-		usb_free_coherent(ep->chip->dev, SYNC_URBS * 4,
+	if (ep->databuf && ep->databuf_sram) {
+		if (usb_pipein(ep->pipe))
+			mtk_usb_free_sram(USB_AUDIO_DATA_IN);
+		else
+			mtk_usb_free_sram(USB_AUDIO_DATA_OUT);
+	}
+
+	if (ep->syncbuf) {
+		if (ep->syncbuf_sram)
+			mtk_usb_free_sram(USB_AUDIO_DATA_SYNC);
+		else
+			usb_free_coherent(ep->chip->dev, SYNC_URBS * 4,
 				  ep->syncbuf, ep->sync_dma);
+	}
 
 	ep->syncbuf = NULL;
+	ep->databuf = NULL;
+	ep->syncbuf_sram = 0;
+	ep->databuf_sram = 0;
 	ep->nurbs = 0;
 }
 
@@ -783,7 +797,8 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
 				frames_per_period, urbs_per_period);
 		/* try to use enough URBs to contain an entire ALSA buffer */
 		max_urbs = min((unsigned) MAX_URBS,
-				MAX_QUEUE * packs_per_ms / urb_packs);
+				max_queue * packs_per_ms / urb_packs);
+
 		pr_info("packs_per_ms=%d, urb_packs=%d\n", packs_per_ms, urb_packs);
 		ep->nurbs = min(max_urbs, urbs_per_period * periods_per_buffer);
 		if (ep->nurbs < 2)
