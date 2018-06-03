@@ -391,7 +391,6 @@ static int mtk_pcm_i2s0_stop(struct snd_pcm_substream *substream)
 	/* clean audio hardware buffer */
 	memset_io(Afe_Block->pucVirtBufAddr, 0, Afe_Block->u4BufferSize);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
-	AudDrv_Clk_Off();
 
 	return 0;
 }
@@ -485,7 +484,6 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 		return ret;
 	}
 	pr_debug("mtk_pcm_i2s0_open return\n");
-	AudDrv_Clk_Off();
 	return 0;
 }
 
@@ -496,6 +494,7 @@ static int mtk_pcm_i2s0_close(struct snd_pcm_substream *substream)
 	ClearSramState(mPlaybackDramState);
 	mPlaybackDramState = GetSramState();
 	AfeControlSramUnLock();
+	AudDrv_Clk_Off();
 	return 0;
 }
 
@@ -509,7 +508,6 @@ static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	uint32 u32AudioI2S = 0;
 
-	AudDrv_Clk_On();
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE
 	    || runtime->format == SNDRV_PCM_FORMAT_S32_LE) {

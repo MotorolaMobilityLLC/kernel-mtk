@@ -110,7 +110,6 @@ static int mtk_pcm_dl1Bt_stop(struct snd_pcm_substream *substream)
 
 	EnableAfe(false);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
-	AudDrv_Clk_Off();
 
 	return 0;
 }
@@ -244,7 +243,6 @@ static int mtk_pcm_dl1bt_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	AudDrv_Clk_On();
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE || runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
