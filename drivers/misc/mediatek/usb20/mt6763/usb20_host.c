@@ -43,7 +43,6 @@ static bool usbc_otg_power_enable;
 static bool usbc_otg_enable;
 static struct mutex tcpc_otg_lock;
 static struct mutex tcpc_otg_pwr_lock;
-bool usb20_host_tcpc_boost_on;
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data);
 static struct delayed_work register_otg_work;
@@ -127,6 +126,15 @@ void vbus_init(void)
 
 }
 
+static bool vbus_on;
+module_param(vbus_on, bool, 0644);
+static int vbus_control;
+module_param(vbus_control, int, 0644);
+bool usb20_check_vbus_on(void)
+{
+	DBG(0, "vbus_on<%d>\n", vbus_on);
+	return vbus_on;
+}
 void _set_vbus(struct musb *musb, int is_on)
 {
 	static int vbus_inited;
@@ -136,7 +144,11 @@ void _set_vbus(struct musb *musb, int is_on)
 		vbus_inited = 1;
 	}
 
-	if (is_on) {
+	DBG(0, "op<%d>, status<%d>\n", is_on, vbus_on);
+	if (is_on && !vbus_on) {
+		/* update flag 1st then enable VBUS to make host mode correct used by PMIC */
+		vbus_on = true;
+
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger, 1500000);
@@ -144,32 +156,25 @@ void _set_vbus(struct musb *musb, int is_on)
 		set_chr_enable_otg(0x1);
 		set_chr_boost_current_limit(1500);
 #endif
-	} else {
+	} else if (!is_on && vbus_on) {
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, false);
 #else
 		set_chr_enable_otg(0x0);
 #endif
+
+		/* disable VBUS 1st then update flag to make host mode correct used by PMIC */
+		vbus_on = false;
 	}
 }
 
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
 #ifndef FPGA_PLATFORM
-	int control = 0;
 
-#ifdef CONFIG_USB_C_SWITCH
-#ifndef CONFIG_TCPC_CLASS
-#ifdef CONFIG_TYPEC_ONLY
-	control = 1;
-#endif
-#endif
-#else
-	control = 1;
-#endif
-	DBG(0, "is_on<%d>, control<%d>\n", is_on, control);
+	DBG(0, "is_on<%d>, control<%d>\n", is_on, vbus_control);
 
-	if (!control)
+	if (!vbus_control)
 		return;
 
 	if (is_on)
@@ -257,19 +262,10 @@ static void tcpc_otg_work_call(struct work_struct *work)
 static void tcpc_otg_power_work_call(struct work_struct *work)
 {
 	mutex_lock(&tcpc_otg_pwr_lock);
-	if (usbc_otg_power_enable) {
-		if (!usb20_host_tcpc_boost_on) {
-			/* update flag 1st then enable VBUS to make host mode correct used by PMIC */
-			usb20_host_tcpc_boost_on = true;
-			_set_vbus(mtk_musb, 1);
-		}
-	} else {
-		if (usb20_host_tcpc_boost_on) {
-			/* disable VBUS 1st then update flag to make host mode correct used by PMIC */
-			_set_vbus(mtk_musb, 0);
-			usb20_host_tcpc_boost_on = false;
-		}
-	}
+	if (usbc_otg_power_enable)
+		_set_vbus(mtk_musb, 1);
+	else
+		_set_vbus(mtk_musb, 0);
 	mutex_unlock(&tcpc_otg_pwr_lock);
 }
 static int otg_tcp_notifier_call(struct notifier_block *nb,
@@ -745,13 +741,16 @@ void mt_usb_otg_init(struct musb *musb)
 	INIT_WORK(&tcpc_otg_work, tcpc_otg_work_call);
 	INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
 	queue_delayed_work(mtk_musb->st_wq, &register_otg_work, 0);
+	vbus_control = 0;
 #else
 	typec_host_driver.priv_data = NULL;
 	register_typec_switch_callback(&typec_host_driver);
+	vbus_control = 0;
 #endif
 #else
 	DBG(0, "host controlled by IDDIG\n");
 	iddig_int_init();
+	vbus_control = 1;
 #endif
 
 	/* EP table */

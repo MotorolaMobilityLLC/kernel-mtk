@@ -79,13 +79,11 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 #include <upmu_common.h>
 bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 
-#if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
-extern bool usb20_host_tcpc_boost_on;
-#endif
-
 #define PHY_IDLE_MODE       0
 #define PHY_DEV_ACTIVE      1
 #define PHY_HOST_ACTIVE     2
 void set_usb_phy_mode(int);
-
+#ifdef CONFIG_USB_MTK_OTG
+extern bool usb20_check_vbus_on(void);
+#endif
 #endif

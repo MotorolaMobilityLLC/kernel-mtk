@@ -353,10 +353,10 @@ bool mt_usb_is_device(void)
 		return false;
 	}
 #endif
-#if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
-	return !usb20_host_tcpc_boost_on;
+#ifdef CONFIG_USB_MTK_OTG
+	return !usb20_check_vbus_on();
 #else
-	return !mtk_musb->is_host;
+	return true;
 #endif
 }
 static struct delayed_work disconnect_check_work;
