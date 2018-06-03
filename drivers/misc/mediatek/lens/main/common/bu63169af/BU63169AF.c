@@ -62,7 +62,7 @@ static struct device *lens_device;
 
 static void TimeoutHandle(void)
 {
-	LOG_INF("TimeoutHandle\n");
+	LOG_INF("BU63169 Timeout Handle Flow\n");
 
 #if !defined(CONFIG_MTK_LEGACY)
 	lens_device = &g_pstAF_I2Cclient->dev;

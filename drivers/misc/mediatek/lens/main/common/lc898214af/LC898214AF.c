@@ -69,7 +69,7 @@ static int s4EEPROM_ReadReg(u16 addr, u16 *data)
 	LOG_INF("u8data[1] = 0x%x\n", u8data[1]);
 
 	*data = u8data[1] << 8 | u8data[0];
-	LOG_INF("s4EEPROM_ReadReg 0x%x, 0x%x\n", addr, *data);
+	LOG_INF("EEPROM 0x%x, 0x%x\n", addr, *data);
 
 	return 0;
 }

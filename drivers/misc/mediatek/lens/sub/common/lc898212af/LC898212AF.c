@@ -52,15 +52,15 @@ static int s4EEPROM_ReadReg(u16 addr, u16 *data)
 
 	g_pstAF_I2Cclient->addr = (EEPROM_I2C_SLAVE_ADDR) >> 1;
 	if (i2c_master_send(g_pstAF_I2Cclient, pu_send_cmd, 2) < 0) {
-		LOG_INF("[s4EEPROM_ReadReg] read I2C send failed!!\n");
+		LOG_INF("read I2C send failed!!\n");
 		return -1;
 	}
 	if (i2c_master_recv(g_pstAF_I2Cclient, &u8data, 1) < 0) {
-		LOG_INF("EEPROM_ReadReg failed!!\n");
+		LOG_INF("failed!!\n");
 		return -1;
 	}
 	*data = u8data;
-	LOG_INF("s4EEPROM_ReadReg2 0x%x, 0x%x\n", addr, *data);
+	LOG_INF("EEPROM 0x%x, 0x%x\n", addr, *data);
 
 	return 0;
 }
@@ -78,19 +78,19 @@ static int s4AF_ReadReg(u8 length, u8 addr, u16 *data)
 
 	if (length == 0) {
 		if (i2c_master_recv(g_pstAF_I2Cclient, &u8data, 1) < 0) {
-			LOG_INF("s4AF_ReadReg failed!!\n");
+			LOG_INF("Read Reg failed!!\n");
 			return -1;
 		}
 		*data = u8data;
 	} else if (length == 1) {
 		if (i2c_master_recv(g_pstAF_I2Cclient, pBuff, 2) < 0) {
-			LOG_INF("s4AF_ReadReg 2 failed!!\n");
+			LOG_INF("Read Reg2 failed!!\n");
 			return -1;
 		}
 
 		*data = (((u16)pBuff[0]) << 8) + ((u16)pBuff[1]);
 	}
-	LOG_INF("s4AF_ReadReg 0x%x, 0x%x, 0x%x\n", length, addr, *data);
+	LOG_INF("Read Reg 0x%x, 0x%x, 0x%x\n", length, addr, *data);
 
 	return 0;
 }
@@ -255,7 +255,7 @@ static int SetVCMPos(u16 _wData)
 	TargetPos = TargetPos << 4;
 
 	s4AF_ReadReg(1, 0x3C, &ExistentPos);
-	LOG_INF("SetVCMPos 0x%x 0x%x\n", TargetPos, ExistentPos);
+	LOG_INF("move pos 0x%x 0x%x\n", TargetPos, ExistentPos);
 	if (TargetPos > ExistentPos) {
 		s4AF_WriteReg(1, 0xA1, TargetPos & 0xfff0);
 		s4AF_WriteReg(1, 0x16, 0x0180);
