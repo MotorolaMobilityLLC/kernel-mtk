@@ -60,13 +60,6 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 		-1,
 	},
 
-	/* DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP */
-	{
-		DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_RDMA0,
-		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
-		-1,
-	},
-
 	/* DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP */
 	{
 		DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
@@ -216,8 +209,6 @@ char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 	/* primary display */
 	case DDP_SCENARIO_PRIMARY_DISP:
 		return "primary_disp";
-	case DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP:
-		return "primary_bypass_pq";
 	case DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP:
 		return "primary_rdma0_color0_disp";
 	case DDP_SCENARIO_PRIMARY_RDMA0_DISP:
