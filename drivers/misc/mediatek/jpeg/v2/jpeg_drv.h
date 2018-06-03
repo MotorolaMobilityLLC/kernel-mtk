@@ -587,7 +587,7 @@ typedef struct {
 
 #endif
 
-extern int smi_debug_bus_hanging_detect_ext(unsigned short larbs, int show_dump, int output_gce_buffer);
+/*extern int smi_debug_bus_hanging_detect_ext(unsigned short larbs, int show_dump, int output_gce_buffer);*/
 
 /* typedef struct */
 /* { */

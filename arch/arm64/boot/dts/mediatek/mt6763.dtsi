@@ -2096,10 +2096,23 @@
 		interrupts = <GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	jpgenc@17030000 {
-		compatible = "mediatek,jpgenc";
-		reg = <0 0x17030000 0 0x1000>;
-		interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+	venc_jpg@17030000 {
+		compatible = "mediatek,venc_jpg";
+		reg =	<0 0x17030000 0 0x1000>;
+		interrupts =	<GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+				<&mmsys_config MMSYS_SMI_COMMON>,
+				<&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_VEN>,
+				<&venc_gcon VENC_GCON_LARB>,
+				<&venc_gcon VENC_GCON_JPGENC>;
+
+			clock-names =
+				"MT_CG_SMI_COMMON",
+				"MT_CG_SCP_SYS_MM0",
+				"MT_CG_SCP_SYS_VEN",
+				"MT_CG_VENC_LARB",
+				"MT_CG_VENC_JPGENC";
 	};
 
 	mbist@17050000 {

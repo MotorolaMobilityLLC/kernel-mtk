@@ -128,6 +128,8 @@
 #include "smi_public.h"
 #endif
 
+#include "smi_debug.h"
+
 /* -------------------------------------------------------------------------- */
 /*  */
 /* -------------------------------------------------------------------------- */
@@ -951,8 +953,10 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			jpeg_drv_enc_dump_reg();
 
 			/* need to dump smi for the case that no irq coming from HW */
-			if (ret == 3)
-				smi_debug_bus_hanging_detect_ext(0x1FF, 1, 0);
+			if (ret == 3) {
+				/*temply remove smi code*/
+				/*smi_debug_bus_hanging_detect_ext(0x1FF, 1, 0);*/
+			}
 
 			jpeg_drv_enc_warm_reset();
 
