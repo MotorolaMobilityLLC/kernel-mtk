@@ -448,7 +448,7 @@ VOID scnFsmMsgAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 					    TRUE,
 					    FALSE,
 					    FALSE,
-					    NULL, NULL, sizeof(CMD_SCAN_CANCEL), (PUINT_8) &rCmdScanCancel, NULL, 0);
+					    NULL, NULL, sizeof(CMD_SCAN_CANCEL), (PUINT_8)&rCmdScanCancel, NULL, 0);
 
 			/* generate scan-done event for caller */
 			scnFsmGenerateScanDoneMsg(prAdapter,
@@ -691,18 +691,18 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 
 	if (fgIsNewVersion) {
 		DBGLOG(SCN, INFO,
-		       "scnEventScanDone Version%d!size of ScanDone%d,ucCompleteChanCount[%d],ucCurrentState%d, u4ScanDurBcnCnt[%lu]\n",
+		       "Version=%d! sizeof(ScanDone)=%d,ucCount=%d,CurrentState=%d, u4ScanDurBcnCnt=%u\n",
 		       prScanDone->ucScanDoneVersion, sizeof(EVENT_SCAN_DONE), prScanDone->ucCompleteChanCount,
 		       prScanDone->ucCurrentState, prScanDone->u4ScanDurBcnCnt);
 
 		if (prScanDone->ucCurrentState != FW_SCAN_STATE_SCAN_DONE) {
-			DBGLOG(SCN, INFO,
-			       "FW Scan timeout!generate ScanDone event at State%d complete chan count%d ucChannelListNum%d\n",
+			DBGLOG(SCN, WARN,
+			       "FW Scan timeout! ScanDone event at State%d completeChanCount=%d ChanListNum=%d\n",
 			       prScanDone->ucCurrentState, prScanDone->ucCompleteChanCount,
 			       prScanParam->ucChannelListNum);
 
 		} else {
-			DBGLOG(SCN, INFO, " scnEventScanDone at FW_SCAN_STATE_SCAN_DONE state\n");
+			DBGLOG(SCN, TRACE, "scnEventScanDone at FW_SCAN_STATE_SCAN_DONE state\n");
 		}
 	} else {
 		DBGLOG(SCN, INFO, "Old scnEventScanDone Version\n");
@@ -722,9 +722,9 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 				prScanInfo->au2ChannelIdleTime[u4ChCnt] = prScanDone->au2ChannelIdleTime[u4ChCnt];
 				prScanInfo->aucChannelMDRDYCnt[u4ChCnt] = prScanDone->aucChannelMDRDYCnt[u4ChCnt];
 
-				if (u4PrintfIdx % 10 == 0 && u4PrintfIdx != 0) {
+				if (u4PrintfIdx % 13 == 0 && u4PrintfIdx != 0) {
 					DBGLOG(SCN, INFO, "Channel  : %s\n", g_aucScanChannelNum);
-					DBGLOG(SCN, INFO, "IdleTime : %s\n", g_aucScanChannelIdleTime);
+					DBGLOG(SCN, TRACE, "IdleTime : %s\n", g_aucScanChannelIdleTime);
 					DBGLOG(SCN, INFO, "MdrdyCnt : %s\n", g_aucScanChannelMDRDY);
 					DBGLOG(SCN, INFO,
 						"==================================================================================\n");
@@ -743,7 +743,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 			}
 
 			DBGLOG(SCN, INFO, "Channel  : %s\n", g_aucScanChannelNum);
-			DBGLOG(SCN, INFO, "IdleTime : %s\n", g_aucScanChannelIdleTime);
+			DBGLOG(SCN, TRACE, "IdleTime : %s\n", g_aucScanChannelIdleTime);
 			DBGLOG(SCN, INFO, "MdrdyCnt : %s\n", g_aucScanChannelMDRDY);
 		} else {
 			prScanInfo->fgIsSparseChannelValid = FALSE;
@@ -757,7 +757,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 		/* switch to next pending scan */
 		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
 	} else {
-		DBGLOG(SCN, INFO, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
+		DBGLOG(SCN, WARN, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
 		       prScanDone->ucSeqNum, prScanInfo->eCurrentState);
 	}
 }				/* end of scnEventScanDone */

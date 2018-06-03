@@ -159,7 +159,7 @@ BOOLEAN glRegisterAmpc(IN P_GLUE_INFO_T prGlueInfo)
 {
 	ASSERT(prGlueInfo);
 
-	DBGLOG(BOW, INFO, "Register for character device to communicate with 802.11 PAL.\n");
+	DBGLOG(BOW, TRACE, "Register for character device to communicate with 802.11 PAL.\n");
 
 	if (prGlueInfo->rBowInfo.fgIsRegistered == TRUE)
 		return FALSE;

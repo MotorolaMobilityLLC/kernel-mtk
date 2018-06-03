@@ -1350,14 +1350,14 @@ int mtk_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev, str
 	if (!prGtkData)
 		return WLAN_STATUS_SUCCESS;
 
-	DBGLOG(RSN, INFO, "cfg80211_set_rekey_data size( %d)\n", sizeof(*data));
+	DBGLOG(RSN, INFO, "cfg80211_set_rekey_data size(%d)\n", sizeof(*data));
 
-	DBGLOG(RSN, INFO, "kek\n");
-	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->kek, NL80211_KEK_LEN);
-	DBGLOG(RSN, INFO, "kck\n");
-	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->kck, NL80211_KCK_LEN);
-	DBGLOG(RSN, INFO, "replay count\n");
-	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->replay_ctr, NL80211_REPLAY_CTR_LEN);
+	DBGLOG(RSN, TRACE, "kek\n");
+	DBGLOG_MEM8(PF, TRACE, (PUINT_8)data->kek, NL80211_KEK_LEN);
+	DBGLOG(RSN, TRACE, "kck\n");
+	DBGLOG_MEM8(PF, TRACE, (PUINT_8)data->kck, NL80211_KCK_LEN);
+	DBGLOG(RSN, TRACE, "replay count\n");
+	DBGLOG_MEM8(PF, TRACE, (PUINT_8)data->replay_ctr, NL80211_REPLAY_CTR_LEN);
 
 #if 0
 	kalMemCopy(prGtkData, data, sizeof(*data));
@@ -1399,7 +1399,7 @@ int mtk_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev, str
 			   prGtkData, sizeof(PARAM_GTK_REKEY_DATA), FALSE, FALSE, TRUE, &u4BufLen);
 
 	if (rStatus != WLAN_STATUS_SUCCESS)
-		DBGLOG(INIT, INFO, "set GTK rekey data error:%lx\n", rStatus);
+		DBGLOG(RSN, ERROR, "set GTK rekey data error:%lx\n", rStatus);
 	else
 		i4Rslt = 0;
 

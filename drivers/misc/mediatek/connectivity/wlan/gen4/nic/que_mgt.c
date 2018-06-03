@@ -514,7 +514,7 @@ VOID qmActivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 		(prStaRec->aprRxReorderParamRefTbl)[i] = NULL;
 #endif
 
-	DBGLOG(QM, INFO, "QM: +STA[%d]\n", (UINT_32) prStaRec->ucIndex);
+	DBGLOG(QM, TRACE, "QM: +STA[%d]\n", (UINT_32) prStaRec->ucIndex);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -559,7 +559,7 @@ VOID qmDeactivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 
 	qmUpdateStaRec(prAdapter, prStaRec);
 
-	DBGLOG(QM, INFO, "QM: -STA[%u]\n", prStaRec->ucIndex);
+	DBGLOG(QM, TRACE, "QM: -STA[%u]\n", prStaRec->ucIndex);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -4158,7 +4158,7 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 				break;
 #if DSCP_SUPPORT
 			case ELEM_ID_QOS_MAP_SET:
-				DBGLOG(QM, WARN, "QM: received assoc resp qosmapset ie\n");
+				DBGLOG(QM, TRACE, "QM: received assoc resp qosmapset ie\n");
 				prStaRec->qosMapSet = qosParseQosMapSet(prAdapter, pucIE);
 				hasnoQosMapSetIE = FALSE;
 				break;
@@ -4169,7 +4169,7 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 		}
 #if DSCP_SUPPORT
 		if (hasnoQosMapSetIE) {
-			DBGLOG(QM, WARN, "QM: remove assoc resp qosmapset ie\n");
+			DBGLOG(QM, TRACE, "QM: remove assoc resp qosmapset ie\n");
 			QosMapSetRelease(prStaRec);
 			prStaRec->qosMapSet = NULL;
 		}
@@ -4263,12 +4263,20 @@ BOOLEAN mqmUpdateEdcaParameters(IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucIE, IN 
 		for (eAci = 0; eAci < WMM_AC_INDEX_NUM; eAci++) {
 			prAcQueParams = &prBssInfo->arACQueParms[eAci];
 			mqmFillAcQueParam(prIeWmmParam, eAci, prAcQueParams);
-			DBGLOG(QM, INFO,
-			       "BSS[%u]: eAci[%d] ACM[%d] Aifsn[%d] CWmin/max[%d/%d] TxopLimit[%d] NewParameter[%d]\n",
-			       prBssInfo->ucBssIndex, eAci, prAcQueParams->ucIsACMSet,
-			       prAcQueParams->u2Aifsn, prAcQueParams->u2CWmin, prAcQueParams->u2CWmax,
-			       prAcQueParams->u2TxopLimit, fgNewParameter);
 		}
+		DBGLOG(QM, INFO,
+		"BSS[%u]: ACM[%d,%d,%d,%d] Aifsn[%d,%d,%d,%d] CWmin/max[%d,%d;%d,%d;%d,%d;%d,%d] Txop[%d,%d,%d,%d]\n",
+		      prBssInfo->ucBssIndex,
+		      prBssInfo->arACQueParms[0].ucIsACMSet, prBssInfo->arACQueParms[1].ucIsACMSet,
+		      prBssInfo->arACQueParms[2].ucIsACMSet, prBssInfo->arACQueParms[3].ucIsACMSet,
+		      prBssInfo->arACQueParms[0].u2Aifsn, prBssInfo->arACQueParms[1].u2Aifsn,
+		      prBssInfo->arACQueParms[2].u2Aifsn, prBssInfo->arACQueParms[3].u2Aifsn,
+		      prBssInfo->arACQueParms[0].u2CWmin, prBssInfo->arACQueParms[0].u2CWmax,
+		      prBssInfo->arACQueParms[1].u2CWmin, prBssInfo->arACQueParms[1].u2CWmax,
+		      prBssInfo->arACQueParms[2].u2CWmin, prBssInfo->arACQueParms[2].u2CWmax,
+		      prBssInfo->arACQueParms[3].u2CWmin, prBssInfo->arACQueParms[3].u2CWmax,
+		      prBssInfo->arACQueParms[0].u2TxopLimit, prBssInfo->arACQueParms[1].u2TxopLimit,
+		      prBssInfo->arACQueParms[2].u2TxopLimit, prBssInfo->arACQueParms[3].u2TxopLimit);
 	} while (FALSE);
 
 	return fgNewParameter;

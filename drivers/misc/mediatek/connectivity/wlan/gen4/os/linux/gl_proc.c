@@ -555,7 +555,6 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 {
 	struct proc_dir_entry *prEntry;
 
-	DBGLOG(INIT, INFO, "[%s]\n", __func__);
 	g_prGlueInfo_proc = prGlueInfo;
 
 	prEntry = proc_create(PROC_MCR_ACCESS, 0664, gprProcRoot, &mcr_ops);

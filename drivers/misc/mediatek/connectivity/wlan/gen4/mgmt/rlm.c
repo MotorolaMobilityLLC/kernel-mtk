@@ -777,7 +777,6 @@ static VOID rlmFillHtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_
 }
 
 #if CFG_SUPPORT_802_11AC
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief For probe request, association request
@@ -985,11 +984,10 @@ static VOID rlmFillVhtOpNotificationIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBss
 	prVhtOpMode->ucId = ELEM_ID_OP_MODE;
 	prVhtOpMode->ucLength = sizeof(IE_VHT_OP_MODE_NOTIFICATION_T) - ELEM_HDR_LEN;
 
-	DBGLOG(RLM, INFO, "rlmFillVhtOpNotificationIE(%d) %u %u\n",
+	DBGLOG(RLM, TRACE, "rlmFillVhtOpNotificationIE(%d) %u %u\n",
 		prBssInfo->ucBssIndex, fgIsMaxCap, prBssInfo->ucNss);
 
 	if (fgIsMaxCap) {
-
 		ucMaxBw = cnmGetBssMaxBw(prAdapter, prBssInfo->ucBssIndex);
 
 		/*handle 80P80 case*/
@@ -997,12 +995,9 @@ static VOID rlmFillVhtOpNotificationIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBss
 			ucMaxBw = MAX_BW_160MHZ;
 
 		prVhtOpMode->ucOperatingMode |= ucMaxBw;
-
 		prVhtOpMode->ucOperatingMode |=
 			(((prBssInfo->ucNss-1) << VHT_OP_MODE_RX_NSS_OFFSET) & VHT_OP_MODE_RX_NSS);
-
 	} else {
-
 		switch (prBssInfo->ucVhtChannelWidth) {
 		case VHT_OP_CHANNEL_WIDTH_80P80:
 			ucMaxBw = MAX_BW_160MHZ;
@@ -1032,16 +1027,12 @@ static VOID rlmFillVhtOpNotificationIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBss
 		}
 
 		prVhtOpMode->ucOperatingMode |= ucMaxBw;
-
-		prVhtOpMode->ucOperatingMode |= (((prBssInfo->ucNss-1)
-			<< VHT_OP_MODE_RX_NSS_OFFSET) & VHT_OP_MODE_RX_NSS);
+		prVhtOpMode->ucOperatingMode |= (((prBssInfo->ucNss-1) << VHT_OP_MODE_RX_NSS_OFFSET)
+			& VHT_OP_MODE_RX_NSS);
 	}
 
-
 	prMsduInfo->u2FrameLength += IE_SIZE(prVhtOpMode);
-
 }
-
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -1095,7 +1086,8 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 			} else {
 				prVhtCap->u4VhtCapInfo |=
 					VHT_CAP_INFO_COMPRESSED_STEERING_NUMBER_OF_BEAMFORMER_ANTENNAS_4_SUPPOERTED;
-				DBGLOG(RLM, INFO, "Set VHT Cap BFEE STS CAP=%d\n", VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX);
+				DBGLOG(RLM, TRACE, "Set VHT Cap BFEE STS CAP=%d\n",
+					VHT_CAP_INFO_BEAMFORMEE_STS_CAP_MAX);
 			}
 		} else {
 			/*DUT role is AP OR GO wiht VHT capabiltiy and generating BCN VHT IE with rlmFillVhtCapIE api*/
@@ -1973,14 +1965,14 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 		case ELEM_ID_WIDE_BAND_CHANNEL_SWITCH:
 			if (!RLM_NET_IS_11AC(prBssInfo) || IE_LEN(pucIE) != (sizeof(IE_WIDE_BAND_CHANNEL_T) - 2))
 				break;
-			DBGLOG(RLM, INFO, "[Channel Switch] ELEM_ID_WIDE_BAND_CHANNEL_SWITCH, 11AC\n");
 			prWideBandChannelIE = (P_IE_WIDE_BAND_CHANNEL_T) pucIE;
 			ucChannelAnnounceVhtBw = prWideBandChannelIE->ucNewChannelWidth;
 			ucChannelAnnounceChannelS1 = prWideBandChannelIE->ucChannelS1;
 			ucChannelAnnounceChannelS2 = prWideBandChannelIE->ucChannelS2;
 			fgHasWideBandIE = TRUE;
 			DBGLOG(RLM, INFO,
-			       "[Ch] BW=%d, s1=%d, s2=%d\n", ucChannelAnnounceVhtBw, ucChannelAnnounceChannelS1,
+			       "[Channel Switch] 11AC: BW=%d, s1=%d, s2=%d\n",
+			       ucChannelAnnounceVhtBw, ucChannelAnnounceChannelS1,
 			       ucChannelAnnounceChannelS2);
 			break;
 #endif
@@ -2050,7 +2042,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 					rlmSendOpModeNotificationFrame(prAdapter, prStaRec,
 								       VHT_OP_MODE_CHANNEL_WIDTH_20, 1);
 				} else {
-					DBGLOG(RLM, INFO, "Skip Send Operation Action Frame");
+					DBGLOG(RLM, LOUD, "Skip Send Operation Action Frame");
 				}
 			}
 
@@ -2150,15 +2142,15 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 		}
 
 		if (prStaRec->ucStaState == STA_STATE_3) {
-			DBGLOG(RLM, INFO, "Update OpMode to 0x%x", prStaRec->ucVhtOpMode);
-			DBGLOG(RLM, INFO, "to FW due to OpMode Notificaition\n");
+			DBGLOG(RLM, INFO, "Update OpMode to 0x%x, to FW due to OpMode Notificaition",
+				prStaRec->ucVhtOpMode);
 			cnmStaSendUpdateCmd(prAdapter, prStaRec, NULL, FALSE);
 		}
 	} else {/* Set Default if the VHT OP mode field is not present */
 		if ((prStaRec->ucVhtOpMode != ucInitVhtOpMode) && (prStaRec->ucStaState == STA_STATE_3)) {
 			prStaRec->ucVhtOpMode = ucInitVhtOpMode;
-			DBGLOG(RLM, INFO, "Update OpMode to 0x%x", prStaRec->ucVhtOpMode);
-			DBGLOG(RLM, INFO, "to FW due to NO OpMode Notificaition\n");
+			DBGLOG(RLM, INFO, "Update OpMode to 0x%x, to FW due to NO OpMode Notificaition",
+				prStaRec->ucVhtOpMode);
 			cnmStaSendUpdateCmd(prAdapter, prStaRec, NULL, FALSE);
 		} else
 			prStaRec->ucVhtOpMode = ucInitVhtOpMode;
@@ -2187,7 +2179,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 			       MAC2STR(prBssInfo->aucBSSID), prBssDesc->ucChannelNum, ucChannelAnnouncePri);
 			prBssDesc->ucChannelNum = ucChannelAnnouncePri;
 		} else {
-			DBGLOG(RLM, INFO, "DFS: BSS: " MACSTR " Desc is not found\n ", MAC2STR(prBssInfo->aucBSSID));
+			DBGLOG(RLM, TRACE, "DFS: BSS: " MACSTR " Desc is not found\n ", MAC2STR(prBssInfo->aucBSSID));
 		}
 
 		if (fgHasWideBandIE != FALSE) {
@@ -2202,7 +2194,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 
 #if CFG_SUPPORT_DFS
 	/*DFS Certification for Channel Bandwidth 20MHz */
-	DBGLOG(RLM, INFO, "Ch : SwitchIE = %d\n", g_fgHasChannelSwitchIE);
+	DBGLOG(RLM, TRACE, "Ch : SwitchIE = %d\n", g_fgHasChannelSwitchIE);
 	if (g_fgHasChannelSwitchIE == TRUE) {
 		prBssInfo->eBssSCO = CHNL_EXT_SCN;
 		prBssInfo->ucVhtChannelWidth = CW_20_40MHZ;
@@ -2226,8 +2218,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 				       prBssInfo->ucVhtChannelFrequencyS2)) {
 
 		/*Dump IE Inforamtion */
-		DBGLOG(RLM, WARN, "rlmRecIeInfoForClient IE Information\n");
-		DBGLOG(RLM, WARN, "IE Length = %d\n", u2IELength);
+		DBGLOG(RLM, WARN, "rlmRecIeInfoForClient IE Information, IE Length = %d\n", u2IELength);
 		DBGLOG_MEM8(RLM, WARN, pucDumpIE, u2IELength);
 
 		/*Error Handling for Non-predicted IE - Fixed to set 20MHz */
@@ -2326,8 +2317,7 @@ rlmRecAssocRespIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, PU
 		prStaRec->ucDesiredPhyTypeSet &= ~PHY_TYPE_BIT_HT;
 		if (prBssDesc) {
 			if (prBssDesc->ucPhyTypeSet && PHY_TYPE_BIT_HT) {
-				DBGLOG(RLM, WARN, "PhyTypeSet in Beacon and AssocResp are unsync. ");
-				DBGLOG(RLM, WARN, "Follow AssocResp to disable HT.\n");
+				DBGLOG(RLM, WARN, "PhyTypeSet are unsync in Beacon and AssocResp(to disable HT)\n");
 			}
 		}
 	}
@@ -2335,8 +2325,7 @@ rlmRecAssocRespIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, PU
 		prStaRec->ucDesiredPhyTypeSet &= ~PHY_TYPE_BIT_VHT;
 		if (prBssDesc) {
 			if (prBssDesc->ucPhyTypeSet && PHY_TYPE_BIT_VHT) {
-				DBGLOG(RLM, WARN, "PhyTypeSet in Beacon and AssocResp are unsync. ");
-				DBGLOG(RLM, WARN, "Follow AssocResp to disable VHT.\n");
+				DBGLOG(RLM, WARN, "PhyTypeSet are unsync in Beacon and AssocResp(to disable VHT)\n");
 			}
 		}
 	}
@@ -2853,7 +2842,7 @@ VOID rlmFillSyncCmdParam(P_CMD_SET_BSS_RLM_PARAM_T prCmdBody, P_BSS_INFO_T prBss
 		       prCmdBody->ucVhtChannelFrequencyS1, prCmdBody->ucVhtChannelFrequencyS2,
 		       prCmdBody->ucNss);
 	} else {
-		DBGLOG(RLM, INFO, "N=%d closed\n", prCmdBody->ucBssIndex);
+		DBGLOG(RLM, TRACE, "N=%d closed\n", prCmdBody->ucBssIndex);
 	}
 }
 

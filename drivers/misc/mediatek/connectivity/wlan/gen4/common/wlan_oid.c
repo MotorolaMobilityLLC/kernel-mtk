@@ -1057,7 +1057,7 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	if (u4SetBufferLen != sizeof(PARAM_CONNECT_T))
 		return WLAN_STATUS_INVALID_LENGTH;
 	else if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(REQ, WARN, "Fail in set ssid! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(OID, WARN, "Fail in set ssid! (Adapter not ready). ACPI=D%d, Radio=%d\n",
 		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
@@ -1099,9 +1099,9 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 			if (EQUAL_MAC_ADDR(prAdapter->rWlanInfo.rCurrBssId.arMacAddress, pParamConn->pucBssid))
 				fgEqualBssid = TRUE;
 		} else
-			DBGLOG(INIT, INFO, "wrong bssid " MACSTR "to connect\n", MAC2STR(pParamConn->pucBssid));
+			DBGLOG(OID, INFO, "wrong bssid " MACSTR "to connect\n", MAC2STR(pParamConn->pucBssid));
 	} else
-		DBGLOG(INIT, INFO, "No Bssid set\n");
+		DBGLOG(OID, TRACE, "No Bssid set\n");
 	prConnSettings->u4FreqInKHz = pParamConn->u4CenterFreq;
 
 	/* prepare for CMD_BUILD_CONNECTION & CMD_GET_CONNECTION_STATUS */
@@ -1114,7 +1114,7 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 				prAisAbortMsg->ucReasonOfDisconnect = DISCONNECT_REASON_CODE_REASSOCIATION;
 			}
 		} else {
-			DBGLOG(INIT, INFO, "DisBySsid\n");
+			DBGLOG(OID, INFO, "DisBySsid\n");
 			kalIndicateStatusAndComplete(prGlueInfo, WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
 			prAisAbortMsg->ucReasonOfDisconnect = DISCONNECT_REASON_CODE_NEW_CONNECTION;
 		}
@@ -1174,7 +1174,7 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
 
-	DBGLOG(INIT, INFO, "ssid %s, bssid " MACSTR ", conn policy %d, disc reason %d\n",
+	DBGLOG(OID, INFO, "ssid %s, bssid " MACSTR ", conn policy %d, disc reason %d\n",
 	       prConnSettings->aucSSID, MAC2STR(prConnSettings->aucBSSID),
 	       prConnSettings->eConnectionPolicy, prAisAbortMsg->ucReasonOfDisconnect);
 	return WLAN_STATUS_SUCCESS;
@@ -2085,8 +2085,7 @@ wlanoidSetRemoveWep(IN P_ADAPTER_T prAdapter,
 	u4KeyId = *(PUINT_32) pvSetBuffer;
 
 	/* Dump PARAM_WEP content. */
-	DBGLOG(REQ, INFO, "Set: Dump PARAM_KEY_INDEX content\n");
-	DBGLOG(REQ, INFO, "Index : 0x%08lx\n", u4KeyId);
+	DBGLOG(REQ, INFO, "Set: Dump PARAM_KEY_INDEX content, Index : 0x%08lx\n", u4KeyId);
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
 		DBGLOG(REQ, WARN,
@@ -2228,7 +2227,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prNewKey->ucBssIdx);
 
 	if (!prBssInfo) {
-		DBGLOG(REQ, ERROR, "BSS Info not exist !!\n");
+		DBGLOG(RSN, ERROR, "BSS Info not exist !!\n");
 		return WLAN_STATUS_SUCCESS;
 	}
 
@@ -2266,7 +2265,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	if ((prNewKey->u4KeyIndex & IS_UNICAST_KEY) == IS_UNICAST_KEY) {
 		prStaRec = cnmGetStaRecByAddress(prAdapter, prBssInfo->ucBssIndex, prNewKey->arBSSID);
 		if (!prStaRec) {	/* Already disconnected ? */
-			DBGLOG(REQ, ERROR, "[wlan] Not set the peer key while disconnect\n");
+			DBGLOG(RSN, ERROR, "[wlan] Not set the peer key while disconnect\n");
 			return WLAN_STATUS_SUCCESS;
 		}
 	}
@@ -2274,12 +2273,12 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + sizeof(CMD_802_11_KEY)));
 
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(RSN, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	/* increase command sequence number */
 	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
-	DBGLOG(REQ, INFO, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
+	DBGLOG(RSN, INFO, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
 
 	/* compose CMD_802_11_KEY cmd pkt */
 	prCmdInfo->eCmdType = COMMAND_TYPE_NETWORK_IOCTL;
@@ -2520,21 +2519,6 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		}
 	}
 
-#if DBG
-	DBGLOG(RSN, INFO, "Add key cmd to wlan index %d:", prCmdKey->ucWlanIndex);
-	DBGLOG(RSN, INFO, "(BSS = %d) " MACSTR "\n", prCmdKey->ucBssIdx, MAC2STR(prCmdKey->aucPeerAddr));
-	DBGLOG(RSN, INFO, "Tx = %d type = %d Auth = %d\n", prCmdKey->ucTxKey, prCmdKey->ucKeyType,
-	       prCmdKey->ucIsAuthenticator);
-	DBGLOG(RSN, INFO, "cipher = %d keyid = %d keylen = %d\n", prCmdKey->ucAlgorithmId, prCmdKey->ucKeyId,
-	       prCmdKey->ucKeyLen);
-	DBGLOG_MEM8(RSN, INFO, prCmdKey->aucKeyMaterial, prCmdKey->ucKeyLen);
-
-	DBGLOG(RSN, INFO, "wepkeyUsed = %d\n", prBssInfo->wepkeyUsed[prCmdKey->ucKeyId]);
-	DBGLOG(RSN, INFO, "wepkeyWlanIdx = %d:", prBssInfo->wepkeyWlanIdx);
-	DBGLOG(RSN, INFO, "ucBMCWlanIndexSUsed = %d\n", prBssInfo->ucBMCWlanIndexSUsed[prCmdKey->ucKeyId]);
-	DBGLOG(RSN, INFO, "ucBMCWlanIndexS = %d:", prBssInfo->ucBMCWlanIndexS[prCmdKey->ucKeyId]);
-#endif
-
 	/* insert into prCmdQueue */
 	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);
 
@@ -2602,7 +2586,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	prRemovedKey = (P_PARAM_REMOVE_KEY_T) pvSetBuffer;
 
 	/* Dump PARAM_REMOVE_KEY content. */
-	DBGLOG(RSN, INFO, "Length: 0x%x, Key Index: 0x%x, BSS_INDEX: %d, BSSID: "MACSTR"\n",
+	DBGLOG(RSN, TRACE, "Length: 0x%x, Key Index: 0x%x, BSS_INDEX: %d, BSSID: "MACSTR"\n",
 		prRemovedKey->u4Length, prRemovedKey->u4KeyIndex, prRemovedKey->ucBssIdx,
 		MAC2STR(prRemovedKey->arBSSID));
 
@@ -2618,7 +2602,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 #endif
 
 	if (u4KeyIndex >= 4) {
-		DBGLOG(RSN, ERROR, "Remove bip key Index : 0x%08lx\n", u4KeyIndex);
+		DBGLOG(RSN, TRACE, "Remove bip key Index : 0x%08lx\n", u4KeyIndex);
 		return WLAN_STATUS_SUCCESS;
 	}
 
@@ -2637,7 +2621,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 			fgRemoveWepKey = TRUE;
 
 		if (fgRemoveWepKey) {
-			DBGLOG(RSN, INFO, "Remove wep key id = %d", u4KeyIndex);
+			DBGLOG(RSN, TRACE, "Remove wep key id = %d", u4KeyIndex);
 			prBssInfo->wepkeyUsed[u4KeyIndex] = FALSE;
 			if (prBssInfo->fgBcDefaultKeyExist &&
 			    prBssInfo->ucBcDefaultKeyIdx == u4KeyIndex) {
@@ -2647,7 +2631,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 			ASSERT(prBssInfo->wepkeyWlanIdx < WTBL_SIZE);
 			ucRemoveBCKeyAtIdx = prBssInfo->wepkeyWlanIdx;
 		} else {
-			DBGLOG(RSN, INFO, "Remove group key id = %d", u4KeyIndex);
+			DBGLOG(RSN, TRACE, "Remove group key id = %d", u4KeyIndex);
 
 			if (prBssInfo->ucBMCWlanIndexSUsed[u4KeyIndex]) {
 
@@ -2662,7 +2646,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 			}
 		}
 
-		DBGLOG(RSN, INFO, "ucRemoveBCKeyAtIdx = %d", ucRemoveBCKeyAtIdx);
+		DBGLOG(RSN, TRACE, "ucRemoveBCKeyAtIdx = %d", ucRemoveBCKeyAtIdx);
 
 		if (ucRemoveBCKeyAtIdx >= WTBL_SIZE)
 			return WLAN_STATUS_SUCCESS;
@@ -2776,7 +2760,7 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	ASSERT(pu4SetInfoLen);
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(REQ, WARN, "Fail in set add key! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(RSN, WARN, "Fail in set add key! (Adapter not ready). ACPI=D%d, Radio=%d\n",
 		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
@@ -2786,9 +2770,8 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Dump PARAM_DEFAULT_KEY_T content. */
-	DBGLOG(RSN, INFO, "Key Index : %d\n", prDefaultKey->ucKeyID);
-	DBGLOG(RSN, INFO, "Unicast Key : %d\n", prDefaultKey->ucUnicast);
-	DBGLOG(RSN, INFO, "Multicast Key : %d\n", prDefaultKey->ucMulticast);
+	DBGLOG(RSN, INFO, "Key Index : %d, Unicast Key : %d, Multicast Key : %d\n",
+		prDefaultKey->ucKeyID, prDefaultKey->ucUnicast, prDefaultKey->ucMulticast);
 
 	/* prWlanTable = prAdapter->rWifiVar.arWtbl; */
 	prGlueInfo = prAdapter->prGlueInfo;
@@ -2837,14 +2820,14 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	}
 
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + sizeof(CMD_DEFAULT_KEY)));
-
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(RSN, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	/* increase command sequence number */
 	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
-	DBGLOG(REQ, INFO, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
+	DBGLOG(RSN, INFO, "ucCmdSeqNum = %d, CMD_ID_DEFAULT_KEY_ID (%d) with wlan idx = %d\n",
+		ucCmdSeqNum, prDefaultKey->ucKeyID, ucWlanIndex);
 
 	/* compose CMD_802_11_KEY cmd pkt */
 	prCmdInfo->eCmdType = COMMAND_TYPE_NETWORK_IOCTL;
@@ -2877,8 +2860,6 @@ wlanoidSetDefaultKey(IN P_ADAPTER_T prAdapter,
 	prCmdDefaultKey->ucKeyId = prDefaultKey->ucKeyID;
 	prCmdDefaultKey->ucWlanIndex = ucWlanIndex;
 	prCmdDefaultKey->ucMulticast = prDefaultKey->ucMulticast;
-
-	DBGLOG(RSN, INFO, "CMD_ID_DEFAULT_KEY_ID (%d) with wlan idx = %d\n", prDefaultKey->ucKeyID, ucWlanIndex);
 
 	/* insert into prCmdQueue */
 	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);
@@ -3012,7 +2993,7 @@ wlanoidSetEncryptionStatus(IN P_ADAPTER_T prAdapter,
 	}
 
 	eEewEncrypt = *(P_ENUM_PARAM_ENCRYPTION_STATUS_T) pvSetBuffer;
-	DBGLOG(REQ, INFO, "ENCRYPTION_STATUS %d\n", eEewEncrypt);
+	DBGLOG(REQ, TRACE, "ENCRYPTION_STATUS %d\n", eEewEncrypt);
 
 	switch (eEewEncrypt) {
 	case ENUM_ENCRYPTION_DISABLED:	/* Disable WEP, TKIP, AES */
@@ -3296,8 +3277,6 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 
 	DEBUGFUNC("wlanoidSetPmkid");
 
-	DBGLOG(REQ, INFO, "wlanoidSetPmkid\n");
-
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
 
@@ -3317,7 +3296,7 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 	if (prPmkid->u4BSSIDInfoCount > CFG_MAX_PMKID_CACHE)
 		return WLAN_STATUS_INVALID_DATA;
 
-	DBGLOG(REQ, INFO, "Count %lu\n", prPmkid->u4BSSIDInfoCount);
+	DBGLOG(REQ, TRACE, "Count %lu\n", prPmkid->u4BSSIDInfoCount);
 
 	prAisSpecBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
 
@@ -6517,20 +6496,13 @@ wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
 	return rWlanStatus;
 }				/* wlanoidSetChipConfig */
 
-
-
-
-
-
 VOID
-wlanLoadDefaultCustomerSetting(IN P_ADAPTER_T prAdapter) {
-
+wlanLoadDefaultCustomerSetting(IN P_ADAPTER_T prAdapter)
+{
 	UINT_8 ucItemNum, i;
 
-
 	ucItemNum = (sizeof(g_rDefaulteSetting) / sizeof(PARAM_CUSTOM_KEY_CFG_STRUCT_T));
-	DBGLOG(INIT, INFO, "[wlanLoadDefaultCustomerSetting] default firmware setting %d item\n");
-
+	DBGLOG(INIT, TRACE, "default firmware setting %d item\n", ucItemNum);
 
 	for (i = 0; i < ucItemNum; i++) {
 		wlanCfgSet(prAdapter, g_rDefaulteSetting[i].aucKey, g_rDefaulteSetting[i].aucValue, 0);
@@ -10988,8 +10960,6 @@ wlanoidSetGtkRekeyData(IN P_ADAPTER_T prAdapter,
 	UINT_8 ucCmdSeqNum;
 	P_BSS_INFO_T prBssInfo;
 
-	DBGLOG(REQ, INFO, "wlanoidSetGtkRekeyData\n");
-
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
 	ASSERT(pu4SetInfoLen);
@@ -11008,7 +10978,7 @@ wlanoidSetGtkRekeyData(IN P_ADAPTER_T prAdapter,
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + sizeof(PARAM_GTK_REKEY_DATA)));
 
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(RSN, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	/* increase command sequence number */

@@ -723,12 +723,12 @@ BOOL secPrivacySeekForEntry(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta)
 				      kalP2PGetTkipCipher(prAdapter->prGlueInfo, ucRoleIdx))) {
 					prSta->fgTransmitKeyExist = TRUE;
 					prWtbl[ucEntry].ucKeyId = prBssInfo->ucBcDefaultKeyIdx;
-					DBGLOG(RSN, INFO, "peer sta set fgTransmitKeyExist\n");
+					DBGLOG(RSN, TRACE, "peer sta set fgTransmitKeyExist\n");
 				}
 			}
 		}
 
-		DBGLOG(RSN, INFO,
+		DBGLOG(RSN, TRACE,
 		       "[Wlan index] BSS#%d keyid#%d P=%d use WlanIndex#%d STAIdx=%d " MACSTR
 		       " staType=%x\n", prSta->ucBssIndex, 0, prWtbl[ucEntry].ucPairwise, ucEntry,
 		       prSta->ucIndex, MAC2STR(prSta->aucMacAddr), prSta->eStaType);
@@ -828,7 +828,7 @@ VOID secRemoveBssBcEntry(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN
 	if (!prBssInfo)
 		return;
 
-	DBGLOG(RSN, INFO, "remove all the key related with BSS!");
+	DBGLOG(RSN, TRACE, "remove all the key related with BSS!");
 
 	if (fgRoam) {
 		if (IS_BSS_AIS(prBssInfo) &&
@@ -932,7 +932,7 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 		for (i = ucStartIDX; i <= ucMaxIDX; i++) {
 			if (prWtbl[i].ucUsed == FALSE) {
 				ucEntry = i;
-				DBGLOG(RSN, INFO, "[Wlan index]: Assign entry #%d\n", i);
+				DBGLOG(RSN, TRACE, "[Wlan index]: Assign entry #%d\n", i);
 				break;
 			}
 		}
@@ -947,7 +947,7 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 			kalMemCopy(prWtbl[ucEntry].aucMacAddr, pucAddr, MAC_ADDR_LEN);
 			prWtbl[ucEntry].ucStaIndex = ucStaIdx;
 		}
-		DBGLOG(RSN, INFO,
+		DBGLOG(RSN, TRACE,
 		       "[Wlan index] BSS#%d keyid#%d P=%d use WlanIndex#%d STAIdx=%d " MACSTR
 		       "\n", ucBssIndex, ucKeyId, prWtbl[ucEntry].ucPairwise, ucEntry, ucStaIdx, MAC2STR(pucAddr));
 
@@ -1092,7 +1092,7 @@ void secPrivacyDumpWTBL(IN P_ADAPTER_T prAdapter)
 
 	for (i = 0; i <= WTBL_SIZE; i++) {
 		if (prWtbl[i].ucUsed)
-			DBGLOG(RSN, INFO,
+			DBGLOG(RSN, TRACE,
 				"#%d Used=%d  BSSIdx=%d keyid=%d P=%d STA=%d Addr=" MACSTR "\n", i,
 				prWtbl[i].ucUsed, prWtbl[i].ucBssIndex, prWtbl[i].ucKeyId,
 				prWtbl[i].ucPairwise, prWtbl[i].ucStaIndex, MAC2STR(prWtbl[i].aucMacAddr));
