@@ -431,11 +431,11 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	if (fix) {
 		if (opp < 0) {
-			spm_write(DVFSRC_FORCE, ~0xFFFF);
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) & ~(1 << 15 | 1 << 8));
+			spm_write(DVFSRC_FORCE, 0);
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 8));
 		} else {
-			spm_write(DVFSRC_FORCE, (~0xFFFF) | (force_req[opp] << 8));
+			spm_write(DVFSRC_FORCE, (force_req[opp] << 8));
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 15));
 		}
 	} else {
@@ -457,7 +457,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	if (fix) {
 		if (!(opp < 0))
-			spm_write(DVFSRC_FORCE, ~0xFFFF);
+			spm_write(DVFSRC_FORCE, 0);
 	}
 
 	vcorefs_crit_mask(log_mask(), kicker,
@@ -591,15 +591,19 @@ static void dvfsrc_init(void)
 		spm_write(DVFSRC_LEVEL_LABEL_14_15, 0x03210321);
 
 		/* todo: EMI/VCORE HRT, MD2SPM, BW setting */
-
+		spm_write(DVFSRC_EMI_QOS0, 0x32);
+		spm_write(DVFSRC_EMI_QOS1, 0x4C);
+		spm_write(DVFSRC_EMI_MD2SPM0, 0xF8);
+		spm_write(DVFSRC_EMI_MD2SPM1, 0x8000);
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x80C0);
 	}
 
 	spm_write(DVFSRC_RSRV_1, 0x0000001C);
 	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000011);
 
-	spm_write(DVFSRC_EMI_REQUEST, 0x00209209);
+	spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
 	spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
-	spm_write(DVFSRC_EMI_REQUEST3, 0x29292929);
+	/* spm_write(DVFSRC_EMI_REQUEST3, 0x29292929); */
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
 	/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29292929); */
 
