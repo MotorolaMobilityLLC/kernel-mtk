@@ -46,6 +46,7 @@
 #include <mtk_spm_resource_req_internal.h>
 
 #include <mtk_power_gs_api.h>
+#include <trace/events/mtk_events.h>
 
 #include <mt-plat/mtk_io.h>
 
@@ -829,7 +830,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
+	trace_dpidle(cpu, 1);
+
 	spm_trigger_wfi_for_dpidle(pwrctrl);
+
+	trace_dpidle(cpu, 0);
 
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
