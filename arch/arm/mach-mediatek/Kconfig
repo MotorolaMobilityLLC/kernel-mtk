@@ -53,6 +53,7 @@ config MACH_MT6765
 	select PINCTRL
 	select PINCTRL_MT6765
 	select MFD_SYSCON
+	select KERNEL_MODE_NEON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
@@ -74,6 +75,9 @@ config MACH_MT6765
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_L2C_PARITY_CHECK
 	select MTK_SYSTRACKER_V2
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
