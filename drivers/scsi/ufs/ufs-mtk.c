@@ -21,6 +21,8 @@
 #include "ufs-mtk.h"
 #include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
+#include "mtk_spm_resource_req.h"
+#include <mtk_clkbuf_ctl.h>
 
 #ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
@@ -75,6 +77,7 @@ bool ufs_mtk_tr_cn_used;
 void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 void __iomem *ufs_mtk_mmio_base_pericfg;
 void __iomem *ufs_mtk_mmio_base_ufs_mphy;
+struct ufs_hba *g_ufs_hba;
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
 {
@@ -253,6 +256,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_mmio_base_infracfg_ao = NULL;
 	ufs_mtk_mmio_base_pericfg = NULL;
 	ufs_mtk_mmio_base_ufs_mphy = NULL;
+	g_ufs_hba = hba;
 
 	ufs_mtk_advertise_hci_quirks(hba);
 
@@ -639,6 +643,9 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		reg = reg & ~(0x1 << 11);
 		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
+		/* Disable MPHY 26MHz ref clock in H8 mode */
+		clk_buf_ctrl(CLK_BUF_UFS, false);
+
 		#if 0
 		/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
 		ufs_mtk_host_sw_rst(hba, SW_RST_TARGET_UFSHCI);
@@ -654,6 +661,9 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	u32 reg;
 
 	if (ufshcd_is_link_hibern8(hba)) {
+		/* Enable MPHY 26MHz ref clock */
+		clk_buf_ctrl(CLK_BUF_UFS, true);
+
 		/* VA09 LDO will be power on by SPM (Step1: SPM turn on VA09 LDO Step2: SPM set RG_VA09_ON to 1'b1  )
 		 * Before VA09 LDO is enabled, some sw flow of mphy needs to be  done here.
 		*/
@@ -1366,6 +1376,82 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	}
 }
 
+/**
+ * ufs_mtk_deepidle_resource_req - Deepidle & SODI resource request.
+ * @hba: per-adapter instance
+ * @resource: DRAM/26M clk/MainPLL resources to be claimed. New claim will substitute old claim.
+ */
+static void ufs_mtk_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
+{
+	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
+}
+
+int ufsh_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms)
+{
+	u32 arg1;
+	u32 ret;
+	unsigned long elapsed_us = 0;
+
+	arg1 = ((u32)mib_attribute << 16) | (u32)gen_select_index;
+	ufshcd_writel(g_ufs_hba, arg1, REG_UIC_COMMAND_ARG_1);
+	ufshcd_writel(g_ufs_hba, 0, REG_UIC_COMMAND_ARG_2);
+	ufshcd_writel(g_ufs_hba, 0, REG_UIC_COMMAND_ARG_3);
+	ufshcd_writel(g_ufs_hba, uic_cmd, REG_UIC_COMMAND);
+
+	while ((ufshcd_readl(g_ufs_hba, REG_INTERRUPT_STATUS) & UIC_COMMAND_COMPL) != UIC_COMMAND_COMPL) {
+		/* busy waiting 1us */
+		udelay(1);
+		elapsed_us += 1;
+		if (elapsed_us > (retry_ms * 1000))
+			return -ETIMEDOUT;
+	}
+	ufshcd_writel(g_ufs_hba, UIC_COMMAND_COMPL, REG_INTERRUPT_STATUS);
+
+	ret = ufshcd_readl(g_ufs_hba, REG_UIC_COMMAND_ARG_2);
+	if (ret & MASK_UIC_COMMAND_RESULT)
+		return ret;
+
+	*value = ufshcd_readl(g_ufs_hba, REG_UIC_COMMAND_ARG_3);
+
+	return 0;
+}
+
+/**
+ * ufs_mtk_deepidle_hibern8_check - callback function for Deepidle & SODI.
+ * Release all resources: DRAM/26M clk/Main PLL and dsiable 26M ref clk if in H8.
+ */
+void ufs_mtk_deepidle_hibern8_check(void)
+{
+	int ret = 0;
+	u32 tmp;
+	/* Release all resources if entering H8 mode */
+	ret = ufsh_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
+	if (ret) {
+		dev_err(g_ufs_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
+		return;
+	}
+	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
+		/* Disable MPHY 26MHz ref clock in H8 mode */
+		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+		clk_buf_ctrl(CLK_BUF_UFS, false);
+		#endif
+		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
+	}
+}
+
+/**
+ * ufs_mtk_deepidle_leave - callback function for leaving Deepidle & SODI.
+ */
+void ufs_mtk_deepidle_leave(void)
+{
+	/* Enable MPHY 26MHz ref clock after leaving deepidle */
+	/* SSPM project will enable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+	clk_buf_ctrl(CLK_BUF_UFS, true);
+	#endif
+}
+
 static const char *ufs_mtk_uic_link_state_to_string(
 			enum uic_link_state state)
 {
@@ -1516,6 +1602,7 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	ufs_mtk_resume,               /* resume */
 	NULL,                         /* dbg_register_dump */
 	ufs_mtk_auto_hibern8,         /* auto_hibern8 */
+	ufs_mtk_deepidle_resource_req,/* deepidle_resource_req */
 	ufs_mtk_scsi_dev_cfg,         /* scsi_dev_cfg */
 };
 

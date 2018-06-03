@@ -301,6 +301,12 @@ struct ufs_hba_variant_ops {
 	 * Auto-hibern8 vops
 	 */
 	void    (*auto_hibern8)(struct ufs_hba *, bool);
+	/*
+	 * MTK PATCH:
+	 * DeepIdle and SODI resource request vops
+	 */
+	void	(*deepidle_resource_req)(struct ufs_hba *,
+					unsigned int resource);
 
 	/* SCSI device slave alloc/configure/destroy vops */
 	int     (*scsi_dev_cfg)(struct scsi_device *, enum ufs_scsi_dev_cfg);
@@ -623,6 +629,12 @@ static inline void ufshcd_vops_auto_hibern8(struct ufs_hba *hba, bool enable)
 {
 	if (hba->vops && hba->vops->auto_hibern8)
 		hba->vops->auto_hibern8(hba, enable);
+}
+
+static inline void ufshcd_vops_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
+{
+	if (hba->vops && hba->vops->deepidle_resource_req)
+		hba->vops->deepidle_resource_req(hba, resource);
 }
 
 static inline void ufshcd_vops_scsi_dev_cfg(struct scsi_device *sdev, enum ufs_scsi_dev_cfg op)
