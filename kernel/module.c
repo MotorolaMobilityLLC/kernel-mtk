@@ -3520,7 +3520,10 @@ static int load_module(struct load_info *info, const char __user *uargs,
 	flush_module_icache(mod);
 
 	/* Now copy in args */
-	mod->args = strndup_user(uargs, ~0UL >> 1);
+	if (uargs)
+		mod->args = strndup_user(uargs, ~0UL >> 1);
+	else
+		mod->args = "";
 	if (IS_ERR(mod->args)) {
 		err = PTR_ERR(mod->args);
 		goto free_arch_cleanup;
@@ -3628,6 +3631,31 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
 
 	return load_module(&info, uargs, 0);
 }
+
+#ifdef CONFIG_MNTL_SUPPORT
+int init_module_mem(void *buf, int size)
+{
+	int err;
+	struct load_info info = { };
+
+	err = may_init_module();
+	if (err) {
+		pr_debug("may_init_module: err=%d\n", err);
+		return err;
+	}
+	pr_debug("init_module_mem: buf=%p, len=%d\n",
+			buf, size);
+	err = security_kernel_module_from_file(NULL);
+		if (err)
+			return err;
+
+	info.hdr = buf;
+	info.len = size;
+
+	return load_module(&info, NULL, 0);
+}
+EXPORT_SYMBOL(init_module_mem);
+#endif
 
 SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
 {
