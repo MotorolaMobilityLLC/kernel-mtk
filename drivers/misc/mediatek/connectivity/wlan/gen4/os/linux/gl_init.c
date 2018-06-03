@@ -555,7 +555,7 @@ static const struct ieee80211_txrx_stypes
 
 #ifdef CONFIG_PM
 static const struct wiphy_wowlan_support mtk_wlan_wowlan_support = {
-	.flags = WIPHY_WOWLAN_MAGIC_PKT,
+	.flags = WIPHY_WOWLAN_MAGIC_PKT | WIPHY_WOWLAN_DISCONNECT | WIPHY_WOWLAN_ANY,
 };
 #endif
 
