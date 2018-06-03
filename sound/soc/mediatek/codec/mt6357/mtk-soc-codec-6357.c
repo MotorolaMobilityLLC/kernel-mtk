@@ -3075,8 +3075,8 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol,
 	/* phone mic dcc */
 	/* set gpio miso mode */
 	set_capture_gpio(true);
-	/* gpio miso driving set to default 6mA, 0xcccc */
-	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
+	/* gpio miso driving set to default 4mA, 0x8888 */
+	Ana_Set_Reg(DRV_CON3, 0x8888, 0xffff);
 	/* Enable audio ADC CLKGEN  */
 	Ana_Set_Reg(AUDDEC_ANA_CON11, 0x1 << 5, 0x1 << 5);
 	/* ADC CLK from CLKGEN (13MHz) */
@@ -5598,8 +5598,6 @@ static void mt6357_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDDEC_ANA_CON3, 0x1 << 4, 0x1 << 4);
 	/* disable LO buffer left short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x1 << 4, 0x1 << 4);
-	/* gpio miso driving set to default 6mA, 0xcccc */
-	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
 	/* set gpio */
 	set_playback_gpio(false);
 	set_capture_gpio(false);
