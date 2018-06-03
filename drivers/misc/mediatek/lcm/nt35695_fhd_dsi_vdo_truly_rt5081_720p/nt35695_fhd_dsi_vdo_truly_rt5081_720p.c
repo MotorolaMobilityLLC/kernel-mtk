@@ -86,6 +86,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_WIDTH										(720)
 #define FRAME_HEIGHT									(1280)
 
+/* physical size in um */
+#define LCM_PHYSICAL_WIDTH									(74520)
+#define LCM_PHYSICAL_HEIGHT									(132480)
+
 #define VIRTUAL_WIDTH									(1080)
 #define VIRTUAL_HEIGHT									(1920)
 
@@ -1342,6 +1346,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 	params->virtual_width = VIRTUAL_WIDTH;
 	params->virtual_height = VIRTUAL_HEIGHT;
 
@@ -1382,7 +1390,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 20;
 	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.ssc_disable = 1;
+	/*params->dsi.ssc_disable = 1;*/
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;	/* this value must be in MTK suggested table */
