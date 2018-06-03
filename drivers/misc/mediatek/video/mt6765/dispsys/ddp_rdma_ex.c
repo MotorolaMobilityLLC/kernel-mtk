@@ -542,7 +542,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
 	unsigned long long consume_rate_div_tmp = 0;
-	unsigned int consume_rate_div = 0;
+	unsigned long long consume_rate_div = 0;
 	unsigned int fifo_valid_size = 384;
 	unsigned int fifo_off_drs_enter = 0;
 	unsigned int fifo_off_drs_leave = 0;
