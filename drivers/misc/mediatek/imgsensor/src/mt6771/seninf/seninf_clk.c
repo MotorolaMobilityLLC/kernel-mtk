@@ -130,7 +130,6 @@ int seninf_clk_set(struct SENINF_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk)
 
 void seninf_clk_open(struct SENINF_CLK *pclk)
 {
-#if 0
 	MINT32 i;
 
 	for (i = SENINF_CLK_IDX_SYS_MIN_NUM; i < SENINF_CLK_IDX_SYS_MAX_NUM; i++) {
@@ -139,27 +138,16 @@ void seninf_clk_open(struct SENINF_CLK *pclk)
 		else
 			atomic_inc(&pclk->enable_cnt[i]);
 	}
-#else
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
-	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_TOP_MUX_SENINF]);
-#endif
 }
 
 void seninf_clk_release(struct SENINF_CLK *pclk)
 {
 	MINT32 i;
 
-	for (i = SENINF_CLK_IDX_TG_MIN_NUM; i < SENINF_CLK_IDX_MAX_NUM; i++)
+	for (i = SENINF_CLK_IDX_MIN_NUM; i < SENINF_CLK_IDX_MAX_NUM; i++)
 		for (; atomic_read(&pclk->enable_cnt[i]) > 0;) {
 			clk_disable_unprepare(pclk->mclk_sel[i]);
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
-
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_TOP_MUX_SENINF]);
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
-	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
 }
 
