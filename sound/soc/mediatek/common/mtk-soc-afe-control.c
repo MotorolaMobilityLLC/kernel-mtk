@@ -3237,6 +3237,44 @@ void ext_sync_signal_unlock(void)
 	spin_unlock_irqrestore(&ext_sync_lock, ext_sync_lock_flags);
 }
 
+/* api for other modules */
+static int request_sram_count;
+int mtk_audio_request_sram(dma_addr_t *phys_addr,
+			   unsigned char **virt_addr,
+			   unsigned int length,
+			   void *user)
+{
+	int ret;
+
+	pr_debug("%s(), user = %p, length = %d, count = %d\n",
+		 __func__, user, length, request_sram_count);
+	ret = AllocateAudioSram(phys_addr, virt_addr, length, user);
+	if (ret) {
+		pr_warn("%s(), allocate sram fail, ret %d\n", __func__, ret);
+		return ret;
+	}
+
+	request_sram_count++;
+	AudDrv_Clk_On();
+
+	pr_debug("%s(), return 0, count = %d\n", __func__, request_sram_count);
+	return 0;
+}
+EXPORT_SYMBOL(mtk_audio_request_sram);
+
+void mtk_audio_free_sram(void *user)
+{
+	pr_debug("%s(), user = %p, count = %d\n",
+		 __func__, user, request_sram_count);
+
+	freeAudioSram(user);
+	AudDrv_Clk_Off();
+	request_sram_count--;
+
+	pr_debug("%s(), return, count = %d\n", __func__, request_sram_count);
+}
+EXPORT_SYMBOL(mtk_audio_free_sram);
+
 static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substream,
 	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block)
 {
