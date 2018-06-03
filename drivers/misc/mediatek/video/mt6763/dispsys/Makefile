@@ -96,4 +96,9 @@ ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "MT8193")
 ccflags-y +=	-DHDMI_MT8193_SUPPORT
 endif
 
+ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"DISP")
+    ccflags-y += -DDISP_COLOR_ON
+else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"OFF")
+    ccflags-y += -DDISP_COLOR_ON
+endif
 # EOF
