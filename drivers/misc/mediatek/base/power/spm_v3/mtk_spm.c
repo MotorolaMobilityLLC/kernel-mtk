@@ -1025,13 +1025,20 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if defined(CONFIG_MACH_MT6775)
+#include <mtk_mcdi_governor.h>
+#include <mtk_hps_internal.h>
 bool is_big_buck_pdn_by_spm(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* check mcdi status with big_buck */
-	/* check hotplug status with big_buck */
-#endif
+	/* If big buck off by mcdi or cpu hotplug
+	 *  then return true
+	 */
+	#define BIG_BUCK_CLUSTER_ID     1
+	return !(mcdi_is_buck_off(BIG_BUCK_CLUSTER_ID)
+			|| cpuhp_is_buck_off(BIG_BUCK_CLUSTER_ID));
+#else
 	return false;
+#endif
 }
 #endif
 
