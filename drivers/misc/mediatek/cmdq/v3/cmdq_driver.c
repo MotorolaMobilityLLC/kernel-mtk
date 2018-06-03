@@ -509,9 +509,20 @@ static s32 cmdq_driver_copy_task_prop_from_user(void *from, u32 size, void **to)
 		}
 	}
 
-	*to = task_prop;
+	if (to)
+		*to = task_prop;
 
 	return 0;
+}
+
+static void cmdq_release_task_property(void **prop_addr, u32 *prop_size)
+{
+	if (!prop_addr || !prop_size)
+		return;
+
+	kfree(*prop_addr);
+	*prop_addr = NULL;
+	*prop_size = 0;
 }
 
 static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long param)
@@ -561,7 +572,11 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		desc_private.node_private_data = pFile->private_data;
 		command.privateData = (cmdqU32Ptr_t)(unsigned long)&desc_private;
 
-		if (cmdq_driver_process_command_request(&command, &ext))
+		status = cmdq_driver_process_command_request(&command, &ext);
+
+		cmdq_release_task_property((void *)CMDQ_U32_PTR(&command.prop_addr), &command.prop_size);
+
+		if (status < 0)
 			return -EFAULT;
 		break;
 	case CMDQ_IOCTL_QUERY_USAGE:
@@ -596,8 +611,11 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* create kernel-space address buffer */
 		status = cmdq_driver_create_reg_address_buffer(&job.command);
-		if (status != 0)
+		if (status != 0) {
+			cmdq_release_task_property((void *)CMDQ_U32_PTR(&job.command.prop_addr),
+				&job.command.prop_size);
 			return status;
+		}
 
 		/* avoid copy large string */
 		if (job.command.userDebugStrLen > CMDQ_MAX_DBG_STR_LEN)
@@ -617,8 +635,11 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* allocate secure medatata */
 		status = cmdq_driver_create_secure_medadata(&job.command);
-		if (status != 0)
+		if (status != 0) {
+			cmdq_release_task_property((void *)CMDQ_U32_PTR(&job.command.prop_addr),
+				&job.command.prop_size);
 			return status;
+		}
 
 		status = cmdqCoreSubmitTaskAsync(&job.command, &ext, NULL, 0, &pTask);
 
@@ -636,6 +657,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		/* free secure path metadata */
 		cmdq_driver_destroy_secure_medadata(&job.command);
 
+		cmdq_release_task_property((void *)CMDQ_U32_PTR(&job.command.prop_addr),
+						&job.command.prop_size);
 		if (status >= 0) {
 			job.hJob = (unsigned long)pTask;
 			if (copy_to_user((void *)param, (void *)&job, sizeof(struct cmdqJobStruct))) {
