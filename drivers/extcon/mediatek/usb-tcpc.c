@@ -35,7 +35,7 @@ static struct mutex tcpc_otg_lock;
 static struct mutex tcpc_otg_pwr_lock;
 static bool tcpc_boost_on;
 
-int tcpc_otg_enable(void)
+static int tcpc_otg_enable(void)
 {
 	int ret = 0;
 
@@ -46,7 +46,7 @@ int tcpc_otg_enable(void)
 	return ret;
 }
 
-int tcpc_otg_disable(void)
+static int tcpc_otg_disable(void)
 {
 	if (usbc_otg_attached) {
 		mt_usbhost_disconnect();
@@ -114,7 +114,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&tcpc_otg_lock);
 			tcpc_role_call(false);
 			mutex_unlock(&tcpc_otg_lock);
-#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
 			usb3_switch_dps_en(true);
 #endif
 		}
@@ -130,7 +130,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		  noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC) &&
 		  noti->typec_state.new_state == TYPEC_UNATTACHED) {
-#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
 			usb3_switch_dps_en(true);
 #endif
 		}
