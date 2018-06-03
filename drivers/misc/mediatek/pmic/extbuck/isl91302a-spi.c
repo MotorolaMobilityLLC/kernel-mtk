@@ -502,8 +502,8 @@ fail_irq:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->regmap_dev);
 #endif /* CONFIG_RT_REGMAP */
-#endif /* CONFIG_IRQ_ENABLE */
 	return ret;
+#endif /* CONFIG_IRQ_ENABLE */
 }
 
 static int isl91302a_spi_remove(struct spi_device *spi)
