@@ -31,11 +31,9 @@
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#endif
 #include <mt-plat/sync_write.h>
 #include <ext_wd_drv.h>
 
@@ -43,9 +41,9 @@
 #include <mt-plat/upmu_common.h>
 #include <linux/irqchip/mtk-eic.h>
 
-#ifdef CONFIG_OF
 void __iomem *toprgu_base;
 int	wdt_irq_id;
+int wdt_sspm_irq_id;
 int ext_debugkey_io = -1;
 int ext_debugkey_io_eint = -1;
 
@@ -53,7 +51,6 @@ static const struct of_device_id rgu_of_match[] = {
 	{ .compatible = "mediatek,mt6763-toprgu", },
 	{},
 };
-#endif
 
 /**---------------------------------------------------------------------
  * Sub feature switch region
@@ -66,11 +63,23 @@ static const struct of_device_id rgu_of_match[] = {
  *   IRQ ID
  *--------------------------------------------------------------------
  */
-#ifdef CONFIG_OF
-#define AP_RGU_WDT_IRQ_ID    wdt_irq_id
-#else
-#define AP_RGU_WDT_IRQ_ID    WDT_IRQ_BIT_ID
-#endif
+#define AP_RGU_WDT_IRQ_ID       wdt_irq_id
+#define AP_RGU_SSPM_WDT_IRQ_ID  wdt_sspm_irq_id
+
+/**
+ * Set the reset length: we will set a special magic key.
+ * For Power off and power on reset, the INTERVAL default value is 0x7FF.
+ * We set Interval[1:0] to different value to distinguish different stage.
+ * Enter pre-loader, we will set it to 0x0
+ * Enter u-boot, we will set it to 0x1
+ * Enter kernel, we will set it to 0x2
+ * And the default value is 0x3 which means reset from a power off and power on reset
+ */
+#define POWER_OFF_ON_MAGIC	(0x3)
+#define PRE_LOADER_MAGIC	(0x0)
+#define U_BOOT_MAGIC		(0x1)
+#define KERNEL_MAGIC		(0x2)
+#define MAGIC_NUM_MASK		(0x3)
 
 /*
  * internal variables
@@ -183,7 +192,7 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 	mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	/* dual_mode(1); //always dual mode */
 	/* mdelay(100); */
-	pr_debug(" mtk_wdt_mode_config  mode value=%x, tmp:%x,pid=%d\n", __raw_readl(MTK_WDT_MODE), tmp, current->pid);
+	pr_debug("[RGU] mode change to 0x%x (write 0x%x), pid: %d\n", __raw_readl(MTK_WDT_MODE), tmp, current->pid);
     #endif
 	spin_unlock(&rgu_reg_operation_spinlock);
 }
@@ -244,8 +253,6 @@ int  mtk_wdt_confirm_hwreboot(void)
 
 void mtk_wdt_restart(enum wd_restart_type type)
 {
-
-#ifdef CONFIG_OF
 	struct device_node *np_rgu;
 
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
@@ -256,7 +263,6 @@ void mtk_wdt_restart(enum wd_restart_type type)
 			pr_debug("RGU iomap failed\n");
 		/* pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id); */
 	}
-#endif
 
     /* pr_debug("WDT:[mtk_wdt_restart] type  =%d, pid=%d\n",type,current->pid); */
 
@@ -323,11 +329,8 @@ void aee_wdt_dump_reg(void)
 void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
-#ifdef CONFIG_OF
 	struct device_node *np_rgu;
-#endif
 	pr_debug("wdt_arch_reset called@Kernel mode =%d\n", mode);
-#ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 
 	if (!toprgu_base) {
@@ -336,7 +339,7 @@ void wdt_arch_reset(char mode)
 			pr_err("RGU iomap failed\n");
 		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 	}
-#endif
+
 	spin_lock(&rgu_reg_operation_spinlock);
 
 	/* Watchdog Rest */
@@ -658,11 +661,8 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 */
 void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 {
-#ifdef CONFIG_OF
 	struct device_node *np_rgu;
-#endif
 	unsigned int ret;
-#ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 
 	if (!toprgu_base) {
@@ -671,7 +671,7 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 			pr_err("mtk_wdt_set_c2k_sysrst RGU iomap failed\n");
 		pr_debug("mtk_wdt_set_c2k_sysrst RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 	}
-#endif
+
 	if (flag == 1) {
 		ret = __raw_readl(MTK_WDT_SWSYSRST);
 		ret &= (~(1 << shift));
@@ -847,7 +847,7 @@ get_wd_api(&wd_api);
 #else /* CONFIG_FIQ_GLUE */
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 {
-	pr_err("fwq mtk_wdt_isr\n");
+	pr_err("[RGU] mtk_wdt_isr\n");
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 	/* mt65xx_irq_mask(AP_RGU_WDT_IRQ_ID); */
 	rgu_wdt_intr_has_trigger = 1;
@@ -859,6 +859,29 @@ static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 }
 #endif /* CONFIG_FIQ_GLUE */
 
+static irqreturn_t mtk_wdt_sspm_isr(int irq, void *dev_id)
+{
+	unsigned int reg;
+
+	/*
+	 * In those platforms SSPM WDT reset not connecting to AP RGU
+	 * directly, we need an interrupt to handle SSPM WDT.
+	 *
+	 * Steps in interrupt handler:
+	 *
+	 *   1. Set SSPM flag in non-reset register (use NONRST_REG2).
+	 *   2. Trigger AP RGU SW reset.
+	 */
+
+	reg = __raw_readl(MTK_WDT_NONRST_REG2);
+	reg |= MTK_WDT_NONRST2_SSPM_RESET;
+	mt_reg_sync_writel(reg, MTK_WDT_NONRST_REG2);
+
+	wdt_arch_reset(1);
+
+	return IRQ_HANDLED;
+}
+
 /*
  * Device interface
  */
@@ -869,25 +892,40 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	struct device_node *node;
 	u32 ints[2] = { 0, 0 };
 
-	pr_err("******** MTK WDT driver probe!! ********\n");
-#ifdef CONFIG_OF
+	pr_err("[RGU] mtk wdt driver probe ..\n");
+
 	if (!toprgu_base) {
 		toprgu_base = of_iomap(dev->dev.of_node, 0);
 		if (!toprgu_base) {
-			pr_err("RGU iomap failed\n");
+			pr_err("[RGU] iomap failed\n");
 			return -ENODEV;
 		}
 	}
+
+	/* get irq for AP WDT */
 	if (!wdt_irq_id) {
 		wdt_irq_id = irq_of_parse_and_map(dev->dev.of_node, 0);
 		if (!wdt_irq_id) {
-			pr_err("RGU get IRQ ID failed\n");
+			pr_err("[RGU] get wdt_irq_id failed, ret: %d\n", wdt_irq_id);
 			return -ENODEV;
 		}
 	}
-	pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 
-#endif
+	/* get irq for SSPM WDT which informs AP */
+	if (!wdt_sspm_irq_id) {
+		wdt_sspm_irq_id = irq_of_parse_and_map(dev->dev.of_node, 1);
+		if (!wdt_sspm_irq_id) {
+			/*
+			 * bypass fail of getting SSPM IRQ because not all
+			 * platforms need this feature.
+			 */
+			pr_err("[RGU] get wdt_sspm_irq_id failed, ret: %d\n", wdt_sspm_irq_id);
+			wdt_sspm_irq_id = 0;
+		}
+	}
+
+	pr_debug("[RGU] base: 0x%p, wdt_irq_id: %d, wdt_sspm_irq_id: %d\n",
+		toprgu_base, wdt_irq_id, wdt_sspm_irq_id);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
 
@@ -896,19 +934,19 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		ext_debugkey_io = ints[0];
 	}
 
-	pr_err("mtk_wdt_probe: ext_debugkey_io=%d\n", ext_debugkey_io);
+	pr_err("[RGU]: ext_debugkey_io: %d\n", ext_debugkey_io);
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 
 #ifndef CONFIG_FIQ_GLUE
-	pr_debug("******** MTK WDT register irq ********\n");
+	pr_debug("[RGU] !CONFIG_FIQ_GLUE: request IRQ\n");
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_irq((irq_handler_t)mtk_wdt_isr);
     #else
 	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, "mt_wdt", NULL);
     #endif		/* CONFIG_KICK_SPM_WDT */
 #else
-	pr_debug("******** MTK WDT register fiq ********\n");
+	pr_debug("[RGU] CONFIG_FIQ_GLUE: request FIQ\n");
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_fiq(wdt_fiq);
     #else
@@ -917,10 +955,19 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #endif
 
 	if (ret != 0) {
-		pr_err("mtk_wdt_probe : failed to request irq (%d)\n", ret);
+		pr_err("[RGU] failed to request wdt_irq_id %d, ret %d\n", wdt_irq_id, ret);
 		return ret;
 	}
-	pr_debug("mtk_wdt_probe : Success to request irq\n");
+
+	if (wdt_sspm_irq_id) {
+		ret = request_irq(AP_RGU_SSPM_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_sspm_isr,
+			IRQF_TRIGGER_HIGH, "mt_sspm_wdt", NULL);
+
+		if (ret != 0) {
+			pr_err("[RGU] failed to request wdt_sspm_irq_id %d, ret %d\n", wdt_sspm_irq_id, ret);
+			return ret;
+		}
+	}
 
     #ifdef CONFIG_KICK_SPM_WDT
 	spm_wdt_init();
@@ -932,27 +979,11 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 
-	/**
-	 * Set the reset length: we will set a special magic key.
-	 * For Power off and power on reset, the INTERVAL default value is 0x7FF.
-	 * We set Interval[1:0] to different value to distinguish different stage.
-	 * Enter pre-loader, we will set it to 0x0
-	 * Enter u-boot, we will set it to 0x1
-	 * Enter kernel, we will set it to 0x2
-	 * And the default value is 0x3 which means reset from a power off and power on reset
-	 */
-	#define POWER_OFF_ON_MAGIC	(0x3)
-	#define PRE_LOADER_MAGIC	(0x0)
-    #define U_BOOT_MAGIC		(0x1)
-	#define KERNEL_MAGIC		(0x2)
-	#define MAGIC_NUM_MASK		(0x3)
-
-
     #ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
-	pr_debug("mtk_wdt_probe : Initialize to dual mode\n");
+	pr_debug("[RGU] WDT (dual mode) enabled.\n");
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 	#else				/* Initialize to disable wdt */
-	pr_debug("mtk_wdt_probe : Initialize to disable wdt\n");
+	pr_debug("[RGU] WDT disabled.\n");
 	mtk_wdt_mode_config(FALSE, FALSE, TRUE, FALSE, FALSE);
 	g_wdt_enable = 0;
 	#endif
@@ -970,11 +1001,12 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_SYSRST, WD_REQ_IRQ_MODE);
 	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_IRQ_MODE);
 #endif
+
 	udelay(100);
-	pr_debug("mtk_wdt_probe : done WDT_MODE(%x),MTK_WDT_NONRST_REG(%x)\n",
+	pr_debug("[RGU] WDT_MODE(0x%x), WDT_NONRST_REG(0x%x)\n",
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
-	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_MODE(%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
-	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_IRQ_EN(%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
+	pr_debug("[RGU] WDT_REQ_MODE(0x%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
+	pr_debug("[RGU] WDT_REQ_IRQ_EN(0x%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 
 	return ret;
 }
@@ -1032,9 +1064,7 @@ static struct platform_driver mtk_wdt_driver = {
 
 	.driver     = {
 		.name	= "mtk-wdt",
-#ifdef CONFIG_OF
 		.of_match_table = rgu_of_match,
-#endif
 	},
 	.probe	= mtk_wdt_probe,
 	.remove	= mtk_wdt_remove,
@@ -1042,14 +1072,6 @@ static struct platform_driver mtk_wdt_driver = {
 /* .suspend	= mtk_wdt_suspend, */
 /* .resume	= mtk_wdt_resume, */
 };
-#ifndef CONFIG_OF
-struct platform_device mtk_device_wdt = {
-		.name		= "mtk-wdt",
-		.id		= 0,
-		.dev		= {
-		}
-};
-#endif
 
 #ifdef CONFIG_KICK_SPM_WDT
 static void spm_wdt_init(void)
@@ -1088,22 +1110,13 @@ static void spm_wdt_init(void)
 }
 #endif
 
-
 /*
  * init and exit function
  */
 static int __init mtk_wdt_init(void)
 {
-
 	int ret;
 
-#ifndef CONFIG_OF
-	ret = platform_device_register(&mtk_device_wdt);
-	if (ret) {
-		pr_err("****[mtk_wdt_driver] Unable to device register(%d)\n", ret);
-		return ret;
-	}
-#endif
 	ret = platform_driver_register(&mtk_wdt_driver);
 	if (ret) {
 		pr_err("****[mtk_wdt_driver] Unable to register driver (%d)\n", ret);
@@ -1119,7 +1132,6 @@ static void __exit mtk_wdt_exit(void)
 /*this function is for those user who need WDT APIs before WDT driver's probe*/
 static int __init mtk_wdt_get_base_addr(void)
 {
-#ifdef CONFIG_OF
 	struct device_node *np_rgu;
 
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
@@ -1132,7 +1144,6 @@ static int __init mtk_wdt_get_base_addr(void)
 		pr_debug("RGU base: 0x%p\n", toprgu_base);
 	}
 
-#endif
 	return 0;
 }
 core_initcall(mtk_wdt_get_base_addr);

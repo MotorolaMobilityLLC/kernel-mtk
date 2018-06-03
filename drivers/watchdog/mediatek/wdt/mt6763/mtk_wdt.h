@@ -94,6 +94,9 @@
 #define MTK_WDT_SWSYS_RST_CAMSYS_RST        (0x00040000)
 #define MTK_WDT_SWSYS_RST_KEY               (0x88000000)
 
+/* WDT_NONRST_REG2 */
+#define MTK_WDT_NONRST2_SSPM_RESET          (1 << 0)
+
 /*MTK_WDT_REQ_IRQ*/
 #define MTK_WDT_REQ_IRQ_KEY		(0x44000000)
 #define MTK_WDT_REQ_IRQ_DEBUG_EN		(0x80000)
