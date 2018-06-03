@@ -24,8 +24,16 @@
 /*
  * /dev/teei_config
  */
+#define MAX_DRV_UUIDS 20
+#define UUID_LEN 32
 
-#define TEEI_CONFIG_IOCTL_INIT_TEEI	_IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
+struct init_param {
+	char uuids[MAX_DRV_UUIDS][UUID_LEN+1];
+	__u32 uuid_count;
+	__u32 flag;
+};
+
+#define TEEI_CONFIG_IOCTL_INIT_TEEI	_IOWR(TEEI_CONFIG_IOC_MAGIC, 3, struct init_param)
 #define TEEI_CONFIG_IOCTL_UNLOCK	_IOWR(TEEI_CONFIG_IOC_MAGIC, 4, int)
 /*
  * /dev/ut_keymaster

@@ -904,20 +904,46 @@ static long teei_config_ioctl(struct file *file,
 				unsigned cmd, unsigned long arg)
 {
 	int retVal = 0;
+	struct init_param param;
 
 	switch (cmd) {
 
 	case TEEI_CONFIG_IOCTL_INIT_TEEI:
-			if (teei_flags != 1) {
-				retVal = init_teei_framework();
+		if (teei_flags != 1) {
+			long res;
+			int i;
 
-				TEEI_BOOT_FOOTPRINT(
-					teei_boot_error_to_string(retVal));
-
-				teei_flags = 1;
+			res = copy_from_user(&param, (void *)arg,
+					sizeof(struct init_param));
+			if (res) {
+				IMSG_ERROR("failed to copy from user\n");
+				retVal = -EINVAL;
+				goto err;
 			}
 
-			break;
+			retVal = init_teei_framework();
+
+			TEEI_BOOT_FOOTPRINT(
+				teei_boot_error_to_string(retVal));
+
+			teei_flags = 1;
+
+			for (i = 0; i < param.uuid_count; i++) {
+				res = tz_load_drv_by_str(param.uuids[i]);
+				if (res)
+					IMSG_ERROR("failed to load secure driver (uuid: %s)\n",
+							param.uuids[i]);
+			}
+
+			param.flag = teei_flags;
+
+			res = copy_to_user((void *)arg, &param,
+					sizeof(struct init_param));
+			if (res)
+				IMSG_ERROR("failed to copy to user\n");
+		}
+
+		break;
 	case TEEI_CONFIG_IOCTL_UNLOCK:
 		complete(&boot_decryto_lock);
 		break;
@@ -926,6 +952,7 @@ static long teei_config_ioctl(struct file *file,
 			retVal = -EINVAL;
 	}
 
+err:
 	return retVal;
 }
 
