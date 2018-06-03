@@ -546,10 +546,9 @@ EXPORT_SYMBOL_GPL(mtk_btag_curr_trace);
 /* step to next trace in debugfs ring buffer */
 struct mtk_btag_trace *mtk_btag_next_trace(struct mtk_btag_ringtrace *rt)
 {
+	rt->index++;
 	if (rt->index >= rt->max)
 		rt->index = 0;
-	else
-		rt->index++;
 
 	return mtk_btag_curr_trace(rt);
 }
