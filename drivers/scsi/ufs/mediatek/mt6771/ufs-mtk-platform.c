@@ -31,7 +31,7 @@ static void __iomem *ufs_mtk_mmio_base_gpio;
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
-
+static struct regulator *reg_va09;
 
 /**
  * ufs_mtk_pltfrm_pwr_change_final_gear - change pwr mode fianl gear value.
@@ -228,7 +228,7 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 	u32 reg;
 
 	if (!ufs_mtk_mmio_base_infracfg_ao) {
-		dev_err(hba->dev, "ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
+		dev_info(hba->dev, "ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
 		return 1;
 	}
 
@@ -354,6 +354,17 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 	} else
 		dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
 
+	/* get va09 regulator and enable it */
+	reg_va09 = regulator_get(hba->dev, "va09");
+	if (!reg_va09) {
+		dev_info(hba->dev, "%s: get va09 fail!!!\n", __func__);
+		return -EINVAL;
+	}
+	err = regulator_enable(reg_va09);
+	if (!err) {
+		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, err);
+		return err;
+	}
 
 	return err;
 }
@@ -387,14 +398,17 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 #if 0 /* need platform porting */
 	/* Enable MPHY 26MHz ref clock */
 	clk_buf_ctrl(CLK_BUF_UFS, true);
+#endif
+	/* Set regulator to turn on VA09 LDO */
+	ret = regulator_enable(reg_va09);
+	if (!ret) {
+		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, ret);
+		return ret;
+	}
 
-	/* Set GPIO to turn on VA09 LDO */
-	if (ufs_mtk_pins_va09_on)
-		pinctrl_select_state(ufs_mtk_pinctrl, ufs_mtk_pins_va09_on);
-
-	/* wait 156 us to stablize VA09 */
-	udelay(156);
-
+	/* wait 200 us to stablize VA09 */
+	udelay(200);
+#if 0
 	/* Step 1: Set RG_VA09_ON to 1 */
 	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 1, 0);
 #endif
@@ -509,11 +523,13 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 #if 0 /* need platform porting */
 	/* Disable MPHY 26MHz ref clock in H8 mode */
 	clk_buf_ctrl(CLK_BUF_UFS, false);
-
-	/* Set GPIO to turn off VA09 LDO */
-	if (ufs_mtk_pins_va09_off)
-		pinctrl_select_state(ufs_mtk_pinctrl, ufs_mtk_pins_va09_off);
 #endif
+	/* Set regulator to turn off VA09 LDO */
+	ret = regulator_disable(reg_va09);
+	if (!ret) {
+		dev_info(hba->dev, "%s: disalbe va09 fail, err = %d\n", __func__, ret);
+		return ret;
+	}
 #if 0
 	/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
 	ufs_mtk_pltfrm_host_sw_rst(hba, SW_RST_TARGET_UFSHCI);
