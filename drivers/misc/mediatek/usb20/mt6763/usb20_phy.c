@@ -83,6 +83,60 @@ void usb_phy_switch_to_usb(void)
 #endif
 
 #else
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#define VAL_MAX_WIDTH_2	0x3
+#define VAL_MAX_WIDTH_3	0x7
+#define OFFSET_RG_USB20_VRT_VREF_SEL 0x4
+#define SHFT_RG_USB20_VRT_VREF_SEL 12
+#define OFFSET_RG_USB20_TERM_VREF_SEL 0x4
+#define SHFT_RG_USB20_TERM_VREF_SEL 8
+#define OFFSET_RG_USB20_PHY_REV6 0x18
+#define SHFT_RG_USB20_PHY_REV6 30
+void usb_phy_tuning(void)
+{
+	static bool inited;
+	static s32 u2_vrt_ref, u2_term_ref, u2_enhance;
+	static struct device_node *of_node;
+
+	if (!inited) {
+		u2_vrt_ref = u2_term_ref = u2_enhance = -1;
+		of_node = of_find_compatible_node(NULL, NULL, "mediatek,phy_tuning");
+		if (of_node) {
+			/* value won't be updated if property not being found */
+			of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &u2_vrt_ref);
+			of_property_read_u32(of_node, "u2_term_ref", (u32 *) &u2_term_ref);
+			of_property_read_u32(of_node, "u2_enhance", (u32 *) &u2_enhance);
+		}
+		inited = true;
+	} else if (!of_node)
+		return;
+
+	if (u2_vrt_ref != -1) {
+		if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
+			USBPHY_CLR32(OFFSET_RG_USB20_VRT_VREF_SEL,
+					VAL_MAX_WIDTH_3 << SHFT_RG_USB20_VRT_VREF_SEL);
+			USBPHY_SET32(OFFSET_RG_USB20_VRT_VREF_SEL,
+					u2_vrt_ref << SHFT_RG_USB20_VRT_VREF_SEL);
+		}
+	}
+	if (u2_term_ref != -1) {
+		if (u2_term_ref <= VAL_MAX_WIDTH_3) {
+			USBPHY_CLR32(OFFSET_RG_USB20_TERM_VREF_SEL,
+					VAL_MAX_WIDTH_3 << SHFT_RG_USB20_TERM_VREF_SEL);
+			USBPHY_SET32(OFFSET_RG_USB20_TERM_VREF_SEL,
+					u2_term_ref << SHFT_RG_USB20_TERM_VREF_SEL);
+		}
+	}
+	if (u2_enhance != -1) {
+		if (u2_enhance <= VAL_MAX_WIDTH_2) {
+			USBPHY_CLR32(OFFSET_RG_USB20_PHY_REV6,
+					VAL_MAX_WIDTH_2 << SHFT_RG_USB20_PHY_REV6);
+			USBPHY_SET32(OFFSET_RG_USB20_PHY_REV6,
+					u2_enhance<<SHFT_RG_USB20_PHY_REV6);
+		}
+	}
+}
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 int usb2jtag_usb_init(void)
@@ -633,6 +687,8 @@ void usb_phy_recover(void)
 
 	/* disc threshold to max, RG_USB20_DISCTH[7:4], dft:1000, MAX:1111 */
 	USBPHY_SET32(0x18, (0xf0<<0));
+
+	usb_phy_tuning();
 
 	DBG(0, "usb recovery success\n");
 }
