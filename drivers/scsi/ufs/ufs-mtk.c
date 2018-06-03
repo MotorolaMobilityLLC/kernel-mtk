@@ -1045,6 +1045,7 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 	bool flag;
 	u32 att;
 	u8 *desc = NULL;
+	u8 read_desc, read_attr, write_attr, read_flag;
 
 	idata = kzalloc(sizeof(struct ufs_ioctl_query_data), GFP_KERNEL);
 	if (!idata) {
@@ -1064,10 +1065,31 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 
 	user_buf_ptr = idata->buf_ptr;
 
+	/*
+	 * save idata->idn to specific local variable to avoid
+	 * confusion by comapring idata->idn with different enums below.
+	 */
+	switch (idata->opcode) {
+	case UPIU_QUERY_OPCODE_READ_DESC:
+		read_desc = idata->idn;
+		break;
+	case UPIU_QUERY_OPCODE_READ_ATTR:
+		read_attr = idata->idn;
+		break;
+	case UPIU_QUERY_OPCODE_WRITE_ATTR:
+		write_attr = idata->idn;
+		break;
+	case UPIU_QUERY_OPCODE_READ_FLAG:
+		read_flag = idata->idn;
+		break;
+	default:
+		goto out_einval;
+	}
+
 	/* verify legal parameters & send query */
 	switch (idata->opcode) {
 	case UPIU_QUERY_OPCODE_READ_DESC:
-		switch (idata->idn) {
+		switch (read_desc) {
 		case QUERY_DESC_IDN_DEVICE:
 		case QUERY_DESC_IDN_STRING:
 			break;
@@ -1086,10 +1108,10 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 		}
 
 		err = ufshcd_query_descriptor(hba, idata->opcode,
-				idata->idn, idata->idx, 0, desc, &length);
+				read_desc, idata->idx, 0, desc, &length);
 		break;
 	case UPIU_QUERY_OPCODE_READ_ATTR:
-		switch (idata->idn) {
+		switch (read_attr) {
 		case QUERY_ATTR_IDN_BOOT_LUN_EN:
 			break;
 		case QUERY_ATTR_IDN_DEVICE_FFU_STATUS:
@@ -1098,10 +1120,10 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 			goto out_einval;
 		}
 		err = ufshcd_query_attr(hba, idata->opcode,
-					idata->idn, idata->idx, 0, &att);
+					read_attr, idata->idx, 0, &att);
 		break;
 	case UPIU_QUERY_OPCODE_WRITE_ATTR:
-		switch (idata->idn) {
+		switch (write_attr) {
 		case QUERY_ATTR_IDN_BOOT_LUN_EN:
 			break;
 		default:
@@ -1117,17 +1139,17 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 		}
 
 		err = ufshcd_query_attr(hba, idata->opcode,
-					idata->idn, idata->idx, 0, &att);
+					write_attr, idata->idx, 0, &att);
 		break;
 	case UPIU_QUERY_OPCODE_READ_FLAG:
-		switch (idata->idn) {
+		switch (read_flag) {
 		case QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE:
 			break;
 		default:
 			goto out_einval;
 		}
 		err = ufshcd_query_flag(hba, idata->opcode,
-					idata->idn, &flag);
+					read_flag, &flag);
 		break;
 	default:
 		goto out_einval;
