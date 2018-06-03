@@ -85,15 +85,9 @@ bool is_game_mode;
 void game_hint_notifier(int is_game)
 {
 	if (is_game) {
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
-		capacity_margin_dvfs = 1024;
-#endif
 		sodi_limit = 120;
 		is_game_mode = true;
 	} else {
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
-		capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
-#endif
 		sodi_limit = DEFAULT_SODI_LIMIT;
 		is_game_mode = false;
 	}
