@@ -3442,7 +3442,11 @@
 					dev = "/dev/block/platform/bootdevice/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro";
+					#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,verify";
+					#else
 					fsmgr_flags = "wait";
+					#endif
 				};
 #endif
 #ifndef CONFIG_MTK_LATE_MOUNT
@@ -3452,7 +3456,11 @@
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
+					#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,verify";
+					#else
 					fsmgr_flags = "wait";
+					#endif
 #else
 					#ifndef CONFIG_MTK_DM_VERITY_OFF
 					fsmgr_flags = "wait,slotselect,verify";
