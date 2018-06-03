@@ -104,6 +104,10 @@ int mtk_smi_larb_get(struct device *larbdev)
 		return ret;
 	}
 
+	/* larb is not bind yet, we only enable clock and power for now. */
+	if (!larb->mmu)
+		return 0;
+
 	/* Configure the iommu info for this larb */
 	writel(*larb->mmu, larb->base + larb->mt_plat->mmu_offset);
 
