@@ -429,7 +429,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG4		0x2ffc06dd
 #define INFRA_CG5		0x00030fe7
 
-#define MM_DISABLE_CG		0x00040000 /* un-gating in preloader */
+#define MM_DISABLE_CG		0x0c840040 /* un-gating in preloader */
 #else
 #define INFRA_CG0		0x80000000
 #define INFRA_CG1		0x00000004
