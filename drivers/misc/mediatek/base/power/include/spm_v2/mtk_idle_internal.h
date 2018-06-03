@@ -18,11 +18,7 @@
 /*
  * Chip specific declaratinos
  */
-#if defined(CONFIG_ARCH_MT6755)
-
-#include <mt_idle_mt6755.h>
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include <mtk_idle_mt6757.h>
 

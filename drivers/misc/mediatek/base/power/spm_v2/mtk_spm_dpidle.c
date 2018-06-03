@@ -415,9 +415,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6755)
-	.scp_req_mask_b = 0, /* bit 21 */
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.scp_req_mask_b = 1, /* bit 21 */
 #endif
 	.lte_mask_b = 0,
@@ -433,9 +431,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 	.spm_dvfs_req = 0,
-#if defined(CONFIG_ARCH_MT6755)
-	.spm_dvfs_force_down = 0,
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.spm_dvfs_force_down = 1,
 #endif
 	.spm_ddren_req = 0,
@@ -780,7 +776,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 
@@ -945,7 +941,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	__spm_init_event_vector(pcmdesc);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 

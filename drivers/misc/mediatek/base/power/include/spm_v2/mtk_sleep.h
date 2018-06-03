@@ -32,8 +32,4 @@ extern void slp_start_auto_suspend_resume_timer(u32 sec);
 extern void slp_create_auto_suspend_resume_thread(void);
 
 extern void slp_module_init(void);
-#if defined(CONFIG_ARCH_MT6755)
-extern void subsys_if_on(void);
-extern void pll_if_on(void);
-#endif
 #endif

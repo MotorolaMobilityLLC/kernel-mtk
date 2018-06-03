@@ -162,9 +162,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0, /* bit 20 */
-#if defined(CONFIG_ARCH_MT6755)
-	.scp_req_mask_b = 0, /* bit 21 */
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.scp_req_mask_b = 1, /* bit 21 */
 #endif
 	.lte_mask_b = 0,
@@ -221,9 +219,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.conn_ddr_en_mask_b = 1,
 	.disp_req_mask_b = 1, /* bit 17, set to be 1 for SODI */
 	.disp1_req_mask_b = 1, /* bit 18, set to be 1 for SODI */
-#if defined(CONFIG_ARCH_MT6755)
-	.mfg_req_mask_b = 0, /* bit 19 */
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.mfg_req_mask_b = 1, /* bit 19, set to be 1 for SODI */
 #endif
 	.c2k_ps_rccif_wake_mask_b = 1,
@@ -286,15 +282,7 @@ static void spm_sodi3_pmic_before_wfi(void)
 	__spm_pmic_pg_force_on();
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
 
-#if defined(CONFIG_ARCH_MT6755)
-
-	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
-					&val,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
-					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #ifdef SODI_VSRAM_VPROC_SHUTDOWN
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
