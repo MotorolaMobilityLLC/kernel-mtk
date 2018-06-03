@@ -45,6 +45,7 @@ extern unsigned int sysctl_sched_use_walt_task_util;
 extern unsigned int sysctl_sched_walt_init_task_load_pct;
 extern unsigned int sysctl_sched_walt_cpu_high_irqload;
 #endif
+extern unsigned int sysctl_sched_isolation_hint_enable;
 
 enum sched_tunable_scaling {
 	SCHED_TUNABLESCALING_NONE,

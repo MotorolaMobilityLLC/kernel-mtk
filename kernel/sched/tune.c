@@ -626,6 +626,9 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	else
 		global_negative_flag = false;
 
+
+	sys_boosted = boost_value;
+
 	for (idx = 0; idx < BOOSTGROUPS_COUNT; idx++) {
 		if (!global_negative_flag) /* positive path or google original path */
 			idx = group_idx;
@@ -884,6 +887,9 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	st->perf_constrain_idx = threshold_idx;
 
 	st->boost = boost;
+
+	sys_boosted = boost;
+
 	if (css == &root_schedtune.css) {
 		sysctl_sched_cfs_boost = boost;
 		perf_boost_idx  = threshold_idx;
