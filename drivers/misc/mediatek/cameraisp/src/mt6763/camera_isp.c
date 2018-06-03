@@ -90,6 +90,7 @@
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
 struct mmdvfs_pm_qos_request isp_qos;
+static unsigned int target_clk;
 
 #define CREATE_TRACE_POINTS
 #include "inc/met_events_camsys.h"
@@ -6534,10 +6535,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_START_TIME:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 3) == 0) {
-			struct S_START_T *pTstp = NULL;
+			struct S_START_T Tstp = {0,};
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			struct S_START_T tstp;
 			unsigned int dma_id = DebugFlag[1];
 
 			if (_cam_max_ == DebugFlag[1]) {
@@ -6549,9 +6549,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			switch (DebugFlag[0]) {
 			case ISP_IRQ_TYPE_INT_CAM_A_ST:
 			case ISP_IRQ_TYPE_INT_CAM_B_ST:
-				pTstp = &tstp;
-
-				if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, pTstp) != 0)
+				if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, &Tstp) != 0)
 					LOG_ERR("Get Buf sof timestamp fail");
 
 				break;
@@ -6561,7 +6559,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
-				pTstp = &gSTime[DebugFlag[0]];
+				Tstp.sec = gSTime[DebugFlag[0]].sec;
+				Tstp.usec = gSTime[DebugFlag[0]].usec;
 				break;
 			default:
 				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
@@ -6575,7 +6574,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			pTstp = &gSTime[DebugFlag[0]];
+
+			if (g1stSof[DebugFlag[0]] == MFALSE) {
+				Tstp.sec = gSTime[DebugFlag[0]].sec;
+				Tstp.usec = gSTime[DebugFlag[0]].usec;
+			} else
+				Tstp.sec = Tstp.usec = 0;
+
 			#endif
 
 			switch (DebugFlag[0]) {
@@ -6587,7 +6592,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
-				if (copy_to_user((void *)Param, pTstp, sizeof(struct S_START_T)) != 0) {
+				if (copy_to_user((void *)Param, &Tstp, sizeof(struct S_START_T)) != 0) {
 					LOG_ERR("copy_to_user failed");
 					Ret = -EFAULT;
 				}
@@ -6628,6 +6633,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			if (copy_from_user(&dfs_update, (void *)Param, sizeof(unsigned int)) == 0) {
 				mmdvfs_pm_qos_update_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, dfs_update);
+				target_clk = dfs_update;
 				LOG_VRB("Set clock level:%d", dfs_update);
 			} else {
 				LOG_ERR("ISP_DFS_UPDATE copy_from_user failed\n");
@@ -6655,12 +6661,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_CUR_ISP_CLOCK:
 		{
-			unsigned int curclk;
+			struct ISP_GET_CLK_INFO getclk;
 
-			curclk = mmdvfs_qos_get_cur_thres(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
-			LOG_VRB("Get current clock level:%d", curclk);
+			getclk.curClk = mmdvfs_qos_get_cur_thres(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
+			getclk.targetClk = target_clk;
+			LOG_VRB("Get current clock level:%d, target clock:%d", getclk.curClk, getclk.targetClk);
 
-			if (copy_to_user((void *)Param, &curclk, sizeof(unsigned int)) != 0) {
+			if (copy_to_user((void *)Param, &getclk, sizeof(struct ISP_GET_CLK_INFO)) != 0) {
 				LOG_ERR("copy_to_user failed");
 				Ret = -EFAULT;
 			}
