@@ -13,7 +13,7 @@ else
 endif
 
 RGX_TOP := $(dir $(lastword $(MAKEFILE_LIST)))
-VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
+VER := $(if $(filter eng,$(CONFIG_MTK_ENG_BUILD)),eng,user)
 
 #MTK_DDK_DEBUG := y
 
