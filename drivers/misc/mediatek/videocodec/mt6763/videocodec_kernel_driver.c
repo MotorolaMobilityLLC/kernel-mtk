@@ -223,10 +223,10 @@ void SendDvfsRequest(int level)
 
 	if (level == MMDVFS_VOLTAGE_LOW_LOW) {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW_LOW)");
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW_LOW);
+		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW_LOW); */
 	} else {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_DEFAULT_STEP)");
-		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_DEFAULT_STEP);
+		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_DEFAULT_STEP); */
 	}
 
 	if (ret != 0) {
