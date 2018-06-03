@@ -509,7 +509,7 @@ out:
 
 static int __init dual_role_class_init(void)
 {
-	dual_role_class = class_create(THIS_MODULE, "dual_role_usb");
+	dual_role_class = class_create(THIS_MODULE, "mtk_dual_role_usb");
 
 	if (IS_ERR(dual_role_class))
 		return PTR_ERR(dual_role_class);
