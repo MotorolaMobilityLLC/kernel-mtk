@@ -16,6 +16,10 @@
 #include <linux/random.h>
 #include <asm/setup.h>
 #include <mtk_spm_internal.h>
+#include <mtk_power_gs_api.h>
+
+#define WORLD_CLK_CNTCV_L        (0x10017008)
+#define WORLD_CLK_CNTCV_H        (0x1001700C)
 static u32 pcm_timer_ramp_max_sec_loop = 1;
 
 const char *wakesrc_str[32] = {
@@ -228,13 +232,27 @@ unsigned int __spm_output_wake_reason(
 		  " req_sta =  0x%x, event_reg = 0x%x, isr = 0x%x, ",
 		  wakesta->req_sta, wakesta->event_reg, wakesta->isr);
 
-	log_size += sprintf(log_buf + log_size,
-		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x\n",
-		wakesta->raw_ext_sta,
-		wakesta->wake_misc,
-		spm_read(SPM_SW_FLAG),
-		spm_read(SPM_SW_RSV_2),
-		spm_read(SPM_SRC_REQ));
+	if (!strcmp(scenario, "suspend")) {
+		log_size += sprintf(log_buf + log_size,
+			"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x, ",
+			wakesta->raw_ext_sta,
+			wakesta->wake_misc,
+			spm_read(SPM_SW_FLAG),
+			spm_read(SPM_SW_RSV_2),
+			spm_read(SPM_SRC_REQ));
+
+		log_size += sprintf(log_buf + log_size,
+			"wlk_cntcv_l = 0x%x, wlk_cntcv_h = 0x%x\n",
+			_golden_read_reg(WORLD_CLK_CNTCV_L),
+			_golden_read_reg(WORLD_CLK_CNTCV_H));
+	} else
+		log_size += sprintf(log_buf + log_size,
+			"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x\n",
+			wakesta->raw_ext_sta,
+			wakesta->wake_misc,
+			spm_read(SPM_SW_FLAG),
+			spm_read(SPM_SW_RSV_2),
+			spm_read(SPM_SRC_REQ));
 
 	WARN_ON(log_size >= 768);
 
