@@ -1,16 +1,15 @@
 /*
-* Copyright (C) 2011-2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -61,20 +60,16 @@
 #endif
 #define pr_fmt(fmt)	"[scp_dvfs]: " fmt
 
-#define SCP_DBG(fmt, arg...) pr_debug(fmt, ##arg)
-#define SCP_INFO(fmt, arg...) pr_info(fmt, ##arg)
-
-#define DRV_Reg32(addr)				readl(addr)
-#define DRV_WriteReg32(addr, val)	writel(val, addr)
-#define DRV_SetReg32(addr, val)		DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
-#define DRV_ClrReg32(addr, val)		DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
+#define DRV_Reg32(addr)	readl(addr)
+#define DRV_WriteReg32(addr, val) writel(val, addr)
+#define DRV_SetReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
+#define DRV_ClrReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
 
 /***************************
  * Operate Point Definition
  ****************************/
 #if 0
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
-#endif
 
 /* DTS state */
 enum SCP_DTS_GPIO_STATE {
@@ -84,7 +79,6 @@ enum SCP_DTS_GPIO_STATE {
 	SCP_DTS_GPIO_STATE_MAX,	/* for array size */
 };
 
-#if 0
 /* DTS state mapping name */
 static const char *scp_state_name[SCP_DTS_GPIO_STATE_MAX] = {
 	"default",
@@ -189,7 +183,7 @@ uint32_t scp_get_freq(void)
 		return_freq = CLK_OPP2;
 	else {
 		return_freq = CLK_OPP2;
-		SCP_DBG("warning: request freq %d > max opp %d\n",
+		pr_debug("warning: request freq %d > max opp %d\n",
 				sum, CLK_OPP2);
 	}
 
@@ -230,7 +224,7 @@ int scp_request_freq(void)
 	int is_increasing_freq = 0;
 
 	if (scp_dvfs_flag != 1) {
-		SCP_DBG("warning: SCP DVFS is OFF\n");
+		pr_debug("warning: SCP DVFS is OFF\n");
 		return 0;
 	}
 
@@ -248,13 +242,18 @@ int scp_request_freq(void)
 		}
 
 		#if SCP_DVFS_USE_PLL
-		scp_pll_ctrl_set(PLL_ENABLE, scp_expected_freq); /*  turn on PLL */
+		/*  turn on PLL */
+		scp_pll_ctrl_set(PLL_ENABLE, scp_expected_freq);
 		#endif
 
-		 do {
-			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
+		do {
+			ret = scp_ipi_send(IPI_DVFS_SET_FREQ,
+								(void *)&value,
+								sizeof(value),
+								0,
+								SCP_A_ID);
 			if (ret != SCP_IPI_DONE)
-				SCP_DBG("%s: SCP send IPI fail - %d\n", __func__, ret);
+				pr_debug("SCP send IPI fail - %d\n", ret);
 
 			mdelay(2);
 			timeout -= 1; /*try 50 times, total about 100ms*/
@@ -274,7 +273,8 @@ int scp_request_freq(void)
 		} while (scp_current_freq != scp_expected_freq);
 
 		#if SCP_DVFS_USE_PLL
-		scp_pll_ctrl_set(PLL_DISABLE, scp_expected_freq); /* turn off PLL */
+		/* turn off PLL */
+		scp_pll_ctrl_set(PLL_DISABLE, scp_expected_freq);
 		#endif
 
 		/* do DVS after DFS if decreasing frequency */
@@ -283,7 +283,8 @@ int scp_request_freq(void)
 	}
 
 	wake_unlock(&scp_suspend_lock);
-	SCP_DBG("[SCP] set freq OK, %d == %d\n", scp_expected_freq, scp_current_freq);
+	pr_debug("[SCP] set freq OK, %d == %d\n",
+			scp_expected_freq, scp_current_freq);
 	return 0;
 }
 
@@ -305,7 +306,7 @@ void scp_pll_mux_set(unsigned int pll_ctrl_flag)
 {
 	int ret = 0;
 
-	SCP_DBG("%s(%d)\n\n", __func__, pll_ctrl_flag);
+	pr_debug("%s(%d)\n\n", __func__, pll_ctrl_flag);
 
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
@@ -321,7 +322,7 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 {
 	int ret = 0;
 
-	SCP_DBG("%s(%d, %d)\n", __func__, pll_ctrl_flag, pll_sel);
+	pr_debug("%s(%d, %d)\n", __func__, pll_ctrl_flag, pll_sel);
 
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		if (pre_pll_sel != CLK_OPP2) {
@@ -332,18 +333,24 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 				WARN_ON(1);
 			}
 		} else {
-			SCP_DBG("no need to do clk_prepare_enable()\n");
+			pr_debug("no need to do clk_prepare_enable()\n");
 		}
 
 		switch (pll_sel) {
 		case CLK_OPP0:
-			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll0);
+			ret = clk_set_parent(
+					mt_scp_pll->clk_mux,
+					mt_scp_pll->clk_pll1);
 			break;
 		case CLK_OPP1:
-			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll5);
+			ret = clk_set_parent(
+					mt_scp_pll->clk_mux,
+					mt_scp_pll->clk_pll5);
 			break;
 		case CLK_OPP2:
-			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll6);
+			ret = clk_set_parent(
+					mt_scp_pll->clk_mux,
+					mt_scp_pll->clk_pll6);
 			break;
 		default:
 			pr_err("ERROR: %s: not support opp freq %d\n", __func__, pll_sel);
@@ -352,19 +359,20 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 		}
 
 		if (ret) {
-			SCP_DBG("ERROR: %s: clk_set_parent() failed, opp=%d\n",
-				__func__, pll_sel);
+			pr_debug("clk_set_parent() failed, opp=%d\n",
+					pll_sel);
 			WARN_ON(1);
 		}
 
 		if (pre_pll_sel != pll_sel)
 			pre_pll_sel = pll_sel;
 
-	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP2) {
+	} else if (pll_ctrl_flag == PLL_DISABLE
+				&& pll_sel != CLK_OPP2) {
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
-		SCP_DBG("clk_disable_unprepare()\n");
+		pr_debug("clk_disable_unprepare()\n");
 	} else {
-		SCP_DBG("no need to do clk_disable_unprepare\n");
+		pr_debug("no need to do clk_disable_unprepare\n");
 	}
 
 	return ret;
@@ -400,7 +408,11 @@ static int mt_scp_dvfs_debug_proc_show(struct seq_file *m, void *v)
 /***********************
  * enable debug message
  ************************/
-static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+static ssize_t mt_scp_dvfs_debug_proc_write(
+						struct file *file,
+						const char __user *buffer,
+						size_t count,
+						loff_t *data)
 {
 	char desc[64];
 	unsigned int debug = 0;
@@ -417,12 +429,13 @@ static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user
 		else if (debug == 1)
 			mt_scp_dvfs_debug = 1;
 		else
-			SCP_INFO("bad argument %d\n", debug);
+			pr_info("bad argument %d\n", debug);
 	} else {
-		SCP_INFO("invalid command!\n");
+		pr_info("invalid command!\n");
 	}
 
-	scp_ipi_send(IPI_DVFS_DEBUG, (void *)&mt_scp_dvfs_debug, sizeof(mt_scp_dvfs_debug), 0, SCP_A_ID);
+	scp_ipi_send(IPI_DVFS_DEBUG, (void *)&mt_scp_dvfs_debug,
+				sizeof(mt_scp_dvfs_debug), 0, SCP_A_ID);
 
 	return count;
 }
@@ -437,10 +450,14 @@ static int mt_scp_dvfs_state_proc_show(struct seq_file *m, void *v)
 	scp_state = readl(SCP_A_SLEEP_DEBUG_REG);
 	seq_printf(m, "scp status: %s\n",
 		((scp_state & IN_DEBUG_IDLE) == IN_DEBUG_IDLE) ? "idle mode"
-		: ((scp_state & ENTERING_SLEEP) == ENTERING_SLEEP) ? "enter sleep"
-		: ((scp_state & IN_SLEEP) == IN_SLEEP) ? "sleep mode"
-		: ((scp_state & ENTERING_ACTIVE) == ENTERING_ACTIVE) ? "enter active"
-		: ((scp_state & IN_ACTIVE) == IN_ACTIVE) ? "active mode" : "none of state");
+		: ((scp_state & ENTERING_SLEEP) == ENTERING_SLEEP) ?
+			"enter sleep"
+		: ((scp_state & IN_SLEEP) == IN_SLEEP) ?
+			"sleep mode"
+		: ((scp_state & ENTERING_ACTIVE) == ENTERING_ACTIVE) ?
+			"enter active"
+		: ((scp_state & IN_ACTIVE) == IN_ACTIVE) ?
+			"active mode" : "none of state");
 	return 0;
 }
 
@@ -450,7 +467,7 @@ static int mt_scp_dvfs_state_proc_show(struct seq_file *m, void *v)
 static int mt_scp_dvfs_sleep_proc_show(struct seq_file *m, void *v)
 {
 	if (scp_sleep_flag == -1)
-		seq_puts(m, "Warning: SCP sleep has not been manually configured by shell command!\n");
+		seq_puts(m, "SCP sleep is not configured by command yet.\n");
 	else if (scp_sleep_flag == 0)
 		seq_puts(m, "SCP Sleep: OFF\n");
 	else if (scp_sleep_flag == 1)
@@ -468,7 +485,11 @@ static int mt_scp_dvfs_sleep_proc_show(struct seq_file *m, void *v)
 /**********************************
  * write scp dvfs sleep
  ***********************************/
-static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+static ssize_t mt_scp_dvfs_sleep_proc_write(
+					struct file *file,
+					const char __user *buffer,
+					size_t count,
+					loff_t *data)
 {
 	char desc[64];
 	unsigned int val = 0;
@@ -484,18 +505,22 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user
 		if (val >= 0  && val <= 3) {
 			if (val != scp_sleep_flag) {
 				scp_sleep_flag = val;
-				SCP_INFO("scp_sleep_flag = %d\n", scp_sleep_flag);
-				ret = scp_ipi_send(IPI_DVFS_SLEEP, (void *)&scp_sleep_flag, sizeof(scp_sleep_flag),
+				pr_info("scp_sleep_flag = %d\n",
+						scp_sleep_flag);
+				ret = scp_ipi_send(IPI_DVFS_SLEEP,
+							(void *)&scp_sleep_flag,
+							sizeof(scp_sleep_flag),
 							0, SCP_A_ID);
 				if (ret != SCP_IPI_DONE)
-					SCP_INFO("%s: SCP send IPI fail - %d\n", __func__, ret);
+					pr_info("%s: SCP send IPI fail - %d\n",
+						__func__, ret);
 			} else
-				SCP_INFO("SCP sleep setting is not changed. keep in %d\n", val);
+				pr_info("SCP sleep flag is not changed\n");
 		} else {
-			SCP_INFO("Warning: invalid input value %d\n", val);
+			pr_info("Warning: invalid input value %d\n", val);
 		}
 	} else {
-		SCP_INFO("Warning: invalid input command, val=%d\n", val);
+		pr_info("Warning: invalid input command, val=%d\n", val);
 	}
 
 	return count;
@@ -514,15 +539,18 @@ static int mt_scp_dvfs_ctrl_proc_show(struct seq_file *m, void *v)
 	scp_expected_freq = readl(EXPECTED_FREQ_REG);
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	seq_printf(m, "SCP DVFS: %s\n", (scp_dvfs_flag == 1)?"ON":"OFF");
-	seq_printf(m, "SCP frequency: cur=%dMHz, expect=%dMHz\n", scp_current_freq, scp_expected_freq);
+	seq_printf(m, "SCP frequency: cur=%dMHz, expect=%dMHz\n",
+				scp_current_freq, scp_expected_freq);
 
 	for (i = 0; i < NUM_FEATURE_ID; i++)
 		seq_printf(m, "feature=%d, freq=%d, enable=%d\n",
-			feature_table[i].feature, feature_table[i].freq, feature_table[i].enable);
+			feature_table[i].feature, feature_table[i].freq,
+			feature_table[i].enable);
 
 	for (i = 0; i < NUM_SENSOR_TYPE; i++)
 		seq_printf(m, "sensor id=%d, freq=%d, enable=%d\n",
-			sensor_type_table[i].feature, sensor_type_table[i].freq, sensor_type_table[i].enable);
+			sensor_type_table[i].feature, sensor_type_table[i].freq,
+			sensor_type_table[i].enable);
 
 	return 0;
 }
@@ -530,7 +558,11 @@ static int mt_scp_dvfs_ctrl_proc_show(struct seq_file *m, void *v)
 /**********************************
  * write scp dvfs ctrl
  ***********************************/
-static ssize_t mt_scp_dvfs_ctrl_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+static ssize_t mt_scp_dvfs_ctrl_proc_write(
+					struct file *file,
+					const char __user *buffer,
+					size_t count,
+					loff_t *data)
 {
 	char desc[64], cmd[32];
 	int len = 0;
@@ -546,74 +578,97 @@ static ssize_t mt_scp_dvfs_ctrl_proc_write(struct file *file, const char __user 
 	if (n == 1 || n == 2) {
 		if (!strcmp(cmd, "on")) {
 			scp_dvfs_flag = 1;
-			SCP_INFO("SCP DVFS: ON\n");
+			pr_info("SCP DVFS: ON\n");
 		} else if (!strcmp(cmd, "off")) {
 			scp_dvfs_flag = -1;
-			SCP_INFO("SCP DVFS: OFF\n");
-		} else if (!strcmp(cmd, "req")) {
+			pr_info("SCP DVFS: OFF\n");
+		}
+#if SCP_VCORE_TEST_ENABLE
+		else if (!strcmp(cmd, "req")) {
 			if (req >= 0 && req <= 5) {
 				if (pre_feature_req == 1)
-					scp_deregister_feature(VCORE_TEST_FEATURE_ID);
+					scp_deregister_feature(
+						VCORE_TEST_FEATURE_ID);
 				else if (pre_feature_req == 2)
-					scp_deregister_feature(VCORE_TEST2_FEATURE_ID);
+					scp_deregister_feature(
+						VCORE_TEST2_FEATURE_ID);
 				else if (pre_feature_req == 3)
-					scp_deregister_feature(VCORE_TEST3_FEATURE_ID);
+					scp_deregister_feature(
+						VCORE_TEST3_FEATURE_ID);
 				else if (pre_feature_req == 4)
-					scp_deregister_feature(VCORE_TEST4_FEATURE_ID);
+					scp_deregister_feature(
+						VCORE_TEST4_FEATURE_ID);
 				else if (pre_feature_req == 5)
-					scp_deregister_feature(VCORE_TEST5_FEATURE_ID);
+					scp_deregister_feature(
+						VCORE_TEST5_FEATURE_ID);
 
 				if (req == 1)
-					scp_register_feature(VCORE_TEST_FEATURE_ID);
+					scp_register_feature(
+						VCORE_TEST_FEATURE_ID);
 				else if (req == 2)
-					scp_register_feature(VCORE_TEST2_FEATURE_ID);
+					scp_register_feature(
+						VCORE_TEST2_FEATURE_ID);
 				else if (req == 3)
-					scp_register_feature(VCORE_TEST3_FEATURE_ID);
+					scp_register_feature(
+						VCORE_TEST3_FEATURE_ID);
 				else if (req == 4)
-					scp_register_feature(VCORE_TEST4_FEATURE_ID);
+					scp_register_feature(
+						VCORE_TEST4_FEATURE_ID);
 				else if (req == 5)
-					scp_register_feature(VCORE_TEST5_FEATURE_ID);
+					scp_register_feature(
+						VCORE_TEST5_FEATURE_ID);
 
 				pre_feature_req = req;
-				SCP_INFO("[SCP] set freq: %d => %d\n", scp_current_freq, scp_expected_freq);
+				pr_info("[SCP] set freq: %d => %d\n",
+					scp_current_freq, scp_expected_freq);
 			} else {
-				SCP_INFO("invalid req value %d\n", req);
+				pr_info("invalid req value %d\n", req);
 			}
+#endif
 		} else {
-			SCP_INFO("invalid command %s\n", cmd);
+			pr_info("invalid command %s\n", cmd);
 		}
 	} else {
-		SCP_INFO("invalid length %d\n", n);
+		pr_info("invalid length %d\n", n);
 	}
 
 	return count;
 }
 
-#define PROC_FOPS_RW(name)							\
-	static int mt_ ## name ## _proc_open(struct inode *inode, struct file *file)	\
-{									\
-	return single_open(file, mt_ ## name ## _proc_show, PDE_DATA(inode));	\
-}									\
-static const struct file_operations mt_ ## name ## _proc_fops = {		\
-	.owner		  = THIS_MODULE,				\
-	.open		   = mt_ ## name ## _proc_open,	\
-	.read		   = seq_read,					\
-	.llseek		 = seq_lseek,					\
-	.release		= single_release,				\
-	.write		  = mt_ ## name ## _proc_write,				\
+#define PROC_FOPS_RW(name) \
+static int mt_ ## name ## _proc_open(\
+					struct inode *inode, \
+					struct file *file) \
+{ \
+	return single_open(file, \
+					mt_ ## name ## _proc_show, \
+					PDE_DATA(inode)); \
+} \
+static const struct file_operations \
+	mt_ ## name ## _proc_fops = {\
+	.owner		= THIS_MODULE, \
+	.open		= mt_ ## name ## _proc_open, \
+	.read		= seq_read, \
+	.llseek		= seq_lseek, \
+	.release	= single_release, \
+	.write		= mt_ ## name ## _proc_write, \
 }
 
-#define PROC_FOPS_RO(name)							\
-	static int mt_ ## name ## _proc_open(struct inode *inode, struct file *file)	\
-{									\
-	return single_open(file, mt_ ## name ## _proc_show, PDE_DATA(inode));	\
-}									\
-static const struct file_operations mt_ ## name ## _proc_fops = {		\
-	.owner		  = THIS_MODULE,				\
-	.open		   = mt_ ## name ## _proc_open,	\
-	.read		   = seq_read,					\
-	.llseek		 = seq_lseek,					\
-	.release		= single_release,				\
+#define PROC_FOPS_RO(name) \
+static int mt_ ## name ## _proc_open(\
+				struct inode *inode,\
+				struct file *file)\
+{\
+	return single_open(file, \
+						mt_ ## name ## _proc_show, \
+						PDE_DATA(inode)); \
+} \
+static const struct file_operations mt_ ## name ## _proc_fops = {\
+	.owner		= THIS_MODULE,\
+	.open		= mt_ ## name ## _proc_open,\
+	.read		= seq_read,\
+	.llseek		= seq_lseek,\
+	.release	= single_release,\
 }
 
 #define PROC_ENTRY(name)	{__stringify(name), &mt_ ## name ## _proc_fops}
@@ -647,7 +702,10 @@ static int mt_scp_dvfs_create_procfs(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
-		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
+		if (!proc_create(entries[i].name,
+						0x0664,
+						dir,
+						entries[i].fops)) {
 			pr_err("ERROR: %s: create /proc/scp_dvfs/%s failed\n",
 						__func__, entries[i].name);
 			ret = -ENOMEM;
@@ -707,11 +765,11 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	struct device_node *node;
 	unsigned int gpio_mode;
 
-	SCP_DBG("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 
 	node = of_find_matching_node(NULL, scpdvfs_of_ids);
 	if (!node) {
-		dev_notice(&pdev->dev, "%s: fail to find SCPDVFS node\n", __func__);
+		dev_notice(&pdev->dev, "fail to find SCPDVFS node\n");
 		WARN_ON(1);
 	}
 
@@ -722,48 +780,57 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	mt_scp_pll->clk_mux = devm_clk_get(&pdev->dev, "clk_mux");
 	if (IS_ERR(mt_scp_pll->clk_mux)) {
 		dev_notice(&pdev->dev, "cannot get clock mux\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_mux);
 	}
 
 	mt_scp_pll->clk_pll0 = devm_clk_get(&pdev->dev, "clk_pll_0");
 	if (IS_ERR(mt_scp_pll->clk_pll0)) {
 		dev_notice(&pdev->dev, "cannot get 1st clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll0);
 	}
 	mt_scp_pll->clk_pll1 = devm_clk_get(&pdev->dev, "clk_pll_1");
 	if (IS_ERR(mt_scp_pll->clk_pll1)) {
 		dev_notice(&pdev->dev, "cannot get 2nd clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll1);
 	}
 	mt_scp_pll->clk_pll2 = devm_clk_get(&pdev->dev, "clk_pll_2");
 	if (IS_ERR(mt_scp_pll->clk_pll2)) {
 		dev_notice(&pdev->dev, "cannot get 3rd clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll2);
 	}
 	mt_scp_pll->clk_pll3 = devm_clk_get(&pdev->dev, "clk_pll_3");
 	if (IS_ERR(mt_scp_pll->clk_pll3)) {
 		dev_notice(&pdev->dev, "cannot get 4th clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll3);
 	}
 	mt_scp_pll->clk_pll4 = devm_clk_get(&pdev->dev, "clk_pll_4");
 	if (IS_ERR(mt_scp_pll->clk_pll4)) {
 		dev_notice(&pdev->dev, "cannot get 5th clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll4);
 	}
 	mt_scp_pll->clk_pll5 = devm_clk_get(&pdev->dev, "clk_pll_5");
 	if (IS_ERR(mt_scp_pll->clk_pll5)) {
 		dev_notice(&pdev->dev, "cannot get 6th clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll5);
 	}
 	mt_scp_pll->clk_pll6 = devm_clk_get(&pdev->dev, "clk_pll_6");
 	if (IS_ERR(mt_scp_pll->clk_pll6)) {
 		dev_notice(&pdev->dev, "cannot get 7th clock parent\n");
+	    WARN_ON(1);
 		return PTR_ERR(mt_scp_pll->clk_pll6);
 	}
 #if 0
 	scp_pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(scp_pctrl)) {
 		dev_notice(&pdev->dev, "Cannot find scp pinctrl!\n");
+	    WARN_ON(1);
 		return PTR_ERR(scp_pctrl);
 	}
 
@@ -788,9 +855,11 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	/* check if v_req pin is configured correctly  */
 	gpio_mode = (DRV_Reg32(RG_GPIO154_MODE)>>GPIO154_BIT)&GPIO154_MASK;
 	if (gpio_mode == 1)
-		SCP_DBG("SCP v_req muxpin setting is correct\n");
-	else
+		pr_debug("v_req muxpin setting is correct\n");
+	else {
 		pr_err("error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
+	    WARN_ON(1);
+	}
 
 	g_scp_dvfs_init_flag = 1;
 
@@ -843,7 +912,7 @@ void mt_pmic_sshub_init(void)
 	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
 	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
 	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-	SCP_DBG("Before: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+	pr_debug("Before: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
 			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 
 	pmic_scp_set_vcore(600000);
@@ -863,7 +932,7 @@ void mt_pmic_sshub_init(void)
 	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
 	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
 	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-	SCP_DBG("After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+	pr_debug("After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
 			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 
 	/*  Workaround once force BUCK in NML mode */
@@ -873,14 +942,16 @@ void mt_pmic_sshub_init(void)
 
 void mt_scp_dvfs_ipi_init(void)
 {
-	scp_ipi_registration(IPI_SCP_PLL_CTRL, scp_pll_ctrl_handler, "IPI_SCP_PLL_CTRL");
+	scp_ipi_registration(IPI_SCP_PLL_CTRL,
+						scp_pll_ctrl_handler,
+						"IPI_SCP_PLL_CTRL");
 }
 
 int __init scp_dvfs_init(void)
 {
 	int ret = 0;
 
-	SCP_DBG("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
