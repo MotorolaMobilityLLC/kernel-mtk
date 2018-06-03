@@ -613,7 +613,6 @@ BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4To
 }				/* wextSrchDesiredRoamingConsortiumIE */
 #endif
 
-#if CFG_SUPPORT_OKC
 BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucPMKID, OUT PUINT_8 okc)
 {
 	INT_32 i4InfoElemLen;
@@ -659,7 +658,6 @@ BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT P
 			 * if IE length is 10 + u2CipherCnt * 4 + 2 + u2AkmCnt * 4 + 2 + 6,
 			 * means PMKID count field is zero, and Group Mgmt Cipher may be exist
 			 */
-
 			if (i4InfoElemLen <= i4LenToCheck + 6)
 				goto check_next;
 			*ppucPMKID = pucIEStart + i4LenToCheck; /* return PMKID field and started at PMKID count */
@@ -675,7 +673,6 @@ check_next:
 	}
 	return FALSE;
 }
-#endif
 #if CFG_SUPPORT_WPS
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3092,6 +3089,45 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 	return 0;
 }
 
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief Set passive scan
+*
+* \param[in] prDev Net device requested.
+* \param[in] prIwrInfo NULL.
+* \param[in] pu4Mode Pointer to new operation mode.
+* \param[in] pcExtra NULL.
+*
+* \retval 0 For success.
+* \retval -EOPNOTSUPP If new mode is not supported.
+*
+* \note Device will run in new operation mode if it is valid.
+*/
+/*----------------------------------------------------------------------------*/
+static int wext_set_passive_scan(IN struct net_device *prNetDev, IN struct iw_point *prData)
+{
+	P_GLUE_INFO_T prGlueInfo;
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	UINT_8 passivescan;
+
+	ASSERT(prNetDev);
+
+	/* prData->pointer should be like SCAN-PASSIVE or SCAN-ACTIVE*/
+	if ((GLUE_CHK_PR2(prNetDev, prData) == FALSE) ||
+		(!prData->pointer) || (prData->length < 11))
+		return -EINVAL;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	passivescan = prData->flags;
+
+	rStatus = kalIoctl(prGlueInfo, wlanoidSetPassiveScan, &passivescan, 1, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
+	return 0;
+}
+#endif /* CONFIG_MTK_TC1_FEATURE */
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief To report the iw private args table to user space.
@@ -3214,11 +3250,20 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ret = -EINVAL;
 		}
 		break;
-
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+	case SIOCSIWPRIV: /* 0x8B0C, flags 1 : Country, flag2 : passive scan */
+		if (iwr->u.data.flags == 0x0001)
+			ret = wext_set_country(prDev, &iwr->u.data);
+		else if (iwr->u.data.flags == 0x0002)
+			ret = wext_set_passive_scan(prDev, &iwr->u.data);
+		else if (iwr->u.data.flags == 0x0003)
+			ret = wext_set_passive_scan(prDev, &iwr->u.data);
+		break;
+#else
 	case SIOCSIWPRIV:	/* 0x8B0C, set country code */
 		ret = wext_set_country(prDev, &iwr->u.data);
 		break;
-
+#endif
 	case SIOCGIWPRIV:	/* 0x8B0D, get private args table */
 		ret = wext_get_priv(prDev, &iwr->u.data);
 		break;

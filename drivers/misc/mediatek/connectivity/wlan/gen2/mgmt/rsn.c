@@ -964,7 +964,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	}
 	if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) {
 		if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection == FALSE) {
-			DBGLOG(RSN, INFO, "[MFP] Skip RSN IE, No MFP Required Capability\n");
+			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Required Capability\n");
 			return FALSE;
 		}
 	}
@@ -1225,13 +1225,10 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 {
 	UINT_32 u4Entry;
 	PUCHAR cp;
-	/* UINT_8                ucExpendedLen = 0; */
+	BOOLEAN fgPmkidExist = FALSE;
 	PUINT_8 pucBuffer;
 	ENUM_NETWORK_TYPE_INDEX_T eNetworkId;
 	P_STA_RECORD_T prStaRec;
-#if CFG_SUPPORT_OKC
-	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
-#endif
 
 	DEBUGFUNC("rsnGenerateRSNIE");
 
@@ -1287,18 +1284,12 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 			prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 			if (!prStaRec) {
 				DBGLOG(RSN, TRACE, "rsnGenerateRSNIE: prStaRec is NULL\n");
-				return;
-			}
-		}
+			} else if (rsnSearchPmkidEntry(prAdapter, prStaRec->aucMacAddr, &u4Entry) &&
+				prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist) {
+				fgPmkidExist = TRUE;
 
-		if (eNetworkId == NETWORK_TYPE_AIS_INDEX &&
-		    rsnSearchPmkidEntry(prAdapter, prStaRec->aucMacAddr, &u4Entry)) {
-			/* DBGLOG(RSN, TRACE, ("Add Pmk at assoc req\n")); */
-			/* DBGLOG(RSN, TRACE, ("addr %pM PMKID %pM\n", */
-			/* (prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].rBssidInfo.arBSSID),*/
-			/* (prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].rBssidInfo.arPMKID))); */
-			if (prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist) {
-				RSN_IE(pucBuffer)->ucLength = 38;
+				RSN_IE(pucBuffer)->ucLength += 2;	/* Length of PMKID count */
+
 				WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
 				cp += 2;
 				DBGLOG(RSN, TRACE,
@@ -1306,53 +1297,30 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 				DBGLOG(RSN, INFO, "use PMKID %pM\n",
 					(prAdapter->rWifiVar.rAisSpecificBssInfo.
 						arPmkidCache[u4Entry].rBssidInfo.arPMKID));
+
+				RSN_IE(pucBuffer)->ucLength += sizeof(PARAM_PMKID_VALUE);	/* Length of PMKID */
 				kalMemCopy(cp,
 					   (PVOID) prAdapter->rWifiVar.rAisSpecificBssInfo.
 					   arPmkidCache[u4Entry].rBssidInfo.arPMKID, sizeof(PARAM_PMKID_VALUE));
-				/* ucExpendedLen = 40; */
-#if CFG_SUPPORT_OKC
-			} else if (prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
-				RSN_IE(pucBuffer)->ucLength = 38;
-				WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
-				cp += 2;
-				DBGLOG(RSN, INFO, "use OKC PMKID %pM\n", prConnSettings->aucOkcPmkId);
-				kalMemCopy(cp, prConnSettings->aucOkcPmkId, 16);
-#endif
-			} else {
-				WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
-				/* ucExpendedLen = ELEM_ID_RSN_LEN_FIXED + 2; */
-#if CFG_SUPPORT_802_11W
-				cp += 2;
-				RSN_IE(pucBuffer)->ucLength += 2;
-#endif
+				cp += sizeof(PARAM_PMKID_VALUE);
 			}
-#if CFG_SUPPORT_OKC
-		} else if (eNetworkId == NETWORK_TYPE_AIS_INDEX &&
-			prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
-			RSN_IE(pucBuffer)->ucLength = 38;
-			WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
-			cp += 2;
-			DBGLOG(RSN, INFO, "use OKC PMKID %pM\n", prConnSettings->aucOkcPmkId);
-			kalMemCopy(cp, prConnSettings->aucOkcPmkId, 16);
-#endif
-		} else {
-			WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
-			/* ucExpendedLen = ELEM_ID_RSN_LEN_FIXED + 2; */
 #if CFG_SUPPORT_802_11W
-			cp += 2;
-			RSN_IE(pucBuffer)->ucLength += 2;
+			if (kalGetMfpSetting(prAdapter->prGlueInfo) != RSN_AUTH_MFP_DISABLED) {
+				if (!fgPmkidExist) {
+					/* Empty PMKID Count */
+					WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
+					cp += 2;
+					RSN_IE(pucBuffer)->ucLength += 2;
+				}
+
+				/* Group Management Cipher Suite */
+				WLAN_SET_FIELD_32(cp, RSN_CIPHER_SUITE_AES_128_CMAC);
+				cp += 4;
+				RSN_IE(pucBuffer)->ucLength += 4;
+			}
 #endif
 		}
 
-#if CFG_SUPPORT_802_11W
-		if ((eNetworkId == NETWORK_TYPE_AIS_INDEX)
-		    && (kalGetMfpSetting(prAdapter->prGlueInfo) !=
-			RSN_AUTH_MFP_DISABLED) /* (mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC) */) {
-			WLAN_SET_FIELD_32(cp, RSN_CIPHER_SUITE_AES_128_CMAC);
-			cp += 4;
-			RSN_IE(pucBuffer)->ucLength += 4;
-		}
-#endif
 		prMsduInfo->u2FrameLength += IE_SIZE(pucBuffer);
 	}
 
@@ -2186,7 +2154,7 @@ void rsnSaQueryRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	if (!prStaRec)
 		return;
 
-	DBGLOG(RSN, TRACE, "IEEE 802.11: Received SA Query Request from %pM\n", prStaRec->aucMacAddr);
+	DBGLOG(RSN, INFO, "IEEE 802.11: Received SA Query Request from %pM\n", prStaRec->aucMacAddr);
 
 	DBGLOG_MEM8(RSN, TRACE, prRxFrame->ucTransId, ACTION_SA_QUERY_TR_ID_LEN);
 
@@ -2195,7 +2163,7 @@ void rsnSaQueryRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				    prStaRec->aucMacAddr);
 		return;
 	}
-	DBGLOG(RSN, TRACE, "IEEE 802.11: Sending SA Query Response to %pM\n", prStaRec->aucMacAddr);
+	DBGLOG(RSN, INFO, "IEEE 802.11: Sending SA Query Response to %pM\n", prStaRec->aucMacAddr);
 
 	prMsduInfo = (P_MSDU_INFO_T) cnmMgtPktAlloc(prAdapter, MAC_TX_RESERVED_FIELD + PUBLIC_ACTION_MAX_LEN);
 
@@ -2524,7 +2492,6 @@ BOOLEAN rsnParseOsenIE(P_ADAPTER_T prAdapter, struct IE_WFA_OSEN *prInfoElem, P_
 		u4RemainRsnIeLen -= 2;
 
 		/* Parse the Authentication and Key Management Cipher Suite List field. */
-
 		i = (UINT_32) u2AuthSuiteCount * 4;
 		if (u4RemainRsnIeLen < (INT_32) i) {
 			DBGLOG(RSN, WARN, "Fail to parse RSN IE in auth & key mgt suite list (IE len: %d)\n",
@@ -2583,6 +2550,7 @@ BOOLEAN rsnParseOsenIE(P_ADAPTER_T prAdapter, struct IE_WFA_OSEN *prInfoElem, P_
 		/* The information about the pairwise key cipher suites is not present.
 		 * Use the default chipher suite for RSN: CCMP
 		 */
+
 		prOsenInfo->u4PairwiseKeyCipherSuiteCount = 1;
 		prOsenInfo->au4PairwiseKeyCipherSuite[0] = RSN_CIPHER_SUITE_CCMP;
 
@@ -2591,6 +2559,7 @@ BOOLEAN rsnParseOsenIE(P_ADAPTER_T prAdapter, struct IE_WFA_OSEN *prInfoElem, P_
 
 	if (pucAuthSuite) {
 		/* The information about the authentication and key management suites is present. */
+
 		if (u2AuthSuiteCount > MAX_NUM_SUPPORTED_AKM_SUITES)
 			u2AuthSuiteCount = MAX_NUM_SUPPORTED_AKM_SUITES;
 
