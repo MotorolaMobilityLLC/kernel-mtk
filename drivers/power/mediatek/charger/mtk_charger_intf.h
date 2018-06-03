@@ -27,10 +27,16 @@
 #include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
 
+/* PD */
+#include <tcpm.h>
+
+
 struct charger_manager;
 #include "mtk_pe_intf.h"
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
+#include "mtk_pdc_intf.h"
+
 
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
@@ -157,6 +163,7 @@ struct charger_custom_data {
 	int apple_1_0a_charger_current;
 	int apple_2_1a_charger_current;
 	int ta_ac_charger_current;
+	int pd_charger_current;
 
 	/* sw jeita */
 	int jeita_temp_above_t4_cv_voltage;
@@ -330,6 +337,10 @@ struct charger_manager {
 	bool enable_pe_3;
 	struct mtk_pe30 pe3;
 	struct charger_device *dc_chg;
+
+	/* pd */
+	struct mtk_pdc pdc;
+
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;

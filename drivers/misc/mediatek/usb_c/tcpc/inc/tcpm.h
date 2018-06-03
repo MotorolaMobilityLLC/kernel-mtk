@@ -224,9 +224,6 @@ struct tcp_notify {
 	};
 };
 
-extern struct tcpc_device
-		*tcpc_dev_get_by_name(const char *name);
-
 extern int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
 				     struct notifier_block *nb);
 extern int unregister_tcp_dev_notifier(struct tcpc_device *tcp_dev,
@@ -863,6 +860,9 @@ extern int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 extern int tcpm_set_remote_power_cap(struct tcpc_device *tcpc,
 					int mv, int ma);
 
+extern struct tcpc_device
+		*tcpc_dev_get_by_name(const char *name);
+
 #else	/* CONFIG_USB_POWER_DELIVERY */
 
 static inline bool tcpm_inquire_pd_prev_connected(
@@ -883,6 +883,13 @@ static inline int tcpm_set_remote_power_cap(struct tcpc_device *tcpc,
 {
 	return 0;
 }
+
+static inline struct tcpc_device
+		*tcpc_dev_get_by_name(const char *name)
+{
+	return NULL;
+}
+
 
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
