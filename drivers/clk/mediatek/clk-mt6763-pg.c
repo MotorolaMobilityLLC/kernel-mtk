@@ -551,14 +551,20 @@ static void aee_clk_data_rest(void)
 #endif
 #endif
 
-void cam_mtcmos_patch(int on)
+int cam_mtcmos_patch(int on)
 {
+	int larb2_cg = 0;
 	if (on) {
 		/* do something */
 		/* do something */
 	} else {
+		if (clk_readl(CAMSYS_CG_STA) & 0x0001)
+			larb2_cg = 1;
+		else
+			larb2_cg = 0;
 		clk_writel(CAMSYS_CG_CLR, 0x0001);
 	}
+	return larb2_cg;
 }
 
 /* auto-gen begin*/
@@ -1323,12 +1329,13 @@ int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
 	int retry = 0;
+	int larb2_cg = 0;
 
 	/* TINFO="enable SPM register control" */
 	/*spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));*/
 
 	if (state == STA_POWER_DOWN) {
-		cam_mtcmos_patch(state);
+		larb2_cg = cam_mtcmos_patch(state);
 		/* TINFO="Start to turn off CAM" */
 		/* TINFO="Set bus protect(SMI_LARB2_SLP_CON)" */
 		spm_write(SMI_LARB2_SLP_CON, spm_read(SMI_LARB2_SLP_CON) | 0x1);
@@ -1336,7 +1343,7 @@ int spm_mtcmos_ctrl_cam(int state)
 		while ((spm_read(SMI_LARB2_SLP_CON) & 0x10000) != 0x10000) {
 			retry++;
 			if (retry > 100) {
-				pr_debug("CAMSYS_CG_STA = 0x%x\n", clk_readl(CAMSYS_CG_STA));
+				pr_debug("CAMSYS_CG_STA = 0x%x, larb2_cg = %d\n", clk_readl(CAMSYS_CG_STA), larb2_cg);
 				pr_debug("SMI_LARB_STAT = 0x%x\n", clk_readl(SMI_LARB_STAT));
 				pr_debug("SMI_LARB2_SLP_CON = 0x%x\n", clk_readl(SMI_LARB2_SLP_CON));
 			}
