@@ -3821,6 +3821,68 @@ UINT_32 kalCheckPath(const PUINT_8 pucPath)
 	return 1;
 }
 
+UINT_32 kalTrunkPath(const PUINT_8 pucPath)
+{
+	struct file *file = NULL;
+	UINT_32 u4Flags = O_TRUNC;
+
+	file = kalFileOpen(pucPath, O_WRONLY | O_CREAT | u4Flags, S_IRWXU);
+	if (!file)
+		return -1;
+
+	kalFileClose(file);
+	return 1;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief read request firmware file binary to pucData
+*
+* \param[in] pucPath  file name
+* \param[out] pucData  Request file output buffer
+* \param[in] u4Size  read size
+* \param[out] pu4ReadSize  real read size
+* \param[in] dev
+*
+* \return
+*           0 success
+*           >0 fail
+*/
+/*----------------------------------------------------------------------------*/
+INT_32 kalRequestFirmware(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size,
+		PUINT_32 pu4ReadSize, struct device *dev)
+{
+	const struct firmware *fw;
+	int ret = 0;
+
+	/*
+	* Driver support request_firmware() to get files
+	* Android path: "/etc/firmware", "/vendor/firmware", "/firmware/image"
+	* Linux path: "/lib/firmware", "/lib/firmware/update"
+	*/
+	ret = request_firmware(&fw, pucPath, dev);
+
+	if (ret != 0) {
+		DBGLOG(INIT, INFO, "kalRequestFirmware %s Fail, errno[%d]!!\n", pucPath, ret);
+		pucData = NULL;
+		*pu4ReadSize = 0;
+		return ret;
+	}
+
+	DBGLOG(INIT, INFO, "kalRequestFirmware(): %s OK\n", pucPath);
+
+	if (fw->size < u4Size)
+		u4Size = fw->size;
+
+	memcpy(pucData, fw->data, u4Size);
+	if (pu4ReadSize)
+		*pu4ReadSize = u4Size;
+
+	release_firmware(fw);
+
+	return ret;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief    To indicate BSS-INFO to NL80211 as scanning result
