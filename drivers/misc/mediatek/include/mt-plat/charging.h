@@ -141,6 +141,14 @@ typedef enum {
 	CHARGING_CMD_RUN_AICL,
 	CHARGING_CMD_SET_IRCMP_RESISTOR,
 	CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
+	CHARGING_CMD_ENABLE_DC_VBUSOV,
+	CHARGING_CMD_SET_DC_VBUSOV,
+	CHARGING_CMD_ENABLE_DC_VBUSOC,
+	CHARGING_CMD_SET_DC_VBUSOC,
+	CHARGING_CMD_ENABLE_DC_VBATOV,
+	CHARGING_CMD_SET_DC_VBATOV,
+	CHARGING_CMD_GET_IS_DC_ENABLE,
+	CHARGING_CMD_SET_PEP20_EFFICIENCY_TABLE,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -612,8 +620,6 @@ extern void hw_charging_enable_dp_voltage(int ison);
 
 
 /* switch charger */
-/*extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);*/
-/*extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);*/
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 extern kal_bool pmic_chrdet_status(void);
