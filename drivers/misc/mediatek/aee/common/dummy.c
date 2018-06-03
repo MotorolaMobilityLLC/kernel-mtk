@@ -207,7 +207,7 @@ __weak void ipanic_oops_free(struct aee_oops *oops, int erase)
 {
 }
 
-__weak void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs)
+__weak void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs, struct task_struct *tsk)
 {
 }
 #endif
