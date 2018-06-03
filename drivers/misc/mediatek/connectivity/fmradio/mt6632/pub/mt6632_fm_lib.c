@@ -1318,7 +1318,7 @@ static fm_s32 mt6632_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 		goto out;
 	}
 
-	ret = fm_reg_write(0x60, 0x7);
+	ret = fm_reg_write(0x60, 0x0007);
 	if (ret)
 		goto out;
 
@@ -1334,6 +1334,9 @@ static fm_s32 mt6632_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 	if (ret)
 		goto out;
 
+	ret = fm_reg_write(0x60, 0x000F);
+	if (ret)
+		goto out;
 	WCN_DBG(FM_NTC | CHIP, "[onoff=%s][mode=%s][sample=%d](0)33KHz,(1)44.1KHz,(2)48KHz\n",
 		   (onoff == FM_I2S_ON) ? "On" : "Off", (mode == FM_I2S_MASTER) ? "Master" : "Slave", sample);
 out:
