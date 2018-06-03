@@ -192,7 +192,8 @@ typedef enum {
 } rndis_network_type_enum;
 
 extern int rndis_get_direct_tethering_state(struct usb_function *f);
-extern int rndis_send_ep0_response(struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer);
+extern int rndis_send_ep0_response(struct usb_composite_dev *cdev,
+		struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer);
 extern void rndis_get_pkt_info(struct rndis_params *params, u32 *maxPacketsPerTransfer, u32 *maxTransferSize);
 extern void rndis_get_net_stats(struct rndis_params *params, tethering_net_stats_t *net_stats);
 extern void rndis_set_net_stats(struct rndis_params *params, tethering_net_stats_t *net_stats);
