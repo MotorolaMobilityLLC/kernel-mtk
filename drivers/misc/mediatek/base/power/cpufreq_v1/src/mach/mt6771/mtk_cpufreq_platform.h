@@ -18,9 +18,9 @@
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define CONFIG_HYBRID_CPU_DVFS	1
-#define PPM_AP_SIDE	1
+/* #define PPM_AP_SIDE	1 */
 #define EEM_AP_SIDE	1
-#define CPU_DVFS_NOT_READY	1
+/* #define CPU_DVFS_NOT_READY	1 */
 /* #define DRCC_SUPPORT 1 */
 #else
 #define SUPPORT_VOLT_HW_AUTO_TRACK 1
@@ -35,6 +35,8 @@
 #define MIN_VPROC_VOLT			60000
 #define MAX_VPROC_VOLT			112000
 
+#define UP_SRATE	1000
+#define DOWN_SRATE	750
 #define PMIC_CMD_DELAY_TIME	5
 #define MIN_PMIC_SETTLE_TIME	5
 

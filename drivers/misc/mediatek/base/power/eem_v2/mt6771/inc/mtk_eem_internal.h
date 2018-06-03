@@ -44,13 +44,12 @@
  * LOG
  */
 #define EEM_TAG	 "[xxxxEEM] "
-#ifdef USING_XLOG
-	#include <linux/xlog.h>
-	#define eem_error(fmt, args...)	 pr_debug(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)
-	#define eem_warning(fmt, args...)   pr_debug(ANDROID_LOG_WARN, EEM_TAG, fmt, ##args)
-	#define eem_notice(fmt, args...)	pr_debug(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
-	#define eem_info(fmt, args...)	  pr_debug(ANDROID_LOG_INFO, EEM_TAG, fmt, ##args)
-	#define eem_debug(fmt, args...)	 pr_debug(ANDROID_LOG_DEBUG, EEM_TAG, fmt, ##args)
+#if 1
+	#define eem_error(fmt, args...)		pr_notice(EEM_TAG fmt, ##args)
+	#define eem_warning(fmt, args...)
+	#define eem_notice(fmt, args...)
+	#define eem_info(fmt, args...)
+	#define eem_debug(fmt, args...)
 #else
 	#define eem_error(fmt, args...)	 pr_debug(EEM_TAG fmt, ##args)
 	#define eem_warning(fmt, args...)   pr_debug(EEM_TAG fmt, ##args)
@@ -150,7 +149,11 @@
  * Given a eem_det * in eem_detectors. Return the id.
  * @det:	pointer to a eem_det in eem_detectors
  */
+#if ENABLE_LOO
+#define det_to_id(det)	((det == &eem_detector_cci) ? EEM_DET_CCI : ((det) - &eem_detectors[0]))
+#else
 #define det_to_id(det)	((det) - &eem_detectors[0])
+#endif
 
 /**
  * Given a eem_ctrl * in eem_ctrls. Return the id.
@@ -184,6 +187,9 @@ struct eem_ctrl {
 /* define main structures in mtk_eem_internal.c */
 extern struct eem_ctrl eem_ctrls[NR_EEM_CTRL];
 extern struct eem_det eem_detectors[NR_EEM_DET];
+#if ENABLE_LOO
+extern struct eem_det eem_detector_cci;
+#endif
 extern struct eem_det_ops eem_det_base_ops;
 
 /* define common operations in mtk_eem_internal.c */

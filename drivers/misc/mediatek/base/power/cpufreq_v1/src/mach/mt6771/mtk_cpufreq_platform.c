@@ -124,9 +124,9 @@ static unsigned int mt6358_vproc_settletime(unsigned int old_volt, unsigned int 
 {
 	/* UP:10mv/us DOWN:7.5mv/us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1000 - 1) / 1000 + PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + UP_SRATE - 1) / UP_SRATE + PMIC_CMD_DELAY_TIME;
 	else
-		return ((old_volt - new_volt) + 750 - 1) / 750 + PMIC_CMD_DELAY_TIME;
+		return ((old_volt - new_volt) + DOWN_SRATE - 1) / DOWN_SRATE + PMIC_CMD_DELAY_TIME;
 }
 
 static int set_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
@@ -159,9 +159,9 @@ static unsigned int mt6358_vsram_settletime(unsigned int old_volt, unsigned int 
 {
 	/* UP:10mv/us DOWN:7.5mv/us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1000 - 1) / 1000 + PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + UP_SRATE - 1) / UP_SRATE + PMIC_CMD_DELAY_TIME;
 	else
-		return ((new_volt - old_volt) + 750 - 1) / 750 + PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + DOWN_SRATE - 1) / DOWN_SRATE + PMIC_CMD_DELAY_TIME;
 }
 
 /* upper layer CANNOT use 'set' function in secure path */
@@ -587,6 +587,9 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	unsigned int lv = CPU_LEVEL_0;
 
 	turbo_flag = 0;
+
+	tag_pr_info("%d, %d, (%d, %d)\n",
+		lv, turbo_flag, UP_SRATE, DOWN_SRATE);
 
 	return lv;
 }
