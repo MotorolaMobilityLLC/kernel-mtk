@@ -18,6 +18,7 @@
 #include <linux/device.h>
 #include <linux/percpu.h>
 #include <linux/hardirq.h>
+#include <linux/clk.h>
 
 extern int met_mode;
 
@@ -81,7 +82,6 @@ DECLARE_PER_CPU(char[MET_STRBUF_SIZE], met_strbuf);
 		preempt_enable_no_resched(); \
 	} while (0)
 
-
 /*
  * SOB: start of buf
  * EOB: end of buf
@@ -119,7 +119,6 @@ DECLARE_PER_CPU(char[MET_STRBUF_SIZE], met_strbuf);
 #define MET_TYPE_MISC	3
 
 struct metdevice {
-
 	struct list_head list;
 	int type;
 	const char *name;
@@ -129,6 +128,7 @@ struct metdevice {
 	int (*create_subfs)(struct kobject *parent);
 	void (*delete_subfs)(void);
 	int mode;
+	int ondiemet_mode; /* new for ondiemet; 1: call ondiemet functions */
 	int cpu_related;
 	int polling_interval;
 	int polling_count_reload;
@@ -142,6 +142,15 @@ struct metdevice {
 	int (*print_help)(char *buf, int len);
 	int (*print_header)(char *buf, int len);
 	int (*process_argument)(const char *arg, int len);
+
+	void (*ondiemet_start)(void);
+	void (*ondiemet_stop)(void);
+	int (*ondiemet_reset)(void);
+	int (*ondiemet_print_help)(char *buf, int len);
+	int (*ondiemet_print_header)(char *buf, int len);
+	int (*ondiemet_process_argument)(const char *arg, int len);
+	void (*ondiemet_timed_polling)(unsigned long long stamp, int cpu);
+	void (*ondiemet_tagged_polling)(unsigned long long stamp, int cpu);
 
 	struct list_head exlist;	/* for linked list before register */
 	void (*suspend)(void);
@@ -164,29 +173,15 @@ int met_devlink_deregister_all(void);
 int fs_reg(void);
 void fs_unreg(void);
 
-
 /******************************************************************************
  * Tracepoints
  ******************************************************************************/
-/*#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-*	error Kernels prior to 2.6.32 not supported
-*elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
-*	define MET_DEFINE_PROBE(probe_name, proto) \
-*		static void probe_##probe_name(PARAMS(proto))
-*	define MET_REGISTER_TRACE(probe_name) \
-*		register_trace_##probe_name(probe_##probe_name)
-*	define MET_UNREGISTER_TRACE(probe_name) \
-*		unregister_trace_##probe_name(probe_##probe_name)
-*else
-*/
-#	define MET_DEFINE_PROBE(probe_name, proto) \
+#define MET_DEFINE_PROBE(probe_name, proto) \
 		static void probe_##probe_name(void *data, PARAMS(proto))
-#	define MET_REGISTER_TRACE(probe_name) \
+#define MET_REGISTER_TRACE(probe_name) \
 		register_trace_##probe_name(probe_##probe_name, NULL)
-#	define MET_UNREGISTER_TRACE(probe_name) \
+#define MET_UNREGISTER_TRACE(probe_name) \
 		unregister_trace_##probe_name(probe_##probe_name, NULL)
-/*#endif*/
-
 
 
 /* ====================== Tagging API ================================ */
@@ -246,9 +241,9 @@ typedef struct _mtag_cmd_t {
 
 #define met_tag_end(id, name) ({ 0; })
 
-#define met_tag_async_start(id, name, cookie) ({ 0; })
+#define met_tag_async_start(id, name, cookie) ({0; })
 
-#define met_tag_async_end(id, name, cookie) ({ 0; })
+#define met_tag_async_end(id, name, cookie) ({0; })
 
 #define met_tag_oneshot(id, name, value) ({ 0; })
 
@@ -332,6 +327,11 @@ int __attribute__((weak)) met_show_clk_tree(const char *name,
 			unsigned int status);
 int __attribute__((weak)) met_reg_clk_tree(void *fp);
 
+int __attribute__((weak)) met_ccf_clk_enable(struct clk *clk);
+int __attribute__((weak)) met_ccf_clk_disable(struct clk *clk);
+int __attribute__((weak)) met_ccf_clk_set_rate(struct clk *clk, struct clk *top);
+int __attribute__((weak)) met_ccf_clk_set_parent(struct clk *clk, struct clk *parent);
+
 extern unsigned int __attribute__((weak)) met_fh_dds[];
 int __attribute__((weak)) met_fh_print_dds(int pll_id, unsigned int dds_value);
 
@@ -345,6 +345,7 @@ void __attribute__((weak)) met_show_pmic_info(unsigned int RegNum, unsigned int 
 #define met_record_off()	tracing_off()
 
 #endif				/* MET_USER_EVENT_SUPPORT */
+
 
 
 /*
@@ -444,6 +445,40 @@ do {						\
 	if (_met_spo_mem_free)			\
 		_met_spo_mem_free(__VA_ARGS__);	\
 } while (0)
+
+
+
+/* =============== MMSYS API  Wrapper for DISP/MDP/GCE mmsys profiling ========= */
+void __attribute__((weak)) met_mmsys_event_gce_thread_begin(ulong thread_no, ulong task_handle, ulong engineFlag,
+								void *pCmd, ulong size);
+void __attribute__((weak)) met_mmsys_event_gce_thread_end(ulong thread_no, ulong task_handle, ulong engineFlag);
+
+void __attribute__((weak)) met_mmsys_event_disp_sof(int mutex_id);
+void __attribute__((weak)) met_mmsys_event_disp_mutex_eof(int mutex_id);
+void __attribute__((weak)) met_mmsys_event_disp_ovl_eof(int ovl_id);
+
+void __attribute__((weak)) met_mmsys_config_isp_base_addr(unsigned long *isp_reg_list);
+void __attribute__((weak)) met_mmsys_event_isp_pass1_begin(int sensor_id);
+void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
+
+
+/* ====================== MMSYS Platform Depend ================================ */
+#if defined(CONFIG_MTK_MET)
+	#if defined(CONFIG_MACH_MT6757)
+		#pragma message("MET MMSYS 6757 include")
+		#include "../met/mt6757/platform/mt6757/met_drv_udtl.h"
+	#elif defined(CONFIG_MACH_MT6799)
+		#pragma message("MET MMSYS 6799 include")
+		#include "../met/mt6799/platform/mt6799/met_drv_udtl.h"
+	#else
+		#pragma message("MET MMSYS include not found!")
+		#include "met_drv_udtl_null.h"
+	#endif
+#else
+	#pragma message("MET MMSYS Null include")
+	#include "met_drv_udtl_null.h"
+#endif
+
 
 
 
