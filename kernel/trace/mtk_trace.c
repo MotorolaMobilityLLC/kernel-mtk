@@ -146,7 +146,7 @@ static __init int boot_trace_cmdline(char *str)
 	update_buf_size(buf_size);
 	return 0;
 }
-__setup("boot_trace", boot_trace_cmdline);
+__setup("androidboot.boot_trace", boot_trace_cmdline);
 
 #include <linux/rtc.h>
 
