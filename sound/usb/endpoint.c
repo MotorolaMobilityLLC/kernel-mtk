@@ -519,6 +519,9 @@ struct snd_usb_endpoint *snd_usb_add_endpoint(struct snd_usb_audio *chip,
 		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
 		    ep->syncmaxsize == 4)
 			ep->udh01_fb_quirk = 1;
+
+		/* let controller driver to know endpoint type */
+		get_endpoint(alts, 1)->bmAttributes |= USB_ENDPOINT_USAGE_FEEDBACK;
 	}
 
 	list_add_tail(&ep->list, &chip->ep_list);
@@ -864,9 +867,11 @@ static int sync_ep_set_params(struct snd_usb_endpoint *ep)
 {
 	int i;
 
+	/* FIXME feedback ep force use dram */
+	#if 0
 	ep->syncbuf = mtk_usb_alloc_sram(USB_AUDIO_DATA_SYNC,
 					SYNC_URBS * 4, &ep->sync_dma);
-
+	#endif
 	if (ep->syncbuf) {
 		ep->syncbuf_sram = 1;
 	} else {
