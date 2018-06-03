@@ -785,7 +785,7 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 	}
 }
 
-int ddp_path_top_clock_on(void) /* SHANG: need modify*/
+int ddp_path_top_clock_on(void)
 {
 	DDPDBG("ddp path top clock on\n");
 
@@ -797,7 +797,6 @@ int ddp_path_top_clock_on(void) /* SHANG: need modify*/
 	ddp_clk_prepare_enable(CLK_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_GALS_COMM1);
 	ddp_clk_prepare_enable(CLK_SMI_LARB0);
-	ddp_clk_prepare_enable(CLK_SMI_LARB1);
 	ddp_clk_prepare_enable(CLK_MM_26M);
 
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
@@ -808,10 +807,9 @@ int ddp_path_top_clock_on(void) /* SHANG: need modify*/
 	return 0;
 }
 
-int ddp_path_top_clock_off(void) /* SHANG: need modify*/
+int ddp_path_top_clock_off(void)
 {
 	ddp_clk_disable_unprepare(CLK_MM_26M);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB1);
 	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
 	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
 	ddp_clk_disable_unprepare(CLK_GALS_COMM0);

@@ -22,38 +22,31 @@
 /* display clk id
  * -- by chip
  */
-enum DDP_CLK_ID { /* SHANG: need modify */
+enum DDP_CLK_ID {
 	/* top clk */
 	CLK_MM_MTCMOS = 0,
 	CLK_SMI_COMMON,
 	CLK_SMI_LARB0,
-	CLK_SMI_LARB1,
 	CLK_GALS_COMM0,
 	CLK_GALS_COMM1,
 	/* module clk */
 	CLK_DISP_OVL0,
 	CLK_DISP_OVL0_2L,
-	CLK_DISP_OVL1_2L,
 	CLK_DISP_RDMA0,
-	CLK_DISP_RDMA1,
 	CLK_DISP_WDMA0,
 	CLK_DISP_COLOR0,
 	CLK_DISP_CCORR0,
 	CLK_DISP_AAL0,
 	CLK_DISP_GAMMA0,
 	CLK_DISP_DITHER0,
-	CLK_DISP_RSZ0,
 	CLK_DSI0_MM_CLK,
 	CLK_DSI0_IF_CLK,
 	CLK_MM_26M,
-	/* mdp clk */
-	CLK_MDP_WROT0,
-	DISP_PWM,
+	CLK_DISP_RSZ0,
+	/* PWM clk */
 	MUX_PWM,
-	CLK26M, /*24*/
-	ULPOSC_D2,
-	ULPOSC_D16,
-	UNIVPLL1_D8,
+	DISP_PWM,
+	CLK26M, /*21*/
 	MAX_DISP_CLK_CNT
 };
 
@@ -76,10 +69,6 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);
 int ddp_parse_apmixed_base(void);
 int ddp_main_modules_clk_on(void);
 int ddp_main_modules_clk_off(void);
-int ddp_ext_modules_clk_on(void);
-int ddp_ext_modules_clk_off(void);
-int ddp_ovl2mem_modules_clk_on(void);
-int ddp_ovl2mem_modules_clk_off(void);
 int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t);
 int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);

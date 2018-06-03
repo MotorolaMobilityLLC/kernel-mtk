@@ -479,16 +479,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	DISP_REG_SET(handle, offset + DISP_REG_RDMA_ENTER_DRS_SETTING,
 		     drs_enter | (drs_enter << 16));
 
-/*SHANG : need confirm how to caculate SETTING_3 */
-/*DISP_REG_SET(handle, offset + DISP_REG_RDMA_MEM_GMC_SETTING_3,
- *  ssue_req_threshold);
- */
-
-	/*SHANG : need set share disp_rsz */
-	/* only config RDMA0 SRAM_SEL */
-	if (idx == 0)
-		DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, is_wrot_sram);
-
 #if 0
 	if (idx == 0)
 		rdma_dump_golden_setting_context(DISP_MODULE_RDMA0);
