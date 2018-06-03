@@ -1870,11 +1870,11 @@ int dvt_start_rdma_to_dpi_for_RGB2YUV(unsigned int resolution, unsigned int time
 
 	DPI_DVT_LOG_W("module init\n");
 	ddp_driver_dpi.init(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.init(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.init(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("module power on\n");
 	ddp_driver_dpi.power_on(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.power_on(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.power_on(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("module config\n");
 	ddp_driver_dpi.config(DISP_MODULE_DPI, &extd_dpi_params, NULL);
@@ -1886,16 +1886,16 @@ int dvt_start_rdma_to_dpi_for_RGB2YUV(unsigned int resolution, unsigned int time
 	}
 
 	dvt_init_RDMA_param(RDMA_MODE_MEMORY, resolution);
-	ddp_driver_rdma.config(DISP_MODULE_RDMA_SHORT, &extd_rdma_params, NULL);
+	ddp_driver_rdma.config(DISP_MODULE_RDMA1, &extd_rdma_params, NULL);
 	/*configRDMASwap(0, 1); */
 
 	DPI_DVT_LOG_W("module reset\n");
 	dvt_mutex_reset(NULL, dvt_acquire_mutex());
 	ddp_driver_dpi.reset(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.reset(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.reset(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("module start\n");
-	ddp_driver_rdma.start(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.start(DISP_MODULE_RDMA1, NULL);
 	ddp_driver_dpi.start(DISP_MODULE_DPI, NULL);
 
 	DPI_DVT_LOG_W("module trigger\n");
@@ -1908,7 +1908,7 @@ int dvt_start_rdma_to_dpi_for_RGB2YUV(unsigned int resolution, unsigned int time
 
 	DPI_DVT_LOG_W("module dump_info\n");
 	ddp_driver_dpi.dump_info(DISP_MODULE_DPI, 1);
-	ddp_driver_rdma.dump_info(DISP_MODULE_RDMA_SHORT, 1);
+	ddp_driver_rdma.dump_info(DISP_MODULE_RDMA1, 1);
 
 	msleep(timeS * 1000);
 
@@ -1917,16 +1917,16 @@ int dvt_start_rdma_to_dpi_for_RGB2YUV(unsigned int resolution, unsigned int time
 	DISP_REG_SET(NULL, DISP_REG_CONFIG_MUTEX_GET(HW_MUTEX), 1);
 	DISP_REG_SET(NULL, DISP_REG_CONFIG_MUTEX_GET(HW_MUTEX), 0);
 	ddp_driver_dpi.stop(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.stop(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.stop(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("module reset\n");
 	dvt_mutex_reset(NULL, dvt_acquire_mutex());
 	ddp_driver_dpi.reset(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.reset(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.reset(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("module power off\n");
 	ddp_driver_dpi.power_off(DISP_MODULE_DPI, NULL);
-	ddp_driver_rdma.power_off(DISP_MODULE_RDMA_SHORT, NULL);
+	ddp_driver_rdma.power_off(DISP_MODULE_RDMA1, NULL);
 
 	DPI_DVT_LOG_W("set Mutex and disconnect path\n");
 	dvt_disconnect_path(NULL);

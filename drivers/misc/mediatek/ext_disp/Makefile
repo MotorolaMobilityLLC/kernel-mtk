@@ -16,7 +16,9 @@ ifeq ($(CONFIG_SINGLE_PANEL_OUTPUT),y)
 else ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/ext_disp/$(PLATFORM)/),)
 ifneq ($(PLATFORM), mt6739)
 obj-y += $(PLATFORM)/
+ifneq ($(PLATFORM), mt6771)
 obj-y += common/
+endif
 else
 obj-y += dummy/
 endif
