@@ -1224,23 +1224,29 @@ static void SetDcCompenSation(bool enable)
 {
 	int lch_value = 0, rch_value = 0, tmp_ramp = 0;
 	int times = 0, i = 0;
+	int sign_lch = 0, sign_rch = 0;
+	int abs_lch = 0, ads_rch = 0;
 	unsigned short dcCompRchHigh = 0, dcCompRchLow = 0;
 	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;
 
 	lch_value = calOffsetToDcComp(mHplTrimOffset);
 	rch_value = calOffsetToDcComp(mHprTrimOffset);
-	times = lch_value > rch_value ? (lch_value >> 10) + 1 : (rch_value >> 10) + 1;
+	sign_lch = lch_value < 0 ? -1 : 1;
+	sign_rch = rch_value < 0 ? -1 : 1;
+	abs_lch = sign_lch * lch_value;
+	ads_rch = sign_rch * rch_value;
+	times = abs_lch > ads_rch ? (abs_lch >> 10) + 1 : (ads_rch >> 10) + 1;
 	pr_aud("%s times = %d, lch_value= 0x%x, rch_value= 0x%x\n", __func__, times, lch_value, rch_value);
 	if (enable) {
 		EnableDcCompensation(true);
 		for (i = 0; i < times; i++) {
 			tmp_ramp = i << 10;
-			if (tmp_ramp < lch_value) {
-				dcCompLchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+			if (tmp_ramp < abs_lch) {
+				dcCompLchHigh = (unsigned short)(sign_lch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
 			}
-			if (tmp_ramp < rch_value) {
-				dcCompRchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+			if (tmp_ramp < ads_rch) {
+				dcCompRchHigh = (unsigned short)(sign_rch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
 			}
 			udelay(100);
@@ -1257,12 +1263,12 @@ static void SetDcCompenSation(bool enable)
 	} else {
 		for (i = times - 1; i >= 0; i--) {
 			tmp_ramp = i << 10;
-			if (tmp_ramp < lch_value) {
-				dcCompLchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+			if (tmp_ramp < abs_lch) {
+				dcCompLchHigh = (unsigned short)(sign_lch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
 			}
-			if (tmp_ramp < rch_value) {
-				dcCompRchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+			if (tmp_ramp < ads_rch) {
+				dcCompRchHigh = (unsigned short)(sign_rch * tmp_ramp >> 8) & 0x0000ffff;
 				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
 			}
 			udelay(100);
@@ -1907,8 +1913,8 @@ static void HeadsetVoloumeSet(void)
 			udelay(200);
 		}
 	}
-	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
-	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, index, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, index, 0x003f);
 }
 
 static void headset_volume_ramp(int source, int target)
