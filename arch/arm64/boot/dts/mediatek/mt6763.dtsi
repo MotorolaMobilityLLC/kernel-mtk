@@ -1522,6 +1522,9 @@
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
+		clocks = <&mmsys_config MMSYS_MDP_DL_TXCK>,
+			 <&mmsys_config MMSYS_MDP_DL_RX_CK>;
+		clock-names = "CAM_MDP_TX", "CAM_MDP_RX";
 	};
 
 	gps {
@@ -1600,42 +1603,56 @@
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14001000 0 0x1000>;
 		interrupts = <GIC_SPI 207 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_RDMA0>;
+		clock-names = "MDP_RDMA0";
 	};
 
 	mdp_rdma1@14002000 {
 		compatible = "mediatek,mdp_rdma1";
 		reg = <0 0x14002000 0 0x1000>;
 		interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_RDMA1>;
+		clock-names = "MDP_RDMA1";
 	};
 
 	mdp_rsz0@14003000 {
 		compatible = "mediatek,mdp_rsz0";
 		reg = <0 0x14003000 0 0x1000>;
 		interrupts = <GIC_SPI 209 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_RSZ0>;
+		clock-names = "MDP_RSZ0";
 	};
 
 	mdp_rsz1@14004000 {
 		compatible = "mediatek,mdp_rsz1";
 		reg = <0 0x14004000 0 0x1000>;
 		interrupts = <GIC_SPI 210 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_RSZ1>;
+		clock-names = "MDP_RSZ1";
 	};
 
 	mdp_wrot0@14005000 {
 		compatible = "mediatek,mdp_wrot0";
 		reg = <0 0x14005000 0 0x1000>;
 		interrupts = <GIC_SPI 212 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_WROT0>;
+		clock-names = "MDP_WROT0";
 	};
 
 	mdp_wdma@14006000 {
 		compatible = "mediatek,mdp_wdma";
 		reg = <0 0x14006000 0 0x1000>;
 		interrupts = <GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_WDMA>;
+		clock-names = "MDP_WDMA";
 	};
 
 	mdp_tdshp@14007000 {
 		compatible = "mediatek,mdp_tdshp";
 		reg = <0 0x14007000 0 0x1000>;
 		interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_MDP_TDSHP>;
+		clock-names = "MDP_TDSHP";
 	};
 
 	disp_ovl0@14008000 {
@@ -1678,6 +1695,8 @@
 		compatible = "mediatek,disp_color0";
 		reg = <0 0x1400e000 0 0x1000>;
 		interrupts = <GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_DISP_COLOR0>;
+		clock-names = "MDP_COLOR";
 	};
 
 	disp_ccorr0@1400f000 {

@@ -36,6 +36,8 @@ struct CmdqMdpModuleBaseVA {
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
 struct CmdqMdpModuleClock {
+	struct clk *clk_CAM_MDP_TX;
+	struct clk *clk_CAM_MDP_RX;
 	struct clk *clk_CAM_MDP;
 	struct clk *clk_MDP_RDMA0;
 	struct clk *clk_MDP_RDMA1;
@@ -58,6 +60,8 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
 }
 
+IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_TX, CAM_MDP_TX);
+IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_RX, CAM_MDP_RX);
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ0, MDP_RSZ0);
@@ -67,6 +71,8 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
+IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP_TX, CAM_MDP_TX);
+IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP_RX, CAM_MDP_RX);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ1, MDP_RSZ1);
@@ -160,6 +166,8 @@ void cmdq_mdp_dump_mmsys_config(void)
 	uint32_t value = 0;
 
 	static const struct RegDef configRegisters[] = {
+		{0x100, "MMSYS Clock Gating Config_0"},
+		{0x110, "MMSYS Clock Gating Config_1"},
 		{0xF80, "ISP_MOUT_EN"},
 		{0xF84, "MDP_RDMA0_MOUT_EN"},
 		/* {0xF88, "MDP_RDMA1_MOUT_EN"},*/
@@ -187,7 +195,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0xFDC, "MDP_COLOR_SEL_IN"},
 		{0xF20, "DISP_COLOR_OUT_SEL_IN"},
 		{0xFD0, "MDP_WROT0_SEL_IN"},
-		/* {0xFD4, "MDP_WROT1_SEL_IN"},*/
+		{0xFD4, "MDP_WDMA_SEL_IN"},
 		{0xFD8, "MDP_COLOR_OUT_SEL_IN"},
 		{0xFDC, "MDP_COLOR_SEL_IN "},
 		/* {0xFDC, "DISP_COLOR_SEL_IN"}, */
@@ -348,7 +356,7 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 {
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
-		return cmdq_mdp_clock_is_enable_CAM_MDP();
+		return cmdq_mdp_clock_is_enable_CAM_MDP_TX();
 	case CMDQ_ENG_MDP_RDMA0:
 		return cmdq_mdp_clock_is_enable_MDP_RDMA0();
 	case CMDQ_ENG_MDP_RSZ0:
@@ -379,7 +387,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
-		cmdq_mdp_enable_clock_CAM_MDP(enable);
+		cmdq_mdp_enable_clock_CAM_MDP_TX(enable);
+		cmdq_mdp_enable_clock_CAM_MDP_RX(enable);
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
@@ -441,8 +450,10 @@ void cmdq_mdp_init_module_clk(void)
 	/* DISP_COLOR_OUT_SEL_IN = 0: DISP_COLOR, 1: MDP_COLOR*/
 	bool mdpColor = ((CMDQ_REG_GET32(DISP_COLOR_OUT_SEL_IN) == 0) ? false : true);
 
-	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP",
-					  &gCmdqMdpModuleClock.clk_CAM_MDP);
+	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP_TX",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP_TX);
+	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP_RX",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP_RX);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
 					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz0", "MDP_RSZ0",
