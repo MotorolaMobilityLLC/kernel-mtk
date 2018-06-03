@@ -2985,20 +2985,10 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 		}
 	}
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
-		return 1;
-#endif
-
 	return l_card_no_cmd23;
 #else
 	if ((host->dma_xfer) && (host->hw->host_function != MSDC_SDIO))
 		host->autocmd |= MSDC_AUTOCMD12;
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
-		return 1;
-#endif
 
 	return 0;
 #endif
