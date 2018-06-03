@@ -166,6 +166,9 @@
 /* CSC reg */
 #define MD_CSC_REG_BASE			0x20100000
 #define MD_CSC_REG_LENGTH		0x210
+/* ELM reg */
+#define MD_ELM_REG_BASE			0x20350000
+#define MD_ELM_REG_LENGTH		0x480
 
 /*MD bootup register*/
 #define MD1_CFG_BASE (0x1020E300)

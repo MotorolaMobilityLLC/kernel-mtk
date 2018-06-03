@@ -205,6 +205,7 @@ struct md_pll_reg {
 	void __iomem *md_rgu_reg_1;
 	void __iomem *md_ost_status;
 	void __iomem *md_csc_reg;
+	void __iomem *md_elm_reg;
 
 	void __iomem *md_boot_stats0;
 	void __iomem *md_boot_stats1;

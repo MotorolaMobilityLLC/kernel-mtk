@@ -299,6 +299,8 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_ost_status = md_info->md_ost_status;
 
 	md_reg->md_csc_reg = ioremap_nocache(MD_CSC_REG_BASE, MD_CSC_REG_LENGTH);
+	md_reg->md_elm_reg = ioremap_nocache(MD_ELM_REG_BASE, MD_ELM_REG_LENGTH);
+
 	md_reg->md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 4);
 	md_reg->md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 4);
 	/*just for dump end*/
@@ -537,6 +539,9 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		/* 9 CSC */
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD CSC: 0x%X\n", MD_CSC_REG_BASE);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_csc_reg, MD_CSC_REG_LENGTH);
+		/* 10 ELM */
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ELM: 0x%X\n", MD_ELM_REG_BASE);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_elm_reg, MD_ELM_REG_LENGTH);
 	}
 
 	md_cd_lock_modem_clock_src(0);
