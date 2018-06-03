@@ -383,8 +383,8 @@ int mt6763_mmdvfs_mmclk_opp_to_legacy_mmclk_step[MT6763_MMDVFS_OPP_MAX] = {
 
 /* Part V ISP DVFS configuration */
 #define MMDVFS_ISP_THRESHOLD_NUM 2
-int mt6763_mmdvs_isp_threshold_setting[MMDVFS_ISP_THRESHOLD_NUM] = {380, 273};
-int mt6763_mmdvs_isp_threshold_opp[MMDVFS_ISP_THRESHOLD_NUM] = {MMDVFS_FINE_STEP_OPP0, MMDVFS_FINE_STEP_OPP1};
+int mt6763_mmdvs_isp_threshold_setting[MMDVFS_ISP_THRESHOLD_NUM] = {450, 300};
+int mt6763_mmdvs_isp_threshold_opp[MMDVFS_ISP_THRESHOLD_NUM] = {MMDVFS_FINE_STEP_OPP0, MMDVFS_FINE_STEP_OPP3};
 
 struct mmdvfs_threshold_setting mt6763_mmdvfs_threshold_settings[MMDVFS_PM_QOS_SUB_SYS_NUM] = {
 	{ MMDVFS_PM_QOS_SUB_SYS_CAMERA, mt6763_mmdvs_isp_threshold_setting,

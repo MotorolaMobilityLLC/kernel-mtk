@@ -109,8 +109,8 @@ struct mmdvfs_clk_desc {
 
 struct mmdvfs_clk_source_desc {
 	void *ccf_handle;
-	char *ccf_name; /* For debugging*/
-	int requested_clk; /* For debugging*/
+	char *ccf_name;
+	u32 clk_rate_mhz;
 };
 
 struct mmdvfs_clk_hw_map {
@@ -224,7 +224,7 @@ struct mmdvfs_threshold_setting {
 struct mmdvfs_thresholds_dvfs_handler {
 		struct mmdvfs_threshold_setting *threshold_settings;
 		int mmdvfs_threshold_setting_num;
-		int (*get_step)(struct mmdvfs_thresholds_dvfs_handler *self, int class_id, int value);
+		int (*get_step)(struct mmdvfs_thresholds_dvfs_handler *self, u32 class_id, u32 value);
 };
 
 
