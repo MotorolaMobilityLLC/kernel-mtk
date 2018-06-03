@@ -86,7 +86,7 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x11203E80, 0x00000001, 0x00000001,/* SSUSB_DMA_CTRL */
 	0x11220000, 0x0F0C0304, 0x0F0C0304,/* AUDIO_TOP_CON0 */
 	0x11220004, 0x001000F0, 0x001000F0,/* AUDIO_TOP_CON1 */
-	0x112300B4, 0x00400000, 0x00000000,/* PATCH_BIT1 */
+	/* 0x112300B4, 0x00400000, 0x00000000, PATCH_BIT1 */
 	0x13000004, 0x00000001, 0x00000001,/* MFG_CG_SET */
 	0x13000008, 0x00000001, 0x00000000,/* MFG_CG_CLR */
 	0x14000100, 0xFFFFFFFF, 0xFFFFFFFF,/* MMSYS_CG_CON0 */
@@ -108,12 +108,12 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x19180000, 0x00000007, 0x00000007,/* CORE_CG_CON */
 	0x19280000, 0x00000007, 0x00000007,/* CORE_CG_CON */
 	0x1A000000, 0x00001FC7, 0x00001FC7,/* CAMSYS_CG_CON */
-	0xA00C0F00, 0x80030000, 0x00000000 /* PTPCORESEL */
+	/* 0xA00C0F00, 0x80030000, 0x00000000 PTPCORESEL */
 };
 
 const unsigned int *AP_CG_Golden_Setting_tcl_gs_dpidle = AP_CG_Golden_Setting_tcl_gs_dpidle_data;
 
-unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_len = 270;
+unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_len = ARRAY_SIZE(AP_CG_Golden_Setting_tcl_gs_dpidle_data);
 
 const unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_data[] = {
  /* Address     Mask        Golden Setting Value */
@@ -210,12 +210,12 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x19180000, 0x00000007, 0x00000007,/* CORE_CG_CON */
 	0x19280000, 0x00000007, 0x00000007,/* CORE_CG_CON */
 	0x1A000000, 0x00001FC7, 0x00001FC7,/* CAMSYS_CG_CON */
-	0xA00C0F00, 0x80030000, 0x00000000 /* PTPCORESEL */
+	/* 0xA00C0F00, 0x80030000, 0x00000000 PTPCORESEL */
 };
 
 const unsigned int *AP_CG_Golden_Setting_tcl_gs_suspend = AP_CG_Golden_Setting_tcl_gs_suspend_data;
 
-unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_len = 282;
+unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_len = ARRAY_SIZE(AP_CG_Golden_Setting_tcl_gs_suspend_data);
 
 const unsigned int AP_CG_Golden_Setting_tcl_gs_vp_mjc_data[] = {
  /* Address     Mask        Golden Setting Value */
@@ -1123,7 +1123,7 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_sodi_data[] = {
 	0x0D01A000, 0x00000001, 0x00000001,/* BUS_MON_CON */
 	0x0D01A070, 0x00000007, 0x00000007,/* ATB_CON */
 	0x1000D0E4, 0x00000001, 0x00000001,/* TIMER_EN */
-	0x112300B4, 0x00400000, 0x00000000,/* PATCH_BIT1 */
+	/* 0x112300B4, 0x00400000, 0x00000000, PATCH_BIT1 */
 	0x14000100, 0xFFFFFFFF, 0x00000000,/* MMSYS_CG_CON0 */
 	0x14000110, 0x00003FFF, 0x00000000,/* MMSYS_CG_CON1 */
 	0x15020000, 0x000003FF, 0x000003FF,/* IMG_CG_CON */
@@ -1143,7 +1143,7 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_sodi_data[] = {
 
 const unsigned int *AP_CG_Golden_Setting_tcl_gs_sodi = AP_CG_Golden_Setting_tcl_gs_sodi_data;
 
-unsigned int AP_CG_Golden_Setting_tcl_gs_sodi_len = 57;
+unsigned int AP_CG_Golden_Setting_tcl_gs_sodi_len = ARRAY_SIZE(AP_CG_Golden_Setting_tcl_gs_sodi_data);
 
 const unsigned int AP_CG_Golden_Setting_tcl_gs_datalink_data[] = {
  /* Address     Mask        Golden Setting Value */
