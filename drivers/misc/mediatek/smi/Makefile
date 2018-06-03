@@ -108,6 +108,7 @@ else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6771"))
 ccflags-y += -DSMI_SYL
 ccflags-y += -DSMI_MMU_V2
 ccflags-y += -DMMDVFS_HOOK
+ccflags-y += -DDYNAMIC_DISP_HRT
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/

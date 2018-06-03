@@ -41,4 +41,5 @@ extern void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_actio
 extern unsigned int *g_mmdvfs_debug_level;
 extern unsigned int *g_mmdvfs_scen_log_mask;
 extern int mmdvfs_internal_set_vpu_step(int current_step, int update_step);
+extern void mmdvfs_internal_get_cam_setting(struct mmdvfs_cam_property *cam_setting);
 #endif				/* __MMDVFS_INTERNAL_H__ */
