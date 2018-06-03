@@ -24,6 +24,14 @@
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
 	};
 
+	chipid@08000000 {
+		compatible = "mediatek,chipid";
+		reg = <0 0x08000000 0 0x0004>,
+		      <0 0x08000004 0 0x0004>,
+		      <0 0x08000008 0 0x0004>,
+		      <0 0x0800000c 0 0x0004>;
+	};
+
 	msdc0:msdc@11230000 {
 		compatible = "mediatek,msdc";
 		reg = <0x0 0x11230000 0x0 0x10000>;

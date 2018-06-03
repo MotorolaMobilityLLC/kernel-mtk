@@ -109,23 +109,24 @@ unsigned int __chip_func_code(void)
 
 unsigned int __chip_date_code(void)
 {
-	/* DATE_CODE_YY[3:0] */
-	unsigned int val1 = (get_devinfo_with_index(27) & (0xF << 8)) >> 2;
+	/* DATE_CODE_YY[11:8] */
+	unsigned int val1 = (get_devinfo_with_index(134) & (0xF << 8)) >> 2;
 	/* DATE_CODE_WW[5:0] */
-	unsigned int val2 = get_devinfo_with_index(27) & 0x3F;
+	unsigned int val2 = get_devinfo_with_index(134) & 0x3F;
 
 	return (val1 | val2);
 }
 
 unsigned int __chip_proj_code(void)
 {
-	return get_devinfo_with_index(29);
+	/*[29:16]*/
+	return (get_devinfo_with_index(29) >> 16) & 0x3FFF;
 }
 
 unsigned int __chip_fab_code(void)
 {
 	/*[22:20]*/
-	unsigned int val = (get_devinfo_with_index(27) & (0x7 << 20)) >> 20;
+	unsigned int val = (get_devinfo_with_index(134) & (0x7 << 20)) >> 20;
 	return val;
 }
 
@@ -171,9 +172,9 @@ static chip_info_cb g_cbs[CHIP_INFO_MAX] = {
 	__chip_sw_ver,
 
 	__chip_func_code,
-	NULL,
-	NULL,
-	NULL,
+	__chip_date_code,
+	__chip_proj_code,
+	__chip_fab_code,
 	NULL,
 };
 
