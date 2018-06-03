@@ -575,6 +575,11 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	int err = 0;
 	u8 databuf[2] = {0};
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	u8 data = 0;
+	u8 drop_cmd_err = 0;
+	int cnt = 0;
+
+	/* GSE_LOG("enable=%d, sensor_power=%d\n", enable, sensor_power); */
 	if(enable == sensor_power) {
 		GSE_LOG("power status is newest!\n");
 		return 0;
@@ -586,17 +591,43 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	else {
 		databuf[0] = CMD_PMU_ACC_SUSPEND;
 	}
-	err = bma_i2c_write_block(client,
-			BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
-	if(err < 0) {
-		GSE_ERR("write power mode value to register failed.\n");
-		mutex_unlock(&obj->lock);
-		return BMI160_ACC_ERR_I2C;
+	do {
+		err = bma_i2c_write_block(client,
+				BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
+		if (err < 0) {
+			GSE_ERR("write power mode value to register failed.\n");
+			mutex_unlock(&obj->lock);
+			return BMI160_ACC_ERR_I2C;
+		}
+		mdelay(1);
+
+		err = bmi160_acc_get_drop_cmd_err(client, &drop_cmd_err);
+		if (err < 0) {
+			GSE_ERR("get_drop_cmd_err failed.\n");
+			mutex_unlock(&obj->lock);
+			return BMI160_ACC_ERR_I2C;
+		}
+		cnt++;
+	} while (drop_cmd_err == 0x1 && cnt < 500);
+	mutex_unlock(&obj->lock);
+
+	if ((cnt == 500) || (drop_cmd_err == 0x1)) {
+		GSE_ERR("drop_cmd!!, drop_cmd_err=%x, cnt=%d\n", drop_cmd_err, cnt);
+		GSE_ERR("set power mode enable = %d fail!\n", enable);
+		return -EINVAL;
 	}
 	sensor_power = enable;
-	mdelay(1);
-	mutex_unlock(&obj->lock);
 	GSE_LOG("set power mode enable = %d ok!\n", enable);
+
+
+	err = bmi160_acc_get_mode(client, &data);
+	if (err < 0) {
+		GSE_ERR("get acc op mode failed.\n");
+		/* return err; */
+	}
+	GSE_LOG("[Lomen] acc_pmu_status=%x\n", data);
+
+
 	return 0;
 }
 /*!
@@ -889,6 +920,19 @@ int bmi160_acc_get_mode(struct i2c_client *client, unsigned char *mode)
 			BMI160_USER_ACC_PMU_STATUS__REG, &v_data_u8r, 1);
 	*mode = BMI160_GET_BITSLICE(v_data_u8r,
 			BMI160_USER_ACC_PMU_STATUS);
+	return comres;
+}
+
+int bmi160_acc_get_drop_cmd_err(struct i2c_client *client, unsigned char *drop_cmd_err)
+{
+	int comres = 0;
+	u8 v_data_u8r = C_BMI160_ZERO_U8X;
+
+	comres = bma_i2c_read_block(client,
+			BMI160_USER_DROP_CMD_ERR__REG, &v_data_u8r, 1);
+	/* drop command error*/
+	*drop_cmd_err = BMI160_GET_BITSLICE(v_data_u8r,
+			BMI160_USER_DROP_CMD_ERR);
 	return comres;
 }
 

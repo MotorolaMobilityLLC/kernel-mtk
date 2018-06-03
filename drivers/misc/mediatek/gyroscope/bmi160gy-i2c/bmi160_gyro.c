@@ -206,6 +206,7 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
 {
 	int err = 0;
 	struct bmg_i2c_data *priv = obj_i2c_data;
+	u8 data_1 = 0;
 	if (priv->power_mode == BMG_SUSPEND_MODE) {
 		err = bmg_set_powermode(client,
 			(enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
@@ -250,6 +251,15 @@ static int bmg_read_raw_data(struct i2c_client *client, s16 data[BMG_AXES_NUM])
 			data[BMG_AXIS_Z]);
 		}
 	}
+	if (atomic_read(&priv->trace) & GYRO_TRC_INFO) {
+		err = bmg_get_powermode(client, &data_1);
+		if (err < 0) {
+			GYRO_ERR("bmg_get_powermode failed.\n");
+			/* return err; */
+		}
+		GYRO_ERR("[Lomen] gyro_pmu_status=%x\n", data_1);
+	}
+
 
 #ifdef CONFIG_BMG_LOWPASS
 /*
@@ -505,6 +515,20 @@ static int bmg_get_chip_type(struct i2c_client *client)
 	return err;
 }
 
+int bmg_get_powermode(struct i2c_client *client, unsigned char *mode)
+{
+	int comres = 0;
+	u8 v_data_u8r = 0;
+#ifdef BMI160_ACCESS_BY_GSE_I2C
+	comres = bmi_i2c_read_wrapper(0, BMI160_USER_GYRO_POWER_MODE_STAT__REG, &v_data_u8r, 1);
+#else
+	comres = bmg_i2c_read_block(client,
+			BMI160_USER_GYRO_POWER_MODE_STAT__REG, &v_data_u8r, 1);
+#endif
+	*mode = BMI160_GET_BITSLICE(v_data_u8r,
+			BMI160_USER_GYRO_POWER_MODE_STAT);
+	return comres;
+}
 static int bmg_set_powermode(struct i2c_client *client,
 		enum BMG_POWERMODE_ENUM power_mode)
 {
