@@ -207,7 +207,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 /* static irqreturn_t RSC_Irq_CAM_A(signed int  Irq,void *DeviceId); */
 static irqreturn_t ISP_Irq_RSC(signed int Irq, void *DeviceId);
 static bool ConfigRSC(void);
-static signed int ConfigRSCHW(RSC_Config *pRscConfig);
+static signed int ConfigRSCHW(struct RSC_Config *pRscConfig);
 static void RSC_ScheduleWork(struct work_struct *data);
 
 
@@ -319,7 +319,7 @@ struct RSC_REQUEST_STRUCT {
 	signed int FrameWRIdx;	/* Frame write Index */
 	signed int RrameRDIdx;	/* Frame read Index */
 	enum RSC_FRAME_STATUS_ENUM RscFrameStatus[_SUPPORT_MAX_RSC_FRAME_REQUEST_];
-	RSC_Config RscFrameConfig[_SUPPORT_MAX_RSC_FRAME_REQUEST_];
+	struct RSC_Config RscFrameConfig[_SUPPORT_MAX_RSC_FRAME_REQUEST_];
 };
 
 struct RSC_REQUEST_RING_STRUCT {
@@ -330,7 +330,7 @@ struct RSC_REQUEST_RING_STRUCT {
 };
 
 struct  RSC_CONFIG_STRUCT {
-	RSC_Config RscFrameConfig[_SUPPORT_MAX_RSC_FRAME_REQUEST_];
+	struct RSC_Config RscFrameConfig[_SUPPORT_MAX_RSC_FRAME_REQUEST_];
 };
 
 static struct RSC_REQUEST_RING_STRUCT g_RSC_ReqRing;
@@ -1071,7 +1071,7 @@ static bool UpdateRSC(pid_t *ProcessID)
 
 }
 
-static signed int ConfigRSCHW(RSC_Config *pRscConfig)
+static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
 #if !BYPASS_REG
 {
 #ifdef RSC_USE_GCE
@@ -1525,14 +1525,14 @@ static inline void RSC_Reset(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int RSC_ReadReg(RSC_REG_IO_STRUCT *pRegIo)
+static signed int RSC_ReadReg(struct RSC_REG_IO_STRUCT *pRegIo)
 {
 	unsigned int i;
 	signed int Ret = 0;
 	/*  */
-	RSC_REG_STRUCT reg;
+	struct RSC_REG_STRUCT reg;
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
-	RSC_REG_STRUCT *pData = (RSC_REG_STRUCT *) pRegIo->pData;
+	struct RSC_REG_STRUCT *pData = (struct RSC_REG_STRUCT *) pRegIo->pData;
 
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
@@ -1570,7 +1570,7 @@ EXIT:
 *
 ********************************************************************************/
 /* Can write sensor's test model only, if need write to other modules, need modify current code flow */
-static signed int RSC_WriteRegToHw(RSC_REG_STRUCT *pReg, unsigned int Count)
+static signed int RSC_WriteRegToHw(struct RSC_REG_STRUCT *pReg, unsigned int Count)
 {
 	signed int Ret = 0;
 	unsigned int i;
@@ -1610,7 +1610,7 @@ static signed int RSC_WriteRegToHw(RSC_REG_STRUCT *pReg, unsigned int Count)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int RSC_WriteReg(RSC_REG_IO_STRUCT *pRegIo)
+static signed int RSC_WriteReg(struct RSC_REG_IO_STRUCT *pRegIo)
 {
 	signed int Ret = 0;
 	/*
@@ -1619,13 +1619,13 @@ static signed int RSC_WriteReg(RSC_REG_IO_STRUCT *pRegIo)
 	 *  signed int TimeTasklet = 0;
 	 */
 	/* unsigned char* pData = NULL; */
-	RSC_REG_STRUCT *pData = NULL;
+	struct RSC_REG_STRUCT *pData = NULL;
 	/*  */
 	if (RSCInfo.DebugMask & RSC_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
-	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(RSC_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(RSC_REG_STRUCT), GFP_ATOMIC);
+	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(struct RSC_REG_STRUCT), GFP_ATOMIC); */
+	pData = kmalloc((pRegIo->Count) * sizeof(struct RSC_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
@@ -1638,7 +1638,7 @@ static signed int RSC_WriteReg(RSC_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	if (copy_from_user
-	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(RSC_REG_STRUCT)) != 0) {
+	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct RSC_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -1658,7 +1658,7 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int RSC_WaitIrq(RSC_WAIT_IRQ_STRUCT *WaitIrq)
+static signed int RSC_WaitIrq(struct RSC_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
 	signed int Ret = 0;
@@ -1837,11 +1837,11 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	signed int Ret = 0;
 
 	/*unsigned int pid = 0;*/
-	RSC_REG_IO_STRUCT RegIo;
-	RSC_WAIT_IRQ_STRUCT IrqInfo;
-	RSC_CLEAR_IRQ_STRUCT ClearIrq;
-	RSC_Config rsc_RscConfig;
-	RSC_Request rsc_RscReq;
+	struct RSC_REG_IO_STRUCT RegIo;
+	struct RSC_WAIT_IRQ_STRUCT IrqInfo;
+	struct RSC_CLEAR_IRQ_STRUCT ClearIrq;
+	struct RSC_Config rsc_RscConfig;
+	struct RSC_Request rsc_RscReq;
 	signed int RscWriteIdx = 0;
 	int idx;
 	struct RSC_USER_INFO_STRUCT *pUserInfo;
@@ -1890,7 +1890,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_READ_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(RSC_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct RSC_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in RSC_ReadReg(...) */
 				Ret = RSC_ReadReg(&RegIo);
 			} else {
@@ -1901,7 +1901,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_WRITE_REGISTER:
 		{
-			if (copy_from_user(&RegIo, (void *)Param, sizeof(RSC_REG_IO_STRUCT)) == 0) {
+			if (copy_from_user(&RegIo, (void *)Param, sizeof(struct RSC_REG_IO_STRUCT)) == 0) {
 				/* 2nd layer behavoir of copy from user is implemented in RSC_WriteReg(...) */
 				Ret = RSC_WriteReg(&RegIo);
 			} else {
@@ -1912,7 +1912,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_WAIT_IRQ:
 		{
-			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(RSC_WAIT_IRQ_STRUCT)) ==
+			if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct RSC_WAIT_IRQ_STRUCT)) ==
 			    0) {
 				/*  */
 				if ((IrqInfo.Type >= RSC_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
@@ -1935,7 +1935,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = RSC_WaitIrq(&IrqInfo);
 
 				if (copy_to_user
-				    ((void *)Param, &IrqInfo, sizeof(RSC_WAIT_IRQ_STRUCT)) != 0) {
+				    ((void *)Param, &IrqInfo, sizeof(struct RSC_WAIT_IRQ_STRUCT)) != 0) {
 					LOG_ERR("copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -1947,7 +1947,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_CLEAR_IRQ:
 		{
-			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(RSC_CLEAR_IRQ_STRUCT))
+			if (copy_from_user(&ClearIrq, (void *)Param, sizeof(struct RSC_CLEAR_IRQ_STRUCT))
 			    == 0) {
 				LOG_DBG("RSC_CLEAR_IRQ Type(%d)", ClearIrq.Type);
 
@@ -2020,10 +2020,10 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			break;
 		}
-		/* RSC_Config */
+		/* struct RSC_Config */
 	case RSC_ENQUE:
 		{
-			if (copy_from_user(&rsc_RscConfig, (void *)Param, sizeof(RSC_Config))
+			if (copy_from_user(&rsc_RscConfig, (void *)Param, sizeof(struct RSC_Config))
 			    == 0) {
 				/* LOG_DBG("RSC_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)",
 				 * ClearIrq.Type, ClearIrq.Status, RSCInfo.IrqInfo.Status[ClearIrq.Type]);
@@ -2049,7 +2049,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 							       RSCReq_Struct[g_RSC_ReqRing.
 									      WriteIdx].
 							       FrameWRIdx++], &rsc_RscConfig,
-					       sizeof(RSC_Config));
+					       sizeof(struct RSC_Config));
 					if (g_RSC_ReqRing.
 					    RSCReq_Struct[g_RSC_ReqRing.WriteIdx].
 					    FrameWRIdx ==
@@ -2106,7 +2106,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_ENQUE_REQ:
 		{
-			if (copy_from_user(&rsc_RscReq, (void *)Param, sizeof(RSC_Request)) ==
+			if (copy_from_user(&rsc_RscReq, (void *)Param, sizeof(struct RSC_Request)) ==
 			    0) {
 				LOG_DBG("RSC_ENQNUE_NUM:%d, pid:%d\n", rsc_RscReq.m_ReqNum,
 					pUserInfo->Pid);
@@ -2119,7 +2119,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (copy_from_user
 				    (g_RscEnqueReq_Struct.RscFrameConfig,
 				     (void *)rsc_RscReq.m_pRscConfig,
-				     rsc_RscReq.m_ReqNum * sizeof(RSC_Config)) != 0) {
+				     rsc_RscReq.m_ReqNum * sizeof(struct RSC_Config)) != 0) {
 					LOG_ERR("copy RSCConfig from request is fail!!\n");
 					Ret = -EFAULT;
 					goto EXIT;
@@ -2154,7 +2154,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 								       [g_RSC_ReqRing.
 									WriteIdx].FrameWRIdx++],
 						       &g_RscEnqueReq_Struct.RscFrameConfig[idx],
-						       sizeof(RSC_Config));
+						       sizeof(struct RSC_Config));
 					}
 					g_RSC_ReqRing.RSCReq_Struct[g_RSC_ReqRing.
 									  WriteIdx].State =
@@ -2234,7 +2234,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					       RscFrameConfig[g_RSC_ReqRing.
 							       RSCReq_Struct[g_RSC_ReqRing.
 									      ReadIdx].RrameRDIdx],
-					       sizeof(RSC_Config));
+					       sizeof(struct RSC_Config));
 					g_RSC_ReqRing.RSCReq_Struct[g_RSC_ReqRing.
 									  ReadIdx].
 					    RscFrameStatus[g_RSC_ReqRing.
@@ -2269,7 +2269,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				     &g_RSC_ReqRing.RSCReq_Struct[g_RSC_ReqRing.ReadIdx].
 				     RscFrameConfig[g_RSC_ReqRing.
 						     RSCReq_Struct[g_RSC_ReqRing.ReadIdx].
-						     RrameRDIdx], sizeof(RSC_Config)) != 0) {
+						     RrameRDIdx], sizeof(struct RSC_Config)) != 0) {
 					LOG_ERR("RSC_DEQUE copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -2290,7 +2290,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case RSC_DEQUE_REQ:
 		{
-			if (copy_from_user(&rsc_RscReq, (void *)Param, sizeof(RSC_Request)) == 0) {
+			if (copy_from_user(&rsc_RscReq, (void *)Param, sizeof(struct RSC_Request)) == 0) {
 				mutex_lock(&gRscDequeMutex);	/* Protect the Multi Process */
 
 				spin_lock_irqsave(&(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]),
@@ -2326,7 +2326,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 								       RSCReq_Struct
 								       [g_RSC_ReqRing.ReadIdx].
 								       RrameRDIdx],
-						       sizeof(RSC_Config));
+						       sizeof(struct RSC_Config));
 						g_RSC_ReqRing.
 						    RSCReq_Struct[g_RSC_ReqRing.ReadIdx].
 						    RscFrameStatus[g_RSC_ReqRing.
@@ -2369,13 +2369,13 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				if (copy_to_user
 				    ((void *)rsc_RscReq.m_pRscConfig,
 				     &g_RscDequeReq_Struct.RscFrameConfig[0],
-				     dequeNum * sizeof(RSC_Config)) != 0) {
+				     dequeNum * sizeof(struct RSC_Config)) != 0) {
 					LOG_ERR
 					    ("RSC_DEQUE_REQ copy_to_user frameconfig failed\n");
 					Ret = -EFAULT;
 				}
 				if (copy_to_user
-				    ((void *)Param, &rsc_RscReq, sizeof(RSC_Request)) != 0) {
+				    ((void *)Param, &rsc_RscReq, sizeof(struct RSC_Request)) != 0) {
 					LOG_ERR("RSC_DEQUE_REQ copy_to_user failed\n");
 					Ret = -EFAULT;
 				}
@@ -2410,8 +2410,8 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static int compat_get_RSC_read_register_data(compat_RSC_REG_IO_STRUCT __user *data32,
-					     RSC_REG_IO_STRUCT __user *data)
+static int compat_get_RSC_read_register_data(struct compat_RSC_REG_IO_STRUCT __user *data32,
+					     struct RSC_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -2424,8 +2424,8 @@ static int compat_get_RSC_read_register_data(compat_RSC_REG_IO_STRUCT __user *da
 	return err;
 }
 
-static int compat_put_RSC_read_register_data(compat_RSC_REG_IO_STRUCT __user *data32,
-					     RSC_REG_IO_STRUCT __user *data)
+static int compat_put_RSC_read_register_data(struct compat_RSC_REG_IO_STRUCT __user *data32,
+					     struct RSC_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr;*/
@@ -2438,8 +2438,8 @@ static int compat_put_RSC_read_register_data(compat_RSC_REG_IO_STRUCT __user *da
 	return err;
 }
 
-static int compat_get_RSC_enque_req_data(compat_RSC_Request __user *data32,
-					      RSC_Request __user *data)
+static int compat_get_RSC_enque_req_data(struct compat_RSC_Request __user *data32,
+					      struct RSC_Request __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -2453,8 +2453,8 @@ static int compat_get_RSC_enque_req_data(compat_RSC_Request __user *data32,
 }
 
 
-static int compat_put_RSC_enque_req_data(compat_RSC_Request __user *data32,
-					      RSC_Request __user *data)
+static int compat_put_RSC_enque_req_data(struct compat_RSC_Request __user *data32,
+					      struct RSC_Request __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr;*/
@@ -2468,8 +2468,8 @@ static int compat_put_RSC_enque_req_data(compat_RSC_Request __user *data32,
 }
 
 
-static int compat_get_RSC_deque_req_data(compat_RSC_Request __user *data32,
-					      RSC_Request __user *data)
+static int compat_get_RSC_deque_req_data(struct compat_RSC_Request __user *data32,
+					      struct RSC_Request __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -2483,8 +2483,8 @@ static int compat_get_RSC_deque_req_data(compat_RSC_Request __user *data32,
 }
 
 
-static int compat_put_RSC_deque_req_data(compat_RSC_Request __user *data32,
-					      RSC_Request __user *data)
+static int compat_put_RSC_deque_req_data(struct compat_RSC_Request __user *data32,
+					      struct RSC_Request __user *data)
 {
 	compat_uint_t count;
 	/*compat_uptr_t uptr;*/
@@ -2509,8 +2509,8 @@ static long RSC_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	switch (cmd) {
 	case COMPAT_RSC_READ_REGISTER:
 		{
-			compat_RSC_REG_IO_STRUCT __user *data32;
-			RSC_REG_IO_STRUCT __user *data;
+			struct compat_RSC_REG_IO_STRUCT __user *data32;
+			struct RSC_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -2535,8 +2535,8 @@ static long RSC_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_RSC_WRITE_REGISTER:
 		{
-			compat_RSC_REG_IO_STRUCT __user *data32;
-			RSC_REG_IO_STRUCT __user *data;
+			struct compat_RSC_REG_IO_STRUCT __user *data32;
+			struct RSC_REG_IO_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -2556,8 +2556,8 @@ static long RSC_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_RSC_ENQUE_REQ:
 		{
-			compat_RSC_Request __user *data32;
-			RSC_Request __user *data;
+			struct compat_RSC_Request __user *data32;
+			struct RSC_Request __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -2582,8 +2582,8 @@ static long RSC_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		}
 	case COMPAT_RSC_DEQUE_REQ:
 		{
-			compat_RSC_Request __user *data32;
-			RSC_Request __user *data;
+			struct compat_RSC_Request __user *data32;
+			struct RSC_Request __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
