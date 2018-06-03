@@ -73,6 +73,7 @@ enum upower_bank {
 };
 
 #define UPOWER_BANK_CLS_BASE UPOWER_BANK_CLS_LL
+
 /* for upower_get_power() to get the target power */
 enum upower_dtype {
 	UPOWER_DYN,
