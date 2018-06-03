@@ -116,7 +116,7 @@ int sensor_attr_deregister(struct sensor_attr_t *misc)
 #if 0
 static char *sensor_attr_devnode(struct device *dev, umode_t *mode)
 {
-	pr_debug"sensor_attr: name :%s\n", dev_name(dev));
+	pr_debug("sensor_attr: name :%s\n", dev_name(dev));
 	return kasprintf(GFP_KERNEL, "sensor/%s", dev_name(dev));
 }
 #endif

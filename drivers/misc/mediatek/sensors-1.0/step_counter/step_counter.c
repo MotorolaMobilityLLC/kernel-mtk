@@ -15,8 +15,6 @@
 #include "step_counter.h"
 
 static struct step_c_context *step_c_context_obj;
-static DEFINE_SPINLOCK(step_irqsafe_lock);
-
 static struct step_c_init_info *step_counter_init_list[MAX_CHOOSE_STEP_C_NUM] = { 0 };
 
 static void step_c_work_func(struct work_struct *work)
@@ -137,17 +135,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 	STEP_C_LOG("step_c_context_alloc_object----\n");
 	return obj;
 }
-static int step_input_event_irqsafe(unsigned char handle,
-			 const struct sensor_event *event)
-{
-	int err = 0;
-	unsigned long flags = 0;
 
-	spin_lock_irqsave(&step_irqsafe_lock, flags);
-	err = sensor_input_event(handle, event);
-	spin_unlock_irqrestore(&step_irqsafe_lock, flags);
-	return err;
-}
 int step_notify(STEP_NOTIFY_TYPE type)
 {
 	int err = 0;
@@ -163,7 +151,7 @@ int step_notify(STEP_NOTIFY_TYPE type)
 		event.flush_action = DATA_ACTION;
 		event.handle = ID_STEP_DETECTOR;
 		event.word[0] = 1;
-		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 
 	}
 	if (type == TYPE_SIGNIFICANT) {
@@ -172,7 +160,7 @@ int step_notify(STEP_NOTIFY_TYPE type)
 		event.flush_action = DATA_ACTION;
 		event.handle = ID_SIGNIFICANT_MOTION;
 		event.word[0] = 1;
-		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	}
 
 	return err;
@@ -464,33 +452,33 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 	switch (handle) {
 	case ID_STEP_COUNTER:
 		if (en == 1)
-			step_c_enable_data(1);
+			res = step_c_enable_data(1);
 		else if (en == 0)
-			step_c_enable_data(0);
+			res = step_c_enable_data(0);
 		else
 			STEP_C_PR_ERR(" step_c_store_active error !!\n");
 		break;
 	case ID_STEP_DETECTOR:
 		if (en == 1)
-			step_d_real_enable(1);
+			res = step_d_real_enable(1);
 		else if (en == 0)
-			step_d_real_enable(0);
+			res = step_d_real_enable(0);
 		else
 			STEP_C_PR_ERR(" step_d_real_enable error !!\n");
 		break;
 	case ID_SIGNIFICANT_MOTION:
 		if (en == 1)
-			significant_real_enable(1);
+			res = significant_real_enable(1);
 		else if (en == 0)
-			significant_real_enable(0);
+			res = significant_real_enable(0);
 		else
 			STEP_C_PR_ERR(" significant_real_enable error !!\n");
 		break;
 	case ID_FLOOR_COUNTER:
 		if (en == 1)
-			floor_c_enable_data(1);
+			res = floor_c_enable_data(1);
 		else if (en == 0)
-			floor_c_enable_data(0);
+			res = floor_c_enable_data(0);
 		else
 			STEP_C_PR_ERR(" fc_real_enable error !!\n");
 		break;
@@ -498,7 +486,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_active done\n");
-	return count;
+	return res;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -516,7 +504,7 @@ static ssize_t step_c_show_active(struct device *dev, struct device_attribute *a
 static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	int delay;
+	int delay = 0, err = 0;
 	int mdelay = 0;
 	struct step_c_context *cxt = NULL;
 
@@ -525,23 +513,23 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 	if (cxt->step_c_ctl.step_c_set_delay == NULL) {
 		STEP_C_LOG("step_c_ctl step_c_set_delay NULL\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-		return count;
+		return -1;
 	}
 
 	if (kstrtoint(buf, 10, &delay) != 0) {
 		STEP_C_PR_ERR("invalid format!!\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-		return count;
+		return -1;
 	}
 
 	if (false == cxt->step_c_ctl.is_report_input_direct) {
 		mdelay = (int)delay / 1000 / 1000;
 		atomic_set(&step_c_context_obj->delay, mdelay);
 	}
-	cxt->step_c_ctl.step_c_set_delay(delay);
+	err = cxt->step_c_ctl.step_c_set_delay(delay);
 	STEP_C_LOG(" step_c_delay %d ns\n", delay);
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-	return count;
+	return err;
 
 }
 
@@ -611,7 +599,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_step_c_batch_enable);
-	return count;
+	return res;
 }
 
 static ssize_t step_c_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
@@ -664,7 +652,7 @@ static ssize_t step_c_store_flush(struct device *dev, struct device_attribute *a
 
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t step_c_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -913,9 +901,9 @@ int step_c_data_report(uint32_t new_counter, int status)
 		event.handle = ID_STEP_COUNTER;
 		event.word[0] = new_counter;
 		last_step_counter = new_counter;
-		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_PR_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -931,9 +919,9 @@ int floor_c_data_report(uint32_t new_counter, int status)
 		event.handle = ID_FLOOR_COUNTER;
 		event.word[0] = new_counter;
 		last_floor_counter = new_counter;
-		err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 		if (err < 0)
-			STEP_C_PR_ERR("event buffer full, so drop this data\n");
+			pr_err_ratelimited("event buffer full, so drop this data\n");
 	}
 	return 0;
 }
@@ -945,9 +933,9 @@ int step_c_flush_report(void)
 
 	event.handle = ID_STEP_COUNTER;
 	event.flush_action = FLUSH_ACTION;
-	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -960,9 +948,9 @@ int step_d_flush_report(void)
 
 	event.handle = ID_STEP_DETECTOR;
 	event.flush_action = FLUSH_ACTION;
-	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;
@@ -980,9 +968,9 @@ int floor_c_flush_report(void)
 
 	event.handle = ID_FLOOR_COUNTER;
 	event.flush_action = FLUSH_ACTION;
-	err = step_input_event_irqsafe(step_c_context_obj->mdev.minor, &event);
+	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
-		STEP_C_PR_ERR("event buffer full, so drop this data\n");
+		pr_err_ratelimited("event buffer full, so drop this data\n");
 	else
 		STEP_C_LOG("flush\n");
 	return err;

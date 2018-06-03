@@ -1,7 +1,0 @@
-
-config CUSTOM_KERNEL_HUMIDITY
-	bool "CUSTOM KERNEL HUMIDITY Config"
-	help
-	  To detect humidity raw data
-
-source "drivers/misc/mediatek/sensor_bio/humidity/hmdyhub/Kconfig"

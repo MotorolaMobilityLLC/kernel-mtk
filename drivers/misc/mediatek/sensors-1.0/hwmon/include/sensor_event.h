@@ -14,6 +14,7 @@
 #ifndef _SENSOR_EVENT_H
 #define _SENSOR_EVENT_H
 #include <linux/poll.h>
+#include <linux/ratelimit.h>
 
 #define CONTINUE_SENSOR_BUF_SIZE	2048
 #define BIO_SENSOR_BUF_SIZE	0x20000 /* ((512 + 1024 + 1024) * 60) */
@@ -22,6 +23,8 @@ enum flushAction {
 	DATA_ACTION,
 	FLUSH_ACTION,
 	BIAS_ACTION,
+	CALI_ACTION,
+	TEMP_ACTION,
 };
 struct sensor_event {
 	int64_t time_stamp;

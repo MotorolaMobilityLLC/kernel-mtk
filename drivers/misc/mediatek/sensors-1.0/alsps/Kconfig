@@ -15,6 +15,7 @@ config MTK_AUTO_DETECT_ALSPS
 	  project and be auto detected by setting this option to yes,
 	  usually only one ALSPS driver can be probed.
 
-source "drivers/misc/mediatek/sensors-1.0/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/alspshub/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/alsps/cm36652-new/Kconfig"

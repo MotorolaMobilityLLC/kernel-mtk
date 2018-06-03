@@ -23,6 +23,12 @@ void scp_power_monitor_notify(uint8_t action, void *data)
 {
 	struct scp_power_monitor *c;
 
+	spin_lock(&pm_lock);
+	list_for_each_entry(c, &power_monitor_list, list) {
+		WARN_ON(c->notifier_call == NULL);
+		c->notifier_call(action, data);
+		pr_debug("scp_power_monitor_notify, module name:%s notify\n", c->name);
+	}
 	switch (action) {
 	case SENSOR_POWER_DOWN:
 		atomic_set(&power_status, SENSOR_POWER_DOWN);
@@ -30,14 +36,6 @@ void scp_power_monitor_notify(uint8_t action, void *data)
 	case SENSOR_POWER_UP:
 		atomic_set(&power_status, SENSOR_POWER_UP);
 		break;
-	}
-	spin_lock(&pm_lock);
-	list_for_each_entry(c, &power_monitor_list, list) {
-		spin_unlock(&pm_lock);
-		WARN_ON(c->notifier_call == NULL);
-		c->notifier_call(action, data);
-		pr_deubg("scp_power_monitor_notify, module name:%s notify\n", c->name);
-		spin_lock(&pm_lock);
 	}
 	spin_unlock(&pm_lock);
 }
@@ -48,7 +46,7 @@ int scp_power_monitor_register(struct scp_power_monitor *monitor)
 
 	WARN_ON(monitor->name == NULL || monitor->notifier_call == NULL);
 
-	spin_lock(&pm_lock);
+	spin_lock_irq(&pm_lock);
 	list_for_each_entry(c, &power_monitor_list, list) {
 		if (!strcmp(c->name, monitor->name)) {
 			err = -1;
@@ -56,15 +54,15 @@ int scp_power_monitor_register(struct scp_power_monitor *monitor)
 		}
 	}
 	list_add(&monitor->list, &power_monitor_list);
-	spin_unlock(&pm_lock);
 	if (atomic_read(&power_status) == SENSOR_POWER_UP) {
 		pr_debug("scp_power_monitor_notify, module name:%s notify\n", monitor->name);
 		monitor->notifier_call(SENSOR_POWER_UP, NULL);
 	}
+	spin_unlock_irq(&pm_lock);
 	return err;
  out:
 	pr_err("%s scp_power_monitor_register fail\n", monitor->name);
-	spin_unlock(&pm_lock);
+	spin_unlock_irq(&pm_lock);
 	return err;
 }
 int scp_power_monitor_deregister(struct scp_power_monitor *monitor)
@@ -72,8 +70,8 @@ int scp_power_monitor_deregister(struct scp_power_monitor *monitor)
 	if (WARN_ON(list_empty(&monitor->list)))
 		return -1;
 
-	spin_lock(&pm_lock);
+	spin_lock_irq(&pm_lock);
 	list_del(&monitor->list);
-	spin_unlock(&pm_lock);
+	spin_unlock_irq(&pm_lock);
 	return 0;
 }

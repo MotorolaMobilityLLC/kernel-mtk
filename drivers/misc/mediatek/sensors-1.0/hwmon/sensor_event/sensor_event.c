@@ -43,12 +43,7 @@ struct sensor_event_obj {
 static struct sensor_event_obj *event_obj;
 static struct lock_class_key buffer_lock_key[ID_SENSOR_MAX_HANDLE];
 /*
- * sensor_input_event support interrupt context, so in interrupt context this function is safe enough.
- * (1)for oneshot and onchange sensor, mtk data flow is from ipi interrupt context report data,
- * when sensor_input_event ringbuffer is full, we couldn't sleep, because this case is in interrupt context.
- * (2)for continues sensor, mtk data flow is from a work report data, when sensor_input_event
- * ringbuffer is full, we could sleep a while until hal read the ringbuffer empty, because this case is not in
- * interrupt context.
+ * sensor_input_event only support process context.
  */
 int sensor_input_event(unsigned char handle,
 			 const struct sensor_event *event)
@@ -56,15 +51,15 @@ int sensor_input_event(unsigned char handle,
 	struct sensor_event_client *client = &event_obj->client[handle];
 	unsigned int dummy = 0;
 
-	/* spin_lock safe, this function support interrupt context */
+	/* spin_lock safe, this function don't support interrupt context */
 	spin_lock(&client->buffer_lock);
 	/*
 	 * Reserve below log if need debug LockProve
-	 * SE_PR_ERR("[Lomen]sensor_input_event: printf key handle ID=%d, key addr=%p\n",
+	 * SE_ERR("[Lomen]sensor_input_event: printf key handle ID=%d, key addr=%p\n",
 	 * handle, (struct lock_class_key*)client->buffer_lock.rlock.dep_map.key);
 	 */
 	if (unlikely(client->buffull == true)) {
-		SE_PR_ERR("input buffull, handle:%d, head:%d, tail:%d\n", handle, client->head, client->tail);
+		pr_err_ratelimited("input buffull, handle:%d, head:%d, tail:%d\n", handle, client->head, client->tail);
 		spin_unlock(&client->buffer_lock);
 		wake_up_interruptible(&client->wait);
 		return -1;
@@ -87,10 +82,9 @@ static int sensor_event_fetch_next(struct sensor_event_client *client,
 {
 	int have_event;
 	/*
-	 * must spin_lock_irq, sensor_input_event may some time in interrupt context, if not will lead
-	 * spin lock dead lock.
+	 * spin_lock safe, sensor_input_event always in process context.
 	 */
-	spin_lock_irq(&client->buffer_lock);
+	spin_lock(&client->buffer_lock);
 
 	have_event = client->head != client->tail;
 	if (have_event) {
@@ -99,7 +93,7 @@ static int sensor_event_fetch_next(struct sensor_event_client *client,
 		client->buffull = false;
 	}
 
-	spin_unlock_irq(&client->buffer_lock);
+	spin_unlock(&client->buffer_lock);
 
 	return have_event;
 }

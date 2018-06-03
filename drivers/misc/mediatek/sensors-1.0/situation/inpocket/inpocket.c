@@ -86,7 +86,7 @@ static int inpocket_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRe
 static int inpocket_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
-		INPOCKET_PR_ERR("inpocket do not support flush\n");
+		INPOCKET_LOG("inpocket do not support flush\n");
 	else if (event->flush_action == DATA_ACTION)
 		situation_notify(ID_IN_POCKET);
 	return 0;
