@@ -253,6 +253,18 @@ static const struct file_operations spm_sleep_count_fops = {
 	.release = single_release,
 };
 
+static int spm_last_wakeup_src_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, get_spm_last_wakeup_src, &inode->i_private);
+}
+
+static const struct file_operations spm_last_wakeup_src_fops = {
+	.open = spm_last_wakeup_src_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM
 static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
@@ -393,6 +405,7 @@ int __init spm_module_init(void)
 	}
 
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
+	spm_file = debugfs_create_file("spm_last_wakeup_src", S_IRUGO, spm_dir, NULL, &spm_last_wakeup_src_fops);
 	spm_resource_req_debugfs_init(spm_dir);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
