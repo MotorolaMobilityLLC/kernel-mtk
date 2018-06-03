@@ -16,7 +16,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
 ccflags-y += -I$(srctree)/drivers/power/mediatek/
 
 ifneq ($(CONFIG_MTK_PMIC_NEW_ARCH),y)
