@@ -178,6 +178,7 @@ config MACH_MT8167
 	select MTK_TIMER
 	select MTK_GIC_EXT
 	select MTK_SYS_CIRQ
+	select HAVE_MTK_IN_HOUSE_TEE_SUPPORT
 	help
 	  This enables support for MediaTek MT8167
 

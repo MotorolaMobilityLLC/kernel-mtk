@@ -161,6 +161,7 @@ endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
+obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += mtee/
 obj-$(CONFIG_MTK_DEBUG_LATCH)	+= debug_latch/
 #obj-$(CONFIG_MTK_DEBUG_TRACER)	+= debug_tracer/
 obj-$(CONFIG_MTK_DFD_INTERNAL_DUMP) += dfd/
@@ -182,9 +183,8 @@ ifneq ($(wildcard $(srctree)/$(src)/gator-driver/),)
 obj-$(CONFIG_GATOR_DRIVER) += gator-driver/
 endif # gator-driver folder exist
 
-#obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += trustzone/
 ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
-#obj-$(CONFIG_TRUSTY) += trustzone/
+#obj-$(CONFIG_TRUSTY) += mtee/
 endif
 
 obj-$(CONFIG_THERMAL)   += thermal/
