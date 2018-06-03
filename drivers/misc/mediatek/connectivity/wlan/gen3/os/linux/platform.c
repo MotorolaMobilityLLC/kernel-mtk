@@ -279,8 +279,8 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 	}
 
 	do {
-		if ((fd->f_op == NULL) || (fd->f_op->read == NULL)) {
-			DBGLOG(INIT, INFO, "[nvram_read] : file can not be read!!\n");
+		if (fd->f_op == NULL) {
+			DBGLOG(INIT, INFO, "[nvram_read] : f_op is NULL!!\n");
 			break;
 		}
 
@@ -299,6 +299,8 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 		pos = (loff_t)offset;
 
 		retLen = __vfs_read(fd, p, len, &pos);
+		if (retLen < 0)
+			DBGLOG(INIT, ERROR, "[nvram_read] : read failed!! Error code: %d\n", retLen);
 
 	} while (FALSE);
 
@@ -348,8 +350,8 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 	}
 
 	do {
-		if ((fd->f_op == NULL) || (fd->f_op->write == NULL)) {
-			DBGLOG(INIT, INFO, "[nvram_write] : file can not be write!!\n");
+		if (fd->f_op == NULL) {
+			DBGLOG(INIT, INFO, "[nvram_write] : f_op is NULL!!\n");
 			break;
 		}
 		/* End of if */
@@ -368,6 +370,8 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 		pos = (loff_t)offset;
 
 		retLen = __vfs_write(fd, p, len, &pos);
+		if (retLen < 0)
+			DBGLOG(INIT, ERROR, "[nvram_write] : write failed!! Error code: %d\n", retLen);
 
 	} while (FALSE);
 
