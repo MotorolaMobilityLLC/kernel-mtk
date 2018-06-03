@@ -1656,18 +1656,20 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	int len = 0;
-	int bufLen = PAGE_SIZE;
+	unsigned int bufLen = PAGE_SIZE;
+	int pull_val = -1;
+	unsigned int i = 0;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(dev);
 	struct gpio_chip *chip = pctl->chip;
-	unsigned int i;
-	int pull_val;
+
+	if (!chip || !pctl || !buf) {
+		pr_debug("[pinctrl] Err: NULL pointer!\n");
+		return len;
+	}
 
 	len += snprintf(buf+len, bufLen-len,
-		"gpio base is %d, total num is %d\n",
+		"gpio base: 0x%x, pins: %03d\n",
 		chip->base, pctl->chip->ngpio);
-
-	len += snprintf(buf+len, bufLen-len,
-		"PIN: [MODE] [DIR] [DOUT] [DIN] [PULL_EN] [PULL_SEL] [IES] [SMT] [DRIVE] ( [R1] [R0] )\n");
 
 	if (pctl->dbg_start >= pctl->chip->ngpio) {
 		len += snprintf(buf+len, bufLen-len,
@@ -1676,28 +1678,41 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 		return len;
 	}
 
-	for (i = pctl->dbg_start; i < pctl->chip->ngpio; i++) {
-		pull_val = mtk_pullsel_get(chip, i);
-		if ((len+32) >= bufLen)
-			break;
+	len += snprintf(buf+len, bufLen-len,
+		"PIN: (MODE)(DIR)(DOUT)(DIN)(IES)(SMT)(DRIVE)(PULL_EN)(PULL_SEL)(R1 R0)\n");
 
+	for (i = pctl->dbg_start; i < pctl->chip->ngpio; i++) {
+		if (len > (bufLen - 96)) {
+			pr_debug("[pinctrl]err:%d exceed to max size %d\n",
+				len, (bufLen - 96));
+			break;
+		}
 		len += snprintf(buf+len, bufLen-len,
-				"%4d:% d% d% d% d% d% d% d% d% d",
+				"%03d: %1d%1d%1d%1d%2d%1d%1d%1d",
 				i,
 				mtk_pinmux_get(chip, i),
 				mtk_gpio_get_direction(chip, i),
 				mtk_gpio_get_out(chip, i),
 				mtk_gpio_get_in(chip, i),
-				mtk_pullen_get(chip, i),
-				(pull_val >= 0) ? (pull_val&1) : -1,
-				mtk_ies_get(chip, i),
+				mtk_driving_get(chip, i),
 				mtk_smt_get(chip, i),
-				mtk_driving_get(chip, i));
-		if ((pull_val & 8) && (pull_val >= 0))
-			len += snprintf(buf+len, bufLen-len,
-				" %d %d", !!(pull_val&4), !!(pull_val&2));
+				mtk_ies_get(chip, i),
+				mtk_pullen_get(chip, i));
+
+		pull_val = mtk_pullsel_get(chip, i);
+		if ((pull_val >= 0)) {
+			len += snprintf(buf+len, bufLen-len, "%1d",
+				(pull_val & 0x01));
+			if (pull_val & 0x08)
+				len += snprintf(buf+len, bufLen-len,
+					"(%1d %1d)", !!(pull_val & 0x04),
+					!!(pull_val & 0x02));
+		} else {
+			len += snprintf(buf+len, bufLen-len, "(-1)");
+		}
 		len += snprintf(buf+len, bufLen-len, "\n");
 	}
+
 	return len;
 }
 
