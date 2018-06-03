@@ -2620,7 +2620,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		<&mipi_rx_ana_csi2a CLK_MIPI2A_CSR_CSI_EN_2A>,
 		<&mipi_rx_ana_csi2b CLK_MIPI2B_CSR_CSI_EN_2B>,
 		<&topckgen CLK_TOP_CAMTM_SEL>,
-		<&topckgen CLK_TOP_UNIVPLL2_D2>;
+		<&topckgen CLK_TOP_UNIVPLL2_D2>,
+		<&scpsys SCP_SYS_CAM>;
 
 
 		clock-names = "CLK_TOP_CAMTG_SEL",
@@ -2644,7 +2645,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			"CLK_MIPI_ANA_2A_CG",
 			"CLK_MIPI_ANA_2B_CG",
 			"CLK_TOP_CAMTM_SEL_CG",
-			"CLK_TOP_CAMTM_208_CG";
+			"CLK_TOP_CAMTM_208_CG",
+			"CLK_SCP_SYS_CAM";
 	};
 
 	camsv1@1a050000 {
