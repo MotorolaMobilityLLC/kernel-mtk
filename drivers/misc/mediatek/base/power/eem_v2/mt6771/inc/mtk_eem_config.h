@@ -155,6 +155,7 @@ enum mt_cpu_dvfs_id {
 #define VBOOT_VAL		(0x30) /* volt domain: 0.8v */
 #define VMAX_VAL		(0x64) /* volt domain: 1.12v*/
 #define VMIN_VAL		(0x10) /* volt domain: 0.6v*/
+#define VMIN_GPU_VAL	(0x14) /* volt domain: 0.625v*/
 #define VCO_VAL			(0x10)
 #define DVTFIXED_VAL		(0x7)
 
