@@ -63,7 +63,8 @@ extern UINT8 aucTdlsTestExtCapElm[];
 
 #define SCN_NLO_NETWORK_CHANNEL_NUM         (4)
 
-#define REMOVE_TIMEOUT_TWO_DAY     (60*60*24*2)
+#define REMOVE_TIMEOUT_TWO_DAY			(60*60*24*2)
+
 /*----------------------------------------------------------------------------*/
 /* MSG_SCN_SCAN_REQ                                                           */
 /*----------------------------------------------------------------------------*/
