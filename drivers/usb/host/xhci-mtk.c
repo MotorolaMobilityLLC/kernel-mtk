@@ -491,20 +491,11 @@ static int xhci_mtk_phy_init(struct xhci_hcd_mtk *mtk)
 {
 	int i;
 	int ret;
-	struct device_node *of_node = mtk->dev->of_node;
 
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
-		for (i = 0; i < mtk->num_phys; i++) {
-			ret = phy_init(mtk->phys[i]);
-			if (ret)
-				goto exit_phy;
-		}
-	} else {
-		for (i = 0; i < mtk->num_phys; i++) {
-			ret = phy_init(mtk->phys[i]);
-			if (ret)
-				goto exit_phy;
-		}
+	for (i = 0; i < mtk->num_phys; i++) {
+		ret = phy_init(mtk->phys[i]);
+		if (ret)
+			goto exit_phy;
 	}
 	return 0;
 
