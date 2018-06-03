@@ -14,7 +14,8 @@
 #ifndef __MTK_MCDI_PROFILE_COMMON_H__
 #define __MTK_MCDI_PROFILE_COMMON_H__
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6771)
 
 #include "mcdi_v1/mtk_mcdi_profile.h"
 
