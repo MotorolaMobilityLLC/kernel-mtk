@@ -351,11 +351,10 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 				udelay(10); /* fix me later, should we add this one? */
 				if (timeout == 0) {
 					ret = IPI_TIMEOUT_ACK;
-					atomic_dec(&lock_ack[mid]);
 					break;
 				}
 			}
-			atomic_dec(&lock_ack[mid]);
+			atomic_set(&lock_ack[mid], 0);
 		} else {
 			int mbno = pin->mbox;
 			struct _mbox_info *mbox = &(mbox_table[mbno]);
