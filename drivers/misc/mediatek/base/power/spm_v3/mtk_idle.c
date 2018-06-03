@@ -56,7 +56,7 @@
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
 #define idle_warn_log(fmt, args...) { \
-	if (dpidle_dump_log == DEEPIDLE_LOG_FULL) \
+	if (dpidle_dump_log & DEEPIDLE_LOG_FULL) \
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
 
@@ -159,7 +159,7 @@ void __attribute__((weak)) msdc_clk_status(int *status)
 	*status = 0x1;
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 operation_cond)
 {
 	go_to_wfi();
 
@@ -228,6 +228,9 @@ static unsigned long long idle_ratio_value[NR_TYPES];
 
 
 static unsigned int idle_block_mask[NR_TYPES][NR_GRPS + 1];
+
+static bool clkmux_cond[NR_TYPES];
+static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -505,13 +508,13 @@ EXPORT_SYMBOL(disable_soidle3_by_bit);
 static unsigned int clk_aud_intbus_sel;
 void faudintbus_pll2sq(void)
 {
-	clk_aud_intbus_sel = clk_readl(CLK_CFG_6) & CLK6_AUDINTBUS_MASK;
-	clk_writel(CLK_CFG_6_CLR, CLK6_AUDINTBUS_MASK);
+	clk_aud_intbus_sel = clk_readl(CLK_CFG(6)) & CLK6_AUDINTBUS_MASK;
+	clk_writel(CLK_CFG_CLR(6), CLK6_AUDINTBUS_MASK);
 }
 
 void faudintbus_sq2pll(void)
 {
-	clk_writel(CLK_CFG_6_SET, clk_aud_intbus_sel);
+	clk_writel(CLK_CFG_SET(6), clk_aud_intbus_sel);
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1142,6 +1145,11 @@ u32 slp_spm_deepidle_flags = {
 
 static void dpidle_pre_process(int cpu)
 {
+	memset(clkmux_block_mask,
+			IDLE_TYPE_DP * NF_CLK_CFG * sizeof(unsigned int),
+			NF_CLK_CFG * sizeof(unsigned int));
+	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
+
 	mtk_idle_notifier_call_chain(DPIDLE_START);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1463,11 +1471,16 @@ get_idle_idx_2:
 int dpidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_DP;
+	u32 operation_cond = 0;
 
 	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
 	dpidle_pre_process(cpu);
-	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log);
+
+	operation_cond = clkmux_cond[IDLE_TYPE_DP] ? 0x1 : 0x0;
+
+	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
+
 	dpidle_post_process(cpu);
 
 	idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
@@ -1820,10 +1833,14 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
 
+	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
+	for (i = 0; i < NF_CLK_CFG; i++)
+		mt_idle_log("[%d]block_cond=0x%08x\n", i, clkmux_block_mask[IDLE_TYPE_DP][i]);
+
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
-	mt_idle_log("(0: None, 1: Reduced, 2: Full\n");
+	mt_idle_log("([0]: Reduced, [1]: Full, [2]: resource_usage\n");
 
 	mt_idle_log("\n*********** dpidle command help  ************\n");
 	mt_idle_log("dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
