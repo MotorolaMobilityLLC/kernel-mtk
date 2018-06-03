@@ -19,7 +19,7 @@
 #define MTK_CHR_EXIST 1
 #define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
-#define EMBEDDED_SEL 1
+#define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
 #define CAR_TUNE_VALUE	100 /*1.00 */
@@ -33,7 +33,7 @@
 /* enable that uisoc = 1 and wait xmins then shutdown */
 #define SHUTDOWN_GAUGE1_XMINS 1
 /* define Xmins to shutdown*/
-#define SHUTDOWN_1_TIME	30
+#define SHUTDOWN_1_TIME	5
 
 #define SHUTDOWN_GAUGE1_VBAT_EN 1
 #define SHUTDOWN_GAUGE1_VBAT 34000
@@ -69,7 +69,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 34000
+#define PMIC_MIN_VOL 33500
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -134,8 +134,8 @@
 
 /* fgc & fgv threshold */
 #define DIFFERENCE_FGC_FGV_TH1 300
-#define DIFFERENCE_FGC_FGV_TH2 400
-#define DIFFERENCE_FGC_FGV_TH3 200
+#define DIFFERENCE_FGC_FGV_TH2 500
+#define DIFFERENCE_FGC_FGV_TH3 300
 #define DIFFERENCE_FGC_FGV_TH_SOC1 7000
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
@@ -166,7 +166,7 @@
 
 #define PSEUDO1_SEL	2
 
-#define FG_TRACKING_CURRENT	15000	/* not implement */
+#define FG_TRACKING_CURRENT	30000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	0	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
@@ -191,6 +191,7 @@
 
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN 1
+#define LOW_TEMP_THRESHOLD 5
 
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
 #define BATTERY_TMP_TO_DISABLE_NAFG -35

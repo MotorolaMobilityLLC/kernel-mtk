@@ -114,11 +114,13 @@ bool gauge_get_current(int *bat_current)
 int gauge_get_average_current(bool *valid)
 {
 	int iavg = 0;
+	int ver = gauge_get_hw_version();
 
 	if (is_fg_disabled())
 		iavg = 0;
 	else {
-		if (gauge_get_hw_version() < GAUGE_HW_V1000)
+		if (ver >= GAUGE_HW_V1000 &&
+			ver < GAUGE_HW_V2000)
 			iavg = gm.sw_iavg;
 		else
 		gauge_dev_get_average_current(gm.gdev, &iavg, valid);
@@ -3528,6 +3530,8 @@ void mtk_battery_init(struct platform_device *dev)
 	gm.ui_soc = -1;
 	gm.log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 	gm.d_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
+
+	gm.fixed_uisoc = 0xffff;
 
 	gm.fg_bat_int1_ht = 0xffff;
 	gm.fg_bat_int1_lt = 0xffff;

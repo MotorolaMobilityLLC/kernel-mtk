@@ -335,7 +335,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			if (down_to_low_bat == 0) {
 				if (IS_ENABLED(
 					LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN)) {
-					if (tmp >= 5) {
+					if (tmp >= LOW_TEMP_THRESHOLD) {
 						down_to_low_bat = 1;
 						notify_fg_shutdown();
 					} else if (sdd->avgvbat <=
