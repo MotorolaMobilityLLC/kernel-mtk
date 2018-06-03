@@ -38,6 +38,7 @@
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
 #include <linux/mmc/slot-gpio.h>
+#include <mt-plat/mtk_io_boost.h>
 
 #include "core.h"
 #include "bus.h"
@@ -419,7 +420,6 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 	return ret;
 }
 
-
 int mmc_run_queue_thread(void *data)
 {
 	struct mmc_host *host = data;
@@ -429,12 +429,19 @@ int mmc_run_queue_thread(void *data)
 	unsigned int task_id, areq_cnt_chk, tmo;
 	bool is_err = false;
 	bool is_done = false;
+	bool io_boost_done = false;
 
 	int err;
 
 	pr_err("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
 	while (1) {
+
+		if (!io_boost_done) {
+			if (!mtk_io_boost_add_tid(current->pid))
+				io_boost_done = true;
+		}
+
 		set_current_state(TASK_RUNNING);
 		mt_biolog_cmdq_check();
 
