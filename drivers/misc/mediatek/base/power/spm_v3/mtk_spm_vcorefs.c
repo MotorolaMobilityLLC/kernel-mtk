@@ -1053,10 +1053,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0x808aa2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0x8032a2);
 		}
 
 		/* FIXME 11/12 */
@@ -1090,10 +1090,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level*/
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		}
 
 		/* FIXME 11/12 */
@@ -1172,7 +1172,7 @@ static void dvfsrc_init(void)
 		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
 
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
-	spm_write(DVFSRC_CHANNEL_MASK, 0x1fffff);
+	spm_write(DVFSRC_CHANNEL_MASK, 0x201fffff);
 	spm_write(DVFSRC_LEVEL_JMP_METHOD, 0x32C80130);
 	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
@@ -1184,21 +1184,21 @@ static void dvfsrc_init(void)
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
 
 	spm_write(DVFSRC_MD_MAP_BW_0, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_1, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_2, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_3, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_4, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_5, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_6, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_7, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_8, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_9, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_1, 0x20002);
+	spm_write(DVFSRC_MD_MAP_BW_2, 0x20002);
+	spm_write(DVFSRC_MD_MAP_BW_3, 0x20002);
+	spm_write(DVFSRC_MD_MAP_BW_4, 0x80008);
+	spm_write(DVFSRC_MD_MAP_BW_5, 0x80008);
+	spm_write(DVFSRC_MD_MAP_BW_6, 0x90009);
+	spm_write(DVFSRC_MD_MAP_BW_7, 0x90009);
+	spm_write(DVFSRC_MD_MAP_BW_8, 0xb000b);
+	spm_write(DVFSRC_MD_MAP_BW_9, 0xb000b);
 	spm_write(DVFSRC_MD_MAP_BW_10, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_11, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_12, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_13, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_14, 0x0);
-	spm_write(DVFSRC_MD_MAP_BW_15, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_14, 0xf000f);
+	spm_write(DVFSRC_MD_MAP_BW_15, 0xff00ff);
 
 	spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | dvfs_mask[BOOT_UP_OPP]);
 
