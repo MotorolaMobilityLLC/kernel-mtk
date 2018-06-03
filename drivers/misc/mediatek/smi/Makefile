@@ -95,6 +95,16 @@ obj-y += mmdvfs_mgr_default.o
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6775.o
 SUPPORT_MET_SMI := true
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6771"))
+ccflags-y += -DSMI_SYL
+ccflags-y += -DSMI_MMU_V2
+ccflags-y += -I$(srctree)/drivers/clk/mediatek
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+obj-y += mmdvfs_mgr_default.o
+obj-y += mtk-smi.o
+obj-y += smi_configuration_mt6771.o
+SUPPORT_MET_SMI := true
 
 else
 ccflags-y += -DSMI_DUMMY
