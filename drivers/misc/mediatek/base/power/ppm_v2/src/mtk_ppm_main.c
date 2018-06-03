@@ -856,7 +856,7 @@ nofity_end:
 		ppm_profile_state_change_notify(prev_state, next_state);
 
 #if PPM_UPDATE_STATE_DIRECT_TO_MET
-	if (g_pSet_PPM_State != NULL && prev_state != next_state)
+	if (g_pSet_PPM_State != NULL)
 		g_pSet_PPM_State((unsigned int)next_state);
 #endif
 
