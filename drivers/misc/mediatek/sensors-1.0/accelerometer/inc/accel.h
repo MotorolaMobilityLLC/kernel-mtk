@@ -21,7 +21,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include <linux/wakelock.h>
+#include <linux/pm_wakeup.h>
 #include <linux/workqueue.h>
 
 #include <linux/atomic.h>
