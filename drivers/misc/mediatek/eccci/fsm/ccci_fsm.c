@@ -554,6 +554,14 @@ struct ccci_fsm_ctl *fsm_get_entity_by_md_id(int md_id)
 	return NULL;
 }
 
+static int fsm_sim_type_handler(int md_id, int data)
+{
+	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_id);
+
+	per_md_data->sim_type = data;
+	return 0;
+}
+
 int ccci_fsm_init(int md_id)
 {
 	struct ccci_fsm_ctl *ctl;
@@ -582,6 +590,7 @@ int ccci_fsm_init(int md_id)
 	fsm_poller_init(&ctl->poller_ctl);
 	fsm_ee_init(&ctl->ee_ctl);
 	fsm_monitor_init(&ctl->monitor_ctl);
+	register_ccci_sys_call_back(ctl->md_id, MD_SIM_TYPE, fsm_sim_type_handler);
 
 	ccci_fsm_entries[md_id] = ctl;
 	return 0;

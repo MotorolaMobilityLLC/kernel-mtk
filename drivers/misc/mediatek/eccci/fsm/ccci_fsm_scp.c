@@ -184,14 +184,6 @@ static int fsm_sim_lock_handler(int md_id, int data)
 }
 #endif
 
-static int fsm_sim_type_handler(int md_id, int data)
-{
-	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_id);
-
-	per_md_data->sim_type = data;
-	return 0;
-}
-
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 void fsm_scp_init0(void)
 {
@@ -219,7 +211,6 @@ int fsm_scp_init(struct ccci_fsm_scp *scp_ctl)
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 	register_ccci_sys_call_back(scp_ctl->md_id, SIM_LOCK_RANDOM_PATTERN, fsm_sim_lock_handler);
 #endif
-	register_ccci_sys_call_back(scp_ctl->md_id, MD_SIM_TYPE, fsm_sim_type_handler);
 
 	return ret;
 }
