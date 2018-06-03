@@ -206,7 +206,7 @@ void PMIC_LP_INIT_SETTING(void)
 		pmic_ldo_vibr_lp(SW, 1, SW_OFF);
 		pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
 		pmic_ldo_tref_lp(SW, 1, SW_OFF);
-	} else if (PMIC_CHIP_VER() == 2) {
+	} else if (PMIC_CHIP_VER() >= 2) {
 		pmic_buck_vproc_lp(SW, 1, SW_LP);
 		pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
