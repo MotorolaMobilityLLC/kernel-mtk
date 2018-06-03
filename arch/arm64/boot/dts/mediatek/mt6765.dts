@@ -456,6 +456,27 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		scp_sramSize = <0x00040000>;
 	};
 
+	scp_dvfs {
+		compatible = "mediatek,scp_dvfs";
+		clocks = <&topckgen CLK_TOP_SCP_SEL>,
+			<&clk26m>,
+			<&topckgen CLK_TOP_SYSPLL4_D2>,
+			<&topckgen CLK_TOP_UNIVPLL2_D2>,
+			<&topckgen CLK_TOP_SYSPLL1_D2>,
+			<&topckgen CLK_TOP_UNIVPLL1_D2>,
+			<&topckgen CLK_TOP_SYSPLL_D3>,
+			<&topckgen CLK_TOP_UNIVPLL_D3>;
+
+		clock-names = "clk_mux",
+			"clk_pll_0",
+			"clk_pll_1",
+			"clk_pll_2",
+			"clk_pll_3",
+			"clk_pll_4",
+			"clk_pll_5",
+			"clk_pll_6";
+	};
+
 	sleep_reg_md@1000f000 {
 		compatible = "mediatek,sleep_reg_md";
 		reg = <0 0x1000f000 0 0x1000>;

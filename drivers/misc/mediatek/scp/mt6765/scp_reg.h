@@ -78,4 +78,7 @@
 	#define CONNSYS_AWAKE_LOCK	(2)
 	#define CONNSYS_AWAKE_UNLOCK	(3)
 #define INFRA_IRQ_CLEAR			(scpreg.scpsys + 0x0A24)
+
+#define SCP_SCP2SPM_VOL_LV		(scpreg.cfg + 0x0094)
+
 #endif
