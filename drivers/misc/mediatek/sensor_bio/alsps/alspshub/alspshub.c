@@ -590,14 +590,12 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		}
 		obj->ps_cali = ps_cali;
 		APS_ERR("[Lomen] ALSPS_IOCTL_SET_CALI\n");
-		/* workaround for UT, need fix before QC
-		 * err = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_SET_CALI, &obj->ps_cali);
-		 * if (err < 0) {
-		 *	APS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
-		 *		ID_PROXIMITY, CUST_ACTION_SET_CALI);
-		 *	err = -1;
-		 * }
-		 */
+		err = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_SET_CALI, &obj->ps_cali);
+		if (err < 0) {
+			APS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
+				ID_PROXIMITY, CUST_ACTION_SET_CALI);
+			err = -1;
+		}
 		break;
 
 	case ALSPS_SET_PS_THRESHOLD:
