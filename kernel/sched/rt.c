@@ -1834,7 +1834,8 @@ static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
 static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
+static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask,
+	struct task_struct *p)
 {
 	int lowest_cpu = -1, lowest_prio = 0;
 	int lowest_preempt_cpu = -1, lowest_preempt_prio = 0;
@@ -1851,6 +1852,7 @@ static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
 
 	for_each_hmp_domain_L_first(domain) {
 		cpumask_and(&cpus_mask, &domain->possible_cpus, lowest_mask);
+		cpumask_and(&cpus_mask, &cpus_mask, tsk_cpus_allowed(p));
 		for_each_cpu(cpu, &cpus_mask) {
 			struct rq *rq;
 			struct task_struct *curr;
@@ -1936,7 +1938,7 @@ static int find_lowest_rq(struct task_struct *task)
 	}
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-	interop_cpu = mt_sched_interop_rt(cpu, lowest_mask);
+	interop_cpu = mt_sched_interop_rt(cpu, lowest_mask, task);
 	if (interop_cpu != -1) {
 		mt_sched_printf(sched_interop, "find idle cpu=%d", interop_cpu);
 		return interop_cpu;
