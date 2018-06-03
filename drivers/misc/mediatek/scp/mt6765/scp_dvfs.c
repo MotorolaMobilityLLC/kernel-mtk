@@ -36,6 +36,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #endif
+#include <linux/pm_qos.h>
 
 #include <linux/uaccess.h>
 #include "scp_ipi.h"
@@ -85,6 +86,8 @@ static int pre_pll_sel = -1;
 static struct mt_scp_pll_t *mt_scp_pll;
 static struct wakeup_source scp_suspend_lock;
 static int g_scp_dvfs_init_flag = -1;
+
+static struct pm_qos_request dvfsrc_scp_vcore_req;
 
 void __attribute__((weak))
 dvfsrc_set_scp_vcore_request(unsigned int level)
@@ -149,15 +152,15 @@ void scp_vcore_request(unsigned int clk_opp)
 
 	/* DVFSRC_VCORE_REQUEST [31:30]
 	 * 2'b00: scp request 0.65v
-	 * 2'b01: scp request 0.7v
-	 * 2'b10: scp request 0.8v
+	 * 2'b10: scp request 0.7v
+	 * 2'b11: scp request 0.8v
 	 */
 	if (clk_opp == CLK_OPP0 || clk_opp == CLK_OPP1)
-		dvfsrc_set_scp_vcore_request(0x0);
+		pm_qos_update_request(&dvfsrc_scp_vcore_req, 0x0);
 	else if (clk_opp == CLK_OPP2)
-		dvfsrc_set_scp_vcore_request(0x1);
+		pm_qos_update_request(&dvfsrc_scp_vcore_req, 0x2);
 	else
-		dvfsrc_set_scp_vcore_request(0x2);
+		pm_qos_update_request(&dvfsrc_scp_vcore_req, 0x3);
 
 	/* SCP to SPM voltage level 0x100066C4 (scp reg 0xC0094)
 	 * 0x1: scp request 0.65v
@@ -343,7 +346,7 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 				&& (pll_sel != CLK_OPP1 &&
 					pll_sel != CLK_OPP3)) {
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
-		pr_debug("clk_disable_unprepare()\n");
+		/* pr_debug("clk_disable_unprepare()\n"); */
 	} else {
 		pr_debug("no need to do clk_disable_unprepare\n");
 	}
@@ -868,6 +871,10 @@ int __init scp_dvfs_init(void)
 	wakeup_source_init(&scp_suspend_lock, "scp wakelock");
 
 	mt_scp_dvfs_ipi_init();
+
+	pm_qos_add_request(&dvfsrc_scp_vcore_req,
+			PM_QOS_SCP_VCORE_REQUEST,
+			PM_QOS_SCP_VCORE_REQUEST_DEFAULT_VALUE);
 
 	return ret;
 }
