@@ -161,7 +161,7 @@ static ssize_t resource_req_read(struct file *filp,
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo bypass [bit] > /d/spm/resource_req\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[1]: UFS, [2]: SSUSB, [3] AUDIO, ");
-	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[4] UART, [5] CONN [6] MSDC\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[4] UART, [5] CONN [6] MSDC [7] SCP\n");
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
