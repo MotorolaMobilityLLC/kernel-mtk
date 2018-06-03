@@ -389,7 +389,7 @@
 		reg = <0 0x11f20000 0 0x1000>;
 	};
 
-	syscfg_pctl_lt: syscfg_pctl_b@11f20000 {
+	syscfg_pctl_lt: syscfg_pctl_lt@11f20000 {
 		compatible = "mediatek,mt6763-pctl-lt-syscfg", "syscon";
 		reg = <0 0x11f20000 0 0x1000>;
 	};

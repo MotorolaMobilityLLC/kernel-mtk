@@ -23,7 +23,6 @@
 #include "pinctrl-mtk-mt6763.h"
 #include <mt-plat/mtk_gpio.h>
 
-#ifdef CONFIG_MTK_GPIOLIB_STAND
 /* For type discreate/continuous PUPD + R1 + R0 */
 static int mtk_pinctrl_set_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin,
 		bool enable, bool isup, unsigned int r1r0)
@@ -189,7 +188,7 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 		goto error_out;
 	}
 
-	mtk_pinctrl_set_gpio_pullsel_pullen(pctl, pin, enable, isup, arg);
+	ret = mtk_pinctrl_set_gpio_pullsel_pullen(pctl, pin, enable, isup, arg);
 
 out:
 
@@ -210,9 +209,8 @@ int mtk_pinctrl_get_gpio_mode_for_eint(int pin)
 	return mtk_pinctrl_get_gpio_value(pctl, pin,
 		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
 }
-#endif
+
 static const struct mtk_pinctrl_devdata mt6763_pinctrl_data = {
-#ifdef CONFIG_MTK_GPIOLIB_STAND
 	.pins = mtk_pins_mt6763,
 	.npins = ARRAY_SIZE(mtk_pins_mt6763),
 	.pin_mode_grps = mtk_pin_info_mode,
@@ -238,40 +236,12 @@ static const struct mtk_pinctrl_devdata mt6763_pinctrl_data = {
 	.mtk_pctl_set_pull = mtk_pinctrl_set_gpio_pull,
 	.mtk_pctl_get_pull_sel = mtk_pinctrl_get_gpio_pullsel,
 	.mtk_pctl_get_pull_en = mtk_pinctrl_get_gpio_pullen,
-	.type1_start = 164,
-	.type1_end = 164,
-	.regmap_num = 8,
+	.type1_start = 151,
+	.type1_end = 151,
+	.regmap_num = 9,
 	.port_shf = 4,
 	.port_mask = 0xf,
 	.port_align = 4,
-#else
-	.pins = mtk_pins_mt6763,
-	.npins = ARRAY_SIZE(mtk_pins_mt6763),
-	.grp_desc = NULL,
-	.n_grp_cls = 0,
-	.pin_drv_grp = NULL,
-	.n_pin_drv_grps = 0,
-	.spec_set_gpio_mode = mt_set_gpio_mode,
-	.mt_set_gpio_dir = mt_set_gpio_dir,
-	.mt_get_gpio_dir = mt_get_gpio_dir,
-	.mt_get_gpio_out = mt_get_gpio_out,
-	.mt_set_gpio_out = mt_set_gpio_out,
-	.mt_set_gpio_driving = mt_set_gpio_driving,
-	.mt_set_gpio_ies = mt_set_gpio_ies,
-	.mt_set_gpio_smt = mt_set_gpio_smt,
-	.mt_set_gpio_slew_rate = mt_set_gpio_slew_rate,
-	.mt_set_gpio_pull_enable =  mt_set_gpio_pull_enable,
-	.mt_set_gpio_pull_select = mt_set_gpio_pull_select,
-	.mt_set_gpio_pull_resistor = mt_set_gpio_pull_resistor,
-	.mt_get_gpio_in = mt_get_gpio_in,
-
-	.type1_start = 164,
-	.type1_end = 164,
-
-	.port_shf = 4,
-	.port_mask = 0xf,
-	.port_align = 4,
-#endif
 };
 
 static int mt6763_pinctrl_probe(struct platform_device *pdev)
