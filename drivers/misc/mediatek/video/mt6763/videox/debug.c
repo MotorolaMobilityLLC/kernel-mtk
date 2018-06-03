@@ -376,6 +376,9 @@ static void bmp_adjust(void *buf, int size, int w, int h)
 	UINT8 temp_byte;
 
 	temp = vmalloc(h_size);
+	if (!temp)
+		return;
+
 	for (v_cursor = 0; v_cursor < h/2; v_cursor++) {
 		memcpy(temp, buf + (h-v_cursor - 1) * h_size, h_size);
 		memcpy(buf + (h-v_cursor - 1) * h_size, buf + v_cursor * h_size, h_size);

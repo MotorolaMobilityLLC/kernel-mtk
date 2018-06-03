@@ -2040,7 +2040,7 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 		if (packet_type == 0x1A || packet_type == 0x1C) {
 			recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
 			if (recv_data_cnt > 10) {
-				DISPCHECK("DSI read long packet data exceeds 4 bytes return size: %d\n",
+				DISPCHECK("DSI read long packet data exceeds 10 bytes return size: %d\n",
 				     recv_data_cnt);
 				recv_data_cnt = 10;
 			}
@@ -4856,7 +4856,7 @@ int DSI_set_roi(int x, int y)
 int DSI_check_roi(void)
 {
 	int ret = 0;
-	unsigned char read_buf[4] = { 1, 1, 1, 1 };
+	unsigned char read_buf[10] = { 1, 1, 1, 1 };
 	unsigned int data_array[16];
 	int count;
 	int x0;
