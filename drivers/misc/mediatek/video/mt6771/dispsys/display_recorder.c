@@ -424,7 +424,7 @@ int _primary_monitor_fps_thread(void *data)
 		msleep_interruptible(200);
 		if (fps_show_flag == 1) {
 			/* already idle ,should clean fps value*/
-			if (debug_layer_update_flag == 1)
+			if (debug_layer_update_flag != 0)
 				debug_layer_update_flag = 0;
 			else {
 				memset(&old_logger_fps, 0, sizeof(old_logger_fps));

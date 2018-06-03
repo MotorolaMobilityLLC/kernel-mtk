@@ -96,7 +96,7 @@ int dsi_mode_flag;
 
 /* background set */
 int layer_offset_debug = 1;
-unsigned int font_size = 6;
+unsigned int font_size = 3;
 int fg_clo = 0x00FF00FF;
 int bg_clo = 0xFF400000;
 
