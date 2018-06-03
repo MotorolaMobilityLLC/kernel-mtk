@@ -54,6 +54,21 @@
 #include "helio-dvfsrc-opp.h"
 #endif
 
+#include "vpu_dvfs.h"
+
+/* opp, mW */
+struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
+	{VPU_OPP_0, 336 * 4},
+	{VPU_OPP_1, 250 * 4},
+	{VPU_OPP_2, 221 * 4},
+	{VPU_OPP_3, 208 * 4},
+	{VPU_OPP_4, 140 * 4},
+	{VPU_OPP_5, 120 * 4},
+	{VPU_OPP_6, 114 * 4},
+	{VPU_OPP_7, 84 * 4},
+};
+
+
 #define CMD_WAIT_TIME_MS    (3 * 1000)
 #define OPP_WAIT_TIME_MS    (30)
 #define PWR_KEEP_TIME_MS    (500)
@@ -506,19 +521,29 @@ out:
 	return true;
 }
 
-int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t freq_upper)
+int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 {
 	int i = 0;
 	int ret = 0;
+	int vcore_opp_index = 0;
+	int vpu_freq_index = 0;
+
+	if ((int)vpu_opp < 4) {
+		vcore_opp_index = 0;
+		vpu_freq_index = vpu_opp;
+	} else {
+		vcore_opp_index = 1;
+		vpu_freq_index = vpu_opp;
+	}
 
 	for (i = 0 ; i < MTK_VPU_CORE ; i++)
-		vpu_opp_check(i, vcore_opp, freq_upper);
+		vpu_opp_check(i, vcore_opp_index, vpu_freq_index);
 
 	mutex_lock(&opp_mutex);
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		if (force_change_dsp_freq[i]) {
 			/* force change freq while running */
-			switch (freq_upper) {
+			switch (vpu_freq_index) {
 			case 0:
 			default:
 				LOG_INF("thermal force change dsp freq to 525MHz");
@@ -545,12 +570,12 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t freq_upper)
 				LOG_INF("thermal force change dsp freq to 182MHz");
 				break;
 			}
-			max_dsp_freq = freq_upper;
+			max_dsp_freq = vpu_freq_index;
 			vpu_change_opp(i, OPPTYPE_DSPFREQ);
 		} else if (force_change_vcore_opp[i]) {
 			/* vcore change should wait */
-			LOG_INF("thermal force change vcore opp to %d", vcore_opp);
-			max_vcore_opp = vcore_opp;
+			LOG_INF("thermal force change vcore opp to %d", vcore_opp_index);
+			max_vcore_opp = vcore_opp_index;
 			/* vcore only need to change one time from thermal request*/
 			if (i == 0)
 				vpu_change_opp(i, OPPTYPE_VCORE);
