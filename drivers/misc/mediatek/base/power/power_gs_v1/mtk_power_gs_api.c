@@ -31,6 +31,7 @@
 #define DEBUG_BUF_SIZE 200
 static char buf[DEBUG_BUF_SIZE] = { 0 };
 static struct base_remap _base_remap;
+static struct pmic_manual_dump _pmic_manual_dump;
 
 static bool _is_pmic_addr(unsigned int addr)
 {
@@ -487,6 +488,15 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 	/* set reg value (normal mode) */
 	else if (sscanf(buf, "set 0x%x 0x%x", &addr, &golden_val) == 2)
 		_golden_write_reg(addr, 0xFFFFFFFF, golden_val);
+	/* set to dump pmic reg value */
+	else if (sscanf(buf, "set_pmic_manual_dump 0x%x", &addr) == 1) {
+		if (_pmic_manual_dump.addr_array) {
+			if (_pmic_manual_dump.array_pos < _pmic_manual_dump.array_size)
+				_pmic_manual_dump.addr_array[_pmic_manual_dump.array_pos++] = addr;
+			else
+				pr_warn("Power_gs: pmic_manual_dump array is full\n");
+		}
+	}
 	/* XXX: 63 = sizeof(cmd) - 1 */
 	else if (sscanf(buf, "%63s", cmd) == 1) {
 		if (!strcmp(cmd, "enable"))
@@ -511,6 +521,10 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 			mt_power_gs_dpidle_compare(GS_ALL);
 		else if (!strcmp(cmd, "dump_sodi"))
 			mt_power_gs_sodi_compare(GS_ALL);
+		else if (!strcmp(cmd, "free_pmic_manual_dump")) {
+			if (_pmic_manual_dump.addr_array)
+				_pmic_manual_dump.array_pos = 0;
+		}
 	}
 
 	free_page((size_t)buf);
@@ -586,6 +600,13 @@ static int mt_golden_setting_init(void)
 			for (i = 0; i < ARRAY_SIZE(entries); i++) {
 				if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops))
 					pr_err("[%s]: fail to mkdir /proc/golden/%s\n", __func__, entries[i].name);
+			}
+
+			_pmic_manual_dump.array_size = REMAP_SIZE_MASK;
+			if (!_pmic_manual_dump.addr_array) {
+				_pmic_manual_dump.addr_array =
+					kmalloc(sizeof(unsigned int) * REMAP_SIZE_MASK + 1, GFP_KERNEL);
+				pr_warn("Power_gs: pmic_manual_dump array malloc done\n");
 			}
 
 			_base_remap.table_size = REMAP_SIZE_MASK;
@@ -701,6 +722,23 @@ unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
 	}
 
 	return 0;
+}
+
+void mt_power_gs_pmic_manual_dump(void)
+{
+	unsigned int i;
+	char *p;
+
+	if (_pmic_manual_dump.addr_array && _pmic_manual_dump.array_pos) {
+		pr_warn("Scenario - PMIC - Addr       - Value\n");
+		for (i = 0; i < _pmic_manual_dump.array_pos; i++) {
+			p = buf;
+			p += snprintf(p, sizeof(buf), "Manual   - PMIC - 0x%08x - 0x%08x",
+				_pmic_manual_dump.addr_array[i],
+				_golden_read_reg(_pmic_manual_dump.addr_array[i]));
+			pr_warn("%s\n", buf);
+		}
+	}
 }
 
 void mt_power_gs_compare(char *scenario, char *pmic_name,
