@@ -998,6 +998,7 @@ bool set_chip_afe_enable(bool enable)
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
 	} else {
 		int retry = 0;
+
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
 		while ((Afe_Get_Reg(AFE_DAC_MON) & 0x1) && ++retry < 100000)
 			udelay(10);
