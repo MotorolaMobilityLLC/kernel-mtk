@@ -197,6 +197,9 @@ static int _mtk_pm_callback_power_on(void)
 	writel(val & ~(0x1), g_MFG_base + 0x8b0);
 	MFG_DEBUG("[MALI] A: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
 
+	/* Resume frequency before power off */
+	mtk_set_mt_gpufreq_target(g_curFreqID);
+
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif

@@ -936,22 +936,18 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 						   ~(1 << GPU_DVFS_IS_VPROC_ENABLED));
 #endif
 		reg_val = regulator_is_enabled(mt_gpufreq_pmic->reg_vproc);
+		/* Error checking */
+		if (enable == 1 && reg_val == 0) {
+			/* VPROC enable fail, dump info and trigger BUG() */
+			gpufreq_err("@%s: enable = %x, reg_val = %d\n", __func__, enable, reg_val);
+		}
 	} else {
 		if (enable == BUCK_ON)
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
 		else
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
-#ifdef VCORE_DVFS_READY
-		if (ret != 0)
-			gpufreq_err("@%s: VCORE LPM status set %d failed! (%d)\n", __func__, enable_lpm, ret);
-#endif
 	}
 #endif
-	/* Error checking */
-	if (enable == 1 && reg_val == 0) {
-		/* VPROC enable fail, dump info and trigger BUG() */
-		gpufreq_err("@%s: enable = %x, reg_val = %d\n", __func__, enable, reg_val);
-	}
 #endif	/* MTK_SSPM */
 
 #ifndef DISABLE_PBM_FEATURE
@@ -1013,15 +1009,8 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 {
 	int ret = 0;
 
-#ifdef MTK_SSPM
-		/*
-		* USE SSPM to switch VPROC
-		*/
-		ret =  mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, SET_VOLT_SWITCH, enable);
-#else
-		mutex_lock(&mt_gpufreq_lock);
+	mutex_lock(&mt_gpufreq_lock);
 
-#ifdef VPROC_SET_BY_PMIC
 	if (mt_gpufreq_ready == false) {
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
 		ret = DRIVER_NOT_READY;
@@ -1050,8 +1039,6 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 		else
 			vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
 	}
-#endif
-#endif /* MTK_SSPM */
 
 #ifndef MTK_SSPM
 	if (enable_lpm) {
