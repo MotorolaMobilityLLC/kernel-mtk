@@ -29,7 +29,6 @@ static int orientation_get_data(int *x, int *y, int *z,
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_ORIENTATION, &data);
 	if (err < 0) {
@@ -37,7 +36,6 @@ static int orientation_get_data(int *x, int *y, int *z,
 		return -1;
 	}
 	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
 	*x = data.orientation_t.azimuth;
 	*y = data.orientation_t.pitch;
 	*z = data.orientation_t.roll;
@@ -91,7 +89,7 @@ static int orientation_recv_data(struct data_unit_t *event, void *reserved)
 		err = orientation_data_report(event->orientation_t.azimuth,
 			event->orientation_t.pitch,
 			event->orientation_t.roll, event->orientation_t.status,
-			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+			(int64_t)event->time_stamp);
 	else if (event->flush_action == FLUSH_ACTION)
 		err = orientation_flush_report();
 

@@ -168,7 +168,6 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 	int gyro[GYROHUB_AXES_NUM];
 	int err = 0;
 	int status = 0;
@@ -185,17 +184,10 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	}
 
 	time_stamp				= data.time_stamp;
-	time_stamp_gpt			= data.time_stamp_gpt;
 	gyro[GYROHUB_AXIS_X]	= data.gyroscope_t.x;
 	gyro[GYROHUB_AXIS_Y]	= data.gyroscope_t.y;
 	gyro[GYROHUB_AXIS_Z]	= data.gyroscope_t.z;
 	status					= data.gyroscope_t.status;
-	pr_debug("recv ipi:timestamp:%lld,timestamp_gpt:%lld x:%d,y:%d,z:%d\n",
-		time_stamp, time_stamp_gpt,
-		gyro[GYROHUB_AXIS_X],
-		gyro[GYROHUB_AXIS_Y],
-		gyro[GYROHUB_AXIS_Z]);
-
 	sprintf(buf, "%04x %04x %04x %04x",
 		gyro[GYROHUB_AXIS_X],
 		gyro[GYROHUB_AXIS_Y],
@@ -501,8 +493,7 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 		data.y = event->gyroscope_t.y;
 		data.z = event->gyroscope_t.z;
 		data.status = event->gyroscope_t.status;
-		data.timestamp =
-			(int64_t)(event->time_stamp + event->time_stamp_gpt);
+		data.timestamp = (int64_t)event->time_stamp;
 		data.reserved[0] = event->reserve[0];
 		err = gyro_data_report(&data);
 	} else if (event->flush_action == FLUSH_ACTION &&

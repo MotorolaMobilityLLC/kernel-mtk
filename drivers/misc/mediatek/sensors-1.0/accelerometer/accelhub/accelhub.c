@@ -205,7 +205,6 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 {
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 	struct data_unit_t data;
 	int acc[ACCELHUB_AXES_NUM];
 	int err = 0;
@@ -222,7 +221,6 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 		return err;
 	}
 	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
 	acc[ACCELHUB_AXIS_X] = data.accelerometer_t.x;
 	acc[ACCELHUB_AXIS_Y] = data.accelerometer_t.y;
 	acc[ACCELHUB_AXIS_Z] = data.accelerometer_t.z;
@@ -448,7 +446,7 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 	data.y = event->accelerometer_t.y;
 	data.z = event->accelerometer_t.z;
 	data.status = event->accelerometer_t.status;
-	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+	data.timestamp = (int64_t)event->time_stamp;
 	data.reserved[0] = event->reserve[0];
 
 	if (event->flush_action == DATA_ACTION &&

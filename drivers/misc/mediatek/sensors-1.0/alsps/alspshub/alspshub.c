@@ -671,14 +671,12 @@ static int als_get_data(int *value, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_LIGHT, &data);
 	if (err) {
 		pr_err("sensor_get_data_from_hub fail!\n");
 	} else {
 		time_stamp = data.time_stamp;
-		time_stamp_gpt = data.time_stamp_gpt;
 		*value = data.light;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
@@ -763,7 +761,6 @@ static int ps_get_data(int *value, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
 	if (err < 0) {
@@ -772,7 +769,6 @@ static int ps_get_data(int *value, int *status)
 		err = -1;
 	} else {
 		time_stamp = data.time_stamp;
-		time_stamp_gpt = data.time_stamp_gpt;
 		*value = data.proximity_t.oneshot;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
