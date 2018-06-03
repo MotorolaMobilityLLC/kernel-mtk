@@ -2710,10 +2710,29 @@
 		reg = <0 0x1a043000 0 0x1000>;
 	};
 
-	ccu@1a080000 {
+	ccu@1a0b1000 {
 		compatible = "mediatek,ccu";
-		reg = <0 0x1a080000 0 0x1000>;
+		reg = <0 0x1a0b1000 0 0x1000>;
 		interrupts = <GIC_SPI 248 IRQ_TYPE_LEVEL_LOW>;
+
+		ccu_hw_offset = <0x0>;
+		ccu_pmem_base = <0x1a0a0000>;
+		ccu_pmem_size = <0x10000>;
+		ccu_dmem_base = <0x1a080000>;
+		ccu_dmem_size = <0x8000>;
+		ccu_dmem_offset = <0x1680>;
+		ccu_log_base = <0x500>;
+		ccu_log_size = <0x200>;
+		ccu_hw_dump_size = <0x550>;
+		ccu_camsys_base = <0x1a000000>;
+		ccu_camsys_size = <0x1000>;
+		ccu_n3d_a_base = <0x1a040000>;
+		ccu_n3d_a_size = <0x1000>;
+		ccu_sensor_pm_size = <0xc00>;
+		ccu_sensor_dm_size = <0x600>;
+
+		clocks = <&camsys CAMSYS_CCU_CGPDN>;
+		clock-names = "CCU_CLK_CAM_CCU";
 	};
 
 	alc@60000000 {

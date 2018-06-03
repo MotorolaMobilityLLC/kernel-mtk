@@ -61,6 +61,9 @@
 #include <linux/compat.h>
 #endif
 
+#ifdef CONFIG_MTK_CCU
+#include "ccu_inc.h"
+#endif
 
 #ifndef CONFIG_MTK_CLKMGR
 /*CCF*/
@@ -1201,6 +1204,9 @@ kd_MultiSensorOpen(void)
 MUINT32 ret = ERROR_NONE;
 MINT32 i = 0;
 
+#ifdef CONFIG_MTK_CCU
+	struct ccu_sensor_info ccuSensorInfo;
+#endif
     KD_MULTI_FUNCTION_ENTRY();
 
     /* from hear to tail */
@@ -1268,6 +1274,17 @@ MINT32 i = 0;
         /* set i2c slave ID */
         /* SensorOpen() will reset i2c slave ID */
         /* KD_SET_I2C_SLAVE_ID(i,g_invokeSocketIdx[i],IMGSENSOR_SET_I2C_ID_FORCE); */
+#ifdef CONFIG_MTK_CCU
+					if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient->addr << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+					} else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR) {
+						ccuSensorInfo.slave_addr = (g_pstI2Cclient2->addr << 1);
+						ccuSensorInfo.sensor_name_string = (char *)(g_invokeSensorNameStr[i]);
+						ccu_set_sensor_info(g_invokeSocketIdx[i], &ccuSensorInfo);
+	}
+#endif
     }
     }
     }
@@ -3239,6 +3256,10 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 								pFeatureCtrl->FeatureId,
 								(unsigned char *)pFeaturePara,
 								(unsigned int *)&FeatureParaLen);
+#ifdef CONFIG_MTK_CCU
+			if (pFeatureCtrl->FeatureId == SENSOR_FEATURE_SET_FRAMERATE)
+				ccu_set_current_fps(*((int32_t *) pFeaturePara));
+#endif
 		} else {
 			PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
 		}
