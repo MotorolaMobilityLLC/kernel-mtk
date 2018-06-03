@@ -763,8 +763,14 @@ DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
 
 static struct miscdevice scp_device = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "scp",
-	.fops = &scp_log_file_ops
+	.name = "scp_A",
+	.fops = &scp_A_log_file_ops
+};
+
+static struct miscdevice scp_B_device = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "scp_B",
+	.fops = &scp_B_log_file_ops
 };
 
 /*
@@ -781,7 +787,25 @@ static int create_files(void)
 		pr_err("[SCP] misc register failed\n");
 		return ret;
 	}
+	ret = misc_register(&scp_B_device);
 
+	if (unlikely(ret != 0)) {
+		pr_err("[SCP B] misc register failed\n");
+		return ret;
+	}
+#if SCP_LOGGER_ENABLE
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_mobile_log);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_logger_wakeup_AP);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_mobile_log_UT);
+	if (unlikely(ret != 0))
+		return ret;
+#endif
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_status);
 
 	if (unlikely(ret != 0))
@@ -804,17 +828,30 @@ static int create_files(void)
 		return ret;
 #endif
 
-	ret = device_create_file(scp_device.this_device, &dev_attr_scp_B_status);
+#if SCP_LOGGER_ENABLE
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_mobile_log);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_logger_wakeup_AP);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_mobile_log_UT);
+	if (unlikely(ret != 0))
+		return ret;
+#endif
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_status);
 
 	if (unlikely(ret != 0))
 		return ret;
 
-	ret = device_create_bin_file(scp_device.this_device, &bin_attr_scp_B_dump);
+	ret = device_create_bin_file(scp_B_device.this_device, &bin_attr_scp_B_dump);
 
 	if (unlikely(ret != 0))
 		return ret;
 
-	ret = device_create_file(scp_device.this_device, &dev_attr_scp_B_reg_status);
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_reg_status);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -1140,7 +1177,7 @@ static int __init scp_init(void)
 	/*scp resvered memory*/
 	pr_debug("[SCP] scp_reserve_memory_ioremap\n");
 	scp_reserve_memory_ioremap();
-
+#if SCP_LOGGER_ENABLE
 	/* scp logger initialise */
 	pr_debug("[SCP] logger init\n");
 	if (scp_logger_init(scp_get_reserve_mem_virt(SCP_A_LOGGER_MEM_ID),
@@ -1148,6 +1185,14 @@ static int __init scp_init(void)
 		pr_err("[SCP] scp_logger_init_fail\n");
 		return -1;
 	}
+	pr_debug("[SCP B] logger init\n");
+	if (scp_B_logger_init(scp_get_reserve_mem_virt(SCP_B_LOGGER_MEM_ID),
+				scp_get_reserve_mem_size(SCP_B_LOGGER_MEM_ID)) == -1) {
+		pr_err("[SCP B] scp_B_logger_init_fail\n");
+		return -1;
+	}
+#endif
+
 #if ENABLE_SCP_EMI_PROTECTION
 	set_scp_mpu();
 #endif
@@ -1163,6 +1208,7 @@ static void __exit scp_exit(void)
 {
 	free_irq(scpreg.irq, NULL);
 	misc_deregister(&scp_device);
+	misc_deregister(&scp_B_device);
 	flush_workqueue(scp_workqueue);
 	/*scp_logger_cleanup();*/
 	destroy_workqueue(scp_workqueue);
