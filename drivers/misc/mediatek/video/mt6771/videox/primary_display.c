@@ -3615,7 +3615,8 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	static int prev_wrot_sram;
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int hwc_fps = 60;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
 	int stable = 0;
 #endif
 
@@ -3695,9 +3696,10 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
+	primary_fps_ctx_get_fps(&in_fps, &stable);
 	if (!primary_display_is_video_mode())
-		primary_fps_ctx_get_fps(&hwc_fps, &stable);
-	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+		out_fps = in_fps;
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);
@@ -5018,7 +5020,8 @@ int primary_display_resume(void)
 	int i, skip_update = 0;
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int hwc_fps = 60;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
 #endif
 
 	DISPCHECK("primary_display_resume begin\n");
@@ -5283,7 +5286,7 @@ int primary_display_resume(void)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
-	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);

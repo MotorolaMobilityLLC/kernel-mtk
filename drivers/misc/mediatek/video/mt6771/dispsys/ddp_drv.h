@@ -357,7 +357,7 @@ struct device *disp_get_device(void);
 /*secure video path implementation: the handle value*/
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
 
-int disp_get_ovl_bandwidth(unsigned int fps, unsigned int *bandwidth);
-int disp_get_rdma_bandwidth(unsigned int fps, unsigned int *bandwidth);
+int disp_get_ovl_bandwidth(unsigned int in_fps, unsigned int out_fps, unsigned int *bandwidth);
+int disp_get_rdma_bandwidth(unsigned int in_fps, unsigned int *bandwidth);
 
 #endif
