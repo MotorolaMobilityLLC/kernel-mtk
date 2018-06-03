@@ -11,25 +11,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
 #include <linux/delay.h>
+#include <linux/cpu.h>
 #include "teei_fp.h"
 #include "teei_id.h"
 #include "sched_status.h"
 #include "nt_smc_call.h"
-
-#define FDRV_CALL       0x02
-
-struct fdrv_call_struct {
-	int fdrv_call_type;
-	int fdrv_call_buff_size;
-	int retVal;
-};
-
-extern int add_work_entry(int work_type, unsigned char *buff);
+#include "teei_common.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include "utdriver_macro.h"
+#include "backward_driver.h"
+#include <imsg_log.h>
+unsigned long fp_buff_addr;
 
 unsigned long create_fp_fdrv(int buff_size)
 {
@@ -40,14 +37,14 @@ unsigned long create_fp_fdrv(int buff_size)
 	struct ack_fast_call_struct msg_ack;
 
 	if ((unsigned char *)message_buff == NULL) {
-		pr_err("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 
 	if (buff_size > VDRV_MAX_SIZE) {
-		pr_err("[%s][%d]: FP Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: FP Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 #ifdef UT_DMA_ZONE
@@ -55,9 +52,10 @@ unsigned long create_fp_fdrv(int buff_size)
 #else
 	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
 #endif
+
 	if ((unsigned char *)temp_addr == NULL) {
-		pr_err("[%s][%d]: kmalloc fp drv buffer failed.\n", __FILE__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: kmalloc fp drv buffer failed.\n", __FILE__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 	memset((void *)(&msg_head), 0, sizeof(struct message_head));
@@ -73,10 +71,9 @@ unsigned long create_fp_fdrv(int buff_size)
 	msg_body.fdrv_phy_addr = virt_to_phys((void *)temp_addr);
 	msg_body.fdrv_size = buff_size;
 
-
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)&msg_body, sizeof(struct create_fdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -87,36 +84,34 @@ unsigned long create_fp_fdrv(int buff_size)
 	down(&(boot_sema));
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
-	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
+	memcpy((void *)(&msg_head), (void *)(message_buff), sizeof(struct message_head));
 	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
+
+	/*local_irq_restore(irq_flag);*/
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
 		retVal = msg_ack.retVal;
 
 		if (retVal == 0) {
-			/* pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__); */
 			return temp_addr;
 		}
-	} else
-		retVal = 0;
+	} else {
+		retVal = (unsigned long)NULL;
+	}
 
 	/* Release the resource and return. */
-	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
+	free_pages((unsigned long)temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
 
-	pr_err("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
+	IMSG_ERROR("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
 	return retVal;
 }
 
-
-
 void set_fp_command(unsigned long memory_size)
 {
-
-	pr_err("[%s][%d]", __func__, __LINE__);
 	struct fdrv_message_head fdrv_msg_head;
 
-	memset((void *)&fdrv_msg_head, 0, sizeof(struct fdrv_message_head));
+	memset((void *)(&fdrv_msg_head), 0, sizeof(struct fdrv_message_head));
 
 	fdrv_msg_head.driver_type = FP_SYS_NO;
 	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
@@ -130,32 +125,32 @@ void set_fp_command(unsigned long memory_size)
 
 int __send_fp_command(unsigned long share_memory_size)
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 	set_fp_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
+	n_invoke_t_drv(&smc_type, 0, 0);
 
-	while (smc_type == 1) {
+	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
-
 }
 
 int send_fp_command(unsigned long share_memory_size)
 {
+
 	struct fdrv_call_struct fdrv_ent;
+
 	int retVal = 0;
 
 	down(&fdrv_lock);
 	ut_pm_mutex_lock(&pm_mutex);
-
 	down(&smc_lock);
-	pr_info("send_fp_command start\n");
+	IMSG_DEBUG("send_fp_command start\n");
 
 	if (teei_config_flag == 1)
 		complete(&global_down_lock);
@@ -168,22 +163,20 @@ int send_fp_command(unsigned long share_memory_size)
 
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
-        if (retVal != 0) {
-            up(&smc_lock);
-            ut_pm_mutex_unlock(&pm_mutex);
-            up(&fdrv_lock);
-            return retVal;
-        }
+
+	if (retVal != 0) {
+		up(&smc_lock);
+		ut_pm_mutex_unlock(&pm_mutex);
+		up(&fdrv_lock);
+		return retVal;
+	}
 
 	down(&fdrv_sema);
-
-	/* put_online_cpus(); */
-    pr_info("send_fp_command end\n");
-
+	IMSG_DEBUG("send_fp_command end\n");
 	/* with a rmb() */
 	rmb();
 
-	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
+	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_BUFF_SIZE);
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);

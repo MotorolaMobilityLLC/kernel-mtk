@@ -44,16 +44,9 @@ config MICROTRUST_KEYMASTER_DRIVER
 	---help---
 	  Enable TEEI Keymaster Driver
 
-config MICROTRUST_TUI_DRIVER
-	bool "Enable Microtrust TUI Support"
+config MICROTRUST_DEBUG
+	bool "Enable Microtrust Debug Message"
 	depends on MICROTRUST_TEE_SUPPORT
 	default n
 	---help---
-	  Enable Microtrust TUI Support
-
-config MICROTRUST_DCIH_SUPPORT
-     tristate "Microtrust DCIH Capability Support"
-     depends on MICROTRUST_TEE_SUPPORT
-     default n
-     ---help---
-     Enable TEEI DCIH Capability
+	  Enable debug messages output from Microtrust Linux drivers

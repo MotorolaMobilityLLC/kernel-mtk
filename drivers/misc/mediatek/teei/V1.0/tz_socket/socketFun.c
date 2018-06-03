@@ -28,11 +28,14 @@
 #include <linux/slab.h>
 #include "TEEI.h"
 #include "socketFun.h"
-#define SOCKET_SIZE     0x80000
-#define MEM_CLEAR       0x1
-#define SOCKET_MAJOR    253
+#define SOCKET_SIZE	0x80000
+#define MEM_CLEAR	0x1
+#define SOCKET_MAJOR	253
 #define SHMEM_ENABLE    0
 #define SHMEM_DISABLE   1
+
+#define IMSG_TAG "[tz_socket]"
+#include <imsg_log.h>
 
 static int socket_major = SOCKET_MAJOR;
 static struct class *driver_class;
@@ -49,7 +52,7 @@ EXPORT_SYMBOL_GPL(daulOS_rd_sem);
 struct semaphore daulOS_wr_sem;
 EXPORT_SYMBOL_GPL(daulOS_wr_sem);
 
-struct socket_dev *socket_devp = NULL;
+struct socket_dev *socket_devp;
 
 int socket_open(struct inode *inode, struct file *filp)
 {
@@ -64,29 +67,29 @@ int socket_release(struct inode *inode, struct file *filp)
 }
 
 static long socket_ioctl(struct file *filp,
-                         unsigned int cmd, unsigned long arg)
+			unsigned int cmd, unsigned long arg)
 {
 	struct socket_dev *dev = filp->private_data;
 
 	switch (cmd) {
-		case MEM_CLEAR:
-			if (down_interruptible(&dev->sem))
-				return -ERESTARTSYS;
+	case MEM_CLEAR:
+		if (down_interruptible(&dev->sem))
+			return -ERESTARTSYS;
 
-			memset(dev->mem, 0, SOCKET_SIZE);
-			up(&dev->sem);
-			pr_info(KERN_INFO "Socket is set to zero.\n");
-			break;
+		memset(dev->mem, 0, SOCKET_SIZE);
+		up(&dev->sem);
+		IMSG_INFO("Socket is set to zero.\n");
+		break;
 
-		default:
-			return -EINVAL;
+	default:
+		return -EINVAL;
 	}
 
 	return 0;
 }
 
 static ssize_t socket_read(struct file *filp, char __user *buf,
-                           size_t size, loff_t *ppos)
+			size_t size, loff_t *ppos)
 {
 	struct TEEI_socket_command *socket_p = NULL;
 	int length = 0;
@@ -110,15 +113,15 @@ static ssize_t socket_read(struct file *filp, char __user *buf,
 }
 
 static ssize_t socket_write(struct file *filp, const char __user *buf,
-                            size_t size, loff_t *ppos)
+				size_t size, loff_t *ppos)
 {
 
 	if (daulOS_shmem_flags == SHMEM_DISABLE) {
-		pr_info("Socket write timeout\n");
+		IMSG_INFO("Socket write timeout\n");
 		return -ETIME;
 	}
 
-	pr_info("Socket write function is running\n");
+	IMSG_INFO("Socket write function is running\n");
 
 	memset((void *)daulOS_share_mem, 0, size);
 
@@ -134,55 +137,55 @@ static loff_t socket_llseek(struct file *filp, loff_t offset, int orig)
 	loff_t ret = 0;
 
 	switch (orig) {
-		case 0:
-			if (offset < 0) {
-				ret = -EINVAL;
-				break;
-			}
-
-			if ((unsigned int)offset > SOCKET_SIZE) {
-				ret = -EINVAL;
-				break;
-			}
-
-			filp->f_pos = (unsigned int)offset;
-			ret = filp->f_pos;
-			break;
-
-		case 1:
-			if ((filp->f_pos + offset) > SOCKET_SIZE) {
-				ret = -EINVAL;
-				break;
-			}
-
-			if ((filp->f_pos + offset) < 0) {
-				ret = -EINVAL;
-				break;
-			}
-
-			filp->f_pos += offset;
-			ret = filp->f_pos;
-			break;
-
-		default:
+	case 0:
+		if (offset < 0) {
 			ret = -EINVAL;
 			break;
+		}
+
+		if ((unsigned int)offset > SOCKET_SIZE) {
+			ret = -EINVAL;
+			break;
+		}
+
+		filp->f_pos = (unsigned int)offset;
+		ret = filp->f_pos;
+		break;
+
+	case 1:
+		if ((filp->f_pos + offset) > SOCKET_SIZE) {
+			ret = -EINVAL;
+			break;
+		}
+
+		if ((filp->f_pos + offset) < 0) {
+			ret = -EINVAL;
+			break;
+		}
+
+		filp->f_pos += offset;
+		ret = filp->f_pos;
+		break;
+
+	default:
+		ret = -EINVAL;
+		break;
 	}
 
 	return ret;
 }
 
 static const struct file_operations socket_fops = {
-	.owner =                THIS_MODULE,
-	.llseek =               socket_llseek,
-	.read =                 socket_read,
-	.write =                socket_write,
+	.owner =		THIS_MODULE,
+	.llseek =		socket_llseek,
+	.read =			socket_read,
+	.write =		socket_write,
 	.unlocked_ioctl = socket_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl   = socket_ioctl,
 #endif
-	.open =                 socket_open,
-	.release =              socket_release,
+	.open =			socket_open,
+	.release =		socket_release,
 };
 
 static void socket_setup_cdev(struct socket_dev *dev, int index)
@@ -195,7 +198,7 @@ static void socket_setup_cdev(struct socket_dev *dev, int index)
 	err = cdev_add(&dev->cdev, devno, 1);
 
 	if (err)
-		pr_info(KERN_NOTICE "Error %d adding socket %d.\n", err, index);
+		IMSG_ERROR("Error %d adding socket %d.\n", err, index);
 }
 
 int socket_init(void)
@@ -214,7 +217,7 @@ int socket_init(void)
 
 	if (IS_ERR(driver_class)) {
 		result = -ENOMEM;
-		pr_info("class_create failed %d.\n", result);
+		IMSG_ERROR("class_create failed %d.\n", result);
 		goto unregister_chrdev_region;
 	}
 
@@ -222,7 +225,7 @@ int socket_init(void)
 
 	if (!class_dev) {
 		result = -ENOMEM;
-		pr_info("class_device_create failed %d.\n", result);
+		IMSG_ERROR("class_device_create failed %d.\n", result);
 		goto class_destroy;
 	}
 

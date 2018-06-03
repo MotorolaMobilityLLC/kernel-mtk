@@ -13,6 +13,7 @@
  */
 #ifndef __TEEI_SMC_STRUCT_H__
 #define __TEEI_SMC_STRUCT_H__
+
 #include <linux/semaphore.h>
 #define TEE_NAME_SIZE   (255)
 
