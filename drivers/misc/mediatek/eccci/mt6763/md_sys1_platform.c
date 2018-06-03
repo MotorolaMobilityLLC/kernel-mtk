@@ -357,7 +357,6 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 	/* 1. pre-action */
 	if (per_md_data->md_dbg_dump_flag & (MD_DBG_DUMP_ALL & ~(1 << MD_DBG_DUMP_SMEM))) {
-		ccci_write32(md_reg->md_dbg_sys, 0x00, 0xB160001);
 		ccci_write32(md_reg->md_dbg_sys, 0x430, 0x1);
 		udelay(1000);
 		CCCI_MEM_LOG_TAG(md->index, TAG, "md_dbg_sys:0x%X\n", cldma_read32(md_reg->md_dbg_sys, 0x430));
