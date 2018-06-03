@@ -308,38 +308,28 @@ static char *ddp_clock_0(int bit)
 		return "smi_larb0(cg), ";
 	case 2:
 		return "smi_larb1(cg), ";
-	case 15:
-		return "ovl0, ";
-	case 16:
-		return "ovl1, ";
-	case 17:
-		return "ovl0_2L, ";
-	case 18:
-		return "ovl1_2L, ";
-	case 19:
-		return "rdma0, ";
 	case 20:
-		return "rdma1, ";
+		return "ovl0, ";
 	case 21:
-		return "wdma0, ";
+		return "ovl0_2L, ";
 	case 22:
-		return "wdma1, ";
+		return "ovl1_2L, ";
 	case 23:
-		return "color, ";
+		return "rdma0, ";
 	case 24:
-		return "ccorr, ";
+		return "rdma1, ";
 	case 25:
-		return "aal, ";
+		return "wdma0, ";
 	case 26:
-		return "gamma, ";
+		return "color, ";
 	case 27:
-		return "od, ";
+		return "ccorr, ";
 	case 28:
-		return "dither, ";
+		return "aal, ";
 	case 29:
-		return "ufoe_mout, ";
+		return "gamma, ";
 	case 30:
-		return "dsc, ";
+		return "dither, ";
 	case 31:
 		return "split, ";
 	default:
@@ -358,8 +348,8 @@ static char *ddp_clock_1(int bit)
 		return "dpi_mm(cg), ";
 	case 3:
 		return "dpi_interface, ";
-	case 8:
-		return "ovl0_mout, ";
+	case 7:
+		return "26M(CG), ";
 	default:
 		return NULL;
 	}
