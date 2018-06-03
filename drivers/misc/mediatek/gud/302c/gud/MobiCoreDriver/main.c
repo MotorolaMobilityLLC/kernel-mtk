@@ -458,7 +458,10 @@ int mc_get_buffer(struct mc_instance *instance,
 	}
 
 	phys = virt_to_phys(addr);
+	/* add table_lock because mc_get_new_handle() calls find_mmu_table() */
+	mutex_lock(&mem_ctx.table_lock);
 	cbuffer->handle = mc_get_new_handle();
+	mutex_unlock(&mem_ctx.table_lock);
 	cbuffer->phys = phys;
 	cbuffer->addr = addr;
 	cbuffer->order = order;
