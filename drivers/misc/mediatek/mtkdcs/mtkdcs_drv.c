@@ -505,5 +505,5 @@ static int __init mtkdcs_init(void)
 
 static void __exit mtkdcs_exit(void) { }
 
-late_initcall(mtkdcs_init);
+postcore_initcall(mtkdcs_init);
 module_exit(mtkdcs_exit);
