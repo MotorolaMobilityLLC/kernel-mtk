@@ -1156,6 +1156,11 @@ static long simple_sd_compat_ioctl(struct file *file, unsigned int cmd,
 	if (arg64 == NULL)
 		return -EFAULT;
 
+	if (!access_ok(VERIFY_WRITE, arg32, sizeof(*arg32)) ||
+	     !access_ok(VERIFY_WRITE, arg64, sizeof(*arg64))) {
+		return -EFAULT;
+	}
+
 	err = compat_get_simple_ion_allocation(arg32, arg64);
 	if (err)
 		return err;
