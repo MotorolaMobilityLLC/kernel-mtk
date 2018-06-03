@@ -362,6 +362,9 @@ int do_esd_check_read(void)
 	int ret = 0;
 	struct cmdqRecStruct *handle;
 
+	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
+		primary_display_idlemgr_kick((char *)__func__, 1);
+
 	/* 0.create esd check cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
 
@@ -477,9 +480,7 @@ int primary_display_esd_check(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_PULSE, 0,
 		primary_display_is_video_mode());
 
-	/* only cmd mode read & with disable mmsys clk will kick */
-	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
-		primary_display_idlemgr_kick((char *)__func__, 1);
+	DISPINFO("[ESD]ESD check read 2\n");
 	ret = do_esd_check_read();
 
 

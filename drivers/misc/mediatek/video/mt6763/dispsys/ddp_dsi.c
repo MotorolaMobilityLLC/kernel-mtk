@@ -4106,17 +4106,6 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 		/* 0. set dsi cmd mode */
 		DSI_SetMode(module, cmdq_trigger_handle, CMD_MODE);
 
-		/* 1. polling dsi not busy */
-		i = DSI_MODULE_BEGIN(module);
-		if (i == 0) {
-			/* polling dsi busy */
-			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
-		}
-#if 1
-		i = DSI_MODULE_END(module);
-		if (i == 1)	/* DUAL */
-			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
-#endif
 		/* 2.dual dsi need do reset DSI_DUAL_EN/DSI_START */
 		if (module == DISP_MODULE_DSIDUAL) {
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
@@ -4127,7 +4116,26 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 				      DSI_START, 0);
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
 				      DSI_START, 0);
+		} else if (module == DISP_MODULE_DSI0) {
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+				      DSI_START, 0);
+		} else if (module == DISP_MODULE_DSI1) {
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+				      DSI_START, 0);
 		}
+
+		/* 1. polling dsi not busy */
+		i = DSI_MODULE_BEGIN(module);
+		if (i == 0) {
+			/* polling dsi busy */
+			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+		}
+#if 1
+		i = DSI_MODULE_END(module);
+		if (i == 1)	{/* DUAL */
+			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+		}
+#endif
 		/* 3.disable HS */
 		/* DSI_clk_HS_mode(module, cmdq_trigger_handle, FALSE); */
 
@@ -4145,8 +4153,14 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 				      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
 				      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-
+		} else if (module == DISP_MODULE_DSI0) {
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+				      DSI_START, 0);
+		} else if (module == DISP_MODULE_DSI1) {
+			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+				      DSI_START, 0);
 		}
+
 		/* 1. set dsi vdo mode */
 		DSI_SetMode(module, cmdq_trigger_handle, dsi_params->mode);
 
