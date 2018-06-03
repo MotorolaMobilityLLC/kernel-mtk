@@ -248,13 +248,13 @@ int add_hw_watchpoint(struct wp_event *wp_event)
 		if (wp_tracer.wp_events[i].virt == (wp_event->virt & ~3)) {
 			pr_err("This address have been watched in cpu%d's watchpoint\n", i);
 			spin_unlock_irqrestore(&wp_lock, flags);
-			return -EAGAIN;
+			return 0;
 		}
 	}
 	spin_unlock_irqrestore(&wp_lock, flags);
 
 	if (i == MAX_NR_WATCH_POINT)
-		return -EAGAIN;
+		return -EBUSY;
 
 	wp_tracer.wp_events[i].virt = wp_event->virt & ~3;	/* enforce word-aligned */
 	wp_tracer.wp_events[i].phys = wp_event->phys;	/* no use currently */
@@ -333,6 +333,12 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr, struct pt_re
 {
 	unsigned long wfar, daddr, iaddr;
 	int i, j, ret;
+/*
+ * Since ARMv8 uses 16 byte as the offset of BCRs, BVRs, WCRs
+ * and WVRs in both aarch32 and aarch64 mode, we have no choices
+ * but referring to Chip name to configure the offset.
+ */
+
 #ifdef CONFIG_ARCH_MT6580
 	int offset = 2;
 #else

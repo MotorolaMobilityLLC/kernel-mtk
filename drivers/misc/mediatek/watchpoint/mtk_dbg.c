@@ -51,6 +51,7 @@ void dump_dbgregs(int cpuid)
 	isb();
 
 	smp_call_function_single(cpuid, smp_read_dbgdscr_callback, &dbgregs[cpuid].DBGDSCRext, 1);
+	dbgregs[cpuid].DBGEDSCR = cs_cpu_read(wp_context->debug_regs[cpuid], EDSCR);
 
 	for (i = 1; i < 1 + (wp_context->bp_nr); i++) {
 #ifdef CONFIG_ARM64
@@ -88,7 +89,7 @@ void dump_dbgregs(int cpuid)
 EXPORT_SYMBOL(dump_dbgregs);
 void print_dbgregs(int cpuid)
 {
-
+	pr_debug("[MTK WP] cpu %d, EDSCR 0x%lx\n", cpuid, dbgregs[cpuid].DBGEDSCR);
 	pr_debug("[MTK WP] cpu %d, DBGDSCRext 0x%lx\n", cpuid, dbgregs[cpuid].DBGDSCRext);
 	pr_debug("[MTK WP] cpu %d, DBGBVR0 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR0);
 	pr_debug("[MTK WP] cpu %d, DBGBVR1 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR1);
@@ -121,9 +122,11 @@ EXPORT_SYMBOL(print_dbgregs);
 #if 1
 unsigned long *mt_save_dbg_regs(unsigned long *p, unsigned int cpuid)
 {
+
 	struct wp_trace_context_t *wp_context;
 
 	register_wp_context(&wp_context);
+
 	cs_cpu_write(wp_context->debug_regs[cpuid], EDLAR, UNLOCK_KEY);
 	cs_cpu_write(wp_context->debug_regs[cpuid], OSLAR_EL1, ~UNLOCK_KEY);
 #ifdef DBG_REG_DUMP
@@ -214,12 +217,14 @@ unsigned long *mt_save_dbg_regs(unsigned long *p, unsigned int cpuid)
 	isb();
 
 	return p;
+
 }
 
 void mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid)
 {
 	unsigned long dscr;
 	struct wp_trace_context_t *wp_context;
+
 #ifdef DBG_REG_DUMP
 	pr_debug("[MTK WP] %s\n", __func__);
 #endif
@@ -233,7 +238,6 @@ void mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid)
 	cs_cpu_write(wp_context->debug_regs[cpuid], OSLAR_EL1, ~UNLOCK_KEY);
 
 	isb();
-
 	/* restore register */
 #ifdef CONFIG_ARM64
 	__asm__ __volatile__("ldr x0, [%0],#0x8\n\t"
@@ -311,7 +315,6 @@ void mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid)
 			     "ldm %0!, {r4}\n\t"
 			     "mcr p14, 0, r4, c0, c7, 0  @DBGVCR\n\t":"+r"(p), "=r"(dscr)
 			     : : "r4", "r5", "r6", "r7", "r8", "r9");
-
 #endif
 	isb();
 }
@@ -326,11 +329,13 @@ void mt_copy_dbg_regs(int to, int from)
 	unsigned long args;
 	struct wp_trace_context_t *wp_context;
 	int i;
+
 #ifdef CONFIG_ARCH_MT6580
 	int offset = 2;
 #else
 	int offset = 4;
 #endif
+
 	register_wp_context(&wp_context);
 	base_to = (unsigned long)wp_context->debug_regs[to];
 	base_from = (unsigned long)wp_context->debug_regs[from];
@@ -380,11 +385,13 @@ static int dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 	struct wp_trace_context_t *wp_context;
 	unsigned long base_to, base_from = 0;
 	int i, j;
+
 #ifdef CONFIG_ARCH_MT6580
 	int offset = 2;
 #else
 	int offset = 4;
 #endif
+
 
 	action = action & 0xf;
 	if (action != CPU_STARTING)
@@ -408,14 +415,13 @@ static int dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 			this_cpu, __func__, action);
 #endif
 
-#if 1	/* restore EDSCR */
+	/* restore EDSCR */
 	args = cs_cpu_read(wp_context->debug_regs[i], EDSCR);
 	cs_cpu_write(wp_context->debug_regs[this_cpu], EDSCR, args);
-#else	/* restore MDSCR_EL1 or DBGDSCRext */
-	smp_call_function_single(i, smp_read_dbgdscr_callback, &args, 1);
+	args = MDBGEN | KDE | TDCC;
 	smp_write_dbgdscr_callback(&args);
-#endif
 	isb();
+
 #ifdef DBG_REG_DUMP
 	pr_err("[MTK WP] cpu %lx do %s, CPU%d's dbgdscr=0x%x\n",
 		 this_cpu,
@@ -441,12 +447,6 @@ static int dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 #endif
 	}
 
-#if 0
-#ifndef CONFIG_ARM64
-	smp_call_function_single(i, smp_read_dbgvcr_callback, &args, 1);
-	smp_write_dbgvcr_callback(&args);
-#endif
-#endif
 	isb();
 
 	return NOTIFY_OK;
@@ -455,6 +455,7 @@ static int dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 static struct notifier_block cpu_nfb = {
 	.notifier_call = dbgregs_hotplug_callback
 };
+
 static int __init regs_backup(void)
 {
 	struct device_node *node;
