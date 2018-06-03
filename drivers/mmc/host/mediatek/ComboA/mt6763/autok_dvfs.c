@@ -945,7 +945,7 @@ int sdio_autok(void)
 
 	if (host->use_hw_dvfs == 0) {
 		/* HW DVFS not support or disabled by device tree */
-		spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
+		/* spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1); */
 		return 0;
 	}
 
