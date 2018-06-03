@@ -537,7 +537,9 @@ static inline bool pd_check_rx_pending(struct pd_port *pd_port)
 
 	if (alert & TCPC_REG_ALERT_RX_STATUS) {
 		PE_INFO("rx_pending\r\n");
+#ifndef CONFIG_USB_PD_ONLY_PRINT_SYSTEM_BUSY
 		pd_enable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
+#endif
 		return true;
 	}
 
@@ -555,9 +557,14 @@ static inline bool pd_process_timer_msg(
 	case PD_TIMER_SENDER_RESPONSE:
 
 #ifdef CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+#ifndef CONFIG_USB_PD_ONLY_PRINT_SYSTEM_BUSY
 		if (pd_check_rx_pending(pd_port))
 			return false;
+#else
+		pd_check_rx_pending(pd_port);
+#endif	/* CONFIG_USB_PD_PRINT_SYSTEM_BUSY */
 #endif	/* CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
+
 
 		pd_cancel_dpm_reaction(pd_port);
 		pd_notify_pe_cancel_pr_swap(pd_port);
