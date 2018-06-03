@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_api.h"
@@ -855,9 +856,12 @@ static int pmic_buck_vimvo_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("buck vimvo enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
+		pmic_config_interface(0x0FE4, 0x1, 0x1, 12);    /* 0x0FE4[12] = 1 */
 		ret = (mreg->en_cb)(1);
-	else {
+		udelay(220);
+		pmic_config_interface(0x0FE4, 0x0, 0x1, 12);    /* 0x0FE4[12] = 0 */
+	} else {
 		pr_err("buck vimvo don't have en_cb\n");
 		ret = -1;
 	}
@@ -1536,9 +1540,12 @@ static int pmic_buck_vmodem_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("buck vmodem enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
+		pmic_config_interface(0x0F88, 0x1, 0x1, 12);    /* 0x0F88[12] = 1 */
 		ret = (mreg->en_cb)(1);
-	else {
+		udelay(220);
+		pmic_config_interface(0x0F88, 0x0, 0x1, 12);    /* 0x0F88[12] = 0 */
+	} else {
 		pr_err("buck vmodem don't have en_cb\n");
 		ret = -1;
 	}
@@ -2953,9 +2960,12 @@ static int pmic_buck_vmd1_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("buck vmd1 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
+		pmic_config_interface(0x0F9C, 0x1, 0x1, 12);    /* 0x0F9C[12] = 1 */
 		ret = (mreg->en_cb)(1);
-	else {
+		udelay(220);
+		pmic_config_interface(0x0F9C, 0x0, 0x1, 12);    /* 0x0F9C[12] = 0 */
+	} else {
 		pr_err("buck vmd1 don't have en_cb\n");
 		ret = -1;
 	}
