@@ -16,7 +16,6 @@
 #include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
-/* #define BATTERY_DTS_SUPPORT */
 #define BATTERY_SW_INIT
 #define RBAT_PULL_UP_VOLT_BY_BIF
 /* #define INIT_BAT_CUR_FROM_PTIM */
