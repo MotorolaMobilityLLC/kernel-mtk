@@ -56,6 +56,8 @@ struct mtk_iommu_data {
 unsigned long mtk_get_pgt_base(void);
 phys_addr_t mtkfb_get_fb_base(void);
 size_t mtkfb_get_fb_size(void);
+int smi_reg_backup_sec(void);
+int smi_reg_restore_sec(void);
 
 #else
 static unsigned long mtk_get_pgt_base(void)
