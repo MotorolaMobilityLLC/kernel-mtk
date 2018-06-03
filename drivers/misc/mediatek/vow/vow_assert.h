@@ -17,6 +17,7 @@
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
+#include "vow.h"
 
 #ifdef CONFIG_MTK_AEE_FEATURE
 #define VOW_ASSERT(exp) \
@@ -30,7 +31,7 @@
 #define AUD_ASSERT(exp) \
 	do { \
 		if (!(exp)) { \
-			pr_err("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
+			VOWDRV_PR_ERR("ASSERT("#exp") fail: \""  __FILE__ "\", %uL\n", __LINE__); \
 		} \
 	} while (0)
 #endif
