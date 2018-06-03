@@ -1295,9 +1295,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 		if (eem_devinfo.FT_PGM <= 3)
 			det->volt_offset = MARGIN_ADD_OFF_VER3;
-
-		if (mt_cpufreq_get_cpu_level() > 0)
-			det->DVTFIXED = 0x9;
 		break;
 
 	case EEM_DET_L:
@@ -1316,8 +1313,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		else
 			det->volt_offset = MARGIN_ADD_OFF_VER4;
 
-		if (mt_cpufreq_get_cpu_level() > 0)
-			det->DVTFIXED = 0x9;
 		break;
 #endif
 #if ENABLE_LOO
@@ -1332,8 +1327,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->EEMMONEN	= devinfo->CCI_MONEN;
 			det->MTDES	= devinfo->CCI_MTDES;
 			det->SPEC       = devinfo->CCI_SPEC;
-			if (mt_cpufreq_get_cpu_level() > 0)
-				det->DVTFIXED = 0x9;
 		} else {
 			/* for DVT L_HI input values are the same as CCI */
 			/* TODO: config real L_HI efuse here */
@@ -1345,8 +1338,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->EEMMONEN	= devinfo->CPU_L_HI_MONEN;
 			det->MTDES	= devinfo->CPU_L_HI_MTDES;
 			det->SPEC	= devinfo->CPU_L_HI_SPEC;
-			if (mt_cpufreq_get_cpu_level() > 0)
-				det->DVTFIXED = 0x9;
 			}
 		break;
 
@@ -1359,8 +1350,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 			det->EEMMONEN	= devinfo->CPU_2L_HI_MONEN;
 			det->MTDES	= devinfo->CPU_2L_HI_MTDES;
 			det->SPEC	= devinfo->CPU_2L_HI_SPEC;
-			if (mt_cpufreq_get_cpu_level() > 0)
-				det->DVTFIXED = 0x9;
 		break;
 #else
 	case EEM_DET_CCI:
@@ -1377,8 +1366,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		if (eem_devinfo.FT_PGM <= 3)
 			det->volt_offset = MARGIN_ADD_OFF_VER3;
 
-		if (mt_cpufreq_get_cpu_level() > 0)
-			det->DVTFIXED = 0x9;
 		break;
 #endif
 
