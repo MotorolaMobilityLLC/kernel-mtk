@@ -601,7 +601,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	#endif
 #else
 	/* For 55 */
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
 #endif
 	/*pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);*//*Peter-SW:55,56*/
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 3);
