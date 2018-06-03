@@ -95,13 +95,17 @@ int mtk_idle_sysfs_entry_create_plat(const char *name
 	int bRet = 0;
 	(void)mode;
 
+	if (!handle)
+		return -1;
 	if (parent && parent->_current)
 		pHandle = (struct dentry *)parent->_current;
 
-	if (!handle)
-		return -1;
+	if (pHandle)
 	handle->_current =
 		(void *)debugfs_create_dir(name, pHandle);
+	else
+		handle->_current =
+			(void *)debugfs_create_dir(name, NULL);
 	return bRet;
 }
 int mtk_idle_sysfs_entry_node_add_plat(const char *name
