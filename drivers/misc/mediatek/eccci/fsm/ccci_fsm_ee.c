@@ -12,6 +12,7 @@
  */
 
 #include "ccci_fsm_internal.h"
+#include "modem_sys.h"
 
 void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl,
 	unsigned int type, char *str)
@@ -79,6 +80,7 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 		struct ccci_smem_region *mdss_dbg
 			= ccci_md_get_smem_by_user_id(ee_ctl->md_id,
 				SMEM_USER_RAW_MDSS_DBG);
+		struct ccci_modem *md = ccci_md_get_modem_by_id(ee_ctl->md_id);
 
 		CCCI_ERROR_LOG(md_id, FSM, "MD exception stage 1!\n");
 #if defined(CONFIG_MTK_AEE_FEATURE)
@@ -108,6 +110,9 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 			ee_case = MD_EE_CASE_NO_RESPONSE;
 		} else if (ee_info_flag & MD_EE_WDT_GET) {
 			ee_case = MD_EE_CASE_WDT;
+			md->per_md_data.md_dbg_dump_flag |=
+			(1 << MD_DBG_DUMP_TOPSM) | (1 << MD_DBG_DUMP_MDRGU)
+			| (1 << MD_DBG_DUMP_OST);
 		} else {
 			CCCI_ERROR_LOG(md_id, FSM,
 				"Invalid MD_EX, ee_info=%x\n", ee_info_flag);
@@ -317,7 +322,7 @@ int fsm_check_ee_done(struct ccci_fsm_ee *ee_ctl, int timeout)
 		if (ccci_port_get_critical_user(ee_ctl->md_id,
 				CRIT_USR_MDLOG)) {
 			CCCI_DEBUG_LOG(ee_ctl->md_id, FSM,
-				"MD logger is running, waiting for EE dump done\n");
+			"MD logger is running, waiting for EE dump done\n");
 			is_ee_done = !(ee_ctl->ee_info_flag & MD_EE_FLOW_START)
 				&& ee_ctl->mdlog_dump_done;
 		} else
