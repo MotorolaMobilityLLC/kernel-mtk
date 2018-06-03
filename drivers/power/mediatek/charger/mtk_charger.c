@@ -130,8 +130,14 @@ int mtk_chr_is_charger_exist(unsigned char *exist)
 }
 
 /*=============== fix me==================*/
+int chargerlog_level = CHRLOG_ERROR_LEVEL;
 
-/* log */
+int chr_get_debug_level(void)
+{
+	return chargerlog_level;
+}
+
+#ifdef MTK_CHARGER_EXP
 #include <linux/string.h>
 
 char chargerlog[1000];
@@ -170,8 +176,8 @@ void charger_log_flash(const char *fmt, ...)
 	chargerlogIdx = 0;
 	memset(chargerlog, 0, 1000);
 }
+#endif
 
-/* log */
 void _wake_up_charger(struct charger_manager *info)
 {
 	unsigned long flags;
@@ -737,8 +743,37 @@ static ssize_t store_pe30(struct device *dev, struct device_attribute *attr,
 static DEVICE_ATTR(pe30, 0664, show_pe30,
 		   store_pe30);
 
-
 /* pump express series end*/
+
+static ssize_t show_charger_log_level(struct device *dev, struct device_attribute *attr,
+					char *buf)
+{
+	chr_err("[show_charger_log_level] show chargerlog_level : %d\n", chargerlog_level);
+	return sprintf(buf, "%d\n", chargerlog_level);
+}
+
+static ssize_t store_charger_log_level(struct device *dev, struct device_attribute *attr,
+					 const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	chr_err("[store_charger_log_level]\n");
+
+	if (buf != NULL && size != 0) {
+		chr_err("[store_charger_log_level] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			chr_err("[store_charger_log_level] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		chargerlog_level = val;
+		chr_err("[FG_daemon_log_level] gFG_daemon_log_level=%d\n", chargerlog_level);
+	}
+	return size;
+}
+static DEVICE_ATTR(charger_log_level, 0664, show_charger_log_level, store_charger_log_level);
+
 
 int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 {
@@ -1893,6 +1928,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 		goto _out;
 	/* Pump express */
 	ret = device_create_file(&(pdev->dev), &dev_attr_Pump_Express);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_charger_log_level);
 	if (ret)
 		goto _out;
 
