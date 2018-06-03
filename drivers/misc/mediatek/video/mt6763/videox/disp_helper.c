@@ -347,16 +347,16 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	0);
-	disp_helper_set_option(DISP_OPT_SHARE_SRAM,	0);
-	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM,	1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	1);
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
-	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
 
 	disp_helper_set_option(DISP_OPT_MET_LOG, 0);
 	/* ===================End: lowpower option setting==================== */
@@ -369,7 +369,7 @@ void disp_helper_option_init(void)
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 1);
+	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 0);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
@@ -382,7 +382,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_FPS_EXT_INTERVAL, 1000);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
-	disp_helper_set_option(DISP_OPT_HRT, 0);
+	disp_helper_set_option(DISP_OPT_HRT, 1);
 
 	/* display partial update */
 #ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT

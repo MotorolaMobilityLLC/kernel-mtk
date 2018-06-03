@@ -18,7 +18,8 @@
 /* from apmixedsys CODA */
 #define APMIXEDSYS_PLL_BASE				((unsigned long)ddp_apmixed_base)
 #define APMIXED_PLL_CON8				(0x0020UL)
-	#define FLD_PLL_MIPID26M_EN				REG_FLD_MSB_LSB(17, 16)
+	#define FLD_PLL_MIPID26M_EN_MIPITX0		REG_FLD_MSB_LSB(16, 16)
+	#define FLD_PLL_MIPID26M_EN_MIPITX1		REG_FLD_MSB_LSB(17, 17)
 
 /* come from CODA mipi_tx_config H file */
 #define MIPITX_LANE_CON					(0x000CUL)

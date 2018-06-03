@@ -87,7 +87,8 @@ static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 };
 
 static void __iomem *ddp_apmixed_base;
-unsigned int parsed_apmixed;
+static unsigned int parsed_apmixed;
+static int apmixed_refcnt;
 
 const char *ddp_get_clk_name(unsigned int n)
 {
@@ -124,6 +125,8 @@ int ddp_clk_check(void)
 			ddp_clks[i].refcnt == 0 ? "off" : "on", ddp_clks[i].refcnt);
 	}
 
+	pr_warn("ddp_clk_check mipitx pll clk is %s refcnt=%d\n",
+		apmixed_refcnt == 0 ? "off" : "on", apmixed_refcnt);
 	return ret;
 }
 
@@ -197,10 +200,15 @@ int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent)
 
 static int __ddp_set_mipi26m(int idx, int en)
 {
-	if (en)
-		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 1);
-	else
-		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 0);
+	if (en) {
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN_MIPITX0, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 1);
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN_MIPITX1, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 1);
+		apmixed_refcnt++;
+	} else {
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN_MIPITX0, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 0);
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN_MIPITX1, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 0);
+		apmixed_refcnt--;
+	}
 
 	return 0;
 }
@@ -599,7 +607,7 @@ void ddp_clk_force_on(unsigned int on)
 {
 	if (on) {
 		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
-		ddp_clk_prepare_enable(TOP_26M);
+		/*ddp_clk_prepare_enable(TOP_26M);*/
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
 		/*ddp_clk_prepare_enable(DISP0_SMI_LARB1);*/
@@ -613,7 +621,7 @@ void ddp_clk_force_on(unsigned int on)
 		/*ddp_clk_disable_unprepare(DISP0_SMI_LARB1);*/
 		ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
-		ddp_clk_disable_unprepare(TOP_26M);
+		/*ddp_clk_disable_unprepare(TOP_26M);*/
 		ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 	}
 }
