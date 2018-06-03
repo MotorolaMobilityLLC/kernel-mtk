@@ -275,6 +275,12 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	target_idx = g_opp_table[idx].gpufreq_idx;
 	target_cond_idx = idx;
 
+	/* for DEMO, set freq from GED to max freq */
+	target_freq = g_opp_table[0].gpufreq_khz;
+	target_volt = g_opp_table[0].gpufreq_volt;
+	target_idx = g_opp_table[0].gpufreq_idx;
+	target_cond_idx = 0;
+
 	gpufreq_pr_debug("@%s: receive freq: %d, index: %d\n", __func__, target_freq, target_idx);
 
 	/* OPP freq is limited by Thermal/Power/PBM */
@@ -867,9 +873,6 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 	if (limited_power == 0) {
 		g_limited_idx_array[IDX_THERMAL_PROTECT_LIMITED] = 0;
 		__mt_gpufreq_update_max_limited_idx();
-
-		/* for DEMO, when there's no thermal limit, set freq to max freq */
-		mt_gpufreq_target(0);
 	} else {
 		limited_freq = __mt_gpufreq_get_limited_freq_by_power(limited_power);
 		for (i = 0; i < g_opp_idx_num; i++) {
