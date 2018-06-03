@@ -742,7 +742,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 }
 
 #ifdef GED_ENABLE_FB_DVFS
-static int gx_gpu_dvfs_margin = 5;
+static int gx_gpu_dvfs_margin = 15;
 module_param(gx_gpu_dvfs_margin, int, S_IRUGO|S_IWUSR);
 #define GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM 4
 static int is_fb_dvfs_triggered;
