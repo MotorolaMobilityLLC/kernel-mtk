@@ -2429,7 +2429,6 @@ static int musb_gadget_start(struct usb_gadget *g, struct usb_gadget_driver *dri
 {
 	struct musb *musb = gadget_to_musb(g);
 	struct usb_otg *otg = musb->xceiv->otg;
-	struct usb_hcd *hcd = musb_to_hcd(musb);
 	unsigned long flags;
 	int retval = 0;
 
@@ -2459,17 +2458,9 @@ static int musb_gadget_start(struct usb_gadget *g, struct usb_gadget_driver *dri
 	 * handles power budgeting ... this way also
 	 * ensures HdrcStart is indirectly called.
 	 */
-	retval = usb_add_hcd(hcd, 0, 0);
-	if (retval < 0) {
-		DBG(2, "add_hcd failed, %d\n", retval);
-		goto err;
-	}
-
 	if ((musb->xceiv->last_event == USB_EVENT_ID)
 	    && otg->set_vbus)
 		otg_set_vbus(otg, 1);
-
-	hcd->self.uses_pio_for_control = 1;
 
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_put(musb->controller);
@@ -2480,6 +2471,7 @@ err:
 	return retval;
 }
 
+#ifdef CONFIG_USB_G_ANDROID
 static void stop_activity(struct musb *musb)
 {
 	int i;
@@ -2513,6 +2505,7 @@ static void stop_activity(struct musb *musb)
 		}
 	}
 }
+#endif
 
 /*
  * Unregister the gadget driver. Used by gadget drivers when
@@ -2524,6 +2517,8 @@ static int musb_gadget_stop(struct usb_gadget *g)
 {
 	struct musb *musb = gadget_to_musb(g);
 	unsigned long flags;
+
+	DBG(0, "%s\n", __func__);
 
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_get_sync(musb->controller);
@@ -2540,14 +2535,16 @@ static int musb_gadget_stop(struct usb_gadget *g)
 	(void)musb_gadget_vbus_draw(&musb->g, 0);
 
 	musb->xceiv->otg->state = OTG_STATE_UNDEFINED;
+#ifdef CONFIG_USB_G_ANDROID
 	stop_activity(musb);
+#endif
 	otg_set_peripheral(musb->xceiv->otg, NULL);
 
 	musb->is_active = 0;
+	musb->gadget_driver = NULL;
 	musb_platform_try_idle(musb, 0);
 	spin_unlock_irqrestore(&musb->lock, flags);
 
-	usb_remove_hcd(musb_to_hcd(musb));
 	/*
 	 * FIXME we need to be able to register another
 	 * gadget driver here and have everything work;

@@ -491,7 +491,7 @@ static int udc_bind_to_driver(struct usb_udc *udc, struct usb_gadget_driver *dri
 {
 	int ret;
 
-	dev_dbg(&udc->dev, "registering UDC driver [%s]\n",
+	dev_info(&udc->dev, "registering UDC driver [%s]\n",
 			driver->function);
 
 	udc->driver = driver;
@@ -506,7 +506,11 @@ static int udc_bind_to_driver(struct usb_udc *udc, struct usb_gadget_driver *dri
 		driver->unbind(udc->gadget);
 		goto err1;
 	}
-
+#ifdef CONFIG_USB_CONFIGFS
+	/* usb_udc_connect_control(udc); */
+	/* Just do pullup */
+	usb_gadget_connect(udc->gadget);
+#endif
 	kobject_uevent(&udc->dev.kobj, KOBJ_CHANGE);
 	return 0;
 err1:
@@ -526,6 +530,7 @@ int usb_udc_attach_driver(const char *name, struct usb_gadget_driver *driver)
 
 	mutex_lock(&udc_lock);
 	list_for_each_entry(udc, &udc_list, list) {
+		pr_info("%s %s %s\n", __func__, name, dev_name(&udc->dev));
 		ret = strcmp(name, dev_name(&udc->dev));
 		if (!ret)
 			break;

@@ -69,6 +69,10 @@ enum transfer_id {
 };
 #endif
 
+struct rawbulk_instance {
+	struct usb_function_instance func_inst;
+};
+
 struct rawbulk_function {
 	int transfer_id;
 	const char *longname;

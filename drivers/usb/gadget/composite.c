@@ -206,7 +206,7 @@ int usb_add_function(struct usb_configuration *config,
 	int	value = -EINVAL;
 
 	pr_debug("[XLOG_DEBUG][USB][COM]%s:\n", __func__);
-	DBG(config->cdev, "adding '%s'/%p to config '%s'/%p\n",
+	INFO(config->cdev, "adding '%s'/%p to config '%s'/%p\n",
 			function->name, function,
 			config->label, config);
 
@@ -246,7 +246,7 @@ int usb_add_function(struct usb_configuration *config,
 
 done:
 	if (value)
-		DBG(config->cdev, "adding '%s'/%p --> %d\n",
+		INFO(config->cdev, "adding '%s'/%p --> %d\n",
 				function->name, function, value);
 	return value;
 }
