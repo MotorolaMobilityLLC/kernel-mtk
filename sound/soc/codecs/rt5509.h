@@ -18,7 +18,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.8_M"
+#define RT5509_DRV_VER			"1.0.9_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
@@ -75,6 +75,7 @@ struct rt5509_chip {
 	u8 mode_store;
 	u8 func_en;
 	u8 spk_prot_en;
+	u8 alc_gain;
 	u8 alc_min_gain;
 	u8 recv_spec_set:1;
 	u8 bypass_dsp:1;
