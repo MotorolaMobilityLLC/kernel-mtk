@@ -90,13 +90,6 @@ static void rt5081_pmu_ldo_irq_register(struct platform_device *pdev)
 	}
 }
 
-static int rt5081_ldo_reg_update_bits(void *chip, uint32_t reg, uint32_t mask,
-		uint32_t data)
-{
-	return rt5081_pmu_reg_update_bits(chip, (uint8_t)reg,
-			(uint8_t)mask, (uint8_t)data);
-}
-
 static int rt5081_ldo_list_voltage(struct regulator_dev *rdev,
 		unsigned selector)
 {
@@ -144,12 +137,6 @@ static int rt5081_ldo_get_voltage_sel(struct regulator_dev *rdev)
 static int rt5081_ldo_enable(struct regulator_dev *rdev)
 {
 	struct rt5081_pmu_ldo_data *info = rdev_get_drvdata(rdev);
-	int retval;
-
-	retval = rt5081_ldo_reg_update_bits(info->chip,
-			RT5081_PMU_REG_OSCCTRL, 0x01, 0x01);
-	if (retval < 0)
-		return retval;
 
 	return rt5081_pmu_reg_set_bit(info->chip,
 		rt5081_ldo_regulators.enable_reg,
@@ -159,10 +146,7 @@ static int rt5081_ldo_enable(struct regulator_dev *rdev)
 static int rt5081_ldo_disable(struct regulator_dev *rdev)
 {
 	struct rt5081_pmu_ldo_data *info = rdev_get_drvdata(rdev);
-	int retval;
 
-	retval =  rt5081_ldo_reg_update_bits(info->chip,
-			RT5081_PMU_REG_OSCCTRL, 0x01, 0x00);
 	return rt5081_pmu_reg_clr_bit(info->chip,
 		rt5081_ldo_regulators.enable_reg,
 		rt5081_ldo_regulators.enable_bit);
@@ -353,4 +337,13 @@ module_platform_driver(rt5081_pmu_ldo);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Patrick Chang <patrick_chang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU Vib LDO");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION("1.0.1_G");
+
+/*
+ * Revision Note
+ * 1.0.1
+ * (1) Remove force OSC on/off for enable/disable LDO
+ *
+ * 1.0.0
+ * Initial release
+ */

@@ -48,7 +48,9 @@ int rt5081_pmu_reg_read(struct rt5081_pmu_chip *chip, u8 addr)
 	int ret = 0;
 
 	rt_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
+	rt_mutex_lock(&chip->io_lock);
 	ret = rt_regmap_reg_read(chip->rd, &rrd, addr);
+	rt_mutex_unlock(&chip->io_lock);
 	return (ret < 0 ? ret : rrd.rt_data.data_u32);
 #else
 	u8 data = 0;
@@ -67,10 +69,14 @@ int rt5081_pmu_reg_write(struct rt5081_pmu_chip *chip, u8 addr, u8 data)
 {
 #ifdef CONFIG_RT_REGMAP
 	struct rt_reg_data rrd = {0};
+	int ret = 0;
 
 	rt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
-	return rt_regmap_reg_write(chip->rd, &rrd, addr, data);
+	rt_mutex_lock(&chip->io_lock);
+	ret = rt_regmap_reg_write(chip->rd, &rrd, addr, data);
+	rt_mutex_unlock(&chip->io_lock);
+	return ret;
 #else
 	int ret = 0;
 
@@ -89,11 +95,15 @@ int rt5081_pmu_reg_update_bits(struct rt5081_pmu_chip *chip, u8 addr,
 {
 #ifdef CONFIG_RT_REGMAP
 	struct rt_reg_data rrd = {0};
+	int ret = 0;
 
 	rt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
 	rt_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
-	return rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
+	rt_mutex_lock(&chip->io_lock);
+	ret = rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
+	rt_mutex_unlock(&chip->io_lock);
+	return ret;
 #else
 	u8 orig = 0;
 	int ret = 0;
@@ -119,9 +129,13 @@ int rt5081_pmu_reg_block_read(struct rt5081_pmu_chip *chip, u8 addr,
 			      int len, u8 *dest)
 {
 #ifdef CONFIG_RT_REGMAP
+	int ret = 0;
 	rt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__,
 		addr, len);
-	return rt_regmap_block_read(chip->rd, addr, len, dest);
+	rt_mutex_lock(&chip->io_lock);
+	ret = rt_regmap_block_read(chip->rd, addr, len, dest);
+	rt_mutex_unlock(&chip->io_lock);
+	return ret;
 #else
 	int ret = 0;
 
@@ -139,9 +153,13 @@ int rt5081_pmu_reg_block_write(struct rt5081_pmu_chip *chip, u8 addr,
 			       int len, const u8 *src)
 {
 #ifdef CONFIG_RT_REGMAP
+	int ret = 0;
 	rt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
 		len);
-	return rt_regmap_block_write(chip->rd, addr, len, src);
+	rt_mutex_lock(&chip->io_lock);
+	ret = rt_regmap_block_write(chip->rd, addr, len, src);
+	rt_mutex_unlock(&chip->io_lock);
+	return ret;
 #else
 	int ret = 0;
 
@@ -255,9 +273,7 @@ static int rt5081_pmu_probe(struct i2c_client *i2c,
 	chip->i2c = i2c;
 	chip->dev = &i2c->dev;
 	chip->chip_rev = chip_rev;
-#ifndef CONFIG_RT_REGMAP
 	rt_mutex_init(&chip->io_lock);
-#endif /* #ifdef CONFIG_RT_REGMAP */
 	i2c_set_clientdata(i2c, chip);
 
 	pm_runtime_set_active(&i2c->dev);
@@ -327,4 +343,4 @@ module_i2c_driver(rt5081_pmu);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("cy_huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU");
-MODULE_VERSION("1.0.1_G");
+MODULE_VERSION("1.0.2_G");
