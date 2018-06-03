@@ -1220,22 +1220,28 @@ VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, const UINT32 len, co
 {
 	INT32 k;
 	UINT32 dump_len;
+	char str[64] = {""};
+	INT32 strlen = 0;
+	char *p;
 
-	pr_warn("start of dump>[%s] len=%d, limit=%d,", title, len, limit);
+	pr_info("[%s] len=%d, limit=%d, start dump\n", title, len, limit);
 
 	dump_len = ((limit != 0) && (len > limit)) ? limit : len;
-#if 0
-	if (limit != 0)
-		len = (len > limit) ? (limit) : (len);
-
-#endif
-
+	p = str;
 	for (k = 0; k < dump_len; k++) {
-		if ((k != 0) && (k % 16 == 0))
-			pr_cont("\n");
-		pr_cont("0x%02x ", buf[k]);
+		if ((k+1) % 16 != 0) {
+			strlen = osal_sprintf(p, "%02x ", buf[k]);
+			p += strlen;
+		} else {
+			strlen = osal_sprintf(p, "%02x\n",  buf[k]);
+			pr_info("%s", str);
+			p = str;
+		}
 	}
-	pr_warn("<end of dump\n");
+	if (k % 16 != 0)
+		pr_info("%s\n", str);
+
+	pr_info("end of dump\n");
 }
 
 UINT32 osal_op_get_id(P_OSAL_OP pOp)
