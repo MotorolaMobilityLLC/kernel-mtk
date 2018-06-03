@@ -391,7 +391,7 @@
 
 		mediatek,enabled = <1>;
 		mediatek,chain_length = <0x61A8>;
-		mediatek,rg_dfd_timeout = <0x2>;
+		mediatek,rg_dfd_timeout = <0x4b0>;
 	};
 
 	clocks {
