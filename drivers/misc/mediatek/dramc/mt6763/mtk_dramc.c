@@ -81,6 +81,7 @@ static void *(*get_emi_base)(void);
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
+unsigned int CH_NUM = 2; /* FIXME, waiting for mt_emi_base_get() porting done */
 unsigned int CBT_MODE;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
@@ -1233,23 +1234,22 @@ unsigned int get_dram_data_rate(void)
 	if (DRAM_TYPE == TYPE_LPDDR3) {
 		if (u4DataRate == 1859)
 			u4DataRate = 1866;
-		else if (u4DataRate == 1794)
-			u4DataRate = 1800;
-		else if (u4DataRate == 1326)
-			u4DataRate = 1333;
-		else if (u4DataRate == 923)
-			u4DataRate = 933;
 		else
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		if (u4DataRate == 3198)
-			u4DataRate = 3200;
-		else if (u4DataRate == 2652)
-			u4DataRate = 2667;
-		else if (u4DataRate == 1599)
-			u4DataRate = 1600;
-		else
-			u4DataRate = 0;
+		if (CH_NUM == 1) {
+			if (u4DataRate == 3198)
+				u4DataRate = 3200;
+			else
+				u4DataRate = 0;
+		} else {
+			if (u4DataRate == 3198)
+				u4DataRate = 3200;
+			else if (u4DataRate == 1599)
+				u4DataRate = 1600;
+			else
+				u4DataRate = 0;
+		}
 	} else
 		u4DataRate = 0;
 
@@ -1283,6 +1283,43 @@ int get_ddr_type(void)
 	return DRAM_TYPE;
 
 }
+
+int get_emi_ch_num(void)
+{
+	void __iomem *emi_base;
+	unsigned int emi_cona;
+
+	if (CH_NUM)
+		return CH_NUM;
+
+	get_emi_base = (void *)symbol_get(mt_emi_base_get);
+	if (get_emi_base == NULL) {
+		pr_err("[get_emi_ch_num] mt_emi_base_get is NULL\n");
+		return 0;
+	}
+
+	emi_base = get_emi_base();
+	emi_cona = readl(IOMEM(emi_base+0x000));
+
+	symbol_put(mt_emi_base_get);
+	get_emi_base = NULL;
+
+	switch ((emi_cona >> 8) & 0x3) {
+	case 0:
+		CH_NUM = 1;
+		break;
+	case 1:
+		CH_NUM = 2;
+		break;
+	case 2:
+		CH_NUM = 4;
+		break;
+	default:
+		pr_err("[LastDRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
+	}
+	return CH_NUM;
+}
+
 int dram_steps_freq(unsigned int step)
 {
 	int freq = -1;
@@ -1292,21 +1329,42 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			/*freq = get_dram_data_rate();*/	/* DDR1800 or DDR1866 */
 			freq = 1866;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 3200;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+			if (CH_NUM == 1)
+				freq = 3733;
+			else
+				freq = 3200;
+		}
 		break;
 	case 1:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = 1333;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 2667;
+			freq = 1600;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+			if (CH_NUM == 1)
+				freq = 3200;
+			else
+				freq = 3200;
+		}
 		break;
 	case 2:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			/* freq = 933; */
-			freq = 1333;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 1600;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+			if (CH_NUM == 1)
+				freq = 3200;
+			else
+				freq = 2400;
+		}
+		break;
+	case 3:
+		if (DRAM_TYPE == TYPE_LPDDR3)
+			freq = 1200;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+			if (CH_NUM == 1)
+				freq = 2400;
+			else
+				freq = 1600;
+		}
 		break;
 	default:
 		return -1;
@@ -1316,10 +1374,15 @@ int dram_steps_freq(unsigned int step)
 
 int dram_can_support_fh(void)
 {
+/* FIXME: open it when multi-freq ready */
+#if 0
 	if (No_DummyRead)
 		return 0;
 	else
 		return 1;
+#else
+	return 0;
+#endif
 }
 
 #ifdef CONFIG_OF_RESERVED_MEM
@@ -1405,23 +1468,73 @@ read_dram_data_rate_show, read_dram_data_rate_store);
 
 static int dram_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	unsigned int i;
+	struct resource *res;
+	void __iomem *base_temp[6];
+	struct device_node *node = NULL;
 
-	pr_err("[DRAMC0] module probe.\n");
+	pr_debug("[DRAMC] module probe.\n");
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355) && defined(DRAM_HQA)
-	_reg_VCORE = regulator_get(&pdev->dev, "vcore");
-	if (!_reg_VCORE)
-		pr_err("[DRAMC] Regulator_get _reg_VCORE fail\n");
-	_reg_VDRAM1 = regulator_get(&pdev->dev, "vdram1");
-	if (!_reg_VDRAM1)
-		pr_err("[DRAMC] Regulator_get _reg_VDRAM1 fail\n");
-	_reg_VDRAM2 = regulator_get(&pdev->dev, "vdram2");
-	if (!_reg_VDRAM2)
-		pr_err("[DRAMC] Regulator_get _reg_VDRAM2 fail\n");
+	for (i = 0; i < 6; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+		base_temp[i] = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(base_temp[i])) {
+			pr_err("[DRAMC] unable to map %d base\n", i);
+			return -EINVAL;
+		}
+	}
+
+	DRAMC_AO_CHA_BASE_ADDR = base_temp[0];
+	DRAMC_AO_CHB_BASE_ADDR = base_temp[1];
+
+	DRAMC_NAO_CHA_BASE_ADDR = base_temp[2];
+	DRAMC_NAO_CHB_BASE_ADDR = base_temp[3];
+
+	DDRPHY_CHA_BASE_ADDR = base_temp[4];
+	DDRPHY_CHB_BASE_ADDR = base_temp[5];
+
+	pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n", DRAMC_AO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n", DRAMC_AO_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DDRPHY_CHA_BASE_ADDR @ %p\n", DDRPHY_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_CHB_BASE_ADDR @ %p\n", DDRPHY_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n", DRAMC_NAO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n", DRAMC_NAO_CHB_BASE_ADDR);
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	if (node) {
+		SLEEP_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
+		SLEEP_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
+		return -1;
+	}
+
+	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
+	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
+
+	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
+	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
+
+#if 0
+	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+		low_freq_counter = 10;
+		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
+		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
+			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	}
 #endif
+	if (dram_can_support_fh())
+		pr_err("[DRAMC Driver] dram can support DFS\n");
+	else
+		pr_err("[DRAMC Driver] dram can not support DFS\n");
 
-	return ret;
+	return 0;
 }
 
 static int dram_remove(struct platform_device *dev)
@@ -1431,7 +1544,7 @@ static int dram_remove(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dram_of_ids[] = {
-	{.compatible = "mediatek,dramc_ch0_top0",},
+	{.compatible = "mediatek,dramc",},
 	{}
 };
 #endif
@@ -1447,89 +1560,6 @@ static struct platform_driver dram_test_drv = {
 #endif
 		},
 };
-
-static int dram_dt_init(void)
-{
-	int ret = 0;
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top1");
-	if (node) {
-		DRAMC_AO_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top1");
-	if (node) {
-		DRAMC_AO_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n",
-		DRAMC_AO_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMC0 CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top0");
-	if (node) {
-		DDRPHY_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHA_BASE_ADDR @ %p\n", DDRPHY_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top0");
-	if (node) {
-		DDRPHY_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DDRPHY_CHB_BASE_ADDR @ %p\n", DDRPHY_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DDRPHY CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch0_top2");
-	if (node) {
-		DRAMC_NAO_CHA_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHA_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHA compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_ch1_top2");
-	if (node) {
-		DRAMC_NAO_CHB_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n",
-		DRAMC_NAO_CHB_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find DRAMCNAO CHB compatible node\n");
-		return -1;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (node) {
-		SLEEP_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
-		SLEEP_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
-		return -1;
-	}
-
-	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
-		pr_err("[DRAMC]find dt_scan_dram_info\n");
-	} else {
-		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
-		return -1;
-	}
-
-	return ret;
-}
 
 static struct timer_list zqcs_timer;
 static unsigned char low_freq_counter;
@@ -1838,18 +1868,9 @@ static int __init dram_test_init(void)
 
 	DRAM_TYPE = 0;
 
-	return ret;
-
-	ret = dram_dt_init();
-	if (ret) {
-		pr_warn("[DRAMC] Device Tree Init Fail\n");
-		return ret;
-	}
-
-#ifndef DRAM_HQA
 	ret = platform_driver_register(&dram_test_drv);
 	if (ret) {
-		pr_warn("fail to create dram_test platform driver\n");
+		pr_warn("[DRAMC] init fail, ret 0x%x\n", ret);
 		return ret;
 	}
 
@@ -1866,27 +1887,13 @@ static int __init dram_test_init(void)
 		pr_warn("fail to create the read dram data rate sysfs files\n");
 		return ret;
 	}
-#endif
 
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
-	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
-
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
-	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
-
-	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
-	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
-
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		low_freq_counter = 10;
-		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
-		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
-			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
+		pr_err("[DRAMC]find dt_scan_dram_info\n");
+	} else {
+		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
+		return -1;
 	}
-	if (dram_can_support_fh())
-		pr_err("[DRAMC Driver] dram can support DFS\n");
-	else
-		pr_err("[DRAMC Driver] dram can not support DFS\n");
 
 	return ret;
 }

@@ -200,6 +200,7 @@ unsigned int read_dram_temperature(unsigned char channel);
 int dram_steps_freq(unsigned int step);
 unsigned int get_shuffle_status(void);
 int get_ddr_type(void);
+int get_emi_ch_num(void);
 int dram_can_support_fh(void);
 extern void *mt_dramc_base_get(void);
 extern void *mt_dramc_nao_base_get(void);
