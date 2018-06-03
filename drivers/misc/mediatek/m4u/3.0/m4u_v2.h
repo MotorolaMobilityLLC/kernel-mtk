@@ -93,6 +93,17 @@ typedef struct {
 	struct list_head mvaList;
 } m4u_client_t;
 
+typedef struct {
+	int eModuleID;
+	unsigned int BufSize;
+	int security;
+	int cache_coherent;
+	unsigned int flags;
+	unsigned int iova_start;
+	unsigned int iova_end;
+	unsigned int *pRetMVABuf;
+} port_mva_info_t;
+
 int m4u_dump_info(int m4u_index);
 int m4u_power_on(int m4u_index);
 int m4u_power_off(int m4u_index);
@@ -104,12 +115,8 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 
 int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva);
 
-int m4u_alloc_mva_sg(int eModuleID,
-						struct sg_table *sg_table,
-						const unsigned int BufSize,
-						int security,
-						int cache_coherent,
-						unsigned int *pRetMVABuf);
+int m4u_alloc_mva_sg(port_mva_info_t *port_info,
+		struct sg_table *sg_table);
 
 int m4u_dealloc_mva_sg(int eModuleID,
 						struct sg_table *sg_table,
