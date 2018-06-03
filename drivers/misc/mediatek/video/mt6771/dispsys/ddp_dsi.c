@@ -4409,9 +4409,10 @@ void PanelMaster_DSI_set_timing(UINT32 dsi_index, struct MIPI_TIMING timing)
 		/* OUTREGBIT(struct DSI_PHY_TIMCON3_REG,DSI_REG->DSI_PHY_TIMECON3,CLK_HS_EXIT,timing.value); */
 		break;
 	case HPW:
-		if (!(dsi_params->mode == SYNC_EVENT_VDO_MODE || dsi_params->mode == BURST_VDO_MODE))
+		if (!(dsi_params->mode == SYNC_EVENT_VDO_MODE || dsi_params->mode == BURST_VDO_MODE)) {
 			timing.value = (timing.value * fbconfig_dsiTmpBufBpp - 10);
 			timing.value = ALIGN_TO((timing.value), 4);
+		}
 		if (dsi_index == PM_DSI0) {
 			DSI_OUTREG32(NULL, &DSI_REG[0]->DSI_HSA_WC, timing.value);
 		} else if (dsi_index == PM_DSI1) {
