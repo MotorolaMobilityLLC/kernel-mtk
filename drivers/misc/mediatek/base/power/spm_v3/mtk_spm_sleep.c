@@ -434,6 +434,11 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
+
+#ifdef CONFIG_MACH_MT6759
+	if (slp_dump_golden_setting)
+		mt_power_gs_dump_suspend();
+#endif
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
