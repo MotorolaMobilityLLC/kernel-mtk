@@ -120,4 +120,11 @@ extern int __close_fd(struct files_struct *files,
 
 extern struct kmem_cache *files_cachep;
 
+/*N: add fdleak debug log*/
+#define FD_OVER_CHECK
+
+#ifdef FD_OVER_CHECK
+extern void fd_show_open_files(pid_t pid, struct files_struct *files, struct fdtable *fdt);
+#endif
+
 #endif /* __LINUX_FDTABLE_H */
