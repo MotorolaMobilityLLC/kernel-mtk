@@ -23,6 +23,7 @@
 #define EEM_FAKE_EFUSE (0)
 /* FIX ME */
 #define UPDATE_TO_UPOWER (1)
+#define IN_MP1 (1)
 #define EEM_LOCKTIME_LIMIT (3000)
 #define ENABLE_EEMCTL0 (1)
 #define ENABLE_LOO			(0)
