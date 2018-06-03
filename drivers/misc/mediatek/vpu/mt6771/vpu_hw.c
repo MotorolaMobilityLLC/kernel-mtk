@@ -2375,17 +2375,17 @@ int vpu_dump_mesg(struct seq_file *s)
 	char *ptr = NULL;
 	char *log_head;
 	char *log_buf;
-	int i = 0;
+	int core_index = 0;
 
-	for (i = 0 ; i < MTK_VPU_CORE; i++) {
-		log_buf = (char *) ((uintptr_t)vpu_service_cores[i].work_buf->va + VPU_OFFSET_LOG);
+	for (core_index = 0 ; core_index < MTK_VPU_CORE; core_index++) {
+		log_buf = (char *) ((uintptr_t)vpu_service_cores[core_index].work_buf->va + VPU_OFFSET_LOG);
 	if (g_vpu_log_level > 8) {
-		int i;
+		int i = 0;
 		int line_pos = 0;
 		char line_buffer[16 + 1] = {0};
 
 		ptr = log_buf;
-			vpu_print_seq(s, "VPU_%d Log Buffer:\n", i);
+		vpu_print_seq(s, "VPU_%d Log Buffer:\n", core_index);
 		for (i = 0; i < VPU_SIZE_LOG_BUF; i++, ptr++) {
 			line_pos = i % 16;
 			if (line_pos == 0)
