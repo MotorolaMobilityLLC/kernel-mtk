@@ -44,6 +44,7 @@ struct rt9458_info {
 	int irq;
 	u8 irq_mask[RT9458_IRQ_REGNUM];
 	u8 chip_rev;
+	u8 bst_sel;
 };
 
 static const struct rt9458_platform_data rt9458_def_platform_data = {
@@ -408,10 +409,25 @@ static int rt9458_charger_get_charging_stat(struct charger_device *chg_dev,
 static int rt9458_charger_enable_otg(struct charger_device *chg_dev, bool en)
 {
 	struct rt9458_info *ri = charger_get_data(chg_dev);
+	int ret = 0;
 
 	/* clear HZ mode */
 	dev_info(ri->dev, "%s: clear HZ mode\n", __func__);
 	rt9458_reg_clr_bits(ri, RT9458_REG_CTRL2, RT9458_HZ_MASK);
+
+	if (en) {
+		/* store VOREG selector, and switch Vbst to 5V */
+		ret = rt9458_reg_read(ri, RT9458_REG_CTRL3);
+		ri->bst_sel = (ret & RT9458_VOREG_MASK) >> RT9458_VOREG_SHFT;
+		ret = rt9458_reg_assign_bits(ri,
+					     RT9458_REG_CTRL3,
+					     RT9458_VOREG_MASK,
+					     0x17 << RT9458_VOREG_SHFT);
+	} else	/* recover original VOREG */
+		ret = rt9458_reg_assign_bits(ri,
+					     RT9458_REG_CTRL3,
+					     RT9458_VOREG_MASK,
+					     ri->bst_sel << RT9458_VOREG_SHFT);
 
 	return rt9458_reg_assign_bits(ri, RT9458_REG_CTRL2, RT9458_OPA_MASK,
 				      en ? 0xff : 0x00);
