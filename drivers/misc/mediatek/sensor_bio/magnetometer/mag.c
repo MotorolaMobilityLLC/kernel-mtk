@@ -307,12 +307,10 @@ static ssize_t mag_store_batch(struct device *dev, struct device_attribute *attr
 		err = cxt->mag_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		MAG_PR_ERR("mag set batch(ODR) err %d\n", err);
-		goto err_out;
 	}
 #else
 	err = mag_enable_and_batch();
 #endif
-err_out:
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_batch done: %d\n", cxt->is_batch_enable);
 	return err;
