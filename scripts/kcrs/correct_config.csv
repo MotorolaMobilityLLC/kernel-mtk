@@ -424,7 +424,7 @@ CONFIG_MTK_CAMERA_ISP_MFB_SUPPORT,PLATFORM,johnson-ch.chiu,,X,X,X,X,X,,,y,,y
 CONFIG_MTK_CCCI_DEVICES,COMMON,yanbin.ren,new config in this commit 9715b038cd89c33b3acb9a75a29652347cccc65c,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_CHIP,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CLKMGR,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTK_CM_MGR,PLATFORM,morven-cf.yeh,,,,,,,,y,y,y,y
+CONFIG_MTK_CM_MGR,PLATFORM,morven-cf.yeh,,X,X,X,X,X,X,y,y,y,y
 CONFIG_MTK_CM36558,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
 CONFIG_MTK_CM36652_NEW,PLATFORM,jy.lan,,,,,,,,,,,
 CONFIG_MTK_CM36686_NEW,PLATFORM,jy.lan,,,,,,,,,,,
