@@ -24,6 +24,8 @@
 #include <linux/io.h>
 #include <linux/dma-mapping.h>
 #include <mt-plat/mtk_lpae.h>
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
 
 
 struct CmdqDeviceStruct {
@@ -361,6 +363,18 @@ void cmdq_dev_test_dts_correctness(void)
 void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
 {
 	s32 ret = -1;
+	u32 sram_size_cpr_64 = 0;
+
+	ret = of_property_read_u32(gCmdqDev.pDev->of_node, "sram_size_cpr_64",
+		&sram_size_cpr_64);
+	if (ret != 0 || !sram_size_cpr_64) {
+		dts_setting->cpr_size = gThreadCount * CMDQ_THR_FREE_CPR_MAX;
+		CMDQ_ERR("sram_size_cpr_64 not support, default:%u\n", dts_setting->cpr_size);
+	} else {
+		/* CPRs are 32bit register, device tree count in 64bit */
+		dts_setting->cpr_size = sram_size_cpr_64 * 2;
+		CMDQ_LOG("free CPR size:%u thread:%u\n", dts_setting->cpr_size, gThreadCount);
+	}
 
 	ret = of_property_read_u32(gCmdqDev.pDev->of_node,
 		"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
@@ -373,6 +387,7 @@ void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
 			CMDQ_ERR("read prefetch size fail\n");
 		}
 	}
+
 	ret = of_property_read_u32(gCmdqDev.pDev->of_node, "ctl_int0",
 		&dts_setting->ctl_int0);
 	if (ret != 0) {
@@ -414,6 +429,7 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	int status;
 	u32 mmsys_dummy_reg_offset_value = 0;
 	u32 thread_count = 16;
+	struct cmdq_dts_setting *dts_setting = cmdq_core_get_dts_setting();
 
 	gThreadCount = 16;
 	gMMSYSDummyRegOffset = 0;
@@ -442,6 +458,15 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	}
 
 	gMMSYSDummyRegOffset = mmsys_dummy_reg_offset_value;
+
+	/* Initialize DTS Setting structure */
+	memset(dts_setting, 0x0, sizeof(struct cmdq_dts_setting));
+	/* Initialize setting for legacy chip */
+	dts_setting->prefetch_thread_count = 3;
+	dts_setting->prefetch_size = kzalloc(
+		sizeof(*dts_setting->prefetch_size) * gThreadCount,
+		GFP_KERNEL);
+	cmdq_dev_get_dts_setting(dts_setting);
 }
 
 void cmdq_dev_init(struct platform_device *pDevice)

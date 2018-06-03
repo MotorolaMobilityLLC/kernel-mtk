@@ -99,8 +99,6 @@
 #undef CMDQ_SECURE_PATH_NORMAL_IRQ
 #endif
 
-/* #define CMDQ_DELAY_IN_DRAM */
-
 typedef u64 CMDQ_VARIABLE;
 /*
 * SPR / CPR / VAR naming rule and number
@@ -122,7 +120,6 @@ typedef u64 CMDQ_VARIABLE;
 #define CMDQ_TPR_ID					(56)
 #define CMDQ_CPR_STRAT_ID			(0x8000)
 #define CMDQ_SRAM_STRAT_ADDR		(0x0)
-#define CMDQ_CPR_SIZE				(0x2df)
 #define CMDQ_GPR_V3_OFFSET			(0x20)
 #define CMDQ_POLLING_TPR_MASK_BIT	(10)
 #define CMDQ_SRAM_ADDR(CPR_OFFSRT)	(((CMDQ_SRAM_STRAT_ADDR + CPR_OFFSRT / 2) << 3) + 0x001)
@@ -131,17 +128,15 @@ typedef u64 CMDQ_VARIABLE;
 
 #define CMDQ_MAX_SRAM_OWNER_NAME	(32)
 
-#ifdef CMDQ_DELAY_IN_DRAM
-#define CMDQ_DELAY_TPR_MASK_BIT	(11)
-#else
+#define CMDQ_DELAY_TPR_MASK_BIT		(11)
 #define CMDQ_DELAY_TPR_MASK_VALUE	(1 << 17 | 1 << 14 | 1 << 11)
-#endif
 
 #define CMDQ_DELAY_MAX_SET		(3)
 #define CMDQ_DELAY_SET_START_CPR	(0)
 #define CMDQ_DELAY_SET_DURATION_CPR	(1)
 #define CMDQ_DELAY_SET_RESULT_CPR	(2)
 #define CMDQ_DELAY_SET_MAX_CPR		(3)
+#define CMDQ_DELAY_THD_SIZE		(64 * 64)	/* delay inst in bytes */
 
 /* #define CMDQ_DUMP_GIC (0) */
 /* #define CMDQ_PROFILE_MMP (0) */

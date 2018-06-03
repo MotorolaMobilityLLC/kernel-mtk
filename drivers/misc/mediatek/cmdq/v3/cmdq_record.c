@@ -2014,7 +2014,6 @@ int32_t cmdq_resource_release_and_write(struct cmdqRecStruct *handle, enum CMDQ_
 
 s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffer_size)
 {
-#ifdef CMDQ_DELAY_IN_DRAM
 	struct cmdqRecStruct *handle;
 	void *p_new_buffer = NULL;
 	uint32_t i;
@@ -2076,7 +2075,6 @@ s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffe
 
 	cmdq_task_destroy(handle);
 
-#endif /*CMDQ_DELAY_IN_DRAM*/
 	return 0;
 }
 
