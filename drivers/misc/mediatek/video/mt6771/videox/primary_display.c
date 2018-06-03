@@ -195,8 +195,9 @@ unsigned int round_corner_offset_enable;
 unsigned int lcm_corner_en;
 unsigned int top_mva, bottom_mva;
 unsigned int corner_pattern_width, corner_pattern_height;
-static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
-	unsigned int *pitch, unsigned int *height);
+static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
+				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
+				unsigned int *pitch, unsigned int *height);
 #endif
 /* hold the wakelock to make kernel awake when primary display is on*/
 struct wake_lock pri_wk_lock;
@@ -3704,7 +3705,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	lcm_corner_en = primary_display_get_lcm_corner_en();
 	if (lcm_corner_en)
-		primary_display_get_round_corner_mva(&top_mva, &bottom_mva,
+		get_round_corner_param(&top_mva, &bottom_mva, NULL, NULL,
 			&corner_pattern_width, &corner_pattern_height);
 #endif
 
@@ -5455,7 +5456,8 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 }
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
+static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
+				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
 				unsigned int *pitch, unsigned int *height)
 {
 	unsigned char ret = -1;
@@ -5465,19 +5467,29 @@ static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned i
 	unsigned int frame_buf_size = DISP_GetFBRamSize();
 	unsigned int vram_buf_size = mtkfb_get_fb_size();
 	unsigned long frame_buf_mva = primary_display_get_frame_buffer_mva_address();
+	ulong tp, bt;
 
 	if (vram_buf_size > dal_buf_size + frame_buf_size) {
 		*height = primary_display_get_corner_pattern_height();
 		*pitch = primary_display_get_width();
 		corner_size = (*pitch) * (*height) * argb4444_bpp;
 
-		*tp_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
-		*bt_mva = *tp_mva + corner_size;
+		tp = frame_buf_mva + vram_buf_size - 2 * corner_size;
+		bt = tp + corner_size;
+		if (tp_mva)
+			*tp_mva = tp;
+		if (bt_mva)
+			*bt_mva = bt;
+		if (tp_pa)
+			*tp_pa = tp;
+		if (bt_pa)
+			*bt_pa = bt;
 		ret = 0;
 	} else {
+		ret = -1;
 		DISPERR("vram_buf may not contain corner size!\n");
 	}
-	return 0;
+	return ret;
 }
 
 void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, unsigned int h,
@@ -5587,109 +5599,99 @@ static int draw_rc_rgba4444(void *rc, uint rc_pitch, uint rc_w, uint rc_h,
 	return 0;
 }
 
-static void rc_copy_img(void *src, uint src_pitch,
-			void *dst, uint dst_pitch,
-			uint w, uint h, uint bpp)
+static void *disp_vmap_pa(phys_addr_t pa, uint size, int cached)
 {
-	uint y;
+	phys_addr_t pa_align;
+	uint sz_align, npages, i;
+	struct page **pages;
+	pgprot_t pgprot;
+	void *va_align;
 
-	for (y = 0; y < h; y++) {
-		memcpy(dst, src, w * bpp);
-		dst += dst_pitch * bpp;
-		src += src_pitch * bpp;
-	}
+	pa_align = round_down(pa, PAGE_SIZE);
+	sz_align = ALIGN(pa + size - pa_align, PAGE_SIZE);
+	npages = sz_align / PAGE_SIZE;
+
+	pages = kmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+	if (!pages)
+		return NULL;
+
+	pgprot = cached ? PAGE_KERNEL : pgprot_writecombine(PAGE_KERNEL);
+	for (i = 0; i < npages; i++)
+		pages[i] = phys_to_page(pa_align + i * PAGE_SIZE);
+
+	va_align = vmap(pages, npages, VM_MAP, pgprot);
+	if (!va_align)
+		DISPERR("%s vmap failed vaddr is null.\n", __func__);
+	else
+		return va_align + (pa & (PAGE_SIZE - 1));
+
+	return NULL;
 }
 
-/* get round corner va:
- * left-top/right-top/left-bottom/right-bottom
- */
-static int get_rc_param(void **lt, void **rt, void **lb, void **rb,
-		     uint *w, uint *h, uint *pitch, uint *bpp)
+struct rc_buf {
+	/* 4 corner va; left-top ~ right-bottom */
+	void *lt;
+	void *rt;
+	void *lb;
+	void *rb;
+	uint w;
+	uint h;
+	uint pitch;
+	uint bpp;
+};
+static struct rc_buf *get_rc_buf(void)
 {
-	static void *rc_lt, *rc_rt, *rc_lb, *rc_rb;
-	static uint rc_w, rc_h;
-	static uint rc_bpp = UFMT_GET_Bpp(UFMT_RGBA4444);
-
-	uint orig_rc_sz, orig_pitch, rc_buf_sz;
-	void *orig_lt, *orig_rt, *orig_lb, *orig_rb;
+	static struct rc_buf rc;
+	uint rc_sz;
+	phys_addr_t lt_pa, lb_pa;
 	int ret = 0;
 
-	unsigned int dal_buf_size = DAL_GetLayerSize();
-	unsigned int frame_buf_size = DISP_GetFBRamSize();
-	unsigned int  vram_buf_size = mtkfb_get_fb_size();
-	unsigned long  frame_buf_va = primary_display_get_frame_buffer_va_address();
+	if (rc.lt)
+		return &rc;
 
-	if (rc_lt)
-		goto done;
+	ret = get_round_corner_param(NULL, NULL, &lt_pa, &lb_pa, &rc.pitch, &rc.h);
+	if (ret)
+		return NULL;
 
-	/* get round corner buffer va */
-	if (vram_buf_size <= dal_buf_size + frame_buf_size) {
-		DISPERR("vram_buf may not contain corner size!\n");
-		ret = -1;
-		goto done;
-	}
+	rc.bpp = UFMT_GET_Bpp(UFMT_RGBA4444);
+	rc.w = rc.h;
+	rc_sz = rc.pitch * rc.h * rc.bpp;
 
-	rc_w = rc_h = primary_display_get_corner_pattern_height();
-	orig_pitch = primary_display_get_width();
-	orig_rc_sz = orig_pitch * rc_h * rc_bpp;
-
-	rc_buf_sz = ALIGN(rc_w * rc_h * rc_bpp, sizeof(ulong));
-	rc_lt = kmalloc(rc_buf_sz * 4, GFP_KERNEL);
-	rc_rt = rc_lt + rc_buf_sz;
-	rc_lb = rc_rt + rc_buf_sz;
-	rc_rb = rc_lb + rc_buf_sz;
-
-	orig_lt = (void *)frame_buf_va + vram_buf_size - 2 * orig_rc_sz;
-	orig_rt = orig_lt + (orig_pitch - rc_w) * rc_bpp;
-	orig_lb = orig_lt + orig_rc_sz;
-	orig_rb = orig_lb + (orig_pitch - rc_w) * rc_bpp;
-
-	rc_copy_img(orig_lt, orig_pitch, rc_lt, rc_w, rc_w, rc_h, rc_bpp);
-	rc_copy_img(orig_rt, orig_pitch, rc_rt, rc_w, rc_w, rc_h, rc_bpp);
-	rc_copy_img(orig_lb, orig_pitch, rc_lb, rc_w, rc_w, rc_h, rc_bpp);
-	rc_copy_img(orig_rb, orig_pitch, rc_rb, rc_w, rc_w, rc_h, rc_bpp);
-done:
-	*lt = rc_lt;
-	*rt = rc_rt;
-	*lb = rc_lb;
-	*rb = rc_rb;
-	*w = rc_w;
-	*h = rc_h;
-	*pitch = rc_w;
-	*bpp = rc_bpp;
-	return ret;
+	rc.lt = disp_vmap_pa(lt_pa, rc_sz, 1);
+	rc.rt = rc.lt + (rc.pitch - rc.w) * rc.bpp;
+	rc.lb = disp_vmap_pa(lb_pa, rc_sz, 1);
+	rc.rb = rc.lb + (rc.pitch - rc.w) * rc.bpp;
+	return &rc;
 }
 
 int __draw_round_corner(void *dst_va, enum UNIFIED_COLOR_FMT dst_fmt,
 			uint dst_w, uint dst_h, uint dst_pitch)
 {
-	uint rc_w, rc_h, rc_pitch, rc_bpp;
 	uint dst_bpp = ufmt_get_Bpp(dst_fmt);
 	void *dst_lt, *dst_rt, *dst_lb, *dst_rb;
-	void *rc_lt, *rc_rt, *rc_lb, *rc_rb;
-	int ret;
+	struct rc_buf *rc;
 
 	if (WARN(dst_bpp != 4, "%s don't support fmt:0x%x\n", __func__, dst_fmt))
 		return -EINVAL;
 
-	ret = get_rc_param(&rc_lt, &rc_rt, &rc_lb, &rc_rb,
-			   &rc_w, &rc_h, &rc_pitch, &rc_bpp);
-	if (ret)
+	rc = get_rc_buf();
+	if (!rc)
 		return -EINVAL;
 
 	dst_lt = dst_va;
-	dst_rt = dst_lt + (dst_w - rc_w) * dst_bpp;
-	dst_lb = dst_va + (dst_h - rc_h) * dst_pitch * dst_bpp;
-	dst_rb = dst_lb + (dst_w - rc_w) * dst_bpp;
-	/* draw four round corners: left-top to right-bottom */
-	draw_rc_rgba4444(rc_lt, rc_pitch, rc_w, rc_h, dst_lt, dst_pitch);
-	draw_rc_rgba4444(rc_rt, rc_pitch, rc_w, rc_h, dst_rt, dst_pitch);
-	draw_rc_rgba4444(rc_lb, rc_pitch, rc_w, rc_h, dst_lb, dst_pitch);
-	draw_rc_rgba4444(rc_rb, rc_pitch, rc_w, rc_h, dst_rb, dst_pitch);
+	dst_rt = dst_lt + (dst_w - rc->w) * dst_bpp;
+	dst_lb = dst_va + (dst_h - rc->h) * dst_pitch * dst_bpp;
+	dst_rb = dst_lb + (dst_w - rc->w) * dst_bpp;
 
-	/* do cache sync of top */
-	__dma_map_area((void *)dst_lt, dst_pitch * rc_h * dst_bpp, DMA_TO_DEVICE);
-	__dma_map_area((void *)dst_lb, dst_pitch * rc_h * dst_bpp, DMA_TO_DEVICE);
+	/* draw 4 round corners: left-top to right-bottom */
+	draw_rc_rgba4444(rc->lt, rc->pitch, rc->w, rc->h, dst_lt, dst_pitch);
+	draw_rc_rgba4444(rc->rt, rc->pitch, rc->w, rc->h, dst_rt, dst_pitch);
+	draw_rc_rgba4444(rc->lb, rc->pitch, rc->w, rc->h, dst_lb, dst_pitch);
+	draw_rc_rgba4444(rc->rb, rc->pitch, rc->w, rc->h, dst_rb, dst_pitch);
+
+	/* do cache sync */
+	__dma_map_area((void *)dst_lt, dst_pitch * rc->h * dst_bpp, DMA_TO_DEVICE);
+	__dma_map_area((void *)dst_lb, dst_pitch * rc->h * dst_bpp, DMA_TO_DEVICE);
 	return 0;
 }
 
