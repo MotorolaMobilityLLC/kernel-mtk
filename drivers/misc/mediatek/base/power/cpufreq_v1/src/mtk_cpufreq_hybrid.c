@@ -422,7 +422,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 #define OFFS_TURBO_FREQ		0x02a4	/* 169 */
 #define OFFS_TURBO_VOLT		0x02a8	/* 170 */
 
-#define OFFS_TURBO_EN		0x02b8	/* 174 */
+#define OFFS_TURBO_DIS		0x02b8	/* 174 */
 #define OFFS_SCHED_DIS		0x02bc	/* 175 */
 #define OFFS_STRESS_EN		0x02c0	/* 176 */
 
@@ -566,7 +566,7 @@ int cpuhvfs_set_sched_dvfs_disable(unsigned int disable)
 
 int cpuhvfs_set_turbo_disable(unsigned int disable)
 {
-	csram_write(OFFS_TURBO_EN, disable);
+	csram_write(OFFS_TURBO_DIS, disable);
 	return 0;
 }
 
@@ -772,7 +772,7 @@ void cpuhvfs_pvt_tbl_create(void)
 			((*(recordTbl + (i * ARRAY_COL_SIZE) + 1) & 0xFFF) << 16) |
 			(*(recordTbl + (i * ARRAY_COL_SIZE)) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i, recordRef[i]);
-		/* LL [31:16] = postdiv, [15:0] = clkdiv */
+		/* LL [31:16] = clk_div, [15:0] = post_div */
 		recordRef[i + NR_FREQ] =
 			((*(recordTbl + (i * ARRAY_COL_SIZE) + 3) & 0xFF) << 16) |
 			(*(recordTbl + (i * ARRAY_COL_SIZE) + 2) & 0xFF);
@@ -782,7 +782,7 @@ void cpuhvfs_pvt_tbl_create(void)
 			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36, recordRef[i + 36]);
-		/* L [31:16] = postdiv, [15:0] = clkdiv */
+		/* L [31:16] = clk_div, [15:0] = post_div */
 		recordRef[i + 36 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
@@ -792,7 +792,7 @@ void cpuhvfs_pvt_tbl_create(void)
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
-		/* B/CCI [31:16] = postdiv, [15:0] = clkdiv */
+		/* B/CCI [31:16] = clk_div, [15:0] = post_div */
 		recordRef[i + 72 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 3) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
@@ -804,7 +804,7 @@ void cpuhvfs_pvt_tbl_create(void)
 				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
 				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 			cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
-			/* CCI [31:16] = postdiv, [15:0] = clkdiv */
+			/* CCI [31:16] = clk_div, [15:0] = post_div */
 			recordRef[i + 108 + NR_FREQ] =
 				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
 				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
