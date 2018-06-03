@@ -13,3 +13,10 @@ obj-$(CONFIG_MTK_AUXADC_INTF)   += mtk_auxadc_intf.o
 
 obj-$(CONFIG_MFD_RT5081_PMU)	+= rt5081/
 obj-y += mtk_battery_adc_intf.o
+
+ifneq (,$(findstring evb,$(CONFIG_ARCH_MTK_PROJECT)))
+	subdir-ccflags-y += -DMTK_EVB_PLATFORM
+$(warning MTK_EVB_PLATFORM)
+else
+$(warning NOT_MTK_EVB_PLATFORM)
+endif

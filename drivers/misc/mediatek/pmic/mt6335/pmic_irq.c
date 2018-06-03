@@ -554,7 +554,6 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 
 }
 
-#define ENABLE_ALL_OC_IRQ 1
 /* register general oc interrupt handler */
 void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 {
