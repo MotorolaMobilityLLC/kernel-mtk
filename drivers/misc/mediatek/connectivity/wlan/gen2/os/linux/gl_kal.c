@@ -1103,6 +1103,18 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 		netif_carrier_off(prGlueInfo->prDevHandler);
 
+		/*Full2Partial*/
+		/*at here, should init u4LastFullScanTime, ucTrScanType, ucChannelListNum, ucChannelNum*/
+		DBGLOG(INIT, TRACE, "Full2Partial disconenct reset value\n");
+		prGlueInfo->u4LastFullScanTime = 0;
+		prGlueInfo->ucTrScanType = 0;
+		kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+		if (prGlueInfo->puFullScan2PartialChannel != NULL) {
+			kalMemFree(prGlueInfo->puFullScan2PartialChannel,
+			VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+			prGlueInfo->puFullScan2PartialChannel = NULL;
+		}
+
 		if (prGlueInfo->fgIsRegistered == TRUE) {
 			P_WIFI_VAR_T prWifiVar = &prGlueInfo->prAdapter->rWifiVar;
 			UINT_16 u2DeauthReason = prWifiVar->arBssInfo[NETWORK_TYPE_AIS_INDEX].u2DeauthReason;

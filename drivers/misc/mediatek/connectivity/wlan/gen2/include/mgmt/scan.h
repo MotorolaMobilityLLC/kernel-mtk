@@ -59,7 +59,7 @@ extern UINT8 aucTdlsTestExtCapElm[];
 
 #define SCN_PROBE_DELAY_MSEC                0
 
-#define SCN_ADHOC_BSS_DESC_TIMEOUT_SEC      5	/* Second. */
+#define SCN_ADHOC_BSS_DESC_TIMEOUT_SEC      15	/* Second. */
 
 #define SCN_NLO_NETWORK_CHANNEL_NUM         (4)
 
