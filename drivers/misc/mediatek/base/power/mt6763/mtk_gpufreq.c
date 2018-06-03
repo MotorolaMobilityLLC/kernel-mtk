@@ -277,10 +277,6 @@ static void __iomem *g_apmixed_base;
 #define VPROC_ENABLE_TIME_US 240 /* spec is 220, but more time means more safety */
 #define VSRAM_GPU_ENABLE_TIME_US 120 /* spec is 110, but more time means more safety */
 
-#define C_MT6763TT	0
-#define C_MT6763T	1
-#define C_MT6763	2
-
 /* mt6763 END */
 
 
@@ -337,6 +333,15 @@ static gpufreq_power_limit_notify g_pGpufreq_power_limit_notify;
 static gpufreq_input_boost_notify g_pGpufreq_input_boost_notify;
 #endif
 static gpufreq_ptpod_update_notify g_pGpufreq_ptpod_update_notify;
+
+/* Efuse Device ID */
+typedef enum {
+	C_MT6763TT = 0,
+	C_MT6763T,
+	C_MT6763,
+} chip_ip_table;
+
+chip_ip_table device_id;
 
 
 /***************************
@@ -481,7 +486,6 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 static unsigned int _mt_gpufreq_get_cur_volt(void);
 static unsigned int _mt_gpufreq_get_cur_freq(void);
 static void _mt_gpufreq_kick_pbm(int enable);
-static int _mt_gpufreq_get_lpm_status(unsigned int unit);
 static int _mt_gpufreq_set_lpm_status(unsigned int unit, unsigned int enable_lpm);
 
 
@@ -510,28 +514,6 @@ get_immediate_gpu_wrap(void)
 {
 	pr_err("get_immediate_gpu_wrap doesn't exist");
 	return 0;
-}
-
-/*************************************************************************************
- * Get Chip ID
- * @param[in] : NA
- * return chip ID
-**************************************************************************************/
-static int get_devinfo(void)
-{
-	if (is_ext_buck_exist()) {
-		gpufreq_dbg("@%s: [FIGO] I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
-		return C_MT6763TT;
-	} else if (get_devinfo_with_index(30) == 0x10) {
-		gpufreq_dbg("@%s: [FIGO] I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
-		return C_MT6763;
-	} else if (get_devinfo_with_index(30) == 0x0 || get_devinfo_with_index(30) == 0x20) {
-		gpufreq_dbg("@%s: [FIGO] I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
-		return C_MT6763T;
-	}
-
-	gpufreq_err("@%s: Wrong Chip Value (%x)\n", __func__, get_devinfo_with_index(30));
-	return -1;
 }
 
 /*************************************************************************************
@@ -852,7 +834,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		goto SET_EXIT;
 	}
 
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		if (enable == mt_gpufreq_volt_enable_state) {
 			ret = 0;
 			/* check if really consist */
@@ -993,30 +975,6 @@ SET_EXIT:
 }
 EXPORT_SYMBOL(mt_gpufreq_voltage_enable_set);
 
-static int _mt_gpufreq_get_lpm_status(unsigned int unit)
-{
-	int mode = -1;
-	int ret = 0;
-
-	switch (unit)	{
-	case VPROC:
-		ret = pmic_read_interface(PMIC_RG_BUCK_VPROC_LP_ADDR, &mode,
-			PMIC_RG_BUCK_VPROC_LP_MASK, PMIC_RG_BUCK_VPROC_LP_SHIFT);
-		if (ret != 0)
-			gpufreq_err("@%s: Query VPROC LPM status failed! (%d)", __func__, ret);
-		break;
-	case VSRAM:
-		ret = pmic_read_interface(PMIC_RG_LDO_VSRAM_GPU_LP_ADDR, &mode,
-			PMIC_RG_LDO_VSRAM_GPU_LP_MASK, PMIC_RG_LDO_VSRAM_GPU_LP_SHIFT);
-		if (ret != 0)
-			gpufreq_err("@%s: Query VSRAM LPM status failed! (%d)", __func__, ret);
-		break;
-	default:
-		gpufreq_err("@%s: Unknown LPM unit!", __func__);
-	}
-	return mode;
-}
-
 static int _mt_gpufreq_set_lpm_status(unsigned int unit, unsigned int enable_lpm)
 {
 	int ret = 0;
@@ -1069,58 +1027,27 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 		goto SET_LPM_EXIT;
 	}
 
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		if (enable_lpm && !mt_gpufreq_ptpod_disable) {
-			/* Enable VPROC LPM */
-			ret = _mt_gpufreq_get_lpm_status(VPROC);
-			if (ret != 1) {
-				ret = _mt_gpufreq_set_lpm_status(VPROC, 1);
-				if (ret != 0)
-					goto SET_LPM_EXIT;
-			}
-			/* Enable VSRAM LPM */
-			ret = _mt_gpufreq_get_lpm_status(VSRAM);
-			if (ret != 1) {
-				ret = _mt_gpufreq_set_lpm_status(VSRAM, 1);
-				if (ret != 0)
-					goto SET_LPM_EXIT;
-			}
+			ret = _mt_gpufreq_set_lpm_status(VPROC, 1);
+			if (ret != 0)
+				goto SET_LPM_EXIT;
+			ret = _mt_gpufreq_set_lpm_status(VSRAM, 1);
+			if (ret != 0)
+				goto SET_LPM_EXIT;
 		} else {
-			/* Disable VSRAM LPM */
-			ret = _mt_gpufreq_get_lpm_status(VSRAM);
-			if (ret != 0) {
-				ret = _mt_gpufreq_set_lpm_status(VSRAM, 0);
-				if (ret != 0)
-					goto SET_LPM_EXIT;
-			}
-			/* Disable VPROC LPM */
-			ret = _mt_gpufreq_get_lpm_status(VPROC);
-			if (ret != 0) {
-				ret = _mt_gpufreq_set_lpm_status(VPROC, 0);
-				if (ret != 0)
-					goto SET_LPM_EXIT;
-			}
-			/* Error Checking */
-			ret = _mt_gpufreq_get_lpm_status(VSRAM);
+			ret = _mt_gpufreq_set_lpm_status(VSRAM, 0);
 			if (ret != 0)
-				gpufreq_err("@%s: Set LPM Error: enable_lpm:%d VSRAM:%d\n", __func__, enable_lpm, ret);
-			ret = _mt_gpufreq_get_lpm_status(VPROC);
+				goto SET_LPM_EXIT;
+			ret = _mt_gpufreq_set_lpm_status(VPROC, 0);
 			if (ret != 0)
-				gpufreq_err("@%s: Set LPM Error: enable_lpm:%d VPROC:%d\n", __func__, enable_lpm, ret);
+				goto SET_LPM_EXIT;
 		}
-		ret = _mt_gpufreq_get_lpm_status(VSRAM);
-		gpufreq_dbg("@%s: [Set LPM] enable_lpm:%d VSRAM:%d\n", __func__, enable_lpm, ret);
-		ret = _mt_gpufreq_get_lpm_status(VPROC);
-		gpufreq_dbg("@%s: [Set LPM] enable_lpm:%d VPROC:%d\n", __func__, enable_lpm, ret);
 	} else {
 		if (enable_lpm && !mt_gpufreq_ptpod_disable)
-			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
+			vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		else
-			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
-#ifdef VCORE_DVFS_READY
-		if (ret != 0)
-			gpufreq_err("@%s: VCORE LPM status set %d failed! (%d)\n", __func__, enable_lpm, ret);
-#endif
+			vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
 	}
 #endif
 #endif /* MTK_SSPM */
@@ -1209,7 +1136,7 @@ void mt_gpufreq_restore_default_volt(void)
 				mt_gpufreqs[i].gpufreq_volt);
 	}
 
-	if (get_devinfo() == C_MT6763TT) /* Use VPROC for power Control */
+	if (device_id == C_MT6763TT) /* Use VPROC for power Control */
 		mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	else /* Use VCORE for power Control */
 		mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
@@ -1239,7 +1166,7 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 				mt_gpufreqs[i].gpufreq_volt);
 	}
 
-	if (get_devinfo() == C_MT6763TT) /* Use VPROC for power Control */
+	if (device_id == C_MT6763TT) /* Use VPROC for power Control */
 		mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	else /* Use VCORE for power Control */
 		mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
@@ -1808,7 +1735,7 @@ static unsigned int _mt_gpufreq_get_cur_volt(void)
 #ifdef MTK_SSPM
 	gpu_volt = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_CUR_VOLT, 0);
 #else
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		/* WARRNING: regulator_get_voltage prints uV */
 		gpu_volt = regulator_get_voltage(mt_gpufreq_pmic->reg_vproc) / 10;
 		gpufreq_dbg("gpu_dvfs_get_cur_volt:[PMIC] volt = %d\n", gpu_volt);
@@ -1898,14 +1825,14 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			   unsigned int volt_old, unsigned int volt_new)
 {
 	if (freq_new > freq_old) {
-		if (get_devinfo() == C_MT6763TT)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(volt_old, volt_new);
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
 		mt_gpufreq_clock_switch(freq_new);
 	} else {
 		mt_gpufreq_clock_switch(freq_new);
-		if (get_devinfo() == C_MT6763TT)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(volt_old, volt_new);
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
@@ -2882,7 +2809,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	}
 
 	/* alloc PMIC regulator */
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		mt_gpufreq_pmic = kzalloc(sizeof(struct mt_gpufreq_pmic_t), GFP_KERNEL);
 		if (mt_gpufreq_pmic == NULL)
 			return -ENOMEM;
@@ -2909,8 +2836,20 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 #endif
 
-	mt_gpufreq_dvfs_table_type = get_devinfo();
+	if (is_ext_buck_exist()) {
+		gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763TT;
+	} else if (get_devinfo_with_index(30) == 0x10) {
+		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763;
+	} else if (get_devinfo_with_index(30) == 0x0 || get_devinfo_with_index(30) == 0x20) {
+		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763T;
+	} else {
+		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30));
+	}
 
+	mt_gpufreq_dvfs_table_type = device_id;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	mt_gpufreq_early_suspend_handler.suspend = mt_gpufreq_early_suspend;
@@ -2954,7 +2893,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	 * setup PMIC init value
 	 ***********************/
 #ifdef VPROC_SET_BY_PMIC
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		g_vproc_sfchg_rrate = _calculate_vproc_sfchg_rate(true); /* rising rate */
 		g_vproc_sfchg_frate = _calculate_vproc_sfchg_rate(false); /* falling rate */
 		g_vsram_sfchg_rrate = _calculate_vsram_sfchg_rate(true); /* rising rate */
@@ -3068,10 +3007,10 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		mt_gpufreq_low_bat_volt_limit_freq_2 =
 			MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2;
-	} else if (get_devinfo() == C_MT6763T) {
+	} else if (device_id == C_MT6763T) {
 		mt_gpufreq_low_bat_volt_limit_freq_2 =
 			MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763T;
 	} else {
@@ -3102,9 +3041,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 
 #ifdef MT_GPUFREQ_OC_PROTECT
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1;
-	} else if (get_devinfo() == C_MT6763T) {
+	} else if (device_id == C_MT6763T) {
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T;
 	} else {
 		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763;
@@ -4075,11 +4014,11 @@ static void _mt_gpufreq_fixed_freq(int fixed_freq)
 {
 	unsigned int last_freq_level = 0;
 
-	if (get_devinfo() == C_MT6763TT)
+	if (device_id == C_MT6763TT)
 		last_freq_level = GPUFREQ_LAST_FREQ_LEVEL;
-	else if (get_devinfo() == C_MT6763T)
+	else if (device_id == C_MT6763T)
 		last_freq_level = GPUFREQ_LAST_FREQ_LEVEL_6763T;
-	else if (get_devinfo() == C_MT6763)
+	else if (device_id == C_MT6763)
 		last_freq_level = GPUFREQ_LAST_FREQ_LEVEL_6763;
 
 	/* freq (KHz) */
@@ -4107,13 +4046,13 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 	unsigned int min_volt = 0;
 
 
-	if (get_devinfo() == C_MT6763TT) {
+	if (device_id == C_MT6763TT) {
 		max_volt = PMIC_MAX_VPROC;
 		min_volt = PMIC_MIN_VPROC;
-	} else if (get_devinfo() == C_MT6763T) {
+	} else if (device_id == C_MT6763T) {
 		max_volt = PMIC_MAX_VCORE_6763T;
 		min_volt = PMIC_MIN_VCORE_6763T;
-	} else if (get_devinfo() == C_MT6763) {
+	} else if (device_id == C_MT6763) {
 		max_volt = PMIC_MAX_VCORE_6763;
 		min_volt = PMIC_MIN_VCORE_6763;
 	}
@@ -4134,7 +4073,7 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 #endif
 		gpufreq_dbg("@ %s, mt_gpufreq_volt_switch2 fix frq = %d, fix volt = %d, volt = %d\n",
 			__func__, mt_gpufreq_fixed_frequency, mt_gpufreq_fixed_voltage, g_cur_gpu_volt);
-		if (get_devinfo() == C_MT6763TT)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
 		else
 			mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
