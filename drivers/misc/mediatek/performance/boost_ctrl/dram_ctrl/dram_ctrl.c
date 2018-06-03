@@ -13,16 +13,8 @@
 #define pr_fmt(fmt) "[SOC DVFS DRAM]"fmt
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/kallsyms.h>
-#include <linux/utsname.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
 #include <linux/uaccess.h>
-#include <linux/printk.h>
 #include <linux/string.h>
-
-#include <linux/platform_device.h>
-
 
 /*if PM_DEVFREQ*/
 #define MTK_QOS_SUPPORT

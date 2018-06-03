@@ -20,17 +20,9 @@
 
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/kallsyms.h>
-#include <linux/utsname.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/uaccess.h>
-#include <linux/printk.h>
 #include <linux/string.h>
-#include <asm/div64.h>
+#include <linux/uaccess.h>
 
-
-#include <linux/platform_device.h>
 #include "eas_ctrl.h"
 #include "eas_ctrl_plat.h"
 
