@@ -3244,10 +3244,14 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		_dump_dsi_params(&(_dsi_context[i].dsi_params));
 	}
 
-	if (!MIPITX_IsEnabled(module, cmdq)) {
+	if (!MIPITX_IsEnabled(module, cmdq) || PanelMaster_is_enable()) {
 		DISPCHECK("MIPITX is not inited, will config mipitx clk=%d\n",
-			_dsi_context[i].dsi_params.PLL_CLOCK);
+			_dsi_context[0].dsi_params.PLL_CLOCK);
 
+		if (PanelMaster_is_enable())
+			DISPDBG("===>Pmaster: set clk:%d\n",
+				_dsi_context[0].dsi_params.PLL_CLOCK);
+		DSI_PHY_clk_switch(module, NULL, false);
 		DSI_PHY_clk_switch(module, NULL, true);
 	}
 
