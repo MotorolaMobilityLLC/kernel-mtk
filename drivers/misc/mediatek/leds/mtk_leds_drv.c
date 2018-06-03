@@ -25,6 +25,9 @@
 #include <mtk_leds_hal.h>
 #include <mtk_leds_drv.h>
 #include <mt-plat/mtk_pwm.h>
+#ifdef CONFIG_MTK_AAL_SUPPORT
+#include <ddp_aal.h>
+#endif
 
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
@@ -35,7 +38,9 @@
  * variables
  ***************************************************************************/
 struct cust_mt65xx_led *bl_setting;
+#ifndef CONFIG_MTK_AAL_SUPPORT
 static unsigned int bl_div = CLK_DIV1;
+#endif
 #define PWM_DIV_NUM 8
 static unsigned int div_array[PWM_DIV_NUM];
 struct mt65xx_led_data *g_leds_data[MT65XX_LED_TYPE_TOTAL];
@@ -784,12 +789,20 @@ static void mt65xx_leds_shutdown(struct platform_device *pdev)
 			break;
 		case MT65XX_LED_MODE_CUST_LCM:
 			LEDS_DRV_DEBUG("backlight control through LCM!!1\n");
+#ifdef CONFIG_MTK_AAL_SUPPORT
+			disp_aal_notify_backlight_changed(0);
+#else
 			((cust_brightness_set) (g_leds_data[i]->cust.data)) (0,
 									     bl_div);
+#endif
 			break;
 		case MT65XX_LED_MODE_CUST_BLS_PWM:
 			LEDS_DRV_DEBUG("backlight control through BLS!!1\n");
+#ifdef CONFIG_MTK_AAL_SUPPORT
+			disp_aal_notify_backlight_changed(0);
+#else
 			((cust_set_brightness) (g_leds_data[i]->cust.data)) (0);
+#endif
 			break;
 		case MT65XX_LED_MODE_NONE:
 		default:
