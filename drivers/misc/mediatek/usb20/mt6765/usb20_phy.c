@@ -631,7 +631,7 @@ void usb_phy_recover(void)
 	hs_slew_rate_cal();
 
 	/* M_ANALOG8[4:0] => RG_USB20_INTR_CAL[4:0] */
-	efuse_val = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
+	efuse_val = (get_devinfo_with_index(107) & (0x1f<<0)) >> 0;
 	if (efuse_val) {
 		DBG(0, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n",
 			efuse_val);
