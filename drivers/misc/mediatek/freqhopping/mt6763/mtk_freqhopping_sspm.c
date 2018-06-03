@@ -78,15 +78,15 @@ unsigned int g_is_suspend;
 static const char *g_pll_name[FH_PLL_NUM] = {
 	"ARMPLL1",
 	"ARMPLL2",
-	"ARMPLL3",
+	"NOTSUPPORT", /* ARMPLL3 cannot do hoppping from EM due to DDS CON1 doesn't exists */
 	"CCIPLL",
 	"GPUPLL",
 	"MPLL",
-	"MEMPLL",
+	"NOTSUPPORT", /* MEMPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
 	"MAINPLL",
 	"MSDCPLL",
 	"MMPLL",
-	"VDECPLL",
+	"NOTSUPPORT", /* VDECPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
 	"TVDPLL"
 };
 
