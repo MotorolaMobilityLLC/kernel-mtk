@@ -173,9 +173,8 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 			ret = -EFAULT;
 		} else {
 			CCCI_NORMAL_LOG(md_id, FSM, "CCCI_IOC_RELOAD_MD_TYPE: 0x%x\n", data);
-			if (data != per_md_data->config.load_type)
-				if (set_modem_support_cap(md_id, data) == 0)
-					per_md_data->config.load_type = data;
+			if (set_modem_support_cap(md_id, data) == 0)
+				per_md_data->config.load_type = data;
 		}
 		break;
 	case CCCI_IOC_SET_MD_IMG_EXIST:
