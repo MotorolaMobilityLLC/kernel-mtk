@@ -122,7 +122,11 @@ EXPORT_SYMBOL_GPL(have_governor_per_policy);
 
 bool cpufreq_driver_is_slow(void)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	return false;
+#else
 	return !(cpufreq_driver->flags & CPUFREQ_DRIVER_FAST);
+#endif
 }
 EXPORT_SYMBOL_GPL(cpufreq_driver_is_slow);
 
