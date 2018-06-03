@@ -11,7 +11,7 @@
  */
 
 #include <linux/regulator/machine.h>
-#include <linux/regulator/mtk_regulator_core.h>
+#include <linux/regulator/mediatek/mtk_regulator_core.h>
 #include "rt5738.h"
 
 struct rt5738_regulator_info {
