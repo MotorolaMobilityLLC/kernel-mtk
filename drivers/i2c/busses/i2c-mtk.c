@@ -1293,6 +1293,27 @@ static const struct mtk_i2c_compatible mt6757_compat = {
 	.ext_time_config = 0x201,
 };
 
+static const struct mtk_i2c_compatible mt6758_compat = {
+	.dma_support = 2,
+	.idvfs_i2c = 1,
+	.set_dt_div = 1,
+	.set_ltiming = 0,
+	.check_max_freq = 1,
+	.ext_time_config = 0,
+	.clk_compatible = "mediatek,pericfg",
+	.clk_sta_offset = 0x278,
+	.cg_bit[0] = 16,
+	.cg_bit[1] = 17,
+	.cg_bit[2] = 24,
+	.cg_bit[3] = 25,
+	.cg_bit[4] = 20,
+	.cg_bit[5] = 21,
+	.cg_bit[6] = 22,
+	.cg_bit[7] = 23,
+	.cg_bit[8] = 18,
+	.cg_bit[9] = 19,
+};
+
 static const struct mtk_i2c_compatible mt6759_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 1,
@@ -1358,6 +1379,7 @@ static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6735-i2c", .data = &mt6735_compat },
 	{ .compatible = "mediatek,mt6797-i2c", .data = &mt6797_compat },
 	{ .compatible = "mediatek,mt6757-i2c", .data = &mt6757_compat },
+	{ .compatible = "mediatek,mt6758-i2c", .data = &mt6758_compat },
 	{ .compatible = "mediatek,mt6759-i2c", .data = &mt6759_compat },
 	{ .compatible = "mediatek,mt6799-i2c", .data = &mt6799_compat },
 	{ .compatible = "mediatek,mt6763-i2c", .data = &mt6763_compat },
