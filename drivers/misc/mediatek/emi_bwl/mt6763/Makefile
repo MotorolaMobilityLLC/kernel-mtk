@@ -12,6 +12,7 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
 
 obj-y += emi_bwl.o
 obj-y += emi_mbw.o

@@ -31,6 +31,7 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 
+#include <ext_wd_drv.h>
 #include "emi_bwl.h"
 #include "emi_mbw.h"
 
@@ -577,6 +578,9 @@ int disable_drs(unsigned char *backup)
 		return -1;
 	}
 
+	/* Set DRS status in RGU */
+	mtk_rgu_cfg_emi_dcs(0);
+
 	return 0;
 }
 
@@ -593,6 +597,10 @@ void restore_drs(unsigned char enable)
 		IOMEM(CHA_EMI_DRS));
 	writel(readl(IOMEM(CHB_EMI_DRS)) | (enable & 0x1),
 		IOMEM(CHB_EMI_DRS));
+
+	/* Set DRS status in RGU */
+	if (enable & 0x11)
+		mtk_rgu_cfg_emi_dcs(1);
 
 out:
 	spin_lock_irqsave(&emi_drs_lock, flags);
