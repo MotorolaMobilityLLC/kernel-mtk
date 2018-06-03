@@ -131,6 +131,9 @@ static int parsing_ipi_msg_from_user_space(
 	uint8_t data_type)
 {
 	uint32_t resv_dram_offset = 0xFFFFFFFF;
+	uint32_t dma_data_length = 0;
+	uint32_t dma_buffer_size = 0;
+	void __user *hal_write_back_addr = NULL;
 
 	int retval = 0;
 
@@ -154,9 +157,37 @@ static int parsing_ipi_msg_from_user_space(
 
 	/* get dram buf if need */
 	if (ipi_msg.data_type == AUDIO_IPI_DMA) {
-		resv_dram_offset = get_resv_dram_buf_offset(ipi_msg.param1);
-		if (resv_dram_offset == 0xFFFFFFFF || ipi_msg.param1 > p_resv_dram->size) {
-			AUD_LOG_E("dma_data_len %u, no enough memory!!\n", ipi_msg.param1);
+		/* hal data length */
+		dma_data_length = ipi_msg.param1;
+
+		/* DMA buffer size */
+		if (ipi_msg.param2 == 0) /* send data only */
+			dma_buffer_size = dma_data_length;
+		else { /* also need to get data */
+			dma_buffer_size = ipi_msg.param2;
+			hal_write_back_addr = (void __user *)ipi_msg.dma_addr;
+
+			if (dma_buffer_size < dma_data_length) {
+				AUD_LOG_E("dma_buffer_size %u < dma_data_length %u!!\n",
+					  dma_buffer_size, dma_data_length);
+				ipi_msg.param1 = 0;
+				retval = -1;
+				goto parsing_exit;
+			}
+
+			/* need ack to get scp info */
+			if (ipi_msg.ack_type != AUDIO_IPI_MSG_NEED_ACK) {
+				ipi_msg.param1 = 0;
+				retval = -1;
+				goto parsing_exit;
+			}
+		}
+
+		/* alloc DMA buffer & copy hal data */
+		resv_dram_offset = get_resv_dram_buf_offset(dma_buffer_size);
+		if (resv_dram_offset == 0xFFFFFFFF ||
+		    dma_buffer_size > p_resv_dram->size) {
+			AUD_LOG_E("dma_buffer_size %u no enough memory\n", dma_buffer_size);
 			ipi_msg.param1 = 0;
 			retval = -1;
 			goto parsing_exit;
@@ -164,11 +195,12 @@ static int parsing_ipi_msg_from_user_space(
 		retval = copy_from_user(
 				 p_resv_dram->vir_addr + resv_dram_offset,
 				 (void __user *)ipi_msg.dma_addr,
-				 ipi_msg.param1);
+				 dma_data_length);
 		if (retval != 0) {
 			AUD_LOG_E("dram copy_from_user retval %d\n", retval);
 			goto parsing_exit;
 		}
+
 		ipi_msg.dma_addr = p_resv_dram->phy_addr + resv_dram_offset;
 	}
 
@@ -178,12 +210,34 @@ static int parsing_ipi_msg_from_user_space(
 
 	retval = audio_send_ipi_filled_msg(&ipi_msg);
 	if (retval == 0) {
+		/* write back data to hal */
+		if (hal_write_back_addr != NULL && ipi_msg.param1 == 1) {
+			if (ipi_msg.param2 > dma_buffer_size) {
+				AUD_LOG_E("ipi_msg->param2 %u > dma_buffer_size %u!!\n",
+					  ipi_msg.param2, dma_buffer_size);
+				ipi_msg.param1 = 0;
+			} else {
+				retval = copy_to_user(
+						 hal_write_back_addr,
+						 p_resv_dram->vir_addr + resv_dram_offset,
+						 ipi_msg.param2);
+				if (retval) {
+					AUD_LOG_W("%s(), copy_to_user dma err, id = 0x%x\n",
+						  __func__, ipi_msg.msg_id);
+					ipi_msg.param1 = 0;
+				}
+			}
+		}
+
+		/* write back ipi msg to hal */
 		retval = copy_to_user(user_data_ptr, &ipi_msg, sizeof(struct ipi_msg_t));
 		if (retval) {
 			AUD_LOG_W("%s(), copy_to_user err, id = 0x%x\n", __func__, ipi_msg.msg_id);
 			retval = -EFAULT;
 		}
 	}
+
+
 
 parsing_exit:
 	return retval;
