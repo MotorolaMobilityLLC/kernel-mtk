@@ -410,12 +410,7 @@
 		interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	apmixed: apmixed@1000c000 {
-		compatible = "mediatek,apmixed",
-			     "mediatek,apmixedsys", "syscon";
-		reg = <0 0x1000c000 0 0x1000>;
-		#clock-cells = <1>;
-	};
+
 
 	eintc: eintc@1000b000 {
 		compatible = "mediatek,mt-eic";
@@ -442,9 +437,11 @@
 						<9 524288>;
 	};
 
-	apmixed@1000c000 {
-		compatible = "mediatek,apmixed";
-		reg = <0 0x1000c000 0 0x0>;
+	apmixed: apmixed@1000c000 {
+		compatible = "mediatek,apmixed",
+			     "mediatek,apmixedsys", "syscon";
+		reg = <0 0x1000c000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	fhctl@1000ce00 {
