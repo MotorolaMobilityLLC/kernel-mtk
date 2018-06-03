@@ -321,7 +321,8 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	/* init work queue */
 	INIT_WORK(&ois_work, ois_pos_polling);
 
-	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k71v1_64_bsp_vulscan", 20) != 0) {
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k71v1_64_bsp_vulscan", 20) != 0 ||
+		strncmp(CONFIG_ARCH_MTK_PROJECT, "k75v1_64_bsp_vulscan", 20) != 0) {
 		if (ois_workqueue == NULL)
 			ois_workqueue = create_singlethread_workqueue("ois_polling");
 	}
