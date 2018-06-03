@@ -242,6 +242,26 @@ int cm_mgr_check_stall_ratio(int mp0, int mp2)
 	return 0;
 }
 
+int cm_mgr_cps_check(void)
+{
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+	unsigned int cpu;
+	unsigned int rel_load, abs_load;
+
+	for_each_online_cpu(cpu) {
+		int tmp;
+
+		tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
+		sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
+		cm_mgr_abs_load += abs_load * tmp;
+		cm_mgr_rel_load += rel_load * tmp;
+	}
+	return 1;
+#else
+	return 0;
+#endif /* CONFIG_MTK_SCHED_RQAVG_US */
+}
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;

@@ -86,8 +86,8 @@ static int count[CM_MGR_CPU_CLUSTER];
 static int count_ack[CM_MGR_CPU_CLUSTER];
 static int vcore_dram_opp;
 static int vcore_dram_opp_cur;
-static int cm_mgr_abs_load;
-static int cm_mgr_rel_load;
+int cm_mgr_abs_load;
+int cm_mgr_rel_load;
 static int total_bw;
 static int cps_valid;
 static int debounce_times_up;
@@ -230,10 +230,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 #ifdef PER_CPU_STALL_RATIO
 		int cpu_ratio_idx[CM_MGR_CPU_COUNT];
 #endif
-#ifdef CONFIG_MTK_SCHED_RQAVG_US
-		unsigned int cpu;
-		unsigned int rel_load, abs_load;
-#endif /* CONFIG_MTK_SCHED_RQAVG_US */
 		int i;
 		int cpu_power_total;
 
@@ -311,31 +307,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 				1, &cpu_opp_cur[0], ARRAY_SIZE(cpu_opp_cur), 0);
 #endif /* DEBUG_CM_MGR */
 
-#ifdef LIGHT_LOAD
-		cm_mgr_abs_load = 0;
-		cm_mgr_rel_load = 0;
-
-#ifdef CONFIG_MTK_SCHED_RQAVG_US
-		for_each_online_cpu(cpu) {
-			int tmp;
-
-			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
-			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
-			cm_mgr_abs_load += abs_load * tmp;
-			cm_mgr_rel_load += rel_load * tmp;
-		}
-
-		/* pr_debug("#@# %s(%d)vcorefs_get_curr_ddr() %d\n", __func__, __LINE__, vcorefs_get_curr_ddr()); */
-		if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
-			cps_valid = 0;
-			cm_mgr_update_met();
-			spin_unlock(&cm_mgr_lock);
-			return;
-		}
-#endif /* CONFIG_MTK_SCHED_RQAVG_US */
-		cps_valid = 1;
-#endif
-
 		vcore_power_up = 0;
 		vcore_power_down = 0;
 
@@ -349,6 +320,21 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		print_hex_dump(KERN_INFO, "cpu_ratio_idx: ", DUMP_PREFIX_NONE, 16,
 				1, &cpu_ratio_idx[0], ARRAY_SIZE(cpu_ratio_idx), 0);
 #endif /* DEBUG_CM_MGR */
+
+#ifdef LIGHT_LOAD
+		cm_mgr_abs_load = 0;
+		cm_mgr_rel_load = 0;
+		cps_valid = 0;
+
+		if (cm_mgr_cps_check()) {
+			if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
+				cm_mgr_update_met();
+				spin_unlock(&cm_mgr_lock);
+				return;
+			}
+		}
+		cps_valid = 1;
+#endif
 
 		level = CM_MGR_EMI_OPP - vcore_dram_opp_cur;
 		if (vcore_dram_opp_cur != 0) {
