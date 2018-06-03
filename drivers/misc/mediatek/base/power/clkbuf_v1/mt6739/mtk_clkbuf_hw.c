@@ -260,11 +260,11 @@ u32 clk_buf_bblpm_enter_cond(void)
 
 	pwr_sta = clkbuf_readl(PWR_STATUS);
 
-	if (pwr_sta & PWR_STATUS_MD)
+	if (pwr_sta & CLKBUF_PWR_STATUS_MD)
 		bblpm_cond |= BBLPM_COND_CEL;
 
 	if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
-	    (pwr_sta & PWR_STATUS_CONN))
+	    (pwr_sta & CLKBUF_PWR_STATUS_CONN))
 		bblpm_cond |= BBLPM_COND_WCN;
 
 	if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)

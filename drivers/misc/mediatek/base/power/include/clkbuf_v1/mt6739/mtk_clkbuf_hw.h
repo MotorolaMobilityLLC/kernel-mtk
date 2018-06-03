@@ -66,8 +66,8 @@ enum {
 };
 
 enum {
-	PWR_STATUS_MD	= (1 << 0),
-	PWR_STATUS_CONN	= (1 << 1),
+	CLKBUF_PWR_STATUS_MD	= (1 << 0),
+	CLKBUF_PWR_STATUS_CONN	= (1 << 1),
 };
 
 #define CLKBUF_USE_BBLPM
