@@ -107,6 +107,20 @@ static const struct afe_dump_reg_attr hdmi_dump_regs[] = {
 	DUMP_REG_ENTRY(AFE_TDM_CON2),
 	DUMP_REG_ENTRY(AFE_IRQ_MCU_CON2),
 	DUMP_REG_ENTRY(AFE_IRQ_CNT5),
+	DUMP_REG_ENTRY(AFE_MEMIF_PBUF2_SIZE),
+};
+
+static const struct afe_dump_reg_attr tdmi_in_dump_regs[] = {
+	DUMP_REG_ENTRY(AFE_DAC_CON0),
+	DUMP_REG_ENTRY(AFE_CONN_TDMIN_CON),
+	DUMP_REG_ENTRY(AFE_HDMI_IN_2CH_BASE),
+	DUMP_REG_ENTRY(AFE_HDMI_IN_2CH_CUR),
+	DUMP_REG_ENTRY(AFE_HDMI_IN_2CH_END),
+	DUMP_REG_ENTRY(AFE_TDM_IN_CON1),
+	DUMP_REG_ENTRY(AFE_HDMI_IN_2CH_CON0),
+	DUMP_REG_ENTRY(AFE_IRQ_MCU_CON2),
+	DUMP_REG_ENTRY(AFE_IRQ_CNT10),
+	DUMP_REG_ENTRY(AFE_MEMIF_PBUF2_SIZE),
 };
 
 static ssize_t mtk_afe_read_file(struct file *file, char __user *user_buf,
@@ -217,7 +231,6 @@ static ssize_t mtk_afe_hdmi_read_file(struct file *file, char __user *user_buf,
 
 	mtk_afe_enable_main_clk(afe);
 
-
 	for (i = 0; i < ARRAY_SIZE(hdmi_dump_regs); i++) {
 		if (regmap_read(afe->regmap, hdmi_dump_regs[i].offset, &reg_value))
 			n += scnprintf(buf + n, count - n, "%s = N/A\n",
@@ -238,6 +251,45 @@ static ssize_t mtk_afe_hdmi_read_file(struct file *file, char __user *user_buf,
 	return ret;
 }
 
+static ssize_t mtk_afe_tdm_in_read_file(struct file *file, char __user *user_buf,
+				size_t count, loff_t *pos)
+{
+	struct mtk_afe *afe = file->private_data;
+	ssize_t ret, i;
+	char *buf;
+	unsigned int reg_value;
+	int n = 0;
+
+	if (*pos < 0 || !count)
+		return -EINVAL;
+
+	buf = kmalloc(count, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	pm_runtime_get_sync(afe->dev);
+
+	mtk_afe_enable_main_clk(afe);
+
+	for (i = 0; i < ARRAY_SIZE(tdmi_in_dump_regs); i++) {
+		if (regmap_read(afe->regmap, tdmi_in_dump_regs[i].offset, &reg_value))
+			n += scnprintf(buf + n, count - n, "%s = N/A\n",
+				       tdmi_in_dump_regs[i].name);
+		else
+			n += scnprintf(buf + n, count - n, "%s = 0x%x\n",
+				       tdmi_in_dump_regs[i].name, reg_value);
+	}
+
+	mtk_afe_disable_main_clk(afe);
+
+	pm_runtime_put(afe->dev);
+
+	ret = simple_read_from_buffer(user_buf, count, pos, buf, n);
+
+	kfree(buf);
+
+	return ret;
+}
 
 static const struct file_operations mtk_afe_fops = {
 	.open = simple_open,
@@ -252,9 +304,16 @@ static const struct file_operations mtk_afe_hdmi_fops = {
 	.llseek = default_llseek,
 };
 
+static const struct file_operations mtk_afe_tdm_in_fops = {
+	.open = simple_open,
+	.read = mtk_afe_tdm_in_read_file,
+	.llseek = default_llseek,
+};
+
 static const struct mtk_afe_debug_fs afe_debug_fs[] = {
 	{"mtksocaudio", &mtk_afe_fops},
 	{"mtksochdmiaudio", &mtk_afe_hdmi_fops},
+	{"mtksoctdminaudio", &mtk_afe_tdm_in_fops},
 };
 
 #endif
