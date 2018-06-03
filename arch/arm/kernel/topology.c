@@ -394,7 +394,7 @@ static struct sched_group_energy energy_core_a15 = {
 };
 
 /* sd energy functions */
-static inline
+inline
 const struct sched_group_energy * const cpu_cluster_energy(int cpu)
 {
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL1];
@@ -424,7 +424,7 @@ const struct sched_group_energy * const cpu_cluster_energy(int cpu)
 	return sge;
 }
 
-static inline
+inline
 const struct sched_group_energy * const cpu_core_energy(int cpu)
 {
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL0];

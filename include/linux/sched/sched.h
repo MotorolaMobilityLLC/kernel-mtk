@@ -35,3 +35,48 @@ do { \
 #else
 #define mt_sched_printf(event, x...) do {} while (0)
 #endif
+
+struct energy_env {
+	struct sched_group	*sg_top;
+	struct sched_group	*sg_cap;
+	int			cap_idx;
+	int			util_delta;
+	int			src_cpu;
+	int			dst_cpu;
+	int			energy;
+	int			payoff;
+	struct task_struct	*task;
+	struct {
+		int before;
+		int after;
+		int delta;
+		int diff;
+	} nrg;
+	struct {
+		int before;
+		int after;
+		int delta;
+	} cap;
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	int	opp_idx[3];	/* [FIXME] cluster may > 3 */
+#endif
+};
+
+/* cpu_core_energy & cpu_cluster_energy both implmented in topology.c */
+extern
+const struct sched_group_energy * const cpu_core_energy(int cpu);
+
+extern
+const struct sched_group_energy * const cpu_cluster_energy(int cpu);
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern inline
+int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level);
+
+extern inline
+int mtk_busy_power(int cpu, void *argu, int sd_level);
+
+extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
+#endif
+
+
