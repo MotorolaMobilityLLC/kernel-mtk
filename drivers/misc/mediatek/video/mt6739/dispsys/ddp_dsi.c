@@ -1151,7 +1151,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]);
 			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PHY_SEL1, FLD_MIPI_TX_PHY3_SEL,
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]);
-			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PHY_SEL1, FLD_MIPI_TX_LPRX_SEL,
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_TOP_CON, FLD_RG_DSI_LPRXCD_SEL,
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
 		}
 	}
