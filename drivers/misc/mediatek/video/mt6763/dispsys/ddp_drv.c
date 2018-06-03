@@ -140,7 +140,7 @@ static const struct mc_uuid_t MC_UUID_TPLAY = {
 	};
 
 static struct mc_session_handle tplaySessionHandle;
-static tplay_tciMessage_t *pTplayTci;
+static struct tplay_tciMessage_t *pTplayTci;
 
 static unsigned int opened_device;
 static enum mc_result late_open_mobicore_device(void)
@@ -179,7 +179,7 @@ static int open_tplay_driver_connection(void)
 
 		/* Allocating WSM for DCI */
 		mcRet =
-		    mc_malloc_wsm(mc_deviceId, 0, sizeof(tplay_tciMessage_t),
+		    mc_malloc_wsm(mc_deviceId, 0, sizeof(struct tplay_tciMessage_t),
 				  (uint8_t **) &pTplayTci, 0);
 		if (mcRet != MC_DRV_OK) {
 			DDPERR("mc_malloc_wsm failed: %d @%s line %d\n", mcRet, __func__, __LINE__);
@@ -192,7 +192,7 @@ static int open_tplay_driver_connection(void)
 		mcRet = mc_open_session(&tplaySessionHandle,
 					&MC_UUID_TPLAY,
 					(uint8_t *) pTplayTci,
-					(uint32_t) sizeof(tplay_tciMessage_t));
+					(uint32_t) sizeof(struct tplay_tciMessage_t));
 		if (mcRet != MC_DRV_OK) {
 			DDPERR("mc_open_session failed: %d @%s line %d\n", mcRet, __func__,
 			       __LINE__);
