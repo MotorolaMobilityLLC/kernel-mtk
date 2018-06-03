@@ -61,7 +61,6 @@
 #define SCP_READY_TIMEOUT (30 * HZ) /* 30 seconds*/
 #define SCP_A_TIMER 0
 
-
 /* scp ready status for notify*/
 unsigned int scp_ready[SCP_CORE_TOTAL];
 
@@ -626,9 +625,26 @@ static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attr
 }
 
 DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
-
-
 #ifdef CONFIG_MTK_ENG_BUILD
+
+static ssize_t scp_ee_force_ke_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", scp_ee_force_ke_enable);
+}
+
+static ssize_t scp_ee_force_ke_ctrl(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int value = 0;
+
+	if (kstrtouint(buf, 10, &value) == 0) {
+		scp_ee_force_ke_enable = value;
+		pr_debug("[SCP] scp_ee_force_ke_enable = %d\n", scp_ee_force_ke_enable);
+	}
+	return n;
+}
+DEVICE_ATTR(scp_ee_force_ke, 0644, scp_ee_force_ke_show, scp_ee_force_ke_ctrl);
+
+
 static inline ssize_t scp_A_awake_lock_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 
@@ -784,6 +800,11 @@ static int create_files(void)
 		return ret;
 
 #ifdef CONFIG_MTK_ENG_BUILD
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ee_force_ke);
+
+	if (unlikely(ret != 0))
+		return ret;
+
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_awake_lock);
 
 	if (unlikely(ret != 0))
