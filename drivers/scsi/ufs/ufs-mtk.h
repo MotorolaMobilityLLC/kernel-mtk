@@ -262,6 +262,7 @@ void ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
 void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
 int  ufs_mtk_get_cmd_str_idx(char cmd);
+bool ufs_mtk_is_data_cmd(char cmd_op);
 void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
 void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
 int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
