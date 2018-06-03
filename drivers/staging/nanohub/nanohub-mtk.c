@@ -70,6 +70,10 @@ int nanohub_ipi_write(void *data, u8 *tx, int length, int timeout)
 			break;
 		usleep_range(100, 200);
 	}
+
+	if (ret == BUSY)
+		pr_debug("%s ipi busy, ret=%d\n", __func__, ret);
+
 	if (ret == DONE)
 		return length;
 	else
