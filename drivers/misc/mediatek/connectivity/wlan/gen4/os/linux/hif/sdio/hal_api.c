@@ -1874,7 +1874,7 @@ VOID halPrintMailbox(IN P_ADAPTER_T prAdapter)
 
 	halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
 	halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-	DBGLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+	DBGFWLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
 }
 
 VOID halPrintIntStatus(IN P_ADAPTER_T prAdapter)

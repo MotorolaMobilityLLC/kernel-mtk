@@ -5306,7 +5306,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	cnmTimerInitTimer(prGlueInfo->prAdapter,
 		&prPerMonitor->rPerfMonTimer,
 		(PFN_MGMT_TIMEOUT_FUNC) kalPerMonHandler, (ULONG) NULL);
-	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 
