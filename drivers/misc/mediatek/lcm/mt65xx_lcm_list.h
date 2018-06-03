@@ -167,6 +167,7 @@ extern struct LCM_DRIVER nt35520_hd720_tm_lcm_drv;
 extern struct LCM_DRIVER nt35520_hd720_boe_lcm_drv;
 extern struct LCM_DRIVER nt35521_hd720_dsi_vdo_boe_lcm_drv;
 extern struct LCM_DRIVER nt35521_hd720_tm_lcm_drv;
+extern struct LCM_DRIVER nt35521_hd_dsi_vdo_truly_rt5081_lcm_drv;
 extern struct LCM_DRIVER r69429_wuxga_dsi_vdo_lcm_drv;
 extern struct LCM_DRIVER r69429_wuxga_dsi_cmd_lcm_drv;
 extern struct LCM_DRIVER rm68210_hd720_dsi_ufoe_cmd_lcm_drv;

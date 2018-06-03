@@ -47,7 +47,7 @@ enum DDP_CLK_ID {
 	/* PWM clk */
 	MUX_PWM,
 	DISP_PWM,
-	CLK26M,
+	CLK26M, /*22*/
 	UNIVPLL2_D4,
 	ULPOSC1_D2,
 	ULPOSC1_D8,

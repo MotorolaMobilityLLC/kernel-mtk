@@ -27,7 +27,7 @@
 	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || \
 	defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || \
 	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6765)
+	defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -621,8 +621,9 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	enum disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) \
-	|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
+	defined(CONFIG_MACH_MT6761)
 	/* pwm ccf api */
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #elif defined(CONFIG_MACH_MT6763)
@@ -675,8 +676,9 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 	disp_pwm_backlight_status(id, 1);
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) \
-	|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
+	defined(CONFIG_MACH_MT6761)
 	/* pwm ccf api */
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #elif defined(CONFIG_MACH_MT6763)
@@ -720,7 +722,8 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739) && \
+	!defined(CONFIG_MACH_MT6765) && !defined(CONFIG_MACH_MT6761)
 	ddp_pwm_power_on(module, cmq_handle);
 #endif
 	return 0;
@@ -752,7 +755,8 @@ bool disp_pwm_is_osc(void)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6765)
+	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6765) || \
+	defined(CONFIG_MACH_MT6761)
 
 	is_osc = disp_pwm_mux_is_osc();
 #endif
