@@ -556,10 +556,23 @@ static int kwdt_thread(void *arg)
 					/* kick local wdt */
 					mpcore_wdt_restart(WD_TYPE_NORMAL);
 #endif
-				} else
+				} else {
 					spin_unlock(&lock);
-			} else
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+					/*
+					 * acao will not let cpu down (as well migrate wdk kthread to other
+					 * cpu) in most of time, thus we dump this case for easier debugging.
+					 */
+					pr_info("[wdk] mis-matched, cpu=%d, bound-pid=%d, cur-pid=%d\n",
+						cpu, wk_tsk[cpu]->pid, current->pid);
+#endif
+				}
+			} else {
 				spin_unlock(&lock);
+
+				pr_info("[wdk] per-cpu thread is not created yet.\n");
+			}
 		} else if (g_enable == 0) {
 			pr_debug("[wdk] stop to kick\n");
 		} else {
