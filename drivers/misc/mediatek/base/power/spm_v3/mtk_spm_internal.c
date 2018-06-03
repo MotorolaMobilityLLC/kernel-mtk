@@ -56,6 +56,42 @@ DEFINE_SPINLOCK(__spm_lock);
 #define PCM_TIMER_RAMP_BASE_SUSPEND_LONG	0x927C00 /* 5min */
 static u32 pcm_timer_ramp_max_sec_loop = 1;
 
+#ifdef CONFIG_MACH_MT6759
+const char *wakesrc_str[32] = {
+	[0] = " R12_PCMTIMER",
+	[1] = " R12_SSPM_WDT_EVENT_B",
+	[2] = " R12_KP_IRQ_B",
+	[3] = " R12_APWDT_EVENT_B",
+	[4] = " R12_APXGPT1_EVENT_B",
+	[5] = " R12_SYS_TIMER_EVENT_B",
+	[6] = " R12_EINT_EVENT_B",
+	[7] = " R12_C2K_WDT_IRQ_B",
+	[8] = " R12_CCIF0_EVENT_B",
+	[9] = " R12_WAKE_UP_EVENT_MCSODI_SRC1_B",
+	[10] = " R12_SSPM_SPM_IRQ_B",
+	[11] = " R12_SCP_IPC_MD2SPM_B",
+	[12] = " R12_SCP_WDT_EVENT_B",
+	[13] = " R12_PCM_WDT_WAKEUP_B",
+	[14] = " R12_USBX_CDSC_B",
+	[15] = " R12_USBX_POWERDWN_B",
+	[16] = " R12_CONN2AP_WAKEUP_B",
+	[17] = " R12_EINT_EVENT_SECURE_B",
+	[18] = " R12_CCIF1_EVENT_B",
+	[19] = " R12_UART0_IRQ_B",
+	[20] = " R12_AFE_IRQ_MCU_B",
+	[21] = " R12_THERMAL_CTRL_EVENT_B",
+	[22] = " R12_SCP_CIRQ_IRQ_B",
+	[23] = " R12_CONN2AP_WDT_IRQ_B",
+	[24] = " R12_CSYSPWRUPREQ_B",
+	[25] = " R12_MD1_WDT_B",
+	[26] = " R12_MD2AP_PEER_WAKEUP_EVENT",
+	[27] = " R12_SEJ_EVENT_B",
+	[28] = " R12_SSPM_WAKEUP_SSPM",
+	[29] = " R12_CPU_IRQ_B",
+	[30] = " R12_SCP_WAKEUP_SCP",
+	[31] = " R12_BIT31",
+};
+#else
 const char *wakesrc_str[32] = {
 	[0] = " R12_PCMTIMER",
 	[1] = " R12_SSPM_WDT_EVENT_B",
@@ -90,6 +126,7 @@ const char *wakesrc_str[32] = {
 	[30] = " R12_SCP_WAKEUP_SCP",
 	[31] = " R12_BIT31",
 };
+#endif
 
 /**************************************
  * Function and API
