@@ -135,7 +135,11 @@
 #define NIC_TX_DESC_DRIVER_PID_MIN              1
 #define NIC_TX_DESC_DRIVER_PID_MAX              127
 
+#if defined(MT6630) || defined(MT6797)
 #define NIC_TX_DATA_DEFAULT_RETRY_COUNT_LIMIT   30
+#else
+#define NIC_TX_DATA_DEFAULT_RETRY_COUNT_LIMIT   7
+#endif
 #define NIC_TX_MGMT_DEFAULT_RETRY_COUNT_LIMIT   30
 
 #define NIC_TX_AC_BE_REMAINING_TX_TIME          TX_DESC_TX_TIME_NO_LIMIT	/* in unit of ms */
