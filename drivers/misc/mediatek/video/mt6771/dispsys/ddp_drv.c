@@ -143,6 +143,7 @@ int disp_get_ovl_bandwidth(unsigned int in_fps, unsigned int out_fps, unsigned i
 			*bandwidth = ((ovl0_bw + ovl0_2l_bw + wdma0_bw) * in_fps) + (rdma0_bw * out_fps);
 		else
 			*bandwidth = (ovl0_bw + ovl0_2l_bw) * out_fps;
+		do_div(*bandwidth, 1000);
 	}
 
 	return ret;
@@ -161,6 +162,7 @@ int disp_get_rdma_bandwidth(unsigned int out_fps, unsigned int *bandwidth)
 		*bandwidth = 0;
 	} else {
 		*bandwidth = rdma0_bw * out_fps;
+		do_div(*bandwidth, 1000);
 	}
 
 	return ret;

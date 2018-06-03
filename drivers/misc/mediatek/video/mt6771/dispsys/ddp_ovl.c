@@ -1345,7 +1345,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 		tmp_bw = (unsigned long long)ovl_cfg->dst_h * ovl_cfg->dst_w * fps * Bpp;
 		do_div(tmp_bw, 1000);
 		tmp_bw *= 1250;
-		do_div(tmp_bw, fps * 1000 * 1000);
+		do_div(tmp_bw, fps * 1000);
 		ovl_bw = ovl_bw + tmp_bw;
 		DDPMSG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n", pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}

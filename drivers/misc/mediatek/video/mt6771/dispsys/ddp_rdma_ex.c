@@ -1061,7 +1061,7 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	rdma_bw = (unsigned long long)width * height * bwBpp;
 	do_div(rdma_bw, 1000);
 	rdma_bw *= 1250;
-	do_div(rdma_bw, 1000 * 1000);
+	do_div(rdma_bw, 1000);
 	DDPMSG("R:width=%u,height=%u,Bpp:%u,bw:%llu\n", width, height, bwBpp, rdma_bw);
 
 	/* bandwidth report */
