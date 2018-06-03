@@ -211,8 +211,10 @@ static int mtk_mod_dai_pcm_hw_params(struct snd_pcm_substream *substream,
 	pr_debug("mod_dai_dma_buf = %p mod_dai_dma_buf->area = %p\n", Capture_dma_buf, Capture_dma_buf->area);
 
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
-	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
-		substream->runtime->dma_bytes, substream) == 0) {
+	if (AllocateAudioSram(&substream->runtime->dma_addr,
+			      &substream->runtime->dma_area,
+			      substream->runtime->dma_bytes, substream,
+			      params_format(hw_params), false) == 0) {
 		mModDaiUseSram = false;
 		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {

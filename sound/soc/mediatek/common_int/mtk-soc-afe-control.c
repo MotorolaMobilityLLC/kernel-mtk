@@ -132,6 +132,10 @@ static unsigned int irq_mcu_mask;
 static int APLL1TunerCounter;
 static int APLL2TunerCounter;
 
+static unsigned int sram_mode_size[2] = {
+	AFE_INTERNAL_SRAM_NORMAL_SIZE,
+	AFE_INTERNAL_SRAM_COMPACT_SIZE,
+};
 static Aud_Sram_Manager mAud_Sram_Manager;
 
 static bool mExternalModemStatus;
@@ -2854,6 +2858,18 @@ void AudDrv_checkDLISRStatus(void)
 	}
 }
 
+static void update_sram_block_valid(enum audio_sram_mode mode)
+{
+	int i;
+
+	for (i = 0; i < mAud_Sram_Manager.mBlocknum; i++) {
+		if ((i + 1) * mAud_Sram_Manager.mBlockSize >
+		    sram_mode_size[mode]) {
+			mAud_Sram_Manager.mAud_Sram_Block[i].mValid = false;
+		}
+	}
+}
+
 bool InitSramManager(struct device *pDev, unsigned int sramblocksize)
 {
 	int i = 0;
@@ -2883,6 +2899,11 @@ bool InitSramManager(struct device *pDev, unsigned int sramblocksize)
 		mAud_Sram_Manager.mAud_Sram_Block[i].msram_virt_addr =
 			(void *)((char *)mAud_Sram_Manager.msram_virt_addr + (sramblocksize * i));
 	}
+
+	/* init for normal mode or compact mode */
+	mAud_Sram_Manager.sram_mode = get_prefer_sram_mode();
+	update_sram_block_valid(mAud_Sram_Manager.sram_mode);
+
 	return true;
 }
 
@@ -2934,13 +2955,58 @@ bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsig
 }
 
 int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
-	unsigned int mSramLength, void *user)
+		      unsigned int mSramLength, void *user,
+		      snd_pcm_format_t format, bool force_normal)
 {
 	unsigned int SramBlockNum = 0;
 	unsigned int SramBlockidx = 0;
+	Aud_Sram_Block *sram_block = NULL;
+	enum audio_sram_mode request_sram_mode;
+	bool has_user = false;
 	int ret = 0;
+	int i;
 
 	AfeControlSramLock();
+
+	/* check if sram has user */
+	for (i = 0; i < mAud_Sram_Manager.mBlocknum; i++) {
+		sram_block = &mAud_Sram_Manager.mAud_Sram_Block[i];
+		if (sram_block->mValid == true && sram_block->mUser != NULL) {
+			has_user = true;
+			break;
+		}
+	}
+
+	/* get sram mode for this request */
+	if (force_normal) {
+		request_sram_mode = audio_sram_normal_mode;
+	} else {
+		if (format == SNDRV_PCM_FORMAT_S32_LE ||
+		    format == SNDRV_PCM_FORMAT_U32_LE) {
+			request_sram_mode = has_user ?
+					    mAud_Sram_Manager.sram_mode :
+					    get_prefer_sram_mode();
+		} else {
+			request_sram_mode = audio_sram_normal_mode;
+		}
+	}
+
+	/* change sram mode if needed */
+	if (mAud_Sram_Manager.sram_mode != request_sram_mode) {
+		if (has_user) {
+			pr_debug("%s(), cannot change mode to %d\n",
+				 __func__,
+				 request_sram_mode);
+			AfeControlSramUnLock();
+			return -ENOMEM;
+		}
+
+		mAud_Sram_Manager.sram_mode = request_sram_mode;
+		update_sram_block_valid(mAud_Sram_Manager.sram_mode);
+	}
+
+	set_sram_mode(mAud_Sram_Manager.sram_mode);
+
 	if (CheckSramAvail(mSramLength, &SramBlockidx, &SramBlockNum) == true) {
 		*sram_phys_addr = mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_phys_addr;
 		*msram_virt_addr = (char *)mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_virt_addr;
@@ -3374,7 +3440,7 @@ int memif_lpbk_enable(struct memif_lpbk *memif_lpbk)
 	if (AllocateAudioSram(&memif_lpbk->dma_addr,
 			      &memif_lpbk->dma_area,
 			      memif_lpbk->dma_bytes,
-			      memif_lpbk) == 0) {
+			      memif_lpbk, format, false) == 0) {
 		memif_lpbk->use_dram = false;
 	} else {
 		memif_lpbk->dma_area = dma_alloc_coherent(memif_lpbk->dev,
@@ -3729,7 +3795,8 @@ int mtk_audio_request_sram(dma_addr_t *phys_addr,
 
 	pr_debug("%s(), user = %p, length = %d, count = %d\n",
 		 __func__, user, length, request_sram_count);
-	ret = AllocateAudioSram(phys_addr, virt_addr, length, user);
+	ret = AllocateAudioSram(phys_addr, virt_addr, length, user,
+				SNDRV_PCM_FORMAT_S32_LE, true);
 	if (ret) {
 		pr_warn("%s(), allocate sram fail, ret %d\n", __func__, ret);
 		return ret;

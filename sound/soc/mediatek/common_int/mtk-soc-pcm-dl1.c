@@ -93,6 +93,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
+#include <sound/pcm_params.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -180,8 +181,10 @@ static int mtk_pcm_dl1_params(struct snd_pcm_substream *substream,
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
-	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
-		substream->runtime->dma_bytes, substream) == 0) {
+	if (AllocateAudioSram(&substream->runtime->dma_addr,
+			      &substream->runtime->dma_area,
+			      substream->runtime->dma_bytes, substream,
+			      params_format(hw_params), false) == 0) {
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, substream->runtime->dma_addr);
 		/* pr_warn("dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {
