@@ -707,9 +707,9 @@ static inline int rt5081_init_cc_params(
 			struct tcpc_device *tcpc, uint8_t cc_res)
 {
 	int rv = 0;
+#ifdef CONFIG_USB_POWER_DELIVERY
 	struct rt5081_chip *chip = tcpc_get_dev_data(tcpc);
 
-#ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_USB_PD_SNK_DFT_NO_GOOD_CRC
 	uint8_t en, sel;
 
