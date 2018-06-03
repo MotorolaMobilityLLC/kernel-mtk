@@ -184,7 +184,7 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 {
 	int ret;
 
-#define GPIO_DEBUG
+/* #define GPIO_DEBUG */
 #ifdef GPIO_DEBUG
 	int pull_val;
 
