@@ -22,8 +22,8 @@
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"
 #include "mtk_secure_api.h"
+#include "mtk_clkbuf_ctl.h"
 
-/* #define UFS_DEV_REF_CLK_CONTROL */
 #ifdef MTK_UFS_HQA
 #include <mtk_reboot.h>
 #include <upmu_common.h>
@@ -36,10 +36,14 @@ static struct pinctrl *ufs_mtk_pinctrl;
 static struct pinctrl_state *ufs_mtk_pins_default;
 static struct pinctrl_state *ufs_mtk_pins_va09_on;
 static struct pinctrl_state *ufs_mtk_pins_va09_off;
+
 #ifdef MTK_UFS_HQA
+
 /* UFS write is performance  200MB/s, 4KB will take around 20us */
 /* Set delay before reset to 100us to cover 4KB & >4KB write */
+
 #define UFS_SPOH_USDELAY_BEFORE_RESET (100)
+
 void random_delay(struct ufs_hba *hba)
 {
 	u32 time = (sched_clock()%UFS_SPOH_USDELAY_BEFORE_RESET);
@@ -115,7 +119,7 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
 		/* Disable MPHY 26MHz ref clock in H8 mode */
 		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
-	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(UFS_DEV_REF_CLK_CONTROL)
+	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		clk_buf_ctrl(CLK_BUF_UFS, false);
 	#endif
 		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
@@ -134,7 +138,7 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
 	/* Enable MPHY 26MHz ref clock after leaving deepidle */
 	/* SSPM project will enable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
 
-#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(UFS_DEV_REF_CLK_CONTROL)
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	/* If current device is not active, it means it is after ufshcd_suspend() through */
 	/* a. runtime or system pm b. ufshcd_shutdown */
 	/* And deepidle/SODI can not enter in ufs suspend/resume callback by idle_lock_by_ufs() */
@@ -351,10 +355,8 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 	int ret = 0;
 	u32 reg;
 
-#if defined(UFS_DEV_REF_CLK_CONTROL)
 	/* Enable MPHY 26MHz ref clock */
 	clk_buf_ctrl(CLK_BUF_UFS, true);
-#endif
 
 	/* Set GPIO to turn on VA09 LDO */
 	if (ufs_mtk_pins_va09_on)
@@ -473,10 +475,8 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 	/* delay awhile to satisfy T_HIBERNATE */
 	mdelay(15);
 
-#if defined(UFS_DEV_REF_CLK_CONTROL)
 	/* Disable MPHY 26MHz ref clock in H8 mode */
 	clk_buf_ctrl(CLK_BUF_UFS, false);
-#endif
 
 	/* Set GPIO to turn off VA09 LDO */
 	if (ufs_mtk_pins_va09_off)
