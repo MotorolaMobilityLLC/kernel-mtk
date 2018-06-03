@@ -272,7 +272,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
-
 		soter-shared-mem {
 			compatible = "microtrust,shared_mem";
 			no-map;
@@ -543,13 +542,34 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	scp@10500000 {
 		compatible = "mediatek,scp";
-		status = "disabled";
+		status = "okay";
 		reg =	<0 0x10500000 0 0x40000>,
 				<0 0x105c0000 0 0x1000>,
 				<0 0x105c4000 0 0x1000>;
 		interrupts = <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>;
 		core_1 = "enable";
 		scp_sramSize = <0x00040000>;
+	};
+
+	scp_dvfs {
+		compatible = "mediatek,scp_dvfs";
+		clocks = <&topckgen CLK_TOP_SCP_SEL>,
+			<&clk26m>,
+			<&topckgen CLK_TOP_SYSPLL4_D2>,
+			<&topckgen CLK_TOP_UNIVPLL2_D2>,
+			<&topckgen CLK_TOP_SYSPLL1_D2>,
+			<&topckgen CLK_TOP_UNIVPLL1_D2>,
+			<&topckgen CLK_TOP_SYSPLL_D3>,
+			<&topckgen CLK_TOP_UNIVPLL_D3>;
+
+		clock-names = "clk_mux",
+			"clk_pll_0",
+			"clk_pll_1",
+			"clk_pll_2",
+			"clk_pll_3",
+			"clk_pll_4",
+			"clk_pll_5",
+			"clk_pll_6";
 	};
 
 	sleep_reg_md@1000f000 {
@@ -568,7 +588,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 	mrdump_ext_rst: mrdump_ext_rst {
-		/*compatible = "mediatek, mrdump_ext_rst-eint";*/
+		compatible = "mediatek, mrdump_ext_rst-eint";
 		source = "EINT";
 		mode = "IRQ";
 		status = "okay";
@@ -1698,6 +1718,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "conn";
 	};
 
+	wifi@18000000 {
+		compatible = "mediatek,wifi";
+		reg = <0 0x18000000 0 0x100000>;
+		interrupts = <GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>;
+	};
 
 	disp_pwm@1100e000 {
 		compatible = "mediatek,disp_pwm";
