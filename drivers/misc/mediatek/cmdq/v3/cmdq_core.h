@@ -135,7 +135,7 @@ do {			\
 
 #define CMDQ_AEE(tag, string, args...) \
 { \
-	CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
+	CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY | DB_OPT_FTRACE, tag, string, ##args) \
 }
 
 #else
