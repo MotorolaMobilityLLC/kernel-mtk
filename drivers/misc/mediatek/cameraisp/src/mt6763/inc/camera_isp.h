@@ -54,7 +54,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #define ISP_REG_PER_DIP_RANGE   (PAGE_SIZE*5)
 
 /* In order with the suquence of device nodes defined in dtsi */
-typedef enum {
+enum ISP_DEV_NODE_ENUM {
 	ISP_IMGSYS_CONFIG_IDX = 0,
 	ISP_DIP_A_IDX, /* Remider: Add this device node manually in .dtsi */
 	ISP_CAMSYS_CONFIG_IDX,
@@ -68,7 +68,7 @@ typedef enum {
 	ISP_CAMSV4_IDX,
 	ISP_CAMSV5_IDX,
 	ISP_DEV_NODE_NUM
-} ISP_DEV_NODE_ENUM;
+};
 
 /* defined if want to support multiple dequne and enque or camera 3.0 */
 /**
@@ -84,26 +84,26 @@ typedef enum {
 /**
  * frame status
  */
-typedef enum {
+enum CAM_FrameST {
 	CAM_FST_NORMAL = 0, CAM_FST_DROP_FRAME = 1, CAM_FST_LAST_WORKING_FRAME = 2,
-} CAM_FrameST;
+};
 
 /**
  * interrupt clear type
  */
-typedef enum {
+enum ISP_IRQ_CLEAR_ENUM {
 	ISP_IRQ_CLEAR_NONE, /* non-clear wait, clear after wait */
 	ISP_IRQ_CLEAR_WAIT, /* clear wait, clear before and after wait */
 	ISP_IRQ_CLEAR_STATUS, /* clear specific status only */
 	ISP_IRQ_CLEAR_ALL /* clear all status */
-} ISP_IRQ_CLEAR_ENUM;
+};
 
 /**
  * module's interrupt , each module should have its own isr.
  * note:
  * mapping to isr table,ISR_TABLE when using no device tree
  */
-typedef enum {
+enum ISP_IRQ_TYPE_ENUM {
 	ISP_IRQ_TYPE_INT_CAM_A_ST,
 	ISP_IRQ_TYPE_INT_CAM_B_ST,
 	ISP_IRQ_TYPE_INT_DIP_A_ST,
@@ -115,13 +115,13 @@ typedef enum {
 	ISP_IRQ_TYPE_INT_CAMSV_5_ST,
 	ISP_IRQ_TYPE_INT_UNI_A_ST,
 	ISP_IRQ_TYPE_AMOUNT
-} ISP_IRQ_TYPE_ENUM;
+};
 
-typedef enum {
+enum ISP_ST_ENUM {
 	SIGNAL_INT = 0, DMA_INT, ISP_IRQ_ST_AMOUNT
-} ISP_ST_ENUM;
+};
 
-typedef struct {
+struct ISP_IRQ_TIME_STRUCT {
 	unsigned int tLastSig_sec; /* time stamp of the latest occurring signal*/
 	unsigned int tLastSig_usec; /* time stamp of the latest occurring signal*/
 	unsigned int tMark2WaitSig_sec; /* time period from marking a signal to user try to wait and get the signal*/
@@ -129,102 +129,102 @@ typedef struct {
 	unsigned int tLastSig2GetSig_sec; /* time period from latest signal to user try to wait and get the signal*/
 	unsigned int tLastSig2GetSig_usec; /* time period from latest signal to user try to wait and get the signal*/
 	int passedbySigcnt; /* the count for the signal passed by  */
-} ISP_IRQ_TIME_STRUCT;
+};
 
-typedef struct {
-	ISP_IRQ_CLEAR_ENUM Clear;
-	ISP_ST_ENUM St_type;
+struct ISP_WAIT_IRQ_ST {
+	enum ISP_IRQ_CLEAR_ENUM Clear;
+	enum ISP_ST_ENUM St_type;
 	unsigned int Status; /*ref. enum:ENUM_CAM_INT / ENUM_CAM_DMA_INT ...etc in isp_drv_stddef.h*/
 	int UserKey; /* user key for doing interrupt operation */
 	unsigned int Timeout;
-	ISP_IRQ_TIME_STRUCT TimeInfo;
-} ISP_WAIT_IRQ_ST;
+	struct ISP_IRQ_TIME_STRUCT TimeInfo;
+};
 
-typedef struct {
-	ISP_IRQ_TYPE_ENUM Type;
+struct ISP_WAIT_IRQ_STRUCT {
+	enum ISP_IRQ_TYPE_ENUM Type;
 	unsigned int bDumpReg;
-	ISP_WAIT_IRQ_ST EventInfo;
-} ISP_WAIT_IRQ_STRUCT;
+	struct ISP_WAIT_IRQ_ST EventInfo;
+};
 
-typedef struct {
+struct ISP_REGISTER_USERKEY_STRUCT {
 	int userKey;
 	char userName[32]; /* this size must the same as the icamiopipe api - registerIrq(...) */
-} ISP_REGISTER_USERKEY_STRUCT;
+};
 
-typedef struct {
+struct ISP_CLEAR_IRQ_ST {
 	int UserKey; /* user key for doing interrupt operation */
-	ISP_ST_ENUM St_type;
+	enum ISP_ST_ENUM St_type;
 	unsigned int Status;
-} ISP_CLEAR_IRQ_ST;
+};
 
-typedef struct {
-	ISP_IRQ_TYPE_ENUM Type;
-	ISP_CLEAR_IRQ_ST EventInfo;
-} ISP_CLEAR_IRQ_STRUCT;
+struct ISP_CLEAR_IRQ_STRUCT {
+	enum ISP_IRQ_TYPE_ENUM Type;
+	struct ISP_CLEAR_IRQ_ST EventInfo;
+};
 
-typedef struct {
+struct ISP_REG_STRUCT {
 	unsigned int module; /*plz refer to ISP_DEV_NODE_ENUM */
 	unsigned int Addr; /* register's addr */
 	unsigned int Val; /* register's value */
-} ISP_REG_STRUCT;
+};
 
-typedef struct {
-	ISP_REG_STRUCT *pData; /* pointer to ISP_REG_STRUCT */
+struct ISP_REG_IO_STRUCT {
+	struct ISP_REG_STRUCT *pData; /* pointer to ISP_REG_STRUCT */
 	unsigned int Count; /* count */
-} ISP_REG_IO_STRUCT;
+};
 
 #ifdef CONFIG_COMPAT
-typedef struct {
+struct compat_ISP_REG_IO_STRUCT {
 	compat_uptr_t pData;
 	unsigned int Count; /* count */
-} compat_ISP_REG_IO_STRUCT;
+};
 #endif
 
-typedef enum {
+enum ISP_DUMP_CMD {
 	ISP_DUMP_TPIPEBUF_CMD = 0,
 	ISP_DUMP_TUNINGBUF_CMD,
 	ISP_DUMP_ISPVIRBUF_CMD,
 	ISP_DUMP_CMDQVIRBUF_CMD
-} ISP_DUMP_CMD;
+};
 
 
-typedef struct {
+struct ISP_DUMP_BUFFER_STRUCT {
 	unsigned int DumpCmd;
 	unsigned int *pBuffer;
 	unsigned int BytesofBufferSize;
-} ISP_DUMP_BUFFER_STRUCT;
+};
 
-typedef struct {
+struct ISP_GET_DUMP_INFO_STRUCT {
 	unsigned int extracmd;
 	unsigned int imgi_baseaddr;
 	unsigned int tdri_baseaddr;
 	unsigned int dmgi_baseaddr;
-} ISP_GET_DUMP_INFO_STRUCT;
+};
 
-typedef enum {
+enum ISP_MEMORY_INFO_CMD {
 	ISP_MEMORY_INFO_TPIPE_CMD = 1,
 	ISP_MEMORY_INFO_CMDQ_CMD
-} ISP_MEMORY_INFO_CMD;
+};
 
-typedef struct {
+struct ISP_MEM_INFO_STRUCT {
 	unsigned int MemInfoCmd;
 	unsigned int MemPa;
 	unsigned int *MemVa;
 	unsigned int MemSizeDiff;
-} ISP_MEM_INFO_STRUCT;
+};
 
 #ifdef CONFIG_COMPAT
-typedef struct {
+struct compat_ISP_DUMP_BUFFER_STRUCT {
 	unsigned int DumpCmd;
 	compat_uptr_t pBuffer;
 	unsigned int BytesofBufferSize;
-} compat_ISP_DUMP_BUFFER_STRUCT;
-typedef struct {
+};
+struct compat_ISP_MEM_INFO_STRUCT {
 	unsigned int MemInfoCmd;
 	unsigned int MemPa;
 	compat_uptr_t MemVa;
 	unsigned int MemSizeDiff;
-} compat_ISP_MEM_INFO_STRUCT;
+};
 
 #endif
 
@@ -244,16 +244,16 @@ typedef struct {
 /* how many clk levels */
 #define ISP_CLK_LEVEL_CNT 10
 
-typedef enum {
+enum _isp_tg_enum_ {
 	_cam_tg_ = 0,
 	_cam_tg2_,
 	_camsv_tg_,
 	_camsv2_tg_,
 	_cam_tg_max_
-} _isp_tg_enum_;
+};
 
 
-typedef enum {
+enum _isp_dma_enum_ {
 	_imgi_ = 0,
 	_imgbi_,
 	_imgci_,
@@ -296,10 +296,10 @@ typedef enum {
 
 	_camsv_imgo_ = _imgo_,
 	_camsv_max_,
-} _isp_dma_enum_;
+};
 
 /* for keep ion handle */
-typedef enum {
+enum ISP_WRDMA_ENUM {
 	_dma_cq0i_ = 0,/* 0168 */
 	_dma_cq0i_vir, /* 0168 */
 	_dma_cq1i_,    /* 0174 */
@@ -340,21 +340,21 @@ typedef enum {
 	_dma_rsso_fh_, /* 03CC */
 	_dma_pso_fh_,  /* 0E20 */
 	_dma_max_wr_
-} ISP_WRDMA_ENUM;
+};
 
-typedef struct {
+struct ISP_DEV_ION_NODE_STRUCT {
 	unsigned int       devNode; /*plz refer to ISP_DEV_NODE_ENUM*/
-	ISP_WRDMA_ENUM     dmaPort;
+	enum ISP_WRDMA_ENUM     dmaPort;
 	int                memID;
-} ISP_DEV_ION_NODE_STRUCT;
+};
 
-typedef struct {
+struct ISP_LARB_MMU_STRUCT {
 	unsigned int LarbNum;
 	unsigned int regOffset;
 	unsigned int regVal;
-} ISP_LARB_MMU_STRUCT;
+};
 
-typedef struct {
+struct ISP_RT_IMAGE_INFO_STRUCT {
 	unsigned int w; /* tg size */
 	unsigned int h;
 	unsigned int xsize; /* dmao xsize */
@@ -368,25 +368,25 @@ typedef struct {
 	unsigned int m_num_0;
 	unsigned int frm_cnt;
 	unsigned int bus_size;
-} ISP_RT_IMAGE_INFO_STRUCT;
+};
 
-typedef struct {
+struct ISP_RT_RRZ_INFO_STRUCT {
 	unsigned int srcX; /* crop window start point */
 	unsigned int srcY;
 	unsigned int srcW; /* crop window size */
 	unsigned int srcH;
 	unsigned int dstW; /* rrz out size */
 	unsigned int dstH;
-} ISP_RT_RRZ_INFO_STRUCT;
+};
 
-typedef struct {
+struct ISP_RT_DMAO_CROPPING_STRUCT {
 	unsigned int x; /* in pix */
 	unsigned int y; /* in pix */
 	unsigned int w; /* in byte */
 	unsigned int h; /* in byte */
-} ISP_RT_DMAO_CROPPING_STRUCT;
+};
 
-typedef struct {
+struct ISP_RT_BUF_INFO_STRUCT {
 	unsigned int memID;
 	unsigned int size;
 	long long base_vAddr;
@@ -395,23 +395,23 @@ typedef struct {
 	unsigned int timeStampUs;
 	unsigned int bFilled;
 	unsigned int bProcessRaw;
-	ISP_RT_IMAGE_INFO_STRUCT image;
-	ISP_RT_RRZ_INFO_STRUCT rrzInfo;
-	ISP_RT_DMAO_CROPPING_STRUCT dmaoCrop; /* imgo */
+	struct ISP_RT_IMAGE_INFO_STRUCT image;
+	struct ISP_RT_RRZ_INFO_STRUCT rrzInfo;
+	struct ISP_RT_DMAO_CROPPING_STRUCT dmaoCrop; /* imgo */
 	unsigned int bDequeued;
 	signed int bufIdx; /* used for replace buffer */
-} ISP_RT_BUF_INFO_STRUCT;
+};
 
-typedef struct {
+struct ISP_DEQUE_BUF_INFO_STRUCT {
 	unsigned int count;
 	unsigned int sof_cnt; /* cnt for current sof */
 	unsigned int img_cnt; /* cnt for mapping to which sof */
 	/* support only deque 1 image at a time */
-	/* ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE]; */
-	ISP_RT_BUF_INFO_STRUCT data[P1_DEQUE_CNT];
-} ISP_DEQUE_BUF_INFO_STRUCT;
+	/* struct ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE]; */
+	struct ISP_RT_BUF_INFO_STRUCT data[P1_DEQUE_CNT];
+};
 
-typedef struct {
+struct ISP_RT_RING_BUF_INFO_STRUCT {
 	unsigned int start; /* current DMA accessing buffer */
 	unsigned int total_count; /* total buffer number.Include Filled and empty */
 	unsigned int empty_count; /* total empty buffer number include current DMA accessing buffer */
@@ -419,52 +419,52 @@ typedef struct {
 	unsigned int active;
 	unsigned int read_idx;
 	unsigned int img_cnt; /* cnt for mapping to which sof */
-	ISP_RT_BUF_INFO_STRUCT data[ISP_RT_BUF_SIZE];
-} ISP_RT_RING_BUF_INFO_STRUCT;
+	struct ISP_RT_BUF_INFO_STRUCT data[ISP_RT_BUF_SIZE];
+};
 
-typedef enum {
+enum ISP_RT_BUF_CTRL_ENUM {
 	ISP_RT_BUF_CTRL_DMA_EN, ISP_RT_BUF_CTRL_CLEAR, ISP_RT_BUF_CTRL_MAX
-} ISP_RT_BUF_CTRL_ENUM;
+};
 
-typedef enum {
+enum ISP_RTBC_STATE_ENUM {
 	ISP_RTBC_STATE_INIT,
 	ISP_RTBC_STATE_SOF,
 	ISP_RTBC_STATE_DONE,
 	ISP_RTBC_STATE_MAX
-} ISP_RTBC_STATE_ENUM;
+};
 
-typedef enum {
+enum ISP_RTBC_BUF_STATE_ENUM {
 	ISP_RTBC_BUF_EMPTY,
 	ISP_RTBC_BUF_FILLED,
 	ISP_RTBC_BUF_LOCKED,
-} ISP_RTBC_BUF_STATE_ENUM;
+};
 
-typedef enum {
+enum ISP_RAW_TYPE_ENUM {
 	ISP_RROCESSED_RAW,
 	ISP_PURE_RAW,
-} ISP_RAW_TYPE_ENUM;
+};
 
-typedef struct {
-	ISP_RTBC_STATE_ENUM state;
+struct ISP_RT_BUF_STRUCT {
+	enum ISP_RTBC_STATE_ENUM state;
 	unsigned long dropCnt;
-	ISP_RT_RING_BUF_INFO_STRUCT ring_buf[_cam_max_];
-} ISP_RT_BUF_STRUCT;
+	struct ISP_RT_RING_BUF_INFO_STRUCT ring_buf[_cam_max_];
+};
 
-typedef struct {
-	ISP_RT_BUF_CTRL_ENUM ctrl;
-	ISP_IRQ_TYPE_ENUM module;
-	_isp_dma_enum_ buf_id;
+struct ISP_BUFFER_CTRL_STRUCT {
+	enum ISP_RT_BUF_CTRL_ENUM ctrl;
+	enum ISP_IRQ_TYPE_ENUM module;
+	enum _isp_dma_enum_ buf_id;
 	/* unsigned int            data_ptr; */
 	/* unsigned int            ex_data_ptr; exchanged buffer */
-	ISP_RT_BUF_INFO_STRUCT *data_ptr;
-	ISP_RT_BUF_INFO_STRUCT *ex_data_ptr; /* exchanged buffer */
+	struct ISP_RT_BUF_INFO_STRUCT *data_ptr;
+	struct ISP_RT_BUF_INFO_STRUCT *ex_data_ptr; /* exchanged buffer */
 	unsigned char *pExtend;
-} ISP_BUFFER_CTRL_STRUCT;
+};
 
 /* reference count */
 #define _use_kernel_ref_cnt_
 
-typedef enum {
+enum ISP_REF_CNT_CTRL_ENUM {
 	ISP_REF_CNT_GET,
 	ISP_REF_CNT_INC,
 	ISP_REF_CNT_DEC,
@@ -472,25 +472,25 @@ typedef enum {
 	ISP_REF_CNT_DEC_AND_RESET_P1_IF_LAST_ONE,
 	ISP_REF_CNT_DEC_AND_RESET_P2_IF_LAST_ONE,
 	ISP_REF_CNT_MAX
-} ISP_REF_CNT_CTRL_ENUM;
+};
 
-typedef enum {
+enum ISP_REF_CNT_ID_ENUM {
 	ISP_REF_CNT_ID_IMEM,
 	ISP_REF_CNT_ID_ISP_FUNC,
 	ISP_REF_CNT_ID_GLOBAL_PIPE,
 	ISP_REF_CNT_ID_P1_PIPE,
 	ISP_REF_CNT_ID_P2_PIPE,
 	ISP_REF_CNT_ID_MAX,
-} ISP_REF_CNT_ID_ENUM;
+};
 
-typedef struct {
-	ISP_REF_CNT_CTRL_ENUM ctrl;
-	ISP_REF_CNT_ID_ENUM id;
+struct ISP_REF_CNT_CTRL_STRUCT {
+	enum ISP_REF_CNT_CTRL_ENUM ctrl;
+	enum ISP_REF_CNT_ID_ENUM id;
 	signed int *data_ptr;
-} ISP_REF_CNT_CTRL_STRUCT;
+};
 
 /* struct for enqueue/dequeue control in ihalpipe wrapper */
-typedef enum {
+enum ISP_P2_BUFQUE_CTRL_ENUM {
 	ISP_P2_BUFQUE_CTRL_ENQUE_FRAME = 0, /* 0,signal that a specific buffer is enqueued */
 	ISP_P2_BUFQUE_CTRL_WAIT_DEQUE, /* 1,a dequeue thread is waiting to do dequeue */
 	ISP_P2_BUFQUE_CTRL_DEQUE_SUCCESS, /* 2,signal that a buffer is dequeued (success) */
@@ -499,16 +499,16 @@ typedef enum {
 	ISP_P2_BUFQUE_CTRL_WAKE_WAITFRAME, /* 5,wake all slept users to check buffer is dequeued or not */
 	ISP_P2_BUFQUE_CTRL_CLAER_ALL, /* 6,free all recored dequeued buffer */
 	ISP_P2_BUFQUE_CTRL_MAX
-} ISP_P2_BUFQUE_CTRL_ENUM;
+};
 
-typedef enum {
+enum ISP_P2_BUFQUE_PROPERTY {
 	ISP_P2_BUFQUE_PROPERTY_DIP = 0,
 	ISP_P2_BUFQUE_PROPERTY_NUM = 1,
 	ISP_P2_BUFQUE_PROPERTY_WARP
-} ISP_P2_BUFQUE_PROPERTY;
-typedef struct {
-	ISP_P2_BUFQUE_CTRL_ENUM ctrl;
-	ISP_P2_BUFQUE_PROPERTY property;
+};
+struct ISP_P2_BUFQUE_STRUCT {
+	enum ISP_P2_BUFQUE_CTRL_ENUM ctrl;
+	enum ISP_P2_BUFQUE_PROPERTY property;
 	unsigned int processID; /* judge multi-process */
 	unsigned int callerID; /* judge multi-thread and different kinds of buffer type */
 	int frameNum; /* total frame number in the enque request */
@@ -516,32 +516,32 @@ typedef struct {
 	int dupCQIdx; /* dup cq index */
 	int burstQIdx; /* burst queue index */
 	unsigned int timeoutIns; /* timeout for wait buffer */
-} ISP_P2_BUFQUE_STRUCT;
+};
 
-typedef enum {
+enum ISP_P2_BUF_STATE_ENUM {
 	ISP_P2_BUF_STATE_NONE = -1,
 	ISP_P2_BUF_STATE_ENQUE = 0,
 	ISP_P2_BUF_STATE_RUNNING,
 	ISP_P2_BUF_STATE_WAIT_DEQUE_FAIL,
 	ISP_P2_BUF_STATE_DEQUE_SUCCESS,
 	ISP_P2_BUF_STATE_DEQUE_FAIL
-} ISP_P2_BUF_STATE_ENUM;
+};
 
-typedef enum {
+enum ISP_P2_BUFQUE_LIST_TAG {
 	ISP_P2_BUFQUE_LIST_TAG_PACKAGE = 0, ISP_P2_BUFQUE_LIST_TAG_UNIT
-} ISP_P2_BUFQUE_LIST_TAG;
+};
 
-typedef enum {
+enum ISP_P2_BUFQUE_MATCH_TYPE {
 	ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ = 0, /* waiting for deque */
 	ISP_P2_BUFQUE_MATCH_TYPE_WAITFM, /* wait frame from user */
 	ISP_P2_BUFQUE_MATCH_TYPE_FRAMEOP, /* frame operaetion */
 	ISP_P2_BUFQUE_MATCH_TYPE_WAITFMEQD /* wait frame enqueued for deque */
-} ISP_P2_BUFQUE_MATCH_TYPE;
+};
 
-typedef struct {
+struct ISP_CLK_INFO {
 	unsigned char clklevelcnt; /* how many clk levels */
 	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
-} ISP_CLK_INFO;
+};
 
 /********************************************************************************************
  * pass1 real time buffer control use cq0c
@@ -554,20 +554,20 @@ typedef struct {
 #ifdef CONFIG_COMPAT
 
 
-typedef struct {
-	ISP_RT_BUF_CTRL_ENUM ctrl;
-	ISP_IRQ_TYPE_ENUM module;
-	_isp_dma_enum_ buf_id;
+struct compat_ISP_BUFFER_CTRL_STRUCT {
+	enum ISP_RT_BUF_CTRL_ENUM ctrl;
+	enum ISP_IRQ_TYPE_ENUM module;
+	enum _isp_dma_enum_ buf_id;
 	compat_uptr_t data_ptr;
 	compat_uptr_t ex_data_ptr; /* exchanged buffer */
 	compat_uptr_t pExtend;
-} compat_ISP_BUFFER_CTRL_STRUCT;
+};
 
-typedef struct {
-	ISP_REF_CNT_CTRL_ENUM ctrl;
-	ISP_REF_CNT_ID_ENUM id;
+struct compat_ISP_REF_CNT_CTRL_STRUCT {
+	enum ISP_REF_CNT_CTRL_ENUM ctrl;
+	enum ISP_REF_CNT_ID_ENUM id;
 	compat_uptr_t data_ptr;
-} compat_ISP_REF_CNT_CTRL_STRUCT;
+};
 
 #endif
 
@@ -579,7 +579,7 @@ typedef struct {
 /*******************************************************************************
  *
  ********************************************************************************/
-typedef enum {
+enum ISP_CMD_ENUM {
 	ISP_CMD_RESET_BY_HWMODULE,
 	ISP_CMD_READ_REG, /* Read register from driver */
 	ISP_CMD_WRITE_REG, /* Write register to driver */
@@ -619,9 +619,9 @@ typedef enum {
 	ISP_CMD_DUMP_BUFFER,
 	ISP_CMD_GET_DUMP_INFO,
 	ISP_CMD_SET_MEM_INFO
-} ISP_CMD_ENUM;
+};
 
-typedef enum {
+enum ISP_HALT_DMA_ENUM {
 	ISP_HALT_DMA_IMGO = 0,
 	ISP_HALT_DMA_RRZO,
 	ISP_HALT_DMA_AAO,
@@ -637,25 +637,25 @@ typedef enum {
 	ISP_HALT_DMA_PDO,
 	ISP_HALT_DMA_RAWI,
 	ISP_HALT_DMA_AMOUNT
-} ISP_HALT_DMA_ENUM;
+};
 
 
 /* Everest reset ioctl */
 #define ISP_RESET_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, unsigned long)
 
 /* read phy reg  */
-#define ISP_READ_REGISTER        _IOWR(ISP_MAGIC, ISP_CMD_READ_REG, ISP_REG_IO_STRUCT)
+#define ISP_READ_REGISTER        _IOWR(ISP_MAGIC, ISP_CMD_READ_REG, struct ISP_REG_IO_STRUCT)
 
 /* write phy reg */
-#define ISP_WRITE_REGISTER       _IOWR(ISP_MAGIC, ISP_CMD_WRITE_REG, ISP_REG_IO_STRUCT)
+#define ISP_WRITE_REGISTER       _IOWR(ISP_MAGIC, ISP_CMD_WRITE_REG, struct ISP_REG_IO_STRUCT)
 
-#define ISP_WAIT_IRQ        _IOW(ISP_MAGIC, ISP_CMD_WAIT_IRQ,      ISP_WAIT_IRQ_STRUCT)
-#define ISP_CLEAR_IRQ       _IOW(ISP_MAGIC, ISP_CMD_CLEAR_IRQ,     ISP_CLEAR_IRQ_STRUCT)
+#define ISP_WAIT_IRQ        _IOW(ISP_MAGIC, ISP_CMD_WAIT_IRQ,      struct ISP_WAIT_IRQ_STRUCT)
+#define ISP_CLEAR_IRQ       _IOW(ISP_MAGIC, ISP_CMD_CLEAR_IRQ,     struct ISP_CLEAR_IRQ_STRUCT)
 #define ISP_DUMP_REG        _IO(ISP_MAGIC, ISP_CMD_DUMP_REG)
-#define ISP_BUFFER_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_RT_BUF_CTRL,   ISP_BUFFER_CTRL_STRUCT)
-#define ISP_REF_CNT_CTRL    _IOWR(ISP_MAGIC, ISP_CMD_REF_CNT,       ISP_REF_CNT_CTRL_STRUCT)
+#define ISP_BUFFER_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_RT_BUF_CTRL,   struct ISP_BUFFER_CTRL_STRUCT)
+#define ISP_REF_CNT_CTRL    _IOWR(ISP_MAGIC, ISP_CMD_REF_CNT,       struct ISP_REF_CNT_CTRL_STRUCT)
 #define ISP_DEBUG_FLAG      _IOW(ISP_MAGIC, ISP_CMD_DEBUG_FLAG,    unsigned char*)
-#define ISP_P2_BUFQUE_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_P2_BUFQUE_CTRL, ISP_P2_BUFQUE_STRUCT)
+#define ISP_P2_BUFQUE_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_P2_BUFQUE_CTRL, struct ISP_P2_BUFQUE_STRUCT)
 #define ISP_UPDATE_REGSCEN     _IOWR(ISP_MAGIC, ISP_CMD_UPDATE_REGSCEN, unsigned int)
 #define ISP_QUERY_REGSCEN     _IOR(ISP_MAGIC, ISP_CMD_QUERY_REGSCEN,   unsigned int)
 #define ISP_UPDATE_BURSTQNUM _IOW(ISP_MAGIC, ISP_CMD_UPDATE_BURSTQNUM,   int)
@@ -667,37 +667,37 @@ typedef enum {
 #define ISP_GET_DROP_FRAME  _IOWR(ISP_MAGIC, ISP_CMD_GET_DROP_FRAME,    unsigned long)
 #define ISP_GET_START_TIME  _IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME,    unsigned char*)
 #define ISP_DFS_UPDATE              _IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
-#define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, ISP_CLK_INFO)
+#define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
 #define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, unsigned int)
 
-#define ISP_REGISTER_IRQ_USER_KEY   _IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, ISP_REGISTER_USERKEY_STRUCT)
+#define ISP_REGISTER_IRQ_USER_KEY   _IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, struct ISP_REGISTER_USERKEY_STRUCT)
 
-#define ISP_MARK_IRQ_REQUEST        _IOWR(ISP_MAGIC, ISP_CMD_MARK_IRQ_REQUEST, ISP_WAIT_IRQ_STRUCT)
-#define ISP_GET_MARK2QUERY_TIME     _IOWR(ISP_MAGIC, ISP_CMD_GET_MARK2QUERY_TIME, ISP_WAIT_IRQ_STRUCT)
-#define ISP_FLUSH_IRQ_REQUEST       _IOW(ISP_MAGIC, ISP_CMD_FLUSH_IRQ_REQUEST, ISP_WAIT_IRQ_STRUCT)
+#define ISP_MARK_IRQ_REQUEST        _IOWR(ISP_MAGIC, ISP_CMD_MARK_IRQ_REQUEST, struct ISP_WAIT_IRQ_STRUCT)
+#define ISP_GET_MARK2QUERY_TIME     _IOWR(ISP_MAGIC, ISP_CMD_GET_MARK2QUERY_TIME, struct ISP_WAIT_IRQ_STRUCT)
+#define ISP_FLUSH_IRQ_REQUEST       _IOW(ISP_MAGIC, ISP_CMD_FLUSH_IRQ_REQUEST, struct ISP_WAIT_IRQ_STRUCT)
 
 #define ISP_WAKELOCK_CTRL           _IOWR(ISP_MAGIC, ISP_CMD_WAKELOCK_CTRL, unsigned long)
 #define ISP_VF_LOG                  _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         unsigned char*)
 #define ISP_GET_VSYNC_CNT           _IOWR(ISP_MAGIC, ISP_CMD_GET_VSYNC_CNT,      unsigned int)
 #define ISP_RESET_VSYNC_CNT         _IOW(ISP_MAGIC, ISP_CMD_RESET_VSYNC_CNT,      unsigned int)
-#define ISP_ION_IMPORT              _IOW(ISP_MAGIC, ISP_CMD_ION_IMPORT, ISP_DEV_ION_NODE_STRUCT)
-#define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
+#define ISP_ION_IMPORT              _IOW(ISP_MAGIC, ISP_CMD_ION_IMPORT, struct ISP_DEV_ION_NODE_STRUCT)
+#define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   struct ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
-#define ISP_LARB_MMU_CTL            _IOW(ISP_MAGIC, ISP_CMD_LARB_MMU_CTL, ISP_LARB_MMU_STRUCT)
-#define ISP_DUMP_BUFFER             _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, ISP_DUMP_BUFFER_STRUCT)
-#define ISP_GET_DUMP_INFO           _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, ISP_GET_DUMP_INFO_STRUCT)
-#define ISP_SET_MEM_INFO            _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, ISP_MEM_INFO_STRUCT)
+#define ISP_LARB_MMU_CTL            _IOW(ISP_MAGIC, ISP_CMD_LARB_MMU_CTL, struct ISP_LARB_MMU_STRUCT)
+#define ISP_DUMP_BUFFER             _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, struct ISP_DUMP_BUFFER_STRUCT)
+#define ISP_GET_DUMP_INFO           _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, struct ISP_GET_DUMP_INFO_STRUCT)
+#define ISP_SET_MEM_INFO            _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, struct ISP_MEM_INFO_STRUCT)
 
 #ifdef CONFIG_COMPAT
-#define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
-#define COMPAT_ISP_WRITE_REGISTER   _IOWR(ISP_MAGIC, ISP_CMD_WRITE_REG,     compat_ISP_REG_IO_STRUCT)
+#define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      struct compat_ISP_REG_IO_STRUCT)
+#define COMPAT_ISP_WRITE_REGISTER   _IOWR(ISP_MAGIC, ISP_CMD_WRITE_REG,     struct compat_ISP_REG_IO_STRUCT)
 #define COMPAT_ISP_DEBUG_FLAG      _IOW(ISP_MAGIC, ISP_CMD_DEBUG_FLAG,     compat_uptr_t)
 #define COMPAT_ISP_GET_DMA_ERR     _IOWR(ISP_MAGIC, ISP_CMD_GET_DMA_ERR,   compat_uptr_t)
 #define COMPAT_ISP_GET_INT_ERR     _IOR(ISP_MAGIC, ISP_CMD_GET_INT_ERR,  compat_uptr_t)
 
-#define COMPAT_ISP_BUFFER_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_RT_BUF_CTRL,    compat_ISP_BUFFER_CTRL_STRUCT)
-#define COMPAT_ISP_REF_CNT_CTRL    _IOWR(ISP_MAGIC, ISP_CMD_REF_CNT,        compat_ISP_REF_CNT_CTRL_STRUCT)
+#define COMPAT_ISP_BUFFER_CTRL     _IOWR(ISP_MAGIC, ISP_CMD_RT_BUF_CTRL,    struct compat_ISP_BUFFER_CTRL_STRUCT)
+#define COMPAT_ISP_REF_CNT_CTRL    _IOWR(ISP_MAGIC, ISP_CMD_REF_CNT,        struct compat_ISP_REF_CNT_CTRL_STRUCT)
 #define COMPAT_ISP_GET_START_TIME  _IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME, compat_uptr_t)
 
 #define COMPAT_ISP_WAKELOCK_CTRL    _IOWR(ISP_MAGIC, ISP_CMD_WAKELOCK_CTRL, compat_uptr_t)
@@ -707,8 +707,8 @@ typedef enum {
 #define COMPAT_ISP_RESET_BY_HWMODULE _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, compat_uptr_t)
 #define COMPAT_ISP_VF_LOG           _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         compat_uptr_t)
 #define COMPAT_ISP_CQ_SW_PATCH      _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH,         compat_uptr_t)
-#define COMPAT_ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, compat_ISP_DUMP_BUFFER_STRUCT)
-#define COMPAT_ISP_SET_MEM_INFO     _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, compat_ISP_MEM_INFO_STRUCT)
+#define COMPAT_ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, struct compat_ISP_DUMP_BUFFER_STRUCT)
+#define COMPAT_ISP_SET_MEM_INFO     _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, struct compat_ISP_MEM_INFO_STRUCT)
 
 #endif
 
