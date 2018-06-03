@@ -122,6 +122,28 @@ static inline void mrdump_mini_save_regs(struct pt_regs *regs)
 #endif
 }
 
+extern void aee_rr_rec_kaslr_offset(uint64_t offset);
+#if defined(CONFIG_RANDOMIZE_BASE) && defined(CONFIG_ARM64)
+static inline void show_kaslr(void)
+{
+	u64 const kaslr_offset = kimage_vaddr - KIMAGE_VADDR;
+
+	pr_notice("Kernel Offset: 0x%llx from 0x%lx\n",
+			kaslr_offset, KIMAGE_VADDR);
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_kaslr_offset(kaslr_offset);
+#endif
+}
+#else
+static inline void show_kaslr(void)
+{
+	pr_notice("Kernel Offset: disabled\n");
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_kaslr_offset(0);
+#endif
+}
+#endif
+
 /* dedicated reboot flow for exception */
 extern void aee_exception_reboot(void);
 
