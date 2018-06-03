@@ -1358,7 +1358,7 @@ cnmPeerUpdate(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, 
 	prStaRec->fgIsUapsdSupported = (prCmd->UapsdBitmap == 0) ? FALSE : TRUE;
 	prStaRec->u4TxBeamformingCap = 0;	/* no use */
 	prStaRec->ucAselCap = 0;	/* no use */
-	prStaRec->ucRCPI = 0;
+	prStaRec->ucRCPI = 120;
 	prStaRec->ucBmpTriggerAC = prCmd->UapsdBitmap;
 	prStaRec->ucBmpDeliveryAC = prCmd->UapsdBitmap;
 	prStaRec->ucUapsdSp = prCmd->UapsdMaxSp;
