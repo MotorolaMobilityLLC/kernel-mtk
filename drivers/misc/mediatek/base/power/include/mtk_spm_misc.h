@@ -27,6 +27,9 @@ defined(CONFIG_MACH_MT6759)
 
 #include "spm_v4/mtk_spm_misc.h"
 
+#elif defined(CONFIG_MACH_MT6765)
+
+/* FIXME */
 #endif
 
 #endif /* __MTK_SPM_MISC_H___ */
