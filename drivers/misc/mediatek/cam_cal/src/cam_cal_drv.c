@@ -189,7 +189,7 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 {
 	stCAM_CAL_LIST_STRUCT *pCamCalList = NULL;
 	stCAM_CAL_FUNC_STRUCT *pCamCalFunc = NULL;
-	int i = 0, j = 0, ret = 1;
+	int i = 0, j = 0;
 
 	cam_cal_get_sensor_list(&pCamCalList);
 	cam_cal_get_func_list(&pCamCalFunc);
@@ -203,10 +203,6 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 					  (*g_i2c_info[g_curDevIdx]).addr);
 				if (cam_cal_get_i2c_client(g_i2c_info[g_curDevIdx], &(cmdInfo->client))) {
 					for (j = 0; pCamCalFunc[j].cmdType != CMD_NONE; j++) {
-						CAM_CALDB("pCamCalFunc[%d].cmdType = %d,
-						pCamCalList[%d].cmdType = %d\n",
-						j, pCamCalFunc[j].cmdType, i,
-						pCamCalList[i].cmdType);
 				if (pCamCalFunc[j].cmdType == pCamCalList[i].cmdType
 						    || pCamCalList[i].cmdType == CMD_AUTO) {
 					if (pCamCalList[i].checkFunc != NULL) {
