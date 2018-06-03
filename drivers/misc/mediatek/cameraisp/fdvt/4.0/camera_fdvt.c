@@ -60,24 +60,21 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#ifdef CONFIG_PM_WAKELOCKS
+#include <linux/pm_wakeup.h>
+#else
+#include <linux/wakelock.h>
+#endif
+
+#ifdef CONFIG_PM_WAKELOCKS
+struct wakeup_source fdvt_wake_lock;
+#else
+struct wake_lock fdvt_wake_lock;
+#endif
+
 #include <smi_public.h>
 
 #define FDVT_DEVNAME     "camera-fdvt"
-
-/*
-*#define MT6573FDVT_DEBUG
-*#ifdef MT6573FDVT_DEBUG
-*#define LOG_DBG(fmt, arg...) printk( "[CAMERAFDVT] "  fmt, ##arg)
-*#else
-*#define LOG_DBG(x,...)
-*#endif
-*#define MT6573FDVT_PARM
-*#ifdef MT6573FDVT_PARM
-*#define LOG_DBG(fmt,arg...) printk("[CAMERAFDVT]" "%s() - "  fmt, __FUNCTION__  ,##arg)
-*#else
-*#define LOG_DBG(fmt,arg...)
-*#endif
-*/
 
 #define LOG_VRB(format, args...)	pr_debug("FDVT [%s] " format, __func__, ##args)
 #define LOG_DBG(format, args...)	pr_debug("FDVT [%s] " format, __func__, ##args)
@@ -99,7 +96,7 @@ static wait_queue_head_t g_FDVTWQ;
 static u32 g_FDVTIRQ = 0, g_FDVTIRQMSK = 0x00000001;
 static DEFINE_SPINLOCK(g_spinLock);
 static unsigned int g_drvOpened;
-
+static unsigned int g_isSuspend;
 
 static u8 *pBuff;
 static u8 *pread_buf;
@@ -288,9 +285,9 @@ void FDVT_basic_config(void)
 	FDVT_WR32(0x0C000000, FDVT_RSCON_BASE_ADR);
 	FDVT_WR32(0x02590132, FDVT_RGB2Y0);
 	FDVT_WR32(0x00000075, FDVT_RGB2Y1);
-	FDVT_WR32(0x66553520, FDVT_INVG0); /*?*/
-	FDVT_WR32(0xB8A28D79, FDVT_INVG1); /*?*/
-	FDVT_WR32(0xFFF4E7CF, FDVT_INVG2); /*?*/
+	FDVT_WR32(0x66553520, FDVT_INVG0);
+	FDVT_WR32(0xB8A28D79, FDVT_INVG1);
+	FDVT_WR32(0xFFF4E7CF, FDVT_INVG2);
 	FDVT_WR32(0x02A402EE, FDVT_FNUM_0);
 	FDVT_WR32(0x02A402EE, FDVT_FNUM_1);
 	FDVT_WR32(0x0DAC0DAC, FDVT_FNUM_2);
@@ -932,7 +929,20 @@ static int FDVT_open(struct inode *inode, struct file *file)
 	g_drvOpened = 1;
 	spin_unlock(&g_spinLock);
 
-	mt_fdvt_clk_ctrl(1); /* ISP help enable */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&fdvt_wake_lock);
+#else
+	wake_lock(&fdvt_wake_lock);
+#endif
+
+	mt_fdvt_clk_ctrl(1);
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&fdvt_wake_lock);
+#else
+	wake_unlock(&fdvt_wake_lock);
+#endif
+
 	if (pBuff != NULL)
 		LOG_DBG("pBuff is not null\n");
 	if (pread_buf != NULL)
@@ -986,9 +996,22 @@ static int FDVT_release(struct inode *inode, struct file *file)
 		pread_buf = NULL;
 	/*}*/
 
-	FDVT_WR32(0x00000000, FDVT_INT_EN);  /* BinChang 20120517 Close Interrupt */
+	FDVT_WR32(0x00000000, FDVT_INT_EN);
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
-	mt_fdvt_clk_ctrl(0); /* ISP help disable */
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&fdvt_wake_lock);
+#else
+	wake_lock(&fdvt_wake_lock);
+#endif
+
+	mt_fdvt_clk_ctrl(0);
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&fdvt_wake_lock);
+#else
+	wake_unlock(&fdvt_wake_lock);
+#endif
 
 	spin_lock(&g_spinLock);
 	g_drvOpened = 0;
@@ -1153,6 +1176,12 @@ static int FDVT_probe(struct platform_device *dev)
 	/* Initialize waitqueue */
 	init_waitqueue_head(&g_FDVTWQ);
 
+#ifdef CONFIG_PM_WAKELOCKS
+			wakeup_source_init(&fdvt_wake_lock, "fdvt_lock_wakelock");
+#else
+			wake_lock_init(&fdvt_wake_lock, WAKE_LOCK_SUSPEND, "fdvt_lock_wakelock");
+#endif
+
 	LOG_DBG("[FDVT_DEBUG] FDVT_probe Done\n");
 
 	return 0;
@@ -1165,7 +1194,21 @@ static int FDVT_remove(struct platform_device *dev)
 	LOG_DBG("[FDVT_DEBUG] FDVT_driver_exit\n");
 	FDVT_WR32(0x00000000, FDVT_INT_EN);
 	g_FDVTIRQ = ioread32((void *)FDVT_INT);
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&fdvt_wake_lock);
+#else
+	wake_lock(&fdvt_wake_lock);
+#endif
+
 	mt_fdvt_clk_ctrl(0);
+
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&fdvt_wake_lock);
+#else
+	wake_unlock(&fdvt_wake_lock);
+#endif
+
 	device_destroy(FDVT_class, FDVT_devno);
 	class_destroy(FDVT_class);
 
@@ -1188,32 +1231,25 @@ static int FDVT_remove(struct platform_device *dev)
 
 static int FDVT_suspend(struct platform_device *dev, pm_message_t state)
 {
-	/* BOOL flag; */
-	/* LOG_DBG("[FDVT_DEBUG] FDVT_suspend\n"); */
-	/* mt_fdvt_clk_ctrl(0); */
-	/*
-	*if (bMP4HWClockUsed == TRUE)
-	*{
-	*flag = hwDisableClock(MT6516_PDN_MM_MP4,"MPEG4_DEC");
-	*flag = hwDisableClock(MT6516_PDN_MM_DCT,"MPEG4_DEC");
-	*}
-	*/
-	/* NOT_REFERENCED(flag); */
+	spin_lock(&g_spinLock);
+	if (g_drvOpened > 0) {
+		LOG_INF("[FDVT_DEBUG] FDVT_suspend\n");
+		mt_fdvt_clk_ctrl(0);
+		g_isSuspend = 1;
+	}
+	spin_unlock(&g_spinLock);
 	return 0;
 }
 
 static int FDVT_resume(struct platform_device *dev)
 {
-	/* BOOL flag; */
-	/* LOG_DBG("[FDVT_DEBUG] FDVT_resume\n"); */
-	/* mt_fdvt_clk_ctrl(1); */
-	/*
-	*if (bMP4HWClockUsed == TRUE)
-	*{
-	*flag = hwEnableClock(MT6516_PDN_MM_MP4,"MPEG4_DEC");
-	*}
-	*/
-	/* NOT_REFERENCED(flag); */
+	spin_lock(&g_spinLock);
+	if (g_isSuspend) {
+		LOG_INF("[FDVT_DEBUG] FDVT_resume\n");
+		mt_fdvt_clk_ctrl(1);
+		g_isSuspend = 0;
+	}
+	spin_unlock(&g_spinLock);
 	return 0;
 }
 
