@@ -168,6 +168,7 @@ static bool ged_dvfs_policy(
 		unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
 unsigned long ged_gas_query_mode(void);
 
+#ifdef GED_DVFS_ENABLE
 static struct {
 	int freq;
 	int up;
@@ -193,6 +194,7 @@ static void _init_loading_ud_table(void)
 	if (num >= 2)
 		loading_ud_table[num-1].down = loading_ud_table[num-2].down;
 }
+#endif
 
 unsigned long ged_query_info( GED_INFO eType)
 {
