@@ -372,6 +372,13 @@ unsigned long arch_get_max_cpu_capacity(int cpu)
 	return per_cpu(cpu_scale, cpu);
 }
 
+unsigned long arch_scale_get_max_freq(int cpu)
+{
+	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
+
+	return max;
+}
+
 unsigned long arch_get_cur_cpu_capacity(int cpu)
 {
 	unsigned long scale_freq = atomic_long_read(&per_cpu(cpu_freq_capacity, cpu));

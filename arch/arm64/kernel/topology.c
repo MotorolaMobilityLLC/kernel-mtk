@@ -361,6 +361,13 @@ void arch_scale_set_max_freq(int cpu, unsigned long freq)
 	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
 }
 
+unsigned long arch_scale_get_max_freq(int cpu)
+{
+	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
+
+	return max;
+}
+
 unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 {
 	unsigned long curr = atomic_long_read(&per_cpu(cpu_freq_capacity, cpu));

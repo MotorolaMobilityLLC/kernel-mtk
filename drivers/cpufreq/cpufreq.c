@@ -371,15 +371,32 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 	unsigned long scale = (cur << SCHED_CAPACITY_SHIFT) / policy->max;
 	struct cpufreq_cpuinfo *cpuinfo = &policy->cpuinfo;
 	int cpu;
+#ifdef CONFIG_HOTPLUG_CPU
+	int cid;
+	struct cpumask cls_cpus;
+#endif
 
 	pr_debug("cpus %*pbl cur/cur max freq %lu/%u kHz freq scale %lu\n",
 		 cpumask_pr_args(policy->cpus), cur, policy->max, scale);
 
-	for_each_cpu(cpu, policy->cpus)
+#ifdef CONFIG_HOTPLUG_CPU
+	cid = arch_get_cluster_id(policy->cpu);
+	arch_get_cluster_cpus(&cls_cpus, cid);
+
+	for_each_cpu(cpu, &cls_cpus) {
 		per_cpu(freq_scale, cpu) = scale;
+		arch_scale_set_max_freq(cpu, policy->max);
+	}
+
+#else
+	for_each_cpu(cpu, policy->cpus) {
+		per_cpu(freq_scale, cpu) = scale;
+		arch_scale_set_max_freq(cpu, policy->max);
+	}
 
 	if (freqs)
 		return;
+#endif
 
 	scale = (policy->max << SCHED_CAPACITY_SHIFT) / cpuinfo->max_freq;
 
@@ -387,8 +404,13 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		 cpumask_pr_args(policy->cpus), policy->max, cpuinfo->max_freq,
 		 scale);
 
+#ifdef CONFIG_HOTPLUG_CPU
 	for_each_cpu(cpu, policy->cpus)
 		per_cpu(max_freq_scale, cpu) = scale;
+#else
+	for_each_cpu(cpu, &cls_cpus)
+		per_cpu(max_freq_scale, cpu) = scale;
+#endif
 }
 
 unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
