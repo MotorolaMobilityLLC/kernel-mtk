@@ -146,13 +146,14 @@ static const int DC1devider = 8;	/* in uv */
 
 static int ANC_enabled;
 static int low_power_mode;
+static int hp_differential_mode;
 
 /* DPD efuse variable and table */
 static unsigned int dpd_lch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
 static unsigned int dpd_rch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
 static int dpd_on;
 static int dpd_version;
-static int dpd_offset_table[12][32] = {
+static int dpd_offset_table[16][32] = {
 	/* T = [1/(10^(Fund-HDX/20)] * 8 * 32768 */
 	{273, 243, 217, 193, 172, 153, 137, 122,
 	 109,  97,  86,  77,  68,  61,  54,  48,
@@ -202,6 +203,22 @@ static int dpd_offset_table[12][32] = {
 	  95,  85,  76,  67,  60,  54,  48,  43,
 	  38,  34,  30,  27,  24,  21,  19,  17,
 	  15,  13,  12,  11,  10,   8,   8,   7},/* 8T with 2.86 offset 560Ohm R HD3*/
+	{332, 296, 264, 235, 210, 187, 167, 148,
+	 132, 118, 105,  94,  83,  74,  66,  59,
+	  53,  47,  42,  37,  33,  30,  26,  24,
+	  21,  19,  17,  15,  13,  12,  11,   9},/* 8T with 0 offset 1kOhm L HD2*/
+	{270, 241, 215, 191, 170, 152, 135, 121,
+	 108,  96,  85,  76,  68,  60,  54,  48,
+	  43,  38,  34,  30,  27,  24,  21,  19,
+	  17,  15,  14,  12,  11,  10,   9,   8},/* 8T with 1.8 offset 1kOhm L HD3*/
+	{332, 296, 264, 235, 210, 187, 167, 148,
+	 132, 118, 105,  94,  83,  74,  66,  59,
+	  53,  47,  42,  37,  33,  30,  26,  24,
+	  21,  19,  17,  15,  13,  12,  11,   9},/* 8T with 0 offset 1kOhm R HD2*/
+	{321, 286, 255, 227, 203, 181, 161, 143,
+	 128, 114, 102,  90,  81,  72,  64,  57,
+	  51,  45,  40,  36,  32,  29,  26,  23,
+	  20,  18,  16,  14,  13,  11,  10,   9},/* 8T with 0.3 offset 1kOhm R HD3*/
 };
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -738,7 +755,12 @@ void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
 	int a2_lch = 0, a3_lch = 0, a2_rch = 0, a3_rch = 0;
 	int a4_lch = 0, a5_lch = 0, a4_rch = 0, a5_rch = 0;
 
-	if (impedance < 24) {
+	if (hp_differential_mode) {
+		a2_lch = dpd_offset_table[12][dpd_lch[DPD_1K][DPD_HD2]];
+		a3_lch = dpd_offset_table[13][dpd_lch[DPD_1K][DPD_HD3]];
+		a2_rch = dpd_offset_table[14][dpd_rch[DPD_1K][DPD_HD2]];
+		a3_rch = dpd_offset_table[15][dpd_rch[DPD_1K][DPD_HD3]];
+	} else if (impedance < 24) {
 		a2_lch = dpd_offset_table[0][dpd_lch[DPD_16K][DPD_HD2]] - 1;
 		a3_lch = dpd_offset_table[1][dpd_lch[DPD_16K][DPD_HD3]];
 		a2_rch = dpd_offset_table[2][dpd_rch[DPD_16K][DPD_HD2]] - 1;
@@ -1016,7 +1038,10 @@ void trigger_headphone_dctrim_hardware(int channels, bool accurate, int trimcode
 	}
 	/* Enable IBIST */
 	/* Set HP DR bias and HP & ZCD bias current optimization */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
+	if (hp_differential_mode)
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001B, 0x003f);
+	else
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
 	/* Set HPP/N STB enhance circuits */
 	Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E);
 	/* Set HP bias in HIFI mdoe */
@@ -2209,6 +2234,12 @@ static void hp_main_output_ramp(bool up)
 	int i = 0, stage = 0;
 	int target = 0;
 
+	if (hp_differential_mode) {
+		Ana_Set_Reg(AUDDEC_ANA_CON1, up << 8, 0x7 << 8);
+		Ana_Set_Reg(AUDDEC_ANA_CON1, up << 11, 0x7 << 11);
+		return;
+	}
+
 	/* Enable/Reduce HPP/N main output stage step by step */
 	target = (low_power_mode == 1) ? 3 : 7;
 	for (i = 0; i <= target; i++) {
@@ -2323,7 +2354,10 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			}
 			/* Enable IBIST */
 			/* Set HP DR bias and HP & ZCD bias current optimization */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
+			if (hp_differential_mode)
+				Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001B, 0x003f);
+			else
+				Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
 			/* Set HPP/N STB enhance circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E);
 			/* Set HP bias in HIFI mdoe */
@@ -3630,6 +3664,26 @@ static int audio_power_mode_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int audio_hp_differential_mode_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = hp_differential_mode;
+	return 0;
+}
+
+static int audio_hp_differential_mode_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(amp_function)) {
+		pr_err("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+	hp_differential_mode = ucontrol->value.integer.value[0];
+	pr_debug("%s(), hp_differential_mode = %d\n", __func__, hp_differential_mode);
+
+	return 0;
+}
+
 static int audio_ul_rate_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s(), codec uplink1 samplerate = %d\n", __func__, mBlockSampleRate[AUDIO_DAI_UL1]);
@@ -3718,6 +3772,8 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 		     Receiver_Speaker_Switch_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
 	SOC_ENUM_EXT("Audio_Power_Mode", Audio_DL_Enum[5], audio_power_mode_get, audio_power_mode_set),
+	SOC_ENUM_EXT("Audio_Hp_Differential_Mode", Audio_DL_Enum[0],
+		     audio_hp_differential_mode_get, audio_hp_differential_mode_set),
 	SOC_SINGLE_EXT("Codec_UL_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul_rate_get,
 		       audio_ul_rate_set),
 	SOC_SINGLE_EXT("Codec_UL2_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul2_rate_get,
