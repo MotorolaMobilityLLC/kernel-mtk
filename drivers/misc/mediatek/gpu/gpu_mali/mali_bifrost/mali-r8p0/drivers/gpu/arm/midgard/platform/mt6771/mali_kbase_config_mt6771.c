@@ -48,57 +48,22 @@ static void _mtk_check_MFG_idle(void)
 {
 	u32 val;
 
-	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x01 */
-	val = readl(g_MFG_base + 0xb4);
-	writel((val & ~(0x2)) | 0x1, g_MFG_base + 0xb4);
+	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x1 */
+	writel(0x00000001, g_MFG_base + 0xb4);
 	MFG_DEBUG("[MALI] 0x130000b4 val = 0x%x\n", readl(g_MFG_base + 0xb4));
 
-	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x3 */
-	val = readl(g_MFG_base + 0x180);
-	writel((val & ~(0xFF)) | 0x3, g_MFG_base + 0x180);
+	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x03 */
+	writel(0x00000003, g_MFG_base + 0x180);
 	MFG_DEBUG("[MALI] 0x13000180 val = 0x%x\n", readl(g_MFG_base + 0x180));
 
-	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 => 1 for idle, 0 for non-idle */
+	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 */
+	/* => 1 for GPU (BUS) idle, 0 for GPU (BUS) non-idle */
+	/* do not care about 0x13000184 */
 	do {
+		val = readl(g_MFG_base + 0x184);
 		val = readl(g_MFG_base + 0x188);
 		MFG_DEBUG("[MALI] 0x13000188 val = 0x%x\n", val);
 	} while ((val & 0x4) != 0x4);
-}
-
-/*
- * For GPU suspend/resume
- */
-
-static void _mtk_pm_callback_power_suspend(void)
-{
-	mutex_lock(&g_mfg_lock);
-
-	g_curFreqID = mt_gpufreq_get_cur_freq_index();
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
-
-	/* Now, turn off pmic power */
-	/* mt_gpufreq_voltage_enable_set(0); */
-
-	MFG_DEBUG("[MALI] power is suspended\n");
-
-	mutex_unlock(&g_mfg_lock);
-}
-
-static int _mtk_pm_callback_power_resume(void)
-{
-	mutex_lock(&g_mfg_lock);
-
-	/* First, turn on pmic power */
-	/* mt_gpufreq_voltage_enable_set(1); */
-
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
-	mtk_set_mt_gpufreq_target(g_curFreqID);
-
-	MFG_DEBUG("[MALI] power is resumed\n");
-
-	mutex_unlock(&g_mfg_lock);
-
-	return 1;
 }
 
 /**
@@ -135,8 +100,6 @@ static void _mtk_pm_callback_power_off(void)
 
 static int _mtk_pm_callback_power_on(void)
 {
-	u32 val;
-
 	mutex_lock(&g_mfg_lock);
 
 	MFG_DEBUG("[MALI] power on ....\n");
@@ -154,8 +117,7 @@ static int _mtk_pm_callback_power_on(void)
 
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
-	val = readl(g_MFG_base + 0x130);
-	writel(val | 0x1, g_MFG_base + 0x130);
+	writel(0x00000001, g_MFG_base + 0x130);
 
 	/* Resume frequency before power off */
 	mtk_set_mt_gpufreq_target(g_curFreqID);
@@ -201,35 +163,13 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		_mtk_pm_callback_power_off();
 }
 
-void pm_callback_power_suspend(struct kbase_device *kbdev)
-{
-#if HARD_RESET_AT_POWER_OFF
-	/* Cause a GPU hard reset to test whether we have actually idled the GPU
-	 * and that we properly reconfigure the GPU on power up.
-	 * Usually this would be dangerous, but if the GPU is working correctly it should
-	 * be completely safe as the GPU should not be active at this point.
-	 * However this is disabled normally because it will most likely interfere with
-	 * bus logging etc.
-	 */
-	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
-	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
-#endif
-	if (!mtk_kbase_is_gpu_always_on())
-		_mtk_pm_callback_power_suspend();
-}
-
-void pm_callback_power_resume(struct kbase_device *kbdev)
-{
-	_mtk_pm_callback_power_resume();
-}
-
 struct kbase_pm_callback_conf pm_callbacks = {
 	.power_on_callback = pm_callback_power_on,
 	.power_off_callback = pm_callback_power_off,
 	.power_suspend_callback  = NULL,
 	.power_resume_callback = NULL,
-	.mtk_power_suspend_callback	= pm_callback_power_suspend,
-	.mtk_power_resume_callback = pm_callback_power_resume
+	.mtk_power_suspend_callback = NULL,
+	.mtk_power_resume_callback = NULL
 };
 
 #ifndef CONFIG_OF
