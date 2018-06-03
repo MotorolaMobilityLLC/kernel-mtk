@@ -1608,6 +1608,13 @@ static int detect_impedance_by_phase(void)
 				detectsOffset[counter] = audio_get_auxadc_value();
 				dcSum = dcSum + detectsOffset[counter];
 			}
+
+			if ((dcSum / kDetectTimes) > hpdet_param.auxadc_upper_bound) {
+				pr_info("%s(), dcValue == 0, auxadc value %d > auxadc_upper_bound %d\n",
+						__func__, dcSum / kDetectTimes, hpdet_param.auxadc_upper_bound);
+				detect_impedance = auxcable_impedance;
+				break;
+			}
 		}
 
 		/* start checking */
@@ -1615,6 +1622,14 @@ static int detect_impedance_by_phase(void)
 			usleep_range(1*1000, 1*1000);
 			detectSum = 0;
 			detectSum = audio_get_auxadc_value();
+
+			if ((dcSum / kDetectTimes) == detectSum) {
+				pr_info("%s(), dcSum / kDetectTimes %d == detectSum %d\n",
+						__func__, dcSum / kDetectTimes, detectSum);
+				detect_impedance = auxcable_impedance;
+				break;
+			}
+
 			pick_impedance = mtk_calculate_hp_impedance(dcSum/kDetectTimes,
 								    detectSum, dcValue, 1);
 
