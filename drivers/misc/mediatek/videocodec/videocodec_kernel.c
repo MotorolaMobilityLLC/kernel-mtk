@@ -38,7 +38,7 @@
 #endif
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 
-#define MODULE_MFV_LOGE(...) pr_err(__VA_ARGS__)
+#define MODULE_MFV_PR_ERR(...) pr_err(__VA_ARGS__)
 
 unsigned long pmem_user_v2p_video(unsigned long va)
 {
@@ -50,31 +50,31 @@ unsigned long pmem_user_v2p_video(unsigned long va)
 	unsigned long pa;
 
 	if (current == NULL) {
-		MODULE_MFV_LOGE("[ERROR] pmem_user_v2p_video, current is NULL!\n");
+		MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p_video, current is NULL!\n");
 		return 0;
 	}
 
 	if (current->mm == NULL) {
-		MODULE_MFV_LOGE("[ERROR] pmem_user_v2p_video, current->mm is NULL! tgid=0x%x, name=%s\n",
+		MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p_video, current->mm is NULL! tgid=0x%x, name=%s\n",
 		current->tgid, current->comm);
 		return 0;
 	}
 
 	pgd = pgd_offset(current->mm, va);  /* what is tsk->mm */
 	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
-		MODULE_MFV_LOGE("[ERROR] pmem_user_v2p(), va=0x%lx, pgd invalid!\n", va);
+		MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p(), va=0x%lx, pgd invalid!\n", va);
 		return 0;
 	}
 
 	pud = pud_offset(pgd, va);
 	if (pud_none(*pud) || pud_bad(*pud)) {
-		MODULE_MFV_LOGE("[ERROR] pmem_user_v2p(), va=0x%lx, pud invalid!\n", va);
+		MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p(), va=0x%lx, pud invalid!\n", va);
 		return 0;
 	}
 
 	pmd = pmd_offset(pud, va);
 	if (pmd_none(*pmd) || pmd_bad(*pmd)) {
-		MODULE_MFV_LOGE("[ERROR] pmem_user_v2p(), va=0x%lx, pmd invalid!\n", va);
+		MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p(), va=0x%lx, pmd invalid!\n", va);
 		return 0;
 	}
 
@@ -85,7 +85,7 @@ unsigned long pmem_user_v2p_video(unsigned long va)
 		return pa;
 	}
 
-	MODULE_MFV_LOGE("[ERROR] pmem_user_v2p(), va=0x%lx, pte invalid!\n", va);
+	MODULE_MFV_PR_ERR("[ERROR] pmem_user_v2p(), va=0x%lx, pte invalid!\n", va);
 	return 0;
 }
 EXPORT_SYMBOL(pmem_user_v2p_video);
