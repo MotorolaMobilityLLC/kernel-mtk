@@ -62,6 +62,8 @@ static int ion_comm_cache_pool(void *data)
 
 		buffer = kzalloc(sizeof(*buffer), GFP_KERNEL);
 		if ((!buffer) || (cached_size >= req_cache_size)) {
+			kfree(buffer);
+			buffer = NULL;
 			atomic_set(&ion_comm_event, 0);
 			IONMSG("%s is ready: req %d, cached %d\n", __func__, req_cache_size, cached_size);
 			continue;
