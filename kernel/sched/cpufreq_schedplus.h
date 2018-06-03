@@ -61,7 +61,13 @@ static inline  int mt_cpufreq_get_cur_freq(
 #endif
 
 #ifdef CONFIG_SCHED_WALT
-extern int walt_cpufreq_notifier_trans(unsigned int cpu, unsigned int new_freq);
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+extern int cpufreq_notifier_trans_sspm_walt(
+		unsigned int cpu, unsigned int new_freq);
+#else
+static inline int cpufreq_notifier_trans_sspm_walt(
+		unsigned int cpu, unsigned int new_freq) { return 0; }
+#endif
 #endif
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS

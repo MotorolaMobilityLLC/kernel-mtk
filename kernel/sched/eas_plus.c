@@ -170,8 +170,9 @@ __src_cpu_util(int cpu, int delta, unsigned long task_delta)
 
 #ifdef CONFIG_SCHED_WALT
 	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
-		util = (cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT) /
-			walt_ravg_window;
+		util = div64_u64((cpu_rq(cpu)->prev_runnable_sum
+				<< SCHED_CAPACITY_SHIFT),
+				walt_ravg_window);
 #endif
 	util = max(util, task_delta);
 	delta += util;
