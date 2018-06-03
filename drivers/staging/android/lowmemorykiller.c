@@ -97,6 +97,7 @@ static unsigned long lowmem_count(struct shrinker *s,
 		global_node_page_state(NR_INACTIVE_FILE);
 }
 
+#ifndef CONFIG_MTK_ENABLE_AGO
 /* Check memory status by zone, pgdat */
 static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 				       int *other_free, int *other_file)
@@ -227,6 +228,15 @@ static short lowmem_amr_check(int *to_be_aggressive, int other_file)
 	return OOM_SCORE_ADJ_MAX + 1;
 #endif
 }
+#else
+static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
+				       int *other_free, int *other_file)
+{
+	return 0;
+}
+
+#define lowmem_amr_check(a, b) (short)(OOM_SCORE_ADJ_MAX + 1)
+#endif
 
 static void __lowmem_trigger_warning(struct task_struct *selected)
 {
