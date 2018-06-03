@@ -52,7 +52,7 @@
  * PMIC related define
  ******************************************************************************/
 #define PMIC_THROTTLING_DLPT_UT	0
-#define PMIC_ISENSE_SUPPORT	1
+#define PMIC_ISENSE_SUPPORT	0
 
 /*****************************************************************************
  * PMIC PT and DLPT UT
@@ -289,6 +289,9 @@ void bat_oc_l_en_setting(int en_val)
 
 void battery_oc_protect_init(void)
 {
+	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
+	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
+
 	pmic_set_register_value(PMIC_FG_CUR_HTH, bat_oc_h_thd(POWER_BAT_OC_CURRENT_H));
 	pmic_set_register_value(PMIC_FG_CUR_LTH, bat_oc_l_thd(POWER_BAT_OC_CURRENT_L));
 
@@ -430,15 +433,13 @@ int bat_percent_notify_handler(void *unused)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 		bat_per_val = bat_get_ui_percentage();
 #endif
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-		if ((upmu_get_rgs_chrdet() == 0) && (g_battery_percent_level == 0)
-			&& (bat_per_val <= BAT_PERCENT_LINIT)) {
-#elif !defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-		if ((g_battery_percent_level == 0) && (bat_per_val <= BAT_PERCENT_LINIT)) {
-#endif
+		if (upmu_get_rgs_chrdet() == 0
+		    && g_battery_percent_level == 0
+		    && bat_per_val <= BAT_PERCENT_LINIT) {
 			g_battery_percent_level = 1;
 			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_1);
-		} else if ((g_battery_percent_level == 1) && (bat_per_val > BAT_PERCENT_LINIT)) {
+		} else if (g_battery_percent_level == 1
+			   && bat_per_val > BAT_PERCENT_LINIT) {
 			g_battery_percent_level = 0;
 			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_0);
 		}
@@ -622,25 +623,22 @@ int do_ptim(bool isSuspend)
 void enable_dummy_load(unsigned int en)
 {
 	if (en == 1) {
-#if 0
 		/* enable isink step */
-		pmic_set_register_value(PMIC_ISINK_CH2_STEP, 0x7);
-		pmic_set_register_value(PMIC_ISINK_CH3_STEP, 0x7);
-#endif
-		/* double function */
-		pmic_set_register_value(PMIC_RG_ISINK3_DOUBLE, 0x1); /*CH3 double on  */
-		pmic_set_register_value(PMIC_RG_ISINK2_DOUBLE, 0x1); /*CH2 double on  */
-		/*enable isink */
-		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, 0x7);
+		pmic_set_register_value(PMIC_ISINK_CH1_STEP, 0x7);
+
+		/* enable isink */
+		pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH1_BIAS_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH0_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH1_EN, 0x1);
 		/*PMICLOG("[enable dummy load]\n"); */
 	} else {
-		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0);
+		/* disable isink */
+		pmic_set_register_value(PMIC_ISINK_CH0_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH1_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH1_BIAS_EN, 0);
 		/*PMICLOG("[disable dummy load]\n"); */
 	}
 }
