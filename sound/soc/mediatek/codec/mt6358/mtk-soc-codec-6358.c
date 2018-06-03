@@ -99,7 +99,7 @@ static void VOW13MCK_Enable(bool enable);
 static void VOW32KCK_Enable(bool enable);
 #endif
 
-static struct mt6356_codec_priv *mCodec_data;
+static struct mt6358_codec_priv *mCodec_data;
 static unsigned int mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = { 48000, 48000, 48000 };
 
 #define MAX_DL_SAMPLE_RATE (192000)
@@ -1610,7 +1610,7 @@ static const struct snd_soc_dai_ops mt6323_aif1_dai_ops = {
 	.prepare = mt63xx_codec_prepare,
 };
 
-static struct snd_soc_dai_driver mtk_6356_dai_codecs[] = {
+static struct snd_soc_dai_driver mtk_6358_dai_codecs[] = {
 	{
 	 .name = MT_SOC_CODEC_TXDAI_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
@@ -2609,7 +2609,7 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 	return 0;
 }
 
-/* For MT6356 LO */
+/* For MT6358 LO */
 static void Apply_Speaker_Gain(void)
 {
 	Ana_Set_Reg(ZCD_CON1,
@@ -3431,7 +3431,7 @@ static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dctrim_control_state), dctrim_control_state)
 };
 
-static const struct snd_kcontrol_new mt6356_snd_controls[] = {
+static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Amp_R_Switch", Audio_DL_Enum[0], Audio_AmpR_Get,
 		     Audio_AmpR_Set),
 	SOC_ENUM_EXT("Audio_Amp_L_Switch", Audio_DL_Enum[1], Audio_AmpL_Get,
@@ -5521,7 +5521,7 @@ static const struct soc_enum Pmic_Test_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_LPBK_function), Pmic_LPBK_function),
 };
 
-static const struct snd_kcontrol_new mt6356_pmic_Test_controls[] = {
+static const struct snd_kcontrol_new mt6358_pmic_Test_controls[] = {
 	SOC_ENUM_EXT("SineTable_DAC_HP", Pmic_Test_Enum[0], SineTable_DAC_HP_Get,
 		     SineTable_DAC_HP_Set),
 	SOC_ENUM_EXT("DAC_LOOP_DAC_HS", Pmic_Test_Enum[1], ADC_LOOP_DAC_HS_Get,
@@ -5537,7 +5537,7 @@ static const struct snd_kcontrol_new mt6356_pmic_Test_controls[] = {
 		       codec_debug_set),
 };
 
-static const struct snd_kcontrol_new mt6356_UL_Codec_controls[] = {
+static const struct snd_kcontrol_new mt6358_UL_Codec_controls[] = {
 	SOC_ENUM_EXT("Audio_ADC_1_Switch", Audio_UL_Enum[0], Audio_ADC1_Get,
 		     Audio_ADC1_Set),
 	SOC_ENUM_EXT("Audio_ADC_2_Switch", Audio_UL_Enum[1], Audio_ADC2_Get,
@@ -5686,7 +5686,7 @@ static int read_efuse_hp_impedance_current_calibration(void)
 	return value;
 }
 
-static const struct snd_soc_dapm_widget mt6356_dapm_widgets[] = {
+static const struct snd_soc_dapm_widget mt6358_dapm_widgets[] = {
 	/* Outputs */
 	SND_SOC_DAPM_OUTPUT("EARPIECE"),
 	SND_SOC_DAPM_OUTPUT("HEADSET"),
@@ -5697,7 +5697,7 @@ static const struct snd_soc_dapm_route mtk_audio_map[] = {
 	{"VOICE_Mux_E", "Voice Mux", "SPEAKER PGA"},
 };
 
-static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
+static void mt6358_codec_init_reg(struct snd_soc_codec *codec)
 {
 	pr_debug("%s\n", __func__);
 
@@ -5762,7 +5762,7 @@ static void InitGlobalVarDefault(void)
 	NvRegCount = 0;
 }
 
-static int mt6356_codec_probe(struct snd_soc_codec *codec)
+static int mt6358_codec_probe(struct snd_soc_codec *codec)
 {
 	struct snd_soc_dapm_context *dapm = &codec->component.dapm;
 
@@ -5771,29 +5771,29 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	if (mInitCodec == true)
 		return 0;
 
-	snd_soc_dapm_new_controls(dapm, mt6356_dapm_widgets, ARRAY_SIZE(mt6356_dapm_widgets));
+	snd_soc_dapm_new_controls(dapm, mt6358_dapm_widgets, ARRAY_SIZE(mt6358_dapm_widgets));
 	snd_soc_dapm_add_routes(dapm, mtk_audio_map, ARRAY_SIZE(mtk_audio_map));
 
 	/* add codec controls */
-	snd_soc_add_codec_controls(codec, mt6356_snd_controls, ARRAY_SIZE(mt6356_snd_controls));
-	snd_soc_add_codec_controls(codec, mt6356_UL_Codec_controls,
-				   ARRAY_SIZE(mt6356_UL_Codec_controls));
-	snd_soc_add_codec_controls(codec, mt6356_pmic_Test_controls,
-				   ARRAY_SIZE(mt6356_pmic_Test_controls));
+	snd_soc_add_codec_controls(codec, mt6358_snd_controls, ARRAY_SIZE(mt6358_snd_controls));
+	snd_soc_add_codec_controls(codec, mt6358_UL_Codec_controls,
+				   ARRAY_SIZE(mt6358_UL_Codec_controls));
+	snd_soc_add_codec_controls(codec, mt6358_pmic_Test_controls,
+				   ARRAY_SIZE(mt6358_pmic_Test_controls));
 
 	snd_soc_add_codec_controls(codec, Audio_snd_auxadc_controls,
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
 
 	/* here to set  private data */
-	mCodec_data = kzalloc(sizeof(struct mt6356_codec_priv), GFP_KERNEL);
+	mCodec_data = kzalloc(sizeof(struct mt6358_codec_priv), GFP_KERNEL);
 	if (!mCodec_data) {
 		/*pr_warn("Failed to allocate private data\n");*/
 		return -ENOMEM;
 	}
 	snd_soc_codec_set_drvdata(codec, mCodec_data);
 
-	memset((void *)mCodec_data, 0, sizeof(struct mt6356_codec_priv));
-	mt6356_codec_init_reg(codec);
+	memset((void *)mCodec_data, 0, sizeof(struct mt6358_codec_priv));
+	mt6358_codec_init_reg(codec);
 	InitCodecDefault();
 	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
 	mInitCodec = true;
@@ -5803,42 +5803,42 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int mt6356_codec_remove(struct snd_soc_codec *codec)
+static int mt6358_codec_remove(struct snd_soc_codec *codec)
 {
 	return 0;
 }
 
-static unsigned int mt6356_read(struct snd_soc_codec *codec, unsigned int reg)
+static unsigned int mt6358_read(struct snd_soc_codec *codec, unsigned int reg)
 {
 	Ana_Get_Reg(reg);
 	return 0;
 }
 
-static int mt6356_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
+static int mt6358_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
 {
 	Ana_Set_Reg(reg, value, 0xffffffff);
 	return 0;
 }
 
 static struct snd_soc_codec_driver soc_mtk_codec = {
-	.probe = mt6356_codec_probe,
-	.remove = mt6356_codec_remove,
+	.probe = mt6358_codec_probe,
+	.remove = mt6358_codec_remove,
 
-	.read = mt6356_read,
-	.write = mt6356_write,
+	.read = mt6358_read,
+	.write = mt6358_write,
 
 	/* use add control to replace */
-	/* .controls = mt6356_snd_controls, */
-	/* .num_controls = ARRAY_SIZE(mt6356_snd_controls), */
+	/* .controls = mt6358_snd_controls, */
+	/* .num_controls = ARRAY_SIZE(mt6358_snd_controls), */
 
-	.dapm_widgets = mt6356_dapm_widgets,
-	.num_dapm_widgets = ARRAY_SIZE(mt6356_dapm_widgets),
+	.dapm_widgets = mt6358_dapm_widgets,
+	.num_dapm_widgets = ARRAY_SIZE(mt6358_dapm_widgets),
 	.dapm_routes = mtk_audio_map,
 	.num_dapm_routes = ARRAY_SIZE(mtk_audio_map),
 
 };
 
-static int mtk_mt6356_codec_dev_probe(struct platform_device *pdev)
+static int mtk_mt6358_codec_dev_probe(struct platform_device *pdev)
 {
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
@@ -5863,11 +5863,11 @@ static int mtk_mt6356_codec_dev_probe(struct platform_device *pdev)
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_codec(&pdev->dev,
-				      &soc_mtk_codec, mtk_6356_dai_codecs,
-				      ARRAY_SIZE(mtk_6356_dai_codecs));
+				      &soc_mtk_codec, mtk_6358_dai_codecs,
+				      ARRAY_SIZE(mtk_6358_dai_codecs));
 }
 
-static int mtk_mt6356_codec_dev_remove(struct platform_device *pdev)
+static int mtk_mt6358_codec_dev_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_codec(&pdev->dev);
 	return 0;
@@ -5881,7 +5881,7 @@ static const struct of_device_id mt_soc_codec_63xx_of_ids[] = {
 };
 #endif
 
-static struct platform_driver mtk_codec_6356_driver = {
+static struct platform_driver mtk_codec_6358_driver = {
 	.driver = {
 		   .name = MT_SOC_CODEC_NAME,
 		   .owner = THIS_MODULE,
@@ -5889,45 +5889,45 @@ static struct platform_driver mtk_codec_6356_driver = {
 		   .of_match_table = mt_soc_codec_63xx_of_ids,
 #endif
 		   },
-	.probe = mtk_mt6356_codec_dev_probe,
-	.remove = mtk_mt6356_codec_dev_remove,
+	.probe = mtk_mt6358_codec_dev_probe,
+	.remove = mtk_mt6358_codec_dev_remove,
 };
 
 #ifndef CONFIG_OF
-static struct platform_device *soc_mtk_codec6356_dev;
+static struct platform_device *soc_mtk_codec6358_dev;
 #endif
 
-static int __init mtk_mt6356_codec_init(void)
+static int __init mtk_mt6358_codec_init(void)
 {
 	pr_debug("%s:\n", __func__);
 #ifndef CONFIG_OF
 	int ret = 0;
 
-	soc_mtk_codec6356_dev = platform_device_alloc(MT_SOC_CODEC_NAME, -1);
+	soc_mtk_codec6358_dev = platform_device_alloc(MT_SOC_CODEC_NAME, -1);
 
-	if (!soc_mtk_codec6356_dev)
+	if (!soc_mtk_codec6358_dev)
 		return -ENOMEM;
 
 
-	ret = platform_device_add(soc_mtk_codec6356_dev);
+	ret = platform_device_add(soc_mtk_codec6358_dev);
 	if (ret != 0) {
-		platform_device_put(soc_mtk_codec6356_dev);
+		platform_device_put(soc_mtk_codec6358_dev);
 		return ret;
 	}
 #endif
 	InitGlobalVarDefault();
 
-	return platform_driver_register(&mtk_codec_6356_driver);
+	return platform_driver_register(&mtk_codec_6358_driver);
 }
 
-module_init(mtk_mt6356_codec_init);
+module_init(mtk_mt6358_codec_init);
 
-static void __exit mtk_mt6356_codec_exit(void)
+static void __exit mtk_mt6358_codec_exit(void)
 {
-	platform_driver_unregister(&mtk_codec_6356_driver);
+	platform_driver_unregister(&mtk_codec_6358_driver);
 }
 
-module_exit(mtk_mt6356_codec_exit);
+module_exit(mtk_mt6358_codec_exit);
 
 /* Module information */
 MODULE_DESCRIPTION("MTK  codec driver");
