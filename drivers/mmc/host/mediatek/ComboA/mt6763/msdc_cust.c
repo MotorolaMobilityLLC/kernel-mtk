@@ -521,7 +521,7 @@ void msdc_clk_pre_enable(struct msdc_host *host)
 	spin_unlock_irqrestore(&msdc_cg_lock, flags);
 }
 
-void msdc_clk_post_disble(struct msdc_host *host)
+void msdc_clk_post_disable(struct msdc_host *host)
 {
 	unsigned long flags;
 
