@@ -106,3 +106,4 @@ obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-y += atf/
 obj-$(CONFIG_THERMAL)   += thermal/
 obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
+obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
