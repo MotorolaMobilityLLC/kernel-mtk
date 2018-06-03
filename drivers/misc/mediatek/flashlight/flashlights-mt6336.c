@@ -132,7 +132,7 @@ static int mt6336_preenable(void)
 {
 	int ret;
 
-	ret = mt6336_set_register_value(0x0519, 0x0D);
+	ret = mt6336_set_register_value(0x0519, 0x0A);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_RG_A_LOOP_GM_EN, 0x06);
 	 * mt6336_set_flag_register_value(
@@ -144,7 +144,7 @@ static int mt6336_preenable(void)
 	 * MT6336_RG_A_LOOP_GM_TUNE_SYS_MSB, 0x00);
 	 */
 
-	ret = mt6336_set_register_value(0x055A, 0x00);
+	ret = mt6336_set_register_value(0x055A, 0x01);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_RG_A_SWCHR_RSV_TRIM_MSB, 0x01);
 	 */
@@ -217,7 +217,7 @@ static int mt6336_postenable(void)
 	 * MT6336_RG_A_PWR_LG_VTHSEL, 0x00);
 	 */
 
-	ret = mt6336_set_register_value(0x0519, 0x3F);
+	ret = mt6336_set_register_value(0x0519, 0x3E);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_RG_A_LOOP_GM_EN, 0x1F);
 	 * mt6336_set_flag_register_value(
@@ -265,10 +265,13 @@ static int mt6336_postenable(void)
 	 * MT6336_RG_EN_RECHARGE, 0x01);
 	 */
 
-	ret = mt6336_set_register_value(0x0529, 0x88);
+	ret = mt6336_set_register_value(0x0529, 0x80);
 	/* mt6336_set_flag_register_value(
 	 * MT6336_RG_A_LOOP_GM_RSV_MSB, 0x88);
 	 */
+
+	ret = mt6336_set_register_value(0x051F, 0x84);
+	ret = mt6336_set_register_value(0x053D, 0x47);
 
 	/* only way to verify register is to get again */
 	ret = 0;
@@ -279,6 +282,8 @@ static int mt6336_postenable(void)
 /* flashlight enable function */
 static int mt6336_enable(void)
 {
+	u8 buck_enable_status;
+
 	mt6336_ctrl_enable(flashlight_ctrl);
 
 	if ((mt6336_en_ch1 == MT6336_ENABLE_FLASH)
@@ -288,12 +293,11 @@ static int mt6336_enable(void)
 					MT6336_DA_QI_OTG_MODE_MUX)) {
 
 			/* disable charging */
-			mt6336_set_register_value(0x0400, 0x00);
-			/* mt6336_set_flag_register_value(
-			 * MT6336_RG_EN_BUCK, 0x00);
-			 * mt6336_set_flag_register_value(
-			 * MT6336_RG_EN_CHARGE, 0x00);
-			 */
+			/* mt6336_set_register_value(0x0400, 0x00); */
+			buck_enable_status =
+				mt6336_get_flag_register_value(MT6336_RG_EN_BUCK);
+			mt6336_set_flag_register_value(MT6336_RG_EN_BUCK, 0x00);
+			/* mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0x00); */
 
 			/* pre-enable steps */
 			mt6336_preenable();
@@ -309,13 +313,19 @@ static int mt6336_enable(void)
 			mt6336_set_flag_register_value(
 					MT6336_RG_EN_LEDCS, 0x01);
 
+#if 1
+			/* enable flash and apply previous buck setting */
+			mt6336_set_flag_register_value(
+					MT6336_RG_EN_BUCK, buck_enable_status);
+			mt6336_set_flag_register_value(MT6336_RG_EN_FLASH, 0x01);
+#else
 			/* Enable flash and enable charger here for robust.
 			 *
 			 * When flash mode and charging mode are both enable,
 			 * flash will get first priority in chip.
 			 */
 			mt6336_set_register_value(0x0400, 0x13);
-
+#endif
 		} else {
 			/*  failed in OTG mode */
 			fl_info("Failed to turn on flash mode since in OTG mode.\n");
