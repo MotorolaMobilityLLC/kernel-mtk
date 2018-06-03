@@ -218,9 +218,13 @@ void rtc_enable_k_eosc(void)
 
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 	rtc_write_trigger();
+	/* Enable K EOSC mode for normal power off and then plug out battery */
+	rtc_write(RTC_AL_YEA, ((rtc_read(RTC_AL_YEA) | RTC_K_EOSC_RSV_0) & (~RTC_K_EOSC_RSV_1)) | RTC_K_EOSC_RSV_2);
+	rtc_write_trigger();
 
 	osc32 = rtc_read(RTC_OSC32CON);
-	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_EOSC) | RTC_EMBCK_SEL_K_EOSC | RTC_EMBCK_SRC_SEL, true);
+	/* Set RTC_EMBCK_SEL_EOSC setting but RTC_EMBCK_SEL_K_EOSC is for HW hard code bug*/
+	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_MODE) | RTC_EMBCK_SEL_EOSC | RTC_EMBCK_SRC_SEL, true);
 	hal_rtc_xinfo("RTC_enable_k_eosc\n");
 }
 

@@ -165,18 +165,18 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 #define RTC_EMBCK_SEL_OPTION        (1U << 9)
 #define RTC_EMBCK_SRC_SEL        (1U << 8)
 #define RTC_EMBCK_SEL_MODE        (3U << 6)
-/* 0: emb_hw    1: emb_k_eosc_32        2:dcxo_ck    3: eosc32_ck*/
-#define RTC_EMBCK_SEL_HW         (0 << 6)
-#define RTC_EMBCK_SEL_K_EOSC         (1U << 6)
-#define RTC_EMBCK_SEL_DCXO         (2U << 6)
-#define RTC_EMBCK_SEL_EOSC         (3U << 6)
+/*	0:dcxo_ck	1:eosc32_ck	2:emb_k_eosc_32	3: emb_hw	*/
+#define RTC_EMBCK_SEL_DCXO         (0 << 6)
+#define RTC_EMBCK_SEL_EOSC         (1U << 6)
+#define RTC_EMBCK_SEL_K_EOSC         (2U << 6)
+#define RTC_EMBCK_SEL_HW         (3U << 6)
 /* 0 (32k crystal exist)    1 (32k crystal doesn't exist)*/
 #define RTC_XOSC32_ENB           (1U << 5)
 /*Default 4'b0111, 2nd step suggest to set to 4'b0000 EOSC_CALI = charging cap calibration*/
 #define RTC_XOSCCALI_MASK        0x001f
 
 #define OSC32CON_ANALOG_SETTING    (RTC_GP_OSC32_CON | RTC_EOSC32_VCT_EN | RTC_EOSC32_CHOP_EN \
-	& (~RTC_REG_XOSC32_ENB) & (~RTC_EMBCK_SEL_MODE) | RTC_EMBCK_SEL_OPTION | RTC_EMBCK_SRC_SEL)
+	& (~RTC_REG_XOSC32_ENB) | RTC_EMBCK_SEL_HW | RTC_EMBCK_SEL_OPTION & (~RTC_EMBCK_SRC_SEL))
 
 #define RTC_XOSCCALI_START        0x0000
 #define RTC_XOSCCALI_END        0x001f
