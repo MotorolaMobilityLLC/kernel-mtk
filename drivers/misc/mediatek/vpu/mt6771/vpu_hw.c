@@ -667,7 +667,6 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 	for (i = 0 ; i < MTK_VPU_CORE ; i++)
 		vpu_opp_check(i, vcore_opp_index, vpu_freq_index);
 
-	mutex_lock(&opp_mutex);
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		if (force_change_dsp_freq[i]) {
 			/* force change freq while running */
@@ -709,7 +708,6 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 				vpu_change_opp(i, OPPTYPE_VCORE);
 		}
 	}
-	mutex_unlock(&opp_mutex);
 
 	return ret;
 }
@@ -2433,7 +2431,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	struct vpu_algo *algo = NULL;
 	bool need_reload = false;
 
-	LOG_DBG("[vpu_%d/%d] pr + ", core, request->algo_id[core]);
+	if (g_vpu_log_level > 2)
+		LOG_INF("[vpu_%d/%d] pr + ", core, request->algo_id[core]);
 
 	/* step1, enable clocks and boot-up if needed */
 	ret = vpu_get_power(core);
@@ -2471,8 +2470,9 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		CHECK_RET("[vpu_%d]have wrong status before do loader!\n", core);
 		LOG_DBG("[vpu_%d] vpu_check_precond done\n", core);
 
-		LOG_DBG("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
-			(unsigned long)algo->bin_ptr, algo->bin_length);
+		if (g_vpu_log_level > 2)
+			LOG_INF("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
+				(unsigned long)algo->bin_ptr, algo->bin_length);
 
 		/* 1. write register */
 		vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_LOADER);           /* command: d2d */
@@ -2489,7 +2489,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 		/* 3. wait until done */
 		ret = wait_command(core);
-		LOG_DBG("[vpu_%d] algo done\n", core);
+		if (g_vpu_log_level > 2)
+			LOG_INF("[vpu_%d] algo done\n", core);
 		vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 		vpu_trace_end();
 		if (ret) {
