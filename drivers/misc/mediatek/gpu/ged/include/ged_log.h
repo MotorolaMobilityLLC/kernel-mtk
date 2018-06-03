@@ -81,7 +81,7 @@ extern GED_LOG_BUF_HANDLE ghLogBuf_ged_ioctl_log;
 #define GED_DEBUG_IOCTL_LOCK_LOG(fmt, ...) \
 	ged_log_buf_print2(ghLogBuf_ged_ioctl_log, GED_LOG_ATTR_TIME_TPT, fmt, ##__VA_ARGS__)
 #else
-#define GED_DEBUG_IOCTL_LOCK_LOG(arg)
+#define GED_DEBUG_IOCTL_LOCK_LOG(...)
 #endif
 
 #endif
