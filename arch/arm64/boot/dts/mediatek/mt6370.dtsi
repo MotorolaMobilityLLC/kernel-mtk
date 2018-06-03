@@ -16,7 +16,7 @@
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
-		/* mt6370,intr_gpio = <&pio 3 0x0>; */ /* GPIO */
+		mt6370,intr_gpio = <&pio 3 0x0>; /* GPIO */
 		core {
 			compatible = "mediatek,mt6370_pmu_core";
 			interrupt-names = "otp", "vdda_ovp", "vdda_uv";
