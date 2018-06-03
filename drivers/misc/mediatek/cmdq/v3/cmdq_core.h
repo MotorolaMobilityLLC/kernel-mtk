@@ -1007,6 +1007,7 @@ extern "C" {
  */
 	void cmdq_core_turnon_first_dump(const struct TaskStruct *pTask);
 	void cmdq_core_turnoff_first_dump(void);
+	void cmdq_core_reset_first_dump(void);
 /**
  * cmdq_core_save_first_dump - save a CMDQ first error dump to file
  */

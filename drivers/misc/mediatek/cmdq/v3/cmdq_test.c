@@ -6136,6 +6136,7 @@ static int _testcase_gen_task_thread(void *data)
 	cmdq_core_clean_stress_context();
 	for (i = 0; i < MAX_RELEASE_QUEUE; i++)
 		destroy_workqueue(release_queues[i]);
+	cmdq_core_reset_first_dump();
 	complete(&thread_data->cmplt);
 
 	return 0;
@@ -6194,6 +6195,10 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 	struct task_struct *trigger_thread_handle;
 	struct thread_param random_thread = { {0} };
 	struct thread_param trigger_thread = { {0} };
+	const u32 finish_timeout_ms = 1000;
+	const u32 finish_timeout_max_count = 20;
+	u32 timeout_counter = 0;
+	u32 wait_status = 0;
 
 	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d loop: %d\n",
 		__func__, multi_task ? "True" : "False", policy.engines_policy,
@@ -6230,7 +6235,12 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 
 		wait_for_completion(&random_thread.cmplt);
 		atomic_set(&trigger_thread.stop, 1);
-		wait_for_completion(&trigger_thread.cmplt);
+		do {
+			wait_status = wait_for_completion_interruptible_timeout(&trigger_thread.cmplt,
+				msecs_to_jiffies(finish_timeout_ms));
+			CMDQ_LOG("wait trigger thread complete count: %u status: %u\n",
+				timeout_counter, wait_status);
+		} while (wait_status != 0 && timeout_counter++ < finish_timeout_max_count);
 	} while (0);
 
 	CMDQ_LOG("%s END\n", __func__);
