@@ -590,7 +590,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 	/* need be called after set_pwrctrl_pcm_flags1() */
-	spm_set_dummy_read_addr(false);
+	/* spm_set_dummy_read_addr(false); */
 
 	soidle_before_wfi(cpu);
 

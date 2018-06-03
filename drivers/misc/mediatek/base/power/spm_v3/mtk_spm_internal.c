@@ -846,6 +846,8 @@ void spm_set_dummy_read_addr(int debug)
 	spm_write(SPM_PASR_DPD_3, rank1_addr & 0xffffffff);
 	if ((rank1_addr >> 32) & 0x1)
 		spm_write(SPM_RSV_CON2, spm_read(SPM_RSV_CON2) | SPM_FLAG_MSB_FOR_DUMMY_READ_ADDR);
+	else
+		spm_write(SPM_RSV_CON2, spm_read(SPM_RSV_CON2) & ~SPM_FLAG_MSB_FOR_DUMMY_READ_ADDR);
 #else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
