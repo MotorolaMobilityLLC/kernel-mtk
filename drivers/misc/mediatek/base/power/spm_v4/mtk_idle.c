@@ -261,6 +261,7 @@ static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
+static int              sodi3_by_uptime_count;
 static bool             sodi3_force_vcore_lp_mode;
 
 /* SODI */
@@ -270,6 +271,7 @@ static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32              sodi_flags = SODI_FLAG_REDUCE_LOG;
+static int              sodi_by_uptime_count;
 
 /* MCDI */
 static unsigned int     mcidle_time_criteria = 3000; /* 3ms */
@@ -627,6 +629,23 @@ static bool soidle3_can_enter(int cpu, int reason)
 	}
 	#endif
 
+	/* do not enter sodi3 at first 30 seconds */
+	if (sodi3_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 30) {
+			sodi3_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_warn("SODI3: blocking by uptime, count = %d\n", sodi3_by_uptime_count);
+			sodi3_by_uptime_count = -1;
+		}
+	}
+
 	/* Check Secure CGs - after other SODI3 criteria PASS */
 	if (!idle_by_pass_secure_cg) {
 		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
@@ -716,6 +735,23 @@ static bool soidle_can_enter(int cpu, int reason)
 		}
 	}
 	#endif
+
+	/* do not enter sodi at first 20 seconds */
+	if (sodi_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+			sodi_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_warn("SODI: blocking by uptime, count = %d\n", sodi_by_uptime_count);
+			sodi_by_uptime_count = -1;
+		}
+	}
 
 	/* Check Secure CGs - after other SODI criteria PASS */
 	if (!idle_by_pass_secure_cg) {
