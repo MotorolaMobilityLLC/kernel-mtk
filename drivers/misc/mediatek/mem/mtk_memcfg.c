@@ -447,6 +447,7 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 		      size_t count, loff_t *pos)
 {
 	static char state;
+	int cnt = 0;
 	struct sched_param param = {
 		.sched_priority = MAX_RT_PRIO - 1,
 	};
@@ -462,8 +463,12 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 			pr_alert("oom test, trying to kill system under oom scenario\n");
 			/* exhaust all memory */
 			for (;;) {
-				alloc_pages(GFP_HIGHUSER_MOVABLE, 0);
-				alloc_pages(GFP_KERNEL, 0);
+				if (!alloc_pages(GFP_HIGHUSER_MOVABLE, 0))
+					cnt++;
+				if (!alloc_pages(GFP_KERNEL, 0))
+					cnt++;
+				if (cnt > 100)
+					BUG();
 			}
 		}
 	}
