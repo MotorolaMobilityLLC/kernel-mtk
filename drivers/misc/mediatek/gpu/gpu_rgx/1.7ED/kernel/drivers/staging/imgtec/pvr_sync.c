@@ -1116,43 +1116,6 @@ pvr_sync_create_waiter_for_foreign_sync(int fd)
 		 */
 		goto err_free_waiter;
 	}
-#ifdef MTK_DEBUG_PROC_PRINT
-	else
-	{
-		/*retrieve the sync info */
-		struct list_head *pos;
-
-		MTKPP_LOG(MTKPP_ID_SYNC, "[%p] %s: status(%d)", fence, fence->name, fence->status);
-
-		list_for_each(pos, &fence->pt_list_head) {
-			struct sync_pt *pt =
-				container_of(pos, struct sync_pt, pt_list);
-
-			struct timeval tv = ktime_to_timeval(pt->timestamp);
-
-			IMG_UINT32 d_data[1] = {};
-
-			if (pt->parent->ops->fill_driver_data)
-				pt->parent->ops->fill_driver_data(pt, d_data, sizeof(d_data));
-
-			MTKPP_LOG(MTKPP_ID_SYNC, "[%p] %s %s_pt status(%d) sync_drv(%u) @%ld.%06ld",
-				fence, pt->parent->ops->driver_name,
-				pt->parent->name, pt->status, d_data[0],
-				tv.tv_sec, tv.tv_usec);
-		}
-#if 0
-		spin_lock_irqsave(&psFence->waiter_list_lock, flags);
-		list_for_each(pos, &psFence->waiter_list_head)
-		{
-			struct sync_fence_waiter *waiter =
-				container_of(pos, struct sync_fence_waiter,
-				 waiter_list);
-			MTKPP_LOG(MTKPP_ID_SYNC,"waiter %pF\n", waiter->callback);
-		}
-		spin_unlock_irqrestore(&psFence->waiter_list_lock, flags);
-#endif
-	}
-#endif
 
 	kernel->current_cleanup_sync = cleanup_sync;
 
