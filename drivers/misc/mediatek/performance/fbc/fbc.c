@@ -15,6 +15,7 @@
 static void notify_twanted_timeout_legacy(void);
 static void notify_touch_up_timeout(void);
 static DECLARE_WORK(mt_tt_legacy_work, (void *) notify_twanted_timeout_legacy);
+static DECLARE_WORK(mt_touch_timeout_work, (void *) notify_touch_up_timeout);
 static DEFINE_SPINLOCK(tlock);
 static DEFINE_SPINLOCK(tlock1);
 static struct workqueue_struct *wq;
@@ -251,7 +252,8 @@ static void disable_touch_up_timer(void)
 
 static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
 {
-	notify_touch_up_timeout();
+	if (wq)
+		queue_work(wq, &mt_touch_timeout_work);
 
 	return HRTIMER_NORESTART;
 }
@@ -866,9 +868,9 @@ static int __init init_fbc(void)
 	mutex_init(&notify_lock);
 	fbc_op = &fbc_legacy;
 
-	wq = create_singlethread_workqueue("mt_tt_legacy_work");
+	wq = create_singlethread_workqueue("mt_fbc_work");
 	if (!wq) {
-		pr_crit(TAG"mt_tt_legacy_work create fail\n");
+		pr_crit(TAG"work create fail\n");
 		return -ENOMEM;
 	}
 
