@@ -140,8 +140,8 @@ struct AFE_OFFLOAD_T {
 	kal_uint64   hw_buffer_addr;  /* physical address */
 	kal_uint64   transferred;
 	kal_uint64   copied_total;    /* for tstamp*/
+	kal_uint64   write_blocked_idx;
 	kal_int8    *hw_buffer_area;  /* virtual pointer */
-	bool         write_blocked;
 	bool         wakelock;
 	DMA_BUFFER_T buf;
 };
@@ -152,6 +152,7 @@ struct AFE_OFFLOAD_SERVICE_T {
 	bool drain;
 	bool support;
 	bool ipiwait;
+	bool needdata;
 	bool ipiresult;
 	void (*setDrain)(bool enable, int draintype);
 	unsigned int volume;
