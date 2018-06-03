@@ -1223,8 +1223,9 @@
 		venc = <&venc>;
 		msdc0 = <&msdc0>;
 		audio = <&audio>;
-		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>;
-		clock-names = "GCE";
+		uart = <&apuart0>;
+		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>, <&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
+		clock-names = "GCE", "GCE_TIMER";
 	};
 
 	met_cci_pmu@10390000 {

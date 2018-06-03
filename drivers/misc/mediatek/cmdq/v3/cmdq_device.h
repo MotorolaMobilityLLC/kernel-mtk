@@ -69,6 +69,7 @@ u32 cmdq_dev_get_thread_count(void);
 struct cmdq_dts_setting {
 	u32 prefetch_thread_count;
 	u32 *prefetch_size;
+	u32 ctl_int0;
 };
 
 /* callback when read resource from device tree */

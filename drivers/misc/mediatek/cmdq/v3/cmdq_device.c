@@ -28,6 +28,7 @@
 struct CmdqDeviceStruct {
 	struct device *pDev;
 	struct clk *clk_gce;
+	struct clk *clk_gce_timer;
 	long regBaseVA;		/* considering 64 bit kernel, use long */
 	phys_addr_t regBasePA;
 	uint32_t irqId;
@@ -196,6 +197,8 @@ void cmdq_dev_init_module_clk(void)
 void cmdq_dev_enable_gce_clock(bool enable)
 {
 	cmdq_dev_enable_device_clock(enable, gCmdqDev.clk_gce, "gce-clk");
+	if (!IS_ERR(gCmdqDev.clk_gce_timer))
+		cmdq_dev_enable_device_clock(enable, gCmdqDev.clk_gce_timer, "gce-clk-timer");
 }
 
 bool cmdq_dev_gce_clock_is_enable(void)
@@ -356,18 +359,12 @@ void cmdq_dev_test_dts_correctness(void)
 
 void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
 {
-	int status;
-
-	do {
-		status = of_property_read_u32(gCmdqDev.pDev->of_node,
-			"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
-		if (status < 0)
-			break;
-		status = of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
-			dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
-		if (status < 0)
-			break;
-	} while (0);
+	of_property_read_u32(gCmdqDev.pDev->of_node,
+		"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
+	of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
+		dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
+	of_property_read_u32(gCmdqDev.pDev->of_node,
+		"ctl_int0", &dts_setting->ctl_int0);
 }
 
 void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb)
@@ -447,6 +444,7 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		gCmdqDev.irqId = irq_of_parse_and_map(node, 0);
 		gCmdqDev.irqSecId = irq_of_parse_and_map(node, 1);
 		gCmdqDev.clk_gce = devm_clk_get(&pDevice->dev, "GCE");
+		gCmdqDev.clk_gce_timer = devm_clk_get(&pDevice->dev, "GCE_TIMER");
 
 		CMDQ_LOG
 		    ("[CMDQ] platform_dev: dev: %p, PA: %pa, VA: %lx, irqId: %d, irqSecId: %d\n",
