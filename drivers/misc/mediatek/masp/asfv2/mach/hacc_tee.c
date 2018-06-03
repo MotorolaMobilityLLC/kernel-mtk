@@ -53,7 +53,7 @@ unsigned int masp_hal_sp_hacc_blk_sz(void)
 	return AES_BLK_SZ;
 }
 
-static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned int buf_size,
+static char *hacc_secure_request(enum hacc_user user, unsigned char *buf, unsigned int buf_size,
 				 BOOL bEncrypt, BOOL bDoLock, unsigned char *sec_seed,
 				 unsigned int seed_size)
 {
@@ -166,13 +166,13 @@ _wrong_direction:
  * For AP NVRAM (user2), it should get hacc lock via ioctl command before using this function
  */
 unsigned char *masp_hal_sp_hacc_enc(unsigned char *buf, unsigned int size, unsigned char bAC,
-				    HACC_USER user, unsigned char bDoLock)
+				    enum hacc_user user, unsigned char bDoLock)
 {
 	return hacc_secure_request(user, buf, size, TRUE, bDoLock, NULL, 0);
 }
 
 unsigned char *masp_hal_sp_hacc_dec(unsigned char *buf, unsigned int size, unsigned char bAC,
-				    HACC_USER user, unsigned char bDoLock)
+				    enum hacc_user user, unsigned char bDoLock)
 {
 	return hacc_secure_request(user, buf, size, FALSE, bDoLock, NULL, 0);
 }

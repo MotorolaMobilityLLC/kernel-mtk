@@ -24,7 +24,6 @@
 #include "masp_version.h"
 #include <linux/types.h>
 #include "sec_error.h"
-#include "sec_nvram.h"
 #include "sec_osal.h"
 #include "sec_mod.h"
 

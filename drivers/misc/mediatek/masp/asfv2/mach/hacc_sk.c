@@ -12,10 +12,11 @@
  */
 
 /*#include <mach/mt_typedefs.h>
-* #include <mach/mt_reg_base.h>
-*/
+ * #include <mach/mt_reg_base.h>
+ */
 #include "sec_error.h"
 #include "hacc_mach.h"
+#include <linux/io.h>
 
 /******************************************************************************
  * this file contains the hardware secure engine low-level operations
@@ -38,8 +39,6 @@
 #else
 #define DMSG
 #endif
-
-
 
 /******************************************************************************
  * LOCAL VERIABLE
@@ -71,7 +70,7 @@ static void hacc_test(void)
 	for (i = 0; i < test_sz; i++) {
 		if (test_src[i] != test_dst[i]) {
 			DMSG("[%s] test_src[%d] = 0x%x != test_dst[%d] = 0x%x\n", MOD, i,
-			     test_src[i], i, test_dst[i]);
+					test_src[i], i, test_dst[i]);
 			DMSG(0);
 		}
 	}
@@ -84,26 +83,26 @@ static void hacc_test(void)
 /******************************************************************************
  * GLOBAL FUNCTIONS
  ******************************************************************************/
-static unsigned int hacc_set_cfg(AES_CFG *cfg)
+static unsigned int hacc_set_cfg(struct aes_cfg *cfg)
 {
-	memcpy(&hacc_ctx.cfg, cfg, sizeof(AES_CFG));
+	memcpy(&hacc_ctx.cfg, cfg, sizeof(struct aes_cfg));
 	return SEC_OK;
 }
 
-static unsigned int hacc_set_mode(AES_MODE mode)
+static unsigned int hacc_set_mode(enum aes_mode mode)
 {
-	AES_CFG cfg;
+	struct aes_cfg cfg;
 
-	DRV_ClrReg32(HACC_ACON, HACC_AES_MODE_MASK);
+	writel(readl((const void *)HACC_ACON) & ~(HACC_AES_MODE_MASK), (void *)HACC_ACON);
 
 	switch (mode) {
 	case AES_ECB_MODE:
 		/* no need cfg */
 		memset(&cfg.config[0], 0, sizeof(cfg.config));
-		DRV_SetReg32(HACC_ACON, HACC_AES_ECB);
+		writel(readl((const void *)HACC_ACON) | HACC_AES_ECB, (void *)HACC_ACON);
 		break;
 	case AES_CBC_MODE:
-		DRV_SetReg32(HACC_ACON, HACC_AES_CBC);
+		writel(readl((const void *)HACC_ACON) | HACC_AES_CBC, (void *)HACC_ACON);
 		break;
 	default:
 		return ERR_HACC_MODE_INVALID;
@@ -112,7 +111,7 @@ static unsigned int hacc_set_mode(AES_MODE mode)
 	return SEC_OK;
 }
 
-unsigned int hacc_set_key(AES_KEY_ID id, AES_KEY key)
+unsigned int hacc_set_key(enum aes_key_id id, enum aes_key key)
 {
 	unsigned int i, acon = 0;
 	unsigned int akey;
@@ -135,17 +134,17 @@ unsigned int hacc_set_key(AES_KEY_ID id, AES_KEY key)
 	hacc_ctx.blk_sz = key;
 
 	/* set aes key length */
-	DRV_ClrReg32(HACC_ACON, HACC_AES_TYPE_MASK);
-	DRV_SetReg32(HACC_ACON, acon);
+	writel(readl((const void *)HACC_ACON) & ~(HACC_AES_TYPE_MASK), (void *)HACC_ACON);
+	writel(readl((const void *)HACC_ACON) | acon, (void *)HACC_ACON);
 
 	/* clear key */
 	for (i = 0; i < HACC_AES_MAX_KEY_SZ; i += 4)
-		DRV_WriteReg32(HACC_AKEY0 + i, 0);
+		writel(0, (void *)(HACC_AKEY0 + i));
 
 	/* set aes key */
 	switch (id) {
 	case AES_HW_KEY:
-		DRV_SetReg32(HACC_ACONK, HACC_AES_BK2C);
+		writel(readl((const void *)HACC_ACONK) | HACC_AES_BK2C, (void *)HACC_ACONK);
 		return 0;
 	case AES_HW_WRAP_KEY:
 		tkey = &hacc_ctx.hw_key[0];
@@ -157,18 +156,18 @@ unsigned int hacc_set_key(AES_KEY_ID id, AES_KEY key)
 	}
 
 	/* non hardware binding key */
-	DRV_ClrReg32(HACC_ACONK, HACC_AES_BK2C);
+	writel(readl((const void *)HACC_ACONK) & ~(HACC_AES_BK2C), (void *)HACC_ACONK);
 
 	/* update key. note that don't use key directly */
 	for (i = 0; i < HACC_AES_MAX_KEY_SZ; i += 4) {
 		akey = (tkey[i] << 24) | (tkey[i + 1] << 16) | (tkey[i + 2] << 8) | (tkey[i + 3]);
-		DRV_WriteReg32(HACC_AKEY0 + i, akey);
+		writel(akey, (void *)(HACC_AKEY0 + i));
 	}
 
 	return SEC_OK;
 }
 
-unsigned int hacc_do_aes(AES_OPS ops, unsigned char *src, unsigned char *dst, unsigned int size)
+unsigned int hacc_do_aes(enum aes_ops ops, unsigned char *src, unsigned char *dst, unsigned int size)
 {
 	unsigned int i;
 	unsigned int *ds, *dt, *vt;
@@ -182,16 +181,16 @@ unsigned int hacc_do_aes(AES_OPS ops, unsigned char *src, unsigned char *dst, un
 	vt = (unsigned int *)&hacc_ctx.cfg.config[0];
 
 	/* erase src, cfg, out register */
-	DRV_SetReg32(HACC_ACON2, HACC_AES_CLR);
+	writel(readl((const void *)HACC_ACON2) | HACC_AES_CLR, (void *)HACC_ACON2);
 
 	/* set init config */
 	for (i = 0; i < AES_CFG_SZ; i += 4)
-		DRV_WriteReg32(HACC_ACFG0 + i, *vt++);
+		writel(*vt++, (void *)(HACC_ACFG0 + i));
 
 	if (ops == AES_ENC)
-		DRV_SetReg32(HACC_ACON, HACC_AES_ENC);
+		writel(readl((const void *)HACC_ACON) | HACC_AES_ENC, (void *)HACC_ACON);
 	else
-		DRV_ClrReg32(HACC_ACON, HACC_AES_ENC);
+		writel(readl((const void *)HACC_ACON) & ~HACC_AES_ENC, (void *)HACC_ACON);
 
 	ds = (unsigned int *)src;
 	dt = (unsigned int *)dst;
@@ -199,18 +198,18 @@ unsigned int hacc_do_aes(AES_OPS ops, unsigned char *src, unsigned char *dst, un
 	do {
 		/* fill in the data */
 		for (i = 0; i < AES_BLK_SZ; i += 4)
-			DRV_WriteReg32(HACC_ASRC0 + i, *ds++);
+			writel(*ds++, (void *)(HACC_ASRC0 + i));
 
 		/* start aes engine */
-		DRV_SetReg32(HACC_ACON2, HACC_AES_START);
+		writel(readl((const void *)HACC_ACON2) | HACC_AES_START, (char *)HACC_ACON2);
 
 		/* wait for aes engine ready */
-		while ((DRV_Reg32(HACC_ACON2) & HACC_AES_RDY) == 0)
+		while ((readl((const void *)HACC_ACON2) & HACC_AES_RDY) == 0)
 			;
 
 		/* read out the data */
 		for (i = 0; i < AES_BLK_SZ; i += 4)
-			*dt++ = DRV_Reg32(HACC_AOUT0 + i);
+			*dt++ = readl((const void *)(HACC_AOUT0 + i));
 
 		if (size == 0)
 			goto _end;
@@ -229,28 +228,27 @@ unsigned int hacc_deinit(void)
 	unsigned int ret = 0;
 
 	/* clear aes module */
-	DRV_SetReg32(HACC_ACON2, HACC_AES_CLR);
+	writel(readl((const void *)HACC_ACON2) | HACC_AES_CLR, (void *)HACC_ACON2);
 
 	return ret;
 }
 
-unsigned int hacc_init(AES_KEY_SEED *keyseed)
+unsigned int hacc_init(struct aes_key_seed *keyseed)
 {
 	unsigned int i = 0;
 	unsigned int *config;
 	unsigned int ret = 0;
 
 	hacc_deinit();
-	/* DRV_WriteReg32(HACC_SECINIT0, HACC_SECINIT0_MAGIC); */
-	/* DRV_WriteReg32(HACC_SECINIT1, HACC_SECINIT1_MAGIC); */
-	/* DRV_WriteReg32(HACC_SECINIT2, HACC_SECINIT2_MAGIC); */
 
 	/* clear aes module */
-	DRV_SetReg32(HACC_ACON2, HACC_AES_CLR);
+	writel(readl((const void *)HACC_ACON2) | HACC_AES_CLR, (void *)HACC_ACON2);
 
 	/* set aes module in cbc mode with no byte order change */
-	DRV_ClrReg32(HACC_ACON2, HACC_AES_CHG_BO_MASK | HACC_AES_MODE_MASK);
-	DRV_SetReg32(HACC_ACON2, HACC_AES_CHG_BO_OFF | HACC_AES_CBC);
+	writel(readl((const void *)HACC_ACON2) & ~(HACC_AES_CHG_BO_MASK | HACC_AES_MODE_MASK),
+					(void *)HACC_ACON2);
+	writel(readl((const void *)HACC_ACON2) | (HACC_AES_CHG_BO_OFF | HACC_AES_CBC),
+					(void *)HACC_ACON2);
 
 	/* aes secure initialiation */
 	memset(&hacc_ctx, 0, sizeof(struct hacc_context));
