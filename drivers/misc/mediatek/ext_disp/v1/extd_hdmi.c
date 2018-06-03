@@ -757,6 +757,7 @@ static enum HDMI_STATUS hdmi_drv_deinit(void)
 }
 
 /* Reset HDMI Driver state */
+#if !defined(CONFIG_MTK_INTERNAL_HDMI_SUPPORT)
 static void hdmi_state_reset(void)
 {
 	HDMI_FUNC();
@@ -771,6 +772,7 @@ static void hdmi_state_reset(void)
 		hdmi_enable_dvfs(false);
 	}
 }
+#endif
 
 /*static*/ void hdmi_suspend(void)
 {
@@ -832,6 +834,7 @@ static void hdmi_state_reset(void)
 	ext_disp_resume(MHL_SESSION_ID);
 	up(&hdmi_update_mutex);
 
+#if !defined(CONFIG_MTK_INTERNAL_HDMI_SUPPORT)
 	if (p->is_force_disable == false) {
 		if (IS_HDMI_FAKE_PLUG_IN()) {
 			hdmi_resume();
@@ -848,6 +851,8 @@ static void hdmi_state_reset(void)
 			hdmi_state_reset();
 		}
 	}
+#endif
+
 }
 
 /*static*/ void hdmi_power_off(void)
