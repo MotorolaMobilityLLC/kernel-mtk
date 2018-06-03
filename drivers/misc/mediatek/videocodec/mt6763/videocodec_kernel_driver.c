@@ -400,6 +400,99 @@ void venc_power_off(void)
 	mutex_unlock(&VencPWRLock);
 }
 
+void vdec_break(void)
+{
+	unsigned int i;
+
+	/* Step 1: set vdec_break */
+	VDO_HW_WRITE(KVA_VDEC_MISC_BASE + 64*4, 0x1);
+
+	/* Step 2: monitor status vdec_break_ok */
+	for (i = 0; i < 5000; i++) {
+		if ((VDO_HW_READ(KVA_VDEC_MISC_BASE + 65*4) & 0x11) == 0x11) {
+			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+			break;
+		}
+	}
+
+	if (i >= 5000) {
+		unsigned int j;
+		VAL_UINT32_T u4DataStatus = 0;
+
+		pr_info("[VCODEC][POTENTIAL ERROR] Leftover data access before powering down\n");
+
+		for (j = 68; j < 80; j++) {
+			u4DataStatus = VDO_HW_READ(KVA_VDEC_MISC_BASE+(j*4));
+			pr_info("[VCODEC][DUMP] MISC_%d = 0x%08x", j, u4DataStatus);
+		}
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(45*4));
+		pr_info("[VCODEC][DUMP] VLD_45 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(46*4));
+		pr_info("[VCODEC][DUMP] VLD_46 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(52*4));
+		pr_info("[VCODEC][DUMP] VLD_52 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(58*4));
+		pr_info("[VCODEC][DUMP] VLD_58 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(59*4));
+		pr_info("[VCODEC][DUMP] VLD_59 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(61*4));
+		pr_info("[VCODEC][DUMP] VLD_61 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(62*4));
+		pr_info("[VCODEC][DUMP] VLD_62 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(63*4));
+		pr_info("[VCODEC][DUMP] VLD_63 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_BASE+(71*4));
+		pr_info("[VCODEC][DUMP] VLD_71 = 0x%08x", u4DataStatus);
+		u4DataStatus = VDO_HW_READ(KVA_VDEC_MISC_BASE+(66*4));
+		pr_info("[VCODEC][DUMP] MISC_66 = 0x%08x", u4DataStatus);
+	}
+
+	/* Step 3: software reset */
+	VDO_HW_WRITE(KVA_VDEC_BASE + 66*4, 0x1);
+	VDO_HW_WRITE(KVA_VDEC_BASE + 66*4, 0x0);
+}
+
+void venc_break(void)
+{
+	unsigned int i;
+	VAL_ULONG_T VENC_SW_PAUSE   = KVA_VENC_BASE + 0xAC;
+	VAL_ULONG_T VENC_IRQ_STATUS = KVA_VENC_BASE + 0x5C;
+	VAL_ULONG_T VENC_SW_HRST_N  = KVA_VENC_BASE + 0xA8;
+	VAL_ULONG_T VENC_IRQ_ACK    = KVA_VENC_BASE + 0x60;
+
+	/* Step 1: raise pause hardware signal */
+	VDO_HW_WRITE(VENC_SW_PAUSE, 0x1);
+
+	/* Step 2: assume software can only tolerate 5000 APB read time. */
+	for (i = 0; i < 5000; i++) {
+		if (VDO_HW_READ(VENC_IRQ_STATUS) & 0x10) {
+			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+			break;
+		}
+	}
+
+	/* Step 3: Lower pause hardware signal and lower software hard reset signal */
+	if (i >= 5000) {
+		VDO_HW_WRITE(VENC_SW_PAUSE, 0x0);
+		VDO_HW_WRITE(VENC_SW_HRST_N, 0x0);
+		VDO_HW_READ(VENC_SW_HRST_N);
+	}
+
+	/* Step 4: Lower software hard reset signal and lower pause hardware signal */
+	else {
+		VDO_HW_WRITE(VENC_SW_HRST_N, 0x0);
+		VDO_HW_READ(VENC_SW_HRST_N);
+		VDO_HW_WRITE(VENC_SW_PAUSE, 0x0);
+	}
+
+	/* Step 5: Raise software hard reset signal */
+	VDO_HW_WRITE(VENC_SW_HRST_N, 0x1);
+	VDO_HW_READ(VENC_SW_HRST_N);
+	/* Step 6: Clear pause status */
+	VDO_HW_WRITE(VENC_IRQ_ACK, 0x10);
+}
+
+
 void dec_isr(void)
 {
 	VAL_RESULT_T    eValRet;
@@ -2126,6 +2219,33 @@ static int vcodec_release(struct inode *inode, struct file *file)
 	if (Driver_Open_Count == 0) {
 		mutex_lock(&HWLock);
 		gu4VdecLockThreadId = 0;
+
+		/* check if someone didn't unlockHW */
+		if (grVcodecHWLock.pvHandle != 0) {
+			pr_info("[ERROR] someone didn't unlockHW vcodec_release pid = %d, grVcodecHWLock.eDriverType %d grVcodecHWLock.pvHandle 0x%lx\n",
+				current->pid, grVcodecHWLock.eDriverType, (VAL_ULONG_T)grVcodecHWLock.pvHandle);
+			pr_info("[ERROR] VCODEC_SEL 0x%x\n",
+				VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20));
+
+			/* power off */
+			if (grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+				vdec_break();
+				vdec_power_off();
+			} else if (grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+				grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+				venc_break();
+				venc_power_off();
+			} else if (grVcodecHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+				venc_power_off();
+			}
+		}
+
 		grVcodecHWLock.pvHandle = 0;
 		grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 		grVcodecHWLock.rLockedTime.u4Sec = 0;
