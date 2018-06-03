@@ -328,12 +328,8 @@ static void fpsgo_init_render_dep(pid_t rpid)
 		p = find_task_by_vpid(iter->render);
 		rcu_read_unlock();
 
-		if (!p) {
-			xgf_reset_render(iter);
-			hlist_del(&iter->hlist);
-			kfree(iter);
+		if (!p)
 			continue;
-		}
 
 		xd = xgf_get_deps(rpid, iter, 1, 1);
 	}
@@ -967,6 +963,9 @@ static unsigned long long xgf_dep_sched_slptime(int rpid,
 	unsigned long long dep_max_slptime = 0ULL;
 
 	xgf_lockprove(__func__);
+
+	if (!proc->render)
+		return dep_max_slptime;
 
 	r = &proc->deps_rec;
 	for (n = rb_first(r); n != NULL; n = rb_next(n)) {
