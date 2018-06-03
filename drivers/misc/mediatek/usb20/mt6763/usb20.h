@@ -23,6 +23,8 @@ struct mt_usb_glue {
 	struct platform_device *musb;
 };
 
+#define glue_to_musb(g)         platform_get_drvdata(g->musb)
+
 #if CONFIG_MTK_GAUGE_VERSION == 30
 extern unsigned int upmu_get_rgs_chrdet(void);
 extern bool upmu_is_chr_det(void);

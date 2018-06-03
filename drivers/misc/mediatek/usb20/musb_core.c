@@ -97,7 +97,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include "mtk_musb.h"
-struct device_node *dts_np;
 #endif
 
 static void (*usb_hal_dpidle_request_fptr)(int);
@@ -171,10 +170,9 @@ module_param(isoc_ep_gpd_count, int, 0644);
 DEFINE_SPINLOCK(usb_io_lock);
 unsigned musb_debug;
 unsigned musb_debug_limit = 1;
-unsigned musb_uart_debug;
+unsigned musb_uart_debug = 1;
 struct musb *mtk_musb;
 unsigned musb_speed = 1;
-u32 usb_irq_number;		/* add for kernel 3.10 */
 bool mtk_usb_power;
 
 struct timeval writeTime;
@@ -2454,47 +2452,25 @@ static int musb_probe(struct platform_device *pdev)
 	int irq = 0;
 	int status;
 	void __iomem *base;
-#ifdef CONFIG_OF
 	void __iomem *pbase;
-	unsigned long usb_mac_base;
-	unsigned long usb_phy_base;
+	struct resource *iomem;
 
-	pr_info("musb probe\n");
-	if (dts_np) {
-		DBG(0, "dts node from dts_np\n");
-		pdev->dev.of_node = dts_np;
-	} else {
-		DBG(0, "dts node from of_find_compatible_node\n");
-		pdev->dev.of_node = of_find_compatible_node(NULL, NULL, "mediatek,USB0");
-	}
-	if (pdev->dev.of_node == NULL)
-		pr_info("USB get node failed\n");
-	base = of_iomap(pdev->dev.of_node, 0);
-	usb_irq_number = irq_of_parse_and_map(pdev->dev.of_node, 0);
-	pbase = of_iomap(pdev->dev.of_node, 1);
+	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	base = devm_ioremap(dev, iomem->start, resource_size(iomem));
+	if (IS_ERR(base))
+		return PTR_ERR(base);
 
-	usb_mac_base = (unsigned long)base;
-	usb_phy_base = (unsigned long)pbase;
-	irq = usb_irq_number;
-	pr_info("musb probe reg: 0x%lx ,0x%lx , irq:%d\n", usb_mac_base, usb_phy_base,
-		usb_irq_number);
-#endif
-#ifdef CONFIG_OF
+	iomem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	pbase = devm_ioremap(dev, iomem->start, resource_size(iomem));
+	if (IS_ERR(pbase))
+		return PTR_ERR(pbase);
+
+	irq = platform_get_irq(pdev, 0);
+	if (irq <= 0)
+		return -ENODEV;
+
+	pr_info("%s mac=0x%lx, phy=0x%lx, irq=%d\n", __func__, (unsigned long)base, (unsigned long)pbase, irq);
 	status = musb_init_controller(dev, irq, base, pbase);
-#else
-	base = (void *)USB_BASE;
-	status = musb_init_controller(dev, irq, base);
-#endif
-
-#if 0
-	if (status < 0)
-		iounmap(base);
-#endif
-
-#ifdef CONFIG_OF
-	usb_mac_base = (unsigned long)mtk_musb->xceiv->io_priv;
-	pr_info("musb core probe done base 0x%lx\n", usb_mac_base);
-#endif
 
 	return status;
 }
