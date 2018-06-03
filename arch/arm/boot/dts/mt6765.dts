@@ -1592,7 +1592,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		id = <6>;
 		reg = <0 0x1100d000 0 0x1000>,
 			<0 0x11000600 0 0x80>;
-		interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao CLK_IFR_I2C_AP>,
 			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "main", "dma";
