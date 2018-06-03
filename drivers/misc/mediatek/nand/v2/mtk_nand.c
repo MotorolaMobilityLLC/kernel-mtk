@@ -831,26 +831,30 @@ void nand_unprepare_clock(void)
 void nand_prepare_clock(void)
 {
 	#if !defined(CONFIG_MTK_LEGACY)
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	clk_prepare(nfi_hclk);
 	clk_prepare(nfiecc_bclk);
 	clk_prepare(nfi_bclk);
-	if (mtk_nfi_dev_comp->chip_ver == 2) {
+	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
 		clk_prepare(nfi_pclk);
 		clk_prepare(nfi_ecc_pclk);
 	}
+	#endif
 	#endif
 }
 
 void nand_unprepare_clock(void)
 {
 	#if !defined(CONFIG_MTK_LEGACY)
+	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	clk_unprepare(nfi_hclk);
 	clk_unprepare(nfiecc_bclk);
 	clk_unprepare(nfi_bclk);
-	if (mtk_nfi_dev_comp->chip_ver == 2) {
+	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
 		clk_unprepare(nfi_pclk);
 		clk_unprepare(nfi_ecc_pclk);
 	}
+	#endif
 	#endif
 }
 
@@ -876,13 +880,15 @@ void nand_enable_clock(void)
 			mtk_nfi_dev_comp->chip_ver);
 	}
 #else
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	clk_enable(nfi_hclk);
 	clk_enable(nfiecc_bclk);
 	clk_enable(nfi_bclk);
-	if (mtk_nfi_dev_comp->chip_ver == 2) {
+	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
 		clk_enable(nfi_pclk);
 		clk_enable(nfi_ecc_pclk);
 	}
+#endif
 #endif
 }
 
@@ -908,13 +914,15 @@ void nand_disable_clock(void)
 			mtk_nfi_dev_comp->chip_ver);
 	}
 #else
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	clk_disable(nfi_hclk);
 	clk_disable(nfiecc_bclk);
 	clk_disable(nfi_bclk);
-	if (mtk_nfi_dev_comp->chip_ver == 2) {
+	if ((mtk_nfi_dev_comp->chip_ver == 2) || (mtk_nfi_dev_comp->chip_ver == 3)) {
 		clk_disable(nfi_pclk);
 		clk_disable(nfi_ecc_pclk);
 	}
+#endif
 #endif
 }
 #endif
@@ -5943,7 +5951,7 @@ static void mtk_nand_command_bp(struct mtd_info *mtd, unsigned int command, int 
 		break;
 
 	case NAND_CMD_RESET:
-		(void)mtk_nand_reset();
+		mtk_nand_device_reset();
 		break;
 
 	case NAND_CMD_READID:
@@ -7172,7 +7180,7 @@ int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t offset)
 	return ret;
 }
 
-int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
+static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
 {
 	struct nand_chip *chip = mtd->priv;
 	u32 block; /*  = (u32)(offset  / (devinfo.blocksize * 1024)); */
@@ -8606,6 +8614,93 @@ static void mtk_nand_gpio_init(void)
 
 #endif
 
+/* #ifdef CONFIG_FPGA_EARLY_PORTING */
+#if 0
+/*******************************************************************************
+ * GPIO(PinMux) register definition
+ *******************************************************************************/
+/*For NFI GPIO setting*/
+/*NCLE*/
+#define NFI_GPIO_MODE3			(GPIO_BASE + 0x320)
+/*NCEB1/NCEB0/NREB*/
+#define NFI_GPIO_MODE4			(GPIO_BASE + 0x330)
+/*NRNB/NREB_C/NDQS_C*/
+#define NFI_GPIO_MODE5			(GPIO_BASE + 0x340)
+/*NLD7/NLD6/NLD4/NLD3/NLD0*/
+#define NFI_GPIO_MODE17			(GPIO_BASE + 0x460)
+/*NALE/NWEB/NLD1/NLD5/NLD8*/
+#define NFI_GPIO_MODE18			(GPIO_BASE + 0x470)
+/*NLD2*/
+#define NFI_GPIO_MODE19			(GPIO_BASE + 0x480)
+
+/*PD, NCEB0/NCEB1/NRNB*/
+#define NFI_GPIO_PULLUP			(GPIO_BASE + 0xE60)
+
+/*Drving*/
+#define NFI_GPIO_DRV_MODE0		(GPIO_BASE + 0xD00)
+#define NFI_GPIO_DRV_MODE6		(GPIO_BASE + 0xD60)
+#define NFI_GPIO_DRV_MODE7		(GPIO_BASE + 0xD70)
+
+/*RDSEL, no need for 1.8V*/
+#define NFI_GPIO_RDSEL1_EN		(GPIO_BASE + 0xC10)
+#define NFI_GPIO_RDSEL6_EN		(GPIO_BASE + 0xC60)
+#define NFI_GPIO_RDSEL7_EN		(GPIO_BASE + 0xC70)
+
+void nand_gpio_cfg_bit32(unsigned long addr, u32 field, u32 val)
+{
+	u32 tv = (unsigned int)(*(volatile unsigned long*)(addr));
+
+	tv &= ~(field);
+	tv |= val;
+	(*(volatile unsigned long*)(addr) = (u32)(tv));
+}
+
+#define NFI_GPIO_CFG_BIT32(reg, field, val) nand_gpio_cfg_bit32(reg, field, val)
+
+static void mtk_nand_gpio_init(void)
+{
+	pr_err("mtk_nand_gpio_init !!!!\n");
+	/*Enable Pinmux Function setting*/
+	/*NCLE*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE3, (0x7 << 12), (0x6 << 12));
+	/*NCEB1/NCEB0/NREB*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE4, (0x1FF << 0), (0x1B6 << 0));
+	/*NRNB/NREB_C/NDQS_C*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE5, (0x1FF << 3), (0x1B1 << 3));
+	/*/NLD7/NLD6/NLD4/NLD3/NLD0*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE17, (0x7FFF << 0), (0x4924 << 0));
+	/*//NALE/NWEB/NLD1/NLD5/NLD8, NLD8 for NDQS*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE18, (0x7FFF << 0), (0x4924 << 0));
+	/*NLD2*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_MODE19, (0x7 << 0), (0x5 << 0));
+
+	/*PULL UP setting*/
+	/*PD, NCEB0, NCEB1, NRNB*/
+	NFI_GPIO_CFG_BIT32(NFI_GPIO_PULLUP, (0xF0FF << 0), (0x1011 << 0));
+
+	/*Driving setting*/
+	/*if(NFI_EFUSE_Is_IO_33V())*/
+	if (1) {
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE0, (0xF << 12), (0x2 << 12));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE6, (0xFF << 8), (0x22 << 8));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE7, (0xFF << 0), (0x22 << 0));
+	} else {
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE0, (0xF << 12), (0x4 << 12));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE6, (0xFF << 8), (0x44 << 8));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_DRV_MODE7, (0xFF << 0), (0x44 << 0));
+	}
+
+	/*TDSEL, No need*/
+	/*RDSEL, only need for 3.3V*/
+	/*if(NFI_EFUSE_Is_IO_33V())*/
+	if (1) {
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_RDSEL1_EN, (0x3F << 6), (0xC << 6));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_RDSEL6_EN, (0xFFF << 0), (0x30C << 0));
+		NFI_GPIO_CFG_BIT32(NFI_GPIO_RDSEL7_EN, (0xFFF << 0), (0x30C << 0));
+	}
+}
+#endif
+
 /******************************************************************************
  * mtk_nand_probe
  *
@@ -9063,7 +9158,9 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	int err = 0;
 	u64 temp;
 #if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	 int ret = 0;
+#endif
 	u32 efuse_index;
 #endif
 	u32 EFUSE_RANDOM_ENABLE = 0x00000004;
@@ -9167,6 +9264,21 @@ static int mtk_nand_probe(struct platform_device *pdev)
 		WARN_ON(IS_ERR(onfi_pad_clk));
 		mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
 		WARN_ON(IS_ERR(mtk_nand_regulator));
+	} else if (mtk_nfi_dev_comp->chip_ver == 3) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+		nfi_hclk = devm_clk_get(&pdev->dev, "nfi_hclk");
+		WARN_ON(IS_ERR(nfi_hclk));
+		nfiecc_bclk = devm_clk_get(&pdev->dev, "nfiecc_bclk");
+		WARN_ON(IS_ERR(nfiecc_bclk));
+		nfi_bclk = devm_clk_get(&pdev->dev, "nfi_bclk");
+		WARN_ON(IS_ERR(nfi_bclk));
+		nfi_ecc_pclk = devm_clk_get(&pdev->dev, "nfiecc_pclk");
+		WARN_ON(IS_ERR(nfi_ecc_pclk));
+		nfi_pclk = devm_clk_get(&pdev->dev, "nfi_pclk");
+		WARN_ON(IS_ERR(nfi_pclk));
+		mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
+		WARN_ON(IS_ERR(mtk_nand_regulator));
+#endif
 	}
 #endif
 
@@ -9177,6 +9289,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	hwPowerOn(MT6323_POWER_LDO_VMCH, VOL_3300, "NFI");
 #endif
 #else
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	ret = regulator_set_voltage(mtk_nand_regulator, 3300000, 3300000);
 	if (ret != 0)
 		pr_err("regulator set vol failed: %d\n", ret);
@@ -9185,13 +9298,14 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	if (ret != 0)
 		pr_err("regulator_enable failed: %d\n", ret);
 #endif
+#endif
 
 #ifdef CONFIG_OF
 	hw = (struct mtk_nand_host_hw *)pdev->dev.platform_data;
 	hw = devm_kzalloc(&pdev->dev, sizeof(*hw), GFP_KERNEL);
 	WARN_ON(!hw);
 	hw->nfi_bus_width = 8;
-	hw->nfi_access_timing = 0x4333;
+	hw->nfi_access_timing = 0x10804333;
 	hw->nfi_cs_num = 2;
 	hw->nand_sec_size = 512;
 	hw->nand_sec_shift = 9;
@@ -9297,6 +9411,12 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #endif
 #ifndef CONFIG_MTK_FPGA
 	/* mtk_nand_gpio_init(); */
+#endif
+
+/*#ifdef CONFIG_FPGA_EARLY_PORTING*/
+#if 0
+	if (mtk_nfi_dev_comp->chip_ver == 3)
+		mtk_nand_gpio_init();
 #endif
 	mtk_nand_init_hw(host);
 	/* Select the device */
@@ -9745,7 +9865,9 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct mtk_nand_host *host = platform_get_drvdata(pdev);
 #if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	  int ret = 0;
+#endif
 #endif
 	/* struct mtd_info *mtd = &host->mtd; */
 	/* backup register */
@@ -9790,9 +9912,11 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 #if defined(CONFIG_MTK_LEGACY)
 		hwPowerDown(MT6323_POWER_LDO_VMCH, "NFI");
 #else
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		ret = regulator_disable(mtk_nand_regulator);
 		if (ret != 0)
 			pr_err("[NFI] Suspend regulator disable failed: %d\n", ret);
+#endif
 #endif
 #endif
 		nand_disable_clock();
@@ -9827,7 +9951,9 @@ static int mtk_nand_resume(struct platform_device *pdev)
 {
 	struct mtk_nand_host *host = platform_get_drvdata(pdev);
 #if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	  int ret = 0;
+#endif
 #endif
 	/* struct mtd_info *mtd = &host->mtd;  //for test */
 	/* struct nand_chip *chip = mtd->priv; */
@@ -9844,6 +9970,7 @@ static int mtk_nand_resume(struct platform_device *pdev)
 #if defined(CONFIG_MTK_LEGACY)
 		hwPowerOn(MT6323_POWER_LDO_VMCH, VOL_3300, "NFI");
 #else
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		ret = regulator_set_voltage(mtk_nand_regulator, 3300000, 3300000);
 		if (ret != 0)
 			pr_err("[NFI] Resume regulator set vol failed: %d\n", ret);
@@ -9851,6 +9978,7 @@ static int mtk_nand_resume(struct platform_device *pdev)
 		ret = regulator_enable(mtk_nand_regulator);
 		if (ret != 0)
 			pr_err("[NFI] Resume regulator_enable failed: %d\n", ret);
+#endif
 #endif
 #endif
 		udelay(200);
