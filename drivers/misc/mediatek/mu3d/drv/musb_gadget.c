@@ -598,6 +598,11 @@ static int is_db_ok(struct musb *musb, struct musb_ep *musb_ep)
 	int tmp;
 	int ret = 1;
 
+	if (c == NULL) {
+		os_printk(K_INFO, "cdev->config NULL!, UMS case?\n");
+		return 1;
+	}
+
 	for (tmp = 0; tmp < MAX_CONFIG_INTERFACES; tmp++) {
 		struct usb_function *f = c->interface[tmp];
 		struct usb_descriptor_header **descriptors;
