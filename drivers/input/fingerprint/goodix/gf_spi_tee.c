@@ -74,7 +74,7 @@
 /*************************************************************/
 
 /* debug log setting */
-u8 g_debug_level = DEBUG_LOG;
+u8 g_debug_level = INFO_LOG;
 
 /* align=2, 2 bytes align */
 /* align=4, 4 bytes align */
