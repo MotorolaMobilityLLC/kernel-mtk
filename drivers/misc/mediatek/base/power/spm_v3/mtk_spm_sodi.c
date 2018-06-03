@@ -742,9 +742,9 @@ wake_reason_t spm_sodi_output_log(
 					so_err(flags, "Warning: wakeup reason is WR_UNKNOWN!\n");
 					wr = WR_UNKNOWN;
 				}
-				so_err(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
+				so_err(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
 						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version, logout_sodi_cnt,
+						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt,
 						logout_selfrefresh_cnt, wakesta->assert_pc, wakesta->r13,
 						wakesta->debug_flag, wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
 						wakesta->idle_sta, wakesta->event_reg, wakesta->isr);
