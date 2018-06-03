@@ -46,6 +46,10 @@
 #define DEVINFO_IDX_10 62	/* 5A8 */
 #define DEVINFO_IDX_11 63	/* 5AC */
 
+#define EX_DEV_IDX_0 59		/* 5A4 */
+#define EX_DEV_IDX_1 64		/* 5B8 */
+#define EX_DEV_IDX_2 65		/* 5BC */
+#define EX_DEV_IDX_3 133	/* 7AC */
 
 /*****************************************
  * eem sw setting

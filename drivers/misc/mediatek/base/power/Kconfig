@@ -15,3 +15,12 @@ config MTK_CM_MGR
 	  this option, dram opp level will be changed which will depended
 	  on power table.
 	  If unsure, say N.
+
+config CPU_FORCE_TO_BIN2
+	bool "Read extra efuse for BIN2 IC"
+	default n
+	---help---
+	  This kernel config can be used to force cpu to segment BIN2.
+	  When enable this option, eem driver will read extra efuse to
+	  obtain parameters for segment BIN2 IC.
+	  If unsure, say N.
