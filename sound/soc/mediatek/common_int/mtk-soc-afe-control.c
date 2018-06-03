@@ -566,8 +566,9 @@ AudDrv_IRQ_handler_exit:
 
 void EnableAPLLTunerbySampleRate(unsigned int SampleRate)
 {
-	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n",
-	       __func__, APLL1TunerCounter, APLL2TunerCounter, SampleRate);
+	/* pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n",
+	 * __func__, APLL1TunerCounter, APLL2TunerCounter, SampleRate);
+	 */
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter++;
@@ -588,8 +589,9 @@ void EnableAPLLTunerbySampleRate(unsigned int SampleRate)
 
 void DisableAPLLTunerbySampleRate(unsigned int SampleRate)
 {
-	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n",
-	       __func__, APLL1TunerCounter, APLL2TunerCounter, SampleRate);
+	/* pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n",
+	 * __func__, APLL1TunerCounter, APLL2TunerCounter, SampleRate);
+	 */
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter--;
@@ -1317,8 +1319,9 @@ bool SetI2SDacOut(unsigned int SampleRate, bool lowjitter, bool I2SWLen)
 	/* force use 32bit for speaker codec */
 	I2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 
-	pr_debug("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n",
-	       SampleRate, lowjitter, I2SWLen);
+	/* pr_debug("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n",
+	 * SampleRate, lowjitter, I2SWLen);
+	 */
 	CleanPreDistortion();
 	SetDLSrc2(SampleRate);
 
@@ -1405,8 +1408,9 @@ bool SetMemoryPathEnableReg(unsigned int Aud_block, bool bEnable)
 
 bool SetMemoryPathEnable(unsigned int Aud_block, bool bEnable)
 {
-	pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block,
-	       bEnable);
+	/* pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block,
+	 * bEnable);
+	 */
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
 		return false;
 
@@ -1425,8 +1429,10 @@ bool SetMemoryPathEnable(unsigned int Aud_block, bool bEnable)
 			return false;
 		}
 	}
-	pr_debug("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n",
-	       __func__, Aud_block, mAudioMEMIF[Aud_block]->mUserCount);
+	/* pr_debug("%s Aud_block = %d
+	 * mAudioMEMIF[Aud_block]->mUserCount = %d\n",
+	 * __func__, Aud_block, mAudioMEMIF[Aud_block]->mUserCount);
+	 */
 
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return true;
@@ -1455,7 +1461,7 @@ void set_ul_src_enable(bool enable)
 {
 	unsigned long flags;
 
-	pr_debug("%s enable = %d\n", __func__, enable);
+	/* pr_debug("%s enable = %d\n", __func__, enable); */
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (enable == true) {
@@ -1475,7 +1481,7 @@ void set_ul2_src_enable(bool enable)
 {
 	unsigned long flags;
 
-	pr_debug("%s enable = %d\n", __func__, enable);
+	/* pr_debug("%s enable = %d\n", __func__, enable); */
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (enable == true) {
@@ -1495,7 +1501,7 @@ void SetDLSrcEnable(bool bEnable)
 {
 	unsigned long flags;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	/* pr_debug("%s bEnable = %d\n", __func__, bEnable); */
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
@@ -1515,7 +1521,7 @@ void SetADDAEnable(bool bEnable)
 {
 	unsigned long flags;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	/* pr_debug("%s bEnable = %d\n", __func__, bEnable); */
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
@@ -1537,8 +1543,7 @@ void SetADDAEnable(bool bEnable)
 
 bool SetI2SDacEnable(bool bEnable)
 {
-	pr_debug("%s bEnable = %d", __func__, bEnable);
-
+	/* pr_debug("%s bEnable = %d", __func__, bEnable);*/
 	if (bEnable) {
 		/* Enable DL SRC order:
 		 * DL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
@@ -1621,7 +1626,7 @@ static bool SetIrqEnable(unsigned int irqmode, bool bEnable)
 	unsigned int enShift, purposeIndex;
 	bool enSet;
 
-	pr_debug("+ %s(), Irqmode %d, bEnable %d\n", __func__, irqmode,
+	pr_debug("%s(), Irqmode %d, bEnable %d\n", __func__, irqmode,
 		 bEnable);
 
 	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM) {
@@ -1667,9 +1672,9 @@ static bool SetIrqMcuSampleRate(unsigned int irqmode, unsigned int SampleRate)
 	unsigned int SRIdx = SampleRateTransform(SampleRate, 0);
 	const struct Aud_RegBitsInfo *irqModeReg;
 
-	pr_debug("%s(), Irqmode %d, SampleRate %d\n", __func__, irqmode,
-	       SampleRate);
-
+	/* pr_debug("%s(), Irqmode %d, SampleRate %d\n", __func__, irqmode,
+	 * SampleRate);
+	 */
 	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM)
 		return false;
 
@@ -1683,8 +1688,9 @@ static bool SetIrqMcuCounter(unsigned int irqmode, unsigned int Counter)
 {
 	const struct Aud_RegBitsInfo *irqCntReg;
 
-	pr_debug("%s(), Irqmode %d, Counter %d\n", __func__, irqmode, Counter);
-
+	/* pr_debug("%s(), Irqmode %d, Counter %d\n",
+	 * __func__, irqmode, Counter);
+	 */
 	if (irqmode >= Soc_Aud_IRQ_MCU_MODE_NUM)
 		return false;
 

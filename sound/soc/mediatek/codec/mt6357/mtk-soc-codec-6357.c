@@ -271,8 +271,9 @@ void SetAnalogSuspend(bool bEnable)
 static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
-	pr_debug("audckbufEnable(), audck_buf_Count = %d, enable = %d\n",
-	       audck_buf_Count, enable);
+	/* pr_debug("%s audck_buf_Count = %d, enable = %d\n",
+	 * __func__, audck_buf_Count, enable);
+	 */
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
@@ -301,7 +302,9 @@ void audckbufEnable(bool enable)
 static int ClsqCount;
 static void ClsqEnable(bool enable)
 {
-	pr_debug("ClsqEnable ClsqCount = %d enable = %d\n", ClsqCount, enable);
+	/* pr_debug("%s ClsqCount = %d enable = %d\n",
+	 * __func__, ClsqCount, enable);
+	 */
 	mutex_lock(&AudAna_lock);
 	if (enable) {
 		if (ClsqCount == 0) {
@@ -325,8 +328,9 @@ static void ClsqEnable(bool enable)
 static int TopCkCount;
 static void Topck_Enable(bool enable)
 {
-	pr_debug("Topck_Enable enable = %d TopCkCount = %d\n", enable,
-	       TopCkCount);
+	/* pr_debug("%s enable = %d TopCkCount = %d\n",
+	 * __func__, enable, TopCkCount);
+	 */
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (TopCkCount == 0) {
@@ -352,8 +356,9 @@ static void Topck_Enable(bool enable)
 static int NvRegCount;
 static void NvregEnable(bool enable)
 {
-	pr_debug("NvregEnable NvRegCount == %d enable = %d\n", NvRegCount,
-	       enable);
+	/* pr_debug("%s NvRegCount == %d enable = %d\n",
+	 * __func__, NvRegCount, enable);
+	 */
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (NvRegCount == 0) {
@@ -570,7 +575,7 @@ static void headset_volume_ramp(int from, int to)
 	if (!is_valid_hp_pga_idx(from) || !is_valid_hp_pga_idx(to))
 		pr_debug("%s(), volume index is not valid, from %d, to %d\n",
 			 __func__, from, to);
-	pr_debug("%s, from %d, to %d\n", __func__, from, to);
+	/* pr_debug("%s, from %d, to %d\n", __func__, from, to); */
 	if (to > from) {
 		offset = to - from;
 		while (offset > 0) {
@@ -602,7 +607,7 @@ static void headset_volume_ramp(int from, int to)
 
 static void setOffsetTrimMux(unsigned int Mux)
 {
-	pr_debug("%s Mux = %d\n", __func__, Mux);
+	/* pr_debug("%s Mux = %d\n", __func__, Mux); */
 	/* Audio offset trimming buffer mux selection */
 	Ana_Set_Reg(AUDDEC_ANA_CON5, Mux, 0xf);
 }
@@ -746,7 +751,7 @@ static void OpenTrimBufferHardware(bool enable, bool buffer_on)
 #endif
 static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
-	pr_debug("%s benable = %d\n", __func__, bEnable);
+	/* pr_debug("%s benable = %d\n", __func__, bEnable); */
 	if (GetDLStatus() == true)
 		return false;
 	if (bEnable == true) {
@@ -871,7 +876,7 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
 	int r_tmp = 0;
 
 	if (dc_input < dc_init) {
-		pr_debug("%s(), Wrong[%d] : dc_input(%d) > dc_init(%d)\n",
+		pr_debug("%s, Wrong[%d] : dc_input(%d) > dc_init(%d)\n",
 			 __func__, pcm_offset, dc_input, dc_init);
 		return 0;
 	}
@@ -880,13 +885,15 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input,
 	r_tmp = DIV_ROUND_CLOSEST(r_tmp, detect_times);
 	/* Efuse calibration */
 	if ((efuse_current_calibrate != 0) && (r_tmp != 0)) {
-		pr_debug("%s(), Before Calibration from EFUSE: %d, R: %d\n",
-			 __func__, efuse_current_calibrate, r_tmp);
+		/* pr_debug("%s, Before Calibration from EFUSE: %d, R: %d\n",
+		 * __func__, efuse_current_calibrate, r_tmp);
+		 */
 		r_tmp = DIV_ROUND_CLOSEST(r_tmp * 128 + efuse_current_calibrate,
 					  128);
 	}
-	pr_debug("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
-	       __func__, pcm_offset, dc_value, r_tmp);
+	/* pr_debug("%s, pcm_offset %d dcoffset %d detected resistor is %d\n",
+	 * __func__, pcm_offset, dc_value, r_tmp);
+	 */
 	return r_tmp;
 }
 #define PARALLEL_OHM 470
@@ -1281,13 +1288,15 @@ static int mt63xx_codec_prepare(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_debug("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-			 substream->runtime->rate);
+		/* pr_debug("%s set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
+		 * __func__, substream->runtime->rate);
+		 */
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] =
 			substream->runtime->rate;
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
-			 substream->runtime->rate);
+		/* pr_debug("%s set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+		 * __func__, substream->runtime->rate);
+		 */
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] =
 			substream->runtime->rate;
 	}
@@ -1890,9 +1899,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 static int Audio_AmpL_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_AmpL_Get = %d\n",
-		 mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_OUT_HEADSETL]);
+	/* pr_debug("Audio_AmpL_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_OUT_HEADSETL]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower
 		[AUDIO_ANALOG_DEVICE_OUT_HEADSETL];
@@ -1927,9 +1937,10 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol,
 static int Audio_AmpR_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_AmpR_Get = %d\n",
-	       mCodec_data->mAudio_Ana_DevicePower
-		       [AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
+	/* pr_debug("Audio_AmpR_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
+	 */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_HEADSETR];
@@ -1939,10 +1950,12 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
-	pr_debug("%s(): enable = %ld, mAudio_Ana_DevicePower[HEADSETR] = %d\n",
-		 __func__, ucontrol->value.integer.value[0],
-	       mCodec_data->mAudio_Ana_DevicePower
-		       [AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
+	/* pr_debug("%s(): enable = %ld,
+	 * mAudio_Ana_DevicePower[HEADSETR] = %d\n", __func__,
+	 * ucontrol->value.integer.value[0],
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
+	 */
 	if ((ucontrol->value.integer.value[0] == true) &&
 	    (mCodec_data->mAudio_Ana_DevicePower
 		     [AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
@@ -2221,9 +2234,10 @@ static void Voice_Amp_Change(bool enable)
 static int Voice_Amp_Get(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Voice_Amp_Get = %d\n",
-	       mCodec_data->mAudio_Ana_DevicePower
-		       [AUDIO_ANALOG_DEVICE_OUT_EARPIECEL]);
+	/* pr_debug("Voice_Amp_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_OUT_EARPIECEL]);
+	 */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL];
@@ -2355,7 +2369,7 @@ static void Speaker_Amp_Change(bool enable)
 static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL];
@@ -2404,7 +2418,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_DevicePower
 			[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP];
@@ -2555,7 +2569,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Switch HPL/R MUX to Line-out */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x35f9, 0xffff);
 	} else {
-		pr_debug("%s(), enable %d\n", __func__, enable);
 		/* HPR/HPL mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
 		/* LOL mux to open */
@@ -2706,8 +2719,9 @@ static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol,
 static int Lineout_PGAR_Get(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s  = %d\n", __func__,
-		 mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR]);
+	/* pr_debug("%s  = %d\n", __func__,
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR]);
+	 */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR];
 	if (ucontrol->value.integer.value[0] == DL_GAIN_N_40DB)
@@ -2734,8 +2748,9 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol,
 static int Handset_PGA_Get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Handset_PGA_Get = %d\n",
-		 mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
+	/* pr_debug("Handset_PGA_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL];
 	if (ucontrol->value.integer.value[0] == DL_GAIN_N_40DB)
@@ -2762,8 +2777,9 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol,
 static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Headset_PGAL_Get = %d\n",
-		 mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
+	/* pr_debug("Headset_PGAL_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
 	if (ucontrol->value.integer.value[0] == DL_GAIN_N_40DB)
@@ -2796,8 +2812,9 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol,
 static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Headset_PGAR_Get = %d\n",
-		 mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
+	/* pr_debug("Headset_PGAR_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	if (ucontrol->value.integer.value[0] == DL_GAIN_N_40DB)
@@ -2870,7 +2887,7 @@ static int codec_dac_sample_rate_set(struct snd_kcontrol *kcontrol,
 static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("\%s n", __func__);
+	/* pr_debug("\%s n", __func__); */
 	ucontrol->value.integer.value[0] = audck_buf_Count;
 	return 0;
 }
@@ -3614,9 +3631,10 @@ static int Audio_UL_AMIC_DCC_Set(struct snd_kcontrol *kcontrol,
 static int Audio_ADC1_Get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_ADC1_Get = %d\n",
-		mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_IN_ADC1]);
+	/* pr_debug("Audio_ADC1_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_IN_ADC1]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC1];
 	return 0;
@@ -3671,9 +3689,10 @@ static int Audio_ADC1_Set(struct snd_kcontrol *kcontrol,
 static int Audio_ADC2_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_ADC2_Get = %d\n",
-		 mCodec_data->mAudio_Ana_DevicePower
-			[AUDIO_ANALOG_DEVICE_IN_ADC2]);
+	/* pr_debug("Audio_ADC2_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_DevicePower
+	 * [AUDIO_ANALOG_DEVICE_IN_ADC2]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC2];
 	return 0;
@@ -3841,7 +3860,7 @@ static int Audio_ADC4_Sel_Set(struct snd_kcontrol *kcontrol,
 }
 static bool AudioPreAmp1_Sel(int Mul_Sel)
 {
-	pr_debug("%s Mul_Sel = %d ", __func__, Mul_Sel);
+	/* pr_debug("%s Mul_Sel = %d ", __func__, Mul_Sel); */
 	if (Mul_Sel >= 0 && Mul_Sel < NUM_PREAMP_INPUT_SELECT)
 		Ana_Set_Reg(AUDENC_ANA_CON0, Mul_Sel << 6, 0x3 << 6);
 	else
@@ -3858,7 +3877,7 @@ static int Audio_PreAmp1_Get(struct snd_kcontrol *kcontrol,
 static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(PreAmp_Mux_function)) {
 		pr_debug("return -EINVAL\n");
@@ -3872,7 +3891,7 @@ static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol,
 }
 static bool AudioPreAmp2_Sel(int Mul_Sel)
 {
-	pr_debug("%s Mul_Sel = %d ", __func__, Mul_Sel);
+	/* pr_debug("%s Mul_Sel = %d ", __func__, Mul_Sel); */
 	if (Mul_Sel >= 0 && Mul_Sel < NUM_PREAMP_INPUT_SELECT)
 		Ana_Set_Reg(AUDENC_ANA_CON1, Mul_Sel << 6, 0x3 << 6);
 	else
@@ -3889,7 +3908,7 @@ static int Audio_PreAmp2_Get(struct snd_kcontrol *kcontrol,
 static int Audio_PreAmp2_Set(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(PreAmp_Mux_function)) {
 		pr_debug("return -EINVAL\n");
@@ -3905,8 +3924,9 @@ static int Audio_PreAmp2_Set(struct snd_kcontrol *kcontrol,
 static int Audio_PGA1_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_AmpR_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1]);
+	/* pr_debug("Audio_AmpR_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
 	return 0;
@@ -3916,7 +3936,7 @@ static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol,
 {
 	int index = 0;
 
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_debug("return -EINVAL\n");
@@ -3932,8 +3952,9 @@ static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol,
 static int Audio_PGA2_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_PGA2_Get = %d\n",
-		 mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2]);
+	/* pr_debug("Audio_PGA2_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2]);
+	 */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
 	return 0;
@@ -3943,7 +3964,7 @@ static int Audio_PGA2_Set(struct snd_kcontrol *kcontrol,
 {
 	int index = 0;
 
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_debug("return -EINVAL\n");
@@ -3982,8 +4003,9 @@ static int Audio_PGA4_Set(struct snd_kcontrol *kcontrol,
 static int Audio_MicSource1_Get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_MicSource1_Get = %d\n",
-		 mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
+	/* pr_debug("Audio_MicSource1_Get = %d\n",
+	 * mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
+	 */
 	ucontrol->value.integer.value[0] =
 		mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
 	return 0;
@@ -4002,7 +4024,7 @@ static int Audio_MicSource1_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	index = ucontrol->value.integer.value[0];
-	pr_debug("%s() index = %d done\n", __func__, index);
+	/* pr_debug("%s() index = %d done\n", __func__, index); */
 	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] =
 		ucontrol->value.integer.value[0];
 	return 0;
@@ -4047,8 +4069,9 @@ static int Audio_MicSource4_Set(struct snd_kcontrol *kcontrol,
 static int Audio_Mic1_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s() mAudio_Analog_Mic1_mode = %d\n",
-		 __func__, mAudio_Analog_Mic1_mode);
+	/* pr_debug("%s() mAudio_Analog_Mic1_mode = %d\n",
+	 * __func__, mAudio_Analog_Mic1_mode);
+	 */
 	ucontrol->value.integer.value[0] = mAudio_Analog_Mic1_mode;
 	return 0;
 }
@@ -4061,14 +4084,15 @@ static int Audio_Mic1_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic1_mode = ucontrol->value.integer.value[0];
-	pr_debug("%s() mAudio_Analog_Mic1_mode = %d\n",
-		 __func__, mAudio_Analog_Mic1_mode);
+	/* pr_debug("%s() mAudio_Analog_Mic1_mode = %d\n",
+	 * __func__, mAudio_Analog_Mic1_mode);
+	 */
 	return 0;
 }
 static int Audio_Mic2_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic2_mode);
+	/* pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic2_mode); */
 	ucontrol->value.integer.value[0] = mAudio_Analog_Mic2_mode;
 	return 0;
 }
@@ -4081,14 +4105,15 @@ static int Audio_Mic2_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic2_mode = ucontrol->value.integer.value[0];
-	pr_debug("%s() mAudio_Analog_Mic2_mode = %d\n",
-		 __func__, mAudio_Analog_Mic2_mode);
+	/* pr_debug("%s() mAudio_Analog_Mic2_mode = %d\n",
+	 * __func__, mAudio_Analog_Mic2_mode);
+	 */
 	return 0;
 }
 static int Audio_Mic3_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic3_mode);
+	/* pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic3_mode); */
 	ucontrol->value.integer.value[0] = mAudio_Analog_Mic3_mode;
 	return 0;
 }
@@ -4101,14 +4126,15 @@ static int Audio_Mic3_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic3_mode = ucontrol->value.integer.value[0];
-	pr_debug("%s() mAudio_Analog_Mic3_mode = %d\n",
-		 __func__, mAudio_Analog_Mic3_mode);
+	/* pr_debug("%s() mAudio_Analog_Mic3_mode = %d\n",
+	 * __func__, mAudio_Analog_Mic3_mode);
+	 */
 	return 0;
 }
 static int Audio_Mic4_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic4_mode);
+	/* pr_debug("%s()  = %d\n", __func__, mAudio_Analog_Mic4_mode); */
 	ucontrol->value.integer.value[0] = mAudio_Analog_Mic4_mode;
 	return 0;
 }
@@ -4121,8 +4147,9 @@ static int Audio_Mic4_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic4_mode = ucontrol->value.integer.value[0];
-	pr_debug("%s() mAudio_Analog_Mic4_mode = %d\n",
-		 __func__, mAudio_Analog_Mic4_mode);
+	/* pr_debug("%s() mAudio_Analog_Mic4_mode = %d\n",
+	 * __func__, mAudio_Analog_Mic4_mode);
+	 */
 	return 0;
 }
 static int Audio_Adc_Power_Mode_Get(struct snd_kcontrol *kcontrol,
