@@ -83,10 +83,10 @@ static enum IMGSENSOR_RETURN gpio_release(void *pinstance)
 		i < GPIO_CTRL_STATE_MAX_NUM;
 		i += 2) {
 		if (gpio_pinctrl_list[i].ppinctrl_lookup_names != NULL &&
-			(pgpio->ppinctrl_state[i] == NULL ||
-			  IS_ERR(pgpio->ppinctrl_state[i]) ||
+			pgpio->ppinctrl_state[i] != NULL &&
+			  !IS_ERR(pgpio->ppinctrl_state[i]) &&
 				pinctrl_select_state(pgpio->ppinctrl,
-						pgpio->ppinctrl_state[i]))) {
+						pgpio->ppinctrl_state[i])) {
 			pr_info(
 			    "%s : pinctrl err, PinIdx %d name %s\n",
 			    __func__,
