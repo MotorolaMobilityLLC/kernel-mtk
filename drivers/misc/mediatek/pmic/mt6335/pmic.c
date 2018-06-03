@@ -378,6 +378,56 @@ unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
   *   [Internal Function]
   *
   *********************************************************/
+/* dump exception reg in kernel and clean status */
+int pmic_dump_exception_reg(void)
+{
+#if 0	/* TBD */
+	int ret_val = 0;
+
+	pr_err("[PMIC_dump_exception_reg][pmic_status]\n");
+	kernel_dump_exception_reg();
+
+	/* clear UVLO off */
+	ret_val = pmic_config_interface(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
+
+	/* clear thermal shutdown 150 */
+	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x0);
+
+	/* clear power not good */
+	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x0);
+
+	/* clear Long press shutdown */
+	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x0);
+	udelay(200);
+	kernel_output_reg(MT6351_STRUP_CON12);
+
+	/* clear WDTRST */
+	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_SET, 0x8, 0xFFFF, 0);
+	udelay(100);
+	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_CLR, 0x8, 0xFFFF, 0);
+
+	/* clear BUCK OC */
+	ret_val = pmic_config_interface(MT6351_BUCK_OC_CON0, 0xFFFF, 0xFFFF, 0);
+	udelay(200);
+
+	/* clear Additional(TBD) */
+
+	/* add mdelay for output the log in buffer */
+	mdelay(500);
+	mdelay(500);
+	mdelay(500);
+	mdelay(500);
+	mdelay(500);
+#endif
+	return 0;
+}
+
 void pmic_dump_register(struct seq_file *m)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[PMU_COMMAND_MAX - 1];
@@ -402,6 +452,33 @@ void pmic_dump_register(struct seq_file *m)
 				i + 8, upmu_get_reg_value(i + 8));
 		}
 	}
+
+}
+
+#define DUMP_ALL_REG 0
+int pmic_pre_wdt_reset(void)
+{
+	int ret = 0;
+
+	preempt_disable();
+	local_irq_disable();
+#if 0	/* TBD */
+	/* for olympus pre wdt reset */
+	ret = pmic_set_register_value(PMIC_RG_VCORE_VSLEEP_SEL, 0x0);
+	ret = pmic_set_register_value(PMIC_RG_VSRAM_MD_VSLEEP_SEL, 0x0);
+	ret = pmic_set_register_value(PMIC_RG_VMODEM_VSLEEP_SEL, 0x0);
+	ret = pmic_set_register_value(PMIC_RG_VMD1_VSLEEP_SEL, 0x0);
+
+	ret = pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_SLEEP, 0x10);
+	ret = pmic_set_register_value(PMIC_BUCK_VMD1_VOSEL_SLEEP, 0x10);
+	ret = pmic_set_register_value(PMIC_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
+	ret = pmic_set_register_value(PMIC_BUCK_VSRAM_MD_VOSEL_SLEEP, 0x10);
+#endif
+	pmic_dump_exception_reg();
+#if DUMP_ALL_REG
+	pmic_dump_register();
+#endif
+	return ret;
 
 }
 
