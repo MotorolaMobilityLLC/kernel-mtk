@@ -14,7 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef CONFIG_MTK_FPSGO
+#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 void update_pwd_tbl(void);
 int reduce_stall(int, int, int);
 #else
