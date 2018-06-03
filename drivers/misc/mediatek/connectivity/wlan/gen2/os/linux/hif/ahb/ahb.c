@@ -807,6 +807,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		MTK_WCN_HIF_DMA_CONF DmaConf;
 		UINT_32 LoopCnt;
 		unsigned long PollTimeout;
+		INT_32 DmaErrorCode = 0;
 #if (CONF_HIF_DMA_INT == 1)
 		INT_32 RtnVal = 0;
 #endif
@@ -843,6 +844,9 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		/* DMA_FROM_DEVICE invalidated (without writeback) the cache */
 		/* TODO: if dst_off was not cacheline aligned */
 		DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE);
+		DmaErrorCode = dma_mapping_error(HifInfo->Dev, DmaConf.Dst);
+		if (DmaErrorCode != 0)
+			DBGLOG(RX, INFO, "DMA mapping error: %d\n", DmaErrorCode);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to read data */
@@ -995,10 +999,12 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		MTK_WCN_HIF_DMA_CONF DmaConf;
 		UINT_32 LoopCnt;
 		unsigned long PollTimeout;
+		INT_32 DmaErrorCode = 0;
 #if (CONF_HIF_DMA_INT == 1)
 		INT_32 RtnVal = 0;
 #endif
 
+		kalMemSet(&DmaConf, 0, sizeof(MTK_WCN_HIF_DMA_CONF));
 		/* config GDMA */
 		HIF_DBG_TX(("[WiFi/HIF/DMA] Prepare to send data...\n"));
 		DmaConf.Count = Size;
@@ -1022,6 +1028,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 		/* DMA_TO_DEVICE writeback the cache */
 		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE);
+		DmaErrorCode = dma_mapping_error(HifInfo->Dev, DmaConf.Src);
+		if (DmaErrorCode != 0)
+			DBGLOG(TX, INFO, "DMA mapping error: %d\n", DmaErrorCode);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to write */

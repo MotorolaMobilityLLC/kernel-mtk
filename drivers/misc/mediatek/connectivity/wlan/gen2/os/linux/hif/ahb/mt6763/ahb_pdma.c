@@ -234,7 +234,7 @@ static VOID HifPdmaConfig(IN void *HifInfoSrc, IN void *Param)
 
 	/* AP_DMA_HIF_0_CON */
 	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_CON);
-	RegVal &= ~(ADH_CR_BURST_LEN | ADH_CR_FIX_EN | ADH_CR_DIR);
+	RegVal &= ~(ADH_CR_BURST_LEN | ADH_CR_FIX_EN | ADH_CR_DIR | ADH_CR_INTA_INCR);
 	RegVal |= (((Conf->Burst << ADH_CR_BURST_LEN_OFFSET) & ADH_CR_BURST_LEN) |
 		   (Conf->Fix_en << ADH_CR_FIX_EN_OFFSET) | (Conf->Dir));
 	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_CON, RegVal);
