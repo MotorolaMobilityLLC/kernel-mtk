@@ -125,6 +125,7 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 	struct sspm_mbox *desc;
 	unsigned int size;
 	void __iomem *in_irq, *out_irq;
+	unsigned long flags = 0;
 
 	if (mbox >= sspm_mbox_cnt)
 		return -1;
@@ -138,10 +139,13 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 	in_irq = desc->in_out + MBOX_IN_IRQ_OFS;
 	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
 
+	spin_lock_irqsave(&lock_mbox[mbox], flags);
 	if (readl(out_irq) & (0x1 << irq)) {
 		pr_err("%s: MBOX%d[%d] out_irq is not clear!\n", __func__, mbox, irq);
+		spin_unlock_irqrestore(&lock_mbox[desc->id], flags);
 		return -1;
 	}
+	spin_unlock_irqrestore(&lock_mbox[desc->id], flags);
 
 	if (!desc->enable)
 		return -1;
@@ -151,7 +155,9 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 	if (len > 0)
 		memcpy_to_sspm(desc->base + (MBOX_SLOT_SIZE * slot), data, len * MBOX_SLOT_SIZE);
 
+	spin_lock_irqsave(&lock_mbox[mbox], flags);
 	writel(0x1 << irq, in_irq);
+	spin_unlock_irqrestore(&lock_mbox[desc->id], flags);
 
 	return 0;
 }
