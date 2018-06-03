@@ -47,11 +47,18 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mtk_cm_mgr.h>
+
+/* #define CM_MGR_USE_PM_NOTIFY */
+#ifdef CM_MGR_USE_PM_NOTIFY
+#include <linux/cpu_pm.h>
+static atomic_t cm_mgr_idle_mask;
+#else
 #include <mtk_spm_reg.h>
+void __iomem *spm_sleep_base;
+#endif /* CM_MGR_USE_PM_NOTIFY */
 
 void __iomem *mcucfg_mp0_counter_base;
 void __iomem *mcucfg_mp2_counter_base;
-void __iomem *spm_sleep_base;
 
 #define diff_value_overflow(diff, a, b) do {\
 	if ((a) >= (b)) \
@@ -153,10 +160,18 @@ int cm_mgr_read_stall(int cpu)
 	int val = 0;
 
 	if (cpu < 4) {
+#ifdef CM_MGR_USE_PM_NOTIFY
+		if (atomic_read(&cm_mgr_idle_mask) & 0x0f)
+#else
 		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 8))
+#endif /* CM_MGR_USE_PM_NOTIFY */
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 	} else {
+#ifdef CM_MGR_USE_PM_NOTIFY
+		if (atomic_read(&cm_mgr_idle_mask) & 0xf0)
+#else
 		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 15))
+#endif /* CM_MGR_USE_PM_NOTIFY */
 			val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
 	}
 
@@ -262,6 +277,36 @@ int cm_mgr_cps_check(void)
 #endif /* CONFIG_MTK_SCHED_RQAVG_US */
 }
 
+#ifdef CM_MGR_USE_PM_NOTIFY
+#ifdef CONFIG_CPU_PM
+static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
+			       unsigned long cmd, void *v)
+{
+	unsigned int cur_cpu = smp_processor_id();
+
+	if (cmd == CPU_PM_EXIT)
+		atomic_or(1 << cur_cpu, &cm_mgr_idle_mask);
+	else if (cmd == CPU_PM_ENTER)
+		atomic_and(~(1 << cur_cpu), &cm_mgr_idle_mask);
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cm_mgr_sched_pm_notifier_block = {
+	.notifier_call = cm_mgr_sched_pm_notifier,
+};
+
+static void cm_mgr_sched_pm_init(void)
+{
+	cpu_pm_register_notifier(&cm_mgr_sched_pm_notifier_block);
+}
+
+#else
+static inline void cm_mgr_sched_pm_init(void) { }
+#endif /* CONFIG_CPU_PM */
+#else
+#endif /* CM_MGR_USE_PM_NOTIFY */
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -284,6 +329,8 @@ int cm_mgr_register_init(void)
 		return -1;
 	}
 
+#ifdef CM_MGR_USE_PM_NOTIFY
+#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
 		pr_info("find mp2_counter node failed\n");
@@ -292,6 +339,7 @@ int cm_mgr_register_init(void)
 		pr_info("base spm_sleep_base failed\n");
 		return -1;
 	}
+#endif /* CM_MGR_USE_PM_NOTIFY */
 
 	return 0;
 }
@@ -305,6 +353,13 @@ int cm_mgr_platform_init(void)
 		pr_info("FAILED TO CREATE REGISTER(%d)\n", r);
 		return r;
 	}
+
+#ifdef CM_MGR_USE_PM_NOTIFY
+	cm_mgr_sched_pm_init();
+	pr_info(" CM_MGR_USE_PM_NOTIFY (%d)\n", r);
+#else
+	pr_info(" !CM_MGR_USE_PM_NOTIFY (%d)\n", r);
+#endif /* CM_MGR_USE_PM_NOTIFY */
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
