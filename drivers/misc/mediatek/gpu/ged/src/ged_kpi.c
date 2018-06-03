@@ -1716,7 +1716,11 @@ GED_ERROR ged_kpi_system_init(void)
 
 	g_psWorkQueue = alloc_ordered_workqueue("ged_kpi", WQ_FREEZABLE | WQ_MEM_RECLAIM);
 	if (g_psWorkQueue) {
+		int i;
+
 		memset(g_asKPI, 0, sizeof(g_asKPI));
+		for (i = 0; i < GED_KPI_TOTAL_ITEMS; i++)
+			g_asKPI[i].ullWnd = 0x0 - 1;
 		gs_hashtable = ged_hashtable_create(10);
 		return gs_hashtable ? GED_OK : GED_ERROR_FAIL;
 	}
