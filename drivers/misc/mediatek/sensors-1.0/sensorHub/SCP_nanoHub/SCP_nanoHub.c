@@ -641,7 +641,7 @@ static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 	uint64_t ipi_transfer_time = 0;
 
 	if (READ_ONCE(rtc_compensation_suspend)) {
-		SCP_PR_ERR("rtc_compensation_suspend is suspended, so drop run algo\n");
+		pr_err_ratelimited("rtc_compensation_suspend is suspended, so drop run algo\n");
 		return;
 	}
 	ap_now_time = ktime_get_boot_ns();
