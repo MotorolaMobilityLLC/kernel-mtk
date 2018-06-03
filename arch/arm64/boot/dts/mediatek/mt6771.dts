@@ -2412,6 +2412,9 @@
 		compatible = "mediatek,dpe";
 		reg = <0 0x15028000 0 0x1000>;
 		interrupts = <GIC_SPI 270 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_DPE>;
+		clock-names = "DPE_CG_IMG_DPE";
 	};
 
 	dpe_dma@15028000 {
@@ -2446,11 +2449,13 @@
 		clock-names = "WPE_CLK_IMG_WPE_B";
 	};
 
-
 	fdvt@1502b000 {
 		compatible = "mediatek,fdvt";
 		reg = <0 0x1502b000 0 0x1000>;
 		interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_FDVT>;
+		clock-names = "FD_CLK_IMG_FDVT";
 	};
 
 	fdvt_dma@1502b000 {
@@ -2462,6 +2467,18 @@
 		compatible = "mediatek,mfb";
 		reg = <0 0x1502e000 0 0x1000>;
 		interrupts = <GIC_SPI 276 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_MFB>;
+		clock-names = "MFB_CLK_IMG_MFB";
+	};
+
+	tsf@1a0a1c00 {
+		compatible = "mediatek,tsf";
+		reg = <0 0x1a0a1c00 0 0x1000>;
+		interrupts = <GIC_SPI 265 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&camsys CAMSYS_CCU_CGPDN>;
+		clock-names = "TSF_CAMSYS_TSF_CGPDN";
 	};
 
 	owe@1502c000 {
