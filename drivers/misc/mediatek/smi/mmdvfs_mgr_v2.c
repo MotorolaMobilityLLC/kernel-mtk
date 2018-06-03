@@ -822,6 +822,7 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 
 	unsigned int scenario = smi_scenario;
 	enum mmdvfs_voltage_enum final_step = mmdvfs_get_default_step();
+	enum mmdvfs_voltage_enum final_step_ulpm_limited = mmdvfs_get_default_step();
 	int mmsys_clk_step = MMSYS_CLK_MEDIUM;
 
 
@@ -899,15 +900,17 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 
 	mmsys_clk_step = determine_current_mmsys_clk();
 
+	final_step_ulpm_limited = final_step;
+
 	if (final_step == MMDVFS_VOLTAGE_LOW_LOW)
 		if (!enable_low_low || !check_if_enter_low_low(g_disp_low_low_request, final_step,
 				g_mmdvfs_concurrency, mmdvfs_get_lcd_resolution(),
 				g_mmdvfs_info->video_record_size[0] * g_mmdvfs_info->video_record_size[1],
 				g_mmdvfs_mgr, g_disp_is_ui_idle)) {
-			final_step = MMDVFS_VOLTAGE_LOW;
+			final_step_ulpm_limited = MMDVFS_VOLTAGE_LOW;
 	}
 
-	g_mmdvfs_current_step = final_step;
+	g_mmdvfs_current_step = final_step_ulpm_limited;
 
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
@@ -931,12 +934,15 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 
 	} else if (final_step == MMDVFS_VOLTAGE_LOW_LOW) {
 		mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_MEDIUM);
-
-		if (concurrency_ulpm & ~(MMDVFS_SCENS_USING_NON_FORCE_KICKER))
-			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_ULTRA_LOW_PWR);
-		else
-			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_UNREQ);
-
+		/* ULPM is limited in some scenarios */
+		if (final_step_ulpm_limited == MMDVFS_VOLTAGE_LOW) {
+			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_LOW_PWR);
+		} else {
+			if (concurrency_ulpm & ~(MMDVFS_SCENS_USING_NON_FORCE_KICKER))
+				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_ULTRA_LOW_PWR);
+			else
+				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_UNREQ);
+		}
 	} else {
 		mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_MEDIUM);
 		mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_UNREQ);
@@ -955,8 +961,9 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d,low_low_en:%d\n",
-		scenario, g_mmdvfs_concurrency, step, final_step, concurrency_hpm, concurrency_lpm, concurrency_ulpm,
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CK:%d,low_low_en:%d\n",
+		scenario, g_mmdvfs_concurrency, step, final_step_ulpm_limited, final_step,
+		concurrency_hpm, concurrency_lpm, concurrency_ulpm,
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
 		current_mmsys_clk, enable_low_low);
@@ -1127,7 +1134,7 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(enum MTK_SMI_BWC_SCEN smi_scenario, e
 	}
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d,low_low_en:%d\n",
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),	CLK:%d,low_low_en:%d\n",
 		scenario, g_mmdvfs_concurrency, step, g_disp_low_low_request, final_step, concurrency,
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
