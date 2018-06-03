@@ -2174,7 +2174,9 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 
 #if defined(SUPPORT_WORKLOAD_ESTIMATION)
 	psRGXFWInit->ui32ConfigFlags |= RGXFWIF_INICFG_WORKEST_V1;
+#endif
 
+/* MTK : move endif for disable SUPPORT_WORKLOAD_ESTIMATION */
 #if defined(SUPPORT_PDVFS)
 	/* Proactive DVFS depends on Workload Estimation */
 	psPDVFSOPPInfo = &(psRGXFWInit->sPDVFSOPPInfo);
@@ -2194,7 +2196,6 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE       *psDeviceNode,
 	{
 		PVR_DPF((PVR_DBG_ERROR,"RGXSetupFirmware: Missing OPP Table"));
 	}
-#endif
 #endif
 
 #if defined(SUPPORT_PDVFS)
