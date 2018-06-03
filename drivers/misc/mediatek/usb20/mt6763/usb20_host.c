@@ -258,11 +258,13 @@ static void tcpc_otg_power_work_call(struct work_struct *work)
 	mutex_lock(&tcpc_otg_pwr_lock);
 	if (usbc_otg_power_enable) {
 		if (!usb20_host_tcpc_boost_on) {
-			_set_vbus(mtk_musb, 1);
+			/* update flag 1st then enable VBUS to make host mode correct used by PMIC */
 			usb20_host_tcpc_boost_on = true;
+			_set_vbus(mtk_musb, 1);
 		}
 	} else {
 		if (usb20_host_tcpc_boost_on) {
+			/* disable VBUS 1st then update flag to make host mode correct used by PMIC */
 			_set_vbus(mtk_musb, 0);
 			usb20_host_tcpc_boost_on = false;
 		}
