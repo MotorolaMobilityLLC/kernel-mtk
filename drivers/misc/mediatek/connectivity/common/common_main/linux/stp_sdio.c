@@ -3483,8 +3483,10 @@ INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	if (ret == -11) {
 		STPSDIO_ERR_FUNC("wake up fail, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms\n");
 		ret = stp_sdio_issue_fake_coredump
-			("<ASSERT> wake up fail, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms ms # -");
-	}
+			("<ASSERT> wake up fail, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms # -");
+	} else if (ret == -2 || ret == -3)
+		STPSDIO_ERR_FUNC("get wake up, sleep pin error\n");
+
 	return ret;
 }
 
