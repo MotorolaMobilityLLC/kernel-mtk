@@ -30,3 +30,6 @@ extern int backlight_brightness_set(int level);
 #define backlight_brightness_set(level) do { } while (0)
 #endif
 extern int disp_bls_set_max_backlight(unsigned int level);
+int __weak disp_bls_set_backlight(int level) { return 0; };
+int __weak mtkfb_set_backlight_level(unsigned int level) { return 0; };
+void __weak disp_pq_notify_backlight_changed(int bl_1024) {};
