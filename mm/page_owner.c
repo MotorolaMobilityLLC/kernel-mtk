@@ -252,14 +252,6 @@ static void init_page_owner(void)
 		return;
 
 #ifdef CONFIG_PAGE_OWNER_SLIM
-
-	if (memory_base == NULL) {
-		pr_err("PAGE OWNER SLIM: early init memblock_alloc fail.\n");
-		pr_info("Disable page owner tracking.\n");
-		page_owner_disabled = true;
-		return;
-	}
-
 	pr_info("Enable [PAGE_OWNER_SLIM]\n");
 	for (i = 0; i < BT_HASH_TABLE_SIZE; i++)
 		INIT_LIST_HEAD(&gBtTable.list[i]);
