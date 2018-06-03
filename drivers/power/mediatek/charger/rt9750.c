@@ -33,6 +33,8 @@
 #include <mt-plat/rt-regmap.h>
 #endif
 
+#define RT9750_DRV_VERSION	"1.0.5_MTK"
+
 #define I2C_ACCESS_MAX_RETRY 5
 
 struct rt9750_desc {
@@ -71,7 +73,7 @@ struct rt9750_info {
 	struct pinctrl_state *en_enable;
 	struct pinctrl_state *en_disable;
 	int irq;
-	u8 device_id;
+	u8 chip_rev;
 #if 0
 	struct task_struct *task;
 #endif
@@ -85,6 +87,14 @@ struct rt9750_info {
 static u32 rt9750_wdt[] = {
 	0, 500000, 1000000, 2000000,
 }; /* us */
+
+static u8 rt9750_init_irq_data[] = {
+	0x00, 0x00,
+};
+
+static u8 rt9750_maskall_irq_data[] = {
+	0xEF, 0xFF,
+};
 
 /* ========= */
 /* RT Regmap */
@@ -305,6 +315,7 @@ static inline int _rt9750_i2c_write_byte(struct rt9750_info *info, u8 cmd,
 	return ret;
 }
 
+#if 0
 static int rt9750_i2c_write_byte(struct rt9750_info *info, u8 cmd, u8 data)
 {
 	int ret = 0;
@@ -315,6 +326,7 @@ static int rt9750_i2c_write_byte(struct rt9750_info *info, u8 cmd, u8 data)
 
 	return ret;
 }
+#endif
 
 static inline int _rt9750_i2c_read_byte(struct rt9750_info *info, u8 cmd)
 {
@@ -357,7 +369,6 @@ static int rt9750_i2c_read_byte(struct rt9750_info *info, u8 cmd)
 	return (ret & 0xFF);
 }
 
-#if 0
 static inline int _rt9750_i2c_block_write(struct rt9750_info *info, u8 cmd,
 	u32 leng, const u8 *data)
 {
@@ -384,7 +395,6 @@ static int rt9750_i2c_block_write(struct rt9750_info *info, u8 cmd, u32 leng,
 
 	return ret;
 }
-#endif
 
 static inline int _rt9750_i2c_block_read(struct rt9750_info *info, u8 cmd,
 	u32 leng, u8 *data)
@@ -525,19 +535,22 @@ static u32 rt9750_find_closest_real_value(const u32 min, const u32 max,
 static int rt9750_is_hw_exist(struct rt9750_info *info)
 {
 	int ret = 0;
-	u8 revision = 0;
+	u8 dev_id = 0, chip_rev = 0;
 
 	ret = i2c_smbus_read_byte_data(info->i2c, RT9750_REG_CORE_CTRL0);
 	if (ret < 0)
 		return false;
 
-	revision = ret & 0xFF;
-	if (revision == RT9750_DEVICE_INFO_E1)
-		pr_info("%s: E1(0x%02X)\n", __func__, revision);
-	else
+	dev_id = ret & 0x07;
+	chip_rev = ret & 0x38;
+	if (dev_id != RT9750_DEVICE_ID) {
+		pr_err("%s: device id is incorrect\n", __func__);
 		return false;
+	}
 
-	info->device_id = revision;
+	pr_info("%s: E%d(0x%02X)\n", __func__, chip_rev + 1, chip_rev);
+
+	info->chip_rev = chip_rev;
 	return true;
 }
 
@@ -685,24 +698,6 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 	return 0;
 }
 
-static int rt9750_enable_all_irq(struct rt9750_info *info, const bool enable)
-{
-	int ret = 0, i = 0;
-	u8 mask = (enable ? 0x00 : 0xFF);
-
-	pr_info("%s: enable = %d\n", __func__, enable);
-
-	for (i = 0; i < 2; i++) {
-		ret = rt9750_i2c_write_byte(info, RT9750_REG_EVENT1_MASK + i,
-			mask);
-		if (ret < 0)
-			pr_err("%s: %s irq-%d failed\n", __func__,
-				(enable ? "mask" : "unmask"), i + 1);
-	}
-
-	return ret;
-}
-
 static int rt9750_set_wdt(struct rt9750_info *info, const u32 us)
 {
 	int ret = 0;
@@ -825,11 +820,29 @@ static int rt9750_set_iococp(struct rt9750_info *info, u32 uA)
 	return ret;
 }
 
+static int rt9750_mask_all_irq(struct rt9750_info *info, bool maskall)
+{
+	int ret = 0;
+
+	pr_info("%s: mask all = %d\n", __func__, maskall);
+
+	if (maskall)
+		ret = rt9750_i2c_block_write(info, RT9750_REG_EVENT1_MASK,
+			ARRAY_SIZE(rt9750_maskall_irq_data),
+			rt9750_maskall_irq_data);
+	else
+		ret = rt9750_i2c_block_write(info, RT9750_REG_EVENT1_MASK,
+			ARRAY_SIZE(rt9750_init_irq_data),
+			rt9750_init_irq_data);
+
+	return ret;
+}
+
 static int rt9750_init_setting(struct rt9750_info *info)
 {
 	int ret = 0;
 
-	ret = rt9750_enable_all_irq(info, true);
+	ret = rt9750_mask_all_irq(info, true);
 
 	ret = rt9750_set_wdt(info, info->desc->wdt);
 	if (ret < 0)
@@ -1197,7 +1210,7 @@ static int rt9750_probe(struct i2c_client *i2c,
 	int ret = 0;
 	struct rt9750_info *info = NULL;
 
-	pr_info("%s\n", __func__);
+	pr_info("%s: %s\n", __func__, RT9750_DRV_VERSION);
 
 	info = devm_kzalloc(&i2c->dev, sizeof(struct rt9750_info), GFP_KERNEL);
 	if (!info)
@@ -1276,6 +1289,7 @@ err_register_regmap:
 #endif
 err_enable_chip:
 err_no_dev:
+	charger_device_unregister(info->chg_dev);
 err_parse_dt:
 err_register_chg_dev:
 	mutex_destroy(&info->i2c_access_lock);
@@ -1296,6 +1310,7 @@ static int rt9750_remove(struct i2c_client *i2c)
 #ifdef CONFIG_RT_REGMAP
 		rt_regmap_device_unregister(info->regmap_dev);
 #endif
+		charger_device_unregister(info->chg_dev);
 		mutex_destroy(&info->i2c_access_lock);
 		mutex_destroy(&info->adc_access_lock);
 		mutex_destroy(&info->gpio_access_lock);
@@ -1373,10 +1388,14 @@ module_exit(rt9750_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9750 Load Switch Driver");
-MODULE_VERSION("1.0.4_MTK");
+MODULE_VERSION(RT9750_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.5
+ * (1) Unregister charger device if probe failed
+ * (2) Mask all irqs for now
+ *
  * 1.0.4
  * (1) Add set_iococp
  * (2) Init iococp in init_setting
