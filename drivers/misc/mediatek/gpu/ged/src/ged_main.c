@@ -54,6 +54,7 @@ static GED_LOG_BUF_HANDLE ghLogBuf_GLES;
 GED_LOG_BUF_HANDLE ghLogBuf_GED;
 #endif
 
+static GED_LOG_BUF_HANDLE ghLogBuf_GPU;
 #define GED_LOG_BUF_COMMON_HWC "HWC"
 static GED_LOG_BUF_HANDLE ghLogBuf_HWC;
 #define GED_LOG_BUF_COMMON_HWC_ERR "HWC_err"
@@ -320,6 +321,8 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_GLES);
 	ghLogBuf_GLES = 0;
 #endif
+	ged_log_buf_free(ghLogBuf_GPU);
+	ghLogBuf_GPU = 0;
 	ged_log_buf_free(ghLogBuf_FENCE);
 	ghLogBuf_FENCE = 0;
 	ged_log_buf_free(ghLogBuf_HWC);
@@ -437,6 +440,9 @@ static int ged_init(void)
 #ifndef GED_BUFFER_LOG_DISABLE
 	/* common gpu info buffer */
 	ged_log_buf_alloc(1024, 64 * 1024, GED_LOG_BUF_TYPE_RINGBUFFER, "gpuinfo", "gpuinfo");
+
+	ghLogBuf_GPU = ged_log_buf_alloc(512, 128 * 512,
+				GED_LOG_BUF_TYPE_RINGBUFFER, "GPU_FENCE", NULL);
 
 #ifdef GED_DEBUG
 	ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);
