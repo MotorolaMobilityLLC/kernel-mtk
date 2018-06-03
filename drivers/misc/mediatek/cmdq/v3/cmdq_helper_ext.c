@@ -3467,7 +3467,7 @@ void cmdq_core_dump_resource_status(enum cmdq_event resourceEvent)
 static void cmdq_core_attach_error_handle_detail(
 	const struct cmdqRecStruct *handle, s32 thread,
 	const struct cmdqRecStruct **nghandle_out, const char **module_out,
-	u32 *irq_flag_out, u32 *inst_a_out, u32 *inst_b_out)
+	u32 *irq_flag_out, u32 *inst_a_out, u32 *inst_b_out, bool *aee_out)
 {
 	s32 error_num = cmdq_ctx.errNum;
 	u32 *pc = NULL;
@@ -3476,6 +3476,7 @@ static void cmdq_core_attach_error_handle_detail(
 
 	if (!handle) {
 		CMDQ_ERR("attach error failed since handle is NULL");
+		*aee_out = false;
 		return;
 	}
 
@@ -3507,6 +3508,8 @@ static void cmdq_core_attach_error_handle_detail(
 			cmdq_core_reset_first_dump();
 		mutex_unlock(&cmdq_err_mutex);
 		cmdq_core_release_nghandleinfo(&nginfo);
+		/* don't aee for esd case */
+		*aee_out = false;
 		return;
 	}
 
@@ -3523,6 +3526,7 @@ static void cmdq_core_attach_error_handle_detail(
 	mutex_unlock(&cmdq_err_mutex);
 
 	cmdq_core_release_nghandleinfo(&nginfo);
+	*aee_out = true;
 }
 
 static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
@@ -3531,7 +3535,8 @@ static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
 	const struct cmdqRecStruct *nghandle = NULL;
 	const char *module = NULL;
 	u32 irq_flag = 0, inst_a = 0, inst_b = 0;
-	u32 op;
+	u32 op = 0;
+	bool aee = true;
 
 	if (unlikely(!handle)) {
 		CMDQ_ERR("attach error without handle\n");
@@ -3545,9 +3550,16 @@ static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
 	}
 
 	cmdq_core_attach_error_handle_detail(handle, handle->thread,
-		&nghandle, &module, &irq_flag, &inst_a, &inst_b);
-
+		&nghandle, &module, &irq_flag, &inst_a, &inst_b, &aee);
 	op = (inst_a & 0xFF000000) >> 24;
+
+	if (!aee) {
+		CMDQ_ERR(
+			"Skip AEE for %s in CMDQ IRQ:0x%02x, INST:(0x%08x, 0x%08x), OP:%s\n",
+			module, irq_flag, inst_a, inst_b,
+			cmdq_core_parse_op(op));
+		return;
+	}
 
 	switch (op) {
 	case CMDQ_CODE_WFE:
