@@ -558,7 +558,7 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
 	}
 
 #ifdef SUPPORT_U3
-	if (dwL1Value & MAC3_INTR) {
+	if (musb_speed && (dwL1Value & MAC3_INTR)) {
 		dwLtssmValue = os_readl(U3D_LTSSM_INTR) & os_readl(U3D_LTSSM_INTR_ENABLE);
 		/* Write 1 clear */
 		os_writel(U3D_LTSSM_INTR, dwLtssmValue);

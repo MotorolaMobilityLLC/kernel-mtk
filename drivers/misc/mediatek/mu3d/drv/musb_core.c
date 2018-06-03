@@ -162,12 +162,27 @@ MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
  * 0: High Speed
  * 1: Super Speed
  */
-#if defined(CONFIG_USB_MU3D_DEFAULT_U2_MODE) && !defined(U3_COMPLIANCE)
 unsigned int musb_speed;
-#else
-unsigned int musb_speed = 1;
-#endif
-module_param_named(speed, musb_speed, uint, S_IRUGO | S_IWUSR);
+static int set_musb_speed(const char *val, const struct kernel_param *kp)
+{
+	int rv;
+
+	/* update module parameter */
+	rv = param_set_int(val, kp);
+	if (rv)
+		return rv;
+
+	musb_hal_speed = musb_speed;
+
+	pr_warn("musb_speed:%d, musb_hal_speed:%d\n", musb_speed, musb_hal_speed);
+
+	return 0;
+}
+static struct kernel_param_ops musb_speed_param_ops = {
+	.set = set_musb_speed,
+	.get = param_get_int,
+};
+module_param_cb(speed, &musb_speed_param_ops, &musb_speed, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, spuper speed.");
 #endif
 
@@ -1032,7 +1047,8 @@ static void set_ssusb_ip_sleep(struct musb *musb)
 {
 	/* Set below sequence to avoid power leakage */
 #ifdef SUPPORT_U3
-	os_setmsk(U3D_SSUSB_U3_CTRL_0P, SSUSB_U3_PORT_PDN | SSUSB_U3_PORT_DIS);
+	if (musb_speed)
+		os_setmsk(U3D_SSUSB_U3_CTRL_0P, SSUSB_U3_PORT_PDN | SSUSB_U3_PORT_DIS);
 #endif
 	os_setmsk(U3D_SSUSB_U2_CTRL_0P, SSUSB_U2_PORT_PDN | SSUSB_U2_PORT_DIS);
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
@@ -2428,6 +2444,14 @@ static int __init musb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	struct device_node *ap_uart0_node = NULL;
+#endif
+
+#ifdef SUPPORT_U3
+#if defined(CONFIG_USB_MU3D_DEFAULT_U2_MODE) && !defined(U3_COMPLIANCE)
+	musb_speed = musb_hal_speed = 0;
+#else
+	musb_speed = musb_hal_speed = 1;
+#endif
 #endif
 
 	irq = irq_of_parse_and_map(dev->parent->of_node, 0);
