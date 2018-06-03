@@ -17,18 +17,18 @@ config MTK_LOCK_DEBUG
 	  Say Y here to enable, If you are not sure about whether to enable it or not, please
 	  set n.
 
-config MT_SCHED_MONITOR
+config MTK_SCHED_MONITOR
 	bool "mt scheduler monitor"
 	default n
 	help
-	  MT_SCHED_MONITOR is used to monitor ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
+	  MTK_SCHED_MONITOR is used to monitor ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
 	  disable duration. Say Y here to enable ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER
 	  monitor. If you are not sure about whether to enable it or not, please
 	  set n.
 
 config PREEMPT_MONITOR
 	bool "mt preempt monitor"
-	depends on MT_SCHED_MONITOR
+	depends on MTK_SCHED_MONITOR
 	default n
 	help
 	  PREEMPT_MONITOR is used to monitor PREEMPT disable/enalbe and
@@ -36,12 +36,12 @@ config PREEMPT_MONITOR
 	  local_irq_disable/enable monitor.
 	  If you are not sure about whether to enable it or not, please set n.
 
-config MT_SCHED_MON_DEFAULT_ENABLE
+config MTK_SCHED_MON_DEFAULT_ENABLE
 	bool "default enable mt scheduler monitor"
-	depends on MT_SCHED_MONITOR
+	depends on MTK_SCHED_MONITOR
 	default n
 	help
-	  MT_SCHED_MON_DEFAULT_ENABLE is used to enable scheduler monitor for auto test
+	  MTK_SCHED_MON_DEFAULT_ENABLE is used to enable scheduler monitor for auto test
 	  system performance(ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER). Say Y here to
 	  enable auto test scheduler monitor. If you are not sure about whether
 	  to enable it or not, please set n.
@@ -54,12 +54,12 @@ config MTK_WQ_DEBUG
 	  enable mtk workqueue debug, or if you are not sure about this, please
 	  set n
 
-config MT_RCU_MONITOR
-	bool "mt rcu callback list monitor"
+config MTK_RCU_MONITOR
+	bool "mtk rcu callback list monitor"
 	depends on TREE_RCU_TRACE
 	default n
 	help
-	  MT_RCU_MONITOR is used to monitor rcu callback list.
+	  MTK_RCU_MONITOR is used to monitor rcu callback list.
 	  Record all call_rcu callback information and invoke rcu callback information.
 	  Say Y here to enable rt throttle
 	  monitor. If you are not sure about whether to enable it or not, please set n.

@@ -639,7 +639,7 @@ static void rcu_dynticks_task_exit(void);
 
 #endif /* #ifndef RCU_TREE_NONCORE */
 
-#ifdef CONFIG_MT_RCU_MONITOR
+#ifdef CONFIG_MTK_RCU_MONITOR
 #include <linux/sched.h>
 
 #define MAX_RCU_BUFF_LEN			1024
@@ -692,7 +692,7 @@ DECLARE_PER_CPU(struct rcu_invoke_log, rcu_invoke_callback_log);
 extern struct rcu_callback_log_entry *rcu_callback_log_add(void);
 extern struct rcu_invoke_log_entry *rcu_invoke_log_add(void);
 
-#endif /* #ifdef CONFIG_MT_RCU_MONITOR */
+#endif /* #ifdef CONFIG_MTK_RCU_MONITOR */
 
 #ifdef CONFIG_RCU_TRACE
 /* Read out queue lengths for tracing. */

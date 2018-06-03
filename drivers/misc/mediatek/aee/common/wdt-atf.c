@@ -19,8 +19,8 @@
 #include <linux/list.h>
 #include <linux/init.h>
 #include <linux/smp.h>
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 #include <linux/io.h>
 #include <linux/delay.h>
@@ -123,7 +123,7 @@ void aee_wdt_dump_info(void)
 #endif
 	if (wdt_log_length == 0) {
 		LOGE("\n No log for WDT\n");
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_dump_sched_traces();
 #endif
 		return;
@@ -519,7 +519,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 		aee_wdt_printf("Invalid atf_aee_debug_virt_addr, no register dump\n");
 	}
 
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
 #endif
