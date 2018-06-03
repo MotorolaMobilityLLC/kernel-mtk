@@ -162,6 +162,7 @@ static uint32 GeneralSampleRateTransform(uint32 sampleRate);
 static uint32 DAIMEMIFSampleRateTransform(uint32 sampleRate);
 static uint32 ADDADLSampleRateTransform(uint32 sampleRate);
 static uint32 ADDAULSampleRateTransform(uint32 sampleRate);
+static uint32 MDSampleRateTransform(uint32 sampleRate);
 
 /*
  *    function implementation
@@ -724,6 +725,9 @@ uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock)
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 	case Soc_Aud_Digital_Block_MEM_DAI:
 		return DAIMEMIFSampleRateTransform(sampleRate);
+	case Soc_Aud_Digital_Block_MODEM_PCM_1_O:
+	case Soc_Aud_Digital_Block_MODEM_PCM_2_O:
+		return MDSampleRateTransform(sampleRate);
 	default:
 		return GeneralSampleRateTransform(sampleRate);
 	}
@@ -837,6 +841,24 @@ uint32 ADDAULSampleRateTransform(uint32 sampleRate)
 		pr_warn("[AudioWarn] %s() sampleRate(%d) is invalid, use 48kHz(24bit)!!!\n",
 			__func__, sampleRate);
 		return Soc_Aud_ADDA_UL_SAMPLERATE_48K;
+	}
+}
+
+uint32 MDSampleRateTransform(uint32 sampleRate)
+{
+	switch (sampleRate) {
+	case 8000:
+		return Soc_Aud_PCM_MODE_PCM_MODE_8K;
+	case 16000:
+		return Soc_Aud_PCM_MODE_PCM_MODE_16K;
+	case 32000:
+		return Soc_Aud_PCM_MODE_PCM_MODE_32K;
+	case 48000:
+		return Soc_Aud_PCM_MODE_PCM_MODE_48K;
+	default:
+		pr_err("%s(), rate %u not support, use 16k\n",
+		       __func__, sampleRate);
+		return Soc_Aud_PCM_MODE_PCM_MODE_16K;
 	}
 }
 
