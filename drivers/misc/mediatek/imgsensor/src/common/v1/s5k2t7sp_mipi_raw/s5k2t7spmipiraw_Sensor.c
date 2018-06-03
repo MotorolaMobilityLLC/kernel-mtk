@@ -2359,13 +2359,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 
 	case SENSOR_FEATURE_SET_REGISTER:
-		write_cmos_sensor(sensor_reg_data->RegAddr,
+		write_cmos_sensor_8(sensor_reg_data->RegAddr,
 			sensor_reg_data->RegData);
 		break;
 
 	case SENSOR_FEATURE_GET_REGISTER:
 		sensor_reg_data->RegData =
-			read_cmos_sensor(sensor_reg_data->RegAddr);
+			read_cmos_sensor_8(sensor_reg_data->RegAddr);
 		break;
 
 	case SENSOR_FEATURE_GET_LENS_DRIVER_ID:
