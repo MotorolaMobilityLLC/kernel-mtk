@@ -52,76 +52,76 @@
 #define REG_DUMP(addr) dcm_pr_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
 #define SECURE_REG_DUMP(addr) dcm_pr_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, mcsi_reg_read(addr##_PHYS & 0xFFFF))
 
-typedef enum {
+enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
 	ARMCORE_DCM_MODE1 = DCM_ON,
 	ARMCORE_DCM_MODE2 = DCM_ON+1,
-} ENUM_ARMCORE_DCM;
+};
 
-typedef enum {
+enum {
 	INFRA_DCM_OFF = DCM_OFF,
 	INFRA_DCM_ON = DCM_ON,
-} ENUM_INFRA_DCM;
+};
 
-typedef enum {
+enum {
 	PERI_DCM_OFF = DCM_OFF,
 	PERI_DCM_ON = DCM_ON,
-} ENUM_PERI_DCM;
+};
 
-typedef enum {
+enum {
 	MCUSYS_DCM_OFF = DCM_OFF,
 	MCUSYS_DCM_ON = DCM_ON,
-} ENUM_MCUSYS_DCM;
+};
 
-typedef enum {
+enum {
 	DRAMC_AO_DCM_OFF = DCM_OFF,
 	DRAMC_AO_DCM_ON = DCM_ON,
-} ENUM_DRAMC_AO_DCM;
+};
 
-typedef enum {
+enum {
 	DDRPHY_DCM_OFF = DCM_OFF,
 	DDRPHY_DCM_ON = DCM_ON,
-} ENUM_DDRPHY_DCM;
+};
 
-typedef enum {
+enum {
 	EMI_DCM_OFF = DCM_OFF,
 	EMI_DCM_ON = DCM_ON,
-} ENUM_EMI_DCM;
+};
 
-typedef enum {
+enum {
 	STALL_DCM_OFF = DCM_OFF,
 	STALL_DCM_ON = DCM_ON,
-} ENUM_STALL_DCM;
+};
 
-typedef enum {
+enum {
 	BIG_CORE_DCM_OFF = DCM_OFF,
 	BIG_CORE_DCM_ON = DCM_ON,
-} ENUM_BIG_CORE_DCM;
+};
 
-typedef enum {
+enum {
 	GIC_SYNC_DCM_OFF = DCM_OFF,
 	GIC_SYNC_DCM_ON = DCM_ON,
-} ENUM_GIC_SYNC_DCM;
+};
 
-typedef enum {
+enum {
 	LAST_CORE_DCM_OFF = DCM_OFF,
 	LAST_CORE_DCM_ON = DCM_ON,
-} ENUM_LAST_CORE_DCM;
+};
 
-typedef enum {
+enum {
 	RGU_DCM_OFF = DCM_OFF,
 	RGU_DCM_ON = DCM_ON,
-} ENUM_RGU_DCM;
+};
 
-typedef enum {
+enum {
 	TOPCKG_DCM_OFF = DCM_OFF,
 	TOPCKG_DCM_ON = DCM_ON,
-} ENUM_TOPCKG_DCM;
+};
 
-typedef enum {
+enum {
 	LPDMA_DCM_OFF = DCM_OFF,
 	LPDMA_DCM_ON = DCM_ON,
-} ENUM_LPDMA_DCM;
+};
 
 enum {
 	ARMCORE_DCM = 0,
@@ -215,20 +215,20 @@ enum {
 #define MCUSYS_STALL_DCM_MP1_WR_DEL_SEL_MASK	(MCUCFG_STALL_DCM_MPX_WR_SEL_MAX_VAL << \
 						 MCUCFG_STALL_DCM_MP1_WR_SEL_BIT)
 
-int dcm_armcore(ENUM_ARMCORE_DCM mode);
-int dcm_infra(ENUM_INFRA_DCM on);
-int dcm_peri(ENUM_PERI_DCM on);
-int dcm_mcusys(ENUM_MCUSYS_DCM on);
-int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
-int dcm_emi(ENUM_EMI_DCM on);
-int dcm_ddrphy(ENUM_DDRPHY_DCM on);
-int dcm_stall(ENUM_STALL_DCM on);
-int dcm_big_core(ENUM_BIG_CORE_DCM on);
-int dcm_gic_sync(ENUM_GIC_SYNC_DCM on);
-int dcm_last_core(ENUM_LAST_CORE_DCM on);
-int dcm_rgu(ENUM_RGU_DCM on);
-int dcm_topckg(ENUM_TOPCKG_DCM on);
-int dcm_lpdma(ENUM_LPDMA_DCM on);
+int dcm_armcore(int mode);
+int dcm_infra(int on);
+int dcm_peri(int on);
+int dcm_mcusys(int on);
+int dcm_dramc_ao(int on);
+int dcm_emi(int on);
+int dcm_ddrphy(int on);
+int dcm_stall(int on);
+int dcm_big_core(int on);
+int dcm_gic_sync(int on);
+int dcm_last_core(int on);
+int dcm_rgu(int on);
+int dcm_topckg(int on);
+int dcm_lpdma(int on);
 
 int mt_dcm_dts_map(void);
 void dcm_set_hotplug_nb(void);
@@ -237,7 +237,7 @@ short dcm_get_cpu_cluster_stat(void);
 int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 
-extern DCM dcm_array[NR_DCM_TYPE];
+extern struct DCM dcm_array[NR_DCM_TYPE];
 
 extern void *mt_dramc_chn_base_get(int channel);
 extern void *mt_ddrphy_chn_base_get(int channel);
