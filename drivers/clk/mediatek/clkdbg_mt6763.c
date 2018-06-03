@@ -198,7 +198,7 @@ static const struct fmeter_clk fclks[] = {
 	FMCLK(CKGEN,  18, "hf_faud_intbus_ck"),
 	FMCLK(CKGEN,  19, "f_fpwrap_ulposc_ck"),
 	FMCLK(CKGEN,  21, "hf_fatb_ck"),
-	FMCLK(CKGEN,  22, "hf_fpwrmcu_ck"),
+	FMCLK(CKGEN,  22, "hf_fsspm_ck"),
 	FMCLK(CKGEN,  23, "hf_fdpi0_ck"),
 	FMCLK(CKGEN,  24, "hf_fscam_ck"),
 	FMCLK(CKGEN,  25, "hf_faud_1_ck"),
