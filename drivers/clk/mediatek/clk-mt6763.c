@@ -1751,7 +1751,7 @@ unsigned int mt_get_ckgen_freq(unsigned int ID)
 
 }
 
-unsigned int mt_get_abist_freq(unsigned int ID, unsigned int DIV)
+unsigned int mt_get_abist_freq(unsigned int ID)
 {
 	int output = 0, i = 0;
 	unsigned int temp, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1 = 0;
@@ -1760,7 +1760,7 @@ unsigned int mt_get_abist_freq(unsigned int ID, unsigned int DIV)
 	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC)|(ID << 16));
 
 	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
-	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF) | (DIV << 24));
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF) | (1 << 24));
 
 	clk26cali_1 = clk_readl(CLK26CALI_1);
 
@@ -1785,7 +1785,7 @@ unsigned int mt_get_abist_freq(unsigned int ID, unsigned int DIV)
 	/*clk_writel(CLK26CALI_1, clk26cali_1);*/
 
 	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
-	return (output * (DIV + 1));
+	return (output * 2);
 }
 
 #if 1
