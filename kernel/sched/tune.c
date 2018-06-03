@@ -17,6 +17,8 @@ bool schedtune_initialized = false;
 
 unsigned int sysctl_sched_cfs_boost __read_mostly;
 
+static int default_stune_threshold;
+
 extern struct reciprocal_value schedtune_spc_rdiv;
 extern struct target_nrg schedtune_target_nrg;
 
@@ -590,6 +592,9 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	unsigned threshold_idx;
 	int boost_pct;
 
+	/* boost big tasks only */
+	stune_task_threshold = default_stune_threshold;
+
 	if (boost < -100 || boost > 100)
 		return -EINVAL;
 	boost_pct = boost;
@@ -931,6 +936,9 @@ schedtune_init(void)
 	}
 
 	sg = sd->groups;
+
+	default_stune_threshold = sg->sge->cap_states[0].cap;
+
 	do {
 		schedtune_add_cluster_nrg(sd, sg, ste);
 	} while (sg = sg->next, sg != sd->groups);
