@@ -2283,6 +2283,13 @@ int univpll_is_used(void)
 	return __clk_get_enable_count(c);
 }
 
+int ipu_is_used(void)
+{
+	struct clk *c = __clk_lookup("pg_ipu_shutdown");
+
+	return __clk_get_enable_count(c);
+}
+
 static int clkdbg_dump_state_all(struct seq_file *s, void *v)
 {
 	int i;
