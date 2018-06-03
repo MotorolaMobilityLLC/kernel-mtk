@@ -391,11 +391,24 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    DISP_RDMA_INDEX_OFFSET * index));
 #endif
+			cnt_rdma_underflow[index]++;
 			DDPPR_ERR("IRQ: RDMA%d underflow! cnt=%d, pix(%d,%d,%d,%d)\n", index,
-				cnt_rdma_underflow[index]++, in_p_cnt, in_l_cnt,
+				cnt_rdma_underflow[index], in_p_cnt, in_l_cnt,
 				out_p_cnt, out_l_cnt);
-			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
-				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
+			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE)) {
+				static long long underflow_t;
+				static long long db_t;
+				long long current_t = sched_clock();
+
+				/* Dump DB if undeflow happened twice in 1ms */
+				if (current_t - underflow_t <= 1000000 &&
+				    current_t - db_t > 1000000000) {
+					DDPAEE("RDMA%d underflow!cnt=%d\n",
+						index, cnt_rdma_underflow[index]);
+					db_t = current_t;
+				}
+				underflow_t = current_t;
+			}
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 			set_display_ut_status(DISP_UT_ERROR_RDMA);
