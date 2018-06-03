@@ -373,9 +373,7 @@ static void testcase_errors(void)
 	ret = 0;
 	do {
 		/* SW timeout */
-		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
-
-		CMDQ_MSG("=============== INIFINITE Wait ===================\n");
+		CMDQ_LOG("=============== INIFINITE Wait ===================\n");
 
 		cmdqCoreClearEvent(CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &hReq);
@@ -388,21 +386,23 @@ static void testcase_errors(void)
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_op_wait(hReq, CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdq_task_flush(hReq);
+		cmdq_core_reset_first_dump();
 
-		CMDQ_MSG("=============== INIFINITE JUMP ===================\n");
+		CMDQ_LOG("=============== INIFINITE JUMP ===================\n");
 
 		/* HW timeout */
-		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 		cmdqCoreClearEvent(CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_op_wait(hReq, CMDQ_EVENT_MDP_RSZ0_EOF);
+		cmdq_append_command(hReq, CMDQ_CODE_EOC, 0, 1, 0, 0);
 		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8, 0, 0);	/* JUMP to connect tasks */
 		ret = _test_submit_async(hReq, &pTask);
 		msleep_interruptible(500);
 		ret = cmdqCoreWaitAndReleaseTask(pTask, 8000);
+		cmdq_core_reset_first_dump();
 
-		CMDQ_MSG("================ POLL INIFINITE ====================\n");
+		CMDQ_LOG("================ POLL INIFINITE ====================\n");
 
 		CMDQ_MSG("testReg: %lx\n", CMDQ_TEST_GCE_DUMMY_VA);
 
@@ -411,19 +411,19 @@ static void testcase_errors(void)
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_op_poll(hReq, CMDQ_TEST_GCE_DUMMY_PA, 1, 0xFFFFFFFF);
 		cmdq_task_flush(hReq);
+		cmdq_core_reset_first_dump();
 
-		CMDQ_MSG("================= INVALID INSTR =================\n");
+		CMDQ_LOG("================= INVALID INSTR =================\n");
 
 		/* invalid instruction */
-		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_append_command(hReq, CMDQ_CODE_JUMP, -1, 0, 0, 0);
 		cmdq_task_flush(hReq);
+		cmdq_core_reset_first_dump();
 
-		CMDQ_MSG("================= INVALID INSTR: UNKNOWN OP(0x%x) =================\n",
+		CMDQ_LOG("================= INVALID INSTR: UNKNOWN OP(0x%x) =================\n",
 			 UNKNOWN_OP);
-		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 
 		/* invalid instruction is asserted when unknown OP */
 		cmdq_task_reset(hReq);
@@ -435,7 +435,7 @@ static void testcase_errors(void)
 			hReq->blockSize += 8;
 		}
 		cmdq_task_flush(hReq);
-
+		cmdq_core_reset_first_dump();
 	} while (0);
 
 	cmdq_task_destroy(hReq);

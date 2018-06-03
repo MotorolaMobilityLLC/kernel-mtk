@@ -518,6 +518,18 @@ struct TaskStruct {
 	struct cmdqProfileMarkerStruct profileMarker;
 };
 
+/* record NG task info for dump */
+struct NGTaskInfoStruct {
+	const struct TaskStruct *ngtask;
+	u64 engine_flag;
+	u32 scenario;
+	u32 *va_start;	/* original buffer va start */
+	u32 *va_pc;	/* hw pc for original buffer */
+	u32 *buffer;
+	u32 buffer_size;
+	u32 dump_size;
+};
+
 struct CmdqRecExtend {
 	/* task access share sram engine */
 	u64 res_engine_flag_acquire;

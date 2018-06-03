@@ -5455,7 +5455,7 @@ void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
 }
 
 static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
-				   const struct TaskStruct **pOutNGTask)
+	const struct TaskStruct **pOutNGTask)
 {
 	uint32_t *pcVA = NULL;
 	uint32_t insts[4] = { 0 };
@@ -6218,6 +6218,8 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 	struct CmdBufferStruct *cmd_buffer = NULL;
 	u32 cmd_size = 0, dump_size = 0;
 	bool dump = false;
+	bool internal = CMDQ_TASK_IS_INTERNAL(pTask);
+	u32 dump_buff_count = 0;
 
 	if (list_empty(&pTask->cmd_buffer_list))
 		return;
@@ -6243,11 +6245,24 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 
 			if (dump)
 				break;
+
+			if (internal && dump_buff_count++ >= 2)
+				break;
 		}
 	}
 
 	if (!dump)
 		CMDQ_ERR("hwPC is not in region, dump all\n");
+}
+
+static void cmdq_core_dump_ng_error_buffer(const struct NGTaskInfoStruct *nginfo)
+{
+	CMDQ_ERR("NGTask buffer start va:0x%p pc:0x%p size:%u dump size:%u\n",
+		nginfo->va_start, nginfo->va_pc,
+		nginfo->buffer_size, nginfo->dump_size);
+	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
+		nginfo->buffer, nginfo->dump_size, true);
+	cmdq_core_save_hex_first_dump("", 16, 4, nginfo->buffer, nginfo->dump_size);
 }
 
 void cmdq_core_dump_thread(s32 thread, const char *tag)
@@ -6293,19 +6308,12 @@ void cmdq_core_dump_thread(s32 thread, const char *tag)
 		tag, value[10], value[11], value[12], value[13], value[14]);
 }
 
-static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const struct TaskStruct *pNGTask,
-				uint32_t thread, bool short_log)
+static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
+	const struct TaskStruct *pNGTask, uint32_t thread, u32 **pc_out, u32 **ngpc_out)
 {
-	struct CmdqCBkStruct *pCallback = NULL;
-	int32_t index = 0;
 	uint32_t *hwPC = NULL;
 	uint32_t *hwNGPC = NULL;
 	uint64_t printEngineFlag = 0;
-	bool isDispScn = false;
-
-	static const char *const engineGroupName[] = {
-		CMDQ_FOREACH_GROUP(GENERATE_STRING)
-	};
 
 	cmdq_core_dump_thread(thread, "ERR");
 
@@ -6343,6 +6351,127 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
 	cmdq_core_dump_status("ERR");
 
+	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
+	CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
+
+	if (pc_out)
+		*pc_out = hwPC;
+	if (ngpc_out)
+		*ngpc_out = hwNGPC;
+}
+
+static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
+	u32 *va_pc, struct NGTaskInfoStruct **nginfo_out)
+{
+	u8 *buffer = NULL;
+	struct NGTaskInfoStruct *nginfo = NULL;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	buffer = kzalloc(ngtask->bufferSize, GFP_ATOMIC);
+	if (!buffer) {
+		CMDQ_ERR("fail to allocate NG buffer\n");
+		return;
+	}
+
+	nginfo = kzalloc(sizeof(*nginfo), GFP_ATOMIC);
+	if (!nginfo) {
+		CMDQ_ERR("fail to allocate NG info\n");
+		kfree(buffer);
+		return;
+	}
+
+	/* copy ngtask info */
+	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+	nginfo->va_start = cmd_buffer->pVABase;
+	nginfo->va_pc = va_pc;
+	nginfo->buffer = (u32 *)buffer;
+	nginfo->engine_flag = ngtask->engineFlag;
+	nginfo->scenario = ngtask->scenario;
+	nginfo->ngtask = ngtask;
+	nginfo->buffer_size = ngtask->bufferSize;
+	*nginfo_out = nginfo;
+
+	list_for_each_entry(cmd_buffer, &ngtask->cmd_buffer_list, listEntry) {
+		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &ngtask->cmd_buffer_list) ?
+			CMDQ_CMD_BUFFER_SIZE - ngtask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+
+		memcpy(buffer, cmd_buffer->pVABase, buf_size);
+		if (va_pc >= cmd_buffer->pVABase &&
+			va_pc < (u32 *)((u8 *)cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE)) {
+			buffer += (u8 *)va_pc - (u8 *)cmd_buffer->pVABase;
+			break;
+		}
+
+		buffer += buf_size;
+	}
+
+	/* only dump to pc */
+	nginfo->dump_size = buffer - (u8 *)nginfo->buffer;
+}
+
+static void cmdq_core_release_nginfo(struct NGTaskInfoStruct *nginfo)
+{
+	if (nginfo) {
+		kfree(nginfo->buffer);
+		kfree(nginfo);
+	}
+}
+
+static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t thread,
+	u32 **pc_out, struct NGTaskInfoStruct **nginfo_out)
+{
+	const struct TaskStruct *ngtask = NULL;
+	u64 eng_flag = 0;
+	s32 index = 0;
+	u32 *ngpc = NULL;
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMPROFILE_FLAG_PULSE, ((unsigned long)task),
+		thread);
+
+	/* Update engine fail count */
+	eng_flag = task->engineFlag;
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
+		if (eng_flag & (1LL << index))
+			gCmdqContext.engine[index].failCount++;
+	}
+
+	/* register error record */
+	if (gCmdqContext.errNum < CMDQ_MAX_ERROR_COUNT) {
+		struct ErrorStruct *error = &gCmdqContext.error[gCmdqContext.errNum];
+
+		cmdq_core_fill_task_record(&error->errorRec, task, thread);
+		error->ts_nsec = local_clock();
+	}
+
+	/* Turn on first CMDQ error dump */
+	cmdq_core_turnon_first_dump(task);
+
+	/* Then we just print out info */
+	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
+		gCmdqContext.errNum);
+
+	cmdq_core_dump_summary(task, thread, &ngtask);
+	cmdq_core_dump_error_task(task, ngtask, thread, pc_out, &ngpc);
+
+	CMDQ_ERR("================= [CMDQ] End of Error %d ================\n",
+		 gCmdqContext.errNum);
+	gCmdqContext.errNum++;
+
+	if (nginfo_out && ngtask)
+		cmdq_core_create_nginfo(ngtask, ngpc, nginfo_out);
+}
+
+static void cmdq_core_attach_engine_error(const struct TaskStruct *task, int32_t thread,
+	const struct NGTaskInfoStruct *nginfo, bool short_log)
+{
+	s32 index = 0;
+	bool disp_scn = false;
+	u64 print_eng_flag = 0;
+	struct CmdqCBkStruct *callback = NULL;
+	static const char *const engineGroupName[] = {
+		CMDQ_FOREACH_GROUP(GENERATE_STRING)
+	};
+
 #ifndef CONFIG_MTK_FPGA
 	CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
 	cmdq_get_func()->dumpSMI(1);
@@ -6353,8 +6482,9 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 		return;
 	}
 
-	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
-	CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
+	print_eng_flag = task->engineFlag;
+	if (nginfo)
+		print_eng_flag |= nginfo->engine_flag;
 
 	/* Dump MMSYS configuration */
 	CMDQ_ERR("=============== [CMDQ] MMSYS_CONFIG ===============\n");
@@ -6362,125 +6492,122 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 
 	/* ask each module to print their status */
 	CMDQ_ERR("=============== [CMDQ] Engine Status ===============\n");
-	pCallback = gCmdqGroupCallback;
-	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
-		if (!cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, printEngineFlag))
+	callback = gCmdqGroupCallback;
+	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; index++) {
+		if (!cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, print_eng_flag))
 			continue;
 
 		CMDQ_ERR("====== engine group %s status =======\n", engineGroupName[index]);
 
-		if (pCallback[index].dumpInfo == NULL) {
+		if (callback[index].dumpInfo == NULL) {
 			CMDQ_ERR("(no dump function)\n");
 			continue;
 		}
 
-		pCallback[index].dumpInfo((
-			cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag),
+		callback[index].dumpInfo((
+			cmdq_mdp_get_func()->getEngineGroupBits(index) & print_eng_flag),
 			gCmdqContext.logLevel);
 	}
 
 	/* force dump DISP for DISP scenario with 0x0 engine flag */
-	if (pTask != NULL)
-		isDispScn = cmdq_get_func()->isDispScenario(pTask->scenario);
+	if (task != NULL)
+		disp_scn = cmdq_get_func()->isDispScenario(task->scenario);
 
-	if (pNGTask != NULL)
-		isDispScn = isDispScn | cmdq_get_func()->isDispScenario(pNGTask->scenario);
+	if (nginfo != NULL)
+		disp_scn = disp_scn | cmdq_get_func()->isDispScenario(nginfo->scenario);
 
-	if (isDispScn) {
+	if (disp_scn) {
 		index = CMDQ_GROUP_DISP;
-		if (pCallback[index].dumpInfo) {
-			pCallback[index].dumpInfo((
-				cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag),
+		if (callback[index].dumpInfo) {
+			callback[index].dumpInfo((
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & print_eng_flag),
 				gCmdqContext.logLevel);
 		}
 	}
 
 	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
-		if (!cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, printEngineFlag))
+		if (!cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, print_eng_flag))
 			continue;
 
-		if (pCallback[index].errorReset) {
-			pCallback[index].errorReset(
-				cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag);
+		if (callback[index].errorReset) {
+			callback[index].errorReset(
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & print_eng_flag);
 			CMDQ_LOG("engine group (%s) reset: function is called\n", engineGroupName[index]);
 		}
 
 	}
+}
 
+static void cmdq_core_dump_task_command(const struct TaskStruct *task,
+	u32 *pc, const struct NGTaskInfoStruct *nginfo)
+{
 	/* Begin is not first, save NG task but print pTask as well */
-	if (pNGTask != NULL && pNGTask != pTask) {
+	if (nginfo && nginfo->ngtask != task) {
 		CMDQ_ERR("========== [CMDQ] Error Command Buffer (NG Task) ==========\n");
-		cmdq_core_dump_error_buffer(pNGTask, hwNGPC);
+		cmdq_core_dump_ng_error_buffer(nginfo);
 	}
 
-	if (pTask != NULL) {
+	if (task != NULL) {
 		CMDQ_ERR("=============== [CMDQ] Error Command Buffer ===============\n");
-		cmdq_core_dump_error_buffer(pTask, hwPC);
+		cmdq_core_dump_error_buffer(task, pc);
 	}
 }
 
-static void cmdq_core_attach_error_task(const struct TaskStruct *pTask, int32_t thread,
-					const struct TaskStruct **pOutNGTask)
+static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t thread,
+	const struct TaskStruct **ngtask_out)
 {
-	struct EngineStruct *pEngine = NULL;
-	struct ThreadStruct *pThread = NULL;
-	const struct TaskStruct *pNGTask = NULL;
-	uint64_t engFlag = 0;
-	int32_t index = 0;
-	bool short_log = false;
+	unsigned long flags = 0L;
+	u32 *pc = NULL;
+	s32 error_num = gCmdqContext.errNum;
+	bool detail_log = false;
+	struct NGTaskInfoStruct *nginfo = NULL;
 
-	if (pTask == NULL) {
+	if (!task) {
 		CMDQ_ERR("attach error failed since pTask is NULL");
 		return;
 	}
 
-	pThread = &(gCmdqContext.thread[thread]);
-	pEngine = gCmdqContext.engine;
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, attach_error);
+	cmdq_core_attach_cmdq_error(task, thread, &pc, &nginfo);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, attach_error_done);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMPROFILE_FLAG_PULSE, ((unsigned long)pTask),
-		      thread);
+	if (ngtask_out && nginfo && nginfo->ngtask)
+		*ngtask_out = nginfo->ngtask;
 
-	/*  */
-	/* Update engine fail count */
-	/*  */
-	engFlag = pTask->engineFlag;
-	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
-		if (engFlag & (1LL << index))
-			pEngine[index].failCount++;
+	/* skip internal testcase */
+	if (CMDQ_TASK_IS_INTERNAL(task)) {
+		cmdq_core_release_nginfo(nginfo);
+		return;
 	}
 
-	/*  */
-	/* register error record */
-	/*  */
-	if (gCmdqContext.errNum < CMDQ_MAX_ERROR_COUNT) {
-		struct ErrorStruct *pError = &gCmdqContext.error[gCmdqContext.errNum];
+	detail_log = error_num <= 2 || error_num % 16 == 0 || cmdq_core_should_full_error();
+	cmdq_core_attach_engine_error(task, thread, nginfo, !detail_log);
+	if (detail_log)
+		cmdq_core_dump_task_command(task, pc, nginfo);
 
-		cmdq_core_fill_task_record(&pError->errorRec, pTask, thread);
-		pError->ts_nsec = local_clock();
+	CMDQ_ERR("================= [CMDQ] End of Full Error %d ================\n",
+		error_num);
+
+	cmdq_core_release_nginfo(nginfo);
+}
+
+static void cmdq_core_attach_error_task_unlock(const struct TaskStruct *task, int32_t thread)
+{
+	u32 *pc = NULL;
+	s32 error_num = gCmdqContext.errNum;
+	bool detail_log = false;
+
+	if (!task) {
+		CMDQ_ERR("attach error failed since pTask is NULL");
+		return;
 	}
 
-	/* Turn on first CMDQ error dump */
-	cmdq_core_turnon_first_dump(pTask);
-
-	/*  */
-	/* Then we just print out info */
-	/*  */
-	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
-		 gCmdqContext.errNum);
-
-	cmdq_core_dump_summary(pTask, thread, &pNGTask);
-	short_log = !(gCmdqContext.errNum <= 2 || gCmdqContext.errNum % 16 == 0 || cmdq_core_should_full_error());
-	cmdq_core_dump_error_task(pTask, pNGTask, thread, short_log);
-
-	CMDQ_ERR("================= [CMDQ] End of Error %d ================\n",
-		 gCmdqContext.errNum);
-	gCmdqContext.errNum++;
-
-	if (pOutNGTask != NULL) {
-		if (pNGTask != NULL)
-			*pOutNGTask = pNGTask;
-		else
-			*pOutNGTask = pTask;
+	cmdq_core_attach_cmdq_error(task, thread, &pc, NULL);
+	detail_log = error_num <= 2 || error_num % 16 == 0 || cmdq_core_should_full_error();
+	if (detail_log) {
+		cmdq_core_dump_task_command(task, pc, NULL);
+		CMDQ_ERR("================= [CMDQ] End of Full Error %d ================\n",
+			error_num);
 	}
 }
 
@@ -6825,7 +6952,7 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 		pTask = pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)];
 		pTask->gotIRQ = *pGotIRQ;
 		pTask->irqFlag = value;
-		cmdq_core_attach_error_task(pTask, thread, NULL);
+		cmdq_core_attach_error_task_unlock(pTask, thread);
 		cmdq_core_remove_task_from_thread_array_by_cookie(pThread,
 								  cookie % cmdq_core_max_task_in_thread(thread),
 								  TASK_STATE_ERR_IRQ);
@@ -7218,6 +7345,11 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	status = 0;
 	pThread = &(gCmdqContext.thread[thread]);
 
+	if (waitQ == 0) {
+		/* print error log before entering exec lock in timeout case */
+		cmdq_core_attach_error_task(pTask, thread, &pNGTask);
+	}
+
 	/* Note that although we disable IRQ, HW continues to execute */
 	/* so it's possible to have pending IRQ */
 	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task);
@@ -7273,8 +7405,6 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			markAsErrorTask = true;
 
 			/* if we reach here, we're in errornous state. */
-			/* print error log immediately. */
-			cmdq_core_attach_error_task(pTask, thread, &pNGTask);
 			CMDQ_ERR("SW timeout of task 0x%p on thread %d\n", pTask, thread);
 			if (pTask != pNGTask) {
 				CMDQ_ERR("   But pc stays in task 0x%p on thread %d\n", pNGTask,
@@ -7726,7 +7856,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 		}
 
 		if (pPrev == NULL) {
-			cmdq_core_attach_error_task(pTask, thread, NULL);
+			cmdq_core_attach_error_task_unlock(pTask, thread);
 			CMDQ_ERR("Invalid task state for reorder %d %d\n", index, loop);
 			status = -EFAULT;
 			break;
