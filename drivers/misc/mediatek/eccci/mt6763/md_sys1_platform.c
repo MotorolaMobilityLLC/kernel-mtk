@@ -1100,13 +1100,17 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 	}
 	cldma_write32(md_info->ap_ccif_base, APCCIF_CON, 0x01);	/* arbitration */
 
-	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & (1 << 0));
-	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
-
 	if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(0))
 		|| cldma_reg_get_4msb_val(md_ctrl->cldma_ap_ao_base,
 					CLDMA_AP_UL_START_ADDR_4MSB, md_ctrl->txq[0].index)) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register: No need  ...\n");
+		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+		if (!(cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS))) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & 0x1);
+			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+		} else
+			CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma ao register: No need  ...\n");
+		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	} else {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register ...11\n");
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -1115,6 +1119,9 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG,
 				      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x40);
 #endif
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & 0x1);
+		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0
