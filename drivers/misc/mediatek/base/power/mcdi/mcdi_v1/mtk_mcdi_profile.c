@@ -23,6 +23,8 @@
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
 
+/* default profile MCDI_CPU_OFF */
+static unsigned int profile_state = 1;
 static bool mcdi_prof_en;
 static int mcdi_prof_target_cpu;
 static unsigned int mcdi_profile_sum_us[NF_MCDI_PROFILE - 1];
@@ -30,6 +32,40 @@ static unsigned long long mcdi_profile_ns[NF_MCDI_PROFILE];
 static unsigned int mcdi_profile_count;
 
 static DEFINE_SPINLOCK(mcdi_prof_spin_lock);
+
+#ifdef MCDI_PROFILE_BREAKDOWN
+const char *prof_item[NF_MCDI_PROFILE - 1] = {
+	"gov sel enter",
+	"gov sel get lock",
+	"gov sel upt res",
+	"gov sel any core",
+	"gov sel cluster",
+	"gov sel leave",
+	"dormant enter",
+	"dormant leave",
+	"gov reflect",
+};
+#else
+const char *prof_item[NF_MCDI_PROFILE - 1] = {
+	"gov select",
+	"dormant enter",
+	"dormant leave",
+	"gov reflect",
+};
+#endif
+
+#ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
+const char *prof_pwr_seq_item[MCDI_PROF_BK_NUM] = {
+	"cluster",
+	"cpu",
+	"armpll",
+	"buck",
+};
+#endif
+unsigned int get_mcdi_profile_state(void)
+{
+	return profile_state;
+}
 
 void set_mcdi_profile_sampling(int en)
 {
@@ -76,12 +112,15 @@ void set_mcdi_profile_target_cpu(int cpu)
 	spin_unlock_irqrestore(&mcdi_prof_spin_lock, flags);
 }
 
-void mcdi_profile_ts(int idx)
+void mcdi_profile_ts(unsigned int idx)
 {
 	unsigned long flags;
 	bool en = false;
 
 	if (!(smp_processor_id() == mcdi_prof_target_cpu))
+		return;
+
+	if (idx > NF_MCDI_PROFILE)
 		return;
 
 	spin_lock_irqsave(&mcdi_prof_spin_lock, flags);
@@ -194,6 +233,12 @@ static ssize_t mcdi_profile_read(struct file *filp,
 	unsigned int ratio_fraction = 0;
 	unsigned int ratio_dur = 0;
 
+#ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
+	struct mcdi_prof_breakdown *p_prof =
+			(struct mcdi_prof_breakdown *)SYSRAM_PROF_PWR_SEQ_BK;
+	unsigned int j;
+#endif
+
 	for (i = 0; i < 4; i++) {
 		cnt[i]   = mcdi_read(PROF_OFF_CNT_REG(i));
 		cnt[i+5] = mcdi_read(PROF_ON_CNT_REG(i));
@@ -296,13 +341,33 @@ static ssize_t mcdi_profile_read(struct file *filp,
 			i, ratio_int, ratio_fraction, ratio_raw/100);
 	}
 
-	mcdi_log("\nprof cpu = %d, count = %d, state = %d\n",
+	mcdi_log("\nprof cpu = %d, count = %d, state = %d, profile_state=%d\n",
 				get_mcdi_profile_cpu(),
 				get_mcdi_profile_cnt(),
-				mcdi_mbox_read(MCDI_MBOX_PROF_CMD));
+				mcdi_mbox_read(MCDI_MBOX_PROF_CMD),
+				profile_state);
 	for (i = 0; i < (NF_MCDI_PROFILE - 1); i++)
-		mcdi_log("%d: %u\n", i, get_mcdi_profile_sum_us(i));
+		mcdi_log("%s: %u\n", prof_item[i], get_mcdi_profile_sum_us(i));
 
+#ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
+	mcdi_log("\npwr seq (us)\n");
+	for (j = 0; j < NF_CLUSTER; j++) {
+		mcdi_log("\n---cluster %d---\n", j);
+		for (i = 0; i < (MCDI_PROF_BK_NUM); i++) {
+			mcdi_log("%s on, cnt : %u, %u\n",
+				prof_pwr_seq_item[i],
+				p_prof->onoff[0].item[i][j],
+				p_prof->onoff[0].count[i][j]);
+		}
+		mcdi_log("\n");
+		for (i = 0; i < (MCDI_PROF_BK_NUM); i++) {
+			mcdi_log("%s off, cnt : %u, %u\n",
+				prof_pwr_seq_item[i],
+				p_prof->onoff[1].item[i][j],
+				p_prof->onoff[1].count[i][j]);
+		}
+	}
+#endif
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
@@ -360,6 +425,10 @@ static ssize_t mcdi_profile_write(struct file *filp,
 		}
 	} else if (!strncmp(cmd_str, "cpu", sizeof("cpu"))) {
 		set_mcdi_profile_target_cpu(param);
+	} else if (!strncmp(cmd_str, "mcdi_state", sizeof("mcdi_state"))) {
+		profile_state = param;
+	} else if (!strncmp(cmd_str, "cluster", sizeof("cluster"))) {
+		mcdi_mbox_write(MCDI_MBOX_PROF_CLUSTER, param);
 	} else {
 		return -EINVAL;
 	}

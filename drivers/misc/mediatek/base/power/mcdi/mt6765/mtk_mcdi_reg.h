@@ -19,6 +19,7 @@
 extern void __iomem *mcdi_sysram_base;
 
 /* MCDI latency profile */
+#define SYSRAM_PROF_PWR_SEQ_BK     (mcdi_sysram_base + 0x520)
 #define SYSRAM_PROF_RATIO_REG      (mcdi_sysram_base + 0x5B0)
 #define SYSRAM_PROF_BASE_REG       (mcdi_sysram_base + 0x600)
 #define SYSRAM_PROF_DATA_REG       (mcdi_sysram_base + 0x680)
@@ -45,7 +46,7 @@ extern void __iomem *mcdi_sysram_base;
 /* MBOX */
 #define MCDI_MBOX                               3
 #define MCDI_MBOX_SLOT_OFFSET_START             0
-#define MCDI_MBOX_SLOT_OFFSET_END               16
+#define MCDI_MBOX_SLOT_OFFSET_END               17
 
 /* MBOX: AP write, SSPM read */
 #define MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF       0
@@ -65,6 +66,7 @@ extern void __iomem *mcdi_sysram_base;
 #define MCDI_MBOX_PAUSE_ACK                     13
 #define MCDI_MBOX_PENDING_ON_EVENT              14
 #define MCDI_MBOX_PROF_CMD                      15
+#define MCDI_MBOX_PROF_CLUSTER                  16
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0

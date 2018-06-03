@@ -28,6 +28,7 @@
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
 #include <mtk_mcdi_state.h>
+#include <mtk_mcdi_profile.h>
 
 #include <trace/events/mtk_idle_event.h>
 
@@ -412,6 +413,8 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		return MCDI_STATE_WFI;
 
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_BOOT_CHK);
+
 
 	/* increase MCDI num (MCUSYS/cluster) */
 	mcdi_gov_data.num_mcusys++;
@@ -432,10 +435,12 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		last_core_token_get  = true;
 	}
 
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_LOCK);
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
 	/* residency latency check of current CPU */
 	update_residency_latency_result(cpu);
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_UPT_RES);
 
 	/* Check if any core deepidle/SODI can entered */
 	if (mcdi_feature_stat.any_core && last_core_token_get) {
@@ -459,6 +464,8 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		trace_check_anycore_rcuidle(cpu, 0, select_state);
 	}
 
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_ANY_CORE);
+
 	if (!is_anycore_dpidle_sodi_state(select_state)) {
 		if (mcdi_feature_stat.cluster_off) {
 			/* Check
@@ -477,6 +484,7 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 			select_state = MCDI_STATE_CPU_OFF;
 		}
 	}
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_CLUSTER);
 
 	return select_state;
 }

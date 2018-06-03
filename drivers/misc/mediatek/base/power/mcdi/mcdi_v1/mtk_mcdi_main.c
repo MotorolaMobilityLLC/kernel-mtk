@@ -465,14 +465,14 @@ int mcdi_enter(int cpu)
 	struct cpuidle_state *mcdi_sta;
 
 	idle_refcnt_inc();
-	mcdi_profile_ts(MCDI_PROFILE_ENTER);
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_ENTER);
 
 	if (likely(mcdi_fw_is_ready()))
 		state = mcdi_governor_select(cpu, cluster_idx);
 	else
 		state = MCDI_STATE_WFI;
 
-	mcdi_profile_ts(MCDI_PROFILE_MCDI_GOVERNOR_SELECT_LEAVE);
+	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_LEAVE);
 
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF) {
 		mcdi_sta = &(mcdi_state_tbl_get(cpu)->states[state]);
@@ -551,7 +551,7 @@ int mcdi_enter(int cpu)
 	idle_refcnt_dec();
 	mcdi_profile_ts(MCDI_PROFILE_LEAVE);
 
-	/* if (state == MCDI_STATE_DPIDLE) */
+	if (state == get_mcdi_profile_state())
 		mcdi_profile_calc();
 
 	return 0;
