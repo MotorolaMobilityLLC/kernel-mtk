@@ -622,11 +622,6 @@ static void mrdump_mini_add_loads(void)
 		}
 	}
 
-	mrdump_mini_add_entry((unsigned long)&mrdump_cblock, sizeof(mrdump_cblock) + 2 * PAGE_SIZE);
-	mrdump_mini_add_entry((unsigned long)mrdump_cblock.machdesc.kallsyms.start_addr +
-			      (mrdump_cblock.machdesc.kallsyms.size / 2 - PAGE_SIZE),
-			      mrdump_cblock.machdesc.kallsyms.size + 2 * PAGE_SIZE);
-
 	mrdump_mini_add_entry((unsigned long)__per_cpu_offset, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)&mem_map, MRDUMP_MINI_SECTION_SIZE);
 	mrdump_mini_add_entry((unsigned long)mem_map, MRDUMP_MINI_SECTION_SIZE);
@@ -780,6 +775,11 @@ int mrdump_mini_init(void)
 	mrdump_mini_build_elf_misc();
 	fill_elf_note_phdr(&mrdump_mini_ehdr->phdrs[1], sizeof(mrdump_mini_ehdr->misc),
 			   offsetof(struct mrdump_mini_elf_header, misc));
+
+	mrdump_mini_add_entry((unsigned long)&mrdump_cblock, sizeof(mrdump_cblock) + 2 * PAGE_SIZE);
+	mrdump_mini_add_entry((unsigned long)mrdump_cblock.machdesc.kallsyms.start_addr +
+			      (mrdump_cblock.machdesc.kallsyms.size / 2 - PAGE_SIZE),
+			      mrdump_cblock.machdesc.kallsyms.size + 2 * PAGE_SIZE);
 
 	return 0;
 }
