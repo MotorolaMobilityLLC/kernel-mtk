@@ -974,20 +974,20 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		}
 		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
 	} else if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_OPTIONAL) {
-		DBGLOG(RSN, TRACE, "[MFP] Should not set the MFP option, need to check!\n");
-		ASSERT(FALSE);
+		if (prBssRsnInfo->u2RsnCap & (ELEM_WPA_CAP_MFPR | ELEM_WPA_CAP_MFPC))
+			prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
 	} else {
-		if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) {
-			DBGLOG(RSN, INFO, "[MFP] Try to join even MFP Required bit set\n");
-			return FALSE;
+		if (prBssRsnInfo->fgRsnCapPresent) {
+			if ((prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC)) {
+				prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
+				prAdapter->prGlueInfo->rWpaInfo.u4Mfp = RSN_AUTH_MFP_OPTIONAL;
+			} else if (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR) {
+				DBGLOG(RSN, INFO, "[MFP] Skip RSN IE, No MFP Required Capability\n");
+				return FALSE;
+			}
 		}
-		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
 	}
 	DBGLOG(RSN, TRACE, "[MFP] fgMgmtProtection = %d\n ", prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection);
-
-	prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq = FALSE;
-	if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR))
-		prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq = TRUE;
 #endif
 
 	if (GET_SELECTOR_TYPE(u4GroupCipher) == CIPHER_SUITE_CCMP) {
