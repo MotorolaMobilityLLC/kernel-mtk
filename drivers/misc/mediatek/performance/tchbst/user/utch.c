@@ -16,8 +16,10 @@
 #include <linux/proc_fs.h>
 #include <mt-plat/fpsgo_common.h>
 
+
 #include "tchbst.h"
 #include "fstb.h"
+#include "mtk_perfmgr_internal.h"
 
 static void notify_touch_up_timeout(void);
 static DECLARE_WORK(mt_touch_timeout_work, (void *) notify_touch_up_timeout);
@@ -30,7 +32,6 @@ static int usrtch_dbg;
 static int  touch_boost_value;
 static int touch_boost_opp; /* boost freq of touch boost */
 static struct ppm_limit_data *target_freq, *reset_freq;
-static int nr_ppm_clusters;
 static int touch_boost_duration;
 static int prev_boost_pid;
 static long long active_time;
@@ -38,28 +39,28 @@ static int usrtch_debug;
 
 void switch_usrtch(int enable)
 {
-		mutex_lock(&notify_lock);
-		usrtch_dbg = !enable;
-		mutex_unlock(&notify_lock);
+	mutex_lock(&notify_lock);
+	usrtch_dbg = !enable;
+	mutex_unlock(&notify_lock);
 }
 
 void switch_init_opp(int boost_opp)
 {
-		int i;
+	int i;
 
-		touch_boost_opp = boost_opp;
-		for (i = 0; i < nr_ppm_clusters; i++)
-			target_freq[i].min =
-			 mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+	touch_boost_opp = boost_opp;
+	for (i = 0; i < perfmgr_clusters; i++)
+		target_freq[i].min =
+			mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
 }
 
 void switch_init_duration(int duration)
 {
-		touch_boost_duration = duration;
+	touch_boost_duration = duration;
 }
 void switch_active_time(int duration)
 {
-		active_time = duration;
+	active_time = duration;
 }
 
 /*--------------------TIMER------------------------*/
@@ -110,9 +111,9 @@ static int notify_touch(int action)
 
 		/* boost */
 		update_eas_boost_value(EAS_KIR_TOUCH,
-			 CGROUP_TA, touch_boost_value);
-		update_userlimit_cpu_freq(PPM_KIR_TOUCH,
-			 nr_ppm_clusters, target_freq);
+				CGROUP_TA, touch_boost_value);
+		update_userlimit_cpu_freq(CPU_KIR_TOUCH,
+				perfmgr_clusters, target_freq);
 		if (usrtch_debug)
 			pr_debug("touch down\n");
 		fpsgo_systrace_c_fbt(prev_boost_pid, 1, "touch");
@@ -131,7 +132,7 @@ static void notify_touch_up_timeout(void)
 	mutex_lock(&notify_lock);
 
 	update_eas_boost_value(EAS_KIR_TOUCH, CGROUP_TA, 0);
-	update_userlimit_cpu_freq(PPM_KIR_TOUCH, nr_ppm_clusters, reset_freq);
+	update_userlimit_cpu_freq(CPU_KIR_TOUCH, perfmgr_clusters, reset_freq);
 	fpsgo_systrace_c_fbt(prev_boost_pid, 0, "touch");
 	if (usrtch_debug)
 		pr_debug("touch timeout\n");
@@ -198,7 +199,7 @@ long usrtch_ioctl(unsigned int cmd, unsigned long arg)
 	mutex_lock(&notify_lock);
 
 	switch (cmd) {
-	/*receive touch info*/
+		/*receive touch info*/
 	case FPSGO_TOUCH:
 		ret = notify_touch(arg);
 		break;
@@ -281,16 +282,15 @@ int init_utch(struct proc_dir_entry *parent)
 	touch_boost_opp = TOUCH_BOOST_OPP;
 	touch_boost_duration = TOUCH_TIMEOUT_NSEC;
 	active_time = TOUCH_FSTB_ACTIVE_US;
-	nr_ppm_clusters = arch_get_nr_clusters();
 
-	target_freq = kcalloc(nr_ppm_clusters,
-		 sizeof(struct ppm_limit_data), GFP_KERNEL);
-	reset_freq = kcalloc(nr_ppm_clusters,
-		 sizeof(struct ppm_limit_data), GFP_KERNEL);
+	target_freq = kcalloc(perfmgr_clusters,
+			sizeof(struct ppm_limit_data), GFP_KERNEL);
+	reset_freq = kcalloc(perfmgr_clusters,
+			sizeof(struct ppm_limit_data), GFP_KERNEL);
 
-	for (i = 0; i < nr_ppm_clusters; i++) {
+	for (i = 0; i < perfmgr_clusters; i++) {
 		target_freq[i].min =
-		mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+			mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
 		target_freq[i].max = reset_freq[i].min = reset_freq[i].max = -1;
 	}
 	mutex_init(&notify_lock);

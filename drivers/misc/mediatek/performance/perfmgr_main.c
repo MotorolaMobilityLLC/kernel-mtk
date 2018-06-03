@@ -19,7 +19,9 @@
 #include "tchbst.h"
 #include "io_ctrl.h"
 #include "boost_ctrl.h"
+#include "mtk_perfmgr_internal.h"
 
+int clstr_num;
 static int perfmgr_probe(struct platform_device *dev)
 {
 	return 0;
@@ -60,6 +62,11 @@ static struct platform_driver perfmgr_driver = {
 	},
 };
 
+static int perfmgr_main_data_init(void)
+{
+	clstr_num = (unsigned int)arch_get_nr_clusters();
+	return 0;
+}
 
 /*--------------------INIT------------------------*/
 
@@ -77,6 +84,7 @@ static int __init init_perfmgr(void)
 	if (ret)
 		return ret;
 
+	perfmgr_main_data_init();
 
 	perfmgr_root = proc_mkdir("perfmgr", NULL);
 	pr_debug("MTK_TOUCH_BOOST function init_perfmgr_touch\n");
@@ -86,10 +94,8 @@ static int __init init_perfmgr(void)
 
 	init_boostctrl(perfmgr_root);
 
+
+
 	return 0;
 }
 device_initcall(init_perfmgr);
-
-/*MODULE_LICENSE("GPL");*/
-/*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The perfmgr function");*/

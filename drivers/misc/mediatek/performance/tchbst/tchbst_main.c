@@ -32,7 +32,3 @@ int init_tchbst(struct proc_dir_entry *parent)
 	init_utch(tchbst_root);
 	return 0;
 }
-
-/*MODULE_LICENSE("GPL");*/
-/*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The tchbst file");*/

@@ -34,7 +34,3 @@ int init_boostctrl(struct proc_dir_entry *parent)
 
 	return 0;
 }
-
-/*MODULE_LICENSE("GPL");*/
-/*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The boost_ctrl file");*/
