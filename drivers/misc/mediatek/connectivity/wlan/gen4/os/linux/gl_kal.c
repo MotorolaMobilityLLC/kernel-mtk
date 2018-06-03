@@ -744,8 +744,9 @@ PVOID kalPacketAllocWithHeadroom(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size,
 {
 	struct sk_buff *prSkb = dev_alloc_skb(u4Size);
 
-    /* Daniel 20151117, add for skb headroom setting */
-	prSkb = skb_realloc_headroom(prSkb, NIC_TX_HEAD_ROOM);
+	/* Daniel 20151117, add for skb headroom setting */
+	if (prSkb)
+		prSkb = skb_realloc_headroom(prSkb, NIC_TX_HEAD_ROOM);
 
 	if (prSkb) {
 		*ppucData = (PUINT_8) (prSkb->data);
@@ -755,14 +756,14 @@ PVOID kalPacketAllocWithHeadroom(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size,
 		*/
 
 		kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
-	}
 #if DBG
-	{
-		PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
-		*pu4Head = (UINT_32) prSkb->head;
-		DBGLOG(RX, TRACE, "prSkb->head = %#lx, prSkb->cb = %#lx\n", (UINT_32) prSkb->head, *pu4Head);
-	}
+		{
+			PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
+			*pu4Head = (UINT_32) prSkb->head;
+			DBGLOG(RX, TRACE, "prSkb->head = %#lx, prSkb->cb = %#lx\n", (UINT_32) prSkb->head, *pu4Head);
+		}
 #endif
+	}
 	return (PVOID) prSkb;
 }
 
