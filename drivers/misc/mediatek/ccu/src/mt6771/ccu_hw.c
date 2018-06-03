@@ -59,8 +59,8 @@ static wait_queue_head_t cmd_wait;
 static bool cmd_done;
 
 struct ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
-static struct ccu_msg_t receivedCcuCmd;
-static struct ccu_msg_t CcuAckCmd;
+static struct ccu_msg receivedCcuCmd;
+static struct ccu_msg CcuAckCmd;
 
 /*isr work management*/
 struct ap_task_manage_t {
@@ -290,7 +290,7 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 #endif
 		default:
 			LOG_DBG("got msgId: %d, cmd_wait\n", receivedCcuCmd.msg_id);
-			ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg_t));
+			ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg));
 			cmd_done = true;
 			wake_up_interruptible(&cmd_wait);
 			break;
@@ -564,7 +564,7 @@ int ccu_send_command(struct ccu_cmd_s *pCmd)
 	pCmd->status = CCU_ENG_STATUS_SUCCESS;
 
 	/* 3. fill pCmd with received command */
-	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(struct ccu_msg_t));
+	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(struct ccu_msg));
 
 	LOG_DBG("got ack command: id(%d), in(%x), out(%x)\n",
 			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
@@ -674,7 +674,8 @@ int ccu_force_powerdown(void)
 		/*Set special isr task to MSG_TO_CCU_SHUTDOWN*/
 		ccu_write_reg(ccu_base, CCU_INFO29, MSG_TO_CCU_SHUTDOWN);
 		/*Interrupt to CCU*/
-		ccu_write_reg(ccu_base, CCU_INT, 1);
+		/* MCU write this field to trigger ccu interrupt pulse */
+		ccu_write_reg_bit(ccu_base, CTL_CCU_INT, INT_CTL_CCU, 1);
 
 		ret = _ccu_powerdown();
 

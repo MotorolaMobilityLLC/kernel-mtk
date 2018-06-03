@@ -24,8 +24,8 @@ enum mb_result {
 
 enum mb_result mailbox_init(struct ccu_mailbox_t *apmcu_mb_addr, struct ccu_mailbox_t *ccu_mb_addr);
 
-enum mb_result mailbox_send_cmd(struct ccu_msg_t *task);
+enum mb_result mailbox_send_cmd(struct ccu_msg *task);
 
-enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task);
+enum mb_result mailbox_receive_cmd(struct ccu_msg *task);
 
 #endif

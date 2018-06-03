@@ -26,7 +26,7 @@
 
 /******************************************************************************
 * Mailbox is a circular queue
-* Composed of 2 pointer front/rear, and a buffer of ccu_msg_t
+* Composed of 2 pointer front/rear, and a buffer of struct ccu_msg
 
 !!! Implement mailbox operation with following rules !!!
     - Initial queue with front=rear=0
@@ -38,7 +38,7 @@
 struct ccu_mailbox_t {
 		MUINT32 front;
 		MUINT32 rear;
-		struct ccu_msg_t queue[CCU_MAILBOX_QUEUE_SIZE];
+		struct ccu_msg queue[CCU_MAILBOX_QUEUE_SIZE];
 };
 
 #endif

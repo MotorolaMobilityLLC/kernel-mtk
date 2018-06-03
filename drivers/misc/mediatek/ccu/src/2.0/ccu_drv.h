@@ -283,7 +283,7 @@ enum ccu_eng_status_e {
 /*  CCU Command                                                                */
 /*---------------------------------------------------------------------------*/
 struct ccu_cmd_s {
-	struct ccu_msg_t task;
+	struct ccu_msg task;
 	enum ccu_eng_status_e status;
 };
 
