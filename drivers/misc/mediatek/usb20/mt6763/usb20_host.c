@@ -199,6 +199,21 @@ u32 sw_deboun_time = 400;
 module_param(sw_deboun_time, int, 0644);
 struct switch_dev otg_state;
 
+u32 typec_control;
+module_param(typec_control, int, 0644);
+static bool typec_req_host;
+
+void musb_typec_host_connect(int delay)
+{
+	typec_req_host = true;
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(delay));
+}
+void musb_typec_host_disconnect(int delay)
+{
+	typec_req_host = false;
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(delay));
+}
+
 static bool musb_is_host(void)
 {
 	u8 devctl = 0;
@@ -211,6 +226,11 @@ static bool musb_is_host(void)
 #endif
 
 	musb_platform_enable(mtk_musb);
+
+	if (typec_control) {
+		usb_is_host = typec_req_host;
+		goto decision_done;
+	}
 
 #ifdef ID_PIN_USE_EX_EINT
 #ifndef FPGA_PLATFORM
@@ -241,13 +261,16 @@ static bool musb_is_host(void)
 
 	if (devctl & MUSB_DEVCTL_BDEVICE || iddig_state) {
 		DBG(0, "will unmask PMIC charger detection\n");
-#ifndef FPGA_PLATFORM
-		pmic_chrdet_int_en(1);
-#endif
 		usb_is_host = false;
 	} else {
 		usb_is_host = true;
 	}
+
+decision_done:
+#ifndef FPGA_PLATFORM
+	if (usb_is_host == false)
+		pmic_chrdet_int_en(1);
+#endif
 
 	DBG(0, "usb_is_host = %d\n", usb_is_host);
 	return usb_is_host;
@@ -284,7 +307,7 @@ module_param(host_test_vbus_off_time_us, int, 0644);
 static int host_plug_test_triggered;
 void switch_int_to_device(struct musb *musb)
 {
-	if (host_plug_test_triggered) {
+	if (typec_control || host_plug_test_triggered) {
 		DBG(1, "directly return\n");
 		return;
 	}
@@ -300,7 +323,7 @@ void switch_int_to_device(struct musb *musb)
 
 void switch_int_to_host(struct musb *musb)
 {
-	if (host_plug_test_triggered) {
+	if (typec_control || host_plug_test_triggered) {
 		DBG(1, "directly return\n");
 		return;
 	}
@@ -317,7 +340,7 @@ void switch_int_to_host(struct musb *musb)
 
 void switch_int_to_host_and_mask(struct musb *musb)
 {
-	if (host_plug_test_triggered) {
+	if (typec_control || host_plug_test_triggered) {
 		DBG(1, "directly return\n");
 		return;
 	}
@@ -359,11 +382,11 @@ static void do_host_plug_test_work(struct work_struct *data)
 			musb_platform_set_vbus(mtk_musb, 0);
 			udelay(host_test_vbus_off_time_us);
 
-			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, 0);
+			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
 		} else if (!mtk_musb->is_host && diff_time >= host_plug_out_test_period_ms) {
 			DBG(0, "ON\n");
 			ktime_begin = ktime_get();
-			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, 0);
+			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
 		}
 	}
 
@@ -372,7 +395,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	/* make it to ON */
 	if (!mtk_musb->is_host) {
 		DBG(0, "rollback to ON\n");
-		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, 0);
+		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
 		DBG(0, "wait manual begin\n");
 		msleep(1000);	/* wait manual-trigger ip_pin_work done */
 		DBG(0, "wait manual end\n");
@@ -390,7 +413,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 
 #define ID_PIN_WORK_RECHECK_TIME 30	/* 30 ms */
 #define ID_PIN_WORK_BLOCK_TIMEOUT 30000 /* 30000 ms */
-static void musb_id_pin_work(struct work_struct *data)
+static void musb_host_work(struct work_struct *data)
 {
 	u8 devctl = 0;
 	unsigned long flags;
@@ -413,7 +436,7 @@ static void musb_id_pin_work(struct work_struct *data)
 			timeout = 1;
 		}
 
-		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(ID_PIN_WORK_RECHECK_TIME));
+		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(ID_PIN_WORK_RECHECK_TIME));
 		return;
 	} else if (!inited) {
 		DBG(0, "PASS, init_done:%d, is_ready:%d, inited:%d, TO:%d\n",
@@ -523,7 +546,7 @@ static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 {
 	iddig_cnt++;
 
-	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(sw_deboun_time));
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(sw_deboun_time));
 	DBG(0, "id pin interrupt assert\n");
 	disable_irq_nosync(usb_iddig_number);
 	return IRQ_HANDLED;
@@ -542,11 +565,11 @@ void mt_usb_iddig_int(struct musb *musb)
 	musb_writel(musb->mregs, USB_L1INTP, usb_l1_ploy);
 	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
 
-	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(sw_deboun_time));
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(sw_deboun_time));
 	DBG(0, "id pin interrupt assert\n");
 }
 
-static void otg_int_init(void)
+static void iddig_int_init(void)
 {
 #ifdef ID_PIN_USE_EX_EINT
 	int	ret = 0;
@@ -634,8 +657,17 @@ void mt_usb_otg_init(struct musb *musb)
 
 	/* init idpin interrupt */
 	ktime_start = ktime_get();
-	INIT_DELAYED_WORK(&musb->id_pin_work, musb_id_pin_work);
-	otg_int_init();
+	INIT_DELAYED_WORK(&musb->host_work, musb_host_work);
+
+	/* FIXME, fill in TYPEC management */
+	if (0) {
+		DBG(0, "host controlled by TYPEC\n");
+		typec_control = 1;
+		/* related resource init & register */
+	} else {
+		DBG(0, "host controlled by IDDIG\n");
+		iddig_int_init();
+	}
 
 	/* EP table */
 	musb->fifo_cfg_host = fifo_cfg_host;
@@ -650,6 +682,55 @@ void mt_usb_otg_init(struct musb *musb)
 	else
 		pr_debug("switch_dev register success\n");
 }
+static int option;
+static int set_option(const char *val, const struct kernel_param *kp)
+{
+	int local_option;
+	int rv;
+
+	/* update module parameter */
+	rv = param_set_int(val, kp);
+	if (rv)
+		return rv;
+
+	/* update local_option */
+	rv = kstrtoint(val, 10, &local_option);
+	if (rv != 0)
+		return rv;
+
+	DBG(0, "option:%d, local_option:%d\n", option, local_option);
+
+	switch (local_option) {
+	case 0:
+		DBG(0, "case %d\n", local_option);
+		iddig_int_init();
+		break;
+	case 1:
+		DBG(0, "case %d\n", local_option);
+		musb_typec_host_connect(0);
+		break;
+	case 2:
+		DBG(0, "case %d\n", local_option);
+		musb_typec_host_disconnect(0);
+		break;
+	case 3:
+		DBG(0, "case %d\n", local_option);
+		musb_typec_host_connect(3000);
+		break;
+	case 4:
+		DBG(0, "case %d\n", local_option);
+		musb_typec_host_disconnect(3000);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops option_param_ops = {
+	.set = set_option,
+	.get = param_get_int,
+};
+module_param_cb(option, &option_param_ops, &option, 0644);
 #else
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */
