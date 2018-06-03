@@ -558,7 +558,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG_TAG(md->index, TAG, "ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
 			cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
 		/*disable MD to AP*/
-		ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
+		cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_SET, (0x1 << INFRA_MD2PERI_PROT_BIT));
 		while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
 				!= (0x1 << INFRA_MD2PERI_PROT_BIT))
 			;
@@ -566,7 +566,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_EN),
 			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY));
 		/*make sure AP to MD is enabled*/
-		RAnd2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (~(0x1 << INFRA_PERI2MD_PROT_BIT)));
+		cldma_write32(infra_ao_base, INFRA_PERI2MD_PROT_CLR, (0x1 << INFRA_PERI2MD_PROT_BIT));
 		while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT)))
 			;
 		CCCI_MEM_LOG_TAG(md->index, TAG, "peri2md: en[0x%X], rdy[0x%X]\n",
@@ -765,7 +765,7 @@ static void md1_pre_access_md_reg(struct ccci_modem *md)
 	CCCI_BOOTUP_LOG(md->index, TAG, "pre: ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
 		cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
 	/*disable MD to AP*/
-	ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
+	cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_SET, (0x1 << INFRA_MD2PERI_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
 			!= (0x1 << INFRA_MD2PERI_PROT_BIT))
 		;
@@ -777,7 +777,7 @@ static void md1_pre_access_md_reg(struct ccci_modem *md)
 static void md1_post_access_md_reg(struct ccci_modem *md)
 {
 	/*disable AP to MD*/
-	ROr2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (0x1 << INFRA_PERI2MD_PROT_BIT));
+	cldma_write32(infra_ao_base, INFRA_PERI2MD_PROT_SET, (0x1 << INFRA_PERI2MD_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT))
 			!= (0x1 << INFRA_PERI2MD_PROT_BIT))
 		;
@@ -786,7 +786,7 @@ static void md1_post_access_md_reg(struct ccci_modem *md)
 		cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY));
 
 	/*enable MD to AP*/
-	RAnd2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (~(0x1 << INFRA_MD2PERI_PROT_BIT)));
+	cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_CLR, (0x1 << INFRA_MD2PERI_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT)))
 		;
 	CCCI_BOOTUP_LOG(md->index, TAG, "md2peri: en[0x%X], rdy[0x%X]\n",
@@ -1140,11 +1140,13 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		|| cldma_reg_get_4msb_val(md_ctrl->cldma_ap_ao_base,
 					CLDMA_AP_UL_START_ADDR_4MSB, md_ctrl->txq[0].index)) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register: No need  ...\n");
+		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 		if (!(cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS))) {
 			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & 0x1);
 			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
 		} else
 			CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma ao register: No need  ...\n");
+		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	} else {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register ...11\n");
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
