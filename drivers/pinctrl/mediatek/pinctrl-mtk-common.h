@@ -19,12 +19,12 @@
 #include <linux/regmap.h>
 #include <linux/pinctrl/pinconf-generic.h>
 
-#define NO_EINT_SUPPORT    255
-#define MT_EDGE_SENSITIVE           0
-#define MT_LEVEL_SENSITIVE          1
-#define EINT_DBNC_SET_DBNC_BITS     4
-#define EINT_DBNC_RST_BIT           (0x1 << 1)
-#define EINT_DBNC_SET_EN            (0x1 << 0)
+#define NO_EINT_SUPPORT         255
+#define MT_EDGE_SENSITIVE       0
+#define MT_LEVEL_SENSITIVE      1
+#define EINT_DBNC_SET_DBNC_BITS 4
+#define EINT_DBNC_RST_BIT       (0x1 << 1)
+#define EINT_DBNC_SET_EN        (0x1 << 0)
 
 #define MTK_PINCTRL_NOT_SUPPORT	(0xffff)
 
@@ -44,7 +44,7 @@ struct mtk_desc_pin {
 	const struct mtk_desc_function	*functions;
 };
 
-#define MTK_PIN(_pin, _pad, _chip, _eint, ...)		\
+#define MTK_PIN(_pin, _pad, _chip, _eint, ...)			\
 	{							\
 		.pin = _pin,					\
 		.eint = _eint,					\
@@ -52,10 +52,10 @@ struct mtk_desc_pin {
 			__VA_ARGS__, { } },			\
 	}
 
-#define MTK_EINT_FUNCTION(_eintmux, _eintnum)				\
+#define MTK_EINT_FUNCTION(_eintmux, _eintnum)			\
 	{							\
-		.eintmux = _eintmux,					\
-		.eintnum = _eintnum,					\
+		.eintmux = _eintmux,				\
+		.eintnum = _eintnum,				\
 	}
 
 #define MTK_FUNCTION(_val, _name)				\
@@ -289,19 +289,19 @@ struct mtk_pinctrl_devdata {
 };
 
 struct mtk_pinctrl {
-	struct regmap	*regmap1;
-	struct regmap	*regmap2;
+	struct regmap *regmap1;
+	struct regmap *regmap2;
 	struct pinctrl_desc pctl_desc;
-	struct device           *dev;
-	struct gpio_chip	*chip;
-	struct mtk_pinctrl_group	*groups;
-	unsigned			ngroups;
-	const char          **grp_names;
-	struct pinctrl_dev      *pctl_dev;
-	const struct mtk_pinctrl_devdata  *devdata;
-	void __iomem		*eint_reg_base;
-	struct irq_domain	*domain;
-	int			*eint_dual_edges;
+	struct device *dev;
+	struct gpio_chip *chip;
+	struct mtk_pinctrl_group *groups;
+	unsigned ngroups;
+	const char **grp_names;
+	struct pinctrl_dev *pctl_dev;
+	const struct mtk_pinctrl_devdata *devdata;
+	void __iomem *eint_reg_base;
+	struct irq_domain *domain;
+	int *eint_dual_edges;
 	u32 *wake_mask;
 	u32 *cur_mask;
 };
