@@ -176,7 +176,7 @@ typedef struct dump_info_fatal {
 	int err_code2;
 	int err_code3;
 	char *ExStr;
-	char offender[8];
+	char offender[9];
 } DUMP_INFO_FATAL;
 
 enum {

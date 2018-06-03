@@ -407,7 +407,7 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src, DUMP_INFO_FATAL *fata
 	if ((fatal_src->offender[0] != 0xCC) && (fatal_src->offender[0] != 0)) {
 		strmncopy(fatal_src->offender, temp_str,
 			sizeof(fatal_src->offender), sizeof(temp_str));
-		snprintf(fata_tar->offender, sizeof(fata_tar->offender),
+		snprintf(fata_tar->offender, 23,
 			"MD Offender:%s\n", temp_str);
 		CCCI_NORMAL_LOG(-1, KERN, "offender: %s\n",
 			     fata_tar->offender);
