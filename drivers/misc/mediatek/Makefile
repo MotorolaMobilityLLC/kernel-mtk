@@ -135,3 +135,4 @@ obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
 obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-y += performance/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
+obj-$(CONFIG_MTK_DEBUG_LATCH) += debug_latch/
