@@ -249,7 +249,8 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 
 #if 1
 /* set ultra registers */
-void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct golden_setting_context *p_golden_setting)
+void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
+				struct golden_setting_context *p_golden_setting, unsigned int input_bpp)
 {
 
 	/* rdma golden setting variables */
@@ -289,8 +290,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 
 	unsigned int frame_rate;
 	unsigned int Bytes_per_sec;
-	unsigned long long temp;
-	unsigned long long temp_for_div;
+	long long temp;   /* must be signed */
+	long long temp_for_div;  /* must be signed */
 
 
 	if (!p_golden_setting) {
@@ -300,7 +301,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	}
 	rdma_golden_setting = p_golden_setting;
 
-	frame_rate = rdma_golden_setting->fps;
+	frame_rate = 60;
 	if (idx == 1) {
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
@@ -346,6 +347,9 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		fifo_off_drs_enter = 4;
 		fifo_off_drs_leave = 1;
 		fifo_off_spm = 12; /* 10 times*/
+		if (input_bpp > 3)
+			fifo_off_spm = 42;
+
 		fifo_off_dvfs = 2;
 		consume_rate = (unsigned long long)rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
 				*frame_rate * Bytes_per_sec;
@@ -638,6 +642,7 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 	unsigned int idx = rdma_index(module);
 	unsigned int color_matrix;
 	unsigned int regval;
+	unsigned int input_bpp = 3;
 
 	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 	       idx, mode, address, unified_color_fmt_name(inFormat), pitch, width, height, sec);
@@ -726,7 +731,10 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 
 	set_rdma_width_height(width, height);
 
-	rdma_set_ultra_l(idx, bpp, handle, p_golden_setting);
+	if (mode == RDMA_MODE_MEMORY)
+		input_bpp = UFMT_GET_bpp(inFormat)/8;
+
+	rdma_set_ultra_l(idx, bpp, handle, p_golden_setting, input_bpp);
 
 
 	return 0;
@@ -1157,6 +1165,7 @@ static int _rdma_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *h
 int rdma_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd, unsigned long *params)
 {
 	int ret = 0;
+	unsigned int input_bpp = 3;
 	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
 	 unsigned int idx = rdma_index(module);
 
@@ -1166,7 +1175,10 @@ int rdma_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioc
 		struct disp_ddp_path_config *pConfig = (struct disp_ddp_path_config *)params;
 		struct golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 
-		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
+		if (pConfig->rdma_config.address)
+			input_bpp = UFMT_GET_bpp(pConfig->rdma_config.inputFormat) / 8;
+
+		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting, input_bpp);
 		break;
 	}
 	case DDP_PARTIAL_UPDATE:

@@ -798,7 +798,8 @@ void _vdo_mode_leave_idle(void)
 
 	/* DC -> DL */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE) &&
-		!disp_helper_get_option(DISP_OPT_SMART_OVL)) {
+		!disp_helper_get_option(DISP_OPT_SMART_OVL) &&
+		primary_get_sess_mode() == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch to the mode before idle */
 		do_primary_display_switch_mode(idlemgr_pgc->session_mode_before_enter_idle,
 			primary_get_sess_id(), 0, NULL, 0);

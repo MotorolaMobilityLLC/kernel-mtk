@@ -140,6 +140,8 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RSZ",
 	"DISP_OPT_DUAL_PIPE",
 	"DISP_OPT_ARR_PHASE_1",
+	"DISP_OPT_GMO_OPTIMIZE",
+	"DISP_OPT_MIRROR_MODE_FROCE_DISABLE_SODI",
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -367,9 +369,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
+	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 1);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
-	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
+	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 	disp_helper_set_option(DISP_OPT_HRT, 1);
 
@@ -391,6 +393,9 @@ void disp_helper_option_init(void)
 
 	/* ARR phase 1 option*/
 	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
+
+	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 1);
+	disp_helper_set_option(DISP_OPT_MIRROR_MODE_FROCE_DISABLE_SODI, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

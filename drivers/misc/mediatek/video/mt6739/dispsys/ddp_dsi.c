@@ -374,13 +374,11 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 		_set_condition_and_wake_up(&(_dsi_context[i].sleep_in_done_wq));
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
-		ddp_clk_tree_dump();
 		if (__ratelimit(&underrun_rate))
 			DDPERR("%s:buffer underrun\n", ddp_get_module_name(module));
 	}
 
 	if (status.INP_UNFINISH_INT_EN) {
-		ddp_clk_tree_dump();
 		if (__ratelimit(&unfinish_rate))
 			DDPERR("%s:input relay unfinish\n", ddp_get_module_name(module));
 	}
@@ -421,6 +419,10 @@ void DSI_clk_HS_mode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, b
 					LC_HS_TX_EN, 1);
 		#endif
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_LCCON, 0x1);
+			if ((_dsi_context[i].dsi_params).lane_swap_en) {
+				DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+					EARLY_DRDY, 0x1f);
+			}
 		} else if (!enter) {
 			DSI_OUTREGBIT(cmdq, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 					LC_HS_TX_EN, 0);
@@ -2400,6 +2402,10 @@ long lcd_enp_bias_setting(unsigned int value)
 {
 	long ret = 0;
 
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN);
 	return ret;
 }
 int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)

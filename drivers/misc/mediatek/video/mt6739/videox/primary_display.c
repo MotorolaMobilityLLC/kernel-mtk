@@ -105,6 +105,7 @@
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+
 static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
 static struct WDMA_CONFIG_STRUCT decouple_wdma_config;
 static struct disp_mem_output_config mem_config;
@@ -1643,9 +1644,10 @@ static int _DL_switch_to_DC_fast(void)
 
 	struct disp_ddp_path_config *data_config_dl = NULL;
 	struct disp_ddp_path_config *data_config_dc = NULL;
-	unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
+	unsigned int mva = 0;	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
 	struct ddp_io_golden_setting_arg gset_arg;
 
+	mva = pgc->dc_buf[pgc->dc_buf_id];
 	if (mva == 0) {
 		DISPERR("%s, dc buffer does not exist\n", __func__);
 		return -1;
@@ -1825,6 +1827,7 @@ static int modify_path_power_off_callback(unsigned long userdata)
 	/* release output buffer */
 	layer = disp_sync_get_output_interface_timeline_id();
 	mtkfb_release_layer_fence(primary_session_id, layer);
+
 	return 0;
 }
 
@@ -2117,7 +2120,8 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	void *buffer_va = NULL;
 	unsigned int buffer_mva = 0;
-	unsigned int mva_size = 0;
+	size_t mva_size = 0;
+	ion_phys_addr_t phy_addr;
 
 	struct ion_mm_data mm_data;
 
@@ -2157,7 +2161,8 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 			return NULL;
 		}
 
-		ion_phys(client, handle, (unsigned long int *)&buffer_mva, (size_t *)&mva_size);
+		ion_phys(client, handle, &phy_addr, &mva_size);
+		buffer_mva = (unsigned int)phy_addr;
 		if (buffer_mva == 0) {
 			DISPERR("Fatal Error, get mva failed\n");
 			ion_free(client, handle);
@@ -2167,8 +2172,9 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		}
 		buf_info->handle = handle;
 		buf_info->mva = buffer_mva;
-		buf_info->size = mva_size;
+		buf_info->size = (uint32_t)mva_size;
 		buf_info->va = buffer_va;
+		buf_info->client = client;
 	} else {
 		DISPERR("Fatal error, kzalloc internal buffer info failed!!\n");
 		kfree(buf_info);
@@ -2184,15 +2190,7 @@ static int init_decouple_buffers(void)
 	int height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
 	int width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	int Bpp = UFMT_GET_Bpp(fmt);
-
 	int buffer_size = width * height * Bpp;
-
-	for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT; i++) {	/* INTERNAL Buf 3 frames */
-		decouple_buffer_info[i] = allocat_decouple_buffer(buffer_size);
-		if (decouple_buffer_info[i] != NULL)
-			pgc->dc_buf[i] = decouple_buffer_info[i]->mva;
-
-	}
 
 	/* initialize rdma config */
 	decouple_rdma_config.height = height;
@@ -2219,9 +2217,31 @@ static int init_decouple_buffers(void)
 	decouple_wdma_config.dstPitch = width * Bpp;
 	decouple_wdma_config.security = DISP_NORMAL_BUFFER;
 
-	pr_debug("%s done\n", __func__);
-	return 0;
+	/* When enable the gmo option, only use one buf */
+	if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE)) {
+		decouple_buffer_info[0] = allocat_decouple_buffer(buffer_size);
+		if (decouple_buffer_info[0] != NULL)
+			pgc->dc_buf[0] = decouple_buffer_info[0]->mva;
+		else
+			DISPERR("gmo alloc buf fail!\n");
 
+		for (i = 1; i < DISP_INTERNAL_BUFFER_COUNT; i++) {	/* INTERNAL Buf 3 frames */
+			decouple_buffer_info[i] = decouple_buffer_info[0];
+			pgc->dc_buf[i] = pgc->dc_buf[0];
+		}
+		DISPMSG("%s alloc gmo bufs done\n", __func__);
+	} else {
+		for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT; i++) {	/* INTERNAL Buf 3 frames */
+			decouple_buffer_info[i] = allocat_decouple_buffer(buffer_size);
+			if (decouple_buffer_info[i] != NULL)
+				pgc->dc_buf[i] = decouple_buffer_info[i]->mva;
+			else
+				DISPERR("alloc buf fail!\n");
+		}
+		DISPMSG("%s alloc %d bufs done\n", __func__, DISP_INTERNAL_BUFFER_COUNT);
+	}
+
+	return 0;
 }
 
 static int _init_decouple_buffers_thread(void *data)
@@ -5322,6 +5342,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		pgc->dc_buf_id++;
 		pgc->dc_buf_id %= DISP_INTERNAL_BUFFER_COUNT;
 		wdma_mva = pgc->dc_buf[pgc->dc_buf_id];
+
 		if (wdma_mva == 0) {
 			DISPERR("%s, dc buffer does not exist\n", __func__);
 			ret = -1;
@@ -5336,8 +5357,6 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		mem_config.security = DISP_NORMAL_BUFFER;
 		mem_config.pitch = decouple_wdma_config.dstPitch;
 		mem_config.fmt = decouple_wdma_config.outputFormat;
-		mmprofile_log_ex(ddp_mmp_get_events()->primary_wdma_config, MMPROFILE_FLAG_PULSE,
-			       pgc->dc_buf_id, wdma_mva);
 	}
 done:
 	return ret;
@@ -5629,6 +5648,14 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 		DISPMSG("%s wait for leave TUI\n", __func__);
 		primary_display_wait_not_state(DISP_BLANK, MAX_SCHEDULE_TIMEOUT);
 		_primary_path_lock(__func__);
+	}
+
+	/* in mirror mode , disable sodi for better performance */
+	if (disp_helper_get_option(DISP_OPT_MIRROR_MODE_FROCE_DISABLE_SODI)) {
+		if (_is_mirror_mode(sess_mode))
+			spm_enable_sodi(0);
+		else
+			spm_enable_sodi(1);
 	}
 
 	ret = do_primary_display_switch_mode(sess_mode, session, 0, NULL, 0);
@@ -5939,7 +5966,7 @@ int primary_display_diagnose(void)
 	int ret = 0;
 
 	DISPMSG("==== %s ===>\n", __func__);
-	ddp_clk_tree_dump();
+	/*ddp_clk_tree_dump();*/
 	dpmgr_check_status(pgc->dpmgr_handle);
 
 	if (primary_display_is_decouple_mode()) {
@@ -6227,7 +6254,6 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
-	bool aal_is_support = disp_aal_is_support();
 
 	DISPFUNC();
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
@@ -6239,13 +6265,11 @@ int primary_display_setbacklight(unsigned int level)
 		return 0;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_START, 0, 0);
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_switch_dst_lock();
 
-	if (aal_is_support == false) {
-		_primary_path_switch_dst_lock();
-
-		_primary_path_lock(__func__);
-	}
-
+	_primary_path_lock(__func__);
+#endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
 	} else {
@@ -6264,13 +6288,11 @@ int primary_display_setbacklight(unsigned int level)
 		}
 		last_level = level;
 	}
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
 
-	if (aal_is_support == false) {
-		_primary_path_unlock(__func__);
-
-		_primary_path_switch_dst_unlock();
-	}
-
+	_primary_path_switch_dst_unlock();
+#endif
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, 0, 0);
 	return ret;
 }

@@ -593,7 +593,7 @@ void ovl_get_info(enum DISP_MODULE_ENUM module, void *data)
 			p->ovl_gamma_out = (DISP_REG_GET(layer_off + DISP_REG_OVL_DATAPATH_CON) & (0x1<<15))?1:0;
 			p->alpha = (DISP_REG_GET(layer_off + DISP_REG_OVL_L0_CON + (i*0x20)) & (0x1<<8))?1:0;
 		}
-		DDPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
+		DDPDBG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
 		       i, p->layer_en, p->src_w, p->src_h, p->bpp, p->addr);
 	}
 }

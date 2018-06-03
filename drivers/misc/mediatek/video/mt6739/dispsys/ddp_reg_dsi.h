@@ -747,7 +747,10 @@ struct DSI_PHY_LCCON_REG {
 	unsigned LC_HS_TX_EN:1;
 	unsigned LC_ULPM_EN:1;
 	unsigned LC_WAKEUP_EN:1;
-	unsigned rsv3:29;
+	unsigned rsv3:1;
+	unsigned rsv4:4;
+	unsigned EARLY_DRDY:5;
+	unsigned rsv13:19;
 };
 
 

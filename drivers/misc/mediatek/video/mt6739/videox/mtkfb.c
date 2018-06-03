@@ -1306,45 +1306,58 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 	case MTKFB_SLT_AUTO_CAPTURE:
 		{
 			struct fb_slt_catpure capConfig;
+			unsigned long *src_pbuf = 0;
+			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
+			unsigned int fbsize = DISP_GetScreenHeight() * DISP_GetScreenWidth() * pixel_bpp;
 
 			if (copy_from_user(&capConfig, (void __user *)arg, sizeof(capConfig))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
-				unsigned int format;
+				src_pbuf = vmalloc(fbsize);
+				if (!src_pbuf) {
+					MTKFB_LOG("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
+					r = -EFAULT;
+				} else {
+					unsigned int format;
 
-				switch (capConfig.format) {
-				case MTK_FB_FORMAT_RGB888:
-					format = UFMT_RGB888;
-					break;
-				case MTK_FB_FORMAT_BGR888:
-					format = UFMT_BGR888;
-					break;
-				case MTK_FB_FORMAT_ARGB8888:
-					format = UFMT_ARGB8888;
-					break;
-				case MTK_FB_FORMAT_RGB565:
-					format = UFMT_RGB565;
-					break;
-				case MTK_FB_FORMAT_UYVY:
-					format = UFMT_UYVY;
-					break;
-				case MTK_FB_FORMAT_ABGR8888:
-				default:
-					format = UFMT_ABGR8888;
-					break;
+					switch (capConfig.format) {
+					case MTK_FB_FORMAT_RGB888:
+						format = UFMT_RGB888;
+						break;
+					case MTK_FB_FORMAT_BGR888:
+						format = UFMT_BGR888;
+						break;
+					case MTK_FB_FORMAT_ARGB8888:
+						format = UFMT_ARGB8888;
+						break;
+					case MTK_FB_FORMAT_RGB565:
+						format = UFMT_RGB565;
+						break;
+					case MTK_FB_FORMAT_UYVY:
+						format = UFMT_UYVY;
+						break;
+					case MTK_FB_FORMAT_ABGR8888:
+					default:
+						format = UFMT_ABGR8888;
+						break;
+					}
+					set_slt_test(1);
+					stop_smart_ovl_nolock();
+					do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+						primary_get_sess_id(), 1, NULL, 1);
+					primary_display_capture_framebuffer_ovl((unsigned long)
+										src_pbuf,
+										format);
+					if (copy_to_user((unsigned long *)capConfig.outputBuffer, src_pbuf, fbsize)) {
+						MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+						r = -EFAULT;
+						}
+					vfree(src_pbuf);
+					restart_smart_ovl_nolock();
+					set_slt_test(0);
+					}
 				}
-				set_slt_test(1);
-				stop_smart_ovl_nolock();
-				do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
-					primary_get_sess_id(), 1, NULL, 1);
-				primary_display_capture_framebuffer_ovl((unsigned long)
-									capConfig.outputBuffer,
-									format);
-				restart_smart_ovl_nolock();
-				set_slt_test(0);
-			}
-
 			return r;
 		}
 	case MTKFB_GET_OVERLAY_LAYER_INFO:

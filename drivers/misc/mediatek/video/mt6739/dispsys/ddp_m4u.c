@@ -58,13 +58,14 @@ enum DISP_MODULE_ENUM m4u_port_to_module(int port)
 
 m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 {
-	enum DISP_MODULE_ENUM module;
 
 	DDPERR("fault call port=%d, mva=0x%lx, data=0x%p\n", port, mva, data);
-	module = m4u_port_to_module(port);
-	ddp_dump_analysis(module);
-	ddp_dump_reg(module);
-
+	ddp_dump_analysis(DISP_MODULE_OVL0);
+	ddp_dump_reg(DISP_MODULE_OVL0);
+	ddp_dump_analysis(DISP_MODULE_RDMA0);
+	ddp_dump_reg(DISP_MODULE_RDMA0);
+	ddp_dump_analysis(DISP_MODULE_WDMA0);
+	ddp_dump_reg(DISP_MODULE_WDMA0);
 	return 0;
 }
 
