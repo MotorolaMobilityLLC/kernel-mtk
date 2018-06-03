@@ -133,11 +133,11 @@ void kpd_slide_qwerty_init(void)
 
 void kpd_get_keymap_state(u16 state[])
 {
-	state[0] = *(volatile u16 *)KP_MEM1;
-	state[1] = *(volatile u16 *)KP_MEM2;
-	state[2] = *(volatile u16 *)KP_MEM3;
-	state[3] = *(volatile u16 *)KP_MEM4;
-	state[4] = *(volatile u16 *)KP_MEM5;
+	state[0] = readw(KP_MEM1);
+	state[1] = readw(KP_MEM2);
+	state[2] = readw(KP_MEM3);
+	state[3] = readw(KP_MEM4);
+	state[4] = readw(KP_MEM5);
 	kpd_print(KPD_SAY "register = %x %x %x %x %x\n", state[0], state[1], state[2], state[3], state[4]);
 
 }
