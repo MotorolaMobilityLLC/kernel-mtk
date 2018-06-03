@@ -64,7 +64,6 @@ static inline void _fp_ip4_udp(struct fp_desc *desc, struct sk_buff *skb, struct
 static inline void fp_ip4_udp(struct fp_desc *desc, struct sk_buff *skb, struct tuple *t, struct interface *iface,
 			      void *l3_header, void *l4_header)
 {
-	struct nat_tuple *found_nat_tuple;
 /* struct ip4header *ip = (struct ip4header *)l3_header; */
 	struct udpheader *udp = (struct udpheader *) l4_header;
 
@@ -80,20 +79,7 @@ static inline void fp_ip4_udp(struct fp_desc *desc, struct sk_buff *skb, struct 
 	t->nat.s.udp.port = udp->uh_sport;
 	t->nat.d.udp.port = udp->uh_dport;
 
-	found_nat_tuple = get_nat_tuple_ip4_tcpudp(t);
-	if (likely(found_nat_tuple)) {
-		/* if (likely(!(t->action & TUPLE_ACTION_ROUTER))) { */
-			/* _fp_ip4_udp(desc, skb, t, found_nat_tuple, ip, udp); */
-		/* } else { //ROUTE */
-			/* fp_ip4_route(desc, skb, t, found_nat_tuple, ip, NULL); */
-		/* } */
-		DEC_REF_NAT_TUPLE(found_nat_tuple);
-		return;
-
-	} else {		/* not found nat */
-		desc->flag |= DESC_FLAG_TRACK_NAT;
-		return;
-	}
+	desc->flag |= DESC_FLAG_TRACK_NAT;
 }
 
 #ifdef SUPPORT_IOC

@@ -129,6 +129,8 @@ extern spinlock_t tuple_lock;
 #define INTERFACE_TYPE_WAN	1
 #define INTERFACE_TYPE_IOC	2
 
+#define MDT_TAG_PATTERN     0x46464646
+
 /* Timing define */
 #define TRACK_TABLE_TIMEOUT_JIFFIES 100
 
@@ -210,6 +212,17 @@ struct fp_wait_queue_t {
 #else
 	spinlock_t lock;
 #endif
+};
+
+struct fp_tag_info_t {
+	unsigned char	in_netif_id;
+	unsigned char	out_netif_id;
+	unsigned short	port;
+};
+
+struct fp_tag_packet_t {
+	unsigned int			guard_pattern;
+	struct fp_tag_info_t	info;
 };
 
 extern struct kmem_cache *nat_tuple_cache;

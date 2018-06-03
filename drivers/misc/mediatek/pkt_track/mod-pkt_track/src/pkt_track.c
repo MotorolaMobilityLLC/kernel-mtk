@@ -44,7 +44,6 @@ enum drt_tethering_cmd_e {
 	DRT_TETHERING_CMD_DEL_QUOTA,
 };
 
-static struct pkt_track_data_t pkt_track_data_par;
 static struct pkt_track_alert_t pkt_measure;
 static struct pkt_track_iquota_t pkt_limit;
 
@@ -172,49 +171,6 @@ MODULE_LICENSE("GPL");
 #ifdef NETLINK_ENABLE
 static void pkt_track_nl_set_cmd(struct sk_buff *skb);
 #endif
-
-static void pkt_track_mdt_send_rule_handler(struct work_struct *work)
-{
-	ipc_ilm_t ilm;
-	int ret;
-	struct pkt_track_data_t *pkt_data = container_of(work, struct pkt_track_data_t, pkt_work);
-	struct pkt_track_msg_t *pkt_msg;
-	unsigned long flags;
-
-	while (!list_empty(&pkt_data->msg_queue)) {
-		spin_lock_irqsave(&pkt_data->lock, flags);
-		pkt_msg = list_first_entry(&pkt_data->msg_queue, struct pkt_track_msg_t, list);
-		list_del(&pkt_msg->list);
-		spin_unlock_irqrestore(&pkt_data->lock, flags);
-
-		if (pkt_msg->is_add_rule) {
-			pkt_printk(K_INFO, "%s: Add rule.\n", __func__);
-
-			memset(&ilm, 0, sizeof(ilm));
-
-			ilm.src_mod_id = AP_MOD_PKTTRC;
-			ilm.dest_mod_id = MD_MOD_MDT;
-			ilm.msg_id = IPC_MSG_ID_MDT_ADD_RULE_IND;
-			ilm.local_para_ptr = (struct local_para *)pkt_msg->data;
-		} else {
-			pkt_printk(K_INFO, "%s: Delete rule.\n", __func__);
-
-			memset(&ilm, 0, sizeof(ilm));
-
-			ilm.src_mod_id = AP_MOD_PKTTRC;
-			ilm.dest_mod_id = MD_MOD_MDT;
-			ilm.msg_id = IPC_MSG_ID_MDT_DELETE_RULE_IND;
-			ilm.local_para_ptr = (struct local_para *)pkt_msg->data;
-		}
-
-		ret = ccci_ipc_send_ilm(0, &ilm);
-		if (unlikely(ret < 0))
-			pkt_printk(K_INFO, "%s: ccci_ipc_send_ilm send return error[%d]!\n", __func__, ret);
-
-		kfree(pkt_msg->data);
-		kfree(pkt_msg);
-	}
-}
 
 static void pkt_track_mdt_set_global_alert_work(struct work_struct *work)
 {
@@ -376,11 +332,6 @@ static int __init pkt_track_init(void)
 		goto out;
 	}
 
-	/* initialize pkt_track work queue */
-	INIT_WORK(&pkt_track_data_par.pkt_work, pkt_track_mdt_send_rule_handler);
-	INIT_LIST_HEAD(&pkt_track_data_par.msg_queue);
-	spin_lock_init(&pkt_track_data_par.lock);
-
 #ifdef NETLINK_ENABLE
 	pkt_printk(K_NOTICE, "%s: Create md netlink socket.\n", __func__);
 	netlink_sock_md = netlink_kernel_create(&init_net, NETLINK_NFLOG_MD, &cfg);
@@ -420,18 +371,7 @@ out:
 
 static void __exit pkt_track_fini(void)
 {
-	struct pkt_track_msg_t *pkt_msg;
-
 	synchronize_net();
-
-	cancel_work_sync(&pkt_track_data_par.pkt_work);
-	/* free memeory*/
-	while (!list_empty(&pkt_track_data_par.msg_queue)) {
-		pkt_msg = list_first_entry(&pkt_track_data_par.msg_queue, struct pkt_track_msg_t, list);
-		list_del(&pkt_msg->list);
-		kfree(pkt_msg->data);
-		kfree(pkt_msg);
-	}
 
 #ifdef NETLINK_ENABLE
 	netlink_kernel_release(netlink_sock_md);
@@ -517,121 +457,6 @@ static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
 	/* Transfer msg to usb gadget driver */
 	pkt_printk(K_INFO, "%s: Transfer ilm to usb gadget driver.\n", __func__);
 	musb_md_msg_hdlr(ilm);
-
-	return 0;
-}
-
-static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
-{
-	void *p;
-
-	pkt_printk(K_INFO, "%s: Handle ilm from MDT about rule.\n", __func__);
-
-	switch (ilm->msg_id) {
-	case IPC_MSG_ID_MDT_DELETE_RULE_RSP:
-	{
-		struct pkt_track_ilm_common_des_t *des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
-
-		p = get_tuple_by_md_rule_id(des->des.rule_id);
-		if (!p) {
-			pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
-						__func__, des->des.rule_id, des);
-			WARN_ON(1);
-			return -1;
-		}
-
-		if (des->des.ip_type == IPC_IP_TYPE_IPV4) {
-			pkt_printk(K_INFO, "%s: Delete IPv4 nat tuple[%p], md_id[%d], ip_type[%d].\n",
-						__func__, p, des->des.rule_id, des->des.ip_type);
-			del_nat_tuple(p);
-			delete_md_rule_id(des->des.rule_id);
-		} else {
-			pkt_printk(K_NOTICE, "%s: Delete IPv6 router tuple[%p], md_id[%d], ip_type[%d].\n",
-						__func__, p, des->des.rule_id, des->des.ip_type);
-			del_router_tuple(p);
-			delete_md_rule_id(des->des.rule_id);
-		}
-
-		break;
-	}
-
-	case IPC_MSG_ID_MDT_SYNC_RULE_STATUS:
-	{
-		struct pkt_track_ilm_common_des_t *des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
-
-		if (des->des.action == PKT_TRACK_MDT_ACTION_DELETE) {
-			p = get_tuple_by_md_rule_id(des->des.rule_id);
-			if (!p) {
-				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
-							__func__, des->des.rule_id, des);
-				WARN_ON(1);
-				return -1;
-			}
-
-			if (des->des.ip_type == IPC_IP_TYPE_IPV4) {
-				pkt_printk(K_NOTICE, "%s: IPv4 nat tuple[%p] is timeout, md_id[%d].\n",
-							__func__, p, des->des.rule_id);
-				timeout_nat_tuple(p);
-			} else {
-				pkt_printk(K_NOTICE, "%s: IPv6 router tuple[%p] is timeout, md_id[%d].\n",
-							__func__, p, des->des.rule_id);
-				timeout_router_tuple(p);
-			}
-
-		} else {
-			pkt_printk(K_ALET, "%s: Wrong action[%d] with MSG_ID[%d], des[%p].\n",
-						__func__, des->des.action, ilm->msg_id, des);
-			WARN_ON(1);
-			return -1;
-		}
-
-		break;
-	}
-
-	case IPC_MSG_ID_MDT_DELETE_TIMEOUT_RULE_IND:
-	{
-		int i;
-		struct pkt_track_ilm_del_rule_ind_t *des = (struct pkt_track_ilm_del_rule_ind_t *) ilm->local_para_ptr;
-
-		for (i = 0; i < des->ipv4_rule_cnt; i++) {
-			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv4 md_id[%d].\n",
-						__func__, des->ipv4_rule_id[i]);
-
-			p = get_tuple_by_md_rule_id(des->ipv4_rule_id[i]);
-			if (!p) {
-				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
-							__func__, des->ipv4_rule_id[i], des);
-				WARN_ON(1);
-				return -1;
-			}
-
-			del_nat_tuple(p);
-			delete_md_rule_id(des->ipv4_rule_id[i]);
-		}
-
-		for (i = 0; i < des->ipv6_rule_cnt; i++) {
-			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv6 md_id[%d].\n",
-						__func__, des->ipv6_rule_id[i]);
-
-			p = get_tuple_by_md_rule_id(des->ipv6_rule_id[i]);
-			if (!p) {
-				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
-							__func__, des->ipv6_rule_id[i], des);
-				WARN_ON(1);
-				return -1;
-			}
-
-			del_router_tuple(p);
-			delete_md_rule_id(des->ipv6_rule_id[i]);
-		}
-
-		break;
-	}
-
-	default:
-		pkt_printk(K_ERR, "%s: Cannot handle MSG_ID[%d] from MDT about rule.\n", __func__, ilm->msg_id);
-		break;
-	}
 
 	return 0;
 }
@@ -766,12 +591,6 @@ int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm)
 	case IPC_MSG_ID_UFPM_ACTIVATE_MD_FAST_PATH_RSP:
 	case IPC_MSG_ID_UFPM_DEACTIVATE_MD_FAST_PATH_RSP:
 		ret = pkt_track_ufpm_msg_hdlr(ilm);
-		break;
-
-	case IPC_MSG_ID_MDT_DELETE_RULE_RSP:
-	case IPC_MSG_ID_MDT_SYNC_RULE_STATUS:
-	case IPC_MSG_ID_MDT_DELETE_TIMEOUT_RULE_IND:
-		ret = pkt_track_mdt_msg_hdlr(ilm);
 		break;
 
 #ifdef NETLINK_ENABLE
@@ -920,11 +739,6 @@ bool pkt_track_send_msg(bool is_add_rule, void *buf)
 
 	pkt_msg->is_add_rule = is_add_rule;
 	pkt_msg->data = buf;
-
-	spin_lock(&pkt_track_data_par.lock);
-	list_add_tail(&pkt_msg->list, &pkt_track_data_par.msg_queue);
-	spin_unlock(&pkt_track_data_par.lock);
-	schedule_work(&pkt_track_data_par.pkt_work);
 
 	return true;
 }
