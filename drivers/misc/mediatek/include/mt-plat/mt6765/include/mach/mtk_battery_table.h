@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #ifndef _MTK_BATTERY_TABLE_H
 #define _MTK_BATTERY_TABLE_H
@@ -128,8 +128,8 @@ int g_PMIC_MIN_VOL[MAX_TABLE_NUMBER][TOTAL_BATTERY_NUMBER] = {
 	{33500, 33500, 33500, 33500},/*T0*/
 	{33500, 33500, 33500, 33500},/*T1*/
 	{33500, 33500, 33500, 33500},/*T2*/
-	{32200, 32200, 32200, 32200},/*T3*/
-	{31500, 31500, 31500, 31500},/*T4*/
+	{33500, 33500, 33500, 33500},/*T3*/
+	{33500, 33500, 33500, 33500},/*T4*/
 	{33001, 33006, 33009, 33004},/*T5*/
 	{33002, 33007, 33008, 33003},/*T6*/
 	{33003, 33008, 33007, 33002},/*T7*/
@@ -158,8 +158,8 @@ int g_QMAX_SYS_VOL[MAX_TABLE_NUMBER][TOTAL_BATTERY_NUMBER] = {
 	{33500, 33500, 33500, 33500},/*T0*/
 	{33500, 33500, 33500, 33500},/*T1*/
 	{33500, 33500, 33500, 33500},/*T2*/
-	{34300, 34300, 34300, 34300},/*T3*/
-	{32800, 32800, 32800, 32800},/*T4*/
+	{33500, 33500, 33500, 33500},/*T3*/
+	{33500, 33500, 33500, 33500},/*T4*/
 	{33500, 33500, 33500, 33500},/*T5*/
 	{33500, 33500, 33500, 33500},/*T6*/
 	{33500, 33500, 33500, 33500},/*T7*/

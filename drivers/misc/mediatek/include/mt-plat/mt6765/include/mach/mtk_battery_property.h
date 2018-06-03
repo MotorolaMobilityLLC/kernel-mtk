@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #ifndef _MTK_BATTERY_PROPERTY_H
 #define _MTK_BATTERY_PROPERTY_H
@@ -17,10 +17,10 @@
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
-#define SHUTDOWN_1_TIME	60
+#define SHUTDOWN_1_TIME	30
 #define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
-#define EMBEDDED_SEL 0
+#define EMBEDDED_SEL 1
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
 #define CAR_TUNE_VALUE	100 /*1.00 */
@@ -103,7 +103,7 @@
 #define SWOCV_OLDOCV_DIFF_EMB	1000
 
 #define TNEW_TOLD_PON_DIFF	5
-#define TNEW_TOLD_PON_DIFF2	20
+#define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
 #define BAT_PLUG_OUT_TIME	32
 #define EXT_HWOCV_SWOCV		300
@@ -112,8 +112,8 @@
 
 /* fgc & fgv threshold */
 #define DIFFERENCE_FGC_FGV_TH1 300
-#define DIFFERENCE_FGC_FGV_TH2 500
-#define DIFFERENCE_FGC_FGV_TH3 300
+#define DIFFERENCE_FGC_FGV_TH2 400
+#define DIFFERENCE_FGC_FGV_TH3 200
 #define DIFFERENCE_FGC_FGV_TH_SOC1 7000
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
@@ -180,15 +180,15 @@
 
 #define UISOC_UPDATE_TYPE 0
 /*
-*	uisoc_update_type:
-*	0: only ui_soc interrupt update ui_soc
-*	1: coulomb/nafg will update ui_soc if delta car > ht/lt_gap /2
-*	2: coulomb/nafg will update ui_soc
-*/
+ *	uisoc_update_type:
+ *	0: only ui_soc interrupt update ui_soc
+ *	1: coulomb/nafg will update ui_soc if delta car > ht/lt_gap /2
+ *	2: coulomb/nafg will update ui_soc
+ */
 
 /* using current to limit uisoc in 100% case*/
 /* UI_FULL_LIMIT_ITH0 3000 means 300ma */
-#define UI_FULL_LIMIT_EN 1
+#define UI_FULL_LIMIT_EN 0
 #define UI_FULL_LIMIT_SOC0 9900
 #define UI_FULL_LIMIT_ITH0 2200
 
