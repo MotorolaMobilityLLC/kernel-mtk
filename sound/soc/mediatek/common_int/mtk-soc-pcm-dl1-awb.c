@@ -63,6 +63,7 @@
 /* information about */
 static AFE_MEM_CONTROL_T  *Dl1_AWB_Control_context;
 static struct snd_dma_buffer *Awb_Capture_dma_buf;
+static int deep_buffer_mem_blk_io;
 
 /*
  *    function implementation
@@ -126,6 +127,11 @@ static void StartAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_AWB, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, true);
+	if (deep_buffer_mem_blk_io >= 0) {
+		pr_debug("%s(), deep_buffer_mem_blk_io %d, set intercon between awb and deep buffer output\n",
+			 __func__, deep_buffer_mem_blk_io);
+		SetIntfConnection(Soc_Aud_InterCon_Connection, deep_buffer_mem_blk_io, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	}
 
 	/* here to turn on digital part */
 	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_MEM_AWB);
@@ -324,7 +330,11 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 static int mtk_dl1_awb_probe(struct platform_device *pdev)
 {
 	pr_warn("mtk_dl1_awb_probe\n");
-
+	deep_buffer_mem_blk_io = get_usage_digital_block_io(AUDIO_USAGE_DEEPBUFFER_PLAYBACK);
+	if (deep_buffer_mem_blk_io < 0) {
+		pr_debug("%s(), invalid mem blk io %d, no need to set intercon between awb and deep buffer output\n",
+			 __func__, deep_buffer_mem_blk_io);
+	}
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
 	if (pdev->dev.dma_mask == NULL)
