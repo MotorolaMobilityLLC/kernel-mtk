@@ -529,8 +529,9 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 #endif /* POWER_READY */
 		if (vcore_step2 == vcore_step1) {
 			pr_info("skip duplicated vcore autok\n");
-			memcpy(host->autok_res[i], host->autok_res[i-1],
-				TUNING_PARA_SCAN_COUNT);
+			if (i >= 1)
+				memcpy(host->autok_res[i], host->autok_res[i-1],
+					TUNING_PARA_SCAN_COUNT);
 		} else {
 			#ifdef SDIO_HQA
 			msdc_HQA_set_voltage(host);
@@ -851,8 +852,9 @@ int emmc_autok(void)
 			MASK_VCORE_VOSEL, SHIFT_VCORE_VOSEL);
 		if (vcore_step2 == vcore_step1) {
 			pr_info("skip duplicated vcore autok\n");
-			memcpy(host->autok_res[i], host->autok_res[i-1],
-				TUNING_PARA_SCAN_COUNT);
+			if (i >= 1)
+				memcpy(host->autok_res[i], host->autok_res[i-1],
+					TUNING_PARA_SCAN_COUNT);
 		} else {
 			emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
 			if (host->use_hw_dvfs == 0)
