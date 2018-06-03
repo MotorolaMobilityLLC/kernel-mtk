@@ -17,9 +17,9 @@
 /* submodule control */
 #define ENABLE_BWL	1
 #define ENABLE_MPU	1
-#define ENABLE_ELM	0
+#define ENABLE_ELM	1
 #define ENABLE_MBW	0
-/*#define DECS_ON_SSPM*/
+#define DECS_ON_SSPM
 /* #define ENABLE_MPU_SLVERR */
 
 /* IRQ from device tree */
@@ -50,34 +50,11 @@
 #define EMI_MPU_CTRL_D(domain)	(EMI_MPU_CTRL_D0 + (domain*4))
 
 /* macro for ELM */
-#define EMI_CONM	(CEN_EMI_BASE + 0x060)
-#define EMI_BMEN	(CEN_EMI_BASE + 0x400)
-#define EMI_BMEN2	(CEN_EMI_BASE + 0x4E8)
-#define EMI_BCNT	(CEN_EMI_BASE + 0x408)
-#define EMI_WSCT	(CEN_EMI_BASE + 0x428)
-#define EMI_WSCT2	(CEN_EMI_BASE + 0x458)
-#define EMI_WSCT3	(CEN_EMI_BASE + 0x460)
-#define EMI_WSCT4	(CEN_EMI_BASE + 0x464)
-#define EMI_MSEL	(CEN_EMI_BASE + 0x440)
-#define EMI_MSEL2	(CEN_EMI_BASE + 0x468)
-#define EMI_BMRW0	(CEN_EMI_BASE + 0x4F8)
-#define EMI_CGMA	(CEN_EMI_BASE + 0x720)
-#define EMI_CGMA_ST0	(CEN_EMI_BASE + 0x724)
-#define EMI_CGMA_ST1	(CEN_EMI_BASE + 0x728)
-#define EMI_CGMA_ST2	(CEN_EMI_BASE + 0x72C)
-#define EMI_EBMINT_ST	(CEN_EMI_BASE + 0x744)
-#define EMI_LTCT0_2ND	(CEN_EMI_BASE + 0x750)
-#define EMI_LTCT1_2ND	(CEN_EMI_BASE + 0x754)
-#define EMI_LTCT2_2ND	(CEN_EMI_BASE + 0x758)
-#define EMI_LTCT3_2ND	(CEN_EMI_BASE + 0x75C)
-#define EMI_LTST0_2ND	(CEN_EMI_BASE + 0x760)
-#define EMI_LTST1_2ND	(CEN_EMI_BASE + 0x764)
-#define EMI_LTST2_2ND	(CEN_EMI_BASE + 0x768)
-#define EMI_CGMA_ST0	(CEN_EMI_BASE + 0x724)
-#define EMI_CGMA_ST1	(CEN_EMI_BASE + 0x728)
-#define EMI_CGMA_ST2	(CEN_EMI_BASE + 0x72C)
-#define EMI_TTYPE1	(CEN_EMI_BASE + 0x500)
-#define EMI_TTYPE(i)	(EMI_TTYPE1 + (i*8))
+#define MBW_BUF_LEN		0x800000
+
+#define LAST_EMI_DECS_CTRL	(LAST_EMI_BASE + 0x04)
+#define LAST_EMI_MBW_BUF_L	(LAST_EMI_BASE + 0x10)
+#define LAST_EMI_MBW_BUF_H	(LAST_EMI_BASE + 0x14)
 
 #include <mt_emi_api.h>
 #include <bwl_v1.h>

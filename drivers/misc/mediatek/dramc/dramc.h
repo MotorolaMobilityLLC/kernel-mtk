@@ -18,5 +18,7 @@ extern void __iomem *SLEEP_BASE_ADDR;
 
 int acquire_dram_ctrl(void);
 int release_dram_ctrl(void);
+void __iomem *get_dbg_info_base(unsigned int key);
+unsigned int get_dbg_info_size(unsigned int key);
 
 #endif /* __DRAMC_COMMON_H__ */

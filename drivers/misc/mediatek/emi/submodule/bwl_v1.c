@@ -255,5 +255,5 @@ void bwl_init(struct platform_driver *emi_ctrl)
 	ret = driver_create_file(&emi_ctrl->driver,
 		&driver_attr_concurrency_scenario);
 	if (ret)
-		pr_info("[BWL] fail to create concurrency_scenario\n");
+		pr_err("[BWL] fail to create concurrency_scenario\n");
 }
