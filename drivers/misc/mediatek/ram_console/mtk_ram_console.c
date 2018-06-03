@@ -757,6 +757,11 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 static void ram_console_init_val(void)
 {
 	LAST_RR_SET(pmic_ext_buck, 0xff);
+#if defined(CONFIG_RANDOMIZE_BASE) && defined(CONFIG_ARM64)
+	LAST_RR_SET(kaslr_offset, 0xecab1e);
+#else
+	LAST_RR_SET(kaslr_offset, 0xd15ab1e);
+#endif
 	LAST_RR_SET(ram_console_buffer_addr, (unsigned long)&ram_console_buffer);
 }
 
