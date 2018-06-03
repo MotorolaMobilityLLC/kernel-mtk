@@ -113,7 +113,7 @@ class KpdObj(ModuleObj):
                     else:
                         flag = True
 
-                        KpdData.set_gpioDinHigh(flag)
+                    KpdData.set_gpioDinHigh(flag)
 
                 if node.nodeName == 'pressPeriod':
                     time = string.atoi(node.childNodes[0].nodeValue)
