@@ -103,7 +103,22 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		goto done;
 	}
 
-	if (info->chr_type == STANDARD_HOST) {
+	if (mtk_pdc_check_charger(info) == true) {
+		int vbus = 0, cur = 0, idx = 0;
+
+		mtk_pdc_get_setting(info, &vbus, &cur, &idx);
+		if (idx != -1) {
+		pdata->input_current_limit = cur * 1000;
+		pdata->charging_current_limit = info->data.pd_charger_current;
+			mtk_pdc_setup(info, idx);
+		} else {
+			pdata->input_current_limit = info->data.usb_charger_current_configured;
+			pdata->charging_current_limit = info->data.usb_charger_current_configured;
+		}
+		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n", __func__,
+			vbus, cur, idx, info->data.pd_charger_current);
+
+	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
 				pdata->input_current_limit = info->data.usb_charger_current_suspend;

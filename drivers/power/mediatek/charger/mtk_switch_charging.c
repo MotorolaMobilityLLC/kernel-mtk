@@ -430,9 +430,6 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 
 	chr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
 
-	if (mtk_pdc_check_charger(info) == true)
-		mtk_pdc_check_cable_impedance(info);
-
 	if (mtk_pe30_check_charger(info) == true)
 		swchgalg->state = CHR_PE30;
 
