@@ -89,6 +89,9 @@ module_param(mtp_skip_vfs_write, bool, 0644);
 
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
 
+unsigned int mtp_rx_req_len = MTP_BULK_BUFFER_SIZE;
+unsigned int mtp_tx_req_len = MTP_BULK_BUFFER_SIZE;
+
 struct mtp_dev {
 	struct usb_function function;
 	struct usb_composite_dev *cdev;
@@ -504,6 +507,8 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 	struct usb_composite_dev *cdev = dev->cdev;
 	struct usb_request *req;
 	struct usb_ep *ep;
+	const unsigned int mtp_req_len[2] = { (MTP_BULK_BUFFER_SIZE*3), MTP_BULK_BUFFER_SIZE};
+	int len_idx;
 	int i;
 
 	DBG(cdev, "create_bulk_endpoints dev: %p\n", dev);
@@ -535,21 +540,43 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 	ep->driver_data = dev;		/* claim the endpoint */
 	dev->ep_intr = ep;
 
+	len_idx = 0;
+retry_tx_alloc:
 	/* now allocate requests for our endpoints */
 	for (i = 0; i < TX_REQ_MAX; i++) {
-		req = mtp_request_new(dev->ep_in, MTP_BULK_BUFFER_SIZE);
-		if (!req)
-			goto fail;
+		req = mtp_request_new(dev->ep_in, mtp_req_len[len_idx]);
+		if (!req) {
+			if (len_idx >= (ARRAY_SIZE(mtp_req_len)-1))
+				goto fail;
+			while ((req = mtp_req_get(dev, &dev->tx_idle)))
+				mtp_request_free(req, dev->ep_in);
+			len_idx++;
+			pr_info("allocate TX fail. try %d\n", mtp_req_len[len_idx]);
+			goto retry_tx_alloc;
+		}
 		req->complete = mtp_complete_in;
 		mtp_req_put(dev, &dev->tx_idle, req);
 	}
+	mtp_tx_req_len = mtp_req_len[len_idx];
+
+	len_idx = 0;
+retry_rx_alloc:
 	for (i = 0; i < RX_REQ_MAX; i++) {
-		req = mtp_request_new(dev->ep_out, MTP_BULK_BUFFER_SIZE);
-		if (!req)
-			goto fail;
+		req = mtp_request_new(dev->ep_out, mtp_req_len[len_idx]);
+		if (!req) {
+			if (len_idx >= (ARRAY_SIZE(mtp_req_len)-1))
+				goto fail;
+			for (--i; i >= 0; i--)
+				mtp_request_free(dev->rx_req[i], dev->ep_out);
+			len_idx++;
+			pr_info("allocate RX fail. try %d\n", mtp_req_len[len_idx]);
+			goto retry_rx_alloc;
+		}
 		req->complete = mtp_complete_out;
 		dev->rx_req[i] = req;
 	}
+	mtp_rx_req_len = mtp_req_len[len_idx];
+
 	for (i = 0; i < INTR_REQ_MAX; i++) {
 		req = mtp_request_new(dev->ep_intr, INTR_BUFFER_SIZE);
 		if (!req)
@@ -557,6 +584,8 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 		req->complete = mtp_complete_intr;
 		mtp_req_put(dev, &dev->intr_idle, req);
 	}
+
+	pr_info("allocate RX=%d Tx=%d\n", mtp_rx_req_len, mtp_tx_req_len);
 
 	return 0;
 
@@ -898,8 +927,8 @@ static void send_file_work(struct work_struct *data)
 			break;
 		}
 
-		if (count > MTP_BULK_BUFFER_SIZE)
-			xfer = MTP_BULK_BUFFER_SIZE;
+		if (count > mtp_tx_req_len)
+			xfer = mtp_tx_req_len;
 		else
 			xfer = count;
 
@@ -991,8 +1020,8 @@ static void receive_file_work(struct work_struct *data)
 			read_req = dev->rx_req[cur_buf];
 			cur_buf = (cur_buf + 1) % RX_REQ_MAX;
 
-			read_req->length = (count > MTP_BULK_BUFFER_SIZE
-					? MTP_BULK_BUFFER_SIZE : count);
+			read_req->length = (count > mtp_rx_req_len
+					? mtp_rx_req_len : count);
 
 			if (total_size >= 0xFFFFFFFF)
 				read_req->short_not_ok = 0;
@@ -1138,8 +1167,8 @@ static void vfs_write_work(struct work_struct *data)
 				int64_t count = (request_count - usb_read_count);
 				struct usb_request *read_req = write_req;
 
-				read_req->length = (count > MTP_BULK_BUFFER_SIZE
-						? MTP_BULK_BUFFER_SIZE : count);
+				read_req->length = (count > mtp_rx_req_len
+						? mtp_rx_req_len : count);
 				MTP_RX_CONCURRENT_DBG("read_req<%p>, len<%d>\n", read_req, read_req->length);
 				rc = usb_ep_queue(dev->ep_out, read_req, GFP_KERNEL);
 				if (unlikely(rc)) {
@@ -1184,8 +1213,8 @@ void trigger_rx_concurrent(void)
 		int rc;
 
 		read_req = dev->rx_req[i];
-		read_req->length = (count > MTP_BULK_BUFFER_SIZE
-				? MTP_BULK_BUFFER_SIZE : count);
+		read_req->length = (count > mtp_rx_req_len
+				? mtp_rx_req_len : count);
 		MTP_RX_CONCURRENT_DBG("i<%d>, read_req<%p>, len<%d>\n", i, read_req, read_req->length);
 		rc = usb_ep_queue(dev->ep_out, read_req, GFP_KERNEL);
 		if (unlikely(rc)) {
