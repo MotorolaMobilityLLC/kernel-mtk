@@ -223,10 +223,15 @@ void musb_g_giveback(struct musb_ep *ep,
 	ep->busy = 1;
 	spin_unlock(&musb->lock);
 
+	if (!request) {
+		DBG(0, "%s request already free\n", ep->end_point.name);
+		goto lock;
+	}
+
 	if (!dma_mapping_error(musb->controller, request->dma))
 		unmap_dma_buffer(req, musb);
-	else
-		DBG(0, "dma_mapping_error\n");
+	else if (req->epnum != 0)
+		DBG(0, "%s dma_mapping_error\n", ep->end_point.name);
 
 	if (request->status == 0)
 		DBG(1, "%s done request %p,  %d/%d\n",
@@ -238,6 +243,7 @@ void musb_g_giveback(struct musb_ep *ep,
 		    ep->end_point.name, request,
 		    req->request.actual, req->request.length, request->status);
 	usb_gadget_giveback_request(&req->ep->end_point, &req->request);
+lock:
 	spin_lock(&musb->lock);
 	ep->busy = busy;
 }

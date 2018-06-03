@@ -674,7 +674,7 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 {
 	struct musb_request	*r;
 	void __iomem		*regs = musb->control_ep->regs;
-	unsigned long		time_count = 3*1000*1000; /* 3 sec */
+	int time_count = 500; /* 0.5 sec */
 
 	musb_read_fifo(&musb->endpoints[0], sizeof(*req), (u8 *)req);
 
