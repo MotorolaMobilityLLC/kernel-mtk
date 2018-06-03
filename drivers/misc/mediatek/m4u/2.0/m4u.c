@@ -394,8 +394,27 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 	int i, ret;
 	struct scatterlist *sg = *pSg;
 	struct page *pages;
+	int gup_flags;
 
 	va_align = round_down(va, PAGE_SIZE);
+	gup_flags = FOLL_TOUCH | FOLL_POPULATE | FOLL_MLOCK;
+	if (vma->vm_flags & VM_LOCKONFAULT)
+		gup_flags &= ~FOLL_POPULATE;
+	/*
+	 * We want to touch writable mappings with a write fault in order
+	 * to break COW, except for shared mappings because these don't COW
+	 * and we would not want to dirty them for nothing.
+	 */
+	if ((vma->vm_flags & (VM_WRITE | VM_SHARED)) == VM_WRITE)
+		gup_flags |= FOLL_WRITE;
+
+	/*
+	 * We want mlock to succeed for regions that have any permissions
+	 * other than PROT_NONE.
+	 */
+	if (vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC))
+		gup_flags |= FOLL_FORCE;
+
 
 	for (i = 0; i < page_num; i++) {
 		int fault_cnt;
@@ -406,7 +425,7 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 		for (fault_cnt = 0; fault_cnt < 3000; fault_cnt++) {
 			if (has_page) {
 				ret = get_user_pages(va_tmp, 1,
-						     (vma->vm_flags & VM_WRITE),
+						     gup_flags,
 						     &pages, NULL);
 
 				if (ret == 1)
