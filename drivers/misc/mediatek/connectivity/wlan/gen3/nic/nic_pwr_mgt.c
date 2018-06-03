@@ -189,7 +189,8 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				       "LP fail, Timeout(%ums) Bus Error[%u] Resetting[%u] NoAck[%u] Cnt[%u]",
 					kalGetTimeTick() - u4CurrTick, fgIsBusAccessFailed, kalIsResetting(),
 					wlanIsChipNoAck(prAdapter), prAdapter->u4OwnFailedCount);
-
+				/* polling cpupcr for debug */
+				wlanPollingCpupcr(4, 5);
 				prAdapter->u4OwnFailedLogCount++;
 				if (prAdapter->u4OwnFailedLogCount > LP_OWN_BACK_FAILED_RESET_CNT) {
 					/* Trigger RESET */

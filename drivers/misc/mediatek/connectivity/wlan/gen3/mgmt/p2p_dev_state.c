@@ -166,7 +166,7 @@ p2pDevStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eOriBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eOriChnlSco;
 
-		DBGLOG(P2P, INFO, "p2p state trans abort chann on hand, eListenExted: %d, eNextState: %d\n",
+		DBGLOG(P2P, TRACE, "p2p state trans abort chann on hand, eListenExted: %d, eNextState: %d\n",
 			prP2pDevFsmInfo->eListenExted, eNextState);
 		if (prP2pDevFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING ||
 			eNextState != P2P_DEV_STATE_CHNL_ON_HAND) {
