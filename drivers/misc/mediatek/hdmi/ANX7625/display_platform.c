@@ -19,6 +19,19 @@ Description:
 Revision History:
 
 ******************************************************************************/
+/*
+ * Copyright(c) 2014, Analogix Semiconductor. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 
 
 #include "display_platform.h"
@@ -353,11 +366,6 @@ void i2s_gpio_ctrl(int enable)
 {
 	int offset = 0;
 	int ret = 0;
-
-#ifdef ANX7625_MTK_PLATFORM
-	if (dst_is_dsi)
-		return;
-#endif
 
 	SLIMPORT_DBG("i2s_gpio_ctrl+  %ld !!\n", sizeof(i2s_gpio_name));
 
