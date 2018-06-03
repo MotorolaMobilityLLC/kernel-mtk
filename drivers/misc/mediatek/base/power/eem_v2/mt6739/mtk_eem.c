@@ -1660,6 +1660,9 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 #ifdef CONFIG_MACH_MT6739
 		det->pmic_base = CPU_PMIC_BASE_6357;
+
+		if (eem_devinfo.FT_PGM == 0x3)
+			det->DVTFIXED = DVTFIXED_VAL_CPU_VER_3;
 #else
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		det->pmic_base = CPU_PMIC_BASE_6356;

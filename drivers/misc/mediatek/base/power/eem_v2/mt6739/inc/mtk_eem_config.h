@@ -191,6 +191,7 @@
 #define VMIN_VAL		(0x20)	/* volt domain: 0.95v*/
 #define VCO_VAL			(0x08)
 #define DVTFIXED_VAL		(0x0A)
+#define DVTFIXED_VAL_CPU_VER_3	(0x00)
 
 #define DTHI_VAL		(0x01) /* positive */
 #define DTLO_VAL		(0xfe) /* negative (2's compliment) */
