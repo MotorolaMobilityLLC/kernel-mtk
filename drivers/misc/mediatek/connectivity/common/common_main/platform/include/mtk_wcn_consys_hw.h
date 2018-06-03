@@ -128,6 +128,7 @@ typedef MTK_WCN_BOOL(*CONSYS_IC_NEED_STORE_PDEV) (VOID);
 typedef UINT32(*CONSYS_IC_STORE_PDEV) (struct platform_device *pdev);
 typedef UINT32(*CONSYS_IC_STORE_RESET_CONTROL) (struct platform_device *pdev);
 typedef MTK_WCN_BOOL(*CONSYS_IC_NEED_GPS) (VOID);
+typedef VOID(*CONSYS_IC_SET_IF_PINMUX) (MTK_WCN_BOOL enable);
 
 typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_CLOCK_BUFFER_CTRL consys_ic_clock_buffer_ctrl;
@@ -159,6 +160,7 @@ typedef struct _WMT_CONSYS_IC_OPS_ {
 	CONSYS_IC_STORE_PDEV consys_ic_store_pdev;
 	CONSYS_IC_STORE_RESET_CONTROL consys_ic_store_reset_control;
 	CONSYS_IC_NEED_GPS consys_ic_need_gps;
+	CONSYS_IC_SET_IF_PINMUX consys_ic_set_if_pinmux;
 } WMT_CONSYS_IC_OPS, *P_WMT_CONSYS_IC_OPS;
 /*******************************************************************************
 *                            P U B L I C   D A T A

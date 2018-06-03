@@ -147,12 +147,52 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 		}
 	}
 
+	if (wmt_consys_ic_ops->consys_ic_read_reg_from_dts)
+		iRet = wmt_consys_ic_ops->consys_ic_read_reg_from_dts(pdev);
+	else
+		iRet = -1;
+
+	if (iRet)
+		return iRet;
+
 	if (wmt_consys_ic_ops->consys_ic_clk_get_from_dts)
 		iRet = wmt_consys_ic_ops->consys_ic_clk_get_from_dts(pdev);
 	else
 		iRet = -1;
+
 	if (iRet)
 		return iRet;
+
+	if (gConEmiPhyBase) {
+		if (wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection)
+			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
+		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
+			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
+#if 1
+		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + SZ_1M / 2, CONSYS_EMI_MEM_SIZE);
+#else
+		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
+#endif
+		/* pEmibaseaddr = ioremap_nocache(0x80090400,270*KBYTE); */
+		if (pEmibaseaddr) {
+			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
+			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
+			iRet = 0;
+		} else {
+			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
+		}
+	} else {
+		WMT_PLAT_ERR_FUNC("consys emi memory address gConEmiPhyBase invalid\n");
+	}
+
+#ifdef CONFIG_MTK_HIBERNATION
+	WMT_PLAT_INFO_FUNC("register connsys restore cb for complying with IPOH function\n");
+	register_swsusp_restore_noirq_func(ID_M_CONNSYS, mtk_wcn_consys_hw_restore, NULL);
+#endif
+
+	if (wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init)
+		wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init();
+
 
 	if (wmt_consys_ic_ops->consys_ic_pmic_get_from_dts)
 		wmt_consys_ic_ops->consys_ic_pmic_get_from_dts(pdev);
@@ -167,6 +207,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 
 	if (wmt_consys_ic_ops->consys_ic_store_reset_control)
 		wmt_consys_ic_ops->consys_ic_store_reset_control(pdev);
+
 	return 0;
 }
 
@@ -191,6 +232,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 	if (on) {
 		WMT_PLAT_DBG_FUNC("++\n");
+		if (wmt_consys_ic_ops->consys_ic_set_if_pinmux)
+			wmt_consys_ic_ops->consys_ic_set_if_pinmux(ENABLE);
+
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
 			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(ENABLE);
 
@@ -260,6 +304,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		}
 		if (wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl)
 			wmt_consys_ic_ops->consys_ic_hw_vcn18_ctrl(DISABLE);
+
+		if (wmt_consys_ic_ops->consys_ic_set_if_pinmux)
+			wmt_consys_ic_ops->consys_ic_set_if_pinmux(DISABLE);
 	}
 	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
 	return iRet;
@@ -456,49 +503,13 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 {
 	INT32 iRet = -1;
 
+	if (wmt_consys_ic_ops == NULL)
+		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
+
 	iRet = platform_driver_register(&mtk_wmt_dev_drv);
 	if (iRet)
 		WMT_PLAT_ERR_FUNC("WMT platform driver registered failed(%d)\n", iRet);
 
-	if (wmt_consys_ic_ops == NULL)
-		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
-
-	if (wmt_consys_ic_ops->consys_ic_read_reg_from_dts)
-		iRet = wmt_consys_ic_ops->consys_ic_read_reg_from_dts(g_pdev);
-	else
-		iRet = -1;
-
-	if (iRet)
-		return iRet;
-
-	if (gConEmiPhyBase) {
-		if (wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection)
-			wmt_consys_ic_ops->consys_ic_emi_mpu_set_region_protection();
-		if (wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg)
-			wmt_consys_ic_ops->consys_ic_emi_set_remapping_reg();
-#if 1
-		pEmibaseaddr = ioremap_nocache(gConEmiPhyBase + SZ_1M / 2, CONSYS_EMI_MEM_SIZE);
-#else
-		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
-#endif
-		/* pEmibaseaddr = ioremap_nocache(0x80090400,270*KBYTE); */
-		if (pEmibaseaddr) {
-			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
-			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
-			iRet = 0;
-		} else {
-			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
-		}
-	} else {
-		WMT_PLAT_ERR_FUNC("consys emi memory address gConEmiPhyBase invalid\n");
-	}
-#ifdef CONFIG_MTK_HIBERNATION
-	WMT_PLAT_INFO_FUNC("register connsys restore cb for complying with IPOH function\n");
-	register_swsusp_restore_noirq_func(ID_M_CONNSYS, mtk_wcn_consys_hw_restore, NULL);
-#endif
-
-	if (wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init)
-		wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init();
 
 	return iRet;
 
