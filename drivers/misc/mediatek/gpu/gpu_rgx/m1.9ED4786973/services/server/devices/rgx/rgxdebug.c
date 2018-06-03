@@ -78,6 +78,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devicemem_history_server.h"
 #endif
 #include "rgx_bvnc_defs_km.h"
+
+#include "mtk_version.h"
+
 #define PVR_DUMP_DRIVER_INFO(x, y)										\
 	PVR_DUMPDEBUG_LOG("%s info: "										\
 					   "BuildOptions: 0x%08x "							\
@@ -3722,6 +3725,7 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 			}
 
 			PVR_DUMPDEBUG_LOG("------[ RGX summary ]------");
+			PVR_DUMPDEBUG_LOG("MTK Version String: %s", MTK_DEBUG_VERSION_STR);
 			PVR_DUMPDEBUG_LOG("RGX BVNC: %d.%d.%d.%d", psDevInfo->sDevFeatureCfg.ui32B, \
 													   psDevInfo->sDevFeatureCfg.ui32V,	\
 													   psDevInfo->sDevFeatureCfg.ui32N, \
