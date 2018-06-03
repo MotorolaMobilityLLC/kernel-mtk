@@ -76,6 +76,7 @@ void do_register_otg_work(struct work_struct *data)
 #endif
 #endif
 #if CONFIG_MTK_GAUGE_VERSION == 30
+#include <mt-plat/mtk_battery.h>
 #include <mt-plat/charger_class.h>
 static struct charger_device *primary_charger;
 #endif
@@ -522,6 +523,36 @@ static void do_host_plug_test_work(struct work_struct *data)
 	DBG(0, "END\n");
 }
 
+static int check_vbus(void)
+{
+	const int wait_cnt = 10;
+	const int wait_period = 100;
+	int i;
+	int ret = -ERANGE;
+
+	for (i = 0; i < wait_cnt; i++) {
+		int vbus;
+
+		vbus = pmic_get_vbus();
+
+		DBG(0, "vbus=%d\n", vbus);
+
+		/*
+		 * USB_3_1_r1.0.pdf 11.4.5 VBUS Electrical Characteristics
+		 * Port (downstream connector) VBUS 4.45~5.25 V
+		 *
+		 * usb_20.pdf 7.3.2 Bus Timing/Electrical Characteristics
+		 * High-power Port VBUS Note 2, Section 7.2.1 4.75 5.25 V
+		 */
+		if (vbus > 4750 && vbus < 5250) {
+			ret = 0;
+			break;
+		}
+		msleep(wait_period);
+	}
+	return ret;
+}
+
 #define ID_PIN_WORK_RECHECK_TIME 30	/* 30 ms */
 #define ID_PIN_WORK_BLOCK_TIMEOUT 30000 /* 30000 ms */
 static void musb_host_work(struct work_struct *data)
@@ -601,7 +632,6 @@ static void musb_host_work(struct work_struct *data)
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
 		wake_lock(&mtk_musb->usb_lock);
-		mt_usb_set_vbus(mtk_musb, 1);
 
 		/* this make PHY operation workable */
 		musb_platform_enable(mtk_musb);
@@ -625,6 +655,11 @@ static void musb_host_work(struct work_struct *data)
 		musb_start(mtk_musb);
 		if (!typec_control && !host_plug_test_triggered)
 			switch_int_to_device(mtk_musb);
+
+		mt_usb_set_vbus(mtk_musb, 1);
+
+		if (check_vbus() < 0)
+			DBG(0, "check vbus fail\n");
 
 		if (host_plug_test_enable && !host_plug_test_triggered)
 			queue_delayed_work(mtk_musb->st_wq, &host_plug_test_work, 0);
@@ -962,6 +997,9 @@ static int set_option(const char *val, const struct kernel_param *kp)
 		DBG(0, "case %d\n", local_option);
 		_set_vbus(mtk_musb, 0);
 		break;
+	case 12:
+		DBG(0, "vbus=%d\n", pmic_get_vbus());
+		break;
 	default:
 		break;
 	}
@@ -971,7 +1009,7 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0400);
+module_param_cb(option, &option_param_ops, &option, 0660);
 #else
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */
