@@ -464,8 +464,7 @@ static long cam_cal_drv_ioctl(
 	struct timeval ktv1, ktv2;
 	unsigned long TimeIntervalUS;
 #endif
-
-	if (_IOC_DIR(a_u4Command != _IOC_NONE)) {
+	if (_IOC_DIR(a_u4Command) != _IOC_NONE) {
 		pBuff = kmalloc(sizeof(stCAM_CAL_INFO_STRUCT), GFP_KERNEL);
 		if (pBuff == NULL) {
 			CAM_CALDB(" ioctl allocate pBuff mem failed\n");
@@ -501,7 +500,6 @@ static long cam_cal_drv_ioctl(
 			CAM_CALDB("ioctl copy from user failed\n");
 			return -EFAULT;
 		}
-
 	}
 	if (ptempbuf == NULL) { /*It have to add */
 		CAM_CALDB("ptempbuf is Null !!!");
