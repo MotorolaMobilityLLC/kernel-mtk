@@ -795,7 +795,7 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 
 	if (wakesta->r12 == 0)
-		strcat(buf, " Unknown_Reason");
+		strncat(buf, " Unknown_Reason", strlen(" Unknown_Reason"));
 
 	if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER) {
