@@ -104,7 +104,7 @@ config MTK_MEMORY_LOWPOWER
 
 config MTK_DCS
 	bool "Support Mediatek DDRPHY DCS mechanism"
-	depends on MTK_MEMORY_LOWPOWER
+	depends on MTK_MEMORY_LOWPOWER && MTK_TINYSYS_SSPM_SUPPORT
 	default n
 	help
 	  Mediatek DDRPHY DCS mechanism.

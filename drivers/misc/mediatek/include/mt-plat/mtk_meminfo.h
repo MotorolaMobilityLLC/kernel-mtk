@@ -68,6 +68,7 @@ extern phys_addr_t memory_ssvp_cma_size(void);
 extern struct single_cma_registration memory_ssvp_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 
+#ifdef CONFIG_MTK_DCS
 enum dcs_status {
 	DCS_NORMAL,
 	DCS_LOWPOWER,
@@ -80,4 +81,5 @@ extern int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status);
 extern void dcs_get_dcs_status_unlock(void);
 extern bool dcs_initialied(void);
 extern char * const dcs_status_name(enum dcs_status status);
+#endif /* end CONFIG_MTK_DCS */
 #endif /* end __MTK_MEMINFO_H__ */
