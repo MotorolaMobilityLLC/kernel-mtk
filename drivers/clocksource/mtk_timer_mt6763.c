@@ -174,9 +174,9 @@ static void task_sched(unsigned long data)
 	tasklet_schedule(&task[id]);
 }
 
+static irqreturn_t gpt_handler(int irq, void *dev_id);
 static void __gpt_ack_irq(struct gpt_device *dev);
 static cycle_t mt_gpt_read(struct clocksource *cs);
-static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id);
 static int mt_gpt_clkevt_next_event(unsigned long cycles,
 				   struct clock_event_device *evt);
 static int mt_gpt_clkevt_shutdown(struct clock_event_device *clk);
@@ -221,57 +221,12 @@ static struct irqaction gpt_irq = {
 #else
 	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW,
 #endif
-	.handler = mt_gpt_clkevt_interrupt,
-	.dev_id     = &gpt_clockevent,
+	.handler = gpt_handler,
+	.dev_id = &gpt_clockevent,
 };
 
 static uint64_t gpt_clkevt_last_interrupt_time;
 static uint64_t gpt_clkevt_last_setting_next_event_time;
-
-static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id)
-{
-	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
-	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
-
-#if defined(CONFIG_MTK_TIMER_AEE_DUMP)
-	gpt_clkevt_last_interrupt_time = sched_clock();
-#endif
-
-#if defined(CONFIG_MTK_TIMER_DEBUG) && !defined(CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0)
-	int cpu;
-	int err = 0;
-
-	cpu = mt_irq_dump_cpu(evt->irq);
-
-	if (cpu < 0) {
-		pr_info("[mt_gpt] invalid irq query! ret %d\n", cpu);
-		err = 1;
-	} else {
-		if (cpu != smp_processor_id()) {
-			pr_info("[mt_gpt] wrong irq! irq_cpu %d, cur_cpu %d\n",
-				cpu, smp_processor_id());
-			err = 1;
-		}
-
-		if (cpu != evt->irq_affinity_on) {
-			pr_info("[mt_gpt] wrong affinity! irq_cpu %d, affinity %d\n",
-				cpu, evt->irq_affinity_on);
-			err = 1;
-		}
-	}
-
-	if (!err)
-		mt_irq_dump_status(evt->irq);
-#endif
-
-	/* acknowledge clkevt (timer0) irq */
-	__gpt_ack_irq(dev);
-
-	/* run event handler */
-	evt->event_handler(evt);
-
-	return IRQ_HANDLED;
-}
 
 void mt_gpt_clkevt_aee_dump(void)
 {
@@ -346,6 +301,47 @@ void mt_gpt_clkevt_aee_dump(void)
 	/* mt_irq_dump_status(xgpt_timers.tmr_irq); */
 
 #endif
+}
+
+static inline unsigned int gpt_get_and_ack_irq(void)
+{
+	unsigned int id;
+	unsigned int mask;
+	unsigned int status = __raw_readl(GPT_IRQSTA);
+
+	for (id = GPT1; id < NR_GPTS; id++) {
+		mask = 0x1 << id;
+		if (status & mask) {
+			mt_reg_sync_writel(mask, GPT_IRQACK);
+			break;
+		}
+	}
+	return id;
+}
+
+/*
+ * gpt_handler users are listed as below,
+ *
+ * For ACAO project:
+ *   GPT1: SoC timer for tick-broadcasting (oneshot)
+ *
+ * For HPS project:
+ *   GPT4: Wakeup source for MTK idle framework (oneshot)
+ */
+static irqreturn_t gpt_handler(int irq, void *dev_id)
+{
+	unsigned int id = gpt_get_and_ack_irq();
+	struct gpt_device *dev = id_to_dev(id);
+
+	if (likely(dev)) {
+		if (!(dev->flags & GPT_ISR))
+			handlers[id](id);
+		else
+			handlers[id]((unsigned long)dev_id);
+	} else
+		pr_info("GPT id is %d\n", id);
+
+	return IRQ_HANDLED;
 }
 
 static void __gpt_enable_irq(struct gpt_device *dev)
@@ -644,6 +640,44 @@ static cycle_t mt_gpt_read(struct clocksource *cs)
 	return cycles;
 }
 
+static void clkevt_handler(unsigned long data)
+{
+	struct clock_event_device *evt = (struct clock_event_device *)data;
+
+#if defined(CONFIG_MTK_TIMER_AEE_DUMP)
+	gpt_clkevt_last_interrupt_time = sched_clock();
+#endif
+
+#if defined(CONFIG_MTK_TIMER_DEBUG) && !defined(CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0)
+	int cpu;
+	int err = 0;
+
+	cpu = mt_irq_dump_cpu(evt->irq);
+
+	if (cpu < 0) {
+		pr_info("[mt_gpt] invalid irq query! ret %d\n", cpu);
+		err = 1;
+	} else {
+		if (cpu != smp_processor_id()) {
+			pr_info("[mt_gpt] wrong irq! irq_cpu %d, cur_cpu %d\n",
+				cpu, smp_processor_id());
+			err = 1;
+		}
+
+		if (cpu != evt->irq_affinity_on) {
+			pr_info("[mt_gpt] wrong affinity! irq_cpu %d, affinity %d\n",
+				cpu, evt->irq_affinity_on);
+			err = 1;
+		}
+	}
+
+	if (!err)
+		mt_irq_dump_status(evt->irq);
+#endif
+
+	evt->event_handler(evt);
+}
+
 static inline void setup_clksrc(u32 freq)
 {
 	struct clocksource *cs = &gpt_clocksource;
@@ -683,10 +717,11 @@ static inline void setup_clkevt(u32 freq, int irq)
 	 * 2. Configure this device as ONESHOT mode as tick broadcast device.
 	 */
 	setup_gpt_dev_locked(dev, GPT_ONE_SHOT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
-		freq / HZ, NULL, GPT_ISR);
+		freq / HZ, clkevt_handler, GPT_ISR);
 #else
+	/* Not used in MTK SMP platform */
 	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
-		freq / HZ, NULL, GPT_ISR);
+		freq / HZ, clkevt_handler, GPT_ISR);
 #endif
 
 	__gpt_get_cmp(dev, cmp);
