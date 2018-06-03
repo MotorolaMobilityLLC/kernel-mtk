@@ -22,6 +22,7 @@
 #define DEFAULT_TURNINGPOINT 65
 #define DEFAULT_WATERSHED 236
 
+
 extern int STUNE_TASK_THRESHOLD;
 
 struct power_tuning_t {
