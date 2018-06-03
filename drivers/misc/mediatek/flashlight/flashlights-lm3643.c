@@ -556,7 +556,7 @@ static int lm3643_release(void *pArg)
 	return 0;
 }
 
-static int lm3643_set_driver(int scenario)
+static int lm3643_set_driver(void)
 {
 	/* init chip and set usage count */
 	mutex_lock(&lm3643_mutex);
@@ -572,7 +572,7 @@ static int lm3643_set_driver(int scenario)
 
 static ssize_t lm3643_strobe_store(struct flashlight_arg arg)
 {
-	lm3643_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
+	lm3643_set_driver();
 	lm3643_set_level(arg.ct, arg.level);
 	lm3643_enable(arg.ct);
 	msleep(arg.dur);

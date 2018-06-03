@@ -90,7 +90,7 @@ static struct charger_consumer *flashlight_charger_consumer;
 #define CHARGER_SUPPLY_NAME "charger_port1"
 
 /* is decrease voltage */
-static int has_decrease_voltage;
+static int is_decrease_voltage;
 
 /******************************************************************************
  * rt5081 operations
@@ -264,26 +264,48 @@ static int rt5081_set_level(int channel, int level)
 	return 0;
 }
 
+static int rt5081_set_scenario(int scenario)
+{
+	/* set decouple mode */
+	rt5081_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+
+	/* notify charger to increase or decrease voltage */
+	if (!flashlight_charger_consumer) {
+		fl_err("Failed with no charger consumer handler.\n");
+		return -1;
+	}
+
+	mutex_lock(&rt5081_mutex);
+	if (scenario & FLASHLIGHT_SCENARIO_CAMERA_MASK) {
+		if (!is_decrease_voltage) {
+			fl_info("Decrease voltage level.\n");
+			charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, false);
+			is_decrease_voltage = 1;
+		}
+	} else {
+		if (is_decrease_voltage) {
+			fl_info("Increase voltage level.\n");
+			charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, true);
+			is_decrease_voltage = 0;
+		}
+	}
+	mutex_unlock(&rt5081_mutex);
+
+	return 0;
+}
+
 /* flashlight init */
-static int rt5081_init(int scenario)
+static int rt5081_init(void)
 {
 	/* clear flashlight state */
 	rt5081_en_ch1 = RT5081_NONE;
 	rt5081_en_ch2 = RT5081_NONE;
 
-	/* set decouple mode */
-	rt5081_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+	/* clear decouple mode */
+	rt5081_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
-	/* notify charger to decrease voltage */
-	if (scenario & FLASHLIGHT_SCENARIO_CAMERA_MASK) {
-		fl_info("Decrease voltage level.\n");
-		if (!flashlight_charger_consumer) {
-			fl_err("Failed with no charger consumer handler.\n");
-			return -1;
-		}
-		charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, false);
-		has_decrease_voltage = 1;
-	}
+	/* clear charger status */
+	is_decrease_voltage = 0;
 
 	return 0;
 }
@@ -296,18 +318,10 @@ static int rt5081_uninit(void)
 	rt5081_en_ch2 = RT5081_NONE;
 
 	/* clear decouple mode */
-	rt5081_decouple_mode = 0;
+	rt5081_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
-	/* notify charger to increase voltage */
-	if (has_decrease_voltage) {
-		fl_info("Increase voltage level.\n");
-		if (!flashlight_charger_consumer) {
-			fl_err("Failed with no charger consumer handler.\n");
-			return -1;
-		}
-		charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, true);
-		has_decrease_voltage = 0;
-	}
+	/* clear charger status */
+	is_decrease_voltage = 0;
 
 	return rt5081_disable();
 }
@@ -460,6 +474,12 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 		rt5081_set_level(channel, fl_arg->arg);
 		break;
 
+	case FLASH_IOC_SET_SCENARIO:
+		fl_dbg("FLASH_IOC_SET_SCENARIO(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		rt5081_set_scenario(fl_arg->arg);
+		break;
+
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
@@ -502,14 +522,14 @@ static int rt5081_release(void *pArg)
 	return 0;
 }
 
-static int rt5081_set_driver(int scenario)
+static int rt5081_set_driver(void)
 {
 	int ret = 0;
 
 	/* init chip and set usage count */
 	mutex_lock(&rt5081_mutex);
 	if (!use_count)
-		ret = rt5081_init(scenario);
+		ret = rt5081_init();
 	use_count++;
 	mutex_unlock(&rt5081_mutex);
 
@@ -520,8 +540,9 @@ static int rt5081_set_driver(int scenario)
 
 static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 {
-#if 1
-	rt5081_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
+	rt5081_set_driver();
+	rt5081_set_scenario(
+			FLASHLIGHT_SCENARIO_CAMERA | FLASHLIGHT_SCENARIO_COUPLE);
 	rt5081_set_level(arg.channel, arg.level);
 
 	if (arg.level < 0)
@@ -530,26 +551,10 @@ static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 		rt5081_operate(arg.channel, RT5081_ENABLE);
 
 	msleep(arg.dur);
+	rt5081_set_scenario(
+			FLASHLIGHT_SCENARIO_FLASHLIGHT | FLASHLIGHT_SCENARIO_COUPLE);
 	rt5081_operate(arg.channel, RT5081_DISABLE);
 	rt5081_release(NULL);
-#endif
-
-#if 0
-	int i;
-
-	rt5081_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
-	for (i = 0; i < RT5081_LEVEL_NUM; i++) {
-		rt5081_set_level(RT5081_CHANNEL_CH1, i);
-		rt5081_set_level(RT5081_CHANNEL_CH2, i);
-		rt5081_operate(RT5081_CHANNEL_CH1, RT5081_ENABLE);
-		rt5081_operate(RT5081_CHANNEL_CH2, RT5081_ENABLE);
-		msleep(50);
-		rt5081_operate(RT5081_CHANNEL_CH1, RT5081_DISABLE);
-		rt5081_operate(RT5081_CHANNEL_CH2, RT5081_DISABLE);
-		msleep(200);
-	}
-	rt5081_release(NULL);
-#endif
 
 	return 0;
 }
@@ -588,7 +593,7 @@ static int rt5081_probe(struct platform_device *pdev)
 
 	/* clear attributes */
 	use_count = 0;
-	has_decrease_voltage = 0;
+	is_decrease_voltage = 0;
 
 	/* get RTK flashlight handler */
 	flashlight_dev_ch1 = find_flashlight_by_name(RT_FLED_DEVICE_CH1);

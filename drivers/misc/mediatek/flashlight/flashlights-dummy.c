@@ -241,7 +241,7 @@ static int dummy_release(void *pArg)
 	return 0;
 }
 
-static int dummy_set_driver(int scenario)
+static int dummy_set_driver(void)
 {
 	/* init chip and set usage count */
 	mutex_lock(&dummy_mutex);
@@ -257,7 +257,7 @@ static int dummy_set_driver(int scenario)
 
 static ssize_t dummy_strobe_store(struct flashlight_arg arg)
 {
-	dummy_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
+	dummy_set_driver();
 	dummy_set_level(arg.level);
 	dummy_enable();
 	msleep(arg.dur);
