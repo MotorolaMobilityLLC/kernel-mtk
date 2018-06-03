@@ -1156,6 +1156,8 @@ static INT32 wmt_stp_init_coex(VOID)
 #define COEX_PTA  3
 #define COEX_MISC 4
 #endif
+#define WMT_COXE_CONFIG_ADJUST_ANTENNA_OPCODE 6
+
 	/*Get wmt config */
 	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
 
@@ -1204,6 +1206,7 @@ static INT32 wmt_stp_init_coex(VOID)
 #endif
 
 	/*command adjustion due to WMT.cfg */
+	coex_table[COEX_WMT].cmd[4] = WMT_COXE_CONFIG_ADJUST_ANTENNA_OPCODE;
 	coex_table[COEX_WMT].cmd[5] = pWmtGenConf->coex_wmt_ant_mode;
 
 	if (gWmtDbgLvl >= WMT_LOG_DBG) {
