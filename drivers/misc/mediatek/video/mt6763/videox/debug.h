@@ -22,6 +22,10 @@ extern int bypass_blank;
 extern int lcm_mode_status;
 extern int layer_layout_allow_non_continuous;
 
+#include "disp_session.h"
+#include "ddp_info.h"
+extern int disp_layer_info_statistic(struct disp_ddp_path_config *last_config, struct disp_frame_cfg_t *cfg);
+
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
 

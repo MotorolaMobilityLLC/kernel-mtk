@@ -5149,6 +5149,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	/*=== create new data_config for ovl input ===*/
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
+	disp_layer_info_statistic(data_config, cfg);
+
 	if (disp_partial_is_support()) {
 		if (primary_display_is_directlink_mode())
 			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);

@@ -32,6 +32,7 @@
 #include "ddp_path.h"
 #include "ddp_reg.h"
 #include "primary_display.h"
+#include "mtk_disp_mgr.h"
 #include "display_recorder.h"
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
@@ -63,8 +64,161 @@ int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 
-static int basic_test_cancel;
+/*********************** layer information statistic *********************/
+#define STATISTIC_MAX_LAYERS 20
+struct layer_statistic {
+	unsigned long total_frame_cnt;
+	unsigned long cnt_by_layers[STATISTIC_MAX_LAYERS];
+	unsigned long cnt_by_layers_with_ext[STATISTIC_MAX_LAYERS];
+	unsigned long cnt_by_layers_with_arm_ext[STATISTIC_MAX_LAYERS];
+};
+static struct layer_statistic layer_stat;
+static int layer_statistic_enable = 1;
 
+static int _is_overlap(unsigned int x1, unsigned int y1, unsigned int w1, unsigned int h1,
+			unsigned int x2, unsigned int y2, unsigned int w2, unsigned int h2)
+{
+	if (x2 >= x1 + w1 || x1 >= x2 + w2)
+		return 0;
+	if (y2 >= y1 + h1 || y1 >= y2 + h2)
+		return 0;
+	return 1;
+}
+
+static int layer_is_overlap(struct disp_frame_cfg_t *cfg, int idx, int from, int to)
+{
+	int i;
+
+	for (i = from; i <= to; i++) {
+		if (_is_overlap(cfg->input_cfg[idx].tgt_offset_x, cfg->input_cfg[idx].tgt_offset_y,
+			cfg->input_cfg[idx].src_width, cfg->input_cfg[idx].src_height,
+			cfg->input_cfg[i].tgt_offset_x, cfg->input_cfg[i].tgt_offset_y,
+			cfg->input_cfg[i].src_width, cfg->input_cfg[i].src_height))
+			return 1;
+	}
+	return 0;
+}
+
+
+static int calc_layer_num_with_arm_ext(struct disp_frame_cfg_t *cfg)
+{
+	int ovl_phy_num[2] = {4, 2};
+	int ovl_ext_num[2] = {3, 3};
+	int ovl_idx = 0;
+	int i, cur_phy_num, cur_ext_num;
+	int cur_phy_idx_in_cfg;
+	int total_phy_layer = 0;
+
+	cur_phy_num = 0;
+	cur_ext_num = 0;
+	cur_phy_idx_in_cfg = 0;
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		int is_overlap;
+
+		if (!cfg->input_cfg[i].layer_enable)
+			continue;
+		/* dump_input_cfg_info(&cfg->input_cfg[i], MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0), 1); */
+
+		if (cur_phy_num && cur_ext_num < ovl_ext_num[ovl_idx])
+			is_overlap = layer_is_overlap(cfg, i, cur_phy_idx_in_cfg, i - 1);
+		else
+			is_overlap = 1;
+
+		if (!is_overlap) {
+			/* put it in ext layer */
+			cur_ext_num++;
+			continue;
+		}
+
+		/* now put it into a phy layer */
+		if (cur_phy_num < ovl_phy_num[ovl_idx]) {
+			cur_phy_num++;
+			cur_phy_idx_in_cfg = i;
+		} else if (ovl_idx < ARRAY_SIZE(ovl_phy_num)) {
+			/* dispatch to next ovl */
+			ovl_idx++;
+			cur_phy_num = 1;
+			cur_phy_idx_in_cfg = i;
+			cur_ext_num = 0;
+		} else {
+			/* no ovl layer aviable !! */
+			goto err_out;
+		}
+	}
+
+	for (i = 0; i < ovl_idx; i++)
+		total_phy_layer += ovl_phy_num[i];
+	total_phy_layer += cur_phy_num;
+	return total_phy_layer;
+
+err_out:
+	DISPERR("%s failed: ovl_idx=%d, cur_phy=%d, cur_ext=%d\n", __func__, ovl_idx, cur_phy_num, cur_ext_num);
+	for (i = 1; i < cfg->input_layer_num; i++)
+		dump_input_cfg_info(&cfg->input_cfg[i], MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0), 1);
+
+	return -1;
+}
+
+int disp_layer_info_statistic(struct disp_ddp_path_config *last_config, struct disp_frame_cfg_t *cfg)
+{
+	unsigned int i, phy_num = 0, ext_num = 0;
+	int phy_num_with_arm_ext;
+
+	if (!ACCESS_ONCE(layer_statistic_enable))
+		return 0;
+
+	layer_stat.total_frame_cnt++;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		if (!cfg->input_cfg[i].layer_enable)
+			continue;
+		if (cfg->input_cfg[i].ext_sel_layer != -1)
+			ext_num++;
+		else
+			phy_num++;
+	}
+	layer_stat.cnt_by_layers[phy_num + ext_num]++;
+	layer_stat.cnt_by_layers_with_ext[phy_num]++;
+
+	phy_num_with_arm_ext = calc_layer_num_with_arm_ext(cfg);
+	if (phy_num_with_arm_ext > 0) {
+		phy_num_with_arm_ext = min(phy_num_with_arm_ext, STATISTIC_MAX_LAYERS);
+		layer_stat.cnt_by_layers_with_arm_ext[phy_num_with_arm_ext]++;
+	}
+
+	if (!(layer_stat.total_frame_cnt % 100)) {
+		char str[200];
+		int offset = 0;
+
+		offset += snprintf(str + offset, sizeof(str) - offset, "total:%ld.layers:", layer_stat.total_frame_cnt);
+		for (i = 1; i <= 12; i++)
+			offset += snprintf(str + offset, sizeof(str) - offset, "%ld,",
+						layer_stat.cnt_by_layers[i]);
+		DISPMSG("layer_cnt %s\n", str);
+
+		offset = 0;
+		offset += snprintf(str + offset, sizeof(str) - offset, ".ext:");
+		for (i = 1; i <= 6 ; i++)
+			offset += snprintf(str + offset, sizeof(str) - offset, "%ld,",
+						layer_stat.cnt_by_layers_with_ext[i]);
+
+		offset += snprintf(str + offset, sizeof(str) - offset, ".arm_ext:");
+		for (i = 1; i <= 6 ; i++)
+			offset += snprintf(str + offset, sizeof(str) - offset, "%ld,",
+						layer_stat.cnt_by_layers_with_arm_ext[i]);
+		DISPMSG("layer_cnt %s\n", str);
+	}
+
+	return 0;
+}
+
+void disp_layer_info_statistic_reset(void)
+{
+	memset(&layer_stat, 0, sizeof(layer_stat));
+}
+
+/*********************** basic test ****************************/
+static int basic_test_cancel;
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
 {
@@ -877,6 +1031,15 @@ static void process_dbg_opt(const char *opt)
 		}
 	}
 
+	if (strncmp(opt, "layer_statistic:", 16) == 0) {
+		ret = sscanf(opt, "layer_statistic:%d\n", &layer_statistic_enable);
+		if (ret != 1) {
+			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		if (!layer_statistic_enable)
+			disp_layer_info_statistic_reset();
+	}
 }
 
 
