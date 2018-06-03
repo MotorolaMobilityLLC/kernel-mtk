@@ -183,7 +183,7 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 
 	if (en == true) {
 		charger_dev_set_direct_charging_vbusov(info->dc_chg, 6500000);
-		charger_dev_set_direct_charging_ibusoc(info->dc_chg, CC_MAX);
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, info->data.cc_max);
 		ret = mtk_enable_direct_charge(pe3->tcpc, en);
 		if (ret != 0)
 			ret2 = ret;
@@ -202,7 +202,7 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 		if (ret != 0)
 			ret2 = ret;
 		charger_dev_set_direct_charging_vbusov(info->dc_chg, 5500000);
-		charger_dev_set_direct_charging_ibusoc(info->dc_chg, CC_NORMAL);
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, info->data.cc_normal);
 	}
 	charger_dev_enable_direct_charging(info->dc_chg, en);
 
@@ -278,7 +278,7 @@ static void wake_up_pe30_thread(struct charger_manager *info)
 
 static int mtk_pe30_get_cv(struct charger_manager *info)
 {
-	int cv = BAT_UPPER_BOUND;
+	int cv = info->data.bat_upper_bound;
 
 	return cv;
 }
@@ -319,14 +319,15 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 	}
 
 	vbat = pmic_get_battery_voltage();
-	if (vbat < BAT_UPPER_BOUND && vbat > BAT_LOWER_BOUND)
+	if (vbat < info->data.bat_upper_bound && vbat > info->data.bat_lower_bound)
 		ret = true;
 
 	pr_err(
 		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
-		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
-		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
+		vbat, info->data.bat_upper_bound, info->data.bat_lower_bound, ret, pe3->is_pe30_done,
+		mtk_is_pd_chg_ready(),
+		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
 
 	return ret;
 
@@ -335,8 +336,9 @@ _fail:
 	pr_err(
 		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
-		vbat, BAT_UPPER_BOUND, BAT_LOWER_BOUND, ret, pe3->is_pe30_done, mtk_is_pd_chg_ready(), pe3->is_vdm_rdy,
-		mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
+		vbat, info->data.bat_upper_bound, info->data.bat_lower_bound, ret, pe3->is_pe30_done,
+		mtk_is_pd_chg_ready(),
+		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
 
 
 
@@ -351,7 +353,7 @@ static void mtk_pe30_start(struct charger_manager *info)
 	if (wake_lock_active(&pe3->pe30_wakelock) == 0)
 		wake_lock(&pe3->pe30_wakelock);
 
-	pe3->charging_current_limit = CC_INIT;
+	pe3->charging_current_limit = info->data.cc_init;
 	pe3->is_pe30_done = true;
 	pe3->pe30_charging_state = DC_INIT;
 	get_monotonic_boottime(&pe3->startTime);
@@ -417,7 +419,7 @@ void mtk_pe30_plugout_reset(struct charger_manager *info)
 		wake_unlock(&pe3->pe30_wakelock);
 
 	mutex_unlock(&pe3->pe30_mutex);
-	mtk_pe30_set_charging_current_limit(info, CC_INIT);
+	mtk_pe30_set_charging_current_limit(info, info->data.cc_init);
 
 	_wake_up_charger(info);
 }
@@ -549,7 +551,7 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 
 	pe30_chr_enable_power_path(info, true);
 
-	if (avgcur > FOD_CURRENT) {
+	if (avgcur > info->data.fod_current) {
 		reset = false;
 		goto _fail;
 	}
@@ -560,19 +562,19 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 		goto _fail;
 	}
 
-	ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, vbat + 50);
+	ret = mtk_pe30_set_ta_boundary_cap(info, info->data.cc_init, vbat + 50);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_init]err1 = %d\n", ret);
 		goto _fail;
 	}
 
-	ret = mtk_pe30_set_ta_cap(info, CC_SS_INIT, vbat + 50);
+	ret = mtk_pe30_set_ta_cap(info, info->data.cc_ss_init, vbat + 50);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_init]err2 = %d\n", ret);
 		goto _fail;
 	}
 
-	msleep(CC_SS_BLANKING);
+	msleep(info->data.cc_ss_blanking);
 
 	ret = mtk_pe30_enable_direct_charge(info, true);
 	if (ret != 0) {
@@ -580,7 +582,7 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 		goto _fail;
 	}
 	pe3->pe30_charging_state = DC_MEASURE_R;
-	pe3->ktime = ktime_set(0, BAT_MS_TO_NS(CC_SS_BLANKING));
+	pe3->ktime = ktime_set(0, BAT_MS_TO_NS(info->data.cc_ss_blanking));
 
 	return;
 _fail:
@@ -601,14 +603,14 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	pr_err("[mtk_pe30_DC_measure_R]vbus = %d\n", pmic_get_vbus());
 
 	/* set boundary */
-	ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, CV_LIMIT);
+	ret = mtk_pe30_set_ta_boundary_cap(info, info->data.cc_init, info->data.cv_limit);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_measure_R]err1 = %d\n", ret);
 		goto _fail;
 	}
 
 	/* measure 1 */
-	ret = mtk_pe30_set_ta_cap(info, 1500, CV_LIMIT);
+	ret = mtk_pe30_set_ta_cap(info, 1500, info->data.cv_limit);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_measure_R]err2 = %d\n", ret);
 		goto _fail;
@@ -633,7 +635,7 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	}
 
 	/* measure 2 */
-	ret = mtk_pe30_set_ta_cap(info, 2000, CV_LIMIT);
+	ret = mtk_pe30_set_ta_cap(info, 2000, info->data.cv_limit);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_measure_R]err2 = %d\n", ret);
 		goto _fail;
@@ -669,20 +671,20 @@ static void mtk_pe30_DC_measure_R(struct charger_manager *info)
 	pe3->r_cable = abs(cap2.vol - pe3->vbus_cali - vbus2) * 1000 / abs(cap2.cur);
 	pe3->r_cable_2 = abs(cap1.vol - pe3->vbus_cali - vbus1) * 1000 / abs(cap1.cur);
 
-	if (pe3->r_sw < R_SW_MIN)
-		pe3->r_sw = R_SW_MIN;
+	if (pe3->r_sw < info->data.r_sw_min)
+		pe3->r_sw = info->data.r_sw_min;
 
-	if (pe3->r_vbat < R_VBAT_MIN)
-		pe3->r_vbat = R_VBAT_MIN;
+	if (pe3->r_vbat < info->data.r_vbat_min)
+		pe3->r_vbat = info->data.r_vbat_min;
 
 	pe3->r_total = pe3->r_cable + pe3->r_sw + pe3->r_vbat;
 
-	if (pe3->r_cable < CC_INIT_R)
-		pe3->charging_current_limit_by_r = CC_INIT;
-	else if (pe3->r_cable < CC_INIT_BAD_CABLE1_R)
-		pe3->charging_current_limit_by_r = CC_INIT_BAD_CABLE1;
-	else if (pe3->r_cable < CC_INIT_BAD_CABLE2_R)
-		pe3->charging_current_limit_by_r = CC_INIT_BAD_CABLE2;
+	if (pe3->r_cable < info->data.cc_init_r)
+		pe3->charging_current_limit_by_r = info->data.cc_init;
+	else if (pe3->r_cable < info->data.cc_init_bad_cable1_r)
+		pe3->charging_current_limit_by_r = info->data.cc_init_bad_cable1;
+	else if (pe3->r_cable < info->data.cc_init_bad_cable2_r)
+		pe3->charging_current_limit_by_r = info->data.cc_init_bad_cable2;
 	else {
 		pr_err("[mtk_pe30_DC_measure_R]r_cable:%d is too hight , end pe30\n", pe3->r_cable);
 
@@ -771,11 +773,11 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 
 	if (vbat >= mtk_pe30_get_cv(info)) {
 
-		if (cap_now.cur >= CC_END) {
-			current_setting = current_setting - CC_SS_STEP;
+		if (cap_now.cur >= info->data.cc_end) {
+			current_setting = current_setting - info->data.cc_ss_step;
 			cv = mtk_pe30_get_cali_vbus(info, current_setting);
-			if (cv >= CV_LIMIT)
-				cv = CV_LIMIT;
+			if (cv >= info->data.cv_limit)
+				cv = info->data.cv_limit;
 			ret = mtk_pe30_set_ta_cap(info, current_setting, cv);
 			if (ret != 0) {
 				pr_err("[mtk_pe30_DC_soft_start]err6 = %d\n", ret);
@@ -786,7 +788,7 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 				"[mtk_pe30_DC_soft_start]go to CV vbat:%d current:%d setting current:%d\n",
 				vbat, cap_now.cur, current_setting);
 			pe3->pe30_charging_state = DC_CC;
-			pe3->ktime = ktime_set(0, BAT_MS_TO_NS(CC_BLANKING));
+			pe3->ktime = ktime_set(0, BAT_MS_TO_NS(info->data.cc_blanking));
 			return;
 		}
 		pr_err("[mtk_pe30_DC_soft_start]end vbat:%d current:%d setting current:%d\n",
@@ -796,20 +798,20 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 
 	}
 
-	if (setting.cur >= CC_INIT) {
+	if (setting.cur >= info->data.cc_init) {
 		pe3->pe30_charging_state = DC_CC;
 		pr_err("[mtk_pe30_DC_soft_start]go to CV2 vbat:%d current:%d setting current:%d\n",
 			vbat, cap_now.cur, current_setting);
-		pe3->ktime = ktime_set(0, BAT_MS_TO_NS(CC_BLANKING));
+		pe3->ktime = ktime_set(0, BAT_MS_TO_NS(info->data.cc_blanking));
 		return;
 	}
 
-	if (vbat >= CV_SS_STEP2)
-		current_setting = current_setting + CC_SS_STEP2;
-	else if (vbat >= CV_SS_STEP3)
-		current_setting = current_setting + CC_SS_STEP3;
+	if (vbat >= info->data.cv_ss_step2)
+		current_setting = current_setting + info->data.cc_ss_step2;
+	else if (vbat >= info->data.cv_ss_step3)
+		current_setting = current_setting + info->data.cc_ss_step3;
 	else
-		current_setting = current_setting + CC_SS_STEP;
+		current_setting = current_setting + info->data.cc_ss_step;
 
 	cv = mtk_pe30_get_cali_vbus(info, current_setting);
 
@@ -818,14 +820,14 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 		vbat, cv, current_setting, pe3->r_total,
 		cap_now.cur, setting.cur);
 
-	ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, CV_LIMIT);
+	ret = mtk_pe30_set_ta_boundary_cap(info, info->data.cc_init, info->data.cv_limit);
 	if (ret != 0) {
 		pr_err("[mtk_pe30_DC_soft_start]err4 = %d\n", ret);
 		goto _fail;
 	}
 
-	if (cv >= CV_LIMIT)
-		cv = CV_LIMIT;
+	if (cv >= info->data.cv_limit)
+		cv = info->data.cv_limit;
 
 	ret = mtk_pe30_set_ta_cap(info, current_setting, cv);
 
@@ -838,7 +840,7 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 
 	pr_err("[mtk_pe30_DC_soft_start]setting:%d %d now:%d %d boundary:%d %d cap:%d %d\n",
 		setting.cur, setting.vol,
-		cap_now.cur, cap_now.vol, CC_INIT, CV_LIMIT, current_setting, cv);
+		cap_now.cur, cap_now.vol, info->data.cc_init, info->data.cv_limit, current_setting, cv);
 
 
 	return;
@@ -871,10 +873,10 @@ static void mtk_pe30_DC_cc(struct charger_manager *info)
 		goto _fail;
 	}
 
-	if (cap_now.cur <= CC_END) {
-		if (pe3->charging_current_limit < CC_END) {
+	if (cap_now.cur <= info->data.cc_end) {
+		if (pe3->charging_current_limit < info->data.cc_end) {
 			pr_err(
-				"[mtk_pe30_DC_cc]cur<%d , reset is_pe30_done\n", CC_END);
+				"[mtk_pe30_DC_cc]cur<%d , reset is_pe30_done\n", info->data.cc_end);
 			pe3->is_pe30_done = false;
 		}
 		pr_err("[mtk_pe30_DC_CC]pe30 end , current:%d\n", cap_now.cur);
@@ -898,18 +900,18 @@ static void mtk_pe30_DC_cc(struct charger_manager *info)
 	}
 
 	cv = mtk_pe30_get_cv(info);
-	if (vbat >= cv || tmp_max >= CHARGER_TEMP_MAX) {
+	if (vbat >= cv || tmp_max >= info->data.charger_temp_max) {
 
-		current_setting -= CC_STEP;
+		current_setting -= info->data.cc_step;
 		TAVbus = mtk_pe30_get_cali_vbus(info, current_setting);
 
-		if (TAVbus >= CV_LIMIT)
-			TAVbus = CV_LIMIT;
+		if (TAVbus >= info->data.cv_limit)
+			TAVbus = info->data.cv_limit;
 
 		if (TAVbus <= 5500)
 			TAVbus = 5500;
 
-		ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, TAVbus);
+		ret = mtk_pe30_set_ta_boundary_cap(info, info->data.cc_init, TAVbus);
 		if (ret != 0) {
 			pr_err("[mtk_pe30_DC_CC]err6 = %d\n", ret);
 			goto _fail;
@@ -935,13 +937,13 @@ static void mtk_pe30_DC_cc(struct charger_manager *info)
 		current_setting += CC_STEP;
 		TAVbus = mtk_pe30_get_cali_vbus(info, current_setting);
 
-		if (TAVbus >= CV_LIMIT)
-			TAVbus = CV_LIMIT;
+		if (TAVbus >= info->data.cv_limit)
+			TAVbus = info->data.cv_limit;
 
 		if (TAVbus <= 5500)
 			TAVbus = 5500;
 
-		ret = mtk_pe30_set_ta_boundary_cap(info, CC_INIT, TAVbus);
+		ret = mtk_pe30_set_ta_boundary_cap(info, info->data.cc_init, TAVbus);
 		if (ret != 0) {
 			pr_err("[mtk_pe30_DC_CC]err8 = %d\n", ret);
 			goto _fail;
@@ -1007,7 +1009,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	/*vbus ov: auxadc by PMIC */
 	vbus = pmic_get_vbus();
 	if (pe3->pe30_charging_state != DC_MEASURE_R && pe3->pe30_charging_state != DC_INIT) {
-		vbus_cv = BAT_UPPER_BOUND + 70 + 110 * CC_INIT / 100 * pe3->r_cable;
+		vbus_cv = info->data.bat_upper_bound + 70 + 110 * info->data.cc_init / 100 * pe3->r_cable;
 		if (vbus > vbus_cv) {
 			pr_err("[%s]%d vbus %d > vbus_cv %d , r_cable:%d end pe30\n",
 			__func__, pe3->pe30_charging_state, vbus, vbus_cv, pe3->r_cable);
@@ -1024,7 +1026,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		goto _fail;
 	}
 
-	if (chrCur >= CC_MAX) {
+	if (chrCur >= (info->data.cc_max / 1000)) {
 		pr_err("[%s]current is too high from chr :%d\n",
 		__func__, chrCur);
 		goto _fail;
@@ -1034,13 +1036,13 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	mtk_pe30_get_ta_current_cap(info, &cap);
 	mtk_pe30_get_ta_cap(info, &setting);
 
-	if (cap.cur >= CC_MAX) {
-		pr_err("[%s]cur %d >= CC_MAX %d , end pe30\n", __func__, cap.cur, CC_MAX);
+	if (cap.cur >= (info->data.cc_max / 1000)) {
+		pr_err("[%s]cur %d >= CC_MAX %d , end pe30\n", __func__, cap.cur, (info->data.cc_max / 1000));
 		goto _fail;
 	}
 
 #ifdef PE30_CHECK_TA
-	if ((cap.vol - setting.vol) > VBUS_OV_GAP) {
+	if ((cap.vol - setting.vol) > info->data.vbus_ov_gap) {
 		pr_err("[%s]vbus:%d > vbuus_b:%d gap:%d, end pe30\n", __func__, cap.vol,
 		setting.vol, VBUS_OV_GAP);
 		goto _fail;
@@ -1053,20 +1055,22 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	ret = pmic_get_bif_battery_voltage(&bifvbat);
 	if (pe3->pe30_charging_state != DC_MEASURE_R && pe3->pe30_charging_state != DC_INIT) {
 		if (ret >= 0)
-			pmic_vbat_ovp = BAT_UPPER_BOUND + 50 + 110 * pe3->current_cap.cur / 100 * pe3->r_vbat;
+			pmic_vbat_ovp = info->data.bat_upper_bound + 50 + 110 *
+			pe3->current_cap.cur / 100 * pe3->r_vbat;
 		else
-			pmic_vbat_ovp = BAT_UPPER_BOUND + 50;
+			pmic_vbat_ovp = info->data.bat_upper_bound + 50;
 		/*pmic adc vbat */
 		if (pmic_vbat > pmic_vbat_ovp) {
 			pr_err("[%s]pmic_vbat:%d pmic_vbat_ovp:%d vbatCv:%d current:%d r_vbat:%d\n",
-			__func__, pmic_vbat, pmic_vbat_ovp, BAT_UPPER_BOUND, pe3->current_cap.cur, pe3->r_vbat);
+			__func__, pmic_vbat, pmic_vbat_ovp, info->data.bat_upper_bound,
+			pe3->current_cap.cur, pe3->r_vbat);
 			goto _fail;
 		}
 
 		/*bif adc vbat */
-		if (ret >= 0 && bifvbat >= BAT_UPPER_BOUND + 50) {
+		if (ret >= 0 && bifvbat >= info->data.bat_upper_bound + 50) {
 			pr_err("[%s]bifvbat %d >= BAT_UPPER_BOUND:%d + 50\n",
-			__func__, bifvbat, BAT_UPPER_BOUND + 50);
+			__func__, bifvbat, info->data.bat_upper_bound + 50);
 			goto _fail;
 		}
 	}
@@ -1078,14 +1082,14 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		goto _fail;
 	}
 
-	if (pe3->batteryTemperature >= BATTERY_TEMP_MAX) {
+	if (pe3->batteryTemperature >= info->data.battery_temp_max) {
 		pr_err("[%s]battery temperature is too high %d, end pe30\n",
 		__func__, pe3->batteryTemperature);
 		reset = false;
 		goto _fail;
 	}
 
-	if (pe3->batteryTemperature <= BATTERY_TEMP_MIN) {
+	if (pe3->batteryTemperature <= info->data.battery_temp_min) {
 		pr_err("[%s]battery temperature is too low %d, end pe30\n",
 		__func__, pe3->batteryTemperature);
 		reset = false;
@@ -1094,7 +1098,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 
 	/* TA thermal*/
 	mtk_pe30_get_ta_tmp_wdt(info, &tmp);
-	if (tmp.temp >= TA_TEMP_MAX) {
+	if (tmp.temp >= info->data.ta_temp_max) {
 		pr_err("[%s]TA temperature is too high %d, end pe30\n",
 		__func__, tmp.temp);
 		goto _fail;
@@ -1114,9 +1118,9 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		pe3->batteryTemperature, biftmp, tmp.temp, cap_b.cur, cap_b.vol,
 		emark, pe3->charging_current_limit, pe3->charging_current_limit_by_r);
 
-	if (pe3->charging_current_limit < CC_END) {
+	if (pe3->charging_current_limit < info->data.cc_end) {
 		pr_err(
-			"[mtk_pe30_set_charging_current_limit]cur<%d , reset is_pe30_done\n", CC_END);
+			"[mtk_pe30_set_charging_current_limit]cur<%d , reset is_pe30_done\n", info->data.cc_end);
 		_mtk_pe30_end(info, false);
 		pe3->is_pe30_done = false;
 	}
@@ -1163,9 +1167,9 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 		pe3->pe30_charging_state, pe3->batteryTemperature, (int)time.tv_sec,
 		wake_lock_active(&pe3->pe30_wakelock));
 
-		if (time.tv_sec >= PE30_MAX_CHARGING_TIME) {
+		if (time.tv_sec >= info->data.pe30_max_charging_time) {
 			pr_err("[mtk_charger_pe30_thread_handler]pe30 charging timeout %d:%d\n",
-			(int)time.tv_sec, PE30_MAX_CHARGING_TIME);
+			(int)time.tv_sec, info->data.pe30_max_charging_time);
 			_mtk_pe30_end(info, false);
 		}
 
@@ -1212,8 +1216,8 @@ bool mtk_pe30_init(struct charger_manager *info)
 
 	pe3->pe30_charging_state = DC_STOP;
 	pe3->batteryTemperature = -1000;
-	pe3->charging_current_limit = CC_INIT;
-	pe3->charging_current_limit_by_r = CC_INIT;
+	pe3->charging_current_limit = info->data.cc_init;
+	pe3->charging_current_limit_by_r = info->data.cc_init;
 	ktime = ktime_set(0, BAT_MS_TO_NS(2000));
 
 	wake_lock_init(&pe3->pe30_wakelock, WAKE_LOCK_SUSPEND, "pe30 wakelock");
