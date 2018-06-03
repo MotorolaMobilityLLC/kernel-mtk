@@ -351,21 +351,17 @@ void OpenAfeDigitaldl1(bool bEnable)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 			SetI2SDacOut(44100, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetI2SDacEnable(true);
-			EnableAfe(true);
-			SetI2SADDAEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-			EnableAfe(true);
 		}
 
+		EnableAfe(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-		if (GetI2SDacEnable() == false) {
-			SetI2SADDAEnable(false);
+		if (GetI2SDacEnable() == false)
 			SetI2SDacEnable(false);
-		}
 
 		EnableAfe(false);
 	}
@@ -1092,10 +1088,23 @@ bool SetI2SAdcEnable(bool bEnable)
 {
 	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState = bEnable;
 
-	SetULSrcEnable(bEnable);
-	SetADDAEnable(bEnable);
-
-	if (bEnable == false) {
+	if (bEnable) {
+		/* Enable UL SRC order:
+		* UL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0)
+		*/
+		EnableAfe(true);
+		SetADDAEnable(bEnable);
+		SetULSrcEnable(bEnable);
+	} else {
+		/* Disable UL SRC order: (reverse)
+		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* AFE (AFE_DAC_CON0) -> UL clock (AUDIO_TOP_CON0)
+		*/
+		SetULSrcEnable(bEnable);
+		SetADDAEnable(bEnable);
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
 			/* power on adc hires */
 			AudDrv_ADC_Hires_Clk_Off();
@@ -1315,9 +1324,25 @@ bool SetI2SDacEnable(bool bEnable)
 	pr_aud("%s bEnable = %d", __func__, bEnable);
 
 	if (bEnable) {
+		/* Enable DL SRC order:
+		* DL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0)
+		*/
+		EnableAfe(true);
+		SetADDAEnable(true);
+		SetDLSrcEnable(true);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
 	} else {
+		/* Disable DL SRC order: (reverse)
+		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0) ->
+		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
+		* AFE (AFE_DAC_CON0) -> DL clock (AUDIO_TOP_CON0)
+		*/
+		SetDLSrcEnable(false);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
+		SetADDAEnable(false);
+
 		AudDrv_AUD_Sel(0);
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
@@ -1330,33 +1355,6 @@ bool SetI2SDacEnable(bool bEnable)
 	return true;
 }
 
-bool SetI2SADDAEnable(bool bEnable)
-{
-	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
-
-	if (bEnable) {
-		/* Enable DL SRC order:
-		* DL clock (AUDIO_TOP_CON0) -> AFE (AFE_DAC_CON0) ->
-		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
-		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0)
-		*/
-		SetADDAEnable(true);
-		SetDLSrcEnable(true);
-	} else {
-		/* Disable DL SRC order: (reverse)
-		* ADDA DL SRC (AFE_ADDA_DL_SRC2_CON0) ->
-		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
-		* AFE (AFE_DAC_CON0) -> DL clock (AUDIO_TOP_CON0)
-		*/
-		SetDLSrcEnable(false);
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
-		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
-			SetADDAEnable(false);
-		}
-	}
-
-	return true;
-}
 
 bool GetI2SDacEnable(void)
 {

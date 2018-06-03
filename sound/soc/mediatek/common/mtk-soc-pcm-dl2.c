@@ -268,11 +268,8 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 	if (mPrepareDone == true) {
 		/* stop DAC output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-		if (GetI2SDacEnable() == false) {
-			SetI2SADDAEnable(false);
+		if (GetI2SDacEnable() == false)
 			SetI2SDacEnable(false);
-		}
-
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
 			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
@@ -394,8 +391,6 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, true);
 
 	EnableAfe(true);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
-		SetI2SADDAEnable(true);
 	return 0;
 }
 
