@@ -37,6 +37,7 @@
 #include "hwmsen_helper.h"
 #include "comms.h"
 #include "sensor_event.h"
+#include "sensor_performance.h"
 #include "SCP_power_monitor.h"
 #include <asm/arch_timer.h>
 
@@ -408,6 +409,7 @@ static int SCP_sensorHub_direct_push_work(void *data)
 	for (;;) {
 		wait_event(chre_kthread_wait, READ_ONCE(chre_kthread_wait_condition));
 		WRITE_ONCE(chre_kthread_wait_condition, false);
+		mark_timestamp(0, WORK_START, ktime_get_boot_ns(), 0);
 		SCP_sensorHub_read_wp_queue();
 	}
 	return 0;
@@ -557,6 +559,8 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 	switch (rsp->notify_rsp.event) {
 	case SCP_DIRECT_PUSH:
 	case SCP_FIFO_FULL:
+		mark_timestamp(0, GOT_IPI, ktime_get_boot_ns(), 0);
+		mark_ipi_timestamp(arch_counter_get_cntvct() - rsp->notify_rsp.arch_counter);
 		SCP_sensorHub_write_wp_queue(rsp);
 		/* queue_work(obj->direct_push_workqueue, &obj->direct_push_work); */
 		WRITE_ONCE(chre_kthread_wait_condition, true);
