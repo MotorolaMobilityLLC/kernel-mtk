@@ -1313,6 +1313,7 @@ void mmdvfs_config_util_init(void)
 		} else if (dram_steps_freq(0) == 3600) {
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6771_3600;
 			g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6771_3600;
+			legacy_to_qos_step[MMDVFS_FINE_STEP_OPP1].qos_step = 0;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch (3600)\n");
 		} else{
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6771;

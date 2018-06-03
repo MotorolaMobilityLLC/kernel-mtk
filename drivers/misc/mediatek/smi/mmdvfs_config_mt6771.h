@@ -99,8 +99,11 @@ struct mmdvfs_clk_hw_map mt6771_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 
 struct mmdvfs_profile_mask qos_apply_profiles[] = {
 #ifdef CONFIG_MTK_QOS_SUPPORT
-	{"4K VP", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, MMDVFS_FINE_STEP_OPP0 },	/* VP 4K */
+	{"4K VP", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, MMDVFS_FINE_STEP_OPP0 },	/* VP 4K for opp0 */
+	{"4K VP", SMI_BWC_SCEN_VP_HIGH_RESOLUTION, MMDVFS_FINE_STEP_OPP1 },	/* VP 4K for opp1 */
 	{"VPU", MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_OPP0 },	/* VPU */
+	{"ICFP", SMI_BWC_SCEN_ICFP, MMDVFS_FINE_STEP_OPP0},	/* ICFP for opp0 */
+	{"ICFP", SMI_BWC_SCEN_ICFP, MMDVFS_FINE_STEP_OPP1},	/* ICFP for opp1 */
 	{"DEBUG", 0, MMDVFS_FINE_STEP_UNREQUEST },	/* debug entry */
 #else
 	{"DEBUG", QOS_ALL_SCENARIO, 0 },	/* debug entry */
