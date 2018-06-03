@@ -348,10 +348,12 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
+#if 0
 	case INT_VPA_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
+#endif
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		/* TBD: dump_exception_reg */
@@ -512,6 +514,9 @@ void register_all_oc_interrupts(void)
 			continue;
 		/* ignore SIM card oc */
 		if (oc_interrupt == INT_VSIM1_OC || oc_interrupt == INT_VSIM2_OC)
+			continue;
+		/* ignore VPA oc */
+		if (oc_interrupt == INT_VPA_OC)
 			continue;
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 			if (oc_interrupt == INT_VCAMA1_OC || oc_interrupt == INT_VCAMA2_OC
