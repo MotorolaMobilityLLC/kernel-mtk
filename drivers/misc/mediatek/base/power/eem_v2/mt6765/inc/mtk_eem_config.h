@@ -20,12 +20,12 @@
 #define EEM_BANK_SOC (0) /* use voltage bin, so disable it */
 #define EARLY_PORTING (0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE (1)
-#define EEM_ENABLE (1) /* enable; after pass HPT mini-SQC */
 #define EEM_FAKE_EFUSE (1)
 /* FIX ME */
 #define UPDATE_TO_UPOWER (1)
 #define EEM_LOCKTIME_LIMIT (3000)
 #define ENABLE_EEMCTL0 (1)
+#define ENABLE_LOO			(1)
 #define ENABLE_INIT1_STRESS (1)
 
 #define EEM_OFFSET
@@ -42,50 +42,21 @@
 #define DEVINFO_IDX_6 56	/* 598 */
 #define DEVINFO_IDX_7 57	/* 59C */
 #define DEVINFO_IDX_8 58	/* 5A0 */
-#define DEVINFO_IDX_9 59	/* 5A4 */
-#define DEVINFO_IDX_10 60	/* 5A8 */
-#define DEVINFO_IDX_11 61	/* 5AC */
-#define DEVINFO_IDX_12 62	/* 5B0 */
-#define DEVINFO_IDX_13 63	/* 5B4 */
+#define DEVINFO_IDX_9 61	/* 5A4 */
+#define DEVINFO_IDX_10 62	/* 5A8 */
+#define DEVINFO_IDX_11 63	/* 5AC */
 
-/* Fake EFUSE */
-#define DEVINFO_0 0x0000FF00
-
-/*2-line*/
-/* L_LOW */
-#define DEVINFO_1 0xA45146F6
-/* LL_LOW + L_LOW */
-#define DEVINFO_2 0x00120012
-/* LL_LOW */
-#define DEVINFO_3 0xA4513602
-/* L_HIGH */
-#define DEVINFO_4 0xA43AFB97
-/* LL_HIGH + L_HIGH */
-#define DEVINFO_5 0x00120012
-/* LL_HIGH */
-#define DEVINFO_6 0xA43B90EA
-/* CCI */
-#define DEVINFO_7 0xA43B86F2
-#define DEVINFO_8 0x00120012
-
-/* RESERVED */
-#define DEVINFO_9 0xFFFFFFFF
-#define DEVINFO_10 0xFFFFFFFF
-
-/*1-line*/
-/* L */
-#define DEVINFO_11 0xA43A98E4
-/* LL + L */
-#define DEVINFO_12 0x00120012
-/* LL */
-#define DEVINFO_13 0xA43B77FE
 
 /*****************************************
  * eem sw setting
  ******************************************
  */
-#define NR_HW_RES_FOR_BANK	(14) /* real eem banks for efuse */
+#define NR_HW_RES_FOR_BANK	(12) /* real eem banks for efuse */
 #define EEM_INIT01_FLAG (0x7) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
+#if ENABLE_LOO
+#define EEM_L_INIT02_FLAG (0x9) /* should be 0x0F=> [3]:L_HI, [0]:L */
+#define EEM_2L_INIT02_FLAG (0x12) /* should be 0x0F=> [4]:2L_HI, [1]:2L */
+#endif
 
 #define NR_FREQ 16
 #define NR_FREQ_CPU 16
@@ -116,7 +87,10 @@
 #define VMAX_VAL		(0x64)
 #define VMIN_VAL		(0x10)
 #define VCO_VAL			(0x10)
-#define DVTFIXED_VAL	(0x8)
+#define DVTFIXED_VAL		(0x8)
+#define DVTFIXED_M_VAL		(0x4)
+
+
 
 #define DTHI_VAL		(0x01) /* positive */
 #define DTLO_VAL		(0xfe) /* negative (2's compliment) */
@@ -154,36 +128,64 @@
 /* #define SEC_MOD_SEL			0x40	*/	/* Secure Mode 4 */
 #endif
 
-#if SEC_MOD_SEL == 0x00
-#define SEC_DCBDET 0xCC
-#define SEC_DCMDET 0xE6
-#define SEC_BDES 0xF5
-#define SEC_MDES 0x97
-#define SEC_MTDES 0xAC
-#elif SEC_MOD_SEL == 0x10
-#define SEC_DCBDET 0xE5
-#define SEC_DCMDET 0xB
-#define SEC_BDES 0x31
-#define SEC_MDES 0x53
-#define SEC_MTDES 0x68
-#elif SEC_MOD_SEL == 0x20
-#define SEC_DCBDET 0x39
-#define SEC_DCMDET 0xFE
-#define SEC_BDES 0x18
-#define SEC_MDES 0x8F
-#define SEC_MTDES 0xB4
-#elif SEC_MOD_SEL == 0x30
-#define SEC_DCBDET 0xDF
-#define SEC_DCMDET 0x18
-#define SEC_BDES 0x0B
-#define SEC_MDES 0x7A
-#define SEC_MTDES 0x52
-#elif SEC_MOD_SEL == 0x40
-#define SEC_DCBDET 0x36
-#define SEC_DCMDET 0xF1
-#define SEC_BDES 0xE2
-#define SEC_MDES 0x80
-#define SEC_MTDES 0x41
+#if SEC_MOD_SEL == 0xF0
+/* Safe EFUSE */
+#define DEVINFO_0 0x0000FF00
+
+/*2-line*/
+/* L_LOW */
+#define DEVINFO_1 0x12A446F6
+/* LL_LOW + L_LOW */
+#define DEVINFO_2 0x00510051
+/* LL_LOW */
+#define DEVINFO_3 0x12A43602
+/* L_HIGH */
+#define DEVINFO_4 0x12A4FB97
+/* LL_HIGH + L_HIGH */
+#define DEVINFO_5 0x003A003B
+/* LL_HIGH */
+#define DEVINFO_6 0x12A490EA
+/* CCI */
+#define DEVINFO_7 0x12A486F2
+#define DEVINFO_8 0x003B0000
+
+/*1-line*/
+/* L */
+#define DEVINFO_9 0x12A498E4
+/* LL + L */
+#define DEVINFO_10 0x003A003B
+/* LL */
+#define DEVINFO_11 0x12A476FE
+
+#else
+/* Safe EFUSE */
+#define DEVINFO_0 0x0000FF00
+
+/*2-line*/
+/* L_LOW */
+#define DEVINFO_1 0x12A446F6
+/* LL_LOW + L_LOW */
+#define DEVINFO_2 0x00510051
+/* LL_LOW */
+#define DEVINFO_3 0x12A43602
+/* L_HIGH */
+#define DEVINFO_4 0x12A4FB97
+/* LL_HIGH + L_HIGH */
+#define DEVINFO_5 0x003A003B
+/* LL_HIGH */
+#define DEVINFO_6 0x12A490EA
+/* CCI */
+#define DEVINFO_7 0x12A486F2
+#define DEVINFO_8 0x003B0000
+
+/*1-line*/
+/* L */
+#define DEVINFO_9 0x12A498E4
+/* LL + L */
+#define DEVINFO_10 0x003A003B
+/* LL */
+#define DEVINFO_11 0x12A476FE
+
 #endif
 
 #endif
