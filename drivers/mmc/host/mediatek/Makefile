@@ -84,7 +84,7 @@ endif
 
 ifeq ($(CONFIG_MTK_PLATFORM), "mt3887")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt3887
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt3886/mt3887
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt3887/mt3887
 obj-$(CONFIG_MMC_MTK_PRO) += mt3887/
 endif
 
