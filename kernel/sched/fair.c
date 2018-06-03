@@ -5232,7 +5232,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
 	return 1;
 }
 
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 #define MT_RT_LOAD (2*1023*scale_load_down(scale_load(prio_to_weight[0])))
 static inline unsigned long mt_rt_load(int cpu)
 {
@@ -5281,7 +5281,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 			else
 				load = target_load(i, load_idx);
 
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 			load += mt_rt_load(i);
 #endif
 			avg_load += load;
@@ -5362,7 +5362,7 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 			}
 		} else if (shallowest_idle_cpu == -1) {
 			load = weighted_cpuload(i);
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 			load += mt_rt_load(i);
 #endif
 			if (load < min_load || (load == min_load && i == this_cpu)) {

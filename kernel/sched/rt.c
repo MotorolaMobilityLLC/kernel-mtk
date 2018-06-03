@@ -1511,7 +1511,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	}
 #endif
 
-#if defined(CONFIG_MT_SCHED_INTEROP)
+#if defined(CONFIG_MTK_SCHED_INTEROP)
 	/* if the task is allowed to put more than one CPU. */
 	if ((p->nr_cpus_allowed > 1)) {
 #else
@@ -1723,7 +1723,7 @@ static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
 
 static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
 {
 	int lowest_cpu = -1, lowest_prio = 0;
@@ -1765,7 +1765,7 @@ static int find_lowest_rq(struct task_struct *task)
 	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
 	int this_cpu = smp_processor_id();
 	int cpu      = task_cpu(task);
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 	int interop_cpu;
 #endif
 
@@ -1779,7 +1779,7 @@ static int find_lowest_rq(struct task_struct *task)
 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
 		return -1; /* No targets found */
 
-#ifdef CONFIG_MT_SCHED_INTEROP
+#ifdef CONFIG_MTK_SCHED_INTEROP
 	interop_cpu = mt_sched_interop_rt(cpu, lowest_mask);
 	if (interop_cpu != -1) {
 		mt_sched_printf(sched_interop, "find idle cpu=%d", interop_cpu);

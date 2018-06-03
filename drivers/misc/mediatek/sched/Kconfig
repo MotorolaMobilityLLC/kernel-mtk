@@ -8,8 +8,8 @@ config MTK_CPU_AFFINITY
 	  Linux design.
 endmenu
 
-menu "MT load balance and schedule enhancement"
-config MT_SCHED_INTEROP
+menu "MTK load balance and schedule enhancement"
+config MTK_SCHED_INTEROP
 	bool "mtk scheduling interopation enhancement"
 	default n
 	help
