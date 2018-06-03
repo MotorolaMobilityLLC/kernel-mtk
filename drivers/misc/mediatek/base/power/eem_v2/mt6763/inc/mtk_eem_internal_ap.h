@@ -229,7 +229,10 @@ struct eem_devinfo {
 	unsigned int SOC_MTDES:8;
 	unsigned int SOC_AGEDELTA:8;
 #else
-	/* M_HW_RES9_10 */
+	/* M_HW_RES9 */
+	unsigned int SOC_RESERVED;
+
+	/* M_HW_RES10 */
 	unsigned int SOC_OPP3:2;
 	unsigned int SOC_OPP2:2;
 	unsigned int SOC_OPP1:2;
