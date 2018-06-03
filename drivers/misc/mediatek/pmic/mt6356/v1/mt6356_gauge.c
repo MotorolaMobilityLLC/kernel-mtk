@@ -1053,6 +1053,16 @@ static int swocv;
 static int zcv_from;
 static int zcv_tmp;
 
+static bool zcv_1st_read;
+static int charger_zcv_1st;
+static int pmic_in_zcv_1st;
+static int pmic_zcv_1st;
+static int pmic_rdy_1st;
+static int swocv_1st;
+static int zcv_from_1st;
+static int zcv_tmp_1st;
+
+
 int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 {
 	int _hw_ocv, _sw_ocv;
@@ -1144,6 +1154,17 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 	swocv = _sw_ocv;
 	zcv_from = _hw_ocv_src;
 	zcv_tmp = now_temp;
+
+	if (zcv_1st_read == false) {
+		charger_zcv_1st = charger_zcv;
+		pmic_rdy_1st = pmic_rdy;
+		pmic_zcv_1st = pmic_zcv;
+		pmic_in_zcv_1st = pmic_in_zcv;
+		swocv_1st = swocv;
+		zcv_from_1st = zcv_from;
+		zcv_tmp_1st = zcv_tmp;
+		zcv_1st_read = true;
+	}
 
 	bm_err("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
 		g_fg_is_charger_exist, _hw_ocv_chgin_rdy);
@@ -2344,7 +2365,7 @@ int fgauge_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en)
 int (*gauge_enable_vbat_low_threshold)(struct gauge_device *gauge_dev, int threshold);
 int (*gauge_enable_vbat_high_threshold)(struct gauge_device *gauge_dev, int threshold);
 
-int fgauge_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
+int fgauge_set_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int vbat2_l_th_mv =  threshold;
 	int vbat2_l_th_reg = MV_to_REG_12_value(vbat2_l_th_mv);
@@ -2368,7 +2389,7 @@ int fgauge_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int thresho
 }
 
 
-int fgauge_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
+int fgauge_set_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int vbat2_h_th_mv =  threshold;
 	int vbat2_h_th_reg = MV_to_REG_12_value(vbat2_h_th_mv);
@@ -2616,60 +2637,79 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 {
-	seq_puts(m, "fgauge dump\n");
-	seq_printf(m, "AUXADC_ADC_RDY_LBAT2 :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_LBAT2));
-	seq_printf(m, "AUXADC_ADC_OUT_LBAT2  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_LBAT2));
+	if (m != NULL) {
+		seq_puts(m, "fgauge dump\n");
+		seq_printf(m, "AUXADC_ADC_RDY_LBAT2 :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_ADC_RDY_LBAT2));
+		seq_printf(m, "AUXADC_ADC_OUT_LBAT2  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_ADC_OUT_LBAT2));
 
-	seq_printf(m, "AUXADC_LBAT2_DEBT_MIN  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN));
-	seq_printf(m, "AUXADC_LBAT2_DEBT_MAX  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX));
+		seq_printf(m, "AUXADC_LBAT2_DEBT_MIN  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN));
+		seq_printf(m, "AUXADC_LBAT2_DEBT_MAX  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX));
 
-	seq_printf(m, "AUXADC_LBAT2_DET_PRD_15_0  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0));
-	seq_printf(m, "AUXADC_LBAT2_DET_PRD_19_16   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16));
+		seq_printf(m, "AUXADC_LBAT2_DET_PRD_15_0  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0));
+		seq_printf(m, "AUXADC_LBAT2_DET_PRD_19_16   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16));
 
-	seq_printf(m, "AUXADC_LBAT2_MAX_IRQ_B  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_MAX_IRQ_B));
-	seq_printf(m, "AUXADC_LBAT2_EN_MAX   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MAX));
+		seq_printf(m, "AUXADC_LBAT2_MAX_IRQ_B  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_MAX_IRQ_B));
+		seq_printf(m, "AUXADC_LBAT2_EN_MAX   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MAX));
 
-	seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MAX  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MAX));
-	seq_printf(m, "AUXADC_LBAT2_VOLT_MAX   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX));
+		seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MAX  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MAX));
+		seq_printf(m, "AUXADC_LBAT2_VOLT_MAX   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX));
 
-	seq_printf(m, "AUXADC_LBAT2_MIN_IRQ_B  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_MIN_IRQ_B));
-	seq_printf(m, "AUXADC_LBAT2_EN_MIN   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MIN));
+		seq_printf(m, "AUXADC_LBAT2_MIN_IRQ_B  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_MIN_IRQ_B));
+		seq_printf(m, "AUXADC_LBAT2_EN_MIN   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MIN));
 
-	seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MIN  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MIN));
-	seq_printf(m, "AUXADC_LBAT2_VOLT_MIN   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MIN));
+		seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MIN  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MIN));
+		seq_printf(m, "AUXADC_LBAT2_VOLT_MIN   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MIN));
 
-	seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MAX  :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MAX));
-	seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MIN   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MIN));
+		seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MAX  :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MAX));
+		seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MIN   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MIN));
 
-	seq_printf(m, "RG_INT_EN_BAT2_H  :%x\n",
-		pmic_get_register_value(PMIC_RG_INT_EN_BAT2_H));
-	seq_printf(m, "RG_INT_EN_BAT2_L   :%x\n",
-		pmic_get_register_value(PMIC_RG_INT_EN_BAT2_L));
+		seq_printf(m, "RG_INT_EN_BAT2_H  :%x\n",
+			pmic_get_register_value(PMIC_RG_INT_EN_BAT2_H));
+		seq_printf(m, "RG_INT_EN_BAT2_L   :%x\n",
+			pmic_get_register_value(PMIC_RG_INT_EN_BAT2_L));
 
-	seq_printf(m, "RG_INT_STATUS_BAT2_H  :%x\n",
-		pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_H));
-	seq_printf(m, "RG_INT_STATUS_BAT2_L   :%x\n",
-		pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_L));
+		seq_printf(m, "RG_INT_STATUS_BAT2_H  :%x\n",
+			pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_H));
+		seq_printf(m, "RG_INT_STATUS_BAT2_L   :%x\n",
+			pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_L));
 
-	seq_printf(m, "AUXADC_SOURCE_LBAT2_SEL   :%x\n",
-		pmic_get_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL));
+		seq_printf(m, "AUXADC_SOURCE_LBAT2_SEL   :%x\n",
+			pmic_get_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL));
 
+		seq_printf(m,
+			"1st chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
+			charger_zcv_1st, pmic_rdy_1st, pmic_zcv_1st, pmic_in_zcv_1st,
+			swocv_1st, zcv_from_1st, zcv_tmp_1st);
+
+		seq_printf(m,
+			"chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
+			charger_zcv, pmic_rdy, pmic_zcv, pmic_in_zcv, swocv, zcv_from, zcv_tmp);
+	}
+
+	bm_debug(
+		"1st chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
+		charger_zcv_1st, pmic_rdy_1st, pmic_zcv_1st, pmic_in_zcv_1st,
+		swocv_1st, zcv_from_1st, zcv_tmp_1st);
+
+	bm_debug(
+		"chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
+		charger_zcv, pmic_rdy, pmic_zcv, pmic_in_zcv, swocv, zcv_from, zcv_tmp);
 	return 0;
 }
 
@@ -2775,8 +2815,8 @@ static struct gauge_ops mt6356_gauge_ops = {
 	.gauge_enable_iavg_interrupt = fgauge_enable_iavg_interrupt,
 	.gauge_enable_vbat_low_interrupt = fgauge_enable_vbat_low_interrupt,
 	.gauge_enable_vbat_high_interrupt = fgauge_enable_vbat_high_interrupt,
-	.gauge_enable_vbat_low_threshold = fgauge_enable_vbat_low_threshold,
-	.gauge_enable_vbat_high_threshold = fgauge_enable_vbat_high_threshold,
+	.gauge_set_vbat_low_threshold = fgauge_set_vbat_low_threshold,
+	.gauge_set_vbat_high_threshold = fgauge_set_vbat_high_threshold,
 	.gauge_enable_car_tune_value_calibration = fgauge_enable_car_tune_value_calibration,
 	.gauge_set_rtc_ui_soc = fgauge_set_rtc_ui_soc,
 	.gauge_get_rtc_ui_soc = fgauge_get_rtc_ui_soc,

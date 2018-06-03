@@ -2336,7 +2336,7 @@ int fgauge_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en)
 int (*gauge_enable_vbat_low_threshold)(struct gauge_device *gauge_dev, int threshold);
 int (*gauge_enable_vbat_high_threshold)(struct gauge_device *gauge_dev, int threshold);
 
-int fgauge_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
+int fgauge_set_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int vbat2_l_th_mv =  threshold;
 	int vbat2_l_th_reg = MV_to_REG_12_value(vbat2_l_th_mv);
@@ -2360,7 +2360,7 @@ int fgauge_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int thresho
 }
 
 
-int fgauge_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
+int fgauge_set_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int vbat2_h_th_mv =  threshold;
 	int vbat2_h_th_reg = MV_to_REG_12_value(vbat2_h_th_mv);
@@ -2714,8 +2714,8 @@ static struct gauge_ops mt6335_gauge_ops = {
 	.gauge_enable_iavg_interrupt = fgauge_enable_iavg_interrupt,
 	.gauge_enable_vbat_low_interrupt = fgauge_enable_vbat_low_interrupt,
 	.gauge_enable_vbat_high_interrupt = fgauge_enable_vbat_high_interrupt,
-	.gauge_enable_vbat_low_threshold = fgauge_enable_vbat_low_threshold,
-	.gauge_enable_vbat_high_threshold = fgauge_enable_vbat_high_threshold,
+	.gauge_set_vbat_low_threshold = fgauge_set_vbat_low_threshold,
+	.gauge_set_vbat_high_threshold = fgauge_set_vbat_high_threshold,
 	.gauge_enable_car_tune_value_calibration = fgauge_enable_car_tune_value_calibration,
 	.gauge_set_rtc_ui_soc = fgauge_set_rtc_ui_soc,
 	.gauge_get_rtc_ui_soc = fgauge_get_rtc_ui_soc,
