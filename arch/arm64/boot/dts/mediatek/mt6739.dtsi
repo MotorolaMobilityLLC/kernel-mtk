@@ -1112,6 +1112,8 @@
 		compatible = "mediatek,auxadc";
 		reg = <0 0x11001000 0 0x1000>;
 		interrupts = <GIC_SPI 74 IRQ_TYPE_EDGE_FALLING>;
+		clocks = <&infracfg_ao CLK_INFRA_AUXADC>;
+		clock-names = "auxadc-main";
 	};
 
 	apuart0: apuart0@11002000 {
