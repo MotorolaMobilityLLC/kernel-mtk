@@ -1363,7 +1363,11 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, struct M4U_PERF_COUNT *pM4U_perf_count)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
+
+	if (!m4u_index)
+		return;
+	m4u_base = gM4UBaseAddr[m4u_index];
 
 	pM4U_perf_count->transaction_cnt = M4U_ReadReg32(m4u_base, REG_MMU_ACC_CNT(m4u_slave_id));
 	/* Transaction access count */
