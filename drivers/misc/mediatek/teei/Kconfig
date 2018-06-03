@@ -24,13 +24,12 @@ config MICROTRUST_TEE_SUPPORT
 config MICROTRUST_TEE_VERSION
 	string "MICROTRUST TEE Version"
 	depends on MICROTRUST_TEE_SUPPORT
-#	default "270" if (MACH_MT6771)
-	default "251"
+	default "280"
 	---help---
 	  Enables the support of Microtrust new version.
 	  All Microtrust related TEE drivers will depend on this option.
 	  Say 270 if you would like to enable this feature.
-	  If unsure, say 251.
+	  If unsure, say 280.
 
 config MICROTRUST_TZ_DRIVER
 	tristate "Microtrust TEEI Driver"
@@ -48,11 +47,11 @@ config MICROTRUST_TZ_DRIVER_MTK_BOOTPROF
 	depends on MICROTRUST_TZ_DRIVER
 	default y
 	---help---
-    Enables the support of Mediatek bootprof feature in Microtrust
-    tz_driver. This feature is for tracking boot progress by
-    notifying mtk bootprof driver in each check point.
-    Say Y if you would like to enable this feature.
-    If unsure, say Y.
+	  Enables the support of Mediatek bootprof feature in Microtrust
+	  tz_driver. This feature is for tracking boot progress by
+	  notifying mtk bootprof driver in each check point.
+	  Say Y if you would like to enable this feature.
+	  If unsure, say Y.
 
 config MICROTRUST_VFS_DRIVER
 	tristate "Microtrust Virtual File System Driver"
@@ -92,11 +91,11 @@ config MICROTRUST_TUI_DRIVER
 	depends on MICROTRUST_TEE_SUPPORT
 	default n
 	---help---
-    Enables support of Microtrust TUI helper driver.
-    This driver provides IOCTL interface for TUI manager to
-    communicate with TUI server in secure world.
-    Say Y if you would like to enable the helper driver.
-    If unsure, say N.
+	  Enables support of Microtrust TUI helper driver.
+	  This driver provides IOCTL interface for TUI manager to
+	  communicate with TUI server in secure world.
+	  Say Y if you would like to enable the helper driver.
+	  If unsure, say N.
 
 config MICROTRUST_DEBUG
 	bool "Enable Microtrust Debug Message"
@@ -113,20 +112,21 @@ config MICROTRUST_UNITTEST_SUPPORT
 	depends on MICROTRUST_TEE_SUPPORT
 	default n
 	---help---
-    Enable Microtrust unittest trigger driver.
-    This driver will can be trigger from Linux userspace and
-    send a start_test message to TEE unittest service.
-    Say Y if you would like to enable secure world log support.
-    If unsure, say N.
+	  Enable Microtrust unittest trigger driver.
+	  This driver will can be trigger from Linux userspace and
+	  send a start_test message to TEE unittest service.
+	  Say Y if you would like to enable secure world log support.
+	  If unsure, say N.
 
 config MICROTRUST_TZ_LOG
 	bool "Enable Microtrust TrustZone logger"
 	depends on MICROTRUST_TEE_SUPPORT
 	default y
 	---help---
-	  Enable debug messages output from Microtrust TEE Secure OS.
-	  More debug information will be directed to console.
-	  Say Y if you would like to enable more debug outputs.
+	  Enable Microtrust TrustZone logger to dump TEE logs in kernel log buffer.
+	  This driver will read out log buffer and direct to console each
+	  time a smc call is returned from secure world.
+	  Say Y if you would like to enable secure world log support.
 	  If unsure, say Y.
 
 config MICROTRUST_TEST_DRIVERS
@@ -134,7 +134,7 @@ config MICROTRUST_TEST_DRIVERS
 	depends on MICROTRUST_TEE_SUPPORT
 	default n
 	---help---
-    Enables support of Microtrust test driver kernel framework.
-    This framework supports DCIH and GP API test drivers.
-    Say Y if you would like to enable the test framework.
-    If unsure, say N.
+	  Enables support of Microtrust test driver kernel framework.
+	  This framework supports DCIH and GP API test drivers.
+	  Say Y if you would like to enable the test framework.
+	  If unsure, say N.
