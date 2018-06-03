@@ -1945,6 +1945,18 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
+	nfc:nfc {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-rst = <172>;
+			gpio-rst-std = <&pio 172 0x0>;
+			gpio-irq = <10>;
+			gpio-irq-std = <&pio 10 0x0>;
+		};
+
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
+	};
+
 	disp_mutex0: disp_mutex0@14001000 {
 		compatible = "mediatek,disp_mutex0";
 		reg = <0 0x14001000 0 0x1000>;
@@ -2911,7 +2923,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	i2c8:i2c8{};
 	i2c9:i2c9{};
 	smart_pa: smart_pa{};
-	irq_nfc: irq_nfc{};
 	md1_sim1_hot_plug_eint:md1_sim1_hot_plug_eint{};
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint{};
 
