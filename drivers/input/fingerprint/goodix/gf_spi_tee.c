@@ -1195,7 +1195,7 @@ static ssize_t gf_debug_store(struct device *dev,
 
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_MILAN_A
-	u8 id_buf[2] = {0};
+	u8 id_tmp[2] = {0};
 #ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 	u16 chip_id;
 #endif
@@ -1277,17 +1277,17 @@ static ssize_t gf_debug_store(struct device *dev,
 	} else if (!strncmp(buf, "-15", 3)) {
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_MILAN_A
-		gf_spi_read_bytes_ree(gf_dev, 0x0142, 2, id_buf);
+		gf_spi_read_bytes_ree(gf_dev, 0x0142, 2, id_tmp);
 		gf_debug(INFO_LOG, "%s line:%d ChipID:0x%x  0x%x\n",
-			__func__, __LINE__, id_buf[0], id_buf[1]);
+			__func__, __LINE__, id_tmp[0], id_tmp[1]);
 
 		/* make fingerprint to lower power mode for nonTEE project */
 #ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
-		gf_spi_read_bytes_ree_new(gf_dev, 0x0142, 2, id_buf);
-		chip_id = (u16)id_buf[0];
-		chip_id += ((u16)id_buf[1]) << 8;
+		gf_spi_read_bytes_ree_new(gf_dev, 0x0142, 2, id_tmp);
+		chip_id = (u16)id_tmp[0];
+		chip_id += ((u16)id_tmp[1]) << 8;
 		gf_debug(INFO_LOG, "[%s]id[0]=0x%x,id[1]=0x%x,chip:0x%x\n",
-			__func__, id_buf[0], id_buf[1], chip_id);
+			__func__, id_tmp[0], id_tmp[1], chip_id);
 
 		if (0x12A4 == chip_id || 0x12A1 == chip_id) {
 			gf_debug(INFO_LOG,
@@ -2227,14 +2227,14 @@ static int gf_probe(struct spi_device *spi)
 #ifdef SUPPORT_REE_MILAN_A
 #ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 	{
-	u8 id_buf[2] = {0};
+	u8 id_tmp[2] = {0};
 	u16 chip_id;
 
-	gf_spi_read_bytes_ree_new(gf_dev, 0x0142, 2, id_buf);
-	chip_id = (u16)id_buf[0];
-	chip_id += ((u16)id_buf[1]) << 8;
-	gf_debug(INFO_LOG, "[%s],id_buf[0]0x%x id_buf[1]=0x%x chip_id:0x%x\n",
-	__func__, id_buf[0], id_buf[1], chip_id);
+	gf_spi_read_bytes_ree_new(gf_dev, 0x0142, 2, id_tmp);
+	chip_id = (u16)id_tmp[0];
+	chip_id += ((u16)id_tmp[1]) << 8;
+	gf_debug(INFO_LOG, "[%s],id_tmp[0]0x%x id_tmp[1]=0x%x chip_id:0x%x\n",
+	__func__, id_tmp[0], id_tmp[1], chip_id);
 
 	if (0x12A4 == chip_id || 0x12A1 == chip_id) {
 		gf_debug(INFO_LOG,
