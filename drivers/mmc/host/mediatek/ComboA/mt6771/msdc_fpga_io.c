@@ -19,11 +19,15 @@
 #include <linux/io.h>
 #include "mtk_sd.h"
 
+/*#define USE_FPGA_PWR_GPIO_CTRL*/
+
 #define FPGA_PWR_GPIO                   (0xF0000E84)
 #define FPGA_PWR_GPIO_EO                (0xF0000E88)
 
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 static void __iomem *fpga_pwr_gpio;
 static void __iomem *fpga_pwr_gpio_eo;
+#endif
 
 #define PWR_GPIO                         (fpga_pwr_gpio)
 #define PWR_GPIO_EO                      (fpga_pwr_gpio_eo)
@@ -34,6 +38,7 @@ static void __iomem *fpga_pwr_gpio_eo;
 #define PWR_MASK_CARD_MASK               (~(1 << 8))
 #define PWR_MASK_VOL_18_MASK             (~(1 << 9))
 
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 	void __iomem *fpga_pwr_gpio_eo)
 {
@@ -48,9 +53,11 @@ void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 
 	pr_debug("[%s]: pwr gpio dir = 0x%x\n", __func__, l_val);
 }
+#endif
 
 void msdc_fpga_pwr_init(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	if (fpga_pwr_gpio == NULL) {
 		fpga_pwr_gpio = ioremap(FPGA_PWR_GPIO, 8);
 		if (fpga_pwr_gpio == NULL) {
@@ -62,10 +69,12 @@ void msdc_fpga_pwr_init(void)
 			fpga_pwr_gpio, fpga_pwr_gpio_eo);
 	}
 	msdc_set_pwr_gpio_dir(fpga_pwr_gpio, fpga_pwr_gpio_eo);
+#endif
 }
 
 bool hwPowerOn_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
@@ -78,12 +87,14 @@ bool hwPowerOn_fpga(void)
 #endif
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif
 	return true;
 }
 EXPORT_SYMBOL(hwPowerOn_fpga);
 
 bool hwPowerSwitch_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
@@ -93,12 +104,14 @@ bool hwPowerSwitch_fpga(void)
 
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif
 	return true;
 }
 EXPORT_SYMBOL(hwPowerSwitch_fpga);
 
 bool hwPowerDown_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
@@ -111,6 +124,7 @@ bool hwPowerDown_fpga(void)
 #endif
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif
 	return true;
 }
 EXPORT_SYMBOL(hwPowerDown_fpga);
