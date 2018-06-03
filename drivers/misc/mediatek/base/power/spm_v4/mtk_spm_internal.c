@@ -232,8 +232,7 @@ do {						\
 		spm_crit2(fmt, ##args);		\
 } while (0)
 
-/* FIXME: */
-#if 0
+#if 1
 void rekick_vcorefs_scenario(void)
 {
 	int flag;

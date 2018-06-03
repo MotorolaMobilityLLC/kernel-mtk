@@ -48,6 +48,23 @@ __weak int sdio_autok(void)
 	return 0;
 }
 
+__weak unsigned int get_vcore_ptp_volt(unsigned int seg)
+{
+	vcorefs_crit("NOT SUPPORT VOLTAG BIN\n");
+	return 0;
+}
+
+__weak unsigned int mt_eem_vcorefs_set_volt(void)
+{
+	vcorefs_crit("NOT SUPPORT EEM\n");
+	return 0;
+}
+
+__weak void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
+{
+	vcorefs_crit("NOT SUPPORT MM DVFS NOTIFY\n");
+}
+
 /*
  * __nosavedata will not be restored after IPO-H boot
  */
@@ -99,6 +116,7 @@ static char *kicker_name[] = {
 	"KIR_SDIO",
 	"KIR_USB",
 	"KIR_GPU",
+	"KIR_APCCCI",
 	"KIR_SYSFS",
 	"KIR_SYSFSX",
 	"KIR_MM_NON_FORCE",
@@ -183,8 +201,10 @@ int vcorefs_enable_debug_isr(bool enable)
 
 	flag = spm_dvfs_flag_init();
 
+#if !defined(CONFIG_MACH_MT6763) /* FIXME */
 	if (enable)
 		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
+#endif
 
 	spm_go_to_vcorefs(flag);
 
@@ -471,7 +491,6 @@ int vcorefs_module_init(void)
  */
 void governor_autok_manager(void)
 {
-#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 	int r;
 	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_START};
 
@@ -486,7 +505,6 @@ void governor_autok_manager(void)
 
 	r = sdio_autok();
 	vcorefs_crit("SDIO autok done: %s\n", (r == 0) ? "Yes" : "No");
-#endif
 }
 
 bool governor_autok_check(int kicker)
