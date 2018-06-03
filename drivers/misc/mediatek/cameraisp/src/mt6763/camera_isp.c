@@ -6594,15 +6594,20 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_DFS_CTRL:
 		{
+			static unsigned int camsys_qos;
 			unsigned int dfs_ctrl;
 
 			if (copy_from_user(&dfs_ctrl, (void *)Param, sizeof(unsigned int)) == 0) {
 				if (dfs_ctrl == MTRUE) {
-					mmdvfs_pm_qos_add_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
-					LOG_VRB("CAMSYS PMQoS turn on");
+					if (++camsys_qos == 1) {
+						mmdvfs_pm_qos_add_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
+						LOG_VRB("CAMSYS PMQoS turn on");
+					}
 				} else {
-					mmdvfs_pm_qos_remove_request(&isp_qos);
-					LOG_VRB("CAMSYS PMQoS turn off");
+					if (--camsys_qos == 0) {
+						mmdvfs_pm_qos_remove_request(&isp_qos);
+						LOG_VRB("CAMSYS PMQoS turn off");
+					}
 				}
 			} else {
 				LOG_ERR("ISP_DFS_CTRL copy_from_user failed\n");
