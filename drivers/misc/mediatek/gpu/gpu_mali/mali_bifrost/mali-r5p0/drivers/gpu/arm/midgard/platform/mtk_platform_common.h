@@ -81,5 +81,6 @@ void mtk_trigger_aee_report(const char *msg);
 void mtk_trigger_emi_report(u64 pa);
 
 int mtk_kbase_is_gpu_always_on(void);
+int mtk_kbase_gpu_debug_log(void);
 
 #endif /* __MTK_PLATFORM_COMMON_H__ */

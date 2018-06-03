@@ -333,7 +333,7 @@ static const struct file_operations kbasep_gpu_dvfs_enable_debugfs_fops = {
 	.release = single_release,
 };
 
-/* 5. For GPU Always On*/
+/* 5. For GPU Always On */
 static int g_always_on;
 
 int mtk_kbase_is_gpu_always_on(void)
@@ -381,6 +381,56 @@ static const struct file_operations kbasep_gpu_always_on_debugfs_fops = {
 	.write	 = kbasep_gpu_always_on_write,
 	.release = single_release,
 };
+
+/* 6. For GPU Debug Log */
+static int g_debug_log;
+
+int mtk_kbase_gpu_debug_log(void)
+{
+	return g_debug_log;
+}
+
+static int proc_gpu_debug_log_show(struct seq_file *m, void *v)
+{
+	int debug_log;
+
+	debug_log = mtk_kbase_gpu_debug_log();
+	seq_printf(m, "debug_log: %d\n", debug_log);
+	return 0;
+}
+
+static int kbasep_gpu_debug_log_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_debug_log_show, NULL);
+}
+
+static ssize_t kbasep_gpu_debug_log_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (!strncmp(desc, "1", 1))
+		g_debug_log = 1;
+	else
+		g_debug_log = 0;
+
+	return count;
+}
+
+static const struct file_operations kbasep_gpu_debug_log_debugfs_fops = {
+	.open	 = kbasep_gpu_debug_log_debugfs_open,
+	.read	 = seq_read,
+	.write	 = kbasep_gpu_debug_log_write,
+	.release = single_release,
+};
+
 
 static struct proc_dir_entry *mali_pentry;
 
@@ -434,6 +484,7 @@ void proc_mali_register(void)
 	proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
 	proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
 	proc_create("always_on", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_always_on_debugfs_fops);
+	proc_create("debug_log", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_debug_log_debugfs_fops);
 }
 
 void proc_mali_unregister(void)
