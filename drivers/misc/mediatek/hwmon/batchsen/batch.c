@@ -259,7 +259,7 @@ static struct batch_context *batch_context_alloc_object(void)
 
 	BATCH_LOG("batch_context_alloc_object++++\n");
 	if (!obj) {
-		BATCH_ERR("Alloc batch object error!\n");
+		pr_err(BATCH_TAG"%s %d : Alloc batch object error!\n", __func__, __LINE__);
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200); /*5Hz, set work queue delay time 200ms */
@@ -293,9 +293,9 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 	cxt = batch_context_obj;
 	res = sscanf(buf, "%d,%d", &handle, &en);
 	if (res != 2)
-		BATCH_ERR(" batch_store_active param error: res = %d\n", res);
+		pr_err(BATCH_TAG"%s %d : batch_store_active param error: res = %d\n", __func__, __LINE__, res);
 
-	BATCH_ERR(" batch_store_active handle=%d ,en=%d\n", handle, en);
+	pr_notice(BATCH_TAG"%s %d : batch_store_active handle=%d ,en=%d\n", __func__, __LINE__, handle, en);
 
 	if (handle < 0 || ID_SENSOR_MAX_HANDLE < handle) {
 		cxt->batch_result = -1;
@@ -365,7 +365,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 	mutex_unlock(&batch_hw_mutex);
 
 	delay = batch_update_polling_rate();
-	BATCH_ERR("batch_update_polling_rate = %d\n", delay);
+	pr_notice(BATCH_TAG"%s %d : batch_update_polling_rate = %d\n", __func__, __LINE__, delay);
 	if (delay > 0) {
 		cxt->is_polling_run = true;
 		atomic_set(&cxt->delay, delay);
@@ -375,7 +375,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 		del_timer_sync(&cxt->timer);
 		cancel_work_sync(&cxt->report);
 	}
-	BATCH_ERR("batch_active done\n");
+	pr_notice(BATCH_TAG"%s %d : batch_active done\n", __func__, __LINE__);
 	return count;
 }
 /*----------------------------------------------------------------------------*/
@@ -398,7 +398,7 @@ static ssize_t batch_show_active(struct device *dev,
 static ssize_t batch_store_delay(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	BATCH_ERR(" batch_store_delay not support now\n");
+	pr_notice(BATCH_TAG"%s %d : batch_store_delay not support now\n", __func__, __LINE__);
 	return count;
 }
 
@@ -426,10 +426,10 @@ static ssize_t batch_store_batch(struct device *dev, struct device_attribute *at
 
 	cxt = batch_context_obj;
 
-	BATCH_ERR("write value: buf = %s\n", buf);
+	pr_notice(BATCH_TAG"%s %d : write value: buf = %s\n", __func__, __LINE__, buf);
 	res = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flags, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (res != 4)
-		BATCH_ERR("batch_store_delay param error: res = %d\n", res);
+		pr_err(BATCH_TAG"%s %d : batch_store_delay param error: res = %d\n", __func__, __LINE__, res);
 
 	BATCH_LOG("batch_store_delay param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
 			handle, flags, samplingPeriodNs, maxBatchReportLatencyNs);
@@ -529,7 +529,7 @@ static ssize_t batch_store_batch(struct device *dev, struct device_attribute *at
 	}
 
 	cxt->batch_result = 0;
-	BATCH_ERR("batch_store_batch done\n");
+	pr_notice(BATCH_TAG"%s %d : batch_store_batch done\n", __func__, __LINE__);
 	return count;
 }
 
@@ -552,25 +552,25 @@ static ssize_t batch_store_flush(struct device *dev, struct device_attribute *at
 	int handle;
 	int ret;
 
-	BATCH_ERR("fwq  flush_store_delay +++\n");
+	pr_notice(BATCH_TAG"%s %d : fwq  flush_store_delay +++\n", __func__, __LINE__);
 	cxt = batch_context_obj;
 
 	ret = kstrtoint(buf, 10, &handle);
 	if (ret != 0) {
 		BATCH_LOG("fwq flush_ err......\n");
-		BATCH_ERR("invalid format!!\n");
+		pr_err(BATCH_TAG"%s %d : invalid format!!\n", __func__, __LINE__);
 		return count;
 	}
 
 	if (handle < 0 || ID_SENSOR_MAX_HANDLE < handle) {
-		BATCH_ERR("invalid handle : %d\n", handle);
+		pr_err(BATCH_TAG"%s %d : invalid handle : %d\n", __func__, __LINE__, handle);
 		cxt->flush_result = -1;
 		return count;
 	}
 
 	report_data_once(handle);/* handle need to use of this function */
 
-	BATCH_ERR("flush_store_delay success------\n");
+	pr_notice(BATCH_TAG"%s %d : flush_store_delay success------\n", __func__, __LINE__);
 	return count;
 }
 
@@ -623,18 +623,19 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 	int handle;
 
 	if (batch_context_obj == NULL) {
-		BATCH_ERR("null pointer!!\n");
+		pr_err(BATCH_TAG"%s %d : null pointer!!\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case BATCH_IO_GET_SENSORS_DATA:
 		if (copy_from_user(&batch_sensors_data, argp, sizeof(batch_sensors_data))) {
-			BATCH_ERR("copy_from_user fail!!\n");
+			pr_err(BATCH_TAG"%s %d : copy_from_user fail!!\n", __func__, __LINE__);
 			return -EFAULT;
 		}
 		mutex_lock(&batch_data_mutex);
-		/* BATCH_ERR("BATCH_IO_GET_SENSORS_DATA1, %d, %d, %d!!\n", batch_sensors_data.numOfDataReturn,
+		/* pr_notice(BATCH_TAG"%s %d : BATCH_IO_GET_SENSORS_DATA1, %d, %d, %d!!\n",
+		*	__func__, __LINE__, batch_sensors_data.numOfDataReturn,
 		*batch_sensors_data.numOfDataLeft, batch_context_obj->numOfDataLeft);
 		*/
 
@@ -642,12 +643,13 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 			err = batch_context_obj->dev_list.data_dev[ID_SENSOR_MAX_HANDLE]
 				.get_data(0, &batch_sensors_data.data[i]);
 			if (err)
-				BATCH_ERR("BATCH_IO_GET_SENSORS_DATA err = %d\n", err);
+				pr_err(BATCH_TAG"%s %d : BATCH_IO_GET_SENSORS_DATA err = %d\n",
+					__func__, __LINE__, err);
 			else {
 				handle = batch_sensors_data.data[i].sensor;
 
 				if (handle < 0 || ID_SENSOR_MAX_HANDLE < handle) {
-					BATCH_ERR("Wrong handle, %d\n", handle);
+					pr_err(BATCH_TAG"%s %d : Wrong handle, %d\n", __func__, __LINE__, handle);
 					continue;
 				}
 
@@ -655,7 +657,8 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 					pt = &batch_context_obj->timestamp_info[handle];
 					batch_sensors_data.data[i].time = pt->end_t - pt->start_t;
 					if (pt->total_count == 0)
-						BATCH_ERR("pt->total_count == 0\n");
+						pr_notice(BATCH_TAG"%s %d : pt->total_count == 0\n",
+							__func__, __LINE__);
 					else
 						do_div(batch_sensors_data.data[i].time, pt->total_count);
 
@@ -692,18 +695,18 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 		#endif
 		}
 
-		/* BATCH_ERR("BATCH_IO_GET_SENSORS_DATA2, %d, %d, %d!!\n",
+		/* pr_notice(BATCH_TAG"%s %d : BATCH_IO_GET_SENSORS_DATA2, %d, %d, %d!!\n", __func__, __LINE__,
 		*batch_sensors_data.numOfDataReturn, batch_sensors_data.numOfDataLeft,
 		*batch_context_obj->numOfDataLeft);
 		*/
 		mutex_unlock(&batch_data_mutex);
 		if (copy_to_user(argp, &batch_sensors_data, sizeof(batch_sensors_data))) {
-			BATCH_ERR("copy_to_user fail!!\n");
+			pr_err(BATCH_TAG"%s %d : copy_to_user fail!!\n", __func__, __LINE__);
 			return -EFAULT;
 		}
 		break;
 	default:
-		BATCH_ERR("have no this paramenter %d!!\n", cmd);
+		pr_err(BATCH_TAG"%s %d : have no this paramenter %d!!\n", __func__, __LINE__, cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -725,7 +728,7 @@ static long batch_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long 
 		err = fp->f_op->unlocked_ioctl(fp, BATCH_IO_GET_SENSORS_DATA, (unsigned long)arg32);
 		break;
 	default:
-		BATCH_ERR("Unknown cmd %x!!\n", cmd);
+		pr_err(BATCH_TAG"%s %d : Unknown cmd %x!!\n", __func__, __LINE__, cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -752,7 +755,7 @@ static int batch_misc_init(struct batch_context *cxt)
 	cxt->mdev.fops  = &batch_fops;
 	err = misc_register(&cxt->mdev);
 	if (err)
-		BATCH_ERR("unable to register batch misc device!!\n");
+		pr_err(BATCH_TAG"%s %d : unable to register batch misc device!!\n", __func__, __LINE__);
 
 	return err;
 }
@@ -836,7 +839,7 @@ int batch_register_data_path(int handle, struct batch_data_path *data)
 
 	cxt = batch_context_obj;
 	if (data == NULL) {
-		BATCH_ERR("data pointer is null!\n");
+		pr_err(BATCH_TAG"%s %d : data pointer is null!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (handle >= 0 && handle <= (ID_SENSOR_MAX_HANDLE)) {
@@ -855,7 +858,7 @@ int batch_register_control_path(int handle, struct batch_control_path *ctl)
 
 	cxt = batch_context_obj;
 	if (ctl == NULL) {
-		BATCH_ERR("ctl pointer is null!\n");
+		pr_err(BATCH_TAG"%s %d : ctl pointer is null!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (handle >= 0 && handle <= (ID_SENSOR_MAX_HANDLE)) {
@@ -874,7 +877,7 @@ int batch_register_support_info(int handle, int support, int div, int timestamp_
 	if (cxt == NULL) {
 		if (support == 0)
 			return 0;
-		BATCH_ERR("cxt pointer is null!\n");
+		pr_err(BATCH_TAG"%s %d : cxt pointer is null!\n", __func__, __LINE__);
 		return -1;
 	}
 
@@ -958,14 +961,15 @@ static int sensorHub_suspend(struct platform_device *dev, pm_message_t state)
 					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
 					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
 				if (res < 0)
-					BATCH_ERR("enable_hw_batch fail, %d, %d\n", handle, res);
+					pr_err(BATCH_TAG"%s %d : enable_hw_batch fail, %d, %d\n",
+						__func__, __LINE__, handle, res);
 			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
 				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle,
 					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
 					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
 					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
 				if (res < 0)
-					BATCH_ERR("enable_hw_batch fail, %d, %d\n",
+					pr_err(BATCH_TAG"%s %d : enable_hw_batch fail, %d, %d\n", __func__, __LINE__,
 						ID_SENSOR_MAX_HANDLE, res);
 			}
 		}
@@ -997,14 +1001,15 @@ static int sensorHub_resume(struct platform_device *dev)
 					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
 					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
 				if (res < 0)
-					BATCH_ERR("enable_hw_batch fail, %d, %d\n", handle, res);
+					pr_err(BATCH_TAG"%s %d : enable_hw_batch fail, %d, %d\n",
+						__func__, __LINE__, handle, res);
 			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
 				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle,
 					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
 					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
 					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
 				if (res < 0)
-					BATCH_ERR("enable_hw_batch fail, %d, %d\n",
+					pr_err(BATCH_TAG"%s %d : enable_hw_batch fail, %d, %d\n", __func__, __LINE__,
 						ID_SENSOR_MAX_HANDLE, res);
 			}
 		}
@@ -1067,7 +1072,7 @@ int  batch_driver_add(struct batch_init_info *obj)
 
 	BATCH_FUN();
 	if (!obj) {
-		BATCH_ERR("batch driver add fail, batch_init_info is NULL\n");
+		pr_err(BATCH_TAG"%s %d : batch driver add fail, batch_init_info is NULL\n", __func__, __LINE__);
 		return -1;
 	}
 
@@ -1075,7 +1080,8 @@ int  batch_driver_add(struct batch_init_info *obj)
 		if (i == 0) {
 			BATCH_LOG("register sensorHub driver for the first time\n");
 			if (platform_driver_register(&sensorHub_driver))
-				BATCH_ERR("failed to register sensorHub driver already exist\n");
+				pr_err(BATCH_TAG"%s %d : failed to register sensorHub driver already exist\n",
+					__func__, __LINE__);
 
 		}
 
@@ -1105,20 +1111,20 @@ static int batch_probe(void)
 	batch_context_obj = batch_context_alloc_object();
 	if (!batch_context_obj) {
 		err = -ENOMEM;
-		BATCH_ERR("unable to allocate devobj!\n");
+		pr_err(BATCH_TAG"%s %d : unable to allocate devobj!\n", __func__, __LINE__);
 		goto exit_alloc_data_failed;
 	}
 
 	err = batch_real_driver_init();
 	if (err) {
-		BATCH_ERR("batch real driver init fail\n");
+		pr_err(BATCH_TAG"%s %d : batch real driver init fail\n", __func__, __LINE__);
 		goto real_driver_init_fail;
 	}
 
 	/* init input dev */
 	err = batch_input_init(batch_context_obj);
 	if (err) {
-		BATCH_ERR("unable to register batch input device!\n");
+		pr_err(BATCH_TAG"%s %d : unable to register batch input device!\n", __func__, __LINE__);
 		goto exit_alloc_input_dev_failed;
 	}
 
@@ -1126,14 +1132,14 @@ static int batch_probe(void)
 	/* add misc dev for sensor hal control cmd */
 	err = batch_misc_init(batch_context_obj);
 	if (err) {
-		BATCH_ERR("unable to register batch misc device!!\n");
+		pr_err(BATCH_TAG"%s %d : unable to register batch misc device!!\n", __func__, __LINE__);
 		goto exit_err_sysfs;
 	}
 
 	err = sysfs_create_group(&batch_context_obj->mdev.this_device->kobj,
 			&batch_attribute_group);
 	if (err < 0) {
-		BATCH_ERR("unable to create batch attribute file\n");
+		pr_err(BATCH_TAG"%s %d : unable to create batch attribute file\n", __func__, __LINE__);
 		goto exit_misc_register_failed;
 	}
 
@@ -1149,7 +1155,7 @@ exit_misc_register_failed:
 exit_err_sysfs:
 
 	if (err) {
-		BATCH_ERR("sysfs node creation error\n");
+		pr_err(BATCH_TAG"%s %d : sysfs node creation error\n", __func__, __LINE__);
 		batch_input_destroy(batch_context_obj);
 	}
 
@@ -1184,7 +1190,7 @@ static int __init batch_init(void)
 	BATCH_FUN();
 
 	if (batch_probe()) {
-		BATCH_ERR("failed to register batch driver\n");
+		pr_err(BATCH_TAG"%s %d : failed to register batch driver\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
