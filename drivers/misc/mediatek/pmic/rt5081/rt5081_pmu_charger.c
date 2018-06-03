@@ -686,7 +686,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		adc_data[2], adc_data[3], adc_data[4], adc_data[5]);
 
 	/* Calculate ADC value */
-	adc_result = (adc_data[0] * 256 + adc_data[1]) * rt5081_adc_unit[adc_sel]
+	adc_result = ((s64)adc_data[0] * 256 + adc_data[1]) * rt5081_adc_unit[adc_sel]
 		+ rt5081_adc_offset[adc_sel];
 
 out_unlock_all:

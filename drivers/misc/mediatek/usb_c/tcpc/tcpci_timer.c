@@ -322,7 +322,7 @@ typedef enum hrtimer_restart (*tcpc_hrtimer_call)(struct hrtimer *timer);
 static inline void on_pe_timer_timeout(
 		struct tcpc_device *tcpc_dev, uint32_t timer_id)
 {
-	struct __pd_event pd_event;
+	struct __pd_event pd_event = {0};
 
 	pd_event.event_type = PD_EVT_TIMER_MSG;
 	pd_event.msg = timer_id;
