@@ -1167,7 +1167,8 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module,
 	return 1;
 }
 
-static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg)
+static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg,
+			struct sbch *data)
 {
 	int update = 0;
 	int cnst_en = 1;
@@ -1196,6 +1197,7 @@ static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg)
 		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
 		set_reg[TRANS_EN] |= trans_en << (16 + cfg->phy_layer * 4);
 		set_reg[CNST_EN] |= cnst_en << (17 + cfg->phy_layer * 4);
+		data->sbch_en_cnt++;
 	} else {
 		set_reg[UPDATE] |= update << (cfg->ext_layer * 4);
 		set_reg[TRANS_EN] |= trans_en << (16 + cfg->ext_layer * 4);
@@ -1222,6 +1224,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->fmt = cfg->fmt;
 	data->ext_layer_num = ext_layer_num;
 	data->phy_layer = cfg->phy_layer;
+	data->sbch_en_cnt = 0;
+	data->full_trans_en = 0;
 
 	if (cfg->ext_layer == -1) {
 		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
@@ -1234,6 +1238,42 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	}
 }
 
+static unsigned long long full_trans_bw_calc(struct sbch *data,
+		 enum DISP_MODULE_ENUM module, struct OVL_CONFIG_STRUCT *cfg,
+		 struct disp_ddp_path_config *pConfig)
+{
+	unsigned long long bw_sum = 0;
+	unsigned int bpp = 0;
+	unsigned int dum_val = 0;
+	/* don't check status for cmd mode */
+	unsigned int status = 0;
+
+	if (data->sbch_en_cnt == SBCH_EN_NUM) {
+		pConfig->read_dum_reg[module] = 1;
+	} else if (data->sbch_en_cnt == SBCH_EN_NUM + 1) {
+
+		if (primary_display_is_video_mode())
+			cmdqBackupReadSlot(pgc->ovl_status_info,
+					0, &status);
+		if (!(0x01 & status)) {
+			cmdqBackupReadSlot(pgc->ovl_dummy_info,
+				module, &dum_val);
+			data->full_trans_en =
+				((0x01 << cfg->phy_layer) & dum_val);
+
+			if (data->full_trans_en)
+				DISPMSG("trans layer %d\n", cfg->phy_layer);
+		}
+	}
+
+	/* caculate the layer bw */
+	if (data->full_trans_en) {
+		bpp = ufmt_get_Bpp(cfg->fmt);
+		bw_sum = (unsigned long long)cfg->dst_w * cfg->dst_h * bpp;
+	}
+
+	return bw_sum;
+}
 static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 		int *ext_reg, struct disp_ddp_path_config *pConfig)
 {
@@ -1330,7 +1370,8 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 }
 
 static void ext_layer_bch_en(int *ext_reg, int ext_num,
-		struct disp_ddp_path_config *pConfig, int *layer)
+		struct disp_ddp_path_config *pConfig, int *layer,
+		struct sbch *data)
 {
 	int j;
 
@@ -1339,7 +1380,7 @@ static void ext_layer_bch_en(int *ext_reg, int ext_num,
 					&pConfig->ovl_config[*layer + 1];
 
 		(*layer)++;
-		sBCH_enable(ext_cfg, ext_reg);
+		sBCH_enable(ext_cfg, ext_reg, &data[*layer + 1]);
 	}
 }
 
@@ -1356,7 +1397,8 @@ static void layer_disable_bch(struct sbch *sbch_data, int ext_num,
 }
 static void ext_layer_compare(struct sbch *sbch_data, int *phy_reg,
 		int *ext_reg, struct disp_ddp_path_config *pConfig,
-		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer, int ext_num)
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer, int ext_num,
+		unsigned long long *bw_sum, enum DISP_MODULE_ENUM module)
 {
 	int ext_update = 0;
 
@@ -1369,9 +1411,11 @@ static void ext_layer_compare(struct sbch *sbch_data, int *phy_reg,
 		ext_update = check_ext_update(sbch_data, ext_num, (*layer),
 							pConfig);
 		if (!ext_update) {
-			sBCH_enable(ovl_cfg, phy_reg);
+			sBCH_enable(ovl_cfg, phy_reg, &sbch_data[*layer]);
+
 			/* enable ext layer BCH on this phy */
-			ext_layer_bch_en(ext_reg, ext_num, pConfig, layer);
+			ext_layer_bch_en(ext_reg, ext_num, pConfig,
+						layer, &sbch_data[*layer]);
 			return;
 		}
 	}
@@ -1386,7 +1430,8 @@ static void ext_layer_compare(struct sbch *sbch_data, int *phy_reg,
 
 static void layer_no_update(struct sbch *sbch_data, int *phy_reg,
 		int *ext_reg, struct disp_ddp_path_config *pConfig,
-		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer)
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer,
+		unsigned long long *bw_sum, enum DISP_MODULE_ENUM module)
 {
 	int ext_num = 0;
 
@@ -1395,7 +1440,9 @@ static void layer_no_update(struct sbch *sbch_data, int *phy_reg,
 
 	/*  the phy layer don't have ext layer, it can use BCH */
 	if (!ext_num && !sbch_data[*layer].ext_layer_num) {
-		sBCH_enable(ovl_cfg, phy_reg);
+		sBCH_enable(ovl_cfg, phy_reg, &sbch_data[*layer]);
+		*bw_sum += full_trans_bw_calc(&sbch_data[*layer],
+					module, ovl_cfg, pConfig);
 	} else if (!ext_num && sbch_data[*layer].ext_layer_num) {
 		/* phy don't have ext, but pre frame has ext
 		 * or pre frame is ext layer.
@@ -1404,7 +1451,7 @@ static void layer_no_update(struct sbch *sbch_data, int *phy_reg,
 					ovl_cfg, phy_reg);
 	} else {
 		ext_layer_compare(sbch_data, phy_reg, ext_reg, pConfig, ovl_cfg,
-							layer, ext_num);
+					layer, ext_num, bw_sum, module);
 	}
 }
 static void layer_update(struct sbch *sbch_data, int *phy_reg,
@@ -1420,12 +1467,14 @@ static void layer_update(struct sbch *sbch_data, int *phy_reg,
 				layer, pConfig, phy_reg, ext_reg);
 }
 
-static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
-			struct disp_ddp_path_config *pConfig, void *handle)
+static unsigned long long sbch_calc(enum DISP_MODULE_ENUM module,
+		struct sbch *sbch_data, struct disp_ddp_path_config *pConfig,
+		void *handle)
 {
 	int i;
 	int phy_bit[BCH_BIT_NUM] = {0};
 	int ext_bit[BCH_BIT_NUM] = {0};
+	unsigned long long full_trans_bw = 0;
 
 	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
 		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[i];
@@ -1464,7 +1513,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 			sbch_data[i].phy_layer == ovl_cfg->phy_layer) {
 			if (ovl_cfg->ext_layer == -1)
 				layer_no_update(sbch_data, phy_bit, ext_bit,
-					pConfig, ovl_cfg, &i);
+					pConfig, ovl_cfg, &i,
+					&full_trans_bw, module);
 		} else {
 			/* the layer addr or height has changed */
 			if (ovl_cfg->ext_layer == -1)
@@ -1481,6 +1531,10 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		phy_bit[UPDATE] | phy_bit[TRANS_EN] | phy_bit[CNST_EN]);
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT,
 		ext_bit[UPDATE] | ext_bit[TRANS_EN] | ext_bit[CNST_EN]);
+	/* clear slot */
+	cmdqBackupWriteSlot(pgc->ovl_dummy_info, module, 0);
+
+	return full_trans_bw;
 }
 
 static int ovl_config_l(enum DISP_MODULE_ENUM module,
@@ -1495,6 +1549,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		pConfig->p_golden_setting_context;
 	unsigned int Bpp, fps;
 	unsigned long long tmp_bw, ovl_bw;
+	unsigned long long full_trans_bw = 0;
 
 	unsigned long layer_offset_rdma_ctrl;
 	unsigned long ovl_base = ovl_base_addr(module);
@@ -1595,8 +1650,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 			pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
-	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
-
 	if (!pConfig->ovl_partial_dirty)
 		_ovl_lc_config(module, pConfig, handle);
 
@@ -1625,8 +1678,14 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 			DISP_REG_SET(handle, ovl_base_addr(module) +
 					DISP_REG_OVL_SBCH_EXT, 0);
 		} else {
-			sbch_calc(module, sbch_info[ovl_index],
+			full_trans_bw = sbch_calc(module, sbch_info[ovl_index],
 					pConfig, handle);
+
+			full_trans_bw *= fps;
+			do_div(full_trans_bw, 1000);
+			full_trans_bw *= 1250;
+			do_div(full_trans_bw, fps * 1000);
+			ovl_bw -= full_trans_bw;
 		}
 	} else {
 	/* if don't enable bch feature, set bch reg to default value(0) */
@@ -1635,6 +1694,9 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		DISP_REG_SET(handle,
 			ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT, 0);
 	}
+
+	DDPDBG("%s transparent bw:%llu, total bw:%llu\n",
+		ddp_get_module_name(module), full_trans_bw, ovl_bw);
 
 	/* bandwidth report */
 	if (module == DISP_MODULE_OVL0) {

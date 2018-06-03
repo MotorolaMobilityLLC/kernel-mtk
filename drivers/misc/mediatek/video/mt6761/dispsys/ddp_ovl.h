@@ -24,6 +24,7 @@
 #define OVL_MAX_WIDTH  (4095)
 #define OVL_MAX_HEIGHT (4095)
 
+#define SBCH_EN_NUM    (1)
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 #define TOTAL_OVL_LAYER_NUM	(4+3+1+2)
 #else
