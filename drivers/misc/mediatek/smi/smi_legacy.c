@@ -1148,7 +1148,7 @@ static int smi_debug_offset_get(struct mtk_smi_dev *smi)
 		return smi->nr_debugs;
 	/* allocate and get debugs */
 	smi->debugs = devm_kcalloc(smi->dev, smi->nr_debugs,
-		sizeof(unsigned int), GFP_KERNEL);
+		sizeof(*smi->debugs), GFP_KERNEL);
 	if (!smi->debugs)
 		return -ENOMEM;
 
@@ -1198,12 +1198,12 @@ static int smi_scen_config_get(struct mtk_smi_dev *smi)
 		return ret;
 	}
 	smi->scen_pairs = devm_kcalloc(smi->dev, smi->nr_scens,
-		sizeof(struct mtk_smi_pair **), GFP_KERNEL);
+		sizeof(*smi->scen_pairs), GFP_KERNEL);
 	if (!smi->scen_pairs)
 		return -ENOMEM;
 	for (i = 0; i < smi->nr_scens; i++) {
 		smi->scen_pairs[i] = devm_kcalloc(smi->dev, smi->nr_scen_pairs,
-			sizeof(struct mtk_smi_pair *), GFP_KERNEL);
+			sizeof(**smi->scen_pairs), GFP_KERNEL);
 		if (!smi->scen_pairs[i])
 			return -ENOMEM;
 	}
@@ -1228,7 +1228,7 @@ int smi_register(struct platform_driver *drv)
 {
 	int i, ret;
 	/* allocate smi driver */
-	smi_drv = kzalloc(sizeof(struct smi_driver *), GFP_KERNEL);
+	smi_drv = kzalloc(sizeof(*smi_drv), GFP_KERNEL);
 	if (!smi_drv)
 		return -ENOMEM;
 	spin_lock_init(&(smi_drv->lock));
@@ -1266,7 +1266,7 @@ int smi_register(struct platform_driver *drv)
 			return ret;
 	}
 	/* allocate smi device */
-	smi_dev = kzalloc(sizeof(struct smi_device *), GFP_KERNEL);
+	smi_dev = kzalloc(sizeof(*smi_dev), GFP_KERNEL);
 	if (!smi_dev)
 		return -ENOMEM;
 	smi_dev->name = "MTK_SMI";

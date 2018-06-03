@@ -168,7 +168,7 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 		smi->nr_clks = 4;
 #endif
 	/* allocate and get clks */
-	smi->clks = devm_kcalloc(smi->dev, smi->nr_clks, sizeof(struct clk *),
+	smi->clks = devm_kcalloc(smi->dev, smi->nr_clks, sizeof(*smi->clks),
 		GFP_KERNEL);
 	if (!smi->clks)
 		return -ENOMEM;
@@ -222,7 +222,7 @@ static int mtk_smi_config_get(struct mtk_smi_dev *smi)
 		return ret;
 	/* allocate and get config_pairs */
 	smi->config_pairs = devm_kcalloc(smi->dev, smi->nr_config_pairs,
-		sizeof(struct mtk_smi_pair *), GFP_KERNEL);
+		sizeof(*smi->config_pairs), GFP_KERNEL);
 	if (!smi->config_pairs)
 		return -ENOMEM;
 
@@ -568,8 +568,7 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 		return ret;
 	}
 	/* dev */
-	larbs[index] = devm_kzalloc(&pdev->dev, sizeof(struct mtk_smi_dev *),
-		GFP_KERNEL);
+	larbs[index] = devm_kzalloc(&pdev->dev, sizeof(**larbs), GFP_KERNEL);
 	if (!larbs[index])
 		return -ENOMEM;
 	larbs[index]->dev = &pdev->dev;
@@ -717,8 +716,7 @@ static int mtk_smi_common_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 	/* dev */
-	common = devm_kzalloc(&pdev->dev, sizeof(struct mtk_smi_dev *),
-		GFP_KERNEL);
+	common = devm_kzalloc(&pdev->dev, sizeof(*common), GFP_KERNEL);
 	if (!common)
 		return -ENOMEM;
 	common->dev = &pdev->dev;
@@ -761,8 +759,8 @@ static int mtk_smi_common_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 	/* larbs */
-	larbs = devm_kcalloc(common->dev, common->index,
-		sizeof(struct mtk_smi_dev *), GFP_KERNEL);
+	larbs = devm_kcalloc(common->dev, common->index, sizeof(*larbs),
+		GFP_KERNEL);
 	if (!larbs)
 		return -ENOMEM;
 	/* device set driver data */
