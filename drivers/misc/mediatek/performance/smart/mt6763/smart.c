@@ -38,6 +38,7 @@
 #include <linux/platform_device.h>
 #include <mt-plat/met_drv.h>
 #include <linux/sched.h>
+#include "mtk_devinfo.h"
 #include "smart.h"
 
 #define SEQ_printf(m, x...)\
@@ -100,6 +101,7 @@ static unsigned long java_up_count;
 
 static unsigned long turbo_util_thresh;
 static int turbo_mode_enable;
+static int force_isolate;
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 struct cpumask turbo_cpus;
 #endif
@@ -625,6 +627,49 @@ static int mt_smart_turbo_support_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static ssize_t mt_smart_force_isolate_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int ret, len = 0;
+	unsigned long arg;
+
+	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
+
+	if (copy_from_user(&buf, ubuf, len))
+		return -EFAULT;
+	buf[cnt] = '\0';
+
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		if (arg == 0) {
+			force_isolate = 0;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+			unset_cpu_isolation(ISO_TURBO);
+#endif
+		}
+		if (arg == 1) {
+			force_isolate = 1;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+			if (turbo_support)
+				set_cpu_isolation(ISO_TURBO, &turbo_cpus);
+#endif
+		}
+	} else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : cnt;
+}
+
+static int mt_smart_force_isolate_show(struct seq_file *m, void *v)
+{
+	if (force_isolate)
+		SEQ_printf(m, "1\n");
+	else
+		SEQ_printf(m, "0\n");
+	return 0;
+}
+
 static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
@@ -934,6 +979,19 @@ static int mt_smart_turbo_support_open(struct inode *inode, struct file *file)
 static const struct file_operations mt_smart_turbo_support_fops = {
 	.open = mt_smart_turbo_support_open,
 	.write = mt_smart_turbo_support_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int mt_smart_force_isolate_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_smart_force_isolate_show, inode->i_private);
+}
+
+static const struct file_operations mt_smart_force_isolate_fops = {
+	.open = mt_smart_force_isolate_open,
+	.write = mt_smart_force_isolate_write,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -1321,6 +1379,9 @@ int __init init_smart(void)
 	pe = proc_create("smart_turbo_support", 0644, smart_dir, &mt_smart_turbo_support_fops);
 	if (!pe)
 		return -ENOMEM;
+	pe = proc_create("smart_force_isolate", 0644, smart_dir, &mt_smart_force_isolate_fops);
+	if (!pe)
+		return -ENOMEM;
 	pe = proc_create("smart_log_enable", 0644, smart_dir, &mt_smart_log_enable_fops);
 	if (!pe)
 		return -ENOMEM;
@@ -1395,11 +1456,14 @@ int __init init_smart(void)
 
 	turbo_util_thresh = 80;   /* util <= 80% */
 
-	turbo_support = 0; /* turbo mode support. Todo: We should read efuse to decide it. */
 	log_enable = 0;    /* debug log */
 	trace_enable = 0;  /* debug trace */
 	uevent_enable = 1; /* smart.c will send uevent to user space */
 	turbo_mode_enable = 0;
+	force_isolate = 0; /* test mode: force turbo mode isolation on */
+
+	/* check turbo mode: bit 3 of index 54 */
+	turbo_support = (get_devinfo_with_index(54) & (1 << 3)) ? 1 : 0;
 
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
