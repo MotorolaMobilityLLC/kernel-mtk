@@ -19,12 +19,14 @@ enum {
 	NUMS_MEM_ID,
 };
 
+#define SSPM_PLT_LOGGER_BUF_LEN        (512 * 1024)
+
 #ifdef _SSPM_INTERNAL_
 /* The total size of sspm_reserve_mblock should less equal than reserve-memory-sspm_share of device tree */
 static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 	{
 		.num = SSPM_MEM_ID,
-		.size = 0x100400,
+		.size = SSPM_PLT_LOGGER_BUF_LEN + 1024,
 	},
 };
 #endif
