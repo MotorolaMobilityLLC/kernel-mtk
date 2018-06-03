@@ -1226,9 +1226,11 @@ TRACE_EVENT(sched_boost_cpu,
 TRACE_EVENT(sched_tune_tasks_update,
 
 	TP_PROTO(struct task_struct *tsk, int cpu, int tasks, int idx,
-		int boost, int max_boost),
+		int boost, int max_boost,
+		int capacity_min, int max_capacity_min),
 
-	TP_ARGS(tsk, cpu, tasks, idx, boost, max_boost),
+	TP_ARGS(tsk, cpu, tasks, idx, boost, max_boost,
+		capacity_min, max_capacity_min),
 
 	TP_STRUCT__entry(
 		__array( char,	comm,	TASK_COMM_LEN	)
@@ -1238,6 +1240,8 @@ TRACE_EVENT(sched_tune_tasks_update,
 		__field( int,		idx		)
 		__field( int,		boost		)
 		__field( int,		max_boost	)
+		__field(int,		capacity_min)
+		__field(int,		max_capacity_min)
 	),
 
 	TP_fast_assign(
@@ -1248,13 +1252,15 @@ TRACE_EVENT(sched_tune_tasks_update,
 		__entry->idx 		= idx;
 		__entry->boost		= boost;
 		__entry->max_boost	= max_boost;
+		__entry->capacity_min	= capacity_min;
+		__entry->max_capacity_min = max_capacity_min;
 	),
 
-	TP_printk("pid=%d comm=%s "
-			"cpu=%d tasks=%d idx=%d boost=%d max_boost=%d",
+	TP_printk("pid=%d comm=%s cpu=%d tasks=%d idx=%d boost=%d max_boost=%d cap_min=%d max_cap_min=%d",
 		__entry->pid, __entry->comm,
 		__entry->cpu, __entry->tasks, __entry->idx,
-		__entry->boost, __entry->max_boost)
+		__entry->boost, __entry->max_boost,
+		__entry->capacity_min, __entry->max_capacity_min)
 );
 
 /*
