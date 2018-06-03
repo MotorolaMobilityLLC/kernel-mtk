@@ -175,6 +175,11 @@
 		interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	tkcore {
+		compatible = "trustkernel,tkcore";
+		interrupts = <GIC_SPI 111 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	psci {
 		compatible	= "arm,psci-0.2";
 		method		= "smc";
