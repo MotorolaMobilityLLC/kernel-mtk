@@ -43,9 +43,7 @@
 #include <mtk_pmic_api_buck.h>
 #include <mt6337_api.h>
 
-#if defined(CONFIG_MACH_MT6799)
 #include <mtk_spm_vcore_dvfs.h>
-#endif
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -91,6 +89,11 @@ u8 spm_snapshot_golden_setting;
 
 struct wake_status spm_wakesta; /* record last wakesta */
 static unsigned int spm_sleep_count;
+
+#if defined(CONFIG_MACH_MT6758)
+int sleep_ddr;
+u32 sleep_vcorefs_debug;
+#endif
 
 /**************************************
  * SW code for suspend
@@ -450,6 +453,10 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	dvfsrc_md_scenario_update(1);
 #endif
 
+#if defined(CONFIG_MACH_MT6758)
+	spm_vcorefs_md_scenario_update(1);
+#endif
+
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
@@ -465,6 +472,12 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 
 #if defined(CONFIG_MACH_MT6799)
 	dvfsrc_md_scenario_update(0);
+#endif
+
+#if defined(CONFIG_MACH_MT6758)
+	sleep_ddr = vcorefs_get_curr_ddr();
+	sleep_vcorefs_debug = spm_read(SPM_DVFS_DEBUG);
+	spm_vcorefs_md_scenario_update(0);
 #endif
 
 #if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
@@ -568,12 +581,18 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
 #endif
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
-#endif
+
+#if defined(CONFIG_MACH_MT6758)
+	spm_crit2(
+	"suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d, sleep ddr = %d, debug = 0x%x\n",
+	spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count, sleep_ddr, sleep_vcorefs_debug);
+#else
 	spm_crit2("suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d\n",
 		  spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count);
+#endif
 	if (spm_ap_mdsrc_req_cnt != 0)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
