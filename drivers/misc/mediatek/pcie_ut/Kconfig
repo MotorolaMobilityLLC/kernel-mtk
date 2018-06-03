@@ -1,9 +1,8 @@
-# pcie unit test
-
 config PCIE_MTK_UNIT
 	bool "pcie unit test"
 	depends on PCIE_MTK
 	help
-	  This is for debugging purpose. If unsure, say N.
-
-
+	  This selects MediaTek(R) PCIE UNIT TEST driver.
+	  UNIT TEST is used to test PCIE device.
+	  If you want to use MediaTek(R) PCIE UNIT TEST driver, say
+	  Y or M here. If unsure, say N.
