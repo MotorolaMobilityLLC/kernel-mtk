@@ -1521,10 +1521,21 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 {
 	struct task_struct *curr;
 	struct rq *rq;
+	int this_cpu = smp_processor_id();
+	int sync = flags & WF_SYNC;
 
 	/* For anything but wake ups, just return the task_cpu */
 	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
 		goto out;
+
+	/* honors sync flag */
+	if (sync) {
+		cpumask_t search_cpus;
+
+		cpumask_and(&search_cpus, tsk_cpus_allowed(p), cpu_online_mask);
+		if (cpumask_test_cpu(this_cpu, &search_cpus))
+			return this_cpu;
+	}
 
 	rq = cpu_rq(cpu);
 
