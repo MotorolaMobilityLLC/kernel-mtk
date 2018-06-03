@@ -143,6 +143,7 @@ static int ram_console_init_desc(uint32_t off_linux)
 			len = strlen(buf[i]);
 			if (len < FMT_MAX_LEN) {
 				strncpy(idesc.desc[i].fmt, buf[i], FMT_MAX_LEN);
+				idesc.desc[i].fmt[FMT_MAX_LEN - 1] = '\0';
 				idesc.desc[i].fmtsize = len;
 			} else {
 				/* idesc.desc[i].size = i; */
@@ -159,6 +160,8 @@ static int ram_console_init_desc(uint32_t off_linux)
 			if (len < FMT_MAX_LEN) {
 				strncpy(idesc.per_cpu_desc[i].fmt,
 					per_cpu_buf[i], FMT_MAX_LEN);
+				idesc.per_cpu_desc[i].fmt[FMT_MAX_LEN - 1] =
+					'\0';
 				idesc.per_cpu_desc[i].fmtsize =
 					strlen(idesc.per_cpu_desc[i].fmt);
 			} else {
