@@ -60,6 +60,8 @@
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
 #include <linux/scatterlist.h>
+#include <linux/irq.h>
+
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -255,6 +257,7 @@ static int suspend_discharging = -1;
 static int is_uisoc_ever_100 = KAL_FALSE;
 #endif
 
+static int chrdet_irq;
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ANDROID BATTERY SERVICE */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -3090,6 +3093,14 @@ void do_chrdet_int_task(void)
 
 }
 
+irqreturn_t ops_chrdet_int_handler(int irq, void *dev_id)
+{
+	pr_debug("[Power/Battery][chrdet_bat_int_handler]....\n");
+
+	do_chrdet_int_task();
+
+	return IRQ_HANDLED;
+}
 
 void BAT_thread(void)
 {
@@ -4830,6 +4841,18 @@ static int battery_dts_probe(struct platform_device *dev)
 
 	battery_log(BAT_LOG_CRTI, "******** battery_dts_probe!! ********\n");
 
+	chrdet_irq = platform_get_irq(dev, 0);
+	if (chrdet_irq <= 0)
+		pr_err("******** don't support irq from dts ********\n");
+	else {
+		ret = request_threaded_irq(chrdet_irq, NULL,
+					   ops_chrdet_int_handler,
+					   IRQF_TRIGGER_HIGH | IRQF_ONESHOT, "ops_pmic_chrdet", dev);
+		if (ret) {
+			pr_err("%s: request_threaded_irq err = %d\n", __func__, ret);
+			return ret;
+		}
+	}
 	battery_device.dev.of_node = dev->dev.of_node;
 	ret = platform_device_register(&battery_device);
 	if (ret) {
