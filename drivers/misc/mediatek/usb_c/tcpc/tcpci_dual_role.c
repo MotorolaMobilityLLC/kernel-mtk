@@ -1,9 +1,8 @@
 /*
- * Copyright (C) 2016 Richtek Technology Corp.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * TCPC Interface for dual role
  *
- * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -253,7 +252,7 @@ static void tcpc_get_dual_desc(struct tcpc_device *tcpc)
 	if (!np)
 		return;
 
-	if (of_property_read_u32(np, "rt-dual,supported_modes", &val) >= 0) {
+	if (of_property_read_u32(np, "tcpc-dual,supported_modes", &val) >= 0) {
 		if (val > DUAL_ROLE_PROP_SUPPORTED_MODES_TOTAL)
 			tcpc->dual_role_supported_modes =
 					DUAL_ROLE_SUPPORTED_MODES_DFP_AND_UFP;

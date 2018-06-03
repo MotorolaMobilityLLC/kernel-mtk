@@ -1,9 +1,8 @@
 /*
- * Copyright (C) 2016 Richtek Technology Corp.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * Richtek TypeC Port Control Interface Core Driver
+ * Mediatek TypeC Port Control Interface Core Driver
  *
- * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -611,7 +610,6 @@ static void __exit tcpc_class_exit(void)
 subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
-MODULE_DESCRIPTION("Richtek TypeC Port Control Core");
-MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
+MODULE_DESCRIPTION("Mediatek TypeC Port Control Core");
 MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
