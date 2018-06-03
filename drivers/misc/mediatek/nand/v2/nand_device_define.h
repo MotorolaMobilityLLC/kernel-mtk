@@ -31,6 +31,7 @@ struct tag_nand_number {
 #define C_SIZE		8192
 #define RAMDOM_READ		(1<<0)
 #define CACHE_READ		(1<<1)
+#define MULTI_PLANE		(1<<2)
 #define RAND_TYPE_SAMSUNG 0
 #define RAND_TYPE_TOSHIBA 1
 #define RAND_TYPE_NONE 2

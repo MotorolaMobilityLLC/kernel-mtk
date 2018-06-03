@@ -47,6 +47,10 @@
 /* #include "partition.h" */
 /* #include <mach/board.h> */
 
+#ifdef CONFIG_MNTL_SUPPORT
+#include "mtk_nand_ops.h"
+#endif
+
 #ifndef FALSE
 #define FALSE (0)
 #endif
@@ -289,11 +293,8 @@ bool find_mirror_pt_from_bottom(u64 *start_addr, struct mtd_info *mtd)
 		}
 #endif
 		if (is_valid_mpt(page_buf)) {
-			if (
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-				(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
-#endif
-				(devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)) {
+			if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
+			    (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)) {
 				slc_ratio = *((u32 *)page_buf + 1);
 				sys_slc_ratio = (slc_ratio >> 16)&0xFF;
 				usr_slc_ratio = (slc_ratio)&0xFF;
@@ -302,6 +303,7 @@ bool find_mirror_pt_from_bottom(u64 *start_addr, struct mtd_info *mtd)
 			} else {
 				pi.sequencenumber = page_buf[PT_SIG_SIZE + page_size];
 			}
+
 			pr_debug("find_mirror find valid pt at %llx sq %x\n",
 			       current_start_addr, pi.sequencenumber);
 			break;
@@ -381,19 +383,17 @@ int load_exist_part_tab(u8 *buf)
 #endif
 		/* memcpy(pmt_spare,&page_buf[LPAGE] ,PT_SIG_SIZE); //do not need skip bad block flag */
 		if (is_valid_pt(page_buf)) {
-			if (
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-				(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
-#endif
-				(devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)) {
+			if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
+			    (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)) {
 				slc_ratio = *((u32 *)page_buf + 1);
 				sys_slc_ratio = (slc_ratio >> 16)&0xFF;
 				usr_slc_ratio = (slc_ratio)&0xFF;
 				pr_warn("[k] slc ratio sys_slc_ratio %d usr_slc_ratio %d\n"
 					, sys_slc_ratio, usr_slc_ratio);
 				pi.sequencenumber = page_buf[PT_SIG_SIZE + PT_TLCRATIO_SIZE + page_size];
-			} else
+			} else {
 				pi.sequencenumber = page_buf[PT_SIG_SIZE + page_size];
+			}
 			pr_info("load_pt find valid pt at %llx sq %x\n", pt_start_addr,
 			       pi.sequencenumber);
 			break;
@@ -415,6 +415,7 @@ int load_exist_part_tab(u8 *buf)
 		/* used the last valid mirror pt, at lease one is valid. */
 		mtd->_read_oob(mtd, (loff_t) mirror_address, &ops_pt);
 	}
+
 	if (
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 		(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
@@ -719,6 +720,9 @@ int new_part_tab(u8 *buf, struct mtd_info *mtd)
 	ops_pt.oobretlen = 0;
 	ops_pt.oobbuf = page_buf + page_size;
 	ops_pt.ooboffs = 0;
+
+	temp_value = 0;
+
 	/* the first image is ? */
 #if 1
 	for (part_num = 0; part_num < PART_MAX_COUNT; part_num++) {
@@ -777,6 +781,7 @@ int new_part_tab(u8 *buf, struct mtd_info *mtd)
 		pageoffset = find_empty_page_from_top(start_addr, mtd);
 		/* download partition used the new partition */
 		/* write mirror at the same 2 page */
+
 		if (
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 			(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
@@ -855,6 +860,7 @@ int update_part_tab(struct mtd_info *mtd)
 	struct mtd_oob_ops ops_pt;
 	u64 temp_value;
 
+	temp_value = 0;
 	memset(page_buf, 0xFF, page_size + 64);
 
 	ei.mtd = mtd;
@@ -885,6 +891,7 @@ int update_part_tab(struct mtd_info *mtd)
 		for (retry_r = 0; retry_r < RETRY_TIMES; retry_r++) {
 			for (retry_w = 0; retry_w < RETRY_TIMES; retry_w++) {
 				current_addr = start_addr + (retry_w + retry_r * RETRY_TIMES) * page_size;
+
 				if (
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 					(devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ||
@@ -900,7 +907,7 @@ int update_part_tab(struct mtd_info *mtd)
 					memcpy(&page_buf[page_size], &sig_buf, PT_SIG_SIZE + PT_TLCRATIO_SIZE);
 					memcpy(&page_buf[page_size + PT_SIG_SIZE + PT_TLCRATIO_SIZE], &pi,
 							PT_SIG_SIZE + PT_TLCRATIO_SIZE);
-				} else {
+				} else	{
 					*(u32 *)sig_buf = PT_SIG;
 					memcpy(page_buf, &sig_buf, PT_SIG_SIZE);
 					memcpy(&page_buf[PT_SIG_SIZE], &new_part[0], sizeof(new_part));
@@ -1214,6 +1221,41 @@ bool mtk_block_istlc(u64 addr)
 }
 EXPORT_SYMBOL(mtk_block_istlc);
 
+#endif
+
+#ifdef CONFIG_MNTL_SUPPORT
+int get_data_partition_info(struct nand_ftl_partition_info *info)
+{
+	unsigned int i;
+	u64 temp;
+
+	pr_debug("get_data_partition_info start\n");
+	for (i = 0; i < PART_MAX_COUNT; i++) {
+		pr_debug("get_data_partition_info %s %d\n",
+			g_exist_Partition[i].name, i);
+		if (!strcmp(g_exist_Partition[i].name, FTL_PARTITION_NAME)) {
+
+			temp = g_exist_Partition[i].size;
+			do_div(temp, ((devinfo.blocksize * 1024) & 0xFFFFFFFF));
+			info->total_block = temp;
+
+			temp = g_exist_Partition[i].offset;
+			do_div(temp, ((devinfo.blocksize * 1024) & 0xFFFFFFFF));
+			info->start_block = temp;
+			info->slc_ratio = slc_ratio;
+
+			pr_info("get part info, start_block:0x%x total_block:0x%x slc_ratio:%d\n",
+				info->start_block, info->total_block, info->slc_ratio);
+
+			return 0;
+		}
+	}
+
+	pr_debug("get_data_partition_info end\n");
+
+	return 1;
+
+}
 #endif
 
 #endif
