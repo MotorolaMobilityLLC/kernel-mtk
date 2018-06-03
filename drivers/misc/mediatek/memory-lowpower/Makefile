@@ -14,3 +14,4 @@
 obj-y += memory-lowpower.o
 obj-y += memory-lowpower.o memory-lowpower-task.o
 obj-$(CONFIG_MTK_PASR)	+= mtkpasr/
+obj-$(CONFIG_MTK_DRS)	+= mtkdrs/
