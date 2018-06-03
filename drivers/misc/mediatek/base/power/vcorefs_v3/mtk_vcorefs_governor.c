@@ -412,6 +412,8 @@ int governor_debug_store(const char *buf)
 
 		if (!strcmp(cmd, "emibw"))
 			r = vcorefs_set_emi_bw_ctrl(val, val2);
+		else if (!strcmp(cmd, "spmdvfs"))
+			spm_request_dvfs_opp(val, val2);
 		else
 			r = -EPERM;
 
