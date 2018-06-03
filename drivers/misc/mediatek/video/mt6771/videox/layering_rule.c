@@ -348,28 +348,28 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 	unsigned int i = 0;
 	struct layer_config *info;
 	unsigned int disp_idx = 0;
-#if 0
-	/* ovl only support 1 yuv layer */
+	unsigned int layer_cnt = 0;
+	unsigned int yuv_cnt;
+
+	/* ovl support total 2 yuv layer */
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
+		yuv_cnt = 0;
 		for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
 			info = &(disp_info->input_config[disp_idx][i]);
 			if (is_gles_layer(disp_info, disp_idx, i))
 				continue;
 			if (is_yuv(info->src_fmt)) {
-				if (flag) {
+				yuv_cnt++;
+				if (yuv_cnt > 2) {
 					/* push to GPU */
 					if (disp_info->gles_head[disp_idx] == -1 || i < disp_info->gles_head[disp_idx])
 						disp_info->gles_head[disp_idx] = i;
 					if (disp_info->gles_tail[disp_idx] == -1 || i > disp_info->gles_tail[disp_idx])
 						disp_info->gles_tail[disp_idx] = i;
-				} else {
-					flag = true;
 				}
 			}
 		}
 	}
-#else
-	unsigned int layer_cnt = 0;
 
 	disp_idx = 1;
 	for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
@@ -388,7 +388,57 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 			flag = false;
 		}
 	}
-#endif
+
+	return flag;
+}
+
+static bool post_hw_limitation(struct disp_layer_info *disp_info)
+{
+	bool flag = false;
+	unsigned int i;
+	struct layer_config *info;
+	unsigned int disp_idx = 0;
+	int yuv_tb = -1, yuv_bb = -1;
+
+	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
+		for (i = 0; i < disp_info->layer_num[disp_idx] ; i++) {
+			info = &(disp_info->input_config[disp_idx][i]);
+			if (is_gles_layer(disp_info, disp_idx, i))
+				continue;
+			if (!is_yuv(info->src_fmt))
+				continue;
+
+			/* NOTICE: assume there are two yuv layer at most */
+			/* YUV format might need alignment, keep some margin */
+			if (yuv_tb == -1) {
+				yuv_tb = info->dst_offset_y;
+				yuv_tb = (yuv_tb < 2) ? 0 : yuv_tb - 2;
+				yuv_bb = yuv_tb + info->dst_height + 1;
+			} else {
+				unsigned firs_tb, firs_bb, seco_tb, seco_bb;
+				unsigned tmp_tb, tmp_bb;
+				bool sort_res;
+
+				tmp_tb = info->dst_offset_y;
+				tmp_tb = (tmp_tb < 2) ? 0 : tmp_tb - 2;
+				tmp_bb = tmp_tb + info->dst_height + 1;
+
+				sort_res = yuv_tb < info->dst_offset_y;
+
+				firs_tb = sort_res ? yuv_tb : tmp_tb;
+				firs_bb = sort_res ? yuv_bb : tmp_bb;
+				seco_tb = sort_res ? tmp_tb : yuv_tb;
+				seco_bb = sort_res ? tmp_bb : yuv_bb;
+
+				if (seco_tb <= firs_bb) {
+					/* yuv overlap, mmclk should be 450MHZ */
+					disp_info->hrt_num = max_hrt_level;
+					DISPINFO("set HRT to max level %d due to yuv overlap\n", disp_info->hrt_num);
+				}
+			}
+		}
+	}
+
 	return flag;
 }
 
@@ -611,4 +661,5 @@ static struct layering_rule_ops l_rule_ops = {
 	.rollback_to_gpu_by_hw_limitation = filter_by_hw_limitation,
 	.unset_disp_rsz_attr = lr_unset_disp_rsz_attr,
 	.adaptive_dc_enabled = _adaptive_dc_enabled,
+	.adjust_hrt_level = post_hw_limitation,
 };
