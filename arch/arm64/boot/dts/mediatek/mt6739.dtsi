@@ -1148,6 +1148,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	i2c1: i2c@11008000 {
@@ -1160,6 +1161,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	i2c2: i2c@11009000 {
@@ -1172,6 +1174,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	i2c3: i2c@1100f000 {
@@ -1184,6 +1187,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	i2c4: i2c@11011000 {
@@ -1196,6 +1200,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	i2c5: i2c@11016000 {
@@ -1208,6 +1213,7 @@
 		 *clock-names = "main", "dma";
 		 */
 		clock-div = <5>;
+		aed = <0x1f>;
 	};
 
 	spi0: spi@1100a000 {
