@@ -2486,15 +2486,18 @@ struct cg_list mm_cg2 = {
 			"mm_smi_common",
 			"mm_smi_comm0",
 			"mm_smi_comm1",
-			"mm_smi_larb0",
-			"mm_smi_img_ck",
-			"mm_smi_cam_ck"
+			"mm_smi_larb0"
 		},
 };
 
 struct cg_list mfg_cg = {.cg = {"mfg_sel"},};
 
-struct cg_list isp_cg = {.cg = {"img_larb2"},};
+struct cg_list isp_cg = {
+		.cg = {
+			"img_larb2",
+			"mm_smi_img_ck"
+		},
+};
 
 struct cg_list cam_cg = {
 		.cg = {
@@ -2506,7 +2509,9 @@ struct cg_list cam_cg = {
 			"camsv0",
 			"camsv1",
 			"camsv2",
-			"cam_ccu"},
+			"cam_ccu",
+			"mm_smi_cam_ck"
+		},
 };
 
 struct mtk_power_gate {
