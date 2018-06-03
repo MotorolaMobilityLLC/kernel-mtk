@@ -62,7 +62,7 @@ static int ccu_i2c_controller_uninit(enum CCU_I2C_CHANNEL i2c_controller_id);
 static inline u32 i2c_readl_dma(struct mt_i2c *i2c, u8 offset);
 static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset);
 static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset);
-static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset);
+static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u16 offset);
 
 
 static enum CCU_I2C_CHANNEL g_ccuI2cChannel;
@@ -310,6 +310,7 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int ena
 
 			/*dump controller status*/
 			i2c = i2c_get_adapdata(pClient->adapter);
+			i2c_writew(2, i2c, 0x240);	/*MCU_INTR re-direct to CCU only*/
 			ccu_i2c_dump_info(i2c);
 		}
 	} else {
@@ -368,7 +369,7 @@ static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
 	return readw(i2c->base + offset);
 }
 
-static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
+static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u16 offset)
 {
 	writew(value, i2c->base + offset);
 }
