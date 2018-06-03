@@ -106,11 +106,11 @@ static struct musb_fifo_cfg fifo_cfg_host[] = {
 };
 
 u32 delay_time = 15;
-module_param(delay_time, int, 0644);
+module_param(delay_time, int, 0400);
 u32 delay_time1 = 55;
-module_param(delay_time1, int, 0644);
+module_param(delay_time1, int, 0400);
 u32 iddig_cnt;
-module_param(iddig_cnt, int, 0644);
+module_param(iddig_cnt, int, 0400);
 
 void vbus_init(void)
 {
@@ -127,9 +127,9 @@ void vbus_init(void)
 }
 
 static bool vbus_on;
-module_param(vbus_on, bool, 0644);
+module_param(vbus_on, bool, 0400);
 static int vbus_control;
-module_param(vbus_control, int, 0644);
+module_param(vbus_control, int, 0400);
 bool usb20_check_vbus_on(void)
 {
 	DBG(0, "vbus_on<%d>\n", vbus_on);
@@ -205,11 +205,11 @@ u32 sw_deboun_time = 1;
 #else
 u32 sw_deboun_time = 400;
 #endif
-module_param(sw_deboun_time, int, 0644);
+module_param(sw_deboun_time, int, 0400);
 struct switch_dev otg_state;
 
 u32 typec_control;
-module_param(typec_control, int, 0644);
+module_param(typec_control, int, 0400);
 static bool typec_req_host;
 static bool iddig_req_host;
 
@@ -372,15 +372,15 @@ void musb_session_restart(struct musb *musb)
 
 static struct delayed_work host_plug_test_work;
 int host_plug_test_enable; /* default disable */
-module_param(host_plug_test_enable, int, 0644);
+module_param(host_plug_test_enable, int, 0400);
 int host_plug_in_test_period_ms = 5000;
-module_param(host_plug_in_test_period_ms, int, 0644);
+module_param(host_plug_in_test_period_ms, int, 0400);
 int host_plug_out_test_period_ms = 5000;
-module_param(host_plug_out_test_period_ms, int, 0644);
+module_param(host_plug_out_test_period_ms, int, 0400);
 int host_test_vbus_off_time_us = 3000;
-module_param(host_test_vbus_off_time_us, int, 0644);
+module_param(host_test_vbus_off_time_us, int, 0400);
 int host_test_vbus_only = 1;
-module_param(host_test_vbus_only, int, 0644);
+module_param(host_test_vbus_only, int, 0400);
 static int host_plug_test_triggered;
 void switch_int_to_device(struct musb *musb)
 {
@@ -912,7 +912,7 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0644);
+module_param_cb(option, &option_param_ops, &option, 0400);
 #else
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */

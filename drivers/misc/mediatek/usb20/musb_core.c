@@ -125,19 +125,19 @@ int kernel_init_done;
 int musb_force_on;
 int musb_host_dynamic_fifo = 1;
 int musb_host_dynamic_fifo_usage_msk;
-module_param(musb_fake_CDP, int, 0644);
+module_param(musb_fake_CDP, int, 0400);
 module_param(kernel_init_done, int, 0644);
-module_param(musb_host_dynamic_fifo, int, 0644);
-module_param(musb_host_dynamic_fifo_usage_msk, int, 0644);
+module_param(musb_host_dynamic_fifo, int, 0400);
+module_param(musb_host_dynamic_fifo_usage_msk, int, 0400);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
 int mtk_host_qmu_force_isoc_restart = 1;
 int mtk_host_active_dev_cnt;
-module_param(mtk_host_qmu_concurrent, int, 0644);
-module_param(mtk_host_qmu_pipe_msk, int, 0644);
-module_param(mtk_host_qmu_force_isoc_restart, int, 0644);
-module_param(mtk_host_active_dev_cnt, int, 0644);
+module_param(mtk_host_qmu_concurrent, int, 0400);
+module_param(mtk_host_qmu_pipe_msk, int, 0400);
+module_param(mtk_host_qmu_force_isoc_restart, int, 0400);
+module_param(mtk_host_active_dev_cnt, int, 0400);
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 unsigned int low_power_timer_total_trigger_cnt;
 unsigned int low_power_timer_total_wake_cnt;
@@ -148,11 +148,11 @@ int audio_on_sram;
 int use_mtk_audio = 1;
 module_param(low_power_timer_total_trigger_cnt, int, 0400);
 module_param(low_power_timer_total_wake_cnt, int, 0400);
-module_param(low_power_timer_mode, int, 0644);
-module_param(low_power_timer_mode2_option, int, 0644);
-module_param(usb_on_sram, int, 0644);
-module_param(audio_on_sram, int, 0644);
-module_param(use_mtk_audio, int, 0644);
+module_param(low_power_timer_mode, int, 0400);
+module_param(low_power_timer_mode2_option, int, 0400);
+module_param(usb_on_sram, int, 0400);
+module_param(audio_on_sram, int, 0400);
+module_param(use_mtk_audio, int, 0400);
 #endif
 
 #include "musb_qmu.h"
@@ -161,10 +161,10 @@ int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
 int isoc_ep_end_idx = 3;
 int isoc_ep_gpd_count = 260;
-module_param(mtk_qmu_dbg_level, int, 0644);
-module_param(mtk_qmu_max_gpd_num, int, 0644);
-module_param(isoc_ep_end_idx, int, 0644);
-module_param(isoc_ep_gpd_count, int, 0644);
+module_param(mtk_qmu_dbg_level, int, 0400);
+module_param(mtk_qmu_max_gpd_num, int, 0400);
+module_param(isoc_ep_end_idx, int, 0400);
+module_param(isoc_ep_gpd_count, int, 0400);
 #endif
 
 DEFINE_SPINLOCK(usb_io_lock);
@@ -191,12 +191,12 @@ static const struct of_device_id apusb_of_ids[] = {
 
 /* void __iomem	*USB_BASE; */
 
-module_param_named(speed, musb_speed, uint, S_IRUGO | S_IWUSR);
+module_param_named(speed, musb_speed, uint, 0400);
 MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, high speed");
-module_param_named(debug, musb_debug, uint, S_IRUGO | S_IWUSR);
+module_param_named(debug, musb_debug, uint, 0400);
 MODULE_PARM_DESC(debug, "Debug message level. Default = 0");
-module_param_named(debug_limit, musb_debug_limit, uint, S_IRUGO | S_IWUSR);
-module_param_named(dbg_uart, musb_uart_debug, uint, S_IRUGO | S_IWUSR);
+module_param_named(debug_limit, musb_debug_limit, uint, 0400);
+module_param_named(dbg_uart, musb_uart_debug, uint, 0400);
 
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)
 
@@ -2756,7 +2756,7 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0644);
+module_param_cb(option, &option_param_ops, &option, 0400);
 static int set_musb_force_on(const char *val, const struct kernel_param *kp)
 {
 	int option;
@@ -2794,4 +2794,4 @@ static struct kernel_param_ops musb_force_on_param_ops = {
 	.set = set_musb_force_on,
 	.get = param_get_int,
 };
-module_param_cb(musb_force_on, &musb_force_on_param_ops, &musb_force_on, 0644);
+module_param_cb(musb_force_on, &musb_force_on_param_ops, &musb_force_on, 0400);

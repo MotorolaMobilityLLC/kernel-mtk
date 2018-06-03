@@ -41,10 +41,10 @@
 #include "mtk_spm_resource_req.h"
 
 static int dpidle_status = USB_DPIDLE_ALLOWED;
-module_param(dpidle_status, int, 0644);
+module_param(dpidle_status, int, 0400);
 
 static int dpidle_debug;
-module_param(dpidle_debug, int, 0644);
+module_param(dpidle_debug, int, 0400);
 
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 
@@ -1730,4 +1730,4 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0644);
+module_param_cb(option, &option_param_ops, &option, 0400);
