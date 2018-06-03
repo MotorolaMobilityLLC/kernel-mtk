@@ -96,7 +96,7 @@ static int lowmem_minfree[9] = {
 
 static int lowmem_minfree_size = 9;
 
-static struct task_struct *lowmem_deathpending;
+#define LOWMEM_DEATHPENDING_TIMEOUT	(HZ)
 static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
@@ -104,24 +104,6 @@ static unsigned long lowmem_deathpending_timeout;
 		if (lowmem_debug_level >= (level))	\
 			pr_info(x);			\
 	} while (0)
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data);
-
-static struct notifier_block task_nb = {
-	.notifier_call	= task_notify_func,
-};
-
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-{
-	struct task_struct *task = data;
-
-	if (task == lowmem_deathpending)
-		lowmem_deathpending = NULL;
-
-	return NOTIFY_DONE;
-}
 
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
@@ -184,17 +166,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	static unsigned long flm_warn_timeout;
 	int log_offset = 0, log_ret;
 #endif
-
-	/*
-	* If we already have a death outstanding, then
-	* bail out right away; indicating to vmscan
-	* that we have nothing further to offer on
-	* this pass.
-	*
-	*/
-	if (lowmem_deathpending &&
-	    time_before_eq(jiffies, lowmem_deathpending_timeout))
-		return SHRINK_STOP;
 
 	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
 	if (IS_ENABLED(CONFIG_CMA))
@@ -498,8 +469,8 @@ log_again:
 			     cache_size, cache_limit,
 			     min_score_adj,
 			     free);
-		lowmem_deathpending = selected;
-		lowmem_deathpending_timeout = jiffies + HZ;
+
+		lowmem_deathpending_timeout = jiffies + LOWMEM_DEATHPENDING_TIMEOUT;
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 		/*
@@ -527,7 +498,6 @@ log_again:
 				if (pid_dump == selected->pid) {/*select 1st time, filter it*/
 					pid_flm_warn = pid_dump;
 					flm_warn_timeout = jiffies + 60 * HZ;
-					lowmem_deathpending = NULL;
 					lowmem_print(1, "'%s' (%d) max RSS, not kill\n",
 						     selected->comm, selected->pid);
 					send_sig(SIGSTOP, selected, 0);
@@ -581,7 +551,6 @@ static int __init lowmem_init(void)
 #if defined(CONFIG_ZRAM) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	vm_swappiness = 150;
 #endif
-	task_free_register(&task_nb);
 	register_shrinker(&lowmem_shrinker);
 	return 0;
 }
