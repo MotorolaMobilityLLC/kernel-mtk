@@ -1135,7 +1135,7 @@ enum hrtimer_restart charger_kthread_hrtimer_func(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-int charger_kthread_fgtimer_func(struct fgtimer *data)
+int charger_kthread_fgtimer_func(struct gtimer *data)
 {
 	struct charger_manager *info = container_of(data, struct charger_manager, charger_kthread_fgtimer);
 
@@ -1146,9 +1146,9 @@ int charger_kthread_fgtimer_func(struct fgtimer *data)
 static void mtk_charger_init_timer(struct charger_manager *info)
 {
 	if (IS_ENABLED(USE_FG_TIMER)) {
-		fgtimer_init(&info->charger_kthread_fgtimer, &info->pdev->dev, "charger_thread");
+		gtimer_init(&info->charger_kthread_fgtimer, &info->pdev->dev, "charger_thread");
 		info->charger_kthread_fgtimer.callback = charger_kthread_fgtimer_func;
-		fgtimer_start(&info->charger_kthread_fgtimer, info->polling_interval);
+		gtimer_start(&info->charger_kthread_fgtimer, info->polling_interval);
 	} else {
 		ktime_t ktime = ktime_set(info->polling_interval, 0);
 
@@ -1161,8 +1161,8 @@ static void mtk_charger_init_timer(struct charger_manager *info)
 static void mtk_charger_start_timer(struct charger_manager *info)
 {
 	if (IS_ENABLED(USE_FG_TIMER)) {
-		pr_debug("fg start timer %d\n", info->polling_interval);
-		fgtimer_start(&info->charger_kthread_fgtimer, info->polling_interval);
+		pr_err("fg start timer");
+		gtimer_start(&info->charger_kthread_fgtimer, info->polling_interval);
 	} else {
 		ktime_t ktime = ktime_set(info->polling_interval, 0);
 
@@ -1174,7 +1174,7 @@ static void mtk_charger_start_timer(struct charger_manager *info)
 void mtk_charger_stop_timer(struct charger_manager *info)
 {
 	if (IS_ENABLED(USE_FG_TIMER))
-		fgtimer_stop(&info->charger_kthread_fgtimer);
+		gtimer_stop(&info->charger_kthread_fgtimer);
 }
 
 static int charger_routine_thread(void *arg)

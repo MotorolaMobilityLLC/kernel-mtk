@@ -10,7 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/mediatek/charger
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
@@ -19,6 +19,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
 subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
 ccflags-y += -I$(srctree)/drivers/power/mediatek/
+ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 
 ifneq ($(CONFIG_MTK_PMIC_NEW_ARCH),y)
 obj-$(CONFIG_MTK_PMIC)	+= pmic.o pmic_irq.o upmu_common.o \

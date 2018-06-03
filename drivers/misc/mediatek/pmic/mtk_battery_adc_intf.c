@@ -10,10 +10,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#include <linux/delay.h>
+#include <linux/time.h>
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_auxadc_intf.h>
+
+#include <mtk_battery_internal.h>
 
 int pmic_get_battery_voltage(void)
 {
@@ -32,6 +36,38 @@ int pmic_get_battery_voltage(void)
 	return bat;
 }
 
+bool pmic_is_battery_exist(void)
+{
+	int temp;
+	bool is_bat_exist;
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
+
+	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+
+	if (temp == 0)
+		is_bat_exist = true;
+	else
+		is_bat_exist = false;
+
+
+	bm_debug("[fg_is_battery_exist] PMIC_RGS_BATON_UNDET = %d\n", is_bat_exist);
+
+	if (is_bat_exist == 0) {
+		if (hw_id == 0x3510) {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+		} else {
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			mdelay(1);
+			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+		}
+	}
+	return is_bat_exist;
+
+}
+
+
 int pmic_get_vbus(void)
 {
 	int vchr = 0;
@@ -46,6 +82,21 @@ int pmic_get_vbus(void)
 
 #endif
 	return vchr;
+}
+
+int pmic_get_v_bat_temp(void)
+{
+	int adc;
+#if defined(CONFIG_POWER_EXT)
+	adc = 0;
+#else
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
+	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP_35);
+#else
+	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
+#endif
+#endif
+	return adc;
 }
 
 int pmic_get_ibus(void)

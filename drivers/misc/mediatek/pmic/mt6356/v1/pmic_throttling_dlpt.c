@@ -68,6 +68,7 @@
 #include <mt-plat/mtk_battery.h>
 #include <mach/mtk_battery_property.h>
 #include <linux/reboot.h>
+#include <mtk_battery_internal.h>
 #else
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
@@ -560,7 +561,7 @@ unsigned int ptim_cnt;
 signed int count_time_out_adc_imp = 36;
 unsigned int count_adc_imp;
 
-int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
+int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging)
 {
 	unsigned int vbat_reg;
 	int ret = 0;
@@ -632,7 +633,8 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 	*bat = (vbat_reg * 3 * 18000) / 32768;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	fgauge_read_IM_current((void *)cur);
+	/*fgauge_read_IM_current((void *)cur);*/
+	gauge_get_ptim_current(cur, is_charging);
 #else
 	*cur = 0;
 #endif
@@ -647,11 +649,12 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 int do_ptim(bool isSuspend)
 {
 	int ret;
+	bool is_charging;
 
 	if (isSuspend == false)
 		pmic_auxadc_lock();
 
-	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr);
+	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr, &is_charging);
 
 	if (isSuspend == false)
 		pmic_auxadc_unlock();
@@ -661,11 +664,26 @@ int do_ptim(bool isSuspend)
 int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	int ret;
+	bool is_charging;
 
 	if (isSuspend == false)
 		pmic_auxadc_lock();
 
-	ret = do_ptim_internal(isSuspend, bat, cur);
+	ret = do_ptim_internal(isSuspend, bat, cur, &is_charging);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, bat, cur, is_charging);
 
 	if (isSuspend == false)
 		pmic_auxadc_unlock();
@@ -1622,7 +1640,7 @@ static ssize_t store_battery_oc_protect_thd(struct device *dev, struct device_at
 	int battery_oc_l_thd, battery_oc_h_thd;
 	int num = sscanf(buf, "%d %d", &battery_oc_l_thd, &battery_oc_h_thd);
 
-	if ((num != 2) || (battery_oc_l_thd <= battery_oc_h_thd))
+	if ((num != 2) || (battery_oc_l_thd >= battery_oc_h_thd))
 		pr_err("Invalid parameter : %s\n", buf);
 	else {
 		g_battery_oc_l_thd = battery_oc_l_thd;
