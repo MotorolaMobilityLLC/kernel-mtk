@@ -23,6 +23,7 @@
 #include <linux/topology.h>
 
 #include "tchbst.h"
+#include "topo_ctrl.h"
 
 static int clu_num, s_clstr_core, b_clstr_core;
 static int *calc_cpu_cap, *calc_cpu_num;
