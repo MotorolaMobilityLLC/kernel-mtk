@@ -915,8 +915,10 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		else
 			i2c_writew(I2C_FS_START_CON, i2c, OFFSET_EXT_CONF);
 	}
-	if (~control_reg & I2C_CONTROL_RS)
-		i2c_writew(I2C_DELAY_LEN, i2c, OFFSET_DELAY_LEN);
+
+	/* delay 5 scl_clk time between two transaction */
+	/* if (~control_reg & I2C_CONTROL_RS) */
+	i2c_writew(I2C_DELAY_LEN, i2c, OFFSET_DELAY_LEN);
 
 	/* Set ioconfig */
 	if (i2c->use_push_pull) {
@@ -986,7 +988,6 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 	/* Prepare buffer data to start transfer */
 	if (isDMA == true && (!i2c->is_ccu_trig)) {
-
 #ifdef CONFIG_MTK_LM_MODE
 		if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
 			i2c_writel_dma(0x1, i2c, OFFSET_TX_MEM_ADDR2);
@@ -1074,9 +1075,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	record_i2c_info(i2c, tmo);
 
 	if (tmo == 0) {
-		dev_info(i2c->dev, "addr:0x%x, irq_reg:0x%x, transfer timeout\n",
-			i2c->addr, i2c_readw(i2c, OFFSET_INTR_STAT));
+		dev_info(i2c->dev, "addr:0x%x,transfer timeout\n",
+			i2c->addr);
 		start_reg = i2c_readw(i2c, OFFSET_START);
+		dev_info(i2c->dev,
+			"timeout:start=0x%x,ch_err=0x%x\n",
+			start_reg, i2c_readw(i2c, OFFSET_ERROR));
+
 		i2c_dump_info(i2c);
 		#if defined(CONFIG_MTK_GIC_EXT)
 		mt_irq_dump_status(i2c->irqnr);
@@ -1097,46 +1102,49 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		if (i2c->ch_offset)
 			i2c_writew_shadow(I2C_RESUME_ARBIT, i2c, OFFSET_START);
 		if (start_reg & I2C_TRANSAC_START) {
-			dev_info(i2c->dev, "bus tied low/high\n");
+			dev_info(i2c->dev, "bus tied low/high(0x%x)\n",
+				start_reg);
 			return -EIO;
 		}
 		return -ETIMEDOUT;
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR |
 	    I2C_TIMEOUT | I2C_BUS_ERR | I2C_IBI)) {
-		if (i2c->irq_stat & I2C_TIMEOUT)
-			dev_info(i2c->dev, "addr:0x%x,irq_stat:0x%x,scl timeout err\n",
-				i2c->addr, i2c->irq_stat);
-		else
-			dev_info(i2c->dev, "addr: %x,irq_stat:0x%x,transfer ACK err\n",
-				i2c->addr, i2c->irq_stat);
+		dev_info(i2c->dev,
+			"error:addr=0x%x,irq_stat=0x%x,ch_offset=0x%x\n",
+			i2c->addr, i2c->irq_stat, i2c->ch_offset);
 
-		if (i2c->ch_offset != 0)
-			i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
-				   i2c, OFFSET_FIFO_ADDR_CLR);
-		else
-			i2c_writew(I2C_FIFO_ADDR_CLR, i2c,
-				   OFFSET_FIFO_ADDR_CLR);
+		/* clear fifo addr:bit2,multi-chn;bit0,normal */
+		i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
+			i2c, OFFSET_FIFO_ADDR_CLR);
 
 		if (i2c->ext_data.isEnable ==  false ||
 			i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
 
+		if (i2c->irq_stat & I2C_TIMEOUT)
+			dev_info(i2c->dev, "scl timeout error.\n");
+
 		if ((i2c->irq_stat & I2C_TRANSAC_COMP) && i2c->ch_offset &&
 		    (!(i2c->irq_stat & I2C_BUS_ERR))) {
-			dev_info(i2c->dev, "addr:0x%x,irq_stat:0x%x,trans done with err",
-				 i2c->addr, i2c->irq_stat);
+			dev_info(i2c->dev, "trans done with error.");
 			return -EREMOTEIO;
 		}
 
 		if ((i2c->irq_stat & I2C_IBI)) {
-			dev_info(i2c->dev, "addr:0x%x,irq_stat:0x%x,IBI triggered",
-				 i2c->addr, i2c->irq_stat);
+			dev_info(i2c->dev,
+				"IBI error:start=0x%x,ch_err=0x%x,dbg_stat=0x%x\n",
+				i2c_readw(i2c, OFFSET_START),
+				i2c_readw(i2c, OFFSET_ERROR),
+				i2c_readw(i2c, OFFSET_DEBUGSTAT));
 			return -EREMOTEIO;
 		}
 		if ((i2c->irq_stat & I2C_BUS_ERR)) {
-			dev_info(i2c->dev, "addr:0x%x,irq_stat:0x%x,bus triggerd",
-				 i2c->addr, i2c->irq_stat);
+			dev_info(i2c->dev,
+				"bus error:start=0x%x,ch_err=0x%x,DEBUG_STAT=0x%x\n",
+				i2c_readw(i2c, OFFSET_START),
+				i2c_readw(i2c, OFFSET_ERROR),
+				i2c_readw(i2c, OFFSET_DEBUGSTAT));
 			return -EREMOTEIO;
 		}
 
@@ -1527,38 +1535,34 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 			if ((i2c->irq_stat & (I2C_IBI | I2C_BUS_ERR))) {
 				dev_info(i2c->dev, "[bxx]cg_cnt:%d,irq_stat:0x%x\n",
 					i2c->cg_cnt, i2c->irq_stat);
+				dev_info(i2c->dev, "0x84=0x%x\n",
+					i2c_readw(i2c, OFFSET_ERROR));
+
 				pr_info("[bxx]0xE0=0x%x,0x1E0=0x%x,0x2E0=0x%x\n",
 					_i2c_readw(i2c, 0xE0),
 					_i2c_readw(i2c, 0x1E0),
 					_i2c_readw(i2c, 0x2E0));
-
 				pr_info("[bxx]0xE4=0x%x,0x1E4=0x%x,0x2E4=0x%x\n",
 					_i2c_readw(i2c, 0xE4),
 					_i2c_readw(i2c, 0x1E4),
 					_i2c_readw(i2c, 0x2E4));
-
 				pr_info("[bxx]0xE8=0x%x,0x1E8=0x%x,0x2E8=0x%x\n",
 					_i2c_readw(i2c, 0xE8),
 					_i2c_readw(i2c, 0x1E8),
 					_i2c_readw(i2c, 0x2E8));
-
 				pr_info("[bxx]0xEC=0x%x,0x1EC=0x%x,0x2EC=0x%x\n",
 					_i2c_readw(i2c, 0xEC),
 					_i2c_readw(i2c, 0x1EC),
 					_i2c_readw(i2c, 0x2EC));
-
 				pr_info("[bxx]0x58=0x%x,0x158=0x%x,0x258=0x%x\n",
 					_i2c_readw(i2c, 0x58),
 					_i2c_readw(i2c, 0x158),
 					_i2c_readw(i2c, 0x258));
-
 				/* IBI triggered */
-				if (i2c->irq_stat & I2C_IBI) {
-					pr_info("[bxx]0x54=0x%x,0x154=0x%x,0x254=0x%x\n",
-						_i2c_readw(i2c, 0x54),
-						_i2c_readw(i2c, 0x154),
-						_i2c_readw(i2c, 0x254));
-				}
+				pr_info("[bxx]0x54=0x%x,0x154=0x%x,0x254=0x%x\n",
+					_i2c_readw(i2c, 0x54),
+					_i2c_readw(i2c, 0x154),
+					_i2c_readw(i2c, 0x254));
 				/* for bxx debug end */
 			}
 		}
@@ -1620,7 +1624,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 		= of_property_read_bool(np, "mediatek,gpupm_used");
 	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
 	i2c->hs_only = of_property_read_bool(np, "mediatek,hs_only");
-	pr_info("[I2C]id:%d,freq :%d,div:%d,ch_offset:0x%x,offset_dma:0x%x,offset_ccu:0x%x\n",
+	pr_info("[I2C]id:%d,freq:%d,div:%d,ch_offset:0x%x,offset_dma:0x%x,offset_ccu:0x%x\n",
 		i2c->id, i2c->speed_hz, i2c->clk_src_div,
 		i2c->ch_offset_default,
 		i2c->ch_offset_dma_default, i2c->ccu_offset);
@@ -1670,10 +1674,6 @@ int mt_i2c_parse_comp_data(void)
 		(u8 *)&i2c_common_compat.cnt_constraint);
 	return 0;
 }
-
-
-
-
 
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,i2c", .data = &i2c_common_compat},

@@ -66,7 +66,7 @@
 #define I2C_SOFT_RST				0x0001
 #define I2C_FIFO_ADDR_CLR			0x0001
 #define I2C_FIFO_ADDR_CLR_MCH		0x0004
-#define I2C_DELAY_LEN				0x0002
+#define I2C_DELAY_LEN				0x000A/* not use 0x02 */
 #define I2C_ST_START_CON			0x8001
 #define I2C_FS_START_CON			0x1800
 #define I2C_TIME_CLR_VALUE			0x0000
