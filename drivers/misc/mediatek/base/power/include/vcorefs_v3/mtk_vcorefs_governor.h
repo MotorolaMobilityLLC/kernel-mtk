@@ -47,6 +47,8 @@ enum dvfs_kicker {
 	KIR_GPU,
 	KIR_SYSFS,
 	KIR_SYSFSX,
+	KIR_MM_NON_FORCE,
+	KIR_SYSFS_N,
 	NUM_KICKER,
 
 	/* internal kicker */
@@ -82,10 +84,19 @@ struct opp_profile {
 
 /*
  * VOUT selection in normal mode (SW mode)
- * VOUT = 0.4V + 6.25mV * VOSEL
+ * VOUT = 0.4V + 6.25mV * VOSEL for PMIC MT6335
+ * VOUT = 0.40625V + 6.25mV * VOSEL for PMIC MT6355
  */
 #define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6335) /* CONFIG_MACH_MT6799 */
 #define VCORE_BASE_UV           400000
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355) /* CONFIG_MACH_MT6759 */
+#define VCORE_BASE_UV           406250
+#else
+#error "Not set pmic config properly!"
+#endif
+
 #define VCORE_STEP_UV           6250
 #define VCORE_INVALID           0x80
 
@@ -102,6 +113,7 @@ extern int kicker_table[LAST_KICKER];
 extern bool is_vcorefs_feature_enable(void);
 bool vcorefs_vcore_dvs_en(void);
 bool vcorefs_dram_dfs_en(void);
+bool vcorefs_mm_clk_en(void);
 int vcorefs_module_init(void);
 extern int vcorefs_get_num_opp(void);
 extern int vcorefs_get_sw_opp(void);
