@@ -148,8 +148,10 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 		if (tmp) {
 			DISPERR("wait present fence fail! cnt=%d\n", cnt);
 			cnt++;
+#if 0
 			if (disp_helper_get_option(DISP_OPT_FENCE_TIMEOUT_AEE) && (cnt == 1))
 				disp_aee_print_with_ftrace("wait present fence fail!\n");
+#endif
 			ret = -1;
 		}
 	}

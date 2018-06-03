@@ -416,7 +416,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	DISPMSG("%s\n", __func__);
 	if (use_wrot_sram() == 0) {
-		DISPERR("no acquired sram to release!!!");
+		DISPERR("no acquired sram to release!!!\n");
 		return;
 	}
 	/* 1.create and reset cmdq */
