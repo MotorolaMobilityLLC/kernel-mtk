@@ -19,6 +19,10 @@
 #include <linux/smp.h>
 #include <linux/topology.h>
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_BY_SF
+#include <mtk_secure_api.h>
+#endif
+
 #include "cmo-mtk.h"
 
 void __attribute__((weak)) mt_fiq_cache_flush_all(void) {}
@@ -62,6 +66,21 @@ void inner_dcache_disable(void)
 	__disable_dcache();
 }
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_BY_SF
+static DEFINE_SPINLOCK(cache_lock);
+
+static void mt_cache_flush_by_sf(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&cache_lock, flags);
+	trace_printk("[snoop] starts\n");
+	mt_secure_call(MTK_SIP_KERNEL_CACHE_FLUSH_BY_SF, 0, 0, 0);
+	trace_printk("[snoop] done\n");
+	spin_unlock_irqrestore(&cache_lock, flags);
+}
+#endif
+
 /*
  * smp_inner_dcache_flush_all: Flush (clean + invalidate) the entire L1 data cache.
  *
@@ -76,8 +95,12 @@ void inner_dcache_disable(void)
  */
 void smp_inner_dcache_flush_all(void)
 {
-#ifdef CONFIG_MTK_FIQ_CACHE
+#if defined(CONFIG_MTK_FIQ_CACHE)
 	mt_fiq_cache_flush_all();
+	return;
+#elif defined(CONFIG_MTK_CACHE_FLUSH_BY_SF)
+	mt_cache_flush_by_sf();
+	return;
 #else
 	int i, total_core, cid, last_cid;
 	struct cpumask mask;
