@@ -901,11 +901,16 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 static int _primary_path_idlemgr_monitor_thread(void *data)
 {
 	int ret = 0;
+	long long interval = 0;
 
 	msleep(16000);
 	while (1) {
-		msleep_interruptible(1000 / primary_display_get_lcm_refresh_rate());
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, atomic_read(&idlemgr_task_wakeup));
+
+		interval = idle_check_interval * 1000 * 1000 - (local_clock() - idlemgr_pgc->idlemgr_last_kick_time);
+		do_div(interval, 1000000);
+		if (interval > 0)
+			msleep_interruptible(interval);
 
 		primary_display_manual_lock();
 
