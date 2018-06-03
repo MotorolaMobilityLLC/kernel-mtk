@@ -3971,7 +3971,8 @@ void RSC_ScheduleWork(struct work_struct *data)
 #ifdef RSC_USE_GCE
 #ifdef ENGINE
 	req_delayed = request_handler(&rsc_reqs, &(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
-	LOG_INF("[%s] regulated request", __func__);
+	if (!req_delayed)
+		LOG_DBG("[%s]no more requests(%d)", __func__, req_delayed);
 #endif
 #else
 	ConfigRSC();
