@@ -3056,9 +3056,7 @@ int submit_bh_wbc_crypt(struct inode *inode, int rw, struct buffer_head *bh,
 
 	bio_get(bio);
 	submit_bio(rw, bio);
-
-	if (bio)
-		bio_put(bio);
+	bio_put(bio);
 
 	return ret;
 }
