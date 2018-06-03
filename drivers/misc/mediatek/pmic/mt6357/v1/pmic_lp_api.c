@@ -82,6 +82,7 @@ const struct PMU_LP_TABLE_ENTRY pmu_lp_table[] = {
 	PMIC_LP_LDO_ENTRY(VIBR),
 	PMIC_LP_LDO_VUSB33_0_ENTRY(VUSB33_0),
 	PMIC_LP_LDO_VUSB33_1_ENTRY(VUSB33_1),
+	PMIC_LP_LDO_ENTRY(TREF),
 };
 
 static int pmic_lp_golden_set(unsigned int en_adr, unsigned char op_en, unsigned char op_cfg)
@@ -358,4 +359,10 @@ int pmic_ldo_vusb33_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned
 
 	ret = pmic_lp_type_set(MT6357_LDO_VUSB33_OP_EN, VUSB33_1, user, op_en, op_cfg);
 	return ret;
+}
+
+int pmic_ldo_tref_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg)
+{
+	PMICLOG("pmic_ldo_tref_lp\n");
+	return pmic_lp_type_set(MT6357_LDO_TREF_OP_EN, TREF, user, op_en, op_cfg);
 }
