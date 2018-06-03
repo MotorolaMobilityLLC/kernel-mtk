@@ -1211,6 +1211,7 @@ void cmdq_core_destroy_buffer_pool(void)
 	if (unlikely((atomic_read(&g_pool_buffer_count)))) {
 		/* should not happen, print counts before reset */
 		CMDQ_ERR("Task buffer still use:%d\n", (s32)atomic_read(&g_pool_buffer_count));
+		return;
 	}
 
 	CMDQ_MSG("DMA pool destroy:%p\n", g_task_buffer_pool);
@@ -8143,6 +8144,8 @@ int32_t cmdqCoreSuspend(void)
 	/* and release HW engines. */
 	/*  */
 	if (killTasks) {
+		CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, suspend_kill);
+
 		/* print active tasks */
 		CMDQ_ERR("[SUSPEND] active tasks during suspend:\n");
 		list_for_each(p, &gCmdqContext.taskActiveList) {
@@ -8159,6 +8162,8 @@ int32_t cmdqCoreSuspend(void)
 			if (pTask->thread != CMDQ_INVALID_THREAD) {
 				CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, suspend_loop);
 
+				CMDQ_ERR("[SUSPEND] release task:0x%p\n", pTask);
+
 				cmdq_core_force_remove_task_from_thread(pTask, pTask->thread);
 				pTask->taskState = TASK_STATE_KILLED;
 
@@ -8170,6 +8175,8 @@ int32_t cmdqCoreSuspend(void)
 				cmdq_core_release_thread(pTask);
 			}
 		}
+
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, suspend_kill);
 
 		/* TODO: skip secure path thread... */
 		/* disable all HW thread */
