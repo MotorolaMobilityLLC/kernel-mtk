@@ -774,6 +774,7 @@ static void dump_pmic_info(void)
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
+		p += sprintf(p, "(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num);
 		#if 1
 		dump_pmic_info();
 		/* DVFSRC */
@@ -818,6 +819,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "PCM_IM_PTR             : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 		#endif
 	} else {
+		spm_vcorefs_warn("(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num);
 		#if 1
 		/* DVFSRC */
 		dump_pmic_info();
@@ -1020,7 +1022,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0)); /* DVFS mapping table by channel*/
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) & ~(1U << 2)); /* BW by channel */
 
-		/* FIXME E1/E2 */
+		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level */
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
@@ -1029,7 +1031,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_SIGNAL_CTRL, 0x808aaa);
 		}
 
-		/* FIXME E1/E2 */
+		/* FIXME 11/12 */
 		if (1) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
@@ -1057,7 +1059,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (1U << 2));
 
-		/* FIXME E1/E2 */
+		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level*/
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
@@ -1066,7 +1068,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
 		}
 
-		/* FIXME E1/E2 */
+		/* FIXME 11/12 */
 		if (1) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
@@ -1077,13 +1079,13 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			/* panel resolution */
 			if (plat_lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
 				/* E2 HRT WQHD */
-				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp1 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp1 */
+				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
 				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
 			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
 				/* E2 HRT FHD */
-				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp1 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp1 */
+				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
+				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
 				spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
 			}
 			#endif
@@ -1146,7 +1148,7 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
-	/* FIXME E1/E2 */
+	/* FIXME 11/12 */
 	if (1)
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
 	else
