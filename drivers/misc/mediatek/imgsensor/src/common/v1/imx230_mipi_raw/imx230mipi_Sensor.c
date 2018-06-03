@@ -643,31 +643,25 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static void set_shutter(kal_uint16 shutter)
+#define MAX_CIT_LSHIFT 7
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
+	kal_uint16 l_shift = 1;
+
+	pr_debug("Enter! shutter =%d, framelength =%d\n",
+		shutter,
+		imgsensor.frame_length);
+
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	/* write_shutter(shutter); */
 
-	/* 0x3500, 0x3501, 0x3502 will increase VBLANK
-	 * to get exposure larger than frame exposure
-	 */
-
-	/* AE doesn't update sensor gain at capture mode,
-	 * thus extra exposure lines must be updated here.
-	 */
-
-	/* OV Recommend Solution */
-	/* if shutter bigger than frame_length,
-	 * should extend frame length first
-	 */
+	/* if shutter bigger than frame_length, extend frame length first */
 	spin_lock(&imgsensor_drv_lock);
-
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else
@@ -676,26 +670,65 @@ static void set_shutter(kal_uint16 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 
-	shutter =
-		(shutter < imgsensor_info.min_shutter) ?
-		imgsensor_info.min_shutter : shutter;
+	shutter = (shutter < imgsensor_info.min_shutter)
+	    ? imgsensor_info.min_shutter : shutter;
+
+	/* long expsoure */
+	if (shutter >
+		(imgsensor_info.max_frame_length - imgsensor_info.margin)) {
+
+		for (l_shift = 1; l_shift < MAX_CIT_LSHIFT; l_shift++) {
+			if ((shutter >> l_shift)
+		    < (imgsensor_info.max_frame_length - imgsensor_info.margin))
+
+				break;
+		}
+		if (l_shift > MAX_CIT_LSHIFT) {
+			pr_debug(
+			    "Unable to set such a long exposure %d, set to max\n",
+			    shutter);
+
+			l_shift = MAX_CIT_LSHIFT;
+		}
+		shutter = shutter >> l_shift;
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+		/* pr_debug(
+		 *  "0x3028 0x%x l_shift %d l_shift&0x3 %d\n",
+		 *  read_cmos_sensor(0x3028),
+		 *  l_shift,
+		 *  l_shift&0x7);
+		 */
+
+		write_cmos_sensor(0x3028,
+		    read_cmos_sensor(0x3028) | (l_shift & 0x7));
+
+		/* pr_debug("0x3028 0x%x\n", read_cmos_sensor(0x3028)); */
+
+	} else {
+		write_cmos_sensor(0x3028, read_cmos_sensor(0x3028) & 0xf8);
+	}
 
 	shutter =
-	 (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
-	 ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	   (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
+	  ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 
 	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk
-			/ imgsensor.line_length * 10 / imgsensor.frame_length;
+		realtime_fps =
+	imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+
 		if (realtime_fps >= 297 && realtime_fps <= 305)
 			set_max_framerate(296, 0);
+		else if (realtime_fps >= 237 && realtime_fps <= 243)
+			set_max_framerate(236, 0);
 		else if (realtime_fps >= 147 && realtime_fps <= 150)
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
 			write_cmos_sensor(0x0104, 0x01);
 			write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
-		      write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
+			write_cmos_sensor(0x0341,
+				imgsensor.frame_length & 0xFF);
+
 			write_cmos_sensor(0x0104, 0x00);
 		}
 	} else {
@@ -711,10 +744,12 @@ static void set_shutter(kal_uint16 shutter)
 	write_cmos_sensor(0x0202, (shutter >> 8) & 0xFF);
 	write_cmos_sensor(0x0203, shutter & 0xFF);
 	write_cmos_sensor(0x0104, 0x00);
-	pr_info("Exit! shutter =%d, framelength =%d\n",
-		shutter, imgsensor.frame_length);
+	pr_debug(
+	    "Exit! shutter =%d, framelength =%d\n",
+	    shutter,
+	    imgsensor.frame_length);
 
-}				/*    set_shutter */
+} /* set_shutter */
 
 
 
@@ -3640,7 +3675,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_ESHUTTER:
-		set_shutter((UINT16) *feature_data);
+		set_shutter((kal_uint32) *feature_data);
 		break;
 	case SENSOR_FEATURE_SET_NIGHTMODE:
 		night_mode((BOOL) *feature_data);
