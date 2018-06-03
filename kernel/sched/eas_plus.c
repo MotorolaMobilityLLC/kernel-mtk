@@ -210,6 +210,7 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 	int max_cap_cpu = 0;
 	int best_cpu = 0;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+	bool over_util = false;
 
 	/* prefer idle for stune */
 	if (prefer_idle) {
@@ -260,6 +261,8 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 	if (task_util(p) <= 0)
 		return target_cpu;
 
+	rcu_read_lock();
+
 	/* no energy comparison if the same cluster */
 	if (target_cpu != task_cpu(p)) {
 		struct energy_env eenv = {
@@ -271,24 +274,25 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 
 		/* Not enough spare capacity on previous cpu */
 		if (cpu_overutilized(task_cpu(p))) {
-			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
-					(int)task_util(p), nrg_diff, true, is_tiny);
-			return target_cpu;
+			over_util = true;
+			goto unlock;
 		}
 
 		nrg_diff = energy_diff(&eenv);
 		if (nrg_diff >= 0 && !cpu_isolated(task_cpu(p))) {
-			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
-					(int)task_util(p), nrg_diff, false, is_tiny);
-
 			/* if previous cpu not idle, choose better another silbing */
 			if (idle_cpu(task_cpu(p)))
-				return task_cpu(p);
+				target_cpu = task_cpu(p);
 			else
-				return select_max_spare_capacity_cpu(p, task_cpu(p));
+				target_cpu =  select_max_spare_capacity_cpu(p, task_cpu(p));
 		}
 	}
 
-	trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu, (int)task_util(p), nrg_diff, false, is_tiny);
+unlock:
+	rcu_read_unlock();
+
+	trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
+			(int)task_util(p), nrg_diff, over_util, is_tiny);
+
 	return target_cpu;
 }
