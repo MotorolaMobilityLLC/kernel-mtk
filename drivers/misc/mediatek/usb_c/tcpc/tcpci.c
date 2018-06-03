@@ -16,9 +16,28 @@
 
 #define TCPC_NOTIFY_OVERTIME	(20) /* ms */
 
-static int tcpc_check_notify_time(struct timeval *begin, struct timeval *end)
+static int tcpc_check_notify_time(struct tcpc_device *tcpc,
+	struct tcp_notify *tcp_noti, uint8_t type, uint8_t state)
 {
-	return (int)(timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
+	int ret;
+#ifdef CONFIG_PD_BEGUG_ON
+	struct timeval begin, end;
+	int timeval = 0;
+#endif
+
+#ifdef CONFIG_PD_BEGUG_ON
+	do_gettimeofday(&begin);
+#endif
+
+	ret = srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
+
+#ifdef CONFIG_PD_BEGUG_ON
+	do_gettimeofday(&end);
+	timeval = (timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
+	PD_BUG_ON(timeval > TCPC_NOTIFY_OVERTIME);
+#endif
+
+	return ret;
 }
 
 int tcpci_check_vbus_valid_from_ic(struct tcpc_device *tcpc)
@@ -192,7 +211,6 @@ int tcpci_set_vconn(struct tcpc_device *tcpc, int enable)
 {
 #ifdef CONFIG_TCPC_SOURCE_VCONN
 	struct tcp_notify tcp_noti;
-	struct timeval begin, end;
 
 	if (tcpc->tcpc_source_vconn == enable)
 		return 0;
@@ -200,12 +218,8 @@ int tcpci_set_vconn(struct tcpc_device *tcpc, int enable)
 	tcpc->tcpc_source_vconn = enable;
 
 	tcp_noti.en_state.en = enable != 0;
-	do_gettimeofday(&begin);
-	srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS],
-			TCP_NOTIFY_SOURCE_VCONN, &tcp_noti);
-	do_gettimeofday(&end);
-
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_SOURCE_VCONN);
 
 	if (tcpc->ops->set_vconn)
 		return tcpc->ops->set_vconn(tcpc, enable);
@@ -359,18 +373,14 @@ int tcpci_notify_typec_state(struct tcpc_device *tcpc)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.typec_state.polarity = tcpc->typec_polarity;
 	tcp_noti.typec_state.old_state = tcpc->typec_attach_old;
 	tcp_noti.typec_state.new_state = tcpc->typec_attach_new;
 	tcp_noti.typec_state.rp_level = tcpc->typec_remote_rp_level;
 
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_USB],
-				TCP_NOTIFY_TYPEC_STATE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_USB, TCP_NOTIFY_TYPEC_STATE);
 	return ret;
 }
 
@@ -379,14 +389,10 @@ int tcpci_notify_role_swap(
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.swap_state.new_role = role;
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(
-		&tcpc->evt_nh[TCP_NOTIFY_IDX_MISC], event, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MISC, event);
 	return ret;
 }
 
@@ -394,14 +400,10 @@ int tcpci_notify_pd_state(struct tcpc_device *tcpc, uint8_t connect)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.pd_state.connected = connect;
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_USB],
-		TCP_NOTIFY_PD_STATE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_USB, TCP_NOTIFY_PD_STATE);
 	return ret;
 }
 
@@ -445,7 +447,6 @@ int tcpci_source_vbus(
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 	if (type >= TCP_VBUS_CTRL_PD &&
@@ -477,11 +478,8 @@ int tcpci_source_vbus(
 
 	tcpci_enable_watchdog(tcpc, mv != 0);
 	TCPC_DBG("source_vbus: %d mV, %d mA\r\n", mv, ma);
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS],
-				TCP_NOTIFY_SOURCE_VBUS, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_SOURCE_VBUS);
 	return ret;
 }
 
@@ -490,7 +488,6 @@ int tcpci_sink_vbus(
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 	if (type >= TCP_VBUS_CTRL_PD &&
@@ -525,9 +522,8 @@ int tcpci_sink_vbus(
 	tcp_noti.vbus_state.type = type;
 
 	TCPC_DBG("sink_vbus: %d mV, %d mA\r\n", mv, ma);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS],
-				TCP_NOTIFY_SINK_VBUS, &tcp_noti);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_SINK_VBUS);
 	return ret;
 }
 
@@ -536,16 +532,12 @@ int tcpci_disable_vbus_control(struct tcpc_device *tcpc)
 #ifdef CONFIG_TYPEC_USE_DIS_VBUS_CTRL
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	TCPC_DBG("disable_vbus\r\n");
 	tcpci_enable_watchdog(tcpc, false);
 
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS],
-					TCP_NOTIFY_DIS_VBUS_CTRL, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_DIS_VBUS_CTRL);
 	return ret;
 #else
 	tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_REMOVE, TCPC_VBUS_SINK_0V, 0);
@@ -560,7 +552,6 @@ int tcpci_notify_attachwait_state(struct tcpc_device *tcpc, bool as_sink)
 	uint8_t notify = 0;
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 #ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
 	if (as_sink)
@@ -575,11 +566,8 @@ int tcpci_notify_attachwait_state(struct tcpc_device *tcpc, bool as_sink)
 	if (notify == 0)
 		return 0;
 
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(
-		&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS], notify, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_VBUS, notify);
 	return ret;
 #else
 	return 0;
@@ -593,7 +581,6 @@ int tcpci_enable_ext_discharge(struct tcpc_device *tcpc, bool en)
 
 #ifdef CONFIG_TCPC_EXT_DISCHARGE
 	struct tcp_notify tcp_noti;
-	struct timeval begin, end;
 
 	mutex_lock(&tcpc->access_lock);
 
@@ -601,13 +588,8 @@ int tcpci_enable_ext_discharge(struct tcpc_device *tcpc, bool en)
 		tcpc->typec_ext_discharge = en;
 		tcp_noti.en_state.en = en;
 		TCPC_DBG("EXT-Discharge: %d\r\n", en);
-		do_gettimeofday(&begin);
-		ret = srcu_notifier_call_chain(
-			&tcpc->evt_nh[TCP_NOTIFY_IDX_VBUS],
-			TCP_NOTIFY_EXT_DISCHARGE, &tcp_noti);
-		do_gettimeofday(&end);
-		PD_BUG_ON(tcpc_check_notify_time(&begin, &end)
-					> TCPC_NOTIFY_OVERTIME);
+		ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+			TCP_NOTIFY_IDX_VBUS, TCP_NOTIFY_EXT_DISCHARGE);
 	}
 
 	mutex_unlock(&tcpc->access_lock);
@@ -681,7 +663,6 @@ int tcpci_notify_hard_reset_state(struct tcpc_device *tcpc, uint8_t state)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.hreset_state.state = state;
 
@@ -692,11 +673,8 @@ int tcpci_notify_hard_reset_state(struct tcpc_device *tcpc, uint8_t state)
 	else
 		return 0;
 
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MISC],
-				TCP_NOTIFY_HARD_RESET_STATE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MISC, TCP_NOTIFY_HARD_RESET_STATE);
 	return ret;
 }
 
@@ -705,17 +683,13 @@ int tcpci_enter_mode(struct tcpc_device *tcpc,
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.mode_ctrl.svid = svid;
 	tcp_noti.mode_ctrl.ops = ops;
 	tcp_noti.mode_ctrl.mode = mode;
 
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-					TCP_NOTIFY_ENTER_MODE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_ENTER_MODE);
 	return ret;
 }
 
@@ -723,14 +697,10 @@ int tcpci_exit_mode(struct tcpc_device *tcpc, uint16_t svid)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.mode_ctrl.svid = svid;
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-					TCP_NOTIFY_EXIT_MODE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_EXIT_MODE);
 	return ret;
 
 }
@@ -741,7 +711,6 @@ int tcpci_report_hpd_state(struct tcpc_device *tcpc, uint32_t dp_status)
 {
 	struct tcp_notify tcp_noti;
 	struct dp_data *dp_data = pd_get_dp_data(&tcpc->pd_port);
-	struct timeval begin, end;
 
 	/* UFP_D to DFP_D only */
 
@@ -749,12 +718,8 @@ int tcpci_report_hpd_state(struct tcpc_device *tcpc, uint32_t dp_status)
 		tcp_noti.ama_dp_hpd_state.irq = PD_VDO_DPSTS_HPD_IRQ(dp_status);
 		tcp_noti.ama_dp_hpd_state.state =
 					PD_VDO_DPSTS_HPD_LVL(dp_status);
-		do_gettimeofday(&begin);
-		srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-			TCP_NOTIFY_AMA_DP_HPD_STATE, &tcp_noti);
-		do_gettimeofday(&end);
-		PD_BUG_ON(tcpc_check_notify_time(&begin, &end) >
-					TCPC_NOTIFY_OVERTIME);
+		tcpc_check_notify_time(tcpc, &tcp_noti,
+			TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_AMA_DP_HPD_STATE);
 	}
 
 	return 0;
@@ -771,7 +736,6 @@ int tcpci_dp_configure(struct tcpc_device *tcpc, uint32_t dp_config)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	DP_INFO("LocalCFG: 0x%x\r\n", dp_config);
 
@@ -792,11 +756,8 @@ int tcpci_dp_configure(struct tcpc_device *tcpc, uint32_t dp_config)
 	tcp_noti.ama_dp_state.signal = (dp_config >> 2) & 0x0f;
 	tcp_noti.ama_dp_state.polarity = tcpc->typec_polarity;
 	tcp_noti.ama_dp_state.active = 1;
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-				TCP_NOTIFY_AMA_DP_STATE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_AMA_DP_STATE);
 	return ret;
 }
 
@@ -804,15 +765,11 @@ int tcpci_dp_attention(struct tcpc_device *tcpc, uint32_t dp_status)
 {
 	/* DFP_U : Not call this function during internal flow */
 	struct tcp_notify tcp_noti;
-	struct timeval begin, end;
 
 	DP_INFO("Attention: 0x%x\r\n", dp_status);
 	tcp_noti.ama_dp_attention.state = (uint8_t) dp_status;
-	do_gettimeofday(&begin);
-	srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-		TCP_NOTIFY_AMA_DP_ATTENTION, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_AMA_DP_ATTENTION);
 	return tcpci_report_hpd_state(tcpc, dp_status);
 }
 
@@ -828,16 +785,12 @@ int tcpci_dp_notify_config_start(struct tcpc_device *tcpc)
 {
 	/* DFP_U : Put signal & mux into the Safe State */
 	struct tcp_notify tcp_noti;
-	struct timeval begin, end;
 
 	DP_INFO("ConfigStart\r\n");
 	tcp_noti.ama_dp_state.sel_config = SW_USB;
 	tcp_noti.ama_dp_state.active = 0;
-	do_gettimeofday(&begin);
-	srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-		TCP_NOTIFY_AMA_DP_STATE, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_AMA_DP_STATE);
 	return 0;
 }
 
@@ -863,7 +816,6 @@ int tcpci_notify_uvdm(struct tcpc_device *tcpc, bool ack)
 {
 	struct tcp_notify tcp_noti;
 	struct pd_port *pd_port = &tcpc->pd_port;
-	struct timeval begin, end;
 
 	tcp_noti.uvdm_msg.ack = ack;
 
@@ -873,12 +825,8 @@ int tcpci_notify_uvdm(struct tcpc_device *tcpc, bool ack)
 		tcp_noti.uvdm_msg.uvdm_data = pd_port->uvdm_data;
 	}
 
-	do_gettimeofday(&begin);
-	srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-		TCP_NOTIFY_UVDM, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
-
+	tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_UVDM);
 	return 0;
 }
 #endif	/* CONFIG_USB_PD_CUSTOM_VDM */
@@ -888,14 +836,10 @@ int tcpci_dc_notify_en_unlock(struct tcpc_device *tcpc)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	DC_INFO("DirectCharge en_unlock\r\n");
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MODE],
-		TCP_NOTIFY_DC_EN_UNLOCK, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MODE, TCP_NOTIFY_DC_EN_UNLOCK);
 	return ret;
 }
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
@@ -909,16 +853,10 @@ int tcpci_notify_alert(struct tcpc_device *tcpc, uint32_t ado)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.alert_msg.ado = ado;
-
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MISC],
-				TCP_NOTIFY_ALERT, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
-
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MISC, TCP_NOTIFY_ALERT);
 	return ret;
 }
 #endif	/* CONFIG_USB_PD_REV30_ALERT_REMOTE */
@@ -928,16 +866,10 @@ int tcpci_notify_status(struct tcpc_device *tcpc, struct pd_status *sdb)
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.status_msg.sdb = sdb;
-
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MISC],
-				TCP_NOTIFY_STATUS, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
-
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MISC, TCP_NOTIFY_STATUS);
 	return ret;
 }
 #endif	/* CONFIG_USB_PD_REV30_STATUS_REMOTE */
@@ -948,16 +880,10 @@ int tcpci_notify_request_bat_info(
 {
 	struct tcp_notify tcp_noti;
 	int ret;
-	struct timeval begin, end;
 
 	tcp_noti.request_bat.ref = ref;
-
-	do_gettimeofday(&begin);
-	ret = srcu_notifier_call_chain(&tcpc->evt_nh[TCP_NOTIFY_IDX_MISC],
-				TCP_NOTIFY_REQUEST_BAT_INFO, &tcp_noti);
-	do_gettimeofday(&end);
-	PD_BUG_ON(tcpc_check_notify_time(&begin, &end) > TCPC_NOTIFY_OVERTIME);
-
+	ret = tcpc_check_notify_time(tcpc, &tcp_noti,
+		TCP_NOTIFY_IDX_MISC, TCP_NOTIFY_REQUEST_BAT_INFO);
 	return ret;
 }
 #endif	/* CONFIG_USB_PD_REV30_BAT_INFO */
