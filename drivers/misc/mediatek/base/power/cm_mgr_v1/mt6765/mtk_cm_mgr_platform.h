@@ -23,7 +23,7 @@
 #define LIGHT_LOAD
 /* #define USE_AVG_PMU */
 /* #define DEBUG_CM_MGR */
-/* #define USE_TIMER_CHECK */
+#define USE_TIMER_CHECK
 /* #define USE_IDLE_NOTIFY */
 #define USE_NEW_CPU_OPP
 
@@ -38,6 +38,7 @@
 #define RATIO_COUNT (100 / 5 - 1)
 #define IS_UP 1
 #define IS_DOWN 0
+#define USE_TIMER_CHECK_TIME msecs_to_jiffies(500)
 
 enum {
 	CM_MGR_LP4X_2CH_3200 = 0,
