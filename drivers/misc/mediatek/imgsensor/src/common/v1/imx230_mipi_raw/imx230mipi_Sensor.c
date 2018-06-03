@@ -446,6 +446,8 @@ static kal_uint32 imx230_ATR(UINT16 DarkLimit, UINT16 OverExp)
 	return ERROR_NONE;
 }
 #endif
+
+#if 0
 static MUINT32 cur_startpos;
 static MUINT32 cur_size;
 
@@ -506,6 +508,30 @@ static void imx230_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 	     end_y_pos);
 
 }
+#endif
+
+static void imx230_get_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
+{
+	int i, idx;
+
+	for (i = 0; i < regNum; i++) {
+		idx = 2 * i;
+		regDa[idx + 1] = read_cmos_sensor(regDa[idx]);
+		/* pr_debug("%x %x", regDa[idx], regDa[idx+1]); */
+	}
+}
+
+static void imx230_set_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
+{
+	int i, idx;
+
+	for (i = 0; i < regNum; i++) {
+		idx = 2 * i;
+		write_cmos_sensor(regDa[idx], regDa[idx + 1]);
+		/* pr_debug("%x %x", regDa[idx], regDa[idx+1]); */
+	}
+}
+
 
 static void imx230_apply_SPC(void)
 {
@@ -1516,21 +1542,20 @@ static void preview_setting(void)
 		/*PD_CAL_ENALBE */
 		write_cmos_sensor(0x3121, 0x01);
 		/*AREA MODE */
-		write_cmos_sensor(0x31B0, 0x02);	/* 8x6 output */
-		write_cmos_sensor(0x31B4, 0x01);	/* 8x6 output */
+		write_cmos_sensor(0x31B0, 0x01);	/* 8x6 output */
 		/*PD_OUT_EN=1 */
 		write_cmos_sensor(0x3123, 0x01);
 
-
 		/*Fixed area mode */
-		write_cmos_sensor(0x3158, 0x03);
-		write_cmos_sensor(0x3159, 0x22);	/* X start = 802 */
-		write_cmos_sensor(0x315a, 0x02);
-		write_cmos_sensor(0x315b, 0x5B);	/* Y start= 603 */
-		write_cmos_sensor(0x315c, 0x07);
-		write_cmos_sensor(0x315d, 0x4E);	/* X end = 1870 */
-		write_cmos_sensor(0x315e, 0x05);
-		write_cmos_sensor(0x315f, 0x7D);	/* Y end = 1405 */
+        write_cmos_sensor(0x3150, 0x00);
+        write_cmos_sensor(0x3151, 0x00);
+        write_cmos_sensor(0x3152, 0x00);
+        write_cmos_sensor(0x3153, 0x00);
+        write_cmos_sensor(0x3154, 0x0A);
+        write_cmos_sensor(0x3155, 0x70);
+        write_cmos_sensor(0x3156, 0x07);
+        write_cmos_sensor(0x3157, 0xD8);
+
 
 	}
 }				/*    preview_setting  */
@@ -1663,14 +1688,14 @@ static void preview_setting_HDR_ES2(void)
 		write_cmos_sensor(0x3123, 0x01);
 
 		/*Fixed area mode */
-		write_cmos_sensor(0x3150, 0x00);
-		write_cmos_sensor(0x3151, 0x38); /* X offset      112/2 = 56 */
-		write_cmos_sensor(0x3152, 0x00);
-		write_cmos_sensor(0x3153, 0x2c); /* Y offset 88/2 = 44 */
-		write_cmos_sensor(0x3154, 0x01); /* X size 640 / 2 = 320 */
-		write_cmos_sensor(0x3155, 0x40);
-		write_cmos_sensor(0x3156, 0x01); /* Y size 640 /2 =320 */
-		write_cmos_sensor(0x3157, 0x40);
+        write_cmos_sensor(0x3150, 0x00);
+        write_cmos_sensor(0x3151, 0x00);
+        write_cmos_sensor(0x3152, 0x00);
+        write_cmos_sensor(0x3153, 0x00);
+        write_cmos_sensor(0x3154, 0x0A);
+        write_cmos_sensor(0x3155, 0x70);
+        write_cmos_sensor(0x3156, 0x07);
+        write_cmos_sensor(0x3157, 0xD8);
 	}
 
 
@@ -2033,6 +2058,7 @@ static void capture_setting_HDR_ES2(void)
 
 
 	/*PDAF*/
+	write_cmos_sensor(0x3001, 0x01);
 	/*PD_CAL_ENALBE */
 	write_cmos_sensor(0x3121, 0x01);
 	/*AREA MODE */
@@ -2050,6 +2076,7 @@ static void capture_setting_HDR_ES2(void)
 	write_cmos_sensor(0x3155, 0xE0);
 	write_cmos_sensor(0x3156, 0x0F);
 	write_cmos_sensor(0x3157, 0xB0);
+
 }
 
 kal_uint16 addr_data_pair_cap_pdaf_15fps_imx230[] = {
@@ -2291,22 +2318,20 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 	/*PD_CAL_ENALBE */
 	write_cmos_sensor(0x3121, 0x01);
 	/*AREA MODE */
-	write_cmos_sensor(0x31B0, 0x02);	/* 8x6 output */
-	write_cmos_sensor(0x31B4, 0x01);	/* 8x6 output */
+	write_cmos_sensor(0x31B0, 0x01);	/* 8x6 output */
 	/*PD_OUT_EN=1 */
 	write_cmos_sensor(0x3123, 0x01);
 
 	/*Fixed area mode */
-	/*Fixed area mode */
+	write_cmos_sensor(0x3150, 0x00);
+	write_cmos_sensor(0x3151, 0x00);
+	write_cmos_sensor(0x3152, 0x00);
+	write_cmos_sensor(0x3153, 0x00);
+	write_cmos_sensor(0x3154, 0x14);
+	write_cmos_sensor(0x3155, 0xE0);
+	write_cmos_sensor(0x3156, 0x0F);
+	write_cmos_sensor(0x3157, 0xB0);
 
-	write_cmos_sensor(0x3158, 0x06);
-	write_cmos_sensor(0x3159, 0x45);	/* X start = 1605 */
-	write_cmos_sensor(0x315a, 0x04);
-	write_cmos_sensor(0x315b, 0xB5);	/* Y start= 1205 */
-	write_cmos_sensor(0x315c, 0x0E);
-	write_cmos_sensor(0x315d, 0x9B);	/* X end = 3739 */
-	write_cmos_sensor(0x315e, 0x0A);
-	write_cmos_sensor(0x315f, 0xFB);	/* Y end = 2811 */
 
 
 }
@@ -3811,6 +3836,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
+
+	case SENSOR_FEATURE_GET_PDAF_REG_SETTING:
+		pr_info("SENSOR_FEATURE_GET_PDAF_REG_SETTING %d",
+			(*feature_para_len));
+
+		imx230_get_pdaf_reg_setting(
+			(*feature_para_len) / sizeof(UINT32), feature_data_16);
+		break;
+	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
+		pr_info("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d",
+			(*feature_para_len));
+
+		imx230_set_pdaf_reg_setting(
+			(*feature_para_len) / sizeof(UINT32), feature_data_16);
+		break;
+
 	case SENSOR_FEATURE_SET_PDAF:
 		pr_info("PDAF mode :%d\n", *feature_data_16);
 		imgsensor.pdaf_mode = *feature_data_16;
@@ -3821,7 +3862,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		"SENSOR_FEATURE_SET_IMX230_PDFOCUS_AREA Start Pos=%d, Size=%d\n",
 		(UINT32) *feature_data, (UINT32) *(feature_data + 1));
 
-		imx230_set_pd_focus_area(*feature_data, *(feature_data + 1));
+		//imx230_set_pd_focus_area(*feature_data, *(feature_data + 1));
 		break;
 	case SENSOR_FEATURE_SET_HDR_SHUTTER:
 		pr_info("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",

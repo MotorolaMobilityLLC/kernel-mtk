@@ -94,17 +94,16 @@ static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 void read_imx230_SPC(BYTE *data)
 {
 
-	/* int addr = 0x2E8; */
+	int addr = 0x763 + 96;
 	int size = 352;
 
 	pr_debug("read imx230 SPC, size = %d\n", size);
-#if 0
+#if 1
 	if (!get_done || last_size != size || last_offset != addr) {
 		if (!_read_imx230_eeprom(addr, IMX230_SPC_data, size)) {
 			get_done = 0;
 			last_size = 0;
 			last_offset = 0;
-			return false;
 		}
 	}
 #endif
