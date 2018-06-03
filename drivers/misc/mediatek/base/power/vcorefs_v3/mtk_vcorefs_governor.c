@@ -616,6 +616,7 @@ void dvfsrc_force_opp(int opp)
 		level = 1 << (VCORE_DVFS_OPP_NUM - opp - 1);
 		writel((readl(DVFSRC_FORCE) & 0xFFFF0000) | level, DVFSRC_FORCE);
 		writel(readl(DVFSRC_BASIC_CONTROL) | (1 << 15), DVFSRC_BASIC_CONTROL);
+		writel(readl(DVFSRC_FORCE) & 0xFFFF0000, DVFSRC_FORCE);
 	}
 }
 #endif
