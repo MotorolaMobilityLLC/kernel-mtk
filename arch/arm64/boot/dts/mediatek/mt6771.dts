@@ -1466,7 +1466,7 @@
 		rsc_frame_done = <279>;
 		mfb_done = <280>;
 		wpe_a_frame_done = <281>;
-		spe_b_frame_done = <282>;
+		wpe_b_frame_done = <282>;
 		occ_done = <283>;
 		venc_done = <289>;
 		jpgenc_done = <290>;
