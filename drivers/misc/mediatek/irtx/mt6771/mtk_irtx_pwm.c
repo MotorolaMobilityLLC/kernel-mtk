@@ -84,6 +84,7 @@ void switch_irtx_gpio(int mode)
 {
 	struct pinctrl *ppinctrl_irtx = mt_irtx_dev.ppinctrl_irtx;
 	struct pinctrl_state *pins_irtx = NULL;
+	int ret;
 
 	pr_notice("[IRTX][PinC]%s(%d)+\n", __func__, mode);
 
@@ -96,6 +97,20 @@ void switch_irtx_gpio(int mode)
 		pr_notice("[IRTX][PinC]%s ppinctrl_irtx:%p is error! err:%ld\n",
 		       __func__, ppinctrl_irtx, PTR_ERR(ppinctrl_irtx));
 		return;
+	}
+
+	if (mode == IRTX_GPIO_MODE_LED_SET) {
+		ret = regulator_enable(mt_irtx_dev.buck);
+		if (ret < 0) {
+			pr_notice("[IRTX] regulator_enable fail!!\n");
+			return;
+		}
+	} else {
+		ret = regulator_disable(mt_irtx_dev.buck);
+		if (ret < 0) {
+			pr_notice("[IRTX] regulator_disable fail!!\n");
+			return;
+		}
 	}
 
 	pins_irtx = pinctrl_lookup_state(ppinctrl_irtx, irtx_gpio_cfg[mode]);
@@ -274,6 +289,18 @@ static int irtx_probe(struct platform_device *plat_dev)
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
+
+	mt_irtx_dev.buck = regulator_get(NULL, "irtx_ldo");
+	if (mt_irtx_dev.buck == NULL) {
+		pr_notice("[IRTX] regulator_get fail!!\n");
+		return -1;
+	}
+
+	ret = regulator_set_voltage(mt_irtx_dev.buck, 2800000, 2800000);
+	if (ret < 0) {
+		pr_notice("[IRTX] regulator_set_voltage fail!!\n");
+		return -1;
+	}
 
 	if (!major) {
 		ret = alloc_chrdev_region(&dev_t_irtx, 0, 1, irtx_driver_name);
