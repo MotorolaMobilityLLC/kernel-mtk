@@ -541,6 +541,12 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 	else
 		spm_sleep_count++;
 
+#if defined(CONFIG_MACH_MT6799)
+	/* Note: Print EMI Idle Fail */
+	if (spm_read(SPM_SW_RSV_3) & 0x1)
+		pr_info("SUSPNED: SPM CHECK EMI IDLE FAIL\n");
+#endif
+
 	wr = __spm_output_wake_reason(wakesta, NULL, true, "suspend");
 
 #if 1
