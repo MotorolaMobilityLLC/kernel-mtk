@@ -67,6 +67,17 @@ static struct vcorefs_profile vcorefs_ctrl = {
  */
 static bool feature_en __nosavedata;
 
+/*
+ * For MET tool register handler
+ */
+static vcorefs_req_handler_t vcorefs_req_handler;
+
+void vcorefs_register_req_notify(vcorefs_req_handler_t handler)
+{
+	vcorefs_req_handler = handler;
+}
+EXPORT_SYMBOL(vcorefs_register_req_notify);
+
 int is_vcorefs_can_work(void)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
@@ -91,6 +102,11 @@ bool is_vcorefs_request(void)
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
 	return pwrctrl->dvfs_request;
+}
+
+int vcorefs_each_kicker_request(enum dvfs_kicker kicker)
+{
+	return kicker_table[kicker];
 }
 
 static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicker, enum dvfs_opp opp)
@@ -256,6 +272,9 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	krconf.dvfs_opp = _get_dvfs_opp(pwrctrl, kicker, opp);
 
 	vcorefs_footprint(kicker, opp);
+
+	if (vcorefs_req_handler)
+		vcorefs_req_handler(kicker, opp);
 
 	r = kick_dvfs_by_opp_index(&krconf);
 
