@@ -322,9 +322,9 @@ thermal_bank_name ts_bank)
 	temp0 = (10000 * 100000 / g_gain) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp1 = (temp0 * 10) / (1534 + g_o_slope * 10);
+		temp1 = (temp0 * 10) / (1653 + g_o_slope * 10);
 	else
-		temp1 = (temp0 * 10) / (1534 - g_o_slope * 10);
+		temp1 = (temp0 * 10) / (1653 - g_o_slope * 10);
 
 	ts_ptpod.ts_MTS = temp1;
 
@@ -333,9 +333,9 @@ thermal_bank_name ts_bank)
 	((10000 * 100000 / 4096 / g_gain) * g_oe + x_roomt * 10) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp2 = temp1 * 100 / (1534 + g_o_slope * 10);
+		temp2 = temp1 * 100 / (1653 + g_o_slope * 10);
 	else
-		temp2 = temp1 * 100 / (1534 - g_o_slope * 10);
+		temp2 = temp1 * 100 / (1653 - g_o_slope * 10);
 
 	ts_ptpod.ts_BTS = (temp0 + temp2 - 250) * 4 / 10;
 
@@ -570,7 +570,7 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 #if THERMAL_CONTROLLER_HW_TP
 static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 {
-	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1534+O_slope*10)/10*(18/15)*
+	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1653+O_slope*10)/10*(18/15)*
 	 *				(1/10000)+X_roomtabb]*Gain*4096 + OE
 	 */
 
@@ -584,14 +584,14 @@ static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 
 	if (g_o_slope_sign == 0) {	/* O_SLOPE is Positive. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (1534 + g_o_slope * 10) / 10 * 18 / 15;
+		format_2 = format_1 * (1653 + g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
 		format_4 = (format_3 * 4096 / 10000 * g_gain) / 100000 + g_oe;
 	} else {		/* O_SLOPE is Negative. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (1534 - g_o_slope * 10) / 10 * 18 / 15;
+		format_2 = format_1 * (1653 - g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
@@ -629,9 +629,9 @@ static __s32 raw_to_temperature_roomt(__u32 ret, enum thermal_sensor ts_name)
 
 
 	if (g_o_slope_sign == 0) /* uint = 0.1 deg */
-		format_4 = ((format_3 * 1000) / (1534 + g_o_slope * 10));
+		format_4 = ((format_3 * 1000) / (1653 + g_o_slope * 10));
 	else			/* uint = 0.1 deg */
-		format_4 = ((format_3 * 1000) / (1534 - g_o_slope * 10));
+		format_4 = ((format_3 * 1000) / (1653 - g_o_slope * 10));
 
 	format_4 = format_4 - (format_4 << 1);
 
