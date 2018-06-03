@@ -47,6 +47,7 @@ struct vpu_user {
 	bool running;
 	bool flush;
 	bool locked;
+	uint8_t power_mode;
 	/* list of vlist_type(struct vpu_request) */
 	struct list_head enque_list;
 	struct list_head deque_list;
@@ -147,6 +148,12 @@ int vpu_boot_up(void);
 int vpu_shut_down(void);
 
 /**
+ * vpu_set_power_dynamic - enable or disable dynamic power mode
+ * @enabled	    enable dynamic mode or not
+ */
+int vpu_set_power_dynamic(bool enabled);
+
+/**
  * vpu_hw_load_algo - call vpu program to load algo, by specifying the start address
  * @algo:       the pointer to struct algo, which has right binary-data info.
  */
@@ -232,6 +239,13 @@ int vpu_dump_mesg(struct seq_file *s);
  * @ruser:      return the created user.
  */
 int vpu_create_user(struct vpu_user **ruser);
+
+/**
+ * vpu_set_power - set the power mode by a user
+ * @user:       the pointer to user.
+ * @power:      the user's power mode.
+ */
+int vpu_set_power(struct vpu_user *user, struct vpu_power *power);
 
 /**
  * vpu_delete_user - delete vpu user, and remove it from user list
