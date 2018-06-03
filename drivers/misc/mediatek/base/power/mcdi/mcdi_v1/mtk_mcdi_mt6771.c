@@ -24,6 +24,8 @@
 #include <mtk_mcdi_mbox.h>
 #include <sspm_mbox.h>
 
+#define PERMIT_BUCK_CTRL_MASK (2)	/* bit0: L, bit1: B */
+
 static DEFINE_SPINLOCK(async_wakeup_en_spin_lock);
 static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_DPIDLE,	/* IDLE_TYPE_DP */
@@ -32,7 +34,26 @@ static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
 };
 
+int mcdi_state_table_idx_map[NF_CPU] = {
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_1
+};
+
 static const char mcdi_node_name[] = "mediatek,mt6771-mcdi";
+
+int mcdi_get_state_tbl(int cpu)
+{
+	if (cpu < 0 || cpu >= NF_CPU)
+		return 0;
+
+	return mcdi_state_table_idx_map[cpu];
+}
 
 int mcdi_get_mcdi_idle_state(int idx)
 {
@@ -41,7 +62,13 @@ int mcdi_get_mcdi_idle_state(int idx)
 
 void mcdi_status_init(void)
 {
-	set_mcdi_enable_status(true);
+	set_mcdi_enable_status(false);
+	set_mcdi_buck_off_mask(0);
+}
+
+unsigned int mcdi_get_buck_ctrl_mask(void)
+{
+	return PERMIT_BUCK_CTRL_MASK;
 }
 
 /*

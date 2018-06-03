@@ -38,7 +38,6 @@
 #include <mtk_mcdi_governor_hint.h>
 
 #include <sspm_mbox.h>
-
 #include <trace/events/mtk_idle_event.h>
 
 /* #define USING_TICK_BROADCAST */
@@ -58,6 +57,7 @@ static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
 void __iomem *mcdi_sysram_base;
+#define MCDI_SYSRAM (mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET)
 
 /* #define WORST_LATENCY_DBG */
 
@@ -95,7 +95,7 @@ static DEFINE_SPINLOCK(mcdi_heart_beat_spin_lock);
 static unsigned int mcdi_heart_beat_log_dump_thd = 5000;          /* 5 sec */
 
 #define log2buf(p, s, fmt, args...) \
-	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
+	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
 #undef mcdi_log
 #define mcdi_log(fmt, args...)	log2buf(p, dbg_buf, fmt, ##args)
@@ -234,6 +234,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 	mcdi_log("\tpause = %d\n", feature_stat.pause);
 	mcdi_log("\tmax s_state = %d\n", feature_stat.s_state);
 	mcdi_log("\tcluster_off = %d\n", feature_stat.cluster_off);
+	mcdi_log("\tbuck_off = %d\n", feature_stat.buck_off);
 	mcdi_log("\tany_core = %d\n", feature_stat.any_core);
 
 	mcdi_log("\n");
@@ -304,6 +305,9 @@ static ssize_t mcdi_state_write(struct file *filp,
 		return count;
 	} else if (!strncmp(cmd_str, "s_state", sizeof("s_state"))) {
 		set_mcdi_s_state(param);
+		return count;
+	} else if (!strncmp(cmd_str, "buck_off", sizeof("buck_off"))) {
+		set_mcdi_buck_off_mask(param);
 		return count;
 	} else if (!strncmp(cmd_str, "hint", sizeof("hint"))) {
 		system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST, param != 0);
@@ -540,15 +544,7 @@ void mcdi_mbox_write(int id, unsigned int val)
 #endif
 }
 
-void mcdi_sysram_init(void)
-{
-	if (!mcdi_sysram_base)
-		return;
 
-	memset_io((void __iomem *)(mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET),
-				0,
-				MCDI_SYSRAM_SIZE - MCDI_DEBUG_INFO_NON_REPLACE_OFFSET);
-}
 
 void mcdi_cpu_off(int cpu)
 {
@@ -692,11 +688,13 @@ void mcdi_heart_beat_log_dump(void)
 
 	get_mcdi_feature_status(&feature_stat);
 
-	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d",
+	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d (buck_off = %d)",
 						feature_stat.enable,
-						feature_stat.s_state);
+						feature_stat.s_state,
+						feature_stat.buck_off);
 
-	mcdi_buf_append(buf, ", system_idle_hint = %08x\n", system_idle_hint_result_raw());
+	mcdi_buf_append(buf, ", system_idle_hint = %08x\n",
+						system_idle_hint_result_raw());
 
 	pr_warn("%s\n", get_mcdi_buf(buf));
 }
@@ -936,6 +934,23 @@ static void __init mcdi_pm_qos_init(void)
 {
 }
 
+static int __init mcdi_sysram_init(void)
+{
+	/* of init */
+	mcdi_of_init();
+
+	if (!mcdi_sysram_base)
+		return -1;
+
+	memset_io((void __iomem *)MCDI_SYSRAM,
+		0,
+		MCDI_SYSRAM_SIZE - MCDI_DEBUG_INFO_NON_REPLACE_OFFSET);
+
+	return 0;
+}
+
+subsys_initcall(mcdi_sysram_init);
+
 static int __init mcdi_init(void)
 {
 	/* Activate MCDI after SMP */
@@ -949,12 +964,6 @@ static int __init mcdi_init(void)
 
 	/* MCDI governor init */
 	mcdi_governor_init();
-
-	/* of init */
-	mcdi_of_init();
-
-	/* MCDI sysram space init */
-	mcdi_sysram_init();
 
 	mcdi_pm_qos_init();
 

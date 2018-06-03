@@ -16,6 +16,7 @@
 #include <mtk_idle_mcdi.h>
 
 #include <mcdi_v1/mtk_mcdi_mt6763.h>
+#include <mtk_mcdi.h>
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_governor.h>
 
@@ -26,7 +27,26 @@ static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
 };
 
+int mcdi_state_table_idx_map[NF_CPU] = {
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_0,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_1,
+	MCDI_STATE_TABLE_SET_2
+};
+
 static const char mcdi_node_name[] = "mediatek,mt6763-mcdi";
+
+int mcdi_get_state_tbl(int cpu)
+{
+	if (cpu < 0 || cpu >= NF_CPU)
+		return 0;
+
+	return mcdi_state_table_idx_map[cpu];
+}
 
 int mcdi_get_mcdi_idle_state(int idx)
 {
@@ -36,6 +56,12 @@ int mcdi_get_mcdi_idle_state(int idx)
 void mcdi_status_init(void)
 {
 	set_mcdi_enable_status(true);
+}
+
+/* can't control buck */
+unsigned int mcdi_get_buck_ctrl_mask(void)
+{
+	return 0;
 }
 
 /* do nothing */
