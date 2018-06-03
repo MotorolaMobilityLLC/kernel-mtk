@@ -665,7 +665,8 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	bin = _GET_BITS_VAL_(2:0, bin);
 	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
 		lv = CPU_LEVEL_0;
-	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20) {
+	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20 ||
+		get_devinfo_with_index(SEG_EFUSE) == 0) {
 		if (bin == 1)
 			lv = CPU_LEVEL_2;
 		else
