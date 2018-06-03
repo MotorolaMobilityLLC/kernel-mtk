@@ -1392,6 +1392,7 @@ int spm_mtcmos_ctrl_ven(int state)
 int spm_mtcmos_ctrl_mfg_2d(int state)
 {
 	int err = 0;
+	int retry = 0;
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -1399,6 +1400,20 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & MFG_PROT_STEP1_0_ACK_MASK) !=
 			MFG_PROT_STEP1_0_ACK_MASK) {
+			retry++;
+			if (retry == 5000) {
+				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_1));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
+				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				BUG_ON(1);
+			}
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
