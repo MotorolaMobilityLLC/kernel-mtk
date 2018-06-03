@@ -14,7 +14,7 @@
 /*
  * This is for bring up and test only.
  */
-#include "mmdvfs_mgr.h"
+#include "mmdvfs_internal.h"
 
 #define MMDVFS_BRINGUP_MSG(func_name) MMDVFSMSG("This is %s bringup version, do nothing\n", func_name)
 
@@ -99,4 +99,24 @@ int mmdvfs_get_stable_isp_clk(void)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 	return MMSYS_CLK_HIGH;
+}
+void mmdvfs_default_step_set(int default_step)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
+}
+void mmdvfs_default_start_delayed_setting(void)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
+}
+void mmdvfs_default_stop_delayed_setting(void)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
+}
+void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
+}
+void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
 }
