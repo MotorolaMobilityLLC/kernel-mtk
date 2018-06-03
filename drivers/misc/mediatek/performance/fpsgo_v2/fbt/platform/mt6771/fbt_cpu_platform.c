@@ -22,6 +22,11 @@ void fbt_set_boost_value(unsigned int base_blc)
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, base_blc - 1 + 4000);
 }
 
+void fbt_clear_boost_value(void)
+{
+	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+}
+
 int fbt_is_mips_different(void)
 {
 	return 1;
