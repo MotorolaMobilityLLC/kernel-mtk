@@ -45,7 +45,7 @@ static inline void client_get(struct tee_client *client)
 	kref_get(&client->kref);
 }
 
-void client_put(struct tee_client *client);
+int client_put(struct tee_client *client);
 bool client_has_sessions(struct tee_client *client);
 void client_close(struct tee_client *client);
 
