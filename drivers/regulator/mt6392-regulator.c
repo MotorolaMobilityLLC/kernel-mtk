@@ -119,38 +119,30 @@ static const u32 ldo_volt_table1[] = {
 };
 
 static const u32 ldo_volt_table2[] = {
-	1500000, 1800000, 2500000, 2800000,
-};
-
-static const u32 ldo_volt_table3[] = {
 	3300000, 3400000, 3500000, 3600000,
 };
 
-static const u32 ldo_volt_table4[] = {
+static const u32 ldo_volt_table3[] = {
 	1800000, 3300000,
 };
 
-static const u32 ldo_volt_table5[] = {
+static const u32 ldo_volt_table4[] = {
 	3000000, 3300000,
 };
 
-static const u32 ldo_volt_table6[] = {
+static const u32 ldo_volt_table5[] = {
 	1200000, 1300000, 1500000, 1800000, 2000000, 2800000, 3000000, 3300000,
 };
 
-static const u32 ldo_volt_table7[] = {
-	1200000, 1350000, 1500000, 1800000,
+static const u32 ldo_volt_table6[] = {
+	1240000, 1390000,
 };
 
-static const u32 ldo_volt_table8[] = {
+static const u32 ldo_volt_table7[] = {
 	1200000, 1300000, 1500000, 1800000,
 };
 
-static const u32 ldo_volt_table9[] = {
-	1200000, 1300000, 1500000, 1800000, 2500000, 2800000, 3000000, 2000000,
-};
-
-static const u32 ldo_volt_table10[] = {
+static const u32 ldo_volt_table8[] = {
 	1800000, 2000000,
 };
 
@@ -279,58 +271,52 @@ static struct mt6392_regulator_info mt6392_regulators[] = {
 	MT6392_LDO("ldo_vaud22", VAUD22, ldo_volt_table1,
 		MT6392_ANALDO_CON2, 14, MT6392_ANALDO_CON8, 0x60,
 		MT6392_ANALDO_CON2, 0x2),
-	MT6392_LDO("ldo_vcama", VCAMA, ldo_volt_table2,
-		MT6392_ANALDO_CON4, 15, MT6392_ANALDO_CON10, 0x60, -1, 0),
+	MT6392_REG_FIXED("ldo_vcama", VCAMA, MT6392_ANALDO_CON4, 15, 2800000,
+		-1, 0),
 	MT6392_REG_FIXED("ldo_vaud28", VAUD28, MT6392_ANALDO_CON23, 14, 2800000,
 		MT6392_ANALDO_CON23, 0x2),
 	MT6392_REG_FIXED("ldo_vadc18", VADC18, MT6392_ANALDO_CON25, 14, 1800000,
 		MT6392_ANALDO_CON25, 0x2),
-	MT6392_LDO("ldo_vcn35_bt", VCN35_BT, ldo_volt_table3,
-		MT6392_ANALDO_CON16, 7, MT6392_ANALDO_CON16, 0xC,
-		MT6392_ANALDO_CON21, 0x2),
-	MT6392_LDO("ldo_vcn35_wifi", VCN35_WIFI, ldo_volt_table3,
-		MT6392_ANALDO_CON17, 12, MT6392_ANALDO_CON16, 0xC,
+	MT6392_LDO("ldo_vcn35", VCN35, ldo_volt_table2,
+		MT6392_ANALDO_CON21, 12, MT6392_ANALDO_CON16, 0xC,
 		MT6392_ANALDO_CON21, 0x2),
 	MT6392_REG_FIXED("ldo_vio28", VIO28, MT6392_DIGLDO_CON0, 14, 2800000,
 		MT6392_DIGLDO_CON0, 0x2),
 	MT6392_REG_FIXED("ldo_vusb", VUSB, MT6392_DIGLDO_CON2, 14, 3300000,
 		MT6392_DIGLDO_CON2, 0x2),
-	MT6392_LDO("ldo_vmc", VMC, ldo_volt_table4,
+	MT6392_LDO("ldo_vmc", VMC, ldo_volt_table3,
 		MT6392_DIGLDO_CON3, 12, MT6392_DIGLDO_CON24, 0x10,
 		MT6392_DIGLDO_CON3, 0x2),
-	MT6392_LDO("ldo_vmch", VMCH, ldo_volt_table5,
+	MT6392_LDO("ldo_vmch", VMCH, ldo_volt_table4,
 		MT6392_DIGLDO_CON5, 14, MT6392_DIGLDO_CON26, 0x80,
 		MT6392_DIGLDO_CON5, 0x2),
-	MT6392_LDO("ldo_vemc3v3", VEMC3V3, ldo_volt_table5,
+	MT6392_LDO("ldo_vemc3v3", VEMC3V3, ldo_volt_table4,
 		MT6392_DIGLDO_CON6, 14, MT6392_DIGLDO_CON27, 0x80,
 		MT6392_DIGLDO_CON6, 0x2),
-	MT6392_LDO("ldo_vgp1", VGP1, ldo_volt_table6,
+	MT6392_LDO("ldo_vgp1", VGP1, ldo_volt_table5,
 		MT6392_DIGLDO_CON7, 15, MT6392_DIGLDO_CON28, 0xE0,
 		MT6392_DIGLDO_CON7, 0x2),
-	MT6392_LDO("ldo_vgp2", VGP2, ldo_volt_table6,
+	MT6392_LDO("ldo_vgp2", VGP2, ldo_volt_table5,
 		MT6392_DIGLDO_CON8, 15, MT6392_DIGLDO_CON29, 0xE0,
 		MT6392_DIGLDO_CON8, 0x2),
 	MT6392_REG_FIXED("ldo_vcn18", VCN18, MT6392_DIGLDO_CON11, 14, 1800000,
 		MT6392_DIGLDO_CON11, 0x2),
-	MT6392_REG_FIXED("ldo_vrtc", VRTC, MT6392_DIGLDO_CON15, 8, 2800000,
-		-1, 0),
-	MT6392_LDO("ldo_vcamaf", VCAMAF, ldo_volt_table6,
+	MT6392_LDO("ldo_vcamaf", VCAMAF, ldo_volt_table5,
 		MT6392_DIGLDO_CON31, 15, MT6392_DIGLDO_CON32, 0xE0,
 		MT6392_DIGLDO_CON31, 0x2),
-	MT6392_LDO("ldo_vm", VM, ldo_volt_table7,
+	MT6392_LDO("ldo_vm", VM, ldo_volt_table6,
 		MT6392_DIGLDO_CON47, 14, MT6392_DIGLDO_CON48, 0x30,
 		MT6392_DIGLDO_CON47, 0x2),
 	MT6392_REG_FIXED("ldo_vio18", VIO18, MT6392_DIGLDO_CON49, 14, 1800000,
 		MT6392_DIGLDO_CON49, 0x2),
-	MT6392_LDO("ldo_vcamd", VCAMD, ldo_volt_table8,
+	MT6392_LDO("ldo_vcamd", VCAMD, ldo_volt_table7,
 		MT6392_DIGLDO_CON51, 14, MT6392_DIGLDO_CON52, 0x60,
 		MT6392_DIGLDO_CON51, 0x2),
 	MT6392_REG_FIXED("ldo_vcamio", VCAMIO, MT6392_DIGLDO_CON53, 14, 1800000,
 		MT6392_DIGLDO_CON53, 0x2),
-	MT6392_LDO("ldo_vm25", VM25, ldo_volt_table9,
-		MT6392_DIGLDO_CON55, 14, MT6392_DIGLDO_CON56, 0xE000,
+	MT6392_REG_FIXED("ldo_vm25", VM25, MT6392_DIGLDO_CON55, 14, 2500000,
 		MT6392_DIGLDO_CON55, 0x2),
-	MT6392_LDO("ldo_vefuse", VEFUSE, ldo_volt_table10,
+	MT6392_LDO("ldo_vefuse", VEFUSE, ldo_volt_table8,
 		MT6392_DIGLDO_CON57, 14, MT6392_DIGLDO_CON58, 0x10,
 		MT6392_DIGLDO_CON57, 0x2),
 };
