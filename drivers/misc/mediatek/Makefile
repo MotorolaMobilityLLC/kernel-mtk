@@ -136,6 +136,7 @@ obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-y += performance/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
 obj-$(CONFIG_MTK_DEBUG_LATCH) += debug_latch/
+obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 
 #io boost
 obj-y += io_boost/
