@@ -113,12 +113,25 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#else
+	/* VCORE */
+	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x8,
+			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
+			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x1,
+			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+	/* VSRAM_OTHERS */
+	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x10,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x1,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 
-#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
-#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if 0
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
@@ -142,11 +155,22 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+#else
+	/* VCORE */
+	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
+			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
+			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x6,
+			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+	/* VSRAM_OTHERS */
+	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x30,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x4,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
-#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 }
 
 bool spm_is_md_sleep(void)
