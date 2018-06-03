@@ -382,12 +382,17 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 }
 #endif
 
+#if defined(CONFIG_MTK_ACAO_SUPPORT)
+static bool next_timer_criteria_check(unsigned int timer_criteria)
+{
+	return true;
+}
+#elif defined(USING_STD_TIMER_OPS)
 static bool next_timer_criteria_check(unsigned int timer_criteria)
 {
 	unsigned int timer_left = 0;
 	bool ret = true;
 
-#ifdef USING_STD_TIMER_OPS
 	struct timespec t;
 
 	t = ktime_to_timespec(tick_nohz_get_sleep_length());
@@ -395,7 +400,15 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 
 	if (timer_left < timer_criteria)
 		ret = false;
+
+	return ret;
+}
 #else
+static bool next_timer_criteria_check(unsigned int timer_criteria)
+{
+	unsigned int timer_left = 0;
+	bool ret = true;
+
 #ifdef CONFIG_SMP
 	timer_left = localtimer_get_counter();
 
@@ -410,10 +423,10 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 	if ((timer_cmp - timer_left) < timer_criteria)
 		ret = false;
 #endif
-#endif
 
 	return ret;
 }
+#endif
 
 static void timer_setting_before_wfi(bool f26m_off)
 {
