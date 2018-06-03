@@ -36,7 +36,7 @@
 
 #define AFE_BASE_END_OFFSET 8
 
-static int mtk_regmap_update_bits(struct regmap *map, int reg,
+int mtk_regmap_update_bits(struct regmap *map, int reg,
 			   unsigned int mask,
 			   unsigned int val)
 {
@@ -45,7 +45,7 @@ static int mtk_regmap_update_bits(struct regmap *map, int reg,
 	return regmap_update_bits(map, reg, mask, val);
 }
 
-static int mtk_regmap_write(struct regmap *map, int reg, unsigned int val)
+int mtk_regmap_write(struct regmap *map, int reg, unsigned int val)
 {
 	if (reg < 0)
 		return 0;
@@ -494,9 +494,9 @@ int mtk_memif_set_enable(struct mtk_base_afe *afe, int id)
 	struct mtk_base_afe_memif *memif = &afe->memif[id];
 
 	if (memif->data->enable_shift < 0) {
-		dev_err(afe->dev, "%s(), error, id %d, enable_shift < 0\n",
-			__func__, id);
-		return -EINVAL;
+		dev_warn(afe->dev, "%s(), error, id %d, enable_shift < 0\n",
+			 __func__, id);
+		return 0;
 	}
 	return mtk_regmap_update_bits(afe->regmap,
 				      memif->data->enable_reg,
@@ -510,9 +510,9 @@ int mtk_memif_set_disable(struct mtk_base_afe *afe, int id)
 	struct mtk_base_afe_memif *memif = &afe->memif[id];
 
 	if (memif->data->enable_shift < 0) {
-		dev_err(afe->dev, "%s(), error, id %d, enable_shift < 0\n",
-			__func__, id);
-		return -EINVAL;
+		dev_warn(afe->dev, "%s(), error, id %d, enable_shift < 0\n",
+			 __func__, id);
+		return 0;
 	}
 	return mtk_regmap_update_bits(afe->regmap,
 				      memif->data->enable_reg,
