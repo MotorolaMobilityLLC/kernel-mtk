@@ -91,6 +91,8 @@ Let's keep this graph up-to-date:
 
 #include "dllist.h"
 
+#include "mtk_meminfo.h"
+
 // #define MMU_OBJECT_REFCOUNT_DEBUGING 1
 #if defined (MMU_OBJECT_REFCOUNT_DEBUGING)
 #define MMU_OBJ_DBG(x)	PVR_DPF(x);
@@ -2947,6 +2949,15 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 				HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 				HTBLOG_U64_BITS_HIGH(sDevPAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevPAddr.uiAddr));
 
+
+			if ((sDevPAddr.uiAddr < get_phys_offset()) ||
+(sDevPAddr.uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+				PVR_DPF((PVR_DBG_ERROR,
+"%s: _SetupPTE out-of-range, sDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
+sDevPAddr.uiAddr, sDevVAddr.uiAddr));
+			}
+
+
 			eError = _SetupPTE(psMMUContext,
 			                   psLevel,
 			                   uiPTEIndex,
@@ -3362,6 +3373,14 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 			HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 			HTBLOG_U64_BITS_HIGH(psDevPAddr[i].uiAddr), HTBLOG_U64_BITS_LOW(psDevPAddr[i].uiAddr));
 
+
+		if ((psDevPAddr[i].uiAddr < get_phys_offset()) ||
+(psDevPAddr[i].uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+			PVR_DPF((PVR_DBG_ERROR,
+"%s: _SetupPTE out-of-range, psDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
+psDevPAddr[i].uiAddr, sDevVAddr.uiAddr));
+		}
+
 		/* Set the PT entry with the specified address and protection flags */
 		eError = _SetupPTE(psMMUContext, psLevel, uiPTEIndex,
 		                   psConfig, &psDevPAddr[i], IMG_FALSE,
@@ -3371,6 +3390,7 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 		                   uiSymbolicAddrOffset,
 #endif /*PDUMP*/
 						   uiProtFlags);
+
 		if (eError != PVRSRV_OK)
 			goto e2;
 
