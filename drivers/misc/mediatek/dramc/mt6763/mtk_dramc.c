@@ -35,6 +35,7 @@
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
 
+#include "emi_bwl.h"
 #include "mtk_dramc.h"
 #include "dramc.h"
 
@@ -585,7 +586,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	/* pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]); */
 
 /* #if PASR_TEST_SCENARIO == PASR_SUPPORT_2_CHANNEL*/
-	for (iChannelIdx = 0; iChannelIdx < 2; iChannelIdx++) {
+	for (iChannelIdx = 0; iChannelIdx < get_ch_num(); iChannelIdx++) {
 		if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 			if (iChannelIdx == 0) { /*Channel-A*/
 				u4rg_24 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x24);
@@ -632,7 +633,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 		writel((readl(u4rg_24) & (~((0x1<<5) | (0x1<<7)))) | ((0x1<<4) | (0x1<<6)), u4rg_24);
 		/* CKE0 CKE1 fix on no matter the setting of CKE2RANK*/
 
-		for (iRankIdx = 0; iRankIdx < 2; iRankIdx++) {
+		for (iRankIdx = 0; iRankIdx < get_rk_num(); iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
 			writel(readl(u4rg_60) | 0x00000001, u4rg_60);
 			cnt = 1000;
@@ -1405,8 +1406,8 @@ void zqcs_timer_callback(unsigned long data)
 		local_irq_restore(save_flags);
 	} else {
   /* CH0_Rank0 --> CH1Rank0 */
-	for (RankCounter = 0; RankCounter < dram_rank_num; RankCounter++) {
-		for (CHCounter = 0; CHCounter < 2; CHCounter++) {
+	for (RankCounter = 0; RankCounter < get_rk_num(); RankCounter++) {
+		for (CHCounter = 0; CHCounter < get_ch_num(); CHCounter++) {
 			TimeCnt = 100;
 
 			if (CHCounter == 0) {
