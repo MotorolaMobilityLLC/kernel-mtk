@@ -23,6 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/math64.h>
 #include "disp_drv_platform.h"	/* must be at the top-most */
 #include "ion_drv.h"
 #include "mtk_ion.h"
@@ -1182,8 +1183,11 @@ unsigned int time_to_line(unsigned int ms, unsigned int width)
 
 	tline_us = get_us_perline(width);
 	time_us = ms * 1000 * LINE_ACCURACY;
-
+#if defined(__LP64__) || defined(_LP64)
 	line = time_us / tline_us;
+#else
+	line = div_u64(time_us, tline_us);
+#endif
 
 	return line;
 }

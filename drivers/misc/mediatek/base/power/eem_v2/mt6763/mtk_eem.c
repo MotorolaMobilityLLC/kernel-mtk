@@ -43,6 +43,7 @@
 #include <linux/types.h>
 #include <linux/time.h>
 #include <linux/slab.h>
+#include <linux/math64.h>
 #ifdef __KERNEL__
 #include <linux/topology.h>
 #endif
@@ -2346,7 +2347,11 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	switch (det->ctrl_id) {
 	case EEM_CTRL_2L:
 		#ifdef CONFIG_THERMAL
+#if defined(__LP64__) || defined(_LP64)
 		temp_long = (unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK0)/1000;
+#else
+		temp_long = div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK0), 1000);
+#endif
 		if (temp_long != 0) {
 			aee_rr_rec_ptp_temp(temp_long << (8 * EEM_CPU_2_LITTLE_IS_SET_VOLT) |
 			(temp_cur & ~((unsigned long long)0xFF << (8 * EEM_CPU_2_LITTLE_IS_SET_VOLT))));
@@ -2356,7 +2361,11 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	case EEM_CTRL_L:
 		#ifdef CONFIG_THERMAL
+#if defined(__LP64__) || defined(_LP64)
 		temp_long = (unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK1)/1000;
+#else
+		temp_long = div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK1), 1000);
+#endif
 		if (temp_long != 0) {
 			aee_rr_rec_ptp_temp(temp_long << (8 * EEM_CPU_LITTLE_IS_SET_VOLT) |
 			(temp_cur & ~((unsigned long long)0xFF << (8 * EEM_CPU_LITTLE_IS_SET_VOLT))));
@@ -2366,7 +2375,11 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	case EEM_CTRL_CCI:
 		#ifdef CONFIG_THERMAL
+#if defined(__LP64__) || defined(_LP64)
 		temp_long = (unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2)/1000;
+#else
+		temp_long = div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
+#endif
 		if (temp_long != 0) {
 			aee_rr_rec_ptp_temp(temp_long << (8 * EEM_CPU_CCI_IS_SET_VOLT)|
 			(temp_cur & ~((unsigned long long)0xFF << (8 * EEM_CPU_CCI_IS_SET_VOLT))));
@@ -2376,7 +2389,11 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	case EEM_CTRL_GPU:
 		#ifdef CONFIG_THERMAL
+#if defined(__LP64__) || defined(_LP64)
 		temp_long = (unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK3)/1000;
+#else
+		temp_long = div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK3), 1000);
+#endif
 		if (temp_long != 0) {
 			aee_rr_rec_ptp_temp(temp_long << (8 * EEM_GPU_IS_SET_VOLT) |
 			(temp_cur & ~((unsigned long long)0xFF << (8 * EEM_GPU_IS_SET_VOLT))));

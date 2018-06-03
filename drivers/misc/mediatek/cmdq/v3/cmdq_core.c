@@ -44,6 +44,7 @@
 #endif
 #include <linux/seq_file.h>
 #include <linux/kthread.h>
+#include <linux/math64.h>
 #include <mt-plat/mtk_lpae.h>
 #include "cmdq_record_private.h"
 
@@ -71,7 +72,7 @@ print_lock_cost = false;		\
 lock_cost_##tag = sched_clock() - lock_cost_##tag;	\
 if (lock_cost_##tag > CMDQ_PROFILE_LIMIT_2) {		\
 	CMDQ_LOG("[warn][%s]wait lock: %llu us > %ums\n",	\
-		#tag, lock_cost_##tag/1000,		\
+		#tag, div_s64(lock_cost_##tag, 1000),		\
 		CMDQ_PROFILE_LIMIT_2/1000000);		\
 }					\
 cost_##lock = sched_clock();		\
@@ -83,11 +84,11 @@ bool force_print_lock = print_lock_cost;	\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_1) {	\
 	CMDQ_LOG("[warn][%s]lock cost: %llu us > %ums\n",	\
-	#tag, cost_##lock/1000,		\
+	#tag, div_s64(cost_##lock, 1000),		\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 } else if (force_print_lock) {			\
 	CMDQ_LOG("[%s]lock cost: %llu us < %ums\n",	\
-	#tag, cost_##lock/1000,		\
+	#tag, div_s64(cost_##lock, 1000),		\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 }						\
 mutex_unlock(&lock);				\
@@ -103,7 +104,7 @@ cost = sched_clock();			\
 cost = sched_clock() - cost;		\
 if (cost > CMDQ_PROFILE_LIMIT_1) {	\
 	CMDQ_LOG("[warn][%s] t_cost %llu > %ums\n",	\
-		tag, cost/1000,			\
+		tag, div_s64(cost, 1000),			\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 }					\
 cost = sched_clock();			\
@@ -126,7 +127,7 @@ cost_##lock = sched_clock();			\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_0) {	\
 CMDQ_LOG("[warn][%s]spin lock cost: %llu > %ums\n",	\
-	#tag, (u64)(cost_##lock/1000),		\
+	#tag, (u64)div_s64(cost_##lock, 1000),		\
 	(u32)(CMDQ_PROFILE_LIMIT_0/1000000));	\
 }						\
 spin_unlock_irqrestore(&lock, flags);		\
@@ -1139,9 +1140,16 @@ void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma
 		if (pVA != NULL && atomic_read(&g_cmdq_mem_monitor.monitor_mem_enable) != 0)
 			cmdq_core_monitor_record_alloc(size);
 
-		if (alloc_cost > CMDQ_PROFILE_LIMIT_1)
+		if (alloc_cost > CMDQ_PROFILE_LIMIT_1) {
+#if defined(__LP64__) || defined(_LP64)
 			CMDQ_LOG("[warn] alloc buffer (size: %zu) cost %llu us > %ums\n",
 				size, alloc_cost/1000, CMDQ_PROFILE_LIMIT_1/1000000);
+#else
+			CMDQ_LOG("[warn] alloc buffer (size: %zu) cost %llu us > %llums\n",
+				size, div_s64(alloc_cost, 1000), div_s64(CMDQ_PROFILE_LIMIT_1, 1000000));
+#endif
+		}
+
 	} while (0);
 
 	*dma_handle = PA;
@@ -1162,9 +1170,16 @@ void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
 	if (atomic_read(&g_cmdq_mem_monitor.monitor_mem_enable) != 0)
 		cmdq_core_monitor_record_free(size);
 
-	if (free_cost > CMDQ_PROFILE_LIMIT_1)
+	if (free_cost > CMDQ_PROFILE_LIMIT_1) {
+#if defined(__LP64__) || defined(_LP64)
 		CMDQ_LOG("[warn] free buffer (size: %zu) cost %llu us > %ums\n",
 			size, free_cost/1000, CMDQ_PROFILE_LIMIT_1/1000000);
+#else
+		CMDQ_LOG("[warn] free buffer (size: %zu) cost %llu us > %llums\n",
+			size, div_s64(free_cost, 1000), div_s64(CMDQ_PROFILE_LIMIT_1, 1000000));
+#endif
+	}
+
 }
 
 s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cpr_offset)
@@ -8359,7 +8374,7 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 
 	if (alloc_cost > CMDQ_PROFILE_LIMIT_2) {
 		CMDQ_LOG("[warn] alloc task cost %llu us > %u ms\n",
-			alloc_cost/1000, CMDQ_PROFILE_LIMIT_2/1000000);
+			div_s64(alloc_cost, 1000), CMDQ_PROFILE_LIMIT_2/1000000);
 	}
 
 	if (ppTaskOut != NULL)

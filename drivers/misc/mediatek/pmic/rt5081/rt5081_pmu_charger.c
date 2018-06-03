@@ -25,6 +25,7 @@
 #include <linux/kthread.h>
 #include <linux/workqueue.h>
 #include <linux/switch.h>
+#include <linux/math64.h>
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/charger_class.h>
@@ -690,6 +691,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 
 out_unlock_all:
 	/* Coefficient of IBUS & IBAT */
+#if defined(__LP64__) || defined(_LP64)
 	if (adc_sel == RT5081_ADC_IBUS) {
 		if (aicr < 400000) /* 400mA */
 			adc_result = adc_result * 67 / 100;
@@ -701,7 +703,19 @@ out_unlock_all:
 			adc_result = adc_result * 536 / 1000;
 		mutex_unlock(&chg_data->ichg_access_lock);
 	}
-
+#else
+	if (adc_sel == RT5081_ADC_IBUS) {
+		if (aicr < 400000) /* 400mA */
+			adc_result = div_s64(adc_result * 67, 100);
+		mutex_unlock(&chg_data->aicr_access_lock);
+	} else if (adc_sel == RT5081_ADC_IBAT) {
+		if (ichg >= 100000 && ichg <= 450000) /* 100~450mA */
+			adc_result = div_s64(adc_result * 475, 1000);
+		else if (ichg >= 500000 && ichg <= 850000) /* 500~850mA */
+			adc_result = div_s64(adc_result * 536, 1000);
+		mutex_unlock(&chg_data->ichg_access_lock);
+	}
+#endif
 out:
 	*adc_val = adc_result;
 	rt5081_enable_hidden_mode(chg_data, false);
