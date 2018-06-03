@@ -183,7 +183,7 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout)
 	core_dmp = (P_WCN_CORE_DUMP_T) osal_malloc(sizeof(WCN_CORE_DUMP_T));
 	if (!core_dmp) {
 		STP_DBG_ERR_FUNC("alloc mem failed!\n");
-		goto fail;
+		return NULL;
 	}
 
 	osal_memset(core_dmp, 0, sizeof(WCN_CORE_DUMP_T));
@@ -199,13 +199,6 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 timeout)
 	STP_DBG_INFO_FUNC("create coredump object OK!\n");
 
 	return core_dmp;
-
-fail:
-	if (core_dmp)
-		osal_free(core_dmp);
-
-	osal_sleepable_lock_deinit(&core_dmp->dmp_lock);
-	return NULL;
 }
 
 
