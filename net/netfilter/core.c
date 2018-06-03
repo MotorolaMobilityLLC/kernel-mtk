@@ -51,8 +51,8 @@ struct drop_packet_info_t {
 	u8 pf;
 	unsigned int hook;
 	u64 drop_time;
-	char *iface;
-	char *table;
+	char iface[IFNAMSIZ];
+	nf_hookfn *table;
 	int family;
 	int already_print;
 };
@@ -94,7 +94,7 @@ static size_t drop_time(u64 ts, char *buf)
 	unsigned long rem_nsec;
 
 	rem_nsec = do_div(ts, 1000000000);
-	return sprintf(buf, "[%5lu.%06lu] ",
+	return sprintf(buf, "%5lu.%06lu",
 			   (unsigned long)ts, rem_nsec / 1000);
 }
 
@@ -160,8 +160,7 @@ static void iptables_drop_packet_monitor(unsigned long data)
 
 			drop_time(iptables_drop_packets.drop_packets[i].drop_time, time_buff);
 			sb_add(&m, "[%pS],[%s],[%s]", iptables_drop_packets.drop_packets[i].table,
-			       iptables_drop_packets.drop_packets[i].iface,
-				time_buff);
+			       iptables_drop_packets.drop_packets[i].iface, time_buff);
 			pr_info("%s\n", m.buf);
 			m.count = 0;
 			memset(m.buf, 0, sizeof(m.buf));
@@ -442,7 +441,6 @@ int nf_hook_slow(struct sk_buff *skb, struct nf_hook_state *state)
 	unsigned int verdict;
 	int ret = 0;
 #ifdef CONFIG_MTK_NET_LOGGING
-	char *table = NULL;
 	unsigned int num;
 #endif
 	/* We may already have this, but read-locks nest anyway */
@@ -458,16 +456,15 @@ next_hook:
 	/*because skb free  need copy some info to ...*/
 	if (iptables_drop_packets.cnt > 100000)
 		iptables_drop_packets.cnt = 1;
-	table = (char *)((struct nf_hook_ops *)elem)->hook;
 	num = iptables_drop_packets.cnt % 500;
 	iptables_drop_packets.drop_packets[num].drop_time = local_clock();
 	iptables_drop_packets.drop_packets[num].len = skb->len;
 	iptables_drop_packets.drop_packets[num].hook = state->hook;
 	iptables_drop_packets.drop_packets[num].pf = state->pf;
-	iptables_drop_packets.drop_packets[num].iface = skb->dev->name;
-	iptables_drop_packets.drop_packets[num].table = table;
+	iptables_drop_packets.drop_packets[num].table = elem->hook;
 	iptables_drop_packets.drop_packets[num].packet_num = num + 1;
 	iptables_drop_packets.drop_packets[num].already_print = 0;
+	strncpy(iptables_drop_packets.drop_packets[num].iface, skb->dev->name, IFNAMSIZ);
 	iptables_drop_packets.cnt++;
 	if ((jiffies - iptables_drop_packets.print_stamp) / HZ > IPTABLES_DROP_PACKET_STATICS) {
 		iptables_drop_packets.print_stamp = jiffies;
