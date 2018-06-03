@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/que_mgt.h#2
 */
@@ -10,250 +61,6 @@
  *  forwarding control, RX packet reordering, and RX BA agreement management.
  */
 
-/*
-** Log: que_mgt.h
-**
-** 07 25 2014 eason.tsai
-** AOSP
-**
-** 08 23 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Reset MSDU_INFO for data packet to avoid unexpected Tx status
-** 2. Drop Tx packet to non-associated STA in driver
-**
-** 08 19 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Enable TC resource adjust feature
-** 2. Set Non-QoS data frame to TC5
-**
-** 07 26 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Reduce extra Tx frame header parsing
-** 2. Add TX port control
-** 3. Add net interface to BSS binding
-**
-** 07 18 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Update TxDesc PF bit setting rule
-** 2. Remove unnecessary QM function
-**
-** 06 25 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update for 1st connection
-**
-** 03 13 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** .
-**
-** 03 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update Tx utility function for management frame
-**
-** 01 28 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Sync CMD format
-**
-** 01 21 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update TX path based on new ucBssIndex modifications.
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 12 27 2012 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update MQM index mapping mechanism
-** 1. TID to ACI
-** 2. ACI to SW TxQ
-** 3. ACI to network TC resource
-**
-** 12 18 2012 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Page count resource management.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*
-* 08 15 2011 cp.wu
-* [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
-* add MT6628-specific definitions.
-*
-* 07 26 2011 eddie.chen
-* [WCXRP00000874] [MT5931][DRV] API for query the RX reorder queued packets counter
-* API for query the RX reorder queued packets counter.
-*
-* 06 14 2011 eddie.chen
-* [WCXRP00000753] [MT5931 Wi-Fi][DRV] Adjust QM for MT5931
-* Change the parameter for WMM pass.
-*
-* 05 31 2011 eddie.chen
-* [WCXRP00000753] [MT5931 Wi-Fi][DRV] Adjust QM for MT5931
-* Fix the QM quota in MT5931.
-*
-* 05 09 2011 eddie.chen
-* [WCXRP00000709] [MT6620 Wi-Fi][Driver] Check free number before copying broadcast packet
-* Check free number before copying broadcast packet.
-*
-* 04 14 2011 eddie.chen
-* [WCXRP00000603] [MT6620 Wi-Fi][DRV] Fix Klocwork warning
-* Check the SW RFB free. Fix the compile warning..
-*
-* 04 08 2011 eddie.chen
-* [WCXRP00000617] [MT6620 Wi-Fi][DRV/FW] Fix for sigma
-* Fix for sigma
-*
-* 03 28 2011 eddie.chen
-* [WCXRP00000602] [MT6620 Wi-Fi][DRV] Fix wmm parameters in beacon for BOW
-* Fix wmm parameters in beacon for BOW.
-*
-* 03 15 2011 eddie.chen
-* [WCXRP00000554] [MT6620 Wi-Fi][DRV] Add sw control debug counter
-* Add sw debug counter for QM.
-*
-* 02 17 2011 eddie.chen
-* [WCXRP00000458] [MT6620 Wi-Fi][Driver] BOW Concurrent - ProbeResp was exist in other channel
-* 1) Change GetFrameAction decision when BSS is absent.
-* 2) Check channel and resource in processing ProbeRequest
-*
-* 01 12 2011 eddie.chen
-* [WCXRP00000322] Add WMM IE in beacon,
-*
-*  Add per station flow control when STA is in PS
-*
-*
-* 1) Check Bss if support QoS before adding WMMIE
-* 2) Check if support prAdapter->rWifiVar QoS and uapsd in flow control
-*
-* 12 29 2010 eddie.chen
-* [WCXRP00000322] Add WMM IE in beacon,
-*
-*  Add per station flow control when STA is in PS
-*
-*
-* 1) PS flow control event
-*
-* 2) WMM IE in beacon, assoc resp, probe resp
-*
-* 12 23 2010 george.huang
-* [WCXRP00000152] [MT6620 Wi-Fi] AP mode power saving function
-* 1. update WMM IE parsing, with ASSOC REQ handling
-* 2. extend U-APSD parameter passing from driver to FW
-*
-* 10 04 2010 cp.wu
-* [WCXRP00000077] [MT6620 Wi-Fi][Driver][FW] Eliminate use of ENUM_NETWORK_TYPE_T and replaced by
-*ENUM_NETWORK_TYPE_INDEX_T only
-* remove ENUM_NETWORK_TYPE_T definitions
-*
-* 09 21 2010 kevin.huang
-* [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
-* Eliminate Linux Compile Warning
-*
-* 08 04 2010 yarco.yang
-* NULL
-* Add TX_AMPDU and ADDBA_REJECT command
-*
-* 07 22 2010 george.huang
-*
-* Update fgIsQoS information in BSS INFO by CMD
-*
-* 07 16 2010 yarco.yang
-*
-* 1. Support BSS Absence/Presence Event
-* 2. Support STA change PS mode Event
-* 3. Support BMC forwarding for AP mode.
-*
-* 07 14 2010 yarco.yang
-*
-* 1. Remove CFG_MQM_MIGRATION
-* 2. Add CMD_UPDATE_WMM_PARMS command
-*
-* 07 13 2010 yarco.yang
-*
-* [WPD00003849]
-* [MT6620 and MT5931] SW Migration, add qmGetFrameAction() API for CMD Queue Processing
-*
-* 07 09 2010 yarco.yang
-*
-* [MT6620 and MT5931] SW Migration: Add ADDBA support
-*
-* 07 08 2010 cp.wu
-*
-* [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
-*
-* 06 29 2010 yarco.yang
-* [WPD00003837][MT6620]Data Path Refine
-* replace g_rQM with Adpater->rQM
-*
-* 06 25 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* add API in que_mgt to retrieve sta-rec index for security frames.
-*
-* 06 23 2010 yarco.yang
-* [WPD00003837][MT6620]Data Path Refine
-* Merge g_arStaRec[] into adapter->arStaRec[]
-*
-* 06 21 2010 yarco.yang
-* [WPD00003837][MT6620]Data Path Refine
-* Support CFG_MQM_MIGRATION flag
-*
-* 06 18 2010 cm.chang
-* [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
-* Provide cnmMgtPktAlloc() and alloc/free function of msg/buf
-*
-* 06 08 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* add hem_mbox.c and cnm_mem.h (but disabled some feature) for further migration
-*
-* 06 06 2010 kevin.huang
-* [WPD00003832][MT6620 5931] Create driver base
-* [MT6620 5931] Create driver base
-*
-* 03 30 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Enabled adaptive TC resource control
-*
-* 03 24 2010 jeffrey.chang
-* [WPD00003826]Initial import for Linux port
-* initial import for Linux port
-*
-* 03 19 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* By default enabling dynamic STA_REC activation and decactivation
-*
-* 03 17 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Changed STA_REC index determination rules (DA=BMCAST always --> STA_REC_INDEX_BMCAST)
-*
-* 03 11 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Fixed buffer leak when processing BAR frames
-*
-* 02 25 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Enabled multi-STA TX path with fairness
-*
-* 02 24 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Enabled dynamically activating and deactivating STA_RECs
-*
-* 02 24 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Added code for dynamic activating and deactivating STA_RECs.
-*
-* 01 13 2010 tehuang.liu
-* [WPD00001943]Create WiFi test driver framework on WinXP
-* Enabled the Burst_End Indication mechanism
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-12-09 14:04:53 GMT MTK02468
-**  Added RX buffer reordering function prototypes
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-12-02 22:08:44 GMT MTK02468
-**  Added macro QM_INIT_STA_REC for initialize a STA_REC
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-11-23 21:58:43 GMT mtk02468
-**  Initial version
-**
-*/
 
 #ifndef _QUE_MGT_H
 #define _QUE_MGT_H
@@ -287,9 +94,7 @@ extern const PUINT_8 apucACI2Str[4];
 #define QM_PRINT_TC_RESOURCE_CTRL       0	/* 1: To print TC resource adjustment results */
 /* 1: If pkt with SSN is missing, auto advance the RX reordering window */
 #define QM_RX_WIN_SSN_AUTO_ADVANCING    1
-/* 1: Indicate the packets falling behind to OS before the frame with
-*  SSN is received
-*/
+/* 1: Indicate the packets falling behind to OS before the frame with SSN is received */
 #define QM_RX_INIT_FALL_BEHIND_PASS     1
 #define QM_TC_RESOURCE_EMPTY_COUNTER    1	/* 1: Count times of TC resource empty happened */
 
@@ -604,9 +409,8 @@ typedef struct _QUE_MGT_T {	/* Queue Management Control Info */
 	UINT_32 u4ExtraReservedTcResource;
 	UINT_32 u4ResidualTcResource;
 
-	/* Set to TRUE if the last TC adjustment has not been completely applied (i.e., waiting more TX-Done events
-	* to align the TC quotas to the TC resource assignment)
-	*/
+	/* Set to TRUE if the last TC adjustment has not been completely applied (i.e., waiting more TX-Done events */
+	/* to align the TC quotas to the TC resource assignment) */
 	BOOLEAN fgTcResourcePostAnnealing;
 
 #if QM_FAST_TC_RESOURCE_CTRL

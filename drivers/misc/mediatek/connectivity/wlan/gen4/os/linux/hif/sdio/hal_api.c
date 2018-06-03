@@ -1,4 +1,55 @@
 /******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
+/******************************************************************************
 *[File]             hif_api.c
 *[Version]          v1.0
 *[Revision Date]    2015-09-08
@@ -259,7 +310,10 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	BOOLEAN fgTimeout;
 	BOOLEAN fgResult;
 	BOOLEAN fgReady = FALSE;
+#if CFG_SUPPORT_LOW_POWER_DEBUG
 	UINT_32 u4MailBoxStatus0 = 0, u4MailBoxStatus1 = 0;
+	UINT_32 u4Data = 0;
+#endif
 
 	ASSERT(prAdapter);
 
@@ -280,28 +334,40 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
 
-		/* For driver own back fail debug,  get mailbox and current PC value */
-#if 0
-		nicGetMailbox(prAdapter, 0, &u4Status);
-		DBGLOG(INIT, INFO, "mailbox status=0x%08x\n", u4Status);
-		HAL_MCR_RD(prAdapter, 0x0154, &u4Status);
-		DBGLOG(INIT, INFO, "status=0x%08x\n", u4Status);
+#if CFG_SUPPORT_LOW_POWER_DEBUG
+		/* For driver own back fail debug,  get current PC value */
+		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
+		DBGLOG(INIT, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
 #endif
 		if (fgResult) {
 			prAdapter->fgIsFwOwn = FALSE;
 			prAdapter->u4OwnFailedCount = 0;
 			prAdapter->u4OwnFailedLogCount = 0;
+
+			if (nicSerIsOperating(prAdapter)) {
+				/* SER is done, start Tx/Rx */
+				nicSerStartTxRx(prAdapter);
+			}
+
+#if CFG_SUPPORT_LOW_POWER_DEBUG
+			/* For Low power debug, get mailbox value */
+			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
+			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
+			DBGLOG(INIT, INFO, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+			halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
+#endif
 			break;
 		} else if ((i > LP_OWN_BACK_FAILED_RETRY_CNT) &&
 			   (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
 			    || wlanIsChipNoAck(prAdapter))) {
 
-			/* Get Chip debug CR status */
+#if CFG_SUPPORT_LOW_POWER_DEBUG
+			/* For driver own back fail debug,  get current PC value */
 			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
 			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-			DBGLOG(HAL, INFO, "DBG 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+			DBGLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
 			halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
-
+#endif
 			if ((prAdapter->u4OwnFailedCount == 0) ||
 			    CHECK_FOR_TIMEOUT(u4CurrTick, prAdapter->rLastOwnFailedLogTime,
 					      MSEC_TO_SYSTIME(LP_OWN_BACK_FAILED_LOG_SKIP_MS))) {
@@ -405,8 +471,8 @@ VOID halSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 	if (prAdapter->fgIsFwOwn == TRUE)
 		return;
 
-	if (nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) {
-		DBGLOG(INIT, STATE, "FW OWN Failed due to pending INT\n");
+	if ((nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) && !nicSerIsOperating(prAdapter)) {
+		DBGLOG(INIT, STATE, "FW OWN Skipped due to pending INT\n");
 		/* pending interrupts */
 		return;
 	}
@@ -444,6 +510,11 @@ VOID halWakeUpWiFi(IN P_ADAPTER_T prAdapter)
 		prAdapter->fgIsFwOwn = FALSE;
 	else
 		HAL_LP_OWN_CLR(prAdapter, &fgResult);
+
+#if CFG_SUPPORT_LOW_POWER_DEBUG
+	/* Polling MCU programming counter */
+	halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
+#endif
 }
 
 VOID halDevInit(IN P_ADAPTER_T prAdapter)
@@ -799,7 +870,7 @@ VOID halProcessTxInterrupt(IN P_ADAPTER_T prAdapter)
 
 	prSDIOCtrl = prAdapter->prGlueInfo->rHifInfo.prSDIOCtrl;
 #if DBG
-	/* dumpMemory8((PUINT_8)prSDIOCtrl, sizeof(SDIO_CTRL_T)); */
+	/* DBGLOG_MEM8(RX, TRACE, (PUINT_8)prSDIOCtrl, sizeof(SDIO_CTRL_T)); */
 #endif
 
 	halTxInterruptSanityCheck(prAdapter, (PUINT_16)&prSDIOCtrl->rTxInfo);
@@ -1393,7 +1464,7 @@ UINT_32 halDumpHifStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32
 		DIV2INT(prStatCnt->u4RxDataCpTime, prStatCnt->u4PktReadCnt[0]),
 		DIV2DEC(prStatCnt->u4RxDataCpTime, prStatCnt->u4PktReadCnt[0]),
 		DIV2INT(prStatCnt->u4PortReadTime, prStatCnt->u4PortReadCnt[0]),
-		DIV2DEC(prStatCnt->u4RxDataCpTime, prStatCnt->u4PktReadCnt[0]));
+		DIV2DEC(prStatCnt->u4PortReadTime, prStatCnt->u4PortReadCnt[0]));
 
 	LOGBUF(pucBuf, u4Max, u4Len, "INT rd_sts/sts[%u.%uus] tx_sts/sts[%u.%uus]\n",
 		DIV2INT(prStatCnt->u4IntReadTime, prStatCnt->u4IntReadCnt),
@@ -1664,6 +1735,11 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 #endif
 	}
 
+	if (u4IntrBits & SER_SDIO_N9_HOST_STOP_TX_RX_OP) {
+		/* Stop HIF Tx/Rx operation */
+		nicSerStopTxRx(prAdapter);
+	}
+
 	DBGLOG(REQ, WARN, "u4IntrBits: 0x%lx\n", u4IntrBits);
 
 } /* end of halProcessSoftwareInterrupt() */
@@ -1869,7 +1945,7 @@ VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 
 	for (u4Loop = 0; u4Loop < u4LoopCount; u4Loop++) {
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(HAL, INFO, "SWPCDBGR 0x%08X\n", u4Data);
+		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
 	}
 }
 

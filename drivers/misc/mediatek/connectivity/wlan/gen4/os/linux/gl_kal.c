@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/gl_kal.c#10
 */
@@ -9,820 +60,6 @@
 *    driver stack.
 */
 
-/*
-** Log: gl_kal.c
-**
-** 11 05 2014 eason.tsai
-** [ALPS01728937] [Need Patch] [Volunteer Patch] MET support
-** revise destination port to src port for MET
-**
-** 09 16 2014 eason.tsai
-** [ALPS01728937] [Need Patch] [Volunteer Patch] MET support
-** MET support
-**
-** 03 12 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** revise for cfg80211 disconnect because of timeout
-**
-** 01 15 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** Merging
-**
-**	//ALPS_SW/DEV/ALPS.JB2.MT6630.DEV/alps/mediatek/kernel/drivers/combo/drv_wlan/mt6630/wlan/...
-**
-*	to //ALPS_SW/TRUNK/KK/alps/mediatek/kernel/drivers/combo/drv_wlan/mt6630/wlan/...
-**
-** 12 27 2013 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** update code for ICAP & nvram
-**
-** 08 12 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. fix on cancel_remain_on_channel() interface
-** 2. queue initialization for another linux kal API
-**
-** 08 09 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** 1. integrate scheduled scan functionality
-** 2. condition compilation for linux-3.4 & linux-3.8 compatibility
-** 3. correct CMD queue access to reduce lock scope
-**
-** 08 09 2013 bruce.kang
-** [BORA00002740] [MT6630 Wi-Fi][Driver]
-** Solve the recursive lock problem when clearing CMD queue.
-**
-** 08 09 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add new input parameter, Tx done status, for wlanReleaseCommand()
-**
-** 07 31 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Fix NetDev binding issue
-**
-** 07 29 2013 cp.wu
-** [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
-** Preparation for porting remain_on_channel support
-**
-** 07 26 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Set NoACK to BMC packet
-** 2. Add kalGetEthAddr function for Tx frame
-** 3. Update RxIndicatePackets
-**
-** 07 25 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Sync the MT6628 MP code which make sure the BSS include at
-** connection result, to let the sme_state become connected
-**
-** 07 23 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. build success for win32 port
-** 2. add SDIO test read/write pattern for HQA tests (default off)
-**
-** 07 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Avoid large packet Tx issue
-**
-** 07 04 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update for 1st Connection.
-**
-** 06 19 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update for 1st connection. Set TC4 default resource value for FW_DL cmd
-**
-** 03 13 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** .
-**
-** 03 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update Tx utility function for management frame
-**
-** 03 05 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** always set values before calling complete()
-**
-** 02 01 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. eliminate MT5931/MT6620/MT6628 logic
-** 2. add firmware download control sequence
-**
-** 01 23 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modify AIS behavior: stop join trial if failed
-**
-** 01 23 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Refine net dev implementation
-**
-** 01 21 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update TX path based on new ucBssIndex modifications.
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 09 04 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** sync for NVRAM warning scan result generation for CFG80211.
-**
-** 08 30 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** check pending scan only by the pointer instead of fgIsRegistered flag.
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
-**
-** 08 24 2012 yuche.tsai
-** NULL
-** Fix bug of invitation request.
-**
-** 08 20 2012 yuche.tsai
-** NULL
-** Try to fix frame register KE issue.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Let netdev bring up.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 05 31 2012 terry.wu
- * NULL
- * .
- *
- * 03 26 2012 cp.wu
- * [WCXRP00001187] [MT6620 Wi-Fi][Driver][Android] Add error handling while firmware image doesn't exist
- * invoke put_cred() after get_current_cred() calls.
- *
- * 03 07 2012 yuche.tsai
- * NULL
- * Fix compile error when WiFi Direct is off.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Snc CFG80211 modification for ICS migration from branch 2.2.
- *
- * 02 20 2012 cp.wu
- * [WCXRP00001187] [MT6620 Wi-Fi][Driver][Android] Add error handling while firmware image doesn't exist
- * do not need to invoke free() while firmware image file doesn't exist
- *
- * 01 05 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the related ioctl / wlan oid function to set the Tx power cfg.
- *
- * 01 02 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the proto type function for set_int set_tx_power and get int get_ch_list.
- *
- * 11 21 2011 cp.wu
- * [WCXRP00001118] [MT6620 Wi-Fi][Driver] Corner case protections to pass Monkey testing
- * 1. wlanoidQueryBssIdList might be passed with a non-zero length but a NULL pointer of buffer
- * add more checking for such cases
- *
- * 2. kalSendComplete() might be invoked with a packet belongs to P2P network right after P2P is unregistered.
- * add some tweaking to protect such cases because that net device has become invalid.
- *
- * 11 18 2011 yuche.tsai
- * NULL
- * CONFIG P2P support RSSI query, default turned off.
- *
- * 11 16 2011 yuche.tsai
- * NULL
- * Avoid using work thread.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 09 23 2011 yuche.tsai
- * [WCXRP00000998] [Volunteer Patch][WiFi Direct][FW] P2P Social Channel & country domain issue
- * Regulation domain feature check in.
- *
- * 08 12 2011 cp.wu
- * [WCXRP00000913] [MT6620 Wi-Fi] create repository of source code dedicated for MT6620 E6 ASIC
- * load WIFI_RAM_CODE_E6 for MT6620 E6 ASIC.
- *
- * 07 18 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000612] [MT6620 Wi-Fi] [FW] CSD update SWRDD algorithm
- * Add CMD/Event for RDD and BWCS.
- *
- * 06 13 2011 eddie.chen
- * [WCXRP00000779] [MT6620 Wi-Fi][DRV]  Add tx rx statistics in linux and use netif_rx_ni
- * Add tx rx statistics and netif_rx_ni.
- *
- * 04 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add BOW short range mode.
- *
- * 04 12 2011 cp.wu
- * [WCXRP00000635] [MT6620 Wi-Fi][Driver] Clear pending security frames when QM clear pending data frames for dedicated
- * network type
- * clear pending security frames for dedicated network type when BSS is being deactivated/disconnected
- *
- * 04 08 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * correct i4TxPendingFrameNum decreasing.
- *
- * 03 23 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * apply multi-queue operation only for linux kernel > 2.6.26
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * portability for compatible with linux 2.6.12.
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * improve portability for awareness of early version of linux kernel and wireless extension.
- *
- * 03 18 2011 cp.wu
- * [WCXRP00000562] [MT6620 Wi-Fi][Driver] I/O buffer pre-allocation to avoid physically continuous memory shortage
- * after system running for a long period
- * refix ...
- *
- * 03 18 2011 cp.wu
- * [WCXRP00000562] [MT6620 Wi-Fi][Driver] I/O buffer pre-allocation to avoid physically continuous memory shortage
- * after system running for a long period
- * correct compiling warning/error.
- *
- * 03 18 2011 cp.wu
- * [WCXRP00000562] [MT6620 Wi-Fi][Driver] I/O buffer pre-allocation to avoid physically continuous memory shortage
- * after system running for a long period
- * add more robust fault tolerance design when pre-allocation failed. (rarely happen)
- *
- * 03 17 2011 cp.wu
- * [WCXRP00000562] [MT6620 Wi-Fi][Driver] I/O buffer pre-allocation to avoid physically continuous memory shortage
- * after system running for a long period
- * use pre-allocated buffer for storing enhanced interrupt response as well
- *
- * 03 16 2011 cp.wu
- * [WCXRP00000562] [MT6620 Wi-Fi][Driver] I/O buffer pre-allocation to avoid physically continuous memory shortage
- * after system running for a long period
- * 1. pre-allocate physical continuous buffer while module is being loaded
- * 2. use pre-allocated physical continuous buffer for TX/RX DMA transfer
- *
- * The windows part remained the same as before, but added similar APIs to hide the difference.
- *
- * 03 15 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into a single one to reduce physically continuous
- * memory consumption
- * 1. deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK
- * 2. Use common coalescing buffer for both TX/RX directions
- *
- *
- * 03 14 2011 jeffrey.chang
- * [WCXRP00000546] [MT6620 Wi-Fi][MT6620 Wi-Fi][Driver] fix kernel build warning message
- * fix kernel build warning message
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 03 06 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Sync BOW Driver to latest person development branch version..
- *
- * 03 03 2011 jeffrey.chang
- * [WCXRP00000512] [MT6620 Wi-Fi][Driver] modify the net device relative functions to support the H/W multiple queue
- * support concurrent network
- *
- * 03 03 2011 jeffrey.chang
- * [WCXRP00000512] [MT6620 Wi-Fi][Driver] modify the net device relative functions to support the H/W multiple queue
- * modify net device relative functions to support multiple H/W queues
- *
- * 03 02 2011 cp.wu
- * [WCXRP00000503] [MT6620 Wi-Fi][Driver] Take RCPI brought by association response as initial RSSI right after
- * connection is built.
- * use RCPI brought by ASSOC-RESP after connection is built as initial RCPI to avoid using a uninitialized MAC-RX RCPI.
- *
- * 02 21 2011 cp.wu
- * [WCXRP00000482] [MT6620 Wi-Fi][Driver] Simplify logic for checking NVRAM existence in driver domain
- * simplify logic for checking NVRAM existence only once.
- *
- * 01 24 2011 cp.wu
- * [WCXRP00000382] [MT6620 Wi-Fi][Driver] Track forwarding packet number with notifying tx thread for serving
- * 1. add an extra counter for tracking pending forward frames.
- * 2. notify TX service thread as well when there is pending forward frame
- * 3. correct build errors leaded by introduction of Wi-Fi direct separation module
- *
- * 01 19 2011 cp.wu
- * [WCXRP00000371] [MT6620 Wi-Fi][Driver] make linux glue layer portable for Android 2.3.1 with Linux 2.6.35.7
- * add compile option to check linux version 2.6.35 for different usage of system API to improve portability
- *
- * 01 12 2011 cp.wu
- * [WCXRP00000357] [MT6620 Wi-Fi][Driver][Bluetooth over Wi-Fi] add another net device interface for BT AMP
- * implementation of separate BT_OVER_WIFI data path.
- *
- * 01 10 2011 cp.wu
- * [WCXRP00000349] [MT6620 Wi-Fi][Driver] make kalIoctl() of linux port as a thread safe API to avoid potential issues
- * due to multiple access
- * use mutex to protect kalIoctl() for thread safe.
- *
- * 11 26 2010 cp.wu
- * [WCXRP00000209] [MT6620 Wi-Fi][Driver] Modify NVRAM checking mechanism to warning only with necessary data field
- * checking
- * 1. NVRAM error is now treated as warning only, thus normal operation is still available but extra scan result used
- * to indicate user is attached
- * 2. DPD and TX-PWR are needed fields from now on, if these 2 fields are not available then warning message is shown
- *
- * 11 04 2010 wh.su
- * [WCXRP00000164] [MT6620 Wi-Fi][Driver] Support the p2p random SSID
- * adding the p2p random ssid support.
- *
- * 11 02 2010 jeffrey.chang
- * [WCXRP00000145] [MT6620 Wi-Fi][Driver] fix issue of byte endian in packet classifier which discards BoW packets
- * .
- *
- * 11 01 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check[WCXRP00000150] [MT6620 Wi-Fi][Driver]
- * Add implementation for querying current TX rate from firmware auto rate module
- * 1) Query link speed (TX rate) from firmware directly with buffering mechanism to reduce overhead
- * 2) Remove CNM CH-RECOVER event handling
- * 3) cfg read/write API renamed with kal prefix for unified naming rules.
- *
- * 11 01 2010 yarco.yang
- * [WCXRP00000149] [MT6620 WI-Fi][Driver]Fine tune performance on MT6516 platform
- * Add code to run WlanIST in SDIO callback.
- *
- * 10 26 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check[WCXRP00000137] [MT6620 Wi-Fi] [FW]
- * Support NIC capability query command
- * 1) update NVRAM content template to ver 1.02
- * 2) add compile option for querying NIC capability (default: off)
- * 3) modify AIS 5GHz support to run-time option, which could be turned on by registry or NVRAM setting
- * 4) correct auto-rate compiler error under linux (treat warning as error)
- * 5) simplify usage of NVRAM and REG_INFO_T
- * 6) add version checking between driver and firmware
- *
- * 10 25 2010 jeffrey.chang
- * [WCXRP00000129] [MT6620] [Driver] Kernel panic when rmmod module on Andriod platform
- * Remove redundant code which cause mismatch of power control release
- *
- * 10 25 2010 jeffrey.chang
- * [WCXRP00000129] [MT6620] [Driver] Kernel panic when rmmod module on Andriod platform
- * Remove redundant GLUE_HALT condfition to avoid unmatched release of power control
- *
- * 10 18 2010 jeffrey.chang
- * [WCXRP00000116] [MT6620 Wi-Fi][Driver] Refine the set_scan ioctl to resolve the Android UI hanging issue
- * refine the scan ioctl to prevent hanging of Android UI
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check[WCXRP00000086] [MT6620 Wi-Fi][Driver]
- * The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 10 06 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * if there is NVRAM, then use MAC address on NVRAM as default MAC address.
- *
- * 10 06 2010 cp.wu
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * code reorganization to improve isolation between GLUE and CORE layers.
- *
- * 10 05 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * 1) add NVRAM access API
- * 2) fake scanning result when NVRAM doesn't exist and/or version mismatch. (off by compiler option)
- * 3) add OID implementation for NVRAM read/write service
- *
- * 09 21 2010 cp.wu
- * [WCXRP00000053] [MT6620 Wi-Fi][Driver] Reset incomplete and might leads to BSOD when entering RF test with AIS
- * associated
- * Do a complete reset with STA-REC null checking for RF test re-entry
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * Eliminate Linux Compile Warning
- *
- * 09 07 2010 wh.su
- * NULL
- * adding the code for beacon/probe req/ probe rsp wsc ie at p2p.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 30 2010 cp.wu
- * NULL
- * API added: nicTxPendingPackets(), for simplifying porting layer
- *
- * 08 20 2010 yuche.tsai
- * NULL
- * Support second interface indicate when enabling P2P.
- *
- * 08 18 2010 yarco.yang
- * NULL
- * 1. Fixed HW checksum offload function not work under Linux issue.
- * 2. Add debug message.
- *
- * 08 16 2010 jeffrey.chang
- * NULL
- * remove redundant code which cause kernel panic
- *
- * 08 16 2010 cp.wu
- * NULL
- * P2P packets are now marked when being queued into driver, and identified later without checking MAC address
- *
- * 08 02 2010 jeffrey.chang
- * NULL
- * 1) modify tx service thread to avoid busy looping
- * 2) add spin lock declartion for linux build
- *
- * 07 29 2010 cp.wu
- * NULL
- * simplify post-handling after TX_DONE interrupt is handled.
- *
- * 07 28 2010 jeffrey.chang
- * NULL
- * 1) remove unused spinlocks
- * 2) enable encyption ioctls
- * 3) fix scan ioctl which may cause supplicant to hang
- *
- * 07 23 2010 cp.wu
- *
- * 1) re-enable AIS-FSM beacon timeout handling.
- * 2) scan done API revised
- *
- * 07 23 2010 jeffrey.chang
- *
- * add new KAL api
- *
- * 07 23 2010 jeffrey.chang
- *
- * bug fix: allocate regInfo when disabling firmware download
- *
- * 07 23 2010 jeffrey.chang
- *
- * use glue layer api to decrease or increase counter atomically
- *
- * 07 22 2010 jeffrey.chang
- *
- * modify tx thread and remove some spinlock
- *
- * 07 22 2010 jeffrey.chang
- *
- * use different spin lock for security frame
- *
- * 07 22 2010 jeffrey.chang
- *
- * add new spinlock
- *
- * 07 19 2010 jeffrey.chang
- *
- * add spinlock for pending security frame count
- *
- * 07 19 2010 jeffrey.chang
- *
- * adjust the timer unit to microsecond
- *
- * 07 19 2010 jeffrey.chang
- *
- * timer should return value greater than zero
- *
- * 07 19 2010 jeffrey.chang
- *
- * add kal api for scanning done
- *
- * 07 19 2010 jeffrey.chang
- *
- * modify cmd/data path for new design
- *
- * 07 19 2010 jeffrey.chang
- *
- * add new kal api
- *
- * 07 19 2010 jeffrey.chang
- *
- * for linux driver migration
- *
- * 07 19 2010 jeffrey.chang
- *
- * Linux port modification
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 23 2010 yarco.yang
- * [WPD00003837][MT6620]Data Path Refine
- * Merge g_arStaRec[] into adapter->arStaRec[]
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * change MAC address updating logic.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 06 01 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * remove unused files.
- *
- * 05 29 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix private ioctl for rftest
- *
- * 05 29 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * workaround for fixing request_firmware() failure on android 2.1
- *
- * 05 28 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix kernel panic when debug mode enabled
- *
- * 05 26 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * 1) Modify set mac address code
- * 2) remove power management macro
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * 1) add timeout handler mechanism for pending command packets
- * 2) add p2p add/removal key
- *
- * 05 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Disable network interface after disassociation
- *
- * 05 10 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * fill network type field while doing frame identification.
- *
- * 05 07 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * prevent supplicant accessing driver during resume
- *
- * 04 27 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * identify BT Over Wi-Fi Security frame and mark it as 802.1X frame
- *
- * 04 27 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * 1) fix firmware download bug
- * 2) remove query statistics for acelerating firmware download
- *
- * 04 27 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * follow Linux's firmware framework, and remove unused kal API
- *
- * 04 22 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- *
- * 1) modify rx path code for supporting Wi-Fi direct
- * 2) modify config.h since Linux dont need to consider retaining packet
- *
- * 04 21 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add for private ioctl support
- *
- * 04 15 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * change firmware name
- *
- * 04 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * flush pending TX packets while unloading driver
- *
- * 04 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Set driver own before handling cmd queue
- *
- * 04 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * 1) prGlueInfo->pvInformationBuffer and prGlueInfo->u4InformationBufferLength are no longer used
- * 2) fix ioctl
- *
- * 04 14 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * information buffer for query oid/ioctl is now buffered in prCmdInfo
- *  *  *  *  *  *  * instead of glue-layer variable to improve multiple oid/ioctl capability
- *
- * 04 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add framework for BT-over-Wi-Fi support.
- *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * 1) prPendingCmdInfo is replaced by queue for multiple handler
- *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *    capability
- *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * 2) command sequence number is now increased atomically
- *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  * 3) private data could be hold and taken use for other purpose
- *
- * 04 09 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix spinlock usage
- *
- * 04 09 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add spinlock for i4TxPendingFrameNum access
- *
- * 04 09 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * 1) add spinlock
- *  * 2) add KAPI for handling association info
- *
- * 04 09 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix spinlock usage
- *
- * 04 09 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * adding firmware download KAPI
- *
- * 04 07 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Set MAC address from firmware
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. free cmdinfo after command is emiited.
- * 2. for BoW frames, user priority is extracted from sk_buff directly.
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * finish non-glue layer access to glue variables
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * accessing to firmware load/start address, and access to OID handling information
- *  *  * are now handled in glue layer
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * rWlanInfo should be placed at adapter rather than glue due to most operations
- *  *  *  *  *  *  * are done in adapter layer.
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access to prGlueInfo->eParamMediaStateIndicated from non-glue layer
- *
- * 04 06 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * (1)deliver the kalOidComplete status to upper layer
- * (2) fix spin lock
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * add KAL API: kalFlushPendingTxPackets(), and take use of the API
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access to prGlueInfo->rWlanInfo.eLinkAttr.ucMediaStreamMode from non-glue layer.
- *
- * 04 06 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add timeout check in the kalOidComplete
- *
- * 04 06 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * improve none-glue code portability
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * code refine: fgTestMode should be at adapter rather than glue due to the device/fw is also involved
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access for prGlueInfo->fgIsCardRemoved in non-glue layer
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) for some OID, never do timeout expiration
- *  *  * 2) add 2 kal API for later integration
- *
- * 04 06 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * raising the priority of processing interrupt
- *
- * 04 01 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Bug fix: the tx thread will cause starvation of MMC thread, and the interrupt will never come in
- *
- * 03 30 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * emulate NDIS Pending OID facility
- *
- * 03 28 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * adding secondary command queue for improving non-glue code portability
- *
- * 03 26 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * [WPD00003826] Initial import for Linux port
- * adding firmware download kal api
- *
- * 03 25 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add Bluetooth-over-Wifi frame header check
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\50 2009-09-28 20:19:08 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\49 2009-08-18 22:56:44 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\48 2009-06-23 23:18:58 GMT mtk01090
-**  Add build option BUILD_USE_EEPROM and compile option CFG_SUPPORT_EXT_CONFIG for NVRAM support
-**  \main\maintrunk.MT5921\47 2008-11-19 11:55:43 GMT mtk01088
-**  fixed some lint warning, and rename some variable with pre-fix to avoid the misunderstanding
-**  \main\maintrunk.MT5921\46 2008-09-02 21:07:42 GMT mtk01461
-**  Remove ASSERT(pvBuf) in kalIndicateStatusAndComplete(), this parameter can be NULL
-**  \main\maintrunk.MT5921\45 2008-08-29 16:03:21 GMT mtk01088
-**  remove non-used code for code review, add assert check
-**  \main\maintrunk.MT5921\44 2008-08-21 00:32:49 GMT mtk01461
-**  \main\maintrunk.MT5921\43 2008-05-30 20:27:02 GMT mtk01461
-**  Rename KAL function
-**  \main\maintrunk.MT5921\42 2008-05-30 15:47:29 GMT mtk01461
-**  \main\maintrunk.MT5921\41 2008-05-30 15:13:04 GMT mtk01084
-**  rename wlanoid
-**  \main\maintrunk.MT5921\40 2008-05-29 14:15:14 GMT mtk01084
-**  remove un-used KAL function
-**  \main\maintrunk.MT5921\39 2008-05-03 15:17:30 GMT mtk01461
-**  Move Query Media Status to GLUE
-**  \main\maintrunk.MT5921\38 2008-04-24 11:59:44 GMT mtk01461
-**  change awake queue threshold and remove code which mark #if 0
-**  \main\maintrunk.MT5921\37 2008-04-17 23:06:35 GMT mtk01461
-**  Add iwpriv support for AdHocMode setting
-**  \main\maintrunk.MT5921\36 2008-04-08 15:38:56 GMT mtk01084
-**  add KAL function to setting pattern search function enable/ disable
-**  \main\maintrunk.MT5921\35 2008-04-01 23:53:13 GMT mtk01461
-**  Add comment
-**  \main\maintrunk.MT5921\34 2008-03-26 15:36:48 GMT mtk01461
-**  Add update MAC Address for Linux
-**  \main\maintrunk.MT5921\33 2008-03-18 11:49:34 GMT mtk01084
-**  update function for initial value access
-**  \main\maintrunk.MT5921\32 2008-03-18 10:25:22 GMT mtk01088
-**  use kal update associate request at linux
-**  \main\maintrunk.MT5921\31 2008-03-06 23:43:08 GMT mtk01385
-**   1. add Query Registry Mac address function.
-**  \main\maintrunk.MT5921\30 2008-02-26 09:47:57 GMT mtk01084
-**  modify KAL set network address/ checksum offload part
-**  \main\maintrunk.MT5921\29 2008-02-12 23:26:53 GMT mtk01461
-**  Add debug option - Packet Order for Linux
-**  \main\maintrunk.MT5921\28 2008-01-09 17:54:43 GMT mtk01084
-**  modify the argument of kalQueryPacketInfo()
-**  \main\maintrunk.MT5921\27 2007-12-24 16:02:03 GMT mtk01425
-**  1. Revise csum offload
-**  \main\maintrunk.MT5921\26 2007-11-30 17:03:36 GMT mtk01425
-**  1. Fix bugs
-**
-**  \main\maintrunk.MT5921\25 2007-11-29 01:57:17 GMT mtk01461
-**  Fix Windows RX multiple packet retain problem
-**  \main\maintrunk.MT5921\24 2007-11-20 11:24:07 GMT mtk01088
-**  <workaround> CR90, not doing the netif_carrier_off to let supplicant 1x pkt can be rcv at hardstattXmit
-**  \main\maintrunk.MT5921\23 2007-11-09 16:36:44 GMT mtk01425
-**  1. Modify for CSUM offloading with Tx Fragment
-**  \main\maintrunk.MT5921\22 2007-11-07 18:37:39 GMT mtk01461
-**  Add Tx Fragmentation Support
-**  \main\maintrunk.MT5921\21 2007-11-06 19:34:06 GMT mtk01088
-**  add the WPS code, indicate the mgmt frame to upper layer
-**  \main\maintrunk.MT5921\20 2007-11-02 01:03:21 GMT mtk01461
-**  Unify TX Path for Normal and IBSS Power Save + IBSS neighbor learning
-**  \main\maintrunk.MT5921\19 2007-10-30 11:59:38 GMT MTK01425
-**  1. Update wlanQueryInformation
-**  \main\maintrunk.MT5921\18 2007-10-30 10:44:57 GMT mtk01425
-**  1. Refine multicast list code
-**  2. Refine TCP/IP csum offload code
-**
-** Revision 1.5  2007/07/17 13:01:18  MTK01088
-** add associate req and rsp function
-**
-** Revision 1.4  2007/07/13 05:19:19  MTK01084
-** provide timer set functions
-**
-** Revision 1.3  2007/06/27 02:18:51  MTK01461
-** Update SCAN_FSM, Initial(Can Load Module), Proc(Can do Reg R/W), TX API
-**
-** Revision 1.2  2007/06/25 06:16:24  MTK01461
-** Update illustrations, gl_init.c, gl_kal.c, gl_kal.h, gl_os.h and RX API
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -885,7 +122,7 @@ static UINT_32 pvIoBufferUsage;
 */
 #if CFG_ENABLE_FW_DOWNLOAD
 
-#if defined(CONFIG_UIDGID_STRICT_TYPE_CHECKS)
+#if (defined(CONFIG_UIDGID_STRICT_TYPE_CHECKS) || (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)))
 #define  KUIDT_VALUE(v) v.val
 #define  KGIDT_VALUE(v) v.val
 #else
@@ -903,6 +140,7 @@ static PUINT_8 apucFwName[] = {
 };
 
 static PUINT_8 apucCr4FwName[] = {
+	(PUINT_8) CFG_CR4_FW_FILENAME "_" HIF_NAME "_MT",
 	(PUINT_8) CFG_CR4_FW_FILENAME "_MT",
 	NULL
 };
@@ -960,7 +198,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo, IN PPUINT_8 apucNameTab
 		ret = request_firmware(&fw_entry, apucNameTable[ucNameIdx], prGlueInfo->prDev);
 
 		if (ret) {
-			DBGLOG(INIT, ERROR, "Request FW image: %s failed, errno[%d]\n",
+			DBGLOG(INIT, TRACE, "Request FW image: %s failed, errno[%d]\n",
 			       apucNameTable[ucNameIdx], fgResult);
 			continue;
 		} else {
@@ -1067,26 +305,26 @@ PPUINT_8 apucName, PUINT_8 pucNameIdx, UINT_8 ucMaxNameIdx)
 
 	for (sub_idx = 0; apucNameTable[sub_idx]; sub_idx++) {
 		if ((*pucNameIdx + 3) < ucMaxNameIdx) {
-			/* Type 1. WIFI_RAM_CODE_MTxxxx */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
-					apucNameTable[sub_idx], chip_id);
-			(*pucNameIdx) += 1;
-
-			/* Type 2. WIFI_RAM_CODE_MTxxxx.bin */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
-					apucNameTable[sub_idx], chip_id);
-			(*pucNameIdx) += 1;
-
-			/* Type 3. WIFI_RAM_CODE_MTxxxx_Ex */
+			/* Type 1. WIFI_RAM_CODE_MTxxxx_Ex */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
 			(*pucNameIdx) += 1;
 
-			/* Type 4. WIFI_RAM_CODE_MTxxxx_Ex.bin */
+			/* Type 2. WIFI_RAM_CODE_MTxxxx_Ex.bin */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u.bin",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
+			(*pucNameIdx) += 1;
+
+			/* Type 3. WIFI_RAM_CODE_MTxxxx */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
+					apucNameTable[sub_idx], chip_id);
+			(*pucNameIdx) += 1;
+
+			/* Type 4. WIFI_RAM_CODE_MTxxxx.bin */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
+					apucNameTable[sub_idx], chip_id);
 			(*pucNameIdx) += 1;
 		} else {
 			/* the table is not large enough */
@@ -1452,7 +690,7 @@ VOID kalUpdateRxCSUMOffloadParam(IN PVOID pvPacket, IN ENUM_CSUM_RESULT_T aeCSUM
 /*----------------------------------------------------------------------------*/
 VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 {
-	dev_kfree_skb((struct sk_buff *)pvPacket);
+	kfree_skb((struct sk_buff *)pvPacket);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1468,7 +706,7 @@ VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 /*----------------------------------------------------------------------------*/
 PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PUINT_8 *ppucData)
 {
-	struct sk_buff *prSkb = dev_alloc_skb(u4Size);
+	struct sk_buff *prSkb = alloc_skb(u4Size, GFP_KERNEL);
 
 	if (prSkb) {
 		*ppucData = (PUINT_8) (prSkb->data);
@@ -1783,6 +1021,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 					     (&(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo)))->prTargetBssDesc;
 
 				if (prBssDesc != NULL) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo),
 								prChannel,
 								CFG80211_BSS_FTYPE_PRESP,
@@ -1794,6 +1033,16 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 								prBssDesc->u2IELength,	/* IE Length */
 								RCPI_TO_dBm(prBssDesc->ucRCPI) * 100,	/* MBM */
 								GFP_KERNEL);
+#else
+					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo), prChannel,
+								  arBssid, 0,	/* TSF */
+								  WLAN_CAPABILITY_ESS,
+								  prBssDesc->u2BeaconInterval,	/* beacon interval */
+								  prBssDesc->aucIEBuf,	/* IE */
+								  prBssDesc->u2IELength,	/* IE Length */
+								  RCPI_TO_dBm(prBssDesc->ucRCPI) * 100,	/* MBM */
+								  GFP_KERNEL);
+#endif
 				}
 			}
 			/* CFG80211 Indication */
@@ -1846,18 +1095,43 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 #endif
 
 		netif_carrier_off(prGlueInfo->prDevHandler);
-
 		if (prGlueInfo->fgIsRegistered == TRUE) {
 			P_BSS_INFO_T prBssInfo = prGlueInfo->prAdapter->prAisBssInfo;
 			UINT_16 u2DeauthReason = 0;
+#if CFG_WPS_DISCONNECT
 
 			if (prBssInfo)
 				u2DeauthReason = prBssInfo->u2DeauthReason;
 			/* CFG80211 Indication */
+			DBGLOG(INIT, INFO, "[wifi]Indicate disconnection: Locally[%d]\n",
+						(eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY));
 			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
-				eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY ? true : false,
-				GFP_KERNEL);
+						eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY,
+						GFP_KERNEL);
+
+#else
+
+#ifdef CONFIG_ANDROID
+#if LINUX_VERSION_CODE == KERNEL_VERSION(3, 10, 0)
+			/* Don't indicate disconnection to upper layer for ANDROID kernel 3.10 */
+			/* since cfg80211 will indicate disconnection to wpa_supplicant for this kernel */
+			if (eStatus == WLAN_STATUS_MEDIA_DISCONNECT)
+#endif
+#endif
+			{
+
+
+				if (prBssInfo)
+					u2DeauthReason = prBssInfo->u2DeauthReason;
+				/* CFG80211 Indication */
+				cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
+							GFP_KERNEL);
+			}
+
+
+#endif
 		}
+
 
 		prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 
@@ -2285,6 +1559,8 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	UINT_8 ucBssIndex = 0;
 	BOOLEAN fgIsValidDevice = TRUE;
 
+	GLUE_SPIN_LOCK_DECLARATION();
+
 	ASSERT(pvPacket);
 	/* ASSERT(prGlueInfo->i4TxPendingFrameNum); */
 
@@ -2293,18 +1569,6 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	ASSERT(u2QueueIdx < CFG_MAX_TXQ_NUM);
 
 	ucBssIndex = GLUE_GET_PKT_BSS_IDX(pvPacket);
-
-#if CFG_ENABLE_WIFI_DIRECT
-	{
-		P_BSS_INFO_T prBssInfo = GET_BSS_INFO_BY_INDEX(prGlueInfo->prAdapter, ucBssIndex);
-
-		/* in case packet was sent after P2P device is unregistered */
-		if ((prBssInfo->eNetworkType == NETWORK_TYPE_P2P) &&
-		    (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE)) {
-			fgIsValidDevice = FALSE;
-		}
-	}
-#endif
 
 #if 0
 	if ((GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum) <= 0)) {
@@ -2338,6 +1602,36 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 
 	ASSERT(prDev);
 
+#if CFG_ENABLE_WIFI_DIRECT
+	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+
+	{
+		P_BSS_INFO_T prBssInfo = GET_BSS_INFO_BY_INDEX(prGlueInfo->prAdapter, ucBssIndex);
+		P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
+		struct net_device *prNetdevice = NULL;
+
+		/* in case packet was sent after P2P device is unregistered or the net_device was be free */
+		if (prBssInfo->eNetworkType == NETWORK_TYPE_P2P) {
+			if (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE)
+				fgIsValidDevice = FALSE;
+			else {
+				ASSERT(prBssInfo->u4PrivateData < KAL_P2P_NUM);
+				prGlueP2pInfo = prGlueInfo->prP2PInfo[prBssInfo->u4PrivateData];
+				if (prGlueP2pInfo) {
+					prNetdevice = prGlueP2pInfo->aprRoleHandler;
+					/* The net_device may be free */
+					if ((prDev != prNetdevice) && (prDev != prGlueP2pInfo->prDevHandler)) {
+						fgIsValidDevice = FALSE;
+						DBGLOG(TX, LOUD,
+							"kalSendCompleteAndAwakeQueue net device deleted! ucBssIndex = %u\n",
+							ucBssIndex);
+					}
+				}
+			}
+		}
+	}
+#endif
+
 	if (fgIsValidDevice == TRUE) {
 		UINT_32 u4StartTh = prGlueInfo->prAdapter->rWifiVar.u4NetifStartTh;
 
@@ -2352,6 +1646,10 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 						[u2QueueIdx]));
 		}
 	}
+
+#if CFG_ENABLE_WIFI_DIRECT
+	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+#endif
 
 	dev_kfree_skb_any((struct sk_buff *)pvPacket);
 
@@ -3294,13 +2592,16 @@ int hif_thread(void *data)
 			}
 		}
 
-		/* TX Commands */
-		if (test_and_clear_bit(GLUE_FLAG_HIF_TX_CMD_BIT, &prGlueInfo->ulFlag))
-			wlanTxCmdMthread(prGlueInfo->prAdapter);
+		/* Skip Tx request if SER is operating */
+		if (!nicSerIsOperating(prGlueInfo->prAdapter)) {
+			/* TX Commands */
+			if (test_and_clear_bit(GLUE_FLAG_HIF_TX_CMD_BIT, &prGlueInfo->ulFlag))
+				wlanTxCmdMthread(prGlueInfo->prAdapter);
 
-		/* Process TX data packet to HIF */
-		if (test_and_clear_bit(GLUE_FLAG_HIF_TX_BIT, &prGlueInfo->ulFlag))
-			nicTxMsduQueueMthread(prGlueInfo->prAdapter);
+			/* Process TX data packet to HIF */
+			if (test_and_clear_bit(GLUE_FLAG_HIF_TX_BIT, &prGlueInfo->ulFlag))
+				nicTxMsduQueueMthread(prGlueInfo->prAdapter);
+		}
 
 		/* Set FW own */
 		if (test_and_clear_bit(GLUE_FLAG_HIF_FW_OWN_BIT, &prGlueInfo->ulFlag))
@@ -4491,6 +3792,25 @@ UINT_32 kalGetMfpSetting(IN P_GLUE_INFO_T prGlueInfo)
 
 	return prGlueInfo->rWpaInfo.u4Mfp;
 }
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief to check if the RSN IE CAP setting from supplicant
+*
+* \param[in]
+*           prGlueInfo
+*
+* \return
+*           TRUE
+*           FALSE
+*/
+/*----------------------------------------------------------------------------*/
+UINT_8 kalGetRsnIeMfpCap(IN P_GLUE_INFO_T prGlueInfo)
+{
+	ASSERT(prGlueInfo);
+
+	return prGlueInfo->rWpaInfo.ucRSNMfpCap;
+}
 #endif
 
 struct file *kalFileOpen(const char *path, int flags, int rights)
@@ -4592,6 +3912,18 @@ UINT_32 kalCheckPath(const PUINT_8 pucPath)
 	return 1;
 }
 
+UINT_32 kalTrunkPath(const PUINT_8 pucPath)
+{
+	struct file *file = NULL;
+	UINT_32 u4Flags = O_TRUNC;
+
+	file = kalFileOpen(pucPath, O_WRONLY | O_CREAT | u4Flags, S_IRWXU);
+	if (!file)
+		return -1;
+
+	kalFileClose(file);
+	return 1;
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -4862,11 +4194,27 @@ VOID kalIndicateRxMgmtFrame(IN P_GLUE_INFO_T prGlueInfo, IN P_SW_RFB_T prSwRfb)
 
 		i4Freq = nicChannelNum2Freq(ucChnlNum) / 1000;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr,
 				i4Freq,	/* in MHz */
 				RCPI_TO_dBm((UINT_8) nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
 				prSwRfb->pvHeader, prSwRfb->u2PacketLen,
 				NL80211_RXMGMT_FLAG_ANSWERED);
+
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0))
+		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr, i4Freq,	/* in MHz */
+						RCPI_TO_dBm((UINT_8)
+						nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
+						prSwRfb->pvHeader, prSwRfb->u2PacketLen,
+						NL80211_RXMGMT_FLAG_ANSWERED,
+						GFP_ATOMIC);
+#else
+		cfg80211_rx_mgmt(prGlueInfo->prDevHandler->ieee80211_ptr, i4Freq,	/* in MHz */
+						RCPI_TO_dBm((UINT_8)
+						nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
+						prSwRfb->pvHeader, prSwRfb->u2PacketLen,
+						GFP_ATOMIC);
+#endif
 
 	} while (FALSE);
 
@@ -5577,6 +4925,11 @@ VOID kalWowProcess(IN P_GLUE_INFO_T prGlueInfo, UINT_8 enable)
 				NULL,
 				0);
 
+	/* ARP offload */
+	wlanSetSuspendMode(prGlueInfo, enable);
+	/* p2pSetSuspendMode(prGlueInfo, TRUE); */
+
+	/* Let WOW enable/disable as last command, so we can back/restore DMA classify filter in FW */
 	rCmdWowlanParam.ucScenarioID = pWOW_CTRL->ucScenarioId;
 	rCmdWowlanParam.ucBlockCount = pWOW_CTRL->ucBlockCount;
 	kalMemCopy(&rCmdWowlanParam.astWakeHif[0], &pWOW_CTRL->astWakeHif[0], sizeof(WOW_WAKE_HIF_T));
@@ -5602,10 +4955,6 @@ VOID kalWowProcess(IN P_GLUE_INFO_T prGlueInfo, UINT_8 enable)
 				(PUINT_8)&rCmdWowlanParam,
 				NULL,
 				0);
-
-	/* ARP offload*/
-	wlanSetSuspendMode(prGlueInfo, enable);
-	/* p2pSetSuspendMode(prGlueInfo, TRUE); */
 
 }
 #endif

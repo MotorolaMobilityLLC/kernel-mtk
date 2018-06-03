@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id:
 */
@@ -8,68 +59,6 @@
 *    This file defines the FSM for Roaming MODULE.
 */
 
-/*
-** Log: roaming_fsm.c
-**
-** 09 03 2013 tsaiyuan.hsu
-** [BORA00002775] MT6630 unified MAC ROAMING
-** 1. modify roaming fsm.
-** 2. add roaming control.
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 24 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Adjust code for DBG and CONFIG_XLOG.
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 02 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * adding the code for XLOG.
- *
- * 08 31 2011 tsaiyuan.hsu
- * [WCXRP00000931] [MT5931 Wi-Fi][DRV/FW] add swcr to disable roaming from driver
- * remove obsolete code.
- *
- * 08 15 2011 tsaiyuan.hsu
- * [WCXRP00000931] [MT5931 Wi-Fi][DRV/FW] add swcr to disable roaming from driver
- * add swcr in driver reg, 0x9fxx0000, to disable roaming .
- *
- * 03 16 2011 tsaiyuan.hsu
- * [WCXRP00000517] [MT6620 Wi-Fi][Driver][FW] Fine Tune Performance of Roaming
- * remove obsolete definition and unused variables.
- *
- * 02 26 2011 tsaiyuan.hsu
- * [WCXRP00000391] [MT6620 Wi-Fi][FW] Add Roaming Support
- * not send disassoc or deauth to leaving AP so as to improve performace of roaming.
- *
- * 01 27 2011 tsaiyuan.hsu
- * [WCXRP00000392] [MT6620 Wi-Fi][Driver] Add Roaming Support
- * add roaming fsm
- * 1. not support 11r, only use strength of signal to determine roaming.
- * 2. not enable CFG_SUPPORT_ROAMING until completion of full test.
- * 3. in 6620, adopt work-around to avoid sign extension problem of cck of hw
- * 4. assume that change of link quality in smooth way.
- *
- * 01 27 2011 tsaiyuan.hsu
- * [WCXRP00000392] [MT6620 Wi-Fi][Driver] Add Roaming Support
- * add roaming fsm
- * 1. not support 11r, only use strength of signal to determine roaming.
- * 2. not enable CFG_SUPPORT_ROAMING until completion of full test.
- * 3. in 6620, adopt work-around to avoid sign extension problem of cck of hw
- * 4. assume that change of link quality in smooth way.
- *
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -236,6 +225,102 @@ VOID roamingFsmScanResultsUpdate(IN P_ADAPTER_T prAdapter)
 	GET_CURRENT_SYSTIME(&prRoamingFsmInfo->rRoamingDiscoveryUpdateTime);
 }				/* end of roamingFsmScanResultsUpdate() */
 
+#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
+/*----------------------------------------------------------------------------*/
+/*
+* @brief
+*
+* @param
+*
+* @return
+*/
+/*----------------------------------------------------------------------------*/
+static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prRoamBSSDescList;
+	P_ROAM_BSS_DESC_T prRoamBssDesc;
+	P_BSS_INFO_T prAisBssInfo;
+	P_BSS_DESC_T prBssDesc;
+	/*CMD_SW_DBG_CTRL_T rCmdSwCtrl;*/
+	CMD_ROAMING_SKIP_ONE_AP_T rCmdRoamingSkipOneAP;
+	BOOLEAN fgIsNeedScan, fgIsRoamingSSID;
+
+	fgIsNeedScan = FALSE;
+	fgIsRoamingSSID = FALSE;
+
+	kalMemZero(&rCmdRoamingSkipOneAP, sizeof(CMD_ROAMING_SKIP_ONE_AP_T));
+
+	prAisBssInfo = prAdapter->prAisBssInfo;
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+	/* Count same BSS Desc from current SCAN result list. */
+	LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
+		if (EQUAL_SSID(prRoamBssDesc->aucSSID,
+				       prRoamBssDesc->ucSSIDLen,
+				       prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen)) {
+			fgIsRoamingSSID = TRUE;
+			fgIsNeedScan = TRUE;
+			DBGLOG(ROAMING, INFO, "roamingFsmSteps: IsRoamingSSID:%d\n", fgIsRoamingSSID);
+			break;
+		}
+	}
+
+	if (!fgIsRoamingSSID) {
+		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		if (prBssDesc) {
+
+			/*rCmdSwCtrl.u4Id = 0xa0280000;*/
+			/*rCmdSwCtrl.u4Data = 0x1;*/
+			rCmdRoamingSkipOneAP.fgIsRoamingSkipOneAP = 1;
+
+			wlanSendSetQueryCmd(prAdapter,
+					    CMD_ID_SET_ROAMING_SKIP,
+					    TRUE,
+					    FALSE,
+					    FALSE, NULL, NULL, sizeof(CMD_ROAMING_SKIP_ONE_AP_T),
+					    (PUINT_8)&rCmdRoamingSkipOneAP, NULL, 0);
+
+			DBGLOG(ROAMING, INFO, "roamingFsmSteps: RCPI:%d RoamSkipTimes:%d\n",
+								prBssDesc->ucRCPI, prAisBssInfo->ucRoamSkipTimes);
+			if (prBssDesc->ucRCPI > 90) {
+				prAisBssInfo->ucRoamSkipTimes = 3;
+				prAisBssInfo->fgGoodRcpiArea = TRUE;
+				prAisBssInfo->fgPoorRcpiArea = FALSE;
+			} else {
+				if (prAisBssInfo->fgGoodRcpiArea) {
+					prAisBssInfo->ucRoamSkipTimes--;
+				} else if (prBssDesc->ucRCPI > 67) {
+					if (!prAisBssInfo->fgPoorRcpiArea) {
+						prAisBssInfo->ucRoamSkipTimes = 2;
+						prAisBssInfo->fgPoorRcpiArea = TRUE;
+						prAisBssInfo->fgGoodRcpiArea = FALSE;
+					} else {
+						prAisBssInfo->ucRoamSkipTimes--;
+					}
+				} else {
+					if (prAisBssInfo->fgPoorRcpiArea) {
+						prAisBssInfo->fgPoorRcpiArea = FALSE;
+						prAisBssInfo->fgGoodRcpiArea = FALSE;
+						prAisBssInfo->ucRoamSkipTimes--;
+					}
+				}
+			}
+
+			if (prAisBssInfo->ucRoamSkipTimes == 0) {
+				prAisBssInfo->ucRoamSkipTimes = 3;
+				prAisBssInfo->fgPoorRcpiArea = FALSE;
+				prAisBssInfo->fgGoodRcpiArea = FALSE;
+				DBGLOG(ROAMING, INFO, "roamingFsmSteps: Need Scan\n");
+				fgIsNeedScan = TRUE;
+			}
+		}
+	}
+
+	return fgIsNeedScan;
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief The Core FSM engine of ROAMING for AIS Infra.
@@ -279,13 +364,23 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 		case ROAMING_STATE_DISCOVERY:
 			{
 				OS_SYSTIME rCurrentTime;
+#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
+				BOOLEAN fgIsNeedScan = FALSE;
+
+				fgIsNeedScan = roamingFsmIsNeedScan(prAdapter);
+#endif
 
 				GET_CURRENT_SYSTIME(&rCurrentTime);
-				if (CHECK_FOR_TIMEOUT
-				    (rCurrentTime, prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
-				     SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC))) {
-					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
-					aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
+				if (CHECK_FOR_TIMEOUT(rCurrentTime,
+					prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
+					SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC))) {
+#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
+					if (fgIsNeedScan)
+#endif
+					{
+						DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
+						aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
+					}
 				} else {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Updated");
 					aisFsmRunEventRoamingDiscovery(prAdapter, FALSE);
@@ -524,8 +619,17 @@ WLAN_STATUS roamingFsmProcessEvent(IN P_ADAPTER_T prAdapter, IN P_CMD_ROAMING_TR
 {
 	DBGLOG(ROAMING, LOUD, "ROAMING Process Events: Current Time = %ld\n", kalGetTimeTick());
 
-	if (prTransit->u2Event == ROAMING_EVENT_DISCOVERY)
+	if (prTransit->u2Event == ROAMING_EVENT_DISCOVERY) {
 		roamingFsmRunEventDiscovery(prAdapter, prTransit);
+
+#if 0
+	DBGLOG(ROAMING, INFO, "RX ROAMING_EVENT_DISCOVERY RCPI[%d] Thr[%d] Reason[%d] Time[%ld]\n",
+		prTransit->u2Data,
+		prTransit->u2RcpiLowThreshold,
+		prTransit->eReason,
+		prTransit->u4RoamingTriggerTime);
+#endif
+	}
 
 	return WLAN_STATUS_SUCCESS;
 }

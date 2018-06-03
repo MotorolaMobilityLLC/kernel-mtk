@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/gl_wext.c#5
 */
@@ -6,384 +57,6 @@
 *    \brief  ioctl() (mostly Linux Wireless Extensions) routines for STA driver.
 */
 
-/*
-** Log: gl_wext.c
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 01 16 2012 wh.su
- * [WCXRP00001170] [MT6620 Wi-Fi][Driver] Adding the related code for set/get band ioctl
- * Adding the template code for set / get band IOCTL (with ICS supplicant_6)..
- *
- * 01 05 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the related ioctl / wlan oid function to set the Tx power cfg.
- *
- * 01 02 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the proto type function for set_int set_tx_power and get int get_ch_list.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 09 23 2011 tsaiyuan.hsu
- * [WCXRP00000979] [MT6620 Wi-Fi][DRV]] stop attempting to connect to config AP after D3 state
- * avoid entering D3 state after deep sleep.
- *
- * 07 28 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings
- * Add BWCS cmd and event.
- *
- * 07 27 2011 wh.su
- * [WCXRP00000877] [MT6620 Wi-Fi][Driver] Remove the netif_carry_ok check for avoid the wpa_supplicant fail to query
- * the ap address
- * Remove the netif check while query bssid and ssid
- *
- * 07 26 2011 chinglan.wang
- * NULL
- * [MT6620][WiFi Driver] Do not include the WSC IE in the association info packet when not do the wps connection..
- *
- * 07 18 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000612] [MT6620 Wi-Fi] [FW] CSD update SWRDD algorithm
- * Add CMD/Event for RDD and BWCS.
- *
- * 05 17 2011 eddie.chen
- * [WCXRP00000603] [MT6620 Wi-Fi][DRV] Fix Klocwork warning
- * Initialize the vairlabes.
- *
- * 05 11 2011 jeffrey.chang
- * [WCXRP00000718] [MT6620 Wi-Fi] modify the behavior of setting tx power
- * modify set_tx_pow ioctl
- *
- * 03 29 2011 terry.wu
- * [WCXRP00000610] [MT 6620 Wi-Fi][Driver] Fix klocwork waring
- * [MT6620 Wi-Fi][Driver] Fix klocwork warning. Add Null pointer check on wext_get_essid. Limit the upper bound of
- * essid storage array.
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * improve portability for awareness of early version of linux kernel and wireless extension.
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 02 21 2011 wh.su
- * [WCXRP00000483] [MT6620 Wi-Fi][Driver] Check the kalIoctl return value before doing the memory copy at linux get
- * essid
- * fixed the potential error to do a larget memory copy while wlanoid get essid not actually running.
- *
- * 02 08 2011 george.huang
- * [WCXRP00000422] [MT6620 Wi-Fi][Driver] support query power mode OID handler
- * Support querying power mode OID.
- *
- * 01 29 2011 wh.su
- * [WCXRP00000408] [MT6620 Wi-Fi][Driver] Not doing memory alloc while ioctl set ie with length 0
- * not doing mem alloc. while set ie length already 0
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Remove debug text.
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Adjust OID order.
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Add Oid for sw control debug command
- *
- * 01 11 2011 chinglan.wang
- * NULL
- * Modify to reslove the CR :[ALPS00028994] Use WEP security to connect Marvell 11N AP.  Connection establish
- * successfully.
- * Use the WPS function to connect AP, the privacy bit always is set to 1. .
- *
- * 01 07 2011 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add a new compiling option to control if MCR read/write is permitted
- *
- * 01 04 2011 cp.wu
- * [WCXRP00000338] [MT6620 Wi-Fi][Driver] Separate kalMemAlloc into kmalloc and vmalloc implementations to ease
- * physically continuous memory demands
- * separate kalMemAlloc() into virtually-continuous and physically-continuous types
- * to ease slab system pressure
- *
- * 01 04 2011 cp.wu
- * [WCXRP00000338] [MT6620 Wi-Fi][Driver] Separate kalMemAlloc into kmalloc and vmalloc implementations to ease
- * physically continuous memory demands
- * separate kalMemAlloc() into virtually-continuous and physically-continuous type to ease slab system pressure
- *
- * 12 31 2010 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add some iwpriv commands to support test mode operation
- *
- * 12 15 2010 george.huang
- * [WCXRP00000152] [MT6620 Wi-Fi] AP mode power saving function
- * Support set PS profile and set WMM-PS related iwpriv.
- *
- * 12 15 2010 george.huang
- * [WCXRP00000152] [MT6620 Wi-Fi] AP mode power saving function
- * Allow change PS profile function (through wext_set_power()).
- *
- * 12 14 2010 jeffrey.chang
- * [WCXRP00000262] [MT6620 Wi-Fi][Driver] modify the scan request ioctl to handle hidden SSID
- * handle hidden SSID
- *
- * 12 13 2010 chinglan.wang
- * NULL
- * Add WPS 1.0 feature flag to enable the WPS 1.0 function.
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * Fix compiling error
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * 1. Country code is from NVRAM or supplicant
- * 2. Change band definition in CMD/EVENT.
- *
- * 11 30 2010 cp.wu
- * [WCXRP00000213] [MT6620 Wi-Fi][Driver] Implement scanning with specified SSID for wpa_supplicant with ap_scan=1
- * .
- *
- * 11 08 2010 wh.su
- * [WCXRP00000171] [MT6620 Wi-Fi][Driver] Add message check code same behavior as mt5921
- * add the message check code from mt5921.
- *
- * 10 19 2010 jeffrey.chang
- * [WCXRP00000121] [MT6620 Wi-Fi][Driver] Temporarily disable set power mode ioctl which may cause 6620 to enter power
- * saving
- * Temporarily disable set power mode ioctl which may cause MT6620 to enter power saving
- *
- * 10 18 2010 jeffrey.chang
- * [WCXRP00000116] [MT6620 Wi-Fi][Driver] Refine the set_scan ioctl to resolve the Android UI hanging issue
- * refine the scan ioctl to prevent hanging of Android UI
- *
- * 10 01 2010 wh.su
- * [WCXRP00000067] [MT6620 Wi-Fi][Driver] Support the android+ WAPI function
- * add the scan result with wapi ie.
- *
- * 09 30 2010 wh.su
- * [WCXRP00000072] [MT6620 Wi-Fi][Driver] Fix TKIP Counter Measure EAPoL callback register issue
- * fixed the wapi ie assigned issue.
- *
- * 09 27 2010 wh.su
- * NULL
- * [WCXRP00000067][MT6620 Wi-Fi][Driver] Support the android+ WAPI function.
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * Eliminate Linux Compile Warning
- *
- * 09 09 2010 cp.wu
- * NULL
- * add WPS/WPA/RSN IE for Wi-Fi Direct scanning result.
- *
- * 09 06 2010 cp.wu
- * NULL
- * Androi/Linux: return current operating channel information
- *
- * 09 01 2010 wh.su
- * NULL
- * adding the wapi support for integration test.
- *
- * 08 02 2010 jeffrey.chang
- * NULL
- * enable remove key ioctl
- *
- * 08 02 2010 jeffrey.chang
- * NULL
- * 1) modify tx service thread to avoid busy looping
- * 2) add spin lock declartion for linux build
- *
- * 07 28 2010 jeffrey.chang
- * NULL
- * 1) enable encyption ioctls
- * 2) temporarily disable remove keys ioctl to prevent  TX1 busy
- *
- * 07 28 2010 jeffrey.chang
- * NULL
- * 1) remove unused spinlocks
- * 2) enable encyption ioctls
- * 3) fix scan ioctl which may cause supplicant to hang
- *
- * 07 19 2010 jeffrey.chang
- *
- * add kal api for scanning done
- *
- * 07 19 2010 jeffrey.chang
- *
- * for linux driver migration
- *
- * 07 19 2010 jeffrey.chang
- *
- * Linux port modification
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 28 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * remove unused macro and debug messages
- *
- * 05 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Add dissassoication support for wpa supplicant
- *
- * 04 22 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- *
- * 1) modify rx path code for supporting Wi-Fi direct
- * 2) modify config.h since Linux dont need to consider retaining packet
- *
- * 04 21 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add for private ioctl support
- *
- * 04 19 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Add ioctl of power management
- *
- * 04 19 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * remove debug message
- *
- * 04 14 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * 1) prGlueInfo->pvInformationBuffer and prGlueInfo->u4InformationBufferLength are no longer used
- *  * 2) fix ioctl
- *
- * 04 12 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * remove debug messages for pre-release
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * rWlanInfo should be placed at adapter rather than glue due to most operations
- *  *  *  *  *  *  *  * are done in adapter layer.
- *
- * 04 02 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix ioctl type
- *
- * 04 01 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * enable pmksa cache operation
- *
- * 03 31 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix ioctl which may cause cmdinfo memory leak
- *
- * 03 31 2010 wh.su
- * [WPD00003816][MT6620 Wi-Fi] Adding the security support
- * modify the wapi related code for new driver's design.
- *
- * 03 30 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * emulate NDIS Pending OID facility
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\38 2009-10-08 10:33:22 GMT mtk01090
-**  Avoid accessing private data of net_device directly. Replace with netdev_priv().
-**  Add more checking for input parameters and pointers.
-**  \main\maintrunk.MT5921\37 2009-09-29 16:49:48 GMT mtk01090
-**  Remove unused variables
-**  \main\maintrunk.MT5921\36 2009-09-28 20:19:11 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\35 2009-09-03 11:42:30 GMT mtk01088
-**  adding the wapi ioctl support
-**  \main\maintrunk.MT5921\34 2009-08-18 22:56:50 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\33 2009-05-14 22:43:47 GMT mtk01089
-**  fix compiling warning
-**  \main\maintrunk.MT5921\32 2009-05-07 22:26:18 GMT mtk01089
-**  Add mandatory and private IO control for Linux BWCS
-**  \main\maintrunk.MT5921\31 2009-02-07 15:11:14 GMT mtk01088
-**  fixed the compiling error
-**  \main\maintrunk.MT5921\30 2009-02-07 14:46:51 GMT mtk01088
-**  add the privacy setting from linux supplicant ap selection
-**  \main\maintrunk.MT5921\29 2008-11-19 15:18:50 GMT mtk01088
-**  fixed the compling error
-**  \main\maintrunk.MT5921\28 2008-11-19 11:56:18 GMT mtk01088
-**  rename some variable with pre-fix to avoid the misunderstanding
-**  \main\maintrunk.MT5921\27 2008-08-29 16:59:43 GMT mtk01088
-**  fixed compiling error
-**  \main\maintrunk.MT5921\26 2008-08-29 14:55:53 GMT mtk01088
-**  adjust the code for meet the coding style, and add assert check
-**  \main\maintrunk.MT5921\25 2008-06-02 11:15:19 GMT mtk01461
-**  Update after wlanoidSetPowerMode changed
-**  \main\maintrunk.MT5921\24 2008-05-30 15:13:12 GMT mtk01084
-**  rename wlanoid
-**  \main\maintrunk.MT5921\23 2008-03-28 10:40:28 GMT mtk01461
-**  Add set desired rate in Linux STD IOCTL
-**  \main\maintrunk.MT5921\22 2008-03-18 10:31:24 GMT mtk01088
-**  add pmkid ioctl and indicate
-**  \main\maintrunk.MT5921\21 2008-03-11 15:21:24 GMT mtk01461
-**  \main\maintrunk.MT5921\20 2008-03-11 14:50:55 GMT mtk01461
-**  Refine WPS related priv ioctl for unified interface
-**
-**  \main\maintrunk.MT5921\19 2008-03-06 16:30:41 GMT mtk01088
-**  move the configuration code from set essid function,
-**  remove the non-used code
-**  \main\maintrunk.MT5921\18 2008-02-21 15:47:09 GMT mtk01461
-**  Fix CR[489]
-**  \main\maintrunk.MT5921\17 2008-02-12 23:38:31 GMT mtk01461
-**  Add Set Frequency & Channel oid support for Linux
-**  \main\maintrunk.MT5921\16 2008-01-24 12:07:34 GMT mtk01461
-**  \main\maintrunk.MT5921\15 2008-01-24 12:00:10 GMT mtk01461
-**  Modify the wext_essid for set up correct information for IBSS, and fix the wrong input ptr for prAdapter
-**  \main\maintrunk.MT5921\14 2007-12-06 09:30:12 GMT mtk01425
-**  1. Branch Test
-**  \main\maintrunk.MT5921\13 2007-12-04 18:07:59 GMT mtk01461
-**  fix typo
-**  \main\maintrunk.MT5921\12 2007-11-30 17:10:21 GMT mtk01425
-**  1. Fix compiling erros
-**
-**  \main\maintrunk.MT5921\11 2007-11-27 10:43:22 GMT mtk01425
-**  1. Add WMM-PS setting
-**  \main\maintrunk.MT5921\10 2007-11-06 20:33:32 GMT mtk01088
-**  fixed the compiler error
-**  \main\maintrunk.MT5921\9 2007-11-06 19:33:15 GMT mtk01088
-**  add WPS code
-**  \main\maintrunk.MT5921\8 2007-10-30 12:00:44 GMT MTK01425
-**  1. Update wlanQueryInformation
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -420,6 +93,161 @@ const long channel_freq[] = {
 	2412, 2417, 2422, 2427, 2432, 2437, 2442,
 	2447, 2452, 2457, 2462, 2467, 2472, 2484
 };
+
+#define NUM_CHANNELS (ARRAY_SIZE(channel_freq))
+
+#define MAX_SSID_LEN    32
+
+/*******************************************************************************
+*                             D A T A   T Y P E S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                            P U B L I C   D A T A
+********************************************************************************
+*/
+/* NOTE: name in iwpriv_args only have 16 bytes */
+static const struct iw_priv_args rIwPrivTable[] = {
+	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, ""},
+	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
+	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, 0, ""},
+	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, ""},
+	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, ""},
+
+	{IOCTL_GET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
+	{IOCTL_GET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
+
+	{IOCTL_SET_INTS, IW_PRIV_TYPE_INT | 4, 0, ""},
+	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | 50, ""},
+
+	/* added for set_oid and get_oid */
+	{IOCTL_SET_STRUCT, 256, 0, ""},
+	{IOCTL_GET_STRUCT, 0, 256, ""},
+
+	{IOCTL_GET_DRIVER, IW_PRIV_TYPE_CHAR | 2000, IW_PRIV_TYPE_CHAR | 2000, "driver"},
+
+#if CFG_SUPPORT_QA_TOOL
+	/* added for ATE iwpriv Command */
+	{IOCTL_IWPRIV_ATE, IW_PRIV_TYPE_CHAR | 2000, 0, ""},
+#endif
+
+	/* sub-ioctl definitions */
+#if 0
+	{PRIV_CMD_REG_DOMAIN, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_reg_domain"},
+	{PRIV_CMD_REG_DOMAIN, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_reg_domain"},
+#endif
+
+#if CFG_TCP_IP_CHKSUM_OFFLOAD
+	{PRIV_CMD_CSUM_OFFLOAD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_tcp_csum"},
+#endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
+
+	{PRIV_CMD_POWER_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_power_mode"},
+	{PRIV_CMD_POWER_MODE, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_power_mode"},
+
+	{PRIV_CMD_WMM_PS, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, 0, "set_wmm_ps"},
+
+	{PRIV_CMD_TEST_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_test_mode"},
+	{PRIV_CMD_TEST_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_test_cmd"},
+	{PRIV_CMD_TEST_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_test_result"},
+#if CFG_SUPPORT_PRIV_MCR_RW
+	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_mcr"},
+	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_mcr"},
+#endif
+
+#if CFG_SUPPORT_QA_TOOL
+	{PRIV_QACMD_SET, IW_PRIV_TYPE_CHAR | 2000, 0, "set"},
+#endif
+
+	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_sw_ctrl"},
+	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_sw_ctrl"},
+
+#if CFG_SUPPORT_BCM && CFG_SUPPORT_BCM_BWCS
+	{PRIV_CUSTOM_BWCS_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_bwcs"},
+	/* GET STRUCT sub-ioctls commands */
+	{PRIV_CUSTOM_BWCS_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_bwcs"},
+#endif
+
+	/* SET STRUCT sub-ioctls commands */
+	{PRIV_CMD_OID, 256, 0, "set_oid"},
+	/* GET STRUCT sub-ioctls commands */
+	{PRIV_CMD_OID, 0, 256, "get_oid"},
+
+	{PRIV_CMD_BAND_CONFIG, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_band"},
+	{PRIV_CMD_BAND_CONFIG, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_band"},
+
+	{PRIV_CMD_SET_TX_POWER, IW_PRIV_TYPE_INT | 4, 0, "set_txpower"},
+	{PRIV_CMD_GET_CH_LIST, 0, IW_PRIV_TYPE_INT | 50, "get_ch_list"},
+	{PRIV_CMD_DUMP_MEM, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
+	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_mem"},
+
+#if CFG_ENABLE_WIFI_DIRECT
+	{PRIV_CMD_P2P_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_p2p_mode"},
+#endif
+	{PRIV_CMD_MET_PROFILING, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_met_prof"},
+
+};
+
+static const iw_handler rIwPrivHandler[] = {
+	[IOCTL_SET_INT - SIOCIWFIRSTPRIV] = priv_set_int,
+	[IOCTL_GET_INT - SIOCIWFIRSTPRIV] = priv_get_int,
+	[IOCTL_SET_ADDRESS - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_GET_ADDRESS - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_SET_STR - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_GET_STR - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_SET_KEY - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_GET_KEY - SIOCIWFIRSTPRIV] = NULL,
+	[IOCTL_SET_STRUCT - SIOCIWFIRSTPRIV] = priv_set_struct,
+	[IOCTL_GET_STRUCT - SIOCIWFIRSTPRIV] = priv_get_struct,
+	[IOCTL_SET_STRUCT_FOR_EM - SIOCIWFIRSTPRIV] = priv_set_struct,
+	[IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
+	[IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
+	[IOCTL_GET_DRIVER - SIOCIWFIRSTPRIV] = priv_set_driver,
+
+#if CFG_SUPPORT_QA_TOOL
+	[IOCTL_IWPRIV_ATE - SIOCIWFIRSTPRIV] = priv_ate_set
+#endif
+};
+
+const struct iw_handler_def wext_handler_def = {
+	.num_standard = 0,
+	.num_private = (__u16) sizeof(rIwPrivHandler) / sizeof(iw_handler),
+	.num_private_args = (__u16) sizeof(rIwPrivTable) / sizeof(struct iw_priv_args),
+	.standard = (iw_handler *) NULL,
+	.private = rIwPrivHandler,
+	.private_args = rIwPrivTable,
+	.get_wireless_stats = wext_get_wireless_stats,
+};
+
+/*******************************************************************************
+*                           P R I V A T E   D A T A
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                                 M A C R O S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                  F U N C T I O N   D E C L A R A T I O N S
+********************************************************************************
+*/
+static void wext_support_ioctl_SIOCSIWGENIE(IN P_GLUE_INFO_T prGlueInfo, IN char *prExtraBuf, IN UINT_32 u4ExtraSize);
+
+static void
+wext_support_ioctl_SIOCSIWPMKSA_Action(IN struct net_device *prDev, IN char *prExtraBuf, IN int ioMode, OUT int *ret);
+
+/*******************************************************************************
+*                              F U N C T I O N S
+********************************************************************************
+*/
 
 void MAP_CHANNEL_ID_TO_KHZ(UINT_32 ch, UINT_32 khz)
 {
@@ -576,161 +404,6 @@ void MAP_CHANNEL_ID_TO_KHZ(UINT_32 ch, UINT_32 khz)
 		break;
 	}
 }
-
-#define NUM_CHANNELS (ARRAY_SIZE(channel_freq))
-
-#define MAX_SSID_LEN    32
-
-/*******************************************************************************
-*                             D A T A   T Y P E S
-********************************************************************************
-*/
-
-/*******************************************************************************
-*                            P U B L I C   D A T A
-********************************************************************************
-*/
-/* NOTE: name in iwpriv_args only have 16 bytes */
-static const struct iw_priv_args rIwPrivTable[] = {
-	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, ""},
-	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
-	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, 0, ""},
-	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, ""},
-	{IOCTL_SET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, ""},
-
-	{IOCTL_GET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
-	{IOCTL_GET_INT, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, ""},
-
-	{IOCTL_SET_INTS, IW_PRIV_TYPE_INT | 4, 0, ""},
-	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | 50, ""},
-
-	/* added for set_oid and get_oid */
-	{IOCTL_SET_STRUCT, 256, 0, ""},
-	{IOCTL_GET_STRUCT, 0, 256, ""},
-
-	{IOCTL_GET_DRIVER, IW_PRIV_TYPE_CHAR | 2000, IW_PRIV_TYPE_CHAR | 2000, "driver"},
-
-#if CFG_SUPPORT_QA_TOOL
-	/* added for ATE iwpriv Command */
-	{IOCTL_IWPRIV_ATE, IW_PRIV_TYPE_CHAR | 2000, 0, ""},
-#endif
-
-	/* sub-ioctl definitions */
-#if 0
-	{PRIV_CMD_REG_DOMAIN, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_reg_domain"},
-	{PRIV_CMD_REG_DOMAIN, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_reg_domain"},
-#endif
-
-#if CFG_TCP_IP_CHKSUM_OFFLOAD
-	{PRIV_CMD_CSUM_OFFLOAD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_tcp_csum"},
-#endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
-
-	{PRIV_CMD_POWER_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_power_mode"},
-	{PRIV_CMD_POWER_MODE, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_power_mode"},
-
-	{PRIV_CMD_WMM_PS, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3, 0, "set_wmm_ps"},
-
-	{PRIV_CMD_TEST_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_test_mode"},
-	{PRIV_CMD_TEST_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_test_cmd"},
-	{PRIV_CMD_TEST_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_test_result"},
-#if CFG_SUPPORT_PRIV_MCR_RW
-	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_mcr"},
-	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_mcr"},
-#endif
-
-#if CFG_SUPPORT_QA_TOOL
-	{PRIV_QACMD_SET, IW_PRIV_TYPE_CHAR | 2000, 0, "set"},
-#endif
-
-	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_sw_ctrl"},
-	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_sw_ctrl"},
-
-#if CFG_SUPPORT_BCM && CFG_SUPPORT_BCM_BWCS
-	{PRIV_CUSTOM_BWCS_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_bwcs"},
-	/* GET STRUCT sub-ioctls commands */
-	{PRIV_CUSTOM_BWCS_CMD, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_bwcs"},
-#endif
-
-	/* SET STRUCT sub-ioctls commands */
-	{PRIV_CMD_OID, 256, 0, "set_oid"},
-	/* GET STRUCT sub-ioctls commands */
-	{PRIV_CMD_OID, 0, 256, "get_oid"},
-
-	{PRIV_CMD_BAND_CONFIG, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_band"},
-	{PRIV_CMD_BAND_CONFIG, 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_band"},
-
-	{PRIV_CMD_SET_TX_POWER, IW_PRIV_TYPE_INT | 4, 0, "set_txpower"},
-	{PRIV_CMD_GET_CH_LIST, 0, IW_PRIV_TYPE_INT | 50, "get_ch_list"},
-	{PRIV_CMD_DUMP_MEM, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2,
-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_mem"},
-
-#if CFG_ENABLE_WIFI_DIRECT
-	{PRIV_CMD_P2P_MODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_p2p_mode"},
-#endif
-	{PRIV_CMD_MET_PROFILING, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_met_prof"},
-
-};
-
-static const iw_handler rIwPrivHandler[] = {
-	[IOCTL_SET_INT - SIOCIWFIRSTPRIV] = priv_set_int,
-	[IOCTL_GET_INT - SIOCIWFIRSTPRIV] = priv_get_int,
-	[IOCTL_SET_ADDRESS - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_GET_ADDRESS - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_SET_STR - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_GET_STR - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_SET_KEY - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_GET_KEY - SIOCIWFIRSTPRIV] = NULL,
-	[IOCTL_SET_STRUCT - SIOCIWFIRSTPRIV] = priv_set_struct,
-	[IOCTL_GET_STRUCT - SIOCIWFIRSTPRIV] = priv_get_struct,
-	[IOCTL_SET_STRUCT_FOR_EM - SIOCIWFIRSTPRIV] = priv_set_struct,
-	[IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
-	[IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
-	[IOCTL_GET_DRIVER - SIOCIWFIRSTPRIV] = priv_set_driver,
-
-#if CFG_SUPPORT_QA_TOOL
-	[IOCTL_IWPRIV_ATE - SIOCIWFIRSTPRIV] = priv_ate_set
-#endif
-};
-
-const struct iw_handler_def wext_handler_def = {
-	.num_standard = 0,
-	.num_private = (__u16) sizeof(rIwPrivHandler) / sizeof(iw_handler),
-	.num_private_args = (__u16) sizeof(rIwPrivTable) / sizeof(struct iw_priv_args),
-	.standard = (iw_handler *) NULL,
-	.private = rIwPrivHandler,
-	.private_args = rIwPrivTable,
-	.get_wireless_stats = wext_get_wireless_stats,
-};
-
-/*******************************************************************************
-*                           P R I V A T E   D A T A
-********************************************************************************
-*/
-
-/*******************************************************************************
-*                                 M A C R O S
-********************************************************************************
-*/
-
-/*******************************************************************************
-*                  F U N C T I O N   D E C L A R A T I O N S
-********************************************************************************
-*/
-
-/*******************************************************************************
-*                              F U N C T I O N S
-********************************************************************************
-*/
-static void wext_support_ioctl_SIOCSIWGENIE(IN P_GLUE_INFO_T prGlueInfo, IN char *prExtraBuf, IN UINT_32 u4ExtraSize);
-
-static void
-wext_support_ioctl_SIOCSIWPMKSA_Action(IN struct net_device *prDev, IN char *prExtraBuf, IN int ioMode, OUT int *ret);
 
 /*----------------------------------------------------------------------------*/
 /*!
