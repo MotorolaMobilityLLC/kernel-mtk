@@ -575,14 +575,12 @@ int usb_boost_init(void)
 {
 	int id;
 
-	test_loops(-1);
 	for (id = 0; id < _TYPE_MAXID; id++) {
 		int count;
 		char wq_name[MAX_LEN_WQ_NAME];
 
 		count = sprintf(wq_name, "%s_wq", type_name[id]);
 		wq_name[count] = '\0';
-		test_loops(id);
 		boost_inst[id].id  = id;
 		update_time(id);
 		boost_inst[id].wq  = create_singlethread_workqueue(wq_name);
