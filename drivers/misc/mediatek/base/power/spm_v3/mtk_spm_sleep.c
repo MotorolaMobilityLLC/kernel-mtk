@@ -105,7 +105,6 @@ static unsigned int spm_sleep_count;
 	WAKE_SRC_R12_USBX_POWERDWN_B | \
 	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
 	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_CSYSPWRUPREQ_B | \
 	WAKE_SRC_R12_MD1_WDT_B | \
 	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
 #else
@@ -124,7 +123,6 @@ static unsigned int spm_sleep_count;
 	WAKE_SRC_R12_USBX_POWERDWN_B | \
 	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
 	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_CSYSPWRUPREQ_B | \
 	WAKE_SRC_R12_MD1_WDT_B | \
 	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT | \
 	WAKE_SRC_R12_SEJ_EVENT_B)
@@ -214,7 +212,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_spm_cksel3_req = 0,
 
 	/* SPM_SRC_MASK */
-	.reg_csyspwreq_mask = 0,
+	.reg_csyspwreq_mask = 1,
 	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
