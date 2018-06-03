@@ -72,6 +72,31 @@ TRACE_EVENT(VPU__D2D_leave,
 	TP_printk("_id=c%da%d", __entry->core, __entry->algo_id)
 );
 
+TRACE_EVENT(VPU__polling,
+	TP_PROTO(int core, int value1, int value2, int value3, int value4),
+	TP_ARGS(core, value1, value2, value3, value4),
+	TP_STRUCT__entry(
+		__field(int, core)
+		__field(int, value1)
+		__field(int, value2)
+		__field(int, value3)
+		__field(int, value4)
+		),
+	TP_fast_assign(
+		__entry->core = core;
+		__entry->value1 = value1;
+		__entry->value2 = value2;
+		__entry->value3 = value3;
+		__entry->value4 = value4;
+	),
+	TP_printk("_id=c%d, value1=%d, value2=%d, value3=%d, value4=%d",
+					__entry->core,
+					__entry->value1,
+					__entry->value2,
+					__entry->value3,
+					__entry->value4)
+);
+
 
 #endif /* _TRACE_MET_VPUSYS_EVENTS_H */
 

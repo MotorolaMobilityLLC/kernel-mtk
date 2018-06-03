@@ -20,4 +20,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/devfreq
 
 obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu_hw.o vpu_reg.o
-
+obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu_profile.o

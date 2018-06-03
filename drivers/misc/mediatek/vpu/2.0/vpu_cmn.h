@@ -19,6 +19,7 @@
 #include <linux/interrupt.h>
 #include "vpu_drv.h"
 
+#define VPU_MET_READY
 #define VPU_PORT_OF_IOMMU M4U_PORT_VPU1
 
 /* Common Structure */
@@ -446,6 +447,21 @@ int vpu_init_debug(struct vpu_device *vpu_dev);
  * @device:     the pointer of vpu_device.
  */
 int vpu_init_reg(int core, struct vpu_device *vpu_dev);
+
+/* =============================== define in vpu_profile.c  =============================== */
+
+/**
+ * vpu_init_profile - init profiling
+ * @device:     the pointer of vpu_device.
+ */
+/* #define MET_POLLING_MODE */
+int vpu_init_profile(int core, struct vpu_device *vpu_dev);
+int vpu_uninit_profile(void);
+int vpu_profile_state_set(int core, int val);
+int vpu_profile_state_get(void);
+void vpu_met_event_enter(int core, int algo_id, int vcore_opp,
+	int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq);
+void vpu_met_event_leave(int core, int algo_id);
 
 
 /* LOG & AEE */

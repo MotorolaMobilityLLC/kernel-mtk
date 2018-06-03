@@ -1029,6 +1029,10 @@ static int vpu_probe(struct platform_device *pdev)
 		LOG_DBG("[probe] [%d] init_hw done\n", core);
 		vpu_init_reg(core, vpu_device);
 		LOG_DBG("[probe] [%d] init_reg done\n", core);
+#ifdef MET_POLLING_MODE
+		vpu_init_profile(core, vpu_device);
+		LOG_DBG("[probe] [%d] vpu_init_profile done\n", core);
+#endif
 #ifdef MTK_VPU_FPGA_PORTING
 	}
 	LOG_DBG("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
@@ -1081,6 +1085,10 @@ static int vpu_remove(struct platform_device *pDev)
 
 	/*  */
 	vpu_uninit_hw();
+	/*  */
+#ifdef MET_POLLING_MODE
+	vpu_uninit_profile();
+#endif
 	/* */
 	LOG_DBG("remove vpu driver");
 	/* unregister char driver. */
