@@ -448,20 +448,28 @@ static int port_net_recv_skb(struct port_t *port, struct sk_buff *skb)
 
 static void port_net_queue_state_notify(struct port_t *port, int dir, int qno, unsigned int state)
 {
+	int is_ack = 0;
+
+	if (dir == OUT && qno == NET_ACK_TXQ_INDEX(port) && port->txq_index != qno)
+		is_ack = 1;
+
 	if (port->md_id != MD_SYS3) {
-		if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
-			((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
+		if (((state == TX_IRQ) &&
+				((!is_ack && ((port->flags & PORT_F_TX_DATA_FULLED) == 0)) ||
+				(is_ack && ((port->flags & PORT_F_TX_ACK_FULLED) == 0)))) ||
+			((state == TX_FULL) &&
+				((!is_ack && (port->flags & PORT_F_TX_DATA_FULLED)) ||
+				(is_ack && (port->flags & PORT_F_TX_ACK_FULLED)))))
 			return;
 	}
-	ccmni_ops.queue_state_callback(port->md_id, GET_CCMNI_IDX(port), state,
-		(dir == OUT && qno == NET_ACK_TXQ_INDEX(port)));
+	ccmni_ops.queue_state_callback(port->md_id, GET_CCMNI_IDX(port), state, is_ack);
 
 	switch (state) {
 	case TX_IRQ:
-		port->flags &= ~PORT_F_RX_FULLED;
+		port->flags &= ~(is_ack ? PORT_F_TX_ACK_FULLED : PORT_F_TX_DATA_FULLED);
 		break;
 	case TX_FULL:
-		port->flags |= PORT_F_RX_FULLED;	/* for convenient in traffic log */
+		port->flags |= (is_ack ? PORT_F_TX_ACK_FULLED : PORT_F_TX_DATA_FULLED);
 		break;
 	default:
 		break;
