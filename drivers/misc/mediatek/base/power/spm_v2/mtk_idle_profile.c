@@ -99,7 +99,7 @@ static struct mtk_idle_block idle_block[NR_TYPES] = {
 #define GET_EVENT_RATIO_SPEED(x)    ((x)/(WINDOW_LEN_SPEED/1000))
 #define GET_EVENT_RATIO_NORMAL(x)   ((x)/(WINDOW_LEN_NORMAL/1000))
 
-idle_twam_t idle_twam;
+struct mtk_idle_twam idle_twam;
 
 #if SPM_MET_TAGGING
 #define idle_get_current_time_us(x) do {\
@@ -128,7 +128,7 @@ unsigned int			soidle_profile[4];
 unsigned int            dpidle_profile[4];
 #endif
 
-p_idle_twam_t mtk_idle_get_twam(void)
+struct mtk_idle_twam *mtk_idle_get_twam(void)
 {
 	return &idle_twam;
 }
