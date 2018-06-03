@@ -2211,6 +2211,7 @@ void mtk_cpuidle_framework_init(void)
 {
 	idle_ver("[%s]entry!!\n", __func__);
 
+#ifdef CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES
 	/* FIXME: disable sodi/dpidle in mduse projects.
 	 * k63v1_64_mduse
 	 * k63v1_64_op01_mduse
@@ -2223,6 +2224,7 @@ void mtk_cpuidle_framework_init(void)
 		idle_switch[IDLE_TYPE_SO3] = 0;
 		idle_switch[IDLE_TYPE_SO] = 0;
 	}
+#endif
 
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
