@@ -51,6 +51,9 @@ struct clk *musb_clk;
 
 #include "mtk_spm_resource_req.h"
 static int dpidle_status = USB_DPIDLE_ALLOWED;
+module_param(dpidle_status, int, 0644);
+static int dpidle_debug;
+module_param(dpidle_debug, int, 0644);
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 #define DPIDLE_TIMER_INTERVAL_MS 30
 static void issue_dpidle_timer(void);
@@ -93,16 +96,25 @@ static void usb_6763_dpidle_request(int mode)
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
-		DBG_LIMIT(1, "USB_DPIDLE_ALLOWED");
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_ALLOWED");
+		else
+			DBG(0, "USB_DPIDLE_ALLOWED\n");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
-		DBG_LIMIT(1, "USB_DPIDLE_FORBIDDEN");
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_FORBIDDEN");
+		else
+			DBG(0, "USB_DPIDLE_FORBIDDEN\n");
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
-		DBG_LIMIT(1, "USB_DPIDLE_SRAM");
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_SRAM");
+		else
+			DBG(0, "USB_DPIDLE_SRAM\n");
 		break;
 	case USB_DPIDLE_TIMER:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,

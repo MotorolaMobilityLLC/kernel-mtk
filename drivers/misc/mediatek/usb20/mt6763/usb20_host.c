@@ -806,6 +806,13 @@ enum {
 
 static void bypass_disc_circuit(int act)
 {
+	u32 val;
+
+	usb_enable_clock(true);
+
+	val = USBPHY_READ32(0x18);
+	DBG(0, "val<0x%x>\n", val);
+
 	/* 0x18, 13-12 RG_USB20_HSRX_MMODE_SELE, dft:00 */
 	if (act == DO_IT) {
 		USBPHY_CLR32(0x18, (0x10<<8));
@@ -814,10 +821,21 @@ static void bypass_disc_circuit(int act)
 		USBPHY_CLR32(0x18, (0x10<<8));
 		USBPHY_CLR32(0x18, (0x20<<8));
 	}
+	val = USBPHY_READ32(0x18);
+	DBG(0, "val<0x%x>\n", val);
+
+	usb_enable_clock(false);
 }
 
 static void disc_threshold_to_max(int act)
 {
+	u32 val;
+
+	usb_enable_clock(true);
+
+	val = USBPHY_READ32(0x18);
+	DBG(0, "val<0x%x>\n", val);
+
 	/* 0x18, 7-4 RG_USB20_DISCTH, dft:1000 */
 	if (act == DO_IT) {
 		USBPHY_SET32(0x18, (0xf0<<0));
@@ -825,6 +843,11 @@ static void disc_threshold_to_max(int act)
 		USBPHY_CLR32(0x18, (0x70<<0));
 		USBPHY_SET32(0x18, (0x80<<0));
 	}
+
+	val = USBPHY_READ32(0x18);
+	DBG(0, "val<0x%x>\n", val);
+
+	usb_enable_clock(false);
 }
 
 static int option;

@@ -170,6 +170,7 @@ module_param(isoc_ep_gpd_count, int, 0644);
 
 DEFINE_SPINLOCK(usb_io_lock);
 unsigned musb_debug;
+unsigned musb_debug_limit = 1;
 unsigned musb_uart_debug;
 struct musb *mtk_musb;
 unsigned musb_speed = 1;
@@ -195,6 +196,7 @@ module_param_named(speed, musb_speed, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, high speed");
 module_param_named(debug, musb_debug, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "Debug message level. Default = 0");
+module_param_named(debug_limit, musb_debug_limit, uint, S_IRUGO | S_IWUSR);
 module_param_named(dbg_uart, musb_uart_debug, uint, S_IRUGO | S_IWUSR);
 
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)
