@@ -99,6 +99,23 @@ struct smi_driver {
 static struct smi_device *smi_dev;
 static struct smi_driver *smi_drv;
 
+/* ***********************************************
+ * get smi base address of COMMON or specific LARB
+ * reg_indx: select specific larb or common
+ * **********************************************/
+void __iomem *smi_base_addr_get(const unsigned int reg_indx)
+{
+	if (reg_indx > common->index) {
+		SMIDBG("invalid reg_indx %d > nr_larbs %d\n",
+			reg_indx, common->index);
+		return NULL;
+	} else if (reg_indx < common->index) {
+		return larbs[reg_indx]->base;
+	} else {
+		return common->base;
+	}
+}
+
 /* ********************************************************
  * prepare and enable CG/MTCMOS of COMMON and specific LARB
  * reg_indx: select specific larb or common

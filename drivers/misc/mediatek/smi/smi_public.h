@@ -32,6 +32,7 @@ struct smi_bwc_scen_cb {
 };
 
 #if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+void __iomem *smi_base_addr_get(const unsigned int reg_indx);
 int smi_bus_prepare_enable(const unsigned int reg_indx,
 	const char *user_name, const bool mtcmos);
 int smi_bus_disable_unprepare(const unsigned int reg_indx,
@@ -41,6 +42,7 @@ int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
 	const bool gce, const bool m4u);
 struct smi_bwc_scen_cb *smi_bwc_scen_cb_register(struct smi_bwc_scen_cb *cb);
 #else
+#define smi_base_addr_get(reg_indx) ((void)0)
 #define smi_bus_prepare_enable(reg_indx, user_name, mtcmos) ((void)0)
 #define smi_bus_disable_unprepare(reg_indx, user_name, mtcmos) ((void)0)
 #define smi_debug_dump_status(reg_indx) ((void)0)
