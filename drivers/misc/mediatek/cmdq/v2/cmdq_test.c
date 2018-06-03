@@ -3963,6 +3963,38 @@ static void testcase_timeout_secure_dapc(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+static void testcase_end_addr_conflict(void)
+{
+	struct cmdqRecStruct *loop_handle, *submit_handle;
+	u32 index;
+	u32 test_thread = cmdq_get_func()->dispThread(CMDQ_SCENARIO_DEBUG_PREFETCH);
+	u32 test_thread_end = CMDQ_THR_FIX_END_ADDR(test_thread);
+
+	/* build trigger loop to write END addr value */
+	cmdq_task_create(CMDQ_SCENARIO_TRIGGER_LOOP, &loop_handle);
+	cmdq_task_reset(loop_handle);
+	cmdq_task_set_secure(loop_handle, gCmdqTestSecure);
+	for (index = 0; index < 48; index++)
+		cmdq_op_write_reg(loop_handle, CMDQ_TEST_GCE_DUMMY_PA, test_thread_end, ~0);
+
+	cmdq_task_start_loop(loop_handle);
+
+	/* repeatly submit task to catch error */
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG_PREFETCH, &submit_handle);
+	for (index = 0; index < 48; index++) {
+		cmdq_task_reset(submit_handle);
+		cmdq_task_set_secure(submit_handle, gCmdqTestSecure);
+		cmdq_op_write_reg(submit_handle, CMDQ_TEST_GCE_DUMMY_PA, test_thread_end, ~0);
+		cmdq_task_flush(submit_handle);
+		CMDQ_LOG("Flush test round #%u\n", index);
+		msleep_interruptible(500);
+	}
+
+	cmdq_task_stop_loop(loop_handle);
+	cmdq_task_destroy(loop_handle);
+	cmdq_task_destroy(submit_handle);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3980,6 +4012,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 143:
+		testcase_end_addr_conflict();
+		break;
 	case 142:
 		testcase_timeout_secure_dapc();
 		testcase_secure_basic();

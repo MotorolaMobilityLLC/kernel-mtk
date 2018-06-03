@@ -2810,7 +2810,7 @@ bool cmdq_core_verfiy_command_end(const struct TaskStruct *pTask)
 #endif
 
 	/* make sure the command is ended by EOC + JUMP */
-	if (noIRQ == true) {
+	if (noIRQ) {
 		if (cmdq_get_func()->is_disp_loop(pTask->scenario)) {
 			/* Allow display only loop not throw IRQ */
 			CMDQ_MSG("[CMD] DISP Loop pTask 0x%p does not throw IRQ (%08x:%08x)\n",
