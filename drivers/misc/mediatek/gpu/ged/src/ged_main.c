@@ -47,7 +47,7 @@
 #include "ged_ge.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
-
+#ifndef GED_BUFFER_LOG_DISABLE
 #ifdef GED_DEBUG
 #define GED_LOG_BUF_COMMON_GLES "GLES"
 static GED_LOG_BUF_HANDLE ghLogBuf_GLES;
@@ -62,6 +62,7 @@ static GED_LOG_BUF_HANDLE ghLogBuf_HWC_ERR;
 static GED_LOG_BUF_HANDLE ghLogBuf_FENCE;
 static GED_LOG_BUF_HANDLE ghLogBuf_FWTrace;
 static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
+#endif
 
 GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 GED_LOG_BUF_HANDLE ghLogBuf_ged_srv;
@@ -191,6 +192,10 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		case GED_BRIDGE_COMMAND_GE_INFO:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_info, GE_INFO);
 			break;
+		case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
+			SET_FUNC_AND_CHECK(ged_bridge_gpu_timestamp,
+				GPU_TIMESTAMP);
+			break;
 		default:
 			GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
 			break;
@@ -302,6 +307,7 @@ static struct miscdevice ged_dev = {
 
 static void ged_exit(void)
 {
+#ifndef GED_BUFFER_LOG_DISABLE
 #ifdef GED_DVFS_DEBUG_BUF
 	ged_log_buf_free(ghLogBuf_DVFS);
 	ged_log_buf_free(ghLogBuf_ged_srv);
@@ -318,6 +324,7 @@ static void ged_exit(void)
 	ghLogBuf_FENCE = 0;
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
+#endif
 
 	ged_fdvfs_exit();
 
@@ -427,7 +434,7 @@ static int ged_init(void)
 		goto ERROR;
 	}
 #endif
-
+#ifndef GED_BUFFER_LOG_DISABLE
 	/* common gpu info buffer */
 	ged_log_buf_alloc(1024, 64 * 1024, GED_LOG_BUF_TYPE_RINGBUFFER, "gpuinfo", "gpuinfo");
 
@@ -446,11 +453,15 @@ static int ged_init(void)
 
 #ifdef GED_DVFS_DEBUG_BUF
 #ifdef GED_LOG_SIZE_LIMITED
-	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60, 20*60*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug_limited");
+	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60, 20*60*100
+		, GED_LOG_BUF_TYPE_RINGBUFFER
+		, "DVFS_Log", "ged_dvfs_debug_limited");
 #else
-	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
+	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*100
+		, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
 #endif
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
+#endif
 #endif
 
 	return 0;

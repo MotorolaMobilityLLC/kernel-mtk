@@ -80,7 +80,8 @@ int ged_bridge_monitor_3D_fence(
 		GED_BRIDGE_IN_MONITOR3DFENCE *psMonitor3DFenceINT,
 		GED_BRIDGE_OUT_MONITOR3DFENCE *psMonitor3DFenceOUT)
 {
-	psMonitor3DFenceOUT->eError = GED_OK; //ged_monitor_3D_fence_add(psMonitor3DFenceINT->fd);
+	psMonitor3DFenceOUT->eError =
+		ged_monitor_3D_fence_add(psMonitor3DFenceINT->fd);
 	return 0;
 }
 //-----------------------------------------------------------------------------
