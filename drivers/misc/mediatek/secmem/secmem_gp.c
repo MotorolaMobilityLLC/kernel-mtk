@@ -536,7 +536,7 @@ static int secmem_region_alloc(void)
 	}
 
 	if (pa == 0 || size == 0) {
-		pr_err("invalid pa(0x%llx) or size(0x%lx)\n", pa, size);
+		pr_err("invalid pa(0x%llx) or size(0x%lx)\n", (u64)pa, size);
 		return -1;
 	}
 
@@ -557,7 +557,7 @@ static int secmem_region_alloc(void)
 #endif
 
 	pr_debug("phyaddr=0x%llx sz=0x%lx rgn_on=%u rgn_ref=%u\n",
-			pa, size, secmem_region_online, secmem_region_ref);
+			(u64)pa, size, secmem_region_online, secmem_region_ref);
 
 	return 0;
 }
