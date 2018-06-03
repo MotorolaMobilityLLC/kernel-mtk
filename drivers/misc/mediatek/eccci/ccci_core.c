@@ -129,6 +129,9 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 	case ID_GET_MD_WAKEUP_SRC:
 		if (md_id == MD_SYS1)
 			ccci_hif_set_wakeup_src(CLDMA_HIF_ID, 1);
+#if (MD_GENERATION >= 6293)
+			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
+#endif
 		if (md_id == MD_SYS3)
 			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
 		break;
