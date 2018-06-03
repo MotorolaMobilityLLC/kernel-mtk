@@ -1814,6 +1814,10 @@ int m4u_unregister_fault_callback(int port)
 
 int m4u_enable_tf(int port, bool fgenable)
 {
+	if (port < 0 || port >= M4U_PORT_UNKNOWN) {
+		M4UMSG("%s fail,m port=%d\n", __func__, port);
+		return -1;
+	}
 	gM4uPort[port].enable_tf = fgenable;
 	return 0;
 }
