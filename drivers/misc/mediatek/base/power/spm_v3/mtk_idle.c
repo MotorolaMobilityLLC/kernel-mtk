@@ -48,6 +48,10 @@
 
 #include "ufs-mtk.h"
 
+#ifdef CONFIG_MTK_DCS
+#include <mt-plat/mtk_meminfo.h>
+#endif
+
 #include <linux/uaccess.h>
 
 #define FEATURE_ENABLE_SODI2P5
@@ -1505,6 +1509,11 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	int i = NR_TYPES - 1;
 	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
+#ifdef CONFIG_MTK_DCS
+	int ch = 0, ret = -1;
+	enum dcs_status dcs_status;
+	bool dcs_lock_get = false;
+#endif
 
 	dump_idle_cnt_in_interval(cpu);
 
@@ -1562,6 +1571,18 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 #endif
 
+#ifdef CONFIG_MTK_DCS
+	/* check if DCS channel switching */
+	ret = dcs_get_dcs_status_trylock(&ch, &dcs_status);
+	if (ret) {
+		reason = BY_DCS;
+		goto get_idle_idx_2;
+	}
+
+	dcs_lock_get = true;
+
+#endif
+
 get_idle_idx_2:
 	/* check if criteria check fail in common part */
 	for (i = 0; i < NR_TYPES; i++) {
@@ -1588,6 +1609,11 @@ get_idle_idx_2:
 	} else {
 		state = CPUIDLE_STATE_RG;
 	}
+
+#ifdef CONFIG_MTK_DCS
+	if (dcs_lock_get)
+		dcs_get_dcs_status_unlock();
+#endif
 
 	return state;
 }
