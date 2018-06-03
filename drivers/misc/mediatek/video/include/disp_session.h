@@ -412,6 +412,10 @@ struct disp_session_buf_info {
 	unsigned int buf_hnd[3];
 };
 
+enum LAYERING_CAPS {
+	LAYERING_OVL_ONLY = 0x00000001,
+};
+
 struct layer_config {
 	unsigned int ovl_id;
 	enum DISP_FORMAT src_fmt;
@@ -419,6 +423,7 @@ struct layer_config {
 	unsigned int dst_width, dst_height;
 	int ext_sel_layer;
 	unsigned int src_width, src_height;
+	unsigned int layer_caps;
 };
 
 struct disp_layer_info {

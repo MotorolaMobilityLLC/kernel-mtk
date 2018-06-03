@@ -102,6 +102,13 @@ bool is_gles_layer(struct disp_layer_info *disp_info, int disp_idx, int layer_id
 		return false;
 }
 
+inline bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_caps)
+{
+	if (layer_info->layer_caps & l_caps)
+		return true;
+	return false;
+}
+
 static int get_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx)
 {
 	int total_cnt = 0;
@@ -335,11 +342,12 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 
 			for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 				layer_info = &disp_info->input_config[i][j];
-				DISPMSG("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d\n",
+				DISPMSG("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d/caps:0x%x\n",
 					j, layer_info->ovl_id, layer_info->dst_offset_x, layer_info->dst_offset_y,
 					layer_info->src_width, layer_info->src_height,
 					layer_info->dst_width, layer_info->dst_height,
-					layer_info->src_fmt, layer_info->ext_sel_layer);
+					layer_info->src_fmt, layer_info->ext_sel_layer,
+					layer_info->layer_caps);
 			}
 		}
 	} else {
@@ -355,11 +363,12 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 
 			for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 				layer_info = &disp_info->input_config[i][j];
-				DISPINFO("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d\n",
+				DISPINFO("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d/caps:0x%x\n",
 					j, layer_info->ovl_id, layer_info->dst_offset_x, layer_info->dst_offset_y,
 					layer_info->src_width, layer_info->src_height,
 					layer_info->dst_width, layer_info->dst_height,
-					layer_info->src_fmt, layer_info->ext_sel_layer);
+					layer_info->src_fmt, layer_info->ext_sel_layer,
+					layer_info->layer_caps);
 			}
 		}
 	}
