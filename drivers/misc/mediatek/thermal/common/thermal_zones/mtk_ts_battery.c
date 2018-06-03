@@ -29,15 +29,20 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
-#include <tmp_battery.h>
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 #include "tzbatt_initcfg.h"
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+#include <mtk_battery.h>
+#else
+#include <tmp_battery.h>
+#endif
 
 /* ************************************ */
 /* Function prototype*/
 /* ************************************ */
-static void __exit mtktsbattery_exit(void);
+static void tsbattery_exit(void);
+
 /* ************************************ */
 /* Weak functions */
 /* ************************************ */
@@ -56,7 +61,7 @@ battery_get_bat_temperature(void)
 	for (i = 0; i < 5; i++)
 		pr_err("[Thermal] E_WF: %s doesn't exist\n", __func__);
 
-	mtktsbattery_exit();
+	tsbattery_exit();
 	return -127000;
 }
 /* ************************************ */
@@ -669,6 +674,13 @@ static void mtktsbattery_unregister_thermal(void)
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
 	}
+}
+
+static void tsbattery_exit(void)
+{
+	mtktsbattery_dprintk("[tsbattery_exit]\n");
+	mtktsbattery_unregister_thermal();
+	mtktsbattery_unregister_cooler();
 }
 
 static int mtkts_battery_open(struct inode *inode, struct file *file)
