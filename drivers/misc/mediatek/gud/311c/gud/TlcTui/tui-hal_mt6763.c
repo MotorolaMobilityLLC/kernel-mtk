@@ -166,8 +166,11 @@ uint32_t hal_tui_alloc(
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 #endif
-
+#if 1 /*support_64_bit*/
+	ret = tui_region_offline64(&pa, &size);
+#else
 	ret = tui_region_offline(&pa, &size);
+#endif
 	pr_debug("%s(%d): required size 0x%zx, acquired size=0x%lx\n",
 		 __func__, __LINE__, allocsize * number, size);
 
@@ -305,6 +308,11 @@ uint32_t hal_tui_notif(void)
 void hal_tui_post_start(struct tlc_tui_response_t *rsp)
 {
 	pr_info("hal_tui_post_start\n");
+}
+
+int __weak tui_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return -1;
 }
 
 int __weak tui_region_offline(phys_addr_t *pa, unsigned long *size)
