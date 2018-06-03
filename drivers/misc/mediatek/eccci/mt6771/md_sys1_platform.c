@@ -94,6 +94,12 @@ void md_cldma_hw_reset(unsigned char md_id)
 	reg_value |= (CLDMA_PD_RST_MASK);
 	ccci_write32(infra_ao_base, INFRA_RST1_REG_PD, reg_value);
 	CCCI_DEBUG_LOG(md_id, TAG, "md_cldma_hw_reset:done\n");
+
+	/* set cldma wakeup source mask */
+	reg_value = ccci_read32(infra_ao_base, INFRA_CLDMA_CTRL_REG);
+	reg_value |= (CLDMA_IP_BUSY_MASK);
+	ccci_write32(infra_ao_base, INFRA_CLDMA_CTRL_REG, reg_value);
+	CCCI_DEBUG_LOG(md_id, TAG, "set cldma ctrl reg as:0x%x\n", reg_value);
 }
 
 int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg *dev_cfg, struct md_hw_info *hw_info)
