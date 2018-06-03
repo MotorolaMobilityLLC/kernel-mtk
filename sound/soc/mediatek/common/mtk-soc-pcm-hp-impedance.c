@@ -71,14 +71,10 @@ static const int DCoffsetDefault = 1460;	/* w/o 33 ohm */
 static const int DCoffsetDefault_33Ohm = 1620;	/* w/ 33 ohm */
 
 static const int DCoffsetVariance = 200;    /* denali 0.2v */
-static const unsigned short HpImpedanceAuxCable = 10000;
-
 static const int mDcRangestep = 7;
-static const int HpImpedancePhase1Step = 100;
-static const int HpImpedancePhase2Step = 100;
-static const int HpImpedancePhase0AdcValue = 200;
-static const int HpImpedancePhase1AdcValue = 2000;
-static const int HpImpedancePhase2AdcValue = 8800;
+
+static const unsigned short HpImpedanceAuxCable = 5000;
+
 static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 static int EfuseCurrentCalibration;
 
@@ -300,8 +296,6 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	const int off_counter = 20;
-
 	pr_warn("%s\n", __func__);
 	AudDrv_Clk_On();
 	/* set dc value to hardware */
@@ -315,9 +309,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		EnableTrimbuffer(true);
 		/*msleep(5);*/
 		usleep_range(5*1000, 20*1000);
-		mAuxAdc_Offset = (PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9,
-							     off_counter,
-							     0) *
+		mAuxAdc_Offset = (audio_get_auxadc_value() *
 				 AUXADC_VOLTAGE_RANGE) /
 				 AUXADC_BIT_RESOLUTION;
 
@@ -374,9 +366,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 			       *Sramdata, *(Sramdata + 1), *(Sramdata + 2), *(Sramdata + 3));
 			msleep(20);
 			dcoffset = 0;
-			dcoffset = (PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9,
-								off_counter,
-								0) *
+			dcoffset = (audio_get_auxadc_value() *
 				   AUXADC_VOLTAGE_RANGE) /
 				   AUXADC_BIT_RESOLUTION;
 			pr_warn("dcoffset= %d\n", dcoffset);
@@ -405,155 +395,157 @@ static void FillDatatoDlmemory(volatile unsigned int *memorypointer,
 	}
 }
 
-static unsigned short Calculate_HP_Impedance(unsigned short dcinit,
-		unsigned short dcinput, unsigned short pcmoffset)
+static unsigned short mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offset,
+						 const unsigned int detect_times)
 {
-	unsigned short R_hp;
-	unsigned int dcvalue;
-	unsigned int R_tmp = 0;
+	unsigned short r_hp;
+	int dc_value;
+	int r_tmp = 0;
 
-	if (dcinput < dcinit)
+	if (dc_input < dc_init) {
+		pr_warn("Wrong[%d] : dc_input(%d) > dc_init(%d)\n", pcm_offset, dc_input, dc_init);
 		return 0;
-
-	dcvalue = (unsigned int)(dcinput - dcinit);		/* S32.3 = S32.2 - S32.2 */
-
-	if (pcmoffset == HpImpedancePhase0AdcValue) {
-		R_tmp = (dcvalue * 2417 + 256) >> 9;		/* 200 (S32.0) */
-
-		if (R_tmp < 650) {
-			pr_debug("%s Phase%d detected resistor is %d, smaller than 650, Goto Phase%d\n",
-				__func__, HpImpedancePhase0AdcValue, R_tmp, HpImpedancePhase1AdcValue);
-			R_tmp = 0;
-		}
-	} else if (pcmoffset == HpImpedancePhase1AdcValue) {
-		R_tmp = (dcvalue * 967 + 1024) >> 11;		/* 2000 (S32.0) */
-
-		if (R_tmp < 150) {
-			pr_debug("%s Phase%d detected resistor is %d, smaller than 150, Goto Phase%d\n",
-				__func__, HpImpedancePhase1AdcValue, R_tmp, HpImpedancePhase2AdcValue);
-			R_tmp = 0;
-		}
-	} else if (pcmoffset == HpImpedancePhase2AdcValue) {
-		R_tmp = (dcvalue * 879 + 4096) >> 13;		/* 8800(S32.0) */
 	}
+
+	dc_value = (unsigned int)(dc_input - dc_init);
+	pr_aud("mtk_calculate_hp_impedance: dc_input(%d) ,dc_init(%d) , dc_value(%d)\n",
+	       dc_input, dc_init, dc_value);
+
+	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
+	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
 
 	/* Efuse calibration */
-	if ((EfuseCurrentCalibration != 0) && (R_tmp != 0)) {
-		R_tmp = R_tmp * 128 / (128 + EfuseCurrentCalibration);
+	if ((EfuseCurrentCalibration != 0) && (r_tmp != 0)) {
+		r_tmp = r_tmp * 128 / (128 + EfuseCurrentCalibration);
 		pr_debug("%s After Calibration from EFUSE: %d, R: %d\n",
-			__func__, EfuseCurrentCalibration, R_tmp);
+			__func__, EfuseCurrentCalibration, r_tmp);
 	}
 
-	R_hp = (unsigned short)R_tmp;
-	pr_debug("%s pcmoffset %d dcoffset %d detected resistor is %d\n",
-		__func__, pcmoffset, dcvalue, R_hp);
+	r_hp = (unsigned short)r_tmp;
+	pr_aud("%s pcm_offset %d dcoffset %d detected resistor is %d\n",
+	       __func__, pcm_offset, dc_value, r_hp);
 
-	return R_hp;
+	return r_hp;
 }
 #endif
+
 
 static void ApplyDctoDl(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
+	const unsigned int kDetectTimes = 8;
+	unsigned int counter;
+	int dcSum = 0, detectSum = 0;
+	int detectsOffset[kDetectTimes];
+	short dcValue = 0;
+	unsigned short pickImpedance = 0;
+	bool flagPhase1 = false, flagPhase2 = false;
+	struct mtk_hpdet_param hpdet_param;
 
-	unsigned int i;
-	unsigned short dcoffset = 0, average = 0;
-	unsigned short ibuffer_v[4];
-	short value = 0;
-#ifdef SUPPORT_GOOGLE_LINEOUT
-	int ret_value;
-#endif
-
-	/* pr_debug("%s\n", __func__); */
-
-	for (value = 0; value < (HpImpedancePhase2AdcValue + HpImpedancePhase1Step);
-		value += HpImpedancePhase1Step) {
+	mtk_read_hp_detection_parameter(&hpdet_param);
+	for (dcValue = 0; dcValue <= hpdet_param.dc_Phase2; dcValue += hpdet_param.dc_Step) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Hp_Playback_dma_buf->area);
 
-		if (value > HpImpedancePhase2AdcValue)
-			value = HpImpedancePhase2AdcValue;
-
 		/* apply to dram */
-		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, value);
+		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, dcValue);
 
 		/* save for DC =0 offset */
-		if (value == 0) {
-			usleep_range(1*1000, 2*1000);
+		if (dcValue == 0) {
+			usleep_range(1*1000, 1*1000);
 
 			/* get adc value */
-			dcoffset = 0;
-			for (i = 0; i < 4; i++) {
-				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
-				dcoffset = dcoffset + ibuffer_v[i];
+			dcSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = audio_get_auxadc_value();
+				dcSum = dcSum + detectsOffset[counter];
 			}
-
-			pr_debug("[DCinit] SUM = %d 1st = %d 2nd = %d 3rd= %d 4th = %d\n",
-				dcoffset, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
+			pr_aud("[DCinit] dcSum = %d of %d times\n", dcSum, kDetectTimes);
 		}
 
 		/* start checking */
-		if (value == HpImpedancePhase0AdcValue) {
-			usleep_range(1*1000, 1*2000);
+		if (dcValue == hpdet_param.dc_Phase0) {
+			usleep_range(1*1000, 1*1000);
 
 			/* get adc value */
-			average = 0;
-			for (i = 0; i < 4; i++) {
-				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
-				average = average + ibuffer_v[i];
+			detectSum = 0;
+			detectSum = audio_get_auxadc_value();
+			pickImpedance = mtk_calculate_hp_impedance(dcSum/kDetectTimes,
+								   detectSum, dcValue, 1);
+			pr_aud("[Pick test] detectSum = %d of %d times hpImpedance = %d\n",
+			       detectSum, 1, pickImpedance);
+			if (pickImpedance < hpdet_param.resistance_first_threshold) {
+				pr_debug("[Pick test]  go to phase 2\n");
+				flagPhase2 = true;
+				continue;
+			} else if (pickImpedance < hpdet_param.resistance_second_threshold) {
+				pr_debug("[Pick test]  go to phase 1\n");
+				flagPhase1 = true;
+				continue;
 			}
 
-			if ((average >> 2) > 4050)
+			/* Phase 0 : detect  range 1kohm to 5kohm impedance */
+			for (counter = 1; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = audio_get_auxadc_value();
+				detectSum = detectSum + detectsOffset[counter];
+			}
+			/* if detect auxadc value over 32630 , the hpImpedance is over 5k ohm */
+			if ((detectSum / kDetectTimes) > hpdet_param.auxadc_upper_bound)
 				mhp_impedance = HpImpedanceAuxCable;
 			else
-				mhp_impedance = Calculate_HP_Impedance(dcoffset, average, value);
-
-			if (mhp_impedance) {
-				pr_debug("[phase %d] SUM = %d 1st = %d 2nd = %d 3rd = %d 4th = %d\n",
-					value, average, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
-				pr_debug("[phase %d]average = %d dcinit_value = %d mhp_impedance = %d\n ",
-					value, average, dcoffset, mhp_impedance);
-				break;
-			}
+				mhp_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+									   dcValue, kDetectTimes);
+			pr_aud("[phase %d] detectSum = %d of %d times hpImpedance = %d\n",
+			       dcValue, detectSum, kDetectTimes, mhp_impedance);
+			break;
 		}
 
-		if (value == HpImpedancePhase1AdcValue || value == HpImpedancePhase2AdcValue) {
-			usleep_range(1*1000, 2*1000);
+		/* Phase 1 : detect  range 250ohm to 1000ohm impedance */
+		if (dcValue == hpdet_param.dc_Phase1 && flagPhase1) {
+			usleep_range(1*1000, 1*1000);
 
 			/* get adc value */
-			average = 0;
-			for (i = 0; i < 4; i++) {
-				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
-				average = average + ibuffer_v[i];
+			detectSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = audio_get_auxadc_value();
+				detectSum = detectSum + detectsOffset[counter];
 			}
+			mhp_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+								   dcValue, kDetectTimes);
 
-			mhp_impedance = Calculate_HP_Impedance(dcoffset, average, value);
-
-			if (mhp_impedance) {
-				pr_debug("[phase %d] SUM = %d 1st = %d 2nd = %d 3rd = %d 4th = %d\n",
-					value, average, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
-				pr_debug("[phase %d]average = %d dcinit_value = %d mhp_impedance = %d\n ",
-					value, average, dcoffset, mhp_impedance);
-				break;
-			}
+			pr_aud("[phase1] detectSum = %d of %d times hpImpedance = %d\n",
+			       detectSum, kDetectTimes, mhp_impedance);
+			break;
 		}
 
-		usleep_range(1*250, 1*500);
+		/* Phase 2 : detect under 250ohm impedance */
+		if (dcValue == hpdet_param.dc_Phase2 && flagPhase2) {
+			usleep_range(1*1000, 1*1000);
+
+			/* get adc value */
+			detectSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = audio_get_auxadc_value();
+				detectSum = detectSum + detectsOffset[counter];
+			}
+			mhp_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+								   dcValue, kDetectTimes);
+
+			pr_aud("[phase2] detectSum = %d of %d times hpImpedance = %d\n",
+			       detectSum, kDetectTimes, mhp_impedance);
+			break;
+		}
+		usleep_range(1*200, 1*200);
 	}
 
-#ifdef SUPPORT_GOOGLE_LINEOUT
-	/* return detected value to ACCDET */
-	ret_value = accdet_read_audio_res((unsigned int)mhp_impedance);
-#endif
-
 	/* Ramp-Down */
-	while (value > 0) {
+	while (dcValue > 0) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Hp_Playback_dma_buf->area);
 
-		value = value - HpImpedancePhase1Step;
+		dcValue = dcValue - hpdet_param.dc_Step;
 		/* apply to dram */
-		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, value);
+		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, dcValue);
 
-		usleep_range(1*200, 1*400);
+		usleep_range(1*200, 1*200);
 	}
 #endif
 }
@@ -562,18 +554,23 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	pr_aud("+ %s()\n", __func__);
+	if (mPrepareDone == false)
+		pr_warn("Audio_HP_ImpeDance driver is not prepared");
+
 	AudDrv_Clk_On();
 	if (OpenHeadPhoneImpedanceSetting(true) == true) {
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
-		/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND); */
-
-		setOffsetTrimBufferGain(3);
-
+		setOffsetTrimBufferGain(3); /* HPDET trim. buffer gain : 18db */
 		EnableTrimbuffer(true);
+
 		setHpGainZero();
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, 0xffff0000, MASK_ALL);
+		/*set AP DL gain to 0db*/
+
 		ApplyDctoDl();
 		SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 		/* usleep_range(0.5*1000, 1*1000); */
+
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
