@@ -23,6 +23,7 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/seq_file.h>
+#include <linux/slab.h>
 
 #include <mach/mtk_charging.h>
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -56,6 +57,7 @@ static const struct i2c_device_id mt6336_i2c_id[] = { {"mt6336", 0}, {} };
 kal_bool chargin_hw_init_done;
 static DEFINE_MUTEX(mt6336_i2c_access);
 int g_mt6336_hw_exist;
+unsigned char g_mt6336_hwcid;
 struct mt6336_ctrl *core_ctrl;
 
 
@@ -67,145 +69,67 @@ struct mt6336_ctrl *core_ctrl;
 #define CODA_ADDR_WIDTH 0x100
 #define SLV_BASE_ADDR 0x52
 
+static int mt6336_read_device(unsigned int reg, unsigned char *returnData, unsigned int len)
+{
+	new_client->addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	return i2c_smbus_read_i2c_block_data(new_client, (reg % CODA_ADDR_WIDTH), len, returnData);
+}
+
+static int mt6336_write_device(unsigned int reg, unsigned char *writeData, unsigned int len)
+{
+	new_client->addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	return i2c_smbus_write_i2c_block_data(new_client, (reg % CODA_ADDR_WIDTH), len, writeData);
+}
+
 unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 {
-	unsigned char xfers = 2;
-	int ret, retries = 1;
-	unsigned short addr;
-	unsigned char cmd;
+	int ret = 0;
 
 	mutex_lock(&mt6336_i2c_access);
-
-	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
-	cmd = reg % CODA_ADDR_WIDTH;
-
-	do {
-		struct i2c_msg msgs[2] = {
-			{
-				.addr = addr,
-				.flags = 0,
-				.len = 1,
-				.buf = &cmd,
-			},
-			{
-
-				.addr = addr,
-				.flags = I2C_M_RD,
-				.len = 1,
-				.buf = returnData,
-			}
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(new_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
-			break;
-		}
-	} while (ret != xfers && --retries);
-
+	ret = mt6336_read_device(reg, returnData, 1);
 	mutex_unlock(&mt6336_i2c_access);
-
-	return ret == xfers ? 1 : -1;
+	return ret < 0 ? 1 : 0;
 }
 
 unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len)
 {
-	unsigned char xfers = 2;
-	int ret, retries = 1;
-	unsigned short addr;
-	unsigned char cmd;
+	int ret = 0;
+	unsigned char *returnData_more = NULL;
 
 	mutex_lock(&mt6336_i2c_access);
-
-	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
-	cmd = reg % CODA_ADDR_WIDTH;
-
-	do {
-		struct i2c_msg msgs[2] = {
-			{
-				.addr = addr,
-				.flags = 0,
-				.len = 1,
-				.buf = &cmd,
-			},
-			{
-
-				.addr = addr,
-				.flags = I2C_M_RD,
-				.len = len,
-				.buf = returnData,
-			}
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(new_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
-			break;
-		}
-	} while (ret != xfers && --retries);
+	if (g_mt6336_hwcid == 0x20) {
+		/* MT6336 E2, burst read not ready */
+		returnData_more = kmalloc_array(len + 2, sizeof(unsigned char), GFP_KERNEL);
+		ret = mt6336_read_device(reg - 0x2, returnData_more, len + 2);
+		memcpy(returnData, returnData_more + 2, len);
+	} else {
+		/* Other chip version */
+		ret = mt6336_read_device(reg, returnData, len);
+	}
 
 	mutex_unlock(&mt6336_i2c_access);
-
-	return ret == xfers ? 1 : -1;
+	return ret < 0 ? 1 : 0;
 }
 
 unsigned int mt6336_write_byte(unsigned int reg, unsigned char writeData)
 {
-	unsigned char xfers = 1;
-	int ret, retries = 1;
-	unsigned char buf[8];
-	unsigned short addr;
-	unsigned char cmd;
+	int ret = 0;
 
 	mutex_lock(&mt6336_i2c_access);
-
-	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
-	cmd = reg % CODA_ADDR_WIDTH;
-
-	buf[0] = cmd;
-	memcpy(&buf[1], &writeData, 1);
-
-	do {
-		struct i2c_msg msgs[1] = {
-			{
-				.addr = addr,
-				.flags = 0,
-				.len = 1 + 1,
-				.buf = buf,
-			},
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(new_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
-			break;
-		}
-	} while (ret != xfers && --retries);
-
+	ret = mt6336_write_device(reg, &writeData, 1);
 	mutex_unlock(&mt6336_i2c_access);
-
-	return ret == xfers ? 1 : -1;
+	return ret < 0 ? 1 : 0;
 }
 
-int mt6336_write_bytes(unsigned int reg, unsigned char *writeData, unsigned int len)
+unsigned int mt6336_write_bytes(unsigned int reg, unsigned char *writeData, unsigned int len)
 {
+	int ret = 0;
+
 	new_client->addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
-	return i2c_smbus_write_i2c_block_data(new_client, (reg % CODA_ADDR_WIDTH), len, writeData);
+	mutex_lock(&mt6336_i2c_access);
+	ret = mt6336_write_device(reg, writeData, len);
+	mutex_unlock(&mt6336_i2c_access);
+	return ret < 0 ? 1 : 0;
 }
 
 /**********************************************************
@@ -220,15 +144,19 @@ unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsi
 	unsigned int ret = 0;
 	unsigned char reg_val;
 
-	ret = mt6336_read_byte(RegNum, &mt6336_reg);
+	ret = mt6336_read_device(RegNum, &mt6336_reg, 1);
 	reg_val = mt6336_reg;
+	if (ret < 0) {
+		pr_err("[%s] err ret=%d, Reg[0x%x] mt6336 read data fail, MASK=0x%x, SHIFT=%d\n",
+			 __func__, ret, RegNum, MASK, SHIFT);
+		return ret;
+	}
 
 	mt6336_reg &= (MASK << SHIFT);
 	*val = (mt6336_reg >> SHIFT);
 
-	MT6336LOG("[mt6336_read_interface] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n",
+	MT6336LOG("[%s] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n", __func__,
 		RegNum, reg_val, *val, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
-
 
 	return ret;
 }
@@ -240,16 +168,29 @@ unsigned int mt6336_config_interface(unsigned int RegNum, unsigned char val, uns
 	unsigned int ret = 0;
 	unsigned char reg_val;
 
-	ret = mt6336_read_byte(RegNum, &mt6336_reg);
+	mutex_lock(&mt6336_i2c_access);
+	ret = mt6336_read_device(RegNum, &mt6336_reg, 1);
 	reg_val = mt6336_reg;
+	if (ret < 0) {
+		pr_err("[%s] err ret=%d, Reg[0x%x] mt6336 read data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, ret, RegNum, val, MASK, SHIFT);
+		mutex_unlock(&mt6336_i2c_access);
+		return ret;
+	}
 
 	mt6336_reg &= ~(MASK << SHIFT);
 	mt6336_reg |= (val << SHIFT);
 
-	ret = mt6336_write_byte(RegNum, mt6336_reg);
+	ret = mt6336_write_device(RegNum, &mt6336_reg, 1);
+	if (ret < 0) {
+		pr_err("[%s] err ret=%d, Reg[0x%x]=0x%x mt6336 write data fail, val=0x%x, MASK=0x%x, SHIFT=%d\n",
+			 __func__, ret, RegNum, mt6336_reg, val, MASK, SHIFT);
+		mutex_unlock(&mt6336_i2c_access);
+		return ret;
+	}
 	MT6336LOG("[mt6336_config_interface] write Reg[0x%x] from 0x%x to 0x%x device_id=0x%x\n", RegNum,
 		    reg_val, mt6336_reg, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
-
+	mutex_unlock(&mt6336_i2c_access);
 	return ret;
 }
 
@@ -450,6 +391,9 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	mt6336_ctrl_enable(core_ctrl);
 	mt6336_hw_component_detect();
 	mt6336_dump_register();
+
+	/* Check MT6336 chip version */
+	g_mt6336_hwcid = mt6336_get_flag_register_value(MT6336_HWCID);
 
 	/*MT6336 Interrupt Service*/
 	MT6336_EINT_SETTING();

@@ -356,19 +356,20 @@ static void mt6336_int_handler(void)
 		for (j = 0; j < CHR_INT_WIDTH; j++) {
 			/* handle CC & PD irq first, CC & PD are at the same status register */
 			cc_pd_status = mt6336_get_register_value(mt6336_interrupts[cc_pd_i].address);
-			if (cc_pd_status & (1 << cc_j)) {
-				if (mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback != NULL) {
+			if (cc_pd_status) {
+				pr_err(MT6336TAG "[CHR_INT] Type-C status[0x%x]=0x%x\n",
+					mt6336_interrupts[cc_pd_i].address, cc_pd_status);
+				if (cc_pd_status & (1 << cc_j)
+				    && mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback != NULL) {
 					mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback();
 					mt6336_interrupts[cc_pd_i].interrupts[cc_j].times++;
 				}
-				ret = mt6336_config_interface(mt6336_interrupts[cc_pd_i].address, 0x1, 0x1, cc_j);
-			}
-			if (cc_pd_status & (1 << pd_j)) {
-				if (mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback != NULL) {
+				if (cc_pd_status & (1 << pd_j)
+				    && mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback != NULL) {
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback();
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].times++;
 				}
-				ret = mt6336_config_interface(mt6336_interrupts[cc_pd_i].address, 0x1, 0x1, pd_j);
+				mt6336_set_register_value(mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 			}
 			if (i == cc_pd_i && (j == cc_j || j == pd_j))
 				continue;
@@ -379,9 +380,10 @@ static void mt6336_int_handler(void)
 					mt6336_interrupts[i].interrupts[j].callback();
 					mt6336_interrupts[i].interrupts[j].times++;
 				}
-				ret = mt6336_config_interface(mt6336_interrupts[i].address, 0x1, 0x1, j);
 			}
 		}
+		if (int_status_vals[i] && i != cc_pd_i)
+			mt6336_set_register_value(mt6336_interrupts[i].address, int_status_vals[i]);
 	}
 }
 
