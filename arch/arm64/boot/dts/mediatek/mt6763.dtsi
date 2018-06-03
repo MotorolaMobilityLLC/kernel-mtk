@@ -1510,6 +1510,10 @@
 		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 	};
 
+	accdet: accdet {
+		compatible = "mediatek,pmic-accdet";
+	};
+
 	dispsys: dispsys@14000000 {
 		compatible = "mediatek,dispsys";
 		reg = <0 0x14000000 0 0x1000>,  /*disp_sys	*/
