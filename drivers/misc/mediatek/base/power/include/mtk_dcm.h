@@ -59,6 +59,7 @@
 #elif defined(CONFIG_MACH_ELBRUS)	\
 	|| defined(CONFIG_MACH_MT6799)	\
 	|| defined(CONFIG_MACH_MT6759)	\
+	|| defined(CONFIG_MACH_MT6761)	\
 	|| defined(CONFIG_MACH_MT6763)	\
 	|| defined(CONFIG_MACH_MT6765)	\
 	|| defined(CONFIG_MACH_MT6739)
