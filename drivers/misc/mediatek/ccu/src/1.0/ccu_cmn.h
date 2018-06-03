@@ -141,6 +141,11 @@ int ccu_send_command(ccu_cmd_st *pCmd);
 int ccu_power(ccu_power_t *power);
 
 /**
+ * ccu_force_powerdown - force CCU to stop & shutdown
+ */
+int ccu_force_powerdown(void);
+
+/**
  * ccu_run - start running ccu .
  */
 int ccu_run(void);
@@ -251,7 +256,7 @@ void ccu_clock_disable(void);
 #define LOG_WRN_MUST(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_DBG(format, args...)
 #define LOG_INF(format, args...)
-#define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_WRN(format, args...)    pr_warn(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 
 #define ccu_print_seq(seq_file, fmt, args...) \
