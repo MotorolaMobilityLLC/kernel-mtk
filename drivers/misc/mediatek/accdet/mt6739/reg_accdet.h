@@ -137,6 +137,8 @@
 #define AUXADC_ACCDET_AUTO_RQST_NONE		(0x00<<1)/* ACCDET auto request none */
 
 #define RG_AUDSPARE							(0x00A0)
+#define RG_AUDSPARE_FSTDSCHRG_ANALOG_DIR_EN	(1<<5)
+#define RG_AUDSPARE_FSTDSCHRG_IMPR_EN		(1<<7)
 /* ACCDET_CON0,0x16C6
   * bit10: control connection between Analog and auxadc
   * bit11: 0,HW mode;1,SW mode
@@ -322,6 +324,7 @@
 
 #define ACCDET_HWMODE_SEL					(0x01<<2)
 #define ACCDET_EINT0_DEB_OUT_DFF			(0x01<<3)
+#define ACCDET_FAST_DISCAHRGE				(0x01<<4)
 #define ACCDET_FAST_DISCAHRGE_EN			(0xC01C)
 #define ACCDET_FAST_DISCAHRGE_DIS			(0xC00C)
 #define ACCDET_FAST_DISCAHRGE_REVISE		(0x000C)
