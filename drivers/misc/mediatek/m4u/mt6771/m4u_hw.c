@@ -32,6 +32,9 @@ static struct m4u_domain gM4uDomain;
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
+/* scp: 0x10001000 , mmsys: 0x14000000*/
+static unsigned long scpsysbaseaddr;
+static unsigned long mmsyscfgbaseaddr;
 static unsigned int gM4UTagCount[] = { 64 };
 
 
@@ -153,10 +156,14 @@ static int __m4u_dump_rs_info(unsigned int va[], unsigned int pa[], unsigned int
 
 static int m4u_dump_rs_info(int m4u_index, int m4u_slave_id)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base = 0;
 	int i;
 	unsigned int va[MMU_TOTAL_RS_NR], pa[MMU_TOTAL_RS_NR], st[MMU_TOTAL_RS_NR], pte[MMU_TOTAL_RS_NR];
 
+	if (m4u_index >= TOTAL_M4U_NUM)
+		return 0;
+
+	m4u_base = gM4UBaseAddr[m4u_index];
 	for (i = 0; i < MMU_TOTAL_RS_NR; i++) {
 		va[i] = COM_ReadReg32((m4u_base + REG_MMU_RSx_VA(m4u_slave_id, i)));
 		pa[i] = COM_ReadReg32((m4u_base + REG_MMU_RSx_PA(m4u_slave_id, i)));
@@ -330,30 +337,35 @@ int mau_dump_status(int m4u_id, int m4u_slave_id)
 	return 0;
 }
 
-int m4u_dump_reg(int m4u_index, unsigned int start)
+int m4u_dump_reg(int m4u_index, unsigned int start, unsigned int end)
 {
 	int i;
 
-	M4UINFO("Register Start =======\n");
-	for (i = 0; i < 400 / 4; i += 4) {
+	for (i = start; i < end; i += 16) {
 		M4UINFO("0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x\n",
-			(start + 4 * i + 4 * 0), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 0),
-			(start + 4 * i + 4 * 1), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 1),
-			(start + 4 * i + 4 * 2), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 2),
-			(start + 4 * i + 4 * 3), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 3));
+			(i + 4 * 0), M4U_ReadReg32(gM4UBaseAddr[m4u_index], i + 4 * 0),
+			(i + 4 * 1), M4U_ReadReg32(gM4UBaseAddr[m4u_index], i + 4 * 1),
+			(i + 4 * 2), M4U_ReadReg32(gM4UBaseAddr[m4u_index], i + 4 * 2),
+			(i + 4 * 3), M4U_ReadReg32(gM4UBaseAddr[m4u_index], i + 4 * 3));
 	}
-	M4UINFO("0xc00=0x%x, 0c04=0x%x, 0xc08=0x%x, 0xc0c=0x%x\n",
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc04),
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc0c));
-	M4UINFO("0xb00=0x%x, 0xb04=0x%x, 0xb08=0x%x, 0xb0c=0x%x\n",
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb04),
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb0c));
-
-	M4UINFO("Register End ==========\n");
 
 	return 0;
 }
 
+int m4u_dump_reg_ext(unsigned long base, unsigned int start, unsigned int end)
+{
+	int i;
+
+	for (i = start; i < end; i += 16) {
+		M4UINFO("0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x\n",
+			(i + 4 * 0), M4U_ReadReg32(base, i + 4 * 0),
+			(i + 4 * 1), M4U_ReadReg32(base, i + 4 * 1),
+			(i + 4 * 2), M4U_ReadReg32(base, i + 4 * 2),
+			(i + 4 * 3), M4U_ReadReg32(base, i + 4 * 3));
+	}
+
+	return 0;
+}
 
 unsigned int m4u_get_main_descriptor(int m4u_id, int m4u_slave_id, int idx)
 {
@@ -1462,6 +1474,7 @@ int m4u_reg_backup(void)
 		__M4U_BACKUP(m4u_base, REG_MMU_HW_DEBUG, *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_NON_BLOCKING_DIS, *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_LEGACY_4KB_MODE, *(pReg++));
+		__M4U_BACKUP(m4u_base, REG_MMU_IN_ORDER_WR_EN, *(pReg++));
 		for (dist = 0; dist < MMU_TOTAL_PROG_DIST_NR; dist++)
 			__M4U_BACKUP(m4u_base, REG_MMU_PROG_DIST(dist), *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_CTRL_REG, *(pReg++));
@@ -1524,6 +1537,7 @@ int m4u_reg_restore(void)
 		__M4U_RESTORE(m4u_base, REG_MMU_HW_DEBUG, *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_NON_BLOCKING_DIS, *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_LEGACY_4KB_MODE, *(pReg++));
+		__M4U_RESTORE(m4u_base, REG_MMU_IN_ORDER_WR_EN, *(pReg++));
 		for (dist = 0; dist < MMU_TOTAL_PROG_DIST_NR; dist++)
 			__M4U_RESTORE(m4u_base, REG_MMU_PROG_DIST(dist), *(pReg++));
 
@@ -2041,6 +2055,7 @@ int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA, int m4u
 	unsigned int regval;
 	int i;
 	int j;
+	struct device_node *node = NULL;
 
 	M4UMSG("m4u_reg_init, ProtectPA = 0x%lx\n", ProtectPA);
 
@@ -2118,14 +2133,16 @@ int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA, int m4u
 	/* ========================================= */
 	/* perisys init */
 	/* ========================================= */
-	if (m4u_id == 1) {
-		struct device_node *node = NULL;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
-		gPericfgBaseAddr = (unsigned long)of_iomap(node, 0);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	gPericfgBaseAddr = (unsigned long)of_iomap(node, 0);
 
-		M4UINFO("gPericfgBaseAddr: 0x%lx\n", gPericfgBaseAddr);
-	}
+	M4UINFO("gPericfgBaseAddr: 0x%lx\n", gPericfgBaseAddr);
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,scpsys");
+	scpsysbaseaddr = (unsigned long)of_iomap(node, 0);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	mmsyscfgbaseaddr = (unsigned long)of_iomap(node, 0);
 	/* ============================================= */
 	/* m4u registers */
 	/* ============================================= */
@@ -2305,10 +2322,38 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		M4UMSG("gM4UBaseAddr[0] is NULL\n");
 		return 0;
 	}
-	M4UMSG("0x44 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x44));
-	m4u_dump_reg(0, 0);
+	m4u_dump_reg(0, 0, 400);
+	m4u_dump_reg(0, 0x500, 0x5fc);
+	m4u_dump_reg(0, 0xb00, 0xb0c);
+	m4u_dump_reg(0, 0xc00, 0xc0c);
+	m4u_dump_reg(0, 0x380, 0x3fc);
+	m4u_dump_reg(0, 0x680, 0x6fc);
+
 	m4u_print_perf_counter(0, 0, "m4u");
-	m4u_dump_rs_info(0, 0);
+	m4u_dump_rs_info(2, 0);
+
+	M4UMSG("====== dump m4u reg end =======>\n");
+
+	if (scpsysbaseaddr > 0) {
+		M4UMSG("====== dump scpsys reg start 0x10001000===>\n");
+		m4u_dump_reg_ext(scpsysbaseaddr, 0x70, 0x94);
+		m4u_dump_reg_ext(scpsysbaseaddr, 0xd00, 0xd64);
+		M4UMSG("====== dump scpsys reg end =======>\n");
+	}
+
+	if (gPericfgBaseAddr > 0) {
+		M4UMSG("====== dump Pericfg reg start 0x10003000===>\n");
+		m4u_dump_reg_ext(gPericfgBaseAddr, 0x500, 0x54c);
+		M4UMSG("====== dump Pericfg reg end =======>\n");
+	}
+
+	if (mmsyscfgbaseaddr > 0) {
+		M4UMSG("====== dump mmsyscfg reg start 0x14000000===>\n");
+		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x100, 0x110);
+		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x914, 0x920);
+		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x96c, 0x974);
+		M4UMSG("====== dump mmsyscfg reg end =======>\n");
+	}
 
 	return 0;
 }
