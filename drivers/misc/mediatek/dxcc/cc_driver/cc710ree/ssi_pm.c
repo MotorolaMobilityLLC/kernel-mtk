@@ -32,9 +32,7 @@
 #include "ssi_pm_ext.h"
 #include <linux/clk.h>
 
-static struct clk *dxcc_ao_clk;
 static struct clk *dxcc_pub_clk;
-
 
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
 
@@ -52,7 +50,7 @@ int ssi_power_mgr_runtime_suspend(struct device *dev)
 	fini_cc_regs(drvdata);
 
 	/* Specific HW suspend code */
-	ssi_pm_ext_hw_suspend(dev, dxcc_ao_clk, dxcc_pub_clk);
+	ssi_pm_ext_hw_suspend(dev, dxcc_pub_clk);
 	return 0;
 }
 
@@ -66,7 +64,7 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 	long timeout;
 
 	/* Specific HW resume code */
-	ssi_pm_ext_hw_resume(dev, dxcc_ao_clk, dxcc_pub_clk);
+	ssi_pm_ext_hw_resume(dev, dxcc_pub_clk);
 
 	init_cc_gpr7_interrupt(drvdata);
 
@@ -157,12 +155,6 @@ int ssi_power_mgr_init(struct ssi_drvdata *drvdata)
 	int rc = 0;
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
 	struct platform_device *plat_dev = drvdata->plat_dev;
-
-	dxcc_ao_clk = devm_clk_get(&plat_dev->dev, "dxcc-ao-clock");
-	if (IS_ERR(dxcc_ao_clk)) {
-		SSI_LOG_ERR("Cannot get dxcc ao clock from common clock framework in power manager.\n");
-		return PTR_ERR(dxcc_ao_clk);
-	}
 
 	dxcc_pub_clk = devm_clk_get(&plat_dev->dev, "dxcc-pubcore-clock");
 	if (IS_ERR(dxcc_pub_clk)) {

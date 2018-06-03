@@ -29,7 +29,7 @@ This function should suspend the HW (if possiable), It should be implemented by
 the driver user.
 The reference code clears the internal SRAM to imitate lose of state.
 */
-void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_ao_clk, struct clk *dxcc_pub_clk)
+void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk)
 {
 	struct ssi_drvdata *drvdata =
 		(struct ssi_drvdata *)dev_get_drvdata(dev);
@@ -52,7 +52,6 @@ void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_ao_clk, struct c
 
 	/* SSI_LOG_ERR("ssi_pm_ext_hw_suspend AO\n"); */
 	clk_disable(dxcc_pub_clk);
-	clk_disable(dxcc_ao_clk);
 }
 
 /*
@@ -61,17 +60,13 @@ the driver user.
 this function forces a Crypto Cell reset to simulate a SEP reset (kind of SEP Power Up).
 Probably, in real implementation you will remove the reset function.
 */
-void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_ao_clk, struct clk *dxcc_pub_clk)
+void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk)
 {
 	struct ssi_drvdata *drvdata =
 	(struct ssi_drvdata *)dev_get_drvdata(dev);
 	void __iomem *cc_base = drvdata->cc_base;
 
 	int ret;
-
-	ret = clk_enable(dxcc_ao_clk);
-	if (ret != 0)
-		SSI_LOG_ERR("Enable dxcc ao clock failed.\n");
 
 	ret = clk_enable(dxcc_pub_clk);
 	if (ret != 0)
