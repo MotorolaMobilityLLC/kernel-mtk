@@ -154,6 +154,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
+	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
 #if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
@@ -192,41 +193,49 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	 * This will help solve over-reclaiming situation while total number
 	 * of free pages is enough, but lower zone(s) is(are) under low memory.
 	 */
-	if (!current_is_kswapd()) {
-		enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+	if (high_zoneidx < MAX_NR_ZONES - 1) {
+		struct pglist_data *pgdat;
+		struct zone *z;
+		enum zone_type zoneidx;
+		unsigned long accumulated_pages = 0, scale = totalram_pages;
+		int new_other_free = 0, new_other_file = 0;
+		int memory_pressure = 0;
 
-		if (high_zoneidx < MAX_NR_ZONES - 1) {
-			struct pglist_data *pgdat;
-			struct zone *z;
-			enum zone_type zoneidx;
-			unsigned long accumulated_pages = 0, scale = totalram_pages;
-			int new_other_free = 0, new_other_file = 0;
+		/* Go through all memory nodes */
+		for_each_online_pgdat(pgdat) {
+			for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
+				z = pgdat->node_zones + zoneidx;
+				accumulated_pages += z->managed_pages;
+				new_other_free += zone_page_state(z, NR_FREE_PAGES);
+				new_other_free -= high_wmark_pages(z);
+				new_other_file += zone_page_state(z, NR_FILE_PAGES);
+				new_other_file -= zone_page_state(z, NR_SHMEM);
 
-			/* Go through all memory nodes */
-			for_each_online_pgdat(pgdat) {
-				for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
-					z = pgdat->node_zones + zoneidx;
-					accumulated_pages += z->managed_pages;
-					new_other_free += zone_page_state(z, NR_FREE_PAGES);
-					new_other_free -= high_wmark_pages(z);
-					new_other_file += zone_page_state(z, NR_FILE_PAGES);
-					new_other_file -= zone_page_state(z, NR_SHMEM);
-				}
+				/* Compute memory pressure level */
+				memory_pressure += zone_page_state(z, NR_ACTIVE_FILE) +
+					zone_page_state(z, NR_INACTIVE_FILE) +
+					zone_page_state(z, NR_ACTIVE_ANON) +
+					zone_page_state(z, NR_INACTIVE_ANON) +
+					new_other_free;
 			}
+		}
 
-			/*
-			 * Update if we go through ONLY lower zone(s) ACTUALLY
-			 * and scale in totalram_pages
-			 */
-			if (totalram_pages > accumulated_pages) {
-				do_div(scale, accumulated_pages);
-				if (totalram_pages > accumulated_pages * scale)
-					scale += 1;
-				new_other_free *= scale;
-				new_other_file *= scale;
-				other_free = new_other_free;
-				other_file = new_other_file;
-			}
+		/*
+		 * Update if we go through ONLY lower zone(s) ACTUALLY
+		 * and scale in totalram_pages
+		 */
+		if (totalram_pages > accumulated_pages) {
+			do_div(scale, accumulated_pages);
+			if (totalram_pages > accumulated_pages * scale)
+				scale += 1;
+			new_other_free *= scale;
+			new_other_file *= scale;
+		}
+
+		/* Update if not kswapd or "being kswapd and high memory pressure" */
+		if (!current_is_kswapd() || (current_is_kswapd() && memory_pressure < 0)) {
+			other_free = new_other_free;
+			other_file = new_other_file;
 		}
 	}
 
