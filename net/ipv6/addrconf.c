@@ -3556,7 +3556,7 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->cnf.rtr_solicit_delay :
 				      idev->rs_interval);
 	} else {
-		inet6_no_ra_notify(RTM_NORA, idev);
+		inet6_no_ra_notify(RTM_DELADDR, idev);
 #ifdef CONFIG_MTK_IPV6_VZW
 		/*add for VzW feature : remove IF_RS_VZW_SENT flag*/
 		if (idev->if_flags & IF_RS_VZW_SENT)
@@ -5388,31 +5388,22 @@ static void inet6_no_ra_notify(int event, struct inet6_dev *idev)
 		kfree_skb(skb);
 		goto errout;
 	}
-
-	rtnl_notify(skb, net, 0, RTNLGRP_IPV6_PREFIX, NULL, GFP_ATOMIC);
+	rtnl_notify(skb, net, 0, RTNLGRP_IPV6_IFADDR, NULL, GFP_ATOMIC);
 	return;
 errout:
 	if (err < 0)
-		rtnl_set_sk_err(net, RTNLGRP_IPV6_PREFIX, err);
+		rtnl_set_sk_err(net, RTNLGRP_IPV6_IFADDR, err);
 }
 
 /*Fill skb for  no ra  msg*/
 static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 			   u32 portid, u32 seq, int event, unsigned int flags)
 {
-	struct net_device *dev = idev->dev;
 	struct nlmsghdr *nlh;
-	struct ifinfomsg *hdr;
 
-	nlh = nlmsg_put(skb, portid, seq, event, sizeof(*hdr), flags);
-	if (!nlh)
-		return -EMSGSIZE;
+	unsigned int flag = 1;
+	struct in6_addr addr;
 
-	hdr = nlmsg_data(nlh);
-	hdr->ifi_family = AF_INET6;
-	hdr->__ifi_pad = 0;
-	hdr->ifi_type = dev->type;
-	hdr->ifi_index = dev->ifindex;
 #ifdef CONFIG_MTK_IPV6_VZW
 	/*This ifi_flags refers to the dev flag in kernel, but here, I use it as a valid flag
 	*When ifi_flags is zero , it means RA refesh Fail, And When ifi_flags is  1, it means
@@ -5420,14 +5411,34 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 	*/
 	/*hdr->ifi_flags = dev_get_flags(dev); */
 	if (idev->if_flags & IF_RS_VZW_SENT) {
-		hdr->ifi_flags = 0;
+		flag = 0;
 		pr_info("[mtk_net][vzw]RA refresh Fail\n");
 	} else {
-		hdr->ifi_flags = 1;
+		flag = 1;
 		pr_info("[mtk_net][vzw]RA init Fail\n");
 	}
 #endif
-	hdr->ifi_change = 0;
+
+	nlh = nlmsg_put(skb, portid, seq, event, sizeof(struct ifaddrmsg), flag);
+	if (!nlh)
+		return -EMSGSIZE;
+
+	put_ifaddrmsg(nlh, 64, 01, 01, idev->dev->ifindex);
+
+	/* ipv6 address
+	* RA refresh Fail - FE80::5A5A:5A22
+	* RA init Fail - FE80::5A5A:5A23
+	*/
+	addr.in6_u.u6_addr32[0] = 0x000080FE;
+	addr.in6_u.u6_addr32[1] = 0x0;
+	addr.in6_u.u6_addr32[2] = 0x5A005A00;
+	if (flag == 0)
+		addr.in6_u.u6_addr32[3] = 0x22005A00;
+	else
+		addr.in6_u.u6_addr32[3] = 0x23005A00;
+
+	if (nla_put_in6_addr(skb, IFA_ADDRESS, &addr) < 0)
+		return -EMSGSIZE;
 
 	nlmsg_end(skb, nlh);
 	return 0;
