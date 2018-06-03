@@ -52,8 +52,7 @@ struct DDP_IRQ_EVENT_MAPPING {
 struct ddp_path_handle {
 	struct cmdqRecStruct *cmdqhandle;
 	int hwmutexid;
-	/* no need power_state now*/
-	/* int power_state; */
+	int power_state;
 	enum DDP_MODE mode;
 	struct mutex mutex_lock;
 	struct DDP_IRQ_EVENT_MAPPING irq_event_map[DISP_PATH_EVENT_NUM];
@@ -164,18 +163,6 @@ static struct DDP_MANAGER_CONTEXT *_get_context(void)
 	return &context;
 }
 
-void dpmgr_set_power_state(unsigned int state)
-{
-	ASSERT(_get_context()->power_state != state);
-	_get_context()->power_state = state;
-}
-
-unsigned int dpmgr_get_power_state(void)
-{
-	return _get_context()->power_state;
-}
-
-#if 0
 static int path_top_clock_off(void)
 {
 	int i = 0;
@@ -232,7 +219,6 @@ static int module_power_on(enum DISP_MODULE_ENUM module)
 	}
 	return 0;
 }
-#endif
 
 static struct ddp_path_handle *find_handle_by_module(enum DISP_MODULE_ENUM module)
 {
@@ -427,7 +413,6 @@ static int _dpmgr_path_disconnect(enum DDP_SCENARIO_ENUM scenario, void *handle)
 	return 0;
 }
 
-#if 0
 int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 					   enum DDP_SCENARIO_ENUM new_scenario, int sw_only)
 {
@@ -450,7 +435,7 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 	}
 	return 0;
 }
-#endif
+
 /**
  * NOTES: modify path should call API like this :
  *   old_scenario = dpmgr_get_scenario(handle);
@@ -488,7 +473,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_sce
 	}
 	return 0;
 }
-#if 0
+
 int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 					    enum DDP_SCENARIO_ENUM new_scenario, int sw_only)
 {
@@ -512,7 +497,6 @@ int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
 
 	return 0;
 }
-#endif
 
 int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 {
@@ -788,7 +772,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 
 	DDPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* open top clock */
-	/* path_top_clock_on(); */
+	path_top_clock_on();
 	/* seting mutex */
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
 	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdqHandle);
@@ -842,9 +826,9 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 
 		}
 	}
-	/* handle->power_state = 0; */
+	handle->power_state = 0;
 	/* close top clock when last path init */
-	/* path_top_clock_off(); */
+	path_top_clock_off();
 	return 0;
 }
 
@@ -1204,8 +1188,8 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 								   NULL);
 		}
 	}
-	/* handle->power_state = 0; */
-	/* path_top_clock_off(); */
+	handle->power_state = 0;
+	path_top_clock_off();
 	return 0;
 }
 
@@ -1223,7 +1207,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	/* path_top_clock_on(); */
+	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_on) {
@@ -1233,7 +1217,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 		}
 	}
 	/* modules on this path will resume power on; */
-	/* handle->power_state = 1; */
+	handle->power_state = 1;
 	return 0;
 }
 
@@ -1263,8 +1247,8 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH
 			}
 		}
 	}
-	/* handle->power_state = 0; */
-	/* path_top_clock_off(); */
+	handle->power_state = 0;
+	path_top_clock_off();
 	return 0;
 }
 
@@ -1282,7 +1266,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 	module_num = ddp_get_module_num(handle->scenario);
 
 	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
-	/* path_top_clock_on(); */
+	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) && ddp_get_module_driver(module_name)->power_on) {
@@ -1296,7 +1280,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 		}
 	}
 	/* modules on this path will resume power on; */
-	/* handle->power_state = 1; */
+	handle->power_state = 1;
 	return 0;
 }
 

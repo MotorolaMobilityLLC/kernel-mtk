@@ -119,7 +119,7 @@ int ddp_clk_check(void)
 		if (ddp_clks[i].refcnt != 0)
 			ret++;
 
-		DDPDBG("ddp_clk_check %s is %s refcnt=%d\n", ddp_clks[i].clk_name,
+		pr_warn("ddp_clk_check %s is %s refcnt=%d\n", ddp_clks[i].clk_name,
 			ddp_clks[i].refcnt == 0 ? "off" : "on", ddp_clks[i].refcnt);
 	}
 
@@ -512,19 +512,21 @@ void ddp_clk_force_on(unsigned int on)
 {
 	if (on) {
 		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+		ddp_clk_prepare_enable(TOP_26M);
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-		ddp_clk_prepare_enable(DISP0_SMI_LARB1);
-
+		/*ddp_clk_prepare_enable(DISP0_SMI_LARB1);*/
 		ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
 		ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
+		ddp_clk_prepare_enable(DISP0_DISP_26M);
 	} else {
+		ddp_clk_disable_unprepare(DISP0_DISP_26M);
 		ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
 		ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
-
-		ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
+		/*ddp_clk_disable_unprepare(DISP0_SMI_LARB1);*/
 		ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
+		ddp_clk_disable_unprepare(TOP_26M);
 		ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 	}
 }

@@ -23,17 +23,19 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include "disp_drv_platform.h"	/* must be at the top-most */
 #include "ion_drv.h"
 #include "mtk_ion.h"
 /* #include "mtk_idle.h" */
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
+#ifdef MTK_FB_SPM_SUPPORT
 #include "mtk_spm_idle.h"
+#endif
 #include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 
-#include "disp_drv_platform.h"
 #include "debug.h"
 #include "disp_drv_log.h"
 #include "disp_lcm.h"
@@ -565,6 +567,8 @@ void _primary_display_disable_mmsys_clk(void)
 		DISPINFO("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
 	}
 	DISPCHECK("[LP]3.dpmanager path power off[end]\n");
+	if (disp_helper_get_option(DISP_OPT_MET_LOG))
+		set_enterulps(1);
 }
 
 void _primary_display_enable_mmsys_clk(void)
@@ -593,6 +597,8 @@ void _primary_display_enable_mmsys_clk(void)
 
 	dpmgr_path_power_on_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPINFO("[LP]1.dpmanager path power on[end]\n");
+	if (disp_helper_get_option(DISP_OPT_MET_LOG))
+		set_enterulps(0);
 
 	DISPDBG("[LP]2.dpmanager path config[begin]\n");
 

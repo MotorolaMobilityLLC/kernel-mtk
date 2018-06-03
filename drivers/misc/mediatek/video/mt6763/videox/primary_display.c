@@ -77,9 +77,15 @@
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
-/* #include "mmdvfs_mgr.h" */
-/* #include "mtk_vcorefs_governor.h" */
-/* #include "mtk_vcorefs_manager.h" */
+#ifdef MTK_FB_MMDVFS_SUPPORT
+#include "mmdvfs_mgr.h"
+#include "mtk_vcorefs_governor.h"
+#include "mtk_vcorefs_manager.h"
+#endif
+#ifdef MTK_FB_SPM_SUPPORT
+#include "mtk_spm_idle.h"
+#endif
+
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
@@ -1942,7 +1948,7 @@ static int _DL_switch_to_DC_fast(void)
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
 
-	/* dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0); */
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
@@ -1986,7 +1992,7 @@ static int _DL_switch_to_DC_fast(void)
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
 
-	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0); */
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
 
@@ -2087,7 +2093,7 @@ static int modify_path_power_off_callback(unsigned long userdata)
 
 	old_scenario = userdata >> 16;
 	new_scenario = userdata & ((1 << 16) - 1);
-	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0); */
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	/* release output buffer */
 	layer = disp_sync_get_output_interface_timeline_id();
@@ -2137,7 +2143,7 @@ static int _DC_switch_to_DL_fast(void)
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
 
-	/* dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0); */
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
@@ -2223,10 +2229,10 @@ static int _DC_switch_to_DL_sw_only(void)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
-	/* dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 1); */
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 1);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 1);
-	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 1); */
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 1);
 
 	/* 5.config rdma from memory mode to directlink mode */
 	data_config_dl->rdma_config = decouple_rdma_config;
@@ -2297,10 +2303,10 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
-	/* dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0); */
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
 			primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
-	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0); */
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
@@ -2338,10 +2344,10 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
-	/* dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0); */
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
 			primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
-	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0); */
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
 	/* set rdma to DL mode */
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -3368,24 +3374,6 @@ static int update_primary_intferface_module(void)
 	return 0;
 }
 
-void primary_display_power_control(unsigned int enable)
-{
-	/* clk op */
-	if (enable)
-		ddp_main_modules_clk_on();
-	else
-		ddp_main_modules_clk_off();
-
-	/* sw op */
-	if (enable) {
-		dpmgr_set_power_state(1);
-		set_enterulps(0); /* for idlemgr */
-	} else {
-		dpmgr_set_power_state(0);
-		set_enterulps(1); /* for idlemgr */
-	}
-
-}
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
@@ -3420,7 +3408,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* Part1: LCM */
 	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED, is_lcm_inited);
 
-	if (unlikely(pgc->plcm == NULL)) {
+	if (pgc->plcm == NULL) {
 		DISPDBG("disp_lcm_probe returns null\n");
 		ret = DISP_STATUS_ERROR;
 		goto done;
@@ -3430,7 +3418,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	lcm_param = disp_lcm_get_params(pgc->plcm);
 
-	if (unlikely(lcm_param == NULL)) {
+	if (lcm_param == NULL) {
 		DISPERR("get lcm params FAILED\n");
 		ret = DISP_STATUS_ERROR;
 		goto done;
@@ -3483,7 +3471,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	 *  8. disable mtcmos
 	 *  --
 	 */
-	if (likely(primary_display_mode == DIRECT_LINK_MODE)) {
+	if (primary_display_mode == DIRECT_LINK_MODE) {
 		_build_path_direct_link();
 		pgc->session_mode = DISP_SESSION_DIRECT_LINK_MODE;
 		DISPINFO("primary display is DIRECT LINK MODE\n");
@@ -3509,15 +3497,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 					IS_ERR(init_decouple_buffer_thread));
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
-	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_DSI_SW_INIT, &(pgc->plcm->params->dsi));
-
-	primary_display_power_control(1);
-	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
-		ddp_clk_force_on(0);
-
-	/* Part4: Path OP */
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
 	dpmgr_path_init(pgc->dpmgr_handle, use_cmdq);
+
+	/* need to force off top CG clock here because we force it on in disp drv init stage */
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
+		ddp_clk_force_on(0);
 
 	/* use fake timer to generate vsync signal for cmd mode w/o LCM(originally using LCM TE Signal as VSYNC) */
 	/* so we don't need to modify display driver's behavior. */
@@ -3606,7 +3591,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	if (!is_lcm_inited && primary_display_is_video_mode())
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, 0);
 
-	/* set_enterulps(0); */
+	if (disp_helper_get_option(DISP_OPT_MET_LOG))
+		set_enterulps(0);
 
 	/* Part5: Top sw init */
 	primary_display_check_recovery_init();
@@ -3781,11 +3767,15 @@ static void _display_set_refresh_rate_post_proc(int fps)
 	if (fps == 60) {
 		/* TODO: switch path after adjusting fps */
 		od_need_start = 0;
+#ifdef MTK_FB_SPM_SUPPORT
 		spm_enable_sodi(1);
+#endif
 	} else if (fps == 120) {
 		if (!od_by_pass)
 			od_need_start = 1;
+#ifdef MTK_FB_SPM_SUPPORT
 		spm_enable_sodi(0);
+#endif
 	}
 }
 #endif
@@ -4230,9 +4220,9 @@ int primary_display_suspend(void)
 	}
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
-	primary_display_power_control(0);
-	/* dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE); */
-	/* set_enterulps(1); */
+	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (disp_helper_get_option(DISP_OPT_MET_LOG))
+		set_enterulps(1);
 
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 8);
@@ -4255,8 +4245,9 @@ done:
 	DISPCHECK("primary_display_suspend end\n");
 	ddp_clk_check();
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
-	/* primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT); */
-
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT);
+#endif
 	return ret;
 }
 
@@ -4351,9 +4342,9 @@ int primary_display_resume(void)
 	}
 
 	DISPDBG("dpmanager path power on[begin]\n");
-	primary_display_power_control(1);
-	/* dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE); */
-	/* set_enterulps(0); */
+	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (disp_helper_get_option(DISP_OPT_MET_LOG))
+		set_enterulps(0);
 
 	DISPCHECK("dpmanager path power on[end]\n");
 
@@ -5175,7 +5166,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 #endif
 	data_config->overlap_layer_num = hrt_level;
 
-#if 0
+#ifdef MTK_FB_MMDVFS_SUPPORT
 	if (hrt_level > HRT_LEVEL_HIGH)
 		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
 
@@ -7152,11 +7143,11 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
-#if 0
-	/* set power down mode forbidden */
+#ifdef MTK_FB_SPM_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
 #endif
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMPROFILE_FLAG_PULSE, 4, 0);
 	_cmdq_reset_config_handle();

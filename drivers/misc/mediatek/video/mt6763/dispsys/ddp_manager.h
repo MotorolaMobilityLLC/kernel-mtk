@@ -61,14 +61,6 @@ enum DDP_IRQ_BIT {
 /* path handle */
 typedef void *disp_path_handle;
 
-/* dpmgr_set_power_state
- * primary display init: set power state = 1
- * primary display suspend: set power state = 0
- * primary display resume: set power state = 1
- * lowpower...
- */
-void dpmgr_set_power_state(unsigned int state);
-
 /* Init ddp manager, now only register irq handler to ddp_irq.c
   * return 0 if ok or -1 if fail.
 */
@@ -93,8 +85,12 @@ int dpmgr_get_scenario(disp_path_handle dp_handle);
 	/*dpmgr_modify_path();*/
   /*after cmdq handle exec done:*/
 	/*dpmgr_modify_path_power_off_old_modules();*/
+int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
+					   enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 int dpmgr_modify_path(disp_path_handle dp_handle, enum DDP_SCENARIO_ENUM new_scenario,
 		      struct cmdqRecStruct *cmdq_handle, enum DDP_MODE isvdomode, int sw_only);
+int dpmgr_modify_path_power_off_old_modules(enum DDP_SCENARIO_ENUM old_scenario,
+					    enum DDP_SCENARIO_ENUM new_scenario, int sw_only);
 
 /* destroy path, it will release mutex to pool, and disconnect path,
   * clear  mapping between handle and modules.

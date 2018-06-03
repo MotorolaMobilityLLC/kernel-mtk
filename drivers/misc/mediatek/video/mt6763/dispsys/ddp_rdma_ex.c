@@ -702,22 +702,11 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 
 int rdma_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 	return 0;
 }
 
 int rdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
-{
-	return 0;
-}
-
-int rdma_power_on(enum DISP_MODULE_ENUM module, void *handle)
-{
-	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
-
-	return 0;
-}
-
-int rdma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 	return 0;
@@ -1247,8 +1236,8 @@ struct DDP_MODULE_DRIVER ddp_driver_rdma = {
 	.trigger = NULL,
 	.stop = rdma_stop,
 	.reset = rdma_reset,
-	.power_on = rdma_power_on,
-	.power_off = rdma_power_off,
+	.power_on = rdma_clock_on,
+	.power_off = rdma_clock_off,
 	.is_idle = NULL,
 	.is_busy = NULL,
 	.dump_info = rdma_dump,

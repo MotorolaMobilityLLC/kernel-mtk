@@ -2705,13 +2705,20 @@ void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk)
 }
 #endif
 
-/* init_dsi_sw
- * 1. regs base init
- * 2. dsi_context init
- * 3. irq handle init
- * 4. get lk mipi setting
- */
-static void _init_dsi_sw(enum DISP_MODULE_ENUM module, LCM_DSI_PARAMS *plcm)
+static void _set_power_on_status(enum DISP_MODULE_ENUM module, unsigned int ispoweon)
+{
+	if (module == DISP_MODULE_DSIDUAL) {
+		_dsi_context[0].is_power_on = ispoweon;
+		_dsi_context[1].is_power_on = ispoweon;
+	} else if (module == DISP_MODULE_DSI0) {
+		_dsi_context[0].is_power_on = ispoweon;
+	} else if (module == DISP_MODULE_DSI1) {
+		_dsi_context[1].is_power_on = ispoweon;
+	}
+
+}
+
+int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 	int i = 0;
 
@@ -2727,10 +2734,10 @@ static void _init_dsi_sw(enum DISP_MODULE_ENUM module, LCM_DSI_PARAMS *plcm)
 
 	DSI_VM_CMD_REG[0] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI0_BASE + 0x134);
 	DSI_VM_CMD_REG[1] = (struct DSI_VM_CMDQ_REGS *)(DISPSYS_DSI1_BASE + 0x134);
+	memset(&_dsi_context, 0, sizeof(_dsi_context));
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DISPCHECK("dsi%d initializing _dsi_context\n", i);
-		memset(&_dsi_context[i], 0, sizeof(struct t_dsi_context));
 		mutex_init(&(_dsi_context[i].lock));
 		_init_condition_wq(&(_dsi_context[i].cmddone_wq));
 		_init_condition_wq(&(_dsi_context[i].read_wq));
@@ -2740,9 +2747,6 @@ static void _init_dsi_sw(enum DISP_MODULE_ENUM module, LCM_DSI_PARAMS *plcm)
 		_init_condition_wq(&(_dsi_context[i].vm_cmd_done_wq));
 		_init_condition_wq(&(_dsi_context[i].sleep_out_done_wq));
 		_init_condition_wq(&(_dsi_context[i].sleep_in_done_wq));
-
-		memcpy(&(_dsi_context[i].dsi_params), plcm, sizeof(LCM_DSI_PARAMS));
-		_dump_dsi_params(&(_dsi_context[i].dsi_params));
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
@@ -2752,35 +2756,23 @@ static void _init_dsi_sw(enum DISP_MODULE_ENUM module, LCM_DSI_PARAMS *plcm)
 		disp_register_module_irq_callback(module, _DSI_INTERNAL_IRQ_Handler);
 	}
 
-#if 0
-	/* get lk mipi setting */
-	if (MIPITX_IsEnabled(module, NULL)) {
+	if (MIPITX_IsEnabled(module, cmdq)) {
+		_set_power_on_status(module, 1);
+		/* enable cg(for ccf)*/
+		ddp_set_mipi26m(module, 1);
 
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			unsigned long mipi_tx_reg_base = (unsigned long)DSI_PHY_REG[i];
-			clock_lane[i] = (INREG32(mipi_tx_reg_base + 0x4)); /* MIPITX_DSI_CLOCK_LANE */
-			data_lane0[i] = (INREG32(mipi_tx_reg_base + 0x8)); /* MIPITX_DSI_DATA_LANE0 */
-			data_lane1[i] = (INREG32(mipi_tx_reg_base + 0xc)); /* MIPITX_DSI_DATA_LANE1 */
-			data_lane2[i] = (INREG32(mipi_tx_reg_base + 0x10)); /* MIPITX_DSI_DATA_LANE2 */
-			data_lane3[i] = (INREG32(mipi_tx_reg_base + 0x14)); /* MIPITX_DSI_DATA_LANE3 */
-			DISPCHECK("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
-				  i, clock_lane[i], data_lane0[i], data_lane1[i], data_lane2[i], data_lane3[i]);
+		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+			ddp_clk_prepare_enable(DISP1_DSI0_MM_CLOCK);
+			ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
 		}
 
+		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+			ddp_clk_prepare_enable(DISP1_DSI1_MM_CLOCK);
+			ddp_clk_prepare_enable(DISP1_DSI1_INTERFACE_CLOCK);
+		}
+		/*__close_dsi_default_clock(module); */
 	}
-#endif
-}
 
-/* init dsi driver:
- * 1.sw init
- *   1.1 _dsi_context
- *   1.2 irq handle
- *   1.3 get mipi lane swap info
- * 2.call ccf api
- *
- */
-int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
-{
 	return DSI_STATUS_OK;
 }
 
@@ -3520,18 +3512,6 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 	/* DISPFUNC(); */
 	/* DISPCHECK("[ddp_dsi_ioctl] index = %d\n", ioctl); */
 	switch (ioctl) {
-	case DDP_DSI_SW_INIT:
-		{
-			LCM_DSI_PARAMS *plcm = (LCM_DSI_PARAMS *)params;
-
-			_init_dsi_sw(module, plcm);
-			break;
-		}
-	case DDP_DSI_MIPI_POWER_ON:
-		{
-			ddp_dsi_power_on(module, cmdq_handle);
-			break;
-		}
 	case DDP_STOP_VIDEO_MODE:
 		{
 			ddp_dsi_stop(module, cmdq_handle);
@@ -3682,19 +3662,6 @@ int ddp_dsi_reset(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
-void _set_power_on_status(enum DISP_MODULE_ENUM module, unsigned int ispoweon)
-{
-	if (module == DISP_MODULE_DSIDUAL) {
-		_dsi_context[0].is_power_on = ispoweon;
-		_dsi_context[1].is_power_on = ispoweon;
-	} else if (module == DISP_MODULE_DSI0) {
-		_dsi_context[0].is_power_on = ispoweon;
-	} else if (module == DISP_MODULE_DSI1) {
-		_dsi_context[1].is_power_on = ispoweon;
-	}
-
-}
-
 unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_DSIDUAL) {
@@ -3712,41 +3679,6 @@ unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module)
 	return 0;
 
 }
-
-#if 0
-/* when clkmgr init, it will put dsi0/dsi1 default on*/
- /* If we don't use DSI1, its clock will always on !!*/
- /* So, here we enable+disable dsi clock, whick will close DSI1 clock.*/
- /* If we default use DSI_DUAL, this func does nothing*/
- /* (because DSI0/DSI1 clock is already enabled */
-static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
-{
-
-	int ret = 0;
-
-
-	/* dsi */
-	ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
-	ret += ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
-	ret += ddp_clk_disable(DISP1_DSI0_MM_CLOCK);
-	ret += ddp_clk_disable(DISP1_DSI0_INTERFACE_CLOCK);
-
-	ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
-	ret += ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
-	ret += ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
-	ret += ddp_clk_disable(DISP1_DSI1_INTERFACE_CLOCK);
-
-	/* mipi-tx */
-	ddp_set_mipi26m(DISP_MODULE_DSI0, 1);
-	ddp_set_mipi26m(DISP_MODULE_DSI0, 0);
-	ddp_set_mipi26m(DISP_MODULE_DSI1, 1);
-	ddp_set_mipi26m(DISP_MODULE_DSI1, 0);
-
-	return ret;
-
-}
-#endif
-
 
 /* ddp_dsi_power_on
  *
@@ -3766,32 +3698,9 @@ static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
  */
 int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	static int not_first_time;
-
 	DISPFUNC();
-	/* mipi was alreay initialized: lk(mipi init)->kernel(power on) */
-	if (MIPITX_IsEnabled(module, NULL)) {
-		ASSERT(not_first_time == 0);
-		not_first_time = 1;
-		DISPCHECK("MIPITX was alreay initialized\n");
-		/* enable cg(for ccf)*/
-
-		ddp_set_mipi26m(module, 1);
-
-		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-			ddp_clk_prepare_enable(DISP1_DSI0_MM_CLOCK);
-			ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
-		}
-
-		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
-			ddp_clk_prepare_enable(DISP1_DSI1_MM_CLOCK);
-			ddp_clk_prepare_enable(DISP1_DSI1_INTERFACE_CLOCK);
-		}
-		/*__close_dsi_default_clock(module); */
-
-		_set_power_on_status(module, 1);
+	if (_is_power_on_status(module))
 		return DSI_STATUS_OK;
-	}
 
 	ddp_set_mipi26m(module, 1);
 
@@ -3829,6 +3738,8 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DISPFUNC();
+	if (!_is_power_on_status(module))
+		return DSI_STATUS_OK;
 
 	/* DSI_BackupRegisters(module, NULL); */
 	DSI_enter_ULPS(module);

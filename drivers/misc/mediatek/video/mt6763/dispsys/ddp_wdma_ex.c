@@ -1023,8 +1023,8 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 struct DDP_MODULE_DRIVER ddp_driver_wdma = {
 	.module = DISP_MODULE_WDMA0,
-	.init = NULL,
-	.deinit = NULL,
+	.init = wdma_clock_on,
+	.deinit = wdma_clock_off,
 	.config = wdma_config_l,
 	.start = wdma_start,
 	.trigger = NULL,

@@ -81,15 +81,23 @@ static int get_bpp(enum DISP_FORMAT format)
 		layerbpp = 4;
 		break;
 	case DISP_FORMAT_BGRX8888:
+	case DISP_FORMAT_PARGB8888:
+	case DISP_FORMAT_PABGR8888:
+	case DISP_FORMAT_PRGBA8888:
+	case DISP_FORMAT_PBGRA8888:
 		layerbpp = 4;
 		break;
 	case DISP_FORMAT_UYVY:
+	case DISP_FORMAT_YUV420_P:
 		layerbpp = 2;
 		break;
 	case DISP_FORMAT_DIM:
 		layerbpp = 0;
 		break;
 
+	case DISP_FORMAT_YV12:
+		layerbpp = 1;
+		break;
 	default:
 		DISPERR("Invalid color format: 0x%x\n", format);
 		return -1;

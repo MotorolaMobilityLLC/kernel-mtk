@@ -497,12 +497,12 @@ int ovl_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 
 int ovl_init(enum DISP_MODULE_ENUM module, void *handle)
 {
-	return 0;
+	return ovl_clock_on(module, handle);
 }
 
 int ovl_deinit(enum DISP_MODULE_ENUM module, void *handle)
 {
-	return 0;
+	return ovl_clock_off(module, handle);
 }
 
 int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
