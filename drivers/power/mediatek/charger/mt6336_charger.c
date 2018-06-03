@@ -777,8 +777,6 @@ static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 	msleep(250);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
 
-	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
-
 	return 0;
 }
 
