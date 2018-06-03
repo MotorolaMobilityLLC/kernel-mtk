@@ -945,6 +945,7 @@ static INT32 wmt_core_hw_check(VOID)
 		break;
 #endif
 #if CFG_CORE_SOC_SUPPORT
+	case 0x0690:
 	case 0x6572:
 	case 0x6582:
 	case 0x6592:
