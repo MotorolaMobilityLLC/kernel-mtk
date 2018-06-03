@@ -288,8 +288,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	}
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
-	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
-
 	mt_irtx_dev.buck = regulator_get(NULL, "irtx_ldo");
 	if (mt_irtx_dev.buck == NULL) {
 		pr_notice("[IRTX] regulator_get fail!!\n");
@@ -301,6 +299,8 @@ static int irtx_probe(struct platform_device *plat_dev)
 		pr_notice("[IRTX] regulator_set_voltage fail!!\n");
 		return -1;
 	}
+
+	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
 
 	if (!major) {
 		ret = alloc_chrdev_region(&dev_t_irtx, 0, 1, irtx_driver_name);
