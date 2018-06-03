@@ -14,6 +14,7 @@
 #ifndef _MT_PMIC_6336_H_
 #define _MT_PMIC_6336_H_
 
+#include "mtk_pmic_common.h"
 #include "mt6336_irq.h"
 #ifndef MT6336_E1
 #include "mt6336_upmu_hw.h"

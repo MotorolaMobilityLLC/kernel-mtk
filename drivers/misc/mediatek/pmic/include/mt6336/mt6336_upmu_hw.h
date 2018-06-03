@@ -483,143 +483,162 @@
 #define MT6336_PMIC_AUXADC_ADC27_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0337))
 #define MT6336_PMIC_AUXADC_ADC28                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0338))
 #define MT6336_PMIC_AUXADC_ADC28_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0339))
-#define MT6336_PMIC_AUXADC_STA0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x033A))
-#define MT6336_PMIC_AUXADC_STA0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x033B))
-#define MT6336_PMIC_AUXADC_STA1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x033C))
-#define MT6336_PMIC_AUXADC_STA1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x033D))
-#define MT6336_PMIC_AUXADC_STA2_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x033E))
-#define MT6336_PMIC_AUXADC_RQST0                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x033F))
-#define MT6336_PMIC_AUXADC_RQST0_SET                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0340))
-#define MT6336_PMIC_AUXADC_RQST0_CLR                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0341))
-#define MT6336_PMIC_AUXADC_RQST0_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0342))
-#define MT6336_PMIC_AUXADC_RQST0_H_SET                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x0343))
-#define MT6336_PMIC_AUXADC_RQST0_H_CLR                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x0344))
-#define MT6336_PMIC_AUXADC_CON0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0345))
-#define MT6336_PMIC_AUXADC_CON0_SET                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0346))
-#define MT6336_PMIC_AUXADC_CON0_CLR                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0347))
-#define MT6336_PMIC_AUXADC_CON0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0348))
-#define MT6336_PMIC_AUXADC_CON0_H_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0349))
-#define MT6336_PMIC_AUXADC_CON0_H_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x034A))
-#define MT6336_PMIC_AUXADC_CON1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x034B))
-#define MT6336_PMIC_AUXADC_CON1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x034C))
-#define MT6336_PMIC_AUXADC_CON2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x034D))
-#define MT6336_PMIC_AUXADC_CON2_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x034E))
-#define MT6336_PMIC_AUXADC_CON3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x034F))
-#define MT6336_PMIC_AUXADC_CON3_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0350))
-#define MT6336_PMIC_AUXADC_CON4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0351))
-#define MT6336_PMIC_AUXADC_CON4_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0352))
-#define MT6336_PMIC_AUXADC_CON5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0353))
-#define MT6336_PMIC_AUXADC_CON5_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0354))
-#define MT6336_PMIC_AUXADC_CON6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0355))
-#define MT6336_PMIC_AUXADC_CON6_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0356))
-#define MT6336_PMIC_AUXADC_CON7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0357))
-#define MT6336_PMIC_AUXADC_CON7_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0358))
-#define MT6336_PMIC_AUXADC_CON8                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0359))
-#define MT6336_PMIC_AUXADC_CON8_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x035A))
-#define MT6336_PMIC_AUXADC_CON9                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x035B))
-#define MT6336_PMIC_AUXADC_CON9_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x035C))
-#define MT6336_PMIC_AUXADC_CON10                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x035D))
-#define MT6336_PMIC_AUXADC_CON10_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x035E))
-#define MT6336_PMIC_AUXADC_CON11                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x035F))
-#define MT6336_PMIC_AUXADC_CON11_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0360))
-#define MT6336_PMIC_AUXADC_CON12                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0361))
-#define MT6336_PMIC_AUXADC_CON12_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0362))
-#define MT6336_PMIC_AUXADC_CON13                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0363))
-#define MT6336_PMIC_AUXADC_CON13_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0364))
-#define MT6336_PMIC_AUXADC_CON14                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0365))
-#define MT6336_PMIC_AUXADC_CON14_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0366))
-#define MT6336_PMIC_AUXADC_CON15_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0368))
-#define MT6336_PMIC_AUXADC_CON16                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0369))
-#define MT6336_PMIC_AUXADC_CON16_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x036A))
-#define MT6336_PMIC_AUXADC_CON17                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x036B))
-#define MT6336_PMIC_AUXADC_CON17_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x036C))
-#define MT6336_PMIC_AUXADC_ANA_0                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x036D))
-#define MT6336_PMIC_AUXADC_AUTORPT0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x036E))
-#define MT6336_PMIC_AUXADC_AUTORPT0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x036F))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP0               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0370))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP0_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0371))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP1               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0372))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP1_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0373))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP2               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0374))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP3               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0375))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP3_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0376))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP4               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0377))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP4_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0378))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP5               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0379))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP5_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x037A))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP6               ((unsigned int)(MT6336_PMIC_REG_BASE+0x037B))
-#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP6_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x037C))
-#define MT6336_PMIC_AUXADC_TYPEC_H0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x037D))
-#define MT6336_PMIC_AUXADC_TYPEC_H0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x037E))
-#define MT6336_PMIC_AUXADC_TYPEC_H1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x037F))
-#define MT6336_PMIC_AUXADC_TYPEC_H1_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0380))
-#define MT6336_PMIC_AUXADC_TYPEC_H2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0381))
-#define MT6336_PMIC_AUXADC_TYPEC_H3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0382))
-#define MT6336_PMIC_AUXADC_TYPEC_H3_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0383))
-#define MT6336_PMIC_AUXADC_TYPEC_H4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0384))
-#define MT6336_PMIC_AUXADC_TYPEC_H4_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0385))
-#define MT6336_PMIC_AUXADC_TYPEC_H5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0386))
-#define MT6336_PMIC_AUXADC_TYPEC_H5_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0387))
-#define MT6336_PMIC_AUXADC_TYPEC_H6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0388))
-#define MT6336_PMIC_AUXADC_TYPEC_H6_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0389))
-#define MT6336_PMIC_AUXADC_TYPEC_L0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038A))
-#define MT6336_PMIC_AUXADC_TYPEC_L0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x038B))
-#define MT6336_PMIC_AUXADC_TYPEC_L1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038C))
-#define MT6336_PMIC_AUXADC_TYPEC_L1_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x038D))
-#define MT6336_PMIC_AUXADC_TYPEC_L2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038E))
-#define MT6336_PMIC_AUXADC_TYPEC_L3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038F))
-#define MT6336_PMIC_AUXADC_TYPEC_L3_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0390))
-#define MT6336_PMIC_AUXADC_TYPEC_L4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0391))
-#define MT6336_PMIC_AUXADC_TYPEC_L4_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0392))
-#define MT6336_PMIC_AUXADC_TYPEC_L5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0393))
-#define MT6336_PMIC_AUXADC_TYPEC_L5_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0394))
-#define MT6336_PMIC_AUXADC_TYPEC_L6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0395))
-#define MT6336_PMIC_AUXADC_TYPEC_L6_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0396))
-#define MT6336_PMIC_AUXADC_THR0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0397))
-#define MT6336_PMIC_AUXADC_THR0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0398))
-#define MT6336_PMIC_AUXADC_THR1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0399))
-#define MT6336_PMIC_AUXADC_THR1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039A))
-#define MT6336_PMIC_AUXADC_THR2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039B))
-#define MT6336_PMIC_AUXADC_THR3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039C))
-#define MT6336_PMIC_AUXADC_THR3_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039D))
-#define MT6336_PMIC_AUXADC_THR4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039E))
-#define MT6336_PMIC_AUXADC_THR4_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039F))
-#define MT6336_PMIC_AUXADC_THR5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A0))
-#define MT6336_PMIC_AUXADC_THR5_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A1))
-#define MT6336_PMIC_AUXADC_THR6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A2))
-#define MT6336_PMIC_AUXADC_THR6_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A3))
-#define MT6336_PMIC_AUXADC_EFUSE0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A4))
-#define MT6336_PMIC_AUXADC_EFUSE0_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A5))
-#define MT6336_PMIC_AUXADC_EFUSE1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A6))
-#define MT6336_PMIC_AUXADC_EFUSE1_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A7))
-#define MT6336_PMIC_AUXADC_EFUSE2                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A8))
-#define MT6336_PMIC_AUXADC_EFUSE2_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A9))
-#define MT6336_PMIC_AUXADC_EFUSE3                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AA))
-#define MT6336_PMIC_AUXADC_EFUSE3_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AB))
-#define MT6336_PMIC_AUXADC_EFUSE4                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AC))
-#define MT6336_PMIC_AUXADC_EFUSE4_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AD))
-#define MT6336_PMIC_AUXADC_EFUSE5                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AE))
-#define MT6336_PMIC_AUXADC_EFUSE5_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AF))
-#define MT6336_PMIC_AUXADC_DBG0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B0))
-#define MT6336_PMIC_AUXADC_DBG0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B1))
-#define MT6336_PMIC_AUXADC_IMP0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B2))
-#define MT6336_PMIC_AUXADC_IMP0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B3))
-#define MT6336_PMIC_AUXADC_IMP1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B4))
-#define MT6336_PMIC_AUXADC_IMP1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B5))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_0                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B6))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_1                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B7))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_1_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B8))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_2                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B9))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_2_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BA))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_3                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BB))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_4                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BD))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_4_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BE))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_5                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BF))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_5_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C0))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_6                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C1))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_6_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C2))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_7                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C3))
-#define MT6336_PMIC_AUXADC_BAT_TEMP_7_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C4))
+#define MT6336_PMIC_AUXADC_ADC29                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x033A))
+#define MT6336_PMIC_AUXADC_ADC29_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x033B))
+#define MT6336_PMIC_AUXADC_STA0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x033C))
+#define MT6336_PMIC_AUXADC_STA0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x033D))
+#define MT6336_PMIC_AUXADC_STA1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x033E))
+#define MT6336_PMIC_AUXADC_STA1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x033F))
+#define MT6336_PMIC_AUXADC_STA2_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0340))
+#define MT6336_PMIC_AUXADC_RQST0                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0341))
+#define MT6336_PMIC_AUXADC_RQST0_SET                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0342))
+#define MT6336_PMIC_AUXADC_RQST0_CLR                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0343))
+#define MT6336_PMIC_AUXADC_RQST0_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0344))
+#define MT6336_PMIC_AUXADC_RQST0_H_SET                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x0345))
+#define MT6336_PMIC_AUXADC_RQST0_H_CLR                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x0346))
+#define MT6336_PMIC_AUXADC_CON0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0347))
+#define MT6336_PMIC_AUXADC_CON0_SET                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0348))
+#define MT6336_PMIC_AUXADC_CON0_CLR                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0349))
+#define MT6336_PMIC_AUXADC_CON0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x034A))
+#define MT6336_PMIC_AUXADC_CON0_H_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x034B))
+#define MT6336_PMIC_AUXADC_CON0_H_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x034C))
+#define MT6336_PMIC_AUXADC_CON1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x034D))
+#define MT6336_PMIC_AUXADC_CON1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x034E))
+#define MT6336_PMIC_AUXADC_CON2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x034F))
+#define MT6336_PMIC_AUXADC_CON2_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0350))
+#define MT6336_PMIC_AUXADC_CON3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0351))
+#define MT6336_PMIC_AUXADC_CON3_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0352))
+#define MT6336_PMIC_AUXADC_CON4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0353))
+#define MT6336_PMIC_AUXADC_CON4_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0354))
+#define MT6336_PMIC_AUXADC_CON5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0355))
+#define MT6336_PMIC_AUXADC_CON5_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0356))
+#define MT6336_PMIC_AUXADC_CON6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0357))
+#define MT6336_PMIC_AUXADC_CON6_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0358))
+#define MT6336_PMIC_AUXADC_CON7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0359))
+#define MT6336_PMIC_AUXADC_CON7_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x035A))
+#define MT6336_PMIC_AUXADC_CON8                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x035B))
+#define MT6336_PMIC_AUXADC_CON8_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x035C))
+#define MT6336_PMIC_AUXADC_CON9                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x035D))
+#define MT6336_PMIC_AUXADC_CON9_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x035E))
+#define MT6336_PMIC_AUXADC_CON10                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x035F))
+#define MT6336_PMIC_AUXADC_CON10_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0360))
+#define MT6336_PMIC_AUXADC_CON11                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0361))
+#define MT6336_PMIC_AUXADC_CON11_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0362))
+#define MT6336_PMIC_AUXADC_CON12                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0363))
+#define MT6336_PMIC_AUXADC_CON12_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0364))
+#define MT6336_PMIC_AUXADC_CON13                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0365))
+#define MT6336_PMIC_AUXADC_CON13_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0366))
+#define MT6336_PMIC_AUXADC_CON14                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0367))
+#define MT6336_PMIC_AUXADC_CON14_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0368))
+#define MT6336_PMIC_AUXADC_CON15_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x036A))
+#define MT6336_PMIC_AUXADC_CON16                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x036B))
+#define MT6336_PMIC_AUXADC_CON16_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x036C))
+#define MT6336_PMIC_AUXADC_CON17                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x036D))
+#define MT6336_PMIC_AUXADC_CON17_H                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x036E))
+#define MT6336_PMIC_AUXADC_ANA_0                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x036F))
+#define MT6336_PMIC_AUXADC_AUTORPT0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0370))
+#define MT6336_PMIC_AUXADC_AUTORPT0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0371))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP0               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0372))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP0_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0373))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP1               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0374))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP1_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0375))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP2               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0376))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP3               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0377))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP3_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x0378))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP4               ((unsigned int)(MT6336_PMIC_REG_BASE+0x0379))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP4_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x037A))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP5               ((unsigned int)(MT6336_PMIC_REG_BASE+0x037B))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP5_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x037C))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP6               ((unsigned int)(MT6336_PMIC_REG_BASE+0x037D))
+#define MT6336_PMIC_AUXADC_VBUS_SOFT_OVP6_H             ((unsigned int)(MT6336_PMIC_REG_BASE+0x037E))
+#define MT6336_PMIC_AUXADC_TYPEC_H0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x037F))
+#define MT6336_PMIC_AUXADC_TYPEC_H0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0380))
+#define MT6336_PMIC_AUXADC_TYPEC_H1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0381))
+#define MT6336_PMIC_AUXADC_TYPEC_H1_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0382))
+#define MT6336_PMIC_AUXADC_TYPEC_H2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0383))
+#define MT6336_PMIC_AUXADC_TYPEC_H3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0384))
+#define MT6336_PMIC_AUXADC_TYPEC_H3_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0385))
+#define MT6336_PMIC_AUXADC_TYPEC_H4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0386))
+#define MT6336_PMIC_AUXADC_TYPEC_H4_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0387))
+#define MT6336_PMIC_AUXADC_TYPEC_H5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0388))
+#define MT6336_PMIC_AUXADC_TYPEC_H5_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0389))
+#define MT6336_PMIC_AUXADC_TYPEC_H6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038A))
+#define MT6336_PMIC_AUXADC_TYPEC_H6_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x038B))
+#define MT6336_PMIC_AUXADC_TYPEC_L0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038C))
+#define MT6336_PMIC_AUXADC_TYPEC_L0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x038D))
+#define MT6336_PMIC_AUXADC_TYPEC_L1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x038E))
+#define MT6336_PMIC_AUXADC_TYPEC_L1_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x038F))
+#define MT6336_PMIC_AUXADC_TYPEC_L2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0390))
+#define MT6336_PMIC_AUXADC_TYPEC_L3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0391))
+#define MT6336_PMIC_AUXADC_TYPEC_L3_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0392))
+#define MT6336_PMIC_AUXADC_TYPEC_L4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0393))
+#define MT6336_PMIC_AUXADC_TYPEC_L4_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0394))
+#define MT6336_PMIC_AUXADC_TYPEC_L5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0395))
+#define MT6336_PMIC_AUXADC_TYPEC_L5_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0396))
+#define MT6336_PMIC_AUXADC_TYPEC_L6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0397))
+#define MT6336_PMIC_AUXADC_TYPEC_L6_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0398))
+#define MT6336_PMIC_AUXADC_THR0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x0399))
+#define MT6336_PMIC_AUXADC_THR0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039A))
+#define MT6336_PMIC_AUXADC_THR1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039B))
+#define MT6336_PMIC_AUXADC_THR1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039C))
+#define MT6336_PMIC_AUXADC_THR2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039D))
+#define MT6336_PMIC_AUXADC_THR3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x039E))
+#define MT6336_PMIC_AUXADC_THR3_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x039F))
+#define MT6336_PMIC_AUXADC_THR4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A0))
+#define MT6336_PMIC_AUXADC_THR4_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A1))
+#define MT6336_PMIC_AUXADC_THR5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A2))
+#define MT6336_PMIC_AUXADC_THR5_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A3))
+#define MT6336_PMIC_AUXADC_THR6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A4))
+#define MT6336_PMIC_AUXADC_THR6_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A5))
+#define MT6336_PMIC_AUXADC_EFUSE0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A6))
+#define MT6336_PMIC_AUXADC_EFUSE0_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A7))
+#define MT6336_PMIC_AUXADC_EFUSE1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A8))
+#define MT6336_PMIC_AUXADC_EFUSE1_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03A9))
+#define MT6336_PMIC_AUXADC_EFUSE2                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AA))
+#define MT6336_PMIC_AUXADC_EFUSE2_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AB))
+#define MT6336_PMIC_AUXADC_EFUSE3                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AC))
+#define MT6336_PMIC_AUXADC_EFUSE3_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AD))
+#define MT6336_PMIC_AUXADC_EFUSE4                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AE))
+#define MT6336_PMIC_AUXADC_EFUSE4_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03AF))
+#define MT6336_PMIC_AUXADC_EFUSE5                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B0))
+#define MT6336_PMIC_AUXADC_EFUSE5_H                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B1))
+#define MT6336_PMIC_AUXADC_DBG0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B2))
+#define MT6336_PMIC_AUXADC_DBG0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B3))
+#define MT6336_PMIC_AUXADC_IMP0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B4))
+#define MT6336_PMIC_AUXADC_IMP0_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B5))
+#define MT6336_PMIC_AUXADC_IMP1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B6))
+#define MT6336_PMIC_AUXADC_IMP1_H                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B7))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_0                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B8))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_1                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03B9))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_1_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BA))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_2                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BB))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_2_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BC))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_3                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BD))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_4                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03BF))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_4_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C0))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_5                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C1))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_5_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C2))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_6                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C3))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_6_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C4))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_7                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C5))
+#define MT6336_PMIC_AUXADC_BAT_TEMP_7_H                 ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C6))
+#define MT6336_PMIC_AUXADC_HWGAIN_0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C7))
+#define MT6336_PMIC_AUXADC_HWGAIN_0_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C8))
+#define MT6336_PMIC_AUXADC_HWGAIN_1_H                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x03C9))
+#define MT6336_PMIC_AUXADC_HWGAIN_4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CA))
+#define MT6336_PMIC_AUXADC_HWGAIN_5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CB))
+#define MT6336_PMIC_AUXADC_HWGAIN_6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CC))
+#define MT6336_PMIC_AUXADC_HWGAIN_7                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CD))
+#define MT6336_PMIC_AUXADC_HWGAIN_8                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CE))
+#define MT6336_PMIC_AUXADC_HWGAIN_9                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x03CF))
+#define MT6336_PMIC_AUXADC_HWGAIN_10_0                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D0))
+#define MT6336_PMIC_AUXADC_HWGAIN_10_1                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D1))
+#define MT6336_PMIC_AUXADC_HWGAIN_11_0                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D2))
+#define MT6336_PMIC_AUXADC_HWGAIN_11_1                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D3))
+#define MT6336_PMIC_AUXADC_HWGAIN_12_0                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D4))
+#define MT6336_PMIC_AUXADC_HWGAIN_12_1                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D5))
+#define MT6336_PMIC_AUXADC_HWGAIN_13_0                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D6))
+#define MT6336_PMIC_AUXADC_HWGAIN_13_1                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x03D7))
 #define MT6336_PMIC_MAIN_CON0                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0400))
 #define MT6336_PMIC_MAIN_CON1                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0401))
 #define MT6336_PMIC_MAIN_CON2                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0402))
@@ -670,160 +689,204 @@
 #define MT6336_PMIC_GER_CON3                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x042F))
 #define MT6336_PMIC_GER_CON4                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0430))
 #define MT6336_PMIC_GER_CON5                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0431))
-#define MT6336_PMIC_LONG_PRESS_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0432))
-#define MT6336_PMIC_SHIP_MODE_CON0                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0433))
-#define MT6336_PMIC_WDT_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0434))
-#define MT6336_PMIC_WDT_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0435))
-#define MT6336_PMIC_DB_WRAPPER_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0436))
-#define MT6336_PMIC_ICL_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0437))
-#define MT6336_PMIC_ICL_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0438))
-#define MT6336_PMIC_BACK_BOOST_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0439))
-#define MT6336_PMIC_SFSTR_CLK_CON0                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x043A))
-#define MT6336_PMIC_SAFE_TIMER_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x043B))
-#define MT6336_PMIC_SFSTR_CLK_CON1                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x043C))
-#define MT6336_PMIC_OTP_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x043D))
-#define MT6336_PMIC_OTP_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x043E))
-#define MT6336_PMIC_OTP_CON2                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x043F))
-#define MT6336_PMIC_OTP_CON3                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0440))
-#define MT6336_PMIC_OTP_CON4                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0441))
-#define MT6336_PMIC_OTP_CON5                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0442))
-#define MT6336_PMIC_OTP_CON6                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0443))
-#define MT6336_PMIC_OTP_CON7                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0444))
-#define MT6336_PMIC_OTP_CON8                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0445))
-#define MT6336_PMIC_OTP_CON9                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0446))
-#define MT6336_PMIC_OTP_CON10                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0447))
-#define MT6336_PMIC_OTP_CON11                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0448))
-#define MT6336_PMIC_OTP_CON12                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0449))
-#define MT6336_PMIC_OTP_CON13                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x044A))
-#define MT6336_PMIC_OTP_CON14                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x044B))
-#define MT6336_PMIC_OTP_DOUT_0_7                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x044C))
-#define MT6336_PMIC_OTP_DOUT_8_15                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x044D))
-#define MT6336_PMIC_OTP_DOUT_16_23                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x044E))
-#define MT6336_PMIC_OTP_DOUT_24_31                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x044F))
-#define MT6336_PMIC_OTP_DOUT_32_39                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0450))
-#define MT6336_PMIC_OTP_DOUT_40_47                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0451))
-#define MT6336_PMIC_OTP_DOUT_48_55                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0452))
-#define MT6336_PMIC_OTP_DOUT_56_63                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0453))
-#define MT6336_PMIC_OTP_DOUT_64_71                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0454))
-#define MT6336_PMIC_OTP_DOUT_72_79                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0455))
-#define MT6336_PMIC_OTP_DOUT_80_87                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0456))
-#define MT6336_PMIC_OTP_DOUT_88_95                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0457))
-#define MT6336_PMIC_OTP_DOUT_96_103                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0458))
-#define MT6336_PMIC_OTP_DOUT_104_111                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0459))
-#define MT6336_PMIC_OTP_DOUT_112_119                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045A))
-#define MT6336_PMIC_OTP_DOUT_120_127                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045B))
-#define MT6336_PMIC_OTP_DOUT_128_135                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045C))
-#define MT6336_PMIC_OTP_DOUT_136_143                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045D))
-#define MT6336_PMIC_OTP_DOUT_144_151                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045E))
-#define MT6336_PMIC_OTP_DOUT_152_159                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x045F))
-#define MT6336_PMIC_OTP_DOUT_160_167                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0460))
-#define MT6336_PMIC_OTP_DOUT_168_175                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0461))
-#define MT6336_PMIC_OTP_DOUT_176_183                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0462))
-#define MT6336_PMIC_OTP_DOUT_184_191                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0463))
-#define MT6336_PMIC_OTP_DOUT_192_199                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0464))
-#define MT6336_PMIC_OTP_DOUT_200_207                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0465))
-#define MT6336_PMIC_OTP_DOUT_208_215                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0466))
-#define MT6336_PMIC_OTP_DOUT_216_223                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0467))
-#define MT6336_PMIC_OTP_DOUT_224_231                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0468))
-#define MT6336_PMIC_OTP_DOUT_232_239                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0469))
-#define MT6336_PMIC_OTP_DOUT_240_247                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046A))
-#define MT6336_PMIC_OTP_DOUT_248_255                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046B))
-#define MT6336_PMIC_OTP_DOUT_256_263                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046C))
-#define MT6336_PMIC_OTP_DOUT_264_271                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046D))
-#define MT6336_PMIC_OTP_DOUT_272_279                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046E))
-#define MT6336_PMIC_OTP_DOUT_280_287                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x046F))
-#define MT6336_PMIC_OTP_DOUT_288_295                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0470))
-#define MT6336_PMIC_OTP_DOUT_296_303                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0471))
-#define MT6336_PMIC_OTP_DOUT_304_311                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0472))
-#define MT6336_PMIC_OTP_DOUT_312_319                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0473))
-#define MT6336_PMIC_OTP_DOUT_320_327                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0474))
-#define MT6336_PMIC_OTP_DOUT_328_335                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0475))
-#define MT6336_PMIC_OTP_DOUT_336_343                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0476))
-#define MT6336_PMIC_OTP_DOUT_344_351                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0477))
-#define MT6336_PMIC_OTP_DOUT_352_359                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0478))
-#define MT6336_PMIC_OTP_DOUT_360_367                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0479))
-#define MT6336_PMIC_OTP_DOUT_368_375                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047A))
-#define MT6336_PMIC_OTP_DOUT_376_383                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047B))
-#define MT6336_PMIC_OTP_DOUT_384_391                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047C))
-#define MT6336_PMIC_OTP_DOUT_392_399                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047D))
-#define MT6336_PMIC_OTP_DOUT_400_407                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047E))
-#define MT6336_PMIC_OTP_DOUT_408_415                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x047F))
-#define MT6336_PMIC_OTP_DOUT_416_423                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0480))
-#define MT6336_PMIC_OTP_DOUT_424_431                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0481))
-#define MT6336_PMIC_OTP_DOUT_432_439                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0482))
-#define MT6336_PMIC_OTP_DOUT_440_447                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0483))
-#define MT6336_PMIC_OTP_DOUT_448_455                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0484))
-#define MT6336_PMIC_OTP_DOUT_456_463                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0485))
-#define MT6336_PMIC_OTP_DOUT_464_471                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0486))
-#define MT6336_PMIC_OTP_DOUT_472_479                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0487))
-#define MT6336_PMIC_OTP_DOUT_480_487                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0488))
-#define MT6336_PMIC_OTP_DOUT_488_495                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0489))
-#define MT6336_PMIC_OTP_DOUT_496_503                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048A))
-#define MT6336_PMIC_OTP_DOUT_504_511                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048B))
-#define MT6336_PMIC_OTP_VAL_0_7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x048C))
-#define MT6336_PMIC_OTP_VAL_8_15                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x048D))
-#define MT6336_PMIC_OTP_VAL_16_23                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x048E))
-#define MT6336_PMIC_OTP_VAL_24_31                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x048F))
-#define MT6336_PMIC_OTP_VAL_32_39                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0490))
-#define MT6336_PMIC_OTP_VAL_40_47                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0491))
-#define MT6336_PMIC_OTP_VAL_48_55                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0492))
-#define MT6336_PMIC_OTP_VAL_56_63                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0493))
-#define MT6336_PMIC_OTP_VAL_64_71                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0494))
-#define MT6336_PMIC_OTP_VAL_72_79                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0495))
-#define MT6336_PMIC_OTP_VAL_80_87                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0496))
-#define MT6336_PMIC_OTP_VAL_88_95                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0497))
-#define MT6336_PMIC_OTP_VAL_96_103                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0498))
-#define MT6336_PMIC_OTP_VAL_104_111                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0499))
-#define MT6336_PMIC_OTP_VAL_112_119                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049A))
-#define MT6336_PMIC_OTP_VAL_120_127                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049B))
-#define MT6336_PMIC_OTP_VAL_128_135                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049C))
-#define MT6336_PMIC_OTP_VAL_136_143                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049D))
-#define MT6336_PMIC_OTP_VAL_144_151                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049E))
-#define MT6336_PMIC_OTP_VAL_152_159                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x049F))
-#define MT6336_PMIC_OTP_VAL_160_167                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A0))
-#define MT6336_PMIC_OTP_VAL_168_175                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A1))
-#define MT6336_PMIC_OTP_VAL_176_183                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A2))
-#define MT6336_PMIC_OTP_VAL_184_191                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A3))
-#define MT6336_PMIC_OTP_VAL_192_199                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A4))
-#define MT6336_PMIC_OTP_VAL_200_207                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A5))
-#define MT6336_PMIC_OTP_VAL_208_215                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A6))
-#define MT6336_PMIC_OTP_VAL_216_223                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A7))
-#define MT6336_PMIC_OTP_VAL_224_231                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A8))
-#define MT6336_PMIC_OTP_VAL_232_239                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A9))
-#define MT6336_PMIC_OTP_VAL_240_247                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AA))
-#define MT6336_PMIC_OTP_VAL_248_255                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AB))
-#define MT6336_PMIC_OTP_VAL_256_263                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AC))
-#define MT6336_PMIC_OTP_VAL_264_271                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AD))
-#define MT6336_PMIC_OTP_VAL_272_279                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AE))
-#define MT6336_PMIC_OTP_VAL_280_287                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AF))
-#define MT6336_PMIC_OTP_VAL_288_295                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B0))
-#define MT6336_PMIC_OTP_VAL_296_303                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B1))
-#define MT6336_PMIC_OTP_VAL_304_311                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B2))
-#define MT6336_PMIC_OTP_VAL_312_319                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B3))
-#define MT6336_PMIC_OTP_VAL_320_327                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B4))
-#define MT6336_PMIC_OTP_VAL_328_335                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B5))
-#define MT6336_PMIC_OTP_VAL_336_343                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B6))
-#define MT6336_PMIC_OTP_VAL_344_351                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B7))
-#define MT6336_PMIC_OTP_VAL_352_359                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B8))
-#define MT6336_PMIC_OTP_VAL_360_367                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B9))
-#define MT6336_PMIC_OTP_VAL_368_375                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BA))
-#define MT6336_PMIC_OTP_VAL_376_383                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BB))
-#define MT6336_PMIC_OTP_VAL_384_391                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BC))
-#define MT6336_PMIC_OTP_VAL_392_399                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BD))
-#define MT6336_PMIC_OTP_VAL_400_407                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BE))
-#define MT6336_PMIC_OTP_VAL_408_415                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BF))
-#define MT6336_PMIC_OTP_VAL_416_423                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C0))
-#define MT6336_PMIC_OTP_VAL_424_431                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C1))
-#define MT6336_PMIC_OTP_VAL_432_439                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C2))
-#define MT6336_PMIC_OTP_VAL_440_447                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C3))
-#define MT6336_PMIC_OTP_VAL_448_455                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C4))
-#define MT6336_PMIC_OTP_VAL_456_463                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C5))
-#define MT6336_PMIC_OTP_VAL_464_471                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C6))
-#define MT6336_PMIC_OTP_VAL_472_479                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C7))
-#define MT6336_PMIC_OTP_VAL_480_487                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C8))
-#define MT6336_PMIC_OTP_VAL_488_495                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C9))
-#define MT6336_PMIC_OTP_VAL_496_503                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CA))
-#define MT6336_PMIC_OTP_VAL_504_511                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CB))
+#define MT6336_PMIC_GAIN_CON0                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0432))
+#define MT6336_PMIC_GAIN_CON1                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0433))
+#define MT6336_PMIC_GAIN_CON2                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0434))
+#define MT6336_PMIC_GAIN_CON3                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0435))
+#define MT6336_PMIC_GAIN_CON4                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0436))
+#define MT6336_PMIC_GAIN_CON5                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0437))
+#define MT6336_PMIC_GAIN_CON6                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0438))
+#define MT6336_PMIC_GAIN_CON7                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0439))
+#define MT6336_PMIC_GAIN_CON8                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x043A))
+#define MT6336_PMIC_GAIN_CON9                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x043B))
+#define MT6336_PMIC_GAIN_CON10                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x043C))
+#define MT6336_PMIC_GAIN_CON11                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x043D))
+#define MT6336_PMIC_GAIN_CON12                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x043E))
+#define MT6336_PMIC_GAIN_CON13                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x043F))
+#define MT6336_PMIC_GAIN_CON14                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0440))
+#define MT6336_PMIC_GAIN_CON15                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0441))
+#define MT6336_PMIC_GAIN_CON16                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0442))
+#define MT6336_PMIC_GAIN_CON17                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0443))
+#define MT6336_PMIC_GAIN_CON18                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0444))
+#define MT6336_PMIC_GAIN_CON19                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0445))
+#define MT6336_PMIC_GAIN_CON20                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0446))
+#define MT6336_PMIC_GAIN_CON21                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0447))
+#define MT6336_PMIC_GAIN_CON22                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0448))
+#define MT6336_PMIC_GAIN_CON23                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0449))
+#define MT6336_PMIC_GAIN_CON24                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044A))
+#define MT6336_PMIC_GAIN_CON25                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044B))
+#define MT6336_PMIC_GAIN_CON26                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044C))
+#define MT6336_PMIC_GAIN_CON27                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044D))
+#define MT6336_PMIC_GAIN_CON28                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044E))
+#define MT6336_PMIC_GAIN_CON29                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x044F))
+#define MT6336_PMIC_GAIN_CON30                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0450))
+#define MT6336_PMIC_GAIN_CON31                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0451))
+#define MT6336_PMIC_GAIN_CON32                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0452))
+#define MT6336_PMIC_GAIN_CON33                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0453))
+#define MT6336_PMIC_GAIN_CON34                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0454))
+#define MT6336_PMIC_GAIN_CON35                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0455))
+#define MT6336_PMIC_GAIN_CON36                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0456))
+#define MT6336_PMIC_GAIN_CON37                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0457))
+#define MT6336_PMIC_GAIN_CON38                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0458))
+#define MT6336_PMIC_GAIN_CON39                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x0459))
+#define MT6336_PMIC_LONG_PRESS_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x045A))
+#define MT6336_PMIC_SHIP_MODE_CON0                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x045B))
+#define MT6336_PMIC_WDT_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x045C))
+#define MT6336_PMIC_WDT_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x045D))
+#define MT6336_PMIC_DB_WRAPPER_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x045E))
+#define MT6336_PMIC_ICL_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x045F))
+#define MT6336_PMIC_ICL_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0460))
+#define MT6336_PMIC_ICL_CON2                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0461))
+#define MT6336_PMIC_BACK_BOOST_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0462))
+#define MT6336_PMIC_SFSTR_CLK_CON0                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0463))
+#define MT6336_PMIC_SAFE_TIMER_CON0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0464))
+#define MT6336_PMIC_SFSTR_CLK_CON1                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0465))
+#define MT6336_PMIC_DB_WRAPPER_CON1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0466))
+#define MT6336_PMIC_BACK_BOOST_CON1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0467))
+#define MT6336_PMIC_FAST_CHR_CON0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0468))
+#define MT6336_PMIC_OTP_CON0                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0469))
+#define MT6336_PMIC_OTP_CON1                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046A))
+#define MT6336_PMIC_OTP_CON2                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046B))
+#define MT6336_PMIC_OTP_CON3                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046C))
+#define MT6336_PMIC_OTP_CON4                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046D))
+#define MT6336_PMIC_OTP_CON5                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046E))
+#define MT6336_PMIC_OTP_CON6                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x046F))
+#define MT6336_PMIC_OTP_CON7                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0470))
+#define MT6336_PMIC_OTP_CON8                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0471))
+#define MT6336_PMIC_OTP_CON9                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x0472))
+#define MT6336_PMIC_OTP_CON10                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0473))
+#define MT6336_PMIC_OTP_CON11                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0474))
+#define MT6336_PMIC_OTP_CON12                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0475))
+#define MT6336_PMIC_OTP_CON13                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0476))
+#define MT6336_PMIC_OTP_CON14                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x0477))
+#define MT6336_PMIC_OTP_DOUT_0_7                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0478))
+#define MT6336_PMIC_OTP_DOUT_8_15                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0479))
+#define MT6336_PMIC_OTP_DOUT_16_23                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047A))
+#define MT6336_PMIC_OTP_DOUT_24_31                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047B))
+#define MT6336_PMIC_OTP_DOUT_32_39                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047C))
+#define MT6336_PMIC_OTP_DOUT_40_47                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047D))
+#define MT6336_PMIC_OTP_DOUT_48_55                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047E))
+#define MT6336_PMIC_OTP_DOUT_56_63                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x047F))
+#define MT6336_PMIC_OTP_DOUT_64_71                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0480))
+#define MT6336_PMIC_OTP_DOUT_72_79                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0481))
+#define MT6336_PMIC_OTP_DOUT_80_87                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0482))
+#define MT6336_PMIC_OTP_DOUT_88_95                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x0483))
+#define MT6336_PMIC_OTP_DOUT_96_103                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x0484))
+#define MT6336_PMIC_OTP_DOUT_104_111                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0485))
+#define MT6336_PMIC_OTP_DOUT_112_119                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0486))
+#define MT6336_PMIC_OTP_DOUT_120_127                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0487))
+#define MT6336_PMIC_OTP_DOUT_128_135                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0488))
+#define MT6336_PMIC_OTP_DOUT_136_143                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0489))
+#define MT6336_PMIC_OTP_DOUT_144_151                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048A))
+#define MT6336_PMIC_OTP_DOUT_152_159                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048B))
+#define MT6336_PMIC_OTP_DOUT_160_167                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048C))
+#define MT6336_PMIC_OTP_DOUT_168_175                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048D))
+#define MT6336_PMIC_OTP_DOUT_176_183                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048E))
+#define MT6336_PMIC_OTP_DOUT_184_191                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x048F))
+#define MT6336_PMIC_OTP_DOUT_192_199                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0490))
+#define MT6336_PMIC_OTP_DOUT_200_207                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0491))
+#define MT6336_PMIC_OTP_DOUT_208_215                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0492))
+#define MT6336_PMIC_OTP_DOUT_216_223                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0493))
+#define MT6336_PMIC_OTP_DOUT_224_231                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0494))
+#define MT6336_PMIC_OTP_DOUT_232_239                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0495))
+#define MT6336_PMIC_OTP_DOUT_240_247                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0496))
+#define MT6336_PMIC_OTP_DOUT_248_255                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0497))
+#define MT6336_PMIC_OTP_DOUT_256_263                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0498))
+#define MT6336_PMIC_OTP_DOUT_264_271                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x0499))
+#define MT6336_PMIC_OTP_DOUT_272_279                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049A))
+#define MT6336_PMIC_OTP_DOUT_280_287                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049B))
+#define MT6336_PMIC_OTP_DOUT_288_295                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049C))
+#define MT6336_PMIC_OTP_DOUT_296_303                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049D))
+#define MT6336_PMIC_OTP_DOUT_304_311                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049E))
+#define MT6336_PMIC_OTP_DOUT_312_319                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x049F))
+#define MT6336_PMIC_OTP_DOUT_320_327                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A0))
+#define MT6336_PMIC_OTP_DOUT_328_335                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A1))
+#define MT6336_PMIC_OTP_DOUT_336_343                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A2))
+#define MT6336_PMIC_OTP_DOUT_344_351                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A3))
+#define MT6336_PMIC_OTP_DOUT_352_359                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A4))
+#define MT6336_PMIC_OTP_DOUT_360_367                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A5))
+#define MT6336_PMIC_OTP_DOUT_368_375                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A6))
+#define MT6336_PMIC_OTP_DOUT_376_383                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A7))
+#define MT6336_PMIC_OTP_DOUT_384_391                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A8))
+#define MT6336_PMIC_OTP_DOUT_392_399                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04A9))
+#define MT6336_PMIC_OTP_DOUT_400_407                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AA))
+#define MT6336_PMIC_OTP_DOUT_408_415                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AB))
+#define MT6336_PMIC_OTP_DOUT_416_423                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AC))
+#define MT6336_PMIC_OTP_DOUT_424_431                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AD))
+#define MT6336_PMIC_OTP_DOUT_432_439                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AE))
+#define MT6336_PMIC_OTP_DOUT_440_447                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04AF))
+#define MT6336_PMIC_OTP_DOUT_448_455                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B0))
+#define MT6336_PMIC_OTP_DOUT_456_463                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B1))
+#define MT6336_PMIC_OTP_DOUT_464_471                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B2))
+#define MT6336_PMIC_OTP_DOUT_472_479                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B3))
+#define MT6336_PMIC_OTP_DOUT_480_487                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B4))
+#define MT6336_PMIC_OTP_DOUT_488_495                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B5))
+#define MT6336_PMIC_OTP_DOUT_496_503                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B6))
+#define MT6336_PMIC_OTP_DOUT_504_511                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B7))
+#define MT6336_PMIC_OTP_VAL_0_7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B8))
+#define MT6336_PMIC_OTP_VAL_8_15                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x04B9))
+#define MT6336_PMIC_OTP_VAL_16_23                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BA))
+#define MT6336_PMIC_OTP_VAL_24_31                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BB))
+#define MT6336_PMIC_OTP_VAL_32_39                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BC))
+#define MT6336_PMIC_OTP_VAL_40_47                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BD))
+#define MT6336_PMIC_OTP_VAL_48_55                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BE))
+#define MT6336_PMIC_OTP_VAL_56_63                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04BF))
+#define MT6336_PMIC_OTP_VAL_64_71                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C0))
+#define MT6336_PMIC_OTP_VAL_72_79                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C1))
+#define MT6336_PMIC_OTP_VAL_80_87                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C2))
+#define MT6336_PMIC_OTP_VAL_88_95                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C3))
+#define MT6336_PMIC_OTP_VAL_96_103                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C4))
+#define MT6336_PMIC_OTP_VAL_104_111                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C5))
+#define MT6336_PMIC_OTP_VAL_112_119                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C6))
+#define MT6336_PMIC_OTP_VAL_120_127                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C7))
+#define MT6336_PMIC_OTP_VAL_128_135                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C8))
+#define MT6336_PMIC_OTP_VAL_136_143                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04C9))
+#define MT6336_PMIC_OTP_VAL_144_151                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CA))
+#define MT6336_PMIC_OTP_VAL_152_159                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CB))
+#define MT6336_PMIC_OTP_VAL_160_167                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CC))
+#define MT6336_PMIC_OTP_VAL_168_175                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CD))
+#define MT6336_PMIC_OTP_VAL_176_183                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CE))
+#define MT6336_PMIC_OTP_VAL_184_191                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04CF))
+#define MT6336_PMIC_OTP_VAL_192_199                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D0))
+#define MT6336_PMIC_OTP_VAL_200_207                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D1))
+#define MT6336_PMIC_OTP_VAL_208_215                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D2))
+#define MT6336_PMIC_OTP_VAL_216_223                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D3))
+#define MT6336_PMIC_OTP_VAL_224_231                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D4))
+#define MT6336_PMIC_OTP_VAL_232_239                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D5))
+#define MT6336_PMIC_OTP_VAL_240_247                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D6))
+#define MT6336_PMIC_OTP_VAL_248_255                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D7))
+#define MT6336_PMIC_OTP_VAL_256_263                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D8))
+#define MT6336_PMIC_OTP_VAL_264_271                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04D9))
+#define MT6336_PMIC_OTP_VAL_272_279                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DA))
+#define MT6336_PMIC_OTP_VAL_280_287                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DB))
+#define MT6336_PMIC_OTP_VAL_288_295                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DC))
+#define MT6336_PMIC_OTP_VAL_296_303                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DD))
+#define MT6336_PMIC_OTP_VAL_304_311                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DE))
+#define MT6336_PMIC_OTP_VAL_312_319                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04DF))
+#define MT6336_PMIC_OTP_VAL_320_327                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E0))
+#define MT6336_PMIC_OTP_VAL_328_335                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E1))
+#define MT6336_PMIC_OTP_VAL_336_343                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E2))
+#define MT6336_PMIC_OTP_VAL_344_351                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E3))
+#define MT6336_PMIC_OTP_VAL_352_359                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E4))
+#define MT6336_PMIC_OTP_VAL_360_367                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E5))
+#define MT6336_PMIC_OTP_VAL_368_375                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E6))
+#define MT6336_PMIC_OTP_VAL_376_383                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E7))
+#define MT6336_PMIC_OTP_VAL_384_391                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E8))
+#define MT6336_PMIC_OTP_VAL_392_399                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04E9))
+#define MT6336_PMIC_OTP_VAL_400_407                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04EA))
+#define MT6336_PMIC_OTP_VAL_408_415                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04EB))
+#define MT6336_PMIC_OTP_VAL_416_423                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04EC))
+#define MT6336_PMIC_OTP_VAL_424_431                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04ED))
+#define MT6336_PMIC_OTP_VAL_432_439                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04EE))
+#define MT6336_PMIC_OTP_VAL_440_447                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04EF))
+#define MT6336_PMIC_OTP_VAL_448_455                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F0))
+#define MT6336_PMIC_OTP_VAL_456_463                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F1))
+#define MT6336_PMIC_OTP_VAL_464_471                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F2))
+#define MT6336_PMIC_OTP_VAL_472_479                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F3))
+#define MT6336_PMIC_OTP_VAL_480_487                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F4))
+#define MT6336_PMIC_OTP_VAL_488_495                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F5))
+#define MT6336_PMIC_OTP_VAL_496_503                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F6))
+#define MT6336_PMIC_OTP_VAL_504_511                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x04F7))
 #define MT6336_PMIC_CORE_ANA_CON0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0500))
 #define MT6336_PMIC_CORE_ANA_CON1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0501))
 #define MT6336_PMIC_CORE_ANA_CON2                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0502))
@@ -1738,9 +1801,9 @@
 #define MT6336_RG_AUXADC_REG_RST_ADDR                                    MT6336_PMIC_TOP_RST_CON0
 #define MT6336_RG_AUXADC_REG_RST_MASK                                    0x1
 #define MT6336_RG_AUXADC_REG_RST_SHIFT                                   3
-#define MT6336_RG_CLK_TRIM_RST_ADDR                                      MT6336_PMIC_TOP_RST_CON0
-#define MT6336_RG_CLK_TRIM_RST_MASK                                      0x1
-#define MT6336_RG_CLK_TRIM_RST_SHIFT                                     4
+#define MT6336_RG_IO_RST_ADDR                                            MT6336_PMIC_TOP_RST_CON0
+#define MT6336_RG_IO_RST_MASK                                            0x1
+#define MT6336_RG_IO_RST_SHIFT                                           4
 #define MT6336_RG_CLKCTL_RST_ADDR                                        MT6336_PMIC_TOP_RST_CON0
 #define MT6336_RG_CLKCTL_RST_MASK                                        0x1
 #define MT6336_RG_CLKCTL_RST_SHIFT                                       5
@@ -1822,12 +1885,12 @@
 #define MT6336_RG_INTCTL_RST_ADDR                                        MT6336_PMIC_TOP_RST_CON3
 #define MT6336_RG_INTCTL_RST_MASK                                        0x1
 #define MT6336_RG_INTCTL_RST_SHIFT                                       1
-#define MT6336_RG_IO_RST_ADDR                                            MT6336_PMIC_TOP_RST_CON3
-#define MT6336_RG_IO_RST_MASK                                            0x1
-#define MT6336_RG_IO_RST_SHIFT                                           2
-#define MT6336_RG_I2C_RST_ADDR                                           MT6336_PMIC_TOP_RST_CON3
-#define MT6336_RG_I2C_RST_MASK                                           0x1
-#define MT6336_RG_I2C_RST_SHIFT                                          3
+#define MT6336_RG_CLK6M_TRIM_RST_ADDR                                    MT6336_PMIC_TOP_RST_CON3
+#define MT6336_RG_CLK6M_TRIM_RST_MASK                                    0x1
+#define MT6336_RG_CLK6M_TRIM_RST_SHIFT                                   2
+#define MT6336_RG_CLK75K_TRIM_RST_ADDR                                   MT6336_PMIC_TOP_RST_CON3
+#define MT6336_RG_CLK75K_TRIM_RST_MASK                                   0x1
+#define MT6336_RG_CLK75K_TRIM_RST_SHIFT                                  3
 #define MT6336_RG_TYPE_C_CC_RST_ADDR                                     MT6336_PMIC_TOP_RST_CON3
 #define MT6336_RG_TYPE_C_CC_RST_MASK                                     0x1
 #define MT6336_RG_TYPE_C_CC_RST_SHIFT                                    4
@@ -3769,6 +3832,9 @@
 #define MT6336_REG_PD_RX_PING_MSG_RCV_EN_ADDR                            MT6336_PMIC_PD_RX_PARAMETER_1
 #define MT6336_REG_PD_RX_PING_MSG_RCV_EN_MASK                            0x1
 #define MT6336_REG_PD_RX_PING_MSG_RCV_EN_SHIFT                           0
+#define MT6336_REG_PD_RX_LENGTH_CHK_EN_ADDR                              MT6336_PMIC_PD_RX_PARAMETER_1
+#define MT6336_REG_PD_RX_LENGTH_CHK_EN_MASK                              0x1
+#define MT6336_REG_PD_RX_LENGTH_CHK_EN_SHIFT                             1
 #define MT6336_REG_PD_RX_PRE_PROTECT_HALF_UI_CYCLE_CNT_MIN_ADDR          MT6336_PMIC_PD_RX_PREAMBLE_PROTECT_PARAMETER_0
 #define MT6336_REG_PD_RX_PRE_PROTECT_HALF_UI_CYCLE_CNT_MIN_MASK          0xFF
 #define MT6336_REG_PD_RX_PRE_PROTECT_HALF_UI_CYCLE_CNT_MIN_SHIFT         0
@@ -4492,6 +4558,15 @@
 #define MT6336_AUXADC_ADC_RDY_WAKEUP2_ADDR                               MT6336_PMIC_AUXADC_ADC28_H
 #define MT6336_AUXADC_ADC_RDY_WAKEUP2_MASK                               0x1
 #define MT6336_AUXADC_ADC_RDY_WAKEUP2_SHIFT                              7
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_L_ADDR                              MT6336_PMIC_AUXADC_ADC29
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_L_MASK                              0xFF
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_L_SHIFT                             0
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_H_ADDR                              MT6336_PMIC_AUXADC_ADC29_H
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_H_MASK                              0x7F
+#define MT6336_AUXADC_ADC_OUT_HWGAIN_H_SHIFT                             0
+#define MT6336_AUXADC_ADC_RDY_HWGAIN_ADDR                                MT6336_PMIC_AUXADC_ADC29_H
+#define MT6336_AUXADC_ADC_RDY_HWGAIN_MASK                                0x1
+#define MT6336_AUXADC_ADC_RDY_HWGAIN_SHIFT                               7
 #define MT6336_AUXADC_ADC_BUSY_IN_L_ADDR                                 MT6336_PMIC_AUXADC_STA0
 #define MT6336_AUXADC_ADC_BUSY_IN_L_MASK                                 0xFF
 #define MT6336_AUXADC_ADC_BUSY_IN_L_SHIFT                                0
@@ -4507,6 +4582,9 @@
 #define MT6336_AUXADC_ADC_BUSY_IN_WAKEUP_ADDR                            MT6336_PMIC_AUXADC_STA0_H
 #define MT6336_AUXADC_ADC_BUSY_IN_WAKEUP_MASK                            0x1
 #define MT6336_AUXADC_ADC_BUSY_IN_WAKEUP_SHIFT                           7
+#define MT6336_AUXADC_ADC_BUSY_IN_HWGAIN_ADDR                            MT6336_PMIC_AUXADC_STA1
+#define MT6336_AUXADC_ADC_BUSY_IN_HWGAIN_MASK                            0x1
+#define MT6336_AUXADC_ADC_BUSY_IN_HWGAIN_SHIFT                           3
 #define MT6336_AUXADC_ADC_BUSY_IN_JEITA_ADDR                             MT6336_PMIC_AUXADC_STA1
 #define MT6336_AUXADC_ADC_BUSY_IN_JEITA_MASK                             0x1
 #define MT6336_AUXADC_ADC_BUSY_IN_JEITA_SHIFT                            4
@@ -5299,6 +5377,93 @@
 #define MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MIN_H_ADDR                 MT6336_PMIC_AUXADC_BAT_TEMP_7_H
 #define MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MIN_H_MASK                 0x1
 #define MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MIN_H_SHIFT                0
+#define MT6336_AUXADC_HWGAIN_DET_PRD_ADDR                                MT6336_PMIC_AUXADC_HWGAIN_0
+#define MT6336_AUXADC_HWGAIN_DET_PRD_MASK                                0xF
+#define MT6336_AUXADC_HWGAIN_DET_PRD_SHIFT                               0
+#define MT6336_AUXADC_HWGAIN_DEBT_ADDR                                   MT6336_PMIC_AUXADC_HWGAIN_0
+#define MT6336_AUXADC_HWGAIN_DEBT_MASK                                   0xF
+#define MT6336_AUXADC_HWGAIN_DEBT_SHIFT                                  4
+#define MT6336_AUXADC_HWGAIN_LV_HSEL_ADDR                                MT6336_PMIC_AUXADC_HWGAIN_0_H
+#define MT6336_AUXADC_HWGAIN_LV_HSEL_MASK                                0x3
+#define MT6336_AUXADC_HWGAIN_LV_HSEL_SHIFT                               0
+#define MT6336_AUXADC_HWGAIN_MV_HSEL_ADDR                                MT6336_PMIC_AUXADC_HWGAIN_0_H
+#define MT6336_AUXADC_HWGAIN_MV_HSEL_MASK                                0x3
+#define MT6336_AUXADC_HWGAIN_MV_HSEL_SHIFT                               2
+#define MT6336_AUXADC_HWGAIN_HV_HSEL_ADDR                                MT6336_PMIC_AUXADC_HWGAIN_0_H
+#define MT6336_AUXADC_HWGAIN_HV_HSEL_MASK                                0x3
+#define MT6336_AUXADC_HWGAIN_HV_HSEL_SHIFT                               4
+#define MT6336_AUXADC_HWGAIN_UHV_HSEL_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_0_H
+#define MT6336_AUXADC_HWGAIN_UHV_HSEL_MASK                               0x3
+#define MT6336_AUXADC_HWGAIN_UHV_HSEL_SHIFT                              6
+#define MT6336_AUXADC_HWGAIN_LV_IRQ_ADDR                                 MT6336_PMIC_AUXADC_HWGAIN_1_H
+#define MT6336_AUXADC_HWGAIN_LV_IRQ_MASK                                 0x1
+#define MT6336_AUXADC_HWGAIN_LV_IRQ_SHIFT                                0
+#define MT6336_AUXADC_HWGAIN_MV_IRQ_ADDR                                 MT6336_PMIC_AUXADC_HWGAIN_1_H
+#define MT6336_AUXADC_HWGAIN_MV_IRQ_MASK                                 0x1
+#define MT6336_AUXADC_HWGAIN_MV_IRQ_SHIFT                                1
+#define MT6336_AUXADC_HWGAIN_HV_IRQ_ADDR                                 MT6336_PMIC_AUXADC_HWGAIN_1_H
+#define MT6336_AUXADC_HWGAIN_HV_IRQ_MASK                                 0x1
+#define MT6336_AUXADC_HWGAIN_HV_IRQ_SHIFT                                2
+#define MT6336_AUXADC_HWGAIN_UHV_IRQ_ADDR                                MT6336_PMIC_AUXADC_HWGAIN_1_H
+#define MT6336_AUXADC_HWGAIN_UHV_IRQ_MASK                                0x1
+#define MT6336_AUXADC_HWGAIN_UHV_IRQ_SHIFT                               3
+#define MT6336_AUXADC_HWGAIN_EN_ADDR                                     MT6336_PMIC_AUXADC_HWGAIN_1_H
+#define MT6336_AUXADC_HWGAIN_EN_MASK                                     0x1
+#define MT6336_AUXADC_HWGAIN_EN_SHIFT                                    4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_ADDR                     MT6336_PMIC_AUXADC_HWGAIN_4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_MASK                     0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_SHIFT                    0
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_B_ADDR                   MT6336_PMIC_AUXADC_HWGAIN_4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_B_MASK                   0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_B_SHIFT                  4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_ADDR                      MT6336_PMIC_AUXADC_HWGAIN_5
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_MASK                      0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_SHIFT                     0
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_B_ADDR                    MT6336_PMIC_AUXADC_HWGAIN_5
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_B_MASK                    0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_B_SHIFT                   4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_ADDR                      MT6336_PMIC_AUXADC_HWGAIN_6
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_MASK                      0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_SHIFT                     0
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_B_ADDR                    MT6336_PMIC_AUXADC_HWGAIN_6
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_B_MASK                    0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_B_SHIFT                   4
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_ADDR                      MT6336_PMIC_AUXADC_HWGAIN_7
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_MASK                      0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_SHIFT                     0
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_B_ADDR                    MT6336_PMIC_AUXADC_HWGAIN_7
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_B_MASK                    0xF
+#define MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_B_SHIFT                   4
+#define MT6336_AUXADC_HWGAIN_DET_PRD_L_ADDR                              MT6336_PMIC_AUXADC_HWGAIN_8
+#define MT6336_AUXADC_HWGAIN_DET_PRD_L_MASK                              0xFF
+#define MT6336_AUXADC_HWGAIN_DET_PRD_L_SHIFT                             0
+#define MT6336_AUXADC_HWGAIN_DET_PRD_M_ADDR                              MT6336_PMIC_AUXADC_HWGAIN_9
+#define MT6336_AUXADC_HWGAIN_DET_PRD_M_MASK                              0xFF
+#define MT6336_AUXADC_HWGAIN_DET_PRD_M_SHIFT                             0
+#define MT6336_AUXADC_HWGAIN_LV_VTH_0_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_10_0
+#define MT6336_AUXADC_HWGAIN_LV_VTH_0_MASK                               0xFF
+#define MT6336_AUXADC_HWGAIN_LV_VTH_0_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_LV_VTH_1_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_10_1
+#define MT6336_AUXADC_HWGAIN_LV_VTH_1_MASK                               0x7F
+#define MT6336_AUXADC_HWGAIN_LV_VTH_1_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_MV_VTH_0_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_11_0
+#define MT6336_AUXADC_HWGAIN_MV_VTH_0_MASK                               0xFF
+#define MT6336_AUXADC_HWGAIN_MV_VTH_0_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_MV_VTH_1_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_11_1
+#define MT6336_AUXADC_HWGAIN_MV_VTH_1_MASK                               0x7F
+#define MT6336_AUXADC_HWGAIN_MV_VTH_1_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_HV_VTH_0_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_12_0
+#define MT6336_AUXADC_HWGAIN_HV_VTH_0_MASK                               0xFF
+#define MT6336_AUXADC_HWGAIN_HV_VTH_0_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_HV_VTH_1_ADDR                               MT6336_PMIC_AUXADC_HWGAIN_12_1
+#define MT6336_AUXADC_HWGAIN_HV_VTH_1_MASK                               0x7F
+#define MT6336_AUXADC_HWGAIN_HV_VTH_1_SHIFT                              0
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_0_ADDR                              MT6336_PMIC_AUXADC_HWGAIN_13_0
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_0_MASK                              0xFF
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_0_SHIFT                             0
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_1_ADDR                              MT6336_PMIC_AUXADC_HWGAIN_13_1
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_1_MASK                              0x7F
+#define MT6336_AUXADC_HWGAIN_UHV_VTH_1_SHIFT                             0
 #define MT6336_RG_EN_BUCK_ADDR                                           MT6336_PMIC_MAIN_CON0
 #define MT6336_RG_EN_BUCK_MASK                                           0x1
 #define MT6336_RG_EN_BUCK_SHIFT                                          0
@@ -5623,6 +5788,231 @@
 #define MT6336_RG_EN_VSYSREG_POST_SFSTR_ADDR                             MT6336_PMIC_GER_CON5
 #define MT6336_RG_EN_VSYSREG_POST_SFSTR_MASK                             0x1
 #define MT6336_RG_EN_VSYSREG_POST_SFSTR_SHIFT                            6
+#define MT6336_RG_SETUP_0_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON0
+#define MT6336_RG_SETUP_0_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_0_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_0_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON0
+#define MT6336_RG_SETUP_0_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_0_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_1_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON1
+#define MT6336_RG_SETUP_1_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_1_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_1_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON1
+#define MT6336_RG_SETUP_1_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_1_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_2_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON2
+#define MT6336_RG_SETUP_2_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_2_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_2_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON2
+#define MT6336_RG_SETUP_2_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_2_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_3_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON3
+#define MT6336_RG_SETUP_3_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_3_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_3_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON3
+#define MT6336_RG_SETUP_3_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_3_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_4_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON4
+#define MT6336_RG_SETUP_4_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_4_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_4_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON4
+#define MT6336_RG_SETUP_4_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_4_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_5_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON5
+#define MT6336_RG_SETUP_5_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_5_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_5_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON5
+#define MT6336_RG_SETUP_5_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_5_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_6_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON6
+#define MT6336_RG_SETUP_6_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_6_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_6_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON6
+#define MT6336_RG_SETUP_6_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_6_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_7_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON7
+#define MT6336_RG_SETUP_7_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_7_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_7_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON7
+#define MT6336_RG_SETUP_7_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_7_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_8_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON8
+#define MT6336_RG_SETUP_8_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_8_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_8_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON8
+#define MT6336_RG_SETUP_8_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_8_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_9_VRAMP_VCS_RTUNE_ADDR                           MT6336_PMIC_GAIN_CON9
+#define MT6336_RG_SETUP_9_VRAMP_VCS_RTUNE_MASK                           0xF
+#define MT6336_RG_SETUP_9_VRAMP_VCS_RTUNE_SHIFT                          0
+#define MT6336_RG_SETUP_9_VRAMP_SLP_ADDR                                 MT6336_PMIC_GAIN_CON9
+#define MT6336_RG_SETUP_9_VRAMP_SLP_MASK                                 0x7
+#define MT6336_RG_SETUP_9_VRAMP_SLP_SHIFT                                4
+#define MT6336_RG_SETUP_10_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON10
+#define MT6336_RG_SETUP_10_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_10_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_10_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON10
+#define MT6336_RG_SETUP_10_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_10_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_11_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON11
+#define MT6336_RG_SETUP_11_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_11_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_11_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON11
+#define MT6336_RG_SETUP_11_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_11_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_12_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON12
+#define MT6336_RG_SETUP_12_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_12_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_12_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON12
+#define MT6336_RG_SETUP_12_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_12_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_13_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON13
+#define MT6336_RG_SETUP_13_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_13_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_13_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON13
+#define MT6336_RG_SETUP_13_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_13_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_14_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON14
+#define MT6336_RG_SETUP_14_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_14_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_14_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON14
+#define MT6336_RG_SETUP_14_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_14_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_15_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON15
+#define MT6336_RG_SETUP_15_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_15_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_15_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON15
+#define MT6336_RG_SETUP_15_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_15_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_16_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON16
+#define MT6336_RG_SETUP_16_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_16_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_16_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON16
+#define MT6336_RG_SETUP_16_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_16_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_17_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON17
+#define MT6336_RG_SETUP_17_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_17_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_17_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON17
+#define MT6336_RG_SETUP_17_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_17_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_18_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON18
+#define MT6336_RG_SETUP_18_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_18_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_18_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON18
+#define MT6336_RG_SETUP_18_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_18_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_19_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON19
+#define MT6336_RG_SETUP_19_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_19_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_19_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON19
+#define MT6336_RG_SETUP_19_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_19_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_20_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON20
+#define MT6336_RG_SETUP_20_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_20_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_20_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON20
+#define MT6336_RG_SETUP_20_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_20_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_21_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON21
+#define MT6336_RG_SETUP_21_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_21_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_21_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON21
+#define MT6336_RG_SETUP_21_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_21_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_22_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON22
+#define MT6336_RG_SETUP_22_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_22_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_22_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON22
+#define MT6336_RG_SETUP_22_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_22_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_23_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON23
+#define MT6336_RG_SETUP_23_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_23_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_23_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON23
+#define MT6336_RG_SETUP_23_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_23_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_24_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON24
+#define MT6336_RG_SETUP_24_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_24_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_24_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON24
+#define MT6336_RG_SETUP_24_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_24_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_25_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON25
+#define MT6336_RG_SETUP_25_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_25_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_25_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON25
+#define MT6336_RG_SETUP_25_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_25_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_26_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON26
+#define MT6336_RG_SETUP_26_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_26_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_26_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON26
+#define MT6336_RG_SETUP_26_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_26_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_27_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON27
+#define MT6336_RG_SETUP_27_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_27_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_27_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON27
+#define MT6336_RG_SETUP_27_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_27_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_28_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON28
+#define MT6336_RG_SETUP_28_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_28_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_28_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON28
+#define MT6336_RG_SETUP_28_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_28_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_29_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON29
+#define MT6336_RG_SETUP_29_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_29_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_29_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON29
+#define MT6336_RG_SETUP_29_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_29_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_30_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON30
+#define MT6336_RG_SETUP_30_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_30_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_30_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON30
+#define MT6336_RG_SETUP_30_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_30_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_31_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON31
+#define MT6336_RG_SETUP_31_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_31_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_31_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON31
+#define MT6336_RG_SETUP_31_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_31_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_32_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON32
+#define MT6336_RG_SETUP_32_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_32_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_32_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON32
+#define MT6336_RG_SETUP_32_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_32_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_33_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON33
+#define MT6336_RG_SETUP_33_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_33_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_33_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON33
+#define MT6336_RG_SETUP_33_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_33_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_SETUP_34_VRAMP_VCS_RTUNE_ADDR                          MT6336_PMIC_GAIN_CON34
+#define MT6336_RG_SETUP_34_VRAMP_VCS_RTUNE_MASK                          0xF
+#define MT6336_RG_SETUP_34_VRAMP_VCS_RTUNE_SHIFT                         0
+#define MT6336_RG_SETUP_34_VRAMP_SLP_ADDR                                MT6336_PMIC_GAIN_CON34
+#define MT6336_RG_SETUP_34_VRAMP_SLP_MASK                                0x7
+#define MT6336_RG_SETUP_34_VRAMP_SLP_SHIFT                               4
+#define MT6336_RG_EN_HW_GAIN_SET_ADDR                                    MT6336_PMIC_GAIN_CON35
+#define MT6336_RG_EN_HW_GAIN_SET_MASK                                    0x1
+#define MT6336_RG_EN_HW_GAIN_SET_SHIFT                                   0
+#define MT6336_RG_HWGAIN_ICL_L2_ADDR                                     MT6336_PMIC_GAIN_CON36
+#define MT6336_RG_HWGAIN_ICL_L2_MASK                                     0x3F
+#define MT6336_RG_HWGAIN_ICL_L2_SHIFT                                    0
+#define MT6336_RG_HWGAIN_ICL_L4_ADDR                                     MT6336_PMIC_GAIN_CON37
+#define MT6336_RG_HWGAIN_ICL_L4_MASK                                     0x3F
+#define MT6336_RG_HWGAIN_ICL_L4_SHIFT                                    0
+#define MT6336_RG_HWGAIN_ICL_L5_ADDR                                     MT6336_PMIC_GAIN_CON38
+#define MT6336_RG_HWGAIN_ICL_L5_MASK                                     0x3F
+#define MT6336_RG_HWGAIN_ICL_L5_SHIFT                                    0
+#define MT6336_RGS_ICL_LEVEL_ADDR                                        MT6336_PMIC_GAIN_CON39
+#define MT6336_RGS_ICL_LEVEL_MASK                                        0x3F
+#define MT6336_RGS_ICL_LEVEL_SHIFT                                       0
 #define MT6336_RG_DIS_PP_EN_PIN_ADDR                                     MT6336_PMIC_LONG_PRESS_CON0
 #define MT6336_RG_DIS_PP_EN_PIN_MASK                                     0x1
 #define MT6336_RG_DIS_PP_EN_PIN_SHIFT                                    0
@@ -5659,6 +6049,12 @@
 #define MT6336_RG_TDEG_ITERM_ADDR                                        MT6336_PMIC_DB_WRAPPER_CON0
 #define MT6336_RG_TDEG_ITERM_MASK                                        0x3
 #define MT6336_RG_TDEG_ITERM_SHIFT                                       2
+#define MT6336_RG_TDEG_VBAT_OVP_SEL_ADDR                                 MT6336_PMIC_DB_WRAPPER_CON0
+#define MT6336_RG_TDEG_VBAT_OVP_SEL_MASK                                 0x3
+#define MT6336_RG_TDEG_VBAT_OVP_SEL_SHIFT                                4
+#define MT6336_RG_EN_TDEG_VBAT_OVP_ADDR                                  MT6336_PMIC_DB_WRAPPER_CON0
+#define MT6336_RG_EN_TDEG_VBAT_OVP_MASK                                  0x1
+#define MT6336_RG_EN_TDEG_VBAT_OVP_SHIFT                                 6
 #define MT6336_RG_ICL_ADDR                                               MT6336_PMIC_ICL_CON0
 #define MT6336_RG_ICL_MASK                                               0x3F
 #define MT6336_RG_ICL_SHIFT                                              0
@@ -5675,11 +6071,17 @@
 #define MT6336_RG_EN_AICC_MASK                                           0x1
 #define MT6336_RG_EN_AICC_SHIFT                                          2
 #define MT6336_RG_TSTEP_THR_ADDR                                         MT6336_PMIC_ICL_CON1
-#define MT6336_RG_TSTEP_THR_MASK                                         0x1
+#define MT6336_RG_TSTEP_THR_MASK                                         0x3
 #define MT6336_RG_TSTEP_THR_SHIFT                                        3
 #define MT6336_RG_EN_DIG_THR_GM_ADDR                                     MT6336_PMIC_ICL_CON1
 #define MT6336_RG_EN_DIG_THR_GM_MASK                                     0x1
-#define MT6336_RG_EN_DIG_THR_GM_SHIFT                                    4
+#define MT6336_RG_EN_DIG_THR_GM_SHIFT                                    5
+#define MT6336_RG_AICC_ONCE_ADDR                                         MT6336_PMIC_ICL_CON1
+#define MT6336_RG_AICC_ONCE_MASK                                         0x1
+#define MT6336_RG_AICC_ONCE_SHIFT                                        6
+#define MT6336_RGS_AICC_RESULT_ADDR                                      MT6336_PMIC_ICL_CON2
+#define MT6336_RGS_AICC_RESULT_MASK                                      0x3F
+#define MT6336_RGS_AICC_RESULT_SHIFT                                     0
 #define MT6336_RG_EN_IBACKBOOST_ADDR                                     MT6336_PMIC_BACK_BOOST_CON0
 #define MT6336_RG_EN_IBACKBOOST_MASK                                     0x1
 #define MT6336_RG_EN_IBACKBOOST_SHIFT                                    0
@@ -5713,6 +6115,36 @@
 #define MT6336_RG_CK_SFSTR_DIV_SEL_ADDR                                  MT6336_PMIC_SFSTR_CLK_CON1
 #define MT6336_RG_CK_SFSTR_DIV_SEL_MASK                                  0x1
 #define MT6336_RG_CK_SFSTR_DIV_SEL_SHIFT                                 0
+#define MT6336_RG_TDEG_PAM_MODE_SEL_ADDR                                 MT6336_PMIC_DB_WRAPPER_CON1
+#define MT6336_RG_TDEG_PAM_MODE_SEL_MASK                                 0x1
+#define MT6336_RG_TDEG_PAM_MODE_SEL_SHIFT                                0
+#define MT6336_RG_TDEG_ICL_MODE_SEL_ADDR                                 MT6336_PMIC_DB_WRAPPER_CON1
+#define MT6336_RG_TDEG_ICL_MODE_SEL_MASK                                 0x1
+#define MT6336_RG_TDEG_ICL_MODE_SEL_SHIFT                                1
+#define MT6336_RG_TDEG_THR_MODE_SEL_ADDR                                 MT6336_PMIC_DB_WRAPPER_CON1
+#define MT6336_RG_TDEG_THR_MODE_SEL_MASK                                 0x1
+#define MT6336_RG_TDEG_THR_MODE_SEL_SHIFT                                2
+#define MT6336_RG_TDEG_CV_MODE_SEL_ADDR                                  MT6336_PMIC_DB_WRAPPER_CON1
+#define MT6336_RG_TDEG_CV_MODE_SEL_MASK                                  0x1
+#define MT6336_RG_TDEG_CV_MODE_SEL_SHIFT                                 3
+#define MT6336_RG_TDEG_ICC_MODE_SEL_ADDR                                 MT6336_PMIC_DB_WRAPPER_CON1
+#define MT6336_RG_TDEG_ICC_MODE_SEL_MASK                                 0x1
+#define MT6336_RG_TDEG_ICC_MODE_SEL_SHIFT                                4
+#define MT6336_RG_TON_IBACKBOOST_SEL_ADDR                                MT6336_PMIC_BACK_BOOST_CON1
+#define MT6336_RG_TON_IBACKBOOST_SEL_MASK                                0x3
+#define MT6336_RG_TON_IBACKBOOST_SEL_SHIFT                               0
+#define MT6336_RG_TOFF_IBACKBOOST_SEL_ADDR                               MT6336_PMIC_BACK_BOOST_CON1
+#define MT6336_RG_TOFF_IBACKBOOST_SEL_MASK                               0x3
+#define MT6336_RG_TOFF_IBACKBOOST_SEL_SHIFT                              2
+#define MT6336_RG_FC_TIMER_ENABLE_ADDR                                   MT6336_PMIC_FAST_CHR_CON0
+#define MT6336_RG_FC_TIMER_ENABLE_MASK                                   0x1
+#define MT6336_RG_FC_TIMER_ENABLE_SHIFT                                  0
+#define MT6336_RG_FC_PS_WIDTH_ADDR                                       MT6336_PMIC_FAST_CHR_CON0
+#define MT6336_RG_FC_PS_WIDTH_MASK                                       0x3
+#define MT6336_RG_FC_PS_WIDTH_SHIFT                                      1
+#define MT6336_RG_DP_DM_SEL_ADDR                                         MT6336_PMIC_FAST_CHR_CON0
+#define MT6336_RG_DP_DM_SEL_MASK                                         0x1
+#define MT6336_RG_DP_DM_SEL_SHIFT                                        3
 #define MT6336_RG_OTP_PA_ADDR                                            MT6336_PMIC_OTP_CON0
 #define MT6336_RG_OTP_PA_MASK                                            0x3F
 #define MT6336_RG_OTP_PA_SHIFT                                           0
@@ -6472,18 +6904,18 @@
 #define MT6336_RG_A_VRAMP_DCOS_ADDR                                      MT6336_PMIC_CORE_ANA_CON63
 #define MT6336_RG_A_VRAMP_DCOS_MASK                                      0xF
 #define MT6336_RG_A_VRAMP_DCOS_SHIFT                                     0
-#define MT6336_RG_A_VRAMP_SLP_ADDR                                       MT6336_PMIC_CORE_ANA_CON63
-#define MT6336_RG_A_VRAMP_SLP_MASK                                       0x7
-#define MT6336_RG_A_VRAMP_SLP_SHIFT                                      4
+#define MT6336_RG_VRAMP_SLP_ADDR                                         MT6336_PMIC_CORE_ANA_CON63
+#define MT6336_RG_VRAMP_SLP_MASK                                         0x7
+#define MT6336_RG_VRAMP_SLP_SHIFT                                        4
 #define MT6336_RG_A_VRAMP_SLP_RTUNE1_ADDR                                MT6336_PMIC_CORE_ANA_CON64
 #define MT6336_RG_A_VRAMP_SLP_RTUNE1_MASK                                0x7
 #define MT6336_RG_A_VRAMP_SLP_RTUNE1_SHIFT                               0
 #define MT6336_RG_A_VRAMP_SLP_RTUNE2_ADDR                                MT6336_PMIC_CORE_ANA_CON64
 #define MT6336_RG_A_VRAMP_SLP_RTUNE2_MASK                                0x7
 #define MT6336_RG_A_VRAMP_SLP_RTUNE2_SHIFT                               3
-#define MT6336_RG_A_VRAMP_VCS_RTUNE_ADDR                                 MT6336_PMIC_CORE_ANA_CON65
-#define MT6336_RG_A_VRAMP_VCS_RTUNE_MASK                                 0xF
-#define MT6336_RG_A_VRAMP_VCS_RTUNE_SHIFT                                0
+#define MT6336_RG_VRAMP_VCS_RTUNE_ADDR                                   MT6336_PMIC_CORE_ANA_CON65
+#define MT6336_RG_VRAMP_VCS_RTUNE_MASK                                   0xF
+#define MT6336_RG_VRAMP_VCS_RTUNE_SHIFT                                  0
 #define MT6336_RG_A_PLIM_PWR_OCLIM_OFF_ADDR                              MT6336_PMIC_CORE_ANA_CON65
 #define MT6336_RG_A_PLIM_PWR_OCLIM_OFF_MASK                              0x1
 #define MT6336_RG_A_PLIM_PWR_OCLIM_OFF_SHIFT                             4
@@ -6724,9 +7156,24 @@
 #define MT6336_RG_A_SWCHR_TESTMODE2_ADDR                                 MT6336_PMIC_CORE_ANA_CON105
 #define MT6336_RG_A_SWCHR_TESTMODE2_MASK                                 0xFF
 #define MT6336_RG_A_SWCHR_TESTMODE2_SHIFT                                0
-#define MT6336_RG_A_BASE_TESTMODE_ADDR                                   MT6336_PMIC_CORE_ANA_CON106
-#define MT6336_RG_A_BASE_TESTMODE_MASK                                   0xFF
-#define MT6336_RG_A_BASE_TESTMODE_SHIFT                                  0
+#define MT6336_RG_A_BASE_TESTMODE_BIT0_ADDR                              MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_BASE_TESTMODE_BIT0_MASK                              0x1
+#define MT6336_RG_A_BASE_TESTMODE_BIT0_SHIFT                             0
+#define MT6336_RG_A_BASE_TESTMODE_BIT1_ADDR                              MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_BASE_TESTMODE_BIT1_MASK                              0x1
+#define MT6336_RG_A_BASE_TESTMODE_BIT1_SHIFT                             1
+#define MT6336_RG_A_FC_EN_ADDR                                           MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_FC_EN_MASK                                           0x1
+#define MT6336_RG_A_FC_EN_SHIFT                                          2
+#define MT6336_RG_A_FC_DP_ADDR                                           MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_FC_DP_MASK                                           0x1
+#define MT6336_RG_A_FC_DP_SHIFT                                          3
+#define MT6336_RG_A_FC_DM_ADDR                                           MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_FC_DM_MASK                                           0x1
+#define MT6336_RG_A_FC_DM_SHIFT                                          4
+#define MT6336_RG_A_BASE_TESTMODE_BIT7_ADDR                              MT6336_PMIC_CORE_ANA_CON106
+#define MT6336_RG_A_BASE_TESTMODE_BIT7_MASK                              0x1
+#define MT6336_RG_A_BASE_TESTMODE_BIT7_SHIFT                             5
 #define MT6336_RG_A_FLA_TESTMODE_ADDR                                    MT6336_PMIC_CORE_ANA_CON107
 #define MT6336_RG_A_FLA_TESTMODE_MASK                                    0xFF
 #define MT6336_RG_A_FLA_TESTMODE_SHIFT                                   0
@@ -8995,7 +9442,7 @@ typedef enum {
 	MT6336_RG_EFUSE_MAN_RST,
 	MT6336_RG_AUXADC_RST,
 	MT6336_RG_AUXADC_REG_RST,
-	MT6336_RG_CLK_TRIM_RST,
+	MT6336_RG_IO_RST,
 	MT6336_RG_CLKCTL_RST,
 	MT6336_RG_DRIVER_RST,
 	MT6336_RG_FQMTR_RST,
@@ -9023,8 +9470,8 @@ typedef enum {
 	MT6336_TOP_RST_CON2_CLR,
 	MT6336_RG_TESTCTL_RST,
 	MT6336_RG_INTCTL_RST,
-	MT6336_RG_IO_RST,
-	MT6336_RG_I2C_RST,
+	MT6336_RG_CLK6M_TRIM_RST,
+	MT6336_RG_CLK75K_TRIM_RST,
 	MT6336_RG_TYPE_C_CC_RST,
 	MT6336_RG_TYPE_C_PD_RST,
 	MT6336_TOP_RST_CON3_RSV,
@@ -9672,6 +10119,7 @@ typedef enum {
 	MT6336_REG_PD_RX_PRE_PROTECT_EN,
 	MT6336_REG_PD_RX_PRE_TRAIN_BIT_CNT,
 	MT6336_REG_PD_RX_PING_MSG_RCV_EN,
+	MT6336_REG_PD_RX_LENGTH_CHK_EN,
 	MT6336_REG_PD_RX_PRE_PROTECT_HALF_UI_CYCLE_CNT_MIN,
 	MT6336_REG_PD_RX_PRE_PROTECT_UI_CYCLE_CNT_MAX_0,
 	MT6336_REG_PD_RX_PRE_PROTECT_UI_CYCLE_CNT_MAX_1,
@@ -9913,11 +10361,15 @@ typedef enum {
 	MT6336_AUXADC_ADC_OUT_WAKEUP2_L,
 	MT6336_AUXADC_ADC_OUT_WAKEUP2_H,
 	MT6336_AUXADC_ADC_RDY_WAKEUP2,
+	MT6336_AUXADC_ADC_OUT_HWGAIN_L,
+	MT6336_AUXADC_ADC_OUT_HWGAIN_H,
+	MT6336_AUXADC_ADC_RDY_HWGAIN,
 	MT6336_AUXADC_ADC_BUSY_IN_L,
 	MT6336_AUXADC_ADC_BUSY_IN_H,
 	MT6336_AUXADC_ADC_BUSY_IN_VBUS_SOFT_OVP,
 	MT6336_AUXADC_ADC_BUSY_IN_BAT_TEMP,
 	MT6336_AUXADC_ADC_BUSY_IN_WAKEUP,
+	MT6336_AUXADC_ADC_BUSY_IN_HWGAIN,
 	MT6336_AUXADC_ADC_BUSY_IN_JEITA,
 	MT6336_AUXADC_ADC_BUSY_IN_CHRGO1,
 	MT6336_AUXADC_ADC_BUSY_IN_CHRGO2,
@@ -10182,6 +10634,35 @@ typedef enum {
 	MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MAX_H,
 	MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MIN_L,
 	MT6336_AUXADC_BAT_TEMP_DEBOUNCE_COUNT_MIN_H,
+	MT6336_AUXADC_HWGAIN_DET_PRD,
+	MT6336_AUXADC_HWGAIN_DEBT,
+	MT6336_AUXADC_HWGAIN_LV_HSEL,
+	MT6336_AUXADC_HWGAIN_MV_HSEL,
+	MT6336_AUXADC_HWGAIN_HV_HSEL,
+	MT6336_AUXADC_HWGAIN_UHV_HSEL,
+	MT6336_AUXADC_HWGAIN_LV_IRQ,
+	MT6336_AUXADC_HWGAIN_MV_IRQ,
+	MT6336_AUXADC_HWGAIN_HV_IRQ,
+	MT6336_AUXADC_HWGAIN_UHV_IRQ,
+	MT6336_AUXADC_HWGAIN_EN,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_UHV_B,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_HV_B,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_MV_B,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV,
+	MT6336_AUXADC_HWGAIN_DEBOUNCE_COUNT_LV_B,
+	MT6336_AUXADC_HWGAIN_DET_PRD_L,
+	MT6336_AUXADC_HWGAIN_DET_PRD_M,
+	MT6336_AUXADC_HWGAIN_LV_VTH_0,
+	MT6336_AUXADC_HWGAIN_LV_VTH_1,
+	MT6336_AUXADC_HWGAIN_MV_VTH_0,
+	MT6336_AUXADC_HWGAIN_MV_VTH_1,
+	MT6336_AUXADC_HWGAIN_HV_VTH_0,
+	MT6336_AUXADC_HWGAIN_HV_VTH_1,
+	MT6336_AUXADC_HWGAIN_UHV_VTH_0,
+	MT6336_AUXADC_HWGAIN_UHV_VTH_1,
 	MT6336_RG_EN_BUCK,
 	MT6336_RG_EN_CHARGE,
 	MT6336_RG_EN_OTGPIN,
@@ -10290,6 +10771,81 @@ typedef enum {
 	MT6336_RG_VBATFETON,
 	MT6336_RG_EN_VSYSREG_SFSTR,
 	MT6336_RG_EN_VSYSREG_POST_SFSTR,
+	MT6336_RG_SETUP_0_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_0_VRAMP_SLP,
+	MT6336_RG_SETUP_1_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_1_VRAMP_SLP,
+	MT6336_RG_SETUP_2_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_2_VRAMP_SLP,
+	MT6336_RG_SETUP_3_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_3_VRAMP_SLP,
+	MT6336_RG_SETUP_4_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_4_VRAMP_SLP,
+	MT6336_RG_SETUP_5_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_5_VRAMP_SLP,
+	MT6336_RG_SETUP_6_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_6_VRAMP_SLP,
+	MT6336_RG_SETUP_7_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_7_VRAMP_SLP,
+	MT6336_RG_SETUP_8_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_8_VRAMP_SLP,
+	MT6336_RG_SETUP_9_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_9_VRAMP_SLP,
+	MT6336_RG_SETUP_10_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_10_VRAMP_SLP,
+	MT6336_RG_SETUP_11_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_11_VRAMP_SLP,
+	MT6336_RG_SETUP_12_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_12_VRAMP_SLP,
+	MT6336_RG_SETUP_13_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_13_VRAMP_SLP,
+	MT6336_RG_SETUP_14_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_14_VRAMP_SLP,
+	MT6336_RG_SETUP_15_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_15_VRAMP_SLP,
+	MT6336_RG_SETUP_16_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_16_VRAMP_SLP,
+	MT6336_RG_SETUP_17_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_17_VRAMP_SLP,
+	MT6336_RG_SETUP_18_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_18_VRAMP_SLP,
+	MT6336_RG_SETUP_19_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_19_VRAMP_SLP,
+	MT6336_RG_SETUP_20_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_20_VRAMP_SLP,
+	MT6336_RG_SETUP_21_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_21_VRAMP_SLP,
+	MT6336_RG_SETUP_22_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_22_VRAMP_SLP,
+	MT6336_RG_SETUP_23_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_23_VRAMP_SLP,
+	MT6336_RG_SETUP_24_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_24_VRAMP_SLP,
+	MT6336_RG_SETUP_25_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_25_VRAMP_SLP,
+	MT6336_RG_SETUP_26_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_26_VRAMP_SLP,
+	MT6336_RG_SETUP_27_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_27_VRAMP_SLP,
+	MT6336_RG_SETUP_28_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_28_VRAMP_SLP,
+	MT6336_RG_SETUP_29_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_29_VRAMP_SLP,
+	MT6336_RG_SETUP_30_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_30_VRAMP_SLP,
+	MT6336_RG_SETUP_31_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_31_VRAMP_SLP,
+	MT6336_RG_SETUP_32_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_32_VRAMP_SLP,
+	MT6336_RG_SETUP_33_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_33_VRAMP_SLP,
+	MT6336_RG_SETUP_34_VRAMP_VCS_RTUNE,
+	MT6336_RG_SETUP_34_VRAMP_SLP,
+	MT6336_RG_EN_HW_GAIN_SET,
+	MT6336_RG_HWGAIN_ICL_L2,
+	MT6336_RG_HWGAIN_ICL_L4,
+	MT6336_RG_HWGAIN_ICL_L5,
+	MT6336_RGS_ICL_LEVEL,
 	MT6336_RG_DIS_PP_EN_PIN,
 	MT6336_RG_T_LONGPRESS_SEL,
 	MT6336_RG_FLAG_MODE,
@@ -10302,6 +10858,8 @@ typedef enum {
 	MT6336_RG_DIS_WDT_SUSPEND,
 	MT6336_RG_OTG_TOLP_ON,
 	MT6336_RG_TDEG_ITERM,
+	MT6336_RG_TDEG_VBAT_OVP_SEL,
+	MT6336_RG_EN_TDEG_VBAT_OVP,
 	MT6336_RG_ICL,
 	MT6336_RG_TSTEP_ICL,
 	MT6336_RG_EN_ICL150PIN,
@@ -10309,6 +10867,8 @@ typedef enum {
 	MT6336_RG_EN_AICC,
 	MT6336_RG_TSTEP_THR,
 	MT6336_RG_EN_DIG_THR_GM,
+	MT6336_RG_AICC_ONCE,
+	MT6336_RGS_AICC_RESULT,
 	MT6336_RG_EN_IBACKBOOST,
 	MT6336_RG_FREQ_SEL,
 	MT6336_RG_SSTIME_SEL,
@@ -10320,6 +10880,16 @@ typedef enum {
 	MT6336_RG_CHR_SAFETMR_FASTCC,
 	MT6336_RG_CHR_SAFETMR_CLEAR,
 	MT6336_RG_CK_SFSTR_DIV_SEL,
+	MT6336_RG_TDEG_PAM_MODE_SEL,
+	MT6336_RG_TDEG_ICL_MODE_SEL,
+	MT6336_RG_TDEG_THR_MODE_SEL,
+	MT6336_RG_TDEG_CV_MODE_SEL,
+	MT6336_RG_TDEG_ICC_MODE_SEL,
+	MT6336_RG_TON_IBACKBOOST_SEL,
+	MT6336_RG_TOFF_IBACKBOOST_SEL,
+	MT6336_RG_FC_TIMER_ENABLE,
+	MT6336_RG_FC_PS_WIDTH,
+	MT6336_RG_DP_DM_SEL,
 	MT6336_RG_OTP_PA,
 	MT6336_RG_OTP_PDIN,
 	MT6336_RG_OTP_PTM,
@@ -10573,10 +11143,10 @@ typedef enum {
 	MT6336_RG_A_LOOP_100K_ICC_TRIM,
 	MT6336_RG_A_LOOP_100K_ICL_TRIM,
 	MT6336_RG_A_VRAMP_DCOS,
-	MT6336_RG_A_VRAMP_SLP,
+	MT6336_RG_VRAMP_SLP,
 	MT6336_RG_A_VRAMP_SLP_RTUNE1,
 	MT6336_RG_A_VRAMP_SLP_RTUNE2,
-	MT6336_RG_A_VRAMP_VCS_RTUNE,
+	MT6336_RG_VRAMP_VCS_RTUNE,
 	MT6336_RG_A_PLIM_PWR_OCLIM_OFF,
 	MT6336_RG_A_PLIM_PWR_OCLIMASYN_OFF,
 	MT6336_RG_A_PLIM_CCEXTR_SEL,
@@ -10657,7 +11227,12 @@ typedef enum {
 	MT6336_RG_A_SWCHR_ZCD_TRIM_MODE,
 	MT6336_RG_A_SWCHR_TESTMODE1,
 	MT6336_RG_A_SWCHR_TESTMODE2,
-	MT6336_RG_A_BASE_TESTMODE,
+	MT6336_RG_A_BASE_TESTMODE_BIT0,
+	MT6336_RG_A_BASE_TESTMODE_BIT1,
+	MT6336_RG_A_FC_EN,
+	MT6336_RG_A_FC_DP,
+	MT6336_RG_A_FC_DM,
+	MT6336_RG_A_BASE_TESTMODE_BIT7,
 	MT6336_RG_A_FLA_TESTMODE,
 	MT6336_RG_A_PPFET_TESTMODE,
 	MT6336_RG_A_ANABASE_RSV,
