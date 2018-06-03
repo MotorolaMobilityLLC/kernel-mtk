@@ -19,6 +19,7 @@ static int __init mrdump_key_init(void)
 {
 	int res;
 	struct wd_api *wd_api = NULL;
+	return 0;
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #endif
