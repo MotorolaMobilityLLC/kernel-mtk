@@ -23,7 +23,7 @@ struct mt_gpufreq_power_table_info {
 	unsigned int gpufreq_power;
 };
 
-typedef void (*gpufreq_power_limit_notify)(unsigned int);	/* legacy */
+typedef void (*gpufreq_power_limit_notify)(unsigned int); /* legacy */
 
 /****************************
  * MTK GPUFREQ API
@@ -34,7 +34,6 @@ extern unsigned int mt_gpufreq_get_cur_volt(void);
 extern unsigned int mt_gpufreq_get_dvfs_table_num(void);
 extern unsigned int mt_gpufreq_target(unsigned int idx);
 extern unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable);
-extern unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm);
 extern unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array_size);
 extern unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx);
 extern unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx);
@@ -53,6 +52,6 @@ extern void mt_gpufreq_enable_CG(void);
 extern void mt_gpufreq_disable_CG(void);
 extern void mt_gpufreq_enable_MTCMOS(void);
 extern void mt_gpufreq_disable_MTCMOS(void);
-extern void mt_gpufreq_set_loading(unsigned int gpu_loading);	/* legacy */
+extern void mt_gpufreq_set_loading(unsigned int gpu_loading); /* legacy */
 
-#endif				/* _MT_GPUFREQ_H_ */
+#endif /* _MT_GPUFREQ_H_ */
