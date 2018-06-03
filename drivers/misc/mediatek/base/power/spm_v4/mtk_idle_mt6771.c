@@ -383,6 +383,18 @@ static int sys_is_on(enum subsys_id id)
 	return (sta & mask) && (sta_s & mask);
 }
 
+static int is_clkmux_on(int id)
+{
+	unsigned int clkcfg = 0;
+	int reg_idx = id / 4;
+	int sub_idx = id % 4;
+	unsigned int mask[4] = {0x80000000, 0x00800000, 0x00008000, 0x00000080};
+
+	clkcfg = idle_readl(CLK_CFG(reg_idx));
+
+	return !(clkcfg & mask[sub_idx]);
+}
+
 static int is_pll_on(int id)
 {
 	return idle_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
@@ -400,7 +412,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_INFRA_2] = ~idle_readl(INFRA_SW_CG_2_STA);      /* INFRA2 */
 
 	/* MTCMOS DIS and MM_PLL */
-	if (sys_is_on(SYS_DIS) && is_pll_on(MM_PLL)) {
+	if (sys_is_on(SYS_DIS) && is_clkmux_on(CLKMUX_MM)) {
 		clks[CG_MMSYS0] = (~idle_readl(DISP_CG_CON_0));
 		clks[CG_MMSYS1] = (~idle_readl(DISP_CG_CON_1));
 	}
