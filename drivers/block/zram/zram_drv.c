@@ -613,6 +613,31 @@ static void dump_object(unsigned char *cmem, size_t tlen)
 
 	pr_err("\n!!!!!!!!!\n");
 }
+#else
+static void check_compressed_data(unsigned char *cmem, size_t tlen)
+{
+#define MAX_PROPORTION_SHIFT	(3)
+
+	size_t nz_count = 0;
+	int idx;
+
+	/*
+	 * View it as being full of zero -
+	 * ZRAM compressed data should not contains lots of zero due to
+	 * its compression algorithm. So we judge it with the following
+	 * formula,
+	 * the number of non-zero bytes < (tlen >> MAX_PROPORTION_SHIFT)
+	 */
+	for (idx = 0; idx < tlen; idx++) {
+		if (*cmem++)
+			nz_count++;
+	}
+
+	if (nz_count < (tlen >> MAX_PROPORTION_SHIFT))
+		pr_info("%s: full of zero!\n", __func__);
+
+#undef MAX_PROPORTION_SHIFT
+}
 #endif
 
 static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
@@ -658,6 +683,11 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 #ifdef CONFIG_MTK_ENG_BUILD
 		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 		dump_object(cmem, size + GUARD_BYTES_LENGTH);
+		zs_unmap_object(meta->mem_pool, handle);
+#else
+		/* Try to identify which pattern it contains */
+		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
+		check_compressed_data(cmem, size);
 		zs_unmap_object(meta->mem_pool, handle);
 #endif
 		return ret;
