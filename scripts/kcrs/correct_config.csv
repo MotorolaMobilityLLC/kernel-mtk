@@ -1019,7 +1019,7 @@ CONFIG_MTK_MOTION_DETECT_HUB,PROJECT,jy.lan,,y,y,y,,,,,,,
 CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT,PROJECT,jun-quan.chen,,X,X,O,,,,,,,
 CONFIG_MTK_DCS,PROJECT,miles.chen,,X,X,y,,,,,,,
 CONFIG_MTK_HW_FDE_AES,PROJECT,Calvin.Liao,,X,X,O,,,,,,,
-CONFIG_MTK_CCU,PROJECT,kuanfu.yeh,,N,y,y,O,y,N,N,O,N,O
+CONFIG_MTK_CCU,PROJECT,kuanfu.yeh,,N,y,y,O,y,N,y,y,y,y
 CONFIG_MTK_DYNAMIC_FPS_SUPPORT,PROJECT,jih-cheng.chiu,,X,X,O,,,,,,,
 CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT,PLATFORM,jih-cheng.chiu,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_KERNEL_GEOFENCE,PROJECT,chiayen.chong,,,,,,,,,,,

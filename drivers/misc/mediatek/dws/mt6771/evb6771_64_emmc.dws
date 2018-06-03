@@ -2231,6 +2231,16 @@
                 <channel>I2C_CHANNEL_6</channel>
                 <address>0x34</address>
             </device19>
+            <device20>
+                <varName>CCU_SENSOR_I2C_MAIN_HW</varName>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x33</address>
+            </device20>
+            <device21>
+                <varName>CCU_SENSOR_I2C_SUB_HW</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x43</address>
+            </device21>
         </module>
         <module name="md1_eint">
             <count>3</count>
