@@ -78,14 +78,6 @@ void mcdi_status_init(void)
 	set_mcdi_enable_status(true);
 }
 
-void mcdi_mcupm_debug_sram_init(void)
-{
-	/* MAGIC NUMBER */
-	mcdi_write(MCUPM_SRAM_DEBUG_BASE, MCDI_DEBUG_INFO_MAGIC_NUM);
-	/* debug version */
-	mcdi_write(MCUPM_SRAM_DEBUG_BASE + 4, MCDI_DEBUG_VERSION);
-}
-
 void mcdi_of_init(void)
 {
 	struct device_node *node = NULL;

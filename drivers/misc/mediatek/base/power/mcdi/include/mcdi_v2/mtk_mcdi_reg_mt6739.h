@@ -46,11 +46,11 @@ extern void __iomem *mcdi_mcupm_sram_base;
 /* profile */
 #define MCUPM_SRAM_PROFILE_BASE              (mcdi_mcupm_sram_base + 0x1000)
 #define SYSRAM_PROF_DATA_REG                 (MCUPM_SRAM_PROFILE_BASE + 0xA60)
-#define SYSRAM_PROF_RATIO_REG                (MCUPM_SRAM_PROFILE_BASE + 0xB30)
-#define SYSRAM_PROF_BASE_REG                 (MCUPM_SRAM_PROFILE_BASE + 0xB58)
-#define SYSRAM_DISTRIBUTE_BASE_REG           (MCUPM_SRAM_PROFILE_BASE + 0xB80)
-#define SYSRAM_LATENCY_BASE_REG              (MCUPM_SRAM_PROFILE_BASE + 0xBA0)
-#define SYSRAM_PROF_RARIO_DUR                (MCUPM_SRAM_PROFILE_BASE + 0xBE0)
+#define SYSRAM_PROF_RATIO_REG                (MCUPM_SRAM_PROFILE_BASE + 0xAFC)
+#define SYSRAM_PROF_BASE_REG                 (MCUPM_SRAM_PROFILE_BASE + 0xAD0)
+#define SYSRAM_DISTRIBUTE_BASE_REG           (MCUPM_SRAM_PROFILE_BASE + 0xB28)
+#define SYSRAM_LATENCY_BASE_REG              (MCUPM_SRAM_PROFILE_BASE + 0xB44)
+#define SYSRAM_PROF_RARIO_DUR                (MCUPM_SRAM_PROFILE_BASE + 0xB84)
 
 #define SYSRAM_PROF_REG(ofs)                 (SYSRAM_PROF_BASE_REG + ofs)
 #define CPU_OFF_LATENCY_REG(ofs)             (SYSRAM_LATENCY_BASE_REG + ofs)
@@ -60,7 +60,7 @@ extern void __iomem *mcdi_mcupm_sram_base;
 
 #define LATENCY_DISTRIBUTE_REG(ofs)          (SYSRAM_DISTRIBUTE_BASE_REG + ofs)
 #define PROF_OFF_CNT_REG(idx)                (LATENCY_DISTRIBUTE_REG(idx * 4))
-#define PROF_ON_CNT_REG(idx)                 (LATENCY_DISTRIBUTE_REG((idx + 4) * 4))
+#define PROF_ON_CNT_REG(idx)                 (LATENCY_DISTRIBUTE_REG((idx + 3) * 4))
 
 #define STANDBYWFI_EN(n)                     (1 << (n +  8))
 #define GIC_IRQOUT_EN(n)                     (1 << (n +  0))

@@ -266,18 +266,19 @@ static ssize_t mcdi_profile_read(struct file *filp,
 			       char __user *userbuf, size_t count, loff_t *f_pos)
 {
 	int i, len = 0;
-	unsigned int cnt[10] = {0};
+	unsigned int cnt[8] = {0};
 	char *p = dbg_buf;
 	unsigned int ratio_raw = 0;
 	unsigned int ratio_int = 0;
 	unsigned int ratio_fraction = 0;
 	unsigned int ratio_dur = 0;
 
-	for (i = 0; i < 4; i++) {
+	/* distribution */
+	for (i = 0; i < 3; i++) {
 		cnt[i]   = mcdi_read(PROF_OFF_CNT_REG(i));
-		cnt[i+5] = mcdi_read(PROF_ON_CNT_REG(i));
-		cnt[4]  += cnt[i];
-		cnt[9]  += cnt[i+5];
+		cnt[i+4] = mcdi_read(PROF_ON_CNT_REG(i));
+		cnt[3]  += cnt[i];
+		cnt[7]  += cnt[i+4];
 	}
 
 	mcdi_log("mcdi cpu off    : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
@@ -302,15 +303,13 @@ static ssize_t mcdi_profile_read(struct file *filp,
 		mcdi_read(Cluster_ON_LATENCY_REG(0xC)));
 	mcdi_log("\n");
 
-	if (cnt[4] > 0 && cnt[9] > 0) {
-		mcdi_log("pwr off latency    < 25 us : %2d%% (%d)\n", (100 * cnt[0]) / cnt[4], cnt[0]);
-		mcdi_log("pwr off latency  25-100 us : %2d%% (%d)\n", (100 * cnt[1]) / cnt[4], cnt[1]);
-		mcdi_log("pwr off latency 100-500 us : %2d%% (%d)\n", (100 * cnt[2]) / cnt[4], cnt[2]);
-		mcdi_log("pwr off latency   > 500 us : %2d%% (%d)\n", (100 * cnt[3]) / cnt[4], cnt[3]);
-		mcdi_log("pwr on  latency    < 25 us : %2d%% (%d)\n", (100 * cnt[5]) / cnt[9], cnt[5]);
-		mcdi_log("pwr on  latency  25-100 us : %2d%% (%d)\n", (100 * cnt[6]) / cnt[9], cnt[6]);
-		mcdi_log("pwr on  latency 100-500 us : %2d%% (%d)\n", (100 * cnt[7]) / cnt[9], cnt[7]);
-		mcdi_log("pwr on  latency   > 500 us : %2d%% (%d)\n", (100 * cnt[8]) / cnt[9], cnt[8]);
+	if (cnt[3] > 0 && cnt[7] > 0) {
+		mcdi_log("pwr off latency  < 100 us : %2d%% (%d)\n", (100 * cnt[0]) / cnt[3], cnt[0]);
+		mcdi_log("pwr off latency 100-500 us : %2d%% (%d)\n", (100 * cnt[1]) / cnt[3], cnt[1]);
+		mcdi_log("pwr off latency   > 500 us : %2d%% (%d)\n", (100 * cnt[2]) / cnt[3], cnt[2]);
+		mcdi_log("pwr on  latency  < 100 us : %2d%% (%d)\n", (100 * cnt[4]) / cnt[7], cnt[4]);
+		mcdi_log("pwr on  latency 100-500 us : %2d%% (%d)\n", (100 * cnt[5]) / cnt[7], cnt[5]);
+		mcdi_log("pwr on  latency   > 500 us : %2d%% (%d)\n", (100 * cnt[6]) / cnt[7], cnt[6]);
 	}
 
 #ifdef WORST_LATENCY_DBG
@@ -335,6 +334,7 @@ static ssize_t mcdi_profile_read(struct file *filp,
 
 	mcdi_log("\nOFF %% (cpu):\n");
 
+	mcdi_log("ratio_dur=%d\n", ratio_dur);
 	for (i = 0; i < NF_CPU; i++) {
 		ratio_raw      = 100 * mcdi_read(SYSRAM_PROF_RATIO_REG + i * 0x8 + 0x4);
 		ratio_int      = ratio_raw / ratio_dur;
@@ -403,6 +403,7 @@ static ssize_t mcdi_profile_write(struct file *filp,
 
 		pr_info("mcdi_reg: 0x%lx=0x%x(%d)\n",
 			param, mcdi_read(mcdi_sysram_base + param), mcdi_read(mcdi_sysram_base + param));
+
 		return count;
 
 	} else if (!strncmp(cmd_str, "enable", strlen("enable"))) {
@@ -902,8 +903,6 @@ static int __init mcdi_init(void)
 	mcdi_sysram_init();
 
 	mcdi_pm_qos_init();
-
-	mcdi_mcupm_debug_sram_init();
 
 	mcdi_enable_mcupm_cluster_counter();
 
