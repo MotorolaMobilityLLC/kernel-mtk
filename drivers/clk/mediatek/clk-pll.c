@@ -463,7 +463,7 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	.set_rate	= mtk_pll_set_rate_dummy,
 };
 #endif
-#if (defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763))
+#if (defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6759))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
 	.enable		= mtk_pll_prepare,
