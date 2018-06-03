@@ -1924,6 +1924,9 @@
 		compatible = "mediatek,rsc";
 		reg = <0 0x15029000 0 0x1000>;
 		interrupts = <GIC_SPI 271 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_RSC>;
+		clock-names = "RSC_CLK_IMG_RSC";
 	};
 
 	wpe@1502a000 {
@@ -1952,6 +1955,9 @@
 		compatible = "mediatek,owe";
 		reg = <0 0x1502c000 0 0x1000>;
 		interrupts = <GIC_SPI 277 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_OWE>;
+		clock-names = "OWE_CLK_IMG_OWE";
 	};
 
 	owe_dma@1502c000 {
