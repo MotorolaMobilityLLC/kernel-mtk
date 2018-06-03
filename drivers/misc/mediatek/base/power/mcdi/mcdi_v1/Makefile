@@ -11,7 +11,12 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 
 obj-y += mtk_mcdi.o
 obj-y += mtk_mcdi_state.o

@@ -17,7 +17,7 @@
 #include <asm/cpuidle.h>
 #include <asm/suspend.h>
 
-/* #define USING_TICK_BROADCAST */
+#define USING_TICK_BROADCAST
 
 int __attribute__((weak)) rgidle_enter(int cpu)
 {

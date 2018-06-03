@@ -11,16 +11,18 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_MCDI_GOVERNOR_H__
-#define __MTK_MCDI_GOVERNOR_H__
+#ifndef __MTK_MCDI_H__
+#define __MTK_MCDI_H__
 
-int mcdi_governor_select(int cpu, int cluster_idx);
-void mcdi_governor_reflect(int cpu, int state);
-void mcdi_avail_cpu_cluster_update(void);
-void mcdi_governor_init(void);
-void set_mcdi_enable_status(bool enabled);
-void get_mcdi_enable_status(bool *enabled, bool *paused);
-int get_residency_latency_result(int cpu);
-void mcdi_state_pause(bool pause);
+#define NF_CPU                  8
+#define NF_CLUSTER              2
+#define CPU_PWR_STAT_MASK       0x000000FF
+#define CLUSTER_PWR_STAT_MASK   0x00030000
 
-#endif /* __MTK_MCDI_GOVERNOR_H__ */
+int cluster_idx_get(int cpu);
+unsigned int get_menu_predict_us(void);
+bool mcdi_task_pause(bool paused);
+unsigned int mcdi_mbox_read(int id);
+void mcdi_mbox_write(int id, unsigned int val);
+
+#endif /* __MTK_MCDI_H__ */
