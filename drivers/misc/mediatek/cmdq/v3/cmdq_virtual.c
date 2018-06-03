@@ -192,29 +192,23 @@ uint64_t cmdq_virtual_flag_from_scenario_legacy(enum CMDQ_SCENARIO_ENUM scn)
 		break;
 	case CMDQ_SCENARIO_SUB_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
-			(1LL << CMDQ_ENG_DISP_COLOR1) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
 			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DSI1_CMD));
 		break;
 	case CMDQ_SCENARIO_SUB_ALL:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
 			(1LL << CMDQ_ENG_DISP_WDMA1) |
-			(1LL << CMDQ_ENG_DISP_COLOR1) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
 			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DSI1_CMD));
 		break;
 	case CMDQ_SCENARIO_MHL_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
-			(1LL << CMDQ_ENG_DISP_COLOR1) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
-			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DPI));
+			(1LL << CMDQ_ENG_DISP_RDMA1));
 		break;
 	case CMDQ_SCENARIO_RDMA0_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_RDMA0) |
 			(1LL << CMDQ_ENG_DISP_UFOE) | (1LL << CMDQ_ENG_DISP_DSI0_CMD));
-		break;
-	case CMDQ_SCENARIO_RDMA2_DISP:
-		flag = ((1LL << CMDQ_ENG_DISP_RDMA2) | (1LL << CMDQ_ENG_DISP_DPI));
 		break;
 	default:
 		flag = 0LL;
@@ -523,7 +517,7 @@ void cmdq_virtual_get_reg_id_from_hwflag(uint64_t hwflag, enum CMDQ_DATA_REGISTE
 		*valueRegId = CMDQ_DATA_REG_2D_SHARPNESS_1;
 		*destRegId = CMDQ_DATA_REG_2D_SHARPNESS_1_DST;
 		*regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_2;
-	} else if (hwflag & ((1LL << CMDQ_ENG_DISP_COLOR0 | (1LL << CMDQ_ENG_DISP_COLOR1)))) {
+	} else if (hwflag & (1LL << CMDQ_ENG_DISP_COLOR0)) {
 		*valueRegId = CMDQ_DATA_REG_PQ_COLOR;
 		*destRegId = CMDQ_DATA_REG_PQ_COLOR_DST;
 		*regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_3;
@@ -888,12 +882,12 @@ uint64_t cmdq_virtual_flag_from_scenario(enum CMDQ_SCENARIO_ENUM scn)
 		break;
 	case CMDQ_SCENARIO_SUB_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
-			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DPI));
+			(1LL << CMDQ_ENG_DISP_RDMA1));
 		break;
 	case CMDQ_SCENARIO_SUB_ALL:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
 			(1LL << CMDQ_ENG_DISP_WDMA1) |
-			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DPI));
+			(1LL << CMDQ_ENG_DISP_RDMA1));
 		break;
 	case CMDQ_SCENARIO_RDMA0_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_RDMA0) | (1LL << CMDQ_ENG_DISP_DSI0_CMD));
@@ -907,7 +901,7 @@ uint64_t cmdq_virtual_flag_from_scenario(enum CMDQ_SCENARIO_ENUM scn)
 		break;
 	case CMDQ_SCENARIO_MHL_DISP:
 	case CMDQ_SCENARIO_RDMA1_DISP:
-		flag = ((1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DPI));
+		flag = ((1LL << CMDQ_ENG_DISP_RDMA1));
 		break;
 	default:
 		flag = 0LL;
