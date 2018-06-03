@@ -65,12 +65,20 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
  * primary and secondary display.Each table has 16 elements which
  * represent the layer mapping rule by the number of input layers.
  */
+#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_GENERAL */
 	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003003F,
 	0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F},
 };
 
+#else
+static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
+	/* HRT_TB_TYPE_GENERAL */
+	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003001F,
+	0x0003001F, 0x0003001F, 0x0003001F, 0x0003001F},
+};
+#endif
 /**
  * The larb mapping table represent the relation between LARB and OVL.
  */

@@ -15,7 +15,12 @@
 
 #include "layering_rule_base.h"
 
-#define MAX_PHY_OVL_CNT 12
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+#define MAX_PHY_OVL_CNT (12-2)
+#else
+#define MAX_PHY_OVL_CNT (12)
+#endif
+
 /* #define HAS_LARB_HRT */
 #ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 #define HRT_AEE_LAYER_MASK 0xFFFFFFDF

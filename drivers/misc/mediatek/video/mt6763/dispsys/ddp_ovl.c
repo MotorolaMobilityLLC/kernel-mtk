@@ -77,7 +77,11 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL0:
 		return 4;
 	case DISP_MODULE_OVL0_2L:
+#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 		return 2;
+#else
+		return 1;
+#endif
 	case DISP_MODULE_OVL1_2L:
 		return 2;
 	default:
@@ -459,6 +463,11 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			REG_FLD_VAL(L_PITCH_FLD_DRGB_SEL, cfg->dst_alpha & 0x3) |
 			REG_FLD_VAL(L_PITCH_FLD_SURFL_EN, cfg->src_alpha & 0x1) |
 			REG_FLD_VAL(L_PITCH_FLD_SRC_PITCH, cfg->src_pitch);
+	if (format == UFMT_RGBA4444) {
+		value |= REG_FLD_VAL(L_PITCH_FLD_SRGB_SEL, (1)) |
+			REG_FLD_VAL(L_PITCH_FLD_DRGB_SEL, (2)) |
+			REG_FLD_VAL(L_PITCH_FLD_SURFL_EN, (1));
+	}
 
 	if (cfg->const_bld)
 		value |= REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
@@ -945,7 +954,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	has_sec_layer = setup_ovl_sec(module, pConfig, handle);
 #endif
 
-	for (layer_id = 0; layer_id < TOTAL_OVL_LAYER_NUM; layer_id++) {
+	for (layer_id = 0; layer_id < TOTAL_REAL_OVL_LAYER_NUM; layer_id++) {
 		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[layer_id];
 		int enable = ovl_cfg->layer_en;
 
