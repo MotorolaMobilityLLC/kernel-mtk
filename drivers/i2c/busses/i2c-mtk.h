@@ -201,6 +201,8 @@ enum I2C_REGS_OFFSET {
 	OFFSET_IRQ_INFO = 0xfff,
 	OFFSET_DMA_FSM_DEBUG = 0xfff,
 	OFFSET_HFIFO_STAT = 0xfff,
+	OFFSET_MULTI_DMA = 0xfff,
+	OFFSET_ROLLBACK = 0xfff,
 };
 
 enum I2C_REGS_OFFSET_V2 {
@@ -246,6 +248,8 @@ enum I2C_REGS_OFFSET_V2 {
 	V2_OFFSET_IRQ_INFO = 0xe0,
 	V2_OFFSET_DMA_FSM_DEBUG = 0xec,
 	V2_OFFSET_HFIFO_STAT = 0xfc,
+	V2_OFFSET_MULTI_DMA = 0xf8c,
+	V2_OFFSET_ROLLBACK = 0xf98,
 
 	/*not in v2*/
 	V2_OFFSET_DCM_EN = 0xfff, /*0x54*/
@@ -343,6 +347,7 @@ struct mt_i2c {
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
+	bool is_ccu_trig;
 	bool suspended;
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */

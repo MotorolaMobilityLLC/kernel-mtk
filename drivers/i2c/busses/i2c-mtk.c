@@ -859,7 +859,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 
 	/* Prepare buffer data to start transfer */
-	if (isDMA == true) {
+	if (isDMA == true && (!i2c->is_ccu_trig)) {
 
 #ifdef CONFIG_MTK_LM_MODE
 		if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
@@ -900,7 +900,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		mb();
 		i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
 	} else {
-		if (i2c->op != I2C_MASTER_RD) {
+		if (i2c->op != I2C_MASTER_RD && (!i2c->is_ccu_trig)) {
 			data_size = i2c->total_len;
 			ptr = i2c->dma_buf.vaddr;
 			while (data_size--) {
@@ -910,10 +910,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		}
 	}
 	if (i2c->dev_comp->ver == 0x2) {
-		if (!i2c->is_hw_trig)
+		if (!i2c->is_ccu_trig)
 			i2c_writew(I2C_MCU_INTR_EN, i2c, OFFSET_MCU_INTR);
-		else
-			i2c_writew(I2C_CCU_INTR_EN, i2c, OFFSET_MCU_INTR);
+		else {
+			dev_info(i2c->dev, "I2C CCU trig.\n");
+			return 0;
+		}
 	}
 	/* flush before sending start */
 	mb();
@@ -1361,11 +1363,11 @@ int i2c_ccu_enable(struct i2c_adapter *adap, u16 ch_offset)
 	if (mt_i2c_clock_enable(i2c))
 		return -EBUSY;
 	mutex_lock(&i2c->i2c_mutex);
-	i2c->is_hw_trig = true;
+	i2c->is_ccu_trig = true;
 	i2c->ext_data.ch_offset = ch_offset;
 	i2c->ext_data.is_ch_offset = true;
 	ret = __mt_i2c_transfer(i2c, &dummy_msg, 1);
-	i2c->is_hw_trig = false;
+	i2c->is_ccu_trig = false;
 	i2c->ext_data.is_ch_offset = false;
 	mutex_unlock(&i2c->i2c_mutex);
 	return ret;
