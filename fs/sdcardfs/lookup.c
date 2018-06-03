@@ -18,6 +18,7 @@
  * General Public License.
  */
 
+#define DEBUG 1
 #include <linux/fs.h>
 #include <linux/limits.h>
 #include "sdcardfs.h"
@@ -184,6 +185,12 @@ int sdcardfs_interpose(struct dentry *dentry, struct super_block *sb,
 
 	lower_inode = lower_path->dentry->d_inode;
 	lower_sb = sdcardfs_lower_super(sb);
+
+	if (dentry && !dentry->d_fsdata) {
+		pr_err("sdcardfs: %s: dentry %p d_fsdata absent\n", __func__, dentry);
+		err = -ENOENT;
+		goto out;
+	}
 
 	/* check that the lower file system didn't cross a mount point */
 	if (lower_inode->i_sb != lower_sb) {
