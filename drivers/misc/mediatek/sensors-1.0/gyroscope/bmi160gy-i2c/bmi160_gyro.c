@@ -515,6 +515,22 @@ static int bmg_get_chip_type(struct i2c_client *client)
 	return err;
 }
 
+int bmg_get_drop_cmd_err(struct i2c_client *client, unsigned char *drop_cmd_err)
+{
+	int comres = 0;
+	u8 v_data_u8r = ((u8)0);
+
+#ifdef BMI160_ACCESS_BY_GSE_I2C
+	comres = bmi_i2c_read_wrapper(0, BMI160_USER_DROP_CMD_ERR__REG, &v_data_u8r, 1);
+#else
+	comres = bmg_i2c_read_block(client,
+			BMI160_USER_DROP_CMD_ERR__REG, &v_data_u8r, 1);
+#endif
+	/* drop command error*/
+	*drop_cmd_err = BMI160_GET_BITSLICE(v_data_u8r,
+			BMI160_USER_DROP_CMD_ERR);
+	return comres;
+}
 int bmg_get_powermode(struct i2c_client *client, unsigned char *mode)
 {
 	int comres = 0;
@@ -536,11 +552,17 @@ static int bmg_set_powermode(struct i2c_client *client,
 	u8 data = 0;
 	u8 actual_power_mode = 0;
 	struct bmg_i2c_data *obj = obj_i2c_data;
-
-	if (power_mode == obj->power_mode)
-		return 0;
+	u8 data_1 = 0;
+	u8 drop_cmd_err = 0;
+	int cnt = 0;
 
 	mutex_lock(&obj->lock);
+	if (power_mode == obj->power_mode) {
+		GYRO_LOG("power status is newest!\n");
+		mutex_unlock(&obj->lock);
+		return 0;
+	}
+
 	if (obj->sensor_type == BMI160_GYRO_TYPE) {
 		if (power_mode == BMG_SUSPEND_MODE) {
 			actual_power_mode = CMD_PMU_GYRO_SUSPEND;
@@ -553,20 +575,42 @@ static int bmg_set_powermode(struct i2c_client *client,
 			return err;
 		}
 		data = actual_power_mode;
+		do {
 #ifdef BMI160_ACCESS_BY_GSE_I2C
-		err += bmi_i2c_write_wrapper(0, BMI160_CMD_COMMANDS__REG, &data, 1);
+			err += bmi_i2c_write_wrapper(0, BMI160_CMD_COMMANDS__REG, &data, 1);
 #else
-		err += bmg_i2c_write_block(client,
-			BMI160_CMD_COMMANDS__REG, &data, 1);
+			err += bmg_i2c_write_block(client,
+					BMI160_CMD_COMMANDS__REG, &data, 1);
 #endif
+			if (err < 0) {
+				BMIGYRO_ERR("set power mode failed, err = %d, sensor name = %s\n",
+					 err, obj->sensor_name);
+				mutex_unlock(&obj->lock);
+				return err;
+			}
+			mdelay(1);
+
+			err = bmg_get_drop_cmd_err(client, &drop_cmd_err);
+			if (err < 0) {
+				BMIGYRO_ERR("get_drop_cmd_err failed.\n");
+				mutex_unlock(&obj->lock);
+				return err;
+			}
+			cnt++;
+		} while (drop_cmd_err == 0x1 && cnt < 500);
+
+		if ((cnt == 500) || (drop_cmd_err == 0x1)) {
+			BMIGYRO_ERR("drop_cmd!!, drop_cmd_err=%x, cnt=%d\n", drop_cmd_err, cnt);
+			BMIGYRO_ERR("set power mode = %d fail!\n", (int)data);
+			mutex_unlock(&obj->lock);
+			return -EINVAL;
+		}
+
 		/* mdelay(55); */
 	}
-	if (err < 0) {
-		BMIGYRO_ERR("set power mode failed, err = %d, sensor name = %s\n",
-			 err, obj->sensor_name);
-	} else {
-		obj->power_mode = power_mode;
-	}
+
+	obj->power_mode = power_mode;
+
 	/* set debounce */
 	if (power_mode == BMG_SUSPEND_MODE) {
 		atomic_set(&obj->gyro_deb_on, 0);
@@ -582,6 +626,14 @@ static int bmg_set_powermode(struct i2c_client *client,
 	/* */
 	mutex_unlock(&obj->lock);
 	GYRO_LOG("set power mode = %d ok.\n", (int)data);
+
+	err = bmg_get_powermode(client, &data_1);
+	if (err < 0) {
+		BMIGYRO_ERR("bmg_get_powermode failed.\n");
+		/* return err; */
+	}
+	GYRO_LOG("[Lomen] gyro_pmu_status=%x\n", data_1);
+
 	return err;
 }
 

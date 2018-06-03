@@ -119,6 +119,13 @@
 #define BMI160_SHIFT_12_POSITION    12
 #define BMI160_SHIFT_16_POSITION    16
 
+#define BMI160_USER_ERROR_ADDR					(0X02)
+/* Error Description - Reg Addr --> (0x02), Bit --> 6 */
+#define BMI160_USER_DROP_CMD_ERR__POS              (6)
+#define BMI160_USER_DROP_CMD_ERR__LEN              (1)
+#define BMI160_USER_DROP_CMD_ERR__MSK              (0x40)
+#define BMI160_USER_DROP_CMD_ERR__REG              (BMI160_USER_ERROR_ADDR)
+
 #define BMI160_USER_DATA_8_ADDR		0X0C
 /* GYR_X (LSB) Description - Reg Addr --> 0x0C, Bit --> 0...7 */
 #define BMI160_USER_DATA_8_GYR_X_LSB__POS	0
@@ -158,4 +165,5 @@ extern s8 bmi_i2c_read_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len);
 extern s8 bmi_i2c_write_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len);
 #endif
 int bmg_get_powermode(struct i2c_client *client, unsigned char *mode);
+int bmg_get_drop_cmd_err(struct i2c_client *client, unsigned char *drop_cmd_err);
 #endif/* BMI160_GYRO_H */

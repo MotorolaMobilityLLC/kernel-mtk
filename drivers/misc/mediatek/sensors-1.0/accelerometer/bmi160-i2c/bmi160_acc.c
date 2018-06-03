@@ -597,12 +597,14 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 drop_cmd_err = 0;
 	int cnt = 0;
 
+	mutex_lock(&obj->lock);
 	/* GSE_LOG("enable=%d, sensor_power=%d\n", enable, sensor_power); */
 	if (enable == sensor_power) {
 		GSE_LOG("power status is newest!\n");
+		mutex_unlock(&obj->lock);
 		return 0;
 	}
-	mutex_lock(&obj->lock);
+
 	if (enable == true)
 		databuf[0] = CMD_PMU_ACC_NORMAL;
 	else
@@ -626,14 +628,15 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 		}
 		cnt++;
 	} while (drop_cmd_err == 0x1 && cnt < 500);
-	mutex_unlock(&obj->lock);
 
 	if ((cnt == 500) || (drop_cmd_err == 0x1)) {
 		GSE_ERR("drop_cmd!!, drop_cmd_err=%x, cnt=%d\n", drop_cmd_err, cnt);
 		GSE_ERR("set power mode enable = %d fail!\n", enable);
+		mutex_unlock(&obj->lock);
 		return -EINVAL;
 	}
 	sensor_power = enable;
+	mutex_unlock(&obj->lock);
 	GSE_LOG("set power mode enable = %d ok!\n", enable);
 
 
