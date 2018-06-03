@@ -372,7 +372,7 @@
 /* Section 5: Adjustable Driver Parameter                     */
 /**************************************************************/
 /* Setting here will override, mtk_sd.h */
-#define CLK_TIMEOUT             (HZ/100)        /* 10ms */
+#define CLK_TIMEOUT             (HZ/10)        /* 100ms */
 
 #define HOST_MAX_BLKSZ          (2048)
 
