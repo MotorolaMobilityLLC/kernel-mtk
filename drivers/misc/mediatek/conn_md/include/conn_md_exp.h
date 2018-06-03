@@ -32,7 +32,7 @@
  * 2. Let wmt_drv.ko handles the difference via:
  *      #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
  */
-#define conn_md_ipc_ilm_t struct ipc_ilm;
+#define conn_md_ipc_ilm_t struct ipc_ilm
 
 enum CONN_MD_ERR_CODE {
 	CONN_MD_ERR_NO_ERR = 0,
