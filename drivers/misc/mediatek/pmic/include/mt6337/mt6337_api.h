@@ -13,6 +13,11 @@
 
 #ifndef _MT_6337_PMIC_API_H_
 #define _MT_6337_PMIC_API_H_
+
+/* MT6337 low power setting API for low power SW */
+extern void wk_mt6337_set_lp_setting(void);
+extern void wk_mt6337_restore_lp_setting(void);
+/* MT6337 register API */
 extern unsigned int mt6337_upmu_get_hwcid(void);
 extern unsigned int mt6337_upmu_get_swcid(void);
 extern unsigned int mt6337_upmu_get_anacid(void);

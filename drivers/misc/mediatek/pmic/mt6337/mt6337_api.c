@@ -16,6 +16,21 @@
 #include "mt6337_upmu_hw.h"
 #include "mt6337.h"
 
+
+/* MT6337 low power setting API for low power SW */
+void wk_mt6337_set_lp_setting(void)
+{
+	mt6337_set_register_value(MT6337_PMIC_RG_SRCLKEN_IN2_EN, 1);
+	mt6337_set_register_value(MT6337_PMIC_RG_OSC_SEL_SRCLKEN2_EN, 0);
+}
+
+void wk_mt6337_restore_lp_setting(void)
+{
+	mt6337_set_register_value(MT6337_PMIC_RG_SRCLKEN_IN2_EN, 0);
+	mt6337_set_register_value(MT6337_PMIC_RG_OSC_SEL_SRCLKEN2_EN, 1);
+}
+
+/* MT6337 register API */
 unsigned int mt6337_upmu_get_hwcid(void)
 {
 	unsigned int ret = 0;
