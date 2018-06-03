@@ -16,6 +16,8 @@
 #include "ddp_debug.h"
 #include "ddp_log.h"
 
+#define DDP_MODULE_REG_RANGE	(0x1000)
+
 static const char reg_magic[] = "no_regs_info";
 
 static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
@@ -655,9 +657,11 @@ unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 	unsigned int i = 0;
 
 	for (i = 0; i < DISP_MODULE_NUM; i++) {
-		if ((isVa == 1) && (addr > ddp_get_module_va(i)) && (addr < ddp_get_module_va(i) + 0x1000))
+		if ((isVa == 1) && (addr >= ddp_get_module_va(i)) &&
+			(addr < ddp_get_module_va(i) + DDP_MODULE_REG_RANGE))
 			break;
-		if ((isVa == 0) && (addr > ddp_get_module_pa(i)) && (addr < ddp_get_module_pa(i) + 0x1000))
+		if ((isVa == 0) && (addr >= ddp_get_module_pa(i)) &&
+			(addr < ddp_get_module_pa(i) + DDP_MODULE_REG_RANGE))
 			break;
 	}
 
