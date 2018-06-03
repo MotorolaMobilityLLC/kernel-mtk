@@ -236,6 +236,7 @@ typedef struct _MTK_WCN_STP_SDIO_HIF_INFO {
 	INT32 sleep_flag;
 	INT32 wakeup_flag;
 	INT32 awake_flag;
+	INT32 txwkr_flag;
 	OSAL_EVENT tx_rx_event;
 	OSAL_SIGNAL isr_check_complete;
 	INT32 dump_flag;
