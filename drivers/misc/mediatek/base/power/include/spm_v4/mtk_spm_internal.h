@@ -156,7 +156,7 @@ struct pwr_ctrl {
 	u8 md_ddr_en_0_dbc_en;
 	u8 md_ddr_en_1_dbc_en;
 	u8 md_mask_b;
-	u8 pmcu_mask_b;
+	u8 sspm_mask_b;
 	u8 lte_mask_b;
 	u8 srcclkeni_mask_b;
 	u8 md_apsrc_1_sel;
@@ -194,12 +194,12 @@ struct pwr_ctrl {
 	u8 md_srcclkena_0_infra_mask_b;
 	u8 md_srcclkena_1_infra_mask_b;
 	u8 conn_srcclkena_infra_mask_b;
-	u8 md32_srcclkena_infra_mask_b;
+	u8 sspm_srcclkena_infra_mask_b;
 	u8 srcclkeni_infra_mask_b;
 	u8 md_apsrc_req_0_infra_mask_b;
 	u8 md_apsrc_req_1_infra_mask_b;
 	u8 conn_apsrcreq_infra_mask_b;
-	u8 md32_apsrcreq_infra_mask_b;
+	u8 sspm_apsrcreq_infra_mask_b;
 	u8 md_ddr_en_0_mask_b;
 	u8 md_ddr_en_1_mask_b;
 	u8 md_vrf18_req_0_mask_b;
@@ -254,12 +254,12 @@ struct pwr_ctrl {
 	u8 ddren_emi_self_refresh_ch0_mask_b;
 	u8 ddren_emi_self_refresh_ch1_mask_b;
 	u8 ddren_mm_state_mask_b;
-	u8 ddren_md32_apsrc_req_mask_b;
+	u8 ddren_sspm_apsrc_req_mask_b;
 	u8 ddren_dqssoc_req_mask_b;
 	u8 ddren2_emi_self_refresh_ch0_mask_b;
 	u8 ddren2_emi_self_refresh_ch1_mask_b;
 	u8 ddren2_mm_state_mask_b;
-	u8 ddren2_md32_apsrc_req_mask_b;
+	u8 ddren2_sspm_apsrc_req_mask_b;
 	u8 ddren2_dqssoc_req_mask_b;
 
 	/* MP0_CPU0_WFI_EN */
@@ -310,7 +310,7 @@ enum pwr_ctrl_enum {
 	PWR_MD_DDR_EN_0_DBC_EN,
 	PWR_MD_DDR_EN_1_DBC_EN,
 	PWR_MD_MASK_B,
-	PWR_PMCU_MASK_B,
+	PWR_SSPM_MASK_B,
 	PWR_LTE_MASK_B,
 	PWR_SRCCLKENI_MASK_B,
 	PWR_MD_APSRC_1_SEL,
@@ -344,12 +344,12 @@ enum pwr_ctrl_enum {
 	PWR_MD_SRCCLKENA_0_INFRA_MASK_B,
 	PWR_MD_SRCCLKENA_1_INFRA_MASK_B,
 	PWR_CONN_SRCCLKENA_INFRA_MASK_B,
-	PWR_MD32_SRCCLKENA_INFRA_MASK_B,
+	PWR_SSPM_SRCCLKENA_INFRA_MASK_B,
 	PWR_SRCCLKENI_INFRA_MASK_B,
 	PWR_MD_APSRC_REQ_0_INFRA_MASK_B,
 	PWR_MD_APSRC_REQ_1_INFRA_MASK_B,
 	PWR_CONN_APSRCREQ_INFRA_MASK_B,
-	PWR_MD32_APSRCREQ_INFRA_MASK_B,
+	PWR_SSPM_APSRCREQ_INFRA_MASK_B,
 	PWR_MD_DDR_EN_0_MASK_B,
 	PWR_MD_DDR_EN_1_MASK_B,
 	PWR_MD_VRF18_REQ_0_MASK_B,
@@ -396,12 +396,12 @@ enum pwr_ctrl_enum {
 	PWR_DDREN_EMI_SELF_REFRESH_CH0_MASK_B,
 	PWR_DDREN_EMI_SELF_REFRESH_CH1_MASK_B,
 	PWR_DDREN_MM_STATE_MASK_B,
-	PWR_DDREN_MD32_APSRC_REQ_MASK_B,
+	PWR_DDREN_SSPM_APSRC_REQ_MASK_B,
 	PWR_DDREN_DQSSOC_REQ_MASK_B,
 	PWR_DDREN2_EMI_SELF_REFRESH_CH0_MASK_B,
 	PWR_DDREN2_EMI_SELF_REFRESH_CH1_MASK_B,
 	PWR_DDREN2_MM_STATE_MASK_B,
-	PWR_DDREN2_MD32_APSRC_REQ_MASK_B,
+	PWR_DDREN2_SSPM_APSRC_REQ_MASK_B,
 	PWR_DDREN2_DQSSOC_REQ_MASK_B,
 	PWR_MP0_CPU0_WFI_EN,
 	PWR_MP0_CPU1_WFI_EN,
@@ -476,9 +476,6 @@ struct spm_data {
 };
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
-#define DYNA_LOAD_PCM_PATH_SIZE 128
-#define PCM_FIRMWARE_VERSION_SIZE 128
 
 struct wake_status {
 	u32 assert_pc;		/* PCM_REG_DATA_INI */

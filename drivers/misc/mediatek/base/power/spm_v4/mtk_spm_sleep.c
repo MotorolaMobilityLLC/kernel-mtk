@@ -94,13 +94,13 @@ static unsigned int spm_sleep_count;
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_PCM_TIMER | \
-	WAKE_SRC_R12_MD32_WDT_EVENT_B | \
+	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
 	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_MD32_SPM_IRQ_B | \
+	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
 	WAKE_SRC_R12_USB_CDSC_B | \
 	WAKE_SRC_R12_USB_POWERDWN_B | \
 	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
@@ -112,13 +112,13 @@ static unsigned int spm_sleep_count;
 #else
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_PCM_TIMER | \
-	WAKE_SRC_R12_MD32_WDT_EVENT_B | \
+	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
 	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_MD32_SPM_IRQ_B | \
+	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
 	WAKE_SRC_R12_USB_CDSC_B | \
 	WAKE_SRC_R12_USB_POWERDWN_B | \
 	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
@@ -188,7 +188,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_ddr_en_0_dbc_en = 0x1,
 	.md_ddr_en_1_dbc_en = 0,
 	.md_mask_b = 0x1,
-	.pmcu_mask_b = 0x1,
+	.sspm_mask_b = 0x1,
 	.lte_mask_b = 0,
 	.srcclkeni_mask_b = 0x1,
 	.md_apsrc_1_sel = 0,
@@ -228,12 +228,12 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_0_infra_mask_b = 0x1,
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0x1,
-	.md32_srcclkena_infra_mask_b = 0,
+	.sspm_srcclkena_infra_mask_b = 0,
 	.srcclkeni_infra_mask_b = 0,
 	.md_apsrc_req_0_infra_mask_b = 0,
 	.md_apsrc_req_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 0,
-	.md32_apsrcreq_infra_mask_b = 0,
+	.sspm_apsrcreq_infra_mask_b = 0,
 	.md_ddr_en_0_mask_b = 0x1,
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 0x1,
@@ -288,12 +288,12 @@ static struct pwr_ctrl suspend_ctrl = {
 	.ddren_emi_self_refresh_ch0_mask_b = 0,
 	.ddren_emi_self_refresh_ch1_mask_b = 0,
 	.ddren_mm_state_mask_b = 0,
-	.ddren_md32_apsrc_req_mask_b = 0,
+	.ddren_sspm_apsrc_req_mask_b = 0,
 	.ddren_dqssoc_req_mask_b = 0,
 	.ddren2_emi_self_refresh_ch0_mask_b = 0,
 	.ddren2_emi_self_refresh_ch1_mask_b = 0,
 	.ddren2_mm_state_mask_b = 0,
-	.ddren2_md32_apsrc_req_mask_b = 0,
+	.ddren2_sspm_apsrc_req_mask_b = 0,
 	.ddren2_dqssoc_req_mask_b = 0,
 
 	/* MP0_CPU0_WFI_EN */

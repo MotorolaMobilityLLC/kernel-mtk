@@ -180,7 +180,7 @@
 #define MFG_2D_PWR_CON                 (SPM_BASE + 0x348)
 #define SYSRAM_CON                     (SPM_BASE + 0x350)
 #define SYSROM_CON                     (SPM_BASE + 0x354)
-#define PMCU_SRAM_CON                  (SPM_BASE + 0x358)
+#define SSPM_SRAM_CON                  (SPM_BASE + 0x358)
 #define UFS_SRAM_CON                   (SPM_BASE + 0x36C)
 #define BSI_TOP_SRAM_CON               (SPM_BASE + 0x370)
 #define PCCIF0_SRAM_CON                (SPM_BASE + 0x378)
@@ -238,22 +238,22 @@
 #define SRAM_DREQ_CON_SET              (SPM_BASE + 0x4B4)
 #define SRAM_DREQ_CON_CLR              (SPM_BASE + 0x4B8)
 #define SPM2EMI_ENTER_ULPM             (SPM_BASE + 0x4BC)
-#define SPM_MD32_IRQ                   (SPM_BASE + 0x4C0)
-#define SPM2PMCU_INT                   (SPM_BASE + 0x4C4)
-#define SPM2PMCU_INT_SET               (SPM_BASE + 0x4C8)
-#define SPM2PMCU_INT_CLR               (SPM_BASE + 0x4CC)
-#define SPM2PMCU_MAILBOX_0             (SPM_BASE + 0x4D0)
-#define SPM2PMCU_MAILBOX_1             (SPM_BASE + 0x4D4)
-#define SPM2PMCU_MAILBOX_2             (SPM_BASE + 0x4D8)
-#define SPM2PMCU_MAILBOX_3             (SPM_BASE + 0x4DC)
-#define PMCU2SPM_INT                   (SPM_BASE + 0x4E0)
-#define PMCU2SPM_INT_SET               (SPM_BASE + 0x4E4)
-#define PMCU2SPM_INT_CLR               (SPM_BASE + 0x4E8)
-#define PMCU2SPM_MAILBOX_0             (SPM_BASE + 0x4EC)
-#define PMCU2SPM_MAILBOX_1             (SPM_BASE + 0x4F0)
-#define PMCU2SPM_MAILBOX_2             (SPM_BASE + 0x4F4)
-#define PMCU2SPM_MAILBOX_3             (SPM_BASE + 0x4F8)
-#define PMCU2SPM_CFG                   (SPM_BASE + 0x4FC)
+#define SPM_SSPM_IRQ                   (SPM_BASE + 0x4C0)
+#define SPM2SSPM_INT                   (SPM_BASE + 0x4C4)
+#define SPM2SSPM_INT_SET               (SPM_BASE + 0x4C8)
+#define SPM2SSPM_INT_CLR               (SPM_BASE + 0x4CC)
+#define SPM2SSPM_MAILBOX_0             (SPM_BASE + 0x4D0)
+#define SPM2SSPM_MAILBOX_1             (SPM_BASE + 0x4D4)
+#define SPM2SSPM_MAILBOX_2             (SPM_BASE + 0x4D8)
+#define SPM2SSPM_MAILBOX_3             (SPM_BASE + 0x4DC)
+#define SSPM2SPM_INT                   (SPM_BASE + 0x4E0)
+#define SSPM2SPM_INT_SET               (SPM_BASE + 0x4E4)
+#define SSPM2SPM_INT_CLR               (SPM_BASE + 0x4E8)
+#define SSPM2SPM_MAILBOX_0             (SPM_BASE + 0x4EC)
+#define SSPM2SPM_MAILBOX_1             (SPM_BASE + 0x4F0)
+#define SSPM2SPM_MAILBOX_2             (SPM_BASE + 0x4F4)
+#define SSPM2SPM_MAILBOX_3             (SPM_BASE + 0x4F8)
+#define SSPM2SPM_CFG                   (SPM_BASE + 0x4FC)
 #define MP0_CPU0_IRQ_MASK              (SPM_BASE + 0x500)
 #define MP0_CPU1_IRQ_MASK              (SPM_BASE + 0x504)
 #define MP0_CPU2_IRQ_MASK              (SPM_BASE + 0x508)
@@ -463,7 +463,7 @@
 #define MD_DDR_EN_0_DBC_EN_LSB              (1U << 18)      /* 1b */
 #define MD_DDR_EN_1_DBC_EN_LSB              (1U << 19)      /* 1b */
 #define MD_MASK_B_LSB                       (1U << 20)      /* 2b */
-#define PMCU_MASK_B_LSB                     (1U << 22)      /* 1b */
+#define SSPM_MASK_B_LSB                     (1U << 22)      /* 1b */
 #define LTE_MASK_B_LSB                      (1U << 23)      /* 1b */
 #define SRCCLKENI_MASK_B_LSB                (1U << 24)      /* 1b */
 #define MD_APSRC_1_SEL_LSB                  (1U << 25)      /* 1b */
@@ -659,12 +659,12 @@
 #define MD_SRCCLKENA_0_INFRA_MASK_B_LSB     (1U << 12)      /* 1b */
 #define MD_SRCCLKENA_1_INFRA_MASK_B_LSB     (1U << 13)      /* 1b */
 #define CONN_SRCCLKENA_INFRA_MASK_B_LSB     (1U << 14)      /* 1b */
-#define MD32_SRCCLKENA_INFRA_MASK_B_LSB     (1U << 15)      /* 1b */
+#define SSPM_SRCCLKENA_INFRA_MASK_B_LSB     (1U << 15)      /* 1b */
 #define SRCCLKENI_INFRA_MASK_B_LSB          (1U << 16)      /* 1b */
 #define MD_APSRC_REQ_0_INFRA_MASK_B_LSB     (1U << 17)      /* 1b */
 #define MD_APSRC_REQ_1_INFRA_MASK_B_LSB     (1U << 18)      /* 1b */
 #define CONN_APSRCREQ_INFRA_MASK_B_LSB      (1U << 19)      /* 1b */
-#define MD32_APSRCREQ_INFRA_MASK_B_LSB      (1U << 20)      /* 1b */
+#define SSPM_APSRCREQ_INFRA_MASK_B_LSB      (1U << 20)      /* 1b */
 #define MD_DDR_EN_0_MASK_B_LSB              (1U << 21)      /* 1b */
 #define MD_DDR_EN_1_MASK_B_LSB              (1U << 22)      /* 1b */
 #define MD_VRF18_REQ_0_MASK_B_LSB           (1U << 23)      /* 1b */
@@ -728,12 +728,12 @@
 #define DDREN_EMI_SELF_REFRESH_CH0_MASK_B_LSB (1U << 6)       /* 1b */
 #define DDREN_EMI_SELF_REFRESH_CH1_MASK_B_LSB (1U << 7)       /* 1b */
 #define DDREN_MM_STATE_MASK_B_LSB           (1U << 8)       /* 1b */
-#define DDREN_MD32_APSRC_REQ_MASK_B_LSB     (1U << 9)       /* 1b */
+#define DDREN_SSPM_APSRC_REQ_MASK_B_LSB     (1U << 9)       /* 1b */
 #define DDREN_DQSSOC_REQ_MASK_B_LSB         (1U << 10)      /* 1b */
 #define DDREN2_EMI_SELF_REFRESH_CH0_MASK_B_LSB (1U << 16)      /* 1b */
 #define DDREN2_EMI_SELF_REFRESH_CH1_MASK_B_LSB (1U << 17)      /* 1b */
 #define DDREN2_MM_STATE_MASK_B_LSB          (1U << 18)      /* 1b */
-#define DDREN2_MD32_APSRC_REQ_MASK_B_LSB    (1U << 19)      /* 1b */
+#define DDREN2_SSPM_APSRC_REQ_MASK_B_LSB    (1U << 19)      /* 1b */
 #define DDREN2_DQSSOC_REQ_MASK_B_LSB        (1U << 20)      /* 1b */
 /* DDR_EN_EMI_DBC_CON (0x10006000+0x0E4) */
 #define EMI_SELF_REFRESH_CH0_DBC_LEN_LSB    (1U << 0)       /* 10b */
@@ -1234,11 +1234,11 @@
 #define IFR_SRAMROM_SRAM_ISOINT_B_LSB       (1U << 24)      /* 8b */
 /* SYSROM_CON (0x10006000+0x354) */
 #define IFR_SRAMROM_ROM_PDN_LSB             (1U << 0)       /* 6b */
-/* PMCU_SRAM_CON (0x10006000+0x358) */
-#define PMCU_SRAM_CKISO_LSB                 (1U << 0)       /* 1b */
-#define PMCU_SRAM_ISOINT_B_LSB              (1U << 1)       /* 1b */
-#define PMCU_SRAM_SLEEP_B_LSB               (1U << 4)       /* 1b */
-#define PMCU_SRAM_PDN_LSB                   (1U << 12)      /* 1b */
+/* SSPM_SRAM_CON (0x10006000+0x358) */
+#define SSPM_SRAM_CKISO_LSB                 (1U << 0)       /* 1b */
+#define SSPM_SRAM_ISOINT_B_LSB              (1U << 1)       /* 1b */
+#define SSPM_SRAM_SLEEP_B_LSB               (1U << 4)       /* 1b */
+#define SSPM_SRAM_PDN_LSB                   (1U << 12)      /* 1b */
 /* UFS_SRAM_CON (0x10006000+0x36C) */
 #define UFS_SRAM_PDN_LSB                    (1U << 0)       /* 5b */
 #define UFS_SRAM_SLEEP_B_LSB                (1U << 5)       /* 5b */
@@ -1463,40 +1463,40 @@
 #define SRAM_DREQ_CON_CLR_LSB               (1U << 0)       /* 16b */
 /* SPM2EMI_ENTER_ULPM (0x10006000+0x4BC) */
 #define SPM2EMI_ENTER_ULPM_LSB              (1U << 0)       /* 1b */
-/* SPM_MD32_IRQ (0x10006000+0x4C0) */
-#define SPM_MD32_IRQ_LSB                    (1U << 0)       /* 1b */
-#define SPM_MD32_IRQ_SEL_LSB                (1U << 4)       /* 1b */
-/* SPM2PMCU_INT (0x10006000+0x4C4) */
-#define SPM2PMCU_INT_LSB                    (1U << 0)       /* 4b */
-/* SPM2PMCU_INT_SET (0x10006000+0x4C8) */
-#define SPM2PMCU_INT_SET_LSB                (1U << 0)       /* 4b */
-/* SPM2PMCU_INT_CLR (0x10006000+0x4CC) */
-#define SPM2PMCU_INT_CLR_LSB                (1U << 0)       /* 4b */
-/* SPM2PMCU_MAILBOX_0 (0x10006000+0x4D0) */
-#define SPM2PMCU_MAILBOX_0_LSB              (1U << 0)       /* 32b */
-/* SPM2PMCU_MAILBOX_1 (0x10006000+0x4D4) */
-#define SPM2PMCU_MAILBOX_1_LSB              (1U << 0)       /* 32b */
-/* SPM2PMCU_MAILBOX_2 (0x10006000+0x4D8) */
-#define SPM2PMCU_MAILBOX_2_LSB              (1U << 0)       /* 32b */
-/* SPM2PMCU_MAILBOX_3 (0x10006000+0x4DC) */
-#define SPM2PMCU_MAILBOX_3_LSB              (1U << 0)       /* 32b */
-/* PMCU2SPM_INT (0x10006000+0x4E0) */
-#define PMCU2SPM_INT_LSB                    (1U << 0)       /* 4b */
-/* PMCU2SPM_INT_SET (0x10006000+0x4E4) */
-#define PMCU2SPM_INT_SET_LSB                (1U << 0)       /* 4b */
-/* PMCU2SPM_INT_CLR (0x10006000+0x4E8) */
-#define PMCU2SPM_INT_CLR_LSB                (1U << 0)       /* 4b */
-/* PMCU2SPM_MAILBOX_0 (0x10006000+0x4EC) */
-#define PMCU2SPM_MAILBOX_0_LSB              (1U << 0)       /* 32b */
-/* PMCU2SPM_MAILBOX_1 (0x10006000+0x4F0) */
-#define PMCU2SPM_MAILBOX_1_LSB              (1U << 0)       /* 32b */
-/* PMCU2SPM_MAILBOX_2 (0x10006000+0x4F4) */
-#define PMCU2SPM_MAILBOX_2_LSB              (1U << 0)       /* 32b */
-/* PMCU2SPM_MAILBOX_3 (0x10006000+0x4F8) */
-#define PMCU2SPM_MAILBOX_3_LSB              (1U << 0)       /* 32b */
-/* PMCU2SPM_CFG (0x10006000+0x4FC) */
-#define PMCU2SPM_INT_MASK_B_LSB             (1U << 0)       /* 4b */
-#define SPM_PMCU_MAILBOX_REQ_LSB            (1U << 8)       /* 1b */
+/* SPM_SSPM_IRQ (0x10006000+0x4C0) */
+#define SPM_SSPM_IRQ_LSB                    (1U << 0)       /* 1b */
+#define SPM_SSPM_IRQ_SEL_LSB                (1U << 4)       /* 1b */
+/* SPM2SSPM_INT (0x10006000+0x4C4) */
+#define SPM2SSPM_INT_LSB                    (1U << 0)       /* 4b */
+/* SPM2SSPM_INT_SET (0x10006000+0x4C8) */
+#define SPM2SSPM_INT_SET_LSB                (1U << 0)       /* 4b */
+/* SPM2SSPM_INT_CLR (0x10006000+0x4CC) */
+#define SPM2SSPM_INT_CLR_LSB                (1U << 0)       /* 4b */
+/* SPM2SSPM_MAILBOX_0 (0x10006000+0x4D0) */
+#define SPM2SSPM_MAILBOX_0_LSB              (1U << 0)       /* 32b */
+/* SPM2SSPM_MAILBOX_1 (0x10006000+0x4D4) */
+#define SPM2SSPM_MAILBOX_1_LSB              (1U << 0)       /* 32b */
+/* SPM2SSPM_MAILBOX_2 (0x10006000+0x4D8) */
+#define SPM2SSPM_MAILBOX_2_LSB              (1U << 0)       /* 32b */
+/* SPM2SSPM_MAILBOX_3 (0x10006000+0x4DC) */
+#define SPM2SSPM_MAILBOX_3_LSB              (1U << 0)       /* 32b */
+/* SSPM2SPM_INT (0x10006000+0x4E0) */
+#define SSPM2SPM_INT_LSB                    (1U << 0)       /* 4b */
+/* SSPM2SPM_INT_SET (0x10006000+0x4E4) */
+#define SSPM2SPM_INT_SET_LSB                (1U << 0)       /* 4b */
+/* SSPM2SPM_INT_CLR (0x10006000+0x4E8) */
+#define SSPM2SPM_INT_CLR_LSB                (1U << 0)       /* 4b */
+/* SSPM2SPM_MAILBOX_0 (0x10006000+0x4EC) */
+#define SSPM2SPM_MAILBOX_0_LSB              (1U << 0)       /* 32b */
+/* SSPM2SPM_MAILBOX_1 (0x10006000+0x4F0) */
+#define SSPM2SPM_MAILBOX_1_LSB              (1U << 0)       /* 32b */
+/* SSPM2SPM_MAILBOX_2 (0x10006000+0x4F4) */
+#define SSPM2SPM_MAILBOX_2_LSB              (1U << 0)       /* 32b */
+/* SSPM2SPM_MAILBOX_3 (0x10006000+0x4F8) */
+#define SSPM2SPM_MAILBOX_3_LSB              (1U << 0)       /* 32b */
+/* SSPM2SPM_CFG (0x10006000+0x4FC) */
+#define SSPM2SPM_INT_MASK_B_LSB             (1U << 0)       /* 4b */
+#define SPM_SSPM_MAILBOX_REQ_LSB            (1U << 8)       /* 1b */
 /* MP0_CPU0_IRQ_MASK (0x10006000+0x500) */
 #define MP0_CPU0_IRQ_MASK_LSB               (1U << 0)       /* 1b */
 #define MP0_CPU0_AUX_LSB                    (1U << 8)       /* 11b */

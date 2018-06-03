@@ -86,7 +86,7 @@
 #define R7_SC_DR_SHORT_QUEUE_PCM              (1U << 31)
 /* --- R12 Define --- */
 #define R12_PCM_TIMER                         (1U << 0)
-#define R12_MD32_WDT_EVENT_B                  (1U << 1)
+#define R12_SSPM_WDT_EVENT_B                  (1U << 1)
 #define R12_KP_IRQ_B                          (1U << 2)
 #define R12_APWDT_EVENT_B                     (1U << 3)
 #define R12_APXGPT1_EVENT_B                   (1U << 4)
@@ -95,7 +95,7 @@
 #define R12_CONN_WDT_IRQ_B                    (1U << 7)
 #define R12_CCIF0_EVENT_B                     (1U << 8)
 #define R12_LOWBATTERY_IRQ_B                  (1U << 9)
-#define R12_MD32_SPM_IRQ_B                    (1U << 10)
+#define R12_SSPM_SPM_IRQ_B                    (1U << 10)
 #define R12_26M_WAKE                          (1U << 11)
 #define R12_26M_SLEEP                         (1U << 12)
 #define R12_PCM_WDT_WAKEUP_B                  (1U << 13)
@@ -113,7 +113,7 @@
 #define R12_MD1_WDT_B                         (1U << 25)
 #define R12_CLDMA_EVENT_B                     (1U << 26)
 #define R12_SEJ_WDT_GPT_B                     (1U << 27)
-#define R12_ALL_MD32_WAKEUP_B                 (1U << 28)
+#define R12_ALL_SSPM_WAKEUP_B                 (1U << 28)
 #define R12_CPU_IRQ_B                         (1U << 29)
 #define R12_CPU_WFI_AND_B                     (1U << 30)
 #define R12_MCUSYS_IDLE_TO_EMI_ALL_B          (1U << 31)
@@ -157,12 +157,12 @@
 #define R13_MD1_APSRC_REQ                     (1U << 3)
 #define R13_CONN_DDR_EN                       (1U << 4)
 #define R13_MD2_SRCCLKENA                     (1U << 5)
-#define R13_MD32_SRCCLKENA                    (1U << 6)
-#define R13_MD32_APSRC_REQ                    (1U << 7)
+#define R13_SSPM_SRCCLKENA                    (1U << 6)
+#define R13_SSPM_APSRC_REQ                    (1U << 7)
 #define R13_MD_STATE                          (1U << 8)
 #define R13_EMI_CLK_OFF_2_ACK                 (1U << 9)
 #define R13_MM_STATE                          (1U << 10)
-#define R13_MD32_STATE                        (1U << 11)
+#define R13_SSPM_STATE                        (1U << 11)
 #define R13_MD_DDR_EN                         (1U << 12)
 #define R13_CONN_STATE                        (1U << 13)
 #define R13_CONN_SRCCLKENA                    (1U << 14)
@@ -186,7 +186,7 @@
 
 enum SPM_WAKE_SRC_LIST {
 	WAKE_SRC_R12_PCM_TIMER = (1U << 0),
-	WAKE_SRC_R12_MD32_WDT_EVENT_B = (1U << 1),
+	WAKE_SRC_R12_SSPM_WDT_EVENT_B = (1U << 1),
 	WAKE_SRC_R12_KP_IRQ_B = (1U << 2),
 	WAKE_SRC_R12_APWDT_EVENT_B = (1U << 3),
 	WAKE_SRC_R12_APXGPT1_EVENT_B = (1U << 4),
@@ -195,7 +195,7 @@ enum SPM_WAKE_SRC_LIST {
 	WAKE_SRC_R12_CONN_WDT_IRQ_B = (1U << 7),
 	WAKE_SRC_R12_CCIF0_EVENT_B = (1U << 8),
 	WAKE_SRC_R12_LOWBATTERY_IRQ_B = (1U << 9),
-	WAKE_SRC_R12_MD32_SPM_IRQ_B = (1U << 10),
+	WAKE_SRC_R12_SSPM_SPM_IRQ_B = (1U << 10),
 	WAKE_SRC_R12_26M_WAKE = (1U << 11),
 	WAKE_SRC_R12_26M_SLEEP = (1U << 12),
 	WAKE_SRC_R12_PCM_WDT_WAKEUP_B = (1U << 13),
@@ -213,7 +213,7 @@ enum SPM_WAKE_SRC_LIST {
 	WAKE_SRC_R12_MD1_WDT_B = (1U << 25),
 	WAKE_SRC_R12_CLDMA_EVENT_B = (1U << 26),
 	WAKE_SRC_R12_SEJ_WDT_GPT_B = (1U << 27),
-	WAKE_SRC_R12_ALL_MD32_WAKEUP_B = (1U << 28),
+	WAKE_SRC_R12_ALL_SSPM_WAKEUP_B = (1U << 28),
 	WAKE_SRC_R12_CPU_IRQ_B = (1U << 29),
 	WAKE_SRC_R12_CPU_WFI_AND_B = (1U << 30),
 	WAKE_SRC_R12_MCUSYS_IDLE_TO_EMI_ALL_B = (1U << 31)
@@ -224,7 +224,7 @@ extern const char *wakesrc_str[32];
 #else
 static const char *wakesrc_str[32] = {
 	[0] = " R12_PCM_TIMER",
-	[1] = " R12_MD32_WDT_EVENT_B",
+	[1] = " R12_SSPM_WDT_EVENT_B",
 	[2] = " R12_KP_IRQ_B",
 	[3] = " R12_APWDT_EVENT_B",
 	[4] = " R12_APXGPT1_EVENT_B",
@@ -233,7 +233,7 @@ static const char *wakesrc_str[32] = {
 	[7] = " R12_CONN_WDT_IRQ_B",
 	[8] = " R12_CCIF0_EVENT_B",
 	[9] = " R12_LOWBATTERY_IRQ_B",
-	[10] = " R12_MD32_SPM_IRQ_B",
+	[10] = " R12_SSPM_SPM_IRQ_B",
 	[11] = " R12_26M_WAKE",
 	[12] = " R12_26M_SLEEP",
 	[13] = " R12_PCM_WDT_WAKEUP_B",
@@ -251,7 +251,7 @@ static const char *wakesrc_str[32] = {
 	[25] = " R12_MD1_WDT_B",
 	[26] = " R12_CLDMA_EVENT_B",
 	[27] = " R12_SEJ_WDT_GPT_B",
-	[28] = " R12_ALL_MD32_WAKEUP_B",
+	[28] = " R12_ALL_SSPM_WAKEUP_B",
 	[29] = " R12_CPU_IRQ_B",
 	[30] = " R12_CPU_WFI_AND_B",
 	[31] = " R12_MCUSYS_IDLE_TO_EMI_ALL_B",
