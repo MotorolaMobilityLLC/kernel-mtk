@@ -1816,8 +1816,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 		retval = rstMsg == WMTRSTMSG_RESET_END ? WMTRSTRET_SUCCESS : WMTRSTRET_FAIL;
 	}
 	mtk_wcn_stp_coredump_start_ctrl(0);
-	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
-	mtk_wcn_stp_re_coredump_set(0);
+	mtk_wcn_stp_set_wmt_trg_assert(0);
 rstDone:
 	osal_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state);
 	return retval;
@@ -2088,6 +2087,12 @@ UINT32 wmt_lib_get_drv_status(UINT32 type)
 INT32 wmt_lib_trigger_reset(VOID)
 {
 	return wmt_btm_trigger_reset();
+}
+
+INT32 wmt_lib_trigger_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
+{
+	wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
+	return wmt_core_ctrl(WMT_CTRL_TRG_ASSERT, (PULONG)&type, (PULONG)&reason);
 }
 
 #if CFG_WMT_PS_SUPPORT

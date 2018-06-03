@@ -28,7 +28,6 @@
 #define STP_BTM_LOG_ERR                  0
 
 INT32 gBtmDbgLevel = STP_BTM_LOG_INFO;
-INT32 host_trigger_assert_flag;
 
 #define STP_BTM_LOUD_FUNC(fmt, arg...) \
 do { \
@@ -77,10 +76,18 @@ const PINT8 g_btm_op_name[] = {
 	"STP_OPID_BTM_EXIT"
 };
 
+static VOID stp_btm_trigger_assert_timeout_handler(ULONG data)
+{
+	if (mtk_wcn_stp_coredump_start_get() == 0)
+		stp_btm_notify_wmt_rst_wq((MTKSTP_BTM_T *)data);
+}
+
 static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;
 	INT32 dump_sink = 1;	/* core dump target, 0: aee; 1: netlink */
+	PUINT8 pbuf;
+	INT32 len;
 
 	if (pStpOp == NULL)
 		return -1;
@@ -99,6 +106,14 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
+		if (mtk_wcn_stp_coredump_start_get() == 0 && mtk_wcn_stp_get_wmt_trg_assert() == 1) {
+			/*host trigger assert but no coredump data will polling fw cpupcr*/
+			STP_BTM_INFO_FUNC("host trigger fw assert timeout!\n");
+			stp_dbg_poll_cpupcr(5, 1, 1);
+			pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
+			len = osal_strlen(pbuf);
+			stp_dbg_trigger_collect_ftrace(pbuf, len);
+		}
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
 		STP_BTM_INFO_FUNC("....+\n");
 		if (stp_btm->wmt_notify) {
@@ -110,7 +125,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		}
 
 		STP_BTM_INFO_FUNC("whole chip reset end!\n");
-		host_trigger_assert_flag = 0;
 		break;
 
 	case STP_OPID_BTM_DBG_DUMP:
@@ -405,8 +419,6 @@ handler_done:
 		} else if (id == STP_OPID_BTM_RST) {
 			/* prevent multi reset case */
 			stp_btm_reset_btm_wq(stp_btm);
-			mtk_wcn_stp_coredump_start_ctrl(0);
-			mtk_wcn_stp_re_coredump_set(0);
 		}
 	}
 
@@ -482,8 +494,7 @@ static inline INT32 _stp_btm_notify_wmt_dmp_wq(MTKSTP_BTM_T *stp_btm)
 
 	/* Paged dump */
 	retval = _stp_btm_dump_type(stp_btm, STP_OPID_BTM_DBG_DUMP);
-	if (!retval)
-		mtk_wcn_stp_coredump_start_ctrl(1);
+
 	return retval;
 }
 
@@ -549,6 +560,8 @@ MTKSTP_BTM_T *stp_btm_init(VOID)
 		osal_signal_init(&(stp_btm->arQue[i].signal));
 		_stp_btm_put_op(stp_btm, &stp_btm->rFreeOpQ, &(stp_btm->arQue[i]));
 	}
+
+	stp_btm_init_trigger_assert_timer(stp_btm);
 
 	/*Generate PSM thread, to servie STP-CORE for packet retrying and core dump receiving */
 	stp_btm->BTMd.pThreadData = (PVOID) stp_btm;
@@ -629,16 +642,9 @@ INT32 stp_notify_btm_dump(MTKSTP_BTM_T *stp_btm)
 static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 {
 	INT32 status = -1;
-	INT32 j = 0;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 	PUINT8 pbuf;
 	INT32 len;
-
-	if (host_trigger_assert_flag == 1) {
-		STP_BTM_ERR_FUNC("BTM-CORE: host_trigger_assert_flag is set, end this assert flow!\n");
-		return status;
-	}
-	host_trigger_assert_flag = 1;
 
 	/* send assert command */
 	STP_BTM_INFO_FUNC("trigger stp assert process\n");
@@ -656,35 +662,14 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 			stp_dbg_trigger_collect_ftrace(pbuf, len);
 		} else
 #endif
-			wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
+			status = wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
 	}
-	do {
-		if (mtk_wcn_stp_re_coredump_get() != 0) {
-			status = 0;
-			break;
-		}
-		if ((j >= 10) && (j%10 == 0))
-			stp_dbg_poll_cpupcr(5, 1, 1);
-		j++;
-		STP_BTM_INFO_FUNC("Wait for assert message (%d)\n", j);
-		osal_sleep_ms(20);
 
-		if (j > 49) {
-			mtk_stp_dump_sdio_register();
-			mtk_wcn_stp_dbg_dump_package();
-			stp_dbg_set_fw_info("host trigger fw assert timeout",
-					osal_strlen("host trigger fw assert timeout"),
-					STP_HOST_TRIGGER_ASSERT_TIMEOUT);
-			pbuf = "Trigger assert timeout ,just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
-			/* wcn_core_dump_timeout(); */
-			stp_dbg_trigger_collect_ftrace(pbuf, len);
-			break;
-		}
+	stp_btm_start_trigger_assert_timer(stp_btm);
 
-	} while (1);
 	if (status == 0)
 		STP_BTM_INFO_FUNC("trigger stp assert succeed\n");
+
 	return status;
 }
 
@@ -693,6 +678,7 @@ INT32 stp_notify_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 {
 	return _stp_btm_do_fw_assert(stp_btm);
 }
+
 INT32 wmt_btm_trigger_reset(VOID)
 {
 	return stp_btm_notify_wmt_rst_wq(stp_btm);
@@ -715,4 +701,23 @@ P_OSAL_OP stp_btm_get_current_op(MTKSTP_BTM_T *stp_btm)
 		return stp_btm->pCurOP;
 	STP_BTM_ERR_FUNC("Invalid pointer\n");
 	return NULL;
+}
+
+INT32 stp_btm_init_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
+{
+	stp_btm->trigger_assert_timer.timeoutHandler = stp_btm_trigger_assert_timeout_handler;
+	stp_btm->trigger_assert_timer.timeroutHandlerData = (ULONG)stp_btm;
+	stp_btm->timeout = 1000;
+
+	return osal_timer_create(&stp_btm->trigger_assert_timer);
+}
+
+INT32 stp_btm_start_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
+{
+	return osal_timer_start(&stp_btm->trigger_assert_timer, stp_btm->timeout);
+}
+
+INT32 stp_btm_stop_trigger_assert_timer(MTKSTP_BTM_T *stp_btm)
+{
+	return osal_timer_stop(&stp_btm->trigger_assert_timer);
 }

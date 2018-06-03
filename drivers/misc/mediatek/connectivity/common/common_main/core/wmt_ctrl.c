@@ -94,7 +94,7 @@ static INT32 wmt_ctrl_soc_paldo_ctrl(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_soc_wakeup_consys(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_set_stp_dbg_info(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_bgw_desense_ctrl(P_WMT_CTRL_DATA);
-static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA);
+static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_evt_parser(P_WMT_CTRL_DATA pWmtCtrlData);
 #if CFG_WMT_LTE_COEX_HANDLING
 static INT32 wmt_ctrl_get_tdm_req_antsel(P_WMT_CTRL_DATA);
@@ -104,10 +104,7 @@ static INT32 wmt_ctrl_gps_sync_set(P_WMT_CTRL_DATA pData);
 
 static INT32 wmt_ctrl_gps_lna_set(P_WMT_CTRL_DATA pData);
 
-
 static INT32 wmt_ctrl_get_patch_name(P_WMT_CTRL_DATA pWmtCtrlData);
-static INT32 wmt_ctrl_set_stp_dbg_info(P_WMT_CTRL_DATA);
-static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData);
 
 /* TODO: [FixMe][GeorgeKuo]: remove unused function */
 /*static INT32  wmt_ctrl_hwver_get(P_WMT_CTRL_DATA);*/
@@ -154,7 +151,7 @@ static const WMT_CTRL_FUNC wmt_ctrl_func[] = {
 	[WMT_CTRL_SOC_WAKEUP_CONSYS] = wmt_ctrl_soc_wakeup_consys,
 	[WMT_CTRL_SET_STP_DBG_INFO] = wmt_ctrl_set_stp_dbg_info,
 	[WMT_CTRL_BGW_DESENSE_CTRL] = wmt_ctrl_bgw_desense_ctrl,
-	[WMT_CTRL_EVT_ERR_TRG_ASSERT] = wmt_ctrl_evt_err_trg_assert,
+	[WMT_CTRL_TRG_ASSERT] = wmt_ctrl_trg_assert,
 	#if CFG_WMT_LTE_COEX_HANDLING
 	[WMT_CTRL_GET_TDM_REQ_ANTSEL] = wmt_ctrl_get_tdm_req_antsel,
 #endif
@@ -1049,7 +1046,7 @@ INT32 wmt_ctrl_set_stp_dbg_info(P_WMT_CTRL_DATA pWmtCtrlData)
 					&(pPatch->ucPLat[0]));
 }
 
-static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
+static INT32 wmt_ctrl_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 {
 	INT32 iRet = -1;
 
@@ -1060,16 +1057,13 @@ static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	reason = pWmtCtrlData->au4CtrlData[1];
 	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d)\n", drv_type, reason);
 
-	if (mtk_wcn_stp_get_wmt_evt_err_trg_assert() == 0) {
-		mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
+	if (mtk_wcn_stp_get_wmt_trg_assert() == 0) {
+		mtk_wcn_stp_set_wmt_trg_assert(1);
+		mtk_wcn_stp_dbg_dump_package();
 
-		iRet = mtk_wcn_stp_wmt_evt_err_trg_assert();
-		if (iRet == 1)
-			WMT_DBG_FUNC("firmware assert has been triggered\n");
-		else if (iRet == 0)
+		iRet = mtk_wcn_stp_wmt_trg_assert();
+		if (iRet == 0)
 			wmt_lib_set_host_assert_info(drv_type, reason, 1);
-		else
-			mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 	} else
 		WMT_INFO_FUNC("do trigger assert & chip reset in stp noack\n");
 

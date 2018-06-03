@@ -635,6 +635,8 @@ INT32 stp_dbg_trigger_collect_ftrace(PUINT8 pbuf, INT32 len)
 	if (!pbuf)
 		STP_DBG_ERR_FUNC("Parameter error\n");
 
+	stp_dbg_set_host_assert_info(WMTDRV_TYPE_WMT, 30, 1);
+	stp_dbg_set_fw_info(pbuf, len, STP_HOST_TRIGGER_ASSERT_TIMEOUT);
 	if (g_core_dump) {
 		osal_strncpy(&g_core_dump->info[0], pbuf, len);
 		aed_combo_exception(NULL, 0, (const PINT32)pbuf, len, (const PINT8)g_core_dump->info);
@@ -2144,10 +2146,12 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 		}
 		if ((issue_type == STP_HOST_TRIGGER_FW_ASSERT) ||
 		    (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)) {
+			g_stp_dbg_cpupcr->fwIsr = 0;
+
+			osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 			switch (g_stp_dbg_cpupcr->host_assert_info.drv_type) {
 			case 0:
 				STP_DBG_INFO_FUNC("BT trigger assert\n");
-				osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				if (g_stp_dbg_cpupcr->host_assert_info.reason != 31)
 					g_stp_dbg_cpupcr->fwTaskId = 1; /*BT firmware trigger assert */
 				else {
@@ -2166,16 +2170,9 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					}
 				}
 
-				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
-				/* g_stp_dbg_cpupcr->host_assert_info.drv_type = 0; */
-				/* g_stp_dbg_cpupcr->host_assert_info.reason = 0; */
-
-				osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
-
 				break;
 			case 1:
 				STP_DBG_INFO_FUNC("FM trigger assert\n");
-				osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				switch (stp_dbg_get_chip_id()) {
 				case 0x6632:
 				case 0x6797:
@@ -2189,15 +2186,9 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					g_stp_dbg_cpupcr->fwTaskId = 4;
 				}
 
-				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
-				/* g_stp_dbg_cpupcr->host_assert_info.drv_type = 0; */
-				/* g_stp_dbg_cpupcr->host_assert_info.reason = 0; */
-
-				osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				break;
 			case 2:
 				STP_DBG_INFO_FUNC("GPS trigger assert\n");
-				osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				switch (stp_dbg_get_chip_id()) {
 				case 0x6632:
 				case 0x6797:
@@ -2211,52 +2202,47 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					g_stp_dbg_cpupcr->fwTaskId = 6;
 				}
 
-				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
-				/* g_stp_dbg_cpupcr->host_assert_info.drv_type = 0; */
-				/* g_stp_dbg_cpupcr->host_assert_info.reason = 0; */
-
-				osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				break;
 			case 3:
 				STP_DBG_INFO_FUNC("WIFI trigger assert\n");
-				osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				switch (stp_dbg_get_chip_id()) {
 				case 0x6632:
 				case 0x6797:
 				case 0x6759:
 				case 0x6758:
 					/* after gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 2;
+					g_stp_dbg_cpupcr->fwTaskId = 12;
 					break;
 				default:
 					/* gen2 fw task id*/
 					g_stp_dbg_cpupcr->fwTaskId = 2;
 				}
 
-				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
-				/* g_stp_dbg_cpupcr->host_assert_info.drv_type = 0; */
-				/* g_stp_dbg_cpupcr->host_assert_info.reason = 0; */
-
-				osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				break;
 			case 4:
 				STP_DBG_INFO_FUNC("WMT trigger assert\n");
-				osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 				if (issue_type == STP_HOST_TRIGGER_ASSERT_TIMEOUT)
 					osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
 
-				if ((g_stp_dbg_cpupcr->host_assert_info.reason == 38) ||
-				    (g_stp_dbg_cpupcr->host_assert_info.reason == 39) ||
-				    (g_stp_dbg_cpupcr->host_assert_info.reason == 40))
-					g_stp_dbg_cpupcr->fwTaskId = 6;	/* HOST schedule reason trigger */
-				else
-					g_stp_dbg_cpupcr->fwTaskId = 0;	/* Must be firmware reason */
-				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
-				osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+				switch (stp_dbg_get_chip_id()) {
+				case 0x6632:
+				case 0x6797:
+				case 0x6759:
+				case 0x6758:
+					/* after gen2 fw task id*/
+					g_stp_dbg_cpupcr->fwTaskId = 9;
+					break;
+				default:
+					/* gen2 fw task id*/
+					g_stp_dbg_cpupcr->fwTaskId = 6;
+				}
+
 				break;
 			default:
 				break;
 			}
+			g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
+			osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 
 		}
 		osal_free(tempbuf);
