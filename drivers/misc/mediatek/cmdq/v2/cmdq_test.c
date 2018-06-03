@@ -4797,7 +4797,7 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 				timeout_counter, wait_status);
 			msleep_interruptible(finish_timeout_ms);
 			timeout_counter++;
-		} while (wait_status == -ERESTARTSYS);
+		} while (wait_status <= 0);
 	} while (0);
 
 	CMDQ_LOG("%s END\n", __func__);
