@@ -475,7 +475,7 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		long long cpu_target_loss;
 		int boost_linear, boost_real;
 		long long t_cpu_cur, t_gpu_cur, t_cpu_target;
-		long long t_cpu_rem_cur;
+		long long t_cpu_rem_cur = 0;
 		int is_gpu_bound;
 		int temp_boost_accum;
 
@@ -578,12 +578,12 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 			met_tag_oneshot(0, "ged_pframe_t_gpu", (long long)(psHead->t_gpu_latest + 999999)/1000000);
 		else
 			met_tag_oneshot(0, "ged_pframe_t_gpu", 100);
-		if (psHead->t_cpu_remained < 200*1000*1000)
+		if (t_cpu_rem_cur < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_cpu_remained_pred",
 				(long long)(t_cpu_rem_cur + 999999)/1000000);
 		else
 			met_tag_oneshot(0, "ged_pframe_t_cpu_remianed_pred", 100);
-		if (psHead->t_gpu_remained < 200*1000*1000)
+		if (psHead->t_gpu_remained < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_gpu_remained",
 				(long long)(psHead->t_gpu_remained + 999999)/1000000);
 		else
