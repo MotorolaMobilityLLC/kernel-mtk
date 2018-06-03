@@ -1138,12 +1138,14 @@ static const struct mtk_gate venc_clks[] __initconst = {
 };
 /* FIXME: modify FMAX */
 #define MT6739_PLL_FMAX		(3000UL * MHZ)
+#define MT6739_PLL_FMIN		(1000UL * MHZ)
 
 #define CON0_MT6739_RST_BAR	BIT(24)
 
 #define PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, \
 		_pcwbits, _pd_reg, _pd_shift, _tuner_reg,\
-		_pcw_reg, _pcw_shift, _div_table) {\
+		_pcw_reg, _pcw_shift, _div_table, _pcwintbits,\
+		_pcwchgreg) {\
 		.id = _id,						\
 		.name = _name,						\
 		.reg = _reg,						\
@@ -1152,7 +1154,10 @@ static const struct mtk_gate venc_clks[] __initconst = {
 		.flags = _flags,					\
 		.rst_bar_mask = CON0_MT6739_RST_BAR,			\
 		.fmax = MT6739_PLL_FMAX,				\
+		.fmin = MT6739_PLL_FMIN,			\
 		.pcwbits = _pcwbits,					\
+		.pcwintbits = _pcwintbits,			\
+		.pcwchgreg = _pcwchgreg,			\
 		.pd_reg = _pd_reg,					\
 		.pd_shift = _pd_shift,					\
 		.tuner_reg = _tuner_reg,				\
@@ -1163,27 +1168,27 @@ static const struct mtk_gate venc_clks[] __initconst = {
 
 #define PLL(_id, _name, _reg, _pwr_reg, _en_mask, _flags, \
 		_pcwbits, _pd_reg, _pd_shift, _tuner_reg,\
-		_pcw_reg, _pcw_shift)\
+		_pcw_reg, _pcw_shift, _pcwintbits, _pcwchgreg)\
 	PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, \
 		_pcwbits,	_pd_reg, _pd_shift, _tuner_reg,\
-		_pcw_reg, _pcw_shift, NULL)
+		_pcw_reg, _pcw_shift, NULL, _pcwintbits, _pcwchgreg)
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
 #if 1
 	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x80000111, HAVE_RST_BAR,
-		21, 0x0224, 24, 0, 0x0224, 0),
+		21, 0x0224, 24, 0, 0x0224, 0, 7, 0x4),
 #endif
 	PLL(CLK_APMIXED_MFGPLL, "mfgpll", 0x0240, 0x024C, 0x40000111, 0,
-		21, 0x0244, 24, 0, 0x0244, 0),
+		21, 0x0244, 24, 0, 0x0244, 0, 7, 0x4),
 	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x0270, 0x027C, 0x40000111, 0,
-		21, 0x0274, 24, 0, 0x0274, 0),
+		21, 0x0274, 24, 0, 0x0274, 0, 7, 0x4),
 	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0xf0000111,	HAVE_RST_BAR,
-		21, 0x0234, 24, 0, 0x0234, 0),
+		21, 0x0234, 24, 0, 0x0234, 0, 7, 0x4),
 	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x0250, 0x025C, 0x40000111,	0,
-		21, 0x0254, 24, 0, 0x0254, 0),
+		21, 0x0254, 24, 0, 0x0254, 0, 7, 0x4),
 	PLL(CLK_APMIXED_APLL1, "apll1", 0x02A0, 0x02B0, 0x40000111,	0,
-		32, 0x02A0, 1, 0, 0x02A4, 0),
+		32, 0x02A0, 1, 0, 0x02A4, 0, 8, 0x0),
 };
 
 static void __init mtk_apmixed_init(struct device_node *node)
