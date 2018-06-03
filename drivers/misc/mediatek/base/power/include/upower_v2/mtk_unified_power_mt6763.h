@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define UPOWER_ENABLE (1)
+#define UPOWER_ENABLE (0)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
@@ -40,8 +40,9 @@ extern "C" {
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
 #define UPOWER_RCU_LOCK
-#define UPOWER_LOG (0)
-
+#define UPOWER_LOG (1)
+#define UPOWER_L_PLUS
+#define UPOWER_L_PLUS_CORE 7
 /* for unified power driver internal use */
 #define UPOWER_OPP_NUM 16
 #define UPOWER_DEGREE_0 85
@@ -65,6 +66,9 @@ enum upower_bank {
 	UPOWER_BANK_CLS_LL,
 	UPOWER_BANK_CLS_L,
 	UPOWER_BANK_CCI,
+#ifdef UPOWER_L_PLUS
+	UPOWER_BANK_L_PLUS,
+#endif
 
 	NR_UPOWER_BANK,
 };

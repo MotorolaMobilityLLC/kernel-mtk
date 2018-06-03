@@ -82,6 +82,9 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+#ifdef UPOWER_L_PLUS
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_1_FY),
+#endif
 	},
 	/* MT6763T_FY */
 	[1] = {
@@ -90,6 +93,9 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
+#ifdef UPOWER_L_PLUS
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_2_FY),
+#endif
 	},
 	/* MT6763T_SB */
 	[2] = {
@@ -98,6 +104,9 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_SB),
+#ifdef UPOWER_L_PLUS
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_2_SB),
+#endif
 	},
 	/* MT6763TT */
 	[3] = {
@@ -106,6 +115,9 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_FY),
+#ifdef UPOWER_L_PLUS
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_3_FY),
+#endif
 	},
 	[4] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_SB),
@@ -113,6 +125,9 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_SB),
+#ifdef UPOWER_L_PLUS
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_3_SB),
+#endif
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */
@@ -122,6 +137,9 @@ unsigned char upower_recognize_by_eem[NR_UPOWER_BANK] = {
 	UPOWER_BANK_LL, /* LL EEM apply voltage to CLS_LL upower bank */
 	UPOWER_BANK_L, /* L EEM apply voltage to CLS_L upower bank */
 	UPOWER_BANK_CCI, /* CCI EEM apply voltage to CCI upower bank */
+#ifdef UPOWER_L_PLUS
+	UPOWER_BANK_L, /* L EEM apply voltage to L_PLUS upower bank */
+#endif
 };
 
 /* Used for rcu lock, points to all the raw tables list*/
@@ -148,6 +166,11 @@ int upower_bank_to_spower_bank(int upower_bank)
 	case UPOWER_BANK_CCI:
 		ret = MTK_SPOWER_CCI;
 		break;
+#ifdef UPOWER_L_PLUS
+	case UPOWER_BANK_L_PLUS:
+		ret = MTK_SPOWER_CPUL;
+		break;
+#endif
 	default:
 		ret = -1;
 		break;
