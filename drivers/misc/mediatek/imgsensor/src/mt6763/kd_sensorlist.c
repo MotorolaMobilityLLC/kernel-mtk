@@ -4156,14 +4156,15 @@ static long CAMERA_HW_Ioctl(
 	*(unsigned int *)pBuff = ISP_CLK_HIGH;
 #endif
 	break;
-/*
+
     case KDIMGSENSORIOC_X_GET_CSI_CLK:
 		*(unsigned int *) pBuff = mt_get_ckgen_freq(*(unsigned int *) pBuff);
-		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(11));
-		PK_DBG("hf_fcam_ck = %d\n", mt_get_ckgen_freq(38));
-		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(56));
-    break;
-*/
+		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(8));
+		PK_DBG("f_fcamtg2_ck = %d\n", mt_get_ckgen_freq(41));
+		PK_DBG("hf_fcam_ck = %d\n", mt_get_ckgen_freq(5));
+		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(35));
+	break;
+
     default:
         PK_DBG("No such command %d\n",a_u4Command);
         i4RetValue = -EPERM;
