@@ -86,6 +86,9 @@ static unsigned int esd_check_enable;
 
 atomic_t enable_wdma_recovery = ATOMIC_INIT(0);
 atomic_t enable_rdma_recovery = ATOMIC_INIT(0);
+atomic_t enable_ovl0_recovery = ATOMIC_INIT(0);
+atomic_t enable_ovl0_2l_recovery = ATOMIC_INIT(0);
+
 
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 /***********external display dual LCM ESD check******************/
@@ -690,7 +693,7 @@ done:
 	return ret;
 }
 
-int primary_display_rdma_recovery(void)
+int primary_display_recovery(enum DISP_MODULE_ENUM module)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct disp_ddp_path_config *pconfig;
@@ -719,13 +722,17 @@ int primary_display_rdma_recovery(void)
 		DISPERR("[disp path recovery]display path is busy after stop\n");
 
 	DISPDBG("[disp path recovery]reset display path[begin]\n");
+	ddp_path_mmsys_sw_reset(module);
 	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-	ddp_path_mmsys_sw_reset(DISP_MODULE_RDMA0);
 	DISPCHECK("[disp path recovery]reset display path[end]\n");
 	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->rdma_dirty = 1;
+	if (module == DISP_MODULE_OVL0 || module == DISP_MODULE_OVL0_2L) {
+		pconfig->ovl_dirty = 1;
+		pconfig->dst_dirty = 1;
+	}
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, NULL);
 
 	DISPDBG("[disp path recovery]start dpmgr path[begin]\n");
@@ -849,6 +856,12 @@ void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_RDMA0:
 		atomic_set(&enable_rdma_recovery, 1);
 		break;
+	case DISP_MODULE_OVL0:
+		atomic_set(&enable_ovl0_recovery, 1);
+		break;
+	case DISP_MODULE_OVL0_2L:
+		atomic_set(&enable_ovl0_2l_recovery, 1);
+		break;
 	default:
 		break;
 	}
@@ -859,7 +872,6 @@ static int primary_display_recovery_kthread(void *data)
 	dpmgr_enable_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_DISP_RECOVERY);
 	while (1) {
 		dpmgr_wait_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_DISP_RECOVERY);
-		DISPMSG("receive RECOVERY event\n");
 
 		if (atomic_read(&enable_wdma_recovery)) {
 			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_WDMA0)) {
@@ -872,8 +884,24 @@ static int primary_display_recovery_kthread(void *data)
 		if (atomic_read(&enable_rdma_recovery)) {
 			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_RDMA0)) {
 				DISPERR("Detect rdma0 malfunction, do recovery.\n");
-				primary_display_rdma_recovery();
+				primary_display_recovery(DISP_MODULE_RDMA0);
 				atomic_set(&enable_rdma_recovery, 0);
+			}
+		}
+
+		if (atomic_read(&enable_ovl0_recovery)) {
+			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_OVL0)) {
+				DISPERR("Detect ovl0 malfunction, do recovery.\n");
+				primary_display_recovery(DISP_MODULE_OVL0);
+				atomic_set(&enable_ovl0_recovery, 0);
+			}
+		}
+
+		if (atomic_read(&enable_ovl0_2l_recovery)) {
+			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_OVL0_2L)) {
+				DISPERR("Detect ovl0_2l malfunction, do recovery.\n");
+				primary_display_recovery(DISP_MODULE_OVL0_2L);
+				atomic_set(&enable_ovl0_2l_recovery, 0);
 			}
 		}
 
