@@ -341,7 +341,7 @@ typedef enum {
 	C_MT6763,
 } chip_ip_table;
 
-chip_ip_table device_id;
+static chip_ip_table device_id;
 
 
 /***************************
@@ -2808,6 +2808,19 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		return PTR_ERR(mt_gpufreq_clk->clk_sub_parent);
 	}
 
+	if (is_ext_buck_exist()) {
+		gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763TT;
+	} else if (get_devinfo_with_index(30) == 0x10) {
+		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763;
+	} else if (get_devinfo_with_index(30) == 0x0 || get_devinfo_with_index(30) == 0x20) {
+		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
+		device_id = C_MT6763T;
+	} else {
+		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30));
+	}
+
 	/* alloc PMIC regulator */
 	if (device_id == C_MT6763TT) {
 		mt_gpufreq_pmic = kzalloc(sizeof(struct mt_gpufreq_pmic_t), GFP_KERNEL);
@@ -2835,19 +2848,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	}
 
 #endif
-
-	if (is_ext_buck_exist()) {
-		gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
-		device_id = C_MT6763TT;
-	} else if (get_devinfo_with_index(30) == 0x10) {
-		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
-		device_id = C_MT6763;
-	} else if (get_devinfo_with_index(30) == 0x0 || get_devinfo_with_index(30) == 0x20) {
-		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
-		device_id = C_MT6763T;
-	} else {
-		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30));
-	}
 
 	mt_gpufreq_dvfs_table_type = device_id;
 
