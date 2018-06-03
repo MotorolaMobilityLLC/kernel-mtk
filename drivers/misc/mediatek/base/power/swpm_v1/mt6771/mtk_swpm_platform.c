@@ -13,6 +13,8 @@
 
 #include <linux/init.h>
 #include <linux/kernel.h>
+#include <mtk_spm_vcore_dvfs_ipi.h>
+#include <mtk_vcorefs_governor.h>
 #include <mtk_swpm_common.h>
 #include <mtk_swpm_platform.h>
 
@@ -243,5 +245,17 @@ int swpm_platform_init(struct platform_device *pdev)
 		(unsigned long)sizeof(dram_def_pwr_conf));
 
 	return ret;
+}
+
+void swpm_send_init_ipi(unsigned int addr, unsigned int size,
+	unsigned int ch_num)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_SWPM_INIT;
+	qos_d.u.swpm_init.dram_addr = addr;
+	qos_d.u.swpm_init.dram_size = size;
+	qos_d.u.swpm_init.dram_ch_num = ch_num;
+	qos_ipi_to_sspm_command(&qos_d, 4);
 }
 

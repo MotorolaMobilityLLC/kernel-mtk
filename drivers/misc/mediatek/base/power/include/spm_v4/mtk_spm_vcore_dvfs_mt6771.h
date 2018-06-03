@@ -47,8 +47,6 @@ extern u32 spm_vcorefs_get_md_srcclkena(void);
 extern void dvfsrc_md_scenario_update(bool);
 extern void dvfsrc_set_scp_vcore_request(unsigned int val);
 extern void helio_dvfsrc_sspm_ipi_init(void);
-extern void send_swpm_init_ipi(unsigned int addr, unsigned int size,
-	unsigned int ch_num);
 extern void dvfsrc_hw_policy_mask(bool mask);
 extern int spm_get_vcore_opp(unsigned int opp);
 extern int spm_vcorefs_get_dvfs_opp(void);

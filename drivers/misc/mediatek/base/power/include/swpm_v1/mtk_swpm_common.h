@@ -48,5 +48,7 @@ extern struct mutex swpm_mutex;
 extern const struct of_device_id swpm_of_ids[];
 
 extern int swpm_platform_init(struct platform_device *pdev);
+extern void swpm_send_init_ipi(unsigned int addr, unsigned int size,
+	unsigned int ch_num);
 #endif
 
