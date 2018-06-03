@@ -99,7 +99,7 @@
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-
+BOOLEAN fgCmdDumpIsDone = FALSE;
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -138,6 +138,47 @@ VOID cmdBufInitialize(IN P_ADAPTER_T prAdapter)
 	}
 
 }				/* end of cmdBufInitialize() */
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief dump CMD queue and print to trace, for debug use only
+* @param[in] prQueue	Pointer to the command Queue to be dumped
+* @param[in] quename	Name of the queue
+*/
+/*----------------------------------------------------------------------------*/
+VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName)
+{
+	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T)QUEUE_GET_HEAD(prQueue);
+
+	DBGLOG(NIC, INFO, "Dump CMD info for %s, Elem number:%u\n", queName, prQueue->u4NumElem);
+	while (prCmdInfo) {
+		P_CMD_INFO_T prCmdInfo1, prCmdInfo2, prCmdInfo3;
+
+		prCmdInfo1 = (P_CMD_INFO_T)QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T)prCmdInfo);
+		if (!prCmdInfo1) {
+			DBGLOG(NIC, INFO, "CID:%d SEQ:%d\n", prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
+			break;
+		}
+		prCmdInfo2 = (P_CMD_INFO_T)QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T)prCmdInfo1);
+		if (!prCmdInfo2) {
+			DBGLOG(NIC, INFO, "CID:%d, SEQ:%d; CID:%d, SEQ:%d\n", prCmdInfo->ucCID,
+				prCmdInfo->ucCmdSeqNum, prCmdInfo1->ucCID, prCmdInfo1->ucCmdSeqNum);
+			break;
+		}
+		prCmdInfo3 = (P_CMD_INFO_T)QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T)prCmdInfo2);
+		if (!prCmdInfo3) {
+			DBGLOG(NIC, INFO, "CID:%d, SEQ:%d; CID:%d, SEQ:%d; CID:%d, SEQ:%d\n", prCmdInfo->ucCID,
+				prCmdInfo->ucCmdSeqNum, prCmdInfo1->ucCID, prCmdInfo1->ucCmdSeqNum,
+				prCmdInfo2->ucCID, prCmdInfo2->ucCmdSeqNum);
+			break;
+		}
+		DBGLOG(NIC, INFO, "CID:%d, SEQ:%d; CID:%d, SEQ:%d; CID:%d, SEQ:%d; CID:%d, SEQ:%d\n",
+				prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum, prCmdInfo1->ucCID,
+				prCmdInfo1->ucCmdSeqNum, prCmdInfo2->ucCID, prCmdInfo2->ucCmdSeqNum,
+				prCmdInfo3->ucCID, prCmdInfo3->ucCmdSeqNum);
+		prCmdInfo = (P_CMD_INFO_T)QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T)prCmdInfo3);
+	}
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -187,6 +228,17 @@ P_CMD_INFO_T cmdBufAllocateCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Length
 		} else {
 			prCmdInfo->pucInfoBuffer = NULL;
 		}
+		fgCmdDumpIsDone = FALSE;
+	} else if (!fgCmdDumpIsDone) {
+		P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+		P_QUE_T prCmdQue = &prGlueInfo->rCmdQueue;
+		P_QUE_T prPendingCmdQue = &prAdapter->rPendingCmdQueue;
+		P_TX_TCQ_STATUS_T prTc = &prAdapter->rTxCtrl.rTc;
+
+		fgCmdDumpIsDone = TRUE;
+		cmdBufDumpCmdQueue(prCmdQue, "waiting Tx CMD queue");
+		cmdBufDumpCmdQueue(prPendingCmdQue, "waiting response CMD queue");
+		DBGLOG(NIC, INFO, "Tc4 number:%d\n", prTc->au4FreeBufferCount[TC4_INDEX]);
 	}
 
 	if (prCmdInfo) {
