@@ -14,36 +14,41 @@
 #ifndef __MTK_STATIC_POWER_MTK6763_H__
 #define __MTK_STATIC_POWER_MTK6763_H__
 
-/* todo: check V_OF_FUSE, T_OF_FUSE */
-#define V_OF_FUSE		1100
+/* mv */
+#define V_OF_FUSE_CPU	1120
+#define V_OF_FUSE_GPU	900
+#define V_OF_FUSE_VCORE	800
+#define V_OF_FUSE_VMD	800
+#define V_OF_FUSE_MODEM	750
 #define T_OF_FUSE		30
 
 /* devinfo offset for each bank */
-#define DEVINFO_IDX_LL 52 /* 0588 */
-#define DEVINFO_IDX_L 54 /* 00590 */
-#define DEVINFO_IDX_CCI 56 /* 0598 */
-#define DEVINFO_IDX_GPU 58 /* 05A0 */
-#define DEVINFO_IDX_VCORE 60 /* 05A8 */
-#define DEVINFO_IDX_VMD 62 /* 05B0 */
-#define DEVINFO_IDX_MODEM 64 /* 05B8 */
+/* CCI use LL leakage */
+#define DEVINFO_IDX_LL 136 /* 07B8 */
+#define DEVINFO_IDX_L 136 /* 07b8 */
+#define DEVINFO_IDX_CCI 136 /* 07B8 */
+#define DEVINFO_IDX_GPU 137 /* 07BC */
+#define DEVINFO_IDX_VCORE 137 /* 07BC */
+#define DEVINFO_IDX_VMD 137 /* 07BC */
+#define DEVINFO_IDX_MODEM 137 /* 07BC */
 
-#define DEVINFO_OFF_LL 8
+#define DEVINFO_OFF_LL 16
 #define DEVINFO_OFF_L 8
-#define DEVINFO_OFF_CCI 8
-#define DEVINFO_OFF_GPU 8
-#define DEVINFO_OFF_VCORE 8
-#define DEVINFO_OFF_VMD 8
+#define DEVINFO_OFF_CCI 16
+#define DEVINFO_OFF_GPU 24
+#define DEVINFO_OFF_VCORE 16
+#define DEVINFO_OFF_VMD 0
 #define DEVINFO_OFF_MODEM 8
 
 /* todo: fake efuse */
 /* default leakage value for each bank */
-#define DEF_CPULL_LEAKAGE	27
-#define DEF_CPUL_LEAKAGE	34
-#define DEF_CCI_LEAKAGE		27
-#define DEF_GPU_LEAKAGE		75
-#define DEF_VCORE_LEAKAGE	135
-#define DEF_VMD_LEAKAGE	135
-#define DEF_MODEM_LEAKAGE	135
+#define DEF_CPULL_LEAKAGE	12
+#define DEF_CPUL_LEAKAGE	63
+#define DEF_CCI_LEAKAGE		12
+#define DEF_GPU_LEAKAGE		8
+#define DEF_VCORE_LEAKAGE	43
+#define DEF_VMD_LEAKAGE		2
+#define DEF_MODEM_LEAKAGE	4
 
 
 enum {
@@ -78,6 +83,8 @@ struct spower_leakage_info {
 	unsigned int devinfo_idx;
 	unsigned int devinfo_offset;
 	unsigned int value;
+	unsigned int v_of_fuse;
+	int t_of_fuse;
 };
 
 extern struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX];
@@ -85,7 +92,7 @@ extern struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX];
 /* efuse mapping */
 #define LL_DEVINFO_DOMAIN (BIT(MTK_SPOWER_CPULL) | BIT(MTK_SPOWER_CPULL_CLUSTER))
 #define L_DEVINFO_DOMAIN (BIT(MTK_SPOWER_CPUL) | BIT(MTK_SPOWER_CPUL_CLUSTER))
-#define CCI_DEVINFO_DOMAIN (BIT(MTK_SPOWER_CCI))
+#define CCI_DEVINFO_DOMAIN (BIT(MTK_SPOWER_CPULL) | BIT(MTK_SPOWER_CPULL_CLUSTER))
 #define GPU_DEVINFO_DOMAIN (BIT(MTK_SPOWER_GPU))
 #define VCORE_DEVINFO_DOMAIN (BIT(MTK_SPOWER_VCORE))
 #define VMD_DEVINFO_DOMAIN (BIT(MTK_SPOWER_VMD))
