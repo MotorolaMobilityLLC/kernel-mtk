@@ -89,6 +89,17 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 		-1,
 	},
 
+	/* DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP */
+	{
+		DISP_MODULE_OVL1_2L, DISP_MODULE_RDMA0, DISP_MODULE_RDMA_VIRTUAL0,
+#ifdef DISP_COLOR_ON
+		DISP_MODULE_COLOR0,
+#endif
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_DITHER0,
+		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		-1,
+	},
+
 	/* DDP_SCENARIO_PRIMARY_OVL_MEMOUT */
 	{
 		DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0, DISP_MODULE_OVL0,
@@ -269,6 +280,8 @@ char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 		return "primary_rdma0_color0_disp";
 	case DDP_SCENARIO_PRIMARY_RDMA0_DISP:
 		return "primary_rdma0_disp";
+	case DDP_SCENARIO_PRIMARY_OVL1_RDMA0_COLOR0_DISP:
+		return "primary_ovl1_2L_disp";
 	case DDP_SCENARIO_PRIMARY_OVL_MEMOUT:
 		return "primary_ovl_memout";
 	case DDP_SCENARIO_PRIMARY_ALL:
