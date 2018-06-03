@@ -241,6 +241,10 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_TECHNOLOGY,
 	POWER_SUPPLY_PROP_CAPACITY,
+	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	/* Add for Battery Service */
 	POWER_SUPPLY_PROP_batt_vol,
 	POWER_SUPPLY_PROP_batt_temp,
@@ -582,12 +586,14 @@ void battery_update_psd(struct battery_data *bat_data)
 	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
 	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
 	bat_data->BAT_ChargerVoltage = battery_get_vbus();
+
 }
 
 static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
 	int ret = 0;
+	int fgcurrent;
 	struct battery_data *data = container_of(psy->desc, struct battery_data, psd);
 
 	switch (psp) {
@@ -605,6 +611,22 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		val->intval = data->BAT_CAPACITY;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_NOW:
+		gauge_get_current(&fgcurrent);
+		val->intval = fgcurrent;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = 3000000;
+		/* 3A */
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		val->intval = 5000000;
+		/* 5v */
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = FG_status.soc;
+		/* using soc as charge_counter */
 		break;
 	case POWER_SUPPLY_PROP_batt_vol:
 		val->intval = data->BAT_batt_vol * 1000;
@@ -633,6 +655,7 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ChargerVoltage:
 		val->intval = data->BAT_ChargerVoltage;
 		break;
+
 		/* Dual battery */
 	case POWER_SUPPLY_PROP_status_smb:
 		val->intval = data->status_smb;
