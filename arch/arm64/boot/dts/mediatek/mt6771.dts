@@ -1082,13 +1082,17 @@
 			<&infracfg_ao INFRACFG_AO_CCIF_AP_CG>,
 			<&infracfg_ao INFRACFG_AO_CCIF_MD_CG>,
 			<&infracfg_ao INFRACFG_AO_CCIF1_AP_CG>,
-			<&infracfg_ao INFRACFG_AO_CCIF1_MD_CG>;
+			<&infracfg_ao INFRACFG_AO_CCIF1_MD_CG>,
+			<&infracfg_ao INFRACFG_AO_CCIF2_AP_CG>,
+			<&infracfg_ao INFRACFG_AO_CCIF2_MD_CG>;
 		clock-names = "scp-sys-md1-main",
 			"infra-cldma-bclk",
 			"infra-ccif-ap",
 			"infra-ccif-md",
 			"infra-ccif1-ap",
-			"infra-ccif1-md";
+			"infra-ccif1-md",
+			"infra-ccif2-ap",
+			"infra-ccif2-md";
 	};
 
 	infra_md_cfg@1021d000 {

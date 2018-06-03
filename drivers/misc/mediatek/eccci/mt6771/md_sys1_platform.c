@@ -48,6 +48,8 @@ static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"infra-ccif-md"},
 	{ NULL, "infra-ccif1-ap"},
 	{ NULL, "infra-ccif1-md"},
+	{ NULL, "infra-ccif2-ap"},
+	{ NULL, "infra-ccif2-md"},
 };
 #if defined(CONFIG_PINCTRL_ELBRUS)
 static struct pinctrl *mdcldma_pinctrl;
