@@ -805,6 +805,7 @@ s32 cmdq_core_alloc_sram_buffer(size_t size,
 	const char *owner_name, u32 *out_cpr_offset);
 void cmdq_core_free_sram_buffer(u32 cpr_offset, size_t size);
 size_t cmdq_core_get_free_sram_size(void);
+size_t cmdq_core_get_cpr_cnt(void);
 void cmdq_delay_dump_thread(bool dump_sram);
 u32 cmdq_core_get_delay_start_cpr(void);
 s32 cmdq_delay_get_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario);
