@@ -379,9 +379,6 @@ struct mtkfb_device {
 	int timeline_max;
 	struct list_head pending_configs;	/* CL2340210 */
 	struct ion_client *ion_client;
-#ifdef CONFIG_MTK_IOMMU
-	struct platform_device *larb_pdev[2];
-#endif
 };
 
 #endif				/* __KERNEL__ */
