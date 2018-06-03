@@ -186,7 +186,7 @@ void do_low_power_timer_test_work(struct work_struct *work)
 	int done = 0;
 
 	spin_lock_irqsave(&mtk_musb->lock, flags);
-	gdp_free_count = qmu_free_gpd_count(0, isoc_ep_start_idx);
+	gdp_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
 	gdp_free_count_last = gdp_free_count;
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
@@ -195,7 +195,7 @@ void do_low_power_timer_test_work(struct work_struct *work)
 		udelay(300);
 
 		spin_lock_irqsave(&mtk_musb->lock, flags);
-		gdp_free_count = qmu_free_gpd_count(0, isoc_ep_start_idx);
+		gdp_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
 
 		if (gdp_free_count == gdp_free_count_last) {
 			ktime_end = ktime_get();
@@ -593,7 +593,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (low_power_timer_mode
 					&& !low_power_timer_activate
 					&& mtk_host_active_dev_cnt == 1
-					&& hw_ep->epnum == isoc_ep_start_idx
+					&& hw_ep->epnum == ISOC_EP_START_IDX
 					&& usb_on_sram
 					&& audio_on_sram) {
 				if (urb->dev->speed == USB_SPEED_FULL)

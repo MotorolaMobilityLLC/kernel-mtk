@@ -38,6 +38,7 @@
 #define MAX_QMU_EP RXQ_NUM
 #define TXQ	0
 #define RXQ	1
+#define ISOC_EP_START_IDX 1
 
 /* QMU SETTING */
 #define NO_ZLP 0
@@ -123,7 +124,7 @@ extern void gpd_switch_to_dram(struct device *dev);
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;
 extern struct musb_hw_ep *qmu_isoc_ep;
-extern int isoc_ep_start_idx;
+extern int isoc_ep_end_idx;
 extern int isoc_ep_gpd_count;
 static inline int mtk_dbg_level(unsigned level)
 {

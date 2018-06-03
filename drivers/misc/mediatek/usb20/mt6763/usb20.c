@@ -72,7 +72,7 @@ static void dpidle_timer_wakeup_func(unsigned long data)
 		} else
 			skip_cnt++;
 	}
-	DBG(1, "dpidle_timer<%p> alive...\n", timer);
+	DBG(2, "dpidle_timer<%p> alive...\n", timer);
 	if (dpidle_status == USB_DPIDLE_TIMER)
 		issue_dpidle_timer();
 	kfree(timer);
@@ -85,7 +85,7 @@ static void issue_dpidle_timer(void)
 	if (!timer)
 		return;
 
-	DBG(1, "add dpidle_timer<%p>\n", timer);
+	DBG(2, "add dpidle_timer<%p>\n", timer);
 	init_timer(timer);
 	timer->function = dpidle_timer_wakeup_func;
 	timer->data = (unsigned long)timer;
@@ -1488,12 +1488,8 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	int retval = 0;
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	isoc_ep_start_idx = 8;
-	isoc_ep_gpd_count = 248;
-#ifdef CONFIG_MTK_UAC_POWER_SAVING
-	/* enable low power mechanism */
-	low_power_timer_mode = 1;
-#endif
+	isoc_ep_end_idx = 1;
+	isoc_ep_gpd_count = 248; /* 30 ms for HS, at most (30*8 + 1) */
 #endif
 
 	register_usb_hal_dpidle_request(usb_6763_dpidle_request);

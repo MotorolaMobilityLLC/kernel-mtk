@@ -2187,6 +2187,91 @@ finish:
 		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
 	}
 }
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+/*
+ *	X:	isoc_ep_end_idx
+	Y:	MAX_QMU_EP
+	Z:	musb->nr_endpoints - 1
+
+	<-----------(X)---------(Y)---------(Z)>
+
+	((EP_GROUP_A))
+	<--isoc ep-->((EP_GROUP_B))
+	<-----------qmu ep------->((EP_GROUP_C))
+	<---------------all ep----------------->
+
+	EP_GROUP_A : QMU EP and GPD# a lot (for ISOC)
+	EP_GROUP_B : QMU EP and GPD# normal
+	EP_GROUP_C : non-QMU EP
+*
+*/
+
+enum {
+	EP_GROUP_A,
+	EP_GROUP_B,
+	EP_GROUP_C,
+};
+
+static int ep_group_match(struct musb *musb, struct musb_qh *qh, int is_in, int group_type)
+{
+	int match_begin[3], match_end[3];
+	int epnum, hw_end = 0;
+	int begin, end, i;
+	struct musb_hw_ep *hw_ep = NULL;
+
+	if (group_type == EP_GROUP_A) {
+		match_begin[0] = 1;
+		match_end[0] = isoc_ep_end_idx;
+
+		match_begin[1] = isoc_ep_end_idx + 1;
+		match_end[1] = MAX_QMU_EP;
+
+		match_begin[2] = MAX_QMU_EP + 1;
+		match_end[2] = musb->nr_endpoints - 1;
+
+	} else if (group_type == EP_GROUP_B) {
+		match_begin[0] = isoc_ep_end_idx + 1;
+		match_end[0] = MAX_QMU_EP;
+
+		match_begin[1] = 1;
+		match_end[1] = isoc_ep_end_idx;
+
+		match_begin[2] = MAX_QMU_EP + 1;
+		match_end[2] = musb->nr_endpoints - 1;
+	} else {
+		match_begin[0] = MAX_QMU_EP + 1;
+		match_end[0] = musb->nr_endpoints - 1;
+
+		match_begin[1] = isoc_ep_end_idx + 1;
+		match_end[1] = MAX_QMU_EP;
+
+		match_begin[2] = 1;
+		match_end[2] = isoc_ep_end_idx;
+	}
+
+	for (i = 0; i < 3; i++) {
+		begin = match_begin[i];
+		end = match_end[i];
+		for (epnum = begin, hw_ep = musb->endpoints + epnum; epnum <= end; epnum++, hw_ep++) {
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			DBG(1, "group<%d,%d>, qh->type:%d, find hw_ep%d, is_in:%d, intv[%d,%d], <%d,%d,%d>\n",
+					group_type, i, qh->type, hw_end, is_in, begin, end,
+					isoc_ep_end_idx, MAX_QMU_EP, musb->nr_endpoints);
+
+			/* REVERT for not matching where it belongs */
+			if (group_type < i)
+				qh->is_use_qmu = 0;
+
+			return hw_end;
+		}
+	}
+
+	return 0;
+}
+#endif
 
 /* schedule nodes correspond to peripheral endpoints, like an OHCI QH.
  * the software schedule associates multiple such nodes with a given
@@ -2212,106 +2297,32 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 		hw_ep = musb->control_ep;
 		goto success;
 	}
-#ifdef MUSB_QMU_LIMIT_SUPPORT
-	if (isoc_ep_gpd_count && qh->is_use_qmu) {
-		for (epnum = 1, hw_ep = musb->endpoints + 1;
-				epnum < MAX_QMU_EP; epnum++, hw_ep++) {
-			/* int	diff; */
-
-			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
-				continue;
-
-			hw_end = epnum;
-			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
-			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
-			break;
-		}
-
-		if (hw_end) {
-			idle = 1;
-			qh->mux = 0;
-			DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
-			goto success;
-		}
-	}
-	qh->is_use_qmu = 0;
-	for (epnum = (MAX_QMU_EP + 1), hw_ep = musb->endpoints + (MAX_QMU_EP + 1);
-		epnum < musb->nr_endpoints; epnum++, hw_ep++) {
-		if (musb_ep_get_qh(hw_ep, is_in) != NULL)
-			continue;
-
-		hw_end = epnum;
-		hw_ep = musb->endpoints + hw_end;	/* got the right ep */
-		break;
-	}
-
-	if (hw_end) {
-		idle = 1;
-		qh->mux = 0;
-		goto success;
-	}
-
-	if (!hw_end) {
-		for (epnum = 1, hw_ep = musb->endpoints + 1;
-				epnum <= MAX_QMU_EP; epnum++, hw_ep++) {
-
-			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
-				continue;
-
-			hw_end = epnum;
-			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
-			break;
-		}
-	}
-
-	if (hw_end) {
-		idle = 1;
-		qh->mux = 0;
-		goto success;
-	} else {
-		WARNING("EP OVERFLOW.\n");
-		return -ENOSPC;
-	}
-#endif
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	if (isoc_ep_gpd_count
-			&& qh->type == USB_ENDPOINT_XFER_ISOC) {
-		for (epnum = isoc_ep_start_idx, hw_ep = musb->endpoints + isoc_ep_start_idx;
-				epnum < musb->nr_endpoints; epnum++, hw_ep++) {
-			/* int  diff; */
+	{
+		int group_type;
 
-			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
-				continue;
+		if (!qh->is_use_qmu)
+			group_type = EP_GROUP_C;
+		else if (qh->type == USB_ENDPOINT_XFER_ISOC)
+			group_type = EP_GROUP_A;
+		else
+			group_type = EP_GROUP_B;
 
-			hw_end = epnum;
-			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
-			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
-			break;
+		epnum = hw_end = ep_group_match(musb, qh, is_in, group_type);
+		if (!hw_end) {
+			DBG(0, "musb::error!not find a ep for the urb\r\n");
+			return -ENOSPC;
 		}
 
-		if (hw_end) {
-			idle = 1;
-			qh->mux = 0;
-			DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
-			goto success;
-		}
+		hw_ep = musb->endpoints + hw_end;
 	}
-	qh->is_use_qmu = 0;
-#endif
-
+#else
 	for (epnum = 1, hw_ep = musb->endpoints + 1; epnum < musb->nr_endpoints; epnum++, hw_ep++) {
 		/* int  diff; */
 
 		if (musb_ep_get_qh(hw_ep, is_in) != NULL)
 			continue;
-
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-		if (isoc_ep_gpd_count && (epnum >= isoc_ep_start_idx)) {
-			epnum = musb->nr_endpoints;
-			continue;
-		}
-#endif
 
 		hw_end = epnum;
 		hw_ep = musb->endpoints + hw_end;	/* got the right ep */
@@ -2319,30 +2330,11 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 		break;
 	}
 
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	/* grab isoc ep if no other ep is available */
-	if (isoc_ep_gpd_count &&
-		!hw_end &&
-		qh->type != USB_ENDPOINT_XFER_ISOC) {
-		for (epnum = isoc_ep_start_idx, hw_ep = musb->endpoints + isoc_ep_start_idx;
-				epnum < musb->nr_endpoints; epnum++, hw_ep++) {
-			/* int  diff; */
-
-			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
-				continue;
-
-			hw_end = epnum;
-			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
-			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
-			break;
-		}
-	}
-#endif
-
 	if (!hw_end) {
 		DBG(0, "musb::error!not find a ep for the urb\r\n");
 		return -ENOSPC;
 	}
+#endif
 
 	idle = 1;
 	qh->mux = 0;
