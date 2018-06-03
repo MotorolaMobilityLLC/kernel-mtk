@@ -12,12 +12,6 @@
  */
 
 
-/* May be used */
-#if 0
-#include <mt-plat/mtk_rtc.h>
-#include <mach/mtk_spm_mtcmos.h>
-#endif
-
 #include <generated/autoconf.h>
 #include <linux/delay.h>
 #include <linux/device.h>
@@ -61,13 +55,6 @@ unsigned int g_cust_eint_mt_pmic_type = 4;
 unsigned int g_cust_eint_mt_pmic_debounce_en = 1;
 
 /* PMIC extern variable */
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-static bool long_pwrkey_press;
-static unsigned long timer_pre;
-static unsigned long timer_pos;
-#define LONG_PWRKEY_PRESS_TIME_UNIT     500     /*500ms */
-#define LONG_PWRKEY_PRESS_TIME_US       1000000 /*500ms */
-#endif
 
 #define IRQ_HANDLER_READY 1
 
@@ -335,11 +322,6 @@ void pwrkey_int_handler(void)
 {
 	PMICLOG("[pwrkey_int_handler] Press pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
-		timer_pre = sched_clock();
-#endif
-
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	kpd_pwrkey_pmic_handler(0x1);
 #endif
@@ -349,22 +331,6 @@ void pwrkey_int_handler_r(void)
 {
 	PMICLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
-		timer_pos = sched_clock();
-		if (timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME_UNIT * LONG_PWRKEY_PRESS_TIME_US)
-			long_pwrkey_press = true;
-		PMICLOG("timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",
-			timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
-		if (long_pwrkey_press) {	/*500ms */
-			PMICLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
-#ifdef CONFIG_MTK_WATCHDOG
-			arch_reset(0, NULL);
-#endif
-		}
-	}
-#endif
-
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	kpd_pwrkey_pmic_handler(0x0);
 #endif
@@ -441,13 +407,17 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
+	case INT_VLDO28_OC:
+		/* keep OC interrupt and keep tracking */
+		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
+		break;
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		kernel_dump_exception_reg();
 		snprintf(oc_str, 30, "PMIC OC:%s", int_name);
 		aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
-		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
+		pr_notice(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 		break;
 	}
 }
@@ -642,11 +612,21 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 {
 	unsigned int i;
 	struct pmic_sp_irq *sp_irq;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 
 	if (sp_int_status == 0)
 		return; /* this subpack control has no interrupt triggered */
 
-	pr_err(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n", (sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+	if ((sp_interrupts[spNo].status + 0x6 * sp_conNo) == PMIC_RG_INT_STATUS_BAT_H_ADDR &&
+	    (sp_int_status == 0x4 || sp_int_status == 0x8 || sp_int_status == 0xC)) {
+		if (__ratelimit(&ratelimit)) {
+			pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n",
+				(sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+		}
+	} else {
+		pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n",
+			(sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+	}
 #if 0
 	/* clear interrupt status in this subpack control */
 	upmu_set_reg_value((sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
