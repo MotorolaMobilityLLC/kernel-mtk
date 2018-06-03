@@ -118,7 +118,7 @@ int dp_dfp_u_notify_pe_ready(
 {
 	struct dp_data *dp_data = pd_get_dp_data(pd_port);
 
-	DPM_DBG("dp_dfp_u_notify_pe_ready\r\n");
+	DPM_DBG("%s\r\n", __func__);
 
 	if (pd_port->data_role != PD_ROLE_DFP)
 		return 0;

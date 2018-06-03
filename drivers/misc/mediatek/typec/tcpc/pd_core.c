@@ -567,7 +567,7 @@ int pd_core_init(struct tcpc_device *tcpc_dev)
 
 	pd_dpm_core_init(pd_port);
 
-	PE_INFO("pd_core_init\r\n");
+	PE_INFO("%s\r\n", __func__);
 	return 0;
 }
 
@@ -868,7 +868,7 @@ int pd_set_vconn(struct pd_port *pd_port, uint8_t role)
 	bool enable;
 	bool en_role = role != PD_ROLE_VCONN_OFF;
 
-	PE_DBG("pd_set_vconn:%d\r\n", role);
+	PE_DBG("%s:%d\r\n", __func__, role);
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	pd_port->tcpc_dev->dual_role_vconn = en_role;
