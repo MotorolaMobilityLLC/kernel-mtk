@@ -101,7 +101,7 @@
 #endif
 #ifdef JPEG_PM_DOMAIN_ENABLE
 /*#include <linux/pm_runtime.h>*/
-#include "mt_smi.h"
+#include "mtk_smi.h"
 #endif
 /* ========================================================== */
 

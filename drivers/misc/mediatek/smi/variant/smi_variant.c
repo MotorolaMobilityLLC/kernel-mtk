@@ -39,7 +39,7 @@
 #include <linux/compat.h>
 #endif
 
-#include "mt_smi.h"
+#include "mtk_smi.h"
 
 #include "smi_reg.h"
 #include "smi_common.h"
