@@ -545,8 +545,7 @@ static void __exit isl91302a_exit(void)
 {
 	spi_unregister_driver(&isl91302a_spi_driver);
 }
-/* late_initcall(isl91302a_init); */
-module_init(isl91302a_init);
+subsys_initcall(isl91302a_init);
 module_exit(isl91302a_exit);
 
 MODULE_DESCRIPTION("ISL91302A Regulator Driver");
