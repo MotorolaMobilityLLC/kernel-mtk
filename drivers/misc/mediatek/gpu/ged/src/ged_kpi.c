@@ -247,7 +247,8 @@ static long target_t_cpu_remained = 16000000; /* for non-GED_KPI_MAX_FPS-FPS cas
 /* static long target_t_cpu_remained_min = 8300000; */ /* default 0.5 vsync period */
 static int cpu_boost_policy;
 static int boost_extra;
-static int boost_amp = 100;
+static int boost_amp;
+static int deboost_reduce;
 static int boost_upper_bound = 100;
 static void (*ged_kpi_cpu_boost_policy_fp)(GED_KPI_HEAD *psHead, GED_KPI *psKPI);
 module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR);
@@ -255,6 +256,7 @@ module_param(gx_force_cpu_boost, int, S_IRUGO|S_IWUSR);
 module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
 module_param(boost_amp, int, S_IRUGO|S_IWUSR);
+module_param(deboost_reduce, int, S_IRUGO|S_IWUSR);
 module_param(boost_upper_bound, int, S_IRUGO|S_IWUSR);
 module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 #endif
@@ -643,8 +645,10 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		else
 			boost_real_cpu = linear_real_boost(boost_linear_cpu);
 
-		if (boost_real_cpu > 0)
-			boost_real_cpu = boost_real_cpu * boost_amp / 100;
+		if (boost_real_cpu >= 0)
+			boost_real_cpu = boost_real_cpu * (100 + boost_amp) / 100;
+		else
+			boost_real_cpu = boost_real_cpu * (100 - deboost_reduce) / 100;
 
 		if (boost_real_cpu != 0) {
 			if (boost_accum_cpu <= 0) {
@@ -652,7 +656,13 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 				if (boost_real_cpu > 0 && boost_accum_cpu > boost_real_cpu)
 					boost_accum_cpu = boost_real_cpu;
 			} else {
-				boost_accum_cpu = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
+				int temp;
+
+				temp = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
+				if (temp <= 0 && boost_real_cpu < 0)
+					boost_accum_cpu = boost_accum_cpu >> 1;
+				else
+					boost_accum_cpu = temp;
 			}
 		}
 
