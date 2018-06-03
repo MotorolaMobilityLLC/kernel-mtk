@@ -241,19 +241,32 @@ static int init_setting(void)
 	}
 
 #elif defined(USE_ISRC_MODE_IMX386_SENSOR)
+	int  i4RetValue;
 	char puSendCmd[2];
 
 	puSendCmd[0] = (char)(0xD0);
 	puSendCmd[1] = (char)(0xC8);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
 
 	puSendCmd[0] = (char)(0xC8);
 	puSendCmd[1] = (char)(0x01);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
 
 	puSendCmd[0] = (char)(0xC6);
 	puSendCmd[1] = (char)(0x00);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
 
 #endif
 
