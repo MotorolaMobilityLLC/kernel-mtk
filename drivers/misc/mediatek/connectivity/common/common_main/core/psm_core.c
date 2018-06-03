@@ -1556,6 +1556,7 @@ INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir, INT32 l
 				stp_psm->idle_time_to_sleep = STP_PSM_IDLE_TIME_SLEEP;
 				osal_clear_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY, &stp_psm->flag);
 			}
+			wmt_lib_ps_set_idle_time(stp_psm->idle_time_to_sleep);
 			sample_start = 0;
 			rx_sum_len = 0;
 			tx_sum_len = 0;

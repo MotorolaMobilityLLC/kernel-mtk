@@ -87,6 +87,8 @@ extern MTK_WCN_BOOL wmt_lib_btm_cb(MTKSTP_BTM_WMT_OP_T op);
 extern INT32 wmt_lib_ps_stp_cb(MTKSTP_PSM_ACTION_T action);
 extern MTK_WCN_BOOL wmt_lib_is_quick_ps_support(VOID);
 
+extern INT32 wmt_lib_ps_set_idle_time(UINT32 psIdleTime);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
