@@ -31,6 +31,7 @@ ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-unused-function
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
+#ccflags-$(CONFIG_MTK_FREQ_HOPPING) += -DFHCTL_READY
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6765) += mtk_gpufreq_core.o

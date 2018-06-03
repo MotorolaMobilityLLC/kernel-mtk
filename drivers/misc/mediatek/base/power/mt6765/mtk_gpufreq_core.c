@@ -42,8 +42,8 @@
 
 /* #include "mtk_thermal_typedefs.h" */
 #include "mtk_thermal.h"
-/*#include "mt_freqhopping.h"*/
-/*#include "mt_fhreg.h"*/
+#include "mt_freqhopping.h"
+#include "mt_fhreg.h"
 #include "upmu_sw.h"
 #include "upmu_hw.h"
 #include "mtk_pbm.h"
@@ -1420,6 +1420,10 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 	gpufreq_pr_debug("@%s: begin, freq = %d, GPUPLL_CON1 = 0x%x\n",
 		__func__, freq_new, DRV_Reg32(GPUPLL_CON1));
 
+#ifndef FHCTL_READY
+	/* Force parking if FHCTL not ready */
+	g_parking = true;
+#endif
 	if (g_parking) {
 		/* mfgpll_ck to clk26m */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_SUB);
@@ -1431,7 +1435,9 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 		__mt_gpufreq_switch_to_clksrc(CLOCK_MAIN);
 		g_parking = false;
 	} else {
-		/* To-Do FHCTL: mt_dfs_general_pll(3, dds);*/
+#ifdef FHCTL_READY
+		mt_dfs_general_pll(3, dds);
+#endif
 	}
 	gpufreq_pr_debug("@%s: end, freq = %d, GPUPLL_CON1 = 0x%x\n",
 		__func__, freq_new, DRV_Reg32(GPUPLL_CON1));
@@ -2306,8 +2312,7 @@ static void __mt_gpufreq_set_initial(void)
 	/* set POST_DIVIDER initial value */
 	g_cur_post_divider_power = POST_DIV4;
 
-	/* To-Do: FHCTL not checked-in, Force parking */
-	g_parking = true;
+	g_parking = false;
 
 	gpufreq_pr_debug("@%s: initial opp index = %d\n",
 		__func__, g_cur_opp_cond_idx);
