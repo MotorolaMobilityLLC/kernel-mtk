@@ -12,7 +12,7 @@
 */
 
 /******************************************************************************
- * camera_isp.c - MT6799 Linux ISP Device Driver
+ * camera_isp.c - MT6763 Linux ISP Device Driver
  *
  * DESCRIPTION:
  *     This file provid the other drivers ISP relative functions
@@ -26,33 +26,25 @@
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
-/* #include <asm/io.h> */
-/* #include <asm/tcm.h> */
 #include <linux/proc_fs.h>  /* proc file use */
-/*      */
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-/* #include <linux/io.h> */
 #include <linux/delay.h>
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
-
-/*#include <mach/hardware.h>*/
-/* #include <mach/mt6593_pll.h> */
-/* #include <mach/camera_isp.h> */
-/*#include <mach/mt_reg_base.h> */
-
-/*#include <mach/irqs.h>*/
-/*#include <mach/mt_clkmgr.h>*/     /* For clock mgr APIS. enable_clock()/disable_clock(). */
-#include <mt-plat/sync_write.h> /* For mt65xx_reg_sync_writel(). */
-/* #include <mach/mt_spm_idle.h> */   /* For spm_enable_sodi()/spm_disable_sodi(). */
-
 #include <linux/of_platform.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+/*for kernel log reduction*/
+#include <linux/printk.h>
+
+#include <mt-plat/sync_write.h> /* For mt65xx_reg_sync_writel(). */
 
 #ifdef COFNIG_MTK_IOMMU
 #include <mtk_iommu.h>
@@ -66,13 +58,8 @@
 #endif
 
 #include <smi_public.h>
-
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
-
 /*for SMI BW debug log*/
-#include"../../../smi/smi_debug.h"
+#include <smi_debug.h>
 
 /*for kernel log count*/
 #define _K_LOG_ADJUST (1)
@@ -83,18 +70,11 @@
 #include <linux/compat.h>
 #endif
 
-/*  */
-/* #include "smi_common.h" */
-
 #ifdef CONFIG_PM_WAKELOCKS
 #include <linux/pm_wakeup.h>
 #else
 #include <linux/wakelock.h>
 #endif
-
-/*for kernel log reduction*/
-#include <linux/printk.h>
-
 
 #ifdef CONFIG_OF
 #include <linux/of_platform.h>  /* for device tree */
@@ -107,7 +87,7 @@
 #include <mt-plat/met_drv.h>
 #endif
 
-#include "mmdvfs_mgr.h"
+#include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
 struct mmdvfs_pm_qos_request isp_qos;
 
@@ -532,7 +512,7 @@ struct isp_imem_memory {
 static struct ion_client *isp_p2_ion_client;
 static struct isp_imem_memory g_isp_p2_imem_buf;
 #endif
-static volatile bool g_bIonBufferAllocated;
+static bool g_bIonBufferAllocated;
 static unsigned int *g_pPhyISPBuffer;
 /* Kernel Warning */
 static unsigned int *g_pKWTpipeBuffer;
@@ -555,22 +535,22 @@ static unsigned int g_TpipeBuffer[(MAX_ISP_TILE_TDR_HEX_NO >> 2)];
 static unsigned int g_VirISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static unsigned int g_CmdqBuffer[(MAX_ISP_CMDQ_BUFFER_SIZE >> 2)];
 #endif
-static volatile bool g_bUserBufIsReady = MFALSE;
+static bool g_bUserBufIsReady = MFALSE;
 static unsigned int DumpBufferField;
-static volatile bool g_bDumpPhyISPBuf = MFALSE;
+static bool g_bDumpPhyISPBuf = MFALSE;
 static unsigned int g_tdriaddr = 0xffffffff;
 static unsigned int g_cmdqaddr = 0xffffffff;
 static ISP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static ISP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
 static ISP_MEM_INFO_STRUCT g_CmdqBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
-static volatile unsigned int m_CurrentPPB;
+static unsigned int m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source isp_wake_lock;
 #else
 struct wake_lock isp_wake_lock;
 #endif
-static volatile int g_bWaitLock;
+static int g_bWaitLock;
 /*
 * static void __iomem *g_isp_base_dase;
 * static void __iomem *g_isp_inner_base_dase;
@@ -638,8 +618,7 @@ struct S_START_T {
 
 /* QQ, remove later */
 /* record remain node count(success/fail) excludes head when enque/deque control */
-static volatile int EDBufQueRemainNodeCnt;
-static volatile unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
+static unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
 
 static /*volatile*/ wait_queue_head_t P2WaitQueueHead_WaitDeque;
@@ -691,11 +670,6 @@ static  spinlock_t      SpinLock_UserKey;
 
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static void ISP_GetDmaPortsStatus(ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats);
-static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, unsigned int dma_id,
-					unsigned int delayCheck);
-static int32_t ISP_PushBufTimestamp(unsigned int module, unsigned int dma_id, unsigned int sec,
-									unsigned int usec, unsigned int frmPeriod);
 static int32_t ISP_PopBufTimestamp(unsigned int module, unsigned int dma_id, struct S_START_T *pTstp);
 static int32_t ISP_WaitTimestampReady(unsigned int module, unsigned int dma_id);
 #endif
@@ -711,14 +685,14 @@ static int Tbl_RTBuf_MMPSize[ISP_IRQ_TYPE_AMOUNT];
 /* original pointer for kmalloc'd area as returned by kmalloc */
 static void *pBuf_kmalloc[ISP_IRQ_TYPE_AMOUNT];
 /*  */
-static volatile ISP_RT_BUF_STRUCT * pstRTBuf[ISP_IRQ_TYPE_AMOUNT] = {NULL};
+static ISP_RT_BUF_STRUCT *pstRTBuf[ISP_IRQ_TYPE_AMOUNT] = {NULL};
 
 /* static ISP_DEQUE_BUF_INFO_STRUCT g_deque_buf = {0,{}};    // Marked to remove build warning. */
 
 unsigned long g_Flash_SpinLock;
 
 
-static volatile unsigned int G_u4EnableClockCount;
+static unsigned int G_u4EnableClockCount;
 
 int pr_detect_count;
 
@@ -781,8 +755,8 @@ enum ISP_BUF_STATUS_ENUM {
 };
 
 struct ISP_BUF_STRUCT {
-	volatile enum ISP_BUF_STATUS_ENUM Status;
-	volatile unsigned int                Size;
+	enum ISP_BUF_STATUS_ENUM Status;
+	unsigned int                Size;
 	unsigned char *pData;
 };
 
@@ -807,7 +781,7 @@ struct ISP_IRQ_ERR_WAN_CNT_STRUCT {
 	unsigned long m_int_usec[ISP_IRQ_TYPE_AMOUNT];
 };
 
-static volatile int FirstUnusedIrqUserKey = 1;
+static int FirstUnusedIrqUserKey = 1;
 #define USERKEY_STR_LEN 128
 
 struct UserKeyInfo {
@@ -815,26 +789,26 @@ struct UserKeyInfo {
 	int userKey;    /* the user key for that user */
 };
 /* array for recording the user name for a specific user key */
-static volatile struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
+static struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
 
 struct ISP_IRQ_INFO_STRUCT {
 	/* Add an extra index for status type in Everest -> signal or dma */
-	volatile unsigned int    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
 	unsigned int             Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
 	unsigned int             ErrMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
 	unsigned int              WarnMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
 	/* flag for indicating that user do mark for a interrupt or not */
-	volatile unsigned int    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile unsigned int    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile unsigned int    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* number of a specific signal that passed by */
-	volatile int     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	int     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* */
-	volatile unsigned int    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
+	unsigned int    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
-	volatile unsigned int    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
+	unsigned int    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
 };
 
@@ -878,8 +852,8 @@ struct ISP_TIMESTPQ_INFO_STRUCT {
 	})
 
 
-static volatile unsigned int g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile unsigned int g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
+static unsigned int g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
+static unsigned int g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
 
 
 
@@ -893,7 +867,7 @@ struct ISP_INFO_STRUCT {
 	spinlock_t                      SpinLockClock;
 	wait_queue_head_t               WaitQueueHead[ISP_IRQ_TYPE_AMOUNT];
 	/* wait_queue_head_t*              WaitQHeadList; */
-	volatile wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
+	wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
 	unsigned int                         UserCount;
 	unsigned int                         DebugMask;
 	int							IrqNum;
@@ -1099,7 +1073,7 @@ static struct SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 
 /* //////////////////////////////////////////////////// */
 union FBC_CTRL_1 {
-	volatile struct { /* 0x18004110 */
+	struct { /* 0x18004110 */
 		unsigned int  FBC_NUM                               :  6;      /*  0.. 5, 0x0000003F */
 		unsigned int  rsv_6                                 :  9;      /*  6..14, 0x00007FC0 */
 		unsigned int  FBC_EN                                :  1;      /* 15..15, 0x00008000 */
@@ -1114,7 +1088,7 @@ union FBC_CTRL_1 {
 };  /* CAM_A_FBC_IMGO_CTL1 */
 
 union FBC_CTRL_2 {
-	volatile struct { /* 0x18004114 */
+	struct { /* 0x18004114 */
 		unsigned int  FBC_CNT                               :  7;      /*  0.. 6, 0x0000007F */
 		unsigned int  rsv_7                                 :  1;      /*  7.. 7, 0x00000080 */
 		unsigned int  RCNT                                  :  6;      /*  8..13, 0x00003F00 */
@@ -4153,17 +4127,17 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 
 /*  */
 /* isr dbg log , sw isr response counter , +1 when sw receive 1 sof isr. */
-static volatile unsigned int sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
-volatile int Vsync_cnt[2] = {0, 0};
+static unsigned int sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
+static int Vsync_cnt[2] = {0, 0};
 
 /* keep current frame status */
-static volatile CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
+static CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 
 /* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
-static volatile bool g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
+static bool g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
-static volatile bool g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile unsigned long long gPrevSofTimestp[ISP_IRQ_TYPE_AMOUNT];
+static bool g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
+static unsigned long long gPrevSofTimestp[ISP_IRQ_TYPE_AMOUNT];
 #endif
 
 static struct S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
@@ -10529,11 +10503,11 @@ irqreturn_t ISP_Irq_CAMSV_0(int  Irq, void *DeviceId)
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
 
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/*  */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/*  */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/*  */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -10719,11 +10693,11 @@ irqreturn_t ISP_Irq_CAMSV_1(int  Irq, void *DeviceId)
 	unsigned int reg_module = ISP_CAMSV1_IDX;
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/* */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -10908,11 +10882,11 @@ irqreturn_t ISP_Irq_CAMSV_2(int  Irq, void *DeviceId)
 	unsigned int reg_module = ISP_CAMSV2_IDX;
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/* */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -11096,11 +11070,11 @@ irqreturn_t ISP_Irq_CAMSV_3(int  Irq, void *DeviceId)
 	unsigned int reg_module = ISP_CAMSV3_IDX;
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/* */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -11283,11 +11257,11 @@ irqreturn_t ISP_Irq_CAMSV_4(int  Irq, void *DeviceId)
 	unsigned int reg_module = ISP_CAMSV4_IDX;
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/* */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -11471,11 +11445,11 @@ irqreturn_t ISP_Irq_CAMSV_5(int  Irq, void *DeviceId)
 	unsigned int reg_module = ISP_CAMSV5_IDX;
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile unsigned int time_stamp;
+	unsigned int time_stamp;
 	/* */
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
@@ -11652,8 +11626,6 @@ irqreturn_t ISP_Irq_CAMSV_5(int  Irq, void *DeviceId)
 
 }
 
-#define ERR_WRN_INT_CNT_THRE    3
-
 irqreturn_t ISP_Irq_CAM_A(int Irq, void *DeviceId)
 {
 	unsigned int module = ISP_IRQ_TYPE_INT_CAM_A_ST;
@@ -11661,8 +11633,8 @@ irqreturn_t ISP_Irq_CAM_A(int Irq, void *DeviceId)
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
 	unsigned int DmaStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
@@ -12150,8 +12122,8 @@ irqreturn_t ISP_Irq_CAM_B(int  Irq, void *DeviceId)
 	unsigned int i;
 	unsigned int IrqStatus, ErrStatus, WarnStatus;
 	unsigned int DmaStatus;
-	volatile union FBC_CTRL_1 fbc_ctrl1[2];
-	volatile union FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
