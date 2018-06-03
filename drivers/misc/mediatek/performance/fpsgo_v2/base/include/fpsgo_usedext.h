@@ -35,4 +35,7 @@ extern int (*fpsgo_fbt2fstb_cpu_capability_fp)(
 	unsigned long long Q2Q_time,
 	unsigned long long Running_time);
 
+int fpsgo_is_force_enable(void);
+void fpsgo_force_switch_enable(int enable);
+
 #endif

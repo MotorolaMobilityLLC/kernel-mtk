@@ -219,6 +219,7 @@ static int vag_fps;
 static int walt_enable;
 static int set_idleprefer;
 static int suppress_ceiling;
+static int force_walt_off;
 
 static unsigned int cpu_max_freq;
 static struct fbt_cpu_dvfs_info *cpu_dvfs;
@@ -1882,6 +1883,7 @@ void fpsgo_comp2fbt_bypass_connect(int pid)
 {
 	unsigned long flags;
 	int free_bhr = 0;
+	int do_walt = 0;
 
 	if (!fbt_enable)
 		return;
@@ -1892,15 +1894,22 @@ void fpsgo_comp2fbt_bypass_connect(int pid)
 	if (!bypass_flag) {
 		bypass_flag = 1;
 		free_bhr = 1;
-		walt_enable = 1;
+
+		if (!force_walt_off) {
+			walt_enable = 1;
+			do_walt = 1;
+		}
 		xgf_trace("bypass_flag %d", bypass_flag);
 	}
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
 	if (free_bhr) {
 		fbt_free_bhr();
-		sched_walt_enable(LT_WALT_FPSGO, 1);
-		xgf_trace("fpsgo enable walt");
+
+		if (do_walt) {
+			sched_walt_enable(LT_WALT_FPSGO, 1);
+			xgf_trace("fpsgo enable walt");
+		}
 	}
 }
 
@@ -2301,6 +2310,42 @@ int fbt_switch_ceiling(int enable)
 	return 0;
 }
 
+int fbt_switch_force_walt_off(int off)
+{
+	unsigned long flags;
+	int disable_walt = 0;
+
+	mutex_lock(&fbt_mlock);
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+	mutex_unlock(&fbt_mlock);
+
+	spin_lock_irqsave(&xgf_slock, flags);
+
+	if (force_walt_off == off) {
+		spin_unlock_irqrestore(&xgf_slock, flags);
+		return 0;
+	}
+
+	force_walt_off = off;
+
+	if (force_walt_off && walt_enable) {
+		disable_walt = 1;
+		walt_enable = 0;
+	}
+
+	spin_unlock_irqrestore(&xgf_slock, flags);
+
+	if (disable_walt) {
+		sched_walt_enable(LT_WALT_FPSGO, 0);
+		xgf_trace("fpsgo disable walt");
+	}
+
+	return 0;
+}
+
 #define FBT_DEBUGFS_ENTRY(name) \
 static int fbt_##name##_open(struct inode *i, struct file *file) \
 { \
@@ -2384,6 +2429,33 @@ static ssize_t fbt_switch_ceiling_write(struct file *flip,
 }
 
 FBT_DEBUGFS_ENTRY(switch_ceiling);
+
+static int fbt_force_walt_show(struct seq_file *m, void *unused)
+{
+	SEQ_printf(m, "force_walt_off:%d\n", force_walt_off);
+	SEQ_printf(m, "walt_enable:%d\n", walt_enable);
+	return 0;
+}
+
+static ssize_t fbt_force_walt_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	if (val > 1 || val < 0)
+		return cnt;
+
+	fbt_switch_force_walt_off(val);
+
+	return cnt;
+}
+
+FBT_DEBUGFS_ENTRY(force_walt);
 
 static int fbt_thread_info_show(struct seq_file *m, void *unused)
 {
@@ -2520,6 +2592,11 @@ int fbt_cpu_init(void)
 					fbt_debugfs_dir,
 					NULL,
 					&fbt_switch_ceiling_fops);
+			debugfs_create_file("disable_walt",
+					S_IRUGO | S_IWUSR | S_IWGRP,
+					fbt_debugfs_dir,
+					NULL,
+					&fbt_force_walt_fops);
 		}
 	}
 

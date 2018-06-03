@@ -26,6 +26,7 @@
 
 #include "fpsgo_common.h"
 #include "fpsgo_v2_common.h"
+#include "fpsgo_usedext.h"
 #include <linux/preempt.h>
 #include <linux/trace_events.h>
 #include <linux/fs.h>
@@ -182,6 +183,46 @@ static ssize_t fpsgo_benchmark_hint_write(struct file *flip,
 
 FPSGO_DEBUGFS_ENTRY(benchmark_hint);
 
+static int fpsgo_force_onoff_show(struct seq_file *m, void *unused)
+{
+	int result = fpsgo_is_force_enable();
+
+	switch (result) {
+	case FPSGO_FORCE_OFF:
+		seq_puts(m, "force off\n");
+		break;
+	case FPSGO_FORCE_ON:
+		seq_puts(m, "force on\n");
+		break;
+	case FPSGO_FREE:
+		seq_puts(m, "free\n");
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static ssize_t fpsgo_force_onoff_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	if (val > 2 || val < 0)
+		return cnt;
+
+	fpsgo_force_switch_enable(val);
+
+	return cnt;
+}
+
+FPSGO_DEBUGFS_ENTRY(force_onoff);
+
 int init_fpsgo_common(void)
 {
 	fpsgo_debugfs_dir = debugfs_create_dir("fpsgo", NULL);
@@ -204,6 +245,12 @@ int init_fpsgo_common(void)
 			    debugfs_common_dir,
 			    NULL,
 			    &fpsgo_benchmark_hint_fops);
+
+	debugfs_create_file("force_onoff",
+			    S_IRUGO | S_IWUSR,
+			    debugfs_common_dir,
+			    NULL,
+			    &fpsgo_force_onoff_fops);
 
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 	fpsgo_systrace_mask = FPSGO_DEBUG_MANDATORY;
