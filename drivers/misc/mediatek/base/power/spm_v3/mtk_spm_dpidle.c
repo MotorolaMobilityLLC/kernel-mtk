@@ -45,7 +45,7 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 
-#include <power_gs_v1/mtk_power_gs_api.h>
+#include <mtk_power_gs_api.h>
 
 #include <mt-plat/mtk_io.h>
 
