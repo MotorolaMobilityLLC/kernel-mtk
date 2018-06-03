@@ -96,23 +96,18 @@ struct mmdvfs_clk_hw_map mt6763_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 #define MT6763_MMDVFS_SENSOR_MIN (19000000)
 /* A.1 [LP4 2-ch] Scenarios of each MM DVFS Step (force kicker) */
 /* OPP 0 scenarios */
-#define MT6763_MMDVFS_OPP0_NUM 18
+#define MT6763_MMDVFS_OPP0_NUM 14
 struct mmdvfs_profile mt6763_mmdvfs_opp0_profiles[MT6763_MMDVFS_OPP0_NUM] = {
 	{"SMVR", SMI_BWC_SCEN_VR_SLOW, {0, 0, 0}, {0, 0, 0 } },
 	{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
-	{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MT6763_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MT6763_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
-	{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MT6763_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"PIP Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 	{"PIP Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 	{"PIP Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 	{"Stereo Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 	{"Stereo Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
 	{"Stereo Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_STEREO, 0}, {0, 0, 0 } },
-	{"Dual zoom preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 	{"Dual zoom preview (reserved)", SMI_BWC_SCEN_CAM_CP,
-		{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
-	{"Dual zoom preview (reserved)", SMI_BWC_SCEN_VR,
 		{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 	{"EIS 4K Feature Recording", SMI_BWC_SCEN_VR,
 		{MT6763_MMDVFS_SENSOR_MIN, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
@@ -135,8 +130,13 @@ struct mmdvfs_profile mt6763_mmdvfs_opp2_profiles[MT6763_MMDVFS_OPP2_NUM] = {
 };
 
 /* OPP 3 scenarios */
-#define MT6763_MMDVFS_OPP3_NUM 9
+#define MT6763_MMDVFS_OPP3_NUM 13
 struct mmdvfs_profile mt6763_mmdvfs_opp3_profiles[MT6763_MMDVFS_OPP3_NUM] = {
+	{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MT6763_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MT6763_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"Dual zoom preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
+	{"Dual zoom preview (reserved)", SMI_BWC_SCEN_VR,
+		{0, MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM, 0}, {0, 0, 0 } },
 	{"EIS Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_EIS_2_0, 0}, {0, 0, 0 } },
 	{"Camera Preview", SMI_BWC_SCEN_CAM_PV, {0, 0, 0}, {0, 0, 0 } },
 	{"Camera Capture", SMI_BWC_SCEN_CAM_CP, {0, 0, 0}, {0, 0, 0 } },

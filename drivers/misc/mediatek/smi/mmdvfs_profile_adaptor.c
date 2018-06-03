@@ -840,20 +840,6 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u3
 		return MMDVFS_FINE_STEP_UNREQUEST;
 
 	self->mmdvfs_scenario_mmdvfs_opp[scenario] = step;
-	if (step >= 0) {
-		/* Overwrite CAM related scenario */
-		if (scenario == MMDVFS_PMQOS_ISP) {
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VR, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VR_SLOW, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VSS, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_CAM_PV, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_CAM_CP, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_ICFP, scenario);
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, MMDVFS_SCEN_ISP, scenario);
-		} else if (((1 << scenario) & LEGACY_CAM_SCENS)) {
-			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, MMDVFS_PMQOS_ISP, scenario);
-		}
-	}
 
 	if (self->wfd_vp_mix_step >= 0) {
 		/* special configuration for mixed step */
