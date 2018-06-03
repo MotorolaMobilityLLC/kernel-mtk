@@ -280,9 +280,11 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 
 	cpu = get_HW_cpuid();
 	crashing_cpu = cpu;
-	crash_save_cpu(regs, cpu);
-
-	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
+	/* null regs, no register dump */
+	if (regs) {
+		crash_save_cpu(regs, cpu);
+		elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
+	}
 
 	va_start(ap, msg);
 	vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg, ap);
