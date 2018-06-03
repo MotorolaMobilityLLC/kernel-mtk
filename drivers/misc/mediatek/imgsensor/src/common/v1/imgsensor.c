@@ -720,8 +720,8 @@ EXPORT_SYMBOL(Get_Camera_Temperature);
 static void cam_temperature_report_wq_routine(
 	struct work_struct *data)
 {
-	MUINT8 valid[3] = {0, 0, 0};
-	MUINT32 temp[3] = {0, 0, 0};
+	MUINT8 valid[4] = {0, 0, 0, 0};
+	MUINT32 temp[4] = {0, 0, 0, 0};
 	MUINT32 ret = 0;
 
 	pr_debug("Temperature Meter Report.\n");

@@ -62,7 +62,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K2T7SP_SENSOR_ID,
-	.checksum_value = 0x9a4bda07,
+	.checksum_value = 0x67b95889,
 
 	.pre = {
 		.pclk = 687000000, /*//30fps case*/
@@ -178,7 +178,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	.slim_video_delay_frame = 3,	/* enter slim video delay frame num */
 
-	.isp_driving_current = ISP_DRIVING_2MA,	/* mclk driving current */
+	.isp_driving_current = ISP_DRIVING_8MA,	/* mclk driving current */
 
 	/* sensor_interface_type */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -188,7 +188,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 	/* 0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL */
 	.mipi_settle_delay_mode = 0,
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gb,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gr,
 	.mclk = 24,	/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 
@@ -200,7 +200,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 
 static struct imgsensor_struct imgsensor = {
-	.mirror = IMAGE_HV_MIRROR,	/* mirrorflip information */
+	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
 
 	/* IMGSENSOR_MODE enum value,record current sensor mode,such as:
 	 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
@@ -1118,6 +1118,8 @@ static void sensor_init(void)
 	write_cmos_sensor(0x6F12, 0x2850);
 	write_cmos_sensor(0x602A, 0x1A74);
 	write_cmos_sensor(0x6F12, 0x0100);
+
+	write_cmos_sensor_8(0x0138, 0x01);/*enable temperature*/
 }				/*      sensor_init  */
 
 
@@ -2131,6 +2133,24 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
+static kal_uint32 get_sensor_temperature(void)
+{
+	UINT8 temperature;
+	INT32 temperature_convert;
+
+	temperature = read_cmos_sensor_8(0x013a);
+
+	if (temperature >= 0x0 && temperature <= 0x78)
+		temperature_convert = temperature;
+	else
+		temperature_convert = -1;
+
+	/*pr_info("temp_c(%d), read_reg(%d), enable %d\n",
+	 *	temperature_convert, temperature, read_cmos_sensor_8(0x0138));
+	 */
+
+	return temperature_convert;
+}
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
@@ -2139,6 +2159,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
+	INT32 *feature_return_para_i32 = (INT32 *) feature_para;
 	unsigned long long *feature_data = (unsigned long long *)feature_para;
 
 	/* SET_PD_BLOCK_INFO_T *PDAFinfo; */
@@ -2393,6 +2414,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
 		break;
+	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
+		*feature_return_para_i32 = get_sensor_temperature();
+		*feature_para_len = 4;
+		break;
+
 	default:
 		break;
 	}

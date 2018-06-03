@@ -128,7 +128,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		else
 			pr_err(
-			    "%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
+			    "%s : sensor_idx %d fail to mclk_set pinctrl, PinIdx %d, Val %d\n",
 			    __func__,
 			    sensor_idx,
 			    pin,
