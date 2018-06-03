@@ -122,6 +122,7 @@ static struct {
 	{DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG"}, /* not use now */
 	{DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO"},
 	{DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE"},
+	{DISP_OPT_DSI_UNDERRUN_AEE, 0, "DISP_OPT_DSI_UNDERRUN_AEE"},
 	{DISP_OPT_HRT, 1, "DISP_OPT_HRT"},
 	{DISP_OPT_PARTIAL_UPDATE, 0, "DISP_OPT_PARTIAL_UPDATE"},
 	{DISP_OPT_CV_BYSUSPEND, 0, "DISP_OPT_CV_BYSUSPEND"},
@@ -416,6 +417,8 @@ void disp_helper_option_init(void)
 
 	/* OVL SBCH */
 	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
+
+	disp_helper_set_option(DISP_OPT_DSI_UNDERRUN_AEE, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

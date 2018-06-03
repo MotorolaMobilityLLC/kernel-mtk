@@ -429,6 +429,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 	unsigned int param)
 {
 	int i = 0;
+	static unsigned int dsi_underrun_trigger = 1;
 	struct DSI_INT_STATUS_REG status;
 #if 0
 	struct DSI_TXRX_CTRL_REG txrx_ctrl;
@@ -457,6 +458,15 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 		_set_condition_and_wake_up(&(_dsi_context[i].sleep_in_done_wq));
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
+		if (disp_helper_get_option(DISP_OPT_DSI_UNDERRUN_AEE)) {
+			if (dsi_underrun_trigger == 1) {
+				DDPAEE("%s:buffer underrun\n",
+					ddp_get_module_name(module));
+				primary_display_diagnose();
+				dsi_underrun_trigger = 0;
+			}
+		}
+
 		DDPERR("%s:buffer underrun\n", ddp_get_module_name(module));
 		primary_display_diagnose();
 	}
