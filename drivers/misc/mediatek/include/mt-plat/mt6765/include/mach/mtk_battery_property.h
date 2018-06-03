@@ -152,8 +152,8 @@
 
 /* mt6357 314.331 uA */
 #define UNIT_FGCURRENT     (314331)
-/* charge_lsb 157166 * 2^11 / 3600 */
-#define UNIT_FGCAR         (10850)
+/* charge_lsb 19646 * 2^11 / 3600 */
+#define UNIT_FGCAR         (11176)
 /* MT6335 use 3, old chip use 4 */
 #define R_VAL_TEMP_2         (1)
 /* MT6335 use 3, old chip use 4 */
