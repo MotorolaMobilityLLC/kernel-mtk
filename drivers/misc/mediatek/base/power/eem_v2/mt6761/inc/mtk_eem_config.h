@@ -136,11 +136,11 @@
 
 /*2-line*/
 /* L_LOW */
-#define DEVINFO_1 0x10bd3c1b
+#define DEVINFO_1 0xFFFFFFFF
 /* L_LOW + LL_LOW */
-#define DEVINFO_2 0x550055
+#define DEVINFO_2 0xFFFFFFFF
 /* LL_LOW */
-#define DEVINFO_3 0x10bd3c1b
+#define DEVINFO_3 0xFFFFFFFF
 /* L_HIGH */
 #define DEVINFO_4 0x10bd3c1b
 /* L_HIGH + LL_HIGH */
@@ -148,8 +148,8 @@
 /* LL_HIGH */
 #define DEVINFO_6 0x10bd3c1b
 /* CCI */
-#define DEVINFO_7 0x10bd3c1b
-#define DEVINFO_8 0x550055
+#define DEVINFO_7 0x07F174EF
+#define DEVINFO_8 0x00540000
 
 /*1-line*/
 /* L */
@@ -181,9 +181,9 @@
 #define DEVINFO_6 0x5DA4DFA6
 /* CCI */
 //#define DEVINFO_7 0x5DA4CABD
-#define DEVINFO_7 0x59040DA7
+#define DEVINFO_7 0x21F152C9
 //#define DEVINFO_8 0x00740000
-#define DEVINFO_8 0x00240000
+#define DEVINFO_8 0x00720000
 
 /*1-line*/
 /* L */
