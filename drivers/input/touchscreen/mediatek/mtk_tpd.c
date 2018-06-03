@@ -49,21 +49,17 @@ struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
 const struct of_device_id touch_of_match[] = {
-	{ .compatible = "mediatek,mt6735-touch", },
-	{ .compatible = "mediatek,mt6580-touch", },
 	{ .compatible = "mediatek,mt8173-touch", },
-	{ .compatible = "mediatek,mt6755-touch", },
 	{ .compatible = "mediatek,mt6757-touch", },
 	{ .compatible = "mediatek,mt6763-touch", },
-	{ .compatible = "mediatek,mt3886-touch", },
 	{ .compatible = "mediatek,mt6797-touch", },
 	{ .compatible = "mediatek,mt8163-touch", },
 	{ .compatible = "mediatek,mt8127-touch", },
 	{ .compatible = "mediatek,mt2701-touch", },
 	{ .compatible = "mediatek,mt7623-touch", },
-	{ .compatible = "mediatek,elbrus-touch", },
 	{ .compatible = "mediatek,mt6799-touch", },
 	{ .compatible = "mediatek,mt6739-touch", },
+	{ .compatible = "mediatek,mt6771-touch", },
 	{ .compatible = "mediatek,touch", },
 	{},
 };
