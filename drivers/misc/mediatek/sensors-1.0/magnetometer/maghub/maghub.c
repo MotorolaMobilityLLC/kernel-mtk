@@ -39,6 +39,7 @@ typedef enum {
 struct maghub_ipi_data {
 	int		direction;
 	int32_t dynamic_cali[MAGHUB_AXES_NUM];
+	int32_t parameter_cali[6];
 	atomic_t	trace;
 	atomic_t	suspend;
 	atomic_t	scp_init_done;
@@ -262,7 +263,7 @@ static int maghub_delete_attr(struct device_driver *driver)
 
 static void scp_init_work_done(struct work_struct *work)
 {
-	int32_t cfg_data[3] = {0};
+	int32_t cfg_data[9] = {0};
 	struct maghub_ipi_data *obj = mag_ipi_data;
 	int err = 0;
 	struct mag_libinfo_t mag_libinfo;
@@ -293,6 +294,13 @@ static void scp_init_work_done(struct work_struct *work)
 	cfg_data[0] = obj->dynamic_cali[0];
 	cfg_data[1] = obj->dynamic_cali[1];
 	cfg_data[2] = obj->dynamic_cali[2];
+
+	cfg_data[3] = obj->parameter_cali[0];
+	cfg_data[4] = obj->parameter_cali[1];
+	cfg_data[5] = obj->parameter_cali[2];
+	cfg_data[6] = obj->parameter_cali[3];
+	cfg_data[7] = obj->parameter_cali[4];
+	cfg_data[8] = obj->parameter_cali[5];
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_MAGNETIC,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
@@ -330,6 +338,16 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	} else if (event->flush_action == TEST_ACTION) {
 		atomic_set(&obj->selftest_status, event->magnetic_t.status);
 		complete(&obj->selftest_done);
+	} else if (event->flush_action == CALI_ACTION) {
+		err = mag_cali_report(event->data);
+		spin_lock(&calibration_lock);
+		obj->parameter_cali[0] = event->data[0];
+		obj->parameter_cali[1] = event->data[1];
+		obj->parameter_cali[2] = event->data[2];
+		obj->parameter_cali[3] = event->data[3];
+		obj->parameter_cali[4] = event->data[4];
+		obj->parameter_cali[5] = event->data[5];
+		spin_unlock(&calibration_lock);
 	}
 	return err;
 }
@@ -394,8 +412,14 @@ static int maghub_set_cali(uint8_t *data, uint8_t count)
 	obj->dynamic_cali[0] = buf[0];
 	obj->dynamic_cali[1] = buf[1];
 	obj->dynamic_cali[2] = buf[2];
-	spin_unlock(&calibration_lock);
 
+	obj->parameter_cali[0] = buf[3];
+	obj->parameter_cali[1] = buf[4];
+	obj->parameter_cali[2] = buf[5];
+	obj->parameter_cali[3] = buf[6];
+	obj->parameter_cali[4] = buf[7];
+	obj->parameter_cali[5] = buf[8];
+	spin_unlock(&calibration_lock);
 	return sensor_cfg_to_hub(ID_MAGNETIC, data, count);
 }
 

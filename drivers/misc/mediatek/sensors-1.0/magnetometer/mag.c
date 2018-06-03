@@ -733,6 +733,27 @@ int mag_bias_report(struct mag_data *data)
 	return err;
 }
 
+int mag_cali_report(int32_t *param)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = param[0];
+	event.word[1] = param[1];
+	event.word[2] = param[2];
+	event.word[3] = param[3];
+	event.word[4] = param[4];
+	event.word[5] = param[5];
+
+	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
+	if (err < 0)
+		pr_err_ratelimited("failed due to event buffer full\n");
+	return err;
+}
+
 int mag_flush_report(void)
 {
 	struct sensor_event event;
