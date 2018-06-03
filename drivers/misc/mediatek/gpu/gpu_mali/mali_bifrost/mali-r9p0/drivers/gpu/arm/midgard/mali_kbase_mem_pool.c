@@ -185,7 +185,7 @@ struct page *kbase_mem_alloc_page(struct kbase_mem_pool *pool)
 	if (current->flags & PF_KTHREAD) {
 		/* Don't trigger OOM killer from kernel threads, e.g. when
 		 * growing memory on GPU page fault */
-		gfp |= __GFP_NORETRY;
+		gfp |= __GFP_NOFAIL;
 	}
 
 	/* don't warn on higer order failures */
