@@ -28,13 +28,13 @@
 
 int __weak do_wlan_drv_init(int chip_id)
 {
-	WMT_DETECT_ERR_FUNC("Can not find wlan module for chip: %d !\n", chip_id);
+	WMT_DETECT_ERR_FUNC("wlan is not enabled on chip %04x!\n", chip_id);
 	return 0;
 }
 
 int __weak do_ant_drv_init(int chip_id)
 {
-	WMT_DETECT_DBG_FUNC("Chip: %d can not support ANT !\n", chip_id);
+	WMT_DETECT_DBG_FUNC("ANT is not enabled on chip %04x!\n", chip_id);
 	return 0;
 }
 

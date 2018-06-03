@@ -35,7 +35,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
-#if defined(MT6797)
+#if defined(MT6631)
 #include "sdio.h"
 #endif
 
@@ -126,14 +126,6 @@ static IST_EVENT_FUNCTION apfnEventFuncTable[] = {
 *                              F U N C T I O N S
 ********************************************************************************
 */
-
-#if defined(MT6797)
-BOOLEAN
-HifIsFwOwn(P_ADAPTER_T prAdapter)
-{
-	return prAdapter->fgIsFwOwn;
-}
-#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This routine is responsible for the allocation of the data structures
@@ -327,7 +319,7 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 VOID nicDisableInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	ASSERT(prAdapter);
-#if defined(MT6797)
+#if defined(MT6631)
 	HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
 #else
 	HAL_BYTE_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
@@ -366,7 +358,7 @@ VOID nicEnableInterrupt(IN P_ADAPTER_T prAdapter)
 		/* If INT was not enabled, enable it and also set LPOwn now */
 		else {
 			HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_SET | WHLPCR_INT_EN_SET);
-#if defined(MT6797)
+#if defined(MT6631)
 			__enable_irq();
 #endif
 			prAdapter->fgIsFwOwn = TRUE;
@@ -374,7 +366,7 @@ VOID nicEnableInterrupt(IN P_ADAPTER_T prAdapter)
 	}
 	/* If INT was not enabled, enable it now */
 	else if (!fgIsIntEnableCache) {
-#if defined(MT6797)
+#if defined(MT6631)
 		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_SET);
 		__enable_irq();
 #else
@@ -619,34 +611,75 @@ WLAN_STATUS nicProcessIST_impl(IN P_ADAPTER_T prAdapter, IN UINT_32 u4IntStatus)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* @brief Verify the CHIP ID
+* @brief Query HW code from HIFSYS CR and convert to SW used Chip ID
+*
+* @param prAdapter      a pointer to adapter private data structure.
+*
+* @return Chip ID in hex format
+*/
+/*----------------------------------------------------------------------------*/
+UINT_16 nicGetChipID(IN P_ADAPTER_T prAdapter)
+{
+	ASSERT(prAdapter);
+
+	if (prAdapter->fgIsReadRevID == FALSE) {
+
+		HAL_GET_CHIP_ID_VER(prAdapter, &prAdapter->u2ChipID, &prAdapter->ucRevID);
+
+		/* Convert HW code to SW used Chip ID */
+		if (prAdapter->u2ChipID == 0x0279)	/* Everest */
+			prAdapter->u2ChipID = 0x6797;
+		if (prAdapter->u2ChipID == 0x0507)	/* Alaska */
+			prAdapter->u2ChipID = 0x6759;
+
+		prAdapter->fgIsReadRevID = TRUE;
+	}
+
+	return prAdapter->u2ChipID;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Verify the Chip ID (HW code) from HIFSYS CR
 *
 * @param prAdapter      a pointer to adapter private data structure.
 *
 *
-* @retval TRUE          CHIP ID is the same as the setting compiled
-* @retval FALSE         CHIP ID is different from the setting compiled
+* @retval TRUE          HW code is the same as the setting compiled
+* @retval FALSE         HW code is different from the setting compiled
 */
 /*----------------------------------------------------------------------------*/
 BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4CIR = 0;
+	UINT_32 u4HwCode = MTK_CHIP_REV;
 
 	ASSERT(prAdapter);
-
-	if (prAdapter->fgIsReadRevID)
-		return TRUE;
+	ASSERT(prAdapter->prGlueInfo);
 
 	HAL_MCR_RD(prAdapter, MCR_WCIR, &u4CIR);
 
-	DBGLOG(NIC, TRACE, "Chip ID: 0x%lx\n", u4CIR & WCIR_CHIP_ID);
-	DBGLOG(NIC, TRACE, "Revision ID: 0x%lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
-
-	if ((u4CIR & WCIR_CHIP_ID) != MTK_CHIP_REV)
+#if defined(MT6631)
+#ifdef CONFIG_OF
+	if (prAdapter->prGlueInfo->rHifInfo.Dev) {
+		if (of_property_read_u32_index(prAdapter->prGlueInfo->rHifInfo.Dev->of_node,
+					       "hardware-values", 0, &u4HwCode))
+			DBGLOG(NIC, ERROR, "Failed to get hardware-values from DT! skip verify chip id\n");
+		else
+			if ((u4CIR & WCIR_CHIP_ID) != u4HwCode) {
+				DBGLOG(NIC, ERROR, "HW code mismatch from chip[%04x] and DT[%04x]\n",
+				       u4CIR & WCIR_CHIP_ID, u4HwCode);
+				return FALSE;
+			}
+	}
+#endif
+#else
+	if ((u4CIR & WCIR_CHIP_ID) != u4HwCode) {
+		DBGLOG(NIC, ERROR, "HW code mismatch from chip[%04x] and pre-defined[%04x]\n",
+			   u4CIR & WCIR_CHIP_ID, u4HwCode);
 		return FALSE;
-
-	prAdapter->ucRevID = (UINT_8) (((u4CIR & WCIR_REVISION_ID) >> 16) & 0xF);
-	prAdapter->fgIsReadRevID = TRUE;
+	}
+#endif
 
 	return TRUE;
 }
@@ -698,15 +731,13 @@ WLAN_STATUS nicInitializeAdapter(IN P_ADAPTER_T prAdapter)
 	ASSERT(prAdapter);
 
 	prAdapter->fgIsIntEnableWithLPOwnSet = FALSE;
-	prAdapter->fgIsReadRevID = FALSE;
 
 	do {
-		#if !defined(MT6797)
 		if (!nicVerifyChipID(prAdapter)) {
 			u4Status = WLAN_STATUS_FAILURE;
 			break;
 		}
-		#endif
+
 		/* 4 <1> MCR init */
 		nicMCRInit(prAdapter);
 
@@ -720,7 +751,7 @@ WLAN_STATUS nicInitializeAdapter(IN P_ADAPTER_T prAdapter)
 		nicHifInit(prAdapter);
 	} while (FALSE);
 
-	DBGLOG(NIC, INFO, "Chip ID[%04X] Version[E%u]\n", MTK_CHIP_REV, wlanGetEcoVersion(prAdapter));
+	DBGLOG(NIC, INFO, "Chip ID[%04X] Version[E%u]\n", nicGetChipID(prAdapter), wlanGetEcoVersion(prAdapter));
 
 	return u4Status;
 }
@@ -760,12 +791,12 @@ void nicRestoreSpiDefMode(IN P_ADAPTER_T prAdapter)
 VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4Value = 0;
-#if defined(MT6797)
+#if defined(MT6631)
 	UINT_32 u4Value1 = 0;
 #endif
 	prAdapter->prGlueInfo->IsrAbnormalCnt++;
 
-#if defined(MT6797)
+#if defined(MT6631)
 	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
 	HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
 	DBGLOG(REQ, ERROR, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);

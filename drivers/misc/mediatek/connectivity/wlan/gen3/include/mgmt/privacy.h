@@ -70,11 +70,7 @@
 
 /* Todo:: Move to register */
 
-#if defined(MT6630) || defined(MT6797)
 #define WTBL_RESERVED_ENTRY             255
-#else
-#define WTBL_RESERVED_ENTRY             255
-#endif
 #define WTBL_SIZE                       32	/*
 						 * Max wlan table size, the max+1 used for probe request,... mgmt frame
 						 * sending use basic rate and no security

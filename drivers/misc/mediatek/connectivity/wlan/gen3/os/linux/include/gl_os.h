@@ -156,9 +156,7 @@
 #include "typedef.h"
 #include "queue.h"
 #include "gl_kal.h"
-#if CFG_CHIP_RESET_SUPPORT
-#include "gl_rst.h"
-#endif
+
 #include "hif.h"
 
 #if CFG_SUPPORT_TDLS

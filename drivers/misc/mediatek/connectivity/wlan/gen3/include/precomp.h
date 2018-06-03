@@ -122,9 +122,7 @@
 
 #include "hal.h"
 
-#if defined(MT6630) || defined(MT6797)
 #include "mt6630_reg.h"
-#endif
 
 #include "rlm.h"
 #include "rlm_domain.h"
@@ -203,6 +201,10 @@
  */
 #include "CFG_Wifi_File.h"
 
+/*------------------------------------------------------------------------------
+ * Others
+ *------------------------------------------------------------------------------
+ */
 #if CFG_ENABLE_WIFI_DIRECT
 #include "gl_p2p_kal.h"
 #endif
@@ -216,6 +218,7 @@
 #endif
 
 extern BOOLEAN fgIsResetting;
+#include "gl_rst.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S

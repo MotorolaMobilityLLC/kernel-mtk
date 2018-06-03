@@ -2505,8 +2505,8 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 				prCmdKey->ucWlanIndex = 255;	/* AIS WEP */
 			} else {
 				if (prStaRec) {	/* AIS RSN Group key but addr is BSSID */
-					ASSERT(prStaRec->ucBMCWlanIndex < WTBL_SIZE)
-					    prCmdKey->ucWlanIndex =
+					ASSERT(prStaRec->ucBMCWlanIndex < WTBL_SIZE);
+					prCmdKey->ucWlanIndex =
 					    secPrivacySeekForBcEntry(prAdapter,
 								     prStaRec->ucBssIndex,
 								     prStaRec->aucMacAddr,

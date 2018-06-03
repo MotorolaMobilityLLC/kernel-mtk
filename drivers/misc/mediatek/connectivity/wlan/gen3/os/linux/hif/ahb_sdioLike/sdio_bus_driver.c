@@ -19,27 +19,14 @@
  * Abstract:
  * Provide SDIO-GEN3  based bus driver routines
  *
- * Revision History:
- * Who         When            What
- * --------    ----------      ----------------------------------------------
  */
 #include <linux/kernel.h>
 #include <linux/io.h>
 #include "debug.h"
 #include "gl_os.h"
 #include "sdio.h"
-/* ========================== SDIO Private Routines ============================= */
 
-/*
- *	sdio_f0_readb - read a single byte from SDIO function 0
- *	@func: an SDIO function of the card
- *	@addr: address to read
- *	@err_ret: optional status value from transfer
- *
- *	Reads a single byte from the address space of SDIO function 0.
- *	If there is a problem reading the address, 0xff is returned
- *	and @err_ret will contain the error code.
- */
+/* ========================== SDIO Private Routines ============================= */
 
 struct sdio_func g_sdio_func;
 
@@ -125,38 +112,35 @@ int sdio_cccr_write(UINT_32 addr, UINT_8 value)
 
 
 /**
- *	sdio_readl - read a 32 bit integer from a SDIO function
- *	@func: SDIO function to access
- *	@addr: address to read
- *	@err_ret: optional status value from transfer
+ *	sdio_cr_readl - read a 32 bit integer from HIF controller driver domain register
+ *	@prHifBaseAddr: HIF host address virtual base
+ *	@addr: HIF controller address to read
  *
- *	Reads a 32 bit integer from the address space of a given SDIO
- *	function. If there is a problem reading the address,
- *	0xffffffff is returned and @err_ret will contain the error
- *	code.
+ *	Reads a 32 bit integer from the address space of HIF controller
+ *	driver domain register in SDIO function via CMD53.
  */
-UINT_32 sdio_cr_readl(volatile unsigned int *HifBaseAddr, unsigned int addr)
+UINT_32 sdio_cr_readl(volatile UINT_8 *prHifBaseAddr, UINT_32 addr)
 {
-	unsigned int value = -1;
+	UINT_32 value;
 	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 
-
-	/* CMD53 incremental mode to read 4-byte */
 	/* 1. Setup command information */
 	info.word = 0;
 	info.field.rw_flag = SDIO_GEN3_READ;
-	info.field.func_num = func->num;/* SDIO_GEN3_FUNCTION_WIFI */
+	info.field.func_num = func->num;
 	info.field.block_mode = SDIO_GEN3_BYTE_MODE;
-	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE;
+	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode to read 4-byte CR */
 	info.field.addr = addr;
 	info.field.count = 4;
 
 	my_sdio_disable(HifLock);
 	__disable_irq();
 
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));
-	value = readl((volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));
+	writel(info.word, (volatile UINT_32 *)(prHifBaseAddr + SDIO_GEN3_CMD_SETUP));
+
+	/* 2. Read CMD53 port to retrieve SDIO function CR value */
+	value = readl((volatile UINT_32 *)(prHifBaseAddr + SDIO_GEN3_CMD53_DATA));
 
 	__enable_irq();
 	my_sdio_enable(HifLock);
@@ -164,39 +148,36 @@ UINT_32 sdio_cr_readl(volatile unsigned int *HifBaseAddr, unsigned int addr)
 	return value;
 }
 
-
 /**
- *	sdio_writel - write a 32 bit integer to a SDIO function
- *	@func: SDIO function to access
- *	@b: integer to write
- *	@addr: address to write to
- *	@err_ret: optional status value from transfer
+ *	sdio_cr_writel - write a 32 bit integer to HIF controller driver domain register
+ *	@value: integer to write
+ *	@prHifBaseAddr: HIF host address virtual base
+ *	@addr: HIF controller address to write to
  *
- *	Writes a 32 bit integer to the address space of a given SDIO
- *	function. @err_ret will contain the status of the actual
- *	transfer.
+ *	Writes a 32 bit integer to the address space of HIF controller
+ *	driver domain register in SDIO function via CMD53.
  */
-
-void sdio_cr_writel(UINT_32 b, volatile unsigned int *HifBaseAddr, unsigned int addr)
+VOID sdio_cr_writel(UINT_32 value, volatile UINT_8 *prHifBaseAddr, UINT_32 addr)
 {
 	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 
-
-	/* CMD53 incremental mode to read 4-byte */
 	/* 1. Setup command information */
 	info.word = 0;
 	info.field.rw_flag = SDIO_GEN3_WRITE;
-	info.field.func_num = func->num; /* SDIO_GEN3_FUNCTION_WIFI */
+	info.field.func_num = func->num;
 	info.field.block_mode = SDIO_GEN3_BYTE_MODE;
-	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE;
+	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode to write 4-byte CR */
 	info.field.addr = addr;
 	info.field.count = 4;
 
 	my_sdio_disable(HifLock);
 	__disable_irq();
-	writel(info.word, (volatile UINT_32 *)(SDIO_GEN3_CMD_SETUP + (UINT_8 *)HifBaseAddr));
-	writel(b, (volatile UINT_32 *)(SDIO_GEN3_CMD53_DATA + (UINT_8 *)HifBaseAddr));
+
+	writel(info.word, (volatile UINT_32 *)(prHifBaseAddr + SDIO_GEN3_CMD_SETUP));
+
+	/* 2. Write CMD53 port to set SDIO function CR value */
+	writel(value, (volatile UINT_32 *)(prHifBaseAddr + SDIO_GEN3_CMD53_DATA));
 
 	__enable_irq();
 	my_sdio_enable(HifLock);

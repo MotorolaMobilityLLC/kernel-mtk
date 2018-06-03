@@ -46,8 +46,8 @@
 #ifdef CONFIG_X86
 #define MTK_WCN_HIF_SDIO            0
 #else
-#if defined(MT6797)
-#define MTK_WCN_HIF_SDIO        0
+#if defined(MT6631)
+#define MTK_WCN_HIF_SDIO            0
 #else
 #define MTK_WCN_HIF_SDIO            1
 #endif
@@ -184,16 +184,6 @@
  * Flags for HIFSYS Interface
  *------------------------------------------------------------------------------
  */
-#if defined(MT6797)
-#define MTK_WCN_SINGLE_MODULE		0 /* 1: without WMT */
-#endif
-
-#ifdef _lint
-#if defined(MT6630)
-#define _HIF_SDIO   1
-#endif
-#endif
-
 /*
  * 1(default): Enable SDIO ISR & TX/RX status enhance mode
  * 0: Disable
@@ -248,16 +238,12 @@
  * Flags and Parameters for Integration
  *------------------------------------------------------------------------------
  */
-#if defined(MT6630) || defined(MT6797)
 #define CFG_MULTI_ECOVER_SUPPORT    1
 
 #define CFG_ENABLE_CAL_LOG          1
 #define CFG_REPORT_RFBB_VERSION     1
 
 #define HW_BSSID_NUM                4	/* HW BSSID number by chip */
-#else
-#error Unknown chip ID.
-#endif
 
 #define CFG_CHIP_RESET_SUPPORT          1
 
@@ -298,7 +284,7 @@
 /* Max Tx page count */
 #define CFG_MAX_TX_PAGE_COUNT               968
 
-#if defined(MT6797)
+#if defined(MT6631)
 #define MY_SDIO_BLOCK_SIZE	512	/* it must be less than or eaqual to 512 */
 #if CFG_SDIO_TX_AGG || CFG_TX_BUFFER_IS_SCATTER_LIST
 #define BLK_MODE_COALESCING_SZ	(NIC_TX_PAGE_SIZE * CFG_MAX_TX_PAGE_COUNT  + MY_SDIO_BLOCK_SIZE - 1)
@@ -526,24 +512,13 @@
 #define CFG_ENABLE_FW_DOWNLOAD_ACK              1
 #define CFG_ENABLE_FW_ENCRYPTION                1
 
-#if defined(MT6630) || defined(MT6797)
 #define CFG_ENABLE_FW_DIVIDED_DOWNLOAD		1
-#else
-#define CFG_ENABLE_FW_DIVIDED_DOWNLOAD		0
-#endif
 
-#if defined(MT6630)
+/* Vary between projects, already replaced by device tree */
+/* default value is for MT6630 */
 #define CFG_FW_LOAD_ADDRESS                     0x00091400
 #define CFG_OVERRIDE_FW_START_ADDRESS           0
 #define CFG_FW_START_ADDRESS                    0x00091400
-
-#elif defined(MT6797)
-#define CFG_FW_LOAD_ADDRESS                     0x000a2800
-#define CFG_OVERRIDE_FW_START_ADDRESS           0
-#define CFG_FW_START_ADDRESS                    0x000a2800
-
-#else
-#endif
 
 /*------------------------------------------------------------------------------
  * Flags of Bluetooth-over-WiFi (BT 3.0 + HS) support
@@ -763,12 +738,6 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_AIS_PASSIVE_SCAN        0
-
-/*------------------------------------------------------------------------------
- * Flags of Workaround
- *------------------------------------------------------------------------------
- */
-#define CFG_ENABLE_READ_EXTRA_4_BYTES       1
 
 /*------------------------------------------------------------------------------
  * Flags of 5G NVRAM SUPPORT

@@ -96,7 +96,7 @@ typedef struct _INIT_HIF_TX_HEADER_T {
 } INIT_HIF_TX_HEADER_T, *P_INIT_HIF_TX_HEADER_T;
 
 #define DOWNLOAD_CONFIG_ENCRYPTION_MODE     BIT(0)
-#if defined(MT6797)
+#if defined(MT6631)
 #define DOWNLOAD_CONFIG_ENCRYPT_IDX_MASK    BITS(1, 2)
 #define DOWNLOAD_CONFIG_ENCRYPT_IDX_OFFSET  1
 #endif
@@ -137,26 +137,22 @@ typedef struct _INIT_HIF_RX_HEADER_T {
 	INIT_WIFI_EVENT_T rInitWifiEvent;
 } INIT_HIF_RX_HEADER_T, *P_INIT_HIF_RX_HEADER_T;
 
-#if defined(MT6797)
 typedef struct _INIT_EVENT_CMD_RESULT {
 	UINT_8  ucStatus;		/* 0: success, others: failure */
-	UINT_8  aucReserved[3];
-	UINT_16  u2PseFid;
-	UINT_8  ucKeyIndex;
-	UINT_8  aucReserved1;
-	INIT_CMD_DOWNLOAD_CONFIG rSrc;
-} INIT_EVENT_CMD_RESULT, *P_INIT_EVENT_CMD_RESULT, INIT_EVENT_PENDING_ERROR, *P_INIT_EVENT_PENDING_ERROR;
-#else
-typedef struct _INIT_EVENT_CMD_RESULT {
-	UINT_8 ucStatus;	/* 0: success */
 	/* 1: rejected by invalid param */
 	/* 2: rejected by incorrect CRC */
 	/* 3: rejected by decryption failure */
 	/* 4: unknown CMD */
 	/* 5: timeout */
 	UINT_8 aucReserved[3];
-} INIT_EVENT_CMD_RESULT, *P_INIT_EVENT_CMD_RESULT, INIT_EVENT_PENDING_ERROR, *P_INIT_EVENT_PENDING_ERROR;
+#if defined(MT6631)
+	UINT_16 u2PseFid;
+	UINT_8  ucKeyIndex;
+	UINT_8  aucReserved1;
+	INIT_CMD_DOWNLOAD_CONFIG rSrc;
 #endif
+} INIT_EVENT_CMD_RESULT, *P_INIT_EVENT_CMD_RESULT, INIT_EVENT_PENDING_ERROR, *P_INIT_EVENT_PENDING_ERROR;
+
 typedef struct _INIT_EVENT_ACCESS_REG {
 	UINT_32 u4Address;
 	UINT_32 u4Data;

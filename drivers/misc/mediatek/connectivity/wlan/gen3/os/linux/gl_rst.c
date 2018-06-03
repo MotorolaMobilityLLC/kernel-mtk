@@ -88,10 +88,9 @@ static void *glResetCallback(ENUM_WMTDRV_TYPE_T eSrcType,
 /*----------------------------------------------------------------------------*/
 VOID glResetInit(VOID)
 {
-#if (defined(MT6797) && (MTK_WCN_SINGLE_MODULE == 0)) || defined(MT6630)
 	/* 1. Register reset callback */
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_WIFI, (PF_WMT_CB) glResetCallback);
-#endif
+
 	/* 2. Initialize reset work */
 	INIT_WORK(&(wifi_rst.rst_work), mtk_wifi_reset);
 	INIT_WORK(&(wifi_rst.rst_trigger_work), mtk_wifi_trigger_reset);
@@ -109,10 +108,8 @@ VOID glResetInit(VOID)
 /*----------------------------------------------------------------------------*/
 VOID glResetUninit(VOID)
 {
-#if (defined(MT6797) && (MTK_WCN_SINGLE_MODULE == 0)) || defined(MT6630)
 	/* 1. Deregister reset callback */
 	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_WIFI);
-#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -232,37 +229,35 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 {
 	BOOLEAN fgResult = TRUE;
 
-#if CFG_WMT_RESET_API_SUPPORT
 	if (kalIsResetting() || fgResetTriggered) {
 		DBGLOG(INIT, ERROR,
-			"Skip triggering whole-chip reset during resetting! Chip[%04X E%u]\n",
-			MTK_CHIP_REV,
-			wlanGetEcoVersion(prAdapter));
+		       "Skip triggering whole-chip reset during resetting! Chip[%04X E%u]\n",
+		       nicGetChipID(prAdapter),
+		       wlanGetEcoVersion(prAdapter));
 		DBGLOG(INIT, ERROR,
-			"FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
-			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			(prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			(prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			(prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			(prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		       "FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
+		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 		fgResult = TRUE;
 	} else {
 		DBGLOG(INIT, ERROR,
 		"Trigger whole-chip reset! Chip[%04X E%u] FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
-			     MTK_CHIP_REV,
-			     wlanGetEcoVersion(prAdapter),
-			     (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			     (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
-			     (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
-			     (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
+		       nicGetChipID(prAdapter),
+		       wlanGetEcoVersion(prAdapter),
+		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
+		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
+		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
 		schedule_work(&(wifi_rst.rst_trigger_work));
 	}
-#endif
 
 	return fgResult;
 }

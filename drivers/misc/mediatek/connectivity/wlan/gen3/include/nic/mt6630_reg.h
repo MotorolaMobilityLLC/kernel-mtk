@@ -124,24 +124,24 @@
 #define MCR_WRPLR                           0x0090
 
 /* 4 Test Mode Data Port */
-#define MCR_WTMDR                           0x00b0
+#define MCR_WTMDR                           0x00B0
 
 /* 4 Test Mode Control Register */
-#define MCR_WTMCR                           0x00b4
+#define MCR_WTMCR                           0x00B4
 
 /* 4 Test Mode Data Pattern Control Register #0 */
-#define MCR_WTMDPCR0                        0x00b8
+#define MCR_WTMDPCR0                        0x00B8
 
 /* 4 Test Mode Data Pattern Control Register #1 */
-#define MCR_WTMDPCR1                        0x00bc
+#define MCR_WTMDPCR1                        0x00Bc
 
 /* 4 WLAN Packet Length Report Control Register */
-#define MCR_WPLRCR                          0x00d4
+#define MCR_WPLRCR                          0x00D4
 
 /* 4 WLAN Snapshot Register */
 #define MCR_WSR                             0x00D8
 
-#if defined(MT6797)
+#if defined(MT6631)
 /* 4 Abnormal Status Register2 */
 #define MCR_WASR2                           0x00E0
 #endif
@@ -251,12 +251,7 @@ typedef struct _ENHANCE_MODE_DATA_STRUCT_T {
 #define WCIR_REVISION_ID                BITS(16, 19)
 #define WCIR_CHIP_ID                    BITS(0, 15)
 
-#if defined(MT6797)
-#define MTK_CHIP_REV                    0x00006797
-#else
 #define MTK_CHIP_REV                    0x00006630
-#endif
-
 #define MTK_CHIP_MP_REVERSION_ID        0x0
 
 /* 3 WHLPCR 0x0004 */
