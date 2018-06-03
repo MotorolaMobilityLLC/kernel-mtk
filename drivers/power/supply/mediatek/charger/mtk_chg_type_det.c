@@ -241,7 +241,7 @@ static int mt_usb_get_property(struct power_supply *psy,
 }
 
 static enum power_supply_property mt_charger_properties[] = {
-	POWER_SUPPLY_PROP_CHARGE_TYPE,
+	POWER_SUPPLY_PROP_ONLINE,
 };
 
 static enum power_supply_property mt_ac_properties[] = {
