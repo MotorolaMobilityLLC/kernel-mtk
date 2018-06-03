@@ -241,6 +241,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define CLK_CFG_SET(n)        (CLK_CFG_0_SET_BASE + n * 0x10)
 #define CLK_CFG_CLR(n)        (CLK_CFG_0_CLR_BASE + n * 0x10)
 #define CLK6_AUDINTBUS_MASK   0x700
+#define CLK13_UFS_CARD_SEL_MASK	0x3
 
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)

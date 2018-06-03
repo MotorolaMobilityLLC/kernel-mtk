@@ -68,6 +68,7 @@ bool spm_set_dpidle_pcm_init_flag(void);
 #define DEEPIDLE_OPT_VCORE_LP_MODE       (1 << 0)
 #define DEEPIDLE_OPT_DUMP_LP_GOLDEN      (1 << 1)
 #define DEEPIDLE_OPT_XO_UFS_ON_OFF       (1 << 2)
+#define DEEPIDLE_OPT_UFSCARD_MUX_SWITCH  (1 << 3)
 
 /*
  * for Screen On Deep Idle 3.0
