@@ -346,7 +346,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct md_pll_reg *md_reg = md_info->md_pll_base;
 	struct ccci_per_md *per_md_data = &md->per_md_data;
 
-	dump_emi_latency();
+	/*dump_emi_latency();*/
 	if (md->md_state == BOOT_WAITING_FOR_HS1)
 		return;
 	/*CCCI_MEM_LOG(md->index, TAG, "Dump subsys_if_on\n");
