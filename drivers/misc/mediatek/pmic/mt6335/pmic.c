@@ -69,7 +69,6 @@ static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
 
-/* For whitney only(set boot voltage in preloader) */
 #define MT6799_BOOT_VOL 1
 
 static unsigned int vmd1_vosel = 0x40;		/* VMD1 0.8V: 0x40 */
@@ -970,7 +969,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(MT6335_TOP_RST_STATUS, 0xFF); TBD, written by Jeter*/
 
 #if MT6799_BOOT_VOL
-	/* For whitney only(set boot voltage in preloader) */
 	if (pmic_get_register_value(PMIC_RG_BUCK_VMD1_VOSEL) == 0x48 ||
 		pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL) == 0x50 ||
 		pmic_get_register_value(PMIC_RG_VSRAM_VMD_VOSEL) == 0x60) {
