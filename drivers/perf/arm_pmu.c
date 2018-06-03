@@ -346,7 +346,8 @@ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
 		ret = armpmu->handle_irq(irq, armpmu);
 	finish_clock = sched_clock();
 
-	perf_sample_event_took(finish_clock - start_clock);
+	/* FIXME */
+	/* perf_sample_event_took(finish_clock - start_clock); */
 	return ret;
 }
 
@@ -610,8 +611,10 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
 
 	irq = platform_get_irq(pmu_device, 0);
 	if (irq >= 0 && irq_is_percpu(irq)) {
+		get_online_cpus();
 		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
 		free_percpu_irq(irq, &hw_events->percpu_pmu);
+		put_online_cpus();
 	} else {
 		for (i = 0; i < irqs; ++i) {
 			int cpu = i;
@@ -645,6 +648,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
 
 	irq = platform_get_irq(pmu_device, 0);
 	if (irq >= 0 && irq_is_percpu(irq)) {
+		get_online_cpus();
 		err = request_percpu_irq(irq, handler, "arm-pmu",
 					 &hw_events->percpu_pmu);
 		if (err) {
@@ -653,6 +657,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
 			return err;
 		}
 		on_each_cpu(cpu_pmu_enable_percpu_irq, &irq, 1);
+		put_online_cpus();
 	} else {
 		for (i = 0; i < irqs; ++i) {
 			int cpu = i;
@@ -704,16 +709,27 @@ static int cpu_pmu_notify(struct notifier_block *b, unsigned long action,
 	int cpu = (unsigned long)hcpu;
 	struct arm_pmu *pmu = container_of(b, struct arm_pmu, hotplug_nb);
 
+	if ((action & ~CPU_TASKS_FROZEN) == CPU_DOWN_PREPARE) {
+		if (pmu->ppi_irq >= 0)
+			_disable_percpu_irq(pmu->ppi_irq, cpu);
+		return NOTIFY_DONE;
+	}
+
 	if ((action & ~CPU_TASKS_FROZEN) != CPU_STARTING)
 		return NOTIFY_DONE;
 
 	if (!cpumask_test_cpu(cpu, &pmu->supported_cpus))
 		return NOTIFY_DONE;
 
-	if (pmu->reset)
+	if (pmu->reset) {
 		pmu->reset(pmu);
-	else
+		if (pmu->ppi_irq >= 0)
+			enable_percpu_irq(pmu->ppi_irq, IRQ_TYPE_NONE);
+	} else {
+		if (pmu->ppi_irq >= 0)
+			enable_percpu_irq(pmu->ppi_irq, IRQ_TYPE_NONE);
 		return NOTIFY_DONE;
+	}
 
 	return NOTIFY_OK;
 }
@@ -907,6 +923,10 @@ int arm_pmu_device_probe(struct platform_device *pdev,
 		pr_info("failed to probe PMU!\n");
 		goto out_free;
 	}
+
+	pmu->ppi_irq = platform_get_irq(pmu->plat_device, 0);
+	if (!(pmu->ppi_irq >= 0 && irq_is_percpu(pmu->ppi_irq)))
+		pmu->ppi_irq = -1;
 
 	ret = cpu_pmu_init(pmu);
 	if (ret)
