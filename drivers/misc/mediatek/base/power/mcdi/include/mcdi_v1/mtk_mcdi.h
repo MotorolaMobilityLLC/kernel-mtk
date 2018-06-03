@@ -32,7 +32,7 @@ enum {
 	NF_MCDI_SMC_EVENT
 };
 
-extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
+extern void aee_rr_rec_mcdi_val(int id, u32 val);
 
 int cluster_idx_get(int cpu);
 unsigned int get_menu_predict_us(void);
