@@ -70,6 +70,10 @@
 #include <asm/div64.h>
 #include "internal.h"
 
+#ifdef CONFIG_MTK_MEMCFG
+#include <mt-plat/mtk_memcfg_reserve_info.h>
+#endif
+
 /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
 static DEFINE_MUTEX(pcp_batch_high_lock);
 #define MIN_PERCPU_PAGELIST_FRACTION	(8)
@@ -6563,6 +6567,22 @@ void __init mem_init_print_info(const char *str)
 		totalhigh_pages << (PAGE_SHIFT - 10),
 #endif
 		str ? ", " : "", str ? str : "");
+
+#ifdef CONFIG_MTK_MEMCFG
+		kernel_reserve_meminfo.available =
+			nr_free_pages() << PAGE_SHIFT;
+		kernel_reserve_meminfo.total = physpages << PAGE_SHIFT;
+		kernel_reserve_meminfo.kernel_code = codesize;
+		kernel_reserve_meminfo.rwdata = datasize;
+		kernel_reserve_meminfo.rodata = rosize;
+		kernel_reserve_meminfo.init = init_data_size + init_code_size;
+		kernel_reserve_meminfo.bss = bss_size;
+		kernel_reserve_meminfo.reserved =
+			(physpages - totalram_pages) << PAGE_SHIFT;
+#ifdef CONFIG_HIGHMEM
+		kernel_reserve_meminfo.highmem = totalhigh_pages << PAGE_SHIFT;
+#endif
+#endif
 }
 
 /**
