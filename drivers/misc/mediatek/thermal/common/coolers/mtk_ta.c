@@ -79,6 +79,7 @@ static int g_tad_pid;
 static bool init_flag;
 static int g_tad_ttj;
 struct SPA_T thermal_spa_t;
+static struct tad_nl_msg_t tad_ret_msg;
 
 /*=============================================================
  *Local function prototype
@@ -119,8 +120,8 @@ void atm_ctrl_cmd_from_user(void *nl_data, struct tad_nl_msg_t *ret_msg)
 			ret_msg->tad_data_len += sizeof(thermal_atm_t);
 
 			tsta_dprintk(
-				"[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n",
-				ret_msg->tad_data_len);
+			"[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n",
+			ret_msg->tad_data_len);
 		}
 		break;
 	case TA_DAEMON_CMD_GET_INIT_FLAG:
@@ -224,7 +225,7 @@ void atm_ctrl_cmd_from_user(void *nl_data, struct tad_nl_msg_t *ret_msg)
 			ret_msg->tad_data_len += sizeof(thermal_spa_t);
 
 			tsta_dprintk(
-				"[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n",
+			"[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n",
 				ret_msg->tad_data_len);
 		}
 		break;
@@ -265,7 +266,7 @@ static void ta_nl_send_to_user(int pid, int seq, struct tad_nl_msg_t *reply_msg)
 	NETLINK_CB(skb).dst_group = 0; /* unicast */
 
 	tsta_dprintk(
-		"[ta_nl_send_to_user] netlink_unicast size=%d tad_cmd=%d pid=%d\n",
+	"[ta_nl_send_to_user] netlink_unicast size=%d tad_cmd=%d pid=%d\n",
 		size, reply_msg->tad_cmd, pid);
 
 
@@ -286,7 +287,7 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 	int seq;
 	void *data;
 	struct nlmsghdr *nlh;
-	struct tad_nl_msg_t *tad_msg, *tad_ret_msg = NULL;
+	struct tad_nl_msg_t *tad_msg = NULL;
 	int size = 0;
 
 	nlh = (struct nlmsghdr *)skb->data;
@@ -301,24 +302,21 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 	data = NLMSG_DATA(nlh);
 
 	tad_msg = (struct tad_nl_msg_t *)data;
+	if (tad_msg->tad_ret_data_len >= TAD_NL_MSG_MAX_LEN) {
+		tsta_warn("[ta_nl_data_handler] tad_msg->=ad_ret_data_len=%d\n",
+		tad_msg->tad_ret_data_len);
+		return;
+	}
 
 	size = tad_msg->tad_ret_data_len + TAD_NL_MSG_T_HDR_LEN;
 
-	/*tad_ret_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
-	tad_ret_msg = vmalloc(size);
-	if (tad_ret_msg != NULL) {
-		memset(tad_ret_msg, 0, size);
+	memset(&tad_ret_msg, 0, size);
 
-		atm_ctrl_cmd_from_user(data, tad_ret_msg);
-		ta_nl_send_to_user(pid, seq, tad_ret_msg);
-		tsta_dprintk(
-			"[ta_nl_data_handler] send to user space process done\n");
+	atm_ctrl_cmd_from_user(data, &tad_ret_msg);
+	ta_nl_send_to_user(pid, seq, &tad_ret_msg);
+	tsta_dprintk("[ta_nl_data_handler] send to user space process done\n");
 
-		vfree(tad_ret_msg);
 
-	} else {
-		pr_notice("[Thermal/TC/TA][ta_nl_data_handler] vmalloc fail\n");
-	}
 
 }
 
