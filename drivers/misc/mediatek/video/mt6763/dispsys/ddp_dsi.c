@@ -2842,8 +2842,6 @@ int ddp_dsi_deinit(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	return DSI_STATUS_OK;
 }
 
-
-
 static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 					  LCM_DSI_PARAMS *dsi_params)
 {
@@ -2867,15 +2865,15 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 		if (dsi_mode == CMD_MODE)
 			continue;
 		/* vdo mode */
-		DSI_OUTREG32(cmdq, &hsa, AS_UINT32(&DSI_REG[i]->DSI_HSA_WC));
-		DSI_OUTREG32(cmdq, &hbp, AS_UINT32(&DSI_REG[i]->DSI_HBP_WC));
-		DSI_OUTREG32(cmdq, &hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
-		DSI_OUTREG32(cmdq, &bllp, AS_UINT32(&DSI_REG[i]->DSI_BLLP_WC));
-		DSI_OUTREG32(cmdq, &ps, AS_UINT32(&DSI_REG[i]->DSI_PSCTRL));
-		DSI_OUTREG32(cmdq, &hstx_ckl_wc, AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
-		DSI_OUTREG32(cmdq, &timcon0, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON0));
-		DSI_OUTREG32(cmdq, &timcon2, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON2));
-		DSI_OUTREG32(cmdq, &timcon3, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON3));
+		DSI_READREG32(struct DSI_HSA_WC_REG*, &hsa, &DSI_REG[i]->DSI_HSA_WC);
+		DSI_READREG32(struct DSI_HBP_WC_REG*, &hbp, &DSI_REG[i]->DSI_HBP_WC);
+		DSI_READREG32(struct DSI_HFP_WC_REG*, &hfp, &DSI_REG[i]->DSI_HFP_WC);
+		DSI_READREG32(struct DSI_BLLP_WC_REG*, &bllp, &DSI_REG[i]->DSI_BLLP_WC);
+		DSI_READREG32(struct DSI_PSCTRL_REG*, &ps, &DSI_REG[i]->DSI_PSCTRL);
+		DSI_READREG32(UINT32*, &hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
+		DSI_READREG32(struct DSI_PHY_TIMCON0_REG*, &timcon0, &DSI_REG[i]->DSI_PHY_TIMECON0);
+		DSI_READREG32(struct DSI_PHY_TIMCON2_REG*, &timcon2, &DSI_REG[i]->DSI_PHY_TIMECON2);
+		DSI_READREG32(struct DSI_PHY_TIMCON3_REG*, &timcon3, &DSI_REG[i]->DSI_PHY_TIMECON3);
 
 		/* 1. sync_pulse_mode */
 		/* Total    WC(A) = HSA_WC + HBP_WC + HFP_WC + PS_WC + 32 */
@@ -2895,11 +2893,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hsa.HSA_WC + hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + 32;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc,
-				     AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n", new_hstx_ckl_wc,
 				  new_hfp.HFP_WC);
 		}
@@ -2921,11 +2918,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + 26;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc,
-				     AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n", new_hstx_ckl_wc,
 				  new_hfp.HFP_WC);
 
@@ -2948,11 +2944,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + bllp.BLLP_WC + 32;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc,
-				     AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n", new_hstx_ckl_wc,
 				  new_hfp.HFP_WC);
 		}
