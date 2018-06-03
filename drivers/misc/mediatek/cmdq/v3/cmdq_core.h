@@ -634,7 +634,8 @@ struct ResourceUnitStruct {
 	bool lend;				/* indicate resource is lend by client or not */
 	bool delaying;			/* indicate resource is in delay check or not */
 	enum CMDQ_EVENT_ENUM lockEvent;	/* SW token to lock in GCE thread */
-	uint64_t engine;			/* which engine is resource */
+	uint64_t engine_id;			/* which engine is resource */
+	uint64_t engine_flag;			/* engine flag */
 	CmdqResourceAvailableCB availableCB;
 	CmdqResourceReleaseCB releaseCB;
 	struct delayed_work delayCheckWork;	/* Delay Work item when delay check is used */
