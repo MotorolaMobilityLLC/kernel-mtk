@@ -233,7 +233,7 @@ typedef struct _NDIS_TRANSPORT_STRUCT {
 	UINT_32 ndisOidCmd;
 	UINT_32 inNdisOidlength;
 	UINT_32 outNdisOidLength;
-	UINT_8 ndisOidContent[0];
+	UINT_8 ndisOidContent[16];
 } NDIS_TRANSPORT_STRUCT, *P_NDIS_TRANSPORT_STRUCT;
 
 /*******************************************************************************
