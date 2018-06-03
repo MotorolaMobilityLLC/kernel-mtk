@@ -43,8 +43,10 @@ u32 dvfsrc_read(u32 offset)
 	return readl(DVFSRC_REG(offset));
 }
 
-#define dvfsrc_write(offset, val) \
-	writel(val, DVFSRC_REG(offset))
+void dvfsrc_write(u32 offset, u32 val)
+{
+	writel(val, DVFSRC_REG(offset));
+}
 
 #define dvfsrc_rmw(offset, val, mask, shift) \
 	dvfsrc_write(offset, (dvfsrc_read(offset) & ~(mask << shift)) \
@@ -92,12 +94,10 @@ void dvfsrc_opp_table_init(void)
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-static int helio_dvfsrc_platform_init(void)
+static int helio_dvfsrc_common_init(void)
 {
 	dvfsrc_opp_level_mapping();
 	dvfsrc_opp_table_init();
-
-/* ToDo: framebuffer notifier for md table */
 
 	if (!spm_load_firmware_status()) {
 		pr_err("SPM FIRMWARE IS NOT READY\n");
@@ -609,9 +609,11 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 
 	pm_qos_notifier_register();
 
-	ret = helio_dvfsrc_platform_init();
+	ret = helio_dvfsrc_common_init();
 	if (ret)
 		return ret;
+
+	helio_dvfsrc_platform_init();
 
 	helio_dvfsrc_reg_config(dvfsrc->init_config);
 
