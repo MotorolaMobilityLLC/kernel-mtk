@@ -312,6 +312,22 @@ static inline void _mtk_simple_regulator_init_ops(struct regulator_ops *rops,
 			mtk_simple_regulator_set_suspend_disable_stub;
 }
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
+	struct device *dev,
+	const struct mtk_simple_regulator_ext_ops *mreg_ext_ops,
+	struct mtk_simple_regulator_adv_ops *mreg_adv_ops)
+{
+	return 0;
+}
+
+int mtk_simple_regulator_unregister(struct mtk_simple_regulator_desc *mreg_desc)
+{
+	return 0;
+}
+
+#else
+
 int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
 	struct device *dev,
 	const struct mtk_simple_regulator_ext_ops *mreg_ext_ops,
@@ -379,3 +395,4 @@ int mtk_simple_regulator_unregister(struct mtk_simple_regulator_desc *mreg_desc)
 	mtk_simple_regulator_device_unregister(mreg_desc->mreg_dev);
 	return 0;
 }
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */

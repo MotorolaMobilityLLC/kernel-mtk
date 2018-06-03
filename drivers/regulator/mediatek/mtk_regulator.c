@@ -19,6 +19,83 @@
 #include <linux/device.h>
 #include <linux/regulator/mediatek/mtk_regulator.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+int mtk_regulator_get(struct device *dev, const char *id,
+	struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int mtk_regulator_get_exclusive(struct device *dev, const char *id,
+	struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int devm_mtk_regulator_get(struct device *dev, const char *id,
+	struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+void mtk_regulator_put(struct mtk_regulator *mreg)
+{
+}
+
+void devm_mtk_regulator_put(struct mtk_regulator *mreg)
+{
+}
+
+int mtk_regulator_enable(struct mtk_regulator *mreg, bool enable)
+{
+	return 0;
+}
+
+int mtk_regulator_force_disable(struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int mtk_regulator_is_enabled(struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int mtk_regulator_set_mode(struct mtk_regulator *mreg,
+	unsigned int mode)
+{
+	return 0;
+}
+
+unsigned int mtk_regulator_get_mode(struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int mtk_regulator_set_voltage(struct mtk_regulator *mreg, int min_uV,
+	int max_uV)
+{
+	return 0;
+}
+
+int mtk_regulator_get_voltage(struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+int mtk_regulator_set_current_limit(struct mtk_regulator *mreg,
+					     int min_uA, int max_uA)
+{
+	return 0;
+}
+
+int mtk_regulator_get_current_limit(struct mtk_regulator *mreg)
+{
+	return 0;
+}
+
+#else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 int mtk_regulator_get(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
@@ -83,6 +160,17 @@ int mtk_regulator_is_enabled(struct mtk_regulator *mreg)
 	return regulator_is_enabled(mreg->consumer);
 }
 
+int mtk_regulator_set_mode(struct mtk_regulator *mreg,
+	unsigned int mode)
+{
+	return regulator_set_mode(mreg->consumer, mode);
+}
+
+unsigned int mtk_regulator_get_mode(struct mtk_regulator *mreg)
+{
+	return regulator_get_mode(mreg->consumer);
+}
+
 int mtk_regulator_set_voltage(struct mtk_regulator *mreg, int min_uV,
 	int max_uV)
 {
@@ -105,3 +193,4 @@ int mtk_regulator_get_current_limit(struct mtk_regulator *mreg)
 {
 	return regulator_get_current_limit(mreg->consumer);
 }
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */

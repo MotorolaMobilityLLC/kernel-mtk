@@ -1,19 +1,18 @@
 /*
  * mtk_regulator.h -- MTK Regulator driver support.
- *
- * Copyright (C) 2013 Richtek Technology Corp.
+ * Copyright (C) 2016 MediaTek Inc.
  * Author: Patrick Chang <patrick_chang@richtek.com>
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 
 #ifndef __LINUX_REGULATOR_MTK_REGULATOR_H_
 #define __LINUX_REGULATOR_MTK_REGULATOR_H_
@@ -59,11 +58,14 @@ extern int mtk_regulator_enable(struct mtk_regulator *mreg, bool enable);
 extern int mtk_regulator_force_disable(struct mtk_regulator *mreg);
 extern int mtk_regulator_is_enabled(struct mtk_regulator *mreg);
 
+extern int mtk_regulator_set_mode(struct mtk_regulator *mreg,
+	unsigned int mode);
+extern unsigned int mtk_regulator_get_mode(struct mtk_regulator *mreg);
 extern int mtk_regulator_set_voltage(struct mtk_regulator *mreg,
-					int min_uv, int max_uv);
+	int min_uv, int max_uv);
 extern int mtk_regulator_get_voltage(struct mtk_regulator *mreg);
 extern int mtk_regulator_set_current_limit(struct mtk_regulator *mreg,
-					     int min_uA, int max_uA);
+	int min_uA, int max_uA);
 extern int mtk_regulator_get_current_limit(struct mtk_regulator *mreg);
 
 #endif /* __LINUX_REGULATOR_MTK_REGULATOR_H_ */
