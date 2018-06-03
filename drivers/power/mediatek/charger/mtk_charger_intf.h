@@ -229,6 +229,7 @@ struct charger_data {
 };
 
 struct charger_manager {
+	bool init_done;
 	const char *algorithm_name;
 	struct platform_device *pdev;
 	void	*algorithm_data;
