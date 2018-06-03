@@ -77,7 +77,7 @@
 static phys_addr_t rec_phys_addr, rec_virt_addr;
 static unsigned long long rec_size;
 #endif
-static bool swpm_enable;
+static bool swpm_enable = true;
 static unsigned char avg_window = DEFAULT_AVG_WINDOW;
 static int swpm_probe(struct platform_device *pdev);
 static struct platform_driver swpm_drv = {
@@ -328,8 +328,13 @@ static int __init swpm_init(void)
 	}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MTK_DRAMC
 	swpm_send_init_ipi((unsigned int)(rec_phys_addr & 0xFFFFFFFF),
 		(unsigned int)(rec_size & 0xFFFFFFFF), get_emi_ch_num());
+#else
+	swpm_send_init_ipi((unsigned int)(rec_phys_addr & 0xFFFFFFFF),
+		(unsigned int)(rec_size & 0xFFFFFFFF), 2);
+#endif
 #endif
 
 	swpm_info("SWPM init done!\n");

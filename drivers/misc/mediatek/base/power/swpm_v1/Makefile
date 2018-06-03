@@ -23,5 +23,17 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
+# only build-in dummy driver for MT6775
+ifeq ($(CONFIG_MACH_MT6775),y)
+obj-y := mtk_swpm_dummy.o
+else
+
+ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-y += mtk_swpm.o
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+else
+# dummy driver to avoid build error
+obj-y := mtk_swpm_dummy.o
+endif
+
+endif
