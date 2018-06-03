@@ -397,6 +397,7 @@ static void ShowStatus(void)
 		show_bt_by_pid(mmcqd1);
 
 	LOGE("[Hang_Detect] dump debug_show_all_locks\n");
+	debug_locks = 1;
 	debug_show_all_locks();
 
 	LOGE("[Hang_Detect] show_free_areas\n");
@@ -444,23 +445,21 @@ static int hang_detect_thread(void *arg)
 				ShowStatus();
 
 			if (hang_detect_counter == 0) {
-				LOGE("[Hang_Detect] we should triger	HWT	...\n");
 				if (aee_mode != AEE_MODE_CUSTOMER_USER) {
+					LOGE("[Hang_Detect] we should triger Kernel API DB	...\n");
 					aee_kernel_warning_api
 						(__FILE__, __LINE__,
 						 DB_OPT_NE_JBT_TRACES | DB_OPT_DISPLAY_HANG_DUMP,
 						 "\nCRDISPATCH_KEY:SS Hang\n",
-						 "we triger HWT ");
+						 "we triger Kernel API DB ");
 					msleep(30 * 1000);
-				} else {	/* only Customer user load  trigger HWT */
+				} else {	/* only Customer user load  trigger KE */
+					LOGE("[Hang_Detect] we should triger KE...\n");
 					aee_kernel_exception_api(__FILE__, __LINE__,
 						 DB_OPT_NE_JBT_TRACES | DB_OPT_DISPLAY_HANG_DUMP,
 						 "\nCRDISPATCH_KEY:SS Hang\n",
-						 "we triger HWT ");
+						 "we triger Kernel API DB ");
 					msleep(30 * 1000);
-					local_irq_disable();
-					while (1)
-						;
 					BUG();
 				}
 			}
