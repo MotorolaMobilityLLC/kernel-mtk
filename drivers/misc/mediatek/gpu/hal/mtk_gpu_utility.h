@@ -78,6 +78,9 @@ bool mtk_get_gpu_custom_upbound_freq(unsigned long *pulFreq);
 bool mtk_get_vsync_offset_event_status(unsigned int *pui32EventStatus);
 bool mtk_get_vsync_offset_debug_status(unsigned int *pui32DebugStatus);
 
+/* CAP */
+bool mtk_get_gpu_dvfs_cal_freq(unsigned long *pulGpu_tar_freq);
+
 /* MET */
 bool mtk_enable_gpu_perf_monitor(bool enable);
 
