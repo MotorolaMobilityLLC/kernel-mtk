@@ -901,7 +901,7 @@ static void testcase_clkmgr(void)
 static void testcase_dram_access(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	uint32_t *regResults;
 	dma_addr_t regResultsMVA;
 	dma_addr_t dstMVA;
@@ -1016,7 +1016,7 @@ static void testcase_dram_access(void)
 static void testcase_long_command(void)
 {
 	int i;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	uint32_t data;
 	uint32_t pattern = 0x0;
 
@@ -1190,7 +1190,7 @@ static void testcase_write_address(void)
 static void testcase_write_from_data_reg(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	uint32_t value;
 	const uint32_t PATTERN = 0xFFFFDEAD;
 	const uint32_t srcGprId = CMDQ_DATA_REG_DEBUG;
@@ -1245,7 +1245,7 @@ static void testcase_write_from_data_reg(void)
 static void testcase_read_to_data_reg(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	uint32_t data;
 	unsigned long long data64;
 
@@ -1322,7 +1322,7 @@ static void testcase_write_reg_from_slot(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
 	const uint32_t PATTEN = 0xBCBCBCBC;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle hSlot = 0;
 	uint32_t value = 0;
 	long long value64 = 0LL;
@@ -1393,7 +1393,7 @@ static void testcase_write_reg_from_slot(void)
 static void testcase_backup_reg_to_slot(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle hSlot = 0;
 	int i;
 	uint32_t value = 0;
@@ -1465,7 +1465,7 @@ static void testcase_update_value_to_slot(void)
 {
 	int32_t i;
 	uint32_t value;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle hSlot = 0;
 	const uint32_t PATTERNS[] = {
 		0xDEAD0000, 0xDEAD0001, 0xDEAD0002, 0xDEAD0003, 0xDEAD0004
@@ -1507,7 +1507,7 @@ static void testcase_update_value_to_slot(void)
 
 static void testcase_poll(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *p_task;
 	uint32_t value = 0;
 	uint32_t pollingVal = 0x00003001;
@@ -1537,7 +1537,7 @@ static void testcase_poll(void)
 
 static void testcase_write_with_mask(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	const uint32_t MASK = (1 << 16);
 	const uint32_t EXPECT_RESULT = PATTERN & MASK;
@@ -1577,7 +1577,7 @@ static void testcase_write_with_mask(void)
 
 static void testcase_write(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 	unsigned long dummy_va, dummy_pa;
@@ -1615,7 +1615,7 @@ static void testcase_write(void)
 
 static void testcase_prefetch(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	int i;
 	uint32_t value = 0;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);	/* 0xDEADDEAD; */
@@ -1667,7 +1667,7 @@ static void testcase_prefetch(void)
 static void testcase_backup_register(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	int ret = 0;
 	uint32_t regAddr[3] = { CMDQ_TEST_GCE_DUMMY_PA,
 		CMDQ_GPR_R32_PA(CMDQ_DATA_REG_PQ_COLOR),
@@ -1711,7 +1711,7 @@ static void testcase_get_result(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
 	int i;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	int ret = 0;
 	struct cmdqCommandStruct desc = { 0 };
 
@@ -1777,7 +1777,7 @@ static int _testcase_simplest_command_loop_submit(const uint32_t loop, enum CMDQ
 						  const long long engineFlag,
 						  const bool isSecureTask)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	int32_t i;
 
 	CMDQ_MSG("%s\n", __func__);
@@ -1848,7 +1848,7 @@ static int _testcase_full_thread_array(void *data)
 	/* this testcase will be passed only when cmdqSecDr support async config mode because */
 	/* never execute event setting till IWC back to NWd */
 
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	int32_t i;
 
 	/* clearn event first */
@@ -1899,7 +1899,7 @@ static void testcase_full_thread_array(void)
 
 static void testcase_module_full_dump(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const bool alreadyEnableLog = cmdq_core_should_print_msg();
 
 	CMDQ_MSG("%s\n", __func__);
@@ -1932,7 +1932,7 @@ static void testcase_module_full_dump(void)
 
 static void testcase_profile_marker(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	/* const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16); */
 	/* uint32_t value = 0; */
 
@@ -1961,7 +1961,7 @@ static void testcase_profile_marker(void)
 
 static void testcase_estimate_command_exec_time(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle hSlot = 0;
 
 	cmdq_alloc_mem(&hSlot, 1);
@@ -2155,7 +2155,7 @@ void testcase_secure_meta_data(void)
 
 void testcase_submit_after_error_happened(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t pollingVal = 0x00003001;
 
 	CMDQ_MSG("%s\n", __func__);
@@ -2403,7 +2403,7 @@ static void testcase_nonsuspend_irq(void)
 
 static void testcase_module_full_mdp_engine(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const bool alreadyEnableLog = cmdq_core_should_print_msg();
 
 	CMDQ_MSG("%s\n", __func__);
@@ -2594,7 +2594,7 @@ static void testcase_append_task_verify(void)
 
 static void testcase_manual_suspend_resume_test(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *pTask, *pTask2;
 
 	CMDQ_MSG("%s\n", __func__);
@@ -2625,7 +2625,7 @@ static void testcase_manual_suspend_resume_test(void)
 
 static void testcase_timeout_wait_early_test(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *pTask;
 
 	CMDQ_MSG("%s\n", __func__);
@@ -2652,7 +2652,7 @@ static void testcase_timeout_wait_early_test(void)
 
 static void testcase_timeout_reorder_test(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 
 	CMDQ_MSG("%s\n", __func__);
 
@@ -2677,7 +2677,7 @@ static void testcase_timeout_reorder_test(void)
 
 static void testcase_error_irq(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 	struct TaskStruct *pTask;
@@ -2977,7 +2977,7 @@ static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, 
 
 static void testcase_acquire_resource(enum CMDQ_EVENT_ENUM resourceEvent, bool acquireExpected)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 	int32_t acquireResult;
@@ -3026,7 +3026,7 @@ static void testcase_acquire_resource(enum CMDQ_EVENT_ENUM resourceEvent, bool a
 
 static int32_t testcase_res_release_cb(enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 
 	CMDQ_MSG("%s\n", __func__);
@@ -3061,7 +3061,7 @@ static int32_t testcase_res_available_cb(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 	const uint64_t engineFlag = (1LL << CMDQ_ENG_MDP_WROT0);
@@ -3212,7 +3212,7 @@ static void testcase_specific_bus_MMSYS(void)
 	const uint32_t loop = 1000;
 	const uint32_t pattern = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t mmsys_register;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle slot_handle;
 	uint32_t start_time, end_time, duration_time;
 
@@ -3458,7 +3458,7 @@ void testcase_monitor_mem_stop(void)
 void _testcase_boundary_mem_inst(uint32_t inst_num)
 {
 	int i;
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	uint32_t data;
 	uint32_t pattern = 0x0;
 	const unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -3680,7 +3680,7 @@ void testcase_invalid_handle(void)
 
 void testcase_get_task_by_engine(void)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct task;
 	const uint64_t engineFlag = (0x1 << CMDQ_ENG_MDP_RDMA0) | (0x1 << CMDQ_ENG_MDP_WROT0);
 	int32_t status;
