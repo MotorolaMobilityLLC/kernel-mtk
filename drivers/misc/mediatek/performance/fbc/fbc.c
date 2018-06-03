@@ -80,7 +80,7 @@ void release_core(void)
 	core_limit[2].min = -1;
 	core_limit[2].max = -1;
 #endif
-	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
+	update_userlimit_cpu_core(PPM_KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
 	fbc_tracer(-4, "b_enable", 0);
 }
@@ -98,8 +98,8 @@ void boost_touch_core_eas(void)
 	core_limit[2].min = -1;
 	core_limit[2].max = -1;
 #endif
-	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
-	perfmgr_kick_fg_boost(KIR_FBC, 2100);
+	update_userlimit_cpu_core(PPM_KIR_FBC, NR_PPM_CLUSTERS, core_limit);
+	perfmgr_kick_fg_boost(EAS_KIR_FBC, 2100);
 	fbc_tracer(-3, "boost_value", 100);
 }
 
@@ -108,7 +108,7 @@ void release_eas(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	perfmgr_kick_fg_boost(KIR_FBC, 0);
+	perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
 	fbc_tracer(-3, "boost_value", 0);
 }
 /*--------------------TIMER------------------------*/
@@ -295,7 +295,7 @@ static void notify_twanted_timeout_eas(void)
 
 	if (chase_boost1 > 100)
 		chase_boost1 = 100;
-	perfmgr_kick_fg_boost(KIR_FBC, chase_boost1 + 2000);
+	perfmgr_kick_fg_boost(EAS_KIR_FBC, chase_boost1 + 2000);
 	fbc_tracer(-3, "boost_value", chase_boost1);
 
 	boost_flag = 1;
@@ -412,7 +412,7 @@ static void notify_no_render_eas(void)
 	if (i < MAX_THREAD && frame_info[i][0] == -1) {
 		chase = 0;
 		if (!first_frame) {
-			perfmgr_kick_fg_boost(KIR_FBC, 0);
+			perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
 			fbc_tracer(-3, "boost_value", 0);
 		}
 		disable_frame_twanted_timer();
@@ -550,13 +550,13 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	if (has_frame == 0) {
 		disable_frame_twanted_timer();
 		frame_done = 1;
-		perfmgr_kick_fg_boost(KIR_FBC, 0);
+		perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
 		fbc_tracer(-3, "boost_value", 0);
 		boost_flag = 0;
 		chase = 0;
 		fbc_tracer(-3, "chase", chase);
 	} else {
-		perfmgr_kick_fg_boost(KIR_FBC, boost_value + 2000);
+		perfmgr_kick_fg_boost(EAS_KIR_FBC, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	}
@@ -642,7 +642,7 @@ void notify_intended_vsync_eas(void)
 	}
 
 	if (chase == 0) {
-		perfmgr_kick_fg_boost(KIR_FBC, boost_value + 2000);
+		perfmgr_kick_fg_boost(EAS_KIR_FBC, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	} else {
@@ -655,7 +655,7 @@ void notify_intended_vsync_eas(void)
 
 		if (chase_boost2 > 100)
 			chase_boost2 = 100;
-		perfmgr_kick_fg_boost(KIR_FBC, chase_boost2 + 2000);
+		perfmgr_kick_fg_boost(EAS_KIR_FBC, chase_boost2 + 2000);
 		fbc_tracer(-3, "boost_value", chase_boost2);
 	}
 
