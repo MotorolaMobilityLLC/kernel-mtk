@@ -77,6 +77,7 @@ char *_seninf_tg_mux_name[_MAX_MCLK_] = {
 };
 
 struct clk *g_seninf_tg_mux[_MAX_MCLK_];
+atomic_t g_seninf_tg_mux_enable_cnt[_MAX_MCLK_];
 
 typedef enum {
 	MCLK_26MHZ,
@@ -102,6 +103,7 @@ char *_seninf_tg_src_mclk_name[_MAX_TG_SRC_] = {
 	"TOP_UNIVPLL_D208",
 };
 struct clk *g_seninf_tg_mclk_src[_MAX_TG_SRC_];
+atomic_t g_seninf_tg_mclk_src_enable_cnt[_MAX_TG_SRC_];
 
 
 #endif
@@ -3492,6 +3494,17 @@ static inline void Check_ccf_clk(void)
 	return;
 }
 
+void ISP_MCLK1_EN(BOOL En)
+{
+}
+void ISP_MCLK2_EN(BOOL En)
+{
+}
+void ISP_MCLK3_EN(BOOL En)
+{
+}
+
+
 static inline int kdSetSensorMclk(int *pBuf)
 {
 	int ret = 0;
@@ -3504,10 +3517,27 @@ static inline int kdSetSensorMclk(int *pBuf)
 	Check_ccf_clk();
 	if (1 == pSensorCtrl->on) {
 		if ((pSensorCtrl->TG < _MAX_MCLK_) && (pSensorCtrl->freq < _MAX_TG_SRC_)) {
-			ret = clk_set_parent(g_seninf_tg_mux[pSensorCtrl->TG], g_seninf_tg_mclk_src[pSensorCtrl->freq]);
-		} else {
-			PK_ERR("[CAMERA SENSOR] CCF kdSetSensorMclk tg=%d, freq= %d\n",
+			if (clk_prepare_enable(g_seninf_tg_mux[pSensorCtrl->TG]))
+				PK_ERR("[CAMERA SENSOR] failed tg=%d, freq= %d\n",
 				pSensorCtrl->TG, pSensorCtrl->freq);
+			else
+				atomic_inc(&g_seninf_tg_mux_enable_cnt[pSensorCtrl->TG]);
+
+			if (clk_prepare_enable(g_seninf_tg_mclk_src[pSensorCtrl->freq]))
+				PK_ERR("[CAMERA SENSOR] CCF kdSetSensorMclk tg=%d, freq= %d\n",
+				pSensorCtrl->TG, pSensorCtrl->freq);
+			else
+				atomic_inc(&g_seninf_tg_mclk_src_enable_cnt[pSensorCtrl->freq]);
+			ret = clk_set_parent(g_seninf_tg_mux[pSensorCtrl->TG], g_seninf_tg_mclk_src[pSensorCtrl->freq]);
+		} else
+			PK_ERR("[CAMERA SENSOR]kdSetSensorMclk out of range, tg=%d, freq= %d\n",
+				pSensorCtrl->TG, pSensorCtrl->freq);
+	} else {
+		if ((pSensorCtrl->TG < _MAX_MCLK_) && (pSensorCtrl->freq < _MAX_TG_SRC_)) {
+			clk_disable_unprepare(g_seninf_tg_mux[pSensorCtrl->TG]);
+			atomic_dec(&g_seninf_tg_mux_enable_cnt[pSensorCtrl->TG]);
+			clk_disable_unprepare(g_seninf_tg_mclk_src[pSensorCtrl->freq]);
+			atomic_dec(&g_seninf_tg_mclk_src_enable_cnt[pSensorCtrl->freq]);
 		}
 	}
 #endif
@@ -4243,7 +4273,6 @@ int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
 ********************************************************************************/
 static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	int i = 0;
     /* reset once in multi-open */
     if (atomic_read(&g_CamDrvOpenCnt) == 0) {
 	mipic_26m_en(1);
@@ -4258,13 +4287,6 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 		mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
 #endif
     }
-	for (i = 0; i < _MAX_MCLK_; i++)
-		clk_prepare_enable(g_seninf_tg_mux[i]);
-
-	for (i = 0; i < _MAX_TG_SRC_; i++)
-		clk_prepare_enable(g_seninf_tg_mclk_src[i]);
-
-
     /*  */
     atomic_inc(&g_CamDrvOpenCnt);
     return 0;
@@ -4288,15 +4310,24 @@ static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
 		mipic_26m_en(0);
+
+		for (i = 0; i < _MAX_MCLK_; i++) {
+			PK_DBG("g_seninf_tg_mux_enable_cnt[%d]!! %d\n",
+				i, atomic_read(&g_seninf_tg_mux_enable_cnt[i]));
+			for (; atomic_read(&g_seninf_tg_mux_enable_cnt[i]) > 0; ) {
+				clk_disable_unprepare(g_seninf_tg_mux[i]);
+				atomic_dec(&g_seninf_tg_mux_enable_cnt[i]);
+			}
+		}
+		for (i = 0; i < _MAX_TG_SRC_; i++) {
+			PK_DBG("g_seninf_tg_mclk_src_enable_cnt[%d]!! %d\n",
+				i, atomic_read(&g_seninf_tg_mclk_src_enable_cnt[i]));
+			for (; atomic_read(&g_seninf_tg_mclk_src_enable_cnt[i]) > 0; ) {
+				clk_disable_unprepare(g_seninf_tg_mclk_src[i]);
+				atomic_dec(&g_seninf_tg_mclk_src_enable_cnt[i]);
+			}
+		}
 	}
-
-	for (i = 0; i < _MAX_MCLK_; i++)
-		clk_disable_unprepare(g_seninf_tg_mux[i]);
-
-	for (i = 0; i < _MAX_TG_SRC_; i++)
-		clk_disable_unprepare(g_seninf_tg_mclk_src[i]);
-
-
     return 0;
 }
 

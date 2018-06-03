@@ -2231,12 +2231,6 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #define ISP_REG_SW_CTL_HW_RST_P2        (0x00000040)
 
 
-/*MCLK counter*/
-static MINT32 mMclk1User;
-static MINT32 mMclk2User;
-static MINT32 mMclk3User;
-static MINT32 mMclk4User;
-
 
 /* if isp has been suspend, frame cnt needs to add previous value*/
 #define ISP_RD32_TG_CAM_FRM_CNT(IrqType, reg_module) ({\
@@ -7405,11 +7399,6 @@ EXIT:
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
 		LOG_DBG("isp open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
-		LOG_DBG("ISP_MCLK_EN Open 0x%x, 0x%x, 0x%x, 0x%x",
-		ISP_RD32(ISP_SENINF0_BASE + 0x0600),
-		ISP_RD32(ISP_SENINF1_BASE + 0x0600),
-		ISP_RD32(ISP_SENINF2_BASE + 0x0600),
-		ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 	}
 
 
@@ -7700,21 +7689,6 @@ static MINT32 ISP_release(
 #if 0 /* _mt6593fpga_dvt_use_ */
 	spm_enable_sodi();
 #endif
-	/* Reset MCLK   */
-	mMclk1User = 0;
-	mMclk2User = 0;
-	mMclk3User = 0;
-
-	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x80000001);
-	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x80000001);
-	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x80000001);
-	ISP_WR32(ISP_SENINF3_BASE + 0x0600, 0x80000001);
-
-	LOG_DBG("ISP_MCLK_EN Release 0x%x, 0x%x, 0x%x, 0x%x",
-	ISP_RD32(ISP_SENINF0_BASE + 0x0600),
-	ISP_RD32(ISP_SENINF1_BASE + 0x0600),
-	ISP_RD32(ISP_SENINF2_BASE + 0x0600),
-	ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 
 EXIT:
 
@@ -9326,126 +9300,6 @@ static void __exit ISP_Exit(void)
 
 	/*  */
 }
-
-void ISP_MCLK1_EN(BOOL En)
-{
-	MUINT32 temp = 0;
-
-	if (En == 1)
-		mMclk1User++;
-	else {
-		mMclk1User--;
-		if (mMclk1User <= 0)
-			mMclk1User = 0;
-
-	}
-
-	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
-	if (En) {
-		if (mMclk1User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
-		}
-	} else {
-		if (mMclk1User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
-		}
-	}
-	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
-	LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d) En(%d)", temp, mMclk1User, En);
-
-}
-EXPORT_SYMBOL(ISP_MCLK1_EN);
-
-void ISP_MCLK2_EN(BOOL En)
-{
-	MUINT32 temp = 0;
-
-	if (En == 1)
-		mMclk2User++;
-	else {
-		mMclk2User--;
-		if (mMclk2User <= 0)
-			mMclk2User = 0;
-
-	}
-
-	temp = ISP_RD32(ISP_SENINF1_BASE + 0x0600);
-	if (En) {
-		if (mMclk2User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
-		}
-	} else {
-		if (mMclk2User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
-		}
-	}
-	LOG_INF("ISP_MCLK2_EN(0x%x), mMclk2User(%d) En(%d)", temp, mMclk2User, En);
-}
-EXPORT_SYMBOL(ISP_MCLK2_EN);
-
-void ISP_MCLK3_EN(BOOL En)
-{
-	MUINT32 temp = 0;
-
-	if (En == 1)
-		mMclk3User++;
-	else {
-		mMclk3User--;
-		if (mMclk3User <= 0)
-			mMclk3User = 0;
-
-	}
-
-	temp = ISP_RD32(ISP_SENINF2_BASE + 0x0600);
-	if (En) {
-		if (mMclk3User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
-		}
-	} else {
-		if (mMclk3User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
-		}
-	}
-	LOG_INF("ISP_MCLK3_EN(%x), mMclk3User(%d) En(%d)", temp, mMclk3User, En);
-}
-EXPORT_SYMBOL(ISP_MCLK3_EN);
-
-void ISP_MCLK4_EN(BOOL En)
-{
-	MUINT32 temp = 0;
-
-	if (En == 1)
-		mMclk4User++;
-	else {
-		mMclk4User--;
-		if (mMclk4User <= 0)
-			mMclk4User = 0;
-
-	}
-
-	temp = ISP_RD32(ISP_SENINF3_BASE + 0x0600);
-	if (En) {
-		if (mMclk4User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_SENINF3_BASE + 0x0600, temp);
-		}
-	} else {
-		if (mMclk4User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_SENINF3_BASE + 0x0600, temp);
-		}
-	}
-	LOG_INF("ISP_MCLK4_EN(%x), mMclk4ser(%d) En(%d)", temp, mMclk4User, En);
-
-}
-EXPORT_SYMBOL(ISP_MCLK4_EN);
-
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag)
 {

@@ -129,10 +129,10 @@ typedef struct {
 
 extern bool _hwPowerDown(PowerType type);
 extern bool _hwPowerOn(PowerType type, int powerVolt);
-extern void ISP_MCLK1_EN(BOOL En);
-extern void ISP_MCLK2_EN(BOOL En);
-extern void ISP_MCLK3_EN(BOOL En);
-extern void ISP_MCLK4_EN(BOOL En);
+void ISP_MCLK1_EN(BOOL En);
+void ISP_MCLK2_EN(BOOL En);
+void ISP_MCLK3_EN(BOOL En);
+
 extern unsigned int mt_get_ckgen_freq(int ID);
 extern void mipic_26m_en(int en);
 extern unsigned int mt_get_abist_freq(unsigned int ID);
