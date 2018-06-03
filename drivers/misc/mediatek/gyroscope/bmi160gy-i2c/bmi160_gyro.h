@@ -37,6 +37,12 @@
 #define BMG_SET_BITSLICE(regvar, bitname, val)\
 	((regvar & ~bitname##__MSK) | ((val<<bitname##__POS)&bitname##__MSK))
 
+#define BMI160_FS_125_LSB               2624
+#define BMI160_FS_250_LSB               1312
+#define BMI160_FS_500_LSB               656
+#define BMI160_FS_1000_LSB              328
+#define BMI160_FS_2000_LSB              164
+
 #define DEGREE_TO_RAD				7506
 #define SW_CALIBRATION
 #define BMG_DEV_NAME				"bmi160_gyro"
