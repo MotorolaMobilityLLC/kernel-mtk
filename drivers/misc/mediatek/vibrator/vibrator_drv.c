@@ -141,7 +141,6 @@ static ssize_t vibr_activate_store(struct device *dev,
 		pr_err(VIB_TAG "set activate fail\n");
 		return ret;
 	}
-	atomic_set(&g_mt_vib->vibr_state, activate);
 
 	ret = size;
 	return ret;
