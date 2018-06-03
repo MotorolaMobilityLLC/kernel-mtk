@@ -111,13 +111,12 @@ static bool check_clkmux_pdn(unsigned int clkmux_id)
 {
 	unsigned int reg, val, idx;
 
-	if (clkmux_id && CLK_CHECK) {
+	if (clkmux_id & CLK_CHECK) {
 		clkmux_id = (clkmux_id & ~CLK_CHECK);
 		reg = clkmux_id / 4;
 		val = idle_readl(CLK_CFG(reg));
 		idx = clkmux_id % 4;
-		val = (val >> (idx * 4)) & 0x80;
-
+		val = (val >> (idx * 8)) & 0x80;
 		return val ? true : false;
 	}
 
@@ -158,7 +157,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_DP] = {
 		0x00200038, /* MTCMOS, 21:VEN,5:ISP,4:MFG,3:DIS */
 		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
-		0x03BFB800,	/* INFRA1 */
+		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000C5,	/* INFRA2 */
 		0x3FFFFFFF,	/* MMSYS0 */
 		0x00000000,	/* MMSYS1 */
@@ -166,7 +165,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_SO3] = {
 		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
 		0x0A040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
-		0x03BFB800,	/* INFRA1 */
+		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000D1,	/* INFRA2 */
 		0x3FFFFFFF,	/* MMSYS0 */
 		0x00000000,	/* MMSYS1 */
@@ -174,7 +173,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_SO] = {
 		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
 		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
-		0x03BFB800,	/* INFRA1 */
+		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000C1,	/* INFRA2 */
 		0x0F84005F,	/* MMSYS0 */
 		0x00000000,	/* MMSYS1 */
@@ -190,40 +189,42 @@ static unsigned int idle_value[NR_CG_GRPS];
  * Check pll idle condition for sodi3
  ***********************************************************/
 
-#define PLL_UNIVPLL APMIXEDSYS(0x230)
-#define PLL_MFGPLL  APMIXEDSYS(0x240)
-#define PLL_MSDCPLL APMIXEDSYS(0x250)
-#define PLL_TVDPLL  APMIXEDSYS(0x260)
-#define PLL_MMPLL   APMIXEDSYS(0x270)
+#define PLL_MFGPLL  APMIXEDSYS(0x24C)
+#define PLL_MMPLL   APMIXEDSYS(0x25C)
+#define PLL_UNIVPLL APMIXEDSYS(0x26C)
+#define PLL_MSDCPLL APMIXEDSYS(0x27C)
 
-#define PLL_BIT_UNIVPLL (1 << 0)
-#define PLL_BIT_MFGPLL  (1 << 1)
-#define PLL_BIT_MSDCPLL (1 << 2)
-#define PLL_BIT_TVDPLL  (1 << 3)
-#define PLL_BIT_MMPLL   (1 << 4)
+#define PLL_BIT_MFGPLL  (1 << 0)
+#define PLL_BIT_MMPLL   (1 << 1)
+#define PLL_BIT_UNIVPLL (1 << 2)
+#define PLL_BIT_MSDCPLL (1 << 3)
 
-static unsigned int idle_pll_cond_mask = {
-	PLL_BIT_UNIVPLL |
-	PLL_BIT_MSDCPLL
+static unsigned int idle_pll_cond_mask[NR_IDLE_TYPES] = {
+	[IDLE_TYPE_DP] = 0,
+	[IDLE_TYPE_SO3] = PLL_BIT_UNIVPLL | PLL_BIT_MSDCPLL,
+	[IDLE_TYPE_SO] = 0,
 	};
-static unsigned int idle_pll_block_mask;
+static unsigned int idle_pll_block_mask[NR_IDLE_TYPES];
 static unsigned int idle_pll_value;
 
 static void update_pll_state(void)
 {
 	idle_pll_value = 0;
-	if (idle_readl(PLL_UNIVPLL) & 0x1)
-		idle_pll_value |= PLL_BIT_UNIVPLL;
 	if (idle_readl(PLL_MFGPLL) & 0x1)
 		idle_pll_value |= PLL_BIT_MFGPLL;
-	if (idle_readl(PLL_MSDCPLL) & 0x1)
-		idle_pll_value |= PLL_BIT_MSDCPLL;
-	if (idle_readl(PLL_TVDPLL) & 0x1)
-		idle_pll_value |= PLL_BIT_TVDPLL;
 	if (idle_readl(PLL_MMPLL) & 0x1)
 		idle_pll_value |= PLL_BIT_MMPLL;
+	if (idle_readl(PLL_UNIVPLL) & 0x1)
+		idle_pll_value |= PLL_BIT_UNIVPLL;
+	if (idle_readl(PLL_MSDCPLL) & 0x1)
+		idle_pll_value |= PLL_BIT_MSDCPLL;
 
-	idle_pll_block_mask = idle_pll_value & idle_pll_cond_mask;
+	idle_pll_block_mask[IDLE_TYPE_DP] =
+		idle_pll_value & idle_pll_cond_mask[IDLE_TYPE_DP];
+	idle_pll_block_mask[IDLE_TYPE_SO3] =
+		idle_pll_value & idle_pll_cond_mask[IDLE_TYPE_SO3];
+	idle_pll_block_mask[IDLE_TYPE_SO] =
+		idle_pll_value & idle_pll_cond_mask[IDLE_TYPE_SO];
 }
 
 /* dp/so3/so print blocking cond mask in debugfs */
@@ -247,7 +248,7 @@ int mtk_idle_cond_append_info(
 			log("0x%08x, ", idle_block_mask[idle_type][i]);
 		if (idle_type == IDLE_TYPE_SO3)
 			log("idle_pll_block_mask: 0x%08x\n"
-				, idle_pll_block_mask);
+				, idle_pll_block_mask[idle_type]);
 	} else {
 		for (i = 0; i < NR_CG_GRPS; i++) {
 			log("[%02d %s] value/cond/block = 0x%08x "
@@ -256,13 +257,10 @@ int mtk_idle_cond_append_info(
 			log("0x%08x 0x%08x\n", idle_cond_mask[idle_type][i]
 				, idle_block_mask[idle_type][i]);
 		}
-
-		if (idle_type == IDLE_TYPE_SO3) {
-			log("[%02d PLLCHK] value/cond/block = 0x%08x "
-				, i, idle_pll_value);
-			log("0x%08x 0x%08x\n", idle_pll_cond_mask
-				, idle_pll_block_mask);
-		}
+		log("[%02d PLLCHK] value/cond/block = 0x%08x "
+			, i, idle_pll_value);
+		log("0x%08x 0x%08x\n", idle_pll_cond_mask[idle_type]
+			, idle_pll_block_mask[idle_type]);
 	}
 
 	return p - logptr;
@@ -275,8 +273,8 @@ void mtk_idle_cond_update_mask(
 	if (reg < NR_CG_GRPS)
 		idle_cond_mask[idle_type][reg] = mask;
 	/* special case for sodi3 pll check */
-	if (idle_type == IDLE_TYPE_SO3 && reg == NR_CG_GRPS)
-		idle_pll_cond_mask = mask;
+	if (reg == NR_CG_GRPS)
+		idle_pll_cond_mask[idle_type] = mask;
 }
 
 static int cgmon_sel = -1;
@@ -325,12 +323,12 @@ static void mtk_idle_cgmon_trace_log(void)
 static void update_secure_cg_state(unsigned int clk[NR_CG_GRPS])
 {
 	/* Update INFRA0 bit 27 */
-	#define INFRAO0_BIT27	(1 << 27)
+	#define INFRA0_BIT27	(1 << 27)
 
-	clk[1] = clk[1] & ~INFRAO0_BIT27;
+	clk[1] = clk[1] & ~INFRA0_BIT27;
 
 	if (mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0, 0))
-		clk[1] |= INFRAO0_BIT27;
+		clk[1] |= INFRA0_BIT27;
 }
 
 /* update all idle condition state: mtcmos/pll/cg/secure_cg */
@@ -341,14 +339,17 @@ void mtk_idle_cond_update_state(void)
 
 	/* read all cg state (not including secure cg) */
 	for (i = 0; i < NR_CG_GRPS; i++) {
-		idle_value[i] = clk[i] = 0;
-		if (idle_readl(SPM_PWR_STATUS) & idle_cg_info[i].subsys_mask) {
-			if (check_clkmux_pdn(idle_cg_info[i].clkmux_id))
-				continue;
-			idle_value[i] = clk[i] = idle_cg_info[i].bBitflip ?
-				~idle_readl(idle_cg_info[i].addr) :
-				idle_readl(idle_cg_info[i].addr);
-		}
+		idle_value[i] = clk[i] =
+			idle_cg_info[i].bBitflip ? 0 : 0xffffffff;
+		/* check mtcmos */
+		if (!(idle_readl(SPM_PWR_STATUS) & idle_cg_info[i].subsys_mask))
+			continue;
+		/* check clkmux */
+		if (check_clkmux_pdn(idle_cg_info[i].clkmux_id))
+			continue;
+		idle_value[i] = clk[i] = idle_cg_info[i].bBitflip ?
+			~idle_readl(idle_cg_info[i].addr) :
+			idle_readl(idle_cg_info[i].addr);
 	}
 
 	/* update secure cg state */
@@ -377,10 +378,11 @@ bool mtk_idle_cond_check(int idle_type)
 {
 	bool ret = false;
 
+	/* check cg state */
 	ret = !(idle_block_mask[idle_type][NR_CG_GRPS]);
 
-	if (idle_type == IDLE_TYPE_SO3)
-		ret = (ret && !idle_pll_block_mask);
+	/* check pll state */
+	ret = (ret && !idle_pll_block_mask[idle_type]);
 
 	return ret;
 }

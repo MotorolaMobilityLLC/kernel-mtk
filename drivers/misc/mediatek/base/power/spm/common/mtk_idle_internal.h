@@ -23,6 +23,12 @@
 
 
 /********************************************************************
+ * Change idle condition check order (1:SO3,DP,SO, 0:DP,SO3,SO)
+ *******************************************************************/
+#define MTK_IDLE_ADJUST_CHECK_ORDER     (1)
+
+
+/********************************************************************
  * Enable/Disable all idle related trace_tag
  *******************************************************************/
 #define MTK_IDLE_TRACE_TAG_ENABLE       (0)
@@ -34,7 +40,6 @@
 #define MTK_IDLE_OPT_XO_UFS_ON_OFF  (1 << 1)
 #define MTK_IDLE_OPT_CLKBUF_BBLPM   (1 << 2)
 #define MTK_IDLE_OPT_SLEEP_DPIDLE   (1 << 16)
-#define MTK_IDLE_OPT_SODI_CG_MODE   (1 << 17)
 
 
 /********************************************************************

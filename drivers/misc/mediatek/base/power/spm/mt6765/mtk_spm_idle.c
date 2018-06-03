@@ -75,7 +75,8 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 };
 
 static unsigned int idle_pcm_flags1[NR_IDLE_TYPES] = {
-	[IDLE_TYPE_DP] = 0,
+	[IDLE_TYPE_DP] =
+		SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT,
 
 	[IDLE_TYPE_SO3] = 0,
 
@@ -234,13 +235,6 @@ void mtk_idle_pre_process_by_chip(
 	/* get pcm_flags and update if needed */
 	pcm_flags = idle_pcm_flags[idle_type];
 	pcm_flags1 = idle_pcm_flags1[idle_type];
-
-	if (idle_type == IDLE_TYPE_SO) {
-		if (op_cond && MTK_IDLE_OPT_SODI_CG_MODE)
-			pcm_flags |= SPM_FLAG_SODI_CG_MODE;
-		else
-			pcm_flags &= ~SPM_FLAG_SODI_CG_MODE;
-	}
 
 	/* [sleep dpidle only] */
 	if (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) {

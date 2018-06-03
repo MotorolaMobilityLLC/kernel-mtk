@@ -243,22 +243,22 @@ int mtk_idle_enter(
 
 	__mtk_idle_footprint(IDLE_FP_ENTER);
 
-	 __profile_idle_stop(idle_type, PIDX_SELECT_TO_ENTER);
+	__profile_idle_stop(idle_type, PIDX_SELECT_TO_ENTER);
 
-	 __profile_idle_start(idle_type, PIDX_ENTER_TOTAL);
+	__profile_idle_start(idle_type, PIDX_ENTER_TOTAL);
 
 	/* idle pre handler: setup notification/thermal/ufs */
-	 __profile_idle_start(idle_type, PIDX_PRE_HANDLER);
+	__profile_idle_start(idle_type, PIDX_PRE_HANDLER);
 	if (!(op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE))
 		op_cond |= mtk_idle_pre_handler(idle_type);
-	 __profile_idle_stop(idle_type, PIDX_PRE_HANDLER);
+	__profile_idle_stop(idle_type, PIDX_PRE_HANDLER);
 
 	__mtk_idle_footprint(IDLE_FP_PREHANDLER);
 
 	/* [by_chip] pre power setting: setup sleep voltage and power mode */
-	 __profile_idle_start(idle_type, PIDX_PWR_PRE_WFI);
+	__profile_idle_start(idle_type, PIDX_PWR_PRE_WFI);
 	mtk_idle_power_pre_process(idle_type, op_cond);
-	 __profile_idle_stop(idle_type, PIDX_PWR_PRE_WFI);
+	__profile_idle_stop(idle_type, PIDX_PWR_PRE_WFI);
 
 	/* [by_chip] spm setup */
 	__profile_idle_start(idle_type, PIDX_SPM_PRE_WFI);
@@ -293,9 +293,9 @@ int mtk_idle_enter(
 	__mtk_idle_footprint(IDLE_FP_ENTER_WFI);
 
 	/* [by_chip] enter cpuidle driver for wfi */
-	 __profile_idle_stop(idle_type, PIDX_ENTER_TOTAL);
+	__profile_idle_stop(idle_type, PIDX_ENTER_TOTAL);
 	mtk_idle_trigger_wfi(idle_type, cpu);
-	 __profile_idle_start(idle_type, PIDX_LEAVE_TOTAL);
+	__profile_idle_start(idle_type, PIDX_LEAVE_TOTAL);
 
 	__mtk_idle_footprint(IDLE_FP_LEAVE_WFI);
 
@@ -337,10 +337,12 @@ RESTORE_UART:
 
 	__profile_idle_stop(idle_type, PIDX_LEAVE_TOTAL);
 
-	__mtk_idle_footprint_reset(idle_type);
+	__mtk_idle_footprint(IDLE_FP_LEAVE);
 
 	/* output idle latency profiling result if enabled */
 	mtk_idle_latency_profile_result(idle_type);
+
+	__mtk_idle_footprint_reset(idle_type);
 
 	return 0;
 }
