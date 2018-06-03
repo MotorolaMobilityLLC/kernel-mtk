@@ -1513,6 +1513,9 @@ int force_get_tbat(bool update)
 	static struct timespec pre_time;
 	struct timespec ctime, dtime;
 
+	if (is_battery_init_done() == false)
+		return 25;
+
 	if (fixed_bat_tmp != 0xffff)
 		return fixed_bat_tmp;
 
