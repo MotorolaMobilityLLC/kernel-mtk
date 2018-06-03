@@ -430,15 +430,16 @@ static int __maybe_unused compare_dsi_checksum(unsigned long unused)
 
 static int __maybe_unused check_dsi_checksum(void)
 {
-	static struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle;
 	int ret;
 
-	if (!handle) {
-		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-		if (ret) {
-			DISPERR("Fail to create cmdq handle\n");
-			return -1;
-		}
+	if (!cksum_golden)
+		return 0;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (ret) {
+		DISPERR("Fail to create cmdq handle\n");
+		return -1;
 	}
 	if (!cksum_slot) {
 		ret = cmdqBackupAllocateSlot(&cksum_slot, 1);
@@ -453,8 +454,12 @@ static int __maybe_unused check_dsi_checksum(void)
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 	cmdqRecBackupRegisterToSlot(handle, cksum_slot, 0, disp_addr_convert(DISPSYS_DSI0_BASE + 0x144));
 	cmdqRecFlushAsyncCallback(handle, compare_dsi_checksum, 0);
+	cmdqRecDestroy(handle);
 	return 0;
 }
+
+/* mutex to prevent test being called in different adb shell process */
+DEFINE_MUTEX(basic_test_lock);
 
 static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 					int w, int h, enum DISP_FORMAT fmt, int frame_num,
@@ -477,17 +482,18 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 	ufmt = disp_fmt_to_unified_fmt(fmt);
 	Bpp = UFMT_GET_bpp(ufmt) / 8;
 	size = w * h * Bpp;
+	mutex_lock(&basic_test_lock);
 
 	DISPMSG("%s: layer_num=%u,en=0x%x,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
 		__func__, layer_num, layer_en_mask,
 		w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, (unsigned long)size);
 
 	if (layer_num > PRIMARY_SESSION_INPUT_LAYER_COUNT)
-		return -EINVAL;
+		goto out_unlock;
 
 	cfg = kmalloc(sizeof(*cfg), GFP_KERNEL);
 	if (!cfg)
-		return -ENOMEM;
+		goto out_unlock;
 
 	/* ======prepare buffer========= */
 	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {
@@ -576,6 +582,10 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 		release_test_buf(&buf_info[i]);
 	release_test_buf(&output_buf_info);
 	kfree(cfg);
+
+out_unlock:
+	mutex_unlock(&basic_test_lock);
+
 	return 0;
 }
 
