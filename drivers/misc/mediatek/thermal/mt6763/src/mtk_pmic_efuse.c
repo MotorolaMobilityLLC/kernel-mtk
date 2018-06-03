@@ -116,7 +116,7 @@ void mtktspmic_cali_prepare2(void)
 	__s32 vbe_t;
 	int factor;
 
-	factor = 1720;
+	factor = 1681;
 
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
