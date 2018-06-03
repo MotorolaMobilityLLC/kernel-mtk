@@ -1778,6 +1778,12 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->prScanRequest = NULL;
 	prGlueInfo->puScanChannel = NULL;
 
+	/*Full2Partial*/
+	/*init update full scan to partial scan varable*/
+	prGlueInfo->u4LastFullScanTime = 0;
+	prGlueInfo->ucTrScanType = 0;
+	kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+	prGlueInfo->puFullScan2PartialChannel = NULL;
 #if CFG_SUPPORT_HOTSPOT_2_0
 	/* Init DAD */
 	prGlueInfo->fgIsDad = FALSE;

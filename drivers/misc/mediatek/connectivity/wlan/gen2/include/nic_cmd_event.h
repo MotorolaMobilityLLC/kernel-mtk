@@ -128,6 +128,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
 #endif
 	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
+	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -1529,6 +1530,12 @@ typedef struct _WIFI_SYSTEM_SUSPEND_CMD_T {
 typedef struct _CMD_ID_SET_ROAMING_SKIP_T {
 	BOOLEAN IsRoamingSkipOneAp;
 } CMD_ID_SET_ROAMING_SKIP_T, *P_CMD_ID_SET_ROAMING_SKIP_T;
+
+struct CMD_TDLS_PS_T {
+	UINT_8	ucIsEnablePs; /* 0: disable tdls power save; 1: enable tdls power save */
+	UINT_8	aucReserved[3];
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
