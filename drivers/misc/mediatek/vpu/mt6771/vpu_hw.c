@@ -31,7 +31,6 @@
 #endif
 #include <mtk_vcorefs_manager.h>
 
-
 #ifdef MTK_VPU_DVT
 #define VPU_TRACE_ENABLED
 #endif
@@ -42,6 +41,13 @@
 #include "vpu_cmn.h"
 #include "vpu_algo.h"
 #include "vpu_dbg.h"
+
+/* MET: define to enable MET */
+/* #define VPU_MET_READY */
+#if defined(VPU_MET_READY)
+#define CREATE_TRACE_POINTS
+#include "met_vpusys_events.h"
+#endif
 
 #define CMD_WAIT_TIME_MS    (3 * 1000)
 #define OPP_WAIT_TIME_MS    (30)
@@ -221,6 +227,65 @@ static inline void unlock_command(int core)
 	mutex_unlock(&(vpu_service_cores[core].cmd_mutex));
 }
 
+static inline int Map_DSP_Freq_Table(int freq_opp)
+{
+	int freq_value = 0;
+
+	switch (freq_opp) {
+	case 0:
+	default:
+		freq_value = 525;
+		break;
+	case 1:
+		freq_value = 450;
+		break;
+	case 2:
+		freq_value = 416;
+		break;
+	case 3:
+		freq_value = 364;
+		break;
+	case 4:
+		freq_value = 312;
+		break;
+	case 5:
+		freq_value = 273;
+		break;
+	case 6:
+		freq_value = 208;
+		break;
+	case 7:
+		freq_value = 182;
+		break;
+	}
+
+	return freq_value;
+}
+
+/*******************************************************************************
+* Add MET ftrace event for power profilling.
+********************************************************************************/
+#if defined(VPU_MET_READY)
+void MET_Events_Trace(bool enter, int core, int algo_id)
+{
+	int vcore_opp = 0;
+	int dsp_freq = 0, ipu_if_freq = 0, dsp1_freq = 0, dsp2_freq = 0;
+
+	if (enter) {
+		mutex_lock(&opp_mutex);
+		vcore_opp = opps.vcore.index;
+		dsp_freq = Map_DSP_Freq_Table(opps.dsp.index);
+		ipu_if_freq = Map_DSP_Freq_Table(opps.ipu_if.index);
+		dsp1_freq = Map_DSP_Freq_Table(opps.dspcore[0].index);
+		dsp2_freq = Map_DSP_Freq_Table(opps.dspcore[1].index);
+		mutex_unlock(&opp_mutex);
+		trace_VPU__D2D_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+	} else {
+		trace_VPU__D2D_leave(core, algo_id, 0);
+	}
+}
+#endif
+
 static inline bool vpu_core_idle_check(void)
 {
 	int i = 0;
@@ -324,66 +389,11 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 	bool freq_check = false;
 	int log_freq = 0, log_max_freq = 0;
 
-	switch (freq_value) {
-	case 0:
-	default:
-		log_freq = 525;
-		break;
-	case 1:
-		log_freq = 450;
-		break;
-	case 2:
-		log_freq = 416;
-		break;
-	case 3:
-		log_freq = 364;
-		break;
-	case 4:
-		log_freq = 312;
-		break;
-	case 5:
-		log_freq = 273;
-		break;
-	case 6:
-		log_freq = 208;
-		break;
-	case 7:
-		log_freq = 182;
-		break;
-	}
-
+	log_freq = Map_DSP_Freq_Table(freq_value);
 	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_value, freq_value, opps.vcore.index);
 
 	mutex_lock(&opp_mutex);
-
-	switch (max_dsp_freq) {
-	case 0:
-	default:
-		log_max_freq = 525;
-		break;
-	case 1:
-		log_max_freq = 450;
-		break;
-	case 2:
-		log_max_freq = 416;
-		break;
-	case 3:
-		log_max_freq = 364;
-		break;
-	case 4:
-		log_max_freq = 312;
-		break;
-	case 5:
-		log_max_freq = 273;
-		break;
-	case 6:
-		log_max_freq = 208;
-		break;
-	case 7:
-		log_max_freq = 182;
-		break;
-	}
-
+	log_max_freq = Map_DSP_Freq_Table(max_dsp_freq);
 	/* vcore opp */
 	if (vcore_value == 0xFF) {
 		LOG_DBG("no request, vcore opp(%d)", vcore_value);
@@ -1973,6 +1983,9 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	#endif
 	vpu_trace_begin("dsp:running");
 	LOG_DBG("[vpu] vpu_hw_enque_request running... ");
+	#if defined(VPU_MET_READY)
+	MET_Events_Trace(1, core, request->algo_id[core]);
+	#endif
 	vpu_write_field(core, FLD_RUN_STALL, 0);      /* RUN_STALL pull down */
 	vpu_write_field(core, FLD_CTL_INT, 1);
 
@@ -1983,6 +1996,9 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	pm_qos_update_request(&vpu_qos_request, 0);
 	#endif
 	vpu_trace_end();
+	#if defined(VPU_MET_READY)
+	MET_Events_Trace(0, core, request->algo_id[core]);
+	#endif
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
 		vpu_dump_buffer_mva(request);
