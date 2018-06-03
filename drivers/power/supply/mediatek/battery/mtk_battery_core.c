@@ -3517,13 +3517,6 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_cust_data.vbat2_det_time * 1000,
 			fg_cust_data.vbat2_det_counter);
 
-			pmic_register_interrupt_callback(
-				INT_VBATON_UNDET,
-				fg_bat_plugout_int_handler);
-			pmic_enable_interrupt(
-				INT_VBATON_UNDET,
-				1,
-				"VBATON_UNDET");
 		}
 	}
 
