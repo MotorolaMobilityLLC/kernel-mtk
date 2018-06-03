@@ -123,7 +123,8 @@ static size_t scp_A_get_last_log(size_t b_len)
 		return 0;
 	}
 
-	/*TODO: SCP keep awake */
+	/*SCP keep awake */
+	scp_awake_lock(SCP_A_ID);
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_start_addr_last));
 	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_end_addr_last));
@@ -157,7 +158,8 @@ static size_t scp_A_get_last_log(size_t b_len)
 	}
 	scp_A_last_log[ret] = '\0';
 
-	/*TODO: SCP release awake */
+	/*SCP release awake */
+	scp_awake_unlock(SCP_A_ID);
 	vfree(pre_scp_last_log_buf);
 	return ret;
 }
@@ -503,8 +505,10 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	scp_A_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
 
 	/* setting dram ctrl config to scp*/
-	/*TODO : get scp waklock to write scp sram*/
+	/*get scp waklock to write scp sram*/
+	scp_awake_lock(SCP_A_ID);
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + scp_A_log_dram_addr_last));
+	scp_awake_unlock(SCP_A_ID);
 	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
 	/*
 	 *send ipi to invoke scp logger
@@ -551,7 +555,8 @@ static size_t scp_B_get_last_log(size_t b_len)
 		return 0;
 	}
 
-	/*TODO: SCP keep awake */
+	/*SCP keep awake */
+	scp_awake_lock(SCP_B_ID);
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_B_log_start_addr_last));
 	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_B_log_end_addr_last));
@@ -585,7 +590,8 @@ static size_t scp_B_get_last_log(size_t b_len)
 	}
 	scp_B_last_log[ret] = '\0';
 
-	/*TODO: SCP release awake */
+	/*SCP release awake */
+	scp_awake_unlock(SCP_B_ID);
 	vfree(pre_scp_last_log_buf);
 	return ret;
 }
@@ -928,8 +934,10 @@ static void scp_B_logger_init_handler(int id, void *data, unsigned int len)
 	scp_B_log_buf_maxlen_last = log_info->scp_log_buf_maxlen;
 
 	/* setting dram ctrl config to scp*/
-	/*TODO : get scp waklock to write scp sram*/
+	/*get scp waklock to write scp sram*/
+	scp_awake_lock(SCP_B_ID);
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_B_LOGGER_MEM_ID), (SCP_TCM + scp_B_log_dram_addr_last));
+	scp_awake_unlock(SCP_B_ID);
 	spin_unlock_irqrestore(&scp_B_log_buf_spinlock, flags);
 	/*
 	 *send ipi to invoke scp logger
@@ -1076,6 +1084,18 @@ const struct file_operations scp_B_log_file_ops = {
 	.poll = scp_B_log_if_poll,
 };
 
+/*
+ * get log from scp and optionally save it
+ * NOTE: this function may be blocked
+ * @param scp_core_id:  fill scp id to get last log
+ */
+void scp_get_log(scp_core_id scp_id)
+{
+	pr_debug("[SCP] %s\n", __func__);
+	/*todo: move last log to dram*/
+	scp_A_get_last_log(SCP_AED_STR_LEN - 200);
+	scp_B_get_last_log(SCP_AED_STR_LEN - 200);
+}
 
 /*
  * return scp last log

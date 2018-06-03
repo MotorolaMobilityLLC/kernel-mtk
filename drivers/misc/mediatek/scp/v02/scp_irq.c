@@ -60,7 +60,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 	SCP_A_TO_HOST_REG = reg;
 
 	if (reboot)
-		scp_aed_reset(reset_type);
+		scp_aed_reset(reset_type, SCP_A_ID);
 
 	return IRQ_HANDLED;
 }
@@ -113,7 +113,7 @@ irqreturn_t scp_B_irq_handler(int irq, void *dev_id)
 	SCP_B_TO_HOST_REG = reg;
 
 	if (reboot)
-		scp_aed_reset(reset_type);
+		scp_aed_reset(reset_type, SCP_B_ID);
 
 	return IRQ_HANDLED;
 }
