@@ -6143,6 +6143,13 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	/* Workaroud!!!!!!*/
+	/* disable sw rc, when decouple mirror */
+	if (primary_display_is_mirror_mode())
+		disp_helper_set_option(DISP_OPT_ROUND_CORNER, 0);
+	else
+		disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
+
 	if (lcm_corner_en) {
 		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER))
 			add_round_corner_layers(data_config,
