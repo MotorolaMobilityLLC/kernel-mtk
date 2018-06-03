@@ -89,6 +89,7 @@ typedef enum __VENC_DRV_VIDEO_FORMAT_T {
 	VENC_DRV_VIDEO_FORMAT_JPEG,                 /* /< JPEG picture format */
 	VENC_DRV_VIDEO_FORMAT_HEVC,                 /* /< HEVC video format */
 	VENC_DRV_VIDEO_FORMAT_H264SEC,              /* /<: Secure H.264 */
+	VENC_DRV_VIDEO_FORMAT_VP9,                  /* /< VP9 video format */
 	VENC_DRV_VIDEO_FORMAT_MAX = 0xFFFFFFFF      /* /< Max VENC_DRV_VIDEO_FORMAT_T value */
 } VENC_DRV_VIDEO_FORMAT_T;
 
@@ -346,7 +347,7 @@ typedef enum __VENC_DRV_SET_TYPE_T {
 	VENC_DRV_SET_TYPE_ADJUST_BITRATE,       /* /< Set to adjust bitrate */
 	VENC_DRV_SET_TYPE_I_FRAME_INTERVAL,     /* /< Set I Frame interval */
 	VENC_DRV_SET_TYPE_WFD_MODE,             /* /< Set Wifi-Display Mode */
-	VENC_DRV_SET_TYPE_RECORD_SIZE,          /* /< Ser record size */
+	VENC_DRV_SET_TYPE_RECORD_SIZE,          /* /< Set record size */
 	VENC_DRV_SET_TYPE_USE_MCI_BUF,          /* /< Set to use MCI buffer */
 	VENC_DRV_SET_TYPE_ADJUST_FRAMERATE,     /* /< Set frame rate */
 	VENC_DRV_SET_TYPE_INIT_QP,              /* /< Set init QP */
@@ -368,6 +369,7 @@ typedef enum __VENC_DRV_SET_TYPE_T {
 
 	VENC_DRV_SET_TYPE_NONREFP,              /* /< Set Enable/Disable Non reference P frame */
 	VENC_DRV_SET_TYPE_CONFIG_QP,            /* /< Set init QP */
+	VENC_DRV_SET_TYPE_IMAGE_SIZE,           /* /< Set image size */
 	VENC_DRV_SET_TYPE_MAX = 0xFFFFFFFF      /* /< Max VENC_DRV_SET_TYPE_T value */
 } VENC_DRV_SET_TYPE_T;
 
