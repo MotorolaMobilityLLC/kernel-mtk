@@ -35,7 +35,7 @@ do {\
 			break; \
 	}   \
 	if (timeout == 0) { \
-		STAR_MSG(STAR_ERR, "polling timeout in %s\n",  __func__); \
+		STAR_PR_INFO("polling timeout in %s\n",  __func__); \
 	} \
 } while (0)
 #endif

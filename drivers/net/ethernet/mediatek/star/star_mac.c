@@ -96,7 +96,7 @@ int star_dma_init(star_dev *dev, uintptr_t desc_viraddr,
 	int i;
 	void __iomem *base = dev->base;
 
-	STAR_MSG(STAR_VERB, "%s virAddr=0x%lx\n", __func__, desc_viraddr);
+	STAR_PR_DEBUG("%s virAddr=0x%lx\n", __func__, desc_viraddr);
 	dev->tx_ring_size = TX_DESC_NUM;
 	dev->rx_ring_size = RX_DESC_NUM;
 
@@ -301,7 +301,7 @@ int star_mac_init(star_dev *dev, u8 mac_addr[6])
 {
 	void __iomem *base = dev->base;
 
-	STAR_MSG(STAR_VERB, "MAC Initialization\n");
+	STAR_PR_DEBUG("MAC Initialization\n");
 
 	/* Set Mac Address */
 	star_set_reg(star_my_mac_h(base),
@@ -380,7 +380,7 @@ int star_phyctrl_init(star_dev *dev, u32 enable, u32 phy_addr)
 	STAR_PHY_CTRL1_FORCESPD_100M |
 	STAR_PHY_CTRL1_ANEN;
 
-	STAR_MSG(STAR_VERB, "PHY Control Initialization\n");
+	STAR_PR_DEBUG("PHY Control Initialization\n");
 	/* Enable/Disable PHY auto-polling */
 	if (enable)
 		star_set_reg(STAR_PHY_CTRL1(base),
@@ -434,17 +434,17 @@ void star_link_status_change(star_dev *dev)
 	val = star_get_reg(STAR_PHY_CTRL1(dev->base));
 	if (dev->link_up != ((val & STAR_PHY_CTRL1_STA_LINK) ? 1UL : 0UL)) {
 		dev->link_up = (val & STAR_PHY_CTRL1_STA_LINK) ? 1UL : 0UL;
-		STAR_MSG(STAR_WARN, "Link status: %s\n",
-			 dev->link_up ? "Up" : "Down");
+		STAR_PR_INFO("Link status: %s\n",
+			     dev->link_up ? "Up" : "Down");
 		if (dev->link_up) {
 			speed = ((val >> STAR_PHY_CTRL1_STA_SPD_OFFSET) &
 				STAR_PHY_CTRL1_STA_SPD_MASK);
-			STAR_MSG(STAR_WARN, "%s Duplex - %s Mbps mode\n",
-				 (val & STAR_PHY_CTRL1_STA_FULL) ?
-				"Full" : "Half",
-				!speed ? "10" : (speed == 1 ? "100" :
-				(speed == 2 ? "1000" : "unknown")));
-			STAR_MSG(STAR_WARN,
+			STAR_PR_INFO("%s Duplex - %s Mbps mode\n",
+				     (val & STAR_PHY_CTRL1_STA_FULL) ?
+				     "Full" : "Half",
+				     !speed ? "10" : (speed == 1 ? "100" :
+				     (speed == 2 ? "1000" : "unknown")));
+			STAR_PR_INFO(
 				 "TX flow control:%s, RX flow control:%s\n",
 				(val & STAR_PHY_CTRL1_STA_TXFC) ? "On" : "Off",
 				(val & STAR_PHY_CTRL1_STA_RXFC) ? "On" : "Off");
@@ -477,8 +477,8 @@ void star_nic_pdset(star_dev *dev, bool flag)
 			}
 		} while (retry++ < MAX_NICPDRDY_RETRY);
 		if (retry >= MAX_NICPDRDY_RETRY)
-			STAR_MSG(STAR_ERR, "timeout MAX_NICPDRDY_RETRY(%d)\n",
-				 MAX_NICPDRDY_RETRY);
+			STAR_PR_ERR("timeout MAX_NICPDRDY_RETRY(%d)\n",
+				    MAX_NICPDRDY_RETRY);
 	} else {
 		data &= ~STAR_MAC_CFG_NICPD;
 		star_set_reg(STAR_MAC_CFG(dev->base), data);
@@ -487,8 +487,8 @@ void star_nic_pdset(star_dev *dev, bool flag)
 
 void star_config_wol(star_dev *star_dev, bool enable)
 {
-	STAR_MSG(STAR_DBG, "[%s]%s wol\n", __func__,
-		 enable ? "enable" : "disable");
+	STAR_PR_INFO("[%s]%s wol\n", __func__,
+		     enable ? "enable" : "disable");
 	if (enable) {
 		star_set_reg(star_int_sta(star_dev->base),
 			     star_get_reg(star_int_sta(star_dev->base)));
