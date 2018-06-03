@@ -32,6 +32,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/vmalloc.h>
+#include <mt-plat/mrdump.h>
 #include <mrdump_private.h>
 
 static struct aee_kernel_api *g_aee_api;
