@@ -91,18 +91,20 @@ static int md1_section_level_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
 
 static int md1_scenario_pwr[POWER_CATEGORY_NUM][SCENARIO_NUM] = {
 				{MAX_PW_STANDBY,
+				 MAX_PW_4G_DL_1CC,
 				 MAX_PW_2G_CONNECT,
 				 MAX_PW_3G_C2K_TALKING,
 				 MAX_PW_3G_4G_C2K_PAGING,
 				 MAX_PW_3G_C2K_DATALINK,
-				 MAX_PW_4G_DL_1CC,
+				 MAX_PW_C2K_SHDR,
 				 MAX_PW_4G_DL_2CC},
 				{AVG_PW_STANDBY,
+				 AVG_PW_4G_DL_1CC,
 				 AVG_PW_2G_CONNECT,
 				 AVG_PW_3G_C2K_TALKING,
 				 AVG_PW_3G_4G_C2K_PAGING,
 				 AVG_PW_3G_C2K_DATALINK,
-				 AVG_PW_4G_DL_1CC,
+				 AVG_PW_C2K_SHDR,
 				 AVG_PW_4G_DL_2CC}
 				};
 
@@ -292,6 +294,16 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 		},
 	},
 
+	[S_4G_DL_1CC] = {
+		.scenario_power = {
+			MAX_PW_4G_DL_1CC,
+			AVG_PW_4G_DL_1CC},
+		.dbm_power_func = {
+			get_md1_4g_dbm_power,
+			NULL, NULL, NULL
+		},
+	},
+
 	[S_2G_CONNECT] = {
 		.scenario_power = {
 			MAX_PW_2G_CONNECT,
@@ -338,12 +350,12 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 		},
 	},
 
-	[S_4G_DL_1CC] = {
+	[S_C2K_SHDR] = {
 		.scenario_power = {
-			MAX_PW_4G_DL_1CC,
-			AVG_PW_4G_DL_1CC},
+			MAX_PW_C2K_SHDR,
+			AVG_PW_C2K_SHDR},
 		.dbm_power_func = {
-			get_md1_4g_dbm_power,
+			get_md1_c2k_dbm_power,
 			NULL, NULL, NULL
 		},
 	},
@@ -435,8 +447,13 @@ static int is_scenario_hit(u32 share_reg, unsigned int scenario)
 
 	switch (scenario) {
 	case S_STANDBY:
-		/* if bit 15 and bit 1 to 7 are not asserted */
-		if ((share_reg & _BITMASK_(7:1)) == 0)
+		/* if bit 15 and bit 0 to 7 are not asserted */
+		if ((share_reg & _BITMASK_(7:0)) == 0)
+			hit = 1;
+		break;
+	case S_4G_DL_1CC:
+		/* if bit 5 is asserted */
+		if ((share_reg & _BIT_(0)) != 0)
 			hit = 1;
 		break;
 	case S_2G_CONNECT:
@@ -459,7 +476,7 @@ static int is_scenario_hit(u32 share_reg, unsigned int scenario)
 		if ((share_reg & _BIT_(4)) != 0)
 			hit = 1;
 		break;
-	case S_4G_DL_1CC:
+	case S_C2K_SHDR:
 		/* if bit 5 is asserted */
 		if ((share_reg & _BIT_(5)) != 0)
 			hit = 1;

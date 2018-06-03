@@ -43,11 +43,12 @@ enum section_level_tbl {
 
 enum md1_scenario {
 	S_STANDBY = 0,
+	S_4G_DL_1CC,
 	S_2G_CONNECT,
 	S_3G_C2K_TALKING,
 	S_3G_4G_C2K_PAGING,
 	S_3G_C2K_DATALINK,
-	S_4G_DL_1CC,
+	S_C2K_SHDR,
 	S_4G_DL_2CC,
 	SCENARIO_NUM
 };
@@ -162,21 +163,23 @@ enum md1_section_level_tbl_c2k {
 
 enum md1_scenario_max_pwr_tbl {
 	MAX_PW_STANDBY = 1,
+	MAX_PW_4G_DL_1CC = 210,
 	MAX_PW_2G_CONNECT = 36,
 	MAX_PW_3G_C2K_TALKING = 78,
 	MAX_PW_3G_4G_C2K_PAGING = 2,
 	MAX_PW_3G_C2K_DATALINK = 190,
-	MAX_PW_4G_DL_1CC = 210,
+	MAX_PW_C2K_SHDR = 27,
 	MAX_PW_4G_DL_2CC = 342
 };
 
 enum md1_scenario_avg_pwr_tbl {
 	AVG_PW_STANDBY = 1,
+	AVG_PW_4G_DL_1CC = 210,
 	AVG_PW_2G_CONNECT = 36,
 	AVG_PW_3G_C2K_TALKING = 78,
 	AVG_PW_3G_4G_C2K_PAGING = 2,
 	AVG_PW_3G_C2K_DATALINK = 190,
-	AVG_PW_4G_DL_1CC = 210,
+	AVG_PW_C2K_SHDR = 27,
 	AVG_PW_4G_DL_2CC = 342
 };
 
