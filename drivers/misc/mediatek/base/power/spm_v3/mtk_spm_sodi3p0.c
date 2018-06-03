@@ -20,8 +20,8 @@
 #include <mt-plat/mtk_secure_api.h>
 
 /* #include <mach/irqs.h> */
-#include <mach/mtk_gpt.h>
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if defined(CONFIG_WATCHDOG) && defined(CONFIG_MTK_WATCHDOG) && \
+	defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
 
@@ -51,11 +51,14 @@
 #include <sspm_timesync.h>
 #endif
 
+#include <trace/events/mtk_idle_event.h>
+
 /**************************************
  * only for internal debug
  **************************************/
 #define PCM_SEC_TO_TICK(sec)	(sec * 32768)
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6775)
 #define SPM_PCMWDT_EN		(0)
 #else
 #define SPM_PCMWDT_EN		(1)
@@ -232,7 +235,8 @@ static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operatio
 
 static void spm_sodi3_setup_wdt(struct pwr_ctrl *pwrctrl, void **api)
 {
-#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if SPM_PCMWDT_EN && defined(CONFIG_WATCHDOG) && \
+	defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	struct wd_api *wd_api = NULL;
 
 	if (!get_wd_api(&wd_api)) {
@@ -252,7 +256,8 @@ static void spm_sodi3_setup_wdt(struct pwr_ctrl *pwrctrl, void **api)
 
 static void spm_sodi3_resume_wdt(struct pwr_ctrl *pwrctrl, void *api)
 {
-#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if SPM_PCMWDT_EN && defined(CONFIG_WATCHDOG) && \
+	defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	struct wd_api *wd_api = (struct wd_api *)api;
 
 	if (!pwrctrl->wdt_disable && wd_api != NULL) {
@@ -353,7 +358,7 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -368,11 +373,19 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
 
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+	trace_sodi3_rcuidle(cpu, 1);
+#endif
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+	trace_sodi3_rcuidle(cpu, 0);
+#endif
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
 		request_uart_to_wakeup();
 RESTORE_IRQ:

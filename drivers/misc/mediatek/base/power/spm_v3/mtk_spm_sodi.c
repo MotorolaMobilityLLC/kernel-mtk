@@ -26,8 +26,6 @@
 #endif
 
 /* #include <mach/irqs.h> */
-#include <mach/mtk_gpt.h>
-
 #include <mt-plat/mtk_boot.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
@@ -45,6 +43,8 @@
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 #include <mtk_hps_internal.h>
 #endif
+
+#include <trace/events/mtk_idle_event.h>
 
 /**************************************
  * only for internal debug
@@ -64,12 +64,9 @@ struct spm_lp_scen __spm_sodi = {
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
-static int by_md2ap_count;
 static unsigned long int sodi_logout_prev_time;
 static int pre_emi_refresh_cnt;
-static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
-static unsigned int logout_selfrefresh_cnt;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
@@ -232,6 +229,7 @@ static inline bool spm_sodi_assert(struct wake_status *wakesta)
 
 static bool spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_time)
 {
+	static int by_md2ap_count;
 	bool logout = false;
 
 	if ((wakesta->r12 & R12_APXGPT1_EVENT_B) == 0) {
@@ -269,6 +267,8 @@ static inline bool spm_sodi_last_logout(long int curr_time)
 	return (curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA;
 }
 
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
 static inline bool spm_sodi_memPllCG(void)
 {
 	return ((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
@@ -277,6 +277,7 @@ static inline bool spm_sodi_memPllCG(void)
 
 static bool spm_sodi_mem_mode_change(void)
 {
+	static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 	bool logout = false;
 	int mem_status = 0;
 
@@ -290,11 +291,12 @@ static bool spm_sodi_mem_mode_change(void)
 	}
 	return logout;
 }
-
+#endif
 
 unsigned int spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
+	static unsigned int logout_selfrefresh_cnt;
 	unsigned int wr = WR_NONE;
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
@@ -307,9 +309,17 @@ unsigned int spm_sodi_output_log(
 
 	if (!(flags & SODI_FLAG_REDUCE_LOG) ||
 			(flags & SODI_FLAG_RESIDENCY)) {
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
 		so_pr_notice(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, oper_cond = 0x%0x\n",
-				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-				spm_read(DUMMY1_PWR_CON), operation_cond);
+			spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+			spm_read(DUMMY1_PWR_CON), operation_cond);
+#else
+		so_pr_notice(flags, "self_refresh = 0x%x, sw_flag = 0x%x, oper_cond = 0x%0x\n",
+			spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+			operation_cond);
+#endif
+
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, (flags&SODI_FLAG_3P0) ? "sodi3" : "sodi");
 		if (flags & SODI_FLAG_RESOURCE_USAGE)
 			spm_resource_req_dump();
@@ -326,9 +336,11 @@ unsigned int spm_sodi_output_log(
 			need_log_out = SODI_LOGOUT_EMI_STATE_CHANGE;
 		else if (spm_sodi_last_logout(sodi_logout_curr_time))
 			need_log_out = SODI_LOGOUT_LONG_INTERVAL;
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
 		else if (spm_sodi_mem_mode_change())
 			need_log_out = SODI_LOGOUT_CG_PD_STATE_CHANGE;
-
+#endif
 		logout_sodi_cnt++;
 		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
 		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
@@ -338,18 +350,29 @@ unsigned int spm_sodi_output_log(
 
 			if (need_log_out == SODI_LOGOUT_ASSERT) {
 				if (wakesta->assert_pc != 0) {
-					so_pr_err(flags, "Warning: wakeup reason is WR_PCM_ASSERT!\n");
+					so_pr_notice(flags, "Warning: wakeup reason is WR_PCM_ASSERT!\n");
 					wr = WR_PCM_ASSERT;
 				} else if (wakesta->r12 == 0) {
-					so_pr_err(flags, "Warning: wakeup reason is WR_UNKNOWN!\n");
+					so_pr_notice(flags, "Warning: wakeup reason is WR_UNKNOWN!\n");
 					wr = WR_UNKNOWN;
 				}
-				so_pr_err(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
-						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt,
-						logout_selfrefresh_cnt, wakesta->assert_pc, wakesta->r13,
-						wakesta->debug_flag, wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
-						wakesta->idle_sta, wakesta->event_reg, wakesta->isr);
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
+				so_pr_notice(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
+					spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+					spm_read(DUMMY1_PWR_CON), logout_sodi_cnt,
+					logout_selfrefresh_cnt, wakesta->assert_pc, wakesta->r13,
+					wakesta->debug_flag, wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+					wakesta->idle_sta, wakesta->event_reg, wakesta->isr);
+#else
+				so_pr_notice(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
+					spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+					logout_sodi_cnt,
+					logout_selfrefresh_cnt, wakesta->assert_pc, wakesta->r13,
+					wakesta->debug_flag, wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+					wakesta->idle_sta, wakesta->event_reg, wakesta->isr);
+#endif
+
 				wr = WR_PCM_ASSERT;
 			} else {
 				char buf[LOG_BUF_SIZE] = { 0 };
@@ -373,13 +396,24 @@ unsigned int spm_sodi_output_log(
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758)
 				so_pr_notice(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, res_usage = 0x%x, op_cond = 0x%x, %d\n",
-						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt, logout_selfrefresh_cnt,
-						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
-						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
-						wakesta->idle_sta, wakesta->event_reg, wakesta->isr,
-						spm_get_resource_usage(), operation_cond, need_log_out);
+					buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+					spm_read(DUMMY1_PWR_CON), logout_sodi_cnt, logout_selfrefresh_cnt,
+					wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+					wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+					wakesta->idle_sta, wakesta->event_reg, wakesta->isr,
+					spm_get_resource_usage(), operation_cond, need_log_out);
+#else
+				so_pr_notice(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, res_usage = 0x%x, op_cond = 0x%x, %d\n",
+					buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+					logout_sodi_cnt, logout_selfrefresh_cnt,
+					wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+					wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+					wakesta->idle_sta, wakesta->event_reg, wakesta->isr,
+					spm_get_resource_usage(), operation_cond, need_log_out);
+#endif
 			}
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;
@@ -453,7 +487,7 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 ope
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -468,11 +502,19 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 ope
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
 
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+	trace_sodi_rcuidle(cpu, 1);
+#endif
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+	trace_sodi_rcuidle(cpu, 0);
+#endif
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS))
 		request_uart_to_wakeup();
 RESTORE_IRQ:

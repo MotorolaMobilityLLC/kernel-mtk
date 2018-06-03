@@ -715,7 +715,6 @@ void spm_set_dummy_read_addr(int debug);
 extern int spm_fs_init(void);
 
 extern int spm_golden_setting_cmp(bool en);
-extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
 
 extern int get_channel_lock(bool blocking);

@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 #include <linux/kernel.h>
-#include <mach/mtk_gpt.h>
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
 #include "mtk_idle_profile.h"

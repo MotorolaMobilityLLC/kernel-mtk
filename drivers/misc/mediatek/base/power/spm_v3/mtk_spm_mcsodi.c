@@ -128,8 +128,10 @@ void spm_go_to_mcsodi(u32 spm_flags, u32 cpu, u32 mcsodi_flags, u32 operation_co
 
 	spm_mcsodi_footprint(SPM_MCSODI_ENTER);
 
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (request_uart_to_sleep())
 		goto mcsodi_abort;
+#endif
 
 	spm_mcsodi_footprint(SPM_MCSODI_SPM_FLOW);
 
@@ -165,7 +167,9 @@ int spm_leave_mcsodi(u32 cpu, u32 operation_cond)
 	}
 
 	spm_mcsodi_footprint(SPM_MCSODI_LEAVE_WFI);
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	request_uart_to_wakeup();
+#endif
 	__spm_get_wakeup_status(&wakesta);
 	spm_mcsodi_pcm_setup_after_wfi(operation_cond);
 

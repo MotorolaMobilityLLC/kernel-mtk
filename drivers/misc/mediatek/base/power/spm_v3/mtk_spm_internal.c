@@ -175,6 +175,9 @@ const char *wakesrc_str[32] = {
 int __spm_check_opp_level_impl(int ch)
 {
 	int opp = 0;
+
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
+
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	opp = scp_get_dvfs_opp();
@@ -193,6 +196,8 @@ int __spm_check_opp_level_impl(int ch)
 #else
 	opp = vcorefs_get_sw_opp();
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
+#endif
+
 #endif
 	return opp;
 }
@@ -341,7 +346,7 @@ do {						\
 
 void rekick_vcorefs_scenario(void)
 {
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799)
 	int flag;
 
 	if (spm_read(PCM_REG15_DATA) == 0x0) {
@@ -457,26 +462,6 @@ void spm_set_dummy_read_addr(int debug)
 				enable_4G(), rank0_addr, rank1_addr);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
-}
-
-void __spm_set_pcm_wdt(int en)
-{
-	/* enable PCM WDT (normal mode) to start count if needed */
-	if (en) {
-		u32 con1;
-
-		con1 = spm_read(PCM_CON1) & ~(RG_PCM_WDT_WAKE_LSB);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | con1);
-
-		if (spm_read(PCM_TIMER_VAL) > PCM_TIMER_MAX)
-			spm_write(PCM_TIMER_VAL, PCM_TIMER_MAX);
-		spm_write(PCM_WDT_VAL, spm_read(PCM_TIMER_VAL) + PCM_WDT_TIMEOUT);
-		spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | RG_PCM_WDT_EN_LSB);
-	} else {
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) &
-		~RG_PCM_WDT_EN_LSB));
-	}
-
 }
 
 int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
