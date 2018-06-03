@@ -1318,6 +1318,10 @@ static unsigned char low_freq_counter;
 
 void zqcs_timer_callback(unsigned long data)
 {
+	unsigned char drs_status;
+	struct timespec time_start;
+	struct timespec time_end;
+	long time_interval;
 #ifdef SW_ZQCS
 	unsigned int Response, TimeCnt, CHCounter, RankCounter;
 	void __iomem *u4rg_24;
@@ -1332,6 +1336,12 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef SW_TX_TRACKING
 	tx_result res[2];
 #endif
+
+	if (disable_drs(&drs_status)) {
+		pr_err("[DRAMC] disable DRS fail\n");
+		return;
+	}
+	getnstimeofday(&time_start);
 
 #ifdef SW_ZQCS
 	local_irq_save(save_flags);
@@ -1428,6 +1438,7 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef SW_TX_TRACKING
 	res[0] = TX_DONE;
 	res[1] = TX_DONE;
+
 	udelay(3);
 	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))	{
 		local_irq_save(save_flags);
@@ -1460,7 +1471,13 @@ void zqcs_timer_callback(unsigned long data)
 		}
 #endif
 
-mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+
+	getnstimeofday(&time_end);
+	time_interval = (time_end.tv_nsec - time_start.tv_nsec) / 1000;
+	if (time_interval < 1000)
+		udelay(1000 - time_interval);
+	enable_drs(drs_status);
 
 #ifdef SW_TX_TRACKING
 	if (res[0] != TX_DONE)

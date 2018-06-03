@@ -93,8 +93,8 @@ extern void __iomem *mt_emi_base_get(void); /* legacy API */
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(int chn);
 extern void __iomem *mt_emi_mpu_base_get(void);
-extern void enable_drs(void);
-extern int disable_drs(void);
+extern void enable_drs(unsigned char enable);
+extern int disable_drs(unsigned char *backup);
 
 #endif  /* !__MT_EMI_BWL_H__ */
 

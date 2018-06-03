@@ -484,10 +484,16 @@ unsigned int mt_emi_mpu_irq_get(void)
 	return mpu_irq;
 }
 
-int disable_drs(void)
+int disable_drs(unsigned char *backup)
 {
 	int count;
 	unsigned int drs_status;
+
+	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL))
+		return -1;
+
+	*backup = (readl(IOMEM(CHA_EMI_DRS)) << 4) & 0x10;
+	*backup |= (readl(IOMEM(CHB_EMI_DRS)) & 0x01);
 
 	writel(readl(IOMEM(CHA_EMI_DRS)) & ~0x1, IOMEM(CHA_EMI_DRS));
 	writel(readl(IOMEM(CHB_EMI_DRS)) & ~0x1, IOMEM(CHB_EMI_DRS));
@@ -510,8 +516,13 @@ int disable_drs(void)
 	return 0;
 }
 
-void enable_drs(void)
+void enable_drs(unsigned char enable)
 {
-	writel(readl(IOMEM(CHA_EMI_DRS)) | 0x1, IOMEM(CHA_EMI_DRS));
-	writel(readl(IOMEM(CHB_EMI_DRS)) | 0x1, IOMEM(CHB_EMI_DRS));
+	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL))
+		return;
+
+	writel(readl(IOMEM(CHA_EMI_DRS)) | ((enable >> 4) & 0x1),
+		IOMEM(CHA_EMI_DRS));
+	writel(readl(IOMEM(CHB_EMI_DRS)) | (enable & 0x1),
+		IOMEM(CHB_EMI_DRS));
 }
