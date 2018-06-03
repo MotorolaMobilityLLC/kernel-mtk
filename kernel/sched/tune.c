@@ -901,6 +901,64 @@ schedtune_test_nrg(unsigned long delta_pwr)
 #define schedtune_test_nrg(delta_pwr)
 #endif
 
+void show_ste_info(void)
+{
+	struct target_nrg *ste = &schedtune_target_nrg;
+	int cluster_nr = arch_get_nr_clusters();
+	int i;
+
+	printk_deferred("STE: min=%lu max=%lu\n",
+			ste->max_power, ste->min_power);
+
+	for (i = 0; i < cluster_nr; i++) {
+		printk_deferred("STE: cid=%d max_dync=%lu max_stc=%lu\n",
+				i, ste->max_dyn_pwr[i], ste->max_stc_pwr[i]);
+	}
+}
+
+void show_pwr_info(void)
+{
+	struct cpumask cluster_cpus;
+	char str[32];
+	unsigned long dyn_pwr;
+	unsigned long stc_pwr;
+	const struct sched_group_energy *cluster_energy, *core_energy;
+	int cpu;
+	int cluster_id = 0;
+	int i = 0;
+	int cluster_first_cpu = 0;
+
+	/* Get num of all clusters */
+	cluster_id = arch_get_nr_clusters();
+	for (i = 0; i < cluster_id; i++) {
+		arch_get_cluster_cpus(&cluster_cpus, i);
+		cluster_first_cpu = cpumask_first(&cluster_cpus);
+
+		snprintf(str, 32, "CLUSTER[%*pbl]",
+				cpumask_pr_args(&cluster_cpus));
+
+		/* Get Cluster energy using EM data of first CPU in this cluster */
+		cluster_energy = cpu_cluster_energy(cluster_first_cpu);
+		dyn_pwr = cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].dyn_pwr;
+		stc_pwr = cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].lkg_pwr[0];
+		pr_info("pwr_tlb: %-17s dyn_pwr: %5lu stc_pwr: %5lu\n",
+				str, dyn_pwr, stc_pwr);
+
+		/* Get CPU energy using EM data for each CPU in this cluster */
+		for_each_cpu(cpu, &cluster_cpus) {
+			core_energy = cpu_core_energy(cpu);
+			dyn_pwr = core_energy->cap_states[core_energy->nr_cap_states - 1].dyn_pwr;
+			stc_pwr = core_energy->cap_states[core_energy->nr_cap_states - 1].lkg_pwr[0];
+
+			snprintf(str, 32, "CPU[%d]", cpu);
+			pr_info("pwr_tlb: %-17s dyn_pwr: %5lu stc_pwr: %5lu\n",
+					str, dyn_pwr, stc_pwr);
+		}
+	}
+
+}
+
+
 #ifndef CONFIG_MTK_ACAO
 /*
  * mtk: Because system only eight cores online when init, we compute
@@ -909,7 +967,7 @@ schedtune_test_nrg(unsigned long delta_pwr)
 static void
 schedtune_add_cluster_nrg_hotplug(struct target_nrg *ste, struct sched_group *sg)
 {
-	struct cpumask *cluster_cpus;
+	struct cpumask cluster_cpus;
 	char str[32];
 	unsigned long min_pwr;
 	unsigned long max_pwr;
@@ -919,21 +977,20 @@ schedtune_add_cluster_nrg_hotplug(struct target_nrg *ste, struct sched_group *sg
 	int i = 0;
 	int cluster_first_cpu = 0;
 
-	cluster_cpus = sched_group_cpus(sg);
-
 	/* Get num of all clusters */
 	cluster_id = arch_get_nr_clusters();
 	for (i = 0; i < cluster_id ; i++) {
-		arch_get_cluster_cpus(cluster_cpus, i);
-		cluster_first_cpu = cpumask_first(cluster_cpus);
+		arch_get_cluster_cpus(&cluster_cpus, i);
+		cluster_first_cpu = cpumask_first(&cluster_cpus);
 
 		snprintf(str, 32, "CLUSTER[%*pbl]",
-			cpumask_pr_args(cluster_cpus));
+			cpumask_pr_args(&cluster_cpus));
 
 		/* Get Cluster energy using EM data of first CPU in this cluster */
 		cluster_energy = cpu_cluster_energy(cluster_first_cpu);
 		min_pwr = cluster_energy->idle_states[cluster_energy->nr_idle_states - 1].power;
-		max_pwr = cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].dyn_pwr;
+		max_pwr = (cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].dyn_pwr +
+			   cluster_energy->cap_states[cluster_energy->nr_cap_states - 1].lkg_pwr[0]);
 		pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
 			str, min_pwr, max_pwr);
 
@@ -941,10 +998,14 @@ schedtune_add_cluster_nrg_hotplug(struct target_nrg *ste, struct sched_group *sg
 		ste->max_power += max_pwr;
 
 		/* Get CPU energy using EM data for each CPU in this cluster */
-		for_each_cpu(cpu, cluster_cpus) {
+		for_each_cpu(cpu, &cluster_cpus) {
 			core_energy = cpu_core_energy(cpu);
 			min_pwr = core_energy->idle_states[core_energy->nr_idle_states - 1].power;
-			max_pwr = core_energy->cap_states[core_energy->nr_cap_states - 1].dyn_pwr;
+			max_pwr = (core_energy->cap_states[core_energy->nr_cap_states - 1].dyn_pwr +
+				   core_energy->cap_states[core_energy->nr_cap_states - 1].lkg_pwr[0]);
+
+			ste->max_dyn_pwr[i] = core_energy->cap_states[core_energy->nr_cap_states - 1].dyn_pwr;
+			ste->max_stc_pwr[i] = core_energy->cap_states[core_energy->nr_cap_states - 1].lkg_pwr[0];
 
 			ste->min_power += min_pwr;
 			ste->max_power += max_pwr;
@@ -1035,12 +1096,17 @@ schedtune_init(void)
 {
 	struct target_nrg *ste = &schedtune_target_nrg;
 	unsigned long delta_pwr = 0;
+#ifndef CONFIG_MTK_ACAO
+	const struct sched_group_energy *sge_core;
+#else
 	struct sched_domain *sd;
 	struct sched_group *sg;
-
+#endif
 	pr_info("schedtune: init normalization constants...\n");
 	ste->max_power = 0;
 	ste->min_power = 0;
+	memset(ste->max_dyn_pwr, 0, sizeof(ste->max_dyn_pwr));
+	memset(ste->max_stc_pwr, 0, sizeof(ste->max_stc_pwr));
 
 	rcu_read_lock();
 
@@ -1048,7 +1114,18 @@ schedtune_init(void)
 	 * When EAS is in use, we always have a pointer to the highest SD
 	 * which provides EM data.
 	 */
+#ifndef CONFIG_MTK_ACAO
+	sge_core = cpu_core_energy(0); /* first CPU in system */
+
+	if (!sge_core) {
+		pr_info("schedtune: no energy model data\n");
+		goto nodata;
+	}
+
+	default_stune_threshold = sge_core->cap_states[0].cap;
+#else
 	sd = rcu_dereference(per_cpu(sd_ea, cpumask_first(cpu_online_mask)));
+
 	if (!sd) {
 		pr_info("schedtune: no energy model data\n");
 		goto nodata;
@@ -1057,11 +1134,12 @@ schedtune_init(void)
 	sg = sd->groups;
 
 	default_stune_threshold = sg->sge->cap_states[0].cap;
+#endif
 
 
 #ifndef CONFIG_MTK_ACAO
 	/* mtk: compute max_power & min_power of all possible cores, not only online cores. */
-	schedtune_add_cluster_nrg_hotplug(ste, sg);
+	schedtune_add_cluster_nrg_hotplug(ste, NULL);
 #else
 	do {
 		schedtune_add_cluster_nrg(sd, sg, ste);
