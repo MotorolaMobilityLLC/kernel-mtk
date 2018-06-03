@@ -688,9 +688,10 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int ctl_no = div64_s64(boost_value, 1000);
 
 	switch (ctl_no) {
+	case 4:
 	case 3:
 		/* dvfs floor */
-		boost_value -= 3000;
+		boost_value -= ctl_no * 1000;
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
 
@@ -752,13 +753,16 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 
 	for (i = 0; i < cpu_cluster_nr; i++)
 		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+
+	/* bypass change boost */
+	if (ctl_no == 4)
+		return 0;
 #endif
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
 	else
 		global_negative_flag = false;
-
 
 	sys_boosted = boost_value;
 
@@ -985,9 +989,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int ctl_no = div64_s64(boost, 1000);
 
 	switch (ctl_no) {
+	case 4:
 	case 3:
 		/* dvfs floor */
-		boost -= 3000;
+		boost -= ctl_no * 1000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
@@ -1046,6 +1051,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	for (i = 0; i < cpu_cluster_nr; i++)
 		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+
+	/* bypass change boost */
+	if (ctl_no == 4)
+		return 0;
 #endif
 
 	global_negative_flag = false;
