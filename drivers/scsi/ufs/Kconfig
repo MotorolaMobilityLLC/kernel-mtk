@@ -84,7 +84,7 @@ config SCSI_UFS_QCOM
 
 	  Select this if you have UFS controller on QCOM chipset.
 
-config MTK_UFS_BOOTING
+config MTK_UFS_SUPPORT
 	bool "Select UFS as default booting device on MTK platform"
 	depends on SCSI_UFSHCD_PLATFORM
 	default n
@@ -98,7 +98,7 @@ config MTK_UFS_BOOTING
 
 config MTK_UFS_BLOCK_IO_LOG
 	bool "UFS Block IO log"
-	depends on MTK_BLOCK_TAG && MTK_UFS_BOOTING
+	depends on MTK_BLOCK_TAG && MTK_UFS_SUPPORT
 	default y
 	---help---
 	  Enable IO trace for performance analysis and application access

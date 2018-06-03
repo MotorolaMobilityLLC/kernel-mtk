@@ -34,7 +34,7 @@
 #include <scsi/scsi_ioctl.h>
 #include <scsi/scsi_cmnd.h>
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 /*
  * MTK PATCH: Include UFS ioctl code definition.
  */
@@ -728,7 +728,7 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
 		 * not have partitions, so we get here only for disks.
 		 */
 		return -ENOIOCTLCMD;
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 	/*
 	 * MTK PATCH: bypass CAP_SYS_RAWIO checking for UFS ioctl facility.
 	 */

@@ -51,7 +51,7 @@
 #include "acl.h"
 #include "mballoc.h"
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #include "ufs-dbg.h"
 #else
 #define ufs_mtk_dbg_hang_detect_dump(...)
