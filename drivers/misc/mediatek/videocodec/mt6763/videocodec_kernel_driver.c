@@ -1146,6 +1146,8 @@ static long vcodec_waitisr(unsigned long arg)
 	VAL_ULONG_T ulFlags;
 	VAL_LONG_T ret;
 	VAL_RESULT_T eValRet;
+	VAL_UINT32_T u4TimeoutMs = 0;
+	VAL_UINT32_T u4CheckIntervalMs = 5;
 
 	MODULE_MFV_LOGD("VCODEC_WAITISR + tid = %d\n", current->pid);
 
@@ -1176,11 +1178,17 @@ static long vcodec_waitisr(unsigned long arg)
 			return -EFAULT;
 		}
 
-		spin_lock_irqsave(&DecIsrLock, ulFlags);
-		DecIsrEvent.u4TimeoutMs = val_isr.u4TimeoutMs;
-		spin_unlock_irqrestore(&DecIsrLock, ulFlags);
+		u4TimeoutMs = val_isr.u4TimeoutMs;
+		do {
+			ret = VDO_HW_READ(KVA_VDEC_MISC_BASE+41*4); /* touch VDEC reg*/
+			spin_lock_irqsave(&DecIsrLock, ulFlags);
+			DecIsrEvent.u4TimeoutMs = u4CheckIntervalMs;
+			spin_unlock_irqrestore(&DecIsrLock, ulFlags);
+			eValRet = eVideoWaitEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
+			if (eValRet == VAL_RESULT_NO_ERROR)
+				break;
+		} while (u4TimeoutMs -= u4CheckIntervalMs > 0);
 
-		eValRet = eVideoWaitEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
 		if (eValRet == VAL_RESULT_INVALID_ISR) {
 			return -2;
 		} else if (eValRet == VAL_RESULT_RESTARTSYS) {
