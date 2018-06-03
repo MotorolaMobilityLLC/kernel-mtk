@@ -2257,6 +2257,32 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 	return true;
 }
 
+int get_usage_digital_block(enum audio_usage_id id)
+{
+	switch (id) {
+	case AUDIO_USAGE_PCM_CAPTURE:
+		return Soc_Aud_Digital_Block_MEM_VUL;
+	case AUDIO_USAGE_SCP_SPK_IV_DATA:
+		return Soc_Aud_Digital_Block_MEM_AWB2;
+	default:
+		pr_debug("%s(), not defined id %d\n", __func__, id);
+		return -EINVAL;
+	};
+}
+
+int get_usage_digital_block_io(enum audio_usage_id id)
+{
+	switch (id) {
+	case AUDIO_USAGE_PCM_CAPTURE:
+		return Soc_Aud_AFE_IO_Block_MEM_VUL;
+	case AUDIO_USAGE_SCP_SPK_IV_DATA:
+		return Soc_Aud_AFE_IO_Block_MEM_AWB2;
+	default:
+		pr_debug("%s(), not defined id %d\n", __func__, id);
+		return -EINVAL;
+	};
+}
+
 void SetSdmLevel(unsigned int level)
 {
 	Afe_Set_Reg(AFE_ADDA_DL_SDM_DCCOMP_CON, level, 0x3f);
