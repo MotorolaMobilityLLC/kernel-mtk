@@ -100,5 +100,6 @@ enum HRT_DRAMC_TYPE {
 
 void layering_rule_init(void);
 int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level);
+int set_emi_bound_tb(int idx, int num, int *val);
 
 #endif
