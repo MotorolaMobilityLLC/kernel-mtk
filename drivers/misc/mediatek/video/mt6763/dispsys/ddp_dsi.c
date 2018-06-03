@@ -65,7 +65,7 @@ typedef enum {
 #define DSI_INREG32(type, addr) INREG32(addr)
 #define DSI_READREG32(type, dst, src) mt_reg_sync_writel(INREG32(src), dst)
 
-static int dsi_reg_op_debug = 1;
+static int dsi_reg_op_debug;
 
 #define BIT_TO_VALUE(TYPE, bit)  \
 do { \
@@ -1560,8 +1560,8 @@ void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_PWR, FLD_AD_DSI_PLL_SDM_PWR_ON, 0);
 
 		/* step 2 */
-		MIPITX_OUTREG32(&DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0080); /* BG_LPF_EN=0 */
-		MIPITX_OUTREG32(&DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0000); /* BG_CORE_EN=1 */
+		MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0080); /* BG_LPF_EN=0 */
+		MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0000); /* BG_CORE_EN=1 */
 
 		/* mdelay(1); */
 
