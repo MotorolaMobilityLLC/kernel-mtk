@@ -2357,9 +2357,6 @@ void set_usb_rdy(void)
 {
 	pr_debug("set usb_rdy, wake up bat\n");
 	usb_rdy = 1;
-#ifdef CONFIG_MTK_SMART_BATTERY
-	wake_up_bat();
-#endif
 }
 bool is_usb_rdy(void)
 {

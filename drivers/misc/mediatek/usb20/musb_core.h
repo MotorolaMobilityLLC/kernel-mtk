@@ -44,7 +44,7 @@
 #include <linux/pm_wakeup.h>
 #include <linux/version.h>
 #include <linux/clk.h>
-#if defined(CONFIG_MTK_SMART_BATTERY)
+#if defined(CONFIG_MTK_CHARGER)
 extern enum charger_type mt_get_charger_type(void);
 #endif
 
