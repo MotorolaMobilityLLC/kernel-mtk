@@ -37,7 +37,7 @@
 #endif
 
 #ifdef CONFIG_MTK_CCU
-#include "ccu_inc.h"
+#include "ccu_imgsensor_if.h"
 #endif
 
 #include "kd_camera_typedef.h"
@@ -1199,7 +1199,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 						       (unsigned int *)&FeatureParaLen);
 #ifdef CONFIG_MTK_CCU
 		if (pFeatureCtrl->FeatureId == SENSOR_FEATURE_SET_FRAMERATE)
-			ccu_set_current_fps(*((int32_t *) pFeaturePara));
+			ccu_set_current_fps((int32_t)psensor->inst.sensor_idx, *((int32_t *) pFeaturePara));
 #endif
 		break;
 	}

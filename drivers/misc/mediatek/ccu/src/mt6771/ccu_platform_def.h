@@ -16,18 +16,16 @@
 /*For user/kernel space sync.*/
 #define CCU_HW_OFFSET  (0x0)
 #define CCU_PMEM_BASE  (0x1A090000)
-#define CCU_PMEM_SIZE  (0x10000)
+#define CCU_PMEM_SIZE  (0x8000)
 #define CCU_DMEM_BASE  (0x1A080000)
 #define CCU_DMEM_SIZE  (0x8000)
 #define CCU_DMEM_OFFSET  (0x0)
-#define CCU_LOG_BASE  (0x400)
 #define CCU_LOG_SIZE  (0x200)
 #define CCU_HW_DUMP_SIZE  (0x550)
 #define CCU_CAMSYS_BASE  (0x1A000000)
 #define CCU_CAMSYS_SIZE  (0x1000)
 #define CCU_N3D_A_BASE  (0x1A040000)
 #define CCU_N3D_A_SIZE  (0x1000)
-#define CCU_SENSOR_PM_SIZE  (0x1000)
-#define CCU_SENSOR_DM_SIZE  (0x800)
+#define CCU_SENSOR_BIN_SIZE  (0x4000)
 
 #endif

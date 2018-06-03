@@ -23,7 +23,7 @@ extern MBOOL sec_vsync_pushed;
 ******************************************************************************/
 enum ccu_msg_id {
 	/*Receive by CCU*/
-    /*CCU Task*/
+	/*CCU Task*/
 	MSG_TO_CCU_IDLE = 0x00000000,
 	MSG_TO_CCU_SENSOR_INIT,
 	MSG_TO_CCU_AE_INIT,
@@ -40,6 +40,9 @@ enum ccu_msg_id {
 	MSG_TO_CCU_GET_AE_DEBUG_INFO,
 	MSG_TO_CCU_SET_3A_SYNC_STATE,
 	MSG_TO_CCU_SYNC_AE_SETTING,
+	MSG_TO_CCU_START_FRAME_SYNC,
+	MSG_TO_CCU_STOP_FRAME_SYNC,
+	MSG_TO_CCU_QUERY_FRAME_SYNC_DONE,
 	MSG_TO_CCU_SUSPEND,
 	MSG_TO_CCU_RESUME,
 	MSG_TO_CCU_SHUTDOWN,
@@ -52,9 +55,9 @@ enum ccu_msg_id {
 	MSG_TO_CCU_AF_SET_HW_REG,
 	MSG_TO_CCU_AF_STOP,
 #endif /*CCU_AF_ENABLE*/
-    /*To identify ccu control msg count*/
+	/*To identify ccu control msg count*/
 	DELIMITER_CCU_CONTROL_CNT_1,
-    /*CCU internal task*/
+	/*CCU internal task*/
 #ifdef CCU_AF_ENABLE
 	MSG_TO_CCU_AF_CQ0,
 	MSG_TO_CCU_AF_AFO,
@@ -65,11 +68,11 @@ enum ccu_msg_id {
 	MSG_CCU_INTERNAL_FRAME_AE_ALGO,
 	MSG_CCU_INTERNAL_VSYNC_AE_SYNC,
 	MSG_CCU_INTERNAL_FRAME_SYNC,
-    /*To identify ccu control msg count*/
+	/*To identify ccu control msg count*/
 	DELIMITER_CCU_CONTROL_CNT_2,
 
-    /*Send to APMCU*/
-    /*CCU Ack/Done*/
+	/*Send to APMCU*/
+	/*CCU Ack/Done*/
 	MSG_CCU_DONE_SENSOR_INIT, /**< Ack cmd for #MSG_TO_CCU_SENSOR_INIT */
 	MSG_CCU_DONE_AE_INIT, /**< Ack cmd for #MSG_TO_CCU_AE_INIT */
 	MSG_CCU_ACK_AE_START, /**< Ack cmd for #MSG_TO_CCU_AE_START */
@@ -85,6 +88,9 @@ enum ccu_msg_id {
 	MSG_CCU_ACK_GET_AE_DEBUG_INFO, /**< Ack cmd for #MSG_TO_CCU_GET_AE_DEBUG_INFO */
 	MSG_CCU_ACK_SET_3A_SYNC_STATE, /**< Ack cmd for #MSG_TO_CCU_SET_3A_SYNC_STATE */
 	MSG_CCU_ACK_SYNC_AE_SETTING, /**< Ack cmd for #MSG_TO_CCU_SYNC_AE_SETTING */
+	MSG_CCU_ACK_START_FRAME_SYNC,
+	MSG_CCU_ACK_STOP_FRAME_SYNC,
+	MSG_CCU_ACK_QUERY_FRAME_SYNC_DONE,
 	MSG_CCU_ACK_SUSPEND, /**< Ack cmd for #MSG_TO_CCU_SUSPEND */
 	MSG_CCU_ACK_RESUME, /**< Ack cmd for #MSG_TO_CCU_RESUME */
 	MSG_CCU_DONE_SHUTDOWN, /**< Ack cmd for #MSG_TO_CCU_SHUTDOWN */
@@ -97,7 +103,7 @@ enum ccu_msg_id {
 	MSG_CCU_ACK_AF_SET_HW_REG,
 	MSG_CCU_ACK_AF_STOP,
 #endif /*CCU_AF_ENABLE*/
-    /*APMCU Task*/
+	/*APMCU Task*/
 	MSG_TO_APMCU_FLUSH_LOG,
 	MSG_TO_APMCU_CCU_ASSERT,
 	MSG_TO_APMCU_CCU_WARNING

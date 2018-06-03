@@ -117,31 +117,25 @@ struct i2c_driver ccu_i2c_sub_driver = {
 /*---------------------------------------------------------------------------*/
 static int ccu_i2c_probe_main(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	/*int i4RetValue = 0;*/
-	LOG_DBG("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientMain %p\n", client);
+	LOG_DBG_MUST("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientMain %p\n", client);
 
 	/* get sensor i2c client */
-	/*--todo: add subcam implementation*/
 	g_ccuI2cClientMain = client;
 
-	/* set I2C clock rate */
-	/*#ifdef CONFIG_MTK_I2C_EXTENSION*/
-	/*g_pstI2Cclient3->timing = 100;*/ /* 100k */
-	/*g_pstI2Cclient3->ext_flag &= ~I2C_POLLING_FLAG;*/ /* No I2C polling busy waiting */
-	/*#endif*/
+	LOG_DBG_MUST("[ccu_i2c_probe] Attached!!\n");
 
-	LOG_DBG("[ccu_i2c_probe] Attached!!\n");
 	return 0;
 }
 
 static int ccu_i2c_probe_sub(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	/*int i4RetValue = 0;*/
-	LOG_DBG("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientSub %p\n", client);
+	LOG_DBG_MUST("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientSub %p\n", client);
 
 	g_ccuI2cClientSub = client;
 
-	LOG_DBG("[ccu_i2c_probe] Attached!!\n");
+	LOG_DBG_MUST("[ccu_i2c_probe] Attached!!\n");
+
 	return 0;
 }
 
@@ -158,12 +152,12 @@ int ccu_i2c_register_driver(void)
 {
 	int i2c_ret = 0;
 
-	LOG_DBG("i2c_add_driver(&ccu_i2c_main_driver)++\n");
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_main_driver)++\n");
 	i2c_ret = i2c_add_driver(&ccu_i2c_main_driver);
-	LOG_DBG("i2c_add_driver(&ccu_i2c_main_driver), ret: %d--\n", i2c_ret);
-	LOG_DBG("i2c_add_driver(&ccu_i2c_sub_driver)++\n");
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_main_driver), ret: %d--\n", i2c_ret);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_sub_driver)++\n");
 	i2c_ret = i2c_add_driver(&ccu_i2c_sub_driver);
-	LOG_DBG("i2c_add_driver(&ccu_i2c_sub_driver), ret: %d--\n", i2c_ret);
+	LOG_DBG_MUST("i2c_add_driver(&ccu_i2c_sub_driver), ret: %d--\n", i2c_ret);
 
 	return 0;
 }
