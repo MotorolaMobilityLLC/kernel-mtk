@@ -286,6 +286,27 @@ struct fuel_gauge_custom_data {
 	int shutdown_system_iboot;
 	int pmic_min_vol;
 
+	/* multi temp gauge 0% */
+	int multi_temp_gauge0;
+
+	int pmic_min_vol_t0;
+	int pmic_min_vol_t1;
+	int pmic_min_vol_t2;
+	int pmic_min_vol_t3;
+	int pmic_min_vol_t4;
+
+	int pon_iboot_t0;
+	int pon_iboot_t1;
+	int pon_iboot_t2;
+	int pon_iboot_t3;
+	int pon_iboot_t4;
+
+	int qmax_sys_vol_t0;
+	int qmax_sys_vol_t1;
+	int qmax_sys_vol_t2;
+	int qmax_sys_vol_t3;
+	int qmax_sys_vol_t4;
+
 	/* hw related */
 	int car_tune_value;
 	int fg_meter_resistance;

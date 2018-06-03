@@ -633,7 +633,9 @@ static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
 	int ret = 0;
-	int fgcurrent;
+	int fgcurrent = 0;
+	bool b_ischarging = 0;
+
 	struct battery_data *data = container_of(psy->desc, struct battery_data, psd);
 
 	switch (psp) {
@@ -653,8 +655,11 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_CAPACITY;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		gauge_get_current(&fgcurrent);
-		val->intval = fgcurrent;
+		b_ischarging = gauge_get_current(&fgcurrent);
+		if (b_ischarging == false)
+			fgcurrent = 0 - fgcurrent;
+
+		val->intval = fgcurrent / 10;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = 3000000;
@@ -1092,6 +1097,9 @@ void fgauge_get_profile_id(void)
 		g_fg_battery_id = Bat_EC_ctrl.debug_bat_id_value;
 	else
 		g_fg_battery_id = BATTERY_PROFILE_ID;
+
+	bm_err("[fgauge_get_profile_id]Battery id=(%d) en:%d,%d\n",
+		g_fg_battery_id, Bat_EC_ctrl.debug_bat_id_en, Bat_EC_ctrl.debug_bat_id_value);
 }
 #endif
 
@@ -1145,6 +1153,28 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.poweron_system_iboot = UNIT_TRANS_10 * POWERON_SYSTEM_IBOOT;
 	fg_cust_data.shutdown_system_iboot = SHUTDOWN_SYSTEM_IBOOT;
 	fg_cust_data.pmic_min_vol = PMIC_MIN_VOL;
+
+	/* multi-temp gague 0% related */
+	fg_cust_data.multi_temp_gauge0 = MULTI_TEMP_GAUGE0;
+
+	fg_cust_data.pmic_min_vol_t0 = g_PMIC_MIN_VOL_T0[g_fg_battery_id];
+	fg_cust_data.pmic_min_vol_t1 = g_PMIC_MIN_VOL_T1[g_fg_battery_id];
+	fg_cust_data.pmic_min_vol_t2 = g_PMIC_MIN_VOL_T2[g_fg_battery_id];
+	fg_cust_data.pmic_min_vol_t3 = g_PMIC_MIN_VOL_T3[g_fg_battery_id];
+	fg_cust_data.pmic_min_vol_t4 = g_PMIC_MIN_VOL_T4[g_fg_battery_id];
+
+	fg_cust_data.pon_iboot_t0 = g_PON_SYS_IBOOT_T0[g_fg_battery_id];
+	fg_cust_data.pon_iboot_t1 = g_PON_SYS_IBOOT_T1[g_fg_battery_id];
+	fg_cust_data.pon_iboot_t2 = g_PON_SYS_IBOOT_T2[g_fg_battery_id];
+	fg_cust_data.pon_iboot_t3 = g_PON_SYS_IBOOT_T3[g_fg_battery_id];
+	fg_cust_data.pon_iboot_t4 = g_PON_SYS_IBOOT_T4[g_fg_battery_id];
+
+	fg_cust_data.qmax_sys_vol_t0 = g_QMAX_SYS_VOL_T0[g_fg_battery_id];
+	fg_cust_data.qmax_sys_vol_t1 = g_QMAX_SYS_VOL_T1[g_fg_battery_id];
+	fg_cust_data.qmax_sys_vol_t2 = g_QMAX_SYS_VOL_T2[g_fg_battery_id];
+	fg_cust_data.qmax_sys_vol_t3 = g_QMAX_SYS_VOL_T3[g_fg_battery_id];
+	fg_cust_data.qmax_sys_vol_t4 = g_QMAX_SYS_VOL_T4[g_fg_battery_id];
+
 
 	/*hw related */
 	fg_cust_data.car_tune_value = UNIT_TRANS_10 * CAR_TUNE_VALUE;
@@ -1311,7 +1341,7 @@ void fg_custom_init_from_header(void)
 #endif
 
 	if (gauge_get_hw_version() == GAUGE_HW_V2001) {
-		bm_err("disable nafg\n");
+		bm_err("GAUGE_HW_V2001 disable nafg\n");
 		fg_cust_data.disable_nafg = 1;
 	}
 
@@ -1815,6 +1845,24 @@ void fg_custom_init(struct platform_device *dev)
 	fg_custom_init_from_dts(dev);
 }
 #endif
+
+void fg_custom_data_check(void)
+{
+	struct fuel_gauge_custom_data *p;
+
+	p = &fg_cust_data;
+	fgauge_get_profile_id();
+
+	bm_err("FGLOG Gauge0[%d,%d,%d]\n",
+		p->poweron_system_iboot, p->shutdown_system_iboot, p->pmic_min_vol);
+	bm_err("FGLOG MultiGauge0[%d] BATID[%d] pmic_min_vol[%d,%d,%d,%d,%d]\n",
+		p->multi_temp_gauge0, g_fg_battery_id,
+		p->pmic_min_vol_t0, p->pmic_min_vol_t1, p->pmic_min_vol_t2, p->pmic_min_vol_t3, p->pmic_min_vol_t4);
+	bm_err("FGLOG pon_iboot[%d,%d,%d,%d,%d] qmax_sys_vol[%d %d %d %d %d]\n",
+		p->pon_iboot_t0, p->pon_iboot_t1, p->pon_iboot_t2, p->pon_iboot_t3, p->pon_iboot_t4,
+		p->qmax_sys_vol_t0, p->qmax_sys_vol_t1, p->qmax_sys_vol_t2, p->qmax_sys_vol_t3, p->qmax_sys_vol_t4);
+
+}
 
 int interpolation(int i1, int b1, int i2, int b2, int i)
 {
@@ -3455,6 +3503,8 @@ void fg_bat_temp_int_internal(void)
 	gauge_dev_enable_battery_tmp_lt_interrupt(gauge_dev, false, 0);
 	gauge_dev_enable_battery_tmp_ht_interrupt(gauge_dev, false, 0);
 
+	if (Bat_EC_ctrl.fixed_temp_en == 1)
+		tmp = Bat_EC_ctrl.fixed_temp_value;
 
 	if (tmp >= fg_bat_tmp_c_ht)
 		wakeup_fg_algo(FG_INTR_BAT_TMP_C_HT);
@@ -4001,6 +4051,7 @@ void exec_BAT_EC(int cmd, int param)
 					Bat_EC_ctrl.fixed_temp_value = 0 - (param - 100);
 				else
 					Bat_EC_ctrl.fixed_temp_value = param;
+
 				bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, enable\n", cmd, param);
 			}
 		}
@@ -4166,7 +4217,6 @@ void exec_BAT_EC(int cmd, int param)
 			}
 		}
 		break;
-
 	case 701:
 		{
 			fg_cust_data.pseudo1_en = param;
@@ -4282,6 +4332,17 @@ void exec_BAT_EC(int cmd, int param)
 			bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, zcv_car_gap_percentage\n", cmd, param);
 		}
 		break;
+	case 720:
+		{
+			fg_cust_data.multi_temp_gauge0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.multi_temp_gauge0=%d\n", cmd, param);
+		}
+		break;
+	case 721:
+		{
+			fg_custom_data_check();
+			bm_err("[FG_IT] exe_BAT_EC cmd %d", cmd);
+		}
 
 	default:
 		bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, default\n", cmd, param);
