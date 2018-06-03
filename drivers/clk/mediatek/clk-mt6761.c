@@ -33,7 +33,7 @@
 #else
 #define MT_MUXPLL_ENABLE	1
 #define MT_CG_ENABLE		1
-#define MT_MTCMOS_ENABLE	0
+#define MT_MTCMOS_ENABLE	1
 #endif
 
 #define ARMPLL_L_EXIST		0
