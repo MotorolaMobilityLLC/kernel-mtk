@@ -1938,8 +1938,9 @@ bool SetMemifSubStream(enum soc_aud_digital_block MemBlock,
 	if (temp == NULL)
 		return false;
 
-	pr_debug("+%s MemBlock = %d substream = %p\n", __func__, MemBlock,
-	       substream);
+	/* pr_debug("%s MemBlock = %d substream = %p\n",
+	 * __func__, MemBlock, substream);
+	 */
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock,
 			  flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
@@ -1961,8 +1962,6 @@ bool SetMemifSubStream(enum soc_aud_digital_block MemBlock,
 	AFE_Mem_Control_context[MemBlock]->MemIfNum++;
 	spin_unlock_irqrestore(
 		&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	/*pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock);*/
-
 	/* DumpMemifSubStream(); */
 	return true;
 }
@@ -2015,8 +2014,9 @@ bool RemoveMemifSubStream(enum soc_aud_digital_block MemBlock,
 		AFE_Mem_Control_context[MemBlock]->MemIfNum--;
 
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
-	pr_debug("+ %s MemBlock = %d substream = %p\n ", __func__, MemBlock,
-	       substream);
+	/* pr_debug("+ %s MemBlock = %d substream = %p\n ",
+	 * __func__, MemBlock, substream);
+	 */
 
 	if (head == NULL) { /* no object */
 			    /* do nothing */
@@ -2058,7 +2058,7 @@ bool RemoveMemifSubStream(enum soc_aud_digital_block MemBlock,
 
 	spin_unlock_irqrestore(
 		&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	pr_debug("- %s MemBlock = %d\n ", __func__, MemBlock);
+	/* pr_debug("- %s MemBlock = %d\n ", __func__, MemBlock); */
 
 	return true;
 }
@@ -2112,14 +2112,15 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 
 	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_HDMI_CUR);
 	if (HW_Cur_ReadIdx == 0) {
-		pr_debug("[Auddrv_HDMI_Interrupt] HW_Cur_ReadIdx ==0\n");
+		/* pr_debug("[Auddrv_HDMI_Interrupt] HW_Cur_ReadIdx ==0\n"); */
 		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 	}
 	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
 
-	pr_debug(
-		"[Auddrv_HDMI_Interrupt]0 HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-		HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+	/* pr_debug("[Auddrv_HDMI_Interrupt]0 HW_Cur_ReadIdx=0x%x
+	 * HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
+	 * HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+	 */
 
 	/* get hw consume bytes */
 	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
@@ -2134,10 +2135,11 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 
 
 
-	pr_debug(
-		"+[HDMI_Interrupt]1 ReadIdx:%x WriteIdx:%x, DataRemained:%x, Afe_consumed_bytes:%x index = %x\n",
-		Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-		Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	/* pr_debug("+[HDMI_Interrupt]1 ReadIdx:%x WriteIdx:%x,
+	 * DataRemained:%x, Afe_consumed_bytes:%x index = %x\n",
+	 * Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
+	 * Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	 */
 
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes ||
 	    Afe_Block->u4DataRemained <= 0 ||
@@ -2146,34 +2148,13 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 		/* memset(Afe_Block->pucVirtBufAddr, 0,
 		 * Afe_Block->u4BufferSize);
 		 */
-
-		pr_debug(
-			"+[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, Remained:%x,bytes:%x index = 0x%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-			Afe_Block->u4DataRemained, Afe_consumed_bytes,
-			HW_memory_index);
 		Afe_Block->u4DMAReadIdx = HW_memory_index;
 		Afe_Block->u4WriteIdx = Afe_Block->u4DMAReadIdx;
 		Afe_Block->u4DataRemained = Afe_Block->u4BufferSize;
-
-		pr_debug(
-			"-[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, DataRemained:%x, bytes %x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-			Afe_Block->u4DataRemained, Afe_consumed_bytes);
 	} else {
-
-		pr_debug(
-			"+[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			Afe_Block->u4WriteIdx);
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-
-		pr_debug(
-			"-[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			Afe_Block->u4WriteIdx);
 	}
 	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]
 		->interruptTrigger = 1;
@@ -2189,10 +2170,10 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 	}
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 
-	pr_debug(
-		"-[Auddrv_HDMI_Interrupt]4 ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-		Afe_Block->u4WriteIdx);
+	/* pr_debug("-[Auddrv_HDMI_Interrupt]4 ReadIdx:%x ,DataRemained:%x,
+	 * WriteIdx:%x\n", Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
+	 * Afe_Block->u4WriteIdx);
+	 */
 #endif
 }
 
@@ -2229,8 +2210,9 @@ void Auddrv_AWB_Interrupt_Handler(void)
 
 	mBlock = &Mem_Block->rBlock;
 	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_AWB_CUR));
-	pr_debug("+%s HW_Cur_ReadIdx = 0x%x\n ", __func__,
-		       HW_Cur_ReadIdx);
+	/* pr_debug("+%s HW_Cur_ReadIdx = 0x%x\n ",
+	 * __func__, HW_Cur_ReadIdx);
+	 */
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -2243,9 +2225,9 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	}
 
 	MaxCopySize = Get_Mem_MaxCopySize(Soc_Aud_Digital_Block_MEM_AWB);
-	pr_debug(
-		"1  mBlock = %p MaxCopySize = 0x%x u4BufferSize = 0x%x\n",
-		mBlock, MaxCopySize, mBlock->u4BufferSize);
+	/* pr_debug("1  mBlock = %p MaxCopySize = 0x%x u4BufferSize = 0x%x\n",
+	 * mBlock, MaxCopySize, mBlock->u4BufferSize);
+	 */
 
 	if (MaxCopySize) {
 		if (MaxCopySize > mBlock->u4BufferSize)
@@ -2254,10 +2236,11 @@ void Auddrv_AWB_Interrupt_Handler(void)
 		mBlock->u4DMAReadIdx += MaxCopySize;
 		mBlock->u4DMAReadIdx %= mBlock->u4BufferSize;
 		Clear_Mem_CopySize(Soc_Aud_Digital_Block_MEM_AWB);
-		pr_debug(
-			"%s read  ReadIdx:0x%x, WriteIdx:0x%x,BufAddr:0x%x  CopySize =0x%x\n",
-			__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
-			mBlock->pucPhysBufAddr, mBlock->u4MaxCopySize);
+		/* pr_debug("%s read  ReadIdx:0x%x, WriteIdx:0x%x,
+		 * BufAddr:0x%x  CopySize =0x%x\n", __func__,
+		 * mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
+		 * mBlock->pucPhysBufAddr, mBlock->u4MaxCopySize);
+		 */
 	}
 
 	/* HW already fill in */
@@ -2266,10 +2249,11 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	if (Hw_Get_bytes < 0)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
-	pr_debug("%s Get_bytes:0x%x,Cur_ReadIdx:0x%x,ReadIdx:0x%x,WriteIdx:0x%x,BufAddr:0x%x Remained = 0x%x\n",
-		__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
-		mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
-		mBlock->u4DataRemained);
+	/* pr_debug("%s Get_bytes:0x%x,Cur_ReadIdx:0x%x,ReadIdx:0x%x,
+	 * WriteIdx:0x%x,BufAddr:0x%x Remained = 0x%x\n",
+	 * __func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
+	 * mBlock->u4WriteIdx, mBlock->pucPhysBufAddr, mBlock->u4DataRemained);
+	 */
 	mBlock->u4WriteIdx += Hw_Get_bytes;
 	mBlock->u4WriteIdx %= mBlock->u4BufferSize;
 	mBlock->u4DataRemained += Hw_Get_bytes;
@@ -2308,9 +2292,10 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	}
 
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-	pr_debug("-%s u4DMAReadIdx:0x%x, u4WriteIdx:0x%x mBlock->u4DataRemained = 0x%x\n",
-		__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
-		mBlock->u4DataRemained);
+	/* pr_debug("-%s u4DMAReadIdx:0x%x, u4WriteIdx:0x%x
+	 * mBlock->u4DataRemained = 0x%x\n", __func__,
+	 * mBlock->u4DMAReadIdx, mBlock->u4WriteIdx, mBlock->u4DataRemained);
+	 */
 }
 
 void Auddrv_DAI_Interrupt_Handler(void)
@@ -2353,11 +2338,11 @@ void Auddrv_DAI_Interrupt_Handler(void)
 	if (Hw_Get_bytes < 0)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
-	pr_debug(
-		"%s Hw_Get_bytes:0x%x, Cur_ReadIdx:0x%x,ReadIdx:0x%x,WriteIdx:0x%x, PhysAddr:0x%x Block->MemIfNum = %d\n",
-		__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
-		mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
-		Mem_Block->MemIfNum);
+	/* pr_debug("%s Hw_Get_bytes:0x%x, Cur_ReadIdx:0x%x,ReadIdx:0x%x,
+	 * WriteIdx:0x%x, PhysAddr:0x%x Block->MemIfNum = %d\n",
+	 * __func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
+	 * mBlock->u4WriteIdx, mBlock->pucPhysBufAddr, Mem_Block->MemIfNum);
+	 */
 
 	mBlock->u4WriteIdx += Hw_Get_bytes;
 	mBlock->u4WriteIdx %= mBlock->u4BufferSize;
@@ -2421,8 +2406,9 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 
 	mBlock = &Mem_Block->rBlock;
 	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL2_CUR));
-	pr_debug("+%s HW_Cur_ReadIdx = 0x%x\n ", __func__,
-		       HW_Cur_ReadIdx);
+	/* pr_debug("+%s HW_Cur_ReadIdx = 0x%x\n ",
+	 * __func__, HW_Cur_ReadIdx);
+	 */
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -2435,9 +2421,9 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 	}
 
 	MaxCopySize = Get_Mem_MaxCopySize(Soc_Aud_Digital_Block_MEM_VUL2);
-	pr_debug(
-		"1  mBlock = %p MaxCopySize = 0x%x u4BufferSize = 0x%x\n",
-		mBlock, MaxCopySize, mBlock->u4BufferSize);
+	/* pr_debug("1  mBlock = %p MaxCopySize = 0x%x u4BufferSize = 0x%x\n",
+	 * mBlock, MaxCopySize, mBlock->u4BufferSize);
+	 */
 
 	if (MaxCopySize) {
 		if (MaxCopySize > mBlock->u4BufferSize)
@@ -2458,11 +2444,11 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 	if (Hw_Get_bytes < 0)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
-	pr_debug(
-		"%s Get_bytes:0x%x,Cur_ReadIdx:0x%x,ReadIdx:0x%x,WriteIdx:0x%x,BufAddr:0x%x Remained = 0x%x\n",
-		__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
-		mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
-		mBlock->u4DataRemained);
+	/* pr_debug("%s Get_bytes:0x%x,Cur_ReadIdx:0x%x,ReadIdx:0x%x,
+	 * WriteIdx:0x%x,BufAddr:0x%x Remained = 0x%x\n",
+	 * __func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
+	 * mBlock->u4WriteIdx, mBlock->pucPhysBufAddr, mBlock->u4DataRemained);
+	 */
 	mBlock->u4WriteIdx += Hw_Get_bytes;
 	mBlock->u4WriteIdx %= mBlock->u4BufferSize;
 	mBlock->u4DataRemained += Hw_Get_bytes;
@@ -2502,10 +2488,10 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 	}
 
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-	pr_debug(
-		"-%s u4DMAReadIdx:0x%x, u4WriteIdx:0x%x mBlock->u4DataRemained = 0x%x\n",
-		__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
-		mBlock->u4DataRemained);
+	/* pr_debug( "-%s u4DMAReadIdx:0x%x, u4WriteIdx:0x%x
+	 * mBlock->u4DataRemained = 0x%x\n", __func__,
+	 * mBlock->u4DMAReadIdx, mBlock->u4WriteIdx, mBlock->u4DataRemained);
+	 */
 }
 
 void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
@@ -2543,15 +2529,16 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_DL1_CUR));
 
 	if (HW_Cur_ReadIdx == 0) {
-		pr_debug("[Auddrv] HW_Cur_ReadIdx ==0\n");
+		/* pr_debug("[Auddrv] HW_Cur_ReadIdx ==0\n"); */
 		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 	}
 
 	HW_memory_index = HW_Cur_ReadIdx - Afe_Get_Reg(AFE_DL1_BASE);
 
-	pr_debug(
-		"[Auddrv] HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-		HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+	/* pr_debug("[Auddrv] HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x
+	 * Afe_Block->pucPhysBufAddr = 0x%x\n",	HW_Cur_ReadIdx,
+	 * HW_memory_index, Afe_Block->pucPhysBufAddr);
+	 */
 
 	/* get hw consume bytes */
 	if (HW_memory_index >= Afe_Block->u4DMAReadIdx) {
@@ -2563,10 +2550,11 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 
 	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
-	pr_debug(
-		"+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
-		__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-		Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	/* pr_debug("+%s ReadIdx:%x WriteIdx:%x,Remained:%x,
+	 * consumed_bytes:%x HW_memory_index = %x\n", __func__,
+	 * Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
+	 * Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	 */
 
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes ||
 	    Afe_Block->u4DataRemained <= 0 ||
@@ -2600,10 +2588,10 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 		}
 		AFE_dL_Abnormal_context.u4UnderflowCnt++;
 	} else {
-		pr_debug(
-			"+DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			Afe_Block->u4WriteIdx);
+		/* pr_debug("+DL_Handling normal ReadIdx:%x ,DataRemained:%x,
+		 * WriteIdx:%x\n", Afe_Block->u4DMAReadIdx,
+		 * Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+		 */
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
@@ -2611,10 +2599,10 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 
 	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]
 		->interruptTrigger = 1;
-	pr_debug(
-		"-DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-		Afe_Block->u4WriteIdx);
+	/* pr_debug("-DL_Handling normal ReadIdx:%x ,
+	 * DataRemained:%x, WriteIdx:%x\n", Afe_Block->u4DMAReadIdx,
+	 * Afe_Block->u4DataRemained,Afe_Block->u4WriteIdx);
+	 */
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
@@ -2669,14 +2657,15 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL1_CUR);
 
 	if (HW_Cur_ReadIdx == 0) {
-		pr_debug("[Auddrv] HW_Cur_ReadIdx ==0\n");
+		/* pr_debug("[Auddrv] HW_Cur_ReadIdx ==0\n"); */
 		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 	}
 
 	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
-	pr_debug(
-		"[Auddrv] HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-		HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+	/* pr_debug("[Auddrv] HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x
+	 * Afe_Block->pucPhysBufAddr = 0x%x\n",
+	 * HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+	 */
 
 	/* get hw consume bytes */
 	if (HW_memory_index >= Afe_Block->u4DMAReadIdx) {
@@ -2687,10 +2676,11 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	}
 
 	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
-	pr_debug(
-		"+%s ReadIdx:%x WriteIdx:%x,Remained:%x,  consumed_bytes:%x HW_memory_index = %x\n",
-		__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-		Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	/* pr_debug("%s ReadIdx:%x WriteIdx:%x,Remained:%x,
+	 * consumed_bytes:%x HW_memory_index = %x\n",
+	 * __func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
+	 * Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	 */
 
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes ||
 	    Afe_Block->u4DataRemained <= 0 ||
@@ -2724,10 +2714,10 @@ void Auddrv_DL1_Interrupt_Handler(void)
 		}
 		AFE_dL_Abnormal_context.u4UnderflowCnt++;
 	} else {
-		pr_debug(
-			"+DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			Afe_Block->u4WriteIdx);
+		/* pr_debug("+DL_Handling normal ReadIdx:%x ,DataRemained:%x,
+		 * WriteIdx:%x\n", Afe_Block->u4DMAReadIdx,
+		 * Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+		 */
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
@@ -2735,10 +2725,10 @@ void Auddrv_DL1_Interrupt_Handler(void)
 
 	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]
 		->interruptTrigger = 1;
-	pr_debug(
-		"-DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-		Afe_Block->u4WriteIdx);
+	/* pr_debug("-DL_Handling normal ReadIdx:%x ,DataRemained:%x,
+	 * WriteIdx:%x\n", Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
+	 * Afe_Block->u4WriteIdx);
+	 */
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
@@ -2908,12 +2898,11 @@ void Auddrv_UL1_Interrupt_Handler(void)
 	if (Hw_Get_bytes < 0)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
-	pr_debug(
-		"%s Get_bytes:%x, Cur_ReadIdx:%x,ReadIdx:%x, WriteIdx:0x%x, BufAddr:%x MemIfNum = %d\n",
-		__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
-		mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
-		Mem_Block->MemIfNum);
-
+	/* pr_debug("%s Get_bytes:%x, Cur_ReadIdx:%x,ReadIdx:%x, WriteIdx:0x%x,
+	 * BufAddr:%x MemIfNum = %d\n",	__func__, Hw_Get_bytes, HW_Cur_ReadIdx,
+	 * mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
+	 * mBlock->pucPhysBufAddr, Mem_Block->MemIfNum);
+	 */
 	mBlock->u4WriteIdx += Hw_Get_bytes;
 	mBlock->u4WriteIdx %= mBlock->u4BufferSize;
 	mBlock->u4DataRemained += Hw_Get_bytes;
@@ -3048,8 +3037,6 @@ void Auddrv_UL2_Interrupt_Handler(void)
 	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 
-	pr_debug("Auddrv_UL2_Interrupt_Handler\n ");
-
 	if (Mem_Block == NULL) {
 		pr_err("Mem_Block == NULL\n ");
 		return;
@@ -3064,8 +3051,6 @@ void Auddrv_UL2_Interrupt_Handler(void)
 
 	mBlock = &Mem_Block->rBlock;
 	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL_D2_CUR));
-	pr_debug("Auddrv_UL2_Interrupt_Handler HW_Cur_ReadIdx = 0x%x\n ",
-		       HW_Cur_ReadIdx);
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -3084,11 +3069,11 @@ void Auddrv_UL2_Interrupt_Handler(void)
 	if (Hw_Get_bytes < 0)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
-	pr_debug(
-		"%s Get_bytes:%x, Cur_ReadIdx:%x,RadIdx:%x, WriteIdx:0x%x, BufAddr:%x MemIfNum = %d\n",
-		__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx,
-		mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
-		Mem_Block->MemIfNum);
+	/* pr_debug("%s Get_bytes:%x, Cur_ReadIdx:%x,RadIdx:%x, WriteIdx:0x%x,
+	 * BufAddr:%x MemIfNum = %d\n",	__func__, Hw_Get_bytes, HW_Cur_ReadIdx,
+	 * mBlock->u4DMAReadIdx, mBlock->u4WriteIdx, mBlock->pucPhysBufAddr,
+	 * Mem_Block->MemIfNum);
+	 */
 
 	mBlock->u4WriteIdx += Hw_Get_bytes;
 	mBlock->u4WriteIdx %= mBlock->u4BufferSize;
@@ -3448,7 +3433,7 @@ int freeAudioSram(void *user)
 		SramBlock = &mAud_Sram_Manager.mAud_Sram_Block[i];
 		if (SramBlock->mUser == user) {
 			SramBlock->mUser = NULL;
-			pr_debug("%s SramBlockidx = %d\n", __func__, i);
+			/* pr_debug("%s SramBlockidx = %d\n", __func__, i); */
 		}
 	}
 	AfeControlSramUnLock();
@@ -4325,13 +4310,15 @@ get_ulmem_frame_index(struct snd_pcm_substream *substream,
 	unsigned long flags;
 	struct afe_block_t *UL1_Block = &(afe_mem_control->rBlock);
 
-	pr_debug("%s Awb_Block->u4WriteIdx;= 0x%x\n", __func__,
-		       UL1_Block->u4WriteIdx);
+	/* pr_debug("%s Awb_Block->u4WriteIdx;= 0x%x\n", __func__,
+	 * UL1_Block->u4WriteIdx);
+	 */
 	mem_blk_spinlock(mem_block);
 	spin_lock_irqsave(&afe_mem_control->substream_lock, flags);
-	pr_debug(
-		"mtk_capture_pcm_pointer UL1_Block->u4WriteIdx= 0x%x, u4DataRemained=0x%x\n",
-		UL1_Block->u4WriteIdx, UL1_Block->u4DataRemained);
+	/* pr_debug("mtk_capture_pcm_pointer UL1_Block->u4WriteIdx= 0x%x,
+	 * u4DataRemained=0x%x\n", UL1_Block->u4WriteIdx,
+	 * UL1_Block->u4DataRemained);
+	 */
 
 	if (GetMemoryPathEnable(mem_block) == true) {
 		switch (mem_block) {
@@ -4363,8 +4350,9 @@ get_ulmem_frame_index(struct snd_pcm_substream *substream,
 			pr_err("%s error mem_block = %d", __func__, mem_block);
 		}
 		if (HW_Cur_ReadIdx == 0) {
-			pr_debug("[Auddrv] %s HW_Cur_ReadIdx ==0\n",
-				       __func__);
+			/* pr_debug("[Auddrv] %s HW_Cur_ReadIdx ==0\n",
+			 * __func__);
+			 */
 			HW_Cur_ReadIdx = UL1_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - UL1_Block->pucPhysBufAddr);
@@ -4404,9 +4392,10 @@ get_ulmem_frame_index(struct snd_pcm_substream *substream,
 			}
 			break;
 		}
-		pr_debug(
-			"[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
-			HW_Cur_ReadIdx, HW_memory_index);
+		/* pr_debug("[Auddrv] mtk_capture_pcm_pointer =0x%x
+		 * HW_memory_index = 0x%x\n",
+		 * HW_Cur_ReadIdx, HW_memory_index);
+		 */
 
 		spin_unlock_irqrestore(&afe_mem_control->substream_lock, flags);
 		mem_blk_spinunlock(mem_block);
@@ -4572,9 +4561,6 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 	struct afe_block_t *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	char *data_w_ptr = (char *)dst;
-
-	pr_debug("mtk_pcm_copy pos = %lu count = %lu\n", pos, count);
-
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
 
@@ -4583,10 +4569,10 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 
 	/* handle for buffer management */
 
-	pr_debug(" WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
-		       Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
-		       Afe_Block->u4DataRemained);
-
+	/* pr_debug(" WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
+	 * Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
+	 * Afe_Block->u4DataRemained);
+	 */
 	if (Afe_Block->u4BufferSize == 0) {
 		pr_err(" u4BufferSize=0 Error");
 		return 0;
@@ -4607,8 +4593,6 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 	}
 
 	copy_size = word_size_align(copy_size);
-	pr_debug("copy_size=0x%x, count=0x%x\n", copy_size,
-		       (unsigned int)count);
 
 	if (copy_size != 0) {
 		mem_blk_spinlock(mem_blk);
@@ -4785,9 +4769,10 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 
 	mem_blk_spinlock(mem_blk);
 	if (Vul_Block->u4DataRemained > Vul_Block->u4BufferSize) {
-		pr_debug("%s u4DataRemained=%x > u4BufferSize=%x",
-			       __func__, Vul_Block->u4DataRemained,
-			       Vul_Block->u4BufferSize);
+		/* pr_debug("%s u4DataRemained=%x > u4BufferSize=%x",
+		 * __func__, Vul_Block->u4DataRemained,
+		 * Vul_Block->u4BufferSize);
+		 */
 		Vul_Block->u4DataRemained = 0;
 		Vul_Block->u4DMAReadIdx = Vul_Block->u4WriteIdx;
 	}
