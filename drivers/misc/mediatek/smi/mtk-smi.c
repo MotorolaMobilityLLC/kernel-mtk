@@ -1830,29 +1830,6 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_UNPREPARE_CLK);
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
 
-	/*
-	 * force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
-	 * call these APIs only when necessary
-	 */
-	{
-		static unsigned int current_fps;
-
-		if ((eFinalScen == SMI_BWC_SCEN_VR_SLOW) && (current_fps != 30)) {
-			/* force 30 fps in VR slow motion profile */
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-			primary_display_force_set_vsync_fps(30);
-			current_fps = 30;
-			SMIMSG("[SMI_PROFILE] set 30 fps\n");
-#endif
-		} else if ((eFinalScen != SMI_BWC_SCEN_VR_SLOW) && (current_fps == 30)) {
-			/* back to normal fps */
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-			current_fps = primary_display_get_fps();
-			primary_display_force_set_vsync_fps(current_fps);
-			SMIMSG("[SMI_PROFILE] back to %u fps\n", current_fps);
-#endif
-		}
-	}
 	return 0;
 }
 
