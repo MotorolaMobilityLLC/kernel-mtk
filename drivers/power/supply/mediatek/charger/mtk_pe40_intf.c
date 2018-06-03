@@ -514,7 +514,7 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 		goto err;
 
 	if (pinfo->enable_hv_charging == false)
-		goto disable_hv;
+		goto retry;
 
 	chr_err("set TD false\n");
 	charger_dev_enable_termination(pinfo->chg1_dev, false);
@@ -536,7 +536,7 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 
 	if (ret != 0) {
 		chr_err("[pe40_i0] err:1 %d\n", ret);
-		goto err;
+		goto retry;
 	}
 
 	/* disable charger */
@@ -712,7 +712,7 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 
 	return 0;
 
-disable_hv:
+retry:
 	mtk_pe40_end(pinfo, 0, true);
 	return 0;
 err:
