@@ -43,12 +43,6 @@
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
 
-#define clk_readl(addr)		readl(addr)
-#define clk_writel(val, addr)	\
-	do { writel(val, addr); wmb(); } while (0)	/* sync_write */
-#define clk_setl(mask, addr)	clk_writel(clk_readl(addr) | (mask), addr)
-#define clk_clrl(mask, addr)	clk_writel(clk_readl(addr) & ~(mask), addr)
-
 #define mt_reg_sync_writel(v, a) \
 	do { \
 		__raw_writel((v), IOMEM(a)); \
@@ -56,6 +50,31 @@
 while (0)
 #define spm_read(addr)			__raw_readl(IOMEM(addr))
 #define spm_write(addr, val)		mt_reg_sync_writel(val, addr)
+
+#define clk_writel(addr, val)   \
+	mt_reg_sync_writel(val, addr)
+
+#define clk_readl(addr)			__raw_readl(IOMEM(addr))
+
+/*MM Bus*/
+#ifdef CONFIG_OF
+void __iomem *clk_mmsys_config_base;
+void __iomem *clk_imgsys_base;
+void __iomem *clk_vdec_gcon_base;
+void __iomem *clk_venc_gcon_base;
+void __iomem *clk_camsys_base;
+#endif
+
+#if 0
+#define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
+#define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
+#define VDEC_CKEN_SET	(clk_vdec_gcon_base + 0x0000)
+#define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
+#define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
+#endif
+#define CAMSYS_CG_STA	(clk_camsys_base + 0x0000)
+#define CAMSYS_CG_CLR	(clk_camsys_base + 0x0008)
+
 
 /*
  * MTCMOS
@@ -163,6 +182,7 @@ static DEFINE_SPINLOCK(spm_noncpu_md_lock);
 #define INFRA_TOPAXI_SI0_STA		INFRA_REG(0x0000)
 #define INFRA_BUS_IDLE_STA5	INFRA_REG(0x0190)
 /* SMI LARB */
+#define SMI_LARB_STAT	SMI_LARB2_REG(0x0000)
 #define SMI_LARB2_SLP_CON    SMI_LARB2_REG(0x000C)
 /* SMI COMMON */
 #define SMI_COMMON_SMI_CLAMP_SET    SMI_COMMON_REG(0x03C4)
@@ -530,6 +550,16 @@ static void aee_clk_data_rest(void)
 }
 #endif
 #endif
+
+void cam_mtcmos_patch(int on)
+{
+	if (on) {
+		/* do something */
+		/* do something */
+	} else {
+		clk_writel(CAMSYS_CG_CLR, 0x0001);
+	}
+}
 
 /* auto-gen begin*/
 int spm_mtcmos_ctrl_md1(int state)
@@ -1292,6 +1322,7 @@ int spm_mtcmos_ctrl_audio(int state)
 int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
+	int retry = 0;
 
 	/* TINFO="enable SPM register control" */
 	/*spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));*/
@@ -1303,7 +1334,12 @@ int spm_mtcmos_ctrl_cam(int state)
 		spm_write(SMI_LARB2_SLP_CON, spm_read(SMI_LARB2_SLP_CON) | 0x1);
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(SMI_LARB2_SLP_CON) & 0x10000) != 0x10000) {
-			/**/
+			retry++;
+			if (retry > 100) {
+				pr_debug("CAMSYS_CG_STA = 0x%x\n", clk_readl(CAMSYS_CG_STA));
+				pr_debug("SMI_LARB_STAT = 0x%x\n", clk_readl(SMI_LARB_STAT));
+				pr_debug("SMI_LARB2_SLP_CON = 0x%x\n", clk_readl(SMI_LARB2_SLP_CON));
+			}
 			/**/
 		}
 #endif
@@ -2167,6 +2203,50 @@ static void __iomem *get_reg(struct device_node *np, int index)
 #endif
 }
 
+#ifdef CONFIG_OF
+void iomap_mm(void)
+{
+	struct device_node *node;
+
+/*mmsys_config*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	if (!node)
+		pr_debug("[CLK_MMSYS] find node failed\n");
+	clk_mmsys_config_base = of_iomap(node, 0);
+	if (!clk_mmsys_config_base)
+		pr_debug("[CLK_MMSYS] base failed\n");
+/*imgsys*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,imgsys");
+	if (!node)
+		pr_debug("[CLK_IMGSYS_CONFIG] find node failed\n");
+	clk_imgsys_base = of_iomap(node, 0);
+	if (!clk_imgsys_base)
+		pr_debug("[CLK_IMGSYS_CONFIG] base failed\n");
+/*vdec_gcon*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_gcon");
+	if (!node)
+		pr_debug("[CLK_VDEC_GCON] find node failed\n");
+	clk_vdec_gcon_base = of_iomap(node, 0);
+	if (!clk_vdec_gcon_base)
+		pr_debug("[CLK_VDEC_GCON] base failed\n");
+/*venc_gcon*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,venc_gcon");
+	if (!node)
+		pr_debug("[CLK_VENC_GCON] find node failed\n");
+	clk_venc_gcon_base = of_iomap(node, 0);
+	if (!clk_venc_gcon_base)
+		pr_debug("[CLK_VENC_GCON] base failed\n");
+
+/*cam*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys");
+	if (!node)
+		pr_debug("[CLK_CAM] find node failed\n");
+	clk_camsys_base = of_iomap(node, 0);
+	if (!clk_camsys_base)
+		pr_debug("[CLK_CAM] base failed\n");
+}
+#endif
+
 static void __init mt_scpsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -2206,7 +2286,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 		pr_err("[CCF] %s:could not register clock provide\n", __func__);
 
 	ckgen_base = ckgen_reg;
-	/*iomap();*/
+	/*MM Bus*/
+	iomap_mm();
 #if 0/*!MT_CCF_BRINGUP*/
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
@@ -2238,27 +2319,27 @@ void subsys_if_on(void)
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
 
 	if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
-		pr_err("suspend warning: SYS_MD1 is on!!!\n");
+		pr_debug("suspend warning: SYS_MD1 is on!!!\n");
 	if ((sta & (1U << 1)) && (sta_s & (1U << 1)))
-		pr_err("suspend warning: SYS_CONN is on!!!\n");
+		pr_debug("suspend warning: SYS_CONN is on!!!\n");
 	if ((sta & (1U << 3)) && (sta_s & (1U << 3)))
-		pr_err("suspend warning: SYS_DIS is on!!!\n");
+		pr_debug("suspend warning: SYS_DIS is on!!!\n");
 	if ((sta & (1U << 4)) && (sta_s & (1U << 4)))
-		pr_err("suspend warning: SYS_MFG is on!!!\n");
+		pr_debug("suspend warning: SYS_MFG is on!!!\n");
 	if ((sta & (1U << 5)) && (sta_s & (1U << 5)))
-		pr_err("suspend warning: SYS_ISP is on!!!\n");
+		pr_debug("suspend warning: SYS_ISP is on!!!\n");
 	if ((sta & (1U << 21)) && (sta_s & (1U << 21)))
-		pr_err("suspend warning: SYS_VEN is on!!!\n");
+		pr_debug("suspend warning: SYS_VEN is on!!!\n");
 	if ((sta & (1U << 23)) && (sta_s & (1U << 23)))
-		pr_err("suspend warning: SYS_MFG_ASYNC is on!!!\n");
+		pr_debug("suspend warning: SYS_MFG_ASYNC is on!!!\n");
 	if ((sta & (1U << 24)) && (sta_s & (1U << 24)))
-		pr_err("suspend warning: SYS_AUDIO is on!!!\n");
+		pr_debug("suspend warning: SYS_AUDIO is on!!!\n");
 	if ((sta & (1U << 27)) && (sta_s & (1U << 27)))
-		pr_err("suspend warning: SYS_CAM is on!!!\n");
+		pr_debug("suspend warning: SYS_CAM is on!!!\n");
 	if ((sta & (1U << 30)) && (sta_s & (1U << 30)))
-		pr_err("suspend warning: SYS_MFG_CORE1 is on!!!\n");
+		pr_debug("suspend warning: SYS_MFG_CORE1 is on!!!\n");
 	if ((sta & (1U << 31)) && (sta_s & (1U << 31)))
-		pr_err("suspend warning: SYS_MFG_CORE0 is on!!!\n");
+		pr_debug("suspend warning: SYS_MFG_CORE0 is on!!!\n");
 }
 
 #if 1 /*only use for suspend test*/

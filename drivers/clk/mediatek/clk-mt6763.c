@@ -1786,11 +1786,10 @@ void mipic_26m_en(int en)
 {
 	/* [6] MIPIC0 26M */
 	/* [11] MIPIC1 26M */
-	if (en) {
+	if (en)
 		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) | 0x00000840);
-	} else {
+	else
 		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff7bf);
-	}
 }
 
 unsigned int mt_get_ckgen_freq(unsigned int ID)
@@ -2027,16 +2026,6 @@ void armpll_control(int id, int on)
 			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) | 0x00000002), ARMPLL_L_PWR_CON0);
 			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) & 0xfffffffe), ARMPLL_L_PWR_CON0);
 		}
-	}
-}
-
-void cam_mtcmos_patch(int on)
-{
-	if (on) {
-		/* do something */
-		/* do something */
-	} else {
-		clk_writel(CAMSYS_CG_CLR, 0x0001);
 	}
 }
 
