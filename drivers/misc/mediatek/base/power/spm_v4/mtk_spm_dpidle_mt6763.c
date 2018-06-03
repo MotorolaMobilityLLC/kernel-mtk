@@ -64,9 +64,10 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 
 	wk_auxadc_bgd_ctrl(0);
 #endif
+#endif
 
 	__spm_sync_pcm_flags(pwrctrl);
-#endif
+
 }
 
 void spm_dpidle_post_process(void)
@@ -80,31 +81,6 @@ void spm_dpidle_post_process(void)
 #endif
 #endif
 }
-
-#if 0
-static int __init get_base_from_node(
-	const char *cmp, void __iomem **pbase, int idx)
-{
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, cmp);
-
-	if (!node) {
-		pr_err("node '%s' not found!\n", cmp);
-		/* FIXME: */
-		/* BUG(); */
-	}
-
-	*pbase = of_iomap(node, idx);
-	if (!(*pbase)) {
-		pr_err("node '%s' cannot iomap!\n", cmp);
-		/* FIXME: */
-		/* BUG(); */
-	}
-
-	return 0;
-}
-#endif
 
 void spm_deepidle_chip_init(void)
 {

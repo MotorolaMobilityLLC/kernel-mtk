@@ -17,8 +17,7 @@
 #include <mtk_idle_internal.h>
 #include <ddp_pwm.h>
 
-/* TODO: check is any need for secure cg accessing */
-/* #include <mt-plat/mtk_secure_api.h> */
+#include <mt-plat/mtk_secure_api.h>
 
 #define IDLE_TAG     "Power/swap"
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -58,7 +57,7 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	/* dpidle_condition_mask */
 	[IDLE_TYPE_DP] = {
-		0x08040A02,	/* INFRA0 */
+		0x00040A02,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000C5,	/* INFRA2 */
 		0xFFFFFFFF,	/* MMSYS0 */
@@ -69,7 +68,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
-		0x0A040E02,	/* INFRA0 */
+		0x02040E02,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000D1,	/* INFRA2 */
 		0xFFFFFFFF,	/* MMSYS0 */
@@ -80,7 +79,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
-		0x08040A02,	/* INFRA0 */
+		0x00040A02,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000000C1,	/* INFRA2 */
 		0x000FFFE0,	/* MMSYS0 */
@@ -254,16 +253,13 @@ bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD
 {
 	int ret = 0;
 
-	/* TODO: check is there any cg for secure accessing */
-#if 0
 	int i;
 	ret = mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0);
 
 	if (ret)
 		for (i = 0; i < NR_TYPES; i++)
 			if (idle_switch[i])
-				block_mask[i][CG_PERI_4] |= 0x00060000;
-#endif
+				block_mask[i][CG_INFRA_0] |= 0x08000000;
 
 	return !ret;
 }
