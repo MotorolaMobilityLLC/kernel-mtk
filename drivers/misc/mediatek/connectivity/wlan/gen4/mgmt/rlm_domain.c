@@ -1114,6 +1114,12 @@ BOOLEAN rlmDomainCheckChannelEntryValid(P_ADAPTER_T prAdapter, UINT_8 ucCentralC
 	UINT_8 i;
 	/*Check Power limit table channel efficient or not */
 
+	/* CH50 is not located in any FCC subbands but it's a valid central channel for 160C*/
+	if (ucCentralCh == 50) {
+		fgValid = TRUE;
+		return fgValid;
+	}
+
 	for (i = POWER_LIMIT_2G4; i < POWER_LIMIT_SUBAND_NUM; i++) {
 		if ((ucCentralCh >= g_rRlmSubBand[i].ucStartCh) && (ucCentralCh <= g_rRlmSubBand[i].ucEndCh))
 			ucTemp = (ucCentralCh - g_rRlmSubBand[i].ucStartCh) % g_rRlmSubBand[i].ucInterval;
@@ -1373,7 +1379,8 @@ VOID rlmDomainCheckCountryPowerLimitTable(P_ADAPTER_T prAdapter)
 
 		if (fgChannelValid == FALSE || fgPowerLimitValid == FALSE) {
 			fgTableValid = FALSE;
-			DBGLOG(RLM, LOUD, "Domain: CC=%c%c, Ch=%d, Limit: %d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			DBGLOG(RLM, LOUD,
+				"Domain: CC=%c%c, Ch=%d, Limit: %d,%d,%d,%d,%d,%d,%d,%d,%d, Valid:%d,%d\n",
 				g_rRlmPowerLimitConfiguration[i].aucCountryCode[0],
 				g_rRlmPowerLimitConfiguration[i].aucCountryCode[1],
 				g_rRlmPowerLimitConfiguration[i].ucCentralCh,
@@ -1385,7 +1392,9 @@ VOID rlmDomainCheckCountryPowerLimitTable(P_ADAPTER_T prAdapter)
 				g_rRlmPowerLimitConfiguration[i].aucPwrLimit[PWR_LIMIT_80M_L],
 				g_rRlmPowerLimitConfiguration[i].aucPwrLimit[PWR_LIMIT_80M_H],
 				g_rRlmPowerLimitConfiguration[i].aucPwrLimit[PWR_LIMIT_160M_L],
-				g_rRlmPowerLimitConfiguration[i].aucPwrLimit[PWR_LIMIT_160M_H]);
+				g_rRlmPowerLimitConfiguration[i].aucPwrLimit[PWR_LIMIT_160M_H],
+				fgChannelValid,
+				fgPowerLimitValid);
 		}
 
 		if (u2CountryCodeTable == COUNTRY_CODE_NULL) {
@@ -1684,6 +1693,7 @@ VOID rlmDomainBuildCmdByConfigTable(P_ADAPTER_T prAdapter, P_CMD_SET_COUNTRY_CHA
 					 *  ch 36 = 22 dBm
 					 *  Cmd final setting -->  ch1~14 = 20dBm, ch36= 22dBm
 					 */
+					prCmdPwrLimit->ucCentralCh = g_rRlmPowerLimitConfiguration[i].ucCentralCh;
 					kalMemCopy(&prCmdPwrLimit->cPwrLimitCCK,
 						   &g_rRlmPowerLimitConfiguration[i].aucPwrLimit, PWR_LIMIT_NUM);
 					prCmd->ucNum++; /*Add this channel setting in rChannelPowerLimit[k]*/

@@ -348,10 +348,14 @@
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 
 #define POWER_LIMIT_TABLE_NULL			0xFFFF
-#define MAX_TX_POWER					63
-#define MIN_TX_POWER					-64
-#define MAX_CMD_SUPPORT_CHANNEL_NUM	64
+#define MAX_TX_POWER				63
+#define MIN_TX_POWER				-64
 
+#define MAX_CMD_SUPPORT_160NC_CHANNEL_NUM	12 /* BW160NC combination NUM */
+#define MAX_CMD_SUPPORT_FCC_CHANNEL_NUM		64
+#define MAX_CMD_SUPPORT_CHANNEL_NUM		(MAX_CMD_SUPPORT_FCC_CHANNEL_NUM	\
+						+ MAX_CMD_SUPPORT_160NC_CHANNEL_NUM + 1)
+						/* FCC sub-band channel + BW160NC channel + CH50 for BW160C */
 #endif
 
 /*******************************************************************************
