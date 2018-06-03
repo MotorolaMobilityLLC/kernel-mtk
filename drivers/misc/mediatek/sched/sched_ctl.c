@@ -305,8 +305,8 @@ static int __init sched_hint_init(void)
 	}
 
 	/* priority setting */
-	param.sched_priority = 50;
-	ret = sched_setscheduler_nocheck(g_shd.task, SCHED_FIFO, &param);
+	param.sched_priority = 120;
+	ret = sched_setscheduler_nocheck(g_shd.task, SCHED_NORMAL, &param);
 
 	if (ret)
 		pr_info("%s: failed to set sched_fifo\n", __func__);
