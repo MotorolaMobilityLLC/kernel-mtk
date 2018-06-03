@@ -22,6 +22,7 @@
 #include "mrdump_private.h"
 
 struct mrdump_control_block *mrdump_cblock;
+struct mrdump_rsvmem_block mrdump_sram_cb;
 
 int mrdump_rsv_conflict;
 struct mrdump_rsvmem_block __initdata rsvmem_block[4];
@@ -98,7 +99,6 @@ __init void mrdump_rsvmem(void)
 early_param("mrdump_rsvmem", early_mrdump_rsvmem);
 
 /* mrdump_cb info from lk */
-struct mrdump_rsvmem_block __initdata mrdump_cb;
 static int __init mrdump_get_cb(char *p)
 {
 	unsigned long cbaddr, cbsize;
@@ -106,13 +106,16 @@ static int __init mrdump_get_cb(char *p)
 
 	ret = sscanf(p, "0x%lx,0x%lx", &cbaddr, &cbsize);
 	if (ret != 2) {
-		pr_notice("%s: no mrdump_cb. (ret=%d, p=%s)\n", __func__,
-				ret, p);
+		pr_notice("%s: no mrdump_sram_cb. (ret=%d, p=%s)\n",
+			 __func__, ret, p);
 	} else {
-		mrdump_cb.start_addr = cbaddr;
-		mrdump_cb.size = cbsize;
+		mrdump_sram_cb.start_addr = cbaddr;
+		mrdump_sram_cb.size = cbsize;
 		pr_notice("%s: mrdump_cbaddr=%pa, mrdump_cbsize=%pa\n",
-			 __func__, &mrdump_cb.start_addr, &mrdump_cb.size);
+			 __func__,
+			 &mrdump_sram_cb.start_addr,
+			 &mrdump_sram_cb.size
+			 );
 	}
 
 	return 0;
@@ -155,18 +158,19 @@ __init void mrdump_cblock_init(void)
 {
 	struct mrdump_machdesc *machdesc_p;
 
-	if ((mrdump_cb.start_addr == 0) || (mrdump_cb.size == 0)) {
+	if ((mrdump_sram_cb.start_addr == 0) || (mrdump_sram_cb.size == 0)) {
 		pr_notice("%s: no mrdump_cb\n", __func__);
 		goto end;
 	}
 
-	if (mrdump_cb.size < sizeof(struct mrdump_control_block)) {
+	if (mrdump_sram_cb.size < sizeof(struct mrdump_control_block)) {
 		pr_notice("%s: not enough space for mrdump control block\n",
 			  __func__);
 		goto end;
 	}
 
-	mrdump_cblock = ioremap_wc(mrdump_cb.start_addr, mrdump_cb.size);
+	mrdump_cblock = ioremap_wc(mrdump_sram_cb.start_addr,
+				   mrdump_sram_cb.size);
 	if (mrdump_cblock == NULL) {
 		pr_notice("%s: mrdump_cb not mapped\n", __func__);
 		goto end;
