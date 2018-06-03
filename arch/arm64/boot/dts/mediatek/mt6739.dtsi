@@ -1671,3 +1671,7 @@
 #else
 #include "mt6356.dtsi"
 #endif
+
+#ifdef CONFIG_CHARGER_RT9466
+#include "rt9466.dtsi"
+#endif
