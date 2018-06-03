@@ -22,15 +22,6 @@ enum idle_lock_spm_id {
 extern void idle_lock_spm(enum idle_lock_spm_id id);
 extern void idle_unlock_spm(enum idle_lock_spm_id id);
 
-extern void enable_dpidle_by_bit(int id);
-extern void disable_dpidle_by_bit(int id);
-
-extern void enable_soidle3_by_bit(int id);
-extern void disable_soidle3_by_bit(int id);
-
-extern void enable_soidle_by_bit(int id);
-extern void disable_soidle_by_bit(int id);
-
 /* return 0: non-active, 1:active */
 extern int dpidle_active_status(void);
 

@@ -22,10 +22,6 @@
 
 #include "spm_v3/mtk_clk_id.h"
 
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_clk_id.h"
-
 #endif
 
 #endif /* __MT_CLK_ID_H__ */
