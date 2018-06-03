@@ -29,7 +29,7 @@ endif
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o
 libcomposite-y			+= composite.o functions.o configfs.o u_f.o
-libcomposite-y			+= meta.o
+libcomposite-$(CONFIG_USB_CONFIGFS_UEVENT)			+= meta.o
 
 g_android-y			:= android.o
 
