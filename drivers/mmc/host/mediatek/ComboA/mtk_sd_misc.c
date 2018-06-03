@@ -647,11 +647,6 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	msdc_set_driving(host, host->hw->driving_applied);
 
 	msdc_clk_disable(host);
-#ifdef DEBUG_MMC_IOCTL
-#if 0
-	msdc_dump_padctl(host);
-#endif
-#endif
 
 	return 0;
 }

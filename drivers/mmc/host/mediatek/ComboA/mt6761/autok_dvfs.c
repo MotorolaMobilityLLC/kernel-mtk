@@ -19,6 +19,7 @@
 
 #include "autok_dvfs.h"
 #include "mtk_sd.h"
+#include "dbg.h"
 #include <mmc/core/sdio_ops.h>
 
 static char const * const sdio_autok_res_path[] = {
@@ -1006,24 +1007,18 @@ int sdio_autok(void)
 }
 EXPORT_SYMBOL(sdio_autok);
 
-void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
+void msdc_dump_autok(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host)
 {
 	int i, j;
 	int bit_pos, byte_pos, start;
 	char buf[65];
 
-	if (!m)
-		pr_notice("[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
-			host->autok_res[0][AUTOK_VER3],
-			host->autok_res[0][AUTOK_VER2],
-			host->autok_res[0][AUTOK_VER1],
-			host->autok_res[0][AUTOK_VER0]);
-	else
-		seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
-			host->autok_res[0][AUTOK_VER3],
-			host->autok_res[0][AUTOK_VER2],
-			host->autok_res[0][AUTOK_VER1],
-			host->autok_res[0][AUTOK_VER0]);
+	SPREAD_PRINTF(buff, size, m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
+		host->autok_res[0][AUTOK_VER3],
+		host->autok_res[0][AUTOK_VER2],
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = AUTOK_VCORE_LEVEL1; i >= AUTOK_VCORE_LEVEL0; i--) {
 		start = CMD_SCAN_R0;
@@ -1036,10 +1031,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]CMD Rising \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]CMD Rising \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]CMD Rising \t: %s\r\n", buf);
 
 		start = CMD_SCAN_F0;
 		for (j = 0; j < 64; j++) {
@@ -1051,10 +1044,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]CMD Falling \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]CMD Falling \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]CMD Falling \t: %s\r\n", buf);
 
 		start = DAT_SCAN_R0;
 		for (j = 0; j < 64; j++) {
@@ -1066,10 +1057,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]DAT Rising \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]DAT Rising \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DAT Rising \t: %s\r\n", buf);
 
 		start = DAT_SCAN_F0;
 		for (j = 0; j < 64; j++) {
@@ -1081,10 +1070,9 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]DAT Falling \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]DAT Rising \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DAT Falling \t: %s\r\n", buf);
+
 		/* cmd response use ds pin, but window is
 		 * different with data pin, because cmd response is SDR.
 		 */
@@ -1098,10 +1086,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]DS CMD Window \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]DS CMD Window \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DS CMD Window \t: %s\r\n", buf);
 
 		start = DS_DAT_SCAN_0;
 		for (j = 0; j < 64; j++) {
@@ -1113,10 +1099,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]DS DAT Window \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]DS DAT Window \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DS DAT Window \t: %s\r\n", buf);
 
 		start = D_DATA_SCAN_0;
 		for (j = 0; j < 32; j++) {
@@ -1128,10 +1112,8 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]Device Data RX \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]Device Data RX \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]Device Data RX \t: %s\r\n", buf);
 
 		start = H_DATA_SCAN_0;
 		for (j = 0; j < 32; j++) {
@@ -1143,46 +1125,27 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 				buf[j] = 'O';
 		}
 		buf[j] = '\0';
-		if (!m)
-			pr_notice("[AUTOK]Host   Data TX \t: %s\r\n", buf);
-		else
-			seq_printf(m, "[AUTOK]Host   Data TX \t: %s\r\n", buf);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]Host   Data TX \t: %s\r\n", buf);
 
-		if (!m) {
-			pr_notice(
-		"[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-				host->autok_res[i][0], host->autok_res[i][1],
-				host->autok_res[i][5], host->autok_res[i][7]);
-			pr_notice(
-		"[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
-				host->autok_res[i][2], host->autok_res[i][3],
-				host->autok_res[i][4]);
-			pr_notice(
-		"[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-				host->autok_res[i][13], host->autok_res[i][9],
-				host->autok_res[i][11]);
-			pr_notice("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-				host->autok_res[i][14], host->autok_res[i][16],
-				host->autok_res[i][18]);
-			pr_notice("[AUTOK]DAT [TX SEL:%d]\r\n",
-				host->autok_res[i][20]);
-		} else {
-			seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-				host->autok_res[i][0], host->autok_res[i][1],
-				host->autok_res[i][5], host->autok_res[i][7]);
-			seq_printf(m, "[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]",
-				host->autok_res[i][2], host->autok_res[i][3],
-				host->autok_res[i][4]);
-			seq_puts(m, "\r\n");
-			seq_printf(m, "[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-				host->autok_res[i][13], host->autok_res[i][9],
-				host->autok_res[i][11]);
-			seq_printf(m, "[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-				host->autok_res[i][14], host->autok_res[i][16],
-				host->autok_res[i][18]);
-			seq_printf(m, "[AUTOK]DAT [TX SEL:%d]\r\n",
-				host->autok_res[i][20]);
-		}
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][0], host->autok_res[i][1],
+			host->autok_res[i][5], host->autok_res[i][7]);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+			host->autok_res[i][2], host->autok_res[i][3],
+			host->autok_res[i][4]);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][13], host->autok_res[i][9],
+			host->autok_res[i][11]);
+		SPREAD_PRINTF(buff, size, m,
+			"[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+			host->autok_res[i][14], host->autok_res[i][16],
+			host->autok_res[i][18]);
+		SPREAD_PRINTF(buff, size, m, "[AUTOK]DAT [TX SEL:%d]\r\n",
+			host->autok_res[i][20]);
 	}
 }
 

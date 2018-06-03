@@ -54,7 +54,8 @@ extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void sdio_set_hw_dvfs(int vcore, int done, struct msdc_host *host);
 extern void sdio_dvfs_reg_restore(struct msdc_host *host);
-extern void msdc_dump_autok(struct msdc_host *host, struct seq_file *m);
+extern void msdc_dump_autok(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
 extern void msdc_dvfs_reg_backup_init(struct msdc_host *host);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
 #endif /* _AUTOK_DVFS_H_ */

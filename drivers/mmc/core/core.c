@@ -290,11 +290,10 @@ void mmc_do_check(struct mmc_host *host)
 		host->ops->request(host, &host->que_mrq);
 
 		/* add for emmc reset when error happen */
-		if ((host->que_mrq.cmd->error == (unsigned int)-ETIMEDOUT)
-		&&  !host->que_mrq.cmd->retries) {
+		if (host->que_mrq.cmd->error && !host->que_mrq.cmd->retries) {
 	/* wait data irq handle done otherwice timing issue will happen  */
 			msleep(2000);
-			while (mmc_reset_for_cmdq(host)) {
+			if (mmc_reset_for_cmdq(host)) {
 				pr_notice("[CQ] reinit fail\n");
 				BUG_ON(1);
 			}
@@ -304,11 +303,6 @@ void mmc_do_check(struct mmc_host *host)
 			atomic_set(&host->cq_rdy_cnt, 0);
 		}
 
-		if (host->que_mrq.cmd->error == (unsigned int)-ENOMEDIUM) {
-			pr_notice("dump runtime pm flag usage_cnt in CMD13:%d",
-		atomic_read(&host->card->dev.power.usage_count));
-			BUG_ON(1);
-		}
 		if (!host->que_mrq.cmd->error ||
 			!host->que_mrq.cmd->retries)
 			break;
@@ -430,31 +424,6 @@ static int mmc_wait_tran(struct mmc_host *host)
 	return 0;
 }
 
-static int mmc_force_wait_tran(struct mmc_host *host)
-{
-	u32 status;
-	int err;
-	unsigned long timeout;
-
-	timeout = jiffies + msecs_to_jiffies(10 * 1000);
-	do {
-		err = mmc_blk_status_check(host->card, &status);
-		if (err) {
-			pr_debug("[CQ] check card status error = %d\n", err);
-			return 1;
-		}
-
-		if (time_after(jiffies, timeout)) {
-			pr_notice("%s: Card stuck in %d state! %s\n",
-					mmc_hostname(host),
-					R1_CURRENT_STATE(status), __func__);
-			BUG_ON(1);
-		}
-	} while (R1_CURRENT_STATE(status) != R1_STATE_TRAN);
-
-	return 0;
-}
-
 /*
  *	check write
  */
@@ -487,7 +456,6 @@ int mmc_run_queue_thread(void *data)
 	struct mmc_request *dat_mrq = NULL;
 	struct mmc_request *done_mrq = NULL;
 	unsigned int task_id, areq_cnt_chk, tmo;
-	bool is_err = false;
 	bool is_done = false;
 	bool io_boost_done = false;
 
@@ -515,30 +483,19 @@ int mmc_run_queue_thread(void *data)
 		if (done_mrq) {
 			if (done_mrq->data->error || done_mrq->cmd->error) {
 				mmc_wait_tran(host);
-				if (!is_err) {
-					is_err = true;
-					mmc_discard_cmdq(host);
-					mmc_wait_tran(host);
-					mmc_clr_dat_list(host);
-					atomic_set(&host->cq_rdy_cnt, 0);
-				}
+				mmc_discard_cmdq(host);
+				mmc_wait_tran(host);
+				mmc_clr_dat_list(host);
+				atomic_set(&host->cq_rdy_cnt, 0);
 
 				if (host->ops->execute_tuning) {
 					err = host->ops->execute_tuning(host,
 				MMC_SEND_TUNING_BLOCK_HS200);
-					if (err)
-						pr_err("[CQ] tuning failed\n");
-					else
-						pr_notice("[CQ] tuning pass\n");
-
-				/* add for emmc reset when error happen */
-					while (err
-			&& (done_mrq->data->error == (unsigned int)-ETIMEDOUT
-			|| done_mrq->cmd->error == (unsigned int)-ETIMEDOUT)
-					&& mmc_reset_for_cmdq(host)) {
+					if (err && mmc_reset_for_cmdq(host)) {
 						pr_notice("[CQ] reinit fail\n");
 						BUG_ON(1);
-					}
+					} else
+						pr_notice("[CQ] tuning pass\n");
 				}
 
 				host->cur_rw_task = 99;
@@ -553,7 +510,6 @@ int mmc_run_queue_thread(void *data)
 
 			if (done_mrq && !done_mrq->data->error
 			&& !done_mrq->cmd->error) {
-				mmc_force_wait_tran(host);
 				task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
 				mt_biolog_cmdq_dma_end(task_id);
 				mmc_check_write(host, done_mrq);
@@ -562,7 +518,6 @@ int mmc_run_queue_thread(void *data)
 
 				if (atomic_read(&host->cq_tuning_now) == 1) {
 					mmc_restore_tasks(host);
-					is_err = false;
 					atomic_set(&host->cq_tuning_now, 0);
 				}
 			}
@@ -633,12 +588,11 @@ int mmc_run_queue_thread(void *data)
 				host->ops->request(host, cmd_mrq);
 
 				/* add for emmc reset when error happen */
-				if ((cmd_mrq->sbc
-			&& cmd_mrq->sbc->error == (unsigned int)-ETIMEDOUT)
-			|| (cmd_mrq->cmd->error == (unsigned int)-ETIMEDOUT)) {
+				if ((cmd_mrq->sbc && cmd_mrq->sbc->error)
+				|| cmd_mrq->cmd->error) {
 		/* wait data irq handle done otherwise timing issue happen*/
 					msleep(2000);
-					while (mmc_reset_for_cmdq(host)) {
+					if (mmc_reset_for_cmdq(host)) {
 						pr_notice("[CQ] reinit fail\n");
 						BUG_ON(1);
 					}
@@ -646,12 +600,6 @@ int mmc_run_queue_thread(void *data)
 					mmc_restore_tasks(host);
 					atomic_set(&host->cq_wait_rdy, 0);
 					atomic_set(&host->cq_rdy_cnt, 0);
-				} else if (cmd_mrq->cmd->error ==
-					(unsigned int)-ENOMEDIUM) {
-					pr_notice(
-			"dump runtime pm flag usage_cnt in CMD44/45 %d",
-			atomic_read(&host->card->dev.power.usage_count));
-					BUG_ON(1);
 				} else
 					atomic_inc(&host->cq_wait_rdy);
 
@@ -737,6 +685,10 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 
 	/* data error */
 	if (mrq->data && mrq->data->error) {
+		pr_notice("%s: cmd%d arg:%x data error:%d\n",
+			mmc_hostname(host),
+			cmd->opcode, cmd->arg,
+			mrq->data->error);
 		atomic_set(&host->cq_tuning_now, 1);
 		goto clear_end;
 	}

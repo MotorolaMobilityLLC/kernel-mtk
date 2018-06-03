@@ -2018,9 +2018,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (p1 == 3) {
 			msdc_get_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 4) {
-			msdc_dump_register_core(host, m);
+			msdc_dump_register_core(NULL, 0, m, host);
 		} else if (p1 == 5) {
-			msdc_dump_info(host->id);
+			msdc_dump_info(NULL, 0, NULL, host->id);
 		}
 	} else if (cmd == SD_TOOL_SET_DRIVING) {
 		char *device_str, *get_set_str;
@@ -2406,7 +2406,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (mode == 2) {
 			msdc_dump_sdio_setting(host, m);
 		} else if (mode == 3) {
-			msdc_dump_autok(host, m);
+			msdc_dump_autok(NULL, 0, m, host);
 		}
 	} else if (cmd == MMC_CMDQ_STATUS) {
 		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
