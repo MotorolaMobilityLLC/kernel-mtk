@@ -2192,6 +2192,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	/* 4.config ovl1 */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_dirty = 1;
 	data_config_dl->ovl_config[0].layer = 0;
 	data_config_dl->ovl_config[0].isDirty = 1;
 	data_config_dl->ovl_config[0].layer_en = 1;
@@ -2774,6 +2775,7 @@ static int DC_switch_to_OVL_DCM(struct cmdqRecStruct *handle, int block)
 	/* 4.config ovl1 */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_dirty = 1;
 	data_config_dl->ovl_config[0].layer = 0;
 	data_config_dl->ovl_config[0].isDirty = 1;
 	data_config_dl->ovl_config[0].layer_en = 1;
