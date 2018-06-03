@@ -60,7 +60,7 @@ struct vpu_user {
 	unsigned long *id;
 	/* to enque/deque must have mutex protection */
 	struct mutex data_mutex;
-	bool running;
+	bool running[MTK_VPU_CORE];
 	bool deleting;
 	bool flushing;
 	bool locked;
@@ -68,6 +68,7 @@ struct vpu_user {
 	struct list_head enque_list;
 	struct list_head deque_list;
 	wait_queue_head_t deque_wait;
+	wait_queue_head_t delete_wait;
 	uint8_t power_mode;
 	uint8_t power_opp;
 };

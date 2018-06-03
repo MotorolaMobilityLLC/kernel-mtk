@@ -1239,6 +1239,23 @@ static bool common_pool_is_empty(void)
 
 	return is_empty;
 }
+static void vpu_hw_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
+{
+	LOG_DBG("[vpu] ion_free_handle +\n");
+
+	if (!client) {
+		LOG_WRN("[vpu] invalid ion client!\n");
+		return;
+	}
+	if (!handle) {
+		LOG_WRN("[vpu] invalid ion handle!\n");
+		return;
+	}
+	if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
+		LOG_INF("[vpu] ion_free_handle(0x%p)\n", handle);
+
+	ion_free(client, handle);
+}
 
 static int vpu_service_routine(void *arg)
 {
@@ -1252,6 +1269,7 @@ static int vpu_service_routine(void *arg)
 	int *d = (int *)arg;
 	int service_core = (*d);
 	bool get = false;
+	int i = 0, j = 0, cnt = 0;
 
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 
@@ -1274,6 +1292,7 @@ static int vpu_service_routine(void *arg)
 		user_in_list = NULL;
 		head = NULL;
 		get = false;
+		cnt = 0;
 
 		mutex_lock(&vpu_dev->servicepool_mutex[service_core]);
 		if (!(list_empty(&vpu_dev->servicepool_list[service_core]))) {
@@ -1322,10 +1341,19 @@ static int vpu_service_routine(void *arg)
 				mutex_unlock(&vpu_dev->user_mutex);
 				LOG_WRN("[vpu_%d] get request that the original user(0x%lx) is deleted\n",
 					service_core, (unsigned long)(user));
+				/* release buf ref cnt if user is deleted*/
+				for (i = 0 ; i < req->buffer_count ; i++) {
+					for (j = 0 ; j < req->buffers[i].plane_count ; j++) {
+						vpu_hw_ion_free_handle(my_ion_client,
+							(struct ion_handle *)((uintptr_t)(req->buf_ion_infos[cnt])));
+						cnt++;
+					}
+				}
 				continue;
 			}
-
-			user->running = true; /* for flush request from queue, DL usage */
+			mutex_lock(&user->data_mutex);
+			user->running[service_core] = true; /* */
+			mutex_unlock(&user->data_mutex);
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
 			#if 1
@@ -1343,8 +1371,8 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d<-0x%x]R,Aid(0x%lx_%d,%d->%d),op(%d,%d/%d->%d,%d->%d),f(0x%x),%d/%d/%d/0x%x\n",
-				service_core, req->requested_core,
+			LOG_INF("[vpu_%d<-0x%x]0x%lx,ID(0x%lx_%d,%d->%d),o(%d,%d/%d-%d,%d-%d),f(0x%x),%d/%d/%d/0x%x\n",
+				service_core, req->requested_core, (unsigned long)req->user_id,
 				(unsigned long)req->request_id, req->frame_magic,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
 				req->power_param.opp_step, req->power_param.freq_step,
@@ -1393,6 +1421,14 @@ static int vpu_service_routine(void *arg)
 			continue;
 		}
 out:
+		cnt = 0;
+		for (i = 0 ; i < req->buffer_count ; i++) {
+			for (j = 0 ; j < req->buffers[i].plane_count ; j++) {
+				vpu_hw_ion_free_handle(my_ion_client,
+					(struct ion_handle *)((uintptr_t)(req->buf_ion_infos[cnt])));
+				cnt++;
+			}
+		}
 		/* if req is null, we should not do anything of following codes */
 		mutex_lock(&(vpu_service_cores[service_core].state_mutex));
 		vpu_service_cores[service_core].state = VCT_IDLE;
@@ -1419,9 +1455,10 @@ out:
 			LOG_INF("[vpu_%d, 0x%x -> 0x%x] algo_id(%d_%d) add to deque list done\n",
 				service_core, req->requested_core, req->occupied_core,
 				(int)(req->algo_id[service_core]), req->frame_magic);
-			user->running = false;
+			user->running[service_core] = false;
 			mutex_unlock(&user->data_mutex);
 			wake_up_interruptible_all(&user->deque_wait);
+			wake_up_interruptible_all(&user->delete_wait);
 		} else {
 			LOG_WRN("[vpu_%d]done request that the original user(0x%lx) is deleted\n",
 				service_core, (unsigned long)(user));
@@ -1720,8 +1757,10 @@ int vpu_init_hw(int core, struct vpu_device *device)
 #ifdef MTK_VPU_EMULATOR
 	vpu_request_emulator_irq(device->irq_num[core], vpu_isr_handler);
 #else
-	m4u_client = m4u_create_client();
-	ion_client = ion_client_create(g_ion_device, "vpu");
+	if (!m4u_client)
+		m4u_client = m4u_create_client();
+	if (!ion_client)
+		ion_client = ion_client_create(g_ion_device, "vpu");
 
 	ret = vpu_map_mva_of_bin(core, device->bin_pa);
 	CHECK_RET("[vpu_%d]fail to map binary data!\n", core);
