@@ -27,10 +27,21 @@
 static int mtk_pinctrl_set_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin,
 		bool enable, bool isup, unsigned int r1r0)
 {
-	unsigned int r0, r1, ret;
+	unsigned int pupd_r1r0 = 0, r0, r1, ret;
 
 	/* For type continuous PUPD + R1 + R0 */
-	ret = mtk_pinctrl_set_gpio_value(pctl, pin, !isup,
+	if (r1r0 == MTK_PUPD_SET_R1R0_01)
+		pupd_r1r0 = 1;
+	else if (r1r0 == MTK_PUPD_SET_R1R0_10)
+		pupd_r1r0 = 2;
+	else if (r1r0 == MTK_PUPD_SET_R1R0_11)
+		pupd_r1r0 = 3;
+	else
+		pupd_r1r0 = 0;
+	if (!isup)
+		pupd_r1r0 |= 0x4;
+
+	ret = mtk_pinctrl_update_gpio_value(pctl, pin, pupd_r1r0,
 		pctl->devdata->n_pin_pupd_r1r0, pctl->devdata->pin_pupd_r1r0_grps);
 	if (ret == 0)
 		return ret;
@@ -39,14 +50,14 @@ static int mtk_pinctrl_set_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin,
 		return -EPERM;
 
 	/* For type discreate PUPD + R1 + R0 */
-	ret = mtk_pinctrl_set_gpio_value(pctl, pin, !isup,
+	ret = mtk_pinctrl_update_gpio_value(pctl, pin, !isup,
 		pctl->devdata->n_pin_pupd, pctl->devdata->pin_pupd_grps);
 	if (ret == 0) {
 		r0 = r1r0 & 0x1;
 		r1 = (r1r0 & 0x2) >> 1;
-		mtk_pinctrl_set_gpio_value(pctl, pin, r0,
+		mtk_pinctrl_update_gpio_value(pctl, pin, r0,
 			pctl->devdata->n_pin_r0, pctl->devdata->pin_r0_grps);
-		mtk_pinctrl_set_gpio_value(pctl, pin, r1,
+		mtk_pinctrl_update_gpio_value(pctl, pin, r1,
 			pctl->devdata->n_pin_r1, pctl->devdata->pin_r1_grps);
 		ret = 0;
 	}
@@ -63,10 +74,10 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 	ret = mtk_pinctrl_get_gpio_value(pctl, pin,
 		pctl->devdata->n_pin_pupd_r1r0, pctl->devdata->pin_pupd_r1r0_grps);
 	if (ret >= 0) {
-		bit_pupd = (ret & 0x4) ? 1 : 0;
+		bit_pupd = (ret & 0x4) ? 1 : 0; /* set for PD, clr for PU */
 		bit_r0   = (ret & 0x1) ? MTK_PUPD_R1R0_BIT_R0 : 0;
 		bit_r1   = (ret & 0x2) ? MTK_PUPD_R1R0_BIT_R1 : 0;
-		return bit_pupd | bit_r0 | bit_r1 | MTK_PUPD_R1R0_BIT_SUPPORT;
+		return MTK_PUPD_R1R0_BIT_SUPPORT | bit_r1 | bit_r0 | bit_pupd;
 	}
 
 	if (!pctl->devdata->n_pin_pupd)
@@ -80,7 +91,7 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 			pctl->devdata->n_pin_r1, pctl->devdata->pin_r1_grps) ? MTK_PUPD_R1R0_BIT_R1 : 0;
 		bit_r0 = mtk_pinctrl_get_gpio_value(pctl, pin,
 			pctl->devdata->n_pin_r0, pctl->devdata->pin_r0_grps) ? MTK_PUPD_R1R0_BIT_R0 : 0;
-		return bit_pupd | bit_r0 | bit_r1 | MTK_PUPD_R1R0_BIT_SUPPORT;
+		return MTK_PUPD_R1R0_BIT_SUPPORT | bit_r1 | bit_r0 | bit_pupd;
 	}
 	return -EPERM;
 }
@@ -89,9 +100,9 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 static int mtk_pinctrl_set_gpio_pullsel_pullen(struct mtk_pinctrl *pctl, int pin,
 		bool enable, bool isup, unsigned int r1r0)
 {
-	mtk_pinctrl_set_gpio_value(pctl, pin, isup,
+	mtk_pinctrl_update_gpio_value(pctl, pin, isup,
 		pctl->devdata->n_pin_pullsel, pctl->devdata->pin_pullsel_grps);
-	mtk_pinctrl_set_gpio_value(pctl, pin, enable,
+	mtk_pinctrl_update_gpio_value(pctl, pin, enable,
 			pctl->devdata->n_pin_pullen, pctl->devdata->pin_pullen_grps);
 	return 0;
 }
@@ -127,7 +138,7 @@ static int mtk_pinctrl_get_gpio_pullsel(struct mtk_pinctrl *pctl, int pin)
 	pull_val = mtk_pinctrl_get_gpio_pupd_r1r0(pctl, pin);
 	if (pull_val == -EPERM) {
 		pull_val = mtk_pinctrl_get_gpio_pullsel_pullen(pctl, pin);
-		/*pull_sel = [pu,pd], 10 is pull up, 01 is pull down*/
+		/*pull_val = [pu,pd], 10 is pull up, 01 is pull down*/
 		if (pull_val == MTK_PUPD_BIT_PU)
 			pull_val = GPIO_PULL_UP;
 		else if (pull_val == MTK_PUPD_BIT_PD)
@@ -156,7 +167,7 @@ static int mtk_pinctrl_get_gpio_pullen(struct mtk_pinctrl *pctl, int pin)
 		else
 			pull_en = GPIO_PULL_UNSUPPORTED;
 	} else if (pull_val & MTK_PUPD_R1R0_BIT_SUPPORT) {
-		/*pull_en = [r1,r0,pupd], pull disabel 000,001, others enable*/
+		/*pull_val = [r1,r0,pupd], pull disabel 000,001, others enable*/
 		if (MTK_PUPD_R1R0_GET_PULLEN(pull_val))
 			pull_en = GPIO_PULL_ENABLE;
 		else
@@ -173,34 +184,56 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 {
 	int ret;
 
+#define GPIO_DEBUG
 #ifdef GPIO_DEBUG
 	int pull_val;
 
-	pr_warn("mtk_pinctrl_set_gpio_pull, pin = %d, enab = %d, sel = %d\n",
-		pin, enable, isup);
+	pr_warn("mtk_pinctrl_set_gpio_pull, pin = %d, enab = %d, sel = %d, arg = %u\n",
+		pin, enable, isup, arg);
 #endif
-	ret = mtk_pinctrl_set_gpio_pupd_r1r0(pctl, pin, enable, isup, arg);
-	if (ret == 0)
+	ret = mtk_pinctrl_set_gpio_pupd_r1r0(pctl, pin, enable, !isup, arg);
+	if (ret == 0) {
+#ifdef GPIO_DEBUG
+		pull_val = mtk_pinctrl_get_gpio_pullsel(pctl, pin);
+		pr_warn("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
+			pin,
+			((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PULLEN(pull_val) : -1),
+			((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PUPD(pull_val) : -1));
+#endif
 		goto out;
+	}
 
 	if (!pctl->devdata->pin_pullsel_grps) {
 		ret = -EPERM;
-		goto error_out;
+		goto out;
 	}
 
 	ret = mtk_pinctrl_set_gpio_pullsel_pullen(pctl, pin, enable, isup, arg);
+#ifdef GPIO_DEBUG
+	if (ret == 0) {
+		int enab = -1, sel = -1;
+
+		pull_val = mtk_pinctrl_get_gpio_pullsel(pctl, pin);
+		if (pull_val == GPIO_PULL_UP) {
+			enab = 1;
+			sel = 1;
+		} else if (pull_val == GPIO_PULL_UP) {
+			enab = 1;
+			sel = 0;
+		} else if (pull_val == GPIO_NO_PULL) {
+			enab = 0;
+			sel = 0;
+		} else if (pull_val == GPIO_PULL_UNSUPPORTED) {
+			enab = -1;
+			sel = -1;
+		}
+		pr_warn("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
+			pin, enab, sel);
+	}
+#endif
 
 out:
 
-#ifdef GPIO_DEBUG
-	pull_val = mtk_pinctrl_get_gpio_pullsel(pctl, pin);
-	pr_warn("mtk_pinctrl_get_gpio_pull, pin = %d, enab = %d, sel = %d\n",
-		pin,
-		((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PULLEN(pull_val) : -1),
-		((pull_val >= 0) ? MTK_PUPD_R1R0_GET_PUPD(pull_val) : -1));
-#endif
-
-error_out:
 	return ret;
 }
 
