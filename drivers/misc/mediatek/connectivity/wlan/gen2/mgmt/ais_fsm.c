@@ -2950,7 +2950,8 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	/* if we're in	req channel/join/search state, don't report disconnect. */
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_JOIN ||
 		prAisFsmInfo->eCurrentState == AIS_STATE_SEARCH ||
-		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN) {
+		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN ||
+		prAisFsmInfo->eCurrentState == AIS_STATE_COLLECT_ESS_INFO) {
 		DBGLOG(AIS, INFO, "CurrentState: %d, don't report disconnect\n",
 				   prAisFsmInfo->eCurrentState);
 		return;
