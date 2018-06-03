@@ -1097,7 +1097,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	pwrctrl->pcm_flags |= SPM_FLAG_RUN_DEEPIDLE_SCENARIO;
+	pwrctrl->pcm_flags |= SPM_FLAG_DEEPIDLE_OPTION;
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
