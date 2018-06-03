@@ -63,6 +63,14 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x10000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
+
+		reserve-memory-scp_share {
+			compatible = "mediatek,reserve-memory-scp_share";
+			no-map;
+			size = <0 0x01400000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
 	};
 
 	/* ATF logger SW IRQ number 279 = 32 + 247 */
@@ -273,6 +281,17 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	devapc_ao_infra_peri@1000e000 {
 		compatible = "mediatek,devapc_ao_infra_peri";
 		reg = <0 0x1000e000 0 0x0>;
+	};
+
+	scp@10500000 {
+		compatible = "mediatek,scp";
+		do_addr_A = <0 0>;
+		reg =	<0 0x10500000 0 0x40000>, /* sram */
+				<0 0x105c0000 0 0x1000>,  /* cfgreg */
+				<0 0x105c4000 0 0x1000>;  /* clkctrl */
+		interrupts = <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>;
+		core_1 = "enable";
+		scp_sramSize = <0x00040000>;      /* scp_A_sram_size */
 	};
 
 	sleep_reg_md@1000f000 {
