@@ -36,6 +36,7 @@ int g_vbst_adjustment;
 int g_irq_count_max;
 int g_irq_mask;
 int g_irq_mask_warning;
+int g_irq_disable;
 
 int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
 					enum dsv_dbg_mode_t mode)
@@ -45,6 +46,9 @@ int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
 	char str[50] = "";
 
 	if (!g_irq_mask)
+		return ret;
+
+	if (!(g_irq_disable & (1 << mode)))
 		return ret;
 
 	irq_count[mode] = irq_count[mode] + 1;
@@ -141,6 +145,10 @@ static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
 				strlen("irq_mask_warning "))) {
 		b += strlen("irq_mask_warning ");
 		flag = DSV_VAR_IRQ_MASK_WARNING;
+	} else if (!strncmp(b, "irq_disable ",
+				strlen("irq_disable "))) {
+		b += strlen("irq_disable ");
+		flag = DSV_VAR_IRQ_DISABLE;
 	} else
 		return -EINVAL;
 
@@ -172,6 +180,11 @@ static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
 		pr_info("[%s] set irq_mask_warning = 0x%x\n",
 					__func__, g_irq_mask_warning);
 		break;
+	case DSV_VAR_IRQ_DISABLE:
+		g_irq_disable = val;
+		pr_info("[%s] set irq_disable = 0x%x\n",
+					__func__, g_irq_disable);
+		break;
 	default:
 		pr_info("[%s] do nothing\n", __func__);
 		break;
@@ -186,6 +199,7 @@ static int mt6370_pmu_dsv_debug_show(struct seq_file *s, void *unused)
 	seq_printf(s, "irq_count_max = %d\n", g_irq_count_max);
 	seq_printf(s, "irq_mask = 0x%x\n", g_irq_mask);
 	seq_printf(s, "irq_mask_warning = 0x%x\n", g_irq_mask_warning);
+	seq_printf(s, "irq_disable = 0x%x\n", g_irq_disable);
 
 	return 0;
 }
@@ -209,6 +223,13 @@ int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
 {
 	struct dentry *mt6370_pmu_dir;
 
+	g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
+	g_vbst_adjustment = 0;
+	g_irq_count_max = IRQ_COUNT_MAX;
+	g_irq_mask = 1;
+	g_irq_mask_warning = 0;
+	g_irq_disable |= (1 << DSV_VPOS_OCP);
+
 	mt6370_pmu_dir = debugfs_create_dir("mt6370_pmu", NULL);
 	if (!mt6370_pmu_dir) {
 		pr_info("create /sys/kernel/debug/mt6370_pmu failed\n");
@@ -218,12 +239,6 @@ int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
 	debugfs_create_file("mt6370_pmu_dsv", 0644,
 				mt6370_pmu_dir, NULL,
 				&mt6370_pmu_dsv_debug_ops);
-
-	g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
-	g_vbst_adjustment = 0;
-	g_irq_count_max = IRQ_COUNT_MAX;
-	g_irq_mask = 1;
-	g_irq_mask_warning = 0;
 
 	return 0;
 }
