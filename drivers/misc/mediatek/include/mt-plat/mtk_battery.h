@@ -90,6 +90,7 @@ do {									\
 
 typedef enum {
 	BATTERY_METER_CMD_HW_FG_INIT,
+	BATTERY_METER_CMD_HW_VERSION,
 
 	BATTERY_METER_CMD_GET_HW_FG_CURRENT,	/* fgauge_read_current */
 	BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN,	/*  */
@@ -151,7 +152,12 @@ typedef enum {
 	BATTERY_METER_CMD_GET_FG_CURRENT_IAVG,
 	BATTERY_METER_CMD_SET_BAT_PLUGOUT_INTR_EN,
 	BATTERY_METER_CMD_SET_SET_IAVG_INTR,
-	BATTERY_METER_CMD_SET_FG_VBAT2_L_INT_EN,
+	BATTERY_METER_CMD_ENABLE_FG_VBAT_L_INT,
+	BATTERY_METER_CMD_ENABLE_FG_VBAT_H_INT,
+	BATTERY_METER_CMD_SET_FG_VBAT_L_TH,
+	BATTERY_METER_CMD_SET_FG_VBAT_H_TH,
+	BATTERY_METER_CMD_SET_META_CALI_CURRENT,
+	BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE,
 
 	BATTERY_METER_CMD_NUMBER
 } BATTERY_METER_CTRL_CMD;
@@ -176,7 +182,11 @@ typedef enum {
 	FG_INTR_SHUTDOWN = 16384,
 	FG_INTR_RESET_NVRAM = 32768,
 	FG_INTR_BAT_PLUGOUT = 65536,
-	FG_INTR_IAVG = 131072,
+	FG_INTR_IAVG = 2^17,
+	FG_INTR_VBAT2_L = 2^18,
+	FG_INTR_VBAT2_H = 2^19,
+	FG_INTR_CHR_FULL = 2^20,
+	FG_INTR_DLPT_SD = 2^21,
 
 } FG_INTERRUPT_FLAG;
 
@@ -191,7 +201,6 @@ typedef enum {
 	FG_DAEMON_CMD_SET_DAEMON_PID,
 	FG_DAEMON_CMD_NOTIFY_DAEMON,
 	FG_DAEMON_CMD_CHECK_FG_DAEMON_VERSION,
-	FG_DAEMON_CMD_GET_SHUTDOWN_COND,
 	FG_DAEMON_CMD_FGADC_RESET,
 	FG_DAEMON_CMD_GET_CUSTOM_SETTING,
 	FG_DAEMON_CMD_GET_TEMPERTURE,
@@ -219,6 +228,7 @@ typedef enum {
 	FG_DAEMON_CMD_IS_HWOCV_UNRELIABLE,
 	FG_DAEMON_CMD_GET_FG_CURRENT_AVG,
 	FG_DAEMON_CMD_SET_FG_TIME,
+	FG_DAEMON_CMD_GET_FG_TIME,
 	FG_DAEMON_CMD_GET_ZCV,
 	FG_DAEMON_CMD_GET_FG_SW_CAR_NAFG_CNT,
 	FG_DAEMON_CMD_GET_FG_SW_CAR_NAFG_DLTV,
@@ -244,7 +254,14 @@ typedef enum {
 	FG_DAEMON_CMD_SET_ANDROID_UI,
 	FG_DAEMON_CMD_SET_BAT_PLUGOUT_INTR,
 	FG_DAEMON_CMD_SET_IAVG_INTR,
-	FG_DAEMON_CMD_SET_FG_VBAT2_L_INT_EN,
+	FG_DAEMON_CMD_SET_FG_SHUTDOWN_COND,
+	FG_DAEMON_CMD_GET_FG_SHUTDOWN_COND,
+	FG_DAEMON_CMD_ENABLE_FG_VBAT_L_INT,
+	FG_DAEMON_CMD_ENABLE_FG_VBAT_H_INT,
+	FG_DAEMON_CMD_SET_FG_VBAT_L_TH,
+	FG_DAEMON_CMD_SET_FG_VBAT_H_TH,
+	FG_DAEMON_CMD_SET_CAR_TUNE_VALUE,
+	FG_DAEMON_CMD_PRINT_LOG,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -409,6 +426,7 @@ struct fuel_gauge_custom_data {
 
 	int versionID1;
 	int versionID2;
+	int versionID3;
 
 	/* Qmax for battery  */
 	int q_max_L_current;
@@ -520,10 +538,14 @@ struct fuel_gauge_custom_data {
 	int fg_pre_tracking_en;
 	int vbat2_det_time;
 	int vbat2_det_counter;
-	int vbat2_det_voltage;
+	int vbat2_det_voltage1;
+	int vbat2_det_voltage2;
+	int vbat2_det_voltage3;
 
 	int shutdown_1_time;
+	int shutdown_gauge0;
 	int shutdown_gauge1_xmins;
+	int shutdown_gauge1_mins;
 
 	/* ZCV update */
 	int zcv_suspend_time;
@@ -603,10 +625,6 @@ struct fuel_gauge_custom_data {
 	int md_sleep_current_check;     /*5. gauge adjust by ocv 9. md sleep current check*/
 	int q_max_by_current;           /*7. qmax variant by current loading.*/
 	/*int q_max_sys_voltage;*/		/*8. qmax variant by sys voltage.*/
-
-	int shutdown_gauge0;
-	/*int shutdown_gauge1_xmins;*/
-	int shutdown_gauge1_mins;
 
 	int min_charging_smooth_time;
 
@@ -699,9 +717,8 @@ enum {
 };
 
 extern void mtk_power_misc_init(struct platform_device *pdev);
-extern void notify_fg_shutdown(int sec);
+extern void notify_fg_shutdown(void);
 extern int set_shutdown_cond(int shutdown_cond);
-
-
+extern int get_shutdown_cond(void);
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */
