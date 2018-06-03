@@ -2080,7 +2080,7 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		mm_step0 = <436 1 0 1>;
 		mm_step0_ext = <436 2 6 0x10C4EC>;
 		mm_step1 = <312 1 0 2>;
-		mm_step1_ext = <436 2 6 0x10C4EC>;
+		mm_step1_ext = <312 2 6 0x10C4EC>;
 		mm_step2 = <227 1 0 3>;
 		mm_step2_ext = <227 2 6 0x117627>;
 		vopp_steps = <0 1 3>;
