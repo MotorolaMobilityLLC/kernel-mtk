@@ -145,6 +145,10 @@ initcall_debug=1 maxcpus=1";
 	};
 };
 
+&flashlights_mt6370{
+	decouple = <1>;
+};
+
 &i2c3 {
 	ext_buck_lp4@57 {
 		regulator-name ="ext_buck_vdd2";
