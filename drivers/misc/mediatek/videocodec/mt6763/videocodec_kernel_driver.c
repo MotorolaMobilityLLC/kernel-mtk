@@ -1000,6 +1000,10 @@ static long vcodec_lockhw(unsigned long arg)
 	} else {
 		MODULE_MFV_PR_ERR("[WARNING] VCODEC_SEL is not 0\n");
 	}
+	if (u4VcodecSel == 0x2)
+		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x10, 0x1);
+	else
+		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x10, 0x0);
 
 	MODULE_MFV_PR_DEBUG("VCODEC_LOCKHW - tid = %d\n", current->pid);
 
