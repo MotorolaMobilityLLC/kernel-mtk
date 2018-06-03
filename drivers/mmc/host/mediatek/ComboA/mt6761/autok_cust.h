@@ -183,8 +183,8 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.msdc0_dat6tx = 0; \
 		autok_para_tx.msdc0_dat7tx = 0; \
 		autok_para_tx.msdc0_txskew = 0; \
-		autok_para_tx.msdc1_clktx = 0; \
-		autok_para_tx.msdc1_sdr104_clktx = 0; \
+		autok_para_tx.msdc1_clktx = 4; \
+		autok_para_tx.msdc1_sdr104_clktx = 4; \
 		autok_para_tx.msdc2_clktx = 0; \
 		autok_para_tx.sdio30_plus_clktx = 0; \
 		autok_para_tx.sdio30_plus_cmdtx = 0; \
