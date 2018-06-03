@@ -123,7 +123,7 @@ static int pmic_lp_type1_set(PMU_LP_TABLE1_ENUM pname, BUCK_LDO_EN_USER user, un
 			     unsigned char op_cfg)
 {
 	const PMU_LP_TABLE1_ENTRY *pFlag = &pmu_lp_table1[pname];
-	unsigned int rb_en, rb_cfg, max_cfg = 1;
+	unsigned int rb_en = 0, rb_cfg = 0, max_cfg = 1;
 	int ret = 0;
 
 	if (user == SW || user == SPM) {
