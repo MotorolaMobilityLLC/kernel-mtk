@@ -1751,8 +1751,8 @@ int gf_spi_read_bytes_ree_new(struct gf_device *gf_dev, u16 addr, u32 data_len, 
 	struct spi_message msg;
 	struct spi_transfer xfer;
 
-	gf_tx_buf_t *g_tx_buf;
-	gf_rx_buf_t *g_rx_buf;
+	struct gf_tx_buf_t *g_tx_buf;
+	struct gf_rx_buf_t *g_rx_buf;
 
 	g_tx_buf = kzalloc(10000 + 5, GFP_KERNEL);
 	g_rx_buf = kzalloc(10000 + 5, GFP_KERNEL);
@@ -1823,8 +1823,8 @@ int gf_spi_write_bytes_ree_new(struct gf_device *gf_dev, u16 addr, u32 data_len,
 	struct spi_message msg;
 	struct spi_transfer xfer;
 
-	gf_tx_buf_t *g_tx_buf;
-	gf_rx_buf_t *g_rx_buf;
+	struct gf_tx_buf_t *g_tx_buf;
+	struct gf_rx_buf_t *g_rx_buf;
 
 	g_tx_buf = kzalloc(10000 + 5, GFP_KERNEL);
 	g_rx_buf = kzalloc(10000 + 5, GFP_KERNEL);

@@ -66,15 +66,15 @@ int nanohub_ipi_write(void *data, u8 *tx, int length, int timeout)
 #endif
 	while (retry--) { /* add retry to avoid SCP busy timeout */
 		ret = scp_ipi_send(IPI_CHRE, tx, length, 0, SCP_A_ID);
-		if (ret != BUSY)
+		if (ret != SCP_IPI_BUSY)
 			break;
 		usleep_range(100, 200);
 	}
 
-	if (ret == BUSY)
+	if (ret == SCP_IPI_BUSY)
 		pr_debug("%s ipi busy, ret=%d\n", __func__, ret);
 
-	if (ret == DONE)
+	if (ret == SCP_IPI_DONE)
 		return length;
 	else
 		return ERROR_NACK;

@@ -602,7 +602,6 @@ static int phy_lpm_enable(struct mtk_phy_instance  *instance, bool on)
 
 static int phy_host_mode(struct mtk_phy_instance  *instance, bool on)
 {
-	unsigned long flags;
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
 	phy_printk(K_DEBUG, "%s+ = %d\n", __func__, on);
