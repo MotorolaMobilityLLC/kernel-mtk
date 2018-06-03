@@ -2153,15 +2153,15 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 
 	/*send wmt part patch address command */
 	if (wmt_ic_ops_soc.icId == 0x6752 ||
-	    wmt_ic_ops_soc.icId == 0x8127 ||
-	    wmt_ic_ops_soc.icId == 0x7623 ||
-	    wmt_ic_ops_soc.icId == 0x6571 ||
-	    wmt_ic_ops_soc.icId == 0x0326 ||
-	    wmt_ic_ops_soc.icId == 0x0551 ||
+		wmt_ic_ops_soc.icId == 0x8127 ||
+		wmt_ic_ops_soc.icId == 0x7623 ||
+		wmt_ic_ops_soc.icId == 0x6571 ||
+		wmt_ic_ops_soc.icId == 0x0326 ||
+		wmt_ic_ops_soc.icId == 0x0551 ||
 		wmt_ic_ops_soc.icId == 0x0690 ||
-	    wmt_ic_ops_soc.icId == 0x0321 ||
+		wmt_ic_ops_soc.icId == 0x0321 ||
 		wmt_ic_ops_soc.icId == 0x0335 ||
-	    wmt_ic_ops_soc.icId == 0x0337 ||
+		wmt_ic_ops_soc.icId == 0x0337 ||
 		wmt_ic_ops_soc.icId == 0x8163 ||
 		wmt_ic_ops_soc.icId == 0x6580 ||
 		wmt_ic_ops_soc.icId == 0x8167) {
@@ -2170,11 +2170,19 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0xc8;
 	}
 	/*send wmt part patch address command */
-	if (wmt_ic_ops_soc.icId == 0x0279 || wmt_ic_ops_soc.icId == 0x0507) {
+	if (wmt_ic_ops_soc.icId == 0x0279) {
 		/* MT6797 patch RAM base */
 		WMT_PATCH_ADDRESS_CMD[8] = 0x08;
 		WMT_PATCH_ADDRESS_CMD[9] = 0x05;
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0x2c;
+		WMT_PATCH_P_ADDRESS_CMD[9] = 0x0b;
+	}
+
+	if (wmt_ic_ops_soc.icId == 0x0507) {
+		/* MT6759 patch RAM base */
+		WMT_PATCH_ADDRESS_CMD[8] = 0x18;
+		WMT_PATCH_ADDRESS_CMD[9] = 0x05;
+		WMT_PATCH_P_ADDRESS_CMD[8] = 0x7c;
 		WMT_PATCH_P_ADDRESS_CMD[9] = 0x0b;
 	}
 
