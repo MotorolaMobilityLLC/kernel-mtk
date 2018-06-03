@@ -17,11 +17,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v1/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/$(CONFIG_MTK_PLATFORM)/
 
-obj-y += mtk_mcdi.o
-obj-y += mtk_mcdi_state.o
+obj-y += mtk_mcdi_main.o
+obj-y += mtk_mcdi_util.o
 obj-y += mtk_mcdi_profile.o
-
-ifeq ($(CONFIG_MACH_MT6758), y)
-obj-y += mtk_mcdi_mt6758.o
-endif

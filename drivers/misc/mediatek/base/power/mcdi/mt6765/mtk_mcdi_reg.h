@@ -10,10 +10,39 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#ifndef __MTK_MCDI_REG_H__
+#define __MTK_MCDI_REG_H__
 
-#ifndef __MTK_MCDI_MBOX_H__
-#define __MTK_MCDI_MBOX_H__
+/* MCDI systram */
+#define MCDI_SYSRAM_SIZE    0x800
 
+extern void __iomem *mcdi_sysram_base;
+
+/* MCDI latency profile */
+#define SYSRAM_PROF_RATIO_REG      (mcdi_sysram_base + 0x5B0)
+#define SYSRAM_PROF_BASE_REG       (mcdi_sysram_base + 0x600)
+#define SYSRAM_PROF_DATA_REG       (mcdi_sysram_base + 0x680)
+#define SYSRAM_LATENCY_BASE_REG    (mcdi_sysram_base + 0x780)
+#define SYSRAM_PROF_RARIO_DUR      (mcdi_sysram_base + 0x7C0)
+
+#define SYSRAM_PROF_REG(ofs)          (SYSRAM_PROF_BASE_REG + ofs)
+#define CPU_OFF_LATENCY_REG(ofs)      (SYSRAM_LATENCY_BASE_REG + ofs)
+#define CPU_ON_LATENCY_REG(ofs)       (SYSRAM_LATENCY_BASE_REG + 0x10 + ofs)
+#define Cluster_OFF_LATENCY_REG(ofs)  (SYSRAM_LATENCY_BASE_REG + 0x20 + ofs)
+#define Cluster_ON_LATENCY_REG(ofs)   (SYSRAM_LATENCY_BASE_REG + 0x30 + ofs)
+
+#define LATENCY_DISTRIBUTE_REG(ofs) (SYSRAM_PROF_BASE_REG + 0x140 + ofs)
+#define PROF_OFF_CNT_REG(idx)       (LATENCY_DISTRIBUTE_REG(idx * 4))
+#define PROF_ON_CNT_REG(idx)        (LATENCY_DISTRIBUTE_REG((idx + 4) * 4))
+
+#define cpu_ratio_shift(idx)        ((idx) * 0x8 + 0x4)
+#define cluster_ratio_shift(idx)    (((idx) + NF_CPU) * 0x8 + 0x4)
+#define PROF_CPU_RATIO_REG(idx) \
+	(SYSRAM_PROF_RATIO_REG + cpu_ratio_shift(idx))
+#define PROF_CLUSTER_RATIO_REG(idx) \
+	(SYSRAM_PROF_RATIO_REG + cluster_ratio_shift(idx))
+
+/* MBOX */
 #define MCDI_MBOX                               3
 #define MCDI_MBOX_SLOT_OFFSET_START             0
 #define MCDI_MBOX_SLOT_OFFSET_END               16
@@ -43,4 +72,4 @@
 #define MCDI_ACTION_WAIT_EVENT                  2
 #define MCDI_ACTION_WORKING                     3
 
-#endif /* __MTK_MCDI_MBOX_H__ */
+#endif /* __MTK_MCDI_REG_H__ */

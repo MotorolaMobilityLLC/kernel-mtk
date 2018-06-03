@@ -22,7 +22,10 @@
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
-#include <mtk_mcdi_mbox.h>
+#include <mtk_mcdi_util.h>
+
+#include <mtk_mcdi_plat.h>
+#include <mtk_mcdi_reg.h>
 #include <mtk_mcdi_state.h>
 
 #include <trace/events/mtk_idle_event.h>
@@ -177,9 +180,9 @@ void update_residency_latency_result(int cpu)
 		struct cpuidle_state *s = &tbl->states[i];
 
 		if (s->target_residency > predict_us)
-			continue;
+			break;
 		if (s->exit_latency > latency_req)
-			continue;
+			break;
 
 		state = i;
 	}

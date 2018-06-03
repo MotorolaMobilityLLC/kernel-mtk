@@ -14,6 +14,8 @@
 #ifndef __MTK_MCDI_PROFILE_H__
 #define __MTK_MCDI_PROFILE_H__
 
+#include <linux/debugfs.h>
+
 enum {
 	MCDI_PROF_FLAG_STOP,
 	MCDI_PROF_FLAG_START,
@@ -39,4 +41,5 @@ int get_mcdi_profile_cpu(void);
 unsigned int get_mcdi_profile_cnt(void);
 unsigned int get_mcdi_profile_sum_us(int idx);
 
+void mcdi_debugfs_profile_init(struct dentry *mcdu_dir);
 #endif /* __MTK_MCDI_PROFILE_H__ */
