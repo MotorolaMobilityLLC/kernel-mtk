@@ -438,6 +438,7 @@ static void _cmdq_build_trigger_loop(void)
 
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_LCM_TE, 0);
 
+		ret = cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CABC_EOF);
 		/* cleat frame done token, now the config thread will not allowed to config registers. */
 		/* remember that config thread's priority is higher than trigger thread, */
 		/* so all the config queued before will be applied then STREAM_EOF token be cleared */
@@ -479,6 +480,7 @@ static void _cmdq_build_trigger_loop(void)
 
 		/* now frame done, config thread is allowed to config register now */
 		ret = cmdqRecSetEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
+		ret = cmdqRecSetEventToken(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_EXT_CABC_EOF);
 
 		/* RUN forever!!!! */
 		WARN_ON(ret < 0);
@@ -500,6 +502,7 @@ void _cmdq_start_extd_trigger_loop(void)
 		/* need to set STREAM_EOF for the first time, otherwise we will stuck in dead loop */
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_EXT_STREAM_EOF);
 		/* /dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW); */
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_EXT_CABC_EOF);
 	}
 
 	EXTDMSG("START cmdq trigger loop finished\n");
@@ -1411,6 +1414,7 @@ int ext_disp_resume(unsigned int session)
 {
 	struct disp_ddp_path_config *data_config;
 	enum EXT_DISP_STATUS ret = EXT_DISP_STATUS_OK;
+	int i = 0;
 
 	EXTDFUNC();
 
@@ -1457,7 +1461,14 @@ int ext_disp_resume(unsigned int session)
 		/*data_config->fps = lcm_fps;*/
 		data_config->dst_dirty = 1;
 
-		dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
+		/* disable all ovl layers to show black screen */
+		for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++)
+			data_config->ovl_config[i].layer_en = 0;
+
+		data_config->ovl_dirty = 1;
+
+		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
+		data_config->dst_dirty = 0;
 
 		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 			EXTDERR("[POWER]Fatal error, we didn't start display path but it's already busy\n");
@@ -2214,10 +2225,12 @@ static int _set_backlight_by_cmdq(unsigned int level)
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
 		EXTDMSG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	} else {
+		cmdqRecWait(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_EXT_CABC_EOF);
 		_cmdq_handle_clear_dirty(cmdq_handle_backlight);
 		_ext_cmdq_insert_wait_frame_done_token(cmdq_handle_backlight);
 		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
-		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+/*		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);*/
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_EXT_CABC_EOF);
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
 		EXTDMSG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	}
