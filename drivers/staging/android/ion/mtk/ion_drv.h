@@ -113,7 +113,7 @@ struct ion_sys_get_phys_param {
 	unsigned long len;
 };
 
-#define ION_MM_DBG_NAME_LEN 16
+#define ION_MM_DBG_NAME_LEN 48
 #define ION_MM_SF_BUF_INFO_LEN 16
 
 struct ion_sys_client_name {

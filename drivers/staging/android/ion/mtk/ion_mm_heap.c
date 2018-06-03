@@ -685,7 +685,7 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
 			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
+				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s %d %d  %d  %d  %s\n",
 				     buffer, buffer->size, buffer->kmap_cnt,
 				     atomic_read(&buffer->ref.refcount), buffer->handle_count,
 				     bug_info->module_id, bug_info->MVA, bug_info->security,
