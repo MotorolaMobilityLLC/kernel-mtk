@@ -4246,11 +4246,11 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0347, 0x07cf);
 				/* Audio L preamplifier DCC precharge, Audio L preamplifier input sel : AIN0 */
 				/* Audio L PGA 18 dB gain */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5B47, 0x7800);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5347, 0x7800);
 				/* Audio L ADC input sel : L PGA. Enable audio L ADC */
-				/* Audio L PGA switch bulk tied to VCM */
+				/* Audio L PGA switch bulk tied to supply rail */
 				udelay(100);
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5B43, 0x0004);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5343, 0x0004);
 				/* Audio L preamplifier DCC precharge off */
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]
 				   == 1) {
@@ -4288,11 +4288,11 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0387, 0x07cf);
 				/* Audio L preamplifier DCC precharge, Audio L preamplifier input sel : AIN1 */
 				/* Audio L PGA 18 dB gain */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5B87, 0x7800);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5387, 0x7800);
 				/* Audio L ADC input sel : L PGA. Enable audio L ADC */
-				/* Audio L PGA switch bulk tied to VCM */
+				/* Audio L PGA switch bulk tied to supply rail */
 				udelay(100);
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5B83, 0x0004);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5383, 0x0004);
 				/* Audio L preamplifier DCC precharge off */
 			}
 		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
@@ -4324,11 +4324,11 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* Audio R PGA 18 dB gain(SMT) */
 			Ana_Set_Reg(AUDENC_ANA_CON1, 0x03C7, 0x00cf);
 			/* Audio R preamplifier input sel : AIN2. Enable audio R PGA */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5BC7, 0xf800);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x53C7, 0xf800);
 			/* Audio R ADC input sel : R PGA. Enable audio R ADC */
-			/* Audio R PGA switch bulk tied to VCM */
+			/* Audio R PGA switch bulk tied to supply rail */
 			udelay(100);
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5BC3, 0x0004);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x53C3, 0x0004);
 			/* Audio R preamplifier DCC precharge off */
 		}
 
@@ -4395,7 +4395,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* "ADC1", main_mic */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5343, 0x0800); /* 0x5343 */
-				/* Audio L PGA switch bulk tied to VCM */
+				/* Audio L PGA switch bulk tied to supply rail */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0343, 0xf000); /* 0x0343 */
 				/* Audio L ADC input sel : off, disable audio L ADC */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0fff); /* 0x0000 */
@@ -4405,7 +4405,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				   == 1) {
 				/* "ADC2", headset mic */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5383, 0x0800); /* 0x5383 */
-				/* Audio L PGA switch bulk tied to VCM */
+				/* Audio L PGA switch bulk tied to supply rail */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0383, 0xf000); /* 0x0383 */
 				/* Audio L ADC input sel : off, disable audio L ADC */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0fff); /* 0x0000 */
@@ -6767,11 +6767,11 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 		Ana_Set_Reg(AUDENC_ANA_CON10, 0x0121, 0xffff);
 		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0347, 0xffff);
 		Ana_Set_Reg(AUDENC_ANA_CON1, 0x03c7, 0xffff);
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5b47, 0xffff);
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x5bc7, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5347, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x53c7, 0xffff);
 		udelay(100);
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5b43, 0xffff);
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x5bc3, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5343, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x53c3, 0xffff);
 
 	} else {
 		pr_warn("%s(): Hardcode for pmic reset\n", __func__);
@@ -7806,8 +7806,9 @@ void mtk_audio_reset_input_precharge(void)
 	}
 #endif
 	pr_warn("%s\n", __func__);
-	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0x0004);
-	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
+	/* Switch bulk tied to supply rail, no need to reset precharge */
+	/* Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0x0004); */
+	/* Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004); */
 }
 EXPORT_SYMBOL(mtk_audio_reset_input_precharge);
 
