@@ -278,6 +278,7 @@ SENINF_IOCTL_EXIT:
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
 static long seninf_ioctl_compat(struct file *pfile, unsigned int cmd, unsigned long arg)
 {
 	if (!pfile->f_op || !pfile->f_op->unlocked_ioctl)
@@ -285,6 +286,7 @@ static long seninf_ioctl_compat(struct file *pfile, unsigned int cmd, unsigned l
 
 	return pfile->f_op->unlocked_ioctl(pfile, cmd, arg);
 }
+#endif
 
 static const struct file_operations gseninf_file_operations = {
 	.owner          = THIS_MODULE,
