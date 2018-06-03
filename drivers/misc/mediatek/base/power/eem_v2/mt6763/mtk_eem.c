@@ -418,15 +418,15 @@ static void get_soc_efuse(void)
 	soc_efuse = 0;
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2) {
-		eem_vcore_index[0] = GET_BITS_VAL(7:6, soc_efuse) & mask_f;
-		eem_vcore_index[1] = GET_BITS_VAL(5:4, soc_efuse) & mask_7;
-		eem_vcore_index[2] = GET_BITS_VAL(3:2, soc_efuse) & mask_7;
-		eem_vcore_index[3] = GET_BITS_VAL(1:0, soc_efuse) & mask_7;
+		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
+		eem_vcore_index[1] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
+		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
+		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
 	} else {
-		eem_vcore_index[0] = GET_BITS_VAL(7:6, soc_efuse) & mask_f;
-		eem_vcore_index[1] = GET_BITS_VAL(5:4, soc_efuse) & mask_f;
-		eem_vcore_index[2] = GET_BITS_VAL(3:2, soc_efuse) & mask_7;
-		eem_vcore_index[3] = GET_BITS_VAL(1:0, soc_efuse) & mask_7;
+		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
+		eem_vcore_index[1] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
+		eem_vcore_index[2] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
+		eem_vcore_index[3] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
 	}
 	eem_error("eem_vcore_index:%d, %d, %d, %d\n", eem_vcore_index[0], eem_vcore_index[1],
 				eem_vcore_index[2], eem_vcore_index[3]);

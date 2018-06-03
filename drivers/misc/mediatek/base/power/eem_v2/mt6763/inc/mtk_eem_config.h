@@ -108,8 +108,8 @@
 #define DEVINFO_10 0x00440003
 #define DEVINFO_DVT_9 0x10BD3C1B
 #define DEVINFO_DVT_10 0x0055C000
-#define DEVINFO_IDX_9 59
-#define DEVINFO_IDX_10 60
+#define DEVINFO_IDX_9 131 /* 59 */
+#define DEVINFO_IDX_10 131 /* 60 */
 
 /* segment */
 #define DEVINFO_IDX_SEG 30
