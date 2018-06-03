@@ -17,7 +17,7 @@
 
 #define DRIVER_AUTHOR   "jlguo <jlguo@via-telecom.com>"
 #define DRIVER_DESC     "Rawbulk Gadget - transport data from CP to Gadget"
-#define DRIVER_VERSION  "1.0.1"
+#define DRIVER_VERSION  "1.0.2"
 
 #include <linux/err.h>
 #include <linux/wakelock.h>

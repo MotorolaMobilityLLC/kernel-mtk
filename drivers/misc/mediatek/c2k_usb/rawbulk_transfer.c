@@ -34,7 +34,7 @@
 
 #define DRIVER_AUTHOR   "Juelun Guo <jlguo@via-telecom.com>"
 #define DRIVER_DESC     "Rawbulk Driver - perform bypass for QingCheng"
-#define DRIVER_VERSION  "1.0.4"
+#define DRIVER_VERSION  "1.0.2"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -44,7 +44,9 @@
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <linux/moduleparam.h>
+#ifndef C2K_USB_UT
 #include <mt-plat/mtk_ccci_common.h>
+#endif
 #include "viatel_rawbulk.h"
 /* #include "modem_sdio.h" */
 
@@ -378,7 +380,15 @@ reget:
 	}
 
 	if (retry) {
-		C2K_NOTE("%s: up request is buzy, try to get usb request\n", __func__);
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 20);
+		static int skip_cnt;
+
+		if (__ratelimit(&ratelimit)) {
+			C2K_NOTE("%s: up request is buzy, reget, skip_cnt<%d>\n", __func__, skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+
 		goto reget;
 	}
 	if (!t->req || got == 0)
@@ -711,6 +721,15 @@ static int start_downstream(struct downstream_transaction *t)
 
 static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 {
+#ifdef C2K_USB_UT
+	int i;
+	static unsigned char last_c;
+	unsigned char c;
+	char verb[64];
+	char compare_val;
+	char *ptr;
+	char *pbuf;
+#endif
 
 	/* struct downstream_transaction *t = container_of(req->buf, */
 	/* struct downstream_transaction, buffer); */
@@ -730,13 +749,8 @@ static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 	}
 #ifdef C2K_USB_UT
 #define PRINT_LIMIT 8
-	int i;
-	static unsigned char last_c;
-	unsigned char c;
-	char *ptr = (char *)t->req->buf;
-	char verb[64];
-	char *pbuf = (char *)verb;
-	char compare_val;
+	ptr = (char *)t->req->buf;
+	pbuf = (char *)verb;
 
 	pbuf += sprintf(pbuf, "down len(%d), %d, ", t->req->actual, (int)sizeof(unsigned char));
 	for (i = 0; i < t->req->actual; i++) {
@@ -1292,5 +1306,4 @@ module_exit(rawbulk_exit);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
-MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPL");
