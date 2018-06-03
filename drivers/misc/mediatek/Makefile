@@ -26,6 +26,7 @@ obj-y	+= hwmon/
 obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
 endif
 
+obj-$(CONFIG_MTK_ACCDET) += accdet/
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MMC_MTK_SDIO) += mtk_sdio/

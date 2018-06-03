@@ -171,6 +171,7 @@ endmenu  # Security
 
 menu "Other Peripherals"
 
+source "drivers/misc/mediatek/accdet/Kconfig"
 source "drivers/misc/mediatek/ice_debug/Kconfig"
 source "drivers/misc/mediatek/udi/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
