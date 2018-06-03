@@ -3257,7 +3257,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 void mtk_battery_init(struct platform_device *dev)
 {
-	gm.log_level = 7;
+	gm.log_level = 3;
 	gm.d_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
 	gm.fg_bat_int1_ht = 0xffff;
