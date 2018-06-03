@@ -116,9 +116,9 @@ struct LCM_setting_table {
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_DELAY, 80, {} },
 	{0x4F, 1, {0x01} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_DELAY, 20, {} }
 };
 
 static struct LCM_setting_table init_setting_cmd[] = {
