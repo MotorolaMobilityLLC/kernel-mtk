@@ -89,6 +89,7 @@ bool spm_resource_req(unsigned int user, unsigned int req_mask)
 
 	return true;
 }
+EXPORT_SYMBOL(spm_resource_req);
 
 unsigned int spm_get_resource_usage(void)
 {
@@ -101,6 +102,7 @@ unsigned int spm_get_resource_usage(void)
 
 	return resource_usage;
 }
+EXPORT_SYMBOL(spm_get_resource_usage);
 
 static void spm_update_curr_resource_usage(void)
 {
