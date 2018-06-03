@@ -746,7 +746,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 	case FM_IOCTL_I2S_SETTING:{
 			struct fm_i2s_setting i2s_cfg;
 
-			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_I2S_SETTING\n");
+			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_I2S_SETTING\n");
 
 			if (copy_from_user(&i2s_cfg, (void *)arg, sizeof(struct fm_i2s_setting))) {
 				WCN_DBG(FM_ALT | MAIN, "i2s set, copy_from_user err\n");
