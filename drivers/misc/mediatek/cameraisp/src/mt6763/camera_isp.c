@@ -632,32 +632,32 @@ static spinlock_t      SpinLock_P2FrameList;
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_ 8
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_ (_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
 struct ISP_P2_BUFQUE_IDX_STRUCT {
-	volatile int start; /* starting index for frames in the ring list */
-	volatile int curr; /* current index for running frame in the ring list */
-	volatile int end; /* ending index for frames in the ring list */
+	/*volatile */int start; /* starting index for frames in the ring list */
+	/*volatile */int curr; /* current index for running frame in the ring list */
+	/*volatile */int end; /* ending index for frames in the ring list */
 };
 
 struct ISP_P2_FRAME_UNIT_STRUCT {
-	volatile unsigned int               processID;  /* caller process ID */
-	volatile unsigned int               callerID;   /* caller thread ID */
-	volatile unsigned int               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
+	/*volatile */unsigned int               processID;  /* caller process ID */
+	/*volatile */unsigned int               callerID;   /* caller thread ID */
+	/*volatile */unsigned int               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
 
-	volatile enum ISP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
+	/*volatile */enum ISP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
 };
 
-static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile struct
+static /*volatile */struct ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static /*volatile */struct
 ISP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
 
 struct ISP_P2_FRAME_PACKAGE_STRUCT {
-	volatile unsigned int                processID;  /* caller process ID */
-	volatile unsigned int                callerID;   /* caller thread ID */
-	volatile unsigned int                dupCQIdx;       /* to judge it belongs to which frame package */
-	volatile int                   frameNum;
-	volatile int                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
+	/*volatile */unsigned int                processID;  /* caller process ID */
+	/*volatile */unsigned int                callerID;   /* caller thread ID */
+	/*volatile */unsigned int                dupCQIdx;       /* to judge it belongs to which frame package */
+	/*volatile */int                   frameNum;
+	/*volatile */int                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
 };
-static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile struct ISP_P2_FRAME_PACKAGE_STRUCT
+static /*volatile */struct ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static /*volatile */struct ISP_P2_FRAME_PACKAGE_STRUCT
 	P2_FramePackage_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_PACKAGE_NUM_];
 
 
