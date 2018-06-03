@@ -90,10 +90,13 @@
 #define MTK_SYSCLK_1536          15360000
 /*---------------------------------------------------------------------------*/
 /* FIXME: MT6593 FPGA porting*/
- /* workaround start */
+/* workaround start */
+/* Just mark it for next time bring up */
+#if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #define CONFIG_FPGA_EARLY_PORTING
 #define FIX_TO_26M
+#endif
 #endif
 /* workaround end */
 
