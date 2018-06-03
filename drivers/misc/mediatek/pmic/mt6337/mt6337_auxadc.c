@@ -109,8 +109,8 @@ int mt6337_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] reg_val = 0x%x, adc_result = %d\n",
-				__func__, reg_val, adc_result);
+	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
 
