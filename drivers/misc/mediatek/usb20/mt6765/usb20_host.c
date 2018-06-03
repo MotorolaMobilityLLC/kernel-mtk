@@ -25,7 +25,7 @@
 #include "usb20.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 #include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
@@ -62,7 +62,8 @@ void do_register_otg_work(struct work_struct *data)
 	}
 
 	otg_nb.notifier_call = otg_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb,
+		TCP_NOTIFY_TYPE_VBUS|TCP_NOTIFY_TYPE_USB);
 	if (ret < 0) {
 		pr_debug("register OTG <%p> fail\n", otg_tcpc_dev);
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
@@ -254,7 +255,7 @@ void musb_typec_host_disconnect(int delay)
 	queue_delayed_work(mtk_musb->st_wq,
 			&mtk_musb->host_work, msecs_to_jiffies(delay));
 }
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 #ifdef CONFIG_TCPC_CLASS
 int tcpc_otg_enable(void)
 {
@@ -800,7 +801,7 @@ void mt_usb_otg_init(struct musb *musb)
 	INIT_DELAYED_WORK(&musb->host_work, musb_host_work);
 
 	/* CONNECTION MANAGEMENT*/
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 	pr_debug("host controlled by TYPEC\n");
 	typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS

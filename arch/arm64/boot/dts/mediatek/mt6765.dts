@@ -2149,6 +2149,21 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		bif_cv_under_threshold2 = <4450000>;
 	};
 
+	rt9465_slave_chr: rt9465_slave_chr {
+		compatible = "richtek,rt9465";
+		status = "disabled";
+	};
+
+	rt-pd-manager {
+		compatible = "mediatek,rt-pd-manager";
+	};
+
+	subpmic_pmu_eint: mt6370_pmu_eint {
+	};
+
+	tcpc_pd: mt6370_pd_eint {
+	};
+
 	firmware {
 		android {
 			compatible = "android,firmware";
