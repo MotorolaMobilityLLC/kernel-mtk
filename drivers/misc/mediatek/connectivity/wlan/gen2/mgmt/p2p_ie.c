@@ -563,7 +563,7 @@ VOID p2pFuncComposeNoaAttribute(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsd
 	for (i = 0; i < prP2pSpecificBssInfo->ucNoATimingCount; i++) {
 		if (prP2pSpecificBssInfo->arNoATiming[i].fgIsInUse) {
 
-			prNoaDesc = (P_NOA_DESCRIPTOR_T) & prNoaAttr->aucNoADesc[i * sizeof(NOA_DESCRIPTOR_T)];
+			prNoaDesc = (P_NOA_DESCRIPTOR_T)&prNoaAttr->aucNoADesc[i * sizeof(NOA_DESCRIPTOR_T)];
 
 			prNoaDesc->ucCountType = prP2pSpecificBssInfo->arNoATiming[i].ucCount;
 			prNoaDesc->u4Duration = prP2pSpecificBssInfo->arNoATiming[i].u4Duration;

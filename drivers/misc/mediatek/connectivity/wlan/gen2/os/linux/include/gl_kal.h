@@ -520,7 +520,7 @@ VOID kalUpdateMACAddress(IN P_GLUE_INFO_T prGlueInfo, IN PUINT_8 pucMacAddr);
 
 VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket);
 
-PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PUINT_8 *ppucData);
+PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PPUINT_8 ppucData);
 
 VOID kalOsTimerInitialize(IN P_GLUE_INFO_T prGlueInfo, IN PVOID prTimerHandler);
 
@@ -557,7 +557,7 @@ VOID kalQueryTxChksumOffloadParam(IN PVOID pvPacket, OUT PUINT_8 pucFlag);
 VOID kalUpdateRxCSUMOffloadParam(IN PVOID pvPacket, IN ENUM_CSUM_RESULT_T eCSUM[]);
 #endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
 
-BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_ADDRESS *prMacAddr);
+BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, PARAM_MAC_ADDRESS *prMacAddr);
 
 VOID
 kalReadyOnChannel(IN P_GLUE_INFO_T prGlueInfo,
@@ -591,7 +591,7 @@ kalDevPortWrite(P_GLUE_INFO_T prGlueInfo,
 
 BOOLEAN kalDevWriteWithSdioCmd52(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Addr, IN UINT_8 ucData);
 
-void kalDevLoopbkAuto(IN GLUE_INFO_T *GlueInfo);
+void kalDevLoopbkAuto(IN P_GLUE_INFO_T GlueInfo);
 
 #if CFG_SUPPORT_EXT_CONFIG
 UINT_32 kalReadExtCfg(IN P_GLUE_INFO_T prGlueInfo);

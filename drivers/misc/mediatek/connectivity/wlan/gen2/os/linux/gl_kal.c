@@ -672,7 +672,7 @@ VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 * \return NULL: Failed to allocate skb, Not NULL get skb
 */
 /*----------------------------------------------------------------------------*/
-PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PUINT_8 *ppucData)
+PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PPUINT_8 ppucData)
 {
 	struct sk_buff *prSkb = dev_alloc_skb(u4Size);
 
@@ -747,7 +747,7 @@ kalProcessRxPacket(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket, IN PUINT_8 pu
 unsigned int testmode;
 unsigned int testlen = 64;
 
-void kalDevLoopbkAuto(IN GLUE_INFO_T *GlueInfo)
+void kalDevLoopbkAuto(IN P_GLUE_INFO_T GlueInfo)
 {
 #define HIF_LOOPBK_AUTO_TEST_LEN    1600
 /* GL_HIF_INFO_T *HifInfo; */
@@ -1631,6 +1631,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 		ucIpVersion = (pucIpHdr[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		if (ucIpVersion == IPVERSION) {
 			UINT_8 ucIpTos;
+
 			ucIpTos = pucIpHdr[1];
 			/* Get the DSCP value from the header of IP packet. */
 			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
@@ -1946,8 +1947,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 			ret = prIoReq->rStatus;
 		if (ret != WLAN_STATUS_SUCCESS)
 			DBGLOG(OID, WARN, "kalIoctl: ret ErrCode: %d\n", ret);
-	}
-	else {
+	} else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
 		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_timeout occurred!\n");
@@ -1972,6 +1972,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 		ret = WLAN_STATUS_FAILURE;
 	}
+
 	DBGLOG(OID, TEMP, "kalIoctl: done\n");
 	up(&prGlueInfo->ioctl_sem);
 	rHaltCtrl.fgHeldByKalIoctl = FALSE;
@@ -2592,7 +2593,7 @@ BOOLEAN kalIsCardRemoved(IN P_GLUE_INFO_T prGlueInfo)
  *         FALSE
  */
 /*----------------------------------------------------------------------------*/
-BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_ADDRESS *prMacAddr)
+BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, PARAM_MAC_ADDRESS *prMacAddr)
 {
 	ASSERT(prGlueInfo);
 
