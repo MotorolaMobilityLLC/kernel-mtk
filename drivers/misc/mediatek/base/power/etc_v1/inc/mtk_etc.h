@@ -73,4 +73,14 @@ extern void mtk_etc_init(void);
 extern void mtk_etc_voltage_change(unsigned int new_vout);
 extern void mtk_etc_power_off(void);
 extern void mtk_dormant_ctrl(unsigned int onOff);
+
+/* SRAM debugging */
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_etc_status(u8 val);
+extern void aee_rr_rec_etc_mode(u8 val);
+
+extern u8 aee_rr_curr_etc_status(void);
+extern u8 aee_rr_curr_etc_mode(void);
+#endif
+
 #endif

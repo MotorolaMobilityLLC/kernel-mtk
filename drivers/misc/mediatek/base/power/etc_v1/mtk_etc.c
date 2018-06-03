@@ -209,6 +209,15 @@ static struct notifier_block __refdata _mt_etc_cpu_notifier = {
 /************************************************
 * Global function definition
 ************************************************/
+#ifdef CONFIG_MTK_RAM_CONSOLE
+static void _mt_etc_aee_init(void)
+{
+	aee_rr_rec_etc_status(0xFF);
+	aee_rr_rec_etc_mode(0xFF);
+}
+#endif
+
+
 #ifdef __KERNEL__
 static long long etc_get_current_time_us(void)
 {
@@ -242,9 +251,18 @@ void mtk_etc_unlock(unsigned long *flags)
 
 void mtk_etc_init(void)
 {
+	#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_etc_status(0x10);
+	#endif
+
 	if (ctrl_etc_enable == 1) {
 		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_INIT, 0, 0, 0);
 	}
+
+	#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_etc_status(0x11);
+	aee_rr_rec_etc_mode(0xF1);
+	#endif
 }
 
 void mtk_etc_voltage_change(unsigned int new_vout)
@@ -257,8 +275,17 @@ void mtk_etc_voltage_change(unsigned int new_vout)
 
 void mtk_etc_power_off(void)
 {
+	#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_etc_status(0x20);
+	#endif
+
 	if (ctrl_etc_enable == 1)
 		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_PWR_OFF, 0, 0, 0);
+
+	#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_etc_status(0x21);
+	aee_rr_rec_etc_mode(0xF0);
+	#endif
 }
 
 void mtk_dormant_ctrl(unsigned int onOff)
@@ -701,6 +728,9 @@ static int etc_probe(struct platform_device *pdev)
 		return 0;
 	}
 
+	#ifdef CONFIG_MTK_RAM_CONSOLE
+	_mt_etc_aee_init();
+	#endif
 	mtk_etc_init();
 	register_hotcpu_notifier(&_mt_etc_cpu_notifier);
 	return 0;
